@@ -40,7 +40,7 @@ func TestAwsFromEc2Resource(t *testing.T) {
 	attrs.InsertString(semconventions.AttributeHostImageID, imageID)
 	attrs.CopyTo(resource.Attributes())
 
-	attributes := make(map[string]string)
+	attributes := make(map[string]pdata.AttributeValue)
 
 	filtered, awsData := makeAws(attributes, resource)
 
@@ -93,7 +93,7 @@ func TestAwsFromEcsResource(t *testing.T) {
 
 	attrs.CopyTo(resource.Attributes())
 
-	attributes := make(map[string]string)
+	attributes := make(map[string]pdata.AttributeValue)
 
 	filtered, awsData := makeAws(attributes, resource)
 
@@ -128,7 +128,7 @@ func TestAwsFromBeanstalkResource(t *testing.T) {
 	attrs.InsertString(semconventions.AttributeServiceVersion, versionLabel)
 	attrs.CopyTo(resource.Attributes())
 
-	attributes := make(map[string]string)
+	attributes := make(map[string]pdata.AttributeValue)
 
 	filtered, awsData := makeAws(attributes, resource)
 
@@ -166,7 +166,7 @@ func TestAwsFromEksResource(t *testing.T) {
 	attrs.InsertString(semconventions.AttributeHostType, "m5.xlarge")
 	attrs.CopyTo(resource.Attributes())
 
-	attributes := make(map[string]string)
+	attributes := make(map[string]pdata.AttributeValue)
 
 	filtered, awsData := makeAws(attributes, resource)
 
@@ -205,12 +205,12 @@ func TestAwsWithAwsSqsResources(t *testing.T) {
 	attrs.InsertString(semconventions.AttributeHostType, "m5.xlarge")
 
 	queueURL := "https://sqs.use1.amazonaws.com/Meltdown-Alerts"
-	attributes := make(map[string]string)
-	attributes[awsxray.AWSOperationAttribute] = "SendMessage"
-	attributes[awsxray.AWSAccountAttribute] = "987654321"
-	attributes[awsxray.AWSRegionAttribute] = "us-east-2"
-	attributes[awsxray.AWSQueueURLAttribute] = queueURL
-	attributes["employee.id"] = "XB477"
+	attributes := make(map[string]pdata.AttributeValue)
+	attributes[awsxray.AWSOperationAttribute] = pdata.NewAttributeValueString("SendMessage")
+	attributes[awsxray.AWSAccountAttribute] = pdata.NewAttributeValueString("987654321")
+	attributes[awsxray.AWSRegionAttribute] = pdata.NewAttributeValueString("us-east-2")
+	attributes[awsxray.AWSQueueURLAttribute] = pdata.NewAttributeValueString(queueURL)
+	attributes["employee.id"] = pdata.NewAttributeValueString("XB477")
 
 	filtered, awsData := makeAws(attributes, resource)
 
@@ -222,8 +222,8 @@ func TestAwsWithAwsSqsResources(t *testing.T) {
 
 func TestAwsWithSqsAlternateAttribute(t *testing.T) {
 	queueURL := "https://sqs.use1.amazonaws.com/Meltdown-Alerts"
-	attributes := make(map[string]string)
-	attributes[awsxray.AWSQueueURLAttribute2] = queueURL
+	attributes := make(map[string]pdata.AttributeValue)
+	attributes[awsxray.AWSQueueURLAttribute2] = pdata.NewAttributeValueString(queueURL)
 
 	filtered, awsData := makeAws(attributes, pdata.NewResource())
 
@@ -254,10 +254,10 @@ func TestAwsWithAwsDynamoDbResources(t *testing.T) {
 	attrs.InsertString(semconventions.AttributeHostType, "m5.xlarge")
 
 	tableName := "WIDGET_TYPES"
-	attributes := make(map[string]string)
-	attributes[awsxray.AWSOperationAttribute] = "PutItem"
-	attributes[awsxray.AWSRequestIDAttribute] = "75107C82-EC8A-4F75-883F-4440B491B0AB"
-	attributes[awsxray.AWSTableNameAttribute] = tableName
+	attributes := make(map[string]pdata.AttributeValue)
+	attributes[awsxray.AWSOperationAttribute] = pdata.NewAttributeValueString("PutItem")
+	attributes[awsxray.AWSRequestIDAttribute] = pdata.NewAttributeValueString("75107C82-EC8A-4F75-883F-4440B491B0AB")
+	attributes[awsxray.AWSTableNameAttribute] = pdata.NewAttributeValueString(tableName)
 
 	filtered, awsData := makeAws(attributes, resource)
 
@@ -270,8 +270,8 @@ func TestAwsWithAwsDynamoDbResources(t *testing.T) {
 
 func TestAwsWithDynamoDbAlternateAttribute(t *testing.T) {
 	tableName := "MyTable"
-	attributes := make(map[string]string)
-	attributes[awsxray.AWSTableNameAttribute2] = tableName
+	attributes := make(map[string]pdata.AttributeValue)
+	attributes[awsxray.AWSTableNameAttribute2] = pdata.NewAttributeValueString(tableName)
 
 	filtered, awsData := makeAws(attributes, pdata.NewResource())
 
@@ -282,8 +282,8 @@ func TestAwsWithDynamoDbAlternateAttribute(t *testing.T) {
 
 func TestAwsWithRequestIdAlternateAttribute(t *testing.T) {
 	requestid := "12345-request"
-	attributes := make(map[string]string)
-	attributes[awsxray.AWSRequestIDAttribute2] = requestid
+	attributes := make(map[string]pdata.AttributeValue)
+	attributes[awsxray.AWSRequestIDAttribute2] = pdata.NewAttributeValueString(requestid)
 
 	filtered, awsData := makeAws(attributes, pdata.NewResource())
 
@@ -293,7 +293,7 @@ func TestAwsWithRequestIdAlternateAttribute(t *testing.T) {
 }
 
 func TestJavaSDK(t *testing.T) {
-	attributes := make(map[string]string)
+	attributes := make(map[string]pdata.AttributeValue)
 	resource := pdata.NewResource()
 	resource.Attributes().InsertString(semconventions.AttributeTelemetrySDKName, "opentelemetry")
 	resource.Attributes().InsertString(semconventions.AttributeTelemetrySDKLanguage, "java")
@@ -308,7 +308,7 @@ func TestJavaSDK(t *testing.T) {
 }
 
 func TestJavaAutoInstrumentation(t *testing.T) {
-	attributes := make(map[string]string)
+	attributes := make(map[string]pdata.AttributeValue)
 	resource := pdata.NewResource()
 	resource.Attributes().InsertString(semconventions.AttributeTelemetrySDKName, "opentelemetry")
 	resource.Attributes().InsertString(semconventions.AttributeTelemetrySDKLanguage, "java")
@@ -325,7 +325,7 @@ func TestJavaAutoInstrumentation(t *testing.T) {
 }
 
 func TestGoSDK(t *testing.T) {
-	attributes := make(map[string]string)
+	attributes := make(map[string]pdata.AttributeValue)
 	resource := pdata.NewResource()
 	resource.Attributes().InsertString(semconventions.AttributeTelemetrySDKName, "opentelemetry")
 	resource.Attributes().InsertString(semconventions.AttributeTelemetrySDKLanguage, "go")
@@ -340,7 +340,7 @@ func TestGoSDK(t *testing.T) {
 }
 
 func TestCustomSDK(t *testing.T) {
-	attributes := make(map[string]string)
+	attributes := make(map[string]pdata.AttributeValue)
 	resource := pdata.NewResource()
 	resource.Attributes().InsertString(semconventions.AttributeTelemetrySDKName, "opentracing")
 	resource.Attributes().InsertString(semconventions.AttributeTelemetrySDKLanguage, "java")
@@ -362,7 +362,7 @@ func TestLogGroups(t *testing.T) {
 		LogGroup: awsxray.String("group2"),
 	}
 
-	attributes := make(map[string]string)
+	attributes := make(map[string]pdata.AttributeValue)
 	resource := pdata.NewResource()
 	lg := pdata.NewAttributeValueArray()
 	ava := lg.ArrayVal()
@@ -393,7 +393,7 @@ func TestLogGroupsFromArns(t *testing.T) {
 		Arn:      awsxray.String(group2),
 	}
 
-	attributes := make(map[string]string)
+	attributes := make(map[string]pdata.AttributeValue)
 	resource := pdata.NewResource()
 	lga := pdata.NewAttributeValueArray()
 	ava := lga.ArrayVal()
