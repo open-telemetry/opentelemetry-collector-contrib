@@ -1,5 +1,9 @@
 # Datadog Exporter
 
+<div class="alert alert-warning">
+The Datadog exporter version v0.28.0 (the current latest version at time of writing) has reports of an <a href="https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/3786">unintended issue</a> that may cause Traces exported to Datadog to not be retained past 15 minutes. This may cause unexpected behavior in the Datadog UI. This issued should be resolved in the next release (v0.29.0), but at present the current recommended version of the Datadog Exporter is <a href="https://github.com/open-telemetry/opentelemetry-collector-contrib/releases/tag/v0.27.0">v0.27.0</a>. Please <a href="https://docs.datadoghq.com/help/">Reach out to Datadog support</a> if it doesn't work as you expect.
+</div>
+
 This exporter sends metric and trace data to [Datadog](https://datadoghq.com). For environment specific setup instructions visit the [Datadog Documentation](https://docs.datadoghq.com/tracing/setup_overview/open_standards/#opentelemetry-collector-datadog-exporter).
 
 > Please review the Collector's [security
