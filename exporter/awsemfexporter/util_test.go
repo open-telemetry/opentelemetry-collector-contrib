@@ -107,6 +107,20 @@ func TestReplacePatternNilAttrValue(t *testing.T) {
 	assert.Equal(t, "/aws/ecs/containerinsights/undefined/performance", s)
 }
 
+func TestReplacePatternValidTaskDefinitionFamily(t *testing.T) {
+	logger := zap.NewNop()
+
+	input := "{TaskDefinitionFamily}"
+
+	attrMap := pdata.NewAttributeMap()
+	attrMap.UpsertString("aws.ecs.cluster.name", "test-cluster-name")
+	attrMap.UpsertString("aws.ecs.task.family", "test-task-definition-family")
+
+	s := replacePatterns(input, attrMap, logger)
+
+	assert.Equal(t, "test-task-definition-family", s)
+}
+
 func TestGetNamespace(t *testing.T) {
 	defaultMetric := createMetricTestData()
 	testCases := []struct {
@@ -176,6 +190,7 @@ func TestGetLogInfo(t *testing.T) {
 					"aws.ecs.task.id":               "test-task-id",
 					"k8s.node.name":                 "ip-192-168-58-245.ec2.internal",
 					"aws.ecs.container.instance.id": "203e0410260d466bab7873bb4f317b4e",
+					"aws.ecs.task.family":           "test-task-definition-family",
 				},
 			},
 		},
@@ -186,10 +201,11 @@ func TestGetLogInfo(t *testing.T) {
 			},
 			Resource: &resourcepb.Resource{
 				Labels: map[string]string{
-					"ClusterName":         "test-cluster-name",
-					"TaskId":              "test-task-id",
-					"NodeName":            "ip-192-168-58-245.ec2.internal",
-					"ContainerInstanceId": "203e0410260d466bab7873bb4f317b4e",
+					"ClusterName":          "test-cluster-name",
+					"TaskId":               "test-task-id",
+					"NodeName":             "ip-192-168-58-245.ec2.internal",
+					"ContainerInstanceId":  "203e0410260d466bab7873bb4f317b4e",
+					"TaskDefinitionFamily": "test-task-definition-family",
 				},
 			},
 		},
@@ -273,6 +289,14 @@ func TestGetLogInfo(t *testing.T) {
 			"instanceTelemetry/{ContainerInstanceId}",
 			"/aws/containerinsights/test-cluster-name/performance",
 			"instanceTelemetry/203e0410260d466bab7873bb4f317b4e",
+		},
+		{
+			"empty namespace, config w/ pattern",
+			"",
+			"/aws/containerinsights/{ClusterName}/performance",
+			"{TaskDefinitionFamily}-{TaskId}",
+			"/aws/containerinsights/test-cluster-name/performance",
+			"test-task-definition-family-test-task-id",
 		},
 	}
 
