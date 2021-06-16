@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+## 💡 Enhancements 💡
+
+- `tailsampling` processor: Add new policy `latency` (#3750)
+
 ## v0.28.0
 
 # 🎉 OpenTelemetry Collector Contrib v0.28.0 (Beta) 🎉
