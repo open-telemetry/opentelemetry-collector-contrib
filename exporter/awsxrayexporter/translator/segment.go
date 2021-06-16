@@ -324,7 +324,7 @@ func timestampToFloatSeconds(ts pdata.Timestamp) float64 {
 	return float64(ts) / float64(time.Second)
 }
 
-func makeXRayAttributes(attributes map[string]string, resource pdata.Resource, storeResource bool, indexedAttrs []string, indexAllAttrs bool) (
+func makeXRayAttributes(attributes map[string]pdata.AttributeValue, resource pdata.Resource, storeResource bool, indexedAttrs []string, indexAllAttrs bool) (
 	string, map[string]interface{}, map[string]map[string]interface{}) {
 	var (
 		annotations = map[string]interface{}{}
@@ -333,7 +333,7 @@ func makeXRayAttributes(attributes map[string]string, resource pdata.Resource, s
 	)
 	userid, ok := attributes[semconventions.AttributeEnduserID]
 	if ok {
-		user = userid
+		user = userid.StringVal()
 		delete(attributes, semconventions.AttributeEnduserID)
 	}
 
@@ -371,15 +371,24 @@ func makeXRayAttributes(attributes map[string]string, resource pdata.Resource, s
 	if indexAllAttrs {
 		for key, value := range attributes {
 			key = fixAnnotationKey(key)
-			annotations[key] = value
+			annoVal := annotationValue(value)
+			if annoVal != nil {
+				annotations[key] = annoVal
+			}
 		}
 	} else {
 		for key, value := range attributes {
 			if indexedKeys[key] {
 				key = fixAnnotationKey(key)
-				annotations[key] = value
+				annoVal := annotationValue(value)
+				if annoVal != nil {
+					annotations[key] = annoVal
+				}
 			} else {
-				defaultMetadata[key] = value
+				metaVal := metadataValue(value)
+				if metaVal != nil {
+					defaultMetadata[key] = metaVal
+				}
 			}
 		}
 	}
