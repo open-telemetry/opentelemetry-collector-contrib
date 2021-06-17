@@ -49,7 +49,7 @@ func TestLoadConfig(t *testing.T) {
 		ExporterSettings: config.NewExporterSettings(config.NewIDWithName(typeStr, "allsettings")),
 		HTTPClientSettings: confighttp.HTTPClientSettings{
 			Headers: map[string]string{
-				"x-custom-header": "loki_rocks",
+				"X-Custom-Header": "loki_rocks",
 			},
 			Endpoint: "https://loki:3100/loki/api/v1/push",
 			TLSSetting: configtls.TLSClientSetting{

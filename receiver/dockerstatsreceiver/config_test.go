@@ -70,8 +70,8 @@ func TestLoadConfig(t *testing.T) {
 	}, ascfg.ContainerLabelsToMetricLabels)
 
 	assert.Equal(t, map[string]string{
-		"my_environment_variable":       "my-metric-label",
-		"my_other_environment_variable": "my-other-metric-label",
+		"MY_ENVIRONMENT_VARIABLE":       "my-metric-label",
+		"MY_OTHER_ENVIRONMENT_VARIABLE": "my-other-metric-label",
 	}, ascfg.EnvVarsToMetricLabels)
 
 	assert.True(t, ascfg.ProvidePerCoreCPUMetrics)
