@@ -1,6 +1,6 @@
 # observIQ Exporter
 
-This exporter supports sending log data to (observIQ)[https://observiq.com/]
+This exporter supports sending log data to [observIQ](https://observiq.com/)
 
 **This exporter is currently being developed and is not yet ready for use**
 
