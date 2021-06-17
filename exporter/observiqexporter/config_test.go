@@ -17,7 +17,7 @@ package observiqexporter
 import (
 	"testing"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestValidateConfig(t *testing.T) {
@@ -72,9 +72,9 @@ func TestValidateConfig(t *testing.T) {
 		t.Run(testCase.testName, func(t *testing.T) {
 			err := testCase.input.validateConfig()
 			if testCase.shouldError {
-				assert.Error(t, err)
+				require.Error(t, err)
 			} else {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 			}
 		})
 	}

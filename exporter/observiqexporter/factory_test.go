@@ -18,7 +18,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configcheck"
 	"go.uber.org/zap"
@@ -26,24 +26,24 @@ import (
 
 func TestNewFactory(t *testing.T) {
 	fact := NewFactory()
-	assert.NotNil(t, fact, "failed to create new factory")
+	require.NotNil(t, fact, "failed to create new factory")
 }
 
 func TestCreateDefaultConfig(t *testing.T) {
 	cfg := createDefaultConfig()
-	assert.NotNil(t, cfg, "failed to create default config")
-	assert.NoError(t, configcheck.ValidateConfig(cfg))
+	require.NotNil(t, cfg, "failed to create default config")
+	require.NoError(t, configcheck.ValidateConfig(cfg))
 }
 
 func TestCreateLogsExporter(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	params := component.ExporterCreateSettings{Logger: zap.NewNop()}
 	_, err := createLogsExporter(context.Background(), params, cfg)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 }
 
 func TestCreateLogsExporterNilConfig(t *testing.T) {
 	params := component.ExporterCreateSettings{Logger: zap.NewNop()}
 	_, err := createLogsExporter(context.Background(), params, nil)
-	assert.Error(t, err)
+	require.Error(t, err)
 }
