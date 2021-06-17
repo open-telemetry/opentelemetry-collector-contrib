@@ -22,7 +22,6 @@ import (
 	"github.com/nginxinc/nginx-prometheus-exporter/client"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/consumer/simple"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/nginxreceiver/internal/metadata"
@@ -68,27 +67,43 @@ func (r *nginxScraper) scrape(context.Context) (pdata.ResourceMetricsSlice, erro
 		}
 	}
 
-	metrics := simple.Metrics{
-		Metrics:                    pdata.NewMetrics(),
-		Timestamp:                  time.Now(),
-		MetricFactoriesByName:      metadata.M.FactoriesByName(),
-		InstrumentationLibraryName: "otelcol/nginx",
-	}
-
 	stats, err := r.client.GetStubStats()
 	if err != nil {
 		r.logger.Error("Failed to fetch nginx stats", zap.Error(err))
 		return pdata.ResourceMetricsSlice{}, err
 	}
 
-	metrics.AddSumDataPoint(metadata.M.NginxRequests.Name(), stats.Requests)
-	metrics.AddSumDataPoint(metadata.M.NginxConnectionsAccepted.Name(), stats.Connections.Accepted)
-	metrics.AddSumDataPoint(metadata.M.NginxConnectionsHandled.Name(), stats.Connections.Handled)
+	now := pdata.TimestampFromTime(time.Now())
+	metrics := pdata.NewMetrics()
+	ilm := metrics.ResourceMetrics().AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty()
+	ilm.InstrumentationLibrary().SetName("otelcol/nginx")
 
-	metrics.WithLabels(map[string]string{metadata.L.State: metadata.LabelState.Active}).AddGaugeDataPoint(metadata.M.NginxConnectionsCurrent.Name(), stats.Connections.Active)
-	metrics.WithLabels(map[string]string{metadata.L.State: metadata.LabelState.Reading}).AddGaugeDataPoint(metadata.M.NginxConnectionsCurrent.Name(), stats.Connections.Reading)
-	metrics.WithLabels(map[string]string{metadata.L.State: metadata.LabelState.Writing}).AddGaugeDataPoint(metadata.M.NginxConnectionsCurrent.Name(), stats.Connections.Writing)
-	metrics.WithLabels(map[string]string{metadata.L.State: metadata.LabelState.Waiting}).AddGaugeDataPoint(metadata.M.NginxConnectionsCurrent.Name(), stats.Connections.Waiting)
+	addSum(ilm.Metrics(), metadata.M.NginxRequests.Init, now, stats.Requests)
+	addSum(ilm.Metrics(), metadata.M.NginxConnectionsAccepted.Init, now, stats.Connections.Accepted)
+	addSum(ilm.Metrics(), metadata.M.NginxConnectionsHandled.Init, now, stats.Connections.Handled)
 
-	return metrics.Metrics.ResourceMetrics(), nil
+	currConnMetric := ilm.Metrics().AppendEmpty()
+	metadata.M.NginxConnectionsCurrent.Init(currConnMetric)
+	dps := currConnMetric.IntGauge().DataPoints()
+	addCurrentConnectionDataPoint(dps, metadata.LabelState.Active, now, stats.Connections.Active)
+	addCurrentConnectionDataPoint(dps, metadata.LabelState.Reading, now, stats.Connections.Reading)
+	addCurrentConnectionDataPoint(dps, metadata.LabelState.Writing, now, stats.Connections.Writing)
+	addCurrentConnectionDataPoint(dps, metadata.LabelState.Waiting, now, stats.Connections.Waiting)
+
+	return metrics.ResourceMetrics(), nil
+}
+
+func addSum(metrics pdata.MetricSlice, initFunc func(pdata.Metric), now pdata.Timestamp, value int64) {
+	metric := metrics.AppendEmpty()
+	initFunc(metric)
+	dp := metric.IntSum().DataPoints().AppendEmpty()
+	dp.SetTimestamp(now)
+	dp.SetValue(value)
+}
+
+func addCurrentConnectionDataPoint(dps pdata.IntDataPointSlice, stateValue string, now pdata.Timestamp, value int64) {
+	dp := dps.AppendEmpty()
+	dp.LabelsMap().Upsert(metadata.L.State, stateValue)
+	dp.SetTimestamp(now)
+	dp.SetValue(value)
 }
