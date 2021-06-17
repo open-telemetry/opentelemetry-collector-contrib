@@ -12,7 +12,7 @@ require (
 	github.com/pelletier/go-toml v1.8.0 // indirect
 	github.com/stretchr/testify v1.7.0
 	go.opencensus.io v0.23.0
-	go.opentelemetry.io/collector v0.28.0
+	go.opentelemetry.io/collector v0.28.1-0.20210616151306-cdc163427b8e
 	go.uber.org/zap v1.17.0
 	google.golang.org/genproto v0.0.0-20210312152112-fc591d9ea70f
 	google.golang.org/grpc v1.38.0
