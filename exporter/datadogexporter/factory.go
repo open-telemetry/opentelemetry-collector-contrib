@@ -25,7 +25,7 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
 	ddconfig "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/config"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata"
 )
 
 const (

@@ -20,7 +20,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/translator/conventions"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/testutils"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/testutils"
 )
 
 var (

@@ -34,8 +34,8 @@ import (
 	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace/ext"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/config"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/metadata"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/utils"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/utils"
 )
 
 const letterBytes = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
