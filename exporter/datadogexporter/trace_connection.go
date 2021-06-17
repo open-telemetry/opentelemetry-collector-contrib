@@ -26,7 +26,7 @@ import (
 	"github.com/gogo/protobuf/proto"
 	"go.opentelemetry.io/collector/component"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/utils"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/utils"
 )
 
 // traceEdgeConnection is used to send data to trace edge
