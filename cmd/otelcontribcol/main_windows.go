@@ -24,7 +24,7 @@ import (
 	"golang.org/x/sys/windows/svc"
 )
 
-func run(params service.AppSettings) error {
+func run(params service.CollectorSettings) error {
 	if useInteractiveMode, err := checkUseInteractiveMode(); err != nil {
 		return err
 	} else if useInteractiveMode {
@@ -50,10 +50,10 @@ func checkUseInteractiveMode() (bool, error) {
 	}
 }
 
-func runService(params service.AppSettings) error {
+func runService(params service.CollectorSettings) error {
 	// do not need to supply service name when startup is invoked through Service Control Manager directly
 	if err := svc.Run("", service.NewWindowsService(params)); err != nil {
-		return fmt.Errorf("failed to start service: %w", err)
+		return fmt.Errorf("failed to start collector server: %w", err)
 	}
 
 	return nil
