@@ -13,7 +13,7 @@
 # limitations under the License.
 """
 This library provides a WSGI middleware that can be used on any WSGI framework
-(such as Django / Flask) to track requests timing through OpenTelemetry.
+(such as Django / Flask / Web.py) to track requests timing through OpenTelemetry.
 
 Usage (Flask)
 -------------
@@ -49,6 +49,35 @@ Modify the application's ``wsgi.py`` file as shown below.
 
     application = get_wsgi_application()
     application = OpenTelemetryMiddleware(application)
+
+Usage (Web.py)
+--------------
+
+.. code-block:: python
+
+    import web
+    from opentelemetry.instrumentation.wsgi import OpenTelemetryMiddleware
+    from cheroot import wsgi
+
+    urls = ('/', 'index')
+
+
+    class index:
+
+        def GET(self):
+            return "Hello, world!"
+
+
+    if __name__ == "__main__":
+        app = web.application(urls, globals())
+        func = app.wsgifunc()
+
+        func = OpenTelemetryMiddleware(func)
+
+        server = wsgi.WSGIServer(
+            ("localhost", 5100), func, server_name="localhost"
+        )
+        server.start()
 
 API
 ---
