@@ -1100,6 +1100,8 @@ github.com/lightstep/lightstep-tracer-go v0.18.1/go.mod h1:jlF1pusYV4pidLvZ+XD0U
 github.com/logrusorgru/aurora v0.0.0-20181002194514-a7b3b318ed4e/go.mod h1:7rIyQOR62GCctdiQpZ/zOJlFyk6y+94wXzv6RNZgaR4=
 github.com/logzio/jaeger-logzio v0.0.0-20201026090333-8336e3e13ec6 h1:VyYJFZWRUgpUnHlx7lCHyHQH6+JBZU7QI46KehsMI28=
 github.com/logzio/jaeger-logzio v0.0.0-20201026090333-8336e3e13ec6/go.mod h1:2WsHadygpe1LFwMGwWstmqGHMMY5JgvxjtdlGR8Mxyw=
+github.com/logzio/jaeger-logzio v1.0.1 h1:YhoRiSlTmaTLcmz+bzcBf7K4xoNaPAA6T22jBI3yvYs=
+github.com/logzio/jaeger-logzio v1.0.1/go.mod h1:L1VvAky65pUvWa6qFD4Pm+WRrGlLl+/Nycn0y4ZCXDo=
 github.com/logzio/logzio-go v0.0.0-20190421083739-334c774b7aeb h1:PflbncrX+y6QoLgeSnX+2NonVJeQL/gM9wcnAQcQdto=
 github.com/logzio/logzio-go v0.0.0-20190421083739-334c774b7aeb/go.mod h1:OBprCVuGvtyYcaCmYjE32bF12d5AAHeXS5xI0QbIXMI=
 github.com/lucasb-eyer/go-colorful v1.0.2/go.mod h1:0MS4r+7BZKSJ5mw4/S5MPN+qHFF1fYclkSPilDOKW0s=
