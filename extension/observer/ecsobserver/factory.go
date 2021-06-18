@@ -43,18 +43,16 @@ func createDefaultConfig() config.Extension {
 
 func createExtension(ctx context.Context, params component.ExtensionCreateSettings, cfg config.Extension) (component.Extension, error) {
 	sdCfg := cfg.(*Config)
-	opt := serviceDiscoveryOptions{Logger: params.Logger}
-	// Create actual AWS client or use overridden config in unit test,
-	if sdCfg.fetcher == nil {
-		fetcher, err := newTaskFetcherFromConfig(*sdCfg, params.Logger)
-		if err != nil {
-			return nil, fmt.Errorf("init fetcher failed: %w", err)
-		}
-		opt.Fetcher = fetcher
-	} else {
-		opt.Fetcher = sdCfg.fetcher
+	fetcher, err := newTaskFetcherFromConfig(*sdCfg, params.Logger)
+	if err != nil {
+		return nil, fmt.Errorf("init fetcher failed: %w", err)
 	}
-	sd, err := newDiscovery(*sdCfg, opt)
+	return createExtensionWithFetcher(params, sdCfg, fetcher)
+}
+
+// fetcher is mock in unit test or AWS API client
+func createExtensionWithFetcher(params component.ExtensionCreateSettings, sdCfg *Config, fetcher *taskFetcher) (component.Extension, error) {
+	sd, err := newDiscovery(*sdCfg, serviceDiscoveryOptions{Logger: params.Logger, Fetcher: fetcher})
 	if err != nil {
 		return nil, err
 	}
