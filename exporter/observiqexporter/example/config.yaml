@@ -1,4 +1,4 @@
-reciever:
+receiver:
   filelog:
     include: ~/example.log
 
