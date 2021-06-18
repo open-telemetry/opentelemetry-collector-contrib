@@ -93,7 +93,7 @@ func (config *Config) validateForMetric() error {
 
 func (config *Config) validate() error {
 	if !subscriptionMatcher.MatchString(config.Subscription) {
-		return fmt.Errorf("subscription '%s' is not a valide  format, use 'projects/<project_id>/subscriptions/<name>'", config.Subscription)
+		return fmt.Errorf("subscription '%s' is not a valid format, use 'projects/<project_id>/subscriptions/<name>'", config.Subscription)
 	}
 	return nil
 }
