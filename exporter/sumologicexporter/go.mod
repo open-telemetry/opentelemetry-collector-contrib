@@ -8,6 +8,6 @@ require (
 	github.com/mattn/go-colorable v0.1.7 // indirect
 	github.com/pelletier/go-toml v1.8.0 // indirect
 	github.com/stretchr/testify v1.7.0
-	go.opentelemetry.io/collector v0.28.0
+	go.opentelemetry.io/collector v0.28.1-0.20210616151306-cdc163427b8e
 	gopkg.in/ini.v1 v1.57.0 // indirect
 )

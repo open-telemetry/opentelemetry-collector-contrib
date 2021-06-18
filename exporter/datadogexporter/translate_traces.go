@@ -23,6 +23,7 @@ import (
 	"time"
 
 	"github.com/DataDog/datadog-agent/pkg/trace/exportable/pb"
+	"github.com/DataDog/datadog-agent/pkg/trace/exportable/traceutil"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/translator/conventions"
@@ -31,9 +32,9 @@ import (
 	"gopkg.in/zorkian/go-datadog-api.v2"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/config"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/metadata"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/metrics"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/utils"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metrics"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/utils"
 )
 
 const (
@@ -207,6 +208,9 @@ func resourceSpansToDatadogSpans(rs pdata.ResourceSpans, hostname string, cfg *c
 		// appends a specific piece of metadata to these spans marking them as analyzed
 		// TODO: allow users to configure specific spans to be marked as an analyzed spans for app analytics
 		top := getAnalyzedSpans(apiTrace.Spans)
+
+		// https://github.com/DataDog/datadog-agent/blob/443930a00bced1ea87d0067fc2f1fc3f98a48ba1/pkg/trace/agent/agent.go#L241-L243
+		traceutil.ComputeTopLevel(apiTrace.Spans)
 
 		payload.Transactions = append(payload.Transactions, top...)
 		payload.Traces = append(payload.Traces, apiTrace)

@@ -15,14 +15,15 @@
 package translator
 
 import (
+	"go.opentelemetry.io/collector/consumer/pdata"
 	semconventions "go.opentelemetry.io/collector/translator/conventions"
 
 	awsxray "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray"
 )
 
-func makeSQL(attributes map[string]string) (map[string]string, *awsxray.SQLData) {
+func makeSQL(attributes map[string]pdata.AttributeValue) (map[string]pdata.AttributeValue, *awsxray.SQLData) {
 	var (
-		filtered    = make(map[string]string)
+		filtered    = make(map[string]pdata.AttributeValue)
 		sqlData     awsxray.SQLData
 		dbURL       string
 		dbSystem    string
@@ -34,15 +35,15 @@ func makeSQL(attributes map[string]string) (map[string]string, *awsxray.SQLData)
 	for key, value := range attributes {
 		switch key {
 		case semconventions.AttributeDBConnectionString:
-			dbURL = value
+			dbURL = value.StringVal()
 		case semconventions.AttributeDBSystem:
-			dbSystem = value
+			dbSystem = value.StringVal()
 		case semconventions.AttributeDBName:
-			dbInstance = value
+			dbInstance = value.StringVal()
 		case semconventions.AttributeDBStatement:
-			dbStatement = value
+			dbStatement = value.StringVal()
 		case semconventions.AttributeDBUser:
-			dbUser = value
+			dbUser = value.StringVal()
 		default:
 			filtered[key] = value
 		}

@@ -36,7 +36,7 @@ const (
 	awsLogGroupArns                = "aws.log.group.arns"
 )
 
-func makeAws(attributes map[string]string, resource pdata.Resource) (map[string]string, *awsxray.AWSData) {
+func makeAws(attributes map[string]pdata.AttributeValue, resource pdata.Resource) (map[string]pdata.AttributeValue, *awsxray.AWSData) {
 	var (
 		cloud        string
 		service      string
@@ -76,7 +76,7 @@ func makeAws(attributes map[string]string, resource pdata.Resource) (map[string]
 		eks          *awsxray.EKSMetadata
 	)
 
-	filtered := make(map[string]string)
+	filtered := make(map[string]pdata.AttributeValue)
 	resource.Attributes().Range(func(key string, value pdata.AttributeValue) bool {
 		switch key {
 		case semconventions.AttributeCloudProvider:
@@ -138,25 +138,25 @@ func makeAws(attributes map[string]string, resource pdata.Resource) (map[string]
 	for key, value := range attributes {
 		switch key {
 		case awsxray.AWSOperationAttribute:
-			operation = value
+			operation = value.StringVal()
 		case awsxray.AWSAccountAttribute:
-			if value != "" {
-				account = value
+			if value.Type() != pdata.AttributeValueTypeNull {
+				account = value.StringVal()
 			}
 		case awsxray.AWSRegionAttribute:
-			remoteRegion = value
+			remoteRegion = value.StringVal()
 		case awsxray.AWSRequestIDAttribute:
 			fallthrough
 		case awsxray.AWSRequestIDAttribute2:
-			requestID = value
+			requestID = value.StringVal()
 		case awsxray.AWSQueueURLAttribute:
 			fallthrough
 		case awsxray.AWSQueueURLAttribute2:
-			queueURL = value
+			queueURL = value.StringVal()
 		case awsxray.AWSTableNameAttribute:
 			fallthrough
 		case awsxray.AWSTableNameAttribute2:
-			tableName = value
+			tableName = value.StringVal()
 		default:
 			filtered[key] = value
 		}

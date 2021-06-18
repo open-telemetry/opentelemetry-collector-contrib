@@ -48,21 +48,33 @@ func (c *Config) validate() error {
 
 // LabelsConfig defines the labels-related configuration
 type LabelsConfig struct {
-	// Attributes are the attributes that are allowed to be added as labels on a log stream.
+	// Attributes are the log record attributes that are allowed to be added as labels on a log stream.
 	Attributes map[string]string `mapstructure:"attributes"`
+
+	// ResourceAttributes are the resource attributes that are allowed to be added as labels on a log stream.
+	ResourceAttributes map[string]string `mapstructure:"resource"`
 }
 
 func (c *LabelsConfig) validate() error {
-	if len(c.Attributes) == 0 {
-		return fmt.Errorf("\"labels.attributes\" must be configured with at least one attribute")
+	if len(c.Attributes) == 0 && len(c.ResourceAttributes) == 0 {
+		return fmt.Errorf("\"labels.attributes\" or \"labels.resource\" must be configured with at least one attribute")
 	}
 
-	labelNameInvalidErr := "the label `%s` in \"labels.attributes\" is not a valid label name. Label names must match " + model.LabelNameRE.String()
+	logRecordNameInvalidErr := "the label `%s` in \"labels.attributes\" is not a valid label name. Label names must match " + model.LabelNameRE.String()
 	for l, v := range c.Attributes {
 		if len(v) > 0 && !model.LabelName(v).IsValid() {
-			return fmt.Errorf(labelNameInvalidErr, v)
+			return fmt.Errorf(logRecordNameInvalidErr, v)
 		} else if len(v) == 0 && !model.LabelName(l).IsValid() {
-			return fmt.Errorf(labelNameInvalidErr, l)
+			return fmt.Errorf(logRecordNameInvalidErr, l)
+		}
+	}
+
+	resourceNameInvalidErr := "the label `%s` in \"labels.resource\" is not a valid label name. Label names must match " + model.LabelNameRE.String()
+	for l, v := range c.ResourceAttributes {
+		if len(v) > 0 && !model.LabelName(v).IsValid() {
+			return fmt.Errorf(resourceNameInvalidErr, v)
+		} else if len(v) == 0 && !model.LabelName(l).IsValid() {
+			return fmt.Errorf(resourceNameInvalidErr, l)
 		}
 	}
 
@@ -70,10 +82,11 @@ func (c *LabelsConfig) validate() error {
 }
 
 // getAttributes creates a lookup of allowed attributes to valid Loki label names.
-func (c *LabelsConfig) getAttributes() map[string]model.LabelName {
+func (c *LabelsConfig) getAttributes(labels map[string]string) map[string]model.LabelName {
+
 	attributes := map[string]model.LabelName{}
 
-	for attrName, lblName := range c.Attributes {
+	for attrName, lblName := range labels {
 		if len(lblName) > 0 {
 			attributes[attrName] = model.LabelName(lblName)
 			continue

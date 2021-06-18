@@ -26,6 +26,7 @@ import (
 	"go.opentelemetry.io/collector/config/configtest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sprocessor/kube"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -48,6 +49,7 @@ func TestLoadConfig(t *testing.T) {
 		&Config{
 			ProcessorSettings: config.NewProcessorSettings(config.NewID(typeStr)),
 			APIConfig:         k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeServiceAccount},
+			Exclude:           ExcludeConfig{Pods: []ExcludePodConfig{{Name: "jaeger-agent"}, {Name: "jaeger-collector"}}},
 		})
 
 	p1 := cfg.Processors[config.NewIDWithName(typeStr, "2")]
@@ -59,12 +61,12 @@ func TestLoadConfig(t *testing.T) {
 			Extract: ExtractConfig{
 				Metadata: []string{"k8s.pod.name", "k8s.pod.uid", "k8s.deployment.name", "k8s.cluster.name", "k8s.namespace.name", "k8s.node.name", "k8s.pod.start_time"},
 				Annotations: []FieldExtractConfig{
-					{TagName: "a1", Key: "annotation-one"},
-					{TagName: "a2", Key: "annotation-two", Regex: "field=(?P<value>.+)"},
+					{TagName: "a1", Key: "annotation-one", From: "pod"},
+					{TagName: "a2", Key: "annotation-two", Regex: "field=(?P<value>.+)", From: kube.MetadataFromPod},
 				},
 				Labels: []FieldExtractConfig{
-					{TagName: "l1", Key: "label1"},
-					{TagName: "l2", Key: "label2", Regex: "field=(?P<value>.+)"},
+					{TagName: "l1", Key: "label1", From: "pod"},
+					{TagName: "l2", Key: "label2", Regex: "field=(?P<value>.+)", From: kube.MetadataFromPod},
 				},
 			},
 			Filter: FilterConfig{
@@ -100,6 +102,12 @@ func TestLoadConfig(t *testing.T) {
 				{
 					From: "resource_attribute",
 					Name: "k8s.pod.uid",
+				},
+			},
+			Exclude: ExcludeConfig{
+				Pods: []ExcludePodConfig{
+					{Name: "jaeger-agent"},
+					{Name: "jaeger-collector"},
 				},
 			},
 		})

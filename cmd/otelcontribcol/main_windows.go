@@ -53,7 +53,7 @@ func checkUseInteractiveMode() (bool, error) {
 func runService(params service.CollectorSettings) error {
 	// do not need to supply service name when startup is invoked through Service Control Manager directly
 	if err := svc.Run("", service.NewWindowsService(params)); err != nil {
-		return fmt.Errorf("failed to start service: %w", err)
+		return fmt.Errorf("failed to start collector server: %w", err)
 	}
 
 	return nil

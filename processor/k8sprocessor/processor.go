@@ -19,6 +19,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/translator/conventions"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
@@ -38,6 +39,7 @@ type kubernetesprocessor struct {
 	rules           kube.ExtractionRules
 	filters         kube.Filters
 	podAssociations []kube.Association
+	podIgnore       kube.Excludes
 }
 
 func (kp *kubernetesprocessor) initKubeClient(logger *zap.Logger, kubeClient kube.ClientProvider) error {
@@ -45,7 +47,7 @@ func (kp *kubernetesprocessor) initKubeClient(logger *zap.Logger, kubeClient kub
 		kubeClient = kube.New
 	}
 	if !kp.passthroughMode {
-		kc, err := kubeClient(logger, kp.apiConfig, kp.rules, kp.filters, kp.podAssociations, nil, nil)
+		kc, err := kubeClient(logger, kp.apiConfig, kp.rules, kp.filters, kp.podAssociations, kp.podIgnore, nil, nil, nil)
 		if err != nil {
 			return err
 		}
@@ -102,16 +104,30 @@ func (kp *kubernetesprocessor) ProcessLogs(ctx context.Context, ld pdata.Logs) (
 func (kp *kubernetesprocessor) processResource(ctx context.Context, resource pdata.Resource) {
 
 	podIdentifierKey, podIdentifierValue := extractPodID(ctx, resource.Attributes(), kp.podAssociations)
-	if podIdentifierKey == "" {
-		return
+	if podIdentifierKey != "" {
+		resource.Attributes().InsertString(podIdentifierKey, string(podIdentifierValue))
 	}
-	resource.Attributes().InsertString(podIdentifierKey, string(podIdentifierValue))
+	namespace := stringAttributeFromMap(resource.Attributes(), conventions.AttributeK8sNamespace)
+	if namespace != "" {
+		resource.Attributes().InsertString(conventions.AttributeK8sNamespace, namespace)
+	}
+
 	if kp.passthroughMode {
 		return
 	}
-	attrsToAdd := kp.getAttributesForPod(podIdentifierValue)
-	for key, val := range attrsToAdd {
-		resource.Attributes().InsertString(key, val)
+
+	if podIdentifierKey != "" {
+		attrsToAdd := kp.getAttributesForPod(podIdentifierValue)
+		for key, val := range attrsToAdd {
+			resource.Attributes().InsertString(key, val)
+		}
+	}
+
+	if namespace != "" {
+		attrsToAdd := kp.getAttributesForPodsNamespace(namespace)
+		for key, val := range attrsToAdd {
+			resource.Attributes().InsertString(key, val)
+		}
 	}
 }
 
@@ -121,4 +137,12 @@ func (kp *kubernetesprocessor) getAttributesForPod(identifier kube.PodIdentifier
 		return nil
 	}
 	return pod.Attributes
+}
+
+func (kp *kubernetesprocessor) getAttributesForPodsNamespace(namespace string) map[string]string {
+	ns, ok := kp.kc.GetNamespace(namespace)
+	if !ok {
+		return nil
+	}
+	return ns.Attributes
 }

@@ -40,6 +40,32 @@
 //
 // If Pod association rules are not configured resources are associated with metadata only by connection's IP Address.
 //
+//
+//The k8sprocessor can be used for automatic tagging of spans, metrics and logs with k8s labels and annotations from pods and namespaces.
+//The config for associating the data passing through the processor (spans, metrics and logs) with specific Pod/Namespace annotations/labels is configured via "annotations"  and "labels" keys.
+//This config represents a list of annotations/labels that are extracted from pods/namespaces and added to spans, metrics and logs.
+//Each item is specified as a config of tag_name (representing the tag name to tag the spans with),
+//key (representing the key used to extract value) and from (representing the kubernetes object used to extract the value).
+//The "from" field has only two possible values "pod" and "namespace" and defaults to "pod" if none is specified.
+//
+//A few examples to use this config are as follows:
+//annotations:
+//  - tag_name: a1 # extracts value of annotation from pods with key `annotation-one` and inserts it as a tag with key `a1`
+//	  key: annotation-one
+//	  from: pod
+//  - tag_name: a2 # extracts value of annotation from namespaces with key `annotation-two` with regexp and inserts it as a tag with key `a2`
+//	  key: annotation-two
+//	  regex: field=(?P<value>.+)
+//	  from: namespace
+//labels:
+//  - tag_name: l1 # extracts value of label from namespaces with key `label1` and inserts it as a tag with key `l1`
+//	  key: label1
+//	  from: namespace
+//  - tag_name: l2 # extracts value of label from pods with key `label1` with regexp and inserts it as a tag with key `l2`
+//	  key: label2
+//	  regex: field=(?P<value>.+)
+//	  from: pod
+
 // RBAC
 //
 // TODO: mention the required RBAC rules.

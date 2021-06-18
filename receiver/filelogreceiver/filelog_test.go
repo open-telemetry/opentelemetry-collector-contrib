@@ -281,10 +281,10 @@ func testdataConfigYamlAsMap() *FileLogConfig {
 				map[string]interface{}{
 					"type":  "regex_parser",
 					"regex": "^(?P<time>\\d{4}-\\d{2}-\\d{2}) (?P<sev>[A-Z]*) (?P<msg>.*)$",
-					"severity": map[interface{}]interface{}{
+					"severity": map[string]interface{}{
 						"parse_from": "sev",
 					},
-					"timestamp": map[interface{}]interface{}{
+					"timestamp": map[string]interface{}{
 						"layout":     "%Y-%m-%d",
 						"parse_from": "time",
 					},
