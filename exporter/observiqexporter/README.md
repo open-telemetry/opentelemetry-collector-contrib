@@ -8,14 +8,14 @@ This exporter supports sending log data to [observIQ](https://observiq.com/)
 
 The following configuration options are required:
 
-- `api_key` (no default): The API key used to authenticate with observIQ. See the (docs for the settings page)[https://docs.observiq.com/docs/overview#settings-page] to generate one.
+- `api_key` (no default): The API key used to authenticate with observIQ. See the [docs for the settings page](https://docs.observiq.com/docs/overview#settings-page) to generate one.
 
 The following configuration options can also be configured:
 
-- `endpoint` (default "https://nozzle.app.observiq.com/v1/add"): Endpoint where logs are sent to over http(s).
-- `agent_id` (default "otel-collector"): ID for identifying the collector deployment. Does not need to be unique, but can be useful for identifying where logs are coming from.
-- `timeout` (default 10s): Http timeout when sending data.
-- `insecure_skip_verify` (default: false): Whether to skip checking the certificate of the endpoint when sending data over HTTPS.
+- `endpoint` (default `https://nozzle.app.observiq.com/v1/add`): Endpoint where logs are sent to over http(s).
+- `agent_id` (default `otel-collector`): ID for identifying the collector deployment. Does not need to be unique, but can be useful for identifying where logs are coming from.
+- `timeout` (default `10s`): Http timeout when sending data.
+- `insecure_skip_verify` (default: `false`): Whether to skip checking the certificate of the endpoint when sending data over HTTPS.
 - `ca_file` (no default) Path to the CA cert to verify the server being connected to.
 - `cert_file` (no default) Path to the TLS cert to use for client connections when TLS client auth is required.
 - `key_file` (no default) Path to the TLS key to use for TLS required connections.
