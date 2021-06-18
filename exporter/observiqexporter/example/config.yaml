@@ -16,4 +16,5 @@ service:
   pipelines:
     logs:
       receivers: [filelog]
+      processors: [batch]
       exporters: [observiq]
