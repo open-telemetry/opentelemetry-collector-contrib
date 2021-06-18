@@ -19,7 +19,6 @@ import (
 	"errors"
 	"fmt"
 	"strings"
-	"sync"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenterror"
@@ -37,7 +36,6 @@ var (
 // carbonreceiver implements a component.MetricsReceiver for Carbon plaintext, aka "line", protocol.
 // see https://graphite.readthedocs.io/en/latest/feeding-carbon.html#the-plaintext-protocol.
 type carbonReceiver struct {
-	sync.Mutex
 	logger *zap.Logger
 	config *Config
 
@@ -111,9 +109,6 @@ func buildTransportServer(config Config) (transport.Server, error) {
 // By convention the consumer of the received data is set when the receiver
 // instance is created.
 func (r *carbonReceiver) Start(_ context.Context, host component.Host) error {
-	r.Lock()
-	defer r.Unlock()
-
 	go func() {
 		if err := r.server.ListenAndServe(r.parser, r.nextConsumer, r.reporter); err != nil {
 			host.ReportFatalError(err)
@@ -125,8 +120,5 @@ func (r *carbonReceiver) Start(_ context.Context, host component.Host) error {
 // Shutdown tells the receiver that should stop reception,
 // giving it a chance to perform any necessary clean-up.
 func (r *carbonReceiver) Shutdown(context.Context) error {
-	r.Lock()
-	defer r.Unlock()
-
 	return r.server.Close()
 }
