@@ -31,8 +31,11 @@ import (
 func TestExtensionStartStop(t *testing.T) {
 	c := ecsmock.NewCluster()
 	f := newTestTaskFetcher(t, c)
-	ctx := context.WithValue(context.TODO(), ctxFetcherOverrideKey, f)
-	ext, err := createExtension(ctx, component.ExtensionCreateSettings{Logger: zap.NewExample()}, createDefaultConfig())
+
+	ctx := context.TODO()
+	cfg := createDefaultConfig()
+	cfg.(*Config).fetcher = f
+	ext, err := createExtension(ctx, component.ExtensionCreateSettings{Logger: zap.NewExample()}, cfg)
 	require.NoError(t, err)
 	require.IsType(t, &ecsObserver{}, ext)
 	require.NoError(t, ext.Start(context.TODO(), componenttest.NewNopHost()))

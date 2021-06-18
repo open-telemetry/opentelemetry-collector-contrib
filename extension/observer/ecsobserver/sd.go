@@ -32,28 +32,13 @@ type serviceDiscovery struct {
 }
 
 type serviceDiscoveryOptions struct {
-	Logger          *zap.Logger
-	FetcherOverride *taskFetcher // for test
+	Logger  *zap.Logger
+	Fetcher *taskFetcher // mock server in test, otherwise call new newTaskFetcherFromConfig to use AWS API
 }
 
 func newDiscovery(cfg Config, opts serviceDiscoveryOptions) (*serviceDiscovery, error) {
-	svcNameFilter, err := serviceConfigsToFilter(cfg.Services)
-	if err != nil {
-		return nil, fmt.Errorf("init serivce name filter failed: %w", err)
-	}
-	var fetcher *taskFetcher
-	if opts.FetcherOverride != nil {
-		fetcher = opts.FetcherOverride
-	} else {
-		fetcher, err = newTaskFetcher(taskFetcherOptions{
-			Logger:            opts.Logger,
-			Region:            cfg.ClusterRegion,
-			Cluster:           cfg.ClusterName,
-			serviceNameFilter: svcNameFilter,
-		})
-		if err != nil {
-			return nil, fmt.Errorf("init fetcher failed: %w", err)
-		}
+	if opts.Fetcher == nil {
+		return nil, fmt.Errorf("fetcher is nil")
 	}
 	matchers, err := newMatchers(cfg, MatcherOptions{Logger: opts.Logger})
 	if err != nil {
@@ -64,7 +49,7 @@ func newDiscovery(cfg Config, opts serviceDiscoveryOptions) (*serviceDiscovery, 
 	return &serviceDiscovery{
 		logger:   opts.Logger,
 		cfg:      cfg,
-		fetcher:  fetcher,
+		fetcher:  opts.Fetcher,
 		filter:   filter,
 		exporter: exporter,
 	}, nil

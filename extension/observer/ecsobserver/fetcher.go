@@ -77,6 +77,19 @@ type taskFetcherOptions struct {
 	ec2Override ec2Client
 }
 
+func newTaskFetcherFromConfig(cfg Config, logger *zap.Logger) (*taskFetcher, error) {
+	svcNameFilter, err := serviceConfigsToFilter(cfg.Services)
+	if err != nil {
+		return nil, fmt.Errorf("init serivce name filter failed: %w", err)
+	}
+	return newTaskFetcher(taskFetcherOptions{
+		Logger:            logger,
+		Region:            cfg.ClusterRegion,
+		Cluster:           cfg.ClusterName,
+		serviceNameFilter: svcNameFilter,
+	})
+}
+
 func newTaskFetcher(opts taskFetcherOptions) (*taskFetcher, error) {
 	// Init cache
 	taskDefCache, err := simplelru.NewLRU(taskDefCacheSize, nil)

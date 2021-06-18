@@ -16,17 +16,15 @@ package ecsobserver
 
 import (
 	"context"
+	"fmt"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/extension/extensionhelper"
 )
 
-type testOverrideKey string // need to define custom type to make linter happy
-
 const (
-	typeStr               config.Type     = "ecs_observer"
-	ctxFetcherOverrideKey testOverrideKey = "fetcherOverride"
+	typeStr config.Type = "ecs_observer"
 )
 
 // NewFactory creates a factory for ECSObserver extension.
@@ -46,10 +44,15 @@ func createDefaultConfig() config.Extension {
 func createExtension(ctx context.Context, params component.ExtensionCreateSettings, cfg config.Extension) (component.Extension, error) {
 	sdCfg := cfg.(*Config)
 	opt := serviceDiscoveryOptions{Logger: params.Logger}
-	// Only for test
-	fetcher := ctx.Value(ctxFetcherOverrideKey)
-	if fetcher != nil {
-		opt.FetcherOverride = fetcher.(*taskFetcher)
+	// Create actual AWS client or use overridden config in unit test,
+	if sdCfg.fetcher == nil {
+		fetcher, err := newTaskFetcherFromConfig(*sdCfg, params.Logger)
+		if err != nil {
+			return nil, fmt.Errorf("init fetcher failed: %w", err)
+		}
+		opt.Fetcher = fetcher
+	} else {
+		opt.Fetcher = sdCfg.fetcher
 	}
 	sd, err := newDiscovery(*sdCfg, opt)
 	if err != nil {

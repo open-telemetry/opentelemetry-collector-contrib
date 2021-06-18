@@ -65,7 +65,7 @@ func TestNewDiscovery(t *testing.T) {
 		options.Cluster = cfg.ClusterName
 		options.serviceNameFilter = svcNameFilter
 	})
-	opts := serviceDiscoveryOptions{Logger: logger, FetcherOverride: fetcher}
+	opts := serviceDiscoveryOptions{Logger: logger, Fetcher: fetcher}
 
 	// Create 1 task def, 2 services and 11 tasks, 8 running on ec2, first 3 runs on fargate
 	nTasks := 11
@@ -199,7 +199,7 @@ func TestNewDiscovery(t *testing.T) {
 			options.Cluster = cfg2.ClusterName
 			options.serviceNameFilter = svcNameFilter
 		})
-		opts2 := serviceDiscoveryOptions{Logger: logger, FetcherOverride: fetcher2}
+		opts2 := serviceDiscoveryOptions{Logger: logger, Fetcher: fetcher2}
 		sd, err := newDiscovery(cfg2, opts2)
 		require.NoError(t, err)
 		require.Error(t, sd.runAndWriteFile(context.TODO()))

@@ -51,6 +51,9 @@ type Config struct {
 	TaskDefinitions []TaskDefinitionConfig `mapstructure:"task_definitions" yaml:"task_definitions"`
 	// DockerLabels is a list of docker labels for filtering containers within tasks.
 	DockerLabels []DockerLabelConfig `mapstructure:"docker_labels" yaml:"docker_labels"`
+
+	// test override
+	fetcher *taskFetcher
 }
 
 // Validate overrides the embedded noop validation so that load config can trigger

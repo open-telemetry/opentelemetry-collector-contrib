@@ -163,7 +163,7 @@ func targetsToFileSDTargets(targets []PrometheusECSTarget, jobLabelName string) 
 			}
 		}
 		// Rename job label as a workaround for https://github.com/open-telemetry/opentelemetry-collector/issues/575#issuecomment-814558584
-		// In order to keep similar behaviour as cloudwatch agent's discovery implementation,
+		// In order to keep similar behavior as cloudwatch agent's discovery implementation,
 		// we support getting job name from docker label. However, prometheus receiver is using job and __name__
 		// labels to get metric type, and it believes the job specified in prom config is always the same as
 		// the job label attached to metrics. Prometheus itself allows discovery to provide job names.
