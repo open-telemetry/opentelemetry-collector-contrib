@@ -23,17 +23,8 @@ import (
 	"go.opentelemetry.io/collector/consumer/pdata"
 )
 
-func TestServiceName(t *testing.T) {
-	const serviceName = "foo-service"
-	rm := testGetMetricData(t, usedMemory(), serviceName)
-	const key = "service.name"
-	attrVal, ok := rm.Resource().Attributes().Get(key)
-	assert.True(t, ok)
-	assert.Equal(t, serviceName, attrVal.StringVal())
-}
-
 func TestMemoryMetric(t *testing.T) {
-	rm := testGetMetricData(t, usedMemory(), "")
+	rm := testGetMetricData(t, usedMemory())
 
 	const metricName = "redis/memory/used"
 	const desc = "Total number of bytes allocated by Redis using its allocator"
@@ -42,10 +33,11 @@ func TestMemoryMetric(t *testing.T) {
 
 	ilms := rm.InstrumentationLibraryMetrics()
 	assert.Equal(t, 1, ilms.Len())
-	assert.Equal(t, 2, rm.Resource().Attributes().Len())
+	assert.Equal(t, 0, rm.Resource().Attributes().Len())
 	ilm := ilms.At(0)
 	ms := ilm.Metrics()
 	m := ms.At(0)
+	assert.Equal(t, "otelcol/redis", ilm.InstrumentationLibrary().Name())
 	assert.Equal(t, metricName, m.Name())
 	assert.Equal(t, desc, m.Description())
 	assert.Equal(t, units, m.Unit())
@@ -54,7 +46,7 @@ func TestMemoryMetric(t *testing.T) {
 }
 
 func TestUptimeInSeconds(t *testing.T) {
-	pdm := testGetMetric(t, uptimeInSeconds(), "")
+	pdm := testGetMetric(t, uptimeInSeconds())
 	const units = "s"
 	v := 104946
 
@@ -63,7 +55,7 @@ func TestUptimeInSeconds(t *testing.T) {
 }
 
 func TestUsedCpuSys(t *testing.T) {
-	pdm := testGetMetricData(t, usedCPUSys(), "")
+	pdm := testGetMetricData(t, usedCPUSys())
 	const units = "s"
 	v := 185.649184
 
@@ -171,6 +163,15 @@ func TestNewPDM(t *testing.T) {
 	assert.Equal(t, serverStartTime, pdm.DoubleSum().DataPoints().At(0).StartTimestamp())
 }
 
+func newResourceMetrics(ms pdata.MetricSlice) pdata.ResourceMetrics {
+	rm := pdata.NewResourceMetrics()
+	ilm := pdata.NewInstrumentationLibraryMetrics()
+	ilm.InstrumentationLibrary().SetName("otelcol/redis")
+	rm.InstrumentationLibraryMetrics().Append(ilm)
+	ms.CopyTo(ilm.Metrics())
+	return rm
+}
+
 func testFetchMetrics(redisMetrics []*redisMetric) (pdata.MetricSlice, []error, error) {
 	svc := newRedisSvc(newFakeClient())
 	info, err := svc.info()
@@ -181,20 +182,20 @@ func testFetchMetrics(redisMetrics []*redisMetric) (pdata.MetricSlice, []error, 
 	return ms, warnings, nil
 }
 
-func testGetMetric(t *testing.T, redisMetric *redisMetric, serverName string) pdata.Metric {
-	rm := testGetMetricData(t, redisMetric, serverName)
+func testGetMetric(t *testing.T, redisMetric *redisMetric) pdata.Metric {
+	rm := testGetMetricData(t, redisMetric)
 	pdm := rm.InstrumentationLibraryMetrics().At(0).Metrics().At(0)
 	return pdm
 }
 
-func testGetMetricData(t *testing.T, metric *redisMetric, serverName string) pdata.ResourceMetrics {
-	rm, warnings, err := testGetMetricDataErr(metric, serverName)
+func testGetMetricData(t *testing.T, metric *redisMetric) pdata.ResourceMetrics {
+	rm, warnings, err := testGetMetricDataErr(metric)
 	require.Nil(t, err)
 	require.Nil(t, warnings)
 	return rm
 }
 
-func testGetMetricDataErr(metric *redisMetric, serverName string) (pdata.ResourceMetrics, []error, error) {
+func testGetMetricDataErr(metric *redisMetric) (pdata.ResourceMetrics, []error, error) {
 	redisMetrics := []*redisMetric{metric}
 	svc := newRedisSvc(newFakeClient())
 	info, err := svc.info()
@@ -202,7 +203,7 @@ func testGetMetricDataErr(metric *redisMetric, serverName string) (pdata.Resourc
 		return pdata.ResourceMetrics{}, nil, err
 	}
 	ms, warnings := info.buildFixedMetrics(redisMetrics, testTimeBundle())
-	rm := newResourceMetrics(ms, serverName)
+	rm := newResourceMetrics(ms)
 	return rm, warnings, nil
 }
 
