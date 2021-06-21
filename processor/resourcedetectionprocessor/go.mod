@@ -6,7 +6,7 @@ require (
 	cloud.google.com/go v0.84.0
 	github.com/Showmax/go-fqdn v1.0.0
 	github.com/armon/go-metrics v0.3.3 // indirect
-	github.com/aws/aws-sdk-go v1.38.60
+	github.com/aws/aws-sdk-go v1.38.64
 	github.com/census-instrumentation/opencensus-proto v0.3.0
 	github.com/docker/docker v20.10.7+incompatible
 	github.com/hashicorp/go-immutable-radix v1.2.0 // indirect
@@ -17,3 +17,5 @@ require (
 	go.uber.org/zap v1.17.0
 	gopkg.in/ini.v1 v1.57.0 // indirect
 )
+
+replace go.opentelemetry.io/collector => /Users/adgollap/Documents/GitHub/opentelemetry-collector-contrib/../opentelemetry-collector

@@ -12,3 +12,5 @@ require (
 	k8s.io/apimachinery v0.20.4
 	k8s.io/client-go v0.20.4
 )
+
+replace go.opentelemetry.io/collector => /Users/adgollap/Documents/GitHub/opentelemetry-collector-contrib/../opentelemetry-collector

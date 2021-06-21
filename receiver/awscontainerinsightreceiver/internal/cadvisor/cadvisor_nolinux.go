@@ -19,19 +19,23 @@ package cadvisor
 import (
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.uber.org/zap"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver/internal/host"
 )
 
 // cadvisor doesn't support windows, define the dummy functions
+
+type hostInfo interface {
+	GetNumCores() int64
+	GetMemoryCapacity() int64
+	GetClusterName() string
+}
 
 // Cadvisor is a dummy struct for windows
 type Cadvisor struct {
 }
 
 // New is a dummy function to construct a dummy Cadvisor struct for windows
-func New(containerOrchestrator string, machineInfo *host.Info, logger *zap.Logger) *Cadvisor {
-	return &Cadvisor{}
+func New(containerOrchestrator string, hostInfo hostInfo, logger *zap.Logger) (*Cadvisor, error) {
+	return &Cadvisor{}, nil
 }
 
 // GetMetrics is a dummy function that always returns empty metrics for windows
