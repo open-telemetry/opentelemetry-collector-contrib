@@ -17,18 +17,108 @@
 package cadvisor
 
 import (
+	"errors"
+	"net/http"
+	"os"
 	"testing"
-	"time"
 
+	"github.com/google/cadvisor/cache/memory"
+	"github.com/google/cadvisor/container"
+	info "github.com/google/cadvisor/info/v1"
+	"github.com/google/cadvisor/manager"
+	"github.com/google/cadvisor/utils/sysfs"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver/internal/host"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver/internal/cadvisor/testutils"
 )
 
+type mockCadvisorManager struct {
+	t *testing.T
+}
+
+// Start the manager. Calling other manager methods before this returns
+// may produce undefined behavior.
+func (m *mockCadvisorManager) Start() error {
+	return nil
+}
+
+// Get information about all subcontainers of the specified container (includes self).
+func (m *mockCadvisorManager) SubcontainersInfo(containerName string, query *info.ContainerInfoRequest) ([]*info.ContainerInfo, error) {
+	containerInfos := testutils.LoadContainerInfo(m.t, "./extractors/testdata/CurInfoContainer.json")
+	return containerInfos, nil
+}
+
+type mockCadvisorManager2 struct {
+}
+
+func (m *mockCadvisorManager2) Start() error {
+	return errors.New("new error")
+}
+
+func (m *mockCadvisorManager2) SubcontainersInfo(containerName string, query *info.ContainerInfoRequest) ([]*info.ContainerInfo, error) {
+	return nil, nil
+}
+
+var mockCreateManager2 = func(memoryCache *memory.InMemoryCache, sysfs sysfs.SysFs, houskeepingConfig manager.HouskeepingConfig,
+	includedMetricsSet container.MetricSet, collectorHTTPClient *http.Client, rawContainerCgroupPathPrefixWhiteList []string,
+	perfEventsFile string) (cadvisorManager, error) {
+	return &mockCadvisorManager2{}, nil
+}
+
+var mockCreateManagerWithError = func(memoryCache *memory.InMemoryCache, sysfs sysfs.SysFs, houskeepingConfig manager.HouskeepingConfig,
+	includedMetricsSet container.MetricSet, collectorHTTPClient *http.Client, rawContainerCgroupPathPrefixWhiteList []string,
+	perfEventsFile string) (cadvisorManager, error) {
+	return nil, errors.New("error")
+}
+
 func TestGetMetrics(t *testing.T) {
-	machineInfo, _ := host.NewInfo(time.Minute, zap.NewNop())
-	c := New("eks", machineInfo, zap.NewNop())
+	// normal case
+	originalHostName := os.Getenv("HOST_NAME")
+	os.Setenv("HOST_NAME", "host")
+	hostInfo := testutils.MockHostInfo{ClusterName: "cluster"}
+	mockCreateManager := func(memoryCache *memory.InMemoryCache, sysfs sysfs.SysFs, houskeepingConfig manager.HouskeepingConfig,
+		includedMetricsSet container.MetricSet, collectorHTTPClient *http.Client, rawContainerCgroupPathPrefixWhiteList []string,
+		perfEventsFile string) (cadvisorManager, error) {
+		return &mockCadvisorManager{t: t}, nil
+	}
+	c, err := New("eks", hostInfo, zap.NewNop(), cadvisorManagerCreator(mockCreateManager))
 	assert.NotNil(t, c)
+	assert.Nil(t, err)
 	assert.NotNil(t, c.GetMetrics())
+	os.Setenv("HOST_NAME", originalHostName)
+
+	// no environmental variable
+	c, err = New("eks", hostInfo, zap.NewNop(), cadvisorManagerCreator(mockCreateManager))
+	assert.Nil(t, c)
+	assert.NotNil(t, err)
+
+	// no cluster name
+	originalHostName = os.Getenv("HOST_NAME")
+	os.Setenv("HOST_NAME", "host")
+	hostInfo = testutils.MockHostInfo{}
+	c, err = New("eks", hostInfo, zap.NewNop(), cadvisorManagerCreator(mockCreateManager))
+	assert.NotNil(t, c)
+	assert.Nil(t, err)
+	assert.Nil(t, c.GetMetrics())
+	os.Setenv("HOST_NAME", originalHostName)
+
+	// error when calling manager.Start
+	originalHostName = os.Getenv("HOST_NAME")
+	os.Setenv("HOST_NAME", "host")
+	hostInfo = testutils.MockHostInfo{ClusterName: "cluster"}
+	c, err = New("eks", hostInfo, zap.NewNop(), cadvisorManagerCreator(mockCreateManager2))
+	assert.Nil(t, c)
+	assert.NotNil(t, err)
+	os.Setenv("HOST_NAME", originalHostName)
+
+	// error when creating cadvisor manager
+	originalHostName = os.Getenv("HOST_NAME")
+	os.Setenv("HOST_NAME", "host")
+	hostInfo = testutils.MockHostInfo{ClusterName: "cluster"}
+	c, err = New("eks", hostInfo, zap.NewNop(), cadvisorManagerCreator(mockCreateManagerWithError))
+	assert.Nil(t, c)
+	assert.NotNil(t, err)
+
+	os.Setenv("HOST_NAME", originalHostName)
 }

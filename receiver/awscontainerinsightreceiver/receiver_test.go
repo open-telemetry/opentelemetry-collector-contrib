@@ -91,6 +91,7 @@ func TestCollectData(t *testing.T) {
 	r.Start(context.Background(), nil)
 	ctx := context.Background()
 	r.k8sapiserver = &MockK8sAPIServer{}
+	r.cadvisor = &MockCadvisor{}
 	err = r.collectData(ctx)
 	require.Nil(t, err)
 
