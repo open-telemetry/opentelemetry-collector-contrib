@@ -132,7 +132,7 @@ func (mt metricTranslator) translateOTelToGroupedMetric(rm *pdata.ResourceMetric
 				receiver:                   metricReceiver,
 				metricDataType:             metric.DataType(),
 			}
-			addToGroupedMetric(&metric, groupedMetrics, metadata, config.logger, mt.metricDescriptor)
+			addToGroupedMetric(&metric, groupedMetrics, metadata, config.logger, mt.metricDescriptor, config)
 		}
 	}
 }

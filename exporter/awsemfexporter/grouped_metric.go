@@ -15,6 +15,9 @@
 package awsemfexporter
 
 import (
+	"encoding/json"
+	"log"
+
 	"go.opentelemetry.io/collector/model/pdata"
 	"go.uber.org/zap"
 
@@ -34,8 +37,8 @@ type metricInfo struct {
 	unit  string
 }
 
-// addToGroupedMetric processes OT metrics and adds them into groupedMetric buckets
-func addToGroupedMetric(pmd *pdata.Metric, groupedMetrics map[interface{}]*groupedMetric, metadata cWMetricMetadata, logger *zap.Logger, descriptor map[string]MetricDescriptor) {
+// addToGroupedMetric processes OT metrics and adds them into GroupedMetric buckets
+func addToGroupedMetric(pmd *pdata.Metric, groupedMetrics map[interface{}]*GroupedMetric, metadata CWMetricMetadata, logger *zap.Logger, descriptor map[string]MetricDescriptor, config *Config) {
 	if pmd == nil {
 		return
 	}
@@ -52,10 +55,17 @@ func addToGroupedMetric(pmd *pdata.Metric, groupedMetrics map[interface{}]*group
 			continue
 		}
 
-		labels := dp.labels
-		metric := &metricInfo{
-			value: dp.value,
-			unit:  translateUnit(pmd, descriptor),
+		labels := dp.Labels
+
+		if isPod, ok := labels["Type"]; ok {
+			if isPod == "Pod" && config.CreateHighLevelObject {
+				addKubernetesWrapper(labels)
+			}
+		}
+
+		metric := &MetricInfo{
+			Value: dp.Value,
+			Unit:  translateUnit(pmd, descriptor),
 		}
 
 		if dp.timestampMs > 0 {
@@ -85,7 +95,102 @@ func addToGroupedMetric(pmd *pdata.Metric, groupedMetrics map[interface{}]*group
 	}
 }
 
-func groupedMetricKey(metadata groupedMetricMetadata, labels map[string]string) aws.Key {
+type kubernetesObj struct {
+	Host           string               `json:"`
+	Labels         internalLabelsObj    `json:`
+	Namespace_name string               `json:`
+	Pod_id         string               `json:`
+	Pod_name       string               `json:`
+	Pod_owners     internalPodOwnersObj `json:`
+	Service_name   string               `json:`
+}
+
+type internalLabelsObj struct {
+	App               string `json:`
+	Pod_template_hash string `json:`
+}
+
+type internalPodOwnersObj struct {
+	Owner_kind string `json:`
+	Owner_name string `json:`
+}
+
+func addKubernetesWrapper(labels map[string]string) {
+	//create schema
+	schema := kubernetesObj{}
+	schema.Host = "host"
+	schema.Labels =
+		internalLabelsObj{
+			App:               "app",
+			Pod_template_hash: "pod_template_hash",
+		}
+	schema.Namespace_name = "namespace_name"
+	schema.Pod_id = "pod_id"
+	schema.Pod_name = "pod_name"
+	schema.Pod_owners =
+		internalPodOwnersObj{
+			Owner_kind: "silly_nest_1",
+			Owner_name: "silly_nest_2",
+		}
+	schema.Service_name = "service_name"
+
+	labels["kubernetes"] = recursivelyFillInStruct(labels, schema)
+}
+
+func recursivelyFillInStruct(labels map[string]string, schema interface{}) string {
+	jsonBytes, err := json.Marshal(schema)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	m := make(map[string]interface{})
+	err = json.Unmarshal(jsonBytes, &m)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	m = recursivelyFillInMap(labels, m)
+	jsonBytes, err = json.Marshal(m)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	jsonString := string(jsonBytes)
+	return jsonString
+
+}
+
+func recursivelyFillInMap(labels map[string]string, schema map[string]interface{}) map[string]interface{} {
+	//Iterate over the keys of the schema
+	for k, v := range schema {
+		//Check if it is nested or not
+		nestedObj, isNested := v.(map[string]interface{})
+		if isNested {
+			//recursively fill in the nested object
+			schema[k] = recursivelyFillInMap(labels, nestedObj)
+			//if the object is empty delete it
+			mapForm, _ := schema[k].(map[string]interface{})
+			if len(mapForm) == 0 {
+				delete(schema, k)
+			}
+		} else {
+			stringVal, isString := v.(string)
+			if !isString {
+				log.Fatal("Non string, struct value found in schema")
+			}
+			labelVal, exists := labels[stringVal]
+			if !exists {
+				delete(schema, k)
+			} else {
+				schema[k] = labelVal
+			}
+		}
+
+	}
+	return schema
+}
+
+func groupedMetricKey(metadata GroupedMetricMetadata, labels map[string]string) aws.Key {
 	return aws.NewKey(metadata, labels)
 }
 
