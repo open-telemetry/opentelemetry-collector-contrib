@@ -60,6 +60,8 @@ func addToGroupedMetric(pmd *pdata.Metric, groupedMetrics map[interface{}]*Group
 		if isPod, ok := labels["Type"]; ok {
 			if isPod == "Pod" && config.CreateHighLevelObject {
 				addKubernetesWrapper(labels)
+			} else if isPod == "Container" && config.CreateHighLevelObject {
+				addKubernetesWrapper(labels)
 			}
 		}
 
@@ -118,21 +120,21 @@ type internalPodOwnersObj struct {
 func addKubernetesWrapper(labels map[string]string) {
 	//create schema
 	schema := kubernetesObj{}
-	schema.Host = "host"
+	schema.Host = "host.name"
 	schema.Labels =
 		internalLabelsObj{
 			App:               "app",
 			Pod_template_hash: "pod_template_hash",
 		}
-	schema.Namespace_name = "namespace_name"
-	schema.Pod_id = "pod_id"
-	schema.Pod_name = "pod_name"
+	schema.Namespace_name = "namespace"
+	schema.Pod_id = "id"
+	schema.Pod_name = "name"
 	schema.Pod_owners =
 		internalPodOwnersObj{
 			Owner_kind: "silly_nest_1",
 			Owner_name: "silly_nest_2",
 		}
-	schema.Service_name = "service_name"
+	schema.Service_name = "service.name"
 
 	labels["kubernetes"] = recursivelyFillInStruct(labels, schema)
 }
