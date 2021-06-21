@@ -7,3 +7,5 @@ require (
 	go.opentelemetry.io/collector v0.28.0
 	go.uber.org/zap v1.17.0
 )
+
+replace go.opentelemetry.io/collector => /Users/adgollap/Documents/GitHub/opentelemetry-collector-contrib/../opentelemetry-collector
