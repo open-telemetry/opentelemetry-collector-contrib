@@ -19,11 +19,10 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.uber.org/zap"
-
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configcheck"
+	"go.uber.org/zap"
 )
 
 func TestCreateDefaultConfig(t *testing.T) {

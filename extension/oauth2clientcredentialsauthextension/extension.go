@@ -18,14 +18,13 @@ import (
 	"context"
 	"net/http"
 
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configauth"
 	"go.uber.org/zap"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/clientcredentials"
 	"google.golang.org/grpc/credentials"
 	grpcOAuth "google.golang.org/grpc/credentials/oauth"
-
-	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configauth"
 )
 
 // ClientCredentialsAuthenticator provides implementation for providing client authentication using OAuth2 client credentials

@@ -20,11 +20,10 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"go.opentelemetry.io/collector/config/configtls"
 	"go.uber.org/zap"
 	"golang.org/x/oauth2"
 	grpcOAuth "google.golang.org/grpc/credentials/oauth"
-
-	"go.opentelemetry.io/collector/config/configtls"
 )
 
 func TestOAuthClientSettings(t *testing.T) {
