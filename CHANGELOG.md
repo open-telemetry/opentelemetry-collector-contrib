@@ -5,6 +5,7 @@
 ## 💡 Enhancements 💡
 
 - `tailsampling` processor: Add new policy `latency` (#3750)
+- `splunkhec` exporter: Include `trace_id` and `span_id` if set (#3850)
 
 ## v0.28.0
 
