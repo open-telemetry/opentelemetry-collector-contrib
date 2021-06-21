@@ -290,6 +290,10 @@ updates:
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
+    directory: "/receiver/googlecloudpubsubreceiver"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
     directory: "/receiver/influxdbreceiver"
     schedule:
       interval: "weekly"
