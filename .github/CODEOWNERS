@@ -84,5 +84,6 @@ receiver/filelogreceiver/                            @open-telemetry/collector-c
 receiver/statsdreceiver/                             @open-telemetry/collector-contrib-approvers @keitwb @jmacd
 receiver/wavefrontreceiver/                          @open-telemetry/collector-contrib-approvers @pjanotti
 receiver/windowsperfcountersreceiver/                @open-telemetry/collector-contrib-approvers @dashpole
+receiver/googlecloudpubsubexporter/                  @open-telemetry/collector-contrib-approvers @alexvanboxel
 
 tracegen/                                            @open-telemetry/collector-contrib-approvers @jpkrohling
