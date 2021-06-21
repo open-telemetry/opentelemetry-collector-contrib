@@ -77,7 +77,8 @@ func (acir *awsContainerInsightReceiver) Start(ctx context.Context, host compone
 		return err
 	}
 
-	acir.cadvisor, err = cadvisor.New(acir.config.ContainerOrchestrator, hostinfo, k8sDecorator, acir.logger)
+	decoratorOption := cadvisor.DecoratorOption(k8sDecorator)
+	acir.cadvisor, err = cadvisor.New(acir.config.ContainerOrchestrator, hostinfo, acir.logger, decoratorOption)
 	if err != nil {
 		return err
 	}

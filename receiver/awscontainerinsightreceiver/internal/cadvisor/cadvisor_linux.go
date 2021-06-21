@@ -76,11 +76,19 @@ var defaultCreateManager = func(memoryCache *memory.InMemoryCache, sysfs sysfs.S
 	return manager.New(memoryCache, sysfs, houskeepingConfig, includedMetricsSet, collectorHTTPClient, rawContainerCgroupPathPrefixWhiteList, perfEventsFile)
 }
 
-type cadvisorOption func(*Cadvisor)
+// Option is a function that can be used to configure Cadvisor struct
+type Option func(*Cadvisor)
 
-func cadvisorManagerCreator(f createCadvisorManager) cadvisorOption {
+func cadvisorManagerCreator(f createCadvisorManager) Option {
 	return func(c *Cadvisor) {
 		c.createCadvisorManager = f
+	}
+}
+
+// DecoratorOption constructs an option for configuring the metric decorator
+func DecoratorOption(d decorator) Option {
+	return func(c *Cadvisor) {
+		c.k8sDecorator = d
 	}
 }
 
@@ -117,7 +125,7 @@ func init() {
 }
 
 // New creates a Cadvisor struct which can generate metrics from embedded cadvisor lib
-func New(containerOrchestrator string, hostInfo hostInfo, k8sDecorator decorator, logger *zap.Logger, options ...cadvisorOption) (*Cadvisor, error) {
+func New(containerOrchestrator string, hostInfo hostInfo, logger *zap.Logger, options ...Option) (*Cadvisor, error) {
 	nodeName := os.Getenv("HOST_NAME")
 	if nodeName == "" {
 		return nil, errors.New("missing environment variable HOST_NAME. Please check your deployment YAML config")
@@ -141,7 +149,6 @@ func New(containerOrchestrator string, hostInfo hostInfo, k8sDecorator decorator
 	}
 
 	c.hostInfo = hostInfo
-	c.k8sDecorator = k8sDecorator
 	return c, nil
 }
 

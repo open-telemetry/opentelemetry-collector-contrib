@@ -33,8 +33,18 @@ type hostInfo interface {
 type Cadvisor struct {
 }
 
+// Option is a function that can be used to configure Cadvisor struct
+type Option func(*Cadvisor)
+
+// DecoratorOption constructs an option for configuring the metric decorator
+func DecoratorOption(d interface{}) Option {
+	return func(c *Cadvisor) {
+		// do nothing
+	}
+}
+
 // New is a dummy function to construct a dummy Cadvisor struct for windows
-func New(containerOrchestrator string, hostInfo hostInfo, logger *zap.Logger) (*Cadvisor, error) {
+func New(containerOrchestrator string, hostInfo hostInfo, logger *zap.Logger, options ...Option) (*Cadvisor, error) {
 	return &Cadvisor{}, nil
 }
 
