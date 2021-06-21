@@ -710,6 +710,7 @@ go.opentelemetry.io/collector/cmd/checkdoc v0.28.1-0.20210616151306-cdc163427b8e
 go.opentelemetry.io/collector/cmd/checkdoc v0.28.1-0.20210616151306-cdc163427b8e/go.mod h1:lhOzRKG54a/UOYYdTE0eLZe3pi8nOa1B01EfZNKD4Us=
 go.opentelemetry.io/collector/cmd/checkdoc v0.28.1-0.20210617145633-3f5c7180c51e h1:0OBfzEng8TNwtW9jrvOQXV/60loKK5QFmJlIfI4gBT4=
 go.opentelemetry.io/collector/cmd/checkdoc v0.28.1-0.20210617145633-3f5c7180c51e/go.mod h1:lhOzRKG54a/UOYYdTE0eLZe3pi8nOa1B01EfZNKD4Us=
+go.opentelemetry.io/collector/cmd/issuegenerator v0.28.1-0.20210616151306-cdc163427b8e h1:LUm5VWRXj8/3H3jJYlo0JTTEVsyJ9Fme3FpbnkN3UDM=
 go.opentelemetry.io/collector/cmd/issuegenerator v0.28.1-0.20210616151306-cdc163427b8e/go.mod h1:zCft6+/pXa73Lr4fLrsL8knQQdqlZVqAThY2Da6Qo4o=
 go.opentelemetry.io/collector/cmd/issuegenerator v0.28.1-0.20210617145633-3f5c7180c51e h1:FU1mD202Y/m6P53e4E2Z5bZ7330/M0l9hUdDddaC8Kw=
 go.opentelemetry.io/collector/cmd/issuegenerator v0.28.1-0.20210617145633-3f5c7180c51e/go.mod h1:zCft6+/pXa73Lr4fLrsL8knQQdqlZVqAThY2Da6Qo4o=
