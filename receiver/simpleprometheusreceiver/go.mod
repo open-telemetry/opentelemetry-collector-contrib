@@ -16,3 +16,5 @@ require (
 	gopkg.in/ini.v1 v1.57.0 // indirect
 	k8s.io/client-go v0.21.2
 )
+
+replace go.opentelemetry.io/collector => /Users/adgollap/Documents/GitHub/opentelemetry-collector-contrib/../opentelemetry-collector

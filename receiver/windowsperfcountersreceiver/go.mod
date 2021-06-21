@@ -13,3 +13,5 @@ require (
 	golang.org/x/sys v0.0.0-20210603081109-ebe580a85c40
 	gopkg.in/ini.v1 v1.57.0 // indirect
 )
+
+replace go.opentelemetry.io/collector => /Users/adgollap/Documents/GitHub/opentelemetry-collector-contrib/../opentelemetry-collector
