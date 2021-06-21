@@ -100,7 +100,6 @@ type podClient interface {
 }
 
 type PodStore struct {
-	ctx              context.Context
 	cache            *mapWithExpiry
 	prevMeasurements map[string]*mapWithExpiry //preMeasurements per each Type (Pod, Container, etc)
 	podClient        podClient
@@ -112,7 +111,7 @@ type PodStore struct {
 	sync.Mutex
 }
 
-func NewPodStore(ctx context.Context, hostIP string, prefFullPodName bool, logger *zap.Logger) (*PodStore, error) {
+func NewPodStore(hostIP string, prefFullPodName bool, logger *zap.Logger) (*PodStore, error) {
 	podClient, err := kubeletutil.NewKubeletClient(hostIP, ci.KubeSecurePort, logger)
 	if err != nil {
 		return nil, err
@@ -129,7 +128,6 @@ func NewPodStore(ctx context.Context, hostIP string, prefFullPodName bool, logge
 	}
 
 	podStore := &PodStore{
-		ctx:              ctx,
 		cache:            newMapWithExpiry(podsExpiry),
 		prevMeasurements: make(map[string]*mapWithExpiry),
 		podClient:        podClient,
@@ -171,17 +169,17 @@ func (p *PodStore) setPrevMeasurement(metricType, metricKey string, content inte
 // We can't do refresh in regular interval because the Decorate(...) function will
 // call refresh(...) on demand when the pod metadata for the given metrics is not in
 // cache yet. This will make the refresh interval irregular.
-func (p *PodStore) RefreshTick() {
+func (p *PodStore) RefreshTick(ctx context.Context) {
 	now := time.Now()
 	if now.Sub(p.lastRefreshed) >= refreshInterval {
-		p.refresh(now)
+		p.refresh(ctx, now)
 		// call cleanup every refresh cycle
 		p.cleanup(now)
 		p.lastRefreshed = now
 	}
 }
 
-func (p *PodStore) Decorate(metric CIMetric, kubernetesBlob map[string]interface{}) bool {
+func (p *PodStore) Decorate(ctx context.Context, metric CIMetric, kubernetesBlob map[string]interface{}) bool {
 	if metric.GetTag(ci.MetricType) == ci.TypeNode {
 		p.decorateNode(metric)
 	} else if metric.GetTag(ci.K8sPodNameKey) != "" {
@@ -194,7 +192,7 @@ func (p *PodStore) Decorate(metric CIMetric, kubernetesBlob map[string]interface
 		entry := p.getCachedEntry(podKey)
 		if entry == nil {
 			p.logger.Debug(fmt.Sprintf("no pod is found for %s, refresh the cache now...", podKey))
-			p.refresh(time.Now())
+			p.refresh(ctx, time.Now())
 			entry = p.getCachedEntry(podKey)
 		}
 
@@ -237,7 +235,7 @@ func (p *PodStore) setCachedEntry(podKey string, entry *cachedEntry) {
 	p.cache.Set(podKey, entry)
 }
 
-func (p *PodStore) refresh(now time.Time) {
+func (p *PodStore) refresh(ctx context.Context, now time.Time) {
 	var podList []corev1.Pod
 	var err error
 	doRefresh := func() {
@@ -246,7 +244,7 @@ func (p *PodStore) refresh(now time.Time) {
 			p.logger.Error("fail to get pod from kubelet", zap.Error(err))
 		}
 	}
-	refreshWithTimeout(p.ctx, doRefresh, refreshInterval)
+	refreshWithTimeout(ctx, doRefresh, refreshInterval)
 	p.refreshInternal(now, podList)
 }
 

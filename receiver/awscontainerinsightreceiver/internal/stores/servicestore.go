@@ -38,14 +38,12 @@ type ServiceStore struct {
 	endpointInfo            endpointInfo
 	lastRefreshed           time.Time
 	logger                  *zap.Logger
-	ctx                     context.Context
 }
 
-func NewServiceStore(ctx context.Context, logger *zap.Logger) (*ServiceStore, error) {
+func NewServiceStore(logger *zap.Logger) (*ServiceStore, error) {
 	s := &ServiceStore{
 		podKeyToServiceNamesMap: make(map[string][]string),
 		logger:                  logger,
-		ctx:                     ctx,
 	}
 	k8sClient := k8sclient.Get(logger)
 	if k8sClient == nil {
@@ -55,17 +53,17 @@ func NewServiceStore(ctx context.Context, logger *zap.Logger) (*ServiceStore, er
 	return s, nil
 }
 
-func (s *ServiceStore) RefreshTick() {
+func (s *ServiceStore) RefreshTick(ctx context.Context) {
 	now := time.Now()
 	if now.Sub(s.lastRefreshed) >= refreshIntervalService {
-		s.refresh()
+		s.refresh(ctx)
 		s.lastRefreshed = now
 	}
 }
 
 // Decorate decorates metrics and update kubernetesBlob
 // service info is not mandatory
-func (s *ServiceStore) Decorate(metric CIMetric, _ map[string]interface{}) bool {
+func (s *ServiceStore) Decorate(ctx context.Context, metric CIMetric, _ map[string]interface{}) bool {
 	if metric.HasTag(ci.K8sPodNameKey) {
 		podKey := createPodKeyFromMetric(metric)
 		if podKey == "" {
@@ -82,13 +80,13 @@ func (s *ServiceStore) Decorate(metric CIMetric, _ map[string]interface{}) bool 
 	return true
 }
 
-func (s *ServiceStore) refresh() {
+func (s *ServiceStore) refresh(ctx context.Context) {
 	doRefresh := func() {
 		s.podKeyToServiceNamesMap = s.endpointInfo.PodKeyToServiceNames()
 		s.logger.Debug("pod to service name map", zap.Any("podKeyToServiceNamesMap", s.podKeyToServiceNamesMap))
 	}
 
-	refreshWithTimeout(s.ctx, doRefresh, refreshIntervalService)
+	refreshWithTimeout(ctx, doRefresh, refreshIntervalService)
 }
 
 func addServiceNameTag(metric CIMetric, serviceNames []string) {

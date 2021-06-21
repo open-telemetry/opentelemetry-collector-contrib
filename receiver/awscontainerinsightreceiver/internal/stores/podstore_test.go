@@ -201,7 +201,6 @@ func getPodStore() *PodStore {
 	nodeInfo.setCPUCapacity(4000)
 	nodeInfo.setMemCapacity(400 * 1024 * 1024)
 	return &PodStore{
-		ctx:              context.Background(),
 		cache:            newMapWithExpiry(time.Minute),
 		nodeInfo:         nodeInfo,
 		prevMeasurements: make(map[string]*mapWithExpiry),
@@ -586,7 +585,7 @@ func TestPodStore_RefreshTick(t *testing.T) {
 	podStore := getPodStore()
 	podStore.podClient = &mockPodClient{}
 	podStore.lastRefreshed = time.Now().Add(-time.Minute)
-	podStore.RefreshTick()
+	podStore.RefreshTick(context.Background())
 
 	assert.Equal(t, uint64(10), podStore.nodeInfo.nodeStats.cpuReq)
 	assert.Equal(t, uint64(50*1024*1024), podStore.nodeInfo.nodeStats.memReq)
@@ -637,7 +636,8 @@ func TestPodStore_Decorate(t *testing.T) {
 	podStore := getPodStore()
 	podStore.podClient = &mockPodClient{}
 	kubernetesBlob := map[string]interface{}{}
-	ok := podStore.Decorate(metric, kubernetesBlob)
+	ctx := context.Background()
+	ok := podStore.Decorate(ctx, metric, kubernetesBlob)
 	assert.True(t, ok)
 
 	// metric with no namespace
@@ -652,7 +652,7 @@ func TestPodStore_Decorate(t *testing.T) {
 	metric = &mockCIMetric{
 		tags: tags,
 	}
-	ok = podStore.Decorate(metric, kubernetesBlob)
+	ok = podStore.Decorate(ctx, metric, kubernetesBlob)
 	assert.False(t, ok)
 
 	// metric with pod info not in cache
@@ -667,10 +667,10 @@ func TestPodStore_Decorate(t *testing.T) {
 	metric = &mockCIMetric{
 		tags: tags,
 	}
-	ok = podStore.Decorate(metric, kubernetesBlob)
+	ok = podStore.Decorate(ctx, metric, kubernetesBlob)
 	assert.False(t, ok)
 
 	// decorate the same metric with a placeholder item in cache
-	ok = podStore.Decorate(metric, kubernetesBlob)
+	ok = podStore.Decorate(ctx, metric, kubernetesBlob)
 	assert.False(t, ok)
 }

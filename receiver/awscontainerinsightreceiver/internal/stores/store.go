@@ -37,12 +37,17 @@ type CIMetric interface {
 }
 
 type K8sStore interface {
-	Decorate(metric CIMetric, kubernetesBlob map[string]interface{}) bool
-	RefreshTick()
+	Decorate(ctx context.Context, metric CIMetric, kubernetesBlob map[string]interface{}) bool
+	RefreshTick(ctx context.Context)
 }
 
 type K8sDecorator struct {
 	stores []K8sStore
+	// We save ctx in the struct because it is used in Decorate(...) function when calling K8sStore.Decorate(...)
+	// It would be easier to keep the ctx here than passing it as a parameter for Decorate(...) function.
+	// The K8sStore (e.g. podstore) does network request in Decorate function, thus needs to take a context
+	// object for canceling the request
+	ctx context.Context
 }
 
 func NewK8sDecorator(ctx context.Context, tagService bool, prefFullPodName bool, logger *zap.Logger) (*K8sDecorator, error) {
@@ -51,16 +56,18 @@ func NewK8sDecorator(ctx context.Context, tagService bool, prefFullPodName bool,
 		return nil, errors.New("environment variable HOST_IP is not set in k8s deployment config")
 	}
 
-	k := &K8sDecorator{}
+	k := &K8sDecorator{
+		ctx: ctx,
+	}
 
-	podstore, err := NewPodStore(ctx, hostIP, prefFullPodName, logger)
+	podstore, err := NewPodStore(hostIP, prefFullPodName, logger)
 	if err != nil {
 		return nil, err
 	}
 	k.stores = append(k.stores, podstore)
 
 	if tagService {
-		servicestore, err := NewServiceStore(ctx, logger)
+		servicestore, err := NewServiceStore(logger)
 		if err != nil {
 			return nil, err
 		}
@@ -73,9 +80,9 @@ func NewK8sDecorator(ctx context.Context, tagService bool, prefFullPodName bool,
 			select {
 			case <-refreshTicker.C:
 				for _, store := range k.stores {
-					store.RefreshTick()
+					store.RefreshTick(k.ctx)
 				}
-			case <-ctx.Done():
+			case <-k.ctx.Done():
 				refreshTicker.Stop()
 				return
 			}
@@ -88,7 +95,7 @@ func NewK8sDecorator(ctx context.Context, tagService bool, prefFullPodName bool,
 func (k *K8sDecorator) Decorate(metric *extractors.CAdvisorMetric) *extractors.CAdvisorMetric {
 	kubernetesBlob := map[string]interface{}{}
 	for _, store := range k.stores {
-		ok := store.Decorate(metric, kubernetesBlob)
+		ok := store.Decorate(k.ctx, metric, kubernetesBlob)
 		if !ok {
 			return nil
 		}
