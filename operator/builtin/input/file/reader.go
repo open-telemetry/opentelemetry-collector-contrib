@@ -29,15 +29,44 @@ import (
 	"github.com/open-telemetry/opentelemetry-log-collection/errors"
 )
 
+// File attributes contains information about file paths
+type fileAttributes struct {
+	Name         string
+	Path         string
+	ResolvedName string
+	ResolvedPath string
+}
+
+// resolveFileAttributes resolves file attributes
+// and sets it to empty string in case of error
+func (f *InputOperator) resolveFileAttributes(path string) *fileAttributes {
+	resolved, err := filepath.EvalSymlinks(path)
+	if err != nil {
+		f.Error(err)
+	}
+
+	abs, err := filepath.Abs(resolved)
+	if err != nil {
+		f.Error(err)
+	}
+
+	return &fileAttributes{
+		Path:         path,
+		Name:         filepath.Base(path),
+		ResolvedPath: abs,
+		ResolvedName: filepath.Base(abs),
+	}
+}
+
 // Reader manages a single file
 type Reader struct {
 	Fingerprint *Fingerprint
 	Offset      int64
-	Path        string
 
-	generation int
-	fileInput  *InputOperator
-	file       *os.File
+	generation     int
+	fileInput      *InputOperator
+	file           *os.File
+	fileAttributes *fileAttributes
 
 	decoder      *encoding.Decoder
 	decodeBuffer []byte
@@ -48,20 +77,20 @@ type Reader struct {
 // NewReader creates a new file reader
 func (f *InputOperator) NewReader(path string, file *os.File, fp *Fingerprint) (*Reader, error) {
 	r := &Reader{
-		Fingerprint:   fp,
-		file:          file,
-		Path:          path,
-		fileInput:     f,
-		SugaredLogger: f.SugaredLogger.With("path", path),
-		decoder:       f.encoding.Encoding.NewDecoder(),
-		decodeBuffer:  make([]byte, 1<<12),
+		Fingerprint:    fp,
+		file:           file,
+		fileInput:      f,
+		SugaredLogger:  f.SugaredLogger.With("path", path),
+		decoder:        f.encoding.Encoding.NewDecoder(),
+		decodeBuffer:   make([]byte, 1<<12),
+		fileAttributes: f.resolveFileAttributes(path),
 	}
 	return r, nil
 }
 
 // Copy creates a deep copy of a Reader
 func (f *Reader) Copy(file *os.File) (*Reader, error) {
-	reader, err := f.fileInput.NewReader(f.Path, file, f.Fingerprint.Copy())
+	reader, err := f.fileInput.NewReader(f.fileAttributes.Path, file, f.Fingerprint.Copy())
 	if err != nil {
 		return nil, err
 	}
@@ -142,12 +171,21 @@ func (f *Reader) emit(ctx context.Context, msgBuf []byte) error {
 		return fmt.Errorf("create entry: %s", err)
 	}
 
-	if err := e.Set(f.fileInput.FilePathField, f.Path); err != nil {
+	if err := e.Set(f.fileInput.FilePathField, f.fileAttributes.Path); err != nil {
 		return err
 	}
-	if err := e.Set(f.fileInput.FileNameField, filepath.Base(f.Path)); err != nil {
+	if err := e.Set(f.fileInput.FileNameField, f.fileAttributes.Name); err != nil {
 		return err
 	}
+
+	if err := e.Set(f.fileInput.FilePathResolvedField, f.fileAttributes.ResolvedPath); err != nil {
+		return err
+	}
+
+	if err := e.Set(f.fileInput.FileNameResolvedField, f.fileAttributes.ResolvedName); err != nil {
+		return err
+	}
+
 	f.fileInput.Write(ctx, e)
 	return nil
 }
