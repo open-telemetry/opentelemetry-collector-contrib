@@ -1420,7 +1420,7 @@ func TestSpanEnvClobbering(t *testing.T) {
 	rs := traces.ResourceSpans().At(0)
 	resource := rs.Resource()
 	resource.Attributes().InitFromMap(map[string]pdata.AttributeValue{
-		"deployment.environment": pdata.NewAttributeValueString("correctenv"),
+		conventions.AttributeDeploymentEnvironment: pdata.NewAttributeValueString("correctenv"),
 		"env":                    pdata.NewAttributeValueString("incorrectenv"),
 	})
 
