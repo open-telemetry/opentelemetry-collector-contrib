@@ -332,7 +332,7 @@ func resourceToDatadogServiceNameAndAttributeMap(
 	// In the future, we can probably just set `env` using the deployment.environment value, but drop the duplicate
 	// deployment.environment tag afterward. Without knowing whether this would break existing user setups, its better
 	// to simply set both tags.
-	// https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/resource/semantic_conventions/deployment_environment.md#deployment
+	// https://github.com/open-telemetry/opentelemetry-specification/blob/v1.4.0/specification/resource/semantic_conventions/deployment_environment.md#deployment
 	if resourceEnv, ok := datadogTags[conventions.AttributeDeploymentEnvironment]; ok {
 		datadogTags[tagDatadogEnv] = utils.NormalizeTag(resourceEnv)
 	}
