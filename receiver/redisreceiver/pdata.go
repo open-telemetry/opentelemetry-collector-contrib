@@ -18,18 +18,6 @@ import (
 	"go.opentelemetry.io/collector/consumer/pdata"
 )
 
-func newResourceMetrics(ms pdata.MetricSlice, serviceName string) pdata.ResourceMetrics {
-	rm := pdata.NewResourceMetrics()
-	r := rm.Resource()
-	rattrs := r.Attributes()
-	rattrs.Insert("type", pdata.NewAttributeValueString(typeStr))
-	rattrs.Insert("service.name", pdata.NewAttributeValueString(serviceName))
-	ilm := pdata.NewInstrumentationLibraryMetrics()
-	rm.InstrumentationLibraryMetrics().Append(ilm)
-	ms.CopyTo(ilm.Metrics())
-	return rm
-}
-
 func buildKeyspaceTriplet(k *keyspace, t *timeBundle) pdata.MetricSlice {
 	ms := pdata.NewMetricSlice()
 	ms.Resize(3)
