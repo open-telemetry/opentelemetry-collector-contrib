@@ -499,7 +499,8 @@ func TestTransformSpan(t *testing.T) {
 				event.SetName("this is the event name")
 				event.SetTimestamp(pdata.TimestampFromTime(now))
 				event.SetDroppedAttributesCount(1)
-				s.Events().Append(event)
+				tgt := s.Events().AppendEmpty()
+				event.CopyTo(tgt)
 				return s
 			},
 			want: telemetry.Span{

@@ -240,7 +240,8 @@ func (se *sumologicexporter) pushLogsData(ctx context.Context, ld pdata.Logs) er
 		logs := ills.AppendEmpty().Logs()
 
 		for _, log := range droppedRecords {
-			logs.Append(log)
+			tgt := logs.AppendEmpty()
+			log.CopyTo(tgt)
 		}
 
 		return consumererror.NewLogs(consumererror.Combine(errs), droppedLogs)

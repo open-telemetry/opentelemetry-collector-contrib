@@ -529,7 +529,8 @@ func TestPushTraceData(t *testing.T) {
 			td: func() pdata.Traces {
 				traces := pdata.NewTraces()
 				resourceSpans := pdata.NewResourceSpans()
-				traces.ResourceSpans().Append(resourceSpans)
+				tgt := traces.ResourceSpans().AppendEmpty()
+				resourceSpans.CopyTo(tgt)
 				return traces
 			}(),
 			called: false,

@@ -34,7 +34,8 @@ func LogRecordsToLogs(records []pdata.LogRecord) pdata.Logs {
 	logs := pdata.NewLogs()
 	logsSlice := logs.ResourceLogs().AppendEmpty().InstrumentationLibraryLogs().AppendEmpty().Logs()
 	for _, record := range records {
-		logsSlice.Append(record)
+		tgt := logsSlice.AppendEmpty()
+		record.CopyTo(tgt)
 	}
 
 	return logs
@@ -283,7 +284,8 @@ func TestPushFailedBatch(t *testing.T) {
 	log := logs.ResourceLogs().At(0)
 
 	for i := 0; i < maxBufferSize; i++ {
-		logs.ResourceLogs().Append(log)
+		tgt := logs.ResourceLogs().AppendEmpty()
+		log.CopyTo(tgt)
 	}
 
 	err := test.exp.pushLogsData(context.Background(), logs)
@@ -476,7 +478,8 @@ func TestPushMetricsFailedBatch(t *testing.T) {
 	metric := metrics.ResourceMetrics().At(0)
 
 	for i := 0; i < maxBufferSize; i++ {
-		metrics.ResourceMetrics().Append(metric)
+		tgt := metrics.ResourceMetrics().AppendEmpty()
+		metric.CopyTo(tgt)
 	}
 
 	err := test.exp.pushMetricsData(context.Background(), metrics)
