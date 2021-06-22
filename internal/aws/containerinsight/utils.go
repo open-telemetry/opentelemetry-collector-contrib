@@ -191,21 +191,29 @@ func ConvertToOTLPMetrics(fields map[string]interface{}, tags map[string]string,
 		unit := GetUnitForMetric(metric)
 		switch t := value.(type) {
 		case int:
-			ilms.Append(intGauge(key, unit, int64(t), timestamp))
+			tgt := ilms.AppendEmpty()
+			intGauge(key, unit, int64(t), timestamp).CopyTo(tgt)
 		case int32:
-			ilms.Append(intGauge(key, unit, int64(t), timestamp))
+			tgt := ilms.AppendEmpty()
+			intGauge(key, unit, int64(t), timestamp).CopyTo(tgt)
 		case int64:
-			ilms.Append(intGauge(key, unit, t, timestamp))
+			tgt := ilms.AppendEmpty()
+			intGauge(key, unit, t, timestamp).CopyTo(tgt)
 		case uint:
-			ilms.Append(doubleGauge(key, unit, float64(t), timestamp))
+			tgt := ilms.AppendEmpty()
+			doubleGauge(key, unit, float64(t), timestamp).CopyTo(tgt)
 		case uint32:
-			ilms.Append(doubleGauge(key, unit, float64(t), timestamp))
+			tgt := ilms.AppendEmpty()
+			doubleGauge(key, unit, float64(t), timestamp).CopyTo(tgt)
 		case uint64:
-			ilms.Append(doubleGauge(key, unit, float64(t), timestamp))
+			tgt := ilms.AppendEmpty()
+			doubleGauge(key, unit, float64(t), timestamp).CopyTo(tgt)
 		case float32:
-			ilms.Append(doubleGauge(key, unit, float64(t), timestamp))
+			tgt := ilms.AppendEmpty()
+			doubleGauge(key, unit, float64(t), timestamp).CopyTo(tgt)
 		case float64:
-			ilms.Append(doubleGauge(key, unit, t, timestamp))
+			tgt := ilms.AppendEmpty()
+			doubleGauge(key, unit, t, timestamp).CopyTo(tgt)
 		default:
 			valueType := fmt.Sprintf("%T", value)
 			logger.Warn("Detected unexpected field", zap.String("key", key), zap.Any("value", value), zap.String("value type", valueType))
