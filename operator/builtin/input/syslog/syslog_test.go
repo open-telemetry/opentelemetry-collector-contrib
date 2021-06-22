@@ -93,12 +93,63 @@ func SyslogInputTest(t *testing.T, cfg *SyslogInputConfig, tc syslog.Case) {
 	}
 }
 
+func TestSyslogIDs(t *testing.T) {
+	basicConfig := func() *syslog.SyslogParserConfig {
+		cfg := syslog.NewSyslogParserConfig("test_syslog_parser")
+		return cfg
+	}
+
+	cases := []struct {
+		Name          string
+		Cfg           *syslog.SyslogParserConfig
+		ExpectedOpIDs []string
+		UDPorTCP      string
+	}{
+		{
+			Name: "default",
+			Cfg: func() *syslog.SyslogParserConfig {
+				sysCfg := basicConfig()
+				sysCfg.Protocol = "RFC3164"
+				return sysCfg
+			}(),
+			UDPorTCP: "UDP",
+			ExpectedOpIDs: []string{
+				"$.test_syslog.test_syslog_parser",
+				"$.fake",
+			},
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(fmt.Sprintf("TCP-%s", tc.Name), func(t *testing.T) {
+			cfg := NewSyslogInputConfigWithTcp(tc.Cfg)
+			bc := testutil.NewBuildContext(t)
+			ops, err := cfg.Build(bc)
+			require.NoError(t, err)
+			for i, op := range ops {
+				out := op.GetOutputIDs()
+				require.Equal(t, tc.ExpectedOpIDs[i], out[0])
+			}
+		})
+		t.Run(fmt.Sprintf("UDP-%s", tc.Name), func(t *testing.T) {
+			cfg := NewSyslogInputConfigWithUdp(tc.Cfg)
+			bc := testutil.NewBuildContext(t)
+			ops, err := cfg.Build(bc)
+			require.NoError(t, err)
+			for i, op := range ops {
+				out := op.GetOutputIDs()
+				require.Equal(t, tc.ExpectedOpIDs[i], out[0])
+			}
+		})
+	}
+}
+
 func NewSyslogInputConfigWithTcp(syslogCfg *syslog.SyslogParserConfig) *SyslogInputConfig {
 	cfg := NewSyslogInputConfig("test_syslog")
 	cfg.SyslogParserConfig = *syslogCfg
 	cfg.Tcp = tcp.NewTCPInputConfig("test_syslog_tcp")
 	cfg.Tcp.ListenAddress = ":14201"
-	cfg.OutputIDs = []string{"fake"}
+	cfg.OutputIDs = []string{"$.fake"}
 	return cfg
 }
 
@@ -107,7 +158,7 @@ func NewSyslogInputConfigWithUdp(syslogCfg *syslog.SyslogParserConfig) *SyslogIn
 	cfg.SyslogParserConfig = *syslogCfg
 	cfg.Udp = udp.NewUDPInputConfig("test_syslog_udp")
 	cfg.Udp.ListenAddress = ":12032"
-	cfg.OutputIDs = []string{"fake"}
+	cfg.OutputIDs = []string{"$.fake"}
 	return cfg
 }
 

@@ -50,20 +50,28 @@ func (c SyslogInputConfig) Build(context operator.BuildContext) ([]operator.Oper
 	if c.Tcp == nil && c.Udp == nil {
 		return nil, fmt.Errorf("need tcp config or udp config")
 	}
+	parentID := c.InputConfig.ID()
+	if parentID == "" {
+		parentID = c.InputConfig.Type()
+	}
+	subContext := context.WithSubNamespace(parentID)
+	if c.Tcp == nil && c.Udp == nil {
+		return nil, fmt.Errorf("need tcp config or udp config")
+	}
 
 	c.SyslogParserConfig.OutputIDs = c.OutputIDs
-	ops, err := c.SyslogParserConfig.Build(context)
+	ops, err := c.SyslogParserConfig.Build(subContext)
 	if err != nil {
 		return nil, fmt.Errorf("failed to resolve syslog config: %s", err)
 	}
 
 	if c.Tcp != nil {
 		c.Tcp.OutputIDs = []string{ops[0].ID()}
-		inputOps, err := c.Tcp.Build(context)
+		inputOps, err := c.Tcp.Build(subContext)
 		if err != nil {
 			return nil, fmt.Errorf("failed to resolve tcp config: %s", err)
 		}
-		ops = append(ops, inputOps...)
+		ops = append(inputOps, ops...)
 	}
 
 	if c.Udp != nil {
@@ -72,7 +80,7 @@ func (c SyslogInputConfig) Build(context operator.BuildContext) ([]operator.Oper
 		if err != nil {
 			return nil, fmt.Errorf("failed to resolve upd config: %s", err)
 		}
-		ops = append(ops, inputOps...)
+		ops = append(inputOps, ops...)
 	}
 
 	return ops, nil
