@@ -45,7 +45,7 @@ type Config struct {
 
 func (config *Config) validate() error {
 	if !topicMatcher.MatchString(config.Topic) {
-		return fmt.Errorf("topic '%s' is not a valide  format, use 'projects/<project_id>/topics/<name>'", config.Topic)
+		return fmt.Errorf("topic '%s' is not a valid format, use 'projects/<project_id>/topics/<name>'", config.Topic)
 	}
 	return nil
 }

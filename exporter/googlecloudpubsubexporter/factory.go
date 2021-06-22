@@ -22,6 +22,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
@@ -31,6 +32,7 @@ const (
 	defaultTimeout = 12 * time.Second
 )
 
+// NewFactory creates a factory for Google Cloud Pub/Sub exporter.
 func NewFactory() component.ExporterFactory {
 	return exporterhelper.NewFactory(
 		typeStr,
@@ -80,6 +82,7 @@ func createTracesExporter(
 		cfg,
 		params.Logger,
 		pubsubExporter.consumeTraces,
+		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		exporterhelper.WithTimeout(pCfg.TimeoutSettings),
 		exporterhelper.WithRetry(pCfg.RetrySettings),
 		exporterhelper.WithQueue(pCfg.QueueSettings),
@@ -100,6 +103,7 @@ func createMetricsExporter(
 		cfg,
 		params.Logger,
 		pubsubExporter.consumeMetrics,
+		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		exporterhelper.WithTimeout(pCfg.TimeoutSettings),
 		exporterhelper.WithRetry(pCfg.RetrySettings),
 		exporterhelper.WithQueue(pCfg.QueueSettings),
@@ -120,6 +124,7 @@ func createLogsExporter(
 		cfg,
 		params.Logger,
 		pubsubExporter.consumeLogs,
+		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		exporterhelper.WithTimeout(pCfg.TimeoutSettings),
 		exporterhelper.WithRetry(pCfg.RetrySettings),
 		exporterhelper.WithQueue(pCfg.QueueSettings),
