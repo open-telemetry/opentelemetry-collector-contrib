@@ -80,8 +80,8 @@ libraries = {
         "library": "mysql-connector-python ~= 8.0",
         "instrumentation": "opentelemetry-instrumentation-mysql==0.23.dev0",
     },
-    "psycopg2-binary": {
-        "library": "psycopg2-binary >= 2.7.3.1",
+    "psycopg2": {
+        "library": "psycopg2 >= 2.7.3.1",
         "instrumentation": "opentelemetry-instrumentation-psycopg2==0.23.dev0",
     },
     "pymemcache": {
