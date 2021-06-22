@@ -1,0 +1,20 @@
+receiver:
+  filelog:
+    include: ~/example.log
+
+processors:
+  batch:
+
+exporter:
+  observiq:
+    api_key: "11111111-2222-3333-4444-555555555555"
+    endpoint: "https://nozzle.app.observiq.com/v1/add"
+    timeout: 10s
+    agent_id: "otel-collector-1"
+
+service:
+  pipelines:
+    logs:
+      receivers: [filelog]
+      processors: [batch]
+      exporters: [observiq]
