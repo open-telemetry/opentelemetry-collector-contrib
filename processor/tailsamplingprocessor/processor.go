@@ -388,7 +388,8 @@ func prepareTraceBatch(rss pdata.ResourceSpans, spans []*pdata.Span) pdata.Trace
 	rss.Resource().CopyTo(rs.Resource())
 	ils := rs.InstrumentationLibrarySpans().AppendEmpty()
 	for _, span := range spans {
-		ils.Spans().Append(*span)
+		sp := ils.Spans().AppendEmpty()
+		span.CopyTo(sp)
 	}
 	return traceTd
 }

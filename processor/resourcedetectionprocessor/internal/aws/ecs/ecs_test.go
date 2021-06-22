@@ -131,7 +131,8 @@ func Test_ecsDetectV4(t *testing.T) {
 	for i, field := range attribFields {
 		ava := pdata.NewAttributeValueArray()
 		av := ava.ArrayVal()
-		av.Append(pdata.NewAttributeValueString(attribVals[i]))
+		avs := av.AppendEmpty()
+		pdata.NewAttributeValueString(attribVals[i]).CopyTo(avs)
 		attr.Insert(field, ava)
 	}
 
