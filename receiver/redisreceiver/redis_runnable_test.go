@@ -18,6 +18,7 @@ import (
 	"context"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/consumertest"
@@ -27,11 +28,17 @@ import (
 func TestRedisRunnable(t *testing.T) {
 	consumer := new(consumertest.MetricsSink)
 	logger, _ := zap.NewDevelopment()
-	runner := newRedisRunnable(context.Background(), config.NewID(typeStr), newFakeClient(), "", consumer, logger)
+	runner := newRedisRunnable(context.Background(), config.NewID(typeStr), newFakeClient(), consumer, logger)
 	err := runner.Setup()
 	require.Nil(t, err)
 	err = runner.Run()
 	require.Nil(t, err)
 	// + 6 because there are two keyspace entries each of which has three metrics
-	require.Equal(t, len(getDefaultRedisMetrics())+6, consumer.MetricsCount())
+	assert.Equal(t, len(getDefaultRedisMetrics())+6, consumer.MetricsCount())
+	md := consumer.AllMetrics()[0]
+	rm := md.ResourceMetrics().At(0)
+	ilm := rm.InstrumentationLibraryMetrics().At(0)
+	il := ilm.InstrumentationLibrary()
+	assert.Equal(t, "otelcol/redis", il.Name())
+
 }
