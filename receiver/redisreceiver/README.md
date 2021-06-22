@@ -44,9 +44,6 @@ The following settings are required:
 
 - `endpoint` (no default): The hostname and port of the Redis instance,
 separated by a colon.
-- `service_name` (no default): The logical name of the Redis server. This
-value will be added as a `service_name` Resource label and may end up as a
-dimension on exported metrics, depending on the exporter.
 
 The following settings are optional:
 
@@ -66,7 +63,6 @@ Example:
 receivers:
   redis:
     endpoint: "localhost:6379"
-    service_name: "my-test-redis"
     collection_interval: 10s
     password: $REDIS_PASSWORD
 ```
@@ -80,7 +76,6 @@ configuration like the following:
 receivers:
   redis:
     endpoint: "localhost:6379"
-    service_name: "my-test-redis"
     collection_interval: 10s
     password: $REDIS_PASSWORD
 ```

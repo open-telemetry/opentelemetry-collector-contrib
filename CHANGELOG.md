@@ -5,6 +5,7 @@
 ## 💡 Enhancements 💡
 
 - `tailsampling` processor: Add new policy `latency` (#3750)
+- `splunkhec` exporter: Include `trace_id` and `span_id` if set (#3850)
 
 ## v0.28.0
 
@@ -22,6 +23,9 @@ The OpenTelemetry Collector Contrib contains everything in the [opentelemetry-co
 
 - `f5cloud` exporter (#3509):
   - Renamed the config 'auth' field to 'f5cloud_auth'. This will prevent a config field name collision when [Support for Custom Exporter Authenticators as Extensions](https://github.com/open-telemetry/opentelemetry-collector/pull/3128) is ready to be integrated.
+- `redis` receiver (#3808)
+  - removed configuration `service_name`. Use resource processor or `resource_attributes` setting if using `receivercreator`
+  - removed `type` label and set instrumentation library name to `otelcol/redis` as other receivers do
 
 ## 💡 Enhancements 💡
 
