@@ -37,15 +37,17 @@ import (
 type InputOperator struct {
 	helper.InputOperator
 
-	Include            []string
-	Exclude            []string
-	FilePathField      entry.Field
-	FileNameField      entry.Field
-	PollInterval       time.Duration
-	SplitFunc          bufio.SplitFunc
-	MaxLogSize         int
-	MaxConcurrentFiles int
-	SeenPaths          map[string]struct{}
+	Include               []string
+	Exclude               []string
+	FilePathField         entry.Field
+	FileNameField         entry.Field
+	FilePathResolvedField entry.Field
+	FileNameResolvedField entry.Field
+	PollInterval          time.Duration
+	SplitFunc             bufio.SplitFunc
+	MaxLogSize            int
+	MaxConcurrentFiles    int
+	SeenPaths             map[string]struct{}
 
 	persister operator.Persister
 
@@ -316,7 +318,7 @@ func (f *InputOperator) newReader(file *os.File, fp *Fingerprint, firstCheck boo
 		if err != nil {
 			return nil, err
 		}
-		newReader.Path = file.Name()
+		newReader.fileAttributes = f.resolveFileAttributes(file.Name())
 		return newReader, nil
 	}
 
