@@ -149,7 +149,7 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/flue
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/httpforwarder => ./extension/httpforwarder
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/oauth2clientcredentialsauthextension => ./extension/oauth2clientauthextension
+replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/oauth2clientauthextension => ./extension/oauth2clientauthextension
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer => ./extension/observer
 
