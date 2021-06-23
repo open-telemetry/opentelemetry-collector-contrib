@@ -1,4 +1,4 @@
-module github.com/open-telemetry/opentelemetry-collector-contrib/extension/oauth2clientcredentialsauthextension
+module github.com/open-telemetry/opentelemetry-collector-contrib/extension/oauth2clientauthextension
 
 go 1.16
 

@@ -47,7 +47,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/tanzuobservabilityexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/fluentbitextension"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/httpforwarder"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/oauth2clientcredentialsauthextension"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/oauth2clientauthextension"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/hostobserver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/k8sobserver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/filestorage"
@@ -100,7 +100,7 @@ func components() (component.Factories, error) {
 		hostobserver.NewFactory(),
 		httpforwarder.NewFactory(),
 		k8sobserver.NewFactory(),
-		oauth2clientcredentialsauthextension.NewFactory(),
+		oauth2clientauthextension.NewFactory(),
 	}
 
 	for _, ext := range factories.Extensions {

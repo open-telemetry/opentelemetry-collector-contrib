@@ -1,12 +1,12 @@
 extensions:
-  oauth2clientcredentials/1:
+  oauth2client/1:
     client_id: someclientid
     client_secret: someclientsecret
     token_url: https://someserver.com/oauth2/default/v1/token
     scopes: ["api.metrics"]
     timeout: 1s
 
-  oauth2clientcredentials/withtls:
+  oauth2client/withtls:
     client_id: someclientid2
     client_secret: someclientsecret2
     token_url: https://someserver2.com/oauth2/default/v1/token
@@ -30,7 +30,7 @@ exporters:
   nop:
 
 service:
-  extensions: [oauth2clientcredentials/1, oauth2clientcredentials/withtls]
+  extensions: [oauth2client/1, oauth2client/withtls]
   pipelines:
     traces:
       receivers: [nop]

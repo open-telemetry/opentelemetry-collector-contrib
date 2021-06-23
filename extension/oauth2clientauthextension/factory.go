@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package oauth2clientcredentialsauthextension
+package oauth2clientauthextension
 
 import (
 	"context"
@@ -24,7 +24,7 @@ import (
 
 const (
 	// The value of extension "type" in configuration.
-	typeStr = "oauth2clientcredentials"
+	typeStr = "oauth2client"
 )
 
 // NewFactory creates a factory for the OIDC Authenticator extension.

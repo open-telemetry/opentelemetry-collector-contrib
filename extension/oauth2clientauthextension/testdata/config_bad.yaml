@@ -1,15 +1,15 @@
 extensions:
-  oauth2clientcredentials/missingid:
+  oauth2client/missingid:
     client_secret: someclientsecret
     token_url: https://someserver.com/oauth2/default/v1/token
     scopes: ["api.metrics"]
 
-  oauth2clientcredentials/missingsecret:
+  oauth2client/missingsecret:
     client_id: someclientid
     token_url: https://someserver.com/oauth2/default/v1/token
     scopes: ["api.metrics"]
 
-  oauth2clientcredentials/missingurl:
+  oauth2client/missingurl:
     client_id: someclientid
     client_secret: someclientsecret
     scopes: ["api.metrics"]
@@ -23,9 +23,9 @@ exporters:
   nop:
 
 service:
-  extensions: [oauth2clientcredentials/missingid,
-               oauth2clientcredentials/missingsecret,
-               oauth2clientcredentials/missingurl]
+  extensions: [oauth2client/missingid,
+               oauth2client/missingsecret,
+               oauth2client/missingurl]
   pipelines:
     traces:
       receivers: [nop]

@@ -8,7 +8,7 @@ For further details about OAuth2 Client Credentials flow (2-legged workflow) ref
 
 ```yaml
 extensions:
-  oauth2clientcredentials:
+  oauth2client:
     client_id: someclientid
     client_secret: someclientsecret
     token_url: https://someserver.com/oauth2/default/v1/token
@@ -34,16 +34,16 @@ exporters:
   otlphttp/withauth:
     endpoint: http://localhost:9000
     auth:
-      authenticator: oauth2clientcredentials
+      authenticator: oauth2client
       
   otlp/withauth:
     endpoint: 0.0.0.0:5000
     ca_file: /tmp/certs/ca.pem
     auth:
-      authenticator: oauth2clientcredentials
+      authenticator: oauth2client
 
 service:
-  extensions: [oauth2clientcredentials]
+  extensions: [oauth2client]
   pipelines:
     metrics:
       receivers: [hostmetrics]
