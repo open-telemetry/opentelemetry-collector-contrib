@@ -22,8 +22,11 @@ import (
 
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver/internal/cadvisor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver/internal/cadvisor/extractors"
 )
+
+var _ cadvisor.Decorator = &K8sDecorator{}
 
 // CIMetric represents the raw metric interface for container insights
 type CIMetric interface {

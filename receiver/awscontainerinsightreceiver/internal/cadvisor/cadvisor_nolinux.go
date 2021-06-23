@@ -19,6 +19,8 @@ package cadvisor
 import (
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver/internal/cadvisor/extractors"
 )
 
 // cadvisor doesn't support windows, define the dummy functions
@@ -33,11 +35,15 @@ type hostInfo interface {
 type Cadvisor struct {
 }
 
+type Decorator interface {
+	Decorate(*extractors.CAdvisorMetric) *extractors.CAdvisorMetric
+}
+
 // Option is a function that can be used to configure Cadvisor struct
 type Option func(*Cadvisor)
 
-// DecoratorOption constructs an option for configuring the metric decorator
-func DecoratorOption(d interface{}) Option {
+// WithDecorator constructs an option for configuring the metric decorator
+func WithDecorator(d interface{}) Option {
 	return func(c *Cadvisor) {
 		// do nothing
 	}

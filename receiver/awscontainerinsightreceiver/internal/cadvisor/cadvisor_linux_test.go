@@ -85,7 +85,7 @@ func TestGetMetrics(t *testing.T) {
 	originalHostName := os.Getenv("HOST_NAME")
 	os.Setenv("HOST_NAME", "host")
 	hostInfo := testutils.MockHostInfo{ClusterName: "cluster"}
-	k8sdecoratorOption := DecoratorOption(&MockK8sDecorator{})
+	k8sdecoratorOption := WithDecorator(&MockK8sDecorator{})
 	mockCreateManager := func(memoryCache *memory.InMemoryCache, sysfs sysfs.SysFs, houskeepingConfig manager.HouskeepingConfig,
 		includedMetricsSet container.MetricSet, collectorHTTPClient *http.Client, rawContainerCgroupPathPrefixWhiteList []string,
 		perfEventsFile string) (cadvisorManager, error) {

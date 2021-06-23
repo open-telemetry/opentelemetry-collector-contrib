@@ -85,8 +85,8 @@ func cadvisorManagerCreator(f createCadvisorManager) Option {
 	}
 }
 
-// DecoratorOption constructs an option for configuring the metric decorator
-func DecoratorOption(d decorator) Option {
+// WithDecorator constructs an option for configuring the metric decorator
+func WithDecorator(d Decorator) Option {
 	return func(c *Cadvisor) {
 		c.k8sDecorator = d
 	}
@@ -103,7 +103,7 @@ type hostInfo interface {
 	GetAutoScalingGroupName() string
 }
 
-type decorator interface {
+type Decorator interface {
 	Decorate(*extractors.CAdvisorMetric) *extractors.CAdvisorMetric
 }
 
@@ -114,7 +114,7 @@ type Cadvisor struct {
 	manager               cadvisorManager
 	version               string
 	hostInfo              hostInfo
-	k8sDecorator          decorator
+	k8sDecorator          Decorator
 	containerOrchestrator string
 }
 
