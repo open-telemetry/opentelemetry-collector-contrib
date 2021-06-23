@@ -18,10 +18,10 @@ The configuration is based on
 ```yaml
 extensions:
   ecs_observer:
-    refresh_interval: 15s
-    cluster_name: 'Cluster-1'
-    cluster_region: 'us-west-2'
-    result_file: '/etc/ecs_sd_targets.yaml'
+    refresh_interval: 60s # format is https://golang.org/pkg/time/#ParseDuration
+    cluster_name: 'Cluster-1' # cluster name need manual config
+    cluster_region: 'us-west-2' # region can be configured directly or use AWS_REGION env var
+    result_file: '/etc/ecs_sd_targets.yaml' # the directory for file must already exists
     services:
       - name_pattern: '^retail-.*$'
     docker_labels:
@@ -41,11 +41,22 @@ receivers:
         - job_name: "ecs-task"
           file_sd_configs:
             - files:
-                - '/etc/ecs_sd_targets.yaml'
+                - '/etc/ecs_sd_targets.yaml' # MUST match the file name in ecs_observer.result_file
+          relabel_configs: # Relabel here because label with __ prefix will be dropped by receiver.
+            - source_labels: [ __meta_ecs_cluster_name ] # ClusterName
+              action: replace
+              target_label: ClusterName
+            - source_labels: [ __meta_ecs_service_name ] # ServiceName
+              action: replace
+              target_label: ServiceName
+            - action: labelmap # Convert docker labels on container to metric labels
+              regex: ^__meta_ecs_container_labels_(.+)$ # Capture the key using regex, e.g. __meta_ecs_container_labels_Java_EMF_Metrics -> Java_EMF_Metrics
+              replacement: '$$1'
 
 processors:
   batch:
 
+# Use awsemf for CloudWatch Container Insights Prometheus. The extension does not have requirement on exporter.
 exporters:
   awsemf:
 
