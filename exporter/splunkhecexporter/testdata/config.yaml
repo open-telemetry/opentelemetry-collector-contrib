@@ -15,7 +15,6 @@ exporters:
     sourcetype: "otel"
     index: "metrics"
     insecure_skip_verify: false
-    insecure: true
     ca_file: ""
     cert_file: ""
     key_file: ""
