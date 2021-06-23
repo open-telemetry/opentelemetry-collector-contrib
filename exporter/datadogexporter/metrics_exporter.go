@@ -23,21 +23,21 @@ import (
 	"gopkg.in/zorkian/go-datadog-api.v2"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/config"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/metadata"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/metrics"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/utils"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metrics"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/utils"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/ttlmap"
 )
 
 type metricsExporter struct {
-	params  component.ExporterCreateParams
+	params  component.ExporterCreateSettings
 	cfg     *config.Config
 	ctx     context.Context
 	client  *datadog.Client
 	prevPts *ttlmap.TTLMap
 }
 
-func newMetricsExporter(ctx context.Context, params component.ExporterCreateParams, cfg *config.Config) *metricsExporter {
+func newMetricsExporter(ctx context.Context, params component.ExporterCreateSettings, cfg *config.Config) *metricsExporter {
 	client := utils.CreateClient(cfg.API.Key, cfg.Metrics.TCPAddr.Endpoint)
 	client.ExtraHeader["User-Agent"] = utils.UserAgent(params.BuildInfo)
 	client.HttpClient = utils.NewHTTPClient(10 * time.Second)
@@ -70,7 +70,7 @@ func (exp *metricsExporter) PushMetricsData(ctx context.Context, md pdata.Metric
 	}
 
 	fallbackHost := metadata.GetHost(exp.params.Logger, exp.cfg)
-	ms, _ := mapMetrics(exp.cfg.Metrics, exp.prevPts, fallbackHost, md)
+	ms, _ := mapMetrics(exp.params.Logger, exp.cfg.Metrics, exp.prevPts, fallbackHost, md, exp.params.BuildInfo)
 	metrics.ProcessMetrics(ms, exp.cfg)
 
 	err := exp.client.PostMetrics(ms)

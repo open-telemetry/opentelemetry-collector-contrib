@@ -19,7 +19,7 @@ Refer to [config.yaml](./testdata/config.yaml) for detailed examples on using th
 * The `otlp` property configures the template used for building the OTLP exporter. Refer to the OTLP Exporter documentation for information on which options are available. Note that the `endpoint` property should not be set and will be overridden by this exporter with the backend endpoint.
 * The `resolver` accepts either a `static` node, or a `dns`. If both are specified, `dns` takes precedence.
 * The `hostname` property inside a `dns` node specifies the hostname to query in order to obtain the list of IP addresses.
-* The `dns` node also accepts an optional property `port` to specify the port to be used for exporting the traces to the IP addresses resolved from `hostname`. If `port` is not specified, the default port 55680 is used.
+* The `dns` node also accepts an optional property `port` to specify the port to be used for exporting the traces to the IP addresses resolved from `hostname`. If `port` is not specified, the default port 4317 is used.
 
 
 Simple example
@@ -28,7 +28,7 @@ receivers:
   otlp:
     protocols:
       grpc:
-        endpoint: localhost:55680
+        endpoint: localhost:4317
 
 processors:
 
@@ -43,10 +43,10 @@ exporters:
     resolver:
       static:
         hostnames:
-        - backend-1:55680
-        - backend-2:55680
-        - backend-3:55680
-        - backend-4:55680
+        - backend-1:4317
+        - backend-2:4317
+        - backend-3:4317
+        - backend-4:4317
 
 service:
   pipelines:
@@ -70,7 +70,7 @@ receivers:
   otlp/loadbalancer:
     protocols:
       grpc:
-        endpoint: localhost:55680
+        endpoint: localhost:4317
   otlp/backend-1:
     protocols:
       grpc:

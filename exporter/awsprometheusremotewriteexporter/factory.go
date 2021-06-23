@@ -44,7 +44,7 @@ func (af *awsFactory) Type() config.Type {
 	return typeStr
 }
 
-func (af *awsFactory) CreateMetricsExporter(ctx context.Context, params component.ExporterCreateParams,
+func (af *awsFactory) CreateMetricsExporter(ctx context.Context, params component.ExporterCreateSettings,
 	cfg config.Exporter) (component.MetricsExporter, error) {
 	return af.ExporterFactory.CreateMetricsExporter(ctx, params, &cfg.(*Config).Config)
 }

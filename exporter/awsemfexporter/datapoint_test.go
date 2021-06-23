@@ -16,7 +16,6 @@ package awsemfexporter
 
 import (
 	"reflect"
-	"strings"
 	"testing"
 	"time"
 
@@ -86,60 +85,68 @@ func generateTestDoubleGauge(name string) *metricspb.Metric {
 	}
 }
 
-func generateTestIntSum(name string) *metricspb.Metric {
-	return &metricspb.Metric{
-		MetricDescriptor: &metricspb.MetricDescriptor{
-			Name: name,
-			Type: metricspb.MetricDescriptor_CUMULATIVE_INT64,
-			Unit: "Count",
-			LabelKeys: []*metricspb.LabelKey{
-				{Key: "label1"},
-			},
-		},
-		Timeseries: []*metricspb.TimeSeries{
-			{
-				LabelValues: []*metricspb.LabelValue{
-					{Value: "value1", HasValue: true},
-					{Value: "value2", HasValue: true},
+func generateTestIntSum(name string) []*metricspb.Metric {
+	var metrics []*metricspb.Metric
+	for i := 0; i < 2; i++ {
+		metrics = append(metrics, &metricspb.Metric{
+			MetricDescriptor: &metricspb.MetricDescriptor{
+				Name: name,
+				Type: metricspb.MetricDescriptor_CUMULATIVE_INT64,
+				Unit: "Count",
+				LabelKeys: []*metricspb.LabelKey{
+					{Key: "label1"},
 				},
-				Points: []*metricspb.Point{
-					{
-						Value: &metricspb.Point_Int64Value{
-							Int64Value: 1,
+			},
+			Timeseries: []*metricspb.TimeSeries{
+				{
+					LabelValues: []*metricspb.LabelValue{
+						{Value: "value1", HasValue: true},
+						{Value: "value2", HasValue: true},
+					},
+					Points: []*metricspb.Point{
+						{
+							Value: &metricspb.Point_Int64Value{
+								Int64Value: int64(i),
+							},
 						},
 					},
 				},
 			},
-		},
+		})
 	}
+	return metrics
 }
 
-func generateTestDoubleSum(name string) *metricspb.Metric {
-	return &metricspb.Metric{
-		MetricDescriptor: &metricspb.MetricDescriptor{
-			Name: name,
-			Type: metricspb.MetricDescriptor_CUMULATIVE_DOUBLE,
-			Unit: "Count",
-			LabelKeys: []*metricspb.LabelKey{
-				{Key: "label1"},
-			},
-		},
-		Timeseries: []*metricspb.TimeSeries{
-			{
-				LabelValues: []*metricspb.LabelValue{
-					{Value: "value1", HasValue: true},
-					{Value: "value2", HasValue: true},
+func generateTestDoubleSum(name string) []*metricspb.Metric {
+	var metrics []*metricspb.Metric
+	for i := 0; i < 2; i++ {
+		metrics = append(metrics, &metricspb.Metric{
+			MetricDescriptor: &metricspb.MetricDescriptor{
+				Name: name,
+				Type: metricspb.MetricDescriptor_CUMULATIVE_DOUBLE,
+				Unit: "Count",
+				LabelKeys: []*metricspb.LabelKey{
+					{Key: "label1"},
 				},
-				Points: []*metricspb.Point{
-					{
-						Value: &metricspb.Point_DoubleValue{
-							DoubleValue: 0.1,
+			},
+			Timeseries: []*metricspb.TimeSeries{
+				{
+					LabelValues: []*metricspb.LabelValue{
+						{Value: "value1", HasValue: true},
+						{Value: "value2", HasValue: true},
+					},
+					Points: []*metricspb.Point{
+						{
+							Value: &metricspb.Point_DoubleValue{
+								DoubleValue: float64(i) * 0.1,
+							},
 						},
 					},
 				},
 			},
-		},
+		})
 	}
+	return metrics
 }
 
 func generateTestHistogram(name string) *metricspb.Metric {
@@ -191,46 +198,49 @@ func generateTestHistogram(name string) *metricspb.Metric {
 	}
 }
 
-func generateTestSummary(name string) *metricspb.Metric {
-	return &metricspb.Metric{
-		MetricDescriptor: &metricspb.MetricDescriptor{
-			Name: name,
-			Type: metricspb.MetricDescriptor_SUMMARY,
-			Unit: "Seconds",
-			LabelKeys: []*metricspb.LabelKey{
-				{Key: "label1"},
-			},
-		},
-		Timeseries: []*metricspb.TimeSeries{
-			{
-				LabelValues: []*metricspb.LabelValue{
-					{Value: "value1", HasValue: true},
+func generateTestSummary(name string) []*metricspb.Metric {
+	var metrics []*metricspb.Metric
+	for i := 0; i < 2; i++ {
+		metrics = append(metrics, &metricspb.Metric{
+			MetricDescriptor: &metricspb.MetricDescriptor{
+				Name: name,
+				Type: metricspb.MetricDescriptor_SUMMARY,
+				Unit: "Seconds",
+				LabelKeys: []*metricspb.LabelKey{
+					{Key: "label1"},
 				},
-				Points: []*metricspb.Point{
-					{
-						Value: &metricspb.Point_SummaryValue{
-							SummaryValue: &metricspb.SummaryValue{
-								Sum: &wrappers.DoubleValue{
-									Value: 15.0,
-								},
-								Count: &wrappers.Int64Value{
-									Value: 5,
-								},
-								Snapshot: &metricspb.SummaryValue_Snapshot{
-									Count: &wrappers.Int64Value{
-										Value: 5,
-									},
+			},
+			Timeseries: []*metricspb.TimeSeries{
+				{
+					LabelValues: []*metricspb.LabelValue{
+						{Value: "value1", HasValue: true},
+					},
+					Points: []*metricspb.Point{
+						{
+							Value: &metricspb.Point_SummaryValue{
+								SummaryValue: &metricspb.SummaryValue{
 									Sum: &wrappers.DoubleValue{
-										Value: 15.0,
+										Value: float64(i * 15.0),
 									},
-									PercentileValues: []*metricspb.SummaryValue_Snapshot_ValueAtPercentile{
-										{
-											Percentile: 0.0,
-											Value:      1,
+									Count: &wrappers.Int64Value{
+										Value: int64(i * 5),
+									},
+									Snapshot: &metricspb.SummaryValue_Snapshot{
+										Count: &wrappers.Int64Value{
+											Value: 5,
 										},
-										{
-											Percentile: 100.0,
-											Value:      5,
+										Sum: &wrappers.DoubleValue{
+											Value: 15.0,
+										},
+										PercentileValues: []*metricspb.SummaryValue_Snapshot_ValueAtPercentile{
+											{
+												Percentile: 0.0,
+												Value:      1,
+											},
+											{
+												Percentile: 100.0,
+												Value:      5,
+											},
 										},
 									},
 								},
@@ -239,8 +249,9 @@ func generateTestSummary(name string) *metricspb.Metric {
 					},
 				},
 			},
-		},
+		})
 	}
+	return metrics
 }
 
 func setupDataPointCache() {
@@ -264,17 +275,23 @@ func TestIntDataPointSliceAt(t *testing.T) {
 			"w/ 1st delta calculation",
 			true,
 			int64(-17),
-			float64(-17),
+			float64(0),
 		},
 		{
-			"w/ 2st delta calculation",
+			"w/ 2nd delta calculation",
 			true,
 			int64(1),
 			float64(18),
 		},
+		{
+			"w/o delta calculation",
+			false,
+			int64(10),
+			float64(10),
+		},
 	}
 
-	for _, tc := range testDeltaCases {
+	for i, tc := range testDeltaCases {
 		t.Run(tc.testName, func(t *testing.T) {
 			testDPS := pdata.NewIntDataPointSlice()
 			testDP := testDPS.AppendEmpty()
@@ -303,11 +320,11 @@ func TestIntDataPointSliceAt(t *testing.T) {
 			}
 
 			assert.Equal(t, 1, dps.Len())
-			dp := dps.At(0)
-			if strings.Contains(tc.testName, "2nd rate") {
+			dp, retained := dps.At(0)
+			assert.Equal(t, i > 0, retained)
+			if retained {
+				assert.Equal(t, expectedDP.Labels, dp.Labels)
 				assert.InDelta(t, expectedDP.Value.(float64), dp.Value.(float64), 0.02)
-			} else {
-				assert.Equal(t, expectedDP, dp)
 			}
 		})
 	}
@@ -328,18 +345,24 @@ func TestDoubleDataPointSliceAt(t *testing.T) {
 		{
 			"w/ 1st delta calculation",
 			true,
-			float64(0.4),
-			float64(0.4),
+			0.4,
+			0.4,
 		},
 		{
 			"w/ 2nd delta calculation",
+			true,
+			0.8,
+			0.4,
+		},
+		{
+			"w/o delta calculation",
 			false,
-			float64(0.5),
-			float64(0.1),
+			0.5,
+			0.5,
 		},
 	}
 
-	for _, tc := range testDeltaCases {
+	for i, tc := range testDeltaCases {
 		t.Run(tc.testName, func(t *testing.T) {
 			testDPS := pdata.NewDoubleDataPointSlice()
 			testDP := testDPS.AppendEmpty()
@@ -359,17 +382,12 @@ func TestDoubleDataPointSliceAt(t *testing.T) {
 				testDPS,
 			}
 
-			expectedDP := DataPoint{
-				Value: tc.calculatedValue,
-				Labels: map[string]string{
-					oTellibDimensionKey: instrLibName,
-					"label1":            "value1",
-				},
-			}
-
 			assert.Equal(t, 1, dps.Len())
-			dp := dps.At(0)
-			assert.True(t, (expectedDP.Value.(float64)-dp.Value.(float64)) < 0.002)
+			dp, retained := dps.At(0)
+			assert.Equal(t, i > 0, retained)
+			if retained {
+				assert.InDelta(t, tc.calculatedValue.(float64), dp.Value.(float64), 0.002)
+			}
 		})
 	}
 }
@@ -381,7 +399,7 @@ func TestHistogramDataPointSliceAt(t *testing.T) {
 	testDPS := pdata.NewHistogramDataPointSlice()
 	testDP := testDPS.AppendEmpty()
 	testDP.SetCount(uint64(17))
-	testDP.SetSum(float64(17.13))
+	testDP.SetSum(17.13)
 	testDP.SetBucketCounts([]uint64{1, 2, 3})
 	testDP.SetExplicitBounds([]float64{1, 2, 3})
 	testDP.LabelsMap().InitFromMap(labels)
@@ -403,7 +421,7 @@ func TestHistogramDataPointSliceAt(t *testing.T) {
 	}
 
 	assert.Equal(t, 1, dps.Len())
-	dp := dps.At(0)
+	dp, _ := dps.At(0)
 	assert.Equal(t, expectedDP, dp)
 }
 
@@ -421,13 +439,13 @@ func TestSummaryDataPointSliceAt(t *testing.T) {
 	}{
 		{
 			"1st summary count calculation",
-			[]interface{}{float64(17.3), uint64(17)},
-			[]interface{}{float64(17.3), uint64(17)},
+			[]interface{}{17.3, uint64(17)},
+			[]interface{}{float64(0), uint64(0)},
 		},
 		{
 			"2nd summary count calculation",
 			[]interface{}{float64(100), uint64(25)},
-			[]interface{}{float64(82.7), uint64(8)},
+			[]interface{}{82.7, uint64(8)},
 		},
 		{
 			"3rd summary count calculation",
@@ -436,7 +454,7 @@ func TestSummaryDataPointSliceAt(t *testing.T) {
 		},
 	}
 
-	for _, tt := range testCases {
+	for i, tt := range testCases {
 		t.Run(tt.testName, func(t *testing.T) {
 			testDPS := pdata.NewSummaryDataPointSlice()
 			testDP := testDPS.AppendEmpty()
@@ -479,14 +497,17 @@ func TestSummaryDataPointSliceAt(t *testing.T) {
 			}
 
 			assert.Equal(t, 1, dps.Len())
-			dp := dps.At(0)
-			expectedMetricStats := expectedDP.Value.(*CWMetricStats)
-			actualMetricsStats := dp.Value.(*CWMetricStats)
-			assert.Equal(t, expectedDP.Labels, dp.Labels)
-			assert.Equal(t, expectedMetricStats.Max, actualMetricsStats.Max)
-			assert.Equal(t, expectedMetricStats.Min, actualMetricsStats.Min)
-			assert.InDelta(t, expectedMetricStats.Count, actualMetricsStats.Count, 0.1)
-			assert.True(t, expectedMetricStats.Sum-actualMetricsStats.Sum < float64(0.02))
+			dp, retained := dps.At(0)
+			assert.Equal(t, i > 0, retained)
+			if retained {
+				expectedMetricStats := expectedDP.Value.(*CWMetricStats)
+				actualMetricsStats := dp.Value.(*CWMetricStats)
+				assert.Equal(t, expectedDP.Labels, dp.Labels)
+				assert.Equal(t, expectedMetricStats.Max, actualMetricsStats.Max)
+				assert.Equal(t, expectedMetricStats.Min, actualMetricsStats.Min)
+				assert.InDelta(t, expectedMetricStats.Count, actualMetricsStats.Count, 0.1)
+				assert.InDelta(t, expectedMetricStats.Sum, actualMetricsStats.Sum, 0.02)
+			}
 		})
 	}
 }
@@ -536,12 +557,14 @@ func TestGetDataPoints(t *testing.T) {
 		"log-stream",
 	}
 	testCases := []struct {
-		testName           string
-		metric             *metricspb.Metric
-		expectedDataPoints DataPoints
+		testName            string
+		isPrometheusMetrics bool
+		metric              *metricspb.Metric
+		expectedDataPoints  DataPoints
 	}{
 		{
 			"Int gauge",
+			false,
 			generateTestIntGauge("foo"),
 			IntDataPointSlice{
 				metadata.InstrumentationLibraryName,
@@ -551,6 +574,7 @@ func TestGetDataPoints(t *testing.T) {
 		},
 		{
 			"Double gauge",
+			false,
 			generateTestDoubleGauge("foo"),
 			DoubleDataPointSlice{
 				metadata.InstrumentationLibraryName,
@@ -560,7 +584,8 @@ func TestGetDataPoints(t *testing.T) {
 		},
 		{
 			"Int sum",
-			generateTestIntSum("foo"),
+			false,
+			generateTestIntSum("foo")[1],
 			IntDataPointSlice{
 				metadata.InstrumentationLibraryName,
 				cumulativeDmm,
@@ -569,7 +594,8 @@ func TestGetDataPoints(t *testing.T) {
 		},
 		{
 			"Double sum",
-			generateTestDoubleSum("foo"),
+			false,
+			generateTestDoubleSum("foo")[1],
 			DoubleDataPointSlice{
 				metadata.InstrumentationLibraryName,
 				cumulativeDmm,
@@ -578,6 +604,7 @@ func TestGetDataPoints(t *testing.T) {
 		},
 		{
 			"Double histogram",
+			false,
 			generateTestHistogram("foo"),
 			HistogramDataPointSlice{
 				metadata.InstrumentationLibraryName,
@@ -585,8 +612,19 @@ func TestGetDataPoints(t *testing.T) {
 			},
 		},
 		{
-			"Summary",
-			generateTestSummary("foo"),
+			"Summary from SDK",
+			false,
+			generateTestSummary("foo")[1],
+			SummaryDataPointSlice{
+				metadata.InstrumentationLibraryName,
+				dmm,
+				pdata.SummaryDataPointSlice{},
+			},
+		},
+		{
+			"Summary from Prometheus",
+			true,
+			generateTestSummary("foo")[1],
 			SummaryDataPointSlice{
 				metadata.InstrumentationLibraryName,
 				cumulativeDmm,
@@ -607,6 +645,13 @@ func TestGetDataPoints(t *testing.T) {
 		expectedLabels := pdata.NewStringMap().InitFromMap(map[string]string{"label1": "value1"})
 
 		t.Run(tc.testName, func(t *testing.T) {
+			setupDataPointCache()
+
+			if tc.isPrometheusMetrics {
+				metadata.receiver = prometheusReceiver
+			} else {
+				metadata.receiver = ""
+			}
 			dps := getDataPoints(&metric, metadata, logger)
 			assert.NotNil(t, dps)
 			assert.Equal(t, reflect.TypeOf(tc.expectedDataPoints), reflect.TypeOf(dps))
@@ -636,7 +681,9 @@ func TestGetDataPoints(t *testing.T) {
 				assert.Equal(t, []float64{0, 10}, dp.ExplicitBounds())
 				assert.Equal(t, expectedLabels, dp.LabelsMap())
 			case SummaryDataPointSlice:
+				expectedDPS := tc.expectedDataPoints.(SummaryDataPointSlice)
 				assert.Equal(t, metadata.InstrumentationLibraryName, convertedDPS.instrumentationLibraryName)
+				assert.Equal(t, expectedDPS.deltaMetricMetadata, convertedDPS.deltaMetricMetadata)
 				assert.Equal(t, 1, convertedDPS.Len())
 				dp := convertedDPS.SummaryDataPointSlice.At(0)
 				assert.Equal(t, 15.0, dp.Sum())
@@ -685,11 +732,11 @@ func BenchmarkGetDataPoints(b *testing.B) {
 	ocMetrics := []*metricspb.Metric{
 		generateTestIntGauge("int-gauge"),
 		generateTestDoubleGauge("double-gauge"),
-		generateTestIntSum("int-sum"),
-		generateTestDoubleSum("double-sum"),
 		generateTestHistogram("double-histogram"),
-		generateTestSummary("summary"),
 	}
+	ocMetrics = append(ocMetrics, generateTestIntSum("int-sum")...)
+	ocMetrics = append(ocMetrics, generateTestDoubleSum("double-sum")...)
+	ocMetrics = append(ocMetrics, generateTestSummary("summary")...)
 	rms := internaldata.OCToMetrics(nil, nil, ocMetrics).ResourceMetrics()
 	metrics := rms.At(0).InstrumentationLibraryMetrics().At(0).Metrics()
 	numMetrics := metrics.Len()
@@ -739,7 +786,7 @@ func TestIntDataPointSlice_At(t *testing.T) {
 				deltaMetricMetadata:        tt.fields.deltaMetricMetadata,
 				IntDataPointSlice:          tt.fields.IntDataPointSlice,
 			}
-			if got := dps.At(tt.args.i); !reflect.DeepEqual(got, tt.want) {
+			if got, _ := dps.At(tt.args.i); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("At() = %v, want %v", got, tt.want)
 			}
 		})

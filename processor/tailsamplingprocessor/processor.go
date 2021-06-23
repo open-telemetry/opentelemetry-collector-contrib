@@ -117,6 +117,9 @@ func getPolicyEvaluator(logger *zap.Logger, cfg *PolicyCfg) (sampling.PolicyEval
 	switch cfg.Type {
 	case AlwaysSample:
 		return sampling.NewAlwaysSample(logger), nil
+	case Latency:
+		lfCfg := cfg.LatencyCfg
+		return sampling.NewLatency(logger, lfCfg.ThresholdMs), nil
 	case NumericAttribute:
 		nafCfg := cfg.NumericAttributeCfg
 		return sampling.NewNumericAttributeFilter(logger, nafCfg.Key, nafCfg.MinValue, nafCfg.MaxValue), nil
@@ -174,7 +177,7 @@ func (tsp *tailSamplingSpanProcessor) samplingPolicyOnTick() {
 	}
 
 	stats.Record(tsp.ctx,
-		statOverallDecisionLatencyµs.M(int64(time.Since(startTime)/time.Microsecond)),
+		statOverallDecisionLatencyUs.M(int64(time.Since(startTime)/time.Microsecond)),
 		statDroppedTooEarlyCount.M(metrics.idNotFoundOnMapCount),
 		statPolicyEvaluationErrorCount.M(metrics.evaluateErrorCount),
 		statTracesOnMemoryGauge.M(int64(atomic.LoadUint64(&tsp.numTracesOnMap))))
@@ -385,7 +388,8 @@ func prepareTraceBatch(rss pdata.ResourceSpans, spans []*pdata.Span) pdata.Trace
 	rss.Resource().CopyTo(rs.Resource())
 	ils := rs.InstrumentationLibrarySpans().AppendEmpty()
 	for _, span := range spans {
-		ils.Spans().Append(*span)
+		sp := ils.Spans().AppendEmpty()
+		span.CopyTo(sp)
 	}
 	return traceTd
 }

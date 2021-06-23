@@ -57,7 +57,7 @@ func (sf *SFxMetricsDataSender) Start() error {
 		AccessToken:      "access_token",
 	}
 
-	params := component.ExporterCreateParams{Logger: zap.L()}
+	params := component.ExporterCreateSettings{Logger: zap.L()}
 	exporter, err := factory.CreateMetricsExporter(context.Background(), params, cfg)
 
 	if err != nil {

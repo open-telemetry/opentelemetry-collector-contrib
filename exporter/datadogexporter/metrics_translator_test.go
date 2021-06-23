@@ -20,12 +20,16 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
+	"go.uber.org/zap/zaptest/observer"
 	"gopkg.in/zorkian/go-datadog-api.v2"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/config"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/metadata"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/metrics"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metrics"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/ttlmap"
 )
 
@@ -513,6 +517,95 @@ func TestMapHistogramMetrics(t *testing.T) {
 	)
 }
 
+func TestQuantileTag(t *testing.T) {
+	tests := []struct {
+		quantile float64
+		tag      string
+	}{
+		{quantile: 0, tag: "quantile:0"},
+		{quantile: 0.001, tag: "quantile:0.001"},
+		{quantile: 0.9, tag: "quantile:0.9"},
+		{quantile: 0.95, tag: "quantile:0.95"},
+		{quantile: 0.99, tag: "quantile:0.99"},
+		{quantile: 0.999, tag: "quantile:0.999"},
+		{quantile: 1, tag: "quantile:1.0"},
+		{quantile: 1e-10, tag: "quantile:1e-10"},
+	}
+
+	for _, test := range tests {
+		assert.Equal(t, test.tag, getQuantileTag(test.quantile))
+	}
+}
+
+func exampleSummaryDataPointSlice(ts pdata.Timestamp) pdata.SummaryDataPointSlice {
+	slice := pdata.NewSummaryDataPointSlice()
+	point := slice.AppendEmpty()
+	point.SetCount(100)
+	point.SetSum(10_000)
+	qSlice := point.QuantileValues()
+
+	qMin := qSlice.AppendEmpty()
+	qMin.SetQuantile(0.0)
+	qMin.SetValue(0)
+
+	qMedian := qSlice.AppendEmpty()
+	qMedian.SetQuantile(0.5)
+	qMedian.SetValue(100)
+
+	q999 := qSlice.AppendEmpty()
+	q999.SetQuantile(0.999)
+	q999.SetValue(500)
+
+	qMax := qSlice.AppendEmpty()
+	qMax.SetQuantile(1)
+	qMax.SetValue(600)
+	point.SetTimestamp(ts)
+	return slice
+}
+
+func TestMapSummaryMetrics(t *testing.T) {
+	ts := pdata.TimestampFromTime(time.Now())
+	slice := exampleSummaryDataPointSlice(ts)
+
+	noQuantiles := []datadog.Metric{
+		metrics.NewGauge("summary.example.count", uint64(ts), 100, []string{}),
+		metrics.NewGauge("summary.example.sum", uint64(ts), 10_000, []string{}),
+	}
+	quantiles := []datadog.Metric{
+		metrics.NewGauge("summary.example.quantile", uint64(ts), 0, []string{"quantile:0"}),
+		metrics.NewGauge("summary.example.quantile", uint64(ts), 100, []string{"quantile:0.5"}),
+		metrics.NewGauge("summary.example.quantile", uint64(ts), 500, []string{"quantile:0.999"}),
+		metrics.NewGauge("summary.example.quantile", uint64(ts), 600, []string{"quantile:1.0"}),
+	}
+	assert.ElementsMatch(t,
+		mapSummaryMetrics("summary.example", slice, false, []string{}),
+		noQuantiles,
+	)
+	assert.ElementsMatch(t,
+		mapSummaryMetrics("summary.example", slice, true, []string{}),
+		append(noQuantiles, quantiles...),
+	)
+
+	noQuantilesAttr := []datadog.Metric{
+		metrics.NewGauge("summary.example.count", uint64(ts), 100, []string{"attribute_tag:attribute_value"}),
+		metrics.NewGauge("summary.example.sum", uint64(ts), 10_000, []string{"attribute_tag:attribute_value"}),
+	}
+	quantilesAttr := []datadog.Metric{
+		metrics.NewGauge("summary.example.quantile", uint64(ts), 0, []string{"attribute_tag:attribute_value", "quantile:0"}),
+		metrics.NewGauge("summary.example.quantile", uint64(ts), 100, []string{"attribute_tag:attribute_value", "quantile:0.5"}),
+		metrics.NewGauge("summary.example.quantile", uint64(ts), 500, []string{"attribute_tag:attribute_value", "quantile:0.999"}),
+		metrics.NewGauge("summary.example.quantile", uint64(ts), 600, []string{"attribute_tag:attribute_value", "quantile:1.0"}),
+	}
+	assert.ElementsMatch(t,
+		mapSummaryMetrics("summary.example", slice, false, []string{"attribute_tag:attribute_value"}),
+		noQuantilesAttr,
+	)
+	assert.ElementsMatch(t,
+		mapSummaryMetrics("summary.example", slice, true, []string{"attribute_tag:attribute_value"}),
+		append(noQuantilesAttr, quantilesAttr...),
+	)
+}
+
 func TestRunningMetrics(t *testing.T) {
 	ms := pdata.NewMetrics()
 	rms := ms.ResourceMetrics()
@@ -534,7 +627,11 @@ func TestRunningMetrics(t *testing.T) {
 	cfg := config.MetricsConfig{}
 	prevPts := newTTLMap()
 
-	series, _ := mapMetrics(cfg, prevPts, "fallbackHostname", ms)
+	buildInfo := component.BuildInfo{
+		Version: "1.0",
+	}
+
+	series, _ := mapMetrics(zap.NewNop(), cfg, prevPts, "fallbackHostname", ms, buildInfo)
 
 	runningHostnames := []string{}
 
@@ -548,7 +645,7 @@ func TestRunningMetrics(t *testing.T) {
 
 	assert.ElementsMatch(t,
 		runningHostnames,
-		[]string{"fallbackHostname", "resource-hostname-1", "resource-hostname-1", "resource-hostname-2"},
+		[]string{"fallbackHostname", "resource-hostname-1", "resource-hostname-2"},
 	)
 
 }
@@ -657,6 +754,12 @@ func createTestMetrics() pdata.Metrics {
 	dpDouble.SetTimestamp(seconds(2))
 	dpDouble.SetValue(4 + math.Pi)
 
+	// Summary
+	met = metricsArray.AppendEmpty()
+	met.SetName("summary")
+	met.SetDataType(pdata.MetricDataTypeSummary)
+	slice := exampleSummaryDataPointSlice(seconds(0))
+	slice.CopyTo(met.Summary().DataPoints())
 	return md
 }
 
@@ -685,7 +788,14 @@ func testCount(name string, val float64) datadog.Metric {
 func TestMapMetrics(t *testing.T) {
 	md := createTestMetrics()
 	cfg := config.MetricsConfig{SendMonotonic: true}
-	series, dropped := mapMetrics(cfg, newTTLMap(), "", md)
+	buildInfo := component.BuildInfo{
+		Version: "1.0",
+	}
+
+	core, observed := observer.New(zapcore.DebugLevel)
+	testLogger := zap.New(core)
+	series, dropped := mapMetrics(testLogger, cfg, newTTLMap(), "", md, buildInfo)
+
 	assert.Equal(t, dropped, 0)
 	filtered := removeRunningMetrics(series)
 	assert.ElementsMatch(t, filtered, []datadog.Metric{
@@ -697,7 +807,12 @@ func TestMapMetrics(t *testing.T) {
 		testGauge("int.histogram.count", 20),
 		testGauge("double.histogram.sum", math.Phi),
 		testGauge("double.histogram.count", 20),
+		testGauge("summary.sum", 10_000),
+		testGauge("summary.count", 100),
 		testCount("int.cumulative.sum", 3),
 		testCount("double.cumulative.sum", math.Pi),
 	})
+
+	// One metric was unknown or unsupported
+	assert.Equal(t, observed.FilterMessage("Unknown or unsupported metric type").Len(), 1)
 }

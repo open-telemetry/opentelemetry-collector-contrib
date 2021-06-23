@@ -32,7 +32,7 @@ func TestValidConfig(t *testing.T) {
 func TestCreateMetricsReceiver(t *testing.T) {
 	hostObserver, err := createExtension(
 		context.Background(),
-		component.ExtensionCreateParams{},
+		component.ExtensionCreateSettings{},
 		&Config{
 			ExtensionSettings: config.NewExtensionSettings(config.NewID(typeStr)),
 		},

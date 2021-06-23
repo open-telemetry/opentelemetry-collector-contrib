@@ -37,10 +37,8 @@ func TestLoadConfig(t *testing.T) {
 	require.NoError(t, err)
 
 	factory := NewFactory()
-	factories.Exporters[config.Type(typeStr)] = factory
-	cfg, err := configtest.LoadConfigFile(
-		t, path.Join(".", "testdata", "config.yaml"), factories,
-	)
+	factories.Exporters[typeStr] = factory
+	cfg, err := configtest.LoadConfigAndValidate(path.Join(".", "testdata", "config.yaml"), factories)
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 
@@ -63,7 +61,7 @@ func TestLoadConfig(t *testing.T) {
 func TestConfigValidate(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
-	params := component.ExporterCreateParams{Logger: zap.NewNop()}
+	params := component.ExporterCreateSettings{Logger: zap.NewNop()}
 
 	_, err := factory.CreateTracesExporter(context.Background(), params, cfg)
 	require.Error(t, err)
@@ -87,7 +85,7 @@ func TestConfigAuth(t *testing.T) {
 
 func testAuth(t *testing.T, apiKey, secretToken, expectedAuthorization string) {
 	factory := NewFactory()
-	params := component.ExporterCreateParams{Logger: zap.NewNop()}
+	params := component.ExporterCreateSettings{Logger: zap.NewNop()}
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.APIKey = apiKey
 	cfg.SecretToken = secretToken

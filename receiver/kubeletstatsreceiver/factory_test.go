@@ -26,13 +26,14 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenterror"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configcheck"
+	"go.opentelemetry.io/collector/config/configparser"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/testbed/testbed"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
+	kube "github.com/open-telemetry/opentelemetry-collector-contrib/internal/kubelet"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver/kubelet"
 )
 
@@ -52,7 +53,7 @@ func TestCreateTracesReceiver(t *testing.T) {
 	factory := NewFactory()
 	traceReceiver, err := factory.CreateTracesReceiver(
 		context.Background(),
-		component.ReceiverCreateParams{Logger: zap.NewNop()},
+		component.ReceiverCreateSettings{Logger: zap.NewNop()},
 		factory.CreateDefaultConfig(),
 		nil,
 	)
@@ -64,7 +65,7 @@ func TestCreateMetricsReceiver(t *testing.T) {
 	factory := NewFactory()
 	metricsReceiver, err := factory.CreateMetricsReceiver(
 		context.Background(),
-		component.ReceiverCreateParams{Logger: zap.NewNop()},
+		component.ReceiverCreateSettings{Logger: zap.NewNop()},
 		tlsConfig(),
 		&testbed.MockMetricConsumer{},
 	)
@@ -79,7 +80,7 @@ func TestFactoryInvalidExtraMetadataLabels(t *testing.T) {
 	}
 	metricsReceiver, err := factory.CreateMetricsReceiver(
 		context.Background(),
-		component.ReceiverCreateParams{Logger: zap.NewNop()},
+		component.ReceiverCreateSettings{Logger: zap.NewNop()},
 		&cfg,
 		&testbed.MockMetricConsumer{},
 	)
@@ -91,7 +92,7 @@ func TestFactoryInvalidExtraMetadataLabels(t *testing.T) {
 func TestFactoryBadAuthType(t *testing.T) {
 	factory := NewFactory()
 	cfg := &Config{
-		ClientConfig: kubelet.ClientConfig{
+		ClientConfig: kube.ClientConfig{
 			APIConfig: k8sconfig.APIConfig{
 				AuthType: "foo",
 			},
@@ -99,7 +100,7 @@ func TestFactoryBadAuthType(t *testing.T) {
 	}
 	_, err := factory.CreateMetricsReceiver(
 		context.Background(),
-		component.ReceiverCreateParams{Logger: zap.NewNop()},
+		component.ReceiverCreateSettings{Logger: zap.NewNop()},
 		cfg,
 		&testbed.MockMetricConsumer{},
 	)
@@ -108,7 +109,7 @@ func TestFactoryBadAuthType(t *testing.T) {
 
 func TestRestClientErr(t *testing.T) {
 	cfg := &Config{
-		ClientConfig: kubelet.ClientConfig{
+		ClientConfig: kube.ClientConfig{
 			APIConfig: k8sconfig.APIConfig{
 				AuthType: "tls",
 			},
@@ -120,7 +121,7 @@ func TestRestClientErr(t *testing.T) {
 
 func tlsConfig() *Config {
 	return &Config{
-		ClientConfig: kubelet.ClientConfig{
+		ClientConfig: kube.ClientConfig{
 			APIConfig: k8sconfig.APIConfig{
 				AuthType: "tls",
 			},
@@ -135,7 +136,7 @@ func tlsConfig() *Config {
 
 func TestCustomUnmarshaller(t *testing.T) {
 	type args struct {
-		componentParser *config.Parser
+		componentParser *configparser.Parser
 		intoCfg         *Config
 	}
 	tests := []struct {
@@ -153,14 +154,14 @@ func TestCustomUnmarshaller(t *testing.T) {
 		{
 			name: "Fail initial unmarshal",
 			args: args{
-				componentParser: config.NewParser(),
+				componentParser: configparser.NewParser(),
 			},
 			wantErr: true,
 		},
 		{
 			name: "metric_group unset",
 			args: args{
-				componentParser: config.NewParser(),
+				componentParser: configparser.NewParser(),
 				intoCfg:         &Config{},
 			},
 			result: &Config{
@@ -170,7 +171,7 @@ func TestCustomUnmarshaller(t *testing.T) {
 		{
 			name: "fail to unmarshall metric_groups",
 			args: args{
-				componentParser: config.NewParser(),
+				componentParser: configparser.NewParser(),
 				intoCfg:         &Config{},
 			},
 			mockUnmarshallFailure: true,
@@ -179,7 +180,7 @@ func TestCustomUnmarshaller(t *testing.T) {
 		{
 			name: "successfully override metric_group",
 			args: args{
-				componentParser: config.NewParser(),
+				componentParser: configparser.NewParser(),
 				intoCfg: &Config{
 					CollectionInterval: 10 * time.Second,
 				},

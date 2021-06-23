@@ -1,11 +1,15 @@
 # Datadog Exporter
 
+> :warning: The Datadog exporter version v0.28.0 (the current latest version at time of writing) has reports of an [unintended issue](https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/3786) that may cause Traces exported to Datadog to not be retained past 15 minutes. This may cause unexpected behavior in the Datadog UI. This issued should be resolved in the next release (v0.29.0), but at present the current recommended version of the Datadog Exporter is [v0.27.0](https://github.com/open-telemetry/opentelemetry-collector-contrib/releases/tag/v0.27.0). Please [Reach out to Datadog support](https://docs.datadoghq.com/help/) if it doesn't work as you expect.
+
 This exporter sends metric and trace data to [Datadog](https://datadoghq.com). For environment specific setup instructions visit the [Datadog Documentation](https://docs.datadoghq.com/tracing/setup_overview/open_standards/#opentelemetry-collector-datadog-exporter).
 
 > Please review the Collector's [security
 > documentation](https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/security.md),
 > which contains recommendations on securing sensitive information such as the
 > API key required by this exporter.
+
+> **Note**: The metrics exporter is not considered stable yet and may suffer breaking changes.
 
 ## Configuration
 
@@ -84,5 +88,6 @@ There are a number of optional settings for configuring how to send your metrics
 
 | Option name | Description | Default |
 |-|-|-|
-| `send_monotonic_counters` | Cumulative monotonic metrics are sent as deltas between successive measurements. Disable this flag to send get the raw, monotonically increasing value. | `true` |
+| `send_monotonic_counter` | Cumulative monotonic metrics are sent as deltas between successive measurements. Disable this flag to send get the raw, monotonically increasing value. | `true` |
 | `delta_ttl` | Maximum number of seconds values from cumulative monotonic metrics are kept in memory. | 3600 |
+| `report_quantiles` | Whether to report quantile values for summary type metrics. | `true` |

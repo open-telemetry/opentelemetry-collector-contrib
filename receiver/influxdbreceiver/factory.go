@@ -46,7 +46,7 @@ func createDefaultConfig() config.Receiver {
 	}
 }
 
-func createMetricsReceiver(_ context.Context, params component.ReceiverCreateParams, cfg config.Receiver, nextConsumer consumer.Metrics) (component.MetricsReceiver, error) {
+func createMetricsReceiver(_ context.Context, params component.ReceiverCreateSettings, cfg config.Receiver, nextConsumer consumer.Metrics) (component.MetricsReceiver, error) {
 	influxLogger := newZapInfluxLogger(params.Logger)
 
 	return newMetricsReceiver(cfg.(*Config), influxLogger, nextConsumer)

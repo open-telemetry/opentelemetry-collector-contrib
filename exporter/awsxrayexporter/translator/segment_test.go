@@ -119,6 +119,35 @@ func TestServerSpanWithInternalServerError(t *testing.T) {
 	assert.True(t, *segment.Fault)
 }
 
+func TestServerSpanWithThrottle(t *testing.T) {
+	spanName := "/api/locations"
+	parentSpanID := newSegmentID()
+	errorMessage := "java.lang.NullPointerException"
+	userAgent := "PostmanRuntime/7.21.0"
+	enduser := "go.tester@example.com"
+	attributes := make(map[string]interface{})
+	attributes[semconventions.AttributeHTTPMethod] = "POST"
+	attributes[semconventions.AttributeHTTPURL] = "https://api.example.org/api/locations"
+	attributes[semconventions.AttributeHTTPTarget] = "/api/locations"
+	attributes[semconventions.AttributeHTTPStatusCode] = 429
+	attributes[semconventions.AttributeHTTPStatusText] = "java.lang.NullPointerException"
+	attributes[semconventions.AttributeHTTPUserAgent] = userAgent
+	attributes[semconventions.AttributeEnduserID] = enduser
+	resource := constructDefaultResource()
+	span := constructServerSpan(parentSpanID, spanName, pdata.StatusCodeError, errorMessage, attributes)
+	timeEvents := constructTimedEventsWithSentMessageEvent(span.StartTimestamp())
+	timeEvents.CopyTo(span.Events())
+
+	segment, _ := MakeSegment(span, resource, nil, false)
+
+	assert.NotNil(t, segment)
+	assert.NotNil(t, segment.Cause)
+	assert.Equal(t, "signup_aggregator", *segment.Name)
+	assert.False(t, *segment.Fault)
+	assert.True(t, *segment.Error)
+	assert.True(t, *segment.Throttle)
+}
+
 func TestServerSpanNoParentId(t *testing.T) {
 	spanName := "/api/locations"
 	parentSpanID := pdata.InvalidSpanID()
@@ -618,6 +647,48 @@ func TestOriginPrefersInfraService(t *testing.T) {
 
 	assert.NotNil(t, segment)
 	assert.Equal(t, OriginEC2, *segment.Origin)
+}
+
+func TestFilteredAttributesMetadata(t *testing.T) {
+	spanName := "/test"
+	parentSpanID := newSegmentID()
+	attributes := make(map[string]interface{})
+	resource := pdata.NewResource()
+
+	attrs := pdata.NewAttributeMap()
+	attrs.InsertString("string_value", "value")
+	attrs.InsertInt("int_value", 123)
+	attrs.InsertDouble("float_value", 456.78)
+	attrs.InsertBool("bool_value", false)
+	attrs.InsertNull("null_value")
+
+	arrayValue := pdata.NewAttributeValueArray()
+	arrayValue.ArrayVal().AppendEmpty().SetIntVal(12)
+	arrayValue.ArrayVal().AppendEmpty().SetIntVal(34)
+	arrayValue.ArrayVal().AppendEmpty().SetIntVal(56)
+	attrs.Insert("array_value", arrayValue)
+
+	mapValue := pdata.NewAttributeValueMap()
+	mapValue.MapVal().InsertDouble("value1", -987.65)
+	mapValue.MapVal().InsertBool("value2", true)
+	attrs.Insert("map_value", mapValue)
+
+	span := constructServerSpan(parentSpanID, spanName, pdata.StatusCodeError, "OK", attributes)
+	attrs.CopyTo(span.Attributes())
+
+	segment, _ := MakeSegment(span, resource, []string{}, false)
+
+	assert.NotNil(t, segment)
+	assert.Nil(t, segment.Metadata["default"]["null_value"])
+	assert.Equal(t, "value", segment.Metadata["default"]["string_value"])
+	assert.Equal(t, int64(123), segment.Metadata["default"]["int_value"])
+	assert.Equal(t, 456.78, segment.Metadata["default"]["float_value"])
+	assert.Equal(t, false, segment.Metadata["default"]["bool_value"])
+	assert.Equal(t, []interface{}{int64(12), int64(34), int64(56)}, segment.Metadata["default"]["array_value"])
+	assert.Equal(t, map[string]interface{}{
+		"value1": -987.65,
+		"value2": true,
+	}, segment.Metadata["default"]["map_value"])
 }
 
 func constructClientSpan(parentSpanID pdata.SpanID, name string, code pdata.StatusCode, message string, attributes map[string]interface{}) pdata.Span {

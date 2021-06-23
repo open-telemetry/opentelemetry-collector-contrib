@@ -83,11 +83,12 @@ func (c *LabelsConfig) validate() error {
 	return nil
 }
 
-// getLogRecordAttributes creates a lookup of allowed attributes to valid Loki label names.
-func (c *LabelsConfig) getLogRecordAttributes() map[string]model.LabelName {
+// getAttributes creates a lookup of allowed attributes to valid Loki label names.
+func (c *LabelsConfig) getAttributes(labels map[string]string) map[string]model.LabelName {
+
 	attributes := map[string]model.LabelName{}
 
-	for attrName, lblName := range c.Attributes {
+	for attrName, lblName := range labels {
 		if len(lblName) > 0 {
 			attributes[attrName] = model.LabelName(lblName)
 			continue

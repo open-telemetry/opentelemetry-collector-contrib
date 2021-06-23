@@ -37,6 +37,13 @@ func Test_newSharedInformer(t *testing.T) {
 	assert.NotNil(t, informer)
 }
 
+func Test_newSharedNamespaceInformer(t *testing.T) {
+	client, err := newFakeAPIClientset(k8sconfig.APIConfig{})
+	require.NoError(t, err)
+	informer := newNamespaceSharedInformer(client)
+	assert.NotNil(t, informer)
+}
+
 func Test_informerListFuncWithSelectors(t *testing.T) {
 	ls, fs, err := selectorsFromFilters(Filters{
 		Fields: []FieldFilter{
@@ -58,6 +65,16 @@ func Test_informerListFuncWithSelectors(t *testing.T) {
 	c, err := newFakeAPIClientset(k8sconfig.APIConfig{})
 	assert.NoError(t, err)
 	listFunc := informerListFuncWithSelectors(c, "test-ns", ls, fs)
+	opts := metav1.ListOptions{}
+	obj, err := listFunc(opts)
+	assert.NoError(t, err)
+	assert.NotNil(t, obj)
+}
+
+func Test_namespaceInformerListFunc(t *testing.T) {
+	c, err := newFakeAPIClientset(k8sconfig.APIConfig{})
+	assert.NoError(t, err)
+	listFunc := namespaceInformerListFunc(c)
 	opts := metav1.ListOptions{}
 	obj, err := listFunc(opts)
 	assert.NoError(t, err)
@@ -91,6 +108,16 @@ func Test_informerWatchFuncWithSelectors(t *testing.T) {
 	assert.NotNil(t, obj)
 }
 
+func Test_namespaceInformerWatchFunc(t *testing.T) {
+	c, err := newFakeAPIClientset(k8sconfig.APIConfig{})
+	assert.NoError(t, err)
+	watchFunc := namespaceInformerWatchFunc(c)
+	opts := metav1.ListOptions{}
+	obj, err := watchFunc(opts)
+	assert.NoError(t, err)
+	assert.NotNil(t, obj)
+}
+
 func Test_fakeInformer(t *testing.T) {
 	// nothing real to test here. just to make coverage happy
 	c, err := newFakeAPIClientset(k8sconfig.APIConfig{})
@@ -101,4 +128,16 @@ func Test_fakeInformer(t *testing.T) {
 	i.LastSyncResourceVersion()
 	store := i.GetStore()
 	store.Add(api_v1.Pod{})
+}
+
+func Test_fakeNamespaceInformer(t *testing.T) {
+	// nothing real to test here. just to make coverage happy
+	c, err := newFakeAPIClientset(k8sconfig.APIConfig{})
+	assert.NoError(t, err)
+	i := NewFakeNamespaceInformer(c)
+	i.AddEventHandlerWithResyncPeriod(cache.ResourceEventHandlerFuncs{}, time.Second)
+	i.HasSynced()
+	i.LastSyncResourceVersion()
+	store := i.GetStore()
+	store.Add(api_v1.Namespace{})
 }

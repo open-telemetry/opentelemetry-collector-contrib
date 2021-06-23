@@ -36,7 +36,7 @@ func TestCreateTestProcessor(t *testing.T) {
 		GroupByKeys:       []string{"foo"},
 	}
 
-	params := component.ProcessorCreateParams{
+	params := component.ProcessorCreateSettings{
 		Logger: zap.NewNop(),
 	}
 

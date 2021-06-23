@@ -27,7 +27,7 @@ import (
 )
 
 const (
-	InstrumentationLibName = "otelcol/kafkametrics"
+	instrumentationLibName = "otelcol/kafkametrics"
 	brokersScraperName     = "brokers"
 	topicsScraperName      = "topics"
 	consumersScraperName   = "consumers"
@@ -46,7 +46,7 @@ var (
 var newMetricsReceiver = func(
 	ctx context.Context,
 	config Config,
-	params component.ReceiverCreateParams,
+	params component.ReceiverCreateSettings,
 	consumer consumer.Metrics,
 ) (component.MetricsReceiver, error) {
 	sc := sarama.NewConfig()

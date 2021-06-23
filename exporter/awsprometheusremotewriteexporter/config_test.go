@@ -37,7 +37,7 @@ func TestLoadConfig(t *testing.T) {
 
 	factory := NewFactory()
 	factories.Exporters[typeStr] = factory
-	cfg, err := configtest.LoadConfigFile(t, path.Join(".", "testdata", "config.yaml"), factories)
+	cfg, err := configtest.LoadConfigAndValidate(path.Join(".", "testdata", "config.yaml"), factories)
 
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
@@ -80,8 +80,8 @@ func TestLoadConfig(t *testing.T) {
 				WriteBufferSize: 512 * 1024,
 				Timeout:         5 * time.Second,
 				Headers: map[string]string{
-					"prometheus-remote-write-version": "0.1.0",
-					"x-scope-orgid":                   "234"},
+					"Prometheus-Remote-Write-Version": "0.1.0",
+					"X-Scope-OrgID":                   "234"},
 			},
 		},
 		AuthConfig: AuthConfig{

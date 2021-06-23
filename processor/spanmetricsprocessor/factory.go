@@ -43,6 +43,6 @@ func createDefaultConfig() config.Processor {
 	}
 }
 
-func createTracesProcessor(_ context.Context, params component.ProcessorCreateParams, cfg config.Processor, nextConsumer consumer.Traces) (component.TracesProcessor, error) {
+func createTracesProcessor(_ context.Context, params component.ProcessorCreateSettings, cfg config.Processor, nextConsumer consumer.Traces) (component.TracesProcessor, error) {
 	return newProcessor(params.Logger, cfg, nextConsumer)
 }

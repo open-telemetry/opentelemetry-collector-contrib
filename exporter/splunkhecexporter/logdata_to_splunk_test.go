@@ -146,6 +146,28 @@ func Test_mapLogRecordToSplunkEvent(t *testing.T) {
 			},
 		},
 		{
+			name: "with span and trace id",
+			logRecordFn: func() pdata.LogRecord {
+				logRecord := pdata.NewLogRecord()
+				logRecord.SetSpanID(pdata.NewSpanID([8]byte{0, 0, 0, 0, 0, 0, 0, 50}))
+				logRecord.SetTraceID(pdata.NewTraceID([16]byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 100}))
+				return logRecord
+			},
+			logResourceFn: pdata.NewResource,
+			configDataFn: func() *Config {
+				return &Config{
+					Source:     "source",
+					SourceType: "sourcetype",
+				}
+			},
+			wantSplunkEvents: func() []*splunk.Event {
+				event := commonLogSplunkEvent(nil, 0, map[string]interface{}{}, "unknown", "source", "sourcetype")
+				event.Fields["span_id"] = "0000000000000032"
+				event.Fields["trace_id"] = "00000000000000000000000000000064"
+				return []*splunk.Event{event}
+			}(),
+		},
+		{
 			name: "with double body",
 			logRecordFn: func() pdata.LogRecord {
 				logRecord := pdata.NewLogRecord()

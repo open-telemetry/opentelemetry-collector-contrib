@@ -15,6 +15,7 @@
 package idbatcher
 
 import (
+	"encoding/binary"
 	"runtime"
 	"sync"
 	"sync/atomic"
@@ -23,7 +24,6 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/consumer/pdata"
-	tracetranslator "go.opentelemetry.io/collector/translator/trace"
 )
 
 func TestBatcherNew(t *testing.T) {
@@ -154,7 +154,10 @@ func concurrencyTest(t *testing.T, numBatches, newBatchesInitialCapacity, batchC
 func generateSequentialIds(numIds uint64) []pdata.TraceID {
 	ids := make([]pdata.TraceID, numIds)
 	for i := uint64(0); i < numIds; i++ {
-		ids[i] = tracetranslator.UInt64ToTraceID(0, i)
+		traceID := [16]byte{}
+		binary.BigEndian.PutUint64(traceID[:8], 0)
+		binary.BigEndian.PutUint64(traceID[8:], i)
+		ids[i] = pdata.NewTraceID(traceID)
 	}
 	return ids
 }

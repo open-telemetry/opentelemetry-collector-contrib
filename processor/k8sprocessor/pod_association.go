@@ -83,7 +83,7 @@ func extractPodID(ctx context.Context, attrs pdata.AttributeMap, associations []
 			}
 		}
 	}
-	return "", kube.PodIdentifier("")
+	return "", ""
 }
 
 func stringAttributeFromMap(attrs pdata.AttributeMap, key string) string {

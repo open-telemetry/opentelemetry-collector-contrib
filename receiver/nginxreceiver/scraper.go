@@ -16,18 +16,20 @@ package nginxreceiver
 
 import (
 	"context"
+	"net/http"
 	"time"
 
 	"github.com/nginxinc/nginx-prometheus-exporter/client"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/consumer/simple"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/nginxreceiver/internal/metadata"
 )
 
 type nginxScraper struct {
-	client *client.NginxClient
+	httpClient *http.Client
+	client     *client.NginxClient
 
 	logger *zap.Logger
 	cfg    *Config
@@ -43,27 +45,26 @@ func newNginxScraper(
 	}
 }
 
-func (r *nginxScraper) scrape(ctx context.Context) (pdata.ResourceMetricsSlice, error) {
+func (r *nginxScraper) start(_ context.Context, host component.Host) error {
+	httpClient, err := r.cfg.ToClient(host.GetExtensions())
+	if err != nil {
+		return err
+	}
+	r.httpClient = httpClient
+
+	return nil
+}
+
+func (r *nginxScraper) scrape(context.Context) (pdata.ResourceMetricsSlice, error) {
 	// Init client in scrape method in case there are transient errors in the
 	// constructor.
 	if r.client == nil {
-		httpClient, err := r.cfg.ToClient()
-		if err != nil {
-			return pdata.ResourceMetricsSlice{}, err
-		}
-
-		r.client, err = client.NewNginxClient(httpClient, r.cfg.HTTPClientSettings.Endpoint)
+		var err error
+		r.client, err = client.NewNginxClient(r.httpClient, r.cfg.HTTPClientSettings.Endpoint)
 		if err != nil {
 			r.client = nil
 			return pdata.ResourceMetricsSlice{}, err
 		}
-	}
-
-	metrics := simple.Metrics{
-		Metrics:                    pdata.NewMetrics(),
-		Timestamp:                  time.Now(),
-		MetricFactoriesByName:      metadata.M.FactoriesByName(),
-		InstrumentationLibraryName: "otelcol/nginx",
 	}
 
 	stats, err := r.client.GetStubStats()
@@ -72,13 +73,37 @@ func (r *nginxScraper) scrape(ctx context.Context) (pdata.ResourceMetricsSlice, 
 		return pdata.ResourceMetricsSlice{}, err
 	}
 
-	metrics.AddSumDataPoint(metadata.M.NginxRequests.Name(), stats.Requests)
-	metrics.AddGaugeDataPoint(metadata.M.NginxConnectionsActive.Name(), stats.Connections.Active)
-	metrics.AddSumDataPoint(metadata.M.NginxConnectionsAccepted.Name(), stats.Connections.Accepted)
-	metrics.AddSumDataPoint(metadata.M.NginxConnectionsHandled.Name(), stats.Connections.Handled)
-	metrics.AddGaugeDataPoint(metadata.M.NginxConnectionsReading.Name(), stats.Connections.Reading)
-	metrics.AddGaugeDataPoint(metadata.M.NginxConnectionsWriting.Name(), stats.Connections.Writing)
-	metrics.AddGaugeDataPoint(metadata.M.NginxConnectionsWaiting.Name(), stats.Connections.Waiting)
+	now := pdata.TimestampFromTime(time.Now())
+	metrics := pdata.NewMetrics()
+	ilm := metrics.ResourceMetrics().AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty()
+	ilm.InstrumentationLibrary().SetName("otelcol/nginx")
 
-	return metrics.Metrics.ResourceMetrics(), nil
+	addSum(ilm.Metrics(), metadata.M.NginxRequests.Init, now, stats.Requests)
+	addSum(ilm.Metrics(), metadata.M.NginxConnectionsAccepted.Init, now, stats.Connections.Accepted)
+	addSum(ilm.Metrics(), metadata.M.NginxConnectionsHandled.Init, now, stats.Connections.Handled)
+
+	currConnMetric := ilm.Metrics().AppendEmpty()
+	metadata.M.NginxConnectionsCurrent.Init(currConnMetric)
+	dps := currConnMetric.IntGauge().DataPoints()
+	addCurrentConnectionDataPoint(dps, metadata.LabelState.Active, now, stats.Connections.Active)
+	addCurrentConnectionDataPoint(dps, metadata.LabelState.Reading, now, stats.Connections.Reading)
+	addCurrentConnectionDataPoint(dps, metadata.LabelState.Writing, now, stats.Connections.Writing)
+	addCurrentConnectionDataPoint(dps, metadata.LabelState.Waiting, now, stats.Connections.Waiting)
+
+	return metrics.ResourceMetrics(), nil
+}
+
+func addSum(metrics pdata.MetricSlice, initFunc func(pdata.Metric), now pdata.Timestamp, value int64) {
+	metric := metrics.AppendEmpty()
+	initFunc(metric)
+	dp := metric.IntSum().DataPoints().AppendEmpty()
+	dp.SetTimestamp(now)
+	dp.SetValue(value)
+}
+
+func addCurrentConnectionDataPoint(dps pdata.IntDataPointSlice, stateValue string, now pdata.Timestamp, value int64) {
+	dp := dps.AppendEmpty()
+	dp.LabelsMap().Upsert(metadata.L.State, stateValue)
+	dp.SetTimestamp(now)
+	dp.SetValue(value)
 }

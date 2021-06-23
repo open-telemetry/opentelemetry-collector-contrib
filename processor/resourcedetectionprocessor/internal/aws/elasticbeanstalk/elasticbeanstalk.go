@@ -28,6 +28,7 @@ import (
 )
 
 const (
+	// TypeStr is type of detector.
 	TypeStr = "elastic_beanstalk"
 
 	linuxPath   = "/var/elasticbeanstalk/xray/environment.conf"
@@ -46,7 +47,7 @@ type EbMetaData struct {
 	VersionLabel    string `json:"version_label"`
 }
 
-func NewDetector(component.ProcessorCreateParams, internal.DetectorConfig) (internal.Detector, error) {
+func NewDetector(component.ProcessorCreateSettings, internal.DetectorConfig) (internal.Detector, error) {
 	return &Detector{fs: &ebFileSystem{}}, nil
 }
 

@@ -27,26 +27,26 @@ import (
 
 const (
 	// http://docs.aws.amazon.com/AmazonCloudWatch/latest/logs/cloudwatch_limits_cwl.html
-	// In truncation logic, it assuming this constant value is larger than PerEventHeaderBytes + len(TruncatedSuffix)
-	DefaultMaxEventPayloadBytes = 1024 * 256 //256KB
+	// In truncation logic, it assuming this constant value is larger than perEventHeaderBytes + len(truncatedSuffix)
+	defaultMaxEventPayloadBytes = 1024 * 256 //256KB
 	// http://docs.aws.amazon.com/AmazonCloudWatchLogs/latest/APIReference/API_PutLogEvents.html
-	MaxRequestEventCount   = 10000
-	PerEventHeaderBytes    = 26
-	MaxRequestPayloadBytes = 1024 * 1024 * 1
+	maxRequestEventCount   = 10000
+	perEventHeaderBytes    = 26
+	maxRequestPayloadBytes = 1024 * 1024 * 1
 
 	minPusherIntervalMs = 200 // 5 TPS
 
-	TruncatedSuffix = "[Truncated...]"
+	truncatedSuffix = "[Truncated...]"
 
-	LogEventTimestampLimitInPast   = 14 * 24 * time.Hour //None of the log events in the batch can be older than 14 days
-	LogEventTimestampLimitInFuture = -2 * time.Hour      //None of the log events in the batch can be more than 2 hours in the future.
+	logEventTimestampLimitInPast   = 14 * 24 * time.Hour //None of the log events in the batch can be older than 14 days
+	logEventTimestampLimitInFuture = -2 * time.Hour      //None of the log events in the batch can be more than 2 hours in the future.
 )
 
 var (
-	maxEventPayloadBytes = DefaultMaxEventPayloadBytes
+	maxEventPayloadBytes = defaultMaxEventPayloadBytes
 )
 
-// Struct to present a log event.
+// LogEvent struct to present a log event.
 type LogEvent struct {
 	InputLogEvent *cloudwatchlogs.InputLogEvent
 	// The time which log generated.
@@ -69,8 +69,8 @@ func (logEvent *LogEvent) Validate(logger *zap.Logger) error {
 		logger.Warn("logpusher: the single log event size is larger than the max event payload allowed. Truncate the log event.",
 			zap.Int("SingleLogEventSize", logEvent.eventPayloadBytes()), zap.Int("maxEventPayloadBytes", maxEventPayloadBytes))
 
-		newPayload := (*logEvent.InputLogEvent.Message)[0:(maxEventPayloadBytes - PerEventHeaderBytes - len(TruncatedSuffix))]
-		newPayload += TruncatedSuffix
+		newPayload := (*logEvent.InputLogEvent.Message)[0:(maxEventPayloadBytes - perEventHeaderBytes - len(truncatedSuffix))]
+		newPayload += truncatedSuffix
 		logEvent.InputLogEvent.Message = &newPayload
 	}
 
@@ -89,7 +89,7 @@ func (logEvent *LogEvent) Validate(logger *zap.Logger) error {
 	currentTime := time.Now().UTC()
 	utcTime := time.Unix(0, *logEvent.InputLogEvent.Timestamp*int64(time.Millisecond)).UTC()
 	duration := currentTime.Sub(utcTime)
-	if duration > LogEventTimestampLimitInPast || duration < LogEventTimestampLimitInFuture {
+	if duration > logEventTimestampLimitInPast || duration < logEventTimestampLimitInFuture {
 		err := errors.New("the log entry's timestamp is older than 14 days or more than 2 hours in the future")
 		logger.Error("discard log entry with invalid timestamp",
 			zap.Error(err), zap.String("LogEventTimestamp", utcTime.String()), zap.String("CurrentTime", currentTime.String()))
@@ -100,10 +100,10 @@ func (logEvent *LogEvent) Validate(logger *zap.Logger) error {
 
 // Calculate the log event payload bytes.
 func (logEvent *LogEvent) eventPayloadBytes() int {
-	return len(*logEvent.InputLogEvent.Message) + PerEventHeaderBytes
+	return len(*logEvent.InputLogEvent.Message) + perEventHeaderBytes
 }
 
-// Struct to present a log event batch
+// LogEventBatch struct to present a log event batch
 type LogEventBatch struct {
 	PutLogEventsInput *cloudwatchlogs.PutLogEventsInput
 	//the total bytes already in this log event batch
@@ -120,7 +120,7 @@ func newLogEventBatch(logGroupName, logStreamName *string) *LogEventBatch {
 		PutLogEventsInput: &cloudwatchlogs.PutLogEventsInput{
 			LogGroupName:  logGroupName,
 			LogStreamName: logStreamName,
-			LogEvents:     make([]*cloudwatchlogs.InputLogEvent, 0, MaxRequestEventCount)},
+			LogEvents:     make([]*cloudwatchlogs.InputLogEvent, 0, maxRequestEventCount)},
 	}
 }
 

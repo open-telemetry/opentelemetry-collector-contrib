@@ -53,7 +53,8 @@ func SplitTraces(batch pdata.Traces) []pdata.Traces {
 				}
 
 				// there is only one instrumentation library per batch
-				batches[key].InstrumentationLibrarySpans().At(0).Spans().Append(span)
+				tgt := batches[key].InstrumentationLibrarySpans().At(0).Spans().AppendEmpty()
+				span.CopyTo(tgt)
 			}
 		}
 	}
@@ -98,7 +99,8 @@ func SplitLogs(batch pdata.Logs) []pdata.Logs {
 				}
 
 				// there is only one instrumentation library per batch
-				batches[key].InstrumentationLibraryLogs().At(0).Logs().Append(log)
+				tgt := batches[key].InstrumentationLibraryLogs().At(0).Logs().AppendEmpty()
+				log.CopyTo(tgt)
 			}
 		}
 	}

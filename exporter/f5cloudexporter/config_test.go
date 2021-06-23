@@ -35,7 +35,7 @@ func TestLoadConfig(t *testing.T) {
 
 	factory := NewFactory()
 	factories.Exporters[typeStr] = factory
-	cfg, err := configtest.LoadConfigFile(t, path.Join(".", "testdata", "config.yaml"), factories)
+	cfg, err := configtest.LoadConfigAndValidate(path.Join(".", "testdata", "config.yaml"), factories)
 
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
@@ -119,7 +119,7 @@ func TestConfig_sanitize(t *testing.T) {
 				Source:         validSource,
 				CredentialFile: "",
 			},
-			errorMessage: "missing required \"auth.credential_file\" setting",
+			errorMessage: "missing required \"f5cloud_auth.credential_file\" setting",
 			shouldError:  true,
 		},
 		{
@@ -129,7 +129,7 @@ func TestConfig_sanitize(t *testing.T) {
 				Source:         validSource,
 				CredentialFile: "non-existent cred file",
 			},
-			errorMessage: "the provided \"auth.credential_file\" does not exist",
+			errorMessage: "the provided \"f5cloud_auth.credential_file\" does not exist",
 			shouldError:  true,
 		},
 		{

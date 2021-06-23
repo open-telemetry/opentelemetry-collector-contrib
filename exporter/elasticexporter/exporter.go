@@ -37,7 +37,7 @@ import (
 )
 
 func newElasticTracesExporter(
-	params component.ExporterCreateParams,
+	params component.ExporterCreateSettings,
 	cfg config.Exporter,
 ) (component.TracesExporter, error) {
 	exporter, err := newElasticExporter(cfg.(*Config), params.Logger)
@@ -59,7 +59,7 @@ func newElasticTracesExporter(
 }
 
 func newElasticMetricsExporter(
-	params component.ExporterCreateParams,
+	params component.ExporterCreateSettings,
 	cfg config.Exporter,
 ) (component.MetricsExporter, error) {
 	exporter, err := newElasticExporter(cfg.(*Config), params.Logger)

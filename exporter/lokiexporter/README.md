@@ -10,8 +10,12 @@ The following settings are required:
 
 - `endpoint` (no default): The target URL to send Loki log streams to (e.g.: http://loki:3100/loki/api/v1/push).
   
-- `labels.attributes` (no default): Map of attributes names to valid Loki label names (must match "^[a-zA-Z_][a-zA-Z0-9_]*$") 
-  allowed to be added as labels to Loki log streams. Logs that do not have at least one of these attributes will be dropped. 
+- `labels.{attributes/resource}` (no default): Either a map of attributes or resource names to valid Loki label names 
+  (must match "^[a-zA-Z_][a-zA-Z0-9_]*$") allowed to be added as labels to Loki log streams. 
+  Attributes are log record attributes that describe the log message itself. Resource attributes are attributes that 
+  belong to the infrastructure that create the log (container_name, cluster_name, etc.). At least one attribute from
+  attribute or resource is required 
+  Logs that do not have at least one of these attributes will be dropped. 
   This is a safety net to help prevent accidentally adding dynamic labels that may significantly increase cardinality, 
   thus having a performance impact on your Loki instance. See the 
   [Loki label best practices](https://grafana.com/docs/loki/latest/best-practices/current-best-practices/) page for 
@@ -47,13 +51,16 @@ loki:
   endpoint: http://loki:3100/loki/api/v1/push
   tenant_id: "example"
   labels:
-    attributes:
+    resource:
       # Allowing 'container.name' attribute and transform it to 'container_name', which is a valid Loki label name.
       container.name: "container_name"
       # Allowing 'k8s.cluster.name' attribute and transform it to 'k8s_cluster_name', which is a valid Loki label name.
       k8s.cluster.name: "k8s_cluster_name"
+    attributes:
       # Allowing 'severity' attribute and not providing a mapping, since the attribute name is a valid Loki label name.
       severity: ""
+      http.status_code: "http_status_code" 
+      
   headers:
     "X-Custom-Header": "loki_rocks"
 ```

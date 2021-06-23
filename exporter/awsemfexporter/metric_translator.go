@@ -50,21 +50,18 @@ var fieldPrometheusTypes = map[pdata.MetricDataType]string{
 	pdata.MetricDataTypeSummary:      "summary",
 }
 
-// CWMetrics defines
 type CWMetrics struct {
 	Measurements []CWMeasurement
 	TimestampMs  int64
 	Fields       map[string]interface{}
 }
 
-// CwMeasurement defines
 type CWMeasurement struct {
 	Namespace  string
 	Dimensions [][]string
 	Metrics    []map[string]string
 }
 
-// CWMetric stats defines
 type CWMetricStats struct {
 	Max   float64
 	Min   float64

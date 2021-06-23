@@ -40,13 +40,11 @@ func TestCreateTracesExporter(t *testing.T) {
 	factories, err := componenttest.NopFactories()
 	require.NoError(t, err)
 	factory := NewFactory()
-	factories.Exporters[config.Type(typeStr)] = factory
-	cfg, err := configtest.LoadConfigFile(
-		t, path.Join(".", "testdata", "config.yaml"), factories,
-	)
+	factories.Exporters[typeStr] = factory
+	cfg, err := configtest.LoadConfigAndValidate(path.Join(".", "testdata", "config.yaml"), factories)
 	require.NoError(t, err)
 
-	params := component.ExporterCreateParams{Logger: zap.NewNop()}
+	params := component.ExporterCreateSettings{Logger: zap.NewNop()}
 	exporter, err := factory.CreateTracesExporter(context.Background(), params, cfg.Exporters[config.NewIDWithName(typeStr, "2")])
 	assert.Nil(t, err)
 	assert.NotNil(t, exporter)

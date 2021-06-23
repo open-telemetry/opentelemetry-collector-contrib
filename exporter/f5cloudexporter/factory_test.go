@@ -60,7 +60,7 @@ func TestFactory_CreateMetricsExporter(t *testing.T) {
 		Audience:       "tests",
 	}
 
-	creationParams := component.ExporterCreateParams{
+	creationParams := component.ExporterCreateSettings{
 		Logger: zap.NewNop(),
 		BuildInfo: component.BuildInfo{
 			Version: "0.0.0",
@@ -77,7 +77,7 @@ func TestFactory_CreateMetricsExporterInvalidConfig(t *testing.T) {
 	factory := NewFactoryWithTokenSourceGetter(mockTokenSourceGetter)
 	cfg := factory.CreateDefaultConfig().(*Config)
 
-	creationParams := component.ExporterCreateParams{Logger: zap.NewNop()}
+	creationParams := component.ExporterCreateSettings{Logger: zap.NewNop()}
 	oexp, err := factory.CreateMetricsExporter(context.Background(), creationParams, cfg)
 	require.Error(t, err)
 	require.Nil(t, oexp)
@@ -93,7 +93,7 @@ func TestFactory_CreateTracesExporter(t *testing.T) {
 		Audience:       "tests",
 	}
 
-	creationParams := component.ExporterCreateParams{
+	creationParams := component.ExporterCreateSettings{
 		Logger: zap.NewNop(),
 		BuildInfo: component.BuildInfo{
 			Version: "0.0.0",
@@ -110,7 +110,7 @@ func Test_Factory_CreateTracesExporterInvalidConfig(t *testing.T) {
 	factory := NewFactoryWithTokenSourceGetter(mockTokenSourceGetter)
 	cfg := factory.CreateDefaultConfig().(*Config)
 
-	creationParams := component.ExporterCreateParams{Logger: zap.NewNop()}
+	creationParams := component.ExporterCreateSettings{Logger: zap.NewNop()}
 	oexp, err := factory.CreateTracesExporter(context.Background(), creationParams, cfg)
 	require.Error(t, err)
 	require.Nil(t, oexp)
@@ -126,7 +126,7 @@ func TestFactory_CreateLogsExporter(t *testing.T) {
 		Audience:       "tests",
 	}
 
-	creationParams := component.ExporterCreateParams{
+	creationParams := component.ExporterCreateSettings{
 		Logger: zap.NewNop(),
 		BuildInfo: component.BuildInfo{
 			Version: "0.0.0",
@@ -143,7 +143,7 @@ func TestFactory_CreateLogsExporterInvalidConfig(t *testing.T) {
 	factory := NewFactoryWithTokenSourceGetter(mockTokenSourceGetter)
 	cfg := factory.CreateDefaultConfig().(*Config)
 
-	creationParams := component.ExporterCreateParams{Logger: zap.NewNop()}
+	creationParams := component.ExporterCreateSettings{Logger: zap.NewNop()}
 	oexp, err := factory.CreateLogsExporter(context.Background(), creationParams, cfg)
 	require.Error(t, err)
 	require.Nil(t, oexp)

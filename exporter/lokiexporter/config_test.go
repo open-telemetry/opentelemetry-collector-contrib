@@ -36,8 +36,8 @@ func TestLoadConfig(t *testing.T) {
 	assert.Nil(t, err)
 
 	factory := NewFactory()
-	factories.Exporters[config.Type(typeStr)] = factory
-	cfg, err := configtest.LoadConfigFile(t, path.Join(".", "testdata", "config.yaml"), factories)
+	factories.Exporters[typeStr] = factory
+	cfg, err := configtest.LoadConfigAndValidate(path.Join(".", "testdata", "config.yaml"), factories)
 
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
@@ -49,7 +49,7 @@ func TestLoadConfig(t *testing.T) {
 		ExporterSettings: config.NewExporterSettings(config.NewIDWithName(typeStr, "allsettings")),
 		HTTPClientSettings: confighttp.HTTPClientSettings{
 			Headers: map[string]string{
-				"x-custom-header": "loki_rocks",
+				"X-Custom-Header": "loki_rocks",
 			},
 			Endpoint: "https://loki:3100/loki/api/v1/push",
 			TLSSetting: configtls.TLSClientSetting{
@@ -98,7 +98,7 @@ func TestJsonLoadConfig(t *testing.T) {
 
 	factory := NewFactory()
 	factories.Exporters[config.Type(typeStr)] = factory
-	cfg, err := configtest.LoadConfigFile(t, path.Join(".", "testdata", "config.yaml"), factories)
+	cfg, err := configtest.LoadConfig(path.Join(".", "testdata", "config.yaml"), factories)
 
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
@@ -384,7 +384,7 @@ func TestLabelsConfig_getAttributes(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			mapping := tt.labels.getLogRecordAttributes()
+			mapping := tt.labels.getAttributes(tt.labels.Attributes)
 
 			assert.Equal(t, tt.expectedMapping, mapping)
 		})
@@ -440,7 +440,7 @@ func TestResourcesConfig_getAttributes(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			mapping := tt.labels.getResourceAttributes()
+			mapping := tt.labels.getAttributes(tt.labels.ResourceAttributes)
 
 			assert.Equal(t, tt.expectedMapping, mapping)
 		})

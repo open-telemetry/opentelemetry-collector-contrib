@@ -54,7 +54,8 @@ func (gap *groupByAttrsProcessor) ProcessTraces(ctx context.Context, td pdata.Tr
 				// Lets combine the base resource attributes + the extracted (grouped) attributes
 				// and keep them in the grouping entry
 				groupedSpans := extractedGroups.attributeGroup(rs.Resource(), groupedAttrMap)
-				matchingInstrumentationLibrarySpans(groupedSpans, ils.InstrumentationLibrary()).Spans().Append(span)
+				sp := matchingInstrumentationLibrarySpans(groupedSpans, ils.InstrumentationLibrary()).Spans().AppendEmpty()
+				span.CopyTo(sp)
 			}
 		}
 	}
@@ -93,7 +94,8 @@ func (gap *groupByAttrsProcessor) ProcessLogs(ctx context.Context, ld pdata.Logs
 				// Lets combine the base resource attributes + the extracted (grouped) attributes
 				// and keep them in the grouping entry
 				groupedLogs := extractedGroups.attributeGroup(ls.Resource(), groupedAttrMap)
-				matchingInstrumentationLibraryLogs(groupedLogs, ill.InstrumentationLibrary()).Logs().Append(log)
+				lr := matchingInstrumentationLibraryLogs(groupedLogs, ill.InstrumentationLibrary()).Logs().AppendEmpty()
+				log.CopyTo(lr)
 			}
 		}
 

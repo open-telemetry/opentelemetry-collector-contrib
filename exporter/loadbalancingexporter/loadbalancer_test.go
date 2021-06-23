@@ -34,7 +34,7 @@ import (
 func TestNewLoadBalancerNoResolver(t *testing.T) {
 	// prepare
 	config := &Config{}
-	params := component.ExporterCreateParams{
+	params := component.ExporterCreateSettings{
 		Logger: zap.NewNop(),
 	}
 
@@ -53,7 +53,7 @@ func TestNewLoadBalancerInvalidStaticResolver(t *testing.T) {
 			Static: &StaticResolver{Hostnames: []string{}},
 		},
 	}
-	params := component.ExporterCreateParams{
+	params := component.ExporterCreateSettings{
 		Logger: zap.NewNop(),
 	}
 
@@ -74,7 +74,7 @@ func TestNewLoadBalancerInvalidDNSResolver(t *testing.T) {
 			},
 		},
 	}
-	params := component.ExporterCreateParams{
+	params := component.ExporterCreateSettings{
 		Logger: zap.NewNop(),
 	}
 
@@ -89,7 +89,7 @@ func TestNewLoadBalancerInvalidDNSResolver(t *testing.T) {
 func TestLoadBalancerStart(t *testing.T) {
 	// prepare
 	config := simpleConfig()
-	params := component.ExporterCreateParams{
+	params := component.ExporterCreateSettings{
 		Logger: zap.NewNop(),
 	}
 	p, err := newLoadBalancer(params, config, nil)
@@ -113,7 +113,7 @@ func TestWithDNSResolver(t *testing.T) {
 			},
 		},
 	}
-	params := component.ExporterCreateParams{
+	params := component.ExporterCreateSettings{
 		Logger: zap.NewNop(),
 	}
 	p, err := newLoadBalancer(params, config, nil)
@@ -139,7 +139,7 @@ func TestMultipleResolvers(t *testing.T) {
 			},
 		},
 	}
-	params := component.ExporterCreateParams{
+	params := component.ExporterCreateSettings{
 		Logger: zap.NewNop(),
 	}
 
@@ -154,7 +154,7 @@ func TestMultipleResolvers(t *testing.T) {
 func TestStartFailureStaticResolver(t *testing.T) {
 	// prepare
 	config := simpleConfig()
-	params := component.ExporterCreateParams{
+	params := component.ExporterCreateSettings{
 		Logger: zap.NewNop(),
 	}
 	p, err := newLoadBalancer(params, config, nil)
@@ -178,7 +178,7 @@ func TestStartFailureStaticResolver(t *testing.T) {
 func TestLoadBalancerShutdown(t *testing.T) {
 	// prepare
 	config := simpleConfig()
-	params := component.ExporterCreateParams{
+	params := component.ExporterCreateSettings{
 		Logger: zap.NewNop(),
 	}
 	p, err := newTracesExporter(params, config)
@@ -195,7 +195,7 @@ func TestLoadBalancerShutdown(t *testing.T) {
 func TestOnBackendChanges(t *testing.T) {
 	// prepare
 	config := simpleConfig()
-	params := component.ExporterCreateParams{
+	params := component.ExporterCreateSettings{
 		Logger: zap.NewNop(),
 	}
 	componentFactory := func(ctx context.Context, endpoint string) (component.Exporter, error) {
@@ -220,7 +220,7 @@ func TestOnBackendChanges(t *testing.T) {
 func TestRemoveExtraExporters(t *testing.T) {
 	// prepare
 	config := simpleConfig()
-	params := component.ExporterCreateParams{
+	params := component.ExporterCreateSettings{
 		Logger: zap.NewNop(),
 	}
 	p, err := newLoadBalancer(params, config, nil)
@@ -242,19 +242,19 @@ func TestRemoveExtraExporters(t *testing.T) {
 func TestAddMissingExporters(t *testing.T) {
 	// prepare
 	cfg := simpleConfig()
-	params := component.ExporterCreateParams{
+	params := component.ExporterCreateSettings{
 		Logger: zap.NewNop(),
 	}
 	exporterFactory := exporterhelper.NewFactory("otlp", func() config.Exporter {
 		return &otlpexporter.Config{}
 	}, exporterhelper.WithTraces(func(
 		_ context.Context,
-		_ component.ExporterCreateParams,
+		_ component.ExporterCreateSettings,
 		_ config.Exporter,
 	) (component.TracesExporter, error) {
 		return newNopMockTracesExporter(), nil
 	}))
-	tmplParams := component.ExporterCreateParams{
+	tmplParams := component.ExporterCreateSettings{
 		Logger:    params.Logger,
 		BuildInfo: params.BuildInfo,
 	}
@@ -282,7 +282,7 @@ func TestAddMissingExporters(t *testing.T) {
 func TestFailedToAddMissingExporters(t *testing.T) {
 	// prepare
 	cfg := simpleConfig()
-	params := component.ExporterCreateParams{
+	params := component.ExporterCreateSettings{
 		Logger: zap.NewNop(),
 	}
 	expectedErr := errors.New("some expected error")
@@ -290,12 +290,12 @@ func TestFailedToAddMissingExporters(t *testing.T) {
 		return &otlpexporter.Config{}
 	}, exporterhelper.WithTraces(func(
 		_ context.Context,
-		_ component.ExporterCreateParams,
+		_ component.ExporterCreateSettings,
 		_ config.Exporter,
 	) (component.TracesExporter, error) {
 		return nil, expectedErr
 	}))
-	tmplParams := component.ExporterCreateParams{
+	tmplParams := component.ExporterCreateSettings{
 		Logger:    params.Logger,
 		BuildInfo: params.BuildInfo,
 	}
@@ -367,7 +367,7 @@ func TestFailedExporterInRing(t *testing.T) {
 			Static: &StaticResolver{Hostnames: []string{"endpoint-1", "endpoint-2"}},
 		},
 	}
-	params := component.ExporterCreateParams{
+	params := component.ExporterCreateSettings{
 		Logger: zap.NewNop(),
 	}
 	componentFactory := func(ctx context.Context, endpoint string) (component.Exporter, error) {

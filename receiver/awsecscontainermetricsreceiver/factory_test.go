@@ -39,7 +39,7 @@ func TestCreateMetricsReceiver(t *testing.T) {
 
 	metricsReceiver, err := createMetricsReceiver(
 		context.Background(),
-		component.ReceiverCreateParams{Logger: zap.NewNop()},
+		component.ReceiverCreateSettings{Logger: zap.NewNop()},
 		createDefaultConfig(),
 		&testbed.MockMetricConsumer{},
 	)
@@ -52,7 +52,7 @@ func TestCreateMetricsReceiverWithEnv(t *testing.T) {
 
 	metricsReceiver, err := createMetricsReceiver(
 		context.Background(),
-		component.ReceiverCreateParams{Logger: zap.NewNop()},
+		component.ReceiverCreateSettings{Logger: zap.NewNop()},
 		createDefaultConfig(),
 		&testbed.MockMetricConsumer{},
 	)
@@ -65,7 +65,7 @@ func TestCreateMetricsReceiverWithBadUrl(t *testing.T) {
 
 	metricsReceiver, err := createMetricsReceiver(
 		context.Background(),
-		component.ReceiverCreateParams{Logger: zap.NewNop()},
+		component.ReceiverCreateSettings{Logger: zap.NewNop()},
 		createDefaultConfig(),
 		&testbed.MockMetricConsumer{},
 	)
@@ -76,7 +76,7 @@ func TestCreateMetricsReceiverWithBadUrl(t *testing.T) {
 func TestCreateMetricsReceiverWithNilConsumer(t *testing.T) {
 	metricsReceiver, err := createMetricsReceiver(
 		context.Background(),
-		component.ReceiverCreateParams{Logger: zap.NewNop()},
+		component.ReceiverCreateSettings{Logger: zap.NewNop()},
 		createDefaultConfig(),
 		nil,
 	)

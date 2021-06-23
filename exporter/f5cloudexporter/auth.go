@@ -22,7 +22,7 @@ import (
 )
 
 const (
-	SourceHeader = "X-F5-Source"
+	sourceHeader = "X-F5-Source"
 )
 
 type f5CloudAuthRoundTripper struct {
@@ -43,7 +43,7 @@ func (rt *f5CloudAuthRoundTripper) RoundTrip(req *http.Request) (*http.Response,
 	tkn.SetAuthHeader(req2)
 
 	// Add F5 specific headers
-	req2.Header.Add(SourceHeader, rt.source)
+	req2.Header.Add(sourceHeader, rt.source)
 
 	resp, err := rt.transport.RoundTrip(req2)
 	if err != nil {

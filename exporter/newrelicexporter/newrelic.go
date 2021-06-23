@@ -359,6 +359,9 @@ func (e exporter) doRequest(details *exportMetadata, req *http.Request) error {
 		} else if response.StatusCode == http.StatusForbidden {
 			// The data has been lost, but it is due to an invalid api key
 			e.logger.Debug("HTTP Forbidden response", zap.String("Status", response.Status))
+		} else if response.StatusCode == http.StatusTooManyRequests {
+			// The data has been lost, but it is due to rate limiting
+			e.logger.Debug("HTTP Too Many Requests", zap.String("Status", response.Status))
 		} else {
 			// The data has been lost due to an error in our payload
 			details.dataOutputCount = 0

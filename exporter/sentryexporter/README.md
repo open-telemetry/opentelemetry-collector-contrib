@@ -7,6 +7,7 @@ For more details about distributed tracing in Sentry, please view [our documenta
 The following configuration options are supported:
 
 - `dsn`: The DSN tells the exporter where to send the events. You can find a Sentry project DSN in the “Client Keys” section of the “Project Settings” section of a Sentry project.
+- `insecure_skip_verify`: If it is set to true, then ssl certificates will not be checked. Useful for test purposes, as well as for Sentry installations deployed in private clouds.
 
 Example:
 
@@ -14,6 +15,7 @@ Example:
 exporters:
   sentry:
     dsn: https://key@host/path/42
+    insecure_skip_verify: true
 ```
 
 See the [docs](./docs/transformation.md) for more details on how this transformation is working.

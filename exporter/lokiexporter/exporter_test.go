@@ -83,22 +83,8 @@ func TestExporter_new(t *testing.T) {
 				ResourceAttributes: testValidResourceWithMapping,
 			},
 		}
-		exp, err := newExporter(config, zap.NewNop())
-		require.NoError(t, err)
+		exp := newExporter(config, zap.NewNop())
 		require.NotNil(t, exp)
-	})
-
-	t.Run("with invalid HTTPClientSettings", func(t *testing.T) {
-		config := &Config{
-			HTTPClientSettings: confighttp.HTTPClientSettings{
-				Endpoint: "",
-				CustomRoundTripper: func(next http.RoundTripper) (http.RoundTripper, error) {
-					return nil, fmt.Errorf("this causes HTTPClientSettings.ToClient() to error")
-				},
-			},
-		}
-		_, err := newExporter(config, zap.NewNop())
-		require.Error(t, err)
 	})
 }
 
@@ -252,10 +238,9 @@ func TestExporter_pushLogData(t *testing.T) {
 				tt.config.Endpoint = serverURL.String()
 			}
 
-			exp, err := newExporter(tt.config, zap.NewNop())
-			require.NoError(t, err)
+			exp := newExporter(tt.config, zap.NewNop())
 			require.NotNil(t, exp)
-			err = exp.start(context.Background(), componenttest.NewNopHost())
+			err := exp.start(context.Background(), componenttest.NewNopHost())
 			require.NoError(t, err)
 
 			err = exp.pushLogData(context.Background(), tt.genLogsFunc())
@@ -286,10 +271,9 @@ func TestExporter_logDataToLoki(t *testing.T) {
 			},
 		},
 	}
-	exp, err := newExporter(config, zap.NewNop())
-	require.NoError(t, err)
+	exp := newExporter(config, zap.NewNop())
 	require.NotNil(t, exp)
-	err = exp.start(context.Background(), componenttest.NewNopHost())
+	err := exp.start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err)
 
 	t.Run("with attributes that match config", func(t *testing.T) {
@@ -429,10 +413,9 @@ func TestExporter_convertAttributesToLabels(t *testing.T) {
 			},
 		},
 	}
-	exp, err := newExporter(config, zap.NewNop())
-	require.NoError(t, err)
+	exp := newExporter(config, zap.NewNop())
 	require.NotNil(t, exp)
-	err = exp.start(context.Background(), componenttest.NewNopHost())
+	err := exp.start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err)
 
 	t.Run("with attributes that match", func(t *testing.T) {
@@ -549,7 +532,7 @@ func TestExporter_encode(t *testing.T) {
 	})
 }
 
-func TestExporter_startAlwaysReturnsNil(t *testing.T) {
+func TestExporter_startReturnsNillWhenValidConfig(t *testing.T) {
 	config := &Config{
 		HTTPClientSettings: confighttp.HTTPClientSettings{
 			Endpoint: validEndpoint,
@@ -559,9 +542,23 @@ func TestExporter_startAlwaysReturnsNil(t *testing.T) {
 			ResourceAttributes: testValidResourceWithMapping,
 		},
 	}
-	e, err := newExporter(config, zap.NewNop())
-	require.NoError(t, err)
-	require.NoError(t, e.start(context.Background(), componenttest.NewNopHost()))
+	exp := newExporter(config, zap.NewNop())
+	require.NotNil(t, exp)
+	require.NoError(t, exp.start(context.Background(), componenttest.NewNopHost()))
+}
+
+func TestExporter_startReturnsErrorWhenInvalidHttpClientSettings(t *testing.T) {
+	config := &Config{
+		HTTPClientSettings: confighttp.HTTPClientSettings{
+			Endpoint: "",
+			CustomRoundTripper: func(next http.RoundTripper) (http.RoundTripper, error) {
+				return nil, fmt.Errorf("this causes HTTPClientSettings.ToClient() to error")
+			},
+		},
+	}
+	exp := newExporter(config, zap.NewNop())
+	require.NotNil(t, exp)
+	require.Error(t, exp.start(context.Background(), componenttest.NewNopHost()))
 }
 
 func TestExporter_stopAlwaysReturnsNil(t *testing.T) {
@@ -574,9 +571,9 @@ func TestExporter_stopAlwaysReturnsNil(t *testing.T) {
 			ResourceAttributes: testValidResourceWithMapping,
 		},
 	}
-	e, err := newExporter(config, zap.NewNop())
-	require.NoError(t, err)
-	require.NoError(t, e.stop(context.Background()))
+	exp := newExporter(config, zap.NewNop())
+	require.NotNil(t, exp)
+	require.NoError(t, exp.stop(context.Background()))
 }
 
 func TestExporter_convertLogtoJsonEntry(t *testing.T) {

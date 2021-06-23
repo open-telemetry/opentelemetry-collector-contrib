@@ -58,7 +58,7 @@ func (f *Factory) CreateDefaultConfig() config.Extension {
 // CreateExtension creates the extension based on this config.
 func (f *Factory) CreateExtension(
 	ctx context.Context,
-	params component.ExtensionCreateParams,
+	params component.ExtensionCreateSettings,
 	cfg config.Extension,
 ) (component.Extension, error) {
 	config := cfg.(*Config)

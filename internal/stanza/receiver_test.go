@@ -35,7 +35,7 @@ import (
 )
 
 func TestStart(t *testing.T) {
-	params := component.ReceiverCreateParams{
+	params := component.ReceiverCreateSettings{
 		Logger: zaptest.NewLogger(t),
 	}
 	mockConsumer := mockLogsConsumer{}
@@ -67,7 +67,7 @@ func TestStart(t *testing.T) {
 }
 
 func TestHandleStartError(t *testing.T) {
-	params := component.ReceiverCreateParams{
+	params := component.ReceiverCreateSettings{
 		Logger: zaptest.NewLogger(t),
 	}
 	mockConsumer := mockLogsConsumer{}
@@ -85,7 +85,7 @@ func TestHandleStartError(t *testing.T) {
 }
 
 func TestHandleConsumeError(t *testing.T) {
-	params := component.ReceiverCreateParams{
+	params := component.ReceiverCreateSettings{
 		Logger: zaptest.NewLogger(t),
 	}
 	mockConsumer := mockLogsRejecter{}

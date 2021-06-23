@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/signalfxreceiver
 
-go 1.15
+go 1.16
 
 require (
 	github.com/gorilla/mux v1.8.0
@@ -9,8 +9,8 @@ require (
 	github.com/signalfx/com_signalfx_metrics_protobuf v0.0.2
 	github.com/stretchr/testify v1.7.0
 	go.opencensus.io v0.23.0
-	go.opentelemetry.io/collector v0.27.0
-	go.uber.org/zap v1.16.0
+	go.opentelemetry.io/collector v0.28.1-0.20210616151306-cdc163427b8e
+	go.uber.org/zap v1.17.0
 )
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter => ../../exporter/signalfxexporter

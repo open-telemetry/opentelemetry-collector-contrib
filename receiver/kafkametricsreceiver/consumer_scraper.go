@@ -75,7 +75,7 @@ func (s *consumerScraper) scrape(context.Context) (pdata.ResourceMetricsSlice, e
 		Metrics:                    pdata.NewMetrics(),
 		Timestamp:                  time.Now(),
 		MetricFactoriesByName:      metadata.M.FactoriesByName(),
-		InstrumentationLibraryName: InstrumentationLibName,
+		InstrumentationLibraryName: instrumentationLibName,
 	}
 
 	cgs, listErr := s.clusterAdmin.ListConsumerGroups()

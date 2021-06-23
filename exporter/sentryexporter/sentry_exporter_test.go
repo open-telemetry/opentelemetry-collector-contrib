@@ -16,10 +16,12 @@ package sentryexporter
 
 import (
 	"context"
+	"encoding/hex"
 	"testing"
 
 	"github.com/getsentry/sentry-go"
 	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/translator/conventions"
@@ -35,25 +37,24 @@ import (
 
 var (
 	rootSpan1 = &sentry.Span{
-		TraceID:      "d6c4f03650bd47699ec65c84352b6208",
-		SpanID:       "1cc4b26ab9094ef0",
-		ParentSpanID: "",
-		Description:  "/api/users/{user_id}",
-		Op:           "http.server",
+		TraceID:     TraceIDFromHex("d6c4f03650bd47699ec65c84352b6208"),
+		SpanID:      SpanIDFromHex("1cc4b26ab9094ef0"),
+		Description: "/api/users/{user_id}",
+		Op:          "http.server",
 		Tags: map[string]string{
 			"organization":   "12345",
 			"status_message": "HTTP OK",
 			"span_kind":      "server",
 		},
-		StartTimestamp: unixNanoToTime(5),
-		EndTimestamp:   unixNanoToTime(10),
-		Status:         "ok",
+		StartTime: unixNanoToTime(5),
+		EndTime:   unixNanoToTime(10),
+		Status:    sentry.SpanStatusOK,
 	}
 
 	childSpan1 = &sentry.Span{
-		TraceID:      "d6c4f03650bd47699ec65c84352b6208",
-		SpanID:       "93ba92db3fa24752",
-		ParentSpanID: "1cc4b26ab9094ef0",
+		TraceID:      TraceIDFromHex("d6c4f03650bd47699ec65c84352b6208"),
+		SpanID:       SpanIDFromHex("93ba92db3fa24752"),
+		ParentSpanID: SpanIDFromHex("1cc4b26ab9094ef0"),
 		Description:  `SELECT * FROM user WHERE "user"."id" = {id}`,
 		Op:           "db",
 		Tags: map[string]string{
@@ -61,15 +62,15 @@ var (
 			"status_message": "MYSQL OK",
 			"span_kind":      "server",
 		},
-		StartTimestamp: unixNanoToTime(5),
-		EndTimestamp:   unixNanoToTime(7),
-		Status:         "ok",
+		StartTime: unixNanoToTime(5),
+		EndTime:   unixNanoToTime(7),
+		Status:    sentry.SpanStatusOK,
 	}
 
 	childChildSpan1 = &sentry.Span{
-		TraceID:      "d6c4f03650bd47699ec65c84352b6208",
-		SpanID:       "1fa8913ec3814d34",
-		ParentSpanID: "93ba92db3fa24752",
+		TraceID:      TraceIDFromHex("d6c4f03650bd47699ec65c84352b6208"),
+		SpanID:       SpanIDFromHex("1fa8913ec3814d34"),
+		ParentSpanID: SpanIDFromHex("93ba92db3fa24752"),
 		Description:  `DB locked`,
 		Op:           "db",
 		Tags: map[string]string{
@@ -77,68 +78,85 @@ var (
 			"status_message": "MYSQL OK",
 			"span_kind":      "server",
 		},
-		StartTimestamp: unixNanoToTime(6),
-		EndTimestamp:   unixNanoToTime(7),
-		Status:         "ok",
+		StartTime: unixNanoToTime(6),
+		EndTime:   unixNanoToTime(7),
+		Status:    sentry.SpanStatusOK,
 	}
 
 	childSpan2 = &sentry.Span{
-		TraceID:      "d6c4f03650bd47699ec65c84352b6208",
-		SpanID:       "34efcde268684bb0",
-		ParentSpanID: "1cc4b26ab9094ef0",
+		TraceID:      TraceIDFromHex("d6c4f03650bd47699ec65c84352b6208"),
+		SpanID:       SpanIDFromHex("34efcde268684bb0"),
+		ParentSpanID: SpanIDFromHex("1cc4b26ab9094ef0"),
 		Description:  "Serialize stuff",
 		Op:           "",
 		Tags: map[string]string{
 			"span_kind": "server",
 		},
-		StartTimestamp: unixNanoToTime(7),
-		EndTimestamp:   unixNanoToTime(10),
-		Status:         "ok",
+		StartTime: unixNanoToTime(7),
+		EndTime:   unixNanoToTime(10),
+		Status:    sentry.SpanStatusOK,
 	}
 
 	orphanSpan1 = &sentry.Span{
-		TraceID:        "d6c4f03650bd47699ec65c84352b6208",
-		SpanID:         "6241111811384fae",
-		ParentSpanID:   "1930bb5cc45c4003",
-		Description:    "A random span",
-		Op:             "",
-		StartTimestamp: unixNanoToTime(3),
-		EndTimestamp:   unixNanoToTime(6),
-		Status:         "ok",
+		TraceID:      TraceIDFromHex("d6c4f03650bd47699ec65c84352b6208"),
+		SpanID:       SpanIDFromHex("6241111811384fae"),
+		ParentSpanID: SpanIDFromHex("1930bb5cc45c4003"),
+		Description:  "A random span",
+		Op:           "",
+		StartTime:    unixNanoToTime(3),
+		EndTime:      unixNanoToTime(6),
+		Status:       sentry.SpanStatusOK,
 	}
 
 	rootSpan2 = &sentry.Span{
-		TraceID:      "d6c4f03650bd47699ec65c84352b6208",
-		SpanID:       "4c7f56556ffe4e4a",
-		ParentSpanID: "",
-		Description:  "Navigating to fancy website",
-		Op:           "pageload",
+		TraceID:     TraceIDFromHex("d6c4f03650bd47699ec65c84352b6208"),
+		SpanID:      SpanIDFromHex("4c7f56556ffe4e4a"),
+		Description: "Navigating to fancy website",
+		Op:          "pageload",
 		Tags: map[string]string{
 			"status_message": "HTTP OK",
 			"span_kind":      "client",
 		},
-		StartTimestamp: unixNanoToTime(0),
-		EndTimestamp:   unixNanoToTime(5),
-		Status:         "ok",
+		StartTime: unixNanoToTime(0),
+		EndTime:   unixNanoToTime(5),
+		Status:    sentry.SpanStatusOK,
 	}
 
 	root2childSpan = &sentry.Span{
-		TraceID:      "d6c4f03650bd47699ec65c84352b6208",
-		SpanID:       "7ff3c8daf8184fee",
-		ParentSpanID: "4c7f56556ffe4e4a",
+		TraceID:      TraceIDFromHex("d6c4f03650bd47699ec65c84352b6208"),
+		SpanID:       SpanIDFromHex("7ff3c8daf8184fee"),
+		ParentSpanID: SpanIDFromHex("4c7f56556ffe4e4a"),
 		Description:  "<FancyReactComponent />",
 		Op:           "react",
 		Tags: map[string]string{
 			"span_kind": "server",
 		},
-		StartTimestamp: unixNanoToTime(4),
-		EndTimestamp:   unixNanoToTime(5),
-		Status:         "ok",
+		StartTime: unixNanoToTime(4),
+		EndTime:   unixNanoToTime(5),
+		Status:    sentry.SpanStatusOK,
 	}
 )
 
-func generateEmptyTransactionMap(spans ...*sentry.Span) map[string]*sentry.Event {
-	transactionMap := make(map[string]*sentry.Event)
+func TraceIDFromHex(s string) sentry.TraceID {
+	var id sentry.TraceID
+	_, err := hex.Decode(id[:], []byte(s))
+	if err != nil {
+		panic(err)
+	}
+	return id
+}
+
+func SpanIDFromHex(s string) sentry.SpanID {
+	var id sentry.SpanID
+	_, err := hex.Decode(id[:], []byte(s))
+	if err != nil {
+		panic(err)
+	}
+	return id
+}
+
+func generateEmptyTransactionMap(spans ...*sentry.Span) map[sentry.SpanID]*sentry.Event {
+	transactionMap := make(map[sentry.SpanID]*sentry.Event)
 	for _, span := range spans {
 		transactionMap[span.SpanID] = transactionFromSpan(span)
 	}
@@ -202,9 +220,9 @@ func TestSpanToSentrySpan(t *testing.T) {
 		assert.False(t, isRootSpan(actual))
 
 		expected := &sentry.Span{
-			TraceID:      "01020304050607080807060504030201",
-			SpanID:       "0102030405060708",
-			ParentSpanID: "0807060504030201",
+			TraceID:      TraceIDFromHex("01020304050607080807060504030201"),
+			SpanID:       SpanIDFromHex("0102030405060708"),
+			ParentSpanID: SpanIDFromHex("0807060504030201"),
 			Description:  name,
 			Op:           "",
 			Tags: map[string]string{
@@ -216,12 +234,13 @@ func TestSpanToSentrySpan(t *testing.T) {
 				"span_kind":       pdata.SpanKindClient.String(),
 				"status_message":  statusMessage,
 			},
-			StartTimestamp: unixNanoToTime(startTime),
-			EndTimestamp:   unixNanoToTime(endTime),
-			Status:         "ok",
+			StartTime: unixNanoToTime(startTime),
+			EndTime:   unixNanoToTime(endTime),
+			Status:    sentry.SpanStatusOK,
 		}
 
-		if diff := cmp.Diff(expected, actual); diff != "" {
+		opts := cmpopts.IgnoreUnexported(sentry.Span{})
+		if diff := cmp.Diff(expected, actual, opts); diff != "" {
 			t.Errorf("Span mismatch (-expected +actual):\n%s", diff)
 		}
 	})
@@ -347,7 +366,7 @@ type SpanStatusCase struct {
 	// input
 	spanStatus pdata.SpanStatus
 	// output
-	status  string
+	status  sentry.SpanStatus
 	message string
 }
 
@@ -356,7 +375,7 @@ func TestStatusFromSpanStatus(t *testing.T) {
 		{
 			testName:   "with empty status",
 			spanStatus: pdata.NewSpanStatus(),
-			status:     "unknown",
+			status:     sentry.SpanStatusUndefined,
 			message:    "",
 		},
 		{
@@ -368,7 +387,7 @@ func TestStatusFromSpanStatus(t *testing.T) {
 
 				return spanStatus
 			}(),
-			status:  "unknown",
+			status:  sentry.SpanStatusUnknown,
 			message: "message",
 		},
 		{
@@ -380,7 +399,7 @@ func TestStatusFromSpanStatus(t *testing.T) {
 
 				return spanStatus
 			}(),
-			status:  "unknown",
+			status:  sentry.SpanStatusUnknown,
 			message: "error code 1337",
 		},
 	}
@@ -397,8 +416,8 @@ func TestStatusFromSpanStatus(t *testing.T) {
 type ClassifyOrphanSpanTestCase struct {
 	testName string
 	// input
-	idMap          map[string]string
-	transactionMap map[string]*sentry.Event
+	idMap          map[sentry.SpanID]sentry.SpanID
+	transactionMap map[sentry.SpanID]*sentry.Event
 	spans          []*sentry.Span
 	// output
 	assertion func(t *testing.T, orphanSpans []*sentry.Span)
@@ -408,7 +427,7 @@ func TestClassifyOrphanSpans(t *testing.T) {
 	testCases := []ClassifyOrphanSpanTestCase{
 		{
 			testName:       "with no root spans",
-			idMap:          make(map[string]string),
+			idMap:          make(map[sentry.SpanID]sentry.SpanID),
 			transactionMap: generateEmptyTransactionMap(),
 			spans:          generateOrphanSpansFromSpans(childSpan1, childSpan2),
 			assertion: func(t *testing.T, orphanSpans []*sentry.Span) {
@@ -417,8 +436,8 @@ func TestClassifyOrphanSpans(t *testing.T) {
 		},
 		{
 			testName: "with no remaining orphans",
-			idMap: func() map[string]string {
-				idMap := make(map[string]string)
+			idMap: func() map[sentry.SpanID]sentry.SpanID {
+				idMap := make(map[sentry.SpanID]sentry.SpanID)
 				idMap[rootSpan1.SpanID] = rootSpan1.SpanID
 				return idMap
 			}(),
@@ -430,8 +449,8 @@ func TestClassifyOrphanSpans(t *testing.T) {
 		},
 		{
 			testName: "with some remaining orphans",
-			idMap: func() map[string]string {
-				idMap := make(map[string]string)
+			idMap: func() map[sentry.SpanID]sentry.SpanID {
+				idMap := make(map[sentry.SpanID]sentry.SpanID)
 				idMap[rootSpan1.SpanID] = rootSpan1.SpanID
 				return idMap
 			}(),
@@ -444,8 +463,8 @@ func TestClassifyOrphanSpans(t *testing.T) {
 		},
 		{
 			testName: "with multiple roots",
-			idMap: func() map[string]string {
-				idMap := make(map[string]string)
+			idMap: func() map[sentry.SpanID]sentry.SpanID {
+				idMap := make(map[sentry.SpanID]sentry.SpanID)
 				idMap[rootSpan1.SpanID] = rootSpan1.SpanID
 				idMap[rootSpan2.SpanID] = rootSpan2.SpanID
 				return idMap

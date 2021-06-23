@@ -14,21 +14,25 @@
 
 package kubelet
 
+import (
+	kube "github.com/open-telemetry/opentelemetry-collector-contrib/internal/kubelet"
+)
+
 // RestClient is swappable for testing.
 type RestClient interface {
 	StatsSummary() ([]byte, error)
 	Pods() ([]byte, error)
 }
 
-// RestClient is a thin wrapper around a kubelet client, encapsulating endpoints
+// HTTPRestClient is a thin wrapper around a kubelet client, encapsulating endpoints
 // and their corresponding http methods. The endpoints /stats/container /spec/
 // are excluded because they require cadvisor. The /metrics endpoint is excluded
 // because it returns Prometheus data.
 type HTTPRestClient struct {
-	client Client
+	client kube.Client
 }
 
-func NewRestClient(client Client) *HTTPRestClient {
+func NewRestClient(client kube.Client) *HTTPRestClient {
 	return &HTTPRestClient{client: client}
 }
 

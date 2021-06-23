@@ -27,24 +27,31 @@ import (
 func TestDockerLabelMatcher_Match(t *testing.T) {
 	t.Run("must set port label", func(t *testing.T) {
 		var cfg DockerLabelConfig
-		require.Error(t, cfg.Init())
+		require.Error(t, cfg.validate())
 	})
 
 	t.Run("metrics_ports not supported", func(t *testing.T) {
 		cfg := DockerLabelConfig{
 			PortLabel: "foo",
 			CommonExporterConfig: CommonExporterConfig{
-				MetricsPorts: []int{404}, // they should be ignored
+				MetricsPorts: []int{404},
 			},
 		}
-		assert.Error(t, cfg.Init())
+		assert.Error(t, cfg.validate())
+	})
+
+	t.Run("invalid export config", func(t *testing.T) {
+		cfg := DockerLabelConfig{PortLabel: "foo", CommonExporterConfig: CommonExporterConfig{
+			MetricsPorts: []int{8080, 8080},
+		}}
+		require.Error(t, cfg.validate())
 	})
 
 	t.Run("valid", func(t *testing.T) {
 		cfg := DockerLabelConfig{
 			PortLabel: "PORT_PROM",
 		}
-		assert.NoError(t, cfg.Init())
+		assert.NoError(t, cfg.validate())
 	})
 
 	portLabel := "MY_PROMETHEUS_PORT"

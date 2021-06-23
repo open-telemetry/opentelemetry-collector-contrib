@@ -29,6 +29,8 @@ import (
 
 var _ interval.Runnable = (*redisRunnable)(nil)
 
+const transport = "http" // todo verify this
+
 // Runs intermittently, fetching info from Redis, creating metrics/datapoints,
 // and feeding them to a metricsConsumer.
 type redisRunnable struct {
@@ -39,24 +41,23 @@ type redisRunnable struct {
 	redisMetrics    []*redisMetric
 	logger          *zap.Logger
 	timeBundle      *timeBundle
-	serviceName     string
+	obsrecv         *obsreport.Receiver
 }
 
 func newRedisRunnable(
 	ctx context.Context,
 	id config.ComponentID,
 	client client,
-	serviceName string,
 	metricsConsumer consumer.Metrics,
 	logger *zap.Logger,
 ) *redisRunnable {
 	return &redisRunnable{
 		id:              id,
 		ctx:             ctx,
-		serviceName:     serviceName,
 		redisSvc:        newRedisSvc(client),
 		metricsConsumer: metricsConsumer,
 		logger:          logger,
+		obsrecv:         obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverID: id, Transport: transport}),
 	}
 }
 
@@ -74,18 +75,17 @@ func (r *redisRunnable) Setup() error {
 // active Redis database, of which there can be 16.
 func (r *redisRunnable) Run() error {
 	const dataFormat = "redis"
-	const transport = "http" // todo verify this
-	ctx := obsreport.StartMetricsReceiveOp(r.ctx, r.id, transport)
+	ctx := r.obsrecv.StartMetricsOp(r.ctx)
 
 	inf, err := r.redisSvc.info()
 	if err != nil {
-		obsreport.EndMetricsReceiveOp(ctx, dataFormat, 0, err)
+		r.obsrecv.EndMetricsOp(ctx, dataFormat, 0, err)
 		return nil
 	}
 
 	uptime, err := inf.getUptimeInSeconds()
 	if err != nil {
-		obsreport.EndMetricsReceiveOp(ctx, dataFormat, 0, err)
+		r.obsrecv.EndMetricsOp(ctx, dataFormat, 0, err)
 		return nil
 	}
 
@@ -97,10 +97,8 @@ func (r *redisRunnable) Run() error {
 
 	pdm := pdata.NewMetrics()
 	rm := pdm.ResourceMetrics().AppendEmpty()
-	resource := rm.Resource()
-	rattrs := resource.Attributes()
-	rattrs.InsertString("service.name", r.serviceName)
 	ilm := rm.InstrumentationLibraryMetrics().AppendEmpty()
+	ilm.InstrumentationLibrary().SetName("otelcol/" + typeStr)
 	fixedMS, warnings := inf.buildFixedMetrics(r.redisMetrics, r.timeBundle)
 	fixedMS.MoveAndAppendTo(ilm.Metrics())
 	if warnings != nil {
@@ -121,7 +119,7 @@ func (r *redisRunnable) Run() error {
 
 	err = r.metricsConsumer.ConsumeMetrics(r.ctx, pdm)
 	_, numPoints := pdm.MetricAndDataPointCount()
-	obsreport.EndMetricsReceiveOp(ctx, dataFormat, numPoints, err)
+	r.obsrecv.EndMetricsOp(ctx, dataFormat, numPoints, err)
 
 	return nil
 }
