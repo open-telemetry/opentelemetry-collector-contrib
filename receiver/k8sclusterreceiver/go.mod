@@ -17,7 +17,7 @@ require (
 	google.golang.org/protobuf v1.26.0
 	k8s.io/api v0.21.2
 	k8s.io/apimachinery v0.21.2
-	k8s.io/client-go v0.21.1
+	k8s.io/client-go v0.21.2
 )
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/common => ../../internal/common
