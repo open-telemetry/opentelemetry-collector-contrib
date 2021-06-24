@@ -15,19 +15,17 @@
 package ecsinfo
 
 import (
+	"context"
 	"errors"
 	"strings"
+
+	"go.uber.org/zap"
 )
 
 const (
 	ecsAgentEndpoint         = "http://%s:51678/v1/metadata"
 	ecsAgentTaskInfoEndpoint = "http://%s:51678/v1/tasks"
 	taskStatusRunning        = "RUNNING"
-
-	// infinity magic number for cgroup: https://unix.stackexchange.com/questions/420906/what-is-the-value-for-the-cgroups-limit-in-bytes-if-the-memory-is-not-restricte
-	kernelMagicCodeNotSet = int64(9223372036854771712)
-
-	ecsInstanceMountConfigPath = "/proc/self/mountinfo"
 )
 
 // There are two formats of ContainerInstance ARN (https://docs.aws.amazon.com/AmazonECS/latest/userguide/ecs-account-settings.html#ecs-resource-ids)
@@ -35,7 +33,7 @@ const (
 // arn:aws:ecs:region:aws_account_id:container-instance/cluster-name/container-instance-id
 // This function will return "container-instance-id" for both ARN format
 
-func GetContainerInstanceIdFromArn(arn string) (containerInstanceId string, err error) {
+func GetContainerInstanceIDFromArn(arn string) (containerInstanceID string, err error) {
 	// When splitting the ARN with ":", the 6th segments could be either:
 	// container-instance/47c0ab6e-2c2c-475e-9c30-b878fa7a8c3d or
 	// container-instance/cluster-name/47c0ab6e-2c2c-475e-9c30-b878fa7a8c3d
@@ -45,14 +43,23 @@ func GetContainerInstanceIdFromArn(arn string) (containerInstanceId string, err 
 		// Characters of "cluster-name" is only allowed to be letters, numbers and hyphens
 		tmpResult := strings.Split(splitedList[5], "/")
 		if len(tmpResult) == 2 {
-			containerInstanceId = tmpResult[1]
+			containerInstanceID = tmpResult[1]
 			return
 		} else if len(tmpResult) == 3 {
-			containerInstanceId = tmpResult[2]
+			containerInstanceID = tmpResult[2]
 			return
 		}
 	}
 	err = errors.New("Can't get ecs container instance id from ContainerInstance arn: " + arn)
 	return
 
+}
+
+type MockHTTPClient struct {
+	responseData []byte
+	err          error
+}
+
+func (m *MockHTTPClient) Request(ctx context.Context, endpoint string, logger *zap.Logger) ([]byte, error) {
+	return m.responseData, m.err
 }

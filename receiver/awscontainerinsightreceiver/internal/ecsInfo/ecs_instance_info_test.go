@@ -16,8 +16,8 @@ package ecsinfo
 
 import (
 	"context"
+	"errors"
 	"io/ioutil"
-	"net/http"
 	"testing"
 	"time"
 
@@ -25,29 +25,12 @@ import (
 	"go.uber.org/zap"
 )
 
-type MockHttpClientforInstance struct {
-	maxRetries              int
-	backoffRetryBaseInMills int
-	client                  *http.Client
-}
-
-func (m *MockHttpClientforInstance) Request(endpoint string, ctx context.Context, logger *zap.Logger) ([]byte, error) {
-	endpoint = "./test/ecsinfo/clusterinfo"
-
-	data, err := ioutil.ReadFile(endpoint)
-
-	if err != nil {
-		return nil, err
-	}
-	return data, nil
-}
-
 type MockHostInfo struct{}
 
-func (mi *MockHostInfo) GetInstanceIp() string {
+func (mi *MockHostInfo) GetInstanceIP() string {
 	return "0.0.0.0"
 }
-func (mi *MockHostInfo) GetinstanceIpReadyC() chan bool {
+func (mi *MockHostInfo) GetinstanceIPReadyC() chan bool {
 	readyC := make(chan bool)
 	return readyC
 }
@@ -58,14 +41,39 @@ func TestECSInstanceInfo(t *testing.T) {
 	defer cancel()
 	instanceReadyC := make(chan bool)
 	hostIPProvider := &MockHostInfo{}
-	mockHttp := &MockHttpClientforInstance{}
 
-	ecsinstanceinfo := newECSInstanceInfo(ctx, hostIPProvider, time.Minute, zap.NewNop(), mockHttp, instanceReadyC)
+	data, err := ioutil.ReadFile("./test/ecsinfo/clusterinfo")
+
+	mockHTTP := &MockHTTPClient{
+		responseData: data,
+		err:          err,
+	}
+
+	//normal case
+	ecsinstanceinfo := newECSInstanceInfo(ctx, hostIPProvider, time.Minute, zap.NewNop(), mockHTTP, instanceReadyC)
 
 	assert.NotNil(t, ecsinstanceinfo)
 
 	<-instanceReadyC
 
 	assert.Equal(t, "cluster_name", ecsinstanceinfo.GetClusterName())
-	assert.Equal(t, "container_instance_id", ecsinstanceinfo.GetContainerInstanceId())
+	assert.Equal(t, "container_instance_id", ecsinstanceinfo.GetContainerInstanceID())
+
+	//failed to get data
+
+	data = nil
+
+	err = errors.New("")
+
+	mockHTTP = &MockHTTPClient{
+		responseData: data,
+		err:          err,
+	}
+	ecsinstanceinfo = newECSInstanceInfo(ctx, hostIPProvider, time.Minute, zap.NewNop(), mockHTTP, instanceReadyC)
+
+	assert.NotNil(t, ecsinstanceinfo)
+
+	assert.Equal(t, "", ecsinstanceinfo.GetClusterName())
+	assert.Equal(t, "", ecsinstanceinfo.GetContainerInstanceID())
+
 }

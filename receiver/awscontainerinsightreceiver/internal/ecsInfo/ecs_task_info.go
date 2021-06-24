@@ -21,10 +21,10 @@ import (
 	"sync"
 	"time"
 
+	"go.uber.org/zap"
+
 	httpClient "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/containerinsight/httpclient"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver/internal/host"
-
-	"go.uber.org/zap"
 )
 
 type ecsTaskInfoProvider interface {
@@ -33,7 +33,7 @@ type ecsTaskInfoProvider interface {
 }
 
 type ECSContainer struct {
-	DockerId string
+	DockerID string
 }
 type ECSTask struct {
 	KnownStatus string
@@ -47,7 +47,7 @@ type ECSTasksInfo struct {
 
 type taskInfo struct {
 	logger                  *zap.Logger
-	httpClient              httpClient.HttpClientProvider
+	httpClient              httpClient.Requester
 	refreshInterval         time.Duration
 	ecsTaskEndpointProvider hostIPProvider
 	runningTaskCount        int64
@@ -59,7 +59,7 @@ type taskInfo struct {
 type taskInfoOption func(*taskInfo)
 
 func newECSTaskInfo(ctx context.Context, ecsTaskEndpointProvider hostIPProvider,
-	refreshInterval time.Duration, logger *zap.Logger, httpClient httpClient.HttpClientProvider, readyC chan bool, options ...taskInfoOption) ecsTaskInfoProvider {
+	refreshInterval time.Duration, logger *zap.Logger, httpClient Requester, readyC chan bool, options ...taskInfoOption) ecsTaskInfoProvider {
 	ti := &taskInfo{
 		logger:                  logger,
 		httpClient:              httpClient,
@@ -80,7 +80,7 @@ func newECSTaskInfo(ctx context.Context, ecsTaskEndpointProvider hostIPProvider,
 
 func (ti *taskInfo) getTasksInfo(ctx context.Context) (ecsTasksInfo *ECSTasksInfo) {
 	ecsTasksInfo = &ECSTasksInfo{}
-	resp, err := ti.httpClient.Request(ti.getECSAgentTaskInfoEndpoint(), ctx, ti.logger)
+	resp, err := ti.httpClient.Request(ctx, ti.getECSAgentTaskInfoEndpoint(), ti.logger)
 	if err != nil {
 		ti.logger.Warn("Failed to call ecsagent taskinfo endpoint, error: ", zap.Error(err))
 		return ecsTasksInfo
@@ -104,7 +104,7 @@ func (ti *taskInfo) refresh(ctx context.Context) {
 			continue
 		}
 		tasks = append(tasks, task)
-		runningTaskCount += 1
+		runningTaskCount++
 	}
 
 	ti.Lock()
@@ -130,5 +130,5 @@ func (ti *taskInfo) getRunningTasksInfo() []ECSTask {
 }
 
 func (ti *taskInfo) getECSAgentTaskInfoEndpoint() string {
-	return fmt.Sprintf(ecsAgentTaskInfoEndpoint, ti.ecsTaskEndpointProvider.GetInstanceIp())
+	return fmt.Sprintf(ecsAgentTaskInfoEndpoint, ti.ecsTaskEndpointProvider.GetInstanceIP())
 }

@@ -18,31 +18,36 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"sync"
 	"time"
 
-	httpClient "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/containerinsight/httpclient"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver/internal/host"
-
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver/internal/host"
 )
 
 type containerInstanceInfoProvider interface {
 	GetClusterName() string
-	GetContainerInstanceId() string
+	GetContainerInstanceID() string
 }
 
-type HttpClientProvider interface {
-	Request(path string, ctx context.Context, logger *zap.Logger) ([]byte, error)
+type Requester interface {
+	Request(ctx context.Context, path string, logger *zap.Logger) ([]byte, error)
+}
+
+type hostIPProvider interface {
+	GetInstanceIP() string
 }
 
 type containerInstanceInfo struct {
 	logger                   *zap.Logger
-	httpClient               httpClient.HttpClientProvider
+	httpClient               Requester
 	refreshInterval          time.Duration
 	ecsAgentEndpointProvider hostIPProvider
 	clusterName              string
-	containerInstanceId      string
+	containerInstanceID      string
 	readyC                   chan bool
+	sync.RWMutex
 }
 
 type ContainerInstance struct {
@@ -53,7 +58,7 @@ type ContainerInstance struct {
 type ecsInstanceInfoOption func(*containerInstanceInfo)
 
 func newECSInstanceInfo(ctx context.Context, ecsAgentEndpointProvider hostIPProvider,
-	refreshInterval time.Duration, logger *zap.Logger, httpClient httpClient.HttpClientProvider, readyC chan bool, options ...ecsInstanceInfoOption) containerInstanceInfoProvider {
+	refreshInterval time.Duration, logger *zap.Logger, httpClient Requester, readyC chan bool, options ...ecsInstanceInfoOption) containerInstanceInfoProvider {
 	cii := &containerInstanceInfo{
 		logger:                   logger,
 		httpClient:               httpClient,
@@ -68,7 +73,7 @@ func newECSInstanceInfo(ctx context.Context, ecsAgentEndpointProvider hostIPProv
 
 	shouldRefresh := func() bool {
 		//stop the refresh once we get instance ID and type successfully
-		return cii.clusterName == "" || cii.containerInstanceId == ""
+		return cii.clusterName == "" || cii.containerInstanceID == ""
 	}
 	go host.RefreshUntil(ctx, cii.refresh, cii.refreshInterval, shouldRefresh, 0)
 
@@ -78,7 +83,7 @@ func newECSInstanceInfo(ctx context.Context, ecsAgentEndpointProvider hostIPProv
 func (cii *containerInstanceInfo) refresh(ctx context.Context) {
 	containerInstance := &ContainerInstance{}
 	cii.logger.Info("Fetch instance id and type from ec2 metadata")
-	resp, err := cii.httpClient.Request(cii.getECSAgentEndpoint(), ctx, cii.logger)
+	resp, err := cii.httpClient.Request(ctx, cii.getECSAgentEndpoint(), cii.logger)
 	if err != nil {
 		cii.logger.Warn("Failed to call ecsagent endpoint, error: ", zap.Error(err))
 	}
@@ -89,24 +94,35 @@ func (cii *containerInstanceInfo) refresh(ctx context.Context) {
 		cii.logger.Warn("Resp content is " + string(resp))
 	}
 
-	cii.clusterName = containerInstance.Cluster
-	cii.containerInstanceId, err = GetContainerInstanceIdFromArn(containerInstance.ContainerInstanceArn)
+	cluster := containerInstance.Cluster
+	instanceID, err := GetContainerInstanceIDFromArn(containerInstance.ContainerInstanceArn)
+
 	if err != nil {
 		cii.logger.Warn("Failed to get instance id from arn, error: ", zap.Error(err))
 	}
-	if cii.clusterName != "" && cii.containerInstanceId != "" {
+
+	cii.Lock()
+	cii.clusterName = cluster
+	cii.containerInstanceID = instanceID
+	cii.Unlock()
+
+	if cii.clusterName != "" && cii.containerInstanceID != "" {
 		close(cii.readyC)
 	}
 }
 
 func (cii *containerInstanceInfo) GetClusterName() string {
+	cii.Lock()
+	defer cii.Unlock()
 	return cii.clusterName
 }
 
-func (cii *containerInstanceInfo) GetContainerInstanceId() string {
-	return cii.containerInstanceId
+func (cii *containerInstanceInfo) GetContainerInstanceID() string {
+	cii.Lock()
+	defer cii.Unlock()
+	return cii.containerInstanceID
 }
 
 func (cii *containerInstanceInfo) getECSAgentEndpoint() string {
-	return fmt.Sprintf(ecsAgentEndpoint, cii.ecsAgentEndpointProvider.GetInstanceIp())
+	return fmt.Sprintf(ecsAgentEndpoint, cii.ecsAgentEndpointProvider.GetInstanceIP())
 }

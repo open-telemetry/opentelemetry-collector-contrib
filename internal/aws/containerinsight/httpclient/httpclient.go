@@ -19,7 +19,6 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"log"
 	"math"
 	"net/http"
 	"time"
@@ -31,42 +30,47 @@ const (
 	defaultMaxRetries              = 3
 	defaultTimeout                 = 1 * time.Second
 	defaultBackoffRetryBaseInMills = 200
-	maxHttpResponseLength          = 5 * 1024 * 1024 // 5MB
+	maxHTTPResponseLength          = 5 * 1024 * 1024 // 5MB
 )
 
-type HttpClient struct {
+type HTTPClient struct {
 	maxRetries              int
-	backoffRetryBaseInMills int
-	client                  clientProvider
+	backoffRetryBaseInMills time.Duration
+	client                  doer
 }
 
-type HttpClientProvider interface {
-	Request(path string, ctx context.Context, logger *zap.Logger) ([]byte, error)
+type Requester interface {
+	Request(ctx context.Context, path string, logger *zap.Logger) ([]byte, error)
 }
 
-type clientProvider interface {
+type doer interface {
 	Do(request *http.Request) (*http.Response, error)
 }
 
-func New() HttpClientProvider {
-
-	client := &http.Client{Timeout: defaultTimeout}
-
-	return NewHttp(defaultMaxRetries, defaultBackoffRetryBaseInMills, client)
-
+func withClientOption(f doer) clientOption {
+	return func(h *HTTPClient) {
+		h.client = f
+	}
 }
 
-func NewHttp(maxRetries int, backoffRetryBaseInMills int, provider clientProvider) HttpClientProvider {
-	httpClient := &HttpClient{
-		maxRetries:              maxRetries,
-		backoffRetryBaseInMills: backoffRetryBaseInMills,
-		client:                  provider,
+type clientOption func(*HTTPClient)
+
+func New(options ...clientOption) Requester {
+
+	httpClient := &HTTPClient{
+		maxRetries:              defaultMaxRetries,
+		backoffRetryBaseInMills: defaultBackoffRetryBaseInMills,
+		client:                  &http.Client{Timeout: defaultTimeout},
+	}
+
+	for _, opt := range options {
+		opt(httpClient)
 	}
 
 	return httpClient
 }
 
-func (h *HttpClient) backoffSleep(currentRetryCount int) {
+func (h *HTTPClient) backoffSleep(currentRetryCount int) {
 	backoffInMillis := int64(float64(h.backoffRetryBaseInMills) * math.Pow(2, float64(currentRetryCount)))
 	sleepDuration := time.Millisecond * time.Duration(backoffInMillis)
 	if sleepDuration > 60*1000 {
@@ -75,21 +79,22 @@ func (h *HttpClient) backoffSleep(currentRetryCount int) {
 	time.Sleep(sleepDuration)
 }
 
-func (h *HttpClient) Request(endpoint string, ctx context.Context, logger *zap.Logger) (body []byte, err error) {
+func (h *HTTPClient) Request(ctx context.Context, endpoint string, logger *zap.Logger) (body []byte, err error) {
 	for i := 0; i < h.maxRetries; i++ {
-		body, err = h.request(endpoint, ctx)
+		body, err = h.request(ctx, endpoint)
 		if err != nil {
-			log.Printf("W! retry [%d/%d], unable to get http response from %s, error: %v", i, h.maxRetries, endpoint, err)
+			sugar := logger.Sugar()
+			sugar.Warn("W! retry [%d/%d], unable to get http response from %s, error: %v", i, h.maxRetries, endpoint, err)
 			h.backoffSleep(i)
 		}
 	}
 	return
 }
 
-func (h *HttpClient) request(endpoint string, ctx context.Context) ([]byte, error) {
-	resp, err := h.clientGet(endpoint, ctx)
+func (h *HTTPClient) request(ctx context.Context, endpoint string) ([]byte, error) {
+	resp, err := h.clientGet(ctx, endpoint)
 	if err != nil {
-		return nil, fmt.Errorf("unable to get response from %s, error: %v", endpoint, err)
+		return nil, err
 	}
 	defer resp.Body.Close()
 
@@ -97,7 +102,7 @@ func (h *HttpClient) request(endpoint string, ctx context.Context) ([]byte, erro
 		return nil, fmt.Errorf("unable to get response from %s, status code: %d", endpoint, resp.StatusCode)
 	}
 
-	if resp.ContentLength >= maxHttpResponseLength {
+	if resp.ContentLength >= maxHTTPResponseLength {
 		return nil, fmt.Errorf("get response with unexpected length from %s, response length: %d", endpoint, resp.ContentLength)
 	}
 
@@ -106,7 +111,7 @@ func (h *HttpClient) request(endpoint string, ctx context.Context) ([]byte, erro
 	//In this case, we read until the limit is reached
 	//This might happen with chunked responses from ECS Introspection API
 	if resp.ContentLength == -1 {
-		reader = io.LimitReader(resp.Body, maxHttpResponseLength)
+		reader = io.LimitReader(resp.Body, maxHTTPResponseLength)
 	} else {
 		reader = resp.Body
 	}
@@ -116,13 +121,13 @@ func (h *HttpClient) request(endpoint string, ctx context.Context) ([]byte, erro
 		return nil, fmt.Errorf("unable to read response body from %s, error: %v", endpoint, err)
 	}
 
-	if len(body) == maxHttpResponseLength {
-		return nil, fmt.Errorf("response from %s, execeeds the maximum length: %v", endpoint, maxHttpResponseLength)
+	if len(body) == maxHTTPResponseLength {
+		return nil, fmt.Errorf("response from %s, execeeds the maximum length: %v", endpoint, maxHTTPResponseLength)
 	}
 	return body, nil
 }
 
-func (h *HttpClient) clientGet(url string, ctx context.Context) (resp *http.Response, err error) {
+func (h *HTTPClient) clientGet(ctx context.Context, url string) (resp *http.Response, err error) {
 	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
 	if err != nil {
 		return nil, err

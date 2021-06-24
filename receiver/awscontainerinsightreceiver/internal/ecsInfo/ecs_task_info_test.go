@@ -16,8 +16,8 @@ package ecsinfo
 
 import (
 	"context"
+	"errors"
 	"io/ioutil"
-	"net/http"
 	"testing"
 	"time"
 
@@ -25,32 +25,21 @@ import (
 	"go.uber.org/zap"
 )
 
-type MockHttpClient struct {
-	maxRetries              int
-	backoffRetryBaseInMills int
-	client                  *http.Client
-}
-
-func (m *MockHttpClient) Request(endpoint string, ctx context.Context, logger *zap.Logger) ([]byte, error) {
-	endpoint = "./test/ecsinfo/taskinfo"
-
-	data, err := ioutil.ReadFile(endpoint)
-
-	if err != nil {
-		return nil, err
-	}
-	return data, nil
-}
-
-func TestECSTaskInfo(t *testing.T) {
+func TestECSTaskInfoSuccess(t *testing.T) {
 
 	ctx := context.Background()
 
 	taskReadyC := make(chan bool)
 	hostIPProvider := &MockHostInfo{}
-	mockHttp := &MockHttpClient{}
 
-	ecsTaskinfo := newECSTaskInfo(ctx, hostIPProvider, time.Minute, zap.NewNop(), mockHttp, taskReadyC)
+	data, err := ioutil.ReadFile("./test/ecsinfo/taskinfo")
+
+	mockHTTP := &MockHTTPClient{
+		responseData: data,
+		err:          err,
+	}
+
+	ecsTaskinfo := newECSTaskInfo(ctx, hostIPProvider, time.Minute, zap.NewNop(), mockHTTP, taskReadyC)
 
 	assert.NotNil(t, ecsTaskinfo)
 
@@ -59,5 +48,35 @@ func TestECSTaskInfo(t *testing.T) {
 	assert.Equal(t, int64(1), ecsTaskinfo.getRunningTaskCount())
 
 	assert.NotEmpty(t, ecsTaskinfo.getRunningTasksInfo())
+
+}
+
+func TestECSTaskInfoFail(t *testing.T) {
+	ctx := context.Background()
+	var data []byte
+	data = nil
+	err := errors.New("")
+	taskReadyC := make(chan bool)
+
+	hostIPProvider := &MockHostInfo{}
+	mockHTTP := &MockHTTPClient{
+		responseData: data,
+		err:          err,
+	}
+	ecsTaskinfo := newECSTaskInfo(ctx, hostIPProvider, time.Minute, zap.NewNop(), mockHTTP, taskReadyC)
+	assert.NotNil(t, ecsTaskinfo)
+	assert.Equal(t, int64(0), ecsTaskinfo.getRunningTaskCount())
+	assert.Equal(t, 0, len(ecsTaskinfo.getRunningTasksInfo()))
+
+	data, err = ioutil.ReadFile("./test/ecsinfo/taskinfo_wrong")
+
+	mockHTTP = &MockHTTPClient{
+		responseData: data,
+		err:          err,
+	}
+	ecsTaskinfo = newECSTaskInfo(ctx, hostIPProvider, time.Minute, zap.NewNop(), mockHTTP, taskReadyC)
+	assert.NotNil(t, ecsTaskinfo)
+	assert.Equal(t, int64(0), ecsTaskinfo.getRunningTaskCount())
+	assert.Equal(t, 0, len(ecsTaskinfo.getRunningTasksInfo()))
 
 }
