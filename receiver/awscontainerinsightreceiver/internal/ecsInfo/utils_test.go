@@ -20,16 +20,17 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestGetContainerInstanceIdFromArn(t *testing.T) {
+func TestGetContainerInstanceIDFromArn(t *testing.T) {
 
 	oldFormatARN := "arn:aws:ecs:region:aws_account_id:task/task-id"
-	newFormatARN := "arn:aws:ecs:region:aws_account_id:task/cluster-name/task-id"
+	result, _ := GetContainerInstanceIDFromArn(oldFormatARN)
+	assert.Equal(t, "task-id", result, "Expected to be equal")
 
-	result, _ := GetContainerInstanceIdFromArn(oldFormatARN)
+	newFormatARN := "arn:aws:ecs:region:aws_account_id:task/cluster-name/task-id"
+	result, _ = GetContainerInstanceIDFromArn(newFormatARN)
 	assert.Equal(t, "task-id", result, "Expected to be equal")
-	result, _ = GetContainerInstanceIdFromArn(newFormatARN)
-	assert.Equal(t, "task-id", result, "Expected to be equal")
+
 	wrongFormatARN := "arn:aws:ecs:region:aws_account_id:task"
-	result, err := GetContainerInstanceIdFromArn(wrongFormatARN)
+	_, err := GetContainerInstanceIDFromArn(wrongFormatARN)
 	assert.NotNil(t, err)
 }

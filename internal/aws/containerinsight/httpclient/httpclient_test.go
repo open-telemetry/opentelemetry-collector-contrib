@@ -44,16 +44,16 @@ func TestRequestSecuess(t *testing.T) {
 		Header:     make(http.Header),
 	}
 
-	mockClient := &fakeClient{
+	fakeClient := &fakeClient{
 		response: response,
 		err:      nil,
 	}
 
-	http := NewHttp(3, 200, mockClient)
+	http := New(withClientOption(fakeClient))
 
 	ctx := context.Background()
 
-	body, err := http.Request("0.0.0.0", ctx, zap.NewNop())
+	body, err := http.Request(ctx, "0.0.0.0", zap.NewNop())
 
 	assert.Nil(t, err)
 
@@ -71,16 +71,16 @@ func TestRequestFailed(t *testing.T) {
 		Header:     make(http.Header),
 	}
 
-	mockClient := &fakeClient{
+	fakeClient := &fakeClient{
 		response: response,
 		err:      nil,
 	}
 
-	http := NewHttp(2, 200, mockClient)
+	http := New(withClientOption(fakeClient))
 
 	ctx := context.Background()
 
-	body, err := http.Request("0.0.0.0", ctx, zap.NewNop())
+	body, err := http.Request(ctx, "0.0.0.0", zap.NewNop())
 
 	assert.Nil(t, body)
 
