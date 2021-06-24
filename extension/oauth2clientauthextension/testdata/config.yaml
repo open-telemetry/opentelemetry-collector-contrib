@@ -2,14 +2,14 @@ extensions:
   oauth2client/1:
     client_id: someclientid
     client_secret: someclientsecret
-    token_url: https://someserver.com/oauth2/default/v1/token
+    token_url: https://example.com/oauth2/default/v1/token
     scopes: ["api.metrics"]
     timeout: 1s
 
   oauth2client/withtls:
     client_id: someclientid2
     client_secret: someclientsecret2
-    token_url: https://someserver2.com/oauth2/default/v1/token
+    token_url: https://example2.com/oauth2/default/v1/token
     scopes: ["api.metrics"]
     timeout: 1s
     # tls settings for the token client

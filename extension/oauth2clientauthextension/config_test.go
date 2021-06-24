@@ -42,7 +42,7 @@ func TestLoadConfig(t *testing.T) {
 	expected.ClientSecret = "someclientsecret"
 	expected.ClientID = "someclientid"
 	expected.Scopes = []string{"api.metrics"}
-	expected.TokenURL = "https://someserver.com/oauth2/default/v1/token"
+	expected.TokenURL = "https://example.com/oauth2/default/v1/token"
 
 	ext := cfg.Extensions[config.NewIDWithName(typeStr, "1")]
 	assert.Equal(t,
@@ -51,7 +51,7 @@ func TestLoadConfig(t *testing.T) {
 			ClientSecret:      "someclientsecret",
 			ClientID:          "someclientid",
 			Scopes:            []string{"api.metrics"},
-			TokenURL:          "https://someserver.com/oauth2/default/v1/token",
+			TokenURL:          "https://example.com/oauth2/default/v1/token",
 			Timeout:           time.Second,
 		},
 		ext)

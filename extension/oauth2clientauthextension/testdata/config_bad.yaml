@@ -1,12 +1,12 @@
 extensions:
   oauth2client/missingid:
     client_secret: someclientsecret
-    token_url: https://someserver.com/oauth2/default/v1/token
+    token_url: https://example.com/oauth2/default/v1/token
     scopes: ["api.metrics"]
 
   oauth2client/missingsecret:
     client_id: someclientid
-    token_url: https://someserver.com/oauth2/default/v1/token
+    token_url: https://example.com/oauth2/default/v1/token
     scopes: ["api.metrics"]
 
   oauth2client/missingurl:
