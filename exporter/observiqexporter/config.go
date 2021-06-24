@@ -36,7 +36,7 @@ type Config struct {
 	// Endpoint URL; Defines the ingestion endpoint (optional)
 	Endpoint string `mapstructure:"endpoint"`
 	// Name that identifies this agent (optional)
-	AgentID string `mapstructure:"agent_id"`
+	AgentName string `mapstructure:"agent_name"`
 }
 
 func (c *Config) validateConfig() error {
