@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+## 💡 Enhancements 💡
+
+- `tailsampling` processor: Add new policy `status_code` (#3754)
+
 ## v0.29.0
 
 # 🎉 OpenTelemetry Collector Contrib v0.29.0 (Beta) 🎉
