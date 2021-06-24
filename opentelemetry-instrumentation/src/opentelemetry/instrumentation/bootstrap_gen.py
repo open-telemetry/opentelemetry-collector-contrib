@@ -61,7 +61,7 @@ libraries = {
         "instrumentation": "opentelemetry-instrumentation-fastapi==0.23.dev0",
     },
     "flask": {
-        "library": "flask ~= 1.0",
+        "library": "flask >= 1.0, < 3.0",
         "instrumentation": "opentelemetry-instrumentation-flask==0.23.dev0",
     },
     "grpcio": {

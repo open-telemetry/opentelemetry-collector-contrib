@@ -13,4 +13,4 @@
 # limitations under the License.
 
 
-_instruments = ("flask ~= 1.0",)
+_instruments = ("flask >= 1.0, < 3.0",)
