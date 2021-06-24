@@ -43,6 +43,7 @@ exporter/googlecloudexporter/                        @open-telemetry/collector-c
 exporter/sumologicexporter/                          @open-telemetry/collector-contrib-approvers @pmm-sumo @sumo-drosiek
 exporter/uptraceexporter/                            @open-telemetry/collector-contrib-approvers @vmihailenco
 exporter/googlecloudpubsubexporter/                  @open-telemetry/collector-contrib-approvers @alexvanboxel
+exporter/tanzuobservabilityexporter/                 @open-telemetry/collector-contrib-approvers @oppegard @thepeterstone
 
 extension/httpforwarder/                             @open-telemetry/collector-contrib-approvers @asuresh4
 extension/observer/                                  @open-telemetry/collector-contrib-approvers @asuresh4 @jrcamp
