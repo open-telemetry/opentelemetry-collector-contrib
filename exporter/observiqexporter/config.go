@@ -35,6 +35,8 @@ type Config struct {
 	APIKey string `mapstructure:"api_key"`
 	// Endpoint URL; Defines the ingestion endpoint (optional)
 	Endpoint string `mapstructure:"endpoint"`
+	// ID that identifies this agent (optional)
+	AgentID string `mapstructure:"agent_id"`
 	// Name that identifies this agent (optional)
 	AgentName string `mapstructure:"agent_name"`
 }

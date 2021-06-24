@@ -22,7 +22,7 @@ import (
 )
 
 func TestLogdataToObservIQFormat(t *testing.T) {
-	data, errs := logdataToObservIQFormat(pdata.NewLogs(), "", defaultClock)
+	data, errs := logdataToObservIQFormat(pdata.NewLogs(), "", "", defaultClock)
 	require.NotNil(t, errs)
 	require.NotNil(t, data)
 }

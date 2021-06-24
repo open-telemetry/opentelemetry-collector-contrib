@@ -58,7 +58,7 @@ func (c *client) sendLogs(
 	}
 
 	// Conversion errors should be returned after sending what could be converted.
-	data, conversionErrs := logdataToObservIQFormat(ld, c.config.AgentName, c.clock)
+	data, conversionErrs := logdataToObservIQFormat(ld, c.config.AgentID, c.config.AgentName, c.clock)
 
 	jsonData, err := json.Marshal(data)
 

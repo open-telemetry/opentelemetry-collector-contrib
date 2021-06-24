@@ -26,6 +26,7 @@ type observIQLog struct {
 }
 
 type observIQAgentInfo struct {
+	ID   string `json:"id"`
 	Name string `json:"name"`
 }
 
@@ -41,6 +42,6 @@ type observIQLogEntry struct {
 }
 
 // Convert pdata.Logs to observIQLogBatch
-func logdataToObservIQFormat(ld pdata.Logs, agentName string, clock clock) (*observIQLogBatch, []error) {
+func logdataToObservIQFormat(ld pdata.Logs, agentID string, agentName string, clock clock) (*observIQLogBatch, []error) {
 	return &observIQLogBatch{}, []error{}
 }

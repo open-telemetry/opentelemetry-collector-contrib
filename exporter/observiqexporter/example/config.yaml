@@ -11,6 +11,7 @@ exporters:
     endpoint: "https://nozzle.app.observiq.com/v1/add"
     timeout: 10s
     agent_name: "otel-collector-1"
+    agent_id: "d90d2a84-d694-4427-91c5-6e686f2f3a04"
 
 service:
   pipelines:
