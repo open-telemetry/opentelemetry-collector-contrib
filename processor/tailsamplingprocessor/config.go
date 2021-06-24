@@ -52,7 +52,7 @@ type PolicyCfg struct {
 	LatencyCfg LatencyCfg `mapstructure:"latency"`
 	// Configs for numeric attribute filter sampling policy evaluator.
 	NumericAttributeCfg NumericAttributeCfg `mapstructure:"numeric_attribute"`
-	// Configs for percetange filter sampling policy evaluator.
+	// Configs for percentage filter sampling policy evaluator.
 	PercentageCfg PercentageCfg `mapstructure:"percentage"`
 	// Configs for status code filter sampling policy evaluator.
 	StatusCodeCfg StatusCodeCfg `mapstructure:"status_code"`
