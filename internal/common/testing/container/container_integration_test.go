@@ -36,13 +36,13 @@ func TestContainerIntegration(t *testing.T) {
 	defer cli.Close()
 
 	// Remove image so more code paths are hit. (Don't need to prune children layers though to keep test faster.)
-	_, _ = cli.ImageRemove(context.Background(), "docker.io/library/nginx:1.17", types.ImageRemoveOptions{
+	_, _ = cli.ImageRemove(context.Background(), "docker.io/library/nginx:1.19", types.ImageRemoveOptions{
 		Force:         true,
 		PruneChildren: false,
 	})
 
 	con := New(t)
-	started := con.StartImage("docker.io/library/nginx:1.17", WithPortReady(80))
+	started := con.StartImage("docker.io/library/nginx:1.19", WithPortReady(80))
 
 	require.NotEmpty(t, started.AddrForPort(80), "IP address was empty")
 	require.NotEmpty(t, started.ID)
@@ -63,7 +63,7 @@ func TestContainerIntegration(t *testing.T) {
 
 func TestRemoveContainerIntegration(t *testing.T) {
 	con := New(t)
-	nginx := con.StartImage("docker.io/library/nginx:1.17", WithPortReady(80))
+	nginx := con.StartImage("docker.io/library/nginx:1.19", WithPortReady(80))
 	require.Equal(t, 1, len(con.runningContainers))
 
 	err := con.RemoveContainer(nginx)
