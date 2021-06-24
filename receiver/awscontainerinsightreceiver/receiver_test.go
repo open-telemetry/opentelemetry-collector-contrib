@@ -58,7 +58,7 @@ func TestReceiver(t *testing.T) {
 	ctx := context.Background()
 
 	err = r.Start(ctx, componenttest.NewNopHost())
-	require.NoError(t, err)
+	require.Error(t, err)
 
 	err = r.Shutdown(ctx)
 	require.NoError(t, err)
