@@ -16,7 +16,9 @@ The OpenTelemetry Collector Contrib contains everything in the [opentelemetry-co
 
 ## 💡 Enhancements 💡
 
-- `tailsampling` processor: Add new policy `latency` (#3750)
+- `tailsampling` processor:
+  - Add new policy `latency` (#3750)
+  - Add new policy `status_code` (#3754)
 - `splunkhec` exporter: Include `trace_id` and `span_id` if set (#3850)
 - `newrelic` exporter: Update instrumentation naming in accordance with otel spec (#3733)
 - `sentry` exporter: Added support for insecure connection with Sentry (#3446)
