@@ -635,6 +635,65 @@ func TestFileReader_FingerprintUpdated(t *testing.T) {
 	require.Equal(t, []byte("testlog1\n"), reader.Fingerprint.FirstBytes)
 }
 
+// Test that a fingerprint:
+// - Starts empty
+// - Updates as a file is read
+// - Stops updating when the max fingerprint size is reached
+// - Stops exactly at max fingerprint size, regardless of content
+func TestFingerprintGrowsAndStops(t *testing.T) {
+	t.Parallel()
+
+	// Use a number with many factors.
+	// Sometimes fingerprint length will align with
+	// the end of a line, sometimes not. Test both.
+	maxFP := 360
+
+	// Use prime numbers to ensure variation in
+	// whether or not they are factors of maxFP
+	lineLens := []int{3, 5, 7, 11, 13, 17, 19, 23, 27}
+
+	for _, lineLen := range lineLens {
+		t.Run(fmt.Sprintf("%d", lineLen), func(t *testing.T) {
+			t.Parallel()
+			operator, _, tempDir := newTestFileOperator(t, func(cfg *InputConfig) {
+				cfg.FingerprintSize = helper.ByteSize(maxFP)
+			}, nil)
+			defer operator.Stop()
+
+			temp := openTemp(t, tempDir)
+			tempCopy := openFile(t, temp.Name())
+			fp, err := operator.NewFingerprint(temp)
+			require.NoError(t, err)
+			require.Equal(t, []byte(""), fp.FirstBytes)
+
+			reader, err := operator.NewReader(temp.Name(), tempCopy, fp)
+			require.NoError(t, err)
+			defer reader.Close()
+
+			// keep track of what has been written to the file
+			fileContent := []byte{}
+
+			// keep track of expected fingerprint size
+			expectedFP := 0
+
+			// Write lines until file is much larger than the length of the fingerprint
+			for len(fileContent) < 2*maxFP {
+				expectedFP += lineLen
+				if expectedFP > maxFP {
+					expectedFP = maxFP
+				}
+
+				line := stringWithLength(lineLen-1) + "\n"
+				fileContent = append(fileContent, []byte(line)...)
+
+				writeString(t, temp, line)
+				reader.ReadToEnd(context.Background())
+				require.Equal(t, fileContent[:expectedFP], reader.Fingerprint.FirstBytes)
+			}
+		})
+	}
+}
+
 func TestEncodings(t *testing.T) {
 	t.Parallel()
 	cases := []struct {
