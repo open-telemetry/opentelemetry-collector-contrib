@@ -8,7 +8,15 @@ processors:
     auth_type: "kubeConfig"
     extract:
       metadata:
-        # extract the following well-known metadata fields
+        # the following metadata fields configuration options are deprecated
+        # - podName
+        # - podUID
+        # - deployment
+        # - cluster
+        # - namespace
+        # - node
+        # - startTime
+        # extract the following well-known metadata fields from pods and namespaces
         - k8s.pod.name
         - k8s.pod.uid
         - k8s.deployment.name
@@ -16,27 +24,23 @@ processors:
         - k8s.namespace.name
         - k8s.node.name
         - k8s.pod.start_time
-        # the following metadata fields configuration options are deprecated
-#        - podName
-#        - podUID
-#        - deployment
-#        - cluster
-#        - namespace
-#        - node
-#        - startTime
 
       annotations:
         - tag_name: a1 # extracts value of annotation with key `annotation-one` and inserts it as a tag with key `a1`
           key: annotation-one
+          from: pod
         - tag_name: a2 # extracts value of annotation with key `annotation-two` with regexp and inserts it as a tag with key `a2`
           key: annotation-two
           regex: field=(?P<value>.+)
+          from: pod
       labels:
         - tag_name: l1 # extracts value of label with key `label1` and inserts it as a tag with key `l1`
           key: label1
+          from: pod
         - tag_name: l2 # extracts value of label with key `label1` with regexp and inserts it as a tag with key `l2`
           key: label2
           regex: field=(?P<value>.+)
+          from: pod
 
     filter:
       namespace: ns2 # only look for pods running in ns2 namespace
@@ -66,6 +70,12 @@ processors:
         name: ip
       - from: resource_attribute
         name: k8s.pod.uid
+    
+    exclude:
+      pods:
+        - name: jaeger-agent
+        - name: jaeger-collector
+
 
 exporters:
   nop:

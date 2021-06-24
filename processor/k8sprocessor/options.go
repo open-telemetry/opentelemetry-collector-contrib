@@ -135,8 +135,23 @@ func extractFieldRules(fieldType string, fields ...FieldExtractConfig) ([]kube.F
 	rules := []kube.FieldExtractionRule{}
 	for _, a := range fields {
 		name := a.TagName
+
+		switch a.From {
+		// By default if the From field is not set for labels and annotations we want to extract them from pod
+		case "", kube.MetadataFromPod:
+			a.From = kube.MetadataFromPod
+		case kube.MetadataFromNamespace:
+			a.From = kube.MetadataFromNamespace
+		default:
+			return rules, fmt.Errorf("%s is not a valid choice for From. Must be one of: pod, namespace", a.From)
+		}
+
 		if name == "" {
-			name = fmt.Sprintf("k8s.pod.%s.%s", fieldType, a.Key)
+			if a.From == kube.MetadataFromPod {
+				name = fmt.Sprintf("k8s.pod.%s.%s", fieldType, a.Key)
+			} else if a.From == kube.MetadataFromNamespace {
+				name = fmt.Sprintf("k8s.namespace.%s.%s", fieldType, a.Key)
+			}
 		}
 
 		var r *regexp.Regexp
@@ -153,7 +168,7 @@ func extractFieldRules(fieldType string, fields ...FieldExtractConfig) ([]kube.F
 		}
 
 		rules = append(rules, kube.FieldExtractionRule{
-			Name: name, Key: a.Key, Regex: r,
+			Name: name, Key: a.Key, Regex: r, From: a.From,
 		})
 	}
 	return rules, nil
@@ -252,6 +267,23 @@ func WithExtractPodAssociations(podAssociations ...PodAssociationConfig) Option 
 			})
 		}
 		p.podAssociations = associations
+		return nil
+	}
+}
+
+// WithExcludes allows specifying pods to exclude
+func WithExcludes(podExclude ExcludeConfig) Option {
+	return func(p *kubernetesprocessor) error {
+		ignoredNames := kube.Excludes{}
+		names := podExclude.Pods
+
+		if len(names) == 0 {
+			names = []ExcludePodConfig{{Name: "jaeger-agent"}, {Name: "jaeger-collector"}}
+		}
+		for _, name := range names {
+			ignoredNames.Pods = append(ignoredNames.Pods, kube.ExcludePods{Name: regexp.MustCompile(name.Name)})
+		}
+		p.podIgnore = ignoredNames
 		return nil
 	}
 }

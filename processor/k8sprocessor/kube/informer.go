@@ -36,6 +36,12 @@ type InformerProvider func(
 	fieldSelector fields.Selector,
 ) cache.SharedInformer
 
+// InformerProviderNamespace defines a function type that returns a new SharedInformer. It is used to
+// allow passing custom shared informers to the watch client for fetching namespace objects.
+type InformerProviderNamespace func(
+	client kubernetes.Interface,
+) cache.SharedInformer
+
 func newSharedInformer(
 	client kubernetes.Interface,
 	namespace string,
@@ -67,5 +73,32 @@ func informerWatchFuncWithSelectors(client kubernetes.Interface, namespace strin
 		opts.LabelSelector = ls.String()
 		opts.FieldSelector = fs.String()
 		return client.CoreV1().Pods(namespace).Watch(context.Background(), opts)
+	}
+}
+
+func newNamespaceSharedInformer(
+	client kubernetes.Interface,
+) cache.SharedInformer {
+	informer := cache.NewSharedInformer(
+		&cache.ListWatch{
+			ListFunc:  namespaceInformerListFunc(client),
+			WatchFunc: namespaceInformerWatchFunc(client),
+		},
+		&api_v1.Namespace{},
+		watchSyncPeriod,
+	)
+	return informer
+}
+
+func namespaceInformerListFunc(client kubernetes.Interface) cache.ListFunc {
+	return func(opts metav1.ListOptions) (runtime.Object, error) {
+		return client.CoreV1().Namespaces().List(context.Background(), opts)
+	}
+
+}
+
+func namespaceInformerWatchFunc(client kubernetes.Interface) cache.WatchFunc {
+	return func(opts metav1.ListOptions) (watch.Interface, error) {
+		return client.CoreV1().Namespaces().Watch(context.Background(), opts)
 	}
 }

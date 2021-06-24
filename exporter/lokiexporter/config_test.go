@@ -49,7 +49,7 @@ func TestLoadConfig(t *testing.T) {
 		ExporterSettings: config.NewExporterSettings(config.NewIDWithName(typeStr, "allsettings")),
 		HTTPClientSettings: confighttp.HTTPClientSettings{
 			Headers: map[string]string{
-				"x-custom-header": "loki_rocks",
+				"X-Custom-Header": "loki_rocks",
 			},
 			Endpoint: "https://loki:3100/loki/api/v1/push",
 			TLSSetting: configtls.TLSClientSetting{
@@ -82,6 +82,10 @@ func TestLoadConfig(t *testing.T) {
 				conventions.AttributeK8sCluster:    "k8s_cluster_name",
 				"severity":                         "severity",
 			},
+			ResourceAttributes: map[string]string{
+				"resource.name": "resource_name",
+				"severity":      "severity",
+			},
 		},
 	}
 	require.Equal(t, &expectedCfg, actualCfg)
@@ -90,8 +94,11 @@ func TestLoadConfig(t *testing.T) {
 func TestConfig_validate(t *testing.T) {
 	const validEndpoint = "https://validendpoint.local"
 
-	validLabelsConfig := LabelsConfig{
+	validAttribLabelsConfig := LabelsConfig{
 		Attributes: testValidAttributesWithMapping,
+	}
+	validResourceLabelsConfig := LabelsConfig{
+		ResourceAttributes: testValidResourceWithMapping,
 	}
 
 	type fields struct {
@@ -111,7 +118,7 @@ func TestConfig_validate(t *testing.T) {
 			name: "with valid endpoint",
 			fields: fields{
 				Endpoint: validEndpoint,
-				Labels:   validLabelsConfig,
+				Labels:   validAttribLabelsConfig,
 			},
 			shouldError: false,
 		},
@@ -119,7 +126,7 @@ func TestConfig_validate(t *testing.T) {
 			name: "with missing endpoint",
 			fields: fields{
 				Endpoint: "",
-				Labels:   validLabelsConfig,
+				Labels:   validAttribLabelsConfig,
 			},
 			errorMessage: "\"endpoint\" must be a valid URL",
 			shouldError:  true,
@@ -128,37 +135,36 @@ func TestConfig_validate(t *testing.T) {
 			name: "with invalid endpoint",
 			fields: fields{
 				Endpoint: "this://is:an:invalid:endpoint.com",
-				Labels:   validLabelsConfig,
+				Labels:   validAttribLabelsConfig,
 			},
 			errorMessage: "\"endpoint\" must be a valid URL",
+			shouldError:  true,
+		},
+		{
+			name: "with missing `labels.attributes` and missing `labels.resource`",
+			fields: fields{
+				Endpoint: validEndpoint,
+				Labels: LabelsConfig{
+					Attributes:         nil,
+					ResourceAttributes: nil,
+				},
+			},
+			errorMessage: "\"labels.attributes\" or \"labels.resource\" must be configured with at least one attribute",
 			shouldError:  true,
 		},
 		{
 			name: "with missing `labels.attributes`",
 			fields: fields{
 				Endpoint: validEndpoint,
-				Labels: LabelsConfig{
-					Attributes: nil,
-				},
-			},
-			errorMessage: "\"labels.attributes\" must be configured with at least one attribute",
-			shouldError:  true,
-		},
-		{
-			name: "with `labels.attributes` set",
-			fields: fields{
-				Endpoint: validEndpoint,
-				Labels: LabelsConfig{
-					Attributes: testValidAttributesWithMapping,
-				},
+				Labels:   validResourceLabelsConfig,
 			},
 			shouldError: false,
 		},
 		{
-			name: "with valid `labels` config",
+			name: "with missing `labels.resource`",
 			fields: fields{
 				Endpoint: validEndpoint,
-				Labels:   validLabelsConfig,
+				Labels:   validAttribLabelsConfig,
 			},
 			shouldError: false,
 		},
@@ -198,9 +204,10 @@ func TestLabelsConfig_validate(t *testing.T) {
 		{
 			name: "with no attributes",
 			labels: LabelsConfig{
-				Attributes: map[string]string{},
+				Attributes:         map[string]string{},
+				ResourceAttributes: map[string]string{},
 			},
-			errorMessage: "\"labels.attributes\" must be configured with at least one attribute",
+			errorMessage: "\"labels.attributes\" or \"labels.resource\" must be configured with at least one attribute",
 			shouldError:  true,
 		},
 		{
@@ -213,6 +220,15 @@ func TestLabelsConfig_validate(t *testing.T) {
 			shouldError: false,
 		},
 		{
+			name: "with valid resource label map",
+			labels: LabelsConfig{
+				ResourceAttributes: map[string]string{
+					"other.attribute": "other",
+				},
+			},
+			shouldError: false,
+		},
+		{
 			name: "with invalid attribute label map",
 			labels: LabelsConfig{
 				Attributes: map[string]string{
@@ -220,6 +236,16 @@ func TestLabelsConfig_validate(t *testing.T) {
 				},
 			},
 			errorMessage: "the label `invalid.label.name` in \"labels.attributes\" is not a valid label name. Label names must match " + model.LabelNameRE.String(),
+			shouldError:  true,
+		},
+		{
+			name: "with invalid resource label map",
+			labels: LabelsConfig{
+				ResourceAttributes: map[string]string{
+					"other.attribute": "invalid.label.name",
+				},
+			},
+			errorMessage: "the label `invalid.label.name` in \"labels.resource\" is not a valid label name. Label names must match " + model.LabelNameRE.String(),
 			shouldError:  true,
 		},
 		{
@@ -301,7 +327,63 @@ func TestLabelsConfig_getAttributes(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			mapping := tt.labels.getAttributes()
+			mapping := tt.labels.getAttributes(tt.labels.Attributes)
+
+			assert.Equal(t, tt.expectedMapping, mapping)
+		})
+	}
+}
+
+func TestResourcesConfig_getAttributes(t *testing.T) {
+	tests := []struct {
+		name            string
+		labels          LabelsConfig
+		expectedMapping map[string]model.LabelName
+	}{
+		{
+			name: "with attributes without label mapping",
+			labels: LabelsConfig{
+				ResourceAttributes: map[string]string{
+					"attribute_1": "",
+					"attribute_2": "",
+				},
+			},
+			expectedMapping: map[string]model.LabelName{
+				"attribute_1": model.LabelName("attribute_1"),
+				"attribute_2": model.LabelName("attribute_2"),
+			},
+		},
+		{
+			name: "with attributes and label mapping",
+			labels: LabelsConfig{
+				ResourceAttributes: map[string]string{
+					"attribute.1": "attribute_1",
+					"attribute.2": "attribute_2",
+				},
+			},
+			expectedMapping: map[string]model.LabelName{
+				"attribute.1": model.LabelName("attribute_1"),
+				"attribute.2": model.LabelName("attribute_2"),
+			},
+		},
+		{
+			name: "with attributes and without label mapping",
+			labels: LabelsConfig{
+				ResourceAttributes: map[string]string{
+					"attribute.1": "attribute_1",
+					"attribute2":  "",
+				},
+			},
+			expectedMapping: map[string]model.LabelName{
+				"attribute.1": model.LabelName("attribute_1"),
+				"attribute2":  model.LabelName("attribute2"),
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mapping := tt.labels.getAttributes(tt.labels.ResourceAttributes)
 
 			assert.Equal(t, tt.expectedMapping, mapping)
 		})

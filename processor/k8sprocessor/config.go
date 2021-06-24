@@ -43,6 +43,10 @@ type Config struct {
 	// Association section allows to define rules for tagging spans, metrics,
 	// and logs with Pod metadata.
 	Association []PodAssociationConfig `mapstructure:"pod_association"`
+
+	// Exclude section allows to define names of pod that should be
+	// ignored while tagging.
+	Exclude ExcludeConfig `mapstructure:"exclude"`
 }
 
 func (cfg *Config) Validate() error {
@@ -52,12 +56,13 @@ func (cfg *Config) Validate() error {
 // ExtractConfig section allows specifying extraction rules to extract
 // data from k8s pod specs.
 type ExtractConfig struct {
-	// Metadata allows to extract pod metadata from a list of metadata fields.
+	// Metadata allows to extract pod/namespace metadata from a list of metadata fields.
 	// The field accepts a list of strings.
 	//
 	// Metadata fields supported right now are,
-	//   k8s.namespace.name, k8s.pod.name, k8s.pod.uid, k8s.deployment.name, k8s.cluster.name,
-	//   k8s.node.name and k8s.pod.start_time
+	//   k8s.pod.name, k8s.pod.uid, k8s.deployment.name, k8s.cluster.name,
+	//   k8s.node.name, k8s.namespace.name and k8s.pod.start_time
+	//
 	// Specifying anything other than these values will result in an error.
 	// By default all of the fields are extracted and added to spans and metrics.
 	Metadata []string `mapstructure:"metadata"`
@@ -113,6 +118,9 @@ type FieldExtractConfig struct {
 	TagName string `mapstructure:"tag_name"`
 	Key     string `mapstructure:"key"`
 	Regex   string `mapstructure:"regex"`
+	// From represents the source of the labels/annotations.
+	// Allowed values are "pod" and "namespace". The default is pod.
+	From string `mapstructure:"from"`
 }
 
 // FilterConfig section allows specifying filters to filter
@@ -191,5 +199,15 @@ type PodAssociationConfig struct {
 
 	// Name represents extracted key name.
 	// e.g. ip, pod_uid, k8s.pod.ip
+	Name string `mapstructure:"name"`
+}
+
+// ExcludeConfig represent a list of Pods to exclude
+type ExcludeConfig struct {
+	Pods []ExcludePodConfig `mapstructure:"pods"`
+}
+
+// ExcludePodConfig represent a Pod name to ignore
+type ExcludePodConfig struct {
 	Name string `mapstructure:"name"`
 }

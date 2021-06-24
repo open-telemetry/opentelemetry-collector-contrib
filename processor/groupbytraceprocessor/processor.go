@@ -213,7 +213,8 @@ func (sp *groupByTraceProcessor) markAsReleased(traceID pdata.TraceID, fire func
 func (sp *groupByTraceProcessor) onTraceReleased(rss []pdata.ResourceSpans) error {
 	trace := pdata.NewTraces()
 	for _, rs := range rss {
-		trace.ResourceSpans().Append(rs)
+		trs := trace.ResourceSpans().AppendEmpty()
+		rs.CopyTo(trs)
 	}
 	stats.Record(context.Background(),
 		mReleasedSpans.M(int64(trace.SpanCount())),
@@ -294,7 +295,8 @@ func splitByTrace(rs pdata.ResourceSpans) []*singleTraceBatch {
 			}
 
 			// there is only one instrumentation library per batch
-			batches[sTraceID].rs.InstrumentationLibrarySpans().At(0).Spans().Append(span)
+			sp := batches[sTraceID].rs.InstrumentationLibrarySpans().At(0).Spans().AppendEmpty()
+			span.CopyTo(sp)
 		}
 	}
 
