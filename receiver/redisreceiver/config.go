@@ -27,9 +27,6 @@ type Config struct {
 	Endpoint string `mapstructure:"endpoint"`
 	// The duration between Redis metric fetches.
 	CollectionInterval time.Duration `mapstructure:"collection_interval"`
-	// The logical name of the Redis server. This value will be added as a
-	// "service.name" Resource label.
-	ServiceName string `mapstructure:"service_name"`
 
 	// TODO allow users to add additional resource key value pairs?
 

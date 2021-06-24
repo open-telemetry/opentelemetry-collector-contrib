@@ -4,7 +4,41 @@
 
 ## 💡 Enhancements 💡
 
-- `tailsampling` processor: Add new policy `latency` (#3750)
+- `tailsampling` processor: Add new policy `status_code` (#3754)
+
+## v0.29.0
+
+# 🎉 OpenTelemetry Collector Contrib v0.29.0 (Beta) 🎉
+
+The OpenTelemetry Collector Contrib contains everything in the [opentelemetry-collector release](https://github.com/open-telemetry/opentelemetry-collector/releases/tag/v0.29.0) (be sure to check the release notes here as well!). Check out the [Getting Started Guide](https://opentelemetry.io/docs/collector/getting-started/) for deployment and configuration information.
+
+## 🛑 Breaking changes 🛑
+
+- `redis` receiver (#3808)
+  - removed configuration `service_name`. Use resource processor or `resource_attributes` setting if using `receivercreator`
+  - removed `type` label and set instrumentation library name to `otelcol/redis` as other receivers do
+
+## 💡 Enhancements 💡
+
+- `tailsampling` processor:
+  - Add new policy `latency` (#3750)
+  - Add new policy `status_code` (#3754)
+- `splunkhec` exporter: Include `trace_id` and `span_id` if set (#3850)
+- `newrelic` exporter: Update instrumentation naming in accordance with otel spec (#3733)
+- `sentry` exporter: Added support for insecure connection with Sentry (#3446)
+- `k8s` processor:
+  - Add namespace k8s tagger (#3384)
+  - Add ignored pod names as config parameter (#3520)
+- `awsemf` exporter: Add support for `TaskDefinitionFamily` placeholder on log stream name (#3755)
+- `loki` exporter: Add resource attributes as Loki label (#3418)
+
+## 🧰 Bug fixes 🧰
+
+- `datadog` exporter:
+  - Ensure top level spans are computed (#3786)
+  - Update `env` clobbering behavior (#3851)
+- `awsxray` exporter: Fixed filtered attribute translation (#3757)
+- `splunkhec` exporter: Include trace and span id if set in log record (#3850)
 
 ## v0.28.0
 

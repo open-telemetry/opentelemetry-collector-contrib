@@ -31,6 +31,8 @@ const (
 	// NumericAttribute sample traces that have a given numeric attribute in a specified
 	// range, e.g.: attribute "http.status_code" >= 399 and <= 999.
 	NumericAttribute PolicyType = "numeric_attribute"
+	// StatusCode sample traces that have a given status code.
+	StatusCode PolicyType = "status_code"
 	// StringAttribute sample traces that a attribute, of type string, matching
 	// one of the listed values.
 	StringAttribute PolicyType = "string_attribute"
@@ -48,6 +50,8 @@ type PolicyCfg struct {
 	LatencyCfg LatencyCfg `mapstructure:"latency"`
 	// Configs for numeric attribute filter sampling policy evaluator.
 	NumericAttributeCfg NumericAttributeCfg `mapstructure:"numeric_attribute"`
+	// Configs for status code filter sampling policy evaluator.
+	StatusCodeCfg StatusCodeCfg `mapstructure:"status_code"`
 	// Configs for string attribute filter sampling policy evaluator.
 	StringAttributeCfg StringAttributeCfg `mapstructure:"string_attribute"`
 	// Configs for rate limiting filter sampling policy evaluator.
@@ -70,6 +74,12 @@ type NumericAttributeCfg struct {
 	MinValue int64 `mapstructure:"min_value"`
 	// MaxValue is the maximum value of the attribute to be considered a match.
 	MaxValue int64 `mapstructure:"max_value"`
+}
+
+// StatusCodeCfg holds the configurable settings to create a status code filter sampling
+// policy evaluator.
+type StatusCodeCfg struct {
+	StatusCodes []string `mapstructure:"status_codes"`
 }
 
 // StringAttributeCfg holds the configurable settings to create a string attribute filter

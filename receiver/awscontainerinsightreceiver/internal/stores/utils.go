@@ -15,8 +15,10 @@
 package stores
 
 import (
+	"context"
 	"encoding/json"
 	"strings"
+	"time"
 
 	corev1 "k8s.io/api/core/v1"
 
@@ -130,8 +132,6 @@ func TagMetricSource(metric CIMetric) {
 		sources = append(sources, []string{"cadvisor", "calculated"}...)
 	case ci.TypeContainerDiskIO:
 		sources = append(sources, []string{"cadvisor"}...)
-	case ci.TypeCluster, ci.TypeClusterService, ci.TypeClusterNamespace:
-		sources = append(sources, []string{"apiserver"}...)
 	}
 
 	if len(sources) > 0 {
@@ -168,4 +168,16 @@ func AddKubernetesInfo(metric CIMetric, kubernetesBlob map[string]interface{}) {
 		}
 		metric.AddTag(ci.Kubernetes, string(kubernetesInfo))
 	}
+}
+
+func refreshWithTimeout(parentContext context.Context, refresh func(), timeout time.Duration) {
+	ctx, cancel := context.WithTimeout(parentContext, timeout)
+	// spawn a goroutine to process the actual refresh
+	go func(cancel func()) {
+		refresh()
+		cancel()
+	}(cancel)
+	// block until either refresh() has executed or the timeout expires
+	<-ctx.Done()
+	cancel()
 }

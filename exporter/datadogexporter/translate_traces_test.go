@@ -374,7 +374,7 @@ func TestTracesTranslationErrorsAndResource(t *testing.T) {
 	// ensure that version gives resource service.version priority
 	assert.Equal(t, "test-version", datadogPayload.Traces[0].Spans[0].Meta["version"])
 
-	assert.Equal(t, 19, len(datadogPayload.Traces[0].Spans[0].Meta))
+	assert.Equal(t, 20, len(datadogPayload.Traces[0].Spans[0].Meta))
 
 	assert.Contains(t, datadogPayload.Traces[0].Spans[0].Meta[tagContainersTags], "container_id:3249847017410247")
 	assert.Contains(t, datadogPayload.Traces[0].Spans[0].Meta[tagContainersTags], "pod_name:example-pod-name")
@@ -617,7 +617,7 @@ func TestTracesTranslationOkStatus(t *testing.T) {
 	// ensure that version gives resource service.version priority
 	assert.Equal(t, "test-version", datadogPayload.Traces[0].Spans[0].Meta["version"])
 
-	assert.Equal(t, 19, len(datadogPayload.Traces[0].Spans[0].Meta))
+	assert.Equal(t, 20, len(datadogPayload.Traces[0].Spans[0].Meta))
 }
 
 // ensure that the datadog span uses the configured unified service tags
@@ -664,7 +664,7 @@ func TestTracesTranslationConfig(t *testing.T) {
 	// ensure that version gives resource service.version priority
 	assert.Equal(t, "test-version", datadogPayload.Traces[0].Spans[0].Meta["version"])
 
-	assert.Equal(t, 16, len(datadogPayload.Traces[0].Spans[0].Meta))
+	assert.Equal(t, 17, len(datadogPayload.Traces[0].Spans[0].Meta))
 }
 
 // ensure that the translation returns early if no resource instrumentation library spans
@@ -1398,4 +1398,55 @@ func TestSpanNameMapping(t *testing.T) {
 	assert.Equal(t, 1, len(aggregatedTraces))
 
 	assert.Equal(t, "bang.client", aggregatedTraces[0].Traces[0].Spans[0].Name)
+}
+
+// ensure that sanitization  of trace payloads occurs
+func TestSpanEnvClobbering(t *testing.T) {
+	mockTraceID := [16]byte{0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F}
+	mockSpanID := [8]byte{0xF1, 0xF2, 0xF3, 0xF4, 0xF5, 0xF6, 0xF7, 0xF8}
+	mockParentSpanID := [8]byte{0xEF, 0xEE, 0xED, 0xEC, 0xEB, 0xEA, 0xE9, 0xE8}
+	endTime := time.Now().Round(time.Second)
+	pdataEndTime := pdata.TimestampFromTime(endTime)
+	startTime := endTime.Add(-90 * time.Second)
+	pdataStartTime := pdata.TimestampFromTime(startTime)
+
+	denylister := newDenylister([]string{})
+	buildInfo := component.BuildInfo{
+		Version: "1.0",
+	}
+
+	traces := pdata.NewTraces()
+	traces.ResourceSpans().Resize(1)
+	rs := traces.ResourceSpans().At(0)
+	resource := rs.Resource()
+	resource.Attributes().InitFromMap(map[string]pdata.AttributeValue{
+		conventions.AttributeDeploymentEnvironment: pdata.NewAttributeValueString("correctenv"),
+		"env": pdata.NewAttributeValueString("incorrectenv"),
+	})
+
+	rs.InstrumentationLibrarySpans().Resize(1)
+	ilss := rs.InstrumentationLibrarySpans().At(0)
+	instrumentationLibrary := ilss.InstrumentationLibrary()
+	instrumentationLibrary.SetName("flash")
+	instrumentationLibrary.SetVersion("v1")
+	span := ilss.Spans().AppendEmpty()
+
+	traceID := pdata.NewTraceID(mockTraceID)
+	spanID := pdata.NewSpanID(mockSpanID)
+	parentSpanID := pdata.NewSpanID(mockParentSpanID)
+	span.SetTraceID(traceID)
+	span.SetSpanID(spanID)
+	span.SetParentSpanID(parentSpanID)
+	span.SetName("End-To-End Here")
+	span.SetKind(pdata.SpanKindServer)
+	span.SetStartTimestamp(pdataStartTime)
+	span.SetEndTimestamp(pdataEndTime)
+
+	config := config.Config{Traces: config.TracesConfig{SpanNameRemappings: map[string]string{"flash.server": "bang.client"}}}
+
+	outputTraces, _ := convertToDatadogTd(traces, "test-host", &config, denylister, buildInfo)
+
+	// Ensure the deployment.environment value is copied to both deployment.environment and env
+	assert.Equal(t, "correctenv", outputTraces[0].Traces[0].Spans[0].Meta["env"])
+	assert.Equal(t, "correctenv", outputTraces[0].Traces[0].Spans[0].Meta["deployment.environment"])
 }

@@ -126,6 +126,9 @@ func getPolicyEvaluator(logger *zap.Logger, cfg *PolicyCfg) (sampling.PolicyEval
 	case StringAttribute:
 		safCfg := cfg.StringAttributeCfg
 		return sampling.NewStringAttributeFilter(logger, safCfg.Key, safCfg.Values, safCfg.EnabledRegexMatching, safCfg.CacheMaxSize), nil
+	case StatusCode:
+		scfCfg := cfg.StatusCodeCfg
+		return sampling.NewStatusCodeFilter(logger, scfCfg.StatusCodes)
 	case RateLimiting:
 		rlfCfg := cfg.RateLimitingCfg
 		return sampling.NewRateLimiting(logger, rlfCfg.SpansPerSecond), nil
@@ -388,7 +391,8 @@ func prepareTraceBatch(rss pdata.ResourceSpans, spans []*pdata.Span) pdata.Trace
 	rss.Resource().CopyTo(rs.Resource())
 	ils := rs.InstrumentationLibrarySpans().AppendEmpty()
 	for _, span := range spans {
-		ils.Spans().Append(*span)
+		sp := ils.Spans().AppendEmpty()
+		span.CopyTo(sp)
 	}
 	return traceTd
 }
