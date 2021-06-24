@@ -88,35 +88,35 @@ func (f *InputOperator) NewReader(path string, file *os.File, fp *Fingerprint) (
 }
 
 // Copy creates a deep copy of a Reader
-func (f *Reader) Copy(file *os.File) (*Reader, error) {
-	reader, err := f.fileInput.NewReader(f.fileAttributes.Path, file, f.Fingerprint.Copy())
+func (r *Reader) Copy(file *os.File) (*Reader, error) {
+	reader, err := r.fileInput.NewReader(r.fileAttributes.Path, file, r.Fingerprint.Copy())
 	if err != nil {
 		return nil, err
 	}
-	reader.Offset = f.Offset
+	reader.Offset = r.Offset
 	return reader, nil
 }
 
 // InitializeOffset sets the starting offset
-func (f *Reader) InitializeOffset(startAtBeginning bool) error {
+func (r *Reader) InitializeOffset(startAtBeginning bool) error {
 	if !startAtBeginning {
-		info, err := f.file.Stat()
+		info, err := r.file.Stat()
 		if err != nil {
 			return fmt.Errorf("stat: %s", err)
 		}
-		f.Offset = info.Size()
+		r.Offset = info.Size()
 	}
 	return nil
 }
 
 // ReadToEnd will read until the end of the file
-func (f *Reader) ReadToEnd(ctx context.Context) {
-	if _, err := f.file.Seek(f.Offset, 0); err != nil {
-		f.Errorw("Failed to seek", zap.Error(err))
+func (r *Reader) ReadToEnd(ctx context.Context) {
+	if _, err := r.file.Seek(r.Offset, 0); err != nil {
+		r.Errorw("Failed to seek", zap.Error(err))
 		return
 	}
 
-	scanner := NewPositionalScanner(f, f.fileInput.MaxLogSize, f.Offset, f.fileInput.SplitFunc)
+	scanner := NewPositionalScanner(r, r.fileInput.MaxLogSize, r.Offset, r.fileInput.SplitFunc)
 
 	// Iterate over the tokenized file, emitting entries as we go
 	for {
@@ -129,76 +129,76 @@ func (f *Reader) ReadToEnd(ctx context.Context) {
 		ok := scanner.Scan()
 		if !ok {
 			if err := getScannerError(scanner); err != nil {
-				f.Errorw("Failed during scan", zap.Error(err))
+				r.Errorw("Failed during scan", zap.Error(err))
 			}
 			break
 		}
 
-		if err := f.emit(ctx, scanner.Bytes()); err != nil {
-			f.Error("Failed to emit entry", zap.Error(err))
+		if err := r.emit(ctx, scanner.Bytes()); err != nil {
+			r.Error("Failed to emit entry", zap.Error(err))
 		}
-		f.Offset = scanner.Pos()
+		r.Offset = scanner.Pos()
 	}
 }
 
 // Close will close the file
-func (f *Reader) Close() {
-	if f.file != nil {
-		if err := f.file.Close(); err != nil {
-			f.Debugf("Problem closing reader", "Error", err.Error())
+func (r *Reader) Close() {
+	if r.file != nil {
+		if err := r.file.Close(); err != nil {
+			r.Debugf("Problem closing reader", "Error", err.Error())
 		}
 	}
 }
 
 // Emit creates an entry with the decoded message and sends it to the next
 // operator in the pipeline
-func (f *Reader) emit(ctx context.Context, msgBuf []byte) error {
+func (r *Reader) emit(ctx context.Context, msgBuf []byte) error {
 	// Skip the entry if it's empty
 	if len(msgBuf) == 0 {
 		return nil
 	}
 
-	msg, err := f.decode(msgBuf)
+	msg, err := r.decode(msgBuf)
 	if err != nil {
 		return fmt.Errorf("decode: %s", err)
 	}
 
-	e, err := f.fileInput.NewEntry(msg)
+	e, err := r.fileInput.NewEntry(msg)
 	if err != nil {
 		return fmt.Errorf("create entry: %s", err)
 	}
 
-	if err := e.Set(f.fileInput.FilePathField, f.fileAttributes.Path); err != nil {
+	if err := e.Set(r.fileInput.FilePathField, r.fileAttributes.Path); err != nil {
 		return err
 	}
-	if err := e.Set(f.fileInput.FileNameField, f.fileAttributes.Name); err != nil {
-		return err
-	}
-
-	if err := e.Set(f.fileInput.FilePathResolvedField, f.fileAttributes.ResolvedPath); err != nil {
+	if err := e.Set(r.fileInput.FileNameField, r.fileAttributes.Name); err != nil {
 		return err
 	}
 
-	if err := e.Set(f.fileInput.FileNameResolvedField, f.fileAttributes.ResolvedName); err != nil {
+	if err := e.Set(r.fileInput.FilePathResolvedField, r.fileAttributes.ResolvedPath); err != nil {
 		return err
 	}
 
-	f.fileInput.Write(ctx, e)
+	if err := e.Set(r.fileInput.FileNameResolvedField, r.fileAttributes.ResolvedName); err != nil {
+		return err
+	}
+
+	r.fileInput.Write(ctx, e)
 	return nil
 }
 
 // decode converts the bytes in msgBuf to utf-8 from the configured encoding
-func (f *Reader) decode(msgBuf []byte) (string, error) {
+func (r *Reader) decode(msgBuf []byte) (string, error) {
 	for {
-		f.decoder.Reset()
-		nDst, _, err := f.decoder.Transform(f.decodeBuffer, msgBuf, true)
+		r.decoder.Reset()
+		nDst, _, err := r.decoder.Transform(r.decodeBuffer, msgBuf, true)
 		if err != nil && err == transform.ErrShortDst {
-			f.decodeBuffer = make([]byte, len(f.decodeBuffer)*2)
+			r.decodeBuffer = make([]byte, len(r.decodeBuffer)*2)
 			continue
 		} else if err != nil {
 			return "", fmt.Errorf("transform encoding: %s", err)
 		}
-		return string(f.decodeBuffer[:nDst]), nil
+		return string(r.decodeBuffer[:nDst]), nil
 	}
 }
 
@@ -213,13 +213,13 @@ func getScannerError(scanner *PositionalScanner) error {
 }
 
 // Read from the file and update the fingerprint if necessary
-func (f *Reader) Read(dst []byte) (int, error) {
-	if len(f.Fingerprint.FirstBytes) == f.fileInput.fingerprintSize {
-		return f.file.Read(dst)
+func (r *Reader) Read(dst []byte) (int, error) {
+	if len(r.Fingerprint.FirstBytes) == r.fileInput.fingerprintSize {
+		return r.file.Read(dst)
 	}
-	n, err := f.file.Read(dst)
-	appendCount := min0(n, f.fileInput.fingerprintSize-int(f.Offset))
-	f.Fingerprint.FirstBytes = append(f.Fingerprint.FirstBytes[:f.Offset], dst[:appendCount]...)
+	n, err := r.file.Read(dst)
+	appendCount := min0(n, r.fileInput.fingerprintSize-int(r.Offset))
+	r.Fingerprint.FirstBytes = append(r.Fingerprint.FirstBytes[:r.Offset], dst[:appendCount]...)
 	return n, err
 }
 
