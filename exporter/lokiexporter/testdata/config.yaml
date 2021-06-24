@@ -17,15 +17,11 @@ exporters:
     endpoint: "https://loki:3100/loki/api/v1/push"
     tenant_id: "example"
     format: "json"
-    labels:
-      attributes:
-        container.name: "container_name"
-      resource:
-        resource.name: "resource_name"
   loki/allsettings:
     endpoint: "https://loki:3100/loki/api/v1/push"
     tenant_id: "example"
     insecure: true
+    format: "body"
     ca_file: /var/lib/mycert.pem
     cert_file: certfile
     key_file: keyfile

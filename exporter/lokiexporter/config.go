@@ -99,19 +99,3 @@ func (c *LabelsConfig) getAttributes(labels map[string]string) map[string]model.
 
 	return attributes
 }
-
-// getResourceAttributes creates a lookup of allowed attributes to valid Loki label names.
-func (c *LabelsConfig) getResourceAttributes() map[string]model.LabelName {
-	attributes := map[string]model.LabelName{}
-
-	for attrName, lblName := range c.ResourceAttributes {
-		if len(lblName) > 0 {
-			attributes[attrName] = model.LabelName(lblName)
-			continue
-		}
-
-		attributes[attrName] = model.LabelName(attrName)
-	}
-
-	return attributes
-}

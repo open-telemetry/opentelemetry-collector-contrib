@@ -137,11 +137,17 @@ func (l *lokiExporter) logDataToLoki(ld pdata.Logs) (pr *logproto.PushRequest, n
 				labels := mergedLabels.String()
 				var entry *logproto.Entry
 				if l.config.Format == "json" {
-					entry = convertLogToJsonEntry(log)
+					var err error
+					entry, err = convertLogToJsonEntry(log)
+					if err != nil {
+						// Couldn't convert to JSON so dropping log.
+						numDroppedLogs++
+						l.logger.Error("Failed to convert to JSON - Dropping Log", zap.Error(err))
+						continue
+					}
 				} else {
 					entry = convertLogToLokiEntry(log)
 				}
-				// entry := convertLogToJsonEntry(log)
 
 				if stream, ok := streams[labels]; ok {
 					stream.Entries = append(stream.Entries, *entry)
@@ -208,10 +214,13 @@ func convertLogToLokiEntry(lr pdata.LogRecord) *logproto.Entry {
 	}
 }
 
-func convertLogToJsonEntry(lr pdata.LogRecord) *logproto.Entry {
-	line := encodeJSON(lr)
+func convertLogToJsonEntry(lr pdata.LogRecord) (*logproto.Entry, error) {
+	line, err := encodeJSON(lr)
+	if err != nil {
+		return nil, err
+	}
 	return &logproto.Entry{
 		Timestamp: time.Unix(0, int64(lr.Timestamp())),
 		Line:      line,
-	}
+	}, nil
 }

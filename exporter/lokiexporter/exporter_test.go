@@ -582,12 +582,12 @@ func TestExporter_convertLogtoJsonEntry(t *testing.T) {
 	lr.Body().SetStringVal("log message")
 	lr.SetTimestamp(ts)
 
-	entry := convertLogToJsonEntry(lr)
-
+	entry, err := convertLogToJsonEntry(lr)
 	expEntry := &logproto.Entry{
 		Timestamp: time.Unix(0, int64(lr.Timestamp())),
 		Line:      `{"body":"log message"}`,
 	}
+	require.Nil(t, err)
 	require.NotNil(t, entry)
 	require.Equal(t, expEntry, entry)
 }

@@ -28,8 +28,8 @@ func exampleJson() string {
 
 func TestConvert(t *testing.T) {
 	in := exampleJson()
-	out := encodeJSON(exampleLog())
+	out, err := encodeJSON(exampleLog())
 	t.Log(in)
-	t.Log(out)
+	t.Log(out, err)
 	assert.Equal(t, in, out)
 }

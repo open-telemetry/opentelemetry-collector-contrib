@@ -87,7 +87,7 @@ func TestLoadConfig(t *testing.T) {
 				"severity":      "severity",
 			},
 		},
-		Format: "loki",
+		Format: "body",
 	}
 	require.Equal(t, &expectedCfg, actualCfg)
 }
@@ -136,12 +136,8 @@ func TestJsonLoadConfig(t *testing.T) {
 		},
 		TenantID: "example",
 		Labels: LabelsConfig{
-			Attributes: map[string]string{
-				conventions.AttributeContainerName: "container_name",
-			},
-			ResourceAttributes: map[string]string{
-				"resource.name": "resource_name",
-			},
+			Attributes:         map[string]string{},
+			ResourceAttributes: map[string]string{},
 		},
 		Format: "json",
 	}

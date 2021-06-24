@@ -48,7 +48,7 @@ func createDefaultConfig() config.Exporter {
 		RetrySettings: exporterhelper.DefaultRetrySettings(),
 		QueueSettings: exporterhelper.DefaultQueueSettings(),
 		TenantID:      "",
-		Format:        "loki",
+		Format:        "body",
 		Labels: LabelsConfig{
 			Attributes:         map[string]string{},
 			ResourceAttributes: map[string]string{},
