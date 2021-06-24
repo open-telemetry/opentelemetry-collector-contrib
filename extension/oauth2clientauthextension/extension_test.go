@@ -29,9 +29,9 @@ import (
 func TestOAuthClientSettings(t *testing.T) {
 	// test files for TLS testing
 	var (
-		testCAFile =  "../../receiver/splunkhecreceiver/testdata/ca.crt"
-		testCertFile = "../../receiver/splunkhecreceiver/testdata/client.crt"
-		testKeyFile =  "../../receiver/splunkhecreceiver/testdata/client.key"
+		testCAFile   = "testdata/testCA.pem"
+		testCertFile = "testdata/test-cert.pem"
+		testKeyFile  = "testdata/test-key.pem"
 	)
 
 	tests := []struct {
@@ -72,7 +72,7 @@ func TestOAuthClientSettings(t *testing.T) {
 				TLSSetting: configtls.TLSClientSetting{
 					TLSSetting: configtls.TLSSetting{
 						CAFile:   testCAFile,
-						CertFile: "testdata/t/doestExist.pem",
+						CertFile: "doestexist.cert",
 						KeyFile:  testKeyFile,
 					},
 					Insecure:           false,
