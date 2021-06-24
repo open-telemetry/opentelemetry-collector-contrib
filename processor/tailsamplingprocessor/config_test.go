@@ -60,16 +60,21 @@ func TestLoadConfig(t *testing.T) {
 				},
 				{
 					Name:          "test-policy-4",
+					Type:          Percentage,
+					PercentageCfg: PercentageCfg{Percentage: 0.1},
+				},
+				{
+					Name:          "test-policy-5",
 					Type:          StatusCode,
 					StatusCodeCfg: StatusCodeCfg{StatusCodes: []string{"ERROR", "UNSET"}},
 				},
 				{
-					Name:               "test-policy-5",
+					Name:               "test-policy-6",
 					Type:               StringAttribute,
 					StringAttributeCfg: StringAttributeCfg{Key: "key2", Values: []string{"value1", "value2"}},
 				},
 				{
-					Name:            "test-policy-6",
+					Name:            "test-policy-7",
 					Type:            RateLimiting,
 					RateLimitingCfg: RateLimitingCfg{SpansPerSecond: 35},
 				},
