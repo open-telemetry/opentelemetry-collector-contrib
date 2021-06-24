@@ -27,7 +27,7 @@ func TestNewStatusCodeFilter_errorHandling(t *testing.T) {
 	assert.Error(t, err, "expected at least one status code to filter on")
 
 	_, err = NewStatusCodeFilter(zap.NewNop(), []string{"OK", "ERR"})
-	assert.Error(t, err, "unknown status code ERR, supported: OK, ERROR, UNSET")
+	assert.EqualError(t, err, "unknown status code \"ERR\", supported: OK, ERROR, UNSET")
 }
 
 func TestPercentageSampling(t *testing.T) {
