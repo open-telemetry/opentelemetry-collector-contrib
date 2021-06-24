@@ -47,7 +47,7 @@ func NewStatusCodeFilter(logger *zap.Logger, statusCodeString []string) (PolicyE
 		case "UNSET":
 			statusCodes[i] = pdata.StatusCodeUnset
 		default:
-			return nil, fmt.Errorf("unknown status code %s, supported: OK, ERROR, UNSET", statusCodeString)
+			return nil, fmt.Errorf("unknown status code %q, supported: OK, ERROR, UNSET", statusCodeString)
 		}
 	}
 
