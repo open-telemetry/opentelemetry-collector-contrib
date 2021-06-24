@@ -4,7 +4,9 @@
 
 ## 💡 Enhancements 💡
 
-- `tailsampling` processor: Add new policy `status_code` (#3754)
+- `tailsampling` processor:
+  - Add new policy `status_code` (#3754)
+  - Add new policy `percentage` (#3876)
 
 ## v0.29.0
 
