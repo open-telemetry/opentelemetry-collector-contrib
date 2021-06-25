@@ -34,7 +34,7 @@ func TestNewPercentageFilter_errorHandling(t *testing.T) {
 func TestPercentageSampling(t *testing.T) {
 	var empty = map[string]pdata.AttributeValue{}
 
-	cases := []float32{0.01, 0.1, 0.33, 0.5, 0.66, 1}
+	cases := []float32{0.01, 0.1, 0.125, 0.33, 0.5, 0.66}
 
 	for _, percentage := range cases {
 		t.Run(fmt.Sprintf("sample %.2f", percentage), func(t *testing.T) {
@@ -44,9 +44,10 @@ func TestPercentageSampling(t *testing.T) {
 			percentageFilter, err := NewPercentageFilter(zap.NewNop(), percentage)
 			assert.NoError(t, err)
 
-			sampled := 0.
+			traceCount := 2000
+			sampled := 0
 
-			for i := 0; i < 100; i++ {
+			for i := 0; i < traceCount; i++ {
 				decision, err := percentageFilter.Evaluate(traceID, trace)
 				assert.NoError(t, err)
 
@@ -55,8 +56,7 @@ func TestPercentageSampling(t *testing.T) {
 				}
 			}
 
-			assert.InDelta(t, 100*percentage, sampled, 0.001, "Sampled traces")
-			assert.InDelta(t, 100*(1-percentage), 100-sampled, 0.001, "Not sampled traces")
+			assert.InDelta(t, percentage*float32(traceCount), sampled, 0.001, "Amount of sampled traces")
 		})
 	}
 }
@@ -67,20 +67,22 @@ func TestPercentageSampling_ignoreAlreadySampledTraces(t *testing.T) {
 	trace := newTraceStringAttrs(empty, "example", "value")
 	traceID := pdata.NewTraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16})
 
-	percentageFilter, err := NewPercentageFilter(zap.NewNop(), 0.5)
+	var percentage float32 = 0.33
+
+	percentageFilter, err := NewPercentageFilter(zap.NewNop(), percentage)
 	assert.NoError(t, err)
 
-	// every two traces should get sampled, already sampled traces don't count
-	for i := 0; i < 100; i++ {
+	traceCount := 100
+	sampled := 0
+
+	for i := 0; i < traceCount; i++ {
 		trace.Decisions = []Decision{NotSampled, NotSampled}
 		decision, err := percentageFilter.Evaluate(traceID, trace)
 		assert.NoError(t, err)
-		assert.Equal(t, decision, Sampled)
 
-		trace.Decisions = []Decision{NotSampled, NotSampled}
-		decision, err = percentageFilter.Evaluate(traceID, trace)
-		assert.NoError(t, err)
-		assert.Equal(t, decision, NotSampled)
+		if decision == Sampled {
+			sampled++
+		}
 
 		// trace has been sampled, should be ignored
 		trace.Decisions = []Decision{NotSampled, Sampled}
@@ -88,6 +90,8 @@ func TestPercentageSampling_ignoreAlreadySampledTraces(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Equal(t, decision, NotSampled)
 	}
+
+	assert.EqualValues(t, percentage*float32(traceCount), sampled)
 }
 
 func TestOnLateArrivingSpans_PercentageSampling(t *testing.T) {

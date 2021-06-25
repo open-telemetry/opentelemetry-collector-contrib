@@ -65,11 +65,17 @@ func (r *percentageFilter) Evaluate(_ pdata.TraceID, trace *TraceData) (Decision
 
 	decision := NotSampled
 
-	if r.tracesProcessed == 0 || float32(r.tracesSampled)/float32(r.tracesProcessed) <= r.percentage {
+	if float32(r.tracesSampled)/float32(r.tracesProcessed) <= r.percentage {
 		r.tracesSampled++
 		decision = Sampled
 	}
-
 	r.tracesProcessed++
+
+	// reset counters to avoid overflow
+	if r.tracesProcessed == 1000 {
+		r.tracesSampled = 0
+		r.tracesProcessed = 0
+	}
+
 	return decision, nil
 }
