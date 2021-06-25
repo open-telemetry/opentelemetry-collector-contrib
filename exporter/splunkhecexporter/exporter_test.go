@@ -118,7 +118,7 @@ func TestConsumeMetricsData(t *testing.T) {
 				if r.Header.Get("Content-Encoding") == "gzip" {
 					t.Fatal("Small batch should not be compressed")
 				}
-				firstPayload := strings.Split(string(body), "\n\r\n\r")[0]
+				firstPayload := strings.Split(string(body), "\n")[0]
 				var metric splunk.Event
 				err = json.Unmarshal([]byte(firstPayload), &metric)
 				if err != nil {
@@ -264,7 +264,7 @@ func TestConsumeLogsData(t *testing.T) {
 				if r.Header.Get("Content-Encoding") == "gzip" {
 					t.Fatal("Small batch should not be compressed")
 				}
-				firstPayload := strings.Split(string(body), "\n\r\n\r")[0]
+				firstPayload := strings.Split(string(body), "\n")[0]
 				var event splunk.Event
 				err = json.Unmarshal([]byte(firstPayload), &event)
 				if err != nil {

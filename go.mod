@@ -71,8 +71,8 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowsperfcountersreceiver v0.0.0-00010101000000-000000000000
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zookeeperreceiver v0.0.0-00010101000000-000000000000
 	github.com/stretchr/testify v1.7.0
-	go.opentelemetry.io/collector v0.28.1-0.20210616151306-cdc163427b8e
-	golang.org/x/sys v0.0.0-20210603125802-9665404d3644
+	go.opentelemetry.io/collector v0.29.0
+	golang.org/x/sys v0.0.0-20210611083646-a4fc73990273
 )
 
 // Replace references to modules that are in this repository with their relateive paths
