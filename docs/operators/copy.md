@@ -20,8 +20,8 @@ Copy a value from the body to resource
 
 ```yaml
 - type: copy
-    from: key
-    to: $resource.newkey
+  from: key
+  to: $resource.newkey
 ```
 
 <table>
@@ -63,8 +63,8 @@ Copy a value from the body to resource
 Copy a value from the body to attributes
 ```yaml
 - type: copy
-    from: key2
-    to: $attributes.newkey
+  from: key2
+  to: $attributes.newkey
 ```
 
 <table>
@@ -108,8 +108,8 @@ Copy a value from the body to attributes
 Copy a value from attributes to the body
 ```yaml
 - type: copy
-    from: $attributes.key
-    to: newkey
+  from: $attributes.key
+  to: newkey
 ```
 
 <table>
@@ -156,8 +156,8 @@ Copy a value from attributes to the body
 Copy a value within the body
 ```yaml
 - type: copy
-    from: obj.nested
-    to: newkey
+  from: obj.nested
+  to: newkey
 ```
 
 <table>
