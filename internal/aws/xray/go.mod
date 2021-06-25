@@ -6,5 +6,3 @@ require (
 	github.com/aws/aws-sdk-go v1.38.60
 	github.com/stretchr/testify v1.7.0
 )
-
-replace go.opentelemetry.io/collector => /Users/adgollap/Documents/GitHub/opentelemetry-collector-contrib/../opentelemetry-collector

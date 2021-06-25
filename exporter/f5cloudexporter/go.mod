@@ -14,5 +14,3 @@ require (
 	google.golang.org/api v0.48.0
 	gopkg.in/ini.v1 v1.57.0 // indirect
 )
-
-replace go.opentelemetry.io/collector => /Users/adgollap/Documents/GitHub/opentelemetry-collector-contrib/../opentelemetry-collector

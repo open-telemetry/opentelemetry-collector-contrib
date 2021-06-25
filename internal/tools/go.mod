@@ -14,5 +14,3 @@ require (
 	go.opentelemetry.io/collector/cmd/mdatagen v0.28.1-0.20210616151306-cdc163427b8e
 	golang.org/x/crypto v0.0.0-20210220033148-5ea612d1eb83 // indirect
 )
-
-replace go.opentelemetry.io/collector => /Users/adgollap/Documents/GitHub/opentelemetry-collector-contrib/../opentelemetry-collector

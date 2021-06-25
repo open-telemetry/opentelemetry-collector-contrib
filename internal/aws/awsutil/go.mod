@@ -10,5 +10,3 @@ require (
 	golang.org/x/net v0.0.0-20210119194325-5f4716e94777
 	gopkg.in/check.v1 v1.0.0-20180628173108-788fd7840127 // indirect
 )
-
-replace go.opentelemetry.io/collector => /Users/adgollap/Documents/GitHub/opentelemetry-collector-contrib/../opentelemetry-collector
