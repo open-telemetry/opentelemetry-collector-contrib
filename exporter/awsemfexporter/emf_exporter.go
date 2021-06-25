@@ -113,7 +113,6 @@ func NewEmfExporter(
 }
 
 func (emf *emfExporter) pushMetricsData(_ context.Context, md pdata.Metrics) error {
-	fmt.Println("This file was changed")
 	rms := md.ResourceMetrics()
 	labels := map[string]string{}
 	for i := 0; i < rms.Len(); i++ {
