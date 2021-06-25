@@ -15,6 +15,7 @@
 package stores
 
 import (
+	"context"
 	"testing"
 	"time"
 
@@ -40,8 +41,9 @@ func TestServiceStore(t *testing.T) {
 		endpointInfo:            &mockEndpoint{},
 	}
 
+	ctx := context.Background()
 	s.lastRefreshed = time.Now().Add(-20 * time.Second)
-	s.RefreshTick()
+	s.RefreshTick(ctx)
 
 	// test the case when it decorates metrics successfully
 	metric := &mockCIMetric{
@@ -51,7 +53,7 @@ func TestServiceStore(t *testing.T) {
 		},
 	}
 	kubernetesBlob := map[string]interface{}{}
-	ok := s.Decorate(metric, kubernetesBlob)
+	ok := s.Decorate(ctx, metric, kubernetesBlob)
 	assert.True(t, ok)
 	assert.Equal(t, "test-service", metric.GetTag(ci.TypeService))
 
@@ -62,7 +64,7 @@ func TestServiceStore(t *testing.T) {
 		},
 	}
 	kubernetesBlob = map[string]interface{}{}
-	ok = s.Decorate(metric, kubernetesBlob)
+	ok = s.Decorate(ctx, metric, kubernetesBlob)
 	assert.False(t, ok)
 	assert.Equal(t, "", metric.GetTag(ci.TypeService))
 }

@@ -52,5 +52,7 @@ func TestLoadConfig(t *testing.T) {
 			ReceiverSettings:      config.NewReceiverSettings(config.NewIDWithName(typeStr, "collection_interval_settings")),
 			CollectionInterval:    60 * time.Second,
 			ContainerOrchestrator: "eks",
+			TagService:            true,
+			PrefFullPodName:       false,
 		})
 }

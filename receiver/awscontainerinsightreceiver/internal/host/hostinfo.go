@@ -46,7 +46,7 @@ type Info struct {
 	nodeCapacityCreator func(*zap.Logger, ...nodeCapacityOption) (nodeCapacityProvider, error)
 	ec2MetadataCreator  func(context.Context, *session.Session, time.Duration, chan bool, *zap.Logger, ...ec2MetadataOption) ec2MetadataProvider
 	ebsVolumeCreator    func(context.Context, *session.Session, string, string, time.Duration, *zap.Logger, ...ebsVolumeOption) ebsVolumeProvider
-	ec2TagsCreator      func(context.Context, *session.Session, string, time.Duration, *zap.Logger, ...ec2TagsOption) ec2TagsProvider
+	ec2TagsCreator      func(context.Context, *session.Session, string, string, time.Duration, *zap.Logger, ...ec2TagsOption) ec2TagsProvider
 }
 
 type machineInfoOption func(*Info)
@@ -107,7 +107,7 @@ func (m *Info) lazyInitEBSVolume(ctx context.Context) {
 func (m *Info) lazyInitEC2Tags(ctx context.Context) {
 	//wait until the instance id is ready
 	<-m.instanceIDReadyC
-	m.ec2Tags = m.ec2TagsCreator(ctx, m.awsSession, m.GetInstanceID(), m.refreshInterval, m.logger)
+	m.ec2Tags = m.ec2TagsCreator(ctx, m.awsSession, m.GetInstanceID(), m.GetRegion(), m.refreshInterval, m.logger)
 	close(m.ec2TagsReadyC)
 }
 
@@ -161,6 +161,14 @@ func (m *Info) GetAutoScalingGroupName() string {
 	}
 
 	return ""
+}
+
+// ExtractEbsIDsUsedByKubernetes extracts the ebs volume id used by kubernetes cluster from host mount file
+func (m *Info) ExtractEbsIDsUsedByKubernetes() map[string]string {
+	if m.ebsVolume != nil {
+		return m.ebsVolume.extractEbsIDsUsedByKubernetes()
+	}
+	return map[string]string{}
 }
 
 // Shutdown stops the host Info
