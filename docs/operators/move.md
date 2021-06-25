@@ -18,8 +18,8 @@ The `move` operator moves (or renames) a field from one location to another.
 Rename value
 ```yaml
 - type: move
-    from: key1
-    to: key3
+  from: key1
+  to: key3
 ```
 
 <table>
@@ -61,8 +61,8 @@ Move a value from the body to resource
 
 ```yaml
 - type: move
-    from: uuid
-    to: $resoruce.uuid
+  from: uuid
+  to: $resoruce.uuid
 ```
 
 <table>
@@ -103,8 +103,8 @@ Move a value from the body to attributes
 
 ```yaml
 - type: move
-    from: ip
-    to: $attributes.ip
+  from: ip
+  to: $attributes.ip
 ```
 
 <table>
@@ -144,8 +144,8 @@ Move a value from the body to attributes
 Replace the body with an individual value nested within the body
 ```yaml
 - type: move
-    from: log
-    to: $body
+  from: log
+  to: $body
 ```
 
 <table>
@@ -183,8 +183,8 @@ Replace the body with an individual value nested within the body
 Remove a layer from the body
 ```yaml
 - type: move
-    from: wrapper
-    to: $body
+  from: wrapper
+  to: $body
 ```
 
 <table>
@@ -231,8 +231,8 @@ Remove a layer from the body
 Merge a layer to the body
 ```yaml
 - type: move
-    from: object
-    to: $body
+  from: object
+  to: $body
 ```
 
 <table>

@@ -22,9 +22,9 @@ Retain fields in the body
 
 ```yaml
 - type: retain
-    fields:
-      - key1
-      - key2
+  fields:
+    - key1
+    - key2
 ```
 
 <table>
@@ -68,8 +68,8 @@ Retain an object in the body
 
 ```yaml
 - type: retain
-    fields:
-      - object
+  fields:
+    - object
 ```
 
 <table>
@@ -114,9 +114,9 @@ Retain fields from resource
 
 ```yaml
 - type: retain
-    fields:
-      - $resource.key1
-      - $resource.key2
+  fields:
+    - $resource.key1
+    - $resource.key2
 ```
 
 <table>
@@ -164,9 +164,9 @@ Retain fields from attributes
 
 ```yaml
 - type: retain
-    fields:
-      - $attributes.key1
-      - $attributes.key2
+  fields:
+    - $attributes.key1
+    - $attributes.key2
 ```
 
 <table>
@@ -213,10 +213,10 @@ Retain fields from all sources
 
 ```yaml
 - type: retain
-    fields:
-      - $resource.key1
-      - $attributes.key3
-      - key5
+  fields:
+    - $resource.key1
+    - $attributes.key3
+    - key5
 ```
 
 <table>

@@ -19,7 +19,7 @@ The `remove` operator removes a field from a record.
 Remove a value from the body
 ```yaml
 - type: remove 
-    field: key1
+  field: key1
 ```
 
 <table>
@@ -57,7 +57,7 @@ Remove a value from the body
 Remove an object from the body
 ```yaml
 - type: remove 
-    field: object
+  field: object
 ```
 
 <table>
@@ -100,7 +100,7 @@ Remove an object from the body
 Remove a value from attributes
 ```yaml
 - type: remove 
-    field: $attributes.otherkey
+  field: $attributes.otherkey
 ```
 
 <table>
@@ -142,7 +142,7 @@ Remove a value from attributes
 Remove a value from resource
 ```yaml
 - type: remove 
-    field: $resource.otherkey
+  field: $resource.otherkey
 ```
 
 <table>
@@ -184,7 +184,7 @@ Remove a value from resource
 Remove all resource fields
 ```yaml
 - type: remove 
-    field: $resource
+  field: $resource
 ```
 
 <table>
@@ -227,7 +227,7 @@ Remove all resource fields
 Remove all attributes
 ```yaml
 - type: remove 
-    field: $attributes
+  field: $attributes
 ```
 
 <table>
