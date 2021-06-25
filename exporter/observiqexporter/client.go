@@ -29,11 +29,10 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.uber.org/zap"
 )
 
-const throttleDuration = 1 * time.Minute
+const throttleDuration = time.Minute
 
 type client struct {
 	config         *Config
@@ -41,8 +40,9 @@ type client struct {
 	logger         *zap.Logger
 	wg             sync.WaitGroup
 	throttled      bool
-	throttledUntil time.Time
+	throttleTimer  *time.Timer
 	throttleLock   sync.RWMutex
+	timesThrottled int
 	clock          clock
 }
 
@@ -54,7 +54,7 @@ func (c *client) sendLogs(
 	defer c.wg.Done()
 
 	if c.isThrottled() {
-		return exporterhelper.NewThrottleRetry(errors.New("observIQ still throttled, attempting to delay logs"), c.throttledUntil.Sub(c.clock.Now()))
+		return consumererror.Permanent(errors.New("observIQ still throttled due to a previous request"))
 	}
 
 	// Conversion errors should be returned after sending what could be converted.
@@ -119,9 +119,8 @@ func (c *client) sendLogs(
 			body = string(bytes)
 		}
 		c.throttle()
-		return exporterhelper.NewThrottleRetry(
-			fmt.Errorf("observiq server returned throttling code (%d), please check your account. Body: %s", res.StatusCode, body),
-			throttleDuration)
+		return consumererror.Permanent(
+			fmt.Errorf("unable to send logs to observIQ (status code: %d), please check your account. Body: %s", res.StatusCode, body))
 
 	case res.StatusCode > 405:
 		return fmt.Errorf(
@@ -142,20 +141,7 @@ func (c *client) isThrottled() bool {
 	throttled := c.throttled
 	c.throttleLock.RUnlock()
 
-	if !throttled {
-		return false
-	}
-
-	now := c.clock.Now()
-	if now.After(c.throttledUntil) {
-		c.throttleLock.Lock()
-		c.throttled = false
-		c.throttleLock.Unlock()
-
-		return false
-	}
-
-	return true
+	return throttled
 }
 
 /*
@@ -166,8 +152,29 @@ func (c *client) throttle() {
 	c.throttleLock.Lock()
 	defer c.throttleLock.Unlock()
 
+	if c.throttleTimer != nil {
+		c.throttleTimer.Stop()
+	}
+
+	c.timesThrottled += 1
 	c.throttled = true
-	c.throttledUntil = c.clock.Now().Add(throttleDuration)
+
+	// Specify to only clear the throttle if we don't throttle again in the meantime
+	curTimesThrottled := c.timesThrottled
+	throttleFunction := func() {
+		c.clearThrottle(curTimesThrottled)
+	}
+
+	c.throttleTimer = c.clock.AfterFunc(throttleDuration, throttleFunction)
+}
+
+func (c *client) clearThrottle(throttleNum int) {
+	c.throttleLock.Lock()
+	defer c.throttleLock.Unlock()
+	// Prevent case where the timer has fired, but another throttle occurred between the timer firing and the lock being acquired
+	if throttleNum == c.timesThrottled {
+		c.throttled = false
+	}
 }
 
 func (c *client) start(context.Context, component.Host) error {

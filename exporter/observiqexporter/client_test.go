@@ -31,6 +31,27 @@ import (
 	"go.uber.org/zap"
 )
 
+// mockClock always reads the same provided time.
+// It also holds on to the function for AfterFunc, so it can be triggered at without relying on timing.
+type mockClock struct {
+	time        time.Time
+	timeoutFunc func()
+}
+
+func (mc mockClock) Now() time.Time {
+	return mc.time
+}
+
+/* Mock after func; Does not call the function, just returns a timer of the given durations*/
+func (mc *mockClock) AfterFunc(d time.Duration, f func()) *time.Timer {
+	mc.timeoutFunc = f
+	return time.NewTimer(d)
+}
+
+func newMockClock(t time.Time) clock {
+	return &mockClock{time: t}
+}
+
 const testURL = "http://example.com"
 
 type testRoundTripper func(req *http.Request) *http.Response
@@ -105,12 +126,13 @@ func TestClientSendLogs(t *testing.T) {
 		responseStatus int
 		respBody       string
 		clockOverride  clock
+		timeoutClock   bool
 		//Outputs
 		shouldError      bool
 		errorIsPermanant bool
 	}
 	staticClock := newMockClock(time.Unix(0, 0))
-	staticClockAfterThrottle := newMockClock(staticClock.time.Add(throttleDuration + 1*time.Nanosecond))
+	//staticClockAfterThrottle := newMockClock(staticClock.(*mockClock).time.Add(throttleDuration + 1*time.Nanosecond))
 
 	testCases := []struct {
 		name        string
@@ -147,22 +169,22 @@ func TestClientSendLogs(t *testing.T) {
 					responseStatus:   401,
 					respBody:         "",
 					shouldError:      true,
-					errorIsPermanant: false,
+					errorIsPermanant: true,
 				},
 				{
 					logs:             createLogData(staticClock),
 					responseStatus:   200, // Client is throttled, so the client will never get to this point
 					respBody:         "",
 					shouldError:      true,
-					errorIsPermanant: false,
+					errorIsPermanant: true,
 				},
 				{
 					logs:             createLogData(staticClock),
 					responseStatus:   200,
 					respBody:         "",
+					timeoutClock:     true,
 					shouldError:      false,
 					errorIsPermanant: false,
-					clockOverride:    staticClockAfterThrottle,
 				},
 			},
 		},
@@ -235,6 +257,11 @@ func TestClientSendLogs(t *testing.T) {
 
 				if req.clockOverride != nil {
 					c.clock = req.clockOverride
+				}
+
+				if req.timeoutClock {
+					require.NotNil(t, c.clock.(*mockClock).timeoutFunc)
+					c.clock.(*mockClock).timeoutFunc()
 				}
 
 				err = c.sendLogs(context.Background(), req.logs)

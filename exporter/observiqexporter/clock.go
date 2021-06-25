@@ -19,26 +19,20 @@ import "time"
 // clock interface provides method for getting time. Allows mocking of time.
 type clock interface {
 	Now() time.Time
+	AfterFunc(d time.Duration, f func()) *time.Timer
 }
 
-// system clock uses time.Now() for getting time
+/*
+	system clock uses time.Now() for getting time, and time.AfterFunc for AfterFunc.
+*/
 type systemClock struct{}
 
-func (dc systemClock) Now() time.Time {
+func (systemClock) Now() time.Time {
 	return time.Now()
 }
 
+func (systemClock) AfterFunc(d time.Duration, f func()) *time.Timer {
+	return time.AfterFunc(d, f)
+}
+
 var defaultClock = systemClock{}
-
-// mockClock always reads the same provided. Used in tests
-type mockClock struct {
-	time time.Time
-}
-
-func (mc mockClock) Now() time.Time {
-	return mc.time
-}
-
-func newMockClock(t time.Time) mockClock {
-	return mockClock{time: t}
-}
