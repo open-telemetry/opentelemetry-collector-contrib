@@ -81,7 +81,6 @@ func (c *client) sendLogs(
 		return err
 	}
 
-	request.Header.Set("x-cabin-agent-name", c.config.AgentName)
 	request.Header.Set("x-cabin-api-key", c.config.APIKey)
 
 	request.Header.Set("Content-Type", "application/json")
