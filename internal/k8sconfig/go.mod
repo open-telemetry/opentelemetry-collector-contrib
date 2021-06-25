@@ -10,5 +10,3 @@ require (
 	github.com/imdario/mergo v0.3.11 // indirect
 	k8s.io/client-go v0.21.3
 )
-
-replace go.opentelemetry.io/collector => /Users/adgollap/Documents/GitHub/opentelemetry-collector-contrib/../opentelemetry-collector
