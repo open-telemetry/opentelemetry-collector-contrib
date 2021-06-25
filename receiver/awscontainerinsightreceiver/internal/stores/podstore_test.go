@@ -15,6 +15,7 @@
 package stores
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"testing"
@@ -25,6 +26,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 
 	ci "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/containerinsight"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/k8s/k8sclient"
 )
 
 func getBaseTestPodInfo() *corev1.Pod {
@@ -247,7 +249,7 @@ func TestPodStore_decorateMem(t *testing.T) {
 	pod := getBaseTestPodInfo()
 
 	tags := map[string]string{ci.MetricType: ci.TypePod}
-	fields := map[string]interface{}{ci.MetricName(ci.TypePod, ci.MemWorkingset): float64(10 * 1024 * 1024)}
+	fields := map[string]interface{}{ci.MetricName(ci.TypePod, ci.MemWorkingset): uint64(10 * 1024 * 1024)}
 
 	metric := generateMetric(fields, tags)
 	podStore.decorateMem(metric, pod)
@@ -256,7 +258,7 @@ func TestPodStore_decorateMem(t *testing.T) {
 	assert.Equal(t, uint64(52428800), metric.GetField("pod_memory_limit").(uint64))
 	assert.Equal(t, float64(12.5), metric.GetField("pod_memory_reserved_capacity").(float64))
 	assert.Equal(t, float64(20), metric.GetField("pod_memory_utilization_over_pod_limit").(float64))
-	assert.Equal(t, float64(10*1024*1024), metric.GetField("pod_memory_working_set").(float64))
+	assert.Equal(t, uint64(10*1024*1024), metric.GetField("pod_memory_working_set").(uint64))
 
 	tags = map[string]string{ci.MetricType: ci.TypeContainer, ci.ContainerNamekey: "ubuntu"}
 	fields = map[string]interface{}{ci.MetricName(ci.TypeContainer, ci.MemWorkingset): float64(10 * 1024 * 1024)}
@@ -397,14 +399,26 @@ func (m *mockReplicaSetInfo1) ReplicaSetToDeployment() map[string]string {
 	return map[string]string{}
 }
 
+type mockK8sClient1 struct{}
+
+func (m *mockK8sClient1) GetReplicaSetClient() k8sclient.ReplicaSetClient {
+	return &mockReplicaSetInfo1{}
+}
+
 type mockReplicaSetInfo2 struct{}
 
 func (m *mockReplicaSetInfo2) ReplicaSetToDeployment() map[string]string {
 	return map[string]string{"DeploymentTest-sftrz2785": "DeploymentTest"}
 }
 
+type mockK8sClient2 struct{}
+
+func (m *mockK8sClient2) GetReplicaSetClient() k8sclient.ReplicaSetClient {
+	return &mockReplicaSetInfo2{}
+}
+
 func TestPodStore_addPodOwnersAndPodNameFallback(t *testing.T) {
-	podStore := &PodStore{replicasetInfo: &mockReplicaSetInfo1{}}
+	podStore := &PodStore{k8sClient: &mockK8sClient1{}}
 	pod := getBaseTestPodInfo()
 	tags := map[string]string{ci.MetricType: ci.TypePod, ci.ContainerNamekey: "ubuntu"}
 	fields := map[string]interface{}{ci.MetricName(ci.TypePod, ci.CPUTotal): float64(1)}
@@ -438,7 +452,7 @@ func TestPodStore_addPodOwnersAndPodNameFallback(t *testing.T) {
 }
 
 func TestPodStore_addPodOwnersAndPodName(t *testing.T) {
-	podStore := &PodStore{replicasetInfo: &mockReplicaSetInfo2{}}
+	podStore := &PodStore{k8sClient: &mockK8sClient2{}}
 
 	pod := getBaseTestPodInfo()
 	tags := map[string]string{ci.MetricType: ci.TypePod, ci.ContainerNamekey: "ubuntu"}
@@ -571,7 +585,7 @@ func TestPodStore_RefreshTick(t *testing.T) {
 	podStore := getPodStore()
 	podStore.podClient = &mockPodClient{}
 	podStore.lastRefreshed = time.Now().Add(-time.Minute)
-	podStore.RefreshTick()
+	podStore.RefreshTick(context.Background())
 
 	assert.Equal(t, uint64(10), podStore.nodeInfo.nodeStats.cpuReq)
 	assert.Equal(t, uint64(50*1024*1024), podStore.nodeInfo.nodeStats.memReq)
@@ -622,7 +636,8 @@ func TestPodStore_Decorate(t *testing.T) {
 	podStore := getPodStore()
 	podStore.podClient = &mockPodClient{}
 	kubernetesBlob := map[string]interface{}{}
-	ok := podStore.Decorate(metric, kubernetesBlob)
+	ctx := context.Background()
+	ok := podStore.Decorate(ctx, metric, kubernetesBlob)
 	assert.True(t, ok)
 
 	// metric with no namespace
@@ -637,7 +652,7 @@ func TestPodStore_Decorate(t *testing.T) {
 	metric = &mockCIMetric{
 		tags: tags,
 	}
-	ok = podStore.Decorate(metric, kubernetesBlob)
+	ok = podStore.Decorate(ctx, metric, kubernetesBlob)
 	assert.False(t, ok)
 
 	// metric with pod info not in cache
@@ -652,10 +667,10 @@ func TestPodStore_Decorate(t *testing.T) {
 	metric = &mockCIMetric{
 		tags: tags,
 	}
-	ok = podStore.Decorate(metric, kubernetesBlob)
+	ok = podStore.Decorate(ctx, metric, kubernetesBlob)
 	assert.False(t, ok)
 
 	// decorate the same metric with a placeholder item in cache
-	ok = podStore.Decorate(metric, kubernetesBlob)
+	ok = podStore.Decorate(ctx, metric, kubernetesBlob)
 	assert.False(t, ok)
 }

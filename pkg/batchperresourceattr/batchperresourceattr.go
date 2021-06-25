@@ -62,7 +62,8 @@ func (bt *batchTraces) ConsumeTraces(ctx context.Context, td pdata.Traces) error
 		}
 
 		// Append ResourceSpan to pdata.Traces for this attribute value.
-		tracesForAttr.ResourceSpans().Append(rs)
+		tgt := tracesForAttr.ResourceSpans().AppendEmpty()
+		rs.CopyTo(tgt)
 	}
 
 	var errs []error
@@ -114,7 +115,8 @@ func (bt *batchMetrics) ConsumeMetrics(ctx context.Context, td pdata.Metrics) er
 		}
 
 		// Append ResourceSpan to pdata.Metrics for this attribute value.
-		metricsForAttr.ResourceMetrics().Append(rm)
+		tgt := metricsForAttr.ResourceMetrics().AppendEmpty()
+		rm.CopyTo(tgt)
 	}
 
 	var errs []error
@@ -166,7 +168,8 @@ func (bt *batchLogs) ConsumeLogs(ctx context.Context, td pdata.Logs) error {
 		}
 
 		// Append ResourceSpan to pdata.Logs for this attribute value.
-		logsForAttr.ResourceLogs().Append(rl)
+		tgt := logsForAttr.ResourceLogs().AppendEmpty()
+		rl.CopyTo(tgt)
 	}
 
 	var errs []error
