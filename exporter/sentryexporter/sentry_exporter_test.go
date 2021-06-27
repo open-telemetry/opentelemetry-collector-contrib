@@ -499,7 +499,7 @@ type mockTransport struct {
 	transactions []*sentry.Event
 }
 
-func (t *mockTransport) SendTransactions(transactions []*sentry.Event) {
+func (t *mockTransport) SendEvents(transactions []*sentry.Event) {
 	t.transactions = transactions
 	t.called = true
 }

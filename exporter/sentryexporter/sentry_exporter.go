@@ -42,6 +42,8 @@ var canonicalCodes = [...]sentry.SpanStatus{
 	sentry.SpanStatusOK,
 	sentry.SpanStatusUnknown,
 }
+// exceptionEvents is a mutable slice of exception events in spans recorded as Sentry events.
+var exceptionEvents []*sentry.Event
 
 // SentryExporter defines the Sentry Exporter.
 type SentryExporter struct {
@@ -74,7 +76,9 @@ func (s *SentryExporter) pushTraceData(_ context.Context, td pdata.Traces) error
 
 			spans := ils.Spans()
 			for k := 0; k < spans.Len(); k++ {
-				sentrySpan := convertToSentrySpan(spans.At(k), library, resourceTags)
+				otelSpan := spans.At(k)
+				sentrySpan := convertToSentrySpan(otelSpan, library, resourceTags)
+				convertEventstoSentryExceptions(&exceptionEvents, otelSpan.Events(), sentrySpan)
 
 				// If a span is a root span, we consider it the start of a Sentry transaction.
 				// We should then create a new transaction for that root span, and keep track of it.
@@ -106,7 +110,9 @@ func (s *SentryExporter) pushTraceData(_ context.Context, td pdata.Traces) error
 
 	transactions := generateTransactions(transactionMap, orphanSpans)
 
-	s.transport.SendTransactions(transactions)
+	events := append(transactions, exceptionEvents...)
+
+	s.transport.SendEvents(events)
 
 	return nil
 }
@@ -125,6 +131,67 @@ func generateTransactions(transactionMap map[sentry.SpanID]*sentry.Event, orphan
 	}
 
 	return transactions
+}
+
+// convertEventstoSentryExceptions creates a set of sentry events from exception events present in spans.
+// These events are stored in a mutated eventList
+func convertEventstoSentryExceptions(eventList *[]*sentry.Event, events pdata.SpanEventSlice, sentrySpan *sentry.Span) {
+	for i := 0; i < events.Len(); i++ {
+		event := events.At(i)
+		if event.Name() != "exception" {
+			continue
+		}
+		var exceptionMessage, exceptionStacktrace, exceptionType string
+		event.Attributes().Range(func(k string, v pdata.AttributeValue) bool {
+			switch k {
+			case conventions.AttributeExceptionMessage:
+				exceptionMessage = v.StringVal()
+			case conventions.AttributeExceptionStacktrace:
+				exceptionStacktrace = v.StringVal()
+			case conventions.AttributeExceptionType:
+				exceptionType = v.StringVal()
+			}
+			return true
+		})
+		if exceptionMessage == "" && exceptionType == "" {
+			// `At least one of the following sets of attributes is required:
+			// - exception.type
+			// - exception.message`
+			continue
+		}
+		sentryEvent := eventFromError(exceptionMessage, exceptionType, sentrySpan)
+		*eventList = append(*eventList, sentryEvent)
+	}
+}
+
+// eventFromError creates a sentry event from error event in a span
+func eventFromError(errorMessage, errorType string, span *sentry.Span) *sentry.Event {
+	event := sentry.NewEvent()
+
+	event.Contexts["trace"] = sentry.TraceContext{
+		TraceID: span.TraceID,
+		SpanID:  span.SpanID,
+		Op:      span.Op,
+		Status:  span.Status,
+	}
+
+	event.Type = errorType
+	event.Message = errorMessage
+	event.Level = "error"
+	event.Exception = []sentry.Exception{{
+		Value: errorMessage,
+		Type: errorType,
+	}}
+
+	event.Sdk.Name = otelSentryExporterName
+	event.Sdk.Version = otelSentryExporterVersion
+
+	event.StartTime = span.StartTime
+	event.Tags = span.Tags
+	event.Timestamp = span.EndTime
+	event.Transaction = span.Description
+
+	return event
 }
 
 // classifyAsOrphanSpans iterates through a list of possible orphan spans and tries to associate them
