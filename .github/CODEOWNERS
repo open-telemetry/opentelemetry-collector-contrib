@@ -64,6 +64,7 @@ processor/routingprocessor/                          @open-telemetry/collector-c
 processor/spanmetricsprocessor/                      @open-telemetry/collector-contrib-approvers @albertteoh
 processor/tailsamplingprocessor/                     @open-telemetry/collector-contrib-approvers @jpkrohling
 
+receiver/awscontainerinsightreceiver/                @open-telemetry/collector-contrib-approvers @Aneurysm9 @pxaws
 receiver/awsecscontainermetricsreceiver/             @open-telemetry/collector-contrib-approvers @kbrockhoff @anuraaga
 receiver/awsxrayreceiver/                            @open-telemetry/collector-contrib-approvers @kbrockhoff @anuraaga
 receiver/carbonreceiver/                             @open-telemetry/collector-contrib-approvers @pjanotti
