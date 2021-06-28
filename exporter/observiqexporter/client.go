@@ -43,7 +43,6 @@ type client struct {
 	throttleTimer  *time.Timer
 	throttleLock   sync.RWMutex
 	timesThrottled int
-	clock          clock
 }
 
 func (c *client) sendLogs(
@@ -58,7 +57,7 @@ func (c *client) sendLogs(
 	}
 
 	// Conversion errors should be returned after sending what could be converted.
-	data, conversionErrs := logdataToObservIQFormat(ld, c.config.AgentID, c.config.AgentName, c.clock)
+	data, conversionErrs := logdataToObservIQFormat(ld, c.config.AgentID, c.config.AgentName)
 
 	jsonData, err := json.Marshal(data)
 
@@ -162,7 +161,7 @@ func (c *client) throttle() {
 		c.clearThrottle(curTimesThrottled)
 	}
 
-	c.throttleTimer = c.clock.AfterFunc(throttleDuration, clearThrottleFunc)
+	c.throttleTimer = timeAfterFunc(throttleDuration, clearThrottleFunc)
 }
 
 /*
@@ -188,7 +187,7 @@ func (c *client) stop(context.Context) error {
 	return nil
 }
 
-func buildClient(config *Config, logger *zap.Logger, clock clock) (*client, error) {
+func buildClient(config *Config, logger *zap.Logger) (*client, error) {
 	tlsCfg, err := config.TLSSetting.LoadTLSConfig()
 	if err != nil {
 		return nil, err
@@ -204,6 +203,5 @@ func buildClient(config *Config, logger *zap.Logger, clock clock) (*client, erro
 		},
 		logger: logger,
 		config: config,
-		clock:  clock,
 	}, nil
 }

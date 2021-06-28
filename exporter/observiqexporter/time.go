@@ -16,23 +16,8 @@ package observiqexporter
 
 import "time"
 
-// clock interface provides method for getting time. Allows mocking of time.
-type clock interface {
-	Now() time.Time
-	AfterFunc(d time.Duration, f func()) *time.Timer
-}
-
 /*
-	system clock uses time.Now() for getting time, and time.AfterFunc for AfterFunc.
+	Definitions of used time functions; here to allow mocking/monkey-patching
 */
-type systemClock struct{}
-
-func (systemClock) Now() time.Time {
-	return time.Now()
-}
-
-func (systemClock) AfterFunc(d time.Duration, f func()) *time.Timer {
-	return time.AfterFunc(d, f)
-}
-
-var defaultClock = systemClock{}
+var timeNow = time.Now
+var timeAfterFunc = time.AfterFunc

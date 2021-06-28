@@ -31,27 +31,6 @@ import (
 	"go.uber.org/zap"
 )
 
-// mockClock always reads the same provided time.
-// It also holds on to the function for AfterFunc, so it can be triggered at without relying on timing.
-type mockClock struct {
-	time        time.Time
-	timeoutFunc func()
-}
-
-func (mc mockClock) Now() time.Time {
-	return mc.time
-}
-
-/* Mock after func; Does not call the function, just returns a timer of the given duration */
-func (mc *mockClock) AfterFunc(d time.Duration, f func()) *time.Timer {
-	mc.timeoutFunc = f
-	return time.NewTimer(d)
-}
-
-func newMockClock(t time.Time) clock {
-	return &mockClock{time: t}
-}
-
 const testURL = "http://example.com"
 
 type testRoundTripper func(req *http.Request) *http.Response
@@ -87,20 +66,19 @@ func newTestHTTPClient(respCode *int, respBody *string, err error) *http.Client 
 	}
 }
 
-func newTestClient(config *Config, httpClient *http.Client, clock clock) *client {
+func newTestClient(config *Config, httpClient *http.Client) *client {
 	return &client{
 		client: httpClient,
 		logger: zap.NewNop(),
 		config: config,
-		clock:  clock,
 	}
 }
 
-func createLogData(clock clock) pdata.Logs {
+func createLogData() pdata.Logs {
 	logs := pdata.NewLogs()
 	logs.ResourceLogs().Resize(1)
 
-	now := clock.Now()
+	now := timeNow()
 
 	rl := logs.ResourceLogs().At(0)
 	rl.InstrumentationLibraryLogs().Resize(1)
@@ -125,19 +103,15 @@ func TestClientSendLogs(t *testing.T) {
 		logs           pdata.Logs
 		responseStatus int
 		respBody       string
-		clockOverride  clock
-		timeoutClock   bool
+		timeoutTimer   bool // Timeout the last set timer created through timeAfterFunc()
 		//Outputs
 		shouldError      bool
 		errorIsPermanant bool
 	}
-	staticClock := newMockClock(time.Unix(0, 0))
-	//staticClockAfterThrottle := newMockClock(staticClock.(*mockClock).time.Add(throttleDuration + 1*time.Nanosecond))
 
 	testCases := []struct {
 		name        string
 		config      Config
-		clock       clock
 		clientError error
 		reqs        []testCaseRequest
 	}{
@@ -147,10 +121,9 @@ func TestClientSendLogs(t *testing.T) {
 				Endpoint:  testURL,
 				AgentName: "agent",
 			},
-			clock: staticClock,
 			reqs: []testCaseRequest{
 				{
-					logs:           createLogData(staticClock),
+					logs:           createLogData(),
 					responseStatus: 200,
 					respBody:       "",
 				},
@@ -162,27 +135,26 @@ func TestClientSendLogs(t *testing.T) {
 				Endpoint:  testURL,
 				AgentName: "agent",
 			},
-			clock: staticClock,
 			reqs: []testCaseRequest{
 				{
-					logs:             createLogData(staticClock),
+					logs:             createLogData(),
 					responseStatus:   401,
 					respBody:         "",
 					shouldError:      true,
 					errorIsPermanant: true,
 				},
 				{
-					logs:             createLogData(staticClock),
+					logs:             createLogData(),
 					responseStatus:   200, // Client is throttled, so the client will never get to this point
 					respBody:         "",
 					shouldError:      true,
 					errorIsPermanant: true,
 				},
 				{
-					logs:             createLogData(staticClock),
+					logs:             createLogData(),
 					responseStatus:   200,
 					respBody:         "",
-					timeoutClock:     true,
+					timeoutTimer:     true,
 					shouldError:      false,
 					errorIsPermanant: false,
 				},
@@ -194,10 +166,9 @@ func TestClientSendLogs(t *testing.T) {
 				Endpoint:  testURL,
 				AgentName: "agent",
 			},
-			clock: staticClock,
 			reqs: []testCaseRequest{
 				{
-					logs:             createLogData(staticClock),
+					logs:             createLogData(),
 					responseStatus:   400,
 					respBody:         "",
 					shouldError:      true,
@@ -211,10 +182,9 @@ func TestClientSendLogs(t *testing.T) {
 				Endpoint:  testURL,
 				AgentName: "agent",
 			},
-			clock: staticClock,
 			reqs: []testCaseRequest{
 				{
-					logs:             createLogData(staticClock),
+					logs:             createLogData(),
 					responseStatus:   500,
 					respBody:         "",
 					shouldError:      true,
@@ -228,25 +198,30 @@ func TestClientSendLogs(t *testing.T) {
 				Endpoint:  testURL,
 				AgentName: "agent",
 			},
-			clock:       staticClock,
 			clientError: errors.New("dial tcp failed"),
 			reqs: []testCaseRequest{
 				{
-					logs:             createLogData(staticClock),
+					logs:             createLogData(),
 					shouldError:      true,
 					errorIsPermanant: false,
 				},
 			},
 		},
 	}
+	var timerFunc func()
+	timeAfterFunc = func(d time.Duration, f func()) *time.Timer {
+		timerFunc = f
+		return time.NewTimer(d)
+	}
 
 	for _, testCase := range testCases {
+		timerFunc = nil
 		t.Run(testCase.name, func(t *testing.T) {
 			var respCode int
 			var respBody string
 
 			httpClient := newTestHTTPClient(&respCode, &respBody, testCase.clientError)
-			c := newTestClient(&testCase.config, httpClient, testCase.clock)
+			c := newTestClient(&testCase.config, httpClient)
 
 			err := c.start(context.Background(), componenttest.NewNopHost())
 			require.NoError(t, err)
@@ -255,13 +230,9 @@ func TestClientSendLogs(t *testing.T) {
 				respCode = req.responseStatus
 				respBody = req.respBody
 
-				if req.clockOverride != nil {
-					c.clock = req.clockOverride
-				}
-
-				if req.timeoutClock {
-					require.NotNil(t, c.clock.(*mockClock).timeoutFunc)
-					c.clock.(*mockClock).timeoutFunc()
+				if req.timeoutTimer {
+					require.NotNil(t, timerFunc)
+					timerFunc()
 				}
 
 				err = c.sendLogs(context.Background(), req.logs)

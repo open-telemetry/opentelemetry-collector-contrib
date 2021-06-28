@@ -42,6 +42,6 @@ type observIQLogEntry struct {
 }
 
 // Convert pdata.Logs to observIQLogBatch
-func logdataToObservIQFormat(ld pdata.Logs, agentID string, agentName string, clock clock) (*observIQLogBatch, []error) {
+func logdataToObservIQFormat(ld pdata.Logs, agentID string, agentName string) (*observIQLogBatch, []error) {
 	return &observIQLogBatch{}, []error{}
 }

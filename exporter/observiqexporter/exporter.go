@@ -30,7 +30,7 @@ func newObservIQLogExporter(config *Config, params component.ExporterCreateSetti
 		return nil, err
 	}
 
-	client, err := buildClient(config, params.Logger, defaultClock)
+	client, err := buildClient(config, params.Logger)
 	if err != nil {
 		return nil, err
 	}
