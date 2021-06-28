@@ -64,7 +64,11 @@ type Config struct {
 	// TODO: we can support directing output to a file (in the future) while customer specifies a file path here.
 	OutputDestination string `mapstructure:"output_destination"`
 
-	CreateHighLevelObject bool `mapstructure:"create_high_level_object"`
+
+	// CreateEKSFargateKubernetesObject is an option to reformat certin metric labels so that they take the form of a high level object
+	// The end result will make the labels look like those coming out of ECS and be more easily injected into cloudwatch
+	// Note that at the moment in order to use this feature the value "kubernetes" must also be added to the ParseJSONEncodedAttributeValues array in order to be used
+	CreateEKSFargateKubernetesObject bool `mapstructure:"create_eks_fargate_kubernetes_object"`
 
 	// ResourceToTelemetrySettings is the option for converting resource attrihutes to telemetry attributes.
 	// "Enabled" - A boolean field to enable/disable this option. Default is `false`.
