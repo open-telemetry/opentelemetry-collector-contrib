@@ -28,8 +28,6 @@ const (
 	typeStr            = "observiq"
 	defaultHTTPTimeout = 10 * time.Second
 	defaultEndpoint    = "https://nozzle.app.observiq.com/v1/add"
-	defaultAgentID     = "00000000-0000-0000-0000-000000000000"
-	defaultAgentName   = "otel collector"
 )
 
 // NewFactory creates a factory for observIQ exporter
@@ -50,8 +48,8 @@ func createDefaultConfig() config.Exporter {
 		},
 		RetrySettings: exporterhelper.DefaultRetrySettings(),
 		QueueSettings: exporterhelper.DefaultQueueSettings(),
-		AgentID:       defaultAgentID,
-		AgentName:     defaultAgentName,
+		AgentID:       defaultAgentID(),
+		AgentName:     defaultAgentName(),
 	}
 }
 

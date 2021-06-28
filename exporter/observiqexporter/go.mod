@@ -3,6 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/observ
 go 1.16
 
 require (
+	github.com/google/uuid v1.2.0
 	github.com/stretchr/testify v1.7.0
 	go.opentelemetry.io/collector v0.29.1-0.20210630154722-7d0a0398174e
 	go.uber.org/zap v1.18.1
