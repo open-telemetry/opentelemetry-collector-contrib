@@ -123,10 +123,7 @@ func (c *client) sendLogs(
 			fmt.Errorf("unable to send logs to observIQ (status code: %d), please check your account. Body: %s", res.StatusCode, body))
 
 	case res.StatusCode > 405:
-		return fmt.Errorf(
-			"request to observIQ returned a failure code. "+
-				"Review status and status code for further details. "+
-				"status_code %d, status %s", res.StatusCode, res.Status)
+		return fmt.Errorf("request to observIQ returned a failure code. status_code %d, status %s", res.StatusCode, res.Status)
 	}
 
 	if len(conversionErrs) > 0 {
@@ -156,25 +153,34 @@ func (c *client) throttle() {
 		c.throttleTimer.Stop()
 	}
 
-	c.timesThrottled += 1
+	c.timesThrottled++
 	c.throttled = true
 
 	// Specify to only clear the throttle if we don't throttle again in the meantime
 	curTimesThrottled := c.timesThrottled
-	throttleFunction := func() {
+	clearThrottleFunc := func() {
 		c.clearThrottle(curTimesThrottled)
 	}
 
-	c.throttleTimer = c.clock.AfterFunc(throttleDuration, throttleFunction)
+	c.throttleTimer = c.clock.AfterFunc(throttleDuration, clearThrottleFunc)
 }
 
-func (c *client) clearThrottle(throttleNum int) {
+/*
+	Clears current throttle.
+	throttleNum indicates which instance of the throttle to clear;
+	this should be equal to c.throttleTimes.
+	returns true if throttle is successfully cleared.
+	returns false if the throttle could not be cleared (c.throttleTimes was incremented before it could be cleared)
+*/
+func (c *client) clearThrottle(throttleNum int) bool {
 	c.throttleLock.Lock()
 	defer c.throttleLock.Unlock()
 	// Prevent case where the timer has fired, but another throttle occurred between the timer firing and the lock being acquired
 	if throttleNum == c.timesThrottled {
 		c.throttled = false
+		return true
 	}
+	return false
 }
 
 func (c *client) start(context.Context, component.Host) error {

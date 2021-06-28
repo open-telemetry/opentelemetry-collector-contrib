@@ -42,7 +42,7 @@ func (mc mockClock) Now() time.Time {
 	return mc.time
 }
 
-/* Mock after func; Does not call the function, just returns a timer of the given durations*/
+/* Mock after func; Does not call the function, just returns a timer of the given duration */
 func (mc *mockClock) AfterFunc(d time.Duration, f func()) *time.Timer {
 	mc.timeoutFunc = f
 	return time.NewTimer(d)
