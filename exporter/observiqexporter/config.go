@@ -68,30 +68,25 @@ func (c *Config) validateConfig() error {
 // Default agent name will be the hostname
 func defaultAgentName() string {
 	const fallbackAgentName = "otel collector"
+	hn, err := os.Hostname()
 
-	if hn, err := os.Hostname(); err == nil {
-		return hn
+	if err != nil {
+		return fallbackAgentName
 	}
 
-	return fallbackAgentName
+	return hn
 }
 
 // Default agent ID will be UUID based off hostname
 func defaultAgentID() string {
-	const spaceUUIDString = "6dcea175-1870-412d-8a91-2a6f46eec784" // arbitrary space UUID.
 	const fallbackID = "00000000-0000-0000-0000-000000000000"
-	spaceUUID, err := uuid.Parse(spaceUUIDString)
-
-	if err != nil {
-		return fallbackID
-	}
 
 	hn, err := os.Hostname()
 	if err != nil {
 		return fallbackID
 	}
 
-	id := uuid.NewMD5(spaceUUID, []byte(hn))
+	id := uuid.NewMD5(uuid.Nil, []byte(hn))
 
 	return id.String()
 
