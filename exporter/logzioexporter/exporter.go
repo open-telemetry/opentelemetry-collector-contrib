@@ -23,8 +23,8 @@ import (
 	"github.com/jaegertracing/jaeger/model"
 	"github.com/logzio/jaeger-logzio/store"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/translator/trace/jaeger"
 )
 

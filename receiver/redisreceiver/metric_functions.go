@@ -15,7 +15,7 @@
 package redisreceiver
 
 import (
-	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/model/pdata"
 )
 
 // Called once at startup. Returns all of the metrics (except keyspace)

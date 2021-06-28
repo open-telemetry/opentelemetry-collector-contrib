@@ -17,7 +17,7 @@ package translate
 import (
 	"errors"
 
-	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/model/pdata"
 )
 
 var (

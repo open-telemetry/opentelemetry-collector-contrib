@@ -23,7 +23,7 @@ import (
 	"github.com/elastic/go-structform/json"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/model/pdata"
 )
 
 var dijkstra = time.Date(1930, 5, 11, 16, 33, 11, 123456789, time.UTC)

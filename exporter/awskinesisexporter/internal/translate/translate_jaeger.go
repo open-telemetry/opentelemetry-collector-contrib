@@ -17,7 +17,7 @@ package translate
 import (
 	awskinesis "github.com/signalfx/opencensus-go-exporter-kinesis"
 	"go.opentelemetry.io/collector/consumer/consumererror"
-	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/model/pdata"
 	jaegertranslator "go.opentelemetry.io/collector/translator/trace/jaeger"
 )
 

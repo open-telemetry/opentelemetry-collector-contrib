@@ -17,7 +17,7 @@ package redisreceiver
 import (
 	"strconv"
 
-	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/model/pdata"
 )
 
 // An intermediate data type that allows us to define at startup which metrics to

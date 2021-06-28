@@ -18,7 +18,7 @@ import (
 	"regexp"
 
 	"github.com/golang/groupcache/lru"
-	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/model/pdata"
 	"go.uber.org/zap"
 )
 

@@ -18,7 +18,7 @@ import (
 	"sync"
 	"time"
 
-	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/model/pdata"
 )
 
 // TraceData stores the sampling related trace data.

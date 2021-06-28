@@ -18,7 +18,7 @@ import (
 	"hash/crc32"
 	"sort"
 
-	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/model/pdata"
 )
 
 const maxPositions uint32 = 36000 // 360 degrees with two decimal places

@@ -15,7 +15,7 @@
 package protocol
 
 import (
-	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/model/pdata"
 )
 
 // Parser is something that can map input StatsD strings to OTLP Metric representations.
