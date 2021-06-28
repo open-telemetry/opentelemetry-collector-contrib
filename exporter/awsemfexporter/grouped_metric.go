@@ -58,9 +58,9 @@ func addToGroupedMetric(pmd *pdata.Metric, groupedMetrics map[interface{}]*Group
 		labels := dp.Labels
 
 		if isPod, ok := labels["Type"]; ok {
-			if isPod == "Pod" && config.CreateHighLevelObject {
+			if isPod == "Pod" && config.CreateEKSFargateKubernetesObject {
 				addKubernetesWrapper(labels)
-			} else if isPod == "Container" && config.CreateHighLevelObject {
+			} else if isPod == "Container" && config.CreateEKSFargateKubernetesObject {
 				addKubernetesWrapper(labels)
 			}
 		}
