@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"net/http"
 	"testing"
+	"time"
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/client"
@@ -47,6 +48,7 @@ func TestContainerIntegration(t *testing.T) {
 	require.NotEmpty(t, started.AddrForPort(80), "IP address was empty")
 	require.NotEmpty(t, started.ID)
 
+	time.Sleep(5 * time.Second)
 	resp, err := http.Get("http://" + started.AddrForPort(80))
 	require.NoError(t, err)
 	resp.Body.Close()
