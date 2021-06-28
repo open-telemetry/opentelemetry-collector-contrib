@@ -148,7 +148,8 @@ func (e *humioTracesExporter) tracesToHumioEvents(td pdata.Traces) ([]*HumioStru
 	if len(droppedTraces) > 0 {
 		dropped := pdata.NewTraces()
 		for _, t := range droppedTraces {
-			dropped.ResourceSpans().Append(t)
+			tgt := dropped.ResourceSpans().AppendEmpty()
+			t.CopyTo(tgt)
 		}
 
 		return results, consumererror.NewTraces(

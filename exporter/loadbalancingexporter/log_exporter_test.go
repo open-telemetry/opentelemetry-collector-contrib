@@ -287,8 +287,10 @@ func TestLogBatchWithTwoTraces(t *testing.T) {
 	first := simpleLogs()
 	second := simpleLogWithID(pdata.NewTraceID([16]byte{2, 3, 4, 5}))
 	batch := pdata.NewLogs()
-	batch.ResourceLogs().Append(first.ResourceLogs().At(0))
-	batch.ResourceLogs().Append(second.ResourceLogs().At(0))
+	firstTgt := batch.ResourceLogs().AppendEmpty()
+	first.ResourceLogs().At(0).CopyTo(firstTgt)
+	secondTgt := batch.ResourceLogs().AppendEmpty()
+	second.ResourceLogs().At(0).CopyTo(secondTgt)
 
 	// test
 	err = p.ConsumeLogs(context.Background(), batch)
