@@ -9,6 +9,6 @@ require (
 	go.opencensus.io v0.23.0
 	go.opentelemetry.io/collector v0.29.1-0.20210628130708-ec64689277a6
 	go.opentelemetry.io/otel v0.20.0
-	go.uber.org/zap v1.18.0
+	go.uber.org/zap v1.18.1
 	gopkg.in/square/go-jose.v2 v2.5.1 // indirect
 )
