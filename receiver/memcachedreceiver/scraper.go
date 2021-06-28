@@ -19,7 +19,7 @@ import (
 	"time"
 
 	"github.com/grobie/gomemcache/memcache"
-	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 	"go.uber.org/zap"
 

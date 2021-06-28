@@ -14,7 +14,7 @@
 
 package groupbytraceprocessor
 
-import "go.opentelemetry.io/collector/consumer/pdata"
+import "go.opentelemetry.io/collector/model/pdata"
 
 // ringBuffer keeps an in-memory bounded buffer with the in-flight trace IDs
 type ringBuffer struct {

@@ -15,7 +15,7 @@
 package groupbyattrsprocessor
 
 import (
-	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/model/pdata"
 )
 
 func instrumentationLibrariesEqual(il1, il2 pdata.InstrumentationLibrary) bool {

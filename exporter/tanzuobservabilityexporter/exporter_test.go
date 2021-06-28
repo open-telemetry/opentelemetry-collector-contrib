@@ -23,8 +23,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/wavefronthq/wavefront-sdk-go/senders"
-	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/translator/conventions"
 	"go.uber.org/zap"
 )

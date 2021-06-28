@@ -23,7 +23,7 @@ import (
 	"github.com/signalfx/signalfx-agent/pkg/apm/correlations"
 	"github.com/signalfx/signalfx-agent/pkg/apm/tracetracker"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/model/pdata"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"

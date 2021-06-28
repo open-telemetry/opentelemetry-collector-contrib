@@ -20,7 +20,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/cloudwatchlogs"
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/model/pdata"
 )
 
 func TestLogToCWLog(t *testing.T) {

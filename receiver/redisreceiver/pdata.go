@@ -15,7 +15,7 @@
 package redisreceiver
 
 import (
-	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/model/pdata"
 )
 
 func buildKeyspaceTriplet(k *keyspace, t *timeBundle) pdata.MetricSlice {

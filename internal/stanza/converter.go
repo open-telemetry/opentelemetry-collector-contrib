@@ -26,7 +26,7 @@ import (
 	"time"
 
 	"github.com/open-telemetry/opentelemetry-log-collection/entry"
-	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/model/pdata"
 	"go.uber.org/zap"
 )
 

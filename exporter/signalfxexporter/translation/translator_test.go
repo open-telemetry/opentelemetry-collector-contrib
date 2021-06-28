@@ -24,7 +24,7 @@ import (
 	sfxpb "github.com/signalfx/com_signalfx_metrics_protobuf/model"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/model/pdata"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest/observer"
 )

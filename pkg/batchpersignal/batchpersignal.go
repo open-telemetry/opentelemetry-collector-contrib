@@ -14,7 +14,7 @@
 
 package batchpersignal
 
-import "go.opentelemetry.io/collector/consumer/pdata"
+import "go.opentelemetry.io/collector/model/pdata"
 
 // SplitTraces returns one pdata.Traces for each trace in the given pdata.Traces input. Each of the resulting pdata.Traces contains exactly one trace.
 func SplitTraces(batch pdata.Traces) []pdata.Traces {

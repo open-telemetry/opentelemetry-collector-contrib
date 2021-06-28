@@ -30,7 +30,7 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/receiver/prometheusreceiver"
 	"go.opentelemetry.io/collector/translator/internaldata"
 	"go.uber.org/zap"

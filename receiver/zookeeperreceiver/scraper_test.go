@@ -26,7 +26,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/config/confignet"
-	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/testutil"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"

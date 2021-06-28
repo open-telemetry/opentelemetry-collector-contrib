@@ -14,7 +14,7 @@
 
 package internal
 
-import "go.opentelemetry.io/collector/consumer/pdata"
+import "go.opentelemetry.io/collector/model/pdata"
 
 func NewResource(mp map[string]interface{}) pdata.Resource {
 	res := pdata.NewResource()

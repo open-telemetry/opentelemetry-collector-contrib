@@ -15,7 +15,7 @@
 package fluentforwardreceiver
 
 import (
-	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/model/pdata"
 )
 
 // Log is a convenience struct for constructing logs for tests.

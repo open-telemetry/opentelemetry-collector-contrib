@@ -15,7 +15,7 @@
 package groupbytraceprocessor
 
 import (
-	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/model/pdata"
 )
 
 // storage is an abstraction for the span storage used by the groupbytrace processor.

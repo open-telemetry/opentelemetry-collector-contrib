@@ -14,7 +14,7 @@
 
 package azuremonitorexporter
 
-import "go.opentelemetry.io/collector/consumer/pdata"
+import "go.opentelemetry.io/collector/model/pdata"
 
 /*
 	Encapsulates iteration over the Spans inside pdata.Traces from the underlying representation.

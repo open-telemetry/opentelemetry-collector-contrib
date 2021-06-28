@@ -14,7 +14,7 @@
 
 package sampling
 
-import "go.opentelemetry.io/collector/consumer/pdata"
+import "go.opentelemetry.io/collector/model/pdata"
 
 // hasResourceOrSpanWithCondition iterates through all the resources and instrumentation library spans until any
 // callback returns true.
