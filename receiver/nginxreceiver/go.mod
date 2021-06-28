@@ -7,7 +7,7 @@ require (
 	github.com/mattn/go-colorable v0.1.7 // indirect
 	github.com/nginxinc/nginx-prometheus-exporter v0.8.1-0.20201110005315-f5a5f8086c19
 	github.com/stretchr/testify v1.7.0
-	github.com/testcontainers/testcontainers-go v0.11.0
+	github.com/testcontainers/testcontainers-go v0.11.1
 	go.opentelemetry.io/collector v0.29.1-0.20210628130708-ec64689277a6
 	go.uber.org/zap v1.18.1
 )
