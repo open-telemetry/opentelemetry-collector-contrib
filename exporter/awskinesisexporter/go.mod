@@ -7,6 +7,6 @@ require (
 	github.com/signalfx/opencensus-go-exporter-kinesis v0.6.3
 	github.com/stretchr/testify v1.7.0
 	go.opentelemetry.io/collector v0.29.1-0.20210628130708-ec64689277a6
-	go.uber.org/zap v1.17.0
+	go.uber.org/zap v1.18.0
 	gopkg.in/square/go-jose.v2 v2.5.1 // indirect
 )
