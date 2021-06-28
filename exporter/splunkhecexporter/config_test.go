@@ -83,7 +83,6 @@ func TestLoadConfig(t *testing.T) {
 				CertFile: "",
 				KeyFile:  "",
 			},
-			Insecure:           true,
 			InsecureSkipVerify: false,
 		},
 	}
