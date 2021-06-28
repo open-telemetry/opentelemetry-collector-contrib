@@ -408,7 +408,8 @@ func TestConverterCancelledContextCancellsTheFlush(t *testing.T) {
 		ills := rls.InstrumentationLibraryLogs().At(0)
 
 		lr := convert(complexEntry())
-		ills.Logs().Append(lr)
+		tgt := ills.Logs().AppendEmpty()
+		lr.CopyTo(tgt)
 
 		assert.Error(t, converter.flush(ctx, pLogs))
 	}()
