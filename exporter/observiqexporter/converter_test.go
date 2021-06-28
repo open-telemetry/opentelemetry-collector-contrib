@@ -16,10 +16,12 @@ package observiqexporter
 
 import (
 	"encoding/json"
+	"strings"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/translator/conventions"
 )
@@ -86,11 +88,11 @@ func TestLogdataToObservIQFormat(t *testing.T) {
 				Severity:  "default",
 				Resource:  map[string]interface{}{},
 				Data: map[string]interface{}{
-					conventions.AttributeServiceName: "myapp",
-					conventions.AttributeHostName:    "myhost",
-					"custom":                         "custom",
+					strings.ReplaceAll(conventions.AttributeServiceName, ".", "_"): "myapp",
+					strings.ReplaceAll(conventions.AttributeHostName, ".", "_"):    "myhost",
+					"custom": "custom",
 				},
-				Agent: &observIQAgentInfo{Name: "agent", ID: "agentID"},
+				Agent: &observIQAgentInfo{Name: "agent", ID: "agentID", Version: "latest"},
 			},
 			false,
 		},
@@ -127,16 +129,16 @@ func TestLogdataToObservIQFormat(t *testing.T) {
 				Severity:  "default",
 				Resource:  map[string]interface{}{},
 				Data: map[string]interface{}{
-					conventions.AttributeServiceName: "myapp",
-					"bool":                           true,
-					"double":                         float64(1.0),
-					"int":                            float64(3),
+					strings.ReplaceAll(conventions.AttributeServiceName, ".", "_"): "myapp",
+					"bool":   true,
+					"double": float64(1.0),
+					"int":    float64(3),
 					"map": map[string]interface{}{
 						"mapKey": "value",
 					},
 					"array": []interface{}{float64(1), float64(2)},
 				},
-				Agent: &observIQAgentInfo{Name: "agent", ID: "agentID"},
+				Agent: &observIQAgentInfo{Name: "agent", ID: "agentID", Version: "latest"},
 			},
 			false,
 		},
@@ -156,7 +158,7 @@ func TestLogdataToObservIQFormat(t *testing.T) {
 				Severity:  "default",
 				Resource:  map[string]interface{}{},
 				Data:      nil,
-				Agent:     &observIQAgentInfo{Name: "agent", ID: "agentID"},
+				Agent:     &observIQAgentInfo{Name: "agent", ID: "agentID", Version: "latest"},
 			},
 			false,
 		},
@@ -180,7 +182,7 @@ func TestLogdataToObservIQFormat(t *testing.T) {
 				Severity:  "default",
 				Resource:  map[string]interface{}{},
 				Data:      nil,
-				Agent:     &observIQAgentInfo{Name: "agent", ID: "agentID"},
+				Agent:     &observIQAgentInfo{Name: "agent", ID: "agentID", Version: "latest"},
 				Body: map[string]interface{}{
 					"mapKey": "value",
 				},
@@ -203,7 +205,7 @@ func TestLogdataToObservIQFormat(t *testing.T) {
 				Severity:  "default",
 				Resource:  map[string]interface{}{},
 				Data:      nil,
-				Agent:     &observIQAgentInfo{Name: "agent", ID: "agentID"},
+				Agent:     &observIQAgentInfo{Name: "agent", ID: "agentID", Version: "latest"},
 			},
 			false,
 		},
@@ -212,7 +214,11 @@ func TestLogdataToObservIQFormat(t *testing.T) {
 	for _, testCase := range testCases {
 		t.Run(testCase.name, func(t *testing.T) {
 			logs := resourceAndLogRecordsToLogs(testCase.logResourceFn(), []pdata.LogRecord{testCase.logRecordFn()})
-			res, errs := logdataToObservIQFormat(logs, testCase.agentID, testCase.agentName)
+			res, errs := logdataToObservIQFormat(
+				logs,
+				testCase.agentID,
+				testCase.agentName,
+				component.DefaultBuildInfo())
 
 			if testCase.expectErr {
 				require.NotEmpty(t, errs)

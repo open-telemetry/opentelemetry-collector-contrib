@@ -22,10 +22,12 @@ import (
 	"errors"
 	"io/ioutil"
 	"net/http"
+	"strings"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/translator/conventions"
@@ -75,9 +77,10 @@ func newTestHTTPClient(t *testing.T, respCode *int, respBody *string, testFunc *
 
 func newTestClient(config *Config, httpClient *http.Client) *client {
 	return &client{
-		client: httpClient,
-		logger: zap.NewNop(),
-		config: config,
+		client:    httpClient,
+		logger:    zap.NewNop(),
+		config:    config,
+		buildInfo: component.DefaultBuildInfo(),
 	}
 }
 
@@ -149,14 +152,14 @@ func TestClientSendLogs(t *testing.T) {
 	defaultLogEntry := observIQLogEntry{
 		Timestamp: "1970-01-01T00:00:00.000Z",
 		Data: map[string]interface{}{
-			conventions.AttributeNetHostIP:   "1.1.1.1",
-			conventions.AttributeNetHostPort: float64(4000),
-			"recordNum":                      float64(0),
+			strings.ReplaceAll(conventions.AttributeNetHostIP, ".", "_"):   "1.1.1.1",
+			strings.ReplaceAll(conventions.AttributeNetHostPort, ".", "_"): float64(4000),
+			"recordNum": float64(0),
 		},
 		Message:  "message",
 		Severity: "default",
 		Resource: map[string]interface{}{},
-		Agent:    &observIQAgentInfo{Name: "agent"},
+		Agent:    &observIQAgentInfo{ID: "0", Name: "agent", Version: "latest"},
 	}
 
 	testCases := []struct {
@@ -169,6 +172,7 @@ func TestClientSendLogs(t *testing.T) {
 			name: "Happy path",
 			config: Config{
 				Endpoint:  testURL,
+				AgentID:   "0",
 				AgentName: "agent",
 			},
 			reqs: []testCaseRequest{
@@ -184,6 +188,7 @@ func TestClientSendLogs(t *testing.T) {
 			name: "throttling",
 			config: Config{
 				Endpoint:  testURL,
+				AgentID:   "0",
 				AgentName: "agent",
 			},
 			reqs: []testCaseRequest{
@@ -215,6 +220,7 @@ func TestClientSendLogs(t *testing.T) {
 			name: "bad request errors permanent",
 			config: Config{
 				Endpoint:  testURL,
+				AgentID:   "0",
 				AgentName: "agent",
 			},
 			reqs: []testCaseRequest{
@@ -231,6 +237,7 @@ func TestClientSendLogs(t *testing.T) {
 			name: "500 error",
 			config: Config{
 				Endpoint:  testURL,
+				AgentID:   "0",
 				AgentName: "agent",
 			},
 			reqs: []testCaseRequest{
@@ -247,6 +254,7 @@ func TestClientSendLogs(t *testing.T) {
 			name: "client error",
 			config: Config{
 				Endpoint:  testURL,
+				AgentID:   "0",
 				AgentName: "agent",
 			},
 			clientError: errors.New("dial tcp failed"),

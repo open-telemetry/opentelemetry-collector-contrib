@@ -18,7 +18,9 @@ import (
 	"crypto/md5" //nolint:gosec // Not used for crypto, just for generating ID based on contents of log
 	"encoding/hex"
 	"encoding/json"
+	"strings"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/model/pdata"
 )
@@ -38,8 +40,9 @@ type observIQLog struct {
 }
 
 type observIQAgentInfo struct {
-	ID   string `json:"id"`
-	Name string `json:"name"`
+	ID      string `json:"id"`
+	Name    string `json:"name"`
+	Version string `json:"version"`
 }
 type observIQLogEntry struct {
 	Timestamp string                 `json:"@timestamp"`
@@ -53,7 +56,7 @@ type observIQLogEntry struct {
 }
 
 // Convert pdata.Logs to observIQLogBatch
-func logdataToObservIQFormat(ld pdata.Logs, agentID string, agentName string) (*observIQLogBatch, []error) {
+func logdataToObservIQFormat(ld pdata.Logs, agentID string, agentName string, buildInfo component.BuildInfo) (*observIQLogBatch, []error) {
 	var rls = ld.ResourceLogs()
 	var sliceOut = make([]*observIQLog, 0, ld.LogRecordCount())
 	var errorsOut = make([]error, 0)
@@ -67,9 +70,9 @@ func logdataToObservIQFormat(ld pdata.Logs, agentID string, agentName string) (*
 			ill := ills.At(j)
 			logs := ill.Logs()
 			for k := 0; k < logs.Len(); k++ {
-				oiqLogEntry := resourceAndInstrmentationLogToEntry(resMap, logs.At(k), agentID, agentName)
+				oiqLogEntry := resourceAndInstrmentationLogToEntry(resMap, logs.At(k), agentID, agentName, buildInfo)
 
-				jsonOiqLogEntry, err := json.Marshal(oiqLogEntry)
+				jsonOIQLogEntry, err := json.Marshal(oiqLogEntry)
 
 				if err != nil {
 					//Skip this log, keep record of error
@@ -78,13 +81,13 @@ func logdataToObservIQFormat(ld pdata.Logs, agentID string, agentName string) (*
 				}
 
 				//md5 sum of the message is ID
-				md5Sum := md5.Sum(jsonOiqLogEntry) //nolint:gosec // Not used for crypto, just for generating ID based on contents of log
+				md5Sum := md5.Sum(jsonOIQLogEntry) //nolint:gosec // Not used for crypto, just for generating ID based on contents of log
 				md5SumAsHex := hex.EncodeToString(md5Sum[:])
 
 				sliceOut = append(sliceOut, &observIQLog{
 					ID:    md5SumAsHex,
-					Size:  len(jsonOiqLogEntry),
-					Entry: preEncodedJSON(jsonOiqLogEntry),
+					Size:  len(jsonOIQLogEntry),
+					Entry: preEncodedJSON(jsonOIQLogEntry),
 				})
 			}
 		}
@@ -96,7 +99,7 @@ func logdataToObservIQFormat(ld pdata.Logs, agentID string, agentName string) (*
 // Output timestamp format, and ISO8601 compliant timesetamp with millisecond precision
 const timestampFieldOutputLayout = "2006-01-02T15:04:05.000Z07:00"
 
-func resourceAndInstrmentationLogToEntry(resMap interface{}, log pdata.LogRecord, agentID string, agentName string) *observIQLogEntry {
+func resourceAndInstrmentationLogToEntry(resMap interface{}, log pdata.LogRecord, agentID string, agentName string, buildInfo component.BuildInfo) *observIQLogEntry {
 	msg := messageFromRecord(log)
 
 	return &observIQLogEntry{
@@ -106,7 +109,7 @@ func resourceAndInstrmentationLogToEntry(resMap interface{}, log pdata.LogRecord
 		Message:   msg,
 		Data:      attributeMapToBaseType(log.Attributes()),
 		Body:      bodyFromRecord(log),
-		Agent:     &observIQAgentInfo{Name: agentName, ID: agentID},
+		Agent:     &observIQAgentInfo{Name: agentName, ID: agentID, Version: buildInfo.Version},
 	}
 }
 
@@ -125,7 +128,7 @@ func messageFromRecord(log pdata.LogRecord) string {
 	return ""
 }
 
-// If Body is a map, it is suitable to be used on the observiq log entry
+// If Body is a map, it is suitable to be used on the observiq log entry as "body"
 func bodyFromRecord(log pdata.LogRecord) map[string]interface{} {
 	if log.Body().Type() == pdata.AttributeValueTypeMap {
 		return attributeMapToBaseType(log.Body().MapVal())
@@ -166,7 +169,6 @@ var severityNumberToObservIQName = map[int32]string{
 	Get severity from the a log record.
 	We prefer the severity number, and map it to a string
 	representing the opentelemetry defined severity.
-	TODO: Should we potentially use the string severity?
 	If there is no severity number, we use "default"
 */
 func severityFromRecord(log pdata.LogRecord) string {
@@ -178,14 +180,15 @@ func severityFromRecord(log pdata.LogRecord) string {
 }
 
 /*
-	Transform AttributeMap to native Go map, skipping nils
+	Transform AttributeMap to native Go map, skipping nils, and replacing dots in keys with _
 */
 func attributeMapToBaseType(m pdata.AttributeMap) map[string]interface{} {
 	mapOut := make(map[string]interface{}, m.Len())
 	m.Range(func(k string, v pdata.AttributeValue) bool {
 		val := attributeValueToBaseType(v)
 		if val != nil {
-			mapOut[k] = val
+			dedotedKey := strings.ReplaceAll(k, ".", "_")
+			mapOut[dedotedKey] = val
 		}
 		return true
 	})
@@ -193,7 +196,7 @@ func attributeMapToBaseType(m pdata.AttributeMap) map[string]interface{} {
 }
 
 /*
-	attrib is the attribute value to convert to it's native Go type
+	attrib is the attribute value to convert to it's native Go type - skips nils in arrays/maps
 */
 func attributeValueToBaseType(attrib pdata.AttributeValue) interface{} {
 	switch attrib.Type() {
