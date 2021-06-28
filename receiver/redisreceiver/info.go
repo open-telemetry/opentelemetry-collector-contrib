@@ -45,7 +45,8 @@ func (i info) buildFixedMetrics(metrics []*redisMetric, t *timeBundle) (pdms pda
 			warnings = append(warnings, parsingError)
 			continue
 		}
-		pdms.Append(pdm)
+		tgt := pdms.AppendEmpty()
+		pdm.CopyTo(tgt)
 	}
 	return pdms, warnings
 }

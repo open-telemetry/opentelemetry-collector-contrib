@@ -422,6 +422,7 @@ func (pfe *PackedForwardEventLogRecords) parseEntries(entriesRaw []byte, isGzipp
 
 		lr.Attributes().InsertString(tagAttributeKey, tag)
 
-		pfe.LogSlice.Append(lr)
+		tgt := pfe.LogSlice.AppendEmpty()
+		lr.CopyTo(tgt)
 	}
 }

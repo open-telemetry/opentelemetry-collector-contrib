@@ -82,7 +82,8 @@ func SplunkHecToMetricsData(logger *zap.Logger, events []*splunk.Event, resource
 		}
 
 		if metrics.Len() > 0 {
-			md.ResourceMetrics().Append(resourceMetrics)
+			tgt := md.ResourceMetrics().AppendEmpty()
+			resourceMetrics.CopyTo(tgt)
 		}
 	}
 
