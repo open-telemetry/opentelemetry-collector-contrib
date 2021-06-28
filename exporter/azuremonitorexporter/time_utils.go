@@ -19,7 +19,7 @@ import (
 	"fmt"
 	"time"
 
-	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/model/pdata"
 )
 
 func toTime(t pdata.Timestamp) time.Time {

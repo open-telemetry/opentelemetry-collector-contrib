@@ -23,7 +23,7 @@ import (
 	"time"
 
 	"github.com/microsoft/ApplicationInsights-Go/appinsights/contracts"
-	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/translator/conventions"
 	"go.uber.org/zap"
 )

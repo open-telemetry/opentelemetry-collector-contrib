@@ -19,7 +19,7 @@ import (
 	"fmt"
 	"strconv"
 
-	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/model/pdata"
 )
 
 // A map of the INFO data returned from Redis.

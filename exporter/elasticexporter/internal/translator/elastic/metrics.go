@@ -23,7 +23,7 @@ import (
 
 	"go.elastic.co/apm/model"
 	"go.elastic.co/fastjson"
-	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/model/pdata"
 )
 
 // EncodeMetrics encodes an OpenTelemetry metrics slice, and instrumentation

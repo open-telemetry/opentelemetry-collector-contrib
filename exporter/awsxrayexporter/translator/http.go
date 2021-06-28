@@ -18,7 +18,7 @@ import (
 	"strconv"
 
 	"github.com/aws/aws-sdk-go/aws"
-	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/model/pdata"
 	semconventions "go.opentelemetry.io/collector/translator/conventions"
 
 	awsxray "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray"

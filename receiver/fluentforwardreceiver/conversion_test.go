@@ -21,7 +21,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"github.com/tinylib/msgp/msgp"
-	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/model/pdata"
 )
 
 func TestMessageEventConversion(t *testing.T) {
