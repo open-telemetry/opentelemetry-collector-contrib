@@ -13,7 +13,7 @@
 // limitations under the License.
 package observiqexporter
 
-import "go.opentelemetry.io/collector/consumer/pdata"
+import "go.opentelemetry.io/collector/model/pdata"
 
 type observIQLogBatch struct {
 	Logs []*observIQLog `json:"logs"`
