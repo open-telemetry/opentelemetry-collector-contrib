@@ -71,7 +71,6 @@ func TestNew(t *testing.T) {
 				CertFile: "file-not-found",
 				KeyFile:  "file-not-found",
 			},
-			Insecure:           false,
 			InsecureSkipVerify: false,
 		},
 	}
