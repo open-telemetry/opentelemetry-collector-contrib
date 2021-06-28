@@ -256,8 +256,8 @@ func TestValue_FromAttribute(t *testing.T) {
 		"non-empty array": {
 			in: func() pdata.AttributeValue {
 				v := pdata.NewAttributeValueArray()
-				arr := v.ArrayVal()
-				arr.Append(pdata.NewAttributeValueInt(1))
+				tgt := v.ArrayVal().AppendEmpty()
+				pdata.NewAttributeValueInt(1).CopyTo(tgt)
 				return v
 			}(),
 			want: ArrValue(IntValue(1)),

@@ -303,7 +303,8 @@ func encodeSpanEvents(t *testing.T, language string, events ...pdata.SpanEvent) 
 	span.SetTraceID(pdata.NewTraceID(traceID))
 	span.SetSpanID(pdata.NewSpanID(transactionID))
 	for _, event := range events {
-		span.Events().Append(event)
+		tgt := span.Events().AppendEmpty()
+		event.CopyTo(tgt)
 	}
 
 	var w fastjson.Writer
