@@ -1,6 +1,6 @@
 receivers:
   filelog:
-    include: ~/example.log
+    include: /home/user/example.log
 
 processors:
   batch:
