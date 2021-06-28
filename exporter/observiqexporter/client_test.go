@@ -24,7 +24,6 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/translator/conventions"
@@ -223,9 +222,6 @@ func TestClientSendLogs(t *testing.T) {
 			httpClient := newTestHTTPClient(&respCode, &respBody, testCase.clientError)
 			c := newTestClient(&testCase.config, httpClient)
 
-			err := c.start(context.Background(), componenttest.NewNopHost())
-			require.NoError(t, err)
-
 			for _, req := range testCase.reqs {
 				respCode = req.responseStatus
 				respBody = req.respBody
@@ -235,7 +231,7 @@ func TestClientSendLogs(t *testing.T) {
 					timerFunc()
 				}
 
-				err = c.sendLogs(context.Background(), req.logs)
+				err := c.sendLogs(context.Background(), req.logs)
 
 				if req.shouldError {
 					require.Error(t, err)

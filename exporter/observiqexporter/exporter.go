@@ -43,7 +43,6 @@ func newObservIQLogExporter(config *Config, params component.ExporterCreateSetti
 		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
 		exporterhelper.WithRetry(config.RetrySettings),
 		exporterhelper.WithQueue(config.QueueSettings),
-		exporterhelper.WithStart(client.start),
 		exporterhelper.WithShutdown(client.stop),
 	)
 

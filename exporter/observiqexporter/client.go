@@ -26,7 +26,6 @@ import (
 	"sync"
 	"time"
 
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/model/pdata"
 	"go.uber.org/zap"
@@ -176,10 +175,6 @@ func (c *client) clearThrottle(throttleNum int) {
 	if throttleNum == c.timesThrottled {
 		c.throttled = false
 	}
-}
-
-func (c *client) start(context.Context, component.Host) error {
-	return nil
 }
 
 func (c *client) stop(context.Context) error {
