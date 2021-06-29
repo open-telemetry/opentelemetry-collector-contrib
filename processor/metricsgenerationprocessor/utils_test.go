@@ -17,9 +17,9 @@ package metricsgenerationprocessor
 import (
 	"testing"
 
-	"go.uber.org/zap"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/model/pdata"
+	"go.uber.org/zap"
 )
 
 func TestCalculateValue(t *testing.T) {

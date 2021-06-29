@@ -337,7 +337,7 @@ func TestMetricsGenerationProcessor(t *testing.T) {
 						require.Equal(t, eDataPoints.At(j).Value(), aDataPoints.At(j).Value())
 					}
 				}
-				
+
 			}
 
 			require.NoError(t, mgp.Shutdown(ctx))
@@ -364,7 +364,6 @@ func generateTestMetrics(tm testMetric) pdata.Metrics {
 
 	return md
 }
-
 
 func generateTestMetricsWithIntDatapoint(tm testMetricIntGauge) pdata.Metrics {
 	md := pdata.NewMetrics()
