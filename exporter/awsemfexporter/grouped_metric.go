@@ -17,8 +17,8 @@ package awsemfexporter
 import (
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.uber.org/zap"
-	"log"
 	"encoding/json"
+	"errors"
 
 	aws "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/metrics"
 )
@@ -37,15 +37,15 @@ type MetricInfo struct {
 }
 
 // addToGroupedMetric processes OT metrics and adds them into GroupedMetric buckets
-func addToGroupedMetric(pmd *pdata.Metric, groupedMetrics map[interface{}]*GroupedMetric, metadata CWMetricMetadata, logger *zap.Logger, descriptor map[string]MetricDescriptor, config *Config) {
+func addToGroupedMetric(pmd *pdata.Metric, groupedMetrics map[interface{}]*GroupedMetric, metadata CWMetricMetadata, logger *zap.Logger, descriptor map[string]MetricDescriptor, config *Config) error {
 	if pmd == nil {
-		return
+		return nil
 	}
 
 	metricName := pmd.Name()
 	dps := getDataPoints(pmd, metadata, logger)
 	if dps == nil || dps.Len() == 0 {
-		return
+		return nil
 	}
 
 	for i := 0; i < dps.Len(); i++ {
@@ -59,9 +59,17 @@ func addToGroupedMetric(pmd *pdata.Metric, groupedMetrics map[interface{}]*Group
 
 		if isPod, ok := labels["Type"]; ok {
 			if(isPod == "Pod" && config.CreateEKSFargateKubernetesObject){
-				addKubernetesWrapper(labels)
+				err := addKubernetesWrapper(labels)
+				if err != nil{
+					logger.Warn("Issue forming Kubernetes Object", zap.Error(err))
+					return err
+				}
 			} else if (isPod == "Container" && config.CreateEKSFargateKubernetesObject){
-				addKubernetesWrapper(labels)
+				err  := addKubernetesWrapper(labels)
+				if err != nil {
+					logger.Warn("Issue forming Kubernetes Object", zap.Error(err))
+					return err
+				}
 			}
 		}
 
@@ -95,6 +103,8 @@ func addToGroupedMetric(pmd *pdata.Metric, groupedMetrics map[interface{}]*Group
 			}
 		}
 	}
+
+	return nil
 }
 
 type kubernetesObj struct{
@@ -118,7 +128,7 @@ type internalPodOwnersObj struct{
 }
 
 
-func addKubernetesWrapper(labels map[string]string){
+func addKubernetesWrapper(labels map[string]string) error{
 	//create schema
 	schema := kubernetesObj{}
 	schema.Host = "host_name"
@@ -137,41 +147,54 @@ func addKubernetesWrapper(labels map[string]string){
 		}
 	schema.Service_name = "service_name"
 
-	labels["kubernetes"] = recursivelyFillInStruct(labels,schema)
+	var err error
+	labels["kubernetes"], err = recursivelyFillInStruct(labels,schema)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 
-func recursivelyFillInStruct(labels map[string]string, schema interface{}) string{
+func recursivelyFillInStruct(labels map[string]string, schema interface{}) (string, error){
 	jsonBytes, err := json.Marshal(schema)
 	if err != nil {
-		log.Fatal(err)
+		return "", err
 	}
 
 	m := make(map[string]interface{})
 	err = json.Unmarshal(jsonBytes,&m)
 	if err != nil {
-		log.Fatal(err)
+		return "", err
 	}
 
-	m = recursivelyFillInMap(labels, m)
+	m, err = recursivelyFillInMap(labels, m)
+	if err != nil {
+		return "", err
+	}
 	jsonBytes, err = json.Marshal(m)
 	if err != nil {
-		log.Fatal(err)
+		return "", err
 	}
 
 	jsonString := string(jsonBytes)
-	return jsonString
+	return jsonString, nil
 	
 }
 
-func recursivelyFillInMap(labels map[string]string, schema map[string]interface{}) map[string]interface{}{
+func recursivelyFillInMap(labels map[string]string, schema map[string]interface{}) (map[string]interface{}, error){
 	//Iterate over the keys of the schema
+	var err error
+	labels["dummy"] = "got to the start"
 	for k,v := range schema{
 		//Check if it is nested or not
 		nestedObj, isNested := v.(map[string]interface{})
 		if isNested {
 			//recursively fill in the nested object
-			schema[k] = recursivelyFillInMap(labels,nestedObj)
+			schema[k], err = recursivelyFillInMap(labels,nestedObj)
+			if err != nil {
+				return nil, err
+			}
 			//if the object is empty delete it
 			mapForm, _ := schema[k].(map[string]interface{})
 			if(len(mapForm) == 0){
@@ -180,7 +203,7 @@ func recursivelyFillInMap(labels map[string]string, schema map[string]interface{
 		} else {
 			stringVal, isString := v.(string)
 			if !isString{
-				log.Fatal("Non string, struct value found in schema")
+				return nil, errors.New("Non string, struct value found in schema")
 			}
 			labelVal, exists := labels[stringVal]
 			if !exists{
@@ -191,7 +214,9 @@ func recursivelyFillInMap(labels map[string]string, schema map[string]interface{
 		}
 
 	}
-	return schema
+
+	labels["dummy"] = "got to the end"
+	return schema, nil
 }
 
 func groupedMetricKey(metadata GroupedMetricMetadata, labels map[string]string) aws.Key {
