@@ -40,7 +40,7 @@ func TestNewReceiver_invalid_version_err(t *testing.T) {
 func TestNewReceiver_invalid_scraper_error(t *testing.T) {
 	c := createDefaultConfig().(*Config)
 	c.Scrapers = []string{"brokers", "cpu"}
-	mockScraper := func(context.Context, Config, *sarama.Config, *zap.Logger) (scraperhelper.ResourceMetricsScraper, error) {
+	mockScraper := func(context.Context, Config, *sarama.Config, *zap.Logger) (scraperhelper.Scraper, error) {
 		return nil, nil
 	}
 	allScrapers["brokers"] = mockScraper
@@ -70,7 +70,7 @@ func TestNewReceiver_invalid_auth_error(t *testing.T) {
 func TestNewReceiver(t *testing.T) {
 	c := createDefaultConfig().(*Config)
 	c.Scrapers = []string{"brokers"}
-	mockScraper := func(context.Context, Config, *sarama.Config, *zap.Logger) (scraperhelper.ResourceMetricsScraper, error) {
+	mockScraper := func(context.Context, Config, *sarama.Config, *zap.Logger) (scraperhelper.Scraper, error) {
 		return nil, nil
 	}
 	allScrapers["brokers"] = mockScraper
@@ -82,7 +82,7 @@ func TestNewReceiver(t *testing.T) {
 func TestNewReceiver_handles_scraper_error(t *testing.T) {
 	c := createDefaultConfig().(*Config)
 	c.Scrapers = []string{"brokers"}
-	mockScraper := func(context.Context, Config, *sarama.Config, *zap.Logger) (scraperhelper.ResourceMetricsScraper, error) {
+	mockScraper := func(context.Context, Config, *sarama.Config, *zap.Logger) (scraperhelper.Scraper, error) {
 		return nil, fmt.Errorf("fail")
 	}
 	allScrapers["brokers"] = mockScraper

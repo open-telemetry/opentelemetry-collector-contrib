@@ -36,7 +36,7 @@ type memcachedScraper struct {
 func newMemcachedScraper(
 	logger *zap.Logger,
 	config *Config,
-) scraperhelper.ResourceMetricsScraper {
+) scraperhelper.Scraper {
 	ms := &memcachedScraper{
 		logger: logger,
 		config: config,

@@ -173,7 +173,7 @@ func (s *consumerScraper) scrape(context.Context) (pdata.ResourceMetricsSlice, e
 	return rms, scrapeErrors.Combine()
 }
 
-func createConsumerScraper(_ context.Context, cfg Config, saramaConfig *sarama.Config, logger *zap.Logger) (scraperhelper.ResourceMetricsScraper, error) {
+func createConsumerScraper(_ context.Context, cfg Config, saramaConfig *sarama.Config, logger *zap.Logger) (scraperhelper.Scraper, error) {
 	groupFilter, err := regexp.Compile(cfg.GroupMatch)
 	if err != nil {
 		return nil, fmt.Errorf("failed to compile group_match: %w", err)
