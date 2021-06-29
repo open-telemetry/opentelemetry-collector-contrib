@@ -20,37 +20,19 @@ import (
 	"go.opentelemetry.io/collector/config"
 )
 
-const (
-	// nameFieldName is the mapstructure field name for name field
-	nameFieldName = "name"
-)
-
 // Config defines the configuration for the processor.
 type Config struct {
 	config.ProcessorSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
 
-	// Set of cumulative sum metrics to convert to delta
-	Metrics []Metric `mapstructure:"metrics"`
-}
-
-type Metric struct {
-	// Name of the metric. This is a required field.
-	Name string `mapstructure:"name"`
-
-	// List of resource attribte keys against which the metric will be matched
-	ResourceAttributeKeys []string `mapstructure:"resource_attribute_keys"`
-
-	// List of metric label keys against which the metric will be matched
-	MetricLabelKeys []string `mapstructure:"metric_label_keys"`
+	// List of cumulative sum metrics to convert to delta
+	Metrics []string `mapstructure:"metrics"`
 }
 
 // Validate checks whether the input configuration has all of the required fields for the processor.
 // An error is returned if there are any invalid inputs.
 func (config *Config) Validate() error {
-	for _, rule := range config.Metrics {
-		if rule.Name == "" {
-			return fmt.Errorf("missing required field %q", nameFieldName)
-		}
+	if len(config.Metrics) <= 0 {
+		return fmt.Errorf("Metric names are missing")
 	}
 	return nil
 }

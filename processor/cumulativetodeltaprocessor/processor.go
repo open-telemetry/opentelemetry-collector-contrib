@@ -24,7 +24,7 @@ import (
 )
 
 type cumulativeToDeltaProcessor struct {
-	metrics []internalMetric
+	metrics []string
 	logger  *zap.Logger
 }
 
@@ -36,9 +36,9 @@ type internalMetric struct {
 	metricLabelKeys       []string
 }
 
-func newCumulativeToDeltaProcessor(metrics []internalMetric, logger *zap.Logger) *cumulativeToDeltaProcessor {
+func newCumulativeToDeltaProcessor(config *Config, logger *zap.Logger) *cumulativeToDeltaProcessor {
 	return &cumulativeToDeltaProcessor{
-		metrics: metrics,
+		metrics: config.Metrics,
 		logger:  logger,
 	}
 }

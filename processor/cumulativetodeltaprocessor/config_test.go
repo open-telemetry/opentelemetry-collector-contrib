@@ -35,17 +35,9 @@ func TestLoadingFullConfig(t *testing.T) {
 			configFile: "config_full.yaml",
 			expCfg: &Config{
 				ProcessorSettings: config.NewProcessorSettings(config.NewID(typeStr)),
-				Metrics: []Metric{
-					{
-						Name:                  "metric1",
-						ResourceAttributeKeys: []string{"attr1", "attr2"},
-						MetricLabelKeys:       []string{"label1"},
-					},
-					{
-						Name:                  "metric2",
-						ResourceAttributeKeys: []string{"attr2"},
-						MetricLabelKeys:       []string{"label2"},
-					},
+				Metrics: []string{
+					"metric1",
+					"metric2",
 				},
 			},
 		},
@@ -81,7 +73,7 @@ func TestValidateConfig(t *testing.T) {
 		{
 			configName:   "config_missing_name.yaml",
 			succeed:      false,
-			errorMessage: fmt.Sprintf("missing required field %q", nameFieldName),
+			errorMessage: fmt.Sprintf("Metric names are missing"),
 		},
 	}
 

@@ -57,26 +57,11 @@ func createMetricsProcessor(
 	}
 
 	processorConfig.Validate()
-	metricsProcessor := newCumulativeToDeltaProcessor(buildInternalConfig(processorConfig), params.Logger)
+	metricsProcessor := newCumulativeToDeltaProcessor(processorConfig, params.Logger)
 
 	return processorhelper.NewMetricsProcessor(
 		cfg,
 		nextConsumer,
 		metricsProcessor,
 		processorhelper.WithCapabilities(processorCapabilities))
-}
-
-// buildInternalConfig constructs the internal metric generation rules
-func buildInternalConfig(config *Config) []internalMetric {
-	internalMetrics := make([]internalMetric, len(config.Metrics))
-
-	for i, metric := range config.Metrics {
-		m := internalMetric{
-			name:                  metric.Name,
-			resourceAttributeKeys: metric.ResourceAttributeKeys,
-			metricLabelKeys:       metric.MetricLabelKeys,
-		}
-		internalMetrics[i] = m
-	}
-	return internalMetrics
 }

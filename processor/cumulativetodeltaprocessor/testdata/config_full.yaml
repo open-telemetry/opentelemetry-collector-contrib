@@ -4,12 +4,8 @@ receivers:
 processors:
   cumulativetodelta:
     metrics:
-      - name: metric1
-        resource_attribute_keys: [attr1, attr2]
-        metric_label_keys: [label1]
-      - name: metric2
-        resource_attribute_keys: [attr2]
-        metric_label_keys: [label2]
+      - metric1
+      - metric2
 
 exporters:
   nop:
