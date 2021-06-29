@@ -195,7 +195,7 @@ commands:
       - run:
           name: Upgrade golang
           command: |
-            choco upgrade golang --version=1.15
+            choco upgrade golang --version=1.16
             refreshenv
       - run:
           name: Unit tests
