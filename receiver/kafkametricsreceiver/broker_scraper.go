@@ -67,7 +67,7 @@ func (s *brokerScraper) scrape(context.Context) (pdata.ResourceMetricsSlice, err
 	return rms, nil
 }
 
-func createBrokerScraper(_ context.Context, cfg Config, saramaConfig *sarama.Config, logger *zap.Logger) (scraperhelper.ResourceMetricsScraper, error) {
+func createBrokerScraper(_ context.Context, cfg Config, saramaConfig *sarama.Config, logger *zap.Logger) (scraperhelper.Scraper, error) {
 	s := brokerScraper{
 		logger:       logger,
 		config:       cfg,
