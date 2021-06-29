@@ -30,12 +30,6 @@ type cumulativeToDeltaProcessor struct {
 
 var _ processorhelper.MProcessor = (*cumulativeToDeltaProcessor)(nil)
 
-type internalMetric struct {
-	name                  string
-	resourceAttributeKeys []string
-	metricLabelKeys       []string
-}
-
 func newCumulativeToDeltaProcessor(config *Config, logger *zap.Logger) *cumulativeToDeltaProcessor {
 	return &cumulativeToDeltaProcessor{
 		metrics: config.Metrics,

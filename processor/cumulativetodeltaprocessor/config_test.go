@@ -73,7 +73,7 @@ func TestValidateConfig(t *testing.T) {
 		{
 			configName:   "config_missing_name.yaml",
 			succeed:      false,
-			errorMessage: fmt.Sprintf("Metric names are missing"),
+			errorMessage: "Metric names are missing",
 		},
 	}
 
