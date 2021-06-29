@@ -59,15 +59,15 @@ func addToGroupedMetric(pmd *pdata.Metric, groupedMetrics map[interface{}]*Group
 
 		labels := dp.Labels
 
-		if isPod, ok := labels["Type"]; ok {
-			if isPod == "Pod" && config.CreateEKSFargateKubernetesObject {
+		if metricType, ok := labels["Type"]; ok {
+			if(metricType == "Pod" && config.CreateEKSFargateKubernetesObject){
 				err := addKubernetesWrapper(labels)
 				if err != nil {
 					logger.Warn("Issue forming Kubernetes Object", zap.Error(err))
 					return err
 				}
-			} else if isPod == "Container" && config.CreateEKSFargateKubernetesObject {
-				err := addKubernetesWrapper(labels)
+			} else if (metricType == "Container" && config.CreateEKSFargateKubernetesObject){
+				err  := addKubernetesWrapper(labels)
 				if err != nil {
 					logger.Warn("Issue forming Kubernetes Object", zap.Error(err))
 					return err
@@ -119,9 +119,9 @@ type kubernetesObj struct {
 	Service_name   string               `json:`
 }
 
-type internalLabelsObj struct {
-	App               string `json:`
-	Pod_template_hash string `json:`
+type internalLabelsObj struct{
+	App string `json:`
+	Pod-template-hash string `json:`
 }
 
 type internalPodOwnersObj struct {
@@ -134,10 +134,10 @@ func addKubernetesWrapper(labels map[string]string) error {
 	schema := kubernetesObj{}
 	schema.Host = "host_name"
 	schema.Labels =
-		internalLabelsObj{
-			App:               "app",
-			Pod_template_hash: "pod_template_hash",
-		}
+	internalLabelsObj{
+		App: "app",
+		Pod-template-hash: "pod-template-hash",
+	}
 	schema.Namespace_name = "namespace_name"
 	schema.Pod_id = "pod_id"
 	schema.Pod_name = "pod_name"
