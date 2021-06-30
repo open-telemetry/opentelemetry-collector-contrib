@@ -13,7 +13,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/kubelet v0.0.0-00010101000000-000000000000
 	github.com/shirou/gopsutil v3.21.5+incompatible
 	github.com/stretchr/testify v1.7.0
-	go.opentelemetry.io/collector v0.29.1-0.20210629183146-cbee3b39483c
+	go.opentelemetry.io/collector v0.29.1-0.20210630003519-14d917479ef3
 	go.uber.org/zap v1.18.1
 	k8s.io/api v0.21.2
 	k8s.io/apimachinery v0.21.2
