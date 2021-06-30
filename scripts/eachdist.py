@@ -631,9 +631,9 @@ def update_dependencies(targets, version, packages):
         if str(pkg) == "all":
             continue
         print(pkg)
-        package_name = str(pkg).split("/")[-1]
+        package_name = str(pkg).split("/", maxsplit=1)[-1]
         # Windows uses backslashes
-        package_name = str(pkg).split("\\")[-1]
+        package_name = str(pkg).split("\\", maxsplit=1)[-1]
         print(package_name)
 
         update_files(

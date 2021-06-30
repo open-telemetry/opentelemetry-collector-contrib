@@ -1,7 +1,10 @@
 import typing
 
 import wrapt
-from aiopg.utils import _ContextManager, _PoolAcquireContextManager
+from aiopg.utils import (  # pylint: disable=no-name-in-module
+    _ContextManager,
+    _PoolAcquireContextManager,
+)
 
 from opentelemetry.instrumentation.dbapi import (
     CursorTracer,
@@ -61,7 +64,9 @@ def get_traced_connection_proxy(
 
         def cursor(self, *args, **kwargs):
             coro = self._cursor(*args, **kwargs)
-            return _ContextManager(coro)
+            return _ContextManager(  # pylint: disable=no-value-for-parameter
+                coro
+            )
 
         async def _cursor(self, *args, **kwargs):
             # pylint: disable=protected-access

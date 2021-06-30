@@ -8,6 +8,7 @@ sphinx-autodoc-typehints
 -e "git+https://github.com/open-telemetry/opentelemetry-python.git#egg=opentelemetry-semantic-conventions&subdirectory=opentelemetry-semantic-conventions"
 -e "git+https://github.com/open-telemetry/opentelemetry-python-contrib.git#egg=opentelemetry-instrumentation&subdirectory=opentelemetry-instrumentation"
 -e "git+https://github.com/open-telemetry/opentelemetry-python.git#egg=opentelemetry-sdk&subdirectory=opentelemetry-sdk"
+-e "git+https://github.com/open-telemetry/opentelemetry-python-contrib.git#egg=opentelemetry-util-http&subdirectory=util/opentelemetry-util-http"
 
 # Required by opentelemetry-instrumentation
 fastapi>=0.65.2

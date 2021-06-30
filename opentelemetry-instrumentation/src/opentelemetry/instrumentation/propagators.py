@@ -26,7 +26,7 @@ https://w3c.github.io/trace-context/#trace-context-http-response-headers-format
 import typing
 from abc import ABC, abstractmethod
 
-import opentelemetry.trace as trace
+from opentelemetry import trace
 from opentelemetry.context.context import Context
 from opentelemetry.propagators import textmap
 from opentelemetry.trace import format_span_id, format_trace_id

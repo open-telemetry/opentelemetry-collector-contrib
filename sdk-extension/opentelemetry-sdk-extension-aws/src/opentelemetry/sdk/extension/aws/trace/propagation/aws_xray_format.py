@@ -51,7 +51,7 @@ API
 import logging
 import typing
 
-import opentelemetry.trace as trace
+from opentelemetry import trace
 from opentelemetry.context import Context
 from opentelemetry.propagators.textmap import (
     CarrierT,

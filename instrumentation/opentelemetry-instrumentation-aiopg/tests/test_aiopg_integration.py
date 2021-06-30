@@ -17,7 +17,10 @@ from unittest import mock
 from unittest.mock import MagicMock
 
 import aiopg
-from aiopg.utils import _ContextManager, _PoolAcquireContextManager
+from aiopg.utils import (  # pylint: disable=no-name-in-module
+    _ContextManager,
+    _PoolAcquireContextManager,
+)
 
 import opentelemetry.instrumentation.aiopg
 from opentelemetry import trace as trace_api
@@ -525,7 +528,7 @@ class MockConnection:
     # pylint: disable=no-self-use
     def cursor(self):
         coro = self._cursor()
-        return _ContextManager(coro)
+        return _ContextManager(coro)  # pylint: disable=no-value-for-parameter
 
     async def _cursor(self):
         return MockCursor()

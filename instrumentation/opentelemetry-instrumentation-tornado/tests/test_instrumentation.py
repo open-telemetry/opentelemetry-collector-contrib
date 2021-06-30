@@ -42,6 +42,7 @@ from .tornado_test_app import (
 
 
 class TornadoTest(AsyncHTTPTestCase, TestBase):
+    # pylint:disable=no-self-use
     def get_app(self):
         tracer = trace.get_tracer(__name__)
         app = make_app(tracer)

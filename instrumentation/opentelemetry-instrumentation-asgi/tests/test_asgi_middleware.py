@@ -14,7 +14,7 @@
 
 import sys
 import unittest
-import unittest.mock as mock
+from unittest import mock
 
 import opentelemetry.instrumentation.asgi as otel_asgi
 from opentelemetry import trace as trace_api

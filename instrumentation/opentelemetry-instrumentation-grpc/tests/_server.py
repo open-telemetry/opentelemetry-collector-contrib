@@ -79,6 +79,7 @@ class TestServer(test_server_pb2_grpc.GRPCTestServerServicer):
 
 
 def create_test_server(port):
+    # pylint: disable=consider-using-with
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=1))
 
     test_server_pb2_grpc.add_GRPCTestServerServicer_to_server(

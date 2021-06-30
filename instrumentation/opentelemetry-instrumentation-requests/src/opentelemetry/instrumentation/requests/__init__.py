@@ -22,11 +22,10 @@ Usage
 .. code-block:: python
 
     import requests
-    import opentelemetry.instrumentation.requests
+    from opentelemetry.instrumentation.requests import RequestsInstrumentor
 
     # You can optionally pass a custom TracerProvider to
-    # RequestsInstrumentor.instrument()
-    opentelemetry.instrumentation.requests.RequestsInstrumentor().instrument()
+    RequestsInstrumentor.instrument()
     response = requests.get(url="https://www.example.org/")
 
 API

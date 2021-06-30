@@ -34,7 +34,10 @@ import typing
 
 import aiopg
 import wrapt
-from aiopg.utils import _ContextManager, _PoolContextManager
+from aiopg.utils import (  # pylint: disable=no-name-in-module
+    _ContextManager,
+    _PoolContextManager,
+)
 
 from opentelemetry.instrumentation.aiopg.aiopg_integration import (
     AiopgIntegration,
@@ -108,7 +111,7 @@ def wrap_connect(
             version=version,
             tracer_provider=tracer_provider,
         )
-        return _ContextManager(
+        return _ContextManager(  # pylint: disable=no-value-for-parameter
             db_integration.wrapped_connection(wrapped, args, kwargs)
         )
 
