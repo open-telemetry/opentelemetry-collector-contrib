@@ -108,7 +108,9 @@ func addToGroupedMetric(pmd *pdata.Metric, groupedMetrics map[interface{}]*Group
 }
 
 type kubernetesObj struct{
-	Host string `json:"`
+	Container_name string `json:`
+	Docker internalDockerObj `json:`
+	Host string `json:`
 	Labels internalLabelsObj `json:`
 	Namespace_name string `json:`
 	Pod_id string `json:`
@@ -117,9 +119,13 @@ type kubernetesObj struct{
 	Service_name string `json:`
 }
 
+type internalDockerObj struct{
+	Container_id string `json:`
+}
+
 type internalLabelsObj struct{
 	App string `json:`
-	Pod-template-hash string `json:`
+	Pod_template_hash string `json: "pod-template-hash"`
 }
 
 type internalPodOwnersObj struct{
@@ -131,11 +137,16 @@ type internalPodOwnersObj struct{
 func addKubernetesWrapper(labels map[string]string) error{
 	//create schema
 	schema := kubernetesObj{}
+	schema.Container_name = "container_name"
+	schema.Docker =
+	internalDockerObj{
+		Container_id: "container_id"
+	}
 	schema.Host = "host_name"
 	schema.Labels =
 	internalLabelsObj{
 		App: "app",
-		Pod-template-hash: "pod-template-hash",
+		Pod_template_hash: "pod-template-hash",
 	}
 	schema.Namespace_name = "namespace_name"
 	schema.Pod_id = "pod_id" 
