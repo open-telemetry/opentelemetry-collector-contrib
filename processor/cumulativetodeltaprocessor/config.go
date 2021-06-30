@@ -31,8 +31,8 @@ type Config struct {
 // Validate checks whether the input configuration has all of the required fields for the processor.
 // An error is returned if there are any invalid inputs.
 func (config *Config) Validate() error {
-	if len(config.Metrics) <= 0 {
-		return fmt.Errorf("Metric names are missing")
+	if len(config.Metrics) == 0 {
+		return fmt.Errorf("metric names are missing")
 	}
 	return nil
 }
