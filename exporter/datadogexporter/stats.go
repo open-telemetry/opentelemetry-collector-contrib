@@ -22,6 +22,7 @@ import (
 )
 
 const (
+	keySamplingRateGlobal string = "_sample_rate"
 	statsBucketDuration   int64  = int64(10 * time.Second)
 	versionAggregationTag string = "version"
 )
@@ -57,9 +58,17 @@ func computeAPMStats(tracePayload *pb.TracePayload, pushTime int64) *stats.Paylo
 			// Use weight 1, as sampling in opentelemetry would occur upstream in a processor.
 			// Generally we want to ship 100% of traces to the backend where more accurate tail based sampling can be performed.
 			// TopLevel is always "true" since we only compute stats for top-level spans.
+
+			var spanWeight float64
+			if spanRate, ok := span.Metrics[keySamplingRateGlobal]; ok {
+				spanWeight = spanRate
+			} else {
+				spanWeight = 1
+			}
+
 			weightedSpan := &stats.WeightedSpan{
 				Span:     span,
-				Weight:   1,
+				Weight:   spanWeight,
 				TopLevel: true,
 			}
 			statsRawBucket.HandleSpan(weightedSpan, tracePayload.Env, []string{versionAggregationTag}, emptySublayer)
