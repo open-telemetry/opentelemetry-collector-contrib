@@ -196,8 +196,7 @@ func recursivelyFillInStruct(labels map[string]string, schema interface{}) (stri
 func recursivelyFillInMap(labels map[string]string, schema map[string]interface{}) (map[string]interface{}, error) {
 	//Iterate over the keys of the schema
 	var err error
-	labels["dummy"] = "got to the start"
-	for k, v := range schema {
+	for k,v := range schema{
 		//Check if it is nested or not
 		nestedObj, isNested := v.(map[string]interface{})
 		if isNested {
@@ -226,7 +225,6 @@ func recursivelyFillInMap(labels map[string]string, schema map[string]interface{
 
 	}
 
-	labels["dummy"] = "got to the end"
 	return schema, nil
 }
 

@@ -14,7 +14,6 @@
 
 package awsecscontainermetrics
 
-// import "io/ioutil"
 
 // RestClient is swappable for testing.
 type RestClient interface {
