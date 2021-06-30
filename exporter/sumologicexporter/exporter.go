@@ -340,7 +340,7 @@ func (se *sumologicexporter) pushMetricsData(ctx context.Context, md pdata.Metri
 			record.attributes.CopyTo(rm.Resource().Attributes())
 
 			ilms := rm.InstrumentationLibraryMetrics()
-			ilms.AppendEmpty().Metrics().Append(record.metric)
+			record.metric.CopyTo(ilms.AppendEmpty().Metrics().AppendEmpty())
 		}
 
 		return consumererror.NewMetrics(consumererror.Combine(errs), droppedMetrics)
