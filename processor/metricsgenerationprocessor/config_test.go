@@ -38,6 +38,7 @@ func TestLoadingFullConfig(t *testing.T) {
 				Rules: []Rule{
 					{
 						Name:      "new_metric",
+						Unit:      "percent",
 						Type:      "calculate",
 						Metric1:   "metric1",
 						Metric2:   "metric2",
@@ -45,6 +46,7 @@ func TestLoadingFullConfig(t *testing.T) {
 					},
 					{
 						Name:      "new_metric",
+						Unit:      "unit",
 						Type:      "scale",
 						Metric1:   "metric1",
 						ScaleBy:   1000,
