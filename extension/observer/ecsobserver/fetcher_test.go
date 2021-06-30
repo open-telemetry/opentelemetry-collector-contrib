@@ -23,21 +23,13 @@ import (
 	"github.com/aws/aws-sdk-go/service/ecs"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/ecsobserver/internal/ecsmock"
 )
 
 func TestFetcher_FetchAndDecorate(t *testing.T) {
 	c := ecsmock.NewCluster()
-	f, err := newTaskFetcher(taskFetcherOptions{
-		Logger:      zap.NewExample(),
-		Cluster:     "not used",
-		Region:      "not used",
-		ecsOverride: c,
-		ec2Override: c,
-	})
-	require.NoError(t, err)
+	f := newTestTaskFetcher(t, c)
 	// Create 1 task def, 2 services and 10 tasks, 8 running on ec2, first 3 runs on fargate
 	nTasks := 11
 	nInstances := 2
@@ -90,13 +82,7 @@ func TestFetcher_FetchAndDecorate(t *testing.T) {
 
 func TestFetcher_GetAllTasks(t *testing.T) {
 	c := ecsmock.NewCluster()
-	f, err := newTaskFetcher(taskFetcherOptions{
-		Logger:      zap.NewExample(),
-		Cluster:     "not used",
-		Region:      "not used",
-		ecsOverride: c,
-	})
-	require.NoError(t, err)
+	f := newTestTaskFetcher(t, c)
 	const nTasks = 203
 	c.SetTasks(ecsmock.GenTasks("p", nTasks, nil))
 	ctx := context.Background()
@@ -107,13 +93,7 @@ func TestFetcher_GetAllTasks(t *testing.T) {
 
 func TestFetcher_AttachTaskDefinitions(t *testing.T) {
 	c := ecsmock.NewCluster()
-	f, err := newTaskFetcher(taskFetcherOptions{
-		Logger:      zap.NewExample(),
-		Cluster:     "not used",
-		Region:      "not used",
-		ecsOverride: c,
-	})
-	require.NoError(t, err)
+	f := newTestTaskFetcher(t, c)
 
 	const nTasks = 5
 	ctx := context.Background()
@@ -158,14 +138,7 @@ func TestFetcher_AttachTaskDefinitions(t *testing.T) {
 func TestFetcher_AttachContainerInstance(t *testing.T) {
 	t.Run("ec2 only", func(t *testing.T) {
 		c := ecsmock.NewCluster()
-		f, err := newTaskFetcher(taskFetcherOptions{
-			Logger:      zap.NewExample(),
-			Cluster:     "not used",
-			Region:      "not used",
-			ecsOverride: c,
-			ec2Override: c,
-		})
-		require.NoError(t, err)
+		f := newTestTaskFetcher(t, c)
 		// Create 1 task def and 11 tasks running on 2 ec2 instances
 		nTasks := 11
 		nInstances := 2
@@ -197,14 +170,7 @@ func TestFetcher_AttachContainerInstance(t *testing.T) {
 
 	t.Run("mixed cluster", func(t *testing.T) {
 		c := ecsmock.NewCluster()
-		f, err := newTaskFetcher(taskFetcherOptions{
-			Logger:      zap.NewExample(),
-			Cluster:     "not used",
-			Region:      "not used",
-			ecsOverride: c,
-			ec2Override: c,
-		})
-		require.NoError(t, err)
+		f := newTestTaskFetcher(t, c)
 		// Create 1 task def and 10 tasks, 8 running on ec2, first 3 runs on fargate
 		nTasks := 11
 		nInstances := 2
@@ -245,13 +211,7 @@ func TestFetcher_AttachContainerInstance(t *testing.T) {
 
 func TestFetcher_GetAllServices(t *testing.T) {
 	c := ecsmock.NewCluster()
-	f, err := newTaskFetcher(taskFetcherOptions{
-		Logger:      zap.NewExample(),
-		Cluster:     "not used",
-		Region:      "not used",
-		ecsOverride: c,
-	})
-	require.NoError(t, err)
+	f := newTestTaskFetcher(t, c)
 	const nServices = 101
 	c.SetServices(ecsmock.GenServices("s", nServices, nil))
 	ctx := context.Background()
@@ -262,13 +222,7 @@ func TestFetcher_GetAllServices(t *testing.T) {
 
 func TestFetcher_AttachService(t *testing.T) {
 	c := ecsmock.NewCluster()
-	f, err := newTaskFetcher(taskFetcherOptions{
-		Logger:      zap.NewExample(),
-		Cluster:     "not used",
-		Region:      "not used",
-		ecsOverride: c,
-	})
-	require.NoError(t, err)
+	f := newTestTaskFetcher(t, c)
 	const nServices = 10
 	c.SetServices(ecsmock.GenServices("s", nServices, func(i int, s *ecs.Service) {
 		s.Deployments = []*ecs.Deployment{

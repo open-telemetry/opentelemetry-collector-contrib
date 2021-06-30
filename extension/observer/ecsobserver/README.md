@@ -5,6 +5,10 @@
 The `ecsobserver` uses the ECS/EC2 API to discover prometheus scrape targets from all running tasks and filter them
 based on service names, task definitions and container labels.
 
+NOTE: If you run collector as a sidecar, you should consider
+use [ECS resource detector](../../../processor/resourcedetectionprocessor/README.md) instead. However, it does not have
+service, EC2 instances etc. because it only queries local API.
+
 ## Config
 
 The configuration is based on
@@ -14,10 +18,10 @@ The configuration is based on
 ```yaml
 extensions:
   ecs_observer:
-    refresh_interval: 15s
-    cluster_name: 'Cluster-1'
-    cluster_region: 'us-west-2'
-    result_file: '/etc/ecs_sd_targets.yaml'
+    refresh_interval: 60s # format is https://golang.org/pkg/time/#ParseDuration
+    cluster_name: 'Cluster-1' # cluster name need manual config
+    cluster_region: 'us-west-2' # region can be configured directly or use AWS_REGION env var
+    result_file: '/etc/ecs_sd_targets.yaml' # the directory for file must already exists
     services:
       - name_pattern: '^retail-.*$'
     docker_labels:
@@ -37,11 +41,22 @@ receivers:
         - job_name: "ecs-task"
           file_sd_configs:
             - files:
-                - '/etc/ecs_sd_targets.yaml'
+                - '/etc/ecs_sd_targets.yaml' # MUST match the file name in ecs_observer.result_file
+          relabel_configs: # Relabel here because label with __ prefix will be dropped by receiver.
+            - source_labels: [ __meta_ecs_cluster_name ] # ClusterName
+              action: replace
+              target_label: ClusterName
+            - source_labels: [ __meta_ecs_service_name ] # ServiceName
+              action: replace
+              target_label: ServiceName
+            - action: labelmap # Convert docker labels on container to metric labels
+              regex: ^__meta_ecs_container_labels_(.+)$ # Capture the key using regex, e.g. __meta_ecs_container_labels_Java_EMF_Metrics -> Java_EMF_Metrics
+              replacement: '$$1'
 
 processors:
   batch:
 
+# Use awsemf for CloudWatch Container Insights Prometheus. The extension does not have requirement on exporter.
 exporters:
   awsemf:
 
@@ -249,6 +264,8 @@ prometheus instead of extension and can cause confusion.
 
 ## Output Format
 
+[Example in unit test](testdata/ut_targets.expected.yaml).
+
 The format is based
 on [cloudwatch agent](https://github.com/aws/amazon-cloudwatch-agent/tree/master/internal/ecsservicediscovery#example-result)
 , [ec2 sd](https://prometheus.io/docs/prometheus/latest/configuration/configuration/#ec2_sd_config)
@@ -354,14 +371,13 @@ The implementation has two parts, core ecs service discovery logic and adapter f
 
 ### Packages
 
-- `extension/observer/ecsobserver` adapter to implement the observer interface
-- `internal/awsecs` polling AWS ECS and EC2 API and filter based on config
-- `internal/awsconfig` the shared aws specific config (e.g. init sdk client), which eventually should be shared by every
-  package that calls AWS API (e.g. emf, xray).
+- `extension/observer/ecsobserver` main logic
+- [internal/ecsmock](internal/ecsmock) mock ECS cluster
+- [internal/errctx](internal/errctx) structured error wrapping
 
 ### Flow
 
-The pseudo code showing the overall flow.
+The pseudocode showing the overall flow.
 
 ```
 NewECSSD() {
@@ -414,36 +430,17 @@ otel's own /metrics.
 
 ### Error Handling
 
-- Auth error will be logged, but the extension will not fail as the IAM role can be updated and take effect without
-  restarting the ECS task.
-- If errors happen in the middle (e.g. rate limit), the discovery result will be merged with previous success runs to
-  avoid discarding active targets, though it may keep some stale targets as well.
+- Auth and cluster not found error will cause the extension to stop (calling `host.ReportFatalError`). Although IAM role
+  can be updated at runtime without restarting the collector, it's better to fail to make the problem obvious. Same
+  applies to cluster not found. In the future we can add config to downgrade those errors if user want to monitor an ECS
+  cluster with collector running outside the cluster, the collector can run anywhere as long as it can reach scrape
+  targets and AWS API.
+- If we have non-critical error, we overwrite existing file with whatever targets we have, we might not have all the
+  targets due to throttle etc.
 
 ### Unit Test
 
-A mock ECS and EC2 server will be implemented in `internal/awsecs`. The rough implementation will be like the following:
-
-```go
-type ECSServiceMock struct {
-	definitions map[string]*ecs.TaskDefinition
-	tasks       map[string]*ecs.Task
-	services    map[string]*ecs.Service
-	taskToEC2   map[string]*ec2.Instance
-}
-
-// RunOnEC2 registers the task definition and instance.
-// It creates a task and sets it to running.
-// The returned task pointer can be modified directly and will be reflected in mocked AWS API call results.
-func (e *ECSServiceMock) RunOnEC2(def *ecs.TaskDefinition, instance *ec2.Instance) *ecs.Task {
-	panic("impl")
-}
-
-// RunOnFargate is similar to RunOnEC2 except instance is not needed as fargate is 'serverless'.
-// A unique private ip will be generated to simulate awsvpc.
-func (e *ECSServiceMock) RunOnFargate(def *ecs.TaskDefinition) *ecs.Task {
-	panic("impl")
-}
-```
+A mock ECS and EC2 server is in [internal/ecsmock](internal/ecsmock), see [fetcher_test](fetcher_test.go) for its usage.
 
 ### Integration Test
 
@@ -452,6 +449,8 @@ against actual ECS service on both EC2 and Fargate.
 
 ## Changelog
 
+- 2021-06-02 first version that actually works on ECS by @pingleig, thanks @anuraaga @Aneurysm9 @jrcamp @mxiamxia for
+  reviewing (all the PRs ...)
 - 2021-02-24 Updated doc by @pingleig
 - 2020-12-29 Initial implementation by [Raphael](https://github.com/theRoughCode)
   in [#1920](https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/1920)
