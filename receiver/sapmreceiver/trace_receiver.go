@@ -43,8 +43,6 @@ var gzipWriterPool = &sync.Pool{
 
 // sapmReceiver receives spans in the Splunk SAPM format over HTTP
 type sapmReceiver struct {
-	// mu protects the fields of this type
-	mu     sync.Mutex
 	logger *zap.Logger
 
 	config *Config
@@ -161,9 +159,6 @@ func (sr *sapmReceiver) HTTPHandlerFunc(rw http.ResponseWriter, req *http.Reques
 
 // Start starts the sapmReceiver's server.
 func (sr *sapmReceiver) Start(_ context.Context, host component.Host) error {
-	sr.mu.Lock()
-	defer sr.mu.Unlock()
-
 	// set up the listener
 	ln, err := sr.config.HTTPServerSettings.ToListener()
 	if err != nil {
@@ -188,9 +183,6 @@ func (sr *sapmReceiver) Start(_ context.Context, host component.Host) error {
 
 // Shutdown stops the the sapmReceiver's server.
 func (sr *sapmReceiver) Shutdown(context.Context) error {
-	sr.mu.Lock()
-	defer sr.mu.Unlock()
-
 	return sr.server.Close()
 }
 

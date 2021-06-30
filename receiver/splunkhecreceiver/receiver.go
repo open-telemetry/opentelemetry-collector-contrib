@@ -22,7 +22,6 @@ import (
 	"fmt"
 	"net"
 	"net/http"
-	"sync"
 	"time"
 
 	"github.com/gorilla/mux"
@@ -73,7 +72,6 @@ var (
 
 // splunkReceiver implements the component.MetricsReceiver for Splunk HEC metric protocol.
 type splunkReceiver struct {
-	sync.Mutex
 	logger          *zap.Logger
 	config          *Config
 	logsConsumer    consumer.Logs
@@ -154,9 +152,6 @@ func NewLogsReceiver(
 // By convention the consumer of the received data is set when the receiver
 // instance is created.
 func (r *splunkReceiver) Start(_ context.Context, host component.Host) error {
-	r.Lock()
-	defer r.Unlock()
-
 	var ln net.Listener
 	// set up the listener
 	ln, err := r.config.HTTPServerSettings.ToListener()
@@ -186,12 +181,7 @@ func (r *splunkReceiver) Start(_ context.Context, host component.Host) error {
 // Shutdown tells the receiver that should stop reception,
 // giving it a chance to perform any necessary clean-up.
 func (r *splunkReceiver) Shutdown(context.Context) error {
-	r.Lock()
-	defer r.Unlock()
-
-	err := r.server.Close()
-
-	return err
+	return r.server.Close()
 }
 
 func (r *splunkReceiver) handleReq(resp http.ResponseWriter, req *http.Request) {
