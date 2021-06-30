@@ -102,11 +102,11 @@ func (kp *kubernetesprocessor) ProcessLogs(ctx context.Context, ld pdata.Logs) (
 
 // processResource adds Pod metadata tags to resource based on pod association configuration
 func (kp *kubernetesprocessor) processResource(ctx context.Context, resource pdata.Resource) {
-
 	podIdentifierKey, podIdentifierValue := extractPodID(ctx, resource.Attributes(), kp.podAssociations)
 	if podIdentifierKey != "" {
 		resource.Attributes().InsertString(podIdentifierKey, string(podIdentifierValue))
 	}
+
 	namespace := stringAttributeFromMap(resource.Attributes(), conventions.AttributeK8sNamespace)
 	if namespace != "" {
 		resource.Attributes().InsertString(conventions.AttributeK8sNamespace, namespace)
