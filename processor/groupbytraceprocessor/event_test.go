@@ -15,6 +15,7 @@
 package groupbytraceprocessor
 
 import (
+	"errors"
 	"strings"
 	"sync"
 	"testing"
@@ -498,21 +499,31 @@ func TestForceShutdown(t *testing.T) {
 	time.Sleep(100 * time.Millisecond)
 }
 
-func TestDoWithTimeout(t *testing.T) {
+func TestDoWithTimeout_NoTimeout(t *testing.T) {
+	// prepare
+	wantErr := errors.New("my error")
+	// test
+	succeed, err := doWithTimeout(20*time.Millisecond, func() error {
+		return wantErr
+	})
+	assert.True(t, succeed)
+	assert.Equal(t, wantErr, err)
+}
+
+func TestDoWithTimeout_TimeoutTrigger(t *testing.T) {
 	// prepare
 	start := time.Now()
 
-	done := make(chan struct{})
-
 	// test
-	doWithTimeout(5*time.Millisecond, func() error {
-		<-done
+	succeed, err := doWithTimeout(20*time.Millisecond, func() error {
+		time.Sleep(1 * time.Second)
 		return nil
 	})
-	close(done)
+	assert.False(t, succeed)
+	assert.NoError(t, err)
 
 	// verify
-	assert.WithinDuration(t, start, time.Now(), 20*time.Millisecond)
+	assert.WithinDuration(t, start, time.Now(), 100*time.Millisecond)
 }
 
 func getGaugeValue(t *testing.T, gauge *stats.Int64Measure) float64 {
