@@ -34,6 +34,9 @@ func TestServiceMatcher(t *testing.T) {
 		cfg := ServiceConfig{NamePattern: invalidRegex}
 		require.Error(t, cfg.validate())
 
+		_, err := serviceConfigsToFilter([]ServiceConfig{cfg})
+		require.Error(t, err)
+
 		cfg = ServiceConfig{NamePattern: "valid", ContainerNamePattern: invalidRegex}
 		require.Error(t, cfg.validate())
 	})
@@ -148,5 +151,20 @@ func TestServiceMatcher(t *testing.T) {
 				},
 			},
 		}, res)
+	})
+}
+
+func TestServiceNameFilter(t *testing.T) {
+	t.Run("match nothing when empty", func(t *testing.T) {
+		f, err := serviceConfigsToFilter(nil)
+		require.NoError(t, err)
+		require.False(t, f("should not match"))
+	})
+
+	t.Run("invalid regex", func(t *testing.T) {
+		invalidRegex := "*" //  missing argument to repetition operator: `*`
+		cfg := ServiceConfig{NamePattern: invalidRegex}
+		_, err := serviceConfigsToFilter([]ServiceConfig{cfg})
+		require.Error(t, err)
 	})
 }

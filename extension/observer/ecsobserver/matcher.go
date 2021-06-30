@@ -77,7 +77,7 @@ type MatchResult struct {
 }
 
 type MatchedContainer struct {
-	TaskIndex      int // Index in task list
+	TaskIndex      int // Index in task list before filter, i.e. after fetch and decorate
 	ContainerIndex int // Index within a tasks definition's container list
 	Targets        []MatchedTarget
 }
@@ -108,6 +108,14 @@ type MatchedTarget struct {
 	Port         int
 	MetricsPath  string
 	Job          string
+}
+
+func matcherOrders() []MatcherType {
+	return []MatcherType{
+		MatcherTypeService,
+		MatcherTypeTaskDefinition,
+		MatcherTypeDockerLabel,
+	}
 }
 
 func newMatchers(c Config, mOpt MatcherOptions) (map[MatcherType][]Matcher, error) {
@@ -144,7 +152,7 @@ var errNotMatched = fmt.Errorf("container not matched")
 
 // matchContainers apply one matcher to a list of tasks and returns MatchResult.
 // It does not modify the task in place, the attaching match result logic is
-// performed by TaskFilter at later stage.
+// performed by taskFilter at later stage.
 func matchContainers(tasks []*Task, matcher Matcher, matcherIndex int) (*MatchResult, error) {
 	var (
 		matchedTasks      []int
