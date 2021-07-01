@@ -140,7 +140,7 @@ func addKubernetesWrapper(labels map[string]string) error{
 	schema.Container_name = "container_name"
 	schema.Docker =
 	internalDockerObj{
-		Container_id: "container_id"
+		Container_id: "container_id",
 	}
 	schema.Host = "host_name"
 	schema.Labels =
