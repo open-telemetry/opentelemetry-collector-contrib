@@ -174,8 +174,7 @@ func TestConsumeMetricsData(t *testing.T) {
 			// Each metric point will generate one Carbon line, set up the wait
 			// for all of them.
 			var wg sync.WaitGroup
-			_, mpc := tt.md.MetricAndDataPointCount()
-			wg.Add(mpc)
+			wg.Add(tt.md.DataPointCount())
 			go func() {
 				assert.NoError(t, ln.SetDeadline(time.Now().Add(time.Second)))
 				conn, err := ln.AcceptTCP()

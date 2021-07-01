@@ -102,8 +102,7 @@ func (kr *kubernetesReceiver) dispatchMetrics(ctx context.Context) {
 
 	c := kr.obsrecv.StartMetricsOp(ctx)
 
-	_, numPoints := mds.MetricAndDataPointCount()
-
+	numPoints := mds.DataPointCount()
 	err := kr.consumer.ConsumeMetrics(c, mds)
 	kr.obsrecv.EndMetricsOp(c, typeStr, numPoints, err)
 }

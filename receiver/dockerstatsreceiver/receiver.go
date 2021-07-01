@@ -146,8 +146,7 @@ func (r *Receiver) Run() error {
 		var err error
 		if result.md != nil {
 			md := internaldata.OCToMetrics(result.md.Node, result.md.Resource, result.md.Metrics)
-			_, np := md.MetricAndDataPointCount()
-			numPoints += np
+			numPoints += md.DataPointCount()
 			err = r.nextConsumer.ConsumeMetrics(r.runnerCtx, md)
 		} else {
 			err = result.err

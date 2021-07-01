@@ -229,7 +229,7 @@ func calcLogBatches(ld pdata.Logs) int {
 
 func (e exporter) pushMetricData(ctx context.Context, md pdata.Metrics) (outputErr error) {
 	details := newMetricMetadata(ctx)
-	_, details.dataInputCount = md.MetricAndDataPointCount()
+	details.dataInputCount = md.DataPointCount()
 	builder := func() ([]telemetry.Batch, error) { return e.buildMetricBatch(&details, md) }
 	return e.export(ctx, &details, builder)
 }

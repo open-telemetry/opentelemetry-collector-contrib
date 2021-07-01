@@ -180,9 +180,7 @@ func (suite *JMXIntegrationSuite) TestJMXReceiverHappyPath() {
 		}
 
 		metric := consumer.AllMetrics()[0]
-		metricCount, datapointCount := metric.MetricAndDataPointCount()
-		require.Equal(t, 1, metricCount)
-		require.Equal(t, 1, datapointCount)
+		require.Equal(t, 1, metric.DataPointCount())
 
 		rm := metric.ResourceMetrics().At(0)
 		resource := rm.Resource()
