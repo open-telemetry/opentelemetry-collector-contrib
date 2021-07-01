@@ -36,7 +36,6 @@ exporter/newrelicexporter/                           @open-telemetry/collector-c
 exporter/sapmexporter/                               @open-telemetry/collector-contrib-approvers @owais @dmitryax
 exporter/sentryexporter/                             @open-telemetry/collector-contrib-approvers @AbhiPrasad
 exporter/signalfxexporter/                           @open-telemetry/collector-contrib-approvers @pmcollins @asuresh4
-exporter/signalfxcorrelationexporter/                @open-telemetry/collector-contrib-approvers @jrcamp @keitwb
 exporter/splunkhecexporter/                          @open-telemetry/collector-contrib-approvers @atoulme
 exporter/stackdriverexporter/                        @open-telemetry/collector-contrib-approvers @aabmass @dashpole @jsuereth @punya @tbarker25
 exporter/googlecloudexporter/                        @open-telemetry/collector-contrib-approvers @aabmass @dashpole @jsuereth @punya @tbarker25
