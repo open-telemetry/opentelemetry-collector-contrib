@@ -104,14 +104,12 @@ func (r *runnable) Run() error {
 		internaldata.OCToMetrics(mds[i].Node, mds[i].Resource, mds[i].Metrics).ResourceMetrics().MoveAndAppendTo(metrics.ResourceMetrics())
 	}
 
-	var numPoints int
 	ctx := obsreport.ReceiverContext(r.ctx, r.receiverID, transport)
 	ctx = r.obsrecv.StartMetricsOp(ctx)
+	numPoints := metrics.DataPointCount()
 	err = r.consumer.ConsumeMetrics(ctx, metrics)
 	if err != nil {
 		r.logger.Error("ConsumeMetricsData failed", zap.Error(err))
-	} else {
-		_, numPoints = metrics.MetricAndDataPointCount()
 	}
 	r.obsrecv.EndMetricsOp(ctx, typeStr, numPoints, err)
 
