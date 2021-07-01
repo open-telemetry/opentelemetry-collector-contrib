@@ -59,7 +59,7 @@ type sapmReceiver struct {
 }
 
 // handleRequest parses an http request containing sapm and passes the trace data to the next consumer
-func (sr *sapmReceiver) handleRequest(ctx context.Context, req *http.Request) error {
+func (sr *sapmReceiver) handleRequest(req *http.Request) error {
 	sapm, err := sapmprotocol.ParseTraceV2Request(req)
 	// errors processing the request should return http.StatusBadRequest
 	if err != nil {
@@ -70,8 +70,7 @@ func (sr *sapmReceiver) handleRequest(ctx context.Context, req *http.Request) er
 	if sr.config.TLSSetting != nil {
 		transport = "https"
 	}
-	ctx = obsreport.ReceiverContext(ctx, sr.config.ID(), transport)
-	ctx = sr.obsrecv.StartTracesOp(ctx)
+	ctx := sr.obsrecv.StartTracesOp(obsreport.ReceiverContext(req.Context(), sr.config.ID(), transport))
 
 	td := jaegertranslator.ProtoBatchesToInternalTraces(sapm.Batches)
 
@@ -96,13 +95,10 @@ func (sr *sapmReceiver) handleRequest(ctx context.Context, req *http.Request) er
 	return err
 }
 
-// HTTPHandlerFunction returns an http.HandlerFunc that handles SAPM requests
+// HTTPHandlerFunc returns an http.HandlerFunc that handles SAPM requests
 func (sr *sapmReceiver) HTTPHandlerFunc(rw http.ResponseWriter, req *http.Request) {
-	// create context with the receiver name from the request context
-	ctx := obsreport.ReceiverContext(req.Context(), sr.config.ID(), "http")
-
 	// handle the request payload
-	err := sr.handleRequest(ctx, req)
+	err := sr.handleRequest(req)
 	if err != nil {
 		// TODO account for this error (throttled logging or metrics)
 		rw.WriteHeader(http.StatusBadRequest)
