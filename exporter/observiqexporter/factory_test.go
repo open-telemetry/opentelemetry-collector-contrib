@@ -24,6 +24,8 @@ import (
 	"go.uber.org/zap"
 )
 
+const exampleAPIKey = "11111111-2222-3333-4444-555555555555"
+
 func TestNewFactory(t *testing.T) {
 	fact := NewFactory()
 	require.NotNil(t, fact, "failed to create new factory")
@@ -37,6 +39,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 
 func TestCreateLogsExporter(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
+	cfg.APIKey = exampleAPIKey
 	params := component.ExporterCreateSettings{Logger: zap.NewNop()}
 	_, err := createLogsExporter(context.Background(), params, cfg)
 	require.NoError(t, err)
