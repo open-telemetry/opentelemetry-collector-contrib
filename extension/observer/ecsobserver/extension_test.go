@@ -75,7 +75,7 @@ func (h *inspectErrorHost) getError() error {
 // In that case sd itself does not use timer and relies on caller to trigger List.
 func TestExtensionStartStop(t *testing.T) {
 	settings := component.ExtensionCreateSettings{Logger: zap.NewExample()}
-	refreshInterval := time.Millisecond
+	refreshInterval := 100 * time.Millisecond
 	waitDuration := 2 * refreshInterval
 
 	createTestExt := func(c *ecsmock.Cluster, output string) component.Extension {
