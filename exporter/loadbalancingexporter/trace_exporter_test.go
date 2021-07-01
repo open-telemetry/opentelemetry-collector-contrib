@@ -472,7 +472,7 @@ func TestRollingUpdatesWhenConsumeTraces(t *testing.T) {
 	// will still pass due to the 10 secs of sleep that is used to simulate
 	// unreachable backends.
 	go func() {
-		time.Sleep(50 * time.Millisecond)
+		time.Sleep(300 * time.Millisecond)
 		resolverCh <- struct{}{}
 	}()
 
