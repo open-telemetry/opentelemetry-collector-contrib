@@ -387,7 +387,7 @@ func buildKey(serviceName string, span pdata.Span, optionalDims []Dimension, res
 func getDimensionValue(d Dimension, span pdata.Span, resourceAttr pdata.AttributeMap) (v string, ok bool) {
 	// The more specific span attribute should take precedence.
 	for _, attrMap := range []pdata.AttributeMap{span.Attributes(), resourceAttr} {
-		if attr, ok := attrMap.Get(d.Name); ok {
+		if attr, exists := attrMap.Get(d.Name); exists {
 			return tracetranslator.AttributeValueToString(attr), true
 		}
 	}
