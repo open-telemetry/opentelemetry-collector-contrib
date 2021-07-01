@@ -21,6 +21,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   ([#538](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/538))
 - Changed the psycopg2-binary to psycopg2 as dependency in production
   ([#543](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/543))
+- Require aiopg to be less than 1.3.0
+  ([#560](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/560))
 
 ### Added
 - `opentelemetry-instrumentation-httpx` Add `httpx` instrumentation

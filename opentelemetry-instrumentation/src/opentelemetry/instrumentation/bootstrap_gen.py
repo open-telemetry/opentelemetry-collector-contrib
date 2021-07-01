@@ -21,7 +21,7 @@ libraries = {
         "instrumentation": "opentelemetry-instrumentation-aiohttp-client==0.23.dev0",
     },
     "aiopg": {
-        "library": "aiopg >= 0.13.0",
+        "library": "aiopg >= 0.13.0, < 1.3.0",
         "instrumentation": "opentelemetry-instrumentation-aiopg==0.23.dev0",
     },
     "asgiref": {
