@@ -38,7 +38,7 @@ func NewFactory() component.ProcessorFactory {
 }
 
 func createDefaultConfig() config.Processor {
-	return &Config{
+	return &spanMetricsConfig{
 		ProcessorSettings: config.NewProcessorSettings(config.NewID(typeStr)),
 	}
 }

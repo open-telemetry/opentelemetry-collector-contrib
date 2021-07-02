@@ -58,13 +58,13 @@ type metricKey string
 type processorImp struct {
 	lock   sync.RWMutex
 	logger *zap.Logger
-	config Config
+	config spanMetricsConfig
 
 	metricsExporter component.MetricsExporter
 	nextConsumer    consumer.Traces
 
 	// Additional dimensions to add to metrics.
-	dimensions []Dimension
+	dimensions []dimension
 
 	// The starting time of the data points.
 	startTime time.Time
@@ -85,7 +85,7 @@ type processorImp struct {
 
 func newProcessor(logger *zap.Logger, config config.Processor, nextConsumer consumer.Traces) (*processorImp, error) {
 	logger.Info("Building spanmetricsprocessor")
-	pConfig := config.(*Config)
+	pConfig := config.(*spanMetricsConfig)
 
 	bounds := defaultLatencyHistogramBucketsMs
 	if pConfig.LatencyHistogramBuckets != nil {
@@ -128,7 +128,7 @@ func mapDurationsToMillis(vs []time.Duration, f func(duration time.Duration) flo
 
 // validateDimensions checks duplicates for reserved dimensions and additional dimensions. Considering
 // the usage of Prometheus related exporters, we also validate the dimensions after sanitization.
-func validateDimensions(dimensions []Dimension) error {
+func validateDimensions(dimensions []dimension) error {
 	labelNames := make(map[string]struct{})
 	for _, key := range []string{serviceNameKey, spanKindKey, statusCodeKey} {
 		labelNames[key] = struct{}{}
@@ -332,7 +332,7 @@ func (p *processorImp) updateLatencyMetrics(key metricKey, latency float64, inde
 	p.latencyBucketCounts[key][index]++
 }
 
-func buildDimensionKVs(serviceName string, span pdata.Span, optionalDims []Dimension) dimKV {
+func buildDimensionKVs(serviceName string, span pdata.Span, optionalDims []dimension) dimKV {
 	dims := make(dimKV)
 	dims[serviceNameKey] = serviceName
 	dims[operationKey] = span.Name()
@@ -362,7 +362,7 @@ func concatDimensionValue(metricKeyBuilder *strings.Builder, value string, prefi
 // buildKey builds the metric key from the service name and span metadata such as operation, kind, status_code and
 // any additional dimensions the user has configured.
 // The metric key is a simple concatenation of dimension values.
-func buildKey(serviceName string, span pdata.Span, optionalDims []Dimension) metricKey {
+func buildKey(serviceName string, span pdata.Span, optionalDims []dimension) metricKey {
 	var metricKeyBuilder strings.Builder
 	concatDimensionValue(&metricKeyBuilder, serviceName, false)
 	concatDimensionValue(&metricKeyBuilder, span.Name(), true)

@@ -38,7 +38,7 @@ func TestLoadConfig(t *testing.T) {
 		configFile                  string
 		wantMetricsExporter         string
 		wantLatencyHistogramBuckets []time.Duration
-		wantDimensions              []Dimension
+		wantDimensions              []dimension
 	}{
 		{configFile: "config-2-pipelines.yaml", wantMetricsExporter: "prometheus"},
 		{configFile: "config-3-pipelines.yaml", wantMetricsExporter: "otlp/spanmetrics"},
@@ -52,7 +52,7 @@ func TestLoadConfig(t *testing.T) {
 				100 * time.Millisecond,
 				250 * time.Millisecond,
 			},
-			wantDimensions: []Dimension{
+			wantDimensions: []dimension{
 				{"http.method", &defaultMethod},
 				{"http.status_code", nil},
 			},
@@ -81,7 +81,7 @@ func TestLoadConfig(t *testing.T) {
 			require.NoError(t, err)
 			require.NotNil(t, cfg)
 			assert.Equal(t,
-				&Config{
+				&spanMetricsConfig{
 					ProcessorSettings:       config.NewProcessorSettings(config.NewID(typeStr)),
 					MetricsExporter:         tc.wantMetricsExporter,
 					LatencyHistogramBuckets: tc.wantLatencyHistogramBuckets,
