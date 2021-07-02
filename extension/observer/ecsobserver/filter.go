@@ -23,10 +23,10 @@ import (
 
 type taskFilter struct {
 	logger   *zap.Logger
-	matchers map[MatcherType][]Matcher
+	matchers map[matcherType][]targetMatcher
 }
 
-func newTaskFilter(logger *zap.Logger, matchers map[MatcherType][]Matcher) *taskFilter {
+func newTaskFilter(logger *zap.Logger, matchers map[matcherType][]targetMatcher) *taskFilter {
 	return &taskFilter{
 		logger:   logger,
 		matchers: matchers,
@@ -34,9 +34,9 @@ func newTaskFilter(logger *zap.Logger, matchers map[MatcherType][]Matcher) *task
 }
 
 // Filter run all the matchers and return all the tasks that including at least one matched container.
-func (f *taskFilter) filter(tasks []*Task) ([]*Task, error) {
+func (f *taskFilter) filter(tasks []*taskAnnotated) ([]*taskAnnotated, error) {
 	// Group result by matcher type, each type can have multiple configs.
-	matched := make(map[MatcherType][]*MatchResult)
+	matched := make(map[matcherType][]*matchResult)
 	var merr error
 	for tpe, matchers := range f.matchers { // for each type of matchers
 		for index, matcher := range matchers { // for individual matchers of same type
@@ -49,7 +49,7 @@ func (f *taskFilter) filter(tasks []*Task) ([]*Task, error) {
 
 			// TODO: print out the pattern to include both pattern and port
 			f.logger.Debug("matched",
-				zap.String("MatcherType", tpe.String()), zap.Int("MatcherIndex", index),
+				zap.String("matcherType", tpe.String()), zap.Int("MatcherIndex", index),
 				zap.Int("Tasks", len(tasks)), zap.Int("MatchedTasks", len(res.Tasks)),
 				zap.Int("MatchedContainers", len(res.Containers)))
 			matched[tpe] = append(matched[tpe], res)
@@ -75,7 +75,7 @@ func (f *taskFilter) filter(tasks []*Task) ([]*Task, error) {
 		taskIndexes = append(taskIndexes, k)
 	}
 	sort.Ints(taskIndexes)
-	var sortedTasks []*Task
+	var sortedTasks []*taskAnnotated
 	for _, i := range taskIndexes {
 		task := tasks[i]
 		// Sort containers within a task
