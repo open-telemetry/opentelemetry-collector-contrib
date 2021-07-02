@@ -102,15 +102,15 @@ func extractErrorFields(err error) ([]zap.Field, string) {
 	if ok {
 		// Rename ok to tok because linter says it shadows outer ok.
 		// Though the linter seems to allow the similar block to shadow...
-		if task, tok := v.(*Task); tok {
+		if task, tok := v.(*taskAnnotated); tok {
 			fields = append(fields, zap.String("TaskArn", aws.StringValue(task.Task.TaskArn)))
-			scope = "Task"
+			scope = "taskAnnotated"
 		}
 	}
 	v, ok = errctx.ValueFrom(err, errKeyTarget)
 	if ok {
-		if target, ok := v.(MatchedTarget); ok {
-			fields = append(fields, zap.String("MatcherType", target.MatcherType.String()))
+		if target, ok := v.(matchedTarget); ok {
+			fields = append(fields, zap.String("matcherType", target.MatcherType.String()))
 			scope = "Target"
 		}
 	}

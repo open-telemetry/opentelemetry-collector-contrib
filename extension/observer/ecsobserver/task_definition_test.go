@@ -45,7 +45,7 @@ func TestTaskDefinitionMatcher(t *testing.T) {
 		require.Error(t, cfg.validate())
 	})
 
-	emptyTask := &Task{
+	emptyTask := &taskAnnotated{
 		Task: &ecs.Task{TaskDefinitionArn: aws.String("arn:that:never:matches")},
 		Definition: &ecs.TaskDefinition{
 			TaskDefinitionArn: aws.String("arn:that:never:matches"),
@@ -56,8 +56,8 @@ func TestTaskDefinitionMatcher(t *testing.T) {
 			},
 		},
 	}
-	genTasks := func() []*Task {
-		return []*Task{
+	genTasks := func() []*taskAnnotated {
+		return []*taskAnnotated{
 			{
 				Task: &ecs.Task{
 					TaskDefinitionArn: aws.String("arn:alike:nginx-latest"),
@@ -99,15 +99,15 @@ func TestTaskDefinitionMatcher(t *testing.T) {
 			},
 		}
 		res := newMatcherAndMatch(t, &cfg, genTasks())
-		assert.Equal(t, &MatchResult{
+		assert.Equal(t, &matchResult{
 			Tasks: []int{0},
-			Containers: []MatchedContainer{
+			Containers: []matchedContainer{
 				{
 					TaskIndex:      0,
 					ContainerIndex: 0,
-					Targets: []MatchedTarget{
+					Targets: []matchedTarget{
 						{
-							MatcherType: MatcherTypeTaskDefinition,
+							MatcherType: matcherTypeTaskDefinition,
 							Port:        2112,
 							Job:         "CONFIG_PROM_JOB",
 						},
@@ -132,15 +132,15 @@ func TestTaskDefinitionMatcher(t *testing.T) {
 			},
 		}
 		res := newMatcherAndMatch(t, &cfg, genTasks())
-		assert.Equal(t, &MatchResult{
+		assert.Equal(t, &matchResult{
 			Tasks: []int{0},
-			Containers: []MatchedContainer{
+			Containers: []matchedContainer{
 				{
 					TaskIndex:      0,
 					ContainerIndex: 1,
-					Targets: []MatchedTarget{
+					Targets: []matchedTarget{
 						{
-							MatcherType: MatcherTypeTaskDefinition,
+							MatcherType: matcherTypeTaskDefinition,
 							Port:        2114,
 							Job:         "CONFIG_PROM_JOB",
 						},

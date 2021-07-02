@@ -43,7 +43,7 @@ func TestFilter(t *testing.T) {
 		assert.Nil(t, res)
 	})
 
-	emptyTask := &Task{
+	emptyTask := &taskAnnotated{
 		Task: &ecs.Task{TaskDefinitionArn: aws.String("arn:that:never:matches")},
 		Definition: &ecs.TaskDefinition{
 			TaskDefinitionArn: aws.String("arn:that:never:matches"),
@@ -55,8 +55,8 @@ func TestFilter(t *testing.T) {
 		},
 	}
 	portLabelWithInvalidValue := "MY_PROMETHEUS_PORT_IS_INVALID"
-	genTasks := func() []*Task {
-		return []*Task{
+	genTasks := func() []*taskAnnotated {
+		return []*taskAnnotated{
 			{
 				Task: &ecs.Task{
 					TaskDefinitionArn: aws.String("arn:alike:nginx-latest"),
@@ -110,13 +110,13 @@ func TestFilter(t *testing.T) {
 		res, err := f.filter(genTasks())
 		require.NoError(t, err)
 		assert.Len(t, res, 1)
-		assert.Equal(t, []MatchedContainer{
+		assert.Equal(t, []matchedContainer{
 			{
 				TaskIndex:      0,
 				ContainerIndex: 0,
-				Targets: []MatchedTarget{
+				Targets: []matchedTarget{
 					{
-						MatcherType: MatcherTypeTaskDefinition,
+						MatcherType: matcherTypeTaskDefinition,
 						Port:        2112,
 						Job:         "CONFIG_PROM_JOB",
 					},
@@ -156,13 +156,13 @@ func TestFilter(t *testing.T) {
 		res, err := f.filter(genTasks())
 		require.NoError(t, err)
 		assert.Len(t, res, 1)
-		assert.Equal(t, []MatchedContainer{
+		assert.Equal(t, []matchedContainer{
 			{
 				TaskIndex:      0,
 				ContainerIndex: 0,
-				Targets: []MatchedTarget{
+				Targets: []matchedTarget{
 					{
-						MatcherType: MatcherTypeService,
+						MatcherType: matcherTypeService,
 						Port:        2112,
 						Job:         "CONFIG_PROM_JOB_BY_SERVICE",
 					},
