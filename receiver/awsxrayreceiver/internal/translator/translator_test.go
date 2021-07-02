@@ -920,10 +920,10 @@ func TestTranslation(t *testing.T) {
 			)
 		}
 
-		traces, totalSpansCount, err := ToTraces(content)
+		traces, totalSpanCount, err := ToTraces(content)
 		if err == nil || (expectedRs != nil && expectedRs.InstrumentationLibrarySpans().Len() > 0 &&
 			expectedRs.InstrumentationLibrarySpans().At(0).Spans().Len() > 0) {
-			assert.Equal(t, totalSpansCount,
+			assert.Equal(t, totalSpanCount,
 				expectedRs.InstrumentationLibrarySpans().At(0).Spans().Len(),
 				"generated span count is different from the expected",
 			)
