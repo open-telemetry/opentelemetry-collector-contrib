@@ -76,7 +76,7 @@ func TestIntegrationSingleNode(t *testing.T) {
 	t.Logf("waiting for metrics...")
 	require.Eventuallyf(t,
 		func() bool {
-			return consumer.MetricsCount() >= expectedMetrics
+			return consumer.DataPointCount() >= expectedMetrics
 		}, 30*time.Second, 5*time.Second,
 		"expected metrics not received",
 	)

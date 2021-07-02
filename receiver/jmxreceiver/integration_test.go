@@ -174,7 +174,7 @@ func (suite *JMXIntegrationSuite) TestJMXReceiverHappyPath() {
 	require.NoError(t, receiver.Start(context.Background(), componenttest.NewNopHost()))
 
 	require.Eventually(t, func() bool {
-		found := consumer.MetricsCount() > 0
+		found := consumer.DataPointCount() > 0
 		if !found {
 			return false
 		}
