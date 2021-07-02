@@ -60,14 +60,8 @@ func addToGroupedMetric(pmd *pdata.Metric, groupedMetrics map[interface{}]*Group
 		labels := dp.Labels
 
 		if metricType, ok := labels["Type"]; ok {
-			if(metricType == "Pod" && config.CreateEKSFargateKubernetesObject){
+			if (metricType == "Pod" || metricType == "Container") && config.CreateEKSFargateKubernetesObject {
 				err := addKubernetesWrapper(labels)
-				if err != nil {
-					logger.Warn("Issue forming Kubernetes Object", zap.Error(err))
-					return err
-				}
-			} else if (metricType == "Container" && config.CreateEKSFargateKubernetesObject){
-				err  := addKubernetesWrapper(labels)
 				if err != nil {
 					logger.Warn("Issue forming Kubernetes Object", zap.Error(err))
 					return err
@@ -109,24 +103,24 @@ func addToGroupedMetric(pmd *pdata.Metric, groupedMetrics map[interface{}]*Group
 	return nil
 }
 
-type kubernetesObj struct{
-	Container_name string `json:`
-	Docker internalDockerObj `json:`
-	Host string `json:`
-	Labels internalLabelsObj `json:`
-	Namespace_name string `json:`
-	Pod_id string `json:`
-	Pod_name string `json:`
-	Pod_owners internalPodOwnersObj `json:`
-	Service_name string `json:`
+type kubernetesObj struct {
+	Container_name string               `json:`
+	Docker         internalDockerObj    `json:`
+	Host           string               `json:`
+	Labels         internalLabelsObj    `json:`
+	Namespace_name string               `json:`
+	Pod_id         string               `json:`
+	Pod_name       string               `json:`
+	Pod_owners     internalPodOwnersObj `json:`
+	Service_name   string               `json:`
 }
 
-type internalDockerObj struct{
+type internalDockerObj struct {
 	Container_id string `json:`
 }
 
-type internalLabelsObj struct{
-	App string `json:`
+type internalLabelsObj struct {
+	App               string `json:`
 	Pod_template_hash string `json: "pod-template-hash"`
 }
 
@@ -140,15 +134,15 @@ func addKubernetesWrapper(labels map[string]string) error {
 	schema := kubernetesObj{}
 	schema.Container_name = "container_name"
 	schema.Docker =
-	internalDockerObj{
-		Container_id: "container_id",
-	}
+		internalDockerObj{
+			Container_id: "container_id",
+		}
 	schema.Host = "host_name"
 	schema.Labels =
-	internalLabelsObj{
-		App: "app",
-		Pod_template_hash: "pod-template-hash",
-	}
+		internalLabelsObj{
+			App:               "app",
+			Pod_template_hash: "pod-template-hash",
+		}
 	schema.Namespace_name = "namespace_name"
 	schema.Pod_id = "pod_id"
 	schema.Pod_name = "pod_name"
@@ -196,7 +190,7 @@ func recursivelyFillInStruct(labels map[string]string, schema interface{}) (stri
 func recursivelyFillInMap(labels map[string]string, schema map[string]interface{}) (map[string]interface{}, error) {
 	//Iterate over the keys of the schema
 	var err error
-	for k,v := range schema{
+	for k, v := range schema {
 		//Check if it is nested or not
 		nestedObj, isNested := v.(map[string]interface{})
 		if isNested {
@@ -216,6 +210,7 @@ func recursivelyFillInMap(labels map[string]string, schema map[string]interface{
 				return nil, errors.New("Non string, struct value found in schema")
 			}
 			labelVal, exists := labels[stringVal]
+			// This deleting implicitly deals with the difference between Container metrics and Pod metrics
 			if !exists {
 				delete(schema, k)
 			} else {
