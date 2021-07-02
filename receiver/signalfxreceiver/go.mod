@@ -9,7 +9,7 @@ require (
 	github.com/signalfx/com_signalfx_metrics_protobuf v0.0.2
 	github.com/stretchr/testify v1.7.0
 	go.opencensus.io v0.23.0
-	go.opentelemetry.io/collector v0.29.1-0.20210702000714-32c2d0f13167
+	go.opentelemetry.io/collector v0.29.1-0.20210702174635-c64d1f096bda
 	go.opentelemetry.io/collector/model v0.0.0-00010101000000-000000000000
 	go.uber.org/zap v1.18.1
 )
@@ -24,4 +24,4 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experiment
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchperresourceattr => ../../pkg/batchperresourceattr
 
-replace go.opentelemetry.io/collector/model => go.opentelemetry.io/collector/model v0.0.0-20210702000714-32c2d0f13167
+replace go.opentelemetry.io/collector/model => go.opentelemetry.io/collector/model v0.0.0-20210702174635-c64d1f096bda
