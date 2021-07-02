@@ -25,7 +25,7 @@ import (
 	"go.opentelemetry.io/collector/model/pdata"
 )
 
-// Type aliases []byte, represents JSON that has already been encoded
+// Type preEncodedJSON aliases []byte, represents JSON that has already been encoded
 // Does not support unmarshalling
 type preEncodedJSON []byte
 
@@ -96,7 +96,7 @@ func logdataToObservIQFormat(ld pdata.Logs, agentID string, agentName string, bu
 	return &observIQLogBatch{Logs: sliceOut}, errorsOut
 }
 
-// Output timestamp format, and ISO8601 compliant timesetamp with millisecond precision
+// Output timestamp format, an ISO8601 compliant timesetamp with millisecond precision
 const timestampFieldOutputLayout = "2006-01-02T15:04:05.000Z07:00"
 
 func resourceAndInstrmentationLogToEntry(resMap interface{}, log pdata.LogRecord, agentID string, agentName string, buildInfo component.BuildInfo) *observIQLogEntry {
@@ -128,7 +128,7 @@ func messageFromRecord(log pdata.LogRecord) string {
 	return ""
 }
 
-// If Body is a map, it is suitable to be used on the observiq log entry as "body"
+// If Body is a map, it is suitable to be used on the observIQ log entry as "body"
 func bodyFromRecord(log pdata.LogRecord) map[string]interface{} {
 	if log.Body().Type() == pdata.AttributeValueTypeMap {
 		return attributeMapToBaseType(log.Body().MapVal())
@@ -174,13 +174,13 @@ var severityNumberToObservIQName = map[int32]string{
 func severityFromRecord(log pdata.LogRecord) string {
 	var sevAsInt32 = int32(log.SeverityNumber())
 	if sevAsInt32 < int32(len(severityNumberToObservIQName)) && sevAsInt32 >= 0 {
-		return severityNumberToObservIQName[int32(log.SeverityNumber())]
+		return severityNumberToObservIQName[sevAsInt32]
 	}
 	return "default"
 }
 
 /*
-	Transform AttributeMap to native Go map, skipping nils, and replacing dots in keys with _
+	Transform AttributeMap to native Go map, skipping keys with nil values, and replacing dots in keys with _
 */
 func attributeMapToBaseType(m pdata.AttributeMap) map[string]interface{} {
 	mapOut := make(map[string]interface{}, m.Len())
