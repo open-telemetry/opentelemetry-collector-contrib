@@ -100,7 +100,7 @@ func newCGroupScanner(ctx context.Context, mountConfigPath string, logger *zap.L
 		refreshInterval:               refreshInterval,
 	}
 
-	if c.memReserved == 0 && c.cpuReserved == 0 {
+	if c.getMemReserved() == 0 && c.getCPUReserved() == 0 {
 		c.refresh()
 	}
 
@@ -301,7 +301,7 @@ func (c *cgroupScanner) getMemReserved() int64 {
 func getTaskCgroupPathFromARN(arn string) (string, error) {
 	result := strings.Split(arn, ":")
 	if len(result) < 6 {
-		return "", fmt.Errorf("invalid ecs task arn: %v", result)
+		return "", fmt.Errorf("invalid ecs task arn: %q", arn)
 	}
 
 	result = strings.Split(result[5], "/")
@@ -310,6 +310,6 @@ func getTaskCgroupPathFromARN(arn string) (string, error) {
 	} else if len(result) == 3 {
 		return result[2], nil
 	} else {
-		return "", fmt.Errorf("invalid ecs task arn: %v", result)
+		return "", fmt.Errorf("invalid ecs task arn: %q", arn)
 	}
 }

@@ -16,6 +16,7 @@ package ecsinfo
 
 import (
 	"context"
+	"errors"
 	"path"
 	"testing"
 	"time"
@@ -52,50 +53,149 @@ func (ii *MockInstanceInfo) GetContainerInstanceID() string {
 func TestGetCGroupPathForTask(t *testing.T) {
 	cgroupMount := "test"
 	controller := "cpu"
-	taskID := "test1"
 	clusterName := "myCluster"
-	result, _ := getCGroupPathForTask(cgroupMount, controller, taskID, clusterName)
-	assert.Equal(t, path.Join(cgroupMount, controller, "ecs", taskID), result)
 
-	taskID = "test4"
-	result, _ = getCGroupPathForTask(cgroupMount, controller, taskID, clusterName)
-	assert.Equal(t, path.Join(cgroupMount, controller, "ecs", clusterName, taskID), result)
+	tests := []struct {
+		name    string
+		input   string
+		wantRes string
+		err     error
+	}{
+		{
+			name:    "Task cgroup path exist",
+			input:   "test1",
+			wantRes: path.Join(cgroupMount, controller, "ecs", "test1"),
+		},
+		{
+			name:    "Legacy Task cgroup path exist",
+			input:   "test4",
+			wantRes: path.Join(cgroupMount, controller, "ecs", clusterName, "test4"),
+		},
+		{
+			name:    "CGroup Path does not exist",
+			input:   "test5",
+			wantRes: "",
+			err:     errors.New("CGroup Path " + path.Join(cgroupMount, controller, "ecs", clusterName, "test5") + " does not exist"),
+		},
+	}
 
-	taskID = "test5"
-	result, err := getCGroupPathForTask(cgroupMount, controller, taskID, clusterName)
-	assert.Equal(t, "", result)
-	assert.NotNil(t, err)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+
+			got, err := getCGroupPathForTask(cgroupMount, controller, tt.input, clusterName)
+
+			if tt.err != nil {
+				assert.NotNil(t, err)
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, tt.wantRes, got)
+			}
+		})
+	}
 }
 
 func TestGetCGroupPathFromARN(t *testing.T) {
-	oldFormatARN := "arn:aws:ecs:region:aws_account_id:task/task-id"
-	newFormatARN := "arn:aws:ecs:region:aws_account_id:task/cluster-name/task-id"
-	result, _ := getTaskCgroupPathFromARN(oldFormatARN)
-	assert.Equal(t, "task-id", result, "Expected to be equal")
-	result, _ = getTaskCgroupPathFromARN(newFormatARN)
-	assert.Equal(t, "task-id", result, "Expected to be equal")
-	wrongFormatARN := "arn:aws:ecs:region:aws_account_id:task"
-	result, err := getTaskCgroupPathFromARN(wrongFormatARN)
-	assert.NotNil(t, err)
-	assert.Equal(t, "", result)
-	wrongFormatARN2 := "arn:aws:ecs:region:aws_account_id:task/clster-name/taskname/task-id"
-	result, err = getTaskCgroupPathFromARN(wrongFormatARN2)
-	assert.NotNil(t, err)
-	assert.Equal(t, "", result, "Expected to be equal")
+	tests := []struct {
+		name    string
+		input   string
+		wantRes string
+		err     error
+	}{
+		{
+			name:    "valid old format ARN",
+			input:   "arn:aws:ecs:region:aws_account_id:task/task-id",
+			wantRes: "task-id",
+		},
+		{
+			name:    "valid new format ARN",
+			input:   "arn:aws:ecs:region:aws_account_id:task/cluster-name/task-id2",
+			wantRes: "task-id2",
+		},
+		{
+			name:    "invalid format ARN fields are less than 6",
+			input:   "arn:aws:tt:aws_account_id:task/task-id",
+			wantRes: "",
+			err:     errors.New("invalid ecs task arn: arn:aws:tt:aws_account_id:task/task-id"),
+		},
+		{
+			name:    "invalid format ARN with only task",
+			input:   "arn:aws:ecs:region:aws_account_id:task",
+			wantRes: "",
+			err:     errors.New("invalid ecs task arn: arn:aws:ecs:region:aws_account_id:task"),
+		},
+		{
+			name:    "invalid format ARN with more than three split result",
+			input:   "arn:aws:ecs:region:aws_account_id:task/region/clustername/task-id/",
+			wantRes: "",
+			err:     errors.New("invalid ecs task arn: arn:aws:ecs:region:aws_account_id:task/region/clustername/task-id/"),
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+
+			got, err := getTaskCgroupPathFromARN(tt.input)
+
+			if tt.err != nil {
+				assert.NotNil(t, err)
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, tt.wantRes, got)
+			}
+		})
+	}
 }
 
 func TestGetCGroupMountPoint(t *testing.T) {
-	result, _ := getCGroupMountPoint("test/mountinfo")
-	assert.Equal(t, "test", result, "Expected to be equal")
 
-	_, err := getCGroupMountPoint("test/mountinfonotexist")
-	assert.NotNil(t, err)
+	tests := []struct {
+		name    string
+		input   string
+		wantRes string
+		err     error
+	}{
+		{
+			name:    "Get c group mount point successfully",
+			input:   "test/mountinfo",
+			wantRes: "test",
+		},
+		{
+			name:    "Get c group mount point which is not existed",
+			input:   "test/mountinfonotexist",
+			wantRes: "",
+			err:     errors.New(""),
+		},
+		{
+			name:    "No data",
+			input:   "test/mountinfo_err2",
+			wantRes: "",
+			err:     errors.New(""),
+		},
+		{
+			name:    "we can't detect if the mount is for cgroup",
+			input:   "test/mountinfo_err1",
+			wantRes: "",
+			err:     errors.New(""),
+		},
+		{
+			name:    "the mount is not properly formated",
+			input:   "test/mountinfo_err3",
+			wantRes: "",
+			err:     errors.New(""),
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
 
-	_, err = getCGroupMountPoint("test/mountinfo_err1")
-	assert.NotNil(t, err)
+			got, err := getCGroupMountPoint(tt.input)
 
-	_, err = getCGroupMountPoint("test/mountinfo_err2")
-	assert.NotNil(t, err)
+			if tt.err != nil {
+				assert.NotNil(t, err)
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, tt.wantRes, got)
+			}
+		})
+	}
 
 }
 
@@ -109,20 +209,50 @@ func TestGetCPUReservedInTask(t *testing.T) {
 
 	cgroup := newCGroupScanner(ctx, "test/mountinfo", zap.NewNop(), taskinfo, containerinfo, time.Minute)
 	ctx.Done()
-	//TestGetCPUReservedFromShares
 
-	assert.Equal(t, int64(128), cgroup.getCPUReservedInTask("test1", ""), "TestGetCPUReservedFromShares expected to be equal")
-
-	assert.Equal(t, int64(128), cgroup.getCPUReservedInTask("test4", "myCluster"), "TestGetCPUReservedFromShares for empty cluster name expected to be equal")
-
-	//TestGetCPUReservedFromQuota
-	assert.Equal(t, int64(256), cgroup.getCPUReservedInTask("test2", ""), "TestGetCPUReservedFromQuota expected to be equal")
-
-	//TestGetCPUReservedFromBoth
-	assert.Equal(t, int64(256), cgroup.getCPUReservedInTask("test3", ""), "TestGetCPUReservedFromBoth expected to be equal")
-
-	//TestGetCPUReservedFromFalseTaskID
-	assert.Equal(t, int64(0), cgroup.getCPUReservedInTask("fake", ""), "TestGetCPUReservedFromFalseTaskID expected to be equal")
+	tests := []struct {
+		name        string
+		taskid      string
+		clusterName string
+		expectRes   int64
+	}{
+		{
+			name:        "Test Get CPU Reserved From Shares",
+			taskid:      "test1",
+			clusterName: "",
+			expectRes:   int64(128),
+		},
+		{
+			name:        "Test Get CPU Reserved From Shares for empty cluster name",
+			taskid:      "test4",
+			clusterName: "myCluster",
+			expectRes:   int64(128),
+		},
+		{
+			name:        "Test Get CPUReserved From Quota",
+			taskid:      "test2",
+			clusterName: "",
+			expectRes:   int64(256),
+		},
+		{
+			name:        "Test Get CPUReserved From Both",
+			taskid:      "test3",
+			clusterName: "",
+			expectRes:   int64(256),
+		},
+		{
+			name:        "Test Get CPUReserved From false Task ID",
+			taskid:      "fake",
+			clusterName: "",
+			expectRes:   int64(0),
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := cgroup.getCPUReservedInTask(tt.taskid, tt.clusterName)
+			assert.Equal(t, tt.expectRes, got)
+		})
+	}
 
 }
 
@@ -135,19 +265,49 @@ func TestGetMEMReservedInTask(t *testing.T) {
 	containerinfo := &MockInstanceInfo{}
 	cgroup := newCGroupScanner(ctx, "test/mountinfo", zap.NewNop(), taskinfo, containerinfo, time.Minute)
 	ctx.Done()
-	//TestGetMEMReservedFromTask
-	containers := []ECSContainer{}
-	assert.Equal(t, int64(256), cgroup.getMEMReservedInTask("test1", "", containers), "TestGetMEMReservedFromTask expected to be equal")
-	assert.Equal(t, int64(256), cgroup.getMEMReservedInTask("test3", "myCluster", containers), "TestGetMEMReservedFromTask for exmpty cluster name expected to be equal")
 
-	//TestGetMEMReservedFromContainers
-	containers = []ECSContainer{{DockerID: "container1"}, {DockerID: "container2"}}
-	assert.Equal(t, int64(384), cgroup.getMEMReservedInTask("test2", "", containers), "TestGetMEMReservedFromContainers expected to be equal")
-
-	//TestGetMEMReservedFromFalseTaskID
-	containers = []ECSContainer{{DockerID: "container1"}, {DockerID: "container2"}}
-	assert.Equal(t, int64(0), cgroup.getMEMReservedInTask("fake", "", containers), "TestGetMEMReservedFromFalseTaskID expected to be equal")
-
+	tests := []struct {
+		name        string
+		taskid      string
+		clusterName string
+		containers  []ECSContainer
+		expectRes   int64
+	}{
+		{
+			name:        "Test Get MEM Reserved From Task without clustername",
+			taskid:      "test1",
+			clusterName: "",
+			containers:  []ECSContainer{},
+			expectRes:   int64(256),
+		},
+		{
+			name:        "Test Get MEM Reserved From Task with clustername",
+			taskid:      "test3",
+			clusterName: "myCluster",
+			containers:  []ECSContainer{},
+			expectRes:   int64(256),
+		},
+		{
+			name:        "Test Get MEM Reserved From Containers",
+			taskid:      "test2",
+			clusterName: "",
+			containers:  []ECSContainer{{DockerID: "container1"}, {DockerID: "container2"}},
+			expectRes:   int64(384),
+		},
+		{
+			name:        "Test Get MEM Reserved From False Task ID",
+			taskid:      "fake",
+			clusterName: "",
+			containers:  []ECSContainer{{DockerID: "container1"}, {DockerID: "container2"}},
+			expectRes:   int64(0),
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := cgroup.getMEMReservedInTask(tt.taskid, tt.clusterName, tt.containers)
+			assert.Equal(t, tt.expectRes, got)
+		})
+	}
 }
 
 func TestGetCPUReservedAndMemReserved(t *testing.T) {
@@ -204,6 +364,7 @@ func TestGetCPUReservedAndMemReserved(t *testing.T) {
 	assert.Equal(t, int64(896), cgroup.getMemReserved())
 
 	cancel()
+
 	// test err
 	cgroup = newCGroupScannerForContainer(ctx, zap.NewNop(), taskinfo, containerinfo, time.Minute)
 
