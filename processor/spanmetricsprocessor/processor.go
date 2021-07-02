@@ -332,7 +332,7 @@ func (p *processorImp) updateLatencyMetrics(key metricKey, latency float64, inde
 	p.latencyBucketCounts[key][index]++
 }
 
-func buildDimensionKVs(serviceName string, span pdata.Span, optionalDims []Dimension, resourceAttrs pdata.AttributeMap) dimKV {
+func (p *processorImp) buildDimensionKVs(serviceName string, span pdata.Span, optionalDims []Dimension, resourceAttrs pdata.AttributeMap) dimKV {
 	dims := make(dimKV)
 	dims[serviceNameKey] = serviceName
 	dims[operationKey] = span.Name()
@@ -341,6 +341,12 @@ func buildDimensionKVs(serviceName string, span pdata.Span, optionalDims []Dimen
 	for _, d := range optionalDims {
 		if v, ok := getDimensionValue(d, span, resourceAttrs); ok {
 			dims[d.Name] = v
+		} else {
+			p.logger.Debug(fmt.Sprintf("%q metric dimension omitted; not found and no default configured", d.Name),
+				zap.String(serviceNameKey, serviceName),
+				zap.String(operationKey, span.Name()),
+				zap.String(spanKindKey, span.Kind().String()),
+				zap.String(statusCodeKey, span.Status().Code().String()))
 		}
 	}
 	return dims
@@ -403,7 +409,7 @@ func getDimensionValue(d Dimension, span pdata.Span, resourceAttr pdata.Attribut
 //   LabelsMap().InitFromMap(p.metricKeyToDimensions[key])
 func (p *processorImp) cache(serviceName string, span pdata.Span, k metricKey, resourceAttrs pdata.AttributeMap) {
 	if _, ok := p.metricKeyToDimensions[k]; !ok {
-		p.metricKeyToDimensions[k] = buildDimensionKVs(serviceName, span, p.dimensions, resourceAttrs)
+		p.metricKeyToDimensions[k] = p.buildDimensionKVs(serviceName, span, p.dimensions, resourceAttrs)
 	}
 }
 
