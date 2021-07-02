@@ -5,7 +5,7 @@ go 1.16
 require (
 	github.com/DataDog/datadog-agent/pkg/trace/exportable v0.0.0-20201016145401-4646cf596b02
 	github.com/OneOfOne/xxhash v1.2.5 // indirect
-	github.com/aws/aws-sdk-go v1.38.69
+	github.com/aws/aws-sdk-go v1.38.71
 	github.com/gogo/protobuf v1.3.2
 	github.com/mattn/go-colorable v0.1.7 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.0.0-00010101000000-000000000000
