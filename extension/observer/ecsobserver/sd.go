@@ -23,6 +23,8 @@ import (
 	"go.uber.org/zap"
 )
 
+// serviceDiscovery runs the discovery loop.
+// It writes discovered targets as prometheus file sd format (for now).
 type serviceDiscovery struct {
 	logger   *zap.Logger
 	cfg      Config
@@ -40,7 +42,7 @@ func newDiscovery(cfg Config, opts serviceDiscoveryOptions) (*serviceDiscovery, 
 	if opts.Fetcher == nil {
 		return nil, fmt.Errorf("fetcher is nil")
 	}
-	matchers, err := newMatchers(cfg, MatcherOptions{Logger: opts.Logger})
+	matchers, err := newMatchers(cfg, matcherOptions{Logger: opts.Logger})
 	if err != nil {
 		return nil, fmt.Errorf("init matchers failed: %w", err)
 	}
@@ -100,7 +102,7 @@ func (s *serviceDiscovery) runAndWriteFile(ctx context.Context) error {
 }
 
 // discover fetch tasks, filter by matching result and export them.
-func (s *serviceDiscovery) discover(ctx context.Context) ([]PrometheusECSTarget, error) {
+func (s *serviceDiscovery) discover(ctx context.Context) ([]prometheusECSTarget, error) {
 	tasks, err := s.fetcher.fetchAndDecorate(ctx)
 	if err != nil {
 		return nil, err
