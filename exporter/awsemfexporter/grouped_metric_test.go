@@ -17,6 +17,7 @@ package awsemfexporter
 import (
 	"testing"
 	"time"
+	"encoding/json"
 
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	agentmetricspb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/metrics/v1"
@@ -429,6 +430,39 @@ func TestAddToGroupedMetric(t *testing.T) {
 		groupedMetrics := make(map[interface{}]*GroupedMetric)
 		addToGroupedMetric(nil, groupedMetrics, metadata, logger, nil, nil)
 		assert.Equal(t, 0, len(groupedMetrics))
+	})
+
+}
+
+func testAddKubernetesWrapper(t *testing.T){
+	t.Run("Test basic creation", func(t *testing.T){
+		dockerObj := struct{
+			Container_id string
+		}{
+			Container_id: "Container mccontainter the third",
+		}
+		expectedCreatedObj := struct{
+			Container_name string 
+			Docker interface{}
+			Host string 
+			Pod_id string
+		}{
+			Container_name: "container mccontainer",
+			Docker: dockerObj,
+			Host: "hosty de la host",
+			Pod_id: "Le id de Pod",
+		}
+
+		inputs := make(map[string]string)
+		inputs["container_id"] = "Container mccontainter the third"
+		inputs["container_name"] = "container mccontainer"
+		inputs["host"] = "hosty de la host"
+		inputs["Pod_id"] = "Le id de Pod"
+
+		jsonBytes, _ := json.Marshal(expectedCreatedObj)
+		err := addKubernetesWrapper(inputs)
+		assert.Equal(t, err != nil, false, "It shouldn't throw an error when adding the obj")
+		assert.Equal(t, inputs["kubernetes"], string(jsonBytes), "The created and expected objects should be the same")
 	})
 }
 
