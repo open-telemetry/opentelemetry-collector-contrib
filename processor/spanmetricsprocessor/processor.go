@@ -43,7 +43,7 @@ const (
 
 var (
 	maxDuration   = time.Duration(math.MaxInt64)
-	maxDurationMs = float64(maxDuration.Milliseconds())
+	maxDurationMs = durationToMillis(maxDuration)
 
 	defaultLatencyHistogramBucketsMs = []float64{
 		2, 4, 6, 8, 10, 50, 100, 200, 400, 800, 1000, 1400, 2000, 5000, 10_000, 15_000, maxDurationMs,
@@ -89,9 +89,7 @@ func newProcessor(logger *zap.Logger, config config.Processor, nextConsumer cons
 
 	bounds := defaultLatencyHistogramBucketsMs
 	if pConfig.LatencyHistogramBuckets != nil {
-		bounds = mapDurationsToMillis(pConfig.LatencyHistogramBuckets, func(duration time.Duration) float64 {
-			return float64(duration.Milliseconds())
-		})
+		bounds = mapDurationsToMillis(pConfig.LatencyHistogramBuckets)
 
 		// "Catch-all" bucket.
 		if bounds[len(bounds)-1] != maxDurationMs {
@@ -118,10 +116,16 @@ func newProcessor(logger *zap.Logger, config config.Processor, nextConsumer cons
 	}, nil
 }
 
-func mapDurationsToMillis(vs []time.Duration, f func(duration time.Duration) float64) []float64 {
+// durationToMillis converts the given duration to the number of milliseconds it represents.
+// Note that this can return sub-millisecond (i.e. < 1ms) values as well.
+func durationToMillis(d time.Duration) float64 {
+	return float64(d.Nanoseconds()) / float64(time.Millisecond.Nanoseconds())
+}
+
+func mapDurationsToMillis(vs []time.Duration) []float64 {
 	vsm := make([]float64, len(vs))
 	for i, v := range vs {
-		vsm[i] = f(v)
+		vsm[i] = durationToMillis(v)
 	}
 	return vsm
 }

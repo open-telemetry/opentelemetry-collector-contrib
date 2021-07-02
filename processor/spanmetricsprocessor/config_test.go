@@ -46,6 +46,8 @@ func TestLoadConfig(t *testing.T) {
 			configFile:          "config-full.yaml",
 			wantMetricsExporter: "otlp/spanmetrics",
 			wantLatencyHistogramBuckets: []time.Duration{
+				5 * time.Nanosecond,
+				8 * time.Microsecond,
 				2 * time.Millisecond,
 				6 * time.Millisecond,
 				10 * time.Millisecond,
