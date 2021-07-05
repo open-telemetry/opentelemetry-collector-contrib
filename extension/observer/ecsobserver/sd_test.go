@@ -218,7 +218,7 @@ func TestNewDiscovery(t *testing.T) {
 
 func newTestTaskFilter(t *testing.T, cfg Config) *taskFilter {
 	logger := zap.NewExample()
-	m, err := newMatchers(cfg, MatcherOptions{Logger: logger})
+	m, err := newMatchers(cfg, matcherOptions{Logger: logger})
 	require.NoError(t, err)
 	f := newTaskFilter(logger, m)
 	return f
@@ -243,21 +243,21 @@ func newTestTaskFetcher(t *testing.T, c *ecsmock.Cluster, opts ...func(options *
 	return f
 }
 
-func newMatcher(t *testing.T, cfg matcherConfig) Matcher {
+func newMatcher(t *testing.T, cfg matcherConfig) targetMatcher {
 	m, err := cfg.newMatcher(testMatcherOptions())
 	require.NoError(t, err)
 	return m
 }
 
-func newMatcherAndMatch(t *testing.T, cfg matcherConfig, tasks []*Task) *MatchResult {
+func newMatcherAndMatch(t *testing.T, cfg matcherConfig, tasks []*taskAnnotated) *matchResult {
 	m := newMatcher(t, cfg)
 	res, err := matchContainers(tasks, m, 0)
 	require.NoError(t, err)
 	return res
 }
 
-func testMatcherOptions() MatcherOptions {
-	return MatcherOptions{
+func testMatcherOptions() matcherOptions {
+	return matcherOptions{
 		Logger: zap.NewExample(),
 	}
 }

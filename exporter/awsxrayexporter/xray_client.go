@@ -18,11 +18,9 @@ package awsxrayexporter
 import (
 	"os"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/aws/request"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/xray"
@@ -32,29 +30,23 @@ import (
 
 var collectorDistribution = "opentelemetry-collector-contrib"
 
-// XRay defines X-Ray api call structure.
-type XRay interface {
-	PutTraceSegments(input *xray.PutTraceSegmentsInput) (*xray.PutTraceSegmentsOutput, error)
-	PutTelemetryRecords(input *xray.PutTelemetryRecordsInput) (*xray.PutTelemetryRecordsOutput, error)
-}
-
-// XRayClient represents X-Ray client.
-type XRayClient struct {
+// xrayClient represents X-Ray client.
+type xrayClient struct {
 	xRay *xray.XRay
 }
 
 // PutTraceSegments makes PutTraceSegments api call on X-Ray client.
-func (c *XRayClient) PutTraceSegments(input *xray.PutTraceSegmentsInput) (*xray.PutTraceSegmentsOutput, error) {
+func (c *xrayClient) PutTraceSegments(input *xray.PutTraceSegmentsInput) (*xray.PutTraceSegmentsOutput, error) {
 	return c.xRay.PutTraceSegments(input)
 }
 
 // PutTelemetryRecords makes PutTelemetryRecords api call on X-Ray client.
-func (c *XRayClient) PutTelemetryRecords(input *xray.PutTelemetryRecordsInput) (*xray.PutTelemetryRecordsOutput, error) {
+func (c *xrayClient) PutTelemetryRecords(input *xray.PutTelemetryRecordsInput) (*xray.PutTelemetryRecordsOutput, error) {
 	return c.xRay.PutTelemetryRecords(input)
 }
 
 // newXRay creates a new instance of the XRay client with a aws configuration and session .
-func newXRay(logger *zap.Logger, awsConfig *aws.Config, buildInfo component.BuildInfo, s *session.Session) XRay {
+func newXRay(logger *zap.Logger, awsConfig *aws.Config, buildInfo component.BuildInfo, s *session.Session) xrayClient {
 	x := xray.New(s, awsConfig)
 	logger.Debug("Using Endpoint: %s", zap.String("endpoint", x.Endpoint))
 
@@ -73,20 +65,9 @@ func newXRay(logger *zap.Logger, awsConfig *aws.Config, buildInfo component.Buil
 		},
 	})
 
-	return &XRayClient{
+	return xrayClient{
 		xRay: x,
 	}
-}
-
-// IsTimeoutError checks whether error is timeout error.
-func IsTimeoutError(err error) bool {
-	awsError, ok := err.(awserr.Error)
-	if ok {
-		if strings.Contains(awsError.Error(), "net/http: request canceled") {
-			return true
-		}
-	}
-	return false
 }
 
 func newCollectorUserAgentHandler(buildInfo component.BuildInfo) request.NamedHandler {

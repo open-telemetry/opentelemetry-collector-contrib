@@ -34,7 +34,7 @@ func TestRedisRunnable(t *testing.T) {
 	err = runner.Run()
 	require.Nil(t, err)
 	// + 6 because there are two keyspace entries each of which has three metrics
-	assert.Equal(t, len(getDefaultRedisMetrics())+6, consumer.MetricsCount())
+	assert.Equal(t, len(getDefaultRedisMetrics())+6, consumer.DataPointCount())
 	md := consumer.AllMetrics()[0]
 	rm := md.ResourceMetrics().At(0)
 	ilm := rm.InstrumentationLibraryMetrics().At(0)

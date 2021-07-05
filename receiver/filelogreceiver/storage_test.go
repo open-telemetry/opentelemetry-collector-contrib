@@ -67,7 +67,7 @@ func TestStorage(t *testing.T) {
 		time.Second,
 		10*time.Millisecond,
 		"expected 2 but got %d logs",
-		sink.LogRecordsCount(),
+		sink.LogRecordCount(),
 	)
 
 	// Shut down the components
@@ -94,7 +94,7 @@ func TestStorage(t *testing.T) {
 		time.Second,
 		10*time.Millisecond,
 		"expected 3 but got %d logs",
-		sink.LogRecordsCount(),
+		sink.LogRecordCount(),
 	)
 	sink.Reset()
 
@@ -109,7 +109,7 @@ func TestStorage(t *testing.T) {
 		time.Second,
 		10*time.Millisecond,
 		"expected 100 but got %d logs",
-		sink.LogRecordsCount(),
+		sink.LogRecordCount(),
 	)
 
 	// Shut down the components
@@ -138,7 +138,7 @@ func TestStorage(t *testing.T) {
 		time.Second,
 		10*time.Millisecond,
 		"expected 5 but got %d logs",
-		sink.LogRecordsCount(),
+		sink.LogRecordCount(),
 	)
 
 	// Shut down the components
@@ -179,7 +179,7 @@ func (l *recallLogger) recall() []string {
 func expectLogs(sink *consumertest.LogsSink, expected []string) func() bool {
 	return func() bool {
 
-		if sink.LogRecordsCount() != len(expected) {
+		if sink.LogRecordCount() != len(expected) {
 			return false
 		}
 

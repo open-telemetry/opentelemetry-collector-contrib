@@ -40,11 +40,11 @@ type DockerLabelConfig struct {
 }
 
 func (d *DockerLabelConfig) validate() error {
-	_, err := d.newMatcher(MatcherOptions{})
+	_, err := d.newMatcher(matcherOptions{})
 	return err
 }
 
-func (d *DockerLabelConfig) newMatcher(options MatcherOptions) (Matcher, error) {
+func (d *DockerLabelConfig) newMatcher(options matcherOptions) (targetMatcher, error) {
 	// It's possible to support it in the future, but for now just fail at config,
 	// so user don't need to wonder which port is used in the exported target.
 	if len(d.MetricsPorts) != 0 {
@@ -74,7 +74,7 @@ func dockerLabelConfigToMatchers(cfgs []DockerLabelConfig) []matcherConfig {
 	return matchers
 }
 
-// dockerLabelMatcher implements Matcher interface.
+// dockerLabelMatcher implements targetMatcher interface.
 // It checks PortLabel from config and only matches if the label value is a valid number.
 type dockerLabelMatcher struct {
 	logger        *zap.Logger
@@ -82,14 +82,14 @@ type dockerLabelMatcher struct {
 	exportSetting *commonExportSetting
 }
 
-func (d *dockerLabelMatcher) Type() MatcherType {
-	return MatcherTypeDockerLabel
+func (d *dockerLabelMatcher) matcherType() matcherType {
+	return matcherTypeDockerLabel
 }
 
 // MatchTargets first checks the port label to find the expected port value.
 // Then it checks if that port is specified in container definition.
 // It only returns match target when both conditions are met.
-func (d *dockerLabelMatcher) MatchTargets(t *Task, c *ecs.ContainerDefinition) ([]MatchedTarget, error) {
+func (d *dockerLabelMatcher) matchTargets(t *taskAnnotated, c *ecs.ContainerDefinition) ([]matchedTarget, error) {
 	portLabel := d.cfg.PortLabel
 
 	// Only check port label
@@ -119,7 +119,7 @@ func (d *dockerLabelMatcher) MatchTargets(t *Task, c *ecs.ContainerDefinition) (
 	}
 
 	// Export only one target based on docker port label.
-	target := MatchedTarget{
+	target := matchedTarget{
 		Port: port,
 	}
 	if v, ok := c.DockerLabels[d.cfg.MetricsPathLabel]; ok {
@@ -132,5 +132,5 @@ func (d *dockerLabelMatcher) MatchTargets(t *Task, c *ecs.ContainerDefinition) (
 	if d.cfg.JobName != "" {
 		target.Job = d.cfg.JobName
 	}
-	return []MatchedTarget{target}, nil
+	return []matchedTarget{target}, nil
 }

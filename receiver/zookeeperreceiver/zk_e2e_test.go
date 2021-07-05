@@ -90,12 +90,12 @@ func TestIntegration(t *testing.T) {
 			t.Log("waiting for metrics...")
 			require.Eventuallyf(t,
 				func() bool {
-					return consumer.MetricsCount() >= test.expectedNumMetrics
+					return consumer.DataPointCount() >= test.expectedNumMetrics
 				},
 				20*time.Second, 2*time.Second,
 				fmt.Sprintf(
 					"received %d metrics, expecting %d",
-					consumer.MetricsCount(),
+					consumer.DataPointCount(),
 					test.expectedNumMetrics,
 				),
 			)

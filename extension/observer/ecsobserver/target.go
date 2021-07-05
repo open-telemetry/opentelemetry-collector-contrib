@@ -29,13 +29,13 @@ const (
 	labelPrefix = "__meta_ecs_"
 )
 
-// PrometheusECSTarget contains address and labels extracted from a running ECS task
+// prometheusECSTarget contains address and labels extracted from a running ECS task
 // and its underlying EC2 instance (if available).
 //
 // For serialization
 // - TargetToLabels and LabelsToTarget converts the struct between map[string]string.
 // - TargetsToFileSDYAML and ToTargetYAML converts it between prometheus file discovery format in YAML.
-type PrometheusECSTarget struct {
+type prometheusECSTarget struct {
 	Source                 string            `label:"source"`
 	Address                string            `label:"__address__"`
 	MetricsPath            string            `label:"__metrics_path__"`
@@ -87,7 +87,7 @@ const (
 
 // ToLabels converts fields in the target to map.
 // It also sanitize label name because the requirements on AWS tags and Prometheus are different.
-func (t *PrometheusECSTarget) ToLabels() map[string]string {
+func (t *prometheusECSTarget) ToLabels() map[string]string {
 	labels := map[string]string{
 		labelSource:                 t.Source,
 		labelAddress:                t.Address,
@@ -146,7 +146,7 @@ type fileSDTarget struct {
 	Labels  map[string]string `yaml:"labels" json:"labels"`
 }
 
-func targetsToFileSDTargets(targets []PrometheusECSTarget, jobLabelName string) ([]fileSDTarget, error) {
+func targetsToFileSDTargets(targets []prometheusECSTarget, jobLabelName string) ([]fileSDTarget, error) {
 	var converted []fileSDTarget
 	omitEmpty := []string{labelJob, labelServiceName}
 	for _, t := range targets {
@@ -184,7 +184,7 @@ func targetsToFileSDTargets(targets []PrometheusECSTarget, jobLabelName string) 
 	return converted, nil
 }
 
-func targetsToFileSDYAML(targets []PrometheusECSTarget, jobLabelName string) ([]byte, error) {
+func targetsToFileSDYAML(targets []prometheusECSTarget, jobLabelName string) ([]byte, error) {
 	converted, err := targetsToFileSDTargets(targets, jobLabelName)
 	if err != nil {
 		return nil, err

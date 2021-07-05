@@ -50,7 +50,7 @@ func TestLoadConfig(t *testing.T) {
 
 	// Example Config
 	ext2 := cfg.Extensions[config.NewIDWithName(typeStr, "2")]
-	ext2Expected := ExampleConfig()
+	ext2Expected := exampleConfig()
 	ext2Expected.ExtensionSettings = config.NewExtensionSettings(config.NewIDWithName(typeStr, "2"))
 	assert.Equal(t, &ext2Expected, ext2)
 

@@ -137,8 +137,8 @@ func newTaskFetcher(opts taskFetcherOptions) (*taskFetcher, error) {
 	return &fetcher, nil
 }
 
-func (f *taskFetcher) fetchAndDecorate(ctx context.Context) ([]*Task, error) {
-	// Task
+func (f *taskFetcher) fetchAndDecorate(ctx context.Context) ([]*taskAnnotated, error) {
+	// taskAnnotated
 	rawTasks, err := f.getAllTasks(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("getAllTasks failed: %w", err)
@@ -191,8 +191,8 @@ func (f *taskFetcher) getAllTasks(ctx context.Context) ([]*ecs.Task, error) {
 	return tasks, nil
 }
 
-// attachTaskDefinition converts ecs.Task into a annotated Task to include its ecs.TaskDefinition.
-func (f *taskFetcher) attachTaskDefinition(ctx context.Context, tasks []*ecs.Task) ([]*Task, error) {
+// attachTaskDefinition converts ecs.Task into a taskAnnotated to include its ecs.TaskDefinition.
+func (f *taskFetcher) attachTaskDefinition(ctx context.Context, tasks []*ecs.Task) ([]*taskAnnotated, error) {
 	svc := f.ecs
 	// key is task definition arn
 	arn2Def := make(map[string]*ecs.TaskDefinition)
@@ -220,9 +220,9 @@ func (f *taskFetcher) attachTaskDefinition(ctx context.Context, tasks []*ecs.Tas
 		arn2Def[arn] = def
 	}
 
-	var tasksWithDef []*Task
+	var tasksWithDef []*taskAnnotated
 	for _, t := range tasks {
-		tasksWithDef = append(tasksWithDef, &Task{
+		tasksWithDef = append(tasksWithDef, &taskAnnotated{
 			Task:       t,
 			Definition: arn2Def[aws.StringValue(t.TaskDefinitionArn)],
 		})
@@ -232,7 +232,7 @@ func (f *taskFetcher) attachTaskDefinition(ctx context.Context, tasks []*ecs.Tas
 
 // attachContainerInstance fetches all the container instances' underlying EC2 vms
 // and attach EC2 info to tasks.
-func (f *taskFetcher) attachContainerInstance(ctx context.Context, tasks []*Task) error {
+func (f *taskFetcher) attachContainerInstance(ctx context.Context, tasks []*taskAnnotated) error {
 	// Map container instance to EC2, key is container instance id.
 	ciToEC2 := make(map[string]*ec2.Instance)
 	// Only EC2 instance type need to fetch EC2 info
@@ -381,7 +381,7 @@ func (f *taskFetcher) getAllServices(ctx context.Context) ([]*ecs.Service, error
 
 // attachService map service to task using deployment id.
 // Each service can have multiple deployment and each task keep track of the deployment in task.StartedBy.
-func (f *taskFetcher) attachService(tasks []*Task, services []*ecs.Service) {
+func (f *taskFetcher) attachService(tasks []*taskAnnotated, services []*ecs.Service) {
 	// Map deployment ID to service name
 	idToService := make(map[string]*ecs.Service)
 	for _, svc := range services {
@@ -396,7 +396,7 @@ func (f *taskFetcher) attachService(tasks []*Task, services []*ecs.Service) {
 
 	// Attach service to task
 	for _, t := range tasks {
-		// Task is created using RunTask i.e. not manged by a service.
+		// taskAnnotated is created using RunTask i.e. not manged by a service.
 		if t.Task.StartedBy == nil {
 			continue
 		}
