@@ -185,13 +185,7 @@ func (r *splunkReceiver) Shutdown(context.Context) error {
 }
 
 func (r *splunkReceiver) handleReq(resp http.ResponseWriter, req *http.Request) {
-
-	transport := "http"
-	if r.config.TLSSetting != nil {
-		transport = "https"
-	}
-
-	ctx := obsreport.ReceiverContext(req.Context(), r.config.ID(), transport)
+	ctx := req.Context()
 	if r.logsConsumer == nil {
 		ctx = r.obsrecv.StartMetricsOp(ctx)
 	}

@@ -18,7 +18,6 @@ import (
 	"context"
 	"fmt"
 
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/obsreport"
@@ -39,7 +38,6 @@ const transport = "http"
 
 type runnable struct {
 	ctx                   context.Context
-	receiverID            config.ComponentID
 	statsProvider         *kubelet.StatsProvider
 	metadataProvider      *kubelet.MetadataProvider
 	consumer              consumer.Metrics
@@ -61,7 +59,6 @@ func newRunnable(
 ) *runnable {
 	return &runnable{
 		ctx:                   ctx,
-		receiverID:            rOptions.id,
 		consumer:              consumer,
 		restClient:            restClient,
 		logger:                logger,
@@ -73,7 +70,7 @@ func newRunnable(
 	}
 }
 
-// Sets up the kubelet connection at startup time.
+// Setup the kubelet connection at startup time.
 func (r *runnable) Setup() error {
 	r.statsProvider = kubelet.NewStatsProvider(r.restClient)
 	r.metadataProvider = kubelet.NewMetadataProvider(r.restClient)
@@ -104,8 +101,7 @@ func (r *runnable) Run() error {
 		internaldata.OCToMetrics(mds[i].Node, mds[i].Resource, mds[i].Metrics).ResourceMetrics().MoveAndAppendTo(metrics.ResourceMetrics())
 	}
 
-	ctx := obsreport.ReceiverContext(r.ctx, r.receiverID, transport)
-	ctx = r.obsrecv.StartMetricsOp(ctx)
+	ctx := r.obsrecv.StartMetricsOp(r.ctx)
 	numPoints := metrics.DataPointCount()
 	err = r.consumer.ConsumeMetrics(ctx, metrics)
 	if err != nil {

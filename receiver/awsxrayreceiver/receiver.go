@@ -40,13 +40,12 @@ const (
 // xrayReceiver implements the component.TracesReceiver interface for converting
 // AWS X-Ray segment document into the OT internal trace format.
 type xrayReceiver struct {
-	instanceID   config.ComponentID
-	poller       udppoller.Poller
-	server       proxy.Server
-	logger       *zap.Logger
-	consumer     consumer.Traces
-	longLivedCtx context.Context
-	obsrecv      *obsreport.Receiver
+	instanceID config.ComponentID
+	poller     udppoller.Poller
+	server     proxy.Server
+	logger     *zap.Logger
+	consumer   consumer.Traces
+	obsrecv    *obsreport.Receiver
 }
 
 func newReceiver(config *Config,
@@ -89,8 +88,7 @@ func newReceiver(config *Config,
 
 func (x *xrayReceiver) Start(ctx context.Context, host component.Host) error {
 	// TODO: Might want to pass `host` into read() below to report a fatal error
-	x.longLivedCtx = obsreport.ReceiverContext(ctx, x.instanceID, udppoller.Transport)
-	x.poller.Start(x.longLivedCtx)
+	x.poller.Start(ctx)
 	go x.start()
 	go x.server.ListenAndServe()
 	x.logger.Info("X-Ray TCP proxy server started")
