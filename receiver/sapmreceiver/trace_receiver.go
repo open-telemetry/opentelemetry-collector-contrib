@@ -66,11 +66,7 @@ func (sr *sapmReceiver) handleRequest(req *http.Request) error {
 		return err
 	}
 
-	transport := "http"
-	if sr.config.TLSSetting != nil {
-		transport = "https"
-	}
-	ctx := sr.obsrecv.StartTracesOp(obsreport.ReceiverContext(req.Context(), sr.config.ID(), transport))
+	ctx := sr.obsrecv.StartTracesOp(req.Context())
 
 	td := jaegertranslator.ProtoBatchesToInternalTraces(sapm.Batches)
 

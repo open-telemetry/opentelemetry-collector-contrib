@@ -98,9 +98,8 @@ func (ar *MockAwsXrayReceiver) handleRequest(req *http.Request) error {
 		transport = "https"
 	}
 
-	ctx := obsreport.ReceiverContext(req.Context(), ar.config.ID(), transport)
 	obsrecv := obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverID: ar.config.ID(), Transport: transport})
-	ctx = obsrecv.StartTracesOp(ctx)
+	ctx := obsrecv.StartTracesOp(req.Context())
 	body, err := ioutil.ReadAll(req.Body)
 	if err != nil {
 		log.Fatalln(err)
