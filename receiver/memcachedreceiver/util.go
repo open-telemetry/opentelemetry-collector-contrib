@@ -21,3 +21,8 @@ func parseInt(s string) int64 {
 	i, _ := strconv.ParseInt(s, 10, 64)
 	return i
 }
+
+func parseFloat(s string) float64 {
+	i, _ := strconv.ParseFloat(s, 10)
+	return i
+}

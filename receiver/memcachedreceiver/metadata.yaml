@@ -1,6 +1,38 @@
 name: memcachedreceiver
 
 labels:
+  command:
+    description: The type of command
+    enum:
+    - get
+    - set
+    - flush
+    - touch
+    - meta
+  direction: 
+    description: direction of data flow
+    enum:
+    - sent
+    - received
+  type: 
+    description: hit/miss
+    enum:
+    - hit
+    - miss
+  operation:
+    description: the type of operation
+    enum:
+    - increment
+    - decrement
+    - get
+    - delete
+    - cas
+    - touch
+  usage_type:
+    description: type of CPU usage
+    enum:
+    - system
+    - user
 
 metrics:
   memcached.bytes:
@@ -23,19 +55,63 @@ metrics:
       monotonic: true
       aggregation: cumulative
     labels: []
-  memcached.get_hits:
-    description: Number of keys that have been requested and found present
-    unit: connections
+  memcached.command_count:
+    description: Commands executed
+    unit: 1
+    data:
+      type: int sum
+      monotonic: true
+      aggregation: cumulative
+    labels: [command]
+  memcached.current_items:
+    description: Number of items currently stored in the cache
+    unit: 1
+    data:
+      type: double gauge
+    labels: []
+  memcached.eviction_count:
+    description: Cache item evictions
+    unit: 1
     data:
       type: int sum
       monotonic: true
       aggregation: cumulative
     labels: []
-  memcached.get_misses:
-    description: Number of items that have been requested and not found
-    unit: connections
+  memcached.network:
+    description: Bytes transferred over the network.
+    unit: 1
     data:
       type: int sum
       monotonic: true
       aggregation: cumulative
-    labels: []
+    labels: [direction]
+  memcached.operation_count:
+    description: Memcached operation hit/miss counts. 
+    unit: 1
+    data:
+      type: int sum
+      monotonic: true
+      aggregation: cumulative
+    labels: [type,operation]
+  memcached.operation_hit_ratio:
+    description: Hit ratio for memcached operations, expressed as a percentage value between 0.0 and 100.0.
+    unit: '%'
+    data:
+      type: double gauge
+    labels: [operation]
+  memcached.rusage:
+    description: Accumulated user and system time. 
+    unit: 1
+    data:
+      type: double gauge
+    lables: []
+  memcached.threads:
+    description: Number of threads used by the memcached instance
+    unit: 1
+    data:
+      type: double gauge
+    lables: [usage_type]
+
+
+
+
