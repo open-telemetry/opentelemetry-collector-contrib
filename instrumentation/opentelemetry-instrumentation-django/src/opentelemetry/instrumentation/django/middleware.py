@@ -16,6 +16,7 @@ from logging import getLogger
 from time import time
 from typing import Callable
 
+from django import VERSION as django_version
 from django.http import HttpRequest, HttpResponse
 
 from opentelemetry.context import attach, detach
@@ -42,10 +43,31 @@ try:
 except ImportError:
     from django.urls import Resolver404, resolve
 
-try:
-    from django.utils.deprecation import MiddlewareMixin
-except ImportError:
-    MiddlewareMixin = object
+DJANGO_2_0 = django_version >= (2, 0)
+
+if DJANGO_2_0:
+    # Since Django 2.0, only `settings.MIDDLEWARE` is supported, so new-style
+    # middlewares can be used.
+    class MiddlewareMixin:
+        def __init__(self, get_response):
+            self.get_response = get_response
+
+        def __call__(self, request):
+            self.process_request(request)
+            response = self.get_response(request)
+            return self.process_response(request, response)
+
+
+else:
+    # Django versions 1.x can use `settings.MIDDLEWARE_CLASSES` and expect
+    # old-style middlewares, which are created by inheriting from
+    # `deprecation.MiddlewareMixin` since its creation in Django 1.10 and 1.11,
+    # or from `object` for older versions.
+    try:
+        from django.utils.deprecation import MiddlewareMixin
+    except ImportError:
+        MiddlewareMixin = object
+
 
 _logger = getLogger(__name__)
 _attributes_by_preference = [
