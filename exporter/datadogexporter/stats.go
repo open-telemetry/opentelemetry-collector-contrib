@@ -15,6 +15,7 @@
 package datadogexporter
 
 import (
+	"strconv"
 	"time"
 
 	"github.com/DataDog/datadog-agent/pkg/trace/exportable/pb"
@@ -22,7 +23,7 @@ import (
 )
 
 const (
-	// keySamplingRateGlobal string = "_sample_rate"
+	keySamplingRateGlobal string = "sample_rate"
 	statsBucketDuration   int64  = int64(10 * time.Second)
 	versionAggregationTag string = "version"
 )
@@ -59,16 +60,20 @@ func computeAPMStats(tracePayload *pb.TracePayload, pushTime int64) *stats.Paylo
 			// Generally we want to ship 100% of traces to the backend where more accurate tail based sampling can be performed.
 			// TopLevel is always "true" since we only compute stats for top-level spans.
 
-			// var spanWeight float64
-			// if spanRate, ok := span.Metrics[keySamplingRateGlobal]; ok {
-			// 	spanWeight = spanRate
-			// } else {
-			// 	spanWeight = 1
-			// }
+			var spanWeight float64
+			if spanRate, ok := span.Metrics[keySamplingRateGlobal]; ok {
+				spanWeight = (1 / spanRate)
+			} else if spanRateMeta, metaok := span.Meta[keySamplingRateGlobal]; metaok {
+				if spanFlt, err := strconv.ParseFloat(spanRateMeta, 64); err == nil {
+					spanWeight = (1 / spanFlt)
+				}
+			} else {
+				spanWeight = 1
+			}
 
 			weightedSpan := &stats.WeightedSpan{
 				Span:     span,
-				Weight:   stats.Weight(span),
+				Weight:   spanWeight,
 				TopLevel: true,
 			}
 			statsRawBucket.HandleSpan(weightedSpan, tracePayload.Env, []string{versionAggregationTag}, emptySublayer)
