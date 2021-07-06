@@ -222,6 +222,58 @@ func TestLogdataToObservIQFormat(t *testing.T) {
 			false,
 		},
 		{
+			"Body is array",
+			func() pdata.LogRecord {
+				logRecord := pdata.NewLogRecord()
+
+				pdata.NewAttributeValueArray().CopyTo(logRecord.Body())
+				logRecord.Body().ArrayVal().Resize(2)
+				logRecord.Body().ArrayVal().At(0).SetStringVal("string")
+				logRecord.Body().ArrayVal().At(1).SetDoubleVal(1.0)
+
+				logRecord.SetTimestamp(nanoTs)
+				return logRecord
+			},
+			pdata.NewResource,
+			"agent",
+			"agentID",
+			observIQLogEntry{
+				Timestamp: stringTs,
+				Severity:  "default",
+				Resource:  map[string]interface{}{},
+				Data:      nil,
+				Agent:     &observIQAgentInfo{Name: "agent", ID: "agentID", Version: "latest"},
+				Body: []interface{}{
+					"string",
+					float64(1.0),
+				},
+			},
+			false,
+		},
+		{
+			"Body is an int",
+			func() pdata.LogRecord {
+				logRecord := pdata.NewLogRecord()
+
+				logRecord.Body().SetIntVal(1)
+
+				logRecord.SetTimestamp(nanoTs)
+				return logRecord
+			},
+			pdata.NewResource,
+			"agent",
+			"agentID",
+			observIQLogEntry{
+				Timestamp: stringTs,
+				Severity:  "default",
+				Resource:  map[string]interface{}{},
+				Data:      nil,
+				Agent:     &observIQAgentInfo{Name: "agent", ID: "agentID", Version: "latest"},
+				Body:      float64(1.0),
+			},
+			false,
+		},
+		{
 			"Body and attributes are maps",
 			func() pdata.LogRecord {
 				logRecord := pdata.NewLogRecord()

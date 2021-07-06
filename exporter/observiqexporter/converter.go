@@ -51,7 +51,7 @@ type observIQLogEntry struct {
 	Resource  interface{}            `json:"resource,omitempty"`
 	Agent     *observIQAgentInfo     `json:"agent,omitempty"`
 	Data      map[string]interface{} `json:"data,omitempty"`
-	Body      map[string]interface{} `json:"body,omitempty"`
+	Body      interface{}            `json:"body,omitempty"`
 }
 
 // Convert pdata.Logs to observIQLogBatch
@@ -125,10 +125,10 @@ func messageFromRecord(log pdata.LogRecord) string {
 	return ""
 }
 
-// If Body is a map, it is suitable to be used on the observIQ log entry as "body"
-func bodyFromRecord(log pdata.LogRecord) map[string]interface{} {
-	if log.Body().Type() == pdata.AttributeValueTypeMap {
-		return attributeMapToBaseType(log.Body().MapVal())
+// If Body is not a string, it is suitable to be used on the observIQ log entry as "body"
+func bodyFromRecord(log pdata.LogRecord) interface{} {
+	if log.Body().Type() != pdata.AttributeValueTypeString {
+		return attributeValueToBaseType(log.Body())
 	}
 	return nil
 }
