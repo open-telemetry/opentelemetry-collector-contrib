@@ -17,6 +17,7 @@ package sentryexporter
 import (
 	"context"
 	"crypto/tls"
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
@@ -42,8 +43,6 @@ var canonicalCodes = [...]sentry.SpanStatus{
 	sentry.SpanStatusOK,
 	sentry.SpanStatusUnknown,
 }
-// exceptionEvents is a mutable slice of exception events in spans recorded as Sentry events.
-var exceptionEvents []*sentry.Event
 
 // SentryExporter defines the Sentry Exporter.
 type SentryExporter struct {
@@ -53,6 +52,7 @@ type SentryExporter struct {
 // pushTraceData takes an incoming OpenTelemetry trace, converts them into Sentry spans and transactions
 // and sends them using Sentry's transport.
 func (s *SentryExporter) pushTraceData(_ context.Context, td pdata.Traces) error {
+	var exceptionEvents []*sentry.Event
 	resourceSpans := td.ResourceSpans()
 	if resourceSpans.Len() == 0 {
 		return nil
@@ -78,7 +78,7 @@ func (s *SentryExporter) pushTraceData(_ context.Context, td pdata.Traces) error
 			for k := 0; k < spans.Len(); k++ {
 				otelSpan := spans.At(k)
 				sentrySpan := convertToSentrySpan(otelSpan, library, resourceTags)
-				convertEventstoSentryExceptions(&exceptionEvents, otelSpan.Events(), sentrySpan)
+				convertEventsToSentryExceptions(&exceptionEvents, otelSpan.Events(), sentrySpan)
 
 				// If a span is a root span, we consider it the start of a Sentry transaction.
 				// We should then create a new transaction for that root span, and keep track of it.
@@ -133,21 +133,19 @@ func generateTransactions(transactionMap map[sentry.SpanID]*sentry.Event, orphan
 	return transactions
 }
 
-// convertEventstoSentryExceptions creates a set of sentry events from exception events present in spans.
+// convertEventsToSentryExceptions creates a set of sentry events from exception events present in spans.
 // These events are stored in a mutated eventList
-func convertEventstoSentryExceptions(eventList *[]*sentry.Event, events pdata.SpanEventSlice, sentrySpan *sentry.Span) {
+func convertEventsToSentryExceptions(eventList *[]*sentry.Event, events pdata.SpanEventSlice, sentrySpan *sentry.Span) {
 	for i := 0; i < events.Len(); i++ {
 		event := events.At(i)
 		if event.Name() != "exception" {
 			continue
 		}
-		var exceptionMessage, exceptionStacktrace, exceptionType string
+		var exceptionMessage, exceptionType string
 		event.Attributes().Range(func(k string, v pdata.AttributeValue) bool {
 			switch k {
 			case conventions.AttributeExceptionMessage:
 				exceptionMessage = v.StringVal()
-			case conventions.AttributeExceptionStacktrace:
-				exceptionStacktrace = v.StringVal()
 			case conventions.AttributeExceptionType:
 				exceptionType = v.StringVal()
 			}
@@ -159,13 +157,17 @@ func convertEventstoSentryExceptions(eventList *[]*sentry.Event, events pdata.Sp
 			// - exception.message`
 			continue
 		}
-		sentryEvent := eventFromError(exceptionMessage, exceptionType, sentrySpan)
+		sentryEvent, _ := sentryEventFromError(exceptionMessage, exceptionType, sentrySpan)
 		*eventList = append(*eventList, sentryEvent)
 	}
 }
 
-// eventFromError creates a sentry event from error event in a span
-func eventFromError(errorMessage, errorType string, span *sentry.Span) *sentry.Event {
+// sentryEventFromError creates a sentry event from error event in a span
+func sentryEventFromError(errorMessage, errorType string, span *sentry.Span) (*sentry.Event, error) {
+	if errorMessage == "" && errorType == "" {
+		err := errors.New("error type and error message were both empty")
+		return nil, err
+	}
 	event := sentry.NewEvent()
 
 	event.Contexts["trace"] = sentry.TraceContext{
@@ -180,7 +182,7 @@ func eventFromError(errorMessage, errorType string, span *sentry.Span) *sentry.E
 	event.Level = "error"
 	event.Exception = []sentry.Exception{{
 		Value: errorMessage,
-		Type: errorType,
+		Type:  errorType,
 	}}
 
 	event.Sdk.Name = otelSentryExporterName
@@ -191,7 +193,7 @@ func eventFromError(errorMessage, errorType string, span *sentry.Span) *sentry.E
 	event.Timestamp = span.EndTime
 	event.Transaction = span.Description
 
-	return event
+	return event, nil
 }
 
 // classifyAsOrphanSpans iterates through a list of possible orphan spans and tries to associate them
