@@ -120,14 +120,46 @@ func TestLogdataToObservIQFormat(t *testing.T) {
 				logRecord.SetTimestamp(nanoTs)
 				return logRecord
 			},
-			pdata.NewResource,
+			func() pdata.Resource {
+				res := pdata.NewResource()
+				res.Attributes().InsertBool("bool", true)
+				res.Attributes().InsertString("string", "string")
+				res.Attributes().InsertInt("int", 1)
+				res.Attributes().InsertNull("null")
+
+				mapVal := pdata.NewAttributeValueMap()
+				mapVal.MapVal().InsertDouble("double", 1.1)
+				mapVal.MapVal().InsertBool("bool", false)
+				mapVal.MapVal().InsertNull("null")
+				res.Attributes().Insert("map", mapVal)
+
+				arrVal := pdata.NewAttributeValueArray()
+				arrVal.ArrayVal().Resize(2)
+				arrVal.ArrayVal().At(0).SetIntVal(1)
+				arrVal.ArrayVal().At(1).SetDoubleVal(2.0)
+				res.Attributes().Insert("array", arrVal)
+
+				return res
+			},
 			"agent",
 			"agentID",
 			observIQLogEntry{
 				Timestamp: stringTs,
 				Message:   "Message",
 				Severity:  "default",
-				Resource:  map[string]interface{}{},
+				Resource: map[string]interface{}{
+					"bool":   true,
+					"string": "string",
+					// Note here about int values -- while this IS an int value,
+					// we marshal then unmarshal json to get this value --
+					// which turns it into a float
+					"int": float64(1),
+					"map": map[string]interface{}{
+						"double": float64(1.1),
+						"bool":   false,
+					},
+					"array": []interface{}{float64(1), float64(2.0)},
+				},
 				Data: map[string]interface{}{
 					strings.ReplaceAll(conventions.AttributeServiceName, ".", "_"): "myapp",
 					"bool":   true,
@@ -185,6 +217,37 @@ func TestLogdataToObservIQFormat(t *testing.T) {
 				Agent:     &observIQAgentInfo{Name: "agent", ID: "agentID", Version: "latest"},
 				Body: map[string]interface{}{
 					"mapKey": "value",
+				},
+			},
+			false,
+		},
+		{
+			"Body and attributes are maps",
+			func() pdata.LogRecord {
+				logRecord := pdata.NewLogRecord()
+
+				bodyMapVal := pdata.NewAttributeValueMap()
+				bodyMapVal.MapVal().Insert("mapKey", pdata.NewAttributeValueString("body"))
+				bodyMapVal.CopyTo(logRecord.Body())
+
+				logRecord.Attributes().InsertString("attrib", "logAttrib")
+
+				logRecord.SetTimestamp(nanoTs)
+				return logRecord
+			},
+			pdata.NewResource,
+			"agent",
+			"agentID",
+			observIQLogEntry{
+				Timestamp: stringTs,
+				Severity:  "default",
+				Resource:  map[string]interface{}{},
+				Data: map[string]interface{}{
+					"attrib": "logAttrib",
+				},
+				Agent: &observIQAgentInfo{Name: "agent", ID: "agentID", Version: "latest"},
+				Body: map[string]interface{}{
+					"mapKey": "body",
 				},
 			},
 			false,
