@@ -53,7 +53,7 @@ This can be done by either setting this environment variable:
 
 ::
 
-    export OTEL_PROPAGATORS = aws_xray
+    export OTEL_PROPAGATORS = xray
 
 
 Or by setting this propagator in your instrumented application:
