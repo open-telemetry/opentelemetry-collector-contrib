@@ -70,7 +70,7 @@ func logdataToObservIQFormat(ld pdata.Logs, agentID string, agentName string, bu
 			ill := ills.At(j)
 			logs := ill.Logs()
 			for k := 0; k < logs.Len(); k++ {
-				oiqLogEntry := resourceAndInstrmentationLogToEntry(resMap, logs.At(k), agentID, agentName, buildInfo)
+				oiqLogEntry := resourceAndInstrumentationLogToEntry(resMap, logs.At(k), agentID, agentName, buildInfo)
 
 				jsonOIQLogEntry, err := json.Marshal(oiqLogEntry)
 
@@ -96,17 +96,15 @@ func logdataToObservIQFormat(ld pdata.Logs, agentID string, agentName string, bu
 	return &observIQLogBatch{Logs: sliceOut}, errorsOut
 }
 
-// Output timestamp format, an ISO8601 compliant timesetamp with millisecond precision
+// Output timestamp format, an ISO8601 compliant timestamp with millisecond precision
 const timestampFieldOutputLayout = "2006-01-02T15:04:05.000Z07:00"
 
-func resourceAndInstrmentationLogToEntry(resMap interface{}, log pdata.LogRecord, agentID string, agentName string, buildInfo component.BuildInfo) *observIQLogEntry {
-	msg := messageFromRecord(log)
-
+func resourceAndInstrumentationLogToEntry(resMap interface{}, log pdata.LogRecord, agentID string, agentName string, buildInfo component.BuildInfo) *observIQLogEntry {
 	return &observIQLogEntry{
 		Timestamp: timestampFromRecord(log),
 		Severity:  severityFromRecord(log),
 		Resource:  resMap,
-		Message:   msg,
+		Message:   messageFromRecord(log),
 		Data:      attributeMapToBaseType(log.Attributes()),
 		Body:      bodyFromRecord(log),
 		Agent:     &observIQAgentInfo{Name: agentName, ID: agentID, Version: buildInfo.Version},
