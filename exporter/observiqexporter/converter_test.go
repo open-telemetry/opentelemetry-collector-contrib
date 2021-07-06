@@ -218,7 +218,7 @@ func TestLogdataToObservIQFormat(t *testing.T) {
 				logs,
 				testCase.agentID,
 				testCase.agentName,
-				component.DefaultBuildInfo())
+				component.DefaultBuildInfo().Version)
 
 			if testCase.expectErr {
 				require.NotEmpty(t, errs)

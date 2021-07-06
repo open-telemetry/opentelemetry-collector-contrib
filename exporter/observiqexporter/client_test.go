@@ -77,10 +77,10 @@ func newTestHTTPClient(t *testing.T, respCode *int, respBody *string, testFunc *
 
 func newTestClient(config *Config, httpClient *http.Client) *client {
 	return &client{
-		client:    httpClient,
-		logger:    zap.NewNop(),
-		config:    config,
-		buildInfo: component.DefaultBuildInfo(),
+		client:       httpClient,
+		logger:       zap.NewNop(),
+		config:       config,
+		buildVersion: component.DefaultBuildInfo().Version,
 	}
 }
 

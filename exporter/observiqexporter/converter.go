@@ -20,7 +20,6 @@ import (
 	"encoding/json"
 	"strings"
 
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/model/pdata"
 )
@@ -56,7 +55,7 @@ type observIQLogEntry struct {
 }
 
 // Convert pdata.Logs to observIQLogBatch
-func logdataToObservIQFormat(ld pdata.Logs, agentID string, agentName string, buildInfo component.BuildInfo) (*observIQLogBatch, []error) {
+func logdataToObservIQFormat(ld pdata.Logs, agentID string, agentName string, buildVersion string) (*observIQLogBatch, []error) {
 	var rls = ld.ResourceLogs()
 	var sliceOut = make([]*observIQLog, 0, ld.LogRecordCount())
 	var errorsOut = make([]error, 0)
@@ -70,7 +69,7 @@ func logdataToObservIQFormat(ld pdata.Logs, agentID string, agentName string, bu
 			ill := ills.At(j)
 			logs := ill.Logs()
 			for k := 0; k < logs.Len(); k++ {
-				oiqLogEntry := resourceAndInstrumentationLogToEntry(resMap, logs.At(k), agentID, agentName, buildInfo)
+				oiqLogEntry := resourceAndInstrumentationLogToEntry(resMap, logs.At(k), agentID, agentName, buildVersion)
 
 				jsonOIQLogEntry, err := json.Marshal(oiqLogEntry)
 
@@ -99,7 +98,7 @@ func logdataToObservIQFormat(ld pdata.Logs, agentID string, agentName string, bu
 // Output timestamp format, an ISO8601 compliant timestamp with millisecond precision
 const timestampFieldOutputLayout = "2006-01-02T15:04:05.000Z07:00"
 
-func resourceAndInstrumentationLogToEntry(resMap interface{}, log pdata.LogRecord, agentID string, agentName string, buildInfo component.BuildInfo) *observIQLogEntry {
+func resourceAndInstrumentationLogToEntry(resMap interface{}, log pdata.LogRecord, agentID string, agentName string, buildVersion string) *observIQLogEntry {
 	return &observIQLogEntry{
 		Timestamp: timestampFromRecord(log),
 		Severity:  severityFromRecord(log),
@@ -107,7 +106,7 @@ func resourceAndInstrumentationLogToEntry(resMap interface{}, log pdata.LogRecor
 		Message:   messageFromRecord(log),
 		Data:      attributeMapToBaseType(log.Attributes()),
 		Body:      bodyFromRecord(log),
-		Agent:     &observIQAgentInfo{Name: agentName, ID: agentID, Version: buildInfo.Version},
+		Agent:     &observIQAgentInfo{Name: agentName, ID: agentID, Version: buildVersion},
 	}
 }
 

@@ -43,7 +43,7 @@ type client struct {
 	throttleTimer  *time.Timer
 	throttleLock   sync.RWMutex
 	timesThrottled int
-	buildInfo      component.BuildInfo
+	buildVersion   string
 }
 
 func (c *client) sendLogs(
@@ -58,7 +58,7 @@ func (c *client) sendLogs(
 	}
 
 	// Conversion errors should be returned after sending what could be converted.
-	data, conversionErrs := logdataToObservIQFormat(ld, c.config.AgentID, c.config.AgentName, c.buildInfo)
+	data, conversionErrs := logdataToObservIQFormat(ld, c.config.AgentID, c.config.AgentName, c.buildVersion)
 
 	jsonData, err := json.Marshal(data)
 
@@ -198,8 +198,8 @@ func buildClient(config *Config, logger *zap.Logger, buildInfo component.BuildIn
 				TLSClientConfig: tlsCfg,
 			},
 		},
-		logger:    logger,
-		config:    config,
-		buildInfo: buildInfo,
+		logger:       logger,
+		config:       config,
+		buildVersion: buildInfo.Version,
 	}, nil
 }
