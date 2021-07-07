@@ -109,7 +109,7 @@ func (h *HTTPClient) Request(ctx context.Context, endpoint string) ([]byte, erro
 }
 
 func (h *HTTPClient) clientGet(ctx context.Context, url string) (resp *http.Response, err error) {
-	req, err := retryablehttp.NewRequest("GET", url, nil)
+	req, err := retryablehttp.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
 		return nil, err
 	}
