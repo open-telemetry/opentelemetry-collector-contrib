@@ -15,6 +15,15 @@ Installation
 ::
 
      pip install opentelemetry-instrumentation-requests
+     
+Configuration
+-------------
+
+.. code-block:: python
+
+     from opentelemetry.instrumentation.requests import RequestsInstrumentor
+     RequestsInstrumentor().instrument()
+
 
 References
 ----------
