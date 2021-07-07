@@ -92,7 +92,7 @@ func TestRequestWithFailedStatus(t *testing.T) {
 
 	respBody := "body"
 	response := &http.Response{
-		Status:        "200 OK",
+		Status:        "Bad Request",
 		StatusCode:    400,
 		Body:          ioutil.NopCloser(bytes.NewBufferString(respBody)),
 		Header:        make(http.Header),
