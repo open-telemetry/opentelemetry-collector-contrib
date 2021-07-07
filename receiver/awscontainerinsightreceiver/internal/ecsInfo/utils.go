@@ -18,8 +18,6 @@ import (
 	"context"
 	"errors"
 	"strings"
-
-	"go.uber.org/zap"
 )
 
 const (
@@ -60,6 +58,16 @@ type MockHTTPClient struct {
 	err          error
 }
 
-func (m *MockHTTPClient) Request(ctx context.Context, endpoint string, logger *zap.Logger) ([]byte, error) {
+func (m *MockHTTPClient) Request(ctx context.Context, endpoint string) ([]byte, error) {
 	return m.responseData, m.err
+}
+
+// Check the channel is closed or not.
+func IsClosed(ch <-chan bool) bool {
+	select {
+	case <-ch:
+		return true
+	default:
+	}
+	return false
 }

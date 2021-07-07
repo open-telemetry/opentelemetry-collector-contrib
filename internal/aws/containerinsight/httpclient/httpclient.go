@@ -23,28 +23,26 @@ import (
 	"net/http"
 	"time"
 
-	"go.uber.org/zap"
+	"github.com/hashicorp/go-retryablehttp"
 )
 
 const (
-	defaultMaxRetries              = 3
-	defaultTimeout                 = 1 * time.Second
-	defaultBackoffRetryBaseInMills = 200
-	maxHTTPResponseLength          = 5 * 1024 * 1024 // 5MB
+	defaultMaxRetries       = 3
+	defaultTimeout          = 1 * time.Second
+	defaultBackoffRetryBase = 200 * time.Millisecond
+	maxHTTPResponseLength   = 5 * 1024 * 1024 // 5MB
 )
 
 type HTTPClient struct {
-	maxRetries              int
-	backoffRetryBaseInMills time.Duration
-	client                  doer
+	client doer
 }
 
 type Requester interface {
-	Request(ctx context.Context, path string, logger *zap.Logger) ([]byte, error)
+	Request(ctx context.Context, path string) ([]byte, error)
 }
 
 type doer interface {
-	Do(request *http.Request) (*http.Response, error)
+	Do(request *retryablehttp.Request) (*http.Response, error)
 }
 
 func withClientOption(f doer) clientOption {
@@ -58,9 +56,12 @@ type clientOption func(*HTTPClient)
 func New(options ...clientOption) Requester {
 
 	httpClient := &HTTPClient{
-		maxRetries:              defaultMaxRetries,
-		backoffRetryBaseInMills: defaultBackoffRetryBaseInMills,
-		client:                  &http.Client{Timeout: defaultTimeout},
+		client: &retryablehttp.Client{
+			HTTPClient:   &http.Client{Timeout: defaultTimeout},
+			RetryWaitMin: defaultBackoffRetryBase,
+			RetryWaitMax: time.Duration(float64(defaultBackoffRetryBase) * math.Pow(2, float64(defaultMaxRetries))),
+			RetryMax:     defaultMaxRetries,
+		},
 	}
 
 	for _, opt := range options {
@@ -70,38 +71,17 @@ func New(options ...clientOption) Requester {
 	return httpClient
 }
 
-func (h *HTTPClient) backoffSleep(currentRetryCount int) {
-	backoffInMillis := int64(float64(h.backoffRetryBaseInMills) * math.Pow(2, float64(currentRetryCount)))
-	sleepDuration := time.Millisecond * time.Duration(backoffInMillis)
-	if sleepDuration > 60*1000 {
-		sleepDuration = 60 * 1000
-	}
-	time.Sleep(sleepDuration)
-}
-
-func (h *HTTPClient) Request(ctx context.Context, endpoint string, logger *zap.Logger) (body []byte, err error) {
-	for i := 0; i < h.maxRetries; i++ {
-		body, err = h.request(ctx, endpoint)
-		if err != nil {
-			sugar := logger.Sugar()
-			sugar.Warn("W! retry [%d/%d], unable to get http response from %s, error: %v", i, h.maxRetries, endpoint, err)
-			h.backoffSleep(i)
-		}
-	}
-	return
-}
-
-func (h *HTTPClient) request(ctx context.Context, endpoint string) ([]byte, error) {
+func (h *HTTPClient) Request(ctx context.Context, endpoint string) ([]byte, error) {
 	resp, err := h.clientGet(ctx, endpoint)
 	if err != nil {
 		return nil, err
 	}
+
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("unable to get response from %s, status code: %d", endpoint, resp.StatusCode)
+		return nil, err
 	}
-
 	if resp.ContentLength >= maxHTTPResponseLength {
 		return nil, fmt.Errorf("get response with unexpected length from %s, response length: %d", endpoint, resp.ContentLength)
 	}
@@ -125,12 +105,13 @@ func (h *HTTPClient) request(ctx context.Context, endpoint string) ([]byte, erro
 		return nil, fmt.Errorf("response from %s, execeeds the maximum length: %v", endpoint, maxHTTPResponseLength)
 	}
 	return body, nil
+
 }
 
 func (h *HTTPClient) clientGet(ctx context.Context, url string) (resp *http.Response, err error) {
-	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
+	req, err := retryablehttp.NewRequest("GET", url, nil)
 	if err != nil {
 		return nil, err
 	}
-	return h.client.Do(req)
+	return h.client.Do(req.WithContext(ctx))
 }

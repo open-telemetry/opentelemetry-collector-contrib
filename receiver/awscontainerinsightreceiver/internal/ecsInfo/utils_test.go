@@ -34,3 +34,15 @@ func TestGetContainerInstanceIDFromArn(t *testing.T) {
 	_, err := GetContainerInstanceIDFromArn(wrongFormatARN)
 	assert.NotNil(t, err)
 }
+
+func TestIsClosed(t *testing.T) {
+
+	channel := make(chan bool)
+
+	assert.Equal(t, false, IsClosed(channel))
+
+	close(channel)
+
+	assert.Equal(t, true, IsClosed(channel))
+
+}
