@@ -80,7 +80,7 @@ func (h *HTTPClient) Request(ctx context.Context, endpoint string) ([]byte, erro
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, err
+		return nil, fmt.Errorf("response status not OK: %d", resp.StatusCode)
 	}
 	if resp.ContentLength >= maxHTTPResponseLength {
 		return nil, fmt.Errorf("get response with unexpected length from %s, response length: %d", endpoint, resp.ContentLength)
