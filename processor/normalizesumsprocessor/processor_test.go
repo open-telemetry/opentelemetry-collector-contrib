@@ -70,8 +70,8 @@ func TestNormalizeSumsProcessor(t *testing.T) {
 		},
 		{
 			name:       "transform-all-happy-case",
-			inputs:     generateSimpleInput(testStart),
-			expected:   generateTransformAllCaseOutput(testStart),
+			inputs:     generateLabelledInput(testStart),
+			expected:   generateLabelledOutput(testStart),
 			transforms: nil,
 		},
 		{
@@ -173,12 +173,12 @@ func generateLabelledOutput(startTime int64) pdata.Metrics {
 	mb1 := b.addMetric("m1", pdata.MetricDataTypeIntSum, true)
 	// mb1.addIntDataPoint(1, map[string]string{"label": "val1"}, startTime, 0)
 	// mb1.addIntDataPoint(1, map[string]string{"label": "val2"}, startTime, 0)
-	mb1.addIntDataPoint(1, map[string]string{"label": "val1"}, startTime+1000, startTime)
-	mb1.addIntDataPoint(1, map[string]string{"label": "val2"}, startTime+1000, startTime)
-	mb1.addIntDataPoint(1, map[string]string{"label": "val1"}, startTime+2000, startTime)
+	mb1.addIntDataPoint(12, map[string]string{"label": "val1"}, startTime+1000, startTime)
+	mb1.addIntDataPoint(2, map[string]string{"label": "val2"}, startTime+1000, startTime)
+	mb1.addIntDataPoint(15, map[string]string{"label": "val1"}, startTime+2000, startTime)
 	//mb1.addIntDataPoint(1, map[string]string{"label": "val2"}, startTime+2000, 1)
-	mb1.addIntDataPoint(1, map[string]string{"label": "val1"}, startTime+3000, startTime)
-	mb1.addIntDataPoint(1, map[string]string{"label": "val2"}, startTime+3000, startTime+2000)
+	mb1.addIntDataPoint(22, map[string]string{"label": "val1"}, startTime+3000, startTime)
+	mb1.addIntDataPoint(10, map[string]string{"label": "val2"}, startTime+3000, startTime+2000)
 
 	rmb.Build().CopyTo(output.ResourceMetrics())
 	return output
@@ -353,7 +353,7 @@ func newResourceMetricsBuilder() resourceMetricsBuilder {
 }
 
 func (rmsb resourceMetricsBuilder) addResourceMetrics(resourceAttributes map[string]pdata.AttributeValue) metricsBuilder {
-	rm := pdata.NewResourceMetrics()
+	rm := rmsb.rms.AppendEmpty()
 
 	if resourceAttributes != nil {
 		rm.Resource().Attributes().InitFromMap(resourceAttributes)
@@ -362,7 +362,6 @@ func (rmsb resourceMetricsBuilder) addResourceMetrics(resourceAttributes map[str
 	rm.InstrumentationLibraryMetrics().Resize(1)
 	ilm := rm.InstrumentationLibraryMetrics().At(0)
 
-	rmsb.rms.Append(rm)
 	return metricsBuilder{metrics: ilm.Metrics()}
 }
 
@@ -375,7 +374,7 @@ type metricsBuilder struct {
 }
 
 func (msb metricsBuilder) addMetric(name string, t pdata.MetricDataType, isMonotonic bool) metricBuilder {
-	metric := pdata.NewMetric()
+	metric := msb.metrics.AppendEmpty()
 	metric.SetName(name)
 	metric.SetDataType(t)
 
@@ -390,7 +389,6 @@ func (msb metricsBuilder) addMetric(name string, t pdata.MetricDataType, isMonot
 		sum.SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
 	}
 
-	msb.metrics.Append(metric)
 	return metricBuilder{metric: metric}
 }
 
@@ -399,38 +397,46 @@ type metricBuilder struct {
 }
 
 func (mb metricBuilder) addIntDataPoint(value int64, labels map[string]string, timestamp int64, startTimestamp int64) metricBuilder {
-	idp := pdata.NewIntDataPoint()
-	idp.LabelsMap().InitFromMap(labels)
-	idp.SetValue(value)
-	idp.SetTimestamp(pdata.TimestampFromTime(time.Unix(timestamp, 0)))
-	if startTimestamp > 0 {
-		idp.SetStartTimestamp(pdata.TimestampFromTime(time.Unix(startTimestamp, 0)))
-	}
-
 	switch mb.metric.DataType() {
 	case pdata.MetricDataTypeIntSum:
-		mb.metric.IntSum().DataPoints().Append(idp)
+		idp := mb.metric.IntSum().DataPoints().AppendEmpty()
+		idp.LabelsMap().InitFromMap(labels)
+		idp.SetValue(value)
+		idp.SetTimestamp(pdata.TimestampFromTime(time.Unix(timestamp, 0)))
+		if startTimestamp > 0 {
+			idp.SetStartTimestamp(pdata.TimestampFromTime(time.Unix(startTimestamp, 0)))
+		}
 	case pdata.MetricDataTypeIntGauge:
-		mb.metric.IntGauge().DataPoints().Append(idp)
+		idp := mb.metric.IntGauge().DataPoints().AppendEmpty()
+		idp.LabelsMap().InitFromMap(labels)
+		idp.SetValue(value)
+		idp.SetTimestamp(pdata.TimestampFromTime(time.Unix(timestamp, 0)))
+		if startTimestamp > 0 {
+			idp.SetStartTimestamp(pdata.TimestampFromTime(time.Unix(startTimestamp, 0)))
+		}
 	}
 
 	return mb
 }
 
 func (mb metricBuilder) addDoubleDataPoint(value float64, labels map[string]string, timestamp int64, startTimestamp int64) metricBuilder {
-	ddp := pdata.NewDoubleDataPoint()
-	ddp.LabelsMap().InitFromMap(labels)
-	ddp.SetValue(value)
-	ddp.SetTimestamp(pdata.TimestampFromTime(time.Unix(timestamp, 0)))
-	if startTimestamp > 0 {
-		ddp.SetStartTimestamp(pdata.TimestampFromTime(time.Unix(startTimestamp, 0)))
-	}
-
 	switch mb.metric.DataType() {
 	case pdata.MetricDataTypeDoubleSum:
-		mb.metric.DoubleSum().DataPoints().Append(ddp)
+		ddp := mb.metric.DoubleSum().DataPoints().AppendEmpty()
+		ddp.LabelsMap().InitFromMap(labels)
+		ddp.SetValue(value)
+		ddp.SetTimestamp(pdata.TimestampFromTime(time.Unix(timestamp, 0)))
+		if startTimestamp > 0 {
+			ddp.SetStartTimestamp(pdata.TimestampFromTime(time.Unix(startTimestamp, 0)))
+		}
 	case pdata.MetricDataTypeDoubleGauge:
-		mb.metric.DoubleGauge().DataPoints().Append(ddp)
+		ddp := mb.metric.DoubleGauge().DataPoints().AppendEmpty()
+		ddp.LabelsMap().InitFromMap(labels)
+		ddp.SetValue(value)
+		ddp.SetTimestamp(pdata.TimestampFromTime(time.Unix(timestamp, 0)))
+		if startTimestamp > 0 {
+			ddp.SetStartTimestamp(pdata.TimestampFromTime(time.Unix(startTimestamp, 0)))
+		}
 	}
 
 	return mb
