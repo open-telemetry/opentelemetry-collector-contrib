@@ -85,7 +85,7 @@ func (ti *taskInfo) getTasksInfo(ctx context.Context) (ecsTasksInfo *ECSTasksInf
 	err = json.Unmarshal(resp, ecsTasksInfo)
 	if err != nil {
 		ti.logger.Warn("Unable to parse resp from ecsagent taskinfo endpoint, error:", zap.Error(err))
-		ti.logger.Warn("D! resp content is %s" + string(resp))
+		ti.logger.Debug("D! resp content is %s" + string(resp))
 	}
 	return ecsTasksInfo
 }
