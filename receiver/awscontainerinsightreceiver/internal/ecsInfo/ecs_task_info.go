@@ -56,10 +56,8 @@ type taskInfo struct {
 	sync.RWMutex
 }
 
-type taskInfoOption func(*taskInfo)
-
 func newECSTaskInfo(ctx context.Context, ecsTaskEndpointProvider hostIPProvider,
-	refreshInterval time.Duration, logger *zap.Logger, httpClient Requester, readyC chan bool, options ...taskInfoOption) ecsTaskInfoProvider {
+	refreshInterval time.Duration, logger *zap.Logger, httpClient Requester, readyC chan bool) ecsTaskInfoProvider {
 	ti := &taskInfo{
 		logger:                  logger,
 		httpClient:              httpClient,
@@ -67,12 +65,10 @@ func newECSTaskInfo(ctx context.Context, ecsTaskEndpointProvider hostIPProvider,
 		ecsTaskEndpointProvider: ecsTaskEndpointProvider,
 		readyC:                  readyC,
 	}
-	for _, opt := range options {
-		opt(ti)
-	}
+
 	shouldRefresh := func() bool {
-		//stop the refresh once we get instance ID and type successfully
-		return ti.runningTaskCount == 0 || len(ti.runningTasksInfo) == 0
+		//keep refreshing to update task info and running task number
+		return true
 	}
 	go host.RefreshUntil(ctx, ti.refresh, ti.refreshInterval, shouldRefresh, 0)
 	return ti
@@ -80,7 +76,7 @@ func newECSTaskInfo(ctx context.Context, ecsTaskEndpointProvider hostIPProvider,
 
 func (ti *taskInfo) getTasksInfo(ctx context.Context) (ecsTasksInfo *ECSTasksInfo) {
 	ecsTasksInfo = &ECSTasksInfo{}
-	resp, err := ti.httpClient.Request(ctx, ti.getECSAgentTaskInfoEndpoint(), ti.logger)
+	resp, err := ti.httpClient.Request(ctx, ti.getECSAgentTaskInfoEndpoint())
 	if err != nil {
 		ti.logger.Warn("Failed to call ecsagent taskinfo endpoint, error: ", zap.Error(err))
 		return ecsTasksInfo
@@ -111,7 +107,9 @@ func (ti *taskInfo) refresh(ctx context.Context) {
 	defer ti.Unlock()
 	ti.runningTaskCount = runningTaskCount
 	ti.runningTasksInfo = tasks
-	if len(ti.runningTasksInfo) != 0 && ti.runningTaskCount != 0 {
+
+	//notify cgroups that the task info is ready
+	if len(ti.runningTasksInfo) != 0 && ti.runningTaskCount != 0 && !IsClosed(ti.readyC) {
 		close(ti.readyC)
 	}
 

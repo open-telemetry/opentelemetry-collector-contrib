@@ -17,12 +17,13 @@ package httpClient
 import (
 	"bytes"
 	"context"
+	"errors"
 	"io/ioutil"
 	"net/http"
 	"testing"
 
+	"github.com/hashicorp/go-retryablehttp"
 	"github.com/stretchr/testify/assert"
-	"go.uber.org/zap"
 )
 
 type fakeClient struct {
@@ -30,18 +31,17 @@ type fakeClient struct {
 	err      error
 }
 
-func (f *fakeClient) Do(req *http.Request) (*http.Response, error) {
-	return f.response, nil
+func (f *fakeClient) Do(req *retryablehttp.Request) (*http.Response, error) {
+	return f.response, f.err
 }
-
-func TestRequestSecuess(t *testing.T) {
+func TestRequestSuccessWithKnownLength(t *testing.T) {
 
 	respBody := "body"
 	response := &http.Response{
-		Status:     "200 OK",
-		StatusCode: 200,
-		Body:       ioutil.NopCloser(bytes.NewBufferString(respBody)),
-		Header:     make(http.Header),
+		StatusCode:    200,
+		Body:          ioutil.NopCloser(bytes.NewBufferString(respBody)),
+		Header:        make(http.Header),
+		ContentLength: 5 * 1024,
 	}
 
 	fakeClient := &fakeClient{
@@ -49,11 +49,11 @@ func TestRequestSecuess(t *testing.T) {
 		err:      nil,
 	}
 
-	http := New(withClientOption(fakeClient))
+	httpFake := New(withClientOption(fakeClient))
 
 	ctx := context.Background()
 
-	body, err := http.Request(ctx, "0.0.0.0", zap.NewNop())
+	body, err := httpFake.Request(ctx, "0.0.0.0")
 
 	assert.Nil(t, err)
 
@@ -61,14 +61,14 @@ func TestRequestSecuess(t *testing.T) {
 
 }
 
-func TestRequestFailed(t *testing.T) {
+func TestRequestSuccessWithUnknownLength(t *testing.T) {
 
 	respBody := "body"
 	response := &http.Response{
-		Status:     "200 OK",
-		StatusCode: 400,
-		Body:       ioutil.NopCloser(bytes.NewBufferString(respBody)),
-		Header:     make(http.Header),
+		StatusCode:    200,
+		Body:          ioutil.NopCloser(bytes.NewBufferString(respBody)),
+		Header:        make(http.Header),
+		ContentLength: -1,
 	}
 
 	fakeClient := &fakeClient{
@@ -76,11 +76,66 @@ func TestRequestFailed(t *testing.T) {
 		err:      nil,
 	}
 
-	http := New(withClientOption(fakeClient))
+	httpFake := New(withClientOption(fakeClient))
 
 	ctx := context.Background()
 
-	body, err := http.Request(ctx, "0.0.0.0", zap.NewNop())
+	body, err := httpFake.Request(ctx, "0.0.0.0")
+
+	assert.Nil(t, err)
+
+	assert.NotNil(t, body)
+
+}
+
+func TestRequestWithFailedStatus(t *testing.T) {
+
+	respBody := "body"
+	response := &http.Response{
+		Status:        "200 OK",
+		StatusCode:    400,
+		Body:          ioutil.NopCloser(bytes.NewBufferString(respBody)),
+		Header:        make(http.Header),
+		ContentLength: 5 * 1024,
+	}
+
+	fakeClient := &fakeClient{
+		response: response,
+		err:      errors.New(""),
+	}
+
+	httpFake := New(withClientOption(fakeClient))
+
+	ctx := context.Background()
+
+	body, err := httpFake.Request(ctx, "0.0.0.0")
+
+	assert.Nil(t, body)
+
+	assert.NotNil(t, err)
+
+}
+
+func TestRequestWithLargeContentLength(t *testing.T) {
+
+	respBody := "body"
+	response := &http.Response{
+		StatusCode:    200,
+		Body:          ioutil.NopCloser(bytes.NewBufferString(respBody)),
+		Header:        make(http.Header),
+		ContentLength: 5 * 1024 * 1024,
+	}
+
+	fakeClient := &fakeClient{
+		response: response,
+		err:      nil,
+	}
+
+	httpFake := New(withClientOption(fakeClient))
+
+	ctx := context.Background()
+
+	body, err := httpFake.Request(ctx, "0.0.0.0")
 
 	assert.Nil(t, body)
 

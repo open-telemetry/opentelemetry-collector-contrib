@@ -32,7 +32,7 @@ type containerInstanceInfoProvider interface {
 }
 
 type Requester interface {
-	Request(ctx context.Context, path string, logger *zap.Logger) ([]byte, error)
+	Request(ctx context.Context, path string) ([]byte, error)
 }
 
 type hostIPProvider interface {
@@ -55,10 +55,8 @@ type ContainerInstance struct {
 	ContainerInstanceArn string
 }
 
-type ecsInstanceInfoOption func(*containerInstanceInfo)
-
 func newECSInstanceInfo(ctx context.Context, ecsAgentEndpointProvider hostIPProvider,
-	refreshInterval time.Duration, logger *zap.Logger, httpClient Requester, readyC chan bool, options ...ecsInstanceInfoOption) containerInstanceInfoProvider {
+	refreshInterval time.Duration, logger *zap.Logger, httpClient Requester, readyC chan bool) containerInstanceInfoProvider {
 	cii := &containerInstanceInfo{
 		logger:                   logger,
 		httpClient:               httpClient,
@@ -67,14 +65,11 @@ func newECSInstanceInfo(ctx context.Context, ecsAgentEndpointProvider hostIPProv
 		readyC:                   readyC,
 	}
 
-	for _, opt := range options {
-		opt(cii)
+	shouldRefresh := func() bool {
+		//stop the refresh once we get instance ID and cluster name successfully
+		return cii.GetClusterName() == "" || cii.GetContainerInstanceID() == ""
 	}
 
-	shouldRefresh := func() bool {
-		//stop the refresh once we get instance ID and type successfully
-		return cii.clusterName == "" || cii.containerInstanceID == ""
-	}
 	go host.RefreshUntil(ctx, cii.refresh, cii.refreshInterval, shouldRefresh, 0)
 
 	return cii
@@ -83,7 +78,7 @@ func newECSInstanceInfo(ctx context.Context, ecsAgentEndpointProvider hostIPProv
 func (cii *containerInstanceInfo) refresh(ctx context.Context) {
 	containerInstance := &ContainerInstance{}
 	cii.logger.Info("Fetch instance id and type from ec2 metadata")
-	resp, err := cii.httpClient.Request(ctx, cii.getECSAgentEndpoint(), cii.logger)
+	resp, err := cii.httpClient.Request(ctx, cii.getECSAgentEndpoint())
 	if err != nil {
 		cii.logger.Warn("Failed to call ecsagent endpoint, error: ", zap.Error(err))
 	}
@@ -104,22 +99,23 @@ func (cii *containerInstanceInfo) refresh(ctx context.Context) {
 	cii.Lock()
 	cii.clusterName = cluster
 	cii.containerInstanceID = instanceID
-	cii.Unlock()
+	defer cii.Unlock()
 
-	if cii.clusterName != "" && cii.containerInstanceID != "" {
+	//notify cgroups that the clustername and instanceID is ready
+	if cii.clusterName != "" && cii.containerInstanceID != "" && !IsClosed(cii.readyC) {
 		close(cii.readyC)
 	}
 }
 
 func (cii *containerInstanceInfo) GetClusterName() string {
-	cii.Lock()
-	defer cii.Unlock()
+	cii.RLock()
+	defer cii.RUnlock()
 	return cii.clusterName
 }
 
 func (cii *containerInstanceInfo) GetContainerInstanceID() string {
-	cii.Lock()
-	defer cii.Unlock()
+	cii.RLock()
+	defer cii.RUnlock()
 	return cii.containerInstanceID
 }
 
