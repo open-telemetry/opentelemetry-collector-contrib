@@ -46,8 +46,7 @@ type kubernetesReceiver struct {
 }
 
 func (kr *kubernetesReceiver) Start(ctx context.Context, host component.Host) error {
-	var c context.Context
-	c, kr.cancel = context.WithCancel(obsreport.ReceiverContext(ctx, kr.config.ID(), transport))
+	ctx, kr.cancel = context.WithCancel(ctx)
 
 	exporters := host.GetExporters()
 	if err := kr.resourceWatcher.setupMetadataExporters(
@@ -57,7 +56,7 @@ func (kr *kubernetesReceiver) Start(ctx context.Context, host component.Host) er
 
 	go func() {
 		kr.logger.Info("Starting shared informers and wait for initial cache sync.")
-		kr.resourceWatcher.startWatchingResources(c)
+		kr.resourceWatcher.startWatchingResources(ctx)
 
 		// Wait till either the initial cache sync times out or until the cancel method
 		// corresponding to this context is called.
@@ -81,8 +80,8 @@ func (kr *kubernetesReceiver) Start(ctx context.Context, host component.Host) er
 		for {
 			select {
 			case <-ticker.C:
-				kr.dispatchMetrics(c)
-			case <-c.Done():
+				kr.dispatchMetrics(ctx)
+			case <-ctx.Done():
 				return
 			}
 		}

@@ -126,6 +126,6 @@ func TestDecodeInputConfigFailure(t *testing.T) {
 
 func expectNLogs(sink *consumertest.LogsSink, expected int) func() bool {
 	return func() bool {
-		return sink.LogRecordsCount() == expected
+		return sink.LogRecordCount() == expected
 	}
 }

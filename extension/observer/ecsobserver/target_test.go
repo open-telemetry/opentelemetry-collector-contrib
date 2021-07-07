@@ -22,7 +22,7 @@ import (
 
 func TestTargetToLabels(t *testing.T) {
 	t.Run("sanitize tags", func(t *testing.T) {
-		pt := PrometheusECSTarget{
+		pt := prometheusECSTarget{
 			TaskTags: map[string]string{
 				"a:b": "sanitized",
 				"ab":  "same",

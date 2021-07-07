@@ -58,7 +58,7 @@ func (s *commonExportSetting) hasContainerPort(containerPort int) bool {
 	return s.metricsPorts[containerPort]
 }
 
-// taskExporter converts annotated Task into PrometheusECSTarget.
+// taskExporter converts annotated taskAnnotated into prometheusECSTarget.
 type taskExporter struct {
 	logger  *zap.Logger
 	cluster string
@@ -77,9 +77,9 @@ func newTaskExporter(logger *zap.Logger, cluster string) *taskExporter {
 // Caller can ignore the error because the only source is failing to get ip and port.
 // The error(s) can generates debug log or metrics.
 // To print the error with its task as context, use printExporterErrors.
-func (e *taskExporter) exportTasks(tasks []*Task) ([]PrometheusECSTarget, error) {
+func (e *taskExporter) exportTasks(tasks []*taskAnnotated) ([]prometheusECSTarget, error) {
 	var merr error
-	var allTargets []PrometheusECSTarget
+	var allTargets []prometheusECSTarget
 	for _, t := range tasks {
 		targets, err := e.exportTask(t)
 		multierr.AppendInto(&merr, err) // if err == nil, AppendInto does nothing
@@ -92,7 +92,7 @@ func (e *taskExporter) exportTasks(tasks []*Task) ([]PrometheusECSTarget, error)
 // exportTask exports all the matched container within a single task.
 // One task can contain multiple containers. One container can have more than one target
 // if there are multiple ports in `metrics_port`.
-func (e *taskExporter) exportTask(task *Task) ([]PrometheusECSTarget, error) {
+func (e *taskExporter) exportTask(task *taskAnnotated) ([]prometheusECSTarget, error) {
 	// All targets in one task shares same IP.
 	privateIP, err := task.PrivateIP()
 	if err != nil {
@@ -100,7 +100,7 @@ func (e *taskExporter) exportTask(task *Task) ([]PrometheusECSTarget, error) {
 	}
 
 	// Base for all the containers in this task, most attributes are same.
-	baseTarget := PrometheusECSTarget{
+	baseTarget := prometheusECSTarget{
 		Source:                 aws.StringValue(task.Task.TaskArn),
 		MetricsPath:            defaultMetricsPath,
 		ClusterName:            e.cluster,
@@ -126,7 +126,7 @@ func (e *taskExporter) exportTask(task *Task) ([]PrometheusECSTarget, error) {
 		baseTarget.EC2PublicIP = aws.StringValue(ec2.PublicIpAddress)
 	}
 
-	var targetsInTask []PrometheusECSTarget
+	var targetsInTask []prometheusECSTarget
 	var merr error
 	for _, m := range task.Matched {
 		container := task.Definition.ContainerDefinitions[m.ContainerIndex]
