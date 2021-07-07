@@ -61,11 +61,14 @@ func addToGroupedMetric(pmd *pdata.Metric, groupedMetrics map[interface{}]*Group
 
 		if metricType, ok := labels["Type"]; ok {
 			if (metricType == "Pod" || metricType == "Container") && config.CreateEKSFargateKubernetesObject {
-				err := addKubernetesWrapper(labels)
+				newObjectVal, err := applySchema(labels, config.EKSFargateKubernetesObjectSchema)
 				if err != nil {
 					logger.Warn("Issue forming Kubernetes Object", zap.Error(err))
+					logger.Warn("Internal Schema", zap.String("internal schema", config.EKSFargateKubernetesObjectSchema))
 					return err
 				}
+
+				labels["kubernetes"] = newObjectVal
 			}
 		}
 
@@ -167,8 +170,15 @@ func recursivelyFillInStruct(labels map[string]string, schema interface{}) (stri
 		return "", err
 	}
 
+	return applySchema(labels, string(jsonBytes))
+
+}
+
+func applySchema(labels map[string]string, schema string) (string, error) {
+	jsonBytes := []byte(schema)
+
 	m := make(map[string]interface{})
-	err = json.Unmarshal(jsonBytes, &m)
+	err := json.Unmarshal(jsonBytes, &m)
 	if err != nil {
 		return "", err
 	}
