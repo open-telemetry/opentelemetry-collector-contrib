@@ -104,54 +104,54 @@ func addToGroupedMetric(pmd *pdata.Metric, groupedMetrics map[interface{}]*Group
 }
 
 type kubernetesObj struct {
-	Container_name string               `json:`
-	Docker         internalDockerObj    `json:`
-	Host           string               `json:`
-	Labels         internalLabelsObj    `json:`
-	Namespace_name string               `json:`
-	Pod_id         string               `json:`
-	Pod_name       string               `json:`
-	Pod_owners     internalPodOwnersObj `json:`
-	Service_name   string               `json:`
+	ContainerName string               `json: "container_name"`
+	Docker        internalDockerObj    `json: docker`
+	Host          string               `json: host`
+	Labels        internalLabelsObj    `json: labels`
+	NamespaceName string               `json: namespace_name`
+	PodId         string               `json: pod_id`
+	PodName       string               `json: pod_name`
+	PodOwners     internalPodOwnersObj `json:pod_owners`
+	ServiceName   string               `json: service_name`
 }
 
 type internalDockerObj struct {
-	Container_id string `json:`
+	ContainerId string `json: container_id`
 }
 
 type internalLabelsObj struct {
-	App               string `json:`
-	Pod_template_hash string `json: "pod-template-hash"`
+	App             string `json: app`
+	PodTemplateHash string `json: "pod-template-hash"`
 }
 
 type internalPodOwnersObj struct {
-	Owner_kind string `json:`
-	Owner_name string `json:`
+	OwnerKind string `json: owner_kind`
+	OwnerName string `json: owner_name`
 }
 
 func addKubernetesWrapper(labels map[string]string) error {
 	//create schema
 	schema := kubernetesObj{}
-	schema.Container_name = "container_name"
+	schema.ContainerName = "container_name"
 	schema.Docker =
 		internalDockerObj{
-			Container_id: "container_id",
+			ContainerId: "container_id",
 		}
 	schema.Host = "host_name"
 	schema.Labels =
 		internalLabelsObj{
-			App:               "app",
-			Pod_template_hash: "pod-template-hash",
+			App:             "app",
+			PodTemplateHash: "pod-template-hash",
 		}
-	schema.Namespace_name = "namespace_name"
-	schema.Pod_id = "pod_id"
-	schema.Pod_name = "pod_name"
-	schema.Pod_owners =
+	schema.NamespaceName = "namespace_name"
+	schema.PodId = "pod_id"
+	schema.PodName = "pod_name"
+	schema.PodOwners =
 		internalPodOwnersObj{
-			Owner_kind: "owner_kind",
-			Owner_name: "owner_name",
+			OwnerKind: "owner_kind",
+			OwnerName: "owner_name",
 		}
-	schema.Service_name = "service_name"
+	schema.ServiceName = "service_name"
 
 	var err error
 	labels["kubernetes"], err = recursivelyFillInStruct(labels, schema)
