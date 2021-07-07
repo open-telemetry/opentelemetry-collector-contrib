@@ -10,7 +10,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   ([#566](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/566))
 - Include Flask 2.0 as compatible with existing flask instrumentation
   ([#545](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/545))
-
+- `openelemetry-sdk-extension-aws` Take a dependency on `opentelemetry-sdk`
+  ([#558](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/558))
 ### Changed
 - `opentelemetry-instrumentation-tornado` properly instrument work done in tornado on_finish method.
   ([#499](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/499))
