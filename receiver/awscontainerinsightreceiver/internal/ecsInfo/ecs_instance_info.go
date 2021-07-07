@@ -86,7 +86,7 @@ func (cii *containerInstanceInfo) refresh(ctx context.Context) {
 	err = json.Unmarshal(resp, containerInstance)
 	if err != nil {
 		cii.logger.Warn("Failed to unmarshal: ", zap.Error(err))
-		cii.logger.Warn("Resp content is " + string(resp))
+		cii.logger.Debug("Resp content is " + string(resp))
 	}
 
 	cluster := containerInstance.Cluster
