@@ -17,7 +17,7 @@ package translator
 import (
 	"time"
 
-	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/model/pdata"
 )
 
 func addStartTime(startTime *float64, span *pdata.Span) {

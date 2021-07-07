@@ -25,7 +25,7 @@ import (
 
 	"go.elastic.co/apm/model"
 	"go.elastic.co/fastjson"
-	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/translator/conventions"
 )
 

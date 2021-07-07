@@ -27,7 +27,6 @@ exporter/elasticsearchexporter/                      @open-telemetry/collector-c
 exporter/f5cloudexporter/                            @open-telemetry/collector-contrib-approvers @gramidt
 exporter/honeycombexporter/                          @open-telemetry/collector-contrib-approvers @paulosman @lizthegrey @MikeGoldsmith
 exporter/humioexporter/                              @open-telemetry/collector-contrib-approvers @xitric
-exporter/jaegerthrifthttpexporter/                   @open-telemetry/collector-contrib-approvers @jpkrohling @pavolloffay
 exporter/awskinesisexporter/                         @open-telemetry/collector-contrib-approvers @owais @anuraaga
 exporter/loadbalancingexporter/                      @open-telemetry/collector-contrib-approvers @jpkrohling
 exporter/logzioexporter/                             @open-telemetry/collector-contrib-approvers @yyyogev @jkowall @albertteoh
@@ -36,13 +35,13 @@ exporter/newrelicexporter/                           @open-telemetry/collector-c
 exporter/sapmexporter/                               @open-telemetry/collector-contrib-approvers @owais @dmitryax
 exporter/sentryexporter/                             @open-telemetry/collector-contrib-approvers @AbhiPrasad
 exporter/signalfxexporter/                           @open-telemetry/collector-contrib-approvers @pmcollins @asuresh4
-exporter/signalfxcorrelationexporter/                @open-telemetry/collector-contrib-approvers @jrcamp @keitwb
 exporter/splunkhecexporter/                          @open-telemetry/collector-contrib-approvers @atoulme
 exporter/stackdriverexporter/                        @open-telemetry/collector-contrib-approvers @aabmass @dashpole @jsuereth @punya @tbarker25
 exporter/googlecloudexporter/                        @open-telemetry/collector-contrib-approvers @aabmass @dashpole @jsuereth @punya @tbarker25
 exporter/sumologicexporter/                          @open-telemetry/collector-contrib-approvers @pmm-sumo @sumo-drosiek
 exporter/uptraceexporter/                            @open-telemetry/collector-contrib-approvers @vmihailenco
 exporter/googlecloudpubsubexporter/                  @open-telemetry/collector-contrib-approvers @alexvanboxel
+exporter/tanzuobservabilityexporter/                 @open-telemetry/collector-contrib-approvers @oppegard @thepeterstone
 
 extension/httpforwarder/                             @open-telemetry/collector-contrib-approvers @asuresh4
 extension/observer/                                  @open-telemetry/collector-contrib-approvers @asuresh4 @jrcamp
@@ -64,6 +63,7 @@ processor/routingprocessor/                          @open-telemetry/collector-c
 processor/spanmetricsprocessor/                      @open-telemetry/collector-contrib-approvers @albertteoh
 processor/tailsamplingprocessor/                     @open-telemetry/collector-contrib-approvers @jpkrohling
 
+receiver/awscontainerinsightreceiver/                @open-telemetry/collector-contrib-approvers @Aneurysm9 @pxaws
 receiver/awsecscontainermetricsreceiver/             @open-telemetry/collector-contrib-approvers @kbrockhoff @anuraaga
 receiver/awsxrayreceiver/                            @open-telemetry/collector-contrib-approvers @kbrockhoff @anuraaga
 receiver/carbonreceiver/                             @open-telemetry/collector-contrib-approvers @pjanotti

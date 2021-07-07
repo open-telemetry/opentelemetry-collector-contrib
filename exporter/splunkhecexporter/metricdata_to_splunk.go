@@ -18,7 +18,7 @@ import (
 	"math"
 	"strconv"
 
-	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/translator/conventions"
 	tracetranslator "go.opentelemetry.io/collector/translator/trace"
 	"go.uber.org/zap"
@@ -43,8 +43,7 @@ const (
 
 func metricDataToSplunk(logger *zap.Logger, data pdata.Metrics, config *Config) ([]*splunk.Event, int) {
 	numDroppedTimeSeries := 0
-	_, dpCount := data.MetricAndDataPointCount()
-	splunkMetrics := make([]*splunk.Event, 0, dpCount)
+	splunkMetrics := make([]*splunk.Event, 0, data.DataPointCount())
 	rms := data.ResourceMetrics()
 	for i := 0; i < rms.Len(); i++ {
 		rm := rms.At(i)

@@ -18,7 +18,7 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/translator/conventions"
 	"go.uber.org/zap"
 
@@ -102,11 +102,11 @@ func (kp *kubernetesprocessor) ProcessLogs(ctx context.Context, ld pdata.Logs) (
 
 // processResource adds Pod metadata tags to resource based on pod association configuration
 func (kp *kubernetesprocessor) processResource(ctx context.Context, resource pdata.Resource) {
-
 	podIdentifierKey, podIdentifierValue := extractPodID(ctx, resource.Attributes(), kp.podAssociations)
 	if podIdentifierKey != "" {
 		resource.Attributes().InsertString(podIdentifierKey, string(podIdentifierValue))
 	}
+
 	namespace := stringAttributeFromMap(resource.Attributes(), conventions.AttributeK8sNamespace)
 	if namespace != "" {
 		resource.Attributes().InsertString(conventions.AttributeK8sNamespace, namespace)

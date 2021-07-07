@@ -18,7 +18,7 @@ import (
 	"errors"
 	"sort"
 
-	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/translator/conventions"
 	"go.uber.org/zap"
 
@@ -119,7 +119,8 @@ func convertToArrayVal(logger *zap.Logger, value []interface{}) (pdata.Attribute
 		if err != nil {
 			return attrVal, err
 		}
-		arr.Append(translatedElt)
+		tgt := arr.AppendEmpty()
+		translatedElt.CopyTo(tgt)
 	}
 	return attrVal, nil
 }

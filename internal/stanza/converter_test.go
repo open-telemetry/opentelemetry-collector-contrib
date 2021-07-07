@@ -25,7 +25,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-log-collection/entry"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/model/pdata"
 )
 
 func BenchmarkConvertSimple(b *testing.B) {
@@ -408,7 +408,8 @@ func TestConverterCancelledContextCancellsTheFlush(t *testing.T) {
 		ills := rls.InstrumentationLibraryLogs().At(0)
 
 		lr := convert(complexEntry())
-		ills.Logs().Append(lr)
+		tgt := ills.Logs().AppendEmpty()
+		lr.CopyTo(tgt)
 
 		assert.Error(t, converter.flush(ctx, pLogs))
 	}()

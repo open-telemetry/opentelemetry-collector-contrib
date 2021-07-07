@@ -34,7 +34,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/testutil"
 	"go.opentelemetry.io/collector/testutil/metricstestutil"
 	"go.opentelemetry.io/collector/translator/internaldata"
@@ -174,8 +174,7 @@ func TestConsumeMetricsData(t *testing.T) {
 			// Each metric point will generate one Carbon line, set up the wait
 			// for all of them.
 			var wg sync.WaitGroup
-			_, mpc := tt.md.MetricAndDataPointCount()
-			wg.Add(mpc)
+			wg.Add(tt.md.DataPointCount())
 			go func() {
 				assert.NoError(t, ln.SetDeadline(time.Now().Add(time.Second)))
 				conn, err := ln.AcceptTCP()

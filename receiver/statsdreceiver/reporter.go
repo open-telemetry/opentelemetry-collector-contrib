@@ -50,7 +50,6 @@ func newReporter(receiverID config.ComponentID, logger *zap.Logger) transport.Re
 // reporter instance. The caller code should include a call to end the
 // returned span.
 func (r *reporter) OnDataReceived(ctx context.Context) context.Context {
-	ctx = obsreport.ReceiverContext(ctx, r.id, "tcp")
 	return r.obsrecv.StartMetricsOp(ctx)
 }
 

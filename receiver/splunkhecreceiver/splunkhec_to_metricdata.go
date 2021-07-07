@@ -19,7 +19,7 @@ import (
 	"strconv"
 	"strings"
 
-	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/translator/conventions"
 	"go.uber.org/zap"
 
@@ -82,7 +82,8 @@ func SplunkHecToMetricsData(logger *zap.Logger, events []*splunk.Event, resource
 		}
 
 		if metrics.Len() > 0 {
-			md.ResourceMetrics().Append(resourceMetrics)
+			tgt := md.ResourceMetrics().AppendEmpty()
+			resourceMetrics.CopyTo(tgt)
 		}
 	}
 

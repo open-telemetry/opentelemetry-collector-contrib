@@ -23,7 +23,7 @@ import (
 	"time"
 
 	"github.com/tinylib/msgp/msgp"
-	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/model/pdata"
 )
 
 const tagAttributeKey = "fluent.tag"
@@ -422,6 +422,7 @@ func (pfe *PackedForwardEventLogRecords) parseEntries(entriesRaw []byte, isGzipp
 
 		lr.Attributes().InsertString(tagAttributeKey, tag)
 
-		pfe.LogSlice.Append(lr)
+		tgt := pfe.LogSlice.AppendEmpty()
+		lr.CopyTo(tgt)
 	}
 }

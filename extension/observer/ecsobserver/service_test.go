@@ -34,6 +34,9 @@ func TestServiceMatcher(t *testing.T) {
 		cfg := ServiceConfig{NamePattern: invalidRegex}
 		require.Error(t, cfg.validate())
 
+		_, err := serviceConfigsToFilter([]ServiceConfig{cfg})
+		require.Error(t, err)
+
 		cfg = ServiceConfig{NamePattern: "valid", ContainerNamePattern: invalidRegex}
 		require.Error(t, cfg.validate())
 	})
@@ -52,8 +55,8 @@ func TestServiceMatcher(t *testing.T) {
 			},
 		},
 	}
-	genTasks := func() []*Task {
-		return []*Task{
+	genTasks := func() []*taskAnnotated {
+		return []*taskAnnotated{
 			{
 				Service: &ecs.Service{ServiceName: aws.String("nginx-service")},
 				Definition: &ecs.TaskDefinition{
@@ -99,15 +102,15 @@ func TestServiceMatcher(t *testing.T) {
 			},
 		}
 		res := newMatcherAndMatch(t, &cfg, genTasks())
-		assert.Equal(t, &MatchResult{
+		assert.Equal(t, &matchResult{
 			Tasks: []int{0},
-			Containers: []MatchedContainer{
+			Containers: []matchedContainer{
 				{
 					TaskIndex:      0,
 					ContainerIndex: 0,
-					Targets: []MatchedTarget{
+					Targets: []matchedTarget{
 						{
-							MatcherType: MatcherTypeService,
+							MatcherType: matcherTypeService,
 							Port:        2112,
 							Job:         "CONFIG_PROM_JOB",
 						},
@@ -132,15 +135,15 @@ func TestServiceMatcher(t *testing.T) {
 			},
 		}
 		res := newMatcherAndMatch(t, &cfg, genTasks())
-		assert.Equal(t, &MatchResult{
+		assert.Equal(t, &matchResult{
 			Tasks: []int{0},
-			Containers: []MatchedContainer{
+			Containers: []matchedContainer{
 				{
 					TaskIndex:      0,
 					ContainerIndex: 1,
-					Targets: []MatchedTarget{
+					Targets: []matchedTarget{
 						{
-							MatcherType: MatcherTypeService,
+							MatcherType: matcherTypeService,
 							Port:        2114,
 							Job:         "CONFIG_PROM_JOB",
 						},
@@ -148,5 +151,20 @@ func TestServiceMatcher(t *testing.T) {
 				},
 			},
 		}, res)
+	})
+}
+
+func TestServiceNameFilter(t *testing.T) {
+	t.Run("match nothing when empty", func(t *testing.T) {
+		f, err := serviceConfigsToFilter(nil)
+		require.NoError(t, err)
+		require.False(t, f("should not match"))
+	})
+
+	t.Run("invalid regex", func(t *testing.T) {
+		invalidRegex := "*" //  missing argument to repetition operator: `*`
+		cfg := ServiceConfig{NamePattern: invalidRegex}
+		_, err := serviceConfigsToFilter([]ServiceConfig{cfg})
+		require.Error(t, err)
 	})
 }

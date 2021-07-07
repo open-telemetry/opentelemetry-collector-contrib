@@ -15,8 +15,9 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/testbed/mockdatareceivers/mockawsxrayreceiver v0.0.0-00010101000000-000000000000
 	github.com/stretchr/testify v1.7.0
 	github.com/tinylib/msgp v1.1.5 // indirect
-	go.opentelemetry.io/collector v0.28.1-0.20210616151306-cdc163427b8e
-	go.uber.org/zap v1.17.0
+	go.opentelemetry.io/collector v0.29.1-0.20210702192737-aaa6d7d6b859
+	go.opentelemetry.io/collector/model v0.0.0-00010101000000-000000000000
+	go.uber.org/zap v1.18.1
 )
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/carbonexporter => ../exporter/carbonexporter
@@ -46,3 +47,5 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/signa
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/splunkhecreceiver => ../receiver/splunkhecreceiver
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/testbed/mockdatareceivers/mockawsxrayreceiver => ../testbed/mockdatareceivers/mockawsxrayreceiver
+
+replace go.opentelemetry.io/collector/model => go.opentelemetry.io/collector/model v0.0.0-20210702192737-aaa6d7d6b859

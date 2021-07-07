@@ -21,18 +21,18 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/obsreport"
+	"go.opentelemetry.io/collector/model/pdata"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver/internal/cadvisor"
 	hostInfo "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver/internal/host"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver/internal/k8sapiserver"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver/internal/stores"
 )
 
 var _ component.MetricsReceiver = (*awsContainerInsightReceiver)(nil)
 
-type MetricsProvider interface {
+type metricsProvider interface {
 	GetMetrics() []pdata.Metrics
 }
 
@@ -42,12 +42,12 @@ type awsContainerInsightReceiver struct {
 	nextConsumer consumer.Metrics
 	config       *Config
 	cancel       context.CancelFunc
-	cadvisor     MetricsProvider
-	k8sapiserver MetricsProvider
+	cadvisor     metricsProvider
+	k8sapiserver metricsProvider
 }
 
-// New creates the aws container insight receiver with the given parameters.
-func New(
+// newAWSContainerInsightReceiver creates the aws container insight receiver with the given parameters.
+func newAWSContainerInsightReceiver(
 	logger *zap.Logger,
 	config *Config,
 	nextConsumer consumer.Metrics) (component.MetricsReceiver, error) {
@@ -65,15 +65,37 @@ func New(
 
 // Start collecting metrics from cadvisor and k8s api server (if it is an elected leader)
 func (acir *awsContainerInsightReceiver) Start(ctx context.Context, host component.Host) error {
-	ctx, acir.cancel = context.WithCancel(obsreport.ReceiverContext(ctx, acir.config.ID(), "http"))
-	//ignore the error for now, will address it in later PR
-	machineInfo, _ := hostInfo.NewInfo(acir.config.CollectionInterval, acir.logger)
-	acir.cadvisor, _ = cadvisor.New(acir.config.ContainerOrchestrator, machineInfo, acir.logger)
-	acir.k8sapiserver, _ = k8sapiserver.New(machineInfo, acir.logger)
+	ctx, acir.cancel = context.WithCancel(context.Background())
 
-	// TODO: add more intialization code
+	hostinfo, err := hostInfo.NewInfo(acir.config.CollectionInterval, acir.logger)
+	if err != nil {
+		return err
+	}
+
+	k8sDecorator, err := stores.NewK8sDecorator(ctx, acir.config.TagService, acir.config.PrefFullPodName, acir.logger)
+	if err != nil {
+		return err
+	}
+
+	decoratorOption := cadvisor.WithDecorator(k8sDecorator)
+	acir.cadvisor, err = cadvisor.New(acir.config.ContainerOrchestrator, hostinfo, acir.logger, decoratorOption)
+	if err != nil {
+		return err
+	}
+
+	acir.k8sapiserver, err = k8sapiserver.New(hostinfo, acir.logger)
+	if err != nil {
+		return err
+	}
 
 	go func() {
+		//cadvisor collects data at dynamical intervals (from 1 to 15 seconds). If the ticker happens
+		//at beginning of a minute, it might read the data collected at end of last minute. To avoid this,
+		//we want to wait until at least two cadvisor collection intervals happens before collecting the metrics
+		secondsInMin := time.Now().Second()
+		if secondsInMin < 30 {
+			time.Sleep(time.Duration(30-secondsInMin) * time.Second)
+		}
 		ticker := time.NewTicker(acir.config.CollectionInterval)
 		defer ticker.Stop()
 

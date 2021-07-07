@@ -29,8 +29,10 @@ import (
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
-	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/model/otlp"
 )
+
+var metricsUnmarshaler = otlp.NewProtobufMetricsUnmarshaler()
 
 type metricsReceiver struct {
 	nextConsumer       consumer.Metrics
@@ -180,7 +182,7 @@ func (r *metricsReceiver) handleWrite(w http.ResponseWriter, req *http.Request) 
 		_, _ = fmt.Fprintf(w, "failed to convert batch to protobuf bytes")
 		return
 	}
-	md, err := pdata.MetricsFromOtlpProtoBytes(b)
+	md, err := metricsUnmarshaler.UnmarshalMetrics(b)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		_, _ = fmt.Fprintf(w, "failed to convert protobuf bytes to OTLP object")

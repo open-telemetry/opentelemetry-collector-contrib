@@ -23,8 +23,7 @@ import (
 	"github.com/Shopify/sarama"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/consumer/simple"
+	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 	"go.uber.org/zap"
@@ -71,16 +70,9 @@ func (s *consumerScraper) shutdown(_ context.Context) error {
 }
 
 func (s *consumerScraper) scrape(context.Context) (pdata.ResourceMetricsSlice, error) {
-	metrics := simple.Metrics{
-		Metrics:                    pdata.NewMetrics(),
-		Timestamp:                  time.Now(),
-		MetricFactoriesByName:      metadata.M.FactoriesByName(),
-		InstrumentationLibraryName: instrumentationLibName,
-	}
-
 	cgs, listErr := s.clusterAdmin.ListConsumerGroups()
 	if listErr != nil {
-		return metrics.ResourceMetrics(), listErr
+		return pdata.ResourceMetricsSlice{}, listErr
 	}
 
 	var matchedGrpIds []string
@@ -92,7 +84,7 @@ func (s *consumerScraper) scrape(context.Context) (pdata.ResourceMetricsSlice, e
 
 	allTopics, listErr := s.clusterAdmin.ListTopics()
 	if listErr != nil {
-		return metrics.ResourceMetrics(), listErr
+		return pdata.ResourceMetricsSlice{}, listErr
 	}
 
 	matchedTopics := map[string]sarama.TopicDetail{}
@@ -125,11 +117,17 @@ func (s *consumerScraper) scrape(context.Context) (pdata.ResourceMetricsSlice, e
 	}
 	consumerGroups, listErr := s.clusterAdmin.DescribeConsumerGroups(matchedGrpIds)
 	if listErr != nil {
-		return metrics.ResourceMetrics(), listErr
+		return pdata.ResourceMetricsSlice{}, listErr
 	}
+
+	now := pdata.TimestampFromTime(time.Now())
+	rms := pdata.NewResourceMetricsSlice()
+	ilm := rms.AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty()
+	ilm.InstrumentationLibrary().SetName(instrumentationLibName)
 	for _, group := range consumerGroups {
-		grpMetrics := metrics.WithLabels(map[string]string{metadata.L.Group: group.GroupId})
-		grpMetrics.AddGaugeDataPoint(metadata.M.KafkaConsumerGroupMembers.Name(), int64(len(group.Members)))
+		labels := pdata.NewStringMap()
+		labels.Upsert(metadata.L.Group, group.GroupId)
+		addGauge(ilm.Metrics(), metadata.M.KafkaConsumerGroupMembers.Name(), now, labels, int64(len(group.Members)))
 		groupOffsetFetchResponse, err := s.clusterAdmin.ListConsumerGroupOffsets(group.GroupId, topicPartitions)
 		if err != nil {
 			scrapeErrors.Add(err)
@@ -145,15 +143,15 @@ func (s *consumerScraper) scrape(context.Context) (pdata.ResourceMetricsSlice, e
 					break
 				}
 			}
-			grpTopicMetrics := grpMetrics.WithLabels(map[string]string{metadata.L.Topic: topic})
+			labels.Upsert(metadata.L.Topic, topic)
 			if isConsumed {
 				var lagSum int64
 				var offsetSum int64
 				for partition, block := range partitions {
-					grpPartitionMetrics := grpTopicMetrics.WithLabels(map[string]string{metadata.L.Partition: string(partition)})
+					labels.Upsert(metadata.L.Partition, string(partition))
 					consumerOffset := block.Offset
 					offsetSum += consumerOffset
-					grpPartitionMetrics.AddGaugeDataPoint(metadata.M.KafkaConsumerGroupOffset.Name(), consumerOffset)
+					addGauge(ilm.Metrics(), metadata.M.KafkaConsumerGroupOffset.Name(), now, labels, consumerOffset)
 					// default -1 to indicate no lag measured.
 					var consumerLag int64 = -1
 					if partitionOffset, ok := topicPartitionOffset[topic][partition]; ok {
@@ -163,18 +161,19 @@ func (s *consumerScraper) scrape(context.Context) (pdata.ResourceMetricsSlice, e
 							lagSum += consumerLag
 						}
 					}
-					grpPartitionMetrics.AddGaugeDataPoint(metadata.M.KafkaConsumerGroupLag.Name(), consumerLag)
+					addGauge(ilm.Metrics(), metadata.M.KafkaConsumerGroupLag.Name(), now, labels, consumerLag)
 				}
-				grpTopicMetrics.AddGaugeDataPoint(metadata.M.KafkaConsumerGroupOffsetSum.Name(), offsetSum)
-				grpTopicMetrics.AddGaugeDataPoint(metadata.M.KafkaConsumerGroupLagSum.Name(), lagSum)
+				labels.Delete(metadata.L.Partition)
+				addGauge(ilm.Metrics(), metadata.M.KafkaConsumerGroupOffsetSum.Name(), now, labels, offsetSum)
+				addGauge(ilm.Metrics(), metadata.M.KafkaConsumerGroupLagSum.Name(), now, labels, lagSum)
 			}
 		}
 	}
 
-	return metrics.ResourceMetrics(), scrapeErrors.Combine()
+	return rms, scrapeErrors.Combine()
 }
 
-func createConsumerScraper(_ context.Context, cfg Config, saramaConfig *sarama.Config, logger *zap.Logger) (scraperhelper.ResourceMetricsScraper, error) {
+func createConsumerScraper(_ context.Context, cfg Config, saramaConfig *sarama.Config, logger *zap.Logger) (scraperhelper.Scraper, error) {
 	groupFilter, err := regexp.Compile(cfg.GroupMatch)
 	if err != nil {
 		return nil, fmt.Errorf("failed to compile group_match: %w", err)

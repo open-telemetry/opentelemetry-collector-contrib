@@ -137,7 +137,7 @@ func Test_wavefrontreceiver_EndToEnd(t *testing.T) {
 
 		require.NoError(t, conn.Close())
 		assert.Eventually(t, func() bool {
-			return sink.MetricsCount() == numMetrics
+			return sink.DataPointCount() == numMetrics
 		}, 10*time.Second, 5*time.Millisecond)
 
 		metrics := sink.AllMetrics()

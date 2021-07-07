@@ -33,7 +33,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumererror"
-	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/translator/conventions"
 	"go.uber.org/zap"
 
@@ -284,11 +284,11 @@ func TestReceiveTraces(t *testing.T) {
 	actual, err := runTraceExport(true, 3, t)
 	assert.NoError(t, err)
 	expected := `{"time":1,"host":"unknown","event":{"trace_id":"01010101010101010101010101010101","span_id":"0000000000000001","parent_span_id":"0102030405060708","name":"root","end_time":2000000000,"kind":"SPAN_KIND_UNSPECIFIED","status":{"message":"ok","code":"STATUS_CODE_OK"},"start_time":1000000000},"fields":{"resource":"R1"}}`
-	expected += "\n\r\n\r\n"
+	expected += "\n"
 	expected += `{"time":2,"host":"unknown","event":{"trace_id":"01010101010101010101010101010101","span_id":"0000000000000001","parent_span_id":"","name":"root","end_time":3000000000,"kind":"SPAN_KIND_UNSPECIFIED","status":{"message":"","code":"STATUS_CODE_UNSET"},"start_time":2000000000},"fields":{"resource":"R1"}}`
-	expected += "\n\r\n\r\n"
+	expected += "\n"
 	expected += `{"time":3,"host":"unknown","event":{"trace_id":"01010101010101010101010101010101","span_id":"0000000000000001","parent_span_id":"0102030405060708","name":"root","end_time":4000000000,"kind":"SPAN_KIND_UNSPECIFIED","status":{"message":"ok","code":"STATUS_CODE_OK"},"start_time":3000000000},"fields":{"resource":"R1"}}`
-	expected += "\n\r\n\r\n"
+	expected += "\n"
 	assert.Equal(t, expected, actual)
 }
 
@@ -319,10 +319,10 @@ func TestReceiveLogs(t *testing.T) {
 			}(),
 			want: wantType{
 				batches: []string{
-					`{"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otlp.log.name":"0_0_0","service.name":"myapp"}}` + "\n\r\n\r\n" +
-						`{"time":0.001,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otlp.log.name":"0_0_1","service.name":"myapp"}}` + "\n\r\n\r\n" +
-						`{"time":0.002,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otlp.log.name":"0_0_2","service.name":"myapp"}}` + "\n\r\n\r\n" +
-						`{"time":0.003,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otlp.log.name":"0_0_3","service.name":"myapp"}}` + "\n\r\n\r\n",
+					`{"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otlp.log.name":"0_0_0","service.name":"myapp"}}` + "\n" +
+						`{"time":0.001,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otlp.log.name":"0_0_1","service.name":"myapp"}}` + "\n" +
+						`{"time":0.002,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otlp.log.name":"0_0_2","service.name":"myapp"}}` + "\n" +
+						`{"time":0.003,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otlp.log.name":"0_0_3","service.name":"myapp"}}` + "\n",
 				},
 				numBatches: 1,
 			},
@@ -337,10 +337,10 @@ func TestReceiveLogs(t *testing.T) {
 			}(),
 			want: wantType{
 				batches: []string{
-					`{"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otlp.log.name":"0_0_0","service.name":"myapp"}}` + "\n\r\n\r\n",
-					`{"time":0.001,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otlp.log.name":"0_0_1","service.name":"myapp"}}` + "\n\r\n\r\n",
-					`{"time":0.002,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otlp.log.name":"0_0_2","service.name":"myapp"}}` + "\n\r\n\r\n",
-					`{"time":0.003,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otlp.log.name":"0_0_3","service.name":"myapp"}}` + "\n\r\n\r\n",
+					`{"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otlp.log.name":"0_0_0","service.name":"myapp"}}` + "\n",
+					`{"time":0.001,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otlp.log.name":"0_0_1","service.name":"myapp"}}` + "\n",
+					`{"time":0.002,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otlp.log.name":"0_0_2","service.name":"myapp"}}` + "\n",
+					`{"time":0.003,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otlp.log.name":"0_0_3","service.name":"myapp"}}` + "\n",
 				},
 				numBatches: 4,
 			},
@@ -355,40 +355,40 @@ func TestReceiveLogs(t *testing.T) {
 			}(),
 			want: wantType{
 				batches: []string{
-					`{"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otlp.log.name":"0_0_0","service.name":"myapp"}}` + "\n\r\n\r\n" +
-						`{"time":0.001,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otlp.log.name":"0_0_1","service.name":"myapp"}}` + "\n\r\n\r\n",
-					`{"time":0.002,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otlp.log.name":"0_0_2","service.name":"myapp"}}` + "\n\r\n\r\n" +
-						`{"time":0.003,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otlp.log.name":"0_0_3","service.name":"myapp"}}` + "\n\r\n\r\n",
+					`{"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otlp.log.name":"0_0_0","service.name":"myapp"}}` + "\n" +
+						`{"time":0.001,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otlp.log.name":"0_0_1","service.name":"myapp"}}` + "\n",
+					`{"time":0.002,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otlp.log.name":"0_0_2","service.name":"myapp"}}` + "\n" +
+						`{"time":0.003,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otlp.log.name":"0_0_3","service.name":"myapp"}}` + "\n",
 				},
 				numBatches: 2,
 			},
 		},
 		{
-			name: "1 compressed batch of 1837 bytes, make sure the event size is more than minCompressionLen=1500 to trigger compression",
+			name: "1 compressed batch of 2037 bytes, make sure the event size is more than minCompressionLen=1500 to trigger compression",
 			logs: createLogData(1, 1, 10),
 			conf: func() *Config {
 				return NewFactory().CreateDefaultConfig().(*Config)
 			}(),
 			want: wantType{
 				batches: []string{
-					`{"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otlp.log.name":"0_0_0","service.name":"myapp"}}` + "\n\r\n\r\n" +
-						`{"time":0.001,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otlp.log.name":"0_0_1","service.name":"myapp"}}` + "\n\r\n\r\n" +
-						`{"time":0.002,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otlp.log.name":"0_0_2","service.name":"myapp"}}` + "\n\r\n\r\n" +
-						`{"time":0.003,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otlp.log.name":"0_0_3","service.name":"myapp"}}` + "\n\r\n\r\n" +
-						`{"time":0.004,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otlp.log.name":"0_0_4","service.name":"myapp"}}` + "\n\r\n\r\n" +
-						`{"time":0.005,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otlp.log.name":"0_0_5","service.name":"myapp"}}` + "\n\r\n\r\n" +
-						`{"time":0.006,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otlp.log.name":"0_0_6","service.name":"myapp"}}` + "\n\r\n\r\n" +
-						`{"time":0.007,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otlp.log.name":"0_0_7","service.name":"myapp"}}` + "\n\r\n\r\n" +
-						`{"time":0.008,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otlp.log.name":"0_0_8","service.name":"myapp"}}` + "\n\r\n\r\n" +
-						`{"time":0.009,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otlp.log.name":"0_0_9","service.name":"myapp"}}` + "\n\r\n\r\n",
+					`{"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otlp.log.name":"0_0_0","service.name":"myapp"}}` + "\n" +
+						`{"time":0.001,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otlp.log.name":"0_0_1","service.name":"myapp"}}` + "\n" +
+						`{"time":0.002,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otlp.log.name":"0_0_2","service.name":"myapp"}}` + "\n" +
+						`{"time":0.003,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otlp.log.name":"0_0_3","service.name":"myapp"}}` + "\n" +
+						`{"time":0.004,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otlp.log.name":"0_0_4","service.name":"myapp"}}` + "\n" +
+						`{"time":0.005,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otlp.log.name":"0_0_5","service.name":"myapp"}}` + "\n" +
+						`{"time":0.006,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otlp.log.name":"0_0_6","service.name":"myapp"}}` + "\n" +
+						`{"time":0.007,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otlp.log.name":"0_0_7","service.name":"myapp"}}` + "\n" +
+						`{"time":0.008,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otlp.log.name":"0_0_8","service.name":"myapp"}}` + "\n" +
+						`{"time":0.009,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otlp.log.name":"0_0_9","service.name":"myapp"}}` + "\n",
 				},
 				numBatches: 1,
 				compressed: true,
 			},
 		},
 		{
-			name: "2 compressed batches - 1916 bytes each, make sure the log size is more than minCompressionLen=1500 to trigger compression",
-			logs: createLogData(1, 1, 18), // comes to HEC events payload size - 1837 bytes
+			name: "2 compressed batches - 1832 bytes each, make sure the log size is more than minCompressionLen=1500 to trigger compression",
+			logs: createLogData(1, 1, 18),
 			conf: func() *Config {
 				cfg := NewFactory().CreateDefaultConfig().(*Config)
 				cfg.MaxContentLengthLogs = 1916
@@ -396,24 +396,24 @@ func TestReceiveLogs(t *testing.T) {
 			}(),
 			want: wantType{
 				batches: []string{
-					`{"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otlp.log.name":"0_0_0","service.name":"myapp"}}` + "\n\r\n\r\n" +
-						`{"time":0.001,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otlp.log.name":"0_0_1","service.name":"myapp"}}` + "\n\r\n\r\n" +
-						`{"time":0.002,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otlp.log.name":"0_0_2","service.name":"myapp"}}` + "\n\r\n\r\n" +
-						`{"time":0.003,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otlp.log.name":"0_0_3","service.name":"myapp"}}` + "\n\r\n\r\n" +
-						`{"time":0.004,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otlp.log.name":"0_0_4","service.name":"myapp"}}` + "\n\r\n\r\n" +
-						`{"time":0.005,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otlp.log.name":"0_0_5","service.name":"myapp"}}` + "\n\r\n\r\n" +
-						`{"time":0.006,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otlp.log.name":"0_0_6","service.name":"myapp"}}` + "\n\r\n\r\n" +
-						`{"time":0.007,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otlp.log.name":"0_0_7","service.name":"myapp"}}` + "\n\r\n\r\n" +
-						`{"time":0.008,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otlp.log.name":"0_0_8","service.name":"myapp"}}` + "\n\r\n\r\n",
-					`{"time":0.009,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otlp.log.name":"0_0_9","service.name":"myapp"}}` + "\n\r\n\r\n" +
-						`{"time":0.01,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otlp.log.name":"0_0_10","service.name":"myapp"}}` + "\n\r\n\r\n" +
-						`{"time":0.011,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otlp.log.name":"0_0_11","service.name":"myapp"}}` + "\n\r\n\r\n" +
-						`{"time":0.012,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otlp.log.name":"0_0_12","service.name":"myapp"}}` + "\n\r\n\r\n" +
-						`{"time":0.013,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otlp.log.name":"0_0_13","service.name":"myapp"}}` + "\n\r\n\r\n" +
-						`{"time":0.014,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otlp.log.name":"0_0_14","service.name":"myapp"}}` + "\n\r\n\r\n" +
-						`{"time":0.015,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otlp.log.name":"0_0_15","service.name":"myapp"}}` + "\n\r\n\r\n" +
-						`{"time":0.016,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otlp.log.name":"0_0_16","service.name":"myapp"}}` + "\n\r\n\r\n" +
-						`{"time":0.017,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otlp.log.name":"0_0_17","service.name":"myapp"}}` + "\n\r\n\r\n",
+					`{"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otlp.log.name":"0_0_0","service.name":"myapp"}}` + "\n" +
+						`{"time":0.001,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otlp.log.name":"0_0_1","service.name":"myapp"}}` + "\n" +
+						`{"time":0.002,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otlp.log.name":"0_0_2","service.name":"myapp"}}` + "\n" +
+						`{"time":0.003,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otlp.log.name":"0_0_3","service.name":"myapp"}}` + "\n" +
+						`{"time":0.004,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otlp.log.name":"0_0_4","service.name":"myapp"}}` + "\n" +
+						`{"time":0.005,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otlp.log.name":"0_0_5","service.name":"myapp"}}` + "\n" +
+						`{"time":0.006,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otlp.log.name":"0_0_6","service.name":"myapp"}}` + "\n" +
+						`{"time":0.007,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otlp.log.name":"0_0_7","service.name":"myapp"}}` + "\n" +
+						`{"time":0.008,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otlp.log.name":"0_0_8","service.name":"myapp"}}` + "\n",
+					`{"time":0.009,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otlp.log.name":"0_0_9","service.name":"myapp"}}` + "\n" +
+						`{"time":0.01,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otlp.log.name":"0_0_10","service.name":"myapp"}}` + "\n" +
+						`{"time":0.011,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otlp.log.name":"0_0_11","service.name":"myapp"}}` + "\n" +
+						`{"time":0.012,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otlp.log.name":"0_0_12","service.name":"myapp"}}` + "\n" +
+						`{"time":0.013,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otlp.log.name":"0_0_13","service.name":"myapp"}}` + "\n" +
+						`{"time":0.014,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otlp.log.name":"0_0_14","service.name":"myapp"}}` + "\n" +
+						`{"time":0.015,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otlp.log.name":"0_0_15","service.name":"myapp"}}` + "\n" +
+						`{"time":0.016,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otlp.log.name":"0_0_16","service.name":"myapp"}}` + "\n" +
+						`{"time":0.017,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otlp.log.name":"0_0_17","service.name":"myapp"}}` + "\n",
 				},
 				numBatches: 2,
 				compressed: true,
@@ -445,11 +445,11 @@ func TestReceiveMetrics(t *testing.T) {
 	actual, err := runMetricsExport(true, 3, t)
 	assert.NoError(t, err)
 	expected := `{"host":"unknown","event":"metric","fields":{"k/n0":"vn0","k/n1":"vn1","k/r0":"vr0","k/r1":"vr1","k0":"v0","k1":"v1","metric_name:gauge_double_with_dims":1234.5678,"metric_type":"DoubleGauge"}}`
-	expected += "\n\r\n\r\n"
+	expected += "\n"
 	expected += `{"time":1.001,"host":"unknown","event":"metric","fields":{"k/n0":"vn0","k/n1":"vn1","k/r0":"vr0","k/r1":"vr1","k0":"v0","k1":"v1","metric_name:gauge_double_with_dims":1234.5678,"metric_type":"DoubleGauge"}}`
-	expected += "\n\r\n\r\n"
+	expected += "\n"
 	expected += `{"time":2.002,"host":"unknown","event":"metric","fields":{"k/n0":"vn0","k/n1":"vn1","k/r0":"vr0","k/r1":"vr1","k0":"v0","k1":"v1","metric_name:gauge_double_with_dims":1234.5678,"metric_type":"DoubleGauge"}}`
-	expected += "\n\r\n\r\n"
+	expected += "\n"
 	assert.Equal(t, expected, actual)
 }
 

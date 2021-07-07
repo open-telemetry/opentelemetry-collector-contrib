@@ -15,6 +15,7 @@
 package stores
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"log"
@@ -90,8 +91,8 @@ func newMapWithExpiry(ttl time.Duration) *mapWithExpiry {
 	}
 }
 
-type replicaSetInfo interface {
-	ReplicaSetToDeployment() map[string]string
+type replicaSetInfoProvider interface {
+	GetReplicaSetClient() k8sclient.ReplicaSetClient
 }
 
 type podClient interface {
@@ -102,7 +103,7 @@ type PodStore struct {
 	cache            *mapWithExpiry
 	prevMeasurements map[string]*mapWithExpiry //preMeasurements per each Type (Pod, Container, etc)
 	podClient        podClient
-	replicasetInfo   replicaSetInfo
+	k8sClient        replicaSetInfoProvider
 	lastRefreshed    time.Time
 	nodeInfo         *nodeInfo
 	prefFullPodName  bool
@@ -132,7 +133,8 @@ func NewPodStore(hostIP string, prefFullPodName bool, logger *zap.Logger) (*PodS
 		podClient:        podClient,
 		nodeInfo:         newNodeInfo(logger),
 		prefFullPodName:  prefFullPodName,
-		replicasetInfo:   k8sClient.ReplicaSet,
+		k8sClient:        k8sClient,
+		logger:           logger,
 	}
 
 	return podStore, nil
@@ -162,17 +164,22 @@ func (p *PodStore) setPrevMeasurement(metricType, metricKey string, content inte
 	prevMeasurement.Set(metricKey, content)
 }
 
-func (p *PodStore) RefreshTick() {
+// RefreshTick triggers refreshing of the pod store.
+// It will be called at relatively short intervals (e.g. 1 second).
+// We can't do refresh in regular interval because the Decorate(...) function will
+// call refresh(...) on demand when the pod metadata for the given metrics is not in
+// cache yet. This will make the refresh interval irregular.
+func (p *PodStore) RefreshTick(ctx context.Context) {
 	now := time.Now()
 	if now.Sub(p.lastRefreshed) >= refreshInterval {
-		p.refresh(now)
+		p.refresh(ctx, now)
 		// call cleanup every refresh cycle
 		p.cleanup(now)
 		p.lastRefreshed = now
 	}
 }
 
-func (p *PodStore) Decorate(metric CIMetric, kubernetesBlob map[string]interface{}) bool {
+func (p *PodStore) Decorate(ctx context.Context, metric CIMetric, kubernetesBlob map[string]interface{}) bool {
 	if metric.GetTag(ci.MetricType) == ci.TypeNode {
 		p.decorateNode(metric)
 	} else if metric.GetTag(ci.K8sPodNameKey) != "" {
@@ -185,7 +192,7 @@ func (p *PodStore) Decorate(metric CIMetric, kubernetesBlob map[string]interface
 		entry := p.getCachedEntry(podKey)
 		if entry == nil {
 			p.logger.Debug(fmt.Sprintf("no pod is found for %s, refresh the cache now...", podKey))
-			p.refresh(time.Now())
+			p.refresh(ctx, time.Now())
 			entry = p.getCachedEntry(podKey)
 		}
 
@@ -228,8 +235,16 @@ func (p *PodStore) setCachedEntry(podKey string, entry *cachedEntry) {
 	p.cache.Set(podKey, entry)
 }
 
-func (p *PodStore) refresh(now time.Time) {
-	podList, _ := p.podClient.ListPods()
+func (p *PodStore) refresh(ctx context.Context, now time.Time) {
+	var podList []corev1.Pod
+	var err error
+	doRefresh := func() {
+		podList, err = p.podClient.ListPods()
+		if err != nil {
+			p.logger.Error("fail to get pod from kubelet", zap.Error(err))
+		}
+	}
+	refreshWithTimeout(ctx, doRefresh, refreshInterval)
 	p.refreshInternal(now, podList)
 }
 
@@ -374,7 +389,7 @@ func (p *PodStore) decorateMem(metric CIMetric, pod *corev1.Pod) {
 			// only set podLimit when all the containers has limit
 			if ok && podMemLimit != 0 {
 				metric.AddField(ci.MetricName(ci.TypePod, ci.MemLimit), podMemLimit)
-				metric.AddField(ci.MetricName(ci.TypePod, ci.MemUtilizationOverPodLimit), podMemWorkingset.(float64)/float64(podMemLimit)*100)
+				metric.AddField(ci.MetricName(ci.TypePod, ci.MemUtilizationOverPodLimit), float64(podMemWorkingset.(uint64))/float64(podMemLimit)*100)
 			}
 		}
 	} else if metric.GetTag(ci.MetricType) == ci.TypeContainer {
@@ -555,7 +570,8 @@ func (p *PodStore) addPodOwnersAndPodName(metric CIMetric, pod *corev1.Pod, kube
 			kind := owner.Kind
 			name := owner.Name
 			if owner.Kind == ci.ReplicaSet {
-				rsToDeployment := p.replicasetInfo.ReplicaSetToDeployment()
+				replicaSetClient := p.k8sClient.GetReplicaSetClient()
+				rsToDeployment := replicaSetClient.ReplicaSetToDeployment()
 				if parent := rsToDeployment[owner.Name]; parent != "" {
 					kind = ci.Deployment
 					name = parent

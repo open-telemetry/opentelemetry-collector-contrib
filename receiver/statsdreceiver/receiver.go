@@ -18,13 +18,12 @@ import (
 	"context"
 	"fmt"
 	"strings"
-	"sync"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/model/pdata"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver/protocol"
@@ -35,7 +34,6 @@ var _ component.MetricsReceiver = (*statsdReceiver)(nil)
 
 // statsdReceiver implements the component.MetricsReceiver for StatsD protocol.
 type statsdReceiver struct {
-	sync.Mutex
 	logger *zap.Logger
 	config *Config
 
@@ -88,9 +86,6 @@ func buildTransportServer(config Config) (transport.Server, error) {
 
 // Start starts a UDP server that can process StatsD messages.
 func (r *statsdReceiver) Start(ctx context.Context, host component.Host) error {
-	r.Lock()
-	defer r.Unlock()
-
 	ctx, r.cancel = context.WithCancel(ctx)
 	var transferChan = make(chan string, 10)
 	ticker := time.NewTicker(r.config.AggregationInterval)
@@ -122,9 +117,6 @@ func (r *statsdReceiver) Start(ctx context.Context, host component.Host) error {
 
 // Shutdown stops the StatsD receiver.
 func (r *statsdReceiver) Shutdown(context.Context) error {
-	r.Lock()
-	defer r.Unlock()
-
 	err := r.server.Close()
 	r.cancel()
 	return err

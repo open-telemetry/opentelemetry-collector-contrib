@@ -27,7 +27,7 @@ import (
 	"github.com/uptrace/uptrace-go/spanexp"
 	"github.com/vmihailenco/msgpack/v5"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/zap"
 

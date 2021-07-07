@@ -21,7 +21,7 @@ import (
 	"strings"
 	"time"
 
-	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/otel/attribute"
 )
 
@@ -120,7 +120,8 @@ func (p *StatsDParser) GetMetrics() pdata.Metrics {
 	}
 
 	for _, summaryMetric := range p.summaries {
-		metrics.ResourceMetrics().At(0).InstrumentationLibraryMetrics().Append(buildSummaryMetric(summaryMetric))
+		tgt := metrics.ResourceMetrics().At(0).InstrumentationLibraryMetrics().AppendEmpty()
+		buildSummaryMetric(summaryMetric).CopyTo(tgt)
 	}
 
 	p.gauges = make(map[statsDMetricdescription]pdata.InstrumentationLibraryMetrics)

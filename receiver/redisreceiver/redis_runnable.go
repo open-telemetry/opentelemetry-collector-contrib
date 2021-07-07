@@ -20,7 +20,7 @@ import (
 
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/obsreport"
 	"go.uber.org/zap"
 
@@ -117,8 +117,8 @@ func (r *redisRunnable) Run() error {
 	}
 	keyspaceMS.MoveAndAppendTo(ilm.Metrics())
 
+	numPoints := pdm.DataPointCount()
 	err = r.metricsConsumer.ConsumeMetrics(r.ctx, pdm)
-	_, numPoints := pdm.MetricAndDataPointCount()
 	r.obsrecv.EndMetricsOp(ctx, dataFormat, numPoints, err)
 
 	return nil

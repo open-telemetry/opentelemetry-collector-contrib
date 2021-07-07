@@ -28,7 +28,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/obsreport"
 	"go.uber.org/zap"
 )
@@ -92,15 +92,14 @@ func (ar *MockAwsXrayReceiver) Start(_ context.Context, host component.Host) err
 }
 
 // handleRequest parses an http request containing aws json request and passes the count of the traces to next consumer
-func (ar *MockAwsXrayReceiver) handleRequest(ctx context.Context, req *http.Request) error {
+func (ar *MockAwsXrayReceiver) handleRequest(req *http.Request) error {
 	transport := "http"
 	if ar.config.TLSCredentials != nil {
 		transport = "https"
 	}
 
-	ctx = obsreport.ReceiverContext(ctx, ar.config.ID(), transport)
 	obsrecv := obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverID: ar.config.ID(), Transport: transport})
-	ctx = obsrecv.StartTracesOp(ctx)
+	ctx := obsrecv.StartTracesOp(req.Context())
 	body, err := ioutil.ReadAll(req.Body)
 	if err != nil {
 		log.Fatalln(err)
@@ -120,16 +119,12 @@ func (ar *MockAwsXrayReceiver) handleRequest(ctx context.Context, req *http.Requ
 
 // HTTPHandlerFunc returns an http.HandlerFunc that handles awsXray requests
 func (ar *MockAwsXrayReceiver) HTTPHandlerFunc(rw http.ResponseWriter, req *http.Request) {
-	// create context with the receiver name from the request context
-	ctx := obsreport.ReceiverContext(req.Context(), ar.config.ID(), "http")
-
 	// handle the request payload
-	err := ar.handleRequest(ctx, req)
+	err := ar.handleRequest(req)
 	if err != nil {
 		rw.WriteHeader(http.StatusBadRequest)
 		return
 	}
-
 }
 
 // Shutdown tells the receiver that should stop reception,

@@ -25,7 +25,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/model/pdata"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchpersignal"
@@ -493,100 +493,6 @@ func TestTracesAreDispatchedInIndividualBatches(t *testing.T) {
 
 	// verify
 	// verification is done at onTraces from the mockProcessor
-}
-
-func TestSplitSameTraceIntoDifferentBatches(t *testing.T) {
-	// prepare
-
-	// we have 1 ResourceSpans with 2 ILS, resulting in two batches
-	input := pdata.NewResourceSpans()
-	input.InstrumentationLibrarySpans().Resize(2)
-
-	// the first ILS has two spans
-	firstILS := input.InstrumentationLibrarySpans().At(0)
-	firstLibrary := firstILS.InstrumentationLibrary()
-	firstLibrary.SetName("first-library")
-	firstILS.Spans().Resize(2)
-	firstSpan := firstILS.Spans().At(0)
-	firstSpan.SetName("first-batch-first-span")
-	firstSpan.SetTraceID(pdata.NewTraceID([16]byte{1, 2, 3, 4}))
-	secondSpan := firstILS.Spans().At(1)
-	secondSpan.SetName("first-batch-second-span")
-	secondSpan.SetTraceID(pdata.NewTraceID([16]byte{1, 2, 3, 4}))
-
-	// the second ILS has one span
-	secondILS := input.InstrumentationLibrarySpans().At(1)
-	secondLibrary := secondILS.InstrumentationLibrary()
-	secondLibrary.SetName("second-library")
-	thirdSpan := secondILS.Spans().AppendEmpty()
-	thirdSpan.SetName("second-batch-first-span")
-	thirdSpan.SetTraceID(pdata.NewTraceID([16]byte{1, 2, 3, 4}))
-
-	// test
-	batches := splitByTrace(input)
-
-	// verify
-	assert.Len(t, batches, 2)
-
-	// first batch
-	assert.Equal(t, pdata.NewTraceID([16]byte{1, 2, 3, 4}), batches[0].traceID)
-	assert.Equal(t, firstLibrary.Name(), batches[0].rs.InstrumentationLibrarySpans().At(0).InstrumentationLibrary().Name())
-	assert.Equal(t, firstSpan.Name(), batches[0].rs.InstrumentationLibrarySpans().At(0).Spans().At(0).Name())
-	assert.Equal(t, secondSpan.Name(), batches[0].rs.InstrumentationLibrarySpans().At(0).Spans().At(1).Name())
-
-	// second batch
-	assert.Equal(t, pdata.NewTraceID([16]byte{1, 2, 3, 4}), batches[1].traceID)
-	assert.Equal(t, secondLibrary.Name(), batches[1].rs.InstrumentationLibrarySpans().At(0).InstrumentationLibrary().Name())
-	assert.Equal(t, thirdSpan.Name(), batches[1].rs.InstrumentationLibrarySpans().At(0).Spans().At(0).Name())
-}
-
-func TestSplitDifferentTracesIntoDifferentBatches(t *testing.T) {
-	// prepare
-
-	// we have 1 ResourceSpans with 1 ILS and two traceIDs, resulting in two batches
-	input := pdata.NewResourceSpans()
-
-	// the first ILS has two spans
-	ils := input.InstrumentationLibrarySpans().AppendEmpty()
-	library := ils.InstrumentationLibrary()
-	library.SetName("first-library")
-	ils.Spans().Resize(2)
-	firstSpan := ils.Spans().At(0)
-	firstSpan.SetName("first-batch-first-span")
-	firstSpan.SetTraceID(pdata.NewTraceID([16]byte{1, 2, 3, 4}))
-	secondSpan := ils.Spans().At(1)
-	secondSpan.SetName("first-batch-second-span")
-	secondSpan.SetTraceID(pdata.NewTraceID([16]byte{2, 3, 4, 5}))
-
-	// test
-	batches := splitByTrace(input)
-
-	// verify
-	assert.Len(t, batches, 2)
-
-	// first batch
-	assert.Equal(t, pdata.NewTraceID([16]byte{1, 2, 3, 4}), batches[0].traceID)
-	assert.Equal(t, library.Name(), batches[0].rs.InstrumentationLibrarySpans().At(0).InstrumentationLibrary().Name())
-	assert.Equal(t, firstSpan.Name(), batches[0].rs.InstrumentationLibrarySpans().At(0).Spans().At(0).Name())
-
-	// second batch
-	assert.Equal(t, pdata.NewTraceID([16]byte{2, 3, 4, 5}), batches[1].traceID)
-	assert.Equal(t, library.Name(), batches[1].rs.InstrumentationLibrarySpans().At(0).InstrumentationLibrary().Name())
-	assert.Equal(t, secondSpan.Name(), batches[1].rs.InstrumentationLibrarySpans().At(0).Spans().At(0).Name())
-}
-
-func TestSplitByTraceWithNilTraceID(t *testing.T) {
-	// prepare
-	input := pdata.NewResourceSpans()
-	ils := input.InstrumentationLibrarySpans().AppendEmpty()
-	firstSpan := ils.Spans().AppendEmpty()
-	firstSpan.SetTraceID(pdata.NewTraceID([16]byte{}))
-
-	// test
-	batches := splitByTrace(input)
-
-	// verify
-	assert.Len(t, batches, 0)
 }
 
 func TestErrorOnProcessResourceSpansContinuesProcessing(t *testing.T) {

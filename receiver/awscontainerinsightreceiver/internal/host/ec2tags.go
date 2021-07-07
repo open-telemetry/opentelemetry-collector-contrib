@@ -55,11 +55,11 @@ type ec2Tags struct {
 
 type ec2TagsOption func(*ec2Tags)
 
-func newEC2Tags(ctx context.Context, session *session.Session, instanceID string,
+func newEC2Tags(ctx context.Context, session *session.Session, instanceID string, region string,
 	refreshInterval time.Duration, logger *zap.Logger, options ...ec2TagsOption) ec2TagsProvider {
 	et := &ec2Tags{
 		instanceID:      instanceID,
-		client:          ec2.New(session),
+		client:          ec2.New(session, aws.NewConfig().WithRegion(region)),
 		refreshInterval: refreshInterval,
 		maxJitterTime:   3 * time.Second,
 		logger:          logger,

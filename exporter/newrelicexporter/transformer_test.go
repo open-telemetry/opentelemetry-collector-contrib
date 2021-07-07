@@ -26,7 +26,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/translator/internaldata"
 	"go.uber.org/zap"
 )
@@ -499,7 +499,8 @@ func TestTransformSpan(t *testing.T) {
 				event.SetName("this is the event name")
 				event.SetTimestamp(pdata.TimestampFromTime(now))
 				event.SetDroppedAttributesCount(1)
-				s.Events().Append(event)
+				tgt := s.Events().AppendEmpty()
+				event.CopyTo(tgt)
 				return s
 			},
 			want: telemetry.Span{

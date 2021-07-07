@@ -188,20 +188,6 @@ commands:
       - store_test_results:
           path: testbed/tests/results/junit
 
-  run_windows_test:
-    steps:
-      - checkout
-      - restore_module_cache
-      - run:
-          name: Upgrade golang
-          command: |
-            choco upgrade golang --version=1.15
-            refreshenv
-      - run:
-          name: Unit tests
-          command: (Get-Childitem -Include go.mod -Recurse) | ForEach-Object { cd (Split-Path $_ -Parent); go test ./...; if ($LastExitCode -gt 0) { exit $LastExitCode } }
-      - save_module_cache
-
 workflows:
   version: 2
   stability-tests:
@@ -228,18 +214,6 @@ workflows:
   build-publish:
     when: << pipeline.parameters.run-build-publish >>
     jobs:
-      - windows-test-with-github-reports:
-          context:
-            - github-release-and-issues-api-token
-          filters:
-            branches:
-              only: main
-            tags:
-              only: /^v[0-9]+\.[0-9]+\.[0-9]+.*/
-      - windows-test:
-          filters:
-            branches:
-              ignore: main
       - setup:
           filters:
             tags:
@@ -292,9 +266,8 @@ workflows:
               only: /^v[0-9]+\.[0-9]+\.[0-9]+.*/
       # this publish-check step only runs on the main branch.
       # it is identical to the other publish-check step in all ways except
-      # it runs loadtest-with-github-reports and windows-test-with-github-reports
-      # instead of loadtest and windows-test. This is because these jobs can access
-      # the GITHUB_TOKEN secret which is not available to PR builds.
+      # it runs loadtest-with-github-reports instead of loadtest.
+      # This is because these jobs can access the GITHUB_TOKEN secret which is not available to PR builds.
       - publish-check:
           requires:
             - lint
@@ -302,7 +275,6 @@ workflows:
             - integration-tests
             - cross-compile
             - loadtest-with-github-reports
-            - windows-test-with-github-reports
             - windows-msi
             - deb-package
             - rpm-package
@@ -320,7 +292,6 @@ workflows:
             - integration-tests
             - cross-compile
             - loadtest
-            - windows-test
             - windows-msi
             - deb-package
             - rpm-package
@@ -337,7 +308,6 @@ workflows:
             - integration-tests
             - cross-compile
             - loadtest-with-github-reports
-            - windows-test-with-github-reports
             - windows-msi
             - deb-package
             - rpm-package
@@ -351,7 +321,6 @@ workflows:
             - lint
             - unit-tests
             - loadtest-with-github-reports
-            - windows-test-with-github-reports
             - integration-tests
             - cross-compile
           filters:
@@ -462,28 +431,6 @@ jobs:
       TEST_RESULTS: testbed/tests/results/junit/results.xml
     steps:
       - run_loadtest
-
-  # this job is identical to the `windows-test` job defined below except that it
-  # reports failures as github issues.
-  # any pipeline using this job must enable "github-release-and-issues-api-token" context
-  windows-test-with-github-reports:
-    executor:
-      name: win/default
-      shell: powershell.exe
-    environment:
-      GOPATH=~/go
-    steps:
-      - run_windows_test
-      - github_issue_generator
-
-  windows-test:
-    executor:
-      name: win/default
-      shell: powershell.exe
-    environment:
-      GOPATH=~/go
-    steps:
-      - run_windows_test
 
   windows-msi:
     executor:

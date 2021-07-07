@@ -17,7 +17,7 @@ package serialization
 import (
 	"testing"
 
-	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/model/pdata"
 )
 
 func TestSerializeIntDataPoints(t *testing.T) {

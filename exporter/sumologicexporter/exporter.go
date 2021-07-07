@@ -22,8 +22,8 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumererror"
-	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"go.opentelemetry.io/collector/model/pdata"
 )
 
 type sumologicexporter struct {
@@ -240,7 +240,8 @@ func (se *sumologicexporter) pushLogsData(ctx context.Context, ld pdata.Logs) er
 		logs := ills.AppendEmpty().Logs()
 
 		for _, log := range droppedRecords {
-			logs.Append(log)
+			tgt := logs.AppendEmpty()
+			log.CopyTo(tgt)
 		}
 
 		return consumererror.NewLogs(consumererror.Combine(errs), droppedLogs)
@@ -339,7 +340,7 @@ func (se *sumologicexporter) pushMetricsData(ctx context.Context, md pdata.Metri
 			record.attributes.CopyTo(rm.Resource().Attributes())
 
 			ilms := rm.InstrumentationLibraryMetrics()
-			ilms.AppendEmpty().Metrics().Append(record.metric)
+			record.metric.CopyTo(ilms.AppendEmpty().Metrics().AppendEmpty())
 		}
 
 		return consumererror.NewMetrics(consumererror.Combine(errs), droppedMetrics)

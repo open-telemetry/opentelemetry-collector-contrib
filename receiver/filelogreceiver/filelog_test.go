@@ -36,7 +36,7 @@ import (
 	"go.opentelemetry.io/collector/config/configcheck"
 	"go.opentelemetry.io/collector/config/configtest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/model/pdata"
 	"go.uber.org/zap/zaptest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/stanza"
@@ -128,7 +128,7 @@ func TestReadStaticFile(t *testing.T) {
 
 	require.Eventually(t, expectNLogs(sink, 3), 2*time.Second, 5*time.Millisecond,
 		"expected %d but got %d logs",
-		3, sink.LogRecordsCount(),
+		3, sink.LogRecordCount(),
 	)
 	// TODO: Figure out a nice way to assert each logs entry content.
 	// require.Equal(t, expectedLogs, sink.AllLogs())
@@ -220,7 +220,7 @@ func (rt *rotationTest) Run(t *testing.T) {
 	wg.Wait()
 	require.Eventually(t, expectNLogs(sink, numLogs), 2*time.Second, 10*time.Millisecond,
 		"expected %d but got %d logs",
-		numLogs, sink.LogRecordsCount(),
+		numLogs, sink.LogRecordCount(),
 	)
 	// TODO: Figure out a nice way to assert each logs entry content.
 	// require.Equal(t, expectedLogs, sink.AllLogs())
@@ -270,7 +270,7 @@ func newTempDir(t *testing.T) string {
 }
 
 func expectNLogs(sink *consumertest.LogsSink, expected int) func() bool {
-	return func() bool { return sink.LogRecordsCount() == expected }
+	return func() bool { return sink.LogRecordCount() == expected }
 }
 
 func testdataConfigYamlAsMap() *FileLogConfig {

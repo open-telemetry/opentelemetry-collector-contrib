@@ -24,7 +24,7 @@ import (
 	sfxpb "github.com/signalfx/com_signalfx_metrics_protobuf/model"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/model/pdata"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest/observer"
 )
@@ -3051,6 +3051,6 @@ func intTS(lbl0 string, lbl1 string, secondsDelta int64, v int64, valueDelta int
 
 func wrapMetric(m pdata.Metric) pdata.ResourceMetrics {
 	out := pdata.NewResourceMetrics()
-	out.InstrumentationLibraryMetrics().AppendEmpty().Metrics().Append(m)
+	m.CopyTo(out.InstrumentationLibraryMetrics().AppendEmpty().Metrics().AppendEmpty())
 	return out
 }

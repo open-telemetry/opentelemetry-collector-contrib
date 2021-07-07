@@ -18,7 +18,7 @@ import (
 	"regexp"
 
 	"github.com/golang/groupcache/lru"
-	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/model/pdata"
 	"go.uber.org/zap"
 )
 
@@ -110,37 +110,29 @@ func (saf *stringAttributeFilter) Evaluate(_ pdata.TraceID, trace *TraceData) (D
 	trace.Lock()
 	batches := trace.ReceivedBatches
 	trace.Unlock()
-	for _, batch := range batches {
-		rspans := batch.ResourceSpans()
 
-		for i := 0; i < rspans.Len(); i++ {
-			rs := rspans.At(i)
-			resource := rs.Resource()
+	return hasResourceOrSpanWithCondition(
+		batches,
+		func(resource pdata.Resource) bool {
 			if v, ok := resource.Attributes().Get(saf.key); ok {
 				if ok := saf.matcher(v.StringVal()); ok {
-					return Sampled, nil
+					return true
 				}
 			}
-
-			ilss := rs.InstrumentationLibrarySpans()
-			for j := 0; j < ilss.Len(); j++ {
-				ils := ilss.At(j)
-				for k := 0; k < ils.Spans().Len(); k++ {
-					span := ils.Spans().At(k)
-					if v, ok := span.Attributes().Get(saf.key); ok {
-						truncableStr := v.StringVal()
-						if len(truncableStr) > 0 {
-							if ok := saf.matcher(v.StringVal()); ok {
-								return Sampled, nil
-							}
-						}
+			return false
+		},
+		func(span pdata.Span) bool {
+			if v, ok := span.Attributes().Get(saf.key); ok {
+				truncableStr := v.StringVal()
+				if len(truncableStr) > 0 {
+					if ok := saf.matcher(v.StringVal()); ok {
+						return true
 					}
-
 				}
 			}
-		}
-	}
-	return NotSampled, nil
+			return false
+		},
+	), nil
 }
 
 // addFilters compiles all the given filters and stores them as regexes.

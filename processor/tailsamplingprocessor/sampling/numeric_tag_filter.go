@@ -15,7 +15,7 @@
 package sampling
 
 import (
-	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/model/pdata"
 	"go.uber.org/zap"
 )
 
@@ -52,24 +52,14 @@ func (naf *numericAttributeFilter) Evaluate(_ pdata.TraceID, trace *TraceData) (
 	trace.Lock()
 	batches := trace.ReceivedBatches
 	trace.Unlock()
-	for _, batch := range batches {
-		rspans := batch.ResourceSpans()
-		for i := 0; i < rspans.Len(); i++ {
-			rs := rspans.At(i)
-			ilss := rs.InstrumentationLibrarySpans()
-			for j := 0; j < ilss.Len(); j++ {
-				ils := ilss.At(j)
-				for k := 0; k < ils.Spans().Len(); k++ {
-					span := ils.Spans().At(k)
-					if v, ok := span.Attributes().Get(naf.key); ok {
-						value := v.IntVal()
-						if value >= naf.minValue && value <= naf.maxValue {
-							return Sampled, nil
-						}
-					}
-				}
+
+	return hasSpanWithCondition(batches, func(span pdata.Span) bool {
+		if v, ok := span.Attributes().Get(naf.key); ok {
+			value := v.IntVal()
+			if value >= naf.minValue && value <= naf.maxValue {
+				return true
 			}
 		}
-	}
-	return NotSampled, nil
+		return false
+	}), nil
 }

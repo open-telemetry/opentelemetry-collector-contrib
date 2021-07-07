@@ -19,7 +19,7 @@ import (
 	"fmt"
 	"strconv"
 
-	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/model/pdata"
 )
 
 // A map of the INFO data returned from Redis.
@@ -45,7 +45,8 @@ func (i info) buildFixedMetrics(metrics []*redisMetric, t *timeBundle) (pdms pda
 			warnings = append(warnings, parsingError)
 			continue
 		}
-		pdms.Append(pdm)
+		tgt := pdms.AppendEmpty()
+		pdm.CopyTo(tgt)
 	}
 	return pdms, warnings
 }

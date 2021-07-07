@@ -35,8 +35,8 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configtls"
-	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/testutil/metricstestutil"
 	"go.opentelemetry.io/collector/translator/conventions"
 	"go.opentelemetry.io/collector/translator/internaldata"
@@ -71,7 +71,6 @@ func TestNew(t *testing.T) {
 				CertFile: "file-not-found",
 				KeyFile:  "file-not-found",
 			},
-			Insecure:           false,
 			InsecureSkipVerify: false,
 		},
 	}
@@ -118,7 +117,7 @@ func TestConsumeMetricsData(t *testing.T) {
 				if r.Header.Get("Content-Encoding") == "gzip" {
 					t.Fatal("Small batch should not be compressed")
 				}
-				firstPayload := strings.Split(string(body), "\n\r\n\r")[0]
+				firstPayload := strings.Split(string(body), "\n")[0]
 				var metric splunk.Event
 				err = json.Unmarshal([]byte(firstPayload), &metric)
 				if err != nil {
@@ -264,7 +263,7 @@ func TestConsumeLogsData(t *testing.T) {
 				if r.Header.Get("Content-Encoding") == "gzip" {
 					t.Fatal("Small batch should not be compressed")
 				}
-				firstPayload := strings.Split(string(body), "\n\r\n\r")[0]
+				firstPayload := strings.Split(string(body), "\n")[0]
 				var event splunk.Event
 				err = json.Unmarshal([]byte(firstPayload), &event)
 				if err != nil {

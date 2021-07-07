@@ -20,7 +20,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/model/pdata"
 )
 
 func TestMemoryMetric(t *testing.T) {
@@ -167,8 +167,9 @@ func newResourceMetrics(ms pdata.MetricSlice) pdata.ResourceMetrics {
 	rm := pdata.NewResourceMetrics()
 	ilm := pdata.NewInstrumentationLibraryMetrics()
 	ilm.InstrumentationLibrary().SetName("otelcol/redis")
-	rm.InstrumentationLibraryMetrics().Append(ilm)
-	ms.CopyTo(ilm.Metrics())
+	tgt := rm.InstrumentationLibraryMetrics().AppendEmpty()
+	ilm.CopyTo(tgt)
+	ms.CopyTo(tgt.Metrics())
 	return rm
 }
 

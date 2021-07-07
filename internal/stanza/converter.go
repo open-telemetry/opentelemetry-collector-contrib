@@ -26,7 +26,7 @@ import (
 	"time"
 
 	"github.com/open-telemetry/opentelemetry-log-collection/entry"
-	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/model/pdata"
 	"go.uber.org/zap"
 )
 
@@ -269,9 +269,10 @@ func (c *Converter) batchLoop() {
 
 			pLogs, ok := c.data[wi.ResourceString]
 			if ok {
-				pLogs.ResourceLogs().
+				lr := pLogs.ResourceLogs().
 					At(0).InstrumentationLibraryLogs().
-					At(0).Logs().Append(wi.LogRecord)
+					At(0).Logs().AppendEmpty()
+				wi.LogRecord.CopyTo(lr)
 			} else {
 				pLogs = pdata.NewLogs()
 				logs := pLogs.ResourceLogs()
@@ -287,7 +288,8 @@ func (c *Converter) batchLoop() {
 
 				ills := rls.InstrumentationLibraryLogs()
 				ills.Resize(1)
-				ills.At(0).Logs().Append(wi.LogRecord)
+				lr := ills.At(0).Logs().AppendEmpty()
+				wi.LogRecord.CopyTo(lr)
 			}
 
 			c.data[wi.ResourceString] = pLogs

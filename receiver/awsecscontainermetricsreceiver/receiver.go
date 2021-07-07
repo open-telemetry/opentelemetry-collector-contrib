@@ -21,7 +21,6 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/obsreport"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsecscontainermetricsreceiver/awsecscontainermetrics"
@@ -60,7 +59,7 @@ func New(
 
 // Start begins collecting metrics from Amazon ECS task metadata endpoint.
 func (aecmr *awsEcsContainerMetricsReceiver) Start(ctx context.Context, host component.Host) error {
-	ctx, aecmr.cancel = context.WithCancel(obsreport.ReceiverContext(ctx, aecmr.config.ID(), "http"))
+	ctx, aecmr.cancel = context.WithCancel(ctx)
 	go func() {
 		ticker := time.NewTicker(aecmr.config.CollectionInterval)
 		defer ticker.Stop()

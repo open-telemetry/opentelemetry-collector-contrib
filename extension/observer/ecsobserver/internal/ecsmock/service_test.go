@@ -16,10 +16,12 @@ package ecsmock
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"testing"
 
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/service/ec2"
 	"github.com/aws/aws-sdk-go/service/ecs"
 	"github.com/stretchr/testify/assert"
@@ -28,9 +30,20 @@ import (
 
 func TestCluster_ListTasksWithContext(t *testing.T) {
 	ctx := context.Background()
-	c := NewCluster()
+	c := NewClusterWithName("c1")
 	count := DefaultPageLimit().ListTaskOutput*2 + 1
 	c.SetTasks(GenTasks("p", count, nil))
+
+	t.Run("invalid cluster", func(t *testing.T) {
+		req := &ecs.ListTasksInput{Cluster: aws.String("not c1")}
+		_, err := c.ListTasksWithContext(ctx, req)
+		require.Error(t, err)
+		var aerr awserr.Error
+		assert.True(t, errors.As(err, &aerr))
+		assert.Equal(t, ecs.ErrCodeClusterNotFoundException, aerr.Code())
+		assert.Equal(t, "code "+ecs.ErrCodeClusterNotFoundException+" message "+aerr.Message(), aerr.Error())
+		assert.Nil(t, aerr.OrigErr())
+	})
 
 	t.Run("get all", func(t *testing.T) {
 		req := &ecs.ListTasksInput{}
@@ -59,11 +72,17 @@ func TestCluster_ListTasksWithContext(t *testing.T) {
 
 func TestCluster_DescribeTasksWithContext(t *testing.T) {
 	ctx := context.Background()
-	c := NewCluster()
+	c := NewClusterWithName("c1")
 	count := 10
 	c.SetTasks(GenTasks("p", count, func(i int, task *ecs.Task) {
 		task.LastStatus = aws.String("running")
 	}))
+
+	t.Run("invalid cluster", func(t *testing.T) {
+		req := &ecs.DescribeTasksInput{Cluster: aws.String("not c1")}
+		_, err := c.DescribeTasksWithContext(ctx, req)
+		require.Error(t, err)
+	})
 
 	t.Run("exists", func(t *testing.T) {
 		req := &ecs.DescribeTasksInput{Tasks: []*string{aws.String("p0"), aws.String(fmt.Sprintf("p%d", count-1))}}
@@ -85,7 +104,7 @@ func TestCluster_DescribeTasksWithContext(t *testing.T) {
 
 func TestCluster_DescribeTaskDefinitionWithContext(t *testing.T) {
 	ctx := context.Background()
-	c := NewCluster()
+	c := NewClusterWithName("c1")
 	c.SetTaskDefinitions(GenTaskDefinitions("foo", 10, 1, nil)) // accept nil
 	c.SetTaskDefinitions(GenTaskDefinitions("foo", 10, 1, func(i int, def *ecs.TaskDefinition) {
 		def.NetworkMode = aws.String(ecs.NetworkModeBridge)
@@ -168,12 +187,18 @@ func TestCluster_DescribeInstancesWithContext(t *testing.T) {
 
 func TestCluster_DescribeContainerInstancesWithContext(t *testing.T) {
 	ctx := context.Background()
-	c := NewCluster()
+	c := NewClusterWithName("c1")
 	count := 10
 	c.SetContainerInstances(GenContainerInstances("foo", count, nil))
 	c.SetContainerInstances(GenContainerInstances("foo", count, func(i int, ci *ecs.ContainerInstance) {
 		ci.Ec2InstanceId = aws.String(fmt.Sprintf("i-%d", i))
 	}))
+
+	t.Run("invalid cluster", func(t *testing.T) {
+		req := &ecs.DescribeContainerInstancesInput{Cluster: aws.String("not c1")}
+		_, err := c.DescribeContainerInstancesWithContext(ctx, req)
+		require.Error(t, err)
+	})
 
 	t.Run("get by id", func(t *testing.T) {
 		var ids []*string
@@ -198,7 +223,7 @@ func TestCluster_DescribeContainerInstancesWithContext(t *testing.T) {
 
 func TestCluster_ListServicesWithContext(t *testing.T) {
 	ctx := context.Background()
-	c := NewCluster()
+	c := NewClusterWithName("c1")
 	count := 100
 	c.SetServices(GenServices("s", count, nil))
 	c.SetServices(GenServices("s", count, func(i int, s *ecs.Service) {
@@ -209,6 +234,12 @@ func TestCluster_ListServicesWithContext(t *testing.T) {
 			},
 		}
 	}))
+
+	t.Run("invalid cluster", func(t *testing.T) {
+		req := &ecs.ListServicesInput{Cluster: aws.String("not c1")}
+		_, err := c.ListServicesWithContext(ctx, req)
+		require.Error(t, err)
+	})
 
 	t.Run("get all", func(t *testing.T) {
 		req := &ecs.ListServicesInput{}
@@ -237,9 +268,15 @@ func TestCluster_ListServicesWithContext(t *testing.T) {
 
 func TestCluster_DescribeServicesWithContext(t *testing.T) {
 	ctx := context.Background()
-	c := NewCluster()
+	c := NewClusterWithName("c1")
 	count := 100
 	c.SetServices(GenServices("s", count, nil))
+
+	t.Run("invalid cluster", func(t *testing.T) {
+		req := &ecs.DescribeServicesInput{Cluster: aws.String("not c1")}
+		_, err := c.DescribeServicesWithContext(ctx, req)
+		require.Error(t, err)
+	})
 
 	t.Run("exists", func(t *testing.T) {
 		req := &ecs.DescribeServicesInput{Services: []*string{aws.String("s0"), aws.String(fmt.Sprintf("s%d", count-1))}}

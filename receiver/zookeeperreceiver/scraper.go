@@ -24,7 +24,7 @@ import (
 	"strconv"
 	"time"
 
-	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/model/pdata"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zookeeperreceiver/internal/metadata"
@@ -115,8 +115,7 @@ func (z *zookeeperMetricsScraper) getResourceMetrics(conn net.Conn) (pdata.Resou
 
 	md := pdata.NewMetrics()
 	z.appendMetrics(scanner, md.ResourceMetrics())
-	mc, _ := md.MetricAndDataPointCount()
-	if mc == 0 {
+	if md.DataPointCount() == 0 {
 		md.ResourceMetrics().Resize(0)
 	}
 	return md.ResourceMetrics(), nil

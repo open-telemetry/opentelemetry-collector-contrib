@@ -15,7 +15,7 @@
 package sampling
 
 import (
-	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/model/pdata"
 	"go.uber.org/zap"
 )
 
@@ -54,7 +54,7 @@ func (l *latency) Evaluate(_ pdata.TraceID, traceData *TraceData) (Decision, err
 	var minTime pdata.Timestamp
 	var maxTime pdata.Timestamp
 
-	return inspectSpans(batches, func(span pdata.Span) bool {
+	return hasSpanWithCondition(batches, func(span pdata.Span) bool {
 		if minTime == 0 || span.StartTimestamp() < minTime {
 			minTime = span.StartTimestamp()
 		}
@@ -65,29 +65,4 @@ func (l *latency) Evaluate(_ pdata.TraceID, traceData *TraceData) (Decision, err
 		duration := maxTime.AsTime().Sub(minTime.AsTime())
 		return duration.Milliseconds() >= l.thresholdMs
 	}), nil
-}
-
-// inspectSpans iterates through all the spans until any callback returns true.
-func inspectSpans(batches []pdata.Traces, shouldSample func(span pdata.Span) bool) Decision {
-	for _, batch := range batches {
-		rspans := batch.ResourceSpans()
-
-		for i := 0; i < rspans.Len(); i++ {
-			rs := rspans.At(i)
-			ilss := rs.InstrumentationLibrarySpans()
-
-			for i := 0; i < ilss.Len(); i++ {
-				ils := ilss.At(i)
-
-				for j := 0; j < ils.Spans().Len(); j++ {
-					span := ils.Spans().At(j)
-
-					if shouldSample(span) {
-						return Sampled
-					}
-				}
-			}
-		}
-	}
-	return NotSampled
 }

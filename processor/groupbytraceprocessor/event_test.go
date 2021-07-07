@@ -15,6 +15,7 @@
 package groupbytraceprocessor
 
 import (
+	"errors"
 	"strings"
 	"sync"
 	"testing"
@@ -24,7 +25,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opencensus.io/stats"
 	"go.opencensus.io/stats/view"
-	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/model/pdata"
 	"go.uber.org/zap"
 )
 
@@ -427,7 +428,7 @@ func TestPeriodicMetrics(t *testing.T) {
 
 	// ensure that we are starting with a clean state
 	view.Unregister(views...)
-	view.Register(views...)
+	assert.NoError(t, view.Register(views...))
 
 	// try to be nice with the next consumer (test)
 	defer view.Unregister(views...)
@@ -461,14 +462,16 @@ func TestPeriodicMetrics(t *testing.T) {
 	go em.periodicMetrics()
 
 	// ensure our gauge is showing 1 item in the queue
-	time.Sleep(10 * time.Millisecond) // wait enough time for the gauge to be updated
-	assertGauge(t, 1, mNumEventsInQueue)
+	assert.Eventually(t, func() bool {
+		return getGaugeValue(t, mNumEventsInQueue) == 1
+	}, 1*time.Second, 10*time.Millisecond)
 
 	wg.Done() // release all events
-	time.Sleep(5 * time.Millisecond)
 
 	// ensure our gauge is now showing no items in the queue
-	assertGauge(t, 0, mNumEventsInQueue)
+	assert.Eventually(t, func() bool {
+		return getGaugeValue(t, mNumEventsInQueue) == 0
+	}, 1*time.Second, 10*time.Millisecond)
 
 	// signal and wait for the recursive call to finish
 	em.shutdownLock.Lock()
@@ -496,30 +499,39 @@ func TestForceShutdown(t *testing.T) {
 	time.Sleep(100 * time.Millisecond)
 }
 
-func TestDoWithTimeout(t *testing.T) {
+func TestDoWithTimeout_NoTimeout(t *testing.T) {
+	// prepare
+	wantErr := errors.New("my error")
+	// test
+	succeed, err := doWithTimeout(20*time.Millisecond, func() error {
+		return wantErr
+	})
+	assert.True(t, succeed)
+	assert.Equal(t, wantErr, err)
+}
+
+func TestDoWithTimeout_TimeoutTrigger(t *testing.T) {
 	// prepare
 	start := time.Now()
 
-	done := make(chan struct{})
-
 	// test
-	doWithTimeout(5*time.Millisecond, func() error {
-		<-done
+	succeed, err := doWithTimeout(20*time.Millisecond, func() error {
+		time.Sleep(1 * time.Second)
 		return nil
 	})
-	close(done)
+	assert.False(t, succeed)
+	assert.NoError(t, err)
 
 	// verify
-	assert.WithinDuration(t, start, time.Now(), 20*time.Millisecond)
+	assert.WithinDuration(t, start, time.Now(), 100*time.Millisecond)
 }
 
-func assertGauge(t *testing.T, expected int, gauge *stats.Int64Measure) {
+func getGaugeValue(t *testing.T, gauge *stats.Int64Measure) float64 {
 	viewData, err := view.RetrieveData("processor/groupbytrace/" + gauge.Name())
 	require.NoError(t, err)
 	require.Len(t, viewData, 1) // we expect exactly one data point, the last value
 
-	sum := viewData[0].Data.(*view.LastValueData)
-	assert.EqualValues(t, expected, sum.Value)
+	return viewData[0].Data.(*view.LastValueData).Value
 }
 
 func assertGaugeNotCreated(t *testing.T, gauge *stats.Int64Measure) {

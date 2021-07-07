@@ -34,8 +34,8 @@ import (
 	"go.opentelemetry.io/collector/config/configtest"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/exporter/otlpexporter"
+	"go.opentelemetry.io/collector/model/pdata"
 	"go.uber.org/zap"
 )
 
@@ -472,7 +472,7 @@ func TestRollingUpdatesWhenConsumeTraces(t *testing.T) {
 	// will still pass due to the 10 secs of sleep that is used to simulate
 	// unreachable backends.
 	go func() {
-		time.Sleep(50 * time.Millisecond)
+		time.Sleep(1 * time.Second)
 		resolverCh <- struct{}{}
 	}()
 

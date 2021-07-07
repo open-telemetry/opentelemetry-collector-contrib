@@ -19,7 +19,7 @@ import (
 	"time"
 
 	"github.com/grobie/gomemcache/memcache"
-	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 	"go.uber.org/zap"
 
@@ -36,7 +36,7 @@ type memcachedScraper struct {
 func newMemcachedScraper(
 	logger *zap.Logger,
 	config *Config,
-) scraperhelper.ResourceMetricsScraper {
+) scraperhelper.Scraper {
 	ms := &memcachedScraper{
 		logger: logger,
 		config: config,
