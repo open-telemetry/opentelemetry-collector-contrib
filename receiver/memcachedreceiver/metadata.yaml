@@ -25,9 +25,6 @@ labels:
     - increment
     - decrement
     - get
-    - delete
-    - cas
-    - touch
   usage_type:
     description: type of CPU usage
     enum:
@@ -104,13 +101,13 @@ metrics:
     unit: 1
     data:
       type: double gauge
-    lables: []
+    lables: [usage_type]
   memcached.threads:
     description: Number of threads used by the memcached instance
     unit: 1
     data:
       type: double gauge
-    lables: [usage_type]
+    lables: []
 
 
 

@@ -290,16 +290,10 @@ var LabelOperation = struct {
 	Increment string
 	Decrement string
 	Get       string
-	Delete    string
-	Cas       string
-	Touch     string
 }{
 	"increment",
 	"decrement",
 	"get",
-	"delete",
-	"cas",
-	"touch",
 }
 
 // LabelType are the possible values that the label "type" can have.

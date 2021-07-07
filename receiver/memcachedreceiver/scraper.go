@@ -28,7 +28,6 @@ import (
 
 type memcachedScraper struct {
 	client *memcache.Client
-
 	logger *zap.Logger
 	config *Config
 }
