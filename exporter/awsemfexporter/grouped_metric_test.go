@@ -434,7 +434,7 @@ func TestAddToGroupedMetric(t *testing.T) {
 
 }
 
-func testAddKubernetesWrapper(t *testing.T) {
+func TestAddKubernetesWrapper(t *testing.T) {
 	t.Run("Test basic creation", func(t *testing.T) {
 		dockerObj := struct {
 			ContainerID string
@@ -443,13 +443,13 @@ func testAddKubernetesWrapper(t *testing.T) {
 		}
 		expectedCreatedObj := struct {
 			ContainerName string
-			Docker         interface{}
-			Host           string
+			Docker        interface{}
+			Host          string
 			PodID         string
 		}{
 			ContainerName: "container mccontainer",
-			Docker:         dockerObj,
-			Host:           "hosty de la host",
+			Docker:        dockerObj,
+			Host:          "hosty de la host",
 			PodID:         "Le id de Pod",
 		}
 

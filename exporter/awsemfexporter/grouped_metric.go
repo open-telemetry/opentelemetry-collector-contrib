@@ -21,9 +21,6 @@ import (
 	"go.opentelemetry.io/collector/model/pdata"
 	"go.uber.org/zap"
 
-	"go.opentelemetry.io/collector/model/pdata"
-	"go.uber.org/zap"
-
 	aws "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/metrics"
 )
 
