@@ -76,9 +76,9 @@ func dedupDimensionSet(dimensions []string) (deduped []string, hasDuplicate bool
 	return
 }
 
-// Init initializes the MetricDeclaration struct. Performs validation and compiles
+// init initializes the MetricDeclaration struct. Performs validation and compiles
 // regex strings. Dimensions are deduped and sorted.
-func (m *MetricDeclaration) Init(logger *zap.Logger) (err error) {
+func (m *MetricDeclaration) init(logger *zap.Logger) (err error) {
 	// Return error if no metric name selectors are defined
 	if len(m.MetricNameSelectors) == 0 {
 		return errors.New("invalid metric declaration: no metric name selectors defined")
@@ -121,7 +121,7 @@ func (m *MetricDeclaration) Init(logger *zap.Logger) (err error) {
 
 	// Initialize label matchers
 	for _, lm := range m.LabelMatchers {
-		if err := lm.Init(); err != nil {
+		if err := lm.init(); err != nil {
 			return err
 		}
 	}
@@ -177,8 +177,8 @@ func (m *MetricDeclaration) ExtractDimensions(labels map[string]string) (dimensi
 	return
 }
 
-// Init LabelMatcher with default values and compile regex string.
-func (lm *LabelMatcher) Init() (err error) {
+// init LabelMatcher with default values and compile regex string.
+func (lm *LabelMatcher) init() (err error) {
 	// Throw error if no label names are specified
 	if len(lm.LabelNames) == 0 {
 		return errors.New("label matcher must have at least one label name specified")
