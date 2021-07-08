@@ -15,9 +15,9 @@
 package awsemfexporter
 
 import (
+	"encoding/json"
 	"testing"
 	"time"
-	"encoding/json"
 
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	agentmetricspb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/metrics/v1"
@@ -434,23 +434,23 @@ func TestAddToGroupedMetric(t *testing.T) {
 
 }
 
-func testAddKubernetesWrapper(t *testing.T){
-	t.Run("Test basic creation", func(t *testing.T){
-		dockerObj := struct{
+func testAddKubernetesWrapper(t *testing.T) {
+	t.Run("Test basic creation", func(t *testing.T) {
+		dockerObj := struct {
 			Container_id string
 		}{
 			Container_id: "Container mccontainter the third",
 		}
-		expectedCreatedObj := struct{
-			Container_name string 
-			Docker interface{}
-			Host string 
-			Pod_id string
+		expectedCreatedObj := struct {
+			Container_name string
+			Docker         interface{}
+			Host           string
+			Pod_id         string
 		}{
 			Container_name: "container mccontainer",
-			Docker: dockerObj,
-			Host: "hosty de la host",
-			Pod_id: "Le id de Pod",
+			Docker:         dockerObj,
+			Host:           "hosty de la host",
+			Pod_id:         "Le id de Pod",
 		}
 
 		inputs := make(map[string]string)
