@@ -341,7 +341,10 @@ func TestLogdataToObservIQFormat(t *testing.T) {
 				require.Empty(t, errs)
 			}
 
-			require.Equal(t, 1, len(res.Logs))
+			require.Len(t, res.Logs, 1)
+
+			// ID must be of length 32
+			require.Len(t, res.Logs[0].ID, 32)
 
 			oiqLogEntry := observIQLogEntry{}
 			err := json.Unmarshal(res.Logs[0].Entry, &oiqLogEntry)

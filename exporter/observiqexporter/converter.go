@@ -54,6 +54,10 @@ type observIQLogEntry struct {
 	Body      interface{}            `json:"body,omitempty"`
 }
 
+// Hash related variables, re-used to avoid multiple allocations
+var fnvHash = fnv.New128a()
+var fnvHashOut = make([]byte, 0, 16)
+
 // Convert pdata.Logs to observIQLogBatch
 func logdataToObservIQFormat(ld pdata.Logs, agentID string, agentName string, buildVersion string) (*observIQLogBatch, []error) {
 	var rls = ld.ResourceLogs()
@@ -80,8 +84,17 @@ func logdataToObservIQFormat(ld pdata.Logs, agentID string, agentName string, bu
 				}
 
 				//fnv sum of the message is ID
-				fnvHash := fnv.New128a().Sum(jsonOIQLogEntry)
-				fnvHashAsHex := hex.EncodeToString(fnvHash[:])
+				fnvHash.Reset()
+				_, err = fnvHash.Write(jsonOIQLogEntry)
+				if err != nil {
+					errorsOut = append(errorsOut, consumererror.Permanent(err))
+					continue
+				}
+
+				fnvHashOut = fnvHashOut[:0]
+				fnvHashOut = fnvHash.Sum(fnvHashOut)
+
+				fnvHashAsHex := hex.EncodeToString(fnvHashOut)
 
 				sliceOut = append(sliceOut, &observIQLog{
 					ID:    fnvHashAsHex,
