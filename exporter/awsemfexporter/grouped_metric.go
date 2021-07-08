@@ -63,7 +63,7 @@ func addToGroupedMetric(pmd *pdata.Metric, groupedMetrics map[interface{}]*Group
 			if (metricType == "Pod" || metricType == "Container") && config.CreateEKSFargateKubernetesObject {
 				err := addKubernetesWrapper(labels)
 				if err != nil {
-					logger.Warn("Issue forming Kubernetes Object", zap.Error(err))
+					logger.Warn("issue forming Kubernetes Object", zap.Error(err))
 					return err
 				}
 			}
