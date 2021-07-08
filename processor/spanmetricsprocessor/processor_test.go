@@ -136,6 +136,27 @@ func TestProcessorShutdown(t *testing.T) {
 	assert.NoError(t, err)
 }
 
+func TestConfigureLatencyBounds(t *testing.T) {
+	// Prepare
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+	cfg.LatencyHistogramBuckets = []time.Duration{
+		3 * time.Nanosecond,
+		3 * time.Microsecond,
+		3 * time.Millisecond,
+		3 * time.Second,
+	}
+
+	// Test
+	next := new(consumertest.TracesSink)
+	p, err := newProcessor(zap.NewNop(), cfg, next)
+
+	// Verify
+	assert.NoError(t, err)
+	assert.NotNil(t, p)
+	assert.Equal(t, []float64{0.000003, 0.003, 3, 3000, maxDurationMs}, p.latencyBounds)
+}
+
 func TestProcessorCapabilities(t *testing.T) {
 	// Prepare
 	factory := NewFactory()
