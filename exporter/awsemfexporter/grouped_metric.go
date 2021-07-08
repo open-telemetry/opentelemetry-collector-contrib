@@ -110,14 +110,14 @@ type kubernetesObj struct {
 	Host          string               `json:"host"`
 	Labels        internalLabelsObj    `json:"labels"`
 	NamespaceName string               `json:"namespace_name"`
-	PodId         string               `json:"pod_id"`
+	PodID         string               `json:"pod_id"`
 	PodName       string               `json:"pod_name"`
 	PodOwners     internalPodOwnersObj `json:"pod_owners"`
 	ServiceName   string               `json:"service_name"`
 }
 
 type internalDockerObj struct {
-	ContainerId string `json:"container_id"`
+	ContainerID string `json:"container_id"`
 }
 
 type internalLabelsObj struct {
@@ -136,7 +136,7 @@ func addKubernetesWrapper(labels map[string]string) error {
 	schema.ContainerName = "container"
 	schema.Docker =
 		internalDockerObj{
-			ContainerId: "container_id",
+			ContainerID: "container_id",
 		}
 	schema.Host = "NodeName"
 	schema.Labels =
@@ -145,7 +145,7 @@ func addKubernetesWrapper(labels map[string]string) error {
 			PodTemplateHash: "pod-template-hash",
 		}
 	schema.NamespaceName = "Namespace"
-	schema.PodId = "PodId"
+	schema.PodID = "PodId"
 	schema.PodName = "PodName"
 	schema.PodOwners =
 		internalPodOwnersObj{
