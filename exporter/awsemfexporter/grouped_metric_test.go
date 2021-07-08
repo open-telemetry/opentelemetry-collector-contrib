@@ -437,15 +437,15 @@ func TestAddToGroupedMetric(t *testing.T) {
 func TestAddKubernetesWrapper(t *testing.T) {
 	t.Run("Test basic creation", func(t *testing.T) {
 		dockerObj := struct {
-			ContainerID string
+			ContainerID string `json:"container_id"`
 		}{
 			ContainerID: "Container mccontainter the third",
 		}
 		expectedCreatedObj := struct {
-			ContainerName string
-			Docker        interface{}
-			Host          string
-			PodID         string
+			ContainerName string      `json:"container_name"`
+			Docker        interface{} `json:"docker"`
+			Host          string      `json:"host"`
+			PodID         string      `json:"pod_id"`
 		}{
 			ContainerName: "container mccontainer",
 			Docker:        dockerObj,
@@ -455,14 +455,14 @@ func TestAddKubernetesWrapper(t *testing.T) {
 
 		inputs := make(map[string]string)
 		inputs["container_id"] = "Container mccontainter the third"
-		inputs["container_name"] = "container mccontainer"
-		inputs["host"] = "hosty de la host"
-		inputs["pod_id"] = "Le id de Pod"
+		inputs["container"] = "container mccontainer"
+		inputs["NodeName"] = "hosty de la host"
+		inputs["PodId"] = "Le id de Pod"
 
 		jsonBytes, _ := json.Marshal(expectedCreatedObj)
 		err := addKubernetesWrapper(inputs)
 		assert.Equal(t, err != nil, false, "It shouldn't throw an error when adding the obj")
-		assert.Equal(t, inputs["kubernetes"], string(jsonBytes), "The created and expected objects should be the same")
+		assert.Equal(t, string(jsonBytes), inputs["kubernetes"], "The created and expected objects should be the same")
 	})
 }
 
