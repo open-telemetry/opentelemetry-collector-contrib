@@ -10,11 +10,11 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk v0.0.0-00010101000000-000000000000
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchperresourceattr v0.0.0-00010101000000-000000000000
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata v0.0.0-00010101000000-000000000000
-	github.com/shirou/gopsutil v3.21.5+incompatible
+	github.com/shirou/gopsutil v3.21.6+incompatible
 	github.com/signalfx/com_signalfx_metrics_protobuf v0.0.2
 	github.com/signalfx/signalfx-agent/pkg/apm v0.0.0-20201202163743-65b4fa925fc8
 	github.com/stretchr/testify v1.7.0
-	go.opentelemetry.io/collector v0.29.1-0.20210702192737-aaa6d7d6b859
+	go.opentelemetry.io/collector v0.29.1-0.20210708142535-fdb85b3e868c
 	go.opentelemetry.io/collector/model v0.0.0-00010101000000-000000000000
 	go.uber.org/zap v1.18.1
 	google.golang.org/protobuf v1.27.1
@@ -28,4 +28,4 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchperre
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata => ../../pkg/experimentalmetricmetadata
 
-replace go.opentelemetry.io/collector/model => go.opentelemetry.io/collector/model v0.0.0-20210702192737-aaa6d7d6b859
+replace go.opentelemetry.io/collector/model => go.opentelemetry.io/collector/model v0.0.0-20210708142535-fdb85b3e868c
