@@ -112,7 +112,7 @@ func newGoogleCloudTracesExporter(cfg *Config, params component.ExporterCreateSe
 
 	return exporterhelper.NewTracesExporter(
 		cfg,
-		params.Logger,
+		component.ExporterCreateSettings{Logger: params.Logger},
 		tExp.pushTraces,
 		exporterhelper.WithShutdown(tExp.Shutdown),
 		// Disable exporterhelper Timeout, since we are using a custom mechanism
@@ -170,7 +170,7 @@ func newGoogleCloudMetricsExporter(cfg *Config, params component.ExporterCreateS
 
 	return exporterhelper.NewMetricsExporter(
 		cfg,
-		params.Logger,
+		component.ExporterCreateSettings{Logger: params.Logger},
 		mExp.pushMetrics,
 		exporterhelper.WithShutdown(mExp.Shutdown),
 		// Disable exporterhelper Timeout, since we are using a custom mechanism

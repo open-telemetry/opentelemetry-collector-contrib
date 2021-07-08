@@ -42,7 +42,7 @@ func createTraceExporter(_ context.Context, params component.ExporterCreateSetti
 
 	return exporterhelper.NewTracesExporter(
 		config,
-		params.Logger,
+		component.ExporterCreateSettings{Logger: params.Logger},
 		exporter.pushTraces,
 		exporterhelper.WithQueue(cfg.QueueSettings),
 		exporterhelper.WithRetry(cfg.RetrySettings),
@@ -60,7 +60,7 @@ func createMetricsExporter(_ context.Context, params component.ExporterCreateSet
 
 	return exporterhelper.NewMetricsExporter(
 		config,
-		params.Logger,
+		component.ExporterCreateSettings{Logger: params.Logger},
 		exporter.pushMetrics,
 		exporterhelper.WithQueue(cfg.QueueSettings),
 		exporterhelper.WithRetry(cfg.RetrySettings),
@@ -75,7 +75,7 @@ func createLogsExporter(_ context.Context, params component.ExporterCreateSettin
 
 	return exporterhelper.NewLogsExporter(
 		config,
-		params.Logger,
+		component.ExporterCreateSettings{Logger: params.Logger},
 		exporter.pushLogs,
 		exporterhelper.WithQueue(cfg.QueueSettings),
 		exporterhelper.WithRetry(cfg.RetrySettings),

@@ -342,7 +342,7 @@ func CreateSentryExporter(config *Config, params component.ExporterCreateSetting
 
 	return exporterhelper.NewTracesExporter(
 		config,
-		params.Logger,
+		component.ExporterCreateSettings{Logger: params.Logger},
 		s.pushTraceData,
 		exporterhelper.WithShutdown(func(ctx context.Context) error {
 			allEventsFlushed := transport.Flush(ctx)

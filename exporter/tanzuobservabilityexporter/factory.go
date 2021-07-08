@@ -58,7 +58,7 @@ func createTraceExporter(
 
 	return exporterhelper.NewTracesExporter(
 		cfg,
-		params.Logger,
+		component.ExporterCreateSettings{Logger: params.Logger},
 		exp.pushTraceData,
 		exporterhelper.WithShutdown(exp.Shutdown),
 	)

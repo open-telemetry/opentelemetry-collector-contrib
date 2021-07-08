@@ -38,7 +38,7 @@ func newTracesExporter(logger *zap.Logger, cfg config.Exporter) (component.Trace
 
 	return exporterhelper.NewTracesExporter(
 		cfg,
-		logger,
+		component.ExporterCreateSettings{Logger: logger},
 		l.pushTraceData)
 }
 

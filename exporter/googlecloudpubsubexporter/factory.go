@@ -78,7 +78,7 @@ func createTracesExporter(
 
 	return exporterhelper.NewTracesExporter(
 		cfg,
-		params.Logger,
+		component.ExporterCreateSettings{Logger: params.Logger},
 		pubsubExporter.consumeTraces,
 		exporterhelper.WithTimeout(pCfg.TimeoutSettings),
 		exporterhelper.WithRetry(pCfg.RetrySettings),

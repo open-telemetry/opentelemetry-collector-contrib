@@ -70,7 +70,7 @@ func createTracesExporter(
 
 	// The logger is only used in a disabled queuedRetrySender, which noisily logs at
 	// the error level when it is disabled and errors occur.
-	return exporterhelper.NewTracesExporter(cfg, zap.NewNop(), exp.pushTraceData,
+	return exporterhelper.NewTracesExporter(cfg, component.ExporterCreateSettings{Logger: zap.NewNop()}, exp.pushTraceData,
 		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: traceConfig.Timeout}),
 		exporterhelper.WithRetry(exporterhelper.RetrySettings{Enabled: false}),
 		exporterhelper.WithQueue(exporterhelper.QueueSettings{Enabled: false}),
@@ -94,7 +94,7 @@ func createMetricsExporter(
 		return nil, err
 	}
 
-	return exporterhelper.NewMetricsExporter(cfg, zap.NewNop(), exp.pushMetricData,
+	return exporterhelper.NewMetricsExporter(cfg, component.ExporterCreateSettings{Logger: zap.NewNop()}, exp.pushMetricData,
 		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: metricsConfig.Timeout}),
 		exporterhelper.WithRetry(exporterhelper.RetrySettings{Enabled: false}),
 		exporterhelper.WithQueue(exporterhelper.QueueSettings{Enabled: false}),
@@ -117,7 +117,7 @@ func createLogsExporter(
 	if err != nil {
 		return nil, err
 	}
-	return exporterhelper.NewLogsExporter(cfg, zap.NewNop(), exp.pushLogData,
+	return exporterhelper.NewLogsExporter(cfg, component.ExporterCreateSettings{Logger: zap.NewNop()}, exp.pushLogData,
 		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: logsConfig.Timeout}),
 		exporterhelper.WithRetry(exporterhelper.RetrySettings{Enabled: false}),
 		exporterhelper.WithQueue(exporterhelper.QueueSettings{Enabled: false}),

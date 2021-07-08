@@ -78,5 +78,5 @@ func newTracesExporter(config *Config, transportChannel transportChannel, logger
 		logger:           logger,
 	}
 
-	return exporterhelper.NewTracesExporter(config, logger, exporter.onTraceData)
+	return exporterhelper.NewTracesExporter(config, component.ExporterCreateSettings{Logger: logger}, exporter.onTraceData)
 }

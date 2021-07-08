@@ -38,7 +38,7 @@ func newLogsExporter(logger *zap.Logger, cfg config.Exporter) (component.LogsExp
 
 	return exporterhelper.NewLogsExporter(
 		cfg,
-		logger,
+		component.ExporterCreateSettings{Logger: logger},
 		l.pushLogsData)
 }
 

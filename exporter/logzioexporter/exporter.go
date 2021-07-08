@@ -81,7 +81,7 @@ func newLogzioTracesExporter(config *Config, params component.ExporterCreateSett
 
 	return exporterhelper.NewTracesExporter(
 		config,
-		params.Logger,
+		component.ExporterCreateSettings{Logger: params.Logger},
 		exporter.pushTraceData,
 		exporterhelper.WithShutdown(exporter.Shutdown))
 }
@@ -90,7 +90,7 @@ func newLogzioMetricsExporter(config *Config, params component.ExporterCreateSet
 	exporter, _ := newLogzioExporter(config, params)
 	return exporterhelper.NewMetricsExporter(
 		config,
-		params.Logger,
+		component.ExporterCreateSettings{Logger: params.Logger},
 		exporter.pushMetricsData,
 		exporterhelper.WithShutdown(exporter.Shutdown))
 }

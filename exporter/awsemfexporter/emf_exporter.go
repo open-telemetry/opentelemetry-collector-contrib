@@ -105,7 +105,7 @@ func newEmfExporter(
 
 	return exporterhelper.NewMetricsExporter(
 		config,
-		params.Logger,
+		component.ExporterCreateSettings{Logger: params.Logger},
 		exp.(*emfExporter).pushMetricsData,
 		exporterhelper.WithResourceToTelemetryConversion(config.(*Config).ResourceToTelemetrySettings),
 		exporterhelper.WithShutdown(exp.(*emfExporter).Shutdown),

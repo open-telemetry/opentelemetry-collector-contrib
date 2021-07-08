@@ -66,7 +66,7 @@ func createLogsExporter(_ context.Context, params component.ExporterCreateSettin
 
 	return exporterhelper.NewLogsExporter(
 		expCfg,
-		params.Logger,
+		component.ExporterCreateSettings{Logger: params.Logger},
 		exp.pushLogData,
 		// explicitly disable since we rely on http.Client timeout logic.
 		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),

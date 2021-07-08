@@ -121,7 +121,7 @@ func createMetricsExporter(
 
 	return exporterhelper.NewMetricsExporter(
 		cfg,
-		params.Logger,
+		component.ExporterCreateSettings{Logger: params.Logger},
 		pushMetricsFn,
 		exporterhelper.WithQueue(exporterhelper.DefaultQueueSettings()),
 		exporterhelper.WithRetry(exporterhelper.DefaultRetrySettings()),
@@ -171,7 +171,7 @@ func createTracesExporter(
 
 	return exporterhelper.NewTracesExporter(
 		cfg,
-		params.Logger,
+		component.ExporterCreateSettings{Logger: params.Logger},
 		pushTracesFn,
 		exporterhelper.WithShutdown(func(context.Context) error {
 			cancel()

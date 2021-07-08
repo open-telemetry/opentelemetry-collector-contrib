@@ -90,7 +90,7 @@ func createTracesExporter(
 
 	return exporterhelper.NewTracesExporter(
 		cfg,
-		params.Logger,
+		component.ExporterCreateSettings{Logger: params.Logger},
 		tracker.AddSpans,
 		exporterhelper.WithStart(tracker.Start),
 		exporterhelper.WithShutdown(tracker.Shutdown))
@@ -116,7 +116,7 @@ func createMetricsExporter(
 
 	me, err := exporterhelper.NewMetricsExporter(
 		expCfg,
-		params.Logger,
+		component.ExporterCreateSettings{Logger: params.Logger},
 		exp.pushMetrics,
 		// explicitly disable since we rely on http.Client timeout logic.
 		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
@@ -198,7 +198,7 @@ func createLogsExporter(
 
 	le, err := exporterhelper.NewLogsExporter(
 		expCfg,
-		params.Logger,
+		component.ExporterCreateSettings{Logger: params.Logger},
 		exp.pushLogs,
 		// explicitly disable since we rely on http.Client timeout logic.
 		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
