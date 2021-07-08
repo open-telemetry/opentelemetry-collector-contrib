@@ -70,9 +70,6 @@ type Config struct {
 	// Note that at the moment in order to use this feature the value "kubernetes" must also be added to the ParseJSONEncodedAttributeValues array in order to be used
 	CreateEKSFargateKubernetesObject bool `mapstructure:"create_eks_fargate_kubernetes_object"`
 
-	//Schema for the EKS Fargate Kubernetes Object
-	EKSFargateKubernetesObjectSchema string `mapstructure:"eks_fargate_kubernetes_object_schema"`
-
 	// ResourceToTelemetrySettings is the option for converting resource attrihutes to telemetry attributes.
 	// "Enabled" - A boolean field to enable/disable this option. Default is `false`.
 	// If enabled, all the resource attributes will be converted to metric labels by default.

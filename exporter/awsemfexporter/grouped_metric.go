@@ -61,14 +61,11 @@ func addToGroupedMetric(pmd *pdata.Metric, groupedMetrics map[interface{}]*Group
 
 		if metricType, ok := labels["Type"]; ok {
 			if (metricType == "Pod" || metricType == "Container") && config.CreateEKSFargateKubernetesObject {
-				newObjectVal, err := applySchema(labels, config.EKSFargateKubernetesObjectSchema)
+				err := addKubernetesWrapper(labels)
 				if err != nil {
 					logger.Warn("Issue forming Kubernetes Object", zap.Error(err))
-					logger.Warn("Internal Schema", zap.String("internal schema", config.EKSFargateKubernetesObjectSchema))
 					return err
 				}
-
-				labels["kubernetes"] = newObjectVal
 			}
 		}
 
@@ -135,26 +132,26 @@ type internalPodOwnersObj struct {
 func addKubernetesWrapper(labels map[string]string) error {
 	//create schema
 	schema := kubernetesObj{}
-	schema.ContainerName = "container_name"
+	schema.ContainerName = "container"
 	schema.Docker =
 		internalDockerObj{
 			ContainerId: "container_id",
 		}
-	schema.Host = "host_name"
+	schema.Host = "NodeName"
 	schema.Labels =
 		internalLabelsObj{
 			App:             "app",
 			PodTemplateHash: "pod-template-hash",
 		}
-	schema.NamespaceName = "namespace_name"
-	schema.PodId = "pod_id"
-	schema.PodName = "pod_name"
+	schema.NamespaceName = "Namespace"
+	schema.PodId = "PodId"
+	schema.PodName = "PodName"
 	schema.PodOwners =
 		internalPodOwnersObj{
 			OwnerKind: "owner_kind",
 			OwnerName: "owner_name",
 		}
-	schema.ServiceName = "service_name"
+	schema.ServiceName = "Service"
 
 	var err error
 	labels["kubernetes"], err = recursivelyFillInStruct(labels, schema)
