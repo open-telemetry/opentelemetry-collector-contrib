@@ -15,9 +15,9 @@
 package observiqexporter
 
 import (
-	"crypto/md5" //nolint:gosec // Not used for crypto, just for generating ID based on contents of log
 	"encoding/hex"
 	"encoding/json"
+	"hash/fnv"
 	"strings"
 
 	"go.opentelemetry.io/collector/consumer/consumererror"
@@ -79,12 +79,12 @@ func logdataToObservIQFormat(ld pdata.Logs, agentID string, agentName string, bu
 					continue
 				}
 
-				//md5 sum of the message is ID
-				md5Sum := md5.Sum(jsonOIQLogEntry) //nolint:gosec // Not used for crypto, just for generating ID based on contents of log
-				md5SumAsHex := hex.EncodeToString(md5Sum[:])
+				//fnv sum of the message is ID
+				fnvHash := fnv.New128a().Sum(jsonOIQLogEntry)
+				fnvHashAsHex := hex.EncodeToString(fnvHash[:])
 
 				sliceOut = append(sliceOut, &observIQLog{
-					ID:    md5SumAsHex,
+					ID:    fnvHashAsHex,
 					Size:  len(jsonOIQLogEntry),
 					Entry: preEncodedJSON(jsonOIQLogEntry),
 				})
