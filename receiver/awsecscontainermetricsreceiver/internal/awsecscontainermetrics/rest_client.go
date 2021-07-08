@@ -14,7 +14,6 @@
 
 package awsecscontainermetrics
 
-
 // RestClient is swappable for testing.
 type RestClient interface {
 	EndpointResponse() ([]byte, []byte, error)
@@ -32,7 +31,6 @@ func NewRestClient(client Client) *HTTPRestClient {
 }
 
 // EndpointResponse gets the task metadata and docker stats from ECS Task Metadata Endpoint
-
 
 func (c *HTTPRestClient) EndpointResponse() ([]byte, []byte, error) {
 	taskStats, err := c.client.Get(taskStatsPath)
