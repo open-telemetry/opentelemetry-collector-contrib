@@ -104,29 +104,29 @@ func addToGroupedMetric(pmd *pdata.Metric, groupedMetrics map[interface{}]*Group
 }
 
 type kubernetesObj struct {
-	ContainerName string               `json: "container_name"`
-	Docker        internalDockerObj    `json: "docker"`
-	Host          string               `json: "host"`
-	Labels        internalLabelsObj    `json: "labels"`
-	NamespaceName string               `json: "namespace_name"`
-	PodId         string               `json: "pod_id"`
-	PodName       string               `json: "pod_name"`
+	ContainerName string               `json:"container_name"`
+	Docker        internalDockerObj    `json:"docker"`
+	Host          string               `json:"host"`
+	Labels        internalLabelsObj    `json:"labels"`
+	NamespaceName string               `json:"namespace_name"`
+	PodId         string               `json:"pod_id"`
+	PodName       string               `json:"pod_name"`
 	PodOwners     internalPodOwnersObj `json:"pod_owners"`
-	ServiceName   string               `json: "service_name"`
+	ServiceName   string               `json:"service_name"`
 }
 
 type internalDockerObj struct {
-	ContainerId string `json: "container_id"`
+	ContainerId string `json:"container_id"`
 }
 
 type internalLabelsObj struct {
-	App             string `json: "app"`
-	PodTemplateHash string `json: "pod-template-hash"`
+	App             string `json:"app"`
+	PodTemplateHash string `json:"pod-template-hash"`
 }
 
 type internalPodOwnersObj struct {
-	OwnerKind string `json: "owner_kind"`
-	OwnerName string `json: "owner_name"`
+	OwnerKind string `json:"owner_kind"`
+	OwnerName string `json:"owner_name"`
 }
 
 func addKubernetesWrapper(labels map[string]string) error {
