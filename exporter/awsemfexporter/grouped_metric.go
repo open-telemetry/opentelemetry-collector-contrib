@@ -21,21 +21,21 @@ import (
 	aws "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/metrics"
 )
 
-// GroupedMetric defines set of metrics with same namespace, timestamp and labels
-type GroupedMetric struct {
-	Labels   map[string]string
-	Metrics  map[string]*MetricInfo
-	Metadata CWMetricMetadata
+// groupedMetric defines set of metrics with same namespace, timestamp and labels
+type groupedMetric struct {
+	labels   map[string]string
+	metrics  map[string]*metricInfo
+	metadata cWMetricMetadata
 }
 
-// MetricInfo defines value and unit for OT Metrics
-type MetricInfo struct {
-	Value interface{}
-	Unit  string
+// metricInfo defines value and unit for OT Metrics
+type metricInfo struct {
+	value interface{}
+	unit  string
 }
 
-// addToGroupedMetric processes OT metrics and adds them into GroupedMetric buckets
-func addToGroupedMetric(pmd *pdata.Metric, groupedMetrics map[interface{}]*GroupedMetric, metadata CWMetricMetadata, logger *zap.Logger, descriptor map[string]MetricDescriptor) {
+// addToGroupedMetric processes OT metrics and adds them into groupedMetric buckets
+func addToGroupedMetric(pmd *pdata.Metric, groupedMetrics map[interface{}]*groupedMetric, metadata cWMetricMetadata, logger *zap.Logger, descriptor map[string]MetricDescriptor) {
 	if pmd == nil {
 		return
 	}
@@ -52,40 +52,40 @@ func addToGroupedMetric(pmd *pdata.Metric, groupedMetrics map[interface{}]*Group
 			continue
 		}
 
-		labels := dp.Labels
-		metric := &MetricInfo{
-			Value: dp.Value,
-			Unit:  translateUnit(pmd, descriptor),
+		labels := dp.labels
+		metric := &metricInfo{
+			value: dp.value,
+			unit:  translateUnit(pmd, descriptor),
 		}
 
-		if dp.TimestampMs > 0 {
-			metadata.TimestampMs = dp.TimestampMs
+		if dp.timestampMs > 0 {
+			metadata.timestampMs = dp.timestampMs
 		}
 
 		// Extra params to use when grouping metrics
-		groupKey := groupedMetricKey(metadata.GroupedMetricMetadata, labels)
+		groupKey := groupedMetricKey(metadata.groupedMetricMetadata, labels)
 		if _, ok := groupedMetrics[groupKey]; ok {
 			// if metricName already exists in metrics map, print warning log
-			if _, ok := groupedMetrics[groupKey].Metrics[metricName]; ok {
+			if _, ok := groupedMetrics[groupKey].metrics[metricName]; ok {
 				logger.Warn(
 					"Duplicate metric found",
 					zap.String("Name", metricName),
 					zap.Any("Labels", labels),
 				)
 			} else {
-				groupedMetrics[groupKey].Metrics[metricName] = metric
+				groupedMetrics[groupKey].metrics[metricName] = metric
 			}
 		} else {
-			groupedMetrics[groupKey] = &GroupedMetric{
-				Labels:   labels,
-				Metrics:  map[string]*MetricInfo{(metricName): metric},
-				Metadata: metadata,
+			groupedMetrics[groupKey] = &groupedMetric{
+				labels:   labels,
+				metrics:  map[string]*metricInfo{(metricName): metric},
+				metadata: metadata,
 			}
 		}
 	}
 }
 
-func groupedMetricKey(metadata GroupedMetricMetadata, labels map[string]string) aws.Key {
+func groupedMetricKey(metadata groupedMetricMetadata, labels map[string]string) aws.Key {
 	return aws.NewKey(metadata, labels)
 }
 
