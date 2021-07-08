@@ -48,17 +48,17 @@ func createDefaultConfig() config.Exporter {
 // an exporter for traces using this configuration
 func createTraceExporter(
 	_ context.Context,
-	params component.ExporterCreateSettings,
+	set component.ExporterCreateSettings,
 	cfg config.Exporter,
 ) (component.TracesExporter, error) {
-	exp, err := newTracesExporter(params.Logger, cfg)
+	exp, err := newTracesExporter(set.Logger, cfg)
 	if err != nil {
 		return nil, err
 	}
 
 	return exporterhelper.NewTracesExporter(
 		cfg,
-		params.Logger,
+		set,
 		exp.pushTraceData,
 		exporterhelper.WithShutdown(exp.Shutdown),
 	)

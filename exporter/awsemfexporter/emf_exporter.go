@@ -96,16 +96,16 @@ func newEmfPusher(
 // newEmfExporter creates a new exporter using exporterhelper
 func newEmfExporter(
 	config config.Exporter,
-	params component.ExporterCreateSettings,
+	set component.ExporterCreateSettings,
 ) (component.MetricsExporter, error) {
-	exp, err := newEmfPusher(config, params)
+	exp, err := newEmfPusher(config, set)
 	if err != nil {
 		return nil, err
 	}
 
 	return exporterhelper.NewMetricsExporter(
 		config,
-		params.Logger,
+		set,
 		exp.(*emfExporter).pushMetricsData,
 		exporterhelper.WithResourceToTelemetryConversion(config.(*Config).ResourceToTelemetrySettings),
 		exporterhelper.WithShutdown(exp.(*emfExporter).Shutdown),

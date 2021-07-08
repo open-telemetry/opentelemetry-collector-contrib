@@ -25,20 +25,20 @@ import (
 )
 
 // newMetricsExporter return a new LogSerice metrics exporter.
-func newMetricsExporter(logger *zap.Logger, cfg config.Exporter) (component.MetricsExporter, error) {
+func newMetricsExporter(set component.ExporterCreateSettings, cfg config.Exporter) (component.MetricsExporter, error) {
 
 	l := &logServiceMetricsSender{
-		logger: logger,
+		logger: set.Logger,
 	}
 
 	var err error
-	if l.client, err = NewLogServiceClient(cfg.(*Config), logger); err != nil {
+	if l.client, err = NewLogServiceClient(cfg.(*Config), set.Logger); err != nil {
 		return nil, err
 	}
 
 	return exporterhelper.NewMetricsExporter(
 		cfg,
-		logger,
+		set,
 		l.pushMetricsData)
 }
 
