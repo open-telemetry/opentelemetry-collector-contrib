@@ -437,27 +437,27 @@ func TestAddToGroupedMetric(t *testing.T) {
 func testAddKubernetesWrapper(t *testing.T) {
 	t.Run("Test basic creation", func(t *testing.T) {
 		dockerObj := struct {
-			Container_id string
+			ContainerID string
 		}{
-			Container_id: "Container mccontainter the third",
+			ContainerID: "Container mccontainter the third",
 		}
 		expectedCreatedObj := struct {
-			Container_name string
+			ContainerName string
 			Docker         interface{}
 			Host           string
-			Pod_id         string
+			PodID         string
 		}{
-			Container_name: "container mccontainer",
+			ContainerName: "container mccontainer",
 			Docker:         dockerObj,
 			Host:           "hosty de la host",
-			Pod_id:         "Le id de Pod",
+			PodID:         "Le id de Pod",
 		}
 
 		inputs := make(map[string]string)
 		inputs["container_id"] = "Container mccontainter the third"
 		inputs["container_name"] = "container mccontainer"
 		inputs["host"] = "hosty de la host"
-		inputs["Pod_id"] = "Le id de Pod"
+		inputs["pod_id"] = "Le id de Pod"
 
 		jsonBytes, _ := json.Marshal(expectedCreatedObj)
 		err := addKubernetesWrapper(inputs)
