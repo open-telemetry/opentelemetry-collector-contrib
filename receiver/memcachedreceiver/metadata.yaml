@@ -8,7 +8,6 @@ labels:
     - set
     - flush
     - touch
-    - meta
   direction: 
     description: direction of data flow
     enum:

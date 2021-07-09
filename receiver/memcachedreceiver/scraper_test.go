@@ -49,9 +49,7 @@ func TestScraper(t *testing.T) {
 	ilm := ilms.At(0)
 	ms := ilm.Metrics()
 
-	require.Equal(t, 11, ms.Len())
-
-	// metricValues := make(map[string]int64, 7)
+	require.Equal(t, 10, ms.Len())
 
 	for i := 0; i < ms.Len(); i++ {
 		m := ms.At(i)
@@ -63,7 +61,7 @@ func TestScraper(t *testing.T) {
 		case "memcached.total_connections":
 			require.Equal(t, 1, m.IntSum().DataPoints().Len())
 		case "memcached.command_count":
-			require.Equal(t, 5, m.IntSum().DataPoints().Len())
+			require.Equal(t, 4, m.IntSum().DataPoints().Len())
 		case "memcached.current_items":
 			require.Equal(t, 1, m.DoubleGauge().DataPoints().Len())
 		case "memcached.eviction_count":
@@ -72,8 +70,6 @@ func TestScraper(t *testing.T) {
 			require.Equal(t, 2, m.IntSum().DataPoints().Len())
 		case "memcached.operation_count":
 			require.Equal(t, 6, m.IntSum().DataPoints().Len())
-		case "memcached.operation_hit_ratio":
-			require.Equal(t, 3, m.DoubleGauge().DataPoints().Len())
 		case "memcached.rusage":
 			require.Equal(t, 2, m.DoubleGauge().DataPoints().Len())
 		case "memcached.threads":

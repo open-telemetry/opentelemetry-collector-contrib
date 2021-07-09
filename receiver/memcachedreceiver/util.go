@@ -23,6 +23,6 @@ func parseInt(s string) int64 {
 }
 
 func parseFloat(s string) float64 {
-	i, _ := strconv.ParseFloat(s, 10)
+	i, _ := strconv.ParseFloat(s, 64)
 	return i
 }
