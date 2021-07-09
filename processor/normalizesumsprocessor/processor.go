@@ -26,7 +26,7 @@ import (
 
 type NormalizeSumsProcessor struct {
 	logger     *zap.Logger
-	transforms []SumMetrics
+	transforms []Transform
 
 	history map[string]*startPoint
 }
@@ -40,7 +40,7 @@ type startPoint struct {
 	lastDoubleValue float64
 }
 
-func newNormalizeSumsProcessor(logger *zap.Logger, transforms []SumMetrics) *NormalizeSumsProcessor {
+func newNormalizeSumsProcessor(logger *zap.Logger, transforms []Transform) *NormalizeSumsProcessor {
 	return &NormalizeSumsProcessor{
 		logger:     logger,
 		transforms: transforms,
@@ -54,21 +54,8 @@ func (nsp *NormalizeSumsProcessor) ProcessMetrics(ctx context.Context, metrics p
 
 	for i := 0; i < metrics.ResourceMetrics().Len(); i++ {
 		rms := metrics.ResourceMetrics().At(i)
-		if nsp.transforms == nil {
-			processingErrors := nsp.transformAllSumMetrics(rms)
-			errors = append(errors, processingErrors...)
-		} else {
-			for _, transform := range nsp.transforms {
-				metrics := findMetrics(transform.MetricName, rms)
-
-				for _, metric := range metrics {
-					err := nsp.transformMetric(transform, rms.Resource(), metric)
-					if err != nil {
-						errors = append(errors, err)
-					}
-				}
-			}
-		}
+		processingErrors := nsp.transformMetrics(rms)
+		errors = append(errors, processingErrors...)
 	}
 
 	if len(errors) > 0 {
@@ -78,66 +65,84 @@ func (nsp *NormalizeSumsProcessor) ProcessMetrics(ctx context.Context, metrics p
 	return metrics, nil
 }
 
-func (nsp *NormalizeSumsProcessor) transformAllSumMetrics(rms pdata.ResourceMetrics) []error {
+func (nsp *NormalizeSumsProcessor) transformMetrics(rms pdata.ResourceMetrics) []error {
 	var errors []error
 
 	ilms := rms.InstrumentationLibraryMetrics()
 	for j := 0; j < ilms.Len(); j++ {
 		ilm := ilms.At(j).Metrics()
+		newSlice := pdata.NewMetricSlice()
 		for k := 0; k < ilm.Len(); k++ {
 			metric := ilm.At(k)
-			if metric.DataType() == pdata.MetricDataTypeIntSum || metric.DataType() == pdata.MetricDataTypeDoubleSum {
-				err := nsp.transformMetric(SumMetrics{MetricName: metric.Name()}, rms.Resource(), foundMetric{metric: &metric, slice: &ilm, idx: k})
+			shouldTransform, transform := nsp.shouldTransformMetric(&metric)
+			if shouldTransform {
+				err, keepMetric := nsp.processMetric(rms.Resource(), &metric)
 				if err != nil {
 					errors = append(errors, err)
 				}
+				if keepMetric {
+					newMetric := newSlice.AppendEmpty()
+					metric.CopyTo(newMetric)
+					if transform.NewName != "" {
+						newMetric.SetName(transform.NewName)
+					}
+				}
+			} else {
+				newMetric := newSlice.AppendEmpty()
+				metric.CopyTo(newMetric)
 			}
 		}
+
+		newSlice.CopyTo(ilm)
 	}
 
 	return errors
 }
 
-func (nsp *NormalizeSumsProcessor) transformMetric(transform SumMetrics, resource pdata.Resource, metric foundMetric) error {
-	switch t := metric.metric.DataType(); t {
+func (nsp *NormalizeSumsProcessor) shouldTransformMetric(metric *pdata.Metric) (bool, *Transform) {
+	// Only consider Sums
+	if !(metric.DataType() == pdata.MetricDataTypeIntSum || metric.DataType() == pdata.MetricDataTypeDoubleSum) {
+		return false, nil
+	}
+
+	// If transforms is empty, transform all Sums
+	if nsp.transforms == nil {
+		t := Transform{MetricName: metric.Name()}
+		return true, &t
+	}
+
+	// Check through the list of transforms for the named metric
+	for _, transform := range nsp.transforms {
+		if transform.MetricName == metric.Name() {
+			return true, &transform
+		}
+	}
+
+	return false, nil
+}
+
+func (nsp *NormalizeSumsProcessor) processMetric(resource pdata.Resource, metric *pdata.Metric) (error, bool) {
+	switch t := metric.DataType(); t {
 	case pdata.MetricDataTypeIntSum:
-		dataPointsRemaining, processingErr := nsp.processIntSumMetric(transform, resource, metric.metric)
+		dataPointsRemaining, processingErr := nsp.processIntSumMetric(resource, metric)
 		if processingErr != nil {
-			return processingErr
+			return processingErr, false
 		} else {
-			cleanUpMetricSlice(transform, metric, dataPointsRemaining)
+			return nil, dataPointsRemaining > 0
 		}
 	case pdata.MetricDataTypeDoubleSum:
-		dataPointsRemaining, processingErr := nsp.processDoubleSumMetric(transform, resource, metric.metric)
+		dataPointsRemaining, processingErr := nsp.processDoubleSumMetric(resource, metric)
 		if processingErr != nil {
-			return processingErr
+			return processingErr, false
 		} else {
-			cleanUpMetricSlice(transform, metric, dataPointsRemaining)
+			return nil, dataPointsRemaining > 0
 		}
 	default:
-		return fmt.Errorf("Data Type not supported %s", metric.metric.DataType())
-	}
-
-	return nil
-}
-
-func cleanUpMetricSlice(transform SumMetrics, metric foundMetric, dataPointsRemaining int) {
-	// If there is meaningful data to send and we are renaming the metric,
-	// add the already renamed metric to the slice
-	if dataPointsRemaining > 0 && transform.NewName != "" {
-		newMetric := metric.slice.AppendEmpty()
-		metric.metric.CopyTo(newMetric)
-		newMetric.SetName(transform.NewName)
-	}
-
-	// If there are no remaining data points after removing restart/start
-	// points, or this metric was renamed, remove this metric from the slice
-	if dataPointsRemaining == 0 || transform.NewName != "" {
-		metricSliceRemoveElement(metric, transform.MetricName)
+		return fmt.Errorf("Data Type not supported %s", t), false
 	}
 }
 
-func (nsp *NormalizeSumsProcessor) processIntSumMetric(transform SumMetrics, resource pdata.Resource, metric *pdata.Metric) (int, error) {
+func (nsp *NormalizeSumsProcessor) processIntSumMetric(resource pdata.Resource, metric *pdata.Metric) (int, error) {
 	dps := metric.IntSum().DataPoints()
 	for i := 0; i < dps.Len(); {
 		reportData := nsp.processIntSumDataPoint(dps.At(i), resource, metric)
@@ -195,7 +200,7 @@ func (nsp *NormalizeSumsProcessor) processIntSumDataPoint(dp pdata.IntDataPoint,
 	return true
 }
 
-func (nsp *NormalizeSumsProcessor) processDoubleSumMetric(transform SumMetrics, resource pdata.Resource, metric *pdata.Metric) (int, error) {
+func (nsp *NormalizeSumsProcessor) processDoubleSumMetric(resource pdata.Resource, metric *pdata.Metric) (int, error) {
 	dps := metric.DoubleSum().DataPoints()
 	for i := 0; i < dps.Len(); {
 		reportData := nsp.processDoubleSumDataPoint(dps.At(i), resource, metric)
@@ -251,33 +256,6 @@ func (nsp *NormalizeSumsProcessor) processDoubleSumDataPoint(dp pdata.DoubleData
 	dp.SetStartTimestamp(start.doubleDataPoint.Timestamp())
 
 	return true
-}
-
-type foundMetric struct {
-	metric *pdata.Metric
-	slice  *pdata.MetricSlice
-	idx    int
-}
-
-func findMetrics(name string, rms pdata.ResourceMetrics) []foundMetric {
-	found := []foundMetric{}
-
-	ilms := rms.InstrumentationLibraryMetrics()
-	for j := 0; j < ilms.Len(); j++ {
-		ilm := ilms.At(j).Metrics()
-		for k := 0; k < ilm.Len(); k++ {
-			metric := ilm.At(k)
-			if name == metric.Name() {
-				found = append(found, foundMetric{
-					metric: &metric,
-					idx:    k,
-					slice:  &ilm,
-				})
-			}
-		}
-	}
-
-	return found
 }
 
 func dataPointIdentifier(resource pdata.Resource, metric *pdata.Metric, labels pdata.StringMap) string {
@@ -360,17 +338,4 @@ func doubleRemoveAt(slice *pdata.DoubleDataPointSlice, idx int) {
 		}
 	}
 	newSlice.CopyTo(*slice)
-}
-
-func metricSliceRemoveElement(metric foundMetric, name string) {
-	newSlice := pdata.NewMetricSlice()
-	newSlice.Resize(metric.slice.Len() - 1)
-	j := 0
-	for i := 0; i < metric.slice.Len(); i++ {
-		if i != metric.idx {
-			metric.slice.At(i).CopyTo(newSlice.At(j))
-			j++
-		}
-	}
-	newSlice.CopyTo(*metric.slice)
 }
