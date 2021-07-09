@@ -28,7 +28,7 @@ check_component_existence() {
       fi
     fi
   done <"$CODEOWNERS"
-  echo "there are $NOT_EXIST_COMPONENTS components not existed as specified in CODEOWNERS"
+  echo "there are $NOT_EXIST_COMPONENTS component(s) that do not exist as specified in CODEOWNERS"
   if [ "$NOT_EXIST_COMPONENTS" -gt 0 ]; then
     exit 1
   fi
