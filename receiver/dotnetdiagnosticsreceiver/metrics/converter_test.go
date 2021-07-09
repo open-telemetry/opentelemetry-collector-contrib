@@ -45,7 +45,7 @@ func TestSumMetricToPdata(t *testing.T) {
 	expectedName := "dotnet.alloc-rate"
 	expectedUnits := "By"
 	pdm := testMetricConversion(t, jsonFile, expectedName, expectedUnits)
-	sum := pdm.DoubleSum()
+	sum := pdm.Sum()
 	assert.False(t, sum.IsMonotonic())
 	pts := sum.DataPoints()
 	assert.Equal(t, 1, pts.Len())

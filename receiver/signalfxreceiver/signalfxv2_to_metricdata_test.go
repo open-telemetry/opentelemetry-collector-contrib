@@ -59,9 +59,9 @@ func Test_signalFxV2ToMetricsData(t *testing.T) {
 			dps = m.IntSum().DataPoints()
 		case pdata.MetricDataTypeDoubleGauge:
 			dps = m.DoubleGauge().DataPoints()
-		case pdata.MetricDataTypeDoubleSum:
-			m.DoubleSum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
-			dps = m.DoubleSum().DataPoints()
+		case pdata.MetricDataTypeSum:
+			m.Sum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+			dps = m.Sum().DataPoints()
 		}
 
 		var labels pdata.StringMap
@@ -72,7 +72,7 @@ func Test_signalFxV2ToMetricsData(t *testing.T) {
 			labels = dp.LabelsMap()
 			dp.SetTimestamp(pdata.TimestampFromTime(now.Truncate(time.Millisecond)))
 			dp.SetValue(int64(val.(int)))
-		case pdata.MetricDataTypeDoubleGauge, pdata.MetricDataTypeDoubleSum:
+		case pdata.MetricDataTypeDoubleGauge, pdata.MetricDataTypeSum:
 			dp := dps.(pdata.DoubleDataPointSlice).AppendEmpty()
 			labels = dp.LabelsMap()
 			dp.SetTimestamp(pdata.TimestampFromTime(now.Truncate(time.Millisecond)))
@@ -138,8 +138,8 @@ func Test_signalFxV2ToMetricsData(t *testing.T) {
 				return []*sfxpb.DataPoint{pt}
 			}(),
 			wantMetricsData: func() pdata.Metrics {
-				m := buildDefaultMetricsData(pdata.MetricDataTypeDoubleSum, 13.13)
-				d := m.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(0).DoubleSum()
+				m := buildDefaultMetricsData(pdata.MetricDataTypeSum, 13.13)
+				d := m.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(0).Sum()
 				d.SetAggregationTemporality(pdata.AggregationTemporalityDelta)
 				d.SetIsMonotonic(true)
 				return m

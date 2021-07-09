@@ -31,7 +31,7 @@ func TestDefaultMetrics(t *testing.T) {
 			t,
 			metric.pdType == pdata.MetricDataTypeIntSum ||
 				metric.pdType == pdata.MetricDataTypeIntGauge ||
-				metric.pdType == pdata.MetricDataTypeDoubleSum ||
+				metric.pdType == pdata.MetricDataTypeSum ||
 				metric.pdType == pdata.MetricDataTypeDoubleGauge,
 		)
 	}

@@ -62,11 +62,11 @@ func TestUsedCpuSys(t *testing.T) {
 	m := pdm.InstrumentationLibraryMetrics().At(0).Metrics().At(0)
 	assert.Equal(
 		t,
-		pdata.MetricDataTypeDoubleSum,
+		pdata.MetricDataTypeSum,
 		m.DataType(),
 	)
 	assert.Equal(t, units, m.Unit())
-	assert.Equal(t, v, m.DoubleSum().DataPoints().At(0).Value())
+	assert.Equal(t, v, m.Sum().DataPoints().At(0).Value())
 }
 
 func TestMissingMetricValue(t *testing.T) {
@@ -159,8 +159,8 @@ func TestNewPDM(t *testing.T) {
 	assert.Equal(t, pdata.Timestamp(0), pdm.DoubleGauge().DataPoints().At(0).StartTimestamp())
 
 	pdm = pdata.NewMetric()
-	initDoubleMetric(&redisMetric{pdType: pdata.MetricDataTypeDoubleSum}, 0, tb, pdm)
-	assert.Equal(t, serverStartTime, pdm.DoubleSum().DataPoints().At(0).StartTimestamp())
+	initDoubleMetric(&redisMetric{pdType: pdata.MetricDataTypeSum}, 0, tb, pdm)
+	assert.Equal(t, serverStartTime, pdm.Sum().DataPoints().At(0).StartTimestamp())
 }
 
 func newResourceMetrics(ms pdata.MetricSlice) pdata.ResourceMetrics {
