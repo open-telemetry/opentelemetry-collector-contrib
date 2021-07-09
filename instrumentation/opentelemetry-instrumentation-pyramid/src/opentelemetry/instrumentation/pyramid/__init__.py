@@ -140,8 +140,8 @@ class PyramidInstrumentor(BaseInstrumentor):
         """"Disable Pyramid instrumentation"""
         unwrap(Configurator, "__init__")
 
-    # pylint:disable=no-self-use
-    def instrument_config(self, config):
+    @staticmethod
+    def instrument_config(config):
         """Enable instrumentation in a Pyramid configurator.
 
         Args:
@@ -149,5 +149,6 @@ class PyramidInstrumentor(BaseInstrumentor):
         """
         config.include("opentelemetry.instrumentation.pyramid.callbacks")
 
-    def uninstrument_config(self, config):
+    @staticmethod
+    def uninstrument_config(config):
         config.add_settings({SETTING_TRACE_ENABLED: False})

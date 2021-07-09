@@ -49,17 +49,16 @@ from opentelemetry.instrumentation.instrumentor import BaseInstrumentor
 from opentelemetry.instrumentation.pymysql.package import _instruments
 from opentelemetry.instrumentation.pymysql.version import __version__
 
+_CONNECTION_ATTRIBUTES = {
+    "database": "db",
+    "port": "port",
+    "host": "host",
+    "user": "user",
+}
+_DATABASE_SYSTEM = "mysql"
+
 
 class PyMySQLInstrumentor(BaseInstrumentor):
-    _CONNECTION_ATTRIBUTES = {
-        "database": "db",
-        "port": "port",
-        "host": "host",
-        "user": "user",
-    }
-
-    _DATABASE_SYSTEM = "mysql"
-
     def instrumentation_dependencies(self) -> Collection[str]:
         return _instruments
 
@@ -73,8 +72,8 @@ class PyMySQLInstrumentor(BaseInstrumentor):
             __name__,
             pymysql,
             "connect",
-            self._DATABASE_SYSTEM,
-            self._CONNECTION_ATTRIBUTES,
+            _DATABASE_SYSTEM,
+            _CONNECTION_ATTRIBUTES,
             version=__version__,
             tracer_provider=tracer_provider,
         )
@@ -83,8 +82,8 @@ class PyMySQLInstrumentor(BaseInstrumentor):
         """"Disable PyMySQL instrumentation"""
         dbapi.unwrap_connect(pymysql, "connect")
 
-    # pylint:disable=no-self-use
-    def instrument_connection(self, connection, tracer_provider=None):
+    @staticmethod
+    def instrument_connection(connection, tracer_provider=None):
         """Enable instrumentation in a PyMySQL connection.
 
         Args:
@@ -99,13 +98,14 @@ class PyMySQLInstrumentor(BaseInstrumentor):
         return dbapi.instrument_connection(
             __name__,
             connection,
-            self._DATABASE_SYSTEM,
-            self._CONNECTION_ATTRIBUTES,
+            _DATABASE_SYSTEM,
+            _CONNECTION_ATTRIBUTES,
             version=__version__,
             tracer_provider=tracer_provider,
         )
 
-    def uninstrument_connection(self, connection):
+    @staticmethod
+    def uninstrument_connection(connection):
         """Disable instrumentation in a PyMySQL connection.
 
         Args:

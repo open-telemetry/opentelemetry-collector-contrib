@@ -259,7 +259,7 @@ def _instrument(
             span_name=span_name,
             tracer_provider=tracer_provider,
         )
-        trace_config.opentelemetry_aiohttp_instrumented = True
+        trace_config._is_instrumented_by_opentelemetry = True
         trace_configs.append(trace_config)
 
         kwargs["trace_configs"] = trace_configs
@@ -282,7 +282,7 @@ def _uninstrument_session(client_session: aiohttp.ClientSession):
     client_session._trace_configs = [
         trace_config
         for trace_config in trace_configs
-        if not hasattr(trace_config, "opentelemetry_aiohttp_instrumented")
+        if not hasattr(trace_config, "_is_instrumented_by_opentelemetry")
     ]
 
 

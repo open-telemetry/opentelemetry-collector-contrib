@@ -48,13 +48,13 @@ from opentelemetry.instrumentation.sqlite3.package import _instruments
 from opentelemetry.instrumentation.sqlite3.version import __version__
 from opentelemetry.trace import get_tracer
 
+# No useful attributes of sqlite3 connection object
+_CONNECTION_ATTRIBUTES = {}
+
+_DATABASE_SYSTEM = "sqlite"
+
 
 class SQLite3Instrumentor(BaseInstrumentor):
-    # No useful attributes of sqlite3 connection object
-    _CONNECTION_ATTRIBUTES = {}
-
-    _DATABASE_SYSTEM = "sqlite"
-
     def instrumentation_dependencies(self) -> Collection[str]:
         return _instruments
 
@@ -68,8 +68,8 @@ class SQLite3Instrumentor(BaseInstrumentor):
             __name__,
             sqlite3,
             "connect",
-            self._DATABASE_SYSTEM,
-            self._CONNECTION_ATTRIBUTES,
+            _DATABASE_SYSTEM,
+            _CONNECTION_ATTRIBUTES,
             version=__version__,
             tracer_provider=tracer_provider,
         )
@@ -78,8 +78,8 @@ class SQLite3Instrumentor(BaseInstrumentor):
         """"Disable SQLite3 instrumentation"""
         dbapi.unwrap_connect(sqlite3, "connect")
 
-    # pylint:disable=no-self-use
-    def instrument_connection(self, connection, tracer_provider=None):
+    @staticmethod
+    def instrument_connection(connection, tracer_provider=None):
         """Enable instrumentation in a SQLite connection.
 
         Args:
@@ -94,13 +94,14 @@ class SQLite3Instrumentor(BaseInstrumentor):
         return dbapi.instrument_connection(
             __name__,
             connection,
-            self._DATABASE_SYSTEM,
-            self._CONNECTION_ATTRIBUTES,
+            _DATABASE_SYSTEM,
+            _CONNECTION_ATTRIBUTES,
             version=__version__,
             tracer_provider=tracer_provider,
         )
 
-    def uninstrument_connection(self, connection):
+    @staticmethod
+    def uninstrument_connection(connection):
         """Disable instrumentation in a SQLite connection.
 
         Args:

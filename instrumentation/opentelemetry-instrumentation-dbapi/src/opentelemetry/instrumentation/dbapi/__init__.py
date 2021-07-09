@@ -180,6 +180,10 @@ def instrument_connection(
     Returns:
         An instrumented connection.
     """
+    if isinstance(connection, wrapt.ObjectProxy):
+        logger.warning("Connection already instrumented")
+        return connection
+
     db_integration = DatabaseApiIntegration(
         name,
         database_system,

@@ -39,6 +39,7 @@ API
 ---
 """
 
+import logging
 import typing
 from typing import Collection
 
@@ -53,6 +54,7 @@ from opentelemetry.instrumentation.instrumentor import BaseInstrumentor
 from opentelemetry.instrumentation.psycopg2.package import _instruments
 from opentelemetry.instrumentation.psycopg2.version import __version__
 
+_logger = logging.getLogger(__name__)
 _OTEL_CURSOR_FACTORY_KEY = "_otel_orig_cursor_factory"
 
 
@@ -91,24 +93,32 @@ class Psycopg2Instrumentor(BaseInstrumentor):
         dbapi.unwrap_connect(psycopg2, "connect")
 
     # TODO(owais): check if core dbapi can do this for all dbapi implementations e.g, pymysql and mysql
-    def instrument_connection(
-        self, connection, tracer_provider=None
-    ):  # pylint: disable=no-self-use
-        setattr(
-            connection, _OTEL_CURSOR_FACTORY_KEY, connection.cursor_factory
-        )
-        connection.cursor_factory = _new_cursor_factory(
-            tracer_provider=tracer_provider
-        )
+    @staticmethod
+    def instrument_connection(connection, tracer_provider=None):
+        if not hasattr(connection, "_is_instrumented_by_opentelemetry"):
+            connection._is_instrumented_by_opentelemetry = False
+
+        if not connection._is_instrumented_by_opentelemetry:
+            setattr(
+                connection, _OTEL_CURSOR_FACTORY_KEY, connection.cursor_factory
+            )
+            connection.cursor_factory = _new_cursor_factory(
+                tracer_provider=tracer_provider
+            )
+            connection._is_instrumented_by_opentelemetry = True
+        else:
+            _logger.warning(
+                "Attempting to instrument Psycopg connection while already instrumented"
+            )
         return connection
 
     # TODO(owais): check if core dbapi can do this for all dbapi implementations e.g, pymysql and mysql
-    def uninstrument_connection(
-        self, connection
-    ):  # pylint: disable=no-self-use
+    @staticmethod
+    def uninstrument_connection(connection):
         connection.cursor_factory = getattr(
             connection, _OTEL_CURSOR_FACTORY_KEY, None
         )
+
         return connection
 
 

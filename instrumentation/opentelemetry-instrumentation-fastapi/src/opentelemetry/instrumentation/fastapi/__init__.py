@@ -12,9 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import logging
 from typing import Collection
 
 import fastapi
+from starlette import middleware
 from starlette.routing import Match
 
 from opentelemetry.instrumentation.asgi import OpenTelemetryMiddleware
@@ -24,6 +26,7 @@ from opentelemetry.semconv.trace import SpanAttributes
 from opentelemetry.util.http import get_excluded_urls, parse_excluded_urls
 
 _excluded_urls_from_env = get_excluded_urls("FASTAPI")
+_logger = logging.getLogger(__name__)
 
 
 class FastAPIInstrumentor(BaseInstrumentor):
@@ -39,7 +42,10 @@ class FastAPIInstrumentor(BaseInstrumentor):
         app: fastapi.FastAPI, tracer_provider=None, excluded_urls=None,
     ):
         """Instrument an uninstrumented FastAPI application."""
-        if not getattr(app, "is_instrumented_by_opentelemetry", False):
+        if not hasattr(app, "_is_instrumented_by_opentelemetry"):
+            app._is_instrumented_by_opentelemetry = False
+
+        if not getattr(app, "_is_instrumented_by_opentelemetry", False):
             if excluded_urls is None:
                 excluded_urls = _excluded_urls_from_env
             else:
@@ -51,7 +57,21 @@ class FastAPIInstrumentor(BaseInstrumentor):
                 span_details_callback=_get_route_details,
                 tracer_provider=tracer_provider,
             )
-            app.is_instrumented_by_opentelemetry = True
+            app._is_instrumented_by_opentelemetry = True
+        else:
+            _logger.warning(
+                "Attempting to instrument FastAPI app while already instrumented"
+            )
+
+    @staticmethod
+    def uninstrument_app(app: fastapi.FastAPI):
+        app.user_middleware = [
+            x
+            for x in app.user_middleware
+            if x.cls is not OpenTelemetryMiddleware
+        ]
+        app.middleware_stack = app.build_middleware_stack()
+        app._is_instrumented_by_opentelemetry = False
 
     def instrumentation_dependencies(self) -> Collection[str]:
         return _instruments

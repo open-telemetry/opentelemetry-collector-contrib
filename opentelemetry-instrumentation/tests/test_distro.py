@@ -53,6 +53,6 @@ class TestDistro(TestCase):
         instrumentor = MockInstrumetor()
         entry_point = MockEntryPoint(MockInstrumetor)
 
-        self.assertFalse(instrumentor._is_instrumented)
+        self.assertFalse(instrumentor._is_instrumented_by_opentelemetry)
         distro.load_instrumentor(entry_point)
-        self.assertTrue(instrumentor._is_instrumented)
+        self.assertTrue(instrumentor._is_instrumented_by_opentelemetry)

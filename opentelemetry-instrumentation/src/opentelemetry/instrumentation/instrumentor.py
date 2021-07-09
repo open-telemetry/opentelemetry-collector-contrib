@@ -43,7 +43,7 @@ class BaseInstrumentor(ABC):
     """
 
     _instance = None
-    _is_instrumented = False
+    _is_instrumented_by_opentelemetry = False
 
     def __new__(cls, *args, **kwargs):
 
@@ -51,6 +51,10 @@ class BaseInstrumentor(ABC):
             cls._instance = object.__new__(cls, *args, **kwargs)
 
         return cls._instance
+
+    @property
+    def is_instrumented_by_opentelemetry(self):
+        return self._is_instrumented_by_opentelemetry
 
     @abstractmethod
     def instrumentation_dependencies(self) -> Collection[str]:
@@ -90,7 +94,7 @@ class BaseInstrumentor(ABC):
         ``opentelemetry-instrument`` command does.
         """
 
-        if self._is_instrumented:
+        if self._is_instrumented_by_opentelemetry:
             _LOG.warning("Attempting to instrument while already instrumented")
             return None
 
@@ -99,13 +103,13 @@ class BaseInstrumentor(ABC):
         if not skip_dep_check:
             conflict = self._check_dependency_conflicts()
             if conflict:
-                _LOG.warning(conflict)
+                _LOG.error(conflict)
                 return None
 
         result = self._instrument(  # pylint: disable=assignment-from-no-return
             **kwargs
         )
-        self._is_instrumented = True
+        self._is_instrumented_by_opentelemetry = True
         return result
 
     def uninstrument(self, **kwargs):
@@ -115,9 +119,9 @@ class BaseInstrumentor(ABC):
         usage of ``kwargs``.
         """
 
-        if self._is_instrumented:
+        if self._is_instrumented_by_opentelemetry:
             result = self._uninstrument(**kwargs)
-            self._is_instrumented = False
+            self._is_instrumented_by_opentelemetry = False
             return result
 
         _LOG.warning("Attempting to uninstrument while already uninstrumented")

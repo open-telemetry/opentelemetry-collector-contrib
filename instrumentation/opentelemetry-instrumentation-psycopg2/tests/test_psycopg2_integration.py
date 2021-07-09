@@ -172,9 +172,45 @@ class TestPostgresqlIntegration(TestBase):
         self.assertEqual(len(spans_list), 1)
 
     # pylint: disable=unused-argument
-    def test_uninstrument_connection(self):
+    def test_instrument_connection_with_instrument(self):
+        cnx = psycopg2.connect(database="test")
+        query = "SELECT * FROM test"
+        cursor = cnx.cursor()
+        cursor.execute(query)
+
+        spans_list = self.memory_exporter.get_finished_spans()
+        self.assertEqual(len(spans_list), 0)
+
+        Psycopg2Instrumentor().instrument()
+        cnx = Psycopg2Instrumentor().instrument_connection(cnx)
+        cursor = cnx.cursor()
+        cursor.execute(query)
+
+        spans_list = self.memory_exporter.get_finished_spans()
+        self.assertEqual(len(spans_list), 1)
+
+    # pylint: disable=unused-argument
+    def test_uninstrument_connection_with_instrument(self):
         Psycopg2Instrumentor().instrument()
         cnx = psycopg2.connect(database="test")
+        query = "SELECT * FROM test"
+        cursor = cnx.cursor()
+        cursor.execute(query)
+
+        spans_list = self.memory_exporter.get_finished_spans()
+        self.assertEqual(len(spans_list), 1)
+
+        cnx = Psycopg2Instrumentor().uninstrument_connection(cnx)
+        cursor = cnx.cursor()
+        cursor.execute(query)
+
+        spans_list = self.memory_exporter.get_finished_spans()
+        self.assertEqual(len(spans_list), 1)
+
+    # pylint: disable=unused-argument
+    def test_uninstrument_connection_with_instrument_connection(self):
+        cnx = psycopg2.connect(database="test")
+        Psycopg2Instrumentor().instrument_connection(cnx)
         query = "SELECT * FROM test"
         cursor = cnx.cursor()
         cursor.execute(query)

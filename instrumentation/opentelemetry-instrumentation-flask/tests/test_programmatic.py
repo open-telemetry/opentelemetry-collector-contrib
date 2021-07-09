@@ -79,7 +79,16 @@ class TestProgrammatic(InstrumentationTest, TestBase, WsgiTestBase):
         with self.disable_logging():
             FlaskInstrumentor().uninstrument_app(self.app)
 
-    def test_uninstrument(self):
+    def test_instrument_app_and_instrument(self):
+        FlaskInstrumentor().instrument()
+        resp = self.client.get("/hello/123")
+        self.assertEqual(200, resp.status_code)
+        self.assertEqual([b"Hello: 123"], list(resp.response))
+        span_list = self.memory_exporter.get_finished_spans()
+        self.assertEqual(len(span_list), 1)
+        FlaskInstrumentor().uninstrument()
+
+    def test_uninstrument_app(self):
         resp = self.client.get("/hello/123")
         self.assertEqual(200, resp.status_code)
         self.assertEqual([b"Hello: 123"], list(resp.response))
@@ -93,6 +102,16 @@ class TestProgrammatic(InstrumentationTest, TestBase, WsgiTestBase):
         self.assertEqual([b"Hello: 123"], list(resp.response))
         span_list = self.memory_exporter.get_finished_spans()
         self.assertEqual(len(span_list), 1)
+
+    def test_uninstrument_app_after_instrument(self):
+        FlaskInstrumentor().instrument()
+        FlaskInstrumentor().uninstrument_app(self.app)
+        resp = self.client.get("/hello/123")
+        self.assertEqual(200, resp.status_code)
+        self.assertEqual([b"Hello: 123"], list(resp.response))
+        span_list = self.memory_exporter.get_finished_spans()
+        self.assertEqual(len(span_list), 0)
+        FlaskInstrumentor().uninstrument()
 
     # pylint: disable=no-member
     def test_only_strings_in_environ(self):

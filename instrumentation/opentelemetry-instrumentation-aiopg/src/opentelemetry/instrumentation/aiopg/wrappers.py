@@ -41,6 +41,7 @@ from aiopg.utils import (  # pylint: disable=no-name-in-module
 
 from opentelemetry.instrumentation.aiopg.aiopg_integration import (
     AiopgIntegration,
+    AsyncProxyObject,
     get_traced_connection_proxy,
 )
 from opentelemetry.instrumentation.aiopg.version import __version__
@@ -153,6 +154,10 @@ def instrument_connection(
     Returns:
         An instrumented connection.
     """
+    if isinstance(connection, AsyncProxyObject):
+        logger.warning("Connection already instrumented")
+        return connection
+
     db_integration = AiopgIntegration(
         name,
         database_system,
@@ -173,7 +178,7 @@ def uninstrument_connection(connection):
     Returns:
         An uninstrumented connection.
     """
-    if isinstance(connection, wrapt.ObjectProxy):
+    if isinstance(connection, AsyncProxyObject):
         return connection.__wrapped__
 
     logger.warning("Connection is not instrumented")
