@@ -79,7 +79,9 @@ func NewLineStartSplitFunc(re *regexp.Regexp, flushAtEOF bool) bufio.SplitFunc {
 		if firstLoc == nil {
 			// Flush if no more data is expected
 			if len(data) != 0 && atEOF && flushAtEOF {
-				return len(data), data, nil
+				token = trimWhitespaces(data)
+				advance = len(data)
+				return
 			}
 			return 0, nil, nil // read more data and try again.
 		}
@@ -89,7 +91,7 @@ func NewLineStartSplitFunc(re *regexp.Regexp, flushAtEOF bool) bufio.SplitFunc {
 		if firstMatchStart != 0 {
 			// the beginning of the file does not match the start pattern, so return a token up to the first match so we don't lose data
 			advance = firstMatchStart
-			token = data[0:firstMatchStart]
+			token = trimWhitespaces(data[0:firstMatchStart])
 			return
 		}
 
@@ -100,7 +102,9 @@ func NewLineStartSplitFunc(re *regexp.Regexp, flushAtEOF bool) bufio.SplitFunc {
 
 		// Flush if no more data is expected
 		if atEOF && flushAtEOF {
-			return len(data), data, nil
+			token = trimWhitespaces(data)
+			advance = len(data)
+			return
 		}
 
 		secondLocOffset := firstMatchEnd + 1
@@ -110,8 +114,8 @@ func NewLineStartSplitFunc(re *regexp.Regexp, flushAtEOF bool) bufio.SplitFunc {
 		}
 		secondMatchStart := secondLoc[0] + secondLocOffset
 
-		advance = secondMatchStart                     // start scanning at the beginning of the second match
-		token = data[firstMatchStart:secondMatchStart] // the token begins at the first match, and ends at the beginning of the second match
+		advance = secondMatchStart                                      // start scanning at the beginning of the second match
+		token = trimWhitespaces(data[firstMatchStart:secondMatchStart]) // the token begins at the first match, and ends at the beginning of the second match
 		err = nil
 		return
 	}
@@ -125,7 +129,9 @@ func NewLineEndSplitFunc(re *regexp.Regexp, flushAtEOF bool) bufio.SplitFunc {
 		if loc == nil {
 			// Flush if no more data is expected
 			if len(data) != 0 && atEOF && flushAtEOF {
-				return len(data), data, nil
+				token = trimWhitespaces(data)
+				advance = len(data)
+				return
 			}
 			return 0, nil, nil // read more data and try again
 		}
@@ -137,7 +143,7 @@ func NewLineEndSplitFunc(re *regexp.Regexp, flushAtEOF bool) bufio.SplitFunc {
 		}
 
 		advance = loc[1]
-		token = data[:loc[1]]
+		token = trimWhitespaces(data[:loc[1]])
 		err = nil
 		return
 	}
@@ -168,7 +174,9 @@ func NewNewlineSplitFunc(encoding encoding.Encoding, flushAtEOF bool) (bufio.Spl
 
 		// Flush if no more data is expected
 		if atEOF && flushAtEOF {
-			return len(data), data, nil
+			token = trimWhitespaces(data)
+			advance = len(data)
+			return
 		}
 
 		// Request more data.
@@ -186,4 +194,11 @@ func encodedCarriageReturn(encoding encoding.Encoding) ([]byte, error) {
 	out := make([]byte, 10)
 	nDst, _, err := encoding.NewEncoder().Transform(out, []byte{'\r'}, true)
 	return out[:nDst], err
+}
+
+func trimWhitespaces(data []byte) []byte {
+	// TrimLeft to strip EOF whitespaces in case of using $ in regex
+	// For some reason newline and carriage return are being moved to beginning of next log
+	// TrimRight to strip all whitespaces from the end of log
+	return bytes.TrimLeft(bytes.TrimRight(data, "\r\n\t "), "\r\n")
 }
