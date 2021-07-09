@@ -20,6 +20,8 @@ import (
 	"time"
 
 	"go.etcd.io/bbolt"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage"
 )
 
 var defaultBucket = []byte(`default`)
@@ -50,44 +52,86 @@ func newClient(filePath string, timeout time.Duration) (*fileStorageClient, erro
 }
 
 // Get will retrieve data from storage that corresponds to the specified key
-func (c *fileStorageClient) Get(_ context.Context, key string) ([]byte, error) {
-	var result []byte
+func (c *fileStorageClient) Get(ctx context.Context, key string) ([]byte, error) {
+	results, err := c.GetBatch(ctx, []string{key})
+	if err != nil {
+		return nil, err
+	}
+	return results[0], nil
+}
+
+// GetBatch will retrieve data from storage that corresponds to the specified collection of keys in a single transaction
+func (c *fileStorageClient) GetBatch(_ context.Context, keys []string) ([][]byte, error) {
+	results := make([][]byte, len(keys))
 	get := func(tx *bbolt.Tx) error {
 		bucket := tx.Bucket(defaultBucket)
 		if bucket == nil {
 			return errors.New("storage not initialized")
 		}
-		result = bucket.Get([]byte(key))
+
+		for i, key := range keys {
+			results[i] = bucket.Get([]byte(key))
+		}
 		return nil // no error
 	}
 
 	if err := c.db.Update(get); err != nil {
 		return nil, err
 	}
-	return result, nil
+	return results, nil
 }
 
 // Set will store data. The data can be retrieved using the same key
-func (c *fileStorageClient) Set(_ context.Context, key string, value []byte) error {
+func (c *fileStorageClient) Set(ctx context.Context, key string, value []byte) error {
+	return c.SetBatch(ctx, []storage.BatchEntry{{Key: key, Value: value}})
+}
+
+// SetBatch will store data for a set of entries in a transaction. The data can be retrieved using the same key
+func (c *fileStorageClient) SetBatch(_ context.Context, entries []storage.BatchEntry) error {
 	set := func(tx *bbolt.Tx) error {
 		bucket := tx.Bucket(defaultBucket)
 		if bucket == nil {
 			return errors.New("storage not initialized")
 		}
-		return bucket.Put([]byte(key), value)
+
+		for _, entry := range entries {
+			var err error
+
+			if entry.Value == nil {
+				err = bucket.Delete([]byte(entry.Key))
+			} else {
+				err = bucket.Put([]byte(entry.Key), entry.Value)
+			}
+
+			if err != nil {
+				return err
+			}
+		}
+
+		return nil
 	}
 
 	return c.db.Update(set)
 }
 
 // Delete will delete data associated with the specified key
-func (c *fileStorageClient) Delete(_ context.Context, key string) error {
+func (c *fileStorageClient) Delete(ctx context.Context, key string) error {
+	return c.DeleteBatch(ctx, []string{key})
+}
+
+// DeleteBatch will delete data associated with the specified keys in a single transaction
+func (c *fileStorageClient) DeleteBatch(_ context.Context, keys []string) error {
 	delete := func(tx *bbolt.Tx) error {
 		bucket := tx.Bucket(defaultBucket)
 		if bucket == nil {
 			return errors.New("storage not initialized")
 		}
-		return bucket.Delete([]byte(key))
+		for _, key := range keys {
+			if err := bucket.Delete([]byte(key)); err != nil {
+				return err
+			}
+		}
+		return nil
 	}
 
 	return c.db.Update(delete)

@@ -24,6 +24,8 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"go.etcd.io/bbolt"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage"
 )
 
 func TestClientOperations(t *testing.T) {
@@ -59,6 +61,64 @@ func TestClientOperations(t *testing.T) {
 	value, err = client.Get(ctx, testKey)
 	require.NoError(t, err)
 	require.Nil(t, value)
+}
+
+func TestClientBatchOperations(t *testing.T) {
+	tempDir := newTempDir(t)
+	dbFile := filepath.Join(tempDir, "my_db")
+
+	client, err := newClient(dbFile, time.Second)
+	require.NoError(t, err)
+
+	ctx := context.Background()
+	testEntries := []storage.BatchEntry{
+		{Key: "testKey1", Value: []byte("testValue1")},
+		{Key: "testKey2", Value: []byte("testValue2")},
+	}
+	testKeys := []string{"testKey1", "testKey2"}
+
+	// Make sure nothing is there
+	value, err := client.GetBatch(ctx, testKeys)
+	require.NoError(t, err)
+	require.Equal(t, value, [][]byte{nil, nil})
+
+	// Set it
+	err = client.SetBatch(ctx, testEntries)
+	require.NoError(t, err)
+
+	// Get it back out, make sure it's right
+	values, err := client.GetBatch(ctx, testKeys)
+	require.NoError(t, err)
+	require.Len(t, values, 2)
+	for i := 0; i < 2; i++ {
+		require.Equal(t, testEntries[i].Value, values[i])
+	}
+
+	testEntriesUpdate := []storage.BatchEntry{
+		{Key: "testKey1", Value: []byte("testValue1")},
+		{Key: "testKey2", Value: nil},
+	}
+
+	// Update it (the second entry should get removed)
+	err = client.SetBatch(ctx, testEntriesUpdate)
+	require.NoError(t, err)
+
+	// Get it back out, make sure it's right
+	valuesUpdate, err := client.GetBatch(ctx, testKeys)
+	require.NoError(t, err)
+	require.Len(t, values, 2)
+	for i := 0; i < 2; i++ {
+		require.Equal(t, testEntriesUpdate[i].Value, valuesUpdate[i])
+	}
+
+	// Delete it all
+	err = client.DeleteBatch(ctx, testKeys)
+	require.NoError(t, err)
+
+	// Make sure it's gone
+	value, err = client.GetBatch(ctx, testKeys)
+	require.NoError(t, err)
+	require.Equal(t, value, [][]byte{nil, nil})
 }
 
 func TestNewClientTransactionErrors(t *testing.T) {
@@ -155,6 +215,25 @@ func BenchmarkClientGet(b *testing.B) {
 	}
 }
 
+func BenchmarkClientGet100(b *testing.B) {
+	tempDir := newTempDir(b)
+	dbFile := filepath.Join(tempDir, "my_db")
+
+	client, err := newClient(dbFile, time.Second)
+	require.NoError(b, err)
+
+	ctx := context.Background()
+
+	testKeys := make([]string, 100)
+	for i := 0; i < 100; i++ {
+		testKeys[i] = "testKey"
+	}
+
+	for n := 0; n < b.N; n++ {
+		client.GetBatch(ctx, testKeys)
+	}
+}
+
 func BenchmarkClientSet(b *testing.B) {
 	tempDir := newTempDir(b)
 	dbFile := filepath.Join(tempDir, "my_db")
@@ -168,6 +247,27 @@ func BenchmarkClientSet(b *testing.B) {
 
 	for n := 0; n < b.N; n++ {
 		client.Set(ctx, testKey, testValue)
+	}
+}
+
+func BenchmarkClientSet100(b *testing.B) {
+	tempDir := newTempDir(b)
+	dbFile := filepath.Join(tempDir, "my_db")
+
+	client, err := newClient(dbFile, time.Second)
+	require.NoError(b, err)
+
+	ctx := context.Background()
+
+	testEntries := make([]storage.BatchEntry, 100)
+	for i := 0; i < 100; i++ {
+		testEntries[i] = storage.BatchEntry{
+			Key:   "testKey",
+			Value: []byte("testValue"),
+		}
+	}
+	for n := 0; n < b.N; n++ {
+		client.SetBatch(ctx, testEntries)
 	}
 }
 
