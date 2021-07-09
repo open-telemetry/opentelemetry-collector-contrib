@@ -70,15 +70,15 @@ func createDefaultConfig() config.Exporter {
 
 func createTracesExporter(
 	_ context.Context,
-	params component.ExporterCreateSettings,
+	set component.ExporterCreateSettings,
 	cfg config.Exporter) (component.TracesExporter, error) {
 
 	pCfg := cfg.(*Config)
-	pubsubExporter := ensureExporter(params, pCfg)
+	pubsubExporter := ensureExporter(set, pCfg)
 
 	return exporterhelper.NewTracesExporter(
 		cfg,
-		params.Logger,
+		set,
 		pubsubExporter.consumeTraces,
 		exporterhelper.WithTimeout(pCfg.TimeoutSettings),
 		exporterhelper.WithRetry(pCfg.RetrySettings),
@@ -90,15 +90,15 @@ func createTracesExporter(
 
 func createMetricsExporter(
 	_ context.Context,
-	params component.ExporterCreateSettings,
+	set component.ExporterCreateSettings,
 	cfg config.Exporter) (component.MetricsExporter, error) {
 
 	pCfg := cfg.(*Config)
-	pubsubExporter := ensureExporter(params, pCfg)
+	pubsubExporter := ensureExporter(set, pCfg)
 
 	return exporterhelper.NewMetricsExporter(
 		cfg,
-		params.Logger,
+		set,
 		pubsubExporter.consumeMetrics,
 		exporterhelper.WithTimeout(pCfg.TimeoutSettings),
 		exporterhelper.WithRetry(pCfg.RetrySettings),
@@ -110,15 +110,15 @@ func createMetricsExporter(
 
 func createLogsExporter(
 	_ context.Context,
-	params component.ExporterCreateSettings,
+	set component.ExporterCreateSettings,
 	cfg config.Exporter) (component.LogsExporter, error) {
 
 	pCfg := cfg.(*Config)
-	pubsubExporter := ensureExporter(params, pCfg)
+	pubsubExporter := ensureExporter(set, pCfg)
 
 	return exporterhelper.NewLogsExporter(
 		cfg,
-		params.Logger,
+		set,
 		pubsubExporter.consumeLogs,
 		exporterhelper.WithTimeout(pCfg.TimeoutSettings),
 		exporterhelper.WithRetry(pCfg.RetrySettings),

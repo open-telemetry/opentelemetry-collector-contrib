@@ -25,20 +25,20 @@ import (
 )
 
 // newTracesExporter return a new LogSerice trace exporter.
-func newTracesExporter(logger *zap.Logger, cfg config.Exporter) (component.TracesExporter, error) {
+func newTracesExporter(set component.ExporterCreateSettings, cfg config.Exporter) (component.TracesExporter, error) {
 
 	l := &logServiceTraceSender{
-		logger: logger,
+		logger: set.Logger,
 	}
 
 	var err error
-	if l.client, err = NewLogServiceClient(cfg.(*Config), logger); err != nil {
+	if l.client, err = NewLogServiceClient(cfg.(*Config), set.Logger); err != nil {
 		return nil, err
 	}
 
 	return exporterhelper.NewTracesExporter(
 		cfg,
-		logger,
+		set,
 		l.pushTraceData)
 }
 
