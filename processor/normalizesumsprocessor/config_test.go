@@ -40,7 +40,7 @@ func TestLoadConfig(t *testing.T) {
 	p1 := cfg.Processors[id]
 	expectedCfg := &Config{
 		ProcessorSettings: &settings,
-		Transforms: []SumMetrics{
+		Transforms: []Transform{
 			{
 				MetricName: "cpu",
 				NewName:    "total_cpu",
