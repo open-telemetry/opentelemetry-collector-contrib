@@ -70,8 +70,8 @@ func newLogzioExporter(config *Config, params component.ExporterCreateSettings) 
 	}, nil
 }
 
-func newLogzioTracesExporter(config *Config, params component.ExporterCreateSettings) (component.TracesExporter, error) {
-	exporter, err := newLogzioExporter(config, params)
+func newLogzioTracesExporter(config *Config, set component.ExporterCreateSettings) (component.TracesExporter, error) {
+	exporter, err := newLogzioExporter(config, set)
 	if err != nil {
 		return nil, err
 	}
@@ -81,16 +81,16 @@ func newLogzioTracesExporter(config *Config, params component.ExporterCreateSett
 
 	return exporterhelper.NewTracesExporter(
 		config,
-		params.Logger,
+		set,
 		exporter.pushTraceData,
 		exporterhelper.WithShutdown(exporter.Shutdown))
 }
 
-func newLogzioMetricsExporter(config *Config, params component.ExporterCreateSettings) (component.MetricsExporter, error) {
-	exporter, _ := newLogzioExporter(config, params)
+func newLogzioMetricsExporter(config *Config, set component.ExporterCreateSettings) (component.MetricsExporter, error) {
+	exporter, _ := newLogzioExporter(config, set)
 	return exporterhelper.NewMetricsExporter(
 		config,
-		params.Logger,
+		set,
 		exporter.pushMetricsData,
 		exporterhelper.WithShutdown(exporter.Shutdown))
 }

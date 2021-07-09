@@ -29,7 +29,7 @@ import (
 )
 
 // newCarbonExporter returns a new Carbon exporter.
-func newCarbonExporter(cfg *Config, params component.ExporterCreateSettings) (component.MetricsExporter, error) {
+func newCarbonExporter(cfg *Config, set component.ExporterCreateSettings) (component.MetricsExporter, error) {
 	// Resolve TCP address just to ensure that it is a valid one. It is better
 	// to fail here than at when the exporter is started.
 	if _, err := net.ResolveTCPAddr("tcp", cfg.Endpoint); err != nil {
@@ -47,7 +47,7 @@ func newCarbonExporter(cfg *Config, params component.ExporterCreateSettings) (co
 
 	return exporterhelper.NewMetricsExporter(
 		cfg,
-		params.Logger,
+		set,
 		sender.pushMetricsData,
 		exporterhelper.WithShutdown(sender.Shutdown))
 }
