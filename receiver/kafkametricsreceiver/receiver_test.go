@@ -21,7 +21,7 @@ import (
 
 	"github.com/Shopify/sarama"
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/exporter/kafkaexporter"
@@ -32,7 +32,7 @@ import (
 func TestNewReceiver_invalid_version_err(t *testing.T) {
 	c := createDefaultConfig().(*Config)
 	c.ProtocolVersion = "invalid"
-	r, err := newMetricsReceiver(context.Background(), *c, component.ReceiverCreateSettings{}, nil)
+	r, err := newMetricsReceiver(context.Background(), *c, componenttest.NewNopReceiverCreateSettings(), nil)
 	assert.Error(t, err)
 	assert.Nil(t, r)
 }
@@ -44,7 +44,7 @@ func TestNewReceiver_invalid_scraper_error(t *testing.T) {
 		return nil, nil
 	}
 	allScrapers["brokers"] = mockScraper
-	r, err := newMetricsReceiver(context.Background(), *c, component.ReceiverCreateSettings{}, nil)
+	r, err := newMetricsReceiver(context.Background(), *c, componenttest.NewNopReceiverCreateSettings(), nil)
 	assert.Nil(t, r)
 	expectedError := fmt.Errorf("no scraper found for key: cpu")
 	if assert.Error(t, err) {
@@ -61,7 +61,7 @@ func TestNewReceiver_invalid_auth_error(t *testing.T) {
 			},
 		},
 	}
-	r, err := newMetricsReceiver(context.Background(), *c, component.ReceiverCreateSettings{}, nil)
+	r, err := newMetricsReceiver(context.Background(), *c, componenttest.NewNopReceiverCreateSettings(), nil)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to load TLS config")
 	assert.Nil(t, r)
@@ -74,7 +74,7 @@ func TestNewReceiver(t *testing.T) {
 		return nil, nil
 	}
 	allScrapers["brokers"] = mockScraper
-	r, err := newMetricsReceiver(context.Background(), *c, component.ReceiverCreateSettings{}, consumertest.NewNop())
+	r, err := newMetricsReceiver(context.Background(), *c, componenttest.NewNopReceiverCreateSettings(), consumertest.NewNop())
 	assert.Nil(t, err)
 	assert.NotNil(t, r)
 }
@@ -86,7 +86,7 @@ func TestNewReceiver_handles_scraper_error(t *testing.T) {
 		return nil, fmt.Errorf("fail")
 	}
 	allScrapers["brokers"] = mockScraper
-	r, err := newMetricsReceiver(context.Background(), *c, component.ReceiverCreateSettings{}, consumertest.NewNop())
+	r, err := newMetricsReceiver(context.Background(), *c, componenttest.NewNopReceiverCreateSettings(), consumertest.NewNop())
 	assert.NotNil(t, err)
 	assert.Nil(t, r)
 }

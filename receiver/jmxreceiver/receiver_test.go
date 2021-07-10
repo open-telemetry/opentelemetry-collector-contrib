@@ -21,16 +21,14 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/testutil"
-	"go.uber.org/zap"
 )
 
 func TestReceiver(t *testing.T) {
-	params := component.ReceiverCreateSettings{Logger: zap.NewNop()}
+	params := componenttest.NewNopReceiverCreateSettings()
 	config := &Config{
 		Endpoint: "service:jmx:protocol:sap",
 		OTLPExporterConfig: otlpExporterConfig{
@@ -176,7 +174,7 @@ otel.exporter.otlp.headers = one=two,three=four
 
 	for _, test := range tests {
 		t.Run(test.name, func(tt *testing.T) {
-			params := component.ReceiverCreateSettings{Logger: zap.NewNop()}
+			params := componenttest.NewNopReceiverCreateSettings()
 			receiver := newJMXMetricReceiver(params, &test.config, consumertest.NewNop())
 			jmxConfig, err := receiver.buildJMXMetricGathererConfig()
 			if test.expectedError == "" {
@@ -209,7 +207,7 @@ func TestBuildOTLPReceiverInvalidEndpoints(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(tt *testing.T) {
-			params := component.ReceiverCreateSettings{Logger: zap.NewNop()}
+			params := componenttest.NewNopReceiverCreateSettings()
 			jmxReceiver := newJMXMetricReceiver(params, &test.config, consumertest.NewNop())
 			otlpReceiver, err := jmxReceiver.buildOTLPReceiver()
 			require.Error(t, err)
