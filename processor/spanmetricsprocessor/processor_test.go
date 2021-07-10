@@ -24,6 +24,7 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/consumer/consumertest"
@@ -503,7 +504,7 @@ func newOTLPExporters(t *testing.T) (*otlpexporter.Config, component.MetricsExpo
 			Endpoint: "example.com:1234",
 		},
 	}
-	expCreationParams := component.ExporterCreateSettings{Logger: zap.NewNop()}
+	expCreationParams := componenttest.NewNopExporterCreateSettings()
 	mexp, err := otlpExpFactory.CreateMetricsExporter(context.Background(), expCreationParams, otlpConfig)
 	require.NoError(t, err)
 	texp, err := otlpExpFactory.CreateTracesExporter(context.Background(), expCreationParams, otlpConfig)
