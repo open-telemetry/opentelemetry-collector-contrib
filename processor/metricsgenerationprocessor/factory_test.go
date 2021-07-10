@@ -21,13 +21,11 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configcheck"
 	"go.opentelemetry.io/collector/config/configtest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.uber.org/zap"
 )
 
 func TestType(t *testing.T) {
@@ -70,7 +68,7 @@ func TestCreateProcessors(t *testing.T) {
 			t.Run(fmt.Sprintf("%s/%s", test.configName, name), func(t *testing.T) {
 				tp, tErr := factory.CreateTracesProcessor(
 					context.Background(),
-					component.ProcessorCreateSettings{Logger: zap.NewNop()},
+					componenttest.NewNopProcessorCreateSettings(),
 					cfg,
 					consumertest.NewNop())
 				// Not implemented error
@@ -79,7 +77,7 @@ func TestCreateProcessors(t *testing.T) {
 
 				mp, mErr := factory.CreateMetricsProcessor(
 					context.Background(),
-					component.ProcessorCreateSettings{Logger: zap.NewNop()},
+					componenttest.NewNopProcessorCreateSettings(),
 					cfg,
 					consumertest.NewNop())
 				if test.succeed {

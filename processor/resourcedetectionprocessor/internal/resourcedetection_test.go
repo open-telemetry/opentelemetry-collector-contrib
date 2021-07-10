@@ -26,6 +26,7 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/model/pdata"
 	"go.uber.org/zap"
 )
@@ -95,7 +96,7 @@ func TestDetect(t *testing.T) {
 			}
 
 			f := NewProviderFactory(mockDetectors)
-			p, err := f.CreateResourceProvider(component.ProcessorCreateSettings{Logger: zap.NewNop()}, time.Second, &mockDetectorConfig{}, mockDetectorTypes...)
+			p, err := f.CreateResourceProvider(componenttest.NewNopProcessorCreateSettings(), time.Second, &mockDetectorConfig{}, mockDetectorTypes...)
 			require.NoError(t, err)
 
 			got, err := p.Get(context.Background())
@@ -111,7 +112,7 @@ func TestDetect(t *testing.T) {
 func TestDetectResource_InvalidDetectorType(t *testing.T) {
 	mockDetectorKey := DetectorType("mock")
 	p := NewProviderFactory(map[DetectorType]DetectorFactory{})
-	_, err := p.CreateResourceProvider(component.ProcessorCreateSettings{Logger: zap.NewNop()}, time.Second, &mockDetectorConfig{}, mockDetectorKey)
+	_, err := p.CreateResourceProvider(componenttest.NewNopProcessorCreateSettings(), time.Second, &mockDetectorConfig{}, mockDetectorKey)
 	require.EqualError(t, err, fmt.Sprintf("invalid detector key: %v", mockDetectorKey))
 }
 
@@ -122,7 +123,7 @@ func TestDetectResource_DetectoryFactoryError(t *testing.T) {
 			return nil, errors.New("creation failed")
 		},
 	})
-	_, err := p.CreateResourceProvider(component.ProcessorCreateSettings{Logger: zap.NewNop()}, time.Second, &mockDetectorConfig{}, mockDetectorKey)
+	_, err := p.CreateResourceProvider(componenttest.NewNopProcessorCreateSettings(), time.Second, &mockDetectorConfig{}, mockDetectorKey)
 	require.EqualError(t, err, fmt.Sprintf("failed creating detector type %q: %v", mockDetectorKey, "creation failed"))
 }
 
