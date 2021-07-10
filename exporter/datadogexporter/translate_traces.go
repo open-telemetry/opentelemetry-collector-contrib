@@ -39,6 +39,7 @@ import (
 
 const (
 	keySamplingPriority string = "_sampling_priority_v1"
+	keySamplingRate     string = "_sample_rate"
 	versionTag          string = "version"
 	oldILNameTag        string = "otel.instrumentation_library.name"
 	currentILNameTag    string = "otel.library.name"
@@ -454,6 +455,11 @@ func setStringTag(s *pb.Span, key, v string) {
 		} else {
 			setMetric(s, ext.EventSampleRate, 0)
 		}
+	case keySamplingRate:
+		if sampleRateFlt, err := strconv.ParseFloat(v, 64); err == nil {
+			setMetric(s, keySamplingRate, sampleRateFlt)
+		}
+
 	default:
 		s.Meta[key] = v
 	}

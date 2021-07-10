@@ -15,7 +15,6 @@
 package datadogexporter
 
 import (
-	"strconv"
 	"time"
 
 	"github.com/DataDog/datadog-agent/pkg/trace/exportable/pb"
@@ -23,7 +22,6 @@ import (
 )
 
 const (
-	keySamplingRateGlobal string = "sample_rate"
 	statsBucketDuration   int64  = int64(10 * time.Second)
 	versionAggregationTag string = "version"
 )
@@ -61,12 +59,8 @@ func computeAPMStats(tracePayload *pb.TracePayload, pushTime int64) *stats.Paylo
 			// TopLevel is always "true" since we only compute stats for top-level spans.
 
 			var spanWeight float64
-			if spanRate, ok := span.Metrics[keySamplingRateGlobal]; ok {
+			if spanRate, ok := span.Metrics[keySamplingRate]; ok {
 				spanWeight = (1 / spanRate)
-			} else if spanRateMeta, metaok := span.Meta[keySamplingRateGlobal]; metaok {
-				if spanFlt, err := strconv.ParseFloat(spanRateMeta, 64); err == nil {
-					spanWeight = (1 / spanFlt)
-				}
 			} else {
 				spanWeight = 1
 			}
