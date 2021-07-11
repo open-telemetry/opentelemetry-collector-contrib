@@ -28,8 +28,8 @@ import (
 	"go.opentelemetry.io/collector/model/pdata"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/idbatcher"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/sampling"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/idbatcher"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/sampling"
 )
 
 const (
@@ -163,7 +163,7 @@ func TestSamplingPolicyTypicalPath(t *testing.T) {
 		maxNumTraces:    maxSize,
 		logger:          zap.NewNop(),
 		decisionBatcher: newSyncIDBatcher(decisionWaitSeconds),
-		policies:        []*Policy{{Name: "mock-policy", Evaluator: mpe, ctx: context.TODO()}},
+		policies:        []*policy{{name: "mock-policy", evaluator: mpe, ctx: context.TODO()}},
 		deleteChan:      make(chan pdata.TraceID, maxSize),
 		policyTicker:    mtt,
 	}
@@ -220,12 +220,12 @@ func TestSamplingMultiplePolicies(t *testing.T) {
 		maxNumTraces:    maxSize,
 		logger:          zap.NewNop(),
 		decisionBatcher: newSyncIDBatcher(decisionWaitSeconds),
-		policies: []*Policy{
+		policies: []*policy{
 			{
-				Name: "policy-1", Evaluator: mpe1, ctx: context.TODO(),
+				name: "policy-1", evaluator: mpe1, ctx: context.TODO(),
 			},
 			{
-				Name: "policy-2", Evaluator: mpe2, ctx: context.TODO(),
+				name: "policy-2", evaluator: mpe2, ctx: context.TODO(),
 			}},
 		deleteChan:   make(chan pdata.TraceID, maxSize),
 		policyTicker: mtt,
@@ -285,7 +285,7 @@ func TestSamplingPolicyDecisionNotSampled(t *testing.T) {
 		maxNumTraces:    maxSize,
 		logger:          zap.NewNop(),
 		decisionBatcher: newSyncIDBatcher(decisionWaitSeconds),
-		policies:        []*Policy{{Name: "mock-policy", Evaluator: mpe, ctx: context.TODO()}},
+		policies:        []*policy{{name: "mock-policy", evaluator: mpe, ctx: context.TODO()}},
 		deleteChan:      make(chan pdata.TraceID, maxSize),
 		policyTicker:    mtt,
 	}
@@ -344,7 +344,7 @@ func TestMultipleBatchesAreCombinedIntoOne(t *testing.T) {
 		maxNumTraces:    maxSize,
 		logger:          zap.NewNop(),
 		decisionBatcher: newSyncIDBatcher(decisionWaitSeconds),
-		policies:        []*Policy{{Name: "mock-policy", Evaluator: mpe, ctx: context.TODO()}},
+		policies:        []*policy{{name: "mock-policy", evaluator: mpe, ctx: context.TODO()}},
 		deleteChan:      make(chan pdata.TraceID, maxSize),
 		policyTicker:    mtt,
 	}
@@ -481,14 +481,14 @@ type manualTTicker struct {
 
 var _ tTicker = (*manualTTicker)(nil)
 
-func (t *manualTTicker) Start(time.Duration) {
+func (t *manualTTicker) start(time.Duration) {
 	t.Started = true
 }
 
-func (t *manualTTicker) OnTick() {
+func (t *manualTTicker) onTick() {
 }
 
-func (t *manualTTicker) Stop() {
+func (t *manualTTicker) stop() {
 }
 
 type syncIDBatcher struct {
