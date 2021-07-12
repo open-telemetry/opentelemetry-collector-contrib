@@ -51,7 +51,7 @@ func (c nopClient) GetBatch(ctx context.Context, strings []string) ([][]byte, er
 }
 
 // SetBatch does nothing and returns nil
-func (c nopClient) SetBatch(ctx context.Context, entries []BatchEntry) error {
+func (c nopClient) SetBatch(ctx context.Context, entries map[string][]byte) error {
 	return nil // no problem
 }
 

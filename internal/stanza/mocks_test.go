@@ -28,8 +28,6 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/model/pdata"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage"
 )
 
 // This file implements some useful testing components
@@ -205,11 +203,11 @@ func (p *mockClient) GetBatch(_ context.Context, keys []string) ([][]byte, error
 	return values, nil
 }
 
-func (p *mockClient) SetBatch(_ context.Context, entries []storage.BatchEntry) error {
+func (p *mockClient) SetBatch(_ context.Context, entries map[string][]byte) error {
 	p.cacheMux.Lock()
 	defer p.cacheMux.Unlock()
-	for _, ent := range entries {
-		p.cache[ent.Key] = ent.Value
+	for key, value := range entries {
+		p.cache[key] = value
 	}
 	return nil
 }

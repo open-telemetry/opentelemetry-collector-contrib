@@ -16,6 +16,7 @@ package filestorage
 
 import (
 	"context"
+	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -24,8 +25,6 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"go.etcd.io/bbolt"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage"
 )
 
 func TestClientOperations(t *testing.T) {
@@ -71,9 +70,9 @@ func TestClientBatchOperations(t *testing.T) {
 	require.NoError(t, err)
 
 	ctx := context.Background()
-	testEntries := []storage.BatchEntry{
-		{Key: "testKey1", Value: []byte("testValue1")},
-		{Key: "testKey2", Value: []byte("testValue2")},
+	testEntries := map[string][]byte{
+		"testKey1": []byte("testValue1"),
+		"testKey2": []byte("testValue2"),
 	}
 	testKeys := []string{"testKey1", "testKey2"}
 
@@ -90,16 +89,15 @@ func TestClientBatchOperations(t *testing.T) {
 	values, err := client.GetBatch(ctx, testKeys)
 	require.NoError(t, err)
 	require.Len(t, values, 2)
-	for i := 0; i < 2; i++ {
-		require.Equal(t, testEntries[i].Value, values[i])
-	}
-
-	testEntriesUpdate := []storage.BatchEntry{
-		{Key: "testKey1", Value: []byte("testValue1")},
-		{Key: "testKey2", Value: nil},
+	for i, key := range testKeys {
+		require.Equal(t, testEntries[key], values[i])
 	}
 
 	// Update it (the second entry should get removed)
+	testEntriesUpdate := map[string][]byte{
+		"testKey1": []byte("testValue1"),
+		"testKey2": nil,
+	}
 	err = client.SetBatch(ctx, testEntriesUpdate)
 	require.NoError(t, err)
 
@@ -107,8 +105,8 @@ func TestClientBatchOperations(t *testing.T) {
 	valuesUpdate, err := client.GetBatch(ctx, testKeys)
 	require.NoError(t, err)
 	require.Len(t, values, 2)
-	for i := 0; i < 2; i++ {
-		require.Equal(t, testEntriesUpdate[i].Value, valuesUpdate[i])
+	for i, key := range testKeys {
+		require.Equal(t, testEntriesUpdate[key], valuesUpdate[i])
 	}
 
 	// Delete it all
@@ -210,6 +208,7 @@ func BenchmarkClientGet(b *testing.B) {
 	ctx := context.Background()
 	testKey := "testKey"
 
+	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
 		client.Get(ctx, testKey)
 	}
@@ -229,6 +228,7 @@ func BenchmarkClientGet100(b *testing.B) {
 		testKeys[i] = "testKey"
 	}
 
+	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
 		client.GetBatch(ctx, testKeys)
 	}
@@ -245,6 +245,7 @@ func BenchmarkClientSet(b *testing.B) {
 	testKey := "testKey"
 	testValue := []byte("testValue")
 
+	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
 		client.Set(ctx, testKey, testValue)
 	}
@@ -259,13 +260,12 @@ func BenchmarkClientSet100(b *testing.B) {
 
 	ctx := context.Background()
 
-	testEntries := make([]storage.BatchEntry, 100)
+	testEntries := make(map[string][]byte)
 	for i := 0; i < 100; i++ {
-		testEntries[i] = storage.BatchEntry{
-			Key:   "testKey",
-			Value: []byte("testValue"),
-		}
+		testEntries[fmt.Sprintf("testKey-%d", i)] = []byte("testValue")
 	}
+
+	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
 		client.SetBatch(ctx, testEntries)
 	}
@@ -281,6 +281,7 @@ func BenchmarkClientDelete(b *testing.B) {
 	ctx := context.Background()
 	testKey := "testKey"
 
+	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
 		client.Delete(ctx, testKey)
 	}

@@ -20,8 +20,6 @@ import (
 	"time"
 
 	"go.etcd.io/bbolt"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage"
 )
 
 var defaultBucket = []byte(`default`)
@@ -83,24 +81,24 @@ func (c *fileStorageClient) GetBatch(_ context.Context, keys []string) ([][]byte
 
 // Set will store data. The data can be retrieved using the same key
 func (c *fileStorageClient) Set(ctx context.Context, key string, value []byte) error {
-	return c.SetBatch(ctx, []storage.BatchEntry{{Key: key, Value: value}})
+	return c.SetBatch(ctx, map[string][]byte{key: value})
 }
 
-// SetBatch will store data for a set of entries in a transaction. The data can be retrieved using the same key
-func (c *fileStorageClient) SetBatch(_ context.Context, entries []storage.BatchEntry) error {
+// SetBatch will store data for a set of entries in a transaction. The data can be retrieved using the same keys
+func (c *fileStorageClient) SetBatch(_ context.Context, entries map[string][]byte) error {
 	set := func(tx *bbolt.Tx) error {
 		bucket := tx.Bucket(defaultBucket)
 		if bucket == nil {
 			return errors.New("storage not initialized")
 		}
 
-		for _, entry := range entries {
+		for key, value := range entries {
 			var err error
 
-			if entry.Value == nil {
-				err = bucket.Delete([]byte(entry.Key))
+			if value == nil {
+				err = bucket.Delete([]byte(key))
 			} else {
-				err = bucket.Put([]byte(entry.Key), entry.Value)
+				err = bucket.Put([]byte(key), value)
 			}
 
 			if err != nil {

@@ -56,19 +56,12 @@ type Client interface {
 	// of one corresponds to a key at a given position and can be nil if not found
 	GetBatch(context.Context, []string) ([][]byte, error)
 
-	// SetBatch will store data. Collection of stored entries is specified using BatchEntry.
-	// When BatchEntry Value contains nil, the key is deleted
-	SetBatch(context.Context, []BatchEntry) error
+	// SetBatch will store data provided in the map. If a value for a given key is nil, the entry is deleted
+	SetBatch(context.Context, map[string][]byte) error
 
 	// DeleteBatch will delete data associated with specified collection of keys
 	DeleteBatch(context.Context, []string) error
 
 	// Close will release any resources held by the client
 	Close(context.Context) error
-}
-
-// BatchEntry describes a single entry that can be stored using SetBatch
-type BatchEntry struct {
-	Key   string
-	Value []byte
 }

@@ -18,7 +18,7 @@ Close(context.Context) error
 As well as their batch counterparts (executed in a single transaction):
 ``````
 GetBatch(context.Context, []string) ([][]byte, error)
-SetBatch(context.Context, []BatchEntry) error
+SetBatch(context.Context, []map[string][]byte) error
 DeleteBatch(context.Context, []string) error
 ```
 
