@@ -31,6 +31,7 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/translator/internaldata"
 	"go.uber.org/zap"
@@ -72,7 +73,7 @@ func TestConsumeMetrics(t *testing.T) {
 	expCfg := factory.CreateDefaultConfig().(*Config)
 	expCfg.Region = "us-west-2"
 	expCfg.MaxRetries = 0
-	exp, err := newEmfPusher(expCfg, component.ExporterCreateSettings{Logger: zap.NewNop()})
+	exp, err := newEmfPusher(expCfg, componenttest.NewNopExporterCreateSettings())
 	assert.Nil(t, err)
 	assert.NotNil(t, exp)
 
@@ -134,7 +135,7 @@ func TestConsumeMetricsWithOutputDestination(t *testing.T) {
 	expCfg.Region = "us-west-2"
 	expCfg.MaxRetries = 0
 	expCfg.OutputDestination = "stdout"
-	exp, err := newEmfPusher(expCfg, component.ExporterCreateSettings{Logger: zap.NewNop()})
+	exp, err := newEmfPusher(expCfg, componenttest.NewNopExporterCreateSettings())
 	assert.Nil(t, err)
 	assert.NotNil(t, exp)
 
@@ -195,7 +196,7 @@ func TestConsumeMetricsWithLogGroupStreamConfig(t *testing.T) {
 	expCfg.MaxRetries = defaultRetryCount
 	expCfg.LogGroupName = "test-logGroupName"
 	expCfg.LogStreamName = "test-logStreamName"
-	exp, err := newEmfPusher(expCfg, component.ExporterCreateSettings{Logger: zap.NewNop()})
+	exp, err := newEmfPusher(expCfg, componenttest.NewNopExporterCreateSettings())
 	assert.Nil(t, err)
 	assert.NotNil(t, exp)
 
@@ -265,7 +266,7 @@ func TestConsumeMetricsWithLogGroupStreamValidPlaceholder(t *testing.T) {
 	expCfg.MaxRetries = defaultRetryCount
 	expCfg.LogGroupName = "/aws/ecs/containerinsights/{ClusterName}/performance"
 	expCfg.LogStreamName = "{TaskId}"
-	exp, err := newEmfPusher(expCfg, component.ExporterCreateSettings{Logger: zap.NewNop()})
+	exp, err := newEmfPusher(expCfg, componenttest.NewNopExporterCreateSettings())
 	assert.Nil(t, err)
 	assert.NotNil(t, exp)
 
@@ -335,7 +336,7 @@ func TestConsumeMetricsWithOnlyLogStreamPlaceholder(t *testing.T) {
 	expCfg.MaxRetries = defaultRetryCount
 	expCfg.LogGroupName = "test-logGroupName"
 	expCfg.LogStreamName = "{TaskId}"
-	exp, err := newEmfPusher(expCfg, component.ExporterCreateSettings{Logger: zap.NewNop()})
+	exp, err := newEmfPusher(expCfg, componenttest.NewNopExporterCreateSettings())
 	assert.Nil(t, err)
 	assert.NotNil(t, exp)
 
@@ -405,7 +406,7 @@ func TestConsumeMetricsWithWrongPlaceholder(t *testing.T) {
 	expCfg.MaxRetries = defaultRetryCount
 	expCfg.LogGroupName = "test-logGroupName"
 	expCfg.LogStreamName = "{WrongKey}"
-	exp, err := newEmfPusher(expCfg, component.ExporterCreateSettings{Logger: zap.NewNop()})
+	exp, err := newEmfPusher(expCfg, componenttest.NewNopExporterCreateSettings())
 	assert.Nil(t, err)
 	assert.NotNil(t, exp)
 
@@ -475,7 +476,7 @@ func TestPushMetricsDataWithErr(t *testing.T) {
 	expCfg.MaxRetries = 0
 	expCfg.LogGroupName = "test-logGroupName"
 	expCfg.LogStreamName = "test-logStreamName"
-	exp, err := newEmfPusher(expCfg, component.ExporterCreateSettings{Logger: zap.NewNop()})
+	exp, err := newEmfPusher(expCfg, componenttest.NewNopExporterCreateSettings())
 	assert.Nil(t, err)
 	assert.NotNil(t, exp)
 
@@ -547,7 +548,7 @@ func TestNewExporterWithoutConfig(t *testing.T) {
 	os.Setenv("AWS_STS_REGIONAL_ENDPOINTS", "fake")
 
 	assert.Nil(t, expCfg.logger)
-	exp, err := newEmfPusher(expCfg, component.ExporterCreateSettings{Logger: zap.NewNop()})
+	exp, err := newEmfPusher(expCfg, componenttest.NewNopExporterCreateSettings())
 	assert.NotNil(t, err)
 	assert.Nil(t, exp)
 	assert.NotNil(t, expCfg.logger)
@@ -609,7 +610,7 @@ func TestNewExporterWithMetricDeclarations(t *testing.T) {
 }
 
 func TestNewExporterWithoutSession(t *testing.T) {
-	exp, err := newEmfPusher(nil, component.ExporterCreateSettings{Logger: zap.NewNop()})
+	exp, err := newEmfPusher(nil, componenttest.NewNopExporterCreateSettings())
 	assert.NotNil(t, err)
 	assert.Nil(t, exp)
 }
@@ -633,7 +634,7 @@ func TestNewEmfExporterWithoutConfig(t *testing.T) {
 	os.Setenv("AWS_STS_REGIONAL_ENDPOINTS", "fake")
 
 	assert.Nil(t, expCfg.logger)
-	exp, err := newEmfExporter(expCfg, component.ExporterCreateSettings{Logger: zap.NewNop()})
+	exp, err := newEmfExporter(expCfg, componenttest.NewNopExporterCreateSettings())
 	assert.NotNil(t, err)
 	assert.Nil(t, exp)
 	assert.NotNil(t, expCfg.logger)

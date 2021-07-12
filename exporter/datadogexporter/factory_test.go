@@ -23,13 +23,11 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configcheck"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configtest"
-	"go.uber.org/zap"
 
 	ddconfig "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/config"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata"
@@ -309,8 +307,6 @@ func TestCreateAPIMetricsExporter(t *testing.T) {
 	server := testutils.DatadogServerMock()
 	defer server.Close()
 
-	logger := zap.NewNop()
-
 	factories, err := componenttest.NopFactories()
 	require.NoError(t, err)
 
@@ -329,7 +325,7 @@ func TestCreateAPIMetricsExporter(t *testing.T) {
 	ctx := context.Background()
 	exp, err := factory.CreateMetricsExporter(
 		ctx,
-		component.ExporterCreateSettings{Logger: logger},
+		componenttest.NewNopExporterCreateSettings(),
 		cfg.Exporters[config.NewIDWithName(typeStr, "api")],
 	)
 
@@ -340,8 +336,6 @@ func TestCreateAPIMetricsExporter(t *testing.T) {
 func TestCreateAPITracesExporter(t *testing.T) {
 	server := testutils.DatadogServerMock()
 	defer server.Close()
-
-	logger := zap.NewNop()
 
 	factories, err := componenttest.NopFactories()
 	require.NoError(t, err)
@@ -361,7 +355,7 @@ func TestCreateAPITracesExporter(t *testing.T) {
 	ctx := context.Background()
 	exp, err := factory.CreateTracesExporter(
 		ctx,
-		component.ExporterCreateSettings{Logger: logger},
+		componenttest.NewNopExporterCreateSettings(),
 		cfg.Exporters[config.NewIDWithName(typeStr, "api")],
 	)
 
@@ -372,7 +366,6 @@ func TestCreateAPITracesExporter(t *testing.T) {
 func TestOnlyMetadata(t *testing.T) {
 	server := testutils.DatadogServerMock()
 	defer server.Close()
-	logger := zap.NewNop()
 
 	factories, err := componenttest.NopFactories()
 	require.NoError(t, err)
@@ -394,7 +387,7 @@ func TestOnlyMetadata(t *testing.T) {
 
 	expTraces, err := factory.CreateTracesExporter(
 		ctx,
-		component.ExporterCreateSettings{Logger: logger},
+		componenttest.NewNopExporterCreateSettings(),
 		cfg,
 	)
 	assert.NoError(t, err)
@@ -402,7 +395,7 @@ func TestOnlyMetadata(t *testing.T) {
 
 	expMetrics, err := factory.CreateMetricsExporter(
 		ctx,
-		component.ExporterCreateSettings{Logger: logger},
+		componenttest.NewNopExporterCreateSettings(),
 		cfg,
 	)
 	assert.NoError(t, err)

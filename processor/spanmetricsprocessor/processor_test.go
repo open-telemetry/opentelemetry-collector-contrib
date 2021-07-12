@@ -504,7 +504,7 @@ func newOTLPExporters(t *testing.T) (*otlpexporter.Config, component.MetricsExpo
 			Endpoint: "example.com:1234",
 		},
 	}
-	expCreationParams := component.ExporterCreateSettings{Logger: zap.NewNop()}
+	expCreationParams := componenttest.NewNopExporterCreateSettings()
 	mexp, err := otlpExpFactory.CreateMetricsExporter(context.Background(), expCreationParams, otlpConfig)
 	require.NoError(t, err)
 	texp, err := otlpExpFactory.CreateTracesExporter(context.Background(), expCreationParams, otlpConfig)

@@ -19,10 +19,9 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configcheck"
-	"go.uber.org/zap"
 )
 
 func TestCreateDefaultConfig(t *testing.T) {
@@ -45,7 +44,7 @@ func TestCreateTracesExporter(t *testing.T) {
 
 	te, err := factory.CreateTracesExporter(
 		context.Background(),
-		component.ExporterCreateSettings{Logger: zap.NewNop()},
+		componenttest.NewNopExporterCreateSettings(),
 		eCfg,
 	)
 	assert.NoError(t, err)
@@ -60,7 +59,7 @@ func TestCreateMetricsExporter(t *testing.T) {
 
 	me, err := factory.CreateMetricsExporter(
 		context.Background(),
-		component.ExporterCreateSettings{Logger: zap.NewNop()},
+		componenttest.NewNopExporterCreateSettings(),
 		eCfg,
 	)
 	assert.NoError(t, err)
@@ -75,7 +74,7 @@ func TestLogsCreateExporter(t *testing.T) {
 
 	me, err := factory.CreateLogsExporter(
 		context.Background(),
-		component.ExporterCreateSettings{Logger: zap.NewNop()},
+		componenttest.NewNopExporterCreateSettings(),
 		eCfg,
 	)
 	assert.NoError(t, err)
@@ -88,13 +87,7 @@ func TestEnsureExporter(t *testing.T) {
 	eCfg := cfg.(*Config)
 	eCfg.Endpoint = "http://testing.invalid"
 
-	param := component.ExporterCreateSettings{
-		BuildInfo: component.BuildInfo{
-			Version: "",
-		},
-	}
-
-	exporter1 := ensureExporter(param, eCfg)
-	exporter2 := ensureExporter(param, eCfg)
+	exporter1 := ensureExporter(componenttest.NewNopExporterCreateSettings(), eCfg)
+	exporter2 := ensureExporter(componenttest.NewNopExporterCreateSettings(), eCfg)
 	assert.Equal(t, exporter1, exporter2)
 }

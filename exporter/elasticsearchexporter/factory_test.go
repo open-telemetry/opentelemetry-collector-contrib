@@ -20,9 +20,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configcheck"
-	"go.uber.org/zap"
 )
 
 func TestCreateDefaultConfig(t *testing.T) {
@@ -37,7 +36,7 @@ func TestFactory_CreateLogsExporter(t *testing.T) {
 	cfg := withDefaultConfig(func(cfg *Config) {
 		cfg.Endpoints = []string{"test:9200"}
 	})
-	params := component.ExporterCreateSettings{Logger: zap.NewNop()}
+	params := componenttest.NewNopExporterCreateSettings()
 	exporter, err := factory.CreateLogsExporter(context.Background(), params, cfg)
 	require.NoError(t, err)
 	require.NotNil(t, exporter)
@@ -48,7 +47,7 @@ func TestFactory_CreateLogsExporter(t *testing.T) {
 func TestFactory_CreateMetricsExporter_Fail(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
-	params := component.ExporterCreateSettings{Logger: zap.NewNop()}
+	params := componenttest.NewNopExporterCreateSettings()
 	_, err := factory.CreateMetricsExporter(context.Background(), params, cfg)
 	require.Error(t, err, "expected an error when creating a traces exporter")
 }
@@ -56,7 +55,7 @@ func TestFactory_CreateMetricsExporter_Fail(t *testing.T) {
 func TestFactory_CreateTracesExporter_Fail(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
-	params := component.ExporterCreateSettings{Logger: zap.NewNop()}
+	params := componenttest.NewNopExporterCreateSettings()
 	_, err := factory.CreateTracesExporter(context.Background(), params, cfg)
 	require.Error(t, err, "expected an error when creating a traces exporter")
 }
