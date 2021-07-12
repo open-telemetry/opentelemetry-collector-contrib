@@ -274,7 +274,7 @@ func TestEventTracePerWorker(t *testing.T) {
 		},
 	} {
 		t.Run(tt.casename, func(t *testing.T) {
-			em := newEventMachine(logger, 200, 100, 1_000)
+			em := newEventMachine(zap.NewNop(), 200, 100, 1_000)
 
 			var wg sync.WaitGroup
 			var workerForTrace *eventMachineWorker
@@ -359,7 +359,7 @@ func TestEventShutdown(t *testing.T) {
 	wg.Add(1)
 
 	traceReceivedFired, traceExpiredFired := false, false
-	em := newEventMachine(logger, 50, 1, 1_000)
+	em := newEventMachine(zap.NewNop(), 50, 1, 1_000)
 	em.onTraceReceived = func(tracesWithID, *eventMachineWorker) error {
 		traceReceivedFired = true
 		return nil
@@ -433,7 +433,7 @@ func TestPeriodicMetrics(t *testing.T) {
 	// try to be nice with the next consumer (test)
 	defer view.Unregister(views...)
 
-	em := newEventMachine(logger, 50, 1, 1_000)
+	em := newEventMachine(zap.NewNop(), 50, 1, 1_000)
 	em.metricsCollectionInterval = time.Millisecond
 
 	wg := sync.WaitGroup{}
@@ -482,7 +482,7 @@ func TestPeriodicMetrics(t *testing.T) {
 
 func TestForceShutdown(t *testing.T) {
 	// prepare
-	em := newEventMachine(logger, 50, 1, 1_000)
+	em := newEventMachine(zap.NewNop(), 50, 1, 1_000)
 	em.shutdownTimeout = 20 * time.Millisecond
 
 	// test
