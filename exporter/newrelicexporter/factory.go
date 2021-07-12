@@ -23,7 +23,6 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-	"go.uber.org/zap"
 )
 
 const typeStr = "newrelic"
@@ -56,7 +55,7 @@ func createDefaultConfig() config.Exporter {
 // CreateTracesExporter creates a New Relic trace exporter for this configuration.
 func createTracesExporter(
 	_ context.Context,
-	params component.ExporterCreateSettings,
+	set component.ExporterCreateSettings,
 	cfg config.Exporter,
 ) (component.TracesExporter, error) {
 	nrConfig, ok := cfg.(*Config)
@@ -64,14 +63,14 @@ func createTracesExporter(
 		return nil, fmt.Errorf("invalid config: %#v", cfg)
 	}
 	traceConfig := nrConfig.TracesConfig
-	exp, err := newExporter(params.Logger, &params.BuildInfo, traceConfig, telemetry.NewSpanRequestFactory)
+	exp, err := newExporter(set.Logger, &set.BuildInfo, traceConfig, telemetry.NewSpanRequestFactory)
 	if err != nil {
 		return nil, err
 	}
 
 	// The logger is only used in a disabled queuedRetrySender, which noisily logs at
 	// the error level when it is disabled and errors occur.
-	return exporterhelper.NewTracesExporter(cfg, zap.NewNop(), exp.pushTraceData,
+	return exporterhelper.NewTracesExporter(cfg, set, exp.pushTraceData,
 		exporterhelper.WithTimeout(traceConfig.TimeoutSettings),
 		exporterhelper.WithRetry(traceConfig.RetrySettings),
 		exporterhelper.WithQueue(exporterhelper.QueueSettings{Enabled: false}),
@@ -81,7 +80,7 @@ func createTracesExporter(
 // CreateMetricsExporter creates a New Relic metrics exporter for this configuration.
 func createMetricsExporter(
 	_ context.Context,
-	params component.ExporterCreateSettings,
+	set component.ExporterCreateSettings,
 	cfg config.Exporter,
 ) (component.MetricsExporter, error) {
 	nrConfig, ok := cfg.(*Config)
@@ -90,12 +89,12 @@ func createMetricsExporter(
 	}
 
 	metricsConfig := nrConfig.MetricsConfig
-	exp, err := newExporter(params.Logger, &params.BuildInfo, metricsConfig, telemetry.NewMetricRequestFactory)
+	exp, err := newExporter(set.Logger, &set.BuildInfo, metricsConfig, telemetry.NewMetricRequestFactory)
 	if err != nil {
 		return nil, err
 	}
 
-	return exporterhelper.NewMetricsExporter(cfg, zap.NewNop(), exp.pushMetricData,
+	return exporterhelper.NewMetricsExporter(cfg, set, exp.pushMetricData,
 		exporterhelper.WithTimeout(metricsConfig.TimeoutSettings),
 		exporterhelper.WithRetry(metricsConfig.RetrySettings),
 		exporterhelper.WithQueue(exporterhelper.QueueSettings{Enabled: false}),
@@ -105,7 +104,7 @@ func createMetricsExporter(
 // CreateLogsExporter creates a New Relic logs exporter for this configuration.
 func createLogsExporter(
 	_ context.Context,
-	params component.ExporterCreateSettings,
+	set component.ExporterCreateSettings,
 	cfg config.Exporter,
 ) (component.LogsExporter, error) {
 	nrConfig, ok := cfg.(*Config)
@@ -114,11 +113,11 @@ func createLogsExporter(
 	}
 
 	logsConfig := nrConfig.LogsConfig
-	exp, err := newExporter(params.Logger, &params.BuildInfo, logsConfig, telemetry.NewLogRequestFactory)
+	exp, err := newExporter(set.Logger, &set.BuildInfo, logsConfig, telemetry.NewLogRequestFactory)
 	if err != nil {
 		return nil, err
 	}
-	return exporterhelper.NewLogsExporter(cfg, zap.NewNop(), exp.pushLogData,
+	return exporterhelper.NewLogsExporter(cfg, set, exp.pushLogData,
 		exporterhelper.WithTimeout(logsConfig.TimeoutSettings),
 		exporterhelper.WithRetry(logsConfig.RetrySettings),
 		exporterhelper.WithQueue(exporterhelper.QueueSettings{Enabled: false}),
