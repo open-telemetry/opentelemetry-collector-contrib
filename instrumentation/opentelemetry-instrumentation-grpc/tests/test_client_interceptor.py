@@ -36,6 +36,7 @@ from ._client import (
     client_streaming_method,
     server_streaming_method,
     simple_method,
+    simple_method_future,
 )
 from ._server import create_test_server
 from .protobuf.test_server_pb2 import Request
@@ -99,6 +100,20 @@ class TestClientProto(TestBase):
         GrpcInstrumentorClient().uninstrument()
         self.server.stop(None)
         self.channel.close()
+
+    def test_unary_unary_future(self):
+        simple_method_future(self._stub).result()
+        spans = self.memory_exporter.get_finished_spans()
+        self.assertEqual(len(spans), 1)
+        span = spans[0]
+
+        self.assertEqual(span.name, "/GRPCTestServer/SimpleMethod")
+        self.assertIs(span.kind, trace.SpanKind.CLIENT)
+
+        # Check version and name in span's instrumentation info
+        self.check_span_instrumentation_info(
+            span, opentelemetry.instrumentation.grpc
+        )
 
     def test_unary_unary(self):
         simple_method(self._stub)

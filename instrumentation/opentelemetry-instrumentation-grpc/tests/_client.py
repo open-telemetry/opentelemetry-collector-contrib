@@ -24,6 +24,13 @@ def simple_method(stub, error=False):
     stub.SimpleMethod(request)
 
 
+def simple_method_future(stub, error=False):
+    request = Request(
+        client_id=CLIENT_ID, request_data="error" if error else "data"
+    )
+    return stub.SimpleMethod.future(request)
+
+
 def client_streaming_method(stub, error=False):
     # create a generator
     def request_messages():
