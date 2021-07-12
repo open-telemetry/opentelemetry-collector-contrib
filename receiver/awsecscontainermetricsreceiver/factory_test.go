@@ -21,10 +21,9 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configcheck"
 	"go.opentelemetry.io/collector/testbed/testbed"
-	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsecscontainermetricsreceiver/awsecscontainermetrics"
 )
@@ -39,7 +38,7 @@ func TestCreateMetricsReceiver(t *testing.T) {
 
 	metricsReceiver, err := createMetricsReceiver(
 		context.Background(),
-		component.ReceiverCreateSettings{Logger: zap.NewNop()},
+		componenttest.NewNopReceiverCreateSettings(),
 		createDefaultConfig(),
 		&testbed.MockMetricConsumer{},
 	)
@@ -52,7 +51,7 @@ func TestCreateMetricsReceiverWithEnv(t *testing.T) {
 
 	metricsReceiver, err := createMetricsReceiver(
 		context.Background(),
-		component.ReceiverCreateSettings{Logger: zap.NewNop()},
+		componenttest.NewNopReceiverCreateSettings(),
 		createDefaultConfig(),
 		&testbed.MockMetricConsumer{},
 	)
@@ -65,7 +64,7 @@ func TestCreateMetricsReceiverWithBadUrl(t *testing.T) {
 
 	metricsReceiver, err := createMetricsReceiver(
 		context.Background(),
-		component.ReceiverCreateSettings{Logger: zap.NewNop()},
+		componenttest.NewNopReceiverCreateSettings(),
 		createDefaultConfig(),
 		&testbed.MockMetricConsumer{},
 	)
@@ -76,7 +75,7 @@ func TestCreateMetricsReceiverWithBadUrl(t *testing.T) {
 func TestCreateMetricsReceiverWithNilConsumer(t *testing.T) {
 	metricsReceiver, err := createMetricsReceiver(
 		context.Background(),
-		component.ReceiverCreateSettings{Logger: zap.NewNop()},
+		componenttest.NewNopReceiverCreateSettings(),
 		createDefaultConfig(),
 		nil,
 	)

@@ -24,9 +24,8 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.uber.org/zap/zaptest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/storagetest"
 )
@@ -42,7 +41,6 @@ func TestStorage(t *testing.T) {
 	storageDir := newTempDir(t)
 
 	f := NewFactory()
-	params := component.ReceiverCreateSettings{Logger: zaptest.NewLogger(t)}
 
 	cfg := testdataRotateTestYamlAsMap(logsDir)
 	cfg.Converter.MaxFlushCount = 1
@@ -53,7 +51,7 @@ func TestStorage(t *testing.T) {
 
 	host := storagetest.NewStorageHost(t, storageDir, "test")
 	sink := new(consumertest.LogsSink)
-	rcvr, err := f.CreateLogsReceiver(ctx, params, cfg, sink)
+	rcvr, err := f.CreateLogsReceiver(ctx, componenttest.NewNopReceiverCreateSettings(), cfg, sink)
 	require.NoError(t, err, "failed to create receiver")
 	require.NoError(t, rcvr.Start(ctx, host))
 
@@ -83,7 +81,7 @@ func TestStorage(t *testing.T) {
 
 	// Start the components again
 	host = storagetest.NewStorageHost(t, storageDir, "test")
-	rcvr, err = f.CreateLogsReceiver(ctx, params, cfg, sink)
+	rcvr, err = f.CreateLogsReceiver(ctx, componenttest.NewNopReceiverCreateSettings(), cfg, sink)
 	require.NoError(t, err, "failed to create receiver")
 	require.NoError(t, rcvr.Start(ctx, host))
 	sink.Reset()
@@ -127,7 +125,7 @@ func TestStorage(t *testing.T) {
 
 	// Start the components again
 	host = storagetest.NewStorageHost(t, storageDir, "test")
-	rcvr, err = f.CreateLogsReceiver(ctx, params, cfg, sink)
+	rcvr, err = f.CreateLogsReceiver(ctx, componenttest.NewNopReceiverCreateSettings(), cfg, sink)
 	require.NoError(t, err, "failed to create receiver")
 	require.NoError(t, rcvr.Start(ctx, host))
 	sink.Reset()

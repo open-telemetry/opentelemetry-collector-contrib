@@ -235,7 +235,7 @@ func (suite *JMXIntegrationSuite) TestJMXReceiverHappyPath() {
 }
 
 func TestJMXReceiverInvalidOTLPEndpointIntegration(t *testing.T) {
-	params := component.ReceiverCreateSettings{Logger: zap.NewNop()}
+	params := componenttest.NewNopReceiverCreateSettings()
 	cfg := &Config{
 		CollectionInterval: 100 * time.Millisecond,
 		Endpoint:           fmt.Sprintf("service:jmx:rmi:///jndi/rmi://localhost:7199/jmxrmi"),
