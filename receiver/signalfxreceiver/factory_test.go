@@ -19,11 +19,10 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenterror"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configcheck"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.uber.org/zap"
 )
 
 func TestCreateDefaultConfig(t *testing.T) {
@@ -38,15 +37,15 @@ func TestCreateReceiverMetricsFirst(t *testing.T) {
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.Endpoint = "localhost:1" // Endpoint is required, not going to be used here.
 
-	params := component.ReceiverCreateSettings{Logger: zap.NewNop()}
+	params := componenttest.NewNopReceiverCreateSettings()
 	mReceiver, err := factory.CreateMetricsReceiver(context.Background(), params, cfg, consumertest.NewNop())
 	assert.Nil(t, err, "receiver creation failed")
 	assert.NotNil(t, mReceiver, "receiver creation failed")
 
-	_, err = factory.CreateTracesReceiver(context.Background(), component.ReceiverCreateSettings{Logger: zap.NewNop()}, cfg, nil)
+	_, err = factory.CreateTracesReceiver(context.Background(), componenttest.NewNopReceiverCreateSettings(), cfg, nil)
 	assert.ErrorIs(t, err, componenterror.ErrDataTypeIsNotSupported)
 
-	lReceiver, err := factory.CreateLogsReceiver(context.Background(), component.ReceiverCreateSettings{Logger: zap.NewNop()}, cfg, consumertest.NewNop())
+	lReceiver, err := factory.CreateLogsReceiver(context.Background(), componenttest.NewNopReceiverCreateSettings(), cfg, consumertest.NewNop())
 	assert.Nil(t, err, "receiver creation failed")
 	assert.NotNil(t, lReceiver, "receiver creation failed")
 
@@ -58,11 +57,11 @@ func TestCreateReceiverLogsFirst(t *testing.T) {
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.Endpoint = "localhost:1" // Endpoint is required, not going to be used here.
 
-	lReceiver, err := factory.CreateLogsReceiver(context.Background(), component.ReceiverCreateSettings{Logger: zap.NewNop()}, cfg, consumertest.NewNop())
+	lReceiver, err := factory.CreateLogsReceiver(context.Background(), componenttest.NewNopReceiverCreateSettings(), cfg, consumertest.NewNop())
 	assert.Nil(t, err, "receiver creation failed")
 	assert.NotNil(t, lReceiver, "receiver creation failed")
 
-	params := component.ReceiverCreateSettings{Logger: zap.NewNop()}
+	params := componenttest.NewNopReceiverCreateSettings()
 	mReceiver, err := factory.CreateMetricsReceiver(context.Background(), params, cfg, consumertest.NewNop())
 	assert.Nil(t, err, "receiver creation failed")
 	assert.NotNil(t, mReceiver, "receiver creation failed")
@@ -75,12 +74,12 @@ func TestCreateInvalidHTTPEndpoint(t *testing.T) {
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.Endpoint = ""
 
-	params := component.ReceiverCreateSettings{Logger: zap.NewNop()}
+	params := componenttest.NewNopReceiverCreateSettings()
 	tReceiver, err := factory.CreateMetricsReceiver(context.Background(), params, cfg, consumertest.NewNop())
 	assert.Error(t, err, "endpoint is not formatted correctly: missing port in address")
 	assert.Nil(t, tReceiver)
 
-	tReceiver, err = factory.CreateLogsReceiver(context.Background(), component.ReceiverCreateSettings{Logger: zap.NewNop()}, cfg, consumertest.NewNop())
+	tReceiver, err = factory.CreateLogsReceiver(context.Background(), componenttest.NewNopReceiverCreateSettings(), cfg, consumertest.NewNop())
 	assert.Error(t, err, "endpoint is not formatted correctly: missing port in address")
 	assert.Nil(t, tReceiver)
 }
@@ -90,7 +89,7 @@ func TestCreateNoPort(t *testing.T) {
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.Endpoint = "localhost:"
 
-	params := component.ReceiverCreateSettings{Logger: zap.NewNop()}
+	params := componenttest.NewNopReceiverCreateSettings()
 	tReceiver, err := factory.CreateMetricsReceiver(context.Background(), params, cfg, consumertest.NewNop())
 	assert.Error(t, err, "endpoint port is not a number: strconv.ParseInt: parsing \"\": invalid syntax")
 	assert.Nil(t, tReceiver)
@@ -101,7 +100,7 @@ func TestCreateLargePort(t *testing.T) {
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.Endpoint = "localhost:65536"
 
-	params := component.ReceiverCreateSettings{Logger: zap.NewNop()}
+	params := componenttest.NewNopReceiverCreateSettings()
 	tReceiver, err := factory.CreateMetricsReceiver(context.Background(), params, cfg, consumertest.NewNop())
 	assert.Error(t, err, "port number must be between 1 and 65535")
 	assert.Nil(t, tReceiver)

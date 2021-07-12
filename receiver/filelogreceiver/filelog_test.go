@@ -30,14 +30,12 @@ import (
 	"github.com/open-telemetry/opentelemetry-log-collection/entry"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configcheck"
 	"go.opentelemetry.io/collector/config/configtest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/model/pdata"
-	"go.uber.org/zap/zaptest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/stanza"
 )
@@ -72,9 +70,7 @@ func TestCreateWithInvalidInputConfig(t *testing.T) {
 
 	_, err := NewFactory().CreateLogsReceiver(
 		context.Background(),
-		component.ReceiverCreateSettings{
-			Logger: zaptest.NewLogger(t),
-		},
+		componenttest.NewNopReceiverCreateSettings(),
 		cfg,
 		new(consumertest.LogsSink),
 	)
@@ -88,7 +84,6 @@ func TestReadStaticFile(t *testing.T) {
 
 	f := NewFactory()
 	sink := new(consumertest.LogsSink)
-	params := component.ReceiverCreateSettings{Logger: zaptest.NewLogger(t)}
 
 	cfg := testdataConfigYamlAsMap()
 	cfg.Converter.MaxFlushCount = 10
@@ -102,7 +97,7 @@ func TestReadStaticFile(t *testing.T) {
 	wg.Add(1)
 	go consumeNLogsFromConverter(converter.OutChannel(), 3, &wg)
 
-	rcvr, err := f.CreateLogsReceiver(context.Background(), params, cfg, sink)
+	rcvr, err := f.CreateLogsReceiver(context.Background(), componenttest.NewNopReceiverCreateSettings(), cfg, sink)
 	require.NoError(t, err, "failed to create receiver")
 	require.NoError(t, rcvr.Start(context.Background(), componenttest.NewNopHost()))
 
@@ -178,7 +173,6 @@ func (rt *rotationTest) Run(t *testing.T) {
 
 	f := NewFactory()
 	sink := new(consumertest.LogsSink)
-	params := component.ReceiverCreateSettings{Logger: zaptest.NewLogger(t)}
 
 	cfg := testdataRotateTestYamlAsMap(tempDir)
 	cfg.Converter.MaxFlushCount = 1
@@ -199,7 +193,7 @@ func (rt *rotationTest) Run(t *testing.T) {
 	wg.Add(1)
 	go consumeNLogsFromConverter(converter.OutChannel(), numLogs, &wg)
 
-	rcvr, err := f.CreateLogsReceiver(context.Background(), params, cfg, sink)
+	rcvr, err := f.CreateLogsReceiver(context.Background(), componenttest.NewNopReceiverCreateSettings(), cfg, sink)
 	require.NoError(t, err, "failed to create receiver")
 	require.NoError(t, rcvr.Start(context.Background(), componenttest.NewNopHost()))
 

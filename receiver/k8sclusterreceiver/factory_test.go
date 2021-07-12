@@ -21,9 +21,9 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.uber.org/zap"
 	"k8s.io/client-go/kubernetes"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
@@ -47,7 +47,7 @@ func TestFactory(t *testing.T) {
 	}, rCfg)
 
 	r, err := f.CreateTracesReceiver(
-		context.Background(), component.ReceiverCreateSettings{},
+		context.Background(), componenttest.NewNopReceiverCreateSettings(),
 		&config.ReceiverSettings{}, consumertest.NewNop(),
 	)
 	require.Error(t, err)
@@ -55,7 +55,7 @@ func TestFactory(t *testing.T) {
 
 	// Fails with bad K8s Config.
 	r, err = f.CreateMetricsReceiver(
-		context.Background(), component.ReceiverCreateSettings{},
+		context.Background(), componenttest.NewNopReceiverCreateSettings(),
 		rCfg, consumertest.NewNop(),
 	)
 	require.Error(t, err)
@@ -66,7 +66,7 @@ func TestFactory(t *testing.T) {
 		return nil, nil
 	}
 	r, err = f.CreateMetricsReceiver(
-		context.Background(), component.ReceiverCreateSettings{Logger: zap.NewNop()},
+		context.Background(), componenttest.NewNopReceiverCreateSettings(),
 		rCfg, consumertest.NewNop(),
 	)
 	require.NoError(t, err)
