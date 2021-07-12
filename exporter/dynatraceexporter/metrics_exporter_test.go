@@ -23,7 +23,6 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configtls"
@@ -483,7 +482,7 @@ func Test_exporter_start_InvalidHTTPClientSettings(t *testing.T) {
 		},
 	}
 
-	exp := newMetricsExporter(component.ExporterCreateSettings{Logger: zap.NewNop()}, config)
+	exp := newMetricsExporter(componenttest.NewNopExporterCreateSettings(), config)
 
 	err := exp.start(context.Background(), componenttest.NewNopHost())
 	if err == nil {
