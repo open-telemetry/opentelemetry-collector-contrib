@@ -23,6 +23,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"go.uber.org/zap"
 )
 
 const typeStr = "newrelic"
@@ -70,6 +71,7 @@ func createTracesExporter(
 
 	// The logger is only used in a disabled queuedRetrySender, which noisily logs at
 	// the error level when it is disabled and errors occur.
+	set.Logger = zap.NewNop()
 	return exporterhelper.NewTracesExporter(cfg, set, exp.pushTraceData,
 		exporterhelper.WithTimeout(traceConfig.TimeoutSettings),
 		exporterhelper.WithRetry(traceConfig.RetrySettings),
@@ -94,6 +96,9 @@ func createMetricsExporter(
 		return nil, err
 	}
 
+	// The logger is only used in a disabled queuedRetrySender, which noisily logs at
+	// the error level when it is disabled and errors occur.
+	set.Logger = zap.NewNop()
 	return exporterhelper.NewMetricsExporter(cfg, set, exp.pushMetricData,
 		exporterhelper.WithTimeout(metricsConfig.TimeoutSettings),
 		exporterhelper.WithRetry(metricsConfig.RetrySettings),
@@ -117,6 +122,10 @@ func createLogsExporter(
 	if err != nil {
 		return nil, err
 	}
+
+	// The logger is only used in a disabled queuedRetrySender, which noisily logs at
+	// the error level when it is disabled and errors occur.
+	set.Logger = zap.NewNop()
 	return exporterhelper.NewLogsExporter(cfg, set, exp.pushLogData,
 		exporterhelper.WithTimeout(logsConfig.TimeoutSettings),
 		exporterhelper.WithRetry(logsConfig.RetrySettings),
