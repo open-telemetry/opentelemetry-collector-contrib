@@ -31,7 +31,6 @@ import (
 	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/translator/conventions"
 	"go.opentelemetry.io/collector/translator/internaldata"
-	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	"google.golang.org/api/option"
 	"google.golang.org/grpc"
 )
@@ -237,13 +236,13 @@ func exportAdditionalLabels(mds []*agentmetricspb.ExportMetricsServiceRequest) [
 func (te *traceExporter) pushTraces(ctx context.Context, td pdata.Traces) error {
 	var errs []error
 	resourceSpans := td.ResourceSpans()
-	spans := make([]*sdktrace.SpanSnapshot, 0, td.SpanCount())
+	spans := make([]cloudtrace.ReadOnlySpan, 0, td.SpanCount())
 	for i := 0; i < resourceSpans.Len(); i++ {
 		sd := pdataResourceSpansToOTSpanData(resourceSpans.At(i))
 		spans = append(spans, sd...)
 	}
 
-	err := te.texporter.ExportSpans(ctx, spans)
+	err := te.texporter.ExportCustomSpans(ctx, spans)
 	if err != nil {
 		errs = append(errs, err)
 	}
