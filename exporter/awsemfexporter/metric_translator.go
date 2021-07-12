@@ -99,7 +99,7 @@ func newMetricTranslator(config Config) metricTranslator {
 }
 
 // translateOTelToGroupedMetric converts OT metrics to Grouped Metric format.
-func (mt metricTranslator) translateOTelToGroupedMetric(rm *pdata.ResourceMetrics, groupedMetrics map[interface{}]*GroupedMetric, config *Config) error {
+func (mt metricTranslator) translateOTelToGroupedMetric(rm *pdata.ResourceMetrics, groupedMetrics map[interface{}]*groupedMetric, config *Config) error {
 	timestamp := time.Now().UnixNano() / int64(time.Millisecond)
 	var instrumentationLibName string
 	cWNamespace := getNamespace(rm, config.Namespace)

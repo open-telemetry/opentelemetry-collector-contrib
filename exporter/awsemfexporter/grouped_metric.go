@@ -38,7 +38,7 @@ type metricInfo struct {
 }
 
 // addToGroupedMetric processes OT metrics and adds them into GroupedMetric buckets
-func addToGroupedMetric(pmd *pdata.Metric, groupedMetrics map[interface{}]*GroupedMetric, metadata CWMetricMetadata, logger *zap.Logger, descriptor map[string]MetricDescriptor, config *Config) error {
+func addToGroupedMetric(pmd *pdata.Metric, groupedMetrics map[interface{}]*groupedMetric, metadata cWMetricMetadata, logger *zap.Logger, descriptor map[string]MetricDescriptor, config *Config) error {
 	if pmd == nil {
 		return nil
 	}
@@ -55,7 +55,7 @@ func addToGroupedMetric(pmd *pdata.Metric, groupedMetrics map[interface{}]*Group
 			continue
 		}
 
-		labels := dp.Labels
+		labels := dp.labels
 
 		if metricType, ok := labels["Type"]; ok {
 			if (metricType == "Pod" || metricType == "Container") && config.CreateEKSFargateKubernetesObject {
@@ -67,9 +67,9 @@ func addToGroupedMetric(pmd *pdata.Metric, groupedMetrics map[interface{}]*Group
 			}
 		}
 
-		metric := &MetricInfo{
-			Value: dp.Value,
-			Unit:  translateUnit(pmd, descriptor),
+		metric := &metricInfo{
+			value: dp.value,
+			unit:  translateUnit(pmd, descriptor),
 		}
 
 		if dp.timestampMs > 0 {
@@ -140,8 +140,8 @@ func addKubernetesWrapper(labels map[string]string) error {
 			PodTemplateHash: "pod-template-hash",
 		},
 		NamespaceName: "Namespace",
-		PodID: "PodId",
-		PodName: "PodName",
+		PodID:         "PodId",
+		PodName:       "PodName",
 		PodOwners: internalPodOwnersObj{
 			OwnerKind: "owner_kind",
 			OwnerName: "owner_name",
@@ -226,7 +226,7 @@ func recursivelyFillInMap(labels map[string]string, schema map[string]interface{
 	return schema, nil
 }
 
-func groupedMetricKey(metadata GroupedMetricMetadata, labels map[string]string) aws.Key {
+func groupedMetricKey(metadata groupedMetricMetadata, labels map[string]string) aws.Key {
 	return aws.NewKey(metadata, labels)
 }
 
