@@ -8,9 +8,9 @@ require (
 	github.com/nginxinc/nginx-prometheus-exporter v0.8.1-0.20201110005315-f5a5f8086c19
 	github.com/stretchr/testify v1.7.0
 	github.com/testcontainers/testcontainers-go v0.11.1
-	go.opentelemetry.io/collector v0.29.1-0.20210702192737-aaa6d7d6b859
+	go.opentelemetry.io/collector v0.29.1-0.20210708180338-a4354b6e8e39
 	go.opentelemetry.io/collector/model v0.0.0-00010101000000-000000000000
 	go.uber.org/zap v1.18.1
 )
 
-replace go.opentelemetry.io/collector/model => go.opentelemetry.io/collector/model v0.0.0-20210702192737-aaa6d7d6b859
+replace go.opentelemetry.io/collector/model => go.opentelemetry.io/collector/model v0.0.0-20210708180338-a4354b6e8e39

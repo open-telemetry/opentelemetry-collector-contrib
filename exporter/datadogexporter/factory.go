@@ -88,13 +88,13 @@ func createDefaultConfig() config.Exporter {
 // createMetricsExporter creates a metrics exporter based on this config.
 func createMetricsExporter(
 	ctx context.Context,
-	params component.ExporterCreateSettings,
+	set component.ExporterCreateSettings,
 	c config.Exporter,
 ) (component.MetricsExporter, error) {
 
 	cfg := c.(*ddconfig.Config)
 
-	params.Logger.Info("sanitizing Datadog metrics exporter configuration")
+	set.Logger.Info("sanitizing Datadog metrics exporter configuration")
 	if err := cfg.Sanitize(); err != nil {
 		return nil, err
 	}
@@ -111,17 +111,17 @@ func createMetricsExporter(
 				if md.ResourceMetrics().Len() > 0 {
 					attrs = md.ResourceMetrics().At(0).Resource().Attributes()
 				}
-				go metadata.Pusher(ctx, params, cfg, attrs)
+				go metadata.Pusher(ctx, set, cfg, attrs)
 			})
 			return nil
 		}
 	} else {
-		pushMetricsFn = newMetricsExporter(ctx, params, cfg).PushMetricsData
+		pushMetricsFn = newMetricsExporter(ctx, set, cfg).PushMetricsData
 	}
 
 	return exporterhelper.NewMetricsExporter(
 		cfg,
-		params.Logger,
+		set,
 		pushMetricsFn,
 		exporterhelper.WithQueue(exporterhelper.DefaultQueueSettings()),
 		exporterhelper.WithRetry(exporterhelper.DefaultRetrySettings()),
@@ -138,13 +138,13 @@ func createMetricsExporter(
 // createTracesExporter creates a trace exporter based on this config.
 func createTracesExporter(
 	ctx context.Context,
-	params component.ExporterCreateSettings,
+	set component.ExporterCreateSettings,
 	c config.Exporter,
 ) (component.TracesExporter, error) {
 
 	cfg := c.(*ddconfig.Config)
 
-	params.Logger.Info("sanitizing Datadog metrics exporter configuration")
+	set.Logger.Info("sanitizing Datadog metrics exporter configuration")
 	if err := cfg.Sanitize(); err != nil {
 		return nil, err
 	}
@@ -161,17 +161,17 @@ func createTracesExporter(
 				if td.ResourceSpans().Len() > 0 {
 					attrs = td.ResourceSpans().At(0).Resource().Attributes()
 				}
-				go metadata.Pusher(ctx, params, cfg, attrs)
+				go metadata.Pusher(ctx, set, cfg, attrs)
 			})
 			return nil
 		}
 	} else {
-		pushTracesFn = newTracesExporter(ctx, params, cfg).pushTraceData
+		pushTracesFn = newTracesExporter(ctx, set, cfg).pushTraceData
 	}
 
 	return exporterhelper.NewTracesExporter(
 		cfg,
-		params.Logger,
+		set,
 		pushTracesFn,
 		exporterhelper.WithShutdown(func(context.Context) error {
 			cancel()

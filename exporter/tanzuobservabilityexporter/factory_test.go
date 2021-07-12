@@ -21,13 +21,11 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configcheck"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configtest"
-	"go.uber.org/zap"
 )
 
 func TestCreateDefaultConfig(t *testing.T) {
@@ -65,7 +63,7 @@ func TestLoadConfig(t *testing.T) {
 func TestCreateExporter(t *testing.T) {
 	defaultConfig := createDefaultConfig()
 	cfg := defaultConfig.(*Config)
-	params := component.ExporterCreateSettings{Logger: zap.NewNop()}
+	params := componenttest.NewNopExporterCreateSettings()
 
 	te, err := createTraceExporter(context.Background(), params, cfg)
 	assert.Nil(t, err)
@@ -73,13 +71,13 @@ func TestCreateExporter(t *testing.T) {
 }
 
 func TestCreateTraceExporterNilConfigError(t *testing.T) {
-	params := component.ExporterCreateSettings{Logger: zap.NewNop()}
+	params := componenttest.NewNopExporterCreateSettings()
 	_, err := createTraceExporter(context.Background(), params, nil)
 	assert.Error(t, err)
 }
 
 func TestCreateTraceExporterInvalidEndpointError(t *testing.T) {
-	params := component.ExporterCreateSettings{Logger: zap.NewNop()}
+	params := componenttest.NewNopExporterCreateSettings()
 	defaultConfig := createDefaultConfig()
 	cfg := defaultConfig.(*Config)
 	cfg.Traces.Endpoint = "http:#$%^&#$%&#"
@@ -88,7 +86,7 @@ func TestCreateTraceExporterInvalidEndpointError(t *testing.T) {
 }
 
 func TestCreateTraceExporterMissingPortError(t *testing.T) {
-	params := component.ExporterCreateSettings{Logger: zap.NewNop()}
+	params := componenttest.NewNopExporterCreateSettings()
 	defaultConfig := createDefaultConfig()
 	cfg := defaultConfig.(*Config)
 	cfg.Traces.Endpoint = "http://localhost"
@@ -97,7 +95,7 @@ func TestCreateTraceExporterMissingPortError(t *testing.T) {
 }
 
 func TestCreateTraceExporterInvalidPortError(t *testing.T) {
-	params := component.ExporterCreateSettings{Logger: zap.NewNop()}
+	params := componenttest.NewNopExporterCreateSettings()
 	defaultConfig := createDefaultConfig()
 	cfg := defaultConfig.(*Config)
 	cfg.Traces.Endpoint = "http://localhost:c42a"

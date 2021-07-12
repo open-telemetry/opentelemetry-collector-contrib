@@ -25,7 +25,6 @@ import (
 	"github.com/prometheus/prometheus/discovery"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtest"
@@ -33,7 +32,6 @@ import (
 	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/receiver/prometheusreceiver"
 	"go.opentelemetry.io/collector/translator/internaldata"
-	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusexecreceiver/subprocessmanager"
 )
@@ -62,7 +60,7 @@ func TestExecKeyMissing(t *testing.T) {
 
 // assertErrorWhenExecKeyMissing makes sure the config passed throws an error, since it's missing the exec key
 func assertErrorWhenExecKeyMissing(t *testing.T, errorReceiverConfig config.Receiver) {
-	_, err := newPromExecReceiver(component.ReceiverCreateSettings{Logger: zap.NewNop()}, errorReceiverConfig.(*Config), nil)
+	_, err := newPromExecReceiver(componenttest.NewNopReceiverCreateSettings(), errorReceiverConfig.(*Config), nil)
 	assert.Error(t, err, "newPromExecReceiver() didn't return an error")
 }
 
@@ -77,7 +75,7 @@ func TestEndToEnd(t *testing.T) {
 // endToEndScrapeTest creates a receiver that invokes `go run test_prometheus_exporter.go` and waits until it has scraped the /metrics endpoint twice - the application will crash between each scrape
 func endToEndScrapeTest(t *testing.T, receiverConfig config.Receiver, testName string) {
 	sink := new(consumertest.MetricsSink)
-	wrapper, err := newPromExecReceiver(component.ReceiverCreateSettings{Logger: zap.NewNop()}, receiverConfig.(*Config), sink)
+	wrapper, err := newPromExecReceiver(componenttest.NewNopReceiverCreateSettings(), receiverConfig.(*Config), sink)
 	assert.NoError(t, err, "newPromExecReceiver() returned an error")
 
 	ctx := context.Background()

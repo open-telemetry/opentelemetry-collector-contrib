@@ -22,6 +22,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configcheck"
 	"go.opentelemetry.io/collector/testutil"
@@ -77,7 +78,7 @@ func TestFactory_CreateMetricsExporterInvalidConfig(t *testing.T) {
 	factory := NewFactoryWithTokenSourceGetter(mockTokenSourceGetter)
 	cfg := factory.CreateDefaultConfig().(*Config)
 
-	creationParams := component.ExporterCreateSettings{Logger: zap.NewNop()}
+	creationParams := componenttest.NewNopExporterCreateSettings()
 	oexp, err := factory.CreateMetricsExporter(context.Background(), creationParams, cfg)
 	require.Error(t, err)
 	require.Nil(t, oexp)
@@ -110,7 +111,7 @@ func Test_Factory_CreateTracesExporterInvalidConfig(t *testing.T) {
 	factory := NewFactoryWithTokenSourceGetter(mockTokenSourceGetter)
 	cfg := factory.CreateDefaultConfig().(*Config)
 
-	creationParams := component.ExporterCreateSettings{Logger: zap.NewNop()}
+	creationParams := componenttest.NewNopExporterCreateSettings()
 	oexp, err := factory.CreateTracesExporter(context.Background(), creationParams, cfg)
 	require.Error(t, err)
 	require.Nil(t, oexp)
@@ -143,7 +144,7 @@ func TestFactory_CreateLogsExporterInvalidConfig(t *testing.T) {
 	factory := NewFactoryWithTokenSourceGetter(mockTokenSourceGetter)
 	cfg := factory.CreateDefaultConfig().(*Config)
 
-	creationParams := component.ExporterCreateSettings{Logger: zap.NewNop()}
+	creationParams := componenttest.NewNopExporterCreateSettings()
 	oexp, err := factory.CreateLogsExporter(context.Background(), creationParams, cfg)
 	require.Error(t, err)
 	require.Nil(t, oexp)
