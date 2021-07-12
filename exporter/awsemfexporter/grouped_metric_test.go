@@ -427,7 +427,7 @@ func TestAddToGroupedMetric(t *testing.T) {
 	})
 
 	t.Run("Nil metric", func(t *testing.T) {
-		groupedMetrics := make(map[interface{}]*GroupedMetric)
+		groupedMetrics := make(map[interface{}]*groupedMetric)
 		addToGroupedMetric(nil, groupedMetrics, metadata, logger, nil, nil)
 		assert.Equal(t, 0, len(groupedMetrics))
 	})
