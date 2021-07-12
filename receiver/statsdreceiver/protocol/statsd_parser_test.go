@@ -953,7 +953,7 @@ func TestStatsDParser_AggregateTimmerWithSummary(t *testing.T) {
 
 func TestStatsDParser_Initialize(t *testing.T) {
 	p := &StatsDParser{}
-	p.Initialize(true, []TimerHistogramMapping{{StatsdType: "timer", ObserverType: "gauge"}, {StatsdType: "histogram", ObserverType: "gauge"}})
+	p.Initialize(true, false, []TimerHistogramMapping{{StatsdType: "timer", ObserverType: "gauge"}, {StatsdType: "histogram", ObserverType: "gauge"}})
 	labels := attribute.Distinct{}
 	teststatsdDMetricdescription := statsDMetricdescription{
 		name:             "test",
@@ -967,7 +967,7 @@ func TestStatsDParser_Initialize(t *testing.T) {
 
 func TestStatsDParser_GetMetrics(t *testing.T) {
 	p := &StatsDParser{}
-	p.Initialize(true, []TimerHistogramMapping{{StatsdType: "timer", ObserverType: "gauge"}, {StatsdType: "histogram", ObserverType: "gauge"}})
+	p.Initialize(true, false, []TimerHistogramMapping{{StatsdType: "timer", ObserverType: "gauge"}, {StatsdType: "histogram", ObserverType: "gauge"}})
 	p.gauges[testDescription("statsdTestMetric1", "g",
 		[]string{"mykey", "metric_type"}, []string{"myvalue", "gauge"})] =
 		buildGaugeMetric(testStatsDMetric("testGauge1", "", 0, 1, false, "g", 0, []string{"mykey", "metric_type"}, []string{"myvalue", "gauge"}), time.Unix(711, 0))
