@@ -129,27 +129,25 @@ type internalPodOwnersObj struct {
 
 func addKubernetesWrapper(labels map[string]string) error {
 	//create schema
-	schema := kubernetesObj{}
-	schema.ContainerName = "container"
-	schema.Docker =
-		internalDockerObj{
+	schema := kubernetesObj{
+		ContainerName: "container",
+		Docker: internalDockerObj{
 			ContainerID: "container_id",
-		}
-	schema.Host = "NodeName"
-	schema.Labels =
-		internalLabelsObj{
+		},
+		Host: "NodeName",
+		Labels: internalLabelsObj{
 			App:             "app",
 			PodTemplateHash: "pod-template-hash",
-		}
-	schema.NamespaceName = "Namespace"
-	schema.PodID = "PodId"
-	schema.PodName = "PodName"
-	schema.PodOwners =
-		internalPodOwnersObj{
+		},
+		NamespaceName: "Namespace",
+		PodID: "PodId",
+		PodName: "PodName",
+		PodOwners: internalPodOwnersObj{
 			OwnerKind: "owner_kind",
 			OwnerName: "owner_name",
-		}
-	schema.ServiceName = "Service"
+		},
+		ServiceName: "Service",
+	}
 
 	var err error
 	labels["kubernetes"], err = recursivelyFillInStruct(labels, schema)
