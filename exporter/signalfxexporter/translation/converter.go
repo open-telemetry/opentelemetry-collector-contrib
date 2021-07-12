@@ -113,8 +113,8 @@ func (c *MetricsConverter) metricToSfxDataPoints(metric pdata.Metric, extraDimen
 		dps = convertIntDatapoints(metric.IntSum().DataPoints(), basePoint, extraDimensions)
 	case pdata.MetricDataTypeDoubleGauge:
 		dps = convertDoubleDatapoints(metric.DoubleGauge().DataPoints(), basePoint, extraDimensions)
-	case pdata.MetricDataTypeDoubleSum:
-		dps = convertDoubleDatapoints(metric.DoubleSum().DataPoints(), basePoint, extraDimensions)
+	case pdata.MetricDataTypeSum:
+		dps = convertDoubleDatapoints(metric.Sum().DataPoints(), basePoint, extraDimensions)
 	case pdata.MetricDataTypeIntHistogram:
 		dps = convertIntHistogram(metric.IntHistogram().DataPoints(), basePoint, extraDimensions)
 	case pdata.MetricDataTypeHistogram:
@@ -273,11 +273,11 @@ func fromMetricDataTypeToMetricType(metric pdata.Metric) *sfxpb.MetricType {
 		}
 		return &sfxMetricTypeCumulativeCounter
 
-	case pdata.MetricDataTypeDoubleSum:
-		if !metric.DoubleSum().IsMonotonic() {
+	case pdata.MetricDataTypeSum:
+		if !metric.Sum().IsMonotonic() {
 			return &sfxMetricTypeGauge
 		}
-		if metric.DoubleSum().AggregationTemporality() == pdata.AggregationTemporalityDelta {
+		if metric.Sum().AggregationTemporality() == pdata.AggregationTemporalityDelta {
 			return &sfxMetricTypeCounter
 		}
 		return &sfxMetricTypeCumulativeCounter

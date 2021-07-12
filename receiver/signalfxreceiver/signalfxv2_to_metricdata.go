@@ -73,8 +73,8 @@ func signalFxV2ToMetrics(
 			err = fillIntDataPoint(sfxDataPoint, m.IntSum().DataPoints())
 		case pdata.MetricDataTypeDoubleGauge:
 			err = fillDoubleDataPoint(sfxDataPoint, m.DoubleGauge().DataPoints())
-		case pdata.MetricDataTypeDoubleSum:
-			err = fillDoubleDataPoint(sfxDataPoint, m.DoubleSum().DataPoints())
+		case pdata.MetricDataTypeSum:
+			err = fillDoubleDataPoint(sfxDataPoint, m.Sum().DataPoints())
 		}
 
 		if err != nil {
@@ -119,9 +119,9 @@ func fillInType(
 	case sfxpb.MetricType_COUNTER:
 		switch {
 		case sfxDatum.DoubleValue != nil:
-			m.SetDataType(pdata.MetricDataTypeDoubleSum)
-			m.DoubleSum().SetAggregationTemporality(pdata.AggregationTemporalityDelta)
-			m.DoubleSum().SetIsMonotonic(true)
+			m.SetDataType(pdata.MetricDataTypeSum)
+			m.Sum().SetAggregationTemporality(pdata.AggregationTemporalityDelta)
+			m.Sum().SetIsMonotonic(true)
 		case sfxDatum.IntValue != nil:
 			m.SetDataType(pdata.MetricDataTypeIntSum)
 			m.IntSum().SetAggregationTemporality(pdata.AggregationTemporalityDelta)
@@ -133,9 +133,9 @@ func fillInType(
 	case sfxpb.MetricType_CUMULATIVE_COUNTER:
 		switch {
 		case sfxDatum.DoubleValue != nil:
-			m.SetDataType(pdata.MetricDataTypeDoubleSum)
-			m.DoubleSum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
-			m.DoubleSum().SetIsMonotonic(true)
+			m.SetDataType(pdata.MetricDataTypeSum)
+			m.Sum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+			m.Sum().SetIsMonotonic(true)
 		case sfxDatum.IntValue != nil:
 			m.SetDataType(pdata.MetricDataTypeIntSum)
 			m.IntSum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)

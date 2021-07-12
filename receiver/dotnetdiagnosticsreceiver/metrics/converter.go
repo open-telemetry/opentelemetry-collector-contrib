@@ -51,8 +51,8 @@ func rawMetricToPdata(dm dotnet.Metric, pdm pdata.Metric, startTime, now time.Ti
 		dp.SetTimestamp(nowPD)
 		dp.SetValue(dm.Mean())
 	case "Sum":
-		pdm.SetDataType(pdata.MetricDataTypeDoubleSum)
-		sum := pdm.DoubleSum()
+		pdm.SetDataType(pdata.MetricDataTypeSum)
+		sum := pdm.Sum()
 		sum.SetAggregationTemporality(pdata.AggregationTemporalityDelta)
 		dps := sum.DataPoints()
 		dp := dps.AppendEmpty()

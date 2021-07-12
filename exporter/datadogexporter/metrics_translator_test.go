@@ -95,8 +95,8 @@ func TestIsCumulativeMonotonic(t *testing.T) {
 	{ // DoubleSumL Cumulative and monotonic
 		metric := pdata.NewMetric()
 		metric.SetName("metric.example")
-		metric.SetDataType(pdata.MetricDataTypeDoubleSum)
-		sum := metric.DoubleSum()
+		metric.SetDataType(pdata.MetricDataTypeSum)
+		sum := metric.Sum()
 		sum.SetIsMonotonic(true)
 		sum.SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
 
@@ -693,11 +693,11 @@ func createTestMetrics() pdata.Metrics {
 	dpInt.SetTimestamp(seconds(0))
 	dpInt.SetValue(2)
 
-	// DoubleSum
+	// Sum
 	met = metricsArray.AppendEmpty()
 	met.SetName("double.sum")
-	met.SetDataType(pdata.MetricDataTypeDoubleSum)
-	dpsDouble = met.DoubleSum().DataPoints()
+	met.SetDataType(pdata.MetricDataTypeSum)
+	dpsDouble = met.Sum().DataPoints()
 	dpDouble = dpsDouble.AppendEmpty()
 	dpDouble.SetTimestamp(seconds(0))
 	dpDouble.SetValue(math.E)
@@ -742,10 +742,10 @@ func createTestMetrics() pdata.Metrics {
 	// Double Sum (cumulative)
 	met = metricsArray.AppendEmpty()
 	met.SetName("double.cumulative.sum")
-	met.SetDataType(pdata.MetricDataTypeDoubleSum)
-	met.DoubleSum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
-	met.DoubleSum().SetIsMonotonic(true)
-	dpsDouble = met.DoubleSum().DataPoints()
+	met.SetDataType(pdata.MetricDataTypeSum)
+	met.Sum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+	met.Sum().SetIsMonotonic(true)
+	dpsDouble = met.Sum().DataPoints()
 	dpsDouble.Resize(2)
 	dpDouble = dpsDouble.At(0)
 	dpDouble.SetTimestamp(seconds(0))

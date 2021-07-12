@@ -122,7 +122,7 @@ func Test_metricDataToSplunk(t *testing.T) {
 				ilm := metrics.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0)
 				doubleSum := ilm.Metrics().AppendEmpty()
 				doubleSum.SetName("double_sum_with_dims")
-				doubleSum.SetDataType(pdata.MetricDataTypeDoubleSum)
+				doubleSum.SetDataType(pdata.MetricDataTypeSum)
 				return metrics
 			},
 		},
@@ -204,8 +204,8 @@ func Test_metricDataToSplunk(t *testing.T) {
 				ilm := metrics.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0)
 				doubleSum := ilm.Metrics().AppendEmpty()
 				doubleSum.SetName("double_sum_with_dims")
-				doubleSum.SetDataType(pdata.MetricDataTypeDoubleSum)
-				doubleSum.DoubleSum().DataPoints().AppendEmpty()
+				doubleSum.SetDataType(pdata.MetricDataTypeSum)
+				doubleSum.Sum().DataPoints().AppendEmpty()
 				return metrics
 			},
 		},
@@ -519,8 +519,8 @@ func Test_metricDataToSplunk(t *testing.T) {
 				ilm := metrics.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0)
 				doubleSum := ilm.Metrics().AppendEmpty()
 				doubleSum.SetName("double_sum_with_dims")
-				doubleSum.SetDataType(pdata.MetricDataTypeDoubleSum)
-				doubleDataPt := doubleSum.DoubleSum().DataPoints().AppendEmpty()
+				doubleSum.SetDataType(pdata.MetricDataTypeSum)
+				doubleDataPt := doubleSum.Sum().DataPoints().AppendEmpty()
 				doubleDataPt.SetTimestamp(ts)
 				doubleDataPt.SetValue(62)
 				return metrics
@@ -536,7 +536,7 @@ func Test_metricDataToSplunk(t *testing.T) {
 						"k0":                               "v0",
 						"k1":                               "v1",
 						"metric_name:double_sum_with_dims": float64(62),
-						"metric_type":                      "DoubleSum",
+						"metric_type":                      "Sum",
 					},
 				},
 			},

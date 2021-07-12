@@ -344,8 +344,8 @@ func metricDataToLogServiceData(md pdata.Metric, defaultLabels KeyValues) (logs 
 		return doubleMetricsToLogs(md.Name(), md.DoubleGauge().DataPoints(), defaultLabels)
 	case pdata.MetricDataTypeIntSum:
 		return intMetricsToLogs(md.Name(), md.IntSum().DataPoints(), defaultLabels)
-	case pdata.MetricDataTypeDoubleSum:
-		return doubleMetricsToLogs(md.Name(), md.DoubleSum().DataPoints(), defaultLabels)
+	case pdata.MetricDataTypeSum:
+		return doubleMetricsToLogs(md.Name(), md.Sum().DataPoints(), defaultLabels)
 	case pdata.MetricDataTypeIntHistogram:
 		return intHistogramMetricsToLogs(md.Name(), md.IntHistogram().DataPoints(), defaultLabels)
 	case pdata.MetricDataTypeHistogram:

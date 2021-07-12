@@ -89,8 +89,8 @@ func TestEncodeMetrics(t *testing.T) {
 	intSum.DataPoints().At(2).SetValue(11)
 	intSum.DataPoints().At(2).LabelsMap().InitFromMap(map[string]string{"k2": "v"})
 
-	metric = appendMetric("double_sum_metric", pdata.MetricDataTypeDoubleSum)
-	doubleSum := metric.DoubleSum()
+	metric = appendMetric("double_sum_metric", pdata.MetricDataTypeSum)
+	doubleSum := metric.Sum()
 	doubleSum.DataPoints().Resize(3)
 	doubleSum.DataPoints().At(0).SetTimestamp(pdata.TimestampFromTime(timestamp0))
 	doubleSum.DataPoints().At(0).SetValue(12)

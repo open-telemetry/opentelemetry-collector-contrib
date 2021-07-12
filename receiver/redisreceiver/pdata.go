@@ -79,8 +79,8 @@ func initDoubleMetric(m *redisMetric, value float64, t *timeBundle, dest pdata.M
 	var pt pdata.DoubleDataPoint
 	if m.pdType == pdata.MetricDataTypeDoubleGauge {
 		pt = dest.DoubleGauge().DataPoints().AppendEmpty()
-	} else if m.pdType == pdata.MetricDataTypeDoubleSum {
-		sum := dest.DoubleSum()
+	} else if m.pdType == pdata.MetricDataTypeSum {
+		sum := dest.Sum()
 		sum.SetIsMonotonic(m.isMonotonic)
 		sum.SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
 		pt = sum.DataPoints().AppendEmpty()

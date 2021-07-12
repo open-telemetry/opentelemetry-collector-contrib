@@ -52,7 +52,7 @@ func (m *redisMetric) parseMetric(strVal string, t *timeBundle) (pdata.Metric, e
 			return pdm, err
 		}
 		initIntMetric(m, val, t, pdm)
-	case pdata.MetricDataTypeDoubleSum:
+	case pdata.MetricDataTypeSum:
 		var val float64
 		val, err = strToDoublePoint(strVal)
 		if err != nil {
