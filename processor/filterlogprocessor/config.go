@@ -12,27 +12,30 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package cumulativetodeltaprocessor
+package filterlogprocessor
 
 import (
-	"fmt"
-
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterconfig"
 	"go.opentelemetry.io/collector/config"
 )
 
-// Config defines the configuration for the processor.
+// Config defines configuration for Resource processor.
 type Config struct {
 	config.ProcessorSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
 
-	// List of cumulative sum metrics to convert to delta
-	Metrics []string `mapstructure:"metrics"`
+	Logs LogFilters `mapstructure:"logs"`
 }
 
-// Validate checks whether the input configuration has all of the required fields for the processor.
-// An error is returned if there are any invalid inputs.
-func (config *Config) Validate() error {
-	if len(config.Metrics) == 0 {
-		return fmt.Errorf("metric names are missing")
-	}
+// LogFilters filters by Log properties.
+type LogFilters struct {
+	// ResourceAttributes defines a list of possible resource attributes to match logs against.
+	// A match occurs if any resource attribute matches at least one expression in this given list.
+	ResourceAttributes []filterconfig.Attribute `mapstructure:"resource_attributes"`
+}
+
+var _ config.Processor = (*Config)(nil)
+
+// Validate checks if the processor configuration is valid
+func (cfg *Config) Validate() error {
 	return nil
 }
