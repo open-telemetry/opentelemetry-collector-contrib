@@ -330,8 +330,8 @@ func mapMetrics(logger *zap.Logger, cfg config.MetricsConfig, prevPts *ttlmap.TT
 				switch md.DataType() {
 				case pdata.MetricDataTypeIntGauge:
 					datapoints = mapIntMetrics(md.Name(), md.IntGauge().DataPoints(), attributeTags)
-				case pdata.MetricDataTypeDoubleGauge:
-					datapoints = mapDoubleMetrics(md.Name(), md.DoubleGauge().DataPoints(), attributeTags)
+				case pdata.MetricDataTypeGauge:
+					datapoints = mapDoubleMetrics(md.Name(), md.Gauge().DataPoints(), attributeTags)
 				case pdata.MetricDataTypeIntSum:
 					if cfg.SendMonotonic && isCumulativeMonotonic(md) {
 						datapoints = mapIntMonotonicMetrics(md.Name(), prevPts, md.IntSum().DataPoints(), attributeTags)

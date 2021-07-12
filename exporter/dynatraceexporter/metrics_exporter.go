@@ -107,8 +107,8 @@ func (e *exporter) serializeMetrics(md pdata.Metrics) ([]string, int) {
 					continue
 				case pdata.MetricDataTypeIntGauge:
 					l = serialization.SerializeIntDataPoints(name, metric.IntGauge().DataPoints(), e.cfg.Tags)
-				case pdata.MetricDataTypeDoubleGauge:
-					l = serialization.SerializeDoubleDataPoints(name, metric.DoubleGauge().DataPoints(), e.cfg.Tags)
+				case pdata.MetricDataTypeGauge:
+					l = serialization.SerializeDoubleDataPoints(name, metric.Gauge().DataPoints(), e.cfg.Tags)
 				case pdata.MetricDataTypeIntSum:
 					l = serialization.SerializeIntDataPoints(name, metric.IntSum().DataPoints(), e.cfg.Tags)
 				case pdata.MetricDataTypeSum:

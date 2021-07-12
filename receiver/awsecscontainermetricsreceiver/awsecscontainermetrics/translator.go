@@ -91,8 +91,8 @@ func appendIntSum(metricName string, unit string, value int64, ts pdata.Timestam
 
 func appendDoubleGauge(metricName string, unit string, value float64, ts pdata.Timestamp, ilm pdata.InstrumentationLibraryMetrics) {
 	metric := appendMetric(ilm, metricName, unit)
-	metric.SetDataType(pdata.MetricDataTypeDoubleGauge)
-	doubleGauge := metric.DoubleGauge()
+	metric.SetDataType(pdata.MetricDataTypeGauge)
+	doubleGauge := metric.Gauge()
 	dataPoint := doubleGauge.DataPoints().AppendEmpty()
 	dataPoint.SetValue(value)
 	dataPoint.SetTimestamp(ts)

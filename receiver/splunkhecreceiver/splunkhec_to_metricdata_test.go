@@ -107,9 +107,9 @@ func Test_splunkV2ToMetricsData(t *testing.T) {
 				md := buildDefaultMetricsData(nanos)
 				mts := md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics()
 				metricPt := mts.At(0)
-				metricPt.SetDataType(pdata.MetricDataTypeDoubleGauge)
+				metricPt.SetDataType(pdata.MetricDataTypeGauge)
 				metricPt.SetName("single")
-				doublePt := metricPt.DoubleGauge().DataPoints().AppendEmpty()
+				doublePt := metricPt.Gauge().DataPoints().AppendEmpty()
 				doublePt.SetValue(13.13)
 				doublePt.SetTimestamp(pdata.Timestamp(nanos))
 				doublePt.LabelsMap().Insert("k0", "v0")
@@ -146,9 +146,9 @@ func Test_splunkV2ToMetricsData(t *testing.T) {
 				md := buildDefaultMetricsData(nanos)
 				mts := md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics()
 				metricPt := mts.At(0)
-				metricPt.SetDataType(pdata.MetricDataTypeDoubleGauge)
+				metricPt.SetDataType(pdata.MetricDataTypeGauge)
 				metricPt.SetName("single")
-				doublePt := metricPt.DoubleGauge().DataPoints().AppendEmpty()
+				doublePt := metricPt.Gauge().DataPoints().AppendEmpty()
 				doublePt.SetValue(13.13)
 				doublePt.LabelsMap().Insert("k0", "v0")
 				doublePt.LabelsMap().Insert("k1", "v1")
@@ -168,9 +168,9 @@ func Test_splunkV2ToMetricsData(t *testing.T) {
 				md := buildDefaultMetricsData(nanos)
 				mts := md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics()
 				metricPt := mts.At(0)
-				metricPt.SetDataType(pdata.MetricDataTypeDoubleGauge)
+				metricPt.SetDataType(pdata.MetricDataTypeGauge)
 				metricPt.SetName("single")
-				doublePt := metricPt.DoubleGauge().DataPoints().AppendEmpty()
+				doublePt := metricPt.Gauge().DataPoints().AppendEmpty()
 				doublePt.SetValue(13.13)
 				doublePt.LabelsMap().Insert("k0", "v0")
 				doublePt.LabelsMap().Insert("k1", "v1")
@@ -190,9 +190,9 @@ func Test_splunkV2ToMetricsData(t *testing.T) {
 				md := buildDefaultMetricsData(nanos)
 				mts := md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics()
 				metricPt := mts.At(0)
-				metricPt.SetDataType(pdata.MetricDataTypeDoubleGauge)
+				metricPt.SetDataType(pdata.MetricDataTypeGauge)
 				metricPt.SetName("single")
-				doublePt := metricPt.DoubleGauge().DataPoints().AppendEmpty()
+				doublePt := metricPt.Gauge().DataPoints().AppendEmpty()
 				doublePt.SetValue(13.13)
 				doublePt.LabelsMap().Insert("k0", "v0")
 				doublePt.LabelsMap().Insert("k1", "v1")
@@ -331,8 +331,8 @@ func internalSortMetricsAndLabels(metrics pdata.MetricSlice) {
 			for l := 0; l < dps.Len(); l++ {
 				dps.At(l).LabelsMap().Sort()
 			}
-		case pdata.MetricDataTypeDoubleGauge:
-			dps := m.DoubleGauge().DataPoints()
+		case pdata.MetricDataTypeGauge:
+			dps := m.Gauge().DataPoints()
 			for l := 0; l < dps.Len(); l++ {
 				dps.At(l).LabelsMap().Sort()
 			}

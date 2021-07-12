@@ -111,8 +111,8 @@ func (c *MetricsConverter) metricToSfxDataPoints(metric pdata.Metric, extraDimen
 		dps = convertIntDatapoints(metric.IntGauge().DataPoints(), basePoint, extraDimensions)
 	case pdata.MetricDataTypeIntSum:
 		dps = convertIntDatapoints(metric.IntSum().DataPoints(), basePoint, extraDimensions)
-	case pdata.MetricDataTypeDoubleGauge:
-		dps = convertDoubleDatapoints(metric.DoubleGauge().DataPoints(), basePoint, extraDimensions)
+	case pdata.MetricDataTypeGauge:
+		dps = convertDoubleDatapoints(metric.Gauge().DataPoints(), basePoint, extraDimensions)
 	case pdata.MetricDataTypeSum:
 		dps = convertDoubleDatapoints(metric.Sum().DataPoints(), basePoint, extraDimensions)
 	case pdata.MetricDataTypeIntHistogram:
@@ -261,7 +261,7 @@ func fromMetricDataTypeToMetricType(metric pdata.Metric) *sfxpb.MetricType {
 	case pdata.MetricDataTypeIntGauge:
 		return &sfxMetricTypeGauge
 
-	case pdata.MetricDataTypeDoubleGauge:
+	case pdata.MetricDataTypeGauge:
 		return &sfxMetricTypeGauge
 
 	case pdata.MetricDataTypeIntSum:

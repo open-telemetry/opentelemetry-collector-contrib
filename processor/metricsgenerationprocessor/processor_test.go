@@ -318,9 +318,9 @@ func TestMetricsGenerationProcessor(t *testing.T) {
 
 				require.Equal(t, eM.Name(), aM.Name())
 
-				if eM.DataType() == pdata.MetricDataTypeDoubleGauge {
-					eDataPoints := eM.DoubleGauge().DataPoints()
-					aDataPoints := aM.DoubleGauge().DataPoints()
+				if eM.DataType() == pdata.MetricDataTypeGauge {
+					eDataPoints := eM.Gauge().DataPoints()
+					aDataPoints := aM.Gauge().DataPoints()
 					require.Equal(t, eDataPoints.Len(), aDataPoints.Len())
 
 					for j := 0; j < eDataPoints.Len(); j++ {
@@ -354,9 +354,9 @@ func generateTestMetrics(tm testMetric) pdata.Metrics {
 	for i, name := range tm.metricNames {
 		m := ms.AppendEmpty()
 		m.SetName(name)
-		m.SetDataType(pdata.MetricDataTypeDoubleGauge)
+		m.SetDataType(pdata.MetricDataTypeGauge
 		for _, value := range tm.metricValues[i] {
-			dp := m.DoubleGauge().DataPoints().AppendEmpty()
+			dp := m.Gauge().DataPoints().AppendEmpty()
 			dp.SetTimestamp(pdata.TimestampFromTime(now.Add(10 * time.Second)))
 			dp.SetValue(value)
 		}
@@ -392,9 +392,9 @@ func getOutputForIntGaugeTest() pdata.Metrics {
 	})
 	ilm := intGaugeOutputMetrics.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics()
 	doubleMetric := ilm.AppendEmpty()
-	doubleMetric.SetDataType(pdata.MetricDataTypeDoubleGauge)
+	doubleMetric.SetDataType(pdata.MetricDataTypeGauge
 	doubleMetric.SetName("metric_calculated")
-	neweDoubleDataPoint := doubleMetric.DoubleGauge().DataPoints().AppendEmpty()
+	neweDoubleDataPoint := doubleMetric.Gauge().DataPoints().AppendEmpty()
 	neweDoubleDataPoint.SetValue(105)
 
 	return intGaugeOutputMetrics

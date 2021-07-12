@@ -122,8 +122,8 @@ func TestConsumeMetrics(t *testing.T) {
 	m := ilm.Metrics().AppendEmpty()
 
 	m.SetName("test_gauge")
-	m.SetDataType(pdata.MetricDataTypeDoubleGauge)
-	dp := m.DoubleGauge().DataPoints().AppendEmpty()
+	m.SetDataType(pdata.MetricDataTypeGauge)
+	dp := m.Gauge().DataPoints().AppendEmpty()
 	dp.LabelsMap().InitFromMap(map[string]string{
 		"k0": "v0",
 		"k1": "v1",
@@ -257,9 +257,9 @@ func TestConsumeMetricsWithAccessTokenPassthrough(t *testing.T) {
 		m := ilm.Metrics().AppendEmpty()
 
 		m.SetName("test_gauge")
-		m.SetDataType(pdata.MetricDataTypeDoubleGauge)
+		m.SetDataType(pdata.MetricDataTypeGauge)
 
-		dp := m.DoubleGauge().DataPoints().AppendEmpty()
+		dp := m.Gauge().DataPoints().AppendEmpty()
 		dp.LabelsMap().InitFromMap(map[string]string{
 			"k0": "v0",
 			"k1": "v1",
@@ -323,8 +323,8 @@ func TestConsumeMetricsWithAccessTokenPassthrough(t *testing.T) {
 				m := ilm.Metrics().AppendEmpty()
 
 				m.SetName("test_gauge")
-				m.SetDataType(pdata.MetricDataTypeDoubleGauge)
-				dp := m.DoubleGauge().DataPoints().AppendEmpty()
+				m.SetDataType(pdata.MetricDataTypeGauge)
+				dp := m.Gauge().DataPoints().AppendEmpty()
 				dp.LabelsMap().InitFromMap(map[string]string{
 					"k0": "v0",
 					"k1": "v1",

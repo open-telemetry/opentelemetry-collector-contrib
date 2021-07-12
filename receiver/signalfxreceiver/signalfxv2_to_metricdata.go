@@ -71,8 +71,8 @@ func signalFxV2ToMetrics(
 			err = fillIntDataPoint(sfxDataPoint, m.IntGauge().DataPoints())
 		case pdata.MetricDataTypeIntSum:
 			err = fillIntDataPoint(sfxDataPoint, m.IntSum().DataPoints())
-		case pdata.MetricDataTypeDoubleGauge:
-			err = fillDoubleDataPoint(sfxDataPoint, m.DoubleGauge().DataPoints())
+		case pdata.MetricDataTypeGauge:
+			err = fillDoubleDataPoint(sfxDataPoint, m.Gauge().DataPoints())
 		case pdata.MetricDataTypeSum:
 			err = fillDoubleDataPoint(sfxDataPoint, m.Sum().DataPoints())
 		}
@@ -109,7 +109,7 @@ func fillInType(
 		switch {
 		case sfxDatum.DoubleValue != nil:
 			// Numerical: Periodic, instantaneous measurement of some state.
-			m.SetDataType(pdata.MetricDataTypeDoubleGauge)
+			m.SetDataType(pdata.MetricDataTypeGauge)
 		case sfxDatum.IntValue != nil:
 			m.SetDataType(pdata.MetricDataTypeIntGauge)
 		default:

@@ -269,8 +269,8 @@ func getDataPoints(pmd *pdata.Metric, metadata cWMetricMetadata, logger *zap.Log
 			adjusterMetadata,
 			metric.DataPoints(),
 		}
-	case pdata.MetricDataTypeDoubleGauge:
-		metric := pmd.DoubleGauge()
+	case pdata.MetricDataTypeGauge:
+		metric := pmd.Gauge()
 		dps = doubleDataPointSlice{
 			metadata.instrumentationLibraryName,
 			adjusterMetadata,
