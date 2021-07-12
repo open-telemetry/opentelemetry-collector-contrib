@@ -53,9 +53,9 @@ func isCumulativeMonotonic(md pdata.Metric) bool {
 	case pdata.MetricDataTypeIntSum:
 		return md.IntSum().AggregationTemporality() == pdata.AggregationTemporalityCumulative &&
 			md.IntSum().IsMonotonic()
-	case pdata.MetricDataTypeDoubleSum:
-		return md.DoubleSum().AggregationTemporality() == pdata.AggregationTemporalityCumulative &&
-			md.DoubleSum().IsMonotonic()
+	case pdata.MetricDataTypeSum:
+		return md.Sum().AggregationTemporality() == pdata.AggregationTemporalityCumulative &&
+			md.Sum().IsMonotonic()
 	}
 	return false
 }
@@ -338,11 +338,11 @@ func mapMetrics(logger *zap.Logger, cfg config.MetricsConfig, prevPts *ttlmap.TT
 					} else {
 						datapoints = mapIntMetrics(md.Name(), md.IntSum().DataPoints(), attributeTags)
 					}
-				case pdata.MetricDataTypeDoubleSum:
+				case pdata.MetricDataTypeSum:
 					if cfg.SendMonotonic && isCumulativeMonotonic(md) {
-						datapoints = mapDoubleMonotonicMetrics(md.Name(), prevPts, md.DoubleSum().DataPoints(), attributeTags)
+						datapoints = mapDoubleMonotonicMetrics(md.Name(), prevPts, md.Sum().DataPoints(), attributeTags)
 					} else {
-						datapoints = mapDoubleMetrics(md.Name(), md.DoubleSum().DataPoints(), attributeTags)
+						datapoints = mapDoubleMetrics(md.Name(), md.Sum().DataPoints(), attributeTags)
 					}
 				case pdata.MetricDataTypeIntHistogram:
 					datapoints = mapIntHistogramMetrics(md.Name(), md.IntHistogram().DataPoints(), cfg.Buckets, attributeTags)

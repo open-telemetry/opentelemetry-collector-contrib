@@ -341,8 +341,8 @@ func (t *transformer) Metric(m pdata.Metric) ([]telemetry.Metric, error) {
 				output = append(output, nrMetric)
 			}
 		}
-	case pdata.MetricDataTypeDoubleSum:
-		sum := m.DoubleSum()
+	case pdata.MetricDataTypeSum:
+		sum := m.Sum()
 		temporality := sum.AggregationTemporality()
 		k.MetricTemporality = temporality
 		t.details.metricMetadataCount[k]++

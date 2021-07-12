@@ -122,8 +122,8 @@ func (gf *graphiteFormatter) metric2String(record metricPair) string {
 		for i := 0; i < dps.Len(); i++ {
 			nextLines = append(nextLines, gf.doubleRecord(fs, name, dps.At(i)))
 		}
-	case pdata.MetricDataTypeDoubleSum:
-		dps := record.metric.DoubleSum().DataPoints()
+	case pdata.MetricDataTypeSum:
+		dps := record.metric.Sum().DataPoints()
 		nextLines = make([]string, 0, dps.Len())
 		for i := 0; i < dps.Len(); i++ {
 			nextLines = append(nextLines, gf.doubleRecord(fs, name, dps.At(i)))

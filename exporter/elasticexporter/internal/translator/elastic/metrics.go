@@ -77,8 +77,8 @@ func EncodeMetrics(otlpMetrics pdata.MetricSlice, otlpLibrary pdata.Instrumentat
 					}},
 				})
 			}
-		case pdata.MetricDataTypeDoubleSum:
-			doubleSum := metric.DoubleSum()
+		case pdata.MetricDataTypeSum:
+			doubleSum := metric.Sum()
 			dps := doubleSum.DataPoints()
 			for i := 0; i < dps.Len(); i++ {
 				dp := dps.At(i)

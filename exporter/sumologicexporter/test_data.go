@@ -121,18 +121,18 @@ func exampleDoubleSumMetric() metricPair {
 		metric:     pdata.NewMetric(),
 	}
 
-	metric.metric.SetDataType(pdata.MetricDataTypeDoubleSum)
+	metric.metric.SetDataType(pdata.MetricDataTypeSum)
 	metric.metric.SetName("sum_metric_double_test")
 
 	metric.attributes.InsertString("foo", "bar")
 
-	dp := metric.metric.DoubleSum().DataPoints().AppendEmpty()
+	dp := metric.metric.Sum().DataPoints().AppendEmpty()
 	dp.LabelsMap().Insert("pod_name", "lorem")
 	dp.LabelsMap().Insert("namespace", "default")
 	dp.SetValue(45.6)
 	dp.SetTimestamp(1618124444.169 * 1e9)
 
-	dp = metric.metric.DoubleSum().DataPoints().AppendEmpty()
+	dp = metric.metric.Sum().DataPoints().AppendEmpty()
 	dp.LabelsMap().Insert("pod_name", "opsum")
 	dp.LabelsMap().Insert("namespace", "kube-config")
 	dp.SetValue(1238.1)
