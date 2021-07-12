@@ -73,7 +73,7 @@ func (r *memcachedScraper) scrape(_ context.Context) (pdata.ResourceMetricsSlice
 	rUsage := initLabeledDoubleGauge(ilm.Metrics(), metadata.M.MemcachedRusage.Name())
 	network := initLabeledIntSum(ilm.Metrics(), metadata.M.MemcachedNetwork.Name())
 	operationCount := initLabeledIntSum(ilm.Metrics(), metadata.M.MemcachedOperationCount.Name())
-
+	hitRatio := initLabeledDoubleGauge(ilm.Metrics(), metadata.M.MemcachedOperationHitRatio.Name())
 	for _, stats := range stats {
 		for k, v := range stats.Stats {
 			labels := pdata.NewStringMap()
@@ -103,13 +103,21 @@ func (r *memcachedScraper) scrape(_ context.Context) (pdata.ResourceMetricsSlice
 			case "evictions":
 				addIntSum(ilm.Metrics(), metadata.M.MemcachedEvictionCount.Name(), now, labels, parseInt(v))
 			case "bytes_read":
-				labels.Insert(metadata.L.Direction, "sent")
+				labels.Insert(metadata.L.Direction, "received")
 				addToIntLabeledMetric(network, now, labels, parseInt(v))
 			case "bytes_written":
-				labels.Insert(metadata.L.Direction, "received")
+				labels.Insert(metadata.L.Direction, "sent")
 				addToIntLabeledMetric(network, now, labels, parseInt(v))
 			case "get_hits":
 				labels.Insert(metadata.L.Operation, "get")
+				statSlice := stats.Stats
+				hits := parseFloat(statSlice["get_hits"])
+				misses := parseFloat(statSlice["get_misses"])
+				if hits+misses > 0 {
+					addToDoubleLabeledMetric(hitRatio, now, labels, (hits / (hits + misses) * 100))
+				} else {
+					addToDoubleLabeledMetric(hitRatio, now, labels, 0)
+				}
 				labels.Insert(metadata.L.Type, "hit")
 				addToIntLabeledMetric(operationCount, now, labels, parseInt(v))
 			case "get_misses":
@@ -118,6 +126,14 @@ func (r *memcachedScraper) scrape(_ context.Context) (pdata.ResourceMetricsSlice
 				addToIntLabeledMetric(operationCount, now, labels, parseInt(v))
 			case "incr_hits":
 				labels.Insert(metadata.L.Operation, "increment")
+				statSlice := stats.Stats
+				hits := parseFloat(statSlice["incr_hits"])
+				misses := parseFloat(statSlice["incr_misses"])
+				if hits+misses > 0 {
+					addToDoubleLabeledMetric(hitRatio, now, labels, (hits / (hits + misses) * 100))
+				} else {
+					addToDoubleLabeledMetric(hitRatio, now, labels, 0)
+				}
 				labels.Insert(metadata.L.Type, "hit")
 				addToIntLabeledMetric(operationCount, now, labels, parseInt(v))
 			case "incr_misses":
@@ -126,6 +142,14 @@ func (r *memcachedScraper) scrape(_ context.Context) (pdata.ResourceMetricsSlice
 				addToIntLabeledMetric(operationCount, now, labels, parseInt(v))
 			case "decr_hits":
 				labels.Insert(metadata.L.Operation, "decrement")
+				statSlice := stats.Stats
+				hits := parseFloat(statSlice["decr_hits"])
+				misses := parseFloat(statSlice["decr_misses"])
+				if hits+misses > 0 {
+					addToDoubleLabeledMetric(hitRatio, now, labels, (hits / (hits + misses) * 100))
+				} else {
+					addToDoubleLabeledMetric(hitRatio, now, labels, 0)
+				}
 				labels.Insert(metadata.L.Type, "hit")
 				addToIntLabeledMetric(operationCount, now, labels, parseInt(v))
 			case "decr_misses":
@@ -138,7 +162,6 @@ func (r *memcachedScraper) scrape(_ context.Context) (pdata.ResourceMetricsSlice
 			case "rusage_user":
 				labels.Insert(metadata.L.UsageType, "user")
 				addToDoubleLabeledMetric(rUsage, now, labels, parseFloat(v))
-
 			}
 		}
 	}

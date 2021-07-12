@@ -75,7 +75,7 @@ metrics:
     labels: []
   memcached.network:
     description: Bytes transferred over the network.
-    unit: 1
+    unit: by
     data:
       type: int sum
       monotonic: true

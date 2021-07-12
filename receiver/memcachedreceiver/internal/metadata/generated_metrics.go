@@ -176,7 +176,7 @@ var Metrics = &metricStruct{
 		func(metric pdata.Metric) {
 			metric.SetName("memcached.network")
 			metric.SetDescription("Bytes transferred over the network.")
-			metric.SetUnit("1")
+			metric.SetUnit("by")
 			metric.SetDataType(pdata.MetricDataTypeIntSum)
 			metric.IntSum().SetIsMonotonic(true)
 			metric.IntSum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
@@ -267,13 +267,11 @@ var LabelCommand = struct {
 	Set   string
 	Flush string
 	Touch string
-	Meta  string
 }{
 	"get",
 	"set",
 	"flush",
 	"touch",
-	"meta",
 }
 
 // LabelDirection are the possible values that the label "direction" can have.
