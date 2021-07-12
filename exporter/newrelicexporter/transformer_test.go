@@ -26,7 +26,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/translator/internaldata"
 	"go.uber.org/zap"
 )
@@ -47,7 +47,6 @@ func TestCommonAttributes(t *testing.T) {
 	details := newTraceMetadata(context.TODO())
 	commonAttrs := newTransformer(zap.NewNop(), buildInfo, &details).CommonAttributes(resource, ilm)
 	assert.Equal(t, "the-collector", commonAttrs[collectorNameKey])
-	assert.Equal(t, "0.0.1", commonAttrs[collectorVersionKey])
 	assert.Equal(t, "R1", commonAttrs["resource"])
 	assert.Equal(t, "test name", commonAttrs[instrumentationNameKey])
 	assert.Equal(t, "test version", commonAttrs[instrumentationVersionKey])
@@ -499,8 +498,7 @@ func TestTransformSpan(t *testing.T) {
 				event.SetName("this is the event name")
 				event.SetTimestamp(pdata.TimestampFromTime(now))
 				event.SetDroppedAttributesCount(1)
-				tgt := s.Events().AppendEmpty()
-				event.CopyTo(tgt)
+				s.Events().Append(event)
 				return s
 			},
 			want: telemetry.Span{
