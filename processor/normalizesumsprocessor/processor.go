@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"strings"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/model/pdata"
 	"go.uber.org/zap"
@@ -48,6 +49,16 @@ func newNormalizeSumsProcessor(logger *zap.Logger, transforms []Transform) *Norm
 	}
 }
 
+// Start is invoked during service startup.
+func (nsp *NormalizeSumsProcessor) Start(context.Context, component.Host) error {
+	return nil
+}
+
+// Shutdown is invoked during service shutdown.
+func (nsp *NormalizeSumsProcessor) Shutdown(context.Context) error {
+	return nil
+}
+
 // ProcessMetrics implements the MProcessor interface.
 func (nsp *NormalizeSumsProcessor) ProcessMetrics(ctx context.Context, metrics pdata.Metrics) (pdata.Metrics, error) {
 	var errors []error
@@ -75,7 +86,7 @@ func (nsp *NormalizeSumsProcessor) transformMetrics(rms pdata.ResourceMetrics) [
 		for k := 0; k < ilm.Len(); k++ {
 			metric := ilm.At(k)
 			if shouldTransform, transform := nsp.shouldTransformMetric(metric); shouldTransform {
-				err, keepMetric := nsp.processMetric(rms.Resource(), metric)
+				keepMetric, err := nsp.processMetric(rms.Resource(), metric)
 				if err != nil {
 					errors = append(errors, err)
 				}
@@ -120,38 +131,31 @@ func (nsp *NormalizeSumsProcessor) shouldTransformMetric(metric pdata.Metric) (b
 	return false, nil
 }
 
-func (nsp *NormalizeSumsProcessor) processMetric(resource pdata.Resource, metric pdata.Metric) (error, bool) {
+func (nsp *NormalizeSumsProcessor) processMetric(resource pdata.Resource, metric pdata.Metric) (bool, error) {
 	switch t := metric.DataType(); t {
 	case pdata.MetricDataTypeIntSum:
-		if dataPointsRemaining, processingErr := nsp.processIntSumMetric(resource, metric); processingErr != nil {
-			return processingErr, false
-		} else {
-			return nil, dataPointsRemaining > 0
-		}
+		return nsp.processIntSumMetric(resource, metric) > 0, nil
 	case pdata.MetricDataTypeDoubleSum:
-		if dataPointsRemaining, processingErr := nsp.processDoubleSumMetric(resource, metric); processingErr != nil {
-			return processingErr, false
-		} else {
-			return nil, dataPointsRemaining > 0
-		}
+		return nsp.processDoubleSumMetric(resource, metric) > 0, nil
+
 	default:
-		return fmt.Errorf("Data Type not supported %s", t), false
+		return false, fmt.Errorf("data type not supported %s", t)
 	}
 }
 
-func (nsp *NormalizeSumsProcessor) processIntSumMetric(resource pdata.Resource, metric pdata.Metric) (int, error) {
+func (nsp *NormalizeSumsProcessor) processIntSumMetric(resource pdata.Resource, metric pdata.Metric) int {
 	dps := metric.IntSum().DataPoints()
 	for i := 0; i < dps.Len(); {
 		reportData := nsp.processIntSumDataPoint(dps.At(i), resource, metric)
 
-		if reportData == false {
+		if !reportData {
 			intRemoveAt(dps, i)
 			continue
 		}
 		i++
 	}
 
-	return dps.Len(), nil
+	return dps.Len()
 }
 
 func (nsp *NormalizeSumsProcessor) processIntSumDataPoint(dp pdata.IntDataPoint, resource pdata.Resource, metric pdata.Metric) bool {
@@ -197,19 +201,19 @@ func (nsp *NormalizeSumsProcessor) processIntSumDataPoint(dp pdata.IntDataPoint,
 	return true
 }
 
-func (nsp *NormalizeSumsProcessor) processDoubleSumMetric(resource pdata.Resource, metric pdata.Metric) (int, error) {
+func (nsp *NormalizeSumsProcessor) processDoubleSumMetric(resource pdata.Resource, metric pdata.Metric) int {
 	dps := metric.DoubleSum().DataPoints()
 	for i := 0; i < dps.Len(); {
 		reportData := nsp.processDoubleSumDataPoint(dps.At(i), resource, metric)
 
-		if reportData == false {
+		if !reportData {
 			doubleRemoveAt(dps, i)
 			continue
 		}
 		i++
 	}
 
-	return dps.Len(), nil
+	return dps.Len()
 }
 
 func (nsp *NormalizeSumsProcessor) processDoubleSumDataPoint(dp pdata.DoubleDataPoint, resource pdata.Resource, metric pdata.Metric) bool {
