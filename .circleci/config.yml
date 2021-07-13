@@ -218,12 +218,6 @@ workflows:
           filters:
             tags:
               only: /^v[0-9]+\.[0-9]+\.[0-9]+.*/
-      - lint:
-          requires:
-            - setup
-          filters:
-            tags:
-              only: /^v[0-9]+\.[0-9]+\.[0-9]+.*/
       - build-examples:
           requires:
             - setup
@@ -252,12 +246,6 @@ workflows:
           filters:
             branches:
               ignore: main
-      - unit-tests:
-          requires:
-            - setup
-          filters:
-            tags:
-              only: /^v[0-9]+\.[0-9]+\.[0-9]+.*/
       - windows-msi:
           requires:
             - cross-compile
@@ -270,9 +258,6 @@ workflows:
       # This is because these jobs can access the GITHUB_TOKEN secret which is not available to PR builds.
       - publish-check:
           requires:
-            - lint
-            - unit-tests
-            - integration-tests
             - cross-compile
             - loadtest-with-github-reports
             - windows-msi
@@ -287,9 +272,6 @@ workflows:
       # GITHUB_TOKEN secret. 
       - publish-check:
           requires:
-            - lint
-            - unit-tests
-            - integration-tests
             - cross-compile
             - loadtest
             - windows-msi
@@ -303,9 +285,6 @@ workflows:
             - github-release-and-issues-api-token
             - dockerhub-token
           requires:
-            - lint
-            - unit-tests
-            - integration-tests
             - cross-compile
             - loadtest-with-github-reports
             - windows-msi
@@ -318,20 +297,13 @@ workflows:
               only: /^v[0-9]+\.[0-9]+\.[0-9]+.*/
       - spawn-stability-tests-job:
           requires:
-            - lint
-            - unit-tests
             - loadtest-with-github-reports
-            - integration-tests
             - cross-compile
           filters:
             branches:
               only: /main|release\/.+/
             tags:
               ignore: /.*/
-      - integration-tests:
-          filters:
-            tags:
-              only: /^v[0-9]+\.[0-9]+\.[0-9]+.*/
       - build-package:
           name: deb-package
           package_type: deb
@@ -359,21 +331,6 @@ jobs:
           paths:
             - project
             - go/bin
-  lint:
-    executor: golang
-    steps:
-      - restore_workspace
-      - run:
-          name: Lint
-          command: make -j2 for-all-target TARGET=lint
-      - run:
-          name: Checks
-          command: make -j4 checklicense checkdoc impi misspell
-      - run:
-          name: Codegen
-          command: |
-            make generate
-            git diff --exit-code ':!*go.sum' || (echo 'Generated code is out of date, please run "make generate" and commit the changes in this PR.' && exit 1)
 
   build-examples:
     docker:
@@ -400,21 +357,6 @@ jobs:
           root: ~/
           paths: project/bin
 
-  unit-tests:
-    executor: golang
-    steps:
-      - restore_workspace
-      - run:
-          name: Unit test coverage
-          command: make unit-tests-with-cover
-# DISABLE CODECOV UNTIL THE SCRIPT IS AUDITED AND WE ARE CERTAIN IT IS OK TO TO EXECUTE IT.
-#      - run:
-#          name: Upload unit test coverage
-#          command: bash <(curl -s https://codecov.io/bash) -F unit
-
-  # this job is identical to the `loadtest` job defined below except that it
-  # reports failures as github issues.
-  # any pipeline using this job must enable "github-release-and-issues-api-token" context
   loadtest-with-github-reports:
     executor: golang
     resource_class: medium+
@@ -565,28 +507,6 @@ jobs:
       - store_test_results:
           path: testbed/stabilitytests/results/junit
       - github_issue_generator
-
-  integration-tests:
-    executor: machine
-    environment:
-      GOPATH: /home/circleci/go
-    steps:
-      - setup_go
-      - setup
-      - run:
-          name: Integration tests with coverage
-          command: |
-            mkdir -p test-results/junit
-            trap "go-junit-report -set-exit-code < test-results/go-integration-tests.out > test-results/junit/results.xml" EXIT
-            make integration-tests-with-cover | tee test-results/go-integration-tests.out
-# DISABLE CODECOV UNTIL THE SCRIPT IS AUDITED AND WE ARE CERTAIN IT IS OK TO TO EXECUTE IT.
-#      - run:
-#          name: Upload integration test coverage
-#          command: bash <(curl -s https://codecov.io/bash) -F integration
-      - store_test_results:
-          path: test-results/junit
-      - store_artifacts:
-          path: test-results
 
   build-package:
     machine:
