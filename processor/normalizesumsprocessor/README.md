@@ -15,9 +15,20 @@ favor of providing only accurate data representing the sum from a known point
 
 ## Configuration
 
+List the metrics being transformed under 'transforms'. If any need to be renamed,
+a new name can be provided, the old metric will be removed.
+
 ```yaml
-metrics:
-  - metric_name: <metric_name>
-    new_name: <new_metric_name> # optional. If not provided, transforms in place
-  - metric_name: <another_metric_name>
+normalizesums:
+  transforms:
+    - metric_name: <metric_name>
+      new_name: <new_metric_name> # optional. If not provided, transforms in place
+    - metric_name: <another_metric_name>
+```
+
+
+If you do not provide a transforms list, any Sum type metrics found will be transformed
+
+```yaml
+normalizesums:
 ```
