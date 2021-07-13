@@ -59,7 +59,7 @@ func (m *redisMetric) parseMetric(strVal string, t *timeBundle) (pdata.Metric, e
 			return pdm, err
 		}
 		initDoubleMetric(m, val, t, pdm)
-	case pdata.MetricDataTypeDoubleGauge:
+	case pdata.MetricDataTypeGauge:
 		var val float64
 		val, err = strToDoublePoint(strVal)
 		if err != nil {

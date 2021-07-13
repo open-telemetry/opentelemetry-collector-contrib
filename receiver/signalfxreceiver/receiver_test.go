@@ -123,8 +123,8 @@ func Test_signalfxeceiver_EndToEnd(t *testing.T) {
 	{
 		m := ilm.Metrics().AppendEmpty()
 		m.SetName("gauge_double_with_dims")
-		m.SetDataType(pdata.MetricDataTypeDoubleGauge)
-		doublePt := m.DoubleGauge().DataPoints().AppendEmpty()
+		m.SetDataType(pdata.MetricDataTypeGauge)
+		doublePt := m.Gauge().DataPoints().AppendEmpty()
 		doublePt.SetTimestamp(ts)
 		doublePt.SetValue(doubleVal)
 	}

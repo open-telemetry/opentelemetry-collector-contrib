@@ -221,7 +221,7 @@ func (f *prometheusFormatter) mergeAttributes(attributes pdata.AttributeMap, add
 
 // doubleGauge2Strings converts DoubleGauge record to a list of strings (one per dataPoint)
 func (f *prometheusFormatter) doubleGauge2Strings(record metricPair) []string {
-	dps := record.metric.DoubleGauge().DataPoints()
+	dps := record.metric.Gauge().DataPoints()
 	lines := make([]string, 0, dps.Len())
 
 	for i := 0; i < dps.Len(); i++ {
@@ -434,7 +434,7 @@ func (f *prometheusFormatter) metric2String(record metricPair) string {
 	switch record.metric.DataType() {
 	case pdata.MetricDataTypeIntGauge:
 		lines = f.intGauge2Strings(record)
-	case pdata.MetricDataTypeDoubleGauge:
+	case pdata.MetricDataTypeGauge:
 		lines = f.doubleGauge2Strings(record)
 	case pdata.MetricDataTypeIntSum:
 		lines = f.intSum2Strings(record)

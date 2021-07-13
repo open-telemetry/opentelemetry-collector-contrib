@@ -57,8 +57,8 @@ func Test_signalFxV2ToMetricsData(t *testing.T) {
 		case pdata.MetricDataTypeIntSum:
 			m.IntSum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
 			dps = m.IntSum().DataPoints()
-		case pdata.MetricDataTypeDoubleGauge:
-			dps = m.DoubleGauge().DataPoints()
+		case pdata.MetricDataTypeGauge:
+			dps = m.Gauge().DataPoints()
 		case pdata.MetricDataTypeSum:
 			m.Sum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
 			dps = m.Sum().DataPoints()
@@ -72,7 +72,7 @@ func Test_signalFxV2ToMetricsData(t *testing.T) {
 			labels = dp.LabelsMap()
 			dp.SetTimestamp(pdata.TimestampFromTime(now.Truncate(time.Millisecond)))
 			dp.SetValue(int64(val.(int)))
-		case pdata.MetricDataTypeDoubleGauge, pdata.MetricDataTypeSum:
+		case pdata.MetricDataTypeGauge, pdata.MetricDataTypeSum:
 			dp := dps.(pdata.DoubleDataPointSlice).AppendEmpty()
 			labels = dp.LabelsMap()
 			dp.SetTimestamp(pdata.TimestampFromTime(now.Truncate(time.Millisecond)))
@@ -110,7 +110,7 @@ func Test_signalFxV2ToMetricsData(t *testing.T) {
 				}
 				return []*sfxpb.DataPoint{pt}
 			}(),
-			wantMetricsData: buildDefaultMetricsData(pdata.MetricDataTypeDoubleGauge, 13.13),
+			wantMetricsData: buildDefaultMetricsData(pdata.MetricDataTypeGauge, 13.13),
 		},
 		{
 			name: "int_counter",
