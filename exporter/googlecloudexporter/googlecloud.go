@@ -31,7 +31,6 @@ import (
 	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/translator/conventions"
 	"go.opentelemetry.io/collector/translator/internaldata"
-	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	"google.golang.org/api/option"
 	"google.golang.org/grpc"
 )
@@ -89,8 +88,8 @@ func generateClientOptions(cfg *Config) ([]option.ClientOption, error) {
 	return copts, nil
 }
 
-func newGoogleCloudTracesExporter(cfg *Config, params component.ExporterCreateSettings) (component.TracesExporter, error) {
-	setVersionInUserAgent(cfg, params.BuildInfo.Version)
+func newGoogleCloudTracesExporter(cfg *Config, set component.ExporterCreateSettings) (component.TracesExporter, error) {
+	setVersionInUserAgent(cfg, set.BuildInfo.Version)
 
 	topts := []cloudtrace.Option{
 		cloudtrace.WithProjectID(cfg.ProjectID),
@@ -112,7 +111,7 @@ func newGoogleCloudTracesExporter(cfg *Config, params component.ExporterCreateSe
 
 	return exporterhelper.NewTracesExporter(
 		cfg,
-		params.Logger,
+		set,
 		tExp.pushTraces,
 		exporterhelper.WithShutdown(tExp.Shutdown),
 		// Disable exporterhelper Timeout, since we are using a custom mechanism
@@ -122,8 +121,8 @@ func newGoogleCloudTracesExporter(cfg *Config, params component.ExporterCreateSe
 		exporterhelper.WithRetry(cfg.RetrySettings))
 }
 
-func newGoogleCloudMetricsExporter(cfg *Config, params component.ExporterCreateSettings) (component.MetricsExporter, error) {
-	setVersionInUserAgent(cfg, params.BuildInfo.Version)
+func newGoogleCloudMetricsExporter(cfg *Config, set component.ExporterCreateSettings) (component.MetricsExporter, error) {
+	setVersionInUserAgent(cfg, set.BuildInfo.Version)
 
 	// TODO:  For each ProjectID, create a different exporter
 	// or at least a unique Google Cloud client per ProjectID.
@@ -170,7 +169,7 @@ func newGoogleCloudMetricsExporter(cfg *Config, params component.ExporterCreateS
 
 	return exporterhelper.NewMetricsExporter(
 		cfg,
-		params.Logger,
+		set,
 		mExp.pushMetrics,
 		exporterhelper.WithShutdown(mExp.Shutdown),
 		// Disable exporterhelper Timeout, since we are using a custom mechanism
@@ -237,13 +236,13 @@ func exportAdditionalLabels(mds []*agentmetricspb.ExportMetricsServiceRequest) [
 func (te *traceExporter) pushTraces(ctx context.Context, td pdata.Traces) error {
 	var errs []error
 	resourceSpans := td.ResourceSpans()
-	spans := make([]*sdktrace.SpanSnapshot, 0, td.SpanCount())
+	spans := make([]cloudtrace.ReadOnlySpan, 0, td.SpanCount())
 	for i := 0; i < resourceSpans.Len(); i++ {
 		sd := pdataResourceSpansToOTSpanData(resourceSpans.At(i))
 		spans = append(spans, sd...)
 	}
 
-	err := te.texporter.ExportSpans(ctx, spans)
+	err := te.texporter.ExportCustomSpans(ctx, spans)
 	if err != nil {
 		errs = append(errs, err)
 	}

@@ -165,7 +165,7 @@ func Test_signalfxeceiver_EndToEnd(t *testing.T) {
 	}
 	exp, err := signalfxexporter.NewFactory().CreateMetricsExporter(
 		context.Background(),
-		component.ExporterCreateSettings{Logger: zap.NewNop()},
+		componenttest.NewNopExporterCreateSettings(),
 		expCfg)
 	require.NoError(t, err)
 	require.NoError(t, exp.Start(context.Background(), componenttest.NewNopHost()))

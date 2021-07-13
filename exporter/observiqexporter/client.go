@@ -26,6 +26,7 @@ import (
 	"sync"
 	"time"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/model/pdata"
 	"go.uber.org/zap"
@@ -42,6 +43,7 @@ type client struct {
 	throttleTimer  *time.Timer
 	throttleLock   sync.RWMutex
 	timesThrottled int
+	buildVersion   string
 }
 
 func (c *client) sendLogs(
@@ -56,7 +58,7 @@ func (c *client) sendLogs(
 	}
 
 	// Conversion errors should be returned after sending what could be converted.
-	data, conversionErrs := logdataToObservIQFormat(ld, c.config.AgentID, c.config.AgentName)
+	data, conversionErrs := logdataToObservIQFormat(ld, c.config.AgentID, c.config.AgentName, c.buildVersion)
 
 	jsonData, err := json.Marshal(data)
 
@@ -182,7 +184,7 @@ func (c *client) stop(context.Context) error {
 	return nil
 }
 
-func buildClient(config *Config, logger *zap.Logger) (*client, error) {
+func buildClient(config *Config, logger *zap.Logger, buildInfo component.BuildInfo) (*client, error) {
 	tlsCfg, err := config.TLSSetting.LoadTLSConfig()
 	if err != nil {
 		return nil, err
@@ -196,7 +198,8 @@ func buildClient(config *Config, logger *zap.Logger) (*client, error) {
 				TLSClientConfig: tlsCfg,
 			},
 		},
-		logger: logger,
-		config: config,
+		logger:       logger,
+		config:       config,
+		buildVersion: buildInfo.Version,
 	}, nil
 }

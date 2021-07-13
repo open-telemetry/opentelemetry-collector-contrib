@@ -26,7 +26,6 @@ import (
 	"go.opentelemetry.io/collector/config/configcheck"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configtls"
-	"go.uber.org/zap"
 )
 
 func TestType(t *testing.T) {
@@ -81,19 +80,19 @@ func TestCreateMetricsExporter(t *testing.T) {
 		{
 			name:                "success_case_with_auth",
 			cfg:                 validConfigWithAuth,
-			params:              component.ExporterCreateSettings{Logger: zap.NewNop()},
+			params:              componenttest.NewNopExporterCreateSettings(),
 			returnErrorOnCreate: false,
 		},
 		{
 			name:                "invalid_config_case",
 			cfg:                 invalidConfig,
-			params:              component.ExporterCreateSettings{Logger: zap.NewNop()},
+			params:              componenttest.NewNopExporterCreateSettings(),
 			returnErrorOnCreate: true,
 		},
 		{
 			name:               "invalid_tls_config_case",
 			cfg:                invalidTLSConfig,
-			params:             component.ExporterCreateSettings{Logger: zap.NewNop()},
+			params:             componenttest.NewNopExporterCreateSettings(),
 			returnErrorOnStart: true,
 		},
 	}

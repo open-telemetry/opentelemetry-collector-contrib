@@ -19,7 +19,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.uber.org/zap"
@@ -36,16 +36,12 @@ func TestCreateTestProcessor(t *testing.T) {
 		GroupByKeys:       []string{"foo"},
 	}
 
-	params := component.ProcessorCreateSettings{
-		Logger: zap.NewNop(),
-	}
-
-	tp, err := createTracesProcessor(context.Background(), params, cfg, consumertest.NewNop())
+	tp, err := createTracesProcessor(context.Background(), componenttest.NewNopProcessorCreateSettings(), cfg, consumertest.NewNop())
 	assert.NoError(t, err)
 	assert.NotNil(t, tp)
 	assert.Equal(t, true, tp.Capabilities().MutatesData)
 
-	lp, err := createLogsProcessor(context.Background(), params, cfg, consumertest.NewNop())
+	lp, err := createLogsProcessor(context.Background(), componenttest.NewNopProcessorCreateSettings(), cfg, consumertest.NewNop())
 	assert.NoError(t, err)
 	assert.NotNil(t, lp)
 	assert.Equal(t, true, lp.Capabilities().MutatesData)

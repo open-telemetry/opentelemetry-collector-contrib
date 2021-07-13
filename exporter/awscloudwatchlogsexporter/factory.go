@@ -40,16 +40,16 @@ func createDefaultConfig() config.Exporter {
 	}
 }
 
-func createLogsExporter(_ context.Context, params component.ExporterCreateSettings, cfg config.Exporter) (component.LogsExporter, error) {
+func createLogsExporter(_ context.Context, set component.ExporterCreateSettings, cfg config.Exporter) (component.LogsExporter, error) {
 	oCfg, ok := cfg.(*Config)
 	if !ok {
 		return nil, errors.New("invalid configuration type; can't cast to awscloudwatchlogsexporter.Config")
 	}
 
-	exporter := &exporter{config: oCfg, logger: params.Logger}
+	exporter := &exporter{config: oCfg, logger: set.Logger}
 	return exporterhelper.NewLogsExporter(
 		oCfg,
-		params.Logger,
+		set,
 		exporter.PushLogs,
 		exporterhelper.WithQueue(exporterhelper.QueueSettings{
 			Enabled:      true,

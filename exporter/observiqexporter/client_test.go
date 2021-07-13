@@ -16,14 +16,18 @@ package observiqexporter
 
 import (
 	"bytes"
+	"compress/gzip"
 	"context"
+	"encoding/json"
 	"errors"
 	"io/ioutil"
 	"net/http"
+	"strings"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/translator/conventions"
@@ -47,8 +51,14 @@ func (t testFailRoundTripper) RoundTrip(req *http.Request) (*http.Response, erro
 
 }
 
-func newTestHTTPClient(respCode *int, respBody *string, err error) *http.Client {
+type requestVerificationFunc func(t *testing.T, req *http.Request)
+
+func newTestHTTPClient(t *testing.T, respCode *int, respBody *string, testFunc *requestVerificationFunc, err error) *http.Client {
 	var rt http.RoundTripper = testRoundTripper(func(req *http.Request) *http.Response {
+		if testFunc != nil && *testFunc != nil {
+			(*testFunc)(t, req)
+		}
+
 		return &http.Response{
 			StatusCode: *respCode,
 			Body:       ioutil.NopCloser(bytes.NewBufferString(*respBody)),
@@ -67,9 +77,10 @@ func newTestHTTPClient(respCode *int, respBody *string, err error) *http.Client 
 
 func newTestClient(config *Config, httpClient *http.Client) *client {
 	return &client{
-		client: httpClient,
-		logger: zap.NewNop(),
-		config: config,
+		client:       httpClient,
+		logger:       zap.NewNop(),
+		config:       config,
+		buildVersion: component.DefaultBuildInfo().Version,
 	}
 }
 
@@ -96,6 +107,31 @@ func createLogData() pdata.Logs {
 	return logs
 }
 
+type observIQLogAddRequest struct {
+	Logs []observIQLogAddRequestLog `json:"logs"`
+}
+
+type observIQLogAddRequestLog struct {
+	ID    string           `json:"id"`
+	Size  int              `json:"size"`
+	Entry observIQLogEntry `json:"entry"`
+}
+
+func verifyFirstElementIsEntryFunc(e observIQLogEntry) requestVerificationFunc {
+	return func(t *testing.T, req *http.Request) {
+		gunzip, err := gzip.NewReader(req.Body)
+
+		require.NoError(t, err)
+
+		parsedReq := observIQLogAddRequest{}
+		err = json.NewDecoder(gunzip).Decode(&parsedReq)
+
+		require.NoError(t, err)
+		require.NotEmpty(t, parsedReq.Logs)
+		require.Equal(t, e, parsedReq.Logs[0].Entry)
+	}
+}
+
 func TestClientSendLogs(t *testing.T) {
 	type testCaseRequest struct {
 		// Inputs
@@ -104,8 +140,26 @@ func TestClientSendLogs(t *testing.T) {
 		respBody       string
 		timeoutTimer   bool // Timeout the last set timer created through timeAfterFunc()
 		//Outputs
+		verifyRequest    requestVerificationFunc // Function is used to verify the request submitted to the client is valid.
 		shouldError      bool
 		errorIsPermanant bool
+	}
+
+	timeNow = func() time.Time {
+		return time.Unix(0, 0)
+	}
+
+	defaultLogEntry := observIQLogEntry{
+		Timestamp: "1970-01-01T00:00:00.000Z",
+		Data: map[string]interface{}{
+			strings.ReplaceAll(conventions.AttributeNetHostIP, ".", "_"):   "1.1.1.1",
+			strings.ReplaceAll(conventions.AttributeNetHostPort, ".", "_"): float64(4000),
+			"recordNum": float64(0),
+		},
+		Message:  "message",
+		Severity: "default",
+		Resource: map[string]interface{}{},
+		Agent:    &observIQAgentInfo{ID: "0", Name: "agent", Version: "latest"},
 	}
 
 	testCases := []struct {
@@ -118,6 +172,7 @@ func TestClientSendLogs(t *testing.T) {
 			name: "Happy path",
 			config: Config{
 				Endpoint:  testURL,
+				AgentID:   "0",
 				AgentName: "agent",
 			},
 			reqs: []testCaseRequest{
@@ -125,6 +180,7 @@ func TestClientSendLogs(t *testing.T) {
 					logs:           createLogData(),
 					responseStatus: 200,
 					respBody:       "",
+					verifyRequest:  verifyFirstElementIsEntryFunc(defaultLogEntry),
 				},
 			},
 		},
@@ -132,6 +188,7 @@ func TestClientSendLogs(t *testing.T) {
 			name: "throttling",
 			config: Config{
 				Endpoint:  testURL,
+				AgentID:   "0",
 				AgentName: "agent",
 			},
 			reqs: []testCaseRequest{
@@ -163,6 +220,7 @@ func TestClientSendLogs(t *testing.T) {
 			name: "bad request errors permanent",
 			config: Config{
 				Endpoint:  testURL,
+				AgentID:   "0",
 				AgentName: "agent",
 			},
 			reqs: []testCaseRequest{
@@ -179,6 +237,7 @@ func TestClientSendLogs(t *testing.T) {
 			name: "500 error",
 			config: Config{
 				Endpoint:  testURL,
+				AgentID:   "0",
 				AgentName: "agent",
 			},
 			reqs: []testCaseRequest{
@@ -195,6 +254,7 @@ func TestClientSendLogs(t *testing.T) {
 			name: "client error",
 			config: Config{
 				Endpoint:  testURL,
+				AgentID:   "0",
 				AgentName: "agent",
 			},
 			clientError: errors.New("dial tcp failed"),
@@ -218,13 +278,15 @@ func TestClientSendLogs(t *testing.T) {
 		t.Run(testCase.name, func(t *testing.T) {
 			var respCode int
 			var respBody string
+			var verifyFunc requestVerificationFunc
 
-			httpClient := newTestHTTPClient(&respCode, &respBody, testCase.clientError)
+			httpClient := newTestHTTPClient(t, &respCode, &respBody, &verifyFunc, testCase.clientError)
 			c := newTestClient(&testCase.config, httpClient)
 
 			for _, req := range testCase.reqs {
 				respCode = req.responseStatus
 				respBody = req.respBody
+				verifyFunc = req.verifyRequest
 
 				if req.timeoutTimer {
 					require.NotNil(t, timerFunc)
