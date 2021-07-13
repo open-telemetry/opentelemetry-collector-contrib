@@ -33,9 +33,9 @@ type Extension interface {
 // Client is the interface that storage clients must implement
 // All methods should return error only if a problem occurred.
 // This mirrors the behavior of a golang map:
-//   - Set and SetBatch doesn't error if a key already exists - it just overwrites the value.
-//   - Get and GetBatch doesn't error if a key is not found - it just returns nil.
-//   - Delete and DeleteBatch doesn't error if the key doesn't exist - it just no-ops.
+//   - Set and SetBatch don't error if a key already exists - they just overwrite the value.
+//   - Get and GetBatch don't error if a key is not found - they just returns nil.
+//   - Delete and DeleteBatch don't error if the key doesn't exist - they just no-ops.
 // This also provides a way to differentiate data operations
 //   [overwrite | not-found | no-op] from "real" problems
 type Client interface {
@@ -53,10 +53,11 @@ type Client interface {
 
 	// GetBatch will retrieve data from storage that corresponds to the
 	// collection of keys. It will return an array of results, where each
-	// of one corresponds to a key at a given position and can be nil if not found
+	// one corresponds to a key at a given position and will be nil, if key is not found
 	GetBatch(context.Context, []string) ([][]byte, error)
 
-	// SetBatch will store data provided in the map. If a value for a given key is nil, the entry is deleted
+	// SetBatch will store data provided in the map.
+	// When a value for a given key is nil, the entry will be deleted
 	SetBatch(context.Context, map[string][]byte) error
 
 	// DeleteBatch will delete data associated with specified collection of keys
