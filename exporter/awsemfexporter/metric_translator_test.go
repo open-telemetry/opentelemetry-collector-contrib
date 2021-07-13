@@ -840,7 +840,7 @@ func TestTranslateGroupedMetricToCWMetric(t *testing.T) {
 						timestampMs: timestamp,
 					},
 					receiver:       prometheusReceiver,
-					metricDataType: pdata.MetricDataTypeDoubleGauge,
+					metricDataType: pdata.MetricDataTypeGauge,
 				},
 			},
 			nil,

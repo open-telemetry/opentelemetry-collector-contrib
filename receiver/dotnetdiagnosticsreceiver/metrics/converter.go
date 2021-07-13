@@ -45,8 +45,8 @@ func rawMetricToPdata(dm dotnet.Metric, pdm pdata.Metric, startTime, now time.Ti
 	nowPD := pdata.TimestampFromTime(now)
 	switch dm.CounterType() {
 	case "Mean":
-		pdm.SetDataType(pdata.MetricDataTypeDoubleGauge)
-		dps := pdm.DoubleGauge().DataPoints()
+		pdm.SetDataType(pdata.MetricDataTypeGauge)
+		dps := pdm.Gauge().DataPoints()
 		dp := dps.AppendEmpty()
 		dp.SetTimestamp(nowPD)
 		dp.SetValue(dm.Mean())

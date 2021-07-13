@@ -231,8 +231,8 @@ func intGauge(ilm pdata.InstrumentationLibraryMetrics, metricName string, unit s
 func doubleGauge(ilm pdata.InstrumentationLibraryMetrics, metricName string, unit string, value float64, ts pdata.Timestamp) {
 	metric := initMetric(ilm, metricName, unit)
 
-	metric.SetDataType(pdata.MetricDataTypeDoubleGauge)
-	doubleGauge := metric.DoubleGauge()
+	metric.SetDataType(pdata.MetricDataTypeGauge)
+	doubleGauge := metric.Gauge()
 	dataPoints := doubleGauge.DataPoints()
 	dataPoints.Resize(1)
 	dataPoint := dataPoints.At(0)

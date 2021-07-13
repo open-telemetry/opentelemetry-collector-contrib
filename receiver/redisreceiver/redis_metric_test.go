@@ -54,7 +54,7 @@ func TestParseMetric_Errors(t *testing.T) {
 		pdata.MetricDataTypeIntSum,
 		pdata.MetricDataTypeIntGauge,
 		pdata.MetricDataTypeSum,
-		pdata.MetricDataTypeDoubleGauge,
+		pdata.MetricDataTypeGauge,
 	} {
 		m := redisMetric{pdType: dataType}
 		_, err := m.parseMetric("foo", &timeBundle{})

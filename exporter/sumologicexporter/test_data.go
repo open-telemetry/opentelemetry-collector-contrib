@@ -69,18 +69,18 @@ func exampleDoubleGaugeMetric() metricPair {
 		metric:     pdata.NewMetric(),
 	}
 
-	metric.metric.SetDataType(pdata.MetricDataTypeDoubleGauge)
+	metric.metric.SetDataType(pdata.MetricDataTypeGauge)
 	metric.metric.SetName("gauge_metric_name_double_test")
 
 	metric.attributes.InsertString("foo", "bar")
 
-	dp := metric.metric.DoubleGauge().DataPoints().AppendEmpty()
+	dp := metric.metric.Gauge().DataPoints().AppendEmpty()
 	dp.LabelsMap().Insert("local_name", "156720")
 	dp.LabelsMap().Insert("endpoint", "http://example_url")
 	dp.SetValue(33.4)
 	dp.SetTimestamp(1608124661.169 * 1e9)
 
-	dp = metric.metric.DoubleGauge().DataPoints().AppendEmpty()
+	dp = metric.metric.Gauge().DataPoints().AppendEmpty()
 	dp.LabelsMap().Insert("local_name", "156155")
 	dp.LabelsMap().Insert("endpoint", "http://another_url")
 	dp.SetValue(56.8)

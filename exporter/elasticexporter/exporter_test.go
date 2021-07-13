@@ -111,8 +111,8 @@ func sampleMetrics() pdata.Metrics {
 	for i := 0; i < 2; i++ {
 		metric := resourceMetrics.At(i).InstrumentationLibraryMetrics().AppendEmpty().Metrics().AppendEmpty()
 		metric.SetName("foobar")
-		metric.SetDataType(pdata.MetricDataTypeDoubleGauge)
-		metric.DoubleGauge().DataPoints().AppendEmpty().SetValue(123)
+		metric.SetDataType(pdata.MetricDataTypeGauge)
+		metric.Gauge().DataPoints().AppendEmpty().SetValue(123)
 	}
 	return metrics
 }

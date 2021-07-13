@@ -78,7 +78,7 @@ func Test_metricDataToSplunk(t *testing.T) {
 				ilm := metrics.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0)
 				doubleGauge := ilm.Metrics().AppendEmpty()
 				doubleGauge.SetName("gauge_double_with_dims")
-				doubleGauge.SetDataType(pdata.MetricDataTypeDoubleGauge)
+				doubleGauge.SetDataType(pdata.MetricDataTypeGauge)
 				return metrics
 			},
 		},
@@ -144,8 +144,8 @@ func Test_metricDataToSplunk(t *testing.T) {
 				ilm := metrics.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0)
 				doubleGauge := ilm.Metrics().AppendEmpty()
 				doubleGauge.SetName("gauge_double_with_dims")
-				doubleGauge.SetDataType(pdata.MetricDataTypeDoubleGauge)
-				doubleGauge.DoubleGauge().DataPoints().AppendEmpty()
+				doubleGauge.SetDataType(pdata.MetricDataTypeGauge)
+				doubleGauge.Gauge().DataPoints().AppendEmpty()
 				return metrics
 			},
 		},
@@ -225,8 +225,8 @@ func Test_metricDataToSplunk(t *testing.T) {
 
 				doubleGauge := ilm.Metrics().AppendEmpty()
 				doubleGauge.SetName("gauge_double_with_dims")
-				doubleGauge.SetDataType(pdata.MetricDataTypeDoubleGauge)
-				doubleDataPt := doubleGauge.DoubleGauge().DataPoints().AppendEmpty()
+				doubleGauge.SetDataType(pdata.MetricDataTypeGauge)
+				doubleDataPt := doubleGauge.Gauge().DataPoints().AppendEmpty()
 				doubleDataPt.SetValue(doubleVal)
 				doubleDataPt.SetTimestamp(pdata.TimestampFromTime(tsUnix))
 
@@ -241,7 +241,7 @@ func Test_metricDataToSplunk(t *testing.T) {
 				return metrics
 			},
 			wantSplunkMetrics: []*splunk.Event{
-				commonSplunkMetric("gauge_double_with_dims", tsMSecs, []string{"com.splunk.index", "com.splunk.sourcetype", "host.name", "service.name", "k0", "k1", "metric_type"}, []interface{}{"myindex", "mysourcetype", "myhost", "mysource", "v0", "v1", "DoubleGauge"}, doubleVal, "mysource", "mysourcetype", "myindex", "myhost"),
+				commonSplunkMetric("gauge_double_with_dims", tsMSecs, []string{"com.splunk.index", "com.splunk.sourcetype", "host.name", "service.name", "k0", "k1", "metric_type"}, []interface{}{"myindex", "mysourcetype", "myhost", "mysource", "v0", "v1", "Gauge"}, doubleVal, "mysource", "mysourcetype", "myindex", "myhost"),
 				commonSplunkMetric("gauge_int_with_dims", tsMSecs, []string{"com.splunk.index", "com.splunk.sourcetype", "host.name", "service.name", "k0", "k1", "metric_type"}, []interface{}{"myindex", "mysourcetype", "myhost", "mysource", "v0", "v1", "IntGauge"}, int64Val, "mysource", "mysourcetype", "myindex", "myhost"),
 			},
 		},

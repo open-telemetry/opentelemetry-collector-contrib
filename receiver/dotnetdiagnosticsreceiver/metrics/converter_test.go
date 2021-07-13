@@ -32,7 +32,7 @@ func TestMeanMetricToPdata(t *testing.T) {
 	expectedName := "dotnet.cpu-usage"
 	expectedUnits := "%"
 	pdm := testMetricConversion(t, jsonFile, expectedName, expectedUnits)
-	pts := pdm.DoubleGauge().DataPoints()
+	pts := pdm.Gauge().DataPoints()
 	assert.Equal(t, 1, pts.Len())
 	pt := pts.At(0)
 	assert.EqualValues(t, 0, pt.StartTimestamp())

@@ -239,7 +239,7 @@ func memFragmentationRatio() *redisMetric {
 	return &redisMetric{
 		key:    "mem_fragmentation_ratio",
 		name:   "redis/memory/fragmentation_ratio",
-		pdType: pdata.MetricDataTypeDoubleGauge,
+		pdType: pdata.MetricDataTypeGauge,
 		desc:   "Ratio between used_memory_rss and used_memory",
 	}
 }

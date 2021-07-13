@@ -14,4 +14,4 @@ require (
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 )
 
-replace go.opentelemetry.io/collector/model => go.opentelemetry.io/collector/model v0.0.0-20210630154722-7d0a0398174e
+replace go.opentelemetry.io/collector/model => go.opentelemetry.io/collector/model v0.0.0-20210712235908-f9dacb8402fe

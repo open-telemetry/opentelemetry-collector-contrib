@@ -108,7 +108,7 @@ func TestIsCumulativeMonotonic(t *testing.T) {
 		metric.SetName("system.cpu.load_average.1m")
 		metric.SetDescription("Average CPU Load over 1 minute.")
 		metric.SetUnit("1")
-		metric.SetDataType(pdata.MetricDataTypeDoubleGauge)
+		metric.SetDataType(pdata.MetricDataTypeGauge)
 
 		assert.False(t, isCumulativeMonotonic(metric))
 	}
@@ -678,8 +678,8 @@ func createTestMetrics() pdata.Metrics {
 	// DoubleGauge
 	met = metricsArray.AppendEmpty()
 	met.SetName("double.gauge")
-	met.SetDataType(pdata.MetricDataTypeDoubleGauge)
-	dpsDouble := met.DoubleGauge().DataPoints()
+	met.SetDataType(pdata.MetricDataTypeGauge)
+	dpsDouble := met.Gauge().DataPoints()
 	dpDouble := dpsDouble.AppendEmpty()
 	dpDouble.SetTimestamp(seconds(0))
 	dpDouble.SetValue(math.Pi)

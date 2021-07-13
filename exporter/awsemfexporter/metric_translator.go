@@ -42,7 +42,7 @@ const (
 var fieldPrometheusTypes = map[pdata.MetricDataType]string{
 	pdata.MetricDataTypeNone:         "",
 	pdata.MetricDataTypeIntGauge:     "gauge",
-	pdata.MetricDataTypeDoubleGauge:  "gauge",
+	pdata.MetricDataTypeGauge:        "gauge",
 	pdata.MetricDataTypeIntSum:       "counter",
 	pdata.MetricDataTypeSum:          "counter",
 	pdata.MetricDataTypeIntHistogram: "histogram",
