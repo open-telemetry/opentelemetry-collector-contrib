@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"strings"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/model/pdata"
 	"go.uber.org/zap"
@@ -46,6 +47,16 @@ func newNormalizeSumsProcessor(logger *zap.Logger, transforms []Transform) *Norm
 		transforms: transforms,
 		history:    make(map[string]*startPoint),
 	}
+}
+
+// Start is invoked during service startup.
+func (nsp *NormalizeSumsProcessor) Start(context.Context, component.Host) error {
+	return nil
+}
+
+// Shutdown is invoked during service shutdown.
+func (nsp *NormalizeSumsProcessor) Shutdown(context.Context) error {
+	return nil
 }
 
 // ProcessMetrics implements the MProcessor interface.
