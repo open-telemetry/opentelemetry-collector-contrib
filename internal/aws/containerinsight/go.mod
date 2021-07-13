@@ -3,6 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/co
 go 1.16
 
 require (
+	github.com/hashicorp/go-retryablehttp v0.7.0
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/stretchr/testify v1.7.0
 	go.opentelemetry.io/collector/model v0.0.0-00010101000000-000000000000
