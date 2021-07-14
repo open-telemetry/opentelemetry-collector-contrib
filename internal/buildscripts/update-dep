@@ -9,7 +9,6 @@ if grep -q "$MODULE " go.mod; then
   go get "$MODULE"@"$VERSION"
   if [ "$MODULE" == "go.opentelemetry.io/collector" ]; then
     MODEL=$MODULE"/model"
-    go mod edit --dropreplace "$MODEL"
     go get "$MODEL"@"$VERSION"
   fi
 fi
