@@ -51,48 +51,35 @@ func newClient(filePath string, timeout time.Duration) (*fileStorageClient, erro
 
 // Get will retrieve data from storage that corresponds to the specified key
 func (c *fileStorageClient) Get(ctx context.Context, key string) ([]byte, error) {
-	results, err := c.GetBatch(ctx, []string{key})
+	results, err := c.Batch(ctx, []string{key}, nil)
 	if err != nil {
 		return nil, err
 	}
 	return results[0], nil
 }
 
-// GetBatch will retrieve data from storage that corresponds to the specified collection of keys in a single transaction
-func (c *fileStorageClient) GetBatch(_ context.Context, keys []string) ([][]byte, error) {
-	results := make([][]byte, len(keys))
-	get := func(tx *bbolt.Tx) error {
-		bucket := tx.Bucket(defaultBucket)
-		if bucket == nil {
-			return errors.New("storage not initialized")
-		}
-
-		for i, key := range keys {
-			results[i] = bucket.Get([]byte(key))
-		}
-		return nil // no error
-	}
-
-	if err := c.db.Update(get); err != nil {
-		return nil, err
-	}
-	return results, nil
-}
-
 // Set will store data. The data can be retrieved using the same key
 func (c *fileStorageClient) Set(ctx context.Context, key string, value []byte) error {
-	return c.SetBatch(ctx, map[string][]byte{key: value})
+	_, err := c.Batch(ctx, nil, map[string][]byte{key: value})
+	return err
 }
 
-// SetBatch will store data for a set of entries in a transaction. The data can be retrieved using the same keys
-func (c *fileStorageClient) SetBatch(_ context.Context, entries map[string][]byte) error {
+// BatchOp will, respectively - get values for selected keys or upsert key/values.
+// When the upserted entry value is nil, the key is removed
+func (c *fileStorageClient) Batch(_ context.Context, retrievedKeys []string, upsertedEntries map[string][]byte) ([][]byte, error) {
+	results := make([][]byte, len(retrievedKeys))
+
 	set := func(tx *bbolt.Tx) error {
 		bucket := tx.Bucket(defaultBucket)
 		if bucket == nil {
 			return errors.New("storage not initialized")
 		}
 
-		for key, value := range entries {
+		for i, key := range retrievedKeys {
+			results[i] = bucket.Get([]byte(key))
+		}
+
+		for key, value := range upsertedEntries {
 			var err error
 
 			if value == nil {
@@ -109,30 +96,13 @@ func (c *fileStorageClient) SetBatch(_ context.Context, entries map[string][]byt
 		return nil
 	}
 
-	return c.db.Update(set)
+	return results, c.db.Update(set)
 }
 
 // Delete will delete data associated with the specified key
 func (c *fileStorageClient) Delete(ctx context.Context, key string) error {
-	return c.DeleteBatch(ctx, []string{key})
-}
-
-// DeleteBatch will delete data associated with the specified keys in a single transaction
-func (c *fileStorageClient) DeleteBatch(_ context.Context, keys []string) error {
-	delete := func(tx *bbolt.Tx) error {
-		bucket := tx.Bucket(defaultBucket)
-		if bucket == nil {
-			return errors.New("storage not initialized")
-		}
-		for _, key := range keys {
-			if err := bucket.Delete([]byte(key)); err != nil {
-				return err
-			}
-		}
-		return nil
-	}
-
-	return c.db.Update(delete)
+	_, err := c.Batch(ctx, nil, map[string][]byte{key: nil})
+	return err
 }
 
 // Close will close the database

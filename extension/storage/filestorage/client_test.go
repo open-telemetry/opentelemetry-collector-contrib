@@ -77,16 +77,16 @@ func TestClientBatchOperations(t *testing.T) {
 	testKeys := []string{"testKey1", "testKey2"}
 
 	// Make sure nothing is there
-	value, err := client.GetBatch(ctx, testKeys)
+	value, err := client.Batch(ctx, testKeys, nil)
 	require.NoError(t, err)
 	require.Equal(t, value, [][]byte{nil, nil})
 
 	// Set it
-	err = client.SetBatch(ctx, testEntries)
+	_, err = client.Batch(ctx, nil, testEntries)
 	require.NoError(t, err)
 
 	// Get it back out, make sure it's right
-	values, err := client.GetBatch(ctx, testKeys)
+	values, err := client.Batch(ctx, testKeys, nil)
 	require.NoError(t, err)
 	require.Len(t, values, 2)
 	for i, key := range testKeys {
@@ -98,11 +98,11 @@ func TestClientBatchOperations(t *testing.T) {
 		"testKey1": []byte("testValue1"),
 		"testKey2": nil,
 	}
-	err = client.SetBatch(ctx, testEntriesUpdate)
+	_, err = client.Batch(ctx, nil, testEntriesUpdate)
 	require.NoError(t, err)
 
 	// Get it back out, make sure it's right
-	valuesUpdate, err := client.GetBatch(ctx, testKeys)
+	valuesUpdate, err := client.Batch(ctx, testKeys, nil)
 	require.NoError(t, err)
 	require.Len(t, values, 2)
 	for i, key := range testKeys {
@@ -110,11 +110,15 @@ func TestClientBatchOperations(t *testing.T) {
 	}
 
 	// Delete it all
-	err = client.DeleteBatch(ctx, testKeys)
+	testKeysDelete := map[string][]byte{
+		"testKey1": nil,
+		"testKey2": nil,
+	}
+	_, err = client.Batch(ctx, nil, testKeysDelete)
 	require.NoError(t, err)
 
 	// Make sure it's gone
-	value, err = client.GetBatch(ctx, testKeys)
+	value, err = client.Batch(ctx, testKeys, nil)
 	require.NoError(t, err)
 	require.Equal(t, value, [][]byte{nil, nil})
 }
@@ -230,7 +234,7 @@ func BenchmarkClientGet100(b *testing.B) {
 
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
-		client.GetBatch(ctx, testKeys)
+		client.Batch(ctx, testKeys, nil)
 	}
 }
 
@@ -267,7 +271,7 @@ func BenchmarkClientSet100(b *testing.B) {
 
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
-		client.SetBatch(ctx, testEntries)
+		client.Batch(ctx, nil, testEntries)
 	}
 }
 
