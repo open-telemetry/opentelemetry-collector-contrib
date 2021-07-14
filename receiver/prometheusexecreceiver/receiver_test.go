@@ -16,6 +16,7 @@ package prometheusexecreceiver
 
 import (
 	"context"
+	"fmt"
 	"path"
 	"testing"
 	"time"
@@ -31,7 +32,6 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/receiver/prometheusreceiver"
-	"go.opentelemetry.io/collector/translator/internaldata"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusexecreceiver/subprocessmanager"
 )
@@ -104,18 +104,28 @@ func endToEndScrapeTest(t *testing.T, receiverConfig config.Receiver, testName s
 // was successfully scraped twice AND the subprocess being handled was stopped and restarted
 func assertTwoUniqueValuesScraped(t *testing.T, metricsSlice []pdata.Metrics) {
 	var value float64
-	for i, val := range metricsSlice {
-		_, _, metrics := internaldata.ResourceMetricsToOC(val.ResourceMetrics().At(0))
-		temp := metrics[0].Timeseries[0].Points[0].GetDoubleValue()
-		if i != 0 && temp != value {
+	for i := range metricsSlice {
+		ms := metricsSlice[i].ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics()
+		var tempM pdata.Metric
+		ok := false
+		for j := 0; j < ms.Len(); j++ {
+			if ms.At(j).Name() == "timestamp_now" {
+				tempM = ms.At(j)
+				ok = true
+			}
+		}
+		assert.True(t, ok, "timestamp_now metric not found")
+		assert.Equal(t, pdata.MetricDataTypeGauge, tempM.DataType())
+		tempV := tempM.Gauge().DataPoints().At(0).Value()
+		if i != 0 && tempV != value {
 			return
 		}
-		if temp != value {
-			value = temp
+		if tempV != value {
+			value = tempV
 		}
 	}
 
-	assert.Fail(t, "All %v scraped values were non-unique", len(metricsSlice))
+	assert.Fail(t, fmt.Sprintf("All %v scraped values were non-unique", len(metricsSlice)))
 }
 
 func TestConfigBuilderFunctions(t *testing.T) {
