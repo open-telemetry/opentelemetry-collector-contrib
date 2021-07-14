@@ -57,7 +57,7 @@ func TestIntegration(t *testing.T) {
 	require.Equal(t, 1, ilms.Len())
 
 	metrics := ilms.At(0).Metrics()
-	require.Equal(t, 5, metrics.Len())
+	require.Equal(t, 11, metrics.Len())
 
 	assertAllMetricNamesArePresent(t, metadata.Metrics.Names(), metrics)
 
