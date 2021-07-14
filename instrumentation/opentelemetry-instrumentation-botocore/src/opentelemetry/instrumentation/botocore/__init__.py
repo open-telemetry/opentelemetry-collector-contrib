@@ -68,6 +68,13 @@ from opentelemetry.trace import SpanKind, get_tracer
 
 logger = logging.getLogger(__name__)
 
+# A key to a context variable to avoid creating duplicate spans when instrumenting
+# both botocore.client and urllib3.connectionpool.HTTPConnectionPool.urlopen since
+# botocore calls urlopen
+_SUPPRESS_HTTP_INSTRUMENTATION_KEY = context_api.create_key(
+    "suppress_http_instrumentation"
+)
+
 
 # pylint: disable=unused-argument
 def _patched_endpoint_prepare_request(wrapped, instance, args, kwargs):
@@ -161,10 +168,16 @@ class BotocoreInstrumentor(BaseInstrumentor):
                         "aws.table_name", api_params["TableName"]
                     )
 
+            token = context_api.attach(
+                context_api.set_value(_SUPPRESS_HTTP_INSTRUMENTATION_KEY, True)
+            )
+
             try:
                 result = original_func(*args, **kwargs)
             except ClientError as ex:
                 error = ex
+            finally:
+                context_api.detach(token)
 
             if error:
                 result = error.response

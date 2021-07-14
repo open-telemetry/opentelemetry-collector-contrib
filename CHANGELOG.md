@@ -45,6 +45,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   ([#562](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/562))
 - `opentelemetry-instrumentation-django` Fix AttributeError: ResolverMatch object has no attribute route
   ([#581](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/581))
+- `opentelemetry-instrumentation-botocore` Suppress botocore downstream instrumentation like urllib3
+  ([#563](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/563))
 
 ### Added
 - `opentelemetry-instrumentation-httpx` Add `httpx` instrumentation
