@@ -8,6 +8,7 @@ ALL_MODULES := $(shell find . -type f -name "go.mod" -exec dirname {} \; | sort 
 ALL_SRC := $(shell find . -name '*.go' -type f | sort)
 ADDLICENSE=addlicense
 ALL_COVERAGE_MOD_DIRS := $(shell find . -type f -name 'go.mod' -exec dirname {} \; | egrep -v '^./internal/tools' | sort)
+FIELDALIGNMENT_DIRS := ./agent/ ./pipeline/
 
 TOOLS_MOD_DIR := ./internal/tools
 .PHONY: install-tools
@@ -16,6 +17,7 @@ install-tools:
 	cd $(TOOLS_MOD_DIR) && go install github.com/vektra/mockery/cmd/mockery
 	cd $(TOOLS_MOD_DIR) && go install github.com/google/addlicense
 	cd $(TOOLS_MOD_DIR) && go install github.com/securego/gosec/v2/cmd/gosec
+	cd $(TOOLS_MOD_DIR) && go install golang.org/x/tools/go/analysis/passes/fieldalignment/cmd/fieldalignment
 
 .PHONY: test
 test: vet test-only
@@ -65,6 +67,14 @@ lint:
 lint-fix:
 	golangci-lint run --fix --allow-parallel-runners ./...
 
+.PHONY: fieldalignment
+fieldalignment:
+	fieldalignment $(FIELDALIGNMENT_DIRS)
+
+.PHONY: fieldalignment-fix
+fieldalignment-fix:
+	fieldalignment -fix $(FIELDALIGNMENT_DIRS)
+
 .PHONY: vet
 vet:
 	GOOS=darwin $(MAKE) for-all CMD="go vet ./..."
@@ -109,4 +119,4 @@ for-all:
 	done
 
 .PHONY: ci-check
-ci-check: vet lint check-license secure
+ci-check: vet lint check-license secure fieldalignment

@@ -27,11 +27,11 @@ import (
 
 // LogAgentBuilder is a construct used to build a log agent
 type LogAgentBuilder struct {
-	configFiles   []string
+	defaultOutput operator.Operator
 	config        *Config
 	logger        *zap.SugaredLogger
 	pluginDir     string
-	defaultOutput operator.Operator
+	configFiles   []string
 }
 
 // NewBuilder creates a new LogAgentBuilder

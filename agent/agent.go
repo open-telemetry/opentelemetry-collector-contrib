@@ -26,11 +26,9 @@ import (
 // LogAgent is an entity that handles log monitoring.
 type LogAgent struct {
 	pipeline pipeline.Pipeline
-
+	*zap.SugaredLogger
 	startOnce sync.Once
 	stopOnce  sync.Once
-
-	*zap.SugaredLogger
 }
 
 // Start will start the log monitoring process
