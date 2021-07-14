@@ -46,12 +46,12 @@ e2e-test: otelcontribcol otelcontribcol-unstable
 unit-tests-with-cover:
 	@echo Verifying that all packages have test files to count in coverage
 	@internal/buildscripts/check-test-files.sh $(subst github.com/open-telemetry/opentelemetry-collector-contrib/,./,$(ALL_PKGS))
-	@$(MAKE) for-all CMD="make do-unit-tests-with-cover"
+	@$(MAKE) for-all-target TARGET="do-unit-tests-with-cover"
 
 .PHONY: integration-tests-with-cover
 integration-tests-with-cover:
 	@echo $(INTEGRATION_TEST_MODULES)
-	@$(MAKE) for-all CMD="make do-integration-tests-with-cover" ALL_MODULES="$(INTEGRATION_TEST_MODULES)"
+	@$(MAKE) for-all-target TARGET="do-integration-tests-with-cover" ALL_MODULES="$(INTEGRATION_TEST_MODULES)"
 
 # Long-running e2e tests
 .PHONY: stability-tests
@@ -70,19 +70,19 @@ gomoddownload:
 
 .PHONY: gotestinstall
 gotestinstall:
-	@$(MAKE) for-all CMD="make test GOTEST_OPT=\"-i\""
+	@$(MAKE) for-all-target TARGET="test GOTEST_OPT=\"-i\""
 
 .PHONY: gotest
 gotest:
-	$(MAKE) for-all CMD="make test"
+	$(MAKE) for-all-target TARGET="test"
 
 .PHONY: gofmt
 gofmt:
-	$(MAKE) for-all CMD="make fmt"
+	$(MAKE) for-all-target TARGET="fmt"
 
 .PHONY: golint
 golint:
-	$(MAKE) for-all CMD="make lint"
+	$(MAKE) for-all-target TARGET="lint"
 
 .PHONY: for-all
 for-all:
