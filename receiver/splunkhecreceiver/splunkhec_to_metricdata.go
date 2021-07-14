@@ -26,10 +26,10 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 )
 
-// SplunkHecToMetricsData converts Splunk HEC metric points to
+// splunkHecToMetricsData converts Splunk HEC metric points to
 // pdata.Metrics. Returning the converted data and the number of
 // dropped time series.
-func SplunkHecToMetricsData(logger *zap.Logger, events []*splunk.Event, resourceCustomizer func(pdata.Resource)) (pdata.Metrics, int) {
+func splunkHecToMetricsData(logger *zap.Logger, events []*splunk.Event, resourceCustomizer func(pdata.Resource)) (pdata.Metrics, int) {
 	numDroppedTimeSeries := 0
 	md := pdata.NewMetrics()
 
