@@ -28,6 +28,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Updating dependency for opentelemetry api/sdk packages to support major version instead
   of pinning to specific versions.
   ([#567](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/567))
+- `opentelemetry-instrumentation-grpc` Respect the suppress instrumentation in gRPC client instrumentor
+  ([#559](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/559))
 - `opentelemetry-instrumentation-grpc` Fixed asynchonous unary call traces
   ([#536](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/536))
 - `opentelemetry-sdk-extension-aws` Update AWS entry points to match spec
