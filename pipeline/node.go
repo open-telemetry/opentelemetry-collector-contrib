@@ -23,8 +23,8 @@ import (
 // OperatorNode is a basic node that represents an operator in a pipeline.
 type OperatorNode struct {
 	operator  operator.Operator
-	id        int64
 	outputIDs map[string]int64
+	id        int64
 }
 
 // Operator returns the operator of the node.
@@ -56,7 +56,11 @@ func createOperatorNode(operator operator.Operator) OperatorNode {
 			outputIDs[output.ID()] = createNodeID(output.ID())
 		}
 	}
-	return OperatorNode{operator, id, outputIDs}
+	return OperatorNode{
+		operator:  operator,
+		outputIDs: outputIDs,
+		id:        id,
+	}
 }
 
 // createNodeID generates a node id from an operator id.
