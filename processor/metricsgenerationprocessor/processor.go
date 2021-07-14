@@ -19,7 +19,6 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/model/pdata"
-	"go.opentelemetry.io/collector/processor/processorhelper"
 	"go.uber.org/zap"
 )
 
@@ -27,8 +26,6 @@ type metricsGenerationProcessor struct {
 	rules  []internalRule
 	logger *zap.Logger
 }
-
-var _ processorhelper.MProcessor = (*metricsGenerationProcessor)(nil)
 
 type internalRule struct {
 	name      string
@@ -52,8 +49,8 @@ func (mgp *metricsGenerationProcessor) Start(context.Context, component.Host) er
 	return nil
 }
 
-// ProcessMetrics implements the MProcessor interface.
-func (mgp *metricsGenerationProcessor) ProcessMetrics(_ context.Context, md pdata.Metrics) (pdata.Metrics, error) {
+// processMetrics implements the ProcessMetricsFunc type.
+func (mgp *metricsGenerationProcessor) processMetrics(_ context.Context, md pdata.Metrics) (pdata.Metrics, error) {
 	resourceMetricsSlice := md.ResourceMetrics()
 
 	for i := 0; i < resourceMetricsSlice.Len(); i++ {
