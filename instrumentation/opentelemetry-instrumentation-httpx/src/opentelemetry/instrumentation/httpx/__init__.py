@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import logging
 import typing
 
 import httpx
@@ -30,6 +31,8 @@ from opentelemetry.semconv.trace import SpanAttributes
 from opentelemetry.trace import SpanKind, Tracer, TracerProvider, get_tracer
 from opentelemetry.trace.span import Span
 from opentelemetry.trace.status import Status
+
+_logger = logging.getLogger(__name__)
 
 URL = typing.Tuple[bytes, bytes, typing.Optional[int], bytes]
 Headers = typing.List[typing.Tuple[bytes, bytes]]
@@ -258,98 +261,48 @@ class AsyncOpenTelemetryTransport(httpx.AsyncBaseTransport):
         return status_code, headers, stream, extensions
 
 
-def _instrument(
-    tracer_provider: TracerProvider = None,
-    request_hook: typing.Optional[RequestHook] = None,
-    response_hook: typing.Optional[ResponseHook] = None,
-) -> None:
-    """Enables tracing of all Client and AsyncClient instances
+class _InstrumentedClient(httpx.Client):
 
-    When a Client or AsyncClient gets created, a telemetry transport is passed
-    in to the instance.
-    """
-    # pylint:disable=unused-argument
-    def instrumented_sync_send(wrapped, instance, args, kwargs):
-        if context.get_value("suppress_instrumentation"):
-            return wrapped(*args, **kwargs)
+    _tracer_provider = None
+    _request_hook = None
+    _response_hook = None
 
-        transport = instance._transport or httpx.HTTPTransport()
-        telemetry_transport = SyncOpenTelemetryTransport(
-            transport,
-            tracer_provider=tracer_provider,
-            request_hook=request_hook,
-            response_hook=response_hook,
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        self._original_transport = self._transport
+        self._is_instrumented_by_opentelemetry = True
+
+        self._transport = SyncOpenTelemetryTransport(
+            self._transport,
+            tracer_provider=_InstrumentedClient._tracer_provider,
+            request_hook=_InstrumentedClient._request_hook,
+            response_hook=_InstrumentedClient._response_hook,
         )
 
-        instance._transport = telemetry_transport
-        return wrapped(*args, **kwargs)
 
-    async def instrumented_async_send(wrapped, instance, args, kwargs):
-        if context.get_value("suppress_instrumentation"):
-            return await wrapped(*args, **kwargs)
+class _InstrumentedAsyncClient(httpx.AsyncClient):
 
-        transport = instance._transport or httpx.AsyncHTTPTransport()
-        telemetry_transport = AsyncOpenTelemetryTransport(
-            transport,
-            tracer_provider=tracer_provider,
-            request_hook=request_hook,
-            response_hook=response_hook,
+    _tracer_provider = None
+    _request_hook = None
+    _response_hook = None
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        self._original_transport = self._transport
+        self._is_instrumented_by_opentelemetry = True
+
+        self._transport = AsyncOpenTelemetryTransport(
+            self._transport,
+            tracer_provider=_InstrumentedAsyncClient._tracer_provider,
+            request_hook=_InstrumentedAsyncClient._request_hook,
+            response_hook=_InstrumentedAsyncClient._response_hook,
         )
-
-        instance._transport = telemetry_transport
-        return await wrapped(*args, **kwargs)
-
-    wrapt.wrap_function_wrapper(httpx.Client, "send", instrumented_sync_send)
-
-    wrapt.wrap_function_wrapper(
-        httpx.AsyncClient, "send", instrumented_async_send
-    )
-
-
-def _instrument_client(
-    client: typing.Union[httpx.Client, httpx.AsyncClient],
-    tracer_provider: TracerProvider = None,
-    request_hook: typing.Optional[RequestHook] = None,
-    response_hook: typing.Optional[ResponseHook] = None,
-) -> None:
-    """Enables instrumentation for the given Client or AsyncClient"""
-    # pylint: disable=protected-access
-    if isinstance(client, httpx.Client):
-        transport = client._transport or httpx.HTTPTransport()
-        telemetry_transport = SyncOpenTelemetryTransport(
-            transport,
-            tracer_provider=tracer_provider,
-            request_hook=request_hook,
-            response_hook=response_hook,
-        )
-    elif isinstance(client, httpx.AsyncClient):
-        transport = client._transport or httpx.AsyncHTTPTransport()
-        telemetry_transport = AsyncOpenTelemetryTransport(
-            transport,
-            tracer_provider=tracer_provider,
-            request_hook=request_hook,
-            response_hook=response_hook,
-        )
-    else:
-        raise TypeError("Invalid client provided")
-    client._transport = telemetry_transport
-
-
-def _uninstrument() -> None:
-    """Disables instrumenting for all newly created Client and AsyncClient instances"""
-    unwrap(httpx.Client, "send")
-    unwrap(httpx.AsyncClient, "send")
-
-
-def _uninstrument_client(
-    client: typing.Union[httpx.Client, httpx.AsyncClient]
-) -> None:
-    """Disables instrumentation for the given Client or AsyncClient"""
-    # pylint: disable=protected-access
-    unwrap(client, "send")
 
 
 class HTTPXClientInstrumentor(BaseInstrumentor):
+    # pylint: disable=protected-access,attribute-defined-outside-init
     """An instrumentor for httpx Client and AsyncClient
 
     See `BaseInstrumentor`
@@ -369,14 +322,31 @@ class HTTPXClientInstrumentor(BaseInstrumentor):
                 ``response_hook``: A hook that receives the span, request, and response
                     that is called right before the span ends
         """
-        _instrument(
-            tracer_provider=kwargs.get("tracer_provider"),
-            request_hook=kwargs.get("request_hook"),
-            response_hook=kwargs.get("response_hook"),
-        )
+        self._original_client = httpx.Client
+        self._original_async_client = httpx.AsyncClient
+        request_hook = kwargs.get("request_hook")
+        response_hook = kwargs.get("response_hook")
+        if callable(request_hook):
+            _InstrumentedClient._request_hook = request_hook
+            _InstrumentedAsyncClient._request_hook = request_hook
+        if callable(response_hook):
+            _InstrumentedClient._response_hook = response_hook
+            _InstrumentedAsyncClient._response_hook = response_hook
+        tracer_provider = kwargs.get("tracer_provider")
+        _InstrumentedClient._tracer_provider = tracer_provider
+        _InstrumentedAsyncClient._tracer_provider = tracer_provider
+        httpx.Client = _InstrumentedClient
+        httpx.AsyncClient = _InstrumentedAsyncClient
 
     def _uninstrument(self, **kwargs):
-        _uninstrument()
+        httpx.Client = self._original_client
+        httpx.AsyncClient = self._original_async_client
+        _InstrumentedClient._tracer_provider = None
+        _InstrumentedClient._request_hook = None
+        _InstrumentedClient._response_hook = None
+        _InstrumentedAsyncClient._tracer_provider = None
+        _InstrumentedAsyncClient._request_hook = None
+        _InstrumentedAsyncClient._response_hook = None
 
     @staticmethod
     def instrument_client(
@@ -395,12 +365,34 @@ class HTTPXClientInstrumentor(BaseInstrumentor):
             response_hook: A hook that receives the span, request, and response
                 that is called right before the span ends
         """
-        _instrument_client(
-            client,
-            tracer_provider=tracer_provider,
-            request_hook=request_hook,
-            response_hook=response_hook,
-        )
+        # pylint: disable=protected-access
+        if not hasattr(client, "_is_instrumented_by_opentelemetry"):
+            client._is_instrumented_by_opentelemetry = False
+
+        if not client._is_instrumented_by_opentelemetry:
+            if isinstance(client, httpx.Client):
+                client._original_transport = client._transport
+                transport = client._transport or httpx.HTTPTransport()
+                client._transport = SyncOpenTelemetryTransport(
+                    transport,
+                    tracer_provider=tracer_provider,
+                    request_hook=request_hook,
+                    response_hook=response_hook,
+                )
+                client._is_instrumented_by_opentelemetry = True
+            if isinstance(client, httpx.AsyncClient):
+                transport = client._transport or httpx.AsyncHTTPTransport()
+                client._transport = AsyncOpenTelemetryTransport(
+                    transport,
+                    tracer_provider=tracer_provider,
+                    request_hook=request_hook,
+                    response_hook=response_hook,
+                )
+                client._is_instrumented_by_opentelemetry = True
+        else:
+            _logger.warning(
+                "Attempting to instrument Httpx client while already instrumented"
+            )
 
     @staticmethod
     def uninstrument_client(
@@ -411,4 +403,12 @@ class HTTPXClientInstrumentor(BaseInstrumentor):
         Args:
             client: The httpx Client or AsyncClient instance
         """
-        _uninstrument_client(client)
+        if hasattr(client, "_original_transport"):
+            client._transport = client._original_transport
+            del client._original_transport
+            client._is_instrumented_by_opentelemetry = False
+        else:
+            _logger.warning(
+                "Attempting to uninstrument Httpx "
+                "client while already uninstrumented"
+            )

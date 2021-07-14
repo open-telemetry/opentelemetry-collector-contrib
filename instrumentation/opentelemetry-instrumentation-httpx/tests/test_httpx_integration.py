@@ -157,6 +157,11 @@ class BaseTestCases:
                 span, opentelemetry.instrumentation.httpx
             )
 
+        def test_basic_multiple(self):
+            self.perform_request(self.URL)
+            self.perform_request(self.URL)
+            self.assert_span(num_spans=2)
+
         def test_not_foundbasic(self):
             url_404 = "http://httpbin.org/status/404"
 
@@ -375,12 +380,9 @@ class BaseTestCases:
             pass
 
         def setUp(self):
-            self.client = self.create_client()
-            HTTPXClientInstrumentor().instrument()
             super().setUp()
-
-        def tearDown(self):
-            super().tearDown()
+            HTTPXClientInstrumentor().instrument()
+            self.client = self.create_client()
             HTTPXClientInstrumentor().uninstrument()
 
         def test_custom_tracer_provider(self):
@@ -388,7 +390,6 @@ class BaseTestCases:
             result = self.create_tracer_provider(resource=resource)
             tracer_provider, exporter = result
 
-            HTTPXClientInstrumentor().uninstrument()
             HTTPXClientInstrumentor().instrument(
                 tracer_provider=tracer_provider
             )
@@ -398,9 +399,9 @@ class BaseTestCases:
             self.assertEqual(result.text, "Hello!")
             span = self.assert_span(exporter=exporter)
             self.assertIs(span.resource, resource)
+            HTTPXClientInstrumentor().uninstrument()
 
         def test_response_hook(self):
-            HTTPXClientInstrumentor().uninstrument()
             HTTPXClientInstrumentor().instrument(
                 tracer_provider=self.tracer_provider,
                 response_hook=self.response_hook,
@@ -419,9 +420,9 @@ class BaseTestCases:
                     HTTP_RESPONSE_BODY: "Hello!",
                 },
             )
+            HTTPXClientInstrumentor().uninstrument()
 
         def test_request_hook(self):
-            HTTPXClientInstrumentor().uninstrument()
             HTTPXClientInstrumentor().instrument(
                 tracer_provider=self.tracer_provider,
                 request_hook=self.request_hook,
@@ -432,9 +433,9 @@ class BaseTestCases:
             self.assertEqual(result.text, "Hello!")
             span = self.assert_span()
             self.assertEqual(span.name, "GET" + self.URL)
+            HTTPXClientInstrumentor().uninstrument()
 
         def test_request_hook_no_span_update(self):
-            HTTPXClientInstrumentor().uninstrument()
             HTTPXClientInstrumentor().instrument(
                 tracer_provider=self.tracer_provider,
                 request_hook=self.no_update_request_hook,
@@ -445,10 +446,10 @@ class BaseTestCases:
             self.assertEqual(result.text, "Hello!")
             span = self.assert_span()
             self.assertEqual(span.name, "HTTP GET")
+            HTTPXClientInstrumentor().uninstrument()
 
         def test_not_recording(self):
             with mock.patch("opentelemetry.trace.INVALID_SPAN") as mock_span:
-                HTTPXClientInstrumentor().uninstrument()
                 HTTPXClientInstrumentor().instrument(
                     tracer_provider=trace._DefaultTracerProvider()
                 )
@@ -463,8 +464,10 @@ class BaseTestCases:
                 self.assertTrue(mock_span.is_recording.called)
                 self.assertFalse(mock_span.set_attribute.called)
                 self.assertFalse(mock_span.set_status.called)
+                HTTPXClientInstrumentor().uninstrument()
 
         def test_suppress_instrumentation_new_client(self):
+            HTTPXClientInstrumentor().instrument()
             token = context.attach(
                 context.set_value("suppress_instrumentation", True)
             )
@@ -476,32 +479,22 @@ class BaseTestCases:
                 context.detach(token)
 
             self.assert_span(num_spans=0)
-
-        def test_existing_client(self):
             HTTPXClientInstrumentor().uninstrument()
-            client = self.create_client()
-            HTTPXClientInstrumentor().instrument()
-            result = self.perform_request(self.URL, client=client)
-            self.assertEqual(result.text, "Hello!")
-            self.assert_span(num_spans=1)
 
         def test_instrument_client(self):
-            HTTPXClientInstrumentor().uninstrument()
             client = self.create_client()
             HTTPXClientInstrumentor().instrument_client(client)
             result = self.perform_request(self.URL, client=client)
             self.assertEqual(result.text, "Hello!")
             self.assert_span(num_spans=1)
-            # instrument again to avoid annoying warning message
-            HTTPXClientInstrumentor().instrument()
 
         def test_uninstrument(self):
+            HTTPXClientInstrumentor().instrument()
             HTTPXClientInstrumentor().uninstrument()
-            result = self.perform_request(self.URL)
+            client = self.create_client()
+            result = self.perform_request(self.URL, client=client)
             self.assertEqual(result.text, "Hello!")
             self.assert_span(num_spans=0)
-            # instrument again to avoid annoying warning message
-            HTTPXClientInstrumentor().instrument()
 
         def test_uninstrument_client(self):
             HTTPXClientInstrumentor().uninstrument_client(self.client)
@@ -512,6 +505,7 @@ class BaseTestCases:
             self.assert_span(num_spans=0)
 
         def test_uninstrument_new_client(self):
+            HTTPXClientInstrumentor().instrument()
             client1 = self.create_client()
             HTTPXClientInstrumentor().uninstrument_client(client1)
 
