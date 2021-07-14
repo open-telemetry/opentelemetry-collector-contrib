@@ -146,7 +146,8 @@ func TestShouldNotFailWhenNextIsProcessor(t *testing.T) {
 			},
 		},
 	}
-	next, err := processorhelper.NewTracesProcessor(cfg, consumertest.NewNop(), &mockProcessor{})
+	mp := &mockProcessor{}
+	next, err := processorhelper.NewTracesProcessor(cfg, consumertest.NewNop(), mp.processTraces)
 	require.NoError(t, err)
 
 	// test
@@ -186,6 +187,6 @@ func TestShutdown(t *testing.T) {
 
 type mockProcessor struct{}
 
-func (mp *mockProcessor) ProcessTraces(context.Context, pdata.Traces) (pdata.Traces, error) {
+func (mp *mockProcessor) processTraces(context.Context, pdata.Traces) (pdata.Traces, error) {
 	return pdata.NewTraces(), nil
 }
