@@ -51,11 +51,7 @@ var metricsSchemata = map[string]common.MetricsSchema{
 }
 
 func newMetricsReceiver(config *Config, influxLogger common.Logger, nextConsumer consumer.Metrics) (*metricsReceiver, error) {
-	schema, found := metricsSchemata[config.MetricsSchema]
-	if !found {
-		return nil, fmt.Errorf("schema '%s' not recognized", config.MetricsSchema)
-	}
-	converter, err := influx2otel.NewLineProtocolToOtelMetrics(influxLogger, schema)
+	converter, err := influx2otel.NewLineProtocolToOtelMetrics(influxLogger)
 	if err != nil {
 		return nil, err
 	}
@@ -194,7 +190,7 @@ func (r *metricsReceiver) handleWrite(w http.ResponseWriter, req *http.Request) 
 		} else {
 			w.WriteHeader(http.StatusInternalServerError)
 		}
-		r.logger.Debug("failed to pass metrics to next consumer: %s", err.Error())
+		r.logger.Debug("failed to pass metrics to next consumer: %s", err)
 		return
 	}
 
