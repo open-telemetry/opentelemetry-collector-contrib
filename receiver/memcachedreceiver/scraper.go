@@ -199,35 +199,11 @@ func addIntSum(ms pdata.MetricSlice, name string, now pdata.Timestamp, labels pd
 	labels.CopyTo(dp.LabelsMap())
 }
 
-func addDoubleSum(ms pdata.MetricSlice, name string, now pdata.Timestamp, labels pdata.StringMap, value float64) {
-	m := ms.AppendEmpty()
-	m.SetName(name)
-	m.SetDataType(pdata.MetricDataTypeDoubleSum)
-	dp := m.DoubleSum().DataPoints().AppendEmpty()
-	dp.SetTimestamp(now)
-	dp.SetValue(value)
-	labels.CopyTo(dp.LabelsMap())
-}
-
 func initLabeledIntSum(ms pdata.MetricSlice, name string) pdata.IntDataPointSlice {
 	m := ms.AppendEmpty()
 	m.SetName(name)
 	m.SetDataType(pdata.MetricDataTypeIntSum)
 	return m.IntSum().DataPoints()
-}
-
-func initLabeledIntGauge(ms pdata.MetricSlice, name string) pdata.IntDataPointSlice {
-	m := ms.AppendEmpty()
-	m.SetName(name)
-	m.SetDataType(pdata.MetricDataTypeIntGauge)
-	return m.IntGauge().DataPoints()
-}
-
-func initLabeledDoubleSum(ms pdata.MetricSlice, name string) pdata.DoubleDataPointSlice {
-	m := ms.AppendEmpty()
-	m.SetName(name)
-	m.SetDataType(pdata.MetricDataTypeDoubleSum)
-	return m.DoubleSum().DataPoints()
 }
 
 func initLabeledDoubleGauge(ms pdata.MetricSlice, name string) pdata.DoubleDataPointSlice {
