@@ -131,10 +131,6 @@ def _instrument(tracer, span_callback=None, name_callback=None):
 
         url = remove_url_credentials(url)
 
-        labels = {}
-        labels[SpanAttributes.HTTP_METHOD] = method
-        labels[SpanAttributes.HTTP_URL] = url
-
         with tracer.start_as_current_span(
             span_name, kind=SpanKind.CLIENT
         ) as span:
@@ -164,15 +160,6 @@ def _instrument(tracer, span_callback=None, name_callback=None):
                     )
                     span.set_status(
                         Status(http_status_to_status_code(result.status_code))
-                    )
-                labels[SpanAttributes.HTTP_STATUS_CODE] = str(
-                    result.status_code
-                )
-                if result.raw and result.raw.version:
-                    labels[SpanAttributes.HTTP_FLAVOR] = (
-                        str(result.raw.version)[:1]
-                        + "."
-                        + str(result.raw.version)[:-1]
                     )
             if span_callback is not None:
                 span_callback(span, result)

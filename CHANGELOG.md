@@ -38,6 +38,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   ([#558](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/558))
 - Change `opentelemetry-instrumentation-httpx` to replace `client` classes with instrumented versions.
   ([#577](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/577))
+- `opentelemetry-instrumentation-requests` Fix potential `AttributeError` when `requests`
+  is used with a custom transport adapter.
+  ([#562](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/562))
 
 ### Added
 - `opentelemetry-instrumentation-httpx` Add `httpx` instrumentation

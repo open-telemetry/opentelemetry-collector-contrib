@@ -17,6 +17,8 @@ from unittest import mock
 
 import httpretty
 import requests
+from requests.adapters import BaseAdapter
+from requests.models import Response
 
 import opentelemetry.instrumentation.requests
 from opentelemetry import context, trace
@@ -30,6 +32,23 @@ from opentelemetry.test.test_base import TestBase
 from opentelemetry.trace import StatusCode
 
 
+class TransportMock:
+    def read(self, *args, **kwargs):
+        pass
+
+
+class MyAdapter(BaseAdapter):
+    def __init__(self, response):
+        super().__init__()
+        self._response = response
+
+    def send(self, *args, **kwargs):  # pylint:disable=signature-differs
+        return self._response
+
+    def close(self):
+        pass
+
+
 class InvalidResponseObjectException(Exception):
     def __init__(self):
         super().__init__()
@@ -38,6 +57,7 @@ class InvalidResponseObjectException(Exception):
 
 class RequestsIntegrationTestBase(abc.ABC):
     # pylint: disable=no-member
+    # pylint: disable=too-many-public-methods
 
     URL = "http://httpbin.org/status/200"
 
@@ -334,6 +354,26 @@ class RequestsIntegrationTestBase(abc.ABC):
 
         span = self.assert_span()
         self.assertEqual(span.status.status_code, StatusCode.ERROR)
+
+    def test_adapter_with_custom_response(self):
+        response = Response()
+        response.status_code = 210
+        response.reason = "hello adapter"
+        response.raw = TransportMock()
+
+        session = requests.Session()
+        session.mount(self.URL, MyAdapter(response))
+
+        self.perform_request(self.URL, session)
+        span = self.assert_span()
+        self.assertEqual(
+            span.attributes,
+            {
+                "http.method": "GET",
+                "http.url": self.URL,
+                "http.status_code": 210,
+            },
+        )
 
 
 class TestRequestsIntegration(RequestsIntegrationTestBase, TestBase):
