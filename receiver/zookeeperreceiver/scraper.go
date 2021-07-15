@@ -115,17 +115,15 @@ func (z *zookeeperMetricsScraper) getResourceMetrics(conn net.Conn) (pdata.Resou
 
 	md := pdata.NewMetrics()
 	z.appendMetrics(scanner, md.ResourceMetrics())
-	if md.DataPointCount() == 0 {
-		md.ResourceMetrics().Resize(0)
-	}
 	return md.ResourceMetrics(), nil
 }
 
 func (z *zookeeperMetricsScraper) appendMetrics(scanner *bufio.Scanner, rms pdata.ResourceMetricsSlice) {
 	now := pdata.TimestampFromTime(time.Now())
-	rm := rms.AppendEmpty()
+	rm := pdata.NewResourceMetrics()
 	ilm := rm.InstrumentationLibraryMetrics().AppendEmpty()
 	ilm.InstrumentationLibrary().SetName("otelcol/zookeeper")
+	keepRM := false
 	for scanner.Scan() {
 		line := scanner.Text()
 		parts := zookeeperFormatRE.FindStringSubmatch(line)
@@ -173,7 +171,11 @@ func (z *zookeeperMetricsScraper) appendMetrics(scanner *bufio.Scanner, rms pdat
 				dp.SetTimestamp(now)
 				dp.SetValue(int64Val)
 			}
+			keepRM = true
 		}
+	}
+	if keepRM {
+		rm.CopyTo(rms.AppendEmpty())
 	}
 }
 

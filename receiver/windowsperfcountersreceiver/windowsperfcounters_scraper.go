@@ -110,8 +110,7 @@ func (s *scraper) scrape(context.Context) (pdata.MetricSlice, error) {
 
 	var errors []error
 
-	metrics.Resize(len(s.counters))
-	idx := 0
+	metrics.EnsureCapacity(len(s.counters))
 	for _, counter := range s.counters {
 		counterValues, err := counter.ScrapeData()
 		if err != nil {
@@ -119,10 +118,8 @@ func (s *scraper) scrape(context.Context) (pdata.MetricSlice, error) {
 			continue
 		}
 
-		initializeDoubleGaugeMetric(metrics.At(idx), now, counter.Path(), counterValues)
-		idx++
+		initializeDoubleGaugeMetric(metrics.AppendEmpty(), now, counter.Path(), counterValues)
 	}
-	metrics.Resize(len(s.counters) - len(errors))
 
 	return metrics, consumererror.Combine(errors)
 }
@@ -133,9 +130,9 @@ func initializeDoubleGaugeMetric(metric pdata.Metric, now pdata.Timestamp, name 
 
 	dg := metric.Gauge()
 	ddps := dg.DataPoints()
-	ddps.Resize(len(counterValues))
-	for i, counterValue := range counterValues {
-		initializeDoubleDataPoint(ddps.At(i), now, counterValue.InstanceName, counterValue.Value)
+	ddps.EnsureCapacity(len(counterValues))
+	for _, counterValue := range counterValues {
+		initializeDoubleDataPoint(ddps.AppendEmpty(), now, counterValue.InstanceName, counterValue.Value)
 	}
 }
 
