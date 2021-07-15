@@ -40,7 +40,7 @@ func (f testRestClient) Pods() ([]byte, error) {
 		return []byte("wrong-json-body"), nil
 	}
 
-	return ioutil.ReadFile("../testdata/pods.json")
+	return ioutil.ReadFile("../../testdata/pods.json")
 }
 
 func TestPods(t *testing.T) {
