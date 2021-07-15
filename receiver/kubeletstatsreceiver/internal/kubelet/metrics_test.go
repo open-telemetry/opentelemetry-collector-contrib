@@ -29,11 +29,11 @@ type fakeRestClient struct {
 }
 
 func (f fakeRestClient) StatsSummary() ([]byte, error) {
-	return ioutil.ReadFile("../testdata/stats-summary.json")
+	return ioutil.ReadFile("../../testdata/stats-summary.json")
 }
 
 func (f fakeRestClient) Pods() ([]byte, error) {
-	return ioutil.ReadFile("../testdata/pods.json")
+	return ioutil.ReadFile("../../testdata/pods.json")
 }
 
 func TestMetricAccumulator(t *testing.T) {
