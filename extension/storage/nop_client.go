@@ -45,7 +45,7 @@ func (c nopClient) Close(context.Context) error {
 	return nil
 }
 
-// BatchOp does nothing, and returns nil, nil
+// Batch does nothing, and returns nil, nil
 func (c nopClient) Batch(ctx context.Context, strings []string, entries map[string][]byte) ([][]byte, error) {
 	return nil, nil // no result, but no problem
 }
