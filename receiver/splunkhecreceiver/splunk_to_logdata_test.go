@@ -150,7 +150,7 @@ func Test_SplunkHecToLogData(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result, err := SplunkHecToLogData(zap.NewNop(), []*splunk.Event{&tt.event}, func(resource pdata.Resource) {})
+			result, err := splunkHecToLogData(zap.NewNop(), []*splunk.Event{&tt.event}, func(resource pdata.Resource) {})
 			assert.Equal(t, tt.wantErr, err)
 			assert.Equal(t, tt.output.Len(), result.ResourceLogs().Len())
 			assert.Equal(t, tt.output.At(0), result.ResourceLogs().At(0))

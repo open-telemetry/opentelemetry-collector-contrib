@@ -29,8 +29,8 @@ const (
 	cannotConvertValue = "cannot convert field value to attribute"
 )
 
-// SplunkHecToLogData transforms splunk events into logs
-func SplunkHecToLogData(logger *zap.Logger, events []*splunk.Event, resourceCustomizer func(pdata.Resource)) (pdata.Logs, error) {
+// splunkHecToLogData transforms splunk events into logs
+func splunkHecToLogData(logger *zap.Logger, events []*splunk.Event, resourceCustomizer func(pdata.Resource)) (pdata.Logs, error) {
 	ld := pdata.NewLogs()
 	rl := ld.ResourceLogs().AppendEmpty()
 	ill := rl.InstrumentationLibraryLogs().AppendEmpty()
