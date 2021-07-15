@@ -24,7 +24,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testing/util"
 	metadataPkg "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/utils"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/utils"
 )
 
 const (

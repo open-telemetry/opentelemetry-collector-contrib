@@ -31,7 +31,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 
 	metadata "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/testutils"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/testutils"
 )
 
 func TestPodAndContainerMetrics(t *testing.T) {

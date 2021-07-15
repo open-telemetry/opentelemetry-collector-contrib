@@ -21,7 +21,7 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 
 	metadata "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/utils"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/utils"
 )
 
 var daemonSetCurrentScheduledMetric = &metricspb.MetricDescriptor{
