@@ -22,7 +22,6 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/hashicorp/go-retryablehttp"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -31,7 +30,7 @@ type fakeClient struct {
 	err      error
 }
 
-func (f *fakeClient) Do(req *retryablehttp.Request) (*http.Response, error) {
+func (f *fakeClient) Do(req *http.Request) (*http.Response, error) {
 	return f.response, f.err
 }
 func TestRequestSuccessWithKnownLength(t *testing.T) {

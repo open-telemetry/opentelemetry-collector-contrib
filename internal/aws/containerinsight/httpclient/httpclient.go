@@ -19,18 +19,17 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"math"
 	"net/http"
 	"time"
 
-	"github.com/hashicorp/go-retryablehttp"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/config/confighttp"
 )
 
 const (
-	defaultMaxRetries       = 3
-	defaultTimeout          = 1 * time.Second
-	defaultBackoffRetryBase = 200 * time.Millisecond
-	maxHTTPResponseLength   = 5 * 1024 * 1024 // 5MB
+	defaultTimeout        = 1 * time.Second
+	maxHTTPResponseLength = 5 * 1024 * 1024 // 5MB
 )
 
 type HTTPClient struct {
@@ -42,7 +41,7 @@ type Requester interface {
 }
 
 type doer interface {
-	Do(request *retryablehttp.Request) (*http.Response, error)
+	Do(request *http.Request) (*http.Response, error)
 }
 
 func withClientOption(f doer) clientOption {
@@ -55,13 +54,14 @@ type clientOption func(*HTTPClient)
 
 func New(options ...clientOption) Requester {
 
+	setting := confighttp.HTTPClientSettings{
+		Timeout: defaultTimeout,
+	}
+
+	client, _ := setting.ToClient(map[config.ComponentID]component.Extension{})
+
 	httpClient := &HTTPClient{
-		client: &retryablehttp.Client{
-			HTTPClient:   &http.Client{Timeout: defaultTimeout},
-			RetryWaitMin: defaultBackoffRetryBase,
-			RetryWaitMax: time.Duration(float64(defaultBackoffRetryBase) * math.Pow(2, float64(defaultMaxRetries))),
-			RetryMax:     defaultMaxRetries,
-		},
+		client: client,
 	}
 
 	for _, opt := range options {
@@ -109,9 +109,9 @@ func (h *HTTPClient) Request(ctx context.Context, endpoint string) ([]byte, erro
 }
 
 func (h *HTTPClient) clientGet(ctx context.Context, url string) (resp *http.Response, err error) {
-	req, err := retryablehttp.NewRequest(http.MethodGet, url, nil)
+	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
 	if err != nil {
 		return nil, err
 	}
-	return h.client.Do(req.WithContext(ctx))
+	return h.client.Do(req)
 }
