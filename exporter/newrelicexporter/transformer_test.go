@@ -494,8 +494,8 @@ func TestTransformSpan(t *testing.T) {
 				s.SetName("with dropped attributes on events")
 
 				ev := pdata.NewSpanEventSlice()
-				ev.Resize(1)
-				event := ev.At(0)
+				ev.EnsureCapacity(1)
+				event := ev.AppendEmpty()
 				event.SetName("this is the event name")
 				event.SetTimestamp(pdata.TimestampFromTime(now))
 				event.SetDroppedAttributesCount(1)

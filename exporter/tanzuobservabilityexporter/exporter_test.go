@@ -232,10 +232,11 @@ func createSpan(
 
 func constructTraces(spans []pdata.Span) pdata.Traces {
 	traces := pdata.NewTraces()
-	traces.ResourceSpans().Resize(1)
-	rs := traces.ResourceSpans().At(0)
-	rs.InstrumentationLibrarySpans().Resize(1)
-	ils := rs.InstrumentationLibrarySpans().At(0)
+	traces.ResourceSpans().EnsureCapacity(1)
+	rs := traces.ResourceSpans().AppendEmpty()
+	rs.InstrumentationLibrarySpans().EnsureCapacity(1)
+	ils := rs.InstrumentationLibrarySpans().AppendEmpty()
+	ils.Spans().EnsureCapacity(len(spans))
 	for _, span := range spans {
 		span.CopyTo(ils.Spans().AppendEmpty())
 	}
