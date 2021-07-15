@@ -389,9 +389,9 @@ func TestUnmarshal(t *testing.T) {
 			ExpectErr: false,
 			Expect: func() *InputConfig {
 				cfg := defaultCfg()
-				newMulti := helper.MultilineConfig{}
-				newMulti.LineStartPattern = "Start"
-				cfg.Multiline = newMulti
+				newSplit := helper.NewSplitterConfig()
+				newSplit.Multiline.LineStartPattern = "Start"
+				cfg.Splitter = newSplit
 				return cfg
 			}(),
 		},
@@ -400,9 +400,9 @@ func TestUnmarshal(t *testing.T) {
 			ExpectErr: false,
 			Expect: func() *InputConfig {
 				cfg := defaultCfg()
-				newMulti := helper.MultilineConfig{}
-				newMulti.LineStartPattern = "%"
-				cfg.Multiline = newMulti
+				newSplit := helper.NewSplitterConfig()
+				newSplit.Multiline.LineStartPattern = "%"
+				cfg.Splitter = newSplit
 				return cfg
 			}(),
 		},
@@ -411,9 +411,9 @@ func TestUnmarshal(t *testing.T) {
 			ExpectErr: false,
 			Expect: func() *InputConfig {
 				cfg := defaultCfg()
-				newMulti := helper.MultilineConfig{}
-				newMulti.LineEndPattern = "Start"
-				cfg.Multiline = newMulti
+				newSplit := helper.NewSplitterConfig()
+				newSplit.Multiline.LineEndPattern = "Start"
+				cfg.Splitter = newSplit
 				return cfg
 			}(),
 		},
@@ -422,9 +422,9 @@ func TestUnmarshal(t *testing.T) {
 			ExpectErr: false,
 			Expect: func() *InputConfig {
 				cfg := defaultCfg()
-				newMulti := helper.MultilineConfig{}
-				newMulti.LineEndPattern = "%"
-				cfg.Multiline = newMulti
+				newSplit := helper.NewSplitterConfig()
+				newSplit.Multiline.LineEndPattern = "%"
+				cfg.Splitter = newSplit
 				return cfg
 			}(),
 		},
@@ -564,7 +564,8 @@ func TestBuild(t *testing.T) {
 		{
 			"MultilineConfiguredStartAndEndPatterns",
 			func(f *InputConfig) {
-				f.Multiline = helper.MultilineConfig{
+				f.Splitter = helper.NewSplitterConfig()
+				f.Splitter.Multiline = helper.MultilineConfig{
 					LineEndPattern:   "Exists",
 					LineStartPattern: "Exists",
 				}
@@ -575,7 +576,8 @@ func TestBuild(t *testing.T) {
 		{
 			"MultilineConfiguredStartPattern",
 			func(f *InputConfig) {
-				f.Multiline = helper.MultilineConfig{
+				f.Splitter = helper.NewSplitterConfig()
+				f.Splitter.Multiline = helper.MultilineConfig{
 					LineStartPattern: "START.*",
 				}
 			},
@@ -585,7 +587,8 @@ func TestBuild(t *testing.T) {
 		{
 			"MultilineConfiguredEndPattern",
 			func(f *InputConfig) {
-				f.Multiline = helper.MultilineConfig{
+				f.Splitter = helper.NewSplitterConfig()
+				f.Splitter.Multiline = helper.MultilineConfig{
 					LineEndPattern: "END.*",
 				}
 			},
@@ -603,7 +606,8 @@ func TestBuild(t *testing.T) {
 		{
 			"LineStartAndEnd",
 			func(f *InputConfig) {
-				f.Multiline = helper.MultilineConfig{
+				f.Splitter = helper.NewSplitterConfig()
+				f.Splitter.Multiline = helper.MultilineConfig{
 					LineStartPattern: ".*",
 					LineEndPattern:   ".*",
 				}
@@ -614,7 +618,8 @@ func TestBuild(t *testing.T) {
 		{
 			"NoLineStartOrEnd",
 			func(f *InputConfig) {
-				f.Multiline = helper.MultilineConfig{}
+				f.Splitter = helper.NewSplitterConfig()
+				f.Splitter.Multiline = helper.MultilineConfig{}
 			},
 			require.NoError,
 			func(t *testing.T, f *InputOperator) {},
@@ -622,7 +627,8 @@ func TestBuild(t *testing.T) {
 		{
 			"InvalidLineStartRegex",
 			func(f *InputConfig) {
-				f.Multiline = helper.MultilineConfig{
+				f.Splitter = helper.NewSplitterConfig()
+				f.Splitter.Multiline = helper.MultilineConfig{
 					LineStartPattern: "(",
 				}
 			},
@@ -632,7 +638,8 @@ func TestBuild(t *testing.T) {
 		{
 			"InvalidLineEndRegex",
 			func(f *InputConfig) {
-				f.Multiline = helper.MultilineConfig{
+				f.Splitter = helper.NewSplitterConfig()
+				f.Splitter.Multiline = helper.MultilineConfig{
 					LineEndPattern: "(",
 				}
 			},
@@ -673,7 +680,8 @@ func NewTestInputConfig() *InputConfig {
 	cfg.WriteTo = entry.NewBodyField([]string{}...)
 	cfg.Include = []string{"i1", "i2"}
 	cfg.Exclude = []string{"e1", "e2"}
-	cfg.Multiline = helper.MultilineConfig{
+	cfg.Splitter = helper.NewSplitterConfig()
+	cfg.Splitter.Multiline = helper.MultilineConfig{
 		LineStartPattern: "start",
 		LineEndPattern:   "end",
 	}
@@ -695,8 +703,8 @@ func TestMapStructureDecodeConfigWithHook(t *testing.T) {
 		"exclude":       expect.Exclude,
 		"poll_interval": 0.2,
 		"multiline": map[string]interface{}{
-			"line_start_pattern": expect.Multiline.LineStartPattern,
-			"line_end_pattern":   expect.Multiline.LineEndPattern,
+			"line_start_pattern": expect.Splitter.Multiline.LineStartPattern,
+			"line_end_pattern":   expect.Splitter.Multiline.LineEndPattern,
 		},
 		"include_file_name":    true,
 		"include_file_path":    false,
@@ -731,8 +739,8 @@ func TestMapStructureDecodeConfig(t *testing.T) {
 			"Duration": 200 * 1000 * 1000,
 		},
 		"multiline": map[string]interface{}{
-			"line_start_pattern": expect.Multiline.LineStartPattern,
-			"line_end_pattern":   expect.Multiline.LineEndPattern,
+			"line_start_pattern": expect.Splitter.Multiline.LineStartPattern,
+			"line_end_pattern":   expect.Splitter.Multiline.LineEndPattern,
 		},
 		"include_file_name":    true,
 		"include_file_path":    false,

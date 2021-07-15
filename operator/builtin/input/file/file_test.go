@@ -296,8 +296,10 @@ func TestStartAtEndNewFile(t *testing.T) {
 // even if the file doesn't end in a newline
 func TestNoNewline(t *testing.T) {
 	t.Parallel()
-	t.Skip()
-	operator, logReceived, tempDir := newTestFileOperator(t, nil, nil)
+	operator, logReceived, tempDir := newTestFileOperator(t, func(cfg *InputConfig) {
+		cfg.Splitter = helper.NewSplitterConfig()
+		cfg.Splitter.Flusher.Period.Duration = time.Nanosecond
+	}, nil)
 
 	temp := openTemp(t, tempDir)
 	writeString(t, temp, "testlog1\ntestlog2")
@@ -625,7 +627,11 @@ func TestFileReader_FingerprintUpdated(t *testing.T) {
 	tempCopy := openFile(t, temp.Name())
 	fp, err := operator.NewFingerprint(temp)
 	require.NoError(t, err)
-	reader, err := operator.NewReader(temp.Name(), tempCopy, fp)
+
+	splitter, err := operator.getMultiline()
+	require.NoError(t, err)
+
+	reader, err := operator.NewReader(temp.Name(), tempCopy, fp, splitter)
 	require.NoError(t, err)
 	defer reader.Close()
 
@@ -666,7 +672,10 @@ func TestFingerprintGrowsAndStops(t *testing.T) {
 			require.NoError(t, err)
 			require.Equal(t, []byte(""), fp.FirstBytes)
 
-			reader, err := operator.NewReader(temp.Name(), tempCopy, fp)
+			splitter, err := operator.getMultiline()
+			require.NoError(t, err)
+
+			reader, err := operator.NewReader(temp.Name(), tempCopy, fp, splitter)
 			require.NoError(t, err)
 			defer reader.Close()
 

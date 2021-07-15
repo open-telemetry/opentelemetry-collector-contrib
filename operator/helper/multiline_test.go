@@ -20,6 +20,7 @@ import (
 	"errors"
 	"regexp"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -33,6 +34,7 @@ type tokenizerTestCase struct {
 	Raw               []byte
 	ExpectedTokenized []string
 	ExpectedError     error
+	Flusher           *Flusher
 }
 
 func (tc tokenizerTestCase) RunFunc(splitFunc bufio.SplitFunc) func(t *testing.T) {
@@ -143,19 +145,42 @@ func TestLineStartSplitFunc(t *testing.T) {
 				"LOGSTART 17 log2\nLOGPART log2\nanother line",
 			},
 		},
+		{
+			Name:              "LogsWithoutFlusher",
+			Pattern:           `^LOGSTART \d+`,
+			Raw:               []byte("LOGPART log1\nLOGPART log1\t   \n"),
+			ExpectedTokenized: []string{},
+			Flusher: &Flusher{
+				force:           false,
+				lastForcedFlush: time.Now(),
+			},
+		},
+		{
+			Name:    "LogsWithFlusher",
+			Pattern: `^LOGSTART \d+`,
+			Raw:     []byte("LOGPART log1\nLOGPART log1\t   \n"),
+			ExpectedTokenized: []string{
+				"LOGPART log1\nLOGPART log1",
+			},
+			Flusher: &Flusher{
+				force:           true,
+				lastForcedFlush: time.Now(),
+			},
+		},
 	}
 
 	for _, tc := range testCases {
 		cfg := &MultilineConfig{
 			LineStartPattern: tc.Pattern,
 		}
-		splitFunc, err := cfg.getSplitFunc(unicode.UTF8, false)
+
+		splitFunc, err := cfg.getSplitFunc(unicode.UTF8, false, tc.Flusher)
 		require.NoError(t, err)
 		t.Run(tc.Name, tc.RunFunc(splitFunc))
 	}
 
 	t.Run("FirstMatchHitsEndOfBuffer", func(t *testing.T) {
-		splitFunc := NewLineStartSplitFunc(regexp.MustCompile("LOGSTART"), false)
+		splitFunc := NewLineStartSplitFunc(regexp.MustCompile("LOGSTART"), false, nil)
 		data := []byte(`LOGSTART`)
 
 		t.Run("NotAtEOF", func(t *testing.T) {
@@ -260,13 +285,36 @@ func TestLineEndSplitFunc(t *testing.T) {
 				"LOGSTART 17 log2\nLOGPART log2\nLOGEND log2",
 			},
 		},
+		{
+			Name:              "LogsWithoutFlusher",
+			Pattern:           `^LOGEND.*$`,
+			Raw:               []byte("LOGPART log1\nLOGPART log1\t   \n"),
+			ExpectedTokenized: []string{},
+			Flusher: &Flusher{
+				force:           false,
+				lastForcedFlush: time.Now(),
+			},
+		},
+		{
+			Name:    "LogsWithFlusher",
+			Pattern: `^LOGEND.*$`,
+			Raw:     []byte("LOGPART log1\nLOGPART log1\t   \n"),
+			ExpectedTokenized: []string{
+				"LOGPART log1\nLOGPART log1",
+			},
+			Flusher: &Flusher{
+				force:           true,
+				lastForcedFlush: time.Now(),
+			},
+		},
 	}
 
 	for _, tc := range testCases {
 		cfg := &MultilineConfig{
 			LineEndPattern: tc.Pattern,
 		}
-		splitFunc, err := cfg.getSplitFunc(unicode.UTF8, false)
+
+		splitFunc, err := cfg.getSplitFunc(unicode.UTF8, false, tc.Flusher)
 		require.NoError(t, err)
 		t.Run(tc.Name, tc.RunFunc(splitFunc))
 	}
@@ -341,10 +389,32 @@ func TestNewlineSplitFunc(t *testing.T) {
 			ExpectedTokenized: []string{},
 			ExpectedError:     errors.New("bufio.Scanner: token too long"),
 		},
+		{
+			Name:              "LogsWithoutFlusher",
+			Pattern:           `^LOGEND.*$`,
+			Raw:               []byte("LOGPART log1"),
+			ExpectedTokenized: []string{},
+			Flusher: &Flusher{
+				force:           false,
+				lastForcedFlush: time.Now(),
+			},
+		},
+		{
+			Name:    "LogsWithFlusher",
+			Pattern: `^LOGEND.*$`,
+			Raw:     []byte("LOGPART log1"),
+			ExpectedTokenized: []string{
+				"LOGPART log1",
+			},
+			Flusher: &Flusher{
+				force:           true,
+				lastForcedFlush: time.Now(),
+			},
+		},
 	}
 
 	for _, tc := range testCases {
-		splitFunc, err := NewNewlineSplitFunc(unicode.UTF8, false)
+		splitFunc, err := NewNewlineSplitFunc(unicode.UTF8, false, tc.Flusher)
 		require.NoError(t, err)
 		t.Run(tc.Name, tc.RunFunc(splitFunc))
 	}
@@ -397,7 +467,7 @@ func TestNewlineSplitFunc_Encodings(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			splitFunc, err := NewNewlineSplitFunc(tc.encoding, false)
+			splitFunc, err := NewNewlineSplitFunc(tc.encoding, false, nil)
 			require.NoError(t, err)
 			scanner := bufio.NewScanner(bytes.NewReader(tc.input))
 			scanner.Split(splitFunc)

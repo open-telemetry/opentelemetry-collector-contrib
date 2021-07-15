@@ -26,6 +26,7 @@ import (
 	"golang.org/x/text/transform"
 
 	"github.com/open-telemetry/opentelemetry-log-collection/errors"
+	"github.com/open-telemetry/opentelemetry-log-collection/operator/helper"
 )
 
 // File attributes contains information about file paths
@@ -70,11 +71,13 @@ type Reader struct {
 	decoder      *encoding.Decoder
 	decodeBuffer []byte
 
+	splitter *helper.Splitter
+
 	*zap.SugaredLogger `json:"-"`
 }
 
 // NewReader creates a new file reader
-func (f *InputOperator) NewReader(path string, file *os.File, fp *Fingerprint) (*Reader, error) {
+func (f *InputOperator) NewReader(path string, file *os.File, fp *Fingerprint, splitter *helper.Splitter) (*Reader, error) {
 	r := &Reader{
 		Fingerprint:    fp,
 		file:           file,
@@ -83,13 +86,14 @@ func (f *InputOperator) NewReader(path string, file *os.File, fp *Fingerprint) (
 		decoder:        f.encoding.Encoding.NewDecoder(),
 		decodeBuffer:   make([]byte, 1<<12),
 		fileAttributes: f.resolveFileAttributes(path),
+		splitter:       splitter,
 	}
 	return r, nil
 }
 
 // Copy creates a deep copy of a Reader
 func (r *Reader) Copy(file *os.File) (*Reader, error) {
-	reader, err := r.fileInput.NewReader(r.fileAttributes.Path, file, r.Fingerprint.Copy())
+	reader, err := r.fileInput.NewReader(r.fileAttributes.Path, file, r.Fingerprint.Copy(), r.splitter)
 	if err != nil {
 		return nil, err
 	}
@@ -116,7 +120,7 @@ func (r *Reader) ReadToEnd(ctx context.Context) {
 		return
 	}
 
-	scanner := NewPositionalScanner(r, r.fileInput.MaxLogSize, r.Offset, r.fileInput.SplitFunc)
+	scanner := NewPositionalScanner(r, r.fileInput.MaxLogSize, r.Offset, r.splitter.SplitFunc)
 
 	// Iterate over the tokenized file, emitting entries as we go
 	for {
@@ -131,8 +135,13 @@ func (r *Reader) ReadToEnd(ctx context.Context) {
 			if err := getScannerError(scanner); err != nil {
 				r.Errorw("Failed during scan", zap.Error(err))
 			}
+
+			// Force flush eventually in next iteration
+			r.splitter.CheckAndFlush()
 			break
 		}
+		// Update information about last flush time
+		r.splitter.Flushed()
 
 		if err := r.emit(ctx, scanner.Bytes()); err != nil {
 			r.Error("Failed to emit entry", zap.Error(err))
