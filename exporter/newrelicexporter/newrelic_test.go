@@ -31,17 +31,16 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opencensus.io/stats/view"
-	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/translator/internaldata"
-	"go.uber.org/zap"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 const (
-	testCollectorName    = "TestCollector"
-	testCollectorVersion = "v1.2.3"
+	testCollectorName    = "otelcol"
+	testCollectorVersion = "latest"
 )
 
 type mockConfig struct {
@@ -80,11 +79,7 @@ func runTraceMock(initialContext context.Context, ptrace pdata.Traces, cfg mockC
 		c.TracesConfig.APIKey = "NRII-1"
 	}
 	c.TracesConfig.insecure, c.TracesConfig.HostOverride = true, u.Host
-	params := component.ExporterCreateSettings{Logger: zap.NewNop(), BuildInfo: component.BuildInfo{
-		Command: testCollectorName,
-		Version: testCollectorVersion,
-	}}
-	exp, err := f.CreateTracesExporter(context.Background(), params, c)
+	exp, err := f.CreateTracesExporter(context.Background(), componenttest.NewNopExporterCreateSettings(), c)
 	if err != nil {
 		return m, err
 	}
@@ -127,11 +122,7 @@ func runMetricMock(initialContext context.Context, pmetrics pdata.Metrics, cfg m
 		c.MetricsConfig.APIKey = "NRII-1"
 	}
 	c.MetricsConfig.insecure, c.MetricsConfig.HostOverride = true, u.Host
-	params := component.ExporterCreateSettings{Logger: zap.NewNop(), BuildInfo: component.BuildInfo{
-		Command: testCollectorName,
-		Version: testCollectorVersion,
-	}}
-	exp, err := f.CreateMetricsExporter(context.Background(), params, c)
+	exp, err := f.CreateMetricsExporter(context.Background(), componenttest.NewNopExporterCreateSettings(), c)
 	if err != nil {
 		return m, err
 	}
@@ -174,11 +165,7 @@ func runLogMock(initialContext context.Context, plogs pdata.Logs, cfg mockConfig
 		c.LogsConfig.APIKey = "NRII-1"
 	}
 	c.LogsConfig.insecure, c.LogsConfig.HostOverride = true, u.Host
-	params := component.ExporterCreateSettings{Logger: zap.NewNop(), BuildInfo: component.BuildInfo{
-		Command: testCollectorName,
-		Version: testCollectorVersion,
-	}}
-	exp, err := f.CreateLogsExporter(context.Background(), params, c)
+	exp, err := f.CreateLogsExporter(context.Background(), componenttest.NewNopExporterCreateSettings(), c)
 	if err != nil {
 		return m, err
 	}
@@ -730,10 +717,7 @@ func TestExportLogs(t *testing.T) {
 }
 
 func TestCreatesClientOptionWithVersionInUserAgent(t *testing.T) {
-	testUserAgentContainsCollectorInfo(t, testCollectorVersion, testCollectorName, "NewRelic-OpenTelemetry-Collector/v1.2.3 TestCollector")
-}
-
-func testUserAgentContainsCollectorInfo(t *testing.T, version string, exeName string, expectedUserAgentSubstring string) {
+	expectedUserAgentSubstring := "NewRelic-OpenTelemetry-Collector/latest otelcol"
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
@@ -761,11 +745,7 @@ func testUserAgentContainsCollectorInfo(t *testing.T, version string, exeName st
 		c.TracesConfig.APIKey = "NRII-1"
 	}
 	c.TracesConfig.insecure, c.TracesConfig.HostOverride = true, u.Host
-	params := component.ExporterCreateSettings{Logger: zap.NewNop(), BuildInfo: component.BuildInfo{
-		Command: exeName,
-		Version: version,
-	}}
-	exp, err := f.CreateTracesExporter(context.Background(), params, c)
+	exp, err := f.CreateTracesExporter(context.Background(), componenttest.NewNopExporterCreateSettings(), c)
 	require.NoError(t, err)
 
 	ptrace := pdata.NewTraces()
@@ -810,11 +790,7 @@ func TestBadSpanResourceGeneratesError(t *testing.T) {
 		c.TracesConfig.APIKey = "NRII-1"
 	}
 	c.TracesConfig.insecure, c.TracesConfig.HostOverride = true, u.Host
-	params := component.ExporterCreateSettings{Logger: zap.NewNop(), BuildInfo: component.BuildInfo{
-		Command: testCollectorName,
-		Version: testCollectorVersion,
-	}}
-	exp, err := f.CreateTracesExporter(context.Background(), params, c)
+	exp, err := f.CreateTracesExporter(context.Background(), componenttest.NewNopExporterCreateSettings(), c)
 	require.NoError(t, err)
 
 	ptrace := pdata.NewTraces()
@@ -861,11 +837,7 @@ func TestBadMetricResourceGeneratesError(t *testing.T) {
 		c.MetricsConfig.APIKey = "NRII-1"
 	}
 	c.TracesConfig.insecure, c.TracesConfig.HostOverride = true, u.Host
-	params := component.ExporterCreateSettings{Logger: zap.NewNop(), BuildInfo: component.BuildInfo{
-		Command: testCollectorName,
-		Version: testCollectorVersion,
-	}}
-	exp, err := f.CreateMetricsExporter(context.Background(), params, c)
+	exp, err := f.CreateMetricsExporter(context.Background(), componenttest.NewNopExporterCreateSettings(), c)
 	require.NoError(t, err)
 
 	md := pdata.NewMetrics()
@@ -910,11 +882,7 @@ func TestBadLogResourceGeneratesError(t *testing.T) {
 		c.LogsConfig.APIKey = "NRII-1"
 	}
 	c.TracesConfig.insecure, c.TracesConfig.HostOverride = true, u.Host
-	params := component.ExporterCreateSettings{Logger: zap.NewNop(), BuildInfo: component.BuildInfo{
-		Command: testCollectorName,
-		Version: testCollectorVersion,
-	}}
-	exp, err := f.CreateLogsExporter(context.Background(), params, c)
+	exp, err := f.CreateLogsExporter(context.Background(), componenttest.NewNopExporterCreateSettings(), c)
 	require.NoError(t, err)
 
 	ld := pdata.NewLogs()
@@ -963,11 +931,7 @@ func TestFailureToRecordMetricsDoesNotAffectExportingData(t *testing.T) {
 	}
 	c.TracesConfig.insecure, c.TracesConfig.HostOverride = true, u.Host
 
-	params := component.ExporterCreateSettings{Logger: zap.NewNop(), BuildInfo: component.BuildInfo{
-		Command: testCollectorName,
-		Version: testCollectorVersion,
-	}}
-	exp, err := f.CreateTracesExporter(context.Background(), params, c)
+	exp, err := f.CreateTracesExporter(context.Background(), componenttest.NewNopExporterCreateSettings(), c)
 	require.NoError(t, err)
 
 	ptrace := pdata.NewTraces()

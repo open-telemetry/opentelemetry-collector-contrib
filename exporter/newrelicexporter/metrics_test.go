@@ -43,7 +43,7 @@ func TestMetricViews(t *testing.T) {
 			assert.Equal(t, spanMetadataTagKeys, curView.TagKeys)
 		} else if curView.Name == "newrelicexporter_attribute_metadata_count" {
 			assert.Equal(t, attributeMetadataTagKeys, curView.TagKeys)
-		} else if curView.Name == "newrelicexporter_service_indicator" {
+		} else if strings.HasSuffix(curView.Name, "_notag") {
 			assert.Equal(t, []tag.Key{}, curView.TagKeys)
 		} else {
 			assert.Equal(t, tagKeys, curView.TagKeys)

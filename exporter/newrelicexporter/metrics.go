@@ -18,7 +18,6 @@ import (
 	"context"
 	"strconv"
 	"strings"
-	"sync"
 	"time"
 
 	"go.opencensus.io/stats"
@@ -47,21 +46,15 @@ var (
 	spanMetadataTagKeys      = []tag.Key{tagGrpcStatusCode, tagHTTPStatusCode, tagRequestUserAgent, tagAPIKey, tagDataType, tagHasSpanEvents, tagHasSpanLinks}
 	attributeMetadataTagKeys = []tag.Key{tagGrpcStatusCode, tagHTTPStatusCode, tagRequestUserAgent, tagAPIKey, tagDataType, tagAttributeLocation, tagAttributeValueType}
 
-	indicator = serviceIndicator{
-		stat: stats.Float64("newrelicexporter_service_indicator", "Service level indicator (SLI) for the exporter service. Range: [0, 1], 0=Unhealthy, 1=Healthy.", stats.UnitDimensionless),
-	}
 	statRequestCount         = stats.Int64("newrelicexporter_request_count", "Number of requests processed", stats.UnitDimensionless)
+	statInputDatapointCount  = stats.Int64("newrelicexporter_input_datapoint_count", "Number of data points received by the exporter.", stats.UnitDimensionless)
 	statOutputDatapointCount = stats.Int64("newrelicexporter_output_datapoint_count", "Number of data points sent to the HTTP API", stats.UnitDimensionless)
-	statExporterTime         = stats.Float64("newrelicexporter_exporter_time", "Wall clock time (seconds) spent in the exporter", stats.UnitSeconds)
-	statExternalTime         = stats.Float64("newrelicexporter_external_time", "Wall clock time (seconds) spent sending data to the HTTP API", stats.UnitSeconds)
+	statExporterTime         = stats.Int64("newrelicexporter_exporter_time", "Wall clock time (milliseconds) spent in the exporter", stats.UnitMilliseconds)
+	statExternalTime         = stats.Int64("newrelicexporter_external_time", "Wall clock time (milliseconds) spent sending data to the HTTP API", stats.UnitMilliseconds)
 	statMetricMetadata       = stats.Int64("newrelicexporter_metric_metadata_count", "Number of metrics processed", stats.UnitDimensionless)
 	statSpanMetadata         = stats.Int64("newrelicexporter_span_metadata_count", "Number of spans processed", stats.UnitDimensionless)
 	statAttributeMetadata    = stats.Int64("newrelicexporter_attribute_metadata_count", "Number of attributes processed", stats.UnitDimensionless)
 )
-
-func init() {
-	indicator.start()
-}
 
 const EuKeyPrefix = "eu01xx"
 
@@ -69,13 +62,26 @@ const EuKeyPrefix = "eu01xx"
 func MetricViews() []*view.View {
 	return []*view.View{
 		buildView(tagKeys, statRequestCount, view.Sum()),
+		{
+			Name:        "newrelicexporter_input_datapoint_count_notag",
+			Measure:     statInputDatapointCount,
+			Description: statInputDatapointCount.Description(),
+			TagKeys:     []tag.Key{},
+			Aggregation: view.Sum(),
+		},
 		buildView(tagKeys, statOutputDatapointCount, view.Sum()),
+		{
+			Name:        "newrelicexporter_output_datapoint_count_notag",
+			Measure:     statOutputDatapointCount,
+			Description: statOutputDatapointCount.Description(),
+			TagKeys:     []tag.Key{},
+			Aggregation: view.Sum(),
+		},
 		buildView(tagKeys, statExporterTime, view.Sum()),
 		buildView(tagKeys, statExternalTime, view.Sum()),
 		buildView(metricMetadataTagKeys, statMetricMetadata, view.Sum()),
 		buildView(spanMetadataTagKeys, statSpanMetadata, view.Sum()),
 		buildView(attributeMetadataTagKeys, statAttributeMetadata, view.Sum()),
-		buildView([]tag.Key{}, indicator.stat, view.LastValue()),
 	}
 }
 
@@ -176,8 +182,6 @@ func initMetadata(ctx context.Context, dataType string) exportMetadata {
 }
 
 func (d exportMetadata) recordMetrics(ctx context.Context) error {
-	indicator.record(d.dataInputCount, d.dataOutputCount)
-
 	tags := []tag.Mutator{
 		tag.Insert(tagGrpcStatusCode, d.grpcResponseCode.String()),
 		tag.Insert(tagHTTPStatusCode, strconv.Itoa(d.httpStatusCode)),
@@ -189,9 +193,10 @@ func (d exportMetadata) recordMetrics(ctx context.Context) error {
 	var errors []error
 	e := stats.RecordWithTags(ctx, tags,
 		statRequestCount.M(1),
+		statInputDatapointCount.M(int64(d.dataInputCount)),
 		statOutputDatapointCount.M(int64(d.dataOutputCount)),
-		statExporterTime.M(d.exporterTime.Seconds()),
-		statExternalTime.M(d.externalDuration.Seconds()),
+		statExporterTime.M(d.exporterTime.Milliseconds()),
+		statExternalTime.M(d.externalDuration.Milliseconds()),
 	)
 
 	if e != nil {
@@ -261,54 +266,4 @@ func sanitizeAPIKeyForLogging(apiKey string) string {
 		end += len(EuKeyPrefix)
 	}
 	return apiKey[:end]
-}
-
-type serviceIndicatorComponents struct {
-	dataPointInputCount  int
-	dataPointOutputCount int
-}
-
-type serviceIndicator struct {
-	raw    serviceIndicatorComponents
-	stat   *stats.Float64Measure
-	mu     sync.Mutex
-	ticker *time.Ticker
-}
-
-func (s *serviceIndicator) record(inputCount, outputCount int) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	s.raw.dataPointInputCount += inputCount
-	s.raw.dataPointOutputCount += outputCount
-}
-
-func (s *serviceIndicator) compute() {
-	s.mu.Lock()
-	captured := s.raw
-	s.raw = serviceIndicatorComponents{}
-	s.mu.Unlock()
-
-	// If there are no datapoints, retain the previously computed SLI
-	if captured.dataPointInputCount <= 0 {
-		return
-	}
-
-	v := float64(captured.dataPointOutputCount) / float64(captured.dataPointInputCount)
-	m := s.stat.M(v)
-	stats.Record(context.Background(), m)
-}
-
-func (s *serviceIndicator) start() {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	if s.ticker != nil {
-		return
-	}
-	s.ticker = time.NewTicker(15 * time.Second)
-	go func() {
-		for {
-			<-s.ticker.C
-			s.compute()
-		}
-	}()
 }

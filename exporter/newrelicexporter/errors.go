@@ -103,14 +103,12 @@ func (e *httpError) GRPCStatus() *grpcStatus.Status {
 	}
 	// The OTLP spec uses the Unavailable code to signal backpressure to the client
 	// If the http status maps to Unavailable, attempt to extract and communicate retry info to the client
-	if mapEntry == codes.Unavailable {
-		retrySeconds := int64(e.ThrottleDelay().Seconds())
-		if retrySeconds > 0 {
-			message := &errdetails.RetryInfo{RetryDelay: &duration.Duration{Seconds: retrySeconds}}
-			status, statusErr := grpcStatus.New(codes.Unavailable, e.response.Status).WithDetails(message)
-			if statusErr == nil {
-				return status
-			}
+	retrySeconds := int64(e.ThrottleDelay().Seconds())
+	if retrySeconds > 0 {
+		message := &errdetails.RetryInfo{RetryDelay: &duration.Duration{Seconds: retrySeconds}}
+		status, statusErr := grpcStatus.New(codes.Unavailable, e.response.Status).WithDetails(message)
+		if statusErr == nil {
+			return status
 		}
 	}
 
