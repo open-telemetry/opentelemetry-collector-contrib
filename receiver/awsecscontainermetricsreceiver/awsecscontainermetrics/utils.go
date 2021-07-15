@@ -24,9 +24,9 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-// GenerateDummyMetrics generates two dummy metrics
+// generateDummyMetrics generates two dummy metrics
 // TODO: Remove once this is replaced with actuall metrics generation code
-func GenerateDummyMetrics() *agentmetricspb.ExportMetricsServiceRequest {
+func generateDummyMetrics() *agentmetricspb.ExportMetricsServiceRequest {
 	md := &agentmetricspb.ExportMetricsServiceRequest{}
 
 	for i := 0; i < 2; i++ {
