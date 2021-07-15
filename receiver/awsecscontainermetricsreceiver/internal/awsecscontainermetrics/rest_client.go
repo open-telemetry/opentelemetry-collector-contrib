@@ -32,11 +32,11 @@ func NewRestClient(client Client) *HTTPRestClient {
 
 // EndpointResponse gets the task metadata and docker stats from ECS Task Metadata Endpoint
 func (c *HTTPRestClient) EndpointResponse() ([]byte, []byte, error) {
-	taskStats, err := c.client.Get(TaskStatsPath)
+	taskStats, err := c.client.Get(taskStatsPath)
 	if err != nil {
 		return nil, nil, err
 	}
-	taskMetadata, err := c.client.Get(TaskMetadataPath)
+	taskMetadata, err := c.client.Get(taskMetadataPath)
 	if err != nil {
 		return nil, nil, err
 	}
