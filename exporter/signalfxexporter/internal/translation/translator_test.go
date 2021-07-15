@@ -2543,8 +2543,8 @@ func TestDeltaTranslatorMismatchedValueTypes(t *testing.T) {
 
 	_ = c.MetricDataToSignalFxV2(wrapMetric(md1))
 	md2 := baseMD()
-	md2.SetDataType(pdata.MetricDataTypeDoubleSum)
-	dblTS("cpu0", "user", 1, 1, 1, md2.DoubleSum().DataPoints().AppendEmpty())
+	md2.SetDataType(pdata.MetricDataTypeSum)
+	dblTS("cpu0", "user", 1, 1, 1, md2.Sum().DataPoints().AppendEmpty())
 	pts := c.MetricDataToSignalFxV2(wrapMetric(md2))
 	idx := indexPts(pts)
 	require.Equal(t, 1, len(idx))
@@ -2982,8 +2982,8 @@ func indexPts(pts []*sfxpb.DataPoint) map[string][]*sfxpb.DataPoint {
 
 func doubleMD(secondsDelta int64, valueDelta float64) pdata.ResourceMetrics {
 	md := baseMD()
-	md.SetDataType(pdata.MetricDataTypeDoubleSum)
-	ms := md.DoubleSum()
+	md.SetDataType(pdata.MetricDataTypeSum)
+	ms := md.Sum()
 	dblTS("cpu0", "user", secondsDelta, 100, valueDelta, ms.DataPoints().AppendEmpty())
 	dblTS("cpu0", "system", secondsDelta, 200, valueDelta, ms.DataPoints().AppendEmpty())
 	dblTS("cpu0", "idle", secondsDelta, 300, valueDelta, ms.DataPoints().AppendEmpty())

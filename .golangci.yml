@@ -118,3 +118,6 @@ issues:
     - text: "G402:"
       linters:
         - gosec
+    - text: "SA1019:.*Resize is deprecated.*"
+      linters:
+        - staticcheck

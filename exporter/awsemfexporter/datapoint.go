@@ -269,8 +269,8 @@ func getDataPoints(pmd *pdata.Metric, metadata cWMetricMetadata, logger *zap.Log
 			adjusterMetadata,
 			metric.DataPoints(),
 		}
-	case pdata.MetricDataTypeDoubleGauge:
-		metric := pmd.DoubleGauge()
+	case pdata.MetricDataTypeGauge:
+		metric := pmd.Gauge()
 		dps = doubleDataPointSlice{
 			metadata.instrumentationLibraryName,
 			adjusterMetadata,
@@ -284,8 +284,8 @@ func getDataPoints(pmd *pdata.Metric, metadata cWMetricMetadata, logger *zap.Log
 			adjusterMetadata,
 			metric.DataPoints(),
 		}
-	case pdata.MetricDataTypeDoubleSum:
-		metric := pmd.DoubleSum()
+	case pdata.MetricDataTypeSum:
+		metric := pmd.Sum()
 		adjusterMetadata.adjustToDelta = metric.AggregationTemporality() == pdata.AggregationTemporalityCumulative
 		dps = doubleDataPointSlice{
 			metadata.instrumentationLibraryName,

@@ -129,9 +129,9 @@ func (s *scraper) scrape(context.Context) (pdata.MetricSlice, error) {
 
 func initializeDoubleGaugeMetric(metric pdata.Metric, now pdata.Timestamp, name string, counterValues []win_perf_counters.CounterValue) {
 	metric.SetName(name)
-	metric.SetDataType(pdata.MetricDataTypeDoubleGauge)
+	metric.SetDataType(pdata.MetricDataTypeGauge)
 
-	dg := metric.DoubleGauge()
+	dg := metric.Gauge()
 	ddps := dg.DataPoints()
 	ddps.Resize(len(counterValues))
 	for i, counterValue := range counterValues {
