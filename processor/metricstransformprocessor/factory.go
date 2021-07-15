@@ -67,7 +67,7 @@ func createMetricsProcessor(
 	return processorhelper.NewMetricsProcessor(
 		cfg,
 		nextConsumer,
-		metricsProcessor,
+		metricsProcessor.processMetrics,
 		processorhelper.WithCapabilities(consumerCapabilities))
 }
 

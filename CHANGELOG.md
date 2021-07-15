@@ -2,9 +2,30 @@
 
 ## Unreleased
 
+## v0.30.0
+
+# 🎉 OpenTelemetry Collector Contrib v0.30.0 (Beta) 🎉
+
+The OpenTelemetry Collector Contrib contains everything in the [opentelemetry-collector release](https://github.com/open-telemetry/opentelemetry-collector/releases/tag/v0.30.0) (be sure to check the release notes here as well!). Check out the [Getting Started Guide](https://opentelemetry.io/docs/collector/getting-started/) for deployment and configuration information.
+
+## 🚀 New components 🚀
+- `oauth2clientauth` extension: ported from core (#3848)
+- `metrics-generation` processor: is now enabled and available (#4047) 
+
+## 🛑 Breaking changes 🛑
+
+- Removed `jaegerthrifthttp` exporter (#4089) 
+
 ## 💡 Enhancements 💡
 
-- `tailsampling` processor: Add new policy `status_code` (#3754)
+- `tailsampling` processor:
+  - Add new policy `status_code` (#3754)
+  - Add new tail sampling processor policy: status_code (#3754)
+- `awscontainerinsights` receiver:
+  - Integrate components and fix bugs for EKS Container Insights (#3846) 
+  - Add Cgroup to collect ECS instance metrics for container insights receiver #3875
+- `spanmetrics` processor: Support sub-millisecond latency buckets (#4091) 
+- `sentry` exporter: Add exception event capture in sentry (#3854)
 
 ## v0.29.0
 
