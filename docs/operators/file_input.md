@@ -12,6 +12,7 @@ The `file_input` operator reads logs from files. It will place the lines read in
 | `exclude`                       | []               | A list of file glob patterns to exclude from reading                                                               |
 | `poll_interval`                 | 200ms            | The duration between filesystem polls                                                                              |
 | `multiline`                     |                  | A `multiline` configuration block. See below for details                                                           |
+| `force_flush_period`            | `0s`             | Time since last read of data from file, after which currently buffered log should be send to pipeline. Takes [duration](../types/duration.md) as value. Zero means waiting for new data forever |
 | `write_to`                      | `$body`          | The body [field](/docs/types/field.md) written to when creating a new log entry                                    |
 | `encoding`                      | `utf-8`          | The encoding of the file being read. See the list of supported encodings below for available options               |
 | `include_file_name`             | `true`           | Whether to add the file name as the attribute `file.name`                                                          |
@@ -37,7 +38,11 @@ If set, the `multiline` configuration block instructs the `file_input` operator 
 The `multiline` configuration block must contain exactly one of `line_start_pattern` or `line_end_pattern`. These are regex patterns that
 match either the beginning of a new log entry, or the end of a log entry.
 
-Also refer to [recombine](/docs/operators/recombine.md) operator for merging events with greater control. 
+If using multiline, last log can sometimes be not flushed due to waiting for more content.
+In order to forcefully flush last buffered log after certain period of time,
+use `force_flush_period` option.
+
+Also refer to [recombine](/docs/operators/recombine.md) operator for merging events with greater control.
 
 ### File rotation
 

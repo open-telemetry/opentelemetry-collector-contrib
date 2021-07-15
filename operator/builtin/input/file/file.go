@@ -15,7 +15,6 @@
 package file
 
 import (
-	"bufio"
 	"bytes"
 	"context"
 	"encoding/json"
@@ -44,7 +43,7 @@ type InputOperator struct {
 	FilePathResolvedField entry.Field
 	FileNameResolvedField entry.Field
 	PollInterval          time.Duration
-	SplitFunc             bufio.SplitFunc
+	Splitter              helper.SplitterConfig
 	MaxLogSize            int
 	MaxConcurrentFiles    int
 	SeenPaths             map[string]struct{}
@@ -323,7 +322,11 @@ func (f *InputOperator) newReader(file *os.File, fp *Fingerprint, firstCheck boo
 	}
 
 	// If we don't match any previously known files, create a new reader from scratch
-	newReader, err := f.NewReader(file.Name(), file, fp)
+	splitter, err := f.getMultiline()
+	if err != nil {
+		return nil, err
+	}
+	newReader, err := f.NewReader(file.Name(), file, fp, splitter)
 	if err != nil {
 		return nil, err
 	}
@@ -393,7 +396,11 @@ func (f *InputOperator) loadLastPollFiles(ctx context.Context) error {
 	// Decode each of the known files
 	f.knownFiles = make([]*Reader, 0, knownFileCount)
 	for i := 0; i < knownFileCount; i++ {
-		newReader, err := f.NewReader("", nil, nil)
+		splitter, err := f.getMultiline()
+		if err != nil {
+			return err
+		}
+		newReader, err := f.NewReader("", nil, nil, splitter)
 		if err != nil {
 			return err
 		}
@@ -404,4 +411,9 @@ func (f *InputOperator) loadLastPollFiles(ctx context.Context) error {
 	}
 
 	return nil
+}
+
+// getMultiline returns helper.Splitter structure and error eventually
+func (f *InputOperator) getMultiline() (*helper.Splitter, error) {
+	return f.Splitter.Build(f.encoding.Encoding, false)
 }
