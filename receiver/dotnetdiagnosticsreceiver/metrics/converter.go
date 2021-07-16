@@ -30,9 +30,9 @@ func rawMetricsToPdata(rawMetrics []dotnet.Metric, startTime, now time.Time) pda
 	ilms := rm.InstrumentationLibraryMetrics()
 	ilm := ilms.AppendEmpty()
 	ms := ilm.Metrics()
-	ms.Resize(len(rawMetrics))
+	ms.EnsureCapacity(len(rawMetrics))
 	for i := 0; i < len(rawMetrics); i++ {
-		rawMetricToPdata(rawMetrics[i], ms.At(i), startTime, now)
+		rawMetricToPdata(rawMetrics[i], ms.AppendEmpty(), startTime, now)
 	}
 	return pdm
 }
