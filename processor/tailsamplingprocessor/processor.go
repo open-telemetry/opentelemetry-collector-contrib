@@ -125,7 +125,7 @@ func getPolicyEvaluator(logger *zap.Logger, cfg *PolicyCfg) (sampling.PolicyEval
 		return sampling.NewNumericAttributeFilter(logger, nafCfg.Key, nafCfg.MinValue, nafCfg.MaxValue), nil
 	case StringAttribute:
 		safCfg := cfg.StringAttributeCfg
-		return sampling.NewStringAttributeFilter(logger, safCfg.Key, safCfg.Values, safCfg.EnabledRegexMatching, safCfg.CacheMaxSize), nil
+		return sampling.NewStringAttributeFilter(logger, safCfg.Key, safCfg.Values, safCfg.EnabledRegexMatching, safCfg.CacheMaxSize, safCfg.InvertMatch), nil
 	case StatusCode:
 		scfCfg := cfg.StatusCodeCfg
 		return sampling.NewStatusCodeFilter(logger, scfCfg.StatusCodes)

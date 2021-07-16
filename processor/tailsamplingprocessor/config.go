@@ -96,6 +96,8 @@ type StringAttributeCfg struct {
 	// from the regular expressions defined in Values.
 	// CacheMaxSize will not be used if EnabledRegexMatching is set to false.
 	CacheMaxSize int `mapstructure:"cache_max_size"`
+	// InvertMatch indicates whether values should (false) or should not (true) match against attribute values.
+	InvertMatch bool `mapstructure:"invert_match"`
 }
 
 // RateLimitingCfg holds the configurable settings to create a rate limiting

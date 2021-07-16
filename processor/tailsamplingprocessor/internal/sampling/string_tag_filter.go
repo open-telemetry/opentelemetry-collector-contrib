@@ -41,7 +41,14 @@ var _ PolicyEvaluator = (*stringAttributeFilter)(nil)
 
 // NewStringAttributeFilter creates a policy evaluator that samples all traces with
 // the given attribute in the given numeric range.
-func NewStringAttributeFilter(logger *zap.Logger, key string, values []string, regexMatchEnabled bool, evictSize int) PolicyEvaluator {
+func NewStringAttributeFilter(logger *zap.Logger, key string, values []string, regexMatchEnabled bool, evictSize int, invertMatch bool) PolicyEvaluator {
+	returnTrue := true
+	returnFalse := false
+	if invertMatch {
+		returnTrue = false
+		returnFalse = true
+	}
+
 	// initialize regex filter rules and LRU cache for matched results
 	if regexMatchEnabled {
 		if evictSize <= 0 {
@@ -64,13 +71,13 @@ func NewStringAttributeFilter(logger *zap.Logger, key string, values []string, r
 
 				for _, r := range regexStrSetting.filterList {
 					if r.MatchString(toMatch) {
-						regexStrSetting.matchedAttrs.Add(toMatch, true)
-						return true
+						regexStrSetting.matchedAttrs.Add(toMatch, returnTrue)
+						return returnTrue
 					}
 				}
 
-				regexStrSetting.matchedAttrs.Add(toMatch, false)
-				return false
+				regexStrSetting.matchedAttrs.Add(toMatch, returnFalse)
+				return returnFalse
 			},
 		}
 	}
@@ -88,7 +95,10 @@ func NewStringAttributeFilter(logger *zap.Logger, key string, values []string, r
 		// matcher returns true if the given string matches any of the string attribute filters
 		matcher: func(toMatch string) bool {
 			_, matched := valuesMap[toMatch]
-			return matched
+			if matched {
+				return returnTrue
+			}
+			return returnFalse
 		},
 	}
 }
