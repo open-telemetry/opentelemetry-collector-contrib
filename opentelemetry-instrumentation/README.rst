@@ -16,6 +16,14 @@ Installation
 
 This package provides a couple of commands that help automatically instruments a program:
 
+.. note::
+    You need to install a distro package to get auto instrumentation working. The ``opentelemetry-distro``
+    package contains the default distro and automatically configures some of the common options for users.
+    For more info about ``opentelemetry-distro`` check `here <https://opentelemetry-python.readthedocs.io/en/latest/examples/distro/README.html>`__
+    ::
+
+        pip install opentelemetry-distro[otlp]
+
 
 opentelemetry-bootstrap
 -----------------------
