@@ -76,22 +76,22 @@ func TestSplitSameTraceIntoDifferentBatches(t *testing.T) {
 	rs := inBatch.ResourceSpans().AppendEmpty()
 
 	// we have 1 ResourceSpans with 2 ILS, resulting in two batches
-	rs.InstrumentationLibrarySpans().Resize(2)
+	rs.InstrumentationLibrarySpans().EnsureCapacity(2)
 
 	// the first ILS has two spans
-	firstILS := rs.InstrumentationLibrarySpans().At(0)
+	firstILS := rs.InstrumentationLibrarySpans().AppendEmpty()
 	firstLibrary := firstILS.InstrumentationLibrary()
 	firstLibrary.SetName("first-library")
-	firstILS.Spans().Resize(2)
-	firstSpan := firstILS.Spans().At(0)
+	firstILS.Spans().EnsureCapacity(2)
+	firstSpan := firstILS.Spans().AppendEmpty()
 	firstSpan.SetName("first-batch-first-span")
 	firstSpan.SetTraceID(pdata.NewTraceID([16]byte{1, 2, 3, 4}))
-	secondSpan := firstILS.Spans().At(1)
+	secondSpan := firstILS.Spans().AppendEmpty()
 	secondSpan.SetName("first-batch-second-span")
 	secondSpan.SetTraceID(pdata.NewTraceID([16]byte{1, 2, 3, 4}))
 
 	// the second ILS has one span
-	secondILS := rs.InstrumentationLibrarySpans().At(1)
+	secondILS := rs.InstrumentationLibrarySpans().AppendEmpty()
 	secondLibrary := secondILS.InstrumentationLibrary()
 	secondLibrary.SetName("second-library")
 	thirdSpan := secondILS.Spans().AppendEmpty()
@@ -125,14 +125,14 @@ func TestSplitDifferentLogsIntoDifferentBatches(t *testing.T) {
 	ill := rl.InstrumentationLibraryLogs().AppendEmpty()
 	library := ill.InstrumentationLibrary()
 	library.SetName("first-library")
-	ill.Logs().Resize(3)
-	firstLog := ill.Logs().At(0)
+	ill.Logs().EnsureCapacity(3)
+	firstLog := ill.Logs().AppendEmpty()
 	firstLog.SetName("first-batch-first-log")
 	firstLog.SetTraceID(pdata.NewTraceID([16]byte{1, 2, 3, 4}))
-	secondLog := ill.Logs().At(1)
+	secondLog := ill.Logs().AppendEmpty()
 	secondLog.SetName("first-batch-second-log")
 	secondLog.SetTraceID(pdata.NewTraceID([16]byte{2, 3, 4, 5}))
-	thirdLog := ill.Logs().At(2)
+	thirdLog := ill.Logs().AppendEmpty()
 	thirdLog.SetName("first-batch-third-log")
 	// do not set traceID for third log
 
@@ -180,22 +180,22 @@ func TestSplitLogsSameTraceIntoDifferentBatches(t *testing.T) {
 	rl := inBatch.ResourceLogs().AppendEmpty()
 
 	// we have 1 ResourceLogs with 2 ILL, resulting in two batches
-	rl.InstrumentationLibraryLogs().Resize(2)
+	rl.InstrumentationLibraryLogs().EnsureCapacity(2)
 
 	// the first ILL has two logs
-	firstILS := rl.InstrumentationLibraryLogs().At(0)
+	firstILS := rl.InstrumentationLibraryLogs().AppendEmpty()
 	firstLibrary := firstILS.InstrumentationLibrary()
 	firstLibrary.SetName("first-library")
-	firstILS.Logs().Resize(2)
-	firstLog := firstILS.Logs().At(0)
+	firstILS.Logs().EnsureCapacity(2)
+	firstLog := firstILS.Logs().AppendEmpty()
 	firstLog.SetName("first-batch-first-log")
 	firstLog.SetTraceID(pdata.NewTraceID([16]byte{1, 2, 3, 4}))
-	secondLog := firstILS.Logs().At(1)
+	secondLog := firstILS.Logs().AppendEmpty()
 	secondLog.SetName("first-batch-second-log")
 	secondLog.SetTraceID(pdata.NewTraceID([16]byte{1, 2, 3, 4}))
 
 	// the second ILL has one log
-	secondILS := rl.InstrumentationLibraryLogs().At(1)
+	secondILS := rl.InstrumentationLibraryLogs().AppendEmpty()
 	secondLibrary := secondILS.InstrumentationLibrary()
 	secondLibrary.SetName("second-library")
 	thirdLog := secondILS.Logs().AppendEmpty()

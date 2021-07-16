@@ -149,7 +149,11 @@ func ToTraces(rawSeg []byte) (*pdata.Traces, error) {
 	traceData := pdata.NewTraces()
 	rspan := traceData.ResourceSpans().AppendEmpty()
 	ils := rspan.InstrumentationLibrarySpans().AppendEmpty()
-	ils.Spans().Resize(len(records))
+	ils.Spans().EnsureCapacity(len(records))
+
+	for i := 0; i < len(records); i++ {
+		ils.Spans().AppendEmpty()
+	}
 
 	return &traceData, nil
 }
