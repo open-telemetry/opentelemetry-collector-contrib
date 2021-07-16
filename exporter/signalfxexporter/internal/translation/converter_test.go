@@ -55,17 +55,17 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 	tsMSecs := unixSecs*1e3 + unixNSecs/1e6
 
 	const doubleVal = 1234.5678
-	initDoublePt := func(doublePt pdata.DoubleDataPoint) {
+	initDoublePt := func(doublePt pdata.NumberDataPoint) {
 		doublePt.SetTimestamp(ts)
 		doublePt.SetValue(doubleVal)
 	}
 
-	initDoublePtWithLabels := func(doublePtWithLabels pdata.DoubleDataPoint) {
+	initDoublePtWithLabels := func(doublePtWithLabels pdata.NumberDataPoint) {
 		initDoublePt(doublePtWithLabels)
 		doublePtWithLabels.LabelsMap().InitFromMap(labelMap)
 	}
 
-	initDoublePtWithLongLabels := func(doublePtWithLabels pdata.DoubleDataPoint) {
+	initDoublePtWithLongLabels := func(doublePtWithLabels pdata.NumberDataPoint) {
 		initDoublePt(doublePtWithLabels)
 		doublePtWithLabels.LabelsMap().InitFromMap(longLabelMap)
 	}
@@ -74,7 +74,7 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 		"k00": "v00",
 		"k11": "v11",
 	}
-	initDoublePtWithDifferentLabels := func(doublePtWithDifferentLabels pdata.DoubleDataPoint) {
+	initDoublePtWithDifferentLabels := func(doublePtWithDifferentLabels pdata.NumberDataPoint) {
 		initDoublePt(doublePtWithDifferentLabels)
 		doublePtWithDifferentLabels.LabelsMap().InitFromMap(differentLabelMap)
 	}

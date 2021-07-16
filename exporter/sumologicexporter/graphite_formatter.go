@@ -87,9 +87,9 @@ func (gf *graphiteFormatter) intRecord(fs fields, name string, dataPoint pdata.I
 	)
 }
 
-// doubleRecord converts DoubleDataPoint to graphite metric string
+// doubleRecord converts NumberDataPoint to graphite metric string
 // with additional information from fields
-func (gf *graphiteFormatter) doubleRecord(fs fields, name string, dataPoint pdata.DoubleDataPoint) string {
+func (gf *graphiteFormatter) doubleRecord(fs fields, name string, dataPoint pdata.NumberDataPoint) string {
 	return fmt.Sprintf("%s %g %d",
 		gf.format(fs, name),
 		dataPoint.Value(),
