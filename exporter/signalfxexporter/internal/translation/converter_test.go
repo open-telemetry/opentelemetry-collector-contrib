@@ -284,16 +284,16 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 				res.Attributes().InsertString("k/n1", "vn1")
 
 				ilm := out.InstrumentationLibraryMetrics().AppendEmpty()
-				ilm.Metrics().Resize(2)
+				ilm.Metrics().EnsureCapacity(2)
 
 				{
-					m := ilm.Metrics().At(0)
+					m := ilm.Metrics().AppendEmpty()
 					m.SetName("gauge_double_with_dims")
 					m.SetDataType(pdata.MetricDataTypeGauge)
 					initDoublePtWithLabels(m.Gauge().DataPoints().AppendEmpty())
 				}
 				{
-					m := ilm.Metrics().At(1)
+					m := ilm.Metrics().AppendEmpty()
 					m.SetName("gauge_int_with_dims")
 					m.SetDataType(pdata.MetricDataTypeIntGauge)
 					initInt64PtWithLabels(m.IntGauge().DataPoints().AppendEmpty())
@@ -337,34 +337,34 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 				res.Attributes().InsertString("k/n1", "vn1")
 
 				ilm := out.InstrumentationLibraryMetrics().AppendEmpty()
-				ilm.Metrics().Resize(5)
+				ilm.Metrics().EnsureCapacity(5)
 
 				{
-					m := ilm.Metrics().At(0)
+					m := ilm.Metrics().AppendEmpty()
 					m.SetName(fmt.Sprintf("l%sng_name", strings.Repeat("o", 256)))
 					m.SetDataType(pdata.MetricDataTypeGauge)
 					initDoublePtWithLabels(m.Gauge().DataPoints().AppendEmpty())
 				}
 				{
-					m := ilm.Metrics().At(1)
+					m := ilm.Metrics().AppendEmpty()
 					m.SetName("gauge_int_with_dims")
 					m.SetDataType(pdata.MetricDataTypeIntGauge)
 					initInt64PtWithLabels(m.IntGauge().DataPoints().AppendEmpty())
 				}
 				{
-					m := ilm.Metrics().At(2)
+					m := ilm.Metrics().AppendEmpty()
 					m.SetName(fmt.Sprintf("l%sng_name", strings.Repeat("o", 256)))
 					m.SetDataType(pdata.MetricDataTypeGauge)
 					initDoublePtWithLabels(m.Gauge().DataPoints().AppendEmpty())
 				}
 				{
-					m := ilm.Metrics().At(3)
+					m := ilm.Metrics().AppendEmpty()
 					m.SetName(fmt.Sprintf("l%sng_name", strings.Repeat("o", 256)))
 					m.SetDataType(pdata.MetricDataTypeGauge)
 					initDoublePtWithLabels(m.Gauge().DataPoints().AppendEmpty())
 				}
 				{
-					m := ilm.Metrics().At(4)
+					m := ilm.Metrics().AppendEmpty()
 					m.SetName("gauge_int_with_dims")
 					m.SetDataType(pdata.MetricDataTypeIntGauge)
 					initInt64PtWithLabels(m.IntGauge().DataPoints().AppendEmpty())
@@ -408,10 +408,10 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 				res.Attributes().InsertString("k/n1", "vn1")
 
 				ilm := out.InstrumentationLibraryMetrics().AppendEmpty()
-				ilm.Metrics().Resize(1)
+				ilm.Metrics().EnsureCapacity(1)
 
 				{
-					m := ilm.Metrics().At(0)
+					m := ilm.Metrics().AppendEmpty()
 					m.SetName("gauge_double_with_dims")
 					m.SetDataType(pdata.MetricDataTypeGauge)
 					initDoublePtWithLongLabels(m.Gauge().DataPoints().AppendEmpty())

@@ -88,9 +88,9 @@ func createTraceData(numberOfTraces int) pdata.Traces {
 	rs := traces.ResourceSpans().AppendEmpty()
 	rs.Resource().Attributes().InsertString("resource", "R1")
 	ils := rs.InstrumentationLibrarySpans().AppendEmpty()
-	ils.Spans().Resize(numberOfTraces)
+	ils.Spans().EnsureCapacity(numberOfTraces)
 	for i := 0; i < numberOfTraces; i++ {
-		span := ils.Spans().At(i)
+		span := ils.Spans().AppendEmpty()
 		span.SetName("root")
 		span.SetStartTimestamp(pdata.Timestamp((i + 1) * 1e9))
 		span.SetEndTimestamp(pdata.Timestamp((i + 2) * 1e9))
@@ -109,16 +109,16 @@ func createTraceData(numberOfTraces int) pdata.Traces {
 
 func createLogData(numResources int, numLibraries int, numRecords int) pdata.Logs {
 	logs := pdata.NewLogs()
-	logs.ResourceLogs().Resize(numResources)
+	logs.ResourceLogs().EnsureCapacity(numResources)
 	for i := 0; i < numResources; i++ {
-		rl := logs.ResourceLogs().At(i)
-		rl.InstrumentationLibraryLogs().Resize(numLibraries)
+		rl := logs.ResourceLogs().AppendEmpty()
+		rl.InstrumentationLibraryLogs().EnsureCapacity(numLibraries)
 		for j := 0; j < numLibraries; j++ {
-			ill := rl.InstrumentationLibraryLogs().At(j)
-			ill.Logs().Resize(numRecords)
+			ill := rl.InstrumentationLibraryLogs().AppendEmpty()
+			ill.Logs().EnsureCapacity(numRecords)
 			for k := 0; k < numRecords; k++ {
 				ts := pdata.Timestamp(int64(k) * time.Millisecond.Nanoseconds())
-				logRecord := ill.Logs().At(k)
+				logRecord := ill.Logs().AppendEmpty()
 				logRecord.SetName(fmt.Sprintf("%d_%d_%d", i, j, k))
 				logRecord.Body().SetStringVal("mylog")
 				logRecord.Attributes().InsertString(conventions.AttributeServiceName, "myapp")
