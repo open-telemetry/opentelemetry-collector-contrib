@@ -23,6 +23,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opencensus.io/stats"
 	"go.opencensus.io/stats/view"
+	"go.opencensus.io/tag"
 	"go.opentelemetry.io/collector/model/pdata"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
@@ -42,6 +43,8 @@ func TestMetricViews(t *testing.T) {
 			assert.Equal(t, spanMetadataTagKeys, curView.TagKeys)
 		} else if curView.Name == "newrelicexporter_attribute_metadata_count" {
 			assert.Equal(t, attributeMetadataTagKeys, curView.TagKeys)
+		} else if strings.HasSuffix(curView.Name, "_notag") {
+			assert.Equal(t, []tag.Key{}, curView.TagKeys)
 		} else {
 			assert.Equal(t, tagKeys, curView.TagKeys)
 		}

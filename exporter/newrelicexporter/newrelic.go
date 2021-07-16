@@ -324,7 +324,7 @@ func (e exporter) export(
 		options = append(options, option)
 	}
 
-	req, err := e.requestFactory.BuildRequest(batches, options...)
+	req, err := e.requestFactory.BuildRequest(ctx, batches, options...)
 	if err != nil {
 		e.logger.Error("Failed to build data map", zap.Error(err))
 		return err
@@ -340,11 +340,17 @@ func (e exporter) export(
 func (e exporter) doRequest(details *exportMetadata, req *http.Request) error {
 	startTime := time.Now()
 	defer func() { details.externalDuration = time.Since(startTime) }()
+
 	// Execute the http request and handle the response
 	response, err := http.DefaultClient.Do(req)
 	if err != nil {
-		e.logger.Error("Error making HTTP request.", zap.Error(err))
-		return &urlError{Err: err}
+		// If the context cancellation caused the error, we don't want to log that error.
+		// Only log an error when the context is still active
+		if ctxErr := req.Context().Err(); ctxErr == nil {
+			e.logger.Error("Error making HTTP request.", zap.Error(err))
+		}
+		err := &urlError{err: err}
+		return err.Wrap()
 	}
 	defer response.Body.Close()
 	io.Copy(ioutil.Discard, response.Body)
@@ -355,20 +361,21 @@ func (e exporter) doRequest(details *exportMetadata, req *http.Request) error {
 		// Log the error at an appropriate level based on the status code
 		if response.StatusCode >= 500 {
 			// The data has been lost, but it is due to a server side error
-			e.logger.Warn("Server HTTP error", zap.String("Status", response.Status))
+			e.logger.Warn("Server HTTP error", zap.String("Status", response.Status), zap.Stringer("Url", req.URL))
 		} else if response.StatusCode == http.StatusForbidden {
 			// The data has been lost, but it is due to an invalid api key
-			e.logger.Debug("HTTP Forbidden response", zap.String("Status", response.Status))
+			e.logger.Debug("HTTP Forbidden response", zap.String("Status", response.Status), zap.Stringer("Url", req.URL))
 		} else if response.StatusCode == http.StatusTooManyRequests {
 			// The data has been lost, but it is due to rate limiting
-			e.logger.Debug("HTTP Too Many Requests", zap.String("Status", response.Status))
+			e.logger.Debug("HTTP Too Many Requests", zap.String("Status", response.Status), zap.Stringer("Url", req.URL))
 		} else {
 			// The data has been lost due to an error in our payload
 			details.dataOutputCount = 0
-			e.logger.Error("Client HTTP error.", zap.String("Status", response.Status))
+			e.logger.Error("Client HTTP error.", zap.String("Status", response.Status), zap.Stringer("Url", req.URL))
 		}
 
-		return &httpError{Response: response}
+		err := newHTTPError(response)
+		return err.Wrap()
 	}
 	return nil
 }
