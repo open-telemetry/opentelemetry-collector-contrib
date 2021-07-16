@@ -38,30 +38,6 @@ const (
 	kernelMagicCodeNotSet = int64(9223372036854771712)
 )
 
-type ecsTaskInfoProvider interface {
-	getRunningTaskCount() int64
-	getRunningTasksInfo() []ECSTask
-}
-
-type ECSContainer struct {
-	DockerID string
-}
-
-type ECSTask struct {
-	KnownStatus string
-	ARN         string
-	Containers  []ECSContainer
-}
-
-type ECSTasksInfo struct {
-	Tasks []ECSTask
-}
-
-type containerInstanceInfoProvider interface {
-	GetClusterName() string
-	GetContainerInstanceID() string
-}
-
 type cgroupScanner struct {
 	logger                        *zap.Logger
 	mountPoint                    string

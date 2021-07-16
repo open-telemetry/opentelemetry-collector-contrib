@@ -63,7 +63,7 @@ func newEC2Metadata(ctx context.Context, session *session.Session, refreshInterv
 		return emd.instanceID == "" || emd.instanceType == ""
 	}
 
-	go refreshUntil(ctx, emd.refresh, emd.refreshInterval, shouldRefresh, 0)
+	go RefreshUntil(ctx, emd.refresh, emd.refreshInterval, shouldRefresh, 0)
 
 	return emd
 }
