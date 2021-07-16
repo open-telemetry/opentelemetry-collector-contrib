@@ -95,7 +95,8 @@ type StringAttributeCfg struct {
 	// CacheMaxSize is the maximum number of attribute entries of LRU Cache that stores the matched result
 	// from the regular expressions defined in Values.
 	// CacheMaxSize will not be used if EnabledRegexMatching is set to false.
-	CacheMaxSize int `mapstructure:"cache_max_size"`
+	CacheMaxSize int  `mapstructure:"cache_max_size"`
+	InvertMatch  bool `mapstructure:"invert_match"`
 }
 
 // RateLimitingCfg holds the configurable settings to create a rate limiting
