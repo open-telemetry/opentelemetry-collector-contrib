@@ -147,7 +147,7 @@ func TestMapIntMetrics(t *testing.T) {
 
 func TestMapDoubleMetrics(t *testing.T) {
 	ts := pdata.TimestampFromTime(time.Now())
-	slice := pdata.NewDoubleDataPointSlice()
+	slice := pdata.NewNumberDataPointSlice()
 	point := slice.AppendEmpty()
 	point.SetValue(math.Pi)
 	point.SetTimestamp(ts)
@@ -304,7 +304,7 @@ func TestMapDoubleMonotonicMetrics(t *testing.T) {
 	}
 
 	//Map to OpenTelemetry format
-	slice := pdata.NewDoubleDataPointSlice()
+	slice := pdata.NewNumberDataPointSlice()
 	slice.EnsureCapacity(len(cumulative))
 	for i, val := range cumulative {
 		point := slice.AppendEmpty()
@@ -327,7 +327,7 @@ func TestMapDoubleMonotonicMetrics(t *testing.T) {
 
 func TestMapDoubleMonotonicDifferentDimensions(t *testing.T) {
 	metricName := "metric.example"
-	slice := pdata.NewDoubleDataPointSlice()
+	slice := pdata.NewNumberDataPointSlice()
 
 	// No tags
 	point := slice.AppendEmpty()
@@ -372,7 +372,7 @@ func TestMapDoubleMonotonicDifferentDimensions(t *testing.T) {
 func TestMapDoubleMonotonicWithReboot(t *testing.T) {
 	values := []float64{0, 30, 0, 20}
 	metricName := "metric.example"
-	slice := pdata.NewDoubleDataPointSlice()
+	slice := pdata.NewNumberDataPointSlice()
 	slice.EnsureCapacity(len(values))
 
 	for i, val := range values {
@@ -396,7 +396,7 @@ func TestMapDoubleMonotonicOutOfOrder(t *testing.T) {
 	values := []float64{0, 1, 2, 3}
 
 	metricName := "metric.example"
-	slice := pdata.NewDoubleDataPointSlice()
+	slice := pdata.NewNumberDataPointSlice()
 	slice.EnsureCapacity(len(values))
 
 	for i, val := range values {

@@ -185,7 +185,7 @@ func intMetricsToLogs(name string, data pdata.IntDataPointSlice, defaultLabels K
 	return logs
 }
 
-func doubleMetricsToLogs(name string, data pdata.DoubleDataPointSlice, defaultLabels KeyValues) (logs []*sls.Log) {
+func numberMetricsToLogs(name string, data pdata.NumberDataPointSlice, defaultLabels KeyValues) (logs []*sls.Log) {
 	for i := 0; i < data.Len(); i++ {
 		dataPoint := data.At(i)
 		labelsMap := dataPoint.LabelsMap()
@@ -293,11 +293,11 @@ func metricDataToLogServiceData(md pdata.Metric, defaultLabels KeyValues) (logs 
 	case pdata.MetricDataTypeIntGauge:
 		return intMetricsToLogs(md.Name(), md.IntGauge().DataPoints(), defaultLabels)
 	case pdata.MetricDataTypeGauge:
-		return doubleMetricsToLogs(md.Name(), md.Gauge().DataPoints(), defaultLabels)
+		return numberMetricsToLogs(md.Name(), md.Gauge().DataPoints(), defaultLabels)
 	case pdata.MetricDataTypeIntSum:
 		return intMetricsToLogs(md.Name(), md.IntSum().DataPoints(), defaultLabels)
 	case pdata.MetricDataTypeSum:
-		return doubleMetricsToLogs(md.Name(), md.Sum().DataPoints(), defaultLabels)
+		return numberMetricsToLogs(md.Name(), md.Sum().DataPoints(), defaultLabels)
 	case pdata.MetricDataTypeHistogram:
 		return doubleHistogramMetricsToLogs(md.Name(), md.Histogram().DataPoints(), defaultLabels)
 	case pdata.MetricDataTypeSummary:

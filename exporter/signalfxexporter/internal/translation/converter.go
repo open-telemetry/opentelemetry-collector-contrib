@@ -228,7 +228,7 @@ func convertIntDatapoints(in pdata.IntDataPointSlice, basePoint *sfxpb.DataPoint
 	return out
 }
 
-func convertDoubleDatapoints(in pdata.DoubleDataPointSlice, basePoint *sfxpb.DataPoint, extraDims []*sfxpb.Dimension) []*sfxpb.DataPoint {
+func convertDoubleDatapoints(in pdata.NumberDataPointSlice, basePoint *sfxpb.DataPoint, extraDims []*sfxpb.Dimension) []*sfxpb.DataPoint {
 	out := make([]*sfxpb.DataPoint, 0, in.Len())
 
 	for i := 0; i < in.Len(); i++ {
