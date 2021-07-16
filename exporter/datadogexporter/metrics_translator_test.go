@@ -185,9 +185,9 @@ func TestMapIntMonotonicMetrics(t *testing.T) {
 
 	//Map to OpenTelemetry format
 	slice := pdata.NewIntDataPointSlice()
-	slice.Resize(len(cumulative))
+	slice.EnsureCapacity(len(cumulative))
 	for i, val := range cumulative {
-		point := slice.At(i)
+		point := slice.AppendEmpty()
 		point.SetValue(val)
 		point.SetTimestamp(seconds(i))
 	}
@@ -253,10 +253,10 @@ func TestMapIntMonotonicWithReboot(t *testing.T) {
 	values := []int64{0, 30, 0, 20}
 	metricName := "metric.example"
 	slice := pdata.NewIntDataPointSlice()
-	slice.Resize(len(values))
+	slice.EnsureCapacity(len(values))
 
 	for i, val := range values {
-		point := slice.At(i)
+		point := slice.AppendEmpty()
 		point.SetTimestamp(seconds(i))
 		point.SetValue(val)
 	}
@@ -277,10 +277,10 @@ func TestMapIntMonotonicOutOfOrder(t *testing.T) {
 
 	metricName := "metric.example"
 	slice := pdata.NewIntDataPointSlice()
-	slice.Resize(len(values))
+	slice.EnsureCapacity(len(values))
 
 	for i, val := range values {
-		point := slice.At(i)
+		point := slice.AppendEmpty()
 		point.SetTimestamp(seconds(stamps[i]))
 		point.SetValue(val)
 	}
@@ -305,9 +305,9 @@ func TestMapDoubleMonotonicMetrics(t *testing.T) {
 
 	//Map to OpenTelemetry format
 	slice := pdata.NewDoubleDataPointSlice()
-	slice.Resize(len(cumulative))
+	slice.EnsureCapacity(len(cumulative))
 	for i, val := range cumulative {
-		point := slice.At(i)
+		point := slice.AppendEmpty()
 		point.SetValue(val)
 		point.SetTimestamp(seconds(i))
 	}
@@ -373,10 +373,10 @@ func TestMapDoubleMonotonicWithReboot(t *testing.T) {
 	values := []float64{0, 30, 0, 20}
 	metricName := "metric.example"
 	slice := pdata.NewDoubleDataPointSlice()
-	slice.Resize(len(values))
+	slice.EnsureCapacity(len(values))
 
 	for i, val := range values {
-		point := slice.At(i)
+		point := slice.AppendEmpty()
 		point.SetTimestamp(seconds(2 * i))
 		point.SetValue(val)
 	}
@@ -397,10 +397,10 @@ func TestMapDoubleMonotonicOutOfOrder(t *testing.T) {
 
 	metricName := "metric.example"
 	slice := pdata.NewDoubleDataPointSlice()
-	slice.Resize(len(values))
+	slice.EnsureCapacity(len(values))
 
 	for i, val := range values {
-		point := slice.At(i)
+		point := slice.AppendEmpty()
 		point.SetTimestamp(seconds(stamps[i]))
 		point.SetValue(val)
 	}
@@ -731,11 +731,11 @@ func createTestMetrics() pdata.Metrics {
 	met.IntSum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
 	met.IntSum().SetIsMonotonic(true)
 	dpsInt = met.IntSum().DataPoints()
-	dpsInt.Resize(2)
-	dpInt = dpsInt.At(0)
+	dpsInt.EnsureCapacity(2)
+	dpInt = dpsInt.AppendEmpty()
 	dpInt.SetTimestamp(seconds(0))
 	dpInt.SetValue(4)
-	dpInt = dpsInt.At(1)
+	dpInt = dpsInt.AppendEmpty()
 	dpInt.SetTimestamp(seconds(2))
 	dpInt.SetValue(7)
 
@@ -746,11 +746,11 @@ func createTestMetrics() pdata.Metrics {
 	met.Sum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
 	met.Sum().SetIsMonotonic(true)
 	dpsDouble = met.Sum().DataPoints()
-	dpsDouble.Resize(2)
-	dpDouble = dpsDouble.At(0)
+	dpsDouble.EnsureCapacity(2)
+	dpDouble = dpsDouble.AppendEmpty()
 	dpDouble.SetTimestamp(seconds(0))
 	dpDouble.SetValue(4)
-	dpDouble = dpsDouble.At(1)
+	dpDouble = dpsDouble.AppendEmpty()
 	dpDouble.SetTimestamp(seconds(2))
 	dpDouble.SetValue(4 + math.Pi)
 

@@ -84,14 +84,16 @@ func NewResourceSpansData(mockTraceID [16]byte, mockSpanID [8]byte, mockParentSp
 	}
 
 	events := span.Events()
-	events.Resize(2)
+	events.EnsureCapacity(2)
 
-	events.At(0).SetTimestamp(pdataStartTime)
-	events.At(0).SetName("start")
+	evt := events.AppendEmpty()
+	evt.SetTimestamp(pdataStartTime)
+	evt.SetName("start")
 
-	events.At(1).SetTimestamp(pdataEndTime)
-	events.At(1).SetName("end")
-	events.At(1).Attributes().InitFromMap(map[string]pdata.AttributeValue{
+	evt = events.AppendEmpty()
+	evt.SetTimestamp(pdataEndTime)
+	evt.SetName("end")
+	evt.Attributes().InitFromMap(map[string]pdata.AttributeValue{
 		"flag": pdata.NewAttributeValueBool(false),
 	})
 
@@ -512,7 +514,7 @@ func TestTracesTranslationErrorsFromEventsBounds(t *testing.T) {
 	rs := NewResourceSpansData(mockTraceID, mockSpanID, mockParentSpanID, pdata.StatusCodeError, true, mockEndTime)
 	span := rs.InstrumentationLibrarySpans().At(0).Spans().At(0)
 	events := span.Events()
-	events.Resize(3)
+	events.EnsureCapacity(3)
 
 	// Start with the error as the first element in the list...
 	attribs := map[string]pdata.AttributeValue{
@@ -520,13 +522,17 @@ func TestTracesTranslationErrorsFromEventsBounds(t *testing.T) {
 		conventions.AttributeExceptionStacktrace: pdata.NewAttributeValueString("HttpError at line 67\nthing at line 45"),
 		conventions.AttributeExceptionMessage:    pdata.NewAttributeValueString("HttpError error occurred"),
 	}
-	events.At(0).SetName(conventions.AttributeExceptionEventName)
-	events.At(0).Attributes().InitFromMap(attribs)
 
-	events.At(1).SetName("start")
+	evt := events.AppendEmpty()
+	evt.SetName(conventions.AttributeExceptionEventName)
+	evt.Attributes().InitFromMap(attribs)
 
-	events.At(2).SetName("end")
-	events.At(2).Attributes().InitFromMap(map[string]pdata.AttributeValue{
+	evt = events.AppendEmpty()
+	evt.SetName("start")
+
+	evt = events.AppendEmpty()
+	evt.SetName("end")
+	evt.Attributes().InitFromMap(map[string]pdata.AttributeValue{
 		"flag": pdata.NewAttributeValueBool(false),
 	})
 
@@ -1264,18 +1270,18 @@ func TestSanitization(t *testing.T) {
 	}
 
 	traces := pdata.NewTraces()
-	traces.ResourceSpans().Resize(1)
-	rs := traces.ResourceSpans().At(0)
+	traces.ResourceSpans().EnsureCapacity(1)
+	rs := traces.ResourceSpans().AppendEmpty()
 	resource := rs.Resource()
 	resource.Attributes().InitFromMap(map[string]pdata.AttributeValue{
 		"deployment.environment": pdata.NewAttributeValueString("UpperCase"),
 	})
-	rs.InstrumentationLibrarySpans().Resize(1)
-	ilss := rs.InstrumentationLibrarySpans().At(0)
+	rs.InstrumentationLibrarySpans().EnsureCapacity(1)
+	ilss := rs.InstrumentationLibrarySpans().AppendEmpty()
 	instrumentationLibrary := ilss.InstrumentationLibrary()
 	instrumentationLibrary.SetName("flash")
 	instrumentationLibrary.SetVersion("v1")
-	ilss.Spans().Resize(1)
+	ilss.Spans().EnsureCapacity(1)
 
 	outputTraces, _ := convertToDatadogTd(traces, "test-host", &config.Config{}, denylister, buildInfo)
 
@@ -1364,14 +1370,14 @@ func TestSpanNameMapping(t *testing.T) {
 	}
 
 	traces := pdata.NewTraces()
-	traces.ResourceSpans().Resize(1)
-	rs := traces.ResourceSpans().At(0)
+	traces.ResourceSpans().EnsureCapacity(1)
+	rs := traces.ResourceSpans().AppendEmpty()
 	resource := rs.Resource()
 	resource.Attributes().InitFromMap(map[string]pdata.AttributeValue{
 		"deployment.environment": pdata.NewAttributeValueString("UpperCase"),
 	})
-	rs.InstrumentationLibrarySpans().Resize(1)
-	ilss := rs.InstrumentationLibrarySpans().At(0)
+	rs.InstrumentationLibrarySpans().EnsureCapacity(1)
+	ilss := rs.InstrumentationLibrarySpans().AppendEmpty()
 	instrumentationLibrary := ilss.InstrumentationLibrary()
 	instrumentationLibrary.SetName("flash")
 	instrumentationLibrary.SetVersion("v1")
@@ -1416,16 +1422,16 @@ func TestSpanEnvClobbering(t *testing.T) {
 	}
 
 	traces := pdata.NewTraces()
-	traces.ResourceSpans().Resize(1)
-	rs := traces.ResourceSpans().At(0)
+	traces.ResourceSpans().EnsureCapacity(1)
+	rs := traces.ResourceSpans().AppendEmpty()
 	resource := rs.Resource()
 	resource.Attributes().InitFromMap(map[string]pdata.AttributeValue{
 		conventions.AttributeDeploymentEnvironment: pdata.NewAttributeValueString("correctenv"),
 		"env": pdata.NewAttributeValueString("incorrectenv"),
 	})
 
-	rs.InstrumentationLibrarySpans().Resize(1)
-	ilss := rs.InstrumentationLibrarySpans().At(0)
+	rs.InstrumentationLibrarySpans().EnsureCapacity(1)
+	ilss := rs.InstrumentationLibrarySpans().AppendEmpty()
 	instrumentationLibrary := ilss.InstrumentationLibrary()
 	instrumentationLibrary.SetName("flash")
 	instrumentationLibrary.SetVersion("v1")

@@ -334,9 +334,9 @@ func (se *sumologicexporter) pushMetricsData(ctx context.Context, md pdata.Metri
 		// Move all dropped records to Metrics
 		droppedMetrics := pdata.NewMetrics()
 		rms := droppedMetrics.ResourceMetrics()
-		rms.Resize(len(droppedRecords))
-		for num, record := range droppedRecords {
-			rm := droppedMetrics.ResourceMetrics().At(num)
+		rms.EnsureCapacity(len(droppedRecords))
+		for _, record := range droppedRecords {
+			rm := droppedMetrics.ResourceMetrics().AppendEmpty()
 			record.attributes.CopyTo(rm.Resource().Attributes())
 
 			ilms := rm.InstrumentationLibraryMetrics()
