@@ -99,12 +99,12 @@ func TestSerializeIntDataPoints(t *testing.T) {
 }
 
 func TestSerializeDoubleDataPoints(t *testing.T) {
-	doubleSlice := pdata.NewDoubleDataPointSlice()
+	doubleSlice := pdata.NewNumberDataPointSlice()
 	doublePoint := doubleSlice.AppendEmpty()
 	doublePoint.SetValue(13.1)
 	doublePoint.SetTimestamp(pdata.Timestamp(100_000_000))
 
-	labelDoubleSlice := pdata.NewDoubleDataPointSlice()
+	labelDoubleSlice := pdata.NewNumberDataPointSlice()
 	labelDoublePoint := labelDoubleSlice.AppendEmpty()
 	labelDoublePoint.SetValue(13.1)
 	labelDoublePoint.SetTimestamp(pdata.Timestamp(100_000_000))
@@ -112,7 +112,7 @@ func TestSerializeDoubleDataPoints(t *testing.T) {
 
 	type args struct {
 		name string
-		data pdata.DoubleDataPointSlice
+		data pdata.NumberDataPointSlice
 		tags []string
 	}
 	tests := []struct {

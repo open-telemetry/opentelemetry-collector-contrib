@@ -76,7 +76,7 @@ func initIntMetric(m *redisMetric, value int64, t *timeBundle, dest pdata.Metric
 func initDoubleMetric(m *redisMetric, value float64, t *timeBundle, dest pdata.Metric) {
 	redisMetricToPDM(m, dest)
 
-	var pt pdata.DoubleDataPoint
+	var pt pdata.NumberDataPoint
 	if m.pdType == pdata.MetricDataTypeGauge {
 		pt = dest.Gauge().DataPoints().AppendEmpty()
 	} else if m.pdType == pdata.MetricDataTypeSum {

@@ -82,7 +82,7 @@ func mapIntMetrics(name string, slice pdata.IntDataPointSlice, attrTags []string
 }
 
 // mapDoubleMetrics maps double datapoints into Datadog metrics
-func mapDoubleMetrics(name string, slice pdata.DoubleDataPointSlice, attrTags []string) []datadog.Metric {
+func mapDoubleMetrics(name string, slice pdata.NumberDataPointSlice, attrTags []string) []datadog.Metric {
 	ms := make([]datadog.Metric, 0, slice.Len())
 	for i := 0; i < slice.Len(); i++ {
 		p := slice.At(i)
@@ -144,7 +144,7 @@ type doubleCounter struct {
 }
 
 // mapDoubleMonotonicMetrics maps monotonic datapoints into Datadog metrics
-func mapDoubleMonotonicMetrics(name string, prevPts *ttlmap.TTLMap, slice pdata.DoubleDataPointSlice, attrTags []string) []datadog.Metric {
+func mapDoubleMonotonicMetrics(name string, prevPts *ttlmap.TTLMap, slice pdata.NumberDataPointSlice, attrTags []string) []datadog.Metric {
 	ms := make([]datadog.Metric, 0, slice.Len())
 	for i := 0; i < slice.Len(); i++ {
 		p := slice.At(i)

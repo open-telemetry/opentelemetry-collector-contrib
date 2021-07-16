@@ -48,7 +48,7 @@ func SerializeIntDataPoints(name string, data pdata.IntDataPointSlice, tags []st
 }
 
 // SerializeDoubleDataPoints serializes a slice of double datapoints to a Dynatrace gauge.
-func SerializeDoubleDataPoints(name string, data pdata.DoubleDataPointSlice, tags []string) []string {
+func SerializeDoubleDataPoints(name string, data pdata.NumberDataPointSlice, tags []string) []string {
 	// {name} {value} {timestamp}
 	output := []string{}
 	for i := 0; i < data.Len(); i++ {

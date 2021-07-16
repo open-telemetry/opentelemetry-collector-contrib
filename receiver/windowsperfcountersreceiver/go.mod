@@ -11,3 +11,7 @@ require (
 	golang.org/x/sys v0.0.0-20210615035016-665e8c7367d1
 	gopkg.in/square/go-jose.v2 v2.5.1 // indirect
 )
+
+replace go.opentelemetry.io/collector => go.opentelemetry.io/collector v0.29.1-0.20210716020257-4d8e3082465d
+
+replace go.opentelemetry.io/collector/model => go.opentelemetry.io/collector/model v0.0.0-20210716020257-4d8e3082465d
