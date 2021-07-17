@@ -20,7 +20,7 @@ import (
 )
 
 func TestGenerateDummyMetrics(t *testing.T) {
-	md := GenerateDummyMetrics()
+	md := generateDummyMetrics()
 
 	require.EqualValues(t, 2, len(md.Metrics))
 }
