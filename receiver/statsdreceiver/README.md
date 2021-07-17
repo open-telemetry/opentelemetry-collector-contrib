@@ -21,6 +21,8 @@ The Following settings are optional:
 
 - `enable_metric_type: true`(default value is false): Enable the statsd receiver to be able to emit the metric type(gauge, counter, timer(in the future), histogram(in the future)) as a label.
 
+- `is_monotonic_counter` (default value is false): Set all counter-type metrics the statsd receiver received as monotonic.
+
 - `timer_histogram_mapping:`(default value is below): Specify what OTLP type to convert received timing/histogram data to.
 
 
@@ -39,6 +41,7 @@ receivers:
     endpoint: "localhost:8127"
     aggregation_interval: 70s
     enable_metric_type: true
+    is_monotonic_counter: false
     timer_histogram_mapping:
       - statsd_type: "histogram"
         observer_type: "gauge"
@@ -115,6 +118,7 @@ receivers:
     endpoint: "localhost:8125" # default
     aggregation_interval: 60s  # default
     enable_metric_type: false   # default
+    is_monotonic_counter: false # default
     timer_histogram_mapping:
       - statsd_type: "histogram"
         observer_type: "gauge"

@@ -34,6 +34,7 @@ const (
 	defaultTransport           = "udp"
 	defaultAggregationInterval = 60 * time.Second
 	defaultEnableMetricType    = false
+	defaultIsMonotonicCounter  = false
 )
 
 var (
@@ -58,6 +59,7 @@ func createDefaultConfig() config.Receiver {
 		},
 		AggregationInterval:   defaultAggregationInterval,
 		EnableMetricType:      defaultEnableMetricType,
+		IsMonotonicCounter:    defaultIsMonotonicCounter,
 		TimerHistogramMapping: defaultTimerHistogramMapping,
 	}
 }

@@ -54,6 +54,7 @@ type StatsDParser struct {
 	summaries              map[statsDMetricdescription]summaryMetric
 	timersAndDistributions []pdata.InstrumentationLibraryMetrics
 	enableMetricType       bool
+	isMonotonicCounter     bool
 	observeTimer           string
 	observeHistogram       string
 }
@@ -84,13 +85,14 @@ type statsDMetricdescription struct {
 	labels           attribute.Distinct
 }
 
-func (p *StatsDParser) Initialize(enableMetricType bool, sendTimerHistogram []TimerHistogramMapping) error {
+func (p *StatsDParser) Initialize(enableMetricType bool, isMonotonicCounter bool, sendTimerHistogram []TimerHistogramMapping) error {
 	p.gauges = make(map[statsDMetricdescription]pdata.InstrumentationLibraryMetrics)
 	p.counters = make(map[statsDMetricdescription]pdata.InstrumentationLibraryMetrics)
 	p.timersAndDistributions = make([]pdata.InstrumentationLibraryMetrics, 0)
 	p.summaries = make(map[statsDMetricdescription]summaryMetric)
 
 	p.enableMetricType = enableMetricType
+	p.isMonotonicCounter = isMonotonicCounter
 	for _, eachMap := range sendTimerHistogram {
 		switch eachMap.StatsdType {
 		case "histogram":
@@ -159,11 +161,11 @@ func (p *StatsDParser) Aggregate(line string) error {
 	case statsdCounter:
 		_, ok := p.counters[parsedMetric.description]
 		if !ok {
-			p.counters[parsedMetric.description] = buildCounterMetric(parsedMetric, timeNowFunc())
+			p.counters[parsedMetric.description] = buildCounterMetric(parsedMetric, p.isMonotonicCounter, timeNowFunc())
 		} else {
 			savedValue := p.counters[parsedMetric.description].Metrics().At(0).IntSum().DataPoints().At(0).Value()
 			parsedMetric.intvalue = parsedMetric.intvalue + savedValue
-			p.counters[parsedMetric.description] = buildCounterMetric(parsedMetric, timeNowFunc())
+			p.counters[parsedMetric.description] = buildCounterMetric(parsedMetric, p.isMonotonicCounter, timeNowFunc())
 		}
 
 	case statsdHistogram:

@@ -34,7 +34,8 @@ func TestBuildCounterMetric(t *testing.T) {
 		labelKeys:   []string{"mykey"},
 		labelValues: []string{"myvalue"},
 	}
-	metric := buildCounterMetric(parsedMetric, timeNow)
+	isMonotonicCounter := false
+	metric := buildCounterMetric(parsedMetric, isMonotonicCounter, timeNow)
 	expectedMetrics := pdata.NewInstrumentationLibraryMetrics()
 	expectedMetric := expectedMetrics.Metrics().AppendEmpty()
 	expectedMetric.SetName("testCounter")

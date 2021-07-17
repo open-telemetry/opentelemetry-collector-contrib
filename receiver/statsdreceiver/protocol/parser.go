@@ -20,7 +20,7 @@ import (
 
 // Parser is something that can map input StatsD strings to OTLP Metric representations.
 type Parser interface {
-	Initialize(enableMetricType bool, sendTimerHistogram []TimerHistogramMapping) error
+	Initialize(enableMetricType bool, isMonotonicCounter bool, sendTimerHistogram []TimerHistogramMapping) error
 	GetMetrics() pdata.Metrics
 	Aggregate(line string) error
 }
