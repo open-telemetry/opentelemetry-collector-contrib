@@ -575,3 +575,19 @@ func TestExporter_stopAlwaysReturnsNil(t *testing.T) {
 	require.NotNil(t, exp)
 	require.NoError(t, exp.stop(context.Background()))
 }
+
+func TestExporter_convertLogtoJsonEntry(t *testing.T) {
+	ts := pdata.Timestamp(int64(1) * time.Millisecond.Nanoseconds())
+	lr := pdata.NewLogRecord()
+	lr.Body().SetStringVal("log message")
+	lr.SetTimestamp(ts)
+
+	entry, err := convertLogToJsonEntry(lr)
+	expEntry := &logproto.Entry{
+		Timestamp: time.Unix(0, int64(lr.Timestamp())),
+		Line:      `{"body":"log message"}`,
+	}
+	require.Nil(t, err)
+	require.NotNil(t, entry)
+	require.Equal(t, expEntry, entry)
+}
