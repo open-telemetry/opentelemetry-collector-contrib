@@ -192,6 +192,26 @@ func (p *mockClient) Delete(_ context.Context, key string) error {
 	return nil
 }
 
+func (p *mockClient) Batch(_ context.Context, keys []string, entries map[string][]byte) ([][]byte, error) {
+	p.cacheMux.Lock()
+	defer p.cacheMux.Unlock()
+
+	values := make([][]byte, len(keys))
+	for i, key := range keys {
+		values[i] = p.cache[key]
+	}
+
+	for key, value := range entries {
+		if value == nil {
+			delete(p.cache, key)
+		} else {
+			p.cache[key] = value
+		}
+	}
+
+	return values, nil
+}
+
 func (p *mockClient) Close(_ context.Context) error {
 	p.cacheMux.Lock()
 	defer p.cacheMux.Unlock()

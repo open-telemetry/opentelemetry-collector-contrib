@@ -16,6 +16,7 @@ package filestorage
 
 import (
 	"context"
+	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -59,6 +60,67 @@ func TestClientOperations(t *testing.T) {
 	value, err = client.Get(ctx, testKey)
 	require.NoError(t, err)
 	require.Nil(t, value)
+}
+
+func TestClientBatchOperations(t *testing.T) {
+	tempDir := newTempDir(t)
+	dbFile := filepath.Join(tempDir, "my_db")
+
+	client, err := newClient(dbFile, time.Second)
+	require.NoError(t, err)
+
+	ctx := context.Background()
+	testEntries := map[string][]byte{
+		"testKey1": []byte("testValue1"),
+		"testKey2": []byte("testValue2"),
+	}
+	testKeys := []string{"testKey1", "testKey2"}
+
+	// Make sure nothing is there
+	value, err := client.Batch(ctx, testKeys, nil)
+	require.NoError(t, err)
+	require.Equal(t, value, [][]byte{nil, nil})
+
+	// Set it
+	_, err = client.Batch(ctx, nil, testEntries)
+	require.NoError(t, err)
+
+	// Get it back out, make sure it's right
+	values, err := client.Batch(ctx, testKeys, nil)
+	require.NoError(t, err)
+	require.Len(t, values, 2)
+	for i, key := range testKeys {
+		require.Equal(t, testEntries[key], values[i])
+	}
+
+	// Update it (the second entry should get removed)
+	testEntriesUpdate := map[string][]byte{
+		"testKey1": []byte("testValue1"),
+		"testKey2": nil,
+	}
+	_, err = client.Batch(ctx, nil, testEntriesUpdate)
+	require.NoError(t, err)
+
+	// Get it back out, make sure it's right
+	valuesUpdate, err := client.Batch(ctx, testKeys, nil)
+	require.NoError(t, err)
+	require.Len(t, values, 2)
+	for i, key := range testKeys {
+		require.Equal(t, testEntriesUpdate[key], valuesUpdate[i])
+	}
+
+	// Delete it all
+	testKeysDelete := map[string][]byte{
+		"testKey1": nil,
+		"testKey2": nil,
+	}
+	_, err = client.Batch(ctx, nil, testKeysDelete)
+	require.NoError(t, err)
+
+	// Make sure it's gone
+	value, err = client.Batch(ctx, testKeys, nil)
+	require.NoError(t, err)
+	require.Equal(t, value, [][]byte{nil, nil})
 }
 
 func TestNewClientTransactionErrors(t *testing.T) {
@@ -150,8 +212,29 @@ func BenchmarkClientGet(b *testing.B) {
 	ctx := context.Background()
 	testKey := "testKey"
 
+	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
 		client.Get(ctx, testKey)
+	}
+}
+
+func BenchmarkClientGet100(b *testing.B) {
+	tempDir := newTempDir(b)
+	dbFile := filepath.Join(tempDir, "my_db")
+
+	client, err := newClient(dbFile, time.Second)
+	require.NoError(b, err)
+
+	ctx := context.Background()
+
+	testKeys := make([]string, 100)
+	for i := 0; i < 100; i++ {
+		testKeys[i] = "testKey"
+	}
+
+	b.ResetTimer()
+	for n := 0; n < b.N; n++ {
+		client.Batch(ctx, testKeys, nil)
 	}
 }
 
@@ -166,8 +249,29 @@ func BenchmarkClientSet(b *testing.B) {
 	testKey := "testKey"
 	testValue := []byte("testValue")
 
+	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
 		client.Set(ctx, testKey, testValue)
+	}
+}
+
+func BenchmarkClientSet100(b *testing.B) {
+	tempDir := newTempDir(b)
+	dbFile := filepath.Join(tempDir, "my_db")
+
+	client, err := newClient(dbFile, time.Second)
+	require.NoError(b, err)
+
+	ctx := context.Background()
+
+	testEntries := make(map[string][]byte)
+	for i := 0; i < 100; i++ {
+		testEntries[fmt.Sprintf("testKey-%d", i)] = []byte("testValue")
+	}
+
+	b.ResetTimer()
+	for n := 0; n < b.N; n++ {
+		client.Batch(ctx, nil, testEntries)
 	}
 }
 
@@ -181,6 +285,7 @@ func BenchmarkClientDelete(b *testing.B) {
 	ctx := context.Background()
 	testKey := "testKey"
 
+	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
 		client.Delete(ctx, testKey)
 	}

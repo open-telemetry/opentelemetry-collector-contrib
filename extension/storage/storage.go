@@ -36,6 +36,8 @@ type Extension interface {
 //   - Set doesn't error if a key already exists - it just overwrites the value.
 //   - Get doesn't error if a key is not found - it just returns nil.
 //   - Delete doesn't error if the key doesn't exist - it just no-ops.
+// Similarly:
+//   - Batch doesn't error if any of the above happens for either retrieved or updated keys
 // This also provides a way to differentiate data operations
 //   [overwrite | not-found | no-op] from "real" problems
 type Client interface {
@@ -50,6 +52,11 @@ type Client interface {
 
 	// Delete will delete data associated with the specified key
 	Delete(context.Context, string) error
+
+	// Batch will, respectively - get values for selected keys or upsert key/values. When the value specified
+	// is nil, the key is being deleted. It will return an array of results, where each
+	// one corresponds to a key at a given position and will be nil, if key is not found
+	Batch(context.Context, []string, map[string][]byte) ([][]byte, error)
 
 	// Close will release any resources held by the client
 	Close(context.Context) error
