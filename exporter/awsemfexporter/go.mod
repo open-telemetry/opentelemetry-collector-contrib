@@ -13,6 +13,7 @@ require (
 	go.opentelemetry.io/collector v0.30.0
 	go.opentelemetry.io/collector/model v0.30.0
 	go.uber.org/zap v1.18.1
+	golang.org/x/tools v0.1.4 // indirect
 	google.golang.org/protobuf v1.27.1
 	gopkg.in/square/go-jose.v2 v2.5.1 // indirect
 )

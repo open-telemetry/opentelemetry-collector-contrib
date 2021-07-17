@@ -15,6 +15,9 @@
 package awsemfexporter
 
 import (
+	"encoding/json"
+	"errors"
+
 	"go.opentelemetry.io/collector/model/pdata"
 	"go.uber.org/zap"
 
@@ -34,16 +37,16 @@ type metricInfo struct {
 	unit  string
 }
 
-// addToGroupedMetric processes OT metrics and adds them into groupedMetric buckets
-func addToGroupedMetric(pmd *pdata.Metric, groupedMetrics map[interface{}]*groupedMetric, metadata cWMetricMetadata, logger *zap.Logger, descriptor map[string]MetricDescriptor) {
+// addToGroupedMetric processes OT metrics and adds them into GroupedMetric buckets
+func addToGroupedMetric(pmd *pdata.Metric, groupedMetrics map[interface{}]*groupedMetric, metadata cWMetricMetadata, logger *zap.Logger, descriptor map[string]MetricDescriptor, config *Config) error {
 	if pmd == nil {
-		return
+		return nil
 	}
 
 	metricName := pmd.Name()
 	dps := getDataPoints(pmd, metadata, logger)
 	if dps == nil || dps.Len() == 0 {
-		return
+		return nil
 	}
 
 	for i := 0; i < dps.Len(); i++ {
@@ -53,6 +56,17 @@ func addToGroupedMetric(pmd *pdata.Metric, groupedMetrics map[interface{}]*group
 		}
 
 		labels := dp.labels
+
+		if metricType, ok := labels["Type"]; ok {
+			if (metricType == "Pod" || metricType == "Container") && config.CreateEKSFargateKubernetesObject {
+				err := addKubernetesWrapper(labels)
+				if err != nil {
+					logger.Warn("issue forming Kubernetes Object", zap.Error(err))
+					return err
+				}
+			}
+		}
+
 		metric := &metricInfo{
 			value: dp.value,
 			unit:  translateUnit(pmd, descriptor),
@@ -83,6 +97,133 @@ func addToGroupedMetric(pmd *pdata.Metric, groupedMetrics map[interface{}]*group
 			}
 		}
 	}
+
+	return nil
+}
+
+type kubernetesObj struct {
+	ContainerName string               `json:"container_name"`
+	Docker        internalDockerObj    `json:"docker"`
+	Host          string               `json:"host"`
+	Labels        internalLabelsObj    `json:"labels"`
+	NamespaceName string               `json:"namespace_name"`
+	PodID         string               `json:"pod_id"`
+	PodName       string               `json:"pod_name"`
+	PodOwners     internalPodOwnersObj `json:"pod_owners"`
+	ServiceName   string               `json:"service_name"`
+}
+
+type internalDockerObj struct {
+	ContainerID string `json:"container_id"`
+}
+
+type internalLabelsObj struct {
+	App             string `json:"app"`
+	PodTemplateHash string `json:"pod-template-hash"`
+}
+
+type internalPodOwnersObj struct {
+	OwnerKind string `json:"owner_kind"`
+	OwnerName string `json:"owner_name"`
+}
+
+func addKubernetesWrapper(labels map[string]string) error {
+	//create schema
+	schema := kubernetesObj{
+		ContainerName: "container",
+		Docker: internalDockerObj{
+			ContainerID: "container_id",
+		},
+		Host: "NodeName",
+		Labels: internalLabelsObj{
+			App:             "app",
+			PodTemplateHash: "pod-template-hash",
+		},
+		NamespaceName: "Namespace",
+		PodID:         "PodId",
+		PodName:       "PodName",
+		PodOwners: internalPodOwnersObj{
+			OwnerKind: "owner_kind",
+			OwnerName: "owner_name",
+		},
+		ServiceName: "Service",
+	}
+
+	var err error
+	labels["kubernetes"], err = recursivelyFillInStruct(labels, schema)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func recursivelyFillInStruct(labels map[string]string, schema interface{}) (string, error) {
+	jsonBytes, err := json.Marshal(schema)
+	if err != nil {
+		return "", err
+	}
+
+	return applySchema(labels, string(jsonBytes))
+
+}
+
+func applySchema(labels map[string]string, schema string) (string, error) {
+	jsonBytes := []byte(schema)
+
+	m := make(map[string]interface{})
+	err := json.Unmarshal(jsonBytes, &m)
+	if err != nil {
+		return "", err
+	}
+
+	m, err = recursivelyFillInMap(labels, m)
+	if err != nil {
+		return "", err
+	}
+	jsonBytes, err = json.Marshal(m)
+	if err != nil {
+		return "", err
+	}
+
+	jsonString := string(jsonBytes)
+	return jsonString, nil
+
+}
+
+func recursivelyFillInMap(labels map[string]string, schema map[string]interface{}) (map[string]interface{}, error) {
+	//Iterate over the keys of the schema
+	var err error
+	for k, v := range schema {
+		//Check if it is nested or not
+		nestedObj, isNested := v.(map[string]interface{})
+		if isNested {
+			//recursively fill in the nested object
+			schema[k], err = recursivelyFillInMap(labels, nestedObj)
+			if err != nil {
+				return nil, err
+			}
+			//if the object is empty delete it
+			mapForm, _ := schema[k].(map[string]interface{})
+			if len(mapForm) == 0 {
+				delete(schema, k)
+			}
+		} else {
+			stringVal, isString := v.(string)
+			if !isString {
+				return nil, errors.New("Non string, struct value found in schema")
+			}
+			labelVal, exists := labels[stringVal]
+			// This deleting implicitly deals with the difference between Container metrics and Pod metrics
+			if !exists {
+				delete(schema, k)
+			} else {
+				schema[k] = labelVal
+			}
+		}
+
+	}
+
+	return schema, nil
 }
 
 func groupedMetricKey(metadata groupedMetricMetadata, labels map[string]string) aws.Key {
