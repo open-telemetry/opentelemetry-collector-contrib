@@ -459,7 +459,6 @@ func setStringTag(s *pb.Span, key, v string) {
 		if sampleRateFlt, err := strconv.ParseFloat(v, 64); err == nil {
 			setMetric(s, keySamplingRate, sampleRateFlt)
 		}
-
 	default:
 		s.Meta[key] = v
 	}

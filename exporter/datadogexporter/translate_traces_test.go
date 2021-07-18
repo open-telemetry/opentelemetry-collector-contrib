@@ -1489,7 +1489,7 @@ func TestSpanRateLimitTag(t *testing.T) {
 	span := ilss.Spans().AppendEmpty()
 
 	attribs := map[string]pdata.AttributeValue{
-		"_sample_rate": pdata.NewAttributeValueDouble(0.5),
+		"_sample_rate": pdata.NewAttributeValueString("0.5"),
 	}
 
 	span.Attributes().InitFromMap(attribs)
