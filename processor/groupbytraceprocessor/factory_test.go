@@ -19,7 +19,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
 )
 
 func TestDefaultConfiguration(t *testing.T) {
@@ -37,13 +37,10 @@ func TestDefaultConfiguration(t *testing.T) {
 func TestCreateTestProcessor(t *testing.T) {
 	c := createDefaultConfig().(*Config)
 
-	params := component.ProcessorCreateSettings{
-		Logger: logger,
-	}
 	next := &mockProcessor{}
 
 	// test
-	p, err := createTracesProcessor(context.Background(), params, c, next)
+	p, err := createTracesProcessor(context.Background(), componenttest.NewNopProcessorCreateSettings(), c, next)
 
 	// verify
 	assert.NoError(t, err)
@@ -53,9 +50,6 @@ func TestCreateTestProcessor(t *testing.T) {
 func TestCreateTestProcessorWithNotImplementedOptions(t *testing.T) {
 	// prepare
 	f := NewFactory()
-	params := component.ProcessorCreateSettings{
-		Logger: logger,
-	}
 	next := &mockProcessor{}
 
 	// test
@@ -76,7 +70,7 @@ func TestCreateTestProcessorWithNotImplementedOptions(t *testing.T) {
 			errDiskStorageNotSupported,
 		},
 	} {
-		p, err := f.CreateTracesProcessor(context.Background(), params, tt.config, next)
+		p, err := f.CreateTracesProcessor(context.Background(), componenttest.NewNopProcessorCreateSettings(), tt.config, next)
 
 		// verify
 		assert.Error(t, tt.expectedErr, err)

@@ -20,10 +20,10 @@ import (
 
 func buildKeyspaceTriplet(k *keyspace, t *timeBundle) pdata.MetricSlice {
 	ms := pdata.NewMetricSlice()
-	ms.Resize(3)
-	initKeyspaceKeysMetric(k, t, ms.At(0))
-	initKeyspaceExpiresMetric(k, t, ms.At(1))
-	initKeyspaceTTLMetric(k, t, ms.At(2))
+	ms.EnsureCapacity(3)
+	initKeyspaceKeysMetric(k, t, ms.AppendEmpty())
+	initKeyspaceExpiresMetric(k, t, ms.AppendEmpty())
+	initKeyspaceTTLMetric(k, t, ms.AppendEmpty())
 	return ms
 }
 
@@ -77,10 +77,10 @@ func initDoubleMetric(m *redisMetric, value float64, t *timeBundle, dest pdata.M
 	redisMetricToPDM(m, dest)
 
 	var pt pdata.DoubleDataPoint
-	if m.pdType == pdata.MetricDataTypeDoubleGauge {
-		pt = dest.DoubleGauge().DataPoints().AppendEmpty()
-	} else if m.pdType == pdata.MetricDataTypeDoubleSum {
-		sum := dest.DoubleSum()
+	if m.pdType == pdata.MetricDataTypeGauge {
+		pt = dest.Gauge().DataPoints().AppendEmpty()
+	} else if m.pdType == pdata.MetricDataTypeSum {
+		sum := dest.Sum()
 		sum.SetIsMonotonic(m.isMonotonic)
 		sum.SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
 		pt = sum.DataPoints().AppendEmpty()

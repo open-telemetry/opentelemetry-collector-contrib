@@ -920,10 +920,10 @@ func TestTranslation(t *testing.T) {
 			)
 		}
 
-		traces, totalSpansCount, err := ToTraces(content)
+		traces, totalSpanCount, err := ToTraces(content)
 		if err == nil || (expectedRs != nil && expectedRs.InstrumentationLibrarySpans().Len() > 0 &&
 			expectedRs.InstrumentationLibrarySpans().At(0).Spans().Len() > 0) {
-			assert.Equal(t, totalSpansCount,
+			assert.Equal(t, totalSpanCount,
 				expectedRs.InstrumentationLibrarySpans().At(0).Spans().Len(),
 				"generated span count is different from the expected",
 			)
@@ -1002,10 +1002,10 @@ func initResourceSpans(expectedSeg *awsxray.Segment,
 	}
 
 	ls := rs.InstrumentationLibrarySpans().AppendEmpty()
-	ls.Spans().Resize(len(propsPerSpan))
+	ls.Spans().EnsureCapacity(len(propsPerSpan))
 
-	for i, props := range propsPerSpan {
-		sp := ls.Spans().At(i)
+	for _, props := range propsPerSpan {
+		sp := ls.Spans().AppendEmpty()
 		spanIDBytes, _ := decodeXRaySpanID(&props.spanID)
 		sp.SetSpanID(pdata.NewSpanID(spanIDBytes))
 		if props.parentSpanID != nil {
@@ -1024,9 +1024,9 @@ func initResourceSpans(expectedSeg *awsxray.Segment,
 		sp.Status().SetCode(props.spanStatus.code)
 
 		if len(props.eventsProps) > 0 {
-			sp.Events().Resize(len(props.eventsProps))
-			for i, evtProps := range props.eventsProps {
-				spEvt := sp.Events().At(i)
+			sp.Events().EnsureCapacity(len(props.eventsProps))
+			for _, evtProps := range props.eventsProps {
+				spEvt := sp.Events().AppendEmpty()
 				spEvt.SetName(evtProps.name)
 				spEvt.Attributes().InitFromMap(evtProps.attrs)
 			}

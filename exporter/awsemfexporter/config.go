@@ -23,9 +23,9 @@ import (
 )
 
 var (
-	// EMFSupportedUnits contains the unit collection supported by CloudWatch backend service.
+	// eMFSupportedUnits contains the unit collection supported by CloudWatch backend service.
 	// https://docs.aws.amazon.com/AmazonCloudWatch/latest/APIReference/API_MetricDatum.html
-	EMFSupportedUnits = newEMFSupportedUnits()
+	eMFSupportedUnits = newEMFSupportedUnits()
 )
 
 // Config defines configuration for AWS EMF exporter.
@@ -87,7 +87,7 @@ type MetricDescriptor struct {
 func (config *Config) Validate() error {
 	validDeclarations := []*MetricDeclaration{}
 	for _, declaration := range config.MetricDeclarations {
-		err := declaration.Init(config.logger)
+		err := declaration.init(config.logger)
 		if err != nil {
 			config.logger.Warn("Dropped metric declaration.", zap.Error(err))
 		} else {
@@ -101,7 +101,7 @@ func (config *Config) Validate() error {
 		if descriptor.metricName == "" {
 			continue
 		}
-		if _, ok := EMFSupportedUnits[descriptor.unit]; ok {
+		if _, ok := eMFSupportedUnits[descriptor.unit]; ok {
 			validDescriptors = append(validDescriptors, descriptor)
 		} else {
 			config.logger.Warn("Dropped unsupported metric desctriptor.", zap.String("unit", descriptor.unit))

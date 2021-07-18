@@ -32,7 +32,7 @@ import (
 
 var _ component.MetricsReceiver = (*awsContainerInsightReceiver)(nil)
 
-type MetricsProvider interface {
+type metricsProvider interface {
 	GetMetrics() []pdata.Metrics
 }
 
@@ -42,12 +42,12 @@ type awsContainerInsightReceiver struct {
 	nextConsumer consumer.Metrics
 	config       *Config
 	cancel       context.CancelFunc
-	cadvisor     MetricsProvider
-	k8sapiserver MetricsProvider
+	cadvisor     metricsProvider
+	k8sapiserver metricsProvider
 }
 
-// New creates the aws container insight receiver with the given parameters.
-func New(
+// newAWSContainerInsightReceiver creates the aws container insight receiver with the given parameters.
+func newAWSContainerInsightReceiver(
 	logger *zap.Logger,
 	config *Config,
 	nextConsumer consumer.Metrics) (component.MetricsReceiver, error) {

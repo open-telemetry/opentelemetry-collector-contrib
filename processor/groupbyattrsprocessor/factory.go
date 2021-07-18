@@ -100,7 +100,7 @@ func createTracesProcessor(
 	return processorhelper.NewTracesProcessor(
 		cfg,
 		nextConsumer,
-		gap,
+		gap.processTraces,
 		processorhelper.WithCapabilities(consumerCapabilities))
 }
 
@@ -120,6 +120,6 @@ func createLogsProcessor(
 	return processorhelper.NewLogsProcessor(
 		cfg,
 		nextConsumer,
-		gap,
+		gap.processLogs,
 		processorhelper.WithCapabilities(consumerCapabilities))
 }

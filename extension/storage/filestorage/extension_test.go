@@ -23,8 +23,8 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
-	"go.uber.org/zap/zaptest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage"
 )
@@ -149,9 +149,7 @@ func TestNewExtensionErrorsOnMissingDirectory(t *testing.T) {
 	cfg := f.CreateDefaultConfig().(*Config)
 	cfg.Directory = "/not/a/dir"
 
-	params := component.ExtensionCreateSettings{Logger: zaptest.NewLogger(t)}
-
-	extension, err := f.CreateExtension(context.Background(), params, cfg)
+	extension, err := f.CreateExtension(context.Background(), componenttest.NewNopExtensionCreateSettings(), cfg)
 	require.Error(t, err)
 	require.Nil(t, extension)
 }
@@ -206,9 +204,7 @@ func TestGetClientErrorsOnDeletedDirectory(t *testing.T) {
 	cfg := f.CreateDefaultConfig().(*Config)
 	cfg.Directory = tempDir
 
-	params := component.ExtensionCreateSettings{Logger: zaptest.NewLogger(t)}
-
-	extension, err := f.CreateExtension(context.Background(), params, cfg)
+	extension, err := f.CreateExtension(context.Background(), componenttest.NewNopExtensionCreateSettings(), cfg)
 	require.NoError(t, err)
 
 	se, ok := extension.(storage.Extension)
@@ -237,9 +233,7 @@ func newTestExtension(t *testing.T) storage.Extension {
 	cfg := f.CreateDefaultConfig().(*Config)
 	cfg.Directory = tempDir
 
-	params := component.ExtensionCreateSettings{Logger: zaptest.NewLogger(t)}
-
-	extension, err := f.CreateExtension(context.Background(), params, cfg)
+	extension, err := f.CreateExtension(context.Background(), componenttest.NewNopExtensionCreateSettings(), cfg)
 	require.NoError(t, err)
 
 	se, ok := extension.(storage.Extension)

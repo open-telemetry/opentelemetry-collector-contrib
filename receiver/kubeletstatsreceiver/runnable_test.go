@@ -29,7 +29,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/fake"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver/kubelet"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver/internal/kubelet"
 )
 
 const (
@@ -71,7 +71,7 @@ func TestRunnable(t *testing.T) {
 	require.NoError(t, err)
 	err = r.Run()
 	require.NoError(t, err)
-	require.Equal(t, dataLen, consumer.MetricsCount())
+	require.Equal(t, dataLen, consumer.DataPointCount())
 }
 
 func TestRunnableWithMetadata(t *testing.T) {
@@ -123,7 +123,7 @@ func TestRunnableWithMetadata(t *testing.T) {
 			require.NoError(t, err)
 			err = r.Run()
 			require.NoError(t, err)
-			require.Equal(t, tt.dataLen, consumer.MetricsCount())
+			require.Equal(t, tt.dataLen, consumer.DataPointCount())
 
 			for _, metrics := range consumer.AllMetrics() {
 				_, resource, metrics := internaldata.ResourceMetricsToOC(metrics.ResourceMetrics().At(0))
@@ -207,7 +207,7 @@ func TestRunnableWithMetricGroups(t *testing.T) {
 			err = r.Run()
 			require.NoError(t, err)
 
-			require.Equal(t, test.dataLen, consumer.MetricsCount())
+			require.Equal(t, test.dataLen, consumer.DataPointCount())
 		})
 	}
 }
@@ -361,7 +361,7 @@ func TestRunnableWithPVCDetailedLabels(t *testing.T) {
 
 			err = r.Run()
 			require.NoError(t, err)
-			require.Equal(t, test.dataLen*volumeMetrics, consumer.MetricsCount())
+			require.Equal(t, test.dataLen*volumeMetrics, consumer.DataPointCount())
 
 			// If Kubernetes API is set, assert additional labels as well.
 			if test.k8sAPIClient != nil && len(test.expectedVolumes) > 0 {

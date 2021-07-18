@@ -285,10 +285,10 @@ func (t *transformer) Metric(m pdata.Metric) ([]telemetry.Metric, error) {
 			}
 			output = append(output, nrMetric)
 		}
-	case pdata.MetricDataTypeDoubleGauge:
+	case pdata.MetricDataTypeGauge:
 		t.details.metricMetadataCount[k]++
 		// "StartTimestampUnixNano" is ignored for all data points.
-		gauge := m.DoubleGauge()
+		gauge := m.Gauge()
 		points := gauge.DataPoints()
 		output = make([]telemetry.Metric, 0, points.Len())
 		for l := 0; l < points.Len(); l++ {
@@ -341,8 +341,8 @@ func (t *transformer) Metric(m pdata.Metric) ([]telemetry.Metric, error) {
 				output = append(output, nrMetric)
 			}
 		}
-	case pdata.MetricDataTypeDoubleSum:
-		sum := m.DoubleSum()
+	case pdata.MetricDataTypeSum:
+		sum := m.Sum()
 		temporality := sum.AggregationTemporality()
 		k.MetricTemporality = temporality
 		t.details.metricMetadataCount[k]++

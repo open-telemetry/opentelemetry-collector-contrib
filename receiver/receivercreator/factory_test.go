@@ -19,17 +19,16 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenterror"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.uber.org/zap"
 )
 
 func TestCreateReceiver(t *testing.T) {
 	factory := NewFactory()
 	cfg := createDefaultConfig()
 
-	params := component.ReceiverCreateSettings{Logger: zap.NewNop()}
+	params := componenttest.NewNopReceiverCreateSettings()
 	tReceiver, err := factory.CreateMetricsReceiver(context.Background(), params, cfg, consumertest.NewNop())
 	assert.NoError(t, err, "receiver creation failed")
 	assert.NotNil(t, tReceiver, "receiver creation failed")

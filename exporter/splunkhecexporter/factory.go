@@ -57,7 +57,7 @@ func createDefaultConfig() config.Exporter {
 
 func createTracesExporter(
 	_ context.Context,
-	params component.ExporterCreateSettings,
+	set component.ExporterCreateSettings,
 	config config.Exporter,
 ) (component.TracesExporter, error) {
 	if config == nil {
@@ -65,14 +65,14 @@ func createTracesExporter(
 	}
 	expCfg := config.(*Config)
 
-	exp, err := createExporter(expCfg, params.Logger, &params.BuildInfo)
+	exp, err := createExporter(expCfg, set.Logger, &set.BuildInfo)
 	if err != nil {
 		return nil, err
 	}
 
 	return exporterhelper.NewTracesExporter(
 		expCfg,
-		params.Logger,
+		set,
 		exp.pushTraceData,
 		// explicitly disable since we rely on http.Client timeout logic.
 		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
@@ -84,7 +84,7 @@ func createTracesExporter(
 
 func createMetricsExporter(
 	_ context.Context,
-	params component.ExporterCreateSettings,
+	set component.ExporterCreateSettings,
 	config config.Exporter,
 ) (component.MetricsExporter, error) {
 	if config == nil {
@@ -92,7 +92,7 @@ func createMetricsExporter(
 	}
 	expCfg := config.(*Config)
 
-	exp, err := createExporter(expCfg, params.Logger, &params.BuildInfo)
+	exp, err := createExporter(expCfg, set.Logger, &set.BuildInfo)
 
 	if err != nil {
 		return nil, err
@@ -100,7 +100,7 @@ func createMetricsExporter(
 
 	return exporterhelper.NewMetricsExporter(
 		expCfg,
-		params.Logger,
+		set,
 		exp.pushMetricsData,
 		// explicitly disable since we rely on http.Client timeout logic.
 		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
@@ -112,7 +112,7 @@ func createMetricsExporter(
 
 func createLogsExporter(
 	_ context.Context,
-	params component.ExporterCreateSettings,
+	set component.ExporterCreateSettings,
 	config config.Exporter,
 ) (exporter component.LogsExporter, err error) {
 	if config == nil {
@@ -120,7 +120,7 @@ func createLogsExporter(
 	}
 	expCfg := config.(*Config)
 
-	exp, err := createExporter(expCfg, params.Logger, &params.BuildInfo)
+	exp, err := createExporter(expCfg, set.Logger, &set.BuildInfo)
 
 	if err != nil {
 		return nil, err
@@ -128,7 +128,7 @@ func createLogsExporter(
 
 	return exporterhelper.NewLogsExporter(
 		expCfg,
-		params.Logger,
+		set,
 		exp.pushLogData,
 		// explicitly disable since we rely on http.Client timeout logic.
 		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),

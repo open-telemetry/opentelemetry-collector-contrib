@@ -23,7 +23,6 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configtls"
@@ -50,12 +49,12 @@ func Test_exporter_PushMetricsData(t *testing.T) {
 	defer ts.Close()
 
 	md := pdata.NewMetrics()
-	md.ResourceMetrics().Resize(2)
-	rm := md.ResourceMetrics().At(0)
+	md.ResourceMetrics().EnsureCapacity(2)
+	rm := md.ResourceMetrics().AppendEmpty()
 
 	ilms := rm.InstrumentationLibraryMetrics()
-	ilms.Resize(2)
-	ilm := ilms.At(0)
+	ilms.EnsureCapacity(2)
+	ilm := ilms.AppendEmpty()
 
 	metrics := ilm.Metrics()
 
@@ -94,18 +93,18 @@ func Test_exporter_PushMetricsData(t *testing.T) {
 	intHistogramDataPoint.SetTimestamp(pdata.Timestamp(100_000_000))
 
 	doubleGaugeMetric := metrics.AppendEmpty()
-	doubleGaugeMetric.SetDataType(pdata.MetricDataTypeDoubleGauge)
+	doubleGaugeMetric.SetDataType(pdata.MetricDataTypeGauge)
 	doubleGaugeMetric.SetName("double_gauge")
-	doubleGauge := doubleGaugeMetric.DoubleGauge()
+	doubleGauge := doubleGaugeMetric.Gauge()
 	doubleGaugeDataPoints := doubleGauge.DataPoints()
 	doubleGaugeDataPoint := doubleGaugeDataPoints.AppendEmpty()
 	doubleGaugeDataPoint.SetValue(10.1)
 	doubleGaugeDataPoint.SetTimestamp(pdata.Timestamp(100_000_000))
 
 	doubleSumMetric := metrics.AppendEmpty()
-	doubleSumMetric.SetDataType(pdata.MetricDataTypeDoubleSum)
+	doubleSumMetric.SetDataType(pdata.MetricDataTypeSum)
 	doubleSumMetric.SetName("double_sum")
-	doubleSum := doubleSumMetric.DoubleSum()
+	doubleSum := doubleSumMetric.Sum()
 	doubleSumDataPoints := doubleSum.DataPoints()
 	doubleSumDataPoint := doubleSumDataPoints.AppendEmpty()
 	doubleSumDataPoint.SetValue(10.1)
@@ -179,12 +178,12 @@ func Test_exporter_PushMetricsData_EmptyPayload(t *testing.T) {
 	defer ts.Close()
 
 	md := pdata.NewMetrics()
-	md.ResourceMetrics().Resize(2)
-	rm := md.ResourceMetrics().At(0)
+	md.ResourceMetrics().EnsureCapacity(2)
+	rm := md.ResourceMetrics().AppendEmpty()
 
 	ilms := rm.InstrumentationLibraryMetrics()
-	ilms.Resize(2)
-	ilm := ilms.At(0)
+	ilms.EnsureCapacity(2)
+	ilm := ilms.AppendEmpty()
 
 	metrics := ilm.Metrics()
 	noneMetric := metrics.AppendEmpty()
@@ -211,12 +210,12 @@ func Test_exporter_PushMetricsData_isDisabled(t *testing.T) {
 	defer ts.Close()
 
 	md := pdata.NewMetrics()
-	md.ResourceMetrics().Resize(2)
-	rm := md.ResourceMetrics().At(0)
+	md.ResourceMetrics().EnsureCapacity(2)
+	rm := md.ResourceMetrics().AppendEmpty()
 
 	ilms := rm.InstrumentationLibraryMetrics()
-	ilms.Resize(2)
-	ilm := ilms.At(0)
+	ilms.EnsureCapacity(2)
+	ilm := ilms.AppendEmpty()
 
 	metrics := ilm.Metrics()
 	metric := metrics.AppendEmpty()
@@ -407,12 +406,12 @@ func Test_exporter_PushMetricsData_Error(t *testing.T) {
 	ts.Close()
 
 	md := pdata.NewMetrics()
-	md.ResourceMetrics().Resize(2)
-	rm := md.ResourceMetrics().At(0)
+	md.ResourceMetrics().EnsureCapacity(2)
+	rm := md.ResourceMetrics().AppendEmpty()
 
 	ilms := rm.InstrumentationLibraryMetrics()
-	ilms.Resize(2)
-	ilm := ilms.At(0)
+	ilms.EnsureCapacity(2)
+	ilm := ilms.AppendEmpty()
 
 	metrics := ilm.Metrics()
 	intGaugeMetric := metrics.AppendEmpty()
@@ -483,7 +482,7 @@ func Test_exporter_start_InvalidHTTPClientSettings(t *testing.T) {
 		},
 	}
 
-	exp := newMetricsExporter(component.ExporterCreateSettings{Logger: zap.NewNop()}, config)
+	exp := newMetricsExporter(componenttest.NewNopExporterCreateSettings(), config)
 
 	err := exp.start(context.Background(), componenttest.NewNopHost())
 	if err == nil {

@@ -25,20 +25,20 @@ import (
 )
 
 // newLogsExporter return a new LogService logs exporter.
-func newLogsExporter(logger *zap.Logger, cfg config.Exporter) (component.LogsExporter, error) {
+func newLogsExporter(set component.ExporterCreateSettings, cfg config.Exporter) (component.LogsExporter, error) {
 
 	l := &logServiceLogsSender{
-		logger: logger,
+		logger: set.Logger,
 	}
 
 	var err error
-	if l.client, err = NewLogServiceClient(cfg.(*Config), logger); err != nil {
+	if l.client, err = NewLogServiceClient(cfg.(*Config), set.Logger); err != nil {
 		return nil, err
 	}
 
 	return exporterhelper.NewLogsExporter(
 		cfg,
-		logger,
+		set,
 		l.pushLogsData)
 }
 

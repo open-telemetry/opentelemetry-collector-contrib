@@ -174,15 +174,13 @@ func (suite *JMXIntegrationSuite) TestJMXReceiverHappyPath() {
 	require.NoError(t, receiver.Start(context.Background(), componenttest.NewNopHost()))
 
 	require.Eventually(t, func() bool {
-		found := consumer.MetricsCount() > 0
+		found := consumer.DataPointCount() > 0
 		if !found {
 			return false
 		}
 
 		metric := consumer.AllMetrics()[0]
-		metricCount, datapointCount := metric.MetricAndDataPointCount()
-		require.Equal(t, 1, metricCount)
-		require.Equal(t, 1, datapointCount)
+		require.Equal(t, 1, metric.DataPointCount())
 
 		rm := metric.ResourceMetrics().At(0)
 		resource := rm.Resource()
@@ -237,7 +235,7 @@ func (suite *JMXIntegrationSuite) TestJMXReceiverHappyPath() {
 }
 
 func TestJMXReceiverInvalidOTLPEndpointIntegration(t *testing.T) {
-	params := component.ReceiverCreateSettings{Logger: zap.NewNop()}
+	params := componenttest.NewNopReceiverCreateSettings()
 	cfg := &Config{
 		CollectionInterval: 100 * time.Millisecond,
 		Endpoint:           fmt.Sprintf("service:jmx:rmi:///jndi/rmi://localhost:7199/jmxrmi"),

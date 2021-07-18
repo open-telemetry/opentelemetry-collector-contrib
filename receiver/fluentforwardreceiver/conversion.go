@@ -287,9 +287,9 @@ func (fe *ForwardEventLogRecords) DecodeMsg(dc *msgp.Reader) (err error) {
 		return
 	}
 
-	fe.LogSlice.Resize(int(entryLen))
+	fe.LogSlice.EnsureCapacity(int(entryLen))
 	for i := 0; i < int(entryLen); i++ {
-		lr := fe.LogSlice.At(i)
+		lr := fe.LogSlice.AppendEmpty()
 
 		err = parseEntryToLogRecord(dc, lr)
 		if err != nil {

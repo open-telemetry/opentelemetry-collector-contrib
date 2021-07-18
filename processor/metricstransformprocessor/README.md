@@ -151,11 +151,13 @@ new_name: system.cpu.usage_time
 
 ### Rename multiple metrics using Substitution
 ```yaml
-# rename all system.cpu metrics to system.processor.*
-include: ^system\.cpu\.(.*)$
+# rename all system.cpu metrics to system.processor.*.stat
+# instead of regular $ use double dollar $$. Because $ is treated as a special character.
+# wrap the group name/number with braces
+include: ^system\.cpu\.(.*)$$
 match_type: regexp
 action: update
-new_name: system.processor.$1
+new_name: system.processor.$${1}.stat
 ```
 
 ### Add a label
@@ -294,13 +296,15 @@ operations:
 # 
 # ex: Consider pod and container metrics collected from Kubernetes. Both the metrics are recorded under under one ResourceMetric
 # applying this transformation will result in two separate ResourceMetric packets with corresponding resource labels in the resource headers
+#
+# instead of regular $ use double dollar $$. Because $ is treated as a special character.
 
 
-- include: ^k8s\.pod\.(.*)$
+- include: ^k8s\.pod\.(.*)$$
   match_type: regexp
   action: group
   group_resource_labels: {"resouce.type": "k8s.pod", "source": "kubelet"}
-- include: ^container\.(.*)$
+- include: ^container\.(.*)$$
   match_type: regexp
   action: group
   group_resource_labels: {"resouce.type": "container", "source": "kubelet"}

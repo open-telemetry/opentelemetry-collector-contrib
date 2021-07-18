@@ -23,6 +23,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/wavefronthq/wavefront-sdk-go/senders"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/translator/conventions"
@@ -204,7 +205,7 @@ func TestExportTraceDataRespectsContext(t *testing.T) {
 	}
 	mockOTelTracesExporter, err := exporterhelper.NewTracesExporter(
 		cfg,
-		zap.NewNop(),
+		componenttest.NewNopExporterCreateSettings(),
 		exp.pushTraceData,
 		exporterhelper.WithShutdown(exp.Shutdown),
 	)
@@ -231,10 +232,11 @@ func createSpan(
 
 func constructTraces(spans []pdata.Span) pdata.Traces {
 	traces := pdata.NewTraces()
-	traces.ResourceSpans().Resize(1)
-	rs := traces.ResourceSpans().At(0)
-	rs.InstrumentationLibrarySpans().Resize(1)
-	ils := rs.InstrumentationLibrarySpans().At(0)
+	traces.ResourceSpans().EnsureCapacity(1)
+	rs := traces.ResourceSpans().AppendEmpty()
+	rs.InstrumentationLibrarySpans().EnsureCapacity(1)
+	ils := rs.InstrumentationLibrarySpans().AppendEmpty()
+	ils.Spans().EnsureCapacity(len(spans))
 	for _, span := range spans {
 		span.CopyTo(ils.Spans().AppendEmpty())
 	}
@@ -253,7 +255,7 @@ func consumeTraces(ptrace pdata.Traces) ([]*Span, error) {
 	}
 	mockOTelTracesExporter, err := exporterhelper.NewTracesExporter(
 		cfg,
-		zap.NewNop(),
+		componenttest.NewNopExporterCreateSettings(),
 		exp.pushTraceData,
 		exporterhelper.WithShutdown(exp.Shutdown),
 	)

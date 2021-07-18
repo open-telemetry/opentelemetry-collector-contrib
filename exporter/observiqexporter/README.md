@@ -12,9 +12,10 @@ The following configuration options are required:
 
 The following configuration options can also be configured:
 
-- `endpoint` (default `https://nozzle.app.observiq.com/v1/add`): Endpoint where logs are sent to over http(s).
-- `agent_id` (default `otel-collector`): ID for identifying the collector deployment. Does not need to be unique, but can be useful for identifying where logs are coming from.
-- `timeout` (default `10s`): Http timeout when sending data.
+- `endpoint` (default: `https://nozzle.app.observiq.com/v1/add`): Endpoint where logs are sent to over http(s).
+- `agent_id` (default: uuid generated from os.Hostname): ID for identifying the collector deployment. Ideally, this is a unique uuid, for uniquely identifying specific deployments of the agent. By default, this will be a uuid generated from the hostname. If the hostname cannot be determined, it will be `00000000-0000-0000-0000-000000000000`
+- `agent_name` (default: os.Hostname): Name for identifying the collector deployment. This is the friendly name of the deployment. Defaults to the hostname; If the hostname cannot be determined, `otel collector` will be used as a fallback.
+- `timeout` (default: `10s`): Http timeout when sending data.
 - `insecure_skip_verify` (default: `false`): Whether to skip checking the certificate of the endpoint when sending data over HTTPS.
 - `ca_file` (no default) Path to the CA cert to verify the server being connected to.
 - `cert_file` (no default) Path to the TLS cert to use for client connections when TLS client auth is required.

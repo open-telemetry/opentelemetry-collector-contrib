@@ -20,12 +20,10 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configcheck"
 	"go.opentelemetry.io/collector/config/configtest"
-	"go.uber.org/zap"
 )
 
 func TestCreateDefaultConfig(t *testing.T) {
@@ -36,7 +34,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 
 func TestCreateTracesExporter(t *testing.T) {
 	cfg := createDefaultConfig()
-	params := component.ExporterCreateSettings{Logger: zap.NewNop()}
+	params := componenttest.NewNopExporterCreateSettings()
 	exp, err := createTracesExporter(context.Background(), params, cfg)
 	require.NoError(t, err)
 	require.NotNil(t, exp)
@@ -52,7 +50,7 @@ func TestCreateTracesExporterLoadConfig(t *testing.T) {
 	cfg, err := configtest.LoadConfigAndValidate(path.Join(".", "testdata", "config.yaml"), factories)
 	require.NoError(t, err)
 
-	params := component.ExporterCreateSettings{Logger: zap.NewNop()}
+	params := componenttest.NewNopExporterCreateSettings()
 	exporter, err := factory.CreateTracesExporter(
 		context.Background(), params, cfg.Exporters[config.NewIDWithName(typeStr, "customname")])
 	require.Nil(t, err)

@@ -17,7 +17,9 @@ package observiqexporter
 import (
 	"errors"
 	"net/url"
+	"os"
 
+	"github.com/google/uuid"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -35,8 +37,10 @@ type Config struct {
 	APIKey string `mapstructure:"api_key"`
 	// Endpoint URL; Defines the ingestion endpoint (optional)
 	Endpoint string `mapstructure:"endpoint"`
-	// Name that identifies this agent (optional)
+	// ID that identifies this agent (optional)
 	AgentID string `mapstructure:"agent_id"`
+	// Name that identifies this agent (optional)
+	AgentName string `mapstructure:"agent_name"`
 }
 
 func (c *Config) validateConfig() error {
@@ -59,4 +63,31 @@ func (c *Config) validateConfig() error {
 	}
 
 	return nil
+}
+
+// Default agent name will be the hostname
+func defaultAgentName() string {
+	const fallbackAgentName = "otel collector"
+	hn, err := os.Hostname()
+
+	if err != nil {
+		return fallbackAgentName
+	}
+
+	return hn
+}
+
+// Default agent ID will be UUID based off hostname
+func defaultAgentID() string {
+	const fallbackID = "00000000-0000-0000-0000-000000000000"
+
+	hn, err := os.Hostname()
+	if err != nil {
+		return fallbackID
+	}
+
+	id := uuid.NewMD5(uuid.Nil, []byte(hn))
+
+	return id.String()
+
 }

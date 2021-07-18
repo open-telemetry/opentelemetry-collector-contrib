@@ -26,7 +26,6 @@ import (
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	"go.opentelemetry.io/collector/model/pdata"
-	"go.opentelemetry.io/collector/processor/processorhelper"
 	"go.opentelemetry.io/collector/translator/internaldata"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/proto"
@@ -37,8 +36,6 @@ type metricsTransformProcessor struct {
 	transforms []internalTransform
 	logger     *zap.Logger
 }
-
-var _ processorhelper.MProcessor = (*metricsTransformProcessor)(nil)
 
 type internalTransform struct {
 	MetricIncludeFilter internalFilter
@@ -211,8 +208,8 @@ func newMetricsTransformProcessor(logger *zap.Logger, internalTransforms []inter
 	}
 }
 
-// ProcessMetrics implements the MProcessor interface.
-func (mtp *metricsTransformProcessor) ProcessMetrics(_ context.Context, md pdata.Metrics) (pdata.Metrics, error) {
+// processMetrics implements the ProcessMetricsFunc type.
+func (mtp *metricsTransformProcessor) processMetrics(_ context.Context, md pdata.Metrics) (pdata.Metrics, error) {
 	rms := md.ResourceMetrics()
 	groupedMds := make([]*agentmetricspb.ExportMetricsServiceRequest, 0)
 

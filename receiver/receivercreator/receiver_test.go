@@ -71,7 +71,7 @@ func TestMockedEndToEnd(t *testing.T) {
 	}
 	dynCfg := cfg.Receivers[config.NewIDWithName(typeStr, "1")]
 	factory := NewFactory()
-	params := component.ReceiverCreateSettings{Logger: zap.NewNop()}
+	params := componenttest.NewNopReceiverCreateSettings()
 	mockConsumer := new(consumertest.MetricsSink)
 	rcvr, err := factory.CreateMetricsReceiver(context.Background(), params, dynCfg, mockConsumer)
 	require.NoError(t, err)

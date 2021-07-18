@@ -27,7 +27,7 @@ import (
 	sfxpb "github.com/signalfx/com_signalfx_metrics_protobuf/model"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configcheck"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -36,8 +36,8 @@ import (
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/translation"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/translation/dpfilters"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/translation"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/translation/dpfilters"
 )
 
 func TestCreateDefaultConfig(t *testing.T) {
@@ -52,7 +52,7 @@ func TestCreateMetricsExporter(t *testing.T) {
 	c.AccessToken = "access_token"
 	c.Realm = "us0"
 
-	_, err := createMetricsExporter(context.Background(), component.ExporterCreateSettings{Logger: zap.NewNop()}, cfg)
+	_, err := createMetricsExporter(context.Background(), componenttest.NewNopExporterCreateSettings(), cfg)
 	assert.NoError(t, err)
 }
 
@@ -62,7 +62,7 @@ func TestCreateTracesExporter(t *testing.T) {
 	c.AccessToken = "access_token"
 	c.Realm = "us0"
 
-	_, err := createTracesExporter(context.Background(), component.ExporterCreateSettings{Logger: zap.NewNop()}, cfg)
+	_, err := createTracesExporter(context.Background(), componenttest.NewNopExporterCreateSettings(), cfg)
 	assert.NoError(t, err)
 }
 
@@ -71,7 +71,7 @@ func TestCreateTracesExporterNoAccessToken(t *testing.T) {
 	c := cfg.(*Config)
 	c.Realm = "us0"
 
-	_, err := createTracesExporter(context.Background(), component.ExporterCreateSettings{Logger: zap.NewNop()}, cfg)
+	_, err := createTracesExporter(context.Background(), componenttest.NewNopExporterCreateSettings(), cfg)
 	assert.EqualError(t, err, "access_token is required")
 }
 
@@ -85,7 +85,7 @@ func TestCreateInstanceViaFactory(t *testing.T) {
 
 	exp, err := factory.CreateMetricsExporter(
 		context.Background(),
-		component.ExporterCreateSettings{Logger: zap.NewNop()},
+		componenttest.NewNopExporterCreateSettings(),
 		cfg)
 	assert.NoError(t, err)
 	assert.NotNil(t, exp)
@@ -96,14 +96,14 @@ func TestCreateInstanceViaFactory(t *testing.T) {
 	expCfg.Realm = "us1"
 	exp, err = factory.CreateMetricsExporter(
 		context.Background(),
-		component.ExporterCreateSettings{Logger: zap.NewNop()},
+		componenttest.NewNopExporterCreateSettings(),
 		cfg)
 	assert.NoError(t, err)
 	require.NotNil(t, exp)
 
 	logExp, err := factory.CreateLogsExporter(
 		context.Background(),
-		component.ExporterCreateSettings{Logger: zap.NewNop()},
+		componenttest.NewNopExporterCreateSettings(),
 		cfg)
 	assert.NoError(t, err)
 	require.NotNil(t, logExp)
@@ -123,7 +123,7 @@ func TestCreateMetricsExporter_CustomConfig(t *testing.T) {
 		TimeoutSettings: exporterhelper.TimeoutSettings{Timeout: 2 * time.Second},
 	}
 
-	te, err := createMetricsExporter(context.Background(), component.ExporterCreateSettings{Logger: zap.NewNop()}, config)
+	te, err := createMetricsExporter(context.Background(), componenttest.NewNopExporterCreateSettings(), config)
 	assert.NoError(t, err)
 	assert.NotNil(t, te)
 }
@@ -166,7 +166,7 @@ func TestFactory_CreateMetricsExporterFails(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			te, err := createMetricsExporter(context.Background(), component.ExporterCreateSettings{Logger: zap.NewNop()}, tt.config)
+			te, err := createMetricsExporter(context.Background(), componenttest.NewNopExporterCreateSettings(), tt.config)
 			assert.EqualError(t, err, tt.errorMessage)
 			assert.Nil(t, te)
 		})
@@ -261,7 +261,7 @@ func TestCreateMetricsExporterWithDefaultExcludeMetrics(t *testing.T) {
 		Realm:            "us1",
 	}
 
-	te, err := createMetricsExporter(context.Background(), component.ExporterCreateSettings{Logger: zap.NewNop()}, config)
+	te, err := createMetricsExporter(context.Background(), componenttest.NewNopExporterCreateSettings(), config)
 	require.NoError(t, err)
 	require.NotNil(t, te)
 
@@ -281,7 +281,7 @@ func TestCreateMetricsExporterWithExcludeMetrics(t *testing.T) {
 		},
 	}
 
-	te, err := createMetricsExporter(context.Background(), component.ExporterCreateSettings{Logger: zap.NewNop()}, config)
+	te, err := createMetricsExporter(context.Background(), componenttest.NewNopExporterCreateSettings(), config)
 	require.NoError(t, err)
 	require.NotNil(t, te)
 
@@ -297,7 +297,7 @@ func TestCreateMetricsExporterWithEmptyExcludeMetrics(t *testing.T) {
 		ExcludeMetrics:   []dpfilters.MetricFilter{},
 	}
 
-	te, err := createMetricsExporter(context.Background(), component.ExporterCreateSettings{Logger: zap.NewNop()}, config)
+	te, err := createMetricsExporter(context.Background(), componenttest.NewNopExporterCreateSettings(), config)
 	require.NoError(t, err)
 	require.NotNil(t, te)
 
@@ -1042,10 +1042,10 @@ func TestDefaultExcludes_not_translated(t *testing.T) {
 func getResourceMetrics(metrics []map[string]string) pdata.ResourceMetrics {
 	rms := pdata.NewResourceMetrics()
 	ilms := rms.InstrumentationLibraryMetrics().AppendEmpty()
-	ilms.Metrics().Resize(len(metrics))
+	ilms.Metrics().EnsureCapacity(len(metrics))
 
-	for i, mp := range metrics {
-		m := ilms.Metrics().At(i)
+	for _, mp := range metrics {
+		m := ilms.Metrics().AppendEmpty()
 		// Set data type to some arbitrary since it does not matter for this test.
 		m.SetDataType(pdata.MetricDataTypeIntSum)
 		dp := m.IntSum().DataPoints().AppendEmpty()

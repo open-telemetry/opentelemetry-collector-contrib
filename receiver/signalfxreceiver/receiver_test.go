@@ -123,8 +123,8 @@ func Test_signalfxeceiver_EndToEnd(t *testing.T) {
 	{
 		m := ilm.Metrics().AppendEmpty()
 		m.SetName("gauge_double_with_dims")
-		m.SetDataType(pdata.MetricDataTypeDoubleGauge)
-		doublePt := m.DoubleGauge().DataPoints().AppendEmpty()
+		m.SetDataType(pdata.MetricDataTypeGauge)
+		doublePt := m.Gauge().DataPoints().AppendEmpty()
 		doublePt.SetTimestamp(ts)
 		doublePt.SetValue(doubleVal)
 	}
@@ -139,10 +139,10 @@ func Test_signalfxeceiver_EndToEnd(t *testing.T) {
 	{
 		m := ilm.Metrics().AppendEmpty()
 		m.SetName("cumulative_double_with_dims")
-		m.SetDataType(pdata.MetricDataTypeDoubleSum)
-		m.DoubleSum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
-		m.DoubleSum().SetIsMonotonic(true)
-		doublePt := m.DoubleSum().DataPoints().AppendEmpty()
+		m.SetDataType(pdata.MetricDataTypeSum)
+		m.Sum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+		m.Sum().SetIsMonotonic(true)
+		doublePt := m.Sum().DataPoints().AppendEmpty()
 		doublePt.SetTimestamp(ts)
 		doublePt.SetValue(doubleVal)
 	}
@@ -165,7 +165,7 @@ func Test_signalfxeceiver_EndToEnd(t *testing.T) {
 	}
 	exp, err := signalfxexporter.NewFactory().CreateMetricsExporter(
 		context.Background(),
-		component.ExporterCreateSettings{Logger: zap.NewNop()},
+		componenttest.NewNopExporterCreateSettings(),
 		expCfg)
 	require.NoError(t, err)
 	require.NoError(t, exp.Start(context.Background(), componenttest.NewNopHost()))

@@ -43,8 +43,8 @@ func getMetricValue(metric pdata.Metric) float64 {
 		}
 		return 0
 	}
-	if metric.DataType() == pdata.MetricDataTypeDoubleGauge {
-		dataPoints := metric.DoubleGauge().DataPoints()
+	if metric.DataType() == pdata.MetricDataTypeGauge {
+		dataPoints := metric.Gauge().DataPoints()
 		if dataPoints.Len() > 0 {
 			return dataPoints.At(0).Value()
 		}
@@ -65,7 +65,7 @@ func generateMetrics(rm pdata.ResourceMetrics, operand2 float64, rule internalRu
 			metric := metricSlice.At(j)
 			if metric.Name() == rule.metric1 {
 				newMetric := appendMetric(ilm, rule.name, rule.unit)
-				newMetric.SetDataType(pdata.MetricDataTypeDoubleGauge)
+				newMetric.SetDataType(pdata.MetricDataTypeGauge)
 				addDoubleGaugeDataPoints(metric, newMetric, operand2, rule.operation, logger)
 			}
 		}
@@ -78,19 +78,19 @@ func addDoubleGaugeDataPoints(from pdata.Metric, to pdata.Metric, operand2 float
 		for i := 0; i < dataPoints.Len(); i++ {
 			fromDataPoint := dataPoints.At(i)
 			operand1 := float64(fromDataPoint.Value())
-			neweDoubleDataPoint := to.DoubleGauge().DataPoints().AppendEmpty()
+			neweDoubleDataPoint := to.Gauge().DataPoints().AppendEmpty()
 			value := calculateValue(operand1, operand2, operation, logger, to.Name())
 			neweDoubleDataPoint.SetValue(value)
 			fromDataPoint.LabelsMap().CopyTo(neweDoubleDataPoint.LabelsMap())
 			neweDoubleDataPoint.SetStartTimestamp(fromDataPoint.StartTimestamp())
 			neweDoubleDataPoint.SetTimestamp(fromDataPoint.Timestamp())
 		}
-	} else if from.DataType() == pdata.MetricDataTypeDoubleGauge {
-		dataPoints := from.DoubleGauge().DataPoints()
+	} else if from.DataType() == pdata.MetricDataTypeGauge {
+		dataPoints := from.Gauge().DataPoints()
 		for i := 0; i < dataPoints.Len(); i++ {
 			fromDataPoint := dataPoints.At(i)
 			operand1 := fromDataPoint.Value()
-			neweDoubleDataPoint := to.DoubleGauge().DataPoints().AppendEmpty()
+			neweDoubleDataPoint := to.Gauge().DataPoints().AppendEmpty()
 			fromDataPoint.CopyTo(neweDoubleDataPoint)
 			value := calculateValue(operand1, operand2, operation, logger, to.Name())
 			neweDoubleDataPoint.SetValue(value)

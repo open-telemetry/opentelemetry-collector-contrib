@@ -61,7 +61,7 @@ func ToTraces(rawSeg []byte) (*pdata.Traces, int, error) {
 	// library so only allocate one `InstrumentationLibrarySpans` in the
 	// `InstrumentationLibrarySpansSlice`.
 	ils := rspan.InstrumentationLibrarySpans().AppendEmpty()
-	ils.Spans().Resize(count)
+	ils.Spans().EnsureCapacity(count)
 	spans := ils.Spans()
 
 	// populating global attributes shared among segment and embedded subsegment(s)
@@ -72,7 +72,7 @@ func ToTraces(rawSeg []byte) (*pdata.Traces, int, error) {
 	// TraceID of the root segment in because embedded subsegments
 	// do not have that information, but it's needed after we flatten
 	// the embedded subsegment to generate independent child spans.
-	_, _, err = segToSpans(seg, seg.TraceID, nil, &spans, 0)
+	_, err = segToSpans(seg, seg.TraceID, nil, &spans)
 	if err != nil {
 		return nil, count, err
 	}
@@ -82,23 +82,22 @@ func ToTraces(rawSeg []byte) (*pdata.Traces, int, error) {
 
 func segToSpans(seg awsxray.Segment,
 	traceID, parentID *string,
-	spans *pdata.SpanSlice, startingIndex int) (int, *pdata.Span, error) {
+	spans *pdata.SpanSlice) (*pdata.Span, error) {
 
-	span := spans.At(startingIndex)
+	span := spans.AppendEmpty()
 
 	err := populateSpan(&seg, traceID, parentID, &span)
 	if err != nil {
-		return 0, nil, err
+		return nil, err
 	}
 
-	startingIndexForSubsegment := 1 + startingIndex
 	var populatedChildSpan *pdata.Span
 	for _, s := range seg.Subsegments {
-		startingIndexForSubsegment, populatedChildSpan, err = segToSpans(s,
+		populatedChildSpan, err = segToSpans(s,
 			traceID, seg.ID,
-			spans, startingIndexForSubsegment)
+			spans)
 		if err != nil {
-			return 0, nil, err
+			return nil, err
 		}
 
 		if seg.Cause != nil &&
@@ -116,7 +115,7 @@ func segToSpans(seg awsxray.Segment,
 		}
 	}
 
-	return startingIndexForSubsegment, &span, nil
+	return &span, nil
 }
 
 func populateSpan(

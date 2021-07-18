@@ -44,16 +44,17 @@ func signalFxV2ToMetrics(
 	ilm := rm.InstrumentationLibraryMetrics().AppendEmpty()
 
 	metrics := ilm.Metrics()
-	metrics.Resize(len(sfxDataPoints))
+	metrics.EnsureCapacity(len(sfxDataPoints))
 
-	i := 0
 	for _, sfxDataPoint := range sfxDataPoints {
 		if sfxDataPoint == nil {
 			// TODO: Log or metric for this odd ball?
 			continue
 		}
 
-		m := metrics.At(i)
+		// fill in a new, unassociated metric as we may drop it during the process
+		m := pdata.NewMetric()
+
 		// First check if the type is convertible and the data point is consistent.
 		err := fillInType(sfxDataPoint, m)
 		if err != nil {
@@ -71,10 +72,10 @@ func signalFxV2ToMetrics(
 			err = fillIntDataPoint(sfxDataPoint, m.IntGauge().DataPoints())
 		case pdata.MetricDataTypeIntSum:
 			err = fillIntDataPoint(sfxDataPoint, m.IntSum().DataPoints())
-		case pdata.MetricDataTypeDoubleGauge:
-			err = fillDoubleDataPoint(sfxDataPoint, m.DoubleGauge().DataPoints())
-		case pdata.MetricDataTypeDoubleSum:
-			err = fillDoubleDataPoint(sfxDataPoint, m.DoubleSum().DataPoints())
+		case pdata.MetricDataTypeGauge:
+			err = fillDoubleDataPoint(sfxDataPoint, m.Gauge().DataPoints())
+		case pdata.MetricDataTypeSum:
+			err = fillDoubleDataPoint(sfxDataPoint, m.Sum().DataPoints())
 		}
 
 		if err != nil {
@@ -85,10 +86,9 @@ func signalFxV2ToMetrics(
 			continue
 		}
 
-		i++
+		// We know at this point we're keeping this metric
+		m.CopyTo(metrics.AppendEmpty())
 	}
-
-	metrics.Resize(i)
 
 	return md, numDroppedDataPoints
 }
@@ -109,7 +109,7 @@ func fillInType(
 		switch {
 		case sfxDatum.DoubleValue != nil:
 			// Numerical: Periodic, instantaneous measurement of some state.
-			m.SetDataType(pdata.MetricDataTypeDoubleGauge)
+			m.SetDataType(pdata.MetricDataTypeGauge)
 		case sfxDatum.IntValue != nil:
 			m.SetDataType(pdata.MetricDataTypeIntGauge)
 		default:
@@ -119,9 +119,9 @@ func fillInType(
 	case sfxpb.MetricType_COUNTER:
 		switch {
 		case sfxDatum.DoubleValue != nil:
-			m.SetDataType(pdata.MetricDataTypeDoubleSum)
-			m.DoubleSum().SetAggregationTemporality(pdata.AggregationTemporalityDelta)
-			m.DoubleSum().SetIsMonotonic(true)
+			m.SetDataType(pdata.MetricDataTypeSum)
+			m.Sum().SetAggregationTemporality(pdata.AggregationTemporalityDelta)
+			m.Sum().SetIsMonotonic(true)
 		case sfxDatum.IntValue != nil:
 			m.SetDataType(pdata.MetricDataTypeIntSum)
 			m.IntSum().SetAggregationTemporality(pdata.AggregationTemporalityDelta)
@@ -133,9 +133,9 @@ func fillInType(
 	case sfxpb.MetricType_CUMULATIVE_COUNTER:
 		switch {
 		case sfxDatum.DoubleValue != nil:
-			m.SetDataType(pdata.MetricDataTypeDoubleSum)
-			m.DoubleSum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
-			m.DoubleSum().SetIsMonotonic(true)
+			m.SetDataType(pdata.MetricDataTypeSum)
+			m.Sum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+			m.Sum().SetIsMonotonic(true)
 		case sfxDatum.IntValue != nil:
 			m.SetDataType(pdata.MetricDataTypeIntSum)
 			m.IntSum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
