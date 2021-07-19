@@ -23,7 +23,6 @@ import (
 
 	"go.uber.org/zap"
 
-	httpClient "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/containerinsight/httpclient"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver/internal/host"
 )
 
@@ -47,7 +46,7 @@ type ECSTasksInfo struct {
 
 type taskInfo struct {
 	logger                  *zap.Logger
-	httpClient              httpClient.Requester
+	httpClient              doer
 	refreshInterval         time.Duration
 	ecsTaskEndpointProvider hostIPProvider
 	runningTaskCount        int64
@@ -57,7 +56,7 @@ type taskInfo struct {
 }
 
 func newECSTaskInfo(ctx context.Context, ecsTaskEndpointProvider hostIPProvider,
-	refreshInterval time.Duration, logger *zap.Logger, httpClient Requester, readyC chan bool) ecsTaskInfoProvider {
+	refreshInterval time.Duration, logger *zap.Logger, httpClient doer, readyC chan bool) ecsTaskInfoProvider {
 	ti := &taskInfo{
 		logger:                  logger,
 		httpClient:              httpClient,
@@ -76,7 +75,7 @@ func newECSTaskInfo(ctx context.Context, ecsTaskEndpointProvider hostIPProvider,
 
 func (ti *taskInfo) getTasksInfo(ctx context.Context) (ecsTasksInfo *ECSTasksInfo) {
 	ecsTasksInfo = &ECSTasksInfo{}
-	resp, err := ti.httpClient.Request(ctx, ti.getECSAgentTaskInfoEndpoint())
+	resp, err := request(ctx, ti.getECSAgentTaskInfoEndpoint(), ti.httpClient)
 	if err != nil {
 		ti.logger.Warn("Failed to call ecsagent taskinfo endpoint, error: ", zap.Error(err))
 		return ecsTasksInfo
