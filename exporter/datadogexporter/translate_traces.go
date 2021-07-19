@@ -372,7 +372,15 @@ func aggregateSpanTags(span pdata.Span, datadogTags map[string]string) map[strin
 	}
 
 	span.Attributes().Range(func(k string, v pdata.AttributeValue) bool {
-		spanTags[utils.NormalizeTag(k)] = tracetranslator.AttributeValueToString(v)
+		switch k {
+		case keySamplingPriority:
+			spanTags[k] = tracetranslator.AttributeValueToString(v)
+		case keySamplingRate:
+			spanTags[k] = tracetranslator.AttributeValueToString(v)
+		default:
+			spanTags[utils.NormalizeTag(k)] = tracetranslator.AttributeValueToString(v)
+		}
+
 		return true
 	})
 
