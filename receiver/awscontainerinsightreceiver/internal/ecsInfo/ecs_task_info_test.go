@@ -15,9 +15,11 @@
 package ecsinfo
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"io/ioutil"
+	"net/http"
 	"testing"
 	"time"
 
@@ -34,9 +36,17 @@ func TestECSTaskInfoSuccess(t *testing.T) {
 
 	data, err := ioutil.ReadFile("./test/ecsinfo/taskinfo")
 
+	respBody := string(data)
+	httpResponse := &http.Response{
+		StatusCode:    200,
+		Body:          ioutil.NopCloser(bytes.NewBufferString(respBody)),
+		Header:        make(http.Header),
+		ContentLength: 5 * 1024,
+	}
+
 	mockHTTP := &MockHTTPClient{
-		responseData: data,
-		err:          err,
+		response: httpResponse,
+		err:      err,
 	}
 
 	ecsTaskinfo := newECSTaskInfo(ctx, hostIPProvider, time.Minute, zap.NewNop(), mockHTTP, taskReadyC)
@@ -53,26 +63,36 @@ func TestECSTaskInfoSuccess(t *testing.T) {
 
 func TestECSTaskInfoFail(t *testing.T) {
 	ctx := context.Background()
-	var data []byte
-	data = nil
 	err := errors.New("")
 	taskReadyC := make(chan bool)
 
 	hostIPProvider := &MockHostInfo{}
+
+	respBody := ""
+
+	httpResponse := &http.Response{
+		Status:        "Bad Request",
+		StatusCode:    400,
+		Body:          ioutil.NopCloser(bytes.NewBufferString(respBody)),
+		Header:        make(http.Header),
+		ContentLength: 5 * 1024,
+	}
+
 	mockHTTP := &MockHTTPClient{
-		responseData: data,
-		err:          err,
+		response: httpResponse,
+		err:      err,
 	}
 	ecsTaskinfo := newECSTaskInfo(ctx, hostIPProvider, time.Minute, zap.NewNop(), mockHTTP, taskReadyC)
 	assert.NotNil(t, ecsTaskinfo)
 	assert.Equal(t, int64(0), ecsTaskinfo.getRunningTaskCount())
 	assert.Equal(t, 0, len(ecsTaskinfo.getRunningTasksInfo()))
 
-	data, err = ioutil.ReadFile("./test/ecsinfo/taskinfo_wrong")
-
+	data, err := ioutil.ReadFile("./test/ecsinfo/taskinfo_wrong")
+	body := string(data)
+	httpResponse.Body = ioutil.NopCloser(bytes.NewBufferString(body))
 	mockHTTP = &MockHTTPClient{
-		responseData: data,
-		err:          err,
+		response: httpResponse,
+		err:      err,
 	}
 	ecsTaskinfo = newECSTaskInfo(ctx, hostIPProvider, time.Minute, zap.NewNop(), mockHTTP, taskReadyC)
 	assert.NotNil(t, ecsTaskinfo)

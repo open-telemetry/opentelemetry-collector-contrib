@@ -31,17 +31,18 @@ type containerInstanceInfoProvider interface {
 	GetContainerInstanceID() string
 }
 
+type hostIPProvider interface {
+	GetInstanceIP() string
+	GetinstanceIPReadyC() chan bool
+}
+
 type Requester interface {
 	Request(ctx context.Context, path string) ([]byte, error)
 }
 
-type hostIPProvider interface {
-	GetInstanceIP() string
-}
-
 type containerInstanceInfo struct {
 	logger                   *zap.Logger
-	httpClient               Requester
+	httpClient               doer
 	refreshInterval          time.Duration
 	ecsAgentEndpointProvider hostIPProvider
 	clusterName              string
@@ -56,7 +57,7 @@ type ContainerInstance struct {
 }
 
 func newECSInstanceInfo(ctx context.Context, ecsAgentEndpointProvider hostIPProvider,
-	refreshInterval time.Duration, logger *zap.Logger, httpClient Requester, readyC chan bool) containerInstanceInfoProvider {
+	refreshInterval time.Duration, logger *zap.Logger, httpClient doer, readyC chan bool) containerInstanceInfoProvider {
 	cii := &containerInstanceInfo{
 		logger:                   logger,
 		httpClient:               httpClient,
@@ -78,7 +79,7 @@ func newECSInstanceInfo(ctx context.Context, ecsAgentEndpointProvider hostIPProv
 func (cii *containerInstanceInfo) refresh(ctx context.Context) {
 	containerInstance := &ContainerInstance{}
 	cii.logger.Info("Fetch instance id and type from ec2 metadata")
-	resp, err := cii.httpClient.Request(ctx, cii.getECSAgentEndpoint())
+	resp, err := request(ctx, cii.getECSAgentEndpoint(), cii.httpClient)
 	if err != nil {
 		cii.logger.Warn("Failed to call ecsagent endpoint, error: ", zap.Error(err))
 	}

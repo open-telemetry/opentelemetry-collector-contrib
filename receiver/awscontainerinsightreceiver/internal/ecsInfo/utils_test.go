@@ -15,6 +15,11 @@
 package ecsinfo
 
 import (
+	"bytes"
+	"context"
+	"errors"
+	"io/ioutil"
+	"net/http"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -44,5 +49,115 @@ func TestIsClosed(t *testing.T) {
 	close(channel)
 
 	assert.Equal(t, true, IsClosed(channel))
+
+}
+
+type fakeClient struct {
+	response *http.Response
+	err      error
+}
+
+func (f *fakeClient) Do(req *http.Request) (*http.Response, error) {
+	return f.response, f.err
+}
+
+func TestRequestSuccessWithKnownLength(t *testing.T) {
+
+	respBody := "body"
+	response := &http.Response{
+		StatusCode:    200,
+		Body:          ioutil.NopCloser(bytes.NewBufferString(respBody)),
+		Header:        make(http.Header),
+		ContentLength: 5 * 1024,
+	}
+
+	fakeClient := &fakeClient{
+		response: response,
+		err:      nil,
+	}
+
+	ctx := context.Background()
+
+	body, err := request(ctx, "0.0.0.0", fakeClient)
+
+	assert.Nil(t, err)
+
+	assert.NotNil(t, body)
+
+}
+
+func TestRequestSuccessWithUnknownLength(t *testing.T) {
+
+	respBody := "body"
+	response := &http.Response{
+		StatusCode:    200,
+		Body:          ioutil.NopCloser(bytes.NewBufferString(respBody)),
+		Header:        make(http.Header),
+		ContentLength: -1,
+	}
+
+	fakeClient := &fakeClient{
+		response: response,
+		err:      nil,
+	}
+
+	ctx := context.Background()
+
+	body, err := request(ctx, "0.0.0.0", fakeClient)
+
+	assert.Nil(t, err)
+
+	assert.NotNil(t, body)
+
+}
+
+func TestRequestWithFailedStatus(t *testing.T) {
+
+	respBody := "body"
+	response := &http.Response{
+		Status:        "Bad Request",
+		StatusCode:    400,
+		Body:          ioutil.NopCloser(bytes.NewBufferString(respBody)),
+		Header:        make(http.Header),
+		ContentLength: 5 * 1024,
+	}
+
+	fakeClient := &fakeClient{
+		response: response,
+		err:      errors.New(""),
+	}
+
+	ctx := context.Background()
+
+	body, err := request(ctx, "0.0.0.0", fakeClient)
+
+	assert.Nil(t, body)
+
+	assert.NotNil(t, err)
+
+}
+
+func TestRequestWithLargeContentLength(t *testing.T) {
+
+	respBody := "body"
+	response := &http.Response{
+		StatusCode:    200,
+		Body:          ioutil.NopCloser(bytes.NewBufferString(respBody)),
+		Header:        make(http.Header),
+		ContentLength: 5 * 1024 * 1024,
+	}
+
+	fakeClient := &fakeClient{
+		response: response,
+		err:      nil,
+	}
+
+	ctx := context.Background()
+
+	body, err := request(ctx, "0.0.0.0", fakeClient)
+
+	assert.Nil(t, body)
+
+	assert.NotNil(t, err)
 
 }

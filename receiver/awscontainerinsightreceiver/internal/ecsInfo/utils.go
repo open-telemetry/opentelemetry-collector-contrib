@@ -17,6 +17,10 @@ package ecsinfo
 import (
 	"context"
 	"errors"
+	"fmt"
+	"io"
+	"io/ioutil"
+	"net/http"
 	"strings"
 )
 
@@ -24,6 +28,7 @@ const (
 	ecsAgentEndpoint         = "http://%s:51678/v1/metadata"
 	ecsAgentTaskInfoEndpoint = "http://%s:51678/v1/tasks"
 	taskStatusRunning        = "RUNNING"
+	maxHTTPResponseLength    = 5 * 1024 * 1024 // 5MB
 )
 
 // There are two formats of ContainerInstance ARN (https://docs.aws.amazon.com/AmazonECS/latest/userguide/ecs-account-settings.html#ecs-resource-ids)
@@ -54,12 +59,12 @@ func GetContainerInstanceIDFromArn(arn string) (containerInstanceID string, err 
 }
 
 type MockHTTPClient struct {
-	responseData []byte
-	err          error
+	response *http.Response
+	err      error
 }
 
-func (m *MockHTTPClient) Request(ctx context.Context, endpoint string) ([]byte, error) {
-	return m.responseData, m.err
+func (m *MockHTTPClient) Do(reqest *http.Request) (*http.Response, error) {
+	return m.response, m.err
 }
 
 // Check the channel is closed or not.
@@ -70,4 +75,53 @@ func IsClosed(ch <-chan bool) bool {
 	default:
 	}
 	return false
+}
+
+type doer interface {
+	Do(request *http.Request) (*http.Response, error)
+}
+
+func request(ctx context.Context, endpoint string, client doer) ([]byte, error) {
+	resp, err := clientGet(ctx, endpoint, client)
+	if err != nil {
+		return nil, err
+	}
+
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("response status not OK: %d", resp.StatusCode)
+	}
+	if resp.ContentLength >= maxHTTPResponseLength {
+		return nil, fmt.Errorf("get response with unexpected length from %s, response length: %d", endpoint, resp.ContentLength)
+	}
+
+	var reader io.Reader
+	//value -1 indicates that the length is unknown, see https://golang.org/src/net/http/response.go
+	//In this case, we read until the limit is reached
+	//This might happen with chunked responses from ECS Introspection API
+	if resp.ContentLength == -1 {
+		reader = io.LimitReader(resp.Body, maxHTTPResponseLength)
+	} else {
+		reader = resp.Body
+	}
+
+	body, err := ioutil.ReadAll(reader)
+	if err != nil {
+		return nil, fmt.Errorf("unable to read response body from %s, error: %v", endpoint, err)
+	}
+
+	if len(body) == maxHTTPResponseLength {
+		return nil, fmt.Errorf("response from %s, execeeds the maximum length: %v", endpoint, maxHTTPResponseLength)
+	}
+	return body, nil
+
+}
+
+func clientGet(ctx context.Context, url string, client doer) (resp *http.Response, err error) {
+	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
+	if err != nil {
+		return nil, err
+	}
+	return client.Do(req)
 }

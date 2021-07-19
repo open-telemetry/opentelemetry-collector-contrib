@@ -15,9 +15,11 @@
 package ecsinfo
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"io/ioutil"
+	"net/http"
 	"testing"
 	"time"
 
@@ -43,10 +45,18 @@ func TestECSInstanceInfo(t *testing.T) {
 	hostIPProvider := &MockHostInfo{}
 
 	data, err := ioutil.ReadFile("./test/ecsinfo/clusterinfo")
+	respBody := string(data)
+
+	httpResponse := &http.Response{
+		StatusCode:    200,
+		Body:          ioutil.NopCloser(bytes.NewBufferString(respBody)),
+		Header:        make(http.Header),
+		ContentLength: 5 * 1024,
+	}
 
 	mockHTTP := &MockHTTPClient{
-		responseData: data,
-		err:          err,
+		response: httpResponse,
+		err:      err,
 	}
 
 	//normal case
@@ -61,13 +71,19 @@ func TestECSInstanceInfo(t *testing.T) {
 
 	//failed to get data
 
-	data = nil
-
 	err = errors.New("")
 
+	httpResponse = &http.Response{
+		Status:        "Bad Request",
+		StatusCode:    400,
+		Body:          ioutil.NopCloser(bytes.NewBufferString(respBody)),
+		Header:        make(http.Header),
+		ContentLength: 5 * 1024,
+	}
+
 	mockHTTP = &MockHTTPClient{
-		responseData: data,
-		err:          err,
+		response: httpResponse,
+		err:      err,
 	}
 	ecsinstanceinfo = newECSInstanceInfo(ctx, hostIPProvider, time.Minute, zap.NewNop(), mockHTTP, instanceReadyC)
 
