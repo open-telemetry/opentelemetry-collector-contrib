@@ -16,8 +16,8 @@ require (
 	go.uber.org/atomic v1.8.0
 	go.uber.org/zap v1.18.1
 	google.golang.org/protobuf v1.27.1
-	k8s.io/api v0.21.2
-	k8s.io/apimachinery v0.21.2
+	k8s.io/api v0.21.3
+	k8s.io/apimachinery v0.21.3
 	k8s.io/client-go v0.21.2
 )
 
