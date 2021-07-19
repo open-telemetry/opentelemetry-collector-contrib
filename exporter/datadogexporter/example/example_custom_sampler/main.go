@@ -100,7 +100,7 @@ func main() {
 			log.Fatalf("failed to stop exporter: %v", err)
 		}
 	}()
-	
+
 	// Create an example provider.
 	provider := sdktrace.NewTracerProvider(
 		sdktrace.WithSampler(sdktrace.ParentBased(DatadogTraceIDRatioBased(0.5))),
@@ -111,7 +111,7 @@ func main() {
 			attribute.String("env", "staging"),
 		)),
 	)
-	
+
 	// Start an example tracer and span.
 	tracer := provider.Tracer("mytracer", trace.WithInstrumentationVersion("1.0.0"))
 	_, span := tracer.Start(ctx, "operation", trace.WithAttributes(
