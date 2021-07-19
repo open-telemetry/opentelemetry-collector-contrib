@@ -44,21 +44,12 @@ func TestIsClosed(t *testing.T) {
 
 	channel := make(chan bool)
 
-	assert.Equal(t, false, IsClosed(channel))
+	assert.Equal(t, false, isClosed(channel))
 
 	close(channel)
 
-	assert.Equal(t, true, IsClosed(channel))
+	assert.Equal(t, true, isClosed(channel))
 
-}
-
-type fakeClient struct {
-	response *http.Response
-	err      error
-}
-
-func (f *fakeClient) Do(req *http.Request) (*http.Response, error) {
-	return f.response, f.err
 }
 
 func TestRequestSuccessWithKnownLength(t *testing.T) {
@@ -71,14 +62,14 @@ func TestRequestSuccessWithKnownLength(t *testing.T) {
 		ContentLength: 5 * 1024,
 	}
 
-	fakeClient := &fakeClient{
+	MockHTTPClient := &MockHTTPClient{
 		response: response,
 		err:      nil,
 	}
 
 	ctx := context.Background()
 
-	body, err := request(ctx, "0.0.0.0", fakeClient)
+	body, err := request(ctx, "0.0.0.0", MockHTTPClient)
 
 	assert.Nil(t, err)
 
@@ -96,14 +87,14 @@ func TestRequestSuccessWithUnknownLength(t *testing.T) {
 		ContentLength: -1,
 	}
 
-	fakeClient := &fakeClient{
+	MockHTTPClient := &MockHTTPClient{
 		response: response,
 		err:      nil,
 	}
 
 	ctx := context.Background()
 
-	body, err := request(ctx, "0.0.0.0", fakeClient)
+	body, err := request(ctx, "0.0.0.0", MockHTTPClient)
 
 	assert.Nil(t, err)
 
@@ -122,14 +113,14 @@ func TestRequestWithFailedStatus(t *testing.T) {
 		ContentLength: 5 * 1024,
 	}
 
-	fakeClient := &fakeClient{
+	MockHTTPClient := &MockHTTPClient{
 		response: response,
 		err:      errors.New(""),
 	}
 
 	ctx := context.Background()
 
-	body, err := request(ctx, "0.0.0.0", fakeClient)
+	body, err := request(ctx, "0.0.0.0", MockHTTPClient)
 
 	assert.Nil(t, body)
 
@@ -147,14 +138,14 @@ func TestRequestWithLargeContentLength(t *testing.T) {
 		ContentLength: 5 * 1024 * 1024,
 	}
 
-	fakeClient := &fakeClient{
+	MockHTTPClient := &MockHTTPClient{
 		response: response,
 		err:      nil,
 	}
 
 	ctx := context.Background()
 
-	body, err := request(ctx, "0.0.0.0", fakeClient)
+	body, err := request(ctx, "0.0.0.0", MockHTTPClient)
 
 	assert.Nil(t, body)
 

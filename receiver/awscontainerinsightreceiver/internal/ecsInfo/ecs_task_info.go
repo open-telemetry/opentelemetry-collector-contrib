@@ -108,7 +108,7 @@ func (ti *taskInfo) refresh(ctx context.Context) {
 	ti.runningTasksInfo = tasks
 
 	//notify cgroups that the task info is ready
-	if len(ti.runningTasksInfo) != 0 && ti.runningTaskCount != 0 && !IsClosed(ti.readyC) {
+	if len(ti.runningTasksInfo) != 0 && ti.runningTaskCount != 0 && !isClosed(ti.readyC) {
 		close(ti.readyC)
 	}
 

@@ -68,7 +68,7 @@ func (m *MockHTTPClient) Do(reqest *http.Request) (*http.Response, error) {
 }
 
 // Check the channel is closed or not.
-func IsClosed(ch <-chan bool) bool {
+func isClosed(ch <-chan bool) bool {
 	select {
 	case <-ch:
 		return true
