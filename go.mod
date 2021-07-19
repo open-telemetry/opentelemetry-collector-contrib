@@ -19,7 +19,7 @@ require (
 	golang.org/x/text v0.3.6
 	gonum.org/v1/gonum v0.9.3
 	gopkg.in/yaml.v2 v2.4.0
-	k8s.io/api v0.21.2
-	k8s.io/apimachinery v0.21.2
-	k8s.io/client-go v0.21.2
+	k8s.io/api v0.21.3
+	k8s.io/apimachinery v0.21.3
+	k8s.io/client-go v0.21.3
 )
