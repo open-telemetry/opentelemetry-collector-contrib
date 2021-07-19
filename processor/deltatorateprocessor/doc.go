@@ -13,5 +13,5 @@
 // limitations under the License.
 
 // package deltatorateprocessor implements a processor which
-// converts cumulative sum metrics to cumulative delta.
+// converts delta sum metrics to rates.
 package deltatorateprocessor
