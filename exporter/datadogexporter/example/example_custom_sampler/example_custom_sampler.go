@@ -16,7 +16,7 @@
 // OpenTelemtry-instrumented programs using a DatadogTraceIDRatioBased s ampler.
 // The default connection is HTTP and the gRPC connection is activated by means of the -grpc flag.
 
-package main
+package example_custom_sampler
 
 import (
 	"context"
