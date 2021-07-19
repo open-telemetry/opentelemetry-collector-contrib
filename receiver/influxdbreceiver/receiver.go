@@ -29,10 +29,7 @@ import (
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
-	"go.opentelemetry.io/collector/model/otlp"
 )
-
-var metricsUnmarshaler = otlp.NewProtobufMetricsUnmarshaler()
 
 type metricsReceiver struct {
 	nextConsumer       consumer.Metrics
@@ -43,11 +40,6 @@ type metricsReceiver struct {
 	wg     sync.WaitGroup
 
 	logger common.Logger
-}
-
-var metricsSchemata = map[string]common.MetricsSchema{
-	"telegraf-prometheus-v1": common.MetricsSchemaTelegrafPrometheusV1,
-	"telegraf-prometheus-v2": common.MetricsSchemaTelegrafPrometheusV2,
 }
 
 func newMetricsReceiver(config *Config, influxLogger common.Logger, nextConsumer consumer.Metrics) (*metricsReceiver, error) {
@@ -172,19 +164,7 @@ func (r *metricsReceiver) handleWrite(w http.ResponseWriter, req *http.Request) 
 		}
 	}
 
-	b, err := batch.ToProtoBytes()
-	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		_, _ = fmt.Fprintf(w, "failed to convert batch to protobuf bytes")
-		return
-	}
-	md, err := metricsUnmarshaler.UnmarshalMetrics(b)
-	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		_, _ = fmt.Fprintf(w, "failed to convert protobuf bytes to OTLP object")
-		return
-	}
-	if err = r.nextConsumer.ConsumeMetrics(req.Context(), md); err != nil {
+	if err := r.nextConsumer.ConsumeMetrics(req.Context(), batch.GetMetrics()); err != nil {
 		if consumererror.IsPermanent(err) {
 			w.WriteHeader(http.StatusBadRequest)
 		} else {
