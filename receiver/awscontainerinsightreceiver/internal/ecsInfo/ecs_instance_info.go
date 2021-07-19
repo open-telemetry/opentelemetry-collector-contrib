@@ -103,7 +103,7 @@ func (cii *containerInstanceInfo) refresh(ctx context.Context) {
 	defer cii.Unlock()
 
 	//notify cgroups that the clustername and instanceID is ready
-	if cii.clusterName != "" && cii.containerInstanceID != "" && !IsClosed(cii.readyC) {
+	if cii.clusterName != "" && cii.containerInstanceID != "" && !isClosed(cii.readyC) {
 		close(cii.readyC)
 	}
 }

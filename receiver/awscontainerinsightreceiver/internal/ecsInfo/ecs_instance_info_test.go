@@ -32,7 +32,7 @@ type MockHostInfo struct{}
 func (mi *MockHostInfo) GetInstanceIP() string {
 	return "0.0.0.0"
 }
-func (mi *MockHostInfo) GetinstanceIPReadyC() chan bool {
+func (mi *MockHostInfo) GetInstanceIPReadyC() chan bool {
 	readyC := make(chan bool)
 	return readyC
 }
