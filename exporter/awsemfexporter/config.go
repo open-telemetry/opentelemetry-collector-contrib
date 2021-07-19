@@ -67,7 +67,7 @@ type Config struct {
 	// CreateEKSFargateKubernetesObject is an option to reformat certin metric labels so that they take the form of a high level object
 	// The end result will make the labels look like those coming out of ECS and be more easily injected into cloudwatch
 	// Note that at the moment in order to use this feature the value "kubernetes" must also be added to the ParseJSONEncodedAttributeValues array in order to be used
-	CreateEKSFargateKubernetesObject bool `mapstructure:"create_eks_fargate_kubernetes_object"`
+	EKSFargateContainerInsightsEnabled bool `mapstructure:"eks_fargate_container_insights_enabled"`
 
 	// ResourceToTelemetrySettings is the option for converting resource attrihutes to telemetry attributes.
 	// "Enabled" - A boolean field to enable/disable this option. Default is `false`.

@@ -460,8 +460,7 @@ func TestAddKubernetesWrapper(t *testing.T) {
 		inputs["PodId"] = "Le id de Pod"
 
 		jsonBytes, _ := json.Marshal(expectedCreatedObj)
-		err := addKubernetesWrapper(inputs)
-		assert.Equal(t, err != nil, false, "It shouldn't throw an error when adding the obj")
+		addKubernetesWrapper(inputs)
 		assert.Equal(t, string(jsonBytes), inputs["kubernetes"], "The created and expected objects should be the same")
 	})
 }
