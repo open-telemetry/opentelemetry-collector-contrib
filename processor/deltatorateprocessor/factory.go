@@ -31,7 +31,7 @@ const (
 
 var processorCapabilities = consumer.Capabilities{MutatesData: true}
 
-// NewFactory returns a new factory for the Metrics Generation processor.
+// NewFactory returns a new factory for the Delta to Rate processor.
 func NewFactory() component.ProcessorFactory {
 	return processorhelper.NewFactory(
 		typeStr,
