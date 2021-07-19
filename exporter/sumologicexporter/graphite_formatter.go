@@ -130,7 +130,6 @@ func (gf *graphiteFormatter) metric2String(record metricPair) string {
 		}
 	// Skip complex metrics
 	case pdata.MetricDataTypeHistogram:
-	case pdata.MetricDataTypeIntHistogram:
 	case pdata.MetricDataTypeSummary:
 	}
 

@@ -115,8 +115,6 @@ func (c *MetricsConverter) metricToSfxDataPoints(metric pdata.Metric, extraDimen
 		dps = convertDoubleDatapoints(metric.Gauge().DataPoints(), basePoint, extraDimensions)
 	case pdata.MetricDataTypeSum:
 		dps = convertDoubleDatapoints(metric.Sum().DataPoints(), basePoint, extraDimensions)
-	case pdata.MetricDataTypeIntHistogram:
-		dps = convertIntHistogram(metric.IntHistogram().DataPoints(), basePoint, extraDimensions)
 	case pdata.MetricDataTypeHistogram:
 		dps = convertHistogram(metric.Histogram().DataPoints(), basePoint, extraDimensions)
 	case pdata.MetricDataTypeSummary:
@@ -282,12 +280,6 @@ func fromMetricDataTypeToMetricType(metric pdata.Metric) *sfxpb.MetricType {
 		}
 		return &sfxMetricTypeCumulativeCounter
 
-	case pdata.MetricDataTypeIntHistogram:
-		if metric.IntHistogram().AggregationTemporality() == pdata.AggregationTemporalityDelta {
-			return &sfxMetricTypeCounter
-		}
-		return &sfxMetricTypeCumulativeCounter
-
 	case pdata.MetricDataTypeHistogram:
 		if metric.Histogram().AggregationTemporality() == pdata.AggregationTemporalityDelta {
 			return &sfxMetricTypeCounter
@@ -296,61 +288,6 @@ func fromMetricDataTypeToMetricType(metric pdata.Metric) *sfxpb.MetricType {
 	}
 
 	return nil
-}
-
-func convertIntHistogram(histDPs pdata.IntHistogramDataPointSlice, basePoint *sfxpb.DataPoint, extraDims []*sfxpb.Dimension) []*sfxpb.DataPoint {
-	var out []*sfxpb.DataPoint
-
-	for i := 0; i < histDPs.Len(); i++ {
-		histDP := histDPs.At(i)
-		ts := timestampToSignalFx(histDP.Timestamp())
-
-		countDP := *basePoint
-		countDP.Metric = basePoint.Metric + "_count"
-		countDP.Timestamp = ts
-		countDP.Dimensions = labelsToDimensions(histDP.LabelsMap(), extraDims)
-		count := int64(histDP.Count())
-		countDP.Value.IntValue = &count
-
-		sumDP := *basePoint
-		sumDP.Timestamp = ts
-		sumDP.Dimensions = labelsToDimensions(histDP.LabelsMap(), extraDims)
-		sum := histDP.Sum()
-		sumDP.Value.IntValue = &sum
-
-		out = append(out, &countDP, &sumDP)
-
-		bounds := histDP.ExplicitBounds()
-		counts := histDP.BucketCounts()
-
-		// Spec says counts is optional but if present it must have one more
-		// element than the bounds array.
-		if len(counts) > 0 && len(counts) != len(bounds)+1 {
-			continue
-		}
-
-		for j, c := range counts {
-			bound := infinityBoundSFxDimValue
-			if j < len(bounds) {
-				bound = float64ToDimValue(bounds[j])
-			}
-
-			dp := *basePoint
-			dp.Metric = basePoint.Metric + "_bucket"
-			dp.Timestamp = ts
-			dp.Dimensions = labelsToDimensions(histDP.LabelsMap(), extraDims)
-			dp.Dimensions = append(dp.Dimensions, &sfxpb.Dimension{
-				Key:   upperBoundDimensionKey,
-				Value: bound,
-			})
-			cInt := int64(c)
-			dp.Value.IntValue = &cInt
-
-			out = append(out, &dp)
-		}
-	}
-
-	return out
 }
 
 func convertHistogram(histDPs pdata.HistogramDataPointSlice, basePoint *sfxpb.DataPoint, extraDims []*sfxpb.Dimension) []*sfxpb.DataPoint {

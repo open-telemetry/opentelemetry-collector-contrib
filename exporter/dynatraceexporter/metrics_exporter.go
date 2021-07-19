@@ -113,8 +113,6 @@ func (e *exporter) serializeMetrics(md pdata.Metrics) ([]string, int) {
 					l = serialization.SerializeIntDataPoints(name, metric.IntSum().DataPoints(), e.cfg.Tags)
 				case pdata.MetricDataTypeSum:
 					l = serialization.SerializeDoubleDataPoints(name, metric.Sum().DataPoints(), e.cfg.Tags)
-				case pdata.MetricDataTypeIntHistogram:
-					l = serialization.SerializeIntHistogramMetrics(name, metric.IntHistogram().DataPoints(), e.cfg.Tags)
 				case pdata.MetricDataTypeHistogram:
 					l = serialization.SerializeHistogramMetrics(name, metric.Histogram().DataPoints(), e.cfg.Tags)
 				}
