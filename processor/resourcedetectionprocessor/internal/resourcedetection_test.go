@@ -253,9 +253,9 @@ func TestAttributesToMap(t *testing.T) {
 
 	ava := pdata.NewAttributeValueArray()
 	arrayAttr := ava.ArrayVal()
-	arrayAttr.Resize(2)
-	arrayAttr.At(0).SetStringVal("inner")
-	arrayAttr.At(1).SetIntVal(42)
+	arrayAttr.EnsureCapacity(2)
+	arrayAttr.AppendEmpty().SetStringVal("inner")
+	arrayAttr.AppendEmpty().SetIntVal(42)
 	attr.Insert("array", ava)
 
 	assert.Equal(t, m, AttributesToMap(attr))

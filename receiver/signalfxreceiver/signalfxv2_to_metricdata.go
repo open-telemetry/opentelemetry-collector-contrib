@@ -44,16 +44,17 @@ func signalFxV2ToMetrics(
 	ilm := rm.InstrumentationLibraryMetrics().AppendEmpty()
 
 	metrics := ilm.Metrics()
-	metrics.Resize(len(sfxDataPoints))
+	metrics.EnsureCapacity(len(sfxDataPoints))
 
-	i := 0
 	for _, sfxDataPoint := range sfxDataPoints {
 		if sfxDataPoint == nil {
 			// TODO: Log or metric for this odd ball?
 			continue
 		}
 
-		m := metrics.At(i)
+		// fill in a new, unassociated metric as we may drop it during the process
+		m := pdata.NewMetric()
+
 		// First check if the type is convertible and the data point is consistent.
 		err := fillInType(sfxDataPoint, m)
 		if err != nil {
@@ -85,10 +86,9 @@ func signalFxV2ToMetrics(
 			continue
 		}
 
-		i++
+		// We know at this point we're keeping this metric
+		m.CopyTo(metrics.AppendEmpty())
 	}
-
-	metrics.Resize(i)
 
 	return md, numDroppedDataPoints
 }

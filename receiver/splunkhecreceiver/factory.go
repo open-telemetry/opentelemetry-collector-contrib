@@ -72,7 +72,7 @@ func createMetricsReceiver(
 		return nil, err
 	}
 
-	return NewMetricsReceiver(params.Logger, *rCfg, consumer)
+	return newMetricsReceiver(params.Logger, *rCfg, consumer)
 }
 
 // createLogsReceiver creates a logs receiver based on provided config.
@@ -90,5 +90,5 @@ func createLogsReceiver(
 		return nil, err
 	}
 
-	return NewLogsReceiver(params.Logger, *rCfg, consumer)
+	return newLogsReceiver(params.Logger, *rCfg, consumer)
 }

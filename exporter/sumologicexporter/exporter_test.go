@@ -280,7 +280,7 @@ func TestPushFailedBatch(t *testing.T) {
 	defer func() { test.srv.Close() }()
 
 	logs := LogRecordsToLogs(exampleLog())
-	logs.ResourceLogs().Resize(maxBufferSize + 1)
+	logs.ResourceLogs().EnsureCapacity(maxBufferSize + 1)
 	log := logs.ResourceLogs().At(0)
 
 	for i := 0; i < maxBufferSize; i++ {
@@ -474,7 +474,7 @@ func TestPushMetricsFailedBatch(t *testing.T) {
 	test.exp.config.MaxRequestBodySize = 1024 * 1024 * 1024 * 1024
 
 	metrics := metricPairToMetrics([]metricPair{exampleIntMetric()})
-	metrics.ResourceMetrics().Resize(maxBufferSize + 1)
+	metrics.ResourceMetrics().EnsureCapacity(maxBufferSize + 1)
 	metric := metrics.ResourceMetrics().At(0)
 
 	for i := 0; i < maxBufferSize; i++ {

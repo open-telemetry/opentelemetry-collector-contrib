@@ -29,9 +29,8 @@ import (
 func resourceAndLogRecordsToLogs(r pdata.Resource, lrs []pdata.LogRecord) pdata.Logs {
 	logs := pdata.NewLogs()
 	resLogs := logs.ResourceLogs()
-	resLogs.AppendEmpty()
 
-	resLog := resLogs.At(0)
+	resLog := resLogs.AppendEmpty()
 	resLogRes := resLog.Resource()
 
 	r.Attributes().Range(func(k string, v pdata.AttributeValue) bool {
@@ -39,13 +38,10 @@ func resourceAndLogRecordsToLogs(r pdata.Resource, lrs []pdata.LogRecord) pdata.
 		return true
 	})
 
-	resLog.InstrumentationLibraryLogs().Resize(len(lrs))
-	for i, l := range lrs {
-		ills := pdata.NewInstrumentationLibraryLogs()
-		ills.Logs().Resize(1)
-		l.CopyTo(ills.Logs().At(0))
-
-		ills.CopyTo(resLog.InstrumentationLibraryLogs().At(i))
+	resLog.InstrumentationLibraryLogs().EnsureCapacity(len(lrs))
+	for _, l := range lrs {
+		ills := resLog.InstrumentationLibraryLogs().AppendEmpty()
+		l.CopyTo(ills.Logs().AppendEmpty())
 	}
 
 	return logs
@@ -112,9 +108,9 @@ func TestLogdataToObservIQFormat(t *testing.T) {
 				logRecord.Attributes().Insert("map", mapVal)
 
 				arrVal := pdata.NewAttributeValueArray()
-				arrVal.ArrayVal().Resize(2)
-				arrVal.ArrayVal().At(0).SetIntVal(1)
-				arrVal.ArrayVal().At(1).SetIntVal(2)
+				arrVal.ArrayVal().EnsureCapacity(2)
+				arrVal.ArrayVal().AppendEmpty().SetIntVal(1)
+				arrVal.ArrayVal().AppendEmpty().SetIntVal(2)
 				logRecord.Attributes().Insert("array", arrVal)
 
 				logRecord.SetTimestamp(nanoTs)
@@ -134,9 +130,9 @@ func TestLogdataToObservIQFormat(t *testing.T) {
 				res.Attributes().Insert("map", mapVal)
 
 				arrVal := pdata.NewAttributeValueArray()
-				arrVal.ArrayVal().Resize(2)
-				arrVal.ArrayVal().At(0).SetIntVal(1)
-				arrVal.ArrayVal().At(1).SetDoubleVal(2.0)
+				arrVal.ArrayVal().EnsureCapacity(2)
+				arrVal.ArrayVal().AppendEmpty().SetIntVal(1)
+				arrVal.ArrayVal().AppendEmpty().SetDoubleVal(2.0)
 				res.Attributes().Insert("array", arrVal)
 
 				return res
@@ -227,9 +223,9 @@ func TestLogdataToObservIQFormat(t *testing.T) {
 				logRecord := pdata.NewLogRecord()
 
 				pdata.NewAttributeValueArray().CopyTo(logRecord.Body())
-				logRecord.Body().ArrayVal().Resize(2)
-				logRecord.Body().ArrayVal().At(0).SetStringVal("string")
-				logRecord.Body().ArrayVal().At(1).SetDoubleVal(1.0)
+				logRecord.Body().ArrayVal().EnsureCapacity(2)
+				logRecord.Body().ArrayVal().AppendEmpty().SetStringVal("string")
+				logRecord.Body().ArrayVal().AppendEmpty().SetDoubleVal(1.0)
 
 				logRecord.SetTimestamp(nanoTs)
 				return logRecord
