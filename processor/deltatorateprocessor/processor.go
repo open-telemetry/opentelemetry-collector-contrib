@@ -41,6 +41,49 @@ func (dtrp *deltaToRateProcessor) Start(context.Context, component.Host) error {
 
 // processMetrics implements the ProcessMetricsFunc type.
 func (dtrp *deltaToRateProcessor) processMetrics(_ context.Context, md pdata.Metrics) (pdata.Metrics, error) {
+	inputMetricSet := make(map[string]bool)
+	for _, name := range dtrp.metrics {
+		inputMetricSet[name] = true
+	}
+
+	resourceMetricsSlice := md.ResourceMetrics()
+
+	for i := 0; i < resourceMetricsSlice.Len(); i++ {
+		rm := resourceMetricsSlice.At(i)
+		ilms := rm.InstrumentationLibraryMetrics()
+		for i := 0; i < ilms.Len(); i++ {
+			ilm := ilms.At(i)
+			metricSlice := ilm.Metrics()
+			for j := 0; j < metricSlice.Len(); j++ {
+				metric := metricSlice.At(j)
+				_, ok := inputMetricSet[metric.Name()]
+				if ok {
+					newDoubleDataPointSlice := pdata.NewDoubleDataPointSlice()
+					if metric.DataType() == pdata.MetricDataTypeSum && metric.Sum().AggregationTemporality() == pdata.AggregationTemporalityDelta {
+						dataPoints := metric.Sum().DataPoints()
+
+						for i := 0; i < dataPoints.Len(); i++ {
+							fromDataPoint := dataPoints.At(i)
+							newDp := newDoubleDataPointSlice.AppendEmpty()
+							fromDataPoint.CopyTo(newDp)
+
+							durationNanos := fromDataPoint.Timestamp().AsTime().Sub(fromDataPoint.StartTimestamp().AsTime())
+							durationSeconds := durationNanos.Seconds()
+							if durationSeconds > 0 {
+								rate := fromDataPoint.Value() / durationNanos.Seconds()
+								newDp.SetValue(rate)
+							}
+						}
+					}
+					metric.SetDataType(pdata.MetricDataTypeGauge)
+					for d := 0; d < newDoubleDataPointSlice.Len(); d++ {
+						dp := metric.Gauge().DataPoints().AppendEmpty()
+						newDoubleDataPointSlice.At(d).CopyTo(dp)
+					}
+				}
+			}
+		}
+	}
 	return md, nil
 }
 
