@@ -56,18 +56,17 @@ func (ctdp *cumulativeToDeltaProcessor) processMetrics(_ context.Context, md pda
 	for i := 0; i < resourceMetricsSlice.Len(); i++ {
 		rm := resourceMetricsSlice.At(i)
 		ilms := rm.InstrumentationLibraryMetrics()
-		for i := 0; i < ilms.Len(); i++ {
-			ilm := ilms.At(i)
+		for j := 0; j < ilms.Len(); j++ {
+			ilm := ilms.At(j)
 			metricSlice := ilm.Metrics()
-			for j := 0; j < metricSlice.Len(); j++ {
-				metric := metricSlice.At(j)
-				_, ok := inputMetricSet[metric.Name()]
-				if ok {
-					if metric.DataType() == pdata.MetricDataTypeSum {
+			for k := 0; k < metricSlice.Len(); k++ {
+				metric := metricSlice.At(k)
+				if inputMetricSet[metric.Name()] {
+					if metric.DataType() == pdata.MetricDataTypeSum && metric.Sum().AggregationTemporality() == pdata.AggregationTemporalityCumulative {
 						dataPoints := metric.Sum().DataPoints()
 
-						for i := 0; i < dataPoints.Len(); i++ {
-							fromDataPoint := dataPoints.At(i)
+						for l := 0; l < dataPoints.Len(); l++ {
+							fromDataPoint := dataPoints.At(l)
 							labelMap := make(map[string]string)
 
 							fromDataPoint.LabelsMap().Range(func(k string, v string) bool {
