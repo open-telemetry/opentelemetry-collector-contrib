@@ -25,6 +25,8 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"go.etcd.io/bbolt"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage"
 )
 
 func TestClientOperations(t *testing.T) {
@@ -70,57 +72,65 @@ func TestClientBatchOperations(t *testing.T) {
 	require.NoError(t, err)
 
 	ctx := context.Background()
-	testEntries := map[string][]byte{
-		"testKey1": []byte("testValue1"),
-		"testKey2": []byte("testValue2"),
+	testSetEntries := []storage.Operation{
+		storage.SetOperation("testKey1", []byte("testValue1")),
+		storage.SetOperation("testKey2", []byte("testValue2")),
 	}
-	testKeys := []string{"testKey1", "testKey2"}
+
+	testGetEntries := []storage.Operation{
+		storage.GetOperation("testKey1"),
+		storage.GetOperation("testKey2"),
+	}
 
 	// Make sure nothing is there
-	value, err := client.Batch(ctx, testKeys, nil)
+	err = client.Batch(ctx, testGetEntries...)
 	require.NoError(t, err)
-	require.Equal(t, value, [][]byte{nil, nil})
+	require.Equal(t, testGetEntries, testGetEntries)
 
 	// Set it
-	_, err = client.Batch(ctx, nil, testEntries)
+	err = client.Batch(ctx, testSetEntries...)
 	require.NoError(t, err)
 
 	// Get it back out, make sure it's right
-	values, err := client.Batch(ctx, testKeys, nil)
+	err = client.Batch(ctx, testGetEntries...)
 	require.NoError(t, err)
-	require.Len(t, values, 2)
-	for i, key := range testKeys {
-		require.Equal(t, testEntries[key], values[i])
+	for i := range testGetEntries {
+		require.Equal(t, testSetEntries[i].Key, testGetEntries[i].Key)
+		require.Equal(t, testSetEntries[i].Value, testGetEntries[i].Value)
 	}
 
-	// Update it (the second entry should get removed)
-	testEntriesUpdate := map[string][]byte{
-		"testKey1": []byte("testValue1"),
-		"testKey2": nil,
+	// Update it (the first entry should be empty and the second one removed)
+	testEntriesUpdate := []storage.Operation{
+		storage.SetOperation("testKey1", []byte{}),
+		storage.DeleteOperation("testKey2"),
 	}
-	_, err = client.Batch(ctx, nil, testEntriesUpdate)
+	err = client.Batch(ctx, testEntriesUpdate...)
 	require.NoError(t, err)
 
 	// Get it back out, make sure it's right
-	valuesUpdate, err := client.Batch(ctx, testKeys, nil)
+	err = client.Batch(ctx, testGetEntries...)
 	require.NoError(t, err)
-	require.Len(t, values, 2)
-	for i, key := range testKeys {
-		require.Equal(t, testEntriesUpdate[key], valuesUpdate[i])
+	for i := range testGetEntries {
+		require.Equal(t, testEntriesUpdate[i].Key, testGetEntries[i].Key)
+		require.Equal(t, testEntriesUpdate[i].Value, testGetEntries[i].Value)
 	}
 
 	// Delete it all
-	testKeysDelete := map[string][]byte{
-		"testKey1": nil,
-		"testKey2": nil,
+	testEntriesDelete := []storage.Operation{
+		storage.DeleteOperation("testKey1"),
+		storage.DeleteOperation("testKey2"),
 	}
-	_, err = client.Batch(ctx, nil, testKeysDelete)
+	err = client.Batch(ctx, testEntriesDelete...)
 	require.NoError(t, err)
 
 	// Make sure it's gone
-	value, err = client.Batch(ctx, testKeys, nil)
+	err = client.Batch(ctx, testGetEntries...)
 	require.NoError(t, err)
-	require.Equal(t, value, [][]byte{nil, nil})
+	for i := range testGetEntries {
+		require.Equal(t, testGetEntries[i].Key, testEntriesDelete[i].Key)
+		require.Nil(t, testGetEntries[i].Value)
+
+	}
 }
 
 func TestNewClientTransactionErrors(t *testing.T) {
@@ -227,14 +237,14 @@ func BenchmarkClientGet100(b *testing.B) {
 
 	ctx := context.Background()
 
-	testKeys := make([]string, 100)
+	testEntries := make([]storage.Operation, 100)
 	for i := 0; i < 100; i++ {
-		testKeys[i] = "testKey"
+		testEntries[i] = storage.GetOperation(fmt.Sprintf("testKey-%d", i))
 	}
 
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
-		client.Batch(ctx, testKeys, nil)
+		client.Batch(ctx, testEntries...)
 	}
 }
 
@@ -264,14 +274,14 @@ func BenchmarkClientSet100(b *testing.B) {
 
 	ctx := context.Background()
 
-	testEntries := make(map[string][]byte)
+	testEntries := make([]storage.Operation, 100)
 	for i := 0; i < 100; i++ {
-		testEntries[fmt.Sprintf("testKey-%d", i)] = []byte("testValue")
+		testEntries[i] = storage.SetOperation(fmt.Sprintf("testKey-%d", i), []byte("testValue"))
 	}
 
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
-		client.Batch(ctx, nil, testEntries)
+		client.Batch(ctx, testEntries...)
 	}
 }
 

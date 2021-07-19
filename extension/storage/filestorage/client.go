@@ -20,6 +20,8 @@ import (
 	"time"
 
 	"go.etcd.io/bbolt"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage"
 )
 
 var defaultBucket = []byte(`default`)
@@ -51,41 +53,44 @@ func newClient(filePath string, timeout time.Duration) (*fileStorageClient, erro
 
 // Get will retrieve data from storage that corresponds to the specified key
 func (c *fileStorageClient) Get(ctx context.Context, key string) ([]byte, error) {
-	results, err := c.Batch(ctx, []string{key}, nil)
+	op := storage.GetOperation(key)
+	err := c.Batch(ctx, op)
 	if err != nil {
 		return nil, err
 	}
-	return results[0], nil
+
+	return op.Value, nil
 }
 
 // Set will store data. The data can be retrieved using the same key
 func (c *fileStorageClient) Set(ctx context.Context, key string, value []byte) error {
-	_, err := c.Batch(ctx, nil, map[string][]byte{key: value})
-	return err
+	return c.Batch(ctx, storage.SetOperation(key, value))
 }
 
-// BatchOp will, respectively - get values for selected keys or upsert key/values.
-// When the upserted entry value is nil, the key is removed
-func (c *fileStorageClient) Batch(_ context.Context, retrievedKeys []string, upsertedEntries map[string][]byte) ([][]byte, error) {
-	results := make([][]byte, len(retrievedKeys))
+// Delete will delete data associated with the specified key
+func (c *fileStorageClient) Delete(ctx context.Context, key string) error {
+	return c.Batch(ctx, storage.DeleteOperation(key))
+}
 
+// Batch executes the specified operations in order. Get operation results are updated in place
+func (c *fileStorageClient) Batch(_ context.Context, ops ...storage.Operation) error {
 	set := func(tx *bbolt.Tx) error {
 		bucket := tx.Bucket(defaultBucket)
 		if bucket == nil {
 			return errors.New("storage not initialized")
 		}
 
-		for i, key := range retrievedKeys {
-			results[i] = bucket.Get([]byte(key))
-		}
-
-		for key, value := range upsertedEntries {
-			var err error
-
-			if value == nil {
-				err = bucket.Delete([]byte(key))
-			} else {
-				err = bucket.Put([]byte(key), value)
+		var err error
+		for _, op := range ops {
+			switch op.Type {
+			case storage.Get:
+				op.Value = bucket.Get([]byte(op.Key))
+			case storage.Set:
+				err = bucket.Put([]byte(op.Key), op.Value)
+			case storage.Delete:
+				err = bucket.Delete([]byte(op.Key))
+			default:
+				return errors.New("wrong operation type")
 			}
 
 			if err != nil {
@@ -96,13 +101,7 @@ func (c *fileStorageClient) Batch(_ context.Context, retrievedKeys []string, ups
 		return nil
 	}
 
-	return results, c.db.Update(set)
-}
-
-// Delete will delete data associated with the specified key
-func (c *fileStorageClient) Delete(ctx context.Context, key string) error {
-	_, err := c.Batch(ctx, nil, map[string][]byte{key: nil})
-	return err
+	return c.db.Update(set)
 }
 
 // Close will close the database

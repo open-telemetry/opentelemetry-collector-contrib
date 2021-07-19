@@ -16,6 +16,7 @@ package stanza
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"sync"
 	"sync/atomic"
@@ -28,6 +29,8 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/model/pdata"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage"
 )
 
 // This file implements some useful testing components
@@ -192,24 +195,24 @@ func (p *mockClient) Delete(_ context.Context, key string) error {
 	return nil
 }
 
-func (p *mockClient) Batch(_ context.Context, keys []string, entries map[string][]byte) ([][]byte, error) {
+func (p *mockClient) Batch(_ context.Context, ops ...storage.Operation) error {
 	p.cacheMux.Lock()
 	defer p.cacheMux.Unlock()
 
-	values := make([][]byte, len(keys))
-	for i, key := range keys {
-		values[i] = p.cache[key]
-	}
-
-	for key, value := range entries {
-		if value == nil {
-			delete(p.cache, key)
-		} else {
-			p.cache[key] = value
+	for _, op := range ops {
+		switch op.Type {
+		case storage.Get:
+			op.Value = p.cache[op.Key]
+		case storage.Set:
+			p.cache[op.Key] = op.Value
+		case storage.Delete:
+			delete(p.cache, op.Key)
+		default:
+			return errors.New("wrong operation type")
 		}
 	}
 
-	return values, nil
+	return nil
 }
 
 func (p *mockClient) Close(_ context.Context) error {
