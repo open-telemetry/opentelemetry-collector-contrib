@@ -1075,10 +1075,11 @@ github.com/influxdata/influxdb-observability/common v0.1.0 h1:ZMZkAgoU1KckYXtjrP
 github.com/influxdata/influxdb-observability/common v0.1.0/go.mod h1:LynmG92zQlDsATlw2q2RyVTdMcXxo7mMuT1e5+0//HU=
 github.com/influxdata/influxdb-observability/influx2otel v0.1.0 h1:ZM50JMI+K7tK+EMiCE4H8ENwdS475LNdogcSMCPvSCs=
 github.com/influxdata/influxdb-observability/influx2otel v0.1.0/go.mod h1:DGy5/YNkWR07nYrdGmYW3hGkz1pz3LamCJGX/fgTW+Q=
-github.com/influxdata/influxdb-observability/otel2influx v0.1.0 h1:yZvi4if3Dr+cL0EM1mVR80d45AKb7jeNuLGdkb83Esw=
-github.com/influxdata/influxdb-observability/otel2influx v0.1.0/go.mod h1:gWN7iMQiw0cufAf7CN0WQrL2BDlrgnpzsFywgwOXoW4=
-github.com/influxdata/influxdb-observability/otlp v0.0.0-20210605003714-a868e4b21ba8 h1:j2Ei8Z4OMUfSEvWCikYRxjkkw6eBiMxlOhc7izs1hts=
+github.com/influxdata/influxdb-observability/otel2influx v0.1.1 h1:q/PNFBkV1ZLd0etKGtumsjm7xkfHEbYHFvqJQEz5hGw=
+github.com/influxdata/influxdb-observability/otel2influx v0.1.1/go.mod h1:k1ydZuZ+pqyPXvLNmwpBOByT4gV5qe20hyVpngU7HHI=
 github.com/influxdata/influxdb-observability/otlp v0.0.0-20210605003714-a868e4b21ba8/go.mod h1:23SLY21Ag84PC0TbvVhdKoOVvrQF6nq5j5sFOW09ZBU=
+github.com/influxdata/influxdb-observability/otlp v0.1.0 h1:aAG7M6OG+iR52srH7TO7+cKwqFa3E3CUdTQ5LfpfPZo=
+github.com/influxdata/influxdb-observability/otlp v0.1.0/go.mod h1:dUIflut4U5fjtFcU0FUQPKvnN/eF3lR1m4Zt3PNe8cg=
 github.com/influxdata/influxdb1-client v0.0.0-20191209144304-8bf82d3c094d/go.mod h1:qj24IKcXYK6Iy9ceXlo3Tc+vtHo9lIhSX5JddghvEPo=
 github.com/influxdata/influxdb1-client v0.0.0-20200827194710-b269163b24ab/go.mod h1:qj24IKcXYK6Iy9ceXlo3Tc+vtHo9lIhSX5JddghvEPo=
 github.com/influxdata/influxql v1.1.0/go.mod h1:KpVI7okXjK6PRi3Z5B+mtKZli+R1DnZgb3N+tzevNgo=
