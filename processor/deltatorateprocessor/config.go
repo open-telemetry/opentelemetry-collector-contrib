@@ -24,7 +24,7 @@ import (
 type Config struct {
 	config.ProcessorSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
 
-	// List of cumulative sum metrics to convert to delta
+	// List of delta sum metrics to convert to rates
 	Metrics []string `mapstructure:"metrics"`
 }
 
