@@ -25,7 +25,9 @@ from django.conf import settings
 settings.configure()
 
 source_dirs = [
-    os.path.abspath("../opentelemetry-instrumentation/src/"),
+    os.path.abspath(
+        "../opentelemetry-python-core/opentelemetry-instrumentation/src/"
+    ),
 ]
 
 exp = "../exporter"

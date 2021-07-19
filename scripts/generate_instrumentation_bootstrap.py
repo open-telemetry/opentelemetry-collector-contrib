@@ -53,6 +53,7 @@ default_instrumentations = []
 
 gen_path = os.path.join(
     root_path,
+    "opentelemetry-python-core",
     "opentelemetry-instrumentation",
     "src",
     "opentelemetry",
@@ -98,7 +99,7 @@ def main():
             "scripts/eachdist.py",
             "format",
             "--path",
-            "opentelemetry-instrumentation",
+            "opentelemetry-python-core/opentelemetry-instrumentation",
         ],
         check=True,
     )

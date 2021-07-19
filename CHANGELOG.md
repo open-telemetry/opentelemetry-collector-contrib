@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased](https://github.com/open-telemetry/opentelemetry-python/compare/v1.3.0-0.22b0...HEAD)
 
+### Removed
+- Move `opentelemetry-instrumentation` to the core repo.
+  ([#595](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/595))
+
 ### Changed
 - `opentelemetry-instrumentation-tornado` properly instrument work done in tornado on_finish method.
   ([#499](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/499))
