@@ -33,7 +33,7 @@ type containerInstanceInfoProvider interface {
 
 type hostIPProvider interface {
 	GetInstanceIP() string
-	GetinstanceIPReadyC() chan bool
+	GetInstanceIPReadyC() chan bool
 }
 
 type Requester interface {
