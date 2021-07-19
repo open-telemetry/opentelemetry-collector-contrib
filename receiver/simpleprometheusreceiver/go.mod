@@ -10,5 +10,5 @@ require (
 	github.com/stretchr/testify v1.7.0
 	go.opentelemetry.io/collector v0.30.0
 	gopkg.in/square/go-jose.v2 v2.5.1 // indirect
-	k8s.io/client-go v0.21.2
+	k8s.io/client-go v0.21.3
 )
