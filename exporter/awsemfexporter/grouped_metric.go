@@ -165,9 +165,9 @@ func mapGetHelper(labels map[string]string, key string) string {
 	val, ok := labels[key]
 	if ok {
 		return val
-	} else {
-		return ""
 	}
+
+	return ""
 }
 
 func groupedMetricKey(metadata groupedMetricMetadata, labels map[string]string) aws.Key {
