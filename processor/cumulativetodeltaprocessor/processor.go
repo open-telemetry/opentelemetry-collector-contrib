@@ -26,14 +26,19 @@ import (
 )
 
 type cumulativeToDeltaProcessor struct {
-	metrics         []string
+	metrics         map[string]bool
 	logger          *zap.Logger
 	deltaCalculator awsmetrics.MetricCalculator
 }
 
 func newCumulativeToDeltaProcessor(config *Config, logger *zap.Logger) *cumulativeToDeltaProcessor {
+	inputMetricSet := make(map[string]bool)
+	for _, name := range config.Metrics {
+		inputMetricSet[name] = true
+	}
+
 	return &cumulativeToDeltaProcessor{
-		metrics:         config.Metrics,
+		metrics:         inputMetricSet,
 		logger:          logger,
 		deltaCalculator: newDeltaCalculator(),
 	}
@@ -46,13 +51,7 @@ func (ctdp *cumulativeToDeltaProcessor) Start(context.Context, component.Host) e
 
 // processMetrics implements the ProcessMetricsFunc type.
 func (ctdp *cumulativeToDeltaProcessor) processMetrics(_ context.Context, md pdata.Metrics) (pdata.Metrics, error) {
-	inputMetricSet := make(map[string]bool)
-	for _, name := range ctdp.metrics {
-		inputMetricSet[name] = true
-	}
-
 	resourceMetricsSlice := md.ResourceMetrics()
-
 	for i := 0; i < resourceMetricsSlice.Len(); i++ {
 		rm := resourceMetricsSlice.At(i)
 		ilms := rm.InstrumentationLibraryMetrics()
@@ -61,7 +60,7 @@ func (ctdp *cumulativeToDeltaProcessor) processMetrics(_ context.Context, md pda
 			metricSlice := ilm.Metrics()
 			for k := 0; k < metricSlice.Len(); k++ {
 				metric := metricSlice.At(k)
-				if inputMetricSet[metric.Name()] {
+				if ctdp.metrics[metric.Name()] {
 					if metric.DataType() == pdata.MetricDataTypeSum && metric.Sum().AggregationTemporality() == pdata.AggregationTemporalityCumulative {
 						dataPoints := metric.Sum().DataPoints()
 
