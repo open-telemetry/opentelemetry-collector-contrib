@@ -19,7 +19,6 @@ import (
 	"context"
 	"time"
 
-	cloudtrace "github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/trace"
 	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
@@ -29,9 +28,9 @@ import (
 	apitrace "go.opentelemetry.io/otel/trace"
 )
 
-func pdataResourceSpansToOTSpanData(rs pdata.ResourceSpans) []cloudtrace.ReadOnlySpan {
+func pdataResourceSpansToOTSpanData(rs pdata.ResourceSpans) []sdktrace.ReadOnlySpan {
 	resource := rs.Resource()
-	var sds []cloudtrace.ReadOnlySpan
+	var sds []sdktrace.ReadOnlySpan
 	ilss := rs.InstrumentationLibrarySpans()
 	for i := 0; i < ilss.Len(); i++ {
 		ils := ilss.At(i)
