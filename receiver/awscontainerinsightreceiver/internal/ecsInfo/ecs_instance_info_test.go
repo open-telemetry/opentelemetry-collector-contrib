@@ -54,7 +54,7 @@ func TestECSInstanceInfo(t *testing.T) {
 		ContentLength: 5 * 1024,
 	}
 
-	mockHTTP := &MockHTTPClient{
+	mockHTTP := &mockHTTPClient{
 		response: httpResponse,
 		err:      err,
 	}
@@ -81,7 +81,7 @@ func TestECSInstanceInfo(t *testing.T) {
 		ContentLength: 5 * 1024,
 	}
 
-	mockHTTP = &MockHTTPClient{
+	mockHTTP = &mockHTTPClient{
 		response: httpResponse,
 		err:      err,
 	}
