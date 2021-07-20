@@ -50,7 +50,6 @@ type dataPoint struct {
 // dataPoints is a wrapper interface for:
 // 	- pdata.intDataPointSlice
 // 	- pdata.doubleDataPointSlice
-// 	- pdata.IntHistogramDataPointSlice
 // 	- pdata.histogramDataPointSlice
 //  - pdata.summaryDataPointSlice
 type dataPoints interface {

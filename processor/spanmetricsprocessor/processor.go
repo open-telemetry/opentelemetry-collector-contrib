@@ -241,17 +241,17 @@ func (p *processorImp) buildMetrics() *pdata.Metrics {
 func (p *processorImp) collectLatencyMetrics(ilm pdata.InstrumentationLibraryMetrics) {
 	for key := range p.latencyCount {
 		mLatency := ilm.Metrics().AppendEmpty()
-		mLatency.SetDataType(pdata.MetricDataTypeIntHistogram)
+		mLatency.SetDataType(pdata.MetricDataTypeHistogram)
 		mLatency.SetName("latency")
-		mLatency.IntHistogram().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+		mLatency.Histogram().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
 
-		dpLatency := mLatency.IntHistogram().DataPoints().AppendEmpty()
+		dpLatency := mLatency.Histogram().DataPoints().AppendEmpty()
 		dpLatency.SetStartTimestamp(pdata.TimestampFromTime(p.startTime))
 		dpLatency.SetTimestamp(pdata.TimestampFromTime(time.Now()))
 		dpLatency.SetExplicitBounds(p.latencyBounds)
 		dpLatency.SetBucketCounts(p.latencyBucketCounts[key])
 		dpLatency.SetCount(p.latencyCount[key])
-		dpLatency.SetSum(int64(p.latencySum[key]))
+		dpLatency.SetSum(p.latencySum[key])
 
 		dpLatency.LabelsMap().InitFromMap(p.metricKeyToDimensions[key])
 	}

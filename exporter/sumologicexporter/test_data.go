@@ -177,38 +177,6 @@ func exampleSummaryMetric() metricPair {
 	return metric
 }
 
-func exampleIntHistogramMetric() metricPair {
-	metric := metricPair{
-		attributes: pdata.NewAttributeMap(),
-		metric:     pdata.NewMetric(),
-	}
-
-	metric.metric.SetDataType(pdata.MetricDataTypeIntHistogram)
-	metric.metric.SetName("histogram_metric_int_test")
-
-	metric.attributes.InsertString("foo", "bar")
-
-	dp := metric.metric.IntHistogram().DataPoints().AppendEmpty()
-	dp.LabelsMap().Insert("pod_name", "dolor")
-	dp.LabelsMap().Insert("namespace", "sumologic")
-	dp.SetBucketCounts([]uint64{0, 12, 7, 5, 8, 13})
-	dp.SetExplicitBounds([]float64{0.1, 0.2, 0.5, 0.8, 1})
-	dp.SetTimestamp(1618124444.169 * 1e9)
-	dp.SetSum(45)
-	dp.SetCount(3)
-
-	dp = metric.metric.IntHistogram().DataPoints().AppendEmpty()
-	dp.LabelsMap().Insert("pod_name", "sit")
-	dp.LabelsMap().Insert("namespace", "main")
-	dp.SetBucketCounts([]uint64{0, 10, 1, 1, 4, 6})
-	dp.SetExplicitBounds([]float64{0.1, 0.2, 0.5, 0.8, 1})
-	dp.SetTimestamp(1608424699.186 * 1e9)
-	dp.SetSum(54)
-	dp.SetCount(5)
-
-	return metric
-}
-
 func exampleHistogramMetric() metricPair {
 	metric := metricPair{
 		attributes: pdata.NewAttributeMap(),

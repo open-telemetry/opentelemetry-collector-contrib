@@ -699,7 +699,7 @@ func TestGetDataPoints(t *testing.T) {
 		metric := pdata.NewMetric()
 		metric.SetName("foo")
 		metric.SetUnit("Count")
-		metric.SetDataType(pdata.MetricDataTypeIntHistogram)
+		metric.SetDataType(pdata.MetricDataTypeNone)
 
 		obs, logs := observer.New(zap.WarnLevel)
 		logger := zap.New(obs)
@@ -712,7 +712,7 @@ func TestGetDataPoints(t *testing.T) {
 			{
 				Entry: zapcore.Entry{Level: zap.WarnLevel, Message: "Unhandled metric data type."},
 				Context: []zapcore.Field{
-					zap.String("DataType", "IntHistogram"),
+					zap.String("DataType", "None"),
 					zap.String("Name", "foo"),
 					zap.String("Unit", "Count"),
 				},

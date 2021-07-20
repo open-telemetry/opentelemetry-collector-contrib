@@ -90,10 +90,6 @@ func EncodeMetrics(otlpMetrics pdata.MetricSlice, otlpLibrary pdata.Instrumentat
 					}},
 				})
 			}
-		case pdata.MetricDataTypeIntHistogram:
-			// TODO(axw) requires https://github.com/elastic/apm-server/issues/3195
-			intHistogram := metric.IntHistogram()
-			dropped += intHistogram.DataPoints().Len()
 		case pdata.MetricDataTypeHistogram:
 			// TODO(axw) requires https://github.com/elastic/apm-server/issues/3195
 			doubleHistogram := metric.Histogram()

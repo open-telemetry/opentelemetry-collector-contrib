@@ -135,20 +135,6 @@ func TestGraphiteMetricDataTypeSummary(t *testing.T) {
 	assert.Equal(t, expected, result)
 }
 
-func TestGraphiteMetricDataTypeIntHistogram(t *testing.T) {
-	gf, err := newGraphiteFormatter("%{cluster}.%{namespace}.%{pod}.%{_metric_}")
-	require.NoError(t, err)
-
-	metric := exampleIntHistogramMetric()
-	metric.attributes.InsertString("cluster", "my_cluster")
-	metric.attributes.InsertString("namespace", "default")
-	metric.attributes.InsertString("pod", "some pod")
-
-	result := gf.metric2String(metric)
-	expected := ``
-	assert.Equal(t, expected, result)
-}
-
 func TestGraphiteMetricDataTypeHistogram(t *testing.T) {
 	gf, err := newGraphiteFormatter("%{cluster}.%{namespace}.%{pod}.%{_metric_}")
 	require.NoError(t, err)
