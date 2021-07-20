@@ -49,7 +49,7 @@ type dataPoint struct {
 
 // dataPoints is a wrapper interface for:
 // 	- pdata.intDataPointSlice
-// 	- pdata.doubleDataPointSlice
+// 	- pdata.NumberDataPointSlice
 // 	- pdata.histogramDataPointSlice
 //  - pdata.summaryDataPointSlice
 type dataPoints interface {
@@ -90,11 +90,11 @@ type intDataPointSlice struct {
 	pdata.IntDataPointSlice
 }
 
-// doubleDataPointSlice is a wrapper for pdata.doubleDataPointSlice
-type doubleDataPointSlice struct {
+// numberDataPointSlice is a wrapper for pdata.NumberDataPointSlice
+type numberDataPointSlice struct {
 	instrumentationLibraryName string
 	deltaMetricMetadata
-	pdata.DoubleDataPointSlice
+	pdata.NumberDataPointSlice
 }
 
 // histogramDataPointSlice is a wrapper for pdata.histogramDataPointSlice
@@ -145,9 +145,9 @@ func (dps intDataPointSlice) At(i int) (dataPoint, bool) {
 	}, retained
 }
 
-// At retrieves the DoubleDataPoint at the given index and performs rate/delta calculation if necessary.
-func (dps doubleDataPointSlice) At(i int) (dataPoint, bool) {
-	metric := dps.DoubleDataPointSlice.At(i)
+// At retrieves the NumberDataPoint at the given index and performs rate/delta calculation if necessary.
+func (dps numberDataPointSlice) At(i int) (dataPoint, bool) {
+	metric := dps.NumberDataPointSlice.At(i)
 	labels := createLabels(metric.LabelsMap(), dps.instrumentationLibraryName)
 	timestampMs := unixNanoToMilliseconds(metric.Timestamp())
 
@@ -270,7 +270,7 @@ func getDataPoints(pmd *pdata.Metric, metadata cWMetricMetadata, logger *zap.Log
 		}
 	case pdata.MetricDataTypeGauge:
 		metric := pmd.Gauge()
-		dps = doubleDataPointSlice{
+		dps = numberDataPointSlice{
 			metadata.instrumentationLibraryName,
 			adjusterMetadata,
 			metric.DataPoints(),
@@ -286,7 +286,7 @@ func getDataPoints(pmd *pdata.Metric, metadata cWMetricMetadata, logger *zap.Log
 	case pdata.MetricDataTypeSum:
 		metric := pmd.Sum()
 		adjusterMetadata.adjustToDelta = metric.AggregationTemporality() == pdata.AggregationTemporalityCumulative
-		dps = doubleDataPointSlice{
+		dps = numberDataPointSlice{
 			metadata.instrumentationLibraryName,
 			adjusterMetadata,
 			metric.DataPoints(),

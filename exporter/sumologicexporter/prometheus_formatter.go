@@ -151,8 +151,8 @@ func (f *prometheusFormatter) uintValueLine(name string, value uint64, dp dataPo
 	)
 }
 
-// doubleDataPointValueLine returns prometheus line with value from pdata.DoubleDataPoint
-func (f *prometheusFormatter) doubleDataPointValueLine(name string, dp pdata.DoubleDataPoint, attributes pdata.AttributeMap) string {
+// doubleDataPointValueLine returns prometheus line with value from pdata.NumberDataPoint
+func (f *prometheusFormatter) doubleDataPointValueLine(name string, dp pdata.NumberDataPoint, attributes pdata.AttributeMap) string {
 	return f.doubleValueLine(
 		name,
 		dp.Value(),
