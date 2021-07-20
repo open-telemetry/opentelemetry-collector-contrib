@@ -9,15 +9,11 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk v0.0.0-00010101000000-000000000000
 	github.com/stretchr/testify v1.7.0
 	go.opencensus.io v0.23.0
-	go.opentelemetry.io/collector v0.0.0-00010101000000-000000000000
-	go.opentelemetry.io/collector/model v0.30.0
+	go.opentelemetry.io/collector v0.30.2-0.20210719230137-809cae954ed3
+	go.opentelemetry.io/collector/model v0.30.2-0.20210719230137-809cae954ed3
 	go.uber.org/zap v1.18.1
 )
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/splunkhecexporter => ../../exporter/splunkhecexporter
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk => ../../internal/splunk
-
-replace go.opentelemetry.io/collector => go.opentelemetry.io/collector v0.29.1-0.20210716020257-4d8e3082465d
-
-replace go.opentelemetry.io/collector/model => go.opentelemetry.io/collector/model v0.0.0-20210716020257-4d8e3082465d
