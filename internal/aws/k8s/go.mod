@@ -14,18 +14,9 @@ require (
 	github.com/onsi/ginkgo v1.12.0 // indirect
 	github.com/onsi/gomega v1.9.0 // indirect
 	github.com/stretchr/testify v1.7.0
-	go.uber.org/atomic v1.8.0 // indirect
-	go.uber.org/zap v1.18.1
-	golang.org/x/lint v0.0.0-20210508222113-6edffad5e616 // indirect
-	golang.org/x/oauth2 v0.0.0-20210514164344-f6687ab2804c // indirect
-	golang.org/x/sys v0.0.0-20210615035016-665e8c7367d1 // indirect
-	golang.org/x/time v0.0.0-20210611083556-38a9dc6acbc6 // indirect
-	golang.org/x/tools v0.1.3 // indirect
-	google.golang.org/appengine v1.6.7 // indirect
-	google.golang.org/protobuf v1.27.1 // indirect
-	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c // indirect
-	k8s.io/api v0.21.2
-	k8s.io/apimachinery v0.21.2
-	k8s.io/client-go v0.21.2
-	k8s.io/klog/v2 v2.9.0 // indirect
+	go.uber.org/atomic v1.7.0 // indirect
+	go.uber.org/zap v1.16.0
+	k8s.io/api v0.21.3
+	k8s.io/apimachinery v0.21.3
+	k8s.io/client-go v0.21.3
 )
