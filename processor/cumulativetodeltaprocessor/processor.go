@@ -32,7 +32,7 @@ type cumulativeToDeltaProcessor struct {
 }
 
 func newCumulativeToDeltaProcessor(config *Config, logger *zap.Logger) *cumulativeToDeltaProcessor {
-	inputMetricSet := make(map[string]bool)
+	inputMetricSet := make(map[string]bool, len(config.Metrics))
 	for _, name := range config.Metrics {
 		inputMetricSet[name] = true
 	}
