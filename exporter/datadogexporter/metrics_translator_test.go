@@ -415,57 +415,6 @@ func TestMapDoubleMonotonicOutOfOrder(t *testing.T) {
 	)
 }
 
-func TestMapIntHistogramMetrics(t *testing.T) {
-	ts := pdata.TimestampFromTime(time.Now())
-	slice := pdata.NewIntHistogramDataPointSlice()
-	point := slice.AppendEmpty()
-	point.SetCount(20)
-	point.SetSum(200)
-	point.SetBucketCounts([]uint64{2, 18})
-	point.SetTimestamp(ts)
-
-	noBuckets := []datadog.Metric{
-		metrics.NewGauge("intHist.test.count", uint64(ts), 20, []string{}),
-		metrics.NewGauge("intHist.test.sum", uint64(ts), 200, []string{}),
-	}
-
-	buckets := []datadog.Metric{
-		metrics.NewGauge("intHist.test.count_per_bucket", uint64(ts), 2, []string{"bucket_idx:0"}),
-		metrics.NewGauge("intHist.test.count_per_bucket", uint64(ts), 18, []string{"bucket_idx:1"}),
-	}
-
-	assert.ElementsMatch(t,
-		mapIntHistogramMetrics("intHist.test", slice, false, []string{}), // No buckets
-		noBuckets,
-	)
-
-	assert.ElementsMatch(t,
-		mapIntHistogramMetrics("intHist.test", slice, true, []string{}), // buckets
-		append(noBuckets, buckets...),
-	)
-
-	// With attribute tags
-	noBucketsAttributeTags := []datadog.Metric{
-		metrics.NewGauge("intHist.test.count", uint64(ts), 20, []string{"attribute_tag:attribute_value"}),
-		metrics.NewGauge("intHist.test.sum", uint64(ts), 200, []string{"attribute_tag:attribute_value"}),
-	}
-
-	bucketsAttributeTags := []datadog.Metric{
-		metrics.NewGauge("intHist.test.count_per_bucket", uint64(ts), 2, []string{"attribute_tag:attribute_value", "bucket_idx:0"}),
-		metrics.NewGauge("intHist.test.count_per_bucket", uint64(ts), 18, []string{"attribute_tag:attribute_value", "bucket_idx:1"}),
-	}
-
-	assert.ElementsMatch(t,
-		mapIntHistogramMetrics("intHist.test", slice, false, []string{"attribute_tag:attribute_value"}), // No buckets
-		noBucketsAttributeTags,
-	)
-
-	assert.ElementsMatch(t,
-		mapIntHistogramMetrics("intHist.test", slice, true, []string{"attribute_tag:attribute_value"}), // buckets
-		append(noBucketsAttributeTags, bucketsAttributeTags...),
-	)
-}
-
 func TestMapHistogramMetrics(t *testing.T) {
 	ts := pdata.TimestampFromTime(time.Now())
 	slice := pdata.NewHistogramDataPointSlice()
@@ -702,17 +651,6 @@ func createTestMetrics() pdata.Metrics {
 	dpDouble.SetTimestamp(seconds(0))
 	dpDouble.SetValue(math.E)
 
-	// IntHistogram
-	met = metricsArray.AppendEmpty()
-	met.SetName("int.histogram")
-	met.SetDataType(pdata.MetricDataTypeIntHistogram)
-	dpsIntHist := met.IntHistogram().DataPoints()
-	dpIntHist := dpsIntHist.AppendEmpty()
-	dpIntHist.SetCount(20)
-	dpIntHist.SetSum(100)
-	dpIntHist.SetBucketCounts([]uint64{2, 18})
-	dpIntHist.SetTimestamp(seconds(0))
-
 	// Histogram
 	met = metricsArray.AppendEmpty()
 	met.SetName("double.histogram")
@@ -803,8 +741,6 @@ func TestMapMetrics(t *testing.T) {
 		testGauge("double.gauge", math.Pi),
 		testGauge("int.sum", 2),
 		testGauge("double.sum", math.E),
-		testGauge("int.histogram.sum", 100),
-		testGauge("int.histogram.count", 20),
 		testGauge("double.histogram.sum", math.Phi),
 		testGauge("double.histogram.count", 20),
 		testGauge("summary.sum", 10_000),

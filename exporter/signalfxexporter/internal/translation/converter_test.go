@@ -92,16 +92,6 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 
 	histBounds := []float64{1, 2, 4}
 	histCounts := []uint64{4, 2, 3, 7}
-	initIntHistDP := func(histDP pdata.IntHistogramDataPoint) {
-		histDP.SetTimestamp(ts)
-		histDP.SetCount(16)
-		histDP.SetSum(100)
-		histDP.SetExplicitBounds(histBounds)
-		histDP.SetBucketCounts(histCounts)
-		histDP.LabelsMap().InitFromMap(labelMap)
-	}
-	intHistDP := pdata.NewIntHistogramDataPoint()
-	initIntHistDP(intHistDP)
 
 	initHistDP := func(histDP pdata.HistogramDataPoint) {
 		histDP.SetTimestamp(ts)
@@ -114,14 +104,14 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 	histDP := pdata.NewHistogramDataPoint()
 	initHistDP(histDP)
 
-	intiIntHistDPNoBuckets := func(histDP pdata.IntHistogramDataPoint) {
+	initHistDPNoBuckets := func(histDP pdata.HistogramDataPoint) {
 		histDP.SetCount(2)
 		histDP.SetSum(10)
 		histDP.SetTimestamp(ts)
 		histDP.LabelsMap().InitFromMap(labelMap)
 	}
-	intHistDPNoBuckets := pdata.NewIntHistogramDataPoint()
-	intiIntHistDPNoBuckets(intHistDPNoBuckets)
+	histDPNoBuckets := pdata.NewHistogramDataPoint()
+	initHistDPNoBuckets(histDPNoBuckets)
 
 	const summarySumVal = 123.4
 	const summaryCountVal = 111
@@ -579,26 +569,11 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 			metricsDataFn: func() pdata.ResourceMetrics {
 				out := pdata.NewResourceMetrics()
 				ilm := out.InstrumentationLibraryMetrics().AppendEmpty()
-
-				{
-					m := ilm.Metrics().AppendEmpty()
-					m.SetName("int_histo")
-					m.SetDataType(pdata.MetricDataTypeIntHistogram)
-					initIntHistDP(m.IntHistogram().DataPoints().AppendEmpty())
-				}
 				{
 					m := ilm.Metrics().AppendEmpty()
 					m.SetName("double_histo")
 					m.SetDataType(pdata.MetricDataTypeHistogram)
 					initHistDP(m.Histogram().DataPoints().AppendEmpty())
-				}
-
-				{
-					m := ilm.Metrics().AppendEmpty()
-					m.SetName("int_delta_histo")
-					m.SetDataType(pdata.MetricDataTypeIntHistogram)
-					m.IntHistogram().SetAggregationTemporality(pdata.AggregationTemporalityDelta)
-					initIntHistDP(m.IntHistogram().DataPoints().AppendEmpty())
 				}
 				{
 					m := ilm.Metrics().AppendEmpty()
@@ -607,13 +582,10 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 					m.Histogram().SetAggregationTemporality(pdata.AggregationTemporalityDelta)
 					initHistDP(m.Histogram().DataPoints().AppendEmpty())
 				}
-
 				return out
 			},
 			wantSfxDataPoints: mergeDPs(
-				expectedFromIntHistogram("int_histo", tsMSecs, labelMap, intHistDP, false),
 				expectedFromHistogram("double_histo", tsMSecs, labelMap, histDP, false),
-				expectedFromIntHistogram("int_delta_histo", tsMSecs, labelMap, intHistDP, true),
 				expectedFromHistogram("double_delta_histo", tsMSecs, labelMap, histDP, true),
 			),
 		},
@@ -624,12 +596,12 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 				ilm := out.InstrumentationLibraryMetrics().AppendEmpty()
 				m := ilm.Metrics().AppendEmpty()
 				m.SetName("no_bucket_histo")
-				m.SetDataType(pdata.MetricDataTypeIntHistogram)
-				intiIntHistDPNoBuckets(m.IntHistogram().DataPoints().AppendEmpty())
+				m.SetDataType(pdata.MetricDataTypeHistogram)
+				initHistDPNoBuckets(m.Histogram().DataPoints().AppendEmpty())
 
 				return out
 			},
-			wantSfxDataPoints: expectedFromIntHistogram("no_bucket_histo", tsMSecs, labelMap, intHistDPNoBuckets, false),
+			wantSfxDataPoints: expectedFromHistogram("no_bucket_histo", tsMSecs, labelMap, histDPNoBuckets, false),
 		},
 		{
 			name: "summaries",
@@ -942,49 +914,6 @@ func sfxDimensions(m map[string]string) []*sfxpb.Dimension {
 	}
 
 	return sfxDims
-}
-
-func expectedFromIntHistogram(
-	metricName string,
-	ts int64,
-	dims map[string]string,
-	histDP pdata.IntHistogramDataPoint,
-	isDelta bool,
-) []*sfxpb.DataPoint {
-	buckets := histDP.BucketCounts()
-
-	dps := make([]*sfxpb.DataPoint, 0)
-
-	typ := &sfxMetricTypeCumulativeCounter
-	if isDelta {
-		typ = &sfxMetricTypeCounter
-	}
-
-	dps = append(dps,
-		int64SFxDataPoint(metricName+"_count", ts, typ, dims,
-			int64(histDP.Count())),
-		int64SFxDataPoint(metricName, ts, typ, dims,
-			histDP.Sum()))
-
-	explicitBounds := histDP.ExplicitBounds()
-	if explicitBounds == nil {
-		return dps
-	}
-	for i := 0; i < len(explicitBounds); i++ {
-		dimsCopy := util.CloneStringMap(dims)
-		dimsCopy[upperBoundDimensionKey] = float64ToDimValue(explicitBounds[i])
-		dps = append(dps,
-			int64SFxDataPoint(metricName+"_bucket", ts,
-				typ, dimsCopy,
-				int64(buckets[i])))
-	}
-	dimsCopy := util.CloneStringMap(dims)
-	dimsCopy[upperBoundDimensionKey] = float64ToDimValue(math.Inf(1))
-	dps = append(dps,
-		int64SFxDataPoint(metricName+"_bucket", ts, typ,
-			dimsCopy,
-			int64(buckets[len(buckets)-1])))
-	return dps
 }
 
 func expectedFromHistogram(

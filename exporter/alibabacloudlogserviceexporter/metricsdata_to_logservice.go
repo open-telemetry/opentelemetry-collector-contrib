@@ -202,54 +202,6 @@ func doubleMetricsToLogs(name string, data pdata.DoubleDataPointSlice, defaultLa
 	return logs
 }
 
-func intHistogramMetricsToLogs(name string, data pdata.IntHistogramDataPointSlice, defaultLabels KeyValues) (logs []*sls.Log) {
-	for i := 0; i < data.Len(); i++ {
-		dataPoint := data.At(i)
-		labelsMap := dataPoint.LabelsMap()
-		labels := defaultLabels.Clone()
-		labelsMap.Range(func(k string, v string) bool {
-			labels.Append(k, v)
-			return true
-		})
-		logs = append(logs, newMetricLogFromRaw(name+"_sum",
-			labels,
-			int64(dataPoint.Timestamp()),
-			float64(dataPoint.Sum())))
-		logs = append(logs, newMetricLogFromRaw(name+"_count",
-			labels,
-			int64(dataPoint.Timestamp()),
-			float64(dataPoint.Count())))
-
-		bounds := dataPoint.ExplicitBounds()
-		boundsStr := make([]string, len(bounds)+1)
-		for i := 0; i < len(bounds); i++ {
-			boundsStr[i] = strconv.FormatFloat(bounds[i], 'g', -1, 64)
-		}
-		boundsStr[len(boundsStr)-1] = infinityBoundValue
-
-		bucketCount := min(len(boundsStr), len(dataPoint.BucketCounts()))
-
-		bucketLabels := labels.Clone()
-		bucketLabels.Append(bucketLabelKey, "")
-		bucketLabels.Sort()
-		for i := 0; i < bucketCount; i++ {
-			bucket := dataPoint.BucketCounts()[i]
-			bucketLabels.Replace(bucketLabelKey, boundsStr[i])
-
-			logs = append(
-				logs,
-				newMetricLogFromRaw(
-					name+"_bucket",
-					bucketLabels,
-					int64(dataPoint.Timestamp()),
-					float64(bucket),
-				))
-		}
-
-	}
-	return logs
-}
-
 func doubleHistogramMetricsToLogs(name string, data pdata.HistogramDataPointSlice, defaultLabels KeyValues) (logs []*sls.Log) {
 	for i := 0; i < data.Len(); i++ {
 		dataPoint := data.At(i)
@@ -346,8 +298,6 @@ func metricDataToLogServiceData(md pdata.Metric, defaultLabels KeyValues) (logs 
 		return intMetricsToLogs(md.Name(), md.IntSum().DataPoints(), defaultLabels)
 	case pdata.MetricDataTypeSum:
 		return doubleMetricsToLogs(md.Name(), md.Sum().DataPoints(), defaultLabels)
-	case pdata.MetricDataTypeIntHistogram:
-		return intHistogramMetricsToLogs(md.Name(), md.IntHistogram().DataPoints(), defaultLabels)
 	case pdata.MetricDataTypeHistogram:
 		return doubleHistogramMetricsToLogs(md.Name(), md.Histogram().DataPoints(), defaultLabels)
 	case pdata.MetricDataTypeSummary:
