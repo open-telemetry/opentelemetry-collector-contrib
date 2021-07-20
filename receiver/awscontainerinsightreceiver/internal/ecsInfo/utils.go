@@ -58,15 +58,6 @@ func GetContainerInstanceIDFromArn(arn string) (containerInstanceID string, err 
 
 }
 
-type MockHTTPClient struct {
-	response *http.Response
-	err      error
-}
-
-func (m *MockHTTPClient) Do(reqest *http.Request) (*http.Response, error) {
-	return m.response, m.err
-}
-
 // Check the channel is closed or not.
 func isClosed(ch <-chan bool) bool {
 	select {

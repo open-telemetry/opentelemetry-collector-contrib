@@ -44,7 +44,7 @@ func TestECSTaskInfoSuccess(t *testing.T) {
 		ContentLength: 5 * 1024,
 	}
 
-	mockHTTP := &MockHTTPClient{
+	mockHTTP := &mockHTTPClient{
 		response: httpResponse,
 		err:      err,
 	}
@@ -78,7 +78,7 @@ func TestECSTaskInfoFail(t *testing.T) {
 		ContentLength: 5 * 1024,
 	}
 
-	mockHTTP := &MockHTTPClient{
+	mockHTTP := &mockHTTPClient{
 		response: httpResponse,
 		err:      err,
 	}
@@ -90,7 +90,7 @@ func TestECSTaskInfoFail(t *testing.T) {
 	data, err := ioutil.ReadFile("./test/ecsinfo/taskinfo_wrong")
 	body := string(data)
 	httpResponse.Body = ioutil.NopCloser(bytes.NewBufferString(body))
-	mockHTTP = &MockHTTPClient{
+	mockHTTP = &mockHTTPClient{
 		response: httpResponse,
 		err:      err,
 	}

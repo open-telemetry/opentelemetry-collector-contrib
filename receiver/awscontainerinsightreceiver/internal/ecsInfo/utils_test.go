@@ -25,6 +25,15 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+type mockHTTPClient struct {
+	response *http.Response
+	err      error
+}
+
+func (m *mockHTTPClient) Do(reqest *http.Request) (*http.Response, error) {
+	return m.response, m.err
+}
+
 func TestGetContainerInstanceIDFromArn(t *testing.T) {
 
 	oldFormatARN := "arn:aws:ecs:region:aws_account_id:task/task-id"
@@ -62,7 +71,7 @@ func TestRequestSuccessWithKnownLength(t *testing.T) {
 		ContentLength: 5 * 1024,
 	}
 
-	MockHTTPClient := &MockHTTPClient{
+	MockHTTPClient := &mockHTTPClient{
 		response: response,
 		err:      nil,
 	}
@@ -87,7 +96,7 @@ func TestRequestSuccessWithUnknownLength(t *testing.T) {
 		ContentLength: -1,
 	}
 
-	MockHTTPClient := &MockHTTPClient{
+	MockHTTPClient := &mockHTTPClient{
 		response: response,
 		err:      nil,
 	}
@@ -113,7 +122,7 @@ func TestRequestWithFailedStatus(t *testing.T) {
 		ContentLength: 5 * 1024,
 	}
 
-	MockHTTPClient := &MockHTTPClient{
+	MockHTTPClient := &mockHTTPClient{
 		response: response,
 		err:      errors.New(""),
 	}
@@ -138,7 +147,7 @@ func TestRequestWithLargeContentLength(t *testing.T) {
 		ContentLength: 5 * 1024 * 1024,
 	}
 
-	MockHTTPClient := &MockHTTPClient{
+	MockHTTPClient := &mockHTTPClient{
 		response: response,
 		err:      nil,
 	}
