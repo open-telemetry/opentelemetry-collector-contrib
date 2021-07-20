@@ -3029,7 +3029,7 @@ func baseMD() pdata.Metric {
 	return out
 }
 
-func dblTS(lbl0 string, lbl1 string, secondsDelta int64, v float64, valueDelta float64, out pdata.DoubleDataPoint) {
+func dblTS(lbl0 string, lbl1 string, secondsDelta int64, v float64, valueDelta float64, out pdata.NumberDataPoint) {
 	out.LabelsMap().InitFromMap(map[string]string{
 		"cpu":   lbl0,
 		"state": lbl1,
