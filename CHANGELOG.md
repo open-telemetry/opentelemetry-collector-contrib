@@ -55,6 +55,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   ([#581](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/581))
 - `opentelemetry-instrumentation-botocore` Suppress botocore downstream instrumentation like urllib3
   ([#563](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/563))
+- `opentelemetry-exporter-datadog` Datadog exporter should not use `unknown_service` as fallback resource service name.
+  ([#570](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/570))
 
 ### Added
 - `opentelemetry-instrumentation-httpx` Add `httpx` instrumentation

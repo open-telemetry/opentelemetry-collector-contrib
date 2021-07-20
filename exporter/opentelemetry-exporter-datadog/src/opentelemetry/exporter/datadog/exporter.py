@@ -135,12 +135,12 @@ class DatadogSpanExporter(SpanExporter):
             [
                 resource_tags,
                 resource_service_name,
-            ] = _extract_tags_from_resource(span.resource)
+            ] = _extract_tags_from_resource(span.resource, self.service)
 
             datadog_span = DatadogSpan(
                 tracer,
                 _get_span_name(span),
-                service=resource_service_name or self.service,
+                service=resource_service_name,
                 resource=_get_resource(span),
                 span_type=_get_span_type(span),
                 trace_id=trace_id,
@@ -312,19 +312,23 @@ def _parse_tags_str(tags_str):
     return parsed_tags
 
 
-def _extract_tags_from_resource(resource):
+def _extract_tags_from_resource(resource, fallback_service_name):
     """Parse tags from resource.attributes, except service.name which
     has special significance within datadog"""
     tags = {}
-    service_name = None
     if not (resource and getattr(resource, "attributes", None)):
-        return [tags, service_name]
+        return [tags, fallback_service_name]
 
+    service_name = None
     for attribute_key, attribute_value in resource.attributes.items():
         if attribute_key == SERVICE_NAME_TAG:
             service_name = attribute_value
         else:
             tags[attribute_key] = attribute_value
+
+    if service_name is None or service_name == "unknown_service":
+        service_name = fallback_service_name
+
     return [tags, service_name]
 
 

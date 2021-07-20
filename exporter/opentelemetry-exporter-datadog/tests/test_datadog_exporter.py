@@ -612,3 +612,41 @@ class TestDatadogSpanExporter(unittest.TestCase):
         ]
         expected = [0.5]
         self.assertListEqual(actual, expected)
+
+    def test_service_name_fallback(self):
+        context = trace_api.SpanContext(
+            trace_id=0x000000000000000000000000DEADBEEF,
+            span_id=0x34BF92DEEFC58C92,
+            is_remote=False,
+            trace_flags=trace_api.TraceFlags(trace_api.TraceFlags.SAMPLED),
+        )
+        trace_api.get_tracer_provider().sampler = sampling.TraceIdRatioBased(
+            0.5
+        )
+
+        resource_with_default_name = Resource(
+            attributes={
+                "key_resource": "some_resource",
+                "service.name": "unknown_service",
+            }
+        )
+
+        span = trace._Span(
+            name="sampled",
+            context=context,
+            parent=None,
+            resource=resource_with_default_name,
+        )
+        span.start()
+        span.end()
+
+        # pylint: disable=protected-access
+        exporter = datadog.DatadogSpanExporter(service="fallback_service_name")
+        datadog_spans = [
+            span.to_dict() for span in exporter._translate_to_datadog([span])
+        ]
+
+        self.assertEqual(len(datadog_spans), 1)
+
+        span = datadog_spans[0]
+        self.assertEqual(span["service"], "fallback_service_name")
