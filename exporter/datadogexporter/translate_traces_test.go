@@ -1500,7 +1500,7 @@ func TestSpanRateLimitTag(t *testing.T) {
 	span.SetName("End-To-End Here")
 	span.SetKind(pdata.SpanKindServer)
 	span.SetStartTimestamp(pdataStartTime)
-	span.SetEndTimestamp(pdataEndTi
+	span.SetEndTimestamp(pdataEndTime)
 
 	outputTraces, _ := convertToDatadogTd(traces, "test-host", &config.Config{}, denylister, buildInfo)
 
