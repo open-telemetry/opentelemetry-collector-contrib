@@ -38,6 +38,59 @@ type severityTestCase struct {
 	expected   entry.Severity
 }
 
+// These tests ensure that users may build a mapping that
+// maps values into any of the predefined keys.
+// For example, this ensures that users can do this:
+//   mapping:
+//     warning3: warn_three
+func validMappingKeyCases() []severityTestCase {
+	aliasedMapping := map[string]entry.Severity{
+		"trace":       entry.Trace,
+		"trace2":      entry.Trace2,
+		"trace3":      entry.Trace3,
+		"trace4":      entry.Trace4,
+		"debug":       entry.Debug,
+		"debug2":      entry.Debug2,
+		"debug3":      entry.Debug3,
+		"debug4":      entry.Debug4,
+		"info":        entry.Info,
+		"info2":       entry.Info2,
+		"info3":       entry.Info3,
+		"info4":       entry.Info4,
+		"notice":      entry.Notice,
+		"warning":     entry.Warning,
+		"warning2":    entry.Warning2,
+		"warning3":    entry.Warning3,
+		"warning4":    entry.Warning4,
+		"error":       entry.Error,
+		"error2":      entry.Error2,
+		"error3":      entry.Error3,
+		"error4":      entry.Error4,
+		"critical":    entry.Critical,
+		"alert":       entry.Alert,
+		"emergency":   entry.Emergency,
+		"emergency2":  entry.Emergency2,
+		"emergency3":  entry.Emergency3,
+		"emergency4":  entry.Emergency4,
+		"catastrophe": entry.Catastrophe,
+	}
+
+	cases := []severityTestCase{}
+	for k, v := range aliasedMapping {
+		cases = append(cases,
+			severityTestCase{
+				name:     k,
+				sample:   "my_custom_value",
+				mapping:  map[interface{}]interface{}{k: "my_custom_value"},
+				expected: v,
+			})
+	}
+
+	return cases
+}
+
+// These cases ensure that text representing OTLP severity
+// levels are automatically recognized by the default mapping.
 func otlpSevCases() []severityTestCase {
 	mustParse := map[string]entry.Severity{
 		"tRaCe":  entry.Trace,
@@ -359,6 +412,7 @@ func TestSeverityParser(t *testing.T) {
 	}
 
 	testCases = append(testCases, otlpSevCases()...)
+	testCases = append(testCases, validMappingKeyCases()...)
 
 	rootField := entry.NewBodyField()
 	someField := entry.NewBodyField("some_field")
