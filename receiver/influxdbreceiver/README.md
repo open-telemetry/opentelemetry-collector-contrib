@@ -18,10 +18,7 @@ Write responses:
 The following configuration options are supported:
 
 * `endpoint` (default = 0.0.0.0:8086) HTTP service endpoint for the line protocol receiver
-* `metrics_schema` (default = telegraf-prometheus-v1) The chosen metrics schema to parse; must be one of:
-  * `telegraf-prometheus-v1`
-  * `telegraf-prometheus-v2`
-  
+
 The full list of settings exposed for this receiver are documented in [config.go](config.go).
 
 Example:
@@ -29,7 +26,6 @@ Example:
 receivers:
   influxdb:
     endpoint: 0.0.0.0:8080
-    metrics_schema: telegraf-prometheus-v1
 ```
 
 ## Definitions
@@ -44,8 +40,9 @@ Telegraf has [hundreds of plugins](https://www.influxdata.com/products/integrati
 ## Schema
 
 The InfluxDB->OpenTelemetry conversion [schema](https://github.com/influxdata/influxdb-observability/blob/main/docs/index.md) and [implementation](https://github.com/influxdata/influxdb-observability/tree/main/influx2otel) are hosted at https://github.com/influxdata/influxdb-observability .
+This receiver automatically detects schema at parse time.
 
-### Example: Metrics - `telegraf-prometheus-v1`
+### Example: Metrics - `prometheus-v1`
 ```
 cpu_temp,foo=bar gauge=87.332
 http_requests_total,method=post,code=200 counter=1027
@@ -54,7 +51,7 @@ http_request_duration_seconds 0.05=24054,0.1=33444,0.2=100392,0.5=129389,1=13398
 rpc_duration_seconds 0.01=3102,0.05=3272,0.5=4773,0.9=9001,0.99=76656,sum=1.7560473e+07,count=2693
 ```
 
-### Example: Metrics - `telegraf-prometheus-v2`
+### Example: Metrics - `prometheus-v2`
 ```
 prometheus,foo=bar cpu_temp=87.332
 prometheus,method=post,code=200 http_requests_total=1027
