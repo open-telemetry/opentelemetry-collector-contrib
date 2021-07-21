@@ -16,6 +16,8 @@ package newrelicexporter
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"math"
 	"net/http"
 	"net/url"
@@ -32,6 +34,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opencensus.io/stats/view"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/translator/internaldata"
 	"google.golang.org/grpc/metadata"
@@ -47,6 +50,7 @@ type mockConfig struct {
 	useAPIKeyHeader bool
 	serverURL       string
 	statusCode      int
+	responseHeaders map[string]string
 }
 
 func runTraceMock(initialContext context.Context, ptrace pdata.Traces, cfg mockConfig) (*Mock, error) {
@@ -60,6 +64,10 @@ func runTraceMock(initialContext context.Context, ptrace pdata.Traces, cfg mockC
 
 	if cfg.statusCode > 0 {
 		m.StatusCode = cfg.statusCode
+	}
+
+	if cfg.responseHeaders != nil {
+		m.ResponseHeaders = cfg.responseHeaders
 	}
 
 	srv := m.Server()
@@ -245,6 +253,26 @@ func TestExportTraceWithErrorStatusCode(t *testing.T) {
 
 	_, err := runTraceMock(context.Background(), ptrace, mockConfig{statusCode: 500})
 	require.Error(t, err)
+}
+
+func TestExportTraceWith429StatusCodeAndRetryAfter(t *testing.T) {
+	ptrace := internaldata.OCToTraces(nil, nil,
+		[]*tracepb.Span{
+			{
+				SpanId: []byte{0, 0, 0, 0, 0, 0, 0, 1},
+				Name:   &tracepb.TruncatableString{Value: "a"},
+			},
+		})
+
+	expected := exporterhelper.NewThrottleRetry(
+		fmt.Errorf("new relic HTTP call failed. Status Code: 429"),
+		time.Duration(10)*time.Second)
+
+	_, err := runTraceMock(context.Background(), ptrace, mockConfig{statusCode: 429, responseHeaders: map[string]string{"Retry-After": "10"}})
+
+	actual := errors.Unwrap(err)
+
+	assert.EqualValues(t, expected, actual)
 }
 
 func TestExportTraceWithNot202StatusCode(t *testing.T) {

@@ -16,12 +16,15 @@ package newrelicexporter
 
 import (
 	"errors"
+	"fmt"
 	"net/http"
 	"net/url"
 	"testing"
+	"time"
 
 	"github.com/golang/protobuf/ptypes/duration"
 	"github.com/stretchr/testify/assert"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"google.golang.org/genproto/googleapis/rpc/errdetails"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -86,6 +89,21 @@ func TestHttpError_GRPCStatus(t *testing.T) {
 			newHTTPError(response).GRPCStatus(),
 		)
 	})
+}
+
+func TestHttpErrorWrapGeneratesThrottleRetryOn429StatusCode(t *testing.T) {
+	expected := exporterhelper.NewThrottleRetry(
+		fmt.Errorf("new relic HTTP call failed. Status Code: 429"),
+		time.Duration(10)*time.Second)
+
+	response := responseOf(http.StatusTooManyRequests)
+	response.Header.Add("Retry-After", "10")
+
+	httpError := newHTTPError(response)
+	wrappedErr := httpError.Wrap()
+	actual := errors.Unwrap(wrappedErr)
+
+	assert.EqualValues(t, expected, actual)
 }
 
 func TestHttpError_Error(t *testing.T) {
