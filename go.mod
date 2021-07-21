@@ -3,6 +3,10 @@ module github.com/open-telemetry/opentelemetry-collector-contrib
 go 1.16
 
 require (
+	github.com/Shopify/sarama v1.29.1
+	github.com/apache/thrift v0.14.2
+	github.com/gogo/protobuf v1.3.2
+	github.com/jaegertracing/jaeger v1.24.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/alibabacloudlogserviceexporter v0.0.0-00010101000000-000000000000
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsemfexporter v0.0.0-00010101000000-000000000000
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awskinesisexporter v0.0.0-00010101000000-000000000000
@@ -71,8 +75,12 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/wavefrontreceiver v0.0.0-00010101000000-000000000000
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowsperfcountersreceiver v0.0.0-00010101000000-000000000000
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zookeeperreceiver v0.0.0-00010101000000-000000000000
+	github.com/openzipkin/zipkin-go v0.2.5
 	github.com/stretchr/testify v1.7.0
+	go.opencensus.io v0.23.0
 	go.opentelemetry.io/collector v0.30.2-0.20210719230137-809cae954ed3
+	go.opentelemetry.io/collector/model v0.30.2-0.20210719230137-809cae954ed3
+	go.uber.org/zap v1.18.1
 	golang.org/x/sys v0.0.0-20210616094352-59db8d763f22
 )
 
