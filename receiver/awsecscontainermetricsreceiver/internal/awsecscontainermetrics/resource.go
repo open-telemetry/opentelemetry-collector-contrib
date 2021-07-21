@@ -25,18 +25,18 @@ func containerResource(cm ContainerMetadata) pdata.Resource {
 	resource := pdata.NewResource()
 	resource.Attributes().UpsertString(conventions.AttributeContainerName, cm.ContainerName)
 	resource.Attributes().UpsertString(conventions.AttributeContainerID, cm.DockerID)
-	resource.Attributes().UpsertString(AttributeECSDockerName, cm.DockerName)
+	resource.Attributes().UpsertString(attributeECSDockerName, cm.DockerName)
 	resource.Attributes().UpsertString(conventions.AttributeContainerImage, cm.Image)
-	resource.Attributes().UpsertString(AttributeContainerImageID, cm.ImageID)
+	resource.Attributes().UpsertString(attributeContainerImageID, cm.ImageID)
 	resource.Attributes().UpsertString(conventions.AttributeContainerTag, getVersionFromIamge(cm.Image))
-	resource.Attributes().UpsertString(AttributeContainerCreatedAt, cm.CreatedAt)
-	resource.Attributes().UpsertString(AttributeContainerStartedAt, cm.StartedAt)
+	resource.Attributes().UpsertString(attributeContainerCreatedAt, cm.CreatedAt)
+	resource.Attributes().UpsertString(attributeContainerStartedAt, cm.StartedAt)
 	if cm.FinishedAt != "" {
-		resource.Attributes().UpsertString(AttributeContainerFinishedAt, cm.FinishedAt)
+		resource.Attributes().UpsertString(attributeContainerFinishedAt, cm.FinishedAt)
 	}
-	resource.Attributes().UpsertString(AttributeContainerKnownStatus, cm.KnownStatus)
+	resource.Attributes().UpsertString(attributeContainerKnownStatus, cm.KnownStatus)
 	if cm.ExitCode != nil {
-		resource.Attributes().UpsertInt(AttributeContainerExitCode, *cm.ExitCode)
+		resource.Attributes().UpsertInt(attributeContainerExitCode, *cm.ExitCode)
 	}
 	return resource
 }
@@ -44,18 +44,18 @@ func containerResource(cm ContainerMetadata) pdata.Resource {
 func taskResource(tm TaskMetadata) pdata.Resource {
 	resource := pdata.NewResource()
 	region, accountID, taskID := getResourceFromARN(tm.TaskARN)
-	resource.Attributes().UpsertString(AttributeECSCluster, getNameFromCluster(tm.Cluster))
-	resource.Attributes().UpsertString(AttributeECSTaskARN, tm.TaskARN)
-	resource.Attributes().UpsertString(AttributeECSTaskID, taskID)
-	resource.Attributes().UpsertString(AttributeECSTaskFamily, tm.Family)
-	resource.Attributes().UpsertString(AttributeECSTaskRevision, tm.Revision)
-	resource.Attributes().UpsertString(AttributeECSServiceName, "undefined")
+	resource.Attributes().UpsertString(attributeECSCluster, getNameFromCluster(tm.Cluster))
+	resource.Attributes().UpsertString(attributeECSTaskARN, tm.TaskARN)
+	resource.Attributes().UpsertString(attributeECSTaskID, taskID)
+	resource.Attributes().UpsertString(attributeECSTaskFamily, tm.Family)
+	resource.Attributes().UpsertString(attributeECSTaskRevision, tm.Revision)
+	resource.Attributes().UpsertString(attributeECSServiceName, "undefined")
 
 	resource.Attributes().UpsertString(conventions.AttributeCloudAvailabilityZone, tm.AvailabilityZone)
-	resource.Attributes().UpsertString(AttributeECSTaskPullStartedAt, tm.PullStartedAt)
-	resource.Attributes().UpsertString(AttributeECSTaskPullStoppedAt, tm.PullStoppedAt)
-	resource.Attributes().UpsertString(AttributeECSTaskKnownStatus, tm.KnownStatus)
-	resource.Attributes().UpsertString(AttributeECSTaskLaunchType, tm.LaunchType)
+	resource.Attributes().UpsertString(attributeECSTaskPullStartedAt, tm.PullStartedAt)
+	resource.Attributes().UpsertString(attributeECSTaskPullStoppedAt, tm.PullStoppedAt)
+	resource.Attributes().UpsertString(attributeECSTaskKnownStatus, tm.KnownStatus)
+	resource.Attributes().UpsertString(attributeECSTaskLaunchType, tm.LaunchType)
 	resource.Attributes().UpsertString(conventions.AttributeCloudRegion, region)
 	resource.Attributes().UpsertString(conventions.AttributeCloudAccount, accountID)
 

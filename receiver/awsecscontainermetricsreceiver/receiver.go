@@ -23,7 +23,7 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsecscontainermetricsreceiver/awsecscontainermetrics"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsecscontainermetricsreceiver/internal/awsecscontainermetrics"
 )
 
 var _ component.MetricsReceiver = (*awsEcsContainerMetricsReceiver)(nil)
@@ -39,7 +39,7 @@ type awsEcsContainerMetricsReceiver struct {
 }
 
 // New creates the aws ecs container metrics receiver with the given parameters.
-func New(
+func newAWSECSContainermetrics(
 	logger *zap.Logger,
 	config *Config,
 	nextConsumer consumer.Metrics,

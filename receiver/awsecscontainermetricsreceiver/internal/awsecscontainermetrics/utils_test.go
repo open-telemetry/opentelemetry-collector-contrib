@@ -19,12 +19,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestGenerateDummyMetrics(t *testing.T) {
-	md := GenerateDummyMetrics()
-
-	require.EqualValues(t, 2, len(md.Metrics))
-}
-
 func TestCreateGaugeIntMetric(t *testing.T) {
 	m := createGaugeIntMetric(100)
 
