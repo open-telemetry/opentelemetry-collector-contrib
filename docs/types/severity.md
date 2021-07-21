@@ -10,14 +10,32 @@ The following named severity levels are supported.
 | ---         | ---           | ---           |
 | Default     |        0      | `default`     |
 | Trace       |       10      | `trace`       |
+| Trace2      |       12      | `trace2`      |
+| Trace3      |       13      | `trace3`      |
+| Trace4      |       14      | `trace4`      |
 | Debug       |       20      | `debug`       |
+| Debug2      |       22      | `debug2`      |
+| Debug3      |       23      | `debug3`      |
+| Debug4      |       24      | `debug4`      |
 | Info        |       30      | `info`        |
+| Info2       |       32      | `info2`       |
+| Info3       |       33      | `info3`       |
+| Info4       |       34      | `info4`       |
 | Notice      |       40      | `notice`      |
 | Warning     |       50      | `warning`     |
+| Warning2    |       52      | `warning2`    |
+| Warning3    |       53      | `warning3`    |
+| Warning4    |       54      | `warning4`    |
 | Error       |       60      | `error`       |
+| Error2      |       62      | `error2`      |
+| Error3      |       63      | `error3`      |
+| Error4      |       64      | `error4`      |
 | Critical    |       70      | `critical`    |
 | Alert       |       80      | `alert`       |
 | Emergency   |       90      | `emergency`   |
+| Emergency2  |       92      | `emergency2`  |
+| Emergency3  |       93      | `emergency3`  |
+| Emergency4  |       94      | `emergency4`  |
 | Catastrophe |      100      | `catastrophe` |
 
 
@@ -102,21 +120,39 @@ The following configurations are equivalent:
   preset: none
   mapping:
     trace: trace
+    trace2: trace2
+    trace3: trace3
+    trace4: trace4
     debug: debug
+    debug2: debug2
+    debug3: debug3
+    debug4: debug4
     info: info
+    info2: info2
+    info3: info3
+    info4: info4
     notice: notice
     warning:
       - warning
       - warn
+    warning2: warning2
+    warning3: warning3
+    warning4: warning4
     error:
       - error
       - err
       - 404
+    error2: error2
+    error3: error3
+    error4: error4
     critical:
       - critical
       - crit
     alert: alert
     emergency: emergency
+    emergency2: emergency2
+    emergency3: emergency3
+    emergency4: emergency4
     catastrophe: catastrophe
 ```
 

@@ -35,47 +35,53 @@ func getBuiltinMapping(name string) severityMap {
 		return map[string]entry.Severity{
 			"default":     entry.Default,
 			"trace":       entry.Trace,
+			"trace2":      entry.Trace2,
+			"trace3":      entry.Trace3,
+			"trace4":      entry.Trace4,
 			"debug":       entry.Debug,
+			"debug2":      entry.Debug2,
+			"debug3":      entry.Debug3,
+			"debug4":      entry.Debug4,
 			"info":        entry.Info,
+			"info2":       entry.Info2,
+			"info3":       entry.Info3,
+			"info4":       entry.Info4,
 			"notice":      entry.Notice,
 			"warning":     entry.Warning,
+			"warning2":    entry.Warning2,
+			"warning3":    entry.Warning3,
+			"warning4":    entry.Warning4,
 			"error":       entry.Error,
+			"error2":      entry.Error2,
+			"error3":      entry.Error3,
+			"error4":      entry.Error4,
 			"critical":    entry.Critical,
 			"alert":       entry.Alert,
 			"emergency":   entry.Emergency,
+			"emergency2":  entry.Emergency2,
+			"emergency3":  entry.Emergency3,
+			"emergency4":  entry.Emergency4,
 			"catastrophe": entry.Catastrophe,
 		}
 	default:
+		// Add some additional values that are automatically recognized
 		mapping := getBuiltinMapping("aliases")
-
-		mapping.add(entry.Trace2, "trace2")
-		mapping.add(entry.Trace3, "trace3")
-		mapping.add(entry.Trace4, "trace4")
-
-		mapping.add(entry.Debug2, "debug2")
-		mapping.add(entry.Debug3, "debug3")
-		mapping.add(entry.Debug4, "debug4")
-
-		mapping.add(entry.Info2, "info2")
-		mapping.add(entry.Info3, "info3")
-		mapping.add(entry.Info4, "info4")
-
 		mapping.add(entry.Warning, "warn")
-		mapping.add(entry.Warning2, "warning2", "warn2")
-		mapping.add(entry.Warning3, "warning3", "warn3")
-		mapping.add(entry.Warning4, "warning4", "warn4")
+		mapping.add(entry.Warning2, "warn2")
+		mapping.add(entry.Warning3, "warn3")
+		mapping.add(entry.Warning4, "warn4")
 
 		mapping.add(entry.Error, "err")
-		mapping.add(entry.Error2, "error2")
-		mapping.add(entry.Error3, "error3")
-		mapping.add(entry.Error4, "error4")
+		mapping.add(entry.Error2, "err2")
+		mapping.add(entry.Error3, "err3")
+		mapping.add(entry.Error4, "err4")
 
 		mapping.add(entry.Critical, "crit")
 
 		mapping.add(entry.Emergency, "fatal")
-		mapping.add(entry.Emergency2, "emergency2", "fatal2")
-		mapping.add(entry.Emergency3, "emergency3", "fatal3")
-		mapping.add(entry.Emergency4, "emergency4", "fatal4")
+		mapping.add(entry.Emergency2, "fatal2")
+		mapping.add(entry.Emergency3, "fatal3")
+		mapping.add(entry.Emergency4, "fatal4")
 
 		return mapping
 	}
