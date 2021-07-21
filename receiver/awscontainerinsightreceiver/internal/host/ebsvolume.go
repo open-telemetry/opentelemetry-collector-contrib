@@ -86,7 +86,7 @@ func newEBSVolume(ctx context.Context, session *session.Session, instanceID stri
 		// keep refreshing to get updated ebs volumes
 		return true
 	}
-	go refreshUntil(ctx, e.refresh, e.refreshInterval, shouldRefresh, e.maxJitterTime)
+	go RefreshUntil(ctx, e.refresh, e.refreshInterval, shouldRefresh, e.maxJitterTime)
 
 	return e
 }
