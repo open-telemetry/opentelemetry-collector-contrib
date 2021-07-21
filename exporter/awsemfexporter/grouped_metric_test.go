@@ -403,7 +403,7 @@ func TestAddToGroupedMetric(t *testing.T) {
 		metric := rms.AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty().Metrics().AppendEmpty()
 		metric.SetName("foo")
 		metric.SetUnit("Count")
-		metric.SetDataType(pdata.MetricDataTypeIntHistogram)
+		metric.SetDataType(pdata.MetricDataTypeNone)
 
 		obs, logs := observer.New(zap.WarnLevel)
 		obsLogger := zap.New(obs)
@@ -415,7 +415,7 @@ func TestAddToGroupedMetric(t *testing.T) {
 			{
 				Entry: zapcore.Entry{Level: zap.WarnLevel, Message: "Unhandled metric data type."},
 				Context: []zapcore.Field{
-					zap.String("DataType", "IntHistogram"),
+					zap.String("DataType", "None"),
 					zap.String("Name", "foo"),
 					zap.String("Unit", "Count"),
 				},

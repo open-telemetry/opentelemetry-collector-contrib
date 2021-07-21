@@ -117,9 +117,6 @@ func TestEncodeMetrics(t *testing.T) {
 	metric = appendMetric("double_histogram_metric", pdata.MetricDataTypeHistogram)
 	metric.Histogram().DataPoints().AppendEmpty()
 	expectDropped++
-	metric = appendMetric("int_histogram_metric", pdata.MetricDataTypeIntHistogram)
-	metric.IntHistogram().DataPoints().AppendEmpty()
-	expectDropped++
 
 	dropped, err := elastic.EncodeMetrics(metrics, instrumentationLibraryMetrics.InstrumentationLibrary(), &w)
 	require.NoError(t, err)

@@ -42,6 +42,7 @@ exporter/sumologicexporter/                          @open-telemetry/collector-c
 exporter/uptraceexporter/                            @open-telemetry/collector-contrib-approvers @vmihailenco
 exporter/googlecloudpubsubexporter/                  @open-telemetry/collector-contrib-approvers @alexvanboxel
 exporter/tanzuobservabilityexporter/                 @open-telemetry/collector-contrib-approvers @oppegard @thepeterstone
+exporter/influxdbexporter/                           @open-telemetry/collector-contrib-approvers @jacobmarble @8none1
 
 extension/httpforwarder/                             @open-telemetry/collector-contrib-approvers @asuresh4
 extension/observer/                                  @open-telemetry/collector-contrib-approvers @asuresh4 @jrcamp
@@ -85,5 +86,6 @@ receiver/statsdreceiver/                             @open-telemetry/collector-c
 receiver/wavefrontreceiver/                          @open-telemetry/collector-contrib-approvers @pjanotti
 receiver/windowsperfcountersreceiver/                @open-telemetry/collector-contrib-approvers @dashpole
 receiver/googlecloudpubsubexporter/                  @open-telemetry/collector-contrib-approvers @alexvanboxel
+receiver/influxdbreceiver/                           @open-telemetry/collector-contrib-approvers @jacobmarble @8none1
 
 tracegen/                                            @open-telemetry/collector-contrib-approvers @jpkrohling

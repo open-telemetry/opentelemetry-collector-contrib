@@ -31,6 +31,7 @@ type Config struct {
 	NetAddr                 confignet.NetAddr                `mapstructure:",squash"`
 	AggregationInterval     time.Duration                    `mapstructure:"aggregation_interval"`
 	EnableMetricType        bool                             `mapstructure:"enable_metric_type"`
+	IsMonotonicCounter      bool                             `mapstructure:"is_monotonic_counter"`
 	TimerHistogramMapping   []protocol.TimerHistogramMapping `mapstructure:"timer_histogram_mapping"`
 }
 

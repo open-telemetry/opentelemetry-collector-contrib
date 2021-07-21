@@ -94,17 +94,6 @@ func Test_metricDataToSplunk(t *testing.T) {
 			},
 		},
 		{
-			name: "nil_int_histogram_value",
-			metricsDataFn: func() pdata.Metrics {
-				metrics := newMetricsWithResources()
-				ilm := metrics.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0)
-				intHistogram := ilm.Metrics().AppendEmpty()
-				intHistogram.SetName("hist_int_with_dims")
-				intHistogram.SetDataType(pdata.MetricDataTypeIntHistogram)
-				return metrics
-			},
-		},
-		{
 			name: "nil_double_histogram_value",
 			metricsDataFn: func() pdata.Metrics {
 				metrics := newMetricsWithResources()
@@ -158,18 +147,6 @@ func Test_metricDataToSplunk(t *testing.T) {
 				intGauge.SetName("gauge_int_with_dims")
 				intGauge.SetDataType(pdata.MetricDataTypeIntGauge)
 				intGauge.IntGauge().DataPoints().AppendEmpty()
-				return metrics
-			},
-		},
-		{
-			name: "int_histogram_empty_data_point",
-			metricsDataFn: func() pdata.Metrics {
-				metrics := newMetricsWithResources()
-				ilm := metrics.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0)
-				intHistogram := ilm.Metrics().AppendEmpty()
-				intHistogram.SetName("int_histogram_with_dims")
-				intHistogram.SetDataType(pdata.MetricDataTypeIntHistogram)
-				intHistogram.IntHistogram().DataPoints().AppendEmpty()
 				return metrics
 			},
 		},
@@ -364,125 +341,7 @@ func Test_metricDataToSplunk(t *testing.T) {
 				},
 			},
 		},
-		{
-			name: "int_histogram_no_upper_bound",
-			metricsDataFn: func() pdata.Metrics {
-				metrics := newMetricsWithResources()
-				ilm := metrics.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0)
-				intHistogram := ilm.Metrics().AppendEmpty()
-				intHistogram.SetName("int_histogram_with_dims")
-				intHistogram.SetDataType(pdata.MetricDataTypeIntHistogram)
-				intHistogramPt := intHistogram.IntHistogram().DataPoints().AppendEmpty()
-				intHistogramPt.SetExplicitBounds(distributionBounds)
-				intHistogramPt.SetBucketCounts([]uint64{4, 2, 3})
-				intHistogramPt.SetCount(7)
-				intHistogramPt.SetSum(23)
-				intHistogramPt.SetTimestamp(pdata.TimestampFromTime(tsUnix))
-				return metrics
-			},
-		},
 
-		{
-			name: "int_histogram",
-			metricsDataFn: func() pdata.Metrics {
-				metrics := newMetricsWithResources()
-				ilm := metrics.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0)
-				intHistogram := ilm.Metrics().AppendEmpty()
-				intHistogram.SetName("int_histogram_with_dims")
-				intHistogram.SetDataType(pdata.MetricDataTypeIntHistogram)
-				intHistogramPt := intHistogram.IntHistogram().DataPoints().AppendEmpty()
-				intHistogramPt.SetExplicitBounds(distributionBounds)
-				intHistogramPt.SetBucketCounts(distributionCounts)
-				intHistogramPt.SetCount(7)
-				intHistogramPt.SetSum(23)
-				intHistogramPt.SetTimestamp(pdata.TimestampFromTime(tsUnix))
-				return metrics
-			},
-			wantSplunkMetrics: []*splunk.Event{
-				{
-					Host:       "unknown",
-					Source:     "",
-					SourceType: "",
-					Event:      "metric",
-					Time:       tsMSecs,
-					Fields: map[string]interface{}{
-						"k0": "v0",
-						"k1": "v1",
-						"metric_name:int_histogram_with_dims_sum": int64(23),
-						"metric_type": "IntHistogram",
-					},
-				},
-				{
-					Host:       "unknown",
-					Source:     "",
-					SourceType: "",
-					Event:      "metric",
-					Time:       tsMSecs,
-					Fields: map[string]interface{}{
-						"k0": "v0",
-						"k1": "v1",
-						"metric_name:int_histogram_with_dims_count": uint64(7),
-						"metric_type": "IntHistogram",
-					},
-				},
-				{
-					Host:       "unknown",
-					Source:     "",
-					SourceType: "",
-					Event:      "metric",
-					Time:       tsMSecs,
-					Fields: map[string]interface{}{
-						"k0": "v0",
-						"k1": "v1",
-						"le": "1",
-						"metric_name:int_histogram_with_dims_bucket": uint64(4),
-						"metric_type": "IntHistogram",
-					},
-				},
-				{
-					Host:       "unknown",
-					Source:     "",
-					SourceType: "",
-					Event:      "metric",
-					Time:       tsMSecs,
-					Fields: map[string]interface{}{
-						"k0": "v0",
-						"k1": "v1",
-						"le": "2",
-						"metric_name:int_histogram_with_dims_bucket": uint64(6),
-						"metric_type": "IntHistogram",
-					},
-				},
-				{
-					Host:       "unknown",
-					Source:     "",
-					SourceType: "",
-					Event:      "metric",
-					Time:       tsMSecs,
-					Fields: map[string]interface{}{
-						"k0": "v0",
-						"k1": "v1",
-						"le": "4",
-						"metric_name:int_histogram_with_dims_bucket": uint64(9),
-						"metric_type": "IntHistogram",
-					},
-				},
-				{
-					Host:       "unknown",
-					Source:     "",
-					SourceType: "",
-					Event:      "metric",
-					Time:       tsMSecs,
-					Fields: map[string]interface{}{
-						"k0": "v0",
-						"k1": "v1",
-						"le": "+Inf",
-						"metric_name:int_histogram_with_dims_bucket": uint64(14),
-						"metric_type": "IntHistogram",
-					},
-				},
-			},
-		},
 		{
 			name: "int_sum",
 			metricsDataFn: func() pdata.Metrics {

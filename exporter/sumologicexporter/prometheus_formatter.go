@@ -141,16 +141,6 @@ func (f *prometheusFormatter) doubleValueLine(name string, value float64, dp dat
 	)
 }
 
-// intValueLine returns prometheus line with given value
-func (f *prometheusFormatter) intValueLine(name string, value int64, dp dataPoint, attributes pdata.AttributeMap) string {
-	return f.intLine(
-		name,
-		f.tags2String(attributes, dp.LabelsMap()),
-		value,
-		dp.Timestamp(),
-	)
-}
-
 // uintValueLine returns prometheus line with given value
 func (f *prometheusFormatter) uintValueLine(name string, value uint64, dp dataPoint, attributes pdata.AttributeMap) string {
 	return f.uintLine(
@@ -161,8 +151,8 @@ func (f *prometheusFormatter) uintValueLine(name string, value uint64, dp dataPo
 	)
 }
 
-// doubleDataPointValueLine returns prometheus line with value from pdata.DoubleDataPoint
-func (f *prometheusFormatter) doubleDataPointValueLine(name string, dp pdata.DoubleDataPoint, attributes pdata.AttributeMap) string {
+// doubleDataPointValueLine returns prometheus line with value from pdata.NumberDataPoint
+func (f *prometheusFormatter) doubleDataPointValueLine(name string, dp pdata.NumberDataPoint, attributes pdata.AttributeMap) string {
 	return f.doubleValueLine(
 		name,
 		dp.Value(),
@@ -315,62 +305,6 @@ func (f *prometheusFormatter) doubleSummary2Strings(record metricPair) []string 
 	return lines
 }
 
-// intHistogram2Strings converts IntHistogram record to a list of strings,
-// (n+1) where n is number of bounds plus two for sum and count per each data point
-func (f *prometheusFormatter) intHistogram2Strings(record metricPair) []string {
-	dps := record.metric.IntHistogram().DataPoints()
-	var lines []string
-
-	for i := 0; i < dps.Len(); i++ {
-		dp := dps.At(i)
-
-		explicitBounds := dp.ExplicitBounds()
-		var cumulative uint64
-		additionalAttributes := pdata.NewAttributeMap()
-
-		for i, bound := range explicitBounds {
-			cumulative += dp.BucketCounts()[i]
-			additionalAttributes.UpsertDouble(prometheusLeTag, bound)
-
-			line := f.uintValueLine(
-				record.metric.Name(),
-				cumulative,
-				dp,
-				f.mergeAttributes(record.attributes, additionalAttributes),
-			)
-			lines = append(lines, line)
-		}
-
-		cumulative += dp.BucketCounts()[len(explicitBounds)]
-		additionalAttributes.UpsertString(prometheusLeTag, prometheusInfValue)
-		line := f.uintValueLine(
-			record.metric.Name(),
-			cumulative,
-			dp,
-			f.mergeAttributes(record.attributes, additionalAttributes),
-		)
-		lines = append(lines, line)
-
-		line = f.intValueLine(
-			f.sumMetric(record.metric.Name()),
-			dp.Sum(),
-			dp,
-			record.attributes,
-		)
-		lines = append(lines, line)
-
-		line = f.uintValueLine(
-			f.countMetric(record.metric.Name()),
-			dp.Count(),
-			dp,
-			record.attributes,
-		)
-		lines = append(lines, line)
-	}
-
-	return lines
-}
-
 // doubleHistogram2Strings converts Histogram record to a list of strings,
 // (n+1) where n is number of bounds plus two for sum and count per each data point
 func (f *prometheusFormatter) doubleHistogram2Strings(record metricPair) []string {
@@ -442,8 +376,6 @@ func (f *prometheusFormatter) metric2String(record metricPair) string {
 		lines = f.doubleSum2Strings(record)
 	case pdata.MetricDataTypeSummary:
 		lines = f.doubleSummary2Strings(record)
-	case pdata.MetricDataTypeIntHistogram:
-		lines = f.intHistogram2Strings(record)
 	case pdata.MetricDataTypeHistogram:
 		lines = f.doubleHistogram2Strings(record)
 	}

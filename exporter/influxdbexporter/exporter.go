@@ -22,14 +22,7 @@ import (
 	"github.com/influxdata/influxdb-observability/otel2influx"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumererror"
-	"go.opentelemetry.io/collector/model/otlp"
 	"go.opentelemetry.io/collector/model/pdata"
-)
-
-var (
-	tracesMarshaler  = otlp.NewProtobufTracesMarshaler()
-	metricsMarshaler = otlp.NewProtobufMetricsMarshaler()
-	logsMarshaler    = otlp.NewProtobufLogsMarshaler()
 )
 
 type tracesExporter struct {
@@ -53,11 +46,7 @@ func newTracesExporter(config *Config, params component.ExporterCreateSettings) 
 func (e *tracesExporter) pushTraces(ctx context.Context, td pdata.Traces) error {
 	batch := e.writer.newBatch()
 
-	protoBytes, err := tracesMarshaler.MarshalTraces(td)
-	if err != nil {
-		return consumererror.Permanent(err)
-	}
-	err = e.converter.WriteTracesFromRequestBytes(ctx, protoBytes, batch)
+	err := e.converter.WriteTraces(ctx, td, batch)
 	if err != nil {
 		return consumererror.Permanent(err)
 	}
@@ -110,11 +99,7 @@ func newMetricsExporter(config *Config, params component.ExporterCreateSettings)
 func (e *metricsExporter) pushMetrics(ctx context.Context, md pdata.Metrics) error {
 	batch := e.writer.newBatch()
 
-	protoBytes, err := metricsMarshaler.MarshalMetrics(md)
-	if err != nil {
-		return consumererror.Permanent(err)
-	}
-	err = e.converter.WriteMetricsFromRequestBytes(ctx, protoBytes, batch)
+	err := e.converter.WriteMetrics(ctx, md, batch)
 	if err != nil {
 		return consumererror.Permanent(err)
 	}
@@ -154,11 +139,7 @@ func newLogsExporter(config *Config, params component.ExporterCreateSettings) *l
 func (e *logsExporter) pushLogs(ctx context.Context, ld pdata.Logs) error {
 	batch := e.writer.newBatch()
 
-	protoBytes, err := logsMarshaler.MarshalLogs(ld)
-	if err != nil {
-		return consumererror.Permanent(err)
-	}
-	err = e.converter.WriteLogsFromRequestBytes(ctx, protoBytes, batch)
+	err := e.converter.WriteLogs(ctx, ld, batch)
 	if err != nil {
 		return consumererror.Permanent(err)
 	}
