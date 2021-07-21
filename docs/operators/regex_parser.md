@@ -2,13 +2,17 @@
 
 The `regex_parser` operator parses the string-type field selected by `parse_from` with the given regular expression pattern.
 
+#### Regex Syntax
+
+This operator makes use of [Go regular expression](https://github.com/google/re2/wiki/Syntax). When writing a regex, consider using a tool such as (regex101)[https://regex101.com/?flavor=golang].
+
 ### Configuration Fields
 
 | Field         | Default          | Description                                                                                                                                                                                                                              |
 | ---           | ---              | ---                                                                                                                                                                                                                                      |
 | `id`          | `regex_parser`   | A unique identifier for the operator                                                                                                                                                                                                     |
 | `output`      | Next in pipeline | The connected operator(s) that will receive all outbound entries                                                                                                                                                                         |
-| `regex`       | required         | A [Go regular expression](https://github.com/google/re2/wiki/Syntax). The named capture groups will be extracted as fields in the parsed object                                                                                          |
+| `regex`       | required         | A [Go regular expression](https://github.com/google/re2/wiki/Syntax). The named capture groups will be extracted as fields in the parsed body.                                                                                          |
 | `parse_from`  | `$body`          | A [field](/docs/types/field.md) that indicates the field from which values should be parsed                                                                                                                                                                    |
 | `parse_to`    | `$body`          | A [field](/docs/types/field.md) that indicates the field to which values will be parsed                                                                                                                                                                    |
 | `preserve_to` |                  | Preserves the unparsed value at the specified [field](/docs/types/field.md)                                                                                                                                                              |
