@@ -22,7 +22,7 @@ import (
 )
 
 func TestMetricSampleFile(t *testing.T) {
-	data, err := ioutil.ReadFile("../testdata/task_stats.json")
+	data, err := ioutil.ReadFile("../../testdata/task_stats.json")
 	require.NoError(t, err)
 	require.NotNil(t, data)
 }

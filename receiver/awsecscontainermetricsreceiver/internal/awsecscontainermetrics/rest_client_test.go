@@ -32,8 +32,8 @@ func TestRestClient(t *testing.T) {
 	stats, metadata, err := rest.EndpointResponse()
 
 	require.Nil(t, err)
-	require.Equal(t, TaskStatsPath, string(stats))
-	require.Equal(t, TaskMetadataPath, string(metadata))
+	require.Equal(t, taskStatsPath, string(stats))
+	require.Equal(t, taskMetadataPath, string(metadata))
 }
 
 type fakeErrorClient struct{}
@@ -54,7 +54,7 @@ func TestRestClientError(t *testing.T) {
 type fakeMetadataErrorClient struct{}
 
 func (f *fakeMetadataErrorClient) Get(path string) ([]byte, error) {
-	if path == TaskStatsPath {
+	if path == taskStatsPath {
 		return []byte(path), nil
 	}
 	return nil, fmt.Errorf("")
