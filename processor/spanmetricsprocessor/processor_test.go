@@ -48,8 +48,8 @@ const (
 	notInSpanAttrName0 = "shouldBeInMetric"
 	notInSpanAttrName1 = "shouldNotBeInMetric"
 
-	sampleLatency         = 11
-	sampleLatencyDuration = sampleLatency * time.Millisecond
+	sampleLatency         = float64(11)
+	sampleLatencyDuration = time.Duration(sampleLatency) * time.Millisecond
 )
 
 // metricID represents the minimum attributes that uniquely identifies a metric in our tests.
@@ -361,14 +361,14 @@ func verifyConsumeMetricsInput(input pdata.Metrics, t *testing.T) bool {
 	for ; mi < m.Len(); mi++ {
 		assert.Equal(t, "latency", m.At(mi).Name())
 
-		data := m.At(mi).IntHistogram()
+		data := m.At(mi).Histogram()
 		assert.Equal(t, pdata.AggregationTemporalityCumulative, data.AggregationTemporality())
 
 		dps := data.DataPoints()
 		require.Equal(t, 1, dps.Len())
 
 		dp := dps.At(0)
-		assert.Equal(t, int64(sampleLatency), dp.Sum(), "Should be a single 11ms latency measurement")
+		assert.Equal(t, sampleLatency, dp.Sum(), "Should be a single 11ms latency measurement")
 		assert.NotZero(t, dp.Timestamp(), "Timestamp should be set")
 
 		// Verify bucket counts. Firstly, find the bucket index where the 11ms latency should belong in.

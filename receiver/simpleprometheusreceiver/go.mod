@@ -8,7 +8,8 @@ require (
 	github.com/prometheus/common v0.29.0
 	github.com/prometheus/prometheus v1.8.2-0.20210621150501-ff58416a0b02
 	github.com/stretchr/testify v1.7.0
-	go.opentelemetry.io/collector v0.30.0
+	go.opentelemetry.io/collector v0.30.2-0.20210719230137-809cae954ed3
+	go.opentelemetry.io/collector/model v0.30.2-0.20210719230137-809cae954ed3 // indirect
 	gopkg.in/square/go-jose.v2 v2.5.1 // indirect
-	k8s.io/client-go v0.21.2
+	k8s.io/client-go v0.21.3
 )

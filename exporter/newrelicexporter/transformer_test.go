@@ -785,25 +785,6 @@ func testTransformDeltaSummaryWithValues(t *testing.T, testName string, count ui
 func TestUnsupportedMetricTypes(t *testing.T) {
 	start := pdata.TimestampFromTime(time.Unix(1, 0))
 	end := pdata.TimestampFromTime(time.Unix(3, 0))
-
-	{
-		m := pdata.NewMetric()
-		m.SetName("no")
-		m.SetDescription("no")
-		m.SetUnit("1")
-		m.SetDataType(pdata.MetricDataTypeIntHistogram)
-		h := m.IntHistogram()
-		dp := h.DataPoints().AppendEmpty()
-		dp.SetStartTimestamp(start)
-		dp.SetTimestamp(end)
-		dp.SetCount(2)
-		dp.SetSum(8)
-		dp.SetExplicitBounds([]float64{3, 7, 11})
-		dp.SetBucketCounts([]uint64{1, 1, 0, 0})
-		h.SetAggregationTemporality(pdata.AggregationTemporalityDelta)
-
-		t.Run("IntHistogram", func(t *testing.T) { testTransformMetricWithError(t, m, &errUnsupportedMetricType{}) })
-	}
 	{
 		m := pdata.NewMetric()
 		m.SetName("no")

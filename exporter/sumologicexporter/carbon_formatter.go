@@ -74,9 +74,9 @@ func carbon2IntRecord(record metricPair, dataPoint pdata.IntDataPoint) string {
 	)
 }
 
-// carbon2DoubleRecord converts DoubleDataPoint to carbon2 metric string
+// carbon2DoubleRecord converts NumberDataPoint to carbon2 metric string
 // with additional information from metricPair.
-func carbon2DoubleRecord(record metricPair, dataPoint pdata.DoubleDataPoint) string {
+func carbon2DoubleRecord(record metricPair, dataPoint pdata.NumberDataPoint) string {
 	return fmt.Sprintf("%s  %g %d",
 		carbon2TagString(record),
 		dataPoint.Value(),
@@ -115,7 +115,6 @@ func carbon2Metric2String(record metricPair) string {
 		}
 	// Skip complex metrics
 	case pdata.MetricDataTypeHistogram:
-	case pdata.MetricDataTypeIntHistogram:
 	case pdata.MetricDataTypeSummary:
 	}
 

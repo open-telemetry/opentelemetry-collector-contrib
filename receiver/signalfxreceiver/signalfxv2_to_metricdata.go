@@ -73,9 +73,9 @@ func signalFxV2ToMetrics(
 		case pdata.MetricDataTypeIntSum:
 			err = fillIntDataPoint(sfxDataPoint, m.IntSum().DataPoints())
 		case pdata.MetricDataTypeGauge:
-			err = fillDoubleDataPoint(sfxDataPoint, m.Gauge().DataPoints())
+			err = fillNumberDataPoint(sfxDataPoint, m.Gauge().DataPoints())
 		case pdata.MetricDataTypeSum:
-			err = fillDoubleDataPoint(sfxDataPoint, m.Sum().DataPoints())
+			err = fillNumberDataPoint(sfxDataPoint, m.Sum().DataPoints())
 		}
 
 		if err != nil {
@@ -163,7 +163,7 @@ func fillIntDataPoint(sfxDataPoint *sfxpb.DataPoint, dps pdata.IntDataPointSlice
 	return nil
 }
 
-func fillDoubleDataPoint(sfxDataPoint *sfxpb.DataPoint, dps pdata.DoubleDataPointSlice) error {
+func fillNumberDataPoint(sfxDataPoint *sfxpb.DataPoint, dps pdata.NumberDataPointSlice) error {
 	if sfxDataPoint.Value.DoubleValue == nil {
 		return errSFxNoDatumValue
 	}
