@@ -1448,9 +1448,7 @@ func TestSpanEnvClobbering(t *testing.T) {
 	span.SetStartTimestamp(pdataStartTime)
 	span.SetEndTimestamp(pdataEndTime)
 
-	config := config.Config{Traces: config.TracesConfig{SpanNameRemappings: map[string]string{"flash.server": "bang.client"}}}
-
-	outputTraces, _ := convertToDatadogTd(traces, "test-host", &config, denylister, buildInfo)
+	outputTraces, _ := convertToDatadogTd(traces, "test-host", &config.Config{}, denylister, buildInfo)
 
 	// Ensure the deployment.environment value is copied to both deployment.environment and env
 	assert.Equal(t, "correctenv", outputTraces[0].Traces[0].Spans[0].Meta["env"])
@@ -1478,7 +1476,6 @@ func TestSpanRateLimitTag(t *testing.T) {
 	resource := rs.Resource()
 	resource.Attributes().InitFromMap(map[string]pdata.AttributeValue{
 		conventions.AttributeDeploymentEnvironment: pdata.NewAttributeValueString("correctenv"),
-		"env": pdata.NewAttributeValueString("incorrectenv"),
 	})
 
 	rs.InstrumentationLibrarySpans().EnsureCapacity(1)
@@ -1503,12 +1500,9 @@ func TestSpanRateLimitTag(t *testing.T) {
 	span.SetName("End-To-End Here")
 	span.SetKind(pdata.SpanKindServer)
 	span.SetStartTimestamp(pdataStartTime)
-	span.SetEndTimestamp(pdataEndTime)
+	span.SetEndTimestamp(pdataEndTi
 
-	config := config.Config{Traces: config.TracesConfig{SpanNameRemappings: map[string]string{"flash.server": "bang.client"}}}
+	outputTraces, _ := convertToDatadogTd(traces, "test-host", &config.Config{}, denylister, buildInfo)
 
-	outputTraces, _ := convertToDatadogTd(traces, "test-host", &config, denylister, buildInfo)
-
-	// Ensure the deployment.environment value is copied to both deployment.environment and env
 	assert.Equal(t, 0.5, outputTraces[0].Traces[0].Spans[0].Metrics["_sample_rate"])
 }

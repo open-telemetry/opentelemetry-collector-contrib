@@ -81,7 +81,7 @@ service:
 
 ### Recommended Samplers
 
-While the OpenTelemetry Specification for Sampling [remains undecided and in active development](https://github.com/open-telemetry/oteps/pull/148), the Datadog Exporter currently supports two sampling approaches to ensure accuracy in generated Trace Stats payloads for details such as hits,errors, and latency within Datadog.
+While the OpenTelemetry Specification for Sampling [remains undecided and in active development](https://github.com/open-telemetry/oteps/pull/148), the Datadog Exporter currently supports two sampling approaches to ensure accuracy in generated Trace Stats payloads for details such as hits, errors, and latency within Datadog.
 
 1. [`ParentBased(root=AlwaysOn)`](https://github.com/open-telemetry/opentelemetry-specification/blob/7fc28733eb3791ebcc98fed0d858a7961f1e95b2/specification/trace/sdk.md#alwayson):  This is the default SDK sampler, and emits 100% of Spans. Depending on your use case, in high volume environments this approach may result in higher than expected resource consumption.
 
