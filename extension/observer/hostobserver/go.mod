@@ -7,8 +7,8 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer v0.0.0-00010101000000-000000000000
 	github.com/shirou/gopsutil v3.21.6+incompatible
 	github.com/stretchr/testify v1.7.0
-	go.opentelemetry.io/collector v0.30.2-0.20210719230137-809cae954ed3
-	go.opentelemetry.io/collector/model v0.30.2-0.20210719230137-809cae954ed3 // indirect
+	go.opentelemetry.io/collector v0.30.2-0.20210721214806-6cce4224c6e7
+	go.opentelemetry.io/collector/model v0.30.2-0.20210721214806-6cce4224c6e7 // indirect
 	go.uber.org/zap v1.18.1
 	gopkg.in/square/go-jose.v2 v2.5.1 // indirect
 )
