@@ -364,12 +364,12 @@ func TestDoubleDataPointSliceAt(t *testing.T) {
 
 	for i, tc := range testDeltaCases {
 		t.Run(tc.testName, func(t *testing.T) {
-			testDPS := pdata.NewDoubleDataPointSlice()
+			testDPS := pdata.NewNumberDataPointSlice()
 			testDP := testDPS.AppendEmpty()
 			testDP.SetValue(tc.value.(float64))
 			testDP.LabelsMap().InitFromMap(labels)
 
-			dps := doubleDataPointSlice{
+			dps := numberDataPointSlice{
 				instrLibName,
 				deltaMetricMetadata{
 					tc.adjustToDelta,
@@ -461,11 +461,11 @@ func TestSummaryDataPointSliceAt(t *testing.T) {
 			testDP.SetSum(tt.inputSumCount[0].(float64))
 			testDP.SetCount(tt.inputSumCount[1].(uint64))
 
-			testDP.QuantileValues().Resize(2)
-			testQuantileValue := testDP.QuantileValues().At(0)
+			testDP.QuantileValues().EnsureCapacity(2)
+			testQuantileValue := testDP.QuantileValues().AppendEmpty()
 			testQuantileValue.SetQuantile(0)
 			testQuantileValue.SetValue(float64(1))
-			testQuantileValue = testDP.QuantileValues().At(1)
+			testQuantileValue = testDP.QuantileValues().AppendEmpty()
 			testQuantileValue.SetQuantile(100)
 			testQuantileValue.SetValue(float64(5))
 			testDP.LabelsMap().InitFromMap(labels)
@@ -576,10 +576,10 @@ func TestGetDataPoints(t *testing.T) {
 			"Double gauge",
 			false,
 			generateTestDoubleGauge("foo"),
-			doubleDataPointSlice{
+			numberDataPointSlice{
 				metadata.instrumentationLibraryName,
 				dmm,
-				pdata.DoubleDataPointSlice{},
+				pdata.NumberDataPointSlice{},
 			},
 		},
 		{
@@ -596,10 +596,10 @@ func TestGetDataPoints(t *testing.T) {
 			"Double sum",
 			false,
 			generateTestDoubleSum("foo")[1],
-			doubleDataPointSlice{
+			numberDataPointSlice{
 				metadata.instrumentationLibraryName,
 				cumulativeDmm,
-				pdata.DoubleDataPointSlice{},
+				pdata.NumberDataPointSlice{},
 			},
 		},
 		{
@@ -664,12 +664,12 @@ func TestGetDataPoints(t *testing.T) {
 				dp := convertedDPS.IntDataPointSlice.At(0)
 				assert.Equal(t, int64(1), dp.Value())
 				assert.Equal(t, expectedLabels, dp.LabelsMap())
-			case doubleDataPointSlice:
-				expectedDPS := tc.expectedDataPoints.(doubleDataPointSlice)
+			case numberDataPointSlice:
+				expectedDPS := tc.expectedDataPoints.(numberDataPointSlice)
 				assert.Equal(t, metadata.instrumentationLibraryName, convertedDPS.instrumentationLibraryName)
 				assert.Equal(t, expectedDPS.deltaMetricMetadata, convertedDPS.deltaMetricMetadata)
 				assert.Equal(t, 1, convertedDPS.Len())
-				dp := convertedDPS.DoubleDataPointSlice.At(0)
+				dp := convertedDPS.NumberDataPointSlice.At(0)
 				assert.Equal(t, 0.1, dp.Value())
 				assert.Equal(t, expectedLabels, dp.LabelsMap())
 			case histogramDataPointSlice:
@@ -699,7 +699,7 @@ func TestGetDataPoints(t *testing.T) {
 		metric := pdata.NewMetric()
 		metric.SetName("foo")
 		metric.SetUnit("Count")
-		metric.SetDataType(pdata.MetricDataTypeIntHistogram)
+		metric.SetDataType(pdata.MetricDataTypeNone)
 
 		obs, logs := observer.New(zap.WarnLevel)
 		logger := zap.New(obs)
@@ -712,7 +712,7 @@ func TestGetDataPoints(t *testing.T) {
 			{
 				Entry: zapcore.Entry{Level: zap.WarnLevel, Message: "Unhandled metric data type."},
 				Context: []zapcore.Field{
-					zap.String("DataType", "IntHistogram"),
+					zap.String("DataType", "None"),
 					zap.String("Name", "foo"),
 					zap.String("Unit", "Count"),
 				},

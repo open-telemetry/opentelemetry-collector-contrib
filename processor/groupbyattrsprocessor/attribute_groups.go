@@ -33,8 +33,7 @@ func matchingInstrumentationLibrarySpans(rl pdata.ResourceSpans, library pdata.I
 		}
 	}
 
-	ilss.Resize(ilss.Len() + 1)
-	ils := ilss.At(ilss.Len() - 1)
+	ils := ilss.AppendEmpty()
 	library.CopyTo(ils.InstrumentationLibrary())
 	return ils
 }
@@ -50,8 +49,7 @@ func matchingInstrumentationLibraryLogs(rl pdata.ResourceLogs, library pdata.Ins
 		}
 	}
 
-	ills.Resize(ills.Len() + 1)
-	ill := ills.At(ills.Len() - 1)
+	ill := ills.AppendEmpty()
 	library.CopyTo(ill.InstrumentationLibrary())
 	return ill
 }

@@ -107,12 +107,12 @@ func TestMetricsExporterSendError(t *testing.T) {
 func sampleMetrics() pdata.Metrics {
 	metrics := pdata.NewMetrics()
 	resourceMetrics := metrics.ResourceMetrics()
-	resourceMetrics.Resize(2)
+	resourceMetrics.EnsureCapacity(2)
 	for i := 0; i < 2; i++ {
-		metric := resourceMetrics.At(i).InstrumentationLibraryMetrics().AppendEmpty().Metrics().AppendEmpty()
+		metric := resourceMetrics.AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty().Metrics().AppendEmpty()
 		metric.SetName("foobar")
-		metric.SetDataType(pdata.MetricDataTypeDoubleGauge)
-		metric.DoubleGauge().DataPoints().AppendEmpty().SetValue(123)
+		metric.SetDataType(pdata.MetricDataTypeGauge)
+		metric.Gauge().DataPoints().AppendEmpty().SetValue(123)
 	}
 	return metrics
 }

@@ -17,7 +17,6 @@ package googlecloudexporter
 import (
 	"time"
 
-	cloudtrace "github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/trace"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/sdk/instrumentation"
 	sdkresource "go.opentelemetry.io/otel/sdk/resource"
@@ -27,6 +26,7 @@ import (
 )
 
 type spanSnapshot struct {
+	sdktrace.ReadOnlySpan                                                 // so we can inherit the "private" func
 	spanContext, parent                                                   apitrace.SpanContext
 	spanKind                                                              apitrace.SpanKind
 	startTime, endTime                                                    time.Time
@@ -39,8 +39,6 @@ type spanSnapshot struct {
 	instrumentationLibrary                                                instrumentation.Library
 	status                                                                sdktrace.Status
 }
-
-var _ cloudtrace.ReadOnlySpan = spanSnapshot{}
 
 func (s spanSnapshot) Name() string                     { return s.name }
 func (s spanSnapshot) SpanContext() trace.SpanContext   { return s.spanContext }

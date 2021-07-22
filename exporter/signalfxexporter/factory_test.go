@@ -36,8 +36,8 @@ import (
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/translation"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/translation/dpfilters"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/translation"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/translation/dpfilters"
 )
 
 func TestCreateDefaultConfig(t *testing.T) {
@@ -1042,10 +1042,10 @@ func TestDefaultExcludes_not_translated(t *testing.T) {
 func getResourceMetrics(metrics []map[string]string) pdata.ResourceMetrics {
 	rms := pdata.NewResourceMetrics()
 	ilms := rms.InstrumentationLibraryMetrics().AppendEmpty()
-	ilms.Metrics().Resize(len(metrics))
+	ilms.Metrics().EnsureCapacity(len(metrics))
 
-	for i, mp := range metrics {
-		m := ilms.Metrics().At(i)
+	for _, mp := range metrics {
+		m := ilms.Metrics().AppendEmpty()
 		// Set data type to some arbitrary since it does not matter for this test.
 		m.SetDataType(pdata.MetricDataTypeIntSum)
 		dp := m.IntSum().DataPoints().AppendEmpty()

@@ -110,7 +110,7 @@ func (f *factory) createTracesProcessor(
 	return processorhelper.NewTracesProcessor(
 		cfg,
 		nextConsumer,
-		rdp,
+		rdp.processTraces,
 		processorhelper.WithCapabilities(consumerCapabilities),
 		processorhelper.WithStart(rdp.Start))
 }
@@ -129,7 +129,7 @@ func (f *factory) createMetricsProcessor(
 	return processorhelper.NewMetricsProcessor(
 		cfg,
 		nextConsumer,
-		rdp,
+		rdp.processMetrics,
 		processorhelper.WithCapabilities(consumerCapabilities),
 		processorhelper.WithStart(rdp.Start))
 }
@@ -148,7 +148,7 @@ func (f *factory) createLogsProcessor(
 	return processorhelper.NewLogsProcessor(
 		cfg,
 		nextConsumer,
-		rdp,
+		rdp.processLogs,
 		processorhelper.WithCapabilities(consumerCapabilities),
 		processorhelper.WithStart(rdp.Start))
 }

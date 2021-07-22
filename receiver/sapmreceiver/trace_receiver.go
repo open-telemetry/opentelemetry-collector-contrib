@@ -181,9 +181,8 @@ func (sr *sapmReceiver) Shutdown(context.Context) error {
 // this validates at compile time that sapmReceiver implements the component.TracesReceiver interface
 var _ component.TracesReceiver = (*sapmReceiver)(nil)
 
-// New creates a sapmReceiver that receives SAPM over http
-func New(
-	ctx context.Context,
+// newReceiver creates a sapmReceiver that receives SAPM over http
+func newReceiver(
 	params component.ReceiverCreateSettings,
 	config *Config,
 	nextConsumer consumer.Traces,

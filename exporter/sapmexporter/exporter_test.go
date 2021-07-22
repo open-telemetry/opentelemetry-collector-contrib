@@ -66,10 +66,10 @@ func TestCreateTracesExporterWithInvalidConfig(t *testing.T) {
 func buildTestTraces(setTokenLabel bool) (traces pdata.Traces) {
 	traces = pdata.NewTraces()
 	rss := traces.ResourceSpans()
-	rss.Resize(20)
+	rss.EnsureCapacity(20)
 
 	for i := 0; i < 20; i++ {
-		rs := rss.At(i)
+		rs := rss.AppendEmpty()
 		resource := rs.Resource()
 		resource.Attributes().InsertString("key1", "value1")
 		if setTokenLabel && i%2 == 1 {
@@ -135,9 +135,9 @@ func hasToken(batches []*model.Batch) bool {
 
 func buildTestTrace(setIds bool) pdata.Traces {
 	trace := pdata.NewTraces()
-	trace.ResourceSpans().Resize(2)
+	trace.ResourceSpans().EnsureCapacity(2)
 	for i := 0; i < 2; i++ {
-		rs := trace.ResourceSpans().At(i)
+		rs := trace.ResourceSpans().AppendEmpty()
 		resource := rs.Resource()
 		resource.Attributes().InsertString("com.splunk.signalfx.access_token", fmt.Sprintf("TraceAccessToken%v", i))
 		span := rs.InstrumentationLibrarySpans().AppendEmpty().Spans().AppendEmpty()

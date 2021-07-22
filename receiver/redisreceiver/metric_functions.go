@@ -86,7 +86,7 @@ func usedCPUSys() *redisMetric {
 		key:         "used_cpu_sys",
 		name:        "redis/cpu/time",
 		units:       "s",
-		pdType:      pdata.MetricDataTypeDoubleSum,
+		pdType:      pdata.MetricDataTypeSum,
 		isMonotonic: true,
 		labels:      map[string]string{"state": "sys"},
 		desc:        "System CPU consumed by the Redis server in seconds since server start",
@@ -98,7 +98,7 @@ func usedCPUUser() *redisMetric {
 		key:         "used_cpu_user",
 		name:        "redis/cpu/time",
 		units:       "s",
-		pdType:      pdata.MetricDataTypeDoubleSum,
+		pdType:      pdata.MetricDataTypeSum,
 		isMonotonic: true,
 		labels:      map[string]string{"state": "user"},
 		desc:        "User CPU consumed by the Redis server in seconds since server start",
@@ -110,7 +110,7 @@ func usedCPUSysChildren() *redisMetric {
 		key:         "used_cpu_sys_children",
 		name:        "redis/cpu/time",
 		units:       "s",
-		pdType:      pdata.MetricDataTypeDoubleSum,
+		pdType:      pdata.MetricDataTypeSum,
 		isMonotonic: true,
 		labels:      map[string]string{"state": "children"},
 		desc:        "User CPU consumed by the background processes in seconds since server start",
@@ -239,7 +239,7 @@ func memFragmentationRatio() *redisMetric {
 	return &redisMetric{
 		key:    "mem_fragmentation_ratio",
 		name:   "redis/memory/fragmentation_ratio",
-		pdType: pdata.MetricDataTypeDoubleGauge,
+		pdType: pdata.MetricDataTypeGauge,
 		desc:   "Ratio between used_memory_rss and used_memory",
 	}
 }

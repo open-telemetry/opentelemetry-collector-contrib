@@ -141,16 +141,6 @@ func (f *prometheusFormatter) doubleValueLine(name string, value float64, dp dat
 	)
 }
 
-// intValueLine returns prometheus line with given value
-func (f *prometheusFormatter) intValueLine(name string, value int64, dp dataPoint, attributes pdata.AttributeMap) string {
-	return f.intLine(
-		name,
-		f.tags2String(attributes, dp.LabelsMap()),
-		value,
-		dp.Timestamp(),
-	)
-}
-
 // uintValueLine returns prometheus line with given value
 func (f *prometheusFormatter) uintValueLine(name string, value uint64, dp dataPoint, attributes pdata.AttributeMap) string {
 	return f.uintLine(
@@ -161,8 +151,8 @@ func (f *prometheusFormatter) uintValueLine(name string, value uint64, dp dataPo
 	)
 }
 
-// doubleDataPointValueLine returns prometheus line with value from pdata.DoubleDataPoint
-func (f *prometheusFormatter) doubleDataPointValueLine(name string, dp pdata.DoubleDataPoint, attributes pdata.AttributeMap) string {
+// doubleDataPointValueLine returns prometheus line with value from pdata.NumberDataPoint
+func (f *prometheusFormatter) doubleDataPointValueLine(name string, dp pdata.NumberDataPoint, attributes pdata.AttributeMap) string {
 	return f.doubleValueLine(
 		name,
 		dp.Value(),
@@ -221,7 +211,7 @@ func (f *prometheusFormatter) mergeAttributes(attributes pdata.AttributeMap, add
 
 // doubleGauge2Strings converts DoubleGauge record to a list of strings (one per dataPoint)
 func (f *prometheusFormatter) doubleGauge2Strings(record metricPair) []string {
-	dps := record.metric.DoubleGauge().DataPoints()
+	dps := record.metric.Gauge().DataPoints()
 	lines := make([]string, 0, dps.Len())
 
 	for i := 0; i < dps.Len(); i++ {
@@ -255,9 +245,9 @@ func (f *prometheusFormatter) intSum2Strings(record metricPair) []string {
 	return lines
 }
 
-// doubleSum2Strings converts DoubleSum record to a list of strings (one per dataPoint)
+// doubleSum2Strings converts Sum record to a list of strings (one per dataPoint)
 func (f *prometheusFormatter) doubleSum2Strings(record metricPair) []string {
-	dps := record.metric.DoubleSum().DataPoints()
+	dps := record.metric.Sum().DataPoints()
 	lines := make([]string, 0, dps.Len())
 
 	for i := 0; i < dps.Len(); i++ {
@@ -312,62 +302,6 @@ func (f *prometheusFormatter) doubleSummary2Strings(record metricPair) []string 
 		)
 		lines = append(lines, line)
 	}
-	return lines
-}
-
-// intHistogram2Strings converts IntHistogram record to a list of strings,
-// (n+1) where n is number of bounds plus two for sum and count per each data point
-func (f *prometheusFormatter) intHistogram2Strings(record metricPair) []string {
-	dps := record.metric.IntHistogram().DataPoints()
-	var lines []string
-
-	for i := 0; i < dps.Len(); i++ {
-		dp := dps.At(i)
-
-		explicitBounds := dp.ExplicitBounds()
-		var cumulative uint64
-		additionalAttributes := pdata.NewAttributeMap()
-
-		for i, bound := range explicitBounds {
-			cumulative += dp.BucketCounts()[i]
-			additionalAttributes.UpsertDouble(prometheusLeTag, bound)
-
-			line := f.uintValueLine(
-				record.metric.Name(),
-				cumulative,
-				dp,
-				f.mergeAttributes(record.attributes, additionalAttributes),
-			)
-			lines = append(lines, line)
-		}
-
-		cumulative += dp.BucketCounts()[len(explicitBounds)]
-		additionalAttributes.UpsertString(prometheusLeTag, prometheusInfValue)
-		line := f.uintValueLine(
-			record.metric.Name(),
-			cumulative,
-			dp,
-			f.mergeAttributes(record.attributes, additionalAttributes),
-		)
-		lines = append(lines, line)
-
-		line = f.intValueLine(
-			f.sumMetric(record.metric.Name()),
-			dp.Sum(),
-			dp,
-			record.attributes,
-		)
-		lines = append(lines, line)
-
-		line = f.uintValueLine(
-			f.countMetric(record.metric.Name()),
-			dp.Count(),
-			dp,
-			record.attributes,
-		)
-		lines = append(lines, line)
-	}
-
 	return lines
 }
 
@@ -434,16 +368,14 @@ func (f *prometheusFormatter) metric2String(record metricPair) string {
 	switch record.metric.DataType() {
 	case pdata.MetricDataTypeIntGauge:
 		lines = f.intGauge2Strings(record)
-	case pdata.MetricDataTypeDoubleGauge:
+	case pdata.MetricDataTypeGauge:
 		lines = f.doubleGauge2Strings(record)
 	case pdata.MetricDataTypeIntSum:
 		lines = f.intSum2Strings(record)
-	case pdata.MetricDataTypeDoubleSum:
+	case pdata.MetricDataTypeSum:
 		lines = f.doubleSum2Strings(record)
 	case pdata.MetricDataTypeSummary:
 		lines = f.doubleSummary2Strings(record)
-	case pdata.MetricDataTypeIntHistogram:
-		lines = f.intHistogram2Strings(record)
 	case pdata.MetricDataTypeHistogram:
 		lines = f.doubleHistogram2Strings(record)
 	}

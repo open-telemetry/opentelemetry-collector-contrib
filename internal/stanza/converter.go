@@ -276,8 +276,7 @@ func (c *Converter) batchLoop() {
 			} else {
 				pLogs = pdata.NewLogs()
 				logs := pLogs.ResourceLogs()
-				logs.Resize(1)
-				rls := logs.At(0)
+				rls := logs.AppendEmpty()
 
 				resource := rls.Resource()
 				resourceAtts := resource.Attributes()
@@ -287,8 +286,7 @@ func (c *Converter) batchLoop() {
 				}
 
 				ills := rls.InstrumentationLibraryLogs()
-				ills.Resize(1)
-				lr := ills.At(0).Logs().AppendEmpty()
+				lr := ills.AppendEmpty().Logs().AppendEmpty()
 				wi.LogRecord.CopyTo(lr)
 			}
 
@@ -524,9 +522,9 @@ func toAttributeMap(obsMap map[string]interface{}) pdata.AttributeValue {
 func toAttributeArray(obsArr []interface{}) pdata.AttributeValue {
 	arrVal := pdata.NewAttributeValueArray()
 	arr := arrVal.ArrayVal()
-	arr.Resize(len(obsArr))
-	for i, v := range obsArr {
-		insertToAttributeVal(v, arr.At(i))
+	arr.EnsureCapacity(len(obsArr))
+	for _, v := range obsArr {
+		insertToAttributeVal(v, arr.AppendEmpty())
 	}
 	return arrVal
 }

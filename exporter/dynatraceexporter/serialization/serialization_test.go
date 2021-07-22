@@ -99,12 +99,12 @@ func TestSerializeIntDataPoints(t *testing.T) {
 }
 
 func TestSerializeDoubleDataPoints(t *testing.T) {
-	doubleSlice := pdata.NewDoubleDataPointSlice()
+	doubleSlice := pdata.NewNumberDataPointSlice()
 	doublePoint := doubleSlice.AppendEmpty()
 	doublePoint.SetValue(13.1)
 	doublePoint.SetTimestamp(pdata.Timestamp(100_000_000))
 
-	labelDoubleSlice := pdata.NewDoubleDataPointSlice()
+	labelDoubleSlice := pdata.NewNumberDataPointSlice()
 	labelDoublePoint := labelDoubleSlice.AppendEmpty()
 	labelDoublePoint.SetValue(13.1)
 	labelDoublePoint.SetTimestamp(pdata.Timestamp(100_000_000))
@@ -112,7 +112,7 @@ func TestSerializeDoubleDataPoints(t *testing.T) {
 
 	type args struct {
 		name string
-		data pdata.DoubleDataPointSlice
+		data pdata.NumberDataPointSlice
 		tags []string
 	}
 	tests := []struct {
@@ -228,82 +228,6 @@ func TestSerializeHistogramMetrics(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := SerializeHistogramMetrics(tt.args.name, tt.args.data, tt.args.tags); !equal(got, tt.want) {
 				t.Errorf("SerializeHistogramMetrics() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
-func TestSerializeIntHistogramMetrics(t *testing.T) {
-	intHistSlice := pdata.NewIntHistogramDataPointSlice()
-	intHistPoint := intHistSlice.AppendEmpty()
-	intHistPoint.SetCount(10)
-	intHistPoint.SetSum(110)
-	intHistPoint.SetTimestamp(pdata.Timestamp(100_000_000))
-
-	labelIntHistSlice := pdata.NewIntHistogramDataPointSlice()
-	labelIntHistPoint := labelIntHistSlice.AppendEmpty()
-	labelIntHistPoint.SetCount(10)
-	labelIntHistPoint.SetSum(110)
-	labelIntHistPoint.SetTimestamp(pdata.Timestamp(100_000_000))
-	labelIntHistPoint.LabelsMap().Insert("labelKey", "labelValue")
-
-	zeroIntHistogramSlice := pdata.NewIntHistogramDataPointSlice()
-	zeroIntHistogramDataPoint := zeroIntHistogramSlice.AppendEmpty()
-	zeroIntHistogramDataPoint.SetCount(0)
-	zeroIntHistogramDataPoint.SetSum(0)
-	zeroIntHistogramDataPoint.SetTimestamp(pdata.Timestamp(100_000_000))
-
-	type args struct {
-		name string
-		data pdata.IntHistogramDataPointSlice
-		tags []string
-	}
-	tests := []struct {
-		name string
-		args args
-		want []string
-	}{
-		{
-			name: "Serialize integer histogram data points",
-			args: args{
-				name: "my_int_hist",
-				data: intHistSlice,
-				tags: []string{},
-			},
-			want: []string{"my_int_hist gauge,min=11,max=11,sum=110,count=10 100"},
-		},
-		{
-			name: "Serialize integer histogram data points with tags",
-			args: args{
-				name: "my_int_hist_with_tags",
-				data: intHistSlice,
-				tags: []string{"test_key=testval"},
-			},
-			want: []string{"my_int_hist_with_tags,test_key=testval gauge,min=11,max=11,sum=110,count=10 100"},
-		},
-		{
-			name: "Serialize integer histogram data points with labels",
-			args: args{
-				name: "my_int_hist_with_labels",
-				data: labelIntHistSlice,
-				tags: []string{},
-			},
-			want: []string{"my_int_hist_with_labels,labelkey=\"labelValue\" gauge,min=11,max=11,sum=110,count=10 100"},
-		},
-		{
-			name: "Serialize zero integer histogram",
-			args: args{
-				name: "zero_int_hist",
-				data: zeroIntHistogramSlice,
-				tags: []string{},
-			},
-			want: []string{},
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := SerializeIntHistogramMetrics(tt.args.name, tt.args.data, tt.args.tags); !equal(got, tt.want) {
-				t.Errorf("SerializeIntHistogramMetrics() = %v, want %v", got, tt.want)
 			}
 		})
 	}
