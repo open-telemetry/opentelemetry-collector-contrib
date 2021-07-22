@@ -18,6 +18,7 @@ import (
 	"errors"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -295,13 +296,10 @@ func TestEventTracePerWorker(t *testing.T) {
 			defer em.shutdown()
 
 			td := pdata.NewTraces()
-			td.ResourceSpans().Resize(1)
-			td.ResourceSpans().At(0).InstrumentationLibrarySpans().Resize(1)
+			ils := td.ResourceSpans().AppendEmpty().InstrumentationLibrarySpans().AppendEmpty()
 			if tt.traceID != [16]byte{} {
-				td.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().Resize(1)
-				span := pdata.NewSpan()
+				span := ils.Spans().AppendEmpty()
 				span.SetTraceID(pdata.NewTraceID(tt.traceID))
-				span.CopyTo(td.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().At(0))
 			}
 
 			// test
@@ -358,14 +356,14 @@ func TestEventShutdown(t *testing.T) {
 	wg := sync.WaitGroup{}
 	wg.Add(1)
 
-	traceReceivedFired, traceExpiredFired := false, false
+	traceReceivedFired, traceExpiredFired := int64(0), int64(0)
 	em := newEventMachine(zap.NewNop(), 50, 1, 1_000)
 	em.onTraceReceived = func(tracesWithID, *eventMachineWorker) error {
-		traceReceivedFired = true
+		atomic.StoreInt64(&traceReceivedFired, 1)
 		return nil
 	}
 	em.onTraceExpired = func(pdata.TraceID, *eventMachineWorker) error {
-		traceExpiredFired = true
+		atomic.StoreInt64(&traceExpiredFired, 1)
 		return nil
 	}
 	em.onTraceRemoved = func(pdata.TraceID) error {
@@ -410,13 +408,13 @@ func TestEventShutdown(t *testing.T) {
 	})
 
 	// verify
-	assert.True(t, traceReceivedFired)
+	assert.Equal(t, int64(1), atomic.LoadInt64(&traceReceivedFired))
 
 	// If the code is wrong, there's a chance that the test will still pass
 	// in case the event is processed after the assertion.
 	// for this reason, we add a small delay here
 	time.Sleep(10 * time.Millisecond)
-	assert.False(t, traceExpiredFired)
+	assert.Equal(t, int64(0), atomic.LoadInt64(&traceExpiredFired))
 
 	// wait until the shutdown has returned
 	shutdownWg.Wait()

@@ -40,9 +40,9 @@ import (
 	"go.opentelemetry.io/collector/model/pdata"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/dimensions"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/translation"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/translation/dpfilters"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/dimensions"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/translation"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/translation/dpfilters"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 	metadata "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata"
 )
@@ -122,8 +122,8 @@ func TestConsumeMetrics(t *testing.T) {
 	m := ilm.Metrics().AppendEmpty()
 
 	m.SetName("test_gauge")
-	m.SetDataType(pdata.MetricDataTypeDoubleGauge)
-	dp := m.DoubleGauge().DataPoints().AppendEmpty()
+	m.SetDataType(pdata.MetricDataTypeGauge)
+	dp := m.Gauge().DataPoints().AppendEmpty()
 	dp.LabelsMap().InitFromMap(map[string]string{
 		"k0": "v0",
 		"k1": "v1",
@@ -257,9 +257,9 @@ func TestConsumeMetricsWithAccessTokenPassthrough(t *testing.T) {
 		m := ilm.Metrics().AppendEmpty()
 
 		m.SetName("test_gauge")
-		m.SetDataType(pdata.MetricDataTypeDoubleGauge)
+		m.SetDataType(pdata.MetricDataTypeGauge)
 
-		dp := m.DoubleGauge().DataPoints().AppendEmpty()
+		dp := m.Gauge().DataPoints().AppendEmpty()
 		dp.LabelsMap().InitFromMap(map[string]string{
 			"k0": "v0",
 			"k1": "v1",
@@ -323,8 +323,8 @@ func TestConsumeMetricsWithAccessTokenPassthrough(t *testing.T) {
 				m := ilm.Metrics().AppendEmpty()
 
 				m.SetName("test_gauge")
-				m.SetDataType(pdata.MetricDataTypeDoubleGauge)
-				dp := m.DoubleGauge().DataPoints().AppendEmpty()
+				m.SetDataType(pdata.MetricDataTypeGauge)
+				dp := m.Gauge().DataPoints().AppendEmpty()
 				dp.LabelsMap().InitFromMap(map[string]string{
 					"k0": "v0",
 					"k1": "v1",
@@ -341,8 +341,8 @@ func TestConsumeMetricsWithAccessTokenPassthrough(t *testing.T) {
 			metrics: func() pdata.Metrics {
 				forFirstToken := validMetricsWithToken(true, fromLabels[0])
 				forSecondToken := validMetricsWithToken(true, fromLabels[1])
-				forSecondToken.ResourceMetrics().Resize(2)
-				forFirstToken.ResourceMetrics().At(0).CopyTo(forSecondToken.ResourceMetrics().At(1))
+				forSecondToken.ResourceMetrics().EnsureCapacity(2)
+				forFirstToken.ResourceMetrics().At(0).CopyTo(forSecondToken.ResourceMetrics().AppendEmpty())
 
 				return forSecondToken
 			}(),
@@ -356,9 +356,9 @@ func TestConsumeMetricsWithAccessTokenPassthrough(t *testing.T) {
 				forSecondToken := validMetricsWithToken(true, fromLabels[0])
 				moreForSecondToken := validMetricsWithToken(true, fromLabels[1])
 
-				forSecondToken.ResourceMetrics().Resize(3)
-				forFirstToken.ResourceMetrics().At(0).CopyTo(forSecondToken.ResourceMetrics().At(1))
-				moreForSecondToken.ResourceMetrics().At(0).CopyTo(forSecondToken.ResourceMetrics().At(2))
+				forSecondToken.ResourceMetrics().EnsureCapacity(3)
+				forFirstToken.ResourceMetrics().At(0).CopyTo(forSecondToken.ResourceMetrics().AppendEmpty())
+				moreForSecondToken.ResourceMetrics().At(0).CopyTo(forSecondToken.ResourceMetrics().AppendEmpty())
 
 				return forSecondToken
 			}(),
@@ -372,9 +372,9 @@ func TestConsumeMetricsWithAccessTokenPassthrough(t *testing.T) {
 				forSecondToken := validMetricsWithToken(true, fromLabels[1])
 				moreForSecondToken := validMetricsWithToken(true, fromLabels[1])
 
-				forSecondToken.ResourceMetrics().Resize(3)
-				moreForSecondToken.ResourceMetrics().At(0).CopyTo(forSecondToken.ResourceMetrics().At(1))
-				forFirstToken.ResourceMetrics().At(0).CopyTo(forSecondToken.ResourceMetrics().At(2))
+				forSecondToken.ResourceMetrics().EnsureCapacity(3)
+				moreForSecondToken.ResourceMetrics().At(0).CopyTo(forSecondToken.ResourceMetrics().AppendEmpty())
+				forFirstToken.ResourceMetrics().At(0).CopyTo(forSecondToken.ResourceMetrics().AppendEmpty())
 
 				return forSecondToken
 			}(),
@@ -386,8 +386,8 @@ func TestConsumeMetricsWithAccessTokenPassthrough(t *testing.T) {
 			metrics: func() pdata.Metrics {
 				forFirstToken := validMetricsWithToken(true, fromLabels[0])
 				forSecondToken := validMetricsWithToken(false, fromLabels[1])
-				forSecondToken.ResourceMetrics().Resize(2)
-				forFirstToken.ResourceMetrics().At(0).CopyTo(forSecondToken.ResourceMetrics().At(1))
+				forSecondToken.ResourceMetrics().EnsureCapacity(2)
+				forFirstToken.ResourceMetrics().At(0).CopyTo(forSecondToken.ResourceMetrics().AppendEmpty())
 				return forSecondToken
 			}(),
 			pushedTokens: []string{fromLabels[0], fromHeaders},
@@ -695,11 +695,11 @@ func TestConsumeLogsDataWithAccessTokenPassthrough(t *testing.T) {
 
 func generateLargeDPBatch() pdata.Metrics {
 	md := pdata.NewMetrics()
-	md.ResourceMetrics().Resize(6500)
+	md.ResourceMetrics().EnsureCapacity(6500)
 
 	ts := time.Now()
 	for i := 0; i < 6500; i++ {
-		rm := md.ResourceMetrics().At(i)
+		rm := md.ResourceMetrics().AppendEmpty()
 		ilm := rm.InstrumentationLibraryMetrics().AppendEmpty()
 		m := ilm.Metrics().AppendEmpty()
 
@@ -723,10 +723,10 @@ func generateLargeEventBatch() pdata.Logs {
 	logs := out.ResourceLogs().AppendEmpty().InstrumentationLibraryLogs().AppendEmpty().Logs()
 
 	batchSize := 65000
-	logs.Resize(batchSize)
+	logs.EnsureCapacity(batchSize)
 	ts := time.Now()
 	for i := 0; i < batchSize; i++ {
-		lr := logs.At(i)
+		lr := logs.AppendEmpty()
 		lr.SetName("test_" + strconv.Itoa(i))
 		lr.Attributes().InsertString("k0", "k1")
 		lr.Attributes().InsertNull("com.splunk.signalfx.event_category")

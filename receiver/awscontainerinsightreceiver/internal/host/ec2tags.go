@@ -74,7 +74,7 @@ func newEC2Tags(ctx context.Context, session *session.Session, instanceID string
 		return et.clusterName == ""
 	}
 
-	go refreshUntil(ctx, et.refresh, et.refreshInterval, shouldRefresh, et.maxJitterTime)
+	go RefreshUntil(ctx, et.refresh, et.refreshInterval, shouldRefresh, et.maxJitterTime)
 
 	return et
 }

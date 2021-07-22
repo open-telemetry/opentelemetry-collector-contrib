@@ -86,17 +86,17 @@ func newTestClient(config *Config, httpClient *http.Client) *client {
 
 func createLogData() pdata.Logs {
 	logs := pdata.NewLogs()
-	logs.ResourceLogs().Resize(1)
+	logs.ResourceLogs().EnsureCapacity(1)
 
 	now := timeNow()
 
-	rl := logs.ResourceLogs().At(0)
-	rl.InstrumentationLibraryLogs().Resize(1)
+	rl := logs.ResourceLogs().AppendEmpty()
+	rl.InstrumentationLibraryLogs().EnsureCapacity(1)
 
-	ill := rl.InstrumentationLibraryLogs().At(0)
-	ill.Logs().Resize(1)
+	ill := rl.InstrumentationLibraryLogs().AppendEmpty()
+	ill.Logs().EnsureCapacity(1)
 
-	logRecord := ill.Logs().At(0)
+	logRecord := ill.Logs().AppendEmpty()
 
 	logRecord.SetTimestamp(pdata.Timestamp(now.UnixNano()))
 	logRecord.Body().SetStringVal("message")

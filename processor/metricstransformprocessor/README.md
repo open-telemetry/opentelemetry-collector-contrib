@@ -151,12 +151,13 @@ new_name: system.cpu.usage_time
 
 ### Rename multiple metrics using Substitution
 ```yaml
-# rename all system.cpu metrics to system.processor.*
+# rename all system.cpu metrics to system.processor.*.stat
 # instead of regular $ use double dollar $$. Because $ is treated as a special character.
+# wrap the group name/number with braces
 include: ^system\.cpu\.(.*)$$
 match_type: regexp
 action: update
-new_name: system.processor.$$1
+new_name: system.processor.$${1}.stat
 ```
 
 ### Add a label

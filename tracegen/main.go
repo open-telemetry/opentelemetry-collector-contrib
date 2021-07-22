@@ -23,11 +23,10 @@ import (
 
 	grpcZap "github.com/grpc-ecosystem/go-grpc-middleware/logging/zap"
 	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/exporters/otlp"
-	"go.opentelemetry.io/otel/exporters/otlp/otlpgrpc"
+	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
 	"go.opentelemetry.io/otel/sdk/resource"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
-	"go.opentelemetry.io/otel/semconv"
+	semconv "go.opentelemetry.io/otel/semconv/v1.4.0"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 
@@ -48,20 +47,18 @@ func main() {
 		zap.AddCallerSkip(3),
 	))
 
-	expOptions := []otlpgrpc.Option{
-		otlpgrpc.WithEndpoint(cfg.Endpoint),
-		otlpgrpc.WithDialOption(
+	expOptions := []otlptracegrpc.Option{
+		otlptracegrpc.WithEndpoint(cfg.Endpoint),
+		otlptracegrpc.WithDialOption(
 			grpc.WithBlock(),
 		),
 	}
 
 	if cfg.Insecure {
-		expOptions = append(expOptions, otlpgrpc.WithInsecure())
+		expOptions = append(expOptions, otlptracegrpc.WithInsecure())
 	}
 
-	driver := otlpgrpc.NewDriver(expOptions...)
-
-	exp, err := otlp.NewExporter(context.Background(), driver)
+	exp, err := otlptracegrpc.New(context.Background(), expOptions...)
 	if err != nil {
 		logger.Error("failed to obtain OTLP exporter", zap.Error(err))
 		return
@@ -78,7 +75,7 @@ func main() {
 	defer ssp.Shutdown(context.Background())
 
 	tracerProvider := sdktrace.NewTracerProvider(
-		sdktrace.WithResource(resource.NewWithAttributes(semconv.ServiceNameKey.String(cfg.ServiceName))),
+		sdktrace.WithResource(resource.NewWithAttributes(semconv.SchemaURL, semconv.ServiceNameKey.String(cfg.ServiceName))),
 	)
 
 	tracerProvider.RegisterSpanProcessor(ssp)

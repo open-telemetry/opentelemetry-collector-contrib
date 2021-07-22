@@ -25,7 +25,7 @@ import (
 	"go.opentelemetry.io/collector/config/configcheck"
 	"go.opentelemetry.io/collector/testbed/testbed"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsecscontainermetricsreceiver/awsecscontainermetrics"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsecscontainermetricsreceiver/internal/awsecscontainermetrics"
 )
 
 func TestValidConfig(t *testing.T) {

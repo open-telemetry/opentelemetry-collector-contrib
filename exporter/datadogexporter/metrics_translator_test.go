@@ -95,8 +95,8 @@ func TestIsCumulativeMonotonic(t *testing.T) {
 	{ // DoubleSumL Cumulative and monotonic
 		metric := pdata.NewMetric()
 		metric.SetName("metric.example")
-		metric.SetDataType(pdata.MetricDataTypeDoubleSum)
-		sum := metric.DoubleSum()
+		metric.SetDataType(pdata.MetricDataTypeSum)
+		sum := metric.Sum()
 		sum.SetIsMonotonic(true)
 		sum.SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
 
@@ -108,7 +108,7 @@ func TestIsCumulativeMonotonic(t *testing.T) {
 		metric.SetName("system.cpu.load_average.1m")
 		metric.SetDescription("Average CPU Load over 1 minute.")
 		metric.SetUnit("1")
-		metric.SetDataType(pdata.MetricDataTypeDoubleGauge)
+		metric.SetDataType(pdata.MetricDataTypeGauge)
 
 		assert.False(t, isCumulativeMonotonic(metric))
 	}
@@ -147,7 +147,7 @@ func TestMapIntMetrics(t *testing.T) {
 
 func TestMapDoubleMetrics(t *testing.T) {
 	ts := pdata.TimestampFromTime(time.Now())
-	slice := pdata.NewDoubleDataPointSlice()
+	slice := pdata.NewNumberDataPointSlice()
 	point := slice.AppendEmpty()
 	point.SetValue(math.Pi)
 	point.SetTimestamp(ts)
@@ -185,9 +185,9 @@ func TestMapIntMonotonicMetrics(t *testing.T) {
 
 	//Map to OpenTelemetry format
 	slice := pdata.NewIntDataPointSlice()
-	slice.Resize(len(cumulative))
+	slice.EnsureCapacity(len(cumulative))
 	for i, val := range cumulative {
-		point := slice.At(i)
+		point := slice.AppendEmpty()
 		point.SetValue(val)
 		point.SetTimestamp(seconds(i))
 	}
@@ -253,10 +253,10 @@ func TestMapIntMonotonicWithReboot(t *testing.T) {
 	values := []int64{0, 30, 0, 20}
 	metricName := "metric.example"
 	slice := pdata.NewIntDataPointSlice()
-	slice.Resize(len(values))
+	slice.EnsureCapacity(len(values))
 
 	for i, val := range values {
-		point := slice.At(i)
+		point := slice.AppendEmpty()
 		point.SetTimestamp(seconds(i))
 		point.SetValue(val)
 	}
@@ -277,10 +277,10 @@ func TestMapIntMonotonicOutOfOrder(t *testing.T) {
 
 	metricName := "metric.example"
 	slice := pdata.NewIntDataPointSlice()
-	slice.Resize(len(values))
+	slice.EnsureCapacity(len(values))
 
 	for i, val := range values {
-		point := slice.At(i)
+		point := slice.AppendEmpty()
 		point.SetTimestamp(seconds(stamps[i]))
 		point.SetValue(val)
 	}
@@ -304,10 +304,10 @@ func TestMapDoubleMonotonicMetrics(t *testing.T) {
 	}
 
 	//Map to OpenTelemetry format
-	slice := pdata.NewDoubleDataPointSlice()
-	slice.Resize(len(cumulative))
+	slice := pdata.NewNumberDataPointSlice()
+	slice.EnsureCapacity(len(cumulative))
 	for i, val := range cumulative {
-		point := slice.At(i)
+		point := slice.AppendEmpty()
 		point.SetValue(val)
 		point.SetTimestamp(seconds(i))
 	}
@@ -327,7 +327,7 @@ func TestMapDoubleMonotonicMetrics(t *testing.T) {
 
 func TestMapDoubleMonotonicDifferentDimensions(t *testing.T) {
 	metricName := "metric.example"
-	slice := pdata.NewDoubleDataPointSlice()
+	slice := pdata.NewNumberDataPointSlice()
 
 	// No tags
 	point := slice.AppendEmpty()
@@ -372,11 +372,11 @@ func TestMapDoubleMonotonicDifferentDimensions(t *testing.T) {
 func TestMapDoubleMonotonicWithReboot(t *testing.T) {
 	values := []float64{0, 30, 0, 20}
 	metricName := "metric.example"
-	slice := pdata.NewDoubleDataPointSlice()
-	slice.Resize(len(values))
+	slice := pdata.NewNumberDataPointSlice()
+	slice.EnsureCapacity(len(values))
 
 	for i, val := range values {
-		point := slice.At(i)
+		point := slice.AppendEmpty()
 		point.SetTimestamp(seconds(2 * i))
 		point.SetValue(val)
 	}
@@ -396,11 +396,11 @@ func TestMapDoubleMonotonicOutOfOrder(t *testing.T) {
 	values := []float64{0, 1, 2, 3}
 
 	metricName := "metric.example"
-	slice := pdata.NewDoubleDataPointSlice()
-	slice.Resize(len(values))
+	slice := pdata.NewNumberDataPointSlice()
+	slice.EnsureCapacity(len(values))
 
 	for i, val := range values {
-		point := slice.At(i)
+		point := slice.AppendEmpty()
 		point.SetTimestamp(seconds(stamps[i]))
 		point.SetValue(val)
 	}
@@ -412,57 +412,6 @@ func TestMapDoubleMonotonicOutOfOrder(t *testing.T) {
 			metrics.NewCount(metricName, uint64(seconds(2)), 2, []string{}),
 			metrics.NewCount(metricName, uint64(seconds(3)), 1, []string{}),
 		},
-	)
-}
-
-func TestMapIntHistogramMetrics(t *testing.T) {
-	ts := pdata.TimestampFromTime(time.Now())
-	slice := pdata.NewIntHistogramDataPointSlice()
-	point := slice.AppendEmpty()
-	point.SetCount(20)
-	point.SetSum(200)
-	point.SetBucketCounts([]uint64{2, 18})
-	point.SetTimestamp(ts)
-
-	noBuckets := []datadog.Metric{
-		metrics.NewGauge("intHist.test.count", uint64(ts), 20, []string{}),
-		metrics.NewGauge("intHist.test.sum", uint64(ts), 200, []string{}),
-	}
-
-	buckets := []datadog.Metric{
-		metrics.NewGauge("intHist.test.count_per_bucket", uint64(ts), 2, []string{"bucket_idx:0"}),
-		metrics.NewGauge("intHist.test.count_per_bucket", uint64(ts), 18, []string{"bucket_idx:1"}),
-	}
-
-	assert.ElementsMatch(t,
-		mapIntHistogramMetrics("intHist.test", slice, false, []string{}), // No buckets
-		noBuckets,
-	)
-
-	assert.ElementsMatch(t,
-		mapIntHistogramMetrics("intHist.test", slice, true, []string{}), // buckets
-		append(noBuckets, buckets...),
-	)
-
-	// With attribute tags
-	noBucketsAttributeTags := []datadog.Metric{
-		metrics.NewGauge("intHist.test.count", uint64(ts), 20, []string{"attribute_tag:attribute_value"}),
-		metrics.NewGauge("intHist.test.sum", uint64(ts), 200, []string{"attribute_tag:attribute_value"}),
-	}
-
-	bucketsAttributeTags := []datadog.Metric{
-		metrics.NewGauge("intHist.test.count_per_bucket", uint64(ts), 2, []string{"attribute_tag:attribute_value", "bucket_idx:0"}),
-		metrics.NewGauge("intHist.test.count_per_bucket", uint64(ts), 18, []string{"attribute_tag:attribute_value", "bucket_idx:1"}),
-	}
-
-	assert.ElementsMatch(t,
-		mapIntHistogramMetrics("intHist.test", slice, false, []string{"attribute_tag:attribute_value"}), // No buckets
-		noBucketsAttributeTags,
-	)
-
-	assert.ElementsMatch(t,
-		mapIntHistogramMetrics("intHist.test", slice, true, []string{"attribute_tag:attribute_value"}), // buckets
-		append(noBucketsAttributeTags, bucketsAttributeTags...),
 	)
 }
 
@@ -678,8 +627,8 @@ func createTestMetrics() pdata.Metrics {
 	// DoubleGauge
 	met = metricsArray.AppendEmpty()
 	met.SetName("double.gauge")
-	met.SetDataType(pdata.MetricDataTypeDoubleGauge)
-	dpsDouble := met.DoubleGauge().DataPoints()
+	met.SetDataType(pdata.MetricDataTypeGauge)
+	dpsDouble := met.Gauge().DataPoints()
 	dpDouble := dpsDouble.AppendEmpty()
 	dpDouble.SetTimestamp(seconds(0))
 	dpDouble.SetValue(math.Pi)
@@ -693,25 +642,14 @@ func createTestMetrics() pdata.Metrics {
 	dpInt.SetTimestamp(seconds(0))
 	dpInt.SetValue(2)
 
-	// DoubleSum
+	// Sum
 	met = metricsArray.AppendEmpty()
 	met.SetName("double.sum")
-	met.SetDataType(pdata.MetricDataTypeDoubleSum)
-	dpsDouble = met.DoubleSum().DataPoints()
+	met.SetDataType(pdata.MetricDataTypeSum)
+	dpsDouble = met.Sum().DataPoints()
 	dpDouble = dpsDouble.AppendEmpty()
 	dpDouble.SetTimestamp(seconds(0))
 	dpDouble.SetValue(math.E)
-
-	// IntHistogram
-	met = metricsArray.AppendEmpty()
-	met.SetName("int.histogram")
-	met.SetDataType(pdata.MetricDataTypeIntHistogram)
-	dpsIntHist := met.IntHistogram().DataPoints()
-	dpIntHist := dpsIntHist.AppendEmpty()
-	dpIntHist.SetCount(20)
-	dpIntHist.SetSum(100)
-	dpIntHist.SetBucketCounts([]uint64{2, 18})
-	dpIntHist.SetTimestamp(seconds(0))
 
 	// Histogram
 	met = metricsArray.AppendEmpty()
@@ -731,26 +669,26 @@ func createTestMetrics() pdata.Metrics {
 	met.IntSum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
 	met.IntSum().SetIsMonotonic(true)
 	dpsInt = met.IntSum().DataPoints()
-	dpsInt.Resize(2)
-	dpInt = dpsInt.At(0)
+	dpsInt.EnsureCapacity(2)
+	dpInt = dpsInt.AppendEmpty()
 	dpInt.SetTimestamp(seconds(0))
 	dpInt.SetValue(4)
-	dpInt = dpsInt.At(1)
+	dpInt = dpsInt.AppendEmpty()
 	dpInt.SetTimestamp(seconds(2))
 	dpInt.SetValue(7)
 
 	// Double Sum (cumulative)
 	met = metricsArray.AppendEmpty()
 	met.SetName("double.cumulative.sum")
-	met.SetDataType(pdata.MetricDataTypeDoubleSum)
-	met.DoubleSum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
-	met.DoubleSum().SetIsMonotonic(true)
-	dpsDouble = met.DoubleSum().DataPoints()
-	dpsDouble.Resize(2)
-	dpDouble = dpsDouble.At(0)
+	met.SetDataType(pdata.MetricDataTypeSum)
+	met.Sum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+	met.Sum().SetIsMonotonic(true)
+	dpsDouble = met.Sum().DataPoints()
+	dpsDouble.EnsureCapacity(2)
+	dpDouble = dpsDouble.AppendEmpty()
 	dpDouble.SetTimestamp(seconds(0))
 	dpDouble.SetValue(4)
-	dpDouble = dpsDouble.At(1)
+	dpDouble = dpsDouble.AppendEmpty()
 	dpDouble.SetTimestamp(seconds(2))
 	dpDouble.SetValue(4 + math.Pi)
 
@@ -803,8 +741,6 @@ func TestMapMetrics(t *testing.T) {
 		testGauge("double.gauge", math.Pi),
 		testGauge("int.sum", 2),
 		testGauge("double.sum", math.E),
-		testGauge("int.histogram.sum", 100),
-		testGauge("int.histogram.count", 20),
 		testGauge("double.histogram.sum", math.Phi),
 		testGauge("double.histogram.count", 20),
 		testGauge("summary.sum", 10_000),

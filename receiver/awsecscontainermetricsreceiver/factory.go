@@ -27,7 +27,7 @@ import (
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsecscontainermetricsreceiver/awsecscontainermetrics"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsecscontainermetricsreceiver/internal/awsecscontainermetrics"
 )
 
 // Factory for awscontainermetrics
@@ -74,7 +74,8 @@ func createMetricsReceiver(
 	rest := restClient(params.Logger, *endpoint)
 
 	rCfg := baseCfg.(*Config)
-	return New(params.Logger, rCfg, consumer, rest)
+	logger := params.Logger
+	return newAWSECSContainermetrics(logger, rCfg, consumer, rest)
 }
 
 func restClient(logger *zap.Logger, endpoint url.URL) awsecscontainermetrics.RestClient {

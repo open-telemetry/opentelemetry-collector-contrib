@@ -53,9 +53,9 @@ func isCumulativeMonotonic(md pdata.Metric) bool {
 	case pdata.MetricDataTypeIntSum:
 		return md.IntSum().AggregationTemporality() == pdata.AggregationTemporalityCumulative &&
 			md.IntSum().IsMonotonic()
-	case pdata.MetricDataTypeDoubleSum:
-		return md.DoubleSum().AggregationTemporality() == pdata.AggregationTemporalityCumulative &&
-			md.DoubleSum().IsMonotonic()
+	case pdata.MetricDataTypeSum:
+		return md.Sum().AggregationTemporality() == pdata.AggregationTemporalityCumulative &&
+			md.Sum().IsMonotonic()
 	}
 	return false
 }
@@ -82,7 +82,7 @@ func mapIntMetrics(name string, slice pdata.IntDataPointSlice, attrTags []string
 }
 
 // mapDoubleMetrics maps double datapoints into Datadog metrics
-func mapDoubleMetrics(name string, slice pdata.DoubleDataPointSlice, attrTags []string) []datadog.Metric {
+func mapDoubleMetrics(name string, slice pdata.NumberDataPointSlice, attrTags []string) []datadog.Metric {
 	ms := make([]datadog.Metric, 0, slice.Len())
 	for i := 0; i < slice.Len(); i++ {
 		p := slice.At(i)
@@ -144,7 +144,7 @@ type doubleCounter struct {
 }
 
 // mapDoubleMonotonicMetrics maps monotonic datapoints into Datadog metrics
-func mapDoubleMonotonicMetrics(name string, prevPts *ttlmap.TTLMap, slice pdata.DoubleDataPointSlice, attrTags []string) []datadog.Metric {
+func mapDoubleMonotonicMetrics(name string, prevPts *ttlmap.TTLMap, slice pdata.NumberDataPointSlice, attrTags []string) []datadog.Metric {
 	ms := make([]datadog.Metric, 0, slice.Len())
 	for i := 0; i < slice.Len(); i++ {
 		p := slice.At(i)
@@ -178,7 +178,7 @@ func mapDoubleMonotonicMetrics(name string, prevPts *ttlmap.TTLMap, slice pdata.
 	return ms
 }
 
-// mapIntHistogramMetrics maps histogram metrics slices to Datadog metrics
+// mapHistogramMetrics maps double histogram metrics slices to Datadog metrics
 //
 // A Histogram metric has:
 // - The count of values in the population
@@ -191,38 +191,6 @@ func mapDoubleMonotonicMetrics(name string, prevPts *ttlmap.TTLMap, slice pdata.
 // We follow a similar approach to our OpenCensus exporter:
 // we report sum and count by default; buckets count can also
 // be reported (opt-in), but bounds are ignored.
-func mapIntHistogramMetrics(name string, slice pdata.IntHistogramDataPointSlice, buckets bool, attrTags []string) []datadog.Metric {
-	// Allocate assuming none are nil and no buckets
-	ms := make([]datadog.Metric, 0, 2*slice.Len())
-	for i := 0; i < slice.Len(); i++ {
-		p := slice.At(i)
-		ts := uint64(p.Timestamp())
-		tags := getTags(p.LabelsMap())
-		tags = append(tags, attrTags...)
-
-		ms = append(ms,
-			metrics.NewGauge(fmt.Sprintf("%s.count", name), ts, float64(p.Count()), tags),
-			metrics.NewGauge(fmt.Sprintf("%s.sum", name), ts, float64(p.Sum()), tags),
-		)
-
-		if buckets {
-			// We have a single metric, 'count_per_bucket', which is tagged with the bucket id. See:
-			// https://github.com/DataDog/opencensus-go-exporter-datadog/blob/c3b47f1c6dcf1c47b59c32e8dbb7df5f78162daa/stats.go#L99-L104
-			fullName := fmt.Sprintf("%s.count_per_bucket", name)
-			for idx, count := range p.BucketCounts() {
-				bucketTags := append(tags, fmt.Sprintf("bucket_idx:%d", idx))
-				ms = append(ms,
-					metrics.NewGauge(fullName, ts, float64(count), bucketTags),
-				)
-			}
-		}
-	}
-	return ms
-}
-
-// mapIntHistogramMetrics maps double histogram metrics slices to Datadog metrics
-//
-// see mapIntHistogramMetrics docs for further details.
 func mapHistogramMetrics(name string, slice pdata.HistogramDataPointSlice, buckets bool, attrTags []string) []datadog.Metric {
 	// Allocate assuming none are nil and no buckets
 	ms := make([]datadog.Metric, 0, 2*slice.Len())
@@ -330,22 +298,20 @@ func mapMetrics(logger *zap.Logger, cfg config.MetricsConfig, prevPts *ttlmap.TT
 				switch md.DataType() {
 				case pdata.MetricDataTypeIntGauge:
 					datapoints = mapIntMetrics(md.Name(), md.IntGauge().DataPoints(), attributeTags)
-				case pdata.MetricDataTypeDoubleGauge:
-					datapoints = mapDoubleMetrics(md.Name(), md.DoubleGauge().DataPoints(), attributeTags)
+				case pdata.MetricDataTypeGauge:
+					datapoints = mapDoubleMetrics(md.Name(), md.Gauge().DataPoints(), attributeTags)
 				case pdata.MetricDataTypeIntSum:
 					if cfg.SendMonotonic && isCumulativeMonotonic(md) {
 						datapoints = mapIntMonotonicMetrics(md.Name(), prevPts, md.IntSum().DataPoints(), attributeTags)
 					} else {
 						datapoints = mapIntMetrics(md.Name(), md.IntSum().DataPoints(), attributeTags)
 					}
-				case pdata.MetricDataTypeDoubleSum:
+				case pdata.MetricDataTypeSum:
 					if cfg.SendMonotonic && isCumulativeMonotonic(md) {
-						datapoints = mapDoubleMonotonicMetrics(md.Name(), prevPts, md.DoubleSum().DataPoints(), attributeTags)
+						datapoints = mapDoubleMonotonicMetrics(md.Name(), prevPts, md.Sum().DataPoints(), attributeTags)
 					} else {
-						datapoints = mapDoubleMetrics(md.Name(), md.DoubleSum().DataPoints(), attributeTags)
+						datapoints = mapDoubleMetrics(md.Name(), md.Sum().DataPoints(), attributeTags)
 					}
-				case pdata.MetricDataTypeIntHistogram:
-					datapoints = mapIntHistogramMetrics(md.Name(), md.IntHistogram().DataPoints(), cfg.Buckets, attributeTags)
 				case pdata.MetricDataTypeHistogram:
 					datapoints = mapHistogramMetrics(md.Name(), md.Histogram().DataPoints(), cfg.Buckets, attributeTags)
 				case pdata.MetricDataTypeSummary:

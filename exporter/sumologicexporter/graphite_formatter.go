@@ -87,9 +87,9 @@ func (gf *graphiteFormatter) intRecord(fs fields, name string, dataPoint pdata.I
 	)
 }
 
-// doubleRecord converts DoubleDataPoint to graphite metric string
+// doubleRecord converts NumberDataPoint to graphite metric string
 // with additional information from fields
-func (gf *graphiteFormatter) doubleRecord(fs fields, name string, dataPoint pdata.DoubleDataPoint) string {
+func (gf *graphiteFormatter) doubleRecord(fs fields, name string, dataPoint pdata.NumberDataPoint) string {
 	return fmt.Sprintf("%s %g %d",
 		gf.format(fs, name),
 		dataPoint.Value(),
@@ -116,21 +116,20 @@ func (gf *graphiteFormatter) metric2String(record metricPair) string {
 		for i := 0; i < dps.Len(); i++ {
 			nextLines = append(nextLines, gf.intRecord(fs, name, dps.At(i)))
 		}
-	case pdata.MetricDataTypeDoubleGauge:
-		dps := record.metric.DoubleGauge().DataPoints()
+	case pdata.MetricDataTypeGauge:
+		dps := record.metric.Gauge().DataPoints()
 		nextLines = make([]string, 0, dps.Len())
 		for i := 0; i < dps.Len(); i++ {
 			nextLines = append(nextLines, gf.doubleRecord(fs, name, dps.At(i)))
 		}
-	case pdata.MetricDataTypeDoubleSum:
-		dps := record.metric.DoubleSum().DataPoints()
+	case pdata.MetricDataTypeSum:
+		dps := record.metric.Sum().DataPoints()
 		nextLines = make([]string, 0, dps.Len())
 		for i := 0; i < dps.Len(); i++ {
 			nextLines = append(nextLines, gf.doubleRecord(fs, name, dps.At(i)))
 		}
 	// Skip complex metrics
 	case pdata.MetricDataTypeHistogram:
-	case pdata.MetricDataTypeIntHistogram:
 	case pdata.MetricDataTypeSummary:
 	}
 

@@ -74,9 +74,9 @@ func carbon2IntRecord(record metricPair, dataPoint pdata.IntDataPoint) string {
 	)
 }
 
-// carbon2DoubleRecord converts DoubleDataPoint to carbon2 metric string
+// carbon2DoubleRecord converts NumberDataPoint to carbon2 metric string
 // with additional information from metricPair.
-func carbon2DoubleRecord(record metricPair, dataPoint pdata.DoubleDataPoint) string {
+func carbon2DoubleRecord(record metricPair, dataPoint pdata.NumberDataPoint) string {
 	return fmt.Sprintf("%s  %g %d",
 		carbon2TagString(record),
 		dataPoint.Value(),
@@ -101,21 +101,20 @@ func carbon2Metric2String(record metricPair) string {
 		for i := 0; i < dps.Len(); i++ {
 			nextLines = append(nextLines, carbon2IntRecord(record, dps.At(i)))
 		}
-	case pdata.MetricDataTypeDoubleGauge:
-		dps := record.metric.DoubleGauge().DataPoints()
+	case pdata.MetricDataTypeGauge:
+		dps := record.metric.Gauge().DataPoints()
 		nextLines = make([]string, 0, dps.Len())
 		for i := 0; i < dps.Len(); i++ {
 			nextLines = append(nextLines, carbon2DoubleRecord(record, dps.At(i)))
 		}
-	case pdata.MetricDataTypeDoubleSum:
-		dps := record.metric.DoubleSum().DataPoints()
+	case pdata.MetricDataTypeSum:
+		dps := record.metric.Sum().DataPoints()
 		nextLines = make([]string, 0, dps.Len())
 		for i := 0; i < dps.Len(); i++ {
 			nextLines = append(nextLines, carbon2DoubleRecord(record, dps.At(i)))
 		}
 	// Skip complex metrics
 	case pdata.MetricDataTypeHistogram:
-	case pdata.MetricDataTypeIntHistogram:
 	case pdata.MetricDataTypeSummary:
 	}
 

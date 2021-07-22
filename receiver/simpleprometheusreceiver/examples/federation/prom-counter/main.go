@@ -24,14 +24,30 @@ import (
 	"time"
 
 	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/exporters/metric/prometheus"
+	"go.opentelemetry.io/otel/exporters/prometheus"
 	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/metric/global"
+	export "go.opentelemetry.io/otel/sdk/export/metric"
+	"go.opentelemetry.io/otel/sdk/metric/aggregator/histogram"
+	controller "go.opentelemetry.io/otel/sdk/metric/controller/basic"
+	processor "go.opentelemetry.io/otel/sdk/metric/processor/basic"
+	selector "go.opentelemetry.io/otel/sdk/metric/selector/simple"
 	"go.uber.org/zap"
 )
 
 func initMeter() {
-	exporter, err := prometheus.InstallNewPipeline(prometheus.Config{})
+	config := prometheus.Config{}
+	c := controller.New(
+		processor.New(
+			selector.NewWithHistogramDistribution(
+				histogram.WithExplicitBoundaries(config.DefaultHistogramBoundaries),
+			),
+			export.CumulativeExportKindSelector(),
+			processor.WithMemory(true),
+		),
+	)
+	exporter, err := prometheus.New(config, c)
+
 	if err != nil {
 		log.Panicf("failed to initialize prometheus exporter %v", err)
 	}
