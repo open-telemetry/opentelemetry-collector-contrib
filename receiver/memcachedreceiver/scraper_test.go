@@ -63,7 +63,7 @@ func TestScraper(t *testing.T) {
 		case "memcached.command_count":
 			require.Equal(t, 4, m.IntSum().DataPoints().Len())
 		case "memcached.current_items":
-			require.Equal(t, 1, m.DoubleGauge().DataPoints().Len())
+			require.Equal(t, 1, m.Gauge().DataPoints().Len())
 		case "memcached.eviction_count":
 			require.Equal(t, 1, m.IntSum().DataPoints().Len())
 		case "memcached.network":
@@ -71,9 +71,9 @@ func TestScraper(t *testing.T) {
 		case "memcached.operation_count":
 			require.Equal(t, 6, m.IntSum().DataPoints().Len())
 		case "memcached.rusage":
-			require.Equal(t, 2, m.DoubleGauge().DataPoints().Len())
+			require.Equal(t, 2, m.Gauge().DataPoints().Len())
 		case "memcached.threads":
-			require.Equal(t, 1, m.DoubleGauge().DataPoints().Len())
+			require.Equal(t, 1, m.Gauge().DataPoints().Len())
 		default:
 			t.Error("Incorrect name or untracked metric name.")
 		}

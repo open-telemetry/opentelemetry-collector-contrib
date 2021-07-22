@@ -157,7 +157,7 @@ var Metrics = &metricStruct{
 			metric.SetName("memcached.current_items")
 			metric.SetDescription("Number of items currently stored in the cache")
 			metric.SetUnit("1")
-			metric.SetDataType(pdata.MetricDataTypeDoubleGauge)
+			metric.SetDataType(pdata.MetricDataTypeGauge)
 		},
 	},
 	&metricImpl{
@@ -199,7 +199,7 @@ var Metrics = &metricStruct{
 			metric.SetName("memcached.operation_hit_ratio")
 			metric.SetDescription("Hit ratio for memcached operations, expressed as a percentage value between 0.0 and 100.0.")
 			metric.SetUnit("%")
-			metric.SetDataType(pdata.MetricDataTypeDoubleGauge)
+			metric.SetDataType(pdata.MetricDataTypeGauge)
 		},
 	},
 	&metricImpl{
@@ -208,7 +208,7 @@ var Metrics = &metricStruct{
 			metric.SetName("memcached.rusage")
 			metric.SetDescription("Accumulated user and system time.")
 			metric.SetUnit("1")
-			metric.SetDataType(pdata.MetricDataTypeDoubleGauge)
+			metric.SetDataType(pdata.MetricDataTypeGauge)
 		},
 	},
 	&metricImpl{
@@ -217,7 +217,7 @@ var Metrics = &metricStruct{
 			metric.SetName("memcached.threads")
 			metric.SetDescription("Number of threads used by the memcached instance")
 			metric.SetUnit("1")
-			metric.SetDataType(pdata.MetricDataTypeDoubleGauge)
+			metric.SetDataType(pdata.MetricDataTypeGauge)
 		},
 	},
 	&metricImpl{

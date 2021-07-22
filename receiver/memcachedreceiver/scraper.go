@@ -69,99 +69,106 @@ func (r *memcachedScraper) scrape(_ context.Context) (pdata.ResourceMetricsSlice
 	ilm.InstrumentationLibrary().SetName("otelcol/memcached")
 	now := pdata.TimestampFromTime(time.Now())
 
-	commandCount := initLabeledIntSum(ilm.Metrics(), metadata.M.MemcachedCommandCount.Name())
-	rUsage := initLabeledDoubleGauge(ilm.Metrics(), metadata.M.MemcachedRusage.Name())
-	network := initLabeledIntSum(ilm.Metrics(), metadata.M.MemcachedNetwork.Name())
-	operationCount := initLabeledIntSum(ilm.Metrics(), metadata.M.MemcachedOperationCount.Name())
-	hitRatio := initLabeledDoubleGauge(ilm.Metrics(), metadata.M.MemcachedOperationHitRatio.Name())
+	commandCount := initMetric(ilm.Metrics(), metadata.M.MemcachedCommandCount).IntSum().DataPoints()
+	rUsage := initMetric(ilm.Metrics(), metadata.M.MemcachedRusage).Gauge().DataPoints()
+	network := initMetric(ilm.Metrics(), metadata.M.MemcachedNetwork).IntSum().DataPoints()
+	operationCount := initMetric(ilm.Metrics(), metadata.M.MemcachedOperationCount).IntSum().DataPoints()
+	hitRatio := initMetric(ilm.Metrics(), metadata.M.MemcachedOperationHitRatio).Gauge().DataPoints()
+	bytes := initMetric(ilm.Metrics(), metadata.M.MemcachedBytes).IntGauge().DataPoints()
+	currConn := initMetric(ilm.Metrics(), metadata.M.MemcachedCurrentConnections).IntGauge().DataPoints()
+	totalConn := initMetric(ilm.Metrics(), metadata.M.MemcachedTotalConnections).IntSum().DataPoints()
+	currItems := initMetric(ilm.Metrics(), metadata.M.MemcachedCurrentItems).Gauge().DataPoints()
+	threads := initMetric(ilm.Metrics(), metadata.M.MemcachedThreads).Gauge().DataPoints()
+	evictions := initMetric(ilm.Metrics(), metadata.M.MemcachedEvictionCount).IntSum().DataPoints()
+
 	for _, stats := range stats {
 		for k, v := range stats.Stats {
 			labels := pdata.NewStringMap()
 			switch k {
 			case "bytes":
-				addIntGauge(ilm.Metrics(), metadata.M.MemcachedBytes.Name(), now, labels, parseInt(v))
+				addToIntMetric(bytes, labels, parseInt(v), now)
 			case "curr_connections":
-				addIntGauge(ilm.Metrics(), metadata.M.MemcachedCurrentConnections.Name(), now, labels, parseInt(v))
+				addToIntMetric(currConn, labels, parseInt(v), now)
 			case "total_connections":
-				addIntSum(ilm.Metrics(), metadata.M.MemcachedTotalConnections.Name(), now, labels, parseInt(v))
+				addToIntMetric(totalConn, labels, parseInt(v), now)
 			case "cmd_get":
 				labels.Insert(metadata.L.Command, "get")
-				addToIntLabeledMetric(commandCount, now, labels, parseInt(v))
+				addToIntMetric(commandCount, labels, parseInt(v), now)
 			case "cmd_set":
 				labels.Insert(metadata.L.Command, "set")
-				addToIntLabeledMetric(commandCount, now, labels, parseInt(v))
+				addToIntMetric(commandCount, labels, parseInt(v), now)
 			case "cmd_flush":
 				labels.Insert(metadata.L.Command, "flush")
-				addToIntLabeledMetric(commandCount, now, labels, parseInt(v))
+				addToIntMetric(commandCount, labels, parseInt(v), now)
 			case "cmd_touch":
 				labels.Insert(metadata.L.Command, "touch")
-				addToIntLabeledMetric(commandCount, now, labels, parseInt(v))
+				addToIntMetric(commandCount, labels, parseInt(v), now)
 			case "curr_items":
-				addDoubleGauge(ilm.Metrics(), metadata.M.MemcachedCurrentItems.Name(), now, labels, parseFloat(v))
+				addToMetric(currItems, labels, parseFloat(v), now)
 			case "threads":
-				addDoubleGauge(ilm.Metrics(), metadata.M.MemcachedThreads.Name(), now, labels, parseFloat(v))
+				addToMetric(threads, labels, parseFloat(v), now)
 			case "evictions":
-				addIntSum(ilm.Metrics(), metadata.M.MemcachedEvictionCount.Name(), now, labels, parseInt(v))
+				addToIntMetric(evictions, labels, parseInt(v), now)
 			case "bytes_read":
 				labels.Insert(metadata.L.Direction, "received")
-				addToIntLabeledMetric(network, now, labels, parseInt(v))
+				addToIntMetric(network, labels, parseInt(v), now)
 			case "bytes_written":
 				labels.Insert(metadata.L.Direction, "sent")
-				addToIntLabeledMetric(network, now, labels, parseInt(v))
+				addToIntMetric(network, labels, parseInt(v), now)
 			case "get_hits":
 				labels.Insert(metadata.L.Operation, "get")
 				statSlice := stats.Stats
 				hits := parseFloat(statSlice["get_hits"])
 				misses := parseFloat(statSlice["get_misses"])
 				if hits+misses > 0 {
-					addToDoubleLabeledMetric(hitRatio, now, labels, (hits / (hits + misses) * 100))
+					addToMetric(hitRatio, labels, (hits / (hits + misses) * 100), now)
 				} else {
-					addToDoubleLabeledMetric(hitRatio, now, labels, 0)
+					addToMetric(hitRatio, labels, 0, now)
 				}
 				labels.Insert(metadata.L.Type, "hit")
-				addToIntLabeledMetric(operationCount, now, labels, parseInt(v))
+				addToIntMetric(operationCount, labels, parseInt(v), now)
 			case "get_misses":
 				labels.Insert(metadata.L.Operation, "get")
 				labels.Insert(metadata.L.Type, "miss")
-				addToIntLabeledMetric(operationCount, now, labels, parseInt(v))
+				addToIntMetric(operationCount, labels, parseInt(v), now)
 			case "incr_hits":
 				labels.Insert(metadata.L.Operation, "increment")
 				statSlice := stats.Stats
 				hits := parseFloat(statSlice["incr_hits"])
 				misses := parseFloat(statSlice["incr_misses"])
 				if hits+misses > 0 {
-					addToDoubleLabeledMetric(hitRatio, now, labels, (hits / (hits + misses) * 100))
+					addToMetric(hitRatio, labels, (hits / (hits + misses) * 100), now)
 				} else {
-					addToDoubleLabeledMetric(hitRatio, now, labels, 0)
+					addToMetric(hitRatio, labels, 0, now)
 				}
 				labels.Insert(metadata.L.Type, "hit")
-				addToIntLabeledMetric(operationCount, now, labels, parseInt(v))
+				addToIntMetric(operationCount, labels, parseInt(v), now)
 			case "incr_misses":
 				labels.Insert(metadata.L.Operation, "increment")
 				labels.Insert(metadata.L.Type, "miss")
-				addToIntLabeledMetric(operationCount, now, labels, parseInt(v))
+				addToIntMetric(operationCount, labels, parseInt(v), now)
 			case "decr_hits":
 				labels.Insert(metadata.L.Operation, "decrement")
 				statSlice := stats.Stats
 				hits := parseFloat(statSlice["decr_hits"])
 				misses := parseFloat(statSlice["decr_misses"])
 				if hits+misses > 0 {
-					addToDoubleLabeledMetric(hitRatio, now, labels, (hits / (hits + misses) * 100))
+					addToMetric(hitRatio, labels, (hits / (hits + misses) * 100), now)
 				} else {
-					addToDoubleLabeledMetric(hitRatio, now, labels, 0)
+					addToMetric(hitRatio, labels, 0, now)
 				}
 				labels.Insert(metadata.L.Type, "hit")
-				addToIntLabeledMetric(operationCount, now, labels, parseInt(v))
+				addToIntMetric(operationCount, labels, parseInt(v), now)
 			case "decr_misses":
 				labels.Insert(metadata.L.Operation, "decrement")
 				labels.Insert(metadata.L.Type, "miss")
-				addToIntLabeledMetric(operationCount, now, labels, parseInt(v))
+				addToIntMetric(operationCount, labels, parseInt(v), now)
 			case "rusage_system":
 				labels.Insert(metadata.L.UsageType, "system")
-				addToDoubleLabeledMetric(rUsage, now, labels, parseFloat(v))
+				addToMetric(rUsage, labels, parseFloat(v), now)
 			case "rusage_user":
 				labels.Insert(metadata.L.UsageType, "user")
-				addToDoubleLabeledMetric(rUsage, now, labels, parseFloat(v))
+				addToMetric(rUsage, labels, parseFloat(v), now)
 			}
 		}
 	}
@@ -169,60 +176,28 @@ func (r *memcachedScraper) scrape(_ context.Context) (pdata.ResourceMetricsSlice
 	return rms, nil
 }
 
-func addIntGauge(ms pdata.MetricSlice, name string, now pdata.Timestamp, labels pdata.StringMap, value int64) {
+func initMetric(ms pdata.MetricSlice, mi metadata.MetricIntf) pdata.Metric {
 	m := ms.AppendEmpty()
-	m.SetName(name)
-	m.SetDataType(pdata.MetricDataTypeIntGauge)
-	dp := m.IntGauge().DataPoints().AppendEmpty()
-	dp.SetTimestamp(now)
-	dp.SetValue(value)
-	labels.CopyTo(dp.LabelsMap())
+	mi.Init(m)
+	return m
 }
 
-func addDoubleGauge(ms pdata.MetricSlice, name string, now pdata.Timestamp, labels pdata.StringMap, value float64) {
-	m := ms.AppendEmpty()
-	m.SetName(name)
-	m.SetDataType(pdata.MetricDataTypeDoubleGauge)
-	dp := m.DoubleGauge().DataPoints().AppendEmpty()
-	dp.SetTimestamp(now)
-	dp.SetValue(value)
-	labels.CopyTo(dp.LabelsMap())
-}
-
-func addIntSum(ms pdata.MetricSlice, name string, now pdata.Timestamp, labels pdata.StringMap, value int64) {
-	m := ms.AppendEmpty()
-	m.SetName(name)
-	m.SetDataType(pdata.MetricDataTypeIntSum)
-	dp := m.IntSum().DataPoints().AppendEmpty()
-	dp.SetTimestamp(now)
-	dp.SetValue(value)
-	labels.CopyTo(dp.LabelsMap())
-}
-
-func initLabeledIntSum(ms pdata.MetricSlice, name string) pdata.IntDataPointSlice {
-	m := ms.AppendEmpty()
-	m.SetName(name)
-	m.SetDataType(pdata.MetricDataTypeIntSum)
-	return m.IntSum().DataPoints()
-}
-
-func initLabeledDoubleGauge(ms pdata.MetricSlice, name string) pdata.DoubleDataPointSlice {
-	m := ms.AppendEmpty()
-	m.SetName(name)
-	m.SetDataType(pdata.MetricDataTypeDoubleGauge)
-	return m.DoubleGauge().DataPoints()
-}
-
-func addToDoubleLabeledMetric(metric pdata.DoubleDataPointSlice, now pdata.Timestamp, labels pdata.StringMap, value float64) {
+// addToMetric adds and labels a double gauge datapoint to a metricslice.
+func addToMetric(metric pdata.DoubleDataPointSlice, labels pdata.StringMap, value float64, ts pdata.Timestamp) {
 	dataPoint := metric.AppendEmpty()
-	dataPoint.SetTimestamp(now)
+	dataPoint.SetTimestamp(ts)
 	dataPoint.SetValue(value)
-	labels.CopyTo(dataPoint.LabelsMap())
+	if labels.Len() > 0 {
+		labels.CopyTo(dataPoint.LabelsMap())
+	}
 }
 
-func addToIntLabeledMetric(metric pdata.IntDataPointSlice, now pdata.Timestamp, labels pdata.StringMap, value int64) {
+// addToIntMetric adds and labels a int sum datapoint to metricslice.
+func addToIntMetric(metric pdata.IntDataPointSlice, labels pdata.StringMap, value int64, ts pdata.Timestamp) {
 	dataPoint := metric.AppendEmpty()
-	dataPoint.SetTimestamp(now)
+	dataPoint.SetTimestamp(ts)
 	dataPoint.SetValue(value)
-	labels.CopyTo(dataPoint.LabelsMap())
+	if labels.Len() > 0 {
+		labels.CopyTo(dataPoint.LabelsMap())
+	}
 }
