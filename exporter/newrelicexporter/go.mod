@@ -9,8 +9,8 @@ require (
 	github.com/newrelic/newrelic-telemetry-sdk-go v0.7.1
 	github.com/stretchr/testify v1.7.0
 	go.opencensus.io v0.23.0
-	go.opentelemetry.io/collector v0.30.2-0.20210721214806-6cce4224c6e7
-	go.opentelemetry.io/collector/model v0.30.2-0.20210721214806-6cce4224c6e7
+	go.opentelemetry.io/collector v0.30.2-0.20210722210235-1ede290c002b
+	go.opentelemetry.io/collector/model v0.30.2-0.20210722210235-1ede290c002b
 	go.uber.org/zap v1.18.1
 	google.golang.org/genproto v0.0.0-20210604141403-392c879c8b08
 	google.golang.org/grpc v1.39.0
