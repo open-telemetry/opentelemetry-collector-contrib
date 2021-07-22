@@ -25,31 +25,6 @@ import (
 	"go.uber.org/zap"
 )
 
-type MockTaskInfo struct {
-	tasks            []ECSTask
-	runningTaskCount int64
-}
-
-func (ii *MockTaskInfo) getRunningTaskCount() int64 {
-	return ii.runningTaskCount
-}
-func (ii *MockTaskInfo) getRunningTasksInfo() []ECSTask {
-
-	return ii.tasks
-}
-
-type MockInstanceInfo struct {
-	clusterName string
-	instanceID  string
-}
-
-func (ii *MockInstanceInfo) GetClusterName() string {
-	return ii.clusterName
-}
-func (ii *MockInstanceInfo) GetContainerInstanceID() string {
-	return ii.instanceID
-}
-
 func TestGetCGroupPathForTask(t *testing.T) {
 	cgroupMount := "test"
 	controller := "cpu"

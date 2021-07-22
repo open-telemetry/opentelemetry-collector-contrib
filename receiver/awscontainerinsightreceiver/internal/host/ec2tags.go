@@ -24,6 +24,8 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/ec2"
 	"go.uber.org/zap"
+
+	ci "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/containerinsight"
 )
 
 const (
@@ -43,26 +45,28 @@ type ec2TagsProvider interface {
 }
 
 type ec2Tags struct {
-	refreshInterval      time.Duration
-	maxJitterTime        time.Duration
-	instanceID           string
-	client               ec2TagsClient
-	clusterName          string
-	autoScalingGroupName string
-	isSucess             chan bool //only used in testing
-	logger               *zap.Logger
+	refreshInterval       time.Duration
+	maxJitterTime         time.Duration
+	containerOrchestrator string
+	instanceID            string
+	client                ec2TagsClient
+	clusterName           string
+	autoScalingGroupName  string
+	isSucess              chan bool //only used in testing
+	logger                *zap.Logger
 }
 
 type ec2TagsOption func(*ec2Tags)
 
-func newEC2Tags(ctx context.Context, session *session.Session, instanceID string, region string,
+func newEC2Tags(ctx context.Context, session *session.Session, instanceID string, region string, containerOrchestrator string,
 	refreshInterval time.Duration, logger *zap.Logger, options ...ec2TagsOption) ec2TagsProvider {
 	et := &ec2Tags{
-		instanceID:      instanceID,
-		client:          ec2.New(session, aws.NewConfig().WithRegion(region)),
-		refreshInterval: refreshInterval,
-		maxJitterTime:   3 * time.Second,
-		logger:          logger,
+		instanceID:            instanceID,
+		client:                ec2.New(session, aws.NewConfig().WithRegion(region)),
+		refreshInterval:       refreshInterval,
+		maxJitterTime:         3 * time.Second,
+		logger:                logger,
+		containerOrchestrator: containerOrchestrator,
 	}
 
 	for _, opt := range options {
@@ -70,8 +74,11 @@ func newEC2Tags(ctx context.Context, session *session.Session, instanceID string
 	}
 
 	shouldRefresh := func() bool {
-		//stop once we get the cluster name
-		return et.clusterName == ""
+		if containerOrchestrator == ci.EKS {
+			//stop once we get the cluster name
+			return et.clusterName == ""
+		}
+		return et.autoScalingGroupName == ""
 	}
 
 	go RefreshUntil(ctx, et.refresh, et.refreshInterval, shouldRefresh, et.maxJitterTime)
@@ -132,10 +139,19 @@ func (et *ec2Tags) getAutoScalingGroupName() string {
 
 func (et *ec2Tags) refresh(ctx context.Context) {
 	tags := et.fetchEC2Tags(ctx)
+	et.logger.Info("Fetch ec2 tags successfully")
 	et.clusterName = tags[clusterNameKey]
 	et.autoScalingGroupName = tags[autoScalingGroupNameTag]
-	if et.isSucess != nil && et.clusterName != "" && et.autoScalingGroupName != "" {
-		// this will be executed only in testing
-		close(et.isSucess)
+	et.logger.Info("Fetch ec2 tags to detect cluster name and auto scaling group name", zap.String("instanceId", et.autoScalingGroupName))
+	et.logger.Info("Fetch ec2 tags to detect cluster name and auto scaling group name", zap.String("instanceId", et.clusterName))
+	if et.containerOrchestrator == ci.ECS {
+		if et.isSucess != nil && et.autoScalingGroupName != "" {
+			close(et.isSucess)
+		}
+	} else {
+		if et.isSucess != nil && et.autoScalingGroupName != "" && et.clusterName != "" {
+			// this will be executed only in testing
+			close(et.isSucess)
+		}
 	}
 }

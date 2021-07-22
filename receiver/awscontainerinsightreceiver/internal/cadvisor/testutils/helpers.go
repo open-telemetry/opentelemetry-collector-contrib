@@ -57,6 +57,7 @@ func (m MockCPUMemInfo) GetMemoryCapacity() int64 {
 type MockHostInfo struct {
 	MockCPUMemInfo
 	ClusterName string
+	InstanceIP  string
 }
 
 func (m MockHostInfo) GetClusterName() string {

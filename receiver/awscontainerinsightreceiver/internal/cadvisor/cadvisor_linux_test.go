@@ -131,3 +131,29 @@ func TestGetMetrics(t *testing.T) {
 
 	os.Setenv("HOST_NAME", originalHostName)
 }
+
+func TestGetMetricsWithECS(t *testing.T) {
+	// normal case
+	ecsInfo := &testutils.MockECSInfo{}
+	hostInfo := testutils.MockHostInfo{InstanceIP: "0.0.0.0"}
+	mockCreateManager := func(memoryCache *memory.InMemoryCache, sysfs sysfs.SysFs, houskeepingConfig manager.HouskeepingConfig,
+		includedMetricsSet container.MetricSet, collectorHTTPClient *http.Client, rawContainerCgroupPathPrefixWhiteList []string,
+		perfEventsFile string) (cadvisorManager, error) {
+		return &mockCadvisorManager{t: t}, nil
+	}
+	c, err := NewWithECSInfo("ecs", hostInfo, zap.NewNop(), ecsInfo, cadvisorManagerCreator(mockCreateManager))
+	assert.NotNil(t, c)
+	assert.Nil(t, err)
+	assert.NotNil(t, c.GetMetrics())
+
+	// error when calling manager.Start
+	c, err = NewWithECSInfo("ecs", hostInfo, zap.NewNop(), ecsInfo, cadvisorManagerCreator(mockCreateManager2))
+	assert.Nil(t, c)
+	assert.NotNil(t, err)
+
+	// error when creating cadvisor manager
+	c, err = NewWithECSInfo("ecs", hostInfo, zap.NewNop(), ecsInfo, cadvisorManagerCreator(mockCreateManagerWithError))
+	assert.Nil(t, c)
+	assert.NotNil(t, err)
+
+}

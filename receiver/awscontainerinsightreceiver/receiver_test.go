@@ -23,6 +23,8 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/model/pdata"
 	"go.uber.org/zap"
+
+	ci "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/containerinsight"
 )
 
 // Mock cadvisor
@@ -119,6 +121,32 @@ func TestCollectDataWithErrConsumer(t *testing.T) {
 	r.k8sapiserver = &MockK8sAPIServer{}
 	ctx := context.Background()
 
+	err = r.collectData(ctx)
+	require.NotNil(t, err)
+}
+
+func TestCollectDataWithECS(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.ContainerOrchestrator = ci.ECS
+	metricsReceiver, err := newAWSContainerInsightReceiver(
+		zap.NewNop(),
+		cfg,
+		new(consumertest.MetricsSink),
+	)
+
+	require.NoError(t, err)
+	require.NotNil(t, metricsReceiver)
+
+	r := metricsReceiver.(*awsContainerInsightReceiver)
+	r.Start(context.Background(), nil)
+	ctx := context.Background()
+
+	r.cadvisor = &MockCadvisor{}
+	err = r.collectData(ctx)
+	require.Nil(t, err)
+
+	//test the case when cadvisor and k8sapiserver failed to initialize
+	r.cadvisor = nil
 	err = r.collectData(ctx)
 	require.NotNil(t, err)
 }

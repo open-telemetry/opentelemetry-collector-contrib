@@ -40,6 +40,7 @@ func (m *mockMetadataClient) GetInstanceIdentityDocumentWithContext(ctx context.
 		Region:       "us-west-2",
 		InstanceID:   "i-abcd1234",
 		InstanceType: "c4.xlarge",
+		PrivateIP:    "79.168.255.0",
 	}, nil
 }
 
@@ -47,14 +48,17 @@ func TestEC2Metadata(t *testing.T) {
 	ctx := context.Background()
 	sess := mock.Session
 	instanceIDReadyC := make(chan bool)
+	instanceIPReadyP := make(chan bool)
 	clientOption := func(e *ec2Metadata) {
 		e.client = &mockMetadataClient{}
 	}
-	e := newEC2Metadata(ctx, sess, 3*time.Millisecond, instanceIDReadyC, zap.NewNop(), clientOption)
+	e := newEC2Metadata(ctx, sess, 3*time.Millisecond, instanceIDReadyC, instanceIPReadyP, zap.NewNop(), clientOption)
 	assert.NotNil(t, e)
 
 	<-instanceIDReadyC
+	<-instanceIPReadyP
 	assert.Equal(t, "i-abcd1234", e.getInstanceID())
 	assert.Equal(t, "c4.xlarge", e.getInstanceType())
 	assert.Equal(t, "us-west-2", e.getRegion())
+	assert.Equal(t, "79.168.255.0", e.getInstanceIP())
 }

@@ -54,6 +54,11 @@ func New(containerOrchestrator string, hostInfo hostInfo, logger *zap.Logger, op
 	return &Cadvisor{}, nil
 }
 
+// NewWithECSInfo is a dummy function to construct a dummy Cadvisor struct for windows
+func NewWithECSInfo(containerOrchestrator string, hostInfo hostInfo, logger *zap.Logger, ecs ecsInfo) (*Cadvisor, error) {
+	return &Cadvisor{}, nil
+}
+
 // GetMetrics is a dummy function that always returns empty metrics for windows
 func (c *Cadvisor) GetMetrics() []pdata.Metrics {
 	return []pdata.Metrics{}

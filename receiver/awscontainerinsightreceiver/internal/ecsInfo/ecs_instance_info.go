@@ -31,11 +31,6 @@ type containerInstanceInfoProvider interface {
 	GetContainerInstanceID() string
 }
 
-type hostIPProvider interface {
-	GetInstanceIP() string
-	GetInstanceIPReadyC() chan bool
-}
-
 type Requester interface {
 	Request(ctx context.Context, path string) ([]byte, error)
 }

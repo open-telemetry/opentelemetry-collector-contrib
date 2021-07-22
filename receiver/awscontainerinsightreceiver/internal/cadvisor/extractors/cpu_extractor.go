@@ -54,7 +54,7 @@ func (c *CPUMetricExtractor) GetValue(info *cInfo.ContainerInfo, mInfo CPUMemInf
 		metric.fields[ci.MetricName(containerType, ci.CPUUtilization)] = metric.fields[ci.MetricName(containerType, ci.CPUTotal)].(float64) / float64(numCores*decimalToMillicores) * 100
 	}
 
-	if containerType == ci.TypeNode {
+	if containerType == ci.TypeNode || containerType == ci.TypeInstance {
 		metric.fields[ci.MetricName(containerType, ci.CPULimit)] = numCores * decimalToMillicores
 	}
 
