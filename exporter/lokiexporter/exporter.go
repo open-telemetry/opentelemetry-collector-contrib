@@ -36,17 +36,24 @@ import (
 )
 
 type lokiExporter struct {
-	config *Config
-	logger *zap.Logger
-	client *http.Client
-	wg     sync.WaitGroup
+	config  *Config
+	logger  *zap.Logger
+	client  *http.Client
+	wg      sync.WaitGroup
+	convert func(pdata.LogRecord) (*logproto.Entry, error)
 }
 
 func newExporter(config *Config, logger *zap.Logger) *lokiExporter {
-	return &lokiExporter{
+	lokiexporter := &lokiExporter{
 		config: config,
 		logger: logger,
 	}
+	if config.Format == "json" {
+		lokiexporter.convert = convertLogToJsonEntry
+	} else {
+		lokiexporter.convert = convertLogToLokiEntry
+	}
+	return lokiexporter
 }
 
 func (l *lokiExporter) pushLogData(ctx context.Context, ld pdata.Logs) error {
@@ -136,17 +143,13 @@ func (l *lokiExporter) logDataToLoki(ld pdata.Logs) (pr *logproto.PushRequest, n
 				}
 				labels := mergedLabels.String()
 				var entry *logproto.Entry
-				if l.config.Format == "json" {
-					var err error
-					entry, err = convertLogToJsonEntry(log)
-					if err != nil {
-						// Couldn't convert to JSON so dropping log.
-						numDroppedLogs++
-						l.logger.Error("Failed to convert to JSON - Dropping Log", zap.Error(err))
-						continue
-					}
-				} else {
-					entry = convertLogToLokiEntry(log)
+				var err error
+				entry, err = l.convert(log)
+				if err != nil {
+					// Couldn't convert to JSON so dropping log.
+					numDroppedLogs++
+					l.logger.Error("Failed to convert to JSON - Dropping Log", zap.Error(err))
+					continue
 				}
 
 				if stream, ok := streams[labels]; ok {
@@ -207,11 +210,11 @@ func (l *lokiExporter) convertAttributesToLabels(attributes pdata.AttributeMap, 
 	return ls
 }
 
-func convertLogToLokiEntry(lr pdata.LogRecord) *logproto.Entry {
+func convertLogToLokiEntry(lr pdata.LogRecord) (*logproto.Entry, error) {
 	return &logproto.Entry{
 		Timestamp: time.Unix(0, int64(lr.Timestamp())),
 		Line:      lr.Body().StringVal(),
-	}
+	}, nil
 }
 
 func convertLogToJsonEntry(lr pdata.LogRecord) (*logproto.Entry, error) {

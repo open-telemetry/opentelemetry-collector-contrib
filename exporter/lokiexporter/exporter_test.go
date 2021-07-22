@@ -477,7 +477,7 @@ func TestExporter_convertLogToLokiEntry(t *testing.T) {
 	lr.Body().SetStringVal("log message")
 	lr.SetTimestamp(ts)
 
-	entry := convertLogToLokiEntry(lr)
+	entry, _ := convertLogToLokiEntry(lr)
 
 	expEntry := &logproto.Entry{
 		Timestamp: time.Unix(0, int64(lr.Timestamp())),
