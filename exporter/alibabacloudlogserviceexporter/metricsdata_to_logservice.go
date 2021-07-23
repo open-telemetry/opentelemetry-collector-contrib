@@ -168,23 +168,6 @@ func resourceToMetricLabels(labels *KeyValues, resource pdata.Resource) {
 	})
 }
 
-func intMetricsToLogs(name string, data pdata.IntDataPointSlice, defaultLabels KeyValues) (logs []*sls.Log) {
-	for i := 0; i < data.Len(); i++ {
-		dataPoint := data.At(i)
-		labelsMap := dataPoint.LabelsMap()
-		labels := defaultLabels.Clone()
-		labelsMap.Range(func(k string, v string) bool {
-			labels.Append(k, v)
-			return true
-		})
-		logs = append(logs, newMetricLogFromRaw(name,
-			labels,
-			int64(dataPoint.Timestamp()),
-			float64(dataPoint.Value())))
-	}
-	return logs
-}
-
 func numberMetricsToLogs(name string, data pdata.NumberDataPointSlice, defaultLabels KeyValues) (logs []*sls.Log) {
 	for i := 0; i < data.Len(); i++ {
 		dataPoint := data.At(i)
@@ -194,10 +177,18 @@ func numberMetricsToLogs(name string, data pdata.NumberDataPointSlice, defaultLa
 			labels.Append(k, v)
 			return true
 		})
-		logs = append(logs, newMetricLogFromRaw(name,
-			labels,
-			int64(dataPoint.Timestamp()),
-			dataPoint.Value()))
+		switch dataPoint.Type() {
+		case pdata.MetricValueTypeInt:
+			logs = append(logs, newMetricLogFromRaw(name,
+				labels,
+				int64(dataPoint.Timestamp()),
+				float64(dataPoint.IntVal())))
+		case pdata.MetricValueTypeDouble:
+			logs = append(logs, newMetricLogFromRaw(name,
+				labels,
+				int64(dataPoint.Timestamp()),
+				dataPoint.DoubleVal()))
+		}
 	}
 	return logs
 }
@@ -290,13 +281,9 @@ func metricDataToLogServiceData(md pdata.Metric, defaultLabels KeyValues) (logs 
 	switch md.DataType() {
 	case pdata.MetricDataTypeNone:
 		break
-	case pdata.MetricDataTypeIntGauge:
-		return intMetricsToLogs(md.Name(), md.IntGauge().DataPoints(), defaultLabels)
-	case pdata.MetricDataTypeGauge:
+	case pdata.MetricDataTypeIntGauge, pdata.MetricDataTypeGauge:
 		return numberMetricsToLogs(md.Name(), md.Gauge().DataPoints(), defaultLabels)
-	case pdata.MetricDataTypeIntSum:
-		return intMetricsToLogs(md.Name(), md.IntSum().DataPoints(), defaultLabels)
-	case pdata.MetricDataTypeSum:
+	case pdata.MetricDataTypeIntSum, pdata.MetricDataTypeSum:
 		return numberMetricsToLogs(md.Name(), md.Sum().DataPoints(), defaultLabels)
 	case pdata.MetricDataTypeHistogram:
 		return doubleHistogramMetricsToLogs(md.Name(), md.Histogram().DataPoints(), defaultLabels)
