@@ -63,7 +63,7 @@ func TestMetricDataToLogService(t *testing.T) {
 	doubleGaugeDataPoints := doubleGauge.DataPoints()
 	doubleGaugeDataPoint := doubleGaugeDataPoints.AppendEmpty()
 	doubleGaugeDataPoint.LabelsMap().Insert("innerLabel", "innerValue")
-	doubleGaugeDataPoint.SetValue(10.1)
+	doubleGaugeDataPoint.SetDoubleVal(10.1)
 	doubleGaugeDataPoint.SetTimestamp(pdata.Timestamp(100_000_000))
 
 	intSumMetric := metrics.AppendEmpty()
@@ -83,7 +83,7 @@ func TestMetricDataToLogService(t *testing.T) {
 	doubleSumDataPoints := doubleSum.DataPoints()
 	doubleSumDataPoint := doubleSumDataPoints.AppendEmpty()
 	doubleSumDataPoint.LabelsMap().Insert("innerLabel", "innerValue")
-	doubleSumDataPoint.SetValue(10.1)
+	doubleSumDataPoint.SetDoubleVal(10.1)
 	doubleSumDataPoint.SetTimestamp(pdata.Timestamp(100_000_000))
 
 	doubleHistogramMetric := metrics.AppendEmpty()

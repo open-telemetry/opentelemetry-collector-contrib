@@ -204,7 +204,7 @@ func Test_metricDataToSplunk(t *testing.T) {
 				doubleGauge.SetName("gauge_double_with_dims")
 				doubleGauge.SetDataType(pdata.MetricDataTypeGauge)
 				doubleDataPt := doubleGauge.Gauge().DataPoints().AppendEmpty()
-				doubleDataPt.SetValue(doubleVal)
+				doubleDataPt.SetDoubleVal(doubleVal)
 				doubleDataPt.SetTimestamp(pdata.TimestampFromTime(tsUnix))
 
 				intGauge := ilm.Metrics().AppendEmpty()
@@ -381,7 +381,7 @@ func Test_metricDataToSplunk(t *testing.T) {
 				doubleSum.SetDataType(pdata.MetricDataTypeSum)
 				doubleDataPt := doubleSum.Sum().DataPoints().AppendEmpty()
 				doubleDataPt.SetTimestamp(ts)
-				doubleDataPt.SetValue(62)
+				doubleDataPt.SetDoubleVal(62)
 				return metrics
 			},
 			wantSplunkMetrics: []*splunk.Event{

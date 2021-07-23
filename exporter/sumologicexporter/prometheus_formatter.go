@@ -155,7 +155,7 @@ func (f *prometheusFormatter) uintValueLine(name string, value uint64, dp dataPo
 func (f *prometheusFormatter) doubleDataPointValueLine(name string, dp pdata.NumberDataPoint, attributes pdata.AttributeMap) string {
 	return f.doubleValueLine(
 		name,
-		dp.Value(),
+		dp.DoubleVal(),
 		dp,
 		attributes,
 	)

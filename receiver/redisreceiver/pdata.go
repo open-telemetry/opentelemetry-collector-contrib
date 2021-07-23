@@ -86,7 +86,7 @@ func initDoubleMetric(m *redisMetric, value float64, t *timeBundle, dest pdata.M
 		pt = sum.DataPoints().AppendEmpty()
 		pt.SetStartTimestamp(pdata.TimestampFromTime(t.serverStart))
 	}
-	pt.SetValue(value)
+	pt.SetDoubleVal(value)
 	pt.SetTimestamp(pdata.TimestampFromTime(t.current))
 	pt.LabelsMap().InitFromMap(m.labels)
 }

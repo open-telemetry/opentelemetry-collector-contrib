@@ -149,7 +149,7 @@ func TestMapDoubleMetrics(t *testing.T) {
 	ts := pdata.TimestampFromTime(time.Now())
 	slice := pdata.NewNumberDataPointSlice()
 	point := slice.AppendEmpty()
-	point.SetValue(math.Pi)
+	point.SetDoubleVal(math.Pi)
 	point.SetTimestamp(ts)
 
 	assert.ElementsMatch(t,
@@ -308,7 +308,7 @@ func TestMapDoubleMonotonicMetrics(t *testing.T) {
 	slice.EnsureCapacity(len(cumulative))
 	for i, val := range cumulative {
 		point := slice.AppendEmpty()
-		point.SetValue(val)
+		point.SetDoubleVal(val)
 		point.SetTimestamp(seconds(i))
 	}
 
@@ -334,7 +334,7 @@ func TestMapDoubleMonotonicDifferentDimensions(t *testing.T) {
 	point.SetTimestamp(seconds(0))
 
 	point = slice.AppendEmpty()
-	point.SetValue(20)
+	point.SetDoubleVal(20)
 	point.SetTimestamp(seconds(1))
 
 	// One tag: valA
@@ -343,7 +343,7 @@ func TestMapDoubleMonotonicDifferentDimensions(t *testing.T) {
 	point.LabelsMap().Insert("key1", "valA")
 
 	point = slice.AppendEmpty()
-	point.SetValue(30)
+	point.SetDoubleVal(30)
 	point.SetTimestamp(seconds(1))
 	point.LabelsMap().Insert("key1", "valA")
 
@@ -353,7 +353,7 @@ func TestMapDoubleMonotonicDifferentDimensions(t *testing.T) {
 	point.LabelsMap().Insert("key1", "valB")
 
 	point = slice.AppendEmpty()
-	point.SetValue(40)
+	point.SetDoubleVal(40)
 	point.SetTimestamp(seconds(1))
 	point.LabelsMap().Insert("key1", "valB")
 
@@ -378,7 +378,7 @@ func TestMapDoubleMonotonicWithReboot(t *testing.T) {
 	for i, val := range values {
 		point := slice.AppendEmpty()
 		point.SetTimestamp(seconds(2 * i))
-		point.SetValue(val)
+		point.SetDoubleVal(val)
 	}
 
 	prevPts := newTTLMap()
@@ -402,7 +402,7 @@ func TestMapDoubleMonotonicOutOfOrder(t *testing.T) {
 	for i, val := range values {
 		point := slice.AppendEmpty()
 		point.SetTimestamp(seconds(stamps[i]))
-		point.SetValue(val)
+		point.SetDoubleVal(val)
 	}
 
 	prevPts := newTTLMap()
@@ -631,7 +631,7 @@ func createTestMetrics() pdata.Metrics {
 	dpsDouble := met.Gauge().DataPoints()
 	dpDouble := dpsDouble.AppendEmpty()
 	dpDouble.SetTimestamp(seconds(0))
-	dpDouble.SetValue(math.Pi)
+	dpDouble.SetDoubleVal(math.Pi)
 
 	// IntSum
 	met = metricsArray.AppendEmpty()
@@ -649,7 +649,7 @@ func createTestMetrics() pdata.Metrics {
 	dpsDouble = met.Sum().DataPoints()
 	dpDouble = dpsDouble.AppendEmpty()
 	dpDouble.SetTimestamp(seconds(0))
-	dpDouble.SetValue(math.E)
+	dpDouble.SetDoubleVal(math.E)
 
 	// Histogram
 	met = metricsArray.AppendEmpty()
@@ -687,10 +687,10 @@ func createTestMetrics() pdata.Metrics {
 	dpsDouble.EnsureCapacity(2)
 	dpDouble = dpsDouble.AppendEmpty()
 	dpDouble.SetTimestamp(seconds(0))
-	dpDouble.SetValue(4)
+	dpDouble.SetDoubleVal(4)
 	dpDouble = dpsDouble.AppendEmpty()
 	dpDouble.SetTimestamp(seconds(2))
-	dpDouble.SetValue(4 + math.Pi)
+	dpDouble.SetDoubleVal(4 + math.Pi)
 
 	// Summary
 	met = metricsArray.AppendEmpty()

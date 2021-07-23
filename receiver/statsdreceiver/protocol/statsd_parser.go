@@ -150,7 +150,7 @@ func (p *StatsDParser) Aggregate(line string) error {
 			p.gauges[parsedMetric.description] = buildGaugeMetric(parsedMetric, timeNowFunc())
 		} else {
 			if parsedMetric.addition {
-				savedValue := p.gauges[parsedMetric.description].Metrics().At(0).Gauge().DataPoints().At(0).Value()
+				savedValue := p.gauges[parsedMetric.description].Metrics().At(0).Gauge().DataPoints().At(0).DoubleVal()
 				parsedMetric.floatvalue = parsedMetric.floatvalue + savedValue
 				p.gauges[parsedMetric.description] = buildGaugeMetric(parsedMetric, timeNowFunc())
 			} else {

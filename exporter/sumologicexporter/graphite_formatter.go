@@ -92,7 +92,7 @@ func (gf *graphiteFormatter) intRecord(fs fields, name string, dataPoint pdata.I
 func (gf *graphiteFormatter) doubleRecord(fs fields, name string, dataPoint pdata.NumberDataPoint) string {
 	return fmt.Sprintf("%s %g %d",
 		gf.format(fs, name),
-		dataPoint.Value(),
+		dataPoint.DoubleVal(),
 		dataPoint.Timestamp()/pdata.Timestamp(time.Second),
 	)
 }

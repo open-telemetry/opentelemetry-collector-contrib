@@ -126,7 +126,7 @@ func Test_signalfxeceiver_EndToEnd(t *testing.T) {
 		m.SetDataType(pdata.MetricDataTypeGauge)
 		doublePt := m.Gauge().DataPoints().AppendEmpty()
 		doublePt.SetTimestamp(ts)
-		doublePt.SetValue(doubleVal)
+		doublePt.SetDoubleVal(doubleVal)
 	}
 	{
 		m := ilm.Metrics().AppendEmpty()
@@ -134,7 +134,7 @@ func Test_signalfxeceiver_EndToEnd(t *testing.T) {
 		m.SetDataType(pdata.MetricDataTypeIntGauge)
 		int64Pt := m.IntGauge().DataPoints().AppendEmpty()
 		int64Pt.SetTimestamp(ts)
-		int64Pt.SetValue(int64Val)
+		int64Pt.SetDoubleVal(int64Val)
 	}
 	{
 		m := ilm.Metrics().AppendEmpty()
@@ -144,7 +144,7 @@ func Test_signalfxeceiver_EndToEnd(t *testing.T) {
 		m.Sum().SetIsMonotonic(true)
 		doublePt := m.Sum().DataPoints().AppendEmpty()
 		doublePt.SetTimestamp(ts)
-		doublePt.SetValue(doubleVal)
+		doublePt.SetDoubleVal(doubleVal)
 	}
 	{
 		m := ilm.Metrics().AppendEmpty()
@@ -154,7 +154,7 @@ func Test_signalfxeceiver_EndToEnd(t *testing.T) {
 		m.IntSum().SetIsMonotonic(true)
 		int64Pt := m.IntSum().DataPoints().AppendEmpty()
 		int64Pt.SetTimestamp(ts)
-		int64Pt.SetValue(int64Val)
+		int64Pt.SetDoubleVal(int64Val)
 	}
 
 	expCfg := &signalfxexporter.Config{
@@ -569,7 +569,7 @@ func Test_sfxReceiver_TLS(t *testing.T) {
 	dps := m.IntGauge().DataPoints()
 	dp := dps.AppendEmpty()
 	dp.SetTimestamp(pdata.Timestamp(msec * 1e6))
-	dp.SetValue(13)
+	dp.SetDoubleVal(13)
 
 	dp.LabelsMap().InitFromMap(map[string]string{
 		"k0": "v0",

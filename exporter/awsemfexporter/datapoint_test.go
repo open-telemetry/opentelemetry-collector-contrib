@@ -366,7 +366,7 @@ func TestDoubleDataPointSliceAt(t *testing.T) {
 		t.Run(tc.testName, func(t *testing.T) {
 			testDPS := pdata.NewNumberDataPointSlice()
 			testDP := testDPS.AppendEmpty()
-			testDP.SetValue(tc.value.(float64))
+			testDP.SetDoubleVal(tc.value.(float64))
 			testDP.LabelsMap().InitFromMap(labels)
 
 			dps := numberDataPointSlice{
@@ -670,7 +670,7 @@ func TestGetDataPoints(t *testing.T) {
 				assert.Equal(t, expectedDPS.deltaMetricMetadata, convertedDPS.deltaMetricMetadata)
 				assert.Equal(t, 1, convertedDPS.Len())
 				dp := convertedDPS.NumberDataPointSlice.At(0)
-				assert.Equal(t, 0.1, dp.Value())
+				assert.Equal(t, 0.1, dp.DoubleVal())
 				assert.Equal(t, expectedLabels, dp.LabelsMap())
 			case histogramDataPointSlice:
 				assert.Equal(t, metadata.instrumentationLibraryName, convertedDPS.instrumentationLibraryName)

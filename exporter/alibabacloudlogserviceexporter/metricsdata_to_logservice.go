@@ -197,7 +197,7 @@ func numberMetricsToLogs(name string, data pdata.NumberDataPointSlice, defaultLa
 		logs = append(logs, newMetricLogFromRaw(name,
 			labels,
 			int64(dataPoint.Timestamp()),
-			dataPoint.Value()))
+			dataPoint.DoubleVal()))
 	}
 	return logs
 }

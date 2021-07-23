@@ -71,12 +71,12 @@ func Test_signalFxV2ToMetricsData(t *testing.T) {
 			dp := dps.(pdata.IntDataPointSlice).AppendEmpty()
 			labels = dp.LabelsMap()
 			dp.SetTimestamp(pdata.TimestampFromTime(now.Truncate(time.Millisecond)))
-			dp.SetValue(int64(val.(int)))
+			dp.SetDoubleVal(int64(val.(int)))
 		case pdata.MetricDataTypeGauge, pdata.MetricDataTypeSum:
 			dp := dps.(pdata.NumberDataPointSlice).AppendEmpty()
 			labels = dp.LabelsMap()
 			dp.SetTimestamp(pdata.TimestampFromTime(now.Truncate(time.Millisecond)))
-			dp.SetValue(val.(float64))
+			dp.SetDoubleVal(val.(float64))
 		}
 
 		labels.InitFromMap(map[string]string{

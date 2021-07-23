@@ -298,7 +298,7 @@ func (t *transformer) Metric(m pdata.Metric) ([]telemetry.Metric, error) {
 			nrMetric := telemetry.Gauge{
 				Name:       m.Name(),
 				Attributes: attributes,
-				Value:      point.Value(),
+				Value:      point.DoubleVal(),
 				Timestamp:  point.Timestamp().AsTime(),
 			}
 			output = append(output, nrMetric)
@@ -362,7 +362,7 @@ func (t *transformer) Metric(m pdata.Metric) ([]telemetry.Metric, error) {
 				nrMetric := telemetry.Gauge{
 					Name:       m.Name(),
 					Attributes: attributes,
-					Value:      point.Value(),
+					Value:      point.DoubleVal(),
 					Timestamp:  point.Timestamp().AsTime(),
 				}
 				output = append(output, nrMetric)
@@ -370,7 +370,7 @@ func (t *transformer) Metric(m pdata.Metric) ([]telemetry.Metric, error) {
 				nrMetric := telemetry.Count{
 					Name:       m.Name(),
 					Attributes: attributes,
-					Value:      point.Value(),
+					Value:      point.DoubleVal(),
 					Timestamp:  point.StartTimestamp().AsTime(),
 					Interval:   time.Duration(point.Timestamp() - point.StartTimestamp()),
 				}

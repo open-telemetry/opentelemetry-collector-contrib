@@ -46,7 +46,7 @@ func getMetricValue(metric pdata.Metric) float64 {
 	if metric.DataType() == pdata.MetricDataTypeGauge {
 		dataPoints := metric.Gauge().DataPoints()
 		if dataPoints.Len() > 0 {
-			return dataPoints.At(0).Value()
+			return dataPoints.At(0).DoubleVal()
 		}
 		return 0
 	}
@@ -80,7 +80,7 @@ func addDoubleGaugeDataPoints(from pdata.Metric, to pdata.Metric, operand2 float
 			operand1 := float64(fromDataPoint.Value())
 			neweDoubleDataPoint := to.Gauge().DataPoints().AppendEmpty()
 			value := calculateValue(operand1, operand2, operation, logger, to.Name())
-			neweDoubleDataPoint.SetValue(value)
+			neweDoubleDataPoint.SetDoubleVal(value)
 			fromDataPoint.LabelsMap().CopyTo(neweDoubleDataPoint.LabelsMap())
 			neweDoubleDataPoint.SetStartTimestamp(fromDataPoint.StartTimestamp())
 			neweDoubleDataPoint.SetTimestamp(fromDataPoint.Timestamp())
@@ -89,11 +89,11 @@ func addDoubleGaugeDataPoints(from pdata.Metric, to pdata.Metric, operand2 float
 		dataPoints := from.Gauge().DataPoints()
 		for i := 0; i < dataPoints.Len(); i++ {
 			fromDataPoint := dataPoints.At(i)
-			operand1 := fromDataPoint.Value()
+			operand1 := fromDataPoint.DoubleVal()
 			neweDoubleDataPoint := to.Gauge().DataPoints().AppendEmpty()
 			fromDataPoint.CopyTo(neweDoubleDataPoint)
 			value := calculateValue(operand1, operand2, operation, logger, to.Name())
-			neweDoubleDataPoint.SetValue(value)
+			neweDoubleDataPoint.SetDoubleVal(value)
 		}
 	}
 }

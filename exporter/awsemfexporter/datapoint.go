@@ -152,7 +152,7 @@ func (dps numberDataPointSlice) At(i int) (dataPoint, bool) {
 	timestampMs := unixNanoToMilliseconds(metric.Timestamp())
 
 	var metricVal float64
-	metricVal = metric.Value()
+	metricVal = metric.DoubleVal()
 	retained := true
 	if dps.adjustToDelta {
 		var deltaVal interface{}

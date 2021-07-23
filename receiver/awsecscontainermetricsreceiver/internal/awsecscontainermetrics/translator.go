@@ -94,7 +94,7 @@ func appendDoubleGauge(metricName string, unit string, value float64, ts pdata.T
 	metric.SetDataType(pdata.MetricDataTypeGauge)
 	doubleGauge := metric.Gauge()
 	dataPoint := doubleGauge.DataPoints().AppendEmpty()
-	dataPoint.SetValue(value)
+	dataPoint.SetDoubleVal(value)
 	dataPoint.SetTimestamp(ts)
 }
 

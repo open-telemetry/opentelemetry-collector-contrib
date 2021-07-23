@@ -101,12 +101,12 @@ func TestSerializeIntDataPoints(t *testing.T) {
 func TestSerializeDoubleDataPoints(t *testing.T) {
 	doubleSlice := pdata.NewNumberDataPointSlice()
 	doublePoint := doubleSlice.AppendEmpty()
-	doublePoint.SetValue(13.1)
+	doublePoint.SetDoubleVal(13.1)
 	doublePoint.SetTimestamp(pdata.Timestamp(100_000_000))
 
 	labelDoubleSlice := pdata.NewNumberDataPointSlice()
 	labelDoublePoint := labelDoubleSlice.AppendEmpty()
-	labelDoublePoint.SetValue(13.1)
+	labelDoublePoint.SetDoubleVal(13.1)
 	labelDoublePoint.SetTimestamp(pdata.Timestamp(100_000_000))
 	labelDoublePoint.LabelsMap().Insert("labelKey", "labelValue")
 

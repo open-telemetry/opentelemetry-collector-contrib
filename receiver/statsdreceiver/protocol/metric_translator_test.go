@@ -44,7 +44,7 @@ func TestBuildCounterMetric(t *testing.T) {
 	expectedMetric.IntSum().SetAggregationTemporality(pdata.AggregationTemporalityDelta)
 	expectedMetric.IntSum().SetIsMonotonic(true)
 	dp := expectedMetric.IntSum().DataPoints().AppendEmpty()
-	dp.SetValue(32)
+	dp.SetDoubleVal(32)
 	dp.SetTimestamp(pdata.TimestampFromTime(timeNow))
 	dp.LabelsMap().Insert("mykey", "myvalue")
 	assert.Equal(t, metric, expectedMetrics)
@@ -69,7 +69,7 @@ func TestBuildGaugeMetric(t *testing.T) {
 	expectedMetric.SetUnit("meter")
 	expectedMetric.SetDataType(pdata.MetricDataTypeGauge)
 	dp := expectedMetric.Gauge().DataPoints().AppendEmpty()
-	dp.SetValue(32.3)
+	dp.SetDoubleVal(32.3)
 	dp.SetTimestamp(pdata.TimestampFromTime(timeNow))
 	dp.LabelsMap().Insert("mykey", "myvalue")
 	dp.LabelsMap().Insert("mykey2", "myvalue2")
@@ -105,7 +105,7 @@ func TestBuildSummaryMetric(t *testing.T) {
 		eachQuantile := dp.QuantileValues().AppendEmpty()
 		eachQuantile.SetQuantile(v)
 		eachQuantileValue := value[int]
-		eachQuantile.SetValue(eachQuantileValue)
+		eachQuantile.SetDoubleVal(eachQuantileValue)
 	}
 
 	assert.Equal(t, metric, expectedMetric)

@@ -56,7 +56,7 @@ func buildGaugeMetric(parsedMetric statsDMetric, timeNow time.Time) pdata.Instru
 	}
 	nm.SetDataType(pdata.MetricDataTypeGauge)
 	dp := nm.Gauge().DataPoints().AppendEmpty()
-	dp.SetValue(parsedMetric.floatvalue)
+	dp.SetDoubleVal(parsedMetric.floatvalue)
 	dp.SetTimestamp(pdata.TimestampFromTime(timeNow))
 	for i, key := range parsedMetric.labelKeys {
 		dp.LabelsMap().Insert(key, parsedMetric.labelValues[i])

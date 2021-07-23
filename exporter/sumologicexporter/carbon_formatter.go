@@ -79,7 +79,7 @@ func carbon2IntRecord(record metricPair, dataPoint pdata.IntDataPoint) string {
 func carbon2DoubleRecord(record metricPair, dataPoint pdata.NumberDataPoint) string {
 	return fmt.Sprintf("%s  %g %d",
 		carbon2TagString(record),
-		dataPoint.Value(),
+		dataPoint.DoubleVal(),
 		dataPoint.Timestamp()/1e9,
 	)
 }

@@ -89,7 +89,7 @@ func mapDoubleMetrics(name string, slice pdata.NumberDataPointSlice, attrTags []
 		tags := getTags(p.LabelsMap())
 		tags = append(tags, attrTags...)
 		ms = append(ms,
-			metrics.NewGauge(name, uint64(p.Timestamp()), p.Value(), tags),
+			metrics.NewGauge(name, uint64(p.Timestamp()), p.DoubleVal(), tags),
 		)
 	}
 	return ms
@@ -163,7 +163,7 @@ func mapDoubleMonotonicMetrics(name string, prevPts *ttlmap.TTLMap, slice pdata.
 			}
 
 			// We calculate the time-normalized delta
-			dx := p.Value() - cnt.value
+			dx := p.DoubleVal() - cnt.value
 
 			// if dx < 0, we assume there was a reset, thus we save the point
 			// but don't export it (it's the first one so we can't do a delta)
@@ -173,7 +173,7 @@ func mapDoubleMonotonicMetrics(name string, prevPts *ttlmap.TTLMap, slice pdata.
 
 		}
 
-		prevPts.Put(key, doubleCounter{ts, p.Value()})
+		prevPts.Put(key, doubleCounter{ts, p.DoubleVal()})
 	}
 	return ms
 }

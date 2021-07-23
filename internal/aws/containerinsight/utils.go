@@ -234,7 +234,7 @@ func doubleGauge(ilm pdata.InstrumentationLibraryMetrics, metricName string, uni
 	dataPoints := doubleGauge.DataPoints()
 	dataPoint := dataPoints.AppendEmpty()
 
-	dataPoint.SetValue(value)
+	dataPoint.SetDoubleVal(value)
 	dataPoint.SetTimestamp(ts)
 }
 

@@ -118,7 +118,7 @@ func addDoubleGauge(metrics pdata.MetricSlice, metricName string, value float64,
 	metric.SetDataType(pdata.MetricDataTypeGauge)
 	doublePt := metric.Gauge().DataPoints().AppendEmpty()
 	doublePt.SetTimestamp(ts)
-	doublePt.SetValue(value)
+	doublePt.SetDoubleVal(value)
 	labels.CopyTo(doublePt.LabelsMap())
 }
 

@@ -3036,7 +3036,7 @@ func dblTS(lbl0 string, lbl1 string, secondsDelta int64, v float64, valueDelta f
 	})
 	const startTime = 1600000000
 	out.SetTimestamp(pdata.Timestamp(time.Duration(startTime+secondsDelta) * time.Second))
-	out.SetValue(v + valueDelta)
+	out.SetDoubleVal(v + valueDelta)
 }
 
 func intTS(lbl0 string, lbl1 string, secondsDelta int64, v int64, valueDelta int64, out pdata.IntDataPoint) {

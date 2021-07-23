@@ -60,7 +60,7 @@ func EncodeMetrics(otlpMetrics pdata.MetricSlice, otlpLibrary pdata.Instrumentat
 					Timestamp: asTime(dp.Timestamp()),
 					Labels:    asStringMap(dp.LabelsMap()),
 					Samples: map[string]model.Metric{name: {
-						Value: dp.Value(),
+						Value: dp.DoubleVal(),
 					}},
 				})
 			}
@@ -86,7 +86,7 @@ func EncodeMetrics(otlpMetrics pdata.MetricSlice, otlpLibrary pdata.Instrumentat
 					Timestamp: asTime(dp.Timestamp()),
 					Labels:    asStringMap(dp.LabelsMap()),
 					Samples: map[string]model.Metric{name: {
-						Value: dp.Value(),
+						Value: dp.DoubleVal(),
 					}},
 				})
 			}

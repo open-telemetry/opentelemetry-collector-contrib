@@ -53,7 +53,7 @@ func SerializeDoubleDataPoints(name string, data pdata.NumberDataPointSlice, tag
 	output := []string{}
 	for i := 0; i < data.Len(); i++ {
 		p := data.At(i)
-		output = append(output, serializeLine(name, serializeTags(p.LabelsMap(), tags), serializeFloat64(p.Value()), p.Timestamp()))
+		output = append(output, serializeLine(name, serializeTags(p.LabelsMap(), tags), serializeFloat64(p.DoubleVal()), p.Timestamp()))
 	}
 
 	return output

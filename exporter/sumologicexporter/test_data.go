@@ -77,13 +77,13 @@ func exampleDoubleGaugeMetric() metricPair {
 	dp := metric.metric.Gauge().DataPoints().AppendEmpty()
 	dp.LabelsMap().Insert("local_name", "156720")
 	dp.LabelsMap().Insert("endpoint", "http://example_url")
-	dp.SetValue(33.4)
+	dp.SetDoubleVal(33.4)
 	dp.SetTimestamp(1608124661.169 * 1e9)
 
 	dp = metric.metric.Gauge().DataPoints().AppendEmpty()
 	dp.LabelsMap().Insert("local_name", "156155")
 	dp.LabelsMap().Insert("endpoint", "http://another_url")
-	dp.SetValue(56.8)
+	dp.SetDoubleVal(56.8)
 	dp.SetTimestamp(1608124662.186 * 1e9)
 
 	return metric
@@ -129,13 +129,13 @@ func exampleDoubleSumMetric() metricPair {
 	dp := metric.metric.Sum().DataPoints().AppendEmpty()
 	dp.LabelsMap().Insert("pod_name", "lorem")
 	dp.LabelsMap().Insert("namespace", "default")
-	dp.SetValue(45.6)
+	dp.SetDoubleVal(45.6)
 	dp.SetTimestamp(1618124444.169 * 1e9)
 
 	dp = metric.metric.Sum().DataPoints().AppendEmpty()
 	dp.LabelsMap().Insert("pod_name", "opsum")
 	dp.LabelsMap().Insert("namespace", "kube-config")
-	dp.SetValue(1238.1)
+	dp.SetDoubleVal(1238.1)
 	dp.SetTimestamp(1608424699.186 * 1e9)
 
 	return metric

@@ -128,7 +128,7 @@ func TestConsumeMetrics(t *testing.T) {
 		"k0": "v0",
 		"k1": "v1",
 	})
-	dp.SetValue(123)
+	dp.SetDoubleVal(123)
 
 	tests := []struct {
 		name                 string
@@ -264,7 +264,7 @@ func TestConsumeMetricsWithAccessTokenPassthrough(t *testing.T) {
 			"k0": "v0",
 			"k1": "v1",
 		})
-		dp.SetValue(123)
+		dp.SetDoubleVal(123)
 		return out
 	}
 
@@ -329,7 +329,7 @@ func TestConsumeMetricsWithAccessTokenPassthrough(t *testing.T) {
 					"k0": "v0",
 					"k1": "v1",
 				})
-				dp.SetValue(123)
+				dp.SetDoubleVal(123)
 
 				return out
 			}(),

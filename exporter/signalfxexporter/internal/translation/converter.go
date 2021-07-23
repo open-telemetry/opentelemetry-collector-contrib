@@ -238,7 +238,7 @@ func convertDoubleDatapoints(in pdata.NumberDataPointSlice, basePoint *sfxpb.Dat
 		dp.Timestamp = timestampToSignalFx(inDp.Timestamp())
 		dp.Dimensions = labelsToDimensions(inDp.LabelsMap(), extraDims)
 
-		val := inDp.Value()
+		val := inDp.DoubleVal()
 		dp.Value.DoubleValue = &val
 
 		out = append(out, &dp)

@@ -597,7 +597,7 @@ func TestTransformGauge(t *testing.T) {
 		gd := m.Gauge()
 		dp := gd.DataPoints().AppendEmpty()
 		dp.SetTimestamp(ts)
-		dp.SetValue(42.0)
+		dp.SetDoubleVal(42.0)
 		t.Run("Double", func(t *testing.T) { testTransformMetric(t, m, expected) })
 	}
 	{
@@ -653,7 +653,7 @@ func TestTransformSum(t *testing.T) {
 		dp := d.DataPoints().AppendEmpty()
 		dp.SetStartTimestamp(start)
 		dp.SetTimestamp(end)
-		dp.SetValue(42.0)
+		dp.SetDoubleVal(42.0)
 		t.Run("Sum-Delta", func(t *testing.T) { testTransformMetric(t, m, expected) })
 	}
 	{
@@ -667,7 +667,7 @@ func TestTransformSum(t *testing.T) {
 		dp := d.DataPoints().AppendEmpty()
 		dp.SetStartTimestamp(start)
 		dp.SetTimestamp(end)
-		dp.SetValue(42.0)
+		dp.SetDoubleVal(42.0)
 		t.Run("Sum-Cumulative", func(t *testing.T) { testTransformMetric(t, m, expectedGauge) })
 	}
 	{

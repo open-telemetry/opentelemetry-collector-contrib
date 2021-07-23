@@ -88,7 +88,7 @@ func Test_exporter_PushMetricsData(t *testing.T) {
 	doubleGauge := doubleGaugeMetric.Gauge()
 	doubleGaugeDataPoints := doubleGauge.DataPoints()
 	doubleGaugeDataPoint := doubleGaugeDataPoints.AppendEmpty()
-	doubleGaugeDataPoint.SetValue(10.1)
+	doubleGaugeDataPoint.SetDoubleVal(10.1)
 	doubleGaugeDataPoint.SetTimestamp(pdata.Timestamp(100_000_000))
 
 	doubleSumMetric := metrics.AppendEmpty()
@@ -97,7 +97,7 @@ func Test_exporter_PushMetricsData(t *testing.T) {
 	doubleSum := doubleSumMetric.Sum()
 	doubleSumDataPoints := doubleSum.DataPoints()
 	doubleSumDataPoint := doubleSumDataPoints.AppendEmpty()
-	doubleSumDataPoint.SetValue(10.1)
+	doubleSumDataPoint.SetDoubleVal(10.1)
 	doubleSumDataPoint.SetTimestamp(pdata.Timestamp(100_000_000))
 
 	doubleHistogramMetric := metrics.AppendEmpty()

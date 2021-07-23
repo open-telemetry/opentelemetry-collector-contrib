@@ -170,7 +170,7 @@ func fillNumberDataPoint(sfxDataPoint *sfxpb.DataPoint, dps pdata.NumberDataPoin
 
 	dp := dps.AppendEmpty()
 	dp.SetTimestamp(dpTimestamp(sfxDataPoint))
-	dp.SetValue(*sfxDataPoint.Value.DoubleValue)
+	dp.SetDoubleVal(*sfxDataPoint.Value.DoubleValue)
 	fillInLabels(sfxDataPoint.Dimensions, dp.LabelsMap())
 
 	return nil
