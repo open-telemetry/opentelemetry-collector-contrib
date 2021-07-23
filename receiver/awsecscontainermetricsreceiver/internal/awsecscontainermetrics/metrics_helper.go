@@ -26,7 +26,7 @@ func getContainerMetrics(stats *ContainerStats, logger *zap.Logger) ECSMetrics {
 		m.MemoryLimit = *stats.Memory.Limit
 
 		if stats.Memory.Stats != nil {
-			m.MemoryUtilized = (*stats.Memory.Usage - stats.Memory.Stats["cache"]) / BytesInMiB
+			m.MemoryUtilized = (*stats.Memory.Usage - stats.Memory.Stats["cache"]) / bytesInMiB
 		}
 	} else {
 		logger.Debug("Nil memory stats found for docker container:" + stats.Name)

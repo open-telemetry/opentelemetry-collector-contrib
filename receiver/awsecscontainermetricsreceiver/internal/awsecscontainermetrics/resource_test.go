@@ -41,13 +41,13 @@ func TestContainerResource(t *testing.T) {
 	expected := map[string]string{
 		conventions.AttributeContainerName:  "container-1",
 		conventions.AttributeContainerID:    "001",
-		AttributeECSDockerName:              "docker-container-1",
+		attributeECSDockerName:              "docker-container-1",
 		conventions.AttributeContainerImage: "nginx:v1.0",
-		AttributeContainerImageID:           "sha256:8cf1bfb43ff5d9b05af9b6b63983440f137",
+		attributeContainerImageID:           "sha256:8cf1bfb43ff5d9b05af9b6b63983440f137",
 		conventions.AttributeContainerTag:   "v1.0",
-		AttributeContainerCreatedAt:         "2020-07-30T22:12:29.837074927Z",
-		AttributeContainerStartedAt:         "2020-07-30T22:12:31.153459485Z",
-		AttributeContainerKnownStatus:       "RUNNING",
+		attributeContainerCreatedAt:         "2020-07-30T22:12:29.837074927Z",
+		attributeContainerStartedAt:         "2020-07-30T22:12:31.153459485Z",
+		attributeContainerKnownStatus:       "RUNNING",
 	}
 
 	verifyAttributeMap(t, expected, attrMap)
@@ -71,21 +71,21 @@ func TestContainerResourceForStoppedContainer(t *testing.T) {
 	r := containerResource(cm)
 	require.NotNil(t, r)
 	attrMap := r.Attributes()
-	getExitCodeAd, found := attrMap.Get(AttributeContainerExitCode)
+	getExitCodeAd, found := attrMap.Get(attributeContainerExitCode)
 	require.EqualValues(t, true, found)
 	require.EqualValues(t, 2, getExitCodeAd.IntVal())
 	require.EqualValues(t, 11, attrMap.Len())
 	expected := map[string]string{
 		conventions.AttributeContainerName:  "container-1",
 		conventions.AttributeContainerID:    "001",
-		AttributeECSDockerName:              "docker-container-1",
+		attributeECSDockerName:              "docker-container-1",
 		conventions.AttributeContainerImage: "nginx:v1.0",
-		AttributeContainerImageID:           "sha256:8cf1bfb43ff5d9b05af9b6b63983440f137",
+		attributeContainerImageID:           "sha256:8cf1bfb43ff5d9b05af9b6b63983440f137",
 		conventions.AttributeContainerTag:   "v1.0",
-		AttributeContainerCreatedAt:         "2020-07-30T22:12:29.837074927Z",
-		AttributeContainerStartedAt:         "2020-07-30T22:12:31.153459485Z",
-		AttributeContainerFinishedAt:        "2020-07-31T22:12:29.837074927Z",
-		AttributeContainerKnownStatus:       "STOPPED",
+		attributeContainerCreatedAt:         "2020-07-30T22:12:29.837074927Z",
+		attributeContainerStartedAt:         "2020-07-30T22:12:31.153459485Z",
+		attributeContainerFinishedAt:        "2020-07-31T22:12:29.837074927Z",
+		attributeContainerKnownStatus:       "STOPPED",
 	}
 
 	verifyAttributeMap(t, expected, attrMap)
@@ -109,16 +109,16 @@ func TestTaskResource(t *testing.T) {
 	attrMap := r.Attributes()
 	require.EqualValues(t, 13, attrMap.Len())
 	expected := map[string]string{
-		AttributeECSCluster:                        "cluster-1",
-		AttributeECSTaskARN:                        "arn:aws:ecs:us-west-2:111122223333:task/default/158d1c8083dd49d6b527399fd6414f5c",
-		AttributeECSTaskID:                         "158d1c8083dd49d6b527399fd6414f5c",
-		AttributeECSTaskFamily:                     "task-def-family-1",
-		AttributeECSTaskRevision:                   "v1.2",
+		attributeECSCluster:                        "cluster-1",
+		attributeECSTaskARN:                        "arn:aws:ecs:us-west-2:111122223333:task/default/158d1c8083dd49d6b527399fd6414f5c",
+		attributeECSTaskID:                         "158d1c8083dd49d6b527399fd6414f5c",
+		attributeECSTaskFamily:                     "task-def-family-1",
+		attributeECSTaskRevision:                   "v1.2",
 		conventions.AttributeCloudAvailabilityZone: "us-west-2d",
-		AttributeECSTaskPullStartedAt:              "2020-10-02T00:43:06.202617438Z",
-		AttributeECSTaskPullStoppedAt:              "2020-10-02T00:43:06.31288465Z",
-		AttributeECSTaskKnownStatus:                "RUNNING",
-		AttributeECSTaskLaunchType:                 "EC2",
+		attributeECSTaskPullStartedAt:              "2020-10-02T00:43:06.202617438Z",
+		attributeECSTaskPullStoppedAt:              "2020-10-02T00:43:06.31288465Z",
+		attributeECSTaskKnownStatus:                "RUNNING",
+		attributeECSTaskLaunchType:                 "EC2",
 		conventions.AttributeCloudRegion:           "us-west-2",
 		conventions.AttributeCloudAccount:          "111122223333",
 	}
@@ -145,16 +145,16 @@ func TestTaskResourceWithClusterARN(t *testing.T) {
 	require.EqualValues(t, 13, attrMap.Len())
 
 	expected := map[string]string{
-		AttributeECSCluster:                        "main-cluster",
-		AttributeECSTaskARN:                        "arn:aws:ecs:us-west-2:803860917211:cluster/main-cluster/c8083dd49d6b527399fd6414",
-		AttributeECSTaskID:                         "c8083dd49d6b527399fd6414",
-		AttributeECSTaskFamily:                     "task-def-family-1",
-		AttributeECSTaskRevision:                   "v1.2",
+		attributeECSCluster:                        "main-cluster",
+		attributeECSTaskARN:                        "arn:aws:ecs:us-west-2:803860917211:cluster/main-cluster/c8083dd49d6b527399fd6414",
+		attributeECSTaskID:                         "c8083dd49d6b527399fd6414",
+		attributeECSTaskFamily:                     "task-def-family-1",
+		attributeECSTaskRevision:                   "v1.2",
 		conventions.AttributeCloudAvailabilityZone: "us-west-2d",
-		AttributeECSTaskPullStartedAt:              "2020-10-02T00:43:06.202617438Z",
-		AttributeECSTaskPullStoppedAt:              "2020-10-02T00:43:06.31288465Z",
-		AttributeECSTaskKnownStatus:                "RUNNING",
-		AttributeECSTaskLaunchType:                 "EC2",
+		attributeECSTaskPullStartedAt:              "2020-10-02T00:43:06.202617438Z",
+		attributeECSTaskPullStoppedAt:              "2020-10-02T00:43:06.31288465Z",
+		attributeECSTaskKnownStatus:                "RUNNING",
+		attributeECSTaskLaunchType:                 "EC2",
 		conventions.AttributeCloudRegion:           "us-west-2",
 		conventions.AttributeCloudAccount:          "803860917211",
 	}

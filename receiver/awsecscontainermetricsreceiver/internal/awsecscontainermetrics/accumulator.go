@@ -46,7 +46,7 @@ func (acc *metricDataAccumulator) getMetricsData(containerStatsMap map[string]*C
 		if ok && !isEmptyStats(stats) {
 
 			containerMetrics := convertContainerMetrics(stats, logger, containerMetadata)
-			acc.accumulate(convertToOTLPMetrics(ContainerPrefix, containerMetrics, containerResource, timestamp))
+			acc.accumulate(convertToOTLPMetrics(containerPrefix, containerMetrics, containerResource, timestamp))
 			aggregateTaskMetrics(&taskMetrics, containerMetrics)
 
 		} else if containerMetadata.FinishedAt != "" && containerMetadata.StartedAt != "" {
@@ -57,12 +57,12 @@ func (acc *metricDataAccumulator) getMetricsData(containerStatsMap map[string]*C
 				logger.Warn("Error time format error found for this container:" + containerMetadata.ContainerName)
 			}
 
-			acc.accumulate(convertStoppedContainerDataToOTMetrics(ContainerPrefix, containerResource, timestamp, duration))
+			acc.accumulate(convertStoppedContainerDataToOTMetrics(containerPrefix, containerResource, timestamp, duration))
 
 		}
 	}
 	overrideWithTaskLevelLimit(&taskMetrics, metadata)
-	acc.accumulate(convertToOTLPMetrics(TaskPrefix, taskMetrics, taskResource, timestamp))
+	acc.accumulate(convertToOTLPMetrics(taskPrefix, taskMetrics, taskResource, timestamp))
 }
 
 func (acc *metricDataAccumulator) accumulate(md pdata.Metrics) {
@@ -95,7 +95,7 @@ func overrideWithTaskLevelLimit(taskMetrics *ECSMetrics, metadata TaskMetadata) 
 		taskMetrics.MemoryReserved = *metadata.Limits.Memory
 	}
 
-	taskMetrics.CPUReserved = taskMetrics.CPUReserved / CPUsInVCpu
+	taskMetrics.CPUReserved = taskMetrics.CPUReserved / cpusInVCpu
 
 	// Overwrite CPU limit with task level limit
 	if metadata.Limits.CPU != nil {

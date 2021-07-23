@@ -37,16 +37,16 @@ func (f testRestClient) EndpointResponse() ([]byte, []byte, error) {
 		return []byte("wrong-json-body"), []byte("wrong-json-body"), nil
 	}
 
-	taskStats, _ := ioutil.ReadFile("../testdata/task_stats.json")
+	taskStats, _ := ioutil.ReadFile("../../testdata/task_stats.json")
 	if f.invalidTaskMetadata {
 		return taskStats, []byte("wrong-json-body"), nil
 	}
 
-	taskStats, err := ioutil.ReadFile("../testdata/task_stats.json")
+	taskStats, err := ioutil.ReadFile("../../testdata/task_stats.json")
 	if err != nil {
 		return nil, nil, err
 	}
-	taskMetadata, err := ioutil.ReadFile("../testdata/task_metadata.json")
+	taskMetadata, err := ioutil.ReadFile("../../testdata/task_metadata.json")
 	if err != nil {
 		return nil, nil, err
 	}

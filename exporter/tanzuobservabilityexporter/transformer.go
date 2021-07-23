@@ -27,14 +27,12 @@ import (
 )
 
 type traceTransformer struct {
-	ResourceAttributes pdata.AttributeMap
-	Config             *Config
+	resAttrs pdata.AttributeMap
 }
 
-func newTraceTransformer(resource pdata.Resource, cfg *Config) *traceTransformer {
+func newTraceTransformer(resource pdata.Resource) *traceTransformer {
 	t := &traceTransformer{
-		ResourceAttributes: resource.Attributes(),
-		Config:             cfg,
+		resAttrs: resource.Attributes(),
 	}
 	return t
 }
@@ -44,7 +42,7 @@ var (
 	errInvalidTraceID = errors.New("TraceID is invalid")
 )
 
-type Span struct {
+type span struct {
 	Name           string
 	TraceID        uuid.UUID
 	SpanID         uuid.UUID
@@ -55,20 +53,20 @@ type Span struct {
 	SpanLogs       []senders.SpanLog
 }
 
-func (t *traceTransformer) Span(orig pdata.Span) (Span, error) {
+func (t *traceTransformer) Span(orig pdata.Span) (span, error) {
 	traceID, err := traceIDtoUUID(orig.TraceID())
 	if err != nil {
-		return Span{}, errInvalidTraceID
+		return span{}, errInvalidTraceID
 	}
 
 	spanID, err := spanIDtoUUID(orig.SpanID())
 	if err != nil {
-		return Span{}, errInvalidSpanID
+		return span{}, errInvalidSpanID
 	}
 
 	startMillis, durationMillis := calculateTimes(orig)
 
-	tags := attributesToTags(t.ResourceAttributes, orig.Attributes())
+	tags := attributesToTags(t.resAttrs, orig.Attributes())
 	t.setRequiredTags(tags)
 
 	tags[labelSpanKind] = spanKind(orig)
@@ -82,7 +80,7 @@ func (t *traceTransformer) Span(orig pdata.Span) (Span, error) {
 		tags[tracetranslator.TagW3CTraceState] = string(orig.TraceState())
 	}
 
-	return Span{
+	return span{
 		Name:           orig.Name(),
 		TraceID:        traceID,
 		SpanID:         spanID,
