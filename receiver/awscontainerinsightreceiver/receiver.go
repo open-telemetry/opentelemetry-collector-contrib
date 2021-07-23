@@ -91,11 +91,15 @@ func (acir *awsContainerInsightReceiver) Start(ctx context.Context, host compone
 		}
 	}
 	if acir.config.ContainerOrchestrator == ci.ECS {
+
 		ecsInfo, err := ecsinfo.NewECSInfo(acir.config.CollectionInterval, hostinfo, acir.logger)
 		if err != nil {
 			return err
 		}
-		acir.cadvisor, err = cadvisor.NewWithECSInfo(acir.config.ContainerOrchestrator, hostinfo, acir.logger, ecsInfo)
+
+		ecsOption := cadvisor.WithECSInfoCreator(ecsInfo)
+
+		acir.cadvisor, err = cadvisor.New(acir.config.ContainerOrchestrator, hostinfo, acir.logger, ecsOption)
 		if err != nil {
 			return err
 		}

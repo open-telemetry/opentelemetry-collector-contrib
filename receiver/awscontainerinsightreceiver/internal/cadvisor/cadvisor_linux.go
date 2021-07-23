@@ -93,6 +93,12 @@ func WithDecorator(d Decorator) Option {
 	}
 }
 
+func WithECSInfoCreator(f ecsInfo) Option {
+	return func(c *Cadvisor) {
+		c.ecsInfo = f
+	}
+}
+
 type hostInfo interface {
 	GetNumCores() int64
 	GetMemoryCapacity() int64
@@ -162,30 +168,6 @@ func New(containerOrchestrator string, hostInfo hostInfo, logger *zap.Logger, op
 	return c, nil
 }
 
-// NewWithECSInfo creates a Cadvisor struct which can generate metrics from embedded cadvisor lib and generate metrics about ECS info
-func NewWithECSInfo(containerOrchestrator string, hostInfo hostInfo, logger *zap.Logger, ecs ecsInfo, options ...Option) (*Cadvisor, error) {
-
-	c := &Cadvisor{
-		logger:                logger,
-		version:               "0",
-		createCadvisorManager: defaultCreateManager,
-		containerOrchestrator: containerOrchestrator,
-	}
-
-	// apply additional options
-	for _, option := range options {
-		option(c)
-	}
-
-	if err := c.initManager(c.createCadvisorManager); err != nil {
-		return nil, err
-	}
-
-	c.hostInfo = hostInfo
-	c.ecsInfo = ecs
-	return c, nil
-}
-
 var metricsExtractors = []extractors.MetricExtractor{}
 
 func GetMetricsExtractors() []extractors.MetricExtractor {
@@ -213,6 +195,10 @@ func (c *Cadvisor) addEbsVolumeInfo(tags map[string]string, ebsVolumeIdsUsedAsPV
 }
 
 func (c *Cadvisor) addECSMetrics(cadvisormetrics []*extractors.CAdvisorMetric) {
+
+	if len(cadvisormetrics) == 0 {
+		c.logger.Warn("cadvisor can't collect any metrics!")
+	}
 
 	for _, cadvisormetric := range cadvisormetrics {
 		if cadvisormetric.GetMetricType() == ci.TypeInstance {
@@ -250,13 +236,13 @@ func addECSResources(tags map[string]string) {
 	var sources []string
 	switch metricType {
 	case ci.TypeInstance:
-		sources = append(sources, []string{"cadvisor", "/proc", "ecsagent", "calculated"}...)
+		sources = []string{"cadvisor", "/proc", "ecsagent", "calculated"}
 	case ci.TypeInstanceFS:
-		sources = append(sources, []string{"cadvisor", "calculated"}...)
+		sources = []string{"cadvisor", "calculated"}
 	case ci.TypeInstanceNet:
-		sources = append(sources, []string{"cadvisor", "calculated"}...)
+		sources = []string{"cadvisor", "calculated"}
 	case ci.TypeInstanceDiskIO:
-		sources = append(sources, []string{"cadvisor"}...)
+		sources = []string{"cadvisor"}
 	}
 	if len(sources) > 0 {
 		sourcesInfo, err := json.Marshal(sources)
@@ -292,7 +278,10 @@ func (c *Cadvisor) decorateMetrics(cadvisormetrics []*extractors.CAdvisorMetric)
 			tags[ci.InstanceType] = instanceType
 		}
 
-		//add cluster name and auto scaling group name
+		//add scaling group name
+		tags[ci.AutoScalingGroupNameKey] = c.hostInfo.GetAutoScalingGroupName()
+
+		//add ECS cluster name and container instance id
 		if c.containerOrchestrator == ci.ECS {
 			if c.ecsInfo.GetClusterName() == "" {
 				c.logger.Warn("Can't get cluster name")
@@ -318,8 +307,7 @@ func (c *Cadvisor) decorateMetrics(cadvisormetrics []*extractors.CAdvisorMetric)
 				result = append(result, out)
 			}
 		}
-		//add scaling group name
-		tags[ci.AutoScalingGroupNameKey] = c.hostInfo.GetAutoScalingGroupName()
+
 	}
 
 	return result
@@ -351,12 +339,11 @@ func (c *Cadvisor) GetMetrics() []pdata.Metrics {
 		return result
 	}
 
-	c.logger.Debug("cadvisor containers stats", zap.Int("size", len(containerinfos)))
 	out := processContainers(containerinfos, c.hostInfo, c.containerOrchestrator, c.logger)
-
 	results := c.decorateMetrics(out)
 
 	if c.containerOrchestrator == ci.ECS {
+		results = out
 		c.addECSMetrics(results)
 	}
 

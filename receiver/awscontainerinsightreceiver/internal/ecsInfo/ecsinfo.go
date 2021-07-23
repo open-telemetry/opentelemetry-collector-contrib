@@ -65,7 +65,6 @@ func (e *EcsInfo) GetCPUReserved() int64 {
 		return e.cgroup.getCPUReserved()
 	}
 	return 0
-	//return e.cgroup.getCPUReserved()
 }
 
 func (e *EcsInfo) GetMemReserved() int64 {
@@ -73,8 +72,6 @@ func (e *EcsInfo) GetMemReserved() int64 {
 		return e.cgroup.getMemReserved()
 	}
 	return 0
-	//return e.cgroup.getMemReserved()
-
 }
 
 func (e *EcsInfo) GetContainerInstanceID() string {
@@ -152,7 +149,7 @@ func (e *EcsInfo) initTaskInfo(ctx context.Context) {
 
 	<-e.hostIPProvider.GetInstanceIPReadyC()
 
-	e.logger.Info("instance ip is ready and begin initializing ecs container info")
+	e.logger.Info("instance ip is ready and begin initializing ecs task info")
 
 	e.ecsTaskInfo = e.ecsTaskInfoCreator(ctx, e.hostIPProvider, e.refreshInterval, e.logger, e.httpClient, e.isTaskInfoReadyC)
 
