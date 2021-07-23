@@ -30,7 +30,7 @@ func NewFactory() component.ExporterFactory {
 	return exporterhelper.NewFactory(
 		exporterType,
 		createDefaultConfig,
-		exporterhelper.WithTraces(createTraceExporter),
+		exporterhelper.WithTraces(createTracesExporter),
 	)
 }
 
@@ -44,9 +44,9 @@ func createDefaultConfig() config.Exporter {
 	}
 }
 
-// createTraceExporter implements exporterhelper.CreateTracesExporter and creates
+// createTracesExporter implements exporterhelper.CreateTracesExporter and creates
 // an exporter for traces using this configuration
-func createTraceExporter(
+func createTracesExporter(
 	_ context.Context,
 	set component.ExporterCreateSettings,
 	cfg config.Exporter,
@@ -60,6 +60,6 @@ func createTraceExporter(
 		cfg,
 		set,
 		exp.pushTraceData,
-		exporterhelper.WithShutdown(exp.Shutdown),
+		exporterhelper.WithShutdown(exp.shutdown),
 	)
 }
