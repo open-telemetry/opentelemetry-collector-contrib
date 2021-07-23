@@ -61,11 +61,11 @@ func createTraceEdgeConnection(rootURL, apiKey string, buildInfo component.Build
 	}
 }
 
-// Payload represents a data payload to be sent to some endpoint
-type Payload struct {
-	CreationDate time.Time
-	Bytes        []byte
-	Headers      map[string]string
+// payLoad represents a data payload to be sent to some endpoint
+type payLoad struct {
+	creationDate time.Time
+	bytes        []byte
+	headers      map[string]string
 }
 
 // SendTraces serializes a trace payload to protobuf and sends it to Trace Edge
@@ -78,14 +78,14 @@ func (con *traceEdgeConnectionImpl) SendTraces(ctx context.Context, trace *pb.Tr
 		return fmt.Errorf("no traces in payload")
 	}
 
-	// Set Headers
+	// Set headers
 	headers := utils.ProtobufHeaders
 
-	// Construct a Payload{} from the headers and binary
-	payload := Payload{
-		CreationDate: time.Now().UTC(),
-		Bytes:        binary,
-		Headers:      headers,
+	// Construct a payLoad{} from the headers and binary
+	payload := payLoad{
+		creationDate: time.Now().UTC(),
+		bytes:        binary,
+		headers:      headers,
 	}
 
 	var sendErr error
@@ -116,14 +116,14 @@ func (con *traceEdgeConnectionImpl) SendStats(ctx context.Context, sts *stats.Pa
 	}
 	binary := b.Bytes()
 
-	// Set Headers
+	// Set headers
 	headers := utils.JSONHeaders
 
-	// Construct a Payload{} from the headers and binary
-	payload := Payload{
-		CreationDate: time.Now().UTC(),
-		Bytes:        binary,
-		Headers:      headers,
+	// Construct a payLoad{} from the headers and binary
+	payload := payLoad{
+		creationDate: time.Now().UTC(),
+		bytes:        binary,
+		headers:      headers,
 	}
 
 	var sendErr error
@@ -145,17 +145,17 @@ func (con *traceEdgeConnectionImpl) SendStats(ctx context.Context, sts *stats.Pa
 }
 
 // sendPayloadToTraceEdge sends a payload to Trace Edge
-func (con *traceEdgeConnectionImpl) sendPayloadToTraceEdge(ctx context.Context, apiKey string, payload *Payload, url string) (bool, error) {
+func (con *traceEdgeConnectionImpl) sendPayloadToTraceEdge(ctx context.Context, apiKey string, payload *payLoad, url string) (bool, error) {
 
 	// Create the request to be sent to the API
-	req, err := http.NewRequestWithContext(ctx, "POST", url, bytes.NewBuffer(payload.Bytes))
+	req, err := http.NewRequestWithContext(ctx, "POST", url, bytes.NewBuffer(payload.bytes))
 
 	if err != nil {
 		return false, err
 	}
 
 	utils.SetDDHeaders(req.Header, con.buildInfo, apiKey)
-	utils.SetExtraHeaders(req.Header, payload.Headers)
+	utils.SetExtraHeaders(req.Header, payload.headers)
 
 	resp, err := con.client.Do(req)
 
