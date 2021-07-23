@@ -63,7 +63,7 @@ metrics:
     description: Number of items currently stored in the cache
     unit: 1
     data:
-      type: double gauge
+      type: gauge
     labels: []
   memcached.eviction_count:
     description: Cache item evictions
@@ -93,19 +93,19 @@ metrics:
     description: Hit ratio for memcached operations, expressed as a percentage value between 0.0 and 100.0.
     unit: '%'
     data:
-      type: double gauge
+      type: gauge
     labels: [operation]
   memcached.rusage:
     description: Accumulated user and system time. 
     unit: 1
     data:
-      type: double gauge
+      type: gauge
     lables: [usage_type]
   memcached.threads:
     description: Number of threads used by the memcached instance
     unit: 1
     data:
-      type: double gauge
+      type: gauge
     lables: []
 
 
