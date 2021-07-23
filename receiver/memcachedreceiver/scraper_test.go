@@ -38,7 +38,7 @@ func TestScraper(t *testing.T) {
 	err := sc.Start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err)
 	metrics, err := sc.Scrape(context.Background(), cfg.ID())
-	require.Nil(t, err)
+	require.NoError(t, err)
 	rms := metrics.ResourceMetrics()
 	require.Equal(t, 1, rms.Len())
 	rm := rms.At(0)
@@ -49,7 +49,7 @@ func TestScraper(t *testing.T) {
 	ilm := ilms.At(0)
 	ms := ilm.Metrics()
 
-	require.Equal(t, 10, ms.Len())
+	require.Equal(t, 11, ms.Len())
 
 	for i := 0; i < ms.Len(); i++ {
 		m := ms.At(i)
@@ -74,6 +74,8 @@ func TestScraper(t *testing.T) {
 			require.Equal(t, 2, m.Gauge().DataPoints().Len())
 		case "memcached.threads":
 			require.Equal(t, 1, m.Gauge().DataPoints().Len())
+		case "memcached.operation_hit_ratio":
+			require.Equal(t, 3, m.Gauge().DataPoints().Len())
 		default:
 			t.Error("Incorrect name or untracked metric name.")
 		}

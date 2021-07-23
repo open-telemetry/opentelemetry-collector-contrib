@@ -1,4 +1,4 @@
-// Copyright 2021 Google LLC
+// Copyright ObservIQ
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -36,7 +36,7 @@ type startPoint struct {
 	dataType pdata.MetricDataType
 
 	intDataPoint    *pdata.IntDataPoint
-	doubleDataPoint *pdata.DoubleDataPoint
+	doubleDataPoint *pdata.NumberDataPoint
 	lastIntValue    int64
 	lastDoubleValue float64
 }
@@ -111,7 +111,7 @@ func (nsp *NormalizeSumsProcessor) transformMetrics(rms pdata.ResourceMetrics) [
 
 func (nsp *NormalizeSumsProcessor) shouldTransformMetric(metric pdata.Metric) (bool, *Transform) {
 	// Only consider Sums
-	if !(metric.DataType() == pdata.MetricDataTypeIntSum || metric.DataType() == pdata.MetricDataTypeDoubleSum) {
+	if !(metric.DataType() == pdata.MetricDataTypeIntSum || metric.DataType() == pdata.MetricDataTypeSum) {
 		return false, nil
 	}
 
@@ -135,8 +135,8 @@ func (nsp *NormalizeSumsProcessor) processMetric(resource pdata.Resource, metric
 	switch t := metric.DataType(); t {
 	case pdata.MetricDataTypeIntSum:
 		return nsp.processIntSumMetric(resource, metric) > 0, nil
-	case pdata.MetricDataTypeDoubleSum:
-		return nsp.processDoubleSumMetric(resource, metric) > 0, nil
+	case pdata.MetricDataTypeSum:
+		return nsp.processSumMetric(resource, metric) > 0, nil
 
 	default:
 		return false, fmt.Errorf("data type not supported %s", t)
@@ -201,10 +201,10 @@ func (nsp *NormalizeSumsProcessor) processIntSumDataPoint(dp pdata.IntDataPoint,
 	return true
 }
 
-func (nsp *NormalizeSumsProcessor) processDoubleSumMetric(resource pdata.Resource, metric pdata.Metric) int {
-	dps := metric.DoubleSum().DataPoints()
+func (nsp *NormalizeSumsProcessor) processSumMetric(resource pdata.Resource, metric pdata.Metric) int {
+	dps := metric.Sum().DataPoints()
 	for i := 0; i < dps.Len(); {
-		reportData := nsp.processDoubleSumDataPoint(dps.At(i), resource, metric)
+		reportData := nsp.processSumDataPoint(dps.At(i), resource, metric)
 
 		if !reportData {
 			doubleRemoveAt(dps, i)
@@ -216,15 +216,15 @@ func (nsp *NormalizeSumsProcessor) processDoubleSumMetric(resource pdata.Resourc
 	return dps.Len()
 }
 
-func (nsp *NormalizeSumsProcessor) processDoubleSumDataPoint(dp pdata.DoubleDataPoint, resource pdata.Resource, metric pdata.Metric) bool {
+func (nsp *NormalizeSumsProcessor) processSumDataPoint(dp pdata.NumberDataPoint, resource pdata.Resource, metric pdata.Metric) bool {
 	metricIdentifier := dataPointIdentifier(resource, metric, dp.LabelsMap())
 
 	start := nsp.history[metricIdentifier]
 	// If this is the first time we've observed this unique metric,
 	// record it as the start point and do not report this data point
 	if start == nil {
-		dps := metric.DoubleSum().DataPoints()
-		newDP := pdata.NewDoubleDataPoint()
+		dps := metric.Sum().DataPoints()
+		newDP := pdata.NewNumberDataPoint()
 		dps.At(0).CopyTo(newDP)
 
 		newStart := startPoint{
@@ -316,11 +316,11 @@ func addAttributeToIdentityBuilder(b *strings.Builder, v pdata.AttributeValue) {
 
 func intRemoveAt(slice pdata.IntDataPointSlice, idx int) {
 	newSlice := pdata.NewIntDataPointSlice()
-	newSlice.Resize(slice.Len() - 1)
 	j := 0
 	for i := 0; i < slice.Len(); i++ {
 		if i != idx {
-			slice.At(i).CopyTo(newSlice.At(j))
+			dp := newSlice.AppendEmpty()
+			slice.At(i).CopyTo(dp)
 			j++
 		}
 	}
@@ -328,13 +328,13 @@ func intRemoveAt(slice pdata.IntDataPointSlice, idx int) {
 	newSlice.CopyTo(slice)
 }
 
-func doubleRemoveAt(slice pdata.DoubleDataPointSlice, idx int) {
-	newSlice := pdata.NewDoubleDataPointSlice()
-	newSlice.Resize(slice.Len() - 1)
+func doubleRemoveAt(slice pdata.NumberDataPointSlice, idx int) {
+	newSlice := pdata.NewNumberDataPointSlice()
 	j := 0
 	for i := 0; i < slice.Len(); i++ {
 		if i != idx {
-			slice.At(i).CopyTo(newSlice.At(j))
+			dp := newSlice.AppendEmpty()
+			slice.At(i).CopyTo(dp)
 			j++
 		}
 	}

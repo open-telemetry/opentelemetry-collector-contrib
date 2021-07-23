@@ -183,7 +183,7 @@ func initMetric(ms pdata.MetricSlice, mi metadata.MetricIntf) pdata.Metric {
 }
 
 // addToMetric adds and labels a double gauge datapoint to a metricslice.
-func addToMetric(metric pdata.DoubleDataPointSlice, labels pdata.StringMap, value float64, ts pdata.Timestamp) {
+func addToMetric(metric pdata.NumberDataPointSlice, labels pdata.StringMap, value float64, ts pdata.Timestamp) {
 	dataPoint := metric.AppendEmpty()
 	dataPoint.SetTimestamp(ts)
 	dataPoint.SetValue(value)
