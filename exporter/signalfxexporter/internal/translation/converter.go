@@ -107,14 +107,10 @@ func (c *MetricsConverter) metricToSfxDataPoints(metric pdata.Metric, extraDimen
 	switch metric.DataType() {
 	case pdata.MetricDataTypeNone:
 		return nil
-	case pdata.MetricDataTypeIntGauge:
-		dps = convertIntDatapoints(metric.IntGauge().DataPoints(), basePoint, extraDimensions)
-	case pdata.MetricDataTypeIntSum:
-		dps = convertIntDatapoints(metric.IntSum().DataPoints(), basePoint, extraDimensions)
 	case pdata.MetricDataTypeGauge:
-		dps = convertDoubleDatapoints(metric.Gauge().DataPoints(), basePoint, extraDimensions)
+		dps = convertNumberDatapoints(metric.Gauge().DataPoints(), basePoint, extraDimensions)
 	case pdata.MetricDataTypeSum:
-		dps = convertDoubleDatapoints(metric.Sum().DataPoints(), basePoint, extraDimensions)
+		dps = convertNumberDatapoints(metric.Sum().DataPoints(), basePoint, extraDimensions)
 	case pdata.MetricDataTypeHistogram:
 		dps = convertHistogram(metric.Histogram().DataPoints(), basePoint, extraDimensions)
 	case pdata.MetricDataTypeSummary:
@@ -210,7 +206,7 @@ func convertSummaryDataPoints(
 	return out
 }
 
-func convertIntDatapoints(in pdata.IntDataPointSlice, basePoint *sfxpb.DataPoint, extraDims []*sfxpb.Dimension) []*sfxpb.DataPoint {
+func convertNumberDatapoints(in pdata.NumberDataPointSlice, basePoint *sfxpb.DataPoint, extraDims []*sfxpb.Dimension) []*sfxpb.DataPoint {
 	out := make([]*sfxpb.DataPoint, 0, in.Len())
 
 	for i := 0; i < in.Len(); i++ {
@@ -220,26 +216,14 @@ func convertIntDatapoints(in pdata.IntDataPointSlice, basePoint *sfxpb.DataPoint
 		dp.Timestamp = timestampToSignalFx(inDp.Timestamp())
 		dp.Dimensions = labelsToDimensions(inDp.LabelsMap(), extraDims)
 
-		val := inDp.Value()
-		dp.Value.IntValue = &val
-
-		out = append(out, &dp)
-	}
-	return out
-}
-
-func convertDoubleDatapoints(in pdata.NumberDataPointSlice, basePoint *sfxpb.DataPoint, extraDims []*sfxpb.Dimension) []*sfxpb.DataPoint {
-	out := make([]*sfxpb.DataPoint, 0, in.Len())
-
-	for i := 0; i < in.Len(); i++ {
-		inDp := in.At(i)
-
-		dp := *basePoint
-		dp.Timestamp = timestampToSignalFx(inDp.Timestamp())
-		dp.Dimensions = labelsToDimensions(inDp.LabelsMap(), extraDims)
-
-		val := inDp.Value()
-		dp.Value.DoubleValue = &val
+		switch inDp.Type() {
+		case pdata.MetricValueTypeInt:
+			val := inDp.IntVal()
+			dp.Value.IntValue = &val
+		case pdata.MetricValueTypeDouble:
+			val := inDp.DoubleVal()
+			dp.Value.DoubleValue = &val
+		}
 
 		out = append(out, &dp)
 	}
@@ -256,20 +240,8 @@ func makeBaseDataPoint(m pdata.Metric) *sfxpb.DataPoint {
 func fromMetricDataTypeToMetricType(metric pdata.Metric) *sfxpb.MetricType {
 	switch metric.DataType() {
 
-	case pdata.MetricDataTypeIntGauge:
-		return &sfxMetricTypeGauge
-
 	case pdata.MetricDataTypeGauge:
 		return &sfxMetricTypeGauge
-
-	case pdata.MetricDataTypeIntSum:
-		if !metric.IntSum().IsMonotonic() {
-			return &sfxMetricTypeGauge
-		}
-		if metric.IntSum().AggregationTemporality() == pdata.AggregationTemporalityDelta {
-			return &sfxMetricTypeCounter
-		}
-		return &sfxMetricTypeCumulativeCounter
 
 	case pdata.MetricDataTypeSum:
 		if !metric.Sum().IsMonotonic() {
