@@ -16,6 +16,7 @@ package sentryexporter
 
 import (
 	"context"
+	"crypto/rand"
 	"crypto/tls"
 	"encoding/hex"
 	"errors"
@@ -26,7 +27,6 @@ import (
 	"strings"
 
 	"github.com/getsentry/sentry-go"
-	"github.com/google/uuid"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/model/pdata"
@@ -102,15 +102,15 @@ func (s *SentryExporter) pushTraceData(_ context.Context, td pdata.Traces) error
 		}
 	}
 
-	if len(transactionMap) == 0 {
-		return nil
-	}
-
 	// After the first pass through, we can't necessarily make the assumption we have not associated all
 	// the spans with a transaction. As such, we must classify the remaining spans as orphans or not.
 	orphanSpans := classifyAsOrphanSpans(maybeOrphanSpans, len(maybeOrphanSpans)+1, idMap, transactionMap)
 
 	transactions := generateTransactions(transactionMap, orphanSpans)
+
+	if len(transactions) == 0 {
+		return nil
+	}
 
 	events := append(transactions, exceptionEvents...)
 
@@ -378,10 +378,12 @@ func transactionFromSpan(span *sentry.Span) *sentry.Event {
 	transaction.EventID = generateEventID()
 
 	transaction.Contexts["trace"] = sentry.TraceContext{
-		TraceID: span.TraceID,
-		SpanID:  span.SpanID,
-		Op:      span.Op,
-		Status:  span.Status,
+		TraceID:      span.TraceID,
+		SpanID:       span.SpanID,
+		ParentSpanID: span.ParentSpanID,
+		Op:           span.Op,
+		Description:  span.Description,
+		Status:       span.Status,
 	}
 
 	transaction.Type = "transaction"
@@ -397,12 +399,19 @@ func transactionFromSpan(span *sentry.Span) *sentry.Event {
 	return transaction
 }
 
-func generateEventID() sentry.EventID {
-	id, _ := uuid.New().MarshalBinary()
-	out := make([]byte, 32, 32)
-	hex.Encode(out, id)
+func uuid() string {
+	id := make([]byte, 16)
+	// Prefer rand.Read over rand.Reader, see https://go-review.googlesource.com/c/go/+/272326/.
+	_, _ = rand.Read(id)
+	id[6] &= 0x0F // clear version
+	id[6] |= 0x40 // set version to 4 (random uuid)
+	id[8] &= 0x3F // clear variant
+	id[8] |= 0x80 // set to IETF variant
+	return hex.EncodeToString(id)
+}
 
-	return sentry.EventID(out)
+func generateEventID() sentry.EventID {
+	return sentry.EventID(uuid())
 }
 
 // CreateSentryExporter returns a new Sentry Exporter.
