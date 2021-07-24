@@ -17,6 +17,7 @@ package k8sclusterreceiver
 import (
 	"time"
 
+	quotaclientset "github.com/openshift/client-go/quota/clientset/versioned"
 	"go.opentelemetry.io/collector/config"
 	k8s "k8s.io/client-go/kubernetes"
 
@@ -37,8 +38,12 @@ type Config struct {
 	// List of exporters to which metadata from this receiver should be forwarded to.
 	MetadataExporters []string `mapstructure:"metadata_exporters"`
 
+	// Whether OpenShift supprot should be enabled or not.
+	Distribution string `mapstructure:"distribution"`
+
 	// For mocking.
-	makeClient func(apiConf k8sconfig.APIConfig) (k8s.Interface, error)
+	makeClient               func(apiConf k8sconfig.APIConfig) (k8s.Interface, error)
+	makeOpenShiftQuotaClient func(apiConf k8sconfig.APIConfig) (quotaclientset.Interface, error)
 }
 
 func (cfg *Config) Validate() error {
@@ -50,4 +55,11 @@ func (cfg *Config) getK8sClient() (k8s.Interface, error) {
 		cfg.makeClient = k8sconfig.MakeClient
 	}
 	return cfg.makeClient(cfg.APIConfig)
+}
+
+func (cfg *Config) getOpenShiftQuotaClient() (quotaclientset.Interface, error) {
+	if cfg.makeOpenShiftQuotaClient == nil {
+		cfg.makeOpenShiftQuotaClient = k8sconfig.MakeOpenShiftQuotaClient
+	}
+	return cfg.makeOpenShiftQuotaClient(cfg.APIConfig)
 }
