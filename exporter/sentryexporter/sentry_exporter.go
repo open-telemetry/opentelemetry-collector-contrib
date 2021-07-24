@@ -17,6 +17,7 @@ package sentryexporter
 import (
 	"context"
 	"crypto/tls"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"log"
@@ -25,6 +26,7 @@ import (
 	"strings"
 
 	"github.com/getsentry/sentry-go"
+	"github.com/google/uuid"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/model/pdata"
@@ -169,12 +171,15 @@ func sentryEventFromError(errorMessage, errorType string, span *sentry.Span) (*s
 		return nil, err
 	}
 	event := sentry.NewEvent()
+	event.EventID = generateEventID()
 
 	event.Contexts["trace"] = sentry.TraceContext{
-		TraceID: span.TraceID,
-		SpanID:  span.SpanID,
-		Op:      span.Op,
-		Status:  span.Status,
+		TraceID:      span.TraceID,
+		SpanID:       span.SpanID,
+		ParentSpanID: span.ParentSpanID,
+		Op:           span.Op,
+		Description:  span.Description,
+		Status:       span.Status,
 	}
 
 	event.Type = errorType
@@ -370,6 +375,7 @@ func isRootSpan(s *sentry.Span) bool {
 // transactionFromSpan converts a span to a transaction.
 func transactionFromSpan(span *sentry.Span) *sentry.Event {
 	transaction := sentry.NewEvent()
+	transaction.EventID = generateEventID()
 
 	transaction.Contexts["trace"] = sentry.TraceContext{
 		TraceID: span.TraceID,
@@ -389,6 +395,14 @@ func transactionFromSpan(span *sentry.Span) *sentry.Event {
 	transaction.Transaction = span.Description
 
 	return transaction
+}
+
+func generateEventID() sentry.EventID {
+	id, _ := uuid.New().MarshalBinary()
+	out := make([]byte, 32, 32)
+	hex.Encode(out, id)
+
+	return sentry.EventID(out)
 }
 
 // CreateSentryExporter returns a new Sentry Exporter.
