@@ -134,7 +134,10 @@ func (emf *emfExporter) pushMetricsData(_ context.Context, md pdata.Metrics) err
 
 	for i := 0; i < rms.Len(); i++ {
 		rm := rms.At(i)
-		emf.metricTranslator.translateOTelToGroupedMetric(&rm, groupedMetrics, expConfig)
+		err := emf.metricTranslator.translateOTelToGroupedMetric(&rm, groupedMetrics, expConfig)
+		if err != nil {
+			return err
+		}
 	}
 
 	for _, groupedMetric := range groupedMetrics {

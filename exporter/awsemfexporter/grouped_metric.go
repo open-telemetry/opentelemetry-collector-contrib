@@ -15,6 +15,8 @@
 package awsemfexporter
 
 import (
+	"encoding/json"
+
 	"go.opentelemetry.io/collector/model/pdata"
 	"go.uber.org/zap"
 
@@ -34,16 +36,16 @@ type metricInfo struct {
 	unit  string
 }
 
-// addToGroupedMetric processes OT metrics and adds them into groupedMetric buckets
-func addToGroupedMetric(pmd *pdata.Metric, groupedMetrics map[interface{}]*groupedMetric, metadata cWMetricMetadata, logger *zap.Logger, descriptor map[string]MetricDescriptor) {
+// addToGroupedMetric processes OT metrics and adds them into GroupedMetric buckets
+func addToGroupedMetric(pmd *pdata.Metric, groupedMetrics map[interface{}]*groupedMetric, metadata cWMetricMetadata, logger *zap.Logger, descriptor map[string]MetricDescriptor, config *Config) error {
 	if pmd == nil {
-		return
+		return nil
 	}
 
 	metricName := pmd.Name()
 	dps := getDataPoints(pmd, metadata, logger)
 	if dps == nil || dps.Len() == 0 {
-		return
+		return nil
 	}
 
 	for i := 0; i < dps.Len(); i++ {
@@ -53,6 +55,13 @@ func addToGroupedMetric(pmd *pdata.Metric, groupedMetrics map[interface{}]*group
 		}
 
 		labels := dp.labels
+
+		if metricType, ok := labels["Type"]; ok {
+			if (metricType == "Pod" || metricType == "Container") && config.EKSFargateContainerInsightsEnabled {
+				addKubernetesWrapper(labels)
+			}
+		}
+
 		metric := &metricInfo{
 			value: dp.value,
 			unit:  translateUnit(pmd, descriptor),
@@ -83,6 +92,82 @@ func addToGroupedMetric(pmd *pdata.Metric, groupedMetrics map[interface{}]*group
 			}
 		}
 	}
+
+	return nil
+}
+
+type kubernetesObj struct {
+	ContainerName string                `json:"container_name,omitempty"`
+	Docker        *internalDockerObj    `json:"docker,omitempty"`
+	Host          string                `json:"host,omitempty"`
+	Labels        *internalLabelsObj    `json:"labels,omitempty"`
+	NamespaceName string                `json:"namespace_name,omitempty"`
+	PodID         string                `json:"pod_id,omitempty"`
+	PodName       string                `json:"pod_name,omitempty"`
+	PodOwners     *internalPodOwnersObj `json:"pod_owners,omitempty"`
+	ServiceName   string                `json:"service_name,omitempty"`
+}
+
+type internalDockerObj struct {
+	ContainerID string `json:"container_id,omitempty"`
+}
+
+type internalLabelsObj struct {
+	App             string `json:"app,omitempty"`
+	PodTemplateHash string `json:"pod-template-hash,omitempty"`
+}
+
+type internalPodOwnersObj struct {
+	OwnerKind string `json:"owner_kind,omitempty"`
+	OwnerName string `json:"owner_name,omitempty"`
+}
+
+func addKubernetesWrapper(labels map[string]string) {
+	//fill in obj
+	filledInObj := kubernetesObj{
+		ContainerName: mapGetHelper(labels, "container"),
+		Docker: &internalDockerObj{
+			ContainerID: mapGetHelper(labels, "container_id"),
+		},
+		Host: mapGetHelper(labels, "NodeName"),
+		Labels: &internalLabelsObj{
+			App:             mapGetHelper(labels, "app"),
+			PodTemplateHash: mapGetHelper(labels, "pod-template-hash"),
+		},
+		NamespaceName: mapGetHelper(labels, "Namespace"),
+		PodID:         mapGetHelper(labels, "PodId"),
+		PodName:       mapGetHelper(labels, "PodName"),
+		PodOwners: &internalPodOwnersObj{
+			OwnerKind: mapGetHelper(labels, "owner_kind"),
+			OwnerName: mapGetHelper(labels, "owner_name"),
+		},
+		ServiceName: mapGetHelper(labels, "Service"),
+	}
+
+	//handle nested empty object
+	if filledInObj.Docker.ContainerID == "" {
+		filledInObj.Docker = nil
+	}
+
+	if filledInObj.Labels.App == "" && filledInObj.Labels.PodTemplateHash == "" {
+		filledInObj.Labels = nil
+	}
+
+	if filledInObj.PodOwners.OwnerKind == "" && filledInObj.PodOwners.OwnerName == "" {
+		filledInObj.PodOwners = nil
+	}
+
+	jsonBytes, _ := json.Marshal(filledInObj)
+	labels["kubernetes"] = string(jsonBytes)
+}
+
+func mapGetHelper(labels map[string]string, key string) string {
+	val, ok := labels[key]
+	if ok {
+		return val
+	}
+
+	return ""
 }
 
 func groupedMetricKey(metadata groupedMetricMetadata, labels map[string]string) aws.Key {
