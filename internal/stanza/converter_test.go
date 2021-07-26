@@ -612,7 +612,7 @@ func TestConvertSeverity(t *testing.T) {
 		{35, pdata.SeverityNumberINFO2, "Info"},
 		{entry.Notice, pdata.SeverityNumberINFO3, "Info"},
 		{45, pdata.SeverityNumberINFO3, "Info"},
-		{entry.Warning, pdata.SeverityNumberINFO4, "Info"},
+		{entry.Warning, pdata.SeverityNumberWARN, "Warn"},
 		{55, pdata.SeverityNumberINFO4, "Info"},
 		{entry.Error, pdata.SeverityNumberERROR, "Error"},
 		{65, pdata.SeverityNumberERROR2, "Error"},
@@ -620,7 +620,7 @@ func TestConvertSeverity(t *testing.T) {
 		{75, pdata.SeverityNumberERROR3, "Error"},
 		{entry.Alert, pdata.SeverityNumberERROR3, "Error"},
 		{85, pdata.SeverityNumberERROR4, "Error"},
-		{entry.Emergency, pdata.SeverityNumberFATAL, "Error"},
+		{entry.Emergency, pdata.SeverityNumberERROR4, "Error"},
 		{95, pdata.SeverityNumberFATAL2, "Fatal"},
 		{entry.Catastrophe, pdata.SeverityNumberFATAL4, "Fatal"},
 	}
