@@ -536,7 +536,7 @@ func convertSeverity(s entry.Severity) (string, pdata.SeverityNumber) {
 	case s == entry.Catastrophe:
 		return "Fatal", pdata.SeverityNumberFATAL4
 	case s == entry.Emergency:
-		return "Error", pdata.SeverityNumberFATAL
+		return "Error", pdata.SeverityNumberERROR4
 	case s == entry.Alert:
 		return "Error", pdata.SeverityNumberERROR3
 	case s == entry.Critical:
@@ -544,7 +544,7 @@ func convertSeverity(s entry.Severity) (string, pdata.SeverityNumber) {
 	case s == entry.Error:
 		return "Error", pdata.SeverityNumberERROR
 	case s == entry.Warning:
-		return "Info", pdata.SeverityNumberINFO4
+		return "Warn", pdata.SeverityNumberWARN
 	case s == entry.Notice:
 		return "Info", pdata.SeverityNumberINFO3
 	case s == entry.Info:
