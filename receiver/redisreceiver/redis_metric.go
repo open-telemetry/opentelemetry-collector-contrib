@@ -29,43 +29,45 @@ type redisMetric struct {
 	desc        string
 	labels      map[string]string
 	pdType      pdata.MetricDataType
+	valueType   pdata.MetricValueType
 	isMonotonic bool
 }
 
 // Parse a numeric string to build a metric based on this redisMetric. The
 // passed-in time is applied to the Point.
 func (m *redisMetric) parseMetric(strVal string, t *timeBundle) (pdata.Metric, error) {
-	var err error
 	pdm := pdata.NewMetric()
 	switch m.pdType {
-	case pdata.MetricDataTypeIntSum:
-		var val int64
-		val, err = strToInt64Point(strVal)
-		if err != nil {
-			return pdm, err
-		}
-		initIntMetric(m, val, t, pdm)
-	case pdata.MetricDataTypeIntGauge:
-		var val int64
-		val, err = strToInt64Point(strVal)
-		if err != nil {
-			return pdm, err
-		}
-		initIntMetric(m, val, t, pdm)
 	case pdata.MetricDataTypeSum:
-		var val float64
-		val, err = strToDoublePoint(strVal)
-		if err != nil {
-			return pdm, err
+		switch m.valueType {
+		case pdata.MetricValueTypeDouble:
+			val, err := strToDoublePoint(strVal)
+			if err != nil {
+				return pdm, err
+			}
+			initDoubleMetric(m, val, t, pdm)
+		case pdata.MetricValueTypeInt:
+			val, err := strToInt64Point(strVal)
+			if err != nil {
+				return pdm, err
+			}
+			initIntMetric(m, val, t, pdm)
 		}
-		initDoubleMetric(m, val, t, pdm)
 	case pdata.MetricDataTypeGauge:
-		var val float64
-		val, err = strToDoublePoint(strVal)
-		if err != nil {
-			return pdm, err
+		switch m.valueType {
+		case pdata.MetricValueTypeDouble:
+			val, err := strToDoublePoint(strVal)
+			if err != nil {
+				return pdm, err
+			}
+			initDoubleMetric(m, val, t, pdm)
+		case pdata.MetricValueTypeInt:
+			val, err := strToInt64Point(strVal)
+			if err != nil {
+				return pdm, err
+			}
+			initIntMetric(m, val, t, pdm)
 		}
-		initDoubleMetric(m, val, t, pdm)
 	}
 	return pdm, nil
 }
