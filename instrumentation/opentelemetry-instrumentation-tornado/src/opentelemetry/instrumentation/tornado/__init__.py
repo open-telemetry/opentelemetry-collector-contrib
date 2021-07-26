@@ -38,7 +38,7 @@ Hooks
 *******
 
 Tornado instrumentation supports extending tracing behaviour with the help of hooks.
-It's ``instrument()`` method accepts three optional functions that get called back with the
+Its ``instrument()`` method accepts three optional functions that get called back with the
 created span and some other contextual information. Example:
 
 .. code-block:: python

@@ -244,44 +244,6 @@ class TestURLLib3Instrumentor(TestBase):
         # expect only a single span (retries are ignored)
         self.assert_exception_span(self.HTTP_URL)
 
-    def test_span_name_callback(self):
-        def span_name_callback(method, url, headers):
-            self.assertEqual("GET", method)
-            self.assertEqual(self.HTTP_URL, url)
-            self.assertEqual({"key": "value"}, headers)
-
-            return "test_span_name"
-
-        URLLib3Instrumentor().uninstrument()
-        URLLib3Instrumentor().instrument(span_name=span_name_callback)
-
-        response = self.perform_request(
-            self.HTTP_URL, headers={"key": "value"}
-        )
-        self.assertEqual(b"Hello!", response.data)
-
-        span = self.assert_span()
-        self.assertEqual("test_span_name", span.name)
-
-    def test_span_name_callback_invalid(self):
-        invalid_span_names = (None, 123, "")
-
-        for span_name in invalid_span_names:
-            self.memory_exporter.clear()
-
-            # pylint: disable=unused-argument
-            def span_name_callback(method, url, headers):
-                return span_name  # pylint: disable=cell-var-from-loop
-
-            URLLib3Instrumentor().uninstrument()
-            URLLib3Instrumentor().instrument(span_name=span_name_callback)
-            with self.subTest(span_name=span_name):
-                response = self.perform_request(self.HTTP_URL)
-                self.assertEqual(b"Hello!", response.data)
-
-                span = self.assert_span()
-                self.assertEqual("HTTP GET", span.name)
-
     def test_url_filter(self):
         def url_filter(url):
             return url.split("?")[0]
@@ -297,3 +259,23 @@ class TestURLLib3Instrumentor(TestBase):
 
         response = self.perform_request(url)
         self.assert_success_span(response, self.HTTP_URL)
+
+    def test_hooks(self):
+        def request_hook(span, request):
+            span.update_name("name set from hook")
+
+        def response_hook(span, request, response):
+            span.set_attribute("response_hook_attr", "value")
+
+        URLLib3Instrumentor().uninstrument()
+        URLLib3Instrumentor().instrument(
+            request_hook=request_hook, response_hook=response_hook
+        )
+        response = self.perform_request(self.HTTP_URL)
+        self.assertEqual(b"Hello!", response.data)
+
+        span = self.assert_span()
+
+        self.assertEqual(span.name, "name set from hook")
+        self.assertIn("response_hook_attr", span.attributes)
+        self.assertEqual(span.attributes["response_hook_attr"], "value")

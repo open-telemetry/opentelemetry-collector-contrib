@@ -33,7 +33,7 @@ from opentelemetry.instrumentation.aiohttp_client import (
 from opentelemetry.instrumentation.utils import _SUPPRESS_INSTRUMENTATION_KEY
 from opentelemetry.semconv.trace import SpanAttributes
 from opentelemetry.test.test_base import TestBase
-from opentelemetry.trace import StatusCode
+from opentelemetry.trace import Span, StatusCode
 
 
 def run_with_test_server(
@@ -161,46 +161,51 @@ class TestAioHttpIntegration(TestBase):
             self.assertFalse(mock_span.set_attribute.called)
             self.assertFalse(mock_span.set_status.called)
 
-    def test_span_name_option(self):
-        for span_name, method, path, expected in (
-            ("static", "POST", "/static-span-name", "static"),
-            (
-                lambda params: "{} - {}".format(
-                    params.method, params.url.path
-                ),
-                "PATCH",
-                "/some/path",
-                "PATCH - /some/path",
-            ),
-        ):
-            with self.subTest(span_name=span_name, method=method, path=path):
-                host, port = self._http_request(
-                    trace_config=aiohttp_client.create_trace_config(
-                        span_name=span_name
-                    ),
-                    method=method,
-                    url=path,
-                    status_code=HTTPStatus.OK,
-                )
+    def test_hooks(self):
+        method = "PATCH"
+        path = "/some/path"
+        expected = "PATCH - /some/path"
 
-                self.assert_spans(
-                    [
-                        (
-                            expected,
-                            (StatusCode.UNSET, None),
-                            {
-                                SpanAttributes.HTTP_METHOD: method,
-                                SpanAttributes.HTTP_URL: "http://{}:{}{}".format(
-                                    host, port, path
-                                ),
-                                SpanAttributes.HTTP_STATUS_CODE: int(
-                                    HTTPStatus.OK
-                                ),
-                            },
-                        )
-                    ]
-                )
-                self.memory_exporter.clear()
+        def request_hook(span: Span, params: aiohttp.TraceRequestStartParams):
+            span.update_name("{} - {}".format(params.method, params.url.path))
+
+        def response_hook(
+            span: Span,
+            params: typing.Union[
+                aiohttp.TraceRequestEndParams,
+                aiohttp.TraceRequestExceptionParams,
+            ],
+        ):
+            span.set_attribute("response_hook_attr", "value")
+
+        host, port = self._http_request(
+            trace_config=aiohttp_client.create_trace_config(
+                request_hook=request_hook, response_hook=response_hook,
+            ),
+            method=method,
+            url=path,
+            status_code=HTTPStatus.OK,
+        )
+
+        for span in self.memory_exporter.get_finished_spans():
+            self.assertEqual(span.name, expected)
+            self.assertEqual(
+                (span.status.status_code, span.status.description),
+                (StatusCode.UNSET, None),
+            )
+            self.assertEqual(
+                span.attributes[SpanAttributes.HTTP_METHOD], method
+            )
+            self.assertEqual(
+                span.attributes[SpanAttributes.HTTP_URL],
+                "http://{}:{}{}".format(host, port, path),
+            )
+            self.assertEqual(
+                span.attributes[SpanAttributes.HTTP_STATUS_CODE], HTTPStatus.OK
+            )
+            self.assertIn("response_hook_attr", span.attributes)
+            self.assertEqual(span.attributes["response_hook_attr"], "value")
+        self.memory_exporter.clear()
 
     def test_url_filter_option(self):
         # Strips all query params from URL before adding as a span attribute.
@@ -501,12 +506,23 @@ class TestAioHttpClientInstrumentor(TestBase):
             span.attributes[SpanAttributes.HTTP_URL],
         )
 
-    def test_span_name(self):
-        def span_name_callback(params: aiohttp.TraceRequestStartParams) -> str:
-            return "{} - {}".format(params.method, params.url.path)
+    def test_hooks(self):
+        def request_hook(span: Span, params: aiohttp.TraceRequestStartParams):
+            span.update_name("{} - {}".format(params.method, params.url.path))
+
+        def response_hook(
+            span: Span,
+            params: typing.Union[
+                aiohttp.TraceRequestEndParams,
+                aiohttp.TraceRequestExceptionParams,
+            ],
+        ):
+            span.set_attribute("response_hook_attr", "value")
 
         AioHttpClientInstrumentor().uninstrument()
-        AioHttpClientInstrumentor().instrument(span_name=span_name_callback)
+        AioHttpClientInstrumentor().instrument(
+            request_hook=request_hook, response_hook=response_hook
+        )
 
         url = "/test-path"
         run_with_test_server(
@@ -514,6 +530,8 @@ class TestAioHttpClientInstrumentor(TestBase):
         )
         span = self.assert_spans(1)
         self.assertEqual("GET - /test-path", span.name)
+        self.assertIn("response_hook_attr", span.attributes)
+        self.assertEqual(span.attributes["response_hook_attr"], "value")
 
 
 class TestLoadingAioHttpInstrumentor(unittest.TestCase):

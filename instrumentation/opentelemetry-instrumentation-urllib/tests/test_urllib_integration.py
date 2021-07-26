@@ -15,7 +15,6 @@
 import abc
 import socket
 import urllib
-from http.client import HTTPResponse
 from unittest import mock
 from urllib import request
 from urllib.error import HTTPError
@@ -119,31 +118,6 @@ class RequestsIntegrationTestBase(abc.ABC):
         self.check_span_instrumentation_info(
             span, opentelemetry.instrumentation.urllib
         )
-
-    def test_name_callback(self):
-        def name_callback(method, url):
-            return "GET" + url
-
-        URLLibInstrumentor().uninstrument()
-        URLLibInstrumentor().instrument(name_callback=name_callback)
-        result = self.perform_request(self.URL)
-
-        self.assertEqual(result.read(), b"Hello!")
-        span = self.assert_span()
-
-        self.assertEqual(span.name, "GET" + self.URL)
-
-    def test_name_callback_default(self):
-        def name_callback(method, url):
-            return 123
-
-        URLLibInstrumentor().uninstrument()
-        URLLibInstrumentor().instrument(name_callback=name_callback)
-        result = self.perform_request(self.URL)
-        self.assertEqual(result.read(), b"Hello!")
-        span = self.assert_span()
-
-        self.assertEqual(span.name, "HTTP GET")
 
     def test_not_foundbasic(self):
         url_404 = "http://httpbin.org/status/404/"
@@ -252,31 +226,6 @@ class RequestsIntegrationTestBase(abc.ABC):
         finally:
             set_global_textmap(previous_propagator)
 
-    def test_span_callback(self):
-        URLLibInstrumentor().uninstrument()
-
-        def span_callback(span, result: HTTPResponse):
-            span.set_attribute("http.response.body", result.read())
-
-        URLLibInstrumentor().instrument(
-            tracer_provider=self.tracer_provider, span_callback=span_callback,
-        )
-
-        result = self.perform_request(self.URL)
-
-        self.assertEqual(result.read(), b"")
-
-        span = self.assert_span()
-        self.assertEqual(
-            span.attributes,
-            {
-                SpanAttributes.HTTP_METHOD: "GET",
-                SpanAttributes.HTTP_URL: self.URL,
-                SpanAttributes.HTTP_STATUS_CODE: 200,
-                "http.response.body": "Hello!",
-            },
-        )
-
     def test_custom_tracer_provider(self):
         resource = resources.Resource.create({})
         result = self.create_tracer_provider(resource=resource)
@@ -329,6 +278,26 @@ class RequestsIntegrationTestBase(abc.ABC):
 
         span = self.assert_span()
         self.assertEqual(span.attributes[SpanAttributes.HTTP_URL], self.URL)
+
+    def test_hooks(self):
+        def request_hook(span, request_obj):
+            span.update_name("name set from hook")
+
+        def response_hook(span, request_obj, response):
+            span.set_attribute("response_hook_attr", "value")
+
+        URLLibInstrumentor().uninstrument()
+        URLLibInstrumentor().instrument(
+            request_hook=request_hook, response_hook=response_hook
+        )
+        result = self.perform_request(self.URL)
+
+        self.assertEqual(result.read(), b"Hello!")
+        span = self.assert_span()
+
+        self.assertEqual(span.name, "name set from hook")
+        self.assertIn("response_hook_attr", span.attributes)
+        self.assertEqual(span.attributes["response_hook_attr"], "value")
 
 
 class TestRequestsIntegration(RequestsIntegrationTestBase, TestBase):

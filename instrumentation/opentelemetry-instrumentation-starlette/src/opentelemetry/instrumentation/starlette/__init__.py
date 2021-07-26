@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import typing
 from typing import Collection
 
 from starlette import applications
@@ -21,9 +22,14 @@ from opentelemetry.instrumentation.asgi import OpenTelemetryMiddleware
 from opentelemetry.instrumentation.asgi.package import _instruments
 from opentelemetry.instrumentation.instrumentor import BaseInstrumentor
 from opentelemetry.semconv.trace import SpanAttributes
+from opentelemetry.trace import Span
 from opentelemetry.util.http import get_excluded_urls
 
 _excluded_urls = get_excluded_urls("STARLETTE")
+
+_ServerRequestHookT = typing.Optional[typing.Callable[[Span, dict], None]]
+_ClientRequestHookT = typing.Optional[typing.Callable[[Span, dict], None]]
+_ClientResponseHookT = typing.Optional[typing.Callable[[Span, dict], None]]
 
 
 class StarletteInstrumentor(BaseInstrumentor):
@@ -35,13 +41,22 @@ class StarletteInstrumentor(BaseInstrumentor):
     _original_starlette = None
 
     @staticmethod
-    def instrument_app(app: applications.Starlette, tracer_provider=None):
+    def instrument_app(
+        app: applications.Starlette,
+        server_request_hook: _ServerRequestHookT = None,
+        client_request_hook: _ClientRequestHookT = None,
+        client_response_hook: _ClientResponseHookT = None,
+        tracer_provider=None,
+    ):
         """Instrument an uninstrumented Starlette application."""
         if not getattr(app, "is_instrumented_by_opentelemetry", False):
             app.add_middleware(
                 OpenTelemetryMiddleware,
                 excluded_urls=_excluded_urls,
-                span_details_callback=_get_route_details,
+                default_span_details=_get_route_details,
+                server_request_hook=server_request_hook,
+                client_request_hook=client_request_hook,
+                client_response_hook=client_response_hook,
                 tracer_provider=tracer_provider,
             )
             app.is_instrumented_by_opentelemetry = True
@@ -52,6 +67,15 @@ class StarletteInstrumentor(BaseInstrumentor):
     def _instrument(self, **kwargs):
         self._original_starlette = applications.Starlette
         _InstrumentedStarlette._tracer_provider = kwargs.get("tracer_provider")
+        _InstrumentedStarlette._server_request_hook = kwargs.get(
+            "server_request_hook"
+        )
+        _InstrumentedStarlette._client_request_hook = kwargs.get(
+            "client_request_hook"
+        )
+        _InstrumentedStarlette._client_response_hook = kwargs.get(
+            "client_response_hook"
+        )
         applications.Starlette = _InstrumentedStarlette
 
     def _uninstrument(self, **kwargs):
@@ -60,13 +84,19 @@ class StarletteInstrumentor(BaseInstrumentor):
 
 class _InstrumentedStarlette(applications.Starlette):
     _tracer_provider = None
+    _server_request_hook: _ServerRequestHookT = None
+    _client_request_hook: _ClientRequestHookT = None
+    _client_response_hook: _ClientResponseHookT = None
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.add_middleware(
             OpenTelemetryMiddleware,
             excluded_urls=_excluded_urls,
-            span_details_callback=_get_route_details,
+            default_span_details=_get_route_details,
+            server_request_hook=_InstrumentedStarlette._server_request_hook,
+            client_request_hook=_InstrumentedStarlette._client_request_hook,
+            client_response_hook=_InstrumentedStarlette._client_response_hook,
             tracer_provider=_InstrumentedStarlette._tracer_provider,
         )
 

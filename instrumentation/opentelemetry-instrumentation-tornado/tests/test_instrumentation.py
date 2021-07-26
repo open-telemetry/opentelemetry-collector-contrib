@@ -505,7 +505,7 @@ class TornadoHookTest(TornadoTest):
         def client_request_hook(span, request):
             span.update_name("name from client hook")
 
-        def client_response_hook(span, request):
+        def client_response_hook(span, response):
             span.set_attribute("attr-from-hook", "value")
 
         self._server_request_hook = server_request_hook
