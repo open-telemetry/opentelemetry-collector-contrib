@@ -605,11 +605,11 @@ func TestTransformGauge(t *testing.T) {
 		m.SetName("gauge")
 		m.SetDescription("description")
 		m.SetUnit("1")
-		m.SetDataType(pdata.MetricDataTypeIntGauge)
-		gi := m.IntGauge()
+		m.SetDataType(pdata.MetricDataTypeGauge)
+		gi := m.Gauge()
 		dp := gi.DataPoints().AppendEmpty()
 		dp.SetTimestamp(ts)
-		dp.SetValue(42)
+		dp.SetIntVal(42)
 		t.Run("Int64", func(t *testing.T) { testTransformMetric(t, m, expected) })
 	}
 }
@@ -675,13 +675,13 @@ func TestTransformSum(t *testing.T) {
 		m.SetName("sum")
 		m.SetDescription("description")
 		m.SetUnit("1")
-		m.SetDataType(pdata.MetricDataTypeIntSum)
-		d := m.IntSum()
+		m.SetDataType(pdata.MetricDataTypeSum)
+		d := m.Sum()
 		d.SetAggregationTemporality(pdata.AggregationTemporalityDelta)
 		dp := d.DataPoints().AppendEmpty()
 		dp.SetStartTimestamp(start)
 		dp.SetTimestamp(end)
-		dp.SetValue(42.0)
+		dp.SetIntVal(42.0)
 		t.Run("IntSum-Delta", func(t *testing.T) { testTransformMetric(t, m, expected) })
 	}
 	{
@@ -689,13 +689,13 @@ func TestTransformSum(t *testing.T) {
 		m.SetName("sum")
 		m.SetDescription("description")
 		m.SetUnit("1")
-		m.SetDataType(pdata.MetricDataTypeIntSum)
-		d := m.IntSum()
+		m.SetDataType(pdata.MetricDataTypeSum)
+		d := m.Sum()
 		d.SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
 		dp := d.DataPoints().AppendEmpty()
 		dp.SetStartTimestamp(start)
 		dp.SetTimestamp(end)
-		dp.SetValue(42.0)
+		dp.SetIntVal(42.0)
 		t.Run("IntSum-Cumulative", func(t *testing.T) { testTransformMetric(t, m, expectedGauge) })
 	}
 }
