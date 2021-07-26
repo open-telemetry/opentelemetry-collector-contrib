@@ -78,13 +78,13 @@ func (r *nginxScraper) scrape(context.Context) (pdata.ResourceMetricsSlice, erro
 	ilm := metrics.ResourceMetrics().AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty()
 	ilm.InstrumentationLibrary().SetName("otelcol/nginx")
 
-	addSum(ilm.Metrics(), metadata.M.NginxRequests.Init, now, stats.Requests)
-	addSum(ilm.Metrics(), metadata.M.NginxConnectionsAccepted.Init, now, stats.Connections.Accepted)
-	addSum(ilm.Metrics(), metadata.M.NginxConnectionsHandled.Init, now, stats.Connections.Handled)
+	addIntSum(ilm.Metrics(), metadata.M.NginxRequests.Init, now, stats.Requests)
+	addIntSum(ilm.Metrics(), metadata.M.NginxConnectionsAccepted.Init, now, stats.Connections.Accepted)
+	addIntSum(ilm.Metrics(), metadata.M.NginxConnectionsHandled.Init, now, stats.Connections.Handled)
 
 	currConnMetric := ilm.Metrics().AppendEmpty()
 	metadata.M.NginxConnectionsCurrent.Init(currConnMetric)
-	dps := currConnMetric.IntGauge().DataPoints()
+	dps := currConnMetric.Gauge().DataPoints()
 	addCurrentConnectionDataPoint(dps, metadata.LabelState.Active, now, stats.Connections.Active)
 	addCurrentConnectionDataPoint(dps, metadata.LabelState.Reading, now, stats.Connections.Reading)
 	addCurrentConnectionDataPoint(dps, metadata.LabelState.Writing, now, stats.Connections.Writing)
@@ -93,17 +93,17 @@ func (r *nginxScraper) scrape(context.Context) (pdata.ResourceMetricsSlice, erro
 	return metrics.ResourceMetrics(), nil
 }
 
-func addSum(metrics pdata.MetricSlice, initFunc func(pdata.Metric), now pdata.Timestamp, value int64) {
+func addIntSum(metrics pdata.MetricSlice, initFunc func(pdata.Metric), now pdata.Timestamp, value int64) {
 	metric := metrics.AppendEmpty()
 	initFunc(metric)
-	dp := metric.IntSum().DataPoints().AppendEmpty()
+	dp := metric.Sum().DataPoints().AppendEmpty()
 	dp.SetTimestamp(now)
-	dp.SetValue(value)
+	dp.SetIntVal(value)
 }
 
-func addCurrentConnectionDataPoint(dps pdata.IntDataPointSlice, stateValue string, now pdata.Timestamp, value int64) {
+func addCurrentConnectionDataPoint(dps pdata.NumberDataPointSlice, stateValue string, now pdata.Timestamp, value int64) {
 	dp := dps.AppendEmpty()
 	dp.LabelsMap().Upsert(metadata.L.State, stateValue)
 	dp.SetTimestamp(now)
-	dp.SetValue(value)
+	dp.SetIntVal(value)
 }
