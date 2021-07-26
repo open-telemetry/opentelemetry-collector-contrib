@@ -103,16 +103,16 @@ func (suite *NginxIntegrationSuite) TestNginxScraperHappyPath() {
 
 		switch m.Name() {
 		case metadata.M.NginxRequests.Name():
-			require.Equal(t, 1, m.IntSum().DataPoints().Len())
-			require.True(t, m.IntSum().IsMonotonic())
+			require.Equal(t, 1, m.Sum().DataPoints().Len())
+			require.True(t, m.Sum().IsMonotonic())
 		case metadata.M.NginxConnectionsAccepted.Name():
-			require.Equal(t, 1, m.IntSum().DataPoints().Len())
-			require.True(t, m.IntSum().IsMonotonic())
+			require.Equal(t, 1, m.Sum().DataPoints().Len())
+			require.True(t, m.Sum().IsMonotonic())
 		case metadata.M.NginxConnectionsHandled.Name():
-			require.Equal(t, 1, m.IntSum().DataPoints().Len())
-			require.True(t, m.IntSum().IsMonotonic())
+			require.Equal(t, 1, m.Sum().DataPoints().Len())
+			require.True(t, m.Sum().IsMonotonic())
 		case metadata.M.NginxConnectionsCurrent.Name():
-			dps := m.IntGauge().DataPoints()
+			dps := m.Gauge().DataPoints()
 			require.Equal(t, 4, dps.Len())
 			present := map[string]bool{}
 			for j := 0; j < dps.Len(); j++ {
