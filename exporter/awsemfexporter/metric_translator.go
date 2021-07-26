@@ -99,7 +99,7 @@ func newMetricTranslator(config Config) metricTranslator {
 }
 
 // translateOTelToGroupedMetric converts OT metrics to Grouped Metric format.
-func (mt metricTranslator) translateOTelToGroupedMetric(rm *pdata.ResourceMetrics, groupedMetrics map[interface{}]*groupedMetric, config *Config) {
+func (mt metricTranslator) translateOTelToGroupedMetric(rm *pdata.ResourceMetrics, groupedMetrics map[interface{}]*groupedMetric, config *Config) error {
 	timestamp := time.Now().UnixNano() / int64(time.Millisecond)
 	var instrumentationLibName string
 	cWNamespace := getNamespace(rm, config.Namespace)
@@ -132,9 +132,13 @@ func (mt metricTranslator) translateOTelToGroupedMetric(rm *pdata.ResourceMetric
 				receiver:                   metricReceiver,
 				metricDataType:             metric.DataType(),
 			}
-			addToGroupedMetric(&metric, groupedMetrics, metadata, config.logger, mt.metricDescriptor)
+			err := addToGroupedMetric(&metric, groupedMetrics, metadata, config.logger, mt.metricDescriptor, config)
+			if err != nil {
+				return err
+			}
 		}
 	}
+	return nil
 }
 
 // translateGroupedMetricToCWMetric converts Grouped Metric format to CloudWatch Metric format.
