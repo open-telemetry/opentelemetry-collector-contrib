@@ -83,32 +83,32 @@ func (s *topicScraper) scrape(context.Context) (pdata.ResourceMetricsSlice, erro
 		}
 		labels := pdata.NewStringMap()
 		labels.Upsert(metadata.L.Topic, topic)
-		addGauge(ilm.Metrics(), metadata.M.KafkaTopicPartitions.Name(), now, labels, int64(len(partitions)))
+		addIntGauge(ilm.Metrics(), metadata.M.KafkaTopicPartitions.Name(), now, labels, int64(len(partitions)))
 		for _, partition := range partitions {
 			labels.Upsert(metadata.L.Partition, string(partition))
 			currentOffset, err := s.client.GetOffset(topic, partition, sarama.OffsetNewest)
 			if err != nil {
 				scrapeErrors.AddPartial(1, err)
 			} else {
-				addGauge(ilm.Metrics(), metadata.M.KafkaPartitionCurrentOffset.Name(), now, labels, currentOffset)
+				addIntGauge(ilm.Metrics(), metadata.M.KafkaPartitionCurrentOffset.Name(), now, labels, currentOffset)
 			}
 			oldestOffset, err := s.client.GetOffset(topic, partition, sarama.OffsetOldest)
 			if err != nil {
 				scrapeErrors.AddPartial(1, err)
 			} else {
-				addGauge(ilm.Metrics(), metadata.M.KafkaPartitionOldestOffset.Name(), now, labels, oldestOffset)
+				addIntGauge(ilm.Metrics(), metadata.M.KafkaPartitionOldestOffset.Name(), now, labels, oldestOffset)
 			}
 			replicas, err := s.client.Replicas(topic, partition)
 			if err != nil {
 				scrapeErrors.AddPartial(1, err)
 			} else {
-				addGauge(ilm.Metrics(), metadata.M.KafkaPartitionReplicas.Name(), now, labels, int64(len(replicas)))
+				addIntGauge(ilm.Metrics(), metadata.M.KafkaPartitionReplicas.Name(), now, labels, int64(len(replicas)))
 			}
 			replicasInSync, err := s.client.InSyncReplicas(topic, partition)
 			if err != nil {
 				scrapeErrors.AddPartial(1, err)
 			} else {
-				addGauge(ilm.Metrics(), metadata.M.KafkaPartitionReplicasInSync.Name(), now, labels, int64(len(replicasInSync)))
+				addIntGauge(ilm.Metrics(), metadata.M.KafkaPartitionReplicasInSync.Name(), now, labels, int64(len(replicasInSync)))
 			}
 		}
 	}
@@ -134,12 +134,12 @@ func createTopicsScraper(_ context.Context, cfg Config, saramaConfig *sarama.Con
 	), nil
 }
 
-func addGauge(ms pdata.MetricSlice, name string, now pdata.Timestamp, labels pdata.StringMap, value int64) {
+func addIntGauge(ms pdata.MetricSlice, name string, now pdata.Timestamp, labels pdata.StringMap, value int64) {
 	m := ms.AppendEmpty()
 	m.SetName(name)
-	m.SetDataType(pdata.MetricDataTypeIntGauge)
-	dp := m.IntGauge().DataPoints().AppendEmpty()
+	m.SetDataType(pdata.MetricDataTypeGauge)
+	dp := m.Gauge().DataPoints().AppendEmpty()
 	dp.SetTimestamp(now)
-	dp.SetValue(value)
+	dp.SetIntVal(value)
 	labels.CopyTo(dp.LabelsMap())
 }
