@@ -23,27 +23,27 @@ import (
 func TestSerializeIntDataPoints(t *testing.T) {
 	type args struct {
 		name string
-		data pdata.IntDataPointSlice
+		data pdata.NumberDataPointSlice
 		tags []string
 	}
 
-	intSlice := pdata.NewIntDataPointSlice()
+	intSlice := pdata.NewNumberDataPointSlice()
 	intPoint := intSlice.AppendEmpty()
-	intPoint.SetValue(13)
+	intPoint.SetIntVal(13)
 	intPoint.SetTimestamp(pdata.Timestamp(100_000_000))
 	intPoint1 := intSlice.AppendEmpty()
-	intPoint1.SetValue(14)
+	intPoint1.SetIntVal(14)
 	intPoint1.SetTimestamp(pdata.Timestamp(101_000_000))
 
-	labelIntSlice := pdata.NewIntDataPointSlice()
+	labelIntSlice := pdata.NewNumberDataPointSlice()
 	labelIntPoint := labelIntSlice.AppendEmpty()
-	labelIntPoint.SetValue(13)
+	labelIntPoint.SetIntVal(13)
 	labelIntPoint.SetTimestamp(pdata.Timestamp(100_000_000))
 	labelIntPoint.LabelsMap().Insert("labelKey", "labelValue")
 
-	emptyLabelIntSlice := pdata.NewIntDataPointSlice()
+	emptyLabelIntSlice := pdata.NewNumberDataPointSlice()
 	emptyLabelIntPoint := emptyLabelIntSlice.AppendEmpty()
-	emptyLabelIntPoint.SetValue(13)
+	emptyLabelIntPoint.SetIntVal(13)
 	emptyLabelIntPoint.SetTimestamp(pdata.Timestamp(100_000_000))
 	emptyLabelIntPoint.LabelsMap().Insert("emptyLabelKey", "")
 
@@ -91,8 +91,8 @@ func TestSerializeIntDataPoints(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := SerializeIntDataPoints(tt.args.name, tt.args.data, tt.args.tags); !equal(got, tt.want) {
-				t.Errorf("SerializeIntDataPoints() = %#v, want %#v", got, tt.want)
+			if got := SerializeNumberDataPoints(tt.args.name, tt.args.data, tt.args.tags); !equal(got, tt.want) {
+				t.Errorf("SerializeNumberDataPoints() = %#v, want %#v", got, tt.want)
 			}
 		})
 	}
@@ -150,8 +150,8 @@ func TestSerializeDoubleDataPoints(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := SerializeDoubleDataPoints(tt.args.name, tt.args.data, tt.args.tags); !equal(got, tt.want) {
-				t.Errorf("SerializeDoubleDataPoints() = %v, want %v", got, tt.want)
+			if got := SerializeNumberDataPoints(tt.args.name, tt.args.data, tt.args.tags); !equal(got, tt.want) {
+				t.Errorf("SerializeNumberDataPoints() = %v, want %v", got, tt.want)
 			}
 		})
 	}
