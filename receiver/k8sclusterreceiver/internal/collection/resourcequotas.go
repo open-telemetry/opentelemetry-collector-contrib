@@ -72,7 +72,7 @@ func getMetricsForResourceQuota(rq *corev1.ResourceQuota) []*resourceMetrics {
 				&metricspb.Metric{
 					MetricDescriptor: t.metric,
 					Timeseries: []*metricspb.TimeSeries{
-						utils.GetInt64TimeSeriesWithLabels(val, []*metricspb.LabelValue{{Value: string(k)}}),
+						utils.GetInt64TimeSeriesWithLabels(val, []*metricspb.LabelValue{{Value: string(k), HasValue: true}}),
 					},
 				},
 			)

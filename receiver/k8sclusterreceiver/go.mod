@@ -10,6 +10,8 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.0.0-00010101000000-000000000000
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.0.0-00010101000000-000000000000
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata v0.0.0-00010101000000-000000000000
+	github.com/openshift/api v0.0.0-20210521075222-e273a339932a
+	github.com/openshift/client-go v0.0.0-20210521082421-73d9475a9142
 	github.com/stretchr/testify v1.7.0
 	go.opentelemetry.io/collector v0.30.2-0.20210723184018-3b7d6ce4830c
 	go.opentelemetry.io/collector/model v0.30.2-0.20210723184018-3b7d6ce4830c
