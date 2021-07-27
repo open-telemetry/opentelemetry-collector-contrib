@@ -128,7 +128,7 @@ func TestConsumeMetrics(t *testing.T) {
 		"k0": "v0",
 		"k1": "v1",
 	})
-	dp.SetValue(123)
+	dp.SetDoubleVal(123)
 
 	tests := []struct {
 		name                 string
@@ -264,7 +264,7 @@ func TestConsumeMetricsWithAccessTokenPassthrough(t *testing.T) {
 			"k0": "v0",
 			"k1": "v1",
 		})
-		dp.SetValue(123)
+		dp.SetDoubleVal(123)
 		return out
 	}
 
@@ -329,7 +329,7 @@ func TestConsumeMetricsWithAccessTokenPassthrough(t *testing.T) {
 					"k0": "v0",
 					"k1": "v1",
 				})
-				dp.SetValue(123)
+				dp.SetDoubleVal(123)
 
 				return out
 			}(),
@@ -704,15 +704,15 @@ func generateLargeDPBatch() pdata.Metrics {
 		m := ilm.Metrics().AppendEmpty()
 
 		m.SetName("test_" + strconv.Itoa(i))
-		m.SetDataType(pdata.MetricDataTypeIntGauge)
+		m.SetDataType(pdata.MetricDataTypeGauge)
 
-		dp := m.IntGauge().DataPoints().AppendEmpty()
+		dp := m.Gauge().DataPoints().AppendEmpty()
 		dp.SetTimestamp(pdata.TimestampFromTime(ts))
 		dp.LabelsMap().InitFromMap(map[string]string{
 			"k0": "v0",
 			"k1": "v1",
 		})
-		dp.SetValue(int64(i))
+		dp.SetIntVal(int64(i))
 	}
 
 	return md
