@@ -57,7 +57,7 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 	const doubleVal = 1234.5678
 	initDoublePt := func(doublePt pdata.NumberDataPoint) {
 		doublePt.SetTimestamp(ts)
-		doublePt.SetValue(doubleVal)
+		doublePt.SetDoubleVal(doubleVal)
 	}
 
 	initDoublePtWithLabels := func(doublePtWithLabels pdata.NumberDataPoint) {
