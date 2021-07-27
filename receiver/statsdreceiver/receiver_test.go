@@ -156,8 +156,8 @@ func Test_statsdreceiver_EndToEnd(t *testing.T) {
 			require.Equal(t, 1, mdd[0].ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().Len())
 			metric := mdd[0].ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(0)
 			assert.Equal(t, statsdMetric.Name, metric.Name())
-			assert.Equal(t, pdata.MetricDataTypeIntSum, metric.DataType())
-			require.Equal(t, 1, metric.IntSum().DataPoints().Len())
+			assert.Equal(t, pdata.MetricDataTypeSum, metric.DataType())
+			require.Equal(t, 1, metric.Sum().DataPoints().Len())
 		})
 	}
 }

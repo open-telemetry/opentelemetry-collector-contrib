@@ -150,7 +150,7 @@ func (p *StatsDParser) Aggregate(line string) error {
 			p.gauges[parsedMetric.description] = buildGaugeMetric(parsedMetric, timeNowFunc())
 		} else {
 			if parsedMetric.addition {
-				savedValue := p.gauges[parsedMetric.description].Metrics().At(0).Gauge().DataPoints().At(0).Value()
+				savedValue := p.gauges[parsedMetric.description].Metrics().At(0).Gauge().DataPoints().At(0).DoubleVal()
 				parsedMetric.floatvalue = parsedMetric.floatvalue + savedValue
 				p.gauges[parsedMetric.description] = buildGaugeMetric(parsedMetric, timeNowFunc())
 			} else {
@@ -163,7 +163,7 @@ func (p *StatsDParser) Aggregate(line string) error {
 		if !ok {
 			p.counters[parsedMetric.description] = buildCounterMetric(parsedMetric, p.isMonotonicCounter, timeNowFunc())
 		} else {
-			savedValue := p.counters[parsedMetric.description].Metrics().At(0).IntSum().DataPoints().At(0).Value()
+			savedValue := p.counters[parsedMetric.description].Metrics().At(0).Sum().DataPoints().At(0).IntVal()
 			parsedMetric.intvalue = parsedMetric.intvalue + savedValue
 			p.counters[parsedMetric.description] = buildCounterMetric(parsedMetric, p.isMonotonicCounter, timeNowFunc())
 		}
