@@ -2538,8 +2538,8 @@ func TestDeltaTranslatorNoMatchingMapping(t *testing.T) {
 func TestDeltaTranslatorMismatchedValueTypes(t *testing.T) {
 	c := testConverter(t, map[string]string{"system.cpu.time": "system.cpu.delta"})
 	md1 := baseMD()
-	md1.SetDataType(pdata.MetricDataTypeIntSum)
-	intTS("cpu0", "user", 1, 1, 1, md1.IntSum().DataPoints().AppendEmpty())
+	md1.SetDataType(pdata.MetricDataTypeSum)
+	intTS("cpu0", "user", 1, 1, 1, md1.Sum().DataPoints().AppendEmpty())
 
 	_ = c.MetricDataToSignalFxV2(wrapMetric(md1))
 	md2 := baseMD()
@@ -2996,8 +2996,8 @@ func doubleMD(secondsDelta int64, valueDelta float64) pdata.ResourceMetrics {
 
 func intMD(secondsDelta int64, valueDelta int64) pdata.ResourceMetrics {
 	md := baseMD()
-	md.SetDataType(pdata.MetricDataTypeIntSum)
-	ms := md.IntSum()
+	md.SetDataType(pdata.MetricDataTypeSum)
+	ms := md.Sum()
 	intTS("cpu0", "user", secondsDelta, 100, valueDelta, ms.DataPoints().AppendEmpty())
 	intTS("cpu0", "system", secondsDelta, 200, valueDelta, ms.DataPoints().AppendEmpty())
 	intTS("cpu0", "idle", secondsDelta, 300, valueDelta, ms.DataPoints().AppendEmpty())
@@ -3010,8 +3010,8 @@ func intMD(secondsDelta int64, valueDelta int64) pdata.ResourceMetrics {
 
 func intMDAfterReset(secondsDelta int64, valueDelta int64) pdata.ResourceMetrics {
 	md := baseMD()
-	md.SetDataType(pdata.MetricDataTypeIntSum)
-	ms := md.IntSum()
+	md.SetDataType(pdata.MetricDataTypeSum)
+	ms := md.Sum()
 	intTS("cpu0", "user", secondsDelta, 0, valueDelta, ms.DataPoints().AppendEmpty())
 	intTS("cpu0", "system", secondsDelta, 0, valueDelta, ms.DataPoints().AppendEmpty())
 	intTS("cpu0", "idle", secondsDelta, 0, valueDelta, ms.DataPoints().AppendEmpty())
@@ -3036,17 +3036,17 @@ func dblTS(lbl0 string, lbl1 string, secondsDelta int64, v float64, valueDelta f
 	})
 	const startTime = 1600000000
 	out.SetTimestamp(pdata.Timestamp(time.Duration(startTime+secondsDelta) * time.Second))
-	out.SetValue(v + valueDelta)
+	out.SetDoubleVal(v + valueDelta)
 }
 
-func intTS(lbl0 string, lbl1 string, secondsDelta int64, v int64, valueDelta int64, out pdata.IntDataPoint) {
+func intTS(lbl0 string, lbl1 string, secondsDelta int64, v int64, valueDelta int64, out pdata.NumberDataPoint) {
 	out.LabelsMap().InitFromMap(map[string]string{
 		"cpu":   lbl0,
 		"state": lbl1,
 	})
 	const startTime = 1600000000
 	out.SetTimestamp(pdata.Timestamp(time.Duration(startTime+secondsDelta) * time.Second))
-	out.SetValue(v + valueDelta)
+	out.SetIntVal(v + valueDelta)
 }
 
 func wrapMetric(m pdata.Metric) pdata.ResourceMetrics {

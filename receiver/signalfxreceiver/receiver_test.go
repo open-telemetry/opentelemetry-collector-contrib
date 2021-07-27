@@ -126,15 +126,15 @@ func Test_signalfxeceiver_EndToEnd(t *testing.T) {
 		m.SetDataType(pdata.MetricDataTypeGauge)
 		doublePt := m.Gauge().DataPoints().AppendEmpty()
 		doublePt.SetTimestamp(ts)
-		doublePt.SetValue(doubleVal)
+		doublePt.SetDoubleVal(doubleVal)
 	}
 	{
 		m := ilm.Metrics().AppendEmpty()
 		m.SetName("gauge_int_with_dims")
-		m.SetDataType(pdata.MetricDataTypeIntGauge)
-		int64Pt := m.IntGauge().DataPoints().AppendEmpty()
+		m.SetDataType(pdata.MetricDataTypeGauge)
+		int64Pt := m.Gauge().DataPoints().AppendEmpty()
 		int64Pt.SetTimestamp(ts)
-		int64Pt.SetValue(int64Val)
+		int64Pt.SetIntVal(int64Val)
 	}
 	{
 		m := ilm.Metrics().AppendEmpty()
@@ -144,17 +144,17 @@ func Test_signalfxeceiver_EndToEnd(t *testing.T) {
 		m.Sum().SetIsMonotonic(true)
 		doublePt := m.Sum().DataPoints().AppendEmpty()
 		doublePt.SetTimestamp(ts)
-		doublePt.SetValue(doubleVal)
+		doublePt.SetDoubleVal(doubleVal)
 	}
 	{
 		m := ilm.Metrics().AppendEmpty()
 		m.SetName("cumulative_int_with_dims")
-		m.SetDataType(pdata.MetricDataTypeIntSum)
-		m.IntSum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
-		m.IntSum().SetIsMonotonic(true)
-		int64Pt := m.IntSum().DataPoints().AppendEmpty()
+		m.SetDataType(pdata.MetricDataTypeSum)
+		m.Sum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+		m.Sum().SetIsMonotonic(true)
+		int64Pt := m.Sum().DataPoints().AppendEmpty()
 		int64Pt.SetTimestamp(ts)
-		int64Pt.SetValue(int64Val)
+		int64Pt.SetIntVal(int64Val)
 	}
 
 	expCfg := &signalfxexporter.Config{
@@ -564,12 +564,12 @@ func Test_sfxReceiver_TLS(t *testing.T) {
 	want := pdata.NewMetrics()
 	m := want.ResourceMetrics().AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty().Metrics().AppendEmpty()
 
-	m.SetDataType(pdata.MetricDataTypeIntGauge)
+	m.SetDataType(pdata.MetricDataTypeGauge)
 	m.SetName("single")
-	dps := m.IntGauge().DataPoints()
+	dps := m.Gauge().DataPoints()
 	dp := dps.AppendEmpty()
 	dp.SetTimestamp(pdata.Timestamp(msec * 1e6))
-	dp.SetValue(13)
+	dp.SetIntVal(13)
 
 	dp.LabelsMap().InitFromMap(map[string]string{
 		"k0": "v0",

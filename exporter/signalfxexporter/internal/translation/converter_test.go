@@ -57,7 +57,7 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 	const doubleVal = 1234.5678
 	initDoublePt := func(doublePt pdata.NumberDataPoint) {
 		doublePt.SetTimestamp(ts)
-		doublePt.SetValue(doubleVal)
+		doublePt.SetDoubleVal(doubleVal)
 	}
 
 	initDoublePtWithLabels := func(doublePtWithLabels pdata.NumberDataPoint) {
@@ -80,12 +80,12 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 	}
 
 	const int64Val = int64(123)
-	initInt64Pt := func(int64Pt pdata.IntDataPoint) {
+	initInt64Pt := func(int64Pt pdata.NumberDataPoint) {
 		int64Pt.SetTimestamp(ts)
-		int64Pt.SetValue(int64Val)
+		int64Pt.SetIntVal(int64Val)
 	}
 
-	initInt64PtWithLabels := func(int64PtWithLabels pdata.IntDataPoint) {
+	initInt64PtWithLabels := func(int64PtWithLabels pdata.NumberDataPoint) {
 		initInt64Pt(int64PtWithLabels)
 		int64PtWithLabels.LabelsMap().InitFromMap(labelMap)
 	}
@@ -158,8 +158,8 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 				{
 					m := ilm.Metrics().AppendEmpty()
 					m.SetName("gauge_int_with_dims")
-					m.SetDataType(pdata.MetricDataTypeIntGauge)
-					initInt64Pt(m.IntGauge().DataPoints().AppendEmpty())
+					m.SetDataType(pdata.MetricDataTypeGauge)
+					initInt64Pt(m.Gauge().DataPoints().AppendEmpty())
 				}
 				{
 					m := ilm.Metrics().AppendEmpty()
@@ -172,10 +172,10 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 				{
 					m := ilm.Metrics().AppendEmpty()
 					m.SetName("cumulative_int_with_dims")
-					m.SetDataType(pdata.MetricDataTypeIntSum)
-					m.IntSum().SetIsMonotonic(true)
-					m.IntSum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
-					initInt64Pt(m.IntSum().DataPoints().AppendEmpty())
+					m.SetDataType(pdata.MetricDataTypeSum)
+					m.Sum().SetIsMonotonic(true)
+					m.Sum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+					initInt64Pt(m.Sum().DataPoints().AppendEmpty())
 				}
 				{
 					m := ilm.Metrics().AppendEmpty()
@@ -188,10 +188,10 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 				{
 					m := ilm.Metrics().AppendEmpty()
 					m.SetName("delta_int_with_dims")
-					m.SetDataType(pdata.MetricDataTypeIntSum)
-					m.IntSum().SetIsMonotonic(true)
-					m.IntSum().SetAggregationTemporality(pdata.AggregationTemporalityDelta)
-					initInt64Pt(m.IntSum().DataPoints().AppendEmpty())
+					m.SetDataType(pdata.MetricDataTypeSum)
+					m.Sum().SetIsMonotonic(true)
+					m.Sum().SetAggregationTemporality(pdata.AggregationTemporalityDelta)
+					initInt64Pt(m.Sum().DataPoints().AppendEmpty())
 				}
 				{
 					m := ilm.Metrics().AppendEmpty()
@@ -203,9 +203,9 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 				{
 					m := ilm.Metrics().AppendEmpty()
 					m.SetName("gauge_sum_int_with_dims")
-					m.SetDataType(pdata.MetricDataTypeIntSum)
-					m.IntSum().SetIsMonotonic(false)
-					initInt64Pt(m.IntSum().DataPoints().AppendEmpty())
+					m.SetDataType(pdata.MetricDataTypeSum)
+					m.Sum().SetIsMonotonic(false)
+					initInt64Pt(m.Sum().DataPoints().AppendEmpty())
 				}
 
 				return out
@@ -236,8 +236,8 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 				{
 					m := ilm.Metrics().AppendEmpty()
 					m.SetName("gauge_int_with_dims")
-					m.SetDataType(pdata.MetricDataTypeIntGauge)
-					initInt64PtWithLabels(m.IntGauge().DataPoints().AppendEmpty())
+					m.SetDataType(pdata.MetricDataTypeGauge)
+					initInt64PtWithLabels(m.Gauge().DataPoints().AppendEmpty())
 				}
 				{
 					m := ilm.Metrics().AppendEmpty()
@@ -249,9 +249,9 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 				{
 					m := ilm.Metrics().AppendEmpty()
 					m.SetName("cumulative_int_with_dims")
-					m.SetDataType(pdata.MetricDataTypeIntSum)
-					m.IntSum().SetIsMonotonic(true)
-					initInt64PtWithLabels(m.IntSum().DataPoints().AppendEmpty())
+					m.SetDataType(pdata.MetricDataTypeSum)
+					m.Sum().SetIsMonotonic(true)
+					initInt64PtWithLabels(m.Sum().DataPoints().AppendEmpty())
 				}
 
 				return out
@@ -285,8 +285,8 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 				{
 					m := ilm.Metrics().AppendEmpty()
 					m.SetName("gauge_int_with_dims")
-					m.SetDataType(pdata.MetricDataTypeIntGauge)
-					initInt64PtWithLabels(m.IntGauge().DataPoints().AppendEmpty())
+					m.SetDataType(pdata.MetricDataTypeGauge)
+					initInt64PtWithLabels(m.Gauge().DataPoints().AppendEmpty())
 				}
 
 				return out
@@ -338,8 +338,8 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 				{
 					m := ilm.Metrics().AppendEmpty()
 					m.SetName("gauge_int_with_dims")
-					m.SetDataType(pdata.MetricDataTypeIntGauge)
-					initInt64PtWithLabels(m.IntGauge().DataPoints().AppendEmpty())
+					m.SetDataType(pdata.MetricDataTypeGauge)
+					initInt64PtWithLabels(m.Gauge().DataPoints().AppendEmpty())
 				}
 				{
 					m := ilm.Metrics().AppendEmpty()
@@ -356,8 +356,8 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 				{
 					m := ilm.Metrics().AppendEmpty()
 					m.SetName("gauge_int_with_dims")
-					m.SetDataType(pdata.MetricDataTypeIntGauge)
-					initInt64PtWithLabels(m.IntGauge().DataPoints().AppendEmpty())
+					m.SetDataType(pdata.MetricDataTypeGauge)
+					initInt64PtWithLabels(m.Gauge().DataPoints().AppendEmpty())
 				}
 
 				return out
@@ -646,8 +646,8 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 				{
 					m := ilm.Metrics().AppendEmpty()
 					m.SetName("gauge_int_with_dims")
-					m.SetDataType(pdata.MetricDataTypeIntGauge)
-					initInt64PtWithLabels(m.IntGauge().DataPoints().AppendEmpty())
+					m.SetDataType(pdata.MetricDataTypeGauge)
+					initInt64PtWithLabels(m.Gauge().DataPoints().AppendEmpty())
 				}
 				{
 					m := ilm.Metrics().AppendEmpty()
@@ -660,9 +660,9 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 				{
 					m := ilm.Metrics().AppendEmpty()
 					m.SetName("cumulative_int_with_dims")
-					m.SetDataType(pdata.MetricDataTypeIntSum)
-					m.IntSum().SetIsMonotonic(true)
-					initInt64PtWithLabels(m.IntSum().DataPoints().AppendEmpty())
+					m.SetDataType(pdata.MetricDataTypeSum)
+					m.Sum().SetIsMonotonic(true)
+					initInt64PtWithLabels(m.Sum().DataPoints().AppendEmpty())
 				}
 
 				return out
@@ -708,8 +708,8 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 				{
 					m := ilm.Metrics().AppendEmpty()
 					m.SetName("gauge_int_with_dims")
-					m.SetDataType(pdata.MetricDataTypeIntGauge)
-					initInt64PtWithLabels(m.IntGauge().DataPoints().AppendEmpty())
+					m.SetDataType(pdata.MetricDataTypeGauge)
+					initInt64PtWithLabels(m.Gauge().DataPoints().AppendEmpty())
 				}
 				{
 					m := ilm.Metrics().AppendEmpty()
@@ -722,9 +722,9 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 				{
 					m := ilm.Metrics().AppendEmpty()
 					m.SetName("cumulative_int_with_dims")
-					m.SetDataType(pdata.MetricDataTypeIntSum)
-					m.IntSum().SetIsMonotonic(true)
-					initInt64PtWithLabels(m.IntSum().DataPoints().AppendEmpty())
+					m.SetDataType(pdata.MetricDataTypeSum)
+					m.Sum().SetIsMonotonic(true)
+					initInt64PtWithLabels(m.Sum().DataPoints().AppendEmpty())
 				}
 
 				return out
@@ -789,10 +789,10 @@ func TestMetricDataToSignalFxV2WithTranslation(t *testing.T) {
 
 	rm := pdata.NewResourceMetrics()
 	md := rm.InstrumentationLibraryMetrics().AppendEmpty().Metrics().AppendEmpty()
-	md.SetDataType(pdata.MetricDataTypeIntGauge)
+	md.SetDataType(pdata.MetricDataTypeGauge)
 	md.SetName("metric1")
-	dp := md.IntGauge().DataPoints().AppendEmpty()
-	dp.SetValue(123)
+	dp := md.Gauge().DataPoints().AppendEmpty()
+	dp.SetIntVal(123)
 	dp.LabelsMap().InitFromMap(map[string]string{
 		"old.dim": "val1",
 	})
@@ -831,10 +831,10 @@ func TestDimensionKeyCharsWithPeriod(t *testing.T) {
 
 	rm := pdata.NewResourceMetrics()
 	md := rm.InstrumentationLibraryMetrics().AppendEmpty().Metrics().AppendEmpty()
-	md.SetDataType(pdata.MetricDataTypeIntGauge)
+	md.SetDataType(pdata.MetricDataTypeGauge)
 	md.SetName("metric1")
-	dp := md.IntGauge().DataPoints().AppendEmpty()
-	dp.SetValue(123)
+	dp := md.Gauge().DataPoints().AppendEmpty()
+	dp.SetIntVal(123)
 	dp.LabelsMap().InitFromMap(map[string]string{
 		"old.dim.with.periods": "val1",
 	})
