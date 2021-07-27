@@ -74,20 +74,20 @@ func Test_splunkV2ToMetricsData(t *testing.T) {
 				mts := metrics.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics()
 
 				metricPt := mts.AppendEmpty()
-				metricPt.SetDataType(pdata.MetricDataTypeIntGauge)
+				metricPt.SetDataType(pdata.MetricDataTypeGauge)
 				metricPt.SetName("yetanother")
-				intPt := metricPt.IntGauge().DataPoints().AppendEmpty()
-				intPt.SetValue(14)
+				intPt := metricPt.Gauge().DataPoints().AppendEmpty()
+				intPt.SetIntVal(14)
 				intPt.SetTimestamp(pdata.Timestamp(nanos))
 				intPt.LabelsMap().Insert("k0", "v0")
 				intPt.LabelsMap().Insert("k1", "v1")
 				intPt.LabelsMap().Insert("k2", "v2")
 
 				metricPt2 := mts.AppendEmpty()
-				metricPt2.SetDataType(pdata.MetricDataTypeIntGauge)
+				metricPt2.SetDataType(pdata.MetricDataTypeGauge)
 				metricPt2.SetName("yetanotherandanother")
-				intPt2 := metricPt2.IntGauge().DataPoints().AppendEmpty()
-				intPt2.SetValue(15)
+				intPt2 := metricPt2.Gauge().DataPoints().AppendEmpty()
+				intPt2.SetIntVal(15)
 				intPt2.SetTimestamp(pdata.Timestamp(nanos))
 				intPt2.LabelsMap().Insert("k0", "v0")
 				intPt2.LabelsMap().Insert("k1", "v1")
@@ -110,7 +110,7 @@ func Test_splunkV2ToMetricsData(t *testing.T) {
 				metricPt.SetDataType(pdata.MetricDataTypeGauge)
 				metricPt.SetName("single")
 				doublePt := metricPt.Gauge().DataPoints().AppendEmpty()
-				doublePt.SetValue(13.13)
+				doublePt.SetDoubleVal(13.13)
 				doublePt.SetTimestamp(pdata.Timestamp(nanos))
 				doublePt.LabelsMap().Insert("k0", "v0")
 				doublePt.LabelsMap().Insert("k1", "v1")
@@ -149,7 +149,7 @@ func Test_splunkV2ToMetricsData(t *testing.T) {
 				metricPt.SetDataType(pdata.MetricDataTypeGauge)
 				metricPt.SetName("single")
 				doublePt := metricPt.Gauge().DataPoints().AppendEmpty()
-				doublePt.SetValue(13.13)
+				doublePt.SetDoubleVal(13.13)
 				doublePt.LabelsMap().Insert("k0", "v0")
 				doublePt.LabelsMap().Insert("k1", "v1")
 				doublePt.LabelsMap().Insert("k2", "v2")
@@ -171,7 +171,7 @@ func Test_splunkV2ToMetricsData(t *testing.T) {
 				metricPt.SetDataType(pdata.MetricDataTypeGauge)
 				metricPt.SetName("single")
 				doublePt := metricPt.Gauge().DataPoints().AppendEmpty()
-				doublePt.SetValue(13.13)
+				doublePt.SetDoubleVal(13.13)
 				doublePt.LabelsMap().Insert("k0", "v0")
 				doublePt.LabelsMap().Insert("k1", "v1")
 				doublePt.LabelsMap().Insert("k2", "v2")
@@ -193,7 +193,7 @@ func Test_splunkV2ToMetricsData(t *testing.T) {
 				metricPt.SetDataType(pdata.MetricDataTypeGauge)
 				metricPt.SetName("single")
 				doublePt := metricPt.Gauge().DataPoints().AppendEmpty()
-				doublePt.SetValue(13.13)
+				doublePt.SetDoubleVal(13.13)
 				doublePt.LabelsMap().Insert("k0", "v0")
 				doublePt.LabelsMap().Insert("k1", "v1")
 				doublePt.LabelsMap().Insert("k2", "v2")
@@ -221,7 +221,7 @@ func Test_splunkV2ToMetricsData(t *testing.T) {
 			}(),
 			wantMetricsData: func() pdata.Metrics {
 				md := buildDefaultMetricsData(nanos)
-				md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(0).IntGauge().DataPoints().At(0).LabelsMap().Update("k0", "")
+				md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(0).Gauge().DataPoints().At(0).LabelsMap().Update("k0", "")
 				return md
 			}(),
 		},
@@ -282,10 +282,10 @@ func buildDefaultMetricsData(time int64) pdata.Metrics {
 	attrs.InsertString("com.splunk.index", "index")
 
 	metricPt := resourceMetrics.InstrumentationLibraryMetrics().AppendEmpty().Metrics().AppendEmpty()
-	metricPt.SetDataType(pdata.MetricDataTypeIntGauge)
+	metricPt.SetDataType(pdata.MetricDataTypeGauge)
 	metricPt.SetName("single")
-	intPt := metricPt.IntGauge().DataPoints().AppendEmpty()
-	intPt.SetValue(13)
+	intPt := metricPt.Gauge().DataPoints().AppendEmpty()
+	intPt.SetIntVal(13)
 	intPt.LabelsMap().Insert("k0", "v0")
 	intPt.LabelsMap().Insert("k1", "v1")
 	intPt.LabelsMap().Insert("k2", "v2")
@@ -326,11 +326,6 @@ func internalSortMetricsAndLabels(metrics pdata.MetricSlice) {
 		m := metrics.At(k)
 		metricsMap[m.Name()] = m
 		switch m.DataType() {
-		case pdata.MetricDataTypeIntGauge:
-			dps := m.IntGauge().DataPoints()
-			for l := 0; l < dps.Len(); l++ {
-				dps.At(l).LabelsMap().Sort()
-			}
 		case pdata.MetricDataTypeGauge:
 			dps := m.Gauge().DataPoints()
 			for l := 0; l < dps.Len(); l++ {
