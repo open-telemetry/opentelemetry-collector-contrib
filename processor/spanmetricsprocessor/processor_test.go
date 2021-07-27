@@ -341,7 +341,7 @@ func verifyConsumeMetricsInput(input pdata.Metrics, t *testing.T) bool {
 	for ; mi < 3; mi++ {
 		assert.Equal(t, "calls_total", m.At(mi).Name())
 
-		data := m.At(mi).IntSum()
+		data := m.At(mi).Sum()
 		assert.Equal(t, pdata.AggregationTemporalityCumulative, data.AggregationTemporality())
 		assert.True(t, data.IsMonotonic())
 
@@ -349,7 +349,7 @@ func verifyConsumeMetricsInput(input pdata.Metrics, t *testing.T) bool {
 		require.Equal(t, 1, dps.Len())
 
 		dp := dps.At(0)
-		assert.Equal(t, int64(1), dp.Value(), "There should only be one metric per Service/operation/kind combination")
+		assert.Equal(t, int64(1), dp.IntVal(), "There should only be one metric per Service/operation/kind combination")
 		assert.NotZero(t, dp.StartTimestamp(), "StartTimestamp should be set")
 		assert.NotZero(t, dp.Timestamp(), "Timestamp should be set")
 
