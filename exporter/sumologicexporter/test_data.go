@@ -22,10 +22,10 @@ func exampleIntMetric() metricPair {
 	metric := pdata.NewMetric()
 	metric.SetName("test.metric.data")
 	metric.SetUnit("bytes")
-	metric.SetDataType(pdata.MetricDataTypeIntSum)
-	dp := metric.IntSum().DataPoints().AppendEmpty()
+	metric.SetDataType(pdata.MetricDataTypeSum)
+	dp := metric.Sum().DataPoints().AppendEmpty()
 	dp.SetTimestamp(1605534165 * 1e9)
-	dp.SetValue(14500)
+	dp.SetIntVal(14500)
 
 	attributes := pdata.NewAttributeMap()
 	attributes.InsertString("test", "test_value")
@@ -43,21 +43,21 @@ func exampleIntGaugeMetric() metricPair {
 		metric:     pdata.NewMetric(),
 	}
 
-	metric.metric.SetDataType(pdata.MetricDataTypeIntGauge)
+	metric.metric.SetDataType(pdata.MetricDataTypeGauge)
 	metric.metric.SetName("gauge_metric_name")
 
 	metric.attributes.InsertString("foo", "bar")
 
-	dp := metric.metric.IntGauge().DataPoints().AppendEmpty()
+	dp := metric.metric.Gauge().DataPoints().AppendEmpty()
 	dp.LabelsMap().Insert("remote_name", "156920")
 	dp.LabelsMap().Insert("url", "http://example_url")
-	dp.SetValue(124)
+	dp.SetIntVal(124)
 	dp.SetTimestamp(1608124661.166 * 1e9)
 
-	dp = metric.metric.IntGauge().DataPoints().AppendEmpty()
+	dp = metric.metric.Gauge().DataPoints().AppendEmpty()
 	dp.LabelsMap().Insert("remote_name", "156955")
 	dp.LabelsMap().Insert("url", "http://another_url")
-	dp.SetValue(245)
+	dp.SetIntVal(245)
 	dp.SetTimestamp(1608124662.166 * 1e9)
 
 	return metric
@@ -77,13 +77,13 @@ func exampleDoubleGaugeMetric() metricPair {
 	dp := metric.metric.Gauge().DataPoints().AppendEmpty()
 	dp.LabelsMap().Insert("local_name", "156720")
 	dp.LabelsMap().Insert("endpoint", "http://example_url")
-	dp.SetValue(33.4)
+	dp.SetDoubleVal(33.4)
 	dp.SetTimestamp(1608124661.169 * 1e9)
 
 	dp = metric.metric.Gauge().DataPoints().AppendEmpty()
 	dp.LabelsMap().Insert("local_name", "156155")
 	dp.LabelsMap().Insert("endpoint", "http://another_url")
-	dp.SetValue(56.8)
+	dp.SetDoubleVal(56.8)
 	dp.SetTimestamp(1608124662.186 * 1e9)
 
 	return metric
@@ -95,21 +95,21 @@ func exampleIntSumMetric() metricPair {
 		metric:     pdata.NewMetric(),
 	}
 
-	metric.metric.SetDataType(pdata.MetricDataTypeIntSum)
+	metric.metric.SetDataType(pdata.MetricDataTypeSum)
 	metric.metric.SetName("sum_metric_int_test")
 
 	metric.attributes.InsertString("foo", "bar")
 
-	dp := metric.metric.IntSum().DataPoints().AppendEmpty()
+	dp := metric.metric.Sum().DataPoints().AppendEmpty()
 	dp.LabelsMap().Insert("name", "156720")
 	dp.LabelsMap().Insert("address", "http://example_url")
-	dp.SetValue(45)
+	dp.SetIntVal(45)
 	dp.SetTimestamp(1608124444.169 * 1e9)
 
-	dp = metric.metric.IntSum().DataPoints().AppendEmpty()
+	dp = metric.metric.Sum().DataPoints().AppendEmpty()
 	dp.LabelsMap().Insert("name", "156155")
 	dp.LabelsMap().Insert("address", "http://another_url")
-	dp.SetValue(1238)
+	dp.SetIntVal(1238)
 	dp.SetTimestamp(1608124699.186 * 1e9)
 
 	return metric
@@ -129,13 +129,13 @@ func exampleDoubleSumMetric() metricPair {
 	dp := metric.metric.Sum().DataPoints().AppendEmpty()
 	dp.LabelsMap().Insert("pod_name", "lorem")
 	dp.LabelsMap().Insert("namespace", "default")
-	dp.SetValue(45.6)
+	dp.SetDoubleVal(45.6)
 	dp.SetTimestamp(1618124444.169 * 1e9)
 
 	dp = metric.metric.Sum().DataPoints().AppendEmpty()
 	dp.LabelsMap().Insert("pod_name", "opsum")
 	dp.LabelsMap().Insert("namespace", "kube-config")
-	dp.SetValue(1238.1)
+	dp.SetDoubleVal(1238.1)
 	dp.SetTimestamp(1608424699.186 * 1e9)
 
 	return metric
