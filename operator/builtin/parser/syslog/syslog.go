@@ -219,12 +219,12 @@ func toBytes(value interface{}) ([]byte, error) {
 }
 
 var severityMapping = [...]entry.Severity{
-	0: entry.Emergency,
-	1: entry.Alert,
-	2: entry.Critical,
+	0: entry.Fatal,
+	1: entry.Error3,
+	2: entry.Error2,
 	3: entry.Error,
-	4: entry.Warning,
-	5: entry.Notice,
+	4: entry.Warn,
+	5: entry.Info3,
 	6: entry.Info,
 	7: entry.Debug,
 }

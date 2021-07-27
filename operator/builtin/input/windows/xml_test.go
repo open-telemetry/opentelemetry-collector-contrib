@@ -52,9 +52,9 @@ func TestParseSeverity(t *testing.T) {
 	xmlWarning := EventXML{Level: "Warning"}
 	xmlInformation := EventXML{Level: "Information"}
 	xmlUnknown := EventXML{Level: "Unknown"}
-	require.Equal(t, entry.Critical, xmlCritical.parseSeverity())
+	require.Equal(t, entry.Fatal, xmlCritical.parseSeverity())
 	require.Equal(t, entry.Error, xmlError.parseSeverity())
-	require.Equal(t, entry.Warning, xmlWarning.parseSeverity())
+	require.Equal(t, entry.Warn, xmlWarning.parseSeverity())
 	require.Equal(t, entry.Info, xmlInformation.parseSeverity())
 	require.Equal(t, entry.Default, xmlUnknown.parseSeverity())
 }

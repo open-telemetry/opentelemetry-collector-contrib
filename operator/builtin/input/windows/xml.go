@@ -49,11 +49,11 @@ func (e *EventXML) parseTimestamp() time.Time {
 func (e *EventXML) parseSeverity() entry.Severity {
 	switch e.Level {
 	case "Critical":
-		return entry.Critical
+		return entry.Fatal
 	case "Error":
 		return entry.Error
 	case "Warning":
-		return entry.Warning
+		return entry.Warn
 	case "Information":
 		return entry.Info
 	default:

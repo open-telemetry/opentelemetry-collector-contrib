@@ -1,43 +1,8 @@
 ## Severity Parsing
 
-`stanza` uses a flexible severity parsing system based on the integers 0 to 100. Standard severities are provided at multiples of 10.
+Severity is represented as a number from 1 to 24. The meaning of these severity levels are defined in the [OpenTelemetry Logs Data Model](https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/logs/data-model.md#field-severitynumber). 
 
-This severity system allows each output operator to interpret the values 0 to 100 as appropriate for the corresponding backend.
-
-The following named severity levels are supported.
-
-| Severity    | Numeric Value | Alias         |
-| ---         | ---           | ---           |
-| Default     |        0      | `default`     |
-| Trace       |       10      | `trace`       |
-| Trace2      |       12      | `trace2`      |
-| Trace3      |       13      | `trace3`      |
-| Trace4      |       14      | `trace4`      |
-| Debug       |       20      | `debug`       |
-| Debug2      |       22      | `debug2`      |
-| Debug3      |       23      | `debug3`      |
-| Debug4      |       24      | `debug4`      |
-| Info        |       30      | `info`        |
-| Info2       |       32      | `info2`       |
-| Info3       |       33      | `info3`       |
-| Info4       |       34      | `info4`       |
-| Notice      |       40      | `notice`      |
-| Warning     |       50      | `warning`     |
-| Warning2    |       52      | `warning2`    |
-| Warning3    |       53      | `warning3`    |
-| Warning4    |       54      | `warning4`    |
-| Error       |       60      | `error`       |
-| Error2      |       62      | `error2`      |
-| Error3      |       63      | `error3`      |
-| Error4      |       64      | `error4`      |
-| Critical    |       70      | `critical`    |
-| Alert       |       80      | `alert`       |
-| Emergency   |       90      | `emergency`   |
-| Emergency2  |       92      | `emergency2`  |
-| Emergency3  |       93      | `emergency3`  |
-| Emergency4  |       94      | `emergency4`  |
-| Catastrophe |      100      | `catastrophe` |
-
+> Note: A `default` severity level is also supported, and is used when a value cannot be mapped to any other level.
 
 ### `severity` parsing parameters
 
@@ -58,9 +23,39 @@ Severity parsing behavior is defined in a config file using a severity `mapping`
 ```yaml
 ...
   mapping:
-    severity_as_int_or_alias: value | list of values | range | special
-    severity_as_int_or_alias: value | list of values | range | special
+    severity_alias: value | list of values | range | special
+    severity_alias: value | list of values | range | special
 ```
+
+The following aliases are used to represent the possible severity levels:
+
+| Severity Number | Alias     |
+| ---             | ---       |
+|        0        | `default` |
+|        1        | `trace`   |
+|        2        | `trace2`  |
+|        3        | `trace3`  |
+|        4        | `trace4`  |
+|        5        | `debug`   |
+|        6        | `debug2`  |
+|        7        | `debug3`  |
+|        8        | `debug4`  |
+|        9        | `info`    |
+|        10       | `info2`   |
+|        11       | `info3`   |
+|        12       | `info4`   |
+|        13       | `warn`    |
+|        14       | `warn2`   |
+|        15       | `warn3`   |
+|        16       | `warn4`   |
+|        17       | `error`   |
+|        18       | `error2`  |
+|        19       | `error3`  |
+|        20       | `error4`  |
+|        21       | `fatal`   |
+|        22       | `fatal2`  |
+|        23       | `fatal3`  |
+|        24       | `fatal4`  |
 
 The following example illustrates many of the ways in which mapping can configured:
 ```yaml
@@ -70,8 +65,8 @@ The following example illustrates many of the ways in which mapping can configur
     # single value to be parsed as "error"
     error: oops
 
-    # list of values to be parsed as "warning"
-    warning:
+    # list of values to be parsed as "warn"
+    warn:
       - hey!
       - YSK
 
@@ -83,11 +78,11 @@ The following example illustrates many of the ways in which mapping can configur
     # special value representing the range 200-299, to be parsed as "debug"
     debug: 2xx
 
-    # single value to be parsed as a custom level of 36
-    36: medium
+    # single value to be parsed as a "info3"
+    info3: medium
 
     # mix and match the above concepts
-    95:
+    fatal:
       - really serious
       - min: 9001
         max: 9050
@@ -131,29 +126,20 @@ The following configurations are equivalent:
     info2: info2
     info3: info3
     info4: info4
-    notice: notice
-    warning:
-      - warning
-      - warn
-    warning2: warning2
-    warning3: warning3
-    warning4: warning4
+    warn: warn
+    warn2: warn2
+    warn3: warn3
+    warn4: warn4
     error:
       - error
-      - err
       - 404
     error2: error2
     error3: error3
     error4: error4
-    critical:
-      - critical
-      - crit
-    alert: alert
-    emergency: emergency
-    emergency2: emergency2
-    emergency3: emergency3
-    emergency4: emergency4
-    catastrophe: catastrophe
+    fatal: fatal
+    fatal2: fatal2
+    fatal3: fatal3
+    fatal4: fatal4
 ```
 
 <sub>Additional built-in presets coming soon</sub>
@@ -171,7 +157,7 @@ If a severity block is specified, the parser operator will perform the severity 
   severity:
     parse_from: severity_field
     mapping:
-      critical: 5xx
+      warn: 5xx
       error: 4xx
       info: 3xx
       debug: 2xx
@@ -184,7 +170,7 @@ As a special case, the [`severity_parser`](/docs/operators/severity_parser.md) o
 - type: severity_parser
   parse_from: severity_field
   mapping:
-    critical: 5xx
+    warn: 5xx
     error: 4xx
     info: 3xx
     debug: 2xx
@@ -209,7 +195,7 @@ Note that the default `preset` is in place, and no additional values have been s
 
 ```json
 {
-  "severity": 0,
+  "severity": "default",
   "body": {
     "severity_field": "ERROR"
   }
@@ -221,7 +207,7 @@ Note that the default `preset` is in place, and no additional values have been s
 
 ```json
 {
-  "severity": 60,
+  "severity": "error",
   "body": {}
 }
 ```
@@ -249,7 +235,7 @@ Note that the default `preset` is in place, and one additional values has been s
 
 ```json
 {
-  "severity": 0,
+  "severity": "default",
   "body": {
     "severity_field": "nooo!"
   }
@@ -261,7 +247,7 @@ Note that the default `preset` is in place, and one additional values has been s
 
 ```json
 {
-  "severity": 60,
+  "severity": "error",
   "body": {}
 }
 ```
@@ -273,7 +259,7 @@ Note that the default `preset` is in place, and one additional values has been s
 
 ```json
 {
-  "severity": 0,
+  "severity": "default",
   "body": {
     "severity_field": "ERROR"
   }
@@ -285,7 +271,7 @@ Note that the default `preset` is in place, and one additional values has been s
 
 ```json
 {
-  "severity": 60,
+  "severity": "error",
   "body": {}
 }
 ```
@@ -315,7 +301,7 @@ Configuration:
 
 ```json
 {
-  "severity": 0,
+  "severity": "default",
   "body": {
     "severity_field": "nooo!"
   }
@@ -327,7 +313,7 @@ Configuration:
 
 ```json
 {
-  "severity": 60,
+  "severity": "error",
   "body": {}
 }
 ```
@@ -339,7 +325,7 @@ Configuration:
 
 ```json
 {
-  "severity": 0,
+  "severity": "default",
   "body": {
     "severity_field": "nooooooo"
   }
@@ -351,7 +337,7 @@ Configuration:
 
 ```json
 {
-  "severity": 60,
+  "severity": "error",
   "body": {}
 }
 ```
@@ -363,7 +349,7 @@ Configuration:
 
 ```json
 {
-  "severity": 0,
+  "severity": "default",
   "body": {
     "severity_field": "hey"
   }
@@ -375,7 +361,7 @@ Configuration:
 
 ```json
 {
-  "severity": 30,
+  "severity": "info",
   "body": {}
 }
 ```
@@ -387,7 +373,7 @@ Configuration:
 
 ```json
 {
-  "severity": 0,
+  "severity": "default",
   "body": {
     "severity_field": 1234
   }
@@ -399,7 +385,7 @@ Configuration:
 
 ```json
 {
-  "severity": 20,
+  "severity": "debug",
   "body": {}
 }
 ```
@@ -411,7 +397,7 @@ Configuration:
 
 ```json
 {
-  "severity": 0,
+  "severity": "default",
   "body": {
     "severity_field": "unknown"
   }
@@ -423,7 +409,7 @@ Configuration:
 
 ```json
 {
-  "severity": 0,
+  "severity": "default",
   "body": {}
 }
 ```
@@ -442,7 +428,7 @@ Configuration:
     error:
       - min: 1
         max: 5
-    alert:
+    fatal:
       - min: 6
         max: 10
 ```
@@ -454,7 +440,7 @@ Configuration:
 
 ```json
 {
-  "severity": 0,
+  "severity": "default",
   "body": {
     "severity_field": 3
   }
@@ -466,7 +452,7 @@ Configuration:
 
 ```json
 {
-  "severity": 60,
+  "severity": "error",
   "body": {}
 }
 ```
@@ -478,7 +464,7 @@ Configuration:
 
 ```json
 {
-  "severity": 0,
+  "severity": "default",
   "body": {
     "severity_field": 9
   }
@@ -490,7 +476,7 @@ Configuration:
 
 ```json
 {
-  "severity": 80,
+  "severity": "fatal",
   "body": {}
 }
 ```
@@ -502,7 +488,7 @@ Configuration:
 
 ```json
 {
-  "severity": 0,
+  "severity": "default",
   "body": {
     "severity_field": 12
   }
@@ -514,7 +500,7 @@ Configuration:
 
 ```json
 {
-  "severity": 0,
+  "severity": "default",
   "body": {}
 }
 ```
@@ -539,7 +525,7 @@ Configuration:
 - type: severity_parser
   parse_from: severity_field
   mapping:
-    critical: 5xx
+    warn: 5xx
     error: 4xx
     info: 3xx
     debug: 2xx
@@ -551,7 +537,7 @@ Equivalent Configuration:
   type: severity_parser
   parse_from: severity_field
   mapping:
-    critical:
+    warn:
       - min: 500
         max: 599
     error:
@@ -573,7 +559,7 @@ Equivalent Configuration:
 
 ```json
 {
-  "severity": 0,
+  "severity": "default",
   "body": {
     "severity_field": 302
   }
@@ -585,7 +571,7 @@ Equivalent Configuration:
 
 ```json
 {
-  "severity": 30,
+  "severity": "info",
   "body": {}
 }
 ```
@@ -597,7 +583,7 @@ Equivalent Configuration:
 
 ```json
 {
-  "severity": 0,
+  "severity": "default",
   "body": {
     "severity_field": 404
   }
@@ -609,7 +595,7 @@ Equivalent Configuration:
 
 ```json
 {
-  "severity": 60,
+  "severity": "error",
   "body": {}
 }
 ```
@@ -621,7 +607,7 @@ Equivalent Configuration:
 
 ```json
 {
-  "severity": 0,
+  "severity": "default",
   "body": {
     "severity_field": 200
   }
@@ -633,7 +619,7 @@ Equivalent Configuration:
 
 ```json
 {
-  "severity": 20,
+  "severity": "debug",
   "body": {}
 }
 ```
@@ -660,7 +646,7 @@ Configuration:
 
 ```json
 {
-  "severity": 0,
+  "severity": "default",
   "body": {
     "severity_field": "nooo!"
   }
@@ -672,7 +658,7 @@ Configuration:
 
 ```json
 {
-  "severity": 60,
+  "severity": "error",
   "body": {}
 }
 ```
@@ -684,7 +670,7 @@ Configuration:
 
 ```json
 {
-  "severity": 0,
+  "severity": "default",
   "body": {
     "severity_field": "ERROR"
   }
@@ -696,7 +682,7 @@ Configuration:
 
 ```json
 {
-  "severity": 0,
+  "severity": "default",
   "body": {}
 }
 ```
