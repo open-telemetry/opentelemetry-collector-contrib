@@ -430,8 +430,8 @@ func NewTestParserConfig() ParserConfig {
 	tp := NewTimeParser()
 	sp := NewSeverityParserConfig()
 	sp.Mapping = map[interface{}]interface{}{
-		"30":             "3xx",
-		int(entry.Error): "4xx"}
+		"info": "3xx",
+		"warn": "4xx"}
 	except.TimeParser = &tp
 	except.SeverityParserConfig = &sp
 
@@ -451,8 +451,8 @@ func TestMapStructureDecodeParserConfigWithHook(t *testing.T) {
 		},
 		"severity": map[string]interface{}{
 			"mapping": map[interface{}]interface{}{
-				"30": "3xx",
-				60:   "4xx",
+				"info": "3xx",
+				"warn": "4xx",
 			},
 		},
 	}
@@ -479,8 +479,8 @@ func TestMapStructureDecodeParserConfig(t *testing.T) {
 		},
 		"severity": map[string]interface{}{
 			"mapping": map[interface{}]interface{}{
-				"30": "3xx",
-				60:   "4xx",
+				"info": "3xx",
+				"warn": "4xx",
 			},
 		},
 	}

@@ -23,9 +23,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-log-collection/operator"
 )
 
-const minSeverity = 0
-const maxSeverity = 100
-
 // map[string or int input]sev-level
 func getBuiltinMapping(name string) severityMap {
 	switch name {
@@ -33,56 +30,42 @@ func getBuiltinMapping(name string) severityMap {
 		return map[string]entry.Severity{}
 	case "aliases":
 		return map[string]entry.Severity{
-			"default":     entry.Default,
-			"trace":       entry.Trace,
-			"trace2":      entry.Trace2,
-			"trace3":      entry.Trace3,
-			"trace4":      entry.Trace4,
-			"debug":       entry.Debug,
-			"debug2":      entry.Debug2,
-			"debug3":      entry.Debug3,
-			"debug4":      entry.Debug4,
-			"info":        entry.Info,
-			"info2":       entry.Info2,
-			"info3":       entry.Info3,
-			"info4":       entry.Info4,
-			"notice":      entry.Notice,
-			"warning":     entry.Warning,
-			"warning2":    entry.Warning2,
-			"warning3":    entry.Warning3,
-			"warning4":    entry.Warning4,
-			"error":       entry.Error,
-			"error2":      entry.Error2,
-			"error3":      entry.Error3,
-			"error4":      entry.Error4,
-			"critical":    entry.Critical,
-			"alert":       entry.Alert,
-			"emergency":   entry.Emergency,
-			"emergency2":  entry.Emergency2,
-			"emergency3":  entry.Emergency3,
-			"emergency4":  entry.Emergency4,
-			"catastrophe": entry.Catastrophe,
+			"trace":  entry.Trace,
+			"trace2": entry.Trace2,
+			"trace3": entry.Trace3,
+			"trace4": entry.Trace4,
+			"debug":  entry.Debug,
+			"debug2": entry.Debug2,
+			"debug3": entry.Debug3,
+			"debug4": entry.Debug4,
+			"info":   entry.Info,
+			"info2":  entry.Info2,
+			"info3":  entry.Info3,
+			"info4":  entry.Info4,
+			"warn":   entry.Warn,
+			"warn2":  entry.Warn2,
+			"warn3":  entry.Warn3,
+			"warn4":  entry.Warn4,
+			"error":  entry.Error,
+			"error2": entry.Error2,
+			"error3": entry.Error3,
+			"error4": entry.Error4,
+			"fatal":  entry.Fatal,
+			"fatal2": entry.Fatal2,
+			"fatal3": entry.Fatal3,
+			"fatal4": entry.Fatal4,
 		}
 	default:
 		// Add some additional values that are automatically recognized
 		mapping := getBuiltinMapping("aliases")
-		mapping.add(entry.Warning, "warn")
-		mapping.add(entry.Warning2, "warn2")
-		mapping.add(entry.Warning3, "warn3")
-		mapping.add(entry.Warning4, "warn4")
-
+		mapping.add(entry.Warn, "warning")
+		mapping.add(entry.Warn2, "warning2")
+		mapping.add(entry.Warn3, "warning3")
+		mapping.add(entry.Warn4, "warning4")
 		mapping.add(entry.Error, "err")
 		mapping.add(entry.Error2, "err2")
 		mapping.add(entry.Error3, "err3")
 		mapping.add(entry.Error4, "err4")
-
-		mapping.add(entry.Critical, "crit")
-
-		mapping.add(entry.Emergency, "fatal")
-		mapping.add(entry.Emergency2, "fatal2")
-		mapping.add(entry.Emergency3, "fatal3")
-		mapping.add(entry.Emergency4, "fatal4")
-
 		return mapping
 	}
 }
@@ -162,31 +145,8 @@ func (c *SeverityParserConfig) Build(context operator.BuildContext) (SeverityPar
 }
 
 func validateSeverity(severity interface{}) (entry.Severity, error) {
-	if sev, _, err := getBuiltinMapping("aliases").find(severity); err != nil {
-		return entry.Default, err
-	} else if sev != entry.Default {
-		return sev, nil
-	}
-
-	// If integer between 0 and 100
-	var intSev int
-	switch s := severity.(type) {
-	case int:
-		intSev = s
-	case string:
-		i, err := strconv.ParseInt(s, 10, 8)
-		if err != nil {
-			return entry.Default, fmt.Errorf("%s cannot be used as a severity", severity)
-		}
-		intSev = int(i)
-	default:
-		return entry.Default, fmt.Errorf("type %T cannot be used as a severity (%v)", severity, severity)
-	}
-
-	if intSev < minSeverity || intSev > maxSeverity {
-		return entry.Default, fmt.Errorf("severity must be between %d and %d", minSeverity, maxSeverity)
-	}
-	return entry.Severity(intSev), nil
+	sev, _, err := getBuiltinMapping("aliases").find(severity)
+	return sev, err
 }
 
 func isRange(value interface{}) (int, int, bool) {

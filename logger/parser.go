@@ -49,13 +49,13 @@ func parseSeverity(zapEntry zapcore.Entry) entry.Severity {
 	case zapcore.InfoLevel:
 		return entry.Info
 	case zapcore.WarnLevel:
-		return entry.Warning
+		return entry.Warn
 	case zapcore.ErrorLevel:
 		return entry.Error
 	case zapcore.PanicLevel:
-		return entry.Critical
+		return entry.Error4
 	case zapcore.FatalLevel:
-		return entry.Catastrophe
+		return entry.Fatal
 	default:
 		return entry.Default
 	}

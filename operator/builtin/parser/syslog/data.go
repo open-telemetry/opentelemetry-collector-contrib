@@ -71,7 +71,7 @@ func CreateCases(basicConfig func() *SyslogParserConfig) ([]Case, error) {
 				"message":  "test message",
 				"priority": 34,
 			},
-			entry.Critical,
+			entry.Error2,
 			"crit",
 		},
 		{
@@ -91,7 +91,7 @@ func CreateCases(basicConfig func() *SyslogParserConfig) ([]Case, error) {
 				"message":  "test message",
 				"priority": 34,
 			},
-			entry.Critical,
+			entry.Error2,
 			"crit",
 		},
 		{
@@ -111,7 +111,7 @@ func CreateCases(basicConfig func() *SyslogParserConfig) ([]Case, error) {
 				"message":  "test message",
 				"priority": 34,
 			},
-			entry.Critical,
+			entry.Error2,
 			"crit",
 		},
 		{
