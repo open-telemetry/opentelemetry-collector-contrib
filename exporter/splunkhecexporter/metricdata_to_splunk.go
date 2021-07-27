@@ -83,24 +83,18 @@ func metricDataToSplunk(logger *zap.Logger, data pdata.Metrics, config *Config) 
 				tm := metrics.At(tmi)
 				metricFieldName := splunkMetricValue + ":" + tm.Name()
 				switch tm.DataType() {
-				case pdata.MetricDataTypeIntGauge:
-					pts := tm.IntGauge().DataPoints()
-					for gi := 0; gi < pts.Len(); gi++ {
-						dataPt := pts.At(gi)
-						fields := cloneMap(commonFields)
-						populateLabels(fields, dataPt.LabelsMap())
-						fields[metricFieldName] = dataPt.Value()
-						fields[splunkMetricTypeKey] = pdata.MetricDataTypeIntGauge.String()
-						sm := createEvent(dataPt.Timestamp(), host, source, sourceType, index, fields)
-						splunkMetrics = append(splunkMetrics, sm)
-					}
 				case pdata.MetricDataTypeGauge:
 					pts := tm.Gauge().DataPoints()
 					for gi := 0; gi < pts.Len(); gi++ {
 						dataPt := pts.At(gi)
 						fields := cloneMap(commonFields)
 						populateLabels(fields, dataPt.LabelsMap())
-						fields[metricFieldName] = dataPt.Value()
+						switch dataPt.Type() {
+						case pdata.MetricValueTypeInt:
+							fields[metricFieldName] = dataPt.IntVal()
+						case pdata.MetricValueTypeDouble:
+							fields[metricFieldName] = dataPt.DoubleVal()
+						}
 						fields[splunkMetricTypeKey] = pdata.MetricDataTypeGauge.String()
 						sm := createEvent(dataPt.Timestamp(), host, source, sourceType, index, fields)
 						splunkMetrics = append(splunkMetrics, sm)
@@ -162,21 +156,13 @@ func metricDataToSplunk(logger *zap.Logger, data pdata.Metrics, config *Config) 
 						dataPt := pts.At(gi)
 						fields := cloneMap(commonFields)
 						populateLabels(fields, dataPt.LabelsMap())
-						fields[metricFieldName] = dataPt.Value()
+						switch dataPt.Type() {
+						case pdata.MetricValueTypeInt:
+							fields[metricFieldName] = dataPt.IntVal()
+						case pdata.MetricValueTypeDouble:
+							fields[metricFieldName] = dataPt.DoubleVal()
+						}
 						fields[splunkMetricTypeKey] = pdata.MetricDataTypeSum.String()
-
-						sm := createEvent(dataPt.Timestamp(), host, source, sourceType, index, fields)
-						splunkMetrics = append(splunkMetrics, sm)
-					}
-				case pdata.MetricDataTypeIntSum:
-					pts := tm.IntSum().DataPoints()
-					for gi := 0; gi < pts.Len(); gi++ {
-						dataPt := pts.At(gi)
-						fields := cloneMap(commonFields)
-						populateLabels(fields, dataPt.LabelsMap())
-						fields[metricFieldName] = dataPt.Value()
-						fields[splunkMetricTypeKey] = pdata.MetricDataTypeIntSum.String()
-
 						sm := createEvent(dataPt.Timestamp(), host, source, sourceType, index, fields)
 						splunkMetrics = append(splunkMetrics, sm)
 					}
