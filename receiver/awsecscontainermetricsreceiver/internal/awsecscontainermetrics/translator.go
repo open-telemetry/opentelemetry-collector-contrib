@@ -73,8 +73,8 @@ func convertStoppedContainerDataToOTMetrics(prefix string, containerResource pda
 func appendIntGauge(metricName string, unit string, value int64, ts pdata.Timestamp, ilm pdata.InstrumentationLibraryMetrics) {
 	metric := appendMetric(ilm, metricName, unit)
 
-	metric.SetDataType(pdata.MetricDataTypeIntGauge)
-	intGauge := metric.IntGauge()
+	metric.SetDataType(pdata.MetricDataTypeGauge)
+	intGauge := metric.Gauge()
 
 	appendIntDataPoint(intGauge.DataPoints(), value, ts)
 }
@@ -82,8 +82,8 @@ func appendIntGauge(metricName string, unit string, value int64, ts pdata.Timest
 func appendIntSum(metricName string, unit string, value int64, ts pdata.Timestamp, ilm pdata.InstrumentationLibraryMetrics) {
 	metric := appendMetric(ilm, metricName, unit)
 
-	metric.SetDataType(pdata.MetricDataTypeIntSum)
-	intSum := metric.IntSum()
+	metric.SetDataType(pdata.MetricDataTypeSum)
+	intSum := metric.Sum()
 	intSum.SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
 
 	appendIntDataPoint(intSum.DataPoints(), value, ts)
@@ -94,13 +94,13 @@ func appendDoubleGauge(metricName string, unit string, value float64, ts pdata.T
 	metric.SetDataType(pdata.MetricDataTypeGauge)
 	doubleGauge := metric.Gauge()
 	dataPoint := doubleGauge.DataPoints().AppendEmpty()
-	dataPoint.SetValue(value)
+	dataPoint.SetDoubleVal(value)
 	dataPoint.SetTimestamp(ts)
 }
 
-func appendIntDataPoint(dataPoints pdata.IntDataPointSlice, value int64, ts pdata.Timestamp) {
+func appendIntDataPoint(dataPoints pdata.NumberDataPointSlice, value int64, ts pdata.Timestamp) {
 	dataPoint := dataPoints.AppendEmpty()
-	dataPoint.SetValue(value)
+	dataPoint.SetIntVal(value)
 	dataPoint.SetTimestamp(ts)
 }
 
