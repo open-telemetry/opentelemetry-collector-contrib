@@ -143,5 +143,5 @@ func initializeNumberDataPointAsDouble(dataPoint pdata.NumberDataPoint, now pdat
 	}
 
 	dataPoint.SetTimestamp(now)
-	dataPoint.SetValue(value)
+	dataPoint.SetDoubleVal(value)
 }

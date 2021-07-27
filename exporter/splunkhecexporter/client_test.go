@@ -73,7 +73,7 @@ func createMetricsData(numberOfDataPoints int) pdata.Metrics {
 		metric.SetDataType(pdata.MetricDataTypeGauge)
 		doublePt := metric.Gauge().DataPoints().AppendEmpty()
 		doublePt.SetTimestamp(pdata.TimestampFromTime(tsUnix))
-		doublePt.SetValue(doubleVal)
+		doublePt.SetDoubleVal(doubleVal)
 		doublePt.LabelsMap().Insert("k/n0", "vn0")
 		doublePt.LabelsMap().Insert("k/n1", "vn1")
 		doublePt.LabelsMap().Insert("k/r0", "vr0")
