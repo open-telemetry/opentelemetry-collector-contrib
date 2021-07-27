@@ -18,6 +18,8 @@ import (
 	"sync"
 	"time"
 
+	"go.opentelemetry.io/collector/model/pdata"
+	tracetranslator "go.opentelemetry.io/collector/translator/trace"
 	"go.opentelemetry.io/otel/attribute"
 )
 
@@ -64,18 +66,18 @@ func NewMetricCalculator(calculateFunc CalculateFunc) MetricCalculator {
 // Calculate accepts a new metric value identified by matricName and labels, and delegates
 // the calculation with value and timestamp back to CalculateFunc for the result. Returns
 // true if the calculation is executed successfully.
-func (rm *MetricCalculator) Calculate(metricName string, labels map[string]string, value interface{}, timestamp time.Time) (interface{}, bool) {
-	k := NewKey(metricName, labels)
-	cacheStore := rm.cache
+func (mc *MetricCalculator) Calculate(metricName string, resource pdata.Resource, labels map[string]string, value interface{}, timestamp time.Time) (interface{}, bool) {
+	k := NewKey(metricName, resource, labels)
+	cacheStore := mc.cache
 
 	var result interface{}
 	done := false
 
-	rm.lock.Lock()
-	defer rm.lock.Unlock()
+	mc.lock.Lock()
+	defer mc.lock.Unlock()
 
 	prev, exists := cacheStore.Get(k)
-	result, done = rm.calculateFunc(prev, value, timestamp)
+	result, done = mc.calculateFunc(prev, value, timestamp)
 	if !exists || done {
 		cacheStore.Set(k, MetricValue{
 			RawValue:  value,
@@ -86,11 +88,12 @@ func (rm *MetricCalculator) Calculate(metricName string, labels map[string]strin
 }
 
 type Key struct {
-	MetricMetadata interface{}
-	MetricLabels   attribute.Distinct
+	MetricMetadata     interface{}
+	ResourceAttributes attribute.Distinct
+	MetricLabels       attribute.Distinct
 }
 
-func NewKey(metricMetadata interface{}, labels map[string]string) Key {
+func NewKey(metricMetadata interface{}, resource pdata.Resource, labels map[string]string) Key {
 	var kvs []attribute.KeyValue
 	var sortable attribute.Sortable
 	for k, v := range labels {
@@ -99,9 +102,19 @@ func NewKey(metricMetadata interface{}, labels map[string]string) Key {
 	set := attribute.NewSetWithSortable(kvs, &sortable)
 
 	dedupSortedLabels := set.Equivalent()
+
+	var rkv []attribute.KeyValue
+	resource.Attributes().Range(func(k string, v pdata.AttributeValue) bool {
+		rkv = append(rkv, attribute.String(k, tracetranslator.AttributeValueToString(v)))
+		return true
+	})
+	rSet := attribute.NewSetWithSortable(rkv, &sortable)
+	dedupSortedResource := rSet.Equivalent()
+
 	return Key{
-		MetricMetadata: metricMetadata,
-		MetricLabels:   dedupSortedLabels,
+		MetricMetadata:     metricMetadata,
+		ResourceAttributes: dedupSortedResource,
+		MetricLabels:       dedupSortedLabels,
 	}
 }
 

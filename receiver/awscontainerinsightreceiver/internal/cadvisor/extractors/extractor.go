@@ -19,6 +19,7 @@ import (
 	"time"
 
 	cinfo "github.com/google/cadvisor/info/v1"
+	"go.opentelemetry.io/collector/model/pdata"
 	"go.uber.org/zap"
 
 	ci "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/containerinsight"
@@ -143,7 +144,8 @@ func newFloat64RateCalculator() awsmetrics.MetricCalculator {
 func assignRateValueToField(rateCalculator *awsmetrics.MetricCalculator, fields map[string]interface{}, metricName string,
 	cinfoName string, curVal interface{}, curTime time.Time, multiplier float64) {
 	key := cinfoName + metricName
-	if val, ok := rateCalculator.Calculate(key, nil, curVal, curTime); ok {
+	resource := pdata.NewResource()
+	if val, ok := rateCalculator.Calculate(key, resource, nil, curVal, curTime); ok {
 		fields[metricName] = val.(float64) * multiplier
 	}
 }

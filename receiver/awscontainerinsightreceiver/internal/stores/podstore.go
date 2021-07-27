@@ -24,6 +24,7 @@ import (
 	"sync"
 	"time"
 
+	"go.opentelemetry.io/collector/model/pdata"
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
 
@@ -70,7 +71,8 @@ type mapWithExpiry struct {
 }
 
 func (m *mapWithExpiry) Get(key string) (interface{}, bool) {
-	if val, ok := m.MapWithExpiry.Get(awsmetrics.NewKey(key, nil)); ok {
+	resource := pdata.NewResource()
+	if val, ok := m.MapWithExpiry.Get(awsmetrics.NewKey(key, resource, nil)); ok {
 		return val.RawValue, ok
 	}
 
@@ -78,11 +80,12 @@ func (m *mapWithExpiry) Get(key string) (interface{}, bool) {
 }
 
 func (m *mapWithExpiry) Set(key string, content interface{}) {
+	resource := pdata.NewResource()
 	val := awsmetrics.MetricValue{
 		RawValue:  content,
 		Timestamp: time.Now(),
 	}
-	m.MapWithExpiry.Set(awsmetrics.NewKey(key, nil), val)
+	m.MapWithExpiry.Set(awsmetrics.NewKey(key, resource, nil), val)
 }
 
 func newMapWithExpiry(ttl time.Duration) *mapWithExpiry {
