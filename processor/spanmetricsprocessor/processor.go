@@ -262,15 +262,15 @@ func (p *processorImp) collectLatencyMetrics(ilm pdata.InstrumentationLibraryMet
 func (p *processorImp) collectCallMetrics(ilm pdata.InstrumentationLibraryMetrics) {
 	for key := range p.callSum {
 		mCalls := ilm.Metrics().AppendEmpty()
-		mCalls.SetDataType(pdata.MetricDataTypeIntSum)
+		mCalls.SetDataType(pdata.MetricDataTypeSum)
 		mCalls.SetName("calls_total")
-		mCalls.IntSum().SetIsMonotonic(true)
-		mCalls.IntSum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+		mCalls.Sum().SetIsMonotonic(true)
+		mCalls.Sum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
 
-		dpCalls := mCalls.IntSum().DataPoints().AppendEmpty()
+		dpCalls := mCalls.Sum().DataPoints().AppendEmpty()
 		dpCalls.SetStartTimestamp(pdata.TimestampFromTime(p.startTime))
 		dpCalls.SetTimestamp(pdata.TimestampFromTime(time.Now()))
-		dpCalls.SetValue(p.callSum[key])
+		dpCalls.SetIntVal(p.callSum[key])
 
 		dpCalls.LabelsMap().InitFromMap(p.metricKeyToDimensions[key])
 	}
