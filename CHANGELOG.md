@@ -4,6 +4,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.20.0] - 2020-07-27
+
+### Added
+- `file_input` operator can now be configured to flush incomplete logs, using the `force_flush_period` setting ([PR216](https://github.com/open-telemetry/opentelemetry-log-collection/pull/216))
+
+### Changed
+- `severity` levels have been redefined to match OpenTelemetry standard levels ([PR228](https://github.com/open-telemetry/opentelemetry-log-collection/pull/228))
+### Fixed
+- `multiline` splitting now trims whitespace characters ([PR212](https://github.com/open-telemetry/opentelemetry-log-collection/pull/212))
+- `windows_eventlog_input` log input now gives a helpful error message when a metadata request fails ([PR206](https://github.com/open-telemetry/opentelemetry-log-collection/pull/206))
+
+
 ## [0.19.0] - 2020-06-22
 
 ### Added
