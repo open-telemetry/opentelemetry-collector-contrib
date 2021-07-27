@@ -85,7 +85,7 @@ func addDoubleGaugeDataPoints(from pdata.Metric, to pdata.Metric, operand2 float
 		neweDoubleDataPoint := to.Gauge().DataPoints().AppendEmpty()
 		fromDataPoint.CopyTo(neweDoubleDataPoint)
 		value := calculateValue(operand1, operand2, operation, logger, to.Name())
-		neweDoubleDataPoint.SetValue(value)
+		neweDoubleDataPoint.SetDoubleVal(value)
 	}
 }
 
