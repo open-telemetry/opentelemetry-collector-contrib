@@ -77,24 +77,24 @@ func (gf *graphiteFormatter) format(f fields, metricName string) string {
 	return fmt.Sprintf(s.template, labels...)
 }
 
-// intRecord converts IntDataPoint to graphite metric string
+// numberRecord converts NumberDataPoint to graphite metric string
 // with additional information from fields
-func (gf *graphiteFormatter) intRecord(fs fields, name string, dataPoint pdata.IntDataPoint) string {
-	return fmt.Sprintf("%s %d %d",
-		gf.format(fs, name),
-		dataPoint.Value(),
-		dataPoint.Timestamp()/pdata.Timestamp(time.Second),
-	)
-}
-
-// doubleRecord converts NumberDataPoint to graphite metric string
-// with additional information from fields
-func (gf *graphiteFormatter) doubleRecord(fs fields, name string, dataPoint pdata.NumberDataPoint) string {
-	return fmt.Sprintf("%s %g %d",
-		gf.format(fs, name),
-		dataPoint.Value(),
-		dataPoint.Timestamp()/pdata.Timestamp(time.Second),
-	)
+func (gf *graphiteFormatter) numberRecord(fs fields, name string, dataPoint pdata.NumberDataPoint) string {
+	switch dataPoint.Type() {
+	case pdata.MetricValueTypeDouble:
+		return fmt.Sprintf("%s %g %d",
+			gf.format(fs, name),
+			dataPoint.DoubleVal(),
+			dataPoint.Timestamp()/pdata.Timestamp(time.Second),
+		)
+	case pdata.MetricValueTypeInt:
+		return fmt.Sprintf("%s %d %d",
+			gf.format(fs, name),
+			dataPoint.IntVal(),
+			dataPoint.Timestamp()/pdata.Timestamp(time.Second),
+		)
+	}
+	return ""
 }
 
 // metric2String returns stringified metricPair
@@ -104,29 +104,17 @@ func (gf *graphiteFormatter) metric2String(record metricPair) string {
 	name := record.metric.Name()
 
 	switch record.metric.DataType() {
-	case pdata.MetricDataTypeIntGauge:
-		dps := record.metric.IntGauge().DataPoints()
-		nextLines = make([]string, 0, dps.Len())
-		for i := 0; i < dps.Len(); i++ {
-			nextLines = append(nextLines, gf.intRecord(fs, name, dps.At(i)))
-		}
-	case pdata.MetricDataTypeIntSum:
-		dps := record.metric.IntSum().DataPoints()
-		nextLines = make([]string, 0, dps.Len())
-		for i := 0; i < dps.Len(); i++ {
-			nextLines = append(nextLines, gf.intRecord(fs, name, dps.At(i)))
-		}
 	case pdata.MetricDataTypeGauge:
 		dps := record.metric.Gauge().DataPoints()
 		nextLines = make([]string, 0, dps.Len())
 		for i := 0; i < dps.Len(); i++ {
-			nextLines = append(nextLines, gf.doubleRecord(fs, name, dps.At(i)))
+			nextLines = append(nextLines, gf.numberRecord(fs, name, dps.At(i)))
 		}
 	case pdata.MetricDataTypeSum:
 		dps := record.metric.Sum().DataPoints()
 		nextLines = make([]string, 0, dps.Len())
 		for i := 0; i < dps.Len(); i++ {
-			nextLines = append(nextLines, gf.doubleRecord(fs, name, dps.At(i)))
+			nextLines = append(nextLines, gf.numberRecord(fs, name, dps.At(i)))
 		}
 	// Skip complex metrics
 	case pdata.MetricDataTypeHistogram:
