@@ -267,24 +267,6 @@ func (t *transformer) Metric(m pdata.Metric) ([]telemetry.Metric, error) {
 	k := metricStatsKey{MetricType: dataType}
 
 	switch dataType {
-	case pdata.MetricDataTypeIntGauge:
-		t.details.metricMetadataCount[k]++
-		// "StartTimestampUnixNano" is ignored for all data points.
-		gauge := m.IntGauge()
-		points := gauge.DataPoints()
-		output = make([]telemetry.Metric, 0, points.Len())
-		for l := 0; l < points.Len(); l++ {
-			point := points.At(l)
-			attributes := t.MetricAttributes(baseAttributes, point.LabelsMap())
-
-			nrMetric := telemetry.Gauge{
-				Name:       m.Name(),
-				Attributes: attributes,
-				Value:      float64(point.Value()),
-				Timestamp:  point.Timestamp().AsTime(),
-			}
-			output = append(output, nrMetric)
-		}
 	case pdata.MetricDataTypeGauge:
 		t.details.metricMetadataCount[k]++
 		// "StartTimestampUnixNano" is ignored for all data points.
@@ -293,53 +275,23 @@ func (t *transformer) Metric(m pdata.Metric) ([]telemetry.Metric, error) {
 		output = make([]telemetry.Metric, 0, points.Len())
 		for l := 0; l < points.Len(); l++ {
 			point := points.At(l)
+
+			var val float64
+			switch point.Type() {
+			case pdata.MetricValueTypeDouble:
+				val = point.DoubleVal()
+			case pdata.MetricValueTypeInt:
+				val = float64(point.IntVal())
+			}
 			attributes := t.MetricAttributes(baseAttributes, point.LabelsMap())
 
 			nrMetric := telemetry.Gauge{
 				Name:       m.Name(),
 				Attributes: attributes,
-				Value:      point.Value(),
+				Value:      val,
 				Timestamp:  point.Timestamp().AsTime(),
 			}
 			output = append(output, nrMetric)
-		}
-	case pdata.MetricDataTypeIntSum:
-		// aggregation_temporality describes if the aggregator reports delta changes
-		// since last report time, or cumulative changes since a fixed start time.
-		sum := m.IntSum()
-		temporality := sum.AggregationTemporality()
-		k.MetricTemporality = temporality
-		t.details.metricMetadataCount[k]++
-
-		points := sum.DataPoints()
-		output = make([]telemetry.Metric, 0, points.Len())
-		for l := 0; l < points.Len(); l++ {
-			point := points.At(l)
-			attributes := t.MetricAttributes(baseAttributes, point.LabelsMap())
-
-			if temporality != pdata.AggregationTemporalityDelta {
-				t.logger.Debug("Converting metric to gauge where AggregationTemporality != Delta",
-					zap.String("MetricName", m.Name()),
-					zap.Stringer("Temporality", temporality),
-					zap.Stringer("MetricType", dataType),
-				)
-				nrMetric := telemetry.Gauge{
-					Name:       m.Name(),
-					Attributes: attributes,
-					Value:      float64(point.Value()),
-					Timestamp:  point.Timestamp().AsTime(),
-				}
-				output = append(output, nrMetric)
-			} else {
-				nrMetric := telemetry.Count{
-					Name:       m.Name(),
-					Attributes: attributes,
-					Value:      float64(point.Value()),
-					Timestamp:  point.StartTimestamp().AsTime(),
-					Interval:   time.Duration(point.Timestamp() - point.StartTimestamp()),
-				}
-				output = append(output, nrMetric)
-			}
 		}
 	case pdata.MetricDataTypeSum:
 		sum := m.Sum()
@@ -352,6 +304,13 @@ func (t *transformer) Metric(m pdata.Metric) ([]telemetry.Metric, error) {
 		for l := 0; l < points.Len(); l++ {
 			point := points.At(l)
 			attributes := t.MetricAttributes(baseAttributes, point.LabelsMap())
+			var val float64
+			switch point.Type() {
+			case pdata.MetricValueTypeDouble:
+				val = point.DoubleVal()
+			case pdata.MetricValueTypeInt:
+				val = float64(point.IntVal())
+			}
 
 			if temporality != pdata.AggregationTemporalityDelta {
 				t.logger.Debug("Converting metric to gauge where AggregationTemporality != Delta",
@@ -362,7 +321,7 @@ func (t *transformer) Metric(m pdata.Metric) ([]telemetry.Metric, error) {
 				nrMetric := telemetry.Gauge{
 					Name:       m.Name(),
 					Attributes: attributes,
-					Value:      point.Value(),
+					Value:      val,
 					Timestamp:  point.Timestamp().AsTime(),
 				}
 				output = append(output, nrMetric)
@@ -370,7 +329,7 @@ func (t *transformer) Metric(m pdata.Metric) ([]telemetry.Metric, error) {
 				nrMetric := telemetry.Count{
 					Name:       m.Name(),
 					Attributes: attributes,
-					Value:      point.Value(),
+					Value:      val,
 					Timestamp:  point.StartTimestamp().AsTime(),
 					Interval:   time.Duration(point.Timestamp() - point.StartTimestamp()),
 				}
