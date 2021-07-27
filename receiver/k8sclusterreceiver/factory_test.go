@@ -19,6 +19,8 @@ import (
 	"testing"
 	"time"
 
+	quotaclientset "github.com/openshift/client-go/quota/clientset/versioned"
+	fakeQuota "github.com/openshift/client-go/quota/clientset/versioned/fake"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -39,6 +41,7 @@ func TestFactory(t *testing.T) {
 
 	require.Equal(t, &Config{
 		ReceiverSettings:           config.NewReceiverSettings(config.NewID(typeStr)),
+		Distribution:               distributionKubernetes,
 		CollectionInterval:         10 * time.Second,
 		NodeConditionTypesToReport: defaultNodeConditionsToReport,
 		APIConfig: k8sconfig.APIConfig{
@@ -78,6 +81,53 @@ func TestFactory(t *testing.T) {
 	require.NoError(t, r.Shutdown(ctx))
 	rCfg.MetadataExporters = []string{"nop/withoutmetadata"}
 	require.Error(t, r.Start(context.Background(), nopHostWithExporters{}))
+}
+
+func TestFactoryDistributions(t *testing.T) {
+	f := NewFactory()
+	require.Equal(t, config.Type("k8s_cluster"), f.Type())
+
+	cfg := f.CreateDefaultConfig()
+	rCfg, ok := cfg.(*Config)
+	require.True(t, ok)
+
+	rCfg.makeClient = func(apiConf k8sconfig.APIConfig) (kubernetes.Interface, error) {
+		return nil, nil
+	}
+	rCfg.makeOpenShiftQuotaClient = func(apiConf k8sconfig.APIConfig) (quotaclientset.Interface, error) {
+		return fakeQuota.NewSimpleClientset(), nil
+	}
+
+	// default
+	r, err := f.CreateMetricsReceiver(
+		context.Background(), componenttest.NewNopReceiverCreateSettings(),
+		rCfg, consumertest.NewNop(),
+	)
+	require.NoError(t, err)
+	require.NotNil(t, r)
+	rr := r.(*kubernetesReceiver)
+	require.Nil(t, rr.resourceWatcher.osQuotaClient)
+
+	// openshift
+	rCfg.Distribution = "openshift"
+	r, err = f.CreateMetricsReceiver(
+		context.Background(), componenttest.NewNopReceiverCreateSettings(),
+		rCfg, consumertest.NewNop(),
+	)
+	require.NoError(t, err)
+	require.NotNil(t, r)
+	rr = r.(*kubernetesReceiver)
+	require.NotNil(t, rr.resourceWatcher.osQuotaClient)
+
+	// bad distribution
+	rCfg.Distribution = "unknown-distro"
+	r, err = f.CreateMetricsReceiver(
+		context.Background(), componenttest.NewNopReceiverCreateSettings(),
+		rCfg, consumertest.NewNop(),
+	)
+	require.Error(t, err)
+	require.Nil(t, r)
+	require.EqualError(t, err, "\"unknown-distro\" is not a supported distribution. Must be one of: \"openshift\", \"kubernetes\"")
 }
 
 // nopHostWithExporters mocks a receiver.ReceiverHost for test purposes.

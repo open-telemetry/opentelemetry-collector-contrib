@@ -6,6 +6,7 @@ receivers:
     metadata_exporters: [nop]
   k8s_cluster/partial_settings:
     collection_interval: 30s
+    distribution: openshift
 
 
 processors:
