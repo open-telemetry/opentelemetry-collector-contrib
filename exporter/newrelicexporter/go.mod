@@ -6,7 +6,7 @@ require (
 	github.com/census-instrumentation/opencensus-proto v0.3.0
 	github.com/golang/protobuf v1.5.2
 	github.com/mattn/go-colorable v0.1.7 // indirect
-	github.com/newrelic/newrelic-telemetry-sdk-go v0.8.0
+	github.com/newrelic/newrelic-telemetry-sdk-go v0.8.1-0.20210727154251-ad4360e0c6c8
 	github.com/stretchr/testify v1.7.0
 	go.opencensus.io v0.23.0
 	go.opentelemetry.io/collector v0.31.0
