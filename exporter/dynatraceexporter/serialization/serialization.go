@@ -31,29 +31,20 @@ const (
 	maxDimKeyLen = 100
 )
 
-// SerializeIntDataPoints serializes a slice of integer datapoints to a Dynatrace gauge.
-func SerializeIntDataPoints(name string, data pdata.IntDataPointSlice, tags []string) []string {
-	// {name} {value} {timestamp}
-	output := []string{}
-
-	for i := 0; i < data.Len(); i++ {
-		p := data.At(i)
-		tagline := serializeTags(p.LabelsMap(), tags)
-		valueLine := strconv.FormatInt(p.Value(), 10)
-
-		output = append(output, serializeLine(name, tagline, valueLine, p.Timestamp()))
-	}
-
-	return output
-}
-
-// SerializeDoubleDataPoints serializes a slice of double datapoints to a Dynatrace gauge.
-func SerializeDoubleDataPoints(name string, data pdata.NumberDataPointSlice, tags []string) []string {
+// SerializeNumberDataPoints serializes a slice of number datapoints to a Dynatrace gauge.
+func SerializeNumberDataPoints(name string, data pdata.NumberDataPointSlice, tags []string) []string {
 	// {name} {value} {timestamp}
 	output := []string{}
 	for i := 0; i < data.Len(); i++ {
 		p := data.At(i)
-		output = append(output, serializeLine(name, serializeTags(p.LabelsMap(), tags), serializeFloat64(p.Value()), p.Timestamp()))
+		var val string
+		switch p.Type() {
+		case pdata.MetricValueTypeDouble:
+			val = serializeFloat64(p.DoubleVal())
+		case pdata.MetricValueTypeInt:
+			val = strconv.FormatInt(p.IntVal(), 10)
+		}
+		output = append(output, serializeLine(name, serializeTags(p.LabelsMap(), tags), val, p.Timestamp()))
 	}
 
 	return output
