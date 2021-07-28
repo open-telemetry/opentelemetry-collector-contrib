@@ -32,7 +32,7 @@ func TestAwsFromEc2Resource(t *testing.T) {
 	resource := pdata.NewResource()
 	attrs := pdata.NewAttributeMap()
 	attrs.InsertString(semconventions.AttributeCloudProvider, semconventions.AttributeCloudProviderAWS)
-	attrs.InsertString(attributeInfrastructureService, "EC2")
+	attrs.InsertString(semconventions.AttributeCloudPlatform, semconventions.AttributeCloudPlatformAWSEC2)
 	attrs.InsertString(semconventions.AttributeCloudAccount, "123456789")
 	attrs.InsertString(semconventions.AttributeCloudAvailabilityZone, "us-east-1c")
 	attrs.InsertString(semconventions.AttributeHostID, instanceID)
@@ -72,23 +72,19 @@ func TestAwsFromEcsResource(t *testing.T) {
 	resource := pdata.NewResource()
 	attrs := pdata.NewAttributeMap()
 	attrs.InsertString(semconventions.AttributeCloudProvider, semconventions.AttributeCloudProviderAWS)
-	attrs.InsertString(attributeInfrastructureService, "ECS")
+	attrs.InsertString(semconventions.AttributeCloudPlatform, semconventions.AttributeCloudPlatformAWSECS)
 	attrs.InsertString(semconventions.AttributeCloudAccount, "123456789")
 	attrs.InsertString(semconventions.AttributeCloudAvailabilityZone, az)
 	attrs.InsertString(semconventions.AttributeContainerImage, "otel/signupaggregator")
 	attrs.InsertString(semconventions.AttributeContainerTag, "v1")
-	attrs.InsertString(semconventions.AttributeK8sCluster, "production")
-	attrs.InsertString(semconventions.AttributeK8sNamespace, "default")
-	attrs.InsertString(semconventions.AttributeK8sDeployment, "signup_aggregator")
-	attrs.InsertString(semconventions.AttributeK8sPod, "my-deployment-65dcf7d447-ddjnl")
 	attrs.InsertString(semconventions.AttributeContainerName, containerName)
 	attrs.InsertString(semconventions.AttributeContainerID, containerID)
 	attrs.InsertString(semconventions.AttributeHostID, instanceID)
-	attrs.InsertString(awsEcsClusterArn, clusterArn)
-	attrs.InsertString(awsEcsContainerArn, containerArn)
-	attrs.InsertString(awsEcsTaskArn, taskArn)
-	attrs.InsertString(awsEcsTaskFamily, family)
-	attrs.InsertString(awsEcsLaunchType, launchType)
+	attrs.InsertString(semconventions.AttributeAWSECSClusterARN, clusterArn)
+	attrs.InsertString(semconventions.AttributeAWSECSContainerARN, containerArn)
+	attrs.InsertString(semconventions.AttributeAWSECSTaskARN, taskArn)
+	attrs.InsertString(semconventions.AttributeAWSECSTaskFamily, family)
+	attrs.InsertString(semconventions.AttributeAWSECSLaunchType, launchType)
 	attrs.InsertString(semconventions.AttributeHostType, "m5.xlarge")
 
 	attrs.CopyTo(resource.Attributes())
@@ -99,10 +95,10 @@ func TestAwsFromEcsResource(t *testing.T) {
 
 	assert.NotNil(t, filtered)
 	assert.NotNil(t, awsData)
-	assert.NotNil(t, awsData.EC2)
 	assert.NotNil(t, awsData.ECS)
+	assert.Nil(t, awsData.EC2)
 	assert.Nil(t, awsData.Beanstalk)
-	assert.NotNil(t, awsData.EKS)
+	assert.Nil(t, awsData.EKS)
 	assert.Equal(t, &awsxray.ECSMetadata{
 		ContainerName:    aws.String(containerName),
 		ContainerID:      aws.String(containerID),
@@ -121,6 +117,7 @@ func TestAwsFromBeanstalkResource(t *testing.T) {
 	resource := pdata.NewResource()
 	attrs := pdata.NewAttributeMap()
 	attrs.InsertString(semconventions.AttributeCloudProvider, semconventions.AttributeCloudProviderAWS)
+	attrs.InsertString(semconventions.AttributeCloudPlatform, semconventions.AttributeCloudPlatformAWSElasticBeanstalk)
 	attrs.InsertString(semconventions.AttributeCloudAccount, "123456789")
 	attrs.InsertString(semconventions.AttributeCloudAvailabilityZone, "us-east-1c")
 	attrs.InsertString(semconventions.AttributeServiceNamespace, "production")
@@ -152,6 +149,7 @@ func TestAwsFromEksResource(t *testing.T) {
 	resource := pdata.NewResource()
 	attrs := pdata.NewAttributeMap()
 	attrs.InsertString(semconventions.AttributeCloudProvider, semconventions.AttributeCloudProviderAWS)
+	attrs.InsertString(semconventions.AttributeCloudPlatform, semconventions.AttributeCloudPlatformAWSEKS)
 	attrs.InsertString(semconventions.AttributeCloudAccount, "123456789")
 	attrs.InsertString(semconventions.AttributeCloudAvailabilityZone, "us-east-1c")
 	attrs.InsertString(semconventions.AttributeContainerImage, "otel/signupaggregator")
@@ -172,10 +170,10 @@ func TestAwsFromEksResource(t *testing.T) {
 
 	assert.NotNil(t, filtered)
 	assert.NotNil(t, awsData)
-	assert.NotNil(t, awsData.EC2)
-	assert.NotNil(t, awsData.ECS)
-	assert.Nil(t, awsData.Beanstalk)
 	assert.NotNil(t, awsData.EKS)
+	assert.Nil(t, awsData.EC2)
+	assert.Nil(t, awsData.ECS)
+	assert.Nil(t, awsData.Beanstalk)
 	assert.Equal(t, &awsxray.EKSMetadata{
 		ClusterName: aws.String("production"),
 		Pod:         aws.String("my-deployment-65dcf7d447-ddjnl"),
@@ -370,7 +368,7 @@ func TestLogGroups(t *testing.T) {
 	ava.AppendEmpty().SetStringVal("group1")
 	ava.AppendEmpty().SetStringVal("group2")
 
-	resource.Attributes().Insert(awsLogGroupNames, lg)
+	resource.Attributes().Insert(semconventions.AttributeAWSLogGroupNames, lg)
 
 	filtered, awsData := makeAws(attributes, resource)
 
@@ -401,7 +399,7 @@ func TestLogGroupsFromArns(t *testing.T) {
 	ava.AppendEmpty().SetStringVal(group1)
 	ava.AppendEmpty().SetStringVal(group2)
 
-	resource.Attributes().Insert(awsLogGroupArns, lga)
+	resource.Attributes().Insert(semconventions.AttributeAWSLogGroupARNs, lga)
 
 	filtered, awsData := makeAws(attributes, resource)
 

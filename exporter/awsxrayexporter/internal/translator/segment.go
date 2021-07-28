@@ -225,24 +225,24 @@ func determineAwsOrigin(resource pdata.Resource) string {
 	// implemented for robustness
 	if is, present := resource.Attributes().Get(semconventions.AttributeCloudPlatform); present {
 		switch is.StringVal() {
-		case "EKS":
+		case semconventions.AttributeCloudPlatformAWSEKS:
 			return OriginEKS
-		case "ElasticBeanstalk":
+		case semconventions.AttributeCloudPlatformAWSElasticBeanstalk:
 			return OriginEB
-		case "ECS":
+		case semconventions.AttributeCloudPlatformAWSECS:
 			lt, present := resource.Attributes().Get("aws.ecs.launchtype")
 			if !present {
 				return OriginECS
 			}
 			switch lt.StringVal() {
-			case "ec2":
+			case semconventions.AttributeAWSECSLaunchTypeEC2:
 				return OriginECSEC2
-			case "fargate":
+			case semconventions.AttributeAWSECSLaunchTypeFargate:
 				return OriginECSFargate
 			default:
 				return OriginECS
 			}
-		case "EC2":
+		case semconventions.AttributeCloudPlatformAWSEC2:
 			return OriginEC2
 
 		// If infrastructure_service is defined with a non-AWS value, we should not assign it an AWS origin
@@ -251,23 +251,6 @@ func determineAwsOrigin(resource pdata.Resource) string {
 		}
 	}
 
-	// EKS > EB > ECS > EC2
-	_, eks := resource.Attributes().Get(semconventions.AttributeK8sCluster)
-	if eks {
-		return OriginEKS
-	}
-	_, eb := resource.Attributes().Get(semconventions.AttributeServiceInstance)
-	if eb {
-		return OriginEB
-	}
-	_, ecs := resource.Attributes().Get(semconventions.AttributeContainerName)
-	if ecs {
-		return OriginECS
-	}
-	_, ec2 := resource.Attributes().Get(semconventions.AttributeHostID)
-	if ec2 {
-		return OriginEC2
-	}
 	return ""
 }
 
