@@ -4,9 +4,9 @@ go 1.16
 
 require (
 	github.com/census-instrumentation/opencensus-proto v0.3.0
-	github.com/hashicorp/go-hclog v0.16.1
+	github.com/hashicorp/go-hclog v0.16.2
 	github.com/jaegertracing/jaeger v1.24.0
-	github.com/logzio/jaeger-logzio v1.0.2
+	github.com/logzio/jaeger-logzio v1.0.3
 	github.com/mattn/go-colorable v0.1.7 // indirect
 	github.com/onsi/ginkgo v1.14.1 // indirect
 	github.com/onsi/gomega v1.10.2 // indirect
