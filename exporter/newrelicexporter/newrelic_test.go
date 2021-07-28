@@ -16,6 +16,8 @@ package newrelicexporter
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"math"
 	"net/http"
 	"net/url"
@@ -32,6 +34,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opencensus.io/stats/view"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/translator/internaldata"
 	"google.golang.org/grpc/metadata"
@@ -47,6 +50,7 @@ type mockConfig struct {
 	useAPIKeyHeader bool
 	serverURL       string
 	statusCode      int
+	responseHeaders map[string]string
 }
 
 func runTraceMock(initialContext context.Context, ptrace pdata.Traces, cfg mockConfig) (*Mock, error) {
@@ -62,6 +66,10 @@ func runTraceMock(initialContext context.Context, ptrace pdata.Traces, cfg mockC
 		m.StatusCode = cfg.statusCode
 	}
 
+	if cfg.responseHeaders != nil {
+		m.ResponseHeaders = cfg.responseHeaders
+	}
+
 	srv := m.Server()
 	defer srv.Close()
 
@@ -74,9 +82,9 @@ func runTraceMock(initialContext context.Context, ptrace pdata.Traces, cfg mockC
 	u, _ := url.Parse(urlString)
 
 	if cfg.useAPIKeyHeader {
-		c.CommonConfig.APIKeyHeader = "api-key"
+		c.TracesConfig.APIKeyHeader = "api-key"
 	} else {
-		c.CommonConfig.APIKey = "NRII-1"
+		c.TracesConfig.APIKey = "NRII-1"
 	}
 	c.TracesConfig.insecure, c.TracesConfig.HostOverride = true, u.Host
 	exp, err := f.CreateTracesExporter(context.Background(), componenttest.NewNopExporterCreateSettings(), c)
@@ -117,9 +125,9 @@ func runMetricMock(initialContext context.Context, pmetrics pdata.Metrics, cfg m
 	u, _ := url.Parse(urlString)
 
 	if cfg.useAPIKeyHeader {
-		c.CommonConfig.APIKeyHeader = "api-key"
+		c.MetricsConfig.APIKeyHeader = "api-key"
 	} else {
-		c.CommonConfig.APIKey = "NRII-1"
+		c.MetricsConfig.APIKey = "NRII-1"
 	}
 	c.MetricsConfig.insecure, c.MetricsConfig.HostOverride = true, u.Host
 	exp, err := f.CreateMetricsExporter(context.Background(), componenttest.NewNopExporterCreateSettings(), c)
@@ -160,9 +168,9 @@ func runLogMock(initialContext context.Context, plogs pdata.Logs, cfg mockConfig
 	u, _ := url.Parse(urlString)
 
 	if cfg.useAPIKeyHeader {
-		c.CommonConfig.APIKeyHeader = "api-key"
+		c.LogsConfig.APIKeyHeader = "api-key"
 	} else {
-		c.CommonConfig.APIKey = "NRII-1"
+		c.LogsConfig.APIKey = "NRII-1"
 	}
 	c.LogsConfig.insecure, c.LogsConfig.HostOverride = true, u.Host
 	exp, err := f.CreateLogsExporter(context.Background(), componenttest.NewNopExporterCreateSettings(), c)
@@ -245,6 +253,26 @@ func TestExportTraceWithErrorStatusCode(t *testing.T) {
 
 	_, err := runTraceMock(context.Background(), ptrace, mockConfig{statusCode: 500})
 	require.Error(t, err)
+}
+
+func TestExportTraceWith429StatusCodeAndRetryAfter(t *testing.T) {
+	ptrace := internaldata.OCToTraces(nil, nil,
+		[]*tracepb.Span{
+			{
+				SpanId: []byte{0, 0, 0, 0, 0, 0, 0, 1},
+				Name:   &tracepb.TruncatableString{Value: "a"},
+			},
+		})
+
+	expected := exporterhelper.NewThrottleRetry(
+		fmt.Errorf("new relic HTTP call failed. Status Code: 429"),
+		time.Duration(10)*time.Second)
+
+	_, err := runTraceMock(context.Background(), ptrace, mockConfig{statusCode: 429, responseHeaders: map[string]string{"Retry-After": "10"}})
+
+	actual := errors.Unwrap(err)
+
+	assert.EqualValues(t, expected, actual)
 }
 
 func TestExportTraceWithNot202StatusCode(t *testing.T) {
@@ -745,9 +773,9 @@ func TestCreatesClientOptionWithVersionInUserAgent(t *testing.T) {
 	u, _ := url.Parse(urlString)
 
 	if cfg.useAPIKeyHeader {
-		c.CommonConfig.APIKeyHeader = "api-key"
+		c.TracesConfig.APIKeyHeader = "api-key"
 	} else {
-		c.CommonConfig.APIKey = "NRII-1"
+		c.TracesConfig.APIKey = "NRII-1"
 	}
 	c.TracesConfig.insecure, c.TracesConfig.HostOverride = true, u.Host
 	exp, err := f.CreateTracesExporter(context.Background(), componenttest.NewNopExporterCreateSettings(), c)
@@ -790,9 +818,9 @@ func TestBadSpanResourceGeneratesError(t *testing.T) {
 	u, _ := url.Parse(urlString)
 
 	if cfg.useAPIKeyHeader {
-		c.CommonConfig.APIKeyHeader = "api-key"
+		c.TracesConfig.APIKeyHeader = "api-key"
 	} else {
-		c.CommonConfig.APIKey = "NRII-1"
+		c.TracesConfig.APIKey = "NRII-1"
 	}
 	c.TracesConfig.insecure, c.TracesConfig.HostOverride = true, u.Host
 	exp, err := f.CreateTracesExporter(context.Background(), componenttest.NewNopExporterCreateSettings(), c)
@@ -837,9 +865,9 @@ func TestBadMetricResourceGeneratesError(t *testing.T) {
 	u, _ := url.Parse(urlString)
 
 	if cfg.useAPIKeyHeader {
-		c.CommonConfig.APIKeyHeader = "api-key"
+		c.MetricsConfig.APIKeyHeader = "api-key"
 	} else {
-		c.CommonConfig.APIKey = "NRII-1"
+		c.MetricsConfig.APIKey = "NRII-1"
 	}
 	c.TracesConfig.insecure, c.TracesConfig.HostOverride = true, u.Host
 	exp, err := f.CreateMetricsExporter(context.Background(), componenttest.NewNopExporterCreateSettings(), c)
@@ -882,9 +910,9 @@ func TestBadLogResourceGeneratesError(t *testing.T) {
 	u, _ := url.Parse(urlString)
 
 	if cfg.useAPIKeyHeader {
-		c.CommonConfig.APIKeyHeader = "api-key"
+		c.LogsConfig.APIKeyHeader = "api-key"
 	} else {
-		c.CommonConfig.APIKey = "NRII-1"
+		c.LogsConfig.APIKey = "NRII-1"
 	}
 	c.TracesConfig.insecure, c.TracesConfig.HostOverride = true, u.Host
 	exp, err := f.CreateLogsExporter(context.Background(), componenttest.NewNopExporterCreateSettings(), c)
@@ -930,9 +958,9 @@ func TestFailureToRecordMetricsDoesNotAffectExportingData(t *testing.T) {
 	u, _ := url.Parse(urlString)
 
 	if cfg.useAPIKeyHeader {
-		c.CommonConfig.APIKeyHeader = "api-key"
+		c.TracesConfig.APIKeyHeader = "api-key"
 	} else {
-		c.CommonConfig.APIKey = "NRII-1"
+		c.TracesConfig.APIKey = "NRII-1"
 	}
 	c.TracesConfig.insecure, c.TracesConfig.HostOverride = true, u.Host
 

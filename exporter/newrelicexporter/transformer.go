@@ -428,7 +428,7 @@ func (t *transformer) MetricAttributes(baseAttributes map[string]interface{}, at
 }
 
 func (t *transformer) TrackAttributes(location attributeLocation, attributeMap pdata.AttributeMap) {
-	attributeMap.Range(func(k string, v pdata.AttributeValue) bool {
+	attributeMap.Range(func(_ string, v pdata.AttributeValue) bool {
 		statsKey := attributeStatsKey{location: location, attributeType: v.Type()}
 		t.details.attributeMetadataCount[statsKey]++
 		return true

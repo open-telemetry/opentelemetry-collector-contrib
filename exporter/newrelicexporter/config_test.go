@@ -24,6 +24,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtest"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -41,141 +42,42 @@ func TestLoadConfig(t *testing.T) {
 
 	r0 := cfg.Exporters[config.NewID(typeStr)]
 	defaultConfig := factory.CreateDefaultConfig().(*Config)
+
+	// The marshaller should set the endpoint specific configuration to the common config by default
+	defaultConfig.TracesConfig = defaultConfig.CommonConfig
+	defaultConfig.LogsConfig = defaultConfig.CommonConfig
+	defaultConfig.MetricsConfig = defaultConfig.CommonConfig
 	assert.Equal(t, r0, defaultConfig)
 
 	r1 := cfg.Exporters[config.NewIDWithName(typeStr, "alt")].(*Config)
 	assert.Equal(t, r1, &Config{
 		ExporterSettings: config.NewExporterSettings(config.NewIDWithName(typeStr, "alt")),
 		CommonConfig: EndpointConfig{
-			APIKey:  "a1b2c3d4",
-			Timeout: time.Second * 30,
+			APIKey: "a1b2c3d4",
+			TimeoutSettings: exporterhelper.TimeoutSettings{
+				Timeout: 30 * time.Second,
+			},
 		},
 		MetricsConfig: EndpointConfig{
+			APIKey: "a1b2c3d4",
+			TimeoutSettings: exporterhelper.TimeoutSettings{
+				Timeout: 30 * time.Second,
+			},
 			HostOverride: "alt.metrics.newrelic.com",
-			insecure:     false,
 		},
 		TracesConfig: EndpointConfig{
+			APIKey: "a1b2c3d4",
+			TimeoutSettings: exporterhelper.TimeoutSettings{
+				Timeout: 30 * time.Second,
+			},
 			HostOverride: "alt.spans.newrelic.com",
-			insecure:     false,
 		},
 		LogsConfig: EndpointConfig{
+			APIKey: "a1b2c3d4",
+			TimeoutSettings: exporterhelper.TimeoutSettings{
+				Timeout: 30 * time.Second,
+			},
 			HostOverride: "alt.logs.newrelic.com",
-			insecure:     false,
 		},
 	})
-}
-
-func TestEndpointSpecificConfigTakesPrecedence(t *testing.T) {
-	cfg := Config{
-		CommonConfig: EndpointConfig{
-			APIKey:       "commonapikey",
-			APIKeyHeader: "commonapikeyheader",
-			HostOverride: "commonhost",
-			Timeout:      time.Second * 10,
-		},
-		TracesConfig: EndpointConfig{
-			APIKey:       "tracesapikey",
-			APIKeyHeader: "tracesapikeyheader",
-			HostOverride: "traceshost",
-			Timeout:      time.Second * 20,
-		},
-		MetricsConfig: EndpointConfig{
-			APIKey:       "metricsapikey",
-			APIKeyHeader: "metricsapikeyheader",
-			HostOverride: "metricshost",
-			Timeout:      time.Second * 30,
-		},
-		LogsConfig: EndpointConfig{
-			APIKey:       "logsapikey",
-			APIKeyHeader: "logsapikeyheader",
-			HostOverride: "logshost",
-			Timeout:      time.Second * 40,
-		},
-	}
-
-	assert.Equal(t, cfg.TracesConfig, cfg.GetTracesConfig())
-	assert.Equal(t, cfg.MetricsConfig, cfg.GetMetricsConfig())
-	assert.Equal(t, cfg.LogsConfig, cfg.GetLogsConfig())
-}
-
-func TestEndpointSpecificConfigUsedWhenDefined(t *testing.T) {
-	cfg := Config{
-		CommonConfig: EndpointConfig{
-			APIKey:       "commonapikey",
-			APIKeyHeader: "commonapikeyheader",
-			HostOverride: "commonhost",
-			Timeout:      time.Second * 10,
-		},
-		TracesConfig: EndpointConfig{
-			APIKey:       "tracesapikey",
-			HostOverride: "traceshost",
-			Timeout:      time.Second * 20,
-		},
-		MetricsConfig: EndpointConfig{
-			APIKeyHeader: "metricsapikeyheader",
-			HostOverride: "metricshost",
-			Timeout:      time.Second * 30,
-		},
-		LogsConfig: EndpointConfig{
-			APIKey:       "logsapikey",
-			APIKeyHeader: "logsapikeyheader",
-			HostOverride: "logshost",
-		},
-	}
-
-	expectedTraceConfig := EndpointConfig{
-		APIKey:       "tracesapikey",
-		APIKeyHeader: "commonapikeyheader",
-		HostOverride: "traceshost",
-		Timeout:      time.Second * 20,
-	}
-	expectedMetricConfig := EndpointConfig{
-		APIKey:       "commonapikey",
-		APIKeyHeader: "metricsapikeyheader",
-		HostOverride: "metricshost",
-		Timeout:      time.Second * 30,
-	}
-	expectedLogConfig := EndpointConfig{
-		APIKey:       "logsapikey",
-		APIKeyHeader: "logsapikeyheader",
-		HostOverride: "logshost",
-		Timeout:      time.Second * 10,
-	}
-
-	assert.Equal(t, expectedTraceConfig, cfg.GetTracesConfig())
-	assert.Equal(t, expectedMetricConfig, cfg.GetMetricsConfig())
-	assert.Equal(t, expectedLogConfig, cfg.GetLogsConfig())
-}
-
-func TestCommonConfigValuesUsed(t *testing.T) {
-	cfg := Config{
-		CommonConfig: EndpointConfig{
-			APIKey:       "commonapikey",
-			APIKeyHeader: "commonapikeyheader",
-			HostOverride: "commonhost",
-			Timeout:      time.Second * 10,
-		},
-		TracesConfig: EndpointConfig{
-			APIKey:       "",
-			APIKeyHeader: "",
-			HostOverride: "",
-			Timeout:      0,
-		},
-		MetricsConfig: EndpointConfig{
-			APIKey:       "",
-			APIKeyHeader: "",
-			HostOverride: "",
-			Timeout:      0,
-		},
-		LogsConfig: EndpointConfig{
-			APIKey:       "",
-			APIKeyHeader: "",
-			HostOverride: "",
-			Timeout:      0,
-		},
-	}
-
-	assert.Equal(t, cfg.CommonConfig, cfg.GetTracesConfig())
-	assert.Equal(t, cfg.CommonConfig, cfg.GetMetricsConfig())
-	assert.Equal(t, cfg.CommonConfig, cfg.GetLogsConfig())
 }
