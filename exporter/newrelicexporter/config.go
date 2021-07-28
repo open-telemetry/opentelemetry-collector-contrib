@@ -15,9 +15,9 @@
 package newrelicexporter
 
 import (
-	"time"
-
 	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/config/configparser"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
 // EndpointConfig defines configuration for a single endpoint in the New Relic exporter.
@@ -31,10 +31,14 @@ type EndpointConfig struct {
 	// HostOverride overrides the endpoint.
 	HostOverride string `mapstructure:"host_override"`
 
-	// Timeout is the total amount of time spent attempting a request,
-	// including retries, before abandoning and dropping data. Default is 15
+	// TimeoutSettings is the total amount of time spent attempting a request,
+	// including retries, before abandoning and dropping data. Default is 5
 	// seconds.
-	Timeout time.Duration `mapstructure:"timeout"`
+	TimeoutSettings exporterhelper.TimeoutSettings `mapstructure:",squash"`
+
+	// RetrySettings defines configuration for retrying batches in case of export failure.
+	// The current supported strategy is exponential backoff.
+	RetrySettings exporterhelper.RetrySettings `mapstructure:"retry"`
 
 	// Insecure disables TLS on the endpoint.
 	insecure bool
@@ -57,36 +61,32 @@ type Config struct {
 	LogsConfig EndpointConfig `mapstructure:"logs"`
 }
 
-// GetTracesConfig merges the common configuration section with the traces specific section.
-func (c Config) GetTracesConfig() EndpointConfig {
-	return mergeConfig(c.CommonConfig, c.TracesConfig)
-}
-
-// GetMetricsConfig merges the common configuration section with the metrics specific section.
-func (c Config) GetMetricsConfig() EndpointConfig {
-	return mergeConfig(c.CommonConfig, c.MetricsConfig)
-}
-
-// GetLogsConfig merges the common configuration section with the logs specific section.
-func (c Config) GetLogsConfig() EndpointConfig {
-	return mergeConfig(c.CommonConfig, c.LogsConfig)
-}
-
-func mergeConfig(baseConfig EndpointConfig, config EndpointConfig) EndpointConfig {
-	if config.APIKey == "" {
-		config.APIKey = baseConfig.APIKey
+func (c *Config) Unmarshal(componentSection *configparser.Parser) error {
+	if err := componentSection.UnmarshalExact(c); err != nil {
+		return err
 	}
 
-	if config.APIKeyHeader == "" {
-		config.APIKeyHeader = baseConfig.APIKeyHeader
+	baseEndpointConfig := c.CommonConfig
+	endpointConfigs := map[string]*EndpointConfig{
+		"metrics": &c.MetricsConfig,
+		"traces":  &c.TracesConfig,
+		"logs":    &c.LogsConfig,
 	}
 
-	if config.HostOverride == "" {
-		config.HostOverride = baseConfig.HostOverride
-	}
+	for section, sectionCfg := range endpointConfigs {
 
-	if config.Timeout == 0 {
-		config.Timeout = baseConfig.Timeout
+		// Default to whatever the common config is
+		*sectionCfg = baseEndpointConfig
+
+		p, err := componentSection.Sub(section)
+		if err != nil {
+			return err
+		}
+
+		// Overlay with the section specific configuration
+		if err := p.UnmarshalExact(sectionCfg); err != nil {
+			return err
+		}
 	}
-	return config
+	return nil
 }
