@@ -39,6 +39,7 @@ import (
 
 const (
 	keySamplingPriority string = "_sampling_priority_v1"
+	keySamplingRate     string = "_sample_rate"
 	versionTag          string = "version"
 	oldILNameTag        string = "otel.instrumentation_library.name"
 	currentILNameTag    string = "otel.library.name"
@@ -371,7 +372,15 @@ func aggregateSpanTags(span pdata.Span, datadogTags map[string]string) map[strin
 	}
 
 	span.Attributes().Range(func(k string, v pdata.AttributeValue) bool {
-		spanTags[utils.NormalizeTag(k)] = tracetranslator.AttributeValueToString(v)
+		switch k {
+		case keySamplingPriority:
+			spanTags[k] = tracetranslator.AttributeValueToString(v)
+		case keySamplingRate:
+			spanTags[k] = tracetranslator.AttributeValueToString(v)
+		default:
+			spanTags[utils.NormalizeTag(k)] = tracetranslator.AttributeValueToString(v)
+		}
+
 		return true
 	})
 
@@ -453,6 +462,10 @@ func setStringTag(s *pb.Span, key, v string) {
 			setMetric(s, ext.EventSampleRate, 1)
 		} else {
 			setMetric(s, ext.EventSampleRate, 0)
+		}
+	case keySamplingRate:
+		if sampleRateFlt, err := strconv.ParseFloat(v, 64); err == nil {
+			setMetric(s, keySamplingRate, sampleRateFlt)
 		}
 	default:
 		s.Meta[key] = v
