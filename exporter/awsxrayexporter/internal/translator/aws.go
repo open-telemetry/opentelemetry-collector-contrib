@@ -25,17 +25,6 @@ import (
 	awsxray "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray"
 )
 
-const (
-	attributeInfrastructureService = "cloud.platform"
-	awsEcsClusterArn               = "aws.ecs.cluster.arn"
-	awsEcsContainerArn             = "aws.ecs.container.arn"
-	awsEcsTaskArn                  = "aws.ecs.task.arn"
-	awsEcsTaskFamily               = "aws.ecs.task.family"
-	awsEcsLaunchType               = "aws.ecs.launchtype"
-	awsLogGroupNames               = "aws.log.group.names"
-	awsLogGroupArns                = "aws.log.group.arns"
-)
-
 func makeAws(attributes map[string]pdata.AttributeValue, resource pdata.Resource) (map[string]pdata.AttributeValue, *awsxray.AWSData) {
 	var (
 		cloud        string
@@ -81,7 +70,7 @@ func makeAws(attributes map[string]pdata.AttributeValue, resource pdata.Resource
 		switch key {
 		case semconventions.AttributeCloudProvider:
 			cloud = value.StringVal()
-		case attributeInfrastructureService:
+		case semconventions.AttributeCloudPlatform:
 			service = value.StringVal()
 		case semconventions.AttributeCloudAccount:
 			account = value.StringVal()
@@ -117,19 +106,19 @@ func makeAws(attributes map[string]pdata.AttributeValue, resource pdata.Resource
 			containerID = value.StringVal()
 		case semconventions.AttributeK8sCluster:
 			clusterName = value.StringVal()
-		case awsEcsClusterArn:
+		case semconventions.AttributeAWSECSClusterARN:
 			clusterArn = value.StringVal()
-		case awsEcsContainerArn:
+		case semconventions.AttributeAWSECSContainerARN:
 			containerArn = value.StringVal()
-		case awsEcsTaskArn:
+		case semconventions.AttributeAWSECSTaskARN:
 			taskArn = value.StringVal()
-		case awsEcsTaskFamily:
+		case semconventions.AttributeAWSECSTaskFamily:
 			taskFamily = value.StringVal()
-		case awsEcsLaunchType:
+		case semconventions.AttributeAWSECSLaunchType:
 			launchType = value.StringVal()
-		case awsLogGroupNames:
+		case semconventions.AttributeAWSLogGroupNames:
 			logGroups = value.ArrayVal()
-		case awsLogGroupArns:
+		case semconventions.AttributeAWSLogGroupARNs:
 			logGroupArns = value.ArrayVal()
 		}
 		return true
@@ -165,7 +154,8 @@ func makeAws(attributes map[string]pdata.AttributeValue, resource pdata.Resource
 		return filtered, nil // not AWS so return nil
 	}
 
-	if service == "EC2" || hostID != "" {
+	// EC2 - hostID/ec2_instanceId should be always returned by ec2 detector
+	if service == semconventions.AttributeCloudPlatformAWSEC2 && hostID != "" {
 		ec2 = &awsxray.EC2Metadata{
 			InstanceID:       awsxray.String(hostID),
 			AvailabilityZone: awsxray.String(zone),
@@ -173,7 +163,9 @@ func makeAws(attributes map[string]pdata.AttributeValue, resource pdata.Resource
 			AmiID:            awsxray.String(amiID),
 		}
 	}
-	if service == "ECS" || container != "" {
+
+	// ECS
+	if service == semconventions.AttributeCloudPlatformAWSECS {
 		ecs = &awsxray.ECSMetadata{
 			ContainerName:    awsxray.String(container),
 			ContainerID:      awsxray.String(containerID),
@@ -186,8 +178,8 @@ func makeAws(attributes map[string]pdata.AttributeValue, resource pdata.Resource
 		}
 	}
 
-	// TODO(willarmiros): Add infrastructure_service checks once their resource detectors are implemented
-	if deployID != "" {
+	// Beanstalk
+	if service == semconventions.AttributeCloudPlatformAWSElasticBeanstalk && deployID != "" {
 		deployNum, err := strconv.ParseInt(deployID, 10, 64)
 		if err != nil {
 			deployNum = 0
@@ -198,7 +190,9 @@ func makeAws(attributes map[string]pdata.AttributeValue, resource pdata.Resource
 			VersionLabel: awsxray.String(versionLabel),
 		}
 	}
-	if clusterName != "" {
+
+	// EKS or native Kubernetes
+	if service == semconventions.AttributeCloudPlatformAWSEKS || clusterName != "" {
 		eks = &awsxray.EKSMetadata{
 			ClusterName: awsxray.String(clusterName),
 			Pod:         awsxray.String(podUID),
