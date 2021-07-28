@@ -37,10 +37,6 @@ func createDefaultConfig() config.Exporter {
 		ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
 		Region:           "",
 		TracesToken:      "",
-		MetricsToken:     "",
-		DrainInterval:    3,
-		QueueMaxLength:   500000,
-		QueueCapacity:    20 * 1024 * 1024,
 	}
 }
 

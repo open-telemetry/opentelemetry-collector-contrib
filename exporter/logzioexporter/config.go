@@ -27,9 +27,6 @@ type Config struct {
 	MetricsToken            string `mapstructure:"metrics_token"`   // Your Logz.io Metrics Token, can be found at https://docs.logz.io/user-guide/accounts/finding-your-metrics-account-token/
 	Region                  string `mapstructure:"region"`          // Your Logz.io 2-letter region code, can be found at https://docs.logz.io/user-guide/accounts/account-region.html#available-regions
 	CustomEndpoint          string `mapstructure:"custom_endpoint"` // Custom endpoint to ship traces to. Use only for dev and tests.
-	DrainInterval           int    `mapstructure:"drain_interval"`
-	QueueCapacity           int64  `mapstructure:"queue_capacity"`
-	QueueMaxLength          int    `mapstructure:"queue_max_length"`
 }
 
 func (c *Config) validate() error {

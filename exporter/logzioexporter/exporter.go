@@ -54,12 +54,8 @@ func newLogzioExporter(config *Config, params component.ExporterCreateSettings) 
 		Region:            config.Region,
 		AccountToken:      config.TracesToken,
 		CustomListenerURL: config.CustomEndpoint,
-		InMemoryQueue:     true,
-		Compress:          true,
-		InMemoryCapacity:  uint64(config.QueueCapacity),
-		LogCountLimit:     config.QueueMaxLength,
-		DrainInterval:     config.DrainInterval,
 	}
+
 	spanWriter, err := store.NewLogzioSpanWriter(writerConfig, logger)
 	if err != nil {
 		return nil, err
