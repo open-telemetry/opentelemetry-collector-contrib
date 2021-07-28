@@ -171,8 +171,7 @@ func mapGetHelper(labels map[string]string, key string) string {
 }
 
 func groupedMetricKey(metadata groupedMetricMetadata, labels map[string]string) aws.Key {
-	res := pdata.NewResource()
-	return aws.NewKey(metadata, res, labels)
+	return aws.NewKey(metadata, labels)
 }
 
 func translateUnit(metric *pdata.Metric, descriptor map[string]MetricDescriptor) string {

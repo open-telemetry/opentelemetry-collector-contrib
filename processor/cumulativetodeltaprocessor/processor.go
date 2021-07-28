@@ -54,7 +54,6 @@ func (ctdp *cumulativeToDeltaProcessor) processMetrics(_ context.Context, md pda
 	resourceMetricsSlice := md.ResourceMetrics()
 	for i := 0; i < resourceMetricsSlice.Len(); i++ {
 		rm := resourceMetricsSlice.At(i)
-		resource := rm.Resource()
 		ilms := rm.InstrumentationLibraryMetrics()
 		for j := 0; j < ilms.Len(); j++ {
 			ilm := ilms.At(j)
@@ -74,7 +73,7 @@ func (ctdp *cumulativeToDeltaProcessor) processMetrics(_ context.Context, md pda
 								return true
 							})
 
-							result, _ := ctdp.deltaCalculator.Calculate(metric.Name(), resource, labelMap, fromDataPoint.Value(), fromDataPoint.Timestamp().AsTime())
+							result, _ := ctdp.deltaCalculator.Calculate(metric.Name(), labelMap, fromDataPoint.Value(), fromDataPoint.Timestamp().AsTime())
 
 							fromDataPoint.SetValue(result.(delta).value)
 							fromDataPoint.SetStartTimestamp(pdata.TimestampFromTime(result.(delta).prevTimestamp))
