@@ -58,7 +58,7 @@ func (dtrp *deltaToRateProcessor) processMetrics(_ context.Context, md pdata.Met
 				metric := metricSlice.At(j)
 				_, ok := inputMetricSet[metric.Name()]
 				if ok {
-					newDoubleDataPointSlice := pdata.NewDoubleDataPointSlice()
+					newDoubleDataPointSlice := pdata.NewNumberDataPointSlice()
 					if metric.DataType() == pdata.MetricDataTypeSum && metric.Sum().AggregationTemporality() == pdata.AggregationTemporalityDelta {
 						dataPoints := metric.Sum().DataPoints()
 
