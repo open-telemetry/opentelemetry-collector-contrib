@@ -48,7 +48,6 @@ type dataPoint struct {
 }
 
 // dataPoints is a wrapper interface for:
-// 	- pdata.intDataPointSlice
 // 	- pdata.NumberDataPointSlice
 // 	- pdata.histogramDataPointSlice
 //  - pdata.summaryDataPointSlice
@@ -83,13 +82,6 @@ func mergeLabels(m deltaMetricMetadata, labels map[string]string) map[string]str
 	return result
 }
 
-// intDataPointSlice is a wrapper for pdata.intDataPointSlice
-type intDataPointSlice struct {
-	instrumentationLibraryName string
-	deltaMetricMetadata
-	pdata.IntDataPointSlice
-}
-
 // numberDataPointSlice is a wrapper for pdata.NumberDataPointSlice
 type numberDataPointSlice struct {
 	instrumentationLibraryName string
@@ -115,36 +107,6 @@ type summaryMetricEntry struct {
 	count uint64
 }
 
-// At retrieves the IntDataPoint at the given index and performs rate/delta calculation if necessary.
-func (dps intDataPointSlice) At(i int) (dataPoint, bool) {
-	metric := dps.IntDataPointSlice.At(i)
-	timestampMs := unixNanoToMilliseconds(metric.Timestamp())
-	labels := createLabels(metric.LabelsMap(), dps.instrumentationLibraryName)
-
-	var metricVal float64
-	metricVal = float64(metric.Value())
-	retained := true
-	if dps.adjustToDelta {
-		var deltaVal interface{}
-		deltaVal, retained = deltaMetricCalculator.Calculate(dps.metricName, mergeLabels(dps.deltaMetricMetadata, labels),
-			metricVal, metric.Timestamp().AsTime())
-		if !retained {
-			return dataPoint{}, retained
-		}
-		// It should not happen in practice that the previous metric value is smaller than the current one.
-		// If it happens, we assume that the metric is reset for some reason.
-		if deltaVal.(float64) >= 0 {
-			metricVal = deltaVal.(float64)
-		}
-	}
-
-	return dataPoint{
-		value:       metricVal,
-		labels:      labels,
-		timestampMs: timestampMs,
-	}, retained
-}
-
 // At retrieves the NumberDataPoint at the given index and performs rate/delta calculation if necessary.
 func (dps numberDataPointSlice) At(i int) (dataPoint, bool) {
 	metric := dps.NumberDataPointSlice.At(i)
@@ -152,7 +114,13 @@ func (dps numberDataPointSlice) At(i int) (dataPoint, bool) {
 	timestampMs := unixNanoToMilliseconds(metric.Timestamp())
 
 	var metricVal float64
-	metricVal = metric.Value()
+	switch metric.Type() {
+	case pdata.MetricValueTypeDouble:
+		metricVal = metric.DoubleVal()
+	case pdata.MetricValueTypeInt:
+		metricVal = float64(metric.IntVal())
+	}
+
 	retained := true
 	if dps.adjustToDelta {
 		var deltaVal interface{}
@@ -262,8 +230,8 @@ func getDataPoints(pmd *pdata.Metric, metadata cWMetricMetadata, logger *zap.Log
 
 	switch pmd.DataType() {
 	case pdata.MetricDataTypeIntGauge:
-		metric := pmd.IntGauge()
-		dps = intDataPointSlice{
+		metric := pmd.Gauge()
+		dps = numberDataPointSlice{
 			metadata.instrumentationLibraryName,
 			adjusterMetadata,
 			metric.DataPoints(),
@@ -276,9 +244,9 @@ func getDataPoints(pmd *pdata.Metric, metadata cWMetricMetadata, logger *zap.Log
 			metric.DataPoints(),
 		}
 	case pdata.MetricDataTypeIntSum:
-		metric := pmd.IntSum()
+		metric := pmd.Sum()
 		adjusterMetadata.adjustToDelta = metric.AggregationTemporality() == pdata.AggregationTemporalityCumulative
-		dps = intDataPointSlice{
+		dps = numberDataPointSlice{
 			metadata.instrumentationLibraryName,
 			adjusterMetadata,
 			metric.DataPoints(),

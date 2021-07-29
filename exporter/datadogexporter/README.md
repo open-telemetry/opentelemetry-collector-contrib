@@ -79,6 +79,14 @@ service:
 
 *Please Note:* Currently [Span Events](https://github.com/open-telemetry/opentelemetry-specification/blob/11cc73939a32e3a2e6f11bdeab843c61cf8594e9/specification/trace/api.md#add-events) are extracted and added to Spans as Json on the Datadog Span Tag `events`.
 
+### Recommended Samplers
+
+While the OpenTelemetry Specification for Sampling [remains undecided and in active development](https://github.com/open-telemetry/oteps/pull/148), the Datadog Exporter currently supports two sampling approaches to ensure accuracy in generated Trace Stats payloads for details such as hits, errors, and latency within Datadog.
+
+1. [`ParentBased(root=AlwaysOn)`](https://github.com/open-telemetry/opentelemetry-specification/blob/7fc28733eb3791ebcc98fed0d858a7961f1e95b2/specification/trace/sdk.md#alwayson):  This is the default SDK sampler, and emits 100% of Spans. Depending on your use case, in high volume environments this approach may result in higher than expected resource consumption.
+
+2. [`DatadogTraceIdRatioBased` , a customized `TraceIdRatioBased` sampler used as the root of a `ParentBased` Sampler, ex: `ParentBased(root=DatadogTraceIdRatioBased)`](https://github.com/open-telemetry/opentelemetry-specification/blob/7fc28733eb3791ebcc98fed0d858a7961f1e95b2/specification/trace/sdk.md#traceidratiobased): In certain high volume environments, an `AlwaysOn` Sampler may not be feasible. In these cases, Datadog supports a global, head based, probability sampling approach for OpenTelemetry by including a custom Datadog `TraceIdRatioBased` Sampler used as the root in a `ParentBased` composite Sampler. This sampler ensures that the global `probability` sampling rate information is appended to Sampled Spans as an attribute `_sample_rate`. This attribute has semantic significance within Datadog and ensures that the Datadog Exporter can correctly "upscale" generated Trace Stats payloads to ensure accurate hits, errors, and latency statistics that include dropped spans. For an example of this custom sampler, [see the example application in [/examples/example_custom_sampler](/examples/example_custom_sampler/example_custom_sampler.go.example).
+
 ## Metric exporter
 
 The metrics exporter does not assume any specific pipeline setup.

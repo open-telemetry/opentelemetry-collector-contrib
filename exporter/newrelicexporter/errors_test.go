@@ -16,12 +16,15 @@ package newrelicexporter
 
 import (
 	"errors"
+	"fmt"
 	"net/http"
 	"net/url"
 	"testing"
+	"time"
 
 	"github.com/golang/protobuf/ptypes/duration"
 	"github.com/stretchr/testify/assert"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"google.golang.org/genproto/googleapis/rpc/errdetails"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -58,7 +61,7 @@ func TestHttpError_GRPCStatus(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			httpResponse := responseOf(test.statusCode)
-			httpError := &httpError{Response: httpResponse}
+			httpError := &httpError{response: httpResponse, err: errors.New("uh oh")}
 			got := httpError.GRPCStatus()
 			assert.Equal(t, test.wantCode, got.Code())
 			assert.Equal(t, httpResponse.Status, got.Message())
@@ -71,7 +74,7 @@ func TestHttpError_GRPCStatus(t *testing.T) {
 		assert.Equal(
 			t,
 			status.New(codes.Unavailable, http.StatusText(http.StatusTooManyRequests)),
-			(&httpError{Response: response}).GRPCStatus(),
+			(&httpError{response: response}).GRPCStatus(),
 		)
 	})
 
@@ -83,14 +86,29 @@ func TestHttpError_GRPCStatus(t *testing.T) {
 		assert.Equal(
 			t,
 			expectedStatus,
-			(&httpError{Response: response}).GRPCStatus(),
+			newHTTPError(response).GRPCStatus(),
 		)
 	})
 }
 
+func TestHttpErrorWrapGeneratesThrottleRetryOn429StatusCode(t *testing.T) {
+	expected := exporterhelper.NewThrottleRetry(
+		fmt.Errorf("new relic HTTP call failed. Status Code: 429"),
+		time.Duration(10)*time.Second)
+
+	response := responseOf(http.StatusTooManyRequests)
+	response.Header.Add("Retry-After", "10")
+
+	httpError := newHTTPError(response)
+	wrappedErr := httpError.Wrap()
+	actual := errors.Unwrap(wrappedErr)
+
+	assert.EqualValues(t, expected, actual)
+}
+
 func TestHttpError_Error(t *testing.T) {
-	httpError := &httpError{Response: responseOf(http.StatusTeapot)}
-	assert.Equal(t, httpError.Error(), "New Relic HTTP call failed. Status Code: 418")
+	httpError := newHTTPError(responseOf(http.StatusTeapot))
+	assert.Equal(t, httpError.Error(), "new relic HTTP call failed. Status Code: 418")
 }
 
 func responseOf(statusCode int) *http.Response {
@@ -134,7 +152,7 @@ func TestUrlError_GRPCStatus(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			err := &urlError{Err: test.err}
+			err := &urlError{err: test.err}
 			got := err.GRPCStatus()
 			assert.Equal(t, test.wantCode, got.Code())
 			assert.Equal(t, "Get \"\": uh oh", got.Message())
@@ -147,7 +165,7 @@ func TestUrlError_Error(t *testing.T) {
 		Op:  "Get",
 		Err: errors.New("uh oh"),
 	}
-	err := &urlError{Err: netErr}
+	err := &urlError{err: netErr}
 	assert.Equal(t, netErr.Error(), err.Error())
 }
 
@@ -156,12 +174,12 @@ func TestUrlError_Unwrap(t *testing.T) {
 		Op:  "Get",
 		Err: errors.New("uh oh"),
 	}
-	err := &urlError{Err: netErr}
+	err := &urlError{err: netErr}
 	assert.Equal(t, netErr, err.Unwrap())
 }
 
 func TestFromGrpcErrorHttpError(t *testing.T) {
-	httpError := &httpError{Response: responseOf(http.StatusTeapot)}
+	httpError := newHTTPError(responseOf(http.StatusTeapot))
 	_, ok := status.FromError(httpError)
 	assert.True(t, ok)
 }
@@ -171,7 +189,7 @@ func TestFromGrpcErrorUrlError(t *testing.T) {
 		Op:  "Get",
 		Err: errors.New("uh oh"),
 	}
-	err := &urlError{Err: netErr}
+	err := &urlError{err: netErr}
 	_, ok := status.FromError(err)
 	assert.True(t, ok)
 }

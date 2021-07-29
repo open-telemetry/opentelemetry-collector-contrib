@@ -523,7 +523,7 @@ func TestOriginEc2(t *testing.T) {
 	resource := pdata.NewResource()
 	attrs := pdata.NewAttributeMap()
 	attrs.InsertString(semconventions.AttributeCloudProvider, semconventions.AttributeCloudProviderAWS)
-	attrs.InsertString("cloud.platform", "EC2")
+	attrs.InsertString(semconventions.AttributeCloudPlatform, semconventions.AttributeCloudPlatformAWSEC2)
 	attrs.InsertString(semconventions.AttributeHostID, "instance-123")
 	attrs.CopyTo(resource.Attributes())
 	span := constructServerSpan(parentSpanID, spanName, pdata.StatusCodeError, "OK", attributes)
@@ -541,7 +541,7 @@ func TestOriginEcs(t *testing.T) {
 	resource := pdata.NewResource()
 	attrs := pdata.NewAttributeMap()
 	attrs.InsertString(semconventions.AttributeCloudProvider, semconventions.AttributeCloudProviderAWS)
-	attrs.InsertString("cloud.platform", "ECS")
+	attrs.InsertString(semconventions.AttributeCloudPlatform, semconventions.AttributeCloudPlatformAWSECS)
 	attrs.InsertString(semconventions.AttributeHostID, "instance-123")
 	attrs.InsertString(semconventions.AttributeContainerName, "container-123")
 	attrs.CopyTo(resource.Attributes())
@@ -560,8 +560,8 @@ func TestOriginEcsEc2(t *testing.T) {
 	resource := pdata.NewResource()
 	attrs := pdata.NewAttributeMap()
 	attrs.InsertString(semconventions.AttributeCloudProvider, semconventions.AttributeCloudProviderAWS)
-	attrs.InsertString("cloud.platform", "ECS")
-	attrs.InsertString("aws.ecs.launchtype", "ec2")
+	attrs.InsertString(semconventions.AttributeCloudPlatform, semconventions.AttributeCloudPlatformAWSECS)
+	attrs.InsertString(semconventions.AttributeAWSECSLaunchType, semconventions.AttributeAWSECSLaunchTypeEC2)
 	attrs.InsertString(semconventions.AttributeHostID, "instance-123")
 	attrs.InsertString(semconventions.AttributeContainerName, "container-123")
 	attrs.CopyTo(resource.Attributes())
@@ -580,8 +580,8 @@ func TestOriginEcsFargate(t *testing.T) {
 	resource := pdata.NewResource()
 	attrs := pdata.NewAttributeMap()
 	attrs.InsertString(semconventions.AttributeCloudProvider, semconventions.AttributeCloudProviderAWS)
-	attrs.InsertString("cloud.platform", "ECS")
-	attrs.InsertString("aws.ecs.launchtype", "fargate")
+	attrs.InsertString(semconventions.AttributeCloudPlatform, semconventions.AttributeCloudPlatformAWSECS)
+	attrs.InsertString(semconventions.AttributeAWSECSLaunchType, semconventions.AttributeAWSECSLaunchTypeFargate)
 	attrs.InsertString(semconventions.AttributeHostID, "instance-123")
 	attrs.InsertString(semconventions.AttributeContainerName, "container-123")
 	attrs.CopyTo(resource.Attributes())
@@ -600,6 +600,7 @@ func TestOriginEb(t *testing.T) {
 	resource := pdata.NewResource()
 	attrs := pdata.NewAttributeMap()
 	attrs.InsertString(semconventions.AttributeCloudProvider, semconventions.AttributeCloudProviderAWS)
+	attrs.InsertString(semconventions.AttributeCloudPlatform, semconventions.AttributeCloudPlatformAWSElasticBeanstalk)
 	attrs.InsertString(semconventions.AttributeHostID, "instance-123")
 	attrs.InsertString(semconventions.AttributeContainerName, "container-123")
 	attrs.InsertString(semconventions.AttributeServiceInstance, "service-123")
@@ -610,6 +611,38 @@ func TestOriginEb(t *testing.T) {
 
 	assert.NotNil(t, segment)
 	assert.Equal(t, OriginEB, *segment.Origin)
+}
+
+func TestOriginEks(t *testing.T) {
+	instanceID := "i-00f7c0bcb26da2a99"
+	containerName := "signup_aggregator-x82ufje83"
+	containerID := "0123456789A"
+	spanName := "/test"
+	parentSpanID := newSegmentID()
+	attributes := make(map[string]interface{})
+	resource := pdata.NewResource()
+	attrs := pdata.NewAttributeMap()
+	attrs.InsertString(semconventions.AttributeCloudProvider, semconventions.AttributeCloudProviderAWS)
+	attrs.InsertString(semconventions.AttributeCloudPlatform, semconventions.AttributeCloudPlatformAWSEKS)
+	attrs.InsertString(semconventions.AttributeCloudAccount, "123456789")
+	attrs.InsertString(semconventions.AttributeCloudAvailabilityZone, "us-east-1c")
+	attrs.InsertString(semconventions.AttributeContainerImage, "otel/signupaggregator")
+	attrs.InsertString(semconventions.AttributeContainerTag, "v1")
+	attrs.InsertString(semconventions.AttributeK8sCluster, "production")
+	attrs.InsertString(semconventions.AttributeK8sNamespace, "default")
+	attrs.InsertString(semconventions.AttributeK8sDeployment, "signup_aggregator")
+	attrs.InsertString(semconventions.AttributeK8sPod, "my-deployment-65dcf7d447-ddjnl")
+	attrs.InsertString(semconventions.AttributeContainerName, containerName)
+	attrs.InsertString(semconventions.AttributeContainerID, containerID)
+	attrs.InsertString(semconventions.AttributeHostID, instanceID)
+	attrs.InsertString(semconventions.AttributeHostType, "m5.xlarge")
+	attrs.CopyTo(resource.Attributes())
+	span := constructServerSpan(parentSpanID, spanName, pdata.StatusCodeError, "OK", attributes)
+
+	segment, _ := MakeSegment(span, resource, []string{}, false)
+
+	assert.NotNil(t, segment)
+	assert.Equal(t, OriginEKS, *segment.Origin)
 }
 
 func TestOriginBlank(t *testing.T) {
@@ -635,7 +668,7 @@ func TestOriginPrefersInfraService(t *testing.T) {
 	resource := pdata.NewResource()
 	attrs := pdata.NewAttributeMap()
 	attrs.InsertString(semconventions.AttributeCloudProvider, semconventions.AttributeCloudProviderAWS)
-	attrs.InsertString("cloud.platform", "EC2")
+	attrs.InsertString(semconventions.AttributeCloudPlatform, semconventions.AttributeCloudPlatformAWSEC2)
 	attrs.InsertString(semconventions.AttributeK8sCluster, "cluster-123")
 	attrs.InsertString(semconventions.AttributeHostID, "instance-123")
 	attrs.InsertString(semconventions.AttributeContainerName, "container-123")
