@@ -139,6 +139,69 @@ func TestProcessAndBuild(t *testing.T) {
 			},
 		},
 		{
+			"MoveBracketedAttributeToResource",
+			false,
+			func() *MoveOperatorConfig {
+				cfg := defaultCfg()
+				cfg.From = entry.NewAttributeField("dotted.field.name")
+				cfg.To = entry.NewResourceField("new")
+				return cfg
+			}(),
+			func() *entry.Entry {
+				e := newTestEntry()
+				e.Attributes = map[string]string{"dotted.field.name": "val"}
+				return e
+			},
+			func() *entry.Entry {
+				e := newTestEntry()
+				e.Resource = map[string]string{"new": "val"}
+				e.Attributes = map[string]string{}
+				return e
+			},
+		},
+		{
+			"MoveBracketedAttributeToBracketedResource",
+			false,
+			func() *MoveOperatorConfig {
+				cfg := defaultCfg()
+				cfg.From = entry.NewAttributeField("dotted.field.name")
+				cfg.To = entry.NewResourceField("dotted.field.name")
+				return cfg
+			}(),
+			func() *entry.Entry {
+				e := newTestEntry()
+				e.Attributes = map[string]string{"dotted.field.name": "val"}
+				return e
+			},
+			func() *entry.Entry {
+				e := newTestEntry()
+				e.Resource = map[string]string{"dotted.field.name": "val"}
+				e.Attributes = map[string]string{}
+				return e
+			},
+		},
+		{
+			"MoveAttributeToBracketedResource",
+			false,
+			func() *MoveOperatorConfig {
+				cfg := defaultCfg()
+				cfg.From = entry.NewAttributeField("new")
+				cfg.To = entry.NewResourceField("dotted.field.name")
+				return cfg
+			}(),
+			func() *entry.Entry {
+				e := newTestEntry()
+				e.Attributes = map[string]string{"new": "val"}
+				return e
+			},
+			func() *entry.Entry {
+				e := newTestEntry()
+				e.Resource = map[string]string{"dotted.field.name": "val"}
+				e.Attributes = map[string]string{}
+				return e
+			},
+		},
+		{
 			"MoveResourceToAttribute",
 			false,
 			func() *MoveOperatorConfig {

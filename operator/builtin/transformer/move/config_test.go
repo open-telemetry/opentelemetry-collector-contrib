@@ -61,6 +61,15 @@ func TestGoldenConfig(t *testing.T) {
 			}(),
 		},
 		{
+			Name: "MoveBracketedAttributeToResource",
+			Expect: func() *MoveOperatorConfig {
+				cfg := defaultCfg()
+				cfg.From = entry.NewAttributeField("dotted.field.name")
+				cfg.To = entry.NewResourceField("new")
+				return cfg
+			}(),
+		},
+		{
 			Name: "MoveResourceToAttribute",
 			Expect: func() *MoveOperatorConfig {
 				cfg := defaultCfg()
