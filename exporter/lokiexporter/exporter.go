@@ -49,7 +49,7 @@ func newExporter(config *Config, logger *zap.Logger) *lokiExporter {
 		logger: logger,
 	}
 	if config.Format == "json" {
-		lokiexporter.convert = convertLogToJsonEntry
+		lokiexporter.convert = convertLogToJSONEntry
 	} else {
 		lokiexporter.convert = convertLogToLokiEntry
 	}
@@ -217,7 +217,7 @@ func convertLogToLokiEntry(lr pdata.LogRecord) (*logproto.Entry, error) {
 	}, nil
 }
 
-func convertLogToJsonEntry(lr pdata.LogRecord) (*logproto.Entry, error) {
+func convertLogToJSONEntry(lr pdata.LogRecord) (*logproto.Entry, error) {
 	line, err := encodeJSON(lr)
 	if err != nil {
 		return nil, err

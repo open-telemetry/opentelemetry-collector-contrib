@@ -21,13 +21,13 @@ func exampleLog() pdata.LogRecord {
 	return buffer
 }
 
-func exampleJson() string {
+func exampleJSON() string {
 	jsonExample := `{"name":"name","body":"Example log","traceid":"01020304000000000000000000000000","spanid":"0506070800000000","severity":"error","attributes":{"attr1":"1","attr2":"2"}}`
 	return jsonExample
 }
 
 func TestConvert(t *testing.T) {
-	in := exampleJson()
+	in := exampleJSON()
 	out, err := encodeJSON(exampleLog())
 	t.Log(in)
 	t.Log(out, err)
