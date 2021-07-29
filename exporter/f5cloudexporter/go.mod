@@ -8,6 +8,6 @@ require (
 	go.opentelemetry.io/collector v0.31.0
 	go.uber.org/zap v1.18.1
 	golang.org/x/oauth2 v0.0.0-20210628180205-a41e5a781914
-	google.golang.org/api v0.50.0
+	google.golang.org/api v0.51.0
 	gopkg.in/square/go-jose.v2 v2.5.1 // indirect
 )
