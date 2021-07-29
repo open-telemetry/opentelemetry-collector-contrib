@@ -1932,7 +1932,6 @@ go.opentelemetry.io/collector v0.31.0/go.mod h1:A9vKmEa2MI/vJXNUoRinq9w25ZMmxWJL
 go.opentelemetry.io/collector/model v0.0.0-20210723184018-3b7d6ce4830c/go.mod h1:PcHNnM+RUl0uD8VkSn93PO78N7kQYhfqpI/eki57pl4=
 go.opentelemetry.io/collector/model v0.30.0/go.mod h1:PcHNnM+RUl0uD8VkSn93PO78N7kQYhfqpI/eki57pl4=
 go.opentelemetry.io/collector/model v0.30.2-0.20210719230137-809cae954ed3/go.mod h1:PcHNnM+RUl0uD8VkSn93PO78N7kQYhfqpI/eki57pl4=
-go.opentelemetry.io/collector/model v0.30.2-0.20210727185145-88b2935343aa/go.mod h1:PcHNnM+RUl0uD8VkSn93PO78N7kQYhfqpI/eki57pl4=
 go.opentelemetry.io/collector/model v0.31.0 h1:IgMOkSBd/n/gV4EQQ1nJ+/ylddOlqTfMGjku91yC0d8=
 go.opentelemetry.io/collector/model v0.31.0/go.mod h1:PcHNnM+RUl0uD8VkSn93PO78N7kQYhfqpI/eki57pl4=
 go.opentelemetry.io/contrib v0.21.0 h1:RMJ6GlUVzLYp/zmItxTTdAmr1gnpO/HHMFmvjAhvJQM=
