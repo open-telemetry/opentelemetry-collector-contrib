@@ -1,0 +1,20 @@
+receivers:
+  nop:
+
+processors:
+  deltatorate:
+    metrics:
+
+exporters:
+  nop:
+
+service:
+  pipelines:
+    traces:
+      receivers: [nop]
+      processors: [deltatorate]
+      exporters: [nop]
+    metrics:
+      receivers: [nop]
+      processors: [deltatorate]
+      exporters: [nop]
