@@ -63,7 +63,7 @@ from opentelemetry.instrumentation.propagators import (
 from opentelemetry.propagate import extract
 from opentelemetry.semconv.trace import SpanAttributes
 from opentelemetry.util._time import _time_ns
-from opentelemetry.util.http import get_excluded_urls
+from opentelemetry.util.http import get_excluded_urls, parse_excluded_urls
 
 _logger = getLogger(__name__)
 
@@ -73,7 +73,7 @@ _ENVIRON_ACTIVATION_KEY = "opentelemetry-flask.activation_key"
 _ENVIRON_TOKEN = "opentelemetry-flask.token"
 
 
-_excluded_urls = get_excluded_urls("FLASK")
+_excluded_urls_from_env = get_excluded_urls("FLASK")
 
 
 def get_default_span_name():
@@ -85,7 +85,7 @@ def get_default_span_name():
     return span_name
 
 
-def _rewrapped_app(wsgi_app, response_hook=None):
+def _rewrapped_app(wsgi_app, response_hook=None, excluded_urls=None):
     def _wrapped_app(wrapped_app_environ, start_response):
         # We want to measure the time for route matching, etc.
         # In theory, we could start the span here and use
@@ -94,7 +94,9 @@ def _rewrapped_app(wsgi_app, response_hook=None):
         wrapped_app_environ[_ENVIRON_STARTTIME_KEY] = _time_ns()
 
         def _start_response(status, response_headers, *args, **kwargs):
-            if not _excluded_urls.url_disabled(flask.request.url):
+            if excluded_urls is None or not excluded_urls.url_disabled(
+                flask.request.url
+            ):
                 span = flask.request.environ.get(_ENVIRON_SPAN_KEY)
 
                 propagator = get_global_response_propagator()
@@ -123,9 +125,11 @@ def _rewrapped_app(wsgi_app, response_hook=None):
     return _wrapped_app
 
 
-def _wrapped_before_request(request_hook=None, tracer=None):
+def _wrapped_before_request(
+    request_hook=None, tracer=None, excluded_urls=None
+):
     def _before_request():
-        if _excluded_urls.url_disabled(flask.request.url):
+        if excluded_urls and excluded_urls.url_disabled(flask.request.url):
             return
         flask_request_environ = flask.request.environ
         span_name = get_default_span_name()
@@ -163,29 +167,33 @@ def _wrapped_before_request(request_hook=None, tracer=None):
     return _before_request
 
 
-def _teardown_request(exc):
-    # pylint: disable=E1101
-    if _excluded_urls.url_disabled(flask.request.url):
-        return
+def _wrapped_teardown_request(excluded_urls=None):
+    def _teardown_request(exc):
+        # pylint: disable=E1101
+        if excluded_urls and excluded_urls.url_disabled(flask.request.url):
+            return
 
-    activation = flask.request.environ.get(_ENVIRON_ACTIVATION_KEY)
-    if not activation:
-        # This request didn't start a span, maybe because it was created in a
-        # way that doesn't run `before_request`, like when it is created with
-        # `app.test_request_context`.
-        return
+        activation = flask.request.environ.get(_ENVIRON_ACTIVATION_KEY)
+        if not activation:
+            # This request didn't start a span, maybe because it was created in
+            # a way that doesn't run `before_request`, like when it is created
+            # with `app.test_request_context`.
+            return
 
-    if exc is None:
-        activation.__exit__(None, None, None)
-    else:
-        activation.__exit__(
-            type(exc), exc, getattr(exc, "__traceback__", None)
-        )
-    context.detach(flask.request.environ.get(_ENVIRON_TOKEN))
+        if exc is None:
+            activation.__exit__(None, None, None)
+        else:
+            activation.__exit__(
+                type(exc), exc, getattr(exc, "__traceback__", None)
+            )
+        context.detach(flask.request.environ.get(_ENVIRON_TOKEN))
+
+    return _teardown_request
 
 
 class _InstrumentedFlask(flask.Flask):
 
+    _excluded_urls = None
     _tracer_provider = None
     _request_hook = None
     _response_hook = None
@@ -197,7 +205,9 @@ class _InstrumentedFlask(flask.Flask):
         self._is_instrumented_by_opentelemetry = True
 
         self.wsgi_app = _rewrapped_app(
-            self.wsgi_app, _InstrumentedFlask._response_hook
+            self.wsgi_app,
+            _InstrumentedFlask._response_hook,
+            excluded_urls=_InstrumentedFlask._excluded_urls,
         )
 
         tracer = trace.get_tracer(
@@ -205,10 +215,16 @@ class _InstrumentedFlask(flask.Flask):
         )
 
         _before_request = _wrapped_before_request(
-            _InstrumentedFlask._request_hook, tracer,
+            _InstrumentedFlask._request_hook,
+            tracer,
+            excluded_urls=_InstrumentedFlask._excluded_urls,
         )
         self._before_request = _before_request
         self.before_request(_before_request)
+
+        _teardown_request = _wrapped_teardown_request(
+            excluded_urls=_InstrumentedFlask._excluded_urls,
+        )
         self.teardown_request(_teardown_request)
 
 
@@ -232,6 +248,12 @@ class FlaskInstrumentor(BaseInstrumentor):
             _InstrumentedFlask._response_hook = response_hook
         tracer_provider = kwargs.get("tracer_provider")
         _InstrumentedFlask._tracer_provider = tracer_provider
+        excluded_urls = kwargs.get("excluded_urls")
+        _InstrumentedFlask._excluded_urls = (
+            _excluded_urls_from_env
+            if excluded_urls is None
+            else parse_excluded_urls(excluded_urls)
+        )
         flask.Flask = _InstrumentedFlask
 
     def _uninstrument(self, **kwargs):
@@ -239,20 +261,38 @@ class FlaskInstrumentor(BaseInstrumentor):
 
     @staticmethod
     def instrument_app(
-        app, request_hook=None, response_hook=None, tracer_provider=None
+        app,
+        request_hook=None,
+        response_hook=None,
+        tracer_provider=None,
+        excluded_urls=None,
     ):
         if not hasattr(app, "_is_instrumented_by_opentelemetry"):
             app._is_instrumented_by_opentelemetry = False
 
         if not app._is_instrumented_by_opentelemetry:
+            excluded_urls = (
+                parse_excluded_urls(excluded_urls)
+                if excluded_urls is not None
+                else _excluded_urls_from_env
+            )
             app._original_wsgi_app = app.wsgi_app
-            app.wsgi_app = _rewrapped_app(app.wsgi_app, response_hook)
+            app.wsgi_app = _rewrapped_app(
+                app.wsgi_app, response_hook, excluded_urls=excluded_urls
+            )
 
             tracer = trace.get_tracer(__name__, __version__, tracer_provider)
 
-            _before_request = _wrapped_before_request(request_hook, tracer)
+            _before_request = _wrapped_before_request(
+                request_hook, tracer, excluded_urls=excluded_urls,
+            )
             app._before_request = _before_request
             app.before_request(_before_request)
+
+            _teardown_request = _wrapped_teardown_request(
+                excluded_urls=excluded_urls,
+            )
+            app._teardown_request = _teardown_request
             app.teardown_request(_teardown_request)
             app._is_instrumented_by_opentelemetry = True
         else:
@@ -267,7 +307,7 @@ class FlaskInstrumentor(BaseInstrumentor):
 
             # FIXME add support for other Flask blueprints that are not None
             app.before_request_funcs[None].remove(app._before_request)
-            app.teardown_request_funcs[None].remove(_teardown_request)
+            app.teardown_request_funcs[None].remove(app._teardown_request)
             del app._original_wsgi_app
             app._is_instrumented_by_opentelemetry = False
         else:

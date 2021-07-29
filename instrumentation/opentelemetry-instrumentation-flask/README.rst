@@ -31,6 +31,12 @@ For example,
 
 will exclude requests such as ``https://site/client/123/info`` and ``https://site/xyz/healthcheck``.
 
+You can also pass the comma delimited regexes to the ``instrument_app`` method directly:
+
+.. code-block:: python
+
+    FlaskInstrumentor().instrument_app(app, excluded_urls="client/.*/info,healthcheck")
+
 References
 ----------
 

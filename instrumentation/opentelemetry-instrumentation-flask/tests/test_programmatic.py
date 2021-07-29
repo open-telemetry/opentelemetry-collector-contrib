@@ -53,24 +53,24 @@ class TestProgrammatic(InstrumentationTest, TestBase, WsgiTestBase):
     def setUp(self):
         super().setUp()
 
-        self.app = Flask(__name__)
-
-        FlaskInstrumentor().instrument_app(self.app)
-
-        self._common_initialization()
-
         self.env_patch = patch.dict(
             "os.environ",
             {
-                "OTEL_PYTHON_FLASK_EXCLUDED_URLS": "http://localhost/excluded_arg/123,excluded_noarg"
+                "OTEL_PYTHON_FLASK_EXCLUDED_URLS": "http://localhost/env_excluded_arg/123,env_excluded_noarg"
             },
         )
         self.env_patch.start()
+
         self.exclude_patch = patch(
-            "opentelemetry.instrumentation.flask._excluded_urls",
+            "opentelemetry.instrumentation.flask._excluded_urls_from_env",
             get_excluded_urls("FLASK"),
         )
         self.exclude_patch.start()
+
+        self.app = Flask(__name__)
+        FlaskInstrumentor().instrument_app(self.app)
+
+        self._common_initialization()
 
     def tearDown(self):
         super().tearDown()
@@ -221,20 +221,42 @@ class TestProgrammatic(InstrumentationTest, TestBase, WsgiTestBase):
         self.assertEqual(span_list[0].kind, trace.SpanKind.SERVER)
         self.assertEqual(span_list[0].attributes, expected_attrs)
 
-    def test_exclude_lists(self):
-        self.client.get("/excluded_arg/123")
+    def test_exclude_lists_from_env(self):
+        self.client.get("/env_excluded_arg/123")
         span_list = self.memory_exporter.get_finished_spans()
         self.assertEqual(len(span_list), 0)
 
-        self.client.get("/excluded_arg/125")
+        self.client.get("/env_excluded_arg/125")
         span_list = self.memory_exporter.get_finished_spans()
         self.assertEqual(len(span_list), 1)
 
-        self.client.get("/excluded_noarg")
+        self.client.get("/env_excluded_noarg")
         span_list = self.memory_exporter.get_finished_spans()
         self.assertEqual(len(span_list), 1)
 
-        self.client.get("/excluded_noarg2")
+        self.client.get("/env_excluded_noarg2")
+        span_list = self.memory_exporter.get_finished_spans()
+        self.assertEqual(len(span_list), 1)
+
+    def test_exclude_lists_from_explicit(self):
+        excluded_urls = "http://localhost/explicit_excluded_arg/123,explicit_excluded_noarg"
+        app = Flask(__name__)
+        FlaskInstrumentor().instrument_app(app, excluded_urls=excluded_urls)
+        client = app.test_client()
+
+        client.get("/explicit_excluded_arg/123")
+        span_list = self.memory_exporter.get_finished_spans()
+        self.assertEqual(len(span_list), 0)
+
+        client.get("/explicit_excluded_arg/125")
+        span_list = self.memory_exporter.get_finished_spans()
+        self.assertEqual(len(span_list), 1)
+
+        client.get("/explicit_excluded_noarg")
+        span_list = self.memory_exporter.get_finished_spans()
+        self.assertEqual(len(span_list), 1)
+
+        client.get("/explicit_excluded_noarg2")
         span_list = self.memory_exporter.get_finished_spans()
         self.assertEqual(len(span_list), 1)
 
