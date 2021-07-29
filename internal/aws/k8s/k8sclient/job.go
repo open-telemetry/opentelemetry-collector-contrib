@@ -36,9 +36,6 @@ const (
 type JobClient interface {
 	// get the mapping between job and cronjob
 	JobToCronJob() map[string]string
-
-	// shutdown is only used internally by clientset to stop the JobClient
-	shutdown()
 }
 
 type noOpJobClient struct {

@@ -86,6 +86,34 @@ func (c *CAdvisorMetric) AddTags(tags map[string]string) {
 	}
 }
 
+func (c *CAdvisorMetric) HasField(key string) bool {
+	return c.fields[key] != nil
+}
+
+func (c *CAdvisorMetric) AddField(key string, val interface{}) {
+	c.fields[key] = val
+}
+
+func (c *CAdvisorMetric) GetField(key string) interface{} {
+	return c.fields[key]
+}
+
+func (c *CAdvisorMetric) HasTag(key string) bool {
+	return c.tags[key] != ""
+}
+
+func (c *CAdvisorMetric) AddTag(key, val string) {
+	c.tags[key] = val
+}
+
+func (c *CAdvisorMetric) GetTag(key string) string {
+	return c.tags[key]
+}
+
+func (c *CAdvisorMetric) RemoveTag(key string) {
+	delete(c.tags, key)
+}
+
 func (c *CAdvisorMetric) Merge(src *CAdvisorMetric) {
 	// If there is any conflict, keep the fields with earlier timestamp
 	for k, v := range src.fields {

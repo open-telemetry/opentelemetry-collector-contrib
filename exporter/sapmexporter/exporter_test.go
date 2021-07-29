@@ -26,11 +26,10 @@ import (
 	"github.com/jaegertracing/jaeger/model"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/translator/trace/jaeger"
-	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 )
@@ -47,7 +46,7 @@ func TestCreateTracesExporter(t *testing.T) {
 			AccessTokenPassthrough: true,
 		},
 	}
-	params := component.ExporterCreateSettings{Logger: zap.NewNop()}
+	params := componenttest.NewNopExporterCreateSettings()
 
 	te, err := newSAPMTracesExporter(cfg, params)
 	assert.Nil(t, err)
@@ -58,7 +57,7 @@ func TestCreateTracesExporter(t *testing.T) {
 
 func TestCreateTracesExporterWithInvalidConfig(t *testing.T) {
 	cfg := &Config{}
-	params := component.ExporterCreateSettings{Logger: zap.NewNop()}
+	params := componenttest.NewNopExporterCreateSettings()
 	te, err := newSAPMTracesExporter(cfg, params)
 	require.Error(t, err)
 	assert.Nil(t, te)
@@ -67,10 +66,10 @@ func TestCreateTracesExporterWithInvalidConfig(t *testing.T) {
 func buildTestTraces(setTokenLabel bool) (traces pdata.Traces) {
 	traces = pdata.NewTraces()
 	rss := traces.ResourceSpans()
-	rss.Resize(20)
+	rss.EnsureCapacity(20)
 
 	for i := 0; i < 20; i++ {
-		rs := rss.At(i)
+		rs := rss.AppendEmpty()
 		resource := rs.Resource()
 		resource.Attributes().InsertString("key1", "value1")
 		if setTokenLabel && i%2 == 1 {
@@ -136,9 +135,9 @@ func hasToken(batches []*model.Batch) bool {
 
 func buildTestTrace(setIds bool) pdata.Traces {
 	trace := pdata.NewTraces()
-	trace.ResourceSpans().Resize(2)
+	trace.ResourceSpans().EnsureCapacity(2)
 	for i := 0; i < 2; i++ {
-		rs := trace.ResourceSpans().At(i)
+		rs := trace.ResourceSpans().AppendEmpty()
 		resource := rs.Resource()
 		resource.Attributes().InsertString("com.splunk.signalfx.access_token", fmt.Sprintf("TraceAccessToken%v", i))
 		span := rs.InstrumentationLibrarySpans().AppendEmpty().Spans().AppendEmpty()
@@ -221,7 +220,7 @@ func TestSAPMClientTokenUsageAndErrorMarshalling(t *testing.T) {
 					AccessTokenPassthrough: tt.accessTokenPassthrough,
 				},
 			}
-			params := component.ExporterCreateSettings{Logger: zap.NewNop()}
+			params := componenttest.NewNopExporterCreateSettings()
 
 			se, err := newSAPMExporter(cfg, params)
 			assert.Nil(t, err)

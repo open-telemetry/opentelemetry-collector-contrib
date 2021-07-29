@@ -78,7 +78,7 @@ func TestEC2Tags(t *testing.T) {
 	isSucessOption := func(e *ec2Tags) {
 		e.isSucess = make(chan bool)
 	}
-	et := newEC2Tags(ctx, sess, "instanceId", time.Millisecond, zap.NewNop(), clientOption,
+	et := newEC2Tags(ctx, sess, "instanceId", "us-west-2", time.Millisecond, zap.NewNop(), clientOption,
 		maxJitterOption, isSucessOption)
 
 	// wait for ec2 tags are fetched

@@ -19,9 +19,8 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configcheck"
-	"go.uber.org/zap"
 )
 
 func TestCreateDefaultConfig(t *testing.T) {
@@ -39,7 +38,7 @@ func TestCreateExporter(t *testing.T) {
 
 	te, err := factory.CreateTracesExporter(
 		context.Background(),
-		component.ExporterCreateSettings{Logger: zap.NewNop()},
+		componenttest.NewNopExporterCreateSettings(),
 		eCfg,
 	)
 	assert.NoError(t, err)
@@ -47,7 +46,7 @@ func TestCreateExporter(t *testing.T) {
 
 	me, err := factory.CreateMetricsExporter(
 		context.Background(),
-		component.ExporterCreateSettings{Logger: zap.NewNop()},
+		componenttest.NewNopExporterCreateSettings(),
 		eCfg,
 	)
 	assert.NoError(t, err)

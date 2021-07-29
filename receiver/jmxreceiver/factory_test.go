@@ -20,10 +20,9 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.uber.org/zap"
 )
 
 func TestWithInvalidConfig(t *testing.T) {
@@ -35,7 +34,7 @@ func TestWithInvalidConfig(t *testing.T) {
 
 	r, err := f.CreateMetricsReceiver(
 		context.Background(),
-		component.ReceiverCreateSettings{Logger: zap.NewNop()},
+		componenttest.NewNopReceiverCreateSettings(),
 		cfg, consumertest.NewNop(),
 	)
 	require.Error(t, err)
@@ -51,7 +50,7 @@ func TestWithValidConfig(t *testing.T) {
 	cfg.(*Config).Endpoint = "myendpoint:12345"
 	cfg.(*Config).GroovyScript = "mygroovyscriptpath"
 
-	params := component.ReceiverCreateSettings{Logger: zap.NewNop()}
+	params := componenttest.NewNopReceiverCreateSettings()
 	r, err := f.CreateMetricsReceiver(context.Background(), params, cfg, consumertest.NewNop())
 	require.NoError(t, err)
 	require.NotNil(t, r)

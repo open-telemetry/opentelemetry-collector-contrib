@@ -30,6 +30,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver/internal/cadvisor/extractors"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver/internal/cadvisor/testutils"
 )
 
@@ -72,24 +73,32 @@ var mockCreateManagerWithError = func(memoryCache *memory.InMemoryCache, sysfs s
 	return nil, errors.New("error")
 }
 
+type MockK8sDecorator struct {
+}
+
+func (m *MockK8sDecorator) Decorate(metric *extractors.CAdvisorMetric) *extractors.CAdvisorMetric {
+	return metric
+}
+
 func TestGetMetrics(t *testing.T) {
 	// normal case
 	originalHostName := os.Getenv("HOST_NAME")
 	os.Setenv("HOST_NAME", "host")
 	hostInfo := testutils.MockHostInfo{ClusterName: "cluster"}
+	k8sdecoratorOption := WithDecorator(&MockK8sDecorator{})
 	mockCreateManager := func(memoryCache *memory.InMemoryCache, sysfs sysfs.SysFs, houskeepingConfig manager.HouskeepingConfig,
 		includedMetricsSet container.MetricSet, collectorHTTPClient *http.Client, rawContainerCgroupPathPrefixWhiteList []string,
 		perfEventsFile string) (cadvisorManager, error) {
 		return &mockCadvisorManager{t: t}, nil
 	}
-	c, err := New("eks", hostInfo, zap.NewNop(), cadvisorManagerCreator(mockCreateManager))
+	c, err := New("eks", hostInfo, zap.NewNop(), cadvisorManagerCreator(mockCreateManager), k8sdecoratorOption)
 	assert.NotNil(t, c)
 	assert.Nil(t, err)
 	assert.NotNil(t, c.GetMetrics())
 	os.Setenv("HOST_NAME", originalHostName)
 
 	// no environmental variable
-	c, err = New("eks", hostInfo, zap.NewNop(), cadvisorManagerCreator(mockCreateManager))
+	c, err = New("eks", hostInfo, zap.NewNop(), cadvisorManagerCreator(mockCreateManager), k8sdecoratorOption)
 	assert.Nil(t, c)
 	assert.NotNil(t, err)
 
@@ -97,7 +106,7 @@ func TestGetMetrics(t *testing.T) {
 	originalHostName = os.Getenv("HOST_NAME")
 	os.Setenv("HOST_NAME", "host")
 	hostInfo = testutils.MockHostInfo{}
-	c, err = New("eks", hostInfo, zap.NewNop(), cadvisorManagerCreator(mockCreateManager))
+	c, err = New("eks", hostInfo, zap.NewNop(), cadvisorManagerCreator(mockCreateManager), k8sdecoratorOption)
 	assert.NotNil(t, c)
 	assert.Nil(t, err)
 	assert.Nil(t, c.GetMetrics())
@@ -107,7 +116,7 @@ func TestGetMetrics(t *testing.T) {
 	originalHostName = os.Getenv("HOST_NAME")
 	os.Setenv("HOST_NAME", "host")
 	hostInfo = testutils.MockHostInfo{ClusterName: "cluster"}
-	c, err = New("eks", hostInfo, zap.NewNop(), cadvisorManagerCreator(mockCreateManager2))
+	c, err = New("eks", hostInfo, zap.NewNop(), cadvisorManagerCreator(mockCreateManager2), k8sdecoratorOption)
 	assert.Nil(t, c)
 	assert.NotNil(t, err)
 	os.Setenv("HOST_NAME", originalHostName)
@@ -116,7 +125,7 @@ func TestGetMetrics(t *testing.T) {
 	originalHostName = os.Getenv("HOST_NAME")
 	os.Setenv("HOST_NAME", "host")
 	hostInfo = testutils.MockHostInfo{ClusterName: "cluster"}
-	c, err = New("eks", hostInfo, zap.NewNop(), cadvisorManagerCreator(mockCreateManagerWithError))
+	c, err = New("eks", hostInfo, zap.NewNop(), cadvisorManagerCreator(mockCreateManagerWithError), k8sdecoratorOption)
 	assert.Nil(t, c)
 	assert.NotNil(t, err)
 

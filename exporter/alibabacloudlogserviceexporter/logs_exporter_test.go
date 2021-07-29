@@ -22,10 +22,10 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/translator/conventions"
-	"go.uber.org/zap"
 )
 
 func createSimpleLogData(numberOfLogs int) pdata.Logs {
@@ -51,7 +51,7 @@ func createSimpleLogData(numberOfLogs int) pdata.Logs {
 }
 
 func TestNewLogsExporter(t *testing.T) {
-	got, err := newLogsExporter(zap.NewNop(), &Config{
+	got, err := newLogsExporter(componenttest.NewNopExporterCreateSettings(), &Config{
 		ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
 		Endpoint:         "us-west-1.log.aliyuncs.com",
 		Project:          "demo-project",
@@ -67,7 +67,7 @@ func TestNewLogsExporter(t *testing.T) {
 }
 
 func TestSTSTokenExporter(t *testing.T) {
-	got, err := newLogsExporter(zap.NewNop(), &Config{
+	got, err := newLogsExporter(componenttest.NewNopExporterCreateSettings(), &Config{
 		ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
 		Endpoint:         "us-west-1.log.aliyuncs.com",
 		Project:          "demo-project",
@@ -79,7 +79,7 @@ func TestSTSTokenExporter(t *testing.T) {
 }
 
 func TestNewFailsWithEmptyLogsExporterName(t *testing.T) {
-	got, err := newLogsExporter(zap.NewNop(), &Config{})
+	got, err := newLogsExporter(componenttest.NewNopExporterCreateSettings(), &Config{})
 	assert.Error(t, err)
 	require.Nil(t, got)
 }

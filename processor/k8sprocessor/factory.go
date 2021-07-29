@@ -99,7 +99,7 @@ func createTracesProcessorWithOptions(
 	return processorhelper.NewTracesProcessor(
 		cfg,
 		next,
-		kp,
+		kp.processTraces,
 		processorhelper.WithCapabilities(consumerCapabilities),
 		processorhelper.WithStart(kp.Start),
 		processorhelper.WithShutdown(kp.Shutdown))
@@ -120,7 +120,7 @@ func createMetricsProcessorWithOptions(
 	return processorhelper.NewMetricsProcessor(
 		cfg,
 		nextMetricsConsumer,
-		kp,
+		kp.processMetrics,
 		processorhelper.WithCapabilities(consumerCapabilities),
 		processorhelper.WithStart(kp.Start),
 		processorhelper.WithShutdown(kp.Shutdown))
@@ -141,7 +141,7 @@ func createLogsProcessorWithOptions(
 	return processorhelper.NewLogsProcessor(
 		cfg,
 		nextLogsConsumer,
-		kp,
+		kp.processLogs,
 		processorhelper.WithCapabilities(consumerCapabilities),
 		processorhelper.WithStart(kp.Start),
 		processorhelper.WithShutdown(kp.Shutdown))

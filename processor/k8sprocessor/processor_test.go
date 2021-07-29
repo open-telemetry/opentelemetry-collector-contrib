@@ -28,7 +28,7 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/translator/conventions"
 	"go.uber.org/zap"
 
@@ -40,7 +40,7 @@ func newTracesProcessor(cfg config.Processor, next consumer.Traces, options ...O
 	opts := append(options, withKubeClientProvider(newFakeClient))
 	return createTracesProcessorWithOptions(
 		context.Background(),
-		component.ProcessorCreateSettings{Logger: zap.NewNop()},
+		componenttest.NewNopProcessorCreateSettings(),
 		cfg,
 		next,
 		opts...,
@@ -51,7 +51,7 @@ func newMetricsProcessor(cfg config.Processor, nextMetricsConsumer consumer.Metr
 	opts := append(options, withKubeClientProvider(newFakeClient))
 	return createMetricsProcessorWithOptions(
 		context.Background(),
-		component.ProcessorCreateSettings{Logger: zap.NewNop()},
+		componenttest.NewNopProcessorCreateSettings(),
 		cfg,
 		nextMetricsConsumer,
 		opts...,
@@ -62,7 +62,7 @@ func newLogsProcessor(cfg config.Processor, nextLogsConsumer consumer.Logs, opti
 	opts := append(options, withKubeClientProvider(newFakeClient))
 	return createLogsProcessorWithOptions(
 		context.Background(),
-		component.ProcessorCreateSettings{Logger: zap.NewNop()},
+		componenttest.NewNopProcessorCreateSettings(),
 		cfg,
 		nextLogsConsumer,
 		opts...,

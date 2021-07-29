@@ -53,6 +53,9 @@ type Rule struct {
 	// Name of the new metric being generated. This is a required field.
 	Name string `mapstructure:"name"`
 
+	// Unit for the new metric being generated.
+	Unit string `mapstructure:"unit"`
+
 	// The rule type following which the new metric will be generated. This is a required field.
 	Type GenerationType `mapstructure:"type"`
 

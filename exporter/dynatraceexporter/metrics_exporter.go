@@ -26,7 +26,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumererror"
-	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/model/pdata"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/dynatraceexporter/config"
@@ -105,16 +105,10 @@ func (e *exporter) serializeMetrics(md pdata.Metrics) ([]string, int) {
 				switch metric.DataType() {
 				case pdata.MetricDataTypeNone:
 					continue
-				case pdata.MetricDataTypeIntGauge:
-					l = serialization.SerializeIntDataPoints(name, metric.IntGauge().DataPoints(), e.cfg.Tags)
-				case pdata.MetricDataTypeDoubleGauge:
-					l = serialization.SerializeDoubleDataPoints(name, metric.DoubleGauge().DataPoints(), e.cfg.Tags)
-				case pdata.MetricDataTypeIntSum:
-					l = serialization.SerializeIntDataPoints(name, metric.IntSum().DataPoints(), e.cfg.Tags)
-				case pdata.MetricDataTypeDoubleSum:
-					l = serialization.SerializeDoubleDataPoints(name, metric.DoubleSum().DataPoints(), e.cfg.Tags)
-				case pdata.MetricDataTypeIntHistogram:
-					l = serialization.SerializeIntHistogramMetrics(name, metric.IntHistogram().DataPoints(), e.cfg.Tags)
+				case pdata.MetricDataTypeGauge:
+					l = serialization.SerializeNumberDataPoints(name, metric.Gauge().DataPoints(), e.cfg.Tags)
+				case pdata.MetricDataTypeSum:
+					l = serialization.SerializeNumberDataPoints(name, metric.Sum().DataPoints(), e.cfg.Tags)
 				case pdata.MetricDataTypeHistogram:
 					l = serialization.SerializeHistogramMetrics(name, metric.Histogram().DataPoints(), e.cfg.Tags)
 				}

@@ -25,21 +25,17 @@ import (
 	"go.opentelemetry.io/collector/component/componenthelper"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/exporter/otlpexporter"
-	"go.uber.org/zap"
+	"go.opentelemetry.io/collector/model/pdata"
 )
 
 func TestNewLoadBalancerNoResolver(t *testing.T) {
 	// prepare
-	config := &Config{}
-	params := component.ExporterCreateSettings{
-		Logger: zap.NewNop(),
-	}
+	cfg := &Config{}
 
 	// test
-	p, err := newLoadBalancer(params, config, nil)
+	p, err := newLoadBalancer(componenttest.NewNopExporterCreateSettings(), cfg, nil)
 
 	// verify
 	require.Nil(t, p)
@@ -48,17 +44,14 @@ func TestNewLoadBalancerNoResolver(t *testing.T) {
 
 func TestNewLoadBalancerInvalidStaticResolver(t *testing.T) {
 	// prepare
-	config := &Config{
+	cfg := &Config{
 		Resolver: ResolverSettings{
 			Static: &StaticResolver{Hostnames: []string{}},
 		},
 	}
-	params := component.ExporterCreateSettings{
-		Logger: zap.NewNop(),
-	}
 
 	// test
-	p, err := newLoadBalancer(params, config, nil)
+	p, err := newLoadBalancer(componenttest.NewNopExporterCreateSettings(), cfg, nil)
 
 	// verify
 	require.Nil(t, p)
@@ -67,19 +60,16 @@ func TestNewLoadBalancerInvalidStaticResolver(t *testing.T) {
 
 func TestNewLoadBalancerInvalidDNSResolver(t *testing.T) {
 	// prepare
-	config := &Config{
+	cfg := &Config{
 		Resolver: ResolverSettings{
 			DNS: &DNSResolver{
 				Hostname: "",
 			},
 		},
 	}
-	params := component.ExporterCreateSettings{
-		Logger: zap.NewNop(),
-	}
 
 	// test
-	p, err := newLoadBalancer(params, config, nil)
+	p, err := newLoadBalancer(componenttest.NewNopExporterCreateSettings(), cfg, nil)
 
 	// verify
 	require.Nil(t, p)
@@ -88,11 +78,8 @@ func TestNewLoadBalancerInvalidDNSResolver(t *testing.T) {
 
 func TestLoadBalancerStart(t *testing.T) {
 	// prepare
-	config := simpleConfig()
-	params := component.ExporterCreateSettings{
-		Logger: zap.NewNop(),
-	}
-	p, err := newLoadBalancer(params, config, nil)
+	cfg := simpleConfig()
+	p, err := newLoadBalancer(componenttest.NewNopExporterCreateSettings(), cfg, nil)
 	require.NotNil(t, p)
 	require.NoError(t, err)
 	p.res = &mockResolver{}
@@ -106,17 +93,14 @@ func TestLoadBalancerStart(t *testing.T) {
 }
 
 func TestWithDNSResolver(t *testing.T) {
-	config := &Config{
+	cfg := &Config{
 		Resolver: ResolverSettings{
 			DNS: &DNSResolver{
 				Hostname: "service-1",
 			},
 		},
 	}
-	params := component.ExporterCreateSettings{
-		Logger: zap.NewNop(),
-	}
-	p, err := newLoadBalancer(params, config, nil)
+	p, err := newLoadBalancer(componenttest.NewNopExporterCreateSettings(), cfg, nil)
 	require.NotNil(t, p)
 	require.NoError(t, err)
 
@@ -129,7 +113,7 @@ func TestWithDNSResolver(t *testing.T) {
 }
 
 func TestMultipleResolvers(t *testing.T) {
-	config := &Config{
+	cfg := &Config{
 		Resolver: ResolverSettings{
 			Static: &StaticResolver{
 				Hostnames: []string{"endpoint-1", "endpoint-2"},
@@ -139,12 +123,9 @@ func TestMultipleResolvers(t *testing.T) {
 			},
 		},
 	}
-	params := component.ExporterCreateSettings{
-		Logger: zap.NewNop(),
-	}
 
 	// test
-	p, err := newLoadBalancer(params, config, nil)
+	p, err := newLoadBalancer(componenttest.NewNopExporterCreateSettings(), cfg, nil)
 
 	// verify
 	assert.Nil(t, p)
@@ -153,11 +134,8 @@ func TestMultipleResolvers(t *testing.T) {
 
 func TestStartFailureStaticResolver(t *testing.T) {
 	// prepare
-	config := simpleConfig()
-	params := component.ExporterCreateSettings{
-		Logger: zap.NewNop(),
-	}
-	p, err := newLoadBalancer(params, config, nil)
+	cfg := simpleConfig()
+	p, err := newLoadBalancer(componenttest.NewNopExporterCreateSettings(), cfg, nil)
 	require.NotNil(t, p)
 	require.NoError(t, err)
 
@@ -177,11 +155,8 @@ func TestStartFailureStaticResolver(t *testing.T) {
 
 func TestLoadBalancerShutdown(t *testing.T) {
 	// prepare
-	config := simpleConfig()
-	params := component.ExporterCreateSettings{
-		Logger: zap.NewNop(),
-	}
-	p, err := newTracesExporter(params, config)
+	cfg := simpleConfig()
+	p, err := newTracesExporter(componenttest.NewNopExporterCreateSettings(), cfg)
 	require.NotNil(t, p)
 	require.NoError(t, err)
 
@@ -194,14 +169,11 @@ func TestLoadBalancerShutdown(t *testing.T) {
 
 func TestOnBackendChanges(t *testing.T) {
 	// prepare
-	config := simpleConfig()
-	params := component.ExporterCreateSettings{
-		Logger: zap.NewNop(),
-	}
+	cfg := simpleConfig()
 	componentFactory := func(ctx context.Context, endpoint string) (component.Exporter, error) {
 		return newNopMockExporter(), nil
 	}
-	p, err := newLoadBalancer(params, config, componentFactory)
+	p, err := newLoadBalancer(componenttest.NewNopExporterCreateSettings(), cfg, componentFactory)
 	require.NotNil(t, p)
 	require.NoError(t, err)
 
@@ -219,11 +191,8 @@ func TestOnBackendChanges(t *testing.T) {
 
 func TestRemoveExtraExporters(t *testing.T) {
 	// prepare
-	config := simpleConfig()
-	params := component.ExporterCreateSettings{
-		Logger: zap.NewNop(),
-	}
-	p, err := newLoadBalancer(params, config, nil)
+	cfg := simpleConfig()
+	p, err := newLoadBalancer(componenttest.NewNopExporterCreateSettings(), cfg, nil)
 	require.NotNil(t, p)
 	require.NoError(t, err)
 
@@ -242,9 +211,6 @@ func TestRemoveExtraExporters(t *testing.T) {
 func TestAddMissingExporters(t *testing.T) {
 	// prepare
 	cfg := simpleConfig()
-	params := component.ExporterCreateSettings{
-		Logger: zap.NewNop(),
-	}
 	exporterFactory := exporterhelper.NewFactory("otlp", func() config.Exporter {
 		return &otlpexporter.Config{}
 	}, exporterhelper.WithTraces(func(
@@ -254,17 +220,13 @@ func TestAddMissingExporters(t *testing.T) {
 	) (component.TracesExporter, error) {
 		return newNopMockTracesExporter(), nil
 	}))
-	tmplParams := component.ExporterCreateSettings{
-		Logger:    params.Logger,
-		BuildInfo: params.BuildInfo,
-	}
 	fn := func(ctx context.Context, endpoint string) (component.Exporter, error) {
 		oCfg := cfg.Protocol.OTLP
 		oCfg.Endpoint = endpoint
-		return exporterFactory.CreateTracesExporter(ctx, tmplParams, &oCfg)
+		return exporterFactory.CreateTracesExporter(ctx, componenttest.NewNopExporterCreateSettings(), &oCfg)
 	}
 
-	p, err := newLoadBalancer(params, cfg, fn)
+	p, err := newLoadBalancer(componenttest.NewNopExporterCreateSettings(), cfg, fn)
 	require.NotNil(t, p)
 	require.NoError(t, err)
 
@@ -282,9 +244,6 @@ func TestAddMissingExporters(t *testing.T) {
 func TestFailedToAddMissingExporters(t *testing.T) {
 	// prepare
 	cfg := simpleConfig()
-	params := component.ExporterCreateSettings{
-		Logger: zap.NewNop(),
-	}
 	expectedErr := errors.New("some expected error")
 	exporterFactory := exporterhelper.NewFactory("otlp", func() config.Exporter {
 		return &otlpexporter.Config{}
@@ -295,17 +254,13 @@ func TestFailedToAddMissingExporters(t *testing.T) {
 	) (component.TracesExporter, error) {
 		return nil, expectedErr
 	}))
-	tmplParams := component.ExporterCreateSettings{
-		Logger:    params.Logger,
-		BuildInfo: params.BuildInfo,
-	}
 	fn := func(ctx context.Context, endpoint string) (component.Exporter, error) {
 		oCfg := cfg.Protocol.OTLP
 		oCfg.Endpoint = endpoint
-		return exporterFactory.CreateTracesExporter(ctx, tmplParams, &oCfg)
+		return exporterFactory.CreateTracesExporter(ctx, componenttest.NewNopExporterCreateSettings(), &oCfg)
 	}
 
-	p, err := newLoadBalancer(params, cfg, fn)
+	p, err := newLoadBalancer(componenttest.NewNopExporterCreateSettings(), cfg, fn)
 	require.NotNil(t, p)
 	require.NoError(t, err)
 
@@ -362,18 +317,15 @@ func TestFailedExporterInRing(t *testing.T) {
 	// this test is based on the discussion in the original PR for this exporter:
 	// https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/1542#discussion_r521268180
 	// prepare
-	config := &Config{
+	cfg := &Config{
 		Resolver: ResolverSettings{
 			Static: &StaticResolver{Hostnames: []string{"endpoint-1", "endpoint-2"}},
 		},
 	}
-	params := component.ExporterCreateSettings{
-		Logger: zap.NewNop(),
-	}
 	componentFactory := func(ctx context.Context, endpoint string) (component.Exporter, error) {
 		return newNopMockExporter(), nil
 	}
-	p, err := newLoadBalancer(params, config, componentFactory)
+	p, err := newLoadBalancer(componenttest.NewNopExporterCreateSettings(), cfg, componentFactory)
 	require.NotNil(t, p)
 	require.NoError(t, err)
 

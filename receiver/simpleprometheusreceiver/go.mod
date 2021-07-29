@@ -3,16 +3,12 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/simple
 go 1.16
 
 require (
-	github.com/armon/go-metrics v0.3.3 // indirect
-	github.com/hashicorp/go-immutable-radix v1.2.0 // indirect
 	github.com/hashicorp/go-msgpack v0.5.5 // indirect
 	github.com/mattn/go-colorable v0.1.7 // indirect
-	github.com/pelletier/go-toml v1.8.0 // indirect
-	github.com/prometheus/common v0.26.0
-	github.com/prometheus/prometheus v1.8.2-0.20210430082741-2a4b8e12bbf2
+	github.com/prometheus/common v0.29.0
+	github.com/prometheus/prometheus v1.8.2-0.20210621150501-ff58416a0b02
 	github.com/stretchr/testify v1.7.0
-	go.opentelemetry.io/collector v0.28.1-0.20210616151306-cdc163427b8e
-	go.uber.org/zap v1.17.0
-	gopkg.in/ini.v1 v1.57.0 // indirect
-	k8s.io/client-go v0.21.2
+	go.opentelemetry.io/collector v0.31.0
+	gopkg.in/square/go-jose.v2 v2.5.1 // indirect
+	k8s.io/client-go v0.21.3
 )

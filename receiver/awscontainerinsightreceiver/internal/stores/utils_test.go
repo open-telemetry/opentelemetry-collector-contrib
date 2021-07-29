@@ -110,9 +110,6 @@ func TestUtils_TagMetricSource(t *testing.T) {
 		ci.TypeContainer,
 		ci.TypeContainerFS,
 		ci.TypeContainerDiskIO,
-		ci.TypeCluster,
-		ci.TypeClusterService,
-		ci.TypeClusterNamespace,
 	}
 
 	expectedSources := []string{
@@ -126,9 +123,6 @@ func TestUtils_TagMetricSource(t *testing.T) {
 		"[\"cadvisor\",\"pod\",\"calculated\"]",
 		"[\"cadvisor\",\"calculated\"]",
 		"[\"cadvisor\"]",
-		"[\"apiserver\"]",
-		"[\"apiserver\"]",
-		"[\"apiserver\"]",
 	}
 	for i, mtype := range types {
 		tags := map[string]string{

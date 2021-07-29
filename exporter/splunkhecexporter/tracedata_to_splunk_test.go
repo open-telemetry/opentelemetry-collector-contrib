@@ -20,7 +20,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/model/pdata"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
@@ -135,7 +135,7 @@ func commonSplunkEvent(
 		Source:     "myservice",
 		SourceType: "mysourcetype",
 		Index:      "myindex",
-		Event: HecSpan{Name: name, StartTime: ts,
+		Event: hecSpan{Name: name, StartTime: ts,
 			TraceID:    "",
 			SpanID:     "",
 			ParentSpan: "",
@@ -144,15 +144,15 @@ func commonSplunkEvent(
 			},
 			EndTime: 0x0,
 			Kind:    "SPAN_KIND_UNSPECIFIED",
-			Status:  HecSpanStatus{Message: "", Code: "STATUS_CODE_UNSET"},
-			Events: []HecEvent{
+			Status:  hecSpanStatus{Message: "", Code: "STATUS_CODE_UNSET"},
+			Events: []hecEvent{
 				{
 					Attributes: map[string]interface{}{"foo": "bar"},
 					Name:       "myEvent",
 					Timestamp:  ts + 3,
 				},
 			},
-			Links: []HecLink{
+			Links: []hecLink{
 				{
 					Attributes: map[string]interface{}{"foo": int64(1), "bar": false, "foobar": []interface{}{"a", "b"}},
 					TraceID:    "12345678000000000000000000000000",

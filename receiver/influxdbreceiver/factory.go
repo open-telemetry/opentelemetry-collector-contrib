@@ -42,7 +42,6 @@ func createDefaultConfig() config.Receiver {
 		HTTPServerSettings: confighttp.HTTPServerSettings{
 			Endpoint: "0.0.0.0:8086",
 		},
-		MetricsSchema: "telegraf-prometheus-v1",
 	}
 }
 

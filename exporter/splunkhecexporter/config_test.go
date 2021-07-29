@@ -23,13 +23,11 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtest"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-	"go.uber.org/zap"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -83,13 +81,12 @@ func TestLoadConfig(t *testing.T) {
 				CertFile: "",
 				KeyFile:  "",
 			},
-			Insecure:           true,
 			InsecureSkipVerify: false,
 		},
 	}
 	assert.Equal(t, &expectedCfg, e1)
 
-	params := component.ExporterCreateSettings{Logger: zap.NewNop()}
+	params := componenttest.NewNopExporterCreateSettings()
 	te, err := factory.CreateMetricsExporter(context.Background(), params, e1)
 	require.NoError(t, err)
 	require.NotNil(t, te)

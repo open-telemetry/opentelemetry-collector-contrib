@@ -22,14 +22,14 @@ import (
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/testutil/metricstestutil"
 	"go.opentelemetry.io/collector/translator/internaldata"
-	"go.uber.org/zap"
 )
 
 func TestNewMetricsExporter(t *testing.T) {
-	got, err := newMetricsExporter(zap.NewNop(), &Config{
+	got, err := newMetricsExporter(componenttest.NewNopExporterCreateSettings(), &Config{
 		ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
 		Endpoint:         "us-west-1.log.aliyuncs.com",
 		Project:          "demo-project",
@@ -53,7 +53,7 @@ func TestNewMetricsExporter(t *testing.T) {
 }
 
 func TestNewFailsWithEmptyMetricsExporterName(t *testing.T) {
-	got, err := newMetricsExporter(zap.NewNop(), &Config{})
+	got, err := newMetricsExporter(componenttest.NewNopExporterCreateSettings(), &Config{})
 	assert.Error(t, err)
 	require.Nil(t, got)
 }

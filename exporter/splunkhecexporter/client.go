@@ -28,7 +28,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumererror"
-	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/model/pdata"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
@@ -190,7 +190,6 @@ func (c *client) pushLogDataInBatches(ctx context.Context, ld pdata.Logs, send f
 					permanentErrors = append(permanentErrors, consumererror.Permanent(fmt.Errorf("dropped log event: %v, error: %v", event, err)))
 					continue
 				}
-				buf.WriteString("\r\n\r\n")
 
 				// Continue adding events to buffer up to capacity.
 				// 0 capacity is interpreted as unknown/unbound consistent with ContentLength in http.Request.
@@ -318,7 +317,6 @@ func encodeBodyEvents(zippers *sync.Pool, evs []*splunk.Event, disableCompressio
 		if err != nil {
 			return nil, false, err
 		}
-		buf.WriteString("\r\n\r\n")
 	}
 	return getReader(zippers, buf, disableCompression)
 }

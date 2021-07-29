@@ -32,12 +32,12 @@ func TestTaskExporter(t *testing.T) {
 	exp := newTaskExporter(zap.NewExample(), "ecs-cluster-1")
 
 	t.Run("invalid ip", func(t *testing.T) {
-		_, err := exp.exportTask(&Task{
+		_, err := exp.exportTask(&taskAnnotated{
 			Task:       &ecs.Task{},
 			Definition: &ecs.TaskDefinition{},
 		})
 		assert.Error(t, err)
-		v := &ErrPrivateIPNotFound{}
+		v := &errPrivateIPNotFound{}
 		assert.True(t, errors.As(err, &v))
 	})
 
@@ -75,14 +75,14 @@ func TestTaskExporter(t *testing.T) {
 		NetworkMode: aws.String(ecs.NetworkModeAwsvpc),
 	}
 	t.Run("single target", func(t *testing.T) {
-		task := &Task{
+		task := &taskAnnotated{
 			Task:       awsVpcTask,
 			Definition: awsVpcTaskDef,
-			Matched: []MatchedContainer{
+			Matched: []matchedContainer{
 				{
-					Targets: []MatchedTarget{
+					Targets: []matchedTarget{
 						{
-							MatcherType: MatcherTypeDockerLabel,
+							MatcherType: matcherTypeDockerLabel,
 							Port:        2112,
 							Job:         "PROM_JOB_1",
 						},
@@ -98,15 +98,15 @@ func TestTaskExporter(t *testing.T) {
 	})
 
 	t.Run("multiple target in one container", func(t *testing.T) {
-		task := &Task{
+		task := &taskAnnotated{
 			Task:       awsVpcTask,
 			Definition: awsVpcTaskDef,
 			Service:    &ecs.Service{ServiceName: aws.String("svc-1")},
-			Matched: []MatchedContainer{
+			Matched: []matchedContainer{
 				{
-					Targets: []MatchedTarget{
+					Targets: []matchedTarget{
 						{
-							MatcherType: MatcherTypeDockerLabel,
+							MatcherType: matcherTypeDockerLabel,
 							Port:        2112,
 							Job:         "PROM_JOB_1",
 						},
@@ -114,7 +114,7 @@ func TestTaskExporter(t *testing.T) {
 							Port: 404, // invalid in the middle, but shouldn't stop the export
 						},
 						{
-							MatcherType: MatcherTypeService,
+							MatcherType: matcherTypeService,
 							Port:        2112,
 							Job:         "PROM_JOB_Service",
 							MetricsPath: "/service_metrics",
@@ -128,13 +128,13 @@ func TestTaskExporter(t *testing.T) {
 		require.Error(t, err)
 		merr := multierr.Errors(err)
 		require.Len(t, merr, 1)
-		v := &ErrMappedPortNotFound{}
+		v := &errMappedPortNotFound{}
 		assert.True(t, errors.As(merr[0], &v))
 		assert.Len(t, targets, 2)
 	})
 
 	t.Run("ec2", func(t *testing.T) {
-		task := &Task{
+		task := &taskAnnotated{
 			Task: &ecs.Task{
 				TaskArn:           aws.String("arn:task:t2"),
 				TaskDefinitionArn: aws.String("t2"),
@@ -164,11 +164,11 @@ func TestTaskExporter(t *testing.T) {
 				NetworkMode: aws.String(ecs.NetworkModeBridge),
 			},
 			EC2: &ec2.Instance{PrivateIpAddress: aws.String("172.168.1.2")},
-			Matched: []MatchedContainer{
+			Matched: []matchedContainer{
 				{
-					Targets: []MatchedTarget{
+					Targets: []matchedTarget{
 						{
-							MatcherType: MatcherTypeDockerLabel,
+							MatcherType: matcherTypeDockerLabel,
 							Port:        2112,
 							Job:         "PROM_JOB_1",
 						},
@@ -183,56 +183,56 @@ func TestTaskExporter(t *testing.T) {
 		assert.Equal(t, "172.168.1.2:2114", targets[0].Address)
 	})
 
-	validMatched := []MatchedContainer{
+	validMatched := []matchedContainer{
 		{
-			Targets: []MatchedTarget{
+			Targets: []matchedTarget{
 				{
-					MatcherType: MatcherTypeDockerLabel,
+					MatcherType: matcherTypeDockerLabel,
 					Port:        2112,
 					Job:         "PROM_JOB_1",
 				},
 			},
 		},
 	}
-	invalidMatched := []MatchedContainer{
+	invalidMatched := []matchedContainer{
 		{
-			Targets: []MatchedTarget{
+			Targets: []matchedTarget{
 				{
-					MatcherType: MatcherTypeDockerLabel,
+					MatcherType: matcherTypeDockerLabel,
 					Port:        404,
 					Job:         "PROM_JOB_1",
 				},
 				{
-					MatcherType: MatcherTypeDockerLabel,
+					MatcherType: matcherTypeDockerLabel,
 					Port:        405,
 					Job:         "PROM_JOB_1",
 				},
 			},
 		},
 	}
-	validTask := &Task{
+	validTask := &taskAnnotated{
 		Task:       awsVpcTask,
 		Definition: awsVpcTaskDef,
 		Matched:    validMatched,
 	}
-	invalidTargetTask := &Task{
+	invalidTargetTask := &taskAnnotated{
 		Task:       awsVpcTask,
 		Definition: awsVpcTaskDef,
 		Matched:    invalidMatched,
 	}
-	invalidIPTask := &Task{
+	invalidIPTask := &taskAnnotated{
 		Task:       &ecs.Task{TaskArn: aws.String("invalid task's invalid arn")},
 		Definition: &ecs.TaskDefinition{},
 	}
 	t.Run("all valid tasks", func(t *testing.T) {
 		// Just make sure the for loop is right, done care about the content, they are tested in previous cases
-		targets, err := exp.exportTasks([]*Task{validTask, validTask})
+		targets, err := exp.exportTasks([]*taskAnnotated{validTask, validTask})
 		assert.NoError(t, err)
 		assert.Len(t, targets, 2)
 	})
 
 	t.Run("invalid tasks", func(t *testing.T) {
-		targets, err := exp.exportTasks([]*Task{
+		targets, err := exp.exportTasks([]*taskAnnotated{
 			validTask,
 			invalidTargetTask, validTask, invalidTargetTask, invalidTargetTask,
 			invalidIPTask,
@@ -248,7 +248,7 @@ func TestTaskExporter(t *testing.T) {
 		printErrors(zap.New(zCore), err)
 		assert.Equal(t, len(merr), len(logs.All()))
 
-		taskScope := logs.FilterField(zap.String("ErrScope", "Task"))
+		taskScope := logs.FilterField(zap.String("ErrScope", "taskAnnotated"))
 		assert.Equal(t, 1, taskScope.Len())
 		targetScope := logs.FilterField(zap.String("ErrScope", "Target"))
 		assert.Equal(t, 2*3, targetScope.Len())

@@ -19,10 +19,11 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configcheck"
-	"go.uber.org/zap"
 )
+
+const exampleAPIKey = "11111111-2222-3333-4444-555555555555"
 
 func TestNewFactory(t *testing.T) {
 	fact := NewFactory()
@@ -37,13 +38,12 @@ func TestCreateDefaultConfig(t *testing.T) {
 
 func TestCreateLogsExporter(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	params := component.ExporterCreateSettings{Logger: zap.NewNop()}
-	_, err := createLogsExporter(context.Background(), params, cfg)
+	cfg.APIKey = exampleAPIKey
+	_, err := createLogsExporter(context.Background(), componenttest.NewNopExporterCreateSettings(), cfg)
 	require.NoError(t, err)
 }
 
 func TestCreateLogsExporterNilConfig(t *testing.T) {
-	params := component.ExporterCreateSettings{Logger: zap.NewNop()}
-	_, err := createLogsExporter(context.Background(), params, nil)
+	_, err := createLogsExporter(context.Background(), componenttest.NewNopExporterCreateSettings(), nil)
 	require.Error(t, err)
 }

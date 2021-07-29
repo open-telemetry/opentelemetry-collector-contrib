@@ -1,0 +1,38 @@
+extensions:
+  oauth2client/1:
+    client_id: someclientid
+    client_secret: someclientsecret
+    token_url: https://example.com/oauth2/default/v1/token
+    scopes: ["api.metrics"]
+    timeout: 1s
+
+  oauth2client/withtls:
+    client_id: someclientid2
+    client_secret: someclientsecret2
+    token_url: https://example2.com/oauth2/default/v1/token
+    scopes: ["api.metrics"]
+    timeout: 1s
+    # tls settings for the token client
+    tls:
+      insecure: true
+      ca_file: cafile
+      cert_file: certfile
+      key_file: keyfile
+
+
+
+# Data pipeline is required to load the config.
+receivers:
+  nop:
+processors:
+  nop:
+exporters:
+  nop:
+
+service:
+  extensions: [oauth2client/1, oauth2client/withtls]
+  pipelines:
+    traces:
+      receivers: [nop]
+      processors: [nop]
+      exporters: [nop]

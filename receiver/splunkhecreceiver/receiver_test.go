@@ -37,7 +37,7 @@ import (
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/testutil"
 	"go.uber.org/zap"
 
@@ -94,7 +94,7 @@ func Test_splunkhecreceiver_NewLogsReceiver(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := NewLogsReceiver(zap.NewNop(), tt.args.config, tt.args.logsConsumer)
+			got, err := newLogsReceiver(zap.NewNop(), tt.args.config, tt.args.logsConsumer)
 			assert.Equal(t, tt.wantErr, err)
 			if err == nil {
 				assert.NotNil(t, got)
@@ -154,7 +154,7 @@ func Test_splunkhecreceiver_NewMetricsReceiver(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := NewMetricsReceiver(zap.NewNop(), tt.args.config, tt.args.metricsConsumer)
+			got, err := newMetricsReceiver(zap.NewNop(), tt.args.config, tt.args.metricsConsumer)
 			assert.Equal(t, tt.wantErr, err)
 			if err == nil {
 				assert.NotNil(t, got)
@@ -310,7 +310,7 @@ func Test_splunkhecReceiver_handleReq(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			sink := new(consumertest.LogsSink)
-			rcv, err := NewLogsReceiver(zap.NewNop(), *config, sink)
+			rcv, err := newLogsReceiver(zap.NewNop(), *config, sink)
 			assert.NoError(t, err)
 
 			r := rcv.(*splunkReceiver)
@@ -335,7 +335,7 @@ func Test_consumer_err(t *testing.T) {
 	config := createDefaultConfig().(*Config)
 	config.Endpoint = "localhost:0" // Actually not creating the endpoint
 	config.initialize()
-	rcv, err := NewLogsReceiver(zap.NewNop(), *config, consumertest.NewErr(errors.New("bad consumer")))
+	rcv, err := newLogsReceiver(zap.NewNop(), *config, consumertest.NewErr(errors.New("bad consumer")))
 	assert.NoError(t, err)
 
 	r := rcv.(*splunkReceiver)
@@ -363,7 +363,7 @@ func Test_consumer_err_metrics(t *testing.T) {
 	config := createDefaultConfig().(*Config)
 	config.Endpoint = "localhost:0" // Actually not creating the endpoint\
 	config.initialize()
-	rcv, err := NewMetricsReceiver(zap.NewNop(), *config, consumertest.NewErr(errors.New("bad consumer")))
+	rcv, err := newMetricsReceiver(zap.NewNop(), *config, consumertest.NewErr(errors.New("bad consumer")))
 	assert.NoError(t, err)
 
 	r := rcv.(*splunkReceiver)
@@ -396,7 +396,7 @@ func Test_splunkhecReceiver_TLS(t *testing.T) {
 	}
 	cfg.initialize()
 	sink := new(consumertest.LogsSink)
-	r, err := NewLogsReceiver(zap.NewNop(), *cfg, sink)
+	r, err := newLogsReceiver(zap.NewNop(), *cfg, sink)
 	require.NoError(t, err)
 	defer r.Shutdown(context.Background())
 
@@ -495,7 +495,7 @@ func Test_splunkhecReceiver_AccessTokenPassthrough(t *testing.T) {
 			config.initialize()
 
 			sink := new(consumertest.LogsSink)
-			rcv, err := NewLogsReceiver(zap.NewNop(), *config, sink)
+			rcv, err := newLogsReceiver(zap.NewNop(), *config, sink)
 			assert.NoError(t, err)
 
 			currentTime := float64(time.Now().UnixNano()) / 1e6
@@ -587,7 +587,7 @@ func Test_Logs_splunkhecReceiver_IndexSourceTypePassthrough(t *testing.T) {
 			}, &exporterConfig)
 			exporter.Start(context.Background(), nil)
 			assert.NoError(t, err)
-			rcv, err := NewLogsReceiver(zap.NewNop(), *cfg, exporter)
+			rcv, err := newLogsReceiver(zap.NewNop(), *cfg, exporter)
 			assert.NoError(t, err)
 
 			currentTime := float64(time.Now().UnixNano()) / 1e6
@@ -685,7 +685,7 @@ func Test_Metrics_splunkhecReceiver_IndexSourceTypePassthrough(t *testing.T) {
 			}, &exporterConfig)
 			exporter.Start(context.Background(), nil)
 			assert.NoError(t, err)
-			rcv, err := NewMetricsReceiver(zap.NewNop(), *cfg, exporter)
+			rcv, err := newMetricsReceiver(zap.NewNop(), *cfg, exporter)
 			assert.NoError(t, err)
 
 			currentTime := float64(time.Now().UnixNano()) / 1e6

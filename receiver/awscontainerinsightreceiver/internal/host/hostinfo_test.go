@@ -121,7 +121,7 @@ func TestInfo(t *testing.T) {
 		}
 	}
 	ec2TagsCreatorOpt := func(m *Info) {
-		m.ec2TagsCreator = func(context.Context, *session.Session, string, time.Duration, *zap.Logger,
+		m.ec2TagsCreator = func(context.Context, *session.Session, string, string, time.Duration, *zap.Logger,
 			...ec2TagsOption) ec2TagsProvider {
 			return &mockEC2Tags{}
 		}

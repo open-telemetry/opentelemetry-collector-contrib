@@ -62,3 +62,23 @@ type MockHostInfo struct {
 func (m MockHostInfo) GetClusterName() string {
 	return m.ClusterName
 }
+
+func (m MockHostInfo) GetEBSVolumeID(string) string {
+	return "ebs-volume-id"
+}
+
+func (m MockHostInfo) GetInstanceID() string {
+	return "instance-id"
+}
+
+func (m MockHostInfo) GetInstanceType() string {
+	return "instance-id"
+}
+
+func (m MockHostInfo) GetAutoScalingGroupName() string {
+	return "asg"
+}
+
+func (m MockHostInfo) ExtractEbsIDsUsedByKubernetes() map[string]string {
+	return map[string]string{}
+}

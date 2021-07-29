@@ -26,12 +26,10 @@ import (
 	"github.com/prometheus/prometheus/config"
 	"github.com/prometheus/prometheus/discovery"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/receiver/prometheusreceiver"
 	"go.opentelemetry.io/collector/testbed/testbed"
-	"go.uber.org/zap"
 )
 
 func TestReceiver(t *testing.T) {
@@ -57,7 +55,7 @@ func TestReceiver(t *testing.T) {
 
 			r, err := f.CreateMetricsReceiver(
 				context.Background(),
-				component.ReceiverCreateSettings{Logger: zap.NewNop()},
+				componenttest.NewNopReceiverCreateSettings(),
 				cfg,
 				&testbed.MockMetricConsumer{},
 			)

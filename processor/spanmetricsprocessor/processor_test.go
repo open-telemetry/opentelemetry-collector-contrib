@@ -24,11 +24,12 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/exporter/otlpexporter"
+	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/translator/conventions"
 	"go.uber.org/zap"
 	"google.golang.org/grpc/metadata"
@@ -47,8 +48,8 @@ const (
 	notInSpanAttrName0 = "shouldBeInMetric"
 	notInSpanAttrName1 = "shouldNotBeInMetric"
 
-	sampleLatency         = 11
-	sampleLatencyDuration = sampleLatency * time.Millisecond
+	sampleLatency         = float64(11)
+	sampleLatencyDuration = time.Duration(sampleLatency) * time.Millisecond
 )
 
 // metricID represents the minimum attributes that uniquely identifies a metric in our tests.
@@ -103,7 +104,7 @@ func TestProcessorStart(t *testing.T) {
 			cfg := factory.CreateDefaultConfig().(*Config)
 			cfg.MetricsExporter = tc.metricsExporter
 
-			procCreationParams := component.ProcessorCreateSettings{Logger: zap.NewNop()}
+			procCreationParams := componenttest.NewNopProcessorCreateSettings()
 			traceProcessor, err := factory.CreateTracesProcessor(context.Background(), procCreationParams, cfg, consumertest.NewNop())
 			require.NoError(t, err)
 
@@ -134,6 +135,27 @@ func TestProcessorShutdown(t *testing.T) {
 
 	// Verify
 	assert.NoError(t, err)
+}
+
+func TestConfigureLatencyBounds(t *testing.T) {
+	// Prepare
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+	cfg.LatencyHistogramBuckets = []time.Duration{
+		3 * time.Nanosecond,
+		3 * time.Microsecond,
+		3 * time.Millisecond,
+		3 * time.Second,
+	}
+
+	// Test
+	next := new(consumertest.TracesSink)
+	p, err := newProcessor(zap.NewNop(), cfg, next)
+
+	// Verify
+	assert.NoError(t, err)
+	assert.NotNil(t, p)
+	assert.Equal(t, []float64{0.000003, 0.003, 3, 3000, maxDurationMs}, p.latencyBounds)
 }
 
 func TestProcessorCapabilities(t *testing.T) {
@@ -319,7 +341,7 @@ func verifyConsumeMetricsInput(input pdata.Metrics, t *testing.T) bool {
 	for ; mi < 3; mi++ {
 		assert.Equal(t, "calls_total", m.At(mi).Name())
 
-		data := m.At(mi).IntSum()
+		data := m.At(mi).Sum()
 		assert.Equal(t, pdata.AggregationTemporalityCumulative, data.AggregationTemporality())
 		assert.True(t, data.IsMonotonic())
 
@@ -327,7 +349,7 @@ func verifyConsumeMetricsInput(input pdata.Metrics, t *testing.T) bool {
 		require.Equal(t, 1, dps.Len())
 
 		dp := dps.At(0)
-		assert.Equal(t, int64(1), dp.Value(), "There should only be one metric per Service/operation/kind combination")
+		assert.Equal(t, int64(1), dp.IntVal(), "There should only be one metric per Service/operation/kind combination")
 		assert.NotZero(t, dp.StartTimestamp(), "StartTimestamp should be set")
 		assert.NotZero(t, dp.Timestamp(), "Timestamp should be set")
 
@@ -339,14 +361,14 @@ func verifyConsumeMetricsInput(input pdata.Metrics, t *testing.T) bool {
 	for ; mi < m.Len(); mi++ {
 		assert.Equal(t, "latency", m.At(mi).Name())
 
-		data := m.At(mi).IntHistogram()
+		data := m.At(mi).Histogram()
 		assert.Equal(t, pdata.AggregationTemporalityCumulative, data.AggregationTemporality())
 
 		dps := data.DataPoints()
 		require.Equal(t, 1, dps.Len())
 
 		dp := dps.At(0)
-		assert.Equal(t, int64(sampleLatency), dp.Sum(), "Should be a single 11ms latency measurement")
+		assert.Equal(t, sampleLatency, dp.Sum(), "Should be a single 11ms latency measurement")
 		assert.NotZero(t, dp.Timestamp(), "Timestamp should be set")
 
 		// Verify bucket counts. Firstly, find the bucket index where the 11ms latency should belong in.
@@ -482,7 +504,7 @@ func newOTLPExporters(t *testing.T) (*otlpexporter.Config, component.MetricsExpo
 			Endpoint: "example.com:1234",
 		},
 	}
-	expCreationParams := component.ExporterCreateSettings{Logger: zap.NewNop()}
+	expCreationParams := componenttest.NewNopExporterCreateSettings()
 	mexp, err := otlpExpFactory.CreateMetricsExporter(context.Background(), expCreationParams, otlpConfig)
 	require.NoError(t, err)
 	texp, err := otlpExpFactory.CreateTracesExporter(context.Background(), expCreationParams, otlpConfig)

@@ -2,10 +2,64 @@
 
 ## Unreleased
 
+## v0.30.0
+
+# 🎉 OpenTelemetry Collector Contrib v0.30.0 (Beta) 🎉
+
+The OpenTelemetry Collector Contrib contains everything in the [opentelemetry-collector release](https://github.com/open-telemetry/opentelemetry-collector/releases/tag/v0.30.0) (be sure to check the release notes here as well!). Check out the [Getting Started Guide](https://opentelemetry.io/docs/collector/getting-started/) for deployment and configuration information.
+
+## 🚀 New components 🚀
+- `oauth2clientauth` extension: ported from core (#3848)
+- `metrics-generation` processor: is now enabled and available (#4047) 
+
+## 🛑 Breaking changes 🛑
+
+- Removed `jaegerthrifthttp` exporter (#4089) 
+
 ## 💡 Enhancements 💡
 
-- `tailsampling` processor: Add new policy `latency` (#3750)
+- `tailsampling` processor:
+  - Add new policy `status_code` (#3754)
+  - Add new tail sampling processor policy: status_code (#3754)
+- `awscontainerinsights` receiver:
+  - Integrate components and fix bugs for EKS Container Insights (#3846) 
+  - Add Cgroup to collect ECS instance metrics for container insights receiver #3875
+- `spanmetrics` processor: Support sub-millisecond latency buckets (#4091) 
+- `sentry` exporter: Add exception event capture in sentry (#3854)
+
+## v0.29.0
+
+# 🎉 OpenTelemetry Collector Contrib v0.29.0 (Beta) 🎉
+
+The OpenTelemetry Collector Contrib contains everything in the [opentelemetry-collector release](https://github.com/open-telemetry/opentelemetry-collector/releases/tag/v0.29.0) (be sure to check the release notes here as well!). Check out the [Getting Started Guide](https://opentelemetry.io/docs/collector/getting-started/) for deployment and configuration information.
+
+## 🛑 Breaking changes 🛑
+
+- `redis` receiver (#3808)
+  - removed configuration `service_name`. Use resource processor or `resource_attributes` setting if using `receivercreator`
+  - removed `type` label and set instrumentation library name to `otelcol/redis` as other receivers do
+
+## 💡 Enhancements 💡
+
+- `tailsampling` processor:
+  - Add new policy `latency` (#3750)
+  - Add new policy `status_code` (#3754)
 - `splunkhec` exporter: Include `trace_id` and `span_id` if set (#3850)
+- `newrelic` exporter: Update instrumentation naming in accordance with otel spec (#3733)
+- `sentry` exporter: Added support for insecure connection with Sentry (#3446)
+- `k8s` processor:
+  - Add namespace k8s tagger (#3384)
+  - Add ignored pod names as config parameter (#3520)
+- `awsemf` exporter: Add support for `TaskDefinitionFamily` placeholder on log stream name (#3755)
+- `loki` exporter: Add resource attributes as Loki label (#3418)
+
+## 🧰 Bug fixes 🧰
+
+- `datadog` exporter:
+  - Ensure top level spans are computed (#3786)
+  - Update `env` clobbering behavior (#3851)
+- `awsxray` exporter: Fixed filtered attribute translation (#3757)
+- `splunkhec` exporter: Include trace and span id if set in log record (#3850)
 
 ## v0.28.0
 
@@ -23,9 +77,6 @@ The OpenTelemetry Collector Contrib contains everything in the [opentelemetry-co
 
 - `f5cloud` exporter (#3509):
   - Renamed the config 'auth' field to 'f5cloud_auth'. This will prevent a config field name collision when [Support for Custom Exporter Authenticators as Extensions](https://github.com/open-telemetry/opentelemetry-collector/pull/3128) is ready to be integrated.
-- `redis` receiver (#3808)
-  - removed configuration `service_name`. Use resource processor or `resource_attributes` setting if using `receivercreator`
-  - removed `type` label and set instrumentation library name to `otelcol/redis` as other receivers do
 
 ## 💡 Enhancements 💡
 

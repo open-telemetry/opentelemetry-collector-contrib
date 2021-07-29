@@ -25,9 +25,9 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/model/pdata"
 	semconventions "go.opentelemetry.io/collector/translator/conventions"
-	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil"
 )
@@ -58,13 +58,12 @@ func initializeTracesExporter() component.TracesExporter {
 	os.Setenv("AWS_SECRET_ACCESS_KEY", "XYrudg2H87u+ADAAq19Wqx3D41a09RsTXXXXXXXX")
 	os.Setenv("AWS_DEFAULT_REGION", "us-east-1")
 	os.Setenv("AWS_REGION", "us-east-1")
-	logger := zap.NewNop()
 	factory := NewFactory()
 	config := factory.CreateDefaultConfig()
 	config.(*Config).Region = "us-east-1"
 	config.(*Config).LocalMode = true
 	mconn := new(awsutil.Conn)
-	traceExporter, err := newTracesExporter(config, component.ExporterCreateSettings{Logger: logger}, mconn)
+	traceExporter, err := newTracesExporter(config, componenttest.NewNopExporterCreateSettings(), mconn)
 	if err != nil {
 		panic(err)
 	}

@@ -18,7 +18,7 @@ import (
 	"reflect"
 	"testing"
 
-	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/model/pdata"
 )
 
 func TestGetHoneycombTraceID(t *testing.T) {

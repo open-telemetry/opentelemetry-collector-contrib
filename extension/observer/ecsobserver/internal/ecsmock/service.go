@@ -21,6 +21,7 @@ import (
 	"strconv"
 
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/aws/request"
 	"github.com/aws/aws-sdk-go/service/ec2"
 	"github.com/aws/aws-sdk-go/service/ecs"
@@ -52,6 +53,7 @@ func DefaultPageLimit() PageLimit {
 
 // Cluster implements both ECS and EC2 API for a single cluster.
 type Cluster struct {
+	name                  string                         // optional
 	definitions           map[string]*ecs.TaskDefinition // key is task definition arn
 	taskMap               map[string]*ecs.Task           // key is task arn
 	taskList              []*ecs.Task
@@ -67,7 +69,13 @@ type Cluster struct {
 
 // NewCluster creates a mock ECS cluster with default limits.
 func NewCluster() *Cluster {
+	return NewClusterWithName("")
+}
+
+// NewClusterWithName creates a cluster that checks for cluster name if request includes a non empty cluster name.
+func NewClusterWithName(name string) *Cluster {
 	return &Cluster{
+		name: name,
 		// NOTE: we don't set the maps by design, they should be injected and API calls
 		// without setting up data should just panic.
 		limit: DefaultPageLimit(),
@@ -93,6 +101,9 @@ func (c *Cluster) Stats() ClusterStats {
 }
 
 func (c *Cluster) ListTasksWithContext(_ context.Context, input *ecs.ListTasksInput, _ ...request.Option) (*ecs.ListTasksOutput, error) {
+	if err := checkCluster(input.Cluster, c.name); err != nil {
+		return nil, err
+	}
 	page, err := getPage(pageInput{
 		nextToken: input.NextToken,
 		size:      len(c.taskList),
@@ -111,6 +122,9 @@ func (c *Cluster) ListTasksWithContext(_ context.Context, input *ecs.ListTasksIn
 }
 
 func (c *Cluster) DescribeTasksWithContext(_ context.Context, input *ecs.DescribeTasksInput, _ ...request.Option) (*ecs.DescribeTasksOutput, error) {
+	if err := checkCluster(input.Cluster, c.name); err != nil {
+		return nil, err
+	}
 	var (
 		failures []*ecs.Failure
 		tasks    []*ecs.Task
@@ -143,6 +157,9 @@ func (c *Cluster) DescribeTaskDefinitionWithContext(_ context.Context, input *ec
 }
 
 func (c *Cluster) DescribeContainerInstancesWithContext(_ context.Context, input *ecs.DescribeContainerInstancesInput, _ ...request.Option) (*ecs.DescribeContainerInstancesOutput, error) {
+	if err := checkCluster(input.Cluster, c.name); err != nil {
+		return nil, err
+	}
 	var (
 		instances []*ecs.ContainerInstance
 		failures  []*ecs.Failure
@@ -200,6 +217,9 @@ func (c *Cluster) DescribeInstancesWithContext(_ context.Context, input *ec2.Des
 }
 
 func (c *Cluster) ListServicesWithContext(_ context.Context, input *ecs.ListServicesInput, _ ...request.Option) (*ecs.ListServicesOutput, error) {
+	if err := checkCluster(input.Cluster, c.name); err != nil {
+		return nil, err
+	}
 	page, err := getPage(pageInput{
 		nextToken: input.NextToken,
 		size:      len(c.serviceList),
@@ -218,6 +238,9 @@ func (c *Cluster) ListServicesWithContext(_ context.Context, input *ecs.ListServ
 }
 
 func (c *Cluster) DescribeServicesWithContext(_ context.Context, input *ecs.DescribeServicesInput, _ ...request.Option) (*ecs.DescribeServicesOutput, error) {
+	if err := checkCluster(input.Cluster, c.name); err != nil {
+		return nil, err
+	}
 	var (
 		failures []*ecs.Failure
 		services []*ecs.Service
@@ -359,7 +382,8 @@ func GenServices(arnPrefix string, count int, modifier func(i int, s *ecs.Servic
 	var services []*ecs.Service
 	for i := 0; i < count; i++ {
 		svc := &ecs.Service{
-			ServiceArn: aws.String(fmt.Sprintf("%s%d", arnPrefix, i)),
+			ServiceArn:  aws.String(fmt.Sprintf("%s%d", arnPrefix, i)),
+			ServiceName: aws.String(fmt.Sprintf("%s%d", arnPrefix, i)),
 		}
 		if modifier != nil {
 			modifier(i, svc)
@@ -370,6 +394,40 @@ func GenServices(arnPrefix string, count int, modifier func(i int, s *ecs.Servic
 }
 
 // Generator End
+
+var _ awserr.Error = (*ecsError)(nil)
+
+// ecsError implements awserr.Error interface
+type ecsError struct {
+	code    string
+	message string
+}
+
+func (e *ecsError) Code() string {
+	return e.code
+}
+
+func (e *ecsError) Message() string {
+	return e.message
+}
+
+func (e *ecsError) Error() string {
+	return "code " + e.code + " message " + e.message
+}
+
+func (e *ecsError) OrigErr() error {
+	return nil
+}
+
+func checkCluster(reqClusterName *string, mockClusterName string) error {
+	if reqClusterName == nil || mockClusterName == "" || *reqClusterName == mockClusterName {
+		return nil
+	}
+	return &ecsError{
+		code:    ecs.ErrCodeClusterNotFoundException,
+		message: fmt.Sprintf("Want cluster %s but the mock cluster is %s", *reqClusterName, mockClusterName),
+	}
+}
 
 // pagination Start
 

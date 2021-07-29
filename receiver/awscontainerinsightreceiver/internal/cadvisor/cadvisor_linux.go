@@ -31,7 +31,7 @@ import (
 	cInfo "github.com/google/cadvisor/info/v1"
 	"github.com/google/cadvisor/manager"
 	"github.com/google/cadvisor/utils/sysfs"
-	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/model/pdata"
 	"go.uber.org/zap"
 
 	ci "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/containerinsight"
@@ -76,11 +76,19 @@ var defaultCreateManager = func(memoryCache *memory.InMemoryCache, sysfs sysfs.S
 	return manager.New(memoryCache, sysfs, houskeepingConfig, includedMetricsSet, collectorHTTPClient, rawContainerCgroupPathPrefixWhiteList, perfEventsFile)
 }
 
-type cadvisorOption func(*Cadvisor)
+// Option is a function that can be used to configure Cadvisor struct
+type Option func(*Cadvisor)
 
-func cadvisorManagerCreator(f createCadvisorManager) cadvisorOption {
+func cadvisorManagerCreator(f createCadvisorManager) Option {
 	return func(c *Cadvisor) {
 		c.createCadvisorManager = f
+	}
+}
+
+// WithDecorator constructs an option for configuring the metric decorator
+func WithDecorator(d Decorator) Option {
+	return func(c *Cadvisor) {
+		c.k8sDecorator = d
 	}
 }
 
@@ -88,6 +96,15 @@ type hostInfo interface {
 	GetNumCores() int64
 	GetMemoryCapacity() int64
 	GetClusterName() string
+	GetEBSVolumeID(string) string
+	ExtractEbsIDsUsedByKubernetes() map[string]string
+	GetInstanceID() string
+	GetInstanceType() string
+	GetAutoScalingGroupName() string
+}
+
+type Decorator interface {
+	Decorate(*extractors.CAdvisorMetric) *extractors.CAdvisorMetric
 }
 
 type Cadvisor struct {
@@ -97,6 +114,7 @@ type Cadvisor struct {
 	manager               cadvisorManager
 	version               string
 	hostInfo              hostInfo
+	k8sDecorator          Decorator
 	containerOrchestrator string
 }
 
@@ -107,7 +125,7 @@ func init() {
 }
 
 // New creates a Cadvisor struct which can generate metrics from embedded cadvisor lib
-func New(containerOrchestrator string, hostInfo hostInfo, logger *zap.Logger, options ...cadvisorOption) (*Cadvisor, error) {
+func New(containerOrchestrator string, hostInfo hostInfo, logger *zap.Logger, options ...Option) (*Cadvisor, error) {
 	nodeName := os.Getenv("HOST_NAME")
 	if nodeName == "" {
 		return nil, errors.New("missing environment variable HOST_NAME. Please check your deployment YAML config")
@@ -140,6 +158,63 @@ func GetMetricsExtractors() []extractors.MetricExtractor {
 	return metricsExtractors
 }
 
+func (c *Cadvisor) addEbsVolumeInfo(tags map[string]string, ebsVolumeIdsUsedAsPV map[string]string) {
+	deviceName, ok := tags[ci.DiskDev]
+	if !ok {
+		return
+	}
+
+	if c.hostInfo != nil {
+		if volID := c.hostInfo.GetEBSVolumeID(deviceName); volID != "" {
+			tags[ci.HostEbsVolumeID] = volID
+		}
+	}
+
+	if tags[ci.MetricType] == ci.TypeContainerFS || tags[ci.MetricType] == ci.TypeNodeFS ||
+		tags[ci.MetricType] == ci.TypeNodeDiskIO || tags[ci.MetricType] == ci.TypeContainerDiskIO {
+		if volID := ebsVolumeIdsUsedAsPV[deviceName]; volID != "" {
+			tags[ci.EbsVolumeID] = volID
+		}
+	}
+}
+
+func (c *Cadvisor) decorateMetrics(cadvisormetrics []*extractors.CAdvisorMetric) []*extractors.CAdvisorMetric {
+	ebsVolumeIdsUsedAsPV := c.hostInfo.ExtractEbsIDsUsedByKubernetes()
+	var result []*extractors.CAdvisorMetric
+	for _, m := range cadvisormetrics {
+		tags := m.GetTags()
+		c.addEbsVolumeInfo(tags, ebsVolumeIdsUsedAsPV)
+
+		//add version
+		tags[ci.Version] = c.version
+
+		//add NodeName for node, pod and container
+		metricType := tags[ci.MetricType]
+		if c.nodeName != "" && (ci.IsNode(metricType) || ci.IsInstance(metricType) ||
+			ci.IsPod(metricType) || ci.IsContainer(metricType)) {
+			tags[ci.NodeNameKey] = c.nodeName
+		}
+
+		//add instance id and type
+		if instanceID := c.hostInfo.GetInstanceID(); instanceID != "" {
+			tags[ci.InstanceID] = instanceID
+		}
+		if instanceType := c.hostInfo.GetInstanceType(); instanceType != "" {
+			tags[ci.InstanceType] = instanceType
+		}
+
+		//add cluster name and auto scaling group name
+		tags[ci.ClusterNameKey] = c.hostInfo.GetClusterName()
+		tags[ci.AutoScalingGroupNameKey] = c.hostInfo.GetAutoScalingGroupName()
+		out := c.k8sDecorator.Decorate(m)
+		if out != nil {
+			result = append(result, out)
+		}
+	}
+
+	return result
+}
+
 // GetMetrics generates metrics from cadvisor
 func (c *Cadvisor) GetMetrics() []pdata.Metrics {
 	c.logger.Debug("collect data from cadvisor...")
@@ -165,7 +240,9 @@ func (c *Cadvisor) GetMetrics() []pdata.Metrics {
 	}
 
 	c.logger.Debug("cadvisor containers stats", zap.Int("size", len(containerinfos)))
-	results := processContainers(containerinfos, c.hostInfo, c.containerOrchestrator, c.logger)
+	out := processContainers(containerinfos, c.hostInfo, c.containerOrchestrator, c.logger)
+
+	results := c.decorateMetrics(out)
 
 	for _, cadvisorMetric := range results {
 		md := ci.ConvertToOTLPMetrics(cadvisorMetric.GetFields(), cadvisorMetric.GetTags(), c.logger)

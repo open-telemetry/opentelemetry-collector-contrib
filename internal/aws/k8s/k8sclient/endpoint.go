@@ -48,9 +48,6 @@ type EpClient interface {
 	PodKeyToServiceNames() map[string][]string
 	// Get the mapping between the service and the number of belonging pods
 	ServiceToPodNum() map[Service]int
-
-	// shutdown is only used internally by clientset to stop the EpClient
-	shutdown()
 }
 
 type epClientOption func(*epClient)

@@ -1,0 +1,35 @@
+receivers:
+  nop:
+
+processors:
+  nop:
+
+exporters:
+  observiq:
+    api_key: "11111111-2222-3333-4444-555555555555"
+  observiq/customname:
+    api_key: "11111111-2222-3333-4444-555555555555"
+    endpoint: "https://sometest.endpoint"
+    timeout: 10s
+    agent_id: "08e097a6-8580-43f6-b4f5-9d3b4eb2d962"
+    agent_name: "otel-collector-1"
+    ca_file: ""
+    cert_file: ""
+    key_file: ""
+    sending_queue:
+      enabled: true
+      num_consumers: 2
+      queue_size: 10
+    retry_on_failure:
+      enabled: true
+      initial_interval: 10s
+      max_interval: 60s
+      max_elapsed_time: 10m
+
+
+service:
+  pipelines:
+    logs:
+      receivers: [nop]
+      processors: [nop]
+      exporters: [observiq]

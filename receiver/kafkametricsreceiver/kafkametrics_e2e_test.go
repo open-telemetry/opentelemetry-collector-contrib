@@ -24,8 +24,8 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.uber.org/zap/zaptest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testing/container"
 )
@@ -63,11 +63,10 @@ func TestIntegrationSingleNode(t *testing.T) {
 	cfg.Brokers = []string{kafkaAddress}
 	cfg.CollectionInterval = 5 * time.Second
 	consumer := new(consumertest.MetricsSink)
-	params := component.ReceiverCreateSettings{Logger: zaptest.NewLogger(t)}
 
 	var receiver component.MetricsReceiver
 	var err error
-	receiver, err = f.CreateMetricsReceiver(context.Background(), params, cfg, consumer)
+	receiver, err = f.CreateMetricsReceiver(context.Background(), componenttest.NewNopReceiverCreateSettings(), cfg, consumer)
 	require.NoError(t, err, "failed to create receiver")
 	require.Eventuallyf(t, func() bool {
 		err = receiver.Start(context.Background(), &testHost{t: t})
@@ -76,7 +75,7 @@ func TestIntegrationSingleNode(t *testing.T) {
 	t.Logf("waiting for metrics...")
 	require.Eventuallyf(t,
 		func() bool {
-			return consumer.MetricsCount() >= expectedMetrics
+			return consumer.DataPointCount() >= expectedMetrics
 		}, 30*time.Second, 5*time.Second,
 		"expected metrics not received",
 	)

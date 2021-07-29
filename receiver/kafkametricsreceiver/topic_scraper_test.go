@@ -22,6 +22,7 @@ import (
 
 	"github.com/Shopify/sarama"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkametricsreceiver/internal/metadata"
@@ -114,23 +115,24 @@ func TestTopicScraper_scrapes(t *testing.T) {
 		topicFilter: match,
 	}
 	rm, err := scraper.scrape(context.Background())
-	assert.Nil(t, err)
-	assert.NotNil(t, rm)
+	assert.NoError(t, err)
+	require.Equal(t, 1, rm.Len())
+	require.Equal(t, 1, rm.At(0).InstrumentationLibraryMetrics().Len())
 	ms := rm.At(0).InstrumentationLibraryMetrics().At(0).Metrics()
 	for i := 0; i < ms.Len(); i++ {
 		m := ms.At(i)
-		dp := m.IntGauge().DataPoints().At(0)
+		dp := m.Gauge().DataPoints().At(0)
 		switch m.Name() {
 		case metadata.M.KafkaTopicPartitions.Name():
-			assert.Equal(t, dp.Value(), int64(len(testPartitions)))
+			assert.Equal(t, dp.IntVal(), int64(len(testPartitions)))
 		case metadata.M.KafkaPartitionCurrentOffset.Name():
-			assert.Equal(t, dp.Value(), testOffset)
+			assert.Equal(t, dp.IntVal(), testOffset)
 		case metadata.M.KafkaPartitionOldestOffset.Name():
-			assert.Equal(t, dp.Value(), testOffset)
+			assert.Equal(t, dp.IntVal(), testOffset)
 		case metadata.M.KafkaPartitionReplicas.Name():
-			assert.Equal(t, dp.Value(), int64(len(testReplicas)))
+			assert.Equal(t, dp.IntVal(), int64(len(testReplicas)))
 		case metadata.M.KafkaPartitionReplicasInSync.Name():
-			assert.Equal(t, dp.Value(), int64(len(testReplicas)))
+			assert.Equal(t, dp.IntVal(), int64(len(testReplicas)))
 		}
 	}
 }

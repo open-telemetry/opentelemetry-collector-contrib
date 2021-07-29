@@ -20,7 +20,7 @@ import (
 	"unicode/utf8"
 
 	"github.com/DataDog/datadog-agent/pkg/trace/exportable/pb"
-	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/model/pdata"
 )
 
 // constants for tags

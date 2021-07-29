@@ -24,7 +24,7 @@ import (
 	"strconv"
 	"time"
 
-	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/model/pdata"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zookeeperreceiver/internal/metadata"
@@ -115,18 +115,15 @@ func (z *zookeeperMetricsScraper) getResourceMetrics(conn net.Conn) (pdata.Resou
 
 	md := pdata.NewMetrics()
 	z.appendMetrics(scanner, md.ResourceMetrics())
-	mc, _ := md.MetricAndDataPointCount()
-	if mc == 0 {
-		md.ResourceMetrics().Resize(0)
-	}
 	return md.ResourceMetrics(), nil
 }
 
 func (z *zookeeperMetricsScraper) appendMetrics(scanner *bufio.Scanner, rms pdata.ResourceMetricsSlice) {
 	now := pdata.TimestampFromTime(time.Now())
-	rm := rms.AppendEmpty()
+	rm := pdata.NewResourceMetrics()
 	ilm := rm.InstrumentationLibraryMetrics().AppendEmpty()
 	ilm.InstrumentationLibrary().SetName("otelcol/zookeeper")
+	keepRM := false
 	for scanner.Scan() {
 		line := scanner.Text()
 		parts := zookeeperFormatRE.FindStringSubmatch(line)
@@ -165,16 +162,20 @@ func (z *zookeeperMetricsScraper) appendMetrics(scanner *bufio.Scanner, rms pdat
 			metric := ilm.Metrics().AppendEmpty()
 			initMetric(metric)
 			switch metric.DataType() {
-			case pdata.MetricDataTypeIntGauge:
-				dp := metric.IntGauge().DataPoints().AppendEmpty()
+			case pdata.MetricDataTypeGauge:
+				dp := metric.Gauge().DataPoints().AppendEmpty()
 				dp.SetTimestamp(now)
-				dp.SetValue(int64Val)
-			case pdata.MetricDataTypeIntSum:
-				dp := metric.IntSum().DataPoints().AppendEmpty()
+				dp.SetIntVal(int64Val)
+			case pdata.MetricDataTypeSum:
+				dp := metric.Sum().DataPoints().AppendEmpty()
 				dp.SetTimestamp(now)
-				dp.SetValue(int64Val)
+				dp.SetIntVal(int64Val)
 			}
+			keepRM = true
 		}
+	}
+	if keepRM {
+		rm.CopyTo(rms.AppendEmpty())
 	}
 }
 

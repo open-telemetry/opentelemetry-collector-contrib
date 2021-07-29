@@ -43,7 +43,7 @@ func TestMetricsTransformProcessor(t *testing.T) {
 					ProcessorSettings: config.NewProcessorSettings(config.NewID(typeStr)),
 				},
 				next,
-				p,
+				p.processMetrics,
 				processorhelper.WithCapabilities(consumerCapabilities))
 			require.NoError(t, err)
 
@@ -163,7 +163,7 @@ func BenchmarkMetricsTransformProcessorRenameMetrics(b *testing.B) {
 		in[i] = metricBuilder().setName("metric1").build()
 	}
 	p := newMetricsTransformProcessor(nil, transforms)
-	mtp, _ := processorhelper.NewMetricsProcessor(&Config{}, consumertest.NewNop(), p)
+	mtp, _ := processorhelper.NewMetricsProcessor(&Config{}, consumertest.NewNop(), p.processMetrics)
 
 	b.ResetTimer()
 

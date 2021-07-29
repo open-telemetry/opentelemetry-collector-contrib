@@ -27,20 +27,20 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/model/pdata"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/idbatcher"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/sampling"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/idbatcher"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/sampling"
 )
 
-// Policy combines a sampling policy evaluator with the destinations to be
+// policy combines a sampling policy evaluator with the destinations to be
 // used for that policy.
-type Policy struct {
-	// Name used to identify this policy instance.
-	Name string
-	// Evaluator that decides if a trace is sampled or not by this policy instance.
-	Evaluator sampling.PolicyEvaluator
+type policy struct {
+	// name used to identify this policy instance.
+	name string
+	// evaluator that decides if a trace is sampled or not by this policy instance.
+	evaluator sampling.PolicyEvaluator
 	// ctx used to carry metric tags of each policy.
 	ctx context.Context
 }
@@ -52,7 +52,7 @@ type tailSamplingSpanProcessor struct {
 	nextConsumer    consumer.Traces
 	start           sync.Once
 	maxNumTraces    uint64
-	policies        []*Policy
+	policies        []*policy
 	logger          *zap.Logger
 	idToTrace       sync.Map
 	policyTicker    tTicker
@@ -79,7 +79,7 @@ func newTracesProcessor(logger *zap.Logger, nextConsumer consumer.Traces, cfg Co
 	}
 
 	ctx := context.Background()
-	var policies []*Policy
+	var policies []*policy
 	for i := range cfg.PolicyCfgs {
 		policyCfg := &cfg.PolicyCfgs[i]
 		policyCtx, err := tag.New(ctx, tag.Upsert(tagPolicyKey, policyCfg.Name), tag.Upsert(tagSourceFormat, sourceFormat))
@@ -90,12 +90,12 @@ func newTracesProcessor(logger *zap.Logger, nextConsumer consumer.Traces, cfg Co
 		if err != nil {
 			return nil, err
 		}
-		policy := &Policy{
-			Name:      policyCfg.Name,
-			Evaluator: eval,
+		p := &policy{
+			name:      policyCfg.Name,
+			evaluator: eval,
 			ctx:       policyCtx,
 		}
-		policies = append(policies, policy)
+		policies = append(policies, p)
 	}
 
 	tsp := &tailSamplingSpanProcessor{
@@ -107,7 +107,7 @@ func newTracesProcessor(logger *zap.Logger, nextConsumer consumer.Traces, cfg Co
 		policies:        policies,
 	}
 
-	tsp.policyTicker = &policyTicker{onTick: tsp.samplingPolicyOnTick}
+	tsp.policyTicker = &policyTicker{onTickFunc: tsp.samplingPolicyOnTick}
 	tsp.deleteChan = make(chan pdata.TraceID, cfg.NumTraces)
 
 	return tsp, nil
@@ -126,6 +126,9 @@ func getPolicyEvaluator(logger *zap.Logger, cfg *PolicyCfg) (sampling.PolicyEval
 	case StringAttribute:
 		safCfg := cfg.StringAttributeCfg
 		return sampling.NewStringAttributeFilter(logger, safCfg.Key, safCfg.Values, safCfg.EnabledRegexMatching, safCfg.CacheMaxSize), nil
+	case StatusCode:
+		scfCfg := cfg.StatusCodeCfg
+		return sampling.NewStatusCodeFilter(logger, scfCfg.StatusCodes)
 	case RateLimiting:
 		rlfCfg := cfg.RateLimitingCfg
 		return sampling.NewRateLimiting(logger, rlfCfg.SpansPerSecond), nil
@@ -191,15 +194,15 @@ func (tsp *tailSamplingSpanProcessor) samplingPolicyOnTick() {
 	)
 }
 
-func (tsp *tailSamplingSpanProcessor) makeDecision(id pdata.TraceID, trace *sampling.TraceData, metrics *policyMetrics) (sampling.Decision, *Policy) {
+func (tsp *tailSamplingSpanProcessor) makeDecision(id pdata.TraceID, trace *sampling.TraceData, metrics *policyMetrics) (sampling.Decision, *policy) {
 	finalDecision := sampling.NotSampled
-	var matchingPolicy *Policy
+	var matchingPolicy *policy
 
-	for i, policy := range tsp.policies {
+	for i, p := range tsp.policies {
 		policyEvaluateStartTime := time.Now()
-		decision, err := policy.Evaluator.Evaluate(id, trace)
+		decision, err := p.evaluator.Evaluate(id, trace)
 		stats.Record(
-			policy.ctx,
+			p.ctx,
 			statDecisionLatencyMicroSec.M(int64(time.Since(policyEvaluateStartTime)/time.Microsecond)))
 
 		if err != nil {
@@ -215,11 +218,11 @@ func (tsp *tailSamplingSpanProcessor) makeDecision(id pdata.TraceID, trace *samp
 				// the nextConsumer will get the context from the first matching policy
 				finalDecision = sampling.Sampled
 				if matchingPolicy == nil {
-					matchingPolicy = policy
+					matchingPolicy = p
 				}
 
 				_ = stats.RecordWithTags(
-					policy.ctx,
+					p.ctx,
 					[]tag.Mutator{tag.Insert(tagSampledKey, "true")},
 					statCountTracesSampled.M(int64(1)),
 				)
@@ -227,7 +230,7 @@ func (tsp *tailSamplingSpanProcessor) makeDecision(id pdata.TraceID, trace *samp
 
 			case sampling.NotSampled:
 				_ = stats.RecordWithTags(
-					policy.ctx,
+					p.ctx,
 					[]tag.Mutator{tag.Insert(tagSampledKey, "false")},
 					statCountTracesSampled.M(int64(1)),
 				)
@@ -243,7 +246,7 @@ func (tsp *tailSamplingSpanProcessor) makeDecision(id pdata.TraceID, trace *samp
 func (tsp *tailSamplingSpanProcessor) ConsumeTraces(ctx context.Context, td pdata.Traces) error {
 	tsp.start.Do(func() {
 		tsp.logger.Info("First trace data arrived, starting tail_sampling timers")
-		tsp.policyTicker.Start(1 * time.Second)
+		tsp.policyTicker.start(1 * time.Second)
 	})
 	resourceSpans := td.ResourceSpans()
 	for i := 0; i < resourceSpans.Len(); i++ {
@@ -305,7 +308,7 @@ func (tsp *tailSamplingSpanProcessor) processTraces(resourceSpans pdata.Resource
 			}
 		}
 
-		for i, policy := range tsp.policies {
+		for i, p := range tsp.policies {
 			var traceTd pdata.Traces
 			actualData.Lock()
 			actualDecision := actualData.Decisions[i]
@@ -325,19 +328,19 @@ func (tsp *tailSamplingSpanProcessor) processTraces(resourceSpans pdata.Resource
 			case sampling.Sampled:
 				// Forward the spans to the policy destinations
 				traceTd := prepareTraceBatch(resourceSpans, spans)
-				if err := tsp.nextConsumer.ConsumeTraces(policy.ctx, traceTd); err != nil {
+				if err := tsp.nextConsumer.ConsumeTraces(p.ctx, traceTd); err != nil {
 					tsp.logger.Warn("Error sending late arrived spans to destination",
-						zap.String("policy", policy.Name),
+						zap.String("policy", p.name),
 						zap.Error(err))
 				}
 				fallthrough // so OnLateArrivingSpans is also called for decision Sampled.
 			case sampling.NotSampled:
-				policy.Evaluator.OnLateArrivingSpans(actualDecision, spans)
+				p.evaluator.OnLateArrivingSpans(actualDecision, spans)
 				stats.Record(tsp.ctx, statLateSpanArrivalAfterDecision.M(int64(time.Since(actualData.DecisionTime)/time.Second)))
 
 			default:
 				tsp.logger.Warn("Encountered unexpected sampling decision",
-					zap.String("policy", policy.Name),
+					zap.String("policy", p.name),
 					zap.Int("decision", int(actualDecision)))
 			}
 
@@ -396,31 +399,31 @@ func prepareTraceBatch(rss pdata.ResourceSpans, spans []*pdata.Span) pdata.Trace
 
 // tTicker interface allows easier testing of ticker related functionality used by tailSamplingProcessor
 type tTicker interface {
-	// Start sets the frequency of the ticker and starts the periodic calls to OnTick.
-	Start(d time.Duration)
-	// OnTick is called when the ticker fires.
-	OnTick()
-	// Stops firing the ticker.
-	Stop()
+	// start sets the frequency of the ticker and starts the periodic calls to OnTick.
+	start(d time.Duration)
+	// onTick is called when the ticker fires.
+	onTick()
+	// stop firing the ticker.
+	stop()
 }
 
 type policyTicker struct {
-	ticker *time.Ticker
-	onTick func()
+	ticker     *time.Ticker
+	onTickFunc func()
 }
 
-func (pt *policyTicker) Start(d time.Duration) {
+func (pt *policyTicker) start(d time.Duration) {
 	pt.ticker = time.NewTicker(d)
 	go func() {
 		for range pt.ticker.C {
-			pt.OnTick()
+			pt.onTick()
 		}
 	}()
 }
-func (pt *policyTicker) OnTick() {
-	pt.onTick()
+func (pt *policyTicker) onTick() {
+	pt.onTickFunc()
 }
-func (pt *policyTicker) Stop() {
+func (pt *policyTicker) stop() {
 	pt.ticker.Stop()
 }
 

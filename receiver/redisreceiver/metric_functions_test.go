@@ -19,7 +19,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/model/pdata"
 )
 
 func TestDefaultMetrics(t *testing.T) {
@@ -29,10 +29,8 @@ func TestDefaultMetrics(t *testing.T) {
 		require.True(t, strings.HasPrefix(metric.name, "redis/"))
 		require.True(
 			t,
-			metric.pdType == pdata.MetricDataTypeIntSum ||
-				metric.pdType == pdata.MetricDataTypeIntGauge ||
-				metric.pdType == pdata.MetricDataTypeDoubleSum ||
-				metric.pdType == pdata.MetricDataTypeDoubleGauge,
+			metric.pdType == pdata.MetricDataTypeSum ||
+				metric.pdType == pdata.MetricDataTypeGauge,
 		)
 	}
 }

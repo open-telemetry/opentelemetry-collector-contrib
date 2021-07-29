@@ -19,7 +19,7 @@ import (
 	"encoding/json"
 
 	"github.com/uptrace/uptrace-go/spanexp"
-	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/zap"
 )

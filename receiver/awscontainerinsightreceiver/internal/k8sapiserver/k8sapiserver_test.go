@@ -22,11 +22,12 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
-	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/model/pdata"
 	"go.uber.org/zap"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/watch"
+	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/fake"
 	"k8s.io/client-go/tools/record"
 
@@ -40,11 +41,31 @@ func NewService(name, namespace string) k8sclient.Service {
 
 var mockClient = new(MockClient)
 
-var mockK8sClient = &k8sclient.K8sClient{
-	Pod:       mockClient,
-	Node:      mockClient,
-	Ep:        mockClient,
-	ClientSet: fake.NewSimpleClientset(),
+type mockK8sClient struct {
+}
+
+func (m *mockK8sClient) GetClientSet() kubernetes.Interface {
+	return fake.NewSimpleClientset()
+}
+
+func (m *mockK8sClient) GetEpClient() k8sclient.EpClient {
+	return mockClient
+}
+
+func (m *mockK8sClient) GetNodeClient() k8sclient.NodeClient {
+	return mockClient
+}
+
+func (m *mockK8sClient) GetPodClient() k8sclient.PodClient {
+	return mockClient
+}
+
+func (m *mockK8sClient) ShutdownNodeClient() {
+
+}
+
+func (m *mockK8sClient) ShutdownPodClient() {
+
 }
 
 type MockClient struct {
@@ -76,9 +97,6 @@ func (client *MockClient) ClusterNodeCount() int {
 func (client *MockClient) ServiceToPodNum() map[k8sclient.Service]int {
 	args := client.Called()
 	return args.Get(0).(map[k8sclient.Service]int)
-}
-
-func (client *MockClient) Shutdown() {
 }
 
 type mockEventBroadcaster struct {
@@ -114,8 +132,14 @@ func assertMetricValueEqual(t *testing.T, m pdata.Metrics, metricName string, ex
 		for i := 0; i < metricSlice.Len(); i++ {
 			metric := metricSlice.At(i)
 			if metric.Name() == metricName {
-				if metric.DataType() == pdata.MetricDataTypeIntGauge {
-					assert.Equal(t, expected, metric.IntGauge().DataPoints().At(0).Value())
+				if metric.DataType() == pdata.MetricDataTypeGauge {
+					switch metric.Gauge().DataPoints().At(0).Type() {
+					case pdata.MetricValueTypeDouble:
+						assert.Equal(t, expected, metric.Gauge().DataPoints().At(0).DoubleVal())
+					case pdata.MetricValueTypeInt:
+						assert.Equal(t, expected, metric.Gauge().DataPoints().At(0).IntVal())
+					}
+
 					return
 				}
 
@@ -149,7 +173,7 @@ func TestK8sAPIServer_GetMetrics(t *testing.T) {
 	hostName, err := os.Hostname()
 	assert.NoError(t, err)
 	k8sClientOption := func(k *K8sAPIServer) {
-		k.k8sClient = mockK8sClient
+		k.k8sClient = &mockK8sClient{}
 	}
 	leadingOption := func(k *K8sAPIServer) {
 		k.leading = true

@@ -29,6 +29,10 @@ conditions this receiver should report. See
 [here](https://kubernetes.io/docs/concepts/architecture/nodes/#condition) for
 list of node conditions. The receiver will emit one metric per entry in the
 array.
+- `distribution` (default = `kubernetes`): The Kubernetes distribution being used
+by the cluster. Currently supported versions are `kubernetes` and `openshift`. Setting
+the value to `openshift` enables OpenShift specific metrics in addition to standard
+kubernetes ones.
 
 Example:
 
@@ -265,4 +269,29 @@ spec:
           configMap:
             name: otelcontribcol
 EOF
+```
+
+### OpenShift
+
+You can enable OpenShift support to collect OpenShift specific metrics in addition to the default
+kubernetes ones. To do this, set the `distribution` key to `openshift`.
+
+Example:
+
+```yaml
+  k8s_cluster:
+    distribution: openshift
+```
+
+Add the following rules to your ClusterRole:
+
+```yaml
+- apigroups:
+  - quota.openshift.io
+  resources:
+  - clusterresourcequotas
+  verbs:
+  - get
+  - list
+  - watch
 ```

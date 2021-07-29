@@ -18,7 +18,7 @@ import (
 	"errors"
 	"sort"
 
-	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/translator/conventions"
 	"go.uber.org/zap"
 
@@ -29,8 +29,8 @@ const (
 	cannotConvertValue = "cannot convert field value to attribute"
 )
 
-// SplunkHecToLogData transforms splunk events into logs
-func SplunkHecToLogData(logger *zap.Logger, events []*splunk.Event, resourceCustomizer func(pdata.Resource)) (pdata.Logs, error) {
+// splunkHecToLogData transforms splunk events into logs
+func splunkHecToLogData(logger *zap.Logger, events []*splunk.Event, resourceCustomizer func(pdata.Resource)) (pdata.Logs, error) {
 	ld := pdata.NewLogs()
 	rl := ld.ResourceLogs().AppendEmpty()
 	ill := rl.InstrumentationLibraryLogs().AppendEmpty()
@@ -119,7 +119,8 @@ func convertToArrayVal(logger *zap.Logger, value []interface{}) (pdata.Attribute
 		if err != nil {
 			return attrVal, err
 		}
-		arr.Append(translatedElt)
+		tgt := arr.AppendEmpty()
+		translatedElt.CopyTo(tgt)
 	}
 	return attrVal, nil
 }

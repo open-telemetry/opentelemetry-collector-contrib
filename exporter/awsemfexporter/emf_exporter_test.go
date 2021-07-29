@@ -31,6 +31,7 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/translator/internaldata"
 	"go.uber.org/zap"
@@ -47,7 +48,7 @@ type mockPusher struct {
 	mock.Mock
 }
 
-func (p *mockPusher) AddLogEntry(logEvent *LogEvent) error {
+func (p *mockPusher) addLogEntry(logEvent *logEvent) error {
 	args := p.Called(nil)
 	errorStr := args.String(0)
 	if errorStr != "" {
@@ -56,7 +57,7 @@ func (p *mockPusher) AddLogEntry(logEvent *LogEvent) error {
 	return nil
 }
 
-func (p *mockPusher) ForceFlush() error {
+func (p *mockPusher) forceFlush() error {
 	args := p.Called(nil)
 	errorStr := args.String(0)
 	if errorStr != "" {
@@ -72,7 +73,7 @@ func TestConsumeMetrics(t *testing.T) {
 	expCfg := factory.CreateDefaultConfig().(*Config)
 	expCfg.Region = "us-west-2"
 	expCfg.MaxRetries = 0
-	exp, err := New(expCfg, component.ExporterCreateSettings{Logger: zap.NewNop()})
+	exp, err := newEmfPusher(expCfg, componenttest.NewNopExporterCreateSettings())
 	assert.Nil(t, err)
 	assert.NotNil(t, exp)
 
@@ -134,7 +135,7 @@ func TestConsumeMetricsWithOutputDestination(t *testing.T) {
 	expCfg.Region = "us-west-2"
 	expCfg.MaxRetries = 0
 	expCfg.OutputDestination = "stdout"
-	exp, err := New(expCfg, component.ExporterCreateSettings{Logger: zap.NewNop()})
+	exp, err := newEmfPusher(expCfg, componenttest.NewNopExporterCreateSettings())
 	assert.Nil(t, err)
 	assert.NotNil(t, exp)
 
@@ -195,7 +196,7 @@ func TestConsumeMetricsWithLogGroupStreamConfig(t *testing.T) {
 	expCfg.MaxRetries = defaultRetryCount
 	expCfg.LogGroupName = "test-logGroupName"
 	expCfg.LogStreamName = "test-logStreamName"
-	exp, err := New(expCfg, component.ExporterCreateSettings{Logger: zap.NewNop()})
+	exp, err := newEmfPusher(expCfg, componenttest.NewNopExporterCreateSettings())
 	assert.Nil(t, err)
 	assert.NotNil(t, exp)
 
@@ -251,9 +252,9 @@ func TestConsumeMetricsWithLogGroupStreamConfig(t *testing.T) {
 	require.NoError(t, exp.Shutdown(ctx))
 	streamToPusherMap, ok := exp.(*emfExporter).groupStreamToPusherMap["test-logGroupName"]
 	assert.True(t, ok)
-	pusher, ok := streamToPusherMap["test-logStreamName"]
+	emfPusher, ok := streamToPusherMap["test-logStreamName"]
 	assert.True(t, ok)
-	assert.NotNil(t, pusher)
+	assert.NotNil(t, emfPusher)
 }
 
 func TestConsumeMetricsWithLogGroupStreamValidPlaceholder(t *testing.T) {
@@ -265,7 +266,7 @@ func TestConsumeMetricsWithLogGroupStreamValidPlaceholder(t *testing.T) {
 	expCfg.MaxRetries = defaultRetryCount
 	expCfg.LogGroupName = "/aws/ecs/containerinsights/{ClusterName}/performance"
 	expCfg.LogStreamName = "{TaskId}"
-	exp, err := New(expCfg, component.ExporterCreateSettings{Logger: zap.NewNop()})
+	exp, err := newEmfPusher(expCfg, componenttest.NewNopExporterCreateSettings())
 	assert.Nil(t, err)
 	assert.NotNil(t, exp)
 
@@ -321,9 +322,9 @@ func TestConsumeMetricsWithLogGroupStreamValidPlaceholder(t *testing.T) {
 	require.NoError(t, exp.Shutdown(ctx))
 	streamToPusherMap, ok := exp.(*emfExporter).groupStreamToPusherMap["/aws/ecs/containerinsights/test-cluster-name/performance"]
 	assert.True(t, ok)
-	pusher, ok := streamToPusherMap["test-task-id"]
+	emfPusher, ok := streamToPusherMap["test-task-id"]
 	assert.True(t, ok)
-	assert.NotNil(t, pusher)
+	assert.NotNil(t, emfPusher)
 }
 
 func TestConsumeMetricsWithOnlyLogStreamPlaceholder(t *testing.T) {
@@ -335,7 +336,7 @@ func TestConsumeMetricsWithOnlyLogStreamPlaceholder(t *testing.T) {
 	expCfg.MaxRetries = defaultRetryCount
 	expCfg.LogGroupName = "test-logGroupName"
 	expCfg.LogStreamName = "{TaskId}"
-	exp, err := New(expCfg, component.ExporterCreateSettings{Logger: zap.NewNop()})
+	exp, err := newEmfPusher(expCfg, componenttest.NewNopExporterCreateSettings())
 	assert.Nil(t, err)
 	assert.NotNil(t, exp)
 
@@ -391,9 +392,9 @@ func TestConsumeMetricsWithOnlyLogStreamPlaceholder(t *testing.T) {
 	require.NoError(t, exp.Shutdown(ctx))
 	streamToPusherMap, ok := exp.(*emfExporter).groupStreamToPusherMap["test-logGroupName"]
 	assert.True(t, ok)
-	pusher, ok := streamToPusherMap["test-task-id"]
+	emfPusher, ok := streamToPusherMap["test-task-id"]
 	assert.True(t, ok)
-	assert.NotNil(t, pusher)
+	assert.NotNil(t, emfPusher)
 }
 
 func TestConsumeMetricsWithWrongPlaceholder(t *testing.T) {
@@ -405,7 +406,7 @@ func TestConsumeMetricsWithWrongPlaceholder(t *testing.T) {
 	expCfg.MaxRetries = defaultRetryCount
 	expCfg.LogGroupName = "test-logGroupName"
 	expCfg.LogStreamName = "{WrongKey}"
-	exp, err := New(expCfg, component.ExporterCreateSettings{Logger: zap.NewNop()})
+	exp, err := newEmfPusher(expCfg, componenttest.NewNopExporterCreateSettings())
 	assert.Nil(t, err)
 	assert.NotNil(t, exp)
 
@@ -461,9 +462,9 @@ func TestConsumeMetricsWithWrongPlaceholder(t *testing.T) {
 	require.NoError(t, exp.Shutdown(ctx))
 	streamToPusherMap, ok := exp.(*emfExporter).groupStreamToPusherMap["test-logGroupName"]
 	assert.True(t, ok)
-	pusher, ok := streamToPusherMap["{WrongKey}"]
+	emfPusher, ok := streamToPusherMap["{WrongKey}"]
 	assert.True(t, ok)
-	assert.NotNil(t, pusher)
+	assert.NotNil(t, emfPusher)
 }
 
 func TestPushMetricsDataWithErr(t *testing.T) {
@@ -475,18 +476,18 @@ func TestPushMetricsDataWithErr(t *testing.T) {
 	expCfg.MaxRetries = 0
 	expCfg.LogGroupName = "test-logGroupName"
 	expCfg.LogStreamName = "test-logStreamName"
-	exp, err := New(expCfg, component.ExporterCreateSettings{Logger: zap.NewNop()})
+	exp, err := newEmfPusher(expCfg, componenttest.NewNopExporterCreateSettings())
 	assert.Nil(t, err)
 	assert.NotNil(t, exp)
 
-	pusher := new(mockPusher)
-	pusher.On("AddLogEntry", nil).Return("some error").Once()
-	pusher.On("AddLogEntry", nil).Return("").Twice()
-	pusher.On("ForceFlush", nil).Return("some error").Once()
-	pusher.On("ForceFlush", nil).Return("").Once()
-	pusher.On("ForceFlush", nil).Return("some error").Once()
-	streamToPusherMap := map[string]Pusher{"test-logStreamName": pusher}
-	exp.(*emfExporter).groupStreamToPusherMap = map[string]map[string]Pusher{}
+	logPusher := new(mockPusher)
+	logPusher.On("addLogEntry", nil).Return("some error").Once()
+	logPusher.On("addLogEntry", nil).Return("").Twice()
+	logPusher.On("forceFlush", nil).Return("some error").Once()
+	logPusher.On("forceFlush", nil).Return("").Once()
+	logPusher.On("forceFlush", nil).Return("some error").Once()
+	streamToPusherMap := map[string]pusher{"test-logStreamName": logPusher}
+	exp.(*emfExporter).groupStreamToPusherMap = map[string]map[string]pusher{}
 	exp.(*emfExporter).groupStreamToPusherMap["test-logGroupName"] = streamToPusherMap
 
 	mdata := agentmetricspb.ExportMetricsServiceRequest{
@@ -547,7 +548,7 @@ func TestNewExporterWithoutConfig(t *testing.T) {
 	os.Setenv("AWS_STS_REGIONAL_ENDPOINTS", "fake")
 
 	assert.Nil(t, expCfg.logger)
-	exp, err := New(expCfg, component.ExporterCreateSettings{Logger: zap.NewNop()})
+	exp, err := newEmfPusher(expCfg, componenttest.NewNopExporterCreateSettings())
 	assert.NotNil(t, err)
 	assert.Nil(t, exp)
 	assert.NotNil(t, expCfg.logger)
@@ -582,7 +583,7 @@ func TestNewExporterWithMetricDeclarations(t *testing.T) {
 
 	obs, logs := observer.New(zap.WarnLevel)
 	logger := zap.New(obs)
-	exp, err := New(expCfg, component.ExporterCreateSettings{Logger: logger})
+	exp, err := newEmfPusher(expCfg, component.ExporterCreateSettings{Logger: logger})
 	assert.Nil(t, err)
 	assert.NotNil(t, exp)
 
@@ -609,7 +610,7 @@ func TestNewExporterWithMetricDeclarations(t *testing.T) {
 }
 
 func TestNewExporterWithoutSession(t *testing.T) {
-	exp, err := New(nil, component.ExporterCreateSettings{Logger: zap.NewNop()})
+	exp, err := newEmfPusher(nil, componenttest.NewNopExporterCreateSettings())
 	assert.NotNil(t, err)
 	assert.Nil(t, exp)
 }
@@ -623,7 +624,7 @@ func TestWrapErrorIfBadRequest(t *testing.T) {
 	assert.False(t, consumererror.IsPermanent(err))
 }
 
-// This test verifies that if func New() returns an error then NewEmfExporter()
+// This test verifies that if func newEmfPusher() returns an error then newEmfExporter()
 // will do so.
 func TestNewEmfExporterWithoutConfig(t *testing.T) {
 	factory := NewFactory()
@@ -633,7 +634,7 @@ func TestNewEmfExporterWithoutConfig(t *testing.T) {
 	os.Setenv("AWS_STS_REGIONAL_ENDPOINTS", "fake")
 
 	assert.Nil(t, expCfg.logger)
-	exp, err := NewEmfExporter(expCfg, component.ExporterCreateSettings{Logger: zap.NewNop()})
+	exp, err := newEmfExporter(expCfg, componenttest.NewNopExporterCreateSettings())
 	assert.NotNil(t, err)
 	assert.Nil(t, exp)
 	assert.NotNil(t, expCfg.logger)

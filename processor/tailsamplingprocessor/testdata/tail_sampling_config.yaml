@@ -27,11 +27,16 @@ processors:
           },
           {
             name: test-policy-4,
+            type: status_code,
+            status_code: {status_codes: [ERROR, UNSET]}
+          },
+          {
+            name: test-policy-5,
             type: string_attribute,
             string_attribute: {key: key2, values: [value1, value2]}
           },
           {
-            name: test-policy-5,
+            name: test-policy-6,
             type: rate_limiting,
             rate_limiting: {spans_per_second: 35}
          },
