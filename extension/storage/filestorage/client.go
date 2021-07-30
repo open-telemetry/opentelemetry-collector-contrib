@@ -74,7 +74,7 @@ func (c *fileStorageClient) Delete(ctx context.Context, key string) error {
 
 // Batch executes the specified operations in order. Get operation results are updated in place
 func (c *fileStorageClient) Batch(_ context.Context, ops ...storage.Operation) error {
-	set := func(tx *bbolt.Tx) error {
+	batch := func(tx *bbolt.Tx) error {
 		bucket := tx.Bucket(defaultBucket)
 		if bucket == nil {
 			return errors.New("storage not initialized")
@@ -101,7 +101,7 @@ func (c *fileStorageClient) Batch(_ context.Context, ops ...storage.Operation) e
 		return nil
 	}
 
-	return c.db.Update(set)
+	return c.db.Update(batch)
 }
 
 // Close will close the database
