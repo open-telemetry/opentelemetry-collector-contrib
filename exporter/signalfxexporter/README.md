@@ -116,9 +116,9 @@ One of `realm` and `api_url` are required.
 
 ## Translation Rules and Metric Transformations
 
-The `translation_rules` configuration field accepts a list of metric-transforming actions to
-help ensure compatibility with custom charts and dashboards when using the OpenTelemetry Collector or provide the ability to produce custom metrics by copying, calculating new, or aggregating other metric values without requiring an additional processor.
-The rule language is expressed in yaml mappings and is [documented here](./internal/translation/translator.go.  Translation rules currently allow the following actions:
+The `translation_rules` metrics configuration field accepts a list of metric-transforming actions to
+help ensure compatibility with custom charts and dashboards when using the OpenTelemetry Collector. It also provides the ability to produce custom metrics by copying, calculating new, or aggregating other metric values without requiring an additional processor.
+The rule language is expressed in yaml mappings and is [documented here](./internal/translation/translator.go).  Translation rules currently allow the following actions:
 
 * `aggregate_metric` - Aggregates a metric through removal of specified dimensions
 * `calculate_new_metric` - Creates a new metric via operating on two consistuent ones
