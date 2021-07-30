@@ -134,7 +134,7 @@ The rule language is expressed in yaml mappings and is [documented here](./inter
 * `rename_metrics` - Replaces a given metric name with specified one
 * `split_metric` - Splits a given metric into multiple new ones for a specified dimension
 
-The translation rules defined in [`translation/constants.go]`](./internal/translation/constants.go) are used by default for this value.  The default rules will create the following aggregated metrics from the [`hostmetrics` receiver](https://github.com/open-telemetry/opentelemetry-collector/blob/main/receiver/hostmetricsreceiver/README.md):
+The translation rules defined in [`translation/constants.go`](./internal/translation/constants.go) are used by default for this value.  The default rules will create the following aggregated metrics from the [`hostmetrics` receiver](https://github.com/open-telemetry/opentelemetry-collector/blob/main/receiver/hostmetricsreceiver/README.md):
 
 * cpu.idle
 * cpu.interrupt

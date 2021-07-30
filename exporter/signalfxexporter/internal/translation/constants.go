@@ -335,18 +335,23 @@ translation_rules:
 ## Calculate extra system.disk.operations.total and system.disk.io.total metrics summing up read/write ops/IO across all devices.
 - action: copy_metrics
   mapping:
-    system.disk.operations: system.disk.operations.total
-    system.disk.io: system.disk.io.total
+    system.disk.operations: sf_temp.system.disk.operations.total
+    system.disk.io: sf_temp.system.disk.io.total
 - action: aggregate_metric
-  metric_name: system.disk.operations.total
+  metric_name: sf_temp.system.disk.operations.total
   aggregation_method: sum
   without_dimensions:
     - device
 - action: aggregate_metric
-  metric_name: system.disk.io.total
+  metric_name: sf_temp.system.disk.io.total
   aggregation_method: sum
   without_dimensions:
     - device
+
+- action: rename_metrics
+  mapping:
+    sf_temp.system.disk.operations.total: system.disk.operations.total
+    sf_temp.system.disk.io.total: system.disk.io.total
 
 ## Calculate an extra disk_ops.total metric as number all all read and write operations happened since the last report.
 - action: copy_metrics
@@ -375,33 +380,40 @@ translation_rules:
 ## Calculate extra network I/O metrics system.network.packets.total and system.network.io.total.
 - action: copy_metrics
   mapping:
-    system.network.packets: system.network.packets.total
-    system.network.io: system.network.io.total
+    system.network.packets: sf_temp.system.network.packets.total
+    system.network.io: sf_temp.system.network.io.total
 - action: aggregate_metric
-  metric_name: system.network.packets.total
+  metric_name: sf_temp.system.network.packets.total
   aggregation_method: sum
   without_dimensions:
   - device
 - action: aggregate_metric
-  metric_name: system.network.io.total
+  metric_name: sf_temp.system.network.io.total
   aggregation_method: sum
   without_dimensions:
   - device
+- action: rename_metrics
+  mapping:
+    sf_temp.system.network.io.total: system.network.io.total
+    sf_temp.system.network.packets.total: system.network.packets.total
 
 ## Calculate extra network.total metric.
 - action: copy_metrics
   mapping:
-    system.network.io: network.total
+    system.network.io: sf_temp.network.total
   dimension_key: direction
   dimension_values:
     receive: true
     transmit: true
 - action: aggregate_metric
-  metric_name: network.total
+  metric_name: sf_temp.network.total
   aggregation_method: sum
   without_dimensions:
   - direction
   - device
+- action: rename_metrics
+  mapping:
+    sf_temp.network.total: network.total
 
 # memory utilization
 - action: calculate_new_metric
