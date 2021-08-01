@@ -18,6 +18,11 @@ Multiple policies exist today and it is straight forward to add more. These incl
 - `status_code`: Sample based upon the status code (`OK`, `ERROR` or `UNSET`)
 - `string_attribute`: Sample based on string attributes value matches, both exact and regex value matches are supported
 - `rate_limiting`: Sample based on rate
+- `composite`: Sample based on a combination of above samplers, with ordering and rate allocation per sampler. Rate allocation allocates certain percentages of spans per policy order. 
+  For example if we have set max_total_spans_per_second as 100 then we can set rate_allocation as follows
+  1. test-composite-policy-1 = 50 % of max_total_spans_per_second = 50 spans_per_second
+  2. test-composite-policy-1 = 25 % of max_total_spans_per_second = 25 spans_per_second
+  3. To ensure remaining capacity is filled use always_sample as one of the policies
 
 The following configuration options can also be modified:
 - `decision_wait` (default = 30s): Wait time since the first span of a trace before making a sampling decision
@@ -67,7 +72,44 @@ processors:
             name: test-policy-7,
             type: rate_limiting,
             rate_limiting: {spans_per_second: 35}
-         }
+         },
+        {
+          name: composite-policy-1,
+          type: composite,
+          composite:
+            {
+              max_total_spans_per_second: 1000,
+              policy_order: [test-composite-policy-1, test-composite-policy-2, test-composite-policy-3],
+              composite_sub_policy:
+                [
+                  {
+                    name: test-composite-policy-1,
+                    type: numeric_attribute,
+                    numeric_attribute: {key: key1, min_value: 50, max_value: 100}
+                  },
+                  {
+                    name: test-composite-policy-2,
+                    type: string_attribute,
+                    string_attribute: {key: key2, values: [value1, value2]}
+                  },
+                  {
+                    name: test-composite-policy-3,
+                    type: always_sample
+                  }
+                ],
+              rate_allocation:
+                [
+                  {
+                    policy: test-composite-policy-1,
+                    percent: 50
+                  },
+                  {
+                    policy: test-composite-policy-2,
+                    percent: 25
+                  }
+                ]
+            }
+        },
       ]
 ```
 
