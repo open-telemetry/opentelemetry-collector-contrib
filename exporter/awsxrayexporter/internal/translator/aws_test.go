@@ -96,7 +96,7 @@ func TestAwsFromEcsResource(t *testing.T) {
 	assert.NotNil(t, filtered)
 	assert.NotNil(t, awsData)
 	assert.NotNil(t, awsData.ECS)
-	assert.Nil(t, awsData.EC2)
+	assert.NotNil(t, awsData.EC2)
 	assert.Nil(t, awsData.Beanstalk)
 	assert.Nil(t, awsData.EKS)
 	assert.Equal(t, &awsxray.ECSMetadata{
@@ -171,7 +171,7 @@ func TestAwsFromEksResource(t *testing.T) {
 	assert.NotNil(t, filtered)
 	assert.NotNil(t, awsData)
 	assert.NotNil(t, awsData.EKS)
-	assert.Nil(t, awsData.EC2)
+	assert.NotNil(t, awsData.EC2)
 	assert.Nil(t, awsData.ECS)
 	assert.Nil(t, awsData.Beanstalk)
 	assert.Equal(t, &awsxray.EKSMetadata{
