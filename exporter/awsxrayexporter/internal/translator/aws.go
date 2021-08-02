@@ -154,8 +154,10 @@ func makeAws(attributes map[string]pdata.AttributeValue, resource pdata.Resource
 		return filtered, nil // not AWS so return nil
 	}
 
-	// EC2 - hostID/ec2_instanceId should be always returned by ec2 detector
-	if service == semconventions.AttributeCloudPlatformAWSEC2 && hostID != "" {
+	// EC2 - add ec2 metadata to xray request if
+	//       1. cloud.platfrom is set to "aws_ec2" or
+	//       2. there is an non-blank host/instance id found
+	if service == semconventions.AttributeCloudPlatformAWSEC2 || hostID != "" {
 		ec2 = &awsxray.EC2Metadata{
 			InstanceID:       awsxray.String(hostID),
 			AvailabilityZone: awsxray.String(zone),
