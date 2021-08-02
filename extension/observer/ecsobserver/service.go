@@ -34,11 +34,11 @@ type ServiceConfig struct {
 }
 
 func (s *ServiceConfig) validate() error {
-	_, err := s.newMatcher(MatcherOptions{})
+	_, err := s.newMatcher(matcherOptions{})
 	return err
 }
 
-func (s *ServiceConfig) newMatcher(opts MatcherOptions) (Matcher, error) {
+func (s *ServiceConfig) newMatcher(opts matcherOptions) (targetMatcher, error) {
 	if s.NamePattern == "" {
 		return nil, fmt.Errorf("name_pattern is empty")
 	}
@@ -86,11 +86,11 @@ type serviceMatcher struct {
 	exportSetting      *commonExportSetting
 }
 
-func (s *serviceMatcher) Type() MatcherType {
-	return MatcherTypeService
+func (s *serviceMatcher) matcherType() matcherType {
+	return matcherTypeService
 }
 
-func (s *serviceMatcher) MatchTargets(t *Task, c *ecs.ContainerDefinition) ([]MatchedTarget, error) {
+func (s *serviceMatcher) matchTargets(t *taskAnnotated, c *ecs.ContainerDefinition) ([]matchedTarget, error) {
 	// Service info is only attached for tasks whose services are included in config.
 	// However, Match is called on tasks so we need to guard nil pointer.
 	if t.Service == nil {

@@ -82,8 +82,8 @@ type splunkReceiver struct {
 
 var _ component.MetricsReceiver = (*splunkReceiver)(nil)
 
-// NewMetricsReceiver creates the Splunk HEC receiver with the given configuration.
-func NewMetricsReceiver(
+// newMetricsReceiver creates the Splunk HEC receiver with the given configuration.
+func newMetricsReceiver(
 	logger *zap.Logger,
 	config Config,
 	nextConsumer consumer.Metrics,
@@ -118,8 +118,8 @@ func NewMetricsReceiver(
 	return r, nil
 }
 
-// NewLogsReceiver creates the Splunk HEC receiver with the given configuration.
-func NewLogsReceiver(
+// newLogsReceiver creates the Splunk HEC receiver with the given configuration.
+func newLogsReceiver(
 	logger *zap.Logger,
 	config Config,
 	nextConsumer consumer.Logs,
@@ -185,13 +185,7 @@ func (r *splunkReceiver) Shutdown(context.Context) error {
 }
 
 func (r *splunkReceiver) handleReq(resp http.ResponseWriter, req *http.Request) {
-
-	transport := "http"
-	if r.config.TLSSetting != nil {
-		transport = "https"
-	}
-
-	ctx := obsreport.ReceiverContext(req.Context(), r.config.ID(), transport)
+	ctx := req.Context()
 	if r.logsConsumer == nil {
 		ctx = r.obsrecv.StartMetricsOp(ctx)
 	}
@@ -269,7 +263,7 @@ func (r *splunkReceiver) createResourceCustomizer(req *http.Request) func(pdata.
 }
 
 func (r *splunkReceiver) consumeMetrics(ctx context.Context, events []*splunk.Event, resp http.ResponseWriter, req *http.Request) {
-	md, _ := SplunkHecToMetricsData(r.logger, events, r.createResourceCustomizer(req))
+	md, _ := splunkHecToMetricsData(r.logger, events, r.createResourceCustomizer(req))
 
 	decodeErr := r.metricsConsumer.ConsumeMetrics(ctx, md)
 	r.obsrecv.EndMetricsOp(ctx, typeStr, len(events), decodeErr)
@@ -283,7 +277,7 @@ func (r *splunkReceiver) consumeMetrics(ctx context.Context, events []*splunk.Ev
 }
 
 func (r *splunkReceiver) consumeLogs(ctx context.Context, events []*splunk.Event, resp http.ResponseWriter, req *http.Request) {
-	ld, err := SplunkHecToLogData(r.logger, events, r.createResourceCustomizer(req))
+	ld, err := splunkHecToLogData(r.logger, events, r.createResourceCustomizer(req))
 	if err != nil {
 		r.failRequest(ctx, resp, http.StatusBadRequest, errUnmarshalBodyRespBody, err)
 		return

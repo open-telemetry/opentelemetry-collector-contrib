@@ -39,6 +39,7 @@ import (
 
 const (
 	keySamplingPriority string = "_sampling_priority_v1"
+	keySamplingRate     string = "_sample_rate"
 	versionTag          string = "version"
 	oldILNameTag        string = "otel.instrumentation_library.name"
 	currentILNameTag    string = "otel.library.name"
@@ -56,9 +57,9 @@ const (
 	eventNameTag        string = "name"
 	eventAttrTag        string = "attributes"
 	eventTimeTag        string = "time"
-	// MaxMetaValLen value from
+	// maxMetaValLen value from
 	// https://github.com/DataDog/datadog-agent/blob/140a4ee164261ef2245340c50371ba989fbeb038/pkg/trace/traceutil/truncate.go#L23.
-	MaxMetaValLen int = 5000
+	maxMetaValLen int = 5000
 	// tagContainersTags specifies the name of the tag which holds key/value
 	// pairs representing information about the container (Docker, EC2, etc).
 	tagContainersTags = "_dd.tags.container"
@@ -371,7 +372,15 @@ func aggregateSpanTags(span pdata.Span, datadogTags map[string]string) map[strin
 	}
 
 	span.Attributes().Range(func(k string, v pdata.AttributeValue) bool {
-		spanTags[utils.NormalizeTag(k)] = tracetranslator.AttributeValueToString(v)
+		switch k {
+		case keySamplingPriority:
+			spanTags[k] = tracetranslator.AttributeValueToString(v)
+		case keySamplingRate:
+			spanTags[k] = tracetranslator.AttributeValueToString(v)
+		default:
+			spanTags[utils.NormalizeTag(k)] = tracetranslator.AttributeValueToString(v)
+		}
+
 		return true
 	})
 
@@ -437,8 +446,8 @@ func setMetric(s *pb.Span, key string, v float64) {
 }
 
 func setStringTag(s *pb.Span, key, v string) {
-	if len(v) > MaxMetaValLen {
-		v = utils.TruncateUTF8(v, MaxMetaValLen)
+	if len(v) > maxMetaValLen {
+		v = utils.TruncateUTF8(v, maxMetaValLen)
 	}
 
 	switch key {
@@ -453,6 +462,10 @@ func setStringTag(s *pb.Span, key, v string) {
 			setMetric(s, ext.EventSampleRate, 1)
 		} else {
 			setMetric(s, ext.EventSampleRate, 0)
+		}
+	case keySamplingRate:
+		if sampleRateFlt, err := strconv.ParseFloat(v, 64); err == nil {
+			setMetric(s, keySamplingRate, sampleRateFlt)
 		}
 	default:
 		s.Meta[key] = v

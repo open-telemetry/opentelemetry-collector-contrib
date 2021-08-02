@@ -251,10 +251,9 @@ func spanWithTraceState(state pdata.TraceState) pdata.Span {
 	return span
 }
 
-func transformerFromAttributes(att pdata.AttributeMap) *traceTransformer {
+func transformerFromAttributes(attrs pdata.AttributeMap) *traceTransformer {
 	return &traceTransformer{
-		ResourceAttributes: att,
-		Config:             createDefaultConfig().(*Config),
+		resAttrs: attrs,
 	}
 }
 

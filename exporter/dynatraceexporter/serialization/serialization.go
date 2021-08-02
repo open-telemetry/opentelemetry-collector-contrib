@@ -31,29 +31,20 @@ const (
 	maxDimKeyLen = 100
 )
 
-// SerializeIntDataPoints serializes a slice of integer datapoints to a Dynatrace gauge.
-func SerializeIntDataPoints(name string, data pdata.IntDataPointSlice, tags []string) []string {
-	// {name} {value} {timestamp}
-	output := []string{}
-
-	for i := 0; i < data.Len(); i++ {
-		p := data.At(i)
-		tagline := serializeTags(p.LabelsMap(), tags)
-		valueLine := strconv.FormatInt(p.Value(), 10)
-
-		output = append(output, serializeLine(name, tagline, valueLine, p.Timestamp()))
-	}
-
-	return output
-}
-
-// SerializeDoubleDataPoints serializes a slice of double datapoints to a Dynatrace gauge.
-func SerializeDoubleDataPoints(name string, data pdata.DoubleDataPointSlice, tags []string) []string {
+// SerializeNumberDataPoints serializes a slice of number datapoints to a Dynatrace gauge.
+func SerializeNumberDataPoints(name string, data pdata.NumberDataPointSlice, tags []string) []string {
 	// {name} {value} {timestamp}
 	output := []string{}
 	for i := 0; i < data.Len(); i++ {
 		p := data.At(i)
-		output = append(output, serializeLine(name, serializeTags(p.LabelsMap(), tags), serializeFloat64(p.Value()), p.Timestamp()))
+		var val string
+		switch p.Type() {
+		case pdata.MetricValueTypeDouble:
+			val = serializeFloat64(p.DoubleVal())
+		case pdata.MetricValueTypeInt:
+			val = strconv.FormatInt(p.IntVal(), 10)
+		}
+		output = append(output, serializeLine(name, serializeTags(p.LabelsMap(), tags), val, p.Timestamp()))
 	}
 
 	return output
@@ -74,31 +65,6 @@ func SerializeHistogramMetrics(name string, data pdata.HistogramDataPointSlice, 
 		avg := p.Sum() / float64(p.Count())
 
 		valueLine := fmt.Sprintf("gauge,min=%[1]s,max=%[1]s,sum=%s,count=%d", serializeFloat64(avg), serializeFloat64(p.Sum()), p.Count())
-
-		output = append(output, serializeLine(name, tagline, valueLine, p.Timestamp()))
-	}
-
-	return output
-}
-
-// SerializeIntHistogramMetrics serializes a slice of integer histogram datapoints to a Dynatrace gauge.
-//
-// IMPORTANT: Min and max are required by Dynatrace but not provided by histogram so they are assumed to be the average.
-func SerializeIntHistogramMetrics(name string, data pdata.IntHistogramDataPointSlice, tags []string) []string {
-	// {name} gauge,min=9.5,max=9.5,sum=19,count=2 {timestamp_unix_ms}
-	output := []string{}
-	for i := 0; i < data.Len(); i++ {
-		p := data.At(i)
-		tagline := serializeTags(p.LabelsMap(), tags)
-		count := p.Count()
-
-		if count == 0 {
-			return []string{}
-		}
-
-		avg := float64(p.Sum()) / float64(count)
-
-		valueLine := fmt.Sprintf("gauge,min=%[1]s,max=%[1]s,sum=%d,count=%d", serializeFloat64(avg), p.Sum(), count)
 
 		output = append(output, serializeLine(name, tagline, valueLine, p.Timestamp()))
 	}

@@ -62,7 +62,7 @@ func (s *brokerScraper) scrape(context.Context) (pdata.ResourceMetricsSlice, err
 	rms := pdata.NewResourceMetricsSlice()
 	ilm := rms.AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty()
 	ilm.InstrumentationLibrary().SetName(instrumentationLibName)
-	addGauge(ilm.Metrics(), metadata.M.KafkaBrokers.Name(), pdata.TimestampFromTime(time.Now()), pdata.NewStringMap(), int64(len(brokers)))
+	addIntGauge(ilm.Metrics(), metadata.M.KafkaBrokers.Name(), pdata.TimestampFromTime(time.Now()), pdata.NewStringMap(), int64(len(brokers)))
 
 	return rms, nil
 }

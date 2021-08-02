@@ -101,7 +101,7 @@ func TestBrokerScraper_scrape(t *testing.T) {
 	assert.Nil(t, err)
 	expectedDp := int64(len(testBrokers))
 	receivedMetrics := ms.At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(0)
-	receivedDp := receivedMetrics.IntGauge().DataPoints().At(0).Value()
+	receivedDp := receivedMetrics.Gauge().DataPoints().At(0).IntVal()
 	assert.Equal(t, expectedDp, receivedDp)
 	assert.NotNil(t, ms)
 }

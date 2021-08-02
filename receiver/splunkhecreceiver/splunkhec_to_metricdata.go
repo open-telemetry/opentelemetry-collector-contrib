@@ -26,10 +26,10 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 )
 
-// SplunkHecToMetricsData converts Splunk HEC metric points to
+// splunkHecToMetricsData converts Splunk HEC metric points to
 // pdata.Metrics. Returning the converted data and the number of
 // dropped time series.
-func SplunkHecToMetricsData(logger *zap.Logger, events []*splunk.Event, resourceCustomizer func(pdata.Resource)) (pdata.Metrics, int) {
+func splunkHecToMetricsData(logger *zap.Logger, events []*splunk.Event, resourceCustomizer func(pdata.Resource)) (pdata.Metrics, int) {
 	numDroppedTimeSeries := 0
 	md := pdata.NewMetrics()
 
@@ -105,20 +105,20 @@ func convertString(logger *zap.Logger, numDroppedTimeSeries *int, metrics pdata.
 func addIntGauge(metrics pdata.MetricSlice, metricName string, value int64, ts pdata.Timestamp, labels pdata.StringMap) {
 	metric := metrics.AppendEmpty()
 	metric.SetName(metricName)
-	metric.SetDataType(pdata.MetricDataTypeIntGauge)
-	intPt := metric.IntGauge().DataPoints().AppendEmpty()
+	metric.SetDataType(pdata.MetricDataTypeGauge)
+	intPt := metric.Gauge().DataPoints().AppendEmpty()
 	intPt.SetTimestamp(ts)
-	intPt.SetValue(value)
+	intPt.SetIntVal(value)
 	labels.CopyTo(intPt.LabelsMap())
 }
 
 func addDoubleGauge(metrics pdata.MetricSlice, metricName string, value float64, ts pdata.Timestamp, labels pdata.StringMap) {
 	metric := metrics.AppendEmpty()
 	metric.SetName(metricName)
-	metric.SetDataType(pdata.MetricDataTypeDoubleGauge)
-	doublePt := metric.DoubleGauge().DataPoints().AppendEmpty()
+	metric.SetDataType(pdata.MetricDataTypeGauge)
+	doublePt := metric.Gauge().DataPoints().AppendEmpty()
 	doublePt.SetTimestamp(ts)
-	doublePt.SetValue(value)
+	doublePt.SetDoubleVal(value)
 	labels.CopyTo(doublePt.LabelsMap())
 }
 

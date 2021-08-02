@@ -25,8 +25,6 @@ import (
 
 var (
 	errSFxNilDatum = errors.New("nil datum value for data-point")
-
-	errSFxNoDatumValue = errors.New("no datum value present for data-point")
 )
 
 // signalFxV2ToMetrics converts SignalFx proto data points to pdata.Metrics.
@@ -44,16 +42,17 @@ func signalFxV2ToMetrics(
 	ilm := rm.InstrumentationLibraryMetrics().AppendEmpty()
 
 	metrics := ilm.Metrics()
-	metrics.Resize(len(sfxDataPoints))
+	metrics.EnsureCapacity(len(sfxDataPoints))
 
-	i := 0
 	for _, sfxDataPoint := range sfxDataPoints {
 		if sfxDataPoint == nil {
 			// TODO: Log or metric for this odd ball?
 			continue
 		}
 
-		m := metrics.At(i)
+		// fill in a new, unassociated metric as we may drop it during the process
+		m := pdata.NewMetric()
+
 		// First check if the type is convertible and the data point is consistent.
 		err := fillInType(sfxDataPoint, m)
 		if err != nil {
@@ -67,36 +66,20 @@ func signalFxV2ToMetrics(
 		m.SetName(sfxDataPoint.Metric)
 
 		switch m.DataType() {
-		case pdata.MetricDataTypeIntGauge:
-			err = fillIntDataPoint(sfxDataPoint, m.IntGauge().DataPoints())
-		case pdata.MetricDataTypeIntSum:
-			err = fillIntDataPoint(sfxDataPoint, m.IntSum().DataPoints())
-		case pdata.MetricDataTypeDoubleGauge:
-			err = fillDoubleDataPoint(sfxDataPoint, m.DoubleGauge().DataPoints())
-		case pdata.MetricDataTypeDoubleSum:
-			err = fillDoubleDataPoint(sfxDataPoint, m.DoubleSum().DataPoints())
+		case pdata.MetricDataTypeGauge:
+			fillNumberDataPoint(sfxDataPoint, m.Gauge().DataPoints())
+		case pdata.MetricDataTypeSum:
+			fillNumberDataPoint(sfxDataPoint, m.Sum().DataPoints())
 		}
 
-		if err != nil {
-			numDroppedDataPoints++
-			logger.Debug("SignalFx data-point datum conversion error",
-				zap.Error(err),
-				zap.String("metric", sfxDataPoint.GetMetric()))
-			continue
-		}
-
-		i++
+		// We know at this point we're keeping this metric
+		m.CopyTo(metrics.AppendEmpty())
 	}
-
-	metrics.Resize(i)
 
 	return md, numDroppedDataPoints
 }
 
-func fillInType(
-	sfxDataPoint *sfxpb.DataPoint,
-	m pdata.Metric,
-) (err error) {
+func fillInType(sfxDataPoint *sfxpb.DataPoint, m pdata.Metric) (err error) {
 	// Combine metric type with the actual data point type
 	sfxMetricType := sfxDataPoint.GetMetricType()
 	sfxDatum := sfxDataPoint.Value
@@ -106,43 +89,18 @@ func fillInType(
 
 	switch sfxMetricType {
 	case sfxpb.MetricType_GAUGE:
-		switch {
-		case sfxDatum.DoubleValue != nil:
-			// Numerical: Periodic, instantaneous measurement of some state.
-			m.SetDataType(pdata.MetricDataTypeDoubleGauge)
-		case sfxDatum.IntValue != nil:
-			m.SetDataType(pdata.MetricDataTypeIntGauge)
-		default:
-			err = fmt.Errorf("non-numeric datapoint encountered")
-		}
+		// Numerical: Periodic, instantaneous measurement of some state.
+		m.SetDataType(pdata.MetricDataTypeGauge)
 
 	case sfxpb.MetricType_COUNTER:
-		switch {
-		case sfxDatum.DoubleValue != nil:
-			m.SetDataType(pdata.MetricDataTypeDoubleSum)
-			m.DoubleSum().SetAggregationTemporality(pdata.AggregationTemporalityDelta)
-			m.DoubleSum().SetIsMonotonic(true)
-		case sfxDatum.IntValue != nil:
-			m.SetDataType(pdata.MetricDataTypeIntSum)
-			m.IntSum().SetAggregationTemporality(pdata.AggregationTemporalityDelta)
-			m.IntSum().SetIsMonotonic(true)
-		default:
-			err = fmt.Errorf("non-numeric datapoint encountered")
-		}
+		m.SetDataType(pdata.MetricDataTypeSum)
+		m.Sum().SetAggregationTemporality(pdata.AggregationTemporalityDelta)
+		m.Sum().SetIsMonotonic(true)
 
 	case sfxpb.MetricType_CUMULATIVE_COUNTER:
-		switch {
-		case sfxDatum.DoubleValue != nil:
-			m.SetDataType(pdata.MetricDataTypeDoubleSum)
-			m.DoubleSum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
-			m.DoubleSum().SetIsMonotonic(true)
-		case sfxDatum.IntValue != nil:
-			m.SetDataType(pdata.MetricDataTypeIntSum)
-			m.IntSum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
-			m.IntSum().SetIsMonotonic(true)
-		default:
-			err = fmt.Errorf("non-numeric datapoint encountered")
-		}
+		m.SetDataType(pdata.MetricDataTypeSum)
+		m.Sum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+		m.Sum().SetIsMonotonic(true)
 	default:
 		err = fmt.Errorf("unknown data-point type (%d)", sfxMetricType)
 	}
@@ -150,31 +108,16 @@ func fillInType(
 	return err
 }
 
-func fillIntDataPoint(sfxDataPoint *sfxpb.DataPoint, dps pdata.IntDataPointSlice) error {
-	if sfxDataPoint.Value.IntValue == nil {
-		return errSFxNoDatumValue
-	}
-
+func fillNumberDataPoint(sfxDataPoint *sfxpb.DataPoint, dps pdata.NumberDataPointSlice) {
 	dp := dps.AppendEmpty()
 	dp.SetTimestamp(dpTimestamp(sfxDataPoint))
-	dp.SetValue(*sfxDataPoint.Value.IntValue)
-	fillInLabels(sfxDataPoint.Dimensions, dp.LabelsMap())
-
-	return nil
-}
-
-func fillDoubleDataPoint(sfxDataPoint *sfxpb.DataPoint, dps pdata.DoubleDataPointSlice) error {
-	if sfxDataPoint.Value.DoubleValue == nil {
-		return errSFxNoDatumValue
+	switch {
+	case sfxDataPoint.Value.IntValue != nil:
+		dp.SetIntVal(*sfxDataPoint.Value.IntValue)
+	case sfxDataPoint.Value.DoubleValue != nil:
+		dp.SetDoubleVal(*sfxDataPoint.Value.DoubleValue)
 	}
-
-	dp := dps.AppendEmpty()
-	dp.SetTimestamp(dpTimestamp(sfxDataPoint))
-	dp.SetValue(*sfxDataPoint.Value.DoubleValue)
 	fillInLabels(sfxDataPoint.Dimensions, dp.LabelsMap())
-
-	return nil
-
 }
 
 func dpTimestamp(dp *sfxpb.DataPoint) pdata.Timestamp {

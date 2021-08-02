@@ -5,11 +5,10 @@
 set -e
 
 if grep -q "$MODULE " go.mod; then
-  # If MODULE is "go.opentelemetry.io/collector" need to update "go.opentelemetry.io/collector/pdata" as well.
+  # If MODULE is "go.opentelemetry.io/collector" need to update "go.opentelemetry.io/collector/model" as well.
+  go get "$MODULE"@"$VERSION"
   if [ "$MODULE" == "go.opentelemetry.io/collector" ]; then
     MODEL=$MODULE"/model"
-    go mod edit --dropreplace "$MODEL"
-    go mod edit --replace "$MODEL"="$MODEL"@"$VERSION"
+    go get "$MODEL"@"$VERSION"
   fi
-  go get "$MODULE"@"$VERSION"
 fi

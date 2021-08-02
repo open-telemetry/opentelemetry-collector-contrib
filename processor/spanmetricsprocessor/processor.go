@@ -43,7 +43,7 @@ const (
 
 var (
 	maxDuration   = time.Duration(math.MaxInt64)
-	maxDurationMs = float64(maxDuration.Milliseconds())
+	maxDurationMs = durationToMillis(maxDuration)
 
 	defaultLatencyHistogramBucketsMs = []float64{
 		2, 4, 6, 8, 10, 50, 100, 200, 400, 800, 1000, 1400, 2000, 5000, 10_000, 15_000, maxDurationMs,
@@ -89,9 +89,7 @@ func newProcessor(logger *zap.Logger, config config.Processor, nextConsumer cons
 
 	bounds := defaultLatencyHistogramBucketsMs
 	if pConfig.LatencyHistogramBuckets != nil {
-		bounds = mapDurationsToMillis(pConfig.LatencyHistogramBuckets, func(duration time.Duration) float64 {
-			return float64(duration.Milliseconds())
-		})
+		bounds = mapDurationsToMillis(pConfig.LatencyHistogramBuckets)
 
 		// "Catch-all" bucket.
 		if bounds[len(bounds)-1] != maxDurationMs {
@@ -118,10 +116,16 @@ func newProcessor(logger *zap.Logger, config config.Processor, nextConsumer cons
 	}, nil
 }
 
-func mapDurationsToMillis(vs []time.Duration, f func(duration time.Duration) float64) []float64 {
+// durationToMillis converts the given duration to the number of milliseconds it represents.
+// Note that this can return sub-millisecond (i.e. < 1ms) values as well.
+func durationToMillis(d time.Duration) float64 {
+	return float64(d.Nanoseconds()) / float64(time.Millisecond.Nanoseconds())
+}
+
+func mapDurationsToMillis(vs []time.Duration) []float64 {
 	vsm := make([]float64, len(vs))
 	for i, v := range vs {
-		vsm[i] = f(v)
+		vsm[i] = durationToMillis(v)
 	}
 	return vsm
 }
@@ -237,17 +241,17 @@ func (p *processorImp) buildMetrics() *pdata.Metrics {
 func (p *processorImp) collectLatencyMetrics(ilm pdata.InstrumentationLibraryMetrics) {
 	for key := range p.latencyCount {
 		mLatency := ilm.Metrics().AppendEmpty()
-		mLatency.SetDataType(pdata.MetricDataTypeIntHistogram)
+		mLatency.SetDataType(pdata.MetricDataTypeHistogram)
 		mLatency.SetName("latency")
-		mLatency.IntHistogram().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+		mLatency.Histogram().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
 
-		dpLatency := mLatency.IntHistogram().DataPoints().AppendEmpty()
+		dpLatency := mLatency.Histogram().DataPoints().AppendEmpty()
 		dpLatency.SetStartTimestamp(pdata.TimestampFromTime(p.startTime))
 		dpLatency.SetTimestamp(pdata.TimestampFromTime(time.Now()))
 		dpLatency.SetExplicitBounds(p.latencyBounds)
 		dpLatency.SetBucketCounts(p.latencyBucketCounts[key])
 		dpLatency.SetCount(p.latencyCount[key])
-		dpLatency.SetSum(int64(p.latencySum[key]))
+		dpLatency.SetSum(p.latencySum[key])
 
 		dpLatency.LabelsMap().InitFromMap(p.metricKeyToDimensions[key])
 	}
@@ -258,15 +262,15 @@ func (p *processorImp) collectLatencyMetrics(ilm pdata.InstrumentationLibraryMet
 func (p *processorImp) collectCallMetrics(ilm pdata.InstrumentationLibraryMetrics) {
 	for key := range p.callSum {
 		mCalls := ilm.Metrics().AppendEmpty()
-		mCalls.SetDataType(pdata.MetricDataTypeIntSum)
+		mCalls.SetDataType(pdata.MetricDataTypeSum)
 		mCalls.SetName("calls_total")
-		mCalls.IntSum().SetIsMonotonic(true)
-		mCalls.IntSum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+		mCalls.Sum().SetIsMonotonic(true)
+		mCalls.Sum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
 
-		dpCalls := mCalls.IntSum().DataPoints().AppendEmpty()
+		dpCalls := mCalls.Sum().DataPoints().AppendEmpty()
 		dpCalls.SetStartTimestamp(pdata.TimestampFromTime(p.startTime))
 		dpCalls.SetTimestamp(pdata.TimestampFromTime(time.Now()))
-		dpCalls.SetValue(p.callSum[key])
+		dpCalls.SetIntVal(p.callSum[key])
 
 		dpCalls.LabelsMap().InitFromMap(p.metricKeyToDimensions[key])
 	}

@@ -61,5 +61,5 @@ func createMetricsExporter(_ context.Context,
 
 	expCfg := config.(*Config)
 
-	return NewEmfExporter(expCfg, params)
+	return newEmfExporter(expCfg, params)
 }

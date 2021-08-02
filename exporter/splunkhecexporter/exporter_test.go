@@ -218,10 +218,10 @@ func generateLargeLogsBatch() pdata.Logs {
 	logs := pdata.NewLogs()
 	rl := logs.ResourceLogs().AppendEmpty()
 	ill := rl.InstrumentationLibraryLogs().AppendEmpty()
-	ill.Logs().Resize(65000)
+	ill.Logs().EnsureCapacity(65000)
 	ts := pdata.Timestamp(123)
 	for i := 0; i < 65000; i++ {
-		logRecord := ill.Logs().At(i)
+		logRecord := ill.Logs().AppendEmpty()
 		logRecord.Body().SetStringVal("mylog")
 		logRecord.Attributes().InsertString(conventions.AttributeServiceName, "myapp")
 		logRecord.Attributes().InsertString(splunk.SourcetypeLabel, "myapp-type")

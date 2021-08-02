@@ -55,8 +55,8 @@ func TestServiceMatcher(t *testing.T) {
 			},
 		},
 	}
-	genTasks := func() []*Task {
-		return []*Task{
+	genTasks := func() []*taskAnnotated {
+		return []*taskAnnotated{
 			{
 				Service: &ecs.Service{ServiceName: aws.String("nginx-service")},
 				Definition: &ecs.TaskDefinition{
@@ -102,15 +102,15 @@ func TestServiceMatcher(t *testing.T) {
 			},
 		}
 		res := newMatcherAndMatch(t, &cfg, genTasks())
-		assert.Equal(t, &MatchResult{
+		assert.Equal(t, &matchResult{
 			Tasks: []int{0},
-			Containers: []MatchedContainer{
+			Containers: []matchedContainer{
 				{
 					TaskIndex:      0,
 					ContainerIndex: 0,
-					Targets: []MatchedTarget{
+					Targets: []matchedTarget{
 						{
-							MatcherType: MatcherTypeService,
+							MatcherType: matcherTypeService,
 							Port:        2112,
 							Job:         "CONFIG_PROM_JOB",
 						},
@@ -135,15 +135,15 @@ func TestServiceMatcher(t *testing.T) {
 			},
 		}
 		res := newMatcherAndMatch(t, &cfg, genTasks())
-		assert.Equal(t, &MatchResult{
+		assert.Equal(t, &matchResult{
 			Tasks: []int{0},
-			Containers: []MatchedContainer{
+			Containers: []matchedContainer{
 				{
 					TaskIndex:      0,
 					ContainerIndex: 1,
-					Targets: []MatchedTarget{
+					Targets: []matchedTarget{
 						{
-							MatcherType: MatcherTypeService,
+							MatcherType: matcherTypeService,
 							Port:        2114,
 							Job:         "CONFIG_PROM_JOB",
 						},

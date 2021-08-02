@@ -22,12 +22,11 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenterror"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configcheck"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.uber.org/zap"
 
 	awsxray "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray"
 )
@@ -54,9 +53,7 @@ func TestCreateTracesReceiver(t *testing.T) {
 	factory := NewFactory()
 	_, err := factory.CreateTracesReceiver(
 		context.Background(),
-		component.ReceiverCreateSettings{
-			Logger: zap.NewNop(),
-		},
+		componenttest.NewNopReceiverCreateSettings(),
 		factory.CreateDefaultConfig().(*Config),
 		consumertest.NewNop(),
 	)
@@ -67,9 +64,7 @@ func TestCreateMetricsReceiver(t *testing.T) {
 	factory := NewFactory()
 	_, err := factory.CreateMetricsReceiver(
 		context.Background(),
-		component.ReceiverCreateSettings{
-			Logger: zap.NewNop(),
-		},
+		componenttest.NewNopReceiverCreateSettings(),
 		factory.CreateDefaultConfig().(*Config),
 		consumertest.NewNop(),
 	)

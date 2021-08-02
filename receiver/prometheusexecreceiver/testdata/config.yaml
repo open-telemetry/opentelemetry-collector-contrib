@@ -8,7 +8,7 @@ receivers:
     scrape_interval: 90s
   prometheus_exec/end_to_end_test/1:
     exec: go run ./testdata/end_to_end_metrics_test/test_prometheus_exporter.go {{port}}
-    scrape_interval: 0.1s
+    scrape_interval: 1s
     port: 9999
     env: 
       - name: "DATA_SOURCE_NAME"
@@ -17,7 +17,7 @@ receivers:
         value: "1234"
   prometheus_exec/end_to_end_test/2:
     exec: go run ./testdata/end_to_end_metrics_test/test_prometheus_exporter.go {{port}}
-    scrape_interval: 0.1s
+    scrape_interval: 1s
 
 processors:
   nop:

@@ -25,10 +25,10 @@ import (
 // pdata.LogSlice. Returning the converted data and the number of dropped log
 // records.
 func signalFxV2EventsToLogRecords(events []*sfxpb.Event, lrs pdata.LogSlice) {
-	lrs.Resize(len(events))
+	lrs.EnsureCapacity(len(events))
 
-	for i, event := range events {
-		lr := lrs.At(i)
+	for _, event := range events {
+		lr := lrs.AppendEmpty()
 
 		// The EventType field is the most logical "name" of the event.
 		lr.SetName(event.EventType)

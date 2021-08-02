@@ -28,7 +28,7 @@ type groupByAttrsProcessor struct {
 }
 
 // ProcessTraces process traces and groups traces by attribute.
-func (gap *groupByAttrsProcessor) ProcessTraces(ctx context.Context, td pdata.Traces) (pdata.Traces, error) {
+func (gap *groupByAttrsProcessor) processTraces(ctx context.Context, td pdata.Traces) (pdata.Traces, error) {
 	rss := td.ResourceSpans()
 	extractedGroups := newSpansGroupedByAttrs()
 
@@ -68,7 +68,7 @@ func (gap *groupByAttrsProcessor) ProcessTraces(ctx context.Context, td pdata.Tr
 	return groupedTraces, nil
 }
 
-func (gap *groupByAttrsProcessor) ProcessLogs(ctx context.Context, ld pdata.Logs) (pdata.Logs, error) {
+func (gap *groupByAttrsProcessor) processLogs(ctx context.Context, ld pdata.Logs) (pdata.Logs, error) {
 	rl := ld.ResourceLogs()
 	extractedGroups := newLogsGroupedByAttrs()
 

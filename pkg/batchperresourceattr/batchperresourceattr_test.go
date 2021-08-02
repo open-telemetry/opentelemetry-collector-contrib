@@ -319,9 +319,9 @@ func fillResourceLogs(rs pdata.ResourceLogs, key string, val pdata.AttributeValu
 func BenchmarkBatchPerResourceTraces(b *testing.B) {
 	inBatch := pdata.NewTraces()
 	rss := inBatch.ResourceSpans()
-	rss.Resize(64)
+	rss.EnsureCapacity(64)
 	for i := 0; i < 64; i++ {
-		fillResourceSpans(rss.At(i), "attr_key", pdata.NewAttributeValueString(strconv.Itoa(i%8)))
+		fillResourceSpans(rss.AppendEmpty(), "attr_key", pdata.NewAttributeValueString(strconv.Itoa(i%8)))
 	}
 	bpr := NewBatchPerResourceTraces("attr_key", consumertest.NewNop())
 	b.ReportAllocs()
@@ -335,9 +335,9 @@ func BenchmarkBatchPerResourceTraces(b *testing.B) {
 
 func BenchmarkBatchPerResourceMetrics(b *testing.B) {
 	inBatch := pdata.NewMetrics()
-	inBatch.ResourceMetrics().Resize(64)
+	inBatch.ResourceMetrics().EnsureCapacity(64)
 	for i := 0; i < 64; i++ {
-		fillResourceMetrics(inBatch.ResourceMetrics().At(i), "attr_key", pdata.NewAttributeValueString(strconv.Itoa(i%8)))
+		fillResourceMetrics(inBatch.ResourceMetrics().AppendEmpty(), "attr_key", pdata.NewAttributeValueString(strconv.Itoa(i%8)))
 	}
 	bpr := NewBatchPerResourceMetrics("attr_key", consumertest.NewNop())
 	b.ReportAllocs()
@@ -351,9 +351,9 @@ func BenchmarkBatchPerResourceMetrics(b *testing.B) {
 
 func BenchmarkBatchPerResourceLogs(b *testing.B) {
 	inBatch := pdata.NewLogs()
-	inBatch.ResourceLogs().Resize(64)
+	inBatch.ResourceLogs().EnsureCapacity(64)
 	for i := 0; i < 64; i++ {
-		fillResourceLogs(inBatch.ResourceLogs().At(i), "attr_key", pdata.NewAttributeValueString(strconv.Itoa(i%8)))
+		fillResourceLogs(inBatch.ResourceLogs().AppendEmpty(), "attr_key", pdata.NewAttributeValueString(strconv.Itoa(i%8)))
 	}
 	bpr := NewBatchPerResourceLogs("attr_key", consumertest.NewNop())
 	b.ReportAllocs()

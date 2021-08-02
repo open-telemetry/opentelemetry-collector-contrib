@@ -39,7 +39,6 @@ type Receiver struct {
 	nextConsumer      consumer.Metrics
 	client            *dockerClient
 	runner            *interval.Runner
-	obsCtx            context.Context
 	runnerCtx         context.Context
 	runnerCancel      context.CancelFunc
 	successfullySetup bool
@@ -81,8 +80,6 @@ func (r *Receiver) Start(ctx context.Context, host component.Host) error {
 		return err
 	}
 
-	r.obsCtx = obsreport.ReceiverContext(ctx, r.config.ID(), r.transport)
-
 	r.runnerCtx, r.runnerCancel = context.WithCancel(context.Background())
 	r.runner = interval.NewRunner(r.config.CollectionInterval, r)
 
@@ -122,7 +119,7 @@ func (r *Receiver) Run() error {
 		return r.Setup()
 	}
 
-	c := r.obsrecv.StartMetricsOp(r.obsCtx)
+	ctx := r.obsrecv.StartMetricsOp(r.runnerCtx)
 
 	containers := r.client.Containers()
 	results := make(chan result, len(containers))
@@ -131,7 +128,7 @@ func (r *Receiver) Run() error {
 	wg.Add(len(containers))
 	for _, container := range containers {
 		go func(dc DockerContainer) {
-			md, err := r.client.FetchContainerStatsAndConvertToMetrics(r.runnerCtx, dc)
+			md, err := r.client.FetchContainerStatsAndConvertToMetrics(ctx, dc)
 			results <- result{md, err}
 			wg.Done()
 		}(container)
@@ -146,9 +143,8 @@ func (r *Receiver) Run() error {
 		var err error
 		if result.md != nil {
 			md := internaldata.OCToMetrics(result.md.Node, result.md.Resource, result.md.Metrics)
-			_, np := md.MetricAndDataPointCount()
-			numPoints += np
-			err = r.nextConsumer.ConsumeMetrics(r.runnerCtx, md)
+			numPoints += md.DataPointCount()
+			err = r.nextConsumer.ConsumeMetrics(ctx, md)
 		} else {
 			err = result.err
 		}
@@ -158,6 +154,6 @@ func (r *Receiver) Run() error {
 		}
 	}
 
-	r.obsrecv.EndMetricsOp(c, typeStr, numPoints, lastErr)
+	r.obsrecv.EndMetricsOp(ctx, typeStr, numPoints, lastErr)
 	return nil
 }

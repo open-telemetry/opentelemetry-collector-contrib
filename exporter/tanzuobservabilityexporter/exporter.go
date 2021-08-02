@@ -101,7 +101,7 @@ func (e *tracesExporter) pushTraceData(ctx context.Context, td pdata.Traces) err
 		resource := rspans.Resource()
 		for j := 0; j < rspans.InstrumentationLibrarySpans().Len(); j++ {
 			ispans := rspans.InstrumentationLibrarySpans().At(j)
-			transform := newTraceTransformer(resource, e.cfg)
+			transform := newTraceTransformer(resource)
 			for k := 0; k < ispans.Spans().Len(); k++ {
 				select {
 				case <-ctx.Done():
@@ -113,7 +113,7 @@ func (e *tracesExporter) pushTraceData(ctx context.Context, td pdata.Traces) err
 						continue
 					}
 
-					if err := e.RecordSpan(transformedSpan); err != nil {
+					if err := e.recordSpan(transformedSpan); err != nil {
 						errs = append(errs, err)
 						continue
 					}
@@ -125,12 +125,7 @@ func (e *tracesExporter) pushTraceData(ctx context.Context, td pdata.Traces) err
 	return consumererror.Combine(errs)
 }
 
-func (e *tracesExporter) Shutdown(_ context.Context) error {
-	e.sender.Close()
-	return nil
-}
-
-func (e *tracesExporter) RecordSpan(span Span) error {
+func (e *tracesExporter) recordSpan(span span) error {
 	var parents []string
 	if span.ParentSpanID != uuid.Nil {
 		parents = []string{span.ParentSpanID.String()}
@@ -153,6 +148,11 @@ func (e *tracesExporter) RecordSpan(span Span) error {
 		return err
 	}
 	return e.sender.Flush()
+}
+
+func (e *tracesExporter) shutdown(_ context.Context) error {
+	e.sender.Close()
+	return nil
 }
 
 func mapToSpanTags(tags map[string]string) []senders.SpanTag {

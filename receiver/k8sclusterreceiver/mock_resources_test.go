@@ -16,11 +16,15 @@ package k8sclusterreceiver
 
 import (
 	"context"
+	"fmt"
 	"strconv"
 	"testing"
 	"time"
 
+	quotav1 "github.com/openshift/api/quota/v1"
+	fakeQuota "github.com/openshift/client-go/quota/clientset/versioned/fake"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes/fake"
@@ -76,6 +80,48 @@ func createNodes(t *testing.T, client *fake.Clientset, numNodes int) {
 			t.FailNow()
 		}
 
+		time.Sleep(2 * time.Millisecond)
+	}
+}
+
+func createClusterQuota(t *testing.T, client *fakeQuota.Clientset, numQuotas int) {
+	for i := 0; i < numQuotas; i++ {
+		q := &quotav1.ClusterResourceQuota{
+			ObjectMeta: v1.ObjectMeta{
+				Name:        fmt.Sprintf("test-clusterquota-%d", i),
+				UID:         types.UID(fmt.Sprintf("test-clusterquota-%d-uid", i)),
+				ClusterName: "test-openshift-cluster",
+			},
+			Status: quotav1.ClusterResourceQuotaStatus{
+				Total: corev1.ResourceQuotaStatus{
+					Hard: corev1.ResourceList{
+						"requests.cpu": *resource.NewQuantity(5, resource.DecimalSI),
+					},
+					Used: corev1.ResourceList{
+						"requests.cpu": *resource.NewQuantity(4, resource.DecimalSI),
+					},
+				},
+				Namespaces: quotav1.ResourceQuotasStatusByNamespace{
+					{
+						Namespace: fmt.Sprintf("ns%d", i),
+						Status: corev1.ResourceQuotaStatus{
+							Hard: corev1.ResourceList{
+								"requests.cpu": *resource.NewQuantity(5, resource.DecimalSI),
+							},
+							Used: corev1.ResourceList{
+								"requests.cpu": *resource.NewQuantity(4, resource.DecimalSI),
+							},
+						},
+					},
+				},
+			},
+		}
+
+		_, err := client.QuotaV1().ClusterResourceQuotas().Create(context.Background(), q, v1.CreateOptions{})
+		if err != nil {
+			t.Errorf("error creating pod: %v", err)
+			t.FailNow()
+		}
 		time.Sleep(2 * time.Millisecond)
 	}
 }

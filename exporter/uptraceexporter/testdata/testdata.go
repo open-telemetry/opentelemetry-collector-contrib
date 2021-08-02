@@ -46,16 +46,16 @@ var (
 func GenerateTraceDataTwoSpansSameResource() pdata.Traces {
 	td := GenerateTraceDataOneEmptyInstrumentationLibrary()
 	rs0ils0 := td.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0)
-	rs0ils0.Spans().Resize(2)
-	fillSpanOne(rs0ils0.Spans().At(0))
-	fillSpanTwo(rs0ils0.Spans().At(1))
+	rs0ils0.Spans().EnsureCapacity(2)
+	fillSpanOne(rs0ils0.Spans().AppendEmpty())
+	fillSpanTwo(rs0ils0.Spans().AppendEmpty())
 	return td
 }
 
 func GenerateTraceDataOneEmptyInstrumentationLibrary() pdata.Traces {
 	td := GenerateTraceDataNoLibraries()
 	rs0 := td.ResourceSpans().At(0)
-	rs0.InstrumentationLibrarySpans().Resize(1)
+	rs0.InstrumentationLibrarySpans().AppendEmpty()
 	return td
 }
 
@@ -68,7 +68,7 @@ func GenerateTraceDataNoLibraries() pdata.Traces {
 
 func GenerateTraceDataOneEmptyResourceSpans() pdata.Traces {
 	td := GenerateTraceDataEmpty()
-	td.ResourceSpans().Resize(1)
+	td.ResourceSpans().AppendEmpty()
 	return td
 }
 
@@ -86,13 +86,13 @@ func fillSpanOne(span pdata.Span) {
 	span.SetEndTimestamp(TestSpanEndTimestamp)
 	span.SetDroppedAttributesCount(1)
 	evs := span.Events()
-	evs.Resize(2)
-	ev0 := evs.At(0)
+	evs.EnsureCapacity(2)
+	ev0 := evs.AppendEmpty()
 	ev0.SetTimestamp(TestSpanEventTimestamp)
 	ev0.SetName("event-with-attr")
 	initSpanEventAttributes(ev0.Attributes())
 	ev0.SetDroppedAttributesCount(2)
-	ev1 := evs.At(1)
+	ev1 := evs.AppendEmpty()
 	ev1.SetTimestamp(TestSpanEventTimestamp)
 	ev1.SetName("event")
 	ev1.SetDroppedAttributesCount(2)
@@ -107,10 +107,10 @@ func fillSpanTwo(span pdata.Span) {
 	span.SetKind(pdata.SpanKindServer)
 	span.SetStartTimestamp(TestSpanStartTimestamp)
 	span.SetEndTimestamp(TestSpanEndTimestamp)
-	span.Links().Resize(2)
-	initSpanLinkAttributes(span.Links().At(0).Attributes())
+	span.Links().EnsureCapacity(2)
+	initSpanLinkAttributes(span.Links().AppendEmpty().Attributes())
 	span.Links().At(0).SetDroppedAttributesCount(4)
-	span.Links().At(1).SetDroppedAttributesCount(4)
+	span.Links().AppendEmpty().SetDroppedAttributesCount(4)
 	span.SetDroppedLinksCount(3)
 	status := span.Status()
 	status.SetCode(pdata.StatusCodeOk)

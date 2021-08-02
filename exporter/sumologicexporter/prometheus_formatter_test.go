@@ -129,31 +129,6 @@ summary_metric_double_test_count{foo="bar",pod_name="sit",namespace="main"} 7 16
 	assert.Equal(t, expected, result)
 }
 
-func TestPrometheusMetricDataTypeIntHistogram(t *testing.T) {
-	f, err := newPrometheusFormatter()
-	require.NoError(t, err)
-	metric := exampleIntHistogramMetric()
-
-	result := f.metric2String(metric)
-	expected := `histogram_metric_int_test{foo="bar",le="0.1",pod_name="dolor",namespace="sumologic"} 0 1618124444169
-histogram_metric_int_test{foo="bar",le="0.2",pod_name="dolor",namespace="sumologic"} 12 1618124444169
-histogram_metric_int_test{foo="bar",le="0.5",pod_name="dolor",namespace="sumologic"} 19 1618124444169
-histogram_metric_int_test{foo="bar",le="0.8",pod_name="dolor",namespace="sumologic"} 24 1618124444169
-histogram_metric_int_test{foo="bar",le="1",pod_name="dolor",namespace="sumologic"} 32 1618124444169
-histogram_metric_int_test{foo="bar",le="+Inf",pod_name="dolor",namespace="sumologic"} 45 1618124444169
-histogram_metric_int_test_sum{foo="bar",pod_name="dolor",namespace="sumologic"} 45 1618124444169
-histogram_metric_int_test_count{foo="bar",pod_name="dolor",namespace="sumologic"} 3 1618124444169
-histogram_metric_int_test{foo="bar",le="0.1",pod_name="sit",namespace="main"} 0 1608424699186
-histogram_metric_int_test{foo="bar",le="0.2",pod_name="sit",namespace="main"} 10 1608424699186
-histogram_metric_int_test{foo="bar",le="0.5",pod_name="sit",namespace="main"} 11 1608424699186
-histogram_metric_int_test{foo="bar",le="0.8",pod_name="sit",namespace="main"} 12 1608424699186
-histogram_metric_int_test{foo="bar",le="1",pod_name="sit",namespace="main"} 16 1608424699186
-histogram_metric_int_test{foo="bar",le="+Inf",pod_name="sit",namespace="main"} 22 1608424699186
-histogram_metric_int_test_sum{foo="bar",pod_name="sit",namespace="main"} 54 1608424699186
-histogram_metric_int_test_count{foo="bar",pod_name="sit",namespace="main"} 5 1608424699186`
-	assert.Equal(t, expected, result)
-}
-
 func TestPrometheusMetricDataTypeHistogram(t *testing.T) {
 	f, err := newPrometheusFormatter()
 	require.NoError(t, err)

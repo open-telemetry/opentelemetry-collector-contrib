@@ -35,14 +35,14 @@ func NewFactory() component.ExporterFactory {
 	)
 }
 
-func createTraceExporter(_ context.Context, params component.ExporterCreateSettings, config config.Exporter) (component.TracesExporter, error) {
+func createTraceExporter(_ context.Context, set component.ExporterCreateSettings, config config.Exporter) (component.TracesExporter, error) {
 	cfg := config.(*Config)
 
-	exporter := newTracesExporter(cfg, params)
+	exporter := newTracesExporter(cfg, set)
 
 	return exporterhelper.NewTracesExporter(
 		config,
-		params.Logger,
+		set,
 		exporter.pushTraces,
 		exporterhelper.WithQueue(cfg.QueueSettings),
 		exporterhelper.WithRetry(cfg.RetrySettings),
@@ -50,17 +50,17 @@ func createTraceExporter(_ context.Context, params component.ExporterCreateSetti
 	)
 }
 
-func createMetricsExporter(_ context.Context, params component.ExporterCreateSettings, config config.Exporter) (component.MetricsExporter, error) {
+func createMetricsExporter(_ context.Context, set component.ExporterCreateSettings, config config.Exporter) (component.MetricsExporter, error) {
 	cfg := config.(*Config)
 
-	exporter, err := newMetricsExporter(cfg, params)
+	exporter, err := newMetricsExporter(cfg, set)
 	if err != nil {
 		return nil, err
 	}
 
 	return exporterhelper.NewMetricsExporter(
 		config,
-		params.Logger,
+		set,
 		exporter.pushMetrics,
 		exporterhelper.WithQueue(cfg.QueueSettings),
 		exporterhelper.WithRetry(cfg.RetrySettings),
@@ -68,14 +68,14 @@ func createMetricsExporter(_ context.Context, params component.ExporterCreateSet
 	)
 }
 
-func createLogsExporter(_ context.Context, params component.ExporterCreateSettings, config config.Exporter) (component.LogsExporter, error) {
+func createLogsExporter(_ context.Context, set component.ExporterCreateSettings, config config.Exporter) (component.LogsExporter, error) {
 	cfg := config.(*Config)
 
-	exporter := newLogsExporter(cfg, params)
+	exporter := newLogsExporter(cfg, set)
 
 	return exporterhelper.NewLogsExporter(
 		config,
-		params.Logger,
+		set,
 		exporter.pushLogs,
 		exporterhelper.WithQueue(cfg.QueueSettings),
 		exporterhelper.WithRetry(cfg.RetrySettings),

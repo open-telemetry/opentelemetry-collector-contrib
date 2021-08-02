@@ -23,10 +23,10 @@ import (
 )
 
 func TestMatcherType(t *testing.T) {
-	m := map[MatcherType]string{
-		MatcherTypeService:        "service",
-		MatcherTypeTaskDefinition: "task_definition",
-		MatcherTypeDockerLabel:    "docker_label",
+	m := map[matcherType]string{
+		matcherTypeService:        "service",
+		matcherTypeTaskDefinition: "task_definition",
+		matcherTypeDockerLabel:    "docker_label",
 		-1:                        "unknown_matcher_type",
 	}
 	for k, v := range m {
@@ -37,7 +37,7 @@ func TestMatcherType(t *testing.T) {
 func TestNewMatchers(t *testing.T) {
 	t.Run("empty", func(t *testing.T) {
 		var c Config
-		_, err := newMatchers(c, MatcherOptions{})
+		_, err := newMatchers(c, matcherOptions{})
 		require.Error(t, err)
 	})
 
@@ -49,7 +49,7 @@ func TestNewMatchers(t *testing.T) {
 				},
 			},
 		}
-		_, err := newMatchers(c, MatcherOptions{})
+		_, err := newMatchers(c, matcherOptions{})
 		require.Error(t, err)
 	})
 
@@ -71,7 +71,7 @@ func TestNewMatchers(t *testing.T) {
 				},
 			},
 		}
-		m, err := newMatchers(c, MatcherOptions{Logger: zap.NewExample()})
+		m, err := newMatchers(c, matcherOptions{Logger: zap.NewExample()})
 		require.NoError(t, err)
 		assert.Len(t, m, 3)
 	})
@@ -79,8 +79,8 @@ func TestNewMatchers(t *testing.T) {
 
 func TestMatchedContainer_MergeTargets(t *testing.T) {
 	t.Run("add new targets", func(t *testing.T) {
-		m := MatchedContainer{
-			Targets: []MatchedTarget{
+		m := matchedContainer{
+			Targets: []matchedTarget{
 				{
 					Port:        1234,
 					MetricsPath: "/m1",
@@ -91,7 +91,7 @@ func TestMatchedContainer_MergeTargets(t *testing.T) {
 				},
 			},
 		}
-		newTargets := []MatchedTarget{
+		newTargets := []matchedTarget{
 			{
 				Port:        1234,
 				MetricsPath: "/not-m1", // different path
@@ -107,10 +107,10 @@ func TestMatchedContainer_MergeTargets(t *testing.T) {
 	})
 
 	t.Run("respect existing targets", func(t *testing.T) {
-		m := MatchedContainer{
-			Targets: []MatchedTarget{
+		m := matchedContainer{
+			Targets: []matchedTarget{
 				{
-					MatcherType: MatcherTypeService,
+					MatcherType: matcherTypeService,
 					Port:        1234,
 					MetricsPath: "/m1",
 				},
@@ -120,9 +120,9 @@ func TestMatchedContainer_MergeTargets(t *testing.T) {
 				},
 			},
 		}
-		newTargets := []MatchedTarget{
+		newTargets := []matchedTarget{
 			{
-				MatcherType: MatcherTypeDockerLabel, // different matcher
+				MatcherType: matcherTypeDockerLabel, // different matcher
 				Port:        1234,
 				MetricsPath: "/m1",
 			},
@@ -133,6 +133,6 @@ func TestMatchedContainer_MergeTargets(t *testing.T) {
 		}
 		m.MergeTargets(newTargets)
 		assert.Len(t, m.Targets, 3)
-		assert.Equal(t, MatcherTypeService, m.Targets[0].MatcherType)
+		assert.Equal(t, matcherTypeService, m.Targets[0].MatcherType)
 	})
 }

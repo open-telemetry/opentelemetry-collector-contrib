@@ -49,6 +49,7 @@ func TestLoadConfig(t *testing.T) {
 	assert.Equal(t, r2,
 		&Config{
 			ReceiverSettings:           config.NewReceiverSettings(config.NewIDWithName(typeStr, "all_settings")),
+			Distribution:               distributionKubernetes,
 			CollectionInterval:         30 * time.Second,
 			NodeConditionTypesToReport: []string{"Ready", "MemoryPressure"},
 			MetadataExporters:          []string{"nop"},
@@ -61,6 +62,7 @@ func TestLoadConfig(t *testing.T) {
 	assert.Equal(t, r3,
 		&Config{
 			ReceiverSettings:           config.NewReceiverSettings(config.NewIDWithName(typeStr, "partial_settings")),
+			Distribution:               distributionOpenShift,
 			CollectionInterval:         30 * time.Second,
 			NodeConditionTypesToReport: []string{"Ready"},
 			APIConfig: k8sconfig.APIConfig{

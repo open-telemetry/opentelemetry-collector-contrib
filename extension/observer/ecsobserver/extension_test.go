@@ -74,8 +74,7 @@ func (h *inspectErrorHost) getError() error {
 // Simply start and stop, the actual test logic is in sd_test.go until we implement the ListWatcher interface.
 // In that case sd itself does not use timer and relies on caller to trigger List.
 func TestExtensionStartStop(t *testing.T) {
-	settings := component.ExtensionCreateSettings{Logger: zap.NewExample()}
-	refreshInterval := time.Millisecond
+	refreshInterval := 100 * time.Millisecond
 	waitDuration := 2 * refreshInterval
 
 	createTestExt := func(c *ecsmock.Cluster, output string) component.Extension {
@@ -84,7 +83,7 @@ func TestExtensionStartStop(t *testing.T) {
 		sdCfg := cfg.(*Config)
 		sdCfg.RefreshInterval = refreshInterval
 		sdCfg.ResultFile = output
-		ext, err := createExtensionWithFetcher(settings, sdCfg, f)
+		ext, err := createExtensionWithFetcher(componenttest.NewNopExtensionCreateSettings(), sdCfg, f)
 		require.NoError(t, err)
 		return ext
 	}

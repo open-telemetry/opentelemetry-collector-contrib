@@ -25,10 +25,8 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
-	"go.uber.org/zap"
 )
 
 func TestFactory(t *testing.T) {
@@ -81,9 +79,7 @@ func TestFactory(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			e, err := f.CreateExtension(
 				context.Background(),
-				component.ExtensionCreateSettings{
-					Logger: zap.NewNop(),
-				},
+				componenttest.NewNopExtensionCreateSettings(),
 				test.config,
 			)
 			if test.wantErr {

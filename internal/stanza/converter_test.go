@@ -401,15 +401,10 @@ func TestConverterCancelledContextCancellsTheFlush(t *testing.T) {
 	go func() {
 		defer wg.Done()
 		pLogs := pdata.NewLogs()
-		logs := pLogs.ResourceLogs()
-		logs.Resize(1)
-		rls := logs.At(0)
-		rls.InstrumentationLibraryLogs().Resize(1)
-		ills := rls.InstrumentationLibraryLogs().At(0)
+		ills := pLogs.ResourceLogs().AppendEmpty().InstrumentationLibraryLogs().AppendEmpty()
 
 		lr := convert(complexEntry())
-		tgt := ills.Logs().AppendEmpty()
-		lr.CopyTo(tgt)
+		lr.CopyTo(ills.Logs().AppendEmpty())
 
 		assert.Error(t, converter.flush(ctx, pLogs))
 	}()
@@ -608,26 +603,30 @@ func TestConvertSeverity(t *testing.T) {
 		expectedText   string
 	}{
 		{entry.Default, pdata.SeverityNumberUNDEFINED, "Undefined"},
-		{5, pdata.SeverityNumberTRACE, "Trace"},
-		{entry.Trace, pdata.SeverityNumberTRACE2, "Trace"},
-		{15, pdata.SeverityNumberTRACE3, "Trace"},
+		{entry.Trace, pdata.SeverityNumberTRACE, "Trace"},
+		{entry.Trace2, pdata.SeverityNumberTRACE2, "Trace2"},
+		{entry.Trace3, pdata.SeverityNumberTRACE3, "Trace3"},
+		{entry.Trace4, pdata.SeverityNumberTRACE4, "Trace4"},
 		{entry.Debug, pdata.SeverityNumberDEBUG, "Debug"},
-		{25, pdata.SeverityNumberDEBUG2, "Debug"},
+		{entry.Debug2, pdata.SeverityNumberDEBUG2, "Debug2"},
+		{entry.Debug3, pdata.SeverityNumberDEBUG3, "Debug3"},
+		{entry.Debug4, pdata.SeverityNumberDEBUG4, "Debug4"},
 		{entry.Info, pdata.SeverityNumberINFO, "Info"},
-		{35, pdata.SeverityNumberINFO2, "Info"},
-		{entry.Notice, pdata.SeverityNumberINFO3, "Info"},
-		{45, pdata.SeverityNumberINFO3, "Info"},
-		{entry.Warning, pdata.SeverityNumberINFO4, "Info"},
-		{55, pdata.SeverityNumberINFO4, "Info"},
+		{entry.Info2, pdata.SeverityNumberINFO2, "Info2"},
+		{entry.Info3, pdata.SeverityNumberINFO3, "Info3"},
+		{entry.Info4, pdata.SeverityNumberINFO4, "Info4"},
+		{entry.Warn, pdata.SeverityNumberWARN, "Warn"},
+		{entry.Warn2, pdata.SeverityNumberWARN2, "Warn2"},
+		{entry.Warn3, pdata.SeverityNumberWARN3, "Warn3"},
+		{entry.Warn4, pdata.SeverityNumberWARN4, "Warn4"},
 		{entry.Error, pdata.SeverityNumberERROR, "Error"},
-		{65, pdata.SeverityNumberERROR2, "Error"},
-		{entry.Critical, pdata.SeverityNumberERROR2, "Error"},
-		{75, pdata.SeverityNumberERROR3, "Error"},
-		{entry.Alert, pdata.SeverityNumberERROR3, "Error"},
-		{85, pdata.SeverityNumberERROR4, "Error"},
-		{entry.Emergency, pdata.SeverityNumberFATAL, "Error"},
-		{95, pdata.SeverityNumberFATAL2, "Fatal"},
-		{entry.Catastrophe, pdata.SeverityNumberFATAL4, "Fatal"},
+		{entry.Error2, pdata.SeverityNumberERROR2, "Error2"},
+		{entry.Error3, pdata.SeverityNumberERROR3, "Error3"},
+		{entry.Error4, pdata.SeverityNumberERROR4, "Error4"},
+		{entry.Fatal, pdata.SeverityNumberFATAL, "Fatal"},
+		{entry.Fatal2, pdata.SeverityNumberFATAL2, "Fatal2"},
+		{entry.Fatal3, pdata.SeverityNumberFATAL3, "Fatal3"},
+		{entry.Fatal4, pdata.SeverityNumberFATAL4, "Fatal4"},
 	}
 
 	for _, tc := range cases {

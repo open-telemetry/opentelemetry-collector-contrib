@@ -17,7 +17,6 @@ package newrelicexporter
 import (
 	"context"
 	"fmt"
-	"time"
 
 	"github.com/newrelic/newrelic-telemetry-sdk-go/telemetry"
 	"go.opencensus.io/stats/view"
@@ -43,11 +42,13 @@ func NewFactory() component.ExporterFactory {
 }
 
 func createDefaultConfig() config.Exporter {
+	defaultRetry := exporterhelper.DefaultRetrySettings()
 	return &Config{
 		ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
 
 		CommonConfig: EndpointConfig{
-			Timeout: time.Second * 15,
+			TimeoutSettings: exporterhelper.DefaultTimeoutSettings(),
+			RetrySettings:   defaultRetry,
 		},
 	}
 }
@@ -55,24 +56,25 @@ func createDefaultConfig() config.Exporter {
 // CreateTracesExporter creates a New Relic trace exporter for this configuration.
 func createTracesExporter(
 	_ context.Context,
-	params component.ExporterCreateSettings,
+	set component.ExporterCreateSettings,
 	cfg config.Exporter,
 ) (component.TracesExporter, error) {
 	nrConfig, ok := cfg.(*Config)
 	if !ok {
 		return nil, fmt.Errorf("invalid config: %#v", cfg)
 	}
-	traceConfig := nrConfig.GetTracesConfig()
-	exp, err := newExporter(params.Logger, &params.BuildInfo, traceConfig, telemetry.NewSpanRequestFactory)
+	traceConfig := nrConfig.TracesConfig
+	exp, err := newExporter(set.Logger, &set.BuildInfo, traceConfig, telemetry.NewSpanRequestFactory)
 	if err != nil {
 		return nil, err
 	}
 
 	// The logger is only used in a disabled queuedRetrySender, which noisily logs at
 	// the error level when it is disabled and errors occur.
-	return exporterhelper.NewTracesExporter(cfg, zap.NewNop(), exp.pushTraceData,
-		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: traceConfig.Timeout}),
-		exporterhelper.WithRetry(exporterhelper.RetrySettings{Enabled: false}),
+	set.Logger = zap.NewNop()
+	return exporterhelper.NewTracesExporter(cfg, set, exp.pushTraceData,
+		exporterhelper.WithTimeout(traceConfig.TimeoutSettings),
+		exporterhelper.WithRetry(traceConfig.RetrySettings),
 		exporterhelper.WithQueue(exporterhelper.QueueSettings{Enabled: false}),
 	)
 }
@@ -80,7 +82,7 @@ func createTracesExporter(
 // CreateMetricsExporter creates a New Relic metrics exporter for this configuration.
 func createMetricsExporter(
 	_ context.Context,
-	params component.ExporterCreateSettings,
+	set component.ExporterCreateSettings,
 	cfg config.Exporter,
 ) (component.MetricsExporter, error) {
 	nrConfig, ok := cfg.(*Config)
@@ -88,15 +90,18 @@ func createMetricsExporter(
 		return nil, fmt.Errorf("invalid config: %#v", cfg)
 	}
 
-	metricsConfig := nrConfig.GetMetricsConfig()
-	exp, err := newExporter(params.Logger, &params.BuildInfo, metricsConfig, telemetry.NewMetricRequestFactory)
+	metricsConfig := nrConfig.MetricsConfig
+	exp, err := newExporter(set.Logger, &set.BuildInfo, metricsConfig, telemetry.NewMetricRequestFactory)
 	if err != nil {
 		return nil, err
 	}
 
-	return exporterhelper.NewMetricsExporter(cfg, zap.NewNop(), exp.pushMetricData,
-		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: metricsConfig.Timeout}),
-		exporterhelper.WithRetry(exporterhelper.RetrySettings{Enabled: false}),
+	// The logger is only used in a disabled queuedRetrySender, which noisily logs at
+	// the error level when it is disabled and errors occur.
+	set.Logger = zap.NewNop()
+	return exporterhelper.NewMetricsExporter(cfg, set, exp.pushMetricData,
+		exporterhelper.WithTimeout(metricsConfig.TimeoutSettings),
+		exporterhelper.WithRetry(metricsConfig.RetrySettings),
 		exporterhelper.WithQueue(exporterhelper.QueueSettings{Enabled: false}),
 	)
 }
@@ -104,7 +109,7 @@ func createMetricsExporter(
 // CreateLogsExporter creates a New Relic logs exporter for this configuration.
 func createLogsExporter(
 	_ context.Context,
-	params component.ExporterCreateSettings,
+	set component.ExporterCreateSettings,
 	cfg config.Exporter,
 ) (component.LogsExporter, error) {
 	nrConfig, ok := cfg.(*Config)
@@ -112,14 +117,18 @@ func createLogsExporter(
 		return nil, fmt.Errorf("invalid config: %#v", cfg)
 	}
 
-	logsConfig := nrConfig.GetLogsConfig()
-	exp, err := newExporter(params.Logger, &params.BuildInfo, logsConfig, telemetry.NewLogRequestFactory)
+	logsConfig := nrConfig.LogsConfig
+	exp, err := newExporter(set.Logger, &set.BuildInfo, logsConfig, telemetry.NewLogRequestFactory)
 	if err != nil {
 		return nil, err
 	}
-	return exporterhelper.NewLogsExporter(cfg, zap.NewNop(), exp.pushLogData,
-		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: logsConfig.Timeout}),
-		exporterhelper.WithRetry(exporterhelper.RetrySettings{Enabled: false}),
+
+	// The logger is only used in a disabled queuedRetrySender, which noisily logs at
+	// the error level when it is disabled and errors occur.
+	set.Logger = zap.NewNop()
+	return exporterhelper.NewLogsExporter(cfg, set, exp.pushLogData,
+		exporterhelper.WithTimeout(logsConfig.TimeoutSettings),
+		exporterhelper.WithRetry(logsConfig.RetrySettings),
 		exporterhelper.WithQueue(exporterhelper.QueueSettings{Enabled: false}),
 	)
 }

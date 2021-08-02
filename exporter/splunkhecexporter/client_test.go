@@ -30,12 +30,10 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/translator/conventions"
-	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 )
@@ -72,10 +70,10 @@ func createMetricsData(numberOfDataPoints int) pdata.Metrics {
 		ilm := rm.InstrumentationLibraryMetrics().AppendEmpty()
 		metric := ilm.Metrics().AppendEmpty()
 		metric.SetName("gauge_double_with_dims")
-		metric.SetDataType(pdata.MetricDataTypeDoubleGauge)
-		doublePt := metric.DoubleGauge().DataPoints().AppendEmpty()
+		metric.SetDataType(pdata.MetricDataTypeGauge)
+		doublePt := metric.Gauge().DataPoints().AppendEmpty()
 		doublePt.SetTimestamp(pdata.TimestampFromTime(tsUnix))
-		doublePt.SetValue(doubleVal)
+		doublePt.SetDoubleVal(doubleVal)
 		doublePt.LabelsMap().Insert("k/n0", "vn0")
 		doublePt.LabelsMap().Insert("k/n1", "vn1")
 		doublePt.LabelsMap().Insert("k/r0", "vr0")
@@ -90,9 +88,9 @@ func createTraceData(numberOfTraces int) pdata.Traces {
 	rs := traces.ResourceSpans().AppendEmpty()
 	rs.Resource().Attributes().InsertString("resource", "R1")
 	ils := rs.InstrumentationLibrarySpans().AppendEmpty()
-	ils.Spans().Resize(numberOfTraces)
+	ils.Spans().EnsureCapacity(numberOfTraces)
 	for i := 0; i < numberOfTraces; i++ {
-		span := ils.Spans().At(i)
+		span := ils.Spans().AppendEmpty()
 		span.SetName("root")
 		span.SetStartTimestamp(pdata.Timestamp((i + 1) * 1e9))
 		span.SetEndTimestamp(pdata.Timestamp((i + 2) * 1e9))
@@ -111,16 +109,16 @@ func createTraceData(numberOfTraces int) pdata.Traces {
 
 func createLogData(numResources int, numLibraries int, numRecords int) pdata.Logs {
 	logs := pdata.NewLogs()
-	logs.ResourceLogs().Resize(numResources)
+	logs.ResourceLogs().EnsureCapacity(numResources)
 	for i := 0; i < numResources; i++ {
-		rl := logs.ResourceLogs().At(i)
-		rl.InstrumentationLibraryLogs().Resize(numLibraries)
+		rl := logs.ResourceLogs().AppendEmpty()
+		rl.InstrumentationLibraryLogs().EnsureCapacity(numLibraries)
 		for j := 0; j < numLibraries; j++ {
-			ill := rl.InstrumentationLibraryLogs().At(j)
-			ill.Logs().Resize(numRecords)
+			ill := rl.InstrumentationLibraryLogs().AppendEmpty()
+			ill.Logs().EnsureCapacity(numRecords)
 			for k := 0; k < numRecords; k++ {
 				ts := pdata.Timestamp(int64(k) * time.Millisecond.Nanoseconds())
-				logRecord := ill.Logs().At(k)
+				logRecord := ill.Logs().AppendEmpty()
 				logRecord.SetName(fmt.Sprintf("%d_%d_%d", i, j, k))
 				logRecord.Body().SetStringVal("mylog")
 				logRecord.Attributes().InsertString(conventions.AttributeServiceName, "myapp")
@@ -182,7 +180,7 @@ func runMetricsExport(disableCompression bool, numberOfDataPoints int, t *testin
 		panic(s.Serve(listener))
 	}()
 
-	params := component.ExporterCreateSettings{Logger: zap.NewNop()}
+	params := componenttest.NewNopExporterCreateSettings()
 	exporter, err := factory.CreateMetricsExporter(context.Background(), params, cfg)
 	assert.NoError(t, err)
 	assert.NoError(t, exporter.Start(context.Background(), componenttest.NewNopHost()))
@@ -221,7 +219,7 @@ func runTraceExport(disableCompression bool, numberOfTraces int, t *testing.T) (
 		panic(s.Serve(listener))
 	}()
 
-	params := component.ExporterCreateSettings{Logger: zap.NewNop()}
+	params := componenttest.NewNopExporterCreateSettings()
 	exporter, err := factory.CreateTracesExporter(context.Background(), params, cfg)
 	assert.NoError(t, err)
 	assert.NoError(t, exporter.Start(context.Background(), componenttest.NewNopHost()))
@@ -257,7 +255,7 @@ func runLogExport(cfg *Config, ld pdata.Logs, t *testing.T) ([][]byte, error) {
 		panic(s.Serve(listener))
 	}()
 
-	params := component.ExporterCreateSettings{Logger: zap.NewNop()}
+	params := componenttest.NewNopExporterCreateSettings()
 	exporter, err := NewFactory().CreateLogsExporter(context.Background(), params, cfg)
 	assert.NoError(t, err)
 	assert.NoError(t, exporter.Start(context.Background(), componenttest.NewNopHost()))
@@ -444,11 +442,11 @@ func TestReceiveLogs(t *testing.T) {
 func TestReceiveMetrics(t *testing.T) {
 	actual, err := runMetricsExport(true, 3, t)
 	assert.NoError(t, err)
-	expected := `{"host":"unknown","event":"metric","fields":{"k/n0":"vn0","k/n1":"vn1","k/r0":"vr0","k/r1":"vr1","k0":"v0","k1":"v1","metric_name:gauge_double_with_dims":1234.5678,"metric_type":"DoubleGauge"}}`
+	expected := `{"host":"unknown","event":"metric","fields":{"k/n0":"vn0","k/n1":"vn1","k/r0":"vr0","k/r1":"vr1","k0":"v0","k1":"v1","metric_name:gauge_double_with_dims":1234.5678,"metric_type":"Gauge"}}`
 	expected += "\n"
-	expected += `{"time":1.001,"host":"unknown","event":"metric","fields":{"k/n0":"vn0","k/n1":"vn1","k/r0":"vr0","k/r1":"vr1","k0":"v0","k1":"v1","metric_name:gauge_double_with_dims":1234.5678,"metric_type":"DoubleGauge"}}`
+	expected += `{"time":1.001,"host":"unknown","event":"metric","fields":{"k/n0":"vn0","k/n1":"vn1","k/r0":"vr0","k/r1":"vr1","k0":"v0","k1":"v1","metric_name:gauge_double_with_dims":1234.5678,"metric_type":"Gauge"}}`
 	expected += "\n"
-	expected += `{"time":2.002,"host":"unknown","event":"metric","fields":{"k/n0":"vn0","k/n1":"vn1","k/r0":"vr0","k/r1":"vr1","k0":"v0","k1":"v1","metric_name:gauge_double_with_dims":1234.5678,"metric_type":"DoubleGauge"}}`
+	expected += `{"time":2.002,"host":"unknown","event":"metric","fields":{"k/n0":"vn0","k/n1":"vn1","k/r0":"vr0","k/r1":"vr1","k0":"v0","k1":"v1","metric_name:gauge_double_with_dims":1234.5678,"metric_type":"Gauge"}}`
 	expected += "\n"
 	assert.Equal(t, expected, actual)
 }
@@ -490,7 +488,7 @@ func TestErrorReceived(t *testing.T) {
 	cfg.DisableCompression = true
 	cfg.Token = "1234-1234"
 
-	params := component.ExporterCreateSettings{Logger: zap.NewNop()}
+	params := componenttest.NewNopExporterCreateSettings()
 	exporter, err := factory.CreateTracesExporter(context.Background(), params, cfg)
 	assert.NoError(t, err)
 	assert.NoError(t, exporter.Start(context.Background(), componenttest.NewNopHost()))
@@ -534,7 +532,7 @@ func TestInvalidURL(t *testing.T) {
 	cfg.RetrySettings.Enabled = false
 	cfg.Endpoint = "ftp://example.com:134"
 	cfg.Token = "1234-1234"
-	params := component.ExporterCreateSettings{Logger: zap.NewNop()}
+	params := componenttest.NewNopExporterCreateSettings()
 	exporter, err := factory.CreateTracesExporter(context.Background(), params, cfg)
 	assert.NoError(t, err)
 	assert.NoError(t, exporter.Start(context.Background(), componenttest.NewNopHost()))

@@ -63,7 +63,7 @@ func createDefaultConfig() config.Exporter {
 // Creates a new trace exporter for Humio
 func createTracesExporter(
 	ctx context.Context,
-	params component.ExporterCreateSettings,
+	set component.ExporterCreateSettings,
 	config config.Exporter,
 ) (component.TracesExporter, error) {
 	if config == nil {
@@ -80,11 +80,11 @@ func createTracesExporter(
 		return nil, errors.New("an ingest token for traces is required when enabling the Humio trace exporter")
 	}
 
-	exporter := newTracesExporter(cfg, params.Logger)
+	exporter := newTracesExporter(cfg, set.Logger)
 
 	return exporterhelper.NewTracesExporter(
 		cfg,
-		params.Logger,
+		set,
 		exporter.pushTraceData,
 		exporterhelper.WithQueue(cfg.QueueSettings),
 		exporterhelper.WithRetry(cfg.RetrySettings),

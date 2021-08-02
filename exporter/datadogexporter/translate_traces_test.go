@@ -84,14 +84,16 @@ func NewResourceSpansData(mockTraceID [16]byte, mockSpanID [8]byte, mockParentSp
 	}
 
 	events := span.Events()
-	events.Resize(2)
+	events.EnsureCapacity(2)
 
-	events.At(0).SetTimestamp(pdataStartTime)
-	events.At(0).SetName("start")
+	evt := events.AppendEmpty()
+	evt.SetTimestamp(pdataStartTime)
+	evt.SetName("start")
 
-	events.At(1).SetTimestamp(pdataEndTime)
-	events.At(1).SetName("end")
-	events.At(1).Attributes().InitFromMap(map[string]pdata.AttributeValue{
+	evt = events.AppendEmpty()
+	evt.SetTimestamp(pdataEndTime)
+	evt.SetName("end")
+	evt.Attributes().InitFromMap(map[string]pdata.AttributeValue{
 		"flag": pdata.NewAttributeValueBool(false),
 	})
 
@@ -512,7 +514,7 @@ func TestTracesTranslationErrorsFromEventsBounds(t *testing.T) {
 	rs := NewResourceSpansData(mockTraceID, mockSpanID, mockParentSpanID, pdata.StatusCodeError, true, mockEndTime)
 	span := rs.InstrumentationLibrarySpans().At(0).Spans().At(0)
 	events := span.Events()
-	events.Resize(3)
+	events.EnsureCapacity(3)
 
 	// Start with the error as the first element in the list...
 	attribs := map[string]pdata.AttributeValue{
@@ -520,13 +522,17 @@ func TestTracesTranslationErrorsFromEventsBounds(t *testing.T) {
 		conventions.AttributeExceptionStacktrace: pdata.NewAttributeValueString("HttpError at line 67\nthing at line 45"),
 		conventions.AttributeExceptionMessage:    pdata.NewAttributeValueString("HttpError error occurred"),
 	}
-	events.At(0).SetName(conventions.AttributeExceptionEventName)
-	events.At(0).Attributes().InitFromMap(attribs)
 
-	events.At(1).SetName("start")
+	evt := events.AppendEmpty()
+	evt.SetName(conventions.AttributeExceptionEventName)
+	evt.Attributes().InitFromMap(attribs)
 
-	events.At(2).SetName("end")
-	events.At(2).Attributes().InitFromMap(map[string]pdata.AttributeValue{
+	evt = events.AppendEmpty()
+	evt.SetName("start")
+
+	evt = events.AppendEmpty()
+	evt.SetName("end")
+	evt.Attributes().InitFromMap(map[string]pdata.AttributeValue{
 		"flag": pdata.NewAttributeValueBool(false),
 	})
 
@@ -1256,6 +1262,57 @@ func TestStatsAggregations(t *testing.T) {
 	assert.Equal(t, "test-version", statsVersionTag.Value)
 }
 
+// ensure that stats payloads get adjusted for approriate sampling weight
+func TestSamplingWeightedStatsAggregations(t *testing.T) {
+	hostname := "testhostname"
+	denylister := newDenylister([]string{})
+
+	// generate mock trace, span and parent span ids
+	mockTraceID := [16]byte{0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F}
+	mockSpanID := [8]byte{0xF1, 0xF2, 0xF3, 0xF4, 0xF5, 0xF6, 0xF7, 0xF8}
+	mockParentSpanID := [8]byte{0xEF, 0xEE, 0xED, 0xEC, 0xEB, 0xEA, 0xE9, 0xE8}
+
+	mockEndTime := time.Now().Round(time.Second)
+
+	// create mock resource span data
+	// toggle on errors and custom service naming to test edge case code paths
+	rs := NewResourceSpansData(mockTraceID, mockSpanID, mockParentSpanID, pdata.StatusCodeError, true, mockEndTime)
+
+	rs.InstrumentationLibrarySpans().EnsureCapacity(1)
+	ilss := rs.InstrumentationLibrarySpans().AppendEmpty()
+	instrumentationLibrary := ilss.InstrumentationLibrary()
+	instrumentationLibrary.SetName("flash")
+	instrumentationLibrary.SetVersion("v1")
+	span := ilss.Spans().AppendEmpty()
+
+	attribs := map[string]pdata.AttributeValue{
+		"_sample_rate": pdata.NewAttributeValueString("0.2"),
+	}
+
+	span.Attributes().InitFromMap(attribs)
+	span.SetKind(pdata.SpanKindServer)
+
+	// translate mocks to datadog traces
+	cfg := config.Config{}
+
+	datadogPayload := resourceSpansToDatadogSpans(rs, hostname, &cfg, denylister, map[string]string{})
+
+	statsOutput := computeAPMStats(&datadogPayload, time.Now().UTC().UnixNano())
+
+	var WeightValue stats.Count
+
+	// extract the first stats.Counts containing a Measure of "hits"
+	// for a span name flash.server
+	for _, countVal := range statsOutput.Stats[0].Counts {
+		if countVal.Measure == "hits" && countVal.Name == "flash.server" {
+			WeightValue = countVal
+		}
+	}
+
+	// should equal 1.0 / 0.2 => 5
+	assert.Equal(t, float64(5), WeightValue.Value)
+}
+
 // ensure that sanitization  of trace payloads occurs
 func TestSanitization(t *testing.T) {
 	denylister := newDenylister([]string{})
@@ -1264,18 +1321,18 @@ func TestSanitization(t *testing.T) {
 	}
 
 	traces := pdata.NewTraces()
-	traces.ResourceSpans().Resize(1)
-	rs := traces.ResourceSpans().At(0)
+	traces.ResourceSpans().EnsureCapacity(1)
+	rs := traces.ResourceSpans().AppendEmpty()
 	resource := rs.Resource()
 	resource.Attributes().InitFromMap(map[string]pdata.AttributeValue{
 		"deployment.environment": pdata.NewAttributeValueString("UpperCase"),
 	})
-	rs.InstrumentationLibrarySpans().Resize(1)
-	ilss := rs.InstrumentationLibrarySpans().At(0)
+	rs.InstrumentationLibrarySpans().EnsureCapacity(1)
+	ilss := rs.InstrumentationLibrarySpans().AppendEmpty()
 	instrumentationLibrary := ilss.InstrumentationLibrary()
 	instrumentationLibrary.SetName("flash")
 	instrumentationLibrary.SetVersion("v1")
-	ilss.Spans().Resize(1)
+	ilss.Spans().EnsureCapacity(1)
 
 	outputTraces, _ := convertToDatadogTd(traces, "test-host", &config.Config{}, denylister, buildInfo)
 
@@ -1364,14 +1421,14 @@ func TestSpanNameMapping(t *testing.T) {
 	}
 
 	traces := pdata.NewTraces()
-	traces.ResourceSpans().Resize(1)
-	rs := traces.ResourceSpans().At(0)
+	traces.ResourceSpans().EnsureCapacity(1)
+	rs := traces.ResourceSpans().AppendEmpty()
 	resource := rs.Resource()
 	resource.Attributes().InitFromMap(map[string]pdata.AttributeValue{
 		"deployment.environment": pdata.NewAttributeValueString("UpperCase"),
 	})
-	rs.InstrumentationLibrarySpans().Resize(1)
-	ilss := rs.InstrumentationLibrarySpans().At(0)
+	rs.InstrumentationLibrarySpans().EnsureCapacity(1)
+	ilss := rs.InstrumentationLibrarySpans().AppendEmpty()
 	instrumentationLibrary := ilss.InstrumentationLibrary()
 	instrumentationLibrary.SetName("flash")
 	instrumentationLibrary.SetVersion("v1")
@@ -1416,16 +1473,16 @@ func TestSpanEnvClobbering(t *testing.T) {
 	}
 
 	traces := pdata.NewTraces()
-	traces.ResourceSpans().Resize(1)
-	rs := traces.ResourceSpans().At(0)
+	traces.ResourceSpans().EnsureCapacity(1)
+	rs := traces.ResourceSpans().AppendEmpty()
 	resource := rs.Resource()
 	resource.Attributes().InitFromMap(map[string]pdata.AttributeValue{
 		conventions.AttributeDeploymentEnvironment: pdata.NewAttributeValueString("correctenv"),
 		"env": pdata.NewAttributeValueString("incorrectenv"),
 	})
 
-	rs.InstrumentationLibrarySpans().Resize(1)
-	ilss := rs.InstrumentationLibrarySpans().At(0)
+	rs.InstrumentationLibrarySpans().EnsureCapacity(1)
+	ilss := rs.InstrumentationLibrarySpans().AppendEmpty()
 	instrumentationLibrary := ilss.InstrumentationLibrary()
 	instrumentationLibrary.SetName("flash")
 	instrumentationLibrary.SetVersion("v1")
@@ -1442,11 +1499,61 @@ func TestSpanEnvClobbering(t *testing.T) {
 	span.SetStartTimestamp(pdataStartTime)
 	span.SetEndTimestamp(pdataEndTime)
 
-	config := config.Config{Traces: config.TracesConfig{SpanNameRemappings: map[string]string{"flash.server": "bang.client"}}}
-
-	outputTraces, _ := convertToDatadogTd(traces, "test-host", &config, denylister, buildInfo)
+	outputTraces, _ := convertToDatadogTd(traces, "test-host", &config.Config{}, denylister, buildInfo)
 
 	// Ensure the deployment.environment value is copied to both deployment.environment and env
 	assert.Equal(t, "correctenv", outputTraces[0].Traces[0].Spans[0].Meta["env"])
 	assert.Equal(t, "correctenv", outputTraces[0].Traces[0].Spans[0].Meta["deployment.environment"])
+}
+
+// ensure that global rate limit tag gets set as a metric
+func TestSpanRateLimitTag(t *testing.T) {
+	mockTraceID := [16]byte{0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F}
+	mockSpanID := [8]byte{0xF1, 0xF2, 0xF3, 0xF4, 0xF5, 0xF6, 0xF7, 0xF8}
+	mockParentSpanID := [8]byte{0xEF, 0xEE, 0xED, 0xEC, 0xEB, 0xEA, 0xE9, 0xE8}
+	endTime := time.Now().Round(time.Second)
+	pdataEndTime := pdata.TimestampFromTime(endTime)
+	startTime := endTime.Add(-90 * time.Second)
+	pdataStartTime := pdata.TimestampFromTime(startTime)
+
+	denylister := newDenylister([]string{})
+	buildInfo := component.BuildInfo{
+		Version: "1.0",
+	}
+
+	traces := pdata.NewTraces()
+	traces.ResourceSpans().EnsureCapacity(1)
+	rs := traces.ResourceSpans().AppendEmpty()
+	resource := rs.Resource()
+	resource.Attributes().InitFromMap(map[string]pdata.AttributeValue{
+		conventions.AttributeDeploymentEnvironment: pdata.NewAttributeValueString("correctenv"),
+	})
+
+	rs.InstrumentationLibrarySpans().EnsureCapacity(1)
+	ilss := rs.InstrumentationLibrarySpans().AppendEmpty()
+	instrumentationLibrary := ilss.InstrumentationLibrary()
+	instrumentationLibrary.SetName("flash")
+	instrumentationLibrary.SetVersion("v1")
+	span := ilss.Spans().AppendEmpty()
+
+	attribs := map[string]pdata.AttributeValue{
+		"_sample_rate": pdata.NewAttributeValueString("0.5"),
+	}
+
+	span.Attributes().InitFromMap(attribs)
+
+	traceID := pdata.NewTraceID(mockTraceID)
+	spanID := pdata.NewSpanID(mockSpanID)
+	parentSpanID := pdata.NewSpanID(mockParentSpanID)
+	span.SetTraceID(traceID)
+	span.SetSpanID(spanID)
+	span.SetParentSpanID(parentSpanID)
+	span.SetName("End-To-End Here")
+	span.SetKind(pdata.SpanKindServer)
+	span.SetStartTimestamp(pdataStartTime)
+	span.SetEndTimestamp(pdataEndTime)
+
+	outputTraces, _ := convertToDatadogTd(traces, "test-host", &config.Config{}, denylister, buildInfo)
+
+	assert.Equal(t, 0.5, outputTraces[0].Traces[0].Spans[0].Metrics["_sample_rate"])
 }

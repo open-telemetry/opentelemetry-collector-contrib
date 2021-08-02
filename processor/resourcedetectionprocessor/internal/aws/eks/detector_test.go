@@ -21,14 +21,13 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
-	"go.uber.org/zap"
+	"go.opentelemetry.io/collector/component/componenttest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
 )
 
 func TestNewDetector(t *testing.T) {
-	detector, err := NewDetector(component.ProcessorCreateSettings{Logger: zap.NewNop()}, nil)
+	detector, err := NewDetector(componenttest.NewNopProcessorCreateSettings(), nil)
 	assert.NoError(t, err)
 	assert.NotNil(t, detector)
 }

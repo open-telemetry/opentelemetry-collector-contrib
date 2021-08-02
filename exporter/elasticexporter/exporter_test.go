@@ -26,10 +26,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.elastic.co/apm/transport/transporttest"
-	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/obsreport/obsreporttest"
-	"go.uber.org/zap"
 )
 
 func TestTracesExporter(t *testing.T) {
@@ -39,7 +38,7 @@ func TestTracesExporter(t *testing.T) {
 
 	factory := NewFactory()
 	recorder, cfg := newRecorder(t)
-	params := component.ExporterCreateSettings{Logger: zap.NewNop()}
+	params := componenttest.NewNopExporterCreateSettings()
 	te, err := factory.CreateTracesExporter(context.Background(), params, cfg)
 	assert.NoError(t, err)
 	assert.NotNil(t, te, "failed to create trace exporter")
@@ -67,7 +66,7 @@ func TestMetricsExporter(t *testing.T) {
 
 	factory := NewFactory()
 	recorder, cfg := newRecorder(t)
-	params := component.ExporterCreateSettings{Logger: zap.NewNop()}
+	params := componenttest.NewNopExporterCreateSettings()
 	me, err := factory.CreateMetricsExporter(context.Background(), params, cfg)
 	assert.NoError(t, err)
 	assert.NotNil(t, me, "failed to create metrics exporter")
@@ -93,7 +92,7 @@ func TestMetricsExporterSendError(t *testing.T) {
 	eCfg := cfg.(*Config)
 	eCfg.APMServerURL = "http://testing.invalid"
 
-	params := component.ExporterCreateSettings{Logger: zap.NewNop()}
+	params := componenttest.NewNopExporterCreateSettings()
 	me, err := factory.CreateMetricsExporter(context.Background(), params, cfg)
 	assert.NoError(t, err)
 	assert.NotNil(t, me, "failed to create metrics exporter")
@@ -108,12 +107,12 @@ func TestMetricsExporterSendError(t *testing.T) {
 func sampleMetrics() pdata.Metrics {
 	metrics := pdata.NewMetrics()
 	resourceMetrics := metrics.ResourceMetrics()
-	resourceMetrics.Resize(2)
+	resourceMetrics.EnsureCapacity(2)
 	for i := 0; i < 2; i++ {
-		metric := resourceMetrics.At(i).InstrumentationLibraryMetrics().AppendEmpty().Metrics().AppendEmpty()
+		metric := resourceMetrics.AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty().Metrics().AppendEmpty()
 		metric.SetName("foobar")
-		metric.SetDataType(pdata.MetricDataTypeDoubleGauge)
-		metric.DoubleGauge().DataPoints().AppendEmpty().SetValue(123)
+		metric.SetDataType(pdata.MetricDataTypeGauge)
+		metric.Gauge().DataPoints().AppendEmpty().SetDoubleVal(123)
 	}
 	return metrics
 }

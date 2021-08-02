@@ -34,16 +34,17 @@ func TestBuildCounterMetric(t *testing.T) {
 		labelKeys:   []string{"mykey"},
 		labelValues: []string{"myvalue"},
 	}
-	metric := buildCounterMetric(parsedMetric, timeNow)
+	isMonotonicCounter := false
+	metric := buildCounterMetric(parsedMetric, isMonotonicCounter, timeNow)
 	expectedMetrics := pdata.NewInstrumentationLibraryMetrics()
 	expectedMetric := expectedMetrics.Metrics().AppendEmpty()
 	expectedMetric.SetName("testCounter")
 	expectedMetric.SetUnit("meter")
-	expectedMetric.SetDataType(pdata.MetricDataTypeIntSum)
-	expectedMetric.IntSum().SetAggregationTemporality(pdata.AggregationTemporalityDelta)
-	expectedMetric.IntSum().SetIsMonotonic(true)
-	dp := expectedMetric.IntSum().DataPoints().AppendEmpty()
-	dp.SetValue(32)
+	expectedMetric.SetDataType(pdata.MetricDataTypeSum)
+	expectedMetric.Sum().SetAggregationTemporality(pdata.AggregationTemporalityDelta)
+	expectedMetric.Sum().SetIsMonotonic(true)
+	dp := expectedMetric.Sum().DataPoints().AppendEmpty()
+	dp.SetIntVal(32)
 	dp.SetTimestamp(pdata.TimestampFromTime(timeNow))
 	dp.LabelsMap().Insert("mykey", "myvalue")
 	assert.Equal(t, metric, expectedMetrics)
@@ -66,9 +67,9 @@ func TestBuildGaugeMetric(t *testing.T) {
 	expectedMetric := expectedMetrics.Metrics().AppendEmpty()
 	expectedMetric.SetName("testGauge")
 	expectedMetric.SetUnit("meter")
-	expectedMetric.SetDataType(pdata.MetricDataTypeDoubleGauge)
-	dp := expectedMetric.DoubleGauge().DataPoints().AppendEmpty()
-	dp.SetValue(32.3)
+	expectedMetric.SetDataType(pdata.MetricDataTypeGauge)
+	dp := expectedMetric.Gauge().DataPoints().AppendEmpty()
+	dp.SetDoubleVal(32.3)
 	dp.SetTimestamp(pdata.TimestampFromTime(timeNow))
 	dp.LabelsMap().Insert("mykey", "myvalue")
 	dp.LabelsMap().Insert("mykey2", "myvalue2")
@@ -88,20 +89,20 @@ func TestBuildSummaryMetric(t *testing.T) {
 
 	metric := buildSummaryMetric(oneSummaryMetric)
 	expectedMetric := pdata.NewInstrumentationLibraryMetrics()
-	expectedMetric.Metrics().Resize(1)
-	expectedMetric.Metrics().At(0).SetName("testSummary")
-	expectedMetric.Metrics().At(0).SetDataType(pdata.MetricDataTypeSummary)
-	expectedMetric.Metrics().At(0).Summary().DataPoints().Resize(1)
-	expectedMetric.Metrics().At(0).Summary().DataPoints().At(0).SetSum(21)
-	expectedMetric.Metrics().At(0).Summary().DataPoints().At(0).SetCount(6)
-	expectedMetric.Metrics().At(0).Summary().DataPoints().At(0).SetTimestamp(pdata.TimestampFromTime(timeNow))
+	m := expectedMetric.Metrics().AppendEmpty()
+	m.SetName("testSummary")
+	m.SetDataType(pdata.MetricDataTypeSummary)
+	dp := m.Summary().DataPoints().AppendEmpty()
+	dp.SetSum(21)
+	dp.SetCount(6)
+	dp.SetTimestamp(pdata.TimestampFromTime(timeNow))
 	for i, key := range oneSummaryMetric.labelKeys {
-		expectedMetric.Metrics().At(0).Summary().DataPoints().At(0).LabelsMap().Insert(key, oneSummaryMetric.labelValues[i])
+		dp.LabelsMap().Insert(key, oneSummaryMetric.labelValues[i])
 	}
 	quantile := []float64{0, 10, 50, 90, 95, 100}
 	value := []float64{1, 1, 3, 6, 6, 6}
 	for int, v := range quantile {
-		eachQuantile := expectedMetric.Metrics().At(0).Summary().DataPoints().At(0).QuantileValues().AppendEmpty()
+		eachQuantile := dp.QuantileValues().AppendEmpty()
 		eachQuantile.SetQuantile(v)
 		eachQuantileValue := value[int]
 		eachQuantile.SetValue(eachQuantileValue)

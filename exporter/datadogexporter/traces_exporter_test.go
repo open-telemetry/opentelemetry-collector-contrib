@@ -28,11 +28,10 @@ import (
 	"github.com/gogo/protobuf/proto"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
 	otelconfig "go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/model/pdata"
-	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/config"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata"
@@ -85,7 +84,7 @@ func testTracesExporterHelper(td pdata.Traces, t *testing.T) []string {
 		},
 	}
 
-	params := component.ExporterCreateSettings{Logger: zap.NewNop()}
+	params := componenttest.NewNopExporterCreateSettings()
 
 	exporter, err := createTracesExporter(context.Background(), params, &cfg)
 
@@ -161,7 +160,7 @@ func TestNewTracesExporter(t *testing.T) {
 	cfg := &config.Config{}
 	cfg.API.Key = "ddog_32_characters_long_api_key1"
 	cfg.Metrics.TCPAddr.Endpoint = metricsServer.URL
-	params := component.ExporterCreateSettings{Logger: zap.NewNop()}
+	params := componenttest.NewNopExporterCreateSettings()
 
 	// The client should have been created correctly
 	exp := newTracesExporter(context.Background(), params, cfg)
@@ -191,7 +190,7 @@ func TestPushTraceData(t *testing.T) {
 		UseResourceMetadata: true,
 	}
 
-	params := component.ExporterCreateSettings{Logger: zap.NewNop()}
+	params := componenttest.NewNopExporterCreateSettings()
 	exp := newTracesExporter(context.Background(), params, cfg)
 
 	err := exp.pushTraceData(context.Background(), testutils.TestTraces.Clone())

@@ -71,5 +71,5 @@ func createMetricsReceiver(
 
 	rCfg := baseCfg.(*Config)
 	logger := params.Logger
-	return New(logger, rCfg, consumer)
+	return newAWSContainerInsightReceiver(logger, rCfg, consumer)
 }

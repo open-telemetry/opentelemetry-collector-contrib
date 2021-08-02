@@ -115,7 +115,7 @@ func New(cfg *Config, logger *zap.Logger) (Poller, error) {
 		maxPollerCount: cfg.NumOfPollerToStart,
 		shutDown:       make(chan struct{}),
 		segChan:        make(chan RawSegment, segChanSize),
-		obsrecv:        obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverID: cfg.ReceiverID, Transport: cfg.Transport}),
+		obsrecv:        obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverID: cfg.ReceiverID, Transport: cfg.Transport, LongLivedCtx: true}),
 	}, nil
 }
 
@@ -171,9 +171,7 @@ func (p *poller) poll() {
 		case <-p.shutDown:
 			return
 		default:
-			ctx := p.obsrecv.StartTracesOp(
-				p.receiverLongLivedCtx,
-				obsreport.WithLongLivedCtx())
+			ctx := p.obsrecv.StartTracesOp(p.receiverLongLivedCtx)
 
 			bufPointer := &buffer
 			rlen, err := p.read(bufPointer)

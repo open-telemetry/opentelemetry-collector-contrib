@@ -29,7 +29,7 @@ func TestParseMetric_PointTimestamp(t *testing.T) {
 	pdm, err := uptimeMetric.parseMetric("42", newTimeBundle(now, 100))
 	require.NoError(t, err)
 
-	pt := pdm.IntSum().DataPoints().At(0)
+	pt := pdm.Sum().DataPoints().At(0)
 	ptTime := pt.Timestamp()
 
 	assert.EqualValues(t, now.UnixNano(), int64(ptTime))
@@ -40,7 +40,7 @@ func TestParseMetric_Labels(t *testing.T) {
 	pdm, err := cpuMetric.parseMetric("42", newTimeBundle(time.Now(), 100))
 	require.NoError(t, err)
 
-	pt := pdm.DoubleSum().DataPoints().At(0)
+	pt := pdm.Sum().DataPoints().At(0)
 	labelsMap := pt.LabelsMap()
 	l := labelsMap.Len()
 	assert.Equal(t, 1, l)
@@ -51,13 +51,16 @@ func TestParseMetric_Labels(t *testing.T) {
 
 func TestParseMetric_Errors(t *testing.T) {
 	for _, dataType := range []pdata.MetricDataType{
-		pdata.MetricDataTypeIntSum,
-		pdata.MetricDataTypeIntGauge,
-		pdata.MetricDataTypeDoubleSum,
-		pdata.MetricDataTypeDoubleGauge,
+		pdata.MetricDataTypeSum,
+		pdata.MetricDataTypeGauge,
 	} {
-		m := redisMetric{pdType: dataType}
-		_, err := m.parseMetric("foo", &timeBundle{})
-		assert.Error(t, err)
+		for _, valueType := range []pdata.MetricValueType{
+			pdata.MetricValueTypeDouble,
+			pdata.MetricValueTypeInt,
+		} {
+			m := redisMetric{pdType: dataType, valueType: valueType}
+			_, err := m.parseMetric("foo", &timeBundle{})
+			assert.Error(t, err)
+		}
 	}
 }

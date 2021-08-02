@@ -68,15 +68,15 @@ func newSAPMExporter(cfg *Config, params component.ExporterCreateSettings) (sapm
 	}, err
 }
 
-func newSAPMTracesExporter(cfg *Config, params component.ExporterCreateSettings) (component.TracesExporter, error) {
-	se, err := newSAPMExporter(cfg, params)
+func newSAPMTracesExporter(cfg *Config, set component.ExporterCreateSettings) (component.TracesExporter, error) {
+	se, err := newSAPMExporter(cfg, set)
 	if err != nil {
 		return nil, err
 	}
 
 	te, err := exporterhelper.NewTracesExporter(
 		cfg,
-		params.Logger,
+		set,
 		se.pushTraceData,
 		exporterhelper.WithShutdown(se.Shutdown),
 		exporterhelper.WithQueue(cfg.QueueSettings),

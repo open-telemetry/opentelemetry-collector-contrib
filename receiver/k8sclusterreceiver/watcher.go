@@ -17,8 +17,12 @@ package k8sclusterreceiver
 import (
 	"context"
 	"fmt"
+	"reflect"
 	"time"
 
+	quotav1 "github.com/openshift/api/quota/v1"
+	quotaclientset "github.com/openshift/client-go/quota/clientset/versioned"
+	quotainformersv1 "github.com/openshift/client-go/quota/informers/externalversions"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.uber.org/atomic"
@@ -34,30 +38,37 @@ import (
 	"k8s.io/client-go/tools/cache"
 
 	metadata "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/collection"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/utils"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/collection"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/utils"
 )
 
+type sharedInformer interface {
+	Start(<-chan struct{})
+	WaitForCacheSync(<-chan struct{}) map[reflect.Type]bool
+}
+
 type resourceWatcher struct {
-	client                     kubernetes.Interface
-	sharedInformerFactory      informers.SharedInformerFactory
-	dataCollector              *collection.DataCollector
-	logger                     *zap.Logger
-	metadataConsumers          []metadataConsumer
-	initialTimeout             time.Duration
-	timedContextForInitialSync context.Context
-	initialSyncDone            *atomic.Bool
-	initialSyncTimedOut        *atomic.Bool
+	client              kubernetes.Interface
+	osQuotaClient       quotaclientset.Interface
+	informerFactories   []sharedInformer
+	dataCollector       *collection.DataCollector
+	logger              *zap.Logger
+	metadataConsumers   []metadataConsumer
+	initialTimeout      time.Duration
+	initialSyncDone     *atomic.Bool
+	initialSyncTimedOut *atomic.Bool
 }
 
 type metadataConsumer func(metadata []*metadata.MetadataUpdate) error
 
 // newResourceWatcher creates a Kubernetes resource watcher.
 func newResourceWatcher(
-	logger *zap.Logger, client kubernetes.Interface,
+	logger *zap.Logger, client kubernetes.Interface, osQuotaClient quotaclientset.Interface,
 	nodeConditionTypesToReport []string, initialSyncTimeout time.Duration) *resourceWatcher {
 	rw := &resourceWatcher{
 		client:              client,
+		osQuotaClient:       osQuotaClient,
+		informerFactories:   []sharedInformer{},
 		logger:              logger,
 		dataCollector:       collection.NewDataCollector(logger, nodeConditionTypesToReport),
 		initialSyncDone:     atomic.NewBool(false),
@@ -92,16 +103,21 @@ func (rw *resourceWatcher) prepareSharedInformerFactory() {
 		factory.Autoscaling().V2beta1().HorizontalPodAutoscalers().Informer(),
 	)
 
-	rw.sharedInformerFactory = factory
+	if rw.osQuotaClient != nil {
+		quotaFactory := quotainformersv1.NewSharedInformerFactory(rw.osQuotaClient, 0)
+		rw.setupInformers(&quotav1.ClusterResourceQuota{}, quotaFactory.Quota().V1().ClusterResourceQuotas().Informer())
+		rw.informerFactories = append(rw.informerFactories, quotaFactory)
+	}
+	rw.informerFactories = append(rw.informerFactories, factory)
 }
 
 // startWatchingResources starts up all informers.
-func (rw *resourceWatcher) startWatchingResources(ctx context.Context) {
+func (rw *resourceWatcher) startWatchingResources(ctx context.Context, inf sharedInformer) context.Context {
 	var cancel context.CancelFunc
-	rw.timedContextForInitialSync, cancel = context.WithTimeout(ctx, rw.initialTimeout)
+	timedContextForInitialSync, cancel := context.WithTimeout(ctx, rw.initialTimeout)
 
 	// Start off individual informers in the factory.
-	rw.sharedInformerFactory.Start(ctx.Done())
+	inf.Start(ctx.Done())
 
 	// Ensure cache is synced with initial state, once informers are started up.
 	// Note that the event handler can start receiving events as soon as the informers
@@ -109,8 +125,9 @@ func (rw *resourceWatcher) startWatchingResources(ctx context.Context) {
 	// collecting data before the cache sync since all data may not be available.
 	// This method will block either till the timeout set on the context, until
 	// the initial sync is complete or the parent context is cancelled.
-	rw.sharedInformerFactory.WaitForCacheSync(rw.timedContextForInitialSync.Done())
+	inf.WaitForCacheSync(timedContextForInitialSync.Done())
 	defer cancel()
+	return timedContextForInitialSync
 }
 
 // setupInformers adds event handlers to informers and setups a metadataStore.

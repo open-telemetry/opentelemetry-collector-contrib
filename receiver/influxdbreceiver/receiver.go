@@ -21,7 +21,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/gorilla/mux"
 	"github.com/influxdata/influxdb-observability/common"
 	"github.com/influxdata/influxdb-observability/influx2otel"
 	lineprotocol "github.com/influxdata/line-protocol/v2/influxdata"
@@ -29,10 +28,7 @@ import (
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
-	"go.opentelemetry.io/collector/model/otlp"
 )
-
-var metricsUnmarshaler = otlp.NewProtobufMetricsUnmarshaler()
 
 type metricsReceiver struct {
 	nextConsumer       consumer.Metrics
@@ -45,17 +41,8 @@ type metricsReceiver struct {
 	logger common.Logger
 }
 
-var metricsSchemata = map[string]common.MetricsSchema{
-	"telegraf-prometheus-v1": common.MetricsSchemaTelegrafPrometheusV1,
-	"telegraf-prometheus-v2": common.MetricsSchemaTelegrafPrometheusV2,
-}
-
 func newMetricsReceiver(config *Config, influxLogger common.Logger, nextConsumer consumer.Metrics) (*metricsReceiver, error) {
-	schema, found := metricsSchemata[config.MetricsSchema]
-	if !found {
-		return nil, fmt.Errorf("schema '%s' not recognized", config.MetricsSchema)
-	}
-	converter, err := influx2otel.NewLineProtocolToOtelMetrics(influxLogger, schema)
+	converter, err := influx2otel.NewLineProtocolToOtelMetrics(influxLogger)
 	if err != nil {
 		return nil, err
 	}
@@ -74,12 +61,12 @@ func (r *metricsReceiver) Start(_ context.Context, host component.Host) error {
 		return fmt.Errorf("failed to bind to address %s: %w", r.httpServerSettings.Endpoint, err)
 	}
 
-	nr := mux.NewRouter()
-	nr.HandleFunc("/write", r.handleWrite)        // InfluxDB 1.x
-	nr.HandleFunc("/api/v2/write", r.handleWrite) // InfluxDB 2.x
+	router := http.NewServeMux()
+	router.HandleFunc("/write", r.handleWrite)        // InfluxDB 1.x
+	router.HandleFunc("/api/v2/write", r.handleWrite) // InfluxDB 2.x
 
 	r.wg.Add(1)
-	r.server = r.httpServerSettings.ToServer(nr)
+	r.server = r.httpServerSettings.ToServer(router)
 	go func() {
 		defer r.wg.Done()
 		if err := r.server.Serve(ln); err != nil && err != http.ErrServerClosed {
@@ -176,25 +163,13 @@ func (r *metricsReceiver) handleWrite(w http.ResponseWriter, req *http.Request) 
 		}
 	}
 
-	b, err := batch.ToProtoBytes()
-	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		_, _ = fmt.Fprintf(w, "failed to convert batch to protobuf bytes")
-		return
-	}
-	md, err := metricsUnmarshaler.UnmarshalMetrics(b)
-	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		_, _ = fmt.Fprintf(w, "failed to convert protobuf bytes to OTLP object")
-		return
-	}
-	if err = r.nextConsumer.ConsumeMetrics(req.Context(), md); err != nil {
+	if err := r.nextConsumer.ConsumeMetrics(req.Context(), batch.GetMetrics()); err != nil {
 		if consumererror.IsPermanent(err) {
 			w.WriteHeader(http.StatusBadRequest)
 		} else {
 			w.WriteHeader(http.StatusInternalServerError)
 		}
-		r.logger.Debug("failed to pass metrics to next consumer: %s", err.Error())
+		r.logger.Debug("failed to pass metrics to next consumer: %s", err)
 		return
 	}
 

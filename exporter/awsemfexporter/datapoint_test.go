@@ -293,12 +293,12 @@ func TestIntDataPointSliceAt(t *testing.T) {
 
 	for i, tc := range testDeltaCases {
 		t.Run(tc.testName, func(t *testing.T) {
-			testDPS := pdata.NewIntDataPointSlice()
+			testDPS := pdata.NewNumberDataPointSlice()
 			testDP := testDPS.AppendEmpty()
-			testDP.SetValue(tc.value.(int64))
+			testDP.SetIntVal(tc.value.(int64))
 			testDP.LabelsMap().InitFromMap(labels)
 
-			dps := IntDataPointSlice{
+			dps := numberDataPointSlice{
 				instrLibName,
 				deltaMetricMetadata{
 					tc.adjustToDelta,
@@ -311,9 +311,9 @@ func TestIntDataPointSliceAt(t *testing.T) {
 				testDPS,
 			}
 
-			expectedDP := DataPoint{
-				Value: tc.calculatedValue,
-				Labels: map[string]string{
+			expectedDP := dataPoint{
+				value: tc.calculatedValue,
+				labels: map[string]string{
 					oTellibDimensionKey: instrLibName,
 					"label":             "value",
 				},
@@ -323,8 +323,8 @@ func TestIntDataPointSliceAt(t *testing.T) {
 			dp, retained := dps.At(0)
 			assert.Equal(t, i > 0, retained)
 			if retained {
-				assert.Equal(t, expectedDP.Labels, dp.Labels)
-				assert.InDelta(t, expectedDP.Value.(float64), dp.Value.(float64), 0.02)
+				assert.Equal(t, expectedDP.labels, dp.labels)
+				assert.InDelta(t, expectedDP.value.(float64), dp.value.(float64), 0.02)
 			}
 		})
 	}
@@ -364,12 +364,12 @@ func TestDoubleDataPointSliceAt(t *testing.T) {
 
 	for i, tc := range testDeltaCases {
 		t.Run(tc.testName, func(t *testing.T) {
-			testDPS := pdata.NewDoubleDataPointSlice()
+			testDPS := pdata.NewNumberDataPointSlice()
 			testDP := testDPS.AppendEmpty()
 			testDP.SetValue(tc.value.(float64))
 			testDP.LabelsMap().InitFromMap(labels)
 
-			dps := DoubleDataPointSlice{
+			dps := numberDataPointSlice{
 				instrLibName,
 				deltaMetricMetadata{
 					tc.adjustToDelta,
@@ -386,7 +386,7 @@ func TestDoubleDataPointSliceAt(t *testing.T) {
 			dp, retained := dps.At(0)
 			assert.Equal(t, i > 0, retained)
 			if retained {
-				assert.InDelta(t, tc.calculatedValue.(float64), dp.Value.(float64), 0.002)
+				assert.InDelta(t, tc.calculatedValue.(float64), dp.value.(float64), 0.002)
 			}
 		})
 	}
@@ -404,17 +404,17 @@ func TestHistogramDataPointSliceAt(t *testing.T) {
 	testDP.SetExplicitBounds([]float64{1, 2, 3})
 	testDP.LabelsMap().InitFromMap(labels)
 
-	dps := HistogramDataPointSlice{
+	dps := histogramDataPointSlice{
 		instrLibName,
 		testDPS,
 	}
 
-	expectedDP := DataPoint{
-		Value: &CWMetricStats{
+	expectedDP := dataPoint{
+		value: &cWMetricStats{
 			Sum:   17.13,
 			Count: 17,
 		},
-		Labels: map[string]string{
+		labels: map[string]string{
 			oTellibDimensionKey: instrLibName,
 			"label1":            "value1",
 		},
@@ -461,16 +461,16 @@ func TestSummaryDataPointSliceAt(t *testing.T) {
 			testDP.SetSum(tt.inputSumCount[0].(float64))
 			testDP.SetCount(tt.inputSumCount[1].(uint64))
 
-			testDP.QuantileValues().Resize(2)
-			testQuantileValue := testDP.QuantileValues().At(0)
+			testDP.QuantileValues().EnsureCapacity(2)
+			testQuantileValue := testDP.QuantileValues().AppendEmpty()
 			testQuantileValue.SetQuantile(0)
 			testQuantileValue.SetValue(float64(1))
-			testQuantileValue = testDP.QuantileValues().At(1)
+			testQuantileValue = testDP.QuantileValues().AppendEmpty()
 			testQuantileValue.SetQuantile(100)
 			testQuantileValue.SetValue(float64(5))
 			testDP.LabelsMap().InitFromMap(labels)
 
-			dps := SummaryDataPointSlice{
+			dps := summaryDataPointSlice{
 				instrLibName,
 				deltaMetricMetadata{
 					true,
@@ -483,14 +483,14 @@ func TestSummaryDataPointSliceAt(t *testing.T) {
 				testDPS,
 			}
 
-			expectedDP := DataPoint{
-				Value: &CWMetricStats{
+			expectedDP := dataPoint{
+				value: &cWMetricStats{
 					Max:   5,
 					Min:   1,
 					Sum:   tt.calculatedSumCount[0].(float64),
 					Count: tt.calculatedSumCount[1].(uint64),
 				},
-				Labels: map[string]string{
+				labels: map[string]string{
 					oTellibDimensionKey: instrLibName,
 					"label1":            "value1",
 				},
@@ -500,9 +500,9 @@ func TestSummaryDataPointSliceAt(t *testing.T) {
 			dp, retained := dps.At(0)
 			assert.Equal(t, i > 0, retained)
 			if retained {
-				expectedMetricStats := expectedDP.Value.(*CWMetricStats)
-				actualMetricsStats := dp.Value.(*CWMetricStats)
-				assert.Equal(t, expectedDP.Labels, dp.Labels)
+				expectedMetricStats := expectedDP.value.(*cWMetricStats)
+				actualMetricsStats := dp.value.(*cWMetricStats)
+				assert.Equal(t, expectedDP.labels, dp.labels)
 				assert.Equal(t, expectedMetricStats.Max, actualMetricsStats.Max)
 				assert.Equal(t, expectedMetricStats.Min, actualMetricsStats.Min)
 				assert.InDelta(t, expectedMetricStats.Count, actualMetricsStats.Count, 0.1)
@@ -530,20 +530,20 @@ func TestCreateLabels(t *testing.T) {
 }
 
 func TestGetDataPoints(t *testing.T) {
-	metadata := CWMetricMetadata{
-		GroupedMetricMetadata: GroupedMetricMetadata{
-			Namespace:   "namespace",
-			TimestampMs: time.Now().UnixNano() / int64(time.Millisecond),
-			LogGroup:    "log-group",
-			LogStream:   "log-stream",
+	metadata := cWMetricMetadata{
+		groupedMetricMetadata: groupedMetricMetadata{
+			namespace:   "namespace",
+			timestampMs: time.Now().UnixNano() / int64(time.Millisecond),
+			logGroup:    "log-group",
+			logStream:   "log-stream",
 		},
-		InstrumentationLibraryName: "cloudwatch-otel",
+		instrumentationLibraryName: "cloudwatch-otel",
 	}
 
 	dmm := deltaMetricMetadata{
 		false,
 		"foo",
-		metadata.TimestampMs,
+		metadata.timestampMs,
 		"namespace",
 		"log-group",
 		"log-stream",
@@ -551,7 +551,7 @@ func TestGetDataPoints(t *testing.T) {
 	cumulativeDmm := deltaMetricMetadata{
 		true,
 		"foo",
-		metadata.TimestampMs,
+		metadata.timestampMs,
 		"namespace",
 		"log-group",
 		"log-stream",
@@ -560,54 +560,54 @@ func TestGetDataPoints(t *testing.T) {
 		testName            string
 		isPrometheusMetrics bool
 		metric              *metricspb.Metric
-		expectedDataPoints  DataPoints
+		expectedDataPoints  dataPoints
 	}{
 		{
 			"Int gauge",
 			false,
 			generateTestIntGauge("foo"),
-			IntDataPointSlice{
-				metadata.InstrumentationLibraryName,
+			numberDataPointSlice{
+				metadata.instrumentationLibraryName,
 				dmm,
-				pdata.IntDataPointSlice{},
+				pdata.NumberDataPointSlice{},
 			},
 		},
 		{
 			"Double gauge",
 			false,
 			generateTestDoubleGauge("foo"),
-			DoubleDataPointSlice{
-				metadata.InstrumentationLibraryName,
+			numberDataPointSlice{
+				metadata.instrumentationLibraryName,
 				dmm,
-				pdata.DoubleDataPointSlice{},
+				pdata.NumberDataPointSlice{},
 			},
 		},
 		{
 			"Int sum",
 			false,
 			generateTestIntSum("foo")[1],
-			IntDataPointSlice{
-				metadata.InstrumentationLibraryName,
+			numberDataPointSlice{
+				metadata.instrumentationLibraryName,
 				cumulativeDmm,
-				pdata.IntDataPointSlice{},
+				pdata.NumberDataPointSlice{},
 			},
 		},
 		{
 			"Double sum",
 			false,
 			generateTestDoubleSum("foo")[1],
-			DoubleDataPointSlice{
-				metadata.InstrumentationLibraryName,
+			numberDataPointSlice{
+				metadata.instrumentationLibraryName,
 				cumulativeDmm,
-				pdata.DoubleDataPointSlice{},
+				pdata.NumberDataPointSlice{},
 			},
 		},
 		{
 			"Double histogram",
 			false,
 			generateTestHistogram("foo"),
-			HistogramDataPointSlice{
-				metadata.InstrumentationLibraryName,
+			histogramDataPointSlice{
+				metadata.instrumentationLibraryName,
 				pdata.HistogramDataPointSlice{},
 			},
 		},
@@ -615,8 +615,8 @@ func TestGetDataPoints(t *testing.T) {
 			"Summary from SDK",
 			false,
 			generateTestSummary("foo")[1],
-			SummaryDataPointSlice{
-				metadata.InstrumentationLibraryName,
+			summaryDataPointSlice{
+				metadata.instrumentationLibraryName,
 				dmm,
 				pdata.SummaryDataPointSlice{},
 			},
@@ -625,8 +625,8 @@ func TestGetDataPoints(t *testing.T) {
 			"Summary from Prometheus",
 			true,
 			generateTestSummary("foo")[1],
-			SummaryDataPointSlice{
-				metadata.InstrumentationLibraryName,
+			summaryDataPointSlice{
+				metadata.instrumentationLibraryName,
 				cumulativeDmm,
 				pdata.SummaryDataPointSlice{},
 			},
@@ -656,33 +656,30 @@ func TestGetDataPoints(t *testing.T) {
 			assert.NotNil(t, dps)
 			assert.Equal(t, reflect.TypeOf(tc.expectedDataPoints), reflect.TypeOf(dps))
 			switch convertedDPS := dps.(type) {
-			case IntDataPointSlice:
-				expectedDPS := tc.expectedDataPoints.(IntDataPointSlice)
-				assert.Equal(t, metadata.InstrumentationLibraryName, convertedDPS.instrumentationLibraryName)
+			case numberDataPointSlice:
+				expectedDPS := tc.expectedDataPoints.(numberDataPointSlice)
+				assert.Equal(t, metadata.instrumentationLibraryName, convertedDPS.instrumentationLibraryName)
 				assert.Equal(t, expectedDPS.deltaMetricMetadata, convertedDPS.deltaMetricMetadata)
 				assert.Equal(t, 1, convertedDPS.Len())
-				dp := convertedDPS.IntDataPointSlice.At(0)
-				assert.Equal(t, int64(1), dp.Value())
+				dp := convertedDPS.NumberDataPointSlice.At(0)
+				switch dp.Type() {
+				case pdata.MetricValueTypeDouble:
+					assert.Equal(t, 0.1, dp.DoubleVal())
+				case pdata.MetricValueTypeInt:
+					assert.Equal(t, int64(1), dp.IntVal())
+				}
 				assert.Equal(t, expectedLabels, dp.LabelsMap())
-			case DoubleDataPointSlice:
-				expectedDPS := tc.expectedDataPoints.(DoubleDataPointSlice)
-				assert.Equal(t, metadata.InstrumentationLibraryName, convertedDPS.instrumentationLibraryName)
-				assert.Equal(t, expectedDPS.deltaMetricMetadata, convertedDPS.deltaMetricMetadata)
-				assert.Equal(t, 1, convertedDPS.Len())
-				dp := convertedDPS.DoubleDataPointSlice.At(0)
-				assert.Equal(t, 0.1, dp.Value())
-				assert.Equal(t, expectedLabels, dp.LabelsMap())
-			case HistogramDataPointSlice:
-				assert.Equal(t, metadata.InstrumentationLibraryName, convertedDPS.instrumentationLibraryName)
+			case histogramDataPointSlice:
+				assert.Equal(t, metadata.instrumentationLibraryName, convertedDPS.instrumentationLibraryName)
 				assert.Equal(t, 1, convertedDPS.Len())
 				dp := convertedDPS.HistogramDataPointSlice.At(0)
 				assert.Equal(t, 35.0, dp.Sum())
 				assert.Equal(t, uint64(18), dp.Count())
 				assert.Equal(t, []float64{0, 10}, dp.ExplicitBounds())
 				assert.Equal(t, expectedLabels, dp.LabelsMap())
-			case SummaryDataPointSlice:
-				expectedDPS := tc.expectedDataPoints.(SummaryDataPointSlice)
-				assert.Equal(t, metadata.InstrumentationLibraryName, convertedDPS.instrumentationLibraryName)
+			case summaryDataPointSlice:
+				expectedDPS := tc.expectedDataPoints.(summaryDataPointSlice)
+				assert.Equal(t, metadata.instrumentationLibraryName, convertedDPS.instrumentationLibraryName)
 				assert.Equal(t, expectedDPS.deltaMetricMetadata, convertedDPS.deltaMetricMetadata)
 				assert.Equal(t, 1, convertedDPS.Len())
 				dp := convertedDPS.SummaryDataPointSlice.At(0)
@@ -699,7 +696,7 @@ func TestGetDataPoints(t *testing.T) {
 		metric := pdata.NewMetric()
 		metric.SetName("foo")
 		metric.SetUnit("Count")
-		metric.SetDataType(pdata.MetricDataTypeIntHistogram)
+		metric.SetDataType(pdata.MetricDataTypeNone)
 
 		obs, logs := observer.New(zap.WarnLevel)
 		logger := zap.New(obs)
@@ -712,7 +709,7 @@ func TestGetDataPoints(t *testing.T) {
 			{
 				Entry: zapcore.Entry{Level: zap.WarnLevel, Message: "Unhandled metric data type."},
 				Context: []zapcore.Field{
-					zap.String("DataType", "IntHistogram"),
+					zap.String("DataType", "None"),
 					zap.String("Name", "foo"),
 					zap.String("Unit", "Count"),
 				},
@@ -741,14 +738,14 @@ func BenchmarkGetDataPoints(b *testing.B) {
 	metrics := rms.At(0).InstrumentationLibraryMetrics().At(0).Metrics()
 	numMetrics := metrics.Len()
 
-	metadata := CWMetricMetadata{
-		GroupedMetricMetadata: GroupedMetricMetadata{
-			Namespace:   "Namespace",
-			TimestampMs: int64(1596151098037),
-			LogGroup:    "log-group",
-			LogStream:   "log-stream",
+	metadata := cWMetricMetadata{
+		groupedMetricMetadata: groupedMetricMetadata{
+			namespace:   "Namespace",
+			timestampMs: int64(1596151098037),
+			logGroup:    "log-group",
+			logStream:   "log-stream",
 		},
-		InstrumentationLibraryName: "cloudwatch-otel",
+		instrumentationLibraryName: "cloudwatch-otel",
 	}
 
 	logger := zap.NewNop()
@@ -766,7 +763,7 @@ func TestIntDataPointSlice_At(t *testing.T) {
 	type fields struct {
 		instrumentationLibraryName string
 		deltaMetricMetadata        deltaMetricMetadata
-		IntDataPointSlice          pdata.IntDataPointSlice
+		NumberDataPointSlice       pdata.NumberDataPointSlice
 	}
 	type args struct {
 		i int
@@ -775,16 +772,16 @@ func TestIntDataPointSlice_At(t *testing.T) {
 		name   string
 		fields fields
 		args   args
-		want   DataPoint
+		want   dataPoint
 	}{
 		// TODO: Add test cases.
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			dps := IntDataPointSlice{
+			dps := numberDataPointSlice{
 				instrumentationLibraryName: tt.fields.instrumentationLibraryName,
 				deltaMetricMetadata:        tt.fields.deltaMetricMetadata,
-				IntDataPointSlice:          tt.fields.IntDataPointSlice,
+				NumberDataPointSlice:       tt.fields.NumberDataPointSlice,
 			}
 			if got, _ := dps.At(tt.args.i); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("At() = %v, want %v", got, tt.want)

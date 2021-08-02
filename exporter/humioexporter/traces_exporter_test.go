@@ -155,12 +155,13 @@ func TestPushTraceData_TransientOnPartialFailure(t *testing.T) {
 	// Arrange
 	// Prepare a valid span with a service name...
 	traces := pdata.NewTraces()
-	traces.ResourceSpans().Resize(2)
-	traces.ResourceSpans().At(0).Resource().Attributes().InsertString(conventions.AttributeServiceName, "service1")
-	traces.ResourceSpans().At(0).InstrumentationLibrarySpans().AppendEmpty().Spans().AppendEmpty()
+	traces.ResourceSpans().EnsureCapacity(2)
+	rspan := traces.ResourceSpans().AppendEmpty()
+	rspan.Resource().Attributes().InsertString(conventions.AttributeServiceName, "service1")
+	rspan.InstrumentationLibrarySpans().AppendEmpty().Spans().AppendEmpty()
 
 	// ...and one without (partial failure)
-	traces.ResourceSpans().At(1).InstrumentationLibrarySpans().AppendEmpty().Spans().AppendEmpty()
+	traces.ResourceSpans().AppendEmpty().InstrumentationLibrarySpans().AppendEmpty().Spans().AppendEmpty()
 
 	cg := func(cfg *Config, logger *zap.Logger, host component.Host) (exporterClient, error) {
 		return &clientMock{

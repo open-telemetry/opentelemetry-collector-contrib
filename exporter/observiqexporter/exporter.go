@@ -15,9 +15,40 @@
 package observiqexporter
 
 import (
+	"errors"
+
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
-func newObservIQLogExporter(config *Config, params component.ExporterCreateSettings) (component.LogsExporter, error) {
-	return nil, nil
+func newObservIQLogExporter(config *Config, set component.ExporterCreateSettings) (component.LogsExporter, error) {
+	if config == nil {
+		return nil, errors.New("config must not be nil")
+	}
+
+	if err := config.validateConfig(); err != nil {
+		return nil, err
+	}
+
+	client, err := buildClient(config, set.Logger, set.BuildInfo)
+	if err != nil {
+		return nil, err
+	}
+
+	exporter, err := exporterhelper.NewLogsExporter(
+		config,
+		set,
+		client.sendLogs,
+		// explicitly disable since we rely on http.Client timeout logic.
+		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
+		exporterhelper.WithRetry(config.RetrySettings),
+		exporterhelper.WithQueue(config.QueueSettings),
+		exporterhelper.WithShutdown(client.stop),
+	)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return exporter, nil
 }

@@ -128,7 +128,7 @@ var Metrics = &metricStruct{
 			metric.SetName("kafka.brokers")
 			metric.SetDescription("Number of brokers in the cluster.")
 			metric.SetUnit("{brokers}")
-			metric.SetDataType(pdata.MetricDataTypeIntGauge)
+			metric.SetDataType(pdata.MetricDataTypeGauge)
 		},
 	},
 	&metricImpl{
@@ -137,7 +137,7 @@ var Metrics = &metricStruct{
 			metric.SetName("kafka.consumer_group.lag")
 			metric.SetDescription("Current approximate lag of consumer group at partition of topic")
 			metric.SetUnit("1")
-			metric.SetDataType(pdata.MetricDataTypeIntGauge)
+			metric.SetDataType(pdata.MetricDataTypeGauge)
 		},
 	},
 	&metricImpl{
@@ -146,7 +146,7 @@ var Metrics = &metricStruct{
 			metric.SetName("kafka.consumer_group.lag_sum")
 			metric.SetDescription("Current approximate sum of consumer group lag across all partitions of topic")
 			metric.SetUnit("1")
-			metric.SetDataType(pdata.MetricDataTypeIntGauge)
+			metric.SetDataType(pdata.MetricDataTypeGauge)
 		},
 	},
 	&metricImpl{
@@ -155,7 +155,7 @@ var Metrics = &metricStruct{
 			metric.SetName("kafka.consumer_group.members")
 			metric.SetDescription("Count of members in the consumer group")
 			metric.SetUnit("{members}")
-			metric.SetDataType(pdata.MetricDataTypeIntGauge)
+			metric.SetDataType(pdata.MetricDataTypeGauge)
 		},
 	},
 	&metricImpl{
@@ -164,7 +164,7 @@ var Metrics = &metricStruct{
 			metric.SetName("kafka.consumer_group.offset")
 			metric.SetDescription("Current offset of the consumer group at partition of topic")
 			metric.SetUnit("1")
-			metric.SetDataType(pdata.MetricDataTypeIntGauge)
+			metric.SetDataType(pdata.MetricDataTypeGauge)
 		},
 	},
 	&metricImpl{
@@ -173,7 +173,7 @@ var Metrics = &metricStruct{
 			metric.SetName("kafka.consumer_group.offset_sum")
 			metric.SetDescription("Sum of consumer group offset across partitions of topic")
 			metric.SetUnit("1")
-			metric.SetDataType(pdata.MetricDataTypeIntGauge)
+			metric.SetDataType(pdata.MetricDataTypeGauge)
 		},
 	},
 	&metricImpl{
@@ -182,7 +182,7 @@ var Metrics = &metricStruct{
 			metric.SetName("kafka.partition.current_offset")
 			metric.SetDescription("Current offset of partition of topic.")
 			metric.SetUnit("1")
-			metric.SetDataType(pdata.MetricDataTypeIntGauge)
+			metric.SetDataType(pdata.MetricDataTypeGauge)
 		},
 	},
 	&metricImpl{
@@ -191,7 +191,7 @@ var Metrics = &metricStruct{
 			metric.SetName("kafka.partition.oldest_offset")
 			metric.SetDescription("Oldest offset of partition of topic")
 			metric.SetUnit("1")
-			metric.SetDataType(pdata.MetricDataTypeIntGauge)
+			metric.SetDataType(pdata.MetricDataTypeGauge)
 		},
 	},
 	&metricImpl{
@@ -200,7 +200,7 @@ var Metrics = &metricStruct{
 			metric.SetName("kafka.partition.replicas")
 			metric.SetDescription("Number of replicas for partition of topic")
 			metric.SetUnit("{replicas}")
-			metric.SetDataType(pdata.MetricDataTypeIntGauge)
+			metric.SetDataType(pdata.MetricDataTypeGauge)
 		},
 	},
 	&metricImpl{
@@ -209,7 +209,7 @@ var Metrics = &metricStruct{
 			metric.SetName("kafka.partition.replicas_in_sync")
 			metric.SetDescription("Number of synchronized replicas of partition")
 			metric.SetUnit("{replicas}")
-			metric.SetDataType(pdata.MetricDataTypeIntGauge)
+			metric.SetDataType(pdata.MetricDataTypeGauge)
 		},
 	},
 	&metricImpl{
@@ -218,7 +218,7 @@ var Metrics = &metricStruct{
 			metric.SetName("kafka.topic.partitions")
 			metric.SetDescription("Number of partitions in topic.")
 			metric.SetUnit("{partitions}")
-			metric.SetDataType(pdata.MetricDataTypeIntGauge)
+			metric.SetDataType(pdata.MetricDataTypeGauge)
 		},
 	},
 }

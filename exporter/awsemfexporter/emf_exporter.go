@@ -42,9 +42,9 @@ const (
 )
 
 type emfExporter struct {
-	//Each (log group, log stream) keeps a separate Pusher because of each (log group, log stream) requires separate stream token.
-	groupStreamToPusherMap map[string]map[string]Pusher
-	svcStructuredLog       LogClient
+	//Each (log group, log stream) keeps a separate pusher because of each (log group, log stream) requires separate stream token.
+	groupStreamToPusherMap map[string]map[string]pusher
+	svcStructuredLog       *cloudWatchLogClient
 	config                 config.Exporter
 	logger                 *zap.Logger
 
@@ -55,8 +55,8 @@ type emfExporter struct {
 	collectorID   string
 }
 
-// New func creates an EMF Exporter instance with data push callback func
-func New(
+// newEmfPusher func creates an EMF Exporter instance with data push callback func
+func newEmfPusher(
 	config config.Exporter,
 	params component.ExporterCreateSettings,
 ) (component.MetricsExporter, error) {
@@ -75,7 +75,7 @@ func New(
 	}
 
 	// create CWLogs client with aws session config
-	svcStructuredLog := NewCloudWatchLogsClient(logger, awsConfig, params.BuildInfo, session)
+	svcStructuredLog := newCloudWatchLogsClient(logger, awsConfig, params.BuildInfo, session)
 	collectorIdentifier, _ := uuid.NewRandom()
 
 	expConfig.Validate()
@@ -88,24 +88,24 @@ func New(
 		logger:           logger,
 		collectorID:      collectorIdentifier.String(),
 	}
-	emfExporter.groupStreamToPusherMap = map[string]map[string]Pusher{}
+	emfExporter.groupStreamToPusherMap = map[string]map[string]pusher{}
 
 	return emfExporter, nil
 }
 
-// NewEmfExporter creates a new exporter using exporterhelper
-func NewEmfExporter(
+// newEmfExporter creates a new exporter using exporterhelper
+func newEmfExporter(
 	config config.Exporter,
-	params component.ExporterCreateSettings,
+	set component.ExporterCreateSettings,
 ) (component.MetricsExporter, error) {
-	exp, err := New(config, params)
+	exp, err := newEmfPusher(config, set)
 	if err != nil {
 		return nil, err
 	}
 
 	return exporterhelper.NewMetricsExporter(
 		config,
-		params.Logger,
+		set,
 		exp.(*emfExporter).pushMetricsData,
 		exporterhelper.WithResourceToTelemetryConversion(config.(*Config).ResourceToTelemetrySettings),
 		exporterhelper.WithShutdown(exp.(*emfExporter).Shutdown),
@@ -127,14 +127,17 @@ func (emf *emfExporter) pushMetricsData(_ context.Context, md pdata.Metrics) err
 	}
 	emf.logger.Info("Start processing resource metrics", zap.Any("labels", labels))
 
-	groupedMetrics := make(map[interface{}]*GroupedMetric)
+	groupedMetrics := make(map[interface{}]*groupedMetric)
 	expConfig := emf.config.(*Config)
 	defaultLogStream := fmt.Sprintf("otel-stream-%s", emf.collectorID)
 	outputDestination := expConfig.OutputDestination
 
 	for i := 0; i < rms.Len(); i++ {
 		rm := rms.At(i)
-		emf.metricTranslator.translateOTelToGroupedMetric(&rm, groupedMetrics, expConfig)
+		err := emf.metricTranslator.translateOTelToGroupedMetric(&rm, groupedMetrics, expConfig)
+		if err != nil {
+			return err
+		}
 	}
 
 	for _, groupedMetric := range groupedMetrics {
@@ -142,17 +145,17 @@ func (emf *emfExporter) pushMetricsData(_ context.Context, md pdata.Metrics) err
 		putLogEvent := translateCWMetricToEMF(cWMetric, expConfig)
 		// Currently we only support two options for "OutputDestination".
 		if strings.EqualFold(outputDestination, outputDestinationStdout) {
-			fmt.Println(*putLogEvent.InputLogEvent.Message)
+			fmt.Println(*putLogEvent.inputLogEvent.Message)
 		} else if strings.EqualFold(outputDestination, outputDestinationCloudWatch) {
-			logGroup := groupedMetric.Metadata.LogGroup
-			logStream := groupedMetric.Metadata.LogStream
+			logGroup := groupedMetric.metadata.logGroup
+			logStream := groupedMetric.metadata.logStream
 			if logStream == "" {
 				logStream = defaultLogStream
 			}
 
-			pusher := emf.getPusher(logGroup, logStream)
-			if pusher != nil {
-				returnError := pusher.AddLogEntry(putLogEvent)
+			emfPusher := emf.getPusher(logGroup, logStream)
+			if emfPusher != nil {
+				returnError := emfPusher.addLogEntry(putLogEvent)
 				if returnError != nil {
 					return wrapErrorIfBadRequest(&returnError)
 				}
@@ -161,13 +164,13 @@ func (emf *emfExporter) pushMetricsData(_ context.Context, md pdata.Metrics) err
 	}
 
 	if strings.EqualFold(outputDestination, outputDestinationCloudWatch) {
-		for _, pusher := range emf.listPushers() {
-			returnError := pusher.ForceFlush()
+		for _, emfPusher := range emf.listPushers() {
+			returnError := emfPusher.forceFlush()
 			if returnError != nil {
-				//TODO now we only have one pusher, so it's ok to return after first error occurred
+				//TODO now we only have one logPusher, so it's ok to return after first error occurred
 				err := wrapErrorIfBadRequest(&returnError)
 				if err != nil {
-					emf.logger.Error("Error force flushing logs. Skipping to next pusher.", zap.Error(err))
+					emf.logger.Error("Error force flushing logs. Skipping to next logPusher.", zap.Error(err))
 				}
 				return err
 			}
@@ -179,30 +182,30 @@ func (emf *emfExporter) pushMetricsData(_ context.Context, md pdata.Metrics) err
 	return nil
 }
 
-func (emf *emfExporter) getPusher(logGroup, logStream string) Pusher {
+func (emf *emfExporter) getPusher(logGroup, logStream string) pusher {
 	emf.pusherMapLock.Lock()
 	defer emf.pusherMapLock.Unlock()
 
 	var ok bool
-	var streamToPusherMap map[string]Pusher
+	var streamToPusherMap map[string]pusher
 	if streamToPusherMap, ok = emf.groupStreamToPusherMap[logGroup]; !ok {
-		streamToPusherMap = map[string]Pusher{}
+		streamToPusherMap = map[string]pusher{}
 		emf.groupStreamToPusherMap[logGroup] = streamToPusherMap
 	}
 
-	var pusher Pusher
-	if pusher, ok = streamToPusherMap[logStream]; !ok {
-		pusher = NewPusher(aws.String(logGroup), aws.String(logStream), emf.retryCnt, emf.svcStructuredLog, emf.logger)
-		streamToPusherMap[logStream] = pusher
+	var emfPusher pusher
+	if emfPusher, ok = streamToPusherMap[logStream]; !ok {
+		emfPusher = newPusher(aws.String(logGroup), aws.String(logStream), emf.retryCnt, *emf.svcStructuredLog, emf.logger)
+		streamToPusherMap[logStream] = emfPusher
 	}
-	return pusher
+	return emfPusher
 }
 
-func (emf *emfExporter) listPushers() []Pusher {
+func (emf *emfExporter) listPushers() []pusher {
 	emf.pusherMapLock.Lock()
 	defer emf.pusherMapLock.Unlock()
 
-	pushers := []Pusher{}
+	pushers := []pusher{}
 	for _, pusherMap := range emf.groupStreamToPusherMap {
 		for _, pusher := range pusherMap {
 			pushers = append(pushers, pusher)
@@ -217,12 +220,12 @@ func (emf *emfExporter) ConsumeMetrics(ctx context.Context, md pdata.Metrics) er
 
 // Shutdown stops the exporter and is invoked during shutdown.
 func (emf *emfExporter) Shutdown(ctx context.Context) error {
-	for _, pusher := range emf.listPushers() {
-		returnError := pusher.ForceFlush()
+	for _, emfPusher := range emf.listPushers() {
+		returnError := emfPusher.forceFlush()
 		if returnError != nil {
 			err := wrapErrorIfBadRequest(&returnError)
 			if err != nil {
-				emf.logger.Error("Error when gracefully shutting down emf_exporter. Skipping to next pusher.", zap.Error(err))
+				emf.logger.Error("Error when gracefully shutting down emf_exporter. Skipping to next logPusher.", zap.Error(err))
 			}
 		}
 	}

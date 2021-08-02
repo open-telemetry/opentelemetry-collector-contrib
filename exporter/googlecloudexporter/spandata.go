@@ -28,9 +28,9 @@ import (
 	apitrace "go.opentelemetry.io/otel/trace"
 )
 
-func pdataResourceSpansToOTSpanData(rs pdata.ResourceSpans) []*sdktrace.SpanSnapshot {
+func pdataResourceSpansToOTSpanData(rs pdata.ResourceSpans) []sdktrace.ReadOnlySpan {
 	resource := rs.Resource()
-	var sds []*sdktrace.SpanSnapshot
+	var sds []sdktrace.ReadOnlySpan
 	ilss := rs.InstrumentationLibrarySpans()
 	for i := 0; i < ilss.Len(); i++ {
 		ils := ilss.At(i)
@@ -48,7 +48,7 @@ func pdataSpanToOTSpanData(
 	span pdata.Span,
 	resource pdata.Resource,
 	il pdata.InstrumentationLibrary,
-) *sdktrace.SpanSnapshot {
+) spanSnapshot {
 	sc := apitrace.SpanContextConfig{
 		TraceID: span.TraceID().Bytes(),
 		SpanID:  span.SpanID().Bytes(),
@@ -65,30 +65,30 @@ func pdataSpanToOTSpanData(
 		sdkresource.WithAttributes(pdataAttributesToOTAttributes(pdata.NewAttributeMap(), resource)...),
 	)
 
-	sd := &sdktrace.SpanSnapshot{
-		SpanContext:              apitrace.NewSpanContext(sc),
-		Parent:                   apitrace.NewSpanContext(parentSc),
-		SpanKind:                 pdataSpanKindToOTSpanKind(span.Kind()),
-		StartTime:                startTime,
-		EndTime:                  endTime,
-		Name:                     span.Name(),
-		Attributes:               pdataAttributesToOTAttributes(span.Attributes(), resource),
-		Links:                    pdataLinksToOTLinks(span.Links()),
-		MessageEvents:            pdataEventsToOTMessageEvents(span.Events()),
-		DroppedAttributeCount:    int(span.DroppedAttributesCount()),
-		DroppedMessageEventCount: int(span.DroppedEventsCount()),
-		DroppedLinkCount:         int(span.DroppedLinksCount()),
-		Resource:                 r,
-	}
-	sd.InstrumentationLibrary = instrumentation.Library{
-		Name:    il.Name(),
-		Version: il.Version(),
-	}
 	status := span.Status()
-	sd.StatusCode = pdataStatusCodeToOTCode(status.Code())
-	sd.StatusMessage = status.Message()
-
-	return sd
+	return spanSnapshot{
+		spanContext:          apitrace.NewSpanContext(sc),
+		parent:               apitrace.NewSpanContext(parentSc),
+		spanKind:             pdataSpanKindToOTSpanKind(span.Kind()),
+		startTime:            startTime,
+		endTime:              endTime,
+		name:                 span.Name(),
+		attributes:           pdataAttributesToOTAttributes(span.Attributes(), resource),
+		links:                pdataLinksToOTLinks(span.Links()),
+		events:               pdataEventsToOTMessageEvents(span.Events()),
+		droppedAttributes:    int(span.DroppedAttributesCount()),
+		droppedMessageEvents: int(span.DroppedEventsCount()),
+		droppedLinks:         int(span.DroppedLinksCount()),
+		resource:             r,
+		instrumentationLibrary: instrumentation.Library{
+			Name:    il.Name(),
+			Version: il.Version(),
+		},
+		status: sdktrace.Status{
+			Code:        pdataStatusCodeToOTCode(status.Code()),
+			Description: status.Message(),
+		},
+	}
 }
 
 func pdataSpanKindToOTSpanKind(k pdata.SpanKind) apitrace.SpanKind {
@@ -159,12 +159,12 @@ func pdataLinksToOTLinks(links pdata.SpanLinkSlice) []apitrace.Link {
 	return otLinks
 }
 
-func pdataEventsToOTMessageEvents(events pdata.SpanEventSlice) []apitrace.Event {
+func pdataEventsToOTMessageEvents(events pdata.SpanEventSlice) []sdktrace.Event {
 	size := events.Len()
-	otEvents := make([]apitrace.Event, 0, size)
+	otEvents := make([]sdktrace.Event, 0, size)
 	for i := 0; i < size; i++ {
 		event := events.At(i)
-		otEvents = append(otEvents, apitrace.Event{
+		otEvents = append(otEvents, sdktrace.Event{
 			Name:       event.Name(),
 			Attributes: pdataAttributesToOTAttributes(event.Attributes(), pdata.NewResource()),
 			Time:       time.Unix(0, int64(event.Timestamp())),

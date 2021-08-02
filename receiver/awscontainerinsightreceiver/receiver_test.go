@@ -45,7 +45,7 @@ func (m *MockK8sAPIServer) GetMetrics() []pdata.Metrics {
 
 func TestReceiver(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	metricsReceiver, err := New(
+	metricsReceiver, err := newAWSContainerInsightReceiver(
 		zap.NewNop(),
 		cfg,
 		consumertest.NewNop(),
@@ -66,7 +66,7 @@ func TestReceiver(t *testing.T) {
 
 func TestReceiverForNilConsumer(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	metricsReceiver, err := New(
+	metricsReceiver, err := newAWSContainerInsightReceiver(
 		zap.NewNop(),
 		cfg,
 		nil,
@@ -78,7 +78,7 @@ func TestReceiverForNilConsumer(t *testing.T) {
 
 func TestCollectData(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	metricsReceiver, err := New(
+	metricsReceiver, err := newAWSContainerInsightReceiver(
 		zap.NewNop(),
 		cfg,
 		new(consumertest.MetricsSink),
@@ -104,7 +104,7 @@ func TestCollectData(t *testing.T) {
 
 func TestCollectDataWithErrConsumer(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	metricsReceiver, err := New(
+	metricsReceiver, err := newAWSContainerInsightReceiver(
 		zap.NewNop(),
 		cfg,
 		consumertest.NewErr(errors.New("an error")),

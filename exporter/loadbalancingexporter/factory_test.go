@@ -19,15 +19,14 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
-	"go.uber.org/zap"
 )
 
 func TestTracesExporterGetsCreatedWithValidConfiguration(t *testing.T) {
 	// prepare
 	factory := NewFactory()
-	creationParams := component.ExporterCreateSettings{Logger: zap.NewNop()}
+	creationParams := componenttest.NewNopExporterCreateSettings()
 	cfg := &Config{
 		ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
 		Resolver: ResolverSettings{
@@ -46,7 +45,7 @@ func TestTracesExporterGetsCreatedWithValidConfiguration(t *testing.T) {
 func TestLogExporterGetsCreatedWithValidConfiguration(t *testing.T) {
 	// prepare
 	factory := NewFactory()
-	creationParams := component.ExporterCreateSettings{Logger: zap.NewNop()}
+	creationParams := componenttest.NewNopExporterCreateSettings()
 	cfg := &Config{
 		ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
 		Resolver: ResolverSettings{

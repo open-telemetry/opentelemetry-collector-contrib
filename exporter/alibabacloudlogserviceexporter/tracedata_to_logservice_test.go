@@ -83,16 +83,16 @@ func loadFromJSON(file string, obj interface{}) error {
 
 func constructSpanData() pdata.Traces {
 	traces := pdata.NewTraces()
-	traces.ResourceSpans().Resize(2)
-	rspans := traces.ResourceSpans().At(0)
+	traces.ResourceSpans().EnsureCapacity(1)
+	rspans := traces.ResourceSpans().AppendEmpty()
 	fillResource(rspans.Resource())
-	rspans.InstrumentationLibrarySpans().Resize(2)
-	ispans := rspans.InstrumentationLibrarySpans().At(0)
+	rspans.InstrumentationLibrarySpans().EnsureCapacity(1)
+	ispans := rspans.InstrumentationLibrarySpans().AppendEmpty()
 	ispans.InstrumentationLibrary().SetName("golang-sls-exporter")
 	ispans.InstrumentationLibrary().SetVersion("v0.1.0")
-	ispans.Spans().Resize(2)
-	fillHTTPClientSpan(ispans.Spans().At(0))
-	fillHTTPServerSpan(ispans.Spans().At(1))
+	ispans.Spans().EnsureCapacity(2)
+	fillHTTPClientSpan(ispans.Spans().AppendEmpty())
+	fillHTTPServerSpan(ispans.Spans().AppendEmpty())
 	return traces
 }
 

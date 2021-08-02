@@ -114,10 +114,10 @@ func Test_SplunkHecToLogData(t *testing.T) {
 				logsSlice := createLogsSlice(nanoseconds)
 				foosArr := pdata.NewAttributeValueArray()
 				foos := foosArr.ArrayVal()
-				foos.Resize(3)
-				foos.At(0).SetStringVal("foo")
-				foos.At(1).SetStringVal("bar")
-				foos.At(2).SetStringVal("foobar")
+				foos.EnsureCapacity(3)
+				foos.AppendEmpty().SetStringVal("foo")
+				foos.AppendEmpty().SetStringVal("bar")
+				foos.AppendEmpty().SetStringVal("foobar")
 
 				attVal := pdata.NewAttributeValueMap()
 				attMap := attVal.MapVal()
@@ -150,7 +150,7 @@ func Test_SplunkHecToLogData(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result, err := SplunkHecToLogData(zap.NewNop(), []*splunk.Event{&tt.event}, func(resource pdata.Resource) {})
+			result, err := splunkHecToLogData(zap.NewNop(), []*splunk.Event{&tt.event}, func(resource pdata.Resource) {})
 			assert.Equal(t, tt.wantErr, err)
 			assert.Equal(t, tt.output.Len(), result.ResourceLogs().Len())
 			assert.Equal(t, tt.output.At(0), result.ResourceLogs().At(0))

@@ -33,9 +33,9 @@ type Log struct {
 func Logs(recs ...Log) pdata.Logs {
 	out := pdata.NewLogs()
 	logSlice := out.ResourceLogs().AppendEmpty().InstrumentationLibraryLogs().AppendEmpty().Logs()
-	logSlice.Resize(len(recs))
+	logSlice.EnsureCapacity(len(recs))
 	for i := range recs {
-		l := logSlice.At(i)
+		l := logSlice.AppendEmpty()
 		recs[i].Body.CopyTo(l.Body())
 		l.SetTimestamp(pdata.Timestamp(recs[i].Timestamp))
 		l.Attributes().InitFromMap(recs[i].Attributes)
