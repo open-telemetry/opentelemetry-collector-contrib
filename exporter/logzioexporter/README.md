@@ -48,10 +48,10 @@ receivers:
   prometheus:
     config:
       scrape_configs:
-        - job_name: 'ratelimiter'
-          scrape_interval: 15s
-          static_configs:
-            - targets: [ "0.0.0.0:8889" ]
+      - job_name: 'ratelimiter'
+        scrape_interval: 15s
+        static_configs:
+          - targets: [ "0.0.0.0:8889" ]
 
 exporters:
   logzio:
