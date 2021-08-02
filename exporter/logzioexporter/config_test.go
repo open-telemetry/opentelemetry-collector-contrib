@@ -44,5 +44,31 @@ func TestLoadConfig(t *testing.T) {
 		TracesToken:      "logzioTESTtoken",
 		Region:           "eu",
 		CustomEndpoint:   "https://some-url.com:8888",
+		DrainInterval:    5,
+		QueueCapacity:    500,
+		QueueMaxLength:   500,
+	}, cfgExp)
+}
+
+func TestDefaultLoadConfig(t *testing.T) {
+	factories, err := componenttest.NopFactories()
+	assert.Nil(t, err)
+
+	factory := NewFactory()
+	factories.Exporters[typeStr] = factory
+	cfg, err := configtest.LoadConfigAndValidate(path.Join(".", "testdata", "configd.yaml"), factories)
+
+	require.NoError(t, err)
+	require.NotNil(t, cfg)
+
+	assert.Equal(t, 2, len(cfg.Exporters))
+
+	cfgExp := cfg.Exporters[config.NewIDWithName(typeStr, "2")]
+	assert.Equal(t, &Config{
+		ExporterSettings: config.NewExporterSettings(config.NewIDWithName(typeStr, "2")),
+		TracesToken:      "logzioTESTtoken",
+		DrainInterval:    3,
+		QueueCapacity:    20 * 1024 * 1024,
+		QueueMaxLength:   500000,
 	}, cfgExp)
 }
