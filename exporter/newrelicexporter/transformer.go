@@ -23,6 +23,7 @@ import (
 
 	"github.com/newrelic/newrelic-telemetry-sdk-go/telemetry"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/translator/conventions"
 	tracetranslator "go.opentelemetry.io/collector/translator/trace"
@@ -327,11 +328,12 @@ func (t *transformer) Metric(m pdata.Metric) ([]telemetry.Metric, error) {
 				output = append(output, nrMetric)
 			} else {
 				nrMetric := telemetry.Count{
-					Name:       m.Name(),
-					Attributes: attributes,
-					Value:      val,
-					Timestamp:  point.StartTimestamp().AsTime(),
-					Interval:   time.Duration(point.Timestamp() - point.StartTimestamp()),
+					Name:               m.Name(),
+					Attributes:         attributes,
+					Value:              val,
+					Timestamp:          point.StartTimestamp().AsTime(),
+					Interval:           time.Duration(point.Timestamp() - point.StartTimestamp()),
+					ForceIntervalValid: true,
 				}
 				output = append(output, nrMetric)
 			}
@@ -340,7 +342,7 @@ func (t *transformer) Metric(m pdata.Metric) ([]telemetry.Metric, error) {
 		hist := m.Histogram()
 		k.MetricTemporality = hist.AggregationTemporality()
 		t.details.metricMetadataCount[k]++
-		return nil, &errUnsupportedMetricType{metricType: k.MetricType.String(), metricName: m.Name(), numDataPoints: hist.DataPoints().Len()}
+		return nil, consumererror.Permanent(&errUnsupportedMetricType{metricType: k.MetricType.String(), metricName: m.Name(), numDataPoints: hist.DataPoints().Len()})
 	case pdata.MetricDataTypeSummary:
 		t.details.metricMetadataCount[k]++
 		summary := m.Summary()
@@ -370,14 +372,15 @@ func (t *transformer) Metric(m pdata.Metric) ([]telemetry.Metric, error) {
 
 			attributes := t.MetricAttributes(baseAttributes, point.LabelsMap())
 			nrMetric := telemetry.Summary{
-				Name:       name,
-				Attributes: attributes,
-				Count:      float64(point.Count()),
-				Sum:        point.Sum(),
-				Min:        minQuantile,
-				Max:        maxQuantile,
-				Timestamp:  point.StartTimestamp().AsTime(),
-				Interval:   time.Duration(point.Timestamp() - point.StartTimestamp()),
+				Name:               name,
+				Attributes:         attributes,
+				Count:              float64(point.Count()),
+				Sum:                point.Sum(),
+				Min:                minQuantile,
+				Max:                maxQuantile,
+				Timestamp:          point.StartTimestamp().AsTime(),
+				Interval:           time.Duration(point.Timestamp() - point.StartTimestamp()),
+				ForceIntervalValid: true,
 			}
 
 			output = append(output, nrMetric)
