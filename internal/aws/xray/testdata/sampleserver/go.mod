@@ -3,7 +3,6 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsxra
 go 1.16
 
 require (
-	github.com/aws/aws-sdk-go v1.38.68 // indirect
 	github.com/aws/aws-xray-sdk-go v1.6.0
 	github.com/google/go-cmp v0.5.6 // indirect
 	github.com/grpc-ecosystem/go-grpc-middleware v1.3.0 // indirect
