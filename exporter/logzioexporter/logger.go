@@ -95,18 +95,18 @@ func (l *hclog2ZapLogger) Named(name string) hclog.Logger {
 }
 
 // ResetNamed implementation.
-func (l hclog2ZapLogger) ResetNamed(name string) hclog.Logger {
+func (l *hclog2ZapLogger) ResetNamed(name string) hclog.Logger {
 	// no need to implement that as go-plugin doesn't use this method.
 	return &hclog2ZapLogger{}
 }
 
 // SetLevel implementation.
-func (l hclog2ZapLogger) SetLevel(level hclog.Level) {
+func (l *hclog2ZapLogger) SetLevel(level hclog.Level) {
 	// no need to implement that as go-plugin doesn't use this method.
 }
 
 // StandardLogger implementation.
-func (l hclog2ZapLogger) StandardLogger(opts *hclog.StandardLoggerOptions) *log.Logger {
+func (l *hclog2ZapLogger) StandardLogger(opts *hclog.StandardLoggerOptions) *log.Logger {
 	// no need to implement that as go-plugin doesn't use this method.
 	return log.New(ioutil.Discard, "", 0)
 }
