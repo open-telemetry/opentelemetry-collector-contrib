@@ -24,23 +24,44 @@ import (
 	"strings"
 	"time"
 
+	"github.com/dynatrace-oss/dynatrace-metric-utils-go/metric/apiconstants"
+	"github.com/dynatrace-oss/dynatrace-metric-utils-go/metric/dimensions"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/model/pdata"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/dynatraceexporter/config"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/dynatraceexporter/serialization"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/ttlmap"
 )
 
-// The maximum number of metrics that may be sent in a single request to the Dynatrace API
-const maxChunkSize = 1000
+const (
+	cSweepIntervalSeconds = 300
+	cMaxAgeSeconds        = 900
+)
 
 // NewExporter exports to a Dynatrace Metrics v2 API
 func newMetricsExporter(params component.ExporterCreateSettings, cfg *config.Config) *exporter {
+	dims := []dimensions.Dimension{}
+	for key, value := range cfg.DefaultDimensions {
+		dims = append(dims, dimensions.NewDimension(key, value))
+	}
+
+	defaultDimensions := dimensions.MergeLists(
+		dimensionsFromTags(cfg.Tags),
+		dimensions.NewNormalizedDimensionList(dims...),
+	)
+	staticDimensions := dimensions.NewNormalizedDimensionList(dimensions.NewDimension("dt.metrics.source", "opentelemetry"))
+
+	prevPts := ttlmap.New(cSweepIntervalSeconds, cMaxAgeSeconds)
+	prevPts.Start()
+
 	return &exporter{
-		logger: params.Logger,
-		cfg:    cfg,
+		logger:            params.Logger,
+		cfg:               cfg,
+		defaultDimensions: defaultDimensions,
+		staticDimensions:  staticDimensions,
+		prev:              prevPts,
 	}
 }
 
@@ -50,18 +71,18 @@ type exporter struct {
 	cfg        *config.Config
 	client     *http.Client
 	isDisabled bool
-}
 
-const (
-	maxMetricKeyLen = 250
-)
+	defaultDimensions dimensions.NormalizedDimensionList
+	staticDimensions  dimensions.NormalizedDimensionList
+	prev              *ttlmap.TTLMap
+}
 
 func (e *exporter) PushMetricsData(ctx context.Context, md pdata.Metrics) error {
 	if e.isDisabled {
 		return nil
 	}
 
-	lines, _ := e.serializeMetrics(md)
+	lines := e.serializeMetrics(md)
 
 	// If request is empty string, there are no serializable metrics in the batch.
 	// This can happen if all metric names are invalid
@@ -78,13 +99,22 @@ func (e *exporter) PushMetricsData(ctx context.Context, md pdata.Metrics) error 
 	return nil
 }
 
-func (e *exporter) serializeMetrics(md pdata.Metrics) ([]string, int) {
+// for backwards-compatibility with deprecated `Tags` config option
+func dimensionsFromTags(tags []string) dimensions.NormalizedDimensionList {
+	dims := []dimensions.Dimension{}
+	for _, tag := range tags {
+		parts := strings.SplitN(tag, "=", 2)
+		if len(parts) == 2 {
+			dims = append(dims, dimensions.NewDimension(parts[0], parts[1]))
+		}
+	}
+	return dimensions.NewNormalizedDimensionList(dims...)
+}
+
+func (e *exporter) serializeMetrics(md pdata.Metrics) []string {
 	lines := make([]string, 0)
-	dropped := 0
 
 	resourceMetrics := md.ResourceMetrics()
-
-	e.logger.Debug(fmt.Sprintf("res metric len: %d, e.cfg.Tags: %v\n", resourceMetrics.Len(), e.cfg.Tags))
 
 	for i := 0; i < resourceMetrics.Len(); i++ {
 		resourceMetric := resourceMetrics.At(i)
@@ -94,31 +124,104 @@ func (e *exporter) serializeMetrics(md pdata.Metrics) ([]string, int) {
 			metrics := libraryMetric.Metrics()
 			for k := 0; k < metrics.Len(); k++ {
 				metric := metrics.At(k)
-				name, normalizationError := normalizeMetricName(e.cfg.Prefix, metric.Name())
-				if normalizationError != nil {
-					dropped++
-					e.logger.Error(fmt.Sprintf("Failed to normalize metric name: %s", metric.Name()))
+				metricLines, err := e.serializeMetric(metric)
+				if err != nil {
+					e.logger.Sugar().Warnf("failed to serialize %s '%s' - %s", metric.DataType().String(), metric.Name(), err.Error())
+				}
+
+				if metricLines == nil {
 					continue
 				}
 
-				var l []string
-				switch metric.DataType() {
-				case pdata.MetricDataTypeNone:
-					continue
-				case pdata.MetricDataTypeGauge:
-					l = serialization.SerializeNumberDataPoints(name, metric.Gauge().DataPoints(), e.cfg.Tags)
-				case pdata.MetricDataTypeSum:
-					l = serialization.SerializeNumberDataPoints(name, metric.Sum().DataPoints(), e.cfg.Tags)
-				case pdata.MetricDataTypeHistogram:
-					l = serialization.SerializeHistogramMetrics(name, metric.Histogram().DataPoints(), e.cfg.Tags)
-				}
-				lines = append(lines, l...)
-				e.logger.Debug(fmt.Sprintf("Exporting type %s, Name: %s, len: %d ", metric.DataType().String(), name, len(l)))
+				lines = append(lines, metricLines...)
+				e.logger.Debug(fmt.Sprintf("Serialized %s, Name: %s, lines: %d ", metric.DataType().String(), metric.Name(), len(metricLines)))
 			}
 		}
 	}
+	return lines
+}
 
-	return lines, dropped
+func (e *exporter) makeCombinedDimensions(labels pdata.AttributeMap) dimensions.NormalizedDimensionList {
+	dimsFromLabels := []dimensions.Dimension{}
+
+	labels.Range(func(k string, v pdata.AttributeValue) bool {
+		dimsFromLabels = append(dimsFromLabels, dimensions.NewDimension(k, pdata.AttributeValueToString(v)))
+		return true
+	})
+	return dimensions.MergeLists(
+		e.defaultDimensions,
+		dimensions.NewNormalizedDimensionList(dimsFromLabels...),
+		e.staticDimensions,
+	)
+}
+
+func (e *exporter) serializeMetric(metric pdata.Metric) ([]string, error) {
+	var metricLines []string
+	switch metric.DataType() {
+	case pdata.MetricDataTypeNone:
+		return nil, nil
+	case pdata.MetricDataTypeGauge:
+		for i := 0; i < metric.Gauge().DataPoints().Len(); i++ {
+			dp := metric.Gauge().DataPoints().At(i)
+
+			line, err := serializeGauge(
+				metric.Name(),
+				e.cfg.Prefix,
+				e.makeCombinedDimensions(dp.Attributes()),
+				dp,
+			)
+
+			if err != nil {
+				return nil, err
+			}
+
+			if line != "" {
+				metricLines = append(metricLines, line)
+			}
+		}
+	case pdata.MetricDataTypeSum:
+		for i := 0; i < metric.Sum().DataPoints().Len(); i++ {
+			dp := metric.Sum().DataPoints().At(i)
+
+			line, err := serializeSum(
+				metric.Name(),
+				e.cfg.Prefix,
+				e.makeCombinedDimensions(dp.Attributes()),
+				metric.Sum().AggregationTemporality(),
+				dp,
+				e.prev,
+			)
+
+			if err != nil {
+				return nil, err
+			}
+
+			if line != "" {
+				metricLines = append(metricLines, line)
+			}
+		}
+	case pdata.MetricDataTypeHistogram:
+		for i := 0; i < metric.Histogram().DataPoints().Len(); i++ {
+			dp := metric.Histogram().DataPoints().At(i)
+
+			line, err := serializeHistogram(
+				metric.Name(),
+				e.cfg.Prefix,
+				e.makeCombinedDimensions(dp.Attributes()),
+				metric.Histogram().AggregationTemporality(),
+				dp,
+			)
+
+			if err != nil {
+				return nil, err
+			}
+
+			if line != "" {
+				metricLines = append(metricLines, line)
+			}
+		}
+	}
+	return metricLines, nil
 }
 
 var lastLog int64
@@ -127,14 +230,14 @@ var lastLog int64
 // Returns the number of lines rejected by Dynatrace.
 // An error indicates all lines were dropped regardless of the returned number.
 func (e *exporter) send(ctx context.Context, lines []string) (int, error) {
-	if now := time.Now().Unix(); len(lines) > maxChunkSize && now-lastLog > 60 {
-		e.logger.Warn(fmt.Sprintf("Batch too large. Sending in chunks of %[1]d metrics. If any chunk fails, previous chunks in the batch could be retried by the batch processor. Please set send_batch_max_size to %[1]d or less. Suppressing this log for 60 seconds.", maxChunkSize))
+	if now := time.Now().Unix(); len(lines) > apiconstants.GetPayloadLinesLimit() && now-lastLog > 60 {
+		e.logger.Warn(fmt.Sprintf("Batch too large. Sending in chunks of %[1]d metrics. If any chunk fails, previous chunks in the batch could be retried by the batch processor. Please set send_batch_max_size to %[1]d or less. Suppressing this log for 60 seconds.", apiconstants.GetPayloadLinesLimit()))
 		lastLog = time.Now().Unix()
 	}
 
 	rejected := 0
-	for i := 0; i < len(lines); i += maxChunkSize {
-		end := i + maxChunkSize
+	for i := 0; i < len(lines); i += apiconstants.GetPayloadLinesLimit() {
+		end := i + apiconstants.GetPayloadLinesLimit()
 
 		if end > len(lines) {
 			end = len(lines)
@@ -231,26 +334,6 @@ func (e *exporter) start(_ context.Context, host component.Host) (err error) {
 	e.client = client
 
 	return nil
-}
-
-// normalizeMetricName formats the custom namespace and view name to
-// Metric naming Conventions
-func normalizeMetricName(prefix, name string) (string, error) {
-	normalizedLen := maxMetricKeyLen
-	if l := len(prefix); l != 0 {
-		normalizedLen -= l + 1
-	}
-
-	name, err := serialization.NormalizeString(name, normalizedLen)
-	if err != nil {
-		return "", err
-	}
-
-	if prefix != "" {
-		name = prefix + "." + name
-	}
-
-	return name, nil
 }
 
 // Response from Dynatrace is expected to be in JSON format
