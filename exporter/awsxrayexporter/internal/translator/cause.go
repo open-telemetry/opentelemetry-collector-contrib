@@ -160,6 +160,8 @@ func parseException(exceptionType string, message string, stacktrace string, lan
 		exceptions = fillJavaScriptStacktrace(stacktrace, exceptions)
 	case "dotnet":
 		exceptions = fillDotnetStacktrace(stacktrace, exceptions)
+	case "php":
+		exceptions = fillJavaStacktrace(stacktrace, exceptions)
 	}
 
 	return exceptions
@@ -394,7 +396,7 @@ func fillJavaScriptStacktrace(stacktrace string, exceptions []awsxray.Exception)
 				path = "native"
 			}
 
-			// only append the exception if all the values of the exception are not default
+			// only append the exception if at least one of the values is not default
 			if path != "" || label != "" || lineIdx != 0 {
 				stack := awsxray.StackFrame{
 					Path:  aws.String(path),

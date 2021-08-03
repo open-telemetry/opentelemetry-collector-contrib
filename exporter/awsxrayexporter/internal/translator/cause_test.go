@@ -821,3 +821,196 @@ func TestParseExceptionWithMalformedStacktrace(t *testing.T) {
 	assert.Equal(t, "", *exceptions[0].Stack[1].Path)
 	assert.Equal(t, 0, *exceptions[0].Stack[1].Line)
 }
+
+func TestParseExceptionPhpStacktrace(t *testing.T) {
+	exceptionType := "Exception"
+	message := "Thrown from grandparent"
+
+	stacktrace := `Exception: Thrown from grandparent
+	at grandparent_func(test.php:56)
+	at parent_func(test.php:51)
+	at child_func(test.php:44)
+	at main(test.php:63)`
+
+	exceptions := parseException(exceptionType, message, stacktrace, "php")
+
+	assert.Len(t, exceptions, 1)
+	assert.NotEmpty(t, exceptions[0].ID)
+	assert.Equal(t, "Exception", *exceptions[0].Type)
+	assert.Equal(t, "Thrown from grandparent", *exceptions[0].Message)
+	assert.Len(t, exceptions[0].Stack, 4)
+	assert.Equal(t, "grandparent_func", *exceptions[0].Stack[0].Label)
+	assert.Equal(t, "test.php", *exceptions[0].Stack[0].Path)
+	assert.Equal(t, 56, *exceptions[0].Stack[0].Line)
+	assert.Equal(t, "parent_func", *exceptions[0].Stack[1].Label)
+	assert.Equal(t, "test.php", *exceptions[0].Stack[1].Path)
+	assert.Equal(t, 51, *exceptions[0].Stack[1].Line)
+	assert.Equal(t, "child_func", *exceptions[0].Stack[2].Label)
+	assert.Equal(t, "test.php", *exceptions[0].Stack[2].Path)
+	assert.Equal(t, 44, *exceptions[0].Stack[2].Line)
+	assert.Equal(t, "main", *exceptions[0].Stack[3].Label)
+	assert.Equal(t, "test.php", *exceptions[0].Stack[3].Path)
+	assert.Equal(t, 63, *exceptions[0].Stack[3].Line)
+}
+
+func TestParseExceptionPhpWithoutStacktrace(t *testing.T) {
+	exceptionType := "Exception"
+	message := "Thrown from grandparent"
+
+	stacktrace := ""
+
+	exceptions := parseException(exceptionType, message, stacktrace, "php")
+
+	assert.Len(t, exceptions, 1)
+	assert.NotEmpty(t, exceptions[0].ID)
+	assert.Equal(t, "Exception", *exceptions[0].Type)
+	assert.Equal(t, "Thrown from grandparent", *exceptions[0].Message)
+	assert.Nil(t, exceptions[0].Stack)
+}
+
+func TestParseExceptionPhpStacktraceWithCause(t *testing.T) {
+	exceptionType := "Exception"
+	message := "Thrown from class B"
+
+	stacktrace := `Exception: Thrown from class B
+	at B.exc(test.php:59)
+	at fail(test.php:81)
+	at main(test.php:89)
+Caused by: Exception: Thrown from class A`
+
+	exceptions := parseException(exceptionType, message, stacktrace, "php")
+
+	assert.Len(t, exceptions, 2)
+	assert.Equal(t, "Exception", *exceptions[0].Type)
+	assert.Equal(t, "Thrown from class B", *exceptions[0].Message)
+	assert.Equal(t, *exceptions[0].Cause, *exceptions[1].ID)
+	assert.Len(t, exceptions[0].Stack, 3)
+	assert.Equal(t, "B.exc", *exceptions[0].Stack[0].Label)
+	assert.Equal(t, "test.php", *exceptions[0].Stack[0].Path)
+	assert.Equal(t, 59, *exceptions[0].Stack[0].Line)
+	assert.Equal(t, "fail", *exceptions[0].Stack[1].Label)
+	assert.Equal(t, "test.php", *exceptions[0].Stack[1].Path)
+	assert.Equal(t, 81, *exceptions[0].Stack[1].Line)
+	assert.Equal(t, "main", *exceptions[0].Stack[2].Label)
+	assert.Equal(t, "test.php", *exceptions[0].Stack[2].Path)
+	assert.Equal(t, 89, *exceptions[0].Stack[2].Line)
+
+	assert.Equal(t, "Exception", *exceptions[1].Type)
+	assert.Equal(t, "Thrown from class A", *exceptions[1].Message)
+	assert.Empty(t, exceptions[1].Stack)
+}
+
+func TestParseExceptionPhpStacktraceWithCauseAndStacktrace(t *testing.T) {
+	exceptionType := "Exception"
+	message := "Thrown from class B"
+
+	stacktrace := `Exception: Thrown from class B
+	at B.exc(test.php:59)
+	at fail(test.php:81)
+	at main(test.php:89)
+Caused by: Exception: Thrown from class A
+	at A.exc(test.php:48)
+	at B.exc(test.php:56)
+	... 2 more`
+
+	exceptions := parseException(exceptionType, message, stacktrace, "php")
+
+	assert.Len(t, exceptions, 2)
+	assert.NotEmpty(t, exceptions[0].ID)
+	assert.Equal(t, "Exception", *exceptions[0].Type)
+	assert.Equal(t, "Thrown from class B", *exceptions[0].Message)
+	assert.Equal(t, *exceptions[0].Cause, *exceptions[1].ID)
+	assert.Len(t, exceptions[0].Stack, 3)
+	assert.Equal(t, "B.exc", *exceptions[0].Stack[0].Label)
+	assert.Equal(t, "test.php", *exceptions[0].Stack[0].Path)
+	assert.Equal(t, 59, *exceptions[0].Stack[0].Line)
+	assert.Equal(t, "fail", *exceptions[0].Stack[1].Label)
+	assert.Equal(t, "test.php", *exceptions[0].Stack[1].Path)
+	assert.Equal(t, 81, *exceptions[0].Stack[1].Line)
+	assert.Equal(t, "main", *exceptions[0].Stack[2].Label)
+	assert.Equal(t, "test.php", *exceptions[0].Stack[2].Path)
+	assert.Equal(t, 89, *exceptions[0].Stack[2].Line)
+
+	assert.Len(t, exceptions[1].Stack, 2)
+	assert.NotEmpty(t, exceptions[1].ID)
+	assert.Equal(t, "Exception", *exceptions[1].Type)
+	assert.Equal(t, "Thrown from class A", *exceptions[1].Message)
+	assert.Equal(t, "A.exc", *exceptions[1].Stack[0].Label)
+	assert.Equal(t, "test.php", *exceptions[1].Stack[0].Path)
+	assert.Equal(t, 48, *exceptions[1].Stack[0].Line)
+	assert.Equal(t, "B.exc", *exceptions[1].Stack[1].Label)
+	assert.Equal(t, "test.php", *exceptions[1].Stack[1].Path)
+	assert.Equal(t, 56, *exceptions[1].Stack[1].Line)
+}
+
+func TestParseExceptionPhpStacktraceWithMultipleCause(t *testing.T) {
+	exceptionType := "Exception"
+	message := "Thrown from class C"
+
+	stacktrace := `Exception: Thrown from class C
+	at C.exc(test.php:74)
+	at main(test.php:89)
+Caused by: Exception: Thrown from class B
+	at B.exc(test.php:59)
+	at C.exc(test.php:71)
+	... 3 more
+Caused by: Exception: Thrown from class A
+	at A.exc(test.php:48)
+	at B.exc(test.php:56)
+	... 4 more`
+
+	exceptions := parseException(exceptionType, message, stacktrace, "php")
+
+	assert.Len(t, exceptions, 3)
+	assert.NotEmpty(t, exceptions[0].ID)
+	assert.Equal(t, "Exception", *exceptions[0].Type)
+	assert.Equal(t, "Thrown from class C", *exceptions[0].Message)
+	assert.Equal(t, *exceptions[0].Cause, *exceptions[1].ID)
+	assert.Len(t, exceptions[0].Stack, 2)
+	assert.Equal(t, "C.exc", *exceptions[0].Stack[0].Label)
+	assert.Equal(t, "test.php", *exceptions[0].Stack[0].Path)
+	assert.Equal(t, 74, *exceptions[0].Stack[0].Line)
+	assert.Equal(t, "main", *exceptions[0].Stack[1].Label)
+	assert.Equal(t, "test.php", *exceptions[0].Stack[1].Path)
+	assert.Equal(t, 89, *exceptions[0].Stack[1].Line)
+
+	assert.Len(t, exceptions[1].Stack, 2)
+	assert.Equal(t, *exceptions[1].Cause, *exceptions[2].ID)
+	assert.Equal(t, "Exception", *exceptions[1].Type)
+	assert.Equal(t, "Thrown from class B", *exceptions[1].Message)
+	assert.Equal(t, "B.exc", *exceptions[1].Stack[0].Label)
+	assert.Equal(t, "test.php", *exceptions[1].Stack[0].Path)
+	assert.Equal(t, 59, *exceptions[1].Stack[0].Line)
+
+	assert.Len(t, exceptions[2].Stack, 2)
+	assert.NotEmpty(t, exceptions[2].ID)
+	assert.Equal(t, "Exception", *exceptions[2].Type)
+	assert.Equal(t, "Thrown from class A", *exceptions[2].Message)
+	assert.Equal(t, "B.exc", *exceptions[2].Stack[1].Label)
+	assert.Equal(t, "test.php", *exceptions[2].Stack[1].Path)
+	assert.Equal(t, 56, *exceptions[2].Stack[1].Line)
+}
+
+func TestParseExceptionPhpStacktraceMalformedLines(t *testing.T) {
+	exceptionType := "Exception"
+	message := "Thrown from class B"
+
+	stacktrace := `Exception: Thrown from class B
+	at B.exc(test.php:59)
+	at fail(test.php:81 malformed
+	at main(test.php:89)`
+
+	exceptions := parseException(exceptionType, message, stacktrace, "php")
+
+	assert.Len(t, exceptions, 1)
+	assert.NotEmpty(t, exceptions[0].ID)
+	assert.Equal(t, "Exception", *exceptions[0].Type)
+	assert.Equal(t, "Thrown from class B", *exceptions[0].Message)
+	assert.Len(t, exceptions[0].Stack, 2)
+	assert.Equal(t, "B.exc", *exceptions[0].Stack[0].Label)
+	assert.Equal(t, "test.php", *exceptions[0].Stack[0].Path)
+	assert.Equal(t, 59, *exceptions[0].Stack[0].Line)
+	assert.Equal(t, "main", *exceptions[0].Stack[1].Label)
+	assert.Equal(t, "test.php", *exceptions[0].Stack[1].Path)
+	assert.Equal(t, 89, *exceptions[0].Stack[1].Line)
+}
