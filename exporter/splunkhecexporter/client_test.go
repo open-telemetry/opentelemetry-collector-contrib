@@ -19,6 +19,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest"
 	"io/ioutil"
 	"math"
 	"net"
@@ -44,16 +46,29 @@ func (t testRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 	return t(req), nil
 }
 
-func newTestClient(respCode int, respBody string) *http.Client {
+func newTestClient(respCode int, respBody string) (*http.Client, *[]http.Header) {
+	return newTestClientWithPresetResponses([]int{respCode}, []string{respBody})
+}
+
+func newTestClientWithPresetResponses(codes []int, bodies []string) (*http.Client, *[]http.Header) {
+	index := 0
+	headers := make([]http.Header, 0)
+
 	return &http.Client{
 		Transport: testRoundTripper(func(req *http.Request) *http.Response {
+			code := codes[index%len(codes)]
+			body := bodies[index%len(bodies)]
+			index++
+
+			headers = append(headers, req.Header)
+
 			return &http.Response{
-				StatusCode: respCode,
-				Body:       ioutil.NopCloser(bytes.NewBufferString(respBody)),
+				StatusCode: code,
+				Body:       ioutil.NopCloser(bytes.NewBufferString(body)),
 				Header:     make(http.Header),
 			}
 		}),
-	}
+	}, &headers
 }
 
 func createMetricsData(numberOfDataPoints int) pdata.Metrics {
@@ -108,13 +123,18 @@ func createTraceData(numberOfTraces int) pdata.Traces {
 }
 
 func createLogData(numResources int, numLibraries int, numRecords int) pdata.Logs {
+	return createLogDataWithCustomLibraries(numResources, make([]string, numLibraries), numRecords)
+}
+
+func createLogDataWithCustomLibraries(numResources int, libraries []string, numRecords int) pdata.Logs {
 	logs := pdata.NewLogs()
 	logs.ResourceLogs().EnsureCapacity(numResources)
 	for i := 0; i < numResources; i++ {
 		rl := logs.ResourceLogs().AppendEmpty()
-		rl.InstrumentationLibraryLogs().EnsureCapacity(numLibraries)
-		for j := 0; j < numLibraries; j++ {
+		rl.InstrumentationLibraryLogs().EnsureCapacity(len(libraries))
+		for j := 0; j < len(libraries); j++ {
 			ill := rl.InstrumentationLibraryLogs().AppendEmpty()
+			ill.InstrumentationLibrary().SetName(libraries[j])
 			ill.Logs().EnsureCapacity(numRecords)
 			for k := 0; k < numRecords; k++ {
 				ts := pdata.Timestamp(int64(k) * time.Millisecond.Nanoseconds())
@@ -655,6 +675,7 @@ func Test_pushLogData_nil_Logs(t *testing.T) {
 			return gzip.NewWriter(nil)
 		}},
 		config: NewFactory().CreateDefaultConfig().(*Config),
+		logger: zaptest.NewLogger(t),
 	}
 
 	for _, test := range tests {
@@ -675,6 +696,7 @@ func Test_pushLogData_InvalidLog(t *testing.T) {
 			return gzip.NewWriter(nil)
 		}},
 		config: &Config{},
+		logger: zaptest.NewLogger(t),
 	}
 
 	logs := pdata.NewLogs()
@@ -694,6 +716,7 @@ func Test_pushLogData_PostError(t *testing.T) {
 			return gzip.NewWriter(nil)
 		}},
 		config: NewFactory().CreateDefaultConfig().(*Config),
+		logger: zaptest.NewLogger(t),
 	}
 
 	// 2000 log records -> ~371888 bytes when JSON encoded.
@@ -735,13 +758,14 @@ func Test_pushLogData_ShouldAddResponseTo400Error(t *testing.T) {
 			return gzip.NewWriter(nil)
 		}},
 		config: NewFactory().CreateDefaultConfig().(*Config),
+		logger: zaptest.NewLogger(t),
 	}
 	logs := createLogData(1, 1, 1)
 
 	responseBody := `some error occurred`
 
 	// An HTTP client that returns status code 400 and response body responseBody.
-	splunkClient.client = newTestClient(400, responseBody)
+	splunkClient.client, _ = newTestClient(400, responseBody)
 	// Sending logs using the client.
 	err := splunkClient.pushLogData(context.Background(), logs)
 	// TODO: Uncomment after consumererror.Logs implements method Unwrap.
@@ -751,7 +775,7 @@ func Test_pushLogData_ShouldAddResponseTo400Error(t *testing.T) {
 	assert.Contains(t, err.Error(), responseBody)
 
 	// An HTTP client that returns some other status code other than 400 and response body responseBody.
-	splunkClient.client = newTestClient(500, responseBody)
+	splunkClient.client, _ = newTestClient(500, responseBody)
 	// Sending logs using the client.
 	err = splunkClient.pushLogData(context.Background(), logs)
 	// TODO: Uncomment after consumererror.Logs implements method Unwrap.
@@ -761,12 +785,62 @@ func Test_pushLogData_ShouldAddResponseTo400Error(t *testing.T) {
 	assert.NotContains(t, err.Error(), responseBody)
 }
 
+func Test_pushLogData_ShouldReturnUnsentLogsOnly(t *testing.T) {
+	c := client{
+		url: &url.URL{Scheme: "http", Host: "splunk"},
+		zippers: sync.Pool{New: func() interface{} {
+			return gzip.NewWriter(nil)
+		}},
+		config: NewFactory().CreateDefaultConfig().(*Config),
+		logger: zaptest.NewLogger(t),
+	}
+
+	logs := createLogData(2, 1, 1)
+
+	c.client, _ = newTestClientWithPresetResponses([]int{200, 400}, []string{"OK", "NOK"})
+	c.config.MaxContentLengthLogs, c.config.DisableCompression = 250, true
+
+	err := c.pushLogData(context.Background(), logs)
+	require.Error(t, err)
+	assert.IsType(t, consumererror.Logs{}, err)
+	assert.Equal(t, 1, (err.(consumererror.Logs)).GetLogs().ResourceLogs().Len())
+	assert.Equal(t, logs.ResourceLogs().At(1), (err.(consumererror.Logs)).GetLogs().ResourceLogs().At(0))
+}
+
+func Test_pushLogData_ShouldAddHeadersForProfilingData(t *testing.T) {
+	c := client{
+		url: &url.URL{Scheme: "http", Host: "splunk"},
+		zippers: sync.Pool{New: func() interface{} {
+			return gzip.NewWriter(nil)
+		}},
+		config: NewFactory().CreateDefaultConfig().(*Config),
+		logger: zaptest.NewLogger(t),
+	}
+
+	logs := createLogDataWithCustomLibraries(1, []string{"otel.logs", "otel.profiling"}, 1)
+	var headers *[]http.Header
+
+	c.client, headers = newTestClient(200, "OK")
+	c.config.MaxContentLengthLogs, c.config.DisableCompression = 250, true
+
+	err := c.pushLogData(context.Background(), logs)
+	require.NoError(t, err)
+
+	c.logger.Info("HEADERS:", zap.Any("headers", headers))
+	assert.Equal(t, 2, len(*headers))
+	assert.NotContains(t, (*headers)[0], "X-Splunk-InstrumentationLibraryName")
+	assert.Contains(t, (*headers)[1], "X-Splunk-InstrumentationLibraryName")
+
+	// TODO: also check the contents of the logs sent!
+}
+
 func Test_pushLogData_Small_MaxContentLength(t *testing.T) {
 	c := client{
 		zippers: sync.Pool{New: func() interface{} {
 			return gzip.NewWriter(nil)
 		}},
 		config: NewFactory().CreateDefaultConfig().(*Config),
+		logger: zaptest.NewLogger(t),
 	}
 	c.config.MaxContentLengthLogs = 1
 
