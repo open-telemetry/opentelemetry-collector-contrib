@@ -16,35 +16,97 @@ package cumulativetodeltaprocessor
 
 import (
 	"context"
+	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/model/pdata"
 	"go.uber.org/zap"
+
+	awsmetrics "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/metrics"
 )
 
 type cumulativeToDeltaProcessor struct {
-	metrics []string
-	logger  *zap.Logger
+	metrics         map[string]bool
+	logger          *zap.Logger
+	deltaCalculator awsmetrics.MetricCalculator
 }
 
 func newCumulativeToDeltaProcessor(config *Config, logger *zap.Logger) *cumulativeToDeltaProcessor {
+	inputMetricSet := make(map[string]bool, len(config.Metrics))
+	for _, name := range config.Metrics {
+		inputMetricSet[name] = true
+	}
+
 	return &cumulativeToDeltaProcessor{
-		metrics: config.Metrics,
-		logger:  logger,
+		metrics:         inputMetricSet,
+		logger:          logger,
+		deltaCalculator: newDeltaCalculator(),
 	}
 }
 
 // Start is invoked during service startup.
-func (mgp *cumulativeToDeltaProcessor) Start(context.Context, component.Host) error {
+func (ctdp *cumulativeToDeltaProcessor) Start(context.Context, component.Host) error {
 	return nil
 }
 
 // processMetrics implements the ProcessMetricsFunc type.
-func (mgp *cumulativeToDeltaProcessor) processMetrics(_ context.Context, md pdata.Metrics) (pdata.Metrics, error) {
+func (ctdp *cumulativeToDeltaProcessor) processMetrics(_ context.Context, md pdata.Metrics) (pdata.Metrics, error) {
+	resourceMetricsSlice := md.ResourceMetrics()
+	for i := 0; i < resourceMetricsSlice.Len(); i++ {
+		rm := resourceMetricsSlice.At(i)
+		ilms := rm.InstrumentationLibraryMetrics()
+		for j := 0; j < ilms.Len(); j++ {
+			ilm := ilms.At(j)
+			metricSlice := ilm.Metrics()
+			for k := 0; k < metricSlice.Len(); k++ {
+				metric := metricSlice.At(k)
+				if ctdp.metrics[metric.Name()] {
+					if metric.DataType() == pdata.MetricDataTypeSum && metric.Sum().AggregationTemporality() == pdata.AggregationTemporalityCumulative {
+						dataPoints := metric.Sum().DataPoints()
+
+						for l := 0; l < dataPoints.Len(); l++ {
+							fromDataPoint := dataPoints.At(l)
+							labelMap := make(map[string]string)
+
+							fromDataPoint.LabelsMap().Range(func(k string, v string) bool {
+								labelMap[k] = v
+								return true
+							})
+
+							result, _ := ctdp.deltaCalculator.Calculate(metric.Name(), labelMap, fromDataPoint.Value(), fromDataPoint.Timestamp().AsTime())
+
+							fromDataPoint.SetValue(result.(delta).value)
+							fromDataPoint.SetStartTimestamp(pdata.TimestampFromTime(result.(delta).prevTimestamp))
+						}
+						metric.Sum().SetAggregationTemporality(pdata.AggregationTemporalityDelta)
+					}
+				}
+			}
+		}
+	}
 	return md, nil
 }
 
 // Shutdown is invoked during service shutdown.
-func (mgp *cumulativeToDeltaProcessor) Shutdown(context.Context) error {
+func (ctdp *cumulativeToDeltaProcessor) Shutdown(context.Context) error {
 	return nil
+}
+
+func newDeltaCalculator() awsmetrics.MetricCalculator {
+	return awsmetrics.NewMetricCalculator(func(prev *awsmetrics.MetricValue, val interface{}, timestamp time.Time) (interface{}, bool) {
+		result := delta{value: val.(float64), prevTimestamp: timestamp}
+
+		if prev != nil {
+			deltaValue := val.(float64) - prev.RawValue.(float64)
+			result.value = deltaValue
+			result.prevTimestamp = prev.Timestamp
+			return result, true
+		}
+		return result, false
+	})
+}
+
+type delta struct {
+	value         float64
+	prevTimestamp time.Time
 }
