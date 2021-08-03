@@ -16,6 +16,7 @@ package deltatorateprocessor
 
 import (
 	"context"
+	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/model/pdata"
@@ -23,14 +24,21 @@ import (
 )
 
 type deltaToRateProcessor struct {
-	metrics []string
-	logger  *zap.Logger
+	metrics  map[string]bool
+	timeUnit StringTimeUnit
+	logger   *zap.Logger
 }
 
 func newDeltaToRateProcessor(config *Config, logger *zap.Logger) *deltaToRateProcessor {
+	inputMetricSet := make(map[string]bool, len(config.Metrics))
+	for _, name := range config.Metrics {
+		inputMetricSet[name] = true
+	}
+
 	return &deltaToRateProcessor{
-		metrics: config.Metrics,
-		logger:  logger,
+		metrics:  inputMetricSet,
+		timeUnit: config.TimeUnit,
+		logger:   logger,
 	}
 }
 
@@ -41,11 +49,6 @@ func (dtrp *deltaToRateProcessor) Start(context.Context, component.Host) error {
 
 // processMetrics implements the ProcessMetricsFunc type.
 func (dtrp *deltaToRateProcessor) processMetrics(_ context.Context, md pdata.Metrics) (pdata.Metrics, error) {
-	inputMetricSet := make(map[string]bool)
-	for _, name := range dtrp.metrics {
-		inputMetricSet[name] = true
-	}
-
 	resourceMetricsSlice := md.ResourceMetrics()
 
 	for i := 0; i < resourceMetricsSlice.Len(); i++ {
@@ -56,7 +59,7 @@ func (dtrp *deltaToRateProcessor) processMetrics(_ context.Context, md pdata.Met
 			metricSlice := ilm.Metrics()
 			for j := 0; j < metricSlice.Len(); j++ {
 				metric := metricSlice.At(j)
-				_, ok := inputMetricSet[metric.Name()]
+				_, ok := dtrp.metrics[metric.Name()]
 				if ok {
 					newDoubleDataPointSlice := pdata.NewNumberDataPointSlice()
 					if metric.DataType() == pdata.MetricDataTypeSum && metric.Sum().AggregationTemporality() == pdata.AggregationTemporalityDelta {
@@ -68,17 +71,15 @@ func (dtrp *deltaToRateProcessor) processMetrics(_ context.Context, md pdata.Met
 							fromDataPoint.CopyTo(newDp)
 
 							durationNanos := fromDataPoint.Timestamp().AsTime().Sub(fromDataPoint.StartTimestamp().AsTime())
-							durationSeconds := durationNanos.Seconds()
-							if durationSeconds > 0 {
-								rate := fromDataPoint.Value() / durationNanos.Seconds()
-								newDp.SetValue(rate)
-							}
+							rate := calculateRate(fromDataPoint.Value(), durationNanos, dtrp.timeUnit)
+							newDp.SetValue(rate)
 						}
-					}
-					metric.SetDataType(pdata.MetricDataTypeGauge)
-					for d := 0; d < newDoubleDataPointSlice.Len(); d++ {
-						dp := metric.Gauge().DataPoints().AppendEmpty()
-						newDoubleDataPointSlice.At(d).CopyTo(dp)
+
+						metric.SetDataType(pdata.MetricDataTypeGauge)
+						for d := 0; d < newDoubleDataPointSlice.Len(); d++ {
+							dp := metric.Gauge().DataPoints().AppendEmpty()
+							newDoubleDataPointSlice.At(d).CopyTo(dp)
+						}
 					}
 				}
 			}
@@ -90,4 +91,22 @@ func (dtrp *deltaToRateProcessor) processMetrics(_ context.Context, md pdata.Met
 // Shutdown is invoked during service shutdown.
 func (dtrp *deltaToRateProcessor) Shutdown(context.Context) error {
 	return nil
+}
+
+func calculateRate(value float64, durationNanos time.Duration, timeUnit StringTimeUnit) float64 {
+	duration := durationNanos.Seconds()
+
+	switch timeUnit {
+	case nanosecond:
+		duration = float64(durationNanos.Nanoseconds())
+	case millisecond:
+		duration = float64(durationNanos.Milliseconds())
+	case minute:
+		duration = durationNanos.Minutes()
+	}
+	if duration > 0 {
+		rate := value / duration
+		return rate
+	}
+	return 0
 }
