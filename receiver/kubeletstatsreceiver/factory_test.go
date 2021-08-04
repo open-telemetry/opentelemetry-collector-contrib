@@ -24,8 +24,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenterror"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configcheck"
 	"go.opentelemetry.io/collector/config/configparser"
 	"go.opentelemetry.io/collector/config/configtls"
@@ -34,7 +34,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 	kube "github.com/open-telemetry/opentelemetry-collector-contrib/internal/kubelet"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver/kubelet"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver/internal/kubelet"
 )
 
 func TestType(t *testing.T) {
@@ -53,7 +53,7 @@ func TestCreateTracesReceiver(t *testing.T) {
 	factory := NewFactory()
 	traceReceiver, err := factory.CreateTracesReceiver(
 		context.Background(),
-		component.ReceiverCreateSettings{Logger: zap.NewNop()},
+		componenttest.NewNopReceiverCreateSettings(),
 		factory.CreateDefaultConfig(),
 		nil,
 	)
@@ -65,7 +65,7 @@ func TestCreateMetricsReceiver(t *testing.T) {
 	factory := NewFactory()
 	metricsReceiver, err := factory.CreateMetricsReceiver(
 		context.Background(),
-		component.ReceiverCreateSettings{Logger: zap.NewNop()},
+		componenttest.NewNopReceiverCreateSettings(),
 		tlsConfig(),
 		&testbed.MockMetricConsumer{},
 	)
@@ -80,7 +80,7 @@ func TestFactoryInvalidExtraMetadataLabels(t *testing.T) {
 	}
 	metricsReceiver, err := factory.CreateMetricsReceiver(
 		context.Background(),
-		component.ReceiverCreateSettings{Logger: zap.NewNop()},
+		componenttest.NewNopReceiverCreateSettings(),
 		&cfg,
 		&testbed.MockMetricConsumer{},
 	)
@@ -100,7 +100,7 @@ func TestFactoryBadAuthType(t *testing.T) {
 	}
 	_, err := factory.CreateMetricsReceiver(
 		context.Background(),
-		component.ReceiverCreateSettings{Logger: zap.NewNop()},
+		componenttest.NewNopReceiverCreateSettings(),
 		cfg,
 		&testbed.MockMetricConsumer{},
 	)

@@ -20,14 +20,14 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.uber.org/zap"
+	"go.opentelemetry.io/collector/model/pdata"
 )
 
 func TestNewTracesExporter(t *testing.T) {
 
-	got, err := newTracesExporter(zap.NewNop(), &Config{
+	got, err := newTracesExporter(componenttest.NewNopExporterCreateSettings(), &Config{
 		ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
 		Endpoint:         "cn-hangzhou.log.aliyuncs.com",
 		Project:          "demo-project",
@@ -49,7 +49,7 @@ func TestNewTracesExporter(t *testing.T) {
 
 func TestNewFailsWithEmptyTracesExporterName(t *testing.T) {
 
-	got, err := newTracesExporter(zap.NewNop(), &Config{})
+	got, err := newTracesExporter(componenttest.NewNopExporterCreateSettings(), &Config{})
 	assert.Error(t, err)
 	require.Nil(t, got)
 }

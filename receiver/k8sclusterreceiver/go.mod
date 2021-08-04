@@ -10,14 +10,17 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.0.0-00010101000000-000000000000
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.0.0-00010101000000-000000000000
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata v0.0.0-00010101000000-000000000000
+	github.com/openshift/api v0.0.0-20210521075222-e273a339932a
+	github.com/openshift/client-go v0.0.0-20210521082421-73d9475a9142
 	github.com/stretchr/testify v1.7.0
-	go.opentelemetry.io/collector v0.29.0
-	go.uber.org/atomic v1.8.0
-	go.uber.org/zap v1.17.0
-	google.golang.org/protobuf v1.26.0
-	k8s.io/api v0.21.2
-	k8s.io/apimachinery v0.21.2
-	k8s.io/client-go v0.21.2
+	go.opentelemetry.io/collector v0.31.0
+	go.opentelemetry.io/collector/model v0.31.0
+	go.uber.org/atomic v1.9.0
+	go.uber.org/zap v1.18.1
+	google.golang.org/protobuf v1.27.1
+	k8s.io/api v0.21.3
+	k8s.io/apimachinery v0.21.3
+	k8s.io/client-go v0.21.3
 )
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/common => ../../internal/common

@@ -23,7 +23,8 @@ import (
 
 	"github.com/newrelic/newrelic-telemetry-sdk-go/telemetry"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/consumer/consumererror"
+	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/translator/conventions"
 	tracetranslator "go.opentelemetry.io/collector/translator/trace"
 	"go.uber.org/zap"
@@ -267,46 +268,34 @@ func (t *transformer) Metric(m pdata.Metric) ([]telemetry.Metric, error) {
 	k := metricStatsKey{MetricType: dataType}
 
 	switch dataType {
-	case pdata.MetricDataTypeIntGauge:
+	case pdata.MetricDataTypeGauge:
 		t.details.metricMetadataCount[k]++
 		// "StartTimestampUnixNano" is ignored for all data points.
-		gauge := m.IntGauge()
+		gauge := m.Gauge()
 		points := gauge.DataPoints()
 		output = make([]telemetry.Metric, 0, points.Len())
 		for l := 0; l < points.Len(); l++ {
 			point := points.At(l)
+
+			var val float64
+			switch point.Type() {
+			case pdata.MetricValueTypeDouble:
+				val = point.DoubleVal()
+			case pdata.MetricValueTypeInt:
+				val = float64(point.IntVal())
+			}
 			attributes := t.MetricAttributes(baseAttributes, point.LabelsMap())
 
 			nrMetric := telemetry.Gauge{
 				Name:       m.Name(),
 				Attributes: attributes,
-				Value:      float64(point.Value()),
+				Value:      val,
 				Timestamp:  point.Timestamp().AsTime(),
 			}
 			output = append(output, nrMetric)
 		}
-	case pdata.MetricDataTypeDoubleGauge:
-		t.details.metricMetadataCount[k]++
-		// "StartTimestampUnixNano" is ignored for all data points.
-		gauge := m.DoubleGauge()
-		points := gauge.DataPoints()
-		output = make([]telemetry.Metric, 0, points.Len())
-		for l := 0; l < points.Len(); l++ {
-			point := points.At(l)
-			attributes := t.MetricAttributes(baseAttributes, point.LabelsMap())
-
-			nrMetric := telemetry.Gauge{
-				Name:       m.Name(),
-				Attributes: attributes,
-				Value:      point.Value(),
-				Timestamp:  point.Timestamp().AsTime(),
-			}
-			output = append(output, nrMetric)
-		}
-	case pdata.MetricDataTypeIntSum:
-		// aggregation_temporality describes if the aggregator reports delta changes
-		// since last report time, or cumulative changes since a fixed start time.
-		sum := m.IntSum()
+	case pdata.MetricDataTypeSum:
+		sum := m.Sum()
 		temporality := sum.AggregationTemporality()
 		k.MetricTemporality = temporality
 		t.details.metricMetadataCount[k]++
@@ -316,6 +305,13 @@ func (t *transformer) Metric(m pdata.Metric) ([]telemetry.Metric, error) {
 		for l := 0; l < points.Len(); l++ {
 			point := points.At(l)
 			attributes := t.MetricAttributes(baseAttributes, point.LabelsMap())
+			var val float64
+			switch point.Type() {
+			case pdata.MetricValueTypeDouble:
+				val = point.DoubleVal()
+			case pdata.MetricValueTypeInt:
+				val = float64(point.IntVal())
+			}
 
 			if temporality != pdata.AggregationTemporalityDelta {
 				t.logger.Debug("Converting metric to gauge where AggregationTemporality != Delta",
@@ -326,67 +322,27 @@ func (t *transformer) Metric(m pdata.Metric) ([]telemetry.Metric, error) {
 				nrMetric := telemetry.Gauge{
 					Name:       m.Name(),
 					Attributes: attributes,
-					Value:      float64(point.Value()),
+					Value:      val,
 					Timestamp:  point.Timestamp().AsTime(),
 				}
 				output = append(output, nrMetric)
 			} else {
 				nrMetric := telemetry.Count{
-					Name:       m.Name(),
-					Attributes: attributes,
-					Value:      float64(point.Value()),
-					Timestamp:  point.StartTimestamp().AsTime(),
-					Interval:   time.Duration(point.Timestamp() - point.StartTimestamp()),
+					Name:               m.Name(),
+					Attributes:         attributes,
+					Value:              val,
+					Timestamp:          point.StartTimestamp().AsTime(),
+					Interval:           time.Duration(point.Timestamp() - point.StartTimestamp()),
+					ForceIntervalValid: true,
 				}
 				output = append(output, nrMetric)
 			}
 		}
-	case pdata.MetricDataTypeDoubleSum:
-		sum := m.DoubleSum()
-		temporality := sum.AggregationTemporality()
-		k.MetricTemporality = temporality
-		t.details.metricMetadataCount[k]++
-
-		points := sum.DataPoints()
-		output = make([]telemetry.Metric, 0, points.Len())
-		for l := 0; l < points.Len(); l++ {
-			point := points.At(l)
-			attributes := t.MetricAttributes(baseAttributes, point.LabelsMap())
-
-			if temporality != pdata.AggregationTemporalityDelta {
-				t.logger.Debug("Converting metric to gauge where AggregationTemporality != Delta",
-					zap.String("MetricName", m.Name()),
-					zap.Stringer("Temporality", temporality),
-					zap.Stringer("MetricType", dataType),
-				)
-				nrMetric := telemetry.Gauge{
-					Name:       m.Name(),
-					Attributes: attributes,
-					Value:      point.Value(),
-					Timestamp:  point.Timestamp().AsTime(),
-				}
-				output = append(output, nrMetric)
-			} else {
-				nrMetric := telemetry.Count{
-					Name:       m.Name(),
-					Attributes: attributes,
-					Value:      point.Value(),
-					Timestamp:  point.StartTimestamp().AsTime(),
-					Interval:   time.Duration(point.Timestamp() - point.StartTimestamp()),
-				}
-				output = append(output, nrMetric)
-			}
-		}
-	case pdata.MetricDataTypeIntHistogram:
-		hist := m.IntHistogram()
-		k.MetricTemporality = hist.AggregationTemporality()
-		t.details.metricMetadataCount[k]++
-		return nil, &errUnsupportedMetricType{metricType: k.MetricType.String(), metricName: m.Name(), numDataPoints: hist.DataPoints().Len()}
 	case pdata.MetricDataTypeHistogram:
 		hist := m.Histogram()
 		k.MetricTemporality = hist.AggregationTemporality()
 		t.details.metricMetadataCount[k]++
-		return nil, &errUnsupportedMetricType{metricType: k.MetricType.String(), metricName: m.Name(), numDataPoints: hist.DataPoints().Len()}
+		return nil, consumererror.Permanent(&errUnsupportedMetricType{metricType: k.MetricType.String(), metricName: m.Name(), numDataPoints: hist.DataPoints().Len()})
 	case pdata.MetricDataTypeSummary:
 		t.details.metricMetadataCount[k]++
 		summary := m.Summary()
@@ -416,14 +372,15 @@ func (t *transformer) Metric(m pdata.Metric) ([]telemetry.Metric, error) {
 
 			attributes := t.MetricAttributes(baseAttributes, point.LabelsMap())
 			nrMetric := telemetry.Summary{
-				Name:       name,
-				Attributes: attributes,
-				Count:      float64(point.Count()),
-				Sum:        point.Sum(),
-				Min:        minQuantile,
-				Max:        maxQuantile,
-				Timestamp:  point.StartTimestamp().AsTime(),
-				Interval:   time.Duration(point.Timestamp() - point.StartTimestamp()),
+				Name:               name,
+				Attributes:         attributes,
+				Count:              float64(point.Count()),
+				Sum:                point.Sum(),
+				Min:                minQuantile,
+				Max:                maxQuantile,
+				Timestamp:          point.StartTimestamp().AsTime(),
+				Interval:           time.Duration(point.Timestamp() - point.StartTimestamp()),
+				ForceIntervalValid: true,
 			}
 
 			output = append(output, nrMetric)
@@ -474,7 +431,7 @@ func (t *transformer) MetricAttributes(baseAttributes map[string]interface{}, at
 }
 
 func (t *transformer) TrackAttributes(location attributeLocation, attributeMap pdata.AttributeMap) {
-	attributeMap.Range(func(k string, v pdata.AttributeValue) bool {
+	attributeMap.Range(func(_ string, v pdata.AttributeValue) bool {
 		statsKey := attributeStatsKey{location: location, attributeType: v.Type()}
 		t.details.attributeMetadataCount[statsKey]++
 		return true

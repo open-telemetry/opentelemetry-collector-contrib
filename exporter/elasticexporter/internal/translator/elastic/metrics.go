@@ -23,7 +23,7 @@ import (
 
 	"go.elastic.co/apm/model"
 	"go.elastic.co/fastjson"
-	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/model/pdata"
 )
 
 // EncodeMetrics encodes an OpenTelemetry metrics slice, and instrumentation
@@ -38,62 +38,46 @@ func EncodeMetrics(otlpMetrics pdata.MetricSlice, otlpLibrary pdata.Instrumentat
 
 		name := metric.Name()
 		switch metric.DataType() {
-		case pdata.MetricDataTypeIntGauge:
-			intGauge := metric.IntGauge()
-			dps := intGauge.DataPoints()
-			for i := 0; i < dps.Len(); i++ {
-				dp := dps.At(i)
-				metricsets.upsert(model.Metrics{
-					Timestamp: asTime(dp.Timestamp()),
-					Labels:    asStringMap(dp.LabelsMap()),
-					Samples: map[string]model.Metric{name: {
-						Value: float64(dp.Value()),
-					}},
-				})
-			}
-		case pdata.MetricDataTypeDoubleGauge:
-			doubleGauge := metric.DoubleGauge()
+		case pdata.MetricDataTypeGauge:
+			doubleGauge := metric.Gauge()
 			dps := doubleGauge.DataPoints()
 			for i := 0; i < dps.Len(); i++ {
 				dp := dps.At(i)
+				var val float64
+				switch dp.Type() {
+				case pdata.MetricValueTypeDouble:
+					val = dp.DoubleVal()
+				case pdata.MetricValueTypeInt:
+					val = float64(dp.IntVal())
+				}
 				metricsets.upsert(model.Metrics{
 					Timestamp: asTime(dp.Timestamp()),
 					Labels:    asStringMap(dp.LabelsMap()),
 					Samples: map[string]model.Metric{name: {
-						Value: dp.Value(),
+						Value: val,
 					}},
 				})
 			}
-		case pdata.MetricDataTypeIntSum:
-			intSum := metric.IntSum()
-			dps := intSum.DataPoints()
-			for i := 0; i < dps.Len(); i++ {
-				dp := dps.At(i)
-				metricsets.upsert(model.Metrics{
-					Timestamp: asTime(dp.Timestamp()),
-					Labels:    asStringMap(dp.LabelsMap()),
-					Samples: map[string]model.Metric{name: {
-						Value: float64(dp.Value()),
-					}},
-				})
-			}
-		case pdata.MetricDataTypeDoubleSum:
-			doubleSum := metric.DoubleSum()
+		case pdata.MetricDataTypeSum:
+			doubleSum := metric.Sum()
 			dps := doubleSum.DataPoints()
 			for i := 0; i < dps.Len(); i++ {
 				dp := dps.At(i)
+				var val float64
+				switch dp.Type() {
+				case pdata.MetricValueTypeDouble:
+					val = dp.DoubleVal()
+				case pdata.MetricValueTypeInt:
+					val = float64(dp.IntVal())
+				}
 				metricsets.upsert(model.Metrics{
 					Timestamp: asTime(dp.Timestamp()),
 					Labels:    asStringMap(dp.LabelsMap()),
 					Samples: map[string]model.Metric{name: {
-						Value: dp.Value(),
+						Value: val,
 					}},
 				})
 			}
-		case pdata.MetricDataTypeIntHistogram:
-			// TODO(axw) requires https://github.com/elastic/apm-server/issues/3195
-			intHistogram := metric.IntHistogram()
-			dropped += intHistogram.DataPoints().Len()
 		case pdata.MetricDataTypeHistogram:
 			// TODO(axw) requires https://github.com/elastic/apm-server/issues/3195
 			doubleHistogram := metric.Histogram()

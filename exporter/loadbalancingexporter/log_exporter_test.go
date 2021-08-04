@@ -31,7 +31,7 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/model/pdata"
 	"go.uber.org/zap"
 )
 
@@ -55,14 +55,8 @@ func TestNewLogsExporter(t *testing.T) {
 		},
 	} {
 		t.Run(tt.desc, func(t *testing.T) {
-			// prepare
-			config := tt.config
-			params := component.ExporterCreateSettings{
-				Logger: zap.NewNop(),
-			}
-
 			// test
-			_, err := newLogsExporter(params, config)
+			_, err := newLogsExporter(componenttest.NewNopExporterCreateSettings(), tt.config)
 
 			// verify
 			require.Equal(t, tt.err, err)
@@ -79,13 +73,7 @@ func TestLogExporterStart(t *testing.T) {
 		{
 			"ok",
 			func() *logExporterImp {
-				// prepare
-				cfg := simpleConfig()
-				params := component.ExporterCreateSettings{
-					Logger: zap.NewNop(),
-				}
-
-				p, _ := newLogsExporter(params, cfg)
+				p, _ := newLogsExporter(componenttest.NewNopExporterCreateSettings(), simpleConfig())
 				return p
 			}(),
 			nil,
@@ -94,13 +82,8 @@ func TestLogExporterStart(t *testing.T) {
 			"error",
 			func() *logExporterImp {
 				// prepare
-				cfg := simpleConfig()
-				params := component.ExporterCreateSettings{
-					Logger: zap.NewNop(),
-				}
-
-				lb, _ := newLoadBalancer(params, cfg, nil)
-				p, _ := newLogsExporter(params, cfg)
+				lb, _ := newLoadBalancer(componenttest.NewNopExporterCreateSettings(), simpleConfig(), nil)
+				p, _ := newLogsExporter(componenttest.NewNopExporterCreateSettings(), simpleConfig())
 
 				lb.res = &mockResolver{
 					onStart: func(context.Context) error {
@@ -128,12 +111,7 @@ func TestLogExporterStart(t *testing.T) {
 }
 
 func TestLogExporterShutdown(t *testing.T) {
-	// prepare
-	config := simpleConfig()
-	params := component.ExporterCreateSettings{
-		Logger: zap.NewNop(),
-	}
-	p, err := newLogsExporter(params, config)
+	p, err := newLogsExporter(componenttest.NewNopExporterCreateSettings(), simpleConfig())
 	require.NotNil(t, p)
 	require.NoError(t, err)
 
@@ -145,19 +123,14 @@ func TestLogExporterShutdown(t *testing.T) {
 }
 
 func TestConsumeLogs(t *testing.T) {
-	// prepare
-	config := simpleConfig()
-	params := component.ExporterCreateSettings{
-		Logger: zap.NewNop(),
-	}
 	componentFactory := func(ctx context.Context, endpoint string) (component.Exporter, error) {
 		return newNopMockLogsExporter(), nil
 	}
-	lb, err := newLoadBalancer(params, config, componentFactory)
+	lb, err := newLoadBalancer(componenttest.NewNopExporterCreateSettings(), simpleConfig(), componentFactory)
 	require.NotNil(t, lb)
 	require.NoError(t, err)
 
-	p, err := newLogsExporter(params, config)
+	p, err := newLogsExporter(componenttest.NewNopExporterCreateSettings(), simpleConfig())
 	require.NotNil(t, p)
 	require.NoError(t, err)
 
@@ -183,19 +156,14 @@ func TestConsumeLogs(t *testing.T) {
 }
 
 func TestConsumeLogsExporterNotFound(t *testing.T) {
-	// prepare
-	config := simpleConfig()
-	params := component.ExporterCreateSettings{
-		Logger: zap.NewNop(),
-	}
 	componentFactory := func(ctx context.Context, endpoint string) (component.Exporter, error) {
 		return newNopMockTracesExporter(), nil
 	}
-	lb, err := newLoadBalancer(params, config, componentFactory)
+	lb, err := newLoadBalancer(componenttest.NewNopExporterCreateSettings(), simpleConfig(), componentFactory)
 	require.NotNil(t, lb)
 	require.NoError(t, err)
 
-	p, err := newLogsExporter(params, config)
+	p, err := newLogsExporter(componenttest.NewNopExporterCreateSettings(), simpleConfig())
 	require.NotNil(t, p)
 	require.NoError(t, err)
 
@@ -220,19 +188,14 @@ func TestConsumeLogsExporterNotFound(t *testing.T) {
 }
 
 func TestConsumeLogsUnexpectedExporterType(t *testing.T) {
-	// prepare
-	config := simpleConfig()
-	params := component.ExporterCreateSettings{
-		Logger: zap.NewNop(),
-	}
 	componentFactory := func(ctx context.Context, endpoint string) (component.Exporter, error) {
 		return newNopMockExporter(), nil
 	}
-	lb, err := newLoadBalancer(params, config, componentFactory)
+	lb, err := newLoadBalancer(componenttest.NewNopExporterCreateSettings(), simpleConfig(), componentFactory)
 	require.NotNil(t, lb)
 	require.NoError(t, err)
 
-	p, err := newLogsExporter(params, config)
+	p, err := newLogsExporter(componenttest.NewNopExporterCreateSettings(), simpleConfig())
 	require.NotNil(t, p)
 	require.NoError(t, err)
 
@@ -259,19 +222,14 @@ func TestConsumeLogsUnexpectedExporterType(t *testing.T) {
 }
 
 func TestLogBatchWithTwoTraces(t *testing.T) {
-	// prepare
-	config := simpleConfig()
-	params := component.ExporterCreateSettings{
-		Logger: zap.NewNop(),
-	}
 	componentFactory := func(ctx context.Context, endpoint string) (component.Exporter, error) {
 		return newNopMockLogsExporter(), nil
 	}
-	lb, err := newLoadBalancer(params, config, componentFactory)
+	lb, err := newLoadBalancer(componenttest.NewNopExporterCreateSettings(), simpleConfig(), componentFactory)
 	require.NotNil(t, lb)
 	require.NoError(t, err)
 
-	p, err := newLogsExporter(params, config)
+	p, err := newLogsExporter(componenttest.NewNopExporterCreateSettings(), simpleConfig())
 	require.NotNil(t, p)
 	require.NoError(t, err)
 
@@ -287,8 +245,10 @@ func TestLogBatchWithTwoTraces(t *testing.T) {
 	first := simpleLogs()
 	second := simpleLogWithID(pdata.NewTraceID([16]byte{2, 3, 4, 5}))
 	batch := pdata.NewLogs()
-	batch.ResourceLogs().Append(first.ResourceLogs().At(0))
-	batch.ResourceLogs().Append(second.ResourceLogs().At(0))
+	firstTgt := batch.ResourceLogs().AppendEmpty()
+	first.ResourceLogs().At(0).CopyTo(firstTgt)
+	secondTgt := batch.ResourceLogs().AppendEmpty()
+	second.ResourceLogs().At(0).CopyTo(secondTgt)
 
 	// test
 	err = p.ConsumeLogs(context.Background(), batch)
@@ -332,19 +292,14 @@ func TestNoLogsInBatch(t *testing.T) {
 }
 
 func TestLogsWithoutTraceID(t *testing.T) {
-	// prepare
-	config := simpleConfig()
-	params := component.ExporterCreateSettings{
-		Logger: zap.NewNop(),
-	}
 	componentFactory := func(ctx context.Context, endpoint string) (component.Exporter, error) {
 		return newNopMockLogsExporter(), nil
 	}
-	lb, err := newLoadBalancer(params, config, componentFactory)
+	lb, err := newLoadBalancer(componenttest.NewNopExporterCreateSettings(), simpleConfig(), componentFactory)
 	require.NotNil(t, lb)
 	require.NoError(t, err)
 
-	p, err := newLogsExporter(params, config)
+	p, err := newLogsExporter(componenttest.NewNopExporterCreateSettings(), simpleConfig())
 	require.NotNil(t, p)
 	require.NoError(t, err)
 
@@ -413,15 +368,14 @@ func TestRollingUpdatesWhenConsumeLogs(t *testing.T) {
 			DNS: &DNSResolver{Hostname: "service-1", Port: ""},
 		},
 	}
-	params := component.ExporterCreateSettings{Logger: zap.NewNop()}
 	componentFactory := func(ctx context.Context, endpoint string) (component.Exporter, error) {
 		return newNopMockLogsExporter(), nil
 	}
-	lb, err := newLoadBalancer(params, cfg, componentFactory)
+	lb, err := newLoadBalancer(componenttest.NewNopExporterCreateSettings(), cfg, componentFactory)
 	require.NotNil(t, lb)
 	require.NoError(t, err)
 
-	p, err := newLogsExporter(params, cfg)
+	p, err := newLogsExporter(componenttest.NewNopExporterCreateSettings(), cfg)
 	require.NotNil(t, p)
 	require.NoError(t, err)
 

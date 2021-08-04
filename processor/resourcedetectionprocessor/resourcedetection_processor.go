@@ -18,7 +18,7 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/model/pdata"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
 )
@@ -36,8 +36,8 @@ func (rdp *resourceDetectionProcessor) Start(ctx context.Context, _ component.Ho
 	return err
 }
 
-// ProcessTraces implements the TracesProcessor interface
-func (rdp *resourceDetectionProcessor) ProcessTraces(_ context.Context, td pdata.Traces) (pdata.Traces, error) {
+// processTraces implements the ProcessTracesFunc type.
+func (rdp *resourceDetectionProcessor) processTraces(_ context.Context, td pdata.Traces) (pdata.Traces, error) {
 	rs := td.ResourceSpans()
 	for i := 0; i < rs.Len(); i++ {
 		res := rs.At(i).Resource()
@@ -46,8 +46,8 @@ func (rdp *resourceDetectionProcessor) ProcessTraces(_ context.Context, td pdata
 	return td, nil
 }
 
-// ProcessMetrics implements the MetricsProcessor interface
-func (rdp *resourceDetectionProcessor) ProcessMetrics(_ context.Context, md pdata.Metrics) (pdata.Metrics, error) {
+// processMetrics implements the ProcessMetricsFunc type.
+func (rdp *resourceDetectionProcessor) processMetrics(_ context.Context, md pdata.Metrics) (pdata.Metrics, error) {
 	rm := md.ResourceMetrics()
 	for i := 0; i < rm.Len(); i++ {
 		res := rm.At(i).Resource()
@@ -56,8 +56,8 @@ func (rdp *resourceDetectionProcessor) ProcessMetrics(_ context.Context, md pdat
 	return md, nil
 }
 
-// ProcessLogs implements the LogsProcessor interface
-func (rdp *resourceDetectionProcessor) ProcessLogs(_ context.Context, ld pdata.Logs) (pdata.Logs, error) {
+// processLogs implements the ProcessLogsFunc type.
+func (rdp *resourceDetectionProcessor) processLogs(_ context.Context, ld pdata.Logs) (pdata.Logs, error) {
 	rls := ld.ResourceLogs()
 	for i := 0; i < rls.Len(); i++ {
 		res := rls.At(i).Resource()

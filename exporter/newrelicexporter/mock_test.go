@@ -61,9 +61,10 @@ type Log struct {
 
 // Mock caches decompressed request bodies
 type Mock struct {
-	Header     http.Header
-	Batches    []Batch
-	StatusCode int
+	Header          http.Header
+	Batches         []Batch
+	StatusCode      int
+	ResponseHeaders map[string]string
 }
 
 func (c *Mock) Spans() []Span {
@@ -109,6 +110,10 @@ func (c *Mock) Server() *httptest.Server {
 		}
 
 		c.Header = r.Header
+
+		for k, v := range c.ResponseHeaders {
+			w.Header().Set(k, v)
+		}
 
 		w.WriteHeader(c.StatusCode)
 	}))

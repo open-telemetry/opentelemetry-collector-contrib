@@ -23,12 +23,11 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer/consumererror"
-	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/model/pdata"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/dynatraceexporter/config"
@@ -50,12 +49,12 @@ func Test_exporter_PushMetricsData(t *testing.T) {
 	defer ts.Close()
 
 	md := pdata.NewMetrics()
-	md.ResourceMetrics().Resize(2)
-	rm := md.ResourceMetrics().At(0)
+	md.ResourceMetrics().EnsureCapacity(2)
+	rm := md.ResourceMetrics().AppendEmpty()
 
 	ilms := rm.InstrumentationLibraryMetrics()
-	ilms.Resize(2)
-	ilm := ilms.At(0)
+	ilms.EnsureCapacity(2)
+	ilm := ilms.AppendEmpty()
 
 	metrics := ilm.Metrics()
 
@@ -66,49 +65,39 @@ func Test_exporter_PushMetricsData(t *testing.T) {
 	noneMetric.SetName("none")
 
 	intGaugeMetric := metrics.AppendEmpty()
-	intGaugeMetric.SetDataType(pdata.MetricDataTypeIntGauge)
+	intGaugeMetric.SetDataType(pdata.MetricDataTypeGauge)
 	intGaugeMetric.SetName("int_gauge")
-	intGauge := intGaugeMetric.IntGauge()
+	intGauge := intGaugeMetric.Gauge()
 	intGaugeDataPoints := intGauge.DataPoints()
 	intGaugeDataPoint := intGaugeDataPoints.AppendEmpty()
-	intGaugeDataPoint.SetValue(10)
+	intGaugeDataPoint.SetIntVal(10)
 	intGaugeDataPoint.SetTimestamp(pdata.Timestamp(100_000_000))
 
 	intSumMetric := metrics.AppendEmpty()
-	intSumMetric.SetDataType(pdata.MetricDataTypeIntSum)
+	intSumMetric.SetDataType(pdata.MetricDataTypeSum)
 	intSumMetric.SetName("int_sum")
-	intSum := intSumMetric.IntSum()
+	intSum := intSumMetric.Sum()
 	intSumDataPoints := intSum.DataPoints()
 	intSumDataPoint := intSumDataPoints.AppendEmpty()
-	intSumDataPoint.SetValue(10)
+	intSumDataPoint.SetIntVal(10)
 	intSumDataPoint.SetTimestamp(pdata.Timestamp(100_000_000))
 
-	intHistogramMetric := metrics.AppendEmpty()
-	intHistogramMetric.SetDataType(pdata.MetricDataTypeIntHistogram)
-	intHistogramMetric.SetName("double_histogram")
-	intHistogram := intHistogramMetric.IntHistogram()
-	intHistogramDataPoints := intHistogram.DataPoints()
-	intHistogramDataPoint := intHistogramDataPoints.AppendEmpty()
-	intHistogramDataPoint.SetCount(2)
-	intHistogramDataPoint.SetSum(19)
-	intHistogramDataPoint.SetTimestamp(pdata.Timestamp(100_000_000))
-
 	doubleGaugeMetric := metrics.AppendEmpty()
-	doubleGaugeMetric.SetDataType(pdata.MetricDataTypeDoubleGauge)
+	doubleGaugeMetric.SetDataType(pdata.MetricDataTypeGauge)
 	doubleGaugeMetric.SetName("double_gauge")
-	doubleGauge := doubleGaugeMetric.DoubleGauge()
+	doubleGauge := doubleGaugeMetric.Gauge()
 	doubleGaugeDataPoints := doubleGauge.DataPoints()
 	doubleGaugeDataPoint := doubleGaugeDataPoints.AppendEmpty()
-	doubleGaugeDataPoint.SetValue(10.1)
+	doubleGaugeDataPoint.SetDoubleVal(10.1)
 	doubleGaugeDataPoint.SetTimestamp(pdata.Timestamp(100_000_000))
 
 	doubleSumMetric := metrics.AppendEmpty()
-	doubleSumMetric.SetDataType(pdata.MetricDataTypeDoubleSum)
+	doubleSumMetric.SetDataType(pdata.MetricDataTypeSum)
 	doubleSumMetric.SetName("double_sum")
-	doubleSum := doubleSumMetric.DoubleSum()
+	doubleSum := doubleSumMetric.Sum()
 	doubleSumDataPoints := doubleSum.DataPoints()
 	doubleSumDataPoint := doubleSumDataPoints.AppendEmpty()
-	doubleSumDataPoint.SetValue(10.1)
+	doubleSumDataPoint.SetDoubleVal(10.1)
 	doubleSumDataPoint.SetTimestamp(pdata.Timestamp(100_000_000))
 
 	doubleHistogramMetric := metrics.AppendEmpty()
@@ -167,7 +156,7 @@ func Test_exporter_PushMetricsData(t *testing.T) {
 		}
 	})
 
-	if wantBody := "prefix.int_gauge 10 100\nprefix.int_sum 10 100\nprefix.double_histogram gauge,min=9.5,max=9.5,sum=19,count=2 100\nprefix.double_gauge 10.1 100\nprefix.double_sum 10.1 100\nprefix.double_histogram gauge,min=5.05,max=5.05,sum=10.1,count=2 100"; sent != wantBody {
+	if wantBody := "prefix.int_gauge 10 100\nprefix.int_sum 10 100\nprefix.double_gauge 10.1 100\nprefix.double_sum 10.1 100\nprefix.double_histogram gauge,min=5.05,max=5.05,sum=10.1,count=2 100"; sent != wantBody {
 		t.Errorf("exporter.PushMetricsData():ResponseBody = %v, want %v", sent, wantBody)
 	}
 }
@@ -179,12 +168,12 @@ func Test_exporter_PushMetricsData_EmptyPayload(t *testing.T) {
 	defer ts.Close()
 
 	md := pdata.NewMetrics()
-	md.ResourceMetrics().Resize(2)
-	rm := md.ResourceMetrics().At(0)
+	md.ResourceMetrics().EnsureCapacity(2)
+	rm := md.ResourceMetrics().AppendEmpty()
 
 	ilms := rm.InstrumentationLibraryMetrics()
-	ilms.Resize(2)
-	ilm := ilms.At(0)
+	ilms.EnsureCapacity(2)
+	ilm := ilms.AppendEmpty()
 
 	metrics := ilm.Metrics()
 	noneMetric := metrics.AppendEmpty()
@@ -211,21 +200,21 @@ func Test_exporter_PushMetricsData_isDisabled(t *testing.T) {
 	defer ts.Close()
 
 	md := pdata.NewMetrics()
-	md.ResourceMetrics().Resize(2)
-	rm := md.ResourceMetrics().At(0)
+	md.ResourceMetrics().EnsureCapacity(2)
+	rm := md.ResourceMetrics().AppendEmpty()
 
 	ilms := rm.InstrumentationLibraryMetrics()
-	ilms.Resize(2)
-	ilm := ilms.At(0)
+	ilms.EnsureCapacity(2)
+	ilm := ilms.AppendEmpty()
 
 	metrics := ilm.Metrics()
 	metric := metrics.AppendEmpty()
-	metric.SetDataType(pdata.MetricDataTypeIntGauge)
+	metric.SetDataType(pdata.MetricDataTypeGauge)
 	metric.SetName("int_gauge")
-	intGauge := metric.IntGauge()
+	intGauge := metric.Gauge()
 	intGaugeDataPoints := intGauge.DataPoints()
 	intGaugeDataPoint := intGaugeDataPoints.AppendEmpty()
-	intGaugeDataPoint.SetValue(10)
+	intGaugeDataPoint.SetIntVal(10)
 	intGaugeDataPoint.SetTimestamp(pdata.Timestamp(100_000_000))
 
 	e := &exporter{
@@ -407,21 +396,21 @@ func Test_exporter_PushMetricsData_Error(t *testing.T) {
 	ts.Close()
 
 	md := pdata.NewMetrics()
-	md.ResourceMetrics().Resize(2)
-	rm := md.ResourceMetrics().At(0)
+	md.ResourceMetrics().EnsureCapacity(2)
+	rm := md.ResourceMetrics().AppendEmpty()
 
 	ilms := rm.InstrumentationLibraryMetrics()
-	ilms.Resize(2)
-	ilm := ilms.At(0)
+	ilms.EnsureCapacity(2)
+	ilm := ilms.AppendEmpty()
 
 	metrics := ilm.Metrics()
 	intGaugeMetric := metrics.AppendEmpty()
-	intGaugeMetric.SetDataType(pdata.MetricDataTypeIntGauge)
+	intGaugeMetric.SetDataType(pdata.MetricDataTypeGauge)
 	intGaugeMetric.SetName("int_gauge")
-	intGauge := intGaugeMetric.IntGauge()
+	intGauge := intGaugeMetric.Gauge()
 	intGaugeDataPoints := intGauge.DataPoints()
 	intGaugeDataPoint := intGaugeDataPoints.AppendEmpty()
-	intGaugeDataPoint.SetValue(10)
+	intGaugeDataPoint.SetIntVal(10)
 	intGaugeDataPoint.SetTimestamp(pdata.Timestamp(100_000_000))
 
 	type fields struct {
@@ -483,7 +472,7 @@ func Test_exporter_start_InvalidHTTPClientSettings(t *testing.T) {
 		},
 	}
 
-	exp := newMetricsExporter(component.ExporterCreateSettings{Logger: zap.NewNop()}, config)
+	exp := newMetricsExporter(componenttest.NewNopExporterCreateSettings(), config)
 
 	err := exp.start(context.Background(), componenttest.NewNopHost())
 	if err == nil {

@@ -26,9 +26,10 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/testutil/metricstestutil"
 	"go.opentelemetry.io/collector/translator/internaldata"
 	"go.uber.org/zap"
@@ -99,8 +100,7 @@ func TestGoogleCloudTraceExport(t *testing.T) {
 
 			go srv.Serve(lis)
 
-			createParams := component.ExporterCreateSettings{Logger: zap.NewNop(), BuildInfo: component.BuildInfo{Version: "v0.0.1"}}
-			sde, err := newGoogleCloudTracesExporter(test.cfg, createParams)
+			sde, err := newGoogleCloudTracesExporter(test.cfg, componenttest.NewNopExporterCreateSettings())
 			if test.expectedErr != "" {
 				assert.EqualError(t, err, test.expectedErr)
 				return

@@ -21,7 +21,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/model/pdata"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver/internal/cadvisor"
@@ -32,7 +32,7 @@ import (
 
 var _ component.MetricsReceiver = (*awsContainerInsightReceiver)(nil)
 
-type MetricsProvider interface {
+type metricsProvider interface {
 	GetMetrics() []pdata.Metrics
 }
 
@@ -42,12 +42,12 @@ type awsContainerInsightReceiver struct {
 	nextConsumer consumer.Metrics
 	config       *Config
 	cancel       context.CancelFunc
-	cadvisor     MetricsProvider
-	k8sapiserver MetricsProvider
+	cadvisor     metricsProvider
+	k8sapiserver metricsProvider
 }
 
-// New creates the aws container insight receiver with the given parameters.
-func New(
+// newAWSContainerInsightReceiver creates the aws container insight receiver with the given parameters.
+func newAWSContainerInsightReceiver(
 	logger *zap.Logger,
 	config *Config,
 	nextConsumer consumer.Metrics) (component.MetricsReceiver, error) {

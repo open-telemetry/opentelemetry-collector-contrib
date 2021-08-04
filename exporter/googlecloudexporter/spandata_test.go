@@ -19,11 +19,11 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/sdk/instrumentation"
-	"go.opentelemetry.io/otel/sdk/trace"
+	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	apitrace "go.opentelemetry.io/otel/trace"
 )
 
@@ -90,20 +90,20 @@ func TestPDataResourceSpansToOTSpanData_endToEnd(t *testing.T) {
 
 	gotOTSpanData := pdataResourceSpansToOTSpanData(rs)
 
-	wantOTSpanData := &trace.SpanSnapshot{
-		SpanContext: apitrace.NewSpanContext(apitrace.SpanContextConfig{
+	wantOTSpanData := &spanSnapshot{
+		spanContext: apitrace.NewSpanContext(apitrace.SpanContextConfig{
 			TraceID: apitrace.TraceID{0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F},
 			SpanID:  apitrace.SpanID{0xF1, 0xF2, 0xF3, 0xF4, 0xF5, 0xF6, 0xF7, 0xF8},
 		}),
-		SpanKind: apitrace.SpanKindServer,
-		Parent: apitrace.NewSpanContext(apitrace.SpanContextConfig{
+		spanKind: apitrace.SpanKindServer,
+		parent: apitrace.NewSpanContext(apitrace.SpanContextConfig{
 			TraceID: apitrace.TraceID{0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F},
 			SpanID:  apitrace.SpanID{0xEF, 0xEE, 0xED, 0xEC, 0xEB, 0xEA, 0xE9, 0xE8},
 		}),
-		Name:      "End-To-End Here",
-		StartTime: startTime,
-		EndTime:   endTime,
-		MessageEvents: []apitrace.Event{
+		name:      "End-To-End Here",
+		startTime: startTime,
+		endTime:   endTime,
+		events: []sdktrace.Event{
 			{
 				Time:       startTime,
 				Name:       "start",
@@ -115,7 +115,7 @@ func TestPDataResourceSpansToOTSpanData_endToEnd(t *testing.T) {
 				Attributes: []attribute.KeyValue{attribute.Bool("flag", false)},
 			},
 		},
-		Links: []apitrace.Link{
+		links: []apitrace.Link{
 			{
 				SpanContext: apitrace.NewSpanContext(apitrace.SpanContextConfig{
 					TraceID: apitrace.TraceID{0xC0, 0xC1, 0xC2, 0xC3, 0xC4, 0xC5, 0xC6, 0xC7, 0xC8, 0xC9, 0xCA, 0xCB, 0xCC, 0xCD, 0xCE, 0xCF},
@@ -131,32 +131,33 @@ func TestPDataResourceSpansToOTSpanData_endToEnd(t *testing.T) {
 				Attributes: []attribute.KeyValue{},
 			},
 		},
-		StatusCode:    codes.Error,
-		StatusMessage: "This is not a drill!",
-		Attributes: []attribute.KeyValue{
+		status: sdktrace.Status{
+			Code:        codes.Error,
+			Description: "This is not a drill!",
+		},
+		attributes: []attribute.KeyValue{
 			attribute.String("namespace", "kube-system"),
 			attribute.Int64("ping_count", 25),
 			attribute.String("agent", "ocagent"),
 			attribute.Bool("cache_hit", true),
 			attribute.Int64("timeout_ns", 12e9),
 		},
-		InstrumentationLibrary: instrumentation.Library{
+		instrumentationLibrary: instrumentation.Library{
 			Name:    "test_il_name",
 			Version: "test_il_version",
 		},
 	}
 
 	assert.EqualValues(t, 1, len(gotOTSpanData))
-	assert.EqualValues(t, wantOTSpanData.SpanContext, gotOTSpanData[0].SpanContext)
-	assert.EqualValues(t, wantOTSpanData.SpanKind, gotOTSpanData[0].SpanKind)
-	assert.EqualValues(t, wantOTSpanData.Parent, gotOTSpanData[0].Parent)
-	assert.EqualValues(t, wantOTSpanData.Name, gotOTSpanData[0].Name)
-	assert.EqualValues(t, wantOTSpanData.StartTime, gotOTSpanData[0].StartTime)
-	assert.EqualValues(t, wantOTSpanData.EndTime, gotOTSpanData[0].EndTime)
-	assert.EqualValues(t, wantOTSpanData.MessageEvents, gotOTSpanData[0].MessageEvents)
-	assert.EqualValues(t, wantOTSpanData.Links, gotOTSpanData[0].Links)
-	assert.EqualValues(t, wantOTSpanData.StatusCode, gotOTSpanData[0].StatusCode)
-	assert.EqualValues(t, wantOTSpanData.StatusMessage, gotOTSpanData[0].StatusMessage)
-	assert.ElementsMatch(t, wantOTSpanData.Attributes, gotOTSpanData[0].Attributes)
-	assert.EqualValues(t, wantOTSpanData.InstrumentationLibrary, gotOTSpanData[0].InstrumentationLibrary)
+	assert.EqualValues(t, wantOTSpanData.SpanContext(), gotOTSpanData[0].SpanContext())
+	assert.EqualValues(t, wantOTSpanData.SpanKind(), gotOTSpanData[0].SpanKind())
+	assert.EqualValues(t, wantOTSpanData.Parent(), gotOTSpanData[0].Parent())
+	assert.EqualValues(t, wantOTSpanData.Name(), gotOTSpanData[0].Name())
+	assert.EqualValues(t, wantOTSpanData.StartTime(), gotOTSpanData[0].StartTime())
+	assert.EqualValues(t, wantOTSpanData.EndTime(), gotOTSpanData[0].EndTime())
+	assert.EqualValues(t, wantOTSpanData.Events(), gotOTSpanData[0].Events())
+	assert.EqualValues(t, wantOTSpanData.Links(), gotOTSpanData[0].Links())
+	assert.EqualValues(t, wantOTSpanData.Status(), gotOTSpanData[0].Status())
+	assert.ElementsMatch(t, wantOTSpanData.Attributes(), gotOTSpanData[0].Attributes())
+	assert.EqualValues(t, wantOTSpanData.InstrumentationLibrary(), gotOTSpanData[0].InstrumentationLibrary())
 }

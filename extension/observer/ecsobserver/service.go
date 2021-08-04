@@ -34,11 +34,11 @@ type ServiceConfig struct {
 }
 
 func (s *ServiceConfig) validate() error {
-	_, err := s.newMatcher(MatcherOptions{})
+	_, err := s.newMatcher(matcherOptions{})
 	return err
 }
 
-func (s *ServiceConfig) newMatcher(opts MatcherOptions) (Matcher, error) {
+func (s *ServiceConfig) newMatcher(opts matcherOptions) (targetMatcher, error) {
 	if s.NamePattern == "" {
 		return nil, fmt.Errorf("name_pattern is empty")
 	}
@@ -86,11 +86,11 @@ type serviceMatcher struct {
 	exportSetting      *commonExportSetting
 }
 
-func (s *serviceMatcher) Type() MatcherType {
-	return MatcherTypeService
+func (s *serviceMatcher) matcherType() matcherType {
+	return matcherTypeService
 }
 
-func (s *serviceMatcher) MatchTargets(t *Task, c *ecs.ContainerDefinition) ([]MatchedTarget, error) {
+func (s *serviceMatcher) matchTargets(t *taskAnnotated, c *ecs.ContainerDefinition) ([]matchedTarget, error) {
 	// Service info is only attached for tasks whose services are included in config.
 	// However, Match is called on tasks so we need to guard nil pointer.
 	if t.Service == nil {
@@ -101,4 +101,30 @@ func (s *serviceMatcher) MatchTargets(t *Task, c *ecs.ContainerDefinition) ([]Ma
 	}
 	// The rest is same as taskDefinitionMatcher
 	return matchContainerByName(s.containerNameRegex, s.exportSetting, c)
+}
+
+// serviceConfigsToFilter reduce number of describe service API call
+func serviceConfigsToFilter(cfgs []ServiceConfig) (serviceNameFilter, error) {
+	// If no service config, don't describe any services
+	if len(cfgs) == 0 {
+		return func(name string) bool {
+			return false
+		}, nil
+	}
+	var regs []*regexp.Regexp
+	for _, cfg := range cfgs {
+		r, err := regexp.Compile(cfg.NamePattern)
+		if err != nil {
+			return nil, fmt.Errorf("invalid service name pattern %q: %w", cfg.NamePattern, err)
+		}
+		regs = append(regs, r)
+	}
+	return func(name string) bool {
+		for _, r := range regs {
+			if r.MatchString(name) {
+				return true
+			}
+		}
+		return false
+	}, nil
 }

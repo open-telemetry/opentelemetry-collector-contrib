@@ -23,9 +23,8 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.uber.org/zap"
+	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/model/pdata"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
 )
@@ -53,7 +52,7 @@ func (mfs *mockFileSystem) IsWindows() bool {
 }
 
 func Test_newDetector(t *testing.T) {
-	d, err := NewDetector(component.ProcessorCreateSettings{Logger: zap.NewNop()}, nil)
+	d, err := NewDetector(componenttest.NewNopProcessorCreateSettings(), nil)
 
 	assert.Nil(t, err)
 	assert.NotNil(t, d)

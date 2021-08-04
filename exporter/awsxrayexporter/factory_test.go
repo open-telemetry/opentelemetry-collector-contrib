@@ -21,12 +21,10 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configcheck"
 	"go.opentelemetry.io/collector/config/configtest"
-	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil"
 )
@@ -53,8 +51,6 @@ func TestCreateDefaultConfig(t *testing.T) {
 }
 
 func TestCreateTracesExporter(t *testing.T) {
-	logger := zap.NewNop()
-
 	factories, err := componenttest.NopFactories()
 	require.NoError(t, err)
 	factory := NewFactory()
@@ -63,14 +59,12 @@ func TestCreateTracesExporter(t *testing.T) {
 	require.NoError(t, err)
 
 	ctx := context.Background()
-	exporter, err := factory.CreateTracesExporter(ctx, component.ExporterCreateSettings{Logger: logger}, cfg.Exporters[config.NewIDWithName(typeStr, "customname")])
+	exporter, err := factory.CreateTracesExporter(ctx, componenttest.NewNopExporterCreateSettings(), cfg.Exporters[config.NewIDWithName(typeStr, "customname")])
 	assert.Nil(t, err)
 	assert.NotNil(t, exporter)
 }
 
 func TestCreateMetricsExporter(t *testing.T) {
-	logger := zap.NewNop()
-
 	factories, err := componenttest.NopFactories()
 	require.NoError(t, err)
 	factory := NewFactory()
@@ -79,7 +73,7 @@ func TestCreateMetricsExporter(t *testing.T) {
 	require.NoError(t, err)
 
 	ctx := context.Background()
-	exporter, err := factory.CreateMetricsExporter(ctx, component.ExporterCreateSettings{Logger: logger}, cfg.Exporters[config.NewIDWithName(typeStr, "customname")])
+	exporter, err := factory.CreateMetricsExporter(ctx, componenttest.NewNopExporterCreateSettings(), cfg.Exporters[config.NewIDWithName(typeStr, "customname")])
 	assert.NotNil(t, err)
 	assert.Nil(t, exporter)
 }

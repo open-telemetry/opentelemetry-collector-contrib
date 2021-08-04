@@ -172,7 +172,7 @@ func (b *influxHTTPWriterBatch) convertFields(m map[string]interface{}) (fields 
 		if k == "" {
 			b.logger.Debug("empty field key")
 		} else if lpv, ok := lineprotocol.NewValue(v); !ok {
-			b.logger.Debug("invalid field value %q for key %q", v, k)
+			b.logger.Debug("invalid field value", "key", k, "value", v)
 		} else {
 			fields[k] = lpv
 		}

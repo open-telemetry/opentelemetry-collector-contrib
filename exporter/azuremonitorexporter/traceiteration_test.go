@@ -18,7 +18,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/mock"
-	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/model/pdata"
 )
 
 type mockVisitor struct {

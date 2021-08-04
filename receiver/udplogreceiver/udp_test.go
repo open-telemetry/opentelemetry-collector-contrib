@@ -24,13 +24,10 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.uber.org/zap"
-	"go.uber.org/zap/zaptest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/stanza"
 )
@@ -43,9 +40,8 @@ func testUDP(t *testing.T, cfg *UDPLogConfig) {
 	numLogs := 5
 
 	f := NewFactory()
-	params := component.ReceiverCreateSettings{Logger: zaptest.NewLogger(t)}
 	sink := new(consumertest.LogsSink)
-	rcvr, err := f.CreateLogsReceiver(context.Background(), params, cfg, sink)
+	rcvr, err := f.CreateLogsReceiver(context.Background(), componenttest.NewNopReceiverCreateSettings(), cfg, sink)
 	require.NoError(t, err)
 	require.NoError(t, rcvr.Start(context.Background(), componenttest.NewNopHost()))
 
@@ -106,9 +102,6 @@ func testdataConfigYamlAsMap() *UDPLogConfig {
 }
 
 func TestDecodeInputConfigFailure(t *testing.T) {
-	params := component.ReceiverCreateSettings{
-		Logger: zap.NewNop(),
-	}
 	sink := new(consumertest.LogsSink)
 	factory := NewFactory()
 	badCfg := &UDPLogConfig{
@@ -120,13 +113,13 @@ func TestDecodeInputConfigFailure(t *testing.T) {
 			"max_buffer_size": "0.1.0.1-",
 		},
 	}
-	receiver, err := factory.CreateLogsReceiver(context.Background(), params, badCfg, sink)
+	receiver, err := factory.CreateLogsReceiver(context.Background(), componenttest.NewNopReceiverCreateSettings(), badCfg, sink)
 	require.Error(t, err, "receiver creation should fail if input config isn't valid")
 	require.Nil(t, receiver, "receiver creation should fail if input config isn't valid")
 }
 
 func expectNLogs(sink *consumertest.LogsSink, expected int) func() bool {
 	return func() bool {
-		return sink.LogRecordsCount() == expected
+		return sink.LogRecordCount() == expected
 	}
 }

@@ -178,7 +178,7 @@ func Test_WindowsPerfCounterScraper(t *testing.T) {
 				metric := metrics.At(i)
 				assert.Equal(t, e.name, metric.Name())
 
-				ddp := metric.DoubleGauge().DataPoints()
+				ddp := metric.Gauge().DataPoints()
 
 				var allInstances bool
 				for _, v := range e.instanceLabelValues {

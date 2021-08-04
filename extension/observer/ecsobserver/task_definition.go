@@ -34,11 +34,11 @@ type TaskDefinitionConfig struct {
 }
 
 func (t *TaskDefinitionConfig) validate() error {
-	_, err := t.newMatcher(MatcherOptions{})
+	_, err := t.newMatcher(matcherOptions{})
 	return err
 }
 
-func (t *TaskDefinitionConfig) newMatcher(opts MatcherOptions) (Matcher, error) {
+func (t *TaskDefinitionConfig) newMatcher(opts matcherOptions) (targetMatcher, error) {
 	if t.ArnPattern == "" {
 		return nil, fmt.Errorf("arn_pattern is empty")
 	}
@@ -87,11 +87,11 @@ type taskDefinitionMatcher struct {
 	exportSetting      *commonExportSetting
 }
 
-func (m *taskDefinitionMatcher) Type() MatcherType {
-	return MatcherTypeTaskDefinition
+func (m *taskDefinitionMatcher) matcherType() matcherType {
+	return matcherTypeTaskDefinition
 }
 
-func (m *taskDefinitionMatcher) MatchTargets(t *Task, c *ecs.ContainerDefinition) ([]MatchedTarget, error) {
+func (m *taskDefinitionMatcher) matchTargets(t *taskAnnotated, c *ecs.ContainerDefinition) ([]matchedTarget, error) {
 	// Check arn
 	if !m.arnRegex.MatchString(aws.StringValue(t.Task.TaskDefinitionArn)) {
 		return nil, errNotMatched

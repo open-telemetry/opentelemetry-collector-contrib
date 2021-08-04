@@ -21,13 +21,11 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configcheck"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configtest"
-	"go.uber.org/zap"
 )
 
 func TestCreateDefaultConfig(t *testing.T) {
@@ -65,42 +63,42 @@ func TestLoadConfig(t *testing.T) {
 func TestCreateExporter(t *testing.T) {
 	defaultConfig := createDefaultConfig()
 	cfg := defaultConfig.(*Config)
-	params := component.ExporterCreateSettings{Logger: zap.NewNop()}
+	params := componenttest.NewNopExporterCreateSettings()
 
-	te, err := createTraceExporter(context.Background(), params, cfg)
+	te, err := createTracesExporter(context.Background(), params, cfg)
 	assert.Nil(t, err)
 	assert.NotNil(t, te, "failed to create trace exporter")
 }
 
 func TestCreateTraceExporterNilConfigError(t *testing.T) {
-	params := component.ExporterCreateSettings{Logger: zap.NewNop()}
-	_, err := createTraceExporter(context.Background(), params, nil)
+	params := componenttest.NewNopExporterCreateSettings()
+	_, err := createTracesExporter(context.Background(), params, nil)
 	assert.Error(t, err)
 }
 
 func TestCreateTraceExporterInvalidEndpointError(t *testing.T) {
-	params := component.ExporterCreateSettings{Logger: zap.NewNop()}
+	params := componenttest.NewNopExporterCreateSettings()
 	defaultConfig := createDefaultConfig()
 	cfg := defaultConfig.(*Config)
 	cfg.Traces.Endpoint = "http:#$%^&#$%&#"
-	_, err := createTraceExporter(context.Background(), params, cfg)
+	_, err := createTracesExporter(context.Background(), params, cfg)
 	assert.Error(t, err)
 }
 
 func TestCreateTraceExporterMissingPortError(t *testing.T) {
-	params := component.ExporterCreateSettings{Logger: zap.NewNop()}
+	params := componenttest.NewNopExporterCreateSettings()
 	defaultConfig := createDefaultConfig()
 	cfg := defaultConfig.(*Config)
 	cfg.Traces.Endpoint = "http://localhost"
-	_, err := createTraceExporter(context.Background(), params, cfg)
+	_, err := createTracesExporter(context.Background(), params, cfg)
 	assert.Error(t, err)
 }
 
 func TestCreateTraceExporterInvalidPortError(t *testing.T) {
-	params := component.ExporterCreateSettings{Logger: zap.NewNop()}
+	params := componenttest.NewNopExporterCreateSettings()
 	defaultConfig := createDefaultConfig()
 	cfg := defaultConfig.(*Config)
 	cfg.Traces.Endpoint = "http://localhost:c42a"
-	_, err := createTraceExporter(context.Background(), params, cfg)
+	_, err := createTracesExporter(context.Background(), params, cfg)
 	assert.Error(t, err)
 }

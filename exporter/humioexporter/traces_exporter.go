@@ -21,7 +21,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumererror"
-	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/translator/conventions"
 	"go.uber.org/zap"
 )
@@ -148,7 +148,8 @@ func (e *humioTracesExporter) tracesToHumioEvents(td pdata.Traces) ([]*HumioStru
 	if len(droppedTraces) > 0 {
 		dropped := pdata.NewTraces()
 		for _, t := range droppedTraces {
-			dropped.ResourceSpans().Append(t)
+			tgt := dropped.ResourceSpans().AppendEmpty()
+			t.CopyTo(tgt)
 		}
 
 		return results, consumererror.NewTraces(

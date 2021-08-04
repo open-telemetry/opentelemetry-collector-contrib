@@ -16,6 +16,7 @@ package ecsobserver
 
 import (
 	"context"
+	"fmt"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
@@ -42,7 +43,16 @@ func createDefaultConfig() config.Extension {
 
 func createExtension(ctx context.Context, params component.ExtensionCreateSettings, cfg config.Extension) (component.Extension, error) {
 	sdCfg := cfg.(*Config)
-	sd, err := NewDiscovery(*sdCfg, ServiceDiscoveryOptions{Logger: params.Logger})
+	fetcher, err := newTaskFetcherFromConfig(*sdCfg, params.Logger)
+	if err != nil {
+		return nil, fmt.Errorf("init fetcher failed: %w", err)
+	}
+	return createExtensionWithFetcher(params, sdCfg, fetcher)
+}
+
+// fetcher is mock in unit test or AWS API client
+func createExtensionWithFetcher(params component.ExtensionCreateSettings, sdCfg *Config, fetcher *taskFetcher) (component.Extension, error) {
+	sd, err := newDiscovery(*sdCfg, serviceDiscoveryOptions{Logger: params.Logger, Fetcher: fetcher})
 	if err != nil {
 		return nil, err
 	}

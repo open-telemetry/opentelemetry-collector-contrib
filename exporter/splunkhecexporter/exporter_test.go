@@ -35,8 +35,8 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configtls"
-	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/testutil/metricstestutil"
 	"go.opentelemetry.io/collector/translator/conventions"
 	"go.opentelemetry.io/collector/translator/internaldata"
@@ -71,7 +71,6 @@ func TestNew(t *testing.T) {
 				CertFile: "file-not-found",
 				KeyFile:  "file-not-found",
 			},
-			Insecure:           false,
 			InsecureSkipVerify: false,
 		},
 	}
@@ -219,10 +218,10 @@ func generateLargeLogsBatch() pdata.Logs {
 	logs := pdata.NewLogs()
 	rl := logs.ResourceLogs().AppendEmpty()
 	ill := rl.InstrumentationLibraryLogs().AppendEmpty()
-	ill.Logs().Resize(65000)
+	ill.Logs().EnsureCapacity(65000)
 	ts := pdata.Timestamp(123)
 	for i := 0; i < 65000; i++ {
-		logRecord := ill.Logs().At(i)
+		logRecord := ill.Logs().AppendEmpty()
 		logRecord.Body().SetStringVal("mylog")
 		logRecord.Attributes().InsertString(conventions.AttributeServiceName, "myapp")
 		logRecord.Attributes().InsertString(splunk.SourcetypeLabel, "myapp-type")

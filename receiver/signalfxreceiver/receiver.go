@@ -32,7 +32,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/translator/conventions"
 	"go.uber.org/zap"
@@ -212,13 +212,7 @@ func (r *sfxReceiver) writeResponse(ctx context.Context, resp http.ResponseWrite
 }
 
 func (r *sfxReceiver) handleDatapointReq(resp http.ResponseWriter, req *http.Request) {
-	transport := "http"
-	if r.config.TLSSetting != nil {
-		transport = "https"
-	}
-
-	ctx := obsreport.ReceiverContext(req.Context(), r.config.ID(), transport)
-	ctx = r.obsrecv.StartMetricsOp(ctx)
+	ctx := r.obsrecv.StartMetricsOp(req.Context())
 
 	if r.metricsConsumer == nil {
 		r.failRequest(ctx, resp, http.StatusBadRequest, errMetricsNotConfigured, nil)
@@ -265,13 +259,7 @@ func (r *sfxReceiver) handleDatapointReq(resp http.ResponseWriter, req *http.Req
 }
 
 func (r *sfxReceiver) handleEventReq(resp http.ResponseWriter, req *http.Request) {
-	transport := "http"
-	if r.config.TLSSetting != nil {
-		transport = "https"
-	}
-
-	ctx := obsreport.ReceiverContext(req.Context(), r.config.ID(), transport)
-	ctx = r.obsrecv.StartMetricsOp(ctx)
+	ctx := r.obsrecv.StartMetricsOp(req.Context())
 
 	if r.logsConsumer == nil {
 		r.failRequest(ctx, resp, http.StatusBadRequest, errLogsNotConfigured, nil)

@@ -27,7 +27,7 @@ import (
 	"strings"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/model/pdata"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
 )

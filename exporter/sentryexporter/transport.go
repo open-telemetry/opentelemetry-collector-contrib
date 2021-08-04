@@ -23,7 +23,7 @@ import (
 
 // transport is used by exporter to send events to Sentry
 type transport interface {
-	SendTransactions(transactions []*sentry.Event)
+	SendEvents(events []*sentry.Event)
 	Configure(options sentry.ClientOptions)
 	Flush(ctx context.Context) bool
 }
@@ -53,7 +53,7 @@ func (t *sentryTransport) Flush(ctx context.Context) bool {
 }
 
 // sendTransactions uses a Sentry HTTPTransport to send transaction events to Sentry
-func (t *sentryTransport) SendTransactions(transactions []*sentry.Event) {
+func (t *sentryTransport) SendEvents(transactions []*sentry.Event) {
 	bufferCounter := 0
 	for _, transaction := range transactions {
 		// We should flush all events when we send transactions equal to the transport

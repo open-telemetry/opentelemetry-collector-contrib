@@ -20,9 +20,8 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configcheck"
-	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/googlecloudexporter"
 )
@@ -44,15 +43,11 @@ func TestCreateExporter(t *testing.T) {
 	eCfg := cfg.(*googlecloudexporter.Config)
 	eCfg.ProjectID = "test"
 
-	te, err := factory.CreateTracesExporter(ctx, component.ExporterCreateSettings{
-		Logger: zap.NewNop(),
-	}, eCfg)
+	te, err := factory.CreateTracesExporter(ctx, componenttest.NewNopExporterCreateSettings(), eCfg)
 	assert.Nil(t, err)
 	assert.NotNil(t, te, "failed to create trace exporter")
 
-	me, err := factory.CreateMetricsExporter(ctx, component.ExporterCreateSettings{
-		Logger: zap.NewNop(),
-	}, eCfg)
+	me, err := factory.CreateMetricsExporter(ctx, componenttest.NewNopExporterCreateSettings(), eCfg)
 	assert.Nil(t, err)
 	assert.NotNil(t, me, "failed to create metrics exporter")
 }

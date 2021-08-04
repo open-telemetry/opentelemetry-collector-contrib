@@ -18,9 +18,8 @@ import (
 	"context"
 	"fmt"
 
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/translator/internaldata"
 	"go.uber.org/zap"
@@ -28,7 +27,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver/kubelet"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver/internal/kubelet"
 	// todo replace with scraping lib when it's ready
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/redisreceiver/interval"
 )
@@ -39,7 +38,6 @@ const transport = "http"
 
 type runnable struct {
 	ctx                   context.Context
-	receiverID            config.ComponentID
 	statsProvider         *kubelet.StatsProvider
 	metadataProvider      *kubelet.MetadataProvider
 	consumer              consumer.Metrics
@@ -61,7 +59,6 @@ func newRunnable(
 ) *runnable {
 	return &runnable{
 		ctx:                   ctx,
-		receiverID:            rOptions.id,
 		consumer:              consumer,
 		restClient:            restClient,
 		logger:                logger,
@@ -73,7 +70,7 @@ func newRunnable(
 	}
 }
 
-// Sets up the kubelet connection at startup time.
+// Setup the kubelet connection at startup time.
 func (r *runnable) Setup() error {
 	r.statsProvider = kubelet.NewStatsProvider(r.restClient)
 	r.metadataProvider = kubelet.NewMetadataProvider(r.restClient)
@@ -104,14 +101,11 @@ func (r *runnable) Run() error {
 		internaldata.OCToMetrics(mds[i].Node, mds[i].Resource, mds[i].Metrics).ResourceMetrics().MoveAndAppendTo(metrics.ResourceMetrics())
 	}
 
-	var numPoints int
-	ctx := obsreport.ReceiverContext(r.ctx, r.receiverID, transport)
-	ctx = r.obsrecv.StartMetricsOp(ctx)
+	ctx := r.obsrecv.StartMetricsOp(r.ctx)
+	numPoints := metrics.DataPointCount()
 	err = r.consumer.ConsumeMetrics(ctx, metrics)
 	if err != nil {
 		r.logger.Error("ConsumeMetricsData failed", zap.Error(err))
-	} else {
-		_, numPoints = metrics.MetricAndDataPointCount()
 	}
 	r.obsrecv.EndMetricsOp(ctx, typeStr, numPoints, err)
 

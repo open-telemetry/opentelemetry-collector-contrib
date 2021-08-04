@@ -30,8 +30,7 @@ import (
 )
 
 type receiver struct {
-	id config.ComponentID
-	sync.Mutex
+	id     config.ComponentID
 	wg     sync.WaitGroup
 	cancel context.CancelFunc
 
@@ -48,8 +47,6 @@ var _ component.LogsReceiver = (*receiver)(nil)
 
 // Start tells the receiver to start
 func (r *receiver) Start(ctx context.Context, host component.Host) error {
-	r.Lock()
-	defer r.Unlock()
 	rctx, cancel := context.WithCancel(ctx)
 	r.cancel = cancel
 	r.logger.Info("Starting stanza receiver")
@@ -138,9 +135,6 @@ func (r *receiver) consumerLoop(ctx context.Context) {
 
 // Shutdown is invoked during service shutdown
 func (r *receiver) Shutdown(ctx context.Context) error {
-	r.Lock()
-	defer r.Unlock()
-
 	r.logger.Info("Stopping stanza receiver")
 	agentErr := r.agent.Stop()
 	r.converter.Stop()

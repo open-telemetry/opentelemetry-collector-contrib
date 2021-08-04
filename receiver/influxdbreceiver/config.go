@@ -23,10 +23,4 @@ import (
 type Config struct {
 	config.ReceiverSettings       `mapstructure:"-"`
 	confighttp.HTTPServerSettings `mapstructure:",squash"`
-
-	// MetricsSchema indicates the metrics schema to emit to line protocol.
-	// Options:
-	// - telegraf-prometheus-v1
-	// - telegraf-prometheus-v2
-	MetricsSchema string `mapstructure:"metrics_schema"`
 }

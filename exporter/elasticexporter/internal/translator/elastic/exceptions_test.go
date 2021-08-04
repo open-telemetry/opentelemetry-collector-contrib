@@ -23,7 +23,7 @@ import (
 	"go.elastic.co/apm/model"
 	"go.elastic.co/apm/transport/transporttest"
 	"go.elastic.co/fastjson"
-	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/translator/conventions"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticexporter/internal/translator/elastic"
@@ -303,7 +303,8 @@ func encodeSpanEvents(t *testing.T, language string, events ...pdata.SpanEvent) 
 	span.SetTraceID(pdata.NewTraceID(traceID))
 	span.SetSpanID(pdata.NewSpanID(transactionID))
 	for _, event := range events {
-		span.Events().Append(event)
+		tgt := span.Events().AppendEmpty()
+		event.CopyTo(tgt)
 	}
 
 	var w fastjson.Writer

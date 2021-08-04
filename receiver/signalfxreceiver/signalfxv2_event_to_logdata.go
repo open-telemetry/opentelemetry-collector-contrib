@@ -16,7 +16,7 @@ package signalfxreceiver
 
 import (
 	sfxpb "github.com/signalfx/com_signalfx_metrics_protobuf/model"
-	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/model/pdata"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 )
@@ -25,10 +25,10 @@ import (
 // pdata.LogSlice. Returning the converted data and the number of dropped log
 // records.
 func signalFxV2EventsToLogRecords(events []*sfxpb.Event, lrs pdata.LogSlice) {
-	lrs.Resize(len(events))
+	lrs.EnsureCapacity(len(events))
 
-	for i, event := range events {
-		lr := lrs.At(i)
+	for _, event := range events {
+		lr := lrs.AppendEmpty()
 
 		// The EventType field is the most logical "name" of the event.
 		lr.SetName(event.EventType)

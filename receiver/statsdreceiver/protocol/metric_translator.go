@@ -18,22 +18,27 @@ import (
 	"time"
 
 	"github.com/montanaflynn/stats"
-	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/model/pdata"
 )
 
-func buildCounterMetric(parsedMetric statsDMetric, timeNow time.Time) pdata.InstrumentationLibraryMetrics {
+func buildCounterMetric(parsedMetric statsDMetric, isMonotonicCounter bool, timeNow time.Time) pdata.InstrumentationLibraryMetrics {
 	ilm := pdata.NewInstrumentationLibraryMetrics()
 	nm := ilm.Metrics().AppendEmpty()
 	nm.SetName(parsedMetric.description.name)
 	if parsedMetric.unit != "" {
 		nm.SetUnit(parsedMetric.unit)
 	}
-	nm.SetDataType(pdata.MetricDataTypeIntSum)
-	nm.IntSum().SetAggregationTemporality(pdata.AggregationTemporalityDelta)
-	nm.IntSum().SetIsMonotonic(true)
+	nm.SetDataType(pdata.MetricDataTypeSum)
 
-	dp := nm.IntSum().DataPoints().AppendEmpty()
-	dp.SetValue(parsedMetric.intvalue)
+	nm.Sum().SetAggregationTemporality(pdata.AggregationTemporalityDelta)
+	if isMonotonicCounter {
+		nm.Sum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+	}
+
+	nm.Sum().SetIsMonotonic(true)
+
+	dp := nm.Sum().DataPoints().AppendEmpty()
+	dp.SetIntVal(parsedMetric.intvalue)
 	dp.SetTimestamp(pdata.TimestampFromTime(timeNow))
 	for i, key := range parsedMetric.labelKeys {
 		dp.LabelsMap().Insert(key, parsedMetric.labelValues[i])
@@ -49,9 +54,9 @@ func buildGaugeMetric(parsedMetric statsDMetric, timeNow time.Time) pdata.Instru
 	if parsedMetric.unit != "" {
 		nm.SetUnit(parsedMetric.unit)
 	}
-	nm.SetDataType(pdata.MetricDataTypeDoubleGauge)
-	dp := nm.DoubleGauge().DataPoints().AppendEmpty()
-	dp.SetValue(parsedMetric.floatvalue)
+	nm.SetDataType(pdata.MetricDataTypeGauge)
+	dp := nm.Gauge().DataPoints().AppendEmpty()
+	dp.SetDoubleVal(parsedMetric.floatvalue)
 	dp.SetTimestamp(pdata.TimestampFromTime(timeNow))
 	for i, key := range parsedMetric.labelKeys {
 		dp.LabelsMap().Insert(key, parsedMetric.labelValues[i])

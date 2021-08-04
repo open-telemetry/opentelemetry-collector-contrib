@@ -26,7 +26,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/consumer/consumererror"
+	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/translator/internaldata"
 	"go.uber.org/zap"
 )
@@ -494,12 +495,13 @@ func TestTransformSpan(t *testing.T) {
 				s.SetName("with dropped attributes on events")
 
 				ev := pdata.NewSpanEventSlice()
-				ev.Resize(1)
-				event := ev.At(0)
+				ev.EnsureCapacity(1)
+				event := ev.AppendEmpty()
 				event.SetName("this is the event name")
 				event.SetTimestamp(pdata.TimestampFromTime(now))
 				event.SetDroppedAttributesCount(1)
-				s.Events().Append(event)
+				tgt := s.Events().AppendEmpty()
+				event.CopyTo(tgt)
 				return s
 			},
 			want: telemetry.Span{
@@ -592,11 +594,11 @@ func TestTransformGauge(t *testing.T) {
 		m.SetName("gauge")
 		m.SetDescription("description")
 		m.SetUnit("1")
-		m.SetDataType(pdata.MetricDataTypeDoubleGauge)
-		gd := m.DoubleGauge()
+		m.SetDataType(pdata.MetricDataTypeGauge)
+		gd := m.Gauge()
 		dp := gd.DataPoints().AppendEmpty()
 		dp.SetTimestamp(ts)
-		dp.SetValue(42.0)
+		dp.SetDoubleVal(42.0)
 		t.Run("Double", func(t *testing.T) { testTransformMetric(t, m, expected) })
 	}
 	{
@@ -604,11 +606,11 @@ func TestTransformGauge(t *testing.T) {
 		m.SetName("gauge")
 		m.SetDescription("description")
 		m.SetUnit("1")
-		m.SetDataType(pdata.MetricDataTypeIntGauge)
-		gi := m.IntGauge()
+		m.SetDataType(pdata.MetricDataTypeGauge)
+		gi := m.Gauge()
 		dp := gi.DataPoints().AppendEmpty()
 		dp.SetTimestamp(ts)
-		dp.SetValue(42)
+		dp.SetIntVal(42)
 		t.Run("Int64", func(t *testing.T) { testTransformMetric(t, m, expected) })
 	}
 }
@@ -627,6 +629,7 @@ func TestTransformSum(t *testing.T) {
 				"unit":        "1",
 				"description": "description",
 			},
+			ForceIntervalValid: true,
 		},
 	}
 	expectedGauge := []telemetry.Metric{
@@ -646,41 +649,41 @@ func TestTransformSum(t *testing.T) {
 		m.SetName("sum")
 		m.SetDescription("description")
 		m.SetUnit("1")
-		m.SetDataType(pdata.MetricDataTypeDoubleSum)
-		d := m.DoubleSum()
+		m.SetDataType(pdata.MetricDataTypeSum)
+		d := m.Sum()
 		d.SetAggregationTemporality(pdata.AggregationTemporalityDelta)
 		dp := d.DataPoints().AppendEmpty()
 		dp.SetStartTimestamp(start)
 		dp.SetTimestamp(end)
-		dp.SetValue(42.0)
-		t.Run("DoubleSum-Delta", func(t *testing.T) { testTransformMetric(t, m, expected) })
+		dp.SetDoubleVal(42.0)
+		t.Run("Sum-Delta", func(t *testing.T) { testTransformMetric(t, m, expected) })
 	}
 	{
 		m := pdata.NewMetric()
 		m.SetName("sum")
 		m.SetDescription("description")
 		m.SetUnit("1")
-		m.SetDataType(pdata.MetricDataTypeDoubleSum)
-		d := m.DoubleSum()
+		m.SetDataType(pdata.MetricDataTypeSum)
+		d := m.Sum()
 		d.SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
 		dp := d.DataPoints().AppendEmpty()
 		dp.SetStartTimestamp(start)
 		dp.SetTimestamp(end)
-		dp.SetValue(42.0)
-		t.Run("DoubleSum-Cumulative", func(t *testing.T) { testTransformMetric(t, m, expectedGauge) })
+		dp.SetDoubleVal(42.0)
+		t.Run("Sum-Cumulative", func(t *testing.T) { testTransformMetric(t, m, expectedGauge) })
 	}
 	{
 		m := pdata.NewMetric()
 		m.SetName("sum")
 		m.SetDescription("description")
 		m.SetUnit("1")
-		m.SetDataType(pdata.MetricDataTypeIntSum)
-		d := m.IntSum()
+		m.SetDataType(pdata.MetricDataTypeSum)
+		d := m.Sum()
 		d.SetAggregationTemporality(pdata.AggregationTemporalityDelta)
 		dp := d.DataPoints().AppendEmpty()
 		dp.SetStartTimestamp(start)
 		dp.SetTimestamp(end)
-		dp.SetValue(42.0)
+		dp.SetIntVal(42.0)
 		t.Run("IntSum-Delta", func(t *testing.T) { testTransformMetric(t, m, expected) })
 	}
 	{
@@ -688,13 +691,13 @@ func TestTransformSum(t *testing.T) {
 		m.SetName("sum")
 		m.SetDescription("description")
 		m.SetUnit("1")
-		m.SetDataType(pdata.MetricDataTypeIntSum)
-		d := m.IntSum()
+		m.SetDataType(pdata.MetricDataTypeSum)
+		d := m.Sum()
 		d.SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
 		dp := d.DataPoints().AppendEmpty()
 		dp.SetStartTimestamp(start)
 		dp.SetTimestamp(end)
-		dp.SetValue(42.0)
+		dp.SetIntVal(42.0)
 		t.Run("IntSum-Cumulative", func(t *testing.T) { testTransformMetric(t, m, expectedGauge) })
 	}
 }
@@ -784,25 +787,6 @@ func testTransformDeltaSummaryWithValues(t *testing.T, testName string, count ui
 func TestUnsupportedMetricTypes(t *testing.T) {
 	start := pdata.TimestampFromTime(time.Unix(1, 0))
 	end := pdata.TimestampFromTime(time.Unix(3, 0))
-
-	{
-		m := pdata.NewMetric()
-		m.SetName("no")
-		m.SetDescription("no")
-		m.SetUnit("1")
-		m.SetDataType(pdata.MetricDataTypeIntHistogram)
-		h := m.IntHistogram()
-		dp := h.DataPoints().AppendEmpty()
-		dp.SetStartTimestamp(start)
-		dp.SetTimestamp(end)
-		dp.SetCount(2)
-		dp.SetSum(8)
-		dp.SetExplicitBounds([]float64{3, 7, 11})
-		dp.SetBucketCounts([]uint64{1, 1, 0, 0})
-		h.SetAggregationTemporality(pdata.AggregationTemporalityDelta)
-
-		t.Run("IntHistogram", func(t *testing.T) { testTransformMetricWithError(t, m, &errUnsupportedMetricType{}) })
-	}
 	{
 		m := pdata.NewMetric()
 		m.SetName("no")
@@ -819,7 +803,9 @@ func TestUnsupportedMetricTypes(t *testing.T) {
 		dp.SetBucketCounts([]uint64{1, 1, 0, 0})
 		h.SetAggregationTemporality(pdata.AggregationTemporalityDelta)
 
-		t.Run("DoubleHistogram", func(t *testing.T) { testTransformMetricWithError(t, m, &errUnsupportedMetricType{}) })
+		t.Run("DoubleHistogram", func(t *testing.T) {
+			testTransformMetricWithError(t, m, consumererror.Permanent(&errUnsupportedMetricType{}))
+		})
 	}
 }
 

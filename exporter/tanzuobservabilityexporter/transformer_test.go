@@ -20,7 +20,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/model/pdata"
 )
 
 func TestSpanStartTimeIsConvertedToMilliseconds(t *testing.T) {
@@ -251,10 +251,9 @@ func spanWithTraceState(state pdata.TraceState) pdata.Span {
 	return span
 }
 
-func transformerFromAttributes(att pdata.AttributeMap) *traceTransformer {
+func transformerFromAttributes(attrs pdata.AttributeMap) *traceTransformer {
 	return &traceTransformer{
-		ResourceAttributes: att,
-		Config:             createDefaultConfig().(*Config),
+		resAttrs: attrs,
 	}
 }
 

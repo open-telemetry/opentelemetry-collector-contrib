@@ -43,7 +43,7 @@ func (f fakeRestClient) EndpointResponse() ([]byte, []byte, error) {
 
 func TestReceiver(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	metricsReceiver, err := New(
+	metricsReceiver, err := newAWSECSContainermetrics(
 		zap.NewNop(),
 		cfg,
 		consumertest.NewNop(),
@@ -65,7 +65,7 @@ func TestReceiver(t *testing.T) {
 
 func TestReceiverForNilConsumer(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	metricsReceiver, err := New(
+	metricsReceiver, err := newAWSECSContainermetrics(
 		zap.NewNop(),
 		cfg,
 		nil,
@@ -78,7 +78,7 @@ func TestReceiverForNilConsumer(t *testing.T) {
 
 func TestCollectDataFromEndpoint(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	metricsReceiver, err := New(
+	metricsReceiver, err := newAWSECSContainermetrics(
 		zap.NewNop(),
 		cfg,
 		new(consumertest.MetricsSink),
@@ -98,7 +98,7 @@ func TestCollectDataFromEndpoint(t *testing.T) {
 func TestCollectDataFromEndpointWithConsumerError(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 
-	metricsReceiver, err := New(
+	metricsReceiver, err := newAWSECSContainermetrics(
 		zap.NewNop(),
 		cfg,
 		consumertest.NewErr(errors.New("Test Error for Metrics Consumer")),
@@ -132,7 +132,7 @@ func (f invalidFakeClient) EndpointResponse() ([]byte, []byte, error) {
 
 func TestCollectDataFromEndpointWithEndpointError(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	metricsReceiver, err := New(
+	metricsReceiver, err := newAWSECSContainermetrics(
 		zap.NewNop(),
 		cfg,
 		new(consumertest.MetricsSink),

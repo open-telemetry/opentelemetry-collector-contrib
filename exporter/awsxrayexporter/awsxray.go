@@ -22,11 +22,11 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/consumererror"
-	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"go.opentelemetry.io/collector/model/pdata"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsxrayexporter/translator"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsxrayexporter/internal/translator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil"
 )
 
@@ -37,18 +37,18 @@ const (
 // newTracesExporter creates an component.TracesExporter that converts to an X-Ray PutTraceSegments
 // request and then posts the request to the configured region's X-Ray endpoint.
 func newTracesExporter(
-	config config.Exporter, params component.ExporterCreateSettings, cn awsutil.ConnAttr) (component.TracesExporter, error) {
+	config config.Exporter, set component.ExporterCreateSettings, cn awsutil.ConnAttr) (component.TracesExporter, error) {
 	typeLog := zap.String("type", string(config.ID().Type()))
 	nameLog := zap.String("name", config.ID().String())
-	logger := params.Logger
+	logger := set.Logger
 	awsConfig, session, err := awsutil.GetAWSConfigSession(logger, cn, &config.(*Config).AWSSessionSettings)
 	if err != nil {
 		return nil, err
 	}
-	xrayClient := newXRay(logger, awsConfig, params.BuildInfo, session)
+	xrayClient := newXRay(logger, awsConfig, set.BuildInfo, session)
 	return exporterhelper.NewTracesExporter(
 		config,
-		logger,
+		set,
 		func(ctx context.Context, td pdata.Traces) error {
 			var err error
 			logger.Debug("TracesExporter", typeLog, nameLog, zap.Int("#spans", td.SpanCount()))

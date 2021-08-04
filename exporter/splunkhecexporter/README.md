@@ -56,13 +56,11 @@ exporters:
     timeout: 10s
     # Whether to skip checking the certificate of the HEC endpoint when sending data over HTTPS. Defaults to false.
     insecure_skip_verify: false
-    # Whether to skip checking the certificate of the HEC endpoint when sending data over HTTPS. Defaults to false.
-    insecure: false
-    # Path to the CA cert to verify the server being connected to. Should only be used if `insecure` is set to false.
+    # Path to the CA cert to verify the server being connected to.
     ca_file: /certs/ExampleCA.crt
-    # Path to the TLS cert to use for client connections when TLS client auth is required. Should only be used if `insecure` is set to false.
+    # Path to the TLS cert to use for client connections when TLS client auth is required.
     cert_file: /certs/HECclient.crt
-    # Path to the TLS key to use for TLS required connections. Should only be used if `insecure` is set to false.
+    # Path to the TLS key to use for TLS required connections.
     key_file: /certs/HECclient.key
     # Application name is used to track telemetry information for Splunk App's using HEC by App name.
     splunk_app_name: "OpenTelemetry-Collector Splunk Exporter"

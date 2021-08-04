@@ -26,6 +26,9 @@ processors:
               # Name of the new metric. This is a required field.
             - name: <new_metric_name>
 
+              # Unit for the new metric being generated.
+              unit: <new_metric_unit>
+
               # type describes how the new metric will be generated. It can be one of `calculate` or `scale`.  calculate generates a metric applying the given operation on two operand metrics. scale operates only on operand1 metric to generate the new metric.
               type: {calculate, scale}
 
@@ -57,6 +60,7 @@ rules:
 # create pod.memory.usage.bytes from pod.memory.usage.megabytes
 rules:
     - name: pod.memory.usage.bytes
+      unit: Bytes
       type: scale
       metric1: pod.memory.usage.megabytes
       operation: multiply

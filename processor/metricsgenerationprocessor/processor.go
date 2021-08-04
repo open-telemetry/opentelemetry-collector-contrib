@@ -18,8 +18,7 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/processor/processorhelper"
+	"go.opentelemetry.io/collector/model/pdata"
 	"go.uber.org/zap"
 )
 
@@ -28,10 +27,9 @@ type metricsGenerationProcessor struct {
 	logger *zap.Logger
 }
 
-var _ processorhelper.MProcessor = (*metricsGenerationProcessor)(nil)
-
 type internalRule struct {
 	name      string
+	unit      string
 	ruleType  string
 	metric1   string
 	metric2   string
@@ -51,8 +49,39 @@ func (mgp *metricsGenerationProcessor) Start(context.Context, component.Host) er
 	return nil
 }
 
-// ProcessMetrics implements the MProcessor interface.
-func (mgp *metricsGenerationProcessor) ProcessMetrics(_ context.Context, md pdata.Metrics) (pdata.Metrics, error) {
+// processMetrics implements the ProcessMetricsFunc type.
+func (mgp *metricsGenerationProcessor) processMetrics(_ context.Context, md pdata.Metrics) (pdata.Metrics, error) {
+	resourceMetricsSlice := md.ResourceMetrics()
+
+	for i := 0; i < resourceMetricsSlice.Len(); i++ {
+		rm := resourceMetricsSlice.At(i)
+		nameToMetricMap := getNameToMetricMap(rm)
+
+		for _, rule := range mgp.rules {
+			operand2 := float64(0)
+			_, ok := nameToMetricMap[rule.metric1]
+			if !ok {
+				mgp.logger.Debug("Missing first metric", zap.String("metric_name", rule.metric1))
+				continue
+			}
+
+			if rule.ruleType == string(calculate) {
+				metric2, ok := nameToMetricMap[rule.metric2]
+				if !ok {
+					mgp.logger.Debug("Missing second metric", zap.String("metric_name", rule.metric2))
+					continue
+				}
+				operand2 = getMetricValue(metric2)
+				if operand2 <= 0 {
+					continue
+				}
+
+			} else if rule.ruleType == string(scale) {
+				operand2 = rule.scaleBy
+			}
+			generateMetrics(rm, operand2, rule, mgp.logger)
+		}
+	}
 	return md, nil
 }
 

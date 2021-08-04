@@ -71,7 +71,7 @@ func createMetricsReceiver(
 		&rConfig.ScraperControllerSettings,
 		params.Logger,
 		consumer,
-		scraperhelper.AddResourceMetricsScraper(
+		scraperhelper.AddScraper(
 			scraperhelper.NewResourceMetricsScraper(
 				rConfig.ID(),
 				zms.scrape,

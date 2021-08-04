@@ -19,10 +19,9 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenterror"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configcheck"
-	"go.uber.org/zap"
 )
 
 func TestCreateDefaultConfig(t *testing.T) {
@@ -36,7 +35,7 @@ func TestCreateReceiver(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
-	params := component.ReceiverCreateSettings{Logger: zap.NewNop()}
+	params := componenttest.NewNopReceiverCreateSettings()
 	tReceiver, err := factory.CreateTracesReceiver(context.Background(), params, cfg, nil)
 	assert.NoError(t, err, "receiver creation failed")
 	assert.NotNil(t, tReceiver, "receiver creation failed")
@@ -52,7 +51,7 @@ func TestCreateInvalidHTTPEndpoint(t *testing.T) {
 	rCfg := cfg.(*Config)
 
 	rCfg.Endpoint = ""
-	params := component.ReceiverCreateSettings{Logger: zap.NewNop()}
+	params := componenttest.NewNopReceiverCreateSettings()
 	_, err := factory.CreateTracesReceiver(context.Background(), params, cfg, nil)
 	assert.Error(t, err, "receiver creation with no endpoints must fail")
 }
@@ -63,7 +62,7 @@ func TestCreateNoPort(t *testing.T) {
 	rCfg := cfg.(*Config)
 
 	rCfg.Endpoint = "localhost:"
-	params := component.ReceiverCreateSettings{Logger: zap.NewNop()}
+	params := componenttest.NewNopReceiverCreateSettings()
 	_, err := factory.CreateTracesReceiver(context.Background(), params, cfg, nil)
 	assert.Error(t, err, "receiver creation with no port number must fail")
 }
@@ -74,7 +73,7 @@ func TestCreateLargePort(t *testing.T) {
 	rCfg := cfg.(*Config)
 
 	rCfg.Endpoint = "localhost:65536"
-	params := component.ReceiverCreateSettings{Logger: zap.NewNop()}
+	params := componenttest.NewNopReceiverCreateSettings()
 	_, err := factory.CreateTracesReceiver(context.Background(), params, cfg, nil)
 	assert.Error(t, err, "receiver creation with too large port number must fail")
 }

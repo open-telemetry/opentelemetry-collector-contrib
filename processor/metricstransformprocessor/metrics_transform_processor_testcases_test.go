@@ -71,9 +71,9 @@ var (
 			},
 			out: []*metricspb.Metric{
 				metricBuilder().setName("new/metric1").
-					setDataType(metricspb.MetricDescriptor_GAUGE_DOUBLE).build(),
+					setDataType(metricspb.MetricDescriptor_GAUGE_INT64).build(),
 				metricBuilder().setName("new/metric2").
-					setDataType(metricspb.MetricDescriptor_GAUGE_DOUBLE).build(),
+					setDataType(metricspb.MetricDescriptor_GAUGE_INT64).build(),
 			},
 		},
 		{
@@ -122,7 +122,7 @@ var (
 			},
 			out: []*metricspb.Metric{
 				metricBuilder().setName("metric1").
-					setDataType(metricspb.MetricDescriptor_CUMULATIVE_DOUBLE).build(),
+					setDataType(metricspb.MetricDescriptor_CUMULATIVE_INT64).build(),
 			},
 		},
 		{
@@ -1547,8 +1547,8 @@ var (
 				metricBuilder().setName("metric2").setDataType(metricspb.MetricDescriptor_GAUGE_INT64).build(),
 			},
 			out: []*metricspb.Metric{
-				metricBuilder().setName("metric1").setDataType(metricspb.MetricDescriptor_CUMULATIVE_DOUBLE).build(),
-				metricBuilder().setName("metric2").setDataType(metricspb.MetricDescriptor_GAUGE_DOUBLE).build(),
+				metricBuilder().setName("metric1").setDataType(metricspb.MetricDescriptor_CUMULATIVE_INT64).build(),
+				metricBuilder().setName("metric2").setDataType(metricspb.MetricDescriptor_GAUGE_INT64).build(),
 			},
 		},
 		{

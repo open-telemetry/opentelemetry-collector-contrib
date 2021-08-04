@@ -10,6 +10,9 @@ exporters:
     account_token: "logzioTESTtoken"
     region: "eu"
     custom_endpoint: "https://some-url.com:8888"
+    drain_interval: 5
+    queue_capacity: 500
+    queue_max_length: 500
 
 service:
   pipelines:

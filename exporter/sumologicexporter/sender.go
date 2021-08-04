@@ -25,7 +25,7 @@ import (
 	"strings"
 
 	"go.opentelemetry.io/collector/consumer/consumererror"
-	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/model/pdata"
 	tracetranslator "go.opentelemetry.io/collector/translator/trace"
 )
 

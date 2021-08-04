@@ -121,18 +121,18 @@ func TestTopicScraper_scrapes(t *testing.T) {
 	ms := rm.At(0).InstrumentationLibraryMetrics().At(0).Metrics()
 	for i := 0; i < ms.Len(); i++ {
 		m := ms.At(i)
-		dp := m.IntGauge().DataPoints().At(0)
+		dp := m.Gauge().DataPoints().At(0)
 		switch m.Name() {
 		case metadata.M.KafkaTopicPartitions.Name():
-			assert.Equal(t, dp.Value(), int64(len(testPartitions)))
+			assert.Equal(t, dp.IntVal(), int64(len(testPartitions)))
 		case metadata.M.KafkaPartitionCurrentOffset.Name():
-			assert.Equal(t, dp.Value(), testOffset)
+			assert.Equal(t, dp.IntVal(), testOffset)
 		case metadata.M.KafkaPartitionOldestOffset.Name():
-			assert.Equal(t, dp.Value(), testOffset)
+			assert.Equal(t, dp.IntVal(), testOffset)
 		case metadata.M.KafkaPartitionReplicas.Name():
-			assert.Equal(t, dp.Value(), int64(len(testReplicas)))
+			assert.Equal(t, dp.IntVal(), int64(len(testReplicas)))
 		case metadata.M.KafkaPartitionReplicasInSync.Name():
-			assert.Equal(t, dp.Value(), int64(len(testReplicas)))
+			assert.Equal(t, dp.IntVal(), int64(len(testReplicas)))
 		}
 	}
 }

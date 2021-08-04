@@ -28,7 +28,7 @@ import (
 	"go.opentelemetry.io/collector/receiver/otlpreceiver"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jmxreceiver/subprocess"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jmxreceiver/internal/subprocess"
 )
 
 var _ component.MetricsReceiver = (*jmxMetricReceiver)(nil)

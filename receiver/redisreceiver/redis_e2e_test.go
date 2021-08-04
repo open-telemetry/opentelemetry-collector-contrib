@@ -24,8 +24,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.uber.org/zap/zaptest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testing/container"
 )
@@ -51,9 +51,8 @@ func TestIntegration(t *testing.T) {
 	cfg.Endpoint = c.AddrForPort(6379)
 
 	consumer := new(consumertest.MetricsSink)
-	params := component.ReceiverCreateSettings{Logger: zaptest.NewLogger(t)}
 
-	rcvr, err := f.CreateMetricsReceiver(context.Background(), params, cfg, consumer)
+	rcvr, err := f.CreateMetricsReceiver(context.Background(), componenttest.NewNopReceiverCreateSettings(), cfg, consumer)
 	require.NoError(t, err, "failed creating metrics receiver")
 	require.NoError(t, rcvr.Start(context.Background(), &testHost{
 		t: t,

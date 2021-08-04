@@ -16,13 +16,21 @@ package stanza
 
 import (
 	// Register parsers and transformers for stanza-based log receivers
+	_ "github.com/open-telemetry/opentelemetry-log-collection/operator/builtin/parser/csv"
 	_ "github.com/open-telemetry/opentelemetry-log-collection/operator/builtin/parser/json"
 	_ "github.com/open-telemetry/opentelemetry-log-collection/operator/builtin/parser/regex"
 	_ "github.com/open-telemetry/opentelemetry-log-collection/operator/builtin/parser/severity"
 	_ "github.com/open-telemetry/opentelemetry-log-collection/operator/builtin/parser/time"
 	_ "github.com/open-telemetry/opentelemetry-log-collection/operator/builtin/parser/trace"
+	_ "github.com/open-telemetry/opentelemetry-log-collection/operator/builtin/parser/uri"
+	_ "github.com/open-telemetry/opentelemetry-log-collection/operator/builtin/transformer/add"
+	_ "github.com/open-telemetry/opentelemetry-log-collection/operator/builtin/transformer/copy"
+	_ "github.com/open-telemetry/opentelemetry-log-collection/operator/builtin/transformer/filter"
+	_ "github.com/open-telemetry/opentelemetry-log-collection/operator/builtin/transformer/flatten"
 	_ "github.com/open-telemetry/opentelemetry-log-collection/operator/builtin/transformer/metadata"
+	_ "github.com/open-telemetry/opentelemetry-log-collection/operator/builtin/transformer/move"
 	_ "github.com/open-telemetry/opentelemetry-log-collection/operator/builtin/transformer/recombine"
 	_ "github.com/open-telemetry/opentelemetry-log-collection/operator/builtin/transformer/restructure"
+	_ "github.com/open-telemetry/opentelemetry-log-collection/operator/builtin/transformer/retain"
 	_ "github.com/open-telemetry/opentelemetry-log-collection/operator/builtin/transformer/router"
 )

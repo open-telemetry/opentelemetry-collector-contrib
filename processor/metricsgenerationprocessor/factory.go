@@ -62,7 +62,7 @@ func createMetricsProcessor(
 	return processorhelper.NewMetricsProcessor(
 		cfg,
 		nextConsumer,
-		metricsProcessor,
+		metricsProcessor.processMetrics,
 		processorhelper.WithCapabilities(processorCapabilities))
 }
 
@@ -73,6 +73,7 @@ func buildInternalConfig(config *Config) []internalRule {
 	for i, rule := range config.Rules {
 		customRule := internalRule{
 			name:      rule.Name,
+			unit:      rule.Unit,
 			ruleType:  string(rule.Type),
 			metric1:   rule.Metric1,
 			metric2:   rule.Metric2,

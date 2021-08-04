@@ -25,9 +25,8 @@ import (
 	"github.com/aws/aws-sdk-go/service/ec2/ec2iface"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.uber.org/zap"
+	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/model/pdata"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
 )
@@ -90,7 +89,7 @@ func TestNewDetector(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			detector, err := NewDetector(component.ProcessorCreateSettings{Logger: zap.NewNop()}, tt.cfg)
+			detector, err := NewDetector(componenttest.NewNopProcessorCreateSettings(), tt.cfg)
 			if tt.shouldError {
 				assert.Error(t, err)
 				assert.Nil(t, detector)

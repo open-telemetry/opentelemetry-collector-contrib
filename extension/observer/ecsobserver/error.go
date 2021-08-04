@@ -18,6 +18,8 @@ import (
 	"errors"
 
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/awserr"
+	"github.com/aws/aws-sdk-go/service/ecs"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
@@ -39,6 +41,32 @@ type errWithAttributes interface {
 	// zapFields will be logged as json attribute and allows searching and filter backend like cloudwatch.
 	// For example { $.ErrScope == "Target" } list all the error whose scope is a (scrape) target.
 	zapFields() []zap.Field
+}
+
+// hasCriticalError returns first critical error.
+// Currently only access error and cluster not found are treated as critical.
+func hasCriticalError(logger *zap.Logger, err error) error {
+	merr := multierr.Errors(err)
+	if merr == nil {
+		merr = []error{err} // fake a multi error
+	}
+	for _, err := range merr {
+		var awsErr awserr.Error
+		if errors.As(err, &awsErr) {
+			// NOTE: we don't use zap.Error because the stack trace is quite useless here
+			// We print the error after entire fetch and match loop is done, and source
+			// of these error are from user config, wrong IAM, typo in cluster name etc.
+			switch awsErr.Code() {
+			case ecs.ErrCodeAccessDeniedException:
+				logger.Error("AccessDenied", zap.String("ErrMessage", awsErr.Message()))
+				return awsErr
+			case ecs.ErrCodeClusterNotFoundException:
+				logger.Error("Cluster NotFound", zap.String("ErrMessage", awsErr.Message()))
+				return awsErr
+			}
+		}
+	}
+	return nil
 }
 
 func printErrors(logger *zap.Logger, err error) {
@@ -74,17 +102,15 @@ func extractErrorFields(err error) ([]zap.Field, string) {
 	if ok {
 		// Rename ok to tok because linter says it shadows outer ok.
 		// Though the linter seems to allow the similar block to shadow...
-		if task, tok := v.(*Task); tok {
+		if task, tok := v.(*taskAnnotated); tok {
 			fields = append(fields, zap.String("TaskArn", aws.StringValue(task.Task.TaskArn)))
-			scope = "Task"
+			scope = "taskAnnotated"
 		}
 	}
 	v, ok = errctx.ValueFrom(err, errKeyTarget)
 	if ok {
-		if target, ok := v.(MatchedTarget); ok {
-			// TODO: change to string once another PR for matcher got merged
-			// https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/3386 defines Stringer
-			fields = append(fields, zap.Int("MatcherType", int(target.MatcherType)))
+		if target, ok := v.(matchedTarget); ok {
+			fields = append(fields, zap.String("matcherType", target.MatcherType.String()))
 			scope = "Target"
 		}
 	}

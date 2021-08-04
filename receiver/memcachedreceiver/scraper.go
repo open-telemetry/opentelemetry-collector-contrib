@@ -19,7 +19,7 @@ import (
 	"time"
 
 	"github.com/grobie/gomemcache/memcache"
-	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 	"go.uber.org/zap"
 
@@ -36,7 +36,7 @@ type memcachedScraper struct {
 func newMemcachedScraper(
 	logger *zap.Logger,
 	config *Config,
-) scraperhelper.ResourceMetricsScraper {
+) scraperhelper.Scraper {
 	ms := &memcachedScraper{
 		logger: logger,
 		config: config,
@@ -73,15 +73,15 @@ func (r *memcachedScraper) scrape(_ context.Context) (pdata.ResourceMetricsSlice
 		for k, v := range stats.Stats {
 			switch k {
 			case "bytes":
-				addGauge(ilm.Metrics(), metadata.M.MemcachedBytes.Init, now, parseInt(v))
+				addIntGauge(ilm.Metrics(), metadata.M.MemcachedBytes.Init, now, parseInt(v))
 			case "curr_connections":
-				addGauge(ilm.Metrics(), metadata.M.MemcachedCurrentConnections.Init, now, parseInt(v))
+				addIntGauge(ilm.Metrics(), metadata.M.MemcachedCurrentConnections.Init, now, parseInt(v))
 			case "total_connections":
-				addSum(ilm.Metrics(), metadata.M.MemcachedTotalConnections.Init, now, parseInt(v))
+				addIntSum(ilm.Metrics(), metadata.M.MemcachedTotalConnections.Init, now, parseInt(v))
 			case "get_hits":
-				addSum(ilm.Metrics(), metadata.M.MemcachedGetHits.Init, now, parseInt(v))
+				addIntSum(ilm.Metrics(), metadata.M.MemcachedGetHits.Init, now, parseInt(v))
 			case "get_misses":
-				addSum(ilm.Metrics(), metadata.M.MemcachedGetMisses.Init, now, parseInt(v))
+				addIntSum(ilm.Metrics(), metadata.M.MemcachedGetMisses.Init, now, parseInt(v))
 			}
 		}
 	}
@@ -89,18 +89,18 @@ func (r *memcachedScraper) scrape(_ context.Context) (pdata.ResourceMetricsSlice
 	return metrics.ResourceMetrics(), nil
 }
 
-func addGauge(metrics pdata.MetricSlice, initFunc func(pdata.Metric), now pdata.Timestamp, value int64) {
+func addIntGauge(metrics pdata.MetricSlice, initFunc func(pdata.Metric), now pdata.Timestamp, value int64) {
 	metric := metrics.AppendEmpty()
 	initFunc(metric)
-	dp := metric.IntGauge().DataPoints().AppendEmpty()
+	dp := metric.Gauge().DataPoints().AppendEmpty()
 	dp.SetTimestamp(now)
-	dp.SetValue(value)
+	dp.SetIntVal(value)
 }
 
-func addSum(metrics pdata.MetricSlice, initFunc func(pdata.Metric), now pdata.Timestamp, value int64) {
+func addIntSum(metrics pdata.MetricSlice, initFunc func(pdata.Metric), now pdata.Timestamp, value int64) {
 	metric := metrics.AppendEmpty()
 	initFunc(metric)
-	dp := metric.IntSum().DataPoints().AppendEmpty()
+	dp := metric.Sum().DataPoints().AppendEmpty()
 	dp.SetTimestamp(now)
-	dp.SetValue(value)
+	dp.SetIntVal(value)
 }
