@@ -46,11 +46,11 @@ func (t testRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 	return t(req), nil
 }
 
-func newTestClient(respCode int, respBody string) (*http.Client, *[]http.Header) {
-	return newTestClientWithPresetResponses([]int{respCode}, []string{respBody})
+func newTestClient(respCode int, respBody string, logger *zap.Logger) (*http.Client, *[]http.Header) {
+	return newTestClientWithPresetResponses([]int{respCode}, []string{respBody}, logger)
 }
 
-func newTestClientWithPresetResponses(codes []int, bodies []string) (*http.Client, *[]http.Header) {
+func newTestClientWithPresetResponses(codes []int, bodies []string, logger *zap.Logger) (*http.Client, *[]http.Header) {
 	index := 0
 	headers := make([]http.Header, 0)
 
@@ -59,6 +59,8 @@ func newTestClientWithPresetResponses(codes []int, bodies []string) (*http.Clien
 			code := codes[index%len(codes)]
 			body := bodies[index%len(bodies)]
 			index++
+
+			logger.Info("HTTP exchange:", zap.Any("header", req.Header), zap.Any("code", code))
 
 			headers = append(headers, req.Header)
 
@@ -123,10 +125,18 @@ func createTraceData(numberOfTraces int) pdata.Traces {
 }
 
 func createLogData(numResources int, numLibraries int, numRecords int) pdata.Logs {
-	return createLogDataWithCustomLibraries(numResources, make([]string, numLibraries), numRecords)
+	return createLogDataWithCustomLibraries(numResources, make([]string, numLibraries), repeat(numRecords, numLibraries))
 }
 
-func createLogDataWithCustomLibraries(numResources int, libraries []string, numRecords int) pdata.Logs {
+func repeat(what int, times int) []int {
+	var result = make([]int, times)
+	for i := range result {
+		result[i] = what
+	}
+	return result
+}
+
+func createLogDataWithCustomLibraries(numResources int, libraries []string, numRecords []int) pdata.Logs {
 	logs := pdata.NewLogs()
 	logs.ResourceLogs().EnsureCapacity(numResources)
 	for i := 0; i < numResources; i++ {
@@ -135,8 +145,8 @@ func createLogDataWithCustomLibraries(numResources int, libraries []string, numR
 		for j := 0; j < len(libraries); j++ {
 			ill := rl.InstrumentationLibraryLogs().AppendEmpty()
 			ill.InstrumentationLibrary().SetName(libraries[j])
-			ill.Logs().EnsureCapacity(numRecords)
-			for k := 0; k < numRecords; k++ {
+			ill.Logs().EnsureCapacity(numRecords[j])
+			for k := 0; k < numRecords[j]; k++ {
 				ts := pdata.Timestamp(int64(k) * time.Millisecond.Nanoseconds())
 				logRecord := ill.Logs().AppendEmpty()
 				logRecord.SetName(fmt.Sprintf("%d_%d_%d", i, j, k))
@@ -765,7 +775,7 @@ func Test_pushLogData_ShouldAddResponseTo400Error(t *testing.T) {
 	responseBody := `some error occurred`
 
 	// An HTTP client that returns status code 400 and response body responseBody.
-	splunkClient.client, _ = newTestClient(400, responseBody)
+	splunkClient.client, _ = newTestClient(400, responseBody, splunkClient.logger)
 	// Sending logs using the client.
 	err := splunkClient.pushLogData(context.Background(), logs)
 	// TODO: Uncomment after consumererror.Logs implements method Unwrap.
@@ -775,7 +785,7 @@ func Test_pushLogData_ShouldAddResponseTo400Error(t *testing.T) {
 	assert.Contains(t, err.Error(), responseBody)
 
 	// An HTTP client that returns some other status code other than 400 and response body responseBody.
-	splunkClient.client, _ = newTestClient(500, responseBody)
+	splunkClient.client, _ = newTestClient(500, responseBody, splunkClient.logger)
 	// Sending logs using the client.
 	err = splunkClient.pushLogData(context.Background(), logs)
 	// TODO: Uncomment after consumererror.Logs implements method Unwrap.
@@ -797,7 +807,7 @@ func Test_pushLogData_ShouldReturnUnsentLogsOnly(t *testing.T) {
 
 	logs := createLogData(2, 1, 1)
 
-	c.client, _ = newTestClientWithPresetResponses([]int{200, 400}, []string{"OK", "NOK"})
+	c.client, _ = newTestClientWithPresetResponses([]int{200, 400}, []string{"OK", "NOK"}, c.logger)
 	c.config.MaxContentLengthLogs, c.config.DisableCompression = 250, true
 
 	err := c.pushLogData(context.Background(), logs)
@@ -817,21 +827,29 @@ func Test_pushLogData_ShouldAddHeadersForProfilingData(t *testing.T) {
 		logger: zaptest.NewLogger(t),
 	}
 
-	logs := createLogDataWithCustomLibraries(1, []string{"otel.logs", "otel.profiling"}, 1)
+	logs := createLogDataWithCustomLibraries(1, []string{"otel.logs", "otel.profiling"}, []int{10, 20})
 	var headers *[]http.Header
 
-	c.client, headers = newTestClient(200, "OK")
+	c.client, headers = newTestClient(200, "OK", c.logger)
 	c.config.MaxContentLengthLogs, c.config.DisableCompression = 250, true
 
 	err := c.pushLogData(context.Background(), logs)
 	require.NoError(t, err)
 
 	c.logger.Info("HEADERS:", zap.Any("headers", headers))
-	assert.Equal(t, 2, len(*headers))
-	assert.NotContains(t, (*headers)[0], "X-Splunk-InstrumentationLibraryName")
-	assert.Contains(t, (*headers)[1], "X-Splunk-InstrumentationLibraryName")
+	assert.Equal(t, 30, len(*headers))
 
-	// TODO: also check the contents of the logs sent!
+	// First, all the events except the last are flushed. The last event of each type stays in the overflow buffer
+	for i := 0; i < 9; i++ {
+		assert.NotContains(t, (*headers)[i], libraryHeaderName)
+	}
+	for i := 9; i < 28; i++ {
+		assert.Contains(t, (*headers)[i], libraryHeaderName)
+	}
+
+	// The last two overflown events come together at the end
+	assert.NotContains(t, (*headers)[28], libraryHeaderName)
+	assert.Contains(t, (*headers)[29], libraryHeaderName)
 }
 
 func Test_pushLogData_Small_MaxContentLength(t *testing.T) {
@@ -857,13 +875,14 @@ func Test_pushLogData_Small_MaxContentLength(t *testing.T) {
 	}
 }
 
+// TODO: also include profiling data in this test
 func TestSubLogs(t *testing.T) {
 	// Creating 12 logs (2 resources x 2 libraries x 3 records)
 	logs := createLogData(2, 2, 3)
 
 	// Logs subset from leftmost index (resource 0, library 0, record 0).
 	_0_0_0 := &logIndex{resource: 0, library: 0, record: 0} //revive:disable-line:var-naming
-	got := subLogs(&logs, _0_0_0)
+	got := subLogs(&logs, _0_0_0, nil)
 
 	// Number of logs in subset should equal original logs.
 	assert.Equal(t, logs.LogRecordCount(), got.LogRecordCount())
@@ -875,7 +894,7 @@ func TestSubLogs(t *testing.T) {
 
 	// Logs subset from some mid index (resource 0, library 1, log 2).
 	_0_1_2 := &logIndex{resource: 0, library: 1, record: 2} //revive:disable-line:var-naming
-	got = subLogs(&logs, _0_1_2)
+	got = subLogs(&logs, _0_1_2, nil)
 
 	assert.Equal(t, 7, got.LogRecordCount())
 
@@ -886,7 +905,7 @@ func TestSubLogs(t *testing.T) {
 
 	// Logs subset from rightmost index (resource 1, library 1, log 2).
 	_1_1_2 := &logIndex{resource: 1, library: 1, record: 2} //revive:disable-line:var-naming
-	got = subLogs(&logs, _1_1_2)
+	got = subLogs(&logs, _1_1_2, nil)
 
 	// Number of logs in subset should be 1.
 	assert.Equal(t, 1, got.LogRecordCount())
