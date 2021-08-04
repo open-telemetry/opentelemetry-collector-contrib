@@ -23,7 +23,7 @@ import (
 
 func TestLoggerConfigs(tester *testing.T) {
 	zapLogger := zap.NewExample()
-	exporterLogger := Hclog2ZapLogger{
+	exporterLogger := hclog2ZapLogger{
 		Zap:  zapLogger,
 		name: loggerName,
 	}
@@ -44,7 +44,7 @@ func TestLoggerConfigs(tester *testing.T) {
 
 func TestLogger(tester *testing.T) {
 	zapLogger := zap.NewExample()
-	exporterLogger := Hclog2ZapLogger{
+	exporterLogger := hclog2ZapLogger{
 		Zap:  zapLogger,
 		name: loggerName,
 	}
