@@ -36,18 +36,32 @@ Usage
         engine=engine,
     )
 
+    # of the async variant of SQLAlchemy
+
+    from sqlalchemy.ext.asyncio import create_async_engine
+
+    from opentelemetry.instrumentation.sqlalchemy import SQLAlchemyInstrumentor
+    import sqlalchemy
+
+    engine = create_async_engine("sqlite:///:memory:")
+    SQLAlchemyInstrumentor().instrument(
+        engine=engine.sync_engine
+    )
+
 API
 ---
 """
 from typing import Collection
 
 import sqlalchemy
+from packaging.version import parse as parse_version
 from wrapt import wrap_function_wrapper as _w
 
 from opentelemetry.instrumentation.instrumentor import BaseInstrumentor
 from opentelemetry.instrumentation.sqlalchemy.engine import (
     EngineTracer,
     _get_tracer,
+    _wrap_create_async_engine,
     _wrap_create_engine,
 )
 from opentelemetry.instrumentation.sqlalchemy.package import _instruments
@@ -76,6 +90,13 @@ class SQLAlchemyInstrumentor(BaseInstrumentor):
         """
         _w("sqlalchemy", "create_engine", _wrap_create_engine)
         _w("sqlalchemy.engine", "create_engine", _wrap_create_engine)
+        if parse_version(sqlalchemy.__version__).release >= (1, 4):
+            _w(
+                "sqlalchemy.ext.asyncio",
+                "create_async_engine",
+                _wrap_create_async_engine,
+            )
+
         if kwargs.get("engine") is not None:
             return EngineTracer(
                 _get_tracer(
@@ -88,3 +109,5 @@ class SQLAlchemyInstrumentor(BaseInstrumentor):
     def _uninstrument(self, **kwargs):
         unwrap(sqlalchemy, "create_engine")
         unwrap(sqlalchemy.engine, "create_engine")
+        if parse_version(sqlalchemy.__version__).release >= (1, 4):
+            unwrap(sqlalchemy.ext.asyncio, "create_async_engine")

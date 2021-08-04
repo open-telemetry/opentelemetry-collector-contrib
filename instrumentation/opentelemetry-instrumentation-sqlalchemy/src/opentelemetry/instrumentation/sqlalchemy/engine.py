@@ -12,8 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from threading import local
-
 from sqlalchemy.event import listen  # pylint: disable=no-name-in-module
 
 from opentelemetry import trace
@@ -45,6 +43,16 @@ def _get_tracer(engine, tracer_provider=None):
 
 
 # pylint: disable=unused-argument
+def _wrap_create_async_engine(func, module, args, kwargs):
+    """Trace the SQLAlchemy engine, creating an `EngineTracer`
+    object that will listen to SQLAlchemy events.
+    """
+    engine = func(*args, **kwargs)
+    EngineTracer(_get_tracer(engine), engine.sync_engine)
+    return engine
+
+
+# pylint: disable=unused-argument
 def _wrap_create_engine(func, module, args, kwargs):
     """Trace the SQLAlchemy engine, creating an `EngineTracer`
     object that will listen to SQLAlchemy events.
@@ -59,20 +67,10 @@ class EngineTracer:
         self.tracer = tracer
         self.engine = engine
         self.vendor = _normalize_vendor(engine.name)
-        self.cursor_mapping = {}
-        self.local = local()
 
         listen(engine, "before_cursor_execute", self._before_cur_exec)
-        listen(engine, "after_cursor_execute", self._after_cur_exec)
-        listen(engine, "handle_error", self._handle_error)
-
-    @property
-    def current_thread_span(self):
-        return getattr(self.local, "current_span", None)
-
-    @current_thread_span.setter
-    def current_thread_span(self, span):
-        setattr(self.local, "current_span", span)
+        listen(engine, "after_cursor_execute", _after_cur_exec)
+        listen(engine, "handle_error", _handle_error)
 
     def _operation_name(self, db_name, statement):
         parts = []
@@ -90,7 +88,9 @@ class EngineTracer:
         return " ".join(parts)
 
     # pylint: disable=unused-argument
-    def _before_cur_exec(self, conn, cursor, statement, *args):
+    def _before_cur_exec(
+        self, conn, cursor, statement, params, context, executemany
+    ):
         attrs, found = _get_attributes_from_url(conn.engine.url)
         if not found:
             attrs = _get_attributes_from_cursor(self.vendor, cursor, attrs)
@@ -100,7 +100,6 @@ class EngineTracer:
             self._operation_name(db_name, statement),
             kind=trace.SpanKind.CLIENT,
         )
-        self.current_thread_span = self.cursor_mapping[cursor] = span
         with trace.use_span(span, end_on_exit=False):
             if span.is_recording():
                 span.set_attribute(SpanAttributes.DB_STATEMENT, statement)
@@ -108,34 +107,28 @@ class EngineTracer:
                 for key, value in attrs.items():
                     span.set_attribute(key, value)
 
-    # pylint: disable=unused-argument
-    def _after_cur_exec(self, conn, cursor, statement, *args):
-        span = self.cursor_mapping.get(cursor, None)
-        if span is None:
-            return
+        context._otel_span = span
 
-        span.end()
-        self._cleanup(cursor)
 
-    def _handle_error(self, context):
-        span = self.current_thread_span
-        if span is None:
-            return
+# pylint: disable=unused-argument
+def _after_cur_exec(conn, cursor, statement, params, context, executemany):
+    span = getattr(context, "_otel_span", None)
+    if span is None:
+        return
 
-        try:
-            if span.is_recording():
-                span.set_status(
-                    Status(StatusCode.ERROR, str(context.original_exception),)
-                )
-        finally:
-            span.end()
-            self._cleanup(context.cursor)
+    span.end()
 
-    def _cleanup(self, cursor):
-        try:
-            del self.cursor_mapping[cursor]
-        except KeyError:
-            pass
+
+def _handle_error(context):
+    span = getattr(context.execution_context, "_otel_span", None)
+    if span is None:
+        return
+
+    if span.is_recording():
+        span.set_status(
+            Status(StatusCode.ERROR, str(context.original_exception),)
+        )
+    span.end()
 
 
 def _get_attributes_from_url(url):
