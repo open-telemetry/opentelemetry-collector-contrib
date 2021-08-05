@@ -137,8 +137,8 @@ github.com/DataDog/zstd v1.4.4/go.mod h1:1jcaCB/ufaK+sKp1NBhlGmpz41jOoPQ35bpF36t
 github.com/DataDog/zstd v1.4.8 h1:Rpmta4xZ/MgZnriKNd24iZMhGpP5dvUcs/uqfBapKZY=
 github.com/DataDog/zstd v1.4.8/go.mod h1:g4AWEaM3yOg3HYfnJ3YIawPnVdXJh9QME85blwSAmyw=
 github.com/Djarvur/go-err113 v0.0.0-20210108212216-aea10b59be24/go.mod h1:4UJr5HIiMZrwgkSPdsjy2uOQExX/WEILpIrO9UPGuXs=
-github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/trace v1.0.0-RC1.0.20210804190750-cec455d94844 h1:rN6h/G1U86/vXIRgh8RrhTFafneceUUdmCy5PVEoYos=
-github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/trace v1.0.0-RC1.0.20210804190750-cec455d94844/go.mod h1:wUQuqLc5wdTVnX/mgszL0WJagBhN+cbqZf1Ax/SNGSk=
+github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/trace v1.0.0-RC2 h1:zQoLPDL4o59qnguhsQ655DD/B0MBnPILQLVU1oirN9E=
+github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/trace v1.0.0-RC2/go.mod h1:wUQuqLc5wdTVnX/mgszL0WJagBhN+cbqZf1Ax/SNGSk=
 github.com/HdrHistogram/hdrhistogram-go v0.9.0/go.mod h1:nxrse8/Tzg2tg3DZcZjm6qEclQKK70g0KxO61gFFZD4=
 github.com/HdrHistogram/hdrhistogram-go v1.0.1 h1:GX8GAYDuhlFQnI2fRDHQhTlkHMz8bEn0jTI6LJU0mpw=
 github.com/HdrHistogram/hdrhistogram-go v1.0.1/go.mod h1:BWJ+nMSHY3L41Zj7CA3uXnloDp7xxV0YvstAE7nKTaM=

@@ -4,7 +4,7 @@ go 1.16
 
 require (
 	contrib.go.opencensus.io/exporter/stackdriver v0.13.8
-	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/trace v1.0.0-RC1.0.20210804190750-cec455d94844
+	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/trace v1.0.0-RC2
 	github.com/census-instrumentation/opencensus-proto v0.3.0
 	github.com/mattn/go-colorable v0.1.7 // indirect
 	github.com/stretchr/testify v1.7.0
