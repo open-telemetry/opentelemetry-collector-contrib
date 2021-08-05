@@ -32,7 +32,7 @@ type spanSnapshot struct {
 	startTime, endTime                                                    time.Time
 	name                                                                  string
 	attributes                                                            []attribute.KeyValue
-	links                                                                 []apitrace.Link
+	links                                                                 []sdktrace.Link
 	events                                                                []sdktrace.Event
 	droppedAttributes, droppedMessageEvents, droppedLinks, childSpanCount int
 	resource                                                              *sdkresource.Resource
@@ -47,7 +47,7 @@ func (s spanSnapshot) SpanKind() trace.SpanKind         { return s.spanKind }
 func (s spanSnapshot) StartTime() time.Time             { return s.startTime }
 func (s spanSnapshot) EndTime() time.Time               { return s.endTime }
 func (s spanSnapshot) Attributes() []attribute.KeyValue { return s.attributes }
-func (s spanSnapshot) Links() []trace.Link              { return s.links }
+func (s spanSnapshot) Links() []sdktrace.Link           { return s.links }
 func (s spanSnapshot) Events() []sdktrace.Event         { return s.events }
 func (s spanSnapshot) Status() sdktrace.Status          { return s.status }
 func (s spanSnapshot) Resource() *sdkresource.Resource  { return s.resource }

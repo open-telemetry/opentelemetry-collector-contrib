@@ -143,15 +143,15 @@ func pdataAttributesToOTAttributes(attrs pdata.AttributeMap, resource pdata.Reso
 	return otAttrs
 }
 
-func pdataLinksToOTLinks(links pdata.SpanLinkSlice) []apitrace.Link {
+func pdataLinksToOTLinks(links pdata.SpanLinkSlice) []sdktrace.Link {
 	size := links.Len()
-	otLinks := make([]apitrace.Link, 0, size)
+	otLinks := make([]sdktrace.Link, 0, size)
 	for i := 0; i < size; i++ {
 		link := links.At(i)
 		sc := apitrace.SpanContextConfig{}
 		sc.TraceID = link.TraceID().Bytes()
 		sc.SpanID = link.SpanID().Bytes()
-		otLinks = append(otLinks, apitrace.Link{
+		otLinks = append(otLinks, sdktrace.Link{
 			SpanContext: apitrace.NewSpanContext(sc),
 			Attributes:  pdataAttributesToOTAttributes(link.Attributes(), pdata.NewResource()),
 		})

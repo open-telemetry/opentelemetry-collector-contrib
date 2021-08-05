@@ -121,7 +121,7 @@ func TestCumulativeToDeltaProcessor(t *testing.T) {
 					require.Equal(t, eDataPoints.Len(), aDataPoints.Len())
 
 					for j := 0; j < eDataPoints.Len(); j++ {
-						require.Equal(t, eDataPoints.At(j).Value(), aDataPoints.At(j).Value())
+						require.Equal(t, eDataPoints.At(j).DoubleVal(), aDataPoints.At(j).DoubleVal())
 					}
 				}
 
@@ -133,7 +133,7 @@ func TestCumulativeToDeltaProcessor(t *testing.T) {
 					require.Equal(t, eM.Sum().AggregationTemporality(), aM.Sum().AggregationTemporality())
 
 					for j := 0; j < eDataPoints.Len(); j++ {
-						require.Equal(t, eDataPoints.At(j).Value(), aDataPoints.At(j).Value())
+						require.Equal(t, eDataPoints.At(j).DoubleVal(), aDataPoints.At(j).DoubleVal())
 					}
 				}
 
@@ -167,7 +167,7 @@ func generateTestMetrics(tm testMetric) pdata.Metrics {
 		for _, value := range tm.metricValues[i] {
 			dp := m.Sum().DataPoints().AppendEmpty()
 			dp.SetTimestamp(pdata.TimestampFromTime(now.Add(10 * time.Second)))
-			dp.SetValue(value)
+			dp.SetDoubleVal(value)
 		}
 	}
 
