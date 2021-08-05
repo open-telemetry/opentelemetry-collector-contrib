@@ -28,17 +28,17 @@ type Config struct {
 	// List of delta sum metrics to convert to rates
 	Metrics []string `mapstructure:"metrics"`
 
-	// Time unit to calculate the rate over. This could be one of the [Nanosecond, Millisecond, Second, Minute]. Default is Second.
+	// Time unit to calculate the rate over. This could be one of [ns, ms, s, m]. Default is s.
 	TimeUnit StringTimeUnit `mapstructure:"time_unit"`
 }
 
 type StringTimeUnit string
 
 const (
-	nanosecond  StringTimeUnit = "Nanosecond"
-	millisecond StringTimeUnit = "Millisecond"
-	second      StringTimeUnit = "Second"
-	minute      StringTimeUnit = "Minute"
+	nanosecond  StringTimeUnit = "ns"
+	millisecond StringTimeUnit = "ms"
+	second      StringTimeUnit = "s"
+	minute      StringTimeUnit = "m"
 )
 
 var timeUnits = map[StringTimeUnit]struct{}{

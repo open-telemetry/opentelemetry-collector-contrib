@@ -16,11 +16,13 @@ processors:
     # processor name: deltatorate
     deltatorate:
 
-        # list the delta sum metrics to calculate the rate
+        # list the delta sum metrics to calculate the rate. This is a required field.
         metrics:
             - <metric_1_name>
             - <metric_2_name>
             .
             .
             - <metric_n_name>
+        # time unit to calculate the rate over. This could be one of [ns, ms, s, m]. This field is optional and the default time_unit is s.
+        time_unit: ns
 ```

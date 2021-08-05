@@ -76,6 +76,10 @@ func TestValidateConfig(t *testing.T) {
 			errorMessage: "metric names are missing",
 		},
 		{
+			configName: "config_valid_time_unit.yaml",
+			succeed:    true,
+		},
+		{
 			configName:   "config_invalid_time_unit.yaml",
 			succeed:      false,
 			errorMessage: fmt.Sprintf("time_unit must be in %q", validTimeUnits()),
