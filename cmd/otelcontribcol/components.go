@@ -15,6 +15,7 @@
 package main
 
 import (
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/awsecshealthcheckextension"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/service/defaultcomponents"
 
@@ -101,6 +102,7 @@ func components() (component.Factories, error) {
 		httpforwarder.NewFactory(),
 		k8sobserver.NewFactory(),
 		oauth2clientauthextension.NewFactory(),
+		awsecshealthcheckextension.NewFactory(),
 	}
 
 	for _, ext := range factories.Extensions {
