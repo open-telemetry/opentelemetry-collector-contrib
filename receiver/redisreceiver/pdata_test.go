@@ -66,7 +66,7 @@ func TestUsedCpuSys(t *testing.T) {
 		m.DataType(),
 	)
 	assert.Equal(t, units, m.Unit())
-	assert.Equal(t, v, m.Sum().DataPoints().At(0).Value())
+	assert.Equal(t, v, m.Sum().DataPoints().At(0).DoubleVal())
 }
 
 func TestMissingMetricValue(t *testing.T) {

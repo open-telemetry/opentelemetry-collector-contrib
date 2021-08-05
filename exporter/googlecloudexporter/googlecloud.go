@@ -103,7 +103,7 @@ func newGoogleCloudTracesExporter(cfg *Config, set component.ExporterCreateSetti
 	}
 	topts = append(topts, cloudtrace.WithTraceClientOptions(copts))
 
-	exp, err := cloudtrace.NewExporter(topts...)
+	exp, err := cloudtrace.New(topts...)
 	if err != nil {
 		return nil, fmt.Errorf("error creating GoogleCloud Trace exporter: %w", err)
 	}

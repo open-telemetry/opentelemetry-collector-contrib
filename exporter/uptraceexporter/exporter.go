@@ -112,7 +112,6 @@ func (e *traceExporter) start(_ context.Context, host component.Host) error {
 	upexp, err := spanexp.NewExporter(&spanexp.Config{
 		DSN:        e.cfg.DSN,
 		HTTPClient: client,
-		MaxRetries: -1, // disable retries because Collector already handles it
 	})
 	if err != nil {
 		return err

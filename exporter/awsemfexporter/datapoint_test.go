@@ -366,7 +366,7 @@ func TestDoubleDataPointSliceAt(t *testing.T) {
 		t.Run(tc.testName, func(t *testing.T) {
 			testDPS := pdata.NewNumberDataPointSlice()
 			testDP := testDPS.AppendEmpty()
-			testDP.SetValue(tc.value.(float64))
+			testDP.SetDoubleVal(tc.value.(float64))
 			testDP.LabelsMap().InitFromMap(labels)
 
 			dps := numberDataPointSlice{
