@@ -4,7 +4,7 @@ go 1.16
 
 require (
 	github.com/stretchr/testify v1.7.0
-	github.com/tinylib/msgp v1.1.5
+	github.com/tinylib/msgp v1.1.6
 	go.opencensus.io v0.23.0
 	go.opentelemetry.io/collector v0.31.1-0.20210804191544-3cfe4f8c5d3e
 	go.opentelemetry.io/collector/model v0.31.1-0.20210804191544-3cfe4f8c5d3e
