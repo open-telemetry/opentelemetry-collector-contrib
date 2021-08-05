@@ -15,7 +15,6 @@
 package main
 
 import (
-	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/awsecshealthcheckextension"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/service/defaultcomponents"
 
@@ -45,6 +44,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/stackdriverexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sumologicexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/tanzuobservabilityexporter"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/awsecshealthcheckextension"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/fluentbitextension"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/httpforwarder"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/oauth2clientauthextension"
@@ -96,13 +96,13 @@ func components() (component.Factories, error) {
 	}
 
 	extensions := []component.ExtensionFactory{
+		awsecshealthcheckextension.NewFactory(),
 		filestorage.NewFactory(),
 		fluentbitextension.NewFactory(),
 		hostobserver.NewFactory(),
 		httpforwarder.NewFactory(),
 		k8sobserver.NewFactory(),
 		oauth2clientauthextension.NewFactory(),
-		awsecshealthcheckextension.NewFactory(),
 	}
 
 	for _, ext := range factories.Extensions {
