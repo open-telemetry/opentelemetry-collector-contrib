@@ -6,7 +6,8 @@ The `docker_observer` uses a Docker client and queries the Docker Engine API for
 
 Requires Docker API Version 1.22+.
 
-The collector will need permissions to access the Docker Engine API.
+The collector will need permissions to access the Docker Engine API, specifically it will need
+read access to the Docker socket (default `unix:///var/run/docker.sock`).
 
 
 ### Configuration
@@ -31,10 +32,11 @@ default: `[]`
 
 #### `use_hostname_if_present`
 
-If true, the "Config.Hostname" field (if present) of the docker
+If true, the `Config.Hostname` field (if present) of the docker
 container will be used as the discovered host that is used to configure
 receivers.  If false or if no hostname is configured, the field
-`NetworkSettings.IPAddress` is used instead.
+`NetworkSettings.IPAddress` is used instead. These settings can be found
+in the output of the Docker API's [Container Inspect](https://docs.docker.com/engine/api/v1.41/#operation/ContainerInspect) json.
 
 default: `false`
 
