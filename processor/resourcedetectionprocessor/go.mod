@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/processor/resou
 go 1.16
 
 require (
-	cloud.google.com/go v0.84.0
+	cloud.google.com/go v0.90.0
 	github.com/Showmax/go-fqdn v1.0.0
 	github.com/aws/aws-sdk-go v1.40.14
 	github.com/census-instrumentation/opencensus-proto v0.3.0
