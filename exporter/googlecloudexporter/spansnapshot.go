@@ -21,7 +21,6 @@ import (
 	"go.opentelemetry.io/otel/sdk/instrumentation"
 	sdkresource "go.opentelemetry.io/otel/sdk/resource"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
-	"go.opentelemetry.io/otel/trace"
 	apitrace "go.opentelemetry.io/otel/trace"
 )
 
@@ -40,21 +39,21 @@ type spanSnapshot struct {
 	status                                                                sdktrace.Status
 }
 
-func (s spanSnapshot) Name() string                     { return s.name }
-func (s spanSnapshot) SpanContext() trace.SpanContext   { return s.spanContext }
-func (s spanSnapshot) Parent() trace.SpanContext        { return s.parent }
-func (s spanSnapshot) SpanKind() trace.SpanKind         { return s.spanKind }
-func (s spanSnapshot) StartTime() time.Time             { return s.startTime }
-func (s spanSnapshot) EndTime() time.Time               { return s.endTime }
-func (s spanSnapshot) Attributes() []attribute.KeyValue { return s.attributes }
-func (s spanSnapshot) Links() []sdktrace.Link           { return s.links }
-func (s spanSnapshot) Events() []sdktrace.Event         { return s.events }
-func (s spanSnapshot) Status() sdktrace.Status          { return s.status }
-func (s spanSnapshot) Resource() *sdkresource.Resource  { return s.resource }
-func (s spanSnapshot) DroppedAttributes() int           { return s.droppedAttributes }
-func (s spanSnapshot) DroppedLinks() int                { return s.droppedLinks }
-func (s spanSnapshot) DroppedEvents() int               { return s.droppedLinks }
-func (s spanSnapshot) ChildSpanCount() int              { return s.childSpanCount }
+func (s spanSnapshot) Name() string                      { return s.name }
+func (s spanSnapshot) SpanContext() apitrace.SpanContext { return s.spanContext }
+func (s spanSnapshot) Parent() apitrace.SpanContext      { return s.parent }
+func (s spanSnapshot) SpanKind() apitrace.SpanKind       { return s.spanKind }
+func (s spanSnapshot) StartTime() time.Time              { return s.startTime }
+func (s spanSnapshot) EndTime() time.Time                { return s.endTime }
+func (s spanSnapshot) Attributes() []attribute.KeyValue  { return s.attributes }
+func (s spanSnapshot) Links() []sdktrace.Link            { return s.links }
+func (s spanSnapshot) Events() []sdktrace.Event          { return s.events }
+func (s spanSnapshot) Status() sdktrace.Status           { return s.status }
+func (s spanSnapshot) Resource() *sdkresource.Resource   { return s.resource }
+func (s spanSnapshot) DroppedAttributes() int            { return s.droppedAttributes }
+func (s spanSnapshot) DroppedLinks() int                 { return s.droppedLinks }
+func (s spanSnapshot) DroppedEvents() int                { return s.droppedLinks }
+func (s spanSnapshot) ChildSpanCount() int               { return s.childSpanCount }
 func (s spanSnapshot) InstrumentationLibrary() instrumentation.Library {
 	return s.instrumentationLibrary
 }
