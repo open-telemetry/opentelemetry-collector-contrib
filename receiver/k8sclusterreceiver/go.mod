@@ -4,7 +4,7 @@ go 1.16
 
 require (
 	github.com/census-instrumentation/opencensus-proto v0.3.0
-	github.com/iancoleman/strcase v0.1.3
+	github.com/iancoleman/strcase v0.2.0
 	github.com/onsi/ginkgo v1.14.1 // indirect
 	github.com/onsi/gomega v1.10.2 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.0.0-00010101000000-000000000000
