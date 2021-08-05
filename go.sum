@@ -1856,8 +1856,8 @@ github.com/vmihailenco/msgpack/v4 v4.3.12/go.mod h1:gborTTJjAo/GWTqqRjrLCn9pgNN+
 github.com/vmihailenco/tagparser v0.1.1 h1:quXMXlA39OCbd2wAdTsGDlK9RkOk6Wuw+x37wVyIuWY=
 github.com/vmihailenco/tagparser v0.1.1/go.mod h1:OeAg3pn3UbLjkWt+rN9oFYB6u/cQgqMEUPoW2WPyhdI=
 github.com/wadey/gocovmerge v0.0.0-20160331181800-b5bfa59ec0ad/go.mod h1:Hy8o65+MXnS6EwGElrSRjUzQDLXreJlzYLlWiHtt8hM=
-github.com/wavefronthq/wavefront-sdk-go v0.9.8 h1:6U1HW/sovO1ASbjU8f7iEZEKphDEehaDhdZ5nabb550=
-github.com/wavefronthq/wavefront-sdk-go v0.9.8/go.mod h1:JTGsu+KKgxx+GitC65VVdftN2iep1nVpQi/8EGR6v4Y=
+github.com/wavefronthq/wavefront-sdk-go v0.9.9 h1:ufOksviv+Cg6X2BIqha//onx8kJkQWZTYWjXcsLYDN0=
+github.com/wavefronthq/wavefront-sdk-go v0.9.9/go.mod h1:JTGsu+KKgxx+GitC65VVdftN2iep1nVpQi/8EGR6v4Y=
 github.com/willf/bitset v1.1.3/go.mod h1:RjeCKbqT1RxIR/KWY6phxZiaY1IyutSBfGjNPySAYV4=
 github.com/willf/bitset v1.1.9/go.mod h1:RjeCKbqT1RxIR/KWY6phxZiaY1IyutSBfGjNPySAYV4=
 github.com/willf/bitset v1.1.11-0.20200630133818-d5bec3311243/go.mod h1:RjeCKbqT1RxIR/KWY6phxZiaY1IyutSBfGjNPySAYV4=
