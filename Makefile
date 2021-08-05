@@ -18,6 +18,11 @@ MOD_NAME=github.com/open-telemetry/opentelemetry-collector-contrib
 # ALL_MODULES includes ./* dirs (excludes . dir and example with go code)
 ALL_MODULES := $(shell find . -type f -name "go.mod" -exec dirname {} \; | sort | egrep  '^./' )
 
+LOG_COLLECTION_MOD_NAME=github.com/open-telemetry/opentelemetry-log-collection
+
+# LOG_COLLECTION_MODULES includes modules depending on github.com/open-telemetry/opentelemetry-log-collection
+LOG_COLLECTION_MODULES := $(shell find . -type f -name "go.mod" -exec grep -l $(LOG_COLLECTION_MOD_NAME) {} \; | xargs -L 1 dirname | sort | egrep  '^./' )
+
 # Modules to run integration tests on.
 # XXX: Find a way to automatically populate this. Too slow to run across all modules when there are just a few.
 INTEGRATION_TEST_MODULES := \
@@ -33,6 +38,9 @@ INTEGRATION_TEST_MODULES := \
 
 all-modules:
 	@echo $(ALL_MODULES) | tr ' ' '\n' | sort
+
+all-modules-using-log-collection:
+	@echo $(LOG_COLLECTION_MODULES) | tr ' ' '\n' | sort
 
 .PHONY: all
 all: common gotest otelcontribcol otelcontribcol-unstable
@@ -58,6 +66,11 @@ integration-tests-with-cover:
 stability-tests: otelcontribcol
 	@echo Stability tests are disabled until we have a stable performance environment.
 	@echo To enable the tests replace this echo by $(MAKE) -C testbed run-stability-tests
+
+.PHONY: log-collection-modules-tests
+log-collection-modules-tests:
+	@echo $(LOG_COLLECTION_MODULES)
+	@$(MAKE) for-all-target TARGET="test" ALL_MODULES="$(LOG_COLLECTION_MODULES)"
 
 .PHONY: gotidy
 gotidy:
