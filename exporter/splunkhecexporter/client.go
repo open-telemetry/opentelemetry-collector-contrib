@@ -164,7 +164,8 @@ func isProfilingData(ill pdata.InstrumentationLibraryLogs) bool {
 // pushLogDataInBatches sends batches of Splunk events in JSON format.
 // The batch content length is restricted to MaxContentLengthLogs.
 // ld log records are parsed to Splunk events.
-// TODO: gofmt?
+// The input data may contain both logs and profiling data.
+// They are batched separately and sent with different HTTP headers
 func (c *client) pushLogDataInBatches(ctx context.Context, ld pdata.Logs, send func(context.Context, *bytes.Buffer, map[string]string) error) error {
 	// Buffer capacity.
 	var bufCap = c.config.MaxContentLengthLogs
@@ -198,8 +199,6 @@ func (c *client) pushLogDataInBatches(ctx context.Context, ld pdata.Logs, send f
 
 			var err error
 
-			//c.logger.Info("ILLS: ", zap.Int("j", j), zap.String("libraryName", ills.At(j).InstrumentationLibrary().Name()))
-
 			if isProfilingData(ills.At(j)) {
 				err, profilingBufLen, profilingBufFront, permanentErrors = c.pushLogRecords(ctx, logs, res, i, j, profilingBuf, profilingEncoder, profilingTmpBuf, bufCap, profilingBufLen, profilingBufFront, permanentErrors, profilingHeaders, send)
 			} else {
@@ -207,26 +206,24 @@ func (c *client) pushLogDataInBatches(ctx context.Context, ld pdata.Logs, send f
 			}
 
 			if err != nil {
-				//c.logger.Error("Error in the loop!", zap.Any("err", err))
 				return consumererror.NewLogs(err, *subLogs(&ld, bufFront, profilingBufFront))
 			}
 		}
 	}
 
+	// There's some leftover unsent non-profiling data
 	if buf.Len() > 0 {
 		if err := send(ctx, buf, nil); err != nil {
-			//c.logger.Info("Error sending buf from the end!", zap.Any("err", err))
 			return consumererror.NewLogs(err, *subLogs(&ld, bufFront, profilingBufFront))
 		}
-		//c.logger.Info("Sent buf from the end with no error!")
 	}
 
+	// There's some leftover unsent profiling data
 	if profilingBuf.Len() > 0 {
 		if err := send(ctx, profilingBuf, profilingHeaders); err != nil {
-			//c.logger.Info("Error sending profilingBuf from the end!", zap.Any("err", err))
+			// Non-profiling bufFront is set to nil because all non-profiling data was flushed successfully above.
 			return consumererror.NewLogs(err, *subLogs(&ld, nil, profilingBufFront))
 		}
-		//c.logger.Info("Sent profilingBuf from the end with no error!")
 	}
 
 	return consumererror.Combine(permanentErrors)
@@ -236,19 +233,15 @@ func (c *client) pushLogRecords(ctx context.Context, logs pdata.LogSlice, res pd
 	for k := 0; k < logs.Len(); k++ {
 		if bufFront == nil {
 			bufFront = &logIndex{resource: i, library: j, record: k}
-			//c.logger.Info("Updating in loop!", zap.Int("bufFront.resource", bufFront.resource), zap.Int("bufFront.library", bufFront.library), zap.Int("bufFront.record", bufFront.record))
 		}
 
 		// Parsing log record to Splunk event.
 		event := mapLogRecordToSplunkEvent(res, logs.At(k), c.config, c.logger)
 		// JSON encoding event and writing to buffer.
-		//c.logger.Info("Before encoding", zap.Int("buf_len", buf.Len()))
 		if err := encoder.Encode(event); err != nil {
 			permanentErrors = append(permanentErrors, consumererror.Permanent(fmt.Errorf("dropped log event: %v, error: %v", event, err)))
 			continue
 		}
-
-		//c.logger.Info("After encoding:", zap.Int("buf_len", buf.Len()))
 
 		// Continue adding events to buffer up to capacity.
 		// 0 capacity is interpreted as unknown/unbound consistent with ContentLength in http.Request.
@@ -259,15 +252,11 @@ func (c *client) pushLogRecords(ctx context.Context, logs pdata.LogSlice, res pd
 			continue
 		}
 
-		//c.logger.Info("Time to flush buffer!", zap.Uint("bufCap", bufCap))
-
 		tmpBuf.Reset()
 		// Storing event bytes over capacity in buffer before truncating.
 		if bufCap > 0 {
 			if over := buf.Len() - bufLen; over <= int(bufCap) {
 				tmpBuf.Write(buf.Bytes()[bufLen:buf.Len()])
-				//c.logger.Info("Copying to tmpBuf",
-				//	zap.Int("bufLen", bufLen), zap.Int("buf.Len()", buf.Len()))
 			} else {
 				permanentErrors = append(permanentErrors, consumererror.Permanent(
 					fmt.Errorf("dropped log event: %s, error: event size %d bytes larger than configured max content length %d bytes", string(buf.Bytes()[bufLen:buf.Len()]), over, bufCap)))
@@ -278,10 +267,8 @@ func (c *client) pushLogRecords(ctx context.Context, logs pdata.LogSlice, res pd
 		buf.Truncate(bufLen)
 		if buf.Len() > 0 {
 			if err := send(ctx, buf, headers); err != nil {
-				//c.logger.Info("Error flushing buffer from the loop!", zap.Any("err", err))
 				return err, bufLen, bufFront, permanentErrors
 			}
-			//c.logger.Info("Flushed buffer from the loop with no error!")
 		}
 		buf.Reset()
 
@@ -291,11 +278,9 @@ func (c *client) pushLogRecords(ctx context.Context, logs pdata.LogSlice, res pd
 		if buf.Len() > 0 {
 			// This means that the current record has overflown the buffer and was not sent
 			bufFront = &logIndex{resource: i, library: j, record: k}
-			//c.logger.Info("Updating in loop!", zap.Int("bufFront.resource", bufFront.resource), zap.Int("bufFront.library", bufFront.library), zap.Int("bufFront.record", bufFront.record))
 		} else {
 			// This means that the entire buffer was sent, including the current record
 			bufFront = nil
-			//c.logger.Info("Reset at iteration end!", zap.Any("bufFront", bufFront))
 		}
 
 		bufLen = buf.Len()
@@ -360,11 +345,11 @@ func subLogsByType(src *pdata.Logs, from *logIndex, dst *pdata.Logs, profiling b
 	resourcesSub := dst.ResourceLogs()
 
 	for i := from.resource; i < resources.Len(); i++ {
-		resourcesSub.AppendEmpty()
-		resources.At(i).Resource().CopyTo(resourcesSub.At(i - from.resource).Resource())
+		newSub := resourcesSub.AppendEmpty()
+		resources.At(i).Resource().CopyTo(newSub.Resource())
 
 		libraries := resources.At(i).InstrumentationLibraryLogs()
-		librariesSub := resourcesSub.At(i - from.resource).InstrumentationLibraryLogs()
+		librariesSub := newSub.InstrumentationLibraryLogs()
 
 		j := 0
 		if i == from.resource {
@@ -378,11 +363,11 @@ func subLogsByType(src *pdata.Logs, from *logIndex, dst *pdata.Logs, profiling b
 				continue
 			}
 
-			librariesSub.AppendEmpty()
-			lib.InstrumentationLibrary().CopyTo(librariesSub.At(jSub).InstrumentationLibrary())
+			newLibSub := librariesSub.AppendEmpty()
+			lib.InstrumentationLibrary().CopyTo(newLibSub.InstrumentationLibrary())
 
 			logs := lib.Logs()
-			logsSub := librariesSub.At(jSub).Logs()
+			logsSub := newLibSub.Logs()
 			jSub++
 
 			k := 0
@@ -391,8 +376,7 @@ func subLogsByType(src *pdata.Logs, from *logIndex, dst *pdata.Logs, profiling b
 			}
 
 			for kSub := 0; k < logs.Len(); k++ { //revive:disable-line:var-naming
-				logsSub.AppendEmpty()
-				logs.At(k).CopyTo(logsSub.At(kSub))
+				logs.At(k).CopyTo(logsSub.AppendEmpty())
 				kSub++
 			}
 		}

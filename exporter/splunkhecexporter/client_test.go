@@ -849,7 +849,42 @@ func Test_pushLogData_ShouldAddHeadersForProfilingData(t *testing.T) {
 	assert.Equal(t, 10, nonProfilingCount)
 }
 
-func Benchmark_pushLogData(b *testing.B) {
+func Benchmark_pushLogData_100_10_10_1024(b *testing.B) {
+	benchPushLogData(b, 100, 10, 10, 1024)
+}
+
+func Benchmark_pushLogData_10_100_100_1024(b *testing.B) {
+	benchPushLogData(b, 10, 100, 100, 1024)
+}
+
+func Benchmark_pushLogData_10_0_100_1024(b *testing.B) {
+	benchPushLogData(b, 10, 0, 100, 1024)
+}
+
+func Benchmark_pushLogData_10_100_0_1024(b *testing.B) {
+	benchPushLogData(b, 10, 100, 0, 1024)
+}
+
+func Benchmark_pushLogData_10_10_10_256(b *testing.B) {
+	benchPushLogData(b, 10, 10, 10, 256)
+}
+
+func Benchmark_pushLogData_10_10_10_1024(b *testing.B) {
+	benchPushLogData(b, 10, 10, 10, 1024)
+}
+
+func Benchmark_pushLogData_10_10_10_8K(b *testing.B) {
+	benchPushLogData(b, 10, 10, 10, 8*1024)
+}
+
+func Benchmark_pushLogData_10_10_10_1M(b *testing.B) {
+	benchPushLogData(b, 10, 10, 10, 1024*1024)
+}
+func Benchmark_pushLogData_10_1_1_1024(b *testing.B) {
+	benchPushLogData(b, 10, 1, 1, 1024)
+}
+
+func benchPushLogData(b *testing.B, numResources int, numProfiling int, numNonProfiling int, bufSize uint) {
 	c := client{
 		url: &url.URL{Scheme: "http", Host: "splunk"},
 		zippers: sync.Pool{New: func() interface{} {
@@ -860,13 +895,15 @@ func Benchmark_pushLogData(b *testing.B) {
 	}
 
 	c.client, _ = newTestClient(200, "OK", c.logger)
-	c.config.MaxContentLengthLogs = 8 * 1024
-	logs := createLogDataWithCustomLibraries(10, []string{"otel.logs", "otel.profiling"}, []int{100, 100})
+	c.config.MaxContentLengthLogs = bufSize
+	logs := createLogDataWithCustomLibraries(numResources, []string{"otel.logs", "otel.profiling"}, []int{numNonProfiling, numProfiling})
 
 	b.ResetTimer()
 
-	err := c.pushLogData(context.Background(), logs)
-	require.NoError(b, err)
+	for i := 0; i < b.N; i++ {
+		err := c.pushLogData(context.Background(), logs)
+		require.NoError(b, err)
+	}
 }
 
 func Test_pushLogData_Small_MaxContentLength(t *testing.T) {
@@ -892,7 +929,6 @@ func Test_pushLogData_Small_MaxContentLength(t *testing.T) {
 	}
 }
 
-// TODO: also include profiling data in this test
 func TestSubLogs(t *testing.T) {
 	// Creating 12 logs (2 resources x 2 libraries x 3 records)
 	logs := createLogData(2, 2, 3)
@@ -929,6 +965,25 @@ func TestSubLogs(t *testing.T) {
 
 	// The name of the sole log record should be 1_1_2.
 	assert.Equal(t, "1_1_2", got.ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).Logs().At(0).Name())
+
+	// Now see how profiling and log data are merged
+	logs = createLogDataWithCustomLibraries(2, []string{"otel.logs", "otel.profiling"}, []int{10, 10})
+	slice := &logIndex{resource: 1, library: 0, record: 5}
+	profSlice := &logIndex{resource: 0, library: 1, record: 8}
+
+	got = subLogs(&logs, slice, profSlice)
+
+	assert.Equal(t, 5+2+10, got.LogRecordCount())
+	assert.Equal(t, "otel.logs", got.ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).InstrumentationLibrary().Name())
+	assert.Equal(t, "1_0_5", got.ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).Logs().At(0).Name())
+	assert.Equal(t, "1_0_9", got.ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).Logs().At(4).Name())
+
+	assert.Equal(t, "otel.profiling", got.ResourceLogs().At(1).InstrumentationLibraryLogs().At(0).InstrumentationLibrary().Name())
+	assert.Equal(t, "0_1_8", got.ResourceLogs().At(1).InstrumentationLibraryLogs().At(0).Logs().At(0).Name())
+	assert.Equal(t, "0_1_9", got.ResourceLogs().At(1).InstrumentationLibraryLogs().At(0).Logs().At(1).Name())
+	assert.Equal(t, "otel.profiling", got.ResourceLogs().At(2).InstrumentationLibraryLogs().At(0).InstrumentationLibrary().Name())
+	assert.Equal(t, "1_1_0", got.ResourceLogs().At(2).InstrumentationLibraryLogs().At(0).Logs().At(0).Name())
+	assert.Equal(t, "1_1_9", got.ResourceLogs().At(2).InstrumentationLibraryLogs().At(0).Logs().At(9).Name())
 }
 
 // validateCompressedEqual validates that GZipped `got` contains `expected` string
