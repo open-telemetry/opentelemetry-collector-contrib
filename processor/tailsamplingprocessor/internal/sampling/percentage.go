@@ -15,15 +15,13 @@
 package sampling
 
 import (
-	"errors"
-
 	"go.opentelemetry.io/collector/model/pdata"
 	"go.uber.org/zap"
 )
 
 type percentageFilter struct {
 	logger          *zap.Logger
-	percentage      float32
+	samplingRatio   float32
 	tracesSampled   int
 	tracesProcessed int
 }
@@ -32,14 +30,17 @@ var _ PolicyEvaluator = (*percentageFilter)(nil)
 
 // NewPercentageFilter creates a policy evaluator that samples a percentage of
 // traces.
-func NewPercentageFilter(logger *zap.Logger, percentage float32) (PolicyEvaluator, error) {
-	if percentage < 0 || percentage > 1 {
-		return nil, errors.New("expected a percentage between 0 and 1")
+func NewPercentageFilter(logger *zap.Logger, samplingPercentage float32) (PolicyEvaluator, error) {
+	if samplingPercentage < 0 {
+		samplingPercentage = 0
+	}
+	if samplingPercentage > 100 {
+		samplingPercentage = 100
 	}
 
 	return &percentageFilter{
-		logger:     logger,
-		percentage: percentage,
+		logger:        logger,
+		samplingRatio: samplingPercentage / 100,
 	}, nil
 }
 
@@ -65,7 +66,7 @@ func (r *percentageFilter) Evaluate(_ pdata.TraceID, trace *TraceData) (Decision
 
 	decision := NotSampled
 
-	if float32(r.tracesSampled)/float32(r.tracesProcessed) <= r.percentage {
+	if float32(r.tracesSampled)/float32(r.tracesProcessed) <= r.samplingRatio {
 		r.tracesSampled++
 		decision = Sampled
 	}

@@ -61,7 +61,7 @@ func TestLoadConfig(t *testing.T) {
 				{
 					Name:          "test-policy-4",
 					Type:          Percentage,
-					PercentageCfg: PercentageCfg{Percentage: 0.1},
+					PercentageCfg: PercentageCfg{SamplingPercentage: 0.1},
 				},
 				{
 					Name:          "test-policy-5",

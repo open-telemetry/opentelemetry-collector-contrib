@@ -52,7 +52,7 @@ processors:
           {
             name: test-policy-4,
             type: percentage,
-            percentage: {percentage: 0.1}
+            percentage: {sampling_percentage: 10}
           },
           {
             name: test-policy-5,

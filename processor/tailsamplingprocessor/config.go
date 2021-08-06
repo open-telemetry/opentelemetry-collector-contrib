@@ -83,7 +83,7 @@ type NumericAttributeCfg struct {
 // PercentageCfg holds the configurable settings to create a percentage filter sampling
 // policy evaluator.
 type PercentageCfg struct {
-	Percentage float32 `mapstructure:"percentage"`
+	SamplingPercentage float32 `mapstructure:"sampling_percentage"`
 }
 
 // StatusCodeCfg holds the configurable settings to create a status code filter sampling

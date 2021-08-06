@@ -23,21 +23,13 @@ import (
 	"go.uber.org/zap"
 )
 
-func TestNewPercentageFilter_errorHandling(t *testing.T) {
-	_, err := NewPercentageFilter(zap.NewNop(), -1)
-	assert.EqualError(t, err, "expected a percentage between 0 and 1")
-
-	_, err = NewPercentageFilter(zap.NewNop(), 1.5)
-	assert.EqualError(t, err, "expected a percentage between 0 and 1")
-}
-
 func TestPercentageSampling(t *testing.T) {
 	var empty = map[string]pdata.AttributeValue{}
 
-	cases := []float32{0.01, 0.1, 0.125, 0.33, 0.5, 0.66}
+	cases := []float32{1, 10, 12.5, 33, 50, 66}
 
 	for _, percentage := range cases {
-		t.Run(fmt.Sprintf("sample %.2f", percentage), func(t *testing.T) {
+		t.Run(fmt.Sprintf("sample %f", percentage), func(t *testing.T) {
 			trace := newTraceStringAttrs(empty, "example", "value")
 			traceID := pdata.NewTraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16})
 
@@ -56,7 +48,7 @@ func TestPercentageSampling(t *testing.T) {
 				}
 			}
 
-			assert.InDelta(t, percentage*float32(traceCount), sampled, 0.001, "Amount of sampled traces")
+			assert.InDelta(t, (percentage/100)*float32(traceCount), sampled, 0.001, "Amount of sampled traces")
 		})
 	}
 }
@@ -67,7 +59,7 @@ func TestPercentageSampling_ignoreAlreadySampledTraces(t *testing.T) {
 	trace := newTraceStringAttrs(empty, "example", "value")
 	traceID := pdata.NewTraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16})
 
-	var percentage float32 = 0.33
+	var percentage float32 = 33
 
 	percentageFilter, err := NewPercentageFilter(zap.NewNop(), percentage)
 	assert.NoError(t, err)
@@ -91,7 +83,7 @@ func TestPercentageSampling_ignoreAlreadySampledTraces(t *testing.T) {
 		assert.Equal(t, decision, NotSampled)
 	}
 
-	assert.EqualValues(t, percentage*float32(traceCount), sampled)
+	assert.EqualValues(t, (percentage/100)*float32(traceCount), sampled)
 }
 
 func TestOnLateArrivingSpans_PercentageSampling(t *testing.T) {
