@@ -16,7 +16,7 @@ package collection
 
 import (
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
-	"go.opentelemetry.io/collector/translator/conventions"
+	conventions "go.opentelemetry.io/collector/translator/conventions/v1.5.0"
 	corev1 "k8s.io/api/core/v1"
 
 	metadata "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata"
@@ -44,10 +44,10 @@ func getResourceForReplicationController(rc *corev1.ReplicationController) *reso
 	return &resourcepb.Resource{
 		Type: k8sType,
 		Labels: map[string]string{
-			k8sKeyReplicationControllerUID:    string(rc.UID),
-			k8sKeyReplicationControllerName:   rc.Name,
-			conventions.AttributeK8sNamespace: rc.Namespace,
-			conventions.AttributeK8sCluster:   rc.ClusterName,
+			k8sKeyReplicationControllerUID:        string(rc.UID),
+			k8sKeyReplicationControllerName:       rc.Name,
+			conventions.AttributeK8SNamespaceName: rc.Namespace,
+			conventions.AttributeK8SClusterName:   rc.ClusterName,
 		},
 	}
 }

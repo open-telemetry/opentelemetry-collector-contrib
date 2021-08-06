@@ -21,7 +21,7 @@ import (
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	"github.com/iancoleman/strcase"
-	"go.opentelemetry.io/collector/translator/conventions"
+	conventions "go.opentelemetry.io/collector/translator/conventions/v1.5.0"
 	corev1 "k8s.io/api/core/v1"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testing/util"
@@ -70,9 +70,9 @@ func getResourceForNode(node *corev1.Node) *resourcepb.Resource {
 	return &resourcepb.Resource{
 		Type: k8sType,
 		Labels: map[string]string{
-			conventions.AttributeK8sNodeUID:  string(node.UID),
-			conventions.AttributeK8sNodeName: node.Name,
-			conventions.AttributeK8sCluster:  node.ClusterName,
+			conventions.AttributeK8SNodeUID:     string(node.UID),
+			conventions.AttributeK8SNodeName:    node.Name,
+			conventions.AttributeK8SClusterName: node.ClusterName,
 		},
 	}
 }
@@ -97,13 +97,13 @@ func nodeConditionValue(node *corev1.Node, condType corev1.NodeConditionType) in
 func getMetadataForNode(node *corev1.Node) map[metadataPkg.ResourceID]*KubernetesMetadata {
 	metadata := util.MergeStringMaps(map[string]string{}, node.Labels)
 
-	metadata[conventions.AttributeK8sNodeName] = node.Name
+	metadata[conventions.AttributeK8SNodeName] = node.Name
 	metadata[nodeCreationTime] = node.GetCreationTimestamp().Format(time.RFC3339)
 
 	nodeID := metadataPkg.ResourceID(node.UID)
 	return map[metadataPkg.ResourceID]*KubernetesMetadata{
 		nodeID: {
-			resourceIDKey: conventions.AttributeK8sNodeUID,
+			resourceIDKey: conventions.AttributeK8SNodeUID,
 			resourceID:    nodeID,
 			metadata:      metadata,
 		},

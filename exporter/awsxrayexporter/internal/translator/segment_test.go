@@ -24,7 +24,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/model/pdata"
-	semconventions "go.opentelemetry.io/collector/translator/conventions"
+	conventions "go.opentelemetry.io/collector/translator/conventions/v1.5.0"
 
 	awsxray "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray"
 )
@@ -47,10 +47,10 @@ func TestClientSpanWithAwsSdkClient(t *testing.T) {
 	parentSpanID := newSegmentID()
 	user := "testingT"
 	attributes := make(map[string]interface{})
-	attributes[semconventions.AttributeHTTPMethod] = "POST"
-	attributes[semconventions.AttributeHTTPScheme] = "https"
-	attributes[semconventions.AttributeHTTPHost] = "dynamodb.us-east-1.amazonaws.com"
-	attributes[semconventions.AttributeHTTPTarget] = "/"
+	attributes[conventions.AttributeHTTPMethod] = "POST"
+	attributes[conventions.AttributeHTTPScheme] = "https"
+	attributes[conventions.AttributeHTTPHost] = "dynamodb.us-east-1.amazonaws.com"
+	attributes[conventions.AttributeHTTPTarget] = "/"
 	attributes[awsxray.AWSServiceAttribute] = "DynamoDB"
 	attributes[awsxray.AWSOperationAttribute] = "GetItem"
 	attributes[awsxray.AWSRequestIDAttribute] = "18BO1FEPJSSAOGNJEDPTPCMIU7VV4KQNSO5AEMVJF66Q9ASUAAJG"
@@ -76,11 +76,11 @@ func TestClientSpanWithPeerService(t *testing.T) {
 	spanName := "AmazonDynamoDB.getItem"
 	parentSpanID := newSegmentID()
 	attributes := make(map[string]interface{})
-	attributes[semconventions.AttributeHTTPMethod] = "POST"
-	attributes[semconventions.AttributeHTTPScheme] = "https"
-	attributes[semconventions.AttributeHTTPHost] = "dynamodb.us-east-1.amazonaws.com"
-	attributes[semconventions.AttributeHTTPTarget] = "/"
-	attributes[semconventions.AttributePeerService] = "cats-table"
+	attributes[conventions.AttributeHTTPMethod] = "POST"
+	attributes[conventions.AttributeHTTPScheme] = "https"
+	attributes[conventions.AttributeHTTPHost] = "dynamodb.us-east-1.amazonaws.com"
+	attributes[conventions.AttributeHTTPTarget] = "/"
+	attributes[conventions.AttributePeerService] = "cats-table"
 	attributes[awsxray.AWSServiceAttribute] = "DynamoDB"
 	attributes[awsxray.AWSOperationAttribute] = "GetItem"
 	attributes[awsxray.AWSRequestIDAttribute] = "18BO1FEPJSSAOGNJEDPTPCMIU7VV4KQNSO5AEMVJF66Q9ASUAAJG"
@@ -99,13 +99,13 @@ func TestServerSpanWithInternalServerError(t *testing.T) {
 	userAgent := "PostmanRuntime/7.21.0"
 	enduser := "go.tester@example.com"
 	attributes := make(map[string]interface{})
-	attributes[semconventions.AttributeHTTPMethod] = "POST"
-	attributes[semconventions.AttributeHTTPURL] = "https://api.example.org/api/locations"
-	attributes[semconventions.AttributeHTTPTarget] = "/api/locations"
-	attributes[semconventions.AttributeHTTPStatusCode] = 500
-	attributes[semconventions.AttributeHTTPStatusText] = "java.lang.NullPointerException"
-	attributes[semconventions.AttributeHTTPUserAgent] = userAgent
-	attributes[semconventions.AttributeEnduserID] = enduser
+	attributes[conventions.AttributeHTTPMethod] = "POST"
+	attributes[conventions.AttributeHTTPURL] = "https://api.example.org/api/locations"
+	attributes[conventions.AttributeHTTPTarget] = "/api/locations"
+	attributes[conventions.AttributeHTTPStatusCode] = 500
+	attributes[conventions.AttributeHTTPStatusText] = "java.lang.NullPointerException"
+	attributes[conventions.AttributeHTTPUserAgent] = userAgent
+	attributes[conventions.AttributeEnduserID] = enduser
 	resource := constructDefaultResource()
 	span := constructServerSpan(parentSpanID, spanName, pdata.StatusCodeError, errorMessage, attributes)
 	timeEvents := constructTimedEventsWithSentMessageEvent(span.StartTimestamp())
@@ -126,13 +126,13 @@ func TestServerSpanWithThrottle(t *testing.T) {
 	userAgent := "PostmanRuntime/7.21.0"
 	enduser := "go.tester@example.com"
 	attributes := make(map[string]interface{})
-	attributes[semconventions.AttributeHTTPMethod] = "POST"
-	attributes[semconventions.AttributeHTTPURL] = "https://api.example.org/api/locations"
-	attributes[semconventions.AttributeHTTPTarget] = "/api/locations"
-	attributes[semconventions.AttributeHTTPStatusCode] = 429
-	attributes[semconventions.AttributeHTTPStatusText] = "java.lang.NullPointerException"
-	attributes[semconventions.AttributeHTTPUserAgent] = userAgent
-	attributes[semconventions.AttributeEnduserID] = enduser
+	attributes[conventions.AttributeHTTPMethod] = "POST"
+	attributes[conventions.AttributeHTTPURL] = "https://api.example.org/api/locations"
+	attributes[conventions.AttributeHTTPTarget] = "/api/locations"
+	attributes[conventions.AttributeHTTPStatusCode] = 429
+	attributes[conventions.AttributeHTTPStatusText] = "java.lang.NullPointerException"
+	attributes[conventions.AttributeHTTPUserAgent] = userAgent
+	attributes[conventions.AttributeEnduserID] = enduser
 	resource := constructDefaultResource()
 	span := constructServerSpan(parentSpanID, spanName, pdata.StatusCodeError, errorMessage, attributes)
 	timeEvents := constructTimedEventsWithSentMessageEvent(span.StartTimestamp())
@@ -194,13 +194,13 @@ func TestClientSpanWithDbComponent(t *testing.T) {
 	parentSpanID := newSegmentID()
 	enterpriseAppID := "25F2E73B-4769-4C79-9DF3-7EBE85D571EA"
 	attributes := make(map[string]interface{})
-	attributes[semconventions.AttributeDBSystem] = "mysql"
-	attributes[semconventions.AttributeDBName] = "customers"
-	attributes[semconventions.AttributeDBStatement] = spanName
-	attributes[semconventions.AttributeDBUser] = "userprefsvc"
-	attributes[semconventions.AttributeDBConnectionString] = "mysql://db.dev.example.com:3306"
-	attributes[semconventions.AttributeNetPeerName] = "db.dev.example.com"
-	attributes[semconventions.AttributeNetPeerPort] = "3306"
+	attributes[conventions.AttributeDBSystem] = "mysql"
+	attributes[conventions.AttributeDBName] = "customers"
+	attributes[conventions.AttributeDBStatement] = spanName
+	attributes[conventions.AttributeDBUser] = "userprefsvc"
+	attributes[conventions.AttributeDBConnectionString] = "mysql://db.dev.example.com:3306"
+	attributes[conventions.AttributeNetPeerName] = "db.dev.example.com"
+	attributes[conventions.AttributeNetPeerPort] = "3306"
 	attributes["enterprise.app.id"] = enterpriseAppID
 	resource := constructDefaultResource()
 	span := constructClientSpan(parentSpanID, spanName, pdata.StatusCodeUnset, "OK", attributes)
@@ -236,13 +236,13 @@ func TestClientSpanWithHttpHost(t *testing.T) {
 	spanName := "GET /"
 	parentSpanID := newSegmentID()
 	attributes := make(map[string]interface{})
-	attributes[semconventions.AttributeHTTPMethod] = "GET"
-	attributes[semconventions.AttributeHTTPScheme] = "https"
-	attributes[semconventions.AttributeNetPeerIP] = "2607:f8b0:4000:80c::2004"
-	attributes[semconventions.AttributeNetPeerPort] = "9443"
-	attributes[semconventions.AttributeHTTPTarget] = "/"
-	attributes[semconventions.AttributeHTTPHost] = "foo.com"
-	attributes[semconventions.AttributeNetPeerName] = "bar.com"
+	attributes[conventions.AttributeHTTPMethod] = "GET"
+	attributes[conventions.AttributeHTTPScheme] = "https"
+	attributes[conventions.AttributeNetPeerIP] = "2607:f8b0:4000:80c::2004"
+	attributes[conventions.AttributeNetPeerPort] = "9443"
+	attributes[conventions.AttributeHTTPTarget] = "/"
+	attributes[conventions.AttributeHTTPHost] = "foo.com"
+	attributes[conventions.AttributeNetPeerName] = "bar.com"
 	resource := constructDefaultResource()
 	span := constructClientSpan(parentSpanID, spanName, pdata.StatusCodeUnset, "OK", attributes)
 
@@ -256,12 +256,12 @@ func TestClientSpanWithoutHttpHost(t *testing.T) {
 	spanName := "GET /"
 	parentSpanID := newSegmentID()
 	attributes := make(map[string]interface{})
-	attributes[semconventions.AttributeHTTPMethod] = "GET"
-	attributes[semconventions.AttributeHTTPScheme] = "https"
-	attributes[semconventions.AttributeNetPeerIP] = "2607:f8b0:4000:80c::2004"
-	attributes[semconventions.AttributeNetPeerPort] = "9443"
-	attributes[semconventions.AttributeHTTPTarget] = "/"
-	attributes[semconventions.AttributeNetPeerName] = "bar.com"
+	attributes[conventions.AttributeHTTPMethod] = "GET"
+	attributes[conventions.AttributeHTTPScheme] = "https"
+	attributes[conventions.AttributeNetPeerIP] = "2607:f8b0:4000:80c::2004"
+	attributes[conventions.AttributeNetPeerPort] = "9443"
+	attributes[conventions.AttributeHTTPTarget] = "/"
+	attributes[conventions.AttributeNetPeerName] = "bar.com"
 	resource := constructDefaultResource()
 	span := constructClientSpan(parentSpanID, spanName, pdata.StatusCodeUnset, "OK", attributes)
 
@@ -275,13 +275,13 @@ func TestClientSpanWithRpcHost(t *testing.T) {
 	spanName := "GET /com.foo.AnimalService/GetCats"
 	parentSpanID := newSegmentID()
 	attributes := make(map[string]interface{})
-	attributes[semconventions.AttributeHTTPMethod] = "GET"
-	attributes[semconventions.AttributeHTTPScheme] = "https"
-	attributes[semconventions.AttributeNetPeerIP] = "2607:f8b0:4000:80c::2004"
-	attributes[semconventions.AttributeNetPeerPort] = "9443"
-	attributes[semconventions.AttributeHTTPTarget] = "/com.foo.AnimalService/GetCats"
-	attributes[semconventions.AttributeRPCService] = "com.foo.AnimalService"
-	attributes[semconventions.AttributeNetPeerName] = "bar.com"
+	attributes[conventions.AttributeHTTPMethod] = "GET"
+	attributes[conventions.AttributeHTTPScheme] = "https"
+	attributes[conventions.AttributeNetPeerIP] = "2607:f8b0:4000:80c::2004"
+	attributes[conventions.AttributeNetPeerPort] = "9443"
+	attributes[conventions.AttributeHTTPTarget] = "/com.foo.AnimalService/GetCats"
+	attributes[conventions.AttributeRPCService] = "com.foo.AnimalService"
+	attributes[conventions.AttributeNetPeerName] = "bar.com"
 	resource := constructDefaultResource()
 	span := constructClientSpan(parentSpanID, spanName, pdata.StatusCodeUnset, "OK", attributes)
 
@@ -294,11 +294,11 @@ func TestClientSpanWithRpcHost(t *testing.T) {
 func TestSpanWithInvalidTraceId(t *testing.T) {
 	spanName := "platformapi.widgets.searchWidgets"
 	attributes := make(map[string]interface{})
-	attributes[semconventions.AttributeHTTPMethod] = "GET"
-	attributes[semconventions.AttributeHTTPScheme] = "ipv6"
-	attributes[semconventions.AttributeNetPeerIP] = "2607:f8b0:4000:80c::2004"
-	attributes[semconventions.AttributeNetPeerPort] = "9443"
-	attributes[semconventions.AttributeHTTPTarget] = spanName
+	attributes[conventions.AttributeHTTPMethod] = "GET"
+	attributes[conventions.AttributeHTTPScheme] = "ipv6"
+	attributes[conventions.AttributeNetPeerIP] = "2607:f8b0:4000:80c::2004"
+	attributes[conventions.AttributeNetPeerPort] = "9443"
+	attributes[conventions.AttributeHTTPTarget] = spanName
 	resource := constructDefaultResource()
 	span := constructClientSpan(pdata.InvalidSpanID(), spanName, pdata.StatusCodeUnset, "OK", attributes)
 	timeEvents := constructTimedEventsWithSentMessageEvent(span.StartTimestamp())
@@ -505,8 +505,8 @@ func TestOriginNotAws(t *testing.T) {
 	attributes := make(map[string]interface{})
 	resource := pdata.NewResource()
 	attrs := pdata.NewAttributeMap()
-	attrs.InsertString(semconventions.AttributeCloudProvider, semconventions.AttributeCloudProviderGCP)
-	attrs.InsertString(semconventions.AttributeHostID, "instance-123")
+	attrs.InsertString(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderGCP)
+	attrs.InsertString(conventions.AttributeHostID, "instance-123")
 	attrs.CopyTo(resource.Attributes())
 	span := constructServerSpan(parentSpanID, spanName, pdata.StatusCodeError, "OK", attributes)
 
@@ -522,9 +522,9 @@ func TestOriginEc2(t *testing.T) {
 	attributes := make(map[string]interface{})
 	resource := pdata.NewResource()
 	attrs := pdata.NewAttributeMap()
-	attrs.InsertString(semconventions.AttributeCloudProvider, semconventions.AttributeCloudProviderAWS)
-	attrs.InsertString(semconventions.AttributeCloudPlatform, semconventions.AttributeCloudPlatformAWSEC2)
-	attrs.InsertString(semconventions.AttributeHostID, "instance-123")
+	attrs.InsertString(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAWS)
+	attrs.InsertString(conventions.AttributeCloudPlatform, conventions.AttributeCloudPlatformAWSEC2)
+	attrs.InsertString(conventions.AttributeHostID, "instance-123")
 	attrs.CopyTo(resource.Attributes())
 	span := constructServerSpan(parentSpanID, spanName, pdata.StatusCodeError, "OK", attributes)
 
@@ -540,10 +540,10 @@ func TestOriginEcs(t *testing.T) {
 	attributes := make(map[string]interface{})
 	resource := pdata.NewResource()
 	attrs := pdata.NewAttributeMap()
-	attrs.InsertString(semconventions.AttributeCloudProvider, semconventions.AttributeCloudProviderAWS)
-	attrs.InsertString(semconventions.AttributeCloudPlatform, semconventions.AttributeCloudPlatformAWSECS)
-	attrs.InsertString(semconventions.AttributeHostID, "instance-123")
-	attrs.InsertString(semconventions.AttributeContainerName, "container-123")
+	attrs.InsertString(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAWS)
+	attrs.InsertString(conventions.AttributeCloudPlatform, conventions.AttributeCloudPlatformAWSECS)
+	attrs.InsertString(conventions.AttributeHostID, "instance-123")
+	attrs.InsertString(conventions.AttributeContainerName, "container-123")
 	attrs.CopyTo(resource.Attributes())
 	span := constructServerSpan(parentSpanID, spanName, pdata.StatusCodeError, "OK", attributes)
 
@@ -559,11 +559,11 @@ func TestOriginEcsEc2(t *testing.T) {
 	attributes := make(map[string]interface{})
 	resource := pdata.NewResource()
 	attrs := pdata.NewAttributeMap()
-	attrs.InsertString(semconventions.AttributeCloudProvider, semconventions.AttributeCloudProviderAWS)
-	attrs.InsertString(semconventions.AttributeCloudPlatform, semconventions.AttributeCloudPlatformAWSECS)
-	attrs.InsertString(semconventions.AttributeAWSECSLaunchType, semconventions.AttributeAWSECSLaunchTypeEC2)
-	attrs.InsertString(semconventions.AttributeHostID, "instance-123")
-	attrs.InsertString(semconventions.AttributeContainerName, "container-123")
+	attrs.InsertString(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAWS)
+	attrs.InsertString(conventions.AttributeCloudPlatform, conventions.AttributeCloudPlatformAWSECS)
+	attrs.InsertString(conventions.AttributeAWSECSLaunchtype, conventions.AttributeAWSECSLaunchtypeEC2)
+	attrs.InsertString(conventions.AttributeHostID, "instance-123")
+	attrs.InsertString(conventions.AttributeContainerName, "container-123")
 	attrs.CopyTo(resource.Attributes())
 	span := constructServerSpan(parentSpanID, spanName, pdata.StatusCodeError, "OK", attributes)
 
@@ -579,11 +579,11 @@ func TestOriginEcsFargate(t *testing.T) {
 	attributes := make(map[string]interface{})
 	resource := pdata.NewResource()
 	attrs := pdata.NewAttributeMap()
-	attrs.InsertString(semconventions.AttributeCloudProvider, semconventions.AttributeCloudProviderAWS)
-	attrs.InsertString(semconventions.AttributeCloudPlatform, semconventions.AttributeCloudPlatformAWSECS)
-	attrs.InsertString(semconventions.AttributeAWSECSLaunchType, semconventions.AttributeAWSECSLaunchTypeFargate)
-	attrs.InsertString(semconventions.AttributeHostID, "instance-123")
-	attrs.InsertString(semconventions.AttributeContainerName, "container-123")
+	attrs.InsertString(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAWS)
+	attrs.InsertString(conventions.AttributeCloudPlatform, conventions.AttributeCloudPlatformAWSECS)
+	attrs.InsertString(conventions.AttributeAWSECSLaunchtype, conventions.AttributeAWSECSLaunchtypeFargate)
+	attrs.InsertString(conventions.AttributeHostID, "instance-123")
+	attrs.InsertString(conventions.AttributeContainerName, "container-123")
 	attrs.CopyTo(resource.Attributes())
 	span := constructServerSpan(parentSpanID, spanName, pdata.StatusCodeError, "OK", attributes)
 
@@ -599,11 +599,11 @@ func TestOriginEb(t *testing.T) {
 	attributes := make(map[string]interface{})
 	resource := pdata.NewResource()
 	attrs := pdata.NewAttributeMap()
-	attrs.InsertString(semconventions.AttributeCloudProvider, semconventions.AttributeCloudProviderAWS)
-	attrs.InsertString(semconventions.AttributeCloudPlatform, semconventions.AttributeCloudPlatformAWSElasticBeanstalk)
-	attrs.InsertString(semconventions.AttributeHostID, "instance-123")
-	attrs.InsertString(semconventions.AttributeContainerName, "container-123")
-	attrs.InsertString(semconventions.AttributeServiceInstance, "service-123")
+	attrs.InsertString(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAWS)
+	attrs.InsertString(conventions.AttributeCloudPlatform, conventions.AttributeCloudPlatformAWSElasticBeanstalk)
+	attrs.InsertString(conventions.AttributeHostID, "instance-123")
+	attrs.InsertString(conventions.AttributeContainerName, "container-123")
+	attrs.InsertString(conventions.AttributeServiceInstanceID, "service-123")
 	attrs.CopyTo(resource.Attributes())
 	span := constructServerSpan(parentSpanID, spanName, pdata.StatusCodeError, "OK", attributes)
 
@@ -622,20 +622,20 @@ func TestOriginEks(t *testing.T) {
 	attributes := make(map[string]interface{})
 	resource := pdata.NewResource()
 	attrs := pdata.NewAttributeMap()
-	attrs.InsertString(semconventions.AttributeCloudProvider, semconventions.AttributeCloudProviderAWS)
-	attrs.InsertString(semconventions.AttributeCloudPlatform, semconventions.AttributeCloudPlatformAWSEKS)
-	attrs.InsertString(semconventions.AttributeCloudAccount, "123456789")
-	attrs.InsertString(semconventions.AttributeCloudAvailabilityZone, "us-east-1c")
-	attrs.InsertString(semconventions.AttributeContainerImage, "otel/signupaggregator")
-	attrs.InsertString(semconventions.AttributeContainerTag, "v1")
-	attrs.InsertString(semconventions.AttributeK8sCluster, "production")
-	attrs.InsertString(semconventions.AttributeK8sNamespace, "default")
-	attrs.InsertString(semconventions.AttributeK8sDeployment, "signup_aggregator")
-	attrs.InsertString(semconventions.AttributeK8sPod, "my-deployment-65dcf7d447-ddjnl")
-	attrs.InsertString(semconventions.AttributeContainerName, containerName)
-	attrs.InsertString(semconventions.AttributeContainerID, containerID)
-	attrs.InsertString(semconventions.AttributeHostID, instanceID)
-	attrs.InsertString(semconventions.AttributeHostType, "m5.xlarge")
+	attrs.InsertString(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAWS)
+	attrs.InsertString(conventions.AttributeCloudPlatform, conventions.AttributeCloudPlatformAWSEKS)
+	attrs.InsertString(conventions.AttributeCloudAccountID, "123456789")
+	attrs.InsertString(conventions.AttributeCloudAvailabilityZone, "us-east-1c")
+	attrs.InsertString(conventions.AttributeContainerImageName, "otel/signupaggregator")
+	attrs.InsertString(conventions.AttributeContainerImageTag, "v1")
+	attrs.InsertString(conventions.AttributeK8SClusterName, "production")
+	attrs.InsertString(conventions.AttributeK8SNamespaceName, "default")
+	attrs.InsertString(conventions.AttributeK8SDeploymentName, "signup_aggregator")
+	attrs.InsertString(conventions.AttributeK8SPodName, "my-deployment-65dcf7d447-ddjnl")
+	attrs.InsertString(conventions.AttributeContainerName, containerName)
+	attrs.InsertString(conventions.AttributeContainerID, containerID)
+	attrs.InsertString(conventions.AttributeHostID, instanceID)
+	attrs.InsertString(conventions.AttributeHostType, "m5.xlarge")
 	attrs.CopyTo(resource.Attributes())
 	span := constructServerSpan(parentSpanID, spanName, pdata.StatusCodeError, "OK", attributes)
 
@@ -651,7 +651,7 @@ func TestOriginBlank(t *testing.T) {
 	attributes := make(map[string]interface{})
 	resource := pdata.NewResource()
 	attrs := pdata.NewAttributeMap()
-	attrs.InsertString(semconventions.AttributeCloudProvider, semconventions.AttributeCloudProviderAWS)
+	attrs.InsertString(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAWS)
 	attrs.CopyTo(resource.Attributes())
 	span := constructServerSpan(parentSpanID, spanName, pdata.StatusCodeError, "OK", attributes)
 
@@ -667,12 +667,12 @@ func TestOriginPrefersInfraService(t *testing.T) {
 	attributes := make(map[string]interface{})
 	resource := pdata.NewResource()
 	attrs := pdata.NewAttributeMap()
-	attrs.InsertString(semconventions.AttributeCloudProvider, semconventions.AttributeCloudProviderAWS)
-	attrs.InsertString(semconventions.AttributeCloudPlatform, semconventions.AttributeCloudPlatformAWSEC2)
-	attrs.InsertString(semconventions.AttributeK8sCluster, "cluster-123")
-	attrs.InsertString(semconventions.AttributeHostID, "instance-123")
-	attrs.InsertString(semconventions.AttributeContainerName, "container-123")
-	attrs.InsertString(semconventions.AttributeServiceInstance, "service-123")
+	attrs.InsertString(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAWS)
+	attrs.InsertString(conventions.AttributeCloudPlatform, conventions.AttributeCloudPlatformAWSEC2)
+	attrs.InsertString(conventions.AttributeK8SClusterName, "cluster-123")
+	attrs.InsertString(conventions.AttributeHostID, "instance-123")
+	attrs.InsertString(conventions.AttributeContainerName, "container-123")
+	attrs.InsertString(conventions.AttributeServiceInstanceID, "service-123")
 	attrs.CopyTo(resource.Attributes())
 	span := constructServerSpan(parentSpanID, spanName, pdata.StatusCodeError, "OK", attributes)
 
@@ -795,19 +795,19 @@ func constructSpanAttributes(attributes map[string]interface{}) pdata.AttributeM
 func constructDefaultResource() pdata.Resource {
 	resource := pdata.NewResource()
 	attrs := pdata.NewAttributeMap()
-	attrs.InsertString(semconventions.AttributeServiceName, "signup_aggregator")
-	attrs.InsertString(semconventions.AttributeServiceVersion, "semver:1.1.4")
-	attrs.InsertString(semconventions.AttributeContainerName, "signup_aggregator")
-	attrs.InsertString(semconventions.AttributeContainerImage, "otel/signupaggregator")
-	attrs.InsertString(semconventions.AttributeContainerTag, "v1")
-	attrs.InsertString(semconventions.AttributeK8sCluster, "production")
-	attrs.InsertString(semconventions.AttributeK8sNamespace, "default")
-	attrs.InsertString(semconventions.AttributeK8sDeployment, "signup_aggregator")
-	attrs.InsertString(semconventions.AttributeK8sPod, "signup_aggregator-x82ufje83")
-	attrs.InsertString(semconventions.AttributeCloudProvider, semconventions.AttributeCloudProviderAWS)
-	attrs.InsertString(semconventions.AttributeCloudAccount, "123456789")
-	attrs.InsertString(semconventions.AttributeCloudRegion, "us-east-1")
-	attrs.InsertString(semconventions.AttributeCloudAvailabilityZone, "us-east-1c")
+	attrs.InsertString(conventions.AttributeServiceName, "signup_aggregator")
+	attrs.InsertString(conventions.AttributeServiceVersion, "semver:1.1.4")
+	attrs.InsertString(conventions.AttributeContainerName, "signup_aggregator")
+	attrs.InsertString(conventions.AttributeContainerImageName, "otel/signupaggregator")
+	attrs.InsertString(conventions.AttributeContainerImageTag, "v1")
+	attrs.InsertString(conventions.AttributeK8SClusterName, "production")
+	attrs.InsertString(conventions.AttributeK8SNamespaceName, "default")
+	attrs.InsertString(conventions.AttributeK8SDeploymentName, "signup_aggregator")
+	attrs.InsertString(conventions.AttributeK8SPodName, "signup_aggregator-x82ufje83")
+	attrs.InsertString(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAWS)
+	attrs.InsertString(conventions.AttributeCloudAccountID, "123456789")
+	attrs.InsertString(conventions.AttributeCloudRegion, "us-east-1")
+	attrs.InsertString(conventions.AttributeCloudAvailabilityZone, "us-east-1c")
 	attrs.InsertString(resourceStringKey, "string")
 	attrs.InsertInt(resourceIntKey, 10)
 	attrs.InsertDouble(resourceDoubleKey, 5.0)
@@ -830,10 +830,10 @@ func constructDefaultResource() pdata.Resource {
 
 func constructTimedEventsWithReceivedMessageEvent(tm pdata.Timestamp) pdata.SpanEventSlice {
 	eventAttr := pdata.NewAttributeMap()
-	eventAttr.InsertString(semconventions.AttributeMessageType, "RECEIVED")
-	eventAttr.InsertInt(semconventions.AttributeMessageID, 1)
-	eventAttr.InsertInt(semconventions.AttributeMessageCompressedSize, 6478)
-	eventAttr.InsertInt(semconventions.AttributeMessageUncompressedSize, 12452)
+	eventAttr.InsertString(conventions.AttributeMessageType, "RECEIVED")
+	eventAttr.InsertInt(conventions.AttributeMessagingMessageID, 1)
+	eventAttr.InsertInt(conventions.AttributeMessagingMessagePayloadCompressedSizeBytes, 6478)
+	eventAttr.InsertInt(conventions.AttributeMessagingMessagePayloadSizeBytes, 12452)
 
 	event := pdata.NewSpanEvent()
 	event.SetTimestamp(tm)
@@ -847,9 +847,9 @@ func constructTimedEventsWithReceivedMessageEvent(tm pdata.Timestamp) pdata.Span
 
 func constructTimedEventsWithSentMessageEvent(tm pdata.Timestamp) pdata.SpanEventSlice {
 	eventAttr := pdata.NewAttributeMap()
-	eventAttr.InsertString(semconventions.AttributeMessageType, "SENT")
-	eventAttr.InsertInt(semconventions.AttributeMessageID, 1)
-	eventAttr.InsertInt(semconventions.AttributeMessageUncompressedSize, 7480)
+	eventAttr.InsertString(conventions.AttributeMessageType, "SENT")
+	eventAttr.InsertInt(conventions.AttributeMessagingMessageID, 1)
+	eventAttr.InsertInt(conventions.AttributeMessagingMessagePayloadSizeBytes, 7480)
 
 	event := pdata.NewSpanEvent()
 	event.SetTimestamp(tm)

@@ -18,7 +18,7 @@ import (
 	"strings"
 
 	"go.opentelemetry.io/collector/model/pdata"
-	"go.opentelemetry.io/collector/translator/conventions"
+	conventions "go.opentelemetry.io/collector/translator/conventions/v1.5.0"
 )
 
 func containerResource(cm ContainerMetadata) pdata.Resource {
@@ -26,9 +26,9 @@ func containerResource(cm ContainerMetadata) pdata.Resource {
 	resource.Attributes().UpsertString(conventions.AttributeContainerName, cm.ContainerName)
 	resource.Attributes().UpsertString(conventions.AttributeContainerID, cm.DockerID)
 	resource.Attributes().UpsertString(attributeECSDockerName, cm.DockerName)
-	resource.Attributes().UpsertString(conventions.AttributeContainerImage, cm.Image)
+	resource.Attributes().UpsertString(conventions.AttributeContainerImageName, cm.Image)
 	resource.Attributes().UpsertString(attributeContainerImageID, cm.ImageID)
-	resource.Attributes().UpsertString(conventions.AttributeContainerTag, getVersionFromIamge(cm.Image))
+	resource.Attributes().UpsertString(conventions.AttributeContainerImageTag, getVersionFromIamge(cm.Image))
 	resource.Attributes().UpsertString(attributeContainerCreatedAt, cm.CreatedAt)
 	resource.Attributes().UpsertString(attributeContainerStartedAt, cm.StartedAt)
 	if cm.FinishedAt != "" {
@@ -57,7 +57,7 @@ func taskResource(tm TaskMetadata) pdata.Resource {
 	resource.Attributes().UpsertString(attributeECSTaskKnownStatus, tm.KnownStatus)
 	resource.Attributes().UpsertString(attributeECSTaskLaunchType, tm.LaunchType)
 	resource.Attributes().UpsertString(conventions.AttributeCloudRegion, region)
-	resource.Attributes().UpsertString(conventions.AttributeCloudAccount, accountID)
+	resource.Attributes().UpsertString(conventions.AttributeCloudAccountID, accountID)
 
 	return resource
 }

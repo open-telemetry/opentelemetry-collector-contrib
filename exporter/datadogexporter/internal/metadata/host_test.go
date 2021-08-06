@@ -20,7 +20,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/translator/conventions"
+	conventions "go.opentelemetry.io/collector/translator/conventions/v1.5.0"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/config"
@@ -75,12 +75,12 @@ const (
 func TestHostnameFromAttributes(t *testing.T) {
 	// Custom hostname
 	attrs := testutils.NewAttributeMap(map[string]string{
-		AttributeDatadogHostname:         testCustomName,
-		AttributeK8sNodeName:             testNodeName,
-		conventions.AttributeK8sCluster:  testClusterName,
-		conventions.AttributeContainerID: testContainerID,
-		conventions.AttributeHostID:      testHostID,
-		conventions.AttributeHostName:    testHostName,
+		AttributeDatadogHostname:            testCustomName,
+		AttributeK8sNodeName:                testNodeName,
+		conventions.AttributeK8SClusterName: testClusterName,
+		conventions.AttributeContainerID:    testContainerID,
+		conventions.AttributeHostID:         testHostID,
+		conventions.AttributeHostName:       testHostName,
 	})
 	hostname, ok := HostnameFromAttributes(attrs)
 	assert.True(t, ok)
@@ -143,7 +143,7 @@ func TestHostnameFromAttributes(t *testing.T) {
 func TestGetClusterName(t *testing.T) {
 	// OpenTelemetry convention
 	attrs := testutils.NewAttributeMap(map[string]string{
-		conventions.AttributeK8sCluster: testClusterName,
+		conventions.AttributeK8SClusterName: testClusterName,
 	})
 	cluster, ok := getClusterName(attrs)
 	assert.True(t, ok)
@@ -176,11 +176,11 @@ func TestGetClusterName(t *testing.T) {
 func TestHostnameKubernetes(t *testing.T) {
 	// Node name and cluster name
 	attrs := testutils.NewAttributeMap(map[string]string{
-		AttributeK8sNodeName:             testNodeName,
-		conventions.AttributeK8sCluster:  testClusterName,
-		conventions.AttributeContainerID: testContainerID,
-		conventions.AttributeHostID:      testHostID,
-		conventions.AttributeHostName:    testHostName,
+		AttributeK8sNodeName:                testNodeName,
+		conventions.AttributeK8SClusterName: testClusterName,
+		conventions.AttributeContainerID:    testContainerID,
+		conventions.AttributeHostID:         testHostID,
+		conventions.AttributeHostName:       testHostName,
 	})
 	hostname, ok := HostnameFromAttributes(attrs)
 	assert.True(t, ok)
@@ -199,10 +199,10 @@ func TestHostnameKubernetes(t *testing.T) {
 
 	// no node name, cluster name
 	attrs = testutils.NewAttributeMap(map[string]string{
-		conventions.AttributeK8sCluster:  testClusterName,
-		conventions.AttributeContainerID: testContainerID,
-		conventions.AttributeHostID:      testHostID,
-		conventions.AttributeHostName:    testHostName,
+		conventions.AttributeK8SClusterName: testClusterName,
+		conventions.AttributeContainerID:    testContainerID,
+		conventions.AttributeHostID:         testHostID,
+		conventions.AttributeHostName:       testHostName,
 	})
 	hostname, ok = HostnameFromAttributes(attrs)
 	assert.True(t, ok)

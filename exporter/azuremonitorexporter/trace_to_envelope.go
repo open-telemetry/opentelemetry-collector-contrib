@@ -24,7 +24,7 @@ import (
 
 	"github.com/microsoft/ApplicationInsights-Go/appinsights/contracts"
 	"go.opentelemetry.io/collector/model/pdata"
-	"go.opentelemetry.io/collector/translator/conventions"
+	conventions "go.opentelemetry.io/collector/translator/conventions/v1.5.0"
 	"go.uber.org/zap"
 )
 
@@ -142,7 +142,7 @@ func spanToEnvelope(
 		envelope.Tags[contracts.CloudRole] = cloudRole
 	}
 
-	if serviceInstance, exists := resourceAttributes.Get(conventions.AttributeServiceInstance); exists {
+	if serviceInstance, exists := resourceAttributes.Get(conventions.AttributeServiceInstanceID); exists {
 		envelope.Tags[contracts.CloudRoleInstance] = serviceInstance.StringVal()
 	}
 
