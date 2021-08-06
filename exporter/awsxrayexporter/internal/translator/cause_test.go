@@ -21,7 +21,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/model/pdata"
-	semconventions "go.opentelemetry.io/collector/translator/conventions"
+	conventions "go.opentelemetry.io/collector/translator/conventions/v1.5.0"
 )
 
 func TestCauseWithExceptions(t *testing.T) {
@@ -32,11 +32,11 @@ func TestCauseWithExceptions(t *testing.T) {
 	span.Status().SetMessage(errorMsg)
 
 	event1 := span.Events().AppendEmpty()
-	event1.SetName(semconventions.AttributeExceptionEventName)
+	event1.SetName(ExceptionEventName)
 	attributes := pdata.NewAttributeMap()
-	attributes.InsertString(semconventions.AttributeExceptionType, "java.lang.IllegalStateException")
-	attributes.InsertString(semconventions.AttributeExceptionMessage, "bad state")
-	attributes.InsertString(semconventions.AttributeExceptionStacktrace, `java.lang.IllegalStateException: state is not legal
+	attributes.InsertString(conventions.AttributeExceptionType, "java.lang.IllegalStateException")
+	attributes.InsertString(conventions.AttributeExceptionMessage, "bad state")
+	attributes.InsertString(conventions.AttributeExceptionStacktrace, `java.lang.IllegalStateException: state is not legal
 	at io.opentelemetry.sdk.trace.RecordEventsReadableSpanTest.recordException(RecordEventsReadableSpanTest.java:626)
 	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
 	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
@@ -44,15 +44,15 @@ Caused by: java.lang.IllegalArgumentException: bad argument`)
 	attributes.CopyTo(event1.Attributes())
 
 	event2 := span.Events().AppendEmpty()
-	event2.SetName(semconventions.AttributeExceptionEventName)
+	event2.SetName(ExceptionEventName)
 	attributes = pdata.NewAttributeMap()
-	attributes.InsertString(semconventions.AttributeExceptionType, "EmptyError")
+	attributes.InsertString(conventions.AttributeExceptionType, "EmptyError")
 	attributes.CopyTo(event2.Attributes())
 
 	filtered, _ := makeHTTP(span)
 
 	res := pdata.NewResource()
-	res.Attributes().InsertString(semconventions.AttributeTelemetrySDKLanguage, "java")
+	res.Attributes().InsertString(conventions.AttributeTelemetrySDKLanguage, "java")
 	isError, isFault, isThrottle, filteredResult, cause := makeCause(span, filtered, res)
 
 	assert.True(t, isFault)
@@ -75,9 +75,9 @@ Caused by: java.lang.IllegalArgumentException: bad argument`)
 func TestCauseWithStatusMessage(t *testing.T) {
 	errorMsg := "this is a test"
 	attributes := make(map[string]interface{})
-	attributes[semconventions.AttributeHTTPMethod] = "POST"
-	attributes[semconventions.AttributeHTTPURL] = "https://api.example.com/widgets"
-	attributes[semconventions.AttributeHTTPStatusCode] = 500
+	attributes[conventions.AttributeHTTPMethod] = "POST"
+	attributes[conventions.AttributeHTTPURL] = "https://api.example.com/widgets"
+	attributes[conventions.AttributeHTTPStatusCode] = 500
 	span := constructExceptionServerSpan(attributes, pdata.StatusCodeError)
 	span.Status().SetMessage(errorMsg)
 	filtered, _ := makeHTTP(span)
@@ -102,10 +102,10 @@ func TestCauseWithStatusMessage(t *testing.T) {
 func TestCauseWithHttpStatusMessage(t *testing.T) {
 	errorMsg := "this is a test"
 	attributes := make(map[string]interface{})
-	attributes[semconventions.AttributeHTTPMethod] = "POST"
-	attributes[semconventions.AttributeHTTPURL] = "https://api.example.com/widgets"
-	attributes[semconventions.AttributeHTTPStatusCode] = 500
-	attributes[semconventions.AttributeHTTPStatusText] = errorMsg
+	attributes[conventions.AttributeHTTPMethod] = "POST"
+	attributes[conventions.AttributeHTTPURL] = "https://api.example.com/widgets"
+	attributes[conventions.AttributeHTTPStatusCode] = 500
+	attributes[conventions.AttributeHTTPStatusText] = errorMsg
 	span := constructExceptionServerSpan(attributes, pdata.StatusCodeError)
 	filtered, _ := makeHTTP(span)
 
@@ -129,10 +129,10 @@ func TestCauseWithHttpStatusMessage(t *testing.T) {
 func TestCauseWithZeroStatusMessage(t *testing.T) {
 	errorMsg := "this is a test"
 	attributes := make(map[string]interface{})
-	attributes[semconventions.AttributeHTTPMethod] = "POST"
-	attributes[semconventions.AttributeHTTPURL] = "https://api.example.com/widgets"
-	attributes[semconventions.AttributeHTTPStatusCode] = 500
-	attributes[semconventions.AttributeHTTPStatusText] = errorMsg
+	attributes[conventions.AttributeHTTPMethod] = "POST"
+	attributes[conventions.AttributeHTTPURL] = "https://api.example.com/widgets"
+	attributes[conventions.AttributeHTTPStatusCode] = 500
+	attributes[conventions.AttributeHTTPStatusText] = errorMsg
 
 	span := constructExceptionServerSpan(attributes, pdata.StatusCodeUnset)
 	filtered, _ := makeHTTP(span)
@@ -153,10 +153,10 @@ func TestCauseWithZeroStatusMessage(t *testing.T) {
 func TestCauseWithClientErrorMessage(t *testing.T) {
 	errorMsg := "this is a test"
 	attributes := make(map[string]interface{})
-	attributes[semconventions.AttributeHTTPMethod] = "POST"
-	attributes[semconventions.AttributeHTTPURL] = "https://api.example.com/widgets"
-	attributes[semconventions.AttributeHTTPStatusCode] = 499
-	attributes[semconventions.AttributeHTTPStatusText] = errorMsg
+	attributes[conventions.AttributeHTTPMethod] = "POST"
+	attributes[conventions.AttributeHTTPURL] = "https://api.example.com/widgets"
+	attributes[conventions.AttributeHTTPStatusCode] = 499
+	attributes[conventions.AttributeHTTPStatusText] = errorMsg
 
 	span := constructExceptionServerSpan(attributes, pdata.StatusCodeError)
 	filtered, _ := makeHTTP(span)
@@ -174,10 +174,10 @@ func TestCauseWithClientErrorMessage(t *testing.T) {
 func TestCauseWithThrottled(t *testing.T) {
 	errorMsg := "this is a test"
 	attributes := make(map[string]interface{})
-	attributes[semconventions.AttributeHTTPMethod] = "POST"
-	attributes[semconventions.AttributeHTTPURL] = "https://api.example.com/widgets"
-	attributes[semconventions.AttributeHTTPStatusCode] = 429
-	attributes[semconventions.AttributeHTTPStatusText] = errorMsg
+	attributes[conventions.AttributeHTTPMethod] = "POST"
+	attributes[conventions.AttributeHTTPURL] = "https://api.example.com/widgets"
+	attributes[conventions.AttributeHTTPStatusCode] = 429
+	attributes[conventions.AttributeHTTPStatusText] = errorMsg
 
 	span := constructExceptionServerSpan(attributes, pdata.StatusCodeError)
 	filtered, _ := makeHTTP(span)

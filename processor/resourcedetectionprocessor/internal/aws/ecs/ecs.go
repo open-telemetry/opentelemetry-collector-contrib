@@ -24,7 +24,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/model/pdata"
-	"go.opentelemetry.io/collector/translator/conventions"
+	conventions "go.opentelemetry.io/collector/translator/conventions/v1.5.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
 )
@@ -74,7 +74,7 @@ func (d *Detector) Detect(context.Context) (pdata.Resource, error) {
 
 	region, account := parseRegionAndAccount(tmdeResp.TaskARN)
 	if account != "" {
-		attr.InsertString(conventions.AttributeCloudAccount, account)
+		attr.InsertString(conventions.AttributeCloudAccountID, account)
 	}
 
 	if region != "" {
@@ -92,10 +92,10 @@ func (d *Detector) Detect(context.Context) (pdata.Resource, error) {
 	// The launch type and log data attributes are only available in TMDE v4
 	switch lt := strings.ToLower(tmdeResp.LaunchType); lt {
 	case "ec2":
-		attr.InsertString(conventions.AttributeAWSECSLaunchType, "ec2")
+		attr.InsertString(conventions.AttributeAWSECSLaunchtype, "ec2")
 
 	case "fargate":
-		attr.InsertString(conventions.AttributeAWSECSLaunchType, "fargate")
+		attr.InsertString(conventions.AttributeAWSECSLaunchtype, "fargate")
 	}
 
 	selfMetaData, err := d.provider.fetchContainerMetaData(tmde)

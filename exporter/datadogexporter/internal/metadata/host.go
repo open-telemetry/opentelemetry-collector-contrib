@@ -16,7 +16,7 @@ package metadata
 
 import (
 	"go.opentelemetry.io/collector/model/pdata"
-	"go.opentelemetry.io/collector/translator/conventions"
+	conventions "go.opentelemetry.io/collector/translator/conventions/v1.5.0"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/config"
@@ -70,7 +70,7 @@ func GetHost(logger *zap.Logger, cfg *config.Config) string {
 }
 
 func getClusterName(attrs pdata.AttributeMap) (string, bool) {
-	if k8sClusterName, ok := attrs.Get(conventions.AttributeK8sCluster); ok {
+	if k8sClusterName, ok := attrs.Get(conventions.AttributeK8SClusterName); ok {
 		return k8sClusterName.StringVal(), true
 	}
 

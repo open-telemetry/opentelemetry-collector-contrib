@@ -17,7 +17,7 @@ import (
 	"fmt"
 
 	"go.opentelemetry.io/collector/model/pdata"
-	"go.opentelemetry.io/collector/translator/conventions"
+	conventions "go.opentelemetry.io/collector/translator/conventions/v1.5.0"
 )
 
 type HostInfo struct {
@@ -55,7 +55,7 @@ func HostInfoFromAttributes(attrs pdata.AttributeMap) (hostInfo *HostInfo) {
 		hostInfo.GCPTags = append(hostInfo.GCPTags, fmt.Sprintf("instance-type:%s", hostType.StringVal()))
 	}
 
-	if cloudAccount, ok := attrs.Get(conventions.AttributeCloudAccount); ok {
+	if cloudAccount, ok := attrs.Get(conventions.AttributeCloudAccountID); ok {
 		hostInfo.GCPTags = append(hostInfo.GCPTags, fmt.Sprintf("project:%s", cloudAccount.StringVal()))
 	}
 

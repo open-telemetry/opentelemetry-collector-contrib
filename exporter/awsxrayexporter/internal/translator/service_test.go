@@ -20,7 +20,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/model/pdata"
-	semconventions "go.opentelemetry.io/collector/translator/conventions"
+	conventions "go.opentelemetry.io/collector/translator/conventions/v1.5.0"
 )
 
 func TestServiceFromResource(t *testing.T) {
@@ -40,7 +40,7 @@ func TestServiceFromResource(t *testing.T) {
 
 func TestServiceFromResourceWithNoServiceVersion(t *testing.T) {
 	resource := constructDefaultResource()
-	resource.Attributes().Delete(semconventions.AttributeServiceVersion)
+	resource.Attributes().Delete(conventions.AttributeServiceVersion)
 	service := makeService(resource)
 
 	assert.NotNil(t, service)

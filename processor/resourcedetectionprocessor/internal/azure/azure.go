@@ -19,7 +19,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/model/pdata"
-	"go.opentelemetry.io/collector/translator/conventions"
+	conventions "go.opentelemetry.io/collector/translator/conventions/v1.5.0"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
@@ -63,7 +63,7 @@ func (d *Detector) Detect(ctx context.Context) (pdata.Resource, error) {
 	attrs.InsertString(conventions.AttributeHostName, compute.Name)
 	attrs.InsertString(conventions.AttributeCloudRegion, compute.Location)
 	attrs.InsertString(conventions.AttributeHostID, compute.VMID)
-	attrs.InsertString(conventions.AttributeCloudAccount, compute.SubscriptionID)
+	attrs.InsertString(conventions.AttributeCloudAccountID, compute.SubscriptionID)
 	attrs.InsertString("azure.vm.size", compute.VMSize)
 	attrs.InsertString("azure.vm.scaleset.name", compute.VMScaleSetName)
 	attrs.InsertString("azure.resourcegroup.name", compute.ResourceGroupName)

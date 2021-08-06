@@ -29,7 +29,7 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/model/pdata"
-	"go.opentelemetry.io/collector/translator/conventions"
+	conventions "go.opentelemetry.io/collector/translator/conventions/v1.5.0"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
@@ -323,7 +323,7 @@ func TestProcessorNoAttrs(t *testing.T) {
 		t,
 		NewFactory().CreateDefaultConfig(),
 		nil,
-		WithExtractMetadata(conventions.AttributeK8sPod),
+		WithExtractMetadata(conventions.AttributeK8SPodName),
 	)
 
 	ctx := client.NewContext(context.Background(), &client.Client{IP: "1.1.1.1"})
@@ -701,7 +701,7 @@ func TestMetricsProcessorHostname(t *testing.T) {
 	p, err := newMetricsProcessor(
 		NewFactory().CreateDefaultConfig(),
 		next,
-		WithExtractMetadata(conventions.AttributeK8sPod),
+		WithExtractMetadata(conventions.AttributeK8SPodName),
 		withExtractKubernetesProcessorInto(&kp),
 	)
 	require.NoError(t, err)
@@ -771,7 +771,7 @@ func TestMetricsProcessorHostnameWithPodAssociation(t *testing.T) {
 	p, err := newMetricsProcessor(
 		NewFactory().CreateDefaultConfig(),
 		next,
-		WithExtractMetadata(conventions.AttributeK8sPod),
+		WithExtractMetadata(conventions.AttributeK8SPodName),
 		withExtractKubernetesProcessorInto(&kp),
 	)
 	require.NoError(t, err)
