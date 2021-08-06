@@ -18,7 +18,7 @@ import (
 	"fmt"
 
 	"go.opentelemetry.io/collector/model/pdata"
-	"go.opentelemetry.io/collector/translator/conventions"
+	conventions "go.opentelemetry.io/collector/translator/conventions/v1.5.0"
 )
 
 var (
@@ -45,13 +45,13 @@ var (
 
 		// Kubernetes resource name (via semantic conventions)
 		// https://github.com/DataDog/datadog-agent/blob/e081bed/pkg/util/kubernetes/const.go
-		conventions.AttributeK8sPod:         "pod_name",
-		conventions.AttributeK8sDeployment:  "kube_deployment",
-		conventions.AttributeK8sReplicaSet:  "kube_replica_set",
-		conventions.AttributeK8sStatefulSet: "kube_stateful_set",
-		conventions.AttributeK8sDaemonSet:   "kube_daemon_set",
-		conventions.AttributeK8sJob:         "kube_job",
-		conventions.AttributeK8sCronJob:     "kube_cronjob",
+		conventions.AttributeK8SPodName:         "pod_name",
+		conventions.AttributeK8SDeploymentName:  "kube_deployment",
+		conventions.AttributeK8SReplicasetName:  "kube_replica_set",
+		conventions.AttributeK8SStatefulsetName: "kube_stateful_set",
+		conventions.AttributeK8SDaemonsetName:   "kube_daemon_set",
+		conventions.AttributeK8SJobName:         "kube_job",
+		conventions.AttributeK8SCronJobName:     "kube_cronjob",
 	}
 
 	// Kubernetes mappings defines the mapping between Kubernetes conventions (both general and Datadog specific)
@@ -93,7 +93,7 @@ func TagsFromAttributes(attrs pdata.AttributeMap) []string {
 			processAttributes.Command = value.StringVal()
 		case conventions.AttributeProcessCommandLine:
 			processAttributes.CommandLine = value.StringVal()
-		case conventions.AttributeProcessID:
+		case conventions.AttributeProcessPID:
 			processAttributes.PID = value.IntVal()
 		case conventions.AttributeProcessOwner:
 			processAttributes.Owner = value.StringVal()

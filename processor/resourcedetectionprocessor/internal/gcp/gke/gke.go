@@ -20,7 +20,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/model/pdata"
-	"go.opentelemetry.io/collector/translator/conventions"
+	conventions "go.opentelemetry.io/collector/translator/conventions/v1.5.0"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
@@ -66,12 +66,12 @@ func (gke *Detector) Detect(ctx context.Context) (pdata.Resource, error) {
 		return res, nil
 	}
 
-	attr.InsertString(conventions.AttributeCloudPlatform, conventions.AttributeCloudPlatformGCPGKE)
+	attr.InsertString(conventions.AttributeCloudPlatform, conventions.AttributeCloudPlatformGCPKubernetesEngine)
 
 	if clusterName, err := gke.metadata.InstanceAttributeValue(clusterNameAttribute); err != nil {
 		gke.log.Warn("Unable to determine GKE cluster name", zap.Error(err))
 	} else if clusterName != "" {
-		attr.InsertString(conventions.AttributeK8sCluster, clusterName)
+		attr.InsertString(conventions.AttributeK8SClusterName, clusterName)
 	}
 
 	return res, nil

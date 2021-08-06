@@ -19,7 +19,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/model/pdata"
-	"go.opentelemetry.io/collector/translator/conventions"
+	conventions "go.opentelemetry.io/collector/translator/conventions/v1.5.0"
 )
 
 var (
@@ -27,7 +27,7 @@ var (
 		res := pdata.NewResource()
 		attr := res.Attributes()
 		attr.InsertString(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAWS)
-		attr.InsertString(conventions.AttributeCloudAccount, "1234")
+		attr.InsertString(conventions.AttributeCloudAccountID, "1234")
 		attr.InsertString(conventions.AttributeCloudRegion, "us-west-2")
 		attr.InsertString(conventions.AttributeHostID, "i-abcd")
 		return res
@@ -36,7 +36,7 @@ var (
 		res := pdata.NewResource()
 		attr := res.Attributes()
 		attr.InsertString(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAWS)
-		attr.InsertString(conventions.AttributeCloudAccount, "1234")
+		attr.InsertString(conventions.AttributeCloudAccountID, "1234")
 		attr.InsertString(conventions.AttributeCloudRegion, "us-west-2")
 		attr.InsertString(conventions.AttributeHostID, "i-abcd")
 		attr.InsertString(conventions.AttributeHostName, "localhost")
@@ -53,7 +53,7 @@ var (
 		res := pdata.NewResource()
 		attr := res.Attributes()
 		attr.InsertString(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderGCP)
-		attr.InsertString(conventions.AttributeCloudAccount, "1234")
+		attr.InsertString(conventions.AttributeCloudAccountID, "1234")
 		attr.InsertString(conventions.AttributeHostID, "i-abcd")
 		return res
 	}()
@@ -61,7 +61,7 @@ var (
 		res := pdata.NewResource()
 		attr := res.Attributes()
 		attr.InsertString(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderGCP)
-		attr.InsertString(conventions.AttributeCloudAccount, "1234")
+		attr.InsertString(conventions.AttributeCloudAccountID, "1234")
 		return res
 	}()
 	azureResource = func() pdata.Resource {
@@ -72,7 +72,7 @@ var (
 		attrs.InsertString(conventions.AttributeHostName, "myHostName")
 		attrs.InsertString(conventions.AttributeCloudRegion, "myCloudRegion")
 		attrs.InsertString(conventions.AttributeHostID, "myHostID")
-		attrs.InsertString(conventions.AttributeCloudAccount, "myCloudAccount")
+		attrs.InsertString(conventions.AttributeCloudAccountID, "myCloudAccount")
 		attrs.InsertString("azure.vm.size", "42")
 		attrs.InsertString("azure.resourcegroup.name", "myResourcegroupName")
 		return res
@@ -85,7 +85,7 @@ var (
 		attrs.InsertString(conventions.AttributeHostName, "myVMScalesetName_1")
 		attrs.InsertString(conventions.AttributeCloudRegion, "myCloudRegion")
 		attrs.InsertString(conventions.AttributeHostID, "myHostID")
-		attrs.InsertString(conventions.AttributeCloudAccount, "myCloudAccount")
+		attrs.InsertString(conventions.AttributeCloudAccountID, "myCloudAccount")
 		attrs.InsertString("azure.vm.size", "42")
 		attrs.InsertString("azure.vm.scaleset.name", "myVMScalesetName")
 		attrs.InsertString("azure.resourcegroup.name", "myResourcegroupName")
@@ -109,7 +109,7 @@ var (
 		attrs.InsertString(conventions.AttributeCloudPlatform, conventions.AttributeCloudPlatformAzureVM)
 		attrs.InsertString(conventions.AttributeCloudRegion, "myCloudRegion")
 		attrs.InsertString(conventions.AttributeHostID, "myHostID")
-		attrs.InsertString(conventions.AttributeCloudAccount, "myCloudAccount")
+		attrs.InsertString(conventions.AttributeCloudAccountID, "myCloudAccount")
 		attrs.InsertString("azure.vm.size", "42")
 		return res
 	}()
@@ -120,7 +120,7 @@ var (
 		attrs.InsertString(conventions.AttributeCloudPlatform, conventions.AttributeCloudPlatformAzureVM)
 		attrs.InsertString(conventions.AttributeCloudRegion, "myCloudRegion")
 		attrs.InsertString(conventions.AttributeHostID, "myHostID")
-		attrs.InsertString(conventions.AttributeCloudAccount, "myCloudAccount")
+		attrs.InsertString(conventions.AttributeCloudAccountID, "myCloudAccount")
 		attrs.InsertString("azure.resourcegroup.name", "myResourcegroupName")
 		attrs.InsertString("azure.vm.size", "42")
 		return res
@@ -135,7 +135,7 @@ var (
 		res := pdata.NewResource()
 		attr := res.Attributes()
 		attr.InsertString(conventions.AttributeCloudProvider, "unknown")
-		attr.InsertString(conventions.AttributeCloudAccount, "1234")
+		attr.InsertString(conventions.AttributeCloudAccountID, "1234")
 		attr.InsertString(conventions.AttributeHostID, "i-abcd")
 		return res
 	}()

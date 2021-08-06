@@ -17,7 +17,7 @@ package attributes
 import (
 	"fmt"
 
-	"go.opentelemetry.io/collector/translator/conventions"
+	conventions "go.opentelemetry.io/collector/translator/conventions/v1.5.0"
 )
 
 type processAttributes struct {

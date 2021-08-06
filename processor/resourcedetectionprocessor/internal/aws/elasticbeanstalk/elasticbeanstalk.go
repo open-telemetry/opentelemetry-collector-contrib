@@ -22,7 +22,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/model/pdata"
-	"go.opentelemetry.io/collector/translator/conventions"
+	conventions "go.opentelemetry.io/collector/translator/conventions/v1.5.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
 )
@@ -80,7 +80,7 @@ func (d Detector) Detect(context.Context) (pdata.Resource, error) {
 	attr := res.Attributes()
 	attr.InsertString(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAWS)
 	attr.InsertString(conventions.AttributeCloudPlatform, conventions.AttributeCloudPlatformAWSElasticBeanstalk)
-	attr.InsertString(conventions.AttributeServiceInstance, strconv.Itoa(ebmd.DeploymentID))
+	attr.InsertString(conventions.AttributeServiceInstanceID, strconv.Itoa(ebmd.DeploymentID))
 	attr.InsertString(conventions.AttributeDeploymentEnvironment, ebmd.EnvironmentName)
 	attr.InsertString(conventions.AttributeServiceVersion, ebmd.VersionLabel)
 	return res, nil

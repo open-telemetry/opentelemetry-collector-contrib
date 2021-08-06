@@ -22,7 +22,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/translator/conventions"
+	conventions "go.opentelemetry.io/collector/translator/conventions/v1.5.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/gcp"
@@ -52,7 +52,7 @@ func TestDetectTrue(t *testing.T) {
 	expected := internal.NewResource(map[string]interface{}{
 		conventions.AttributeCloudProvider:         conventions.AttributeCloudProviderGCP,
 		conventions.AttributeCloudPlatform:         conventions.AttributeCloudPlatformGCPComputeEngine,
-		conventions.AttributeCloudAccount:          "1",
+		conventions.AttributeCloudAccountID:        "1",
 		conventions.AttributeCloudAvailabilityZone: "zone",
 
 		conventions.AttributeHostID:   "2",

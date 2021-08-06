@@ -19,7 +19,7 @@ import (
 
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
-	"go.opentelemetry.io/collector/translator/conventions"
+	conventions "go.opentelemetry.io/collector/translator/conventions/v1.5.0"
 	corev1 "k8s.io/api/core/v1"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testing/util"
@@ -147,8 +147,8 @@ func getAllContainerLabels(cs corev1.ContainerStatus,
 	out := util.CloneStringMap(dims)
 
 	out[conventions.AttributeContainerID] = utils.StripContainerID(cs.ContainerID)
-	out[conventions.AttributeK8sContainer] = cs.Name
-	out[conventions.AttributeContainerImage] = cs.Image
+	out[conventions.AttributeK8SContainerName] = cs.Name
+	out[conventions.AttributeContainerImageName] = cs.Image
 
 	return out
 }
