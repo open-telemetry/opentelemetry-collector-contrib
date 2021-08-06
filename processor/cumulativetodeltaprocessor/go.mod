@@ -3,7 +3,6 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/processor/cumul
 go 1.17
 
 require (
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/metrics v0.36.0
 	github.com/stretchr/testify v1.7.0
 	go.opentelemetry.io/collector v0.36.1-0.20210923171211-10f543a9a43f
 	go.opentelemetry.io/collector/model v0.36.1-0.20210923171211-10f543a9a43f
@@ -40,5 +39,3 @@ require (
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b // indirect
 )
-
-replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/metrics => ./../../internal/aws/metrics
