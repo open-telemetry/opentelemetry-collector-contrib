@@ -15,9 +15,9 @@
 package cumulativetodeltaprocessor
 
 import (
-	"fmt"
 	"path"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -26,72 +26,45 @@ import (
 	"go.opentelemetry.io/collector/config/configtest"
 )
 
+const configFile = "config.yaml"
+
 func TestLoadingFullConfig(t *testing.T) {
+
+	factories, err := componenttest.NopFactories()
+	assert.NoError(t, err)
+
+	factory := NewFactory()
+	factories.Processors[typeStr] = factory
+	cfg, err := configtest.LoadConfigAndValidate(path.Join(".", "testdata", configFile), factories)
+	assert.NoError(t, err)
+	require.NotNil(t, cfg)
+
 	tests := []struct {
-		configFile string
-		expCfg     *Config
+		expCfg *Config
 	}{
 		{
-			configFile: "config_full.yaml",
 			expCfg: &Config{
-				ProcessorSettings: config.NewProcessorSettings(config.NewID(typeStr)),
+				ProcessorSettings: config.NewProcessorSettings(config.NewIDWithName(typeStr, "alt")),
 				Metrics: []string{
 					"metric1",
 					"metric2",
 				},
+				MaxStale:      10 * time.Second,
+				MonotonicOnly: false,
+			},
+		},
+		{
+			expCfg: &Config{
+				ProcessorSettings: config.NewProcessorSettings(config.NewID(typeStr)),
+				MonotonicOnly:     true,
 			},
 		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.expCfg.ID().String(), func(t *testing.T) {
-			factories, err := componenttest.NopFactories()
-			assert.NoError(t, err)
-
-			factory := NewFactory()
-			factories.Processors[typeStr] = factory
-			config, err := configtest.LoadConfigAndValidate(path.Join(".", "testdata", test.configFile), factories)
-			assert.NoError(t, err)
-			require.NotNil(t, config)
-
-			cfg := config.Processors[test.expCfg.ID()]
+			cfg := cfg.Processors[test.expCfg.ID()]
 			assert.Equal(t, test.expCfg, cfg)
 		})
-	}
-}
-
-func TestValidateConfig(t *testing.T) {
-	tests := []struct {
-		configName   string
-		succeed      bool
-		errorMessage string
-	}{
-		{
-			configName: "config_full.yaml",
-			succeed:    true,
-		},
-		{
-			configName:   "config_missing_name.yaml",
-			succeed:      false,
-			errorMessage: "metric names are missing",
-		},
-	}
-
-	for _, test := range tests {
-		factories, err := componenttest.NopFactories()
-		assert.NoError(t, err)
-
-		factory := NewFactory()
-		factories.Processors[typeStr] = factory
-		t.Run(test.configName, func(t *testing.T) {
-			config, err := configtest.LoadConfigAndValidate(path.Join(".", "testdata", test.configName), factories)
-			if test.succeed {
-				assert.NotNil(t, config)
-				assert.NoError(t, err)
-			} else {
-				assert.EqualError(t, err, fmt.Sprintf("processor %q has invalid configuration: %s", typeStr, test.errorMessage))
-			}
-		})
-
 	}
 }

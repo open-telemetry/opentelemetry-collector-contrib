@@ -38,6 +38,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 	cfg := factory.CreateDefaultConfig()
 	assert.Equal(t, cfg, &Config{
 		ProcessorSettings: config.NewProcessorSettings(config.NewID(typeStr)),
+		MonotonicOnly:     true,
 	})
 	assert.NoError(t, configtest.CheckConfigStruct(cfg))
 }
@@ -49,7 +50,7 @@ func TestCreateProcessors(t *testing.T) {
 		errorMessage string
 	}{
 		{
-			configName: "config_full.yaml",
+			configName: "config.yaml",
 			succeed:    true,
 		},
 	}

@@ -15,7 +15,7 @@
 package cumulativetodeltaprocessor
 
 import (
-	"fmt"
+	"time"
 
 	"go.opentelemetry.io/collector/config"
 )
@@ -24,15 +24,19 @@ import (
 type Config struct {
 	config.ProcessorSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
 
-	// List of cumulative sum metrics to convert to delta
+	// List of cumulative metrics to convert to delta. Default: converts all cumulative metrics to delta.
 	Metrics []string `mapstructure:"metrics"`
+
+	// The total time a state entry will live past the time it was last seen. Set to 0 to retain state indefinitely.
+	MaxStale time.Duration `mapstructure:"max_stale"`
+
+	// Set to false in order to convert non monotonic metrics
+	MonotonicOnly bool `mapstructure:"monotonic_only"`
 }
 
-// Validate checks whether the input configuration has all of the required fields for the processor.
-// An error is returned if there are any invalid inputs.
-func (config *Config) Validate() error {
-	if len(config.Metrics) == 0 {
-		return fmt.Errorf("metric names are missing")
-	}
+var _ config.Processor = (*Config)(nil)
+
+// Validate checks if the processor configuration is valid
+func (cfg *Config) Validate() error {
 	return nil
 }
