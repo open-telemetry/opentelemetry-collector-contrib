@@ -60,8 +60,6 @@ func newTestClientWithPresetResponses(codes []int, bodies []string, logger *zap.
 			body := bodies[index%len(bodies)]
 			index++
 
-			logger.Info("HTTP exchange:", zap.Any("header", req.Header), zap.Any("code", code))
-
 			headers = append(headers, req.Header)
 
 			return &http.Response{
@@ -831,25 +829,44 @@ func Test_pushLogData_ShouldAddHeadersForProfilingData(t *testing.T) {
 	var headers *[]http.Header
 
 	c.client, headers = newTestClient(200, "OK", c.logger)
-	c.config.MaxContentLengthLogs, c.config.DisableCompression = 250, true
+	// A 300-byte buffer only fits one record (around 200 bytes), so each record will be sent separately
+	c.config.MaxContentLengthLogs, c.config.DisableCompression = 300, true
 
 	err := c.pushLogData(context.Background(), logs)
 	require.NoError(t, err)
-
-	c.logger.Info("HEADERS:", zap.Any("headers", headers))
 	assert.Equal(t, 30, len(*headers))
 
-	// First, all the events except the last are flushed. The last event of each type stays in the overflow buffer
-	for i := 0; i < 9; i++ {
-		assert.NotContains(t, (*headers)[i], libraryHeaderName)
-	}
-	for i := 9; i < 28; i++ {
-		assert.Contains(t, (*headers)[i], libraryHeaderName)
+	profilingCount, nonProfilingCount := 0, 0
+	for i := range *headers {
+		if (*headers)[i].Get(libraryHeaderName) == profilingLibraryName {
+			profilingCount++
+		} else {
+			nonProfilingCount++
+		}
 	}
 
-	// The last two overflown events come together at the end
-	assert.NotContains(t, (*headers)[28], libraryHeaderName)
-	assert.Contains(t, (*headers)[29], libraryHeaderName)
+	assert.Equal(t, 20, profilingCount)
+	assert.Equal(t, 10, nonProfilingCount)
+}
+
+func Benchmark_pushLogData(b *testing.B) {
+	c := client{
+		url: &url.URL{Scheme: "http", Host: "splunk"},
+		zippers: sync.Pool{New: func() interface{} {
+			return gzip.NewWriter(nil)
+		}},
+		config: NewFactory().CreateDefaultConfig().(*Config),
+		logger: zaptest.NewLogger(b),
+	}
+
+	c.client, _ = newTestClient(200, "OK", c.logger)
+	c.config.MaxContentLengthLogs = 8 * 1024
+	logs := createLogDataWithCustomLibraries(10, []string{"otel.logs", "otel.profiling"}, []int{100, 100})
+
+	b.ResetTimer()
+
+	err := c.pushLogData(context.Background(), logs)
+	require.NoError(b, err)
 }
 
 func Test_pushLogData_Small_MaxContentLength(t *testing.T) {
