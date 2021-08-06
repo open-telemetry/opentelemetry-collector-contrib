@@ -15,7 +15,6 @@
 package sampling
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -24,22 +23,72 @@ import (
 )
 
 func TestPercentageSampling(t *testing.T) {
-	var empty = map[string]pdata.AttributeValue{}
+	tests := []struct {
+		name                       string
+		samplingPercentage         float32
+		includedAlreadySampled     bool // if set 50% of the traces will have a Sampled decision
+		expectedSamplingPercentage float32
+		total                      int
+	}{
+		{
+			"sampling percentage 100",
+			100,
+			false,
+			100,
+			2000,
+		},
+		{
+			"sampling percentage 0",
+			0,
+			false,
+			0,
+			2000,
+		},
+		{
+			"sampling percentage 33",
+			33,
+			false,
+			33,
+			2000,
+		},
+		{
+			"sampling percentage -50",
+			-50,
+			false,
+			0,
+			2000,
+		},
+		{
+			"sampling percentage 150",
+			150,
+			false,
+			100,
+			2000,
+		},
+		{
+			"sampling percentage 50 with already sampled traces",
+			50,
+			true,
+			25,
+			2000,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var empty = map[string]pdata.AttributeValue{}
 
-	cases := []float32{1, 10, 12.5, 33, 50, 66}
-
-	for _, percentage := range cases {
-		t.Run(fmt.Sprintf("sample %f", percentage), func(t *testing.T) {
-			trace := newTraceStringAttrs(empty, "example", "value")
-			traceID := pdata.NewTraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16})
-
-			percentageFilter, err := NewPercentageFilter(zap.NewNop(), percentage)
+			percentageFilter, err := NewPercentageFilter(zap.NewNop(), tt.samplingPercentage)
 			assert.NoError(t, err)
 
-			traceCount := 2000
 			sampled := 0
+			for i := 0; i < tt.total; i++ {
+				trace := newTraceStringAttrs(empty, "example", "value")
+				if tt.includedAlreadySampled && i%2 == 0 {
+					trace.Decisions = []Decision{Sampled}
+				}
 
-			for i := 0; i < traceCount; i++ {
+				traceID := pdata.NewTraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16})
+
 				decision, err := percentageFilter.Evaluate(traceID, trace)
 				assert.NoError(t, err)
 
@@ -48,42 +97,9 @@ func TestPercentageSampling(t *testing.T) {
 				}
 			}
 
-			assert.InDelta(t, (percentage/100)*float32(traceCount), sampled, 0.001, "Amount of sampled traces")
+			assert.InDelta(t, tt.expectedSamplingPercentage/100, float32(sampled)/float32(tt.total), 0.01)
 		})
 	}
-}
-
-func TestPercentageSampling_ignoreAlreadySampledTraces(t *testing.T) {
-	var empty = map[string]pdata.AttributeValue{}
-
-	trace := newTraceStringAttrs(empty, "example", "value")
-	traceID := pdata.NewTraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16})
-
-	var percentage float32 = 33
-
-	percentageFilter, err := NewPercentageFilter(zap.NewNop(), percentage)
-	assert.NoError(t, err)
-
-	traceCount := 100
-	sampled := 0
-
-	for i := 0; i < traceCount; i++ {
-		trace.Decisions = []Decision{NotSampled, NotSampled}
-		decision, err := percentageFilter.Evaluate(traceID, trace)
-		assert.NoError(t, err)
-
-		if decision == Sampled {
-			sampled++
-		}
-
-		// trace has been sampled, should be ignored
-		trace.Decisions = []Decision{NotSampled, Sampled}
-		decision, err = percentageFilter.Evaluate(traceID, trace)
-		assert.NoError(t, err)
-		assert.Equal(t, decision, NotSampled)
-	}
-
-	assert.EqualValues(t, (percentage/100)*float32(traceCount), sampled)
 }
 
 func TestOnLateArrivingSpans_PercentageSampling(t *testing.T) {
