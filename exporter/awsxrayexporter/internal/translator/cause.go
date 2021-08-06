@@ -161,6 +161,7 @@ func parseException(exceptionType string, message string, stacktrace string, lan
 	case "dotnet":
 		exceptions = fillDotnetStacktrace(stacktrace, exceptions)
 	case "php":
+		// The PHP SDK formats stack traces exactly like Java would
 		exceptions = fillJavaStacktrace(stacktrace, exceptions)
 	}
 
