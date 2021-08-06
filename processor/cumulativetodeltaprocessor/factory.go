@@ -47,7 +47,7 @@ func createDefaultConfig() config.Processor {
 }
 
 func createMetricsProcessor(
-	ctx context.Context,
+	_ context.Context,
 	params component.ProcessorCreateSettings,
 	cfg config.Processor,
 	nextConsumer consumer.Metrics,
@@ -57,7 +57,6 @@ func createMetricsProcessor(
 		return nil, fmt.Errorf("configuration parsing error")
 	}
 
-	processorConfig.Validate()
 	metricsProcessor := newCumulativeToDeltaProcessor(processorConfig, params.Logger)
 
 	return processorhelper.NewMetricsProcessor(
