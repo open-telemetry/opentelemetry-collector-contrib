@@ -27,62 +27,69 @@ func TestProbabilisticSampling(t *testing.T) {
 		name                       string
 		samplingPercentage         float32
 		includeAlreadySampled      bool
-		withSampledTraces          bool // if set 50% of the traces will have a Sampled decision
+		ratioThatIsAlreadySampled  int // 1 in x traces have a sampled decision
 		expectedSamplingPercentage float32
 	}{
 		{
-			"sampling percentage 100",
+			"100%",
 			100,
 			false,
-			false,
+			0,
 			100,
 		},
 		{
-			"sampling percentage 0",
+			"0%",
 			0,
 			false,
-			false,
+			0,
 			0,
 		},
 		{
-			"sampling percentage 33",
+			"33%",
 			33,
 			false,
-			false,
+			0,
 			33,
 		},
 		{
-			"sampling percentage -50",
+			"-%50",
 			-50,
 			false,
-			false,
+			0,
 			0,
 		},
 		{
-			"sampling percentage 150",
+			"150%",
 			150,
 			false,
-			false,
+			0,
 			100,
 		},
 		{
-			"sampling percentage 10 with already sampled traces included",
+			"25% - 10% already sampled, not included",
+			25,
+			false,
 			10,
-			true,
-			true,
-			50, // no new traces should be sampled
+			10 + (25 * 0.9), // = 10% already sampled + 25% of the remaining 90%
 		},
 		{
-			"sampling percentage 10 with already sampled traces not included",
-			10,
-			false,
+			"25% - 10% already sampled, included",
+			25,
 			true,
-			55, // 10% of remaining traces should be sampled
+			10,
+			25,
+		},
+		{
+			"5% - 10% already sampled, included",
+			5,
+			true,
+			10,
+			10,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			traceCount := 200
+			traceCount := 10_000
 
 			var emptyAttrs = map[string]pdata.AttributeValue{}
 
@@ -91,7 +98,7 @@ func TestProbabilisticSampling(t *testing.T) {
 			sampled := 0
 			for i := 0; i < traceCount; i++ {
 				trace := newTraceStringAttrs(emptyAttrs, "example", "value")
-				if tt.withSampledTraces && i%2 == 0 {
+				if tt.ratioThatIsAlreadySampled != 0 && i%tt.ratioThatIsAlreadySampled == 0 {
 					trace.Decisions = []Decision{Sampled}
 				}
 
