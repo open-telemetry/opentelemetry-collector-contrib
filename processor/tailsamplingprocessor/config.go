@@ -83,7 +83,12 @@ type NumericAttributeCfg struct {
 // ProbabilisticCfg holds the configurable settings to create a probabilistic
 // sampling policy evaluator.
 type ProbabilisticCfg struct {
+	// Percentage of traces to sample.
 	SamplingPercentage float32 `mapstructure:"sampling_percentage"`
+	// Whether to include traces sampled by earlier policies in the processing chain towards the
+	// overall sampling percentage. If not set, this policy samples a percentage of traces that
+	// have not been sampled yet. If set, this policy samples traces up to the desired percentage.
+	IncludeAlreadySampled bool `mapstructure:"include_already_sampled"`
 }
 
 // StatusCodeCfg holds the configurable settings to create a status code filter sampling

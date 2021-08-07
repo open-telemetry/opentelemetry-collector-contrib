@@ -26,12 +26,14 @@ func TestProbabilisticSampling(t *testing.T) {
 	tests := []struct {
 		name                       string
 		samplingPercentage         float32
-		includedAlreadySampled     bool // if set 50% of the traces will have a Sampled decision
+		includeAlreadySampled      bool
+		withSampledTraces          bool // if set 50% of the traces will have a Sampled decision
 		expectedSamplingPercentage float32
 	}{
 		{
 			"sampling percentage 100",
 			100,
+			false,
 			false,
 			100,
 		},
@@ -39,11 +41,13 @@ func TestProbabilisticSampling(t *testing.T) {
 			"sampling percentage 0",
 			0,
 			false,
+			false,
 			0,
 		},
 		{
 			"sampling percentage 33",
 			33,
+			false,
 			false,
 			33,
 		},
@@ -51,19 +55,29 @@ func TestProbabilisticSampling(t *testing.T) {
 			"sampling percentage -50",
 			-50,
 			false,
+			false,
 			0,
 		},
 		{
 			"sampling percentage 150",
 			150,
 			false,
+			false,
 			100,
 		},
 		{
-			"sampling percentage 50 with already sampled traces",
-			50,
+			"sampling percentage 10 with already sampled traces included",
+			10,
 			true,
-			25,
+			true,
+			50, // no new traces should be sampled
+		},
+		{
+			"sampling percentage 10 with already sampled traces not included",
+			10,
+			false,
+			true,
+			55, // 10% of remaining traces should be sampled
 		},
 	}
 	for _, tt := range tests {
@@ -72,12 +86,12 @@ func TestProbabilisticSampling(t *testing.T) {
 
 			var emptyAttrs = map[string]pdata.AttributeValue{}
 
-			probabilisticSampler := NewProbabilisticSampler(zap.NewNop(), tt.samplingPercentage)
+			probabilisticSampler := NewProbabilisticSampler(zap.NewNop(), tt.samplingPercentage, tt.includeAlreadySampled)
 
 			sampled := 0
 			for i := 0; i < traceCount; i++ {
 				trace := newTraceStringAttrs(emptyAttrs, "example", "value")
-				if tt.includedAlreadySampled && i%2 == 0 {
+				if tt.withSampledTraces && i%2 == 0 {
 					trace.Decisions = []Decision{Sampled}
 				}
 
@@ -97,7 +111,7 @@ func TestProbabilisticSampling(t *testing.T) {
 }
 
 func TestOnLateArrivingSpans_PercentageSampling(t *testing.T) {
-	probabilisticSampler := NewProbabilisticSampler(zap.NewNop(), 10)
+	probabilisticSampler := NewProbabilisticSampler(zap.NewNop(), 10, false)
 
 	err := probabilisticSampler.OnLateArrivingSpans(NotSampled, nil)
 	assert.Nil(t, err)

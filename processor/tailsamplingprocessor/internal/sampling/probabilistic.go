@@ -20,8 +20,10 @@ import (
 )
 
 type probabilisticSampler struct {
-	logger          *zap.Logger
-	samplingRatio   float32
+	logger                *zap.Logger
+	samplingRatio         float32
+	includeAlreadySampled bool
+
 	tracesSampled   int
 	tracesProcessed int
 }
@@ -30,7 +32,7 @@ var _ PolicyEvaluator = (*probabilisticSampler)(nil)
 
 // NewProbabilisticSampler creates a policy evaluator that samples a percentage of
 // traces.
-func NewProbabilisticSampler(logger *zap.Logger, samplingPercentage float32) PolicyEvaluator {
+func NewProbabilisticSampler(logger *zap.Logger, samplingPercentage float32, includeAlreadySampled bool) PolicyEvaluator {
 	if samplingPercentage < 0 {
 		samplingPercentage = 0
 	}
@@ -39,8 +41,9 @@ func NewProbabilisticSampler(logger *zap.Logger, samplingPercentage float32) Pol
 	}
 
 	return &probabilisticSampler{
-		logger:        logger,
-		samplingRatio: samplingPercentage / 100,
+		logger:                logger,
+		samplingRatio:         samplingPercentage / 100,
+		includeAlreadySampled: includeAlreadySampled,
 	}
 }
 
@@ -57,11 +60,12 @@ func (s *probabilisticSampler) OnLateArrivingSpans(Decision, []*pdata.Span) erro
 func (s *probabilisticSampler) Evaluate(_ pdata.TraceID, trace *TraceData) (Decision, error) {
 	s.logger.Debug("Evaluating spans in probabilistic filter")
 
-	// ignore traces that have already been sampled before
-	for _, decision := range trace.Decisions {
-		if decision == Sampled {
-			return NotSampled, nil
+	if hasSampledDecision(trace) {
+		if s.includeAlreadySampled {
+			s.tracesSampled++
+			s.tracesProcessed++
 		}
+		return Sampled, nil
 	}
 
 	decision := NotSampled
@@ -79,4 +83,13 @@ func (s *probabilisticSampler) Evaluate(_ pdata.TraceID, trace *TraceData) (Deci
 	}
 
 	return decision, nil
+}
+
+func hasSampledDecision(trace *TraceData) bool {
+	for _, decision := range trace.Decisions {
+		if decision == Sampled {
+			return true
+		}
+	}
+	return false
 }
