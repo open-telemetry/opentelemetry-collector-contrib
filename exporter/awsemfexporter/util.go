@@ -22,6 +22,7 @@ import (
 
 	"go.opentelemetry.io/collector/model/pdata"
 	conventions "go.opentelemetry.io/collector/translator/conventions/v1.5.0"
+	tracetranslator "go.opentelemetry.io/collector/translator/trace"
 	"go.uber.org/zap"
 )
 
@@ -29,38 +30,42 @@ var patternKeyToAttributeMap = map[string]string{
 	"ClusterName":          "aws.ecs.cluster.name",
 	"TaskId":               "aws.ecs.task.id",
 	"NodeName":             "k8s.node.name",
+	"PodName":              "pod",
 	"ContainerInstanceId":  "aws.ecs.container.instance.id",
 	"TaskDefinitionFamily": "aws.ecs.task.family",
 }
 
-func replacePatterns(s string, attrMap pdata.AttributeMap, logger *zap.Logger) string {
+func replacePatterns(s string, attrMap map[string]string, logger *zap.Logger) (string, bool) {
+	success := true
+	foundAndReplaced := true
 	for key := range patternKeyToAttributeMap {
-		s = replacePatternWithResource(s, key, attrMap, logger)
+		s, foundAndReplaced = replacePatternWithAttrValue(s, key, attrMap, logger)
+		success = success && foundAndReplaced
 	}
-	return s
+	return s, success
 }
 
-func replacePatternWithResource(s, patternKey string, attrMap pdata.AttributeMap, logger *zap.Logger) string {
+func replacePatternWithAttrValue(s, patternKey string, attrMap map[string]string, logger *zap.Logger) (string, bool) {
 	pattern := "{" + patternKey + "}"
 	if strings.Contains(s, pattern) {
-		if value, ok := attrMap.Get(patternKey); ok {
+		if value, ok := attrMap[patternKey]; ok {
 			return replace(s, pattern, value, logger)
-		} else if value, ok := attrMap.Get(patternKeyToAttributeMap[patternKey]); ok {
+		} else if value, ok := attrMap[patternKeyToAttributeMap[patternKey]]; ok {
 			return replace(s, pattern, value, logger)
 		} else {
 			logger.Debug("No resource attribute found for pattern " + pattern)
-			return strings.Replace(s, pattern, "undefined", -1)
+			return strings.Replace(s, pattern, "undefined", -1), false
 		}
 	}
-	return s
+	return s, true
 }
 
-func replace(s, pattern string, value pdata.AttributeValue, logger *zap.Logger) string {
-	if value.StringVal() == "" {
+func replace(s, pattern string, value string, logger *zap.Logger) (string, bool) {
+	if value == "" {
 		logger.Debug("Empty resource attribute value found for pattern " + pattern)
-		return strings.Replace(s, pattern, "undefined", -1)
+		return strings.Replace(s, pattern, "undefined", -1), false
 	}
-	return strings.Replace(s, pattern, value.StringVal(), -1)
+	return strings.Replace(s, pattern, value, -1), true
 }
 
 // getNamespace retrieves namespace for given set of metrics from user config.
@@ -84,20 +89,24 @@ func getNamespace(rm *pdata.ResourceMetrics, namespace string) string {
 }
 
 // getLogInfo retrieves the log group and log stream names from a given set of metrics.
-func getLogInfo(rm *pdata.ResourceMetrics, cWNamespace string, config *Config) (logGroup, logStream string) {
+func getLogInfo(rm *pdata.ResourceMetrics, cWNamespace string, config *Config) (string, string, bool) {
+	var logGroup, logStream string
+	groupReplaced := true
+	streamReplaced := true
+
 	if cWNamespace != "" {
 		logGroup = fmt.Sprintf("/metrics/%s", cWNamespace)
 	}
 
 	// Override log group/stream if specified in config. However, in this case, customer won't have correlation experience
 	if len(config.LogGroupName) > 0 {
-		logGroup = replacePatterns(config.LogGroupName, rm.Resource().Attributes(), config.logger)
+		logGroup, groupReplaced = replacePatterns(config.LogGroupName, attrMaptoStringMap(rm.Resource().Attributes()), config.logger)
 	}
 	if len(config.LogStreamName) > 0 {
-		logStream = replacePatterns(config.LogStreamName, rm.Resource().Attributes(), config.logger)
+		logStream, streamReplaced = replacePatterns(config.LogStreamName, attrMaptoStringMap(rm.Resource().Attributes()), config.logger)
 	}
 
-	return
+	return logGroup, logStream, (groupReplaced && streamReplaced)
 }
 
 // dedupDimensions removes duplicated dimension sets from the given dimensions.
@@ -155,4 +164,15 @@ func dimensionRollup(dimensionRollupOption string, labels map[string]string) [][
 // unixNanoToMilliseconds converts a timestamp in nanoseconds to milliseconds.
 func unixNanoToMilliseconds(timestamp pdata.Timestamp) int64 {
 	return int64(uint64(timestamp) / uint64(time.Millisecond))
+}
+
+// attrMaptoStringMap converts a pdata.AttributeMap to a map[string]string
+func attrMaptoStringMap(attrMap pdata.AttributeMap) map[string]string {
+	strMap := make(map[string]string, attrMap.Len())
+
+	attrMap.Range(func(k string, v pdata.AttributeValue) bool {
+		strMap[k] = tracetranslator.AttributeValueToString(v)
+		return true
+	})
+	return strMap
 }
