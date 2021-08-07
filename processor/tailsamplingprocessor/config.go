@@ -31,8 +31,8 @@ const (
 	// NumericAttribute sample traces that have a given numeric attribute in a specified
 	// range, e.g.: attribute "http.status_code" >= 399 and <= 999.
 	NumericAttribute PolicyType = "numeric_attribute"
-	// Percentage samples a given percentage of traces.
-	Percentage PolicyType = "percentage"
+	// Probabilistic samples a given percentage of traces.
+	Probabilistic PolicyType = "probabilistic"
 	// StatusCode sample traces that have a given status code.
 	StatusCode PolicyType = "status_code"
 	// StringAttribute sample traces that a attribute, of type string, matching
@@ -52,8 +52,8 @@ type PolicyCfg struct {
 	LatencyCfg LatencyCfg `mapstructure:"latency"`
 	// Configs for numeric attribute filter sampling policy evaluator.
 	NumericAttributeCfg NumericAttributeCfg `mapstructure:"numeric_attribute"`
-	// Configs for percentage filter sampling policy evaluator.
-	PercentageCfg PercentageCfg `mapstructure:"percentage"`
+	// Configs for probabilistic sampling policy evaluator.
+	ProbabilisticCfg ProbabilisticCfg `mapstructure:"probabilistic"`
 	// Configs for status code filter sampling policy evaluator.
 	StatusCodeCfg StatusCodeCfg `mapstructure:"status_code"`
 	// Configs for string attribute filter sampling policy evaluator.
@@ -80,9 +80,9 @@ type NumericAttributeCfg struct {
 	MaxValue int64 `mapstructure:"max_value"`
 }
 
-// PercentageCfg holds the configurable settings to create a percentage filter sampling
-// policy evaluator.
-type PercentageCfg struct {
+// ProbabilisticCfg holds the configurable settings to create a probabilistic
+// sampling policy evaluator.
+type ProbabilisticCfg struct {
 	SamplingPercentage float32 `mapstructure:"sampling_percentage"`
 }
 

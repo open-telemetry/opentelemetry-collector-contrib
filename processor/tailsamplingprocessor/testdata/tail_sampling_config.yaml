@@ -27,8 +27,8 @@ processors:
           },
           {
             name: test-policy-4,
-            type: percentage,
-            percentage: {sampling_percentage: 0.1}
+            type: probabilistic,
+            probabilistic: {sampling_percentage: 0.1}
           },
           {
             name: test-policy-5,

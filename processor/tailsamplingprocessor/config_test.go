@@ -59,9 +59,9 @@ func TestLoadConfig(t *testing.T) {
 					NumericAttributeCfg: NumericAttributeCfg{Key: "key1", MinValue: 50, MaxValue: 100},
 				},
 				{
-					Name:          "test-policy-4",
-					Type:          Percentage,
-					PercentageCfg: PercentageCfg{SamplingPercentage: 0.1},
+					Name:             "test-policy-4",
+					Type:             Probabilistic,
+					ProbabilisticCfg: ProbabilisticCfg{SamplingPercentage: 0.1},
 				},
 				{
 					Name:          "test-policy-5",

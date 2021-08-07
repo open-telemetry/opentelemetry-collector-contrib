@@ -19,18 +19,18 @@ import (
 	"go.uber.org/zap"
 )
 
-type percentageFilter struct {
+type probabilisticSampler struct {
 	logger          *zap.Logger
 	samplingRatio   float32
 	tracesSampled   int
 	tracesProcessed int
 }
 
-var _ PolicyEvaluator = (*percentageFilter)(nil)
+var _ PolicyEvaluator = (*probabilisticSampler)(nil)
 
-// NewPercentageFilter creates a policy evaluator that samples a percentage of
+// NewProbabilisticSampler creates a policy evaluator that samples a percentage of
 // traces.
-func NewPercentageFilter(logger *zap.Logger, samplingPercentage float32) (PolicyEvaluator, error) {
+func NewProbabilisticSampler(logger *zap.Logger, samplingPercentage float32) PolicyEvaluator {
 	if samplingPercentage < 0 {
 		samplingPercentage = 0
 	}
@@ -38,24 +38,24 @@ func NewPercentageFilter(logger *zap.Logger, samplingPercentage float32) (Policy
 		samplingPercentage = 100
 	}
 
-	return &percentageFilter{
+	return &probabilisticSampler{
 		logger:        logger,
 		samplingRatio: samplingPercentage / 100,
-	}, nil
+	}
 }
 
 // OnLateArrivingSpans notifies the evaluator that the given list of spans arrived
 // after the sampling decision was already taken for the trace.
 // This gives the evaluator a chance to log any message/metrics and/or update any
 // related internal state.
-func (r *percentageFilter) OnLateArrivingSpans(Decision, []*pdata.Span) error {
-	r.logger.Debug("Triggering action for late arriving spans in percentage filter")
+func (s *probabilisticSampler) OnLateArrivingSpans(Decision, []*pdata.Span) error {
+	s.logger.Debug("Triggering action for late arriving spans in probabilistic filter")
 	return nil
 }
 
 // Evaluate looks at the trace data and returns a corresponding SamplingDecision.
-func (r *percentageFilter) Evaluate(_ pdata.TraceID, trace *TraceData) (Decision, error) {
-	r.logger.Debug("Evaluating spans in percentage filter")
+func (s *probabilisticSampler) Evaluate(_ pdata.TraceID, trace *TraceData) (Decision, error) {
+	s.logger.Debug("Evaluating spans in probabilistic filter")
 
 	// ignore traces that have already been sampled before
 	for _, decision := range trace.Decisions {
@@ -66,16 +66,16 @@ func (r *percentageFilter) Evaluate(_ pdata.TraceID, trace *TraceData) (Decision
 
 	decision := NotSampled
 
-	if float32(r.tracesSampled)/float32(r.tracesProcessed) <= r.samplingRatio {
-		r.tracesSampled++
+	if float32(s.tracesSampled)/float32(s.tracesProcessed) <= s.samplingRatio {
+		s.tracesSampled++
 		decision = Sampled
 	}
-	r.tracesProcessed++
+	s.tracesProcessed++
 
 	// reset counters to avoid overflow
-	if r.tracesProcessed == 1000 {
-		r.tracesSampled = 0
-		r.tracesProcessed = 0
+	if s.tracesProcessed == 1000 {
+		s.tracesSampled = 0
+		s.tracesProcessed = 0
 	}
 
 	return decision, nil

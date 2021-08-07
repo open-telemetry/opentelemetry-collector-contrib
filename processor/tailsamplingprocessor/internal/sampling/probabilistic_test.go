@@ -22,74 +22,68 @@ import (
 	"go.uber.org/zap"
 )
 
-func TestPercentageSampling(t *testing.T) {
+func TestProbabilisticSampling(t *testing.T) {
 	tests := []struct {
 		name                       string
 		samplingPercentage         float32
 		includedAlreadySampled     bool // if set 50% of the traces will have a Sampled decision
 		expectedSamplingPercentage float32
-		total                      int
 	}{
 		{
 			"sampling percentage 100",
 			100,
 			false,
 			100,
-			2000,
 		},
 		{
 			"sampling percentage 0",
 			0,
 			false,
 			0,
-			2000,
 		},
 		{
 			"sampling percentage 33",
 			33,
 			false,
 			33,
-			2000,
 		},
 		{
 			"sampling percentage -50",
 			-50,
 			false,
 			0,
-			2000,
 		},
 		{
 			"sampling percentage 150",
 			150,
 			false,
 			100,
-			2000,
 		},
 		{
 			"sampling percentage 50 with already sampled traces",
 			50,
 			true,
 			25,
-			2000,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			var empty = map[string]pdata.AttributeValue{}
+			traceCount := 200
 
-			percentageFilter, err := NewPercentageFilter(zap.NewNop(), tt.samplingPercentage)
-			assert.NoError(t, err)
+			var emptyAttrs = map[string]pdata.AttributeValue{}
+
+			probabilisticSampler := NewProbabilisticSampler(zap.NewNop(), tt.samplingPercentage)
 
 			sampled := 0
-			for i := 0; i < tt.total; i++ {
-				trace := newTraceStringAttrs(empty, "example", "value")
+			for i := 0; i < traceCount; i++ {
+				trace := newTraceStringAttrs(emptyAttrs, "example", "value")
 				if tt.includedAlreadySampled && i%2 == 0 {
 					trace.Decisions = []Decision{Sampled}
 				}
 
 				traceID := pdata.NewTraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16})
 
-				decision, err := percentageFilter.Evaluate(traceID, trace)
+				decision, err := probabilisticSampler.Evaluate(traceID, trace)
 				assert.NoError(t, err)
 
 				if decision == Sampled {
@@ -97,15 +91,14 @@ func TestPercentageSampling(t *testing.T) {
 				}
 			}
 
-			assert.InDelta(t, tt.expectedSamplingPercentage/100, float32(sampled)/float32(tt.total), 0.01)
+			assert.InDelta(t, tt.expectedSamplingPercentage/100, float32(sampled)/float32(traceCount), 0.01)
 		})
 	}
 }
 
 func TestOnLateArrivingSpans_PercentageSampling(t *testing.T) {
-	percentageFilter, err := NewPercentageFilter(zap.NewNop(), 0.1)
-	assert.Nil(t, err)
+	probabilisticSampler := NewProbabilisticSampler(zap.NewNop(), 10)
 
-	err = percentageFilter.OnLateArrivingSpans(NotSampled, nil)
+	err := probabilisticSampler.OnLateArrivingSpans(NotSampled, nil)
 	assert.Nil(t, err)
 }
