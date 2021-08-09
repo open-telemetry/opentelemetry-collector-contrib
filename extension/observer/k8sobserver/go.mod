@@ -11,9 +11,9 @@ require (
 	go.opentelemetry.io/collector/model v0.31.1-0.20210807221137-acd1eb198b27 // indirect
 	go.uber.org/zap v1.18.1
 	gopkg.in/square/go-jose.v2 v2.5.1 // indirect
-	k8s.io/api v0.21.3
-	k8s.io/apimachinery v0.21.3
-	k8s.io/client-go v0.21.3
+	k8s.io/api v0.22.0
+	k8s.io/apimachinery v0.22.0
+	k8s.io/client-go v0.22.0
 )
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer => ../
