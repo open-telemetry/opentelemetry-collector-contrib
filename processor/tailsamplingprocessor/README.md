@@ -93,7 +93,7 @@ Running the probabilistic sampling processor is more efficient than the tail sam
 The probabilistic sampling policy makes decision based upon the trace ID, so waiting until more spans have arrived will not influence its decision. 
 
 ...you are already using the tail sampling processor: add the probabilistic sampling policy as last in your chain.
-You are already incurring the cost of running the tail sampling processor, adding the probabilistic policy will be neglible.
+You are already incurring the cost of running the tail sampling processor, adding the probabilistic policy will be negligible.
 Additionally, using the policy within the tail sampling processor will ensure traces that are sampled by other policies will not be dropped.
 
 [probabilistic_sampling_processor]: https://github.com/open-telemetry/opentelemetry-collector/tree/main/processor/probabilisticsamplerprocessor
