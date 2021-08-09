@@ -28,7 +28,7 @@ processors:
           {
             name: test-policy-4,
             type: probabilistic,
-            probabilistic: {hash_seed: 22, sampling_percentage: 0.1}
+            probabilistic: {hash_salt: "custom-salt", sampling_percentage: 0.1}
           },
           {
             name: test-policy-5,

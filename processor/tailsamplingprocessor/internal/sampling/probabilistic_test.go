@@ -27,37 +27,50 @@ import (
 func TestProbabilisticSampling(t *testing.T) {
 	tests := []struct {
 		name                       string
-		samplingPercentage         float32
-		expectedSamplingPercentage float32
+		samplingPercentage         float64
+		hashSalt                   string
+		expectedSamplingPercentage float64
 	}{
 		{
 			"100%",
 			100,
+			"",
 			100,
 		},
 		{
 			"0%",
 			0,
+			"",
 			0,
 		},
 		{
 			"25%",
 			25,
+			"",
 			25,
 		},
 		{
 			"33%",
 			33,
+			"",
+			33,
+		},
+		{
+			"33% - custom salt",
+			33,
+			"test-salt",
 			33,
 		},
 		{
 			"-%50",
 			-50,
+			"",
 			0,
 		},
 		{
 			"150%",
 			150,
+			"",
 			100,
 		},
 	}
@@ -67,7 +80,7 @@ func TestProbabilisticSampling(t *testing.T) {
 
 			var emptyAttrs = map[string]pdata.AttributeValue{}
 
-			probabilisticSampler := NewProbabilisticSampler(zap.NewNop(), 22, tt.samplingPercentage)
+			probabilisticSampler := NewProbabilisticSampler(zap.NewNop(), tt.hashSalt, tt.samplingPercentage)
 
 			sampled := 0
 			for _, traceID := range genRandomTraceIDs(traceCount) {
@@ -90,7 +103,7 @@ func TestProbabilisticSampling(t *testing.T) {
 }
 
 func TestOnLateArrivingSpans_PercentageSampling(t *testing.T) {
-	probabilisticSampler := NewProbabilisticSampler(zap.NewNop(), 22, 10)
+	probabilisticSampler := NewProbabilisticSampler(zap.NewNop(), "", 10)
 
 	err := probabilisticSampler.OnLateArrivingSpans(NotSampled, nil)
 	assert.Nil(t, err)

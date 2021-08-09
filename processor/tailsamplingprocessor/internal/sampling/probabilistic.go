@@ -15,37 +15,38 @@
 package sampling
 
 import (
+	"hash/fnv"
+	"math"
+	"math/big"
+
 	"go.opentelemetry.io/collector/model/pdata"
 	"go.uber.org/zap"
 )
 
 const (
-	// The constants help translate user friendly percentages to numbers direct used in sampling.
-	numHashBuckets        = 0x4000 // Using a power of 2 to avoid division.
-	bitMaskHashBuckets    = numHashBuckets - 1
-	percentageScaleFactor = numHashBuckets / 100.0
+	defaultHashSalt = "default-hash-seed"
 )
 
 type probabilisticSampler struct {
-	logger             *zap.Logger
-	scaledSamplingRate uint32
-	hashSeed           uint32
+	logger    *zap.Logger
+	threshold uint64
+	hashSalt  string
 }
 
 var _ PolicyEvaluator = (*probabilisticSampler)(nil)
 
 // NewProbabilisticSampler creates a policy evaluator that samples a percentage of
 // traces.
-func NewProbabilisticSampler(logger *zap.Logger, hashSeed uint32, samplingPercentage float32) PolicyEvaluator {
-	if samplingPercentage < 0 {
-		samplingPercentage = 0
+func NewProbabilisticSampler(logger *zap.Logger, hashSalt string, samplingPercentage float64) PolicyEvaluator {
+	if hashSalt == "" {
+		hashSalt = defaultHashSalt
 	}
 
 	return &probabilisticSampler{
 		logger: logger,
-		// Adjust sampling percentage on private so recalculations are avoided.
-		scaledSamplingRate: uint32(samplingPercentage * percentageScaleFactor),
-		hashSeed:           hashSeed,
+		// calculate threshold once
+		threshold: calculateThreshold(samplingPercentage / 100),
+		hashSalt:  hashSalt,
 	}
 }
 
@@ -63,63 +64,28 @@ func (s *probabilisticSampler) Evaluate(traceID pdata.TraceID, _ *TraceData) (De
 	s.logger.Debug("Evaluating spans in probabilistic filter")
 
 	traceIDBytes := traceID.Bytes()
-	if hash(traceIDBytes[:], s.hashSeed)&bitMaskHashBuckets < s.scaledSamplingRate {
+	if hashTraceID(s.hashSalt, traceIDBytes[:]) <= s.threshold {
 		return Sampled, nil
 	}
 
 	return NotSampled, nil
 }
 
-// hash is a murmur3 hash function, see http://en.wikipedia.org/wiki/MurmurHash
-func hash(key []byte, seed uint32) (hash uint32) {
-	const (
-		c1 = 0xcc9e2d51
-		c2 = 0x1b873593
-		c3 = 0x85ebca6b
-		c4 = 0xc2b2ae35
-		r1 = 15
-		r2 = 13
-		m  = 5
-		n  = 0xe6546b64
-	)
+// calculateThreshold converts a ratio into a value between 0 and MaxUint64
+func calculateThreshold(ratio float64) uint64 {
+	// Use big.Float and big.Int to calculate threshold because directly convert
+	// math.MaxUint64 to float64 will cause digits/bits to be cut off if the converted value
+	// doesn't fit into bits that are used to store digits for float64 in Golang
+	boundary := new(big.Float).SetInt(new(big.Int).SetUint64(math.MaxUint64))
+	res, _ := boundary.Mul(boundary, big.NewFloat(ratio)).Uint64()
+	return res
+}
 
-	hash = seed
-	iByte := 0
-	for ; iByte+4 <= len(key); iByte += 4 {
-		k := uint32(key[iByte]) | uint32(key[iByte+1])<<8 | uint32(key[iByte+2])<<16 | uint32(key[iByte+3])<<24
-		k *= c1
-		k = (k << r1) | (k >> (32 - r1))
-		k *= c2
-		hash ^= k
-		hash = (hash << r2) | (hash >> (32 - r2))
-		hash = hash*m + n
-	}
-
-	// TraceId and SpanId have lengths that are multiple of 4 so the code below is never expected to
-	// be hit when sampling traces. However, it is preserved here to keep it as a correct murmur3 implementation.
-	// This is enforced via tests.
-	var remainingBytes uint32
-	switch len(key) - iByte {
-	case 3:
-		remainingBytes += uint32(key[iByte+2]) << 16
-		fallthrough
-	case 2:
-		remainingBytes += uint32(key[iByte+1]) << 8
-		fallthrough
-	case 1:
-		remainingBytes += uint32(key[iByte])
-		remainingBytes *= c1
-		remainingBytes = (remainingBytes << r1) | (remainingBytes >> (32 - r1))
-		remainingBytes *= c2
-		hash ^= remainingBytes
-	}
-
-	hash ^= uint32(len(key))
-	hash ^= hash >> 16
-	hash *= c3
-	hash ^= hash >> 13
-	hash *= c4
-	hash ^= hash >> 16
-
-	return
+// hashTraceID creates a hash using the FNV-1a algorithm.
+func hashTraceID(salt string, b []byte) uint64 {
+	hasher := fnv.New64a()
+	// the implementation fnv.Write() never returns an error, see hash/fnv/fnv.go
+	_, _ = hasher.Write([]byte(salt))
+	_, _ = hasher.Write(b)
+	return hasher.Sum64()
 }
