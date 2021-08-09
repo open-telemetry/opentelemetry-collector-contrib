@@ -222,7 +222,15 @@ func (c *client) pushLogDataInBatches(ctx context.Context, ld pdata.Logs, send f
 				// Writing truncated bytes back to buffer.
 				tmpBuf.WriteTo(buf)
 
-				bufFront, bufLen = nil, buf.Len()
+				if buf.Len() > 0 {
+					// This means that the current record has overflown the buffer and was not sent
+					bufFront = &logIndex{resource: i, library: j, record: k}
+				} else {
+					// This means that the entire buffer was sent, including the current record
+					bufFront = nil
+				}
+
+				bufLen = buf.Len()
 			}
 		}
 	}
