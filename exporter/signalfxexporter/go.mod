@@ -13,8 +13,8 @@ require (
 	github.com/signalfx/com_signalfx_metrics_protobuf v0.0.2
 	github.com/signalfx/signalfx-agent/pkg/apm v0.0.0-20201202163743-65b4fa925fc8
 	github.com/stretchr/testify v1.7.0
-	go.opentelemetry.io/collector v0.31.1-0.20210805221026-cebe5773b96f
-	go.opentelemetry.io/collector/model v0.31.1-0.20210805221026-cebe5773b96f
+	go.opentelemetry.io/collector v0.31.1-0.20210809153342-28acc7d8b7f2
+	go.opentelemetry.io/collector/model v0.31.1-0.20210809153342-28acc7d8b7f2
 	go.uber.org/zap v1.18.1
 )
 

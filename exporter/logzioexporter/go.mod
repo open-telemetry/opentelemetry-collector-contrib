@@ -5,11 +5,11 @@ go 1.16
 require (
 	github.com/census-instrumentation/opencensus-proto v0.3.0
 	github.com/hashicorp/go-hclog v0.16.2
-	github.com/jaegertracing/jaeger v1.24.0
+	github.com/jaegertracing/jaeger v1.25.0
 	github.com/logzio/jaeger-logzio v1.0.3
 	github.com/stretchr/testify v1.7.0
-	go.opentelemetry.io/collector v0.31.1-0.20210805221026-cebe5773b96f
-	go.opentelemetry.io/collector/model v0.31.1-0.20210805221026-cebe5773b96f
+	go.opentelemetry.io/collector v0.31.1-0.20210809153342-28acc7d8b7f2
+	go.opentelemetry.io/collector/model v0.31.1-0.20210809153342-28acc7d8b7f2
 	go.uber.org/zap v1.18.1
 	google.golang.org/protobuf v1.27.1
 )
