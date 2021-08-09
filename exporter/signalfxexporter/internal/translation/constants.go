@@ -83,15 +83,6 @@ translation_rules:
 - action: multiply_float
   scale_factors_float:
     sf_temp.cpu.utilization: 100
-- action: rename_metrics
-  mapping:
-    sf_temp.cpu.utilization: cpu.utilization
-
-- action: drop_metrics
-  metric_names:
-    sf_temp.system.cpu.delta: true
-    sf_temp.system.cpu.total: true
-    sf_temp.system.cpu.usage: true
 
 # convert cpu metrics
 - action: split_metric
@@ -129,10 +120,6 @@ translation_rules:
     sf_temp.cpu.softirq: int
     sf_temp.cpu.nice: int
 
-- action: rename_metrics
-  mapping:
-    sf_temp.container_cpu_utilization: container_cpu_utilization
-
 # compute cpu.num_processors
 - action: copy_metrics
   mapping:
@@ -142,10 +129,6 @@ translation_rules:
   aggregation_method: count
   without_dimensions:
   - cpu
-
-- action: rename_metrics
-  mapping:
-    sf_temp.cpu.num_processors: cpu.num_processors
 
 - action: aggregate_metric
   metric_name: sf_temp.cpu.idle
@@ -187,17 +170,6 @@ translation_rules:
   aggregation_method: sum
   without_dimensions:
   - cpu
-
-- action: rename_metrics
-  mapping:
-    sf_temp.cpu.idle: cpu.idle
-    sf_temp.cpu.interrupt: cpu.interrupt
-    sf_temp.cpu.nice: cpu.nice
-    sf_temp.cpu.softirq: cpu.softirq
-    sf_temp.cpu.steal: cpu.steal
-    sf_temp.cpu.system: cpu.system
-    sf_temp.cpu.user: cpu.user
-    sf_temp.cpu.wait: cpu.wait
 
 # compute memory.total
 - action: copy_metrics
@@ -277,25 +249,10 @@ translation_rules:
   scale_factors_float:
     sf_temp.disk.utilization: 100
 
-- action: rename_metrics
-  mapping:
-    sf_temp.disk.utilization: disk.utilization
-
-- action: drop_metrics
-  metric_names:
-    sf_temp.disk.total: true
-    sf_temp.system.filesystem.usage: true
-    sf_temp.system.memory.usage: true
-
 ## disk.summary_utilization
 - action: copy_metrics
   mapping:
     sf_temp.df_complex.used: sf_temp.df_complex.used_total
-
-# remove redundant metrics
-- action: drop_metrics
-  metric_names:
-    sf_temp.df_complex.used: true
 
 - action: aggregate_metric
   metric_name: sf_temp.df_complex.used_total
@@ -320,15 +277,6 @@ translation_rules:
   scale_factors_float:
     sf_temp.disk.summary_utilization: 100
 
-- action: drop_metrics
-  metric_names:
-    sf_temp.disk.summary_total: true
-    sf_temp.df_complex.used_total: true
-
-- action: rename_metrics
-  mapping:
-    sf_temp.disk.summary_utilization: disk.summary_utilization
-
 
 # Translations to derive disk I/O metrics.
 
@@ -348,11 +296,6 @@ translation_rules:
   without_dimensions:
     - device
 
-- action: rename_metrics
-  mapping:
-    sf_temp.system.disk.operations.total: system.disk.operations.total
-    sf_temp.system.disk.io.total: system.disk.io.total
-
 ## Calculate an extra disk_ops.total metric as number all all read and write operations happened since the last report.
 - action: copy_metrics
   mapping:
@@ -366,10 +309,6 @@ translation_rules:
 - action: delta_metric
   mapping:
     sf_temp.disk.ops: disk_ops.total
-
-- action: drop_metrics
-  metric_names:
-    sf_temp.disk.ops: true
 
 - action: delta_metric
   mapping:
@@ -392,10 +331,6 @@ translation_rules:
   aggregation_method: sum
   without_dimensions:
   - device
-- action: rename_metrics
-  mapping:
-    sf_temp.system.network.io.total: system.network.io.total
-    sf_temp.system.network.packets.total: system.network.packets.total
 
 ## Calculate extra network.total metric.
 - action: copy_metrics
@@ -411,9 +346,6 @@ translation_rules:
   without_dimensions:
   - direction
   - device
-- action: rename_metrics
-  mapping:
-    sf_temp.network.total: network.total
 
 # memory utilization
 - action: calculate_new_metric
@@ -450,13 +382,41 @@ translation_rules:
 
 - action: rename_metrics
   mapping:
+    sf_temp.container_cpu_utilization: container_cpu_utilization
+    sf_temp.cpu.idle: cpu.idle
+    sf_temp.cpu.interrupt: cpu.interrupt
+    sf_temp.cpu.nice: cpu.nice
+    sf_temp.cpu.num_processors: cpu.num_processors
+    sf_temp.cpu.softirq: cpu.softirq
+    sf_temp.cpu.steal: cpu.steal
+    sf_temp.cpu.system: cpu.system
+    sf_temp.cpu.user: cpu.user
+    sf_temp.cpu.utilization: cpu.utilization
+    sf_temp.cpu.wait: cpu.wait
+    sf_temp.disk.summary_utilization: disk.summary_utilization
+    sf_temp.disk.utilization: disk.utilization
     sf_temp.memory.total: memory.total
     sf_temp.memory.utilization: memory.utilization
+    sf_temp.network.total: network.total
+    sf_temp.system.disk.io.total: system.disk.io.total
+    sf_temp.system.disk.operations.total: system.disk.operations.total
+    sf_temp.system.network.io.total: system.network.io.total
+    sf_temp.system.network.packets.total: system.network.packets.total
 
 # remove redundant metrics
 - action: drop_metrics
   metric_names:
+    sf_temp.df_complex.used: true
+    sf_temp.df_complex.used_total: true
+    sf_temp.disk.ops: true
+    sf_temp.disk.summary_total: true
+    sf_temp.disk.total: true
     sf_temp.memory.used: true
+    sf_temp.system.cpu.delta: true
+    sf_temp.system.cpu.total: true
+    sf_temp.system.cpu.usage: true
+    sf_temp.system.filesystem.usage: true
+    sf_temp.system.memory.usage: true
     sf_temp.system.paging.operations.page_in: true
     sf_temp.system.paging.operations.page_out: true
 `

@@ -163,6 +163,8 @@ The translation rules defined in [`translation/constants.go`](./internal/transla
 * vmpage_io.swap.in
 * vmpage_io.swap.out
 
+These metrics are intended to be reported directly to Splunk IM by the SignalFx exporter.  Any desired changes to their attributes or values should be made via additional translation rules or from their constituent host metrics.
+
 ## Example Config
 
 ```yaml
