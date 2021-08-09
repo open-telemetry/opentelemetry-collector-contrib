@@ -803,14 +803,20 @@ func Test_pushLogData_ShouldReturnUnsentLogsOnly(t *testing.T) {
 		logger: zaptest.NewLogger(t),
 	}
 
+	// Just two records
 	logs := createLogData(2, 1, 1)
 
-	c.client, _ = newTestClientWithPresetResponses([]int{200, 400}, []string{"OK", "NOK"}, c.logger)
+	// Each record is about 200 bytes, so the 250-byte buffer will fit only one at a time
 	c.config.MaxContentLengthLogs, c.config.DisableCompression = 250, true
+
+	// The first record is to be sent successfully, the second one should not
+	c.client, _ = newTestClientWithPresetResponses([]int{200, 400}, []string{"OK", "NOK"}, c.logger)
 
 	err := c.pushLogData(context.Background(), logs)
 	require.Error(t, err)
 	assert.IsType(t, consumererror.Logs{}, err)
+
+	// Only the record that was not successfully sent should be returned
 	assert.Equal(t, 1, (err.(consumererror.Logs)).GetLogs().ResourceLogs().Len())
 	assert.Equal(t, logs.ResourceLogs().At(1), (err.(consumererror.Logs)).GetLogs().ResourceLogs().At(0))
 }

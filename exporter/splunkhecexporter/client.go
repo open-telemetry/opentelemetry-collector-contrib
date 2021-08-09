@@ -45,6 +45,17 @@ type client struct {
 	headers map[string]string
 }
 
+// bufferState encapsulates intermediate buffer state when pushing log data
+type bufferState struct {
+	buf      *bytes.Buffer
+	encoder  *json.Encoder
+	tmpBuf   *bytes.Buffer
+	bufFront *logIndex
+	bufLen   int
+	resource int
+	library  int
+}
+
 // Minimum number of bytes to compress. 1500 is the MTU of an ethernet frame.
 const minCompressionLen = 1500
 
@@ -161,132 +172,137 @@ func isProfilingData(ill pdata.InstrumentationLibraryLogs) bool {
 	return ill.InstrumentationLibrary().Name() == profilingLibraryName
 }
 
+func makeBlankBufferState(bufCap uint) bufferState {
+	// Buffer of JSON encoded Splunk events, last record is expected to overflow bufCap, hence the padding
+	var buf = bytes.NewBuffer(make([]byte, 0, bufCap+bufCapPadding))
+	var encoder = json.NewEncoder(buf)
+
+	// Buffer for overflown records that do not fit in the main buffer
+	var tmpBuf = bytes.NewBuffer(make([]byte, 0, bufCapPadding))
+
+	return bufferState{
+		buf:      buf,
+		encoder:  encoder,
+		tmpBuf:   tmpBuf,
+		bufFront: nil, // Index of the log record of the first unsent event in buffer.
+		bufLen:   0,   // Length of data in buffer excluding the last record if it overflows bufCap
+		resource: 0,   // Index of currently processed Resource
+		library:  0,   // Index of currently processed Library
+	}
+}
+
 // pushLogDataInBatches sends batches of Splunk events in JSON format.
 // The batch content length is restricted to MaxContentLengthLogs.
 // ld log records are parsed to Splunk events.
 // The input data may contain both logs and profiling data.
 // They are batched separately and sent with different HTTP headers
 func (c *client) pushLogDataInBatches(ctx context.Context, ld pdata.Logs, send func(context.Context, *bytes.Buffer, map[string]string) error) error {
-	// Buffer capacity.
-	var bufCap = c.config.MaxContentLengthLogs
-
-	// Buffer of JSON encoded Splunk events.
-	// Expected to grow more than bufCap then truncated to bufLen.
-	var buf = bytes.NewBuffer(make([]byte, 0, bufCap+bufCapPadding))
-	var encoder = json.NewEncoder(buf)
-	var tmpBuf = bytes.NewBuffer(make([]byte, 0, bufCapPadding))
-
-	var profilingBuf = bytes.NewBuffer(make([]byte, 0, bufCap+bufCapPadding))
-	var profilingEncoder = json.NewEncoder(profilingBuf)
-	var profilingTmpBuf = bytes.NewBuffer(make([]byte, 0, bufCapPadding))
-
-	// Length of retained bytes in buffer after truncation.
-	var bufLen int
-	var profilingBufLen int
-
-	// Index of the log record of the first unsent event in buffer.
-	var bufFront *logIndex
-	var profilingBufFront *logIndex
-
+	var bufferState = makeBlankBufferState(c.config.MaxContentLengthLogs)
+	var profilingBufferState = makeBlankBufferState(c.config.MaxContentLengthLogs)
 	var permanentErrors []error
 
 	var rls = ld.ResourceLogs()
 	for i := 0; i < rls.Len(); i++ {
-		res := rls.At(i).Resource()
 		ills := rls.At(i).InstrumentationLibraryLogs()
 		for j := 0; j < ills.Len(); j++ {
-			logs := ills.At(j).Logs()
-
 			var err error
+			var newPermanentErrors []error
 
 			if isProfilingData(ills.At(j)) {
-				err, profilingBufLen, profilingBufFront, permanentErrors = c.pushLogRecords(ctx, logs, res, i, j, profilingBuf, profilingEncoder, profilingTmpBuf, bufCap, profilingBufLen, profilingBufFront, permanentErrors, profilingHeaders, send)
+				profilingBufferState.resource, profilingBufferState.library = i, j
+				err, newPermanentErrors = c.pushLogRecords(ctx, rls, &profilingBufferState, profilingHeaders, send)
 			} else {
-				err, bufLen, bufFront, permanentErrors = c.pushLogRecords(ctx, logs, res, i, j, buf, encoder, tmpBuf, bufCap, bufLen, bufFront, permanentErrors, nil, send)
+				bufferState.resource, bufferState.library = i, j
+				err, newPermanentErrors = c.pushLogRecords(ctx, rls, &bufferState, nil, send)
 			}
 
 			if err != nil {
-				return consumererror.NewLogs(err, *subLogs(&ld, bufFront, profilingBufFront))
+				return consumererror.NewLogs(err, *subLogs(&ld, bufferState.bufFront, profilingBufferState.bufFront))
 			}
+
+			permanentErrors = append(permanentErrors, newPermanentErrors...)
 		}
 	}
 
 	// There's some leftover unsent non-profiling data
-	if buf.Len() > 0 {
-		if err := send(ctx, buf, nil); err != nil {
-			return consumererror.NewLogs(err, *subLogs(&ld, bufFront, profilingBufFront))
+	if bufferState.buf.Len() > 0 {
+		if err := send(ctx, bufferState.buf, nil); err != nil {
+			return consumererror.NewLogs(err, *subLogs(&ld, bufferState.bufFront, profilingBufferState.bufFront))
 		}
 	}
 
 	// There's some leftover unsent profiling data
-	if profilingBuf.Len() > 0 {
-		if err := send(ctx, profilingBuf, profilingHeaders); err != nil {
+	if profilingBufferState.buf.Len() > 0 {
+		if err := send(ctx, profilingBufferState.buf, profilingHeaders); err != nil {
 			// Non-profiling bufFront is set to nil because all non-profiling data was flushed successfully above.
-			return consumererror.NewLogs(err, *subLogs(&ld, nil, profilingBufFront))
+			return consumererror.NewLogs(err, *subLogs(&ld, nil, profilingBufferState.bufFront))
 		}
 	}
 
 	return consumererror.Combine(permanentErrors)
 }
 
-func (c *client) pushLogRecords(ctx context.Context, logs pdata.LogSlice, res pdata.Resource, i int, j int, buf *bytes.Buffer, encoder *json.Encoder, tmpBuf *bytes.Buffer, bufCap uint, bufLen int, bufFront *logIndex, permanentErrors []error, headers map[string]string, send func(context.Context, *bytes.Buffer, map[string]string) error) (error, int, *logIndex, []error) {
+func (c *client) pushLogRecords(ctx context.Context, lds pdata.ResourceLogsSlice, state *bufferState, headers map[string]string, send func(context.Context, *bytes.Buffer, map[string]string) error) (sendingError error, permanentErrors []error) {
+	res := lds.At(state.resource)
+	logs := res.InstrumentationLibraryLogs().At(state.library).Logs()
+	bufCap := int(c.config.MaxContentLengthLogs)
+
 	for k := 0; k < logs.Len(); k++ {
-		if bufFront == nil {
-			bufFront = &logIndex{resource: i, library: j, record: k}
+		if state.bufFront == nil {
+			state.bufFront = &logIndex{resource: state.resource, library: state.library, record: k}
 		}
 
 		// Parsing log record to Splunk event.
-		event := mapLogRecordToSplunkEvent(res, logs.At(k), c.config, c.logger)
+		event := mapLogRecordToSplunkEvent(res.Resource(), logs.At(k), c.config, c.logger)
 		// JSON encoding event and writing to buffer.
-		if err := encoder.Encode(event); err != nil {
+		if err := state.encoder.Encode(event); err != nil {
 			permanentErrors = append(permanentErrors, consumererror.Permanent(fmt.Errorf("dropped log event: %v, error: %v", event, err)))
 			continue
 		}
 
 		// Continue adding events to buffer up to capacity.
 		// 0 capacity is interpreted as unknown/unbound consistent with ContentLength in http.Request.
-		if buf.Len() <= int(bufCap) || bufCap == 0 {
+		if state.buf.Len() <= bufCap || bufCap == 0 {
 			// Tracking length of event bytes below capacity in buffer.
-			bufLen = buf.Len()
-			//c.logger.Info("Continuing since buffer is not full")
+			state.bufLen = state.buf.Len()
 			continue
 		}
 
-		tmpBuf.Reset()
+		state.tmpBuf.Reset()
 		// Storing event bytes over capacity in buffer before truncating.
 		if bufCap > 0 {
-			if over := buf.Len() - bufLen; over <= int(bufCap) {
-				tmpBuf.Write(buf.Bytes()[bufLen:buf.Len()])
+			if over := state.buf.Len() - state.bufLen; over <= bufCap {
+				state.tmpBuf.Write(state.buf.Bytes()[state.bufLen:state.buf.Len()])
 			} else {
 				permanentErrors = append(permanentErrors, consumererror.Permanent(
-					fmt.Errorf("dropped log event: %s, error: event size %d bytes larger than configured max content length %d bytes", string(buf.Bytes()[bufLen:buf.Len()]), over, bufCap)))
+					fmt.Errorf("dropped log event: %s, error: event size %d bytes larger than configured max content length %d bytes", string(state.buf.Bytes()[state.bufLen:state.buf.Len()]), over, bufCap)))
 			}
 		}
 
 		// Truncating buffer at tracked length below capacity and sending.
-		buf.Truncate(bufLen)
-		if buf.Len() > 0 {
-			if err := send(ctx, buf, headers); err != nil {
-				return err, bufLen, bufFront, permanentErrors
+		state.buf.Truncate(state.bufLen)
+		if state.buf.Len() > 0 {
+			if err := send(ctx, state.buf, headers); err != nil {
+				return err, permanentErrors
 			}
 		}
-		buf.Reset()
+		state.buf.Reset()
 
 		// Writing truncated bytes back to buffer.
-		tmpBuf.WriteTo(buf)
+		state.tmpBuf.WriteTo(state.buf)
 
-		if buf.Len() > 0 {
+		if state.buf.Len() > 0 {
 			// This means that the current record has overflown the buffer and was not sent
-			bufFront = &logIndex{resource: i, library: j, record: k}
+			state.bufFront = &logIndex{resource: state.resource, library: state.library, record: k}
 		} else {
 			// This means that the entire buffer was sent, including the current record
-			bufFront = nil
+			state.bufFront = nil
 		}
 
-		bufLen = buf.Len()
+		state.bufLen = state.buf.Len()
 	}
 
-	return nil, bufLen, bufFront, permanentErrors
+	return nil, permanentErrors
 }
 
 func (c *client) postEvents(ctx context.Context, events io.Reader, headers map[string]string, compressed bool) error {
