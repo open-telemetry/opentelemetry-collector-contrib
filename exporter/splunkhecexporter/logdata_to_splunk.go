@@ -42,10 +42,6 @@ type logIndex struct {
 	record int
 }
 
-func (i *logIndex) zero() bool {
-	return i.resource == 0 && i.library == 0 && i.record == 0
-}
-
 func mapLogRecordToSplunkEvent(res pdata.Resource, lr pdata.LogRecord, config *Config, logger *zap.Logger) *splunk.Event {
 	host := unknownHostName
 	source := config.Source

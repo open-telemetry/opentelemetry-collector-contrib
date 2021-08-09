@@ -19,8 +19,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"go.uber.org/zap"
-	"go.uber.org/zap/zaptest"
 	"io/ioutil"
 	"math"
 	"net"
@@ -29,6 +27,8 @@ import (
 	"sync"
 	"testing"
 	"time"
+
+	"go.uber.org/zap/zaptest"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -46,11 +46,11 @@ func (t testRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 	return t(req), nil
 }
 
-func newTestClient(respCode int, respBody string, logger *zap.Logger) (*http.Client, *[]http.Header) {
-	return newTestClientWithPresetResponses([]int{respCode}, []string{respBody}, logger)
+func newTestClient(respCode int, respBody string) (*http.Client, *[]http.Header) {
+	return newTestClientWithPresetResponses([]int{respCode}, []string{respBody})
 }
 
-func newTestClientWithPresetResponses(codes []int, bodies []string, logger *zap.Logger) (*http.Client, *[]http.Header) {
+func newTestClientWithPresetResponses(codes []int, bodies []string) (*http.Client, *[]http.Header) {
 	index := 0
 	headers := make([]http.Header, 0)
 
@@ -773,7 +773,7 @@ func Test_pushLogData_ShouldAddResponseTo400Error(t *testing.T) {
 	responseBody := `some error occurred`
 
 	// An HTTP client that returns status code 400 and response body responseBody.
-	splunkClient.client, _ = newTestClient(400, responseBody, splunkClient.logger)
+	splunkClient.client, _ = newTestClient(400, responseBody)
 	// Sending logs using the client.
 	err := splunkClient.pushLogData(context.Background(), logs)
 	// TODO: Uncomment after consumererror.Logs implements method Unwrap.
@@ -783,7 +783,7 @@ func Test_pushLogData_ShouldAddResponseTo400Error(t *testing.T) {
 	assert.Contains(t, err.Error(), responseBody)
 
 	// An HTTP client that returns some other status code other than 400 and response body responseBody.
-	splunkClient.client, _ = newTestClient(500, responseBody, splunkClient.logger)
+	splunkClient.client, _ = newTestClient(500, responseBody)
 	// Sending logs using the client.
 	err = splunkClient.pushLogData(context.Background(), logs)
 	// TODO: Uncomment after consumererror.Logs implements method Unwrap.
@@ -810,7 +810,7 @@ func Test_pushLogData_ShouldReturnUnsentLogsOnly(t *testing.T) {
 	c.config.MaxContentLengthLogs, c.config.DisableCompression = 250, true
 
 	// The first record is to be sent successfully, the second one should not
-	c.client, _ = newTestClientWithPresetResponses([]int{200, 400}, []string{"OK", "NOK"}, c.logger)
+	c.client, _ = newTestClientWithPresetResponses([]int{200, 400}, []string{"OK", "NOK"})
 
 	err := c.pushLogData(context.Background(), logs)
 	require.Error(t, err)
@@ -834,7 +834,7 @@ func Test_pushLogData_ShouldAddHeadersForProfilingData(t *testing.T) {
 	logs := createLogDataWithCustomLibraries(1, []string{"otel.logs", "otel.profiling"}, []int{10, 20})
 	var headers *[]http.Header
 
-	c.client, headers = newTestClient(200, "OK", c.logger)
+	c.client, headers = newTestClient(200, "OK")
 	// A 300-byte buffer only fits one record (around 200 bytes), so each record will be sent separately
 	c.config.MaxContentLengthLogs, c.config.DisableCompression = 300, true
 
@@ -900,7 +900,7 @@ func benchPushLogData(b *testing.B, numResources int, numProfiling int, numNonPr
 		logger: zaptest.NewLogger(b),
 	}
 
-	c.client, _ = newTestClient(200, "OK", c.logger)
+	c.client, _ = newTestClient(200, "OK")
 	c.config.MaxContentLengthLogs = bufSize
 	logs := createLogDataWithCustomLibraries(numResources, []string{"otel.logs", "otel.profiling"}, []int{numNonProfiling, numProfiling})
 

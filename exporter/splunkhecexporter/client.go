@@ -197,8 +197,8 @@ func makeBlankBufferState(bufCap uint) bufferState {
 // The input data may contain both logs and profiling data.
 // They are batched separately and sent with different HTTP headers
 func (c *client) pushLogDataInBatches(ctx context.Context, ld pdata.Logs, send func(context.Context, *bytes.Buffer, map[string]string) error) error {
-	var bufferState = makeBlankBufferState(c.config.MaxContentLengthLogs)
-	var profilingBufferState = makeBlankBufferState(c.config.MaxContentLengthLogs)
+	var bufState = makeBlankBufferState(c.config.MaxContentLengthLogs)
+	var profilingBufState = makeBlankBufferState(c.config.MaxContentLengthLogs)
 	var permanentErrors []error
 
 	var rls = ld.ResourceLogs()
@@ -209,15 +209,15 @@ func (c *client) pushLogDataInBatches(ctx context.Context, ld pdata.Logs, send f
 			var newPermanentErrors []error
 
 			if isProfilingData(ills.At(j)) {
-				profilingBufferState.resource, profilingBufferState.library = i, j
-				err, newPermanentErrors = c.pushLogRecords(ctx, rls, &profilingBufferState, profilingHeaders, send)
+				profilingBufState.resource, profilingBufState.library = i, j
+				newPermanentErrors, err = c.pushLogRecords(ctx, rls, &profilingBufState, profilingHeaders, send)
 			} else {
-				bufferState.resource, bufferState.library = i, j
-				err, newPermanentErrors = c.pushLogRecords(ctx, rls, &bufferState, nil, send)
+				bufState.resource, bufState.library = i, j
+				newPermanentErrors, err = c.pushLogRecords(ctx, rls, &bufState, nil, send)
 			}
 
 			if err != nil {
-				return consumererror.NewLogs(err, *subLogs(&ld, bufferState.bufFront, profilingBufferState.bufFront))
+				return consumererror.NewLogs(err, *subLogs(&ld, bufState.bufFront, profilingBufState.bufFront))
 			}
 
 			permanentErrors = append(permanentErrors, newPermanentErrors...)
@@ -225,24 +225,24 @@ func (c *client) pushLogDataInBatches(ctx context.Context, ld pdata.Logs, send f
 	}
 
 	// There's some leftover unsent non-profiling data
-	if bufferState.buf.Len() > 0 {
-		if err := send(ctx, bufferState.buf, nil); err != nil {
-			return consumererror.NewLogs(err, *subLogs(&ld, bufferState.bufFront, profilingBufferState.bufFront))
+	if bufState.buf.Len() > 0 {
+		if err := send(ctx, bufState.buf, nil); err != nil {
+			return consumererror.NewLogs(err, *subLogs(&ld, bufState.bufFront, profilingBufState.bufFront))
 		}
 	}
 
 	// There's some leftover unsent profiling data
-	if profilingBufferState.buf.Len() > 0 {
-		if err := send(ctx, profilingBufferState.buf, profilingHeaders); err != nil {
+	if profilingBufState.buf.Len() > 0 {
+		if err := send(ctx, profilingBufState.buf, profilingHeaders); err != nil {
 			// Non-profiling bufFront is set to nil because all non-profiling data was flushed successfully above.
-			return consumererror.NewLogs(err, *subLogs(&ld, nil, profilingBufferState.bufFront))
+			return consumererror.NewLogs(err, *subLogs(&ld, nil, profilingBufState.bufFront))
 		}
 	}
 
 	return consumererror.Combine(permanentErrors)
 }
 
-func (c *client) pushLogRecords(ctx context.Context, lds pdata.ResourceLogsSlice, state *bufferState, headers map[string]string, send func(context.Context, *bytes.Buffer, map[string]string) error) (sendingError error, permanentErrors []error) {
+func (c *client) pushLogRecords(ctx context.Context, lds pdata.ResourceLogsSlice, state *bufferState, headers map[string]string, send func(context.Context, *bytes.Buffer, map[string]string) error) (permanentErrors []error, sendingError error) {
 	res := lds.At(state.resource)
 	logs := res.InstrumentationLibraryLogs().At(state.library).Logs()
 	bufCap := int(c.config.MaxContentLengthLogs)
@@ -283,7 +283,7 @@ func (c *client) pushLogRecords(ctx context.Context, lds pdata.ResourceLogsSlice
 		state.buf.Truncate(state.bufLen)
 		if state.buf.Len() > 0 {
 			if err := send(ctx, state.buf, headers); err != nil {
-				return err, permanentErrors
+				return permanentErrors, err
 			}
 		}
 		state.buf.Reset()
@@ -292,7 +292,7 @@ func (c *client) pushLogRecords(ctx context.Context, lds pdata.ResourceLogsSlice
 		state.tmpBuf.WriteTo(state.buf)
 
 		if state.buf.Len() > 0 {
-			// This means that the current record has overflown the buffer and was not sent
+			// This means that the current record had overflown the buffer and was not sent
 			state.bufFront = &logIndex{resource: state.resource, library: state.library, record: k}
 		} else {
 			// This means that the entire buffer was sent, including the current record
@@ -302,7 +302,7 @@ func (c *client) pushLogRecords(ctx context.Context, lds pdata.ResourceLogsSlice
 		state.bufLen = state.buf.Len()
 	}
 
-	return nil, permanentErrors
+	return permanentErrors, nil
 }
 
 func (c *client) postEvents(ctx context.Context, events io.Reader, headers map[string]string, compressed bool) error {
