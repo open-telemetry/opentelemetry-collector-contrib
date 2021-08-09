@@ -76,7 +76,7 @@ func TestProbabilisticSampling(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			traceCount := 1_000_000
+			traceCount := 100_000
 
 			var emptyAttrs = map[string]pdata.AttributeValue{}
 
@@ -95,7 +95,7 @@ func TestProbabilisticSampling(t *testing.T) {
 			}
 
 			effectiveSamplingPercentage := float32(sampled) / float32(traceCount) * 100
-			assert.InDelta(t, tt.expectedSamplingPercentage, effectiveSamplingPercentage, 0.1,
+			assert.InDelta(t, tt.expectedSamplingPercentage, effectiveSamplingPercentage, 0.2,
 				"Effective sampling percentage is %f, expected %f", effectiveSamplingPercentage, tt.expectedSamplingPercentage,
 			)
 		})
