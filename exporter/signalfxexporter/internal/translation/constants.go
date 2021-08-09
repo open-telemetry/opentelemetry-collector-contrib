@@ -312,7 +312,7 @@ translation_rules:
 
 - action: delta_metric
   mapping:
-    system.disk.pending_operations: sf_temp.disk.ops.pending
+    system.disk.pending_operations: disk_ops.pending
 
 # Translations to derive Network I/O metrics.
 
