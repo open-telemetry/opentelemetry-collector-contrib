@@ -37,7 +37,7 @@ var patternKeyToAttributeMap = map[string]string{
 
 func replacePatterns(s string, attrMap map[string]string, logger *zap.Logger) (string, bool) {
 	success := true
-	foundAndReplaced := true
+	var foundAndReplaced bool
 	for key := range patternKeyToAttributeMap {
 		s, foundAndReplaced = replacePatternWithAttrValue(s, key, attrMap, logger)
 		success = success && foundAndReplaced
