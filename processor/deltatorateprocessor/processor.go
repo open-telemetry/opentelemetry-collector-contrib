@@ -24,9 +24,9 @@ import (
 )
 
 type deltaToRateProcessor struct {
-	metrics  map[string]bool
-	timeUnit StringTimeUnit
-	logger   *zap.Logger
+	ConfiguredMetrics map[string]bool
+	TimeUnit          StringTimeUnit
+	logger            *zap.Logger
 }
 
 func newDeltaToRateProcessor(config *Config, logger *zap.Logger) *deltaToRateProcessor {
@@ -36,9 +36,9 @@ func newDeltaToRateProcessor(config *Config, logger *zap.Logger) *deltaToRatePro
 	}
 
 	return &deltaToRateProcessor{
-		metrics:  inputMetricSet,
-		timeUnit: config.TimeUnit,
-		logger:   logger,
+		ConfiguredMetrics: inputMetricSet,
+		TimeUnit:          config.TimeUnit,
+		logger:            logger,
 	}
 }
 
@@ -59,27 +59,27 @@ func (dtrp *deltaToRateProcessor) processMetrics(_ context.Context, md pdata.Met
 			metricSlice := ilm.Metrics()
 			for j := 0; j < metricSlice.Len(); j++ {
 				metric := metricSlice.At(j)
-				_, ok := dtrp.metrics[metric.Name()]
-				if ok {
-					newDoubleDataPointSlice := pdata.NewNumberDataPointSlice()
-					if metric.DataType() == pdata.MetricDataTypeSum && metric.Sum().AggregationTemporality() == pdata.AggregationTemporalityDelta {
-						dataPoints := metric.Sum().DataPoints()
+				if _, ok := dtrp.ConfiguredMetrics[metric.Name()]; !ok {
+					continue
+				}
+				newDoubleDataPointSlice := pdata.NewNumberDataPointSlice()
+				if metric.DataType() == pdata.MetricDataTypeSum && metric.Sum().AggregationTemporality() == pdata.AggregationTemporalityDelta {
+					dataPoints := metric.Sum().DataPoints()
 
-						for i := 0; i < dataPoints.Len(); i++ {
-							fromDataPoint := dataPoints.At(i)
-							newDp := newDoubleDataPointSlice.AppendEmpty()
-							fromDataPoint.CopyTo(newDp)
+					for i := 0; i < dataPoints.Len(); i++ {
+						fromDataPoint := dataPoints.At(i)
+						newDp := newDoubleDataPointSlice.AppendEmpty()
+						fromDataPoint.CopyTo(newDp)
 
-							durationNanos := fromDataPoint.Timestamp().AsTime().Sub(fromDataPoint.StartTimestamp().AsTime())
-							rate := calculateRate(fromDataPoint.DoubleVal(), durationNanos, dtrp.timeUnit)
-							newDp.SetDoubleVal(rate)
-						}
+						durationNanos := fromDataPoint.Timestamp().AsTime().Sub(fromDataPoint.StartTimestamp().AsTime())
+						rate := calculateRate(fromDataPoint.DoubleVal(), durationNanos, dtrp.TimeUnit)
+						newDp.SetDoubleVal(rate)
+					}
 
-						metric.SetDataType(pdata.MetricDataTypeGauge)
-						for d := 0; d < newDoubleDataPointSlice.Len(); d++ {
-							dp := metric.Gauge().DataPoints().AppendEmpty()
-							newDoubleDataPointSlice.At(d).CopyTo(dp)
-						}
+					metric.SetDataType(pdata.MetricDataTypeGauge)
+					for d := 0; d < newDoubleDataPointSlice.Len(); d++ {
+						dp := metric.Gauge().DataPoints().AppendEmpty()
+						newDoubleDataPointSlice.At(d).CopyTo(dp)
 					}
 				}
 			}
