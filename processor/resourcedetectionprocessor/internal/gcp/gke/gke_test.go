@@ -61,7 +61,7 @@ func TestDetectWithoutCluster(t *testing.T) {
 
 	assert.Equal(t, map[string]interface{}{
 		"cloud.provider": "gcp",
-		"cloud.platform": "gcp_gke",
+		"cloud.platform": "gcp_kubernetes_engine",
 	}, internal.AttributesToMap(res.Attributes()))
 
 	metadata.AssertExpectations(t)
@@ -105,7 +105,7 @@ func TestDetector_Detect(t *testing.T) {
 
 	assert.Equal(t, map[string]interface{}{
 		"cloud.provider":   "gcp",
-		"cloud.platform":   "gcp_gke",
+		"cloud.platform":   "gcp_kubernetes_engine",
 		"k8s.cluster.name": "cluster-a",
 	}, internal.AttributesToMap(res.Attributes()))
 

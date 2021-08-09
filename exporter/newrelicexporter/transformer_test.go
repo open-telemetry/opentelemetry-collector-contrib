@@ -26,6 +26,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/translator/internaldata"
 	"go.uber.org/zap"
@@ -628,6 +629,7 @@ func TestTransformSum(t *testing.T) {
 				"unit":        "1",
 				"description": "description",
 			},
+			ForceIntervalValid: true,
 		},
 	}
 	expectedGauge := []telemetry.Metric{
@@ -801,7 +803,9 @@ func TestUnsupportedMetricTypes(t *testing.T) {
 		dp.SetBucketCounts([]uint64{1, 1, 0, 0})
 		h.SetAggregationTemporality(pdata.AggregationTemporalityDelta)
 
-		t.Run("DoubleHistogram", func(t *testing.T) { testTransformMetricWithError(t, m, &errUnsupportedMetricType{}) })
+		t.Run("DoubleHistogram", func(t *testing.T) {
+			testTransformMetricWithError(t, m, consumererror.Permanent(&errUnsupportedMetricType{}))
+		})
 	}
 }
 

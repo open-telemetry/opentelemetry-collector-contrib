@@ -26,7 +26,7 @@ import (
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	dtypes "github.com/docker/docker/api/types"
 	"github.com/golang/protobuf/ptypes/timestamp"
-	"go.opentelemetry.io/collector/translator/conventions"
+	conventions "go.opentelemetry.io/collector/translator/conventions/v1.5.0"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -63,10 +63,10 @@ func ContainerStatsToMetrics(
 		Resource: &resourcepb.Resource{
 			Type: "container",
 			Labels: map[string]string{
-				"container.hostname":                container.Config.Hostname,
-				conventions.AttributeContainerID:    container.ID,
-				conventions.AttributeContainerImage: container.Config.Image,
-				conventions.AttributeContainerName:  strings.TrimPrefix(container.Name, "/"),
+				"container.hostname":                    container.Config.Hostname,
+				conventions.AttributeContainerID:        container.ID,
+				conventions.AttributeContainerImageName: container.Config.Image,
+				conventions.AttributeContainerName:      strings.TrimPrefix(container.Name, "/"),
 			},
 		},
 	}

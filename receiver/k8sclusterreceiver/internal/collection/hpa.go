@@ -17,7 +17,7 @@ package collection
 import (
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
-	"go.opentelemetry.io/collector/translator/conventions"
+	conventions "go.opentelemetry.io/collector/translator/conventions/v1.5.0"
 	"k8s.io/api/autoscaling/v2beta1"
 
 	metadata "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata"
@@ -92,10 +92,10 @@ func getResourceForHPA(hpa *v2beta1.HorizontalPodAutoscaler) *resourcepb.Resourc
 	return &resourcepb.Resource{
 		Type: k8sType,
 		Labels: map[string]string{
-			k8sKeyHPAUID:                      string(hpa.UID),
-			k8sKeyHPAName:                     hpa.Name,
-			conventions.AttributeK8sNamespace: hpa.Namespace,
-			conventions.AttributeK8sCluster:   hpa.ClusterName,
+			k8sKeyHPAUID:                          string(hpa.UID),
+			k8sKeyHPAName:                         hpa.Name,
+			conventions.AttributeK8SNamespaceName: hpa.Namespace,
+			conventions.AttributeK8SClusterName:   hpa.ClusterName,
 		},
 	}
 }

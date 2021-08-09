@@ -23,8 +23,9 @@ import (
 
 	"github.com/newrelic/newrelic-telemetry-sdk-go/telemetry"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/model/pdata"
-	"go.opentelemetry.io/collector/translator/conventions"
+	conventions "go.opentelemetry.io/collector/translator/conventions/v1.5.0"
 	tracetranslator "go.opentelemetry.io/collector/translator/trace"
 	"go.uber.org/zap"
 )
@@ -327,11 +328,12 @@ func (t *transformer) Metric(m pdata.Metric) ([]telemetry.Metric, error) {
 				output = append(output, nrMetric)
 			} else {
 				nrMetric := telemetry.Count{
-					Name:       m.Name(),
-					Attributes: attributes,
-					Value:      val,
-					Timestamp:  point.StartTimestamp().AsTime(),
-					Interval:   time.Duration(point.Timestamp() - point.StartTimestamp()),
+					Name:               m.Name(),
+					Attributes:         attributes,
+					Value:              val,
+					Timestamp:          point.StartTimestamp().AsTime(),
+					Interval:           time.Duration(point.Timestamp() - point.StartTimestamp()),
+					ForceIntervalValid: true,
 				}
 				output = append(output, nrMetric)
 			}
@@ -340,7 +342,7 @@ func (t *transformer) Metric(m pdata.Metric) ([]telemetry.Metric, error) {
 		hist := m.Histogram()
 		k.MetricTemporality = hist.AggregationTemporality()
 		t.details.metricMetadataCount[k]++
-		return nil, &errUnsupportedMetricType{metricType: k.MetricType.String(), metricName: m.Name(), numDataPoints: hist.DataPoints().Len()}
+		return nil, consumererror.Permanent(&errUnsupportedMetricType{metricType: k.MetricType.String(), metricName: m.Name(), numDataPoints: hist.DataPoints().Len()})
 	case pdata.MetricDataTypeSummary:
 		t.details.metricMetadataCount[k]++
 		summary := m.Summary()
@@ -370,14 +372,15 @@ func (t *transformer) Metric(m pdata.Metric) ([]telemetry.Metric, error) {
 
 			attributes := t.MetricAttributes(baseAttributes, point.LabelsMap())
 			nrMetric := telemetry.Summary{
-				Name:       name,
-				Attributes: attributes,
-				Count:      float64(point.Count()),
-				Sum:        point.Sum(),
-				Min:        minQuantile,
-				Max:        maxQuantile,
-				Timestamp:  point.StartTimestamp().AsTime(),
-				Interval:   time.Duration(point.Timestamp() - point.StartTimestamp()),
+				Name:               name,
+				Attributes:         attributes,
+				Count:              float64(point.Count()),
+				Sum:                point.Sum(),
+				Min:                minQuantile,
+				Max:                maxQuantile,
+				Timestamp:          point.StartTimestamp().AsTime(),
+				Interval:           time.Duration(point.Timestamp() - point.StartTimestamp()),
+				ForceIntervalValid: true,
 			}
 
 			output = append(output, nrMetric)
@@ -428,7 +431,7 @@ func (t *transformer) MetricAttributes(baseAttributes map[string]interface{}, at
 }
 
 func (t *transformer) TrackAttributes(location attributeLocation, attributeMap pdata.AttributeMap) {
-	attributeMap.Range(func(k string, v pdata.AttributeValue) bool {
+	attributeMap.Range(func(_ string, v pdata.AttributeValue) bool {
 		statsKey := attributeStatsKey{location: location, attributeType: v.Type()}
 		t.details.attributeMetadataCount[statsKey]++
 		return true

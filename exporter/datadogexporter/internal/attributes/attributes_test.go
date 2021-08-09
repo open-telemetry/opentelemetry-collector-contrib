@@ -20,7 +20,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/model/pdata"
-	"go.opentelemetry.io/collector/translator/conventions"
+	conventions "go.opentelemetry.io/collector/translator/conventions/v1.5.0"
 )
 
 func TestTagsFromAttributes(t *testing.T) {
@@ -29,10 +29,10 @@ func TestTagsFromAttributes(t *testing.T) {
 		conventions.AttributeProcessExecutablePath: pdata.NewAttributeValueString("/usr/bin/cmd/otelcol"),
 		conventions.AttributeProcessCommand:        pdata.NewAttributeValueString("cmd/otelcol"),
 		conventions.AttributeProcessCommandLine:    pdata.NewAttributeValueString("cmd/otelcol --config=\"/path/to/config.yaml\""),
-		conventions.AttributeProcessID:             pdata.NewAttributeValueInt(1),
+		conventions.AttributeProcessPID:            pdata.NewAttributeValueInt(1),
 		conventions.AttributeProcessOwner:          pdata.NewAttributeValueString("root"),
 		conventions.AttributeOSType:                pdata.NewAttributeValueString("LINUX"),
-		conventions.AttributeK8sDaemonSet:          pdata.NewAttributeValueString("daemon_set_name"),
+		conventions.AttributeK8SDaemonsetName:      pdata.NewAttributeValueString("daemon_set_name"),
 		conventions.AttributeAWSECSClusterARN:      pdata.NewAttributeValueString("cluster_arn"),
 		"tags.datadoghq.com/service":               pdata.NewAttributeValueString("service_name"),
 	}

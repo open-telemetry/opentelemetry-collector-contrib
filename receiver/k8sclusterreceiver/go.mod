@@ -4,7 +4,7 @@ go 1.16
 
 require (
 	github.com/census-instrumentation/opencensus-proto v0.3.0
-	github.com/iancoleman/strcase v0.1.3
+	github.com/iancoleman/strcase v0.2.0
 	github.com/onsi/ginkgo v1.14.1 // indirect
 	github.com/onsi/gomega v1.10.2 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.0.0-00010101000000-000000000000
@@ -13,8 +13,8 @@ require (
 	github.com/openshift/api v0.0.0-20210521075222-e273a339932a
 	github.com/openshift/client-go v0.0.0-20210521082421-73d9475a9142
 	github.com/stretchr/testify v1.7.0
-	go.opentelemetry.io/collector v0.30.2-0.20210723184018-3b7d6ce4830c
-	go.opentelemetry.io/collector/model v0.30.2-0.20210723184018-3b7d6ce4830c
+	go.opentelemetry.io/collector v0.31.1-0.20210805221026-cebe5773b96f
+	go.opentelemetry.io/collector/model v0.31.1-0.20210805221026-cebe5773b96f
 	go.uber.org/atomic v1.9.0
 	go.uber.org/zap v1.18.1
 	google.golang.org/protobuf v1.27.1

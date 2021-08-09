@@ -17,7 +17,7 @@ package collection
 import (
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
-	"go.opentelemetry.io/collector/translator/conventions"
+	conventions "go.opentelemetry.io/collector/translator/conventions/v1.5.0"
 	batchv1 "k8s.io/api/batch/v1"
 
 	metadata "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata"
@@ -110,10 +110,10 @@ func getResourceForJob(j *batchv1.Job) *resourcepb.Resource {
 	return &resourcepb.Resource{
 		Type: k8sType,
 		Labels: map[string]string{
-			conventions.AttributeK8sJobUID:    string(j.UID),
-			conventions.AttributeK8sJob:       j.Name,
-			conventions.AttributeK8sNamespace: j.Namespace,
-			conventions.AttributeK8sCluster:   j.ClusterName,
+			conventions.AttributeK8SJobUID:        string(j.UID),
+			conventions.AttributeK8SJobName:       j.Name,
+			conventions.AttributeK8SNamespaceName: j.Namespace,
+			conventions.AttributeK8SClusterName:   j.ClusterName,
 		},
 	}
 }

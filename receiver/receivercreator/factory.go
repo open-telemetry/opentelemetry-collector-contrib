@@ -21,7 +21,7 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
-	"go.opentelemetry.io/collector/translator/conventions"
+	conventions "go.opentelemetry.io/collector/translator/conventions/v1.5.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer"
 )
@@ -45,14 +45,14 @@ func createDefaultConfig() config.Receiver {
 		ReceiverSettings: config.NewReceiverSettings(config.NewID(typeStr)),
 		ResourceAttributes: resourceAttributes{
 			observer.PodType: map[string]string{
-				conventions.AttributeK8sPod:       "`name`",
-				conventions.AttributeK8sPodUID:    "`uid`",
-				conventions.AttributeK8sNamespace: "`namespace`",
+				conventions.AttributeK8SPodName:       "`name`",
+				conventions.AttributeK8SPodUID:        "`uid`",
+				conventions.AttributeK8SNamespaceName: "`namespace`",
 			},
 			observer.PortType: map[string]string{
-				conventions.AttributeK8sPod:       "`pod.name`",
-				conventions.AttributeK8sPodUID:    "`pod.uid`",
-				conventions.AttributeK8sNamespace: "`pod.namespace`",
+				conventions.AttributeK8SPodName:       "`pod.name`",
+				conventions.AttributeK8SPodUID:        "`pod.uid`",
+				conventions.AttributeK8SNamespaceName: "`pod.namespace`",
 			},
 		},
 		receiverTemplates: map[string]receiverTemplate{},

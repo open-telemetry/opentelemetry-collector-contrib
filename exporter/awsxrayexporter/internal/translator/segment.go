@@ -26,7 +26,7 @@ import (
 
 	awsP "github.com/aws/aws-sdk-go/aws"
 	"go.opentelemetry.io/collector/model/pdata"
-	semconventions "go.opentelemetry.io/collector/translator/conventions"
+	conventions "go.opentelemetry.io/collector/translator/conventions/v1.5.0"
 
 	awsxray "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray"
 )
@@ -115,7 +115,7 @@ func MakeSegment(span pdata.Span, resource pdata.Resource, indexedAttrs []string
 	attributes := span.Attributes()
 
 	// peer.service should always be prioritized for segment names when set because it is what the user decided.
-	if peerService, ok := attributes.Get(semconventions.AttributePeerService); ok {
+	if peerService, ok := attributes.Get(conventions.AttributePeerService); ok {
 		name = peerService.StringVal()
 	}
 
@@ -130,10 +130,10 @@ func MakeSegment(span pdata.Span, resource pdata.Resource, indexedAttrs []string
 	}
 
 	if name == "" {
-		if dbInstance, ok := attributes.Get(semconventions.AttributeDBName); ok {
+		if dbInstance, ok := attributes.Get(conventions.AttributeDBName); ok {
 			// For database queries, the segment name convention is <db name>@<db host>
 			name = dbInstance.StringVal()
-			if dbURL, ok := attributes.Get(semconventions.AttributeDBConnectionString); ok {
+			if dbURL, ok := attributes.Get(conventions.AttributeDBConnectionString); ok {
 				if parsed, _ := url.Parse(dbURL.StringVal()); parsed != nil {
 					if parsed.Hostname() != "" {
 						name += "@" + parsed.Hostname()
@@ -145,25 +145,25 @@ func MakeSegment(span pdata.Span, resource pdata.Resource, indexedAttrs []string
 
 	if name == "" && span.Kind() == pdata.SpanKindServer {
 		// Only for a server span, we can use the resource.
-		if service, ok := resource.Attributes().Get(semconventions.AttributeServiceName); ok {
+		if service, ok := resource.Attributes().Get(conventions.AttributeServiceName); ok {
 			name = service.StringVal()
 		}
 	}
 
 	if name == "" {
-		if rpcservice, ok := attributes.Get(semconventions.AttributeRPCService); ok {
+		if rpcservice, ok := attributes.Get(conventions.AttributeRPCService); ok {
 			name = rpcservice.StringVal()
 		}
 	}
 
 	if name == "" {
-		if host, ok := attributes.Get(semconventions.AttributeHTTPHost); ok {
+		if host, ok := attributes.Get(conventions.AttributeHTTPHost); ok {
 			name = host.StringVal()
 		}
 	}
 
 	if name == "" {
-		if peer, ok := attributes.Get(semconventions.AttributeNetPeerName); ok {
+		if peer, ok := attributes.Get(conventions.AttributeNetPeerName); ok {
 			name = peer.StringVal()
 		}
 	}
@@ -215,34 +215,34 @@ func determineAwsOrigin(resource pdata.Resource) string {
 		return ""
 	}
 
-	if provider, ok := resource.Attributes().Get(semconventions.AttributeCloudProvider); ok {
-		if provider.StringVal() != semconventions.AttributeCloudProviderAWS {
+	if provider, ok := resource.Attributes().Get(conventions.AttributeCloudProvider); ok {
+		if provider.StringVal() != conventions.AttributeCloudProviderAWS {
 			return ""
 		}
 	}
 
 	// TODO(willarmiros): Only use platform for origin resolution once detectors for all AWS environments are
 	// implemented for robustness
-	if is, present := resource.Attributes().Get(semconventions.AttributeCloudPlatform); present {
+	if is, present := resource.Attributes().Get(conventions.AttributeCloudPlatform); present {
 		switch is.StringVal() {
-		case "EKS":
+		case conventions.AttributeCloudPlatformAWSEKS:
 			return OriginEKS
-		case "ElasticBeanstalk":
+		case conventions.AttributeCloudPlatformAWSElasticBeanstalk:
 			return OriginEB
-		case "ECS":
+		case conventions.AttributeCloudPlatformAWSECS:
 			lt, present := resource.Attributes().Get("aws.ecs.launchtype")
 			if !present {
 				return OriginECS
 			}
 			switch lt.StringVal() {
-			case "ec2":
+			case conventions.AttributeAWSECSLaunchtypeEC2:
 				return OriginECSEC2
-			case "fargate":
+			case conventions.AttributeAWSECSLaunchtypeFargate:
 				return OriginECSFargate
 			default:
 				return OriginECS
 			}
-		case "EC2":
+		case conventions.AttributeCloudPlatformAWSEC2:
 			return OriginEC2
 
 		// If infrastructure_service is defined with a non-AWS value, we should not assign it an AWS origin
@@ -251,23 +251,6 @@ func determineAwsOrigin(resource pdata.Resource) string {
 		}
 	}
 
-	// EKS > EB > ECS > EC2
-	_, eks := resource.Attributes().Get(semconventions.AttributeK8sCluster)
-	if eks {
-		return OriginEKS
-	}
-	_, eb := resource.Attributes().Get(semconventions.AttributeServiceInstance)
-	if eb {
-		return OriginEB
-	}
-	_, ecs := resource.Attributes().Get(semconventions.AttributeContainerName)
-	if ecs {
-		return OriginECS
-	}
-	_, ec2 := resource.Attributes().Get(semconventions.AttributeHostID)
-	if ec2 {
-		return OriginEC2
-	}
 	return ""
 }
 
@@ -331,10 +314,10 @@ func makeXRayAttributes(attributes map[string]pdata.AttributeValue, resource pda
 		metadata    = map[string]map[string]interface{}{}
 		user        string
 	)
-	userid, ok := attributes[semconventions.AttributeEnduserID]
+	userid, ok := attributes[conventions.AttributeEnduserID]
 	if ok {
 		user = userid.StringVal()
-		delete(attributes, semconventions.AttributeEnduserID)
+		delete(attributes, conventions.AttributeEnduserID)
 	}
 
 	if len(attributes) == 0 && (!storeResource || resource.Attributes().Len() == 0) {

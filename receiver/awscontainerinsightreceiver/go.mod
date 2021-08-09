@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscon
 go 1.16
 
 require (
-	github.com/aws/aws-sdk-go v1.40.8
+	github.com/aws/aws-sdk-go v1.40.14
 	github.com/google/cadvisor v0.39.2
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil v0.0.0-00010101000000-000000000000
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/containerinsight v0.0.0-00010101000000-000000000000
@@ -11,10 +11,10 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/metrics v0.0.0-00010101000000-000000000000
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.0.0-00010101000000-000000000000
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/kubelet v0.0.0-00010101000000-000000000000
-	github.com/shirou/gopsutil v3.21.6+incompatible
+	github.com/shirou/gopsutil v3.21.7+incompatible
 	github.com/stretchr/testify v1.7.0
-	go.opentelemetry.io/collector v0.30.2-0.20210723184018-3b7d6ce4830c
-	go.opentelemetry.io/collector/model v0.30.2-0.20210723184018-3b7d6ce4830c
+	go.opentelemetry.io/collector v0.31.1-0.20210805221026-cebe5773b96f
+	go.opentelemetry.io/collector/model v0.31.1-0.20210805221026-cebe5773b96f
 	go.uber.org/zap v1.18.1
 	k8s.io/api v0.21.3
 	k8s.io/apimachinery v0.21.3

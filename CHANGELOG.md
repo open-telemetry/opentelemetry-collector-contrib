@@ -2,6 +2,40 @@
 
 ## Unreleased
 
+## v0.31.0
+
+# 🎉 OpenTelemetry Collector Contrib v0.31.0 (Beta) 🎉
+
+The OpenTelemetry Collector Contrib contains everything in the [opentelemetry-collector release](https://github.com/open-telemetry/opentelemetry-collector/releases/tag/v0.31.0) (be sure to check the release notes here as well!). Check out the [Getting Started Guide](https://opentelemetry.io/docs/collector/getting-started/) for deployment and configuration information.
+
+## 🛑 Breaking changes 🛑
+
+- `influxdb` receiver: Removed `metrics_schema` config option (#4277)
+
+## 💡 Enhancements 💡
+
+- Update to OTLP 0.8.0:
+  - Remove use of `IntHistogram` (#4276)
+  - Update exporters/receivers for `NumberDataPoint`
+- Remove use of deprecated `pdata` slice `Resize()` (#4203, #4208, #4209)
+- `awsemf` exporter: Added the option to have a user who is sending metrics from EKS Fargate Container Insights to reformat them to look the same as insights from ECS so that they can be ingested by CloudWatch (#4130)
+- `k8scluster` receiver: Support OpenShift cluster quota metrics (#4342)
+- `newrelic` exporter (#4278):
+  - Requests are now retry-able via configuration option (defaults to retries enabled). Permanent errors are not retried.
+  - The exporter monitoring metrics now include an untagged summary metric for ease of use.
+  - Improved error logging to include URLs that fail to post messages to New Relic.
+- `datadog` exporter: Upscale trace stats when global sampling rate is set (#4213)
+
+## 🧰 Bug fixes 🧰
+
+- `statsd` receiver: Add option to set Counter to be monotonic (#4154)
+- Fix `internal/stanza` severity mappings (#4315)
+- `awsxray` exporter: Fix the wrong AWS env resource setting (#4384)
+- `newrelic` exporter (#4278):
+  - Configuration unmarshalling did not allow timeout value to be set to 0 in the endpoint specific section.
+  - Request cancellation was not propagated via context into the http request.
+  - The queued retry logger is set to a zap.Nop logger as intended.
+
 ## v0.30.0
 
 # 🎉 OpenTelemetry Collector Contrib v0.30.0 (Beta) 🎉

@@ -21,7 +21,7 @@ import (
 
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
-	"go.opentelemetry.io/collector/translator/conventions"
+	conventions "go.opentelemetry.io/collector/translator/conventions/v1.5.0"
 	"go.uber.org/zap"
 	appsv1 "k8s.io/api/apps/v1"
 	batchv1 "k8s.io/api/batch/v1"
@@ -114,11 +114,11 @@ func getResourceForPod(pod *corev1.Pod) *resourcepb.Resource {
 	return &resourcepb.Resource{
 		Type: k8sType,
 		Labels: map[string]string{
-			conventions.AttributeK8sPodUID:    string(pod.UID),
-			conventions.AttributeK8sPod:       pod.Name,
-			conventions.AttributeK8sNodeName:  pod.Spec.NodeName,
-			conventions.AttributeK8sNamespace: pod.Namespace,
-			conventions.AttributeK8sCluster:   pod.ClusterName,
+			conventions.AttributeK8SPodUID:        string(pod.UID),
+			conventions.AttributeK8SPodName:       pod.Name,
+			conventions.AttributeK8SNodeName:      pod.Spec.NodeName,
+			conventions.AttributeK8SNamespaceName: pod.Namespace,
+			conventions.AttributeK8SClusterName:   pod.ClusterName,
 		},
 	}
 }
@@ -180,7 +180,7 @@ func getMetadataForPod(pod *corev1.Pod, mc *metadataStore, logger *zap.Logger) m
 	podID := metadataPkg.ResourceID(pod.UID)
 	return mergeKubernetesMetadataMaps(map[metadataPkg.ResourceID]*KubernetesMetadata{
 		podID: {
-			resourceIDKey: conventions.AttributeK8sPodUID,
+			resourceIDKey: conventions.AttributeK8SPodUID,
 			resourceID:    podID,
 			metadata:      metadata,
 		},
@@ -203,9 +203,9 @@ func collectPodJobProperties(pod *corev1.Pod, JobStore cache.Store, logger *zap.
 
 		jobObj := job.(*batchv1.Job)
 		if cronJobRef := utils.FindOwnerWithKind(jobObj.OwnerReferences, k8sKindCronJob); cronJobRef != nil {
-			return getWorkloadProperties(cronJobRef, conventions.AttributeK8sCronJob)
+			return getWorkloadProperties(cronJobRef, conventions.AttributeK8SCronJobName)
 		}
-		return getWorkloadProperties(jobRef, conventions.AttributeK8sJob)
+		return getWorkloadProperties(jobRef, conventions.AttributeK8SJobName)
 	}
 	return nil
 }
@@ -226,9 +226,9 @@ func collectPodReplicaSetProperties(pod *corev1.Pod, replicaSetstore cache.Store
 
 		replicaSetObj := replicaSet.(*appsv1.ReplicaSet)
 		if deployRef := utils.FindOwnerWithKind(replicaSetObj.OwnerReferences, k8sKindDeployment); deployRef != nil {
-			return getWorkloadProperties(deployRef, conventions.AttributeK8sDeployment)
+			return getWorkloadProperties(deployRef, conventions.AttributeK8SDeploymentName)
 		}
-		return getWorkloadProperties(rsRef, conventions.AttributeK8sReplicaSet)
+		return getWorkloadProperties(rsRef, conventions.AttributeK8SReplicasetName)
 	}
 	return nil
 }
@@ -236,16 +236,16 @@ func collectPodReplicaSetProperties(pod *corev1.Pod, replicaSetstore cache.Store
 func logWarning(ref *v1.OwnerReference, podUID types.UID, logger *zap.Logger) {
 	logger.Warn(
 		"Resource does not exist in store, properties from it will not be synced.",
-		zap.String(conventions.AttributeK8sPodUID, string(podUID)),
-		zap.String(conventions.AttributeK8sJobUID, string(ref.UID)),
+		zap.String(conventions.AttributeK8SPodUID, string(podUID)),
+		zap.String(conventions.AttributeK8SJobUID, string(ref.UID)),
 	)
 }
 
 func logError(err error, ref *v1.OwnerReference, podUID types.UID, logger *zap.Logger) {
 	logger.Error(
 		"Failed to get resource from store, properties from it will not be synced.",
-		zap.String(conventions.AttributeK8sPodUID, string(podUID)),
-		zap.String(conventions.AttributeK8sJobUID, string(ref.UID)),
+		zap.String(conventions.AttributeK8SPodUID, string(podUID)),
+		zap.String(conventions.AttributeK8SJobUID, string(ref.UID)),
 		zap.Error(err),
 	)
 }

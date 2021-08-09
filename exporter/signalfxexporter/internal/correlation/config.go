@@ -21,7 +21,7 @@ import (
 
 	"github.com/signalfx/signalfx-agent/pkg/apm/correlations"
 	"go.opentelemetry.io/collector/config/confighttp"
-	"go.opentelemetry.io/collector/translator/conventions"
+	conventions "go.opentelemetry.io/collector/translator/conventions/v1.5.0"
 )
 
 // DefaultConfig returns default configuration correlation values.
@@ -30,7 +30,7 @@ func DefaultConfig() *Config {
 		HTTPClientSettings:  confighttp.HTTPClientSettings{Timeout: 5 * time.Second},
 		StaleServiceTimeout: 5 * time.Minute,
 		SyncAttributes: map[string]string{
-			conventions.AttributeK8sPodUID:   conventions.AttributeK8sPodUID,
+			conventions.AttributeK8SPodUID:   conventions.AttributeK8SPodUID,
 			conventions.AttributeContainerID: conventions.AttributeContainerID,
 		},
 		Config: correlations.Config{

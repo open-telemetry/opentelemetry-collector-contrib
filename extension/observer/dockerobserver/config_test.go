@@ -1,4 +1,4 @@
-// Copyright OpenTelemetry Authors
+// Copyright  OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,12 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package uptraceexporter
+package dockerobserver
 
 import (
 	"path"
 	"testing"
+	"time"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
@@ -26,23 +28,31 @@ import (
 
 func TestLoadConfig(t *testing.T) {
 	factories, err := componenttest.NopFactories()
-	require.Nil(t, err)
+	assert.NoError(t, err)
 
 	factory := NewFactory()
-	factories.Exporters[typeStr] = factory
-
+	factories.Extensions[typeStr] = factory
 	cfg, err := configtest.LoadConfigAndValidate(path.Join(".", "testdata", "config.yaml"), factories)
 
-	require.NoError(t, err)
+	require.Nil(t, err)
 	require.NotNil(t, cfg)
 
-	require.Equal(t, 2, len(cfg.Exporters))
+	require.Len(t, cfg.Extensions, 2)
 
-	c0 := cfg.Exporters[config.NewID(typeStr)].(*Config)
-	require.Equal(t, config.NewExporterSettings(config.NewID(typeStr)), c0.ExporterSettings)
-	require.Equal(t, "https://api.uptrace.dev@example.com/1", c0.DSN)
+	ext0 := cfg.Extensions[config.NewID(typeStr)]
+	assert.Equal(t, factory.CreateDefaultConfig(), ext0)
 
-	c1 := cfg.Exporters[config.NewIDWithName(typeStr, "customname")].(*Config)
-	require.Equal(t, config.NewExporterSettings(config.NewIDWithName(typeStr, "customname")), c1.ExporterSettings)
-	require.Equal(t, "https://key@example.com/1", c1.DSN)
+	ext1 := cfg.Extensions[config.NewIDWithName(typeStr, "all_settings")]
+	assert.Equal(t,
+		&Config{
+			Endpoint:              "unix:///var/run/docker.sock",
+			ExtensionSettings:     config.NewExtensionSettings(config.NewIDWithName(typeStr, "all_settings")),
+			CacheSyncInterval:     5 * time.Minute,
+			Timeout:               20 * time.Second,
+			ExcludedImages:        []string{"excluded", "image"},
+			UseHostnameIfPresent:  true,
+			UseHostBindings:       true,
+			IgnoreNonHostBindings: true,
+		},
+		ext1)
 }

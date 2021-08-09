@@ -1,0 +1,26 @@
+extensions:
+  docker_observer:
+  docker_observer/all_settings:
+    endpoint: "unix:///var/run/docker.sock"
+    timeout: 20s
+    excluded_images: ["excluded", "image"]
+    use_hostname_if_present: true
+    use_host_bindings: true
+    ignore_non_host_bindings: true
+    cache_sync_interval: 5m
+
+service:
+  extensions: [docker_observer, docker_observer/all_settings]
+  pipelines:
+    traces:
+      receivers: [nop]
+      processors: [nop]
+      exporters: [nop]
+
+# Data pipeline is required to load the config.
+receivers:
+  nop:
+processors:
+  nop:
+exporters:
+  nop:
