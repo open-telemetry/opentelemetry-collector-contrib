@@ -32,7 +32,7 @@ const (
 	parserConfigSection = "parser"
 )
 
-var _ config.CustomUnmarshable = (*Config)(nil)
+var _ config.Unmarshallable = (*Config)(nil)
 
 // Config defines configuration for the Carbon receiver.
 type Config struct {
