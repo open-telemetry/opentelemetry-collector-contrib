@@ -18,7 +18,7 @@ import (
 	"context"
 	"fmt"
 
-	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/testbed/testbed"
@@ -56,11 +56,10 @@ func (je *SapmDataSender) Start() error {
 		DisableCompression: true,
 		AccessToken:        "MyToken",
 	}
+	params := componenttest.NewNopExporterCreateSettings()
+	params.Logger = zap.L()
 
-	var err error
-	params := component.ExporterCreateSettings{Logger: zap.L()}
 	exporter, err := factory.CreateTracesExporter(context.Background(), params, cfg)
-
 	if err != nil {
 		return err
 	}

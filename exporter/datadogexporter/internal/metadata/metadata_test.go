@@ -26,8 +26,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
 	conventions "go.opentelemetry.io/collector/translator/conventions/v1.5.0"
-	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/config"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata/azure"
@@ -58,10 +58,8 @@ var (
 
 func TestFillHostMetadata(t *testing.T) {
 	cache.Cache.Flush()
-	params := component.ExporterCreateSettings{
-		Logger:    zap.NewNop(),
-		BuildInfo: mockBuildInfo,
-	}
+	params := componenttest.NewNopExporterCreateSettings()
+	params.BuildInfo = mockBuildInfo
 
 	cfg := &config.Config{TagsConfig: config.TagsConfig{
 		Hostname: "hostname",
@@ -195,10 +193,9 @@ func TestPusher(t *testing.T) {
 		API:                 config.APIConfig{Key: "apikey"},
 		UseResourceMetadata: true,
 	}
-	mockParams := component.ExporterCreateSettings{
-		Logger:    zap.NewNop(),
-		BuildInfo: mockBuildInfo,
-	}
+	params := componenttest.NewNopExporterCreateSettings()
+	params.BuildInfo = mockBuildInfo
+
 	attrs := testutils.NewAttributeMap(map[string]string{
 		AttributeDatadogHostname: "datadog-hostname",
 	})
@@ -209,7 +206,7 @@ func TestPusher(t *testing.T) {
 	defer server.Close()
 	cfg.Metrics.Endpoint = server.URL
 
-	go Pusher(ctx, mockParams, cfg, attrs)
+	go Pusher(ctx, params, cfg, attrs)
 
 	body := <-server.MetadataChan
 	var recvMetadata HostMetadata
