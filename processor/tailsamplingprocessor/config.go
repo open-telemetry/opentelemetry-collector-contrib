@@ -83,12 +83,13 @@ type NumericAttributeCfg struct {
 // ProbabilisticCfg holds the configurable settings to create a probabilistic
 // sampling policy evaluator.
 type ProbabilisticCfg struct {
-	// Percentage of traces to sample.
+	// HashSeed allows one to configure the hashing seed. This is important in scenarios where multiple layers of collectors
+	// have different sampling rates: if they use the same seed all passing one layer may pass the other even if they have
+	// different sampling rates, configuring different seeds avoids that.
+	HashSeed uint32 `mapstructure:"hash_seed"`
+	// SamplingPercentage is the percentage rate at which traces are going to be sampled. Defaults to zero, i.e.: no sample.
+	// Values greater or equal 100 are treated as "sample all traces".
 	SamplingPercentage float32 `mapstructure:"sampling_percentage"`
-	// Whether to include traces sampled by earlier policies in the processing chain towards the
-	// overall sampling percentage. If not set, this policy samples a percentage of traces that
-	// have not been sampled yet. If set, this policy samples traces up to the desired percentage.
-	IncludeAlreadySampled bool `mapstructure:"include_already_sampled"`
 }
 
 // StatusCodeCfg holds the configurable settings to create a status code filter sampling

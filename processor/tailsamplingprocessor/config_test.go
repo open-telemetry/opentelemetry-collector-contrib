@@ -61,7 +61,7 @@ func TestLoadConfig(t *testing.T) {
 				{
 					Name:             "test-policy-4",
 					Type:             Probabilistic,
-					ProbabilisticCfg: ProbabilisticCfg{SamplingPercentage: 0.1},
+					ProbabilisticCfg: ProbabilisticCfg{HashSeed: 22, SamplingPercentage: 0.1},
 				},
 				{
 					Name:          "test-policy-5",
