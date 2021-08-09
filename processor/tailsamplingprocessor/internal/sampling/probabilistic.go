@@ -65,9 +65,9 @@ func (s *probabilisticSampler) Evaluate(traceID pdata.TraceID, _ *TraceData) (De
 	traceIDBytes := traceID.Bytes()
 	if hash(traceIDBytes[:], s.hashSeed)&bitMaskHashBuckets < s.scaledSamplingRate {
 		return Sampled, nil
-	} else {
-		return NotSampled, nil
 	}
+
+	return NotSampled, nil
 }
 
 // hash is a murmur3 hash function, see http://en.wikipedia.org/wiki/MurmurHash
