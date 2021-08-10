@@ -26,7 +26,6 @@ import (
 
 type deltaToRateProcessor struct {
 	ConfiguredMetrics map[string]bool
-	TimeUnit          StringTimeUnit
 	logger            *zap.Logger
 }
 
@@ -38,7 +37,6 @@ func newDeltaToRateProcessor(config *Config, logger *zap.Logger) *deltaToRatePro
 
 	return &deltaToRateProcessor{
 		ConfiguredMetrics: inputMetricSet,
-		TimeUnit:          config.TimeUnit,
 		logger:            logger,
 	}
 }
@@ -76,7 +74,7 @@ func (dtrp *deltaToRateProcessor) processMetrics(_ context.Context, md pdata.Met
 					fromDataPoint.CopyTo(newDp)
 
 					durationNanos := fromDataPoint.Timestamp().AsTime().Sub(fromDataPoint.StartTimestamp().AsTime())
-					rate := calculateRate(fromDataPoint.DoubleVal(), durationNanos, dtrp.TimeUnit)
+					rate := calculateRate(fromDataPoint.DoubleVal(), durationNanos)
 					newDp.SetDoubleVal(rate)
 				}
 
@@ -96,17 +94,8 @@ func (dtrp *deltaToRateProcessor) Shutdown(context.Context) error {
 	return nil
 }
 
-func calculateRate(value float64, durationNanos time.Duration, timeUnit StringTimeUnit) float64 {
+func calculateRate(value float64, durationNanos time.Duration) float64 {
 	duration := durationNanos.Seconds()
-
-	switch timeUnit {
-	case nanosecond:
-		duration = float64(durationNanos.Nanoseconds())
-	case millisecond:
-		duration = float64(durationNanos.Milliseconds())
-	case minute:
-		duration = durationNanos.Minutes()
-	}
 	if duration > 0 {
 		rate := value / duration
 		return rate

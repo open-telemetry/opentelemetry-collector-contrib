@@ -36,7 +36,6 @@ type testMetric struct {
 type deltaToRateTest struct {
 	name       string
 	metrics    []string
-	timeUnit   StringTimeUnit
 	inMetrics  pdata.Metrics
 	outMetrics pdata.Metrics
 }
@@ -71,51 +70,8 @@ var (
 			}),
 		},
 		{
-			name:     "delta_to_rate_per_minute",
-			metrics:  []string{"metric_1", "metric_2"},
-			timeUnit: minute,
-			inMetrics: generateSumMetrics(testMetric{
-				metricNames:  []string{"metric_1", "metric_2"},
-				metricValues: [][]float64{{100, 200, 600}, {40}},
-				isDelta:      []bool{true, true},
-			}),
-			outMetrics: generateGaugeMetrics(testMetric{
-				metricNames:  []string{"metric_1", "metric_2"},
-				metricValues: [][]float64{{50, 100, 300}, {20}},
-			}),
-		},
-		{
-			name:     "delta_to_rate_per_nanosecond",
-			metrics:  []string{"metric_1", "metric_2"},
-			timeUnit: nanosecond,
-			inMetrics: generateSumMetrics(testMetric{
-				metricNames:  []string{"metric_1", "metric_2"},
-				metricValues: [][]float64{{120000000000}, {240000000000}},
-				isDelta:      []bool{true, true},
-			}),
-			outMetrics: generateGaugeMetrics(testMetric{
-				metricNames:  []string{"metric_1", "metric_2"},
-				metricValues: [][]float64{{1}, {2}},
-			}),
-		},
-		{
-			name:     "delta_to_rate_per_millisecond",
-			metrics:  []string{"metric_1", "metric_2"},
-			timeUnit: millisecond,
-			inMetrics: generateSumMetrics(testMetric{
-				metricNames:  []string{"metric_1", "metric_2"},
-				metricValues: [][]float64{{1200000}, {240000}},
-				isDelta:      []bool{true, true},
-			}),
-			outMetrics: generateGaugeMetrics(testMetric{
-				metricNames:  []string{"metric_1", "metric_2"},
-				metricValues: [][]float64{{10}, {2}},
-			}),
-		},
-		{
-			name:     "delta_to_rate_with_cumulative",
-			metrics:  []string{"metric_1", "metric_2"},
-			timeUnit: millisecond,
+			name:    "delta_to_rate_with_cumulative",
+			metrics: []string{"metric_1", "metric_2"},
 			inMetrics: generateSumMetrics(testMetric{
 				metricNames:  []string{"metric_1", "metric_2"},
 				metricValues: [][]float64{{100}, {4}},
@@ -138,7 +94,6 @@ func TestCumulativeToDeltaProcessor(t *testing.T) {
 			cfg := &Config{
 				ProcessorSettings: config.NewProcessorSettings(config.NewID(typeStr)),
 				Metrics:           test.metrics,
-				TimeUnit:          test.timeUnit,
 			}
 			factory := NewFactory()
 			mgp, err := factory.CreateMetricsProcessor(

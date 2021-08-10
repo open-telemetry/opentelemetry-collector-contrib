@@ -23,6 +23,4 @@ processors:
             .
             .
             - <metric_n_name>
-        # time unit to calculate the rate over. This could be one of [ns, ms, s, m]. This field is optional and the default time_unit is s.
-        time_unit: ns
 ```
