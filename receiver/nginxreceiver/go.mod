@@ -10,5 +10,5 @@ require (
 	github.com/testcontainers/testcontainers-go v0.11.1
 	go.opentelemetry.io/collector v0.31.1-0.20210807221137-acd1eb198b27
 	go.opentelemetry.io/collector/model v0.31.1-0.20210807221137-acd1eb198b27
-	go.uber.org/zap v1.18.1
+	go.uber.org/zap v1.19.0
 )
