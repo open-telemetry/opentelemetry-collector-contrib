@@ -17,6 +17,7 @@ package signalfxexporter
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"os"
 	"testing"
@@ -612,6 +613,16 @@ func TestDefaultCPUTranslations(t *testing.T) {
 	require.Equal(t, 1, len(cpuUtil))
 	for _, pt := range cpuUtil {
 		require.Equal(t, 66, int(*pt.Value.DoubleValue))
+	}
+
+	cpuUtilPerCore := m["cpu.utilization_per_core"]
+	require.Equal(t, 8, len(cpuUtilPerCore))
+
+	cpuStateMetrics := []string{"cpu.idle", "cpu.interrupt", "cpu.num_processors", "cpu.system", "cpu.user"}
+	for _, metric := range cpuStateMetrics {
+		dps, ok := m[metric]
+		require.True(t, ok, fmt.Sprintf("%s metrics not found", metric))
+		require.Len(t, dps, 1)
 	}
 }
 
