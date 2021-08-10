@@ -17,6 +17,7 @@
 package cadvisor
 
 import (
+	"encoding/json"
 	"errors"
 	"net/http"
 	"os"
@@ -92,6 +93,12 @@ func WithDecorator(d Decorator) Option {
 	}
 }
 
+func WithECSInfoCreator(f ecsInfo) Option {
+	return func(c *Cadvisor) {
+		c.ecsInfo = f
+	}
+}
+
 type hostInfo interface {
 	GetNumCores() int64
 	GetMemoryCapacity() int64
@@ -101,6 +108,14 @@ type hostInfo interface {
 	GetInstanceID() string
 	GetInstanceType() string
 	GetAutoScalingGroupName() string
+}
+
+type ecsInfo interface {
+	GetCPUReserved() int64
+	GetMemReserved() int64
+	GetRunningTaskCount() int64
+	GetContainerInstanceID() string
+	GetClusterName() string
 }
 
 type Decorator interface {
@@ -115,6 +130,7 @@ type Cadvisor struct {
 	version               string
 	hostInfo              hostInfo
 	k8sDecorator          Decorator
+	ecsInfo               ecsInfo
 	containerOrchestrator string
 }
 
@@ -127,7 +143,7 @@ func init() {
 // New creates a Cadvisor struct which can generate metrics from embedded cadvisor lib
 func New(containerOrchestrator string, hostInfo hostInfo, logger *zap.Logger, options ...Option) (*Cadvisor, error) {
 	nodeName := os.Getenv("HOST_NAME")
-	if nodeName == "" {
+	if nodeName == "" && containerOrchestrator == ci.EKS {
 		return nil, errors.New("missing environment variable HOST_NAME. Please check your deployment YAML config")
 	}
 
@@ -178,6 +194,65 @@ func (c *Cadvisor) addEbsVolumeInfo(tags map[string]string, ebsVolumeIdsUsedAsPV
 	}
 }
 
+func (c *Cadvisor) addECSMetrics(cadvisormetrics []*extractors.CAdvisorMetric) {
+
+	if len(cadvisormetrics) == 0 {
+		c.logger.Warn("cadvisor can't collect any metrics!")
+	}
+
+	for _, cadvisormetric := range cadvisormetrics {
+		if cadvisormetric.GetMetricType() == ci.TypeInstance {
+			metricMap := cadvisormetric.GetFields()
+			cpuReserved := c.ecsInfo.GetCPUReserved()
+			memReserved := c.ecsInfo.GetMemReserved()
+			if cpuReserved == 0 && memReserved == 0 {
+				c.logger.Warn("Can't get mem or cpu reserved!")
+			}
+			cpuLimits, cpuExist := metricMap[ci.MetricName(ci.TypeInstance, ci.CPULimit)]
+			memLimits, memExist := metricMap[ci.MetricName(ci.TypeInstance, ci.MemLimit)]
+
+			if !cpuExist && !memExist {
+				c.logger.Warn("Can't get mem or cpu limit")
+			} else {
+				//cgroup standard cpulimits should be cadvisor standard * 1.024
+				metricMap[ci.MetricName(ci.TypeInstance, ci.CPUReservedCapacity)] = float64(cpuReserved) / (float64(cpuLimits.(int64)) * 1.024) * 100
+				metricMap[ci.MetricName(ci.TypeInstance, ci.MemReservedCapacity)] = float64(memReserved) / float64(memLimits.(int64)) * 100
+			}
+
+			if c.ecsInfo.GetRunningTaskCount() == 0 {
+				c.logger.Warn("Can't get running task number")
+			} else {
+				metricMap[ci.MetricName(ci.TypeInstance, ci.RunningTaskCount)] = c.ecsInfo.GetRunningTaskCount()
+			}
+		}
+	}
+}
+
+func addECSResources(tags map[string]string) {
+	metricType := tags[ci.MetricType]
+	if metricType == "" {
+		return
+	}
+	var sources []string
+	switch metricType {
+	case ci.TypeInstance:
+		sources = []string{"cadvisor", "/proc", "ecsagent", "calculated"}
+	case ci.TypeInstanceFS:
+		sources = []string{"cadvisor", "calculated"}
+	case ci.TypeInstanceNet:
+		sources = []string{"cadvisor", "calculated"}
+	case ci.TypeInstanceDiskIO:
+		sources = []string{"cadvisor"}
+	}
+	if len(sources) > 0 {
+		sourcesInfo, err := json.Marshal(sources)
+		if err != nil {
+			return
+		}
+		tags[ci.SourcesKey] = string(sourcesInfo)
+	}
+}
+
 func (c *Cadvisor) decorateMetrics(cadvisormetrics []*extractors.CAdvisorMetric) []*extractors.CAdvisorMetric {
 	ebsVolumeIdsUsedAsPV := c.hostInfo.ExtractEbsIDsUsedByKubernetes()
 	var result []*extractors.CAdvisorMetric
@@ -203,13 +278,36 @@ func (c *Cadvisor) decorateMetrics(cadvisormetrics []*extractors.CAdvisorMetric)
 			tags[ci.InstanceType] = instanceType
 		}
 
-		//add cluster name and auto scaling group name
-		tags[ci.ClusterNameKey] = c.hostInfo.GetClusterName()
+		//add scaling group name
 		tags[ci.AutoScalingGroupNameKey] = c.hostInfo.GetAutoScalingGroupName()
-		out := c.k8sDecorator.Decorate(m)
-		if out != nil {
-			result = append(result, out)
+
+		//add ECS cluster name and container instance id
+		if c.containerOrchestrator == ci.ECS {
+			if c.ecsInfo.GetClusterName() == "" {
+				c.logger.Warn("Can't get cluster name")
+			} else {
+				tags[ci.ClusterNameKey] = c.ecsInfo.GetClusterName()
+			}
+
+			if c.ecsInfo.GetContainerInstanceID() == "" {
+				c.logger.Warn("Can't get containerInstanceId")
+			} else {
+				tags[ci.ContainerInstanceIDKey] = c.ecsInfo.GetContainerInstanceID()
+			}
+			addECSResources(tags)
 		}
+
+		// add tags for EKS
+		if c.containerOrchestrator == ci.EKS {
+
+			tags[ci.ClusterNameKey] = c.hostInfo.GetClusterName()
+
+			out := c.k8sDecorator.Decorate(m)
+			if out != nil {
+				result = append(result, out)
+			}
+		}
+
 	}
 
 	return result
@@ -222,11 +320,13 @@ func (c *Cadvisor) GetMetrics() []pdata.Metrics {
 	var containerinfos []*cInfo.ContainerInfo
 	var err error
 
-	//don't emit metrics if the cluster name is not detected
-	clusterName := c.hostInfo.GetClusterName()
-	if clusterName == "" {
-		c.logger.Warn("Failed to detect cluster name. Drop all metrics")
-		return result
+	//For EKS don't emit metrics if the cluster name is not detected
+	if c.containerOrchestrator == ci.EKS {
+		clusterName := c.hostInfo.GetClusterName()
+		if clusterName == "" {
+			c.logger.Warn("Failed to detect cluster name. Drop all metrics")
+			return result
+		}
 	}
 
 	req := &cInfo.ContainerInfoRequest{
@@ -239,10 +339,13 @@ func (c *Cadvisor) GetMetrics() []pdata.Metrics {
 		return result
 	}
 
-	c.logger.Debug("cadvisor containers stats", zap.Int("size", len(containerinfos)))
 	out := processContainers(containerinfos, c.hostInfo, c.containerOrchestrator, c.logger)
-
 	results := c.decorateMetrics(out)
+
+	if c.containerOrchestrator == ci.ECS {
+		results = out
+		c.addECSMetrics(results)
+	}
 
 	for _, cadvisorMetric := range results {
 		md := ci.ConvertToOTLPMetrics(cadvisorMetric.GetFields(), cadvisorMetric.GetTags(), c.logger)

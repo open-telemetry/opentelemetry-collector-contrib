@@ -24,7 +24,9 @@ import (
 	"go.opentelemetry.io/collector/model/pdata"
 	"go.uber.org/zap"
 
+	ci "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/containerinsight"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver/internal/cadvisor"
+	ecsinfo "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver/internal/ecsInfo"
 	hostInfo "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver/internal/host"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver/internal/k8sapiserver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver/internal/stores"
@@ -67,25 +69,40 @@ func newAWSContainerInsightReceiver(
 func (acir *awsContainerInsightReceiver) Start(ctx context.Context, host component.Host) error {
 	ctx, acir.cancel = context.WithCancel(context.Background())
 
-	hostinfo, err := hostInfo.NewInfo(acir.config.CollectionInterval, acir.logger)
+	hostinfo, err := hostInfo.NewInfo(acir.config.ContainerOrchestrator, acir.config.CollectionInterval, acir.logger)
 	if err != nil {
 		return err
 	}
 
-	k8sDecorator, err := stores.NewK8sDecorator(ctx, acir.config.TagService, acir.config.PrefFullPodName, acir.logger)
-	if err != nil {
-		return err
-	}
+	if acir.config.ContainerOrchestrator == ci.EKS {
+		k8sDecorator, err := stores.NewK8sDecorator(ctx, acir.config.TagService, acir.config.PrefFullPodName, acir.logger)
+		if err != nil {
+			return err
+		}
 
-	decoratorOption := cadvisor.WithDecorator(k8sDecorator)
-	acir.cadvisor, err = cadvisor.New(acir.config.ContainerOrchestrator, hostinfo, acir.logger, decoratorOption)
-	if err != nil {
-		return err
+		decoratorOption := cadvisor.WithDecorator(k8sDecorator)
+		acir.cadvisor, err = cadvisor.New(acir.config.ContainerOrchestrator, hostinfo, acir.logger, decoratorOption)
+		if err != nil {
+			return err
+		}
+		acir.k8sapiserver, err = k8sapiserver.New(hostinfo, acir.logger)
+		if err != nil {
+			return err
+		}
 	}
+	if acir.config.ContainerOrchestrator == ci.ECS {
 
-	acir.k8sapiserver, err = k8sapiserver.New(hostinfo, acir.logger)
-	if err != nil {
-		return err
+		ecsInfo, err := ecsinfo.NewECSInfo(acir.config.CollectionInterval, hostinfo, acir.logger)
+		if err != nil {
+			return err
+		}
+
+		ecsOption := cadvisor.WithECSInfoCreator(ecsInfo)
+
+		acir.cadvisor, err = cadvisor.New(acir.config.ContainerOrchestrator, hostinfo, acir.logger, ecsOption)
+		if err != nil {
+			return err
+		}
 	}
 
 	go func() {
