@@ -17,8 +17,6 @@ package awsemfexporter
 import (
 	"encoding/json"
 
-	"encoding/json"
-
 	"go.opentelemetry.io/collector/model/pdata"
 	"go.uber.org/zap"
 
