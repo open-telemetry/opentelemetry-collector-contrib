@@ -88,7 +88,7 @@ func processContainers(cInfos []*cInfo.ContainerInfo, mInfo extractors.CPUMemInf
 	}
 
 	// This happens when our cgroup path based pod detection logic is not working.
-	if len(metrics) == beforePod {
+	if len(metrics) == beforePod && containerOrchestrator == ci.EKS {
 		logger.Warn("No pod metric collected", zap.Any("metrics count", beforePod))
 	}
 

@@ -28,11 +28,13 @@ import (
 
 // Info contains information about a host
 type Info struct {
-	cancel           context.CancelFunc
-	logger           *zap.Logger
-	awsSession       *session.Session
-	refreshInterval  time.Duration
-	instanceIDReadyC chan bool // close of this channel indicates instance ID is ready
+	cancel                context.CancelFunc
+	logger                *zap.Logger
+	awsSession            *session.Session
+	refreshInterval       time.Duration
+	containerOrchestrator string
+	instanceIDReadyC      chan bool // close of this channel indicates instance ID is ready
+	instanceIPReadyC      chan bool // close of this channel indicates instance Ip is ready
 
 	ebsVolumeReadyC chan bool // close of this channel indicates ebsVolume is initialized. It is used only in test
 	ec2TagsReadyC   chan bool // close of this channel indicates ec2Tags is initialized. It is used only in test
@@ -44,27 +46,29 @@ type Info struct {
 
 	awsSessionCreator   func(*zap.Logger, awsutil.ConnAttr, *awsutil.AWSSessionSettings) (*aws.Config, *session.Session, error)
 	nodeCapacityCreator func(*zap.Logger, ...nodeCapacityOption) (nodeCapacityProvider, error)
-	ec2MetadataCreator  func(context.Context, *session.Session, time.Duration, chan bool, *zap.Logger, ...ec2MetadataOption) ec2MetadataProvider
+	ec2MetadataCreator  func(context.Context, *session.Session, time.Duration, chan bool, chan bool, *zap.Logger, ...ec2MetadataOption) ec2MetadataProvider
 	ebsVolumeCreator    func(context.Context, *session.Session, string, string, time.Duration, *zap.Logger, ...ebsVolumeOption) ebsVolumeProvider
-	ec2TagsCreator      func(context.Context, *session.Session, string, string, time.Duration, *zap.Logger, ...ec2TagsOption) ec2TagsProvider
+	ec2TagsCreator      func(context.Context, *session.Session, string, string, string, time.Duration, *zap.Logger, ...ec2TagsOption) ec2TagsProvider
 }
 
 type machineInfoOption func(*Info)
 
 // NewInfo creates a new Info struct
-func NewInfo(refreshInterval time.Duration, logger *zap.Logger, options ...machineInfoOption) (*Info, error) {
+func NewInfo(containerOrchestrator string, refreshInterval time.Duration, logger *zap.Logger, options ...machineInfoOption) (*Info, error) {
 	ctx, cancel := context.WithCancel(context.Background())
 	mInfo := &Info{
 		cancel:           cancel,
 		refreshInterval:  refreshInterval,
 		instanceIDReadyC: make(chan bool),
+		instanceIPReadyC: make(chan bool),
 		logger:           logger,
 
-		awsSessionCreator:   awsutil.GetAWSConfigSession,
-		nodeCapacityCreator: newNodeCapacity,
-		ec2MetadataCreator:  newEC2Metadata,
-		ebsVolumeCreator:    newEBSVolume,
-		ec2TagsCreator:      newEC2Tags,
+		containerOrchestrator: containerOrchestrator,
+		awsSessionCreator:     awsutil.GetAWSConfigSession,
+		nodeCapacityCreator:   newNodeCapacity,
+		ec2MetadataCreator:    newEC2Metadata,
+		ebsVolumeCreator:      newEBSVolume,
+		ec2TagsCreator:        newEC2Tags,
 
 		// used in test only
 		ebsVolumeReadyC: make(chan bool),
@@ -88,7 +92,7 @@ func NewInfo(refreshInterval time.Duration, logger *zap.Logger, options ...machi
 	}
 	mInfo.awsSession = session
 
-	mInfo.ec2Metadata = mInfo.ec2MetadataCreator(ctx, session, refreshInterval, mInfo.instanceIDReadyC, logger)
+	mInfo.ec2Metadata = mInfo.ec2MetadataCreator(ctx, session, refreshInterval, mInfo.instanceIDReadyC, mInfo.instanceIPReadyC, logger)
 
 	go mInfo.lazyInitEBSVolume(ctx)
 	go mInfo.lazyInitEC2Tags(ctx)
@@ -107,7 +111,7 @@ func (m *Info) lazyInitEBSVolume(ctx context.Context) {
 func (m *Info) lazyInitEC2Tags(ctx context.Context) {
 	//wait until the instance id is ready
 	<-m.instanceIDReadyC
-	m.ec2Tags = m.ec2TagsCreator(ctx, m.awsSession, m.GetInstanceID(), m.GetRegion(), m.refreshInterval, m.logger)
+	m.ec2Tags = m.ec2TagsCreator(ctx, m.awsSession, m.GetInstanceID(), m.GetRegion(), m.containerOrchestrator, m.refreshInterval, m.logger)
 	close(m.ec2TagsReadyC)
 }
 
@@ -124,6 +128,11 @@ func (m *Info) GetInstanceType() string {
 // GetRegion returns the region for the host
 func (m *Info) GetRegion() string {
 	return m.ec2Metadata.getRegion()
+}
+
+//GetInstanceIP returns the IP address of the host
+func (m *Info) GetInstanceIP() string {
+	return m.ec2Metadata.getInstanceIP()
 }
 
 // GetNumCores returns the number of cpu cores on the host
@@ -152,6 +161,11 @@ func (m *Info) GetClusterName() string {
 	}
 
 	return ""
+}
+
+//GetInstanceIPReadyC returns the channel to show the status of host IP
+func (m *Info) GetInstanceIPReadyC() chan bool {
+	return m.instanceIPReadyC
 }
 
 // GetAutoScalingGroupName returns the auto scaling group associated with the host

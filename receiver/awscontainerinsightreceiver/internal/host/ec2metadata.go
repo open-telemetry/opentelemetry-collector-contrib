@@ -31,6 +31,7 @@ type ec2MetadataProvider interface {
 	getInstanceID() string
 	getInstanceType() string
 	getRegion() string
+	getInstanceIP() string
 }
 
 type ec2Metadata struct {
@@ -39,18 +40,21 @@ type ec2Metadata struct {
 	refreshInterval  time.Duration
 	instanceID       string
 	instanceType     string
+	instanceIP       string
 	region           string
 	instanceIDReadyC chan bool
+	instanceIPReadyC chan bool
 }
 
 type ec2MetadataOption func(*ec2Metadata)
 
 func newEC2Metadata(ctx context.Context, session *session.Session, refreshInterval time.Duration,
-	instanceIDReadyC chan bool, logger *zap.Logger, options ...ec2MetadataOption) ec2MetadataProvider {
+	instanceIDReadyC chan bool, instanceIPReadyC chan bool, logger *zap.Logger, options ...ec2MetadataOption) ec2MetadataProvider {
 	emd := &ec2Metadata{
 		client:           awsec2metadata.New(session),
 		refreshInterval:  refreshInterval,
 		instanceIDReadyC: instanceIDReadyC,
+		instanceIPReadyC: instanceIPReadyC,
 		logger:           logger,
 	}
 
@@ -60,7 +64,7 @@ func newEC2Metadata(ctx context.Context, session *session.Session, refreshInterv
 
 	shouldRefresh := func() bool {
 		//stop the refresh once we get instance ID and type successfully
-		return emd.instanceID == "" || emd.instanceType == ""
+		return emd.instanceID == "" || emd.instanceType == "" || emd.instanceIP == ""
 	}
 
 	go RefreshUntil(ctx, emd.refresh, emd.refreshInterval, shouldRefresh, 0)
@@ -80,10 +84,15 @@ func (emd *ec2Metadata) refresh(ctx context.Context) {
 	emd.instanceID = doc.InstanceID
 	emd.instanceType = doc.InstanceType
 	emd.region = doc.Region
+	emd.instanceIP = doc.PrivateIP
 
 	// notify ec2tags and ebsvolume that the instance id is ready
 	if emd.instanceID != "" {
 		close(emd.instanceIDReadyC)
+	}
+	// notify ecsinfo that the instance id is ready
+	if emd.instanceIP != "" {
+		close(emd.instanceIPReadyC)
 	}
 }
 
@@ -97,4 +106,8 @@ func (emd *ec2Metadata) getInstanceType() string {
 
 func (emd *ec2Metadata) getRegion() string {
 	return emd.region
+}
+
+func (emd *ec2Metadata) getInstanceIP() string {
+	return emd.instanceIP
 }
