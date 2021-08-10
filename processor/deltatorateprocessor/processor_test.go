@@ -31,6 +31,7 @@ type testMetric struct {
 	metricNames  []string
 	metricValues [][]float64
 	isDelta      []bool
+	deltaSecond  int
 }
 
 type deltaToRateTest struct {
@@ -49,11 +50,13 @@ var (
 				metricNames:  []string{"metric_1", "metric_2"},
 				metricValues: [][]float64{{100}, {4}},
 				isDelta:      []bool{true, true},
+				deltaSecond:  120,
 			}),
 			outMetrics: generateSumMetrics(testMetric{
 				metricNames:  []string{"metric_1", "metric_2"},
 				metricValues: [][]float64{{100}, {4}},
 				isDelta:      []bool{true, true},
+				deltaSecond:  120,
 			}),
 		},
 		{
@@ -63,6 +66,7 @@ var (
 				metricNames:  []string{"metric_1", "metric_2"},
 				metricValues: [][]float64{{120, 240, 360}, {360}},
 				isDelta:      []bool{true, true},
+				deltaSecond:  120,
 			}),
 			outMetrics: generateGaugeMetrics(testMetric{
 				metricNames:  []string{"metric_1", "metric_2"},
@@ -76,11 +80,27 @@ var (
 				metricNames:  []string{"metric_1", "metric_2"},
 				metricValues: [][]float64{{100}, {4}},
 				isDelta:      []bool{false, false},
+				deltaSecond:  120,
 			}),
 			outMetrics: generateSumMetrics(testMetric{
 				metricNames:  []string{"metric_1", "metric_2"},
 				metricValues: [][]float64{{100}, {4}},
 				isDelta:      []bool{false, false},
+				deltaSecond:  120,
+			}),
+		},
+		{
+			name:    "delta_to_rate_expect_zero",
+			metrics: []string{"metric_1", "metric_2"},
+			inMetrics: generateSumMetrics(testMetric{
+				metricNames:  []string{"metric_1", "metric_2"},
+				metricValues: [][]float64{{120, 240, 360}, {360}},
+				isDelta:      []bool{true, true},
+				deltaSecond:  0,
+			}),
+			outMetrics: generateGaugeMetrics(testMetric{
+				metricNames:  []string{"metric_1", "metric_2"},
+				metricValues: [][]float64{{0, 0, 0}, {0}},
 			}),
 		},
 	}
@@ -160,6 +180,7 @@ func TestCumulativeToDeltaProcessor(t *testing.T) {
 func generateSumMetrics(tm testMetric) pdata.Metrics {
 	md := pdata.NewMetrics()
 	now := time.Now()
+	delta := time.Duration(tm.deltaSecond)
 
 	rm := md.ResourceMetrics().AppendEmpty()
 	ms := rm.InstrumentationLibraryMetrics().AppendEmpty().Metrics()
@@ -180,7 +201,7 @@ func generateSumMetrics(tm testMetric) pdata.Metrics {
 		for _, value := range tm.metricValues[i] {
 			dp := m.Sum().DataPoints().AppendEmpty()
 			dp.SetStartTimestamp(pdata.TimestampFromTime(now))
-			dp.SetTimestamp(pdata.TimestampFromTime(now.Add(120 * time.Second)))
+			dp.SetTimestamp(pdata.TimestampFromTime(now.Add(delta * time.Second)))
 			dp.SetDoubleVal(value)
 		}
 	}
