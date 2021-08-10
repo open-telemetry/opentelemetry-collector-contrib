@@ -16,6 +16,7 @@ package deltatorateprocessor
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
@@ -63,24 +64,26 @@ func (dtrp *deltaToRateProcessor) processMetrics(_ context.Context, md pdata.Met
 					continue
 				}
 				newDoubleDataPointSlice := pdata.NewNumberDataPointSlice()
-				if metric.DataType() == pdata.MetricDataTypeSum && metric.Sum().AggregationTemporality() == pdata.AggregationTemporalityDelta {
-					dataPoints := metric.Sum().DataPoints()
+				if metric.DataType() != pdata.MetricDataTypeSum || metric.Sum().AggregationTemporality() != pdata.AggregationTemporalityDelta {
+					dtrp.logger.Info(fmt.Sprintf("Configured metric for rate calculation %s is not a sum or delta\n", metric.Name()))
+					continue
+				}
+				dataPoints := metric.Sum().DataPoints()
 
-					for i := 0; i < dataPoints.Len(); i++ {
-						fromDataPoint := dataPoints.At(i)
-						newDp := newDoubleDataPointSlice.AppendEmpty()
-						fromDataPoint.CopyTo(newDp)
+				for i := 0; i < dataPoints.Len(); i++ {
+					fromDataPoint := dataPoints.At(i)
+					newDp := newDoubleDataPointSlice.AppendEmpty()
+					fromDataPoint.CopyTo(newDp)
 
-						durationNanos := fromDataPoint.Timestamp().AsTime().Sub(fromDataPoint.StartTimestamp().AsTime())
-						rate := calculateRate(fromDataPoint.DoubleVal(), durationNanos, dtrp.TimeUnit)
-						newDp.SetDoubleVal(rate)
-					}
+					durationNanos := fromDataPoint.Timestamp().AsTime().Sub(fromDataPoint.StartTimestamp().AsTime())
+					rate := calculateRate(fromDataPoint.DoubleVal(), durationNanos, dtrp.TimeUnit)
+					newDp.SetDoubleVal(rate)
+				}
 
-					metric.SetDataType(pdata.MetricDataTypeGauge)
-					for d := 0; d < newDoubleDataPointSlice.Len(); d++ {
-						dp := metric.Gauge().DataPoints().AppendEmpty()
-						newDoubleDataPointSlice.At(d).CopyTo(dp)
-					}
+				metric.SetDataType(pdata.MetricDataTypeGauge)
+				for d := 0; d < newDoubleDataPointSlice.Len(); d++ {
+					dp := metric.Gauge().DataPoints().AppendEmpty()
+					newDoubleDataPointSlice.At(d).CopyTo(dp)
 				}
 			}
 		}
