@@ -45,8 +45,18 @@ func (t testRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 }
 
 func newTestClient(respCode int, respBody string) *http.Client {
+	return newTestClientWithPresetResponses([]int{respCode}, []string{respBody})
+}
+
+func newTestClientWithPresetResponses(codes []int, bodies []string) *http.Client {
+	index := 0
+
 	return &http.Client{
 		Transport: testRoundTripper(func(req *http.Request) *http.Response {
+			respCode := codes[index%len(codes)]
+			respBody := bodies[index%len(bodies)]
+			index++
+
 			return &http.Response{
 				StatusCode: respCode,
 				Body:       ioutil.NopCloser(bytes.NewBufferString(respBody)),
@@ -726,6 +736,33 @@ func Test_pushLogData_PostError(t *testing.T) {
 	require.Error(t, err)
 	assert.IsType(t, consumererror.Logs{}, err)
 	assert.Equal(t, (err.(consumererror.Logs)).GetLogs(), logs)
+}
+
+func Test_pushLogData_ShouldReturnUnsentLogsOnly(t *testing.T) {
+	c := client{
+		url: &url.URL{Scheme: "http", Host: "splunk"},
+		zippers: sync.Pool{New: func() interface{} {
+			return gzip.NewWriter(nil)
+		}},
+		config: NewFactory().CreateDefaultConfig().(*Config),
+	}
+
+	// Just two records
+	logs := createLogData(2, 1, 1)
+
+	// Each record is about 200 bytes, so the 250-byte buffer will fit only one
+	c.config.MaxContentLengthLogs, c.config.DisableCompression = 250, true
+
+	// The first record is to be sent successfully, the second one should not
+	c.client = newTestClientWithPresetResponses([]int{200, 400}, []string{"OK", "NOK"})
+
+	err := c.pushLogData(context.Background(), logs)
+	require.Error(t, err)
+	assert.IsType(t, consumererror.Logs{}, err)
+
+	// Only the record that was not successfully sent should be returned
+	assert.Equal(t, 1, (err.(consumererror.Logs)).GetLogs().ResourceLogs().Len())
+	assert.Equal(t, logs.ResourceLogs().At(1), (err.(consumererror.Logs)).GetLogs().ResourceLogs().At(0))
 }
 
 func Test_pushLogData_ShouldAddResponseTo400Error(t *testing.T) {
