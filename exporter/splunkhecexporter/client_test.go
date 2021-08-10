@@ -34,6 +34,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/model/pdata"
 	conventions "go.opentelemetry.io/collector/translator/conventions/v1.5.0"
+	"go.uber.org/zap/zaptest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 )
@@ -44,26 +45,29 @@ func (t testRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 	return t(req), nil
 }
 
-func newTestClient(respCode int, respBody string) *http.Client {
+func newTestClient(respCode int, respBody string) (*http.Client, *[]http.Header) {
 	return newTestClientWithPresetResponses([]int{respCode}, []string{respBody})
 }
 
-func newTestClientWithPresetResponses(codes []int, bodies []string) *http.Client {
+func newTestClientWithPresetResponses(codes []int, bodies []string) (*http.Client, *[]http.Header) {
 	index := 0
+	headers := make([]http.Header, 0)
 
 	return &http.Client{
 		Transport: testRoundTripper(func(req *http.Request) *http.Response {
-			respCode := codes[index%len(codes)]
-			respBody := bodies[index%len(bodies)]
+			code := codes[index%len(codes)]
+			body := bodies[index%len(bodies)]
 			index++
 
+			headers = append(headers, req.Header)
+
 			return &http.Response{
-				StatusCode: respCode,
-				Body:       ioutil.NopCloser(bytes.NewBufferString(respBody)),
+				StatusCode: code,
+				Body:       ioutil.NopCloser(bytes.NewBufferString(body)),
 				Header:     make(http.Header),
 			}
 		}),
-	}
+	}, &headers
 }
 
 func createMetricsData(numberOfDataPoints int) pdata.Metrics {
@@ -118,15 +122,28 @@ func createTraceData(numberOfTraces int) pdata.Traces {
 }
 
 func createLogData(numResources int, numLibraries int, numRecords int) pdata.Logs {
+	return createLogDataWithCustomLibraries(numResources, make([]string, numLibraries), repeat(numRecords, numLibraries))
+}
+
+func repeat(what int, times int) []int {
+	var result = make([]int, times)
+	for i := range result {
+		result[i] = what
+	}
+	return result
+}
+
+func createLogDataWithCustomLibraries(numResources int, libraries []string, numRecords []int) pdata.Logs {
 	logs := pdata.NewLogs()
 	logs.ResourceLogs().EnsureCapacity(numResources)
 	for i := 0; i < numResources; i++ {
 		rl := logs.ResourceLogs().AppendEmpty()
-		rl.InstrumentationLibraryLogs().EnsureCapacity(numLibraries)
-		for j := 0; j < numLibraries; j++ {
+		rl.InstrumentationLibraryLogs().EnsureCapacity(len(libraries))
+		for j := 0; j < len(libraries); j++ {
 			ill := rl.InstrumentationLibraryLogs().AppendEmpty()
-			ill.Logs().EnsureCapacity(numRecords)
-			for k := 0; k < numRecords; k++ {
+			ill.InstrumentationLibrary().SetName(libraries[j])
+			ill.Logs().EnsureCapacity(numRecords[j])
+			for k := 0; k < numRecords[j]; k++ {
 				ts := pdata.Timestamp(int64(k) * time.Millisecond.Nanoseconds())
 				logRecord := ill.Logs().AppendEmpty()
 				logRecord.SetName(fmt.Sprintf("%d_%d_%d", i, j, k))
@@ -665,6 +682,7 @@ func Test_pushLogData_nil_Logs(t *testing.T) {
 			return gzip.NewWriter(nil)
 		}},
 		config: NewFactory().CreateDefaultConfig().(*Config),
+		logger: zaptest.NewLogger(t),
 	}
 
 	for _, test := range tests {
@@ -685,6 +703,7 @@ func Test_pushLogData_InvalidLog(t *testing.T) {
 			return gzip.NewWriter(nil)
 		}},
 		config: &Config{},
+		logger: zaptest.NewLogger(t),
 	}
 
 	logs := pdata.NewLogs()
@@ -704,6 +723,7 @@ func Test_pushLogData_PostError(t *testing.T) {
 			return gzip.NewWriter(nil)
 		}},
 		config: NewFactory().CreateDefaultConfig().(*Config),
+		logger: zaptest.NewLogger(t),
 	}
 
 	// 2000 log records -> ~371888 bytes when JSON encoded.
@@ -738,6 +758,40 @@ func Test_pushLogData_PostError(t *testing.T) {
 	assert.Equal(t, (err.(consumererror.Logs)).GetLogs(), logs)
 }
 
+func Test_pushLogData_ShouldAddResponseTo400Error(t *testing.T) {
+	splunkClient := client{
+		url: &url.URL{Scheme: "http", Host: "splunk"},
+		zippers: sync.Pool{New: func() interface{} {
+			return gzip.NewWriter(nil)
+		}},
+		config: NewFactory().CreateDefaultConfig().(*Config),
+		logger: zaptest.NewLogger(t),
+	}
+	logs := createLogData(1, 1, 1)
+
+	responseBody := `some error occurred`
+
+	// An HTTP client that returns status code 400 and response body responseBody.
+	splunkClient.client, _ = newTestClient(400, responseBody)
+	// Sending logs using the client.
+	err := splunkClient.pushLogData(context.Background(), logs)
+	// TODO: Uncomment after consumererror.Logs implements method Unwrap.
+	//require.True(t, consumererror.IsPermanent(err), "Expecting permanent error")
+	require.Contains(t, err.Error(), "HTTP/0.0 400")
+	// The returned error should contain the response body responseBody.
+	assert.Contains(t, err.Error(), responseBody)
+
+	// An HTTP client that returns some other status code other than 400 and response body responseBody.
+	splunkClient.client, _ = newTestClient(500, responseBody)
+	// Sending logs using the client.
+	err = splunkClient.pushLogData(context.Background(), logs)
+	// TODO: Uncomment after consumererror.Logs implements method Unwrap.
+	//require.False(t, consumererror.IsPermanent(err), "Expecting non-permanent error")
+	require.Contains(t, err.Error(), "HTTP 500")
+	// The returned error should not contain the response body responseBody.
+	assert.NotContains(t, err.Error(), responseBody)
+}
+
 func Test_pushLogData_ShouldReturnUnsentLogsOnly(t *testing.T) {
 	c := client{
 		url: &url.URL{Scheme: "http", Host: "splunk"},
@@ -745,16 +799,17 @@ func Test_pushLogData_ShouldReturnUnsentLogsOnly(t *testing.T) {
 			return gzip.NewWriter(nil)
 		}},
 		config: NewFactory().CreateDefaultConfig().(*Config),
+		logger: zaptest.NewLogger(t),
 	}
 
 	// Just two records
 	logs := createLogData(2, 1, 1)
 
-	// Each record is about 200 bytes, so the 250-byte buffer will fit only one
+	// Each record is about 200 bytes, so the 250-byte buffer will fit only one at a time
 	c.config.MaxContentLengthLogs, c.config.DisableCompression = 250, true
 
 	// The first record is to be sent successfully, the second one should not
-	c.client = newTestClientWithPresetResponses([]int{200, 400}, []string{"OK", "NOK"})
+	c.client, _ = newTestClientWithPresetResponses([]int{200, 400}, []string{"OK", "NOK"})
 
 	err := c.pushLogData(context.Background(), logs)
 	require.Error(t, err)
@@ -765,37 +820,95 @@ func Test_pushLogData_ShouldReturnUnsentLogsOnly(t *testing.T) {
 	assert.Equal(t, logs.ResourceLogs().At(1), (err.(consumererror.Logs)).GetLogs().ResourceLogs().At(0))
 }
 
-func Test_pushLogData_ShouldAddResponseTo400Error(t *testing.T) {
-	splunkClient := client{
+func Test_pushLogData_ShouldAddHeadersForProfilingData(t *testing.T) {
+	c := client{
 		url: &url.URL{Scheme: "http", Host: "splunk"},
 		zippers: sync.Pool{New: func() interface{} {
 			return gzip.NewWriter(nil)
 		}},
 		config: NewFactory().CreateDefaultConfig().(*Config),
+		logger: zaptest.NewLogger(t),
 	}
-	logs := createLogData(1, 1, 1)
 
-	responseBody := `some error occurred`
+	logs := createLogDataWithCustomLibraries(1, []string{"otel.logs", "otel.profiling"}, []int{10, 20})
+	var headers *[]http.Header
 
-	// An HTTP client that returns status code 400 and response body responseBody.
-	splunkClient.client = newTestClient(400, responseBody)
-	// Sending logs using the client.
-	err := splunkClient.pushLogData(context.Background(), logs)
-	// TODO: Uncomment after consumererror.Logs implements method Unwrap.
-	//require.True(t, consumererror.IsPermanent(err), "Expecting permanent error")
-	require.Contains(t, err.Error(), "HTTP/0.0 400")
-	// The returned error should contain the response body responseBody.
-	assert.Contains(t, err.Error(), responseBody)
+	c.client, headers = newTestClient(200, "OK")
+	// A 300-byte buffer only fits one record (around 200 bytes), so each record will be sent separately
+	c.config.MaxContentLengthLogs, c.config.DisableCompression = 300, true
 
-	// An HTTP client that returns some other status code other than 400 and response body responseBody.
-	splunkClient.client = newTestClient(500, responseBody)
-	// Sending logs using the client.
-	err = splunkClient.pushLogData(context.Background(), logs)
-	// TODO: Uncomment after consumererror.Logs implements method Unwrap.
-	//require.False(t, consumererror.IsPermanent(err), "Expecting non-permanent error")
-	require.Contains(t, err.Error(), "HTTP 500")
-	// The returned error should not contain the response body responseBody.
-	assert.NotContains(t, err.Error(), responseBody)
+	err := c.pushLogData(context.Background(), logs)
+	require.NoError(t, err)
+	assert.Equal(t, 30, len(*headers))
+
+	profilingCount, nonProfilingCount := 0, 0
+	for i := range *headers {
+		if (*headers)[i].Get(libraryHeaderName) == profilingLibraryName {
+			profilingCount++
+		} else {
+			nonProfilingCount++
+		}
+	}
+
+	assert.Equal(t, 20, profilingCount)
+	assert.Equal(t, 10, nonProfilingCount)
+}
+
+func Benchmark_pushLogData_100_10_10_1024(b *testing.B) {
+	benchPushLogData(b, 100, 10, 10, 1024)
+}
+
+func Benchmark_pushLogData_10_100_100_1024(b *testing.B) {
+	benchPushLogData(b, 10, 100, 100, 1024)
+}
+
+func Benchmark_pushLogData_10_0_100_1024(b *testing.B) {
+	benchPushLogData(b, 10, 0, 100, 1024)
+}
+
+func Benchmark_pushLogData_10_100_0_1024(b *testing.B) {
+	benchPushLogData(b, 10, 100, 0, 1024)
+}
+
+func Benchmark_pushLogData_10_10_10_256(b *testing.B) {
+	benchPushLogData(b, 10, 10, 10, 256)
+}
+
+func Benchmark_pushLogData_10_10_10_1024(b *testing.B) {
+	benchPushLogData(b, 10, 10, 10, 1024)
+}
+
+func Benchmark_pushLogData_10_10_10_8K(b *testing.B) {
+	benchPushLogData(b, 10, 10, 10, 8*1024)
+}
+
+func Benchmark_pushLogData_10_10_10_1M(b *testing.B) {
+	benchPushLogData(b, 10, 10, 10, 1024*1024)
+}
+func Benchmark_pushLogData_10_1_1_1024(b *testing.B) {
+	benchPushLogData(b, 10, 1, 1, 1024)
+}
+
+func benchPushLogData(b *testing.B, numResources int, numProfiling int, numNonProfiling int, bufSize uint) {
+	c := client{
+		url: &url.URL{Scheme: "http", Host: "splunk"},
+		zippers: sync.Pool{New: func() interface{} {
+			return gzip.NewWriter(nil)
+		}},
+		config: NewFactory().CreateDefaultConfig().(*Config),
+		logger: zaptest.NewLogger(b),
+	}
+
+	c.client, _ = newTestClient(200, "OK")
+	c.config.MaxContentLengthLogs = bufSize
+	logs := createLogDataWithCustomLibraries(numResources, []string{"otel.logs", "otel.profiling"}, []int{numNonProfiling, numProfiling})
+
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		err := c.pushLogData(context.Background(), logs)
+		require.NoError(b, err)
+	}
 }
 
 func Test_pushLogData_Small_MaxContentLength(t *testing.T) {
@@ -804,6 +917,7 @@ func Test_pushLogData_Small_MaxContentLength(t *testing.T) {
 			return gzip.NewWriter(nil)
 		}},
 		config: NewFactory().CreateDefaultConfig().(*Config),
+		logger: zaptest.NewLogger(t),
 	}
 	c.config.MaxContentLengthLogs = 1
 
@@ -826,7 +940,7 @@ func TestSubLogs(t *testing.T) {
 
 	// Logs subset from leftmost index (resource 0, library 0, record 0).
 	_0_0_0 := &logIndex{resource: 0, library: 0, record: 0} //revive:disable-line:var-naming
-	got := subLogs(&logs, _0_0_0)
+	got := subLogs(&logs, _0_0_0, nil)
 
 	// Number of logs in subset should equal original logs.
 	assert.Equal(t, logs.LogRecordCount(), got.LogRecordCount())
@@ -838,7 +952,7 @@ func TestSubLogs(t *testing.T) {
 
 	// Logs subset from some mid index (resource 0, library 1, log 2).
 	_0_1_2 := &logIndex{resource: 0, library: 1, record: 2} //revive:disable-line:var-naming
-	got = subLogs(&logs, _0_1_2)
+	got = subLogs(&logs, _0_1_2, nil)
 
 	assert.Equal(t, 7, got.LogRecordCount())
 
@@ -849,13 +963,32 @@ func TestSubLogs(t *testing.T) {
 
 	// Logs subset from rightmost index (resource 1, library 1, log 2).
 	_1_1_2 := &logIndex{resource: 1, library: 1, record: 2} //revive:disable-line:var-naming
-	got = subLogs(&logs, _1_1_2)
+	got = subLogs(&logs, _1_1_2, nil)
 
 	// Number of logs in subset should be 1.
 	assert.Equal(t, 1, got.LogRecordCount())
 
 	// The name of the sole log record should be 1_1_2.
 	assert.Equal(t, "1_1_2", got.ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).Logs().At(0).Name())
+
+	// Now see how profiling and log data are merged
+	logs = createLogDataWithCustomLibraries(2, []string{"otel.logs", "otel.profiling"}, []int{10, 10})
+	slice := &logIndex{resource: 1, library: 0, record: 5}
+	profSlice := &logIndex{resource: 0, library: 1, record: 8}
+
+	got = subLogs(&logs, slice, profSlice)
+
+	assert.Equal(t, 5+2+10, got.LogRecordCount())
+	assert.Equal(t, "otel.logs", got.ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).InstrumentationLibrary().Name())
+	assert.Equal(t, "1_0_5", got.ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).Logs().At(0).Name())
+	assert.Equal(t, "1_0_9", got.ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).Logs().At(4).Name())
+
+	assert.Equal(t, "otel.profiling", got.ResourceLogs().At(1).InstrumentationLibraryLogs().At(0).InstrumentationLibrary().Name())
+	assert.Equal(t, "0_1_8", got.ResourceLogs().At(1).InstrumentationLibraryLogs().At(0).Logs().At(0).Name())
+	assert.Equal(t, "0_1_9", got.ResourceLogs().At(1).InstrumentationLibraryLogs().At(0).Logs().At(1).Name())
+	assert.Equal(t, "otel.profiling", got.ResourceLogs().At(2).InstrumentationLibraryLogs().At(0).InstrumentationLibrary().Name())
+	assert.Equal(t, "1_1_0", got.ResourceLogs().At(2).InstrumentationLibraryLogs().At(0).Logs().At(0).Name())
+	assert.Equal(t, "1_1_9", got.ResourceLogs().At(2).InstrumentationLibraryLogs().At(0).Logs().At(9).Name())
 }
 
 // validateCompressedEqual validates that GZipped `got` contains `expected` string
