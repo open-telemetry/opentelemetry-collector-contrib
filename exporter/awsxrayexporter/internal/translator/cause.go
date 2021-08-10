@@ -167,6 +167,8 @@ func parseException(exceptionType string, message string, stacktrace string, lan
 	case "php":
 		// The PHP SDK formats stack traces exactly like Java would
 		exceptions = fillJavaStacktrace(stacktrace, exceptions)
+	case "go":
+		exceptions = fillGoStacktrace(stacktrace, exceptions)
 	}
 
 	return exceptions
@@ -483,6 +485,50 @@ func fillDotnetStacktrace(stacktrace string, exceptions []awsxray.Exception) []a
 			break
 		}
 	}
+	return exceptions
+}
+
+func fillGoStacktrace(stacktrace string, exceptions []awsxray.Exception) []awsxray.Exception {
+	var line string
+	var label string
+	var path string
+	var lineNumber int
+
+	r := textproto.NewReader(bufio.NewReader(strings.NewReader(stacktrace)))
+
+	// Skip first line containing top level exception / message
+	_, _ =  r.ReadLine()
+	exception := &exceptions[0]
+	line, err := r.ReadLine()
+	if err != nil {
+		return exceptions
+	}
+
+	exception.Stack = make([]awsxray.StackFrame, 0)
+	for {
+		label = line
+		line, err = r.ReadLine()
+
+		if strings.Contains(line, "\t") {
+			s := strings.Split(line, ":")
+			path = strings.Trim(s[0], "\t")
+			lineNumber, _ = strconv.Atoi(s[1])
+		}
+
+		stack := awsxray.StackFrame{
+			Path:  aws.String(path),
+			Label: aws.String(label),
+			Line:  aws.Int(lineNumber),
+		}
+
+		exception.Stack = append(exception.Stack, stack)
+
+		line, err = r.ReadLine()
+		if err != nil {
+			break
+		}
+	}
+
 	return exceptions
 }
 

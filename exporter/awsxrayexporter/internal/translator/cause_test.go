@@ -1014,3 +1014,61 @@ func TestParseExceptionPhpStacktraceMalformedLines(t *testing.T) {
 	assert.Equal(t, "test.php", *exceptions[0].Stack[1].Path)
 	assert.Equal(t, 89, *exceptions[0].Stack[1].Line)
 }
+
+func TestParseExceptionGoWithoutStacktrace(t *testing.T) {
+	exceptionType := "Exception"
+	message := "Thrown from grandparent"
+
+	stacktrace := ""
+
+	exceptions := parseException(exceptionType, message, stacktrace, "go")
+
+	assert.Len(t, exceptions, 1)
+	assert.NotEmpty(t, exceptions[0].ID)
+	assert.Equal(t, "Exception", *exceptions[0].Type)
+	assert.Equal(t, "Thrown from grandparent", *exceptions[0].Message)
+	assert.Nil(t, exceptions[0].Stack)
+}
+
+func TestParseExceptionGoWithStacktrace(t *testing.T) {
+	exceptionType := "Exception"
+	message := "error message"
+
+	stacktrace := `
+go.opentelemetry.io/otel/sdk/trace.recordStackTrace
+	otel-go-core/opentelemetry-go/sdk/trace/span.go:324
+go.opentelemetry.io/otel/sdk/trace.(*span).End
+	otel-go-core/opentelemetry-go/sdk/trace/span.go:249
+go.opentelemetry.io/otel/sdk/trace.TestSpanCapturesPanic.func1
+	otel-go-core/opentelemetry-go/sdk/trace/trace_test.go:1360
+github.com/stretchr/testify/assert.didPanic.func1
+	go/pkg/mod/github.com/stretchr/testify@v1.7.0/assert/assertions.go:1018
+github.com/stretchr/testify/assert.didPanic
+	go/pkg/mod/github.com/stretchr/testify@v1.7.0/assert/assertions.go:1020
+github.com/stretchr/testify/assert.PanicsWithError
+	go/pkg/mod/github.com/stretchr/testify@v1.7.0/assert/assertions.go:1071
+github.com/stretchr/testify/require.PanicsWithError
+	go/pkg/mod/github.com/stretchr/testify@v1.7.0/require/require.go:1607
+go.opentelemetry.io/otel/sdk/trace.TestSpanCapturesPanic
+	otel-go-core/opentelemetry-go/sdk/trace/trace_test.go:1362`
+
+	exceptions := parseException(exceptionType, message, stacktrace, "go")
+	assert.Len(t, exceptions, 1)
+	assert.NotEmpty(t, exceptions[0].ID)
+	assert.Equal(t, "Exception", *exceptions[0].Type)
+	assert.Equal(t, "error message", *exceptions[0].Message)
+	assert.Len(t, exceptions[0].Stack, 8)
+	assert.Equal(t, "go.opentelemetry.io/otel/sdk/trace.recordStackTrace", *exceptions[0].Stack[0].Label)
+	assert.Equal(t, "otel-go-core/opentelemetry-go/sdk/trace/span.go", *exceptions[0].Stack[0].Path)
+	assert.Equal(t, 324, *exceptions[0].Stack[0].Line)
+	assert.Equal(t, "go.opentelemetry.io/otel/sdk/trace.(*span).End", *exceptions[0].Stack[1].Label)
+	assert.Equal(t, "otel-go-core/opentelemetry-go/sdk/trace/span.go", *exceptions[0].Stack[1].Path)
+	assert.Equal(t, 249, *exceptions[0].Stack[1].Line)
+	assert.Equal(t, "github.com/stretchr/testify/require.PanicsWithError", *exceptions[0].Stack[6].Label)
+	assert.Equal(t, "go/pkg/mod/github.com/stretchr/testify@v1.7.0/require/require.go", *exceptions[0].Stack[6].Path)
+	assert.Equal(t, 1607, *exceptions[0].Stack[6].Line)
+	assert.Equal(t, "go.opentelemetry.io/otel/sdk/trace.TestSpanCapturesPanic", *exceptions[0].Stack[7].Label)
+	assert.Equal(t, "otel-go-core/opentelemetry-go/sdk/trace/trace_test.go", *exceptions[0].Stack[7].Path)
+	assert.Equal(t, 1362, *exceptions[0].Stack[7].Line)
+
+}
