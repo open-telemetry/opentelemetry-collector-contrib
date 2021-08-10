@@ -20,21 +20,17 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/model/pdata"
-	"go.uber.org/zap"
 )
 
 func TestTrackerAddSpans(t *testing.T) {
 	tracker := NewTracker(
 		DefaultConfig(),
 		"abcd",
-		component.ExporterCreateSettings{
-			Logger: zap.NewNop(),
-		},
+		componenttest.NewNopExporterCreateSettings(),
 	)
 
 	err := tracker.Start(context.Background(), componenttest.NewNopHost())
@@ -87,9 +83,7 @@ func TestTrackerStart(t *testing.T) {
 			tracker := NewTracker(
 				tt.config,
 				"abcd",
-				component.ExporterCreateSettings{
-					Logger: zap.NewNop(),
-				},
+				componenttest.NewNopExporterCreateSettings(),
 			)
 
 			err := tracker.Start(context.Background(), componenttest.NewNopHost())

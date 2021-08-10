@@ -93,7 +93,7 @@ func WithDecorator(d Decorator) Option {
 	}
 }
 
-func WithECSInfoCreator(f ecsInfo) Option {
+func WithECSInfoCreator(f EcsInfo) Option {
 	return func(c *Cadvisor) {
 		c.ecsInfo = f
 	}
@@ -110,7 +110,7 @@ type hostInfo interface {
 	GetAutoScalingGroupName() string
 }
 
-type ecsInfo interface {
+type EcsInfo interface {
 	GetCPUReserved() int64
 	GetMemReserved() int64
 	GetRunningTaskCount() int64
@@ -130,7 +130,7 @@ type Cadvisor struct {
 	version               string
 	hostInfo              hostInfo
 	k8sDecorator          Decorator
-	ecsInfo               ecsInfo
+	ecsInfo               EcsInfo
 	containerOrchestrator string
 }
 
