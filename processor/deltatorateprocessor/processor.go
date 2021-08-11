@@ -62,7 +62,7 @@ func (dtrp *deltaToRateProcessor) processMetrics(_ context.Context, md pdata.Met
 					continue
 				}
 				if metric.DataType() != pdata.MetricDataTypeSum || metric.Sum().AggregationTemporality() != pdata.AggregationTemporalityDelta {
-					dtrp.logger.Info(fmt.Sprintf("Configured metric for rate calculation %s is not a sum or delta\n", metric.Name()))
+					dtrp.logger.Info(fmt.Sprintf("Configured metric for rate calculation %s is not a delta sum\n", metric.Name()))
 					continue
 				}
 				newDoubleDataPointSlice := pdata.NewNumberDataPointSlice()
@@ -73,7 +73,7 @@ func (dtrp *deltaToRateProcessor) processMetrics(_ context.Context, md pdata.Met
 					newDp := newDoubleDataPointSlice.AppendEmpty()
 					fromDataPoint.CopyTo(newDp)
 
-					durationNanos := fromDataPoint.Timestamp().AsTime().Sub(fromDataPoint.StartTimestamp().AsTime())
+					durationNanos := time.Duration(fromDataPoint.Timestamp() - fromDataPoint.StartTimestamp())
 					rate := calculateRate(fromDataPoint.DoubleVal(), durationNanos)
 					newDp.SetDoubleVal(rate)
 				}
