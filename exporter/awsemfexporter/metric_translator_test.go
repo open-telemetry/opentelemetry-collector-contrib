@@ -54,6 +54,8 @@ func createMetricTestData() *agentmetricspb.ExportMetricsServiceRequest {
 			Labels: map[string]string{
 				conventions.AttributeServiceName:      "myServiceName",
 				conventions.AttributeServiceNamespace: "myServiceNS",
+				"ClusterName":                         "myCluster",
+				"PodName":                             "myPod",
 				attributeReceiver:                     prometheusReceiver,
 			},
 		},
@@ -2066,6 +2068,72 @@ func BenchmarkTranslateOtToGroupedMetricWithInstrLibrary(b *testing.B) {
 	for n := 0; n < b.N; n++ {
 		groupedMetric := make(map[interface{}]*groupedMetric)
 		translator.translateOTelToGroupedMetric(&rm, groupedMetric, config)
+	}
+}
+
+func BenchmarkTranslateOtToGroupedMetricWithoutConfigReplacePattern(b *testing.B) {
+	oc := createMetricTestData()
+	rm := internaldata.OCToMetrics(oc.Node, oc.Resource, oc.Metrics).ResourceMetrics().At(0)
+	ilms := rm.InstrumentationLibraryMetrics()
+	ilm := ilms.At(0)
+	ilm.InstrumentationLibrary().SetName("cloudwatch-lib")
+	config := &Config{
+		Namespace:             "",
+		DimensionRollupOption: zeroAndSingleDimensionRollup,
+		LogGroupName:          "group.no.replace.pattern",
+		LogStreamName:         "stream.no.replace.pattern",
+		logger:                zap.NewNop(),
+	}
+	translator := newMetricTranslator(*config)
+
+	b.ResetTimer()
+	for n := 0; n < b.N; n++ {
+		groupedMetrics := make(map[interface{}]*groupedMetric)
+		translator.translateOTelToGroupedMetric(&rm, groupedMetrics, config)
+	}
+}
+
+func BenchmarkTranslateOtToGroupedMetricWithConfigReplaceWithResource(b *testing.B) {
+	oc := createMetricTestData()
+	rm := internaldata.OCToMetrics(oc.Node, oc.Resource, oc.Metrics).ResourceMetrics().At(0)
+	ilms := rm.InstrumentationLibraryMetrics()
+	ilm := ilms.At(0)
+	ilm.InstrumentationLibrary().SetName("cloudwatch-lib")
+	config := &Config{
+		Namespace:             "",
+		DimensionRollupOption: zeroAndSingleDimensionRollup,
+		LogGroupName:          "group.{ClusterName}",
+		LogStreamName:         "stream.no.replace.pattern",
+		logger:                zap.NewNop(),
+	}
+	translator := newMetricTranslator(*config)
+
+	b.ResetTimer()
+	for n := 0; n < b.N; n++ {
+		groupedMetrics := make(map[interface{}]*groupedMetric)
+		translator.translateOTelToGroupedMetric(&rm, groupedMetrics, config)
+	}
+}
+
+func BenchmarkTranslateOtToGroupedMetricWithConfigReplaceWithLabel(b *testing.B) {
+	oc := createMetricTestData()
+	rm := internaldata.OCToMetrics(oc.Node, oc.Resource, oc.Metrics).ResourceMetrics().At(0)
+	ilms := rm.InstrumentationLibraryMetrics()
+	ilm := ilms.At(0)
+	ilm.InstrumentationLibrary().SetName("cloudwatch-lib")
+	config := &Config{
+		Namespace:             "",
+		DimensionRollupOption: zeroAndSingleDimensionRollup,
+		LogGroupName:          "group.no.replace.pattern",
+		LogStreamName:         "stream.{PodName}",
+		logger:                zap.NewNop(),
+	}
+	translator := newMetricTranslator(*config)
+
+	b.ResetTimer()
+	for n := 0; n < b.N; n++ {
+		groupedMetrics := make(map[interface{}]*groupedMetric)
+		translator.translateOTelToGroupedMetric(&rm, groupedMetrics, config)
 	}
 }
 
