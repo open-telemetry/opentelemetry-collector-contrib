@@ -171,10 +171,10 @@ func resourceToMetricLabels(labels *KeyValues, resource pdata.Resource) {
 func numberMetricsToLogs(name string, data pdata.NumberDataPointSlice, defaultLabels KeyValues) (logs []*sls.Log) {
 	for i := 0; i < data.Len(); i++ {
 		dataPoint := data.At(i)
-		labelsMap := dataPoint.LabelsMap()
+		attributeMap := dataPoint.Attributes()
 		labels := defaultLabels.Clone()
-		labelsMap.Range(func(k string, v string) bool {
-			labels.Append(k, v)
+		attributeMap.Range(func(k string, v pdata.AttributeValue) bool {
+			labels.Append(k, v.StringVal()) // TODO(codeboten): Fix as part of https://github.com/open-telemetry/opentelemetry-collector/issues/3815
 			return true
 		})
 		switch dataPoint.Type() {
@@ -202,10 +202,10 @@ func numberMetricsToLogs(name string, data pdata.NumberDataPointSlice, defaultLa
 func doubleHistogramMetricsToLogs(name string, data pdata.HistogramDataPointSlice, defaultLabels KeyValues) (logs []*sls.Log) {
 	for i := 0; i < data.Len(); i++ {
 		dataPoint := data.At(i)
-		labelsMap := dataPoint.LabelsMap()
+		attributeMap := dataPoint.Attributes()
 		labels := defaultLabels.Clone()
-		labelsMap.Range(func(k string, v string) bool {
-			labels.Append(k, v)
+		attributeMap.Range(func(k string, v pdata.AttributeValue) bool {
+			labels.Append(k, v.StringVal()) // TODO(codeboten): Fix as part of https://github.com/open-telemetry/opentelemetry-collector/issues/3815
 			return true
 		})
 		logs = append(logs, newMetricLogFromRaw(name+"_sum",
@@ -250,10 +250,10 @@ func doubleHistogramMetricsToLogs(name string, data pdata.HistogramDataPointSlic
 func doubleSummaryMetricsToLogs(name string, data pdata.SummaryDataPointSlice, defaultLabels KeyValues) (logs []*sls.Log) {
 	for i := 0; i < data.Len(); i++ {
 		dataPoint := data.At(i)
-		labelsMap := dataPoint.LabelsMap()
+		attributeMap := dataPoint.Attributes()
 		labels := defaultLabels.Clone()
-		labelsMap.Range(func(k string, v string) bool {
-			labels.Append(k, v)
+		attributeMap.Range(func(k string, v pdata.AttributeValue) bool {
+			labels.Append(k, v.StringVal()) // TODO(codeboten): Fix as part of https://github.com/open-telemetry/opentelemetry-collector/issues/3815
 			return true
 		})
 		logs = append(logs, newMetricLogFromRaw(name+"_sum",
