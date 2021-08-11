@@ -98,12 +98,14 @@ func getLogInfo(rm *pdata.ResourceMetrics, cWNamespace string, config *Config) (
 		logGroup = fmt.Sprintf("/metrics/%s", cWNamespace)
 	}
 
+	strAttributeMap := attrMaptoStringMap(rm.Resource().Attributes())
+
 	// Override log group/stream if specified in config. However, in this case, customer won't have correlation experience
 	if len(config.LogGroupName) > 0 {
-		logGroup, groupReplaced = replacePatterns(config.LogGroupName, attrMaptoStringMap(rm.Resource().Attributes()), config.logger)
+		logGroup, groupReplaced = replacePatterns(config.LogGroupName, strAttributeMap, config.logger)
 	}
 	if len(config.LogStreamName) > 0 {
-		logStream, streamReplaced = replacePatterns(config.LogStreamName, attrMaptoStringMap(rm.Resource().Attributes()), config.logger)
+		logStream, streamReplaced = replacePatterns(config.LogStreamName, strAttributeMap, config.logger)
 	}
 
 	return logGroup, logStream, (groupReplaced && streamReplaced)
