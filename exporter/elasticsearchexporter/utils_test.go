@@ -49,6 +49,8 @@ type httpTestError struct {
 	cause   error
 }
 
+const currentESVersion = "7.14.0"
+
 func (e *httpTestError) Error() string {
 	return fmt.Sprintf("http request failed (status=%v): %v", e.Status(), e.Message())
 }
@@ -129,6 +131,18 @@ func (r *bulkRecorder) countItems() (count int) {
 
 func newESTestServer(t *testing.T, bulkHandler bulkHandler) *httptest.Server {
 	mux := http.NewServeMux()
+
+	mux.HandleFunc("/", handleErr(func(w http.ResponseWriter, req *http.Request) error {
+		w.Header().Add("X-Elastic-Product", "Elasticsearch")
+
+		enc := json.NewEncoder(w)
+		return enc.Encode(map[string]interface{}{
+			"version": map[string]interface{}{
+				"number": currentESVersion,
+			},
+		})
+	}))
+
 	mux.HandleFunc("/_bulk", handleErr(func(w http.ResponseWriter, req *http.Request) error {
 		tsStart := time.Now()
 		var items []itemRequest
@@ -158,8 +172,7 @@ func newESTestServer(t *testing.T, bulkHandler bulkHandler) *httptest.Server {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
 		enc := json.NewEncoder(w)
-		enc.Encode(bulkResult{Took: took, Items: resp, HasErrors: itemsHasError(resp)})
-		return nil
+		return enc.Encode(bulkResult{Took: took, Items: resp, HasErrors: itemsHasError(resp)})
 	}))
 
 	server := httptest.NewServer(mux)
