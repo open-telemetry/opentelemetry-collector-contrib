@@ -174,6 +174,23 @@ func seconds(i int) pdata.Timestamp {
 	return pdata.TimestampFromTime(time.Unix(int64(i), 0))
 }
 
+func TestPutAndGetDiff(t *testing.T) {
+	prevPts := newTTLMap()
+	_, ok := putAndGetDiff(prevPts, "test", 1, 5)
+	// no diff since it is the first point
+	assert.False(t, ok)
+	_, ok = putAndGetDiff(prevPts, "test", 0, 0)
+	// no diff since ts is lower than the stored point
+	assert.False(t, ok)
+	_, ok = putAndGetDiff(prevPts, "test", 2, 2)
+	// no diff since the value is lower than the stored value
+	assert.False(t, ok)
+	dx, ok := putAndGetDiff(prevPts, "test", 3, 4)
+	// diff with the most recent point (2,2)
+	assert.True(t, ok)
+	assert.Equal(t, 2.0, dx)
+}
+
 func TestMapIntMonotonicMetrics(t *testing.T) {
 	// Create list of values
 	deltas := []int64{1, 2, 200, 3, 7, 0}

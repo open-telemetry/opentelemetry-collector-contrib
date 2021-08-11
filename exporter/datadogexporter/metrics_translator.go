@@ -94,6 +94,26 @@ type numberCounter struct {
 	value float64
 }
 
+// putAndGetDiff submits a new value for a given key and returns the difference with the
+// last submitted value (ordered by timestamp). The diff value is only valid if `ok` is true.
+func putAndGetDiff(prevPts *ttlmap.TTLMap, key string, ts uint64, val float64) (dx float64, ok bool) {
+	if c := prevPts.Get(key); c != nil {
+		cnt := c.(numberCounter)
+		if cnt.ts > ts {
+			// We were given a point older than the one in memory so we drop it
+			// We keep the existing point in memory since it is the most recent
+			return 0, false
+		}
+		// if dx < 0, we assume there was a reset, thus we save the point
+		// but don't export it (it's the first one so we can't do a delta)
+		dx = val - cnt.value
+		ok = dx >= 0
+	}
+
+	prevPts.Put(key, numberCounter{ts, val})
+	return
+}
+
 // mapNumberMonotonicMetrics maps monotonic datapoints into Datadog metrics
 func mapNumberMonotonicMetrics(name string, prevPts *ttlmap.TTLMap, slice pdata.NumberDataPointSlice, attrTags []string) []datadog.Metric {
 	ms := make([]datadog.Metric, 0, slice.Len())
@@ -112,27 +132,9 @@ func mapNumberMonotonicMetrics(name string, prevPts *ttlmap.TTLMap, slice pdata.
 			val = float64(p.IntVal())
 		}
 
-		if c := prevPts.Get(key); c != nil {
-			cnt := c.(numberCounter)
-
-			if cnt.ts > ts {
-				// We were given a point older than the one in memory so we drop it
-				// We keep the existing point in memory since it is the most recent
-				continue
-			}
-
-			// We calculate the time-normalized delta
-			dx := val - cnt.value
-
-			// if dx < 0, we assume there was a reset, thus we save the point
-			// but don't export it (it's the first one so we can't do a delta)
-			if dx >= 0 {
-				ms = append(ms, metrics.NewCount(name, ts, dx, tags))
-			}
-
+		if dx, ok := putAndGetDiff(prevPts, key, ts, val); ok {
+			ms = append(ms, metrics.NewCount(name, ts, dx, tags))
 		}
-
-		prevPts.Put(key, numberCounter{ts, val})
 	}
 	return ms
 }
