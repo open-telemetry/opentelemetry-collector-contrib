@@ -503,11 +503,11 @@ func TestQuantileTag(t *testing.T) {
 	}
 }
 
-func exampleSummaryDataPointSlice(ts pdata.Timestamp) pdata.SummaryDataPointSlice {
+func exampleSummaryDataPointSlice(ts pdata.Timestamp, sum float64, count uint64) pdata.SummaryDataPointSlice {
 	slice := pdata.NewSummaryDataPointSlice()
 	point := slice.AppendEmpty()
-	point.SetCount(100)
-	point.SetSum(10_000)
+	point.SetCount(count)
+	point.SetSum(sum)
 	qSlice := point.QuantileValues()
 
 	qMin := qSlice.AppendEmpty()
@@ -531,11 +531,18 @@ func exampleSummaryDataPointSlice(ts pdata.Timestamp) pdata.SummaryDataPointSlic
 
 func TestMapSummaryMetrics(t *testing.T) {
 	ts := pdata.TimestampFromTime(time.Now())
-	slice := exampleSummaryDataPointSlice(ts)
+	slice := exampleSummaryDataPointSlice(ts, 10_001, 101)
+
+	newPrevPts := func(tags []string) *ttlmap.TTLMap {
+		prevPts := newTTLMap()
+		prevPts.Put(metricDimensionsToMapKey("summary.example.count", tags), numberCounter{0, 1})
+		prevPts.Put(metricDimensionsToMapKey("summary.example.sum", tags), numberCounter{0, 1})
+		return prevPts
+	}
 
 	noQuantiles := []datadog.Metric{
-		metrics.NewGauge("summary.example.count", uint64(ts), 100, []string{}),
-		metrics.NewGauge("summary.example.sum", uint64(ts), 10_000, []string{}),
+		metrics.NewCount("summary.example.count", uint64(ts), 100, []string{}),
+		metrics.NewCount("summary.example.sum", uint64(ts), 10_000, []string{}),
 	}
 	quantiles := []datadog.Metric{
 		metrics.NewGauge("summary.example.quantile", uint64(ts), 0, []string{"quantile:0"}),
@@ -543,18 +550,20 @@ func TestMapSummaryMetrics(t *testing.T) {
 		metrics.NewGauge("summary.example.quantile", uint64(ts), 500, []string{"quantile:0.999"}),
 		metrics.NewGauge("summary.example.quantile", uint64(ts), 600, []string{"quantile:1.0"}),
 	}
+	prevPts := newPrevPts([]string{})
 	assert.ElementsMatch(t,
-		mapSummaryMetrics("summary.example", slice, false, []string{}),
+		mapSummaryMetrics("summary.example", prevPts, slice, false, []string{}),
 		noQuantiles,
 	)
+	prevPts = newPrevPts([]string{})
 	assert.ElementsMatch(t,
-		mapSummaryMetrics("summary.example", slice, true, []string{}),
+		mapSummaryMetrics("summary.example", prevPts, slice, true, []string{}),
 		append(noQuantiles, quantiles...),
 	)
 
 	noQuantilesAttr := []datadog.Metric{
-		metrics.NewGauge("summary.example.count", uint64(ts), 100, []string{"attribute_tag:attribute_value"}),
-		metrics.NewGauge("summary.example.sum", uint64(ts), 10_000, []string{"attribute_tag:attribute_value"}),
+		metrics.NewCount("summary.example.count", uint64(ts), 100, []string{"attribute_tag:attribute_value"}),
+		metrics.NewCount("summary.example.sum", uint64(ts), 10_000, []string{"attribute_tag:attribute_value"}),
 	}
 	quantilesAttr := []datadog.Metric{
 		metrics.NewGauge("summary.example.quantile", uint64(ts), 0, []string{"attribute_tag:attribute_value", "quantile:0"}),
@@ -562,12 +571,14 @@ func TestMapSummaryMetrics(t *testing.T) {
 		metrics.NewGauge("summary.example.quantile", uint64(ts), 500, []string{"attribute_tag:attribute_value", "quantile:0.999"}),
 		metrics.NewGauge("summary.example.quantile", uint64(ts), 600, []string{"attribute_tag:attribute_value", "quantile:1.0"}),
 	}
+	prevPts = newPrevPts([]string{"attribute_tag:attribute_value"})
 	assert.ElementsMatch(t,
-		mapSummaryMetrics("summary.example", slice, false, []string{"attribute_tag:attribute_value"}),
+		mapSummaryMetrics("summary.example", prevPts, slice, false, []string{"attribute_tag:attribute_value"}),
 		noQuantilesAttr,
 	)
+	prevPts = newPrevPts([]string{"attribute_tag:attribute_value"})
 	assert.ElementsMatch(t,
-		mapSummaryMetrics("summary.example", slice, true, []string{"attribute_tag:attribute_value"}),
+		mapSummaryMetrics("summary.example", prevPts, slice, true, []string{"attribute_tag:attribute_value"}),
 		append(noQuantilesAttr, quantilesAttr...),
 	)
 }
@@ -713,7 +724,13 @@ func createTestMetrics() pdata.Metrics {
 	met = metricsArray.AppendEmpty()
 	met.SetName("summary")
 	met.SetDataType(pdata.MetricDataTypeSummary)
-	slice := exampleSummaryDataPointSlice(seconds(0))
+	slice := exampleSummaryDataPointSlice(seconds(0), 1, 1)
+	slice.CopyTo(met.Summary().DataPoints())
+
+	met = metricsArray.AppendEmpty()
+	met.SetName("summary")
+	met.SetDataType(pdata.MetricDataTypeSummary)
+	slice = exampleSummaryDataPointSlice(seconds(1), 10_001, 101)
 	slice.CopyTo(met.Summary().DataPoints())
 	return md
 }
@@ -753,6 +770,11 @@ func TestMapMetrics(t *testing.T) {
 
 	assert.Equal(t, dropped, 0)
 	filtered := removeRunningMetrics(series)
+	sec := 1.0
+	summarySum := testCount("summary.sum", 10_000)
+	summarySum.Points[0][0] = &sec
+	summaryCount := testCount("summary.count", 100)
+	summaryCount.Points[0][0] = &sec
 	assert.ElementsMatch(t, filtered, []datadog.Metric{
 		testGauge("int.gauge", 1),
 		testGauge("double.gauge", math.Pi),
@@ -760,8 +782,8 @@ func TestMapMetrics(t *testing.T) {
 		testGauge("double.sum", math.E),
 		testGauge("double.histogram.sum", math.Phi),
 		testGauge("double.histogram.count", 20),
-		testGauge("summary.sum", 10_000),
-		testGauge("summary.count", 100),
+		summarySum,
+		summaryCount,
 		testCount("int.cumulative.sum", 3),
 		testCount("double.cumulative.sum", math.Pi),
 	})
