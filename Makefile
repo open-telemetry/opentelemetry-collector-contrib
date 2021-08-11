@@ -68,10 +68,6 @@ gotidy:
 gomoddownload:
 	@$(MAKE) for-all CMD="go mod download"
 
-.PHONY: gotestinstall
-gotestinstall:
-	@$(MAKE) for-all-target TARGET="test GOTEST_OPT=\"-i\""
-
 .PHONY: gotest
 gotest:
 	$(MAKE) for-all-target TARGET="test"
