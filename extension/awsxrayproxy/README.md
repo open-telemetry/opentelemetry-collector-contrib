@@ -33,7 +33,8 @@ The TCP address and port on which this proxy listens for requests.
 Default: `0.0.0.0:2000`
 
 ### proxy_address (Optional)
-Defines the proxy address that this proxy forwards HTTP requests to AWS X-Ray backend through. If left unconfigured, requests will be sent directly.
+Defines the proxy address that this extension forwards HTTP requests to the AWS X-Ray backend through. If left unconfigured, requests will be sent directly.
+This will generally be set to a NAT gateway when the collector is running on a network without public internet.
 
 ### insecure (Optional)
 Enables or disables TLS certificate verification when this proxy forwards HTTP requests to the AWS X-Ray backend. This sets the `InsecureSkipVerify` in the [TLSConfig](https://godoc.org/crypto/tls#Config). When setting to true, TLS is susceptible to man-in-the-middle attacks so it should be used only for testing.

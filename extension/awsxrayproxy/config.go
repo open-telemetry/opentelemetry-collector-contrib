@@ -25,7 +25,7 @@ type Config struct {
 	config.ExtensionSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
 
 	// endpoint is the TCP address and port on which this receiver listens for
-	// calls from the X-Ray SDK and relays them to the AWS X-Ray backend to
+	// calls from OpenTelemetry clients and relays them to the AWS X-Ray backend to
 	// get sampling rules and report sampling statistics.
 	confignet.TCPAddr `mapstructure:",squash"`
 
