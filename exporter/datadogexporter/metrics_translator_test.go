@@ -42,7 +42,7 @@ func TestMetricValue(t *testing.T) {
 	)
 
 	metric := metrics.NewGauge(name, ts, value, tags)
-	assert.Equal(t, metrics.Gauge, metric.GetType())
+	assert.Equal(t, string(metrics.Gauge), metric.GetType())
 	assert.Equal(t, tags, metric.Tags)
 }
 
