@@ -33,15 +33,16 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/ttlmap"
 )
 
-// getTags maps a stringMap into a slice of Datadog tags
-func getTags(labels pdata.StringMap) []string {
+// getTags maps an attributeMap into a slice of Datadog tags
+func getTags(labels pdata.AttributeMap) []string {
 	tags := make([]string, 0, labels.Len())
-	labels.Range(func(key string, value string) bool {
-		if value == "" {
+	labels.Range(func(key string, value pdata.AttributeValue) bool {
+		v := value.StringVal() // TODO(codeboten): Fix as part of https://github.com/open-telemetry/opentelemetry-collector/issues/3815
+		if v == "" {
 			// Tags can't end with ":" so we replace empty values with "n/a"
-			value = "n/a"
+			v = "n/a"
 		}
-		tags = append(tags, fmt.Sprintf("%s:%s", key, value))
+		tags = append(tags, fmt.Sprintf("%s:%s", key, v))
 		return true
 	})
 	return tags
@@ -71,7 +72,7 @@ func mapNumberMetrics(name string, slice pdata.NumberDataPointSlice, attrTags []
 	ms := make([]datadog.Metric, 0, slice.Len())
 	for i := 0; i < slice.Len(); i++ {
 		p := slice.At(i)
-		tags := getTags(p.LabelsMap())
+		tags := getTags(p.Attributes())
 		tags = append(tags, attrTags...)
 		var val float64
 		switch p.Type() {
@@ -100,7 +101,7 @@ func mapNumberMonotonicMetrics(name string, prevPts *ttlmap.TTLMap, slice pdata.
 	for i := 0; i < slice.Len(); i++ {
 		p := slice.At(i)
 		ts := uint64(p.Timestamp())
-		tags := getTags(p.LabelsMap())
+		tags := getTags(p.Attributes())
 		tags = append(tags, attrTags...)
 		key := metricDimensionsToMapKey(name, tags)
 
@@ -156,7 +157,7 @@ func mapHistogramMetrics(name string, slice pdata.HistogramDataPointSlice, bucke
 	for i := 0; i < slice.Len(); i++ {
 		p := slice.At(i)
 		ts := uint64(p.Timestamp())
-		tags := getTags(p.LabelsMap())
+		tags := getTags(p.Attributes())
 		tags = append(tags, attrTags...)
 
 		ms = append(ms,
@@ -202,7 +203,7 @@ func mapSummaryMetrics(name string, slice pdata.SummaryDataPointSlice, quantiles
 	for i := 0; i < slice.Len(); i++ {
 		p := slice.At(i)
 		ts := uint64(p.Timestamp())
-		tags := getTags(p.LabelsMap())
+		tags := getTags(p.Attributes())
 		tags = append(tags, attrTags...)
 
 		ms = append(ms,

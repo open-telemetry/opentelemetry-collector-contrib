@@ -47,15 +47,14 @@ func TestMetricValue(t *testing.T) {
 }
 
 func TestGetTags(t *testing.T) {
-	labels := pdata.NewStringMap()
-	labels.InitFromMap(map[string]string{
-		"key1": "val1",
-		"key2": "val2",
-		"key3": "",
+	attributes := pdata.NewAttributeMap().InitFromMap(map[string]pdata.AttributeValue{
+		"key1": pdata.NewAttributeValueString("val1"),
+		"key2": pdata.NewAttributeValueString("val2"),
+		"key3": pdata.NewAttributeValueString(""),
 	})
 
 	assert.ElementsMatch(t,
-		getTags(labels),
+		getTags(attributes),
 		[...]string{"key1:val1", "key2:val2", "key3:n/a"},
 	)
 }
@@ -220,22 +219,22 @@ func TestMapIntMonotonicDifferentDimensions(t *testing.T) {
 	// One tag: valA
 	point = slice.AppendEmpty()
 	point.SetTimestamp(seconds(0))
-	point.LabelsMap().Insert("key1", "valA")
+	point.Attributes().InsertString("key1", "valA")
 
 	point = slice.AppendEmpty()
 	point.SetIntVal(30)
 	point.SetTimestamp(seconds(1))
-	point.LabelsMap().Insert("key1", "valA")
+	point.Attributes().InsertString("key1", "valA")
 
 	// same tag: valB
 	point = slice.AppendEmpty()
 	point.SetTimestamp(seconds(0))
-	point.LabelsMap().Insert("key1", "valB")
+	point.Attributes().InsertString("key1", "valB")
 
 	point = slice.AppendEmpty()
 	point.SetIntVal(40)
 	point.SetTimestamp(seconds(1))
-	point.LabelsMap().Insert("key1", "valB")
+	point.Attributes().InsertString("key1", "valB")
 
 	prevPts := newTTLMap()
 
@@ -340,22 +339,22 @@ func TestMapDoubleMonotonicDifferentDimensions(t *testing.T) {
 	// One tag: valA
 	point = slice.AppendEmpty()
 	point.SetTimestamp(seconds(0))
-	point.LabelsMap().Insert("key1", "valA")
+	point.Attributes().InsertString("key1", "valA")
 
 	point = slice.AppendEmpty()
 	point.SetDoubleVal(30)
 	point.SetTimestamp(seconds(1))
-	point.LabelsMap().Insert("key1", "valA")
+	point.Attributes().InsertString("key1", "valA")
 
 	// one tag: valB
 	point = slice.AppendEmpty()
 	point.SetTimestamp(seconds(0))
-	point.LabelsMap().Insert("key1", "valB")
+	point.Attributes().InsertString("key1", "valB")
 
 	point = slice.AppendEmpty()
 	point.SetDoubleVal(40)
 	point.SetTimestamp(seconds(1))
-	point.LabelsMap().Insert("key1", "valB")
+	point.Attributes().InsertString("key1", "valB")
 
 	prevPts := newTTLMap()
 
