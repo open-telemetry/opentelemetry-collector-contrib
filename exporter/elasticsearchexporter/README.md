@@ -28,13 +28,6 @@ This exporter supports sending OpenTelemetry logs to [Elasticsearch](https://www
   - `max_interval` (default=1m): Max waiting time if a HTTP request failed.
 - `mapping`: Events are encoded to JSON. The `mapping` allows users to
   configure additional mapping rules.
-  - `mode` (default=ecs): The fields naming mode. valid modes are:
-    - `none`: Use original fields and event structure from the OTLP event.
-    - `ecs`: Try to map fields defined in the
-             [OpenTelemetry Semantic Conventions](https://github.com/open-telemetry/opentelemetry-specification/tree/main/semantic_conventions)
-             to [Elastic Common Schema (ECS)](https://www.elastic.co/guide/en/ecs/current/index.html).
-  - `fields` (optional): Configure additional fields mappings.
-  - `file` (optional): Read additional field mappings from the provided YAML file.
   - `dedup` (default=true): Try to find and remove duplicate fields/attributes
     from events before publishing to Elasticsearch. Some structured logging
     libraries can produce duplicate fields (for example zap). Elasticsearch

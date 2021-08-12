@@ -75,7 +75,7 @@ func newExporter(logger *zap.Logger, cfg *Config) (*elasticsearchExporter, error
 	}
 
 	// TODO: Apply encoding and field mapping settings.
-	model := &encodeModel{dedup: true, dedot: false}
+	model := &encodeModel{dedup: cfg.Mapping.Dedup, dedot: cfg.Mapping.Dedot}
 
 	return &elasticsearchExporter{
 		logger:      logger,

@@ -16,7 +16,6 @@ package elasticsearchexporter
 
 import (
 	"errors"
-	"fmt"
 	"os"
 	"strings"
 	"time"
@@ -145,14 +144,21 @@ type RetrySettings struct {
 }
 
 type MappingsSettings struct {
-	// Mode configures the field mappings.
-	Mode string `mapstructure:"mode"`
+	// TODO
+	/*
+				// Mode configures the field mappings.
+		    // - `none`: Use original fields and event structure from the OTLP event.
+		    // - `ecs`: Try to map fields defined in the
+		    //          [OpenTelemetry Semantic Conventions](https://github.com/open-telemetry/opentelemetry-specification/tree/main/semantic_conventions)
+		    //          to [Elastic Common Schema (ECS)](https://www.elastic.co/guide/en/ecs/current/index.html).
+				Mode string `mapstructure:"mode"`
 
-	// Additional field mappings.
-	Fields map[string]string `mapstructure:"fields"`
+				// Additional field mappings.
+				Fields map[string]string `mapstructure:"fields"`
 
-	// File to read additional fields mappings from.
-	File string `mapstructure:"file"`
+				// File to read additional fields mappings from.
+				File string `mapstructure:"file"`
+	*/
 
 	// Try to find and remove duplicate fields
 	Dedup bool `mapstructure:"dedup"`
@@ -219,10 +225,6 @@ func (cfg *Config) Validate() error {
 
 	if cfg.Index == "" {
 		return errConfigNoIndex
-	}
-
-	if _, ok := mappingModes[cfg.Mapping.Mode]; !ok {
-		return fmt.Errorf("unknown mapping mode %v", cfg.Mapping.Mode)
 	}
 
 	return nil

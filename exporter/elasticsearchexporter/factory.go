@@ -52,7 +52,6 @@ func createDefaultConfig() config.Exporter {
 			MaxInterval:     1 * time.Minute,
 		},
 		Mapping: MappingsSettings{
-			Mode:  "ecs",
 			Dedup: true,
 			Dedot: true,
 		},
