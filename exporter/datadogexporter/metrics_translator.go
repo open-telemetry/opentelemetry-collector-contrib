@@ -267,7 +267,7 @@ func mapMetrics(logger *zap.Logger, cfg config.MetricsConfig, prevPts *ttlmap.TT
 							datapoints = mapNumberMetrics(md.Name(), metrics.Gauge, md.Sum().DataPoints(), attributeTags)
 						}
 					case pdata.AggregationTemporalityDelta:
-						datapoints = mapNumberMetrics(md.Name(), metrics.Gauge, md.Sum().DataPoints(), attributeTags)
+						datapoints = mapNumberMetrics(md.Name(), metrics.Count, md.Sum().DataPoints(), attributeTags)
 					default: // pdata.AggregationTemporalityUnspecified or any other not supported type
 						logger.Debug("Unknown or unsupported aggregation temporality",
 							zap.String("metric name", md.Name()),
