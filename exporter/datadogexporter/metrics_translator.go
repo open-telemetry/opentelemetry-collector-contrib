@@ -258,10 +258,21 @@ func mapMetrics(logger *zap.Logger, cfg config.MetricsConfig, prevPts *ttlmap.TT
 				case pdata.MetricDataTypeGauge:
 					datapoints = mapNumberMetrics(md.Name(), md.Gauge().DataPoints(), attributeTags)
 				case pdata.MetricDataTypeSum:
-					if cfg.SendMonotonic && isCumulativeMonotonic(md) {
-						datapoints = mapNumberMonotonicMetrics(md.Name(), prevPts, md.Sum().DataPoints(), attributeTags)
-					} else {
+					switch md.Sum().AggregationTemporality() {
+					case pdata.AggregationTemporalityCumulative:
+						if cfg.SendMonotonic && isCumulativeMonotonic(md) {
+							datapoints = mapNumberMonotonicMetrics(md.Name(), prevPts, md.Sum().DataPoints(), attributeTags)
+						} else {
+							datapoints = mapNumberMetrics(md.Name(), md.Sum().DataPoints(), attributeTags)
+						}
+					case pdata.AggregationTemporalityDelta:
 						datapoints = mapNumberMetrics(md.Name(), md.Sum().DataPoints(), attributeTags)
+					default: // pdata.AggregationTemporalityUnspecified or any other not supported type
+						logger.Debug("Unknown or unsupported aggregation temporality",
+							zap.String("metric name", md.Name()),
+							zap.Any("aggregation temporality", md.Sum().AggregationTemporality()),
+						)
+						continue
 					}
 				case pdata.MetricDataTypeHistogram:
 					datapoints = mapHistogramMetrics(md.Name(), md.Histogram().DataPoints(), cfg.Buckets, attributeTags)
