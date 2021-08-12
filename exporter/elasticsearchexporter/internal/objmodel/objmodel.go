@@ -43,7 +43,6 @@
 package objmodel
 
 import (
-	"errors"
 	"io"
 	"math"
 	"sort"
@@ -255,11 +254,7 @@ func (doc *Document) iterJSONFlat(w *json.Visitor) error {
 
 	for i := range doc.fields {
 		fld := &doc.fields[i]
-
-		// filter out empty values
-		if fld.value.kind == KindIgnore ||
-			fld.value.kind == KindNil ||
-			(fld.value.kind == KindArr && len(fld.value.arr) == 0) {
+		if fld.value.IsEmpty() {
 			continue
 		}
 
@@ -273,7 +268,74 @@ func (doc *Document) iterJSONFlat(w *json.Visitor) error {
 }
 
 func (doc *Document) iterJSONDedot(w *json.Visitor) error {
-	return errors.New("TODO")
+	objPrefix := ""
+	level := 0
+
+	w.OnObjectStart(-1, structform.AnyType)
+	defer w.OnObjectFinished()
+
+	for i := range doc.fields {
+		fld := &doc.fields[i]
+		if fld.value.IsEmpty() {
+			continue
+		}
+
+		key := fld.key
+		// decrease object level until last reported and current key have the same path prefix
+		for L := commonObjPrefix(key, objPrefix); L < len(objPrefix); {
+			for L > 0 && key[L-1] != '.' {
+				L--
+			}
+
+			// remove levels and append write list of outstanding '}' into the writer
+			if L > 0 {
+				for delta := objPrefix[L:]; len(delta) > 0; {
+					idx := strings.IndexByte(delta, '.')
+					if idx < 0 {
+						break
+					}
+
+					delta = delta[idx+1:]
+					level--
+					w.OnObjectFinished()
+				}
+
+				objPrefix = key[:L]
+			} else { // no common prefix, close all objects we reported so far.
+				for ; level > 0; level-- {
+					w.OnObjectFinished()
+				}
+				objPrefix = ""
+			}
+		}
+
+		// increase object level up to current field
+		for {
+			start := len(objPrefix)
+			idx := strings.IndexByte(key[start:], '.')
+			if idx < 0 {
+				break
+			}
+
+			level++
+			objPrefix = key[:len(objPrefix)+idx+1]
+			fieldName := key[start : start+idx]
+			w.OnKey(fieldName)
+			w.OnObjectStart(-1, structform.AnyType)
+		}
+
+		// report value
+		fieldName := key[len(objPrefix):]
+		w.OnKey(fieldName)
+		fld.value.iterJSON(w, true)
+	}
+
+	// close all pending object levels
+	for ; level > 0; level-- {
+		w.OnObjectFinished()
+	}
+
+	return nil
 }
 
 // StringValue create a new value from a string.
@@ -349,6 +411,19 @@ func (v *Value) Dedup() {
 		for i := range v.arr {
 			v.arr[i].Dedup()
 		}
+	}
+}
+
+func (v *Value) IsEmpty() bool {
+	switch v.kind {
+	case KindNil, KindIgnore:
+		return true
+	case KindArr:
+		return len(v.arr) == 0
+	case KindObject:
+		return len(v.doc.fields) == 0
+	default:
+		return false
 	}
 }
 
@@ -429,4 +504,18 @@ func flattenKey(path, key string) string {
 		return key
 	}
 	return path + "." + key
+}
+
+func commonObjPrefix(a, b string) int {
+	end := len(a)
+	if alt := len(b); alt < end {
+		end = alt
+	}
+
+	for i := 0; i < end; i++ {
+		if a[i] != b[i] {
+			return i
+		}
+	}
+	return end
 }
