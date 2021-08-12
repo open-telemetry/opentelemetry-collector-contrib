@@ -60,13 +60,12 @@ func Test_signalFxV2ToMetricsData(t *testing.T) {
 		}
 
 		dp := dps.AppendEmpty()
-		labels := dp.LabelsMap()
-		labels.InitFromMap(map[string]string{
-			"k0": "v0",
-			"k1": "v1",
-			"k2": "v2",
+		dp.Attributes().InitFromMap(map[string]pdata.AttributeValue{
+			"k0": pdata.NewAttributeValueString("v0"),
+			"k1": pdata.NewAttributeValueString("v1"),
+			"k2": pdata.NewAttributeValueString("v2"),
 		})
-		labels.Sort()
+		dp.Attributes().Sort()
 
 		dp.SetTimestamp(pdata.TimestampFromTime(now.Truncate(time.Millisecond)))
 
@@ -158,7 +157,7 @@ func Test_signalFxV2ToMetricsData(t *testing.T) {
 			}(),
 			wantMetricsData: func() pdata.Metrics {
 				md := buildDefaultMetricsData(pdata.MetricDataTypeGauge, 13)
-				md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(0).Gauge().DataPoints().At(0).LabelsMap().Update("k0", "")
+				md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(0).Gauge().DataPoints().At(0).Attributes().UpdateString("k0", "")
 				return md
 			}(),
 		},
