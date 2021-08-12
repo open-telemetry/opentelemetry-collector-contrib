@@ -1,0 +1,26 @@
+extensions:
+  awsxrayproxy:
+  awsxrayproxy/1:
+    endpoint: "0.0.0.0:1234"
+    proxy_address: "https://proxy.proxy.com"
+    insecure: true
+    server_name_override: "something"
+    region: "us-west-1"
+    role_arn: "arn:aws:iam::123456789012:role/awesome_role"
+    aws_endpoint: "https://another.aws.endpoint.com"
+
+service:
+  extensions: [awsxrayproxy/1]
+  pipelines:
+    traces:
+      receivers: [nop]
+      processors: [nop]
+      exporters: [nop]
+
+# Data pipeline is required to load the config.
+receivers:
+  nop:
+processors:
+  nop:
+exporters:
+  nop:
