@@ -68,7 +68,7 @@ func metricDimensionsToMapKey(name string, tags []string) string {
 }
 
 // mapNumberMetrics maps double datapoints into Datadog metrics
-func mapNumberMetrics(name string, slice pdata.NumberDataPointSlice, attrTags []string) []datadog.Metric {
+func mapNumberMetrics(name string, dt metrics.MetricDataType, slice pdata.NumberDataPointSlice, attrTags []string) []datadog.Metric {
 	ms := make([]datadog.Metric, 0, slice.Len())
 	for i := 0; i < slice.Len(); i++ {
 		p := slice.At(i)
@@ -82,7 +82,7 @@ func mapNumberMetrics(name string, slice pdata.NumberDataPointSlice, attrTags []
 			val = float64(p.IntVal())
 		}
 		ms = append(ms,
-			metrics.NewGauge(name, uint64(p.Timestamp()), val, tags),
+			metrics.NewMetric(name, dt, uint64(p.Timestamp()), val, tags),
 		)
 	}
 	return ms
@@ -257,17 +257,17 @@ func mapMetrics(logger *zap.Logger, cfg config.MetricsConfig, prevPts *ttlmap.TT
 				var datapoints []datadog.Metric
 				switch md.DataType() {
 				case pdata.MetricDataTypeGauge:
-					datapoints = mapNumberMetrics(md.Name(), md.Gauge().DataPoints(), attributeTags)
+					datapoints = mapNumberMetrics(md.Name(), metrics.Gauge, md.Gauge().DataPoints(), attributeTags)
 				case pdata.MetricDataTypeSum:
 					switch md.Sum().AggregationTemporality() {
 					case pdata.AggregationTemporalityCumulative:
 						if cfg.SendMonotonic && isCumulativeMonotonic(md) {
 							datapoints = mapNumberMonotonicMetrics(md.Name(), prevPts, md.Sum().DataPoints(), attributeTags)
 						} else {
-							datapoints = mapNumberMetrics(md.Name(), md.Sum().DataPoints(), attributeTags)
+							datapoints = mapNumberMetrics(md.Name(), metrics.Gauge, md.Sum().DataPoints(), attributeTags)
 						}
 					case pdata.AggregationTemporalityDelta:
-						datapoints = mapNumberMetrics(md.Name(), md.Sum().DataPoints(), attributeTags)
+						datapoints = mapNumberMetrics(md.Name(), metrics.Gauge, md.Sum().DataPoints(), attributeTags)
 					default: // pdata.AggregationTemporalityUnspecified or any other not supported type
 						logger.Debug("Unknown or unsupported aggregation temporality",
 							zap.String("metric name", md.Name()),

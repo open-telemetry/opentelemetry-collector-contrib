@@ -133,13 +133,18 @@ func TestMapIntMetrics(t *testing.T) {
 	point.SetTimestamp(ts)
 
 	assert.ElementsMatch(t,
-		mapNumberMetrics("int64.test", slice, []string{}),
+		mapNumberMetrics("int64.test", metrics.Gauge, slice, []string{}),
 		[]datadog.Metric{metrics.NewGauge("int64.test", uint64(ts), 17, []string{})},
+	)
+
+	assert.ElementsMatch(t,
+		mapNumberMetrics("int64.delta.test", metrics.Count, slice, []string{}),
+		[]datadog.Metric{metrics.NewCount("int64.delta.test", uint64(ts), 17, []string{})},
 	)
 
 	// With attribute tags
 	assert.ElementsMatch(t,
-		mapNumberMetrics("int64.test", slice, []string{"attribute_tag:attribute_value"}),
+		mapNumberMetrics("int64.test", metrics.Gauge, slice, []string{"attribute_tag:attribute_value"}),
 		[]datadog.Metric{metrics.NewGauge("int64.test", uint64(ts), 17, []string{"attribute_tag:attribute_value"})},
 	)
 }
@@ -152,13 +157,18 @@ func TestMapDoubleMetrics(t *testing.T) {
 	point.SetTimestamp(ts)
 
 	assert.ElementsMatch(t,
-		mapNumberMetrics("float64.test", slice, []string{}),
+		mapNumberMetrics("float64.test", metrics.Gauge, slice, []string{}),
 		[]datadog.Metric{metrics.NewGauge("float64.test", uint64(ts), math.Pi, []string{})},
+	)
+
+	assert.ElementsMatch(t,
+		mapNumberMetrics("float64.delta.test", metrics.Count, slice, []string{}),
+		[]datadog.Metric{metrics.NewCount("float64.delta.test", uint64(ts), math.Pi, []string{})},
 	)
 
 	// With attribute tags
 	assert.ElementsMatch(t,
-		mapNumberMetrics("float64.test", slice, []string{"attribute_tag:attribute_value"}),
+		mapNumberMetrics("float64.test", metrics.Gauge, slice, []string{"attribute_tag:attribute_value"}),
 		[]datadog.Metric{metrics.NewGauge("float64.test", uint64(ts), math.Pi, []string{"attribute_tag:attribute_value"})},
 	)
 }
