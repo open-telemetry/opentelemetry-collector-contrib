@@ -633,19 +633,27 @@ func createTestMetrics() pdata.Metrics {
 	dpDouble.SetTimestamp(seconds(0))
 	dpDouble.SetDoubleVal(math.Pi)
 
-	// IntSum
+	// aggregation unspecified sum
+	met = metricsArray.AppendEmpty()
+	met.SetName("unspecified.sum")
+	met.SetDataType(pdata.MetricDataTypeSum)
+	met.Sum().SetAggregationTemporality(pdata.AggregationTemporalityUnspecified)
+
+	// Int Sum (delta)
 	met = metricsArray.AppendEmpty()
 	met.SetName("int.sum")
 	met.SetDataType(pdata.MetricDataTypeSum)
+	met.Sum().SetAggregationTemporality(pdata.AggregationTemporalityDelta)
 	dpsInt = met.Sum().DataPoints()
 	dpInt = dpsInt.AppendEmpty()
 	dpInt.SetTimestamp(seconds(0))
 	dpInt.SetIntVal(2)
 
-	// Sum
+	// Double Sum (delta)
 	met = metricsArray.AppendEmpty()
 	met.SetName("double.sum")
 	met.SetDataType(pdata.MetricDataTypeSum)
+	met.Sum().SetAggregationTemporality(pdata.AggregationTemporalityDelta)
 	dpsDouble = met.Sum().DataPoints()
 	dpDouble = dpsDouble.AppendEmpty()
 	dpDouble.SetTimestamp(seconds(0))
@@ -749,6 +757,8 @@ func TestMapMetrics(t *testing.T) {
 		testCount("double.cumulative.sum", math.Pi),
 	})
 
-	// One metric was unknown or unsupported
+	// One metric type was unknown or unsupported
 	assert.Equal(t, observed.FilterMessage("Unknown or unsupported metric type").Len(), 1)
+	// One metric aggregation temporality was unknown or unsupported
+	assert.Equal(t, observed.FilterMessage("Unknown or unsupported aggregation temporality").Len(), 1)
 }
