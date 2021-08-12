@@ -50,22 +50,22 @@ func NewDetector(p component.ProcessorCreateSettings, dcfg internal.DetectorConf
 }
 
 // Detect detects system metadata and returns a resource with the available ones
-func (d *Detector) Detect(ctx context.Context) (pdata.Resource, error) {
+func (d *Detector) Detect(ctx context.Context) (resource pdata.Resource, schemaURL string, err error) {
 	res := pdata.NewResource()
 	attrs := res.Attributes()
 
 	osType, err := d.provider.OSType(ctx)
 	if err != nil {
-		return res, fmt.Errorf("failed getting OS type: %w", err)
+		return res, "", fmt.Errorf("failed getting OS type: %w", err)
 	}
 
 	hostname, err := d.provider.Hostname(ctx)
 	if err != nil {
-		return res, fmt.Errorf("failed getting OS hostname: %w", err)
+		return res, "", fmt.Errorf("failed getting OS hostname: %w", err)
 	}
 
 	attrs.InsertString(conventions.AttributeHostName, hostname)
 	attrs.InsertString(conventions.AttributeOSType, osType)
 
-	return res, nil
+	return res, conventions.SchemaURL, nil
 }

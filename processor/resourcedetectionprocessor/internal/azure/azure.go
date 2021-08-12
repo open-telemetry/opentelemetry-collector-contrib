@@ -47,7 +47,7 @@ func NewDetector(p component.ProcessorCreateSettings, cfg internal.DetectorConfi
 }
 
 // Detect detects system metadata and returns a resource with the available ones
-func (d *Detector) Detect(ctx context.Context) (pdata.Resource, error) {
+func (d *Detector) Detect(ctx context.Context) (resource pdata.Resource, schemaURL string, err error) {
 	res := pdata.NewResource()
 	attrs := res.Attributes()
 
@@ -55,7 +55,7 @@ func (d *Detector) Detect(ctx context.Context) (pdata.Resource, error) {
 	if err != nil {
 		d.logger.Debug("Azure detector metadata retrieval failed", zap.Error(err))
 		// return an empty Resource and no error
-		return res, nil
+		return res, "", nil
 	}
 
 	attrs.InsertString(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAzure)
@@ -68,5 +68,5 @@ func (d *Detector) Detect(ctx context.Context) (pdata.Resource, error) {
 	attrs.InsertString("azure.vm.scaleset.name", compute.VMScaleSetName)
 	attrs.InsertString("azure.resourcegroup.name", compute.ResourceGroupName)
 
-	return res, nil
+	return res, conventions.SchemaURL, nil
 }

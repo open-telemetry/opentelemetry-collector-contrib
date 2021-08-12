@@ -67,7 +67,7 @@ func Test_ecsNewDetector(t *testing.T) {
 func Test_detectorReturnsIfNoEnvVars(t *testing.T) {
 	os.Clearenv()
 	d, _ := NewDetector(componenttest.NewNopProcessorCreateSettings(), nil)
-	res, err := d.Detect(context.TODO())
+	res, _, err := d.Detect(context.TODO())
 
 	assert.Nil(t, err)
 	assert.Equal(t, 0, res.Attributes().Len())
@@ -136,7 +136,7 @@ func Test_ecsDetectV4(t *testing.T) {
 	}
 
 	d := Detector{provider: &mockMetaDataProvider{isV4: true}}
-	got, err := d.Detect(context.TODO())
+	got, _, err := d.Detect(context.TODO())
 
 	assert.Nil(t, err)
 	assert.NotNil(t, got)
@@ -160,7 +160,7 @@ func Test_ecsDetectV3(t *testing.T) {
 	attr.InsertString("cloud.account.id", "123456789123")
 
 	d := Detector{provider: &mockMetaDataProvider{isV4: false}}
-	got, err := d.Detect(context.TODO())
+	got, _, err := d.Detect(context.TODO())
 
 	assert.Nil(t, err)
 	assert.NotNil(t, got)
