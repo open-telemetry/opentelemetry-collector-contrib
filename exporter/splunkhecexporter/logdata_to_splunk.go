@@ -72,7 +72,7 @@ func mapLogRecordToSplunkEvent(res pdata.Resource, lr pdata.LogRecord, config *C
 		case splunk.DefaultSourceLabel:
 			source = v.StringVal()
 			fields[k] = v.StringVal()
-		case splunk.DefaultSourcetypeLabel:
+		case splunk.DefaultSourceTypeLabel:
 			sourcetype = v.StringVal()
 		case splunk.DefaultIndexLabel:
 			index = v.StringVal()
@@ -89,7 +89,7 @@ func mapLogRecordToSplunkEvent(res pdata.Resource, lr pdata.LogRecord, config *C
 		case splunk.DefaultSourceLabel:
 			source = v.StringVal()
 			fields[k] = v.StringVal()
-		case splunk.DefaultSourcetypeLabel:
+		case splunk.DefaultSourceTypeLabel:
 			sourcetype = v.StringVal()
 		case splunk.DefaultIndexLabel:
 			index = v.StringVal()

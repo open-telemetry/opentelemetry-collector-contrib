@@ -50,7 +50,7 @@ func (t *testingHecConfiguration) GetHostKey() string {
 
 var defaultTestingHecConfig = &testingHecConfiguration{
 	sourceKey:     splunk.DefaultSourceLabel,
-	sourceTypeKey: splunk.DefaultSourcetypeLabel,
+	sourceTypeKey: splunk.DefaultSourceTypeLabel,
 	indexKey:      splunk.DefaultIndexLabel,
 	hostKey:       conventions.AttributeHostName,
 }

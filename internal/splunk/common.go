@@ -26,7 +26,7 @@ const (
 	SFxAccessTokenLabel    = "com.splunk.signalfx.access_token" // #nosec
 	SFxEventCategoryKey    = "com.splunk.signalfx.event_category"
 	SFxEventPropertiesKey  = "com.splunk.signalfx.event_properties"
-	DefaultSourcetypeLabel = "com.splunk.sourcetype"
+	DefaultSourceTypeLabel = "com.splunk.sourcetype"
 	DefaultSourceLabel     = "com.splunk.source"
 	DefaultIndexLabel      = "com.splunk.index"
 	NameLabel              = "otel.log.name"

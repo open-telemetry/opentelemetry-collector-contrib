@@ -52,7 +52,7 @@ func (c *Config) initialize() error {
 		c.SourceKey = splunk.DefaultSourceLabel
 	}
 	if c.SourceTypeKey == "" {
-		c.SourceTypeKey = splunk.DefaultSourcetypeLabel
+		c.SourceTypeKey = splunk.DefaultSourceTypeLabel
 	}
 	if c.IndexKey == "" {
 		c.IndexKey = splunk.DefaultIndexLabel

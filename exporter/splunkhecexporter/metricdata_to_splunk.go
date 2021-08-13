@@ -60,7 +60,7 @@ func metricDataToSplunk(logger *zap.Logger, data pdata.Metrics, config *Config) 
 		if sourceSet, isSet := attributes.Get(splunk.DefaultSourceLabel); isSet {
 			source = sourceSet.StringVal()
 		}
-		if sourcetypeSet, isSet := attributes.Get(splunk.DefaultSourcetypeLabel); isSet {
+		if sourcetypeSet, isSet := attributes.Get(splunk.DefaultSourceTypeLabel); isSet {
 			sourceType = sourcetypeSet.StringVal()
 		}
 		if indexSet, isSet := attributes.Get(splunk.DefaultIndexLabel); isSet {

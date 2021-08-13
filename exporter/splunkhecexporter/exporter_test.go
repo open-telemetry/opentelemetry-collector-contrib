@@ -226,7 +226,7 @@ func generateLargeLogsBatch() pdata.Logs {
 		logRecord := ill.Logs().AppendEmpty()
 		logRecord.Body().SetStringVal("mylog")
 		logRecord.Attributes().InsertString(splunk.DefaultSourceLabel, "myapp")
-		logRecord.Attributes().InsertString(splunk.DefaultSourcetypeLabel, "myapp-type")
+		logRecord.Attributes().InsertString(splunk.DefaultSourceTypeLabel, "myapp-type")
 		logRecord.Attributes().InsertString(splunk.DefaultIndexLabel, "myindex")
 		logRecord.Attributes().InsertString(conventions.AttributeHostName, "myhost")
 		logRecord.Attributes().InsertString("custom", "custom")
