@@ -50,12 +50,12 @@ func NewDetector(params component.ProcessorCreateSettings, _ internal.DetectorCo
 }
 
 // Detect detects associated resources when running in GKE environment.
-func (gke *Detector) Detect(ctx context.Context) (pdata.Resource, error) {
+func (gke *Detector) Detect(ctx context.Context) (resource pdata.Resource, schemaURL string, err error) {
 	res := pdata.NewResource()
 
 	// Check if on GCP.
 	if !gke.metadata.OnGCE() {
-		return res, nil
+		return res, "", nil
 	}
 
 	attr := res.Attributes()
@@ -63,7 +63,7 @@ func (gke *Detector) Detect(ctx context.Context) (pdata.Resource, error) {
 
 	// Check if running on k8s.
 	if os.Getenv(kubernetesServiceHostEnvVar) == "" {
-		return res, nil
+		return res, "", nil
 	}
 
 	attr.InsertString(conventions.AttributeCloudPlatform, conventions.AttributeCloudPlatformGCPKubernetesEngine)
@@ -74,5 +74,5 @@ func (gke *Detector) Detect(ctx context.Context) (pdata.Resource, error) {
 		attr.InsertString(conventions.AttributeK8SClusterName, clusterName)
 	}
 
-	return res, nil
+	return res, conventions.SchemaURL, nil
 }
