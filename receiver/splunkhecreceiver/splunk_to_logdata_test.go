@@ -15,11 +15,11 @@
 package splunkhecreceiver
 
 import (
-	conventions "go.opentelemetry.io/collector/translator/conventions/v1.5.0"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/model/pdata"
+	conventions "go.opentelemetry.io/collector/translator/conventions/v1.5.0"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"

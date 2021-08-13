@@ -16,13 +16,13 @@ package splunkhecreceiver
 
 import (
 	"fmt"
-	conventions "go.opentelemetry.io/collector/translator/conventions/v1.5.0"
 	"net"
 	"strconv"
 
 	"github.com/gobwas/glob"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
+	conventions "go.opentelemetry.io/collector/translator/conventions/v1.5.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 )

@@ -15,10 +15,10 @@
 package splunkhecreceiver
 
 import (
-	"github.com/gobwas/glob"
 	"path"
 	"testing"
 
+	"github.com/gobwas/glob"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -140,7 +140,7 @@ func TestLoadConfig(t *testing.T) {
 
 	r2 := cfg.Receivers[config.NewIDWithName(typeStr, "tls")].(*Config)
 	assert.NoError(t, r2.initialize())
-	expectedTlsConfig := &Config{
+	expectedTLSConfig := &Config{
 		ReceiverSettings: config.NewReceiverSettings(config.NewIDWithName(typeStr, "tls")),
 		HTTPServerSettings: confighttp.HTTPServerSettings{
 			Endpoint: ":8088",
@@ -160,6 +160,6 @@ func TestLoadConfig(t *testing.T) {
 		IndexKey:      "com.splunk.index",
 		HostKey:       "host.name",
 	}
-	expectedTlsConfig.pathGlob, _ = glob.Compile("*")
-	assert.Equal(t, expectedTlsConfig, r2)
+	expectedTLSConfig.pathGlob, _ = glob.Compile("*")
+	assert.Equal(t, expectedTLSConfig, r2)
 }
