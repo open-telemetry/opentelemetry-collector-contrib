@@ -27,6 +27,7 @@ const (
 	SFxEventCategoryKey   = "com.splunk.signalfx.event_category"
 	SFxEventPropertiesKey = "com.splunk.signalfx.event_properties"
 	SourcetypeLabel       = "com.splunk.sourcetype"
+	SourceLabel           = "com.splunk.source"
 	IndexLabel            = "com.splunk.index"
 	NameLabel             = "otlp.log.name"
 	HECTokenHeader        = "Splunk"

@@ -40,7 +40,7 @@ func splunkHecToMetricsData(logger *zap.Logger, events []*splunk.Event, resource
 			attrs.InsertString(conventions.AttributeHostName, event.Host)
 		}
 		if event.Source != "" {
-			attrs.InsertString(conventions.AttributeServiceName, event.Source)
+			attrs.InsertString(splunk.SourceLabel, event.Source)
 		}
 		if event.SourceType != "" {
 			attrs.InsertString(splunk.SourcetypeLabel, event.SourceType)
