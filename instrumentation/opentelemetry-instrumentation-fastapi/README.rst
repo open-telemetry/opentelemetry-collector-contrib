@@ -55,7 +55,7 @@ You can also pass the list of urls to exclude explicitly to the instrumentation 
 
 .. code-block:: python
 
-    FastAPIInstrumentor.instrument_app(app, "client/.*/info,healthcheck")
+    FastAPIInstrumentor.instrument_app(app, excluded_urls="client/.*/info,healthcheck")
 
 References
 ----------
