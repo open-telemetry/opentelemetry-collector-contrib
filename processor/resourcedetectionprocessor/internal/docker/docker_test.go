@@ -47,8 +47,9 @@ func TestDetect(t *testing.T) {
 	md.On("OSType").Return("DARWIN", nil)
 
 	detector := &Detector{provider: md, logger: zap.NewNop()}
-	res, err := detector.Detect(context.Background())
+	res, schemaURL, err := detector.Detect(context.Background())
 	require.NoError(t, err)
+	assert.Equal(t, conventions.SchemaURL, schemaURL)
 	md.AssertExpectations(t)
 	res.Attributes().Sort()
 
