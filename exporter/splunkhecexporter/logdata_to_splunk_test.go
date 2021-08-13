@@ -348,6 +348,31 @@ func Test_mapLogRecordToSplunkEvent(t *testing.T) {
 				}
 			}(),
 		},
+		{
+			name: "with severity",
+			logRecordFn: func() pdata.LogRecord {
+				logRecord := pdata.NewLogRecord()
+				logRecord.Body().SetStringVal("mylog")
+				logRecord.Attributes().InsertString(splunk.SourceLabel, "myapp")
+				logRecord.Attributes().InsertString(splunk.SourcetypeLabel, "myapp-type")
+				logRecord.Attributes().InsertString(conventions.AttributeHostName, "myhost")
+				logRecord.Attributes().InsertString("custom", "custom")
+				logRecord.SetSeverityText("DEBUG")
+				logRecord.SetTimestamp(ts)
+				return logRecord
+			},
+			logResourceFn: pdata.NewResource,
+			configDataFn: func() *Config {
+				return &Config{
+					Source:     "source",
+					SourceType: "sourcetype",
+				}
+			},
+			wantSplunkEvents: []*splunk.Event{
+				commonLogSplunkEvent("mylog", ts, map[string]interface{}{"custom": "custom", "com.splunk.source": "myapp", "host.name": "myhost", "otlp.log.severity": "DEBUG"},
+					"myhost", "myapp", "myapp-type"),
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
