@@ -81,7 +81,12 @@ func (c *client) sendLogs(
 		return err
 	}
 
-	request.Header.Set("x-cabin-api-key", c.config.APIKey)
+	if c.config.APIKey != "" {
+		request.Header.Set("x-cabin-api-key", c.config.APIKey)
+	} else {
+		// Secret key is configured instead of api key
+		request.Header.Set("x-cabin-secret-key", c.config.SecretKey)
+	}
 
 	request.Header.Set("Content-Type", "application/json")
 	request.Header.Set("Content-Encoding", "gzip")
