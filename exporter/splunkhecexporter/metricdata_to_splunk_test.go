@@ -146,7 +146,7 @@ func Test_metricDataToSplunk(t *testing.T) {
 
 				metrics := pdata.NewMetrics()
 				rm := metrics.ResourceMetrics().AppendEmpty()
-				rm.Resource().Attributes().InsertString("service.name", "mysource")
+				rm.Resource().Attributes().InsertString("com.splunk.source", "mysource")
 				rm.Resource().Attributes().InsertString("host.name", "myhost")
 				rm.Resource().Attributes().InsertString("com.splunk.sourcetype", "mysourcetype")
 				rm.Resource().Attributes().InsertString("com.splunk.index", "myindex")
@@ -172,8 +172,8 @@ func Test_metricDataToSplunk(t *testing.T) {
 				return metrics
 			},
 			wantSplunkMetrics: []*splunk.Event{
-				commonSplunkMetric("gauge_double_with_dims", tsMSecs, []string{"com.splunk.index", "com.splunk.sourcetype", "host.name", "service.name", "k0", "k1", "metric_type"}, []interface{}{"myindex", "mysourcetype", "myhost", "mysource", "v0", "v1", "Gauge"}, doubleVal, "mysource", "mysourcetype", "myindex", "myhost"),
-				commonSplunkMetric("gauge_int_with_dims", tsMSecs, []string{"com.splunk.index", "com.splunk.sourcetype", "host.name", "service.name", "k0", "k1", "metric_type"}, []interface{}{"myindex", "mysourcetype", "myhost", "mysource", "v0", "v1", "Gauge"}, int64Val, "mysource", "mysourcetype", "myindex", "myhost"),
+				commonSplunkMetric("gauge_double_with_dims", tsMSecs, []string{"com.splunk.index", "com.splunk.sourcetype", "host.name", "com.splunk.source", "k0", "k1", "metric_type"}, []interface{}{"myindex", "mysourcetype", "myhost", "mysource", "v0", "v1", "Gauge"}, doubleVal, "mysource", "mysourcetype", "myindex", "myhost"),
+				commonSplunkMetric("gauge_int_with_dims", tsMSecs, []string{"com.splunk.index", "com.splunk.sourcetype", "host.name", "com.splunk.source", "k0", "k1", "metric_type"}, []interface{}{"myindex", "mysourcetype", "myhost", "mysource", "v0", "v1", "Gauge"}, int64Val, "mysource", "mysourcetype", "myindex", "myhost"),
 			},
 		},
 

@@ -75,7 +75,7 @@ func traceDataToSplunk(logger *zap.Logger, data pdata.Traces, config *Config) ([
 		if conventionHost, isSet := attributes.Get(conventions.AttributeHostName); isSet {
 			host = conventionHost.StringVal()
 		}
-		if sourceSet, isSet := attributes.Get(conventions.AttributeServiceName); isSet {
+		if sourceSet, isSet := attributes.Get(splunk.SourceLabel); isSet {
 			source = sourceSet.StringVal()
 		}
 		if sourcetypeSet, isSet := attributes.Get(splunk.SourcetypeLabel); isSet {
