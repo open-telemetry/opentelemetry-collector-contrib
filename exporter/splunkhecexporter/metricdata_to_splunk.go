@@ -57,13 +57,13 @@ func metricDataToSplunk(logger *zap.Logger, data pdata.Metrics, config *Config) 
 		if conventionHost, isSet := attributes.Get(conventions.AttributeHostName); isSet {
 			host = conventionHost.StringVal()
 		}
-		if sourceSet, isSet := attributes.Get(splunk.SourceLabel); isSet {
+		if sourceSet, isSet := attributes.Get(splunk.DefaultSourceLabel); isSet {
 			source = sourceSet.StringVal()
 		}
-		if sourcetypeSet, isSet := attributes.Get(splunk.SourcetypeLabel); isSet {
+		if sourcetypeSet, isSet := attributes.Get(splunk.DefaultSourcetypeLabel); isSet {
 			sourceType = sourcetypeSet.StringVal()
 		}
-		if indexSet, isSet := attributes.Get(splunk.IndexLabel); isSet {
+		if indexSet, isSet := attributes.Get(splunk.DefaultIndexLabel); isSet {
 			index = indexSet.StringVal()
 		}
 		attributes.Range(func(k string, v pdata.AttributeValue) bool {

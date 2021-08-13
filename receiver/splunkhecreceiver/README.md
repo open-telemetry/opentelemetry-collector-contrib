@@ -29,7 +29,11 @@ The following settings are optional:
       Note: Both `key_file` and `cert_file` are required for TLS connection.
     * `key_file`: Specifies the key file to use for TLS connection. Note: Both
       `key_file` and `cert_file` are required for TLS connection.
-* `path` (default = '/*): The path to listen on, as a glob expression.
+* `path` (default = '/*'): The path to listen on, as a glob expression.
+* `source_key` (default = 'com.splunk.source'): Specifies the source field to a specific unified model attribute.
+* `sourcetype_key` (default = 'com.splunk.sourcetype'): Specifies the sourcetype field to a specific unified model attribute.
+* `index_key` (default = 'com.splunk.index'): Specifies the index field to a specific unified model attribute.
+* `host_key` (default = 'host.name'): Specifies the host field to a specific unified model attribute.
 Example:
 
 ```yaml
@@ -41,6 +45,10 @@ receivers:
       cert_file: /test.crt
       key_file: /test.key
     path: "/myhecreceiver"
+    source_key: "mysource"
+    sourcetype_key: "mysourcetype"
+    index_key: "myindex"
+    host_key: "myhost"
 ```
 
 The full list of settings exposed for this receiver are documented [here](./config.go)

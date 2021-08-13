@@ -15,6 +15,7 @@
 package splunkhecreceiver
 
 import (
+	conventions "go.opentelemetry.io/collector/translator/conventions/v1.5.0"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -24,16 +25,47 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 )
 
+type testingHecConfiguration struct {
+	sourceKey     string
+	sourceTypeKey string
+	indexKey      string
+	hostKey       string
+}
+
+func (t *testingHecConfiguration) GetSourceKey() string {
+	return t.sourceKey
+}
+
+func (t *testingHecConfiguration) GetSourceTypeKey() string {
+	return t.sourceTypeKey
+}
+
+func (t *testingHecConfiguration) GetIndexKey() string {
+	return t.indexKey
+}
+
+func (t *testingHecConfiguration) GetHostKey() string {
+	return t.hostKey
+}
+
+var defaultTestingHecConfig = &testingHecConfiguration{
+	sourceKey:     splunk.DefaultSourceLabel,
+	sourceTypeKey: splunk.DefaultSourcetypeLabel,
+	indexKey:      splunk.DefaultIndexLabel,
+	hostKey:       conventions.AttributeHostName,
+}
+
 func Test_SplunkHecToLogData(t *testing.T) {
 
 	time := 0.123
 	nanoseconds := 123000000
 
 	tests := []struct {
-		name    string
-		event   splunk.Event
-		output  pdata.ResourceLogsSlice
-		wantErr error
+		name      string
+		event     splunk.Event
+		output    pdata.ResourceLogsSlice
+		hecConfig splunk.HECConfiguration
+		wantErr   error
 	}{
 		{
 			name: "happy_path",
@@ -48,6 +80,7 @@ func Test_SplunkHecToLogData(t *testing.T) {
 					"foo": "bar",
 				},
 			},
+			hecConfig: defaultTestingHecConfig,
 			output: func() pdata.ResourceLogsSlice {
 				return createLogsSlice(nanoseconds)
 			}(),
@@ -66,6 +99,7 @@ func Test_SplunkHecToLogData(t *testing.T) {
 					"foo": "bar",
 				},
 			},
+			hecConfig: defaultTestingHecConfig,
 			output: func() pdata.ResourceLogsSlice {
 				logsSlice := createLogsSlice(nanoseconds)
 				logsSlice.At(0).InstrumentationLibraryLogs().At(0).Logs().At(0).Body().SetDoubleVal(12.3)
@@ -86,6 +120,7 @@ func Test_SplunkHecToLogData(t *testing.T) {
 					"foo": "bar",
 				},
 			},
+			hecConfig: defaultTestingHecConfig,
 			output: func() pdata.ResourceLogsSlice {
 				logsSlice := createLogsSlice(nanoseconds)
 				arrVal := pdata.NewAttributeValueArray()
@@ -110,6 +145,7 @@ func Test_SplunkHecToLogData(t *testing.T) {
 					"foo": "bar",
 				},
 			},
+			hecConfig: defaultTestingHecConfig,
 			output: func() pdata.ResourceLogsSlice {
 				logsSlice := createLogsSlice(nanoseconds)
 				foosArr := pdata.NewAttributeValueArray()
@@ -142,15 +178,52 @@ func Test_SplunkHecToLogData(t *testing.T) {
 					"foo": "bar",
 				},
 			},
+			hecConfig: defaultTestingHecConfig,
 			output: func() pdata.ResourceLogsSlice {
 				return createLogsSlice(0)
+			}(),
+			wantErr: nil,
+		},
+		{
+			name: "custom_config_mapping",
+			event: splunk.Event{
+				Time:       new(float64),
+				Host:       "localhost",
+				Source:     "mysource",
+				SourceType: "mysourcetype",
+				Index:      "myindex",
+				Event:      "value",
+				Fields: map[string]interface{}{
+					"foo": "bar",
+				},
+			},
+			hecConfig: &testingHecConfiguration{
+				sourceKey:     "mysource",
+				sourceTypeKey: "mysourcetype",
+				indexKey:      "myindex",
+				hostKey:       "myhost",
+			},
+			output: func() pdata.ResourceLogsSlice {
+				lrs := pdata.NewResourceLogsSlice()
+				lr := lrs.AppendEmpty()
+				ill := lr.InstrumentationLibraryLogs().AppendEmpty()
+				logRecord := ill.Logs().AppendEmpty()
+				logRecord.SetName("mysourcetype")
+				logRecord.Body().SetStringVal("value")
+				logRecord.SetTimestamp(pdata.Timestamp(0))
+				logRecord.Attributes().InsertString("myhost", "localhost")
+				logRecord.Attributes().InsertString("mysource", "mysource")
+				logRecord.Attributes().InsertString("mysourcetype", "mysourcetype")
+				logRecord.Attributes().InsertString("myindex", "myindex")
+				logRecord.Attributes().InsertString("foo", "bar")
+				return lrs
 			}(),
 			wantErr: nil,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result, err := splunkHecToLogData(zap.NewNop(), []*splunk.Event{&tt.event}, func(resource pdata.Resource) {})
+			result, err := splunkHecToLogData(zap.NewNop(), []*splunk.Event{&tt.event}, func(resource pdata.Resource) {}, tt.hecConfig)
 			assert.Equal(t, tt.wantErr, err)
 			assert.Equal(t, tt.output.Len(), result.ResourceLogs().Len())
 			assert.Equal(t, tt.output.At(0), result.ResourceLogs().At(0))

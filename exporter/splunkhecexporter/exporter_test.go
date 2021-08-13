@@ -225,9 +225,9 @@ func generateLargeLogsBatch() pdata.Logs {
 	for i := 0; i < 65000; i++ {
 		logRecord := ill.Logs().AppendEmpty()
 		logRecord.Body().SetStringVal("mylog")
-		logRecord.Attributes().InsertString(splunk.SourceLabel, "myapp")
-		logRecord.Attributes().InsertString(splunk.SourcetypeLabel, "myapp-type")
-		logRecord.Attributes().InsertString(splunk.IndexLabel, "myindex")
+		logRecord.Attributes().InsertString(splunk.DefaultSourceLabel, "myapp")
+		logRecord.Attributes().InsertString(splunk.DefaultSourcetypeLabel, "myapp-type")
+		logRecord.Attributes().InsertString(splunk.DefaultIndexLabel, "myindex")
 		logRecord.Attributes().InsertString(conventions.AttributeHostName, "myhost")
 		logRecord.Attributes().InsertString("custom", "custom")
 		logRecord.SetTimestamp(ts)
