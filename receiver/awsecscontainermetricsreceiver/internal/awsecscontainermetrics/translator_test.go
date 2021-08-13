@@ -17,8 +17,10 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/model/pdata"
+	conventions "go.opentelemetry.io/collector/translator/conventions/v1.5.0"
 )
 
 func TestConvertToOTMetrics(t *testing.T) {
@@ -34,6 +36,7 @@ func TestConvertToOTMetrics(t *testing.T) {
 	resource := pdata.NewResource()
 	md := convertToOTLPMetrics("container.", m, resource, timestamp)
 	require.EqualValues(t, 26, md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().Len())
+	assert.EqualValues(t, conventions.SchemaURL, md.ResourceMetrics().At(0).SchemaUrl())
 }
 
 func TestIntGauge(t *testing.T) {
