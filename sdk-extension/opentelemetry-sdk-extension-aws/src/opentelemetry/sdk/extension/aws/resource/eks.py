@@ -94,8 +94,10 @@ def _get_container_id():
     with open("/proc/self/cgroup", encoding="utf8") as container_info_file:
         for raw_line in container_info_file.readlines():
             line = raw_line.strip()
+            # Subsequent IDs should be the same, exit if found one
             if len(line) > _CONTAINER_ID_LENGTH:
                 container_id = line[-_CONTAINER_ID_LENGTH:]
+                break
     return container_id
 
 

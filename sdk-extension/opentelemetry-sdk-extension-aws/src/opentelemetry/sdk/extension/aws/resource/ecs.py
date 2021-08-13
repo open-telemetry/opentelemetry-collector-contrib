@@ -49,8 +49,10 @@ class AwsEcsResourceDetector(ResourceDetector):
                 ) as container_info_file:
                     for raw_line in container_info_file.readlines():
                         line = raw_line.strip()
+                        # Subsequent IDs should be the same, exit if found one
                         if len(line) > _CONTAINER_ID_LENGTH:
                             container_id = line[-_CONTAINER_ID_LENGTH:]
+                            break
             except FileNotFoundError as exception:
                 logger.warning(
                     "Failed to get container ID on ECS: %s.", exception
