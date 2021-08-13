@@ -49,10 +49,10 @@ func TestNewType(t *testing.T) {
 	tags := []string{"tag:value"}
 
 	gauge := NewGauge(name, ts, value, tags)
-	assert.Equal(t, gauge.GetType(), Gauge)
+	assert.Equal(t, gauge.GetType(), string(Gauge))
 
 	count := NewCount(name, ts, value, tags)
-	assert.Equal(t, count.GetType(), Count)
+	assert.Equal(t, count.GetType(), string(Count))
 
 }
 

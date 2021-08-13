@@ -42,7 +42,7 @@ func TestMetricValue(t *testing.T) {
 	)
 
 	metric := metrics.NewGauge(name, ts, value, tags)
-	assert.Equal(t, metrics.Gauge, metric.GetType())
+	assert.Equal(t, string(metrics.Gauge), metric.GetType())
 	assert.Equal(t, tags, metric.Tags)
 }
 
@@ -133,13 +133,18 @@ func TestMapIntMetrics(t *testing.T) {
 	point.SetTimestamp(ts)
 
 	assert.ElementsMatch(t,
-		mapNumberMetrics("int64.test", slice, []string{}),
+		mapNumberMetrics("int64.test", metrics.Gauge, slice, []string{}),
 		[]datadog.Metric{metrics.NewGauge("int64.test", uint64(ts), 17, []string{})},
+	)
+
+	assert.ElementsMatch(t,
+		mapNumberMetrics("int64.delta.test", metrics.Count, slice, []string{}),
+		[]datadog.Metric{metrics.NewCount("int64.delta.test", uint64(ts), 17, []string{})},
 	)
 
 	// With attribute tags
 	assert.ElementsMatch(t,
-		mapNumberMetrics("int64.test", slice, []string{"attribute_tag:attribute_value"}),
+		mapNumberMetrics("int64.test", metrics.Gauge, slice, []string{"attribute_tag:attribute_value"}),
 		[]datadog.Metric{metrics.NewGauge("int64.test", uint64(ts), 17, []string{"attribute_tag:attribute_value"})},
 	)
 }
@@ -152,13 +157,18 @@ func TestMapDoubleMetrics(t *testing.T) {
 	point.SetTimestamp(ts)
 
 	assert.ElementsMatch(t,
-		mapNumberMetrics("float64.test", slice, []string{}),
+		mapNumberMetrics("float64.test", metrics.Gauge, slice, []string{}),
 		[]datadog.Metric{metrics.NewGauge("float64.test", uint64(ts), math.Pi, []string{})},
+	)
+
+	assert.ElementsMatch(t,
+		mapNumberMetrics("float64.delta.test", metrics.Count, slice, []string{}),
+		[]datadog.Metric{metrics.NewCount("float64.delta.test", uint64(ts), math.Pi, []string{})},
 	)
 
 	// With attribute tags
 	assert.ElementsMatch(t,
-		mapNumberMetrics("float64.test", slice, []string{"attribute_tag:attribute_value"}),
+		mapNumberMetrics("float64.test", metrics.Gauge, slice, []string{"attribute_tag:attribute_value"}),
 		[]datadog.Metric{metrics.NewGauge("float64.test", uint64(ts), math.Pi, []string{"attribute_tag:attribute_value"})},
 	)
 }
@@ -640,7 +650,7 @@ func createTestMetrics() pdata.Metrics {
 
 	// Int Sum (delta)
 	met = metricsArray.AppendEmpty()
-	met.SetName("int.sum")
+	met.SetName("int.delta.sum")
 	met.SetDataType(pdata.MetricDataTypeSum)
 	met.Sum().SetAggregationTemporality(pdata.AggregationTemporalityDelta)
 	dpsInt = met.Sum().DataPoints()
@@ -650,7 +660,27 @@ func createTestMetrics() pdata.Metrics {
 
 	// Double Sum (delta)
 	met = metricsArray.AppendEmpty()
-	met.SetName("double.sum")
+	met.SetName("double.delta.sum")
+	met.SetDataType(pdata.MetricDataTypeSum)
+	met.Sum().SetAggregationTemporality(pdata.AggregationTemporalityDelta)
+	dpsDouble = met.Sum().DataPoints()
+	dpDouble = dpsDouble.AppendEmpty()
+	dpDouble.SetTimestamp(seconds(0))
+	dpDouble.SetDoubleVal(math.E)
+
+	// Int Sum (delta monotonic)
+	met = metricsArray.AppendEmpty()
+	met.SetName("int.delta.monotonic.sum")
+	met.SetDataType(pdata.MetricDataTypeSum)
+	met.Sum().SetAggregationTemporality(pdata.AggregationTemporalityDelta)
+	dpsInt = met.Sum().DataPoints()
+	dpInt = dpsInt.AppendEmpty()
+	dpInt.SetTimestamp(seconds(0))
+	dpInt.SetIntVal(2)
+
+	// Double Sum (delta monotonic)
+	met = metricsArray.AppendEmpty()
+	met.SetName("double.delta.monotonic.sum")
 	met.SetDataType(pdata.MetricDataTypeSum)
 	met.Sum().SetAggregationTemporality(pdata.AggregationTemporalityDelta)
 	dpsDouble = met.Sum().DataPoints()
@@ -674,6 +704,28 @@ func createTestMetrics() pdata.Metrics {
 	met.SetName("int.cumulative.sum")
 	met.SetDataType(pdata.MetricDataTypeSum)
 	met.Sum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+	dpsInt = met.Sum().DataPoints()
+	dpsInt.EnsureCapacity(2)
+	dpInt = dpsInt.AppendEmpty()
+	dpInt.SetTimestamp(seconds(0))
+	dpInt.SetIntVal(4)
+
+	// Double Sum (cumulative)
+	met = metricsArray.AppendEmpty()
+	met.SetName("double.cumulative.sum")
+	met.SetDataType(pdata.MetricDataTypeSum)
+	met.Sum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+	dpsDouble = met.Sum().DataPoints()
+	dpsDouble.EnsureCapacity(2)
+	dpDouble = dpsDouble.AppendEmpty()
+	dpDouble.SetTimestamp(seconds(0))
+	dpDouble.SetDoubleVal(4)
+
+	// Int Sum (cumulative monotonic)
+	met = metricsArray.AppendEmpty()
+	met.SetName("int.cumulative.monotonic.sum")
+	met.SetDataType(pdata.MetricDataTypeSum)
+	met.Sum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
 	met.Sum().SetIsMonotonic(true)
 	dpsInt = met.Sum().DataPoints()
 	dpsInt.EnsureCapacity(2)
@@ -684,9 +736,9 @@ func createTestMetrics() pdata.Metrics {
 	dpInt.SetTimestamp(seconds(2))
 	dpInt.SetIntVal(7)
 
-	// Double Sum (cumulative)
+	// Double Sum (cumulative monotonic)
 	met = metricsArray.AppendEmpty()
-	met.SetName("double.cumulative.sum")
+	met.SetName("double.cumulative.monotonic.sum")
 	met.SetDataType(pdata.MetricDataTypeSum)
 	met.Sum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
 	met.Sum().SetIsMonotonic(true)
@@ -724,8 +776,8 @@ func testGauge(name string, val float64) datadog.Metric {
 	return m
 }
 
-func testCount(name string, val float64) datadog.Metric {
-	m := metrics.NewCount(name, 2*1e9, val, []string{})
+func testCount(name string, val float64, seconds uint64) datadog.Metric {
+	m := metrics.NewCount(name, seconds*1e9, val, []string{})
 	m.SetHost(testHostname)
 	return m
 }
@@ -746,14 +798,18 @@ func TestMapMetrics(t *testing.T) {
 	assert.ElementsMatch(t, filtered, []datadog.Metric{
 		testGauge("int.gauge", 1),
 		testGauge("double.gauge", math.Pi),
-		testGauge("int.sum", 2),
-		testGauge("double.sum", math.E),
+		testCount("int.delta.sum", 2, 0),
+		testCount("double.delta.sum", math.E, 0),
+		testCount("int.delta.monotonic.sum", 2, 0),
+		testCount("double.delta.monotonic.sum", math.E, 0),
 		testGauge("double.histogram.sum", math.Phi),
 		testGauge("double.histogram.count", 20),
 		testGauge("summary.sum", 10_000),
 		testGauge("summary.count", 100),
-		testCount("int.cumulative.sum", 3),
-		testCount("double.cumulative.sum", math.Pi),
+		testGauge("int.cumulative.sum", 4),
+		testGauge("double.cumulative.sum", 4),
+		testCount("int.cumulative.monotonic.sum", 3, 2),
+		testCount("double.cumulative.monotonic.sum", math.Pi, 2),
 	})
 
 	// One metric type was unknown or unsupported
