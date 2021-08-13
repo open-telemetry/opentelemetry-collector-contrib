@@ -33,6 +33,14 @@ MockEksResourceAttributes = {
 
 class AwsEksResourceDetectorTest(unittest.TestCase):
     @patch(
+        "opentelemetry.sdk.extension.aws.resource.eks._get_k8s_cred_value",
+        return_value="MOCK_TOKEN",
+    )
+    @patch(
+        "opentelemetry.sdk.extension.aws.resource.eks._is_eks",
+        return_value=True,
+    )
+    @patch(
         "opentelemetry.sdk.extension.aws.resource.eks._get_cluster_info",
         return_value=f"""{{
   "kind": "ConfigMap",
@@ -56,14 +64,6 @@ class AwsEksResourceDetectorTest(unittest.TestCase):
 """,
     )
     @patch(
-        "opentelemetry.sdk.extension.aws.resource.eks._is_eks",
-        return_value=True,
-    )
-    @patch(
-        "opentelemetry.sdk.extension.aws.resource.eks._get_k8s_cred_value",
-        return_value="MOCK_TOKEN",
-    )
-    @patch(
         "builtins.open",
         new_callable=mock_open,
         read_data=f"""14:name=systemd:/docker/{MockEksResourceAttributes[ResourceAttributes.CONTAINER_ID]}
@@ -85,11 +85,25 @@ class AwsEksResourceDetectorTest(unittest.TestCase):
     def test_simple_create(
         self,
         mock_open_function,
-        mock_get_k8_cred_value,
-        mock_is_eks,
         mock_get_cluster_info,
+        mock_is_eks,
+        mock_get_k8_cred_value,
     ):
         actual = AwsEksResourceDetector().detect()
         self.assertDictEqual(
             actual.attributes.copy(), OrderedDict(MockEksResourceAttributes)
         )
+
+    @patch(
+        "opentelemetry.sdk.extension.aws.resource.eks._get_k8s_cred_value",
+        return_value="MOCK_TOKEN",
+    )
+    @patch(
+        "opentelemetry.sdk.extension.aws.resource.eks._is_eks",
+        return_value=False,
+    )
+    def test_if_no_eks_env_var_and_should_raise(
+        self, mock_is_eks, mock_get_k8_cred_value
+    ):
+        with self.assertRaises(RuntimeError):
+            AwsEksResourceDetector(raise_on_error=True).detect()
