@@ -353,8 +353,8 @@ func Test_mapLogRecordToSplunkEvent(t *testing.T) {
 			logRecordFn: func() pdata.LogRecord {
 				logRecord := pdata.NewLogRecord()
 				logRecord.Body().SetStringVal("mylog")
-				logRecord.Attributes().InsertString(splunk.SourceLabel, "myapp")
-				logRecord.Attributes().InsertString(splunk.SourcetypeLabel, "myapp-type")
+				logRecord.Attributes().InsertString(splunk.DefaultSourceLabel, "myapp")
+				logRecord.Attributes().InsertString(splunk.DefaultSourceTypeLabel, "myapp-type")
 				logRecord.Attributes().InsertString(conventions.AttributeHostName, "myhost")
 				logRecord.Attributes().InsertString("custom", "custom")
 				logRecord.SetSeverityText("DEBUG")
