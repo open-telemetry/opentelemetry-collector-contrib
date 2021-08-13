@@ -668,7 +668,7 @@ func createTestMetrics() pdata.Metrics {
 	dpDouble.SetTimestamp(seconds(0))
 	dpDouble.SetDoubleVal(math.E)
 
-	// Int Sum (delta)
+	// Int Sum (delta monotonic)
 	met = metricsArray.AppendEmpty()
 	met.SetName("int.delta.monotonic.sum")
 	met.SetDataType(pdata.MetricDataTypeSum)
@@ -678,7 +678,7 @@ func createTestMetrics() pdata.Metrics {
 	dpInt.SetTimestamp(seconds(0))
 	dpInt.SetIntVal(2)
 
-	// Double Sum (delta)
+	// Double Sum (delta monotonic)
 	met = metricsArray.AppendEmpty()
 	met.SetName("double.delta.monotonic.sum")
 	met.SetDataType(pdata.MetricDataTypeSum)
