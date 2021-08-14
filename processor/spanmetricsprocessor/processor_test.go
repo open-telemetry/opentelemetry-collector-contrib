@@ -38,16 +38,18 @@ import (
 )
 
 const (
-	stringAttrName     = "stringAttrName"
-	intAttrName        = "intAttrName"
-	doubleAttrName     = "doubleAttrName"
-	boolAttrName       = "boolAttrName"
-	nullAttrName       = "nullAttrName"
-	mapAttrName        = "mapAttrName"
-	arrayAttrName      = "arrayAttrName"
-	notInSpanAttrName0 = "shouldBeInMetric"
-	notInSpanAttrName1 = "shouldNotBeInMetric"
+	stringAttrName         = "stringAttrName"
+	intAttrName            = "intAttrName"
+	doubleAttrName         = "doubleAttrName"
+	boolAttrName           = "boolAttrName"
+	nullAttrName           = "nullAttrName"
+	mapAttrName            = "mapAttrName"
+	arrayAttrName          = "arrayAttrName"
+	notInSpanAttrName0     = "shouldBeInMetric"
+	notInSpanAttrName1     = "shouldNotBeInMetric"
+	regionResourceAttrName = "region"
 
+	sampleRegion          = "us-east-1"
 	sampleLatency         = float64(11)
 	sampleLatencyDuration = time.Duration(sampleLatency) * time.Millisecond
 )
@@ -312,6 +314,8 @@ func newProcessorImp(mexp *mocks.MetricsExporter, tcon *mocks.TracesConsumer, de
 			{notInSpanAttrName0, &defaultNotInSpanAttrVal},
 			// Leave the default value unset to test that this dimension should not be added to the metric.
 			{notInSpanAttrName1, nil},
+			// Add a resource attribute to test "process" attributes like IP, host, region, cluster, etc.
+			{regionResourceAttrName, nil},
 		},
 		metricKeyToDimensions: make(map[metricKey]dimKV),
 	}
@@ -396,14 +400,15 @@ func verifyConsumeMetricsInput(input pdata.Metrics, t *testing.T) bool {
 func verifyMetricLabels(dp metricDataPoint, t *testing.T, seenMetricIDs map[metricID]bool) {
 	mID := metricID{}
 	wantDimensions := map[string]string{
-		stringAttrName:     "stringAttrValue",
-		intAttrName:        "99",
-		doubleAttrName:     "99.99",
-		boolAttrName:       "true",
-		nullAttrName:       "",
-		arrayAttrName:      "[]",
-		mapAttrName:        "{}",
-		notInSpanAttrName0: "defaultNotInSpanAttrVal",
+		stringAttrName:         "stringAttrValue",
+		intAttrName:            "99",
+		doubleAttrName:         "99.99",
+		boolAttrName:           "true",
+		nullAttrName:           "",
+		arrayAttrName:          "[]",
+		mapAttrName:            "{}",
+		notInSpanAttrName0:     "defaultNotInSpanAttrVal",
+		regionResourceAttrName: sampleRegion,
 	}
 	dp.LabelsMap().Range(func(k string, v string) bool {
 		switch k {
@@ -474,6 +479,8 @@ func initServiceSpans(serviceSpans serviceSpans, spans pdata.ResourceSpans) {
 			InsertString(conventions.AttributeServiceName, serviceSpans.serviceName)
 	}
 
+	spans.Resource().Attributes().InsertString(regionResourceAttrName, sampleRegion)
+
 	ils := spans.InstrumentationLibrarySpans().AppendEmpty()
 	for _, span := range serviceSpans.spans {
 		initSpan(span, ils.Spans().AppendEmpty())
@@ -512,16 +519,92 @@ func newOTLPExporters(t *testing.T) (*otlpexporter.Config, component.MetricsExpo
 	return otlpConfig, mexp, texp
 }
 
-func TestBuildKey(t *testing.T) {
+func TestBuildKeySameServiceOperationCharSequence(t *testing.T) {
 	span0 := pdata.NewSpan()
 	span0.SetName("c")
-	k0 := buildKey("ab", span0, nil)
+	k0 := buildKey("ab", span0, nil, pdata.NewAttributeMap())
 
 	span1 := pdata.NewSpan()
 	span1.SetName("bc")
-	k1 := buildKey("a", span1, nil)
+	k1 := buildKey("a", span1, nil, pdata.NewAttributeMap())
 
 	assert.NotEqual(t, k0, k1)
+	assert.Equal(t, metricKey("ab\u0000c\u0000SPAN_KIND_UNSPECIFIED\u0000STATUS_CODE_UNSET"), k0)
+	assert.Equal(t, metricKey("a\u0000bc\u0000SPAN_KIND_UNSPECIFIED\u0000STATUS_CODE_UNSET"), k1)
+}
+
+func TestBuildKeyWithDimensions(t *testing.T) {
+	defaultFoo := "bar"
+	for _, tc := range []struct {
+		name            string
+		optionalDims    []Dimension
+		resourceAttrMap map[string]pdata.AttributeValue
+		spanAttrMap     map[string]pdata.AttributeValue
+		wantKey         string
+	}{
+		{
+			name:    "nil optionalDims",
+			wantKey: "ab\u0000c\u0000SPAN_KIND_UNSPECIFIED\u0000STATUS_CODE_UNSET",
+		},
+		{
+			name: "neither span nor resource contains key, dim provides default",
+			optionalDims: []Dimension{
+				{Name: "foo", Default: &defaultFoo},
+			},
+			wantKey: "ab\u0000c\u0000SPAN_KIND_UNSPECIFIED\u0000STATUS_CODE_UNSET\u0000bar",
+		},
+		{
+			name: "neither span nor resource contains key, dim provides no default",
+			optionalDims: []Dimension{
+				{Name: "foo"},
+			},
+			wantKey: "ab\u0000c\u0000SPAN_KIND_UNSPECIFIED\u0000STATUS_CODE_UNSET",
+		},
+		{
+			name: "span attribute contains dimension",
+			optionalDims: []Dimension{
+				{Name: "foo"},
+			},
+			spanAttrMap: map[string]pdata.AttributeValue{
+				"foo": pdata.NewAttributeValueInt(99),
+			},
+			wantKey: "ab\u0000c\u0000SPAN_KIND_UNSPECIFIED\u0000STATUS_CODE_UNSET\u000099",
+		},
+		{
+			name: "resource attribute contains dimension",
+			optionalDims: []Dimension{
+				{Name: "foo"},
+			},
+			resourceAttrMap: map[string]pdata.AttributeValue{
+				"foo": pdata.NewAttributeValueInt(99),
+			},
+			wantKey: "ab\u0000c\u0000SPAN_KIND_UNSPECIFIED\u0000STATUS_CODE_UNSET\u000099",
+		},
+		{
+			name: "both span and resource attribute contains dimension, should prefer span attribute",
+			optionalDims: []Dimension{
+				{Name: "foo"},
+			},
+			spanAttrMap: map[string]pdata.AttributeValue{
+				"foo": pdata.NewAttributeValueInt(100),
+			},
+			resourceAttrMap: map[string]pdata.AttributeValue{
+				"foo": pdata.NewAttributeValueInt(99),
+			},
+			wantKey: "ab\u0000c\u0000SPAN_KIND_UNSPECIFIED\u0000STATUS_CODE_UNSET\u0000100",
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			resAttr := pdata.NewAttributeMap()
+			resAttr.InitFromMap(tc.resourceAttrMap)
+			span0 := pdata.NewSpan()
+			span0.Attributes().InitFromMap(tc.spanAttrMap)
+			span0.SetName("c")
+			k := buildKey("ab", span0, tc.optionalDims, resAttr)
+
+			assert.Equal(t, metricKey(tc.wantKey), k)
+		})
+	}
 }
 
 func TestProcessorDuplicateDimensions(t *testing.T) {
