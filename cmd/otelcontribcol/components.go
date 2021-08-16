@@ -191,6 +191,7 @@ func components() (component.Factories, error) {
 	}
 
 	processors := []component.ProcessorFactory{
+		attributesprocessor.NewFactory(),
 		groupbyattrsprocessor.NewFactory(),
 		groupbytraceprocessor.NewFactory(),
 		k8sprocessor.NewFactory(),
