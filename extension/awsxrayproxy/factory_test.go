@@ -16,6 +16,8 @@ package awsxrayproxy
 
 import (
 	"context"
+	"net/http"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -44,13 +46,27 @@ func TestFactory_CreateDefaultConfig(t *testing.T) {
 
 func TestFactory_CreateExtension(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	cfg.ProxyConfig.TCPAddr.Endpoint = testutil.GetAvailableLocalAddress(t)
+	address := testutil.GetAvailableLocalAddress(t)
+	cfg.ProxyConfig.TCPAddr.Endpoint = address
 	cfg.ProxyConfig.Region = "us-east-2"
 
 	ctx := context.Background()
 	ext, err := createExtension(ctx, componenttest.NewNopExtensionCreateSettings(), cfg)
 	assert.NoError(t, err)
 	assert.NotNil(t, ext)
+
+	err = ext.Start(ctx, componenttest.NewNopHost())
+	assert.NoError(t, err)
+
+	resp, err := http.Post(
+		"http://"+address+"/GetSamplingRules",
+		"application/json",
+		strings.NewReader(`{"NextToken": null}`))
+
+	assert.NoError(t, err)
+
+	// The request was proxied and has standard AWS headers.
+	assert.NotEmpty(t, resp.Header.Get("X-Amzn-Requestid"))
 
 	err = ext.Shutdown(ctx)
 	assert.NoError(t, err)
