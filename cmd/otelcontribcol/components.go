@@ -166,6 +166,7 @@ func components() (component.Factories, error) {
 		dynatraceexporter.NewFactory(),
 		elasticexporter.NewFactory(),
 		f5cloudexporter.NewFactory(),
+		fileexporer.NewFactory(),
 		googlecloudexporter.NewFactory(),
 		honeycombexporter.NewFactory(),
 		humioexporter.NewFactory(),
