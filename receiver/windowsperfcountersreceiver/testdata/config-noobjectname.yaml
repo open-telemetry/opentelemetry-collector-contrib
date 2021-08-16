@@ -1,0 +1,18 @@
+receivers:
+  windowsperfcounters:
+    perfcounters:
+      - counters:
+          - "counter"
+
+processors:
+  nop:
+
+exporters:
+  nop:
+
+service:
+  pipelines:
+    metrics:
+      receivers: [windowsperfcounters]
+      processors: [nop]
+      exporters: [nop]

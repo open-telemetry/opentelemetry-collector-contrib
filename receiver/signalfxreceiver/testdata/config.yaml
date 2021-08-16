@@ -1,0 +1,24 @@
+receivers:
+  signalfx:
+  signalfx/allsettings:
+    # endpoint specifies the network interface and port which will receive
+    # SignalFx metrics.
+    endpoint: localhost:9943
+    access_token_passthrough: true
+  signalfx/tls:
+    tls_settings:
+      cert_file: /test.crt
+      key_file: /test.key
+
+processors:
+  nop:
+
+exporters:
+  nop:
+
+service:
+  pipelines:
+    metrics:
+      receivers: [signalfx, signalfx/allsettings]
+      processors: [nop]
+      exporters: [nop]
