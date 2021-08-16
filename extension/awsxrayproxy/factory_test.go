@@ -17,6 +17,7 @@ package awsxrayproxy
 import (
 	"context"
 	"net/http"
+	"os"
 	"strings"
 	"testing"
 
@@ -49,6 +50,10 @@ func TestFactory_CreateExtension(t *testing.T) {
 	address := testutil.GetAvailableLocalAddress(t)
 	cfg.ProxyConfig.TCPAddr.Endpoint = address
 	cfg.ProxyConfig.Region = "us-east-2"
+
+	// Simplest way to get SDK to use fake credentials
+	os.Setenv("AWS_ACCESS_KEY_ID", "fakeAccessKeyID")
+	os.Setenv("AWS_SECRET_ACCESS_KEY", "fakeSecretAccessKey")
 
 	ctx := context.Background()
 	ext, err := createExtension(ctx, componenttest.NewNopExtensionCreateSettings(), cfg)
