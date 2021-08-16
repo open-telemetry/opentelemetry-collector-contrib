@@ -15,6 +15,8 @@ The OpenTelemetry Collector Contrib contains everything in the [opentelemetry-co
 ## 🛑 Breaking changes 🛑
 
 - `splunk_hec` receiver/exporter: `com.splunk.source` field is mapped to `source` field in Splunk instead of `service.name` (#4596)
+- `redis` receiver: Move interval runner package to `internal/interval` (#4600)
+- `datadog` exporter: Export summary count and sum as monotonic counts (#4605)
 
 ## 💡 Enhancements 💡
 
@@ -32,6 +34,7 @@ The OpenTelemetry Collector Contrib contains everything in the [opentelemetry-co
 - `elasticsearch` exporter: Add dedot support (#4579)
 - `signalfx` exporter: Add process metric to translation rules (#4598)
 - `splunk_hec` exporter: Add profiling logs support (#4464)
+- `awsemf` exporter: Replace logGroup and logStream pattern with metric labels (#4466)
 
 ## 🧰 Bug fixes 🧰
 
