@@ -32,6 +32,7 @@ import (
 	"go.opentelemetry.io/collector/model/pdata"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsemfexporter/internal/k8sapiserver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil"
 )
 
@@ -41,12 +42,17 @@ const (
 	outputDestinationStdout     = "stdout"
 )
 
+type metricsProvider interface {
+	GetMetrics() []pdata.Metrics
+}
+
 type emfExporter struct {
 	//Each (log group, log stream) keeps a separate pusher because of each (log group, log stream) requires separate stream token.
 	groupStreamToPusherMap map[string]map[string]pusher
 	svcStructuredLog       *cloudWatchLogClient
 	config                 config.Exporter
 	logger                 *zap.Logger
+	k8sapiserver           metricsProvider
 
 	metricTranslator metricTranslator
 
@@ -109,75 +115,85 @@ func newEmfExporter(
 		exp.(*emfExporter).pushMetricsData,
 		exporterhelper.WithResourceToTelemetryConversion(config.(*Config).ResourceToTelemetrySettings),
 		exporterhelper.WithShutdown(exp.(*emfExporter).Shutdown),
+		exporterhelper.WithStart(exp.(*emfExporter).Start),
 	)
 }
 
-func (emf *emfExporter) pushMetricsData(_ context.Context, md pdata.Metrics) error {
-	rms := md.ResourceMetrics()
-	labels := map[string]string{}
-	for i := 0; i < rms.Len(); i++ {
-		rm := rms.At(i)
-		am := rm.Resource().Attributes()
-		if am.Len() > 0 {
-			am.Range(func(k string, v pdata.AttributeValue) bool {
-				labels[k] = v.StringVal()
-				return true
-			})
-		}
-	}
-	emf.logger.Info("Start processing resource metrics", zap.Any("labels", labels))
+func (emf *emfExporter) pushMetricsData(_ context.Context, metricData pdata.Metrics) error {
+	var mds []pdata.Metrics
+	mds = append(mds, metricData)
 
-	groupedMetrics := make(map[interface{}]*groupedMetric)
-	expConfig := emf.config.(*Config)
-	defaultLogStream := fmt.Sprintf("otel-stream-%s", emf.collectorID)
-	outputDestination := expConfig.OutputDestination
-
-	for i := 0; i < rms.Len(); i++ {
-		rm := rms.At(i)
-		err := emf.metricTranslator.translateOTelToGroupedMetric(&rm, groupedMetrics, expConfig)
-		if err != nil {
-			return err
-		}
+	if emf.config.(*Config).EKSFargateContainerInsightsEnabled {
+		mds = append(mds, emf.k8sapiserver.GetMetrics()...)
 	}
 
-	for _, groupedMetric := range groupedMetrics {
-		cWMetric := translateGroupedMetricToCWMetric(groupedMetric, expConfig)
-		putLogEvent := translateCWMetricToEMF(cWMetric, expConfig)
-		// Currently we only support two options for "OutputDestination".
-		if strings.EqualFold(outputDestination, outputDestinationStdout) {
-			fmt.Println(*putLogEvent.inputLogEvent.Message)
-		} else if strings.EqualFold(outputDestination, outputDestinationCloudWatch) {
-			logGroup := groupedMetric.metadata.logGroup
-			logStream := groupedMetric.metadata.logStream
-			if logStream == "" {
-				logStream = defaultLogStream
-			}
-
-			emfPusher := emf.getPusher(logGroup, logStream)
-			if emfPusher != nil {
-				returnError := emfPusher.addLogEntry(putLogEvent)
-				if returnError != nil {
-					return wrapErrorIfBadRequest(&returnError)
-				}
+	for _, md := range mds {
+		rms := md.ResourceMetrics()
+		labels := map[string]string{}
+		for i := 0; i < rms.Len(); i++ {
+			rm := rms.At(i)
+			am := rm.Resource().Attributes()
+			if am.Len() > 0 {
+				am.Range(func(k string, v pdata.AttributeValue) bool {
+					labels[k] = v.StringVal()
+					return true
+				})
 			}
 		}
-	}
+		emf.logger.Info("Start processing resource metrics", zap.Any("labels", labels))
 
-	if strings.EqualFold(outputDestination, outputDestinationCloudWatch) {
-		for _, emfPusher := range emf.listPushers() {
-			returnError := emfPusher.forceFlush()
-			if returnError != nil {
-				//TODO now we only have one logPusher, so it's ok to return after first error occurred
-				err := wrapErrorIfBadRequest(&returnError)
-				if err != nil {
-					emf.logger.Error("Error force flushing logs. Skipping to next logPusher.", zap.Error(err))
-				}
+		groupedMetrics := make(map[interface{}]*groupedMetric)
+		expConfig := emf.config.(*Config)
+		defaultLogStream := fmt.Sprintf("otel-stream-%s", emf.collectorID)
+		outputDestination := expConfig.OutputDestination
+
+		for i := 0; i < rms.Len(); i++ {
+			rm := rms.At(i)
+			err := emf.metricTranslator.translateOTelToGroupedMetric(&rm, groupedMetrics, expConfig)
+			if err != nil {
 				return err
 			}
 		}
-	}
 
-	emf.logger.Info("Finish processing resource metrics", zap.Any("labels", labels))
+		for _, groupedMetric := range groupedMetrics {
+			cWMetric := translateGroupedMetricToCWMetric(groupedMetric, expConfig)
+			putLogEvent := translateCWMetricToEMF(cWMetric, expConfig)
+			// Currently we only support two options for "OutputDestination".
+			if strings.EqualFold(outputDestination, outputDestinationStdout) {
+				fmt.Println(*putLogEvent.inputLogEvent.Message)
+			} else if strings.EqualFold(outputDestination, outputDestinationCloudWatch) {
+				logGroup := groupedMetric.metadata.logGroup
+				logStream := groupedMetric.metadata.logStream
+				if logStream == "" {
+					logStream = defaultLogStream
+				}
+
+				emfPusher := emf.getPusher(logGroup, logStream)
+				if emfPusher != nil {
+					returnError := emfPusher.addLogEntry(putLogEvent)
+					if returnError != nil {
+						return wrapErrorIfBadRequest(&returnError)
+					}
+				}
+			}
+		}
+
+		if strings.EqualFold(outputDestination, outputDestinationCloudWatch) {
+			for _, emfPusher := range emf.listPushers() {
+				returnError := emfPusher.forceFlush()
+				if returnError != nil {
+					//TODO now we only have one logPusher, so it's ok to return after first error occurred
+					err := wrapErrorIfBadRequest(&returnError)
+					if err != nil {
+						emf.logger.Error("Error force flushing logs. Skipping to next logPusher.", zap.Error(err))
+					}
+					return err
+				}
+			}
+		}
+
+		emf.logger.Info("Finish processing resource metrics", zap.Any("labels", labels))
+	}
 
 	return nil
 }
@@ -239,6 +255,13 @@ func (emf *emfExporter) Capabilities() consumer.Capabilities {
 
 // Start
 func (emf *emfExporter) Start(ctx context.Context, host component.Host) error {
+	// TODO: pull the cluster name from environment variable
+	// starts the k8s API server
+	apiServer, err := k8sapiserver.New("texas", emf.logger)
+	if err != nil {
+		return err
+	}
+	emf.k8sapiserver = apiServer
 	return nil
 }
 
