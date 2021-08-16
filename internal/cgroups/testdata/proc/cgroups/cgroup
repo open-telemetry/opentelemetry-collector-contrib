@@ -1,3 +1,0 @@
-3:memory:/docker/large
-2:cpu,cpuacct:/docker
-1:cpuset:/
