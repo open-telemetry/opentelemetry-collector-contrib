@@ -35,6 +35,7 @@ import (
 type K8sClient interface {
 	GetClientSet() kubernetes.Interface
 	GetEpClient() k8sclient.EpClient
+	GetPodClient() k8sclient.PodClient
 }
 
 // K8sAPIServer is a struct that produces metrics from kubernetes api server
@@ -44,6 +45,7 @@ type K8sAPIServer struct {
 
 	k8sClient K8sClient //*k8sclient.K8sClient
 	epClient  k8sclient.EpClient
+	podClient k8sclient.PodClient
 }
 
 type k8sAPIServerOption func(*K8sAPIServer)
@@ -64,6 +66,7 @@ func New(clusterName string, logger *zap.Logger, options ...k8sAPIServerOption) 
 		return nil, errors.New("failed to start k8sapiserver because k8sclient is nil")
 	}
 	k.epClient = k.k8sClient.GetEpClient()
+	k.podClient = k.k8sClient.GetPodClient()
 
 	return k, nil
 }
@@ -90,6 +93,23 @@ func (k *K8sAPIServer) GetMetrics() []pdata.Metrics {
 
 		attributes[ci.Kubernetes] = fmt.Sprintf("{\"namespace_name\":\"%s\",\"service_name\":\"%s\"}",
 			service.Namespace, service.ServiceName)
+		md := ci.ConvertToOTLPMetrics(fields, attributes, k.logger)
+		result = append(result, md)
+	}
+
+	for namespace, podNum := range k.podClient.NamespaceToRunningPodNum() {
+		fields := map[string]interface{}{
+			"namespace_number_of_running_pods": podNum,
+		}
+		attributes := map[string]string{
+			ci.ClusterNameKey: k.clusterName,
+			ci.MetricType:     ci.TypeClusterNamespace,
+			ci.Timestamp:      timestampNs,
+			ci.K8sNamespace:   namespace,
+			ci.Version:        "0",
+		}
+
+		attributes[ci.Kubernetes] = fmt.Sprintf("{\"namespace_name\":\"%s\"}", namespace)
 		md := ci.ConvertToOTLPMetrics(fields, attributes, k.logger)
 		result = append(result, md)
 	}
