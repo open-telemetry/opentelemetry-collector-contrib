@@ -1,0 +1,20 @@
+receivers:
+  windowsperfcounters:
+    perfcounters:
+      - object: "object"
+        instances: [""]
+        counters:
+          - "counter"
+
+processors:
+  nop:
+
+exporters:
+  nop:
+
+service:
+  pipelines:
+    metrics:
+      receivers: [windowsperfcounters]
+      processors: [nop]
+      exporters: [nop]

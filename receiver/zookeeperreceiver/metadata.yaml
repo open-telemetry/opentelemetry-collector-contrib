@@ -1,0 +1,100 @@
+name: zookeeperreceiver
+
+labels:
+  server.state:
+    description: State of the Zookeeper server (leader, standalone or follower).
+  zk.version:
+    description: Zookeeper version of the instance.
+
+metrics:
+  zookeeper.followers:
+    description: The number of followers in sync with the leader. Only exposed by the leader.
+    unit: 1
+    data:
+      type: gauge
+  zookeeper.synced_followers:
+    description: The number of followers in sync with the leader. Only exposed by the leader.
+    unit: 1
+    data:
+      type: gauge
+  zookeeper.pending_syncs:
+    description: The number of pending syncs from the followers. Only exposed by the leader.
+    unit: 1
+    data:
+      type: gauge
+  zookeeper.latency.avg:
+    description: Average time in milliseconds for requests to be processed.
+    unit: ms
+    data:
+      type: gauge
+  zookeeper.latency.max:
+    description: Maximum time in milliseconds for requests to be processed.
+    unit: ms
+    data:
+      type: gauge
+  zookeeper.latency.min:
+    description: Minimum time in milliseconds for requests to be processed.
+    unit: 1
+    data:
+      type: gauge
+  zookeeper.connections_alive:
+    description: Number of active clients connected to a ZooKeeper server.
+    unit: 1
+    data:
+      type: gauge
+  zookeeper.outstanding_requests:
+    description: Number of currently executing requests.
+    unit: 1
+    data:
+      type: gauge
+  zookeeper.znodes:
+    description: Number of z-nodes that a ZooKeeper server has in its data tree.
+    unit: 1
+    data:
+      type: gauge
+  zookeeper.watches:
+    description: Number of watches placed on Z-Nodes on a ZooKeeper server.
+    unit: 1
+    data:
+      type: gauge
+  zookeeper.ephemeral_nodes:
+    description: Number of ephemeral nodes that a ZooKeeper server has in its data tree.
+    unit: 1
+    data:
+      type: gauge
+  zookeeper.approximate_date_size:
+    description: Size of data in bytes that a ZooKeeper server has in its data tree.
+    unit: By
+    data:
+      type: gauge
+  zookeeper.open_file_descriptors:
+    description: Number of file descriptors that a ZooKeeper server has open.
+    unit: 1
+    data:
+      type: gauge
+  zookeeper.max_file_descriptors:
+    description: Maximum number of file descriptors that a ZooKeeper server can open.
+    unit: 1
+    data:
+      type: gauge
+  zookeeper.packets.received:
+    description: Number of ZooKeeper packets received by a server.
+    unit: 1
+    data:
+      type: sum
+      monotonic: true
+      aggregation: cumulative
+  zookeeper.packets.sent:
+    description: Number of ZooKeeper packets sent by a server.
+    unit: 1
+    data:
+      type: sum
+      monotonic: true
+      aggregation: cumulative
+  zookeeper.fsync_threshold_exceeds:
+    description: Number of times fsync duration has exceeded warning threshold.
+    unit: 1
+    data:
+      type: sum
+      monotonic: true
+      aggregation: cumulative

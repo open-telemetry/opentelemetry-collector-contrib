@@ -1,0 +1,79 @@
+name: kafkametricsreceiver
+
+labels:
+  topic:
+    description: The ID (integer) of a topic
+  partition:
+    description: The number (integer) of the partition
+  group:
+    description: The ID (string) of a consumer group
+
+metrics:
+#  brokers scraper
+  kafka.brokers:
+    description: Number of brokers in the cluster.
+    unit: "{brokers}"
+    data:
+      type: gauge
+#  topics scraper
+  kafka.topic.partitions:
+    description: Number of partitions in topic.
+    unit: "{partitions}"
+    data:
+      type: gauge
+    labels: [topic]
+  kafka.partition.current_offset:
+    description: Current offset of partition of topic.
+    unit: 1
+    data:
+      type: gauge
+    labels: [topic, partition]
+  kafka.partition.oldest_offset:
+    description: Oldest offset of partition of topic
+    unit: 1
+    data:
+      type: gauge
+    labels: [topic, partition]
+  kafka.partition.replicas:
+    description: Number of replicas for partition of topic
+    unit: "{replicas}"
+    data:
+      type: gauge
+    labels: [topic, partition]
+  kafka.partition.replicas_in_sync:
+    description: Number of synchronized replicas of partition
+    unit: "{replicas}"
+    data:
+      type: gauge
+    labels: [topic, partition]
+#  consumers scraper
+  kafka.consumer_group.members:
+    description: Count of members in the consumer group
+    unit: "{members}"
+    data:
+      type: gauge
+    labels: [group]
+  kafka.consumer_group.offset:
+    description: Current offset of the consumer group at partition of topic
+    unit: 1
+    data:
+      type: gauge
+    labels: [group, topic, partition]
+  kafka.consumer_group.offset_sum:
+    description: Sum of consumer group offset across partitions of topic
+    unit: 1
+    data:
+      type: gauge
+    labels: [group, topic]
+  kafka.consumer_group.lag:
+    description: Current approximate lag of consumer group at partition of topic
+    unit: 1
+    data:
+      type: gauge
+    labels: [group, topic, partition]
+  kafka.consumer_group.lag_sum:
+    description: Current approximate sum of consumer group lag across all partitions of topic
+    unit: 1
+    data:
+      type: gauge
+    labels: [group, topic]
