@@ -19,6 +19,7 @@ import (
 	"sort"
 	"strings"
 	"testing"
+	"time"
 
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	agentmetricspb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/metrics/v1"
@@ -53,6 +54,8 @@ func createMetricTestData() *agentmetricspb.ExportMetricsServiceRequest {
 			Labels: map[string]string{
 				conventions.AttributeServiceName:      "myServiceName",
 				conventions.AttributeServiceNamespace: "myServiceNS",
+				"ClusterName":                         "myCluster",
+				"PodName":                             "myPod",
 				attributeReceiver:                     prometheusReceiver,
 			},
 		},
@@ -2068,6 +2071,72 @@ func BenchmarkTranslateOtToGroupedMetricWithInstrLibrary(b *testing.B) {
 	}
 }
 
+func BenchmarkTranslateOtToGroupedMetricWithoutConfigReplacePattern(b *testing.B) {
+	oc := createMetricTestData()
+	rm := internaldata.OCToMetrics(oc.Node, oc.Resource, oc.Metrics).ResourceMetrics().At(0)
+	ilms := rm.InstrumentationLibraryMetrics()
+	ilm := ilms.At(0)
+	ilm.InstrumentationLibrary().SetName("cloudwatch-lib")
+	config := &Config{
+		Namespace:             "",
+		DimensionRollupOption: zeroAndSingleDimensionRollup,
+		LogGroupName:          "group.no.replace.pattern",
+		LogStreamName:         "stream.no.replace.pattern",
+		logger:                zap.NewNop(),
+	}
+	translator := newMetricTranslator(*config)
+
+	b.ResetTimer()
+	for n := 0; n < b.N; n++ {
+		groupedMetrics := make(map[interface{}]*groupedMetric)
+		translator.translateOTelToGroupedMetric(&rm, groupedMetrics, config)
+	}
+}
+
+func BenchmarkTranslateOtToGroupedMetricWithConfigReplaceWithResource(b *testing.B) {
+	oc := createMetricTestData()
+	rm := internaldata.OCToMetrics(oc.Node, oc.Resource, oc.Metrics).ResourceMetrics().At(0)
+	ilms := rm.InstrumentationLibraryMetrics()
+	ilm := ilms.At(0)
+	ilm.InstrumentationLibrary().SetName("cloudwatch-lib")
+	config := &Config{
+		Namespace:             "",
+		DimensionRollupOption: zeroAndSingleDimensionRollup,
+		LogGroupName:          "group.{ClusterName}",
+		LogStreamName:         "stream.no.replace.pattern",
+		logger:                zap.NewNop(),
+	}
+	translator := newMetricTranslator(*config)
+
+	b.ResetTimer()
+	for n := 0; n < b.N; n++ {
+		groupedMetrics := make(map[interface{}]*groupedMetric)
+		translator.translateOTelToGroupedMetric(&rm, groupedMetrics, config)
+	}
+}
+
+func BenchmarkTranslateOtToGroupedMetricWithConfigReplaceWithLabel(b *testing.B) {
+	oc := createMetricTestData()
+	rm := internaldata.OCToMetrics(oc.Node, oc.Resource, oc.Metrics).ResourceMetrics().At(0)
+	ilms := rm.InstrumentationLibraryMetrics()
+	ilm := ilms.At(0)
+	ilm.InstrumentationLibrary().SetName("cloudwatch-lib")
+	config := &Config{
+		Namespace:             "",
+		DimensionRollupOption: zeroAndSingleDimensionRollup,
+		LogGroupName:          "group.no.replace.pattern",
+		LogStreamName:         "stream.{PodName}",
+		logger:                zap.NewNop(),
+	}
+	translator := newMetricTranslator(*config)
+
+	b.ResetTimer()
+	for n := 0; n < b.N; n++ {
+		groupedMetrics := make(map[interface{}]*groupedMetric)
+		translator.translateOTelToGroupedMetric(&rm, groupedMetrics, config)
+	}
+}
+
 func BenchmarkTranslateOtToGroupedMetricWithoutInstrLibrary(b *testing.B) {
 	oc := createMetricTestData()
 	rm := internaldata.OCToMetrics(oc.Node, oc.Resource, oc.Metrics).ResourceMetrics().At(0)
@@ -2186,4 +2255,190 @@ func BenchmarkTranslateCWMetricToEMF(b *testing.B) {
 	for n := 0; n < b.N; n++ {
 		translateCWMetricToEMF(met, &Config{})
 	}
+}
+
+type testMetric struct {
+	metricNames          []string
+	metricValues         [][]float64
+	resourceAttributeMap map[string]pdata.AttributeValue
+	labelMap             map[string]string
+}
+
+type logGroupStreamTest struct {
+	name             string
+	inputMetrics     pdata.Metrics
+	inLogGroupName   string
+	inLogStreamName  string
+	outLogGroupName  string
+	outLogStreamName string
+}
+
+var (
+	logGroupStreamTestCases = []logGroupStreamTest{
+		{
+			name: "log_group_stream_expect_same",
+			inputMetrics: generateTestMetrics(testMetric{
+				metricNames:  []string{"metric_1", "metric_2"},
+				metricValues: [][]float64{{100}, {4}},
+			}),
+			inLogGroupName:   "test-log-group",
+			inLogStreamName:  "test-log-stream",
+			outLogGroupName:  "test-log-group",
+			outLogStreamName: "test-log-stream",
+		},
+		{
+			name: "log_group_pattern_from_resource",
+			inputMetrics: generateTestMetrics(testMetric{
+				metricNames:  []string{"metric_1", "metric_2"},
+				metricValues: [][]float64{{100}, {4}},
+				resourceAttributeMap: map[string]pdata.AttributeValue{
+					"ClusterName": pdata.NewAttributeValueString("test-cluster"),
+					"PodName":     pdata.NewAttributeValueString("test-pod"),
+				},
+			}),
+			inLogGroupName:   "test-log-group-{ClusterName}",
+			inLogStreamName:  "test-log-stream",
+			outLogGroupName:  "test-log-group-test-cluster",
+			outLogStreamName: "test-log-stream",
+		},
+		{
+			name: "log_stream_pattern_from_resource",
+			inputMetrics: generateTestMetrics(testMetric{
+				metricNames:  []string{"metric_1", "metric_2"},
+				metricValues: [][]float64{{100}, {4}},
+				resourceAttributeMap: map[string]pdata.AttributeValue{
+					"ClusterName": pdata.NewAttributeValueString("test-cluster"),
+					"PodName":     pdata.NewAttributeValueString("test-pod"),
+				},
+			}),
+			inLogGroupName:   "test-log-group",
+			inLogStreamName:  "test-log-stream-{PodName}",
+			outLogGroupName:  "test-log-group",
+			outLogStreamName: "test-log-stream-test-pod",
+		},
+		{
+			name: "log_group_pattern_from_label",
+			inputMetrics: generateTestMetrics(testMetric{
+				metricNames:  []string{"metric_1", "metric_2"},
+				metricValues: [][]float64{{100}, {4}},
+				labelMap: map[string]string{
+					"ClusterName": "test-cluster",
+					"PodName":     "test-pod",
+				},
+			}),
+			inLogGroupName:   "test-log-group-{ClusterName}",
+			inLogStreamName:  "test-log-stream",
+			outLogGroupName:  "test-log-group-test-cluster",
+			outLogStreamName: "test-log-stream",
+		},
+		{
+			name: "log_stream_pattern_from_label",
+			inputMetrics: generateTestMetrics(testMetric{
+				metricNames:  []string{"metric_1", "metric_2"},
+				metricValues: [][]float64{{100}, {4}},
+				labelMap: map[string]string{
+					"ClusterName": "test-cluster",
+					"PodName":     "test-pod",
+				},
+			}),
+			inLogGroupName:   "test-log-group",
+			inLogStreamName:  "test-log-stream-{PodName}",
+			outLogGroupName:  "test-log-group",
+			outLogStreamName: "test-log-stream-test-pod",
+		},
+		{
+			name: "config_pattern_from_both_attributes",
+			inputMetrics: generateTestMetrics(testMetric{
+				metricNames:  []string{"metric_1", "metric_2"},
+				metricValues: [][]float64{{100}, {4}},
+				resourceAttributeMap: map[string]pdata.AttributeValue{
+					"ClusterName": pdata.NewAttributeValueString("test-cluster"),
+				},
+				labelMap: map[string]string{
+					"PodName": "test-pod",
+				},
+			}),
+			inLogGroupName:   "test-log-group-{ClusterName}",
+			inLogStreamName:  "test-log-stream-{PodName}",
+			outLogGroupName:  "test-log-group-test-cluster",
+			outLogStreamName: "test-log-stream-test-pod",
+		},
+		{
+			name: "config_pattern_missing_from_both_attributes",
+			inputMetrics: generateTestMetrics(testMetric{
+				metricNames:  []string{"metric_1", "metric_2"},
+				metricValues: [][]float64{{100}, {4}},
+			}),
+			inLogGroupName:   "test-log-group-{ClusterName}",
+			inLogStreamName:  "test-log-stream-{PodName}",
+			outLogGroupName:  "test-log-group-undefined",
+			outLogStreamName: "test-log-stream-undefined",
+		},
+		{
+			name: "config_pattern_group_missing_stream_present",
+			inputMetrics: generateTestMetrics(testMetric{
+				metricNames:  []string{"metric_1", "metric_2"},
+				metricValues: [][]float64{{100}, {4}},
+				labelMap: map[string]string{
+					"PodName": "test-pod",
+				},
+			}),
+			inLogGroupName:   "test-log-group-{ClusterName}",
+			inLogStreamName:  "test-log-stream-{PodName}",
+			outLogGroupName:  "test-log-group-undefined",
+			outLogStreamName: "test-log-stream-test-pod",
+		},
+	}
+)
+
+func TestTranslateOtToGroupedMetricForLogGroupAndStream(t *testing.T) {
+	for _, test := range logGroupStreamTestCases {
+		t.Run(test.name, func(t *testing.T) {
+			config := &Config{
+				Namespace:             "",
+				LogGroupName:          test.inLogGroupName,
+				LogStreamName:         test.inLogStreamName,
+				DimensionRollupOption: zeroAndSingleDimensionRollup,
+				logger:                zap.NewNop(),
+			}
+
+			translator := newMetricTranslator(*config)
+
+			groupedMetrics := make(map[interface{}]*groupedMetric)
+
+			rm := test.inputMetrics.ResourceMetrics().At(0)
+			translator.translateOTelToGroupedMetric(&rm, groupedMetrics, config)
+
+			assert.NotNil(t, groupedMetrics)
+			assert.Equal(t, 1, len(groupedMetrics))
+
+			for _, actual := range groupedMetrics {
+				assert.Equal(t, test.outLogGroupName, actual.metadata.logGroup)
+				assert.Equal(t, test.outLogStreamName, actual.metadata.logStream)
+			}
+		})
+	}
+}
+
+func generateTestMetrics(tm testMetric) pdata.Metrics {
+	md := pdata.NewMetrics()
+	now := time.Now()
+
+	rm := md.ResourceMetrics().AppendEmpty()
+
+	rm.Resource().Attributes().InitFromMap(tm.resourceAttributeMap)
+	ms := rm.InstrumentationLibraryMetrics().AppendEmpty().Metrics()
+
+	for i, name := range tm.metricNames {
+		m := ms.AppendEmpty()
+		m.SetName(name)
+		m.SetDataType(pdata.MetricDataTypeGauge)
+		for _, value := range tm.metricValues[i] {
+			dp := m.Gauge().DataPoints().AppendEmpty()
+			dp.SetTimestamp(pdata.TimestampFromTime(now.Add(10 * time.Second)))
+			dp.SetDoubleVal(value)
+			dp.LabelsMap().InitFromMap(tm.labelMap)
+		}
+	}
+	return md
 }

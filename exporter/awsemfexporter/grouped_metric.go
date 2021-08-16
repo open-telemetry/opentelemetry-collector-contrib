@@ -16,6 +16,7 @@ package awsemfexporter
 
 import (
 	"encoding/json"
+	"strings"
 
 	"go.opentelemetry.io/collector/model/pdata"
 	"go.uber.org/zap"
@@ -37,7 +38,7 @@ type metricInfo struct {
 }
 
 // addToGroupedMetric processes OT metrics and adds them into GroupedMetric buckets
-func addToGroupedMetric(pmd *pdata.Metric, groupedMetrics map[interface{}]*groupedMetric, metadata cWMetricMetadata, logger *zap.Logger, descriptor map[string]MetricDescriptor, config *Config) error {
+func addToGroupedMetric(pmd *pdata.Metric, groupedMetrics map[interface{}]*groupedMetric, metadata cWMetricMetadata, patternReplaceSucceeded bool, logger *zap.Logger, descriptor map[string]MetricDescriptor, config *Config) error {
 	if pmd == nil {
 		return nil
 	}
@@ -59,6 +60,17 @@ func addToGroupedMetric(pmd *pdata.Metric, groupedMetrics map[interface{}]*group
 		if metricType, ok := labels["Type"]; ok {
 			if (metricType == "Pod" || metricType == "Container") && config.EKSFargateContainerInsightsEnabled {
 				addKubernetesWrapper(labels)
+			}
+		}
+
+		// if patterns were found in config file and weren't replaced by resource attributes, replace those patterns with metric labels.
+		// if patterns are provided for a valid key and that key doesn't exist in the resource attributes, it is replaced with `undefined`.
+		if !patternReplaceSucceeded {
+			if strings.Contains(metadata.logGroup, "undefined") {
+				metadata.logGroup, _ = replacePatterns(config.LogGroupName, labels, config.logger)
+			}
+			if strings.Contains(metadata.logStream, "undefined") {
+				metadata.logStream, _ = replacePatterns(config.LogStreamName, labels, config.logger)
 			}
 		}
 
