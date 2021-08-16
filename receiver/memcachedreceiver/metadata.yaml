@@ -1,0 +1,41 @@
+name: memcachedreceiver
+
+labels:
+
+metrics:
+  memcached.bytes:
+    description: Current number of bytes used by this server to store items
+    unit: By
+    data:
+      type: gauge
+    labels: []
+  memcached.current_connections:
+    description: The current number of open connections
+    unit: connections
+    data:
+      type: gauge
+    labels: []
+  memcached.total_connections:
+    description: Total number of connections opened since the server started running
+    unit: connections
+    data:
+      type: sum
+      monotonic: true
+      aggregation: cumulative
+    labels: []
+  memcached.get_hits:
+    description: Number of keys that have been requested and found present
+    unit: connections
+    data:
+      type: sum
+      monotonic: true
+      aggregation: cumulative
+    labels: []
+  memcached.get_misses:
+    description: Number of items that have been requested and not found
+    unit: connections
+    data:
+      type: sum
+      monotonic: true
+      aggregation: cumulative
+    labels: []

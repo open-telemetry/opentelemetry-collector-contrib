@@ -1,0 +1,50 @@
+receivers:
+  nop:
+
+processors:
+  resourcedetection:
+  resourcedetection/gce:
+    detectors: [env, gce]
+    timeout: 2s
+    override: false
+  resourcedetection/ec2:
+    detectors: [env, ec2]
+    timeout: 2s
+    override: false
+    ec2:
+      tags:
+        - ^tag1$
+        - ^tag2$
+  resourcedetection/ecs:
+    detectors: [env, ecs]
+    timeout: 2s
+    override: false
+  resourcedetection/system:
+    detectors: [env, system]
+    timeout: 2s
+    override: false
+  resourcedetection/docker:
+    detectors: [env, docker]
+    timeout: 2s
+    override: false
+  resourcedetection/azure:
+    detectors: [env, azure]
+    timeout: 2s
+    override: false
+
+exporters:
+  nop:
+
+service:
+  pipelines:
+    metrics:
+      receivers: [nop]
+      processors:
+      # Choose one depending on your cloud provider and environment:
+      # - resourcedetection/system
+      # - resourcedetection/docker
+      # - resourcedetection/gce
+      # - resourcedetection/ec2
+      # - resourcedetection/ecs
+      # - resourcedetection/azure
+      exporters: [nop]

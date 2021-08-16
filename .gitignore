@@ -1,0 +1,36 @@
+local/
+
+# GoLand IDEA
+/.idea/
+*.iml
+
+# VS Code
+.vscode
+*.code-workspace
+
+# Binaries for programs and plugins
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+bin/
+dist/
+
+# Emacs
+*~
+\#*\#
+
+# Miscellaneous files
+*.sw[op]
+*.DS_Store
+
+# Coverage
+coverage.txt
+integration-coverage.txt
+coverage.html
+integration-coverage.html
+
+# Wix
+*.wixobj
+*.wixpdb

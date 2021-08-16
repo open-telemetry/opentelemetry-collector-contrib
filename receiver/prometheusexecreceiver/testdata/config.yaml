@@ -1,0 +1,33 @@
+receivers:
+  prometheus_exec:
+  prometheus_exec/test:
+    exec: mysqld_exporter
+    port: 9104
+  prometheus_exec/test2:
+    exec: postgres_exporter
+    scrape_interval: 90s
+  prometheus_exec/end_to_end_test/1:
+    exec: go run ./testdata/end_to_end_metrics_test/test_prometheus_exporter.go {{port}}
+    scrape_interval: 1s
+    port: 9999
+    env: 
+      - name: "DATA_SOURCE_NAME"
+        value: user:password@(hostname:port)/dbname
+      - name: SECONDARY_PORT
+        value: "1234"
+  prometheus_exec/end_to_end_test/2:
+    exec: go run ./testdata/end_to_end_metrics_test/test_prometheus_exporter.go {{port}}
+    scrape_interval: 1s
+
+processors:
+  nop:
+
+exporters:
+  nop:
+
+service:
+  pipelines:
+    metrics:
+      receivers: [prometheus_exec, prometheus_exec/test, prometheus_exec/end_to_end_test/1, prometheus_exec/end_to_end_test/2]
+      processors: [nop]
+      exporters: [nop]
