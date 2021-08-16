@@ -1,5 +1,0 @@
-typed.options:
-  floating.point.example:  3.14
-  integer.example: 1234
-  bool.example: no
-  string.example: this is a string
