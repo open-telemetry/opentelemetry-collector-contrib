@@ -33,15 +33,16 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/ttlmap"
 )
 
-// getTags maps a stringMap into a slice of Datadog tags
-func getTags(labels pdata.StringMap) []string {
+// getTags maps an attributeMap into a slice of Datadog tags
+func getTags(labels pdata.AttributeMap) []string {
 	tags := make([]string, 0, labels.Len())
-	labels.Range(func(key string, value string) bool {
-		if value == "" {
+	labels.Range(func(key string, value pdata.AttributeValue) bool {
+		v := value.StringVal() // TODO(codeboten): Fix as part of https://github.com/open-telemetry/opentelemetry-collector/issues/3815
+		if v == "" {
 			// Tags can't end with ":" so we replace empty values with "n/a"
-			value = "n/a"
+			v = "n/a"
 		}
-		tags = append(tags, fmt.Sprintf("%s:%s", key, value))
+		tags = append(tags, fmt.Sprintf("%s:%s", key, v))
 		return true
 	})
 	return tags
@@ -67,11 +68,11 @@ func metricDimensionsToMapKey(name string, tags []string) string {
 }
 
 // mapNumberMetrics maps double datapoints into Datadog metrics
-func mapNumberMetrics(name string, slice pdata.NumberDataPointSlice, attrTags []string) []datadog.Metric {
+func mapNumberMetrics(name string, dt metrics.MetricDataType, slice pdata.NumberDataPointSlice, attrTags []string) []datadog.Metric {
 	ms := make([]datadog.Metric, 0, slice.Len())
 	for i := 0; i < slice.Len(); i++ {
 		p := slice.At(i)
-		tags := getTags(p.LabelsMap())
+		tags := getTags(p.Attributes())
 		tags = append(tags, attrTags...)
 		var val float64
 		switch p.Type() {
@@ -81,7 +82,7 @@ func mapNumberMetrics(name string, slice pdata.NumberDataPointSlice, attrTags []
 			val = float64(p.IntVal())
 		}
 		ms = append(ms,
-			metrics.NewGauge(name, uint64(p.Timestamp()), val, tags),
+			metrics.NewMetric(name, dt, uint64(p.Timestamp()), val, tags),
 		)
 	}
 	return ms
@@ -120,7 +121,7 @@ func mapNumberMonotonicMetrics(name string, prevPts *ttlmap.TTLMap, slice pdata.
 	for i := 0; i < slice.Len(); i++ {
 		p := slice.At(i)
 		ts := uint64(p.Timestamp())
-		tags := getTags(p.LabelsMap())
+		tags := getTags(p.Attributes())
 		tags = append(tags, attrTags...)
 		key := metricDimensionsToMapKey(name, tags)
 
@@ -158,7 +159,7 @@ func mapHistogramMetrics(name string, slice pdata.HistogramDataPointSlice, bucke
 	for i := 0; i < slice.Len(); i++ {
 		p := slice.At(i)
 		ts := uint64(p.Timestamp())
-		tags := getTags(p.LabelsMap())
+		tags := getTags(p.Attributes())
 		tags = append(tags, attrTags...)
 
 		ms = append(ms,
@@ -204,7 +205,7 @@ func mapSummaryMetrics(name string, prevPts *ttlmap.TTLMap, slice pdata.SummaryD
 	for i := 0; i < slice.Len(); i++ {
 		p := slice.At(i)
 		ts := uint64(p.Timestamp())
-		tags := getTags(p.LabelsMap())
+		tags := getTags(p.Attributes())
 		tags = append(tags, attrTags...)
 
 		// count and sum are increasing; we treat them as cumulative monotonic sums.
@@ -270,12 +271,23 @@ func mapMetrics(logger *zap.Logger, cfg config.MetricsConfig, prevPts *ttlmap.TT
 				var datapoints []datadog.Metric
 				switch md.DataType() {
 				case pdata.MetricDataTypeGauge:
-					datapoints = mapNumberMetrics(md.Name(), md.Gauge().DataPoints(), attributeTags)
+					datapoints = mapNumberMetrics(md.Name(), metrics.Gauge, md.Gauge().DataPoints(), attributeTags)
 				case pdata.MetricDataTypeSum:
-					if cfg.SendMonotonic && isCumulativeMonotonic(md) {
-						datapoints = mapNumberMonotonicMetrics(md.Name(), prevPts, md.Sum().DataPoints(), attributeTags)
-					} else {
-						datapoints = mapNumberMetrics(md.Name(), md.Sum().DataPoints(), attributeTags)
+					switch md.Sum().AggregationTemporality() {
+					case pdata.AggregationTemporalityCumulative:
+						if cfg.SendMonotonic && isCumulativeMonotonic(md) {
+							datapoints = mapNumberMonotonicMetrics(md.Name(), prevPts, md.Sum().DataPoints(), attributeTags)
+						} else {
+							datapoints = mapNumberMetrics(md.Name(), metrics.Gauge, md.Sum().DataPoints(), attributeTags)
+						}
+					case pdata.AggregationTemporalityDelta:
+						datapoints = mapNumberMetrics(md.Name(), metrics.Count, md.Sum().DataPoints(), attributeTags)
+					default: // pdata.AggregationTemporalityUnspecified or any other not supported type
+						logger.Debug("Unknown or unsupported aggregation temporality",
+							zap.String("metric name", md.Name()),
+							zap.Any("aggregation temporality", md.Sum().AggregationTemporality()),
+						)
+						continue
 					}
 				case pdata.MetricDataTypeHistogram:
 					datapoints = mapHistogramMetrics(md.Name(), md.Histogram().DataPoints(), cfg.Buckets, attributeTags)

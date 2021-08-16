@@ -40,7 +40,7 @@ func splunkHecToMetricsData(logger *zap.Logger, events []*splunk.Event, resource
 			attrs.InsertString(conventions.AttributeHostName, event.Host)
 		}
 		if event.Source != "" {
-			attrs.InsertString(conventions.AttributeServiceName, event.Source)
+			attrs.InsertString(splunk.SourceLabel, event.Source)
 		}
 		if event.SourceType != "" {
 			attrs.InsertString(splunk.SourcetypeLabel, event.SourceType)
@@ -52,7 +52,7 @@ func splunkHecToMetricsData(logger *zap.Logger, events []*splunk.Event, resource
 
 		values := event.GetMetricValues()
 
-		labels := buildLabels(event.Fields)
+		labels := buildAttributes(event.Fields)
 
 		metrics := resourceMetrics.InstrumentationLibraryMetrics().AppendEmpty().Metrics()
 		for metricName, metricValue := range values {
@@ -90,7 +90,7 @@ func splunkHecToMetricsData(logger *zap.Logger, events []*splunk.Event, resource
 	return md, numDroppedTimeSeries
 }
 
-func convertString(logger *zap.Logger, numDroppedTimeSeries *int, metrics pdata.MetricSlice, metricName string, pointTimestamp pdata.Timestamp, s string, labels pdata.StringMap) {
+func convertString(logger *zap.Logger, numDroppedTimeSeries *int, metrics pdata.MetricSlice, metricName string, pointTimestamp pdata.Timestamp, s string, attributes pdata.AttributeMap) {
 	// best effort, cast to string and turn into a number
 	dbl, err := strconv.ParseFloat(s, 64)
 	if err != nil {
@@ -98,28 +98,28 @@ func convertString(logger *zap.Logger, numDroppedTimeSeries *int, metrics pdata.
 		logger.Debug("Cannot convert metric value from string to number",
 			zap.String("metric", metricName))
 	} else {
-		addDoubleGauge(metrics, metricName, dbl, pointTimestamp, labels)
+		addDoubleGauge(metrics, metricName, dbl, pointTimestamp, attributes)
 	}
 }
 
-func addIntGauge(metrics pdata.MetricSlice, metricName string, value int64, ts pdata.Timestamp, labels pdata.StringMap) {
+func addIntGauge(metrics pdata.MetricSlice, metricName string, value int64, ts pdata.Timestamp, attributes pdata.AttributeMap) {
 	metric := metrics.AppendEmpty()
 	metric.SetName(metricName)
 	metric.SetDataType(pdata.MetricDataTypeGauge)
 	intPt := metric.Gauge().DataPoints().AppendEmpty()
 	intPt.SetTimestamp(ts)
 	intPt.SetIntVal(value)
-	labels.CopyTo(intPt.LabelsMap())
+	attributes.CopyTo(intPt.Attributes())
 }
 
-func addDoubleGauge(metrics pdata.MetricSlice, metricName string, value float64, ts pdata.Timestamp, labels pdata.StringMap) {
+func addDoubleGauge(metrics pdata.MetricSlice, metricName string, value float64, ts pdata.Timestamp, attributes pdata.AttributeMap) {
 	metric := metrics.AppendEmpty()
 	metric.SetName(metricName)
 	metric.SetDataType(pdata.MetricDataTypeGauge)
 	doublePt := metric.Gauge().DataPoints().AppendEmpty()
 	doublePt.SetTimestamp(ts)
 	doublePt.SetDoubleVal(value)
-	labels.CopyTo(doublePt.LabelsMap())
+	attributes.CopyTo(doublePt.Attributes())
 }
 
 func convertTimestamp(sec *float64) pdata.Timestamp {
@@ -130,10 +130,10 @@ func convertTimestamp(sec *float64) pdata.Timestamp {
 	return pdata.Timestamp(*sec * 1e9)
 }
 
-// Extract dimensions from the Splunk event fields to populate metric data point labels.
-func buildLabels(dimensions map[string]interface{}) pdata.StringMap {
-	labels := pdata.NewStringMap()
-	labels.EnsureCapacity(len(dimensions))
+// Extract dimensions from the Splunk event fields to populate metric data point attributes.
+func buildAttributes(dimensions map[string]interface{}) pdata.AttributeMap {
+	attributes := pdata.NewAttributeMap()
+	attributes.EnsureCapacity(len(dimensions))
 	for key, val := range dimensions {
 
 		if strings.HasPrefix(key, "metric_name") {
@@ -143,7 +143,7 @@ func buildLabels(dimensions map[string]interface{}) pdata.StringMap {
 			// TODO: Log or metric for this odd ball?
 			continue
 		}
-		labels.Insert(key, fmt.Sprintf("%v", val))
+		attributes.InsertString(key, fmt.Sprintf("%v", val))
 	}
-	return labels
+	return attributes
 }

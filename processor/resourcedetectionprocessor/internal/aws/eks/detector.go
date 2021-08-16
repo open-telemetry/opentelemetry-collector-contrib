@@ -44,17 +44,17 @@ func NewDetector(_ component.ProcessorCreateSettings, _ internal.DetectorConfig)
 }
 
 // Detect returns a Resource describing the Amazon EKS environment being run in.
-func (detector *Detector) Detect(ctx context.Context) (pdata.Resource, error) {
+func (detector *Detector) Detect(ctx context.Context) (resource pdata.Resource, schemaURL string, err error) {
 	res := pdata.NewResource()
 
 	// Check if running on k8s.
 	if os.Getenv(kubernetesServiceHostEnvVar) == "" {
-		return res, nil
+		return res, "", nil
 	}
 
 	attr := res.Attributes()
 	attr.InsertString(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAWS)
 	attr.InsertString(conventions.AttributeCloudPlatform, conventions.AttributeCloudPlatformAWSEKS)
 
-	return res, nil
+	return res, conventions.SchemaURL, nil
 }

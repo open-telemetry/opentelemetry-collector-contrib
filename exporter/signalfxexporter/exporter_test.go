@@ -124,9 +124,9 @@ func TestConsumeMetrics(t *testing.T) {
 	m.SetName("test_gauge")
 	m.SetDataType(pdata.MetricDataTypeGauge)
 	dp := m.Gauge().DataPoints().AppendEmpty()
-	dp.LabelsMap().InitFromMap(map[string]string{
-		"k0": "v0",
-		"k1": "v1",
+	dp.Attributes().InitFromMap(map[string]pdata.AttributeValue{
+		"k0": pdata.NewAttributeValueString("v0"),
+		"k1": pdata.NewAttributeValueString("v1"),
 	})
 	dp.SetDoubleVal(123)
 
@@ -260,9 +260,9 @@ func TestConsumeMetricsWithAccessTokenPassthrough(t *testing.T) {
 		m.SetDataType(pdata.MetricDataTypeGauge)
 
 		dp := m.Gauge().DataPoints().AppendEmpty()
-		dp.LabelsMap().InitFromMap(map[string]string{
-			"k0": "v0",
-			"k1": "v1",
+		dp.Attributes().InitFromMap(map[string]pdata.AttributeValue{
+			"k0": pdata.NewAttributeValueString("v0"),
+			"k1": pdata.NewAttributeValueString("v1"),
 		})
 		dp.SetDoubleVal(123)
 		return out
@@ -325,9 +325,9 @@ func TestConsumeMetricsWithAccessTokenPassthrough(t *testing.T) {
 				m.SetName("test_gauge")
 				m.SetDataType(pdata.MetricDataTypeGauge)
 				dp := m.Gauge().DataPoints().AppendEmpty()
-				dp.LabelsMap().InitFromMap(map[string]string{
-					"k0": "v0",
-					"k1": "v1",
+				dp.Attributes().InitFromMap(map[string]pdata.AttributeValue{
+					"k0": pdata.NewAttributeValueString("v0"),
+					"k1": pdata.NewAttributeValueString("v1"),
 				})
 				dp.SetDoubleVal(123)
 
@@ -708,9 +708,9 @@ func generateLargeDPBatch() pdata.Metrics {
 
 		dp := m.Gauge().DataPoints().AppendEmpty()
 		dp.SetTimestamp(pdata.TimestampFromTime(ts))
-		dp.LabelsMap().InitFromMap(map[string]string{
-			"k0": "v0",
-			"k1": "v1",
+		dp.Attributes().InitFromMap(map[string]pdata.AttributeValue{
+			"k0": pdata.NewAttributeValueString("v0"),
+			"k1": pdata.NewAttributeValueString("v1"),
 		})
 		dp.SetIntVal(int64(i))
 	}

@@ -26,7 +26,7 @@ import (
 
 type dataPoint interface {
 	Timestamp() pdata.Timestamp
-	LabelsMap() pdata.StringMap
+	Attributes() pdata.AttributeMap
 }
 
 type prometheusFormatter struct {
@@ -55,11 +55,11 @@ func newPrometheusFormatter() (prometheusFormatter, error) {
 }
 
 // PrometheusLabels returns all attributes as sanitized prometheus labels string
-func (f *prometheusFormatter) tags2String(attr pdata.AttributeMap, labels pdata.StringMap) prometheusTags {
+func (f *prometheusFormatter) tags2String(attr pdata.AttributeMap, labels pdata.AttributeMap) prometheusTags {
 	mergedAttributes := pdata.NewAttributeMap()
 	attr.CopyTo(mergedAttributes)
-	labels.Range(func(k string, v string) bool {
-		mergedAttributes.UpsertString(k, v)
+	labels.Range(func(k string, v pdata.AttributeValue) bool {
+		mergedAttributes.UpsertString(k, v.StringVal())
 		return true
 	})
 	length := mergedAttributes.Len()
@@ -135,7 +135,7 @@ func (f *prometheusFormatter) uintLine(name string, attributes prometheusTags, v
 func (f *prometheusFormatter) doubleValueLine(name string, value float64, dp dataPoint, attributes pdata.AttributeMap) string {
 	return f.doubleLine(
 		name,
-		f.tags2String(attributes, dp.LabelsMap()),
+		f.tags2String(attributes, dp.Attributes()),
 		value,
 		dp.Timestamp(),
 	)
@@ -145,7 +145,7 @@ func (f *prometheusFormatter) doubleValueLine(name string, value float64, dp dat
 func (f *prometheusFormatter) uintValueLine(name string, value uint64, dp dataPoint, attributes pdata.AttributeMap) string {
 	return f.uintLine(
 		name,
-		f.tags2String(attributes, dp.LabelsMap()),
+		f.tags2String(attributes, dp.Attributes()),
 		value,
 		dp.Timestamp(),
 	)
@@ -164,7 +164,7 @@ func (f *prometheusFormatter) numberDataPointValueLine(name string, dp pdata.Num
 	case pdata.MetricValueTypeInt:
 		return f.intLine(
 			name,
-			f.tags2String(attributes, dp.LabelsMap()),
+			f.tags2String(attributes, dp.Attributes()),
 			dp.IntVal(),
 			dp.Timestamp(),
 		)

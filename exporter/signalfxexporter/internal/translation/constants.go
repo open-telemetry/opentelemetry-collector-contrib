@@ -380,6 +380,21 @@ translation_rules:
     major: vmpage_io.swap.out
     minor: vmpage_io.memory.out
 
+# process metric
+- action: copy_metrics
+  mapping:
+    process.cpu.time: sf_temp.process.cpu.time
+  dimension_key: state
+  dimension_values:
+    user: true
+    system: true
+
+- action: aggregate_metric
+  metric_name: sf_temp.process.cpu.time
+  aggregation_method: sum
+  without_dimensions:
+  - state
+
 - action: rename_metrics
   mapping:
     sf_temp.container_cpu_utilization: container_cpu_utilization
@@ -402,6 +417,7 @@ translation_rules:
     sf_temp.system.disk.operations.total: system.disk.operations.total
     sf_temp.system.network.io.total: system.network.io.total
     sf_temp.system.network.packets.total: system.network.packets.total
+    sf_temp.process.cpu.time: process.cpu_time_seconds
 
 # remove redundant metrics
 - action: drop_metrics

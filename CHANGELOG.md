@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+## 🛑 Breaking changes 🛑
+
+- `splunk_hec` receiver/exporter: `com.splunk.source` field is mapped to `source` field in Splunk instead of `service.name` (#4596)
+
 ## v0.31.0
 
 # 🎉 OpenTelemetry Collector Contrib v0.31.0 (Beta) 🎉

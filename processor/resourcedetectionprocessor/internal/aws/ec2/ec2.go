@@ -56,20 +56,20 @@ func NewDetector(_ component.ProcessorCreateSettings, dcfg internal.DetectorConf
 	return &Detector{metadataProvider: newMetadataClient(sess), tagKeyRegexes: tagKeyRegexes}, nil
 }
 
-func (d *Detector) Detect(ctx context.Context) (pdata.Resource, error) {
+func (d *Detector) Detect(ctx context.Context) (resource pdata.Resource, schemaURL string, err error) {
 	res := pdata.NewResource()
 	if !d.metadataProvider.available(ctx) {
-		return res, nil
+		return res, "", nil
 	}
 
 	meta, err := d.metadataProvider.get(ctx)
 	if err != nil {
-		return res, fmt.Errorf("failed getting identity document: %w", err)
+		return res, "", fmt.Errorf("failed getting identity document: %w", err)
 	}
 
 	hostname, err := d.metadataProvider.hostname(ctx)
 	if err != nil {
-		return res, fmt.Errorf("failed getting hostname: %w", err)
+		return res, "", fmt.Errorf("failed getting hostname: %w", err)
 	}
 
 	attr := res.Attributes()
@@ -86,14 +86,14 @@ func (d *Detector) Detect(ctx context.Context) (pdata.Resource, error) {
 	if len(d.tagKeyRegexes) != 0 {
 		tags, err := connectAndFetchEc2Tags(meta.Region, meta.InstanceID, d.tagKeyRegexes)
 		if err != nil {
-			return res, fmt.Errorf("failed fetching ec2 instance tags: %w", err)
+			return res, "", fmt.Errorf("failed fetching ec2 instance tags: %w", err)
 		}
 		for key, val := range tags {
 			attr.InsertString(tagPrefix+key, val)
 		}
 	}
 
-	return res, nil
+	return res, conventions.SchemaURL, nil
 }
 
 func connectAndFetchEc2Tags(region string, instanceID string, tagKeyRegexes []*regexp.Regexp) (map[string]string, error) {

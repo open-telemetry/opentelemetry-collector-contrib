@@ -41,11 +41,11 @@ func NewDetector(component.ProcessorCreateSettings, internal.DetectorConfig) (in
 	return &Detector{metadata: &gcp.MetadataImpl{}}, nil
 }
 
-func (d *Detector) Detect(context.Context) (pdata.Resource, error) {
+func (d *Detector) Detect(context.Context) (resource pdata.Resource, schemaURL string, err error) {
 	res := pdata.NewResource()
 
 	if !d.metadata.OnGCE() {
-		return res, nil
+		return res, "", nil
 	}
 
 	attr := res.Attributes()
@@ -53,7 +53,7 @@ func (d *Detector) Detect(context.Context) (pdata.Resource, error) {
 	var errors []error
 	errors = append(errors, d.initializeCloudAttributes(attr)...)
 	errors = append(errors, d.initializeHostAttributes(attr)...)
-	return res, consumererror.Combine(errors)
+	return res, conventions.SchemaURL, consumererror.Combine(errors)
 }
 
 func (d *Detector) initializeCloudAttributes(attr pdata.AttributeMap) []error {
