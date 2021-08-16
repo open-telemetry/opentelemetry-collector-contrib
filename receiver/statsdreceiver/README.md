@@ -1,0 +1,143 @@
+# StatsD Receiver
+
+StatsD receiver for ingesting StatsD messages(https://github.com/statsd/statsd/blob/master/docs/metric_types.md) into the OpenTelemetry Collector.
+
+Supported pipeline types: metrics
+
+Use case: it does not support horizontal pool of collectors. Desired work case is that customers use the receiver as an agent with a single input at the same time.
+
+> :construction: This receiver is currently in **BETA**.
+
+## Configuration
+
+The following settings are required:
+
+- `endpoint` (default = `localhost:8125`): Address and port to listen on.
+
+
+The Following settings are optional:
+
+- `aggregation_interval: 70s`(default value is 60s): The aggregation time that the receiver aggregates the metrics (similar to the flush interval in StatsD server)
+
+- `enable_metric_type: true`(default value is false): Enable the statsd receiver to be able to emit the metric type(gauge, counter, timer(in the future), histogram(in the future)) as a label.
+
+- `is_monotonic_counter` (default value is false): Set all counter-type metrics the statsd receiver received as monotonic.
+
+- `timer_histogram_mapping:`(default value is below): Specify what OTLP type to convert received timing/histogram data to.
+
+
+`"statsd_type"` specifies received Statsd data type. Possible values for this setting are `"timing"`, `"timer"` and `"histogram"`.
+
+`"observer_type"` specifies OTLP data type to convert to. We support `"gauge"` and `"summary"`. For `"gauge"`, it does not perform any aggregation.
+For `"summary`, the statsD receiver will aggregate to one OTLP summary metric for one metric description(the same metric name with the same tags). It will send percentile 0, 10, 50, 90, 95, 100 to the downstream. 
+TODO: Add a new option to use a smoothed summary like Promethetheus: https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/3261 
+
+Example:
+
+```yaml
+receivers:
+  statsd:
+  statsd/2:
+    endpoint: "localhost:8127"
+    aggregation_interval: 70s
+    enable_metric_type: true
+    is_monotonic_counter: false
+    timer_histogram_mapping:
+      - statsd_type: "histogram"
+        observer_type: "gauge"
+      - statsd_type: "timing"
+        observer_type: "gauge"
+```
+
+The full list of settings exposed for this receiver are documented [here](./config.go)
+with detailed sample configurations [here](./testdata/config.yaml).
+
+## Aggregation
+
+Aggregation is done in statsD receiver. The default aggregation interval is 60s. The receiver only aggregates the metrics with the same metric name, metric type, label keys and label values. After each aggregation interval, the receiver will send all metrics (after aggregation) in this aggregation interval to the following workflow.
+
+It supports:
+Counter(transferred to int):
+- statsdTestMetric1:3000|c|#mykey:myvalue
+statsdTestMetric1:4000|c|#mykey:myvalue
+(get the value after incrementation: 7000)
+- statsdTestMetric1:3000|c|#mykey:myvalue
+statsdTestMetric1:20|c|@0.25|#mykey:myvalue
+(get the value after incrementation with sample rate: 3000+20/0.25=3080)
+
+When the receiver receives valid sample rate (greater than 0 and less than 1), we covert the count value to float, divide by the sample rate and then covert back to integer.
+
+The official [doc](https://github.com/statsd/statsd/blob/master/docs/metric_types.md#counting) does not support negative counter, we follow this pattern at this time. There are some requests for negative counters, we need to ake a look if we want to support later. For example:
+https://github.com/influxdata/telegraf/issues/1898
+https://thenewstack.io/collecting-metrics-using-statsd-a-standard-for-real-time-monitoring/
+https://docs.datadoghq.com/developers/metrics/dogstatsd_metrics_submission/#count
+
+Gauge(transferred to double):
+- statsdTestMetric1:500|g|#mykey:myvalue
+statsdTestMetric1:400|g|#mykey:myvalue
+(get the latest value: 400)
+- statsdTestMetric1:500|g|#mykey:myvalue
+statsdTestMetric1:+2|g|#mykey:myvalue
+statsdTestMetric1:-1|g|#mykey:myvalue
+(get the value after calculation: 501)
+
+## Metrics
+
+General format is:
+
+`<name>:<value>|<type>|@<sample-rate>|#<tag1-key>:<tag1-value>,<tag2-k/v>`
+
+### Counter
+
+`<name>:<value>|c|@<sample-rate>|#<tag1-key>:<tag1-value>`
+
+It supports sample rate.
+TODO: Need to change the implementation part for sample rate after OTLP supports sample rate as a parameter later.
+
+
+### Gauge
+
+`<name>:<value>|g|@<sample-rate>|#<tag1-key>:<tag1-value>`
+
+
+### Timer
+
+`<name>:<value>|ms|@<sample-rate>|#<tag1-key>:<tag1-value>`
+`<name>:<value>|h|@<sample-rate>|#<tag1-key>:<tag1-value>`
+
+It supports sample rate.
+
+
+## Testing
+
+### Full sample collector config
+
+```yaml
+receivers:
+  statsd:
+    endpoint: "localhost:8125" # default
+    aggregation_interval: 60s  # default
+    enable_metric_type: false   # default
+    is_monotonic_counter: false # default
+    timer_histogram_mapping:
+      - statsd_type: "histogram"
+        observer_type: "gauge"
+      - statsd_type: "timing"
+        observer_type: "gauge"
+
+exporters:
+  file:
+    path: ./test.json
+
+service:
+  pipelines:
+    metrics:
+     receivers: [statsd]
+     exporters: [file]
+```
+
+### Send StatsD message into the receiver
+
+A simple way to send a metric to `localhost:8125`:
+
+`echo "test.metric:42|c|#myKey:myVal" | nc -w 1 -u localhost 8125`

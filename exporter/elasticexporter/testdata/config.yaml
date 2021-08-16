@@ -1,0 +1,20 @@
+receivers:
+  nop:
+  
+processors:
+  nop:
+  
+exporters:
+  elastic:
+    apm_server_url: https://elastic.example.com
+  elastic/customname:
+    apm_server_url: https://elastic.example.com
+    api_key: RTNxMjlXNEJt
+    secret_token: hunter2
+
+service:
+  pipelines:
+    traces:
+      receivers: [nop]
+      processors: [nop]
+      exporters: [elastic]

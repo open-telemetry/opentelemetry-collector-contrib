@@ -1,0 +1,21 @@
+receivers:
+    nop:
+
+processors:
+    metricstransform:
+        transforms:
+            - action: update
+
+exporters:
+    nop:
+
+service:
+    pipelines:
+        traces:
+            receivers: [nop]
+            processors: [metricstransform]
+            exporters: [nop]
+        metrics:
+            receivers: [nop]
+            processors: [metricstransform]
+            exporters: [nop]

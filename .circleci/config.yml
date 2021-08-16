@@ -1,0 +1,543 @@
+# Using Contexts:
+#   some jobs depend on secrets like API tokens to work correctly such as publishing to docker hub
+#   or reporting issues to GitHub. All such tokens are stored in CircleCI contexts (https://circleci.com/docs/2.0/contexts).
+#   
+#   All tokens stored in a contexts are injected into a job as environment variables IF the pipeline that runs the job
+#   explicitly enables the context for the job. 
+#
+#   Contexts are protected with security groups. Jobs that use contexts will not run for commits from people who are not
+#   part of the approved security groups for the given context. This means that contributors who are not part of the
+#   OpenTelemetry GitHub organisation will not be able to run jobs that depend on contexts. As a result, PR pipelines
+#   should never depend on any contexts and never use any tokens/secrets.
+#
+#   This CI pipeline uses two contexts:
+#      - github-release-and-issues-api-token
+#        This context makes GITHUB_TOKEN available to jobs. Jobs can use the token to authenticate with the GitHub API.
+#        We use this to report failures as issues back to the GitHub project.
+#        Any member of the OpenTelemetry GitHub organisation can run jobs that require this context e.g, loadtest-with-github-reports.
+#        
+#      - dockerhub-token
+#        This contexts makes DOCKER_HUB_USERNAME and DOCKER_HUB_PASSWORD environment variables available to the jobs.
+#        This is used to publish docker images to Docker Hub.
+#        Only project approvers and maintainers can run jobs that depend on this context such e.g, publish-stable.
+
+version: 2.1
+
+parameters:
+  run-build-publish:
+    type: boolean
+    default: true
+  run-stability-tests:
+    type: boolean
+    default: false
+  collector-sha:
+    type: string
+    default: ""
+
+orbs:
+  win: circleci/windows@2.4.0
+
+executors:
+  golang:
+    docker:
+      - image: cimg/go:1.16
+  machine:
+    machine:
+      image: ubuntu-1604:201903-01
+
+commands:
+  verify_dist_files_exist:
+    parameters:
+      files:
+        type: string
+        default: |
+            bin/otelcontribcol_darwin_arm64
+            bin/otelcontribcol_darwin_amd64
+            bin/otelcontribcol_linux_arm64
+            bin/otelcontribcol_linux_amd64
+            bin/otelcontribcol_windows_amd64.exe
+            dist/otel-contrib-collector-*.arm64.rpm
+            dist/otel-contrib-collector_*_amd64.deb
+            dist/otel-contrib-collector-*.x86_64.rpm
+            dist/otel-contrib-collector_*_arm64.deb
+            dist/otel-contrib-collector-*amd64.msi
+    steps:
+      - run:
+          name: Check if files exist
+          command: |
+            files="<< parameters.files >>"
+            for f in $files; do
+              if [[ ! -f $f ]]
+              then
+                  echo "$f does not exist."
+                  exit 1
+              fi
+            done
+
+  setup:
+    steps:
+      - checkout
+      - restore_module_cache
+      - run:
+          name: Install deps
+          command: make -j8 for-all-target TARGET=dep
+      - run:
+          name: Install tools
+          command: make install-tools
+      - save_module_cache
+
+  setup_go:
+    steps:
+      - run:
+          name: Install Go 1.16
+          command: |
+            sudo rm -rf /usr/local/go
+            curl -L https://dl.google.com/go/go1.16.4.linux-amd64.tar.gz | sudo tar xz -C /usr/local
+      - run:
+          name: Add ~/go/bin to PATH
+          command: |
+            echo 'export PATH=$HOME/go/bin:$PATH' >> $BASH_ENV
+
+  restore_workspace:
+    steps:
+      - attach_to_workspace
+      - restore_module_cache
+
+  attach_to_workspace:
+    steps:
+      - attach_workspace:
+          at: ~/
+
+  save_module_cache:
+    steps:
+      - save_cache:
+          key: cimg-go-pkg-mod-{{ arch }}-{{ checksum "go.sum" }}-{{ checksum "internal/tools/go.sum" }}
+          paths:
+            - "/home/circleci/go/pkg/mod"
+
+  restore_module_cache:
+    steps:
+      - run:
+          name: create modules dir
+          command: mkdir -p ~/go/pkg/mod
+      - restore_cache: # restores saved cache if no changes are detected since last run
+          keys:
+            - cimg-go-pkg-mod-{{ arch }}-{{ checksum "go.sum" }}-{{ checksum "internal/tools/go.sum" }}
+
+  install_fluentbit:
+    steps:
+      - run: |
+          sudo chmod 0777 -R /opt
+      - restore_cache: # restores saved cache if no changes are detected since last run
+          keys:
+            - "cimg-fluentbit-{{ arch }}-1.5.3"
+      - run: |
+          sudo ln -s /opt/td-agent-bit/bin/td-agent-bit /usr/local/bin/fluent-bit
+          if [[ -f /opt/td-agent-bit/bin/td-agent-bit ]]; then
+            exit 0
+          fi
+          wget https://packages.fluentbit.io/ubuntu/bionic/pool/main/t/td-agent-bit/td-agent-bit_1.5.3_amd64.deb
+          sudo dpkg -i ./td-agent-bit*.deb
+      - save_cache:
+          key: cimg-fluentbit-{{ arch }}-1.5.3
+          paths:
+            - /opt/td-agent-bit
+
+  publish_docker_images:
+    parameters:
+      repo:
+        type: string
+      tag:
+        type: string
+    steps:
+      - run:
+          name: Build image
+          command: |
+            make docker-otelcontribcol
+            docker tag otelcontribcol:latest otel/<< parameters.repo >>:<< parameters.tag >>
+            docker tag otelcontribcol:latest otel/<< parameters.repo >>:latest
+      - run:
+          name: Login to Docker Hub
+          command: docker login -u $DOCKER_HUB_USERNAME -p $DOCKER_HUB_PASSWORD
+      - run:
+          name: Push image
+          command: |
+            docker push otel/<< parameters.repo >>:<< parameters.tag >>
+            docker push otel/<< parameters.repo >>:latest
+
+  github_issue_generator:
+    steps:
+      - when:
+          condition:
+            equal: [main, << pipeline.git.branch >>]
+          steps:
+            - run:
+                name: Generate GitHub Issue
+                command: issuegenerator ${TEST_RESULTS}
+                when: on_fail
+
+  run_loadtest:
+    steps:
+      - restore_workspace
+      - install_fluentbit
+      - run:
+          name: Loadtest
+          command: make e2e-test
+      - store_artifacts:
+          path: testbed/tests/results
+      - store_test_results:
+          path: testbed/tests/results/junit
+
+workflows:
+  version: 2
+  stability-tests:
+    when: << pipeline.parameters.run-stability-tests >>
+    jobs:
+      - checkout-commit
+      - setup:
+          requires:
+            - checkout-commit
+      - cross-compile:
+          requires:
+            - setup
+      - run-stability-tests:
+          context:
+            - github-release-and-issues-api-token
+          requires:
+            - cross-compile 
+      - publish-dev:
+          context:
+            - dockerhub-token
+          requires:
+            - run-stability-tests
+
+  build-publish:
+    when: << pipeline.parameters.run-build-publish >>
+    jobs:
+      - setup:
+          filters:
+            tags:
+              only: /^v[0-9]+\.[0-9]+\.[0-9]+.*/
+      - build-examples:
+          requires:
+            - setup
+          filters:
+            tags:
+              only: /^v[0-9]+\.[0-9]+\.[0-9]+.*/
+      - cross-compile:
+          requires:
+            - setup
+          filters:
+            tags:
+              only: /^v[0-9]+\.[0-9]+\.[0-9]+.*/
+      - loadtest-with-github-reports:
+          context:
+            - github-release-and-issues-api-token
+          requires:
+            - cross-compile 
+          filters:
+            branches:
+              only: main
+            tags:
+              only: /^v[0-9]+\.[0-9]+\.[0-9]+.*/
+      - loadtest:
+          requires:
+            - cross-compile 
+          filters:
+            branches:
+              ignore: main
+      - windows-msi:
+          requires:
+            - cross-compile
+          filters:
+            tags:
+              only: /^v[0-9]+\.[0-9]+\.[0-9]+.*/
+      # this publish-check step only runs on the main branch.
+      # it is identical to the other publish-check step in all ways except
+      # it runs loadtest-with-github-reports instead of loadtest.
+      # This is because these jobs can access the GITHUB_TOKEN secret which is not available to PR builds.
+      - publish-check:
+          requires:
+            - cross-compile
+            - loadtest-with-github-reports
+            - windows-msi
+            - deb-package
+            - rpm-package
+          filters:
+            branches:
+              only: main
+      # this publish-check step run for PR builds (all branches except main).
+      # it runs the same jobs as the previous public-check step but
+      # it uses the versions that do not need access to the
+      # GITHUB_TOKEN secret. 
+      - publish-check:
+          requires:
+            - cross-compile
+            - loadtest
+            - windows-msi
+            - deb-package
+            - rpm-package
+          filters:
+            branches:
+              ignore: main
+      - publish-stable:
+          context:
+            - github-release-and-issues-api-token
+            - dockerhub-token
+          requires:
+            - cross-compile
+            - loadtest-with-github-reports
+            - windows-msi
+            - deb-package
+            - rpm-package
+          filters:
+            branches:
+              ignore: /.*/
+            tags:
+              only: /^v[0-9]+\.[0-9]+\.[0-9]+.*/
+      - spawn-stability-tests-job:
+          requires:
+            - loadtest-with-github-reports
+            - cross-compile
+          filters:
+            branches:
+              only: /main|release\/.+/
+            tags:
+              ignore: /.*/
+      - build-package:
+          name: deb-package
+          package_type: deb
+          requires:
+            - cross-compile
+          filters:
+            tags:
+              only: /^v[0-9]+\.[0-9]+\.[0-9]+.*/
+      - build-package:
+          name: rpm-package
+          package_type: rpm
+          requires:
+            - cross-compile
+          filters:
+            tags:
+              only: /^v[0-9]+\.[0-9]+\.[0-9]+.*/
+
+jobs:
+  setup:
+    executor: golang
+    steps:
+      - setup
+      - persist_to_workspace:
+          root: ~/
+          paths:
+            - project
+            - go/bin
+
+  build-examples:
+    docker:
+      - image: cimg/go:1.16
+    steps:
+      - restore_workspace
+      - setup_remote_docker
+      - run:
+          name: Build examples
+          command: make build-examples
+
+  cross-compile:
+    executor: golang
+    parallelism: 4
+    steps:
+      - restore_workspace
+      - run:
+          name: Build collector for all archs
+          command: grep ^otelcontribcol-all-sys Makefile|fmt -w 1|tail -n +2|circleci tests split|xargs make
+      - run:
+          name: Log checksums to console
+          command: shasum -a 256 bin/*
+      - persist_to_workspace:
+          root: ~/
+          paths: project/bin
+
+  loadtest-with-github-reports:
+    executor: golang
+    resource_class: medium+
+    environment:
+      TEST_RESULTS: testbed/tests/results/junit/results.xml
+    steps:
+      - run_loadtest
+      - github_issue_generator
+
+  loadtest:
+    executor: golang
+    resource_class: medium+
+    environment:
+      TEST_RESULTS: testbed/tests/results/junit/results.xml
+    steps:
+      - run_loadtest
+
+  windows-msi:
+    executor:
+      name: win/default
+      shell: powershell.exe
+    steps:
+      - attach_to_workspace
+      - run:
+          command: mkdir -p dist
+      - run:
+          name: Install Wix Toolset
+          command: .\internal\buildscripts\packaging\msi\make.ps1 Install-Tools
+      - run:
+          name: Build MSI
+          command: |
+            $Version = if ($env:CIRCLE_TAG -match '^v(\d+\.\d+\.\d+)') { $Matches[1] } else { "0.0.1" }
+            .\internal\buildscripts\packaging\msi\make.ps1 New-MSI -Version $Version
+      - run:
+          name: Validate MSI
+          command: .\internal\buildscripts\packaging\msi\make.ps1 Confirm-MSI
+      - persist_to_workspace:
+          root: ~/
+          paths: project/dist/*.msi
+
+  publish-check:
+    docker:
+      - image: cimg/go:1.16
+    steps:
+      - attach_to_workspace
+      - setup_remote_docker
+      - verify_dist_files_exist
+      - run:
+          name: Check passed
+          command: echo "publish check passed meaning release CI jobs should work as expected"
+          when: on_success
+      - run:
+          name: Check failed
+          command: echo "publish check failed. This means release CI jobs will likely fail as well"
+          when: on_fail
+
+  # any pipeline using this job must enable "github-release-and-issues-api-token"
+  # and "dockerhub-token" contexts
+  publish-stable:
+    docker:
+      - image: cimg/go:1.16
+    steps:
+      - restore_workspace
+      - verify_dist_files_exist
+      - setup_remote_docker
+      - publish_docker_images:
+          repo: opentelemetry-collector-contrib
+          tag: ${CIRCLE_TAG:1}
+      - run:
+          name: Prepare release artifacts
+          command: |
+            cp bin/* dist/
+      - run:
+          name: Calculate checksums
+          command: cd dist && shasum -a 256 * > checksums.txt
+      - run:
+          name: Create Github release and upload artifacts
+          command: ghr -t $GITHUB_TOKEN -u $CIRCLE_PROJECT_USERNAME -r $CIRCLE_PROJECT_REPONAME --replace $CIRCLE_TAG dist/
+
+  # any pipeline using this job must enable "github-release-and-issues-api-token"
+  # and "dockerhub-token" contexts
+  publish-dev:
+    executor: golang
+    steps:
+      - restore_workspace
+      - verify_dist_files_exist:
+          files: |
+            bin/otelcontribcol_darwin_amd64
+            bin/otelcontribcol_linux_arm64
+            bin/otelcontribcol_linux_amd64
+            bin/otelcontribcol_windows_amd64.exe
+      - setup_remote_docker
+      - publish_docker_images:
+          repo: opentelemetry-collector-contrib-dev
+          tag: ${CIRCLE_SHA1}
+
+  spawn-stability-tests-job:
+    executor: golang
+    steps:
+      - run:
+          name: Trigger stability tests job
+          command: |
+            curl -f -X POST "https://circleci.com/api/v2/project/github/open-telemetry/${CIRCLE_PROJECT_REPONAME}/pipeline?circle-token=${CIRCLE_API_TOKEN}" \
+                -H 'Content-Type: application/json' \
+                -H 'Accept: application/json' \
+                -d '{"parameters": {"run-build-publish": false, "run-stability-tests": true, "collector-sha": "'"${CIRCLE_SHA1}"'"}, "branch": "'"${CIRCLE_BRANCH}"'"}'
+
+  checkout-commit:
+    executor: golang
+    steps:
+      - checkout
+      - run:
+          name: Checkout pipeline parameter commit
+          command: |
+            git checkout << pipeline.parameters.collector-sha >>
+            git status
+
+  # this jobs reports failures as github issues and as a result, any pipeline using this job
+  # must enable "github-release-and-issues-api-token" context
+  run-stability-tests:
+    parameters:
+      # Number of runners must be always in sync with number of stability tests,
+      # so every node runs exactly one stability test.
+      runners-number:
+        type: integer 
+        default: 9
+    executor: golang
+    resource_class: medium+
+    parallelism: << parameters.runners-number >>
+    environment:
+      TEST_RESULTS: testbed/stabilitytests/results/junit/results.xml
+    steps:
+      - restore_workspace
+      - run:
+          no_output_timeout: 70m
+          name: Run stability tests
+          command: |
+            export TESTS=$(make -C testbed -s list-stability-tests)
+            export TEST_NUM=$(echo ${TESTS} | wc -w | tr -d '[:space:]')
+            if [ "${TEST_NUM}" -ne "<< parameters.runners-number >>" ]; then \
+              echo "ERROR: Number of stability tests must match number of CircleCI runners. Update runners-number parameter"; exit 2; \
+            fi
+            export TEST_NAME=$(echo ${TESTS} | sed 's/ /\n/g' | circleci tests split --total=${TEST_NUM})
+            echo "Running ${TEST_NAME}..."
+            TEST_ARGS="-test.run=${TEST_NAME}" make stability-tests
+      - store_artifacts:
+          path: testbed/stabilitytests/results
+      - store_test_results:
+          path: testbed/stabilitytests/results/junit
+      - github_issue_generator
+
+  build-package:
+    machine:
+      image: ubuntu-1604:202007-01
+    parameters:
+      package_type:
+        type: enum
+        enum: ["deb", "rpm"]
+    steps:
+      - checkout
+      - attach_to_workspace
+      - run:
+          name: Install fpm and dependencies
+          command: |
+            sudo apt-get update
+            sudo apt-get install -y ruby ruby-dev rubygems build-essential rpm
+            gem install --no-document fpm -v 1.11.0
+      - run:
+          name: Build << parameters.package_type >> amd64 package
+          command: ./internal/buildscripts/packaging/fpm/<< parameters.package_type >>/build.sh "${CIRCLE_TAG:-}" "amd64" "./dist/"
+      - run:
+          name: Build << parameters.package_type >> arm64 package
+          command: ./internal/buildscripts/packaging/fpm/<< parameters.package_type >>/build.sh "${CIRCLE_TAG:-}" "arm64" "./dist/"
+      - run:
+          name: Test << parameters.package_type >> package installation
+          command: |
+            if [[ "<< parameters.package_type >>" = "deb" ]]; then
+                ./internal/buildscripts/packaging/fpm/test.sh dist/otel-contrib-collector*amd64.deb examples/tracing/otel-collector-config.yml
+            else
+                ./internal/buildscripts/packaging/fpm/test.sh dist/otel-contrib-collector*x86_64.rpm examples/tracing/otel-collector-config.yml
+            fi
+      - persist_to_workspace:
+          root: ~/
+          paths: project/dist/*.<< parameters.package_type >>
