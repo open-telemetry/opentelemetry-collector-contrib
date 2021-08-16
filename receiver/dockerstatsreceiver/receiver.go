@@ -26,6 +26,7 @@ import (
 	"go.opentelemetry.io/collector/obsreport"
 	"go.uber.org/zap"
 
+	docker "github.com/open-telemetry/opentelemetry-collector-contrib/internal/docker"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/interval"
 )
 
@@ -36,7 +37,7 @@ type Receiver struct {
 	config            *Config
 	logger            *zap.Logger
 	nextConsumer      consumer.Metrics
-	client            *dockerClient
+	client            *docker.DockerClient
 	runner            *interval.Runner
 	runnerCtx         context.Context
 	runnerCancel      context.CancelFunc
@@ -73,8 +74,12 @@ func NewReceiver(
 }
 
 func (r *Receiver) Start(ctx context.Context, host component.Host) error {
-	var err error
-	r.client, err = newDockerClient(r.config, r.logger)
+	dConfig, err := docker.NewConfig(r.config.Endpoint, r.config.Timeout, r.config.ExcludedImages)
+	if err != nil {
+		return err
+	}
+
+	r.client, err = docker.NewDockerClient(dConfig, r.logger)
 	if err != nil {
 		return err
 	}
@@ -126,8 +131,23 @@ func (r *Receiver) Run() error {
 	wg := &sync.WaitGroup{}
 	wg.Add(len(containers))
 	for _, container := range containers {
-		go func(dc DockerContainer) {
-			md, err := r.client.FetchContainerStatsAndConvertToMetrics(ctx, dc)
+		go func(dc docker.DockerContainer) {
+			statsJSON, err := r.client.FetchContainerStatsAsJSON(ctx, dc)
+			if err != nil {
+				results <- result{nil, err}
+				wg.Done()
+				return
+			}
+
+			md, err := ContainerStatsToMetrics(statsJSON, &container, r.config)
+			if err != nil {
+				r.logger.Error(
+					"Could not convert docker containerStats for container id",
+					zap.String("id", container.ID),
+					zap.Error(err),
+				)
+			}
+
 			results <- result{md, err}
 			wg.Done()
 		}(container)

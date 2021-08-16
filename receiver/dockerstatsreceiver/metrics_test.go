@@ -22,6 +22,7 @@ import (
 	"time"
 
 	dtypes "github.com/docker/docker/api/types"
+	docker "github.com/open-telemetry/opentelemetry-collector-contrib/internal/docker"
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/model/pdata"
 	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
@@ -245,7 +246,7 @@ func statsJSON(t *testing.T) *dtypes.StatsJSON {
 	return &stats
 }
 
-func containerJSON(t *testing.T) *DockerContainer {
+func containerJSON(t *testing.T) *docker.DockerContainer {
 	containerRaw, err := ioutil.ReadFile(path.Join(".", "testdata", "container.json"))
 	if err != nil {
 		t.Fatal(err)
@@ -256,9 +257,9 @@ func containerJSON(t *testing.T) *DockerContainer {
 	if err != nil {
 		t.Fatal(err)
 	}
-	return &DockerContainer{
+	return &docker.DockerContainer{
 		ContainerJSON: &container,
-		EnvMap:        containerEnvToMap(container.Config.Env),
+		EnvMap:        docker.ContainerEnvToMap(container.Config.Env),
 	}
 }
 

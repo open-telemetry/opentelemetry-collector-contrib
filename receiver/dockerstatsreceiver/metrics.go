@@ -21,6 +21,7 @@ import (
 	"strings"
 
 	dtypes "github.com/docker/docker/api/types"
+	docker "github.com/open-telemetry/opentelemetry-collector-contrib/internal/docker"
 	"go.opentelemetry.io/collector/model/pdata"
 	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
 )
@@ -29,17 +30,10 @@ const (
 	metricPrefix = "container."
 )
 
-// DockerContainer is client.ContainerInspect() response container
-// stats and translated environment string map for potential labels.
-type DockerContainer struct {
-	*dtypes.ContainerJSON
-	EnvMap map[string]string
-}
-
 func ContainerStatsToMetrics(
 	now pdata.Timestamp,
 	containerStats *dtypes.StatsJSON,
-	container *DockerContainer,
+	container *docker.DockerContainer,
 	config *Config,
 ) (pdata.Metrics, error) {
 	md := pdata.NewMetrics()
