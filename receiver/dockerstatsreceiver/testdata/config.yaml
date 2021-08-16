@@ -1,0 +1,29 @@
+receivers:
+  docker_stats:
+  docker_stats/allsettings:
+    endpoint: http://example.com/
+    collection_interval: 2s
+    timeout: 20s
+    container_labels_to_metric_labels:
+      my.container.label: my-metric-label
+      my.other.container.label: my-other-metric-label
+    env_vars_to_metric_labels:
+      MY_ENVIRONMENT_VARIABLE: my-metric-label
+      MY_OTHER_ENVIRONMENT_VARIABLE: my-other-metric-label
+    excluded_images:
+      - undesired-container
+      - another-*-container
+    provide_per_core_cpu_metrics: true
+
+processors:
+  nop:
+
+exporters:
+  nop:
+
+service:
+  pipelines:
+    metrics:
+      receivers: [docker_stats, docker_stats/allsettings]
+      processors: [nop]
+      exporters: [nop]

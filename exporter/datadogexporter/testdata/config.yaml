@@ -1,0 +1,68 @@
+receivers:
+  nop:
+
+processors:
+  nop:
+
+exporters:
+  datadog/api:
+    hostname: customhostname
+    env: prod
+    service: myservice
+    version: myversion
+
+    tags:
+      - example:tag
+
+    api:
+      key: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+      site: datadoghq.eu
+
+    traces:
+      sample_rate: 1
+
+  datadog/api2:
+    hostname: customhostname
+    env: prod
+    service: myservice
+    version: myversion
+
+    tags:
+      - example:tag
+
+    api:
+      key: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+      site: datadoghq.eu
+
+    metrics:
+      endpoint: https://api.datadoghq.test
+      report_quantiles: false
+
+    traces:
+      sample_rate: 1
+      endpoint: https://trace.agent.datadoghq.test
+
+  datadog/default:
+    api:
+      key: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+
+  datadog/default2:
+
+  datadog/invalid:
+    metrics:
+      endpoint: "invalid:"
+    
+    traces:
+      endpoint: "invalid:"
+
+service:
+  pipelines:
+    metrics:
+      receivers: [nop]
+      processors: [nop]
+      exporters: [datadog/api, datadog/invalid]
+
+    traces:
+      receivers: [nop]
+      processors: [nop]
+      exporters: [datadog/api, datadog/invalid]

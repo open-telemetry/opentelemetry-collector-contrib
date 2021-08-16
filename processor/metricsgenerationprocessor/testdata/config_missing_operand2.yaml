@@ -1,0 +1,25 @@
+receivers:
+  nop:
+
+processors:
+  experimental_metricsgeneration:
+    rules:
+      # missing operand2 metric
+      - name: new_metric
+        type: calculate
+        metric1: metric1
+        operation: percent
+
+exporters:
+  nop:
+
+service:
+  pipelines:
+    traces:
+      receivers: [nop]
+      processors: [experimental_metricsgeneration]
+      exporters: [nop]
+    metrics:
+      receivers: [nop]
+      processors: [experimental_metricsgeneration]
+      exporters: [nop]
