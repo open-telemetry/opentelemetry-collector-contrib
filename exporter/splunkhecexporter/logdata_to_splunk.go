@@ -58,8 +58,12 @@ func mapLogRecordToSplunkEvent(res pdata.Resource, lr pdata.LogRecord, config *C
 		fields[traceIDFieldKey] = traceID
 	}
 	if lr.SeverityText() != "" {
-		fields[splunk.SeverityLabel] = lr.SeverityText()
+		fields[splunk.SeverityTextLabel] = lr.SeverityText()
 	}
+	if lr.SeverityNumber() != pdata.SeverityNumberUNDEFINED {
+		fields[splunk.SeverityNumberLabel] = lr.SeverityNumber()
+	}
+
 	res.Attributes().Range(func(k string, v pdata.AttributeValue) bool {
 		switch k {
 		case conventions.AttributeHostName:
