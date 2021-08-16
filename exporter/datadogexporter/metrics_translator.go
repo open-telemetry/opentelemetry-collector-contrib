@@ -95,6 +95,26 @@ type numberCounter struct {
 	value float64
 }
 
+// putAndGetDiff submits a new value for a given key and returns the difference with the
+// last submitted value (ordered by timestamp). The diff value is only valid if `ok` is true.
+func putAndGetDiff(prevPts *ttlmap.TTLMap, key string, ts uint64, val float64) (dx float64, ok bool) {
+	if c := prevPts.Get(key); c != nil {
+		cnt := c.(numberCounter)
+		if cnt.ts > ts {
+			// We were given a point older than the one in memory so we drop it
+			// We keep the existing point in memory since it is the most recent
+			return 0, false
+		}
+		// if dx < 0, we assume there was a reset, thus we save the point
+		// but don't export it (it's the first one so we can't do a delta)
+		dx = val - cnt.value
+		ok = dx >= 0
+	}
+
+	prevPts.Put(key, numberCounter{ts, val})
+	return
+}
+
 // mapNumberMonotonicMetrics maps monotonic datapoints into Datadog metrics
 func mapNumberMonotonicMetrics(name string, prevPts *ttlmap.TTLMap, slice pdata.NumberDataPointSlice, attrTags []string) []datadog.Metric {
 	ms := make([]datadog.Metric, 0, slice.Len())
@@ -113,27 +133,9 @@ func mapNumberMonotonicMetrics(name string, prevPts *ttlmap.TTLMap, slice pdata.
 			val = float64(p.IntVal())
 		}
 
-		if c := prevPts.Get(key); c != nil {
-			cnt := c.(numberCounter)
-
-			if cnt.ts > ts {
-				// We were given a point older than the one in memory so we drop it
-				// We keep the existing point in memory since it is the most recent
-				continue
-			}
-
-			// We calculate the time-normalized delta
-			dx := val - cnt.value
-
-			// if dx < 0, we assume there was a reset, thus we save the point
-			// but don't export it (it's the first one so we can't do a delta)
-			if dx >= 0 {
-				ms = append(ms, metrics.NewCount(name, ts, dx, tags))
-			}
-
+		if dx, ok := putAndGetDiff(prevPts, key, ts, val); ok {
+			ms = append(ms, metrics.NewCount(name, ts, dx, tags))
 		}
-
-		prevPts.Put(key, numberCounter{ts, val})
 	}
 	return ms
 }
@@ -197,7 +199,7 @@ func getQuantileTag(quantile float64) string {
 }
 
 // mapSummaryMetrics maps summary datapoints into Datadog metrics
-func mapSummaryMetrics(name string, slice pdata.SummaryDataPointSlice, quantiles bool, attrTags []string) []datadog.Metric {
+func mapSummaryMetrics(name string, prevPts *ttlmap.TTLMap, slice pdata.SummaryDataPointSlice, quantiles bool, attrTags []string) []datadog.Metric {
 	// Allocate assuming none are nil and no quantiles
 	ms := make([]datadog.Metric, 0, 2*slice.Len())
 	for i := 0; i < slice.Len(); i++ {
@@ -206,10 +208,22 @@ func mapSummaryMetrics(name string, slice pdata.SummaryDataPointSlice, quantiles
 		tags := getTags(p.Attributes())
 		tags = append(tags, attrTags...)
 
-		ms = append(ms,
-			metrics.NewGauge(fmt.Sprintf("%s.count", name), ts, float64(p.Count()), tags),
-			metrics.NewGauge(fmt.Sprintf("%s.sum", name), ts, p.Sum(), tags),
-		)
+		// count and sum are increasing; we treat them as cumulative monotonic sums.
+		{
+			countName := fmt.Sprintf("%s.count", name)
+			countKey := metricDimensionsToMapKey(countName, tags)
+			if dx, ok := putAndGetDiff(prevPts, countKey, ts, float64(p.Count())); ok {
+				ms = append(ms, metrics.NewCount(countName, ts, dx, tags))
+			}
+		}
+
+		{
+			sumName := fmt.Sprintf("%s.sum", name)
+			sumKey := metricDimensionsToMapKey(sumName, tags)
+			if dx, ok := putAndGetDiff(prevPts, sumKey, ts, p.Sum()); ok {
+				ms = append(ms, metrics.NewCount(sumName, ts, dx, tags))
+			}
+		}
 
 		if quantiles {
 			fullName := fmt.Sprintf("%s.quantile", name)
@@ -278,7 +292,7 @@ func mapMetrics(logger *zap.Logger, cfg config.MetricsConfig, prevPts *ttlmap.TT
 				case pdata.MetricDataTypeHistogram:
 					datapoints = mapHistogramMetrics(md.Name(), md.Histogram().DataPoints(), cfg.Buckets, attributeTags)
 				case pdata.MetricDataTypeSummary:
-					datapoints = mapSummaryMetrics(md.Name(), md.Summary().DataPoints(), cfg.Quantiles, attributeTags)
+					datapoints = mapSummaryMetrics(md.Name(), prevPts, md.Summary().DataPoints(), cfg.Quantiles, attributeTags)
 				default: // pdata.MetricDataTypeNone or any other not supported type
 					logger.Debug("Unknown or unsupported metric type", zap.String("metric name", md.Name()), zap.Any("data type", md.DataType()))
 					continue
