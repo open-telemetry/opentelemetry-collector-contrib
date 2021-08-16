@@ -123,6 +123,7 @@ func components() (component.Factories, error) {
 		dotnetdiagnosticsreceiver.NewFactory(),
 		filelogreceiver.NewFactory(),
 		fluentforwardreceiver.NewFactory(),
+		hostmetricsreceiver.NewFactory(),
 		influxdbreceiver.NewFactory(),
 		jmxreceiver.NewFactory(),
 		kafkametricsreceiver.NewFactory(),
