@@ -81,7 +81,7 @@ func Test_mapLogRecordToSplunkEvent(t *testing.T) {
 				}
 			},
 			wantSplunkEvents: []*splunk.Event{
-				commonLogSplunkEvent("mylog", ts, map[string]interface{}{"custom": "custom", "com.splunk.source": "myapp", "host.name": "myhost", "otlp.log.name": "my very own name"},
+				commonLogSplunkEvent("mylog", ts, map[string]interface{}{"custom": "custom", "com.splunk.source": "myapp", "host.name": "myhost", "otel.log.name": "my very own name"},
 					"myhost", "myapp", "myapp-type"),
 			},
 		},
@@ -369,7 +369,7 @@ func Test_mapLogRecordToSplunkEvent(t *testing.T) {
 				}
 			},
 			wantSplunkEvents: []*splunk.Event{
-				commonLogSplunkEvent("mylog", ts, map[string]interface{}{"custom": "custom", "com.splunk.source": "myapp", "host.name": "myhost", "otlp.log.severity": "DEBUG"},
+				commonLogSplunkEvent("mylog", ts, map[string]interface{}{"custom": "custom", "com.splunk.source": "myapp", "host.name": "myhost", "otel.log.severity": "DEBUG"},
 					"myhost", "myapp", "myapp-type"),
 			},
 		},
