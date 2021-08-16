@@ -1,0 +1,23 @@
+receivers:
+  k8s_cluster:
+  k8s_cluster/all_settings:
+    collection_interval: 30s
+    node_conditions_to_report: ["Ready", "MemoryPressure"]
+    metadata_exporters: [nop]
+  k8s_cluster/partial_settings:
+    collection_interval: 30s
+    distribution: openshift
+
+
+processors:
+  nop:
+
+exporters:
+  nop:
+
+service:
+  pipelines:
+    metrics:
+      receivers: [k8s_cluster]
+      processors: [nop]
+      exporters: [nop]

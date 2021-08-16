@@ -1,0 +1,34 @@
+receivers:
+    nop:
+
+processors:
+    nop:
+
+exporters:
+    awsprometheusremotewrite:
+    awsprometheusremotewrite/2:
+        namespace: "test-space"
+        retry_on_failure:
+            enabled: true
+            initial_interval: 10s
+            max_interval: 60s
+            max_elapsed_time: 10m
+        endpoint: "https://aps-workspaces.us-east-1.amazonaws.com/workspaces/ws-XXX/api/v1/remote_write"
+        ca_file: "/var/lib/mycert.pem"
+        write_buffer_size: 524288
+        headers:
+            Prometheus-Remote-Write-Version: "0.1.0"
+            X-Scope-OrgID: 234
+        aws_auth:
+            region: "us-west-2"
+            service: "service-name"
+            role_arn: "arn:aws:iam::123456789012:role/IAMRole"
+        external_labels:
+            key1: value1
+            key2: value2
+service:
+    pipelines:
+        metrics:
+            receivers: [nop]
+            processors: [nop]
+            exporters: [awsprometheusremotewrite]

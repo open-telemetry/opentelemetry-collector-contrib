@@ -1,0 +1,17 @@
+receivers:
+  nop:
+
+processors:
+  nop:
+
+exporters:
+  tanzuobservability:
+    traces:
+      endpoint: "http://localhost:40001"
+
+service:
+  pipelines:
+    traces:
+      receivers: [ nop ]
+      processors: [ nop ]
+      exporters: [ tanzuobservability ]
