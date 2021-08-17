@@ -734,7 +734,7 @@ func testTransformDeltaSummaryWithValues(t *testing.T, testName string, count ui
 	dp.SetTimestamp(end)
 	dp.SetSum(sum)
 	dp.SetCount(count)
-	dp.LabelsMap().Insert("foo", "bar")
+	dp.Attributes().InsertString("foo", "bar")
 	q := dp.QuantileValues()
 	if !math.IsNaN(min) {
 		minQuantile := q.AppendEmpty()
