@@ -221,14 +221,14 @@ func (suite *JMXIntegrationSuite) TestJMXReceiverHappyPath() {
 		require.False(t, sum.IsMonotonic())
 
 		// These labels are determined by system properties
-		labels := sum.DataPoints().At(0).LabelsMap()
+		labels := sum.DataPoints().At(0).Attributes()
 		customLabel, ok := labels.Get("mylabel")
 		require.True(t, ok)
-		require.Equal(t, "myvalue", customLabel)
+		require.Equal(t, "myvalue", customLabel.StringVal())
 
 		anotherCustomLabel, ok := labels.Get("myotherlabel")
 		require.True(t, ok)
-		require.Equal(t, "myothervalue", anotherCustomLabel)
+		require.Equal(t, "myothervalue", anotherCustomLabel.StringVal())
 
 		return true
 	}, 30*time.Second, 100*time.Millisecond, getJavaStdout(receiver))
