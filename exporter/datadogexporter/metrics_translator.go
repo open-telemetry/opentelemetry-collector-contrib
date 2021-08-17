@@ -21,6 +21,7 @@ import (
 	"strings"
 	"time"
 
+	gocache "github.com/patrickmn/go-cache"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/model/pdata"
 	"go.uber.org/zap"
@@ -30,8 +31,43 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/attributes"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metrics"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/ttlmap"
 )
+
+type ttlCache struct {
+	cache *gocache.Cache
+}
+
+// numberCounter keeps the value of a number
+// monotonic counter at a given point in time
+type numberCounter struct {
+	ts    uint64
+	value float64
+}
+
+func newTTLCache(sweepInterval int64, deltaTTL int64) *ttlCache {
+	cache := gocache.New(time.Duration(deltaTTL)*time.Second, time.Duration(sweepInterval)*time.Second)
+	return &ttlCache{cache}
+}
+
+// putAndGetDiff submits a new value for a given key and returns the difference with the
+// last submitted value (ordered by timestamp). The diff value is only valid if `ok` is true.
+func (t *ttlCache) putAndGetDiff(key string, ts uint64, val float64) (dx float64, ok bool) {
+	if c, found := t.cache.Get(key); found {
+		cnt := c.(numberCounter)
+		if cnt.ts > ts {
+			// We were given a point older than the one in memory so we drop it
+			// We keep the existing point in memory since it is the most recent
+			return 0, false
+		}
+		// if dx < 0, we assume there was a reset, thus we save the point
+		// but don't export it (it's the first one so we can't do a delta)
+		dx = val - cnt.value
+		ok = dx >= 0
+	}
+
+	t.cache.Set(key, numberCounter{ts, val}, gocache.DefaultExpiration)
+	return
+}
 
 // getTags maps an attributeMap into a slice of Datadog tags
 func getTags(labels pdata.AttributeMap) []string {
@@ -88,35 +124,8 @@ func mapNumberMetrics(name string, dt metrics.MetricDataType, slice pdata.Number
 	return ms
 }
 
-// numberCounter keeps the value of a number
-// monotonic counter at a given point in time
-type numberCounter struct {
-	ts    uint64
-	value float64
-}
-
-// putAndGetDiff submits a new value for a given key and returns the difference with the
-// last submitted value (ordered by timestamp). The diff value is only valid if `ok` is true.
-func putAndGetDiff(prevPts *ttlmap.TTLMap, key string, ts uint64, val float64) (dx float64, ok bool) {
-	if c := prevPts.Get(key); c != nil {
-		cnt := c.(numberCounter)
-		if cnt.ts > ts {
-			// We were given a point older than the one in memory so we drop it
-			// We keep the existing point in memory since it is the most recent
-			return 0, false
-		}
-		// if dx < 0, we assume there was a reset, thus we save the point
-		// but don't export it (it's the first one so we can't do a delta)
-		dx = val - cnt.value
-		ok = dx >= 0
-	}
-
-	prevPts.Put(key, numberCounter{ts, val})
-	return
-}
-
 // mapNumberMonotonicMetrics maps monotonic datapoints into Datadog metrics
-func mapNumberMonotonicMetrics(name string, prevPts *ttlmap.TTLMap, slice pdata.NumberDataPointSlice, attrTags []string) []datadog.Metric {
+func mapNumberMonotonicMetrics(name string, prevPts *ttlCache, slice pdata.NumberDataPointSlice, attrTags []string) []datadog.Metric {
 	ms := make([]datadog.Metric, 0, slice.Len())
 	for i := 0; i < slice.Len(); i++ {
 		p := slice.At(i)
@@ -133,7 +142,7 @@ func mapNumberMonotonicMetrics(name string, prevPts *ttlmap.TTLMap, slice pdata.
 			val = float64(p.IntVal())
 		}
 
-		if dx, ok := putAndGetDiff(prevPts, key, ts, val); ok {
+		if dx, ok := prevPts.putAndGetDiff(key, ts, val); ok {
 			ms = append(ms, metrics.NewCount(name, ts, dx, tags))
 		}
 	}
@@ -199,7 +208,7 @@ func getQuantileTag(quantile float64) string {
 }
 
 // mapSummaryMetrics maps summary datapoints into Datadog metrics
-func mapSummaryMetrics(name string, prevPts *ttlmap.TTLMap, slice pdata.SummaryDataPointSlice, quantiles bool, attrTags []string) []datadog.Metric {
+func mapSummaryMetrics(name string, prevPts *ttlCache, slice pdata.SummaryDataPointSlice, quantiles bool, attrTags []string) []datadog.Metric {
 	// Allocate assuming none are nil and no quantiles
 	ms := make([]datadog.Metric, 0, 2*slice.Len())
 	for i := 0; i < slice.Len(); i++ {
@@ -212,7 +221,7 @@ func mapSummaryMetrics(name string, prevPts *ttlmap.TTLMap, slice pdata.SummaryD
 		{
 			countName := fmt.Sprintf("%s.count", name)
 			countKey := metricDimensionsToMapKey(countName, tags)
-			if dx, ok := putAndGetDiff(prevPts, countKey, ts, float64(p.Count())); ok {
+			if dx, ok := prevPts.putAndGetDiff(countKey, ts, float64(p.Count())); ok {
 				ms = append(ms, metrics.NewCount(countName, ts, dx, tags))
 			}
 		}
@@ -220,7 +229,7 @@ func mapSummaryMetrics(name string, prevPts *ttlmap.TTLMap, slice pdata.SummaryD
 		{
 			sumName := fmt.Sprintf("%s.sum", name)
 			sumKey := metricDimensionsToMapKey(sumName, tags)
-			if dx, ok := putAndGetDiff(prevPts, sumKey, ts, p.Sum()); ok {
+			if dx, ok := prevPts.putAndGetDiff(sumKey, ts, p.Sum()); ok {
 				ms = append(ms, metrics.NewCount(sumName, ts, dx, tags))
 			}
 		}
@@ -241,7 +250,7 @@ func mapSummaryMetrics(name string, prevPts *ttlmap.TTLMap, slice pdata.SummaryD
 }
 
 // mapMetrics maps OTLP metrics into the DataDog format
-func mapMetrics(logger *zap.Logger, cfg config.MetricsConfig, prevPts *ttlmap.TTLMap, fallbackHost string, md pdata.Metrics, buildInfo component.BuildInfo) (series []datadog.Metric, droppedTimeSeries int) {
+func mapMetrics(logger *zap.Logger, cfg config.MetricsConfig, prevPts *ttlCache, fallbackHost string, md pdata.Metrics, buildInfo component.BuildInfo) (series []datadog.Metric, droppedTimeSeries int) {
 	pushTime := uint64(time.Now().UTC().UnixNano())
 	rms := md.ResourceMetrics()
 	seenHosts := make(map[string]struct{})
