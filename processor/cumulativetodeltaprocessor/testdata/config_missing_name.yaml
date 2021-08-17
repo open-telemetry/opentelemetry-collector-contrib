@@ -1,0 +1,20 @@
+receivers:
+  nop:
+
+processors:
+  cumulativetodelta:
+    metrics:
+
+exporters:
+  nop:
+
+service:
+  pipelines:
+    traces:
+      receivers: [nop]
+      processors: [cumulativetodelta]
+      exporters: [nop]
+    metrics:
+      receivers: [nop]
+      processors: [cumulativetodelta]
+      exporters: [nop]

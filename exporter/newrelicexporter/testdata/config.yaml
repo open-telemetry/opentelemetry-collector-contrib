@@ -1,0 +1,37 @@
+receivers:
+  nop:
+
+processors:
+  nop:
+
+exporters:
+  newrelic:
+  newrelic/alt:
+    apikey: a1b2c3d4
+    timeout: 30s
+    retry:
+      enabled: false
+      initial_interval: 0
+      max_interval: 0
+      max_elapsed_time: 0
+    metrics:
+      host_override: alt.metrics.newrelic.com
+    traces:
+      host_override: alt.spans.newrelic.com
+    logs:
+      host_override: alt.logs.newrelic.com
+
+service:
+  pipelines:
+    traces:
+      receivers: [nop]
+      processors: [nop]
+      exporters: [newrelic]
+    metrics:
+      receivers: [nop]
+      processors: [nop]
+      exporters: [newrelic]
+    logs:
+      receivers: [nop]
+      processors: [nop]
+      exporters: [newrelic]
