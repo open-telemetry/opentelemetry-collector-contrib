@@ -228,7 +228,7 @@ func collectPodReplicaSetProperties(pod *corev1.Pod, replicaSetstore cache.Store
 		if deployRef := utils.FindOwnerWithKind(replicaSetObj.OwnerReferences, k8sKindDeployment); deployRef != nil {
 			return getWorkloadProperties(deployRef, conventions.AttributeK8SDeploymentName)
 		}
-		return getWorkloadProperties(rsRef, conventions.AttributeK8SReplicasetName)
+		return getWorkloadProperties(rsRef, conventions.AttributeK8SReplicaSetName)
 	}
 	return nil
 }
