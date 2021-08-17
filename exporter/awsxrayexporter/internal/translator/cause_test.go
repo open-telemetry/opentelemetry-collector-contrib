@@ -1066,7 +1066,6 @@ created by testing.(*T).Run
 	assert.Equal(t, "created by testing.(*T).Run", strings.Split(*exceptions[0].Stack[4].Label, "(0x")[0])
 	assert.Equal(t, "/usr/local/Cellar/go/1.16.3/libexec/src/testing/testing.go", *exceptions[0].Stack[4].Path)
 	assert.Equal(t, 1238, *exceptions[0].Stack[4].Line)
-
 }
 
 func TestParseMultipleExceptionGoWithStacktrace(t *testing.T) {
