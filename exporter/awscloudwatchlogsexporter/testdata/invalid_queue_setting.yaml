@@ -1,0 +1,16 @@
+receivers:
+  nop: {}
+
+exporters:
+  awscloudwatchlogs:
+    log_group_name: "test-4"
+    log_stream_name: "testing"
+    sending_queue:
+      enabled: false
+      num_consumers: 2
+
+service:
+  pipelines:
+    logs:
+      receivers: [nop]
+      exporters: [awscloudwatchlogs]

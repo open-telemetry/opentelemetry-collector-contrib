@@ -1,0 +1,12 @@
+receivers:
+  nop: {}
+
+exporters:
+  awscloudwatchlogs:
+    log_group_name: "test-1"
+
+service:
+  pipelines:
+    logs:
+      receivers: [nop]
+      exporters: [awscloudwatchlogs]
