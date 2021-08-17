@@ -33,7 +33,7 @@ var _ component.Extension = (*xrayProxy)(nil)
 
 func (x xrayProxy) Start(ctx context.Context, host component.Host) error {
 	go x.server.ListenAndServe()
-	x.logger.Info("X-Ray proxy server started")
+	x.logger.Info("X-Ray proxy server started on " + x.config.ProxyConfig.Endpoint)
 	return nil
 }
 
