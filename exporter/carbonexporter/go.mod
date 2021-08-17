@@ -6,7 +6,7 @@ require (
 	github.com/census-instrumentation/opencensus-proto v0.3.0
 	github.com/mattn/go-colorable v0.1.7 // indirect
 	github.com/stretchr/testify v1.7.0
-	go.opentelemetry.io/collector v0.32.0
-	go.opentelemetry.io/collector/model v0.32.0
+	go.opentelemetry.io/collector v0.32.1-0.20210817223921-dd190c568f83
+	go.opentelemetry.io/collector/model v0.32.1-0.20210817223921-dd190c568f83
 	google.golang.org/protobuf v1.27.1
 )
