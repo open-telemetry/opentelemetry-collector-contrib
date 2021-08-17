@@ -263,7 +263,6 @@ func TestIntDataPointSliceAt(t *testing.T) {
 	setupDataPointCache()
 
 	instrLibName := "cloudwatch-otel"
-	labels := map[string]pdata.AttributeValue{"label": pdata.NewAttributeValueString("value")}
 
 	testDeltaCases := []struct {
 		testName        string
@@ -296,7 +295,7 @@ func TestIntDataPointSliceAt(t *testing.T) {
 			testDPS := pdata.NewNumberDataPointSlice()
 			testDP := testDPS.AppendEmpty()
 			testDP.SetIntVal(tc.value.(int64))
-			testDP.Attributes().InitFromMap(labels)
+			testDP.Attributes().InsertString("label", "value")
 
 			dps := numberDataPointSlice{
 				instrLibName,
@@ -313,7 +312,7 @@ func TestIntDataPointSliceAt(t *testing.T) {
 
 			expectedDP := dataPoint{
 				value: tc.calculatedValue,
-				labels: map[string]string{
+				attributes: map[string]string{
 					oTellibDimensionKey: instrLibName,
 					"label":             "value",
 				},
@@ -323,7 +322,7 @@ func TestIntDataPointSliceAt(t *testing.T) {
 			dp, retained := dps.At(0)
 			assert.Equal(t, i > 0, retained)
 			if retained {
-				assert.Equal(t, expectedDP.labels, dp.labels)
+				assert.Equal(t, expectedDP.attributes, dp.attributes)
 				assert.InDelta(t, expectedDP.value.(float64), dp.value.(float64), 0.02)
 			}
 		})
@@ -334,7 +333,6 @@ func TestDoubleDataPointSliceAt(t *testing.T) {
 	setupDataPointCache()
 
 	instrLibName := "cloudwatch-otel"
-	labels := map[string]pdata.AttributeValue{"label1": pdata.NewAttributeValueString("value1")}
 
 	testDeltaCases := []struct {
 		testName        string
@@ -367,7 +365,7 @@ func TestDoubleDataPointSliceAt(t *testing.T) {
 			testDPS := pdata.NewNumberDataPointSlice()
 			testDP := testDPS.AppendEmpty()
 			testDP.SetDoubleVal(tc.value.(float64))
-			testDP.Attributes().InitFromMap(labels)
+			testDP.Attributes().InsertString("label", "value")
 
 			dps := numberDataPointSlice{
 				instrLibName,
@@ -394,7 +392,6 @@ func TestDoubleDataPointSliceAt(t *testing.T) {
 
 func TestHistogramDataPointSliceAt(t *testing.T) {
 	instrLibName := "cloudwatch-otel"
-	labels := map[string]pdata.AttributeValue{"label1": pdata.NewAttributeValueString("value1")}
 
 	testDPS := pdata.NewHistogramDataPointSlice()
 	testDP := testDPS.AppendEmpty()
@@ -402,7 +399,7 @@ func TestHistogramDataPointSliceAt(t *testing.T) {
 	testDP.SetSum(17.13)
 	testDP.SetBucketCounts([]uint64{1, 2, 3})
 	testDP.SetExplicitBounds([]float64{1, 2, 3})
-	testDP.Attributes().InitFromMap(labels)
+	testDP.Attributes().InsertString("label1", "value1")
 
 	dps := histogramDataPointSlice{
 		instrLibName,
@@ -414,7 +411,7 @@ func TestHistogramDataPointSliceAt(t *testing.T) {
 			Sum:   17.13,
 			Count: 17,
 		},
-		labels: map[string]string{
+		attributes: map[string]string{
 			oTellibDimensionKey: instrLibName,
 			"label1":            "value1",
 		},
@@ -429,7 +426,7 @@ func TestSummaryDataPointSliceAt(t *testing.T) {
 	setupDataPointCache()
 
 	instrLibName := "cloudwatch-otel"
-	labels := map[string]pdata.AttributeValue{"label1": pdata.NewAttributeValueString("value1")}
+
 	metadataTimeStamp := time.Now().UnixNano() / int64(time.Millisecond)
 
 	testCases := []struct {
@@ -468,7 +465,7 @@ func TestSummaryDataPointSliceAt(t *testing.T) {
 			testQuantileValue = testDP.QuantileValues().AppendEmpty()
 			testQuantileValue.SetQuantile(100)
 			testQuantileValue.SetValue(float64(5))
-			testDP.Attributes().InitFromMap(labels)
+			testDP.Attributes().InsertString("label1", "value1")
 
 			dps := summaryDataPointSlice{
 				instrLibName,
@@ -490,7 +487,7 @@ func TestSummaryDataPointSliceAt(t *testing.T) {
 					Sum:   tt.calculatedSumCount[0].(float64),
 					Count: tt.calculatedSumCount[1].(uint64),
 				},
-				labels: map[string]string{
+				attributes: map[string]string{
 					oTellibDimensionKey: instrLibName,
 					"label1":            "value1",
 				},
@@ -502,7 +499,7 @@ func TestSummaryDataPointSliceAt(t *testing.T) {
 			if retained {
 				expectedMetricStats := expectedDP.value.(*cWMetricStats)
 				actualMetricsStats := dp.value.(*cWMetricStats)
-				assert.Equal(t, expectedDP.labels, dp.labels)
+				assert.Equal(t, expectedDP.attributes, dp.attributes)
 				assert.Equal(t, expectedMetricStats.Max, actualMetricsStats.Max)
 				assert.Equal(t, expectedMetricStats.Min, actualMetricsStats.Min)
 				assert.InDelta(t, expectedMetricStats.Count, actualMetricsStats.Count, 0.1)
@@ -518,17 +515,34 @@ func TestCreateLabels(t *testing.T) {
 		"b": "B",
 		"c": "C",
 	}
-	labelsMap := pdata.NewAttributeMap().InitFromMap(map[string]pdata.AttributeValue{
-		"a": pdata.NewAttributeValueString("A"),
-		"b": pdata.NewAttributeValueString("B"),
-		"c": pdata.NewAttributeValueString("C"),
-	})
+	labelsMap := pdata.NewStringMap().InitFromMap(expectedLabels)
 
 	labels := createLabels(labelsMap, noInstrumentationLibraryName)
 	assert.Equal(t, expectedLabels, labels)
 
 	// With isntrumentation library name
 	labels = createLabels(labelsMap, "cloudwatch-otel")
+	expectedLabels[oTellibDimensionKey] = "cloudwatch-otel"
+	assert.Equal(t, expectedLabels, labels)
+}
+
+func TestCreateAttributes(t *testing.T) {
+	expectedLabels := map[string]string{
+		"a": "A",
+		"b": "B",
+		"c": "C",
+	}
+	attributeMap := make(map[string]pdata.AttributeValue)
+	for k, v := range expectedLabels {
+		attributeMap[k] = pdata.NewAttributeValueString(v)
+	}
+	attributes := pdata.NewAttributeMap().InitFromMap(attributeMap)
+
+	labels := createAttributes(attributes, noInstrumentationLibraryName)
+	assert.Equal(t, expectedLabels, labels)
+
+	// With isntrumentation library name
+	labels = createAttributes(attributes, "cloudwatch-otel")
 	expectedLabels[oTellibDimensionKey] = "cloudwatch-otel"
 	assert.Equal(t, expectedLabels, labels)
 }
@@ -646,7 +660,7 @@ func TestGetDataPoints(t *testing.T) {
 
 		logger := zap.NewNop()
 
-		expectedAttributes := pdata.NewAttributeMap().InitFromMap(map[string]pdata.AttributeValue{"label1": pdata.NewAttributeValueString("value1")})
+		expectedLabels := pdata.NewStringMap().InitFromMap(map[string]string{"label1": "value1"})
 
 		t.Run(tc.testName, func(t *testing.T) {
 			setupDataPointCache()
@@ -672,7 +686,7 @@ func TestGetDataPoints(t *testing.T) {
 				case pdata.MetricValueTypeInt:
 					assert.Equal(t, int64(1), dp.IntVal())
 				}
-				assert.Equal(t, expectedAttributes, dp.Attributes())
+				assert.Equal(t, expectedLabels, dp.LabelsMap())
 			case histogramDataPointSlice:
 				assert.Equal(t, metadata.instrumentationLibraryName, convertedDPS.instrumentationLibraryName)
 				assert.Equal(t, 1, convertedDPS.Len())
@@ -680,7 +694,7 @@ func TestGetDataPoints(t *testing.T) {
 				assert.Equal(t, 35.0, dp.Sum())
 				assert.Equal(t, uint64(18), dp.Count())
 				assert.Equal(t, []float64{0, 10}, dp.ExplicitBounds())
-				assert.Equal(t, expectedAttributes, dp.Attributes())
+				assert.Equal(t, expectedLabels, dp.LabelsMap())
 			case summaryDataPointSlice:
 				expectedDPS := tc.expectedDataPoints.(summaryDataPointSlice)
 				assert.Equal(t, metadata.instrumentationLibraryName, convertedDPS.instrumentationLibraryName)

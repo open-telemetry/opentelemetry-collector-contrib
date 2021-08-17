@@ -55,7 +55,7 @@ func addToGroupedMetric(pmd *pdata.Metric, groupedMetrics map[interface{}]*group
 			continue
 		}
 
-		labels := dp.labels
+		labels := dp.attributes
 
 		if metricType, ok := labels["Type"]; ok {
 			if (metricType == "Pod" || metricType == "Container") && config.EKSFargateContainerInsightsEnabled {
@@ -63,7 +63,7 @@ func addToGroupedMetric(pmd *pdata.Metric, groupedMetrics map[interface{}]*group
 			}
 		}
 
-		// if patterns were found in config file and weren't replaced by resource attributes, replace those patterns with metric labels.
+		// if patterns were found in config file and weren't replaced by resource attributes, replace those patterns with metric attributes.
 		// if patterns are provided for a valid key and that key doesn't exist in the resource attributes, it is replaced with `undefined`.
 		if !patternReplaceSucceeded {
 			if strings.Contains(metadata.logGroup, "undefined") {
