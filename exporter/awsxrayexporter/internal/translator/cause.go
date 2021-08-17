@@ -507,11 +507,11 @@ func fillGoStacktrace(stacktrace string, exceptions []awsxray.Exception) []awsxr
 	exception.Stack = make([]awsxray.StackFrame, 0)
 	for {
 		if strings.Contains(line, "goroutine") {
-			line, err = r.ReadLine()
+			line, _ = r.ReadLine()
 		}
 
 		label = line
-		line, err = r.ReadLine()
+		line, _ = r.ReadLine()
 
 		if strings.Contains(line, "\t") {
 			s := strings.Split(line, ":")
