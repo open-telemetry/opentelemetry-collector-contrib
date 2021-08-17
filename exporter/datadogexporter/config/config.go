@@ -63,6 +63,9 @@ type MetricsConfig struct {
 	// Buckets states whether to report buckets from distribution metrics
 	Buckets bool `mapstructure:"report_buckets"`
 
+	// BucketsAsCounts reports histogram buckets as Datadog counts instead of distributions.
+	BucketsAsCounts bool `mapstructure:"histogram_buckets_as_counts"`
+
 	// Quantiles states whether to report quantiles from summary metrics.
 	// By default, the minimum, maximum and average are reported.
 	Quantiles bool `mapstructure:"report_quantiles"`
@@ -231,6 +234,10 @@ func (c *Config) Sanitize() error {
 	// Set default site
 	if c.API.Site == "" {
 		c.API.Site = "datadoghq.com"
+	}
+
+	if c.Metrics.BucketsAsCounts {
+		c.Metrics.Buckets = true
 	}
 
 	// Set the endpoint based on the Site

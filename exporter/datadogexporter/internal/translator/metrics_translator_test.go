@@ -16,12 +16,15 @@ package translator
 
 import (
 	"context"
+	"fmt"
 	"math"
 	"testing"
 	"time"
 
+	"github.com/DataDog/datadog-agent/pkg/quantile"
 	gocache "github.com/patrickmn/go-cache"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/model/pdata"
@@ -448,14 +451,19 @@ func TestMapHistogramMetrics(t *testing.T) {
 	tr := newTranslator(zap.NewNop(), config.MetricsConfig{SendMonotonic: true})
 
 	tr.cfg.Buckets = false
+	res, sl := tr.mapHistogramMetrics("doubleHist.test", slice, []string{})
+	require.Empty(t, sl)
 	assert.ElementsMatch(t,
-		tr.mapHistogramMetrics("doubleHist.test", slice, []string{}), // No buckets
+		res, // No buckets
 		noBuckets,
 	)
 
 	tr.cfg.Buckets = true
+	tr.cfg.BucketsAsCounts = true
+	res, sl = tr.mapHistogramMetrics("doubleHist.test", slice, []string{})
+	require.Empty(t, sl)
 	assert.ElementsMatch(t,
-		tr.mapHistogramMetrics("doubleHist.test", slice, []string{}), // buckets
+		res, // buckets
 		append(noBuckets, buckets...),
 	)
 
@@ -471,16 +479,104 @@ func TestMapHistogramMetrics(t *testing.T) {
 	}
 
 	tr.cfg.Buckets = false
+	res, sl = tr.mapHistogramMetrics("doubleHist.test", slice, []string{"attribute_tag:attribute_value"})
+	require.Empty(t, sl)
 	assert.ElementsMatch(t,
-		tr.mapHistogramMetrics("doubleHist.test", slice, []string{"attribute_tag:attribute_value"}), // No buckets
+		res, // No buckets
 		noBucketsAttributeTags,
 	)
 
 	tr.cfg.Buckets = true
+	tr.cfg.BucketsAsCounts = true
+	res, sl = tr.mapHistogramMetrics("doubleHist.test", slice, []string{"attribute_tag:attribute_value"})
+	require.Empty(t, sl)
 	assert.ElementsMatch(t,
-		tr.mapHistogramMetrics("doubleHist.test", slice, []string{"attribute_tag:attribute_value"}), // buckets
+		res, // buckets
 		append(noBucketsAttributeTags, bucketsAttributeTags...),
 	)
+}
+
+func TestHistogramSketches(t *testing.T) {
+	N := 1_000
+	M := 20_000.0
+
+	// Given a probability distribution function for a distribution
+	// with support [0, N], generate an OTLP Histogram data point with N buckets,
+	// (-inf, 0], (0, 1], ..., (N-1, N], (N, inf)
+	// which contains N*M uniform samples of the distribution.
+	fromPDF := func(pdf func(x float64) float64) pdata.HistogramDataPoint {
+		p := pdata.NewHistogramDataPoint()
+		bounds := make([]float64, N+1)
+		buckets := make([]uint64, N+2)
+		buckets[0] = 0
+		for i := 0; i <= N; i++ {
+			bounds[i] = float64(i)
+			// the bucket with bounds (i, i+1) has the value
+			// of the pdf in the midpoint of the bucket (i + .5)
+			buckets[i+1] = uint64(pdf((float64(i) + 0.5)) * M)
+		}
+		buckets[N+1] = 0
+		p.SetExplicitBounds(bounds)
+		p.SetBucketCounts(buckets)
+		return p
+	}
+
+	tests := []struct {
+		// distribution name
+		name string
+		// the probability distribution function (within [0,N])
+		pdf func(x float64) float64
+		// the cumulative distribution function (within [0,N])
+		cdf func(quantile float64) float64
+		// error tolerance for testing cdf(quantile(q)) ≈ q
+		epsilon float64
+	}{
+		{
+			// https://en.wikipedia.org/wiki/Continuous_uniform_distribution
+			name:    "Uniform distribution (a=0,b=N)",
+			pdf:     func(x float64) float64 { return 1 / float64(N) },
+			cdf:     func(q float64) float64 { return q / float64(N) },
+			epsilon: 0.01,
+		},
+		{
+			// https://en.wikipedia.org/wiki/U-quadratic_distribution
+			name: "U-quadratic distribution (a=0,b=N)",
+			pdf: func(x float64) float64 {
+				a := 0.0
+				b := float64(N)
+				alpha := 12.0 / math.Pow(b-a, 3)
+				beta := (b + a) / 2.0
+				return alpha * math.Pow(x-beta, 2)
+			},
+			cdf: func(x float64) float64 {
+				a := 0.0
+				b := float64(N)
+				alpha := 12.0 / math.Pow(b-a, 3)
+				beta := (b + a) / 2.0
+				return alpha / 3 * (math.Pow(x-beta, 3) + math.Pow(beta-alpha, 3))
+			},
+			epsilon: 0.025,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			tr := newTranslator(zap.NewNop(), config.MetricsConfig{})
+			p := fromPDF(test.pdf)
+			sk := tr.getSketchBuckets("test", 0, p, true, []string{}).Points[0].Sketch
+			assert.Equal(t, 0.0, sk.Quantile(quantile.Default(), 0))
+			for i := 1; i <= 99; i++ {
+				q := (float64(i)) / 100.0
+				assert.InEpsilon(t,
+					// test that the CDF is the (approximate) inverse of the quantile function
+					test.cdf(sk.Quantile(quantile.Default(), q)),
+					q,
+					test.epsilon,
+					fmt.Sprintf("error too high for p%d", i),
+				)
+			}
+		})
+	}
 }
 
 func TestQuantileTag(t *testing.T) {
@@ -604,7 +700,7 @@ func TestRunningMetrics(t *testing.T) {
 	cfg := config.MetricsConfig{}
 	tr := newTranslator(zap.NewNop(), cfg)
 
-	series := tr.MapMetrics(ms)
+	series, _ := tr.MapMetrics(ms)
 
 	runningHostnames := []string{}
 
@@ -810,7 +906,8 @@ func TestMapMetrics(t *testing.T) {
 	core, observed := observer.New(zapcore.DebugLevel)
 	testLogger := zap.New(core)
 	tr := newTranslator(testLogger, cfg)
-	series := tr.MapMetrics(md)
+	series, sl := tr.MapMetrics(md)
+	require.Empty(t, sl)
 
 	filtered := removeRunningMetrics(series)
 	assert.ElementsMatch(t, filtered, []datadog.Metric{
@@ -932,7 +1029,7 @@ func TestNaNMetrics(t *testing.T) {
 	core, observed := observer.New(zapcore.DebugLevel)
 	testLogger := zap.New(core)
 	tr := newTranslator(testLogger, cfg)
-	series := tr.MapMetrics(md)
+	series, _ := tr.MapMetrics(md)
 
 	filtered := removeRunningMetrics(series)
 	assert.ElementsMatch(t, filtered, []datadog.Metric{

@@ -21,6 +21,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/DataDog/datadog-agent/pkg/quantile"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/model/pdata"
 	"go.uber.org/zap"
@@ -29,6 +30,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/config"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/attributes"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metrics"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/sketches"
 )
 
 const metricName string = "metric name"
@@ -140,6 +142,47 @@ func (t *Translator) mapNumberMonotonicMetrics(name string, slice pdata.NumberDa
 	return ms
 }
 
+func getBounds(p pdata.HistogramDataPoint, idx int) (lowerBound float64, upperBound float64) {
+	lowerBound = math.Inf(-1)
+	upperBound = math.Inf(1)
+	if idx > 0 {
+		lowerBound = p.ExplicitBounds()[idx-1]
+	}
+	if idx < len(p.ExplicitBounds()) {
+		upperBound = p.ExplicitBounds()[idx]
+	}
+	return
+}
+
+func (t *Translator) getSketchBuckets(name string, ts uint64, p pdata.HistogramDataPoint, delta bool, tags []string) sketches.SketchSeries {
+	as := &quantile.Agent{}
+	for j := range p.BucketCounts() {
+		lowerBound, upperBound := getBounds(p, j)
+		if math.IsInf(upperBound, 1) {
+			// Set it to the lower bound because of this misterious comment:
+			// https://github.com/DataDog/datadog-agent/blob/7.30.1/pkg/aggregator/check_sampler.go#L107-L111
+			upperBound = lowerBound
+		}
+
+		count := p.BucketCounts()[j]
+		if delta {
+			as.InsertInterpolate(lowerBound, upperBound, uint(count))
+		} else if dx, ok := t.prevPts.putAndGetDiff(name, tags, ts, float64(count)); ok {
+			as.InsertInterpolate(lowerBound, upperBound, uint(dx))
+		}
+
+	}
+	return sketches.SketchSeries{
+		Name:     name,
+		Tags:     tags,
+		Interval: 1,
+		Points: []sketches.SketchPoint{{
+			Ts:     int64(p.Timestamp() / 1e9),
+			Sketch: as.Finish(),
+		}},
+	}
+}
+
 // mapHistogramMetrics maps double histogram metrics slices to Datadog metrics
 //
 // A Histogram metric has:
@@ -153,9 +196,12 @@ func (t *Translator) mapNumberMonotonicMetrics(name string, slice pdata.NumberDa
 // We follow a similar approach to our OpenCensus exporter:
 // we report sum and count by default; buckets count can also
 // be reported (opt-in), but bounds are ignored.
-func (t *Translator) mapHistogramMetrics(name string, slice pdata.HistogramDataPointSlice, attrTags []string) []datadog.Metric {
+func (t *Translator) mapHistogramMetrics(name string, slice pdata.HistogramDataPointSlice, attrTags []string) (ms []datadog.Metric, sl sketches.SketchSeriesList) {
 	// Allocate assuming none are nil and no buckets
-	ms := make([]datadog.Metric, 0, 2*slice.Len())
+	ms = make([]datadog.Metric, 0, 2*slice.Len())
+	if !t.cfg.BucketsAsCounts {
+		sl = make(sketches.SketchSeriesList, 0, slice.Len())
+	}
 	for i := 0; i < slice.Len(); i++ {
 		p := slice.At(i)
 		ts := uint64(p.Timestamp())
@@ -172,18 +218,23 @@ func (t *Translator) mapHistogramMetrics(name string, slice pdata.HistogramDataP
 		}
 
 		if t.cfg.Buckets {
-			// We have a single metric, 'count_per_bucket', which is tagged with the bucket id. See:
-			// https://github.com/DataDog/opencensus-go-exporter-datadog/blob/c3b47f1c6dcf1c47b59c32e8dbb7df5f78162daa/stats.go#L99-L104
-			fullName := fmt.Sprintf("%s.count_per_bucket", name)
-			for idx, count := range p.BucketCounts() {
-				bucketTags := append(tags, fmt.Sprintf("bucket_idx:%d", idx))
-				ms = append(ms,
-					metrics.NewGauge(fullName, ts, float64(count), bucketTags),
-				)
+			if !t.cfg.BucketsAsCounts {
+				// TODO: pass the delta value when PR #5065 is merged.
+				sl = append(sl, t.getSketchBuckets(name, ts, p, true, tags))
+			} else {
+				// We have a single metric, 'count_per_bucket', which is tagged with the bucket id. See:
+				// https://github.com/DataDog/opencensus-go-exporter-datadog/blob/c3b47f1c6dcf1c47b59c32e8dbb7df5f78162daa/stats.go#L99-L104
+				fullName := fmt.Sprintf("%s.count_per_bucket", name)
+				for idx, count := range p.BucketCounts() {
+					bucketTags := append(tags, fmt.Sprintf("bucket_idx:%d", idx))
+					ms = append(ms,
+						metrics.NewGauge(fullName, ts, float64(count), bucketTags),
+					)
+				}
 			}
 		}
 	}
-	return ms
+	return
 }
 
 // getQuantileTag returns the quantile tag for summary types.
@@ -250,7 +301,7 @@ func (t *Translator) mapSummaryMetrics(name string, slice pdata.SummaryDataPoint
 }
 
 // MapMetrics maps OTLP metrics into the DataDog format
-func (t *Translator) MapMetrics(md pdata.Metrics) (series []datadog.Metric) {
+func (t *Translator) MapMetrics(md pdata.Metrics) (series []datadog.Metric, sl sketches.SketchSeriesList) {
 	pushTime := uint64(time.Now().UTC().UnixNano())
 	rms := md.ResourceMetrics()
 	seenHosts := make(map[string]struct{})
@@ -282,6 +333,7 @@ func (t *Translator) MapMetrics(md pdata.Metrics) (series []datadog.Metric) {
 			for k := 0; k < metricsArray.Len(); k++ {
 				md := metricsArray.At(k)
 				var datapoints []datadog.Metric
+				var sketchesPoints sketches.SketchSeriesList
 				switch md.DataType() {
 				case pdata.MetricDataTypeGauge:
 					datapoints = t.mapNumberMetrics(md.Name(), metrics.Gauge, md.Gauge().DataPoints(), attributeTags)
@@ -303,7 +355,7 @@ func (t *Translator) MapMetrics(md pdata.Metrics) (series []datadog.Metric) {
 						continue
 					}
 				case pdata.MetricDataTypeHistogram:
-					datapoints = t.mapHistogramMetrics(md.Name(), md.Histogram().DataPoints(), attributeTags)
+					datapoints, sketchesPoints = t.mapHistogramMetrics(md.Name(), md.Histogram().DataPoints(), attributeTags)
 				case pdata.MetricDataTypeSummary:
 					datapoints = t.mapSummaryMetrics(md.Name(), md.Summary().DataPoints(), attributeTags)
 				default: // pdata.MetricDataTypeNone or any other not supported type
@@ -315,7 +367,12 @@ func (t *Translator) MapMetrics(md pdata.Metrics) (series []datadog.Metric) {
 					datapoints[i].SetHost(host)
 				}
 
+				for i := range sl {
+					sl[i].Host = host
+				}
+
 				series = append(series, datapoints...)
+				sl = append(sl, sketchesPoints...)
 			}
 		}
 	}
