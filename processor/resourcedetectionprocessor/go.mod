@@ -10,7 +10,7 @@ require (
 	github.com/docker/docker v20.10.8+incompatible
 	github.com/mattn/go-colorable v0.1.7 // indirect
 	github.com/stretchr/testify v1.7.0
-	go.opentelemetry.io/collector v0.31.1-0.20210810171211-8038673eba9e
-	go.opentelemetry.io/collector/model v0.31.1-0.20210810171211-8038673eba9e
+	go.opentelemetry.io/collector v0.32.0
+	go.opentelemetry.io/collector/model v0.32.0
 	go.uber.org/zap v1.19.0
 )
