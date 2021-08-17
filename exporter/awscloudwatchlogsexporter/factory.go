@@ -51,6 +51,8 @@ func createLogsExporter(_ context.Context, set component.ExporterCreateSettings,
 		oCfg,
 		set,
 		exporter.PushLogs,
+		exporterhelper.WithStart(exporter.Start),
+		exporterhelper.WithShutdown(exporter.Shutdown),
 		exporterhelper.WithQueue(exporterhelper.QueueSettings{
 			Enabled:      true,
 			NumConsumers: 1, // due to the sequence token, there can be only one request in flight
