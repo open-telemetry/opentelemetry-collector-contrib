@@ -202,9 +202,9 @@ func Test_WindowsPerfCounterScraper(t *testing.T) {
 				if len(e.instanceLabelValues) > 0 {
 					instanceLabelValues := make([]string, 0, ddp.Len())
 					for i := 0; i < ddp.Len(); i++ {
-						instanceLabelValue, ok := ddp.At(i).LabelsMap().Get(instanceLabelName)
+						instanceLabelValue, ok := ddp.At(i).Attributes().Get(instanceLabelName)
 						require.Truef(t, ok, "data point was missing %q label", instanceLabelName)
-						instanceLabelValues = append(instanceLabelValues, instanceLabelValue)
+						instanceLabelValues = append(instanceLabelValues, instanceLabelValue.StringVal())
 					}
 
 					if !allInstances {
