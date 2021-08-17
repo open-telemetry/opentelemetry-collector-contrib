@@ -7,7 +7,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver v0.0.0-00010101000000-000000000000
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/collectdreceiver v0.0.0-00010101000000-000000000000
 	github.com/stretchr/testify v1.7.0
-	go.opentelemetry.io/collector v0.32.0
+	go.opentelemetry.io/collector v0.32.1-0.20210817223921-dd190c568f83
 	google.golang.org/protobuf v1.27.1
 )
 
