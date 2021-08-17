@@ -29,7 +29,9 @@ const (
 	SourcetypeLabel       = "com.splunk.sourcetype"
 	SourceLabel           = "com.splunk.source"
 	IndexLabel            = "com.splunk.index"
-	NameLabel             = "otlp.log.name"
+	NameLabel             = "otel.log.name"
+	SeverityTextLabel     = "otel.log.severity.text"
+	SeverityNumberLabel   = "otel.log.severity.number"
 	HECTokenHeader        = "Splunk"
 	HecTokenLabel         = "com.splunk.hec.access_token" // #nosec
 	// HecEventMetricType is the type of HEC event. Set to metric, as per https://docs.splunk.com/Documentation/Splunk/8.0.3/Metrics/GetMetricsInOther.
