@@ -143,7 +143,7 @@ func Components() (component.Factories, error) {
 		udplogreceiver.NewFactory(),
 	}
 
-	receivers = append(receivers, []component.ReceiverFactory{}...)
+	receivers = append(receivers, extraReceivers()...)
 
 	for _, rcv := range factories.Receivers {
 		receivers = append(receivers, rcv)
