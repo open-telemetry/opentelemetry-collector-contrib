@@ -35,27 +35,27 @@ const (
 	userAgent                       = "OpenTelemetry-Collector Docker Stats Receiver/v0.0.1"
 )
 
-// DockerContainer is client.ContainerInspect() response container
+// Container is client.ContainerInspect() response container
 // stats and translated environment string map for potential labels.
-type DockerContainer struct {
+type Container struct {
 	*dtypes.ContainerJSON
 	EnvMap map[string]string
 }
 
-// DockerClient provides the core metric gathering functionality from the Docker Daemon.
+// Client provides the core metric gathering functionality from the Docker Daemon.
 // It retrieves container information in two forms to produce metric data: dtypes.ContainerJSON
 // from client.ContainerInspect() for container information (id, name, hostname, labels, and env)
 // and dtypes.StatsJSON from client.ContainerStats() for metric values.
-type DockerClient struct {
+type Client struct {
 	client               *docker.Client
 	config               *Config
-	containers           map[string]DockerContainer
+	containers           map[string]Container
 	containersLock       sync.Mutex
 	excludedImageMatcher *StringMatcher
 	logger               *zap.Logger
 }
 
-func NewDockerClient(config *Config, logger *zap.Logger) (*DockerClient, error) {
+func NewDockerClient(config *Config, logger *zap.Logger) (*Client, error) {
 	client, err := docker.NewClientWithOpts(
 		docker.WithHost(config.Endpoint),
 		docker.WithVersion(fmt.Sprintf("v%v", config.DockerAPIVersion)),
@@ -70,11 +70,11 @@ func NewDockerClient(config *Config, logger *zap.Logger) (*DockerClient, error) 
 		return nil, fmt.Errorf("could not determine docker client excluded images: %w", err)
 	}
 
-	dc := &DockerClient{
+	dc := &Client{
 		client:               client,
 		config:               config,
 		logger:               logger,
-		containers:           make(map[string]DockerContainer),
+		containers:           make(map[string]Container),
 		containersLock:       sync.Mutex{},
 		excludedImageMatcher: excludedImageMatcher,
 	}
@@ -82,11 +82,11 @@ func NewDockerClient(config *Config, logger *zap.Logger) (*DockerClient, error) 
 	return dc, nil
 }
 
-// Provides a slice of DockerContainers to use for individual FetchContainerStats calls.
-func (dc *DockerClient) Containers() []DockerContainer {
+// Provides a slice of Container to use for individual FetchContainerStats calls.
+func (dc *Client) Containers() []Container {
 	dc.containersLock.Lock()
 	defer dc.containersLock.Unlock()
-	containers := make([]DockerContainer, 0, len(dc.containers))
+	containers := make([]Container, 0, len(dc.containers))
 	for _, container := range dc.containers {
 		containers = append(containers, container)
 	}
@@ -96,7 +96,7 @@ func (dc *DockerClient) Containers() []DockerContainer {
 // LoadContainerList will load the initial running container maps for
 // inspection and establishing which containers warrant stat gathering calls
 // by the receiver.
-func (dc *DockerClient) LoadContainerList(ctx context.Context) error {
+func (dc *Client) LoadContainerList(ctx context.Context) error {
 	// Build initial container maps before starting loop
 	filters := dfilters.NewArgs()
 	filters.Add("status", "running")
@@ -135,9 +135,9 @@ func (dc *DockerClient) LoadContainerList(ctx context.Context) error {
 
 // FetchContainerStatsAsJSON will query the desired container stats
 // and return them as StatsJSON
-func (dc *DockerClient) FetchContainerStatsAsJSON(
+func (dc *Client) FetchContainerStatsAsJSON(
 	ctx context.Context,
-	container DockerContainer,
+	container Container,
 ) (*dtypes.StatsJSON, error) {
 	containerStats, err := dc.FetchContainerStats(ctx, container)
 	if err != nil {
@@ -154,9 +154,9 @@ func (dc *DockerClient) FetchContainerStatsAsJSON(
 
 // FetchContainerStats will query the desired container stats
 // and return them as ContainerStats
-func (dc *DockerClient) FetchContainerStats(
+func (dc *Client) FetchContainerStats(
 	ctx context.Context,
-	container DockerContainer,
+	container Container,
 ) (dtypes.ContainerStats, error) {
 	dc.logger.Debug("Fetching container stats.", zap.String("id", container.ID))
 	statsCtx, cancel := context.WithTimeout(ctx, dc.config.Timeout)
@@ -181,9 +181,9 @@ func (dc *DockerClient) FetchContainerStats(
 	return containerStats, err
 }
 
-func (dc *DockerClient) toStatsJSON(
+func (dc *Client) toStatsJSON(
 	containerStats dtypes.ContainerStats,
-	container *DockerContainer,
+	container *Container,
 ) (*dtypes.StatsJSON, error) {
 	var statsJSON dtypes.StatsJSON
 	err := json.NewDecoder(containerStats.Body).Decode(&statsJSON)
@@ -204,7 +204,7 @@ func (dc *DockerClient) toStatsJSON(
 	return &statsJSON, nil
 }
 
-func (dc *DockerClient) ContainerEventLoop(ctx context.Context) {
+func (dc *Client) ContainerEventLoop(ctx context.Context) {
 	filters := dfilters.NewArgs([]dfilters.KeyValuePair{
 		{Key: "type", Value: "container"},
 		{Key: "event", Value: "destroy"},
@@ -272,7 +272,7 @@ EVENT_LOOP:
 
 // Queries inspect api and returns *ContainerJSON and true when container should be queried for stats,
 // nil and false otherwise.
-func (dc *DockerClient) inspectedContainerIsOfInterest(ctx context.Context, cid string) (*dtypes.ContainerJSON, bool) {
+func (dc *Client) inspectedContainerIsOfInterest(ctx context.Context, cid string) (*dtypes.ContainerJSON, bool) {
 	inspectCtx, cancel := context.WithTimeout(ctx, dc.config.Timeout)
 	container, err := dc.client.ContainerInspect(inspectCtx, cid)
 	defer cancel()
@@ -288,7 +288,7 @@ func (dc *DockerClient) inspectedContainerIsOfInterest(ctx context.Context, cid 
 	return nil, false
 }
 
-func (dc *DockerClient) persistContainer(containerJSON *dtypes.ContainerJSON) {
+func (dc *Client) persistContainer(containerJSON *dtypes.ContainerJSON) {
 	if containerJSON == nil {
 		return
 	}
@@ -303,20 +303,20 @@ func (dc *DockerClient) persistContainer(containerJSON *dtypes.ContainerJSON) {
 	dc.logger.Debug("Monitoring Docker container", zap.String("id", cid))
 	dc.containersLock.Lock()
 	defer dc.containersLock.Unlock()
-	dc.containers[cid] = DockerContainer{
+	dc.containers[cid] = Container{
 		ContainerJSON: containerJSON,
 		EnvMap:        ContainerEnvToMap(containerJSON.Config.Env),
 	}
 }
 
-func (dc *DockerClient) removeContainer(cid string) {
+func (dc *Client) removeContainer(cid string) {
 	dc.containersLock.Lock()
 	defer dc.containersLock.Unlock()
 	delete(dc.containers, cid)
 	dc.logger.Debug("Removed container from stores.", zap.String("id", cid))
 }
 
-func (dc *DockerClient) shouldBeExcluded(image string) bool {
+func (dc *Client) shouldBeExcluded(image string) bool {
 	return dc.excludedImageMatcher != nil && dc.excludedImageMatcher.Matches(image)
 }
 

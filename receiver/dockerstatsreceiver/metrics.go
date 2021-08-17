@@ -33,7 +33,7 @@ const (
 func ContainerStatsToMetrics(
 	now pdata.Timestamp,
 	containerStats *dtypes.StatsJSON,
-	container *docker.DockerContainer,
+	container docker.Container,
 	config *Config,
 ) (pdata.Metrics, error) {
 	md := pdata.NewMetrics()

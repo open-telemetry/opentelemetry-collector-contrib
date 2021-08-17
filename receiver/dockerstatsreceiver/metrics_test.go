@@ -246,7 +246,7 @@ func statsJSON(t *testing.T) *dtypes.StatsJSON {
 	return &stats
 }
 
-func containerJSON(t *testing.T) *docker.DockerContainer {
+func containerJSON(t *testing.T) docker.Container {
 	containerRaw, err := ioutil.ReadFile(path.Join(".", "testdata", "container.json"))
 	if err != nil {
 		t.Fatal(err)
@@ -257,7 +257,7 @@ func containerJSON(t *testing.T) *docker.DockerContainer {
 	if err != nil {
 		t.Fatal(err)
 	}
-	return &docker.DockerContainer{
+	return docker.Container{
 		ContainerJSON: &container,
 		EnvMap:        docker.ContainerEnvToMap(container.Config.Env),
 	}

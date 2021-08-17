@@ -26,7 +26,7 @@ import (
 	"go.opentelemetry.io/collector/obsreport"
 	"go.uber.org/zap"
 
-	docker "github.com/open-telemetry/opentelemetry-collector-contrib/internal/docker"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/docker"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/interval"
 )
 
@@ -37,7 +37,7 @@ type Receiver struct {
 	config            *Config
 	logger            *zap.Logger
 	nextConsumer      consumer.Metrics
-	client            *docker.DockerClient
+	client            *docker.Client
 	runner            *interval.Runner
 	runnerCtx         context.Context
 	runnerCancel      context.CancelFunc
@@ -131,19 +131,19 @@ func (r *Receiver) Run() error {
 	wg := &sync.WaitGroup{}
 	wg.Add(len(containers))
 	for _, container := range containers {
-		go func(dc docker.DockerContainer) {
-			statsJSON, err := r.client.FetchContainerStatsAsJSON(ctx, dc)
+		go func(c docker.Container) {
+			statsJSON, err := r.client.FetchContainerStatsAsJSON(ctx, c)
 			if err != nil {
 				results <- result{nil, err}
 				wg.Done()
 				return
 			}
 
-			md, err := ContainerStatsToMetrics(statsJSON, &container, r.config)
+			md, err := ContainerStatsToMetrics(statsJSON, c, r.config)
 			if err != nil {
 				r.logger.Error(
 					"Could not convert docker containerStats for container id",
-					zap.String("id", container.ID),
+					zap.String("id", c.ID),
 					zap.Error(err),
 				)
 			}
