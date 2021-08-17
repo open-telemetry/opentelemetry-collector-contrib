@@ -48,8 +48,6 @@ func newMetricsExporter(ctx context.Context, params component.ExporterCreateSett
 		sweepInterval = cfg.Metrics.DeltaTTL / 2
 	}
 	prevPts := newTTLCache(sweepInterval, cfg.Metrics.DeltaTTL)
-	prevPts.Start()
-
 	return &metricsExporter{params, cfg, ctx, client, prevPts}
 }
 

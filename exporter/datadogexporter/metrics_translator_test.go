@@ -19,6 +19,7 @@ import (
 	"testing"
 	"time"
 
+	gocache "github.com/patrickmn/go-cache"
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/model/pdata"
@@ -173,9 +174,8 @@ func TestMapDoubleMetrics(t *testing.T) {
 }
 
 func newTestCache() *ttlCache {
-	// don't start the sweeping goroutine
-	// since it is not needed
-	return newTTLCache(1800, 3600)
+	cache := newTTLCache(1800, 3600)
+	return cache
 }
 
 func seconds(i int) pdata.Timestamp {
@@ -543,8 +543,8 @@ func TestMapSummaryMetrics(t *testing.T) {
 
 	newPrevPts := func(tags []string) *ttlCache {
 		prevPts := newTestCache()
-		prevPts.ttlMap.Put(metricDimensionsToMapKey("summary.example.count", tags), numberCounter{0, 1})
-		prevPts.ttlMap.Put(metricDimensionsToMapKey("summary.example.sum", tags), numberCounter{0, 1})
+		prevPts.cache.Set(metricDimensionsToMapKey("summary.example.count", tags), numberCounter{0, 1}, gocache.NoExpiration)
+		prevPts.cache.Set(metricDimensionsToMapKey("summary.example.sum", tags), numberCounter{0, 1}, gocache.NoExpiration)
 		return prevPts
 	}
 

@@ -21,6 +21,7 @@ import (
 	"strings"
 	"time"
 
+	gocache "github.com/patrickmn/go-cache"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/model/pdata"
 	"go.uber.org/zap"
@@ -30,11 +31,10 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/attributes"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metrics"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/ttlmap"
 )
 
 type ttlCache struct {
-	ttlMap *ttlmap.TTLMap
+	cache *gocache.Cache
 }
 
 // numberCounter keeps the value of a number
@@ -45,17 +45,14 @@ type numberCounter struct {
 }
 
 func newTTLCache(sweepInterval int64, deltaTTL int64) *ttlCache {
-	return &ttlCache{ttlmap.New(sweepInterval, deltaTTL)}
-}
-
-func (t *ttlCache) Start() {
-	t.ttlMap.Start()
+	cache := gocache.New(time.Duration(deltaTTL)*time.Second, time.Duration(sweepInterval)*time.Second)
+	return &ttlCache{cache}
 }
 
 // putAndGetDiff submits a new value for a given key and returns the difference with the
 // last submitted value (ordered by timestamp). The diff value is only valid if `ok` is true.
 func (t *ttlCache) putAndGetDiff(key string, ts uint64, val float64) (dx float64, ok bool) {
-	if c := t.ttlMap.Get(key); c != nil {
+	if c, found := t.cache.Get(key); found {
 		cnt := c.(numberCounter)
 		if cnt.ts > ts {
 			// We were given a point older than the one in memory so we drop it
@@ -68,7 +65,7 @@ func (t *ttlCache) putAndGetDiff(key string, ts uint64, val float64) (dx float64
 		ok = dx >= 0
 	}
 
-	t.ttlMap.Put(key, numberCounter{ts, val})
+	t.cache.Set(key, numberCounter{ts, val}, gocache.DefaultExpiration)
 	return
 }
 
