@@ -81,7 +81,7 @@ func Test_mapLogRecordToSplunkEvent(t *testing.T) {
 				}
 			},
 			wantSplunkEvents: []*splunk.Event{
-				commonLogSplunkEvent("mylog", ts, map[string]interface{}{"custom": "custom", "com.splunk.source": "myapp", "host.name": "myhost", "otlp.log.name": "my very own name"},
+				commonLogSplunkEvent("mylog", ts, map[string]interface{}{"custom": "custom", "com.splunk.source": "myapp", "host.name": "myhost", "otel.log.name": "my very own name"},
 					"myhost", "myapp", "myapp-type"),
 			},
 		},
@@ -347,6 +347,32 @@ func Test_mapLogRecordToSplunkEvent(t *testing.T) {
 					event,
 				}
 			}(),
+		},
+		{
+			name: "with severity",
+			logRecordFn: func() pdata.LogRecord {
+				logRecord := pdata.NewLogRecord()
+				logRecord.Body().SetStringVal("mylog")
+				logRecord.Attributes().InsertString(splunk.SourceLabel, "myapp")
+				logRecord.Attributes().InsertString(splunk.SourcetypeLabel, "myapp-type")
+				logRecord.Attributes().InsertString(conventions.AttributeHostName, "myhost")
+				logRecord.Attributes().InsertString("custom", "custom")
+				logRecord.SetSeverityText("DEBUG")
+				logRecord.SetSeverityNumber(pdata.SeverityNumberDEBUG)
+				logRecord.SetTimestamp(ts)
+				return logRecord
+			},
+			logResourceFn: pdata.NewResource,
+			configDataFn: func() *Config {
+				return &Config{
+					Source:     "source",
+					SourceType: "sourcetype",
+				}
+			},
+			wantSplunkEvents: []*splunk.Event{
+				commonLogSplunkEvent("mylog", ts, map[string]interface{}{"custom": "custom", "com.splunk.source": "myapp", "host.name": "myhost", "otel.log.severity.number": pdata.SeverityNumberDEBUG, "otel.log.severity.text": "DEBUG"},
+					"myhost", "myapp", "myapp-type"),
+			},
 		},
 	}
 	for _, tt := range tests {
