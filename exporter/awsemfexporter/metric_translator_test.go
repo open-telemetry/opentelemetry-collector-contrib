@@ -2261,7 +2261,7 @@ type testMetric struct {
 	metricNames          []string
 	metricValues         [][]float64
 	resourceAttributeMap map[string]pdata.AttributeValue
-	labelMap             map[string]string
+	attributeMap         map[string]pdata.AttributeValue
 }
 
 type logGroupStreamTest struct {
@@ -2321,9 +2321,9 @@ var (
 			inputMetrics: generateTestMetrics(testMetric{
 				metricNames:  []string{"metric_1", "metric_2"},
 				metricValues: [][]float64{{100}, {4}},
-				labelMap: map[string]string{
-					"ClusterName": "test-cluster",
-					"PodName":     "test-pod",
+				attributeMap: map[string]pdata.AttributeValue{
+					"ClusterName": pdata.NewAttributeValueString("test-cluster"),
+					"PodName":     pdata.NewAttributeValueString("test-pod"),
 				},
 			}),
 			inLogGroupName:   "test-log-group-{ClusterName}",
@@ -2336,9 +2336,9 @@ var (
 			inputMetrics: generateTestMetrics(testMetric{
 				metricNames:  []string{"metric_1", "metric_2"},
 				metricValues: [][]float64{{100}, {4}},
-				labelMap: map[string]string{
-					"ClusterName": "test-cluster",
-					"PodName":     "test-pod",
+				attributeMap: map[string]pdata.AttributeValue{
+					"ClusterName": pdata.NewAttributeValueString("test-cluster"),
+					"PodName":     pdata.NewAttributeValueString("test-pod"),
 				},
 			}),
 			inLogGroupName:   "test-log-group",
@@ -2354,8 +2354,8 @@ var (
 				resourceAttributeMap: map[string]pdata.AttributeValue{
 					"ClusterName": pdata.NewAttributeValueString("test-cluster"),
 				},
-				labelMap: map[string]string{
-					"PodName": "test-pod",
+				attributeMap: map[string]pdata.AttributeValue{
+					"PodName": pdata.NewAttributeValueString("test-pod"),
 				},
 			}),
 			inLogGroupName:   "test-log-group-{ClusterName}",
@@ -2379,8 +2379,8 @@ var (
 			inputMetrics: generateTestMetrics(testMetric{
 				metricNames:  []string{"metric_1", "metric_2"},
 				metricValues: [][]float64{{100}, {4}},
-				labelMap: map[string]string{
-					"PodName": "test-pod",
+				attributeMap: map[string]pdata.AttributeValue{
+					"PodName": pdata.NewAttributeValueString("test-pod"),
 				},
 			}),
 			inLogGroupName:   "test-log-group-{ClusterName}",
@@ -2437,7 +2437,7 @@ func generateTestMetrics(tm testMetric) pdata.Metrics {
 			dp := m.Gauge().DataPoints().AppendEmpty()
 			dp.SetTimestamp(pdata.TimestampFromTime(now.Add(10 * time.Second)))
 			dp.SetDoubleVal(value)
-			dp.LabelsMap().InitFromMap(tm.labelMap)
+			dp.Attributes().InitFromMap(tm.attributeMap)
 		}
 	}
 	return md
