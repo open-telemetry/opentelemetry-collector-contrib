@@ -21,6 +21,7 @@ import (
 	"go.opentelemetry.io/collector/model/pdata"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/k8s/k8sutil"
 	aws "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/metrics"
 )
 
@@ -38,7 +39,7 @@ type metricInfo struct {
 }
 
 // addToGroupedMetric processes OT metrics and adds them into GroupedMetric buckets
-func addToGroupedMetric(pmd *pdata.Metric, groupedMetrics map[interface{}]*groupedMetric, metadata cWMetricMetadata, patternReplaceSucceeded bool, logger *zap.Logger, descriptor map[string]MetricDescriptor, config *Config) error {
+func addToGroupedMetric(pmd *pdata.Metric, groupedMetrics map[interface{}]*groupedMetric, metadata cWMetricMetadata, patternReplaceSucceeded bool, logger *zap.Logger, descriptor map[string]MetricDescriptor, config *Config, podServiceMap map[string][]string) error {
 	if pmd == nil {
 		return nil
 	}
@@ -56,10 +57,16 @@ func addToGroupedMetric(pmd *pdata.Metric, groupedMetrics map[interface{}]*group
 		}
 
 		labels := dp.labels
+		if config.EKSFargateContainerInsightsEnabled {
+			if metricType, ok := labels["Type"]; ok {
+				if metricType == "Pod" || metricType == "Container" {
+					addKubernetesWrapper(labels)
+				}
+			}
 
-		if metricType, ok := labels["Type"]; ok {
-			if (metricType == "Pod" || metricType == "Container") && config.EKSFargateContainerInsightsEnabled {
-				addKubernetesWrapper(labels)
+			podKey := k8sutil.CreatePodKey(labels["Namespace"], labels["PodName"])
+			if services, ok := podServiceMap[podKey]; ok {
+				labels["Service"] = services[0]
 			}
 		}
 

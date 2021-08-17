@@ -116,3 +116,8 @@ func (k *K8sAPIServer) GetMetrics() []pdata.Metrics {
 
 	return result
 }
+
+// GetPodKeyToServiceNames returns the mapping between pod key and the corresponding service names
+func (k *K8sAPIServer) GetPodKeyToServiceNames() map[string][]string {
+	return k.epClient.PodKeyToServiceNames()
+}

@@ -44,15 +44,17 @@ const (
 
 type metricsProvider interface {
 	GetMetrics() []pdata.Metrics
+	GetPodKeyToServiceNames() map[string][]string
 }
 
 type emfExporter struct {
 	//Each (log group, log stream) keeps a separate pusher because of each (log group, log stream) requires separate stream token.
-	groupStreamToPusherMap map[string]map[string]pusher
-	svcStructuredLog       *cloudWatchLogClient
-	config                 config.Exporter
-	logger                 *zap.Logger
-	k8sapiserver           metricsProvider
+	groupStreamToPusherMap  map[string]map[string]pusher
+	svcStructuredLog        *cloudWatchLogClient
+	config                  config.Exporter
+	logger                  *zap.Logger
+	k8sapiserver            metricsProvider
+	podKeyToServiceNamesMap map[string][]string
 
 	metricTranslator metricTranslator
 
@@ -125,6 +127,7 @@ func (emf *emfExporter) pushMetricsData(_ context.Context, metricData pdata.Metr
 
 	if emf.config.(*Config).EKSFargateContainerInsightsEnabled {
 		mds = append(mds, emf.k8sapiserver.GetMetrics()...)
+		emf.podKeyToServiceNamesMap = emf.k8sapiserver.GetPodKeyToServiceNames()
 	}
 
 	for _, md := range mds {
@@ -149,7 +152,7 @@ func (emf *emfExporter) pushMetricsData(_ context.Context, metricData pdata.Metr
 
 		for i := 0; i < rms.Len(); i++ {
 			rm := rms.At(i)
-			err := emf.metricTranslator.translateOTelToGroupedMetric(&rm, groupedMetrics, expConfig)
+			err := emf.metricTranslator.translateOTelToGroupedMetric(&rm, groupedMetrics, expConfig, emf.podKeyToServiceNamesMap)
 			if err != nil {
 				return err
 			}
@@ -262,6 +265,7 @@ func (emf *emfExporter) Start(ctx context.Context, host component.Host) error {
 		return err
 	}
 	emf.k8sapiserver = apiServer
+	emf.podKeyToServiceNamesMap = emf.k8sapiserver.GetPodKeyToServiceNames()
 	return nil
 }
 
