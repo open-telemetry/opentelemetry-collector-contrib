@@ -497,7 +497,7 @@ func fillGoStacktrace(stacktrace string, exceptions []awsxray.Exception) []awsxr
 	r := textproto.NewReader(bufio.NewReader(strings.NewReader(stacktrace)))
 
 	// Skip first line containing top level exception / message
-	_, _ =  r.ReadLine()
+	_, _ = r.ReadLine()
 	exception := &exceptions[0]
 	line, err := r.ReadLine()
 	if err != nil {
