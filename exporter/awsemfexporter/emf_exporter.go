@@ -125,7 +125,7 @@ func (emf *emfExporter) pushMetricsData(_ context.Context, md pdata.Metrics) err
 			})
 		}
 	}
-	emf.logger.Info("Start processing resource metrics", zap.Any("labels", labels))
+	emf.logger.Info("Start processing resource metrics", zap.Any("attributes", labels))
 
 	groupedMetrics := make(map[interface{}]*groupedMetric)
 	expConfig := emf.config.(*Config)
@@ -177,7 +177,7 @@ func (emf *emfExporter) pushMetricsData(_ context.Context, md pdata.Metrics) err
 		}
 	}
 
-	emf.logger.Info("Finish processing resource metrics", zap.Any("labels", labels))
+	emf.logger.Info("Finish processing resource metrics", zap.Any("attributes", labels))
 
 	return nil
 }

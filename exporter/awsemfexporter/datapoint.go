@@ -43,7 +43,7 @@ func calculateSummaryDelta(prev *aws.MetricValue, val interface{}, timestampMs t
 // dataPoint represents a processed metric data point
 type dataPoint struct {
 	value       interface{}
-	labels      map[string]string
+	attributes  map[string]string
 	timestampMs int64
 }
 
@@ -110,7 +110,16 @@ type summaryMetricEntry struct {
 // At retrieves the NumberDataPoint at the given index and performs rate/delta calculation if necessary.
 func (dps numberDataPointSlice) At(i int) (dataPoint, bool) {
 	metric := dps.NumberDataPointSlice.At(i)
-	labels := createLabels(metric.LabelsMap(), dps.instrumentationLibraryName)
+	// To work backward compatible on the old OTel SDKs
+	// will get metric dimensions from Attributes first
+	// then get the dimension from LabelsMap if Attributes is not populated
+	attributes := make(map[string]string)
+	if metric.Attributes().Len() > 0 {
+		attributes = createAttributes(metric.Attributes(), dps.instrumentationLibraryName)
+	} else {
+		attributes = createLabels(metric.LabelsMap(), dps.instrumentationLibraryName)
+	}
+
 	timestampMs := unixNanoToMilliseconds(metric.Timestamp())
 
 	var metricVal float64
@@ -124,7 +133,7 @@ func (dps numberDataPointSlice) At(i int) (dataPoint, bool) {
 	retained := true
 	if dps.adjustToDelta {
 		var deltaVal interface{}
-		deltaVal, retained = deltaMetricCalculator.Calculate(dps.metricName, mergeLabels(dps.deltaMetricMetadata, labels),
+		deltaVal, retained = deltaMetricCalculator.Calculate(dps.metricName, mergeLabels(dps.deltaMetricMetadata, attributes),
 			metricVal, metric.Timestamp().AsTime())
 		if !retained {
 			return dataPoint{}, retained
@@ -138,7 +147,7 @@ func (dps numberDataPointSlice) At(i int) (dataPoint, bool) {
 
 	return dataPoint{
 		value:       metricVal,
-		labels:      labels,
+		attributes:  attributes,
 		timestampMs: timestampMs,
 	}, retained
 }
@@ -146,7 +155,16 @@ func (dps numberDataPointSlice) At(i int) (dataPoint, bool) {
 // At retrieves the HistogramDataPoint at the given index.
 func (dps histogramDataPointSlice) At(i int) (dataPoint, bool) {
 	metric := dps.HistogramDataPointSlice.At(i)
-	labels := createLabels(metric.LabelsMap(), dps.instrumentationLibraryName)
+	// To work backward compatible on the old OTel SDKs
+	// will get metric dimensions from Attributes first
+	// then get the dimension from LabelsMap if Attributes is not populated
+	attributes := make(map[string]string)
+	if metric.Attributes().Len() > 0 {
+		attributes = createAttributes(metric.Attributes(), dps.instrumentationLibraryName)
+	} else {
+		attributes = createLabels(metric.LabelsMap(), dps.instrumentationLibraryName)
+	}
+
 	timestamp := unixNanoToMilliseconds(metric.Timestamp())
 
 	return dataPoint{
@@ -154,7 +172,7 @@ func (dps histogramDataPointSlice) At(i int) (dataPoint, bool) {
 			Count: metric.Count(),
 			Sum:   metric.Sum(),
 		},
-		labels:      labels,
+		attributes:  attributes,
 		timestampMs: timestamp,
 	}, true
 }
@@ -162,7 +180,16 @@ func (dps histogramDataPointSlice) At(i int) (dataPoint, bool) {
 // At retrieves the SummaryDataPoint at the given index.
 func (dps summaryDataPointSlice) At(i int) (dataPoint, bool) {
 	metric := dps.SummaryDataPointSlice.At(i)
-	labels := createLabels(metric.LabelsMap(), dps.instrumentationLibraryName)
+	// To work backward compatible on the old OTel SDKs
+	// will get metric dimensions from Attributes first
+	// then get the dimension from LabelsMap if Attributes is not populated
+	attributes := make(map[string]string)
+	if metric.Attributes().Len() > 0 {
+		attributes = createAttributes(metric.Attributes(), dps.instrumentationLibraryName)
+	} else {
+		attributes = createLabels(metric.LabelsMap(), dps.instrumentationLibraryName)
+	}
+
 	timestampMs := unixNanoToMilliseconds(metric.Timestamp())
 
 	sum := metric.Sum()
@@ -170,7 +197,7 @@ func (dps summaryDataPointSlice) At(i int) (dataPoint, bool) {
 	retained := true
 	if dps.adjustToDelta {
 		var delta interface{}
-		delta, retained = summaryMetricCalculator.Calculate(dps.metricName, mergeLabels(dps.deltaMetricMetadata, labels),
+		delta, retained = summaryMetricCalculator.Calculate(dps.metricName, mergeLabels(dps.deltaMetricMetadata, attributes),
 			summaryMetricEntry{metric.Sum(), metric.Count()}, metric.Timestamp().AsTime())
 		if !retained {
 			return dataPoint{}, retained
@@ -191,12 +218,12 @@ func (dps summaryDataPointSlice) At(i int) (dataPoint, bool) {
 
 	return dataPoint{
 		value:       metricVal,
-		labels:      labels,
+		attributes:  attributes,
 		timestampMs: timestampMs,
 	}, retained
 }
 
-// createLabels converts OTel StringMap labels to a map
+// createLabels converts OTel StringMap attributes to a map
 // and optionally adds in the OTel instrumentation library name
 func createLabels(labelsMap pdata.StringMap, instrLibName string) map[string]string {
 	labels := make(map[string]string, labelsMap.Len()+1)
@@ -211,6 +238,23 @@ func createLabels(labelsMap pdata.StringMap, instrLibName string) map[string]str
 	}
 
 	return labels
+}
+
+// createAttributes converts OTel metric attributes to a map
+// and optionally adds in the OTel instrumentation library name
+func createAttributes(attributeMap pdata.AttributeMap, instrLibName string) map[string]string {
+	attributes := make(map[string]string, attributeMap.Len()+1)
+	attributeMap.Range(func(k string, v pdata.AttributeValue) bool {
+		attributes[k] = v.StringVal()
+		return true
+	})
+
+	// Add OTel instrumentation lib name as an additional attribute if it is defined
+	if instrLibName != noInstrumentationLibraryName {
+		attributes[oTellibDimensionKey] = instrLibName
+	}
+
+	return attributes
 }
 
 // getDataPoints retrieves data points from OT Metric.

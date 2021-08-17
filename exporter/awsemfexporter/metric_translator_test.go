@@ -2438,6 +2438,9 @@ func generateTestMetrics(tm testMetric) pdata.Metrics {
 			dp.SetTimestamp(pdata.TimestampFromTime(now.Add(10 * time.Second)))
 			dp.SetDoubleVal(value)
 			dp.LabelsMap().InitFromMap(tm.labelMap)
+			for k, v := range tm.labelMap {
+				dp.Attributes().InsertString(k, v)
+			}
 		}
 	}
 	return md
