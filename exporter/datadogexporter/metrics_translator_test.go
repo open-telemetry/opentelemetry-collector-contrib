@@ -30,7 +30,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/config"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metrics"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/ttlmap"
 )
 
 func TestMetricValue(t *testing.T) {
@@ -173,10 +172,10 @@ func TestMapDoubleMetrics(t *testing.T) {
 	)
 }
 
-func newTTLMap() *ttlmap.TTLMap {
+func newTestCache() *ttlCache {
 	// don't start the sweeping goroutine
 	// since it is not needed
-	return ttlmap.New(1800, 3600)
+	return newTTLCache(1800, 3600)
 }
 
 func seconds(i int) pdata.Timestamp {
@@ -184,17 +183,17 @@ func seconds(i int) pdata.Timestamp {
 }
 
 func TestPutAndGetDiff(t *testing.T) {
-	prevPts := newTTLMap()
-	_, ok := putAndGetDiff(prevPts, "test", 1, 5)
+	prevPts := newTestCache()
+	_, ok := prevPts.putAndGetDiff("test", 1, 5)
 	// no diff since it is the first point
 	assert.False(t, ok)
-	_, ok = putAndGetDiff(prevPts, "test", 0, 0)
+	_, ok = prevPts.putAndGetDiff("test", 0, 0)
 	// no diff since ts is lower than the stored point
 	assert.False(t, ok)
-	_, ok = putAndGetDiff(prevPts, "test", 2, 2)
+	_, ok = prevPts.putAndGetDiff("test", 2, 2)
 	// no diff since the value is lower than the stored value
 	assert.False(t, ok)
-	dx, ok := putAndGetDiff(prevPts, "test", 3, 4)
+	dx, ok := prevPts.putAndGetDiff("test", 3, 4)
 	// diff with the most recent point (2,2)
 	assert.True(t, ok)
 	assert.Equal(t, 2.0, dx)
@@ -225,7 +224,7 @@ func TestMapIntMonotonicMetrics(t *testing.T) {
 		expected[i] = metrics.NewCount(metricName, uint64(seconds(i+1)), float64(val), []string{})
 	}
 
-	prevPts := newTTLMap()
+	prevPts := newTestCache()
 	output := mapNumberMonotonicMetrics(metricName, prevPts, slice, []string{})
 
 	assert.ElementsMatch(t, output, expected)
@@ -263,7 +262,7 @@ func TestMapIntMonotonicDifferentDimensions(t *testing.T) {
 	point.SetTimestamp(seconds(1))
 	point.Attributes().InsertString("key1", "valB")
 
-	prevPts := newTTLMap()
+	prevPts := newTestCache()
 
 	assert.ElementsMatch(t,
 		mapNumberMonotonicMetrics(metricName, prevPts, slice, []string{}),
@@ -287,7 +286,7 @@ func TestMapIntMonotonicWithReboot(t *testing.T) {
 		point.SetIntVal(val)
 	}
 
-	prevPts := newTTLMap()
+	prevPts := newTestCache()
 	assert.ElementsMatch(t,
 		mapNumberMonotonicMetrics(metricName, prevPts, slice, []string{}),
 		[]datadog.Metric{
@@ -311,7 +310,7 @@ func TestMapIntMonotonicOutOfOrder(t *testing.T) {
 		point.SetIntVal(val)
 	}
 
-	prevPts := newTTLMap()
+	prevPts := newTestCache()
 	assert.ElementsMatch(t,
 		mapNumberMonotonicMetrics(metricName, prevPts, slice, []string{}),
 		[]datadog.Metric{
@@ -345,7 +344,7 @@ func TestMapDoubleMonotonicMetrics(t *testing.T) {
 		expected[i] = metrics.NewCount(metricName, uint64(seconds(i+1)), val, []string{})
 	}
 
-	prevPts := newTTLMap()
+	prevPts := newTestCache()
 	output := mapNumberMonotonicMetrics(metricName, prevPts, slice, []string{})
 
 	assert.ElementsMatch(t, expected, output)
@@ -383,7 +382,7 @@ func TestMapDoubleMonotonicDifferentDimensions(t *testing.T) {
 	point.SetTimestamp(seconds(1))
 	point.Attributes().InsertString("key1", "valB")
 
-	prevPts := newTTLMap()
+	prevPts := newTestCache()
 
 	assert.ElementsMatch(t,
 		mapNumberMonotonicMetrics(metricName, prevPts, slice, []string{}),
@@ -407,7 +406,7 @@ func TestMapDoubleMonotonicWithReboot(t *testing.T) {
 		point.SetDoubleVal(val)
 	}
 
-	prevPts := newTTLMap()
+	prevPts := newTestCache()
 	assert.ElementsMatch(t,
 		mapNumberMonotonicMetrics(metricName, prevPts, slice, []string{}),
 		[]datadog.Metric{
@@ -431,7 +430,7 @@ func TestMapDoubleMonotonicOutOfOrder(t *testing.T) {
 		point.SetDoubleVal(val)
 	}
 
-	prevPts := newTTLMap()
+	prevPts := newTestCache()
 	assert.ElementsMatch(t,
 		mapNumberMonotonicMetrics(metricName, prevPts, slice, []string{}),
 		[]datadog.Metric{
@@ -542,10 +541,10 @@ func TestMapSummaryMetrics(t *testing.T) {
 	ts := pdata.TimestampFromTime(time.Now())
 	slice := exampleSummaryDataPointSlice(ts, 10_001, 101)
 
-	newPrevPts := func(tags []string) *ttlmap.TTLMap {
-		prevPts := newTTLMap()
-		prevPts.Put(metricDimensionsToMapKey("summary.example.count", tags), numberCounter{0, 1})
-		prevPts.Put(metricDimensionsToMapKey("summary.example.sum", tags), numberCounter{0, 1})
+	newPrevPts := func(tags []string) *ttlCache {
+		prevPts := newTestCache()
+		prevPts.ttlMap.Put(metricDimensionsToMapKey("summary.example.count", tags), numberCounter{0, 1})
+		prevPts.ttlMap.Put(metricDimensionsToMapKey("summary.example.sum", tags), numberCounter{0, 1})
 		return prevPts
 	}
 
@@ -611,7 +610,7 @@ func TestRunningMetrics(t *testing.T) {
 	rms.AppendEmpty()
 
 	cfg := config.MetricsConfig{}
-	prevPts := newTTLMap()
+	prevPts := newTestCache()
 
 	buildInfo := component.BuildInfo{
 		Version: "1.0",
@@ -825,7 +824,7 @@ func TestMapMetrics(t *testing.T) {
 
 	core, observed := observer.New(zapcore.DebugLevel)
 	testLogger := zap.New(core)
-	series, dropped := mapMetrics(testLogger, cfg, newTTLMap(), "", md, buildInfo)
+	series, dropped := mapMetrics(testLogger, cfg, newTestCache(), "", md, buildInfo)
 
 	assert.Equal(t, dropped, 0)
 	filtered := removeRunningMetrics(series)

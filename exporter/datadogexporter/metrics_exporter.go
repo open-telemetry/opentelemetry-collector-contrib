@@ -26,7 +26,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metrics"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/utils"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/ttlmap"
 )
 
 type metricsExporter struct {
@@ -34,7 +33,7 @@ type metricsExporter struct {
 	cfg     *config.Config
 	ctx     context.Context
 	client  *datadog.Client
-	prevPts *ttlmap.TTLMap
+	prevPts *ttlCache
 }
 
 func newMetricsExporter(ctx context.Context, params component.ExporterCreateSettings, cfg *config.Config) *metricsExporter {
@@ -48,7 +47,7 @@ func newMetricsExporter(ctx context.Context, params component.ExporterCreateSett
 	if cfg.Metrics.DeltaTTL > 1 {
 		sweepInterval = cfg.Metrics.DeltaTTL / 2
 	}
-	prevPts := ttlmap.New(sweepInterval, cfg.Metrics.DeltaTTL)
+	prevPts := newTTLCache(sweepInterval, cfg.Metrics.DeltaTTL)
 	prevPts.Start()
 
 	return &metricsExporter{params, cfg, ctx, client, prevPts}
