@@ -426,60 +426,95 @@ func TestMapDoubleMonotonicOutOfOrder(t *testing.T) {
 	)
 }
 
-func TestMapHistogramMetrics(t *testing.T) {
+func TestMapDeltaHistogramMetrics(t *testing.T) {
 	ts := pdata.NewTimestampFromTime(time.Now())
 	slice := pdata.NewHistogramDataPointSlice()
 	point := slice.AppendEmpty()
 	point.SetCount(20)
 	point.SetSum(math.Pi)
 	point.SetBucketCounts([]uint64{2, 18})
+	point.SetExplicitBounds([]float64{0})
 	point.SetTimestamp(ts)
 
 	noBuckets := []datadog.Metric{
-		metrics.NewGauge("doubleHist.test.count", uint64(ts), 20, []string{}),
-		metrics.NewGauge("doubleHist.test.sum", uint64(ts), math.Pi, []string{}),
+		metrics.NewCount("doubleHist.test.count", uint64(ts), 20, []string{}),
+		metrics.NewCount("doubleHist.test.sum", uint64(ts), math.Pi, []string{}),
 	}
 
 	buckets := []datadog.Metric{
-		metrics.NewGauge("doubleHist.test.count_per_bucket", uint64(ts), 2, []string{"bucket_idx:0"}),
-		metrics.NewGauge("doubleHist.test.count_per_bucket", uint64(ts), 18, []string{"bucket_idx:1"}),
+		metrics.NewCount("doubleHist.test.bucket", uint64(ts), 2, []string{"lower_bound:-inf", "upper_bound:0"}),
+		metrics.NewCount("doubleHist.test.bucket", uint64(ts), 18, []string{"lower_bound:0", "upper_bound:inf"}),
 	}
 
 	tr := newTranslator(zap.NewNop(), config.MetricsConfig{SendMonotonic: true})
+	delta := true
 
 	tr.cfg.Buckets = false
 	assert.ElementsMatch(t,
-		tr.mapHistogramMetrics("doubleHist.test", slice, []string{}), // No buckets
+		tr.mapHistogramMetrics("doubleHist.test", slice, delta, []string{}), // No buckets
 		noBuckets,
 	)
 
 	tr.cfg.Buckets = true
 	assert.ElementsMatch(t,
-		tr.mapHistogramMetrics("doubleHist.test", slice, []string{}), // buckets
+		tr.mapHistogramMetrics("doubleHist.test", slice, delta, []string{}), // buckets
 		append(noBuckets, buckets...),
 	)
 
 	// With attribute tags
 	noBucketsAttributeTags := []datadog.Metric{
-		metrics.NewGauge("doubleHist.test.count", uint64(ts), 20, []string{"attribute_tag:attribute_value"}),
-		metrics.NewGauge("doubleHist.test.sum", uint64(ts), math.Pi, []string{"attribute_tag:attribute_value"}),
+		metrics.NewCount("doubleHist.test.count", uint64(ts), 20, []string{"attribute_tag:attribute_value"}),
+		metrics.NewCount("doubleHist.test.sum", uint64(ts), math.Pi, []string{"attribute_tag:attribute_value"}),
 	}
 
 	bucketsAttributeTags := []datadog.Metric{
-		metrics.NewGauge("doubleHist.test.count_per_bucket", uint64(ts), 2, []string{"attribute_tag:attribute_value", "bucket_idx:0"}),
-		metrics.NewGauge("doubleHist.test.count_per_bucket", uint64(ts), 18, []string{"attribute_tag:attribute_value", "bucket_idx:1"}),
+		metrics.NewCount("doubleHist.test.bucket", uint64(ts), 2, []string{"attribute_tag:attribute_value", "lower_bound:-inf", "upper_bound:0"}),
+		metrics.NewCount("doubleHist.test.bucket", uint64(ts), 18, []string{"attribute_tag:attribute_value", "lower_bound:0", "upper_bound:inf"}),
 	}
 
 	tr.cfg.Buckets = false
 	assert.ElementsMatch(t,
-		tr.mapHistogramMetrics("doubleHist.test", slice, []string{"attribute_tag:attribute_value"}), // No buckets
+		tr.mapHistogramMetrics("doubleHist.test", slice, delta, []string{"attribute_tag:attribute_value"}), // No buckets
 		noBucketsAttributeTags,
 	)
 
 	tr.cfg.Buckets = true
 	assert.ElementsMatch(t,
-		tr.mapHistogramMetrics("doubleHist.test", slice, []string{"attribute_tag:attribute_value"}), // buckets
+		tr.mapHistogramMetrics("doubleHist.test", slice, delta, []string{"attribute_tag:attribute_value"}), // buckets
 		append(noBucketsAttributeTags, bucketsAttributeTags...),
+	)
+}
+
+func TestMapCumulativeHistogramMetrics(t *testing.T) {
+	slice := pdata.NewHistogramDataPointSlice()
+	point := slice.AppendEmpty()
+	point.SetCount(20)
+	point.SetSum(math.Pi)
+	point.SetBucketCounts([]uint64{2, 18})
+	point.SetExplicitBounds([]float64{0})
+	point.SetTimestamp(seconds(0))
+
+	point = slice.AppendEmpty()
+	point.SetCount(20 + 30)
+	point.SetSum(math.Pi + 20)
+	point.SetBucketCounts([]uint64{2 + 11, 18 + 2})
+	point.SetExplicitBounds([]float64{0})
+	point.SetTimestamp(seconds(2))
+
+	expected := []datadog.Metric{
+		metrics.NewCount("doubleHist.test.count", uint64(seconds(2)), 30, []string{}),
+		metrics.NewCount("doubleHist.test.sum", uint64(seconds(2)), 20, []string{}),
+		metrics.NewCount("doubleHist.test.bucket", uint64(seconds(2)), 11, []string{"lower_bound:-inf", "upper_bound:0"}),
+		metrics.NewCount("doubleHist.test.bucket", uint64(seconds(2)), 2, []string{"lower_bound:0", "upper_bound:inf"}),
+	}
+
+	tr := newTranslator(zap.NewNop(), config.MetricsConfig{SendMonotonic: true})
+	delta := false
+
+	tr.cfg.Buckets = true
+	assert.ElementsMatch(t,
+		tr.mapHistogramMetrics("doubleHist.test", slice, delta, []string{}),
+		expected,
 	)
 }
 
@@ -707,15 +742,23 @@ func createTestMetrics() pdata.Metrics {
 	dpDouble.SetTimestamp(seconds(0))
 	dpDouble.SetDoubleVal(math.E)
 
-	// Histogram
+	// aggregation unspecified histogram
+	met = metricsArray.AppendEmpty()
+	met.SetName("unspecified.histogram")
+	met.SetDataType(pdata.MetricDataTypeHistogram)
+	met.Histogram().SetAggregationTemporality(pdata.AggregationTemporalityUnspecified)
+
+	// Histogram (delta)
 	met = metricsArray.AppendEmpty()
 	met.SetName("double.histogram")
 	met.SetDataType(pdata.MetricDataTypeHistogram)
+	met.Histogram().SetAggregationTemporality(pdata.AggregationTemporalityDelta)
 	dpsDoubleHist := met.Histogram().DataPoints()
 	dpDoubleHist := dpsDoubleHist.AppendEmpty()
 	dpDoubleHist.SetCount(20)
 	dpDoubleHist.SetSum(math.Phi)
 	dpDoubleHist.SetBucketCounts([]uint64{2, 18})
+	dpDoubleHist.SetExplicitBounds([]float64{0})
 	dpDoubleHist.SetTimestamp(seconds(0))
 
 	// Int Sum (cumulative)
@@ -824,8 +867,8 @@ func TestMapMetrics(t *testing.T) {
 		testCount("double.delta.sum", math.E, 0),
 		testCount("int.delta.monotonic.sum", 2, 0),
 		testCount("double.delta.monotonic.sum", math.E, 0),
-		testGauge("double.histogram.sum", math.Phi),
-		testGauge("double.histogram.count", 20),
+		testCount("double.histogram.sum", math.Phi, 0),
+		testCount("double.histogram.count", 20, 0),
 		testCount("summary.sum", 10_000, 2),
 		testCount("summary.count", 100, 2),
 		testGauge("int.cumulative.sum", 4),
@@ -836,8 +879,8 @@ func TestMapMetrics(t *testing.T) {
 
 	// One metric type was unknown or unsupported
 	assert.Equal(t, observed.FilterMessage("Unknown or unsupported metric type").Len(), 1)
-	// One metric aggregation temporality was unknown or unsupported
-	assert.Equal(t, observed.FilterMessage("Unknown or unsupported aggregation temporality").Len(), 1)
+	// Two metric aggregation temporality was unknown or unsupported
+	assert.Equal(t, observed.FilterMessage("Unknown or unsupported aggregation temporality").Len(), 2)
 }
 
 func createNaNMetrics() pdata.Metrics {
@@ -884,6 +927,7 @@ func createNaNMetrics() pdata.Metrics {
 	met = metricsArray.AppendEmpty()
 	met.SetName("nan.histogram")
 	met.SetDataType(pdata.MetricDataTypeHistogram)
+	met.Histogram().SetAggregationTemporality(pdata.AggregationTemporalityDelta)
 	dpsDoubleHist := met.Histogram().DataPoints()
 	dpDoubleHist := dpsDoubleHist.AppendEmpty()
 	dpDoubleHist.SetCount(20)
@@ -940,7 +984,7 @@ func TestNaNMetrics(t *testing.T) {
 
 	filtered := removeRunningMetrics(series)
 	assert.ElementsMatch(t, filtered, []datadog.Metric{
-		testGauge("nan.histogram.count", 20),
+		testCount("nan.histogram.count", 20, 0),
 		testCount("nan.summary.count", 100, 2),
 	})
 

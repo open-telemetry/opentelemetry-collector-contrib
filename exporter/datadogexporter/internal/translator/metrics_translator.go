@@ -140,6 +140,41 @@ func (t *Translator) mapNumberMonotonicMetrics(name string, slice pdata.NumberDa
 	return ms
 }
 
+func getBounds(p pdata.HistogramDataPoint, idx int) (lowerBound float64, upperBound float64) {
+	lowerBound = math.Inf(-1)
+	upperBound = math.Inf(1)
+	if idx > 0 {
+		lowerBound = p.ExplicitBounds()[idx-1]
+	}
+	if idx < len(p.ExplicitBounds()) {
+		upperBound = p.ExplicitBounds()[idx]
+	}
+	return
+}
+
+func (t *Translator) getLegacyBuckets(name string, p pdata.HistogramDataPoint, delta bool, tags []string) []datadog.Metric {
+	// We have a single metric, 'bucket', which is tagged with the bucket id. See:
+	// https://github.com/DataDog/integrations-core/blob/7.30.1/datadog_checks_base/datadog_checks/base/checks/openmetrics/v2/transformers/histogram.py
+	ms := make([]datadog.Metric, 0, len(p.BucketCounts()))
+	fullName := fmt.Sprintf("%s.bucket", name)
+	for idx, val := range p.BucketCounts() {
+		lowerBound, upperBound := getBounds(p, idx)
+		bucketTags := append(tags,
+			fmt.Sprintf("lower_bound:%s", formatFloat(lowerBound)),
+			fmt.Sprintf("upper_bound:%s", formatFloat(upperBound)),
+		)
+
+		count := float64(val)
+		ts := uint64(p.Timestamp())
+		if delta {
+			ms = append(ms, metrics.NewCount(fullName, ts, count, bucketTags))
+		} else if dx, ok := t.prevPts.putAndGetDiff(fullName, bucketTags, ts, count); ok {
+			ms = append(ms, metrics.NewCount(fullName, ts, dx, bucketTags))
+		}
+	}
+	return ms
+}
+
 // mapHistogramMetrics maps double histogram metrics slices to Datadog metrics
 //
 // A Histogram metric has:
@@ -150,10 +185,10 @@ func (t *Translator) mapNumberMonotonicMetrics(name string, slice pdata.NumberDa
 //    - the count of the number of items in that bucket
 //    - a sample value from each bucket
 //
-// We follow a similar approach to our OpenCensus exporter:
+// We follow a similar approach to our OpenMetrics check:
 // we report sum and count by default; buckets count can also
-// be reported (opt-in), but bounds are ignored.
-func (t *Translator) mapHistogramMetrics(name string, slice pdata.HistogramDataPointSlice, attrTags []string) []datadog.Metric {
+// be reported (opt-in) tagged by lower bound.
+func (t *Translator) mapHistogramMetrics(name string, slice pdata.HistogramDataPointSlice, delta bool, attrTags []string) []datadog.Metric {
 	// Allocate assuming none are nil and no buckets
 	ms := make([]datadog.Metric, 0, 2*slice.Len())
 	for i := 0; i < slice.Len(); i++ {
@@ -162,25 +197,30 @@ func (t *Translator) mapHistogramMetrics(name string, slice pdata.HistogramDataP
 		tags := getTags(p.Attributes())
 		tags = append(tags, attrTags...)
 
-		ms = append(ms,
-			metrics.NewGauge(fmt.Sprintf("%s.count", name), ts, float64(p.Count()), tags),
-		)
+		{
+			count := float64(p.Count())
+			countName := fmt.Sprintf("%s.count", name)
+			if delta {
+				ms = append(ms, metrics.NewCount(countName, ts, count, tags))
+			} else if dx, ok := t.prevPts.putAndGetDiff(countName, tags, ts, count); ok {
+				ms = append(ms, metrics.NewCount(countName, ts, dx, tags))
+			}
+		}
 
-		sumName := fmt.Sprintf("%s.sum", name)
-		if !t.isSkippable(sumName, p.Sum()) {
-			ms = append(ms, metrics.NewGauge(sumName, ts, p.Sum(), tags))
+		{
+			sum := p.Sum()
+			sumName := fmt.Sprintf("%s.sum", name)
+			if !t.isSkippable(sumName, p.Sum()) {
+				if delta {
+					ms = append(ms, metrics.NewCount(sumName, ts, sum, tags))
+				} else if dx, ok := t.prevPts.putAndGetDiff(sumName, tags, ts, sum); ok {
+					ms = append(ms, metrics.NewCount(sumName, ts, dx, tags))
+				}
+			}
 		}
 
 		if t.cfg.Buckets {
-			// We have a single metric, 'count_per_bucket', which is tagged with the bucket id. See:
-			// https://github.com/DataDog/opencensus-go-exporter-datadog/blob/c3b47f1c6dcf1c47b59c32e8dbb7df5f78162daa/stats.go#L99-L104
-			fullName := fmt.Sprintf("%s.count_per_bucket", name)
-			for idx, count := range p.BucketCounts() {
-				bucketTags := append(tags, fmt.Sprintf("bucket_idx:%d", idx))
-				ms = append(ms,
-					metrics.NewGauge(fullName, ts, float64(count), bucketTags),
-				)
-			}
+			ms = append(ms, t.getLegacyBuckets(name, p, delta, tags)...)
 		}
 	}
 	return ms
@@ -314,7 +354,17 @@ func (t *Translator) MapMetrics(md pdata.Metrics) (series []datadog.Metric) {
 						continue
 					}
 				case pdata.MetricDataTypeHistogram:
-					datapoints = t.mapHistogramMetrics(md.Name(), md.Histogram().DataPoints(), attributeTags)
+					switch md.Histogram().AggregationTemporality() {
+					case pdata.AggregationTemporalityCumulative, pdata.AggregationTemporalityDelta:
+						delta := md.Histogram().AggregationTemporality() == pdata.AggregationTemporalityDelta
+						datapoints = t.mapHistogramMetrics(md.Name(), md.Histogram().DataPoints(), delta, attributeTags)
+					default: // pdata.AggregationTemporalityUnspecified or any other not supported type
+						t.logger.Debug("Unknown or unsupported aggregation temporality",
+							zap.String("metric name", md.Name()),
+							zap.Any("aggregation temporality", md.Histogram().AggregationTemporality()),
+						)
+						continue
+					}
 				case pdata.MetricDataTypeSummary:
 					datapoints = t.mapSummaryMetrics(md.Name(), md.Summary().DataPoints(), attributeTags)
 				default: // pdata.MetricDataTypeNone or any other not supported type
