@@ -115,7 +115,7 @@ func (e *exporter) PushLogs(ctx context.Context, ld pdata.Logs) (err error) {
 		return err
 	}
 	if info := out.RejectedLogEventsInfo; info != nil {
-		return fmt.Errorf("log event rejected")
+		return fmt.Errorf("log event rejected: %s", info.String())
 	}
 	e.logger.Debug("Log events are successfully put")
 
