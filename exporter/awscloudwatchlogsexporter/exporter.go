@@ -59,7 +59,7 @@ func (e *exporter) Start(ctx context.Context, host component.Host) error {
 		}
 		e.client = cloudwatchlogs.New(sess)
 
-		e.logger.Debug("Retrieving Cloud Watch sequence token")
+		e.logger.Debug("Retrieving CloudWatch sequence token")
 		out, err := e.client.DescribeLogStreams(&cloudwatchlogs.DescribeLogStreamsInput{
 			LogGroupName:        aws.String(e.config.LogGroupName),
 			LogStreamNamePrefix: aws.String(e.config.LogStreamName),
@@ -73,6 +73,10 @@ func (e *exporter) Start(ctx context.Context, host component.Host) error {
 			return
 		}
 		stream := out.LogStreams[0]
+		if stream.UploadSequenceToken == nil {
+			e.logger.Debug("CloudWatch sequence token is nil, will assume empty")
+			return
+		}
 		e.seqToken = *stream.UploadSequenceToken
 	})
 	return startErr
@@ -99,8 +103,13 @@ func (e *exporter) PushLogs(ctx context.Context, ld pdata.Logs) (err error) {
 		LogGroupName:  aws.String(e.config.LogGroupName),
 		LogStreamName: aws.String(e.config.LogStreamName),
 		LogEvents:     logEvents,
-		SequenceToken: aws.String(e.seqToken),
 	}
+	if e.seqToken != "" {
+		input.SequenceToken = aws.String(e.seqToken)
+	} else {
+		e.logger.Debug("Putting log events without a sequence token")
+	}
+
 	out, err := e.client.PutLogEvents(input)
 	if err != nil {
 		return err
