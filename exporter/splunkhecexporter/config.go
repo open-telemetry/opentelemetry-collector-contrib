@@ -23,6 +23,9 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	conventions "go.opentelemetry.io/collector/translator/conventions/v1.5.0"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 )
 
 const (
@@ -30,6 +33,12 @@ const (
 	hecPath                   = "services/collector"
 	maxContentLengthLogsLimit = 2 * 1024 * 1024
 )
+
+// NewConfig allows to create a config struct and initialize it.
+func NewConfig(config *Config) *Config {
+	config.initialize()
+	return config
+}
 
 // Config defines configuration for Splunk exporter.
 type Config struct {
@@ -71,6 +80,21 @@ type Config struct {
 
 	// App version is used to track telemetry information for Splunk App's using HEC by App version. Defaults to the current OpenTelemetry Collector Contrib build version.
 	SplunkAppVersion string `mapstructure:"splunk_app_version"`
+
+	// SourceKey informs the exporter to map a specific unified model attribute value to the standard source field of a HEC event.
+	SourceKey string `mapstructure:"source_key"`
+	// SourceTypeKey informs the exporter to map a specific unified model attribute value to the standard sourcetype field of a HEC event.
+	SourceTypeKey string `mapstructure:"sourcetype_key"`
+	// IndexKey informs the exporter to map the index field to a specific unified model attribute.
+	IndexKey string `mapstructure:"index_key"`
+	// HostKey informs the exporter to map a specific unified model attribute value to the standard Host field and the host.name field of a HEC event.
+	HostKey string `mapstructure:"host_key"`
+	// SeverityTextKey informs the exporter to map the severity text field to a specific HEC field.
+	SeverityTextKey string `mapstructure:"severity_text_key"`
+	// SeverityNumberKey informs the exporter to map the severity number field to a specific HEC field.
+	SeverityNumberKey string `mapstructure:"severity_number_key"`
+	// NameKey informs the exporter to map the name field to a specific HEC field.
+	NameKey string `mapstructure:"name_key"`
 }
 
 func (cfg *Config) getOptionsFromConfig() (*exporterOptions, error) {
@@ -116,4 +140,57 @@ func (cfg *Config) getURL() (out *url.URL, err error) {
 	}
 
 	return
+}
+
+func (cfg *Config) GetSourceKey() string {
+	return cfg.SourceKey
+}
+
+func (cfg *Config) GetSourceTypeKey() string {
+	return cfg.SourceTypeKey
+}
+
+func (cfg *Config) GetIndexKey() string {
+	return cfg.IndexKey
+}
+
+func (cfg *Config) GetHostKey() string {
+	return cfg.HostKey
+}
+
+func (cfg *Config) GetNameKey() string {
+	return cfg.NameKey
+}
+
+func (cfg *Config) GetSeverityTextKey() string {
+	return cfg.SeverityTextKey
+}
+
+func (cfg *Config) GetSeverityNumberKey() string {
+	return cfg.SeverityNumberKey
+}
+
+// initialize the configuration
+func (cfg *Config) initialize() {
+	if cfg.SourceKey == "" {
+		cfg.SourceKey = splunk.DefaultSourceLabel
+	}
+	if cfg.SourceTypeKey == "" {
+		cfg.SourceTypeKey = splunk.DefaultSourceTypeLabel
+	}
+	if cfg.IndexKey == "" {
+		cfg.IndexKey = splunk.DefaultIndexLabel
+	}
+	if cfg.HostKey == "" {
+		cfg.HostKey = conventions.AttributeHostName
+	}
+	if cfg.SeverityTextKey == "" {
+		cfg.SeverityTextKey = splunk.DefaultSeverityTextLabel
+	}
+	if cfg.SeverityNumberKey == "" {
+		cfg.SeverityNumberKey = splunk.DefaultSeverityNumberLabel
+	}
+	if cfg.NameKey == "" {
+		cfg.NameKey = splunk.DefaultNameLabel
+	}
 }

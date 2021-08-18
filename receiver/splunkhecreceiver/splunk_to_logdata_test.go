@@ -26,10 +26,13 @@ import (
 )
 
 type testingHecConfiguration struct {
-	sourceKey     string
-	sourceTypeKey string
-	indexKey      string
-	hostKey       string
+	sourceKey         string
+	sourceTypeKey     string
+	indexKey          string
+	hostKey           string
+	nameKey           string
+	severityTextKey   string
+	severityNumberKey string
 }
 
 func (t *testingHecConfiguration) GetSourceKey() string {
@@ -48,11 +51,26 @@ func (t *testingHecConfiguration) GetHostKey() string {
 	return t.hostKey
 }
 
+func (t *testingHecConfiguration) GetNameKey() string {
+	return t.nameKey
+}
+
+func (t *testingHecConfiguration) GetSeverityTextKey() string {
+	return t.severityTextKey
+}
+
+func (t *testingHecConfiguration) GetSeverityNumberKey() string {
+	return t.severityNumberKey
+}
+
 var defaultTestingHecConfig = &testingHecConfiguration{
-	sourceKey:     splunk.DefaultSourceLabel,
-	sourceTypeKey: splunk.DefaultSourceTypeLabel,
-	indexKey:      splunk.DefaultIndexLabel,
-	hostKey:       conventions.AttributeHostName,
+	sourceKey:         splunk.DefaultSourceLabel,
+	sourceTypeKey:     splunk.DefaultSourceTypeLabel,
+	indexKey:          splunk.DefaultIndexLabel,
+	hostKey:           conventions.AttributeHostName,
+	nameKey:           splunk.DefaultNameLabel,
+	severityTextKey:   splunk.DefaultSeverityTextLabel,
+	severityNumberKey: splunk.DefaultSeverityNumberLabel,
 }
 
 func Test_SplunkHecToLogData(t *testing.T) {

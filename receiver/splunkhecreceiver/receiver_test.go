@@ -573,15 +573,15 @@ func Test_Logs_splunkhecReceiver_IndexSourceTypePassthrough(t *testing.T) {
 			defer endServer.Close()
 
 			factory := splunkhecexporter.NewFactory()
-			exporterConfig := splunkhecexporter.Config{
+			exporterConfig := splunkhecexporter.NewConfig(&splunkhecexporter.Config{
 				ExporterSettings:   config.NewExporterSettings(config.NewID("splunkhec")),
 				Token:              "ignored",
 				SourceType:         "defaultsourcetype",
 				Index:              "defaultindex",
 				DisableCompression: true,
 				Endpoint:           endServer.URL,
-			}
-			exporter, err := factory.CreateLogsExporter(context.Background(), componenttest.NewNopExporterCreateSettings(), &exporterConfig)
+			})
+			exporter, err := factory.CreateLogsExporter(context.Background(), componenttest.NewNopExporterCreateSettings(), exporterConfig)
 			exporter.Start(context.Background(), nil)
 			assert.NoError(t, err)
 			rcv, err := newLogsReceiver(componenttest.NewNopTelemetrySettings(), *cfg, exporter)
@@ -669,15 +669,15 @@ func Test_Metrics_splunkhecReceiver_IndexSourceTypePassthrough(t *testing.T) {
 			defer endServer.Close()
 
 			factory := splunkhecexporter.NewFactory()
-			exporterConfig := splunkhecexporter.Config{
+			exporterConfig := splunkhecexporter.NewConfig(&splunkhecexporter.Config{
 				ExporterSettings:   config.NewExporterSettings(config.NewID("splunkhec")),
 				Token:              "ignored",
 				SourceType:         "defaultsourcetype",
 				Index:              "defaultindex",
 				DisableCompression: true,
 				Endpoint:           endServer.URL,
-			}
-			exporter, err := factory.CreateMetricsExporter(context.Background(), componenttest.NewNopExporterCreateSettings(), &exporterConfig)
+			})
+			exporter, err := factory.CreateMetricsExporter(context.Background(), componenttest.NewNopExporterCreateSettings(), exporterConfig)
 			exporter.Start(context.Background(), nil)
 			assert.NoError(t, err)
 			rcv, err := newMetricsReceiver(componenttest.NewNopTelemetrySettings(), *cfg, exporter)

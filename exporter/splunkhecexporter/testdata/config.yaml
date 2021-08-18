@@ -30,6 +30,13 @@ exporters:
       max_elapsed_time: 10m
     splunk_app_name: "OpenTelemetry-Collector Splunk Exporter"
     splunk_app_version: "v0.0.1"
+    source_key: "mysource"
+    sourcetype_key: "mysourcetype"
+    index_key: "myindex"
+    host_key: "myhost"
+    severity_text_key: "myseverityfield"
+    severity_number_key: "myseveritynumfield"
+    name_key: "mynamefield"
 service:
   pipelines:
     metrics:

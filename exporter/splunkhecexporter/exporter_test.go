@@ -165,6 +165,7 @@ func TestConsumeMetricsData(t *testing.T) {
 			}
 
 			config := NewFactory().CreateDefaultConfig().(*Config)
+			config.initialize()
 			config.Source = "test"
 			config.SourceType = "test_type"
 			config.Token = "1234"
@@ -311,6 +312,7 @@ func TestConsumeLogsData(t *testing.T) {
 			}
 
 			config := NewFactory().CreateDefaultConfig().(*Config)
+			config.initialize()
 			config.Source = "test"
 			config.SourceType = "test_type"
 			config.Token = "1234"

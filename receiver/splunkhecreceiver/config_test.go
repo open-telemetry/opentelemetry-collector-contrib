@@ -129,11 +129,14 @@ func TestLoadConfig(t *testing.T) {
 		AccessTokenPassthroughConfig: splunk.AccessTokenPassthroughConfig{
 			AccessTokenPassthrough: true,
 		},
-		Path:          "/foo",
-		SourceKey:     "file.name",
-		SourceTypeKey: "foobar",
-		IndexKey:      "myindex",
-		HostKey:       "myhostfield",
+		Path:              "/foo",
+		SourceKey:         "file.name",
+		SourceTypeKey:     "foobar",
+		IndexKey:          "myindex",
+		HostKey:           "myhostfield",
+		SeverityTextKey:   "otel.log.severity.text",
+		SeverityNumberKey: "otel.log.severity.number",
+		NameKey:           "otel.log.name",
 	}
 	expectedAllSettings.pathGlob, _ = glob.Compile("/foo")
 	assert.Equal(t, expectedAllSettings, r1)
@@ -154,11 +157,14 @@ func TestLoadConfig(t *testing.T) {
 		AccessTokenPassthroughConfig: splunk.AccessTokenPassthroughConfig{
 			AccessTokenPassthrough: false,
 		},
-		Path:          "",
-		SourceKey:     "com.splunk.source",
-		SourceTypeKey: "com.splunk.sourcetype",
-		IndexKey:      "com.splunk.index",
-		HostKey:       "host.name",
+		Path:              "",
+		SourceKey:         "com.splunk.source",
+		SourceTypeKey:     "com.splunk.sourcetype",
+		IndexKey:          "com.splunk.index",
+		HostKey:           "host.name",
+		SeverityTextKey:   "otel.log.severity.text",
+		SeverityNumberKey: "otel.log.severity.number",
+		NameKey:           "otel.log.name",
 	}
 	expectedTLSConfig.pathGlob, _ = glob.Compile("*")
 	assert.Equal(t, expectedTLSConfig, r2)

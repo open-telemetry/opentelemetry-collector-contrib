@@ -22,18 +22,18 @@ import (
 
 // Constants for Splunk components.
 const (
-	SFxAccessTokenHeader   = "X-Sf-Token"                       // #nosec
-	SFxAccessTokenLabel    = "com.splunk.signalfx.access_token" // #nosec
-	SFxEventCategoryKey    = "com.splunk.signalfx.event_category"
-	SFxEventPropertiesKey  = "com.splunk.signalfx.event_properties"
-	DefaultSourceTypeLabel = "com.splunk.sourcetype"
-	DefaultSourceLabel     = "com.splunk.source"
-	DefaultIndexLabel      = "com.splunk.index"
-	NameLabel              = "otel.log.name"
-	SeverityTextLabel      = "otel.log.severity.text"
-	SeverityNumberLabel    = "otel.log.severity.number"
-	HECTokenHeader         = "Splunk"
-	HecTokenLabel          = "com.splunk.hec.access_token" // #nosec
+	SFxAccessTokenHeader       = "X-Sf-Token"                       // #nosec
+	SFxAccessTokenLabel        = "com.splunk.signalfx.access_token" // #nosec
+	SFxEventCategoryKey        = "com.splunk.signalfx.event_category"
+	SFxEventPropertiesKey      = "com.splunk.signalfx.event_properties"
+	DefaultSourceTypeLabel     = "com.splunk.sourcetype"
+	DefaultSourceLabel         = "com.splunk.source"
+	DefaultIndexLabel          = "com.splunk.index"
+	DefaultNameLabel           = "otel.log.name"
+	DefaultSeverityTextLabel   = "otel.log.severity.text"
+	DefaultSeverityNumberLabel = "otel.log.severity.number"
+	HECTokenHeader             = "Splunk"
+	HecTokenLabel              = "com.splunk.hec.access_token" // #nosec
 	// HecEventMetricType is the type of HEC event. Set to metric, as per https://docs.splunk.com/Documentation/Splunk/8.0.3/Metrics/GetMetricsInOther.
 	HecEventMetricType = "metric"
 )
@@ -115,4 +115,7 @@ type HECConfiguration interface {
 	GetSourceTypeKey() string
 	GetIndexKey() string
 	GetHostKey() string
+	GetNameKey() string
+	GetSeverityTextKey() string
+	GetSeverityNumberKey() string
 }

@@ -44,9 +44,15 @@ type Config struct {
 	IndexKey string `mapstructure:"index_key"`
 	// HostKey informs the receiver to map the host field to a specific unified model attribute.
 	HostKey string `mapstructure:"host_key"`
+	// SeverityTextKey informs the receiver to map the severity text field to a specific HEC field.
+	SeverityTextKey string `mapstructure:"severity_text_key"`
+	// SeverityNumberKey informs the receiver to map the severity number field to a specific HEC field.
+	SeverityNumberKey string `mapstructure:"severity_number_key"`
+	// DefaultNameLabel informs the receiver to map the name field to a specific HEC field.
+	NameKey string `mapstructure:"name_key"`
 }
 
-// initialize and initialize the configuration
+// initialize the configuration
 func (c *Config) initialize() error {
 	if c.SourceKey == "" {
 		c.SourceKey = splunk.DefaultSourceLabel
@@ -59,6 +65,15 @@ func (c *Config) initialize() error {
 	}
 	if c.HostKey == "" {
 		c.HostKey = conventions.AttributeHostName
+	}
+	if c.SeverityTextKey == "" {
+		c.SeverityTextKey = splunk.DefaultSeverityTextLabel
+	}
+	if c.SeverityNumberKey == "" {
+		c.SeverityNumberKey = splunk.DefaultSeverityNumberLabel
+	}
+	if c.NameKey == "" {
+		c.NameKey = splunk.DefaultNameLabel
 	}
 
 	path := c.Path
@@ -88,6 +103,18 @@ func (c *Config) GetIndexKey() string {
 
 func (c *Config) GetHostKey() string {
 	return c.HostKey
+}
+
+func (c *Config) GetNameKey() string {
+	return c.NameKey
+}
+
+func (c *Config) GetSeverityTextKey() string {
+	return c.SeverityTextKey
+}
+
+func (c *Config) GetSeverityNumberKey() string {
+	return c.SeverityNumberKey
 }
 
 // extract the port number from string in "address:port" format. If the

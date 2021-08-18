@@ -194,6 +194,7 @@ func runMetricsExport(disableCompression bool, numberOfDataPoints int, t *testin
 
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
+	cfg.initialize()
 	cfg.Endpoint = "http://" + listener.Addr().String() + "/services/collector"
 	cfg.DisableCompression = disableCompression
 	cfg.Token = "1234-1234"
@@ -233,6 +234,7 @@ func runTraceExport(disableCompression bool, numberOfTraces int, t *testing.T) (
 
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
+	cfg.initialize()
 	cfg.Endpoint = "http://" + listener.Addr().String() + "/services/collector"
 	cfg.DisableCompression = disableCompression
 	cfg.Token = "1234-1234"
@@ -339,15 +341,16 @@ func TestReceiveLogs(t *testing.T) {
 			logs: createLogData(1, 1, 4),
 			conf: func() *Config {
 				cfg := NewFactory().CreateDefaultConfig().(*Config)
+				cfg.initialize()
 				cfg.MaxContentLengthLogs = 0
 				return cfg
 			}(),
 			want: wantType{
 				batches: []string{
-					`{"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"com.splunk.source":"myapp","custom":"custom","host.name":"myhost","otel.log.name":"0_0_0"}}` + "\n" +
-						`{"time":0.001,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"com.splunk.source":"myapp","custom":"custom","host.name":"myhost","otel.log.name":"0_0_1"}}` + "\n" +
-						`{"time":0.002,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"com.splunk.source":"myapp","custom":"custom","host.name":"myhost","otel.log.name":"0_0_2"}}` + "\n" +
-						`{"time":0.003,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"com.splunk.source":"myapp","custom":"custom","host.name":"myhost","otel.log.name":"0_0_3"}}` + "\n",
+					`{"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otel.log.name":"0_0_0"}}` + "\n" +
+						`{"time":0.001,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otel.log.name":"0_0_1"}}` + "\n" +
+						`{"time":0.002,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otel.log.name":"0_0_2"}}` + "\n" +
+						`{"time":0.003,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otel.log.name":"0_0_3"}}` + "\n",
 				},
 				numBatches: 1,
 			},
@@ -357,15 +360,16 @@ func TestReceiveLogs(t *testing.T) {
 			logs: createLogData(1, 1, 4),
 			conf: func() *Config {
 				cfg := NewFactory().CreateDefaultConfig().(*Config)
+				cfg.initialize()
 				cfg.MaxContentLengthLogs = 300
 				return cfg
 			}(),
 			want: wantType{
 				batches: []string{
-					`{"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"com.splunk.source":"myapp","custom":"custom","host.name":"myhost","otel.log.name":"0_0_0"}}` + "\n",
-					`{"time":0.001,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"com.splunk.source":"myapp","custom":"custom","host.name":"myhost","otel.log.name":"0_0_1"}}` + "\n",
-					`{"time":0.002,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"com.splunk.source":"myapp","custom":"custom","host.name":"myhost","otel.log.name":"0_0_2"}}` + "\n",
-					`{"time":0.003,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"com.splunk.source":"myapp","custom":"custom","host.name":"myhost","otel.log.name":"0_0_3"}}` + "\n",
+					`{"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otel.log.name":"0_0_0"}}` + "\n",
+					`{"time":0.001,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otel.log.name":"0_0_1"}}` + "\n",
+					`{"time":0.002,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otel.log.name":"0_0_2"}}` + "\n",
+					`{"time":0.003,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otel.log.name":"0_0_3"}}` + "\n",
 				},
 				numBatches: 4,
 			},
@@ -375,15 +379,16 @@ func TestReceiveLogs(t *testing.T) {
 			logs: createLogData(1, 1, 4),
 			conf: func() *Config {
 				cfg := NewFactory().CreateDefaultConfig().(*Config)
+				cfg.initialize()
 				cfg.MaxContentLengthLogs = 448
 				return cfg
 			}(),
 			want: wantType{
 				batches: []string{
-					`{"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"com.splunk.source":"myapp","custom":"custom","host.name":"myhost","otel.log.name":"0_0_0"}}` + "\n" +
-						`{"time":0.001,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"com.splunk.source":"myapp","custom":"custom","host.name":"myhost","otel.log.name":"0_0_1"}}` + "\n",
-					`{"time":0.002,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"com.splunk.source":"myapp","custom":"custom","host.name":"myhost","otel.log.name":"0_0_2"}}` + "\n" +
-						`{"time":0.003,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"com.splunk.source":"myapp","custom":"custom","host.name":"myhost","otel.log.name":"0_0_3"}}` + "\n",
+					`{"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otel.log.name":"0_0_0"}}` + "\n" +
+						`{"time":0.001,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otel.log.name":"0_0_1"}}` + "\n",
+					`{"time":0.002,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otel.log.name":"0_0_2"}}` + "\n" +
+						`{"time":0.003,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otel.log.name":"0_0_3"}}` + "\n",
 				},
 				numBatches: 2,
 			},
@@ -392,20 +397,22 @@ func TestReceiveLogs(t *testing.T) {
 			name: "1 compressed batch of 2037 bytes, make sure the event size is more than minCompressionLen=1500 to trigger compression",
 			logs: createLogData(1, 1, 10),
 			conf: func() *Config {
-				return NewFactory().CreateDefaultConfig().(*Config)
+				cfg := NewFactory().CreateDefaultConfig().(*Config)
+				cfg.initialize()
+				return cfg
 			}(),
 			want: wantType{
 				batches: []string{
-					`{"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"com.splunk.source":"myapp","custom":"custom","host.name":"myhost","otel.log.name":"0_0_0"}}` + "\n" +
-						`{"time":0.001,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"com.splunk.source":"myapp","custom":"custom","host.name":"myhost","otel.log.name":"0_0_1"}}` + "\n" +
-						`{"time":0.002,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"com.splunk.source":"myapp","custom":"custom","host.name":"myhost","otel.log.name":"0_0_2"}}` + "\n" +
-						`{"time":0.003,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"com.splunk.source":"myapp","custom":"custom","host.name":"myhost","otel.log.name":"0_0_3"}}` + "\n" +
-						`{"time":0.004,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"com.splunk.source":"myapp","custom":"custom","host.name":"myhost","otel.log.name":"0_0_4"}}` + "\n" +
-						`{"time":0.005,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"com.splunk.source":"myapp","custom":"custom","host.name":"myhost","otel.log.name":"0_0_5"}}` + "\n" +
-						`{"time":0.006,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"com.splunk.source":"myapp","custom":"custom","host.name":"myhost","otel.log.name":"0_0_6"}}` + "\n" +
-						`{"time":0.007,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"com.splunk.source":"myapp","custom":"custom","host.name":"myhost","otel.log.name":"0_0_7"}}` + "\n" +
-						`{"time":0.008,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"com.splunk.source":"myapp","custom":"custom","host.name":"myhost","otel.log.name":"0_0_8"}}` + "\n" +
-						`{"time":0.009,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"com.splunk.source":"myapp","custom":"custom","host.name":"myhost","otel.log.name":"0_0_9"}}` + "\n",
+					`{"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otel.log.name":"0_0_0"}}` + "\n" +
+						`{"time":0.001,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otel.log.name":"0_0_1"}}` + "\n" +
+						`{"time":0.002,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otel.log.name":"0_0_2"}}` + "\n" +
+						`{"time":0.003,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otel.log.name":"0_0_3"}}` + "\n" +
+						`{"time":0.004,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otel.log.name":"0_0_4"}}` + "\n" +
+						`{"time":0.005,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otel.log.name":"0_0_5"}}` + "\n" +
+						`{"time":0.006,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otel.log.name":"0_0_6"}}` + "\n" +
+						`{"time":0.007,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otel.log.name":"0_0_7"}}` + "\n" +
+						`{"time":0.008,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otel.log.name":"0_0_8"}}` + "\n" +
+						`{"time":0.009,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otel.log.name":"0_0_9"}}` + "\n",
 				},
 				numBatches: 1,
 				compressed: true,
@@ -413,32 +420,35 @@ func TestReceiveLogs(t *testing.T) {
 		},
 		{
 			name: "2 compressed batches - 1832 bytes each, make sure the log size is more than minCompressionLen=1500 to trigger compression",
-			logs: createLogData(1, 1, 18),
+			logs: createLogData(1, 1, 20),
 			conf: func() *Config {
 				cfg := NewFactory().CreateDefaultConfig().(*Config)
+				cfg.initialize()
 				cfg.MaxContentLengthLogs = 1916
 				return cfg
 			}(),
 			want: wantType{
 				batches: []string{
-					`{"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"com.splunk.source":"myapp","custom":"custom","host.name":"myhost","otel.log.name":"0_0_0"}}` + "\n" +
-						`{"time":0.001,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"com.splunk.source":"myapp","custom":"custom","host.name":"myhost","otel.log.name":"0_0_1"}}` + "\n" +
-						`{"time":0.002,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"com.splunk.source":"myapp","custom":"custom","host.name":"myhost","otel.log.name":"0_0_2"}}` + "\n" +
-						`{"time":0.003,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"com.splunk.source":"myapp","custom":"custom","host.name":"myhost","otel.log.name":"0_0_3"}}` + "\n" +
-						`{"time":0.004,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"com.splunk.source":"myapp","custom":"custom","host.name":"myhost","otel.log.name":"0_0_4"}}` + "\n" +
-						`{"time":0.005,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"com.splunk.source":"myapp","custom":"custom","host.name":"myhost","otel.log.name":"0_0_5"}}` + "\n" +
-						`{"time":0.006,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"com.splunk.source":"myapp","custom":"custom","host.name":"myhost","otel.log.name":"0_0_6"}}` + "\n" +
-						`{"time":0.007,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"com.splunk.source":"myapp","custom":"custom","host.name":"myhost","otel.log.name":"0_0_7"}}` + "\n" +
-						`{"time":0.008,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"com.splunk.source":"myapp","custom":"custom","host.name":"myhost","otel.log.name":"0_0_8"}}` + "\n",
-					`{"time":0.009,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"com.splunk.source":"myapp","custom":"custom","host.name":"myhost","otel.log.name":"0_0_9"}}` + "\n" +
-						`{"time":0.01,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"com.splunk.source":"myapp","custom":"custom","host.name":"myhost","otel.log.name":"0_0_10"}}` + "\n" +
-						`{"time":0.011,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"com.splunk.source":"myapp","custom":"custom","host.name":"myhost","otel.log.name":"0_0_11"}}` + "\n" +
-						`{"time":0.012,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"com.splunk.source":"myapp","custom":"custom","host.name":"myhost","otel.log.name":"0_0_12"}}` + "\n" +
-						`{"time":0.013,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"com.splunk.source":"myapp","custom":"custom","host.name":"myhost","otel.log.name":"0_0_13"}}` + "\n" +
-						`{"time":0.014,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"com.splunk.source":"myapp","custom":"custom","host.name":"myhost","otel.log.name":"0_0_14"}}` + "\n" +
-						`{"time":0.015,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"com.splunk.source":"myapp","custom":"custom","host.name":"myhost","otel.log.name":"0_0_15"}}` + "\n" +
-						`{"time":0.016,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"com.splunk.source":"myapp","custom":"custom","host.name":"myhost","otel.log.name":"0_0_16"}}` + "\n" +
-						`{"time":0.017,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"com.splunk.source":"myapp","custom":"custom","host.name":"myhost","otel.log.name":"0_0_17"}}` + "\n",
+					`{"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otel.log.name":"0_0_0"}}` + "\n" +
+						`{"time":0.001,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otel.log.name":"0_0_1"}}` + "\n" +
+						`{"time":0.002,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otel.log.name":"0_0_2"}}` + "\n" +
+						`{"time":0.003,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otel.log.name":"0_0_3"}}` + "\n" +
+						`{"time":0.004,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otel.log.name":"0_0_4"}}` + "\n" +
+						`{"time":0.005,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otel.log.name":"0_0_5"}}` + "\n" +
+						`{"time":0.006,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otel.log.name":"0_0_6"}}` + "\n" +
+						`{"time":0.007,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otel.log.name":"0_0_7"}}` + "\n" +
+						`{"time":0.008,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otel.log.name":"0_0_8"}}` + "\n" +
+						`{"time":0.009,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otel.log.name":"0_0_9"}}` + "\n",
+					`{"time":0.01,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otel.log.name":"0_0_10"}}` + "\n" +
+						`{"time":0.011,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otel.log.name":"0_0_11"}}` + "\n" +
+						`{"time":0.012,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otel.log.name":"0_0_12"}}` + "\n" +
+						`{"time":0.013,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otel.log.name":"0_0_13"}}` + "\n" +
+						`{"time":0.014,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otel.log.name":"0_0_14"}}` + "\n" +
+						`{"time":0.015,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otel.log.name":"0_0_15"}}` + "\n" +
+						`{"time":0.016,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otel.log.name":"0_0_16"}}` + "\n" +
+						`{"time":0.017,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otel.log.name":"0_0_17"}}` + "\n" +
+						`{"time":0.018,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otel.log.name":"0_0_18"}}` + "\n" +
+						`{"time":0.019,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otel.log.name":"0_0_19"}}` + "\n",
 				},
 				numBatches: 2,
 				compressed: true,
@@ -506,6 +516,7 @@ func TestErrorReceived(t *testing.T) {
 
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
+	cfg.initialize()
 	cfg.Endpoint = "http://" + listener.Addr().String() + "/services/collector"
 	// Disable QueueSettings to ensure that we execute the request when calling ConsumeTraces
 	// otherwise we will not see the error.
@@ -539,6 +550,7 @@ func TestInvalidTraces(t *testing.T) {
 
 func TestInvalidLogs(t *testing.T) {
 	config := NewFactory().CreateDefaultConfig().(*Config)
+	config.initialize()
 	config.DisableCompression = false
 	_, err := runLogExport(config, createLogData(1, 1, 0), t)
 	assert.Error(t, err)
@@ -552,6 +564,7 @@ func TestInvalidMetrics(t *testing.T) {
 func TestInvalidURL(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
+	cfg.initialize()
 	// Disable queuing to ensure that we execute the request when calling ConsumeTraces
 	// otherwise we will not see the error.
 	cfg.QueueSettings.Enabled = false
@@ -677,11 +690,13 @@ func Test_pushLogData_nil_Logs(t *testing.T) {
 		},
 	}
 
+	config := NewFactory().CreateDefaultConfig().(*Config)
+	config.initialize()
 	c := client{
 		zippers: sync.Pool{New: func() interface{} {
 			return gzip.NewWriter(nil)
 		}},
-		config: NewFactory().CreateDefaultConfig().(*Config),
+		config: config,
 		logger: zaptest.NewLogger(t),
 	}
 
@@ -717,12 +732,14 @@ func Test_pushLogData_InvalidLog(t *testing.T) {
 }
 
 func Test_pushLogData_PostError(t *testing.T) {
+	config := NewFactory().CreateDefaultConfig().(*Config)
+	config.initialize()
 	c := client{
 		url: &url.URL{Host: "in va lid"},
 		zippers: sync.Pool{New: func() interface{} {
 			return gzip.NewWriter(nil)
 		}},
-		config: NewFactory().CreateDefaultConfig().(*Config),
+		config: config,
 		logger: zaptest.NewLogger(t),
 	}
 
@@ -759,12 +776,14 @@ func Test_pushLogData_PostError(t *testing.T) {
 }
 
 func Test_pushLogData_ShouldAddResponseTo400Error(t *testing.T) {
+	config := NewFactory().CreateDefaultConfig().(*Config)
+	config.initialize()
 	splunkClient := client{
 		url: &url.URL{Scheme: "http", Host: "splunk"},
 		zippers: sync.Pool{New: func() interface{} {
 			return gzip.NewWriter(nil)
 		}},
-		config: NewFactory().CreateDefaultConfig().(*Config),
+		config: config,
 		logger: zaptest.NewLogger(t),
 	}
 	logs := createLogData(1, 1, 1)
@@ -793,12 +812,14 @@ func Test_pushLogData_ShouldAddResponseTo400Error(t *testing.T) {
 }
 
 func Test_pushLogData_ShouldReturnUnsentLogsOnly(t *testing.T) {
+	config := NewFactory().CreateDefaultConfig().(*Config)
+	config.initialize()
 	c := client{
 		url: &url.URL{Scheme: "http", Host: "splunk"},
 		zippers: sync.Pool{New: func() interface{} {
 			return gzip.NewWriter(nil)
 		}},
-		config: NewFactory().CreateDefaultConfig().(*Config),
+		config: config,
 		logger: zaptest.NewLogger(t),
 	}
 
@@ -821,12 +842,14 @@ func Test_pushLogData_ShouldReturnUnsentLogsOnly(t *testing.T) {
 }
 
 func Test_pushLogData_ShouldAddHeadersForProfilingData(t *testing.T) {
+	config := NewFactory().CreateDefaultConfig().(*Config)
+	config.initialize()
 	c := client{
 		url: &url.URL{Scheme: "http", Host: "splunk"},
 		zippers: sync.Pool{New: func() interface{} {
 			return gzip.NewWriter(nil)
 		}},
-		config: NewFactory().CreateDefaultConfig().(*Config),
+		config: config,
 		logger: zaptest.NewLogger(t),
 	}
 
@@ -890,12 +913,14 @@ func Benchmark_pushLogData_10_1_1_1024(b *testing.B) {
 }
 
 func benchPushLogData(b *testing.B, numResources int, numProfiling int, numNonProfiling int, bufSize uint) {
+	config := NewFactory().CreateDefaultConfig().(*Config)
+	config.initialize()
 	c := client{
 		url: &url.URL{Scheme: "http", Host: "splunk"},
 		zippers: sync.Pool{New: func() interface{} {
 			return gzip.NewWriter(nil)
 		}},
-		config: NewFactory().CreateDefaultConfig().(*Config),
+		config: config,
 		logger: zaptest.NewLogger(b),
 	}
 
