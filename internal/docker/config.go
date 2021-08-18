@@ -26,17 +26,12 @@ type Config struct {
 	// The maximum amount of time to wait for docker API responses. Default is 5s
 	Timeout time.Duration `mapstructure:"timeout"`
 
-	// A list of filters whose matching images are to be excluded.  Supports literals, globs, and regex.
+	// A list of filters whose matching images are to be excluded. Supports literals, globs, and regex.
 	ExcludedImages []string `mapstructure:"excluded_images"`
 }
 
-func (config Config) validate() error {
-	if config.Endpoint == "" {
-		return errors.New("config.Endpoint must be specified")
-	}
-	return nil
-}
-
+// NewConfig creates a new config to be used when creating
+// a docker client
 func NewConfig(endpoint string, timeout time.Duration, excludedImages []string) (*Config, error) {
 	cfg := &Config{
 		Endpoint:       endpoint,
@@ -48,6 +43,8 @@ func NewConfig(endpoint string, timeout time.Duration, excludedImages []string) 
 	return cfg, err
 }
 
+// NewDefaultConfig creates a new config with default values
+// to be used when creating a docker client
 func NewDefaultConfig() *Config {
 	cfg := &Config{
 		Endpoint: "unix:///var/run/docker.sock",
@@ -55,4 +52,13 @@ func NewDefaultConfig() *Config {
 	}
 
 	return cfg
+}
+
+// validate asserts that an endpoint field is set
+// on the config struct
+func (config Config) validate() error {
+	if config.Endpoint == "" {
+		return errors.New("config.Endpoint must be specified")
+	}
+	return nil
 }

@@ -82,7 +82,7 @@ func NewDockerClient(config *Config, logger *zap.Logger) (*Client, error) {
 	return dc, nil
 }
 
-// Provides a slice of Container to use for individual FetchContainerStats calls.
+// Containers provides a slice of Container to use for individual FetchContainerStats calls.
 func (dc *Client) Containers() []Container {
 	dc.containersLock.Lock()
 	defer dc.containersLock.Unlock()
