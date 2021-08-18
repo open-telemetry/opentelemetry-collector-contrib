@@ -110,7 +110,7 @@ func (ctdp *cumulativeToDeltaProcessor) convertDataPoints(in interface{}, baseId
 		dps.RemoveIf(func(dp pdata.NumberDataPoint) bool {
 			id := baseIdentity
 			id.StartTimestamp = dp.StartTimestamp()
-			id.LabelsMap = dp.LabelsMap()
+			id.Attributes = dp.Attributes()
 			id.MetricValueType = dp.Type()
 			point := tracking.ValuePoint{
 				ObservedTimestamp: dp.Timestamp(),

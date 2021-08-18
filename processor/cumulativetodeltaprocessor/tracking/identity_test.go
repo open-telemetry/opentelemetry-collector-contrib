@@ -32,9 +32,9 @@ func TestMetricIdentity_Write(t *testing.T) {
 	il.SetName("ilm_name")
 	il.SetVersion("ilm_version")
 
-	labels := pdata.NewStringMap()
-	labels.InitFromMap(map[string]string{
-		"label": "value",
+	attributes := pdata.NewAttributeMap()
+	attributes.InitFromMap(map[string]pdata.AttributeValue{
+		"label": pdata.NewAttributeValueString("value"),
 	})
 	type fields struct {
 		Resource               pdata.Resource
@@ -44,7 +44,7 @@ func TestMetricIdentity_Write(t *testing.T) {
 		MetricName             string
 		MetricUnit             string
 		StartTimestamp         pdata.Timestamp
-		LabelsMap              pdata.StringMap
+		Attributes             pdata.AttributeMap
 		MetricValueType        pdata.MetricValueType
 	}
 	tests := []struct {
@@ -57,7 +57,7 @@ func TestMetricIdentity_Write(t *testing.T) {
 			fields: fields{
 				Resource:               resource,
 				InstrumentationLibrary: il,
-				LabelsMap:              labels,
+				Attributes:             attributes,
 				MetricName:             "m_name",
 				MetricUnit:             "m_unit",
 			},
@@ -68,7 +68,7 @@ func TestMetricIdentity_Write(t *testing.T) {
 			fields: fields{
 				Resource:               resource,
 				InstrumentationLibrary: il,
-				LabelsMap:              labels,
+				Attributes:             attributes,
 				MetricDataType:         pdata.MetricDataTypeSum,
 				MetricValueType:        pdata.MetricValueTypeInt,
 				MetricIsMonotonic:      true,
@@ -86,7 +86,7 @@ func TestMetricIdentity_Write(t *testing.T) {
 				MetricName:             tt.fields.MetricName,
 				MetricUnit:             tt.fields.MetricUnit,
 				StartTimestamp:         tt.fields.StartTimestamp,
-				LabelsMap:              tt.fields.LabelsMap,
+				Attributes:             tt.fields.Attributes,
 				MetricValueType:        tt.fields.MetricValueType,
 			}
 			b := &bytes.Buffer{}
@@ -130,7 +130,7 @@ func TestMetricIdentity_IsFloatVal(t *testing.T) {
 			mi := &MetricIdentity{
 				Resource:               pdata.NewResource(),
 				InstrumentationLibrary: pdata.NewInstrumentationLibrary(),
-				LabelsMap:              pdata.NewStringMap(),
+				Attributes:             pdata.NewAttributeMap(),
 				MetricDataType:         pdata.MetricDataTypeSum,
 				MetricValueType:        tt.fields.MetricValueType,
 			}
@@ -170,7 +170,7 @@ func TestMetricIdentity_IsSupportedMetricType(t *testing.T) {
 			mi := &MetricIdentity{
 				Resource:               pdata.NewResource(),
 				InstrumentationLibrary: pdata.NewInstrumentationLibrary(),
-				LabelsMap:              pdata.NewStringMap(),
+				Attributes:             pdata.NewAttributeMap(),
 				MetricDataType:         tt.fields.MetricDataType,
 			}
 			if got := mi.IsSupportedMetricType(); got != tt.want {

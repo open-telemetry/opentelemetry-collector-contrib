@@ -30,7 +30,7 @@ type MetricIdentity struct {
 	MetricName             string
 	MetricUnit             string
 	StartTimestamp         pdata.Timestamp
-	LabelsMap              pdata.StringMap
+	Attributes             pdata.AttributeMap
 	MetricValueType        pdata.MetricValueType
 }
 
@@ -66,11 +66,11 @@ func (mi *MetricIdentity) Write(b *bytes.Buffer) {
 	b.WriteByte(SEP)
 	b.WriteString(mi.MetricUnit)
 
-	mi.LabelsMap.Sort().Range(func(k, v string) bool {
+	mi.Attributes.Sort().Range(func(k string, v pdata.AttributeValue) bool {
 		b.WriteByte(SEP)
 		b.WriteString(k)
 		b.WriteByte(':')
-		b.WriteString(v)
+		b.WriteString(tracetranslator.AttributeValueToString(v))
 		return true
 	})
 	b.WriteByte(SEP)
