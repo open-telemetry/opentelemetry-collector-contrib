@@ -69,12 +69,12 @@ func mapLogRecordToSplunkEvent(res pdata.Resource, lr pdata.LogRecord, config *C
 		case conventions.AttributeHostName:
 			host = v.StringVal()
 			fields[k] = v.StringVal()
-		case splunk.SourceLabel:
+		case splunk.DefaultSourceLabel:
 			source = v.StringVal()
 			fields[k] = v.StringVal()
-		case splunk.SourcetypeLabel:
+		case splunk.DefaultSourceTypeLabel:
 			sourcetype = v.StringVal()
-		case splunk.IndexLabel:
+		case splunk.DefaultIndexLabel:
 			index = v.StringVal()
 		default:
 			fields[k] = convertAttributeValue(v, logger)
@@ -86,12 +86,12 @@ func mapLogRecordToSplunkEvent(res pdata.Resource, lr pdata.LogRecord, config *C
 		case conventions.AttributeHostName:
 			host = v.StringVal()
 			fields[k] = v.StringVal()
-		case splunk.SourceLabel:
+		case splunk.DefaultSourceLabel:
 			source = v.StringVal()
 			fields[k] = v.StringVal()
-		case splunk.SourcetypeLabel:
+		case splunk.DefaultSourceTypeLabel:
 			sourcetype = v.StringVal()
-		case splunk.IndexLabel:
+		case splunk.DefaultIndexLabel:
 			index = v.StringVal()
 		default:
 			fields[k] = convertAttributeValue(v, logger)

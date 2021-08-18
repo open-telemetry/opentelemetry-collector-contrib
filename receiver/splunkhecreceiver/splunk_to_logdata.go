@@ -19,7 +19,6 @@ import (
 	"sort"
 
 	"go.opentelemetry.io/collector/model/pdata"
-	conventions "go.opentelemetry.io/collector/translator/conventions/v1.5.0"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
@@ -30,7 +29,7 @@ const (
 )
 
 // splunkHecToLogData transforms splunk events into logs
-func splunkHecToLogData(logger *zap.Logger, events []*splunk.Event, resourceCustomizer func(pdata.Resource)) (pdata.Logs, error) {
+func splunkHecToLogData(logger *zap.Logger, events []*splunk.Event, resourceCustomizer func(pdata.Resource), config splunk.HECConfiguration) (pdata.Logs, error) {
 	ld := pdata.NewLogs()
 	rl := ld.ResourceLogs().AppendEmpty()
 	ill := rl.InstrumentationLibraryLogs().AppendEmpty()
@@ -52,16 +51,16 @@ func splunkHecToLogData(logger *zap.Logger, events []*splunk.Event, resourceCust
 		}
 
 		if event.Host != "" {
-			logRecord.Attributes().InsertString(conventions.AttributeHostName, event.Host)
+			logRecord.Attributes().InsertString(config.GetHostKey(), event.Host)
 		}
 		if event.Source != "" {
-			logRecord.Attributes().InsertString(splunk.SourceLabel, event.Source)
+			logRecord.Attributes().InsertString(config.GetSourceKey(), event.Source)
 		}
 		if event.SourceType != "" {
-			logRecord.Attributes().InsertString(splunk.SourcetypeLabel, event.SourceType)
+			logRecord.Attributes().InsertString(config.GetSourceTypeKey(), event.SourceType)
 		}
 		if event.Index != "" {
-			logRecord.Attributes().InsertString(splunk.IndexLabel, event.Index)
+			logRecord.Attributes().InsertString(config.GetIndexKey(), event.Index)
 		}
 		resourceCustomizer(rl.Resource())
 		keys := make([]string, 0, len(event.Fields))
