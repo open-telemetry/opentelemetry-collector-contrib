@@ -205,7 +205,7 @@ func TestRemovedContainerRemovesRecordsIntegration(t *testing.T) {
 
 	// Confirm missing container paths
 	md, err := r.client.FetchContainerStatsAndConvertToMetrics(ctx, containers[0])
-	assert.Nil(t, md)
+	assert.Zero(t, md.DataPointCount())
 	require.Error(t, err)
 	assert.Equal(t, fmt.Sprintf("Error response from daemon: No such container: %s", containers[0].ID), err.Error())
 

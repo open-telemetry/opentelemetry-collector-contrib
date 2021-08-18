@@ -149,7 +149,7 @@ func TestFetchingTimeouts(t *testing.T) {
 		},
 	)
 
-	assert.Nil(t, md)
+	assert.Zero(t, md.DataPointCount())
 	require.Error(t, err)
 
 	assert.Contains(t, err.Error(), expectedError)
