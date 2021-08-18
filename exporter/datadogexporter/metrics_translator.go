@@ -73,7 +73,7 @@ func (t *ttlCache) putAndGetDiff(key string, ts uint64, val float64) (dx float64
 func getTags(labels pdata.AttributeMap) []string {
 	tags := make([]string, 0, labels.Len())
 	labels.Range(func(key string, value pdata.AttributeValue) bool {
-		v := value.StringVal() // TODO(codeboten): Fix as part of https://github.com/open-telemetry/opentelemetry-collector/issues/3815
+		v := pdata.AttributeValueToString(value)
 		if v == "" {
 			// Tags can't end with ":" so we replace empty values with "n/a"
 			v = "n/a"

@@ -422,7 +422,7 @@ func (t *transformer) MetricAttributes(baseAttributes map[string]interface{}, at
 	attrMap.Range(func(k string, v pdata.AttributeValue) bool {
 		// Only include attribute if not an override attribute
 		if _, isOverrideKey := t.OverrideAttributes[k]; !isOverrideKey {
-			rawMap[k] = v.StringVal()
+			rawMap[k] = pdata.AttributeValueToString(v)
 		}
 		return true
 	})
