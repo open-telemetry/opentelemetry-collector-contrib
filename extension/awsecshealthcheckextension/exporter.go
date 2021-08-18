@@ -36,7 +36,7 @@ func (e *ECSHealthCheckExporter) ExportView(vd *view.Data) {
 	e.mu.Lock()
 	defer e.mu.Unlock()
 
-	if vd.View.Name == "ExporterFailedNumber" {
+	if vd.View.Name == "exporter/send_failed_requests" {
 		e.exporterErrorQueue = append(e.exporterErrorQueue, vd)
 	}
 }

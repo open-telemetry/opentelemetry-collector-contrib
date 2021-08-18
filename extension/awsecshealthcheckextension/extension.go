@@ -18,7 +18,6 @@ import (
 	"context"
 	"net"
 	"net/http"
-	"strconv"
 	"time"
 
 	"github.com/jaegertracing/jaeger/pkg/healthcheck"
@@ -33,6 +32,7 @@ type ECSHealthCheckExtension struct {
 	logger   *zap.Logger
 	state    *healthcheck.HealthCheck
 	server   http.Server
+	interval time.Duration
 	stopCh   chan struct{}
 	exporter *ECSHealthCheckExporter
 }
@@ -72,6 +72,11 @@ func (hc *ECSHealthCheckExtension) Start(_ context.Context, host component.Host)
 		return err
 	}
 
+	hc.interval, err = time.ParseDuration(hc.config.Interval)
+	if err != nil {
+		return err
+	}
+
 	hc.server.Handler = hc.handler()
 	hc.stopCh = make(chan struct{})
 	go func() {
@@ -88,8 +93,7 @@ func (hc *ECSHealthCheckExtension) check() bool {
 	hc.exporter.mu.Lock()
 	defer hc.exporter.mu.Unlock()
 
-	interval, _ := time.ParseDuration(hc.config.Interval)
-	hc.exporter.rotate(interval)
+	hc.exporter.rotate(hc.interval)
 
 	return hc.config.ExporterErrorLimit >= len(hc.exporter.exporterErrorQueue)
 }
@@ -98,10 +102,8 @@ func (hc *ECSHealthCheckExtension) handler() http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		if hc.check() {
 			w.WriteHeader(200)
-			_, _ = w.Write([]byte(strconv.Itoa(len(hc.exporter.exporterErrorQueue))))
 		} else {
 			w.WriteHeader(500)
-			_, _ = w.Write([]byte(strconv.Itoa(len(hc.exporter.exporterErrorQueue))))
 		}
 	})
 }
