@@ -507,7 +507,7 @@ func fillGoStacktrace(stacktrace string, exceptions []awsxray.Exception) []awsxr
 
 	exception.Stack = make([]awsxray.StackFrame, 0)
 	for {
-		re := regexp.MustCompile("^goroutine.*\\brunning\\b.*:$")
+		re := regexp.MustCompile(`^goroutine.*\brunning\b.*:$`)
 		match := re.Match([]byte(line))
 		if match {
 			line, _ = r.ReadLine()
