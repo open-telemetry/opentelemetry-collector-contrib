@@ -94,7 +94,7 @@ func serializeTags(labels pdata.AttributeMap, exporterTags []string) string {
 		if err != nil {
 			return true
 		}
-		value := escapeDimension(v.StringVal()) // TODO(codeboten): Fix as part of https://github.com/open-telemetry/opentelemetry-collector/issues/3815
+		value := escapeDimension(pdata.AttributeValueToString(v))
 		tag := key + "=" + value
 		tags = append(tags, tag)
 		return true
