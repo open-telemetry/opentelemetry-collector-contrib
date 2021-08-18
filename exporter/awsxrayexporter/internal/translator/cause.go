@@ -17,6 +17,7 @@ package translator
 import (
 	"bufio"
 	"net/textproto"
+	"regexp"
 	"strconv"
 	"strings"
 
@@ -506,7 +507,8 @@ func fillGoStacktrace(stacktrace string, exceptions []awsxray.Exception) []awsxr
 
 	exception.Stack = make([]awsxray.StackFrame, 0)
 	for {
-		if strings.Contains(line, "goroutine") {
+		match, _ := regexp.MatchString("^goroutine.*\\brunning\\b.*:$", line)
+		if match {
 			line, _ = r.ReadLine()
 		}
 
@@ -514,7 +516,8 @@ func fillGoStacktrace(stacktrace string, exceptions []awsxray.Exception) []awsxr
 		line, _ = r.ReadLine()
 
 		if strings.Contains(line, "\t") {
-			s := strings.Split(line, ":")
+			a := regexp.MustCompile(":")
+			s := a.Split(line, 2)
 			if len(s) >= 2 {
 				path = strings.Trim(s[0], "\t")
 				lineNumber, _ = strconv.Atoi(strings.Split(s[1], " +0x")[0])

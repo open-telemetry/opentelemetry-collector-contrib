@@ -1034,8 +1034,7 @@ func TestParseExceptionGoWithStacktrace(t *testing.T) {
 	exceptionType := "Exception"
 	message := "error message"
 
-	stacktrace := `
-goroutine 19 [running]:
+	stacktrace := `goroutine 19 [running]:
 go.opentelemetry.io/otel/sdk/trace.recordStackTrace(0x0, 0x0)
 	otel-go-core/opentelemetry-go/sdk/trace/span.go:323 +0x9b
 go.opentelemetry.io/otel/sdk/trace.(*span).RecordError(0xc0003a6000, 0x14a5f00, 0xc00038c000, 0xc000390140, 0x3, 0x4)
