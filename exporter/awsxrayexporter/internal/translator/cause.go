@@ -495,6 +495,9 @@ func fillGoStacktrace(stacktrace string, exceptions []awsxray.Exception) []awsxr
 	var path string
 	var lineNumber int
 
+	plnre := regexp.MustCompile(`([^:\s]+)\:(\d+)`)
+	re := regexp.MustCompile(`^goroutine.*\brunning\b.*:$`)
+
 	r := textproto.NewReader(bufio.NewReader(strings.NewReader(stacktrace)))
 
 	// Skip first line containing top level exception / message
@@ -507,7 +510,6 @@ func fillGoStacktrace(stacktrace string, exceptions []awsxray.Exception) []awsxr
 
 	exception.Stack = make([]awsxray.StackFrame, 0)
 	for {
-		re := regexp.MustCompile(`^goroutine.*\brunning\b.*:$`)
 		match := re.Match([]byte(line))
 		if match {
 			line, _ = r.ReadLine()
@@ -516,13 +518,10 @@ func fillGoStacktrace(stacktrace string, exceptions []awsxray.Exception) []awsxr
 		label = line
 		line, _ = r.ReadLine()
 
-		if strings.Contains(line, "\t") {
-			a := regexp.MustCompile(":")
-			s := a.Split(line, 2)
-			if len(s) >= 2 {
-				path = strings.Trim(s[0], "\t")
-				lineNumber, _ = strconv.Atoi(strings.Split(s[1], " +0x")[0])
-			}
+		matches := plnre.FindStringSubmatch(line)
+		if len(matches) == 3 {
+			path = matches[1]
+			lineNumber, _ = strconv.Atoi(matches[2])
 		}
 
 		stack := awsxray.StackFrame{
