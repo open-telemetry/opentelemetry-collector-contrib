@@ -515,8 +515,10 @@ func fillGoStacktrace(stacktrace string, exceptions []awsxray.Exception) []awsxr
 
 		if strings.Contains(line, "\t") {
 			s := strings.Split(line, ":")
-			path = strings.Trim(s[0], "\t")
-			lineNumber, _ = strconv.Atoi(strings.Split(s[1], " +0x")[0])
+			if len(s) >= 2 {
+				path = strings.Trim(s[0], "\t")
+				lineNumber, _ = strconv.Atoi(strings.Split(s[1], " +0x")[0])
+			}
 		}
 
 		stack := awsxray.StackFrame{
