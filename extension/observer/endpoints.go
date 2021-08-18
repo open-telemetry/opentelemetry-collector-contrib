@@ -35,12 +35,15 @@ const (
 	PodType EndpointType = "pod"
 	// HostPortType is a hostport endpoint.
 	HostPortType EndpointType = "hostport"
+	// Container is a container endpoint.
+	ContainerType EndpointType = "container"
 )
 
 var (
 	_ EndpointDetails = (*Pod)(nil)
 	_ EndpointDetails = (*Port)(nil)
 	_ EndpointDetails = (*HostPort)(nil)
+	_ EndpointDetails = (*Container)(nil)
 )
 
 // EndpointDetails provides additional context about an endpoint such as a Pod or Port.
@@ -157,4 +160,45 @@ func (h *HostPort) Env() EndpointEnv {
 
 func (h *HostPort) Type() EndpointType {
 	return HostPortType
+}
+
+// Container is a discovered container
+type Container struct {
+	// Name is the primary name of the container
+	Name string
+	// Image is the name of the container image
+	Image string
+	// Port is the exposed port of container
+	Port uint16
+	// AlternatePort is the exposed port accessed through some kind of redirection,
+	// such as Docker port redirection
+	AlternatePort uint16
+	// Command used to invoke the process using the Endpoint.
+	Command string
+	// ContainerID is the id of the container exposing the Endpoint.
+	ContainerID string
+	// Host is the hostname/ip address of the Endpoint.
+	Host string
+	// Transport is the transport protocol used by the Endpoint. (TCP or UDP).
+	Transport Transport
+	// Labels is a map of user-specified metadata on the container.
+	Labels map[string]string
+}
+
+func (c *Container) Env() EndpointEnv {
+	return map[string]interface{}{
+		"name":           c.Name,
+		"image":          c.Image,
+		"port":           c.Port,
+		"alternate_port": c.AlternatePort,
+		"command":        c.Command,
+		"container_id":   c.ContainerID,
+		"host":           c.Host,
+		"transport":      c.Transport,
+		"labels":         c.Labels,
+	}
+}
+
+func (c *Container) Type() EndpointType {
+	return ContainerType
 }

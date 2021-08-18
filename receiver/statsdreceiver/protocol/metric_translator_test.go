@@ -46,7 +46,7 @@ func TestBuildCounterMetric(t *testing.T) {
 	dp := expectedMetric.Sum().DataPoints().AppendEmpty()
 	dp.SetIntVal(32)
 	dp.SetTimestamp(pdata.TimestampFromTime(timeNow))
-	dp.LabelsMap().Insert("mykey", "myvalue")
+	dp.Attributes().InsertString("mykey", "myvalue")
 	assert.Equal(t, metric, expectedMetrics)
 }
 
@@ -71,8 +71,8 @@ func TestBuildGaugeMetric(t *testing.T) {
 	dp := expectedMetric.Gauge().DataPoints().AppendEmpty()
 	dp.SetDoubleVal(32.3)
 	dp.SetTimestamp(pdata.TimestampFromTime(timeNow))
-	dp.LabelsMap().Insert("mykey", "myvalue")
-	dp.LabelsMap().Insert("mykey2", "myvalue2")
+	dp.Attributes().InsertString("mykey", "myvalue")
+	dp.Attributes().InsertString("mykey2", "myvalue2")
 	assert.Equal(t, metric, expectedMetrics)
 }
 
@@ -97,7 +97,7 @@ func TestBuildSummaryMetric(t *testing.T) {
 	dp.SetCount(6)
 	dp.SetTimestamp(pdata.TimestampFromTime(timeNow))
 	for i, key := range oneSummaryMetric.labelKeys {
-		dp.LabelsMap().Insert(key, oneSummaryMetric.labelValues[i])
+		dp.Attributes().InsertString(key, oneSummaryMetric.labelValues[i])
 	}
 	quantile := []float64{0, 10, 50, 90, 95, 100}
 	value := []float64{1, 1, 3, 6, 6, 6}

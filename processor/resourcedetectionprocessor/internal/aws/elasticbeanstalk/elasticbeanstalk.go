@@ -51,11 +51,10 @@ func NewDetector(component.ProcessorCreateSettings, internal.DetectorConfig) (in
 	return &Detector{fs: &ebFileSystem{}}, nil
 }
 
-func (d Detector) Detect(context.Context) (pdata.Resource, error) {
+func (d Detector) Detect(context.Context) (resource pdata.Resource, schemaURL string, err error) {
 	res := pdata.NewResource()
 	var conf io.ReadCloser
 
-	var err error
 	if d.fs.IsWindows() {
 		conf, err = d.fs.Open(windowsPath)
 	} else {
@@ -65,7 +64,7 @@ func (d Detector) Detect(context.Context) (pdata.Resource, error) {
 	// Do not want to return error so it fails silently on non-EB instances
 	if err != nil {
 		// TODO: Log a more specific message with zap
-		return res, nil
+		return res, "", nil
 	}
 
 	ebmd := &EbMetaData{}
@@ -74,7 +73,7 @@ func (d Detector) Detect(context.Context) (pdata.Resource, error) {
 
 	if err != nil {
 		// TODO: Log a more specific error with zap
-		return res, err
+		return res, "", err
 	}
 
 	attr := res.Attributes()
@@ -83,5 +82,5 @@ func (d Detector) Detect(context.Context) (pdata.Resource, error) {
 	attr.InsertString(conventions.AttributeServiceInstanceID, strconv.Itoa(ebmd.DeploymentID))
 	attr.InsertString(conventions.AttributeDeploymentEnvironment, ebmd.EnvironmentName)
 	attr.InsertString(conventions.AttributeServiceVersion, ebmd.VersionLabel)
-	return res, nil
+	return res, conventions.SchemaURL, nil
 }

@@ -154,6 +154,7 @@ The translation rules defined in [`translation/constants.go`](./internal/transla
 * memory.total
 * memory.utilization
 * network.total
+* process.cpu_time_seconds
 * system.disk.io.total
 * system.disk.operations.total
 * system.network.io.total

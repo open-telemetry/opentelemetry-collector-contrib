@@ -41,7 +41,7 @@ func buildCounterMetric(parsedMetric statsDMetric, isMonotonicCounter bool, time
 	dp.SetIntVal(parsedMetric.intvalue)
 	dp.SetTimestamp(pdata.TimestampFromTime(timeNow))
 	for i, key := range parsedMetric.labelKeys {
-		dp.LabelsMap().Insert(key, parsedMetric.labelValues[i])
+		dp.Attributes().InsertString(key, parsedMetric.labelValues[i])
 	}
 
 	return ilm
@@ -59,7 +59,7 @@ func buildGaugeMetric(parsedMetric statsDMetric, timeNow time.Time) pdata.Instru
 	dp.SetDoubleVal(parsedMetric.floatvalue)
 	dp.SetTimestamp(pdata.TimestampFromTime(timeNow))
 	for i, key := range parsedMetric.labelKeys {
-		dp.LabelsMap().Insert(key, parsedMetric.labelValues[i])
+		dp.Attributes().InsertString(key, parsedMetric.labelValues[i])
 	}
 
 	return ilm
@@ -77,7 +77,7 @@ func buildSummaryMetric(summaryMetric summaryMetric) pdata.InstrumentationLibrar
 	dp.SetSum(sum)
 	dp.SetTimestamp(pdata.TimestampFromTime(summaryMetric.timeNow))
 	for i, key := range summaryMetric.labelKeys {
-		dp.LabelsMap().Insert(key, summaryMetric.labelValues[i])
+		dp.Attributes().InsertString(key, summaryMetric.labelValues[i])
 	}
 
 	quantile := []float64{0, 10, 50, 90, 95, 100}

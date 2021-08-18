@@ -32,7 +32,7 @@ func TestTagsFromAttributes(t *testing.T) {
 		conventions.AttributeProcessPID:            pdata.NewAttributeValueInt(1),
 		conventions.AttributeProcessOwner:          pdata.NewAttributeValueString("root"),
 		conventions.AttributeOSType:                pdata.NewAttributeValueString("LINUX"),
-		conventions.AttributeK8SDaemonsetName:      pdata.NewAttributeValueString("daemon_set_name"),
+		conventions.AttributeK8SDaemonSetName:      pdata.NewAttributeValueString("daemon_set_name"),
 		conventions.AttributeAWSECSClusterARN:      pdata.NewAttributeValueString("cluster_arn"),
 		"tags.datadoghq.com/service":               pdata.NewAttributeValueString("service_name"),
 	}

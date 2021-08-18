@@ -27,7 +27,7 @@ type redisMetric struct {
 	name        string
 	units       string
 	desc        string
-	labels      map[string]string
+	labels      map[string]pdata.AttributeValue
 	pdType      pdata.MetricDataType
 	valueType   pdata.MetricValueType
 	isMonotonic bool

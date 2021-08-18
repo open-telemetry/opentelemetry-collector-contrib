@@ -16,7 +16,7 @@ processors:
     # processor name: deltatorate
     deltatorate:
 
-        # list the delta sum metrics to calculate the rate
+        # list the delta sum metrics to calculate the rate. This is a required field.
         metrics:
             - <metric_1_name>
             - <metric_2_name>

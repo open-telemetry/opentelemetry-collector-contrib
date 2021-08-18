@@ -186,7 +186,7 @@ func TestDetector_Detect(t *testing.T) {
 			d := &Detector{
 				metadataProvider: tt.fields.metadataProvider,
 			}
-			got, err := d.Detect(tt.args.ctx)
+			got, _, err := d.Detect(tt.args.ctx)
 
 			if tt.wantErr {
 				require.Error(t, err)

@@ -38,6 +38,8 @@ exporters:
     log_stream_name: "testing-integrations-stream"
     region: "us-east-1"
     endpoint: "logs.us-east-1.amazonaws.com"
+    sending_queue:
+      queue_size: 50
     retry_on_failure:
       enabled: true
       initial_interval: 10ms

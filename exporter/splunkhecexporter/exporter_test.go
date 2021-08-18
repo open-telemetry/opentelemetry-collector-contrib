@@ -82,7 +82,9 @@ func TestNew(t *testing.T) {
 func TestConsumeMetricsData(t *testing.T) {
 	smallBatch := &agentmetricspb.ExportMetricsServiceRequest{
 		Node: &commonpb.Node{
-			ServiceInfo: &commonpb.ServiceInfo{Name: "test_splunk"},
+			Attributes: map[string]string{
+				"com.splunk.source": "test_splunk",
+			},
 		},
 		Resource: &resourcepb.Resource{Type: "test"},
 		Metrics: []*metricspb.Metric{
@@ -223,9 +225,9 @@ func generateLargeLogsBatch() pdata.Logs {
 	for i := 0; i < 65000; i++ {
 		logRecord := ill.Logs().AppendEmpty()
 		logRecord.Body().SetStringVal("mylog")
-		logRecord.Attributes().InsertString(conventions.AttributeServiceName, "myapp")
-		logRecord.Attributes().InsertString(splunk.SourcetypeLabel, "myapp-type")
-		logRecord.Attributes().InsertString(splunk.IndexLabel, "myindex")
+		logRecord.Attributes().InsertString(splunk.DefaultSourceLabel, "myapp")
+		logRecord.Attributes().InsertString(splunk.DefaultSourceTypeLabel, "myapp-type")
+		logRecord.Attributes().InsertString(splunk.DefaultIndexLabel, "myindex")
 		logRecord.Attributes().InsertString(conventions.AttributeHostName, "myhost")
 		logRecord.Attributes().InsertString("custom", "custom")
 		logRecord.SetTimestamp(ts)
