@@ -174,7 +174,7 @@ func numberMetricsToLogs(name string, data pdata.NumberDataPointSlice, defaultLa
 		attributeMap := dataPoint.Attributes()
 		labels := defaultLabels.Clone()
 		attributeMap.Range(func(k string, v pdata.AttributeValue) bool {
-			labels.Append(k, v.StringVal()) // TODO(codeboten): Fix as part of https://github.com/open-telemetry/opentelemetry-collector/issues/3815
+			labels.Append(k, pdata.AttributeValueToString(v))
 			return true
 		})
 		switch dataPoint.Type() {
@@ -205,7 +205,7 @@ func doubleHistogramMetricsToLogs(name string, data pdata.HistogramDataPointSlic
 		attributeMap := dataPoint.Attributes()
 		labels := defaultLabels.Clone()
 		attributeMap.Range(func(k string, v pdata.AttributeValue) bool {
-			labels.Append(k, v.StringVal()) // TODO(codeboten): Fix as part of https://github.com/open-telemetry/opentelemetry-collector/issues/3815
+			labels.Append(k, pdata.AttributeValueToString(v))
 			return true
 		})
 		logs = append(logs, newMetricLogFromRaw(name+"_sum",
@@ -253,7 +253,7 @@ func doubleSummaryMetricsToLogs(name string, data pdata.SummaryDataPointSlice, d
 		attributeMap := dataPoint.Attributes()
 		labels := defaultLabels.Clone()
 		attributeMap.Range(func(k string, v pdata.AttributeValue) bool {
-			labels.Append(k, v.StringVal()) // TODO(codeboten): Fix as part of https://github.com/open-telemetry/opentelemetry-collector/issues/3815
+			labels.Append(k, pdata.AttributeValueToString(v))
 			return true
 		})
 		logs = append(logs, newMetricLogFromRaw(name+"_sum",

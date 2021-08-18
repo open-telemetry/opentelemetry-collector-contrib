@@ -201,7 +201,7 @@ func (dps summaryDataPointSlice) At(i int) (dataPoint, bool) {
 func createLabels(attributes pdata.AttributeMap, instrLibName string) map[string]string {
 	labels := make(map[string]string, attributes.Len()+1)
 	attributes.Range(func(k string, v pdata.AttributeValue) bool {
-		labels[k] = v.StringVal()
+		labels[k] = pdata.AttributeValueToString(v)
 		return true
 	})
 
