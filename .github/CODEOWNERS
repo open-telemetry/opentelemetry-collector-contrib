@@ -25,7 +25,6 @@ exporter/dynatraceexporter/                          @open-telemetry/collector-c
 exporter/elasticexporter/                            @open-telemetry/collector-contrib-approvers @axw @simitt @jalvz
 exporter/elasticsearchexporter/                      @open-telemetry/collector-contrib-approvers @urso @faec @blakerouse
 exporter/f5cloudexporter/                            @open-telemetry/collector-contrib-approvers @gramidt
-exporter/honeycombexporter/                          @open-telemetry/collector-contrib-approvers @paulosman @lizthegrey @MikeGoldsmith
 exporter/humioexporter/                              @open-telemetry/collector-contrib-approvers @xitric
 exporter/awskinesisexporter/                         @open-telemetry/collector-contrib-approvers @owais @anuraaga
 exporter/loadbalancingexporter/                      @open-telemetry/collector-contrib-approvers @jpkrohling
