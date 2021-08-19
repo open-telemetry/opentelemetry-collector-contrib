@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package main
+package components
 
 import (
 	"testing"
@@ -22,7 +22,7 @@ import (
 )
 
 func TestDefaultComponents(t *testing.T) {
-	factories, err := components()
+	factories, err := Components()
 	assert.NoError(t, err)
 
 	exts := factories.Extensions
