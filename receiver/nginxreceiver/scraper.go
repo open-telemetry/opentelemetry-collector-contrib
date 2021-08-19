@@ -16,7 +16,9 @@ package nginxreceiver
 
 import (
 	"context"
+	"fmt"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/nginxinc/nginx-prometheus-exporter/client"
@@ -48,11 +50,53 @@ func newNginxScraper(
 func (r *nginxScraper) start(_ context.Context, host component.Host) error {
 	httpClient, err := r.cfg.ToClient(host.GetExtensions())
 	if err != nil {
+		r.logger.Error("nginx", zap.Error(err), zap.String("status_code", "INVALID_ARGUMENT"))
 		return err
 	}
 	r.httpClient = httpClient
 
 	return nil
+}
+func (r *nginxScraper) logGetErrors(err error) {
+	if err != nil {
+		switch {
+		case strings.HasPrefix(err.Error(), "failed to get"):
+			r.logger.Error("nginx", zap.Error(err), zap.String("status_code", "INTERNAL"))
+		case strings.HasPrefix(err.Error(), "expected"):
+			r.logStatusCode(err)
+		case strings.HasPrefix(err.Error(), "failed to read"):
+			r.logger.Error("nginx", zap.Error(err), zap.String("status_code", "INTERNAL"))
+		case strings.HasPrefix(err.Error(), "failed to parse"):
+			r.logger.Error("nginx", zap.Error(err), zap.String("status_code", "INTERNAL"))
+		default:
+			r.logger.Error("nginx", zap.Error(err), zap.String("status_code", "UNKNOWN"))
+		}
+	}
+}
+
+func (r *nginxScraper) logStatusCode(err error) {
+	if err != nil {
+		switch err.Error() {
+		case fmt.Sprintf("expected %v response, got %v", http.StatusOK, 400):
+			r.logger.Error("nginx", zap.Error(err), zap.String("status_code", "INTERNAL"))
+		case fmt.Sprintf("expected %v response, got %v", http.StatusOK, 401):
+			r.logger.Error("nginx", zap.Error(err), zap.String("status_code", "UNAUTHENTICATED"))
+		case fmt.Sprintf("expected %v response, got %v", http.StatusOK, 403):
+			r.logger.Error("nginx", zap.Error(err), zap.String("status_code", "PERMISSION_DENIED"))
+		case fmt.Sprintf("expected %v response, got %v", http.StatusOK, 404):
+			r.logger.Error("nginx", zap.Error(err), zap.String("status_code", "UNIMPLEMENTED"))
+		case fmt.Sprintf("expected %v response, got %v", http.StatusOK, 429):
+			r.logger.Error("nginx", zap.Error(err), zap.String("status_code", "UNAVAILABLE"))
+		case fmt.Sprintf("expected %v response, got %v", http.StatusOK, 502):
+			r.logger.Error("nginx", zap.Error(err), zap.String("status_code", "UNAVAILABLE"))
+		case fmt.Sprintf("expected %v response, got %v", http.StatusOK, 503):
+			r.logger.Error("nginx", zap.Error(err), zap.String("status_code", "UNAVAILABLE"))
+		case fmt.Sprintf("expected %v response, got %v", http.StatusOK, 504):
+			r.logger.Error("nginx", zap.Error(err), zap.String("status_code", "UNAVAILABLE"))
+		default:
+			r.logger.Error("nginx", zap.Error(err), zap.String("status_code", "UNKNOWN"))
+		}
+	}
 }
 
 func (r *nginxScraper) scrape(context.Context) (pdata.ResourceMetricsSlice, error) {
@@ -62,6 +106,7 @@ func (r *nginxScraper) scrape(context.Context) (pdata.ResourceMetricsSlice, erro
 		var err error
 		r.client, err = client.NewNginxClient(r.httpClient, r.cfg.HTTPClientSettings.Endpoint)
 		if err != nil {
+			r.logGetErrors(err)
 			r.client = nil
 			return pdata.ResourceMetricsSlice{}, err
 		}
@@ -69,6 +114,7 @@ func (r *nginxScraper) scrape(context.Context) (pdata.ResourceMetricsSlice, erro
 
 	stats, err := r.client.GetStubStats()
 	if err != nil {
+		r.logGetErrors(err)
 		r.logger.Error("Failed to fetch nginx stats", zap.Error(err))
 		return pdata.ResourceMetricsSlice{}, err
 	}

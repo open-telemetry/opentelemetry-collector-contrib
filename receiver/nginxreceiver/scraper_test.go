@@ -18,9 +18,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net"
 	"net/http"
 	"net/http/httptest"
+	"strconv"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -28,6 +31,8 @@ import (
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/model/pdata"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
+	"go.uber.org/zap/zaptest/observer"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/nginxreceiver/internal/metadata"
 )
@@ -133,8 +138,273 @@ func TestScraperError(t *testing.T) {
 	})
 }
 
+func TestScraperLogs(t *testing.T) {
+	l, err := net.Listen("tcp", "127.0.0.1:52418")
+	require.Nil(t, err)
+	nginxMock := httptest.NewUnstartedServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+		if req.URL.Path == "/bad_get" {
+			time.Sleep(11 * time.Millisecond)
+			return
+		}
+		if req.URL.Path == "/bad_response_body" {
+			rw.Header().Set("Content-Length", "1")
+			return
+		}
+		if req.URL.Path == "/bad_parse" {
+			_, _ = rw.Write([]byte(`Bad status page`))
+			return
+		}
+		if req.URL.Path == "/400" {
+			rw.WriteHeader(400)
+			return
+		}
+		if req.URL.Path == "/401" {
+			rw.WriteHeader(401)
+			return
+		}
+		if req.URL.Path == "/403" {
+			rw.WriteHeader(403)
+			return
+		}
+		if req.URL.Path == "/404" {
+			rw.WriteHeader(404)
+			return
+		}
+		if req.URL.Path == "/429" {
+			rw.WriteHeader(429)
+			return
+		}
+		if req.URL.Path == "/502" {
+			rw.WriteHeader(502)
+			return
+		}
+		if req.URL.Path == "/503" {
+			rw.WriteHeader(503)
+			return
+		}
+		if req.URL.Path == "/504" {
+			rw.WriteHeader(504)
+			return
+		}
+		defaultPort, _ := strconv.Atoi(req.URL.Path[1:])
+		rw.WriteHeader(defaultPort)
+	}))
+	http.DefaultTransport.(*http.Transport).ResponseHeaderTimeout = 10 * time.Millisecond
+	nginxMock.Listener.Close()
+	nginxMock.Listener = l
+	nginxMock.Start()
+
+	testCases := []struct {
+		desc     string
+		endpoint string
+		expected []observer.LoggedEntry
+	}{
+		{
+			desc:     "failed to get logging",
+			endpoint: "/bad_get",
+			expected: []observer.LoggedEntry{
+				{
+					Entry: zapcore.Entry{
+						Level:   zap.ErrorLevel,
+						Message: "nginx"},
+					Context: []zapcore.Field{
+						zap.Error(fmt.Errorf("failed to get http://127.0.0.1:52418/bad_get: Get \"http://127.0.0.1:52418/bad_get\": net/http: timeout awaiting response headers")),
+						zap.String("status_code", "INTERNAL"),
+					},
+				},
+			},
+		},
+		{
+			desc:     "400 logging",
+			endpoint: "/400",
+			expected: []observer.LoggedEntry{
+				{
+					Entry: zapcore.Entry{
+						Level:   zap.ErrorLevel,
+						Message: "nginx"},
+					Context: []zapcore.Field{
+						zap.Error(fmt.Errorf("expected 200 response, got 400")),
+						zap.String("status_code", "INTERNAL"),
+					},
+				},
+			},
+		},
+		{
+			desc:     "401 logging",
+			endpoint: "/401",
+			expected: []observer.LoggedEntry{
+				{
+					Entry: zapcore.Entry{
+						Level:   zap.ErrorLevel,
+						Message: "nginx"},
+					Context: []zapcore.Field{
+						zap.Error(fmt.Errorf("expected 200 response, got 401")),
+						zap.String("status_code", "UNAUTHENTICATED"),
+					},
+				},
+			},
+		},
+		{
+			desc:     "403 logging",
+			endpoint: "/403",
+			expected: []observer.LoggedEntry{
+				{
+					Entry: zapcore.Entry{
+						Level:   zap.ErrorLevel,
+						Message: "nginx"},
+					Context: []zapcore.Field{
+						zap.Error(fmt.Errorf("expected 200 response, got 403")),
+						zap.String("status_code", "PERMISSION_DENIED"),
+					},
+				},
+			},
+		},
+		{
+			desc:     "404 logging",
+			endpoint: "/404",
+			expected: []observer.LoggedEntry{
+				{
+					Entry: zapcore.Entry{
+						Level:   zap.ErrorLevel,
+						Message: "nginx"},
+					Context: []zapcore.Field{
+						zap.Error(fmt.Errorf("expected 200 response, got 404")),
+						zap.String("status_code", "UNIMPLEMENTED"),
+					},
+				},
+			},
+		},
+		{
+			desc:     "429 logging",
+			endpoint: "/429",
+			expected: []observer.LoggedEntry{
+				{
+					Entry: zapcore.Entry{
+						Level:   zap.ErrorLevel,
+						Message: "nginx"},
+					Context: []zapcore.Field{
+						zap.Error(fmt.Errorf("expected 200 response, got 429")),
+						zap.String("status_code", "UNAVAILABLE"),
+					},
+				},
+			},
+		},
+		{
+			desc:     "502 logging",
+			endpoint: "/502",
+			expected: []observer.LoggedEntry{
+				{
+					Entry: zapcore.Entry{
+						Level:   zap.ErrorLevel,
+						Message: "nginx"},
+					Context: []zapcore.Field{
+						zap.Error(fmt.Errorf("expected 200 response, got 502")),
+						zap.String("status_code", "UNAVAILABLE"),
+					},
+				},
+			},
+		},
+		{
+			desc:     "503 logging",
+			endpoint: "/503",
+			expected: []observer.LoggedEntry{
+				{
+					Entry: zapcore.Entry{
+						Level:   zap.ErrorLevel,
+						Message: "nginx"},
+					Context: []zapcore.Field{
+						zap.Error(fmt.Errorf("expected 200 response, got 503")),
+						zap.String("status_code", "UNAVAILABLE"),
+					},
+				},
+			},
+		},
+		{
+			desc:     "504 logging",
+			endpoint: "/504",
+			expected: []observer.LoggedEntry{
+				{
+					Entry: zapcore.Entry{
+						Level:   zap.ErrorLevel,
+						Message: "nginx"},
+					Context: []zapcore.Field{
+						zap.Error(fmt.Errorf("expected 200 response, got 504")),
+						zap.String("status_code", "UNAVAILABLE"),
+					},
+				},
+			},
+		},
+		{
+			desc:     "505 default logging",
+			endpoint: "/505",
+			expected: []observer.LoggedEntry{
+				{
+					Entry: zapcore.Entry{
+						Level:   zap.ErrorLevel,
+						Message: "nginx"},
+					Context: []zapcore.Field{
+						zap.Error(fmt.Errorf("expected 200 response, got 505")),
+						zap.String("status_code", "UNKNOWN"),
+					},
+				},
+			},
+		},
+		{
+			desc:     "bad response body",
+			endpoint: "/bad_response_body",
+			expected: []observer.LoggedEntry{
+				{
+					Entry: zapcore.Entry{
+						Level:   zap.ErrorLevel,
+						Message: "nginx"},
+					Context: []zapcore.Field{
+						zap.Error(fmt.Errorf("failed to read the response body: unexpected EOF")),
+						zap.String("status_code", "INTERNAL"),
+					},
+				},
+			},
+		},
+		{
+			desc:     "bad status page",
+			endpoint: "/bad_parse",
+			expected: []observer.LoggedEntry{
+				{
+					Entry: zapcore.Entry{
+						Level:   zap.ErrorLevel,
+						Message: "nginx"},
+					Context: []zapcore.Field{
+						zap.Error(fmt.Errorf("failed to parse response body \"Bad status page\": invalid input \"Bad status page\"")),
+						zap.String("status_code", "INTERNAL"),
+					},
+				},
+			},
+		},
+	}
+	for _, tC := range testCases {
+		t.Run(tC.desc, func(t *testing.T) {
+			obs, logs := observer.New(zap.ErrorLevel)
+
+			sc := newNginxScraper(zap.New(obs), &Config{
+				HTTPClientSettings: confighttp.HTTPClientSettings{
+					Endpoint: nginxMock.URL + tC.endpoint,
+				},
+			})
+
+			err := sc.start(context.Background(), componenttest.NewNopHost())
+			require.NoError(t, err)
+			_, err = sc.scrape(context.Background())
+			require.Error(t, err)
+
+			require.Equal(t, 1, logs.Len())
+			require.Equal(t, tC.expected, logs.AllUntimed())
+		})
+	}
+	nginxMock.Close()
+}
+
 func TestScraperFailedStart(t *testing.T) {
-	sc := newNginxScraper(zap.NewNop(), &Config{
+	obs, logs := observer.New(zap.ErrorLevel)
+	sc := newNginxScraper(zap.New(obs), &Config{
 		HTTPClientSettings: confighttp.HTTPClientSettings{
 			Endpoint: "localhost:8080",
 			TLSSetting: configtls.TLSClientSetting{
@@ -146,4 +416,9 @@ func TestScraperFailedStart(t *testing.T) {
 	})
 	err := sc.start(context.Background(), componenttest.NewNopHost())
 	require.Error(t, err)
+
+	require.Equal(t, 1, logs.Len())
+	errorsMap := logs.AllUntimed()[0].ContextMap()
+	require.Equal(t, "failed to load TLS config: failed to load CA CertPool: failed to load CA /non/existent: open /non/existent: no such file or directory", errorsMap["error"])
+	require.Equal(t, "INVALID_ARGUMENT", errorsMap["status_code"])
 }
