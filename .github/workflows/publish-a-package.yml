@@ -1,0 +1,31 @@
+name: Publish a Package from Tag
+
+on:
+  push:
+    tags:
+      - 'opentelemetry-*==1.*'
+
+jobs:
+  publish-a-package:
+    name: Publish package from tag
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v1
+    - uses: actions/setup-python@v1
+      with:
+        python-version: '3.9'
+    - name: Log tag that triggered publish workflow
+      run:  echo "Attempting to publish package from tag $GITHUB_REF"
+    - name: Build wheel for tag
+      run: ./scripts/build_a_package.sh
+    - name: Install twine
+      run: |
+        pip install twine
+    # We don't need to publish to TestPyPI because we only publish 1 package.
+    # If it fails no other work needs to be reversed.
+    - name: Publish to PyPI
+      env:
+        TWINE_USERNAME: '__token__'
+        TWINE_PASSWORD: ${{ secrets.pypi_password }}
+      run: |
+        twine upload --skip-existing --verbose dist/*

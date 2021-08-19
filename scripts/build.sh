@@ -31,6 +31,10 @@ DISTDIR=dist
  (
    cd $DISTDIR
    for x in *.tar.gz ; do
+    if [[ $x =~ ^opentelemetry-.*-1\.[0-9]+.*\.tar\.gz$ ]]; then
+      echo "Skipping $x because it is >=1.0 and should be released using a tag."
+      continue
+    fi
      pip wheel --no-deps $x
    done
  )
