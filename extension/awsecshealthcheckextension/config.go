@@ -46,7 +46,7 @@ func (cfg *Config) Validate() error {
 		return err
 	}
 	if cfg.ExporterErrorLimit <= 0 {
-		return errors.New("math: exporters error limit is a negative number")
+		return errors.New("bad config: exporter_error_limit expects a positive number")
 	}
 	return nil
 }
