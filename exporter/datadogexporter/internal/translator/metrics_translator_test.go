@@ -113,18 +113,6 @@ func TestIsCumulativeMonotonic(t *testing.T) {
 	}
 }
 
-func TestMetricDimensionsToMapKey(t *testing.T) {
-	metricName := "metric.name"
-	noTags := metricDimensionsToMapKey(metricName, []string{})
-	someTags := metricDimensionsToMapKey(metricName, []string{"key1:val1", "key2:val2"})
-	sameTags := metricDimensionsToMapKey(metricName, []string{"key2:val2", "key1:val1"})
-	diffTags := metricDimensionsToMapKey(metricName, []string{"key3:val3"})
-
-	assert.NotEqual(t, noTags, someTags)
-	assert.NotEqual(t, someTags, diffTags)
-	assert.Equal(t, someTags, sameTags)
-}
-
 func TestMapIntMetrics(t *testing.T) {
 	ts := pdata.TimestampFromTime(time.Now())
 	slice := pdata.NewNumberDataPointSlice()
@@ -180,23 +168,6 @@ func newTestCache() *TTLCache {
 
 func seconds(i int) pdata.Timestamp {
 	return pdata.TimestampFromTime(time.Unix(int64(i), 0))
-}
-
-func TestPutAndGetDiff(t *testing.T) {
-	prevPts := newTestCache()
-	_, ok := prevPts.putAndGetDiff("test", 1, 5)
-	// no diff since it is the first point
-	assert.False(t, ok)
-	_, ok = prevPts.putAndGetDiff("test", 0, 0)
-	// no diff since ts is lower than the stored point
-	assert.False(t, ok)
-	_, ok = prevPts.putAndGetDiff("test", 2, 2)
-	// no diff since the value is lower than the stored value
-	assert.False(t, ok)
-	dx, ok := prevPts.putAndGetDiff("test", 3, 4)
-	// diff with the most recent point (2,2)
-	assert.True(t, ok)
-	assert.Equal(t, 2.0, dx)
 }
 
 func TestMapIntMonotonicMetrics(t *testing.T) {
@@ -542,10 +513,10 @@ func TestMapSummaryMetrics(t *testing.T) {
 	slice := exampleSummaryDataPointSlice(ts, 10_001, 101)
 
 	newPrevPts := func(tags []string) *TTLCache {
-		prevPts := newTestCache()
-		prevPts.cache.Set(metricDimensionsToMapKey("summary.example.count", tags), numberCounter{0, 1}, gocache.NoExpiration)
-		prevPts.cache.Set(metricDimensionsToMapKey("summary.example.sum", tags), numberCounter{0, 1}, gocache.NoExpiration)
-		return prevPts
+		c := newTestCache()
+		c.cache.Set(c.metricDimensionsToMapKey("summary.example.count", tags), numberCounter{0, 1}, gocache.NoExpiration)
+		c.cache.Set(c.metricDimensionsToMapKey("summary.example.sum", tags), numberCounter{0, 1}, gocache.NoExpiration)
+		return c
 	}
 
 	noQuantiles := []datadog.Metric{

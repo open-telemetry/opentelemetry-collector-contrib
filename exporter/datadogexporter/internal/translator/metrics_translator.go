@@ -16,12 +16,9 @@ package translator
 
 import (
 	"fmt"
-	"sort"
 	"strconv"
-	"strings"
 	"time"
 
-	gocache "github.com/patrickmn/go-cache"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/model/pdata"
 	"go.uber.org/zap"
@@ -32,42 +29,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metrics"
 )
-
-type TTLCache struct {
-	cache *gocache.Cache
-}
-
-// numberCounter keeps the value of a number
-// monotonic counter at a given point in time
-type numberCounter struct {
-	ts    uint64
-	value float64
-}
-
-func NewTTLCache(sweepInterval int64, deltaTTL int64) *TTLCache {
-	cache := gocache.New(time.Duration(deltaTTL)*time.Second, time.Duration(sweepInterval)*time.Second)
-	return &TTLCache{cache}
-}
-
-// putAndGetDiff submits a new value for a given key and returns the difference with the
-// last submitted value (ordered by timestamp). The diff value is only valid if `ok` is true.
-func (t *TTLCache) putAndGetDiff(key string, ts uint64, val float64) (dx float64, ok bool) {
-	if c, found := t.cache.Get(key); found {
-		cnt := c.(numberCounter)
-		if cnt.ts > ts {
-			// We were given a point older than the one in memory so we drop it
-			// We keep the existing point in memory since it is the most recent
-			return 0, false
-		}
-		// if dx < 0, we assume there was a reset, thus we save the point
-		// but don't export it (it's the first one so we can't do a delta)
-		dx = val - cnt.value
-		ok = dx >= 0
-	}
-
-	t.cache.Set(key, numberCounter{ts, val}, gocache.DefaultExpiration)
-	return
-}
 
 // getTags maps an attributeMap into a slice of Datadog tags
 func getTags(labels pdata.AttributeMap) []string {
@@ -92,15 +53,6 @@ func isCumulativeMonotonic(md pdata.Metric) bool {
 			md.Sum().IsMonotonic()
 	}
 	return false
-}
-
-// metricDimensionsToMapKey maps name and tags to a string to use as an identifier
-// The tags order does not matter
-func metricDimensionsToMapKey(name string, tags []string) string {
-	const separator string = "}{" // These are invalid in tags
-	dimensions := append(tags, name)
-	sort.Strings(dimensions)
-	return strings.Join(dimensions, separator)
 }
 
 // mapNumberMetrics maps double datapoints into Datadog metrics
@@ -132,7 +84,6 @@ func mapNumberMonotonicMetrics(name string, prevPts *TTLCache, slice pdata.Numbe
 		ts := uint64(p.Timestamp())
 		tags := getTags(p.Attributes())
 		tags = append(tags, attrTags...)
-		key := metricDimensionsToMapKey(name, tags)
 
 		var val float64
 		switch p.Type() {
@@ -142,7 +93,7 @@ func mapNumberMonotonicMetrics(name string, prevPts *TTLCache, slice pdata.Numbe
 			val = float64(p.IntVal())
 		}
 
-		if dx, ok := prevPts.putAndGetDiff(key, ts, val); ok {
+		if dx, ok := prevPts.putAndGetDiff(name, tags, ts, val); ok {
 			ms = append(ms, metrics.NewCount(name, ts, dx, tags))
 		}
 	}
@@ -220,16 +171,14 @@ func mapSummaryMetrics(name string, prevPts *TTLCache, slice pdata.SummaryDataPo
 		// count and sum are increasing; we treat them as cumulative monotonic sums.
 		{
 			countName := fmt.Sprintf("%s.count", name)
-			countKey := metricDimensionsToMapKey(countName, tags)
-			if dx, ok := prevPts.putAndGetDiff(countKey, ts, float64(p.Count())); ok {
+			if dx, ok := prevPts.putAndGetDiff(countName, tags, ts, float64(p.Count())); ok {
 				ms = append(ms, metrics.NewCount(countName, ts, dx, tags))
 			}
 		}
 
 		{
 			sumName := fmt.Sprintf("%s.sum", name)
-			sumKey := metricDimensionsToMapKey(sumName, tags)
-			if dx, ok := prevPts.putAndGetDiff(sumKey, ts, p.Sum()); ok {
+			if dx, ok := prevPts.putAndGetDiff(sumName, tags, ts, p.Sum()); ok {
 				ms = append(ms, metrics.NewCount(sumName, ts, dx, tags))
 			}
 		}
