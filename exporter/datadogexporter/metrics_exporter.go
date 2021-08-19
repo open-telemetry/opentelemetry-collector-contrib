@@ -38,6 +38,8 @@ type metricsExporter struct {
 	tr     *translator.Translator
 }
 
+var _ translator.HostnameProvider = (*hostProvider)(nil)
+
 type hostProvider struct {
 	logger *zap.Logger
 	cfg    *config.Config
