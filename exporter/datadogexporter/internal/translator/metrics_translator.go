@@ -31,11 +31,14 @@ import (
 )
 
 type Translator struct {
-	prevPts *TTLCache
+	prevPts   *TTLCache
+	logger    *zap.Logger
+	cfg       config.MetricsConfig
+	buildInfo component.BuildInfo
 }
 
-func New(cache *TTLCache) *Translator {
-	return &Translator{cache}
+func New(cache *TTLCache, params component.ExporterCreateSettings, cfg config.MetricsConfig) *Translator {
+	return &Translator{cache, params.Logger, cfg, params.BuildInfo}
 }
 
 // getTags maps an attributeMap into a slice of Datadog tags
@@ -121,7 +124,7 @@ func (t *Translator) mapNumberMonotonicMetrics(name string, slice pdata.NumberDa
 // We follow a similar approach to our OpenCensus exporter:
 // we report sum and count by default; buckets count can also
 // be reported (opt-in), but bounds are ignored.
-func (t *Translator) mapHistogramMetrics(name string, slice pdata.HistogramDataPointSlice, buckets bool, attrTags []string) []datadog.Metric {
+func (t *Translator) mapHistogramMetrics(name string, slice pdata.HistogramDataPointSlice, attrTags []string) []datadog.Metric {
 	// Allocate assuming none are nil and no buckets
 	ms := make([]datadog.Metric, 0, 2*slice.Len())
 	for i := 0; i < slice.Len(); i++ {
@@ -135,7 +138,7 @@ func (t *Translator) mapHistogramMetrics(name string, slice pdata.HistogramDataP
 			metrics.NewGauge(fmt.Sprintf("%s.sum", name), ts, p.Sum(), tags),
 		)
 
-		if buckets {
+		if t.cfg.Buckets {
 			// We have a single metric, 'count_per_bucket', which is tagged with the bucket id. See:
 			// https://github.com/DataDog/opencensus-go-exporter-datadog/blob/c3b47f1c6dcf1c47b59c32e8dbb7df5f78162daa/stats.go#L99-L104
 			fullName := fmt.Sprintf("%s.count_per_bucket", name)
@@ -167,7 +170,7 @@ func getQuantileTag(quantile float64) string {
 }
 
 // mapSummaryMetrics maps summary datapoints into Datadog metrics
-func (t *Translator) mapSummaryMetrics(name string, slice pdata.SummaryDataPointSlice, quantiles bool, attrTags []string) []datadog.Metric {
+func (t *Translator) mapSummaryMetrics(name string, slice pdata.SummaryDataPointSlice, attrTags []string) []datadog.Metric {
 	// Allocate assuming none are nil and no quantiles
 	ms := make([]datadog.Metric, 0, 2*slice.Len())
 	for i := 0; i < slice.Len(); i++ {
@@ -191,7 +194,7 @@ func (t *Translator) mapSummaryMetrics(name string, slice pdata.SummaryDataPoint
 			}
 		}
 
-		if quantiles {
+		if t.cfg.Quantiles {
 			fullName := fmt.Sprintf("%s.quantile", name)
 			quantiles := p.QuantileValues()
 			for i := 0; i < quantiles.Len(); i++ {
@@ -207,7 +210,7 @@ func (t *Translator) mapSummaryMetrics(name string, slice pdata.SummaryDataPoint
 }
 
 // MapMetrics maps OTLP metrics into the DataDog format
-func (t *Translator) MapMetrics(logger *zap.Logger, cfg config.MetricsConfig, fallbackHost string, md pdata.Metrics, buildInfo component.BuildInfo) (series []datadog.Metric, droppedTimeSeries int) {
+func (t *Translator) MapMetrics(fallbackHost string, md pdata.Metrics) (series []datadog.Metric) {
 	pushTime := uint64(time.Now().UTC().UnixNano())
 	rms := md.ResourceMetrics()
 	seenHosts := make(map[string]struct{})
@@ -218,7 +221,7 @@ func (t *Translator) MapMetrics(logger *zap.Logger, cfg config.MetricsConfig, fa
 
 		// Only fetch attribute tags if they're not already converted into labels.
 		// Otherwise some tags would be present twice in a metric's tag list.
-		if !cfg.ExporterConfig.ResourceAttributesAsTags {
+		if !t.cfg.ExporterConfig.ResourceAttributesAsTags {
 			attributeTags = attributes.TagsFromAttributes(rm.Resource().Attributes())
 		}
 
@@ -241,7 +244,7 @@ func (t *Translator) MapMetrics(logger *zap.Logger, cfg config.MetricsConfig, fa
 				case pdata.MetricDataTypeSum:
 					switch md.Sum().AggregationTemporality() {
 					case pdata.AggregationTemporalityCumulative:
-						if cfg.SendMonotonic && isCumulativeMonotonic(md) {
+						if t.cfg.SendMonotonic && isCumulativeMonotonic(md) {
 							datapoints = t.mapNumberMonotonicMetrics(md.Name(), md.Sum().DataPoints(), attributeTags)
 						} else {
 							datapoints = t.mapNumberMetrics(md.Name(), metrics.Gauge, md.Sum().DataPoints(), attributeTags)
@@ -249,18 +252,18 @@ func (t *Translator) MapMetrics(logger *zap.Logger, cfg config.MetricsConfig, fa
 					case pdata.AggregationTemporalityDelta:
 						datapoints = t.mapNumberMetrics(md.Name(), metrics.Count, md.Sum().DataPoints(), attributeTags)
 					default: // pdata.AggregationTemporalityUnspecified or any other not supported type
-						logger.Debug("Unknown or unsupported aggregation temporality",
+						t.logger.Debug("Unknown or unsupported aggregation temporality",
 							zap.String("metric name", md.Name()),
 							zap.Any("aggregation temporality", md.Sum().AggregationTemporality()),
 						)
 						continue
 					}
 				case pdata.MetricDataTypeHistogram:
-					datapoints = t.mapHistogramMetrics(md.Name(), md.Histogram().DataPoints(), cfg.Buckets, attributeTags)
+					datapoints = t.mapHistogramMetrics(md.Name(), md.Histogram().DataPoints(), attributeTags)
 				case pdata.MetricDataTypeSummary:
-					datapoints = t.mapSummaryMetrics(md.Name(), md.Summary().DataPoints(), cfg.Quantiles, attributeTags)
+					datapoints = t.mapSummaryMetrics(md.Name(), md.Summary().DataPoints(), attributeTags)
 				default: // pdata.MetricDataTypeNone or any other not supported type
-					logger.Debug("Unknown or unsupported metric type", zap.String("metric name", md.Name()), zap.Any("data type", md.DataType()))
+					t.logger.Debug("Unknown or unsupported metric type", zap.String("metric name", md.Name()), zap.Any("data type", md.DataType()))
 					continue
 				}
 
@@ -275,7 +278,7 @@ func (t *Translator) MapMetrics(logger *zap.Logger, cfg config.MetricsConfig, fa
 
 	for host := range seenHosts {
 		// Report the host as running
-		runningMetric := metrics.DefaultMetrics("metrics", host, pushTime, buildInfo)
+		runningMetric := metrics.DefaultMetrics("metrics", host, pushTime, t.buildInfo)
 		series = append(series, runningMetric...)
 	}
 

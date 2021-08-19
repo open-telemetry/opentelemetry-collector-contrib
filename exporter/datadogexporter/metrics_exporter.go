@@ -49,7 +49,7 @@ func newMetricsExporter(ctx context.Context, params component.ExporterCreateSett
 		sweepInterval = cfg.Metrics.DeltaTTL / 2
 	}
 	prevPts := translator.NewTTLCache(sweepInterval, cfg.Metrics.DeltaTTL)
-	tr := translator.New(prevPts)
+	tr := translator.New(prevPts, params, cfg.Metrics)
 	return &metricsExporter{params, cfg, ctx, client, tr}
 }
 
@@ -69,7 +69,7 @@ func (exp *metricsExporter) PushMetricsData(ctx context.Context, md pdata.Metric
 	}
 
 	fallbackHost := metadata.GetHost(exp.params.Logger, exp.cfg)
-	ms, _ := exp.tr.MapMetrics(exp.params.Logger, exp.cfg.Metrics, fallbackHost, md, exp.params.BuildInfo)
+	ms := exp.tr.MapMetrics(fallbackHost, md)
 	metrics.ProcessMetrics(ms, exp.cfg)
 
 	err := exp.client.PostMetrics(ms)
