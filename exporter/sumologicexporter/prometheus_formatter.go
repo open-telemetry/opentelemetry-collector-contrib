@@ -21,7 +21,6 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/model/pdata"
-	tracetranslator "go.opentelemetry.io/collector/translator/trace"
 )
 
 type dataPoint interface {
@@ -75,7 +74,7 @@ func (f *prometheusFormatter) tags2String(attr pdata.AttributeMap, labels pdata.
 			fmt.Sprintf(
 				`%s="%s"`,
 				f.sanitizeKey(k),
-				f.sanitizeValue(tracetranslator.AttributeValueToString(v)),
+				f.sanitizeValue(pdata.AttributeValueToString(v)),
 			),
 		)
 		return true
