@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+## 💡 Enhancements 💡
+
+- `tailsampling` processor: Add new policy `probabilistic` (#3876)
+
 ## v0.33.0
 
 # 🎉 OpenTelemetry Collector Contrib v0.33.0 (Beta) 🎉
