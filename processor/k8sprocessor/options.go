@@ -19,7 +19,7 @@ import (
 	"os"
 	"regexp"
 
-	"go.opentelemetry.io/collector/translator/conventions"
+	conventions "go.opentelemetry.io/collector/translator/conventions/v1.5.0"
 	"k8s.io/apimachinery/pkg/selection"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
@@ -71,13 +71,13 @@ func WithExtractMetadata(fields ...string) Option {
 	return func(p *kubernetesprocessor) error {
 		if len(fields) == 0 {
 			fields = []string{
-				conventions.AttributeK8sNamespace,
-				conventions.AttributeK8sPod,
-				conventions.AttributeK8sPodUID,
+				conventions.AttributeK8SNamespaceName,
+				conventions.AttributeK8SPodName,
+				conventions.AttributeK8SPodUID,
 				metadataPodStartTime,
-				conventions.AttributeK8sDeployment,
-				conventions.AttributeK8sCluster,
-				conventions.AttributeK8sNodeName,
+				conventions.AttributeK8SDeploymentName,
+				conventions.AttributeK8SClusterName,
+				conventions.AttributeK8SNodeName,
 			}
 		}
 		for _, field := range fields {
@@ -85,19 +85,19 @@ func WithExtractMetadata(fields ...string) Option {
 			// Old conventions handled by the cases metdataNamespace, metadataPodName, metadataPodUID,
 			// metadataStartTime, metadataDeployment, metadataCluster, metadataNode are being supported for backward compatibility.
 			// These will be removed when new conventions get merged to https://github.com/open-telemetry/opentelemetry-collector/blob/main/translator/conventions/opentelemetry.go
-			case metdataNamespace, conventions.AttributeK8sNamespace:
+			case metdataNamespace, conventions.AttributeK8SNamespaceName:
 				p.rules.Namespace = true
-			case metadataPodName, conventions.AttributeK8sPod:
+			case metadataPodName, conventions.AttributeK8SPodName:
 				p.rules.PodName = true
-			case metadataPodUID, conventions.AttributeK8sPodUID:
+			case metadataPodUID, conventions.AttributeK8SPodUID:
 				p.rules.PodUID = true
 			case metadataStartTime, metadataPodStartTime:
 				p.rules.StartTime = true
-			case metadataDeployment, conventions.AttributeK8sDeployment:
+			case metadataDeployment, conventions.AttributeK8SDeploymentName:
 				p.rules.Deployment = true
-			case metadataCluster, conventions.AttributeK8sCluster:
+			case metadataCluster, conventions.AttributeK8SClusterName:
 				p.rules.Cluster = true
-			case metadataNode, conventions.AttributeK8sNodeName:
+			case metadataNode, conventions.AttributeK8SNodeName:
 				p.rules.Node = true
 			default:
 				return fmt.Errorf("\"%s\" is not a supported metadata field", field)

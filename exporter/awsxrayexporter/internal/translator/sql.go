@@ -16,7 +16,7 @@ package translator
 
 import (
 	"go.opentelemetry.io/collector/model/pdata"
-	semconventions "go.opentelemetry.io/collector/translator/conventions"
+	conventions "go.opentelemetry.io/collector/translator/conventions/v1.5.0"
 
 	awsxray "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray"
 )
@@ -34,15 +34,15 @@ func makeSQL(attributes map[string]pdata.AttributeValue) (map[string]pdata.Attri
 
 	for key, value := range attributes {
 		switch key {
-		case semconventions.AttributeDBConnectionString:
+		case conventions.AttributeDBConnectionString:
 			dbURL = value.StringVal()
-		case semconventions.AttributeDBSystem:
+		case conventions.AttributeDBSystem:
 			dbSystem = value.StringVal()
-		case semconventions.AttributeDBName:
+		case conventions.AttributeDBName:
 			dbInstance = value.StringVal()
-		case semconventions.AttributeDBStatement:
+		case conventions.AttributeDBStatement:
 			dbStatement = value.StringVal()
-		case semconventions.AttributeDBUser:
+		case conventions.AttributeDBUser:
 			dbUser = value.StringVal()
 		default:
 			filtered[key] = value

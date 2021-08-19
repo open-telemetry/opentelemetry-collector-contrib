@@ -20,7 +20,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/model/pdata"
-	"go.opentelemetry.io/collector/translator/conventions"
+	conventions "go.opentelemetry.io/collector/translator/conventions/v1.5.0"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
@@ -45,13 +45,13 @@ func NewDetector(p component.ProcessorCreateSettings, _ internal.DetectorConfig)
 }
 
 // Detect detects system metadata and returns a resource with the available ones
-func (d *Detector) Detect(_ context.Context) (pdata.Resource, error) {
+func (d *Detector) Detect(_ context.Context) (resource pdata.Resource, schemaURL string, err error) {
 	res := pdata.NewResource()
 	attrs := res.Attributes()
 
 	osType, err := d.provider.OSType()
 	if err != nil {
-		return res, fmt.Errorf("failed getting OS type: %w", err)
+		return res, "", fmt.Errorf("failed getting OS type: %w", err)
 	}
 
 	hostname, err := d.provider.FQDN()
@@ -60,12 +60,12 @@ func (d *Detector) Detect(_ context.Context) (pdata.Resource, error) {
 		d.logger.Debug("FQDN query failed, falling back to OS hostname", zap.Error(err))
 		hostname, err = d.provider.Hostname()
 		if err != nil {
-			return res, fmt.Errorf("failed getting OS hostname: %w", err)
+			return res, "", fmt.Errorf("failed getting OS hostname: %w", err)
 		}
 	}
 
 	attrs.InsertString(conventions.AttributeHostName, hostname)
 	attrs.InsertString(conventions.AttributeOSType, osType)
 
-	return res, nil
+	return res, conventions.SchemaURL, nil
 }

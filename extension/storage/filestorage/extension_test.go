@@ -25,8 +25,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage"
+	"go.opentelemetry.io/collector/extension/storage"
 )
 
 func TestExtensionIntegrity(t *testing.T) {

@@ -114,7 +114,59 @@ One of `realm` and `api_url` are required.
   - `cleanup_interval` (default = 1 minute): How frequently to purge duplicate requests.
   - `sync_attributes` (default = `{"k8s.pod.uid": "k8s.pod.uid", "container.id": "container.id"}`) Map containing key of the attribute to read from spans to sync to dimensions specified as the value.
 
-## Example
+## Translation Rules and Metric Transformations
+
+The `translation_rules` metrics configuration field accepts a list of metric-transforming actions to
+help ensure compatibility with custom charts and dashboards when using the OpenTelemetry Collector. It also provides the ability to produce custom metrics by copying, calculating new, or aggregating other metric values without requiring an additional processor.
+The rule language is expressed in yaml mappings and is [documented here](./internal/translation/translator.go).  Translation rules currently allow the following actions:
+
+* `aggregate_metric` - Aggregates a metric through removal of specified dimensions
+* `calculate_new_metric` - Creates a new metric via operating on two consistuent ones
+* `convert_values` - Convert float values to int for specified metric names
+* `copy_metrics` - Creates a new metric as a copy of another
+* `delta_metric` - Creates a new delta metric for a specified non-delta one
+* `divide_int` - Scales a metric's integer value by a given factor
+* `drop_dimensions` - Drops dimensions for specified metrics, or globally
+* `drop_metrics` - Drops all metrics with a given name
+* `multiply_float` - Scales a metric's integer value by a given float factor
+* `multiply_int` - Scales a metric's integer value by a given int factor
+* `rename_dimension_keys` - Renames dimensions for specified metrics, or globally
+* `rename_metrics` - Replaces a given metric name with specified one
+* `split_metric` - Splits a given metric into multiple new ones for a specified dimension
+
+The translation rules defined in [`translation/constants.go`](./internal/translation/constants.go) are used by default for this value.  The default rules will create the following aggregated metrics from the [`hostmetrics` receiver](https://github.com/open-telemetry/opentelemetry-collector/blob/main/receiver/hostmetricsreceiver/README.md):
+
+* cpu.idle
+* cpu.interrupt
+* cpu.nice
+* cpu.num_processors
+* cpu.softirq
+* cpu.steal
+* cpu.system
+* cpu.user
+* cpu.utilization
+* cpu.utilization_per_core
+* cpu.wait
+* disk.summary_utilization
+* disk.utilization
+* disk_ops.pending
+* disk_ops.total
+* memory.total
+* memory.utilization
+* network.total
+* process.cpu_time_seconds
+* system.disk.io.total
+* system.disk.operations.total
+* system.network.io.total
+* system.network.packets.total
+* vmpage_io.memory.in
+* vmpage_io.memory.out
+* vmpage_io.swap.in
+* vmpage_io.swap.out
+
+These metrics are intended to be reported directly to Splunk IM by the SignalFx exporter.  Any desired changes to their attributes or values should be made via additional translation rules or from their constituent host metrics.
+
+## Example Config
 
 ```yaml
 exporters:

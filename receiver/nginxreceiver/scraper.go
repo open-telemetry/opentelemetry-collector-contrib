@@ -103,7 +103,7 @@ func addIntSum(metrics pdata.MetricSlice, initFunc func(pdata.Metric), now pdata
 
 func addCurrentConnectionDataPoint(dps pdata.NumberDataPointSlice, stateValue string, now pdata.Timestamp, value int64) {
 	dp := dps.AppendEmpty()
-	dp.LabelsMap().Upsert(metadata.L.State, stateValue)
+	dp.Attributes().UpsertString(metadata.L.State, stateValue)
 	dp.SetTimestamp(now)
 	dp.SetIntVal(value)
 }

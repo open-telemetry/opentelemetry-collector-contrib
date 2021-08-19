@@ -24,12 +24,14 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/config"
 )
 
+type MetricDataType string
+
 const (
 	// Gauge is the Datadog Gauge metric type
-	Gauge string = "gauge"
+	Gauge MetricDataType = "gauge"
 	// Count is the Datadog Count metric type
-	Count               string = "count"
-	otelNamespacePrefix string = "otel"
+	Count               MetricDataType = "count"
+	otelNamespacePrefix string         = "otel"
 )
 
 // newMetric creates a new Datadog metric given a name, a Unix nanoseconds timestamp
@@ -47,20 +49,24 @@ func newMetric(name string, ts uint64, value float64, tags []string) datadog.Met
 	return metric
 }
 
+// NewMetric creates a new Datadog metric given a name, a type, a Unix nanoseconds timestamp
+// a value and a slice of tags
+func NewMetric(name string, dt MetricDataType, ts uint64, value float64, tags []string) datadog.Metric {
+	metric := newMetric(name, ts, value, tags)
+	metric.SetType(string(dt))
+	return metric
+}
+
 // NewGauge creates a new Datadog Gauge metric given a name, a Unix nanoseconds timestamp
 // a value and a slice of tags
 func NewGauge(name string, ts uint64, value float64, tags []string) datadog.Metric {
-	gauge := newMetric(name, ts, value, tags)
-	gauge.SetType(Gauge)
-	return gauge
+	return NewMetric(name, Gauge, ts, value, tags)
 }
 
 // NewCount creates a new Datadog count metric given a name, a Unix nanoseconds timestamp
 // a value and a slice of tags
 func NewCount(name string, ts uint64, value float64, tags []string) datadog.Metric {
-	count := newMetric(name, ts, value, tags)
-	count.SetType(Count)
-	return count
+	return NewMetric(name, Count, ts, value, tags)
 }
 
 // DefaultMetrics creates built-in metrics to report that an exporter is running

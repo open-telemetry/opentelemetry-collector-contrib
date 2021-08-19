@@ -20,8 +20,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-log-collection/operator"
 	"go.opentelemetry.io/collector/component"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage"
+	"go.opentelemetry.io/collector/extension/storage"
 )
 
 func (r *receiver) setStorageClient(ctx context.Context, host component.Host) error {

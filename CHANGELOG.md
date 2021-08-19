@@ -6,6 +6,60 @@
 
 - `tailsampling` processor: Add new policy `probabilistic` (#3876)
 
+## v0.33.0
+
+# 🎉 OpenTelemetry Collector Contrib v0.33.0 (Beta) 🎉
+
+The OpenTelemetry Collector Contrib contains everything in the [opentelemetry-collector release](https://github.com/open-telemetry/opentelemetry-collector/releases/tag/v0.32.0) (be sure to check the release notes here as well!). Check out the [Getting Started Guide](https://opentelemetry.io/docs/collector/getting-started/) for deployment and configuration information.
+
+## 🚀 New components 🚀
+
+- [`cumulativetodelta` processor](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/cumulativetodeltaprocessor) to convert cumulative sum metrics to cumulative delta
+
+## 💡 Enhancements 💡
+
+- Collector contrib has now full support for metrics proto v0.9.0.
+
+## v0.32.0
+
+# 🎉 OpenTelemetry Collector Contrib v0.32.0 (Beta) 🎉
+
+This release is marked as "bad" since the metrics pipelines will produce bad data.
+
+- See https://github.com/open-telemetry/opentelemetry-collector/issues/3824
+
+The OpenTelemetry Collector Contrib contains everything in the [opentelemetry-collector release](https://github.com/open-telemetry/opentelemetry-collector/releases/tag/v0.32.0) (be sure to check the release notes here as well!). Check out the [Getting Started Guide](https://opentelemetry.io/docs/collector/getting-started/) for deployment and configuration information.
+
+## 🛑 Breaking changes 🛑
+
+- `splunk_hec` receiver/exporter: `com.splunk.source` field is mapped to `source` field in Splunk instead of `service.name` (#4596)
+- `redis` receiver: Move interval runner package to `internal/interval` (#4600)
+- `datadog` exporter: Export summary count and sum as monotonic counts (#4605)
+
+## 💡 Enhancements 💡
+
+- `logzio` exporter:
+  - New implementation of an in-memory queue to store traces, data compression with gzip, and queue configuration options (#4395)
+  - Make `Hclog2ZapLogger` struct and methods private for public go api review (#4431)
+- `newrelic` exporter (#4392):
+  - Marked unsupported metric as permanent error
+  - Force the interval to be valid even if 0
+- `awsxray` exporter: Add PHP stacktrace parsing support (#4454)
+- `file_storage` extension: Implementation of batch storage API (#4145)
+- `datadog` exporter:
+  - Skip sum metrics with no aggregation temporality (#4597)
+  - Export delta sums as counts (#4609)
+- `elasticsearch` exporter: Add dedot support (#4579)
+- `signalfx` exporter: Add process metric to translation rules (#4598)
+- `splunk_hec` exporter: Add profiling logs support (#4464)
+- `awsemf` exporter: Replace logGroup and logStream pattern with metric labels (#4466)
+
+## 🧰 Bug fixes 🧰
+
+- `awsxray` exporter: Fix the origin on ECS/EKS/EB on EC2 cases (#4391)
+- `splunk_hec` exporter: Prevent re-sending logs that were successfully sent (#4467)
+- `signalfx` exporter: Prefix temporary metric translations (#4394)
+
 ## v0.31.0
 
 # 🎉 OpenTelemetry Collector Contrib v0.31.0 (Beta) 🎉

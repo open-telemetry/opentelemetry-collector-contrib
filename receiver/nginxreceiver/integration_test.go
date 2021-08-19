@@ -117,18 +117,21 @@ func (suite *NginxIntegrationSuite) TestNginxScraperHappyPath() {
 			present := map[string]bool{}
 			for j := 0; j < dps.Len(); j++ {
 				dp := dps.At(j)
-				state, _ := dp.LabelsMap().Get("state")
-				switch state {
+				state, ok := dp.Attributes().Get("state")
+				if !ok {
+					continue
+				}
+				switch state.StringVal() {
 				case metadata.LabelState.Active:
-					present[state] = true
+					present[state.StringVal()] = true
 				case metadata.LabelState.Reading:
-					present[state] = true
+					present[state.StringVal()] = true
 				case metadata.LabelState.Writing:
-					present[state] = true
+					present[state.StringVal()] = true
 				case metadata.LabelState.Waiting:
-					present[state] = true
+					present[state.StringVal()] = true
 				default:
-					require.Nil(t, state, fmt.Sprintf("connections with state %s not expected", state))
+					t.Error(fmt.Sprintf("connections with state %s not expected", state.StringVal()))
 				}
 			}
 			// Ensure all 4 expected states were present

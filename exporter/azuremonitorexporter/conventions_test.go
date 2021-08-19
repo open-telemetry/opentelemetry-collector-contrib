@@ -19,7 +19,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/model/pdata"
-	"go.opentelemetry.io/collector/translator/conventions"
+	conventions "go.opentelemetry.io/collector/translator/conventions/v1.5.0"
 )
 
 func TestHTTPAttributeMapping(t *testing.T) {
@@ -104,11 +104,11 @@ func TestDatabaseAttributeMapping(t *testing.T) {
 		conventions.AttributeDBUser:                pdata.NewAttributeValueString(conventions.AttributeDBUser),
 		conventions.AttributeDBStatement:           pdata.NewAttributeValueString(conventions.AttributeDBStatement),
 		conventions.AttributeDBOperation:           pdata.NewAttributeValueString(conventions.AttributeDBOperation),
-		conventions.AttributeDBMsSQLInstanceName:   pdata.NewAttributeValueString(conventions.AttributeDBMsSQLInstanceName),
+		conventions.AttributeDBMSSQLInstanceName:   pdata.NewAttributeValueString(conventions.AttributeDBMSSQLInstanceName),
 		conventions.AttributeDBJDBCDriverClassname: pdata.NewAttributeValueString(conventions.AttributeDBJDBCDriverClassname),
 		conventions.AttributeDBCassandraKeyspace:   pdata.NewAttributeValueString(conventions.AttributeDBCassandraKeyspace),
 		conventions.AttributeDBHBaseNamespace:      pdata.NewAttributeValueString(conventions.AttributeDBHBaseNamespace),
-		conventions.AttributeDBRedisDatabaseIndex:  pdata.NewAttributeValueString(conventions.AttributeDBRedisDatabaseIndex),
+		conventions.AttributeDBRedisDBIndex:        pdata.NewAttributeValueString(conventions.AttributeDBRedisDBIndex),
 		conventions.AttributeDBMongoDBCollection:   pdata.NewAttributeValueString(conventions.AttributeDBMongoDBCollection),
 	}
 
@@ -126,7 +126,7 @@ func TestDatabaseAttributeMapping(t *testing.T) {
 	assert.Equal(t, conventions.AttributeDBUser, databaseAttributes.DBUser)
 	assert.Equal(t, conventions.AttributeDBStatement, databaseAttributes.DBStatement)
 	assert.Equal(t, conventions.AttributeDBOperation, databaseAttributes.DBOperation)
-	assert.Equal(t, conventions.AttributeDBMsSQLInstanceName, databaseAttributes.DBMSSQLInstanceName)
+	assert.Equal(t, conventions.AttributeDBMSSQLInstanceName, databaseAttributes.DBMSSQLInstanceName)
 	assert.Equal(t, conventions.AttributeDBJDBCDriverClassname, databaseAttributes.DBJDBCDriverClassName)
 	assert.Equal(t, conventions.AttributeDBCassandraKeyspace, databaseAttributes.DBCassandraKeyspace)
 	assert.Equal(t, conventions.AttributeDBHBaseNamespace, databaseAttributes.DBHBaseNamespace)
@@ -136,18 +136,18 @@ func TestDatabaseAttributeMapping(t *testing.T) {
 
 func TestMessagingAttributeMapping(t *testing.T) {
 	messagingAttributeValues := map[string]pdata.AttributeValue{
-		conventions.AttributeMessagingSystem:                pdata.NewAttributeValueString(conventions.AttributeMessagingSystem),
-		conventions.AttributeMessagingDestination:           pdata.NewAttributeValueString(conventions.AttributeMessagingDestination),
-		conventions.AttributeMessagingDestinationKind:       pdata.NewAttributeValueString(conventions.AttributeMessagingDestinationKind),
-		conventions.AttributeMessagingTempDestination:       pdata.NewAttributeValueString(conventions.AttributeMessagingTempDestination),
-		conventions.AttributeMessagingProtocol:              pdata.NewAttributeValueString(conventions.AttributeMessagingProtocol),
-		conventions.AttributeMessagingProtocolVersion:       pdata.NewAttributeValueString(conventions.AttributeMessagingProtocolVersion),
-		conventions.AttributeMessagingURL:                   pdata.NewAttributeValueString(conventions.AttributeMessagingURL),
-		conventions.AttributeMessagingMessageID:             pdata.NewAttributeValueString(conventions.AttributeMessagingMessageID),
-		conventions.AttributeMessagingConversationID:        pdata.NewAttributeValueString(conventions.AttributeMessagingConversationID),
-		conventions.AttributeMessagingPayloadSize:           pdata.NewAttributeValueInt(1),
-		conventions.AttributeMessagingPayloadCompressedSize: pdata.NewAttributeValueInt(2),
-		conventions.AttributeMessagingOperation:             pdata.NewAttributeValueString(conventions.AttributeMessagingOperation),
+		conventions.AttributeMessagingSystem:                            pdata.NewAttributeValueString(conventions.AttributeMessagingSystem),
+		conventions.AttributeMessagingDestination:                       pdata.NewAttributeValueString(conventions.AttributeMessagingDestination),
+		conventions.AttributeMessagingDestinationKind:                   pdata.NewAttributeValueString(conventions.AttributeMessagingDestinationKind),
+		conventions.AttributeMessagingTempDestination:                   pdata.NewAttributeValueString(conventions.AttributeMessagingTempDestination),
+		conventions.AttributeMessagingProtocol:                          pdata.NewAttributeValueString(conventions.AttributeMessagingProtocol),
+		conventions.AttributeMessagingProtocolVersion:                   pdata.NewAttributeValueString(conventions.AttributeMessagingProtocolVersion),
+		conventions.AttributeMessagingURL:                               pdata.NewAttributeValueString(conventions.AttributeMessagingURL),
+		conventions.AttributeMessagingMessageID:                         pdata.NewAttributeValueString(conventions.AttributeMessagingMessageID),
+		conventions.AttributeMessagingConversationID:                    pdata.NewAttributeValueString(conventions.AttributeMessagingConversationID),
+		conventions.AttributeMessagingMessagePayloadSizeBytes:           pdata.NewAttributeValueInt(1),
+		conventions.AttributeMessagingMessagePayloadCompressedSizeBytes: pdata.NewAttributeValueInt(2),
+		conventions.AttributeMessagingOperation:                         pdata.NewAttributeValueString(conventions.AttributeMessagingOperation),
 	}
 
 	attributeMap := pdata.NewAttributeMap()

@@ -117,7 +117,7 @@ func fillNumberDataPoint(sfxDataPoint *sfxpb.DataPoint, dps pdata.NumberDataPoin
 	case sfxDataPoint.Value.DoubleValue != nil:
 		dp.SetDoubleVal(*sfxDataPoint.Value.DoubleValue)
 	}
-	fillInLabels(sfxDataPoint.Dimensions, dp.LabelsMap())
+	fillInAttributes(sfxDataPoint.Dimensions, dp.Attributes())
 }
 
 func dpTimestamp(dp *sfxpb.DataPoint) pdata.Timestamp {
@@ -125,18 +125,18 @@ func dpTimestamp(dp *sfxpb.DataPoint) pdata.Timestamp {
 	return pdata.Timestamp(dp.GetTimestamp() * 1e6)
 }
 
-func fillInLabels(
+func fillInAttributes(
 	dimensions []*sfxpb.Dimension,
-	labels pdata.StringMap,
+	attributes pdata.AttributeMap,
 ) {
-	labels.Clear()
-	labels.EnsureCapacity(len(dimensions))
+	attributes.Clear()
+	attributes.EnsureCapacity(len(dimensions))
 
 	for _, dim := range dimensions {
 		if dim == nil {
 			// TODO: Log or metric for this odd ball?
 			continue
 		}
-		labels.Insert(dim.Key, dim.Value)
+		attributes.InsertString(dim.Key, dim.Value)
 	}
 }

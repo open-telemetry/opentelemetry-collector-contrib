@@ -45,6 +45,17 @@ type client struct {
 	headers map[string]string
 }
 
+// bufferState encapsulates intermediate buffer state when pushing log data
+type bufferState struct {
+	buf      *bytes.Buffer
+	encoder  *json.Encoder
+	tmpBuf   *bytes.Buffer
+	bufFront *logIndex
+	bufLen   int
+	resource int
+	library  int
+}
+
 // Minimum number of bytes to compress. 1500 is the MTU of an ethernet frame.
 const minCompressionLen = 1500
 
@@ -109,8 +120,7 @@ func (c *client) sendSplunkEvents(ctx context.Context, splunkEvents []*splunk.Ev
 	if err != nil {
 		return consumererror.Permanent(err)
 	}
-
-	return c.postEvents(ctx, body, compressed)
+	return c.postEvents(ctx, body, nil, compressed)
 }
 
 func (c *client) pushLogData(ctx context.Context, ld pdata.Logs) error {
@@ -124,7 +134,7 @@ func (c *client) pushLogData(ctx context.Context, ld pdata.Logs) error {
 	gzipWriter.Reset(gzipBuffer)
 
 	// Callback when each batch is to be sent.
-	send := func(ctx context.Context, buf *bytes.Buffer) (err error) {
+	send := func(ctx context.Context, buf *bytes.Buffer, headers map[string]string) (err error) {
 		shouldCompress := buf.Len() >= minCompressionLen && !c.config.DisableCompression
 
 		if shouldCompress {
@@ -139,110 +149,175 @@ func (c *client) pushLogData(ctx context.Context, ld pdata.Logs) error {
 				return fmt.Errorf("failed flushing compressed data to gzip writer: %v", err)
 			}
 
-			return c.postEvents(ctx, gzipBuffer, shouldCompress)
+			return c.postEvents(ctx, gzipBuffer, headers, shouldCompress)
 		}
 
-		return c.postEvents(ctx, buf, shouldCompress)
+		return c.postEvents(ctx, buf, headers, shouldCompress)
 	}
 
 	return c.pushLogDataInBatches(ctx, ld, send)
 }
 
-// pushLogDataInBatches sends batches of Splunk events in JSON format.
-// The batch content length is restricted to MaxContentLengthLogs.
-// ld log records are parsed to Splunk events.
-func (c *client) pushLogDataInBatches(ctx context.Context, ld pdata.Logs, send func(context.Context, *bytes.Buffer) error) error {
-	// Length of retained bytes in buffer after truncation.
-	var bufLen int
-	// Buffer capacity.
-	var bufCap = c.config.MaxContentLengthLogs
-	// A guesstimated value > length of bytes of a single event.
-	// Added to buffer capacity so that buffer is likely to grow by reslicing when buf.Len() > bufCap.
-	const bufCapPadding = uint(4096)
+// A guesstimated value > length of bytes of a single event.
+// Added to buffer capacity so that buffer is likely to grow by reslicing when buf.Len() > bufCap.
+const bufCapPadding = uint(4096)
+const libraryHeaderName = "X-Splunk-Instrumentation-Library"
+const profilingLibraryName = "otel.profiling"
 
-	// Buffer of JSON encoded Splunk events.
-	// Expected to grow more than bufCap then truncated to bufLen.
+var profilingHeaders = map[string]string{
+	libraryHeaderName: profilingLibraryName,
+}
+
+func isProfilingData(ill pdata.InstrumentationLibraryLogs) bool {
+	return ill.InstrumentationLibrary().Name() == profilingLibraryName
+}
+
+func makeBlankBufferState(bufCap uint) bufferState {
+	// Buffer of JSON encoded Splunk events, last record is expected to overflow bufCap, hence the padding
 	var buf = bytes.NewBuffer(make([]byte, 0, bufCap+bufCapPadding))
 	var encoder = json.NewEncoder(buf)
 
+	// Buffer for overflown records that do not fit in the main buffer
 	var tmpBuf = bytes.NewBuffer(make([]byte, 0, bufCapPadding))
 
-	// Index of the log record of the first event in buffer.
-	var bufFront *logIndex
+	return bufferState{
+		buf:      buf,
+		encoder:  encoder,
+		tmpBuf:   tmpBuf,
+		bufFront: nil, // Index of the log record of the first unsent event in buffer.
+		bufLen:   0,   // Length of data in buffer excluding the last record if it overflows bufCap
+		resource: 0,   // Index of currently processed Resource
+		library:  0,   // Index of currently processed Library
+	}
+}
 
+// pushLogDataInBatches sends batches of Splunk events in JSON format.
+// The batch content length is restricted to MaxContentLengthLogs.
+// ld log records are parsed to Splunk events.
+// The input data may contain both logs and profiling data.
+// They are batched separately and sent with different HTTP headers
+func (c *client) pushLogDataInBatches(ctx context.Context, ld pdata.Logs, send func(context.Context, *bytes.Buffer, map[string]string) error) error {
+	var bufState = makeBlankBufferState(c.config.MaxContentLengthLogs)
+	var profilingBufState = makeBlankBufferState(c.config.MaxContentLengthLogs)
 	var permanentErrors []error
 
 	var rls = ld.ResourceLogs()
 	for i := 0; i < rls.Len(); i++ {
-		res := rls.At(i).Resource()
 		ills := rls.At(i).InstrumentationLibraryLogs()
 		for j := 0; j < ills.Len(); j++ {
-			logs := ills.At(j).Logs()
-			for k := 0; k < logs.Len(); k++ {
-				if bufFront == nil {
-					bufFront = &logIndex{resource: i, library: j, record: k}
-				}
+			var err error
+			var newPermanentErrors []error
 
-				// Parsing log record to Splunk event.
-				event := mapLogRecordToSplunkEvent(res, logs.At(k), c.config, c.logger)
-				// JSON encoding event and writing to buffer.
-				if err := encoder.Encode(event); err != nil {
-					permanentErrors = append(permanentErrors, consumererror.Permanent(fmt.Errorf("dropped log event: %v, error: %v", event, err)))
-					continue
-				}
-
-				// Continue adding events to buffer up to capacity.
-				// 0 capacity is interpreted as unknown/unbound consistent with ContentLength in http.Request.
-				if buf.Len() <= int(bufCap) || bufCap == 0 {
-					// Tracking length of event bytes below capacity in buffer.
-					bufLen = buf.Len()
-					continue
-				}
-
-				tmpBuf.Reset()
-				// Storing event bytes over capacity in buffer before truncating.
-				if bufCap > 0 {
-					if over := buf.Len() - bufLen; over <= int(bufCap) {
-						tmpBuf.Write(buf.Bytes()[bufLen:buf.Len()])
-					} else {
-						permanentErrors = append(permanentErrors, consumererror.Permanent(
-							fmt.Errorf("dropped log event: %s, error: event size %d bytes larger than configured max content length %d bytes", string(buf.Bytes()[bufLen:buf.Len()]), over, bufCap)))
-					}
-				}
-
-				// Truncating buffer at tracked length below capacity and sending.
-				buf.Truncate(bufLen)
-				if buf.Len() > 0 {
-					if err := send(ctx, buf); err != nil {
-						return consumererror.NewLogs(err, *subLogs(&ld, bufFront))
-					}
-				}
-				buf.Reset()
-
-				// Writing truncated bytes back to buffer.
-				tmpBuf.WriteTo(buf)
-
-				bufFront, bufLen = nil, buf.Len()
+			if isProfilingData(ills.At(j)) {
+				profilingBufState.resource, profilingBufState.library = i, j
+				newPermanentErrors, err = c.pushLogRecords(ctx, rls, &profilingBufState, profilingHeaders, send)
+			} else {
+				bufState.resource, bufState.library = i, j
+				newPermanentErrors, err = c.pushLogRecords(ctx, rls, &bufState, nil, send)
 			}
+
+			if err != nil {
+				return consumererror.NewLogs(err, *subLogs(&ld, bufState.bufFront, profilingBufState.bufFront))
+			}
+
+			permanentErrors = append(permanentErrors, newPermanentErrors...)
 		}
 	}
 
-	if buf.Len() > 0 {
-		if err := send(ctx, buf); err != nil {
-			return consumererror.NewLogs(err, *subLogs(&ld, bufFront))
+	// There's some leftover unsent non-profiling data
+	if bufState.buf.Len() > 0 {
+		if err := send(ctx, bufState.buf, nil); err != nil {
+			return consumererror.NewLogs(err, *subLogs(&ld, bufState.bufFront, profilingBufState.bufFront))
+		}
+	}
+
+	// There's some leftover unsent profiling data
+	if profilingBufState.buf.Len() > 0 {
+		if err := send(ctx, profilingBufState.buf, profilingHeaders); err != nil {
+			// Non-profiling bufFront is set to nil because all non-profiling data was flushed successfully above.
+			return consumererror.NewLogs(err, *subLogs(&ld, nil, profilingBufState.bufFront))
 		}
 	}
 
 	return consumererror.Combine(permanentErrors)
 }
 
-func (c *client) postEvents(ctx context.Context, events io.Reader, compressed bool) error {
+func (c *client) pushLogRecords(ctx context.Context, lds pdata.ResourceLogsSlice, state *bufferState, headers map[string]string, send func(context.Context, *bytes.Buffer, map[string]string) error) (permanentErrors []error, sendingError error) {
+	res := lds.At(state.resource)
+	logs := res.InstrumentationLibraryLogs().At(state.library).Logs()
+	bufCap := int(c.config.MaxContentLengthLogs)
+
+	for k := 0; k < logs.Len(); k++ {
+		if state.bufFront == nil {
+			state.bufFront = &logIndex{resource: state.resource, library: state.library, record: k}
+		}
+
+		// Parsing log record to Splunk event.
+		event := mapLogRecordToSplunkEvent(res.Resource(), logs.At(k), c.config, c.logger)
+		// JSON encoding event and writing to buffer.
+		if err := state.encoder.Encode(event); err != nil {
+			permanentErrors = append(permanentErrors, consumererror.Permanent(fmt.Errorf("dropped log event: %v, error: %v", event, err)))
+			continue
+		}
+
+		// Continue adding events to buffer up to capacity.
+		// 0 capacity is interpreted as unknown/unbound consistent with ContentLength in http.Request.
+		if state.buf.Len() <= bufCap || bufCap == 0 {
+			// Tracking length of event bytes below capacity in buffer.
+			state.bufLen = state.buf.Len()
+			continue
+		}
+
+		state.tmpBuf.Reset()
+		// Storing event bytes over capacity in buffer before truncating.
+		if bufCap > 0 {
+			if over := state.buf.Len() - state.bufLen; over <= bufCap {
+				state.tmpBuf.Write(state.buf.Bytes()[state.bufLen:state.buf.Len()])
+			} else {
+				permanentErrors = append(permanentErrors, consumererror.Permanent(
+					fmt.Errorf("dropped log event: %s, error: event size %d bytes larger than configured max content length %d bytes", string(state.buf.Bytes()[state.bufLen:state.buf.Len()]), over, bufCap)))
+			}
+		}
+
+		// Truncating buffer at tracked length below capacity and sending.
+		state.buf.Truncate(state.bufLen)
+		if state.buf.Len() > 0 {
+			if err := send(ctx, state.buf, headers); err != nil {
+				return permanentErrors, err
+			}
+		}
+		state.buf.Reset()
+
+		// Writing truncated bytes back to buffer.
+		state.tmpBuf.WriteTo(state.buf)
+
+		if state.buf.Len() > 0 {
+			// This means that the current record had overflown the buffer and was not sent
+			state.bufFront = &logIndex{resource: state.resource, library: state.library, record: k}
+		} else {
+			// This means that the entire buffer was sent, including the current record
+			state.bufFront = nil
+		}
+
+		state.bufLen = state.buf.Len()
+	}
+
+	return permanentErrors, nil
+}
+
+func (c *client) postEvents(ctx context.Context, events io.Reader, headers map[string]string, compressed bool) error {
 	req, err := http.NewRequestWithContext(ctx, "POST", c.url.String(), events)
 	if err != nil {
 		return consumererror.Permanent(err)
 	}
 
+	// Set the headers configured for the client
 	for k, v := range c.headers {
+		req.Header.Set(k, v)
+	}
+
+	// Set extra headers passed by the caller
+	for k, v := range headers {
 		req.Header.Set(k, v)
 	}
 
@@ -263,34 +338,52 @@ func (c *client) postEvents(ctx context.Context, events io.Reader, compressed bo
 	return err
 }
 
-// subLogs returns a subset of `ld` starting from index `from` to the end.
-func subLogs(ld *pdata.Logs, from *logIndex) *pdata.Logs {
-	if ld == nil || from == nil || from.zero() {
+// subLogs returns a subset of `ld` starting from `profilingBufFront` for profiling data
+// plus starting from `bufFront` for non-profiling data. Both can be nil, in which case they are ignored
+func subLogs(ld *pdata.Logs, bufFront *logIndex, profilingBufFront *logIndex) *pdata.Logs {
+	if ld == nil {
 		return ld
 	}
 
 	subset := pdata.NewLogs()
+	subLogsByType(ld, bufFront, &subset, false)
+	subLogsByType(ld, profilingBufFront, &subset, true)
 
-	resources := ld.ResourceLogs()
-	resourcesSub := subset.ResourceLogs()
+	return &subset
+}
+
+func subLogsByType(src *pdata.Logs, from *logIndex, dst *pdata.Logs, profiling bool) {
+	if from == nil {
+		return // All the data of this type was sent successfully
+	}
+
+	resources := src.ResourceLogs()
+	resourcesSub := dst.ResourceLogs()
 
 	for i := from.resource; i < resources.Len(); i++ {
-		resourcesSub.AppendEmpty()
-		resources.At(i).Resource().CopyTo(resourcesSub.At(i - from.resource).Resource())
+		newSub := resourcesSub.AppendEmpty()
+		resources.At(i).Resource().CopyTo(newSub.Resource())
 
 		libraries := resources.At(i).InstrumentationLibraryLogs()
-		librariesSub := resourcesSub.At(i - from.resource).InstrumentationLibraryLogs()
+		librariesSub := newSub.InstrumentationLibraryLogs()
 
 		j := 0
 		if i == from.resource {
 			j = from.library
 		}
 		for jSub := 0; j < libraries.Len(); j++ {
-			librariesSub.AppendEmpty()
-			libraries.At(j).InstrumentationLibrary().CopyTo(librariesSub.At(jSub).InstrumentationLibrary())
+			lib := libraries.At(j)
 
-			logs := libraries.At(j).Logs()
-			logsSub := librariesSub.At(jSub).Logs()
+			// Only copy profiling data if requested. If not requested, only copy non-profiling data
+			if profiling != isProfilingData(lib) {
+				continue
+			}
+
+			newLibSub := librariesSub.AppendEmpty()
+			lib.InstrumentationLibrary().CopyTo(newLibSub.InstrumentationLibrary())
+
+			logs := lib.Logs()
+			logsSub := newLibSub.Logs()
 			jSub++
 
 			k := 0
@@ -299,14 +392,11 @@ func subLogs(ld *pdata.Logs, from *logIndex) *pdata.Logs {
 			}
 
 			for kSub := 0; k < logs.Len(); k++ { //revive:disable-line:var-naming
-				logsSub.AppendEmpty()
-				logs.At(k).CopyTo(logsSub.At(kSub))
+				logs.At(k).CopyTo(logsSub.AppendEmpty())
 				kSub++
 			}
 		}
 	}
-
-	return &subset
 }
 
 func encodeBodyEvents(zippers *sync.Pool, evs []*splunk.Event, disableCompression bool) (bodyReader io.Reader, compressed bool, err error) {

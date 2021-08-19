@@ -26,7 +26,7 @@ import (
 	"github.com/DataDog/datadog-agent/pkg/trace/exportable/traceutil"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/model/pdata"
-	"go.opentelemetry.io/collector/translator/conventions"
+	conventions "go.opentelemetry.io/collector/translator/conventions/v1.5.0"
 	tracetranslator "go.opentelemetry.io/collector/translator/trace"
 	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace/ext"
 	"gopkg.in/zorkian/go-datadog-api.v2"
@@ -65,6 +65,10 @@ const (
 	tagContainersTags = "_dd.tags.container"
 	tagDatadogEnv     = "env"
 )
+
+// AttributeExceptionEventName the name of the exception event.
+// TODO: Remove this when collector defines this semantic convention.
+const AttributeExceptionEventName = "exception"
 
 // converts Traces into an array of datadog trace payloads grouped by env
 func convertToDatadogTd(td pdata.Traces, fallbackHost string, cfg *config.Config, blk *denylister, buildInfo component.BuildInfo) ([]*pb.TracePayload, []datadog.Metric) {
@@ -397,7 +401,7 @@ func buildDatadogContainerTags(spanTags map[string]string) string {
 	if val, ok := spanTags[conventions.AttributeContainerID]; ok {
 		b.WriteString(fmt.Sprintf("%s:%s,", "container_id", val))
 	}
-	if val, ok := spanTags[conventions.AttributeK8sPod]; ok {
+	if val, ok := spanTags[conventions.AttributeK8SPodName]; ok {
 		b.WriteString(fmt.Sprintf("%s:%s,", "pod_name", val))
 	}
 
@@ -637,7 +641,7 @@ func extractErrorTagsFromEvents(s pdata.Span, tags map[string]string) {
 	evts := s.Events()
 	for i := evts.Len() - 1; i >= 0; i-- {
 		evt := evts.At(i)
-		if evt.Name() == conventions.AttributeExceptionEventName {
+		if evt.Name() == AttributeExceptionEventName {
 			attribs := evt.Attributes()
 			if errType, ok := attribs.Get(conventions.AttributeExceptionType); ok {
 				tags[ext.ErrorType] = errType.StringVal()

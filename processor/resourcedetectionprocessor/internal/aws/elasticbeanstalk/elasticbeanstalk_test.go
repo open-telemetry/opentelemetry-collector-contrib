@@ -62,7 +62,7 @@ func Test_windowsPath(t *testing.T) {
 	mfs := &mockFileSystem{windows: true, exists: true, contents: xrayConf}
 	d := Detector{fs: mfs}
 
-	r, err := d.Detect(context.TODO())
+	r, _, err := d.Detect(context.TODO())
 
 	assert.Nil(t, err)
 	assert.NotNil(t, r)
@@ -73,7 +73,7 @@ func Test_fileNotExists(t *testing.T) {
 	mfs := &mockFileSystem{exists: false}
 	d := Detector{fs: mfs}
 
-	r, err := d.Detect(context.TODO())
+	r, _, err := d.Detect(context.TODO())
 
 	assert.Nil(t, err)
 	assert.NotNil(t, r)
@@ -84,7 +84,7 @@ func Test_fileMalformed(t *testing.T) {
 	mfs := &mockFileSystem{exists: true, contents: "some overwritten value"}
 	d := Detector{fs: mfs}
 
-	r, err := d.Detect(context.TODO())
+	r, _, err := d.Detect(context.TODO())
 
 	assert.NotNil(t, err)
 	assert.NotNil(t, r)
@@ -103,7 +103,7 @@ func Test_AttributesDetectedSuccessfully(t *testing.T) {
 	attr.InsertString("service.instance.id", "23")
 	attr.InsertString("service.version", "env-version-1234")
 
-	r, err := d.Detect(context.TODO())
+	r, _, err := d.Detect(context.TODO())
 
 	assert.Nil(t, err)
 	assert.NotNil(t, r)

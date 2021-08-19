@@ -19,6 +19,7 @@ import (
 	"testing"
 	"time"
 
+	gocache "github.com/patrickmn/go-cache"
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/model/pdata"
@@ -30,7 +31,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/config"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metrics"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/ttlmap"
 )
 
 func TestMetricValue(t *testing.T) {
@@ -42,20 +42,19 @@ func TestMetricValue(t *testing.T) {
 	)
 
 	metric := metrics.NewGauge(name, ts, value, tags)
-	assert.Equal(t, metrics.Gauge, metric.GetType())
+	assert.Equal(t, string(metrics.Gauge), metric.GetType())
 	assert.Equal(t, tags, metric.Tags)
 }
 
 func TestGetTags(t *testing.T) {
-	labels := pdata.NewStringMap()
-	labels.InitFromMap(map[string]string{
-		"key1": "val1",
-		"key2": "val2",
-		"key3": "",
+	attributes := pdata.NewAttributeMap().InitFromMap(map[string]pdata.AttributeValue{
+		"key1": pdata.NewAttributeValueString("val1"),
+		"key2": pdata.NewAttributeValueString("val2"),
+		"key3": pdata.NewAttributeValueString(""),
 	})
 
 	assert.ElementsMatch(t,
-		getTags(labels),
+		getTags(attributes),
 		[...]string{"key1:val1", "key2:val2", "key3:n/a"},
 	)
 }
@@ -134,13 +133,18 @@ func TestMapIntMetrics(t *testing.T) {
 	point.SetTimestamp(ts)
 
 	assert.ElementsMatch(t,
-		mapNumberMetrics("int64.test", slice, []string{}),
+		mapNumberMetrics("int64.test", metrics.Gauge, slice, []string{}),
 		[]datadog.Metric{metrics.NewGauge("int64.test", uint64(ts), 17, []string{})},
+	)
+
+	assert.ElementsMatch(t,
+		mapNumberMetrics("int64.delta.test", metrics.Count, slice, []string{}),
+		[]datadog.Metric{metrics.NewCount("int64.delta.test", uint64(ts), 17, []string{})},
 	)
 
 	// With attribute tags
 	assert.ElementsMatch(t,
-		mapNumberMetrics("int64.test", slice, []string{"attribute_tag:attribute_value"}),
+		mapNumberMetrics("int64.test", metrics.Gauge, slice, []string{"attribute_tag:attribute_value"}),
 		[]datadog.Metric{metrics.NewGauge("int64.test", uint64(ts), 17, []string{"attribute_tag:attribute_value"})},
 	)
 }
@@ -153,25 +157,46 @@ func TestMapDoubleMetrics(t *testing.T) {
 	point.SetTimestamp(ts)
 
 	assert.ElementsMatch(t,
-		mapNumberMetrics("float64.test", slice, []string{}),
+		mapNumberMetrics("float64.test", metrics.Gauge, slice, []string{}),
 		[]datadog.Metric{metrics.NewGauge("float64.test", uint64(ts), math.Pi, []string{})},
+	)
+
+	assert.ElementsMatch(t,
+		mapNumberMetrics("float64.delta.test", metrics.Count, slice, []string{}),
+		[]datadog.Metric{metrics.NewCount("float64.delta.test", uint64(ts), math.Pi, []string{})},
 	)
 
 	// With attribute tags
 	assert.ElementsMatch(t,
-		mapNumberMetrics("float64.test", slice, []string{"attribute_tag:attribute_value"}),
+		mapNumberMetrics("float64.test", metrics.Gauge, slice, []string{"attribute_tag:attribute_value"}),
 		[]datadog.Metric{metrics.NewGauge("float64.test", uint64(ts), math.Pi, []string{"attribute_tag:attribute_value"})},
 	)
 }
 
-func newTTLMap() *ttlmap.TTLMap {
-	// don't start the sweeping goroutine
-	// since it is not needed
-	return ttlmap.New(1800, 3600)
+func newTestCache() *ttlCache {
+	cache := newTTLCache(1800, 3600)
+	return cache
 }
 
 func seconds(i int) pdata.Timestamp {
 	return pdata.TimestampFromTime(time.Unix(int64(i), 0))
+}
+
+func TestPutAndGetDiff(t *testing.T) {
+	prevPts := newTestCache()
+	_, ok := prevPts.putAndGetDiff("test", 1, 5)
+	// no diff since it is the first point
+	assert.False(t, ok)
+	_, ok = prevPts.putAndGetDiff("test", 0, 0)
+	// no diff since ts is lower than the stored point
+	assert.False(t, ok)
+	_, ok = prevPts.putAndGetDiff("test", 2, 2)
+	// no diff since the value is lower than the stored value
+	assert.False(t, ok)
+	dx, ok := prevPts.putAndGetDiff("test", 3, 4)
+	// diff with the most recent point (2,2)
+	assert.True(t, ok)
+	assert.Equal(t, 2.0, dx)
 }
 
 func TestMapIntMonotonicMetrics(t *testing.T) {
@@ -199,7 +224,7 @@ func TestMapIntMonotonicMetrics(t *testing.T) {
 		expected[i] = metrics.NewCount(metricName, uint64(seconds(i+1)), float64(val), []string{})
 	}
 
-	prevPts := newTTLMap()
+	prevPts := newTestCache()
 	output := mapNumberMonotonicMetrics(metricName, prevPts, slice, []string{})
 
 	assert.ElementsMatch(t, output, expected)
@@ -220,24 +245,24 @@ func TestMapIntMonotonicDifferentDimensions(t *testing.T) {
 	// One tag: valA
 	point = slice.AppendEmpty()
 	point.SetTimestamp(seconds(0))
-	point.LabelsMap().Insert("key1", "valA")
+	point.Attributes().InsertString("key1", "valA")
 
 	point = slice.AppendEmpty()
 	point.SetIntVal(30)
 	point.SetTimestamp(seconds(1))
-	point.LabelsMap().Insert("key1", "valA")
+	point.Attributes().InsertString("key1", "valA")
 
 	// same tag: valB
 	point = slice.AppendEmpty()
 	point.SetTimestamp(seconds(0))
-	point.LabelsMap().Insert("key1", "valB")
+	point.Attributes().InsertString("key1", "valB")
 
 	point = slice.AppendEmpty()
 	point.SetIntVal(40)
 	point.SetTimestamp(seconds(1))
-	point.LabelsMap().Insert("key1", "valB")
+	point.Attributes().InsertString("key1", "valB")
 
-	prevPts := newTTLMap()
+	prevPts := newTestCache()
 
 	assert.ElementsMatch(t,
 		mapNumberMonotonicMetrics(metricName, prevPts, slice, []string{}),
@@ -261,7 +286,7 @@ func TestMapIntMonotonicWithReboot(t *testing.T) {
 		point.SetIntVal(val)
 	}
 
-	prevPts := newTTLMap()
+	prevPts := newTestCache()
 	assert.ElementsMatch(t,
 		mapNumberMonotonicMetrics(metricName, prevPts, slice, []string{}),
 		[]datadog.Metric{
@@ -285,7 +310,7 @@ func TestMapIntMonotonicOutOfOrder(t *testing.T) {
 		point.SetIntVal(val)
 	}
 
-	prevPts := newTTLMap()
+	prevPts := newTestCache()
 	assert.ElementsMatch(t,
 		mapNumberMonotonicMetrics(metricName, prevPts, slice, []string{}),
 		[]datadog.Metric{
@@ -319,7 +344,7 @@ func TestMapDoubleMonotonicMetrics(t *testing.T) {
 		expected[i] = metrics.NewCount(metricName, uint64(seconds(i+1)), val, []string{})
 	}
 
-	prevPts := newTTLMap()
+	prevPts := newTestCache()
 	output := mapNumberMonotonicMetrics(metricName, prevPts, slice, []string{})
 
 	assert.ElementsMatch(t, expected, output)
@@ -340,24 +365,24 @@ func TestMapDoubleMonotonicDifferentDimensions(t *testing.T) {
 	// One tag: valA
 	point = slice.AppendEmpty()
 	point.SetTimestamp(seconds(0))
-	point.LabelsMap().Insert("key1", "valA")
+	point.Attributes().InsertString("key1", "valA")
 
 	point = slice.AppendEmpty()
 	point.SetDoubleVal(30)
 	point.SetTimestamp(seconds(1))
-	point.LabelsMap().Insert("key1", "valA")
+	point.Attributes().InsertString("key1", "valA")
 
 	// one tag: valB
 	point = slice.AppendEmpty()
 	point.SetTimestamp(seconds(0))
-	point.LabelsMap().Insert("key1", "valB")
+	point.Attributes().InsertString("key1", "valB")
 
 	point = slice.AppendEmpty()
 	point.SetDoubleVal(40)
 	point.SetTimestamp(seconds(1))
-	point.LabelsMap().Insert("key1", "valB")
+	point.Attributes().InsertString("key1", "valB")
 
-	prevPts := newTTLMap()
+	prevPts := newTestCache()
 
 	assert.ElementsMatch(t,
 		mapNumberMonotonicMetrics(metricName, prevPts, slice, []string{}),
@@ -381,7 +406,7 @@ func TestMapDoubleMonotonicWithReboot(t *testing.T) {
 		point.SetDoubleVal(val)
 	}
 
-	prevPts := newTTLMap()
+	prevPts := newTestCache()
 	assert.ElementsMatch(t,
 		mapNumberMonotonicMetrics(metricName, prevPts, slice, []string{}),
 		[]datadog.Metric{
@@ -405,7 +430,7 @@ func TestMapDoubleMonotonicOutOfOrder(t *testing.T) {
 		point.SetDoubleVal(val)
 	}
 
-	prevPts := newTTLMap()
+	prevPts := newTestCache()
 	assert.ElementsMatch(t,
 		mapNumberMonotonicMetrics(metricName, prevPts, slice, []string{}),
 		[]datadog.Metric{
@@ -486,11 +511,11 @@ func TestQuantileTag(t *testing.T) {
 	}
 }
 
-func exampleSummaryDataPointSlice(ts pdata.Timestamp) pdata.SummaryDataPointSlice {
+func exampleSummaryDataPointSlice(ts pdata.Timestamp, sum float64, count uint64) pdata.SummaryDataPointSlice {
 	slice := pdata.NewSummaryDataPointSlice()
 	point := slice.AppendEmpty()
-	point.SetCount(100)
-	point.SetSum(10_000)
+	point.SetCount(count)
+	point.SetSum(sum)
 	qSlice := point.QuantileValues()
 
 	qMin := qSlice.AppendEmpty()
@@ -514,11 +539,18 @@ func exampleSummaryDataPointSlice(ts pdata.Timestamp) pdata.SummaryDataPointSlic
 
 func TestMapSummaryMetrics(t *testing.T) {
 	ts := pdata.TimestampFromTime(time.Now())
-	slice := exampleSummaryDataPointSlice(ts)
+	slice := exampleSummaryDataPointSlice(ts, 10_001, 101)
+
+	newPrevPts := func(tags []string) *ttlCache {
+		prevPts := newTestCache()
+		prevPts.cache.Set(metricDimensionsToMapKey("summary.example.count", tags), numberCounter{0, 1}, gocache.NoExpiration)
+		prevPts.cache.Set(metricDimensionsToMapKey("summary.example.sum", tags), numberCounter{0, 1}, gocache.NoExpiration)
+		return prevPts
+	}
 
 	noQuantiles := []datadog.Metric{
-		metrics.NewGauge("summary.example.count", uint64(ts), 100, []string{}),
-		metrics.NewGauge("summary.example.sum", uint64(ts), 10_000, []string{}),
+		metrics.NewCount("summary.example.count", uint64(ts), 100, []string{}),
+		metrics.NewCount("summary.example.sum", uint64(ts), 10_000, []string{}),
 	}
 	quantiles := []datadog.Metric{
 		metrics.NewGauge("summary.example.quantile", uint64(ts), 0, []string{"quantile:0"}),
@@ -526,18 +558,20 @@ func TestMapSummaryMetrics(t *testing.T) {
 		metrics.NewGauge("summary.example.quantile", uint64(ts), 500, []string{"quantile:0.999"}),
 		metrics.NewGauge("summary.example.quantile", uint64(ts), 600, []string{"quantile:1.0"}),
 	}
+	prevPts := newPrevPts([]string{})
 	assert.ElementsMatch(t,
-		mapSummaryMetrics("summary.example", slice, false, []string{}),
+		mapSummaryMetrics("summary.example", prevPts, slice, false, []string{}),
 		noQuantiles,
 	)
+	prevPts = newPrevPts([]string{})
 	assert.ElementsMatch(t,
-		mapSummaryMetrics("summary.example", slice, true, []string{}),
+		mapSummaryMetrics("summary.example", prevPts, slice, true, []string{}),
 		append(noQuantiles, quantiles...),
 	)
 
 	noQuantilesAttr := []datadog.Metric{
-		metrics.NewGauge("summary.example.count", uint64(ts), 100, []string{"attribute_tag:attribute_value"}),
-		metrics.NewGauge("summary.example.sum", uint64(ts), 10_000, []string{"attribute_tag:attribute_value"}),
+		metrics.NewCount("summary.example.count", uint64(ts), 100, []string{"attribute_tag:attribute_value"}),
+		metrics.NewCount("summary.example.sum", uint64(ts), 10_000, []string{"attribute_tag:attribute_value"}),
 	}
 	quantilesAttr := []datadog.Metric{
 		metrics.NewGauge("summary.example.quantile", uint64(ts), 0, []string{"attribute_tag:attribute_value", "quantile:0"}),
@@ -545,12 +579,14 @@ func TestMapSummaryMetrics(t *testing.T) {
 		metrics.NewGauge("summary.example.quantile", uint64(ts), 500, []string{"attribute_tag:attribute_value", "quantile:0.999"}),
 		metrics.NewGauge("summary.example.quantile", uint64(ts), 600, []string{"attribute_tag:attribute_value", "quantile:1.0"}),
 	}
+	prevPts = newPrevPts([]string{"attribute_tag:attribute_value"})
 	assert.ElementsMatch(t,
-		mapSummaryMetrics("summary.example", slice, false, []string{"attribute_tag:attribute_value"}),
+		mapSummaryMetrics("summary.example", prevPts, slice, false, []string{"attribute_tag:attribute_value"}),
 		noQuantilesAttr,
 	)
+	prevPts = newPrevPts([]string{"attribute_tag:attribute_value"})
 	assert.ElementsMatch(t,
-		mapSummaryMetrics("summary.example", slice, true, []string{"attribute_tag:attribute_value"}),
+		mapSummaryMetrics("summary.example", prevPts, slice, true, []string{"attribute_tag:attribute_value"}),
 		append(noQuantilesAttr, quantilesAttr...),
 	)
 }
@@ -574,7 +610,7 @@ func TestRunningMetrics(t *testing.T) {
 	rms.AppendEmpty()
 
 	cfg := config.MetricsConfig{}
-	prevPts := newTTLMap()
+	prevPts := newTestCache()
 
 	buildInfo := component.BuildInfo{
 		Version: "1.0",
@@ -633,19 +669,47 @@ func createTestMetrics() pdata.Metrics {
 	dpDouble.SetTimestamp(seconds(0))
 	dpDouble.SetDoubleVal(math.Pi)
 
-	// IntSum
+	// aggregation unspecified sum
 	met = metricsArray.AppendEmpty()
-	met.SetName("int.sum")
+	met.SetName("unspecified.sum")
 	met.SetDataType(pdata.MetricDataTypeSum)
+	met.Sum().SetAggregationTemporality(pdata.AggregationTemporalityUnspecified)
+
+	// Int Sum (delta)
+	met = metricsArray.AppendEmpty()
+	met.SetName("int.delta.sum")
+	met.SetDataType(pdata.MetricDataTypeSum)
+	met.Sum().SetAggregationTemporality(pdata.AggregationTemporalityDelta)
 	dpsInt = met.Sum().DataPoints()
 	dpInt = dpsInt.AppendEmpty()
 	dpInt.SetTimestamp(seconds(0))
 	dpInt.SetIntVal(2)
 
-	// Sum
+	// Double Sum (delta)
 	met = metricsArray.AppendEmpty()
-	met.SetName("double.sum")
+	met.SetName("double.delta.sum")
 	met.SetDataType(pdata.MetricDataTypeSum)
+	met.Sum().SetAggregationTemporality(pdata.AggregationTemporalityDelta)
+	dpsDouble = met.Sum().DataPoints()
+	dpDouble = dpsDouble.AppendEmpty()
+	dpDouble.SetTimestamp(seconds(0))
+	dpDouble.SetDoubleVal(math.E)
+
+	// Int Sum (delta monotonic)
+	met = metricsArray.AppendEmpty()
+	met.SetName("int.delta.monotonic.sum")
+	met.SetDataType(pdata.MetricDataTypeSum)
+	met.Sum().SetAggregationTemporality(pdata.AggregationTemporalityDelta)
+	dpsInt = met.Sum().DataPoints()
+	dpInt = dpsInt.AppendEmpty()
+	dpInt.SetTimestamp(seconds(0))
+	dpInt.SetIntVal(2)
+
+	// Double Sum (delta monotonic)
+	met = metricsArray.AppendEmpty()
+	met.SetName("double.delta.monotonic.sum")
+	met.SetDataType(pdata.MetricDataTypeSum)
+	met.Sum().SetAggregationTemporality(pdata.AggregationTemporalityDelta)
 	dpsDouble = met.Sum().DataPoints()
 	dpDouble = dpsDouble.AppendEmpty()
 	dpDouble.SetTimestamp(seconds(0))
@@ -667,6 +731,28 @@ func createTestMetrics() pdata.Metrics {
 	met.SetName("int.cumulative.sum")
 	met.SetDataType(pdata.MetricDataTypeSum)
 	met.Sum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+	dpsInt = met.Sum().DataPoints()
+	dpsInt.EnsureCapacity(2)
+	dpInt = dpsInt.AppendEmpty()
+	dpInt.SetTimestamp(seconds(0))
+	dpInt.SetIntVal(4)
+
+	// Double Sum (cumulative)
+	met = metricsArray.AppendEmpty()
+	met.SetName("double.cumulative.sum")
+	met.SetDataType(pdata.MetricDataTypeSum)
+	met.Sum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+	dpsDouble = met.Sum().DataPoints()
+	dpsDouble.EnsureCapacity(2)
+	dpDouble = dpsDouble.AppendEmpty()
+	dpDouble.SetTimestamp(seconds(0))
+	dpDouble.SetDoubleVal(4)
+
+	// Int Sum (cumulative monotonic)
+	met = metricsArray.AppendEmpty()
+	met.SetName("int.cumulative.monotonic.sum")
+	met.SetDataType(pdata.MetricDataTypeSum)
+	met.Sum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
 	met.Sum().SetIsMonotonic(true)
 	dpsInt = met.Sum().DataPoints()
 	dpsInt.EnsureCapacity(2)
@@ -677,9 +763,9 @@ func createTestMetrics() pdata.Metrics {
 	dpInt.SetTimestamp(seconds(2))
 	dpInt.SetIntVal(7)
 
-	// Double Sum (cumulative)
+	// Double Sum (cumulative monotonic)
 	met = metricsArray.AppendEmpty()
-	met.SetName("double.cumulative.sum")
+	met.SetName("double.cumulative.monotonic.sum")
 	met.SetDataType(pdata.MetricDataTypeSum)
 	met.Sum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
 	met.Sum().SetIsMonotonic(true)
@@ -696,7 +782,13 @@ func createTestMetrics() pdata.Metrics {
 	met = metricsArray.AppendEmpty()
 	met.SetName("summary")
 	met.SetDataType(pdata.MetricDataTypeSummary)
-	slice := exampleSummaryDataPointSlice(seconds(0))
+	slice := exampleSummaryDataPointSlice(seconds(0), 1, 1)
+	slice.CopyTo(met.Summary().DataPoints())
+
+	met = metricsArray.AppendEmpty()
+	met.SetName("summary")
+	met.SetDataType(pdata.MetricDataTypeSummary)
+	slice = exampleSummaryDataPointSlice(seconds(2), 10_001, 101)
 	slice.CopyTo(met.Summary().DataPoints())
 	return md
 }
@@ -717,8 +809,8 @@ func testGauge(name string, val float64) datadog.Metric {
 	return m
 }
 
-func testCount(name string, val float64) datadog.Metric {
-	m := metrics.NewCount(name, 2*1e9, val, []string{})
+func testCount(name string, val float64, seconds uint64) datadog.Metric {
+	m := metrics.NewCount(name, seconds*1e9, val, []string{})
 	m.SetHost(testHostname)
 	return m
 }
@@ -732,23 +824,29 @@ func TestMapMetrics(t *testing.T) {
 
 	core, observed := observer.New(zapcore.DebugLevel)
 	testLogger := zap.New(core)
-	series, dropped := mapMetrics(testLogger, cfg, newTTLMap(), "", md, buildInfo)
+	series, dropped := mapMetrics(testLogger, cfg, newTestCache(), "", md, buildInfo)
 
 	assert.Equal(t, dropped, 0)
 	filtered := removeRunningMetrics(series)
 	assert.ElementsMatch(t, filtered, []datadog.Metric{
 		testGauge("int.gauge", 1),
 		testGauge("double.gauge", math.Pi),
-		testGauge("int.sum", 2),
-		testGauge("double.sum", math.E),
+		testCount("int.delta.sum", 2, 0),
+		testCount("double.delta.sum", math.E, 0),
+		testCount("int.delta.monotonic.sum", 2, 0),
+		testCount("double.delta.monotonic.sum", math.E, 0),
 		testGauge("double.histogram.sum", math.Phi),
 		testGauge("double.histogram.count", 20),
-		testGauge("summary.sum", 10_000),
-		testGauge("summary.count", 100),
-		testCount("int.cumulative.sum", 3),
-		testCount("double.cumulative.sum", math.Pi),
+		testCount("summary.sum", 10_000, 2),
+		testCount("summary.count", 100, 2),
+		testGauge("int.cumulative.sum", 4),
+		testGauge("double.cumulative.sum", 4),
+		testCount("int.cumulative.monotonic.sum", 3, 2),
+		testCount("double.cumulative.monotonic.sum", math.Pi, 2),
 	})
 
-	// One metric was unknown or unsupported
+	// One metric type was unknown or unsupported
 	assert.Equal(t, observed.FilterMessage("Unknown or unsupported metric type").Len(), 1)
+	// One metric aggregation temporality was unknown or unsupported
+	assert.Equal(t, observed.FilterMessage("Unknown or unsupported aggregation temporality").Len(), 1)
 }
