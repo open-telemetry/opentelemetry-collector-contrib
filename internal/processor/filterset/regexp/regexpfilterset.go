@@ -25,7 +25,7 @@ import (
 // FilterSet is exported for convenience, but has unexported fields and should be constructed through NewFilterSet.
 //
 // FilterSet satisfies the FilterSet interface from
-// "go.opentelemetry.io/collector/internal/processor/filterset"
+// "go.opentelemetry.io/collector-contrib/internal/processor/filterset"
 type FilterSet struct {
 	regexes      []*regexp.Regexp
 	cacheEnabled bool

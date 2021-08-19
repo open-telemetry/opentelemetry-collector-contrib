@@ -18,7 +18,7 @@ package strict
 // FilterSet is exported for convenience, but has unexported fields and should be constructed through NewFilterSet.
 //
 // regexpFilterSet satisfies the FilterSet interface from
-// "go.opentelemetry.io/collector/internal/processor/filterset"
+// "go.opentelemetry.io/collector-contrib/internal/processor/filterset"
 type FilterSet struct {
 	filters map[string]struct{}
 }

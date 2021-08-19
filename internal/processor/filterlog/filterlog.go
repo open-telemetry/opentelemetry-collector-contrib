@@ -17,9 +17,9 @@ package filterlog
 import (
 	"fmt"
 
-	"go.opentelemetry.io/collector/internal/processor/filterconfig"
-	"go.opentelemetry.io/collector/internal/processor/filtermatcher"
-	"go.opentelemetry.io/collector/internal/processor/filterset"
+	"go.opentelemetry.io/collector-contrib/internal/processor/filterconfig"
+	"go.opentelemetry.io/collector-contrib/internal/processor/filtermatcher"
+	"go.opentelemetry.io/collector-contrib/internal/processor/filterset"
 	"go.opentelemetry.io/collector/model/pdata"
 )
 

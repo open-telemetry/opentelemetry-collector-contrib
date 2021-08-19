@@ -15,9 +15,9 @@
 package filtermetric
 
 import (
-	"go.opentelemetry.io/collector/internal/processor/filterconfig"
-	"go.opentelemetry.io/collector/internal/processor/filterset"
-	"go.opentelemetry.io/collector/internal/processor/filterset/regexp"
+	"go.opentelemetry.io/collector-contrib/internal/processor/filterconfig"
+	"go.opentelemetry.io/collector-contrib/internal/processor/filterset"
+	"go.opentelemetry.io/collector-contrib/internal/processor/filterset/regexp"
 )
 
 // MatchType specifies the strategy for matching against `pdata.Metric`s. This

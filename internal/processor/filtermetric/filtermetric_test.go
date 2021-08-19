@@ -19,7 +19,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"go.opentelemetry.io/collector/internal/processor/filterset"
+	"go.opentelemetry.io/collector-contrib/internal/processor/filterset"
 	"go.opentelemetry.io/collector/model/pdata"
 )
 
