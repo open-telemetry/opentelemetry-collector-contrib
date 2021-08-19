@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package datadogexporter
+package translator
 
 import (
 	"math"
@@ -173,8 +173,8 @@ func TestMapDoubleMetrics(t *testing.T) {
 	)
 }
 
-func newTestCache() *ttlCache {
-	cache := newTTLCache(1800, 3600)
+func newTestCache() *TTLCache {
+	cache := NewTTLCache(1800, 3600)
 	return cache
 }
 
@@ -541,7 +541,7 @@ func TestMapSummaryMetrics(t *testing.T) {
 	ts := pdata.TimestampFromTime(time.Now())
 	slice := exampleSummaryDataPointSlice(ts, 10_001, 101)
 
-	newPrevPts := func(tags []string) *ttlCache {
+	newPrevPts := func(tags []string) *TTLCache {
 		prevPts := newTestCache()
 		prevPts.cache.Set(metricDimensionsToMapKey("summary.example.count", tags), numberCounter{0, 1}, gocache.NoExpiration)
 		prevPts.cache.Set(metricDimensionsToMapKey("summary.example.sum", tags), numberCounter{0, 1}, gocache.NoExpiration)
@@ -616,7 +616,7 @@ func TestRunningMetrics(t *testing.T) {
 		Version: "1.0",
 	}
 
-	series, _ := mapMetrics(zap.NewNop(), cfg, prevPts, "fallbackHostname", ms, buildInfo)
+	series, _ := MapMetrics(zap.NewNop(), cfg, prevPts, "fallbackHostname", ms, buildInfo)
 
 	runningHostnames := []string{}
 
@@ -824,7 +824,7 @@ func TestMapMetrics(t *testing.T) {
 
 	core, observed := observer.New(zapcore.DebugLevel)
 	testLogger := zap.New(core)
-	series, dropped := mapMetrics(testLogger, cfg, newTestCache(), "", md, buildInfo)
+	series, dropped := MapMetrics(testLogger, cfg, newTestCache(), "", md, buildInfo)
 
 	assert.Equal(t, dropped, 0)
 	filtered := removeRunningMetrics(series)

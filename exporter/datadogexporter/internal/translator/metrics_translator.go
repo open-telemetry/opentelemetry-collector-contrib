@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package datadogexporter
+package translator
 
 import (
 	"fmt"
@@ -33,7 +33,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metrics"
 )
 
-type ttlCache struct {
+type TTLCache struct {
 	cache *gocache.Cache
 }
 
@@ -44,14 +44,14 @@ type numberCounter struct {
 	value float64
 }
 
-func newTTLCache(sweepInterval int64, deltaTTL int64) *ttlCache {
+func NewTTLCache(sweepInterval int64, deltaTTL int64) *TTLCache {
 	cache := gocache.New(time.Duration(deltaTTL)*time.Second, time.Duration(sweepInterval)*time.Second)
-	return &ttlCache{cache}
+	return &TTLCache{cache}
 }
 
 // putAndGetDiff submits a new value for a given key and returns the difference with the
 // last submitted value (ordered by timestamp). The diff value is only valid if `ok` is true.
-func (t *ttlCache) putAndGetDiff(key string, ts uint64, val float64) (dx float64, ok bool) {
+func (t *TTLCache) putAndGetDiff(key string, ts uint64, val float64) (dx float64, ok bool) {
 	if c, found := t.cache.Get(key); found {
 		cnt := c.(numberCounter)
 		if cnt.ts > ts {
@@ -125,7 +125,7 @@ func mapNumberMetrics(name string, dt metrics.MetricDataType, slice pdata.Number
 }
 
 // mapNumberMonotonicMetrics maps monotonic datapoints into Datadog metrics
-func mapNumberMonotonicMetrics(name string, prevPts *ttlCache, slice pdata.NumberDataPointSlice, attrTags []string) []datadog.Metric {
+func mapNumberMonotonicMetrics(name string, prevPts *TTLCache, slice pdata.NumberDataPointSlice, attrTags []string) []datadog.Metric {
 	ms := make([]datadog.Metric, 0, slice.Len())
 	for i := 0; i < slice.Len(); i++ {
 		p := slice.At(i)
@@ -208,7 +208,7 @@ func getQuantileTag(quantile float64) string {
 }
 
 // mapSummaryMetrics maps summary datapoints into Datadog metrics
-func mapSummaryMetrics(name string, prevPts *ttlCache, slice pdata.SummaryDataPointSlice, quantiles bool, attrTags []string) []datadog.Metric {
+func mapSummaryMetrics(name string, prevPts *TTLCache, slice pdata.SummaryDataPointSlice, quantiles bool, attrTags []string) []datadog.Metric {
 	// Allocate assuming none are nil and no quantiles
 	ms := make([]datadog.Metric, 0, 2*slice.Len())
 	for i := 0; i < slice.Len(); i++ {
@@ -249,8 +249,8 @@ func mapSummaryMetrics(name string, prevPts *ttlCache, slice pdata.SummaryDataPo
 	return ms
 }
 
-// mapMetrics maps OTLP metrics into the DataDog format
-func mapMetrics(logger *zap.Logger, cfg config.MetricsConfig, prevPts *ttlCache, fallbackHost string, md pdata.Metrics, buildInfo component.BuildInfo) (series []datadog.Metric, droppedTimeSeries int) {
+// MapMetrics maps OTLP metrics into the DataDog format
+func MapMetrics(logger *zap.Logger, cfg config.MetricsConfig, prevPts *TTLCache, fallbackHost string, md pdata.Metrics, buildInfo component.BuildInfo) (series []datadog.Metric, droppedTimeSeries int) {
 	pushTime := uint64(time.Now().UTC().UnixNano())
 	rms := md.ResourceMetrics()
 	seenHosts := make(map[string]struct{})

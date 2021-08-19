@@ -25,6 +25,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/config"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metrics"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/translator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/utils"
 )
 
@@ -33,7 +34,7 @@ type metricsExporter struct {
 	cfg     *config.Config
 	ctx     context.Context
 	client  *datadog.Client
-	prevPts *ttlCache
+	prevPts *translator.TTLCache
 }
 
 func newMetricsExporter(ctx context.Context, params component.ExporterCreateSettings, cfg *config.Config) *metricsExporter {
@@ -47,7 +48,7 @@ func newMetricsExporter(ctx context.Context, params component.ExporterCreateSett
 	if cfg.Metrics.DeltaTTL > 1 {
 		sweepInterval = cfg.Metrics.DeltaTTL / 2
 	}
-	prevPts := newTTLCache(sweepInterval, cfg.Metrics.DeltaTTL)
+	prevPts := translator.NewTTLCache(sweepInterval, cfg.Metrics.DeltaTTL)
 	return &metricsExporter{params, cfg, ctx, client, prevPts}
 }
 
@@ -67,7 +68,7 @@ func (exp *metricsExporter) PushMetricsData(ctx context.Context, md pdata.Metric
 	}
 
 	fallbackHost := metadata.GetHost(exp.params.Logger, exp.cfg)
-	ms, _ := mapMetrics(exp.params.Logger, exp.cfg.Metrics, exp.prevPts, fallbackHost, md, exp.params.BuildInfo)
+	ms, _ := translator.MapMetrics(exp.params.Logger, exp.cfg.Metrics, exp.prevPts, fallbackHost, md, exp.params.BuildInfo)
 	metrics.ProcessMetrics(ms, exp.cfg)
 
 	err := exp.client.PostMetrics(ms)
