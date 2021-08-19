@@ -20,6 +20,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/model/pdata"
+	"go.uber.org/zap"
 	"gopkg.in/zorkian/go-datadog-api.v2"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/config"
@@ -37,6 +38,15 @@ type metricsExporter struct {
 	tr     *translator.Translator
 }
 
+type hostProvider struct {
+	logger *zap.Logger
+	cfg    *config.Config
+}
+
+func (p *hostProvider) Hostname(context.Context) (string, error) {
+	return metadata.GetHost(p.logger, p.cfg), nil
+}
+
 func newMetricsExporter(ctx context.Context, params component.ExporterCreateSettings, cfg *config.Config) *metricsExporter {
 	client := utils.CreateClient(cfg.API.Key, cfg.Metrics.TCPAddr.Endpoint)
 	client.ExtraHeader["User-Agent"] = utils.UserAgent(params.BuildInfo)
@@ -49,7 +59,7 @@ func newMetricsExporter(ctx context.Context, params component.ExporterCreateSett
 		sweepInterval = cfg.Metrics.DeltaTTL / 2
 	}
 	prevPts := translator.NewTTLCache(sweepInterval, cfg.Metrics.DeltaTTL)
-	tr := translator.New(prevPts, params, cfg.Metrics)
+	tr := translator.New(prevPts, params, cfg.Metrics, &hostProvider{params.Logger, cfg})
 	return &metricsExporter{params, cfg, ctx, client, tr}
 }
 
@@ -68,8 +78,7 @@ func (exp *metricsExporter) PushMetricsData(ctx context.Context, md pdata.Metric
 		})
 	}
 
-	fallbackHost := metadata.GetHost(exp.params.Logger, exp.cfg)
-	ms := exp.tr.MapMetrics(fallbackHost, md)
+	ms := exp.tr.MapMetrics(md)
 	metrics.ProcessMetrics(ms, exp.cfg)
 
 	err := exp.client.PostMetrics(ms)

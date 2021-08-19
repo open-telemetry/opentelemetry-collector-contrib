@@ -15,6 +15,7 @@
 package translator
 
 import (
+	"context"
 	"fmt"
 	"strconv"
 	"time"
@@ -30,15 +31,22 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metrics"
 )
 
-type Translator struct {
-	prevPts   *TTLCache
-	logger    *zap.Logger
-	cfg       config.MetricsConfig
-	buildInfo component.BuildInfo
+// HostnameProvider gets a hostname
+type HostnameProvider interface {
+	// Hostname gets the hostname from the machine.
+	Hostname(ctx context.Context) (string, error)
 }
 
-func New(cache *TTLCache, params component.ExporterCreateSettings, cfg config.MetricsConfig) *Translator {
-	return &Translator{cache, params.Logger, cfg, params.BuildInfo}
+type Translator struct {
+	prevPts          *TTLCache
+	logger           *zap.Logger
+	cfg              config.MetricsConfig
+	buildInfo        component.BuildInfo
+	hostnameProvider HostnameProvider
+}
+
+func New(cache *TTLCache, params component.ExporterCreateSettings, cfg config.MetricsConfig, fallbackHostProvider HostnameProvider) *Translator {
+	return &Translator{cache, params.Logger, cfg, params.BuildInfo, fallbackHostProvider}
 }
 
 // getTags maps an attributeMap into a slice of Datadog tags
@@ -210,7 +218,7 @@ func (t *Translator) mapSummaryMetrics(name string, slice pdata.SummaryDataPoint
 }
 
 // MapMetrics maps OTLP metrics into the DataDog format
-func (t *Translator) MapMetrics(fallbackHost string, md pdata.Metrics) (series []datadog.Metric) {
+func (t *Translator) MapMetrics(md pdata.Metrics) (series []datadog.Metric) {
 	pushTime := uint64(time.Now().UTC().UnixNano())
 	rms := md.ResourceMetrics()
 	seenHosts := make(map[string]struct{})
@@ -227,7 +235,11 @@ func (t *Translator) MapMetrics(fallbackHost string, md pdata.Metrics) (series [
 
 		host, ok := metadata.HostnameFromAttributes(rm.Resource().Attributes())
 		if !ok {
-			host = fallbackHost
+			fallbackHost, err := t.hostnameProvider.Hostname(context.Background())
+			host = ""
+			if err == nil {
+				host = fallbackHost
+			}
 		}
 		seenHosts[host] = struct{}{}
 

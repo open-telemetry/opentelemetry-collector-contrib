@@ -15,6 +15,7 @@
 package translator
 
 import (
+	"context"
 	"math"
 	"testing"
 	"time"
@@ -22,6 +23,7 @@ import (
 	gocache "github.com/patrickmn/go-cache"
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/model/pdata"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -113,8 +115,20 @@ func TestIsCumulativeMonotonic(t *testing.T) {
 	}
 }
 
+type testProvider string
+
+func (t testProvider) Hostname(context.Context) (string, error) {
+	return string(t), nil
+}
+
 func newTranslator(logger *zap.Logger, cfg config.MetricsConfig) *Translator {
-	return New(newTestCache(), logger, cfg)
+	params := component.ExporterCreateSettings{
+		BuildInfo: component.BuildInfo{
+			Version: "1.0",
+		},
+		Logger: logger,
+	}
+	return New(newTestCache(), params, cfg, testProvider("fallbackHostname"))
 }
 
 func TestMapIntMetrics(t *testing.T) {
@@ -523,7 +537,7 @@ func TestMapSummaryMetrics(t *testing.T) {
 		c := newTestCache()
 		c.cache.Set(c.metricDimensionsToMapKey("summary.example.count", tags), numberCounter{0, 1}, gocache.NoExpiration)
 		c.cache.Set(c.metricDimensionsToMapKey("summary.example.sum", tags), numberCounter{0, 1}, gocache.NoExpiration)
-		return New(c, zap.NewNop(), config.MetricsConfig{Quantiles: quantiles})
+		return New(c, componenttest.NewNopExporterCreateSettings(), config.MetricsConfig{Quantiles: quantiles}, testProvider("fallbackHostname"))
 	}
 
 	noQuantiles := []datadog.Metric{
@@ -590,11 +604,7 @@ func TestRunningMetrics(t *testing.T) {
 	cfg := config.MetricsConfig{}
 	tr := newTranslator(zap.NewNop(), cfg)
 
-	buildInfo := component.BuildInfo{
-		Version: "1.0",
-	}
-
-	series, _ := tr.MapMetrics("fallbackHostname", ms, buildInfo)
+	series := tr.MapMetrics(ms)
 
 	runningHostnames := []string{}
 
@@ -796,16 +806,12 @@ func testCount(name string, val float64, seconds uint64) datadog.Metric {
 func TestMapMetrics(t *testing.T) {
 	md := createTestMetrics()
 	cfg := config.MetricsConfig{SendMonotonic: true}
-	buildInfo := component.BuildInfo{
-		Version: "1.0",
-	}
 
 	core, observed := observer.New(zapcore.DebugLevel)
 	testLogger := zap.New(core)
 	tr := newTranslator(testLogger, cfg)
-	series, dropped := tr.MapMetrics("", md, buildInfo)
+	series := tr.MapMetrics(md)
 
-	assert.Equal(t, dropped, 0)
 	filtered := removeRunningMetrics(series)
 	assert.ElementsMatch(t, filtered, []datadog.Metric{
 		testGauge("int.gauge", 1),
