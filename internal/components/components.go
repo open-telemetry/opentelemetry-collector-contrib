@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package main
+package components
 
 import (
 	"go.opentelemetry.io/collector/component"
@@ -90,7 +90,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zookeeperreceiver"
 )
 
-func components() (component.Factories, error) {
+func Components() (component.Factories, error) {
 	factories, err := defaultcomponents.Components()
 	if err != nil {
 		return component.Factories{}, err

@@ -14,7 +14,7 @@
 
 // +build enable_unstable
 
-package main
+package components
 
 import (
 	"go.opentelemetry.io/collector/component"
