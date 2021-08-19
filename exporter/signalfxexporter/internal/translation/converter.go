@@ -24,7 +24,6 @@ import (
 
 	sfxpb "github.com/signalfx/com_signalfx_metrics_protobuf/model"
 	"go.opentelemetry.io/collector/model/pdata"
-	tracetranslator "go.opentelemetry.io/collector/translator/trace"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 
@@ -359,7 +358,7 @@ func resourceToDimensions(res pdata.Resource) []*sfxpb.Dimension {
 
 		dims = append(dims, &sfxpb.Dimension{
 			Key:   k,
-			Value: tracetranslator.AttributeValueToString(val),
+			Value: pdata.AttributeValueToString(val),
 		})
 		return true
 	})

@@ -18,7 +18,7 @@ import (
 	"fmt"
 	"regexp"
 
-	tracetranslator "go.opentelemetry.io/collector/translator/trace"
+	"go.opentelemetry.io/collector/model/pdata"
 )
 
 type sourceFormats struct {
@@ -78,7 +78,7 @@ func (s *sourceFormat) format(f fields) string {
 	for _, matchset := range s.matches {
 		v, ok := f.orig.Get(matchset)
 		if ok {
-			labels = append(labels, tracetranslator.AttributeValueToString(v))
+			labels = append(labels, pdata.AttributeValueToString(v))
 		} else {
 			labels = append(labels, "")
 		}

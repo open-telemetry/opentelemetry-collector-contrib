@@ -327,7 +327,7 @@ func resourceToDatadogServiceNameAndAttributeMap(
 	}
 
 	attrs.Range(func(k string, v pdata.AttributeValue) bool {
-		datadogTags[k] = tracetranslator.AttributeValueToString(v)
+		datadogTags[k] = pdata.AttributeValueToString(v)
 		return true
 	})
 
@@ -378,11 +378,11 @@ func aggregateSpanTags(span pdata.Span, datadogTags map[string]string) map[strin
 	span.Attributes().Range(func(k string, v pdata.AttributeValue) bool {
 		switch k {
 		case keySamplingPriority:
-			spanTags[k] = tracetranslator.AttributeValueToString(v)
+			spanTags[k] = pdata.AttributeValueToString(v)
 		case keySamplingRate:
-			spanTags[k] = tracetranslator.AttributeValueToString(v)
+			spanTags[k] = pdata.AttributeValueToString(v)
 		default:
-			spanTags[utils.NormalizeTag(k)] = tracetranslator.AttributeValueToString(v)
+			spanTags[utils.NormalizeTag(k)] = pdata.AttributeValueToString(v)
 		}
 
 		return true
@@ -674,7 +674,7 @@ func eventsToString(evts pdata.SpanEventSlice) string {
 		event := map[string]interface{}{}
 		event[eventNameTag] = spanEvent.Name()
 		event[eventTimeTag] = spanEvent.Timestamp()
-		event[eventAttrTag] = tracetranslator.AttributeMapToMap(spanEvent.Attributes())
+		event[eventAttrTag] = pdata.AttributeMapToMap(spanEvent.Attributes())
 		eventArray = append(eventArray, event)
 	}
 	eventArrayBytes, _ := json.Marshal(&eventArray)

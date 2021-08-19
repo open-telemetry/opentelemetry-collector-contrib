@@ -20,7 +20,6 @@ import (
 
 	"go.opentelemetry.io/collector/model/pdata"
 	conventions "go.opentelemetry.io/collector/translator/conventions/v1.5.0"
-	tracetranslator "go.opentelemetry.io/collector/translator/trace"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
@@ -67,12 +66,12 @@ func metricDataToSplunk(logger *zap.Logger, data pdata.Metrics, config *Config) 
 			index = indexSet.StringVal()
 		}
 		attributes.Range(func(k string, v pdata.AttributeValue) bool {
-			commonFields[k] = tracetranslator.AttributeValueToString(v)
+			commonFields[k] = pdata.AttributeValueToString(v)
 			return true
 		})
 
 		rm.Resource().Attributes().Range(func(k string, v pdata.AttributeValue) bool {
-			commonFields[k] = tracetranslator.AttributeValueToString(v)
+			commonFields[k] = pdata.AttributeValueToString(v)
 			return true
 		})
 		ilms := rm.InstrumentationLibraryMetrics()
