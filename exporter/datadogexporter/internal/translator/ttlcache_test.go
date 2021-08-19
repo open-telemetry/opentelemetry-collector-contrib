@@ -20,6 +20,10 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func newTestCache() *TTLCache {
+	cache := NewTTLCache(1800, 3600)
+	return cache
+}
 func TestPutAndGetDiff(t *testing.T) {
 	prevPts := newTestCache()
 	_, ok := prevPts.putAndGetDiff("test", []string{}, 1, 5)

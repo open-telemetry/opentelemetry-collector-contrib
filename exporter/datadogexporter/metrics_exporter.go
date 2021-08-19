@@ -30,11 +30,11 @@ import (
 )
 
 type metricsExporter struct {
-	params  component.ExporterCreateSettings
-	cfg     *config.Config
-	ctx     context.Context
-	client  *datadog.Client
-	prevPts *translator.TTLCache
+	params component.ExporterCreateSettings
+	cfg    *config.Config
+	ctx    context.Context
+	client *datadog.Client
+	tr     *translator.Translator
 }
 
 func newMetricsExporter(ctx context.Context, params component.ExporterCreateSettings, cfg *config.Config) *metricsExporter {
@@ -49,7 +49,8 @@ func newMetricsExporter(ctx context.Context, params component.ExporterCreateSett
 		sweepInterval = cfg.Metrics.DeltaTTL / 2
 	}
 	prevPts := translator.NewTTLCache(sweepInterval, cfg.Metrics.DeltaTTL)
-	return &metricsExporter{params, cfg, ctx, client, prevPts}
+	tr := translator.New(prevPts)
+	return &metricsExporter{params, cfg, ctx, client, tr}
 }
 
 func (exp *metricsExporter) PushMetricsData(ctx context.Context, md pdata.Metrics) error {
@@ -68,7 +69,7 @@ func (exp *metricsExporter) PushMetricsData(ctx context.Context, md pdata.Metric
 	}
 
 	fallbackHost := metadata.GetHost(exp.params.Logger, exp.cfg)
-	ms, _ := translator.MapMetrics(exp.params.Logger, exp.cfg.Metrics, exp.prevPts, fallbackHost, md, exp.params.BuildInfo)
+	ms, _ := exp.tr.MapMetrics(exp.params.Logger, exp.cfg.Metrics, fallbackHost, md, exp.params.BuildInfo)
 	metrics.ProcessMetrics(ms, exp.cfg)
 
 	err := exp.client.PostMetrics(ms)
