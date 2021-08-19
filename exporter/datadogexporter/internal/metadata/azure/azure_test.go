@@ -18,7 +18,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/translator/conventions"
+	conventions "go.opentelemetry.io/collector/translator/conventions/v1.5.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/testutils"
 )
@@ -27,12 +27,12 @@ var (
 	testVMID     = "02aab8a4-74ef-476e-8182-f6d2ba4166a6"
 	testHostname = "test-hostname"
 	testAttrs    = testutils.NewAttributeMap(map[string]string{
-		conventions.AttributeCloudProvider: conventions.AttributeCloudProviderAzure,
-		conventions.AttributeHostName:      testHostname,
-		conventions.AttributeCloudRegion:   "location",
-		conventions.AttributeHostID:        testVMID,
-		conventions.AttributeCloudAccount:  "subscriptionID",
-		AttributeResourceGroupName:         "resourceGroup",
+		conventions.AttributeCloudProvider:  conventions.AttributeCloudProviderAzure,
+		conventions.AttributeHostName:       testHostname,
+		conventions.AttributeCloudRegion:    "location",
+		conventions.AttributeHostID:         testVMID,
+		conventions.AttributeCloudAccountID: "subscriptionID",
+		AttributeResourceGroupName:          "resourceGroup",
 	})
 	testEmpty = testutils.NewAttributeMap(map[string]string{})
 )

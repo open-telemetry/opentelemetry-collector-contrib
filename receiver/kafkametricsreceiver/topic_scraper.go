@@ -81,11 +81,11 @@ func (s *topicScraper) scrape(context.Context) (pdata.ResourceMetricsSlice, erro
 			scrapeErrors.Add(err)
 			continue
 		}
-		labels := pdata.NewStringMap()
-		labels.Upsert(metadata.L.Topic, topic)
+		labels := pdata.NewAttributeMap()
+		labels.UpsertString(metadata.L.Topic, topic)
 		addIntGauge(ilm.Metrics(), metadata.M.KafkaTopicPartitions.Name(), now, labels, int64(len(partitions)))
 		for _, partition := range partitions {
-			labels.Upsert(metadata.L.Partition, string(partition))
+			labels.UpsertInt(metadata.L.Partition, int64(partition))
 			currentOffset, err := s.client.GetOffset(topic, partition, sarama.OffsetNewest)
 			if err != nil {
 				scrapeErrors.AddPartial(1, err)
@@ -134,12 +134,12 @@ func createTopicsScraper(_ context.Context, cfg Config, saramaConfig *sarama.Con
 	), nil
 }
 
-func addIntGauge(ms pdata.MetricSlice, name string, now pdata.Timestamp, labels pdata.StringMap, value int64) {
+func addIntGauge(ms pdata.MetricSlice, name string, now pdata.Timestamp, labels pdata.AttributeMap, value int64) {
 	m := ms.AppendEmpty()
 	m.SetName(name)
 	m.SetDataType(pdata.MetricDataTypeGauge)
 	dp := m.Gauge().DataPoints().AppendEmpty()
 	dp.SetTimestamp(now)
 	dp.SetIntVal(value)
-	labels.CopyTo(dp.LabelsMap())
+	labels.CopyTo(dp.Attributes())
 }

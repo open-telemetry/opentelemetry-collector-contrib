@@ -18,7 +18,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/model/pdata"
-	"go.opentelemetry.io/collector/translator/conventions"
+	conventions "go.opentelemetry.io/collector/translator/conventions/v1.5.0"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
@@ -42,10 +42,6 @@ type logIndex struct {
 	record int
 }
 
-func (i *logIndex) zero() bool {
-	return i.resource == 0 && i.library == 0 && i.record == 0
-}
-
 func mapLogRecordToSplunkEvent(res pdata.Resource, lr pdata.LogRecord, config *Config, logger *zap.Logger) *splunk.Event {
 	host := unknownHostName
 	source := config.Source
@@ -61,17 +57,24 @@ func mapLogRecordToSplunkEvent(res pdata.Resource, lr pdata.LogRecord, config *C
 	if traceID := lr.TraceID().HexString(); traceID != "" {
 		fields[traceIDFieldKey] = traceID
 	}
+	if lr.SeverityText() != "" {
+		fields[splunk.SeverityTextLabel] = lr.SeverityText()
+	}
+	if lr.SeverityNumber() != pdata.SeverityNumberUNDEFINED {
+		fields[splunk.SeverityNumberLabel] = lr.SeverityNumber()
+	}
+
 	res.Attributes().Range(func(k string, v pdata.AttributeValue) bool {
 		switch k {
 		case conventions.AttributeHostName:
 			host = v.StringVal()
 			fields[k] = v.StringVal()
-		case conventions.AttributeServiceName:
+		case splunk.DefaultSourceLabel:
 			source = v.StringVal()
 			fields[k] = v.StringVal()
-		case splunk.SourcetypeLabel:
+		case splunk.DefaultSourceTypeLabel:
 			sourcetype = v.StringVal()
-		case splunk.IndexLabel:
+		case splunk.DefaultIndexLabel:
 			index = v.StringVal()
 		default:
 			fields[k] = convertAttributeValue(v, logger)
@@ -83,12 +86,12 @@ func mapLogRecordToSplunkEvent(res pdata.Resource, lr pdata.LogRecord, config *C
 		case conventions.AttributeHostName:
 			host = v.StringVal()
 			fields[k] = v.StringVal()
-		case conventions.AttributeServiceName:
+		case splunk.DefaultSourceLabel:
 			source = v.StringVal()
 			fields[k] = v.StringVal()
-		case splunk.SourcetypeLabel:
+		case splunk.DefaultSourceTypeLabel:
 			sourcetype = v.StringVal()
-		case splunk.IndexLabel:
+		case splunk.DefaultIndexLabel:
 			index = v.StringVal()
 		default:
 			fields[k] = convertAttributeValue(v, logger)

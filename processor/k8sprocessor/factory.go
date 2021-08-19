@@ -22,7 +22,7 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/processor/processorhelper"
-	"go.opentelemetry.io/collector/translator/conventions"
+	conventions "go.opentelemetry.io/collector/translator/conventions/v1.5.0"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
@@ -208,25 +208,25 @@ func warnDeprecatedMetadataConfig(logger *zap.Logger, cfg config.Processor) {
 		switch field {
 		case metdataNamespace:
 			oldName = metdataNamespace
-			newName = conventions.AttributeK8sNamespace
+			newName = conventions.AttributeK8SNamespaceName
 		case metadataPodName:
 			oldName = metadataPodName
-			newName = conventions.AttributeK8sPod
+			newName = conventions.AttributeK8SPodName
 		case metadataPodUID:
 			oldName = metadataPodUID
-			newName = conventions.AttributeK8sPodUID
+			newName = conventions.AttributeK8SPodUID
 		case metadataStartTime:
 			oldName = metadataStartTime
 			newName = metadataPodStartTime
 		case metadataDeployment:
 			oldName = metadataDeployment
-			newName = conventions.AttributeK8sDeployment
+			newName = conventions.AttributeK8SDeploymentName
 		case metadataCluster:
 			oldName = metadataCluster
-			newName = conventions.AttributeK8sCluster
+			newName = conventions.AttributeK8SClusterName
 		case metadataNode:
 			oldName = metadataNode
-			newName = conventions.AttributeK8sNodeName
+			newName = conventions.AttributeK8SNodeName
 		}
 		if oldName != "" {
 			logger.Warn(fmt.Sprintf("%s has been deprecated in favor of %s for k8s-tagger processor", oldName, newName))

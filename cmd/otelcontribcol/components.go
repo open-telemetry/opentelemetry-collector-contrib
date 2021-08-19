@@ -51,6 +51,8 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/hostobserver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/k8sobserver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/filestorage"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/cumulativetodeltaprocessor"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatorateprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbyattrsprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbytraceprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sprocessor"
@@ -200,6 +202,8 @@ func components() (component.Factories, error) {
 		routingprocessor.NewFactory(),
 		tailsamplingprocessor.NewFactory(),
 		spanmetricsprocessor.NewFactory(),
+		cumulativetodeltaprocessor.NewFactory(),
+		deltatorateprocessor.NewFactory(),
 	}
 	for _, pr := range factories.Processors {
 		processors = append(processors, pr)

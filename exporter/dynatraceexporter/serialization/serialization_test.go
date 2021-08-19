@@ -39,13 +39,13 @@ func TestSerializeIntDataPoints(t *testing.T) {
 	labelIntPoint := labelIntSlice.AppendEmpty()
 	labelIntPoint.SetIntVal(13)
 	labelIntPoint.SetTimestamp(pdata.Timestamp(100_000_000))
-	labelIntPoint.LabelsMap().Insert("labelKey", "labelValue")
+	labelIntPoint.Attributes().InsertString("labelKey", "labelValue")
 
 	emptyLabelIntSlice := pdata.NewNumberDataPointSlice()
 	emptyLabelIntPoint := emptyLabelIntSlice.AppendEmpty()
 	emptyLabelIntPoint.SetIntVal(13)
 	emptyLabelIntPoint.SetTimestamp(pdata.Timestamp(100_000_000))
-	emptyLabelIntPoint.LabelsMap().Insert("emptyLabelKey", "")
+	emptyLabelIntPoint.Attributes().InsertString("emptyLabelKey", "")
 
 	tests := []struct {
 		name string
@@ -108,7 +108,7 @@ func TestSerializeDoubleDataPoints(t *testing.T) {
 	labelDoublePoint := labelDoubleSlice.AppendEmpty()
 	labelDoublePoint.SetDoubleVal(13.1)
 	labelDoublePoint.SetTimestamp(pdata.Timestamp(100_000_000))
-	labelDoublePoint.LabelsMap().Insert("labelKey", "labelValue")
+	labelDoublePoint.Attributes().InsertString("labelKey", "labelValue")
 
 	type args struct {
 		name string
@@ -169,7 +169,7 @@ func TestSerializeHistogramMetrics(t *testing.T) {
 	labelDoubleHistPoint.SetCount(10)
 	labelDoubleHistPoint.SetSum(101.0)
 	labelDoubleHistPoint.SetTimestamp(pdata.Timestamp(100_000_000))
-	labelDoubleHistPoint.LabelsMap().Insert("labelKey", "labelValue")
+	labelDoubleHistPoint.Attributes().InsertString("labelKey", "labelValue")
 
 	zeroHistogramSlice := pdata.NewHistogramDataPointSlice()
 	zeroHistogramDataPoint := zeroHistogramSlice.AppendEmpty()
@@ -262,7 +262,7 @@ func Test_serializeLine(t *testing.T) {
 
 func Test_serializeTags(t *testing.T) {
 	type args struct {
-		labels       pdata.StringMap
+		attributes   pdata.AttributeMap
 		exporterTags []string
 	}
 	tests := []struct {
@@ -271,39 +271,39 @@ func Test_serializeTags(t *testing.T) {
 		want string
 	}{
 		{
-			name: "No labels or tags",
-			args: args{labels: pdata.NewStringMap()},
+			name: "No attributes or tags",
+			args: args{attributes: pdata.NewAttributeMap()},
 			want: "",
 		},
 		{
-			name: "Labels with no tags",
-			args: args{labels: pdata.NewStringMap().InitFromMap(map[string]string{"test": "value"})},
+			name: "Attributes with no tags",
+			args: args{attributes: pdata.NewAttributeMap().InitFromMap(map[string]pdata.AttributeValue{"test": pdata.NewAttributeValueString("value")})},
 			want: "test=\"value\"",
 		},
 		{
-			name: "Tags with no labels",
-			args: args{labels: pdata.NewStringMap(), exporterTags: []string{"tag=value"}},
+			name: "Tags with no attributes",
+			args: args{attributes: pdata.NewAttributeMap(), exporterTags: []string{"tag=value"}},
 			want: "tag=value",
 		},
 		{
-			name: "Tags and labels",
-			args: args{labels: pdata.NewStringMap().InitFromMap(map[string]string{"test": "value"}), exporterTags: []string{"tag=value"}},
+			name: "Tags and attributes",
+			args: args{attributes: pdata.NewAttributeMap().InitFromMap(map[string]pdata.AttributeValue{"test": pdata.NewAttributeValueString("value")}), exporterTags: []string{"tag=value"}},
 			want: "tag=value,test=\"value\"",
 		},
 		{
 			name: "Invalid tags",
-			args: args{labels: pdata.NewStringMap().InitFromMap(map[string]string{"_": "value"}), exporterTags: []string{"tag=value"}},
+			args: args{attributes: pdata.NewAttributeMap().InitFromMap(map[string]pdata.AttributeValue{"_": pdata.NewAttributeValueString("value")}), exporterTags: []string{"tag=value"}},
 			want: "tag=value",
 		},
 		{
 			name: "Tag with trailing _",
-			args: args{labels: pdata.NewStringMap().InitFromMap(map[string]string{"test__": "value"}), exporterTags: []string{"tag=value"}},
+			args: args{attributes: pdata.NewAttributeMap().InitFromMap(map[string]pdata.AttributeValue{"test__": pdata.NewAttributeValueString("value")}), exporterTags: []string{"tag=value"}},
 			want: "tag=value,test=\"value\"",
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := serializeTags(tt.args.labels, tt.args.exporterTags); got != tt.want {
+			if got := serializeTags(tt.args.attributes, tt.args.exporterTags); got != tt.want {
 				t.Errorf("serializeTags() = %v, want %v", got, tt.want)
 			}
 		})

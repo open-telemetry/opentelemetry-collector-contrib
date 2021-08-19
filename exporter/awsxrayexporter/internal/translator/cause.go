@@ -22,10 +22,14 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws"
 	"go.opentelemetry.io/collector/model/pdata"
-	semconventions "go.opentelemetry.io/collector/translator/conventions"
+	conventions "go.opentelemetry.io/collector/translator/conventions/v1.5.0"
 
 	awsxray "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray"
 )
+
+// ExceptionEventName the name of the exception event.
+// TODO: Remove this when collector defines this semantic convention.
+const ExceptionEventName = "exception"
 
 func makeCause(span pdata.Span, attributes map[string]pdata.AttributeValue, resource pdata.Resource) (isError, isFault, isThrottle bool,
 	filtered map[string]pdata.AttributeValue, cause *awsxray.CauseData) {
@@ -43,7 +47,7 @@ func makeCause(span pdata.Span, attributes map[string]pdata.AttributeValue, reso
 	hasExceptions := false
 	for i := 0; i < span.Events().Len(); i++ {
 		event := span.Events().At(i)
-		if event.Name() == semconventions.AttributeExceptionEventName {
+		if event.Name() == ExceptionEventName {
 			hasExceptions = true
 			break
 		}
@@ -51,27 +55,27 @@ func makeCause(span pdata.Span, attributes map[string]pdata.AttributeValue, reso
 
 	if hasExceptions {
 		language := ""
-		if val, ok := resource.Attributes().Get(semconventions.AttributeTelemetrySDKLanguage); ok {
+		if val, ok := resource.Attributes().Get(conventions.AttributeTelemetrySDKLanguage); ok {
 			language = val.StringVal()
 		}
 
 		exceptions := make([]awsxray.Exception, 0)
 		for i := 0; i < span.Events().Len(); i++ {
 			event := span.Events().At(i)
-			if event.Name() == semconventions.AttributeExceptionEventName {
+			if event.Name() == ExceptionEventName {
 				exceptionType := ""
 				message = ""
 				stacktrace := ""
 
-				if val, ok := event.Attributes().Get(semconventions.AttributeExceptionType); ok {
+				if val, ok := event.Attributes().Get(conventions.AttributeExceptionType); ok {
 					exceptionType = val.StringVal()
 				}
 
-				if val, ok := event.Attributes().Get(semconventions.AttributeExceptionMessage); ok {
+				if val, ok := event.Attributes().Get(conventions.AttributeExceptionMessage); ok {
 					message = val.StringVal()
 				}
 
-				if val, ok := event.Attributes().Get(semconventions.AttributeExceptionStacktrace); ok {
+				if val, ok := event.Attributes().Get(conventions.AttributeExceptionStacktrace); ok {
 					stacktrace = val.StringVal()
 				}
 
@@ -89,7 +93,7 @@ func makeCause(span pdata.Span, attributes map[string]pdata.AttributeValue, reso
 		filtered = make(map[string]pdata.AttributeValue)
 		for key, value := range attributes {
 			switch key {
-			case semconventions.AttributeHTTPStatusText:
+			case conventions.AttributeHTTPStatusText:
 				if message == "" {
 					message = value.StringVal()
 				}
@@ -117,7 +121,7 @@ func makeCause(span pdata.Span, attributes map[string]pdata.AttributeValue, reso
 		}
 	}
 
-	if val, ok := span.Attributes().Get(semconventions.AttributeHTTPStatusCode); ok {
+	if val, ok := span.Attributes().Get(conventions.AttributeHTTPStatusCode); ok {
 		code := val.IntVal()
 		// We only differentiate between faults (server errors) and errors (client errors) for HTTP spans.
 		if code >= 400 && code <= 499 {
@@ -160,6 +164,9 @@ func parseException(exceptionType string, message string, stacktrace string, lan
 		exceptions = fillJavaScriptStacktrace(stacktrace, exceptions)
 	case "dotnet":
 		exceptions = fillDotnetStacktrace(stacktrace, exceptions)
+	case "php":
+		// The PHP SDK formats stack traces exactly like Java would
+		exceptions = fillJavaStacktrace(stacktrace, exceptions)
 	}
 
 	return exceptions
@@ -394,7 +401,7 @@ func fillJavaScriptStacktrace(stacktrace string, exceptions []awsxray.Exception)
 				path = "native"
 			}
 
-			// only append the exception if all the values of the exception are not default
+			// only append the exception if at least one of the values is not default
 			if path != "" || label != "" || lineIdx != 0 {
 				stack := awsxray.StackFrame{
 					Path:  aws.String(path),

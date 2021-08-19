@@ -27,7 +27,7 @@ import (
 	"go.opentelemetry.io/collector/translator/internaldata"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/redisreceiver/interval"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/interval"
 )
 
 var _ component.MetricsReceiver = (*Receiver)(nil)

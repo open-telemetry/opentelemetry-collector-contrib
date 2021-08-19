@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscon
 go 1.16
 
 require (
-	github.com/aws/aws-sdk-go v1.40.14
+	github.com/aws/aws-sdk-go v1.40.24
 	github.com/google/cadvisor v0.39.2
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil v0.0.0-00010101000000-000000000000
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/containerinsight v0.0.0-00010101000000-000000000000
@@ -13,12 +13,12 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/kubelet v0.0.0-00010101000000-000000000000
 	github.com/shirou/gopsutil v3.21.7+incompatible
 	github.com/stretchr/testify v1.7.0
-	go.opentelemetry.io/collector v0.31.0
-	go.opentelemetry.io/collector/model v0.31.0
-	go.uber.org/zap v1.18.1
-	k8s.io/api v0.21.3
-	k8s.io/apimachinery v0.21.3
-	k8s.io/client-go v0.21.3
+	go.opentelemetry.io/collector v0.32.1-0.20210817223921-dd190c568f83
+	go.opentelemetry.io/collector/model v0.32.1-0.20210817223921-dd190c568f83
+	go.uber.org/zap v1.19.0
+	k8s.io/api v0.22.0
+	k8s.io/apimachinery v0.22.0
+	k8s.io/client-go v0.22.0
 	k8s.io/klog v1.0.0
 )
 

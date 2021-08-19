@@ -19,11 +19,16 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
 func TestDefaultConfig_exporterSettings(t *testing.T) {
 	want := &Config{
 		ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
+		RetrySettings:    exporterhelper.DefaultRetrySettings(),
+		QueueSettings: QueueSettings{
+			QueueSize: exporterhelper.DefaultQueueSettings().QueueSize,
+		},
 	}
 	assert.Equal(t, want, createDefaultConfig())
 }

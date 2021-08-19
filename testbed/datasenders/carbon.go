@@ -19,7 +19,7 @@ import (
 	"fmt"
 	"time"
 
-	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/testbed/testbed"
@@ -56,9 +56,10 @@ func (cs *CarbonDataSender) Start() error {
 		Endpoint:         cs.GetEndpoint().String(),
 		Timeout:          5 * time.Second,
 	}
-	params := component.ExporterCreateSettings{Logger: zap.L()}
-	exporter, err := factory.CreateMetricsExporter(context.Background(), params, cfg)
+	params := componenttest.NewNopExporterCreateSettings()
+	params.Logger = zap.L()
 
+	exporter, err := factory.CreateMetricsExporter(context.Background(), params, cfg)
 	if err != nil {
 		return err
 	}

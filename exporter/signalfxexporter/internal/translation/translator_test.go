@@ -3030,9 +3030,9 @@ func baseMD() pdata.Metric {
 }
 
 func dblTS(lbl0 string, lbl1 string, secondsDelta int64, v float64, valueDelta float64, out pdata.NumberDataPoint) {
-	out.LabelsMap().InitFromMap(map[string]string{
-		"cpu":   lbl0,
-		"state": lbl1,
+	out.Attributes().InitFromMap(map[string]pdata.AttributeValue{
+		"cpu":   pdata.NewAttributeValueString(lbl0),
+		"state": pdata.NewAttributeValueString(lbl1),
 	})
 	const startTime = 1600000000
 	out.SetTimestamp(pdata.Timestamp(time.Duration(startTime+secondsDelta) * time.Second))
@@ -3040,9 +3040,9 @@ func dblTS(lbl0 string, lbl1 string, secondsDelta int64, v float64, valueDelta f
 }
 
 func intTS(lbl0 string, lbl1 string, secondsDelta int64, v int64, valueDelta int64, out pdata.NumberDataPoint) {
-	out.LabelsMap().InitFromMap(map[string]string{
-		"cpu":   lbl0,
-		"state": lbl1,
+	out.Attributes().InitFromMap(map[string]pdata.AttributeValue{
+		"cpu":   pdata.NewAttributeValueString(lbl0),
+		"state": pdata.NewAttributeValueString(lbl1),
 	})
 	const startTime = 1600000000
 	out.SetTimestamp(pdata.Timestamp(time.Duration(startTime+secondsDelta) * time.Second))

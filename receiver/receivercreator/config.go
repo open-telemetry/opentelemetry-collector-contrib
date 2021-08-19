@@ -74,7 +74,7 @@ func newReceiverTemplate(name string, cfg userConfigMap) (receiverTemplate, erro
 	}, nil
 }
 
-var _ config.CustomUnmarshable = (*Config)(nil)
+var _ config.Unmarshallable = (*Config)(nil)
 
 // Config defines configuration for receiver_creator.
 type Config struct {
@@ -102,8 +102,7 @@ func (cfg *Config) Unmarshal(componentParser *configparser.Parser) error {
 		return fmt.Errorf("unable to extract key %v: %v", receiversConfigKey, err)
 	}
 
-	receiversSettings := cast.ToStringMap(componentParser.Get(receiversConfigKey))
-	for subreceiverKey := range receiversSettings {
+	for subreceiverKey := range receiversCfg.ToStringMap() {
 		subreceiverSection, err := receiversCfg.Sub(subreceiverKey)
 		if err != nil {
 			return fmt.Errorf("unable to extract subreceiver key %v: %v", subreceiverKey, err)

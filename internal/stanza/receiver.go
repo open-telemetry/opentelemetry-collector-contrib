@@ -23,10 +23,9 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/extension/storage"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage"
 )
 
 type receiver struct {

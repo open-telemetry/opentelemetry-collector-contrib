@@ -22,7 +22,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/translator/conventions"
+	conventions "go.opentelemetry.io/collector/translator/conventions/v1.5.0"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
@@ -47,21 +47,22 @@ func TestDetectAzureAvailable(t *testing.T) {
 	}, nil)
 
 	detector := &Detector{provider: mp}
-	res, err := detector.Detect(context.Background())
+	res, schemaURL, err := detector.Detect(context.Background())
 	require.NoError(t, err)
+	assert.Equal(t, conventions.SchemaURL, schemaURL)
 	mp.AssertExpectations(t)
 	res.Attributes().Sort()
 
 	expected := internal.NewResource(map[string]interface{}{
-		conventions.AttributeCloudProvider: conventions.AttributeCloudProviderAzure,
-		conventions.AttributeCloudPlatform: conventions.AttributeCloudPlatformAzureVM,
-		conventions.AttributeHostName:      "name",
-		conventions.AttributeCloudRegion:   "location",
-		conventions.AttributeHostID:        "vmID",
-		conventions.AttributeCloudAccount:  "subscriptionID",
-		"azure.vm.size":                    "vmSize",
-		"azure.resourcegroup.name":         "resourceGroup",
-		"azure.vm.scaleset.name":           "myScaleset",
+		conventions.AttributeCloudProvider:  conventions.AttributeCloudProviderAzure,
+		conventions.AttributeCloudPlatform:  conventions.AttributeCloudPlatformAzureVM,
+		conventions.AttributeHostName:       "name",
+		conventions.AttributeCloudRegion:    "location",
+		conventions.AttributeHostID:         "vmID",
+		conventions.AttributeCloudAccountID: "subscriptionID",
+		"azure.vm.size":                     "vmSize",
+		"azure.resourcegroup.name":          "resourceGroup",
+		"azure.vm.scaleset.name":            "myScaleset",
 	})
 	expected.Attributes().Sort()
 
@@ -73,7 +74,7 @@ func TestDetectError(t *testing.T) {
 	mp.On("Metadata").Return(&ComputeMetadata{}, fmt.Errorf("mock error"))
 
 	detector := &Detector{provider: mp, logger: zap.NewNop()}
-	res, err := detector.Detect(context.Background())
+	res, _, err := detector.Detect(context.Background())
 	assert.NoError(t, err)
 	assert.True(t, internal.IsEmptyResource(res))
 }

@@ -19,7 +19,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/model/pdata"
-	"go.opentelemetry.io/collector/translator/conventions"
+	conventions "go.opentelemetry.io/collector/translator/conventions/v1.5.0"
 )
 
 func TestContainerResource(t *testing.T) {
@@ -39,15 +39,15 @@ func TestContainerResource(t *testing.T) {
 	attrMap := r.Attributes()
 	require.EqualValues(t, 9, attrMap.Len())
 	expected := map[string]string{
-		conventions.AttributeContainerName:  "container-1",
-		conventions.AttributeContainerID:    "001",
-		attributeECSDockerName:              "docker-container-1",
-		conventions.AttributeContainerImage: "nginx:v1.0",
-		attributeContainerImageID:           "sha256:8cf1bfb43ff5d9b05af9b6b63983440f137",
-		conventions.AttributeContainerTag:   "v1.0",
-		attributeContainerCreatedAt:         "2020-07-30T22:12:29.837074927Z",
-		attributeContainerStartedAt:         "2020-07-30T22:12:31.153459485Z",
-		attributeContainerKnownStatus:       "RUNNING",
+		conventions.AttributeContainerName:      "container-1",
+		conventions.AttributeContainerID:        "001",
+		attributeECSDockerName:                  "docker-container-1",
+		conventions.AttributeContainerImageName: "nginx:v1.0",
+		attributeContainerImageID:               "sha256:8cf1bfb43ff5d9b05af9b6b63983440f137",
+		conventions.AttributeContainerImageTag:  "v1.0",
+		attributeContainerCreatedAt:             "2020-07-30T22:12:29.837074927Z",
+		attributeContainerStartedAt:             "2020-07-30T22:12:31.153459485Z",
+		attributeContainerKnownStatus:           "RUNNING",
 	}
 
 	verifyAttributeMap(t, expected, attrMap)
@@ -76,16 +76,16 @@ func TestContainerResourceForStoppedContainer(t *testing.T) {
 	require.EqualValues(t, 2, getExitCodeAd.IntVal())
 	require.EqualValues(t, 11, attrMap.Len())
 	expected := map[string]string{
-		conventions.AttributeContainerName:  "container-1",
-		conventions.AttributeContainerID:    "001",
-		attributeECSDockerName:              "docker-container-1",
-		conventions.AttributeContainerImage: "nginx:v1.0",
-		attributeContainerImageID:           "sha256:8cf1bfb43ff5d9b05af9b6b63983440f137",
-		conventions.AttributeContainerTag:   "v1.0",
-		attributeContainerCreatedAt:         "2020-07-30T22:12:29.837074927Z",
-		attributeContainerStartedAt:         "2020-07-30T22:12:31.153459485Z",
-		attributeContainerFinishedAt:        "2020-07-31T22:12:29.837074927Z",
-		attributeContainerKnownStatus:       "STOPPED",
+		conventions.AttributeContainerName:      "container-1",
+		conventions.AttributeContainerID:        "001",
+		attributeECSDockerName:                  "docker-container-1",
+		conventions.AttributeContainerImageName: "nginx:v1.0",
+		attributeContainerImageID:               "sha256:8cf1bfb43ff5d9b05af9b6b63983440f137",
+		conventions.AttributeContainerImageTag:  "v1.0",
+		attributeContainerCreatedAt:             "2020-07-30T22:12:29.837074927Z",
+		attributeContainerStartedAt:             "2020-07-30T22:12:31.153459485Z",
+		attributeContainerFinishedAt:            "2020-07-31T22:12:29.837074927Z",
+		attributeContainerKnownStatus:           "STOPPED",
 	}
 
 	verifyAttributeMap(t, expected, attrMap)
@@ -120,7 +120,7 @@ func TestTaskResource(t *testing.T) {
 		attributeECSTaskKnownStatus:                "RUNNING",
 		attributeECSTaskLaunchType:                 "EC2",
 		conventions.AttributeCloudRegion:           "us-west-2",
-		conventions.AttributeCloudAccount:          "111122223333",
+		conventions.AttributeCloudAccountID:        "111122223333",
 	}
 
 	verifyAttributeMap(t, expected, attrMap)
@@ -156,7 +156,7 @@ func TestTaskResourceWithClusterARN(t *testing.T) {
 		attributeECSTaskKnownStatus:                "RUNNING",
 		attributeECSTaskLaunchType:                 "EC2",
 		conventions.AttributeCloudRegion:           "us-west-2",
-		conventions.AttributeCloudAccount:          "803860917211",
+		conventions.AttributeCloudAccountID:        "803860917211",
 	}
 
 	verifyAttributeMap(t, expected, attrMap)
