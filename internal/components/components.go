@@ -49,6 +49,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/oauth2clientauthextension"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/hostobserver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/k8sobserver"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/oidcauthextension"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/filestorage"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/cumulativetodeltaprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatorateprocessor"
@@ -96,6 +97,9 @@ func Components() (component.Factories, error) {
 		return component.Factories{}, err
 	}
 
+	// drop the oidcauth extension from core while we are migrating
+	delete(factories.Extensions, "oidc")
+
 	extensions := []component.ExtensionFactory{
 		filestorage.NewFactory(),
 		fluentbitextension.NewFactory(),
@@ -103,6 +107,7 @@ func Components() (component.Factories, error) {
 		httpforwarder.NewFactory(),
 		k8sobserver.NewFactory(),
 		oauth2clientauthextension.NewFactory(),
+		oidcauthextension.NewFactory(),
 	}
 
 	for _, ext := range factories.Extensions {
