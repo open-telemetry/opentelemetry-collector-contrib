@@ -19,9 +19,9 @@ import (
 	"fmt"
 	"strconv"
 
-	"go.opentelemetry.io/collector/internal/processor/filterconfig"
-	"go.opentelemetry.io/collector/internal/processor/filterhelper"
-	"go.opentelemetry.io/collector/internal/processor/filterset"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterconfig"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterhelper"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterset"
 	"go.opentelemetry.io/collector/model/pdata"
 )
 

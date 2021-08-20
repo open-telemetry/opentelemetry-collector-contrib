@@ -15,7 +15,7 @@
 package filtermetric
 
 import (
-	"go.opentelemetry.io/collector/internal/processor/filterset"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterset"
 	"go.opentelemetry.io/collector/model/pdata"
 )
 
