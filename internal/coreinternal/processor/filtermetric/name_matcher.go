@@ -15,8 +15,9 @@
 package filtermetric
 
 import (
-	"go.opentelemetry.io/collector/internal/processor/filterset"
 	"go.opentelemetry.io/collector/model/pdata"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterset"
 )
 
 // nameMatcher matches metrics by metric properties against prespecified values for each property.
