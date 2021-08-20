@@ -44,6 +44,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/stackdriverexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sumologicexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/tanzuobservabilityexporter"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/awsecshealthcheckextension"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/bearertokenauthextension"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/fluentbitextension"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/httpforwarder"
@@ -102,6 +103,7 @@ func Components() (component.Factories, error) {
 	delete(factories.Extensions, "bearertokenauth")
 
 	extensions := []component.ExtensionFactory{
+		awsecshealthcheckextension.NewFactory(),
 		bearertokenauthextension.NewFactory(),
 		filestorage.NewFactory(),
 		fluentbitextension.NewFactory(),
