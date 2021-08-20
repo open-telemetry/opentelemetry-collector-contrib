@@ -17,6 +17,6 @@ require (
 	go.opentelemetry.io/collector/cmd/issuegenerator v0.33.1-0.20210820002854-d3000232f8f6
 	go.opentelemetry.io/collector/cmd/mdatagen v0.33.1-0.20210820002854-d3000232f8f6
 	go.uber.org/atomic v1.8.0 // indirect
-	golang.org/x/tools v0.1.3
+	golang.org/x/tools v0.1.5
 	google.golang.org/protobuf v1.27.1 // indirect
 )
