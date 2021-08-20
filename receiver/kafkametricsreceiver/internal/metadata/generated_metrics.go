@@ -103,22 +103,6 @@ func (m *metricStruct) ByName(n string) MetricIntf {
 	return metricsByName[n]
 }
 
-func (m *metricStruct) FactoriesByName() map[string]func(pdata.Metric) {
-	return map[string]func(pdata.Metric){
-		Metrics.KafkaBrokers.Name():                 Metrics.KafkaBrokers.Init,
-		Metrics.KafkaConsumerGroupLag.Name():        Metrics.KafkaConsumerGroupLag.Init,
-		Metrics.KafkaConsumerGroupLagSum.Name():     Metrics.KafkaConsumerGroupLagSum.Init,
-		Metrics.KafkaConsumerGroupMembers.Name():    Metrics.KafkaConsumerGroupMembers.Init,
-		Metrics.KafkaConsumerGroupOffset.Name():     Metrics.KafkaConsumerGroupOffset.Init,
-		Metrics.KafkaConsumerGroupOffsetSum.Name():  Metrics.KafkaConsumerGroupOffsetSum.Init,
-		Metrics.KafkaPartitionCurrentOffset.Name():  Metrics.KafkaPartitionCurrentOffset.Init,
-		Metrics.KafkaPartitionOldestOffset.Name():   Metrics.KafkaPartitionOldestOffset.Init,
-		Metrics.KafkaPartitionReplicas.Name():       Metrics.KafkaPartitionReplicas.Init,
-		Metrics.KafkaPartitionReplicasInSync.Name(): Metrics.KafkaPartitionReplicasInSync.Init,
-		Metrics.KafkaTopicPartitions.Name():         Metrics.KafkaTopicPartitions.Init,
-	}
-}
-
 // Metrics contains a set of methods for each metric that help with
 // manipulating those metrics.
 var Metrics = &metricStruct{
