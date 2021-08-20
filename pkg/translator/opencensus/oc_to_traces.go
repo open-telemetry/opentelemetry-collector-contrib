@@ -23,10 +23,11 @@ import (
 	"go.opencensus.io/trace"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/occonventions"
 	"go.opentelemetry.io/collector/model/pdata"
 	conventions "go.opentelemetry.io/collector/translator/conventions/v1.5.0"
 	tracetranslator "go.opentelemetry.io/collector/translator/trace"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/occonventions"
 )
 
 // OCToTraces may be used only by OpenCensus receiver and exporter implementations.
