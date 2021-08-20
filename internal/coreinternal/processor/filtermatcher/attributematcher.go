@@ -19,10 +19,11 @@ import (
 	"fmt"
 	"strconv"
 
+	"go.opentelemetry.io/collector/model/pdata"
+
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterconfig"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterhelper"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterset"
-	"go.opentelemetry.io/collector/model/pdata"
 )
 
 type AttributesMatcher []AttributeMatcher
