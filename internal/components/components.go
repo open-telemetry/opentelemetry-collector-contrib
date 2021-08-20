@@ -44,6 +44,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/stackdriverexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sumologicexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/tanzuobservabilityexporter"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/bearertokenauthextension"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/fluentbitextension"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/httpforwarder"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/oauth2clientauthextension"
@@ -97,10 +98,11 @@ func Components() (component.Factories, error) {
 		return component.Factories{}, err
 	}
 
-	// drop the oidcauth extension from core while we are migrating
 	delete(factories.Extensions, "oidc")
+	delete(factories.Extensions, "bearertokenauth")
 
 	extensions := []component.ExtensionFactory{
+		bearertokenauthextension.NewFactory(),
 		filestorage.NewFactory(),
 		fluentbitextension.NewFactory(),
 		hostobserver.NewFactory(),
