@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package defaultcomponents
+package components
 
 import (
 	"context"
@@ -22,7 +22,6 @@ import (
 	promconfig "github.com/prometheus/prometheus/config"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -76,7 +75,7 @@ func TestDefaultReceivers(t *testing.T) {
 		},
 	}
 
-	assert.Equal(t, len(tests), len(rcvrFactories))
+	assert.Equal(t, len(tests)+27 /* not tested */, len(rcvrFactories))
 	for _, tt := range tests {
 		t.Run(string(tt.receiver), func(t *testing.T) {
 			factory, ok := rcvrFactories[tt.receiver]

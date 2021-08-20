@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package defaultcomponents
+package components
 
 import (
 	"context"
@@ -20,16 +20,16 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/extension/ballastextension"
-	"go.opentelemetry.io/collector/extension/bearertokenauthextension"
 	"go.opentelemetry.io/collector/extension/healthcheckextension"
 	"go.opentelemetry.io/collector/extension/pprofextension"
 	"go.opentelemetry.io/collector/extension/zpagesextension"
 	"go.opentelemetry.io/collector/testutil"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/bearertokenauthextension"
 )
 
 func TestDefaultExtensions(t *testing.T) {
@@ -84,9 +84,8 @@ func TestDefaultExtensions(t *testing.T) {
 		},
 	}
 
-	// we have one more extension that we can't test here: the OIDC Auth extension requires
-	// an OIDC server to get the config from, and we don't want to spawn one here for this test.
-	assert.Equal(t, len(tests)+1, len(extFactories))
+	// * The OIDC Auth extension requires an OIDC server to get the config from, and we don't want to spawn one here for this test.
+	assert.Equal(t, len(tests)+7 /* not tested */, len(extFactories))
 
 	for _, tt := range tests {
 		t.Run(string(tt.extension), func(t *testing.T) {
