@@ -4,7 +4,7 @@ go 1.16
 
 require (
 	github.com/DataDog/datadog-agent/pkg/trace/exportable v0.0.0-20201016145401-4646cf596b02
-	github.com/aws/aws-sdk-go v1.40.24
+	github.com/aws/aws-sdk-go v1.40.26
 	github.com/gogo/protobuf v1.3.2
 	github.com/mattn/go-colorable v0.1.7 // indirect
 	github.com/patrickmn/go-cache v2.1.0+incompatible
