@@ -18,11 +18,11 @@ import (
 	"fmt"
 
 	"github.com/jaegertracing/jaeger/model"
-
-	"go.opentelemetry.io/collector/internal/idutils"
 	"go.opentelemetry.io/collector/model/pdata"
 	conventions "go.opentelemetry.io/collector/translator/conventions/v1.5.0"
 	tracetranslator "go.opentelemetry.io/collector/translator/trace"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/idutils"
 )
 
 // InternalTracesToJaegerProto translates internal trace data into the Jaeger Proto for GRPC.
