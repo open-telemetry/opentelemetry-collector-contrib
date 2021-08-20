@@ -24,11 +24,12 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/service"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/components"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/version"
 )
 
 func main() {
-	factories, err := components()
+	factories, err := components.Components()
 	if err != nil {
 		log.Fatalf("failed to build components: %v", err)
 	}

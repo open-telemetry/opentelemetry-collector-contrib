@@ -26,7 +26,6 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/model/pdata"
 	conventions "go.opentelemetry.io/collector/translator/conventions/v1.5.0"
-	tracetranslator "go.opentelemetry.io/collector/translator/trace"
 	"go.uber.org/zap"
 )
 
@@ -68,7 +67,7 @@ func newTransformer(logger *zap.Logger, buildInfo *component.BuildInfo, details 
 
 func (t *transformer) CommonAttributes(resource pdata.Resource, lib pdata.InstrumentationLibrary) map[string]interface{} {
 	resourceAttrs := resource.Attributes()
-	commonAttrs := tracetranslator.AttributeMapToMap(resourceAttrs)
+	commonAttrs := pdata.AttributeMapToMap(resourceAttrs)
 	t.TrackAttributes(attributeLocationResource, resourceAttrs)
 
 	if n := lib.Name(); n != "" {
@@ -132,7 +131,7 @@ func (t *transformer) Log(log pdata.LogRecord) (telemetry.Log, error) {
 	logAttrs := log.Attributes()
 	attrs := make(map[string]interface{}, logAttrs.Len()+5)
 
-	for k, v := range tracetranslator.AttributeMapToMap(logAttrs) {
+	for k, v := range pdata.AttributeMapToMap(logAttrs) {
 		// Only include attribute if not an override attribute
 		if _, isOverrideKey := t.OverrideAttributes[k]; !isOverrideKey {
 			attrs[k] = v
@@ -212,7 +211,7 @@ func (t *transformer) SpanAttributes(span pdata.Span) map[string]interface{} {
 		attrs[droppedEventsCountKey] = droppedEventsCount
 	}
 
-	for k, v := range tracetranslator.AttributeMapToMap(spanAttrs) {
+	for k, v := range pdata.AttributeMapToMap(spanAttrs) {
 		// Only include attribute if not an override attribute
 		if _, isOverrideKey := t.OverrideAttributes[k]; !isOverrideKey {
 			attrs[k] = v
@@ -238,7 +237,7 @@ func (t *transformer) SpanEvents(span pdata.Span) []telemetry.Event {
 		events[i] = telemetry.Event{
 			EventType:  event.Name(),
 			Timestamp:  event.Timestamp().AsTime(),
-			Attributes: tracetranslator.AttributeMapToMap(eventAttrs),
+			Attributes: pdata.AttributeMapToMap(eventAttrs),
 		}
 
 		if droppedAttributesCount := event.DroppedAttributesCount(); droppedAttributesCount > 0 {

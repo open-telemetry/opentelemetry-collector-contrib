@@ -22,7 +22,6 @@ import (
 
 	"go.opentelemetry.io/collector/model/pdata"
 	conventions "go.opentelemetry.io/collector/translator/conventions/v1.5.0"
-	tracetranslator "go.opentelemetry.io/collector/translator/trace"
 	"go.uber.org/zap"
 )
 
@@ -173,7 +172,7 @@ func attrMaptoStringMap(attrMap pdata.AttributeMap) map[string]string {
 	strMap := make(map[string]string, attrMap.Len())
 
 	attrMap.Range(func(k string, v pdata.AttributeValue) bool {
-		strMap[k] = tracetranslator.AttributeValueToString(v)
+		strMap[k] = pdata.AttributeValueToString(v)
 		return true
 	})
 	return strMap

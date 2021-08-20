@@ -23,10 +23,10 @@ import (
 	"sync"
 	"time"
 
-	agentmetricspb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/metrics/v1"
 	dtypes "github.com/docker/docker/api/types"
 	dfilters "github.com/docker/docker/api/types/filters"
 	docker "github.com/docker/docker/client"
+	"go.opentelemetry.io/collector/model/pdata"
 	"go.uber.org/zap"
 )
 
@@ -131,7 +131,7 @@ func (dc *dockerClient) LoadContainerList(ctx context.Context) error {
 func (dc *dockerClient) FetchContainerStatsAndConvertToMetrics(
 	ctx context.Context,
 	container DockerContainer,
-) (*agentmetricspb.ExportMetricsServiceRequest, error) {
+) (pdata.Metrics, error) {
 	dc.logger.Debug("Fetching container stats.", zap.String("id", container.ID))
 	statsCtx, cancel := context.WithTimeout(ctx, dc.config.Timeout)
 	containerStats, err := dc.client.ContainerStats(statsCtx, container.ID, false)
@@ -151,22 +151,22 @@ func (dc *dockerClient) FetchContainerStatsAndConvertToMetrics(
 			)
 		}
 
-		return nil, err
+		return pdata.NewMetrics(), err
 	}
 
 	statsJSON, err := dc.toStatsJSON(containerStats, &container)
 	if err != nil {
-		return nil, err
+		return pdata.NewMetrics(), err
 	}
 
-	md, err := ContainerStatsToMetrics(statsJSON, &container, dc.config)
+	md, err := ContainerStatsToMetrics(pdata.TimestampFromTime(time.Now()), statsJSON, &container, dc.config)
 	if err != nil {
 		dc.logger.Error(
 			"Could not convert docker containerStats for container id",
 			zap.String("id", container.ID),
 			zap.Error(err),
 		)
-		return nil, err
+		return pdata.NewMetrics(), err
 	}
 	return md, nil
 }

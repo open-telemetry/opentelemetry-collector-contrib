@@ -2,15 +2,33 @@
 
 ## Unreleased
 
-## v0.32.0
+## 💡 Enhancements 💡
 
-# 🎉 OpenTelemetry Collector Contrib v0.32.0 (Beta) 🎉
+- `tailsampling` processor: Add new policy `probabilistic` (#3876)
+
+## v0.33.0
+
+# 🎉 OpenTelemetry Collector Contrib v0.33.0 (Beta) 🎉
 
 The OpenTelemetry Collector Contrib contains everything in the [opentelemetry-collector release](https://github.com/open-telemetry/opentelemetry-collector/releases/tag/v0.32.0) (be sure to check the release notes here as well!). Check out the [Getting Started Guide](https://opentelemetry.io/docs/collector/getting-started/) for deployment and configuration information.
 
 ## 🚀 New components 🚀
 
 - [`cumulativetodelta` processor](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/cumulativetodeltaprocessor) to convert cumulative sum metrics to cumulative delta
+
+## 💡 Enhancements 💡
+
+- Collector contrib has now full support for metrics proto v0.9.0.
+
+## v0.32.0
+
+# 🎉 OpenTelemetry Collector Contrib v0.32.0 (Beta) 🎉
+
+This release is marked as "bad" since the metrics pipelines will produce bad data.
+
+- See https://github.com/open-telemetry/opentelemetry-collector/issues/3824
+
+The OpenTelemetry Collector Contrib contains everything in the [opentelemetry-collector release](https://github.com/open-telemetry/opentelemetry-collector/releases/tag/v0.32.0) (be sure to check the release notes here as well!). Check out the [Getting Started Guide](https://opentelemetry.io/docs/collector/getting-started/) for deployment and configuration information.
 
 ## 🛑 Breaking changes 🛑
 

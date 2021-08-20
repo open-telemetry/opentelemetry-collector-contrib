@@ -126,6 +126,10 @@ updates:
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
+    directory: "/extension/bearertokenauthextension"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
     directory: "/extension/fluentbitextension"
     schedule:
       interval: "weekly"
@@ -147,6 +151,10 @@ updates:
       interval: "weekly"
   - package-ecosystem: "gomod"
     directory: "/extension/observer/k8sobserver"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
+    directory: "/extension/oidcauthextension"
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"

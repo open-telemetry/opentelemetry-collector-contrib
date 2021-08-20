@@ -37,7 +37,7 @@ const (
 	serviceNameKey     = conventions.AttributeServiceName
 	operationKey       = "operation" // is there a constant we can refer to?
 	spanKindKey        = tracetranslator.TagSpanKind
-	statusCodeKey      = tracetranslator.TagStatusCode
+	statusCodeKey      = "status.code" // Otel core removed this and changed to semantic conventions "otel.status_code"
 	metricKeySeparator = string(byte(0))
 )
 
@@ -378,7 +378,7 @@ func buildKey(serviceName string, span pdata.Span, optionalDims []Dimension) met
 			value = *d.Default
 		}
 		if attr, ok := spanAttr.Get(d.Name); ok {
-			value = tracetranslator.AttributeValueToString(attr)
+			value = pdata.AttributeValueToString(attr)
 		}
 		concatDimensionValue(&metricKeyBuilder, value, true)
 	}

@@ -155,7 +155,7 @@ func attributesToTags(attributes ...pdata.AttributeMap) map[string]string {
 	tags := map[string]string{}
 
 	extractTag := func(k string, v pdata.AttributeValue) bool {
-		tags[k] = tracetranslator.AttributeValueToString(v)
+		tags[k] = pdata.AttributeValueToString(v)
 		return true
 	}
 

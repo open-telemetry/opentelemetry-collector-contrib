@@ -1,0 +1,16 @@
+receivers:
+  otlp:
+    protocols:
+
+processors:
+  nop:
+
+exporters:
+  nop:
+
+service:
+  pipelines:
+    traces:
+     receivers: [otlp]
+     processors: [nop]
+     exporters: [nop]

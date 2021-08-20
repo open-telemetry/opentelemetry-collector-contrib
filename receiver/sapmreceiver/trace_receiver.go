@@ -29,7 +29,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/obsreport"
-	jaegertranslator "go.opentelemetry.io/collector/translator/trace/jaeger"
+	"go.opentelemetry.io/collector/translator/trace/jaeger"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
@@ -68,7 +68,7 @@ func (sr *sapmReceiver) handleRequest(req *http.Request) error {
 
 	ctx := sr.obsrecv.StartTracesOp(req.Context())
 
-	td := jaegertranslator.ProtoBatchesToInternalTraces(sapm.Batches)
+	td := jaeger.ProtoBatchesToInternalTraces(sapm.Batches)
 
 	if sr.config.AccessTokenPassthrough {
 		if accessToken := req.Header.Get(splunk.SFxAccessTokenHeader); accessToken != "" {
