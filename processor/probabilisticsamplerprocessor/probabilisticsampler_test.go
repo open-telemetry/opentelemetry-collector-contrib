@@ -22,13 +22,13 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/idutils"
-
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/model/pdata"
 	conventions "go.opentelemetry.io/collector/translator/conventions/v1.5.0"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/idutils"
 )
 
 func TestNewTracesProcessor(t *testing.T) {
