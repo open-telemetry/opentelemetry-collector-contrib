@@ -37,7 +37,7 @@ const (
 	serviceNameKey     = conventions.AttributeServiceName
 	operationKey       = "operation" // is there a constant we can refer to?
 	spanKindKey        = tracetranslator.TagSpanKind
-	statusCodeKey      = tracetranslator.TagStatusCode
+	statusCodeKey      = "status.code" // Otel core removed this and changed to semantic conventions "otel.status_code"
 	metricKeySeparator = string(byte(0))
 )
 
