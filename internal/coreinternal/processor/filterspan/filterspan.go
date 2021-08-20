@@ -17,11 +17,12 @@ package filterspan
 import (
 	"fmt"
 
+	"go.opentelemetry.io/collector/model/pdata"
+	conventions "go.opentelemetry.io/collector/translator/conventions/v1.5.0"
+
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterconfig"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filtermatcher"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterset"
-	"go.opentelemetry.io/collector/model/pdata"
-	conventions "go.opentelemetry.io/collector/translator/conventions/v1.5.0"
 )
 
 // Matcher is an interface that allows matching a span against a configuration
