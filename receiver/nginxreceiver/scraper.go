@@ -25,6 +25,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/model/pdata"
 	"go.uber.org/zap"
+	"google.golang.org/grpc/codes"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/nginxreceiver/internal/metadata"
 )
@@ -50,7 +51,7 @@ func newNginxScraper(
 func (r *nginxScraper) start(_ context.Context, host component.Host) error {
 	httpClient, err := r.cfg.ToClient(host.GetExtensions())
 	if err != nil {
-		r.logger.Error("nginx", zap.Error(err), zap.String("status_code", "INVALID_ARGUMENT"))
+		r.logger.Error("nginx", zap.Error(err), zap.String("status_code", codes.InvalidArgument.String()))
 		return err
 	}
 	r.httpClient = httpClient
@@ -61,15 +62,15 @@ func (r *nginxScraper) logGetErrors(err error) {
 	if err != nil {
 		switch {
 		case strings.HasPrefix(err.Error(), "failed to get"):
-			r.logger.Error("nginx", zap.Error(err), zap.String("status_code", "INTERNAL"))
+			r.logger.Error("nginx", zap.Error(err), zap.String("status_code", codes.Unavailable.String()))
 		case strings.HasPrefix(err.Error(), "expected"):
 			r.logStatusCode(err)
 		case strings.HasPrefix(err.Error(), "failed to read"):
-			r.logger.Error("nginx", zap.Error(err), zap.String("status_code", "INTERNAL"))
+			r.logger.Error("nginx", zap.Error(err), zap.String("status_code", codes.Internal.String()))
 		case strings.HasPrefix(err.Error(), "failed to parse"):
-			r.logger.Error("nginx", zap.Error(err), zap.String("status_code", "INTERNAL"))
+			r.logger.Error("nginx", zap.Error(err), zap.String("status_code", codes.Internal.String()))
 		default:
-			r.logger.Error("nginx", zap.Error(err), zap.String("status_code", "UNKNOWN"))
+			r.logger.Error("nginx", zap.Error(err), zap.String("status_code", codes.Internal.String()))
 		}
 	}
 }
@@ -78,23 +79,23 @@ func (r *nginxScraper) logStatusCode(err error) {
 	if err != nil {
 		switch err.Error() {
 		case fmt.Sprintf("expected %v response, got %v", http.StatusOK, 400):
-			r.logger.Error("nginx", zap.Error(err), zap.String("status_code", "INTERNAL"))
+			r.logger.Error("nginx", zap.Error(err), zap.String("status_code", codes.Internal.String()))
 		case fmt.Sprintf("expected %v response, got %v", http.StatusOK, 401):
-			r.logger.Error("nginx", zap.Error(err), zap.String("status_code", "UNAUTHENTICATED"))
+			r.logger.Error("nginx", zap.Error(err), zap.String("status_code", codes.Unauthenticated.String()))
 		case fmt.Sprintf("expected %v response, got %v", http.StatusOK, 403):
-			r.logger.Error("nginx", zap.Error(err), zap.String("status_code", "PERMISSION_DENIED"))
+			r.logger.Error("nginx", zap.Error(err), zap.String("status_code", codes.PermissionDenied.String()))
 		case fmt.Sprintf("expected %v response, got %v", http.StatusOK, 404):
-			r.logger.Error("nginx", zap.Error(err), zap.String("status_code", "UNIMPLEMENTED"))
+			r.logger.Error("nginx", zap.Error(err), zap.String("status_code", codes.Unimplemented.String()))
 		case fmt.Sprintf("expected %v response, got %v", http.StatusOK, 429):
-			r.logger.Error("nginx", zap.Error(err), zap.String("status_code", "UNAVAILABLE"))
+			r.logger.Error("nginx", zap.Error(err), zap.String("status_code", codes.Unavailable.String()))
 		case fmt.Sprintf("expected %v response, got %v", http.StatusOK, 502):
-			r.logger.Error("nginx", zap.Error(err), zap.String("status_code", "UNAVAILABLE"))
+			r.logger.Error("nginx", zap.Error(err), zap.String("status_code", codes.Unavailable.String()))
 		case fmt.Sprintf("expected %v response, got %v", http.StatusOK, 503):
-			r.logger.Error("nginx", zap.Error(err), zap.String("status_code", "UNAVAILABLE"))
+			r.logger.Error("nginx", zap.Error(err), zap.String("status_code", codes.Unavailable.String()))
 		case fmt.Sprintf("expected %v response, got %v", http.StatusOK, 504):
-			r.logger.Error("nginx", zap.Error(err), zap.String("status_code", "UNAVAILABLE"))
+			r.logger.Error("nginx", zap.Error(err), zap.String("status_code", codes.Unavailable.String()))
 		default:
-			r.logger.Error("nginx", zap.Error(err), zap.String("status_code", "UNKNOWN"))
+			r.logger.Error("nginx", zap.Error(err), zap.String("status_code", codes.Unknown.String()))
 		}
 	}
 }

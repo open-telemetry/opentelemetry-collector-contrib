@@ -33,6 +33,7 @@ import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest/observer"
+	"google.golang.org/grpc/codes"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/nginxreceiver/internal/metadata"
 )
@@ -139,8 +140,8 @@ func TestScraperError(t *testing.T) {
 }
 
 func TestScraperLogs(t *testing.T) {
-	l, err := net.Listen("tcp", "127.0.0.1:52418")
-	require.Nil(t, err)
+	l, err := net.Listen("tcp", ":0")
+	require.NoError(t, err)
 	nginxMock := httptest.NewUnstartedServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 		if req.URL.Path == "/bad_get" {
 			time.Sleep(11 * time.Millisecond)
@@ -208,8 +209,8 @@ func TestScraperLogs(t *testing.T) {
 						Level:   zap.ErrorLevel,
 						Message: "nginx"},
 					Context: []zapcore.Field{
-						zap.Error(fmt.Errorf("failed to get http://127.0.0.1:52418/bad_get: Get \"http://127.0.0.1:52418/bad_get\": net/http: timeout awaiting response headers")),
-						zap.String("status_code", "INTERNAL"),
+						zap.Error(fmt.Errorf("failed to get http://%s/bad_get: Get \"http://%s/bad_get\": net/http: timeout awaiting response headers", l.Addr().String(), l.Addr().String())),
+						zap.String("status_code", codes.Unavailable.String()),
 					},
 				},
 			},
@@ -224,7 +225,7 @@ func TestScraperLogs(t *testing.T) {
 						Message: "nginx"},
 					Context: []zapcore.Field{
 						zap.Error(fmt.Errorf("expected 200 response, got 400")),
-						zap.String("status_code", "INTERNAL"),
+						zap.String("status_code", codes.Internal.String()),
 					},
 				},
 			},
@@ -239,7 +240,7 @@ func TestScraperLogs(t *testing.T) {
 						Message: "nginx"},
 					Context: []zapcore.Field{
 						zap.Error(fmt.Errorf("expected 200 response, got 401")),
-						zap.String("status_code", "UNAUTHENTICATED"),
+						zap.String("status_code", codes.Unauthenticated.String()),
 					},
 				},
 			},
@@ -254,7 +255,7 @@ func TestScraperLogs(t *testing.T) {
 						Message: "nginx"},
 					Context: []zapcore.Field{
 						zap.Error(fmt.Errorf("expected 200 response, got 403")),
-						zap.String("status_code", "PERMISSION_DENIED"),
+						zap.String("status_code", codes.PermissionDenied.String()),
 					},
 				},
 			},
@@ -269,7 +270,7 @@ func TestScraperLogs(t *testing.T) {
 						Message: "nginx"},
 					Context: []zapcore.Field{
 						zap.Error(fmt.Errorf("expected 200 response, got 404")),
-						zap.String("status_code", "UNIMPLEMENTED"),
+						zap.String("status_code", codes.Unimplemented.String()),
 					},
 				},
 			},
@@ -284,7 +285,7 @@ func TestScraperLogs(t *testing.T) {
 						Message: "nginx"},
 					Context: []zapcore.Field{
 						zap.Error(fmt.Errorf("expected 200 response, got 429")),
-						zap.String("status_code", "UNAVAILABLE"),
+						zap.String("status_code", codes.Unavailable.String()),
 					},
 				},
 			},
@@ -299,7 +300,7 @@ func TestScraperLogs(t *testing.T) {
 						Message: "nginx"},
 					Context: []zapcore.Field{
 						zap.Error(fmt.Errorf("expected 200 response, got 502")),
-						zap.String("status_code", "UNAVAILABLE"),
+						zap.String("status_code", codes.Unavailable.String()),
 					},
 				},
 			},
@@ -314,7 +315,7 @@ func TestScraperLogs(t *testing.T) {
 						Message: "nginx"},
 					Context: []zapcore.Field{
 						zap.Error(fmt.Errorf("expected 200 response, got 503")),
-						zap.String("status_code", "UNAVAILABLE"),
+						zap.String("status_code", codes.Unavailable.String()),
 					},
 				},
 			},
@@ -329,7 +330,7 @@ func TestScraperLogs(t *testing.T) {
 						Message: "nginx"},
 					Context: []zapcore.Field{
 						zap.Error(fmt.Errorf("expected 200 response, got 504")),
-						zap.String("status_code", "UNAVAILABLE"),
+						zap.String("status_code", codes.Unavailable.String()),
 					},
 				},
 			},
@@ -344,7 +345,7 @@ func TestScraperLogs(t *testing.T) {
 						Message: "nginx"},
 					Context: []zapcore.Field{
 						zap.Error(fmt.Errorf("expected 200 response, got 505")),
-						zap.String("status_code", "UNKNOWN"),
+						zap.String("status_code", codes.Unknown.String()),
 					},
 				},
 			},
@@ -359,7 +360,7 @@ func TestScraperLogs(t *testing.T) {
 						Message: "nginx"},
 					Context: []zapcore.Field{
 						zap.Error(fmt.Errorf("failed to read the response body: unexpected EOF")),
-						zap.String("status_code", "INTERNAL"),
+						zap.String("status_code", codes.Internal.String()),
 					},
 				},
 			},
@@ -374,7 +375,7 @@ func TestScraperLogs(t *testing.T) {
 						Message: "nginx"},
 					Context: []zapcore.Field{
 						zap.Error(fmt.Errorf("failed to parse response body \"Bad status page\": invalid input \"Bad status page\"")),
-						zap.String("status_code", "INTERNAL"),
+						zap.String("status_code", codes.Internal.String()),
 					},
 				},
 			},
@@ -420,5 +421,5 @@ func TestScraperFailedStart(t *testing.T) {
 	require.Equal(t, 1, logs.Len())
 	errorsMap := logs.AllUntimed()[0].ContextMap()
 	require.Equal(t, "failed to load TLS config: failed to load CA CertPool: failed to load CA /non/existent: open /non/existent: no such file or directory", errorsMap["error"])
-	require.Equal(t, "INVALID_ARGUMENT", errorsMap["status_code"])
+	require.Equal(t, codes.InvalidArgument.String(), errorsMap["status_code"])
 }
