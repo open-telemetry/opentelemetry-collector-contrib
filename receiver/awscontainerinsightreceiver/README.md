@@ -572,7 +572,6 @@ kubectl apply -f config.yaml
 | kubernete            |
 | pod_status           |
 
-
 <br/><br/> 
 
 ### Pod Network
@@ -661,7 +660,7 @@ kubectl apply -f config.yaml
 
 The attribute `container_status_reason` is present only when `container_status` is in "Waiting" or "Terminated" State. The attribute `container_last_termination_reason` is present only when `container_status` is in "Terminated" State.
 
-This is a sample configuration for AWS Container Insights using the `awscontainerinsightreceiver` and `awsemfexporter` for an ECS cluster:
+This is a sample configuration for AWS Container Insights using the `awscontainerinsightreceiver` and `awsemfexporter` for an ECS cluster to collect the instance level metrics:
 ```
 receivers:
   awscontainerinsightreceiver:
@@ -749,11 +748,8 @@ To deploy to an ECS cluster check this [doc](https://aws-otel.github.io/docs/set
 | instance_network_tx_dropped             | Count/Second  |
 | instance_network_tx_errors              | Count/Second  |
 | instance_network_tx_packets             | Count/Second  |
-| instance_number_of_running_tasks        | Count         | 
-
-
+| instance_number_of_running_tasks        | Count         |
 <br/><br/>
-
 
 | Resource Attribute   |
 |----------------------|
@@ -766,7 +762,6 @@ To deploy to an ECS cluster check this [doc](https://aws-otel.github.io/docs/set
 | Sources              |
 | ContainerInstanceId  |
 | InstanceId           |
-
 
 <br/><br/>
 <br/><br/>

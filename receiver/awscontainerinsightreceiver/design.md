@@ -40,9 +40,9 @@ The following two packages are used to decorate metrics:
     * add the corresponding attribute `Service` to the metrics for the relevant pods
     * call "List & Watch" for "Endpoint" objects from Kubernetes API server. In this mode, when there is any change to “Endpoint”, agent will get the notification of the change. The benefit is that the agent could get Endpoint information update in time. If the "Endpoint" resources just occasionally slightly changes, the impact to API server is supposed to be minimal.
 
-The following package is to collect AWS ECS specific metrics and AWS ECS relative resources:
+The following package is to collect AWS ECS specific metrics and AWS ECS related resources:
 
 * `ecsInfo`
   * ecs_instance_info will call ECS container agent introspect container instance endpoint to collect the ECS cluster info and container info.
   * ecs_task_info will call ECS container agent introspect task endpoint to collect the ECS task and container info.
-  * cgroup will mount the linux host based on the task info to get the cpu_reserved_capacity, mem_reserved_capacity and instance_running_task_number.
+  * cgroup will mount the linux host based on the task info to get the cpu_reserved_capacity, memory_reserved_capacity and instance_running_task_number.
