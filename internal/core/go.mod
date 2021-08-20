@@ -6,7 +6,6 @@ require (
 	contrib.go.opencensus.io/exporter/prometheus v0.3.0
 	github.com/Shopify/sarama v1.29.1
 	github.com/StackExchange/wmi v1.2.1 // indirect
-	github.com/pquerna/cachecontrol v0.1.0 // indirect
 	github.com/antonmedv/expr v1.9.0
 	github.com/apache/thrift v0.14.2
 	github.com/cenkalti/backoff/v4 v4.1.1
@@ -44,7 +43,7 @@ require (
 	github.com/uber/jaeger-lib v2.4.1+incompatible
 	github.com/xdg-go/scram v1.0.2
 	go.opencensus.io v0.23.0
-	go.opentelemetry.io/collector/model v0.33.0
+	go.opentelemetry.io/collector/model v0.33.1-0.20210820002854-d3000232f8f6
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.22.0
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.22.0
 	go.opentelemetry.io/contrib/zpages v0.22.0
@@ -62,7 +61,5 @@ require (
 	google.golang.org/protobuf v1.27.1
 	gopkg.in/yaml.v2 v2.4.0
 )
-
-replace go.opentelemetry.io/collector/model => ./model
 
 retract v0.32.0 // Contains incomplete metrics transition to proto 0.9.0, random components are not working.
