@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package internaldata
+package opencensus
 
 import (
 	occommon "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
