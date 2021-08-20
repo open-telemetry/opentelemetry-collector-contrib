@@ -21,28 +21,32 @@ import (
 	"go.opencensus.io/stats/view"
 )
 
+const (
+	exporterFailureView = "exporter/send_failed_requests"
+)
+
 // ECSHealthCheckExporter is a struct implement the exporter interface in open census that could export metrics
-type ECSHealthCheckExporter struct {
+type ecsHealthCheckExporter struct {
 	mu                 sync.Mutex
 	exporterErrorQueue []*view.Data
 }
 
-func newECSHealthCheckExporter() *ECSHealthCheckExporter {
-	return &ECSHealthCheckExporter{}
+func newECSHealthCheckExporter() *ecsHealthCheckExporter {
+	return &ecsHealthCheckExporter{}
 }
 
 // ExportView function could export the failure view to the queue
-func (e *ECSHealthCheckExporter) ExportView(vd *view.Data) {
+func (e *ecsHealthCheckExporter) ExportView(vd *view.Data) {
 	e.mu.Lock()
 	defer e.mu.Unlock()
 
-	if vd.View.Name == "exporter/send_failed_requests" {
+	if vd.View.Name == exporterFailureView {
 		e.exporterErrorQueue = append(e.exporterErrorQueue, vd)
 	}
 }
 
 // rotate function could rotate the error logs that expired the time interval
-func (e *ECSHealthCheckExporter) rotate(interval time.Duration) {
+func (e *ecsHealthCheckExporter) rotate(interval time.Duration) {
 	e.mu.Lock()
 	defer e.mu.Unlock()
 

@@ -45,6 +45,9 @@ func (cfg *Config) Validate() error {
 	if err != nil {
 		return err
 	}
+	if cfg.TCPAddr.Endpoint == "" {
+		return errors.New("bad config: endpoint must be specified")
+	}
 	if cfg.ExporterErrorLimit <= 0 {
 		return errors.New("bad config: exporter_error_limit expects a positive number")
 	}

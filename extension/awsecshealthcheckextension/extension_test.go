@@ -51,15 +51,17 @@ func TestHealthCheckExtensionUsage(t *testing.T) {
 	// Give a chance for the server goroutine to run.
 	runtime.Gosched()
 
+	newView := view.View{Name: exporterFailureView}
+
 	currentTime := time.Now()
 	vd1 := &view.Data{
-		View:  nil,
+		View:  &newView,
 		Start: currentTime.Add(-2 * time.Minute),
 		End:   currentTime,
 		Rows:  nil,
 	}
 	vd2 := &view.Data{
-		View:  nil,
+		View:  &newView,
 		Start: currentTime.Add(-1 * time.Minute),
 		End:   currentTime,
 		Rows:  nil,
@@ -69,14 +71,14 @@ func TestHealthCheckExtensionUsage(t *testing.T) {
 	req1, err := http.NewRequest("GET", testEndpoint, nil)
 	require.Nil(t, err)
 	responseRecorder1 := httptest.NewRecorder()
-	hcExt.Handler().ServeHTTP(responseRecorder1, req1)
+	hcExt.handler().ServeHTTP(responseRecorder1, req1)
 	require.Equal(t, http.StatusOK, responseRecorder1.Code)
 
 	hcExt.exporter.exporterErrorQueue = append(hcExt.exporter.exporterErrorQueue, vd2)
 	req2, err := http.NewRequest("GET", testEndpoint, nil)
 	require.Nil(t, err)
 	responseRecorder2 := httptest.NewRecorder()
-	hcExt.Handler().ServeHTTP(responseRecorder2, req2)
+	hcExt.handler().ServeHTTP(responseRecorder2, req2)
 	require.Equal(t, http.StatusInternalServerError, responseRecorder2.Code)
 }
 

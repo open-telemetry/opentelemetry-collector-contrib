@@ -27,24 +27,24 @@ import (
 	"go.opentelemetry.io/collector/component"
 )
 
-type ECSHealthCheckExtension struct {
+type ecsHealthCheckExtension struct {
 	config   Config
 	logger   *zap.Logger
 	state    *healthcheck.HealthCheck
 	server   http.Server
 	interval time.Duration
 	stopCh   chan struct{}
-	exporter *ECSHealthCheckExporter
+	exporter *ecsHealthCheckExporter
 }
 
 // initExporter function could register the customized exporter
-func (hc *ECSHealthCheckExtension) initExporter() error {
+func (hc *ecsHealthCheckExtension) initExporter() error {
 	hc.exporter = newECSHealthCheckExporter()
 	view.RegisterExporter(hc.exporter)
 	return nil
 }
 
-func (hc *ECSHealthCheckExtension) Start(_ context.Context, host component.Host) error {
+func (hc *ecsHealthCheckExtension) Start(_ context.Context, host component.Host) error {
 	hc.logger.Info("Starting ECS health check extension", zap.Any("config", hc.config))
 
 	// Initialize listener
@@ -63,11 +63,7 @@ func (hc *ECSHealthCheckExtension) Start(_ context.Context, host component.Host)
 		return err
 	}
 
-	if hc.config.TCPAddr.Endpoint == "" || hc.config.TCPAddr.Endpoint == defaultEndpoint {
-		ln, err = net.Listen("tcp", defaultEndpoint)
-	} else {
-		ln, err = hc.config.TCPAddr.Listen()
-	}
+	ln, err = hc.config.TCPAddr.Listen()
 	if err != nil {
 		return err
 	}
@@ -77,28 +73,35 @@ func (hc *ECSHealthCheckExtension) Start(_ context.Context, host component.Host)
 		return err
 	}
 
+	ticker := time.NewTicker(1 * time.Minute)
+
 	hc.server.Handler = hc.handler()
 	hc.stopCh = make(chan struct{})
 	go func() {
 		defer close(hc.stopCh)
 
+		select {
+		case <-ticker.C:
+			hc.exporter.rotate(hc.interval)
+		default:
+		}
+
 		if err := hc.server.Serve(ln); err != http.ErrServerClosed && err != nil {
 			host.ReportFatalError(err)
 		}
+
 	}()
 	return nil
 }
 
-func (hc *ECSHealthCheckExtension) check() bool {
+func (hc *ecsHealthCheckExtension) check() bool {
 	hc.exporter.mu.Lock()
 	defer hc.exporter.mu.Unlock()
-
-	hc.exporter.rotate(hc.interval)
 
 	return hc.config.ExporterErrorLimit >= len(hc.exporter.exporterErrorQueue)
 }
 
-func (hc *ECSHealthCheckExtension) handler() http.Handler {
+func (hc *ecsHealthCheckExtension) handler() http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		if hc.check() {
 			w.WriteHeader(200)
@@ -108,7 +111,7 @@ func (hc *ECSHealthCheckExtension) handler() http.Handler {
 	})
 }
 
-func (hc *ECSHealthCheckExtension) Shutdown(context.Context) error {
+func (hc *ecsHealthCheckExtension) Shutdown(context.Context) error {
 	err := hc.server.Close()
 	if hc.stopCh != nil {
 		<-hc.stopCh
@@ -116,8 +119,8 @@ func (hc *ECSHealthCheckExtension) Shutdown(context.Context) error {
 	return err
 }
 
-func newServer(config Config, logger *zap.Logger) *ECSHealthCheckExtension {
-	hc := &ECSHealthCheckExtension{
+func newServer(config Config, logger *zap.Logger) *ecsHealthCheckExtension {
+	hc := &ecsHealthCheckExtension{
 		config:   config,
 		logger:   logger,
 		state:    healthcheck.New(),

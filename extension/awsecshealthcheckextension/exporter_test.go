@@ -24,9 +24,10 @@ import (
 )
 
 func TestECSHealthCheckExporter_ExportView(t *testing.T) {
-	exporter := &ECSHealthCheckExporter{}
+	exporter := &ecsHealthCheckExporter{}
+	newView := view.View{Name: exporterFailureView}
 	vd := &view.Data{
-		View:  nil,
+		View:  &newView,
 		Start: time.Time{},
 		End:   time.Time{},
 		Rows:  nil,
@@ -36,18 +37,19 @@ func TestECSHealthCheckExporter_ExportView(t *testing.T) {
 }
 
 func TestECSHealthCheckExporter_rotate(t *testing.T) {
-	exporter := &ECSHealthCheckExporter{}
+	exporter := &ecsHealthCheckExporter{}
 	currentTime := time.Now()
 	time1 := currentTime.Add(-10 * time.Minute)
 	time2 := currentTime.Add(-3 * time.Minute)
+	newView := view.View{Name: exporterFailureView}
 	vd1 := &view.Data{
-		View:  nil,
+		View:  &newView,
 		Start: time1,
 		End:   currentTime,
 		Rows:  nil,
 	}
 	vd2 := &view.Data{
-		View:  nil,
+		View:  &newView,
 		Start: time2,
 		End:   currentTime,
 		Rows:  nil,
