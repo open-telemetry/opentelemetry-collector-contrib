@@ -1,0 +1,141 @@
+receivers:
+  nop:
+
+processors:
+  nop:
+
+exporters:
+  datadog:
+    ## @param hostname - string - optional
+    ## A custom hostname.
+    ## If unset it will be determined from the `DD_HOST` environment variable.
+    ## If both this and `DD_HOST` are unset, this will be determined automatically if possible.
+    #
+    # hostname: customhostname
+
+    ## @param env - string - optional
+    ## The environment for unified service tagging.
+    ## If unset it will be determined from the `DD_ENV` environment variable.
+    #
+    # env: prod
+
+    ## @param service - string - optional
+    ## The service for unified service tagging.
+    ## If unset it will be determined from the `DD_SERVICE` environment variable.
+    #
+    # service: myservice
+
+    ## @param version - string - optional
+    ## The version for unified service tagging.
+    ## If unset it will be determined from the `DD_VERSION` environment variable.
+    #
+    # version: myversion
+
+    ## @param tags - list of strings - optional - default: []
+    ## The list of default tags to add to every metric or trace.
+    ## If unset it will be determined from the `DD_TAGS` environment variable, specified
+    ## as a list of space-separated strings.
+    #
+    # tags: []
+
+    ## @param only_metadata - boolean - optional - default: false
+    ## Whether to send only metadata. This is useful for agent-collector
+    ## setups, so that metadata about a host is sent to the backend even
+    ## when telemetry data is reported via a different host.
+
+    ## @param api - custom object - required.
+    ## Specific API configuration.
+    #
+    api:
+      ## @ param key - string - required
+      ## The Datadog API key to associate your Agent's data with your organization.
+      ## Create a new API key here: https://app.datadoghq.com/account/settings
+      ## If unset it will be determined from the `DD_API_KEY` environment variable.
+      #
+      key: "<YOUR API KEY>"
+
+      ## @param site - string - optional - default: datadoghq.com
+      ## The site of the Datadog intake to send Agent data to.
+      ## Set to 'datadoghq.eu' to send data to the EU site.
+      ## If unset it will be determined from the `DD_SITE` environment variable.
+      #
+      # site: datadoghq.com
+
+    ## @param metrics - custom object - optional
+    ## Metric exporter specific configuration.
+    #
+    # metrics:
+      ## @param report_buckets - boolean - optional - default: false
+      ## Whether to report bucket counts for distribution metric types.
+      ## Enabling this will increase the number of custom metrics.
+      #
+      # report_buckets: false
+
+      ## @param send_monotonic_counter - boolean - optional - default: true
+      ## Whether to report monotonic metrics as counters or gauges (raw value).
+      ## See https://docs.datadoghq.com/integrations/guide/prometheus-metrics/#counter
+      ## for further details
+      #
+      # send_monotonic_counter: true
+
+      ## @param - delta_ttl - integer - optional - default: 3600
+      ## The amount of time (in seconds) that values are kept in memory for
+      ## calculating deltas for cumulative monotonic metrics.
+      #
+      # delta_ttl: 3600
+
+      ## @param endpoint - string - optional
+      ## The host of the Datadog intake server to send metrics to.
+      ## If unset it will be determined from the `DD_URL` environment variable.
+      ## If both this and `DD_URL` are unset, the value is obtained through the `site` parameter in the `api` section.
+      #
+      # endpoint: https://api.datadoghq.com
+
+      ## @param resource_attributes_as_tags - string - optional - default: false
+      ## Set to true to add all resource attributes of a metric to its metric tags.
+      ## When set to false, only a small predefined subset of resource attributes is converted
+      ## to metric tags.
+      #
+      # resource_attributes_as_tags: false
+
+    ## @param traces - custom object - optional
+    ## Trace exporter specific configuration.
+    #
+    # traces:
+      ## @param sample_rate - integer - optional - default: 1
+      #  The rate at which to sample traces. Default is 1 (Always Sample),
+      #  meaning no sampling. If you want to send one event out of every 250
+      #  you would specify 250.
+      #
+      # sample_rate: 1
+
+      ## @param endpoint - string - optional
+      ## The host of the Datadog intake server to send traces to.
+      ## If unset it will be determined from the `DD_APM_URL` environment variable.
+      ## If both this and `DD_APM_URL` are unset, the value is obtained through the `site` parameter in the `api` section.
+      #
+      # endpoint: https://api.datadoghq.com
+
+      ## @param ignore_resources - list of strings - optional
+      ## A blacklist of regular expressions can be provided to disable certain traces based on their resource name
+      ## all entries must be surrounded by double quotes and separated by commas.
+      #
+      # ignore_resources: ["(GET|POST) /healthcheck"] 
+
+      ## @param span_name_remappings - map of key/value pairs - optional
+      ## A map of Datadog span operation name keys and preferred name valuues to update those names to. This can be used to
+      ## automatically map Datadog Span Operation Names to an updated value, and is useful when a user wants to
+      ## shorten or modify span names to something more user friendly in the case of instrumentation libraries with
+      ## particularly verbose names.
+      #
+      # span_name_remappings: 
+      #   io.opentelemetry.javaagent.spring.client: spring.client
+      #   instrumentation::express.server: express
+
+
+service:
+  pipelines:
+    traces:
+      receivers: [nop]
+      processors: [nop]
+      exporters: [datadog]

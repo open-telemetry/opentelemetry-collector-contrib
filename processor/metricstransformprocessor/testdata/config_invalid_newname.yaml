@@ -1,0 +1,22 @@
+receivers:
+    nop:
+
+processors:
+    metricstransform:
+        transforms:
+            - include: old_name
+              action: insert # missing new_name
+
+exporters:
+    nop:
+
+service:
+    pipelines:
+        traces:
+            receivers: [nop]
+            processors: [metricstransform]
+            exporters: [nop]
+        metrics:
+            receivers: [nop]
+            processors: [metricstransform]
+            exporters: [nop]

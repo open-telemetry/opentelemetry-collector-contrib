@@ -1,0 +1,22 @@
+receivers:
+  nop:
+
+processors:
+  nop:
+
+exporters:
+  awsemf:
+  awsemf/1:
+    region: 'us-west-2'
+    role_arn: "arn:aws:iam::123456789:role/monitoring-EKS-NodeInstanceRole"
+  awsemf/resource_attr_to_label:
+    resource_to_telemetry_conversion:
+      enabled: true
+
+service:
+  pipelines:
+    traces:
+      receivers: [nop]
+      processors: [nop]
+      exporters: [awsemf]
+
