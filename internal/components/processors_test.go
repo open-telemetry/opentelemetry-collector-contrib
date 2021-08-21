@@ -31,7 +31,8 @@ import (
 	"go.opentelemetry.io/collector/processor/memorylimiter"
 	"go.opentelemetry.io/collector/processor/processorhelper"
 	"go.opentelemetry.io/collector/processor/resourceprocessor"
-	"go.opentelemetry.io/collector/processor/spanprocessor"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanprocessor"
 )
 
 func TestDefaultProcessors(t *testing.T) {
