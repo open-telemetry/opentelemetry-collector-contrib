@@ -101,7 +101,7 @@ func (mt metricTranslator) translateOTelToGroupedMetric(rm *pdata.ResourceMetric
 	timestamp := time.Now().UnixNano() / int64(time.Millisecond)
 	var instrumentationLibName string
 	cWNamespace := getNamespace(rm, config.Namespace)
-	logGroup, logStream := getLogInfo(rm, cWNamespace, config)
+	logGroup, logStream, patternReplaceSucceeded := getLogInfo(rm, cWNamespace, config)
 
 	ilms := rm.InstrumentationLibraryMetrics()
 	var metricReceiver string
@@ -130,7 +130,7 @@ func (mt metricTranslator) translateOTelToGroupedMetric(rm *pdata.ResourceMetric
 				receiver:                   metricReceiver,
 				metricDataType:             metric.DataType(),
 			}
-			err := addToGroupedMetric(&metric, groupedMetrics, metadata, config.logger, mt.metricDescriptor, config)
+			err := addToGroupedMetric(&metric, groupedMetrics, metadata, patternReplaceSucceeded, config.logger, mt.metricDescriptor, config)
 			if err != nil {
 				return err
 			}

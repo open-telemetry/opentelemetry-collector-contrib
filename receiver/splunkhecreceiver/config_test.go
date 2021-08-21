@@ -18,6 +18,7 @@ import (
 	"path"
 	"testing"
 
+	"github.com/gobwas/glob"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -114,38 +115,51 @@ func TestLoadConfig(t *testing.T) {
 
 	assert.Equal(t, len(cfg.Receivers), 3)
 
-	r0 := cfg.Receivers[config.NewID(typeStr)]
+	r0 := cfg.Receivers[config.NewID(typeStr)].(*Config)
 	assert.Equal(t, r0, createDefaultConfig())
+	assert.NoError(t, r0.initialize())
 
 	r1 := cfg.Receivers[config.NewIDWithName(typeStr, "allsettings")].(*Config)
-	assert.Equal(t, r1,
-		&Config{
-			ReceiverSettings: config.NewReceiverSettings(config.NewIDWithName(typeStr, "allsettings")),
-			HTTPServerSettings: confighttp.HTTPServerSettings{
-				Endpoint: "localhost:8088",
-			},
-			AccessTokenPassthroughConfig: splunk.AccessTokenPassthroughConfig{
-				AccessTokenPassthrough: true,
-			},
-			Path: "/foo",
-		})
+	assert.NoError(t, r1.initialize())
+	expectedAllSettings := &Config{
+		ReceiverSettings: config.NewReceiverSettings(config.NewIDWithName(typeStr, "allsettings")),
+		HTTPServerSettings: confighttp.HTTPServerSettings{
+			Endpoint: "localhost:8088",
+		},
+		AccessTokenPassthroughConfig: splunk.AccessTokenPassthroughConfig{
+			AccessTokenPassthrough: true,
+		},
+		Path:          "/foo",
+		SourceKey:     "file.name",
+		SourceTypeKey: "foobar",
+		IndexKey:      "myindex",
+		HostKey:       "myhostfield",
+	}
+	expectedAllSettings.pathGlob, _ = glob.Compile("/foo")
+	assert.Equal(t, expectedAllSettings, r1)
 
 	r2 := cfg.Receivers[config.NewIDWithName(typeStr, "tls")].(*Config)
-	assert.Equal(t, r2,
-		&Config{
-			ReceiverSettings: config.NewReceiverSettings(config.NewIDWithName(typeStr, "tls")),
-			HTTPServerSettings: confighttp.HTTPServerSettings{
-				Endpoint: ":8088",
-				TLSSetting: &configtls.TLSServerSetting{
-					TLSSetting: configtls.TLSSetting{
-						CertFile: "/test.crt",
-						KeyFile:  "/test.key",
-					},
+	assert.NoError(t, r2.initialize())
+	expectedTLSConfig := &Config{
+		ReceiverSettings: config.NewReceiverSettings(config.NewIDWithName(typeStr, "tls")),
+		HTTPServerSettings: confighttp.HTTPServerSettings{
+			Endpoint: ":8088",
+			TLSSetting: &configtls.TLSServerSetting{
+				TLSSetting: configtls.TLSSetting{
+					CertFile: "/test.crt",
+					KeyFile:  "/test.key",
 				},
 			},
-			AccessTokenPassthroughConfig: splunk.AccessTokenPassthroughConfig{
-				AccessTokenPassthrough: false,
-			},
-			Path: "",
-		})
+		},
+		AccessTokenPassthroughConfig: splunk.AccessTokenPassthroughConfig{
+			AccessTokenPassthrough: false,
+		},
+		Path:          "",
+		SourceKey:     "com.splunk.source",
+		SourceTypeKey: "com.splunk.sourcetype",
+		IndexKey:      "com.splunk.index",
+		HostKey:       "host.name",
+	}
+	expectedTLSConfig.pathGlob, _ = glob.Compile("*")
+	assert.Equal(t, expectedTLSConfig, r2)
 }

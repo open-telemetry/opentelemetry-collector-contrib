@@ -263,7 +263,7 @@ func (r *splunkReceiver) createResourceCustomizer(req *http.Request) func(pdata.
 }
 
 func (r *splunkReceiver) consumeMetrics(ctx context.Context, events []*splunk.Event, resp http.ResponseWriter, req *http.Request) {
-	md, _ := splunkHecToMetricsData(r.logger, events, r.createResourceCustomizer(req))
+	md, _ := splunkHecToMetricsData(r.logger, events, r.createResourceCustomizer(req), r.config)
 
 	decodeErr := r.metricsConsumer.ConsumeMetrics(ctx, md)
 	r.obsrecv.EndMetricsOp(ctx, typeStr, len(events), decodeErr)
@@ -277,7 +277,7 @@ func (r *splunkReceiver) consumeMetrics(ctx context.Context, events []*splunk.Ev
 }
 
 func (r *splunkReceiver) consumeLogs(ctx context.Context, events []*splunk.Event, resp http.ResponseWriter, req *http.Request) {
-	ld, err := splunkHecToLogData(r.logger, events, r.createResourceCustomizer(req))
+	ld, err := splunkHecToLogData(r.logger, events, r.createResourceCustomizer(req), r.config)
 	if err != nil {
 		r.failRequest(ctx, resp, http.StatusBadRequest, errUnmarshalBodyRespBody, err)
 		return

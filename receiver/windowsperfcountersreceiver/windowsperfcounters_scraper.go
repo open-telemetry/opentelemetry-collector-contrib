@@ -138,8 +138,7 @@ func initializeDoubleGaugeMetric(metric pdata.Metric, now pdata.Timestamp, name 
 
 func initializeNumberDataPointAsDouble(dataPoint pdata.NumberDataPoint, now pdata.Timestamp, instanceLabel string, value float64) {
 	if instanceLabel != "" {
-		labelsMap := dataPoint.LabelsMap()
-		labelsMap.Insert(instanceLabelName, instanceLabel)
+		dataPoint.Attributes().InsertString(instanceLabelName, instanceLabel)
 	}
 
 	dataPoint.SetTimestamp(now)

@@ -31,4 +31,5 @@ import (
 	_ "go.opentelemetry.io/collector/cmd/checkdoc"
 	_ "go.opentelemetry.io/collector/cmd/issuegenerator"
 	_ "go.opentelemetry.io/collector/cmd/mdatagen"
+	_ "golang.org/x/tools/cmd/goimports"
 )

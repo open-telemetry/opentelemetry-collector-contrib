@@ -1,0 +1,12 @@
+receivers:
+  nop: {}
+
+exporters:
+  awscloudwatchlogs:
+    log_stream_name: "testing"
+
+service:
+  pipelines:
+    logs:
+      receivers: [nop]
+      exporters: [awscloudwatchlogs]

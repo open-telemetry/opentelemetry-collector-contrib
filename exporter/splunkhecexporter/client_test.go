@@ -148,9 +148,9 @@ func createLogDataWithCustomLibraries(numResources int, libraries []string, numR
 				logRecord := ill.Logs().AppendEmpty()
 				logRecord.SetName(fmt.Sprintf("%d_%d_%d", i, j, k))
 				logRecord.Body().SetStringVal("mylog")
-				logRecord.Attributes().InsertString(splunk.SourceLabel, "myapp")
-				logRecord.Attributes().InsertString(splunk.SourcetypeLabel, "myapp-type")
-				logRecord.Attributes().InsertString(splunk.IndexLabel, "myindex")
+				logRecord.Attributes().InsertString(splunk.DefaultSourceLabel, "myapp")
+				logRecord.Attributes().InsertString(splunk.DefaultSourceTypeLabel, "myapp-type")
+				logRecord.Attributes().InsertString(splunk.DefaultIndexLabel, "myindex")
 				logRecord.Attributes().InsertString(conventions.AttributeHostName, "myhost")
 				logRecord.Attributes().InsertString("custom", "custom")
 				logRecord.SetTimestamp(ts)
@@ -344,10 +344,10 @@ func TestReceiveLogs(t *testing.T) {
 			}(),
 			want: wantType{
 				batches: []string{
-					`{"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"com.splunk.source":"myapp","custom":"custom","host.name":"myhost","otlp.log.name":"0_0_0"}}` + "\n" +
-						`{"time":0.001,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"com.splunk.source":"myapp","custom":"custom","host.name":"myhost","otlp.log.name":"0_0_1"}}` + "\n" +
-						`{"time":0.002,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"com.splunk.source":"myapp","custom":"custom","host.name":"myhost","otlp.log.name":"0_0_2"}}` + "\n" +
-						`{"time":0.003,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"com.splunk.source":"myapp","custom":"custom","host.name":"myhost","otlp.log.name":"0_0_3"}}` + "\n",
+					`{"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"com.splunk.source":"myapp","custom":"custom","host.name":"myhost","otel.log.name":"0_0_0"}}` + "\n" +
+						`{"time":0.001,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"com.splunk.source":"myapp","custom":"custom","host.name":"myhost","otel.log.name":"0_0_1"}}` + "\n" +
+						`{"time":0.002,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"com.splunk.source":"myapp","custom":"custom","host.name":"myhost","otel.log.name":"0_0_2"}}` + "\n" +
+						`{"time":0.003,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"com.splunk.source":"myapp","custom":"custom","host.name":"myhost","otel.log.name":"0_0_3"}}` + "\n",
 				},
 				numBatches: 1,
 			},
@@ -362,10 +362,10 @@ func TestReceiveLogs(t *testing.T) {
 			}(),
 			want: wantType{
 				batches: []string{
-					`{"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"com.splunk.source":"myapp","custom":"custom","host.name":"myhost","otlp.log.name":"0_0_0"}}` + "\n",
-					`{"time":0.001,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"com.splunk.source":"myapp","custom":"custom","host.name":"myhost","otlp.log.name":"0_0_1"}}` + "\n",
-					`{"time":0.002,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"com.splunk.source":"myapp","custom":"custom","host.name":"myhost","otlp.log.name":"0_0_2"}}` + "\n",
-					`{"time":0.003,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"com.splunk.source":"myapp","custom":"custom","host.name":"myhost","otlp.log.name":"0_0_3"}}` + "\n",
+					`{"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"com.splunk.source":"myapp","custom":"custom","host.name":"myhost","otel.log.name":"0_0_0"}}` + "\n",
+					`{"time":0.001,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"com.splunk.source":"myapp","custom":"custom","host.name":"myhost","otel.log.name":"0_0_1"}}` + "\n",
+					`{"time":0.002,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"com.splunk.source":"myapp","custom":"custom","host.name":"myhost","otel.log.name":"0_0_2"}}` + "\n",
+					`{"time":0.003,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"com.splunk.source":"myapp","custom":"custom","host.name":"myhost","otel.log.name":"0_0_3"}}` + "\n",
 				},
 				numBatches: 4,
 			},
@@ -380,10 +380,10 @@ func TestReceiveLogs(t *testing.T) {
 			}(),
 			want: wantType{
 				batches: []string{
-					`{"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"com.splunk.source":"myapp","custom":"custom","host.name":"myhost","otlp.log.name":"0_0_0"}}` + "\n" +
-						`{"time":0.001,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"com.splunk.source":"myapp","custom":"custom","host.name":"myhost","otlp.log.name":"0_0_1"}}` + "\n",
-					`{"time":0.002,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"com.splunk.source":"myapp","custom":"custom","host.name":"myhost","otlp.log.name":"0_0_2"}}` + "\n" +
-						`{"time":0.003,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"com.splunk.source":"myapp","custom":"custom","host.name":"myhost","otlp.log.name":"0_0_3"}}` + "\n",
+					`{"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"com.splunk.source":"myapp","custom":"custom","host.name":"myhost","otel.log.name":"0_0_0"}}` + "\n" +
+						`{"time":0.001,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"com.splunk.source":"myapp","custom":"custom","host.name":"myhost","otel.log.name":"0_0_1"}}` + "\n",
+					`{"time":0.002,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"com.splunk.source":"myapp","custom":"custom","host.name":"myhost","otel.log.name":"0_0_2"}}` + "\n" +
+						`{"time":0.003,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"com.splunk.source":"myapp","custom":"custom","host.name":"myhost","otel.log.name":"0_0_3"}}` + "\n",
 				},
 				numBatches: 2,
 			},
@@ -396,16 +396,16 @@ func TestReceiveLogs(t *testing.T) {
 			}(),
 			want: wantType{
 				batches: []string{
-					`{"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"com.splunk.source":"myapp","custom":"custom","host.name":"myhost","otlp.log.name":"0_0_0"}}` + "\n" +
-						`{"time":0.001,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"com.splunk.source":"myapp","custom":"custom","host.name":"myhost","otlp.log.name":"0_0_1"}}` + "\n" +
-						`{"time":0.002,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"com.splunk.source":"myapp","custom":"custom","host.name":"myhost","otlp.log.name":"0_0_2"}}` + "\n" +
-						`{"time":0.003,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"com.splunk.source":"myapp","custom":"custom","host.name":"myhost","otlp.log.name":"0_0_3"}}` + "\n" +
-						`{"time":0.004,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"com.splunk.source":"myapp","custom":"custom","host.name":"myhost","otlp.log.name":"0_0_4"}}` + "\n" +
-						`{"time":0.005,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"com.splunk.source":"myapp","custom":"custom","host.name":"myhost","otlp.log.name":"0_0_5"}}` + "\n" +
-						`{"time":0.006,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"com.splunk.source":"myapp","custom":"custom","host.name":"myhost","otlp.log.name":"0_0_6"}}` + "\n" +
-						`{"time":0.007,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"com.splunk.source":"myapp","custom":"custom","host.name":"myhost","otlp.log.name":"0_0_7"}}` + "\n" +
-						`{"time":0.008,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"com.splunk.source":"myapp","custom":"custom","host.name":"myhost","otlp.log.name":"0_0_8"}}` + "\n" +
-						`{"time":0.009,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"com.splunk.source":"myapp","custom":"custom","host.name":"myhost","otlp.log.name":"0_0_9"}}` + "\n",
+					`{"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"com.splunk.source":"myapp","custom":"custom","host.name":"myhost","otel.log.name":"0_0_0"}}` + "\n" +
+						`{"time":0.001,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"com.splunk.source":"myapp","custom":"custom","host.name":"myhost","otel.log.name":"0_0_1"}}` + "\n" +
+						`{"time":0.002,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"com.splunk.source":"myapp","custom":"custom","host.name":"myhost","otel.log.name":"0_0_2"}}` + "\n" +
+						`{"time":0.003,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"com.splunk.source":"myapp","custom":"custom","host.name":"myhost","otel.log.name":"0_0_3"}}` + "\n" +
+						`{"time":0.004,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"com.splunk.source":"myapp","custom":"custom","host.name":"myhost","otel.log.name":"0_0_4"}}` + "\n" +
+						`{"time":0.005,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"com.splunk.source":"myapp","custom":"custom","host.name":"myhost","otel.log.name":"0_0_5"}}` + "\n" +
+						`{"time":0.006,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"com.splunk.source":"myapp","custom":"custom","host.name":"myhost","otel.log.name":"0_0_6"}}` + "\n" +
+						`{"time":0.007,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"com.splunk.source":"myapp","custom":"custom","host.name":"myhost","otel.log.name":"0_0_7"}}` + "\n" +
+						`{"time":0.008,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"com.splunk.source":"myapp","custom":"custom","host.name":"myhost","otel.log.name":"0_0_8"}}` + "\n" +
+						`{"time":0.009,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"com.splunk.source":"myapp","custom":"custom","host.name":"myhost","otel.log.name":"0_0_9"}}` + "\n",
 				},
 				numBatches: 1,
 				compressed: true,
@@ -421,24 +421,24 @@ func TestReceiveLogs(t *testing.T) {
 			}(),
 			want: wantType{
 				batches: []string{
-					`{"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"com.splunk.source":"myapp","custom":"custom","host.name":"myhost","otlp.log.name":"0_0_0"}}` + "\n" +
-						`{"time":0.001,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"com.splunk.source":"myapp","custom":"custom","host.name":"myhost","otlp.log.name":"0_0_1"}}` + "\n" +
-						`{"time":0.002,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"com.splunk.source":"myapp","custom":"custom","host.name":"myhost","otlp.log.name":"0_0_2"}}` + "\n" +
-						`{"time":0.003,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"com.splunk.source":"myapp","custom":"custom","host.name":"myhost","otlp.log.name":"0_0_3"}}` + "\n" +
-						`{"time":0.004,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"com.splunk.source":"myapp","custom":"custom","host.name":"myhost","otlp.log.name":"0_0_4"}}` + "\n" +
-						`{"time":0.005,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"com.splunk.source":"myapp","custom":"custom","host.name":"myhost","otlp.log.name":"0_0_5"}}` + "\n" +
-						`{"time":0.006,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"com.splunk.source":"myapp","custom":"custom","host.name":"myhost","otlp.log.name":"0_0_6"}}` + "\n" +
-						`{"time":0.007,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"com.splunk.source":"myapp","custom":"custom","host.name":"myhost","otlp.log.name":"0_0_7"}}` + "\n" +
-						`{"time":0.008,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"com.splunk.source":"myapp","custom":"custom","host.name":"myhost","otlp.log.name":"0_0_8"}}` + "\n",
-					`{"time":0.009,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"com.splunk.source":"myapp","custom":"custom","host.name":"myhost","otlp.log.name":"0_0_9"}}` + "\n" +
-						`{"time":0.01,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"com.splunk.source":"myapp","custom":"custom","host.name":"myhost","otlp.log.name":"0_0_10"}}` + "\n" +
-						`{"time":0.011,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"com.splunk.source":"myapp","custom":"custom","host.name":"myhost","otlp.log.name":"0_0_11"}}` + "\n" +
-						`{"time":0.012,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"com.splunk.source":"myapp","custom":"custom","host.name":"myhost","otlp.log.name":"0_0_12"}}` + "\n" +
-						`{"time":0.013,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"com.splunk.source":"myapp","custom":"custom","host.name":"myhost","otlp.log.name":"0_0_13"}}` + "\n" +
-						`{"time":0.014,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"com.splunk.source":"myapp","custom":"custom","host.name":"myhost","otlp.log.name":"0_0_14"}}` + "\n" +
-						`{"time":0.015,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"com.splunk.source":"myapp","custom":"custom","host.name":"myhost","otlp.log.name":"0_0_15"}}` + "\n" +
-						`{"time":0.016,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"com.splunk.source":"myapp","custom":"custom","host.name":"myhost","otlp.log.name":"0_0_16"}}` + "\n" +
-						`{"time":0.017,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"com.splunk.source":"myapp","custom":"custom","host.name":"myhost","otlp.log.name":"0_0_17"}}` + "\n",
+					`{"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"com.splunk.source":"myapp","custom":"custom","host.name":"myhost","otel.log.name":"0_0_0"}}` + "\n" +
+						`{"time":0.001,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"com.splunk.source":"myapp","custom":"custom","host.name":"myhost","otel.log.name":"0_0_1"}}` + "\n" +
+						`{"time":0.002,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"com.splunk.source":"myapp","custom":"custom","host.name":"myhost","otel.log.name":"0_0_2"}}` + "\n" +
+						`{"time":0.003,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"com.splunk.source":"myapp","custom":"custom","host.name":"myhost","otel.log.name":"0_0_3"}}` + "\n" +
+						`{"time":0.004,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"com.splunk.source":"myapp","custom":"custom","host.name":"myhost","otel.log.name":"0_0_4"}}` + "\n" +
+						`{"time":0.005,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"com.splunk.source":"myapp","custom":"custom","host.name":"myhost","otel.log.name":"0_0_5"}}` + "\n" +
+						`{"time":0.006,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"com.splunk.source":"myapp","custom":"custom","host.name":"myhost","otel.log.name":"0_0_6"}}` + "\n" +
+						`{"time":0.007,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"com.splunk.source":"myapp","custom":"custom","host.name":"myhost","otel.log.name":"0_0_7"}}` + "\n" +
+						`{"time":0.008,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"com.splunk.source":"myapp","custom":"custom","host.name":"myhost","otel.log.name":"0_0_8"}}` + "\n",
+					`{"time":0.009,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"com.splunk.source":"myapp","custom":"custom","host.name":"myhost","otel.log.name":"0_0_9"}}` + "\n" +
+						`{"time":0.01,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"com.splunk.source":"myapp","custom":"custom","host.name":"myhost","otel.log.name":"0_0_10"}}` + "\n" +
+						`{"time":0.011,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"com.splunk.source":"myapp","custom":"custom","host.name":"myhost","otel.log.name":"0_0_11"}}` + "\n" +
+						`{"time":0.012,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"com.splunk.source":"myapp","custom":"custom","host.name":"myhost","otel.log.name":"0_0_12"}}` + "\n" +
+						`{"time":0.013,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"com.splunk.source":"myapp","custom":"custom","host.name":"myhost","otel.log.name":"0_0_13"}}` + "\n" +
+						`{"time":0.014,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"com.splunk.source":"myapp","custom":"custom","host.name":"myhost","otel.log.name":"0_0_14"}}` + "\n" +
+						`{"time":0.015,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"com.splunk.source":"myapp","custom":"custom","host.name":"myhost","otel.log.name":"0_0_15"}}` + "\n" +
+						`{"time":0.016,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"com.splunk.source":"myapp","custom":"custom","host.name":"myhost","otel.log.name":"0_0_16"}}` + "\n" +
+						`{"time":0.017,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"com.splunk.source":"myapp","custom":"custom","host.name":"myhost","otel.log.name":"0_0_17"}}` + "\n",
 				},
 				numBatches: 2,
 				compressed: true,

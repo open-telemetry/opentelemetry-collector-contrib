@@ -37,7 +37,7 @@ const (
 	serviceNameKey     = conventions.AttributeServiceName
 	operationKey       = "operation" // is there a constant we can refer to?
 	spanKindKey        = tracetranslator.TagSpanKind
-	statusCodeKey      = tracetranslator.TagStatusCode
+	statusCodeKey      = "status.code" // Otel core removed this and changed to semantic conventions "otel.status_code"
 	metricKeySeparator = string(byte(0))
 )
 
@@ -49,9 +49,6 @@ var (
 		2, 4, 6, 8, 10, 50, 100, 200, 400, 800, 1000, 1400, 2000, 5000, 10_000, 15_000, maxDurationMs,
 	}
 )
-
-// dimKV represents the dimension key-value pairs for a metric.
-type dimKV map[string]string
 
 type metricKey string
 
@@ -80,7 +77,7 @@ type processorImp struct {
 
 	// A cache of dimension key-value maps keyed by a unique identifier formed by a concatenation of its values:
 	// e.g. { "foo/barOK": { "serviceName": "foo", "operation": "/bar", "status_code": "OK" }}
-	metricKeyToDimensions map[metricKey]dimKV
+	metricKeyToDimensions map[metricKey]pdata.AttributeMap
 }
 
 func newProcessor(logger *zap.Logger, config config.Processor, nextConsumer consumer.Traces) (*processorImp, error) {
@@ -112,7 +109,7 @@ func newProcessor(logger *zap.Logger, config config.Processor, nextConsumer cons
 		latencyBucketCounts:   make(map[metricKey][]uint64),
 		nextConsumer:          nextConsumer,
 		dimensions:            pConfig.Dimensions,
-		metricKeyToDimensions: make(map[metricKey]dimKV),
+		metricKeyToDimensions: make(map[metricKey]pdata.AttributeMap),
 	}, nil
 }
 
@@ -253,7 +250,7 @@ func (p *processorImp) collectLatencyMetrics(ilm pdata.InstrumentationLibraryMet
 		dpLatency.SetCount(p.latencyCount[key])
 		dpLatency.SetSum(p.latencySum[key])
 
-		dpLatency.LabelsMap().InitFromMap(p.metricKeyToDimensions[key])
+		p.metricKeyToDimensions[key].CopyTo(dpLatency.Attributes())
 	}
 }
 
@@ -272,7 +269,7 @@ func (p *processorImp) collectCallMetrics(ilm pdata.InstrumentationLibraryMetric
 		dpCalls.SetTimestamp(pdata.TimestampFromTime(time.Now()))
 		dpCalls.SetIntVal(p.callSum[key])
 
-		dpCalls.LabelsMap().InitFromMap(p.metricKeyToDimensions[key])
+		p.metricKeyToDimensions[key].CopyTo(dpCalls.Attributes())
 	}
 }
 
@@ -336,15 +333,15 @@ func (p *processorImp) updateLatencyMetrics(key metricKey, latency float64, inde
 	p.latencyBucketCounts[key][index]++
 }
 
-func (p *processorImp) buildDimensionKVs(serviceName string, span pdata.Span, optionalDims []Dimension, resourceAttrs pdata.AttributeMap) dimKV {
-	dims := make(dimKV)
-	dims[serviceNameKey] = serviceName
-	dims[operationKey] = span.Name()
-	dims[spanKindKey] = span.Kind().String()
-	dims[statusCodeKey] = span.Status().Code().String()
+func (p *processorImp) buildDimensionKVs(serviceName string, span pdata.Span, optionalDims []Dimension, resourceAttrs pdata.AttributeMap) pdata.AttributeMap {
+	dims := pdata.NewAttributeMap()
+	dims.UpsertString(serviceNameKey, serviceName)
+	dims.UpsertString(operationKey, span.Name())
+	dims.UpsertString(spanKindKey, span.Kind().String())
+	dims.UpsertString(statusCodeKey, span.Status().Code().String())
 	for _, d := range optionalDims {
 		if v, ok := getDimensionValue(d, span, resourceAttrs); ok {
-			dims[d.Name] = v
+			dims.Upsert(d.Name, v)
 		} else {
 			p.logger.Debug(fmt.Sprintf("%q metric dimension omitted; not found and no default configured", d.Name),
 				zap.String(serviceNameKey, serviceName),
@@ -379,7 +376,7 @@ func buildKey(serviceName string, span pdata.Span, optionalDims []Dimension, res
 
 	for _, d := range optionalDims {
 		if v, ok := getDimensionValue(d, span, resourceAttrs); ok {
-			concatDimensionValue(&metricKeyBuilder, v, true)
+			concatDimensionValue(&metricKeyBuilder, pdata.AttributeValueToString(v), true)
 		}
 	}
 
@@ -394,16 +391,16 @@ func buildKey(serviceName string, span pdata.Span, optionalDims []Dimension, res
 //
 // The ok flag indicates if a dimension value was fetched in order to differentiate
 // an empty string value from a state where no value was found.
-func getDimensionValue(d Dimension, span pdata.Span, resourceAttr pdata.AttributeMap) (v string, ok bool) {
+func getDimensionValue(d Dimension, span pdata.Span, resourceAttr pdata.AttributeMap) (v pdata.AttributeValue, ok bool) {
 	// The more specific span attribute should take precedence.
 	for _, attrMap := range []pdata.AttributeMap{span.Attributes(), resourceAttr} {
 		if attr, exists := attrMap.Get(d.Name); exists {
-			return tracetranslator.AttributeValueToString(attr), true
+			return attr, true
 		}
 	}
 	// Set the default if configured, otherwise this metric will have no value set for the dimension.
 	if d.Default != nil {
-		return *d.Default, true
+		return pdata.NewAttributeValueString(*d.Default), true
 	}
 	return v, ok
 }

@@ -1,0 +1,15 @@
+receivers:
+  jaeger:
+
+processors:
+  nop:
+
+exporters:
+  nop:
+
+service:
+  pipelines:
+    traces:
+     receivers: [jaeger]
+     processors: [nop]
+     exporters: [nop]

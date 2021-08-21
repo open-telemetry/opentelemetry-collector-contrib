@@ -20,11 +20,10 @@ import (
 	"net/url"
 	"sync"
 
-	agentmetricspb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/metrics/v1"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/obsreport"
-	"go.opentelemetry.io/collector/translator/internaldata"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/interval"
@@ -110,7 +109,7 @@ func (r *Receiver) Setup() error {
 }
 
 type result struct {
-	md  *agentmetricspb.ExportMetricsServiceRequest
+	md  pdata.Metrics
 	err error
 }
 
@@ -139,14 +138,14 @@ func (r *Receiver) Run() error {
 
 	numPoints := 0
 	var lastErr error
-	for result := range results {
+	for res := range results {
 		var err error
-		if result.md != nil {
-			md := internaldata.OCToMetrics(result.md.Node, result.md.Resource, result.md.Metrics)
-			numPoints += md.DataPointCount()
-			err = r.nextConsumer.ConsumeMetrics(ctx, md)
+		currentNumPoints := res.md.DataPointCount()
+		if currentNumPoints != 0 {
+			numPoints += currentNumPoints
+			err = r.nextConsumer.ConsumeMetrics(ctx, res.md)
 		} else {
-			err = result.err
+			err = res.err
 		}
 
 		if err != nil {

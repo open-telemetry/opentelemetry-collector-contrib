@@ -119,7 +119,7 @@ jobs:
       - name: Lint
         run: make -j4 golint
       - name: Checks 
-        run: make -j4 checklicense misspell checkdoc impi
+        run: make -j4 checklicense misspell checkdoc
       - name: Codegem
         run: |
           make generate

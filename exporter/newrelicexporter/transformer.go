@@ -26,7 +26,6 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/model/pdata"
 	conventions "go.opentelemetry.io/collector/translator/conventions/v1.5.0"
-	tracetranslator "go.opentelemetry.io/collector/translator/trace"
 	"go.uber.org/zap"
 )
 
@@ -68,7 +67,7 @@ func newTransformer(logger *zap.Logger, buildInfo *component.BuildInfo, details 
 
 func (t *transformer) CommonAttributes(resource pdata.Resource, lib pdata.InstrumentationLibrary) map[string]interface{} {
 	resourceAttrs := resource.Attributes()
-	commonAttrs := tracetranslator.AttributeMapToMap(resourceAttrs)
+	commonAttrs := pdata.AttributeMapToMap(resourceAttrs)
 	t.TrackAttributes(attributeLocationResource, resourceAttrs)
 
 	if n := lib.Name(); n != "" {
@@ -132,7 +131,7 @@ func (t *transformer) Log(log pdata.LogRecord) (telemetry.Log, error) {
 	logAttrs := log.Attributes()
 	attrs := make(map[string]interface{}, logAttrs.Len()+5)
 
-	for k, v := range tracetranslator.AttributeMapToMap(logAttrs) {
+	for k, v := range pdata.AttributeMapToMap(logAttrs) {
 		// Only include attribute if not an override attribute
 		if _, isOverrideKey := t.OverrideAttributes[k]; !isOverrideKey {
 			attrs[k] = v
@@ -212,7 +211,7 @@ func (t *transformer) SpanAttributes(span pdata.Span) map[string]interface{} {
 		attrs[droppedEventsCountKey] = droppedEventsCount
 	}
 
-	for k, v := range tracetranslator.AttributeMapToMap(spanAttrs) {
+	for k, v := range pdata.AttributeMapToMap(spanAttrs) {
 		// Only include attribute if not an override attribute
 		if _, isOverrideKey := t.OverrideAttributes[k]; !isOverrideKey {
 			attrs[k] = v
@@ -238,7 +237,7 @@ func (t *transformer) SpanEvents(span pdata.Span) []telemetry.Event {
 		events[i] = telemetry.Event{
 			EventType:  event.Name(),
 			Timestamp:  event.Timestamp().AsTime(),
-			Attributes: tracetranslator.AttributeMapToMap(eventAttrs),
+			Attributes: pdata.AttributeMapToMap(eventAttrs),
 		}
 
 		if droppedAttributesCount := event.DroppedAttributesCount(); droppedAttributesCount > 0 {
@@ -284,7 +283,7 @@ func (t *transformer) Metric(m pdata.Metric) ([]telemetry.Metric, error) {
 			case pdata.MetricValueTypeInt:
 				val = float64(point.IntVal())
 			}
-			attributes := t.MetricAttributes(baseAttributes, point.LabelsMap())
+			attributes := t.MetricAttributes(baseAttributes, point.Attributes())
 
 			nrMetric := telemetry.Gauge{
 				Name:       m.Name(),
@@ -304,7 +303,7 @@ func (t *transformer) Metric(m pdata.Metric) ([]telemetry.Metric, error) {
 		output = make([]telemetry.Metric, 0, points.Len())
 		for l := 0; l < points.Len(); l++ {
 			point := points.At(l)
-			attributes := t.MetricAttributes(baseAttributes, point.LabelsMap())
+			attributes := t.MetricAttributes(baseAttributes, point.Attributes())
 			var val float64
 			switch point.Type() {
 			case pdata.MetricValueTypeDouble:
@@ -370,7 +369,7 @@ func (t *transformer) Metric(m pdata.Metric) ([]telemetry.Metric, error) {
 				}
 			}
 
-			attributes := t.MetricAttributes(baseAttributes, point.LabelsMap())
+			attributes := t.MetricAttributes(baseAttributes, point.Attributes())
 			nrMetric := telemetry.Summary{
 				Name:               name,
 				Attributes:         attributes,
@@ -414,15 +413,15 @@ func (t *transformer) BaseMetricAttributes(metric pdata.Metric) map[string]inter
 	return attrs
 }
 
-func (t *transformer) MetricAttributes(baseAttributes map[string]interface{}, attrMap pdata.StringMap) map[string]interface{} {
+func (t *transformer) MetricAttributes(baseAttributes map[string]interface{}, attrMap pdata.AttributeMap) map[string]interface{} {
 	rawMap := make(map[string]interface{}, len(baseAttributes)+attrMap.Len())
 	for k, v := range baseAttributes {
 		rawMap[k] = v
 	}
-	attrMap.Range(func(k string, v string) bool {
+	attrMap.Range(func(k string, v pdata.AttributeValue) bool {
 		// Only include attribute if not an override attribute
 		if _, isOverrideKey := t.OverrideAttributes[k]; !isOverrideKey {
-			rawMap[k] = v
+			rawMap[k] = pdata.AttributeValueToString(v)
 		}
 		return true
 	})

@@ -63,7 +63,7 @@ type metricID struct {
 }
 
 type metricDataPoint interface {
-	LabelsMap() pdata.StringMap
+	Attributes() pdata.AttributeMap
 }
 
 type serviceSpans struct {
@@ -259,7 +259,7 @@ func TestMetricKeyCache(t *testing.T) {
 	// Validate
 	require.NoError(t, err)
 
-	origKeyCache := make(map[metricKey]dimKV)
+	origKeyCache := make(map[metricKey]pdata.AttributeMap)
 	for k, v := range p.metricKeyToDimensions {
 		origKeyCache[k] = v
 	}
@@ -317,7 +317,7 @@ func newProcessorImp(mexp *mocks.MetricsExporter, tcon *mocks.TracesConsumer, de
 			// Add a resource attribute to test "process" attributes like IP, host, region, cluster, etc.
 			{regionResourceAttrName, nil},
 		},
-		metricKeyToDimensions: make(map[metricKey]dimKV),
+		metricKeyToDimensions: make(map[metricKey]pdata.AttributeMap),
 	}
 }
 
@@ -399,27 +399,27 @@ func verifyConsumeMetricsInput(input pdata.Metrics, t *testing.T) bool {
 
 func verifyMetricLabels(dp metricDataPoint, t *testing.T, seenMetricIDs map[metricID]bool) {
 	mID := metricID{}
-	wantDimensions := map[string]string{
-		stringAttrName:         "stringAttrValue",
-		intAttrName:            "99",
-		doubleAttrName:         "99.99",
-		boolAttrName:           "true",
-		nullAttrName:           "",
-		arrayAttrName:          "[]",
-		mapAttrName:            "{}",
-		notInSpanAttrName0:     "defaultNotInSpanAttrVal",
-		regionResourceAttrName: sampleRegion,
+	wantDimensions := map[string]pdata.AttributeValue{
+		stringAttrName:         pdata.NewAttributeValueString("stringAttrValue"),
+		intAttrName:            pdata.NewAttributeValueInt(99),
+		doubleAttrName:         pdata.NewAttributeValueDouble(99.99),
+		boolAttrName:           pdata.NewAttributeValueBool(true),
+		nullAttrName:           pdata.NewAttributeValueNull(),
+		arrayAttrName:          pdata.NewAttributeValueArray(),
+		mapAttrName:            pdata.NewAttributeValueMap(),
+		notInSpanAttrName0:     pdata.NewAttributeValueString("defaultNotInSpanAttrVal"),
+		regionResourceAttrName: pdata.NewAttributeValueString(sampleRegion),
 	}
-	dp.LabelsMap().Range(func(k string, v string) bool {
+	dp.Attributes().Range(func(k string, v pdata.AttributeValue) bool {
 		switch k {
 		case serviceNameKey:
-			mID.service = v
+			mID.service = v.StringVal()
 		case operationKey:
-			mID.operation = v
+			mID.operation = v.StringVal()
 		case spanKindKey:
-			mID.kind = v
+			mID.kind = v.StringVal()
 		case statusCodeKey:
-			mID.statusCode = v
+			mID.statusCode = v.StringVal()
 		case notInSpanAttrName1:
 			assert.Fail(t, notInSpanAttrName1+" should not be in this metric")
 		default:

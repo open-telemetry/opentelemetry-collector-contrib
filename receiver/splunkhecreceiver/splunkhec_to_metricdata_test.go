@@ -55,11 +55,13 @@ func Test_splunkV2ToMetricsData(t *testing.T) {
 		splunkDataPoint       *splunk.Event
 		wantMetricsData       pdata.Metrics
 		wantDroppedTimeseries int
+		hecConfig             splunk.HECConfiguration
 	}{
 		{
 			name:            "int_gauge",
 			splunkDataPoint: buildDefaultSplunkDataPt(),
 			wantMetricsData: buildDefaultMetricsData(nanos),
+			hecConfig:       defaultTestingHecConfig,
 		},
 		{
 			name: "multiple",
@@ -95,6 +97,7 @@ func Test_splunkV2ToMetricsData(t *testing.T) {
 
 				return metrics
 			}(),
+			hecConfig: defaultTestingHecConfig,
 		},
 		{
 			name: "double_gauge",
@@ -117,6 +120,7 @@ func Test_splunkV2ToMetricsData(t *testing.T) {
 				doublePt.Attributes().InsertString("k2", "v2")
 				return md
 			}(),
+			hecConfig: defaultTestingHecConfig,
 		},
 		{
 			name: "int_counter_pointer",
@@ -125,6 +129,7 @@ func Test_splunkV2ToMetricsData(t *testing.T) {
 				return pt
 			}(),
 			wantMetricsData: buildDefaultMetricsData(nanos),
+			hecConfig:       defaultTestingHecConfig,
 		},
 		{
 			name: "int_counter",
@@ -134,6 +139,41 @@ func Test_splunkV2ToMetricsData(t *testing.T) {
 				return pt
 			}(),
 			wantMetricsData: buildDefaultMetricsData(nanos),
+			hecConfig:       defaultTestingHecConfig,
+		},
+		{
+			name: "custom_hec",
+			splunkDataPoint: func() *splunk.Event {
+				pt := buildDefaultSplunkDataPt()
+				pt.Fields["metric_name:single"] = int64(13)
+				return pt
+			}(),
+			wantMetricsData: func() pdata.Metrics {
+				metrics := pdata.NewMetrics()
+				resourceMetrics := metrics.ResourceMetrics().AppendEmpty()
+				attrs := resourceMetrics.Resource().Attributes()
+				attrs.InsertString("myhost", "localhost")
+				attrs.InsertString("mysource", "source")
+				attrs.InsertString("mysourcetype", "sourcetype")
+				attrs.InsertString("myindex", "index")
+
+				metricPt := resourceMetrics.InstrumentationLibraryMetrics().AppendEmpty().Metrics().AppendEmpty()
+				metricPt.SetDataType(pdata.MetricDataTypeGauge)
+				metricPt.SetName("single")
+				intPt := metricPt.Gauge().DataPoints().AppendEmpty()
+				intPt.SetIntVal(13)
+				intPt.Attributes().InsertString("k0", "v0")
+				intPt.Attributes().InsertString("k1", "v1")
+				intPt.Attributes().InsertString("k2", "v2")
+				intPt.SetTimestamp(pdata.Timestamp(nanos))
+				return metrics
+			}(),
+			hecConfig: &testingHecConfiguration{
+				sourceKey:     "mysource",
+				sourceTypeKey: "mysourcetype",
+				indexKey:      "myindex",
+				hostKey:       "myhost",
+			},
 		},
 		{
 			name: "double_counter",
@@ -156,6 +196,7 @@ func Test_splunkV2ToMetricsData(t *testing.T) {
 				doublePt.SetTimestamp(pdata.Timestamp(nanos))
 				return md
 			}(),
+			hecConfig: defaultTestingHecConfig,
 		},
 		{
 			name: "double_counter_as_string_pointer",
@@ -178,6 +219,7 @@ func Test_splunkV2ToMetricsData(t *testing.T) {
 				doublePt.SetTimestamp(pdata.Timestamp(nanos))
 				return md
 			}(),
+			hecConfig: defaultTestingHecConfig,
 		},
 		{
 			name: "double_counter_as_string",
@@ -200,6 +242,7 @@ func Test_splunkV2ToMetricsData(t *testing.T) {
 				doublePt.SetTimestamp(pdata.Timestamp(nanos))
 				return md
 			}(),
+			hecConfig: defaultTestingHecConfig,
 		},
 		{
 			name: "zero_timestamp",
@@ -211,6 +254,7 @@ func Test_splunkV2ToMetricsData(t *testing.T) {
 			wantMetricsData: func() pdata.Metrics {
 				return buildDefaultMetricsData(0)
 			}(),
+			hecConfig: defaultTestingHecConfig,
 		},
 		{
 			name: "empty_dimension_value",
@@ -224,6 +268,7 @@ func Test_splunkV2ToMetricsData(t *testing.T) {
 				md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(0).Gauge().DataPoints().At(0).Attributes().UpdateString("k0", "")
 				return md
 			}(),
+			hecConfig: defaultTestingHecConfig,
 		},
 		{
 			name: "invalid_point",
@@ -235,6 +280,7 @@ func Test_splunkV2ToMetricsData(t *testing.T) {
 			wantMetricsData: func() pdata.Metrics {
 				return pdata.NewMetrics()
 			}(),
+			hecConfig:             defaultTestingHecConfig,
 			wantDroppedTimeseries: 1,
 		},
 		{
@@ -249,6 +295,7 @@ func Test_splunkV2ToMetricsData(t *testing.T) {
 				return pdata.NewMetrics()
 			}(),
 			wantDroppedTimeseries: 1,
+			hecConfig:             defaultTestingHecConfig,
 		},
 		{
 			name: "nil_dimension_ignored",
@@ -260,12 +307,13 @@ func Test_splunkV2ToMetricsData(t *testing.T) {
 				return pt
 			}(),
 			wantMetricsData: buildDefaultMetricsData(nanos),
+			hecConfig:       defaultTestingHecConfig,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			md, numDroppedTimeseries := splunkHecToMetricsData(zap.NewNop(), []*splunk.Event{tt.splunkDataPoint}, func(resource pdata.Resource) {})
+			md, numDroppedTimeseries := splunkHecToMetricsData(zap.NewNop(), []*splunk.Event{tt.splunkDataPoint}, func(resource pdata.Resource) {}, tt.hecConfig)
 			assert.Equal(t, tt.wantDroppedTimeseries, numDroppedTimeseries)
 			assert.EqualValues(t, tt.wantMetricsData, sortMetricsAndLabels(md))
 		})
