@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package internaldata
+package opencensus
 
 import (
 	"testing"
@@ -25,11 +25,12 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
-	"go.opentelemetry.io/collector/internal/goldendataset"
-	"go.opentelemetry.io/collector/internal/occonventions"
-	"go.opentelemetry.io/collector/internal/testdata"
 	"go.opentelemetry.io/collector/model/pdata"
 	tracetranslator "go.opentelemetry.io/collector/translator/trace"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/goldendataset"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/occonventions"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
 )
 
 func TestInternalTraceStateToOC(t *testing.T) {
@@ -355,8 +356,8 @@ func TestInternalToOC(t *testing.T) {
 
 func TestInternalTracesToOCTracesAndBack(t *testing.T) {
 	tds, err := goldendataset.GenerateTraces(
-		"../../internal/goldendataset/testdata/generated_pict_pairs_traces.txt",
-		"../../internal/goldendataset/testdata/generated_pict_pairs_spans.txt")
+		"../../../internal/coreinternal/goldendataset/testdata/generated_pict_pairs_traces.txt",
+		"../../../internal/coreinternal/goldendataset/testdata/generated_pict_pairs_spans.txt")
 	assert.NoError(t, err)
 	for _, td := range tds {
 		ocNode, ocResource, ocSpans := ResourceSpansToOC(td.ResourceSpans().At(0))
