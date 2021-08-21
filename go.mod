@@ -51,6 +51,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricstransformprocessor v0.0.0-00010101000000-000000000000
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/probabilisticsamplerprocessor v0.0.0-00010101000000-000000000000
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor v0.0.0-00010101000000-000000000000
+	github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourceprocessor v0.0.0-00010101000000-000000000000
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/routingprocessor v0.0.0-00010101000000-000000000000
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanmetricsprocessor v0.0.0-00010101000000-000000000000
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor v0.0.0-00010101000000-000000000000
@@ -257,6 +258,8 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/grou
 replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sprocessor => ./processor/k8sprocessor/
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor => ./processor/resourcedetectionprocessor/
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourceprocessor => ./processor/resourceprocessor/
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricstransformprocessor => ./processor/metricstransformprocessor/
 
