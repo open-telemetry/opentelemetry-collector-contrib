@@ -37,6 +37,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/logzioexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/lokiexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/newrelicexporter"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opencensusexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sapmexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sentryexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter"
@@ -102,6 +103,7 @@ func Components() (component.Factories, error) {
 		return component.Factories{}, err
 	}
 
+	delete(factories.Exporters, "opencensus")
 	delete(factories.Extensions, "oidc")
 	delete(factories.Extensions, "bearertokenauth")
 	delete(factories.Processors, "probabilistic_sampler")
@@ -189,6 +191,7 @@ func Components() (component.Factories, error) {
 		logzioexporter.NewFactory(),
 		lokiexporter.NewFactory(),
 		newrelicexporter.NewFactory(),
+		opencensusexporter.NewFactory(),
 		sapmexporter.NewFactory(),
 		sentryexporter.NewFactory(),
 		signalfxexporter.NewFactory(),
