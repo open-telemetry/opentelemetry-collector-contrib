@@ -26,10 +26,10 @@ import (
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	jaegerzipkin "github.com/jaegertracing/jaeger/model/converter/thrift/zipkin"
 	"github.com/jaegertracing/jaeger/thrift-gen/zipkincore"
+	"go.opentelemetry.io/collector/model/pdata"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
-	"go.opentelemetry.io/collector/internal/idutils"
-	"go.opentelemetry.io/collector/model/pdata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/idutils"
 )
 
 type thriftUnmarshaler struct{}
