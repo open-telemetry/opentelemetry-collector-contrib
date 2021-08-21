@@ -104,9 +104,9 @@ func Components() (component.Factories, error) {
 	}
 
 	delete(factories.Exporters, "kafka")
-  delete(factories.Extensions, "oidc")
+	delete(factories.Extensions, "oidc")
 	delete(factories.Extensions, "bearertokenauth")
-  delete(factories.Processors, "probabilistic_sampler")
+	delete(factories.Processors, "probabilistic_sampler")
 	delete(factories.Processors, "span")
 	delete(factories.Processors, "resource")
 	delete(factories.Processors, "filter")
