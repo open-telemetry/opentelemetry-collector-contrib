@@ -19,12 +19,13 @@ import (
 
 	"go.uber.org/zap"
 
-	"go.opentelemetry.io/collector/internal/processor/filterconfig"
-	"go.opentelemetry.io/collector/internal/processor/filtermatcher"
-	"go.opentelemetry.io/collector/internal/processor/filtermetric"
-	"go.opentelemetry.io/collector/internal/processor/filterset"
 	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/processor/processorhelper"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterconfig"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filtermatcher"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filtermetric"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterset"
 )
 
 type filterMetricProcessor struct {
