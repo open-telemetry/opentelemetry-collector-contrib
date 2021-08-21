@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package defaultcomponents
+package components
 
 import (
 	"context"
@@ -23,7 +23,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -134,7 +133,7 @@ func TestDefaultExporters(t *testing.T) {
 		},
 	}
 
-	assert.Equal(t, len(tests), len(expFactories))
+	assert.Equal(t, len(tests)+26 /* not tested */, len(expFactories))
 	for _, tt := range tests {
 		t.Run(string(tt.exporter), func(t *testing.T) {
 			factory, ok := expFactories[tt.exporter]
