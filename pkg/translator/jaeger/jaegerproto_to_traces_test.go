@@ -24,12 +24,12 @@ import (
 	"github.com/jaegertracing/jaeger/model"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-
-	"go.opentelemetry.io/collector/internal/idutils"
-	"go.opentelemetry.io/collector/internal/testdata"
 	"go.opentelemetry.io/collector/model/pdata"
 	conventions "go.opentelemetry.io/collector/translator/conventions/v1.5.0"
 	tracetranslator "go.opentelemetry.io/collector/translator/trace"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/idutils"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
 )
 
 // Use timespamp with microsecond granularity to work well with jaeger thrift translation

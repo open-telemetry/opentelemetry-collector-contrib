@@ -20,11 +20,11 @@ import (
 	"github.com/jaegertracing/jaeger/model"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-
-	"go.opentelemetry.io/collector/internal/goldendataset"
 	"go.opentelemetry.io/collector/model/pdata"
 	conventions "go.opentelemetry.io/collector/translator/conventions/v1.5.0"
 	tracetranslator "go.opentelemetry.io/collector/translator/trace"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/goldendataset"
 )
 
 func TestGetTagFromStatusCode(t *testing.T) {
@@ -320,8 +320,8 @@ func TestInternalTracesToJaegerProto(t *testing.T) {
 
 func TestInternalTracesToJaegerProtoBatchesAndBack(t *testing.T) {
 	tds, err := goldendataset.GenerateTraces(
-		"../../../internal/goldendataset/testdata/generated_pict_pairs_traces.txt",
-		"../../../internal/goldendataset/testdata/generated_pict_pairs_spans.txt")
+		"../../../internal/coreinternal/goldendataset/testdata/generated_pict_pairs_traces.txt",
+		"../../../internal/coreinternal/goldendataset/testdata/generated_pict_pairs_spans.txt")
 	assert.NoError(t, err)
 	for _, td := range tds {
 		protoBatches, err := InternalTracesToJaegerProto(td)

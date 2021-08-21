@@ -20,11 +20,11 @@ import (
 	"reflect"
 
 	"github.com/jaegertracing/jaeger/thrift-gen/jaeger"
-
-	"go.opentelemetry.io/collector/internal/idutils"
 	"go.opentelemetry.io/collector/model/pdata"
 	conventions "go.opentelemetry.io/collector/translator/conventions/v1.5.0"
 	tracetranslator "go.opentelemetry.io/collector/translator/trace"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/idutils"
 )
 
 var blankJaegerThriftSpan = new(jaeger.Span)
