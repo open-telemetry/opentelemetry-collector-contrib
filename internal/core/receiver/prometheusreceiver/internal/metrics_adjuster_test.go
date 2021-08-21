@@ -23,24 +23,24 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 
-	mtu "go.opentelemetry.io/collector/testutil/metricstestutil"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/metricstestutil"
 )
 
 func Test_gauge(t *testing.T) {
 	script := []*metricsAdjusterTest{{
 		"Gauge: round 1 - gauge not adjusted",
-		[]*metricspb.Metric{mtu.Gauge(g1, k1k2, mtu.Timeseries(t1Ms, v1v2, mtu.Double(t1Ms, 44)))},
-		[]*metricspb.Metric{mtu.Gauge(g1, k1k2, mtu.Timeseries(t1Ms, v1v2, mtu.Double(t1Ms, 44)))},
+		[]*metricspb.Metric{metricstestutil.Gauge(g1, k1k2, metricstestutil.Timeseries(t1Ms, v1v2, metricstestutil.Double(t1Ms, 44)))},
+		[]*metricspb.Metric{metricstestutil.Gauge(g1, k1k2, metricstestutil.Timeseries(t1Ms, v1v2, metricstestutil.Double(t1Ms, 44)))},
 		0,
 	}, {
 		"Gauge: round 2 - gauge not adjusted",
-		[]*metricspb.Metric{mtu.Gauge(g1, k1k2, mtu.Timeseries(t2Ms, v1v2, mtu.Double(t2Ms, 66)))},
-		[]*metricspb.Metric{mtu.Gauge(g1, k1k2, mtu.Timeseries(t2Ms, v1v2, mtu.Double(t2Ms, 66)))},
+		[]*metricspb.Metric{metricstestutil.Gauge(g1, k1k2, metricstestutil.Timeseries(t2Ms, v1v2, metricstestutil.Double(t2Ms, 66)))},
+		[]*metricspb.Metric{metricstestutil.Gauge(g1, k1k2, metricstestutil.Timeseries(t2Ms, v1v2, metricstestutil.Double(t2Ms, 66)))},
 		0,
 	}, {
 		"Gauge: round 3 - value less than previous value - gauge is not adjusted",
-		[]*metricspb.Metric{mtu.Gauge(g1, k1k2, mtu.Timeseries(t3Ms, v1v2, mtu.Double(t3Ms, 55)))},
-		[]*metricspb.Metric{mtu.Gauge(g1, k1k2, mtu.Timeseries(t3Ms, v1v2, mtu.Double(t3Ms, 55)))},
+		[]*metricspb.Metric{metricstestutil.Gauge(g1, k1k2, metricstestutil.Timeseries(t3Ms, v1v2, metricstestutil.Double(t3Ms, 55)))},
+		[]*metricspb.Metric{metricstestutil.Gauge(g1, k1k2, metricstestutil.Timeseries(t3Ms, v1v2, metricstestutil.Double(t3Ms, 55)))},
 		0,
 	}}
 	runScript(t, NewJobsMap(time.Minute).get("job", "0"), script)
@@ -49,18 +49,18 @@ func Test_gauge(t *testing.T) {
 func Test_gaugeDistribution(t *testing.T) {
 	script := []*metricsAdjusterTest{{
 		"GaugeDist: round 1 - gauge distribution not adjusted",
-		[]*metricspb.Metric{mtu.GaugeDist(gd1, k1k2, mtu.Timeseries(t1Ms, v1v2, mtu.DistPt(t1Ms, bounds0, []int64{4, 2, 3, 7})))},
-		[]*metricspb.Metric{mtu.GaugeDist(gd1, k1k2, mtu.Timeseries(t1Ms, v1v2, mtu.DistPt(t1Ms, bounds0, []int64{4, 2, 3, 7})))},
+		[]*metricspb.Metric{metricstestutil.GaugeDist(gd1, k1k2, metricstestutil.Timeseries(t1Ms, v1v2, metricstestutil.DistPt(t1Ms, bounds0, []int64{4, 2, 3, 7})))},
+		[]*metricspb.Metric{metricstestutil.GaugeDist(gd1, k1k2, metricstestutil.Timeseries(t1Ms, v1v2, metricstestutil.DistPt(t1Ms, bounds0, []int64{4, 2, 3, 7})))},
 		0,
 	}, {
 		"GaugeDist: round 2 - gauge distribution not adjusted",
-		[]*metricspb.Metric{mtu.GaugeDist(gd1, k1k2, mtu.Timeseries(t2Ms, v1v2, mtu.DistPt(t2Ms, bounds0, []int64{6, 5, 8, 11})))},
-		[]*metricspb.Metric{mtu.GaugeDist(gd1, k1k2, mtu.Timeseries(t2Ms, v1v2, mtu.DistPt(t2Ms, bounds0, []int64{6, 5, 8, 11})))},
+		[]*metricspb.Metric{metricstestutil.GaugeDist(gd1, k1k2, metricstestutil.Timeseries(t2Ms, v1v2, metricstestutil.DistPt(t2Ms, bounds0, []int64{6, 5, 8, 11})))},
+		[]*metricspb.Metric{metricstestutil.GaugeDist(gd1, k1k2, metricstestutil.Timeseries(t2Ms, v1v2, metricstestutil.DistPt(t2Ms, bounds0, []int64{6, 5, 8, 11})))},
 		0,
 	}, {
 		"GaugeDist: round 3 - count/sum less than previous - gauge distribution not adjusted",
-		[]*metricspb.Metric{mtu.GaugeDist(gd1, k1k2, mtu.Timeseries(t3Ms, v1v2, mtu.DistPt(t3Ms, bounds0, []int64{2, 0, 1, 5})))},
-		[]*metricspb.Metric{mtu.GaugeDist(gd1, k1k2, mtu.Timeseries(t3Ms, v1v2, mtu.DistPt(t3Ms, bounds0, []int64{2, 0, 1, 5})))},
+		[]*metricspb.Metric{metricstestutil.GaugeDist(gd1, k1k2, metricstestutil.Timeseries(t3Ms, v1v2, metricstestutil.DistPt(t3Ms, bounds0, []int64{2, 0, 1, 5})))},
+		[]*metricspb.Metric{metricstestutil.GaugeDist(gd1, k1k2, metricstestutil.Timeseries(t3Ms, v1v2, metricstestutil.DistPt(t3Ms, bounds0, []int64{2, 0, 1, 5})))},
 		0,
 	}}
 	runScript(t, NewJobsMap(time.Minute).get("job", "0"), script)
@@ -69,23 +69,23 @@ func Test_gaugeDistribution(t *testing.T) {
 func Test_cumulative(t *testing.T) {
 	script := []*metricsAdjusterTest{{
 		"Cumulative: round 1 - initial instance, start time is established",
-		[]*metricspb.Metric{mtu.Cumulative(c1, k1k2, mtu.Timeseries(t1Ms, v1v2, mtu.Double(t1Ms, 44)))},
-		[]*metricspb.Metric{mtu.Cumulative(c1, k1k2, mtu.Timeseries(t1Ms, v1v2, mtu.Double(t1Ms, 44)))},
+		[]*metricspb.Metric{metricstestutil.Cumulative(c1, k1k2, metricstestutil.Timeseries(t1Ms, v1v2, metricstestutil.Double(t1Ms, 44)))},
+		[]*metricspb.Metric{metricstestutil.Cumulative(c1, k1k2, metricstestutil.Timeseries(t1Ms, v1v2, metricstestutil.Double(t1Ms, 44)))},
 		1,
 	}, {
 		"Cumulative: round 2 - instance adjusted based on round 1",
-		[]*metricspb.Metric{mtu.Cumulative(c1, k1k2, mtu.Timeseries(t2Ms, v1v2, mtu.Double(t2Ms, 66)))},
-		[]*metricspb.Metric{mtu.Cumulative(c1, k1k2, mtu.Timeseries(t1Ms, v1v2, mtu.Double(t2Ms, 66)))},
+		[]*metricspb.Metric{metricstestutil.Cumulative(c1, k1k2, metricstestutil.Timeseries(t2Ms, v1v2, metricstestutil.Double(t2Ms, 66)))},
+		[]*metricspb.Metric{metricstestutil.Cumulative(c1, k1k2, metricstestutil.Timeseries(t1Ms, v1v2, metricstestutil.Double(t2Ms, 66)))},
 		0,
 	}, {
 		"Cumulative: round 3 - instance reset (value less than previous value), start time is reset",
-		[]*metricspb.Metric{mtu.Cumulative(c1, k1k2, mtu.Timeseries(t3Ms, v1v2, mtu.Double(t3Ms, 55)))},
-		[]*metricspb.Metric{mtu.Cumulative(c1, k1k2, mtu.Timeseries(t3Ms, v1v2, mtu.Double(t3Ms, 55)))},
+		[]*metricspb.Metric{metricstestutil.Cumulative(c1, k1k2, metricstestutil.Timeseries(t3Ms, v1v2, metricstestutil.Double(t3Ms, 55)))},
+		[]*metricspb.Metric{metricstestutil.Cumulative(c1, k1k2, metricstestutil.Timeseries(t3Ms, v1v2, metricstestutil.Double(t3Ms, 55)))},
 		1,
 	}, {
 		"Cumulative: round 4 - instance adjusted based on round 3",
-		[]*metricspb.Metric{mtu.Cumulative(c1, k1k2, mtu.Timeseries(t4Ms, v1v2, mtu.Double(t4Ms, 72)))},
-		[]*metricspb.Metric{mtu.Cumulative(c1, k1k2, mtu.Timeseries(t3Ms, v1v2, mtu.Double(t4Ms, 72)))},
+		[]*metricspb.Metric{metricstestutil.Cumulative(c1, k1k2, metricstestutil.Timeseries(t4Ms, v1v2, metricstestutil.Double(t4Ms, 72)))},
+		[]*metricspb.Metric{metricstestutil.Cumulative(c1, k1k2, metricstestutil.Timeseries(t3Ms, v1v2, metricstestutil.Double(t4Ms, 72)))},
 		0,
 	}}
 	runScript(t, NewJobsMap(time.Minute).get("job", "0"), script)
@@ -94,23 +94,23 @@ func Test_cumulative(t *testing.T) {
 func Test_cumulativeDistribution(t *testing.T) {
 	script := []*metricsAdjusterTest{{
 		"CumulativeDist: round 1 - initial instance, start time is established",
-		[]*metricspb.Metric{mtu.CumulativeDist(cd1, k1k2, mtu.Timeseries(t1Ms, v1v2, mtu.DistPt(t1Ms, bounds0, []int64{4, 2, 3, 7})))},
-		[]*metricspb.Metric{mtu.CumulativeDist(cd1, k1k2, mtu.Timeseries(t1Ms, v1v2, mtu.DistPt(t1Ms, bounds0, []int64{4, 2, 3, 7})))},
+		[]*metricspb.Metric{metricstestutil.CumulativeDist(cd1, k1k2, metricstestutil.Timeseries(t1Ms, v1v2, metricstestutil.DistPt(t1Ms, bounds0, []int64{4, 2, 3, 7})))},
+		[]*metricspb.Metric{metricstestutil.CumulativeDist(cd1, k1k2, metricstestutil.Timeseries(t1Ms, v1v2, metricstestutil.DistPt(t1Ms, bounds0, []int64{4, 2, 3, 7})))},
 		1,
 	}, {
 		"CumulativeDist: round 2 - instance adjusted based on round 1",
-		[]*metricspb.Metric{mtu.CumulativeDist(cd1, k1k2, mtu.Timeseries(t2Ms, v1v2, mtu.DistPt(t2Ms, bounds0, []int64{6, 3, 4, 8})))},
-		[]*metricspb.Metric{mtu.CumulativeDist(cd1, k1k2, mtu.Timeseries(t1Ms, v1v2, mtu.DistPt(t2Ms, bounds0, []int64{6, 3, 4, 8})))},
+		[]*metricspb.Metric{metricstestutil.CumulativeDist(cd1, k1k2, metricstestutil.Timeseries(t2Ms, v1v2, metricstestutil.DistPt(t2Ms, bounds0, []int64{6, 3, 4, 8})))},
+		[]*metricspb.Metric{metricstestutil.CumulativeDist(cd1, k1k2, metricstestutil.Timeseries(t1Ms, v1v2, metricstestutil.DistPt(t2Ms, bounds0, []int64{6, 3, 4, 8})))},
 		0,
 	}, {
 		"CumulativeDist: round 3 - instance reset (value less than previous value), start time is reset",
-		[]*metricspb.Metric{mtu.CumulativeDist(cd1, k1k2, mtu.Timeseries(t3Ms, v1v2, mtu.DistPt(t3Ms, bounds0, []int64{5, 3, 2, 7})))},
-		[]*metricspb.Metric{mtu.CumulativeDist(cd1, k1k2, mtu.Timeseries(t3Ms, v1v2, mtu.DistPt(t3Ms, bounds0, []int64{5, 3, 2, 7})))},
+		[]*metricspb.Metric{metricstestutil.CumulativeDist(cd1, k1k2, metricstestutil.Timeseries(t3Ms, v1v2, metricstestutil.DistPt(t3Ms, bounds0, []int64{5, 3, 2, 7})))},
+		[]*metricspb.Metric{metricstestutil.CumulativeDist(cd1, k1k2, metricstestutil.Timeseries(t3Ms, v1v2, metricstestutil.DistPt(t3Ms, bounds0, []int64{5, 3, 2, 7})))},
 		1,
 	}, {
 		"CumulativeDist: round 4 - instance adjusted based on round 3",
-		[]*metricspb.Metric{mtu.CumulativeDist(cd1, k1k2, mtu.Timeseries(t4Ms, v1v2, mtu.DistPt(t4Ms, bounds0, []int64{7, 4, 2, 12})))},
-		[]*metricspb.Metric{mtu.CumulativeDist(cd1, k1k2, mtu.Timeseries(t3Ms, v1v2, mtu.DistPt(t4Ms, bounds0, []int64{7, 4, 2, 12})))},
+		[]*metricspb.Metric{metricstestutil.CumulativeDist(cd1, k1k2, metricstestutil.Timeseries(t4Ms, v1v2, metricstestutil.DistPt(t4Ms, bounds0, []int64{7, 4, 2, 12})))},
+		[]*metricspb.Metric{metricstestutil.CumulativeDist(cd1, k1k2, metricstestutil.Timeseries(t3Ms, v1v2, metricstestutil.DistPt(t4Ms, bounds0, []int64{7, 4, 2, 12})))},
 		0,
 	}}
 	runScript(t, NewJobsMap(time.Minute).get("job", "0"), script)
@@ -119,23 +119,23 @@ func Test_cumulativeDistribution(t *testing.T) {
 func Test_summary_no_count(t *testing.T) {
 	script := []*metricsAdjusterTest{{
 		"Summary No Count: round 1 - initial instance, start time is established",
-		[]*metricspb.Metric{mtu.Summary(s1, k1k2, mtu.Timeseries(t1Ms, v1v2, mtu.SummPt(t1Ms, 10, 40, percent0, []float64{1, 5, 8})))},
-		[]*metricspb.Metric{mtu.Summary(s1, k1k2, mtu.Timeseries(t1Ms, v1v2, mtu.SummPt(t1Ms, 10, 40, percent0, []float64{1, 5, 8})))},
+		[]*metricspb.Metric{metricstestutil.Summary(s1, k1k2, metricstestutil.Timeseries(t1Ms, v1v2, metricstestutil.SummPt(t1Ms, 10, 40, percent0, []float64{1, 5, 8})))},
+		[]*metricspb.Metric{metricstestutil.Summary(s1, k1k2, metricstestutil.Timeseries(t1Ms, v1v2, metricstestutil.SummPt(t1Ms, 10, 40, percent0, []float64{1, 5, 8})))},
 		1,
 	}, {
 		"Summary No Count: round 2 - instance adjusted based on round 1",
-		[]*metricspb.Metric{mtu.Summary(s1, k1k2, mtu.Timeseries(t2Ms, v1v2, mtu.SummPt(t2Ms, 15, 70, percent0, []float64{7, 44, 9})))},
-		[]*metricspb.Metric{mtu.Summary(s1, k1k2, mtu.Timeseries(t1Ms, v1v2, mtu.SummPt(t2Ms, 15, 70, percent0, []float64{7, 44, 9})))},
+		[]*metricspb.Metric{metricstestutil.Summary(s1, k1k2, metricstestutil.Timeseries(t2Ms, v1v2, metricstestutil.SummPt(t2Ms, 15, 70, percent0, []float64{7, 44, 9})))},
+		[]*metricspb.Metric{metricstestutil.Summary(s1, k1k2, metricstestutil.Timeseries(t1Ms, v1v2, metricstestutil.SummPt(t2Ms, 15, 70, percent0, []float64{7, 44, 9})))},
 		0,
 	}, {
 		"Summary No Count: round 3 - instance reset (count less than previous), start time is reset",
-		[]*metricspb.Metric{mtu.Summary(s1, k1k2, mtu.Timeseries(t3Ms, v1v2, mtu.SummPt(t3Ms, 12, 66, percent0, []float64{3, 22, 5})))},
-		[]*metricspb.Metric{mtu.Summary(s1, k1k2, mtu.Timeseries(t3Ms, v1v2, mtu.SummPt(t3Ms, 12, 66, percent0, []float64{3, 22, 5})))},
+		[]*metricspb.Metric{metricstestutil.Summary(s1, k1k2, metricstestutil.Timeseries(t3Ms, v1v2, metricstestutil.SummPt(t3Ms, 12, 66, percent0, []float64{3, 22, 5})))},
+		[]*metricspb.Metric{metricstestutil.Summary(s1, k1k2, metricstestutil.Timeseries(t3Ms, v1v2, metricstestutil.SummPt(t3Ms, 12, 66, percent0, []float64{3, 22, 5})))},
 		1,
 	}, {
 		"Summary No Count: round 4 - instance adjusted based on round 3",
-		[]*metricspb.Metric{mtu.Summary(s1, k1k2, mtu.Timeseries(t4Ms, v1v2, mtu.SummPt(t4Ms, 14, 96, percent0, []float64{9, 47, 8})))},
-		[]*metricspb.Metric{mtu.Summary(s1, k1k2, mtu.Timeseries(t3Ms, v1v2, mtu.SummPt(t4Ms, 14, 96, percent0, []float64{9, 47, 8})))},
+		[]*metricspb.Metric{metricstestutil.Summary(s1, k1k2, metricstestutil.Timeseries(t4Ms, v1v2, metricstestutil.SummPt(t4Ms, 14, 96, percent0, []float64{9, 47, 8})))},
+		[]*metricspb.Metric{metricstestutil.Summary(s1, k1k2, metricstestutil.Timeseries(t3Ms, v1v2, metricstestutil.SummPt(t4Ms, 14, 96, percent0, []float64{9, 47, 8})))},
 		0,
 	}}
 
@@ -150,23 +150,23 @@ func Test_summary_no_count(t *testing.T) {
 func Test_summary(t *testing.T) {
 	script := []*metricsAdjusterTest{{
 		"Summary: round 1 - initial instance, start time is established",
-		[]*metricspb.Metric{mtu.Summary(s1, k1k2, mtu.Timeseries(t1Ms, v1v2, mtu.SummPt(t1Ms, 10, 40, percent0, []float64{1, 5, 8})))},
-		[]*metricspb.Metric{mtu.Summary(s1, k1k2, mtu.Timeseries(t1Ms, v1v2, mtu.SummPt(t1Ms, 10, 40, percent0, []float64{1, 5, 8})))},
+		[]*metricspb.Metric{metricstestutil.Summary(s1, k1k2, metricstestutil.Timeseries(t1Ms, v1v2, metricstestutil.SummPt(t1Ms, 10, 40, percent0, []float64{1, 5, 8})))},
+		[]*metricspb.Metric{metricstestutil.Summary(s1, k1k2, metricstestutil.Timeseries(t1Ms, v1v2, metricstestutil.SummPt(t1Ms, 10, 40, percent0, []float64{1, 5, 8})))},
 		1,
 	}, {
 		"Summary: round 2 - instance adjusted based on round 1",
-		[]*metricspb.Metric{mtu.Summary(s1, k1k2, mtu.Timeseries(t2Ms, v1v2, mtu.SummPt(t2Ms, 15, 70, percent0, []float64{7, 44, 9})))},
-		[]*metricspb.Metric{mtu.Summary(s1, k1k2, mtu.Timeseries(t1Ms, v1v2, mtu.SummPt(t2Ms, 15, 70, percent0, []float64{7, 44, 9})))},
+		[]*metricspb.Metric{metricstestutil.Summary(s1, k1k2, metricstestutil.Timeseries(t2Ms, v1v2, metricstestutil.SummPt(t2Ms, 15, 70, percent0, []float64{7, 44, 9})))},
+		[]*metricspb.Metric{metricstestutil.Summary(s1, k1k2, metricstestutil.Timeseries(t1Ms, v1v2, metricstestutil.SummPt(t2Ms, 15, 70, percent0, []float64{7, 44, 9})))},
 		0,
 	}, {
 		"Summary: round 3 - instance reset (count less than previous), start time is reset",
-		[]*metricspb.Metric{mtu.Summary(s1, k1k2, mtu.Timeseries(t3Ms, v1v2, mtu.SummPt(t3Ms, 12, 66, percent0, []float64{3, 22, 5})))},
-		[]*metricspb.Metric{mtu.Summary(s1, k1k2, mtu.Timeseries(t3Ms, v1v2, mtu.SummPt(t3Ms, 12, 66, percent0, []float64{3, 22, 5})))},
+		[]*metricspb.Metric{metricstestutil.Summary(s1, k1k2, metricstestutil.Timeseries(t3Ms, v1v2, metricstestutil.SummPt(t3Ms, 12, 66, percent0, []float64{3, 22, 5})))},
+		[]*metricspb.Metric{metricstestutil.Summary(s1, k1k2, metricstestutil.Timeseries(t3Ms, v1v2, metricstestutil.SummPt(t3Ms, 12, 66, percent0, []float64{3, 22, 5})))},
 		1,
 	}, {
 		"Summary: round 4 - instance adjusted based on round 3",
-		[]*metricspb.Metric{mtu.Summary(s1, k1k2, mtu.Timeseries(t4Ms, v1v2, mtu.SummPt(t4Ms, 14, 96, percent0, []float64{9, 47, 8})))},
-		[]*metricspb.Metric{mtu.Summary(s1, k1k2, mtu.Timeseries(t3Ms, v1v2, mtu.SummPt(t4Ms, 14, 96, percent0, []float64{9, 47, 8})))},
+		[]*metricspb.Metric{metricstestutil.Summary(s1, k1k2, metricstestutil.Timeseries(t4Ms, v1v2, metricstestutil.SummPt(t4Ms, 14, 96, percent0, []float64{9, 47, 8})))},
+		[]*metricspb.Metric{metricstestutil.Summary(s1, k1k2, metricstestutil.Timeseries(t3Ms, v1v2, metricstestutil.SummPt(t4Ms, 14, 96, percent0, []float64{9, 47, 8})))},
 		0,
 	}}
 	runScript(t, NewJobsMap(time.Minute).get("job", "0"), script)
@@ -176,65 +176,65 @@ func Test_multiMetrics(t *testing.T) {
 	script := []*metricsAdjusterTest{{
 		"MultiMetrics: round 1 - combined round 1 of individual metrics",
 		[]*metricspb.Metric{
-			mtu.Gauge(g1, k1k2, mtu.Timeseries(t1Ms, v1v2, mtu.Double(t1Ms, 44))),
-			mtu.GaugeDist(gd1, k1k2, mtu.Timeseries(t1Ms, v1v2, mtu.DistPt(t1Ms, bounds0, []int64{4, 2, 3, 7}))),
-			mtu.Cumulative(c1, k1k2, mtu.Timeseries(t1Ms, v1v2, mtu.Double(t1Ms, 44))),
-			mtu.CumulativeDist(cd1, k1k2, mtu.Timeseries(t1Ms, v1v2, mtu.DistPt(t1Ms, bounds0, []int64{4, 2, 3, 7}))),
-			mtu.Summary(s1, k1k2, mtu.Timeseries(t1Ms, v1v2, mtu.SummPt(t1Ms, 10, 40, percent0, []float64{1, 5, 8}))),
+			metricstestutil.Gauge(g1, k1k2, metricstestutil.Timeseries(t1Ms, v1v2, metricstestutil.Double(t1Ms, 44))),
+			metricstestutil.GaugeDist(gd1, k1k2, metricstestutil.Timeseries(t1Ms, v1v2, metricstestutil.DistPt(t1Ms, bounds0, []int64{4, 2, 3, 7}))),
+			metricstestutil.Cumulative(c1, k1k2, metricstestutil.Timeseries(t1Ms, v1v2, metricstestutil.Double(t1Ms, 44))),
+			metricstestutil.CumulativeDist(cd1, k1k2, metricstestutil.Timeseries(t1Ms, v1v2, metricstestutil.DistPt(t1Ms, bounds0, []int64{4, 2, 3, 7}))),
+			metricstestutil.Summary(s1, k1k2, metricstestutil.Timeseries(t1Ms, v1v2, metricstestutil.SummPt(t1Ms, 10, 40, percent0, []float64{1, 5, 8}))),
 		},
 		[]*metricspb.Metric{
-			mtu.Gauge(g1, k1k2, mtu.Timeseries(t1Ms, v1v2, mtu.Double(t1Ms, 44))),
-			mtu.GaugeDist(gd1, k1k2, mtu.Timeseries(t1Ms, v1v2, mtu.DistPt(t1Ms, bounds0, []int64{4, 2, 3, 7}))),
-			mtu.Cumulative(c1, k1k2, mtu.Timeseries(t1Ms, v1v2, mtu.Double(t1Ms, 44))),
-			mtu.CumulativeDist(cd1, k1k2, mtu.Timeseries(t1Ms, v1v2, mtu.DistPt(t1Ms, bounds0, []int64{4, 2, 3, 7}))),
-			mtu.Summary(s1, k1k2, mtu.Timeseries(t1Ms, v1v2, mtu.SummPt(t1Ms, 10, 40, percent0, []float64{1, 5, 8}))),
+			metricstestutil.Gauge(g1, k1k2, metricstestutil.Timeseries(t1Ms, v1v2, metricstestutil.Double(t1Ms, 44))),
+			metricstestutil.GaugeDist(gd1, k1k2, metricstestutil.Timeseries(t1Ms, v1v2, metricstestutil.DistPt(t1Ms, bounds0, []int64{4, 2, 3, 7}))),
+			metricstestutil.Cumulative(c1, k1k2, metricstestutil.Timeseries(t1Ms, v1v2, metricstestutil.Double(t1Ms, 44))),
+			metricstestutil.CumulativeDist(cd1, k1k2, metricstestutil.Timeseries(t1Ms, v1v2, metricstestutil.DistPt(t1Ms, bounds0, []int64{4, 2, 3, 7}))),
+			metricstestutil.Summary(s1, k1k2, metricstestutil.Timeseries(t1Ms, v1v2, metricstestutil.SummPt(t1Ms, 10, 40, percent0, []float64{1, 5, 8}))),
 		},
 		3,
 	}, {
 		"MultiMetrics: round 2 - combined round 2 of individual metrics",
 		[]*metricspb.Metric{
-			mtu.Gauge(g1, k1k2, mtu.Timeseries(t2Ms, v1v2, mtu.Double(t2Ms, 66))),
-			mtu.GaugeDist(gd1, k1k2, mtu.Timeseries(t2Ms, v1v2, mtu.DistPt(t2Ms, bounds0, []int64{6, 5, 8, 11}))),
-			mtu.Cumulative(c1, k1k2, mtu.Timeseries(t2Ms, v1v2, mtu.Double(t2Ms, 66))),
-			mtu.CumulativeDist(cd1, k1k2, mtu.Timeseries(t2Ms, v1v2, mtu.DistPt(t2Ms, bounds0, []int64{6, 3, 4, 8}))),
-			mtu.Summary(s1, k1k2, mtu.Timeseries(t2Ms, v1v2, mtu.SummPt(t2Ms, 15, 70, percent0, []float64{7, 44, 9}))),
+			metricstestutil.Gauge(g1, k1k2, metricstestutil.Timeseries(t2Ms, v1v2, metricstestutil.Double(t2Ms, 66))),
+			metricstestutil.GaugeDist(gd1, k1k2, metricstestutil.Timeseries(t2Ms, v1v2, metricstestutil.DistPt(t2Ms, bounds0, []int64{6, 5, 8, 11}))),
+			metricstestutil.Cumulative(c1, k1k2, metricstestutil.Timeseries(t2Ms, v1v2, metricstestutil.Double(t2Ms, 66))),
+			metricstestutil.CumulativeDist(cd1, k1k2, metricstestutil.Timeseries(t2Ms, v1v2, metricstestutil.DistPt(t2Ms, bounds0, []int64{6, 3, 4, 8}))),
+			metricstestutil.Summary(s1, k1k2, metricstestutil.Timeseries(t2Ms, v1v2, metricstestutil.SummPt(t2Ms, 15, 70, percent0, []float64{7, 44, 9}))),
 		},
 		[]*metricspb.Metric{
-			mtu.Gauge(g1, k1k2, mtu.Timeseries(t2Ms, v1v2, mtu.Double(t2Ms, 66))),
-			mtu.GaugeDist(gd1, k1k2, mtu.Timeseries(t2Ms, v1v2, mtu.DistPt(t2Ms, bounds0, []int64{6, 5, 8, 11}))),
-			mtu.Cumulative(c1, k1k2, mtu.Timeseries(t1Ms, v1v2, mtu.Double(t2Ms, 66))),
-			mtu.CumulativeDist(cd1, k1k2, mtu.Timeseries(t1Ms, v1v2, mtu.DistPt(t2Ms, bounds0, []int64{6, 3, 4, 8}))),
-			mtu.Summary(s1, k1k2, mtu.Timeseries(t1Ms, v1v2, mtu.SummPt(t2Ms, 15, 70, percent0, []float64{7, 44, 9}))),
+			metricstestutil.Gauge(g1, k1k2, metricstestutil.Timeseries(t2Ms, v1v2, metricstestutil.Double(t2Ms, 66))),
+			metricstestutil.GaugeDist(gd1, k1k2, metricstestutil.Timeseries(t2Ms, v1v2, metricstestutil.DistPt(t2Ms, bounds0, []int64{6, 5, 8, 11}))),
+			metricstestutil.Cumulative(c1, k1k2, metricstestutil.Timeseries(t1Ms, v1v2, metricstestutil.Double(t2Ms, 66))),
+			metricstestutil.CumulativeDist(cd1, k1k2, metricstestutil.Timeseries(t1Ms, v1v2, metricstestutil.DistPt(t2Ms, bounds0, []int64{6, 3, 4, 8}))),
+			metricstestutil.Summary(s1, k1k2, metricstestutil.Timeseries(t1Ms, v1v2, metricstestutil.SummPt(t2Ms, 15, 70, percent0, []float64{7, 44, 9}))),
 		},
 		0,
 	}, {
 		"MultiMetrics: round 3 - combined round 3 of individual metrics",
 		[]*metricspb.Metric{
-			mtu.Gauge(g1, k1k2, mtu.Timeseries(t3Ms, v1v2, mtu.Double(t3Ms, 55))),
-			mtu.GaugeDist(gd1, k1k2, mtu.Timeseries(t3Ms, v1v2, mtu.DistPt(t3Ms, bounds0, []int64{2, 0, 1, 5}))),
-			mtu.Cumulative(c1, k1k2, mtu.Timeseries(t3Ms, v1v2, mtu.Double(t3Ms, 55))),
-			mtu.CumulativeDist(cd1, k1k2, mtu.Timeseries(t3Ms, v1v2, mtu.DistPt(t3Ms, bounds0, []int64{5, 3, 2, 7}))),
-			mtu.Summary(s1, k1k2, mtu.Timeseries(t3Ms, v1v2, mtu.SummPt(t3Ms, 12, 66, percent0, []float64{3, 22, 5}))),
+			metricstestutil.Gauge(g1, k1k2, metricstestutil.Timeseries(t3Ms, v1v2, metricstestutil.Double(t3Ms, 55))),
+			metricstestutil.GaugeDist(gd1, k1k2, metricstestutil.Timeseries(t3Ms, v1v2, metricstestutil.DistPt(t3Ms, bounds0, []int64{2, 0, 1, 5}))),
+			metricstestutil.Cumulative(c1, k1k2, metricstestutil.Timeseries(t3Ms, v1v2, metricstestutil.Double(t3Ms, 55))),
+			metricstestutil.CumulativeDist(cd1, k1k2, metricstestutil.Timeseries(t3Ms, v1v2, metricstestutil.DistPt(t3Ms, bounds0, []int64{5, 3, 2, 7}))),
+			metricstestutil.Summary(s1, k1k2, metricstestutil.Timeseries(t3Ms, v1v2, metricstestutil.SummPt(t3Ms, 12, 66, percent0, []float64{3, 22, 5}))),
 		},
 		[]*metricspb.Metric{
-			mtu.Gauge(g1, k1k2, mtu.Timeseries(t3Ms, v1v2, mtu.Double(t3Ms, 55))),
-			mtu.GaugeDist(gd1, k1k2, mtu.Timeseries(t3Ms, v1v2, mtu.DistPt(t3Ms, bounds0, []int64{2, 0, 1, 5}))),
-			mtu.Cumulative(c1, k1k2, mtu.Timeseries(t3Ms, v1v2, mtu.Double(t3Ms, 55))),
-			mtu.CumulativeDist(cd1, k1k2, mtu.Timeseries(t3Ms, v1v2, mtu.DistPt(t3Ms, bounds0, []int64{5, 3, 2, 7}))),
-			mtu.Summary(s1, k1k2, mtu.Timeseries(t3Ms, v1v2, mtu.SummPt(t3Ms, 12, 66, percent0, []float64{3, 22, 5}))),
+			metricstestutil.Gauge(g1, k1k2, metricstestutil.Timeseries(t3Ms, v1v2, metricstestutil.Double(t3Ms, 55))),
+			metricstestutil.GaugeDist(gd1, k1k2, metricstestutil.Timeseries(t3Ms, v1v2, metricstestutil.DistPt(t3Ms, bounds0, []int64{2, 0, 1, 5}))),
+			metricstestutil.Cumulative(c1, k1k2, metricstestutil.Timeseries(t3Ms, v1v2, metricstestutil.Double(t3Ms, 55))),
+			metricstestutil.CumulativeDist(cd1, k1k2, metricstestutil.Timeseries(t3Ms, v1v2, metricstestutil.DistPt(t3Ms, bounds0, []int64{5, 3, 2, 7}))),
+			metricstestutil.Summary(s1, k1k2, metricstestutil.Timeseries(t3Ms, v1v2, metricstestutil.SummPt(t3Ms, 12, 66, percent0, []float64{3, 22, 5}))),
 		},
 		3,
 	}, {
 		"MultiMetrics: round 4 - combined round 4 of individual metrics",
 		[]*metricspb.Metric{
-			mtu.Cumulative(c1, k1k2, mtu.Timeseries(t4Ms, v1v2, mtu.Double(t4Ms, 72))),
-			mtu.CumulativeDist(cd1, k1k2, mtu.Timeseries(t4Ms, v1v2, mtu.DistPt(t4Ms, bounds0, []int64{7, 4, 2, 12}))),
-			mtu.Summary(s1, k1k2, mtu.Timeseries(t4Ms, v1v2, mtu.SummPt(t4Ms, 14, 96, percent0, []float64{9, 47, 8}))),
+			metricstestutil.Cumulative(c1, k1k2, metricstestutil.Timeseries(t4Ms, v1v2, metricstestutil.Double(t4Ms, 72))),
+			metricstestutil.CumulativeDist(cd1, k1k2, metricstestutil.Timeseries(t4Ms, v1v2, metricstestutil.DistPt(t4Ms, bounds0, []int64{7, 4, 2, 12}))),
+			metricstestutil.Summary(s1, k1k2, metricstestutil.Timeseries(t4Ms, v1v2, metricstestutil.SummPt(t4Ms, 14, 96, percent0, []float64{9, 47, 8}))),
 		},
 		[]*metricspb.Metric{
-			mtu.Cumulative(c1, k1k2, mtu.Timeseries(t3Ms, v1v2, mtu.Double(t4Ms, 72))),
-			mtu.CumulativeDist(cd1, k1k2, mtu.Timeseries(t3Ms, v1v2, mtu.DistPt(t4Ms, bounds0, []int64{7, 4, 2, 12}))),
-			mtu.Summary(s1, k1k2, mtu.Timeseries(t3Ms, v1v2, mtu.SummPt(t4Ms, 14, 96, percent0, []float64{9, 47, 8}))),
+			metricstestutil.Cumulative(c1, k1k2, metricstestutil.Timeseries(t3Ms, v1v2, metricstestutil.Double(t4Ms, 72))),
+			metricstestutil.CumulativeDist(cd1, k1k2, metricstestutil.Timeseries(t3Ms, v1v2, metricstestutil.DistPt(t4Ms, bounds0, []int64{7, 4, 2, 12}))),
+			metricstestutil.Summary(s1, k1k2, metricstestutil.Timeseries(t3Ms, v1v2, metricstestutil.SummPt(t4Ms, 14, 96, percent0, []float64{9, 47, 8}))),
 		},
 		0,
 	}}
@@ -244,32 +244,32 @@ func Test_multiMetrics(t *testing.T) {
 func Test_multiTimeseries(t *testing.T) {
 	script := []*metricsAdjusterTest{{
 		"MultiTimeseries: round 1 - initial first instance, start time is established",
-		[]*metricspb.Metric{mtu.Cumulative(c1, k1k2, mtu.Timeseries(t1Ms, v1v2, mtu.Double(t1Ms, 44)))},
-		[]*metricspb.Metric{mtu.Cumulative(c1, k1k2, mtu.Timeseries(t1Ms, v1v2, mtu.Double(t1Ms, 44)))},
+		[]*metricspb.Metric{metricstestutil.Cumulative(c1, k1k2, metricstestutil.Timeseries(t1Ms, v1v2, metricstestutil.Double(t1Ms, 44)))},
+		[]*metricspb.Metric{metricstestutil.Cumulative(c1, k1k2, metricstestutil.Timeseries(t1Ms, v1v2, metricstestutil.Double(t1Ms, 44)))},
 		1,
 	}, {
 		"MultiTimeseries: round 2 - first instance adjusted based on round 1, initial second instance",
-		[]*metricspb.Metric{mtu.Cumulative(c1, k1k2, mtu.Timeseries(t2Ms, v1v2, mtu.Double(t2Ms, 66)), mtu.Timeseries(t2Ms, v10v20, mtu.Double(t2Ms, 20)))},
-		[]*metricspb.Metric{mtu.Cumulative(c1, k1k2, mtu.Timeseries(t1Ms, v1v2, mtu.Double(t2Ms, 66)), mtu.Timeseries(t2Ms, v10v20, mtu.Double(t2Ms, 20)))},
+		[]*metricspb.Metric{metricstestutil.Cumulative(c1, k1k2, metricstestutil.Timeseries(t2Ms, v1v2, metricstestutil.Double(t2Ms, 66)), metricstestutil.Timeseries(t2Ms, v10v20, metricstestutil.Double(t2Ms, 20)))},
+		[]*metricspb.Metric{metricstestutil.Cumulative(c1, k1k2, metricstestutil.Timeseries(t1Ms, v1v2, metricstestutil.Double(t2Ms, 66)), metricstestutil.Timeseries(t2Ms, v10v20, metricstestutil.Double(t2Ms, 20)))},
 		1,
 	}, {
 		"MultiTimeseries: round 3 - first instance adjusted based on round 1, second based on round 2",
-		[]*metricspb.Metric{mtu.Cumulative(c1, k1k2, mtu.Timeseries(t3Ms, v1v2, mtu.Double(t3Ms, 88)), mtu.Timeseries(t3Ms, v10v20, mtu.Double(t3Ms, 49)))},
-		[]*metricspb.Metric{mtu.Cumulative(c1, k1k2, mtu.Timeseries(t1Ms, v1v2, mtu.Double(t3Ms, 88)), mtu.Timeseries(t2Ms, v10v20, mtu.Double(t3Ms, 49)))},
+		[]*metricspb.Metric{metricstestutil.Cumulative(c1, k1k2, metricstestutil.Timeseries(t3Ms, v1v2, metricstestutil.Double(t3Ms, 88)), metricstestutil.Timeseries(t3Ms, v10v20, metricstestutil.Double(t3Ms, 49)))},
+		[]*metricspb.Metric{metricstestutil.Cumulative(c1, k1k2, metricstestutil.Timeseries(t1Ms, v1v2, metricstestutil.Double(t3Ms, 88)), metricstestutil.Timeseries(t2Ms, v10v20, metricstestutil.Double(t3Ms, 49)))},
 		0,
 	}, {
 		"MultiTimeseries: round 4 - first instance reset, second instance adjusted based on round 2, initial third instance",
 		[]*metricspb.Metric{
-			mtu.Cumulative(c1, k1k2, mtu.Timeseries(t4Ms, v1v2, mtu.Double(t4Ms, 87)), mtu.Timeseries(t4Ms, v10v20, mtu.Double(t4Ms, 57)), mtu.Timeseries(t4Ms, v100v200, mtu.Double(t4Ms, 10)))},
+			metricstestutil.Cumulative(c1, k1k2, metricstestutil.Timeseries(t4Ms, v1v2, metricstestutil.Double(t4Ms, 87)), metricstestutil.Timeseries(t4Ms, v10v20, metricstestutil.Double(t4Ms, 57)), metricstestutil.Timeseries(t4Ms, v100v200, metricstestutil.Double(t4Ms, 10)))},
 		[]*metricspb.Metric{
-			mtu.Cumulative(c1, k1k2, mtu.Timeseries(t4Ms, v1v2, mtu.Double(t4Ms, 87)), mtu.Timeseries(t2Ms, v10v20, mtu.Double(t4Ms, 57)), mtu.Timeseries(t4Ms, v100v200, mtu.Double(t4Ms, 10)))},
+			metricstestutil.Cumulative(c1, k1k2, metricstestutil.Timeseries(t4Ms, v1v2, metricstestutil.Double(t4Ms, 87)), metricstestutil.Timeseries(t2Ms, v10v20, metricstestutil.Double(t4Ms, 57)), metricstestutil.Timeseries(t4Ms, v100v200, metricstestutil.Double(t4Ms, 10)))},
 		2,
 	}, {
 		"MultiTimeseries: round 5 - first instance adjusted based on round 4, second on round 2, third on round 4",
 		[]*metricspb.Metric{
-			mtu.Cumulative(c1, k1k2, mtu.Timeseries(t5Ms, v1v2, mtu.Double(t5Ms, 90)), mtu.Timeseries(t5Ms, v10v20, mtu.Double(t5Ms, 65)), mtu.Timeseries(t5Ms, v100v200, mtu.Double(t5Ms, 22)))},
+			metricstestutil.Cumulative(c1, k1k2, metricstestutil.Timeseries(t5Ms, v1v2, metricstestutil.Double(t5Ms, 90)), metricstestutil.Timeseries(t5Ms, v10v20, metricstestutil.Double(t5Ms, 65)), metricstestutil.Timeseries(t5Ms, v100v200, metricstestutil.Double(t5Ms, 22)))},
 		[]*metricspb.Metric{
-			mtu.Cumulative(c1, k1k2, mtu.Timeseries(t4Ms, v1v2, mtu.Double(t5Ms, 90)), mtu.Timeseries(t2Ms, v10v20, mtu.Double(t5Ms, 65)), mtu.Timeseries(t4Ms, v100v200, mtu.Double(t5Ms, 22)))},
+			metricstestutil.Cumulative(c1, k1k2, metricstestutil.Timeseries(t4Ms, v1v2, metricstestutil.Double(t5Ms, 90)), metricstestutil.Timeseries(t2Ms, v10v20, metricstestutil.Double(t5Ms, 65)), metricstestutil.Timeseries(t4Ms, v100v200, metricstestutil.Double(t5Ms, 22)))},
 		0,
 	}}
 	runScript(t, NewJobsMap(time.Minute).get("job", "0"), script)
@@ -278,23 +278,23 @@ func Test_multiTimeseries(t *testing.T) {
 func Test_emptyLabels(t *testing.T) {
 	script := []*metricsAdjusterTest{{
 		"EmptyLabels: round 1 - initial instance, implicitly empty labels, start time is established",
-		[]*metricspb.Metric{mtu.Cumulative(c1, []string{}, mtu.Timeseries(t1Ms, []string{}, mtu.Double(t1Ms, 44)))},
-		[]*metricspb.Metric{mtu.Cumulative(c1, []string{}, mtu.Timeseries(t1Ms, []string{}, mtu.Double(t1Ms, 44)))},
+		[]*metricspb.Metric{metricstestutil.Cumulative(c1, []string{}, metricstestutil.Timeseries(t1Ms, []string{}, metricstestutil.Double(t1Ms, 44)))},
+		[]*metricspb.Metric{metricstestutil.Cumulative(c1, []string{}, metricstestutil.Timeseries(t1Ms, []string{}, metricstestutil.Double(t1Ms, 44)))},
 		1,
 	}, {
 		"EmptyLabels: round 2 - instance adjusted based on round 1",
-		[]*metricspb.Metric{mtu.Cumulative(c1, []string{}, mtu.Timeseries(t2Ms, []string{}, mtu.Double(t2Ms, 66)))},
-		[]*metricspb.Metric{mtu.Cumulative(c1, []string{}, mtu.Timeseries(t1Ms, []string{}, mtu.Double(t2Ms, 66)))},
+		[]*metricspb.Metric{metricstestutil.Cumulative(c1, []string{}, metricstestutil.Timeseries(t2Ms, []string{}, metricstestutil.Double(t2Ms, 66)))},
+		[]*metricspb.Metric{metricstestutil.Cumulative(c1, []string{}, metricstestutil.Timeseries(t1Ms, []string{}, metricstestutil.Double(t2Ms, 66)))},
 		0,
 	}, {
 		"EmptyLabels: round 3 - one explicitly empty label, instance adjusted based on round 1",
-		[]*metricspb.Metric{mtu.Cumulative(c1, k1, mtu.Timeseries(t3Ms, []string{""}, mtu.Double(t3Ms, 77)))},
-		[]*metricspb.Metric{mtu.Cumulative(c1, k1, mtu.Timeseries(t1Ms, []string{""}, mtu.Double(t3Ms, 77)))},
+		[]*metricspb.Metric{metricstestutil.Cumulative(c1, k1, metricstestutil.Timeseries(t3Ms, []string{""}, metricstestutil.Double(t3Ms, 77)))},
+		[]*metricspb.Metric{metricstestutil.Cumulative(c1, k1, metricstestutil.Timeseries(t1Ms, []string{""}, metricstestutil.Double(t3Ms, 77)))},
 		0,
 	}, {
 		"EmptyLabels: round 4 - three explicitly empty labels, instance adjusted based on round 1",
-		[]*metricspb.Metric{mtu.Cumulative(c1, k1k2k3, mtu.Timeseries(t3Ms, []string{"", "", ""}, mtu.Double(t3Ms, 88)))},
-		[]*metricspb.Metric{mtu.Cumulative(c1, k1k2k3, mtu.Timeseries(t1Ms, []string{"", "", ""}, mtu.Double(t3Ms, 88)))},
+		[]*metricspb.Metric{metricstestutil.Cumulative(c1, k1k2k3, metricstestutil.Timeseries(t3Ms, []string{"", "", ""}, metricstestutil.Double(t3Ms, 88)))},
+		[]*metricspb.Metric{metricstestutil.Cumulative(c1, k1k2k3, metricstestutil.Timeseries(t1Ms, []string{"", "", ""}, metricstestutil.Double(t3Ms, 88)))},
 		0,
 	}}
 	runScript(t, NewJobsMap(time.Minute).get("job", "0"), script)
@@ -304,12 +304,12 @@ func Test_tsGC(t *testing.T) {
 	script1 := []*metricsAdjusterTest{{
 		"TsGC: round 1 - initial instances, start time is established",
 		[]*metricspb.Metric{
-			mtu.Cumulative(c1, k1k2, mtu.Timeseries(t1Ms, v1v2, mtu.Double(t1Ms, 44)), mtu.Timeseries(t1Ms, v10v20, mtu.Double(t1Ms, 20))),
-			mtu.CumulativeDist(cd1, k1k2, mtu.Timeseries(t1Ms, v1v2, mtu.DistPt(t1Ms, bounds0, []int64{4, 2, 3, 7})), mtu.Timeseries(t1Ms, v10v20, mtu.DistPt(t1Ms, bounds0, []int64{40, 20, 30, 70}))),
+			metricstestutil.Cumulative(c1, k1k2, metricstestutil.Timeseries(t1Ms, v1v2, metricstestutil.Double(t1Ms, 44)), metricstestutil.Timeseries(t1Ms, v10v20, metricstestutil.Double(t1Ms, 20))),
+			metricstestutil.CumulativeDist(cd1, k1k2, metricstestutil.Timeseries(t1Ms, v1v2, metricstestutil.DistPt(t1Ms, bounds0, []int64{4, 2, 3, 7})), metricstestutil.Timeseries(t1Ms, v10v20, metricstestutil.DistPt(t1Ms, bounds0, []int64{40, 20, 30, 70}))),
 		},
 		[]*metricspb.Metric{
-			mtu.Cumulative(c1, k1k2, mtu.Timeseries(t1Ms, v1v2, mtu.Double(t1Ms, 44)), mtu.Timeseries(t1Ms, v10v20, mtu.Double(t1Ms, 20))),
-			mtu.CumulativeDist(cd1, k1k2, mtu.Timeseries(t1Ms, v1v2, mtu.DistPt(t1Ms, bounds0, []int64{4, 2, 3, 7})), mtu.Timeseries(t1Ms, v10v20, mtu.DistPt(t1Ms, bounds0, []int64{40, 20, 30, 70}))),
+			metricstestutil.Cumulative(c1, k1k2, metricstestutil.Timeseries(t1Ms, v1v2, metricstestutil.Double(t1Ms, 44)), metricstestutil.Timeseries(t1Ms, v10v20, metricstestutil.Double(t1Ms, 20))),
+			metricstestutil.CumulativeDist(cd1, k1k2, metricstestutil.Timeseries(t1Ms, v1v2, metricstestutil.DistPt(t1Ms, bounds0, []int64{4, 2, 3, 7})), metricstestutil.Timeseries(t1Ms, v10v20, metricstestutil.DistPt(t1Ms, bounds0, []int64{40, 20, 30, 70}))),
 		},
 		4,
 	}}
@@ -317,12 +317,12 @@ func Test_tsGC(t *testing.T) {
 	script2 := []*metricsAdjusterTest{{
 		"TsGC: round 2 - metrics first timeseries adjusted based on round 2, second timeseries not updated",
 		[]*metricspb.Metric{
-			mtu.Cumulative(c1, k1k2, mtu.Timeseries(t2Ms, v1v2, mtu.Double(t2Ms, 88))),
-			mtu.CumulativeDist(cd1, k1k2, mtu.Timeseries(t2Ms, v1v2, mtu.DistPt(t2Ms, bounds0, []int64{8, 7, 9, 14}))),
+			metricstestutil.Cumulative(c1, k1k2, metricstestutil.Timeseries(t2Ms, v1v2, metricstestutil.Double(t2Ms, 88))),
+			metricstestutil.CumulativeDist(cd1, k1k2, metricstestutil.Timeseries(t2Ms, v1v2, metricstestutil.DistPt(t2Ms, bounds0, []int64{8, 7, 9, 14}))),
 		},
 		[]*metricspb.Metric{
-			mtu.Cumulative(c1, k1k2, mtu.Timeseries(t1Ms, v1v2, mtu.Double(t2Ms, 88))),
-			mtu.CumulativeDist(cd1, k1k2, mtu.Timeseries(t1Ms, v1v2, mtu.DistPt(t2Ms, bounds0, []int64{8, 7, 9, 14}))),
+			metricstestutil.Cumulative(c1, k1k2, metricstestutil.Timeseries(t1Ms, v1v2, metricstestutil.Double(t2Ms, 88))),
+			metricstestutil.CumulativeDist(cd1, k1k2, metricstestutil.Timeseries(t1Ms, v1v2, metricstestutil.DistPt(t2Ms, bounds0, []int64{8, 7, 9, 14}))),
 		},
 		0,
 	}}
@@ -330,12 +330,12 @@ func Test_tsGC(t *testing.T) {
 	script3 := []*metricsAdjusterTest{{
 		"TsGC: round 3 - metrics first timeseries adjusted based on round 2, second timeseries empty due to timeseries gc()",
 		[]*metricspb.Metric{
-			mtu.Cumulative(c1, k1k2, mtu.Timeseries(t3Ms, v1v2, mtu.Double(t3Ms, 99)), mtu.Timeseries(t3Ms, v10v20, mtu.Double(t3Ms, 80))),
-			mtu.CumulativeDist(cd1, k1k2, mtu.Timeseries(t3Ms, v1v2, mtu.DistPt(t3Ms, bounds0, []int64{9, 8, 10, 15})), mtu.Timeseries(t3Ms, v10v20, mtu.DistPt(t3Ms, bounds0, []int64{55, 66, 33, 77}))),
+			metricstestutil.Cumulative(c1, k1k2, metricstestutil.Timeseries(t3Ms, v1v2, metricstestutil.Double(t3Ms, 99)), metricstestutil.Timeseries(t3Ms, v10v20, metricstestutil.Double(t3Ms, 80))),
+			metricstestutil.CumulativeDist(cd1, k1k2, metricstestutil.Timeseries(t3Ms, v1v2, metricstestutil.DistPt(t3Ms, bounds0, []int64{9, 8, 10, 15})), metricstestutil.Timeseries(t3Ms, v10v20, metricstestutil.DistPt(t3Ms, bounds0, []int64{55, 66, 33, 77}))),
 		},
 		[]*metricspb.Metric{
-			mtu.Cumulative(c1, k1k2, mtu.Timeseries(t1Ms, v1v2, mtu.Double(t3Ms, 99)), mtu.Timeseries(t3Ms, v10v20, mtu.Double(t3Ms, 80))),
-			mtu.CumulativeDist(cd1, k1k2, mtu.Timeseries(t1Ms, v1v2, mtu.DistPt(t3Ms, bounds0, []int64{9, 8, 10, 15})), mtu.Timeseries(t3Ms, v10v20, mtu.DistPt(t3Ms, bounds0, []int64{55, 66, 33, 77}))),
+			metricstestutil.Cumulative(c1, k1k2, metricstestutil.Timeseries(t1Ms, v1v2, metricstestutil.Double(t3Ms, 99)), metricstestutil.Timeseries(t3Ms, v10v20, metricstestutil.Double(t3Ms, 80))),
+			metricstestutil.CumulativeDist(cd1, k1k2, metricstestutil.Timeseries(t1Ms, v1v2, metricstestutil.DistPt(t3Ms, bounds0, []int64{9, 8, 10, 15})), metricstestutil.Timeseries(t3Ms, v10v20, metricstestutil.DistPt(t3Ms, bounds0, []int64{55, 66, 33, 77}))),
 		},
 		2,
 	}}
@@ -358,12 +358,12 @@ func Test_jobGC(t *testing.T) {
 	job1Script1 := []*metricsAdjusterTest{{
 		"JobGC: job 1, round 1 - initial instances, adjusted should be empty",
 		[]*metricspb.Metric{
-			mtu.Cumulative(c1, k1k2, mtu.Timeseries(t1Ms, v1v2, mtu.Double(t1Ms, 44)), mtu.Timeseries(t1Ms, v10v20, mtu.Double(t1Ms, 20))),
-			mtu.CumulativeDist(cd1, k1k2, mtu.Timeseries(t1Ms, v1v2, mtu.DistPt(t1Ms, bounds0, []int64{4, 2, 3, 7})), mtu.Timeseries(t1Ms, v10v20, mtu.DistPt(t1Ms, bounds0, []int64{40, 20, 30, 70}))),
+			metricstestutil.Cumulative(c1, k1k2, metricstestutil.Timeseries(t1Ms, v1v2, metricstestutil.Double(t1Ms, 44)), metricstestutil.Timeseries(t1Ms, v10v20, metricstestutil.Double(t1Ms, 20))),
+			metricstestutil.CumulativeDist(cd1, k1k2, metricstestutil.Timeseries(t1Ms, v1v2, metricstestutil.DistPt(t1Ms, bounds0, []int64{4, 2, 3, 7})), metricstestutil.Timeseries(t1Ms, v10v20, metricstestutil.DistPt(t1Ms, bounds0, []int64{40, 20, 30, 70}))),
 		},
 		[]*metricspb.Metric{
-			mtu.Cumulative(c1, k1k2, mtu.Timeseries(t1Ms, v1v2, mtu.Double(t1Ms, 44)), mtu.Timeseries(t1Ms, v10v20, mtu.Double(t1Ms, 20))),
-			mtu.CumulativeDist(cd1, k1k2, mtu.Timeseries(t1Ms, v1v2, mtu.DistPt(t1Ms, bounds0, []int64{4, 2, 3, 7})), mtu.Timeseries(t1Ms, v10v20, mtu.DistPt(t1Ms, bounds0, []int64{40, 20, 30, 70}))),
+			metricstestutil.Cumulative(c1, k1k2, metricstestutil.Timeseries(t1Ms, v1v2, metricstestutil.Double(t1Ms, 44)), metricstestutil.Timeseries(t1Ms, v10v20, metricstestutil.Double(t1Ms, 20))),
+			metricstestutil.CumulativeDist(cd1, k1k2, metricstestutil.Timeseries(t1Ms, v1v2, metricstestutil.DistPt(t1Ms, bounds0, []int64{4, 2, 3, 7})), metricstestutil.Timeseries(t1Ms, v10v20, metricstestutil.DistPt(t1Ms, bounds0, []int64{40, 20, 30, 70}))),
 		},
 		4,
 	}}
@@ -378,12 +378,12 @@ func Test_jobGC(t *testing.T) {
 	job1Script2 := []*metricsAdjusterTest{{
 		"JobGC: job 1, round 2 - metrics timeseries empty due to job-level gc",
 		[]*metricspb.Metric{
-			mtu.Cumulative(c1, k1k2, mtu.Timeseries(t4Ms, v1v2, mtu.Double(t4Ms, 99)), mtu.Timeseries(t4Ms, v10v20, mtu.Double(t4Ms, 80))),
-			mtu.CumulativeDist(cd1, k1k2, mtu.Timeseries(t4Ms, v1v2, mtu.DistPt(t4Ms, bounds0, []int64{9, 8, 10, 15})), mtu.Timeseries(t4Ms, v10v20, mtu.DistPt(t4Ms, bounds0, []int64{55, 66, 33, 77}))),
+			metricstestutil.Cumulative(c1, k1k2, metricstestutil.Timeseries(t4Ms, v1v2, metricstestutil.Double(t4Ms, 99)), metricstestutil.Timeseries(t4Ms, v10v20, metricstestutil.Double(t4Ms, 80))),
+			metricstestutil.CumulativeDist(cd1, k1k2, metricstestutil.Timeseries(t4Ms, v1v2, metricstestutil.DistPt(t4Ms, bounds0, []int64{9, 8, 10, 15})), metricstestutil.Timeseries(t4Ms, v10v20, metricstestutil.DistPt(t4Ms, bounds0, []int64{55, 66, 33, 77}))),
 		},
 		[]*metricspb.Metric{
-			mtu.Cumulative(c1, k1k2, mtu.Timeseries(t4Ms, v1v2, mtu.Double(t4Ms, 99)), mtu.Timeseries(t4Ms, v10v20, mtu.Double(t4Ms, 80))),
-			mtu.CumulativeDist(cd1, k1k2, mtu.Timeseries(t4Ms, v1v2, mtu.DistPt(t4Ms, bounds0, []int64{9, 8, 10, 15})), mtu.Timeseries(t4Ms, v10v20, mtu.DistPt(t4Ms, bounds0, []int64{55, 66, 33, 77}))),
+			metricstestutil.Cumulative(c1, k1k2, metricstestutil.Timeseries(t4Ms, v1v2, metricstestutil.Double(t4Ms, 99)), metricstestutil.Timeseries(t4Ms, v10v20, metricstestutil.Double(t4Ms, 80))),
+			metricstestutil.CumulativeDist(cd1, k1k2, metricstestutil.Timeseries(t4Ms, v1v2, metricstestutil.DistPt(t4Ms, bounds0, []int64{9, 8, 10, 15})), metricstestutil.Timeseries(t4Ms, v10v20, metricstestutil.DistPt(t4Ms, bounds0, []int64{55, 66, 33, 77}))),
 		},
 		4,
 	}}
