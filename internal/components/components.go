@@ -33,6 +33,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/honeycombexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/humioexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/influxdbexporter"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/loadbalancingexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/logzioexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/lokiexporter"
@@ -102,6 +103,7 @@ func Components() (component.Factories, error) {
 	delete(factories.Extensions, "oidc")
 	delete(factories.Extensions, "bearertokenauth")
 	delete(factories.Processors, "probabilistic_sampler")
+	delete(factories.Exporters, "kafka")
 
 	extensions := []component.ExtensionFactory{
 		bearertokenauthextension.NewFactory(),
@@ -179,6 +181,7 @@ func Components() (component.Factories, error) {
 		honeycombexporter.NewFactory(),
 		humioexporter.NewFactory(),
 		influxdbexporter.NewFactory(),
+		kafkaexporter.NewFactory(),
 		loadbalancingexporter.NewFactory(),
 		logzioexporter.NewFactory(),
 		lokiexporter.NewFactory(),
