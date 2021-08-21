@@ -59,6 +59,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricsgenerationprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricstransformprocessor"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/probabilisticsamplerprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/routingprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanmetricsprocessor"
@@ -100,6 +101,7 @@ func Components() (component.Factories, error) {
 
 	delete(factories.Extensions, "oidc")
 	delete(factories.Extensions, "bearertokenauth")
+	delete(factories.Processors, "probabilistic_sampler")
 
 	extensions := []component.ExtensionFactory{
 		bearertokenauthextension.NewFactory(),
@@ -203,6 +205,7 @@ func Components() (component.Factories, error) {
 		k8sprocessor.NewFactory(),
 		metricstransformprocessor.NewFactory(),
 		metricsgenerationprocessor.NewFactory(),
+		probabilisticsamplerprocessor.NewFactory(),
 		resourcedetectionprocessor.NewFactory(),
 		routingprocessor.NewFactory(),
 		tailsamplingprocessor.NewFactory(),
