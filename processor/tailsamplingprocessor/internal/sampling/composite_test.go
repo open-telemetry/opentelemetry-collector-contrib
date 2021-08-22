@@ -14,6 +14,7 @@
 package sampling
 
 import (
+	"github.com/stretchr/testify/require"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -46,16 +47,12 @@ func TestCompositeEvaluatorNotSampled(t *testing.T) {
 	trace := createTrace()
 
 	decision, err := c.Evaluate(traceID, trace)
-	if err != nil {
-		t.Fatalf("Failed to evaluate composite policy: %v", err)
-	}
+	require.NoError(t, err, "Failed to evaluate composite policy: %v", err)
 
 	// None of the numeric filters should match since input trace data does not contain
 	// the "tag", so the decision should be NotSampled.
 	expected := NotSampled
-	if decision != expected {
-		t.Fatalf("Incorrect decision by composite policy evaluator: expected %v, actual %v", expected, decision)
-	}
+	assert.Equal(t, decision, expected)
 }
 
 func TestCompositeEvaluatorSampled(t *testing.T) {
@@ -68,15 +65,11 @@ func TestCompositeEvaluatorSampled(t *testing.T) {
 	trace := createTrace()
 
 	decision, err := c.Evaluate(traceID, trace)
-	if err != nil {
-		t.Fatalf("Failed to evaluate composite policy: %v", err)
-	}
+	require.NoError(t, err, "Failed to evaluate composite policy: %v", err)
 
 	// The second policy is AlwaysSample, so the decision should be Sampled.
 	expected := Sampled
-	if decision != expected {
-		t.Fatalf("Incorrect decision by composite policy evaluator: expected %v, actual %v", expected, decision)
-	}
+	assert.Equal(t, decision, expected)
 }
 
 func TestCompositeEvaluatorSampled_AlwaysSampled(t *testing.T) {
@@ -86,19 +79,16 @@ func TestCompositeEvaluatorSampled_AlwaysSampled(t *testing.T) {
 	n2 := NewAlwaysSample(zap.NewNop())
 	c := NewComposite(zap.NewNop(), 10, []SubPolicyEvalParams{{n1, 20}, {n2, 20}}, FakeTimeProvider{})
 
-	for i := 1; i <= 3; i++ {
+	for i := 1; i <= 10; i++ {
 		trace := createTrace()
 
 		decision, err := c.Evaluate(traceID, trace)
-		if err != nil {
-			t.Fatalf("Failed to evaluate composite policy: %v", err)
-		}
+		require.NoError(t, err, "Failed to evaluate composite policy: %v", err)
+
 
 		// The second policy is AlwaysSample, so the decision should be Sampled.
 		expected := Sampled
-		if decision != expected {
-			t.Fatalf("Incorrect decision by composite policy evaluator: expected %v, actual %v", expected, decision)
-		}
+		assert.Equal(t, decision, expected)
 	}
 }
 
@@ -115,27 +105,19 @@ func TestCompositeEvaluatorThrottling(t *testing.T) {
 	// First totalSPS traces should be 100% Sampled
 	for i := 0; i < totalSPS; i++ {
 		decision, err := c.Evaluate(traceID, trace)
-		if err != nil {
-			t.Fatalf("Failed to evaluate composite policy: %v", err)
-		}
+		require.NoError(t, err, "Failed to evaluate composite policy: %v", err)
 
 		expected := Sampled
-		if decision != expected {
-			t.Fatalf("Incorrect decision by composite policy evaluator: expected %v, actual %v", expected, decision)
-		}
+		assert.Equal(t, decision, expected)
 	}
 
 	// Now we hit the rate limit, so subsequent evaluations should result in 100% NotSampled
 	for i := 0; i < totalSPS; i++ {
 		decision, err := c.Evaluate(traceID, trace)
-		if err != nil {
-			t.Fatalf("Failed to evaluate composite policy: %v", err)
-		}
+		require.NoError(t, err, "Failed to evaluate composite policy: %v", err)
 
 		expected := NotSampled
-		if decision != expected {
-			t.Fatalf("Incorrect decision by composite policy evaluator: expected %v, actual %v", expected, decision)
-		}
+		assert.Equal(t, decision, expected)
 	}
 
 	// Let the time advance by one second.
@@ -144,14 +126,10 @@ func TestCompositeEvaluatorThrottling(t *testing.T) {
 	// Subsequent sampling should be Sampled again because it is a new second.
 	for i := 0; i < totalSPS; i++ {
 		decision, err := c.Evaluate(traceID, trace)
-		if err != nil {
-			t.Fatalf("Failed to evaluate composite policy: %v", err)
-		}
+		require.NoError(t, err, "Failed to evaluate composite policy: %v", err)
 
 		expected := Sampled
-		if decision != expected {
-			t.Fatalf("Incorrect decision by composite policy evaluator: expected %v, actual %v", expected, decision)
-		}
+		assert.Equal(t, decision, expected)
 	}
 }
 
@@ -180,9 +158,7 @@ func TestCompositeEvaluator2SubpolicyThrottling(t *testing.T) {
 	// First totalSPS/2 should be Sampled until we hit the rate limit
 	for i := 0; i < totalSPS/2; i++ {
 		decision, err := c.Evaluate(traceID, trace)
-		if err != nil {
-			t.Fatalf("Failed to evaluate composite policy: %v", err)
-		}
+		require.NoError(t, err, "Failed to evaluate composite policy: %v", err)
 
 		expected := Sampled
 		if decision != expected {
@@ -193,9 +169,7 @@ func TestCompositeEvaluator2SubpolicyThrottling(t *testing.T) {
 	// Now we hit the rate limit for second subpolicy, so subsequent evaluations should result in NotSampled
 	for i := 0; i < totalSPS/2; i++ {
 		decision, err := c.Evaluate(traceID, trace)
-		if err != nil {
-			t.Fatalf("Failed to evaluate composite policy: %v", err)
-		}
+		require.NoError(t, err, "Failed to evaluate composite policy: %v", err)
 
 		expected := NotSampled
 		if decision != expected {
@@ -209,27 +183,19 @@ func TestCompositeEvaluator2SubpolicyThrottling(t *testing.T) {
 	// It is a new second, so we should start sampling again.
 	for i := 0; i < totalSPS/2; i++ {
 		decision, err := c.Evaluate(traceID, trace)
-		if err != nil {
-			t.Fatalf("Failed to evaluate composite policy: %v", err)
-		}
+		require.NoError(t, err, "Failed to evaluate composite policy: %v", err)
 
 		expected := Sampled
-		if decision != expected {
-			t.Fatalf("Incorrect decision by composite policy evaluator: expected %v, actual %v", expected, decision)
-		}
+		assert.Equal(t, decision, expected)
 	}
 
 	// Now let's hit the hard limit and exceed the total by a factor of 2
 	for i := 0; i < 2*totalSPS; i++ {
 		decision, err := c.Evaluate(traceID, trace)
-		if err != nil {
-			t.Fatalf("Failed to evaluate composite policy: %v", err)
-		}
+		require.NoError(t, err, "Failed to evaluate composite policy: %v", err)
 
 		expected := NotSampled
-		if decision != expected {
-			t.Fatalf("Incorrect decision by composite policy evaluator: expected %v, actual %v", expected, decision)
-		}
+		assert.Equal(t, decision, expected)
 	}
 
 	// Let the time advance by one second.
@@ -238,13 +204,9 @@ func TestCompositeEvaluator2SubpolicyThrottling(t *testing.T) {
 	// It is a new second, so we should start sampling again.
 	for i := 0; i < totalSPS/2; i++ {
 		decision, err := c.Evaluate(traceID, trace)
-		if err != nil {
-			t.Fatalf("Failed to evaluate composite policy: %v", err)
-		}
+		require.NoError(t, err, "Failed to evaluate composite policy: %v", err)
 
 		expected := Sampled
-		if decision != expected {
-			t.Fatalf("Incorrect decision by composite policy evaluator: expected %v, actual %v", expected, decision)
-		}
+		assert.Equal(t, decision, expected)
 	}
 }

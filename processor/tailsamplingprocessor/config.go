@@ -40,7 +40,7 @@ const (
 	StringAttribute PolicyType = "string_attribute"
 	// RateLimiting allows all traces until the specified limits are satisfied.
 	RateLimiting PolicyType = "rate_limiting"
-	// Composite Composite allows defining composite policy
+	// Composite allows defining a composite policy, combining the other policies in one
 	Composite PolicyType = "composite"
 )
 
@@ -95,7 +95,7 @@ type PolicyCfg struct {
 	StringAttributeCfg StringAttributeCfg `mapstructure:"string_attribute"`
 	// Configs for rate limiting filter sampling policy evaluator.
 	RateLimitingCfg RateLimitingCfg `mapstructure:"rate_limiting"`
-	// CompositeCfg for defining composite policy
+	// Configs for defining composite policy
 	CompositeCfg CompositeCfg `mapstructure:"composite"`
 }
 

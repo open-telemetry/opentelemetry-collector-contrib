@@ -77,6 +77,6 @@ func TestCompositeHelper(t *testing.T) {
 	rlfCfg := cfg.PolicyCfgs[0].CompositeCfg
 	composite, e := getNewCompositePolicy(zap.NewNop(), rlfCfg)
 	require.NotNil(t, composite)
-	require.Nil(t, e)
+	require.NoError(t, e)
 	// TBD add more assertions
 }
