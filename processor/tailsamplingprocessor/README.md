@@ -22,7 +22,7 @@ Multiple policies exist today and it is straight forward to add more. These incl
 - `composite`: Sample based on a combination of above samplers, with ordering and rate allocation per sampler. Rate allocation allocates certain percentages of spans per policy order. 
   For example if we have set max_total_spans_per_second as 100 then we can set rate_allocation as follows
   1. test-composite-policy-1 = 50 % of max_total_spans_per_second = 50 spans_per_second
-  2. test-composite-policy-1 = 25 % of max_total_spans_per_second = 25 spans_per_second
+  2. test-composite-policy-2 = 25 % of max_total_spans_per_second = 25 spans_per_second
   3. To ensure remaining capacity is filled use always_sample as one of the policies
 
 The following configuration options can also be modified:

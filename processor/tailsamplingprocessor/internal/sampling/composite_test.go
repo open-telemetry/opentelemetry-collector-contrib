@@ -107,7 +107,7 @@ func TestCompositeEvaluatorThrottling(t *testing.T) {
 	// Create only one subpolicy, with 100% Sampled policy.
 	n1 := NewAlwaysSample(zap.NewNop())
 	timeProvider := &FakeTimeProvider{second: 0}
-	const totalSPS = 100
+	const totalSPS = 10
 	c := NewComposite(zap.NewNop(), totalSPS, []SubPolicyEvalParams{{n1, totalSPS}}, timeProvider)
 
 	trace := createTrace()
@@ -159,10 +159,10 @@ func TestOnLateArrivingSpans_Composite(t *testing.T) {
 	n1 := NewNumericAttributeFilter(zap.NewNop(), "tag", 0, 100)
 	n2 := NewAlwaysSample(zap.NewNop())
 	timeProvider := &FakeTimeProvider{second: 0}
-	const totalSPS = 100
+	const totalSPS = 10
 	c := NewComposite(zap.NewNop(), totalSPS, []SubPolicyEvalParams{{n1, totalSPS / 2}, {n2, totalSPS / 2}}, timeProvider)
 	e := c.OnLateArrivingSpans(Sampled, nil)
-	assert.Nil(t, e)
+	assert.NoError(t, e)
 }
 
 func TestCompositeEvaluator2SubpolicyThrottling(t *testing.T) {
@@ -170,7 +170,7 @@ func TestCompositeEvaluator2SubpolicyThrottling(t *testing.T) {
 	n1 := NewNumericAttributeFilter(zap.NewNop(), "tag", 0, 100)
 	n2 := NewAlwaysSample(zap.NewNop())
 	timeProvider := &FakeTimeProvider{second: 0}
-	const totalSPS = 100
+	const totalSPS = 10
 	c := NewComposite(zap.NewNop(), totalSPS, []SubPolicyEvalParams{{n1, totalSPS / 2}, {n2, totalSPS / 2}}, timeProvider)
 
 	trace := createTrace()
