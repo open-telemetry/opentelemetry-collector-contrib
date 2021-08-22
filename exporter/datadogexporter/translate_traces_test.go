@@ -30,7 +30,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/model/pdata"
-	"go.opentelemetry.io/collector/translator/conventions"
+	conventions "go.opentelemetry.io/collector/translator/conventions/v1.5.0"
 	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace/ext"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/config"
@@ -116,7 +116,7 @@ func NewResourceSpansData(mockTraceID [16]byte, mockSpanID [8]byte, mockParentSp
 		resource.Attributes().InitFromMap(map[string]pdata.AttributeValue{
 			conventions.AttributeContainerID:           pdata.NewAttributeValueString("3249847017410247"),
 			conventions.AttributeDeploymentEnvironment: pdata.NewAttributeValueString("test-env"),
-			conventions.AttributeK8sPod:                pdata.NewAttributeValueString("example-pod-name"),
+			conventions.AttributeK8SPodName:            pdata.NewAttributeValueString("example-pod-name"),
 			conventions.AttributeAWSECSTaskARN:         pdata.NewAttributeValueString("arn:aws:ecs:ap-southwest-1:241423265983:task/test-environment-test-echo-Cluster-2lrqTJKFjACT/746bf64740324812835f688c30cf1512"),
 			"namespace":                                pdata.NewAttributeValueString("kube-system"),
 			"service.name":                             pdata.NewAttributeValueString("test-resource-service-name"),
@@ -461,7 +461,7 @@ func TestTracesTranslationErrorsFromEventsUsesLast(t *testing.T) {
 	events.AppendEmpty().SetName("start")
 
 	event := events.AppendEmpty()
-	event.SetName(conventions.AttributeExceptionEventName)
+	event.SetName(AttributeExceptionEventName)
 	event.Attributes().InitFromMap(map[string]pdata.AttributeValue{
 		conventions.AttributeExceptionType:       pdata.NewAttributeValueString("SomeOtherErr"),
 		conventions.AttributeExceptionStacktrace: pdata.NewAttributeValueString("SomeOtherErr at line 67\nthing at line 45"),
@@ -469,7 +469,7 @@ func TestTracesTranslationErrorsFromEventsUsesLast(t *testing.T) {
 	})
 
 	event = events.AppendEmpty()
-	event.SetName(conventions.AttributeExceptionEventName)
+	event.SetName(AttributeExceptionEventName)
 	event.Attributes().InitFromMap(attribs)
 
 	event = events.AppendEmpty()
@@ -524,7 +524,7 @@ func TestTracesTranslationErrorsFromEventsBounds(t *testing.T) {
 	}
 
 	evt := events.AppendEmpty()
-	evt.SetName(conventions.AttributeExceptionEventName)
+	evt.SetName(AttributeExceptionEventName)
 	evt.Attributes().InitFromMap(attribs)
 
 	evt = events.AppendEmpty()
@@ -564,7 +564,7 @@ func TestTracesTranslationErrorsFromEventsBounds(t *testing.T) {
 		"flag": pdata.NewAttributeValueBool(false),
 	})
 
-	events.At(2).SetName(conventions.AttributeExceptionEventName)
+	events.At(2).SetName(AttributeExceptionEventName)
 	events.At(2).Attributes().InitFromMap(attribs)
 
 	// Ensure the error type is copied over

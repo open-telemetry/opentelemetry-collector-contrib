@@ -44,7 +44,7 @@ func SerializeNumberDataPoints(name string, data pdata.NumberDataPointSlice, tag
 		case pdata.MetricValueTypeInt:
 			val = strconv.FormatInt(p.IntVal(), 10)
 		}
-		output = append(output, serializeLine(name, serializeTags(p.LabelsMap(), tags), val, p.Timestamp()))
+		output = append(output, serializeLine(name, serializeTags(p.Attributes(), tags), val, p.Timestamp()))
 	}
 
 	return output
@@ -58,7 +58,7 @@ func SerializeHistogramMetrics(name string, data pdata.HistogramDataPointSlice, 
 	output := []string{}
 	for i := 0; i < data.Len(); i++ {
 		p := data.At(i)
-		tagline := serializeTags(p.LabelsMap(), tags)
+		tagline := serializeTags(p.Attributes(), tags)
 		if p.Count() == 0 {
 			return []string{}
 		}
@@ -87,14 +87,14 @@ func serializeLine(name, tagline, valueline string, timestamp pdata.Timestamp) s
 	return output
 }
 
-func serializeTags(labels pdata.StringMap, exporterTags []string) string {
+func serializeTags(labels pdata.AttributeMap, exporterTags []string) string {
 	tags := append([]string{}, exporterTags...)
-	labels.Range(func(k string, v string) bool {
+	labels.Range(func(k string, v pdata.AttributeValue) bool {
 		key, err := NormalizeString(strings.ToLower(k), maxDimKeyLen)
 		if err != nil {
 			return true
 		}
-		value := escapeDimension(v)
+		value := escapeDimension(pdata.AttributeValueToString(v))
 		tag := key + "=" + value
 		tags = append(tags, tag)
 		return true

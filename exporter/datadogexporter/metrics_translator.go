@@ -21,6 +21,7 @@ import (
 	"strings"
 	"time"
 
+	gocache "github.com/patrickmn/go-cache"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/model/pdata"
 	"go.uber.org/zap"
@@ -30,18 +31,54 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/attributes"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metrics"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/ttlmap"
 )
 
-// getTags maps a stringMap into a slice of Datadog tags
-func getTags(labels pdata.StringMap) []string {
-	tags := make([]string, 0, labels.Len())
-	labels.Range(func(key string, value string) bool {
-		if value == "" {
-			// Tags can't end with ":" so we replace empty values with "n/a"
-			value = "n/a"
+type ttlCache struct {
+	cache *gocache.Cache
+}
+
+// numberCounter keeps the value of a number
+// monotonic counter at a given point in time
+type numberCounter struct {
+	ts    uint64
+	value float64
+}
+
+func newTTLCache(sweepInterval int64, deltaTTL int64) *ttlCache {
+	cache := gocache.New(time.Duration(deltaTTL)*time.Second, time.Duration(sweepInterval)*time.Second)
+	return &ttlCache{cache}
+}
+
+// putAndGetDiff submits a new value for a given key and returns the difference with the
+// last submitted value (ordered by timestamp). The diff value is only valid if `ok` is true.
+func (t *ttlCache) putAndGetDiff(key string, ts uint64, val float64) (dx float64, ok bool) {
+	if c, found := t.cache.Get(key); found {
+		cnt := c.(numberCounter)
+		if cnt.ts > ts {
+			// We were given a point older than the one in memory so we drop it
+			// We keep the existing point in memory since it is the most recent
+			return 0, false
 		}
-		tags = append(tags, fmt.Sprintf("%s:%s", key, value))
+		// if dx < 0, we assume there was a reset, thus we save the point
+		// but don't export it (it's the first one so we can't do a delta)
+		dx = val - cnt.value
+		ok = dx >= 0
+	}
+
+	t.cache.Set(key, numberCounter{ts, val}, gocache.DefaultExpiration)
+	return
+}
+
+// getTags maps an attributeMap into a slice of Datadog tags
+func getTags(labels pdata.AttributeMap) []string {
+	tags := make([]string, 0, labels.Len())
+	labels.Range(func(key string, value pdata.AttributeValue) bool {
+		v := pdata.AttributeValueToString(value)
+		if v == "" {
+			// Tags can't end with ":" so we replace empty values with "n/a"
+			v = "n/a"
+		}
+		tags = append(tags, fmt.Sprintf("%s:%s", key, v))
 		return true
 	})
 	return tags
@@ -67,11 +104,11 @@ func metricDimensionsToMapKey(name string, tags []string) string {
 }
 
 // mapNumberMetrics maps double datapoints into Datadog metrics
-func mapNumberMetrics(name string, slice pdata.NumberDataPointSlice, attrTags []string) []datadog.Metric {
+func mapNumberMetrics(name string, dt metrics.MetricDataType, slice pdata.NumberDataPointSlice, attrTags []string) []datadog.Metric {
 	ms := make([]datadog.Metric, 0, slice.Len())
 	for i := 0; i < slice.Len(); i++ {
 		p := slice.At(i)
-		tags := getTags(p.LabelsMap())
+		tags := getTags(p.Attributes())
 		tags = append(tags, attrTags...)
 		var val float64
 		switch p.Type() {
@@ -81,26 +118,19 @@ func mapNumberMetrics(name string, slice pdata.NumberDataPointSlice, attrTags []
 			val = float64(p.IntVal())
 		}
 		ms = append(ms,
-			metrics.NewGauge(name, uint64(p.Timestamp()), val, tags),
+			metrics.NewMetric(name, dt, uint64(p.Timestamp()), val, tags),
 		)
 	}
 	return ms
 }
 
-// numberCounter keeps the value of a number
-// monotonic counter at a given point in time
-type numberCounter struct {
-	ts    uint64
-	value float64
-}
-
 // mapNumberMonotonicMetrics maps monotonic datapoints into Datadog metrics
-func mapNumberMonotonicMetrics(name string, prevPts *ttlmap.TTLMap, slice pdata.NumberDataPointSlice, attrTags []string) []datadog.Metric {
+func mapNumberMonotonicMetrics(name string, prevPts *ttlCache, slice pdata.NumberDataPointSlice, attrTags []string) []datadog.Metric {
 	ms := make([]datadog.Metric, 0, slice.Len())
 	for i := 0; i < slice.Len(); i++ {
 		p := slice.At(i)
 		ts := uint64(p.Timestamp())
-		tags := getTags(p.LabelsMap())
+		tags := getTags(p.Attributes())
 		tags = append(tags, attrTags...)
 		key := metricDimensionsToMapKey(name, tags)
 
@@ -112,27 +142,9 @@ func mapNumberMonotonicMetrics(name string, prevPts *ttlmap.TTLMap, slice pdata.
 			val = float64(p.IntVal())
 		}
 
-		if c := prevPts.Get(key); c != nil {
-			cnt := c.(numberCounter)
-
-			if cnt.ts > ts {
-				// We were given a point older than the one in memory so we drop it
-				// We keep the existing point in memory since it is the most recent
-				continue
-			}
-
-			// We calculate the time-normalized delta
-			dx := val - cnt.value
-
-			// if dx < 0, we assume there was a reset, thus we save the point
-			// but don't export it (it's the first one so we can't do a delta)
-			if dx >= 0 {
-				ms = append(ms, metrics.NewCount(name, ts, dx, tags))
-			}
-
+		if dx, ok := prevPts.putAndGetDiff(key, ts, val); ok {
+			ms = append(ms, metrics.NewCount(name, ts, dx, tags))
 		}
-
-		prevPts.Put(key, numberCounter{ts, val})
 	}
 	return ms
 }
@@ -156,7 +168,7 @@ func mapHistogramMetrics(name string, slice pdata.HistogramDataPointSlice, bucke
 	for i := 0; i < slice.Len(); i++ {
 		p := slice.At(i)
 		ts := uint64(p.Timestamp())
-		tags := getTags(p.LabelsMap())
+		tags := getTags(p.Attributes())
 		tags = append(tags, attrTags...)
 
 		ms = append(ms,
@@ -196,19 +208,31 @@ func getQuantileTag(quantile float64) string {
 }
 
 // mapSummaryMetrics maps summary datapoints into Datadog metrics
-func mapSummaryMetrics(name string, slice pdata.SummaryDataPointSlice, quantiles bool, attrTags []string) []datadog.Metric {
+func mapSummaryMetrics(name string, prevPts *ttlCache, slice pdata.SummaryDataPointSlice, quantiles bool, attrTags []string) []datadog.Metric {
 	// Allocate assuming none are nil and no quantiles
 	ms := make([]datadog.Metric, 0, 2*slice.Len())
 	for i := 0; i < slice.Len(); i++ {
 		p := slice.At(i)
 		ts := uint64(p.Timestamp())
-		tags := getTags(p.LabelsMap())
+		tags := getTags(p.Attributes())
 		tags = append(tags, attrTags...)
 
-		ms = append(ms,
-			metrics.NewGauge(fmt.Sprintf("%s.count", name), ts, float64(p.Count()), tags),
-			metrics.NewGauge(fmt.Sprintf("%s.sum", name), ts, p.Sum(), tags),
-		)
+		// count and sum are increasing; we treat them as cumulative monotonic sums.
+		{
+			countName := fmt.Sprintf("%s.count", name)
+			countKey := metricDimensionsToMapKey(countName, tags)
+			if dx, ok := prevPts.putAndGetDiff(countKey, ts, float64(p.Count())); ok {
+				ms = append(ms, metrics.NewCount(countName, ts, dx, tags))
+			}
+		}
+
+		{
+			sumName := fmt.Sprintf("%s.sum", name)
+			sumKey := metricDimensionsToMapKey(sumName, tags)
+			if dx, ok := prevPts.putAndGetDiff(sumKey, ts, p.Sum()); ok {
+				ms = append(ms, metrics.NewCount(sumName, ts, dx, tags))
+			}
+		}
 
 		if quantiles {
 			fullName := fmt.Sprintf("%s.quantile", name)
@@ -226,7 +250,7 @@ func mapSummaryMetrics(name string, slice pdata.SummaryDataPointSlice, quantiles
 }
 
 // mapMetrics maps OTLP metrics into the DataDog format
-func mapMetrics(logger *zap.Logger, cfg config.MetricsConfig, prevPts *ttlmap.TTLMap, fallbackHost string, md pdata.Metrics, buildInfo component.BuildInfo) (series []datadog.Metric, droppedTimeSeries int) {
+func mapMetrics(logger *zap.Logger, cfg config.MetricsConfig, prevPts *ttlCache, fallbackHost string, md pdata.Metrics, buildInfo component.BuildInfo) (series []datadog.Metric, droppedTimeSeries int) {
 	pushTime := uint64(time.Now().UTC().UnixNano())
 	rms := md.ResourceMetrics()
 	seenHosts := make(map[string]struct{})
@@ -256,17 +280,28 @@ func mapMetrics(logger *zap.Logger, cfg config.MetricsConfig, prevPts *ttlmap.TT
 				var datapoints []datadog.Metric
 				switch md.DataType() {
 				case pdata.MetricDataTypeGauge:
-					datapoints = mapNumberMetrics(md.Name(), md.Gauge().DataPoints(), attributeTags)
+					datapoints = mapNumberMetrics(md.Name(), metrics.Gauge, md.Gauge().DataPoints(), attributeTags)
 				case pdata.MetricDataTypeSum:
-					if cfg.SendMonotonic && isCumulativeMonotonic(md) {
-						datapoints = mapNumberMonotonicMetrics(md.Name(), prevPts, md.Sum().DataPoints(), attributeTags)
-					} else {
-						datapoints = mapNumberMetrics(md.Name(), md.Sum().DataPoints(), attributeTags)
+					switch md.Sum().AggregationTemporality() {
+					case pdata.AggregationTemporalityCumulative:
+						if cfg.SendMonotonic && isCumulativeMonotonic(md) {
+							datapoints = mapNumberMonotonicMetrics(md.Name(), prevPts, md.Sum().DataPoints(), attributeTags)
+						} else {
+							datapoints = mapNumberMetrics(md.Name(), metrics.Gauge, md.Sum().DataPoints(), attributeTags)
+						}
+					case pdata.AggregationTemporalityDelta:
+						datapoints = mapNumberMetrics(md.Name(), metrics.Count, md.Sum().DataPoints(), attributeTags)
+					default: // pdata.AggregationTemporalityUnspecified or any other not supported type
+						logger.Debug("Unknown or unsupported aggregation temporality",
+							zap.String("metric name", md.Name()),
+							zap.Any("aggregation temporality", md.Sum().AggregationTemporality()),
+						)
+						continue
 					}
 				case pdata.MetricDataTypeHistogram:
 					datapoints = mapHistogramMetrics(md.Name(), md.Histogram().DataPoints(), cfg.Buckets, attributeTags)
 				case pdata.MetricDataTypeSummary:
-					datapoints = mapSummaryMetrics(md.Name(), md.Summary().DataPoints(), cfg.Quantiles, attributeTags)
+					datapoints = mapSummaryMetrics(md.Name(), prevPts, md.Summary().DataPoints(), cfg.Quantiles, attributeTags)
 				default: // pdata.MetricDataTypeNone or any other not supported type
 					logger.Debug("Unknown or unsupported metric type", zap.String("metric name", md.Name()), zap.Any("data type", md.DataType()))
 					continue

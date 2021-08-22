@@ -37,8 +37,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/testutil"
-	"go.opentelemetry.io/collector/translator/conventions"
-	tracetranslator "go.opentelemetry.io/collector/translator/trace"
+	conventions "go.opentelemetry.io/collector/translator/conventions/v1.5.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 )
@@ -106,8 +105,8 @@ func grpcFixture(t1 time.Time) *model.Batch {
 				StartTime:     t1,
 				Duration:      10 * time.Minute,
 				Tags: []model.KeyValue{
-					model.String(tracetranslator.TagStatusMsg, "Stale indices"),
-					model.Int64(tracetranslator.TagStatusCode, trace.StatusCodeNotFound),
+					model.String(conventions.OtelStatusDescription, "Stale indices"),
+					model.Int64(conventions.OtelStatusCode, trace.StatusCodeNotFound),
 					model.Bool("error", true),
 				},
 				References: []model.SpanRef{
@@ -125,8 +124,8 @@ func grpcFixture(t1 time.Time) *model.Batch {
 				StartTime:     t1.Add(10 * time.Minute),
 				Duration:      2 * time.Second,
 				Tags: []model.KeyValue{
-					model.String(tracetranslator.TagStatusMsg, "Frontend crash"),
-					model.Int64(tracetranslator.TagStatusCode, trace.StatusCodeInternal),
+					model.String(conventions.OtelStatusDescription, "Frontend crash"),
+					model.Int64(conventions.OtelStatusCode, trace.StatusCodeInternal),
 					model.Bool("error", true),
 				},
 			},

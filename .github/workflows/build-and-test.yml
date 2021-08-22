@@ -74,9 +74,7 @@ jobs:
           key: v1-tools-${{ runner.os }}-${{ hashFiles('./internal/tools/go.mod') }}
       - name: Install dependencies
         if: steps.module-cache.outputs.hit != 'true'
-        run: |
-          make gomoddownload
-          make gotestinstall
+        run: make gomoddownload
       - name: Install Tools
         if: steps.tool-cache.outputs.cache-hit != 'true'
         run: make install-tools
@@ -121,7 +119,7 @@ jobs:
       - name: Lint
         run: make -j4 golint
       - name: Checks 
-        run: make -j4 checklicense misspell checkdoc impi
+        run: make -j4 checklicense misspell checkdoc
       - name: Codegem
         run: |
           make generate

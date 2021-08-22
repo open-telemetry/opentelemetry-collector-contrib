@@ -19,7 +19,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/model/pdata"
-	"go.opentelemetry.io/collector/translator/conventions"
+	conventions "go.opentelemetry.io/collector/translator/conventions/v1.5.0"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
@@ -107,9 +107,9 @@ func (kp *kubernetesprocessor) processResource(ctx context.Context, resource pda
 		resource.Attributes().InsertString(podIdentifierKey, string(podIdentifierValue))
 	}
 
-	namespace := stringAttributeFromMap(resource.Attributes(), conventions.AttributeK8sNamespace)
+	namespace := stringAttributeFromMap(resource.Attributes(), conventions.AttributeK8SNamespaceName)
 	if namespace != "" {
-		resource.Attributes().InsertString(conventions.AttributeK8sNamespace, namespace)
+		resource.Attributes().InsertString(conventions.AttributeK8SNamespaceName, namespace)
 	}
 
 	if kp.passthroughMode {

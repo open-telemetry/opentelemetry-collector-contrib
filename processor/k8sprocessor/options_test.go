@@ -21,7 +21,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/translator/conventions"
+	conventions "go.opentelemetry.io/collector/translator/conventions/v1.5.0"
 	"k8s.io/apimachinery/pkg/selection"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
@@ -255,7 +255,7 @@ func TestWithExtractMetadata(t *testing.T) {
 	assert.Equal(t, err.Error(), `"randomfield" is not a supported metadata field`)
 
 	p = &kubernetesprocessor{}
-	assert.NoError(t, WithExtractMetadata(conventions.AttributeK8sNamespace, conventions.AttributeK8sPod, conventions.AttributeK8sPodUID)(p))
+	assert.NoError(t, WithExtractMetadata(conventions.AttributeK8SNamespaceName, conventions.AttributeK8SPodName, conventions.AttributeK8SPodUID)(p))
 	assert.True(t, p.rules.Namespace)
 	assert.False(t, p.rules.Cluster)
 	assert.True(t, p.rules.PodName)

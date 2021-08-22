@@ -263,7 +263,7 @@ func TestIntDataPointSliceAt(t *testing.T) {
 	setupDataPointCache()
 
 	instrLibName := "cloudwatch-otel"
-	labels := map[string]string{"label": "value"}
+	labels := map[string]pdata.AttributeValue{"label": pdata.NewAttributeValueString("value")}
 
 	testDeltaCases := []struct {
 		testName        string
@@ -296,7 +296,7 @@ func TestIntDataPointSliceAt(t *testing.T) {
 			testDPS := pdata.NewNumberDataPointSlice()
 			testDP := testDPS.AppendEmpty()
 			testDP.SetIntVal(tc.value.(int64))
-			testDP.LabelsMap().InitFromMap(labels)
+			testDP.Attributes().InitFromMap(labels)
 
 			dps := numberDataPointSlice{
 				instrLibName,
@@ -334,7 +334,7 @@ func TestDoubleDataPointSliceAt(t *testing.T) {
 	setupDataPointCache()
 
 	instrLibName := "cloudwatch-otel"
-	labels := map[string]string{"label1": "value1"}
+	labels := map[string]pdata.AttributeValue{"label1": pdata.NewAttributeValueString("value1")}
 
 	testDeltaCases := []struct {
 		testName        string
@@ -366,8 +366,8 @@ func TestDoubleDataPointSliceAt(t *testing.T) {
 		t.Run(tc.testName, func(t *testing.T) {
 			testDPS := pdata.NewNumberDataPointSlice()
 			testDP := testDPS.AppendEmpty()
-			testDP.SetValue(tc.value.(float64))
-			testDP.LabelsMap().InitFromMap(labels)
+			testDP.SetDoubleVal(tc.value.(float64))
+			testDP.Attributes().InitFromMap(labels)
 
 			dps := numberDataPointSlice{
 				instrLibName,
@@ -394,7 +394,7 @@ func TestDoubleDataPointSliceAt(t *testing.T) {
 
 func TestHistogramDataPointSliceAt(t *testing.T) {
 	instrLibName := "cloudwatch-otel"
-	labels := map[string]string{"label1": "value1"}
+	labels := map[string]pdata.AttributeValue{"label1": pdata.NewAttributeValueString("value1")}
 
 	testDPS := pdata.NewHistogramDataPointSlice()
 	testDP := testDPS.AppendEmpty()
@@ -402,7 +402,7 @@ func TestHistogramDataPointSliceAt(t *testing.T) {
 	testDP.SetSum(17.13)
 	testDP.SetBucketCounts([]uint64{1, 2, 3})
 	testDP.SetExplicitBounds([]float64{1, 2, 3})
-	testDP.LabelsMap().InitFromMap(labels)
+	testDP.Attributes().InitFromMap(labels)
 
 	dps := histogramDataPointSlice{
 		instrLibName,
@@ -429,7 +429,7 @@ func TestSummaryDataPointSliceAt(t *testing.T) {
 	setupDataPointCache()
 
 	instrLibName := "cloudwatch-otel"
-	labels := map[string]string{"label1": "value1"}
+	labels := map[string]pdata.AttributeValue{"label1": pdata.NewAttributeValueString("value1")}
 	metadataTimeStamp := time.Now().UnixNano() / int64(time.Millisecond)
 
 	testCases := []struct {
@@ -468,7 +468,7 @@ func TestSummaryDataPointSliceAt(t *testing.T) {
 			testQuantileValue = testDP.QuantileValues().AppendEmpty()
 			testQuantileValue.SetQuantile(100)
 			testQuantileValue.SetValue(float64(5))
-			testDP.LabelsMap().InitFromMap(labels)
+			testDP.Attributes().InitFromMap(labels)
 
 			dps := summaryDataPointSlice{
 				instrLibName,
@@ -518,7 +518,11 @@ func TestCreateLabels(t *testing.T) {
 		"b": "B",
 		"c": "C",
 	}
-	labelsMap := pdata.NewStringMap().InitFromMap(expectedLabels)
+	labelsMap := pdata.NewAttributeMap().InitFromMap(map[string]pdata.AttributeValue{
+		"a": pdata.NewAttributeValueString("A"),
+		"b": pdata.NewAttributeValueString("B"),
+		"c": pdata.NewAttributeValueString("C"),
+	})
 
 	labels := createLabels(labelsMap, noInstrumentationLibraryName)
 	assert.Equal(t, expectedLabels, labels)
@@ -642,7 +646,7 @@ func TestGetDataPoints(t *testing.T) {
 
 		logger := zap.NewNop()
 
-		expectedLabels := pdata.NewStringMap().InitFromMap(map[string]string{"label1": "value1"})
+		expectedAttributes := pdata.NewAttributeMap().InitFromMap(map[string]pdata.AttributeValue{"label1": pdata.NewAttributeValueString("value1")})
 
 		t.Run(tc.testName, func(t *testing.T) {
 			setupDataPointCache()
@@ -668,7 +672,7 @@ func TestGetDataPoints(t *testing.T) {
 				case pdata.MetricValueTypeInt:
 					assert.Equal(t, int64(1), dp.IntVal())
 				}
-				assert.Equal(t, expectedLabels, dp.LabelsMap())
+				assert.Equal(t, expectedAttributes, dp.Attributes())
 			case histogramDataPointSlice:
 				assert.Equal(t, metadata.instrumentationLibraryName, convertedDPS.instrumentationLibraryName)
 				assert.Equal(t, 1, convertedDPS.Len())
@@ -676,7 +680,7 @@ func TestGetDataPoints(t *testing.T) {
 				assert.Equal(t, 35.0, dp.Sum())
 				assert.Equal(t, uint64(18), dp.Count())
 				assert.Equal(t, []float64{0, 10}, dp.ExplicitBounds())
-				assert.Equal(t, expectedLabels, dp.LabelsMap())
+				assert.Equal(t, expectedAttributes, dp.Attributes())
 			case summaryDataPointSlice:
 				expectedDPS := tc.expectedDataPoints.(summaryDataPointSlice)
 				assert.Equal(t, metadata.instrumentationLibraryName, convertedDPS.instrumentationLibraryName)

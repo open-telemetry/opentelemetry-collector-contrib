@@ -285,6 +285,130 @@ func TestValue_FromAttribute(t *testing.T) {
 	}
 }
 
+func TestDocument_Serialize_Flat(t *testing.T) {
+	tests := map[string]struct {
+		doc  Document
+		want string
+	}{
+		"no nesting with multiple fields": {
+			doc: DocumentFromAttributes(pdata.NewAttributeMap().InitFromMap(map[string]pdata.AttributeValue{
+				"a": pdata.NewAttributeValueString("test"),
+				"b": pdata.NewAttributeValueInt(1),
+			})),
+			want: `{"a":"test","b":1}`,
+		},
+		"shared prefix": {
+			doc: DocumentFromAttributes(pdata.NewAttributeMap().InitFromMap(map[string]pdata.AttributeValue{
+				"a.str": pdata.NewAttributeValueString("test"),
+				"a.i":   pdata.NewAttributeValueInt(1),
+			})),
+			want: `{"a.i":1,"a.str":"test"}`,
+		},
+		"multiple namespaces with dot": {
+			doc: DocumentFromAttributes(pdata.NewAttributeMap().InitFromMap(map[string]pdata.AttributeValue{
+				"a.str": pdata.NewAttributeValueString("test"),
+				"b.i":   pdata.NewAttributeValueInt(1),
+			})),
+			want: `{"a.str":"test","b.i":1}`,
+		},
+		"nested maps": {
+			doc: DocumentFromAttributes(pdata.NewAttributeMap().InitFromMap(map[string]pdata.AttributeValue{
+				"a": func() pdata.AttributeValue {
+					m := pdata.NewAttributeValueMap()
+					m.MapVal().InsertString("str", "test")
+					m.MapVal().InsertInt("i", 1)
+					return m
+				}(),
+			})),
+			want: `{"a.i":1,"a.str":"test"}`,
+		},
+		"multi-level nested namespace maps": {
+			doc: DocumentFromAttributes(pdata.NewAttributeMap().InitFromMap(map[string]pdata.AttributeValue{
+				"a": func() pdata.AttributeValue {
+					m := pdata.NewAttributeValueMap()
+					m.MapVal().InsertString("b.str", "test")
+					m.MapVal().InsertInt("i", 1)
+					return m
+				}(),
+			})),
+			want: `{"a.b.str":"test","a.i":1}`,
+		},
+	}
+
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			var buf strings.Builder
+			test.doc.Dedup()
+			err := test.doc.Serialize(&buf, false)
+			require.NoError(t, err)
+
+			assert.Equal(t, test.want, buf.String())
+		})
+	}
+}
+
+func TestDocument_Serialize_Dedot(t *testing.T) {
+	tests := map[string]struct {
+		doc  Document
+		want string
+	}{
+		"no nesting with multiple fields": {
+			doc: DocumentFromAttributes(pdata.NewAttributeMap().InitFromMap(map[string]pdata.AttributeValue{
+				"a": pdata.NewAttributeValueString("test"),
+				"b": pdata.NewAttributeValueInt(1),
+			})),
+			want: `{"a":"test","b":1}`,
+		},
+		"shared prefix": {
+			doc: DocumentFromAttributes(pdata.NewAttributeMap().InitFromMap(map[string]pdata.AttributeValue{
+				"a.str": pdata.NewAttributeValueString("test"),
+				"a.i":   pdata.NewAttributeValueInt(1),
+			})),
+			want: `{"a":{"i":1,"str":"test"}}`,
+		},
+		"multiple namespaces": {
+			doc: DocumentFromAttributes(pdata.NewAttributeMap().InitFromMap(map[string]pdata.AttributeValue{
+				"a.str": pdata.NewAttributeValueString("test"),
+				"b.i":   pdata.NewAttributeValueInt(1),
+			})),
+			want: `{"a":{"str":"test"},"b":{"i":1}}`,
+		},
+		"nested maps": {
+			doc: DocumentFromAttributes(pdata.NewAttributeMap().InitFromMap(map[string]pdata.AttributeValue{
+				"a": func() pdata.AttributeValue {
+					m := pdata.NewAttributeValueMap()
+					m.MapVal().InsertString("str", "test")
+					m.MapVal().InsertInt("i", 1)
+					return m
+				}(),
+			})),
+			want: `{"a":{"i":1,"str":"test"}}`,
+		},
+		"multi-level nested namespace maps": {
+			doc: DocumentFromAttributes(pdata.NewAttributeMap().InitFromMap(map[string]pdata.AttributeValue{
+				"a": func() pdata.AttributeValue {
+					m := pdata.NewAttributeValueMap()
+					m.MapVal().InsertString("b.c.str", "test")
+					m.MapVal().InsertInt("i", 1)
+					return m
+				}(),
+			})),
+			want: `{"a":{"b":{"c":{"str":"test"}},"i":1}}`,
+		},
+	}
+
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			var buf strings.Builder
+			test.doc.Dedup()
+			err := test.doc.Serialize(&buf, true)
+			require.NoError(t, err)
+
+			assert.Equal(t, test.want, buf.String())
+		})
+	}
+}
+
 func TestValue_Serialize(t *testing.T) {
 	tests := map[string]struct {
 		value Value

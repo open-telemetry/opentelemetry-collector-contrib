@@ -21,13 +21,12 @@ import (
 	"testing"
 	"time"
 
-	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"github.com/newrelic/newrelic-telemetry-sdk-go/telemetry"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/model/pdata"
-	"go.opentelemetry.io/collector/translator/internaldata"
 	"go.uber.org/zap"
 )
 
@@ -273,16 +272,12 @@ func TestTransformSpan(t *testing.T) {
 		{
 			name: "error code",
 			spanFunc: func() pdata.Span {
-				// There is no setter method for a Status so convert instead.
-				return internaldata.OCToTraces(
-					nil, nil, []*tracepb.Span{
-						{
-							TraceId: []byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
-							SpanId:  []byte{0, 0, 0, 0, 0, 0, 0, 3},
-							Name:    &tracepb.TruncatableString{Value: "error code"},
-							Status:  &tracepb.Status{Code: 1},
-						},
-					}).ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().At(0)
+				s := pdata.NewSpan()
+				s.SetName("error code")
+				s.SetTraceID(pdata.NewTraceID([16]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}))
+				s.SetSpanID(pdata.NewSpanID([8]byte{0, 0, 0, 0, 0, 0, 0, 3}))
+				s.Status().SetCode(pdata.StatusCodeError)
+				return s
 			},
 			want: telemetry.Span{
 				ID:        "0000000000000003",
@@ -298,16 +293,13 @@ func TestTransformSpan(t *testing.T) {
 		{
 			name: "error message",
 			spanFunc: func() pdata.Span {
-				// There is no setter method for a Status so convert instead.
-				return internaldata.OCToTraces(
-					nil, nil, []*tracepb.Span{
-						{
-							TraceId: []byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
-							SpanId:  []byte{0, 0, 0, 0, 0, 0, 0, 3},
-							Name:    &tracepb.TruncatableString{Value: "error message"},
-							Status:  &tracepb.Status{Code: 1, Message: "error message"},
-						},
-					}).ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().At(0)
+				s := pdata.NewSpan()
+				s.SetName("error message")
+				s.SetTraceID(pdata.NewTraceID([16]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}))
+				s.SetSpanID(pdata.NewSpanID([8]byte{0, 0, 0, 0, 0, 0, 0, 3}))
+				s.Status().SetCode(pdata.StatusCodeError)
+				s.Status().SetMessage("error message")
+				return s
 			},
 			want: telemetry.Span{
 				ID:        "0000000000000003",
@@ -324,40 +316,15 @@ func TestTransformSpan(t *testing.T) {
 		{
 			name: "attributes",
 			spanFunc: func() pdata.Span {
-				// There is no setter method for attributes so convert instead.
-				return internaldata.OCToTraces(
-					nil, nil, []*tracepb.Span{
-						{
-							TraceId: []byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
-							SpanId:  []byte{0, 0, 0, 0, 0, 0, 0, 4},
-							Name:    &tracepb.TruncatableString{Value: "attrs"},
-							Status:  &tracepb.Status{},
-							Attributes: &tracepb.Span_Attributes{
-								AttributeMap: map[string]*tracepb.AttributeValue{
-									"prod": {
-										Value: &tracepb.AttributeValue_BoolValue{
-											BoolValue: true,
-										},
-									},
-									"weight": {
-										Value: &tracepb.AttributeValue_IntValue{
-											IntValue: 10,
-										},
-									},
-									"score": {
-										Value: &tracepb.AttributeValue_DoubleValue{
-											DoubleValue: 99.8,
-										},
-									},
-									"user": {
-										Value: &tracepb.AttributeValue_StringValue{
-											StringValue: &tracepb.TruncatableString{Value: "alice"},
-										},
-									},
-								},
-							},
-						},
-					}).ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().At(0)
+				s := pdata.NewSpan()
+				s.SetName("attrs")
+				s.SetTraceID(pdata.NewTraceID([16]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}))
+				s.SetSpanID(pdata.NewSpanID([8]byte{0, 0, 0, 0, 0, 0, 0, 4}))
+				s.Attributes().UpsertBool("prod", true)
+				s.Attributes().UpsertInt("weight", 10)
+				s.Attributes().UpsertDouble("score", 99.8)
+				s.Attributes().UpsertString("user", "alice")
+				return s
 			},
 			want: telemetry.Span{
 				ID:        "0000000000000004",
@@ -628,6 +595,7 @@ func TestTransformSum(t *testing.T) {
 				"unit":        "1",
 				"description": "description",
 			},
+			ForceIntervalValid: true,
 		},
 	}
 	expectedGauge := []telemetry.Metric{
@@ -766,7 +734,7 @@ func testTransformDeltaSummaryWithValues(t *testing.T, testName string, count ui
 	dp.SetTimestamp(end)
 	dp.SetSum(sum)
 	dp.SetCount(count)
-	dp.LabelsMap().Insert("foo", "bar")
+	dp.Attributes().InsertString("foo", "bar")
 	q := dp.QuantileValues()
 	if !math.IsNaN(min) {
 		minQuantile := q.AppendEmpty()
@@ -801,7 +769,9 @@ func TestUnsupportedMetricTypes(t *testing.T) {
 		dp.SetBucketCounts([]uint64{1, 1, 0, 0})
 		h.SetAggregationTemporality(pdata.AggregationTemporalityDelta)
 
-		t.Run("DoubleHistogram", func(t *testing.T) { testTransformMetricWithError(t, m, &errUnsupportedMetricType{}) })
+		t.Run("DoubleHistogram", func(t *testing.T) {
+			testTransformMetricWithError(t, m, consumererror.Permanent(&errUnsupportedMetricType{}))
+		})
 	}
 }
 

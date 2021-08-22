@@ -29,7 +29,7 @@ exporter/honeycombexporter/                          @open-telemetry/collector-c
 exporter/humioexporter/                              @open-telemetry/collector-contrib-approvers @xitric
 exporter/awskinesisexporter/                         @open-telemetry/collector-contrib-approvers @owais @anuraaga
 exporter/loadbalancingexporter/                      @open-telemetry/collector-contrib-approvers @jpkrohling
-exporter/logzioexporter/                             @open-telemetry/collector-contrib-approvers @yyyogev @jkowall @albertteoh
+exporter/logzioexporter/                             @open-telemetry/collector-contrib-approvers @jkowall @Doron-Bargo @yotamloe
 exporter/lokiexporter/                               @open-telemetry/collector-contrib-approvers @gramidt
 exporter/newrelicexporter/                           @open-telemetry/collector-contrib-approvers @alanwest @a-feld @jack-berg @nrcventura
 exporter/sapmexporter/                               @open-telemetry/collector-contrib-approvers @owais @dmitryax
@@ -44,6 +44,7 @@ exporter/googlecloudpubsubexporter/                  @open-telemetry/collector-c
 exporter/tanzuobservabilityexporter/                 @open-telemetry/collector-contrib-approvers @oppegard @thepeterstone
 exporter/influxdbexporter/                           @open-telemetry/collector-contrib-approvers @jacobmarble @8none1
 
+extension/awsxrayproxy/                              @open-telemetry/collector-contrib-approvers @anuraaga @Aneurysm9 @mxiamxia
 extension/httpforwarder/                             @open-telemetry/collector-contrib-approvers @asuresh4
 extension/observer/                                  @open-telemetry/collector-contrib-approvers @asuresh4 @jrcamp
 

@@ -16,8 +16,7 @@ package splunkhecexporter
 
 import (
 	"go.opentelemetry.io/collector/model/pdata"
-	"go.opentelemetry.io/collector/translator/conventions"
-	tracetranslator "go.opentelemetry.io/collector/translator/trace"
+	conventions "go.opentelemetry.io/collector/translator/conventions/v1.5.0"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
@@ -75,17 +74,17 @@ func traceDataToSplunk(logger *zap.Logger, data pdata.Traces, config *Config) ([
 		if conventionHost, isSet := attributes.Get(conventions.AttributeHostName); isSet {
 			host = conventionHost.StringVal()
 		}
-		if sourceSet, isSet := attributes.Get(conventions.AttributeServiceName); isSet {
+		if sourceSet, isSet := attributes.Get(splunk.DefaultSourceLabel); isSet {
 			source = sourceSet.StringVal()
 		}
-		if sourcetypeSet, isSet := attributes.Get(splunk.SourcetypeLabel); isSet {
+		if sourcetypeSet, isSet := attributes.Get(splunk.DefaultSourceTypeLabel); isSet {
 			sourceType = sourcetypeSet.StringVal()
 		}
-		if indexSet, isSet := attributes.Get(splunk.IndexLabel); isSet {
+		if indexSet, isSet := attributes.Get(splunk.DefaultIndexLabel); isSet {
 			index = indexSet.StringVal()
 		}
 		attributes.Range(func(k string, v pdata.AttributeValue) bool {
-			commonFields[k] = tracetranslator.AttributeValueToString(v)
+			commonFields[k] = pdata.AttributeValueToString(v)
 			return true
 		})
 		ilss := rs.InstrumentationLibrarySpans()

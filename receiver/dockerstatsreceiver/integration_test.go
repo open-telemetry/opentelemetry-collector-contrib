@@ -27,7 +27,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.opentelemetry.io/collector/translator/conventions"
+	conventions "go.opentelemetry.io/collector/translator/conventions/v1.5.0"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
 
@@ -157,7 +157,7 @@ func TestExcludedImageProducesNoMetricsIntegration(t *testing.T) {
 				for i := 0; i < resourceMetrics.Len(); i++ {
 					resourceMetric := resourceMetrics.At(i)
 					resource := resourceMetric.Resource()
-					if nameAttr, ok := resource.Attributes().Get(conventions.AttributeContainerImage); ok {
+					if nameAttr, ok := resource.Attributes().Get(conventions.AttributeContainerImageName); ok {
 						if strings.Contains(nameAttr.StringVal(), "redis") {
 							return true
 						}
@@ -205,7 +205,7 @@ func TestRemovedContainerRemovesRecordsIntegration(t *testing.T) {
 
 	// Confirm missing container paths
 	md, err := r.client.FetchContainerStatsAndConvertToMetrics(ctx, containers[0])
-	assert.Nil(t, md)
+	assert.Zero(t, md.DataPointCount())
 	require.Error(t, err)
 	assert.Equal(t, fmt.Sprintf("Error response from daemon: No such container: %s", containers[0].ID), err.Error())
 

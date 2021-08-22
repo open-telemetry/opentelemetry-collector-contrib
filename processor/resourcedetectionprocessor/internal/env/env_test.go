@@ -37,7 +37,8 @@ func TestDetectTrue(t *testing.T) {
 	os.Setenv(envVar, "key=value")
 
 	detector := &Detector{}
-	res, err := detector.Detect(context.Background())
+	res, schemaURL, err := detector.Detect(context.Background())
+	assert.Equal(t, "", schemaURL)
 	require.NoError(t, err)
 	assert.Equal(t, internal.NewResource(map[string]interface{}{"key": "value"}), res)
 }
@@ -46,8 +47,9 @@ func TestDetectFalse(t *testing.T) {
 	os.Setenv(envVar, "")
 
 	detector := &Detector{}
-	res, err := detector.Detect(context.Background())
+	res, schemaURL, err := detector.Detect(context.Background())
 	require.NoError(t, err)
+	assert.Equal(t, "", schemaURL)
 	assert.True(t, internal.IsEmptyResource(res))
 }
 
@@ -56,8 +58,9 @@ func TestDetectDeprecatedEnv(t *testing.T) {
 	os.Setenv(deprecatedEnvVar, "key=value")
 
 	detector := &Detector{}
-	res, err := detector.Detect(context.Background())
+	res, schemaURL, err := detector.Detect(context.Background())
 	require.NoError(t, err)
+	assert.Equal(t, "", schemaURL)
 	assert.Equal(t, internal.NewResource(map[string]interface{}{"key": "value"}), res)
 }
 
@@ -65,8 +68,9 @@ func TestDetectError(t *testing.T) {
 	os.Setenv(envVar, "key=value,key")
 
 	detector := &Detector{}
-	res, err := detector.Detect(context.Background())
+	res, schemaURL, err := detector.Detect(context.Background())
 	assert.Error(t, err)
+	assert.Equal(t, "", schemaURL)
 	assert.True(t, internal.IsEmptyResource(res))
 }
 

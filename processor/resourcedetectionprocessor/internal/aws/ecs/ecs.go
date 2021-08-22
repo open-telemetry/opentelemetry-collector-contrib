@@ -24,7 +24,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/model/pdata"
-	"go.opentelemetry.io/collector/translator/conventions"
+	conventions "go.opentelemetry.io/collector/translator/conventions/v1.5.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
 )
@@ -48,7 +48,7 @@ func NewDetector(params component.ProcessorCreateSettings, _ internal.DetectorCo
 
 // Detect records metadata retrieved from the ECS Task Metadata Endpoint (TMDE) as resource attributes
 // TODO(willarmiros): Replace all attribute fields and enums with values defined in "conventions" once they exist
-func (d *Detector) Detect(context.Context) (pdata.Resource, error) {
+func (d *Detector) Detect(context.Context) (resource pdata.Resource, schemaURL string, err error) {
 	res := pdata.NewResource()
 
 	tmde := getTmdeFromEnv()
@@ -56,13 +56,13 @@ func (d *Detector) Detect(context.Context) (pdata.Resource, error) {
 	// Fail fast if neither env var is present
 	if tmde == "" {
 		// TODO: Log a more specific error with zap
-		return res, nil
+		return res, "", nil
 	}
 
 	tmdeResp, err := d.provider.fetchTaskMetaData(tmde)
 
 	if err != nil || tmdeResp == nil {
-		return res, err
+		return res, "", err
 	}
 
 	attr := res.Attributes()
@@ -74,7 +74,7 @@ func (d *Detector) Detect(context.Context) (pdata.Resource, error) {
 
 	region, account := parseRegionAndAccount(tmdeResp.TaskARN)
 	if account != "" {
-		attr.InsertString(conventions.AttributeCloudAccount, account)
+		attr.InsertString(conventions.AttributeCloudAccountID, account)
 	}
 
 	if region != "" {
@@ -92,16 +92,16 @@ func (d *Detector) Detect(context.Context) (pdata.Resource, error) {
 	// The launch type and log data attributes are only available in TMDE v4
 	switch lt := strings.ToLower(tmdeResp.LaunchType); lt {
 	case "ec2":
-		attr.InsertString(conventions.AttributeAWSECSLaunchType, "ec2")
+		attr.InsertString(conventions.AttributeAWSECSLaunchtype, "ec2")
 
 	case "fargate":
-		attr.InsertString(conventions.AttributeAWSECSLaunchType, "fargate")
+		attr.InsertString(conventions.AttributeAWSECSLaunchtype, "fargate")
 	}
 
 	selfMetaData, err := d.provider.fetchContainerMetaData(tmde)
 
 	if err != nil || selfMetaData == nil {
-		return res, err
+		return res, "", err
 	}
 
 	logAttributes := [4]string{
@@ -117,7 +117,7 @@ func (d *Detector) Detect(context.Context) (pdata.Resource, error) {
 		}
 	}
 
-	return res, nil
+	return res, conventions.SchemaURL, nil
 }
 
 func getTmdeFromEnv() string {

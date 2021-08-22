@@ -40,7 +40,7 @@ func TestEKS(t *testing.T) {
 
 	// Call EKS Resource detector to detect resources
 	eksResourceDetector := &Detector{}
-	res, err := eksResourceDetector.Detect(ctx)
+	res, _, err := eksResourceDetector.Detect(ctx)
 	require.NoError(t, err)
 
 	assert.Equal(t, map[string]interface{}{
@@ -53,7 +53,7 @@ func TestEKS(t *testing.T) {
 func TestNotEKS(t *testing.T) {
 	detector := Detector{}
 	require.NoError(t, os.Unsetenv("KUBERNETES_SERVICE_HOST"))
-	r, err := detector.Detect(context.Background())
+	r, _, err := detector.Detect(context.Background())
 	require.NoError(t, err)
 	assert.Equal(t, 0, r.Attributes().Len(), "Resource object should be empty")
 }

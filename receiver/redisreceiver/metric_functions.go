@@ -90,7 +90,7 @@ func usedCPUSys() *redisMetric {
 		pdType:      pdata.MetricDataTypeSum,
 		valueType:   pdata.MetricValueTypeDouble,
 		isMonotonic: true,
-		labels:      map[string]string{"state": "sys"},
+		labels:      map[string]pdata.AttributeValue{"state": pdata.NewAttributeValueString("sys")},
 		desc:        "System CPU consumed by the Redis server in seconds since server start",
 	}
 }
@@ -103,7 +103,7 @@ func usedCPUUser() *redisMetric {
 		pdType:      pdata.MetricDataTypeSum,
 		valueType:   pdata.MetricValueTypeDouble,
 		isMonotonic: true,
-		labels:      map[string]string{"state": "user"},
+		labels:      map[string]pdata.AttributeValue{"state": pdata.NewAttributeValueString("user")},
 		desc:        "User CPU consumed by the Redis server in seconds since server start",
 	}
 }
@@ -116,7 +116,7 @@ func usedCPUSysChildren() *redisMetric {
 		pdType:      pdata.MetricDataTypeSum,
 		valueType:   pdata.MetricValueTypeDouble,
 		isMonotonic: true,
-		labels:      map[string]string{"state": "children"},
+		labels:      map[string]pdata.AttributeValue{"state": pdata.NewAttributeValueString("children")},
 		desc:        "User CPU consumed by the background processes in seconds since server start",
 	}
 }

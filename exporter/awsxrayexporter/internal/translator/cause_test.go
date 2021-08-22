@@ -21,7 +21,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/model/pdata"
-	semconventions "go.opentelemetry.io/collector/translator/conventions"
+	conventions "go.opentelemetry.io/collector/translator/conventions/v1.5.0"
 )
 
 func TestCauseWithExceptions(t *testing.T) {
@@ -32,11 +32,11 @@ func TestCauseWithExceptions(t *testing.T) {
 	span.Status().SetMessage(errorMsg)
 
 	event1 := span.Events().AppendEmpty()
-	event1.SetName(semconventions.AttributeExceptionEventName)
+	event1.SetName(ExceptionEventName)
 	attributes := pdata.NewAttributeMap()
-	attributes.InsertString(semconventions.AttributeExceptionType, "java.lang.IllegalStateException")
-	attributes.InsertString(semconventions.AttributeExceptionMessage, "bad state")
-	attributes.InsertString(semconventions.AttributeExceptionStacktrace, `java.lang.IllegalStateException: state is not legal
+	attributes.InsertString(conventions.AttributeExceptionType, "java.lang.IllegalStateException")
+	attributes.InsertString(conventions.AttributeExceptionMessage, "bad state")
+	attributes.InsertString(conventions.AttributeExceptionStacktrace, `java.lang.IllegalStateException: state is not legal
 	at io.opentelemetry.sdk.trace.RecordEventsReadableSpanTest.recordException(RecordEventsReadableSpanTest.java:626)
 	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
 	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
@@ -44,15 +44,15 @@ Caused by: java.lang.IllegalArgumentException: bad argument`)
 	attributes.CopyTo(event1.Attributes())
 
 	event2 := span.Events().AppendEmpty()
-	event2.SetName(semconventions.AttributeExceptionEventName)
+	event2.SetName(ExceptionEventName)
 	attributes = pdata.NewAttributeMap()
-	attributes.InsertString(semconventions.AttributeExceptionType, "EmptyError")
+	attributes.InsertString(conventions.AttributeExceptionType, "EmptyError")
 	attributes.CopyTo(event2.Attributes())
 
 	filtered, _ := makeHTTP(span)
 
 	res := pdata.NewResource()
-	res.Attributes().InsertString(semconventions.AttributeTelemetrySDKLanguage, "java")
+	res.Attributes().InsertString(conventions.AttributeTelemetrySDKLanguage, "java")
 	isError, isFault, isThrottle, filteredResult, cause := makeCause(span, filtered, res)
 
 	assert.True(t, isFault)
@@ -75,9 +75,9 @@ Caused by: java.lang.IllegalArgumentException: bad argument`)
 func TestCauseWithStatusMessage(t *testing.T) {
 	errorMsg := "this is a test"
 	attributes := make(map[string]interface{})
-	attributes[semconventions.AttributeHTTPMethod] = "POST"
-	attributes[semconventions.AttributeHTTPURL] = "https://api.example.com/widgets"
-	attributes[semconventions.AttributeHTTPStatusCode] = 500
+	attributes[conventions.AttributeHTTPMethod] = "POST"
+	attributes[conventions.AttributeHTTPURL] = "https://api.example.com/widgets"
+	attributes[conventions.AttributeHTTPStatusCode] = 500
 	span := constructExceptionServerSpan(attributes, pdata.StatusCodeError)
 	span.Status().SetMessage(errorMsg)
 	filtered, _ := makeHTTP(span)
@@ -102,10 +102,10 @@ func TestCauseWithStatusMessage(t *testing.T) {
 func TestCauseWithHttpStatusMessage(t *testing.T) {
 	errorMsg := "this is a test"
 	attributes := make(map[string]interface{})
-	attributes[semconventions.AttributeHTTPMethod] = "POST"
-	attributes[semconventions.AttributeHTTPURL] = "https://api.example.com/widgets"
-	attributes[semconventions.AttributeHTTPStatusCode] = 500
-	attributes[semconventions.AttributeHTTPStatusText] = errorMsg
+	attributes[conventions.AttributeHTTPMethod] = "POST"
+	attributes[conventions.AttributeHTTPURL] = "https://api.example.com/widgets"
+	attributes[conventions.AttributeHTTPStatusCode] = 500
+	attributes[conventions.AttributeHTTPStatusText] = errorMsg
 	span := constructExceptionServerSpan(attributes, pdata.StatusCodeError)
 	filtered, _ := makeHTTP(span)
 
@@ -129,10 +129,10 @@ func TestCauseWithHttpStatusMessage(t *testing.T) {
 func TestCauseWithZeroStatusMessage(t *testing.T) {
 	errorMsg := "this is a test"
 	attributes := make(map[string]interface{})
-	attributes[semconventions.AttributeHTTPMethod] = "POST"
-	attributes[semconventions.AttributeHTTPURL] = "https://api.example.com/widgets"
-	attributes[semconventions.AttributeHTTPStatusCode] = 500
-	attributes[semconventions.AttributeHTTPStatusText] = errorMsg
+	attributes[conventions.AttributeHTTPMethod] = "POST"
+	attributes[conventions.AttributeHTTPURL] = "https://api.example.com/widgets"
+	attributes[conventions.AttributeHTTPStatusCode] = 500
+	attributes[conventions.AttributeHTTPStatusText] = errorMsg
 
 	span := constructExceptionServerSpan(attributes, pdata.StatusCodeUnset)
 	filtered, _ := makeHTTP(span)
@@ -153,10 +153,10 @@ func TestCauseWithZeroStatusMessage(t *testing.T) {
 func TestCauseWithClientErrorMessage(t *testing.T) {
 	errorMsg := "this is a test"
 	attributes := make(map[string]interface{})
-	attributes[semconventions.AttributeHTTPMethod] = "POST"
-	attributes[semconventions.AttributeHTTPURL] = "https://api.example.com/widgets"
-	attributes[semconventions.AttributeHTTPStatusCode] = 499
-	attributes[semconventions.AttributeHTTPStatusText] = errorMsg
+	attributes[conventions.AttributeHTTPMethod] = "POST"
+	attributes[conventions.AttributeHTTPURL] = "https://api.example.com/widgets"
+	attributes[conventions.AttributeHTTPStatusCode] = 499
+	attributes[conventions.AttributeHTTPStatusText] = errorMsg
 
 	span := constructExceptionServerSpan(attributes, pdata.StatusCodeError)
 	filtered, _ := makeHTTP(span)
@@ -174,10 +174,10 @@ func TestCauseWithClientErrorMessage(t *testing.T) {
 func TestCauseWithThrottled(t *testing.T) {
 	errorMsg := "this is a test"
 	attributes := make(map[string]interface{})
-	attributes[semconventions.AttributeHTTPMethod] = "POST"
-	attributes[semconventions.AttributeHTTPURL] = "https://api.example.com/widgets"
-	attributes[semconventions.AttributeHTTPStatusCode] = 429
-	attributes[semconventions.AttributeHTTPStatusText] = errorMsg
+	attributes[conventions.AttributeHTTPMethod] = "POST"
+	attributes[conventions.AttributeHTTPURL] = "https://api.example.com/widgets"
+	attributes[conventions.AttributeHTTPStatusCode] = 429
+	attributes[conventions.AttributeHTTPStatusText] = errorMsg
 
 	span := constructExceptionServerSpan(attributes, pdata.StatusCodeError)
 	filtered, _ := makeHTTP(span)
@@ -820,4 +820,299 @@ func TestParseExceptionWithMalformedStacktrace(t *testing.T) {
 	assert.Equal(t, "System.Net.Http.HttpConnectionPool.ConnectAsync(HttpRequestMessage request, Boolean allowHttp2, CancellationToken cancellationToken)", *exceptions[0].Stack[1].Label)
 	assert.Equal(t, "", *exceptions[0].Stack[1].Path)
 	assert.Equal(t, 0, *exceptions[0].Stack[1].Line)
+}
+
+func TestParseExceptionPhpStacktrace(t *testing.T) {
+	exceptionType := "Exception"
+	message := "Thrown from grandparent"
+
+	stacktrace := `Exception: Thrown from grandparent
+	at grandparent_func(test.php:56)
+	at parent_func(test.php:51)
+	at child_func(test.php:44)
+	at main(test.php:63)`
+
+	exceptions := parseException(exceptionType, message, stacktrace, "php")
+
+	assert.Len(t, exceptions, 1)
+	assert.NotEmpty(t, exceptions[0].ID)
+	assert.Equal(t, "Exception", *exceptions[0].Type)
+	assert.Equal(t, "Thrown from grandparent", *exceptions[0].Message)
+	assert.Len(t, exceptions[0].Stack, 4)
+	assert.Equal(t, "grandparent_func", *exceptions[0].Stack[0].Label)
+	assert.Equal(t, "test.php", *exceptions[0].Stack[0].Path)
+	assert.Equal(t, 56, *exceptions[0].Stack[0].Line)
+	assert.Equal(t, "parent_func", *exceptions[0].Stack[1].Label)
+	assert.Equal(t, "test.php", *exceptions[0].Stack[1].Path)
+	assert.Equal(t, 51, *exceptions[0].Stack[1].Line)
+	assert.Equal(t, "child_func", *exceptions[0].Stack[2].Label)
+	assert.Equal(t, "test.php", *exceptions[0].Stack[2].Path)
+	assert.Equal(t, 44, *exceptions[0].Stack[2].Line)
+	assert.Equal(t, "main", *exceptions[0].Stack[3].Label)
+	assert.Equal(t, "test.php", *exceptions[0].Stack[3].Path)
+	assert.Equal(t, 63, *exceptions[0].Stack[3].Line)
+}
+
+func TestParseExceptionPhpWithoutStacktrace(t *testing.T) {
+	exceptionType := "Exception"
+	message := "Thrown from grandparent"
+
+	stacktrace := ""
+
+	exceptions := parseException(exceptionType, message, stacktrace, "php")
+
+	assert.Len(t, exceptions, 1)
+	assert.NotEmpty(t, exceptions[0].ID)
+	assert.Equal(t, "Exception", *exceptions[0].Type)
+	assert.Equal(t, "Thrown from grandparent", *exceptions[0].Message)
+	assert.Nil(t, exceptions[0].Stack)
+}
+
+func TestParseExceptionPhpStacktraceWithCause(t *testing.T) {
+	exceptionType := "Exception"
+	message := "Thrown from class B"
+
+	stacktrace := `Exception: Thrown from class B
+	at B.exc(test.php:59)
+	at fail(test.php:81)
+	at main(test.php:89)
+Caused by: Exception: Thrown from class A`
+
+	exceptions := parseException(exceptionType, message, stacktrace, "php")
+
+	assert.Len(t, exceptions, 2)
+	assert.Equal(t, "Exception", *exceptions[0].Type)
+	assert.Equal(t, "Thrown from class B", *exceptions[0].Message)
+	assert.Equal(t, *exceptions[0].Cause, *exceptions[1].ID)
+	assert.Len(t, exceptions[0].Stack, 3)
+	assert.Equal(t, "B.exc", *exceptions[0].Stack[0].Label)
+	assert.Equal(t, "test.php", *exceptions[0].Stack[0].Path)
+	assert.Equal(t, 59, *exceptions[0].Stack[0].Line)
+	assert.Equal(t, "fail", *exceptions[0].Stack[1].Label)
+	assert.Equal(t, "test.php", *exceptions[0].Stack[1].Path)
+	assert.Equal(t, 81, *exceptions[0].Stack[1].Line)
+	assert.Equal(t, "main", *exceptions[0].Stack[2].Label)
+	assert.Equal(t, "test.php", *exceptions[0].Stack[2].Path)
+	assert.Equal(t, 89, *exceptions[0].Stack[2].Line)
+
+	assert.Equal(t, "Exception", *exceptions[1].Type)
+	assert.Equal(t, "Thrown from class A", *exceptions[1].Message)
+	assert.Empty(t, exceptions[1].Stack)
+}
+
+func TestParseExceptionPhpStacktraceWithCauseAndStacktrace(t *testing.T) {
+	exceptionType := "Exception"
+	message := "Thrown from class B"
+
+	stacktrace := `Exception: Thrown from class B
+	at B.exc(test.php:59)
+	at fail(test.php:81)
+	at main(test.php:89)
+Caused by: Exception: Thrown from class A
+	at A.exc(test.php:48)
+	at B.exc(test.php:56)
+	... 2 more`
+
+	exceptions := parseException(exceptionType, message, stacktrace, "php")
+
+	assert.Len(t, exceptions, 2)
+	assert.NotEmpty(t, exceptions[0].ID)
+	assert.Equal(t, "Exception", *exceptions[0].Type)
+	assert.Equal(t, "Thrown from class B", *exceptions[0].Message)
+	assert.Equal(t, *exceptions[0].Cause, *exceptions[1].ID)
+	assert.Len(t, exceptions[0].Stack, 3)
+	assert.Equal(t, "B.exc", *exceptions[0].Stack[0].Label)
+	assert.Equal(t, "test.php", *exceptions[0].Stack[0].Path)
+	assert.Equal(t, 59, *exceptions[0].Stack[0].Line)
+	assert.Equal(t, "fail", *exceptions[0].Stack[1].Label)
+	assert.Equal(t, "test.php", *exceptions[0].Stack[1].Path)
+	assert.Equal(t, 81, *exceptions[0].Stack[1].Line)
+	assert.Equal(t, "main", *exceptions[0].Stack[2].Label)
+	assert.Equal(t, "test.php", *exceptions[0].Stack[2].Path)
+	assert.Equal(t, 89, *exceptions[0].Stack[2].Line)
+
+	assert.Len(t, exceptions[1].Stack, 2)
+	assert.NotEmpty(t, exceptions[1].ID)
+	assert.Equal(t, "Exception", *exceptions[1].Type)
+	assert.Equal(t, "Thrown from class A", *exceptions[1].Message)
+	assert.Equal(t, "A.exc", *exceptions[1].Stack[0].Label)
+	assert.Equal(t, "test.php", *exceptions[1].Stack[0].Path)
+	assert.Equal(t, 48, *exceptions[1].Stack[0].Line)
+	assert.Equal(t, "B.exc", *exceptions[1].Stack[1].Label)
+	assert.Equal(t, "test.php", *exceptions[1].Stack[1].Path)
+	assert.Equal(t, 56, *exceptions[1].Stack[1].Line)
+}
+
+func TestParseExceptionPhpStacktraceWithMultipleCause(t *testing.T) {
+	exceptionType := "Exception"
+	message := "Thrown from class C"
+
+	stacktrace := `Exception: Thrown from class C
+	at C.exc(test.php:74)
+	at main(test.php:89)
+Caused by: Exception: Thrown from class B
+	at B.exc(test.php:59)
+	at C.exc(test.php:71)
+	... 3 more
+Caused by: Exception: Thrown from class A
+	at A.exc(test.php:48)
+	at B.exc(test.php:56)
+	... 4 more`
+
+	exceptions := parseException(exceptionType, message, stacktrace, "php")
+
+	assert.Len(t, exceptions, 3)
+	assert.NotEmpty(t, exceptions[0].ID)
+	assert.Equal(t, "Exception", *exceptions[0].Type)
+	assert.Equal(t, "Thrown from class C", *exceptions[0].Message)
+	assert.Equal(t, *exceptions[0].Cause, *exceptions[1].ID)
+	assert.Len(t, exceptions[0].Stack, 2)
+	assert.Equal(t, "C.exc", *exceptions[0].Stack[0].Label)
+	assert.Equal(t, "test.php", *exceptions[0].Stack[0].Path)
+	assert.Equal(t, 74, *exceptions[0].Stack[0].Line)
+	assert.Equal(t, "main", *exceptions[0].Stack[1].Label)
+	assert.Equal(t, "test.php", *exceptions[0].Stack[1].Path)
+	assert.Equal(t, 89, *exceptions[0].Stack[1].Line)
+
+	assert.Len(t, exceptions[1].Stack, 2)
+	assert.Equal(t, *exceptions[1].Cause, *exceptions[2].ID)
+	assert.Equal(t, "Exception", *exceptions[1].Type)
+	assert.Equal(t, "Thrown from class B", *exceptions[1].Message)
+	assert.Equal(t, "B.exc", *exceptions[1].Stack[0].Label)
+	assert.Equal(t, "test.php", *exceptions[1].Stack[0].Path)
+	assert.Equal(t, 59, *exceptions[1].Stack[0].Line)
+
+	assert.Len(t, exceptions[2].Stack, 2)
+	assert.NotEmpty(t, exceptions[2].ID)
+	assert.Equal(t, "Exception", *exceptions[2].Type)
+	assert.Equal(t, "Thrown from class A", *exceptions[2].Message)
+	assert.Equal(t, "B.exc", *exceptions[2].Stack[1].Label)
+	assert.Equal(t, "test.php", *exceptions[2].Stack[1].Path)
+	assert.Equal(t, 56, *exceptions[2].Stack[1].Line)
+}
+
+func TestParseExceptionPhpStacktraceMalformedLines(t *testing.T) {
+	exceptionType := "Exception"
+	message := "Thrown from class B"
+
+	stacktrace := `Exception: Thrown from class B
+	at B.exc(test.php:59)
+	at fail(test.php:81 malformed
+	at main(test.php:89)`
+
+	exceptions := parseException(exceptionType, message, stacktrace, "php")
+
+	assert.Len(t, exceptions, 1)
+	assert.NotEmpty(t, exceptions[0].ID)
+	assert.Equal(t, "Exception", *exceptions[0].Type)
+	assert.Equal(t, "Thrown from class B", *exceptions[0].Message)
+	assert.Len(t, exceptions[0].Stack, 2)
+	assert.Equal(t, "B.exc", *exceptions[0].Stack[0].Label)
+	assert.Equal(t, "test.php", *exceptions[0].Stack[0].Path)
+	assert.Equal(t, 59, *exceptions[0].Stack[0].Line)
+	assert.Equal(t, "main", *exceptions[0].Stack[1].Label)
+	assert.Equal(t, "test.php", *exceptions[0].Stack[1].Path)
+	assert.Equal(t, 89, *exceptions[0].Stack[1].Line)
+}
+
+func TestParseExceptionGoWithoutStacktrace(t *testing.T) {
+	exceptionType := "Exception"
+	message := "Thrown from grandparent"
+
+	stacktrace := ""
+
+	exceptions := parseException(exceptionType, message, stacktrace, "go")
+
+	assert.Len(t, exceptions, 1)
+	assert.NotEmpty(t, exceptions[0].ID)
+	assert.Equal(t, "Exception", *exceptions[0].Type)
+	assert.Equal(t, "Thrown from grandparent", *exceptions[0].Message)
+	assert.Nil(t, exceptions[0].Stack)
+}
+
+func TestParseExceptionGoWithStacktrace(t *testing.T) {
+	exceptionType := "Exception"
+	message := "error message"
+
+	stacktrace := `goroutine 19 [running]:
+go.opentelemetry.io/otel/sdk/trace.recordStackTrace(0x0, 0x0)
+	otel-go-core/opentelemetry-go/sdk/trace/span.go:323 +0x9b
+go.opentelemetry.io/otel/sdk/trace.(*span).RecordError(0xc0003a6000, 0x14a5f00, 0xc00038c000, 0xc000390140, 0x3, 0x4)
+	otel-go-core/opentelemetry-go/sdk/trace/span.go:302 +0x3fc
+go.opentelemetry.io/otel/sdk/trace.TestRecordErrorWithStackTrace(0xc000102900)
+	otel-go-core/opentelemetry-go/sdk/trace/trace_test.go:1167 +0x3ef
+testing.tRunner(0xc000102900, 0x1484410)
+	/usr/local/Cellar/go/1.16.3/libexec/src/testing/testing.go:1193 +0x1a3
+created by testing.(*T).Run
+	/usr/local/Cellar/go/1.16.3/libexec/src/testing/testing.go:1238 +0x63c`
+
+	exceptions := parseException(exceptionType, message, stacktrace, "go")
+	assert.Len(t, exceptions, 1)
+	assert.NotEmpty(t, exceptions[0].ID)
+	assert.Equal(t, "Exception", *exceptions[0].Type)
+	assert.Equal(t, "error message", *exceptions[0].Message)
+	assert.Len(t, exceptions[0].Stack, 5)
+
+	assert.True(t, strings.HasPrefix(*exceptions[0].Stack[0].Label, "go.opentelemetry.io/otel/sdk/trace.recordStackTrace"))
+	assert.Equal(t, "otel-go-core/opentelemetry-go/sdk/trace/span.go", *exceptions[0].Stack[0].Path)
+	assert.Equal(t, 323, *exceptions[0].Stack[0].Line)
+	assert.True(t, strings.HasPrefix(*exceptions[0].Stack[1].Label, "go.opentelemetry.io/otel/sdk/trace.(*span).RecordError"))
+	assert.Equal(t, "otel-go-core/opentelemetry-go/sdk/trace/span.go", *exceptions[0].Stack[1].Path)
+	assert.Equal(t, 302, *exceptions[0].Stack[1].Line)
+	assert.True(t, strings.HasPrefix(*exceptions[0].Stack[3].Label, "testing.tRunner"))
+	assert.Equal(t, "/usr/local/Cellar/go/1.16.3/libexec/src/testing/testing.go", *exceptions[0].Stack[3].Path)
+	assert.Equal(t, 1193, *exceptions[0].Stack[3].Line)
+	assert.True(t, strings.HasPrefix(*exceptions[0].Stack[4].Label, "created by testing.(*T).Run"))
+	assert.Equal(t, "/usr/local/Cellar/go/1.16.3/libexec/src/testing/testing.go", *exceptions[0].Stack[4].Path)
+	assert.Equal(t, 1238, *exceptions[0].Stack[4].Line)
+}
+
+func TestParseMultipleExceptionGoWithStacktrace(t *testing.T) {
+	exceptionType := "Exception"
+	message := "panic"
+
+	stacktrace := `goroutine 19 [running]:
+go.opentelemetry.io/otel/sdk/trace.recordStackTrace(0x0, 0x0)
+	Documents/otel-go-core/opentelemetry-go/sdk/trace/span.go:318 +0x9b
+go.opentelemetry.io/otel/sdk/trace.(*span).End(0xc000082300, 0xc0000a0040, 0x1, 0x1)
+	Documents/otel-go-core/opentelemetry-go/sdk/trace/span.go:252 +0x4ee
+panic(0x1414f00, 0xc0000a0050)
+	/usr/local/Cellar/go/1.16.3/libexec/src/runtime/panic.go:971 +0x4c7
+go.opentelemetry.io/otel/sdk/trace.TestSpanCapturesPanicWithStackTrace.func1()
+	Documents/otel-go-core/opentelemetry-go/sdk/trace/trace_test.go:1425 +0x225
+github.com/stretchr/testify/assert.didPanic.func1(0xc0001ad0e8, 0xc0001ad0d7, 0xc0001ad0d8, 0xc00009e048)
+	go/pkg/mod/github.com/stretchr/testify@v1.7.0/assert/assertions.go:1018 +0xb8
+github.com/stretchr/testify/assert.didPanic(0xc00009e048, 0x14a5b00, 0x0, 0x0, 0x0, 0x0)
+	go/pkg/mod/github.com/stretchr/testify@v1.7.0/assert/assertions.go:1020 +0x85
+github.com/stretchr/testify/assert.PanicsWithError(0x14a5b60, 0xc000186600, 0x146e31c, 0xd, 0xc00009e048, 0x0, 0x0, 0x0, 0xc000038900)
+	go/pkg/mod/github.com/stretchr/testify@v1.7.0/assert/assertions.go:1071 +0x10c
+goroutine 26 [running]:
+github.com/stretchr/testify/require.PanicsWithError(0x14a7328, 0xc000186600, 0x146e31c, 0xd, 0xc00009e048, 0x0, 0x0, 0x0)
+	go/pkg/mod/github.com/stretchr/testify@v1.7.0/require/require.go:1607 +0x15e
+go.opentelemetry.io/otel/sdk/trace.TestSpanCapturesPanicWithStackTrace(0xc000186600)
+	Documents/otel-go-core/opentelemetry-go/sdk/trace/trace_test.go:1427 +0x33a
+testing.tRunner(0xc000186600, 0x1484440)
+	/usr/local/Cellar/go/1.16.3/libexec/src/testing/testing.go:1193 +0x1a3
+created by testing.(*T).Run
+	/usr/local/Cellar/go/1.16.3/libexec/src/testing/testing.go:1238 +0x63c`
+
+	exceptions := parseException(exceptionType, message, stacktrace, "go")
+	assert.Len(t, exceptions, 1)
+	assert.NotEmpty(t, exceptions[0].ID)
+	assert.Equal(t, "Exception", *exceptions[0].Type)
+	assert.Equal(t, "panic", *exceptions[0].Message)
+	assert.Len(t, exceptions[0].Stack, 11)
+
+	assert.True(t, strings.HasPrefix(*exceptions[0].Stack[0].Label, "go.opentelemetry.io/otel/sdk/trace.recordStackTrace"))
+	assert.Equal(t, "Documents/otel-go-core/opentelemetry-go/sdk/trace/span.go", *exceptions[0].Stack[0].Path)
+	assert.Equal(t, 318, *exceptions[0].Stack[0].Line)
+	assert.True(t, strings.HasPrefix(*exceptions[0].Stack[7].Label, "github.com/stretchr/testify/require.PanicsWithError"))
+	assert.Equal(t, "go/pkg/mod/github.com/stretchr/testify@v1.7.0/require/require.go", *exceptions[0].Stack[7].Path)
+	assert.Equal(t, 1607, *exceptions[0].Stack[7].Line)
+	assert.True(t, strings.HasPrefix(*exceptions[0].Stack[8].Label, "go.opentelemetry.io/otel/sdk/trace.TestSpanCapturesPanicWithStackTrace"))
+	assert.Equal(t, "Documents/otel-go-core/opentelemetry-go/sdk/trace/trace_test.go", *exceptions[0].Stack[8].Path)
+	assert.Equal(t, 1427, *exceptions[0].Stack[8].Line)
+	assert.True(t, strings.HasPrefix(*exceptions[0].Stack[10].Label, "created by testing.(*T).Run"))
+	assert.Equal(t, "/usr/local/Cellar/go/1.16.3/libexec/src/testing/testing.go", *exceptions[0].Stack[10].Path)
+	assert.Equal(t, 1238, *exceptions[0].Stack[10].Line)
 }

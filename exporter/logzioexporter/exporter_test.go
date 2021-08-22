@@ -15,17 +15,18 @@
 package logzioexporter
 
 import (
+	"bytes"
+	"compress/gzip"
 	"context"
 	"encoding/json"
 	"errors"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
 
-	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
-	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"github.com/jaegertracing/jaeger/model"
 	"github.com/logzio/jaeger-logzio/store/objects"
 	"github.com/stretchr/testify/assert"
@@ -33,8 +34,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/model/pdata"
-	"go.opentelemetry.io/collector/translator/internaldata"
-	"google.golang.org/protobuf/types/known/wrapperspb"
+	conventions "go.opentelemetry.io/collector/translator/conventions/v1.5.0"
 )
 
 const (
@@ -43,14 +43,14 @@ const (
 	testOperation = "testOperation"
 )
 
-var testSpans = []*tracepb.Span{
-	{
-		TraceId:                 []byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
-		SpanId:                  []byte{0, 0, 0, 0, 0, 0, 0, 2},
-		Name:                    &tracepb.TruncatableString{Value: testOperation},
-		Kind:                    tracepb.Span_SERVER,
-		SameProcessAsParentSpan: &wrapperspb.BoolValue{Value: true},
-	},
+func newTestTraces() pdata.Traces {
+	td := pdata.NewTraces()
+	s := td.ResourceSpans().AppendEmpty().InstrumentationLibrarySpans().AppendEmpty().Spans().AppendEmpty()
+	s.SetName(testOperation)
+	s.SetTraceID(pdata.NewTraceID([16]byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1}))
+	s.SetSpanID(pdata.NewSpanID([8]byte{0, 0, 0, 0, 0, 0, 0, 2}))
+	s.SetKind(pdata.SpanKindServer)
+	return td
 }
 
 func testTracesExporter(td pdata.Traces, t *testing.T, cfg *Config) {
@@ -100,7 +100,7 @@ func TestEmptyNode(tester *testing.T) {
 		TracesToken:      "test",
 		Region:           "eu",
 	}
-	testTracesExporter(internaldata.OCToTraces(nil, nil, nil), tester, &cfg)
+	testTracesExporter(pdata.NewTraces(), tester, &cfg)
 }
 
 func TestWriteSpanError(tester *testing.T) {
@@ -115,7 +115,7 @@ func TestWriteSpanError(tester *testing.T) {
 	exporter.WriteSpanFunc = func(context.Context, *model.Span) error {
 		return errors.New("fail")
 	}
-	err := exporter.pushTraceData(context.Background(), internaldata.OCToTraces(nil, nil, testSpans))
+	err := exporter.pushTraceData(context.Background(), newTestTraces())
 	assert.NoError(tester, err)
 }
 
@@ -131,8 +131,28 @@ func TestConversionTraceError(tester *testing.T) {
 	exporter.InternalTracesToJaegerTraces = func(td pdata.Traces) ([]*model.Batch, error) {
 		return nil, errors.New("fail")
 	}
-	err := exporter.pushTraceData(context.Background(), internaldata.OCToTraces(nil, nil, testSpans))
+	err := exporter.pushTraceData(context.Background(), newTestTraces())
 	assert.Error(tester, err)
+}
+
+func gUnzipData(data []byte) (resData []byte, err error) {
+	b := bytes.NewBuffer(data)
+
+	var r io.Reader
+	r, err = gzip.NewReader(b)
+	if err != nil {
+		return
+	}
+
+	var resB bytes.Buffer
+	_, err = resB.ReadFrom(r)
+	if err != nil {
+		return
+	}
+
+	resData = resB.Bytes()
+
+	return
 }
 
 func TestPushTraceData(tester *testing.T) {
@@ -149,17 +169,15 @@ func TestPushTraceData(tester *testing.T) {
 	}
 	defer server.Close()
 
-	node := &commonpb.Node{
-		ServiceInfo: &commonpb.ServiceInfo{
-			Name: testService,
-		},
-		Identifier: &commonpb.ProcessIdentifier{
-			HostName: testHost,
-		},
-	}
-	testTracesExporter(internaldata.OCToTraces(node, nil, testSpans), tester, &cfg)
-	requests := strings.Split(string(recordedRequests), "\n")
+	td := newTestTraces()
+	res := td.ResourceSpans().At(0).Resource()
+	res.Attributes().UpsertString(conventions.AttributeServiceName, testService)
+	res.Attributes().UpsertString(conventions.AttributeHostName, testHost)
+	testTracesExporter(td, tester, &cfg)
+
 	var logzioSpan objects.LogzioSpan
+	decoded, _ := gUnzipData(recordedRequests)
+	requests := strings.Split(string(decoded), "\n")
 	assert.NoError(tester, json.Unmarshal([]byte(requests[0]), &logzioSpan))
 	assert.Equal(tester, testOperation, logzioSpan.OperationName)
 	assert.Equal(tester, testService, logzioSpan.Process.ServiceName)

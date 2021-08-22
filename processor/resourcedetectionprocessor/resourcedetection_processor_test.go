@@ -40,9 +40,9 @@ type MockDetector struct {
 	mock.Mock
 }
 
-func (p *MockDetector) Detect(ctx context.Context) (pdata.Resource, error) {
+func (p *MockDetector) Detect(ctx context.Context) (resource pdata.Resource, schemaURL string, err error) {
 	args := p.Called()
-	return args.Get(0).(pdata.Resource), args.Error(1)
+	return args.Get(0).(pdata.Resource), "", args.Error(1)
 }
 
 func TestResourceProcessor(t *testing.T) {

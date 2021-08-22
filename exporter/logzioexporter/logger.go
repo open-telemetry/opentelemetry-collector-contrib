@@ -25,88 +25,88 @@ import (
 	"go.uber.org/zap/zapcore"
 )
 
-// Hclog2ZapLogger implements Hashicorp's hclog.Logger interface using Uber's zap.Logger. It's a workaround for plugin
+// hclog2ZapLogger implements Hashicorp's hclog.Logger interface using Uber's zap.Logger. It's a workaround for plugin
 // system. go-plugin doesn't support other logger than hclog. This logger implements only methods used by the go-plugin.
-type Hclog2ZapLogger struct {
+type hclog2ZapLogger struct {
 	Zap  *zap.Logger
 	name string
 }
 
-func (l Hclog2ZapLogger) Log(level hclog.Level, msg string, args ...interface{}) {}
+func (l *hclog2ZapLogger) Log(level hclog.Level, msg string, args ...interface{}) {}
 
-func (l Hclog2ZapLogger) ImpliedArgs() []interface{} {
+func (l *hclog2ZapLogger) ImpliedArgs() []interface{} {
 	return nil
 }
 
-func (l Hclog2ZapLogger) Name() string {
+func (l *hclog2ZapLogger) Name() string {
 	return l.name
 }
 
-func (l Hclog2ZapLogger) StandardWriter(opts *hclog.StandardLoggerOptions) io.Writer {
+func (l *hclog2ZapLogger) StandardWriter(opts *hclog.StandardLoggerOptions) io.Writer {
 	return nil
 }
 
 // Trace implementation.
-func (l Hclog2ZapLogger) Trace(msg string, args ...interface{}) {}
+func (l *hclog2ZapLogger) Trace(msg string, args ...interface{}) {}
 
 // Debug implementation.
-func (l Hclog2ZapLogger) Debug(msg string, args ...interface{}) {
+func (l *hclog2ZapLogger) Debug(msg string, args ...interface{}) {
 	l.Zap.Debug(msg, argsToFields(args...)...)
 }
 
 // Info implementation.
-func (l Hclog2ZapLogger) Info(msg string, args ...interface{}) {
+func (l *hclog2ZapLogger) Info(msg string, args ...interface{}) {
 	l.Zap.Info(msg, argsToFields(args...)...)
 }
 
 // Warn implementation.
-func (l Hclog2ZapLogger) Warn(msg string, args ...interface{}) {
+func (l *hclog2ZapLogger) Warn(msg string, args ...interface{}) {
 	l.Zap.Warn(msg, argsToFields(args...)...)
 }
 
 // Error implementation.
-func (l Hclog2ZapLogger) Error(msg string, args ...interface{}) {
+func (l *hclog2ZapLogger) Error(msg string, args ...interface{}) {
 	l.Zap.Error(msg, argsToFields(args...)...)
 }
 
 // IsTrace implementation.
-func (l Hclog2ZapLogger) IsTrace() bool { return false }
+func (l *hclog2ZapLogger) IsTrace() bool { return false }
 
 // IsDebug implementation.
-func (l Hclog2ZapLogger) IsDebug() bool { return false }
+func (l *hclog2ZapLogger) IsDebug() bool { return false }
 
 // IsInfo implementation.
-func (l Hclog2ZapLogger) IsInfo() bool { return false }
+func (l *hclog2ZapLogger) IsInfo() bool { return false }
 
 // IsWarn implementation.
-func (l Hclog2ZapLogger) IsWarn() bool { return false }
+func (l *hclog2ZapLogger) IsWarn() bool { return false }
 
 // IsError implementation.
-func (l Hclog2ZapLogger) IsError() bool { return false }
+func (l *hclog2ZapLogger) IsError() bool { return false }
 
 // With implementation.
-func (l Hclog2ZapLogger) With(args ...interface{}) hclog.Logger {
-	return Hclog2ZapLogger{Zap: l.Zap.With(argsToFields(args...)...)}
+func (l *hclog2ZapLogger) With(args ...interface{}) hclog.Logger {
+	return &hclog2ZapLogger{Zap: l.Zap.With(argsToFields(args...)...)}
 }
 
 // Named implementation.
-func (l Hclog2ZapLogger) Named(name string) hclog.Logger {
-	return Hclog2ZapLogger{Zap: l.Zap.Named(name)}
+func (l *hclog2ZapLogger) Named(name string) hclog.Logger {
+	return &hclog2ZapLogger{Zap: l.Zap.Named(name)}
 }
 
 // ResetNamed implementation.
-func (l Hclog2ZapLogger) ResetNamed(name string) hclog.Logger {
+func (l *hclog2ZapLogger) ResetNamed(name string) hclog.Logger {
 	// no need to implement that as go-plugin doesn't use this method.
-	return Hclog2ZapLogger{}
+	return &hclog2ZapLogger{}
 }
 
 // SetLevel implementation.
-func (l Hclog2ZapLogger) SetLevel(level hclog.Level) {
+func (l *hclog2ZapLogger) SetLevel(level hclog.Level) {
 	// no need to implement that as go-plugin doesn't use this method.
 }
 
 // StandardLogger implementation.
-func (l Hclog2ZapLogger) StandardLogger(opts *hclog.StandardLoggerOptions) *log.Logger {
+func (l *hclog2ZapLogger) StandardLogger(opts *hclog.StandardLoggerOptions) *log.Logger {
 	// no need to implement that as go-plugin doesn't use this method.
 	return log.New(ioutil.Discard, "", 0)
 }
