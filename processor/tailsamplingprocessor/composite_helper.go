@@ -25,9 +25,8 @@ import (
 func getNewCompositePolicy(logger *zap.Logger, config CompositeCfg) (sampling.PolicyEvaluator, error) {
 	var subPolicyEvalParams []sampling.SubPolicyEvalParams
 	rateAllocationsMap := getRateAllocationMap(config)
-	for i := range config.SubPolicyCfg {
-		policyCfg := &config.SubPolicyCfg[i]
-		policy, _ := getSubPolicyEvaluator(logger, policyCfg)
+	for _, policyCfg := range config.SubPolicyCfg {
+		policy, _ := getSubPolicyEvaluator(logger, &policyCfg)
 
 		evalParams := sampling.SubPolicyEvalParams{
 			Evaluator:         policy,
@@ -44,11 +43,11 @@ func getRateAllocationMap(config CompositeCfg) map[string]float64 {
 	maxTotalSPS := float64(config.MaxTotalSpansPerSecond)
 	// Default SPS determined by equally diving number of sub policies
 	defaultSPS := maxTotalSPS / float64(len(config.SubPolicyCfg))
-	for i := 0; i < len(config.RateAllocation); i++ {
-		rAlloc := &config.RateAllocation[i]
-		rateAllocationsMap[rAlloc.Policy] = defaultSPS
+	for _, rAlloc := range config.RateAllocation{
 		if rAlloc.Percent > 0 {
 			rateAllocationsMap[rAlloc.Policy] = (float64(rAlloc.Percent) / 100) * maxTotalSPS
+		}else {
+			rateAllocationsMap[rAlloc.Policy] = defaultSPS
 		}
 	}
 	return rateAllocationsMap
