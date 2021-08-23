@@ -23,7 +23,8 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/model/pdata"
-	jaegertranslator "go.opentelemetry.io/collector/translator/trace/jaeger"
+
+	jaegertranslator "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger"
 )
 
 func TestUnmarshalJaeger(t *testing.T) {

@@ -16,7 +16,8 @@ package kafkareceiver
 
 import (
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/exporter/kafkaexporter"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter"
 )
 
 // Config defines configuration for Kafka receiver.
