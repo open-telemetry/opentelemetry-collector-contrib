@@ -26,13 +26,13 @@ import (
 	"time"
 
 	zipkinmodel "github.com/openzipkin/zipkin-go/model"
-
-	"go.opentelemetry.io/collector/internal/idutils"
-	"go.opentelemetry.io/collector/internal/occonventions"
 	"go.opentelemetry.io/collector/model/pdata"
 	conventions "go.opentelemetry.io/collector/translator/conventions/v1.5.0"
 	tracetranslator "go.opentelemetry.io/collector/translator/trace"
-	"go.opentelemetry.io/collector/translator/trace/internal/zipkin"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/idutils"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/occonventions"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin/internal/zipkin"
 )
 
 // ToTranslator converts from Zipkin data model to pdata.

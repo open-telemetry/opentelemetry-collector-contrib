@@ -20,11 +20,11 @@ import (
 
 	zipkinmodel "github.com/openzipkin/zipkin-go/model"
 	"github.com/stretchr/testify/assert"
-
-	"go.opentelemetry.io/collector/internal/goldendataset"
-	"go.opentelemetry.io/collector/internal/testdata"
 	"go.opentelemetry.io/collector/model/pdata"
 	conventions "go.opentelemetry.io/collector/translator/conventions/v1.5.0"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/goldendataset"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
 )
 
 func TestInternalTracesToZipkinSpans(t *testing.T) {
@@ -86,8 +86,8 @@ func TestInternalTracesToZipkinSpans(t *testing.T) {
 
 func TestInternalTracesToZipkinSpansAndBack(t *testing.T) {
 	tds, err := goldendataset.GenerateTraces(
-		"../../../internal/goldendataset/testdata/generated_pict_pairs_traces.txt",
-		"../../../internal/goldendataset/testdata/generated_pict_pairs_spans.txt")
+		"../../../../internal/coreinternal/goldendataset/testdata/generated_pict_pairs_traces.txt",
+		"../../../../internal/coreinternal/goldendataset/testdata/generated_pict_pairs_spans.txt")
 	assert.NoError(t, err)
 	for _, td := range tds {
 		zipkinSpans, err := FromTranslator{}.FromTraces(td)
