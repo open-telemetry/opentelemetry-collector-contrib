@@ -20,9 +20,8 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
-	"go.uber.org/zap"
-
 	"go.opentelemetry.io/collector/model/pdata"
+	"go.uber.org/zap"
 )
 
 func TestInvalidDataType(t *testing.T) {

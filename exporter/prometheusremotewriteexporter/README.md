@@ -11,7 +11,7 @@ Supported pipeline types: metrics
 :warning: Non-cumulative monotonic, histogram, and summary OTLP metrics are
 dropped by this exporter.
 
-A [design doc](./DESIGN.md) is available to document in detail
+A [design doc](DESIGN.md) is available to document in detail
 how this exporter works.
 
 ## Getting Started

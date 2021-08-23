@@ -19,7 +19,6 @@ import (
 
 	"github.com/prometheus/prometheus/prompb"
 	"github.com/stretchr/testify/assert"
-
 	"go.opentelemetry.io/collector/model/pdata"
 )
 

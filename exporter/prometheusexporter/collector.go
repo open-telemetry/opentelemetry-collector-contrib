@@ -19,9 +19,8 @@ import (
 	"sort"
 
 	"github.com/prometheus/client_golang/prometheus"
-	"go.uber.org/zap"
-
 	"go.opentelemetry.io/collector/model/pdata"
+	"go.uber.org/zap"
 )
 
 type collector struct {

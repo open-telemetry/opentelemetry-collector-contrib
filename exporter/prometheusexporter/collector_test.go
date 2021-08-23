@@ -21,10 +21,9 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	io_prometheus_client "github.com/prometheus/client_model/go"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/model/pdata"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
-
-	"go.opentelemetry.io/collector/model/pdata"
 )
 
 type mockAccumulator struct {
