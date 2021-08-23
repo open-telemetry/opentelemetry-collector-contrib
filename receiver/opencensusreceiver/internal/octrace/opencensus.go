@@ -29,7 +29,8 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/obsreport"
-	"go.opentelemetry.io/collector/translator/internaldata"
+
+	internaldata "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus"
 )
 
 const (
