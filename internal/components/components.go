@@ -54,6 +54,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/k8sobserver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/oidcauthextension"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/filestorage"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/attributesprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/cumulativetodeltaprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatorateprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor"
@@ -111,6 +112,7 @@ func Components() (component.Factories, error) {
 	delete(factories.Extensions, "oidc")
 	delete(factories.Extensions, "bearertokenauth")
 	delete(factories.Processors, "probabilistic_sampler")
+	delete(factories.Processors, "attributes")
 	delete(factories.Processors, "span")
 	delete(factories.Processors, "resource")
 	delete(factories.Processors, "filter")
@@ -218,6 +220,7 @@ func Components() (component.Factories, error) {
 	}
 
 	processors := []component.ProcessorFactory{
+		attributesprocessor.NewFactory(),
 		filterprocessor.NewFactory(),
 		groupbyattrsprocessor.NewFactory(),
 		groupbytraceprocessor.NewFactory(),
