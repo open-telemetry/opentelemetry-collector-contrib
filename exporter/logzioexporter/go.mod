@@ -11,3 +11,6 @@ require (
 	go.opentelemetry.io/collector/model v0.33.1-0.20210820002854-d3000232f8f6
 	go.uber.org/zap v1.19.0
 )
+
+// see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/4433
+exclude github.com/StackExchange/wmi v1.2.0
