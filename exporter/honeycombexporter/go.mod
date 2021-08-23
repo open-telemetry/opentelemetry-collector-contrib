@@ -3,7 +3,6 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/honeyc
 go 1.16
 
 require (
-	github.com/census-instrumentation/opencensus-proto v0.3.0
 	github.com/google/go-cmp v0.5.6
 	github.com/honeycombio/libhoney-go v1.15.4
 	github.com/klauspost/compress v1.13.4
