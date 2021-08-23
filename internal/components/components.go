@@ -16,6 +16,7 @@ package components
 
 import (
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/receiver/opencensusreceiver"
 	"go.opentelemetry.io/collector/service/defaultcomponents"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/alibabacloudlogserviceexporter"
@@ -82,6 +83,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkametricsreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/opencensusreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusexecreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/receivercreator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/redisreceiver"
@@ -112,6 +114,7 @@ func Components() (component.Factories, error) {
 	delete(factories.Processors, "span")
 	delete(factories.Processors, "resource")
 	delete(factories.Processors, "filter")
+	delete(factories.Receivers, "opencensus")
 
 	extensions := []component.ExtensionFactory{
 		bearertokenauthextension.NewFactory(),
@@ -147,6 +150,7 @@ func Components() (component.Factories, error) {
 		kafkametricsreceiver.NewFactory(),
 		k8sclusterreceiver.NewFactory(),
 		kubeletstatsreceiver.NewFactory(),
+		opencensusreceiver.NewFactory(),
 		prometheusexecreceiver.NewFactory(),
 		receivercreator.NewFactory(),
 		redisreceiver.NewFactory(),
