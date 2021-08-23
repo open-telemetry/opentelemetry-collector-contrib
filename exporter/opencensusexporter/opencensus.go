@@ -28,7 +28,8 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/model/pdata"
-	"go.opentelemetry.io/collector/translator/internaldata"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus"
 )
 
 // See https://godoc.org/google.golang.org/grpc#ClientConn.NewStream
@@ -171,7 +172,7 @@ func (oce *ocExporter) pushTraces(_ context.Context, td pdata.Traces) error {
 
 	rss := td.ResourceSpans()
 	for i := 0; i < rss.Len(); i++ {
-		node, resource, spans := internaldata.ResourceSpansToOC(rss.At(i))
+		node, resource, spans := opencensus.ResourceSpansToOC(rss.At(i))
 		// This is a hack because OC protocol expects a Node for the initial message.
 		if node == nil {
 			node = &commonpb.Node{}
@@ -221,7 +222,7 @@ func (oce *ocExporter) pushMetrics(_ context.Context, md pdata.Metrics) error {
 	rms := md.ResourceMetrics()
 	for i := 0; i < rms.Len(); i++ {
 		ocReq := agentmetricspb.ExportMetricsServiceRequest{}
-		ocReq.Node, ocReq.Resource, ocReq.Metrics = internaldata.ResourceMetricsToOC(rms.At(i))
+		ocReq.Node, ocReq.Resource, ocReq.Metrics = opencensus.ResourceMetricsToOC(rms.At(i))
 
 		// This is a hack because OC protocol expects a Node for the initial message.
 		if ocReq.Node == nil {

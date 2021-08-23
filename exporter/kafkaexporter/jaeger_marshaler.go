@@ -23,7 +23,8 @@ import (
 
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/model/pdata"
-	jaegertranslator "go.opentelemetry.io/collector/translator/trace/jaeger"
+
+	jaegertranslator "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger"
 )
 
 type jaegerMarshaler struct {
