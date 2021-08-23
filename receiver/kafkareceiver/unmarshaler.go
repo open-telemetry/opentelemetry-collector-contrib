@@ -17,8 +17,9 @@ package kafkareceiver
 import (
 	"go.opentelemetry.io/collector/model/otlp"
 	"go.opentelemetry.io/collector/model/pdata"
-	"go.opentelemetry.io/collector/translator/trace/zipkinv1"
-	"go.opentelemetry.io/collector/translator/trace/zipkinv2"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin/zipkinv1"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin/zipkinv2"
 )
 
 // TracesUnmarshaler deserializes the message body.
