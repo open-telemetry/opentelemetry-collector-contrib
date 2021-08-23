@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/simpleprometheusreceiver
 
-go 1.16
+go 1.17
 
 require (
 	github.com/hashicorp/go-msgpack v0.5.5 // indirect

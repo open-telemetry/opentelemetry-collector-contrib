@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/containerinsight
 
-go 1.16
+go 1.17
 
 require (
 	github.com/pkg/errors v0.9.1 // indirect

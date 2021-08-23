@@ -1,9 +1,9 @@
 # Using Contexts:
 #   some jobs depend on secrets like API tokens to work correctly such as publishing to docker hub
 #   or reporting issues to GitHub. All such tokens are stored in CircleCI contexts (https://circleci.com/docs/2.0/contexts).
-#   
+#
 #   All tokens stored in a contexts are injected into a job as environment variables IF the pipeline that runs the job
-#   explicitly enables the context for the job. 
+#   explicitly enables the context for the job.
 #
 #   Contexts are protected with security groups. Jobs that use contexts will not run for commits from people who are not
 #   part of the approved security groups for the given context. This means that contributors who are not part of the
@@ -15,7 +15,7 @@
 #        This context makes GITHUB_TOKEN available to jobs. Jobs can use the token to authenticate with the GitHub API.
 #        We use this to report failures as issues back to the GitHub project.
 #        Any member of the OpenTelemetry GitHub organisation can run jobs that require this context e.g, loadtest-with-github-reports.
-#        
+#
 #      - dockerhub-token
 #        This contexts makes DOCKER_HUB_USERNAME and DOCKER_HUB_PASSWORD environment variables available to the jobs.
 #        This is used to publish docker images to Docker Hub.
@@ -40,7 +40,7 @@ orbs:
 executors:
   golang:
     docker:
-      - image: cimg/go:1.16
+      - image: cimg/go:1.17
   machine:
     machine:
       image: ubuntu-1604:201903-01
@@ -89,10 +89,10 @@ commands:
   setup_go:
     steps:
       - run:
-          name: Install Go 1.16
+          name: Install Go 1.17
           command: |
             sudo rm -rf /usr/local/go
-            curl -L https://dl.google.com/go/go1.16.4.linux-amd64.tar.gz | sudo tar xz -C /usr/local
+            curl -L https://dl.google.com/go/go1.17.linux-amd64.tar.gz | sudo tar xz -C /usr/local
       - run:
           name: Add ~/go/bin to PATH
           command: |
@@ -204,7 +204,7 @@ workflows:
           context:
             - github-release-and-issues-api-token
           requires:
-            - cross-compile 
+            - cross-compile
       - publish-dev:
           context:
             - dockerhub-token
@@ -234,7 +234,7 @@ workflows:
           context:
             - github-release-and-issues-api-token
           requires:
-            - cross-compile 
+            - cross-compile
           filters:
             branches:
               only: main
@@ -242,7 +242,7 @@ workflows:
               only: /^v[0-9]+\.[0-9]+\.[0-9]+.*/
       - loadtest:
           requires:
-            - cross-compile 
+            - cross-compile
           filters:
             branches:
               ignore: main
@@ -269,7 +269,7 @@ workflows:
       # this publish-check step run for PR builds (all branches except main).
       # it runs the same jobs as the previous public-check step but
       # it uses the versions that do not need access to the
-      # GITHUB_TOKEN secret. 
+      # GITHUB_TOKEN secret.
       - publish-check:
           requires:
             - cross-compile
@@ -334,7 +334,7 @@ jobs:
 
   build-examples:
     docker:
-      - image: cimg/go:1.16
+      - image: cimg/go:1.17
     steps:
       - restore_workspace
       - setup_remote_docker
@@ -399,7 +399,7 @@ jobs:
 
   publish-check:
     docker:
-      - image: cimg/go:1.16
+      - image: cimg/go:1.17
     steps:
       - attach_to_workspace
       - setup_remote_docker
@@ -417,7 +417,7 @@ jobs:
   # and "dockerhub-token" contexts
   publish-stable:
     docker:
-      - image: cimg/go:1.16
+      - image: cimg/go:1.17
     steps:
       - restore_workspace
       - verify_dist_files_exist
@@ -481,7 +481,7 @@ jobs:
       # Number of runners must be always in sync with number of stability tests,
       # so every node runs exactly one stability test.
       runners-number:
-        type: integer 
+        type: integer
         default: 9
     executor: golang
     resource_class: medium+

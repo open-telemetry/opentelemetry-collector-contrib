@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudpubsubreceiver
 
-go 1.16
+go 1.17
 
 require (
 	github.com/stretchr/testify v1.7.0

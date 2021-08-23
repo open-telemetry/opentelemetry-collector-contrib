@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sumologicexporter
 
-go 1.16
+go 1.17
 
 require (
 	github.com/mattn/go-colorable v0.1.7 // indirect
