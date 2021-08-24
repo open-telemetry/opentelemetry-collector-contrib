@@ -20,12 +20,11 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtest"
-	"go.opentelemetry.io/collector/processor/processorhelper"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/attraction"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterconfig"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterset"
 )
@@ -43,10 +42,10 @@ func TestLoadingConfig(t *testing.T) {
 	p0 := cfg.Processors[config.NewIDWithName(typeStr, "insert")]
 	assert.Equal(t, p0, &Config{
 		ProcessorSettings: config.NewProcessorSettings(config.NewIDWithName(typeStr, "insert")),
-		Settings: processorhelper.Settings{
-			Actions: []processorhelper.ActionKeyValue{
-				{Key: "attribute1", Value: 123, Action: processorhelper.INSERT},
-				{Key: "string key", FromAttribute: "anotherkey", Action: processorhelper.INSERT},
+		Settings: attraction.Settings{
+			Actions: []attraction.ActionKeyValue{
+				{Key: "attribute1", Value: 123, Action: attraction.INSERT},
+				{Key: "string key", FromAttribute: "anotherkey", Action: attraction.INSERT},
 			},
 		},
 	})
@@ -54,10 +53,10 @@ func TestLoadingConfig(t *testing.T) {
 	p1 := cfg.Processors[config.NewIDWithName(typeStr, "update")]
 	assert.Equal(t, p1, &Config{
 		ProcessorSettings: config.NewProcessorSettings(config.NewIDWithName(typeStr, "update")),
-		Settings: processorhelper.Settings{
-			Actions: []processorhelper.ActionKeyValue{
-				{Key: "boo", FromAttribute: "foo", Action: processorhelper.UPDATE},
-				{Key: "db.secret", Value: "redacted", Action: processorhelper.UPDATE},
+		Settings: attraction.Settings{
+			Actions: []attraction.ActionKeyValue{
+				{Key: "boo", FromAttribute: "foo", Action: attraction.UPDATE},
+				{Key: "db.secret", Value: "redacted", Action: attraction.UPDATE},
 			},
 		},
 	})
@@ -65,10 +64,10 @@ func TestLoadingConfig(t *testing.T) {
 	p2 := cfg.Processors[config.NewIDWithName(typeStr, "upsert")]
 	assert.Equal(t, p2, &Config{
 		ProcessorSettings: config.NewProcessorSettings(config.NewIDWithName(typeStr, "upsert")),
-		Settings: processorhelper.Settings{
-			Actions: []processorhelper.ActionKeyValue{
-				{Key: "region", Value: "planet-earth", Action: processorhelper.UPSERT},
-				{Key: "new_user_key", FromAttribute: "user_key", Action: processorhelper.UPSERT},
+		Settings: attraction.Settings{
+			Actions: []attraction.ActionKeyValue{
+				{Key: "region", Value: "planet-earth", Action: attraction.UPSERT},
+				{Key: "new_user_key", FromAttribute: "user_key", Action: attraction.UPSERT},
 			},
 		},
 	})
@@ -76,10 +75,10 @@ func TestLoadingConfig(t *testing.T) {
 	p3 := cfg.Processors[config.NewIDWithName(typeStr, "delete")]
 	assert.Equal(t, p3, &Config{
 		ProcessorSettings: config.NewProcessorSettings(config.NewIDWithName(typeStr, "delete")),
-		Settings: processorhelper.Settings{
-			Actions: []processorhelper.ActionKeyValue{
-				{Key: "credit_card", Action: processorhelper.DELETE},
-				{Key: "duplicate_key", Action: processorhelper.DELETE},
+		Settings: attraction.Settings{
+			Actions: []attraction.ActionKeyValue{
+				{Key: "credit_card", Action: attraction.DELETE},
+				{Key: "duplicate_key", Action: attraction.DELETE},
 			},
 		},
 	})
@@ -87,9 +86,9 @@ func TestLoadingConfig(t *testing.T) {
 	p4 := cfg.Processors[config.NewIDWithName(typeStr, "hash")]
 	assert.Equal(t, p4, &Config{
 		ProcessorSettings: config.NewProcessorSettings(config.NewIDWithName(typeStr, "hash")),
-		Settings: processorhelper.Settings{
-			Actions: []processorhelper.ActionKeyValue{
-				{Key: "user.email", Action: processorhelper.HASH},
+		Settings: attraction.Settings{
+			Actions: []attraction.ActionKeyValue{
+				{Key: "user.email", Action: attraction.HASH},
 			},
 		},
 	})
@@ -107,10 +106,10 @@ func TestLoadingConfig(t *testing.T) {
 				},
 			},
 		},
-		Settings: processorhelper.Settings{
-			Actions: []processorhelper.ActionKeyValue{
-				{Key: "credit_card", Action: processorhelper.DELETE},
-				{Key: "duplicate_key", Action: processorhelper.DELETE},
+		Settings: attraction.Settings{
+			Actions: []attraction.ActionKeyValue{
+				{Key: "credit_card", Action: attraction.DELETE},
+				{Key: "duplicate_key", Action: attraction.DELETE},
 			},
 		},
 	})
@@ -124,10 +123,10 @@ func TestLoadingConfig(t *testing.T) {
 				Services: []string{"auth.*", "login.*"},
 			},
 		},
-		Settings: processorhelper.Settings{
-			Actions: []processorhelper.ActionKeyValue{
-				{Key: "credit_card", Action: processorhelper.DELETE},
-				{Key: "duplicate_key", Action: processorhelper.DELETE},
+		Settings: attraction.Settings{
+			Actions: []attraction.ActionKeyValue{
+				{Key: "credit_card", Action: attraction.DELETE},
+				{Key: "duplicate_key", Action: attraction.DELETE},
 			},
 		},
 	})
@@ -147,10 +146,10 @@ func TestLoadingConfig(t *testing.T) {
 				},
 			},
 		},
-		Settings: processorhelper.Settings{
-			Actions: []processorhelper.ActionKeyValue{
-				{Key: "credit_card", Action: processorhelper.DELETE},
-				{Key: "duplicate_key", Action: processorhelper.DELETE},
+		Settings: attraction.Settings{
+			Actions: []attraction.ActionKeyValue{
+				{Key: "credit_card", Action: attraction.DELETE},
+				{Key: "duplicate_key", Action: attraction.DELETE},
 			},
 		},
 	})
@@ -158,11 +157,11 @@ func TestLoadingConfig(t *testing.T) {
 	p8 := cfg.Processors[config.NewIDWithName(typeStr, "complex")]
 	assert.Equal(t, p8, &Config{
 		ProcessorSettings: config.NewProcessorSettings(config.NewIDWithName(typeStr, "complex")),
-		Settings: processorhelper.Settings{
-			Actions: []processorhelper.ActionKeyValue{
-				{Key: "operation", Value: "default", Action: processorhelper.INSERT},
-				{Key: "svc.operation", FromAttribute: "operation", Action: processorhelper.UPSERT},
-				{Key: "operation", Action: processorhelper.DELETE},
+		Settings: attraction.Settings{
+			Actions: []attraction.ActionKeyValue{
+				{Key: "operation", Value: "default", Action: attraction.INSERT},
+				{Key: "svc.operation", FromAttribute: "operation", Action: attraction.UPSERT},
+				{Key: "operation", Action: attraction.DELETE},
 			},
 		},
 	})
@@ -170,13 +169,13 @@ func TestLoadingConfig(t *testing.T) {
 	p9 := cfg.Processors[config.NewIDWithName(typeStr, "example")]
 	assert.Equal(t, p9, &Config{
 		ProcessorSettings: config.NewProcessorSettings(config.NewIDWithName(typeStr, "example")),
-		Settings: processorhelper.Settings{
-			Actions: []processorhelper.ActionKeyValue{
-				{Key: "db.table", Action: processorhelper.DELETE},
-				{Key: "redacted_span", Value: true, Action: processorhelper.UPSERT},
-				{Key: "copy_key", FromAttribute: "key_original", Action: processorhelper.UPDATE},
-				{Key: "account_id", Value: 2245, Action: processorhelper.INSERT},
-				{Key: "account_password", Action: processorhelper.DELETE},
+		Settings: attraction.Settings{
+			Actions: []attraction.ActionKeyValue{
+				{Key: "db.table", Action: attraction.DELETE},
+				{Key: "redacted_span", Value: true, Action: attraction.UPSERT},
+				{Key: "copy_key", FromAttribute: "key_original", Action: attraction.UPDATE},
+				{Key: "account_id", Value: 2245, Action: attraction.INSERT},
+				{Key: "account_password", Action: attraction.DELETE},
 			},
 		},
 	})
@@ -194,10 +193,10 @@ func TestLoadingConfig(t *testing.T) {
 				SpanNames: []string{"login.*"},
 			},
 		},
-		Settings: processorhelper.Settings{
-			Actions: []processorhelper.ActionKeyValue{
-				{Key: "password", Action: processorhelper.UPDATE, Value: "obfuscated"},
-				{Key: "token", Action: processorhelper.DELETE},
+		Settings: attraction.Settings{
+			Actions: []attraction.ActionKeyValue{
+				{Key: "password", Action: attraction.UPDATE, Value: "obfuscated"},
+				{Key: "token", Action: attraction.DELETE},
 			},
 		},
 	})

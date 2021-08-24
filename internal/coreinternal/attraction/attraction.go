@@ -12,15 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package processorhelper
+package attraction
 
 import (
 	"fmt"
 	"regexp"
 	"strings"
 
-	"go.opentelemetry.io/collector/internal/processor/filterhelper"
 	"go.opentelemetry.io/collector/model/pdata"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterhelper"
 )
 
 // Settings specifies the processor settings.

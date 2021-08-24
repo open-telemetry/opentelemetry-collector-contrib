@@ -20,13 +20,12 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/model/pdata"
-	"go.opentelemetry.io/collector/processor/processorhelper"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/attraction"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterconfig"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterset"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
@@ -101,9 +100,9 @@ func TestLogProcessor_NilEmptyData(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	oCfg := cfg.(*Config)
-	oCfg.Settings.Actions = []processorhelper.ActionKeyValue{
-		{Key: "attribute1", Action: processorhelper.INSERT, Value: 123},
-		{Key: "attribute1", Action: processorhelper.DELETE},
+	oCfg.Settings.Actions = []attraction.ActionKeyValue{
+		{Key: "attribute1", Action: attraction.INSERT, Value: 123},
+		{Key: "attribute1", Action: attraction.DELETE},
 	}
 
 	tp, err := factory.CreateLogsProcessor(
@@ -157,8 +156,8 @@ func TestAttributes_FilterLogs(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	oCfg := cfg.(*Config)
-	oCfg.Actions = []processorhelper.ActionKeyValue{
-		{Key: "attribute1", Action: processorhelper.INSERT, Value: 123},
+	oCfg.Actions = []attraction.ActionKeyValue{
+		{Key: "attribute1", Action: attraction.INSERT, Value: 123},
 	}
 	oCfg.Include = &filterconfig.MatchProperties{
 		LogNames: []string{"^[^i].*"},
@@ -222,8 +221,8 @@ func TestAttributes_FilterLogsByNameStrict(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	oCfg := cfg.(*Config)
-	oCfg.Actions = []processorhelper.ActionKeyValue{
-		{Key: "attribute1", Action: processorhelper.INSERT, Value: 123},
+	oCfg.Actions = []attraction.ActionKeyValue{
+		{Key: "attribute1", Action: attraction.INSERT, Value: 123},
 	}
 	oCfg.Include = &filterconfig.MatchProperties{
 		LogNames: []string{"apply", "dont_apply"},
@@ -285,8 +284,8 @@ func TestAttributes_FilterLogsByNameRegexp(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	oCfg := cfg.(*Config)
-	oCfg.Actions = []processorhelper.ActionKeyValue{
-		{Key: "attribute1", Action: processorhelper.INSERT, Value: 123},
+	oCfg.Actions = []attraction.ActionKeyValue{
+		{Key: "attribute1", Action: attraction.INSERT, Value: 123},
 	}
 	oCfg.Include = &filterconfig.MatchProperties{
 		LogNames: []string{"^apply.*"},
@@ -348,11 +347,11 @@ func TestLogAttributes_Hash(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	oCfg := cfg.(*Config)
-	oCfg.Actions = []processorhelper.ActionKeyValue{
-		{Key: "user.email", Action: processorhelper.HASH},
-		{Key: "user.id", Action: processorhelper.HASH},
-		{Key: "user.balance", Action: processorhelper.HASH},
-		{Key: "user.authenticated", Action: processorhelper.HASH},
+	oCfg.Actions = []attraction.ActionKeyValue{
+		{Key: "user.email", Action: attraction.HASH},
+		{Key: "user.id", Action: attraction.HASH},
+		{Key: "user.balance", Action: attraction.HASH},
+		{Key: "user.authenticated", Action: attraction.HASH},
 	}
 
 	tp, err := factory.CreateLogsProcessor(context.Background(), componenttest.NewNopProcessorCreateSettings(), cfg, consumertest.NewNop())
@@ -393,8 +392,8 @@ func BenchmarkAttributes_FilterLogsByName(b *testing.B) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	oCfg := cfg.(*Config)
-	oCfg.Actions = []processorhelper.ActionKeyValue{
-		{Key: "attribute1", Action: processorhelper.INSERT, Value: 123},
+	oCfg.Actions = []attraction.ActionKeyValue{
+		{Key: "attribute1", Action: attraction.INSERT, Value: 123},
 	}
 	oCfg.Include = &filterconfig.MatchProperties{
 		LogNames: []string{"^apply.*"},

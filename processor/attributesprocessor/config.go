@@ -16,8 +16,8 @@ package attributesprocessor
 
 import (
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/processor/processorhelper"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/attraction"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterconfig"
 )
 
@@ -36,7 +36,7 @@ type Config struct {
 	// Specifies the list of attributes to act on.
 	// The set of actions are {INSERT, UPDATE, UPSERT, DELETE, HASH, EXTRACT}.
 	// This is a required field.
-	processorhelper.Settings `mapstructure:",squash"`
+	attraction.Settings `mapstructure:",squash"`
 }
 
 var _ config.Processor = (*Config)(nil)

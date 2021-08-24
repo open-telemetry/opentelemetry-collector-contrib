@@ -23,6 +23,7 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/processor/processorhelper"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/attraction"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterlog"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterspan"
 )
@@ -60,7 +61,7 @@ func createTracesProcessor(
 	if len(oCfg.Actions) == 0 {
 		return nil, fmt.Errorf("error creating \"attributes\" processor due to missing required field \"actions\" of processor %v", cfg.ID())
 	}
-	attrProc, err := processorhelper.NewAttrProc(&oCfg.Settings)
+	attrProc, err := attraction.NewAttrProc(&oCfg.Settings)
 	if err != nil {
 		return nil, fmt.Errorf("error creating \"attributes\" processor: %w of processor %v", err, cfg.ID())
 	}
@@ -90,7 +91,7 @@ func createLogProcessor(
 	if len(oCfg.Actions) == 0 {
 		return nil, fmt.Errorf("error creating \"attributes\" processor due to missing required field \"actions\" of processor %v", cfg.ID())
 	}
-	attrProc, err := processorhelper.NewAttrProc(&oCfg.Settings)
+	attrProc, err := attraction.NewAttrProc(&oCfg.Settings)
 	if err != nil {
 		return nil, fmt.Errorf("error creating \"attributes\" processor: %w of processor %v", err, cfg.ID())
 	}
