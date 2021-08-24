@@ -22,9 +22,8 @@ import (
 	agenttracepb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/trace/v1"
 	ocresource "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	"github.com/stretchr/testify/assert"
-	"google.golang.org/protobuf/proto"
-
 	"go.opentelemetry.io/collector/model/pdata"
+	"google.golang.org/protobuf/proto"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/occonventions"
 )

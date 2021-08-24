@@ -18,7 +18,6 @@ import (
 	occommon "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	ocmetrics "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	ocresource "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
-
 	"go.opentelemetry.io/collector/model/pdata"
 )
 

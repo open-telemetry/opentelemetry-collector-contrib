@@ -22,7 +22,6 @@ import (
 	"github.com/shirou/gopsutil/cpu"
 	"github.com/shirou/gopsutil/host"
 	"github.com/shirou/gopsutil/process"
-
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/model/pdata"
 

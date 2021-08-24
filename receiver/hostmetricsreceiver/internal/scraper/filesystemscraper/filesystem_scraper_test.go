@@ -23,7 +23,6 @@ import (
 	"github.com/shirou/gopsutil/disk"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-
 	"go.opentelemetry.io/collector/model/pdata"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterset"

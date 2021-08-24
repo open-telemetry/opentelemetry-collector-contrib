@@ -18,7 +18,6 @@ import (
 	"fmt"
 
 	"github.com/spf13/cast"
-
 	"go.opentelemetry.io/collector/model/pdata"
 )
 

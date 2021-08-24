@@ -17,13 +17,12 @@ package opencensus
 import (
 	"testing"
 
-	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/model/pdata"
-
 	occommon "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	agentmetricspb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/metrics/v1"
 	ocmetrics "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	ocresource "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
+	"github.com/stretchr/testify/assert"
+	"go.opentelemetry.io/collector/model/pdata"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
 )

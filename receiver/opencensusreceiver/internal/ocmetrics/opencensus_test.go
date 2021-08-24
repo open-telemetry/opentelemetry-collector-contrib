@@ -31,14 +31,13 @@ import (
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"google.golang.org/grpc"
-	"google.golang.org/protobuf/proto"
-	"google.golang.org/protobuf/types/known/timestamppb"
-
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"google.golang.org/grpc"
+	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opencensusexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"

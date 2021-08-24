@@ -22,12 +22,11 @@ import (
 	"github.com/Shopify/sarama"
 	"go.opencensus.io/stats"
 	"go.opencensus.io/tag"
-	"go.uber.org/zap"
-
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/obsreport"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter"
 )

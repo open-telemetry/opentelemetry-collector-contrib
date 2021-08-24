@@ -24,7 +24,6 @@ import (
 	zipkinreporter "github.com/openzipkin/zipkin-go/reporter"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-
 	"go.opentelemetry.io/collector/model/pdata"
 	conventions "go.opentelemetry.io/collector/translator/conventions/v1.5.0"
 
