@@ -31,14 +31,14 @@ func TestGeneratorAndBackend(t *testing.T) {
 		sender   DataSender
 	}{
 		{
-			name:     "Jaeger-JaegerGRPC",
-			receiver: NewJaegerDataReceiver(port),
-			sender:   NewJaegerGRPCDataSender(DefaultHost, port),
+			name:     "OTLP-OTLP",
+			receiver: NewOTLPDataReceiver(port),
+			sender:   NewOTLPTraceDataSender(DefaultHost, port),
 		},
 		{
-			name:     "Zipkin-Zipkin",
-			receiver: NewZipkinDataReceiver(port),
-			sender:   NewZipkinDataSender(DefaultHost, port),
+			name:     "OTLP/HTTP-OTLP/HTTP",
+			receiver: NewOTLPHTTPDataReceiver(port),
+			sender:   NewOTLPHTTPTraceDataSender(DefaultHost, port),
 		},
 	}
 

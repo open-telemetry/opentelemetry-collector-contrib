@@ -19,13 +19,11 @@ import (
 	"strings"
 
 	"github.com/shirou/gopsutil/process"
-	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
-
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/internal/version"
 	"go.opentelemetry.io/collector/service"
 	"go.opentelemetry.io/collector/service/parserprovider"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 )
 
 // inProcessCollector implements the OtelcolRunner interfaces running a single otelcol as a go routine within the
@@ -62,10 +60,7 @@ func (ipp *inProcessCollector) PrepareConfig(configStr string) (configCleanup fu
 
 func (ipp *inProcessCollector) Start(args StartParams) error {
 	settings := service.CollectorSettings{
-		BuildInfo: component.BuildInfo{
-			Command: "otelcol",
-			Version: version.Version,
-		},
+		BuildInfo:      component.DefaultBuildInfo(),
 		Factories:      ipp.factories,
 		ParserProvider: parserprovider.NewInMemory(strings.NewReader(ipp.configStr)),
 	}

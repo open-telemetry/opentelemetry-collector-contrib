@@ -16,7 +16,7 @@ Each test case within the suite should create a `testbed.TestCase` and supply im
 
 For instance, if using the existing end-to-end test, the general dataflow can be (Note that MockBackend does not really have a consumer instance, only to make it intuitive, this diagram draws it a separate module):
 
-![e2e diagram](./e2e_diagram.jpeg)
+![e2e diagram](e2e_diagram.jpeg)
 
 ## Pluggable Test Components
 
@@ -120,7 +120,7 @@ Here providing some examples of how to run and get the results of testing.
 
 ​	Then get the result:
 
-![collector-contrib tests result](./CCRepo_result.png)
+![collector-contrib tests result](CCRepo_result.png)
 
 2. Under [Collector/testbed/](https://github.com/open-telemetry/opentelemetry-collector/tree/main/testbed) repo, here taking correctness tests as an example, by running:
 
@@ -132,5 +132,5 @@ Here providing some examples of how to run and get the results of testing.
 
 Then get the result:
 
-![collector correctness tests result](./correctness_result.png)
+![collector correctness tests result](correctness_result.png)
 
