@@ -100,6 +100,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/udplogreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/wavefrontreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowsperfcountersreceiver"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zipkinreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zookeeperreceiver"
 )
 
@@ -125,6 +126,7 @@ func Components() (component.Factories, error) {
 	delete(factories.Receivers, "opencensus")
 	delete(factories.Receivers, "kafka")
 	delete(factories.Receivers, "hostmetrics")
+	delete(factories.Receivers, "zipkin")
 
 	extensions := []component.ExtensionFactory{
 		bearertokenauthextension.NewFactory(),
@@ -177,6 +179,7 @@ func Components() (component.Factories, error) {
 		syslogreceiver.NewFactory(),
 		tcplogreceiver.NewFactory(),
 		udplogreceiver.NewFactory(),
+		zipkinreceiver.NewFactory(),
 	}
 
 	receivers = append(receivers, extraReceivers()...)

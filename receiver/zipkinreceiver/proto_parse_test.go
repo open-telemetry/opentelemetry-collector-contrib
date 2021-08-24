@@ -22,12 +22,12 @@ import (
 	"github.com/openzipkin/zipkin-go/proto/zipkin_proto3"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"google.golang.org/protobuf/proto"
-
 	"go.opentelemetry.io/collector/model/pdata"
 	conventions "go.opentelemetry.io/collector/translator/conventions/v1.5.0"
 	tracetranslator "go.opentelemetry.io/collector/translator/trace"
-	"go.opentelemetry.io/collector/translator/trace/zipkinv2"
+	"google.golang.org/protobuf/proto"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin/zipkinv2"
 )
 
 func TestConvertSpansToTraceSpans_protobuf(t *testing.T) {

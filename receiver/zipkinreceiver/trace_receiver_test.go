@@ -35,7 +35,6 @@ import (
 	"github.com/jaegertracing/jaeger/thrift-gen/zipkincore"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -49,9 +48,9 @@ import (
 )
 
 const (
-	zipkinV2Single      = "../../translator/trace/zipkinv2/testdata/zipkin_v2_single.json"
-	zipkinV2NoTimestamp = "../../translator/trace/zipkinv2/testdata/zipkin_v2_notimestamp.json"
-	zipkinV1SingleBatch = "../../translator/trace/zipkinv1/testdata/zipkin_v1_single_batch.json"
+	zipkinV2Single      = "../../pkg/translator/zipkin/zipkinv2/testdata/zipkin_v2_single.json"
+	zipkinV2NoTimestamp = "../../pkg/translator/zipkin/zipkinv2/testdata/zipkin_v2_notimestamp.json"
+	zipkinV1SingleBatch = "../../pkg/translator/zipkin/zipkinv1/testdata/zipkin_v1_single_batch.json"
 )
 
 var zipkinReceiverID = config.NewIDWithName(typeStr, "receiver_test")
