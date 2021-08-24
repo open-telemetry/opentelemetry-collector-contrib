@@ -81,6 +81,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/fluentforwardreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/influxdbreceiver"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jaegerreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jmxreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkametricsreceiver"
@@ -123,6 +124,7 @@ func Components() (component.Factories, error) {
 	delete(factories.Processors, "filter")
 
 	delete(factories.Receivers, "opencensus")
+	delete(factories.Receivers, "jaeger")
 	delete(factories.Receivers, "kafka")
 	delete(factories.Receivers, "hostmetrics")
 
@@ -157,6 +159,7 @@ func Components() (component.Factories, error) {
 		fluentforwardreceiver.NewFactory(),
 		hostmetricsreceiver.NewFactory(),
 		influxdbreceiver.NewFactory(),
+		jaegerreceiver.NewFactory(),
 		jmxreceiver.NewFactory(),
 		kafkareceiver.NewFactory(),
 		kafkametricsreceiver.NewFactory(),

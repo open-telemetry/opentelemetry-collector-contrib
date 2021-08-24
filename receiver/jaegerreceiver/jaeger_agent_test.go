@@ -31,8 +31,6 @@ import (
 	jaegerthrift "github.com/jaegertracing/jaeger/thrift-gen/jaeger"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"google.golang.org/grpc"
-
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configgrpc"
@@ -42,6 +40,7 @@ import (
 	"go.opentelemetry.io/collector/testutil"
 	conventions "go.opentelemetry.io/collector/translator/conventions/v1.5.0"
 	"go.opentelemetry.io/collector/translator/trace/jaeger"
+	"google.golang.org/grpc"
 )
 
 var jaegerAgent = config.NewIDWithName(typeStr, "agent_test")
