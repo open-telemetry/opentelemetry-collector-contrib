@@ -19,13 +19,13 @@ import (
 	"context"
 
 	"github.com/jaegertracing/jaeger/model"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger"
 	sapmclient "github.com/signalfx/sapm-proto/client"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/model/pdata"
-	"go.opentelemetry.io/collector/translator/trace/jaeger"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
