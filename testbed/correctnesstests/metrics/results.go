@@ -38,7 +38,7 @@ func (r *results) Init(resultsDir string) {
 	if err != nil {
 		log.Fatalf(err.Error())
 	}
-	r.resultsFile, err = os.Create(path.Join(resultsDir, "CORRECTNESSRESULTS.md"))
+	r.resultsFile, err = os.Create(path.Join(resultsDir, "TESTRESULTS.md"))
 	if err != nil {
 		log.Fatalf(err.Error())
 	}

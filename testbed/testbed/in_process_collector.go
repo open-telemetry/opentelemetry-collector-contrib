@@ -37,7 +37,7 @@ type inProcessCollector struct {
 	stopped   bool
 }
 
-// NewInProcessCollector crewtes a new inProcessCollector using the supplied component factories.
+// NewInProcessCollector creates a new inProcessCollector using the supplied component factories.
 func NewInProcessCollector(factories component.Factories) OtelcolRunner {
 	return &inProcessCollector{
 		factories: factories,
