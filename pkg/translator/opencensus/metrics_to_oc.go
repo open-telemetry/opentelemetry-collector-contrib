@@ -21,7 +21,6 @@ import (
 	ocmetrics "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	ocresource "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	"github.com/golang/protobuf/ptypes/wrappers"
-
 	"go.opentelemetry.io/collector/model/pdata"
 )
 

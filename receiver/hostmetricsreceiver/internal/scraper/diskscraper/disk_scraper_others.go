@@ -23,13 +23,11 @@ import (
 
 	"github.com/shirou/gopsutil/disk"
 	"github.com/shirou/gopsutil/host"
-
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/model/pdata"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/diskscraper/internal/metadata"
-
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterset"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/diskscraper/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/scrapererror"
 )
 

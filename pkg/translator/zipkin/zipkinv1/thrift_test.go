@@ -28,10 +28,9 @@ import (
 	"github.com/jaegertracing/jaeger/thrift-gen/zipkincore"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"google.golang.org/protobuf/testing/protocmp"
-
 	conventions "go.opentelemetry.io/collector/translator/conventions/v1.5.0"
 	tracetranslator "go.opentelemetry.io/collector/translator/trace"
+	"google.golang.org/protobuf/testing/protocmp"
 )
 
 // compareTraceData compares got to want while ignoring order. Both are modified in place.

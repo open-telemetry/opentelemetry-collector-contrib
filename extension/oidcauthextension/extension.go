@@ -29,11 +29,10 @@ import (
 	"time"
 
 	"github.com/coreos/go-oidc"
-	"go.uber.org/zap"
-	"google.golang.org/grpc"
-
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configauth"
+	"go.uber.org/zap"
+	"google.golang.org/grpc"
 )
 
 type oidcExtension struct {

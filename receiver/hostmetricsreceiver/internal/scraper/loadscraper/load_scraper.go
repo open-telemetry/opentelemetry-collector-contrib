@@ -19,10 +19,9 @@ import (
 	"time"
 
 	"github.com/shirou/gopsutil/load"
-	"go.uber.org/zap"
-
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/model/pdata"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/loadscraper/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/scrapererror"

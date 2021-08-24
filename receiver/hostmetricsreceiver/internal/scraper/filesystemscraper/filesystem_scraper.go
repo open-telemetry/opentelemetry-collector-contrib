@@ -20,7 +20,6 @@ import (
 	"time"
 
 	"github.com/shirou/gopsutil/disk"
-
 	"go.opentelemetry.io/collector/model/pdata"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/filesystemscraper/internal/metadata"
