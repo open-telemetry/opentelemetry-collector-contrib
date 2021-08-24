@@ -32,7 +32,7 @@ import (
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/testutil"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testutil"
 )
 
 type clientRequestArgs struct {

@@ -29,16 +29,20 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/dynatraceexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/f5cloudexporter"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/fileexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/googlecloudexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/honeycombexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/humioexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/influxdbexporter"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/jaegerexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/loadbalancingexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/logzioexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/lokiexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/newrelicexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opencensusexporter"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusexporter"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusremotewriteexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sapmexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sentryexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter"
@@ -81,6 +85,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/fluentforwardreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/influxdbreceiver"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jaegerreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jmxreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkametricsreceiver"
@@ -88,6 +93,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/opencensusreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusexecreceiver"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/receivercreator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/redisreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sapmreceiver"
@@ -100,6 +106,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/udplogreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/wavefrontreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowsperfcountersreceiver"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zipkinreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zookeeperreceiver"
 )
 
@@ -109,8 +116,12 @@ func Components() (component.Factories, error) {
 		return component.Factories{}, err
 	}
 
+	delete(factories.Exporters, "file")
+	delete(factories.Exporters, "jaeger")
 	delete(factories.Exporters, "kafka")
 	delete(factories.Exporters, "opencensus")
+	delete(factories.Exporters, "prometheus")
+	delete(factories.Exporters, "prometheusremotewrite")
 	delete(factories.Exporters, "zipkin")
 
 	delete(factories.Extensions, "oidc")
@@ -122,9 +133,12 @@ func Components() (component.Factories, error) {
 	delete(factories.Processors, "resource")
 	delete(factories.Processors, "filter")
 
-	delete(factories.Receivers, "opencensus")
-	delete(factories.Receivers, "kafka")
 	delete(factories.Receivers, "hostmetrics")
+	delete(factories.Receivers, "jaeger")
+	delete(factories.Receivers, "kafka")
+	delete(factories.Receivers, "opencensus")
+	delete(factories.Receivers, "prometheus")
+	delete(factories.Receivers, "zipkin")
 
 	extensions := []component.ExtensionFactory{
 		bearertokenauthextension.NewFactory(),
@@ -157,6 +171,7 @@ func Components() (component.Factories, error) {
 		fluentforwardreceiver.NewFactory(),
 		hostmetricsreceiver.NewFactory(),
 		influxdbreceiver.NewFactory(),
+		jaegerreceiver.NewFactory(),
 		jmxreceiver.NewFactory(),
 		kafkareceiver.NewFactory(),
 		kafkametricsreceiver.NewFactory(),
@@ -164,6 +179,7 @@ func Components() (component.Factories, error) {
 		kubeletstatsreceiver.NewFactory(),
 		opencensusreceiver.NewFactory(),
 		prometheusexecreceiver.NewFactory(),
+		prometheusreceiver.NewFactory(),
 		receivercreator.NewFactory(),
 		redisreceiver.NewFactory(),
 		sapmreceiver.NewFactory(),
@@ -177,6 +193,7 @@ func Components() (component.Factories, error) {
 		syslogreceiver.NewFactory(),
 		tcplogreceiver.NewFactory(),
 		udplogreceiver.NewFactory(),
+		zipkinreceiver.NewFactory(),
 	}
 
 	receivers = append(receivers, extraReceivers()...)
@@ -201,16 +218,20 @@ func Components() (component.Factories, error) {
 		dynatraceexporter.NewFactory(),
 		elasticexporter.NewFactory(),
 		f5cloudexporter.NewFactory(),
+		fileexporter.NewFactory(),
 		googlecloudexporter.NewFactory(),
 		honeycombexporter.NewFactory(),
 		humioexporter.NewFactory(),
 		influxdbexporter.NewFactory(),
+		jaegerexporter.NewFactory(),
 		kafkaexporter.NewFactory(),
 		loadbalancingexporter.NewFactory(),
 		logzioexporter.NewFactory(),
 		lokiexporter.NewFactory(),
 		newrelicexporter.NewFactory(),
 		opencensusexporter.NewFactory(),
+		prometheusexporter.NewFactory(),
+		prometheusremotewriteexporter.NewFactory(),
 		sapmexporter.NewFactory(),
 		sentryexporter.NewFactory(),
 		signalfxexporter.NewFactory(),

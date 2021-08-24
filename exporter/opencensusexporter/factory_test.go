@@ -29,7 +29,7 @@ import (
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/configtls"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/testutil"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testutil"
 )
 
 func TestCreateDefaultConfig(t *testing.T) {

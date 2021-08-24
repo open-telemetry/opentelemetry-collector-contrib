@@ -40,7 +40,7 @@ import (
 	"go.opentelemetry.io/collector/model/pdata"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/testutil"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testutil"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/splunkhecexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
