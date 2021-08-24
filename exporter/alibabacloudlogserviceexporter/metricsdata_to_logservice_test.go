@@ -34,6 +34,7 @@ func TestMetricDataToLogService(t *testing.T) {
 	rm.Resource().Attributes().InsertString("labelB", "valueB")
 	rm.Resource().Attributes().InsertString("labelA", "valueA")
 	rm.Resource().Attributes().InsertString("a", "b")
+	rm.Resource().Attributes().InsertString("service.name", "unknown-service")
 	ilms := rm.InstrumentationLibraryMetrics()
 	ilms.AppendEmpty() // Add an empty InstrumentationLibraryMetrics
 	ilm := ilms.AppendEmpty()

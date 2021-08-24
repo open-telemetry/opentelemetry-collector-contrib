@@ -159,10 +159,7 @@ func min(l, r int) int {
 func resourceToMetricLabels(labels *KeyValues, resource pdata.Resource) {
 	attrs := resource.Attributes()
 	attrs.Range(func(k string, v pdata.AttributeValue) bool {
-		labels.keyValues = append(labels.keyValues, KeyValue{
-			Key:   k,
-			Value: pdata.AttributeValueToString(v),
-		})
+		labels.Append(k, pdata.AttributeValueToString(v))
 		return true
 	})
 }
