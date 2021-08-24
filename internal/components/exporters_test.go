@@ -35,10 +35,13 @@ import (
 	"go.opentelemetry.io/collector/exporter/prometheusexporter"
 	"go.opentelemetry.io/collector/exporter/zipkinexporter"
 
+	"go.opentelemetry.io/collector/testutil"
+
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/testutil"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opencensusexporter"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/zipkinexporter"
 )
 
 func TestDefaultExporters(t *testing.T) {

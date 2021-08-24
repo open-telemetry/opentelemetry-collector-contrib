@@ -33,8 +33,9 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/receiver/opencensusreceiver/internal/ocmetrics"
-	"go.opentelemetry.io/collector/receiver/opencensusreceiver/internal/octrace"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/opencensusreceiver/internal/ocmetrics"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/opencensusreceiver/internal/octrace"
 )
 
 // ocReceiver is the type that exposes Trace and Metrics reception.
