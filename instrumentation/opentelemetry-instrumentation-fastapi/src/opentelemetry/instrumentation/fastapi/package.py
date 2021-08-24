@@ -13,4 +13,4 @@
 # limitations under the License.
 
 
-_instruments = ("fastapi ~= 0.58.1",)
+_instruments = ("fastapi ~= 0.58",)

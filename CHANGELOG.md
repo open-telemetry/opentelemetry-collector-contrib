@@ -13,6 +13,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `opentelemetry-instrumentation-asgi`, `opentelemetry-instrumentation-aiohttp-client`, `openetelemetry-instrumentation-fastapi`,        
   `opentelemetry-instrumentation-starlette`, `opentelemetry-instrumentation-urllib`, `opentelemetry-instrumentation-urllib3` Added `request_hook` and `response_hook` callbacks 
   ([#576](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/576))
+  
+### Changed
+
+- `opentelemetry-instrumentation-fastapi` Allow instrumentation of newer FastAPI versions.
+  ([#602](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/602))
 
 ### Changed
 - Enable explicit `excluded_urls` argument in `opentelemetry-instrumentation-flask`
