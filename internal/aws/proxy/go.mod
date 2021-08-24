@@ -10,4 +10,4 @@ require (
     github.com/open-telemetry/opentelemetry-collector-contrib/internal/testutil v0.0.0-00010101000000-000000000000
 )
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/testutil => ../internal/testutil
+replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/testutil => ../../testutil
