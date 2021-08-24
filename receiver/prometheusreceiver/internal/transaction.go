@@ -28,13 +28,13 @@ import (
 	"github.com/prometheus/prometheus/pkg/exemplar"
 	"github.com/prometheus/prometheus/pkg/labels"
 	"github.com/prometheus/prometheus/storage"
-	"go.uber.org/zap"
-	"google.golang.org/protobuf/types/known/timestamppb"
-
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/obsreport"
-	"go.opentelemetry.io/collector/translator/internaldata"
+	"go.uber.org/zap"
+	"google.golang.org/protobuf/types/known/timestamppb"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus"
 )
 
 const (
@@ -214,7 +214,7 @@ func (tr *transaction) Commit() error {
 
 	numPoints := 0
 	if len(metrics) > 0 {
-		md := internaldata.OCToMetrics(tr.node, tr.resource, metrics)
+		md := opencensus.OCToMetrics(tr.node, tr.resource, metrics)
 		numPoints = md.DataPointCount()
 		err = tr.sink.ConsumeMetrics(ctx, md)
 	}

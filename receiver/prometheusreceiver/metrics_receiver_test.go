@@ -36,14 +36,14 @@ import (
 	"github.com/prometheus/prometheus/scrape"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/types/known/timestamppb"
 	"gopkg.in/yaml.v2"
 
-	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.opentelemetry.io/collector/translator/internaldata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus"
 )
 
 var logger = zap.NewNop()
@@ -1428,7 +1428,7 @@ func testEndToEnd(t *testing.T, targets []*testData, useStartTimeMetric bool) {
 		rms := md.ResourceMetrics()
 		for i := 0; i < rms.Len(); i++ {
 			ocmd := &agentmetricspb.ExportMetricsServiceRequest{}
-			ocmd.Node, ocmd.Resource, ocmd.Metrics = internaldata.ResourceMetricsToOC(rms.At(i))
+			ocmd.Node, ocmd.Resource, ocmd.Metrics = opencensus.ResourceMetricsToOC(rms.At(i))
 			result, ok := results[ocmd.Node.ServiceInfo.Name]
 			if !ok {
 				result = make([]*agentmetricspb.ExportMetricsServiceRequest, 0)
@@ -1548,7 +1548,7 @@ func testEndToEndRegex(t *testing.T, targets []*testData, useStartTimeMetric boo
 		rms := md.ResourceMetrics()
 		for i := 0; i < rms.Len(); i++ {
 			ocmd := &agentmetricspb.ExportMetricsServiceRequest{}
-			ocmd.Node, ocmd.Resource, ocmd.Metrics = internaldata.ResourceMetricsToOC(rms.At(i))
+			ocmd.Node, ocmd.Resource, ocmd.Metrics = opencensus.ResourceMetricsToOC(rms.At(i))
 			result, ok := results[ocmd.Node.ServiceInfo.Name]
 			if !ok {
 				result = make([]*agentmetricspb.ExportMetricsServiceRequest, 0)

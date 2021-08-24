@@ -31,15 +31,15 @@ import (
 	"github.com/prometheus/prometheus/prompb"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/processor/batchprocessor"
+	"go.opentelemetry.io/collector/service"
+	"go.opentelemetry.io/collector/service/parserprovider"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 
-	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/exporter/prometheusremotewriteexporter"
-	"go.opentelemetry.io/collector/processor/batchprocessor"
-	"go.opentelemetry.io/collector/receiver/prometheusreceiver"
-	"go.opentelemetry.io/collector/service"
-	"go.opentelemetry.io/collector/service/parserprovider"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusremotewriteexporter"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver"
 )
 
 // Test that staleness markers are emitted for timeseries that intermittently disappear.

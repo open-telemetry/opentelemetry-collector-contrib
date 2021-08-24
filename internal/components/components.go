@@ -93,6 +93,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/opencensusreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusexecreceiver"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/receivercreator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/redisreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sapmreceiver"
@@ -132,10 +133,11 @@ func Components() (component.Factories, error) {
 	delete(factories.Processors, "resource")
 	delete(factories.Processors, "filter")
 
-	delete(factories.Receivers, "opencensus")
+	delete(factories.Receivers, "hostmetrics")
 	delete(factories.Receivers, "jaeger")
 	delete(factories.Receivers, "kafka")
-	delete(factories.Receivers, "hostmetrics")
+	delete(factories.Receivers, "opencensus")
+	delete(factories.Receivers, "prometheus")
 	delete(factories.Receivers, "zipkin")
 
 	extensions := []component.ExtensionFactory{
@@ -177,6 +179,7 @@ func Components() (component.Factories, error) {
 		kubeletstatsreceiver.NewFactory(),
 		opencensusreceiver.NewFactory(),
 		prometheusexecreceiver.NewFactory(),
+		prometheusreceiver.NewFactory(),
 		receivercreator.NewFactory(),
 		redisreceiver.NewFactory(),
 		sapmreceiver.NewFactory(),

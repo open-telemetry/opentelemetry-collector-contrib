@@ -22,10 +22,9 @@ import (
 	"time"
 
 	promconfig "github.com/prometheus/prometheus/config"
-	"gopkg.in/yaml.v2"
-
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configparser"
+	"gopkg.in/yaml.v2"
 )
 
 const (
