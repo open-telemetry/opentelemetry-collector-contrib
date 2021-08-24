@@ -68,18 +68,18 @@ func newMetricFamilyPdata(metricName string, mc MetadataCache, intervalStartTime
 			metadata.Type = textparse.MetricTypeUnknown
 		}
 	} else if !ok {
-			// Prometheus sends metrics without a type hint as gauges.
-			// MetricTypeUnknown is converted a gauge in convToOCAMetricType()
-			//logger.Debug(fmt.Sprintf("Metadata unknown, using Gauge type for: %s %+v", metricName, metadata))
-			metadata.Type = textparse.MetricTypeUnknown
-		}
-		mtype := convToPdataMetricType(metadata.Type)
+		// Prometheus sends metrics without a type hint as gauges.
+		// MetricTypeUnknown is converted a gauge in convToOCAMetricType()
+		//logger.Debug(fmt.Sprintf("Metadata unknown, using Gauge type for: %s %+v", metricName, metadata))
+		metadata.Type = textparse.MetricTypeUnknown
+	}
+	mtype := convToPdataMetricType(metadata.Type)
 	
-		// If a counter has a _total suffix but metadata is stored without it, keep _total suffix as the name otherwise 
-		// the metric sent won't have the suffix
-		if mtype == pdata.MetricDataTypeSum && strings.HasSuffix(metricName, metricSuffixTotal) {
-			familyName = metricName
-		}
+	// If a counter has a _total suffix but metadata is stored without it, keep _total suffix as the name otherwise 
+	// the metric sent won't have the suffix
+	if mtype == pdata.MetricDataTypeSum && strings.HasSuffix(metricName, metricSuffixTotal) {
+		familyName = metricName
+	}
 
 	return &metricFamilyPdata{
 		mtype:  mtype,
