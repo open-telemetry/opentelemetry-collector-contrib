@@ -30,6 +30,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   ([#595](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/595))
 
 ### Changed
+- `opentelemetry-instrumentation-falcon` added support for Falcon 3.
+  ([#607](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/607))
 - `opentelemetry-instrumentation-tornado` properly instrument work done in tornado on_finish method.
   ([#499](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/499))
 - `opentelemetry-instrumentation` Fixed cases where trying to use an instrumentation package without the

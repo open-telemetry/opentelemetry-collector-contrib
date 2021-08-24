@@ -126,7 +126,7 @@ _ENVIRON_EXC = "opentelemetry-falcon.exc"
 
 _excluded_urls = get_excluded_urls("FALCON")
 _traced_request_attrs = get_traced_request_attrs("FALCON")
-_response_propagation_setter = FuncSetter(falcon.api.Response.append_header)
+_response_propagation_setter = FuncSetter(falcon.Response.append_header)
 
 
 class FalconInstrumentor(BaseInstrumentor):
