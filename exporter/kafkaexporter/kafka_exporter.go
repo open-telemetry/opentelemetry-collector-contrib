@@ -19,11 +19,10 @@ import (
 	"fmt"
 
 	"github.com/Shopify/sarama"
-	"go.uber.org/zap"
-
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/model/pdata"
+	"go.uber.org/zap"
 )
 
 var errUnrecognizedEncoding = fmt.Errorf("unrecognized encoding")

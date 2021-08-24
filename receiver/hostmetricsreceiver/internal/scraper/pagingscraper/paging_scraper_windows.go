@@ -22,7 +22,6 @@ import (
 	"time"
 
 	"github.com/shirou/gopsutil/host"
-
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/model/pdata"
 

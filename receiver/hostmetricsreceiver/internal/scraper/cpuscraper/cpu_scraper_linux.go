@@ -18,7 +18,6 @@ package cpuscraper
 
 import (
 	"github.com/shirou/gopsutil/cpu"
-
 	"go.opentelemetry.io/collector/model/pdata"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/cpuscraper/internal/metadata"

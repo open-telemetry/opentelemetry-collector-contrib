@@ -16,7 +16,6 @@ package zipkinv2
 
 import (
 	zipkinreporter "github.com/openzipkin/zipkin-go/reporter"
-
 	"go.opentelemetry.io/collector/model/pdata"
 )
 

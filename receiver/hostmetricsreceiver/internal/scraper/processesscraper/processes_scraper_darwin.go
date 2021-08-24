@@ -18,7 +18,6 @@ package processesscraper
 
 import (
 	"github.com/shirou/gopsutil/load"
-
 	"go.opentelemetry.io/collector/model/pdata"
 )
 

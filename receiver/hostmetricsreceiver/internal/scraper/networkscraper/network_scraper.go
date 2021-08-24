@@ -21,7 +21,6 @@ import (
 
 	"github.com/shirou/gopsutil/host"
 	"github.com/shirou/gopsutil/net"
-
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/model/pdata"
 

@@ -15,9 +15,8 @@
 package opencensus
 
 import (
-	"google.golang.org/protobuf/types/known/timestamppb"
-
 	"go.opentelemetry.io/collector/model/pdata"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 // timestampAsTimestampPb converts a pdata.Timestamp to a protobuf known type Timestamp.
