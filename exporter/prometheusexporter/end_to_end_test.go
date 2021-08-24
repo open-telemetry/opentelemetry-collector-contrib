@@ -28,11 +28,10 @@ import (
 
 	promconfig "github.com/prometheus/prometheus/config"
 	"github.com/stretchr/testify/require"
-	"gopkg.in/yaml.v2"
-
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/receiver/prometheusreceiver"
+	"gopkg.in/yaml.v2"
 )
 
 func TestEndToEndSummarySupport(t *testing.T) {
