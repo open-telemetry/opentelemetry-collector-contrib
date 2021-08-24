@@ -19,7 +19,6 @@ import (
 	"errors"
 
 	_ "github.com/prometheus/prometheus/discovery/install" // init() of this package registers service discovery impl.
-
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"

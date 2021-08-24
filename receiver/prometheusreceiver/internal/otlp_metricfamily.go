@@ -20,7 +20,6 @@ import (
 
 	"github.com/prometheus/prometheus/pkg/labels"
 	"github.com/prometheus/prometheus/pkg/textparse"
-
 	"go.opentelemetry.io/collector/model/pdata"
 )
 

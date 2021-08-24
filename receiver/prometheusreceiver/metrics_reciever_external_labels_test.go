@@ -22,11 +22,11 @@ import (
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	"github.com/prometheus/prometheus/pkg/labels"
 	"github.com/stretchr/testify/require"
-
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.opentelemetry.io/collector/translator/internaldata"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus"
 )
 
 const targetExternalLabels = `
@@ -67,7 +67,7 @@ func TestExternalLabels(t *testing.T) {
 		rms := md.ResourceMetrics()
 		for i := 0; i < rms.Len(); i++ {
 			ocmd := &agentmetricspb.ExportMetricsServiceRequest{}
-			ocmd.Node, ocmd.Resource, ocmd.Metrics = internaldata.ResourceMetricsToOC(rms.At(i))
+			ocmd.Node, ocmd.Resource, ocmd.Metrics = opencensus.ResourceMetricsToOC(rms.At(i))
 			result, ok := results[ocmd.Node.ServiceInfo.Name]
 			if !ok {
 				result = make([]*agentmetricspb.ExportMetricsServiceRequest, 0)
