@@ -5,8 +5,9 @@ go 1.16
 require (
 	github.com/census-instrumentation/opencensus-proto v0.3.0
 	github.com/grpc-ecosystem/grpc-gateway v1.16.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opencensusexporter v0.0.0-20210823171402-ced60e83d21b
+	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opencensusexporter v0.0.0-00010101000000-000000000000
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.0.0-00010101000000-000000000000
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testutil v0.0.0-00010101000000-000000000000
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus v0.0.0-00010101000000-000000000000
 	github.com/rs/cors v1.8.0
 	github.com/soheilhy/cmux v0.1.5
@@ -20,6 +21,10 @@ require (
 	google.golang.org/grpc v1.40.0
 	google.golang.org/protobuf v1.27.1
 )
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testutil => ../../internal/coreinternal/testutil
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/opencensusreceiver => ./
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal => ../../internal/coreinternal
 
