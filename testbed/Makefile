@@ -8,9 +8,9 @@ list-tests:
 run-tests:
 	./runtests.sh
 
-.PHONY: run-tests-unstable
-run-tests-unstable:
-	TESTS_DIR=tests_unstable_exe ./runtests.sh
+.PHONY: list-loadtest-tests
+list-loadtest-tests:
+	RUN_TESTBED=1 $(GOTEST) -v ./tests --test.list '.*' | grep "^Test"
 
 .PHONY: list-stability-tests
 list-stability-tests:

@@ -27,7 +27,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"go.opentelemetry.io/collector/testbed/testbed"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/testbed"
 )
 
 var (
@@ -224,8 +224,8 @@ func Scenario1kSPSWithAttrs(t *testing.T, args []string, tests []TestCase, proce
 			require.NoError(t, err)
 
 			// Create sender and receiver on available ports.
-			sender := testbed.NewJaegerGRPCDataSender(testbed.DefaultHost, testbed.GetAvailablePort(t))
-			receiver := testbed.NewOCDataReceiver(testbed.GetAvailablePort(t))
+			sender := testbed.NewOTLPTraceDataSender(testbed.DefaultHost, testbed.GetAvailablePort(t))
+			receiver := testbed.NewOTLPDataReceiver(testbed.GetAvailablePort(t))
 
 			// Prepare config.
 			configStr := createConfigYaml(t, sender, receiver, resultDir, processors, extensions)

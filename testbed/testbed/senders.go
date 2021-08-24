@@ -20,24 +20,19 @@ import (
 	"log"
 	"net"
 
-	"go.opentelemetry.io/otel/trace"
-	"go.uber.org/zap"
-
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/exporter/jaegerexporter"
-	"go.opentelemetry.io/collector/exporter/opencensusexporter"
 	"go.opentelemetry.io/collector/exporter/otlpexporter"
 	"go.opentelemetry.io/collector/exporter/otlphttpexporter"
-	"go.opentelemetry.io/collector/exporter/prometheusexporter"
-	"go.opentelemetry.io/collector/exporter/zipkinexporter"
+	"go.uber.org/zap"
 )
 
 // DataSender defines the interface that allows sending data. This is an interface
 // that must be implemented by all protocols that want to be used in LoadGenerator.
-// Note the terminology: testbed.DataSender is something that sends data to Collector
+// Note the terminology: DataSender is something that sends data to Collector
 // and the corresponding entity that receives the data in the Collector is a receiver.
 type DataSender interface {
 	// Start sender and connect to the configured endpoint. Must be called before
@@ -109,141 +104,6 @@ func (dsb *DataSenderBase) Flush() {
 	// Exporter interface does not support Flush, so nothing to do.
 }
 
-// jaegerGRPCDataSender implements TraceDataSender for Jaeger thrift_http exporter.
-type jaegerGRPCDataSender struct {
-	DataSenderBase
-	consumer.Traces
-}
-
-// Ensure jaegerGRPCDataSender implements TraceDataSender.
-var _ TraceDataSender = (*jaegerGRPCDataSender)(nil)
-
-// NewJaegerGRPCDataSender creates a new Jaeger exporter sender that will send
-// to the specified port after Start is called.
-func NewJaegerGRPCDataSender(host string, port int) TraceDataSender {
-	return &jaegerGRPCDataSender{
-		DataSenderBase: DataSenderBase{Port: port, Host: host},
-	}
-}
-
-func (je *jaegerGRPCDataSender) Start() error {
-	factory := jaegerexporter.NewFactory()
-	cfg := factory.CreateDefaultConfig().(*jaegerexporter.Config)
-	// Disable retries, we should push data and if error just log it.
-	cfg.RetrySettings.Enabled = false
-	// Disable sending queue, we should push data from the caller goroutine.
-	cfg.QueueSettings.Enabled = false
-	cfg.Endpoint = je.GetEndpoint().String()
-	cfg.TLSSetting = configtls.TLSClientSetting{
-		Insecure: true,
-	}
-
-	exp, err := factory.CreateTracesExporter(context.Background(), defaultExporterParams(), cfg)
-	if err != nil {
-		return err
-	}
-
-	je.Traces = exp
-	return exp.Start(context.Background(), je)
-}
-
-func (je *jaegerGRPCDataSender) GenConfigYAMLStr() string {
-	return fmt.Sprintf(`
-  jaeger:
-    protocols:
-      grpc:
-        endpoint: "%s"`, je.GetEndpoint())
-}
-
-func (je *jaegerGRPCDataSender) ProtocolName() string {
-	return "jaeger"
-}
-
-type ocDataSender struct {
-	DataSenderBase
-}
-
-func (ods *ocDataSender) fillConfig(cfg *opencensusexporter.Config) *opencensusexporter.Config {
-	cfg.Endpoint = ods.GetEndpoint().String()
-	cfg.TLSSetting = configtls.TLSClientSetting{
-		Insecure: true,
-	}
-	return cfg
-}
-
-func (ods *ocDataSender) GenConfigYAMLStr() string {
-	// Note that this generates a receiver config for agent.
-	return fmt.Sprintf(`
-  opencensus:
-    endpoint: "%s"`, ods.GetEndpoint())
-}
-
-func (ods *ocDataSender) ProtocolName() string {
-	return "opencensus"
-}
-
-// ocTracesDataSender implements TraceDataSender for OpenCensus trace exporter.
-type ocTracesDataSender struct {
-	ocDataSender
-	consumer.Traces
-}
-
-// NewOCTraceDataSender creates a new ocTracesDataSender that will send
-// to the specified port after Start is called.
-func NewOCTraceDataSender(host string, port int) TraceDataSender {
-	return &ocTracesDataSender{
-		ocDataSender: ocDataSender{
-			DataSenderBase: DataSenderBase{
-				Port: port,
-				Host: host,
-			},
-		},
-	}
-}
-
-func (ote *ocTracesDataSender) Start() error {
-	factory := opencensusexporter.NewFactory()
-	cfg := ote.fillConfig(factory.CreateDefaultConfig().(*opencensusexporter.Config))
-	exp, err := factory.CreateTracesExporter(context.Background(), defaultExporterParams(), cfg)
-	if err != nil {
-		return err
-	}
-
-	ote.Traces = exp
-	return exp.Start(context.Background(), ote)
-}
-
-// ocMetricsDataSender implements MetricDataSender for OpenCensus metrics exporter.
-type ocMetricsDataSender struct {
-	ocDataSender
-	consumer.Metrics
-}
-
-// NewOCMetricDataSender creates a new OpenCensus metric exporter sender that will send
-// to the specified port after Start is called.
-func NewOCMetricDataSender(host string, port int) MetricDataSender {
-	return &ocMetricsDataSender{
-		ocDataSender: ocDataSender{
-			DataSenderBase: DataSenderBase{
-				Port: port,
-				Host: host,
-			},
-		},
-	}
-}
-
-func (ome *ocMetricsDataSender) Start() error {
-	factory := opencensusexporter.NewFactory()
-	cfg := ome.fillConfig(factory.CreateDefaultConfig().(*opencensusexporter.Config))
-	exp, err := factory.CreateMetricsExporter(context.Background(), defaultExporterParams(), cfg)
-	if err != nil {
-		return err
-	}
-
-	ome.Metrics = exp
-	return exp.Start(context.Background(), ome)
-}
-
 type otlpHTTPDataSender struct {
 	DataSenderBase
 }
@@ -294,7 +154,10 @@ func NewOTLPHTTPTraceDataSender(host string, port int) TraceDataSender {
 func (ote *otlpHTTPTraceDataSender) Start() error {
 	factory := otlphttpexporter.NewFactory()
 	cfg := ote.fillConfig(factory.CreateDefaultConfig().(*otlphttpexporter.Config))
-	exp, err := factory.CreateTracesExporter(context.Background(), defaultExporterParams(), cfg)
+	params := componenttest.NewNopExporterCreateSettings()
+	params.Logger = zap.L()
+
+	exp, err := factory.CreateTracesExporter(context.Background(), params, cfg)
 	if err != nil {
 		return err
 	}
@@ -325,7 +188,10 @@ func NewOTLPHTTPMetricDataSender(host string, port int) MetricDataSender {
 func (ome *otlpHTTPMetricsDataSender) Start() error {
 	factory := otlphttpexporter.NewFactory()
 	cfg := ome.fillConfig(factory.CreateDefaultConfig().(*otlphttpexporter.Config))
-	exp, err := factory.CreateMetricsExporter(context.Background(), defaultExporterParams(), cfg)
+	params := componenttest.NewNopExporterCreateSettings()
+	params.Logger = zap.L()
+
+	exp, err := factory.CreateMetricsExporter(context.Background(), params, cfg)
 	if err != nil {
 		return err
 	}
@@ -356,7 +222,10 @@ func NewOTLPHTTPLogsDataSender(host string, port int) LogDataSender {
 func (olds *otlpHTTPLogsDataSender) Start() error {
 	factory := otlphttpexporter.NewFactory()
 	cfg := olds.fillConfig(factory.CreateDefaultConfig().(*otlphttpexporter.Config))
-	exp, err := factory.CreateLogsExporter(context.Background(), defaultExporterParams(), cfg)
+	params := componenttest.NewNopExporterCreateSettings()
+	params.Logger = zap.L()
+
+	exp, err := factory.CreateLogsExporter(context.Background(), params, cfg)
 	if err != nil {
 		return err
 	}
@@ -415,7 +284,10 @@ func NewOTLPTraceDataSender(host string, port int) TraceDataSender {
 func (ote *otlpTraceDataSender) Start() error {
 	factory := otlpexporter.NewFactory()
 	cfg := ote.fillConfig(factory.CreateDefaultConfig().(*otlpexporter.Config))
-	exp, err := factory.CreateTracesExporter(context.Background(), defaultExporterParams(), cfg)
+	params := componenttest.NewNopExporterCreateSettings()
+	params.Logger = zap.L()
+
+	exp, err := factory.CreateTracesExporter(context.Background(), params, cfg)
 	if err != nil {
 		return err
 	}
@@ -446,7 +318,10 @@ func NewOTLPMetricDataSender(host string, port int) MetricDataSender {
 func (ome *otlpMetricsDataSender) Start() error {
 	factory := otlpexporter.NewFactory()
 	cfg := ome.fillConfig(factory.CreateDefaultConfig().(*otlpexporter.Config))
-	exp, err := factory.CreateMetricsExporter(context.Background(), defaultExporterParams(), cfg)
+	params := componenttest.NewNopExporterCreateSettings()
+	params.Logger = zap.L()
+
+	exp, err := factory.CreateMetricsExporter(context.Background(), params, cfg)
 	if err != nil {
 		return err
 	}
@@ -477,115 +352,14 @@ func NewOTLPLogsDataSender(host string, port int) LogDataSender {
 func (olds *otlpLogsDataSender) Start() error {
 	factory := otlpexporter.NewFactory()
 	cfg := olds.fillConfig(factory.CreateDefaultConfig().(*otlpexporter.Config))
-	exp, err := factory.CreateLogsExporter(context.Background(), defaultExporterParams(), cfg)
+	params := componenttest.NewNopExporterCreateSettings()
+	params.Logger = zap.L()
+
+	exp, err := factory.CreateLogsExporter(context.Background(), params, cfg)
 	if err != nil {
 		return err
 	}
 
 	olds.Logs = exp
 	return exp.Start(context.Background(), olds)
-}
-
-// zipkinDataSender implements TraceDataSender for Zipkin http exporter.
-type zipkinDataSender struct {
-	DataSenderBase
-	consumer.Traces
-}
-
-// NewZipkinDataSender creates a new Zipkin exporter sender that will send
-// to the specified port after Start is called.
-func NewZipkinDataSender(host string, port int) TraceDataSender {
-	return &zipkinDataSender{
-		DataSenderBase: DataSenderBase{
-			Port: port,
-			Host: host,
-		},
-	}
-}
-
-func (zs *zipkinDataSender) Start() error {
-	factory := zipkinexporter.NewFactory()
-	cfg := factory.CreateDefaultConfig().(*zipkinexporter.Config)
-	cfg.Endpoint = fmt.Sprintf("http://%s/api/v2/spans", zs.GetEndpoint())
-	// Disable retries, we should push data and if error just log it.
-	cfg.RetrySettings.Enabled = false
-	// Disable sending queue, we should push data from the caller goroutine.
-	cfg.QueueSettings.Enabled = false
-
-	exp, err := factory.CreateTracesExporter(context.Background(), defaultExporterParams(), cfg)
-	if err != nil {
-		return err
-	}
-
-	zs.Traces = exp
-	return exp.Start(context.Background(), zs)
-}
-
-func (zs *zipkinDataSender) GenConfigYAMLStr() string {
-	return fmt.Sprintf(`
-  zipkin:
-    endpoint: %s`, zs.GetEndpoint())
-}
-
-func (zs *zipkinDataSender) ProtocolName() string {
-	return "zipkin"
-}
-
-// prometheus
-
-type prometheusDataSender struct {
-	DataSenderBase
-	consumer.Metrics
-	namespace string
-}
-
-// NewPrometheusDataSender creates a new Prometheus sender that will expose data
-// on the specified port after Start is called.
-func NewPrometheusDataSender(host string, port int) MetricDataSender {
-	return &prometheusDataSender{
-		DataSenderBase: DataSenderBase{
-			Port: port,
-			Host: host,
-		},
-	}
-}
-
-func (pds *prometheusDataSender) Start() error {
-	factory := prometheusexporter.NewFactory()
-	cfg := factory.CreateDefaultConfig().(*prometheusexporter.Config)
-	cfg.Endpoint = pds.GetEndpoint().String()
-	cfg.Namespace = pds.namespace
-
-	exp, err := factory.CreateMetricsExporter(context.Background(), defaultExporterParams(), cfg)
-	if err != nil {
-		return err
-	}
-
-	pds.Metrics = exp
-	return exp.Start(context.Background(), pds)
-}
-
-func (pds *prometheusDataSender) GenConfigYAMLStr() string {
-	format := `
-  prometheus:
-    config:
-      scrape_configs:
-        - job_name: 'testbed'
-          scrape_interval: 100ms
-          static_configs:
-            - targets: ['%s']
-`
-	return fmt.Sprintf(format, pds.GetEndpoint())
-}
-
-func (pds *prometheusDataSender) ProtocolName() string {
-	return "prometheus"
-}
-
-func defaultExporterParams() component.ExporterCreateSettings {
-	return component.ExporterCreateSettings{
-		Logger:         zap.L(),
-		TracerProvider: trace.NewNoopTracerProvider(),
-		BuildInfo:      component.DefaultBuildInfo(),
-	}
 }

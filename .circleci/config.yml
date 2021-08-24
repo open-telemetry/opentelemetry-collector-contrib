@@ -182,7 +182,7 @@ commands:
       - install_fluentbit
       - run:
           name: Loadtest
-          command: make e2e-test
+          command: TEST_ARGS="-test.run=$(make -C testbed -s list-loadtest-tests | circleci tests split|xargs echo|sed 's/ /|/g')" make e2e-test
       - store_artifacts:
           path: testbed/tests/results
       - store_test_results:
@@ -359,6 +359,7 @@ jobs:
 
   loadtest-with-github-reports:
     executor: golang
+    parallelism: 6
     resource_class: medium+
     environment:
       TEST_RESULTS: testbed/tests/results/junit/results.xml
@@ -368,6 +369,7 @@ jobs:
 
   loadtest:
     executor: golang
+    parallelism: 6
     resource_class: medium+
     environment:
       TEST_RESULTS: testbed/tests/results/junit/results.xml
