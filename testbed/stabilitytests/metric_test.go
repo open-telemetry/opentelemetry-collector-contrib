@@ -17,11 +17,10 @@ package tests
 import (
 	"testing"
 
-	"go.opentelemetry.io/collector/testbed/testbed"
-	scenarios "go.opentelemetry.io/collector/testbed/tests"
-
 	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/datareceivers"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/datasenders"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/testbed"
+	scenarios "github.com/open-telemetry/opentelemetry-collector-contrib/testbed/tests"
 )
 
 func TestStabilityMetricsOTLP(t *testing.T) {
@@ -43,8 +42,8 @@ func TestStabilityMetricsOTLP(t *testing.T) {
 func TestStabilityMetricsOpenCensus(t *testing.T) {
 	scenarios.Scenario10kItemsPerSecond(
 		t,
-		testbed.NewOCMetricDataSender(testbed.DefaultHost, testbed.GetAvailablePort(t)),
-		testbed.NewOCDataReceiver(testbed.GetAvailablePort(t)),
+		datasenders.NewOCMetricDataSender(testbed.DefaultHost, testbed.GetAvailablePort(t)),
+		datareceivers.NewOCDataReceiver(testbed.GetAvailablePort(t)),
 		testbed.ResourceSpec{
 			ExpectedMaxCPU:      85,
 			ExpectedMaxRAM:      86,

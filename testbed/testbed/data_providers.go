@@ -22,13 +22,13 @@ import (
 	"strconv"
 	"time"
 
-	"go.uber.org/atomic"
-
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/internal/goldendataset"
-	"go.opentelemetry.io/collector/internal/idutils"
 	"go.opentelemetry.io/collector/model/otlp"
 	"go.opentelemetry.io/collector/model/pdata"
+	"go.uber.org/atomic"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/goldendataset"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/idutils"
 )
 
 // DataProvider defines the interface for generators of test data used to drive various end-to-end tests.

@@ -25,8 +25,9 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
-	"go.opentelemetry.io/collector/testbed/testbed"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/testbed"
 )
 
 func TestIdleMode(t *testing.T) {
@@ -35,18 +36,18 @@ func TestIdleMode(t *testing.T) {
 	tc := testbed.NewTestCase(
 		t,
 		dataProvider,
-		testbed.NewJaegerGRPCDataSender(testbed.DefaultHost, testbed.DefaultJaegerPort),
-		testbed.NewOCDataReceiver(testbed.DefaultOCPort),
+		testbed.NewOTLPTraceDataSender(testbed.DefaultHost, testbed.DefaultOTLPPort),
+		testbed.NewOTLPDataReceiver(testbed.DefaultOTLPPort),
 		testbed.NewChildProcessCollector(),
 		&testbed.PerfTestValidator{},
 		performanceResultsSummary,
-		testbed.WithResourceLimits(testbed.ResourceSpec{ExpectedMaxCPU: 4, ExpectedMaxRAM: 70}),
+		testbed.WithResourceLimits(testbed.ResourceSpec{ExpectedMaxCPU: 10, ExpectedMaxRAM: 70}),
 	)
-	defer tc.Stop()
-
 	tc.StartAgent()
 
 	tc.Sleep(tc.Duration)
+
+	tc.Stop()
 }
 
 func TestBallastMemory(t *testing.T) {
@@ -54,16 +55,17 @@ func TestBallastMemory(t *testing.T) {
 		ballastSize uint32
 		maxRSS      uint32
 	}{
-		{100, 60},
-		{500, 70},
-		{1000, 100},
+		{100, 70},
+		{500, 80},
+		{1000, 110},
 	}
 
 	options := testbed.LoadOptions{DataItemsPerSecond: 10_000, ItemsPerBatch: 10}
 	dataProvider := testbed.NewPerfTestDataProvider(options)
 	for _, test := range tests {
-		ballastCfg, err := readCfgTemplate()
-		assert.NoError(t, err)
+		cfgBytes, err := ioutil.ReadFile(path.Join("testdata", "ballast_extension.yaml"))
+		require.NoError(t, err)
+		ballastCfg := string(cfgBytes)
 		ballastCfg = fmt.Sprintf(ballastCfg, test.ballastSize)
 		cp := testbed.NewChildProcessCollector()
 		cleanup, err := cp.PrepareConfig(ballastCfg)
@@ -71,8 +73,8 @@ func TestBallastMemory(t *testing.T) {
 		tc := testbed.NewTestCase(
 			t,
 			dataProvider,
-			testbed.NewJaegerGRPCDataSender(testbed.DefaultHost, testbed.DefaultJaegerPort),
-			testbed.NewOCDataReceiver(testbed.DefaultOCPort),
+			testbed.NewOTLPTraceDataSender(testbed.DefaultHost, testbed.DefaultOTLPPort),
+			testbed.NewOTLPDataReceiver(55680),
 			cp,
 			&testbed.PerfTestValidator{},
 			performanceResultsSummary,
@@ -89,7 +91,7 @@ func TestBallastMemory(t *testing.T) {
 		tc.WaitForN(func() bool {
 			rss, vms, _ = tc.AgentMemoryInfo()
 			return vms > test.ballastSize
-		}, time.Second*2, "VMS must be greater than %d", test.ballastSize)
+		}, time.Second*2, fmt.Sprintf("VMS must be greater than %d", test.ballastSize))
 
 		// https://github.com/open-telemetry/opentelemetry-collector/issues/3233
 		// given that the maxRSS isn't an absolute maximum and that the actual maximum might be a bit off,
@@ -99,12 +101,4 @@ func TestBallastMemory(t *testing.T) {
 		cleanup()
 		tc.Stop()
 	}
-}
-
-func readCfgTemplate() (string, error) {
-	cfgBytes, err := ioutil.ReadFile(path.Join("testdata", "ballast_extension.yaml"))
-	if err != nil {
-		return "", err
-	}
-	return string(cfgBytes), nil
 }
