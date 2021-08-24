@@ -22,6 +22,8 @@ import (
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/extension/extensionhelper"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/proxy"
 )
 
 const (
@@ -43,17 +45,19 @@ func NewFactory() component.ExtensionFactory {
 func createDefaultConfig() config.Extension {
 	return &Config{
 		ExtensionSettings: config.NewExtensionSettings(config.NewID(typeStr)),
-		TCPAddr: confignet.TCPAddr{
-			Endpoint: defaultEndpoint,
+		ProxyConfig: proxy.Config{
+			TCPAddr: confignet.TCPAddr{
+				Endpoint: defaultEndpoint,
+			},
+			ProxyAddress: "",
+			TLSSetting: configtls.TLSClientSetting{
+				Insecure:   false,
+				ServerName: "",
+			},
+			Region:      "",
+			RoleARN:     "",
+			AWSEndpoint: "",
 		},
-		ProxyAddress: "",
-		TLSSetting: configtls.TLSClientSetting{
-			Insecure:   false,
-			ServerName: "",
-		},
-		Region:      "",
-		RoleARN:     "",
-		AWSEndpoint: "",
 	}
 }
 

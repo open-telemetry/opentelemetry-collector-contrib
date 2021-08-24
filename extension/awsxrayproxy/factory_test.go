@@ -6,7 +6,7 @@
 //
 //     http://www.apache.org/licenses/LICENSE-2.0
 //
-// Unless required by applicable law or agreed to in writing, software
+// Unless assertd by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
@@ -19,34 +19,39 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configcheck"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/testutil"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/proxy"
 )
 
 func TestFactory_CreateDefaultConfig(t *testing.T) {
 	cfg := createDefaultConfig()
 	assert.Equal(t, &Config{
 		ExtensionSettings: config.NewExtensionSettings(config.NewID(typeStr)),
-		TCPAddr: confignet.TCPAddr{
-			Endpoint: defaultEndpoint,
+		ProxyConfig: proxy.Config{
+			TCPAddr: confignet.TCPAddr{
+				Endpoint: defaultEndpoint,
+			},
 		},
 	}, cfg)
 
 	assert.NoError(t, configcheck.ValidateConfig(cfg))
-	ext, err := createExtension(context.Background(), componenttest.NewNopExtensionCreateSettings(), cfg)
-	require.NoError(t, err)
-	require.NotNil(t, ext)
 }
 
 func TestFactory_CreateExtension(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	cfg.TCPAddr.Endpoint = testutil.GetAvailableLocalAddress(t)
+	cfg.ProxyConfig.TCPAddr.Endpoint = testutil.GetAvailableLocalAddress(t)
+	cfg.ProxyConfig.Region = "us-east-2"
 
-	ext, err := createExtension(context.Background(), componenttest.NewNopExtensionCreateSettings(), cfg)
-	require.NoError(t, err)
-	require.NotNil(t, ext)
+	ctx := context.Background()
+	ext, err := createExtension(ctx, componenttest.NewNopExtensionCreateSettings(), cfg)
+	assert.NoError(t, err)
+	assert.NotNil(t, ext)
+
+	err = ext.Shutdown(ctx)
+	assert.NoError(t, err)
 }
