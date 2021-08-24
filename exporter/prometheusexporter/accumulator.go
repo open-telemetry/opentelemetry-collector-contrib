@@ -20,9 +20,8 @@ import (
 	"sync"
 	"time"
 
-	"go.uber.org/zap"
-
 	"go.opentelemetry.io/collector/model/pdata"
+	"go.uber.org/zap"
 )
 
 type accumulatedValue struct {

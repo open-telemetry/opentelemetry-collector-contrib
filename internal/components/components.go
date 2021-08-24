@@ -39,6 +39,8 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/lokiexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/newrelicexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opencensusexporter"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusexporter"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusremotewriteexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sapmexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sentryexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter"
@@ -111,6 +113,8 @@ func Components() (component.Factories, error) {
 
 	delete(factories.Exporters, "kafka")
 	delete(factories.Exporters, "opencensus")
+	delete(factories.Exporters, "prometheus")
+	delete(factories.Exporters, "prometheusremotewrite")
 	delete(factories.Exporters, "zipkin")
 
 	delete(factories.Extensions, "oidc")
@@ -211,6 +215,8 @@ func Components() (component.Factories, error) {
 		lokiexporter.NewFactory(),
 		newrelicexporter.NewFactory(),
 		opencensusexporter.NewFactory(),
+		prometheusexporter.NewFactory(),
+		prometheusremotewriteexporter.NewFactory(),
 		sapmexporter.NewFactory(),
 		sentryexporter.NewFactory(),
 		signalfxexporter.NewFactory(),
