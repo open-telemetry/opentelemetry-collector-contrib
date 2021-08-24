@@ -24,12 +24,13 @@ import (
 	"time"
 
 	"github.com/jaegertracing/jaeger/model"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/model/pdata"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 )

@@ -34,7 +34,6 @@ import (
 	staticStrategyStore "github.com/jaegertracing/jaeger/plugin/sampling/strategystore/static"
 	"github.com/jaegertracing/jaeger/proto-gen/api_v2"
 	jaegerthrift "github.com/jaegertracing/jaeger/thrift-gen/jaeger"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/client"
@@ -53,6 +52,8 @@ import (
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger"
 )
 
 var jaegerReceiver = config.NewIDWithName("jaeger", "receiver_test")

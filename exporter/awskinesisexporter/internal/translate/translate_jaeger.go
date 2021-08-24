@@ -15,10 +15,11 @@
 package translate
 
 import (
-	jaegertranslator "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger"
 	awskinesis "github.com/signalfx/opencensus-go-exporter-kinesis"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/model/pdata"
+
+	jaegertranslator "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger"
 )
 
 type jaeger struct {
