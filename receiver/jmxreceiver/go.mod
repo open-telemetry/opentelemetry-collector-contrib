@@ -12,3 +12,5 @@ require (
 	go.uber.org/atomic v1.9.0
 	go.uber.org/zap v1.19.0
 )
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/testutil => ../../internal/testutil

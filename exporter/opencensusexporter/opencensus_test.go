@@ -27,7 +27,8 @@ import (
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/receiver/opencensusreceiver"
-	"go.opentelemetry.io/collector/testutil"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/testutil"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
 )

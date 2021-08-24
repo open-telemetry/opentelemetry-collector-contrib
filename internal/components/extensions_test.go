@@ -27,7 +27,8 @@ import (
 	"go.opentelemetry.io/collector/extension/healthcheckextension"
 	"go.opentelemetry.io/collector/extension/pprofextension"
 	"go.opentelemetry.io/collector/extension/zpagesextension"
-	"go.opentelemetry.io/collector/testutil"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/testutil"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/bearertokenauthextension"
 )

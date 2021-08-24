@@ -34,10 +34,11 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/model/pdata"
-	"go.opentelemetry.io/collector/testutil"
 	"go.opentelemetry.io/collector/testutil/metricstestutil"
 	"go.opentelemetry.io/collector/translator/internaldata"
 	"google.golang.org/protobuf/types/known/timestamppb"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/testutil"
 )
 
 func TestNew(t *testing.T) {
