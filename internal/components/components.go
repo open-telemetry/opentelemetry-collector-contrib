@@ -29,6 +29,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/dynatraceexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/f5cloudexporter"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/fileexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/googlecloudexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/honeycombexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/humioexporter"
@@ -112,6 +113,7 @@ func Components() (component.Factories, error) {
 		return component.Factories{}, err
 	}
 
+	delete(factories.Exporters, "file")
 	delete(factories.Exporters, "jaeger")
 	delete(factories.Exporters, "kafka")
 	delete(factories.Exporters, "opencensus")
@@ -207,6 +209,7 @@ func Components() (component.Factories, error) {
 		dynatraceexporter.NewFactory(),
 		elasticexporter.NewFactory(),
 		f5cloudexporter.NewFactory(),
+		fileexporter.NewFactory(),
 		googlecloudexporter.NewFactory(),
 		honeycombexporter.NewFactory(),
 		humioexporter.NewFactory(),
