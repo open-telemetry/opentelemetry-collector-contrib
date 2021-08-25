@@ -29,9 +29,10 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testutil"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testutil"
 )
 
 const (
