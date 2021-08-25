@@ -47,6 +47,7 @@ type Config struct {
 	// "Enabled" - A boolean field to enable/disable this option. Default is `false`.
 	// If enabled, all the resource attributes will be converted to metric labels by default.
 	ResourceToTelemetrySettings resourcetotelemetry.Settings `mapstructure:"resource_to_telemetry_conversion"`
+	WAL                         *walConfig                   `mapstructure:"wal"`
 }
 
 // RemoteWriteQueue allows to configure the remote write queue.
