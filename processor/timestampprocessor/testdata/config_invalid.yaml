@@ -1,0 +1,15 @@
+receivers:
+  nop:
+
+processors:
+  timestamp: # no round_to_nearest
+
+exporters:
+  nop:
+
+service:
+  pipelines:
+    metrics:
+      receivers: [nop]
+      processors: [timestamp]
+      exporters: [nop]

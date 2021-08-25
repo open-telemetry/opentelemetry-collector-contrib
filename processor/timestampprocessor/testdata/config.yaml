@@ -1,0 +1,16 @@
+receivers:
+  nop:
+
+processors:
+  timestamp/1sec:
+    round_to_nearest: 1s
+
+exporters:
+  nop:
+
+service:
+  pipelines:
+    metrics:
+      receivers: [nop]
+      processors: [timestamp/1sec]
+      exporters: [nop]
