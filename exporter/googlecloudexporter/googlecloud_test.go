@@ -31,7 +31,6 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/testutil/metricstestutil"
-	"go.opentelemetry.io/collector/translator/internaldata"
 	"google.golang.org/api/option"
 	cloudmetricpb "google.golang.org/genproto/googleapis/api/metric"
 	cloudtracepb "google.golang.org/genproto/googleapis/devtools/cloudtrace/v2"
@@ -40,6 +39,8 @@ import (
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/protobuf/types/known/emptypb"
 	"google.golang.org/protobuf/types/known/timestamppb"
+
+	internaldata "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus"
 )
 
 type testServer struct {
