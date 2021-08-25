@@ -29,15 +29,14 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/model/pdata"
 	conventions "go.opentelemetry.io/collector/translator/conventions/v1.5.0"
-	tracetranslator "go.opentelemetry.io/collector/translator/trace"
 	"go.uber.org/zap"
 )
 
 const (
 	serviceNameKey     = conventions.AttributeServiceName
-	operationKey       = "operation" // is there a constant we can refer to?
-	spanKindKey        = tracetranslator.TagSpanKind
-	statusCodeKey      = "status.code" // Otel core removed this and changed to semantic conventions "otel.status_code"
+	operationKey       = "operation"   // OpenTelemetry non-standard constant.
+	spanKindKey        = "span.kind"   // OpenTelemetry non-standard constant.
+	statusCodeKey      = "status.code" // OpenTelemetry non-standard constant.
 	metricKeySeparator = string(byte(0))
 )
 
