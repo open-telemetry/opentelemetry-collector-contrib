@@ -19,8 +19,8 @@ package tests
 
 import (
 	"fmt"
-	"io/ioutil"
 	"path"
+	"path/filepath"
 	"testing"
 	"time"
 
@@ -31,14 +31,27 @@ import (
 )
 
 func TestIdleMode(t *testing.T) {
+
 	options := testbed.LoadOptions{DataItemsPerSecond: 10_000, ItemsPerBatch: 10}
 	dataProvider := testbed.NewPerfTestDataProvider(options)
+
+	resultDir, err := filepath.Abs(path.Join("results", t.Name()))
+	require.NoError(t, err)
+
+	sender := testbed.NewOTLPTraceDataSender(testbed.DefaultHost, testbed.GetAvailablePort(t))
+	receiver := testbed.NewOTLPDataReceiver(testbed.GetAvailablePort(t))
+	cfg := createConfigYaml(t, sender, receiver, resultDir, nil, nil)
+	cp := testbed.NewChildProcessCollector()
+	cleanup, err := cp.PrepareConfig(cfg)
+	require.NoError(t, err)
+	t.Cleanup(cleanup)
+
 	tc := testbed.NewTestCase(
 		t,
 		dataProvider,
-		testbed.NewOTLPTraceDataSender(testbed.DefaultHost, testbed.DefaultOTLPPort),
-		testbed.NewOTLPDataReceiver(testbed.DefaultOTLPPort),
-		testbed.NewChildProcessCollector(),
+		sender,
+		receiver,
+		cp,
 		&testbed.PerfTestValidator{},
 		performanceResultsSummary,
 		testbed.WithResourceLimits(testbed.ResourceSpec{ExpectedMaxCPU: 10, ExpectedMaxRAM: 70}),
@@ -50,6 +63,11 @@ func TestIdleMode(t *testing.T) {
 	tc.Stop()
 }
 
+const ballastConfig = `
+  memory_ballast:
+    size_mib: %d
+`
+
 func TestBallastMemory(t *testing.T) {
 	tests := []struct {
 		ballastSize uint32
@@ -60,21 +78,25 @@ func TestBallastMemory(t *testing.T) {
 		{1000, 110},
 	}
 
+	resultDir, err := filepath.Abs(path.Join("results", t.Name()))
+	require.NoError(t, err)
+
 	options := testbed.LoadOptions{DataItemsPerSecond: 10_000, ItemsPerBatch: 10}
 	dataProvider := testbed.NewPerfTestDataProvider(options)
 	for _, test := range tests {
-		cfgBytes, err := ioutil.ReadFile(path.Join("testdata", "ballast_extension.yaml"))
-		require.NoError(t, err)
-		ballastCfg := string(cfgBytes)
-		ballastCfg = fmt.Sprintf(ballastCfg, test.ballastSize)
+		sender := testbed.NewOTLPTraceDataSender(testbed.DefaultHost, testbed.GetAvailablePort(t))
+		receiver := testbed.NewOTLPDataReceiver(testbed.GetAvailablePort(t))
+		ballastCfg := createConfigYaml(
+			t, sender, receiver, resultDir, nil,
+			map[string]string{"memory_ballast": fmt.Sprintf(ballastConfig, test.ballastSize)})
 		cp := testbed.NewChildProcessCollector()
 		cleanup, err := cp.PrepareConfig(ballastCfg)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		tc := testbed.NewTestCase(
 			t,
 			dataProvider,
-			testbed.NewOTLPTraceDataSender(testbed.DefaultHost, testbed.DefaultOTLPPort),
-			testbed.NewOTLPDataReceiver(55680),
+			sender,
+			receiver,
 			cp,
 			&testbed.PerfTestValidator{},
 			performanceResultsSummary,
