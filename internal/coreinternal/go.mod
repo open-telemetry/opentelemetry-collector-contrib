@@ -12,3 +12,4 @@ require (
 	go.opentelemetry.io/collector/model v0.33.1-0.20210820002854-d3000232f8f6
 	google.golang.org/protobuf v1.27.1
 )
+

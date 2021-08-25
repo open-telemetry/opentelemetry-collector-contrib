@@ -22,14 +22,11 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/service"
 	"go.opentelemetry.io/collector/service/parserprovider"
-	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
 )
 
 // inProcessCollector implements the OtelcolRunner interfaces running a single otelcol as a go routine within the
 // same process as the test executor.
 type inProcessCollector struct {
-	logger    *zap.Logger
 	factories component.Factories
 	configStr string
 	svc       *service.Collector
@@ -37,7 +34,7 @@ type inProcessCollector struct {
 	stopped   bool
 }
 
-// NewInProcessCollector crewtes a new inProcessCollector using the supplied component factories.
+// NewInProcessCollector creates a new inProcessCollector using the supplied component factories.
 func NewInProcessCollector(factories component.Factories) OtelcolRunner {
 	return &inProcessCollector{
 		factories: factories,
@@ -48,12 +45,6 @@ func (ipp *inProcessCollector) PrepareConfig(configStr string) (configCleanup fu
 	configCleanup = func() {
 		// NoOp
 	}
-	var logger *zap.Logger
-	logger, err = configureLogger()
-	if err != nil {
-		return configCleanup, err
-	}
-	ipp.logger = logger
 	ipp.configStr = configStr
 	return configCleanup, err
 }
@@ -122,11 +113,4 @@ func (ipp *inProcessCollector) GetTotalConsumption() *ResourceConsumption {
 
 func (ipp *inProcessCollector) GetResourceConsumption() string {
 	return ""
-}
-
-func configureLogger() (*zap.Logger, error) {
-	conf := zap.NewDevelopmentConfig()
-	conf.Level.SetLevel(zapcore.InfoLevel)
-	logger, err := conf.Build()
-	return logger, err
 }

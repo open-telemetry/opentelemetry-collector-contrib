@@ -20,16 +20,16 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-
-	"go.opentelemetry.io/collector/internal/goldendataset"
 	"go.opentelemetry.io/collector/model/pdata"
-	"go.opentelemetry.io/collector/testbed/correctness"
-	"go.opentelemetry.io/collector/testbed/testbed"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/goldendataset"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/correctnesstests"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/testbed"
 )
 
-// tests with the prefix "TestHarness_" get run in the "correctness-metrics" ci job
+// tests with the prefix "TestHarness_" get run in the "correctnesstests-metrics" ci job
 func TestHarness_MetricsGoldenData(t *testing.T) {
-	tests, err := correctness.LoadPictOutputPipelineDefs(
+	tests, err := correctnesstests.LoadPictOutputPipelineDefs(
 		"testdata/generated_pict_pairs_metrics_pipeline.txt",
 	)
 	require.NoError(t, err)
@@ -38,8 +38,8 @@ func TestHarness_MetricsGoldenData(t *testing.T) {
 	res.Init("results")
 	for _, test := range tests {
 		test.TestName = fmt.Sprintf("%s-%s", test.Receiver, test.Exporter)
-		test.DataSender = correctness.ConstructMetricsSender(t, test.Receiver)
-		test.DataReceiver = correctness.ConstructReceiver(t, test.Exporter)
+		test.DataSender = correctnesstests.ConstructMetricsSender(t, test.Receiver)
+		test.DataReceiver = correctnesstests.ConstructReceiver(t, test.Exporter)
 		t.Run(test.TestName, func(t *testing.T) {
 			r := testWithMetricsGoldenDataset(
 				t,
@@ -91,7 +91,7 @@ func testWithMetricsGoldenDataset(
 }
 
 func getTestMetrics(t *testing.T) []pdata.Metrics {
-	const file = "../../../internal/goldendataset/testdata/generated_pict_pairs_metrics.txt"
+	const file = "../../../internal/coreinternal/goldendataset/testdata/generated_pict_pairs_metrics.txt"
 	mds, err := goldendataset.GenerateMetrics(file)
 	require.NoError(t, err)
 	return mds

@@ -20,11 +20,11 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
-
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/service/defaultcomponents"
-	"go.opentelemetry.io/collector/testbed/correctness"
-	"go.opentelemetry.io/collector/testbed/testbed"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/correctnesstests"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/testbed"
 )
 
 type correctnessTestCase struct {
@@ -46,7 +46,7 @@ func newCorrectnessTestCase(
 
 func (tc *correctnessTestCase) startCollector() {
 	tc.collector = testbed.NewInProcessCollector(componentFactories(tc.t))
-	_, err := tc.collector.PrepareConfig(correctness.CreateConfigYaml(tc.sender, tc.receiver, nil, "metrics"))
+	_, err := tc.collector.PrepareConfig(correctnesstests.CreateConfigYaml(tc.sender, tc.receiver, nil, "metrics"))
 	require.NoError(tc.t, err)
 	rd, err := newResultsDir(tc.t.Name())
 	require.NoError(tc.t, err)
