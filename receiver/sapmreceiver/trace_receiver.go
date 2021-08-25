@@ -29,8 +29,9 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/obsreport"
-	"go.opentelemetry.io/collector/translator/trace/jaeger"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 )

@@ -49,10 +49,11 @@ import (
 	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/testutil"
 	conventions "go.opentelemetry.io/collector/translator/conventions/v1.5.0"
-	"go.opentelemetry.io/collector/translator/trace/jaeger"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger"
 )
 
 var jaegerReceiver = config.NewIDWithName("jaeger", "receiver_test")
