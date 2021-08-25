@@ -39,9 +39,10 @@ import (
 	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/testutil/metricstestutil"
 	conventions "go.opentelemetry.io/collector/translator/conventions/v1.5.0"
-	"go.opentelemetry.io/collector/translator/internaldata"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/types/known/timestamppb"
+
+	internaldata "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 )

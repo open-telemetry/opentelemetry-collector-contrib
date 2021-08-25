@@ -25,7 +25,8 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/testutil/metricstestutil"
-	"go.opentelemetry.io/collector/translator/internaldata"
+
+	internaldata "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus"
 )
 
 func TestNewMetricsExporter(t *testing.T) {
