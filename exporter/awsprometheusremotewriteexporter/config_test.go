@@ -27,7 +27,8 @@ import (
 	"go.opentelemetry.io/collector/config/configtest"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-	prw "go.opentelemetry.io/collector/exporter/prometheusremotewriteexporter"
+
+	prw "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusremotewriteexporter"
 )
 
 // TestLoadConfig checks whether yaml configuration can be loaded correctly.
