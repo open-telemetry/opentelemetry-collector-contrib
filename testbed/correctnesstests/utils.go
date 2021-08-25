@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package correctness
+package correctnesstests
 
 import (
 	"bufio"
@@ -22,7 +22,9 @@ import (
 	"strings"
 	"testing"
 
-	"go.opentelemetry.io/collector/testbed/testbed"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/datareceivers"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/datasenders"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/testbed"
 )
 
 // CreateConfigYaml creates a yaml config for an otel collector given a testbed sender, testbed receiver, any
@@ -127,11 +129,11 @@ func ConstructTraceSender(t *testing.T, receiver string) testbed.DataSender {
 	case "otlp":
 		sender = testbed.NewOTLPTraceDataSender(testbed.DefaultHost, testbed.GetAvailablePort(t))
 	case "opencensus":
-		sender = testbed.NewOCTraceDataSender(testbed.DefaultHost, testbed.GetAvailablePort(t))
+		sender = datasenders.NewOCTraceDataSender(testbed.DefaultHost, testbed.GetAvailablePort(t))
 	case "jaeger":
-		sender = testbed.NewJaegerGRPCDataSender(testbed.DefaultHost, testbed.GetAvailablePort(t))
+		sender = datasenders.NewJaegerGRPCDataSender(testbed.DefaultHost, testbed.GetAvailablePort(t))
 	case "zipkin":
-		sender = testbed.NewZipkinDataSender(testbed.DefaultHost, testbed.GetAvailablePort(t))
+		sender = datasenders.NewZipkinDataSender(testbed.DefaultHost, testbed.GetAvailablePort(t))
 	default:
 		t.Errorf("unknown receiver type: %s", receiver)
 	}
@@ -145,9 +147,9 @@ func ConstructMetricsSender(t *testing.T, receiver string) testbed.MetricDataSen
 	case "otlp":
 		sender = testbed.NewOTLPMetricDataSender(testbed.DefaultHost, testbed.GetAvailablePort(t))
 	case "opencensus":
-		sender = testbed.NewOCMetricDataSender(testbed.DefaultHost, testbed.GetAvailablePort(t))
+		sender = datasenders.NewOCMetricDataSender(testbed.DefaultHost, testbed.GetAvailablePort(t))
 	case "prometheus":
-		sender = testbed.NewPrometheusDataSender(testbed.DefaultHost, testbed.GetAvailablePort(t))
+		sender = datasenders.NewPrometheusDataSender(testbed.DefaultHost, testbed.GetAvailablePort(t))
 	default:
 		t.Errorf("unknown receiver type: %s", receiver)
 	}
@@ -161,13 +163,13 @@ func ConstructReceiver(t *testing.T, exporter string) testbed.DataReceiver {
 	case "otlp":
 		receiver = testbed.NewOTLPDataReceiver(testbed.GetAvailablePort(t))
 	case "opencensus":
-		receiver = testbed.NewOCDataReceiver(testbed.GetAvailablePort(t))
+		receiver = datareceivers.NewOCDataReceiver(testbed.GetAvailablePort(t))
 	case "jaeger":
-		receiver = testbed.NewJaegerDataReceiver(testbed.GetAvailablePort(t))
+		receiver = datareceivers.NewJaegerDataReceiver(testbed.GetAvailablePort(t))
 	case "zipkin":
-		receiver = testbed.NewZipkinDataReceiver(testbed.GetAvailablePort(t))
+		receiver = datareceivers.NewZipkinDataReceiver(testbed.GetAvailablePort(t))
 	case "prometheus":
-		receiver = testbed.NewPrometheusDataReceiver(testbed.GetAvailablePort(t))
+		receiver = datareceivers.NewPrometheusDataReceiver(testbed.GetAvailablePort(t))
 	default:
 		t.Errorf("unknown exporter type: %s", exporter)
 	}

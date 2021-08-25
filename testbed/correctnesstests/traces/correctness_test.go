@@ -20,10 +20,10 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
-
 	"go.opentelemetry.io/collector/service/defaultcomponents"
-	"go.opentelemetry.io/collector/testbed/correctness"
-	"go.opentelemetry.io/collector/testbed/testbed"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/correctnesstests"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/testbed"
 )
 
 var correctnessResults testbed.TestResultsSummary = &testbed.CorrectnessResults{}
@@ -33,7 +33,7 @@ func TestMain(m *testing.M) {
 }
 
 func TestTracingGoldenData(t *testing.T) {
-	tests, err := correctness.LoadPictOutputPipelineDefs("testdata/generated_pict_pairs_traces_pipeline.txt")
+	tests, err := correctnesstests.LoadPictOutputPipelineDefs("testdata/generated_pict_pairs_traces_pipeline.txt")
 	require.NoError(t, err)
 	processors := map[string]string{
 		"batch": `
@@ -43,8 +43,8 @@ func TestTracingGoldenData(t *testing.T) {
 	}
 	for _, test := range tests {
 		test.TestName = fmt.Sprintf("%s-%s", test.Receiver, test.Exporter)
-		test.DataSender = correctness.ConstructTraceSender(t, test.Receiver)
-		test.DataReceiver = correctness.ConstructReceiver(t, test.Exporter)
+		test.DataSender = correctnesstests.ConstructTraceSender(t, test.Receiver)
+		test.DataReceiver = correctnesstests.ConstructReceiver(t, test.Exporter)
 		t.Run(test.TestName, func(t *testing.T) {
 			testWithTracingGoldenDataset(t, test.DataSender, test.DataReceiver, test.ResourceSpec, processors)
 		})
@@ -59,14 +59,14 @@ func testWithTracingGoldenDataset(
 	processors map[string]string,
 ) {
 	dataProvider := testbed.NewGoldenDataProvider(
-		"../../../internal/goldendataset/testdata/generated_pict_pairs_traces.txt",
-		"../../../internal/goldendataset/testdata/generated_pict_pairs_spans.txt",
+		"../../../internal/coreinternal/goldendataset/testdata/generated_pict_pairs_traces.txt",
+		"../../../internal/coreinternal/goldendataset/testdata/generated_pict_pairs_spans.txt",
 		"")
 	factories, err := defaultcomponents.Components()
 	require.NoError(t, err, "default components resulted in: %v", err)
 	runner := testbed.NewInProcessCollector(factories)
 	validator := testbed.NewCorrectTestValidator(sender.ProtocolName(), receiver.ProtocolName(), dataProvider)
-	config := correctness.CreateConfigYaml(sender, receiver, processors, "traces")
+	config := correctnesstests.CreateConfigYaml(sender, receiver, processors, "traces")
 	configCleanup, cfgErr := runner.PrepareConfig(config)
 	require.NoError(t, cfgErr, "collector configuration resulted in: %v", cfgErr)
 	defer configCleanup()
