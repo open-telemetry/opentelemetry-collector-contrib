@@ -122,6 +122,9 @@ func (e *tracesExporter) pushTraceData(ctx context.Context, td pdata.Traces) err
 		}
 	}
 
+	if err := e.sender.Flush(); err != nil {
+		errs = append(errs, err)
+	}
 	return consumererror.Combine(errs)
 }
 
@@ -131,7 +134,7 @@ func (e *tracesExporter) recordSpan(span span) error {
 		parents = []string{span.ParentSpanID.String()}
 	}
 
-	err := e.sender.SendSpan(
+	return e.sender.SendSpan(
 		span.Name,
 		span.StartMillis,
 		span.DurationMillis,
@@ -143,11 +146,6 @@ func (e *tracesExporter) recordSpan(span span) error {
 		mapToSpanTags(span.Tags),
 		span.SpanLogs,
 	)
-
-	if err != nil {
-		return err
-	}
-	return e.sender.Flush()
 }
 
 func (e *tracesExporter) shutdown(_ context.Context) error {
