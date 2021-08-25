@@ -37,12 +37,6 @@ type TestCase struct {
 	// does not write out results when set to true
 	skipResults bool
 
-	// Agent config file path.
-	agentConfigFile string
-
-	// Load generator spec file path.
-	// loadSpecFile string
-
 	// Resource spec for agent.
 	resourceSpec ResourceSpec
 
@@ -143,10 +137,6 @@ func (tc *TestCase) composeTestResultFileName(fileName string) string {
 // StartAgent starts the agent and redirects its standard output and standard error
 // to "agent.log" file located in the test directory.
 func (tc *TestCase) StartAgent(args ...string) {
-	if tc.agentConfigFile != "" {
-		args = append(args, "--config")
-		args = append(args, tc.agentConfigFile)
-	}
 	logFileName := tc.composeTestResultFileName("agent.log")
 
 	err := tc.agentProc.Start(StartParams{
