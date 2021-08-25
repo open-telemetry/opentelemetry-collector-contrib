@@ -17,3 +17,7 @@ require (
 replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/splunkhecexporter => ../../exporter/splunkhecexporter
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk => ../../internal/splunk
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus => ../../pkg/translator/opencensus
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal => ../../internal/coreinternal

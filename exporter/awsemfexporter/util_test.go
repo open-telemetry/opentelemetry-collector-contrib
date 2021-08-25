@@ -23,8 +23,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/model/pdata"
 	conventions "go.opentelemetry.io/collector/translator/conventions/v1.5.0"
-	"go.opentelemetry.io/collector/translator/internaldata"
 	"go.uber.org/zap"
+
+	internaldata "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus"
 )
 
 func TestReplacePatternValidTaskId(t *testing.T) {

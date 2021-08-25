@@ -31,9 +31,10 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configcheck"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.opentelemetry.io/collector/translator/internaldata"
 	"go.uber.org/zap"
 	zapObserver "go.uber.org/zap/zaptest/observer"
+
+	internaldata "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer"
 )
