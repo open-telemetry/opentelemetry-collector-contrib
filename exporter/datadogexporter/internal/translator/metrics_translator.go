@@ -38,11 +38,11 @@ type HostnameProvider interface {
 }
 
 type Translator struct {
-	prevPts          *TTLCache
-	logger           *zap.Logger
-	cfg              config.MetricsConfig
-	buildInfo        component.BuildInfo
-	hostnameProvider HostnameProvider
+	prevPts                  *TTLCache
+	logger                   *zap.Logger
+	cfg                      config.MetricsConfig
+	buildInfo                component.BuildInfo
+	fallbackHostnameProvider HostnameProvider
 }
 
 func New(cache *TTLCache, params component.ExporterCreateSettings, cfg config.MetricsConfig, fallbackHostProvider HostnameProvider) *Translator {
@@ -235,7 +235,7 @@ func (t *Translator) MapMetrics(md pdata.Metrics) (series []datadog.Metric) {
 
 		host, ok := metadata.HostnameFromAttributes(rm.Resource().Attributes())
 		if !ok {
-			fallbackHost, err := t.hostnameProvider.Hostname(context.Background())
+			fallbackHost, err := t.fallbackHostnameProvider.Hostname(context.Background())
 			host = ""
 			if err == nil {
 				host = fallbackHost
