@@ -38,6 +38,7 @@ type metricsExporter struct {
 	tr     *translator.Translator
 }
 
+// assert `hostProvider` implements HostnameProvider interface
 var _ translator.HostnameProvider = (*hostProvider)(nil)
 
 type hostProvider struct {
