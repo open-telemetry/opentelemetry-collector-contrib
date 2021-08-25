@@ -1,6 +1,6 @@
 # OpenTelemetry Collector Demo
 
-*IMPORTANT:* This is a pre-released version of the OpenTelemetry Collector.
+*IMPORTANT:* This is a pre-released version of the OpenTelemetry Collector Contrib.
 
 This demo contains a client and server applications that use the
 opentelemetry Go library for instrumentation and for sending telemetry data
@@ -18,7 +18,7 @@ OpenTelemetry Collectors deployed:
  Jaeger, Zipkin, and Prometheus;
 
 This demo uses `docker-compose` and by default runs against the 
-`otel/opentelemetry-collector-dev:latest` image. To run the demo, switch
+`otel/opentelemetry-collector-contrib-dev:latest` image. To run the demo, switch
 to the `examples/demo` folder and run:
 
 ```shell
