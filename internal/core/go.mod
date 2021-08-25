@@ -1,4 +1,4 @@
-module go.opentelemetry.io/collector
+module github.com/open-telemetry/opentelemetry-collector-contrib/internal/core
 
 go 1.16
 

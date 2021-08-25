@@ -1,4 +1,4 @@
-module go.opentelemetry.io/collector/cmd/checkdoc
+module github.com/open-telemetry/opentelemetry-collector-contrib/internal/core/cmd/checkdoc
 
 go 1.16
 

@@ -1,4 +1,4 @@
-module go.opentelemetry.io/collector/cmd/issuegenerator
+module github.com/open-telemetry/opentelemetry-collector-contrib/internal/core/cmd/issuegenerator
 
 go 1.16
 
