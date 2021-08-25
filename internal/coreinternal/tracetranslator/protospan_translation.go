@@ -16,7 +16,6 @@ package tracetranslator
 
 import (
 	"go.opentelemetry.io/collector/model/pdata"
-	conventions "go.opentelemetry.io/collector/translator/conventions/v1.5.0"
 )
 
 // Some of the keys used to represent OTLP constructs as tags or annotations in other formats.
@@ -29,13 +28,6 @@ const (
 	TagHTTPStatusMsg = "http.status_message"
 
 	TagW3CTraceState = "w3c.tracestate"
-)
-
-const (
-	// Deprecated: Use conventions.OtelStatusCode
-	TagStatusCode = conventions.OtelStatusCode
-	// Deprecated: Use conventions.OtelStatusDescription
-	TagStatusMsg = conventions.OtelStatusDescription
 )
 
 // Constants used for signifying batch-level attribute values where not supplied by OTLP data but required
