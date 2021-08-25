@@ -70,7 +70,7 @@ def instrument(tracer_provider, memory_exporter):
     CeleryInstrumentor().uninstrument()
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="function")
 def tracer_provider(memory_exporter):
     original_tracer_provider = trace_api.get_tracer_provider()
 
@@ -86,7 +86,7 @@ def tracer_provider(memory_exporter):
     trace_api.set_tracer_provider(original_tracer_provider)
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="function")
 def memory_exporter():
     memory_exporter = InMemorySpanExporter()
     return memory_exporter
