@@ -160,6 +160,7 @@ install-tools:
 	cd $(TOOLS_MOD_DIR) && go install go.opentelemetry.io/collector/cmd/issuegenerator
 	cd $(TOOLS_MOD_DIR) && go install go.opentelemetry.io/collector/cmd/mdatagen
 	cd $(TOOLS_MOD_DIR) && go install golang.org/x/tools/cmd/goimports
+	cd $(TOOLS_MOD_DIR) && go install go.opentelemetry.io/build-tools/multimod
 
 .PHONY: run
 run:

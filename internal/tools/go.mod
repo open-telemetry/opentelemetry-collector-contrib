@@ -10,9 +10,9 @@ require (
 	github.com/jstemmer/go-junit-report v0.9.1
 	github.com/pavius/impi v0.0.3
 	github.com/prometheus/common v0.29.0 // indirect
-	github.com/spf13/cobra v1.2.1 // indirect
 	github.com/stretchr/objx v0.2.0 // indirect
 	github.com/tcnksm/ghr v0.14.0
+	go.opentelemetry.io/build-tools/multimod v0.0.0-20210823170809-d834b53332fe
 	go.opentelemetry.io/collector/cmd/checkdoc v0.33.1-0.20210820002854-d3000232f8f6
 	go.opentelemetry.io/collector/cmd/issuegenerator v0.33.1-0.20210820002854-d3000232f8f6
 	go.opentelemetry.io/collector/cmd/mdatagen v0.33.1-0.20210820002854-d3000232f8f6
