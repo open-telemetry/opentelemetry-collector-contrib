@@ -773,8 +773,8 @@ go.opentelemetry.io/build-tools/checkdoc v0.0.0-20210826185254-a20c5b1e2d7c h1:P
 go.opentelemetry.io/build-tools/checkdoc v0.0.0-20210826185254-a20c5b1e2d7c/go.mod h1:LSxCgynkoVzMPV/OEMaGXWm48o0WVAXocdfpvmJX1pE=
 go.opentelemetry.io/build-tools/issuegenerator v0.0.0-20210826185254-a20c5b1e2d7c h1:JW6d8hV1v8azYP9SAjA3Yh0uqLDBjYHz2VcvI+TPHLw=
 go.opentelemetry.io/build-tools/issuegenerator v0.0.0-20210826185254-a20c5b1e2d7c/go.mod h1:NSrnkWJbEC6r27HIE2fnIpQ/ttCgXEaIyVGzOGE8nqs=
-go.opentelemetry.io/collector/cmd/mdatagen v0.33.1-0.20210820002854-d3000232f8f6 h1:GhYCyfy0YClvnGlrw0UVXo0AghHe/yD8zdpOhzJVfM0=
-go.opentelemetry.io/collector/cmd/mdatagen v0.33.1-0.20210820002854-d3000232f8f6/go.mod h1:BkstFxlb/O+TT0yTP5CJb021ejzgdWxvV1DYrC1+GvM=
+go.opentelemetry.io/collector/cmd/mdatagen v0.33.1-0.20210826200354-479f46434f9a h1:mD0StQ09YNxS5WNJG0ynD4asWcPcJLwMdvKVUX0DlL8=
+go.opentelemetry.io/collector/cmd/mdatagen v0.33.1-0.20210826200354-479f46434f9a/go.mod h1:ORcm4LeOEv8/3Y+g05+LSfZIaD50XAjSpqek5PcQKrs=
 go.uber.org/atomic v1.3.2/go.mod h1:gD2HeocX3+yG+ygLZcrzQJaqmWj9AIm7n08wl/qW/PE=
 go.uber.org/atomic v1.4.0/go.mod h1:gD2HeocX3+yG+ygLZcrzQJaqmWj9AIm7n08wl/qW/PE=
 go.uber.org/atomic v1.5.0/go.mod h1:sABNBOSYdrvTF6hTgEIbc7YasKWGhgEQZyfxyTvoXHQ=
