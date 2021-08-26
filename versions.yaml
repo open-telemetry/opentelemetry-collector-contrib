@@ -48,14 +48,10 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/routingprocessor
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourceprocessor
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanmetricsprocessor
-      - github.com/open-telemetry/opentelemetry-collector-contrib/internal/core/cmd/issuegenerator
-      - github.com/open-telemetry/opentelemetry-collector-contrib/internal/core/cmd/mdatagen
-      - github.com/open-telemetry/opentelemetry-collector-contrib/internal/core/cmd/checkdoc
       - github.com/open-telemetry/opentelemetry-collector-contrib/internal/interval
       - github.com/open-telemetry/opentelemetry-collector-contrib/internal/stanza
       - github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal
       - github.com/open-telemetry/opentelemetry-collector-contrib/internal/common
-      - github.com/open-telemetry/opentelemetry-collector-contrib/internal/core
       - github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk
       - github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig
       - github.com/open-telemetry/opentelemetry-collector-contrib/internal/kubelet
@@ -156,3 +152,7 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata
 excluded-modules:
   - github.com/open-telemetry/opentelemetry-collector-contrib/internal/tools
+  - github.com/open-telemetry/opentelemetry-collector-contrib/internal/core/cmd/issuegenerator
+  - github.com/open-telemetry/opentelemetry-collector-contrib/internal/core/cmd/mdatagen
+  - github.com/open-telemetry/opentelemetry-collector-contrib/internal/core/cmd/checkdoc
+  - github.com/open-telemetry/opentelemetry-collector-contrib/internal/core
