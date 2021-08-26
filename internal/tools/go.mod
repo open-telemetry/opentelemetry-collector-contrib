@@ -15,7 +15,7 @@ require (
 	github.com/tcnksm/ghr v0.14.0
 	go.opentelemetry.io/build-tools/checkdoc v0.0.0-20210826185254-a20c5b1e2d7c
 	go.opentelemetry.io/build-tools/issuegenerator v0.0.0-20210826185254-a20c5b1e2d7c
-	go.opentelemetry.io/collector/cmd/mdatagen v0.33.1-0.20210820002854-d3000232f8f6
+	go.opentelemetry.io/collector/cmd/mdatagen v0.33.1-0.20210826200354-479f46434f9a
 	go.uber.org/atomic v1.8.0 // indirect
 	golang.org/x/tools v0.1.3
 	google.golang.org/protobuf v1.27.1 // indirect
