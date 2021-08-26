@@ -18,6 +18,8 @@ import (
 	"path"
 	"testing"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterconfig"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -91,6 +93,89 @@ func TestLoadingConfigStrict(t *testing.T) {
 						MatchType:   filtermetric.Strict,
 						MetricNames: []string{"hello_world"},
 					},
+				},
+			},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.filterID.String(), func(t *testing.T) {
+			cfg := cfg.Processors[test.filterID]
+			assert.Equal(t, test.expCfg, cfg)
+		})
+	}
+}
+
+// TestLoadingConfigStrictLogs tests loading testdata/config_logs_strict.yaml
+func TestLoadingConfigStrictLogs(t *testing.T) {
+
+	testDataLogPropertiesInclude := &LogMatchProperties{
+		LogMatchType: Strict,
+		ResourceAttributes: []filterconfig.Attribute{
+			{
+				Key:   "should_include",
+				Value: "true",
+			},
+		},
+	}
+
+	testDataLogPropertiesExclude := &LogMatchProperties{
+		LogMatchType: Strict,
+		ResourceAttributes: []filterconfig.Attribute{
+			{
+				Key:   "should_exclude",
+				Value: "true",
+			},
+		},
+	}
+
+	factories, err := componenttest.NopFactories()
+	assert.Nil(t, err)
+
+	factory := NewFactory()
+	factories.Processors[typeStr] = factory
+	cfg, err := configtest.LoadConfigAndValidate(path.Join(".", "testdata", "config_logs_strict.yaml"), factories)
+
+	assert.Nil(t, err)
+	require.NotNil(t, cfg)
+
+	tests := []struct {
+		filterID config.ComponentID
+		expCfg   *Config
+	}{
+		{
+			filterID: config.NewIDWithName("filter", "empty"),
+			expCfg: &Config{
+				ProcessorSettings: config.NewProcessorSettings(config.NewIDWithName(typeStr, "empty")),
+				Logs: LogFilters{
+					Include: &LogMatchProperties{
+						LogMatchType: Strict,
+					},
+				},
+			},
+		}, {
+			filterID: config.NewIDWithName("filter", "include"),
+			expCfg: &Config{
+				ProcessorSettings: config.NewProcessorSettings(config.NewIDWithName(typeStr, "include")),
+				Logs: LogFilters{
+					Include: testDataLogPropertiesInclude,
+				},
+			},
+		}, {
+			filterID: config.NewIDWithName("filter", "exclude"),
+			expCfg: &Config{
+				ProcessorSettings: config.NewProcessorSettings(config.NewIDWithName(typeStr, "exclude")),
+				Logs: LogFilters{
+					Exclude: testDataLogPropertiesExclude,
+				},
+			},
+		}, {
+			filterID: config.NewIDWithName("filter", "includeexclude"),
+			expCfg: &Config{
+				ProcessorSettings: config.NewProcessorSettings(config.NewIDWithName(typeStr, "includeexclude")),
+				Logs: LogFilters{
+					Include: testDataLogPropertiesInclude,
+					Exclude: testDataLogPropertiesExclude,
 				},
 			},
 		},
