@@ -152,7 +152,5 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata
 excluded-modules:
   - github.com/open-telemetry/opentelemetry-collector-contrib/internal/tools
-  - github.com/open-telemetry/opentelemetry-collector-contrib/internal/core/cmd/issuegenerator
   - github.com/open-telemetry/opentelemetry-collector-contrib/internal/core/cmd/mdatagen
-  - github.com/open-telemetry/opentelemetry-collector-contrib/internal/core/cmd/checkdoc
   - github.com/open-telemetry/opentelemetry-collector-contrib/internal/core
