@@ -39,7 +39,6 @@ import (
 	conventions "go.opentelemetry.io/collector/translator/conventions/v1.5.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testutil"
-
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 )
 
