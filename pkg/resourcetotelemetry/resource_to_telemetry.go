@@ -12,27 +12,50 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package exporterhelper
+package resourcetotelemetry
 
 import (
+	"context"
+
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/model/pdata"
 )
 
-// ResourceToTelemetrySettings defines configuration for converting resource attributes to metric labels.
-type ResourceToTelemetrySettings struct {
-	// Enabled indicates whether to not convert resource attributes to metric labels
+// Settings defines configuration for converting resource attributes to telemetry attributes.
+// When used, it must be embedded in the exporter configuration:
+// type Config struct {
+//   // ...
+//   resourcetotelemetry.Settings `mapstructure:"resource_to_telemetry_conversion"`
+// }
+type Settings struct {
+	// Enabled indicates whether to convert resource attributes to telemetry attributes. Default is `false`.
 	Enabled bool `mapstructure:"enabled"`
 }
 
-// defaultResourceToTelemetrySettings returns the default settings for ResourceToTelemetrySettings.
-func defaultResourceToTelemetrySettings() ResourceToTelemetrySettings {
-	return ResourceToTelemetrySettings{
-		Enabled: false,
-	}
+type wrapperMetricsExporter struct {
+	component.MetricsExporter
 }
 
-// convertResourceToAttributes converts all resource attributes to metric labels
-func convertResourceToAttributes(md pdata.Metrics) pdata.Metrics {
+func (wme *wrapperMetricsExporter) ConsumeMetrics(ctx context.Context, md pdata.Metrics) error {
+	return wme.MetricsExporter.ConsumeMetrics(ctx, convertToMetricsAttributes(md))
+}
+
+func (wme *wrapperMetricsExporter) Capabilities() consumer.Capabilities {
+	// Always return false since this wrapper clones the data.
+	return consumer.Capabilities{MutatesData: false}
+}
+
+// WrapMetricsExporter wraps a given component.MetricsExporter and based on the given settings
+// converts incoming resource attributes to metrics attributes.
+func WrapMetricsExporter(set Settings, exporter component.MetricsExporter) component.MetricsExporter {
+	if !set.Enabled {
+		return exporter
+	}
+	return &wrapperMetricsExporter{MetricsExporter: exporter}
+}
+
+func convertToMetricsAttributes(md pdata.Metrics) pdata.Metrics {
 	cloneMd := md.Clone()
 	rms := cloneMd.ResourceMetrics()
 	for i := 0; i < rms.Len(); i++ {
