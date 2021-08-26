@@ -24,8 +24,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
-	"go.opentelemetry.io/collector/testbed/testbed"
 	"go.uber.org/zap"
 )
 
@@ -37,26 +37,26 @@ func TestNewReceiver(t *testing.T) {
 		},
 	}
 	logger := zap.NewNop()
-	nextConsumer := &testbed.MockMetricConsumer{}
-	mr, err := NewReceiver(context.Background(), logger, config, nextConsumer)
+	nextConsumer := consumertest.NewNop()
+	mr, err := NewReceiver(context.Background(), logger, config, consumertest.NewNop())
 	assert.NotNil(t, mr)
 	assert.Nil(t, err)
 
 	receiver := mr.(*Receiver)
 	assert.Equal(t, config, receiver.config)
-	assert.Equal(t, nextConsumer, receiver.nextConsumer)
+	assert.Same(t, nextConsumer, receiver.nextConsumer)
 	assert.Equal(t, logger, receiver.logger)
 }
 
 func TestNewReceiverErrors(t *testing.T) {
 	logger := zap.NewNop()
 
-	r, err := NewReceiver(context.Background(), logger, &Config{}, &testbed.MockMetricConsumer{})
+	r, err := NewReceiver(context.Background(), logger, &Config{}, consumertest.NewNop())
 	assert.Nil(t, r)
 	require.Error(t, err)
 	assert.Equal(t, "config.Endpoint must be specified", err.Error())
 
-	r, err = NewReceiver(context.Background(), logger, &Config{Endpoint: "someEndpoint"}, &testbed.MockMetricConsumer{})
+	r, err = NewReceiver(context.Background(), logger, &Config{Endpoint: "someEndpoint"}, consumertest.NewNop())
 	assert.Nil(t, r)
 	require.Error(t, err)
 	assert.Equal(t, "config.CollectionInterval must be specified", err.Error())
