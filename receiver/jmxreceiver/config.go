@@ -92,6 +92,15 @@ func (oec otlpExporterConfig) headersToString() string {
 }
 
 func (c *Config) parseProperties() []string {
+	if c.Properties == nil {
+		c.Properties = make(map[string]string)
+	}
+
+	// Set defaults if not present
+	if _, present := c.Properties["org.slf4j.simpleLogger.defaultLogLevel"]; !present {
+		c.Properties["org.slf4j.simpleLogger.defaultLogLevel"] = "info"
+	}
+
 	parsed := make([]string, 0, len(c.Properties))
 	for property, value := range c.Properties {
 		parsed = append(parsed, fmt.Sprintf("-D%s=%s", property, value))

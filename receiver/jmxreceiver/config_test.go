@@ -84,7 +84,7 @@ func TestLoadConfig(t *testing.T) {
 		}, r1)
 
 	assert.Equal(
-		t, []string{"-Dproperty.one=value.one", "-Dproperty.two=value.two.a=value.two.b,value.two.c=value.two.d"},
+		t, []string{"-Dorg.slf4j.simpleLogger.defaultLogLevel=info", "-Dproperty.one=value.one", "-Dproperty.two=value.two.a=value.two.b,value.two.c=value.two.d"},
 		r1.parseProperties(),
 	)
 
