@@ -15,8 +15,9 @@
 package kafkametricsreceiver
 
 import (
-	"go.opentelemetry.io/collector/exporter/kafkaexporter"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter"
 )
 
 // Config represents user settings for kafkametrics receiver
