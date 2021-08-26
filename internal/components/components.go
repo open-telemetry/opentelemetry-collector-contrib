@@ -117,8 +117,6 @@ func Components() (component.Factories, error) {
 		return component.Factories{}, err
 	}
 
-<<<<<<< HEAD
-=======
 	delete(factories.Exporters, "file")
 	delete(factories.Exporters, "jaeger")
 	delete(factories.Exporters, "kafka")
@@ -144,7 +142,6 @@ func Components() (component.Factories, error) {
 	delete(factories.Receivers, "prometheus")
 	delete(factories.Receivers, "zipkin")
 
->>>>>>> d62d188b0 (Move pprofextension)
 	extensions := []component.ExtensionFactory{
 		bearertokenauthextension.NewFactory(),
 		filestorage.NewFactory(),
