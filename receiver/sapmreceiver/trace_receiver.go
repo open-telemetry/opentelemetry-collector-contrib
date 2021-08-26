@@ -31,9 +31,8 @@ import (
 	"go.opentelemetry.io/collector/obsreport"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger"
-
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger"
 )
 
 var gzipWriterPool = &sync.Pool{

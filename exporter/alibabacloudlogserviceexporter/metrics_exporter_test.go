@@ -26,7 +26,6 @@ import (
 	"go.opentelemetry.io/collector/config"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/metricstestutil"
-
 	internaldata "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus"
 )
 

@@ -29,7 +29,6 @@ import (
 	"k8s.io/client-go/kubernetes/fake"
 
 	internaldata "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus"
-
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver/internal/kubelet"
 )
 

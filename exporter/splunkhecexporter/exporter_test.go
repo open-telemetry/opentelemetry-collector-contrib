@@ -42,10 +42,8 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/metricstestutil"
-
-	internaldata "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus"
-
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
+	internaldata "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus"
 )
 
 func TestNew(t *testing.T) {
