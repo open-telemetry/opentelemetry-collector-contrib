@@ -23,10 +23,10 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtest"
-	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -88,7 +88,7 @@ func TestLoadConfig(t *testing.T) {
 			LogStreamName:                   "",
 			DimensionRollupOption:           "ZeroAndSingleDimensionRollup",
 			OutputDestination:               "cloudwatch",
-			ResourceToTelemetrySettings:     exporterhelper.ResourceToTelemetrySettings{Enabled: true},
+			ResourceToTelemetrySettings:     resourcetotelemetry.Settings{Enabled: true},
 			ParseJSONEncodedAttributeValues: make([]string, 0),
 			MetricDeclarations:              []*MetricDeclaration{},
 			MetricDescriptors:               []MetricDescriptor{},
@@ -109,7 +109,7 @@ func TestConfigValidate(t *testing.T) {
 			MaxRetries:            1,
 		},
 		DimensionRollupOption:       "ZeroAndSingleDimensionRollup",
-		ResourceToTelemetrySettings: exporterhelper.ResourceToTelemetrySettings{Enabled: true},
+		ResourceToTelemetrySettings: resourcetotelemetry.Settings{Enabled: true},
 		MetricDescriptors:           incorrectDescriptor,
 		logger:                      zap.NewNop(),
 	}
