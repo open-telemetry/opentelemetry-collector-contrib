@@ -58,6 +58,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/hostobserver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/k8sobserver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/oidcauthextension"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/pprofextension"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/filestorage"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/attributesprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/cumulativetodeltaprocessor"
@@ -116,6 +117,34 @@ func Components() (component.Factories, error) {
 		return component.Factories{}, err
 	}
 
+<<<<<<< HEAD
+=======
+	delete(factories.Exporters, "file")
+	delete(factories.Exporters, "jaeger")
+	delete(factories.Exporters, "kafka")
+	delete(factories.Exporters, "opencensus")
+	delete(factories.Exporters, "prometheus")
+	delete(factories.Exporters, "prometheusremotewrite")
+	delete(factories.Exporters, "zipkin")
+
+	delete(factories.Extensions, "oidc")
+	delete(factories.Extensions, "bearertokenauth")
+	delete(factories.Extensions, "pprof")
+
+	delete(factories.Processors, "probabilistic_sampler")
+	delete(factories.Processors, "attributes")
+	delete(factories.Processors, "span")
+	delete(factories.Processors, "resource")
+	delete(factories.Processors, "filter")
+
+	delete(factories.Receivers, "hostmetrics")
+	delete(factories.Receivers, "jaeger")
+	delete(factories.Receivers, "kafka")
+	delete(factories.Receivers, "opencensus")
+	delete(factories.Receivers, "prometheus")
+	delete(factories.Receivers, "zipkin")
+
+>>>>>>> d62d188b0 (Move pprofextension)
 	extensions := []component.ExtensionFactory{
 		bearertokenauthextension.NewFactory(),
 		filestorage.NewFactory(),
@@ -123,6 +152,7 @@ func Components() (component.Factories, error) {
 		hostobserver.NewFactory(),
 		httpforwarder.NewFactory(),
 		k8sobserver.NewFactory(),
+		pprofextension.NewFactory(),
 		oauth2clientauthextension.NewFactory(),
 		oidcauthextension.NewFactory(),
 	}
