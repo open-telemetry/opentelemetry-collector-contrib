@@ -27,6 +27,8 @@ import (
 	"go.opentelemetry.io/collector/config/configtest"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry"
 )
 
 // TestLoadConfig checks whether yaml configuration can be loaded correctly
@@ -78,7 +80,7 @@ func Test_loadConfig(t *testing.T) {
 					"Prometheus-Remote-Write-Version": "0.1.0",
 					"X-Scope-OrgID":                   "234"},
 			},
-			ResourceToTelemetrySettings: exporterhelper.ResourceToTelemetrySettings{Enabled: true},
+			ResourceToTelemetrySettings: resourcetotelemetry.Settings{Enabled: true},
 		})
 }
 
