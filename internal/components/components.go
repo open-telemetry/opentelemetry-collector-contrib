@@ -117,6 +117,8 @@ func Components() (component.Factories, error) {
 		return component.Factories{}, err
 	}
 
+	delete(factories.Extensions, "pprof")
+
 	extensions := []component.ExtensionFactory{
 		bearertokenauthextension.NewFactory(),
 		filestorage.NewFactory(),
