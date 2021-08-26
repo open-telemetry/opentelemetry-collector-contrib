@@ -30,9 +30,8 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/model/pdata"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger"
-
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger"
 )
 
 func TestCreateTracesExporter(t *testing.T) {

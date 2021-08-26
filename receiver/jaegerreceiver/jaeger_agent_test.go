@@ -41,7 +41,6 @@ import (
 	"google.golang.org/grpc"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testutil"
-
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger"
 )
 

@@ -18,9 +18,8 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"go.uber.org/atomic"
-
 	"go.opentelemetry.io/collector/model/pdata"
+	"go.uber.org/atomic"
 )
 
 const metricsPictPairsFile = "../../internal/goldendataset/testdata/generated_pict_pairs_metrics.txt"
