@@ -27,10 +27,10 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/model/pdata"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry"
 )
 
 func TestPrometheusExporter(t *testing.T) {
@@ -259,7 +259,7 @@ func TestPrometheusExporter_endToEndWithResource(t *testing.T) {
 		Endpoint:         ":7777",
 		SendTimestamps:   true,
 		MetricExpiration: 120 * time.Minute,
-		ResourceToTelemetrySettings: exporterhelper.ResourceToTelemetrySettings{
+		ResourceToTelemetrySettings: resourcetotelemetry.Settings{
 			Enabled: true,
 		},
 	}

@@ -11,14 +11,14 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-package exporterhelper
+package resourcetotelemetry
 
 import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 
-	"go.opentelemetry.io/collector/internal/testdata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
 )
 
 func TestConvertResourceToAttributes(t *testing.T) {
@@ -29,7 +29,7 @@ func TestConvertResourceToAttributes(t *testing.T) {
 	assert.Equal(t, 1, md.ResourceMetrics().At(0).Resource().Attributes().Len())
 	assert.Equal(t, 1, md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).Attributes().Len())
 
-	cloneMd := convertResourceToAttributes(md)
+	cloneMd := convertToMetricsAttributes(md)
 
 	// After converting resource to labels
 	assert.Equal(t, 1, cloneMd.ResourceMetrics().At(0).Resource().Attributes().Len())
@@ -52,7 +52,7 @@ func TestConvertResourceToAttributesAllDataTypesEmptyDataPoint(t *testing.T) {
 	assert.Equal(t, 0, md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(3).Sum().DataPoints().At(0).Attributes().Len())
 	assert.Equal(t, 0, md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(4).Histogram().DataPoints().At(0).Attributes().Len())
 
-	cloneMd := convertResourceToAttributes(md)
+	cloneMd := convertToMetricsAttributes(md)
 
 	// After converting resource to labels
 	assert.Equal(t, 1, cloneMd.ResourceMetrics().At(0).Resource().Attributes().Len())

@@ -22,6 +22,8 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry"
 )
 
 const (
@@ -65,14 +67,13 @@ func createMetricsExporter(
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		exporterhelper.WithStart(prometheus.Start),
 		exporterhelper.WithShutdown(prometheus.Shutdown),
-		exporterhelper.WithResourceToTelemetryConversion(pcfg.ResourceToTelemetrySettings),
 	)
 	if err != nil {
 		return nil, err
 	}
 
 	return &wrapMetricsExpoter{
-		MetricsExporter: exporter,
+		MetricsExporter: resourcetotelemetry.WrapMetricsExporter(pcfg.ResourceToTelemetrySettings, exporter),
 		exporter:        prometheus,
 	}, nil
 }

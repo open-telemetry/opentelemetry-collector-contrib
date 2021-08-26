@@ -7,6 +7,7 @@ require (
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/trace v1.0.0-RC2
 	github.com/census-instrumentation/opencensus-proto v0.3.0
 	github.com/mattn/go-colorable v0.1.7 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.0.0-00010101000000-000000000000
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus v0.0.0-00010101000000-000000000000
 	github.com/stretchr/testify v1.7.0
 	go.opencensus.io v0.23.0

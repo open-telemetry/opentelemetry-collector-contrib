@@ -4,7 +4,6 @@ go 1.16
 
 require (
 	github.com/grobie/gomemcache v0.0.0-20180201122607-1f779c573665
-	github.com/hashicorp/go-msgpack v0.5.5 // indirect
 	github.com/mattn/go-colorable v0.1.7 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.0.0-00010101000000-000000000000
 	github.com/stretchr/testify v1.7.0
