@@ -27,7 +27,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/testbed/testbed"
+	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.uber.org/zap"
 )
 
@@ -37,14 +37,14 @@ func TestNewReceiver(t *testing.T) {
 		CollectionInterval: 1 * time.Second,
 	}
 	logger := zap.NewNop()
-	nextConsumer := &testbed.MockMetricConsumer{}
+	nextConsumer := consumertest.NewNop()
 	mr, err := NewReceiver(context.Background(), logger, config, nextConsumer)
 	assert.NotNil(t, mr)
 	assert.Nil(t, err)
 
 	receiver := mr.(*Receiver)
 	assert.Equal(t, config, receiver.config)
-	assert.Equal(t, nextConsumer, receiver.nextConsumer)
+	assert.Same(t, nextConsumer, receiver.nextConsumer)
 	assert.Equal(t, logger, receiver.logger)
 	assert.Equal(t, "unix", receiver.transport)
 }
@@ -52,12 +52,12 @@ func TestNewReceiver(t *testing.T) {
 func TestNewReceiverErrors(t *testing.T) {
 	logger := zap.NewNop()
 
-	r, err := NewReceiver(context.Background(), logger, &Config{}, &testbed.MockMetricConsumer{})
+	r, err := NewReceiver(context.Background(), logger, &Config{}, consumertest.NewNop())
 	assert.Nil(t, r)
 	require.Error(t, err)
 	assert.Equal(t, "config.Endpoint must be specified", err.Error())
 
-	r, err = NewReceiver(context.Background(), logger, &Config{Endpoint: "someEndpoint"}, &testbed.MockMetricConsumer{})
+	r, err = NewReceiver(context.Background(), logger, &Config{Endpoint: "someEndpoint"}, consumertest.NewNop())
 	assert.Nil(t, r)
 	require.Error(t, err)
 	assert.Equal(t, "config.CollectionInterval must be specified", err.Error())
@@ -70,7 +70,7 @@ func TestErrorsInStart(t *testing.T) {
 		CollectionInterval: 1 * time.Second,
 	}
 	logger := zap.NewNop()
-	receiver, err := NewReceiver(context.Background(), logger, config, &testbed.MockMetricConsumer{})
+	receiver, err := NewReceiver(context.Background(), logger, config, consumertest.NewNop())
 	assert.NotNil(t, receiver)
 	assert.Nil(t, err)
 
