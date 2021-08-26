@@ -4,8 +4,6 @@ go 1.16
 
 require (
 	github.com/census-instrumentation/opencensus-proto v0.3.0
-	github.com/containerd/containerd v1.4.4 // indirect
-	github.com/docker/docker v20.10.8+incompatible // indirect
 	github.com/onsi/ginkgo v1.14.1 // indirect
 	github.com/onsi/gomega v1.10.2 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/interval v0.0.0-00010101000000-000000000000
@@ -13,8 +11,8 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/kubelet v0.0.0-00010101000000-000000000000
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus v0.0.0-00010101000000-000000000000
 	github.com/stretchr/testify v1.7.0
-	go.opentelemetry.io/collector v0.33.1-0.20210820002854-d3000232f8f6
-	go.opentelemetry.io/collector/model v0.33.1-0.20210820002854-d3000232f8f6
+	go.opentelemetry.io/collector v0.33.1-0.20210826200354-479f46434f9a
+	go.opentelemetry.io/collector/model v0.33.1-0.20210826200354-479f46434f9a
 	go.uber.org/zap v1.19.0
 	google.golang.org/protobuf v1.27.1
 	gopkg.in/yaml.v2 v2.4.0
