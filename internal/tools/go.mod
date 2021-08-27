@@ -15,8 +15,10 @@ require (
 	go.opentelemetry.io/build-tools/checkdoc v0.0.0-20210826185254-a20c5b1e2d7c
 	go.opentelemetry.io/build-tools/issuegenerator v0.0.0-20210826185254-a20c5b1e2d7c
 	go.opentelemetry.io/build-tools/multimod v0.0.0-20210825233102-a2a6c6de716c
-	go.opentelemetry.io/collector/cmd/mdatagen v0.33.1-0.20210826200354-479f46434f9a
+	github.com/open-telemetry/opentelemetry-collector-contrib/cmd/mdatagen v0.0.0-00010101000000-000000000000
 	go.uber.org/atomic v1.8.0 // indirect
 	golang.org/x/tools v0.1.3
 	google.golang.org/protobuf v1.27.1 // indirect
 )
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/cmd/mdatagen => ../../cmd/mdatagen

@@ -17,6 +17,7 @@ module-sets:
     version: v0.34.0
     modules:
       - github.com/open-telemetry/opentelemetry-collector-contrib
+      - github.com/open-telemetry/opentelemetry-collector-contrib/cmd/mdatagen
       - github.com/open-telemetry/opentelemetry-collector-contrib/tracegen
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/fluentbitextension
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/oidcauthextension
@@ -28,6 +29,7 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/dockerobserver
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/ecsobserver
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/hostobserver
+      - github.com/open-telemetry/opentelemetry-collector-contrib/extension/pprofextension
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/awsxrayproxy
       - github.com/open-telemetry/opentelemetry-collector-contrib/testbed
@@ -150,7 +152,7 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchpersignal
       - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchperresourceattr
       - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata
+      - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry
 excluded-modules:
   - github.com/open-telemetry/opentelemetry-collector-contrib/internal/tools
-  - github.com/open-telemetry/opentelemetry-collector-contrib/internal/core/cmd/mdatagen
   - github.com/open-telemetry/opentelemetry-collector-contrib/internal/core

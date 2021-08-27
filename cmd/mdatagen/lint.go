@@ -19,7 +19,7 @@ import (
 	"strings"
 	"unicode"
 
-	"go.opentelemetry.io/collector/cmd/mdatagen/third_party/golint"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/mdatagen/third_party/golint"
 )
 
 // formatIdentifier variable in a go-safe way
