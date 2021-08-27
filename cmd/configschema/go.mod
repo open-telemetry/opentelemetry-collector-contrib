@@ -10,5 +10,3 @@ require (
 	go.opentelemetry.io/collector/model v0.33.0
 	golang.org/x/mod v0.4.2
 )
-
-replace github.com/open-telemetry/opentelemetry-collector-contrib/cmd/configschema => ./
