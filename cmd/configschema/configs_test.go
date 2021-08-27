@@ -18,9 +18,9 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/service/defaultcomponents"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/components"
 )
 
 func TestGetAllConfigs(t *testing.T) {
@@ -72,9 +72,9 @@ func TestGetConfig(t *testing.T) {
 }
 
 func testComponents() component.Factories {
-	components, err := defaultcomponents.Components()
+	cmps, err := components.Components()
 	if err != nil {
 		panic(err)
 	}
-	return components
+	return cmps
 }

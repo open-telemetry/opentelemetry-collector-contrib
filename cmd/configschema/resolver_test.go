@@ -30,7 +30,7 @@ import (
 func TestPackageDirLocal(t *testing.T) {
 	pkg := pdata.NewSum()
 	pkgValue := reflect.ValueOf(pkg)
-	dr := testDR()
+	dr := testDR("../..")
 	output, err := dr.PackageDir(pkgValue.Type())
 	assert.NoError(t, err)
 	assert.Equal(t, "../../model/pdata", output)
@@ -48,7 +48,7 @@ func TestPackageDirError(t *testing.T) {
 
 func TestExternalPkgDirErr(t *testing.T) {
 	pkg := "random/test"
-	pkgPath, err := testDR().externalPackageDir(pkg)
+	pkgPath, err := testDR("../..").externalPackageDir(pkg)
 	if assert.Error(t, err) {
 		expected := fmt.Sprintf("could not find package: \"%s\"", pkg)
 		assert.EqualErrorf(t, err, expected, "")
@@ -57,7 +57,7 @@ func TestExternalPkgDirErr(t *testing.T) {
 }
 
 func TestExternalPkgDir(t *testing.T) {
-	dr := testDR()
+	dr := testDR("../..")
 	testPkg := "grpc-ecosystem/grpc-gateway"
 	pkgPath, err := dr.externalPackageDir(testPkg)
 	assert.NoError(t, err)
@@ -73,7 +73,7 @@ func TestExternalPkgDir(t *testing.T) {
 
 func TestExternalPkgDirReplace(t *testing.T) {
 	pkg := DefaultModule + "/model"
-	pkgPath, err := testDR().externalPackageDir(pkg)
+	pkgPath, err := testDR("../..").externalPackageDir(pkg)
 	assert.NoError(t, err)
 	assert.Equal(t, "../../model", pkgPath)
 }

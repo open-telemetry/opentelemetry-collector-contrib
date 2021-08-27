@@ -31,7 +31,7 @@ const DefaultSrcRoot = "."
 
 // DefaultModule is the module prefix of otelcol. Can be used to create a
 // DirResolver.
-const DefaultModule = "go.opentelemetry.io/collector"
+const DefaultModule = "github.com/open-telemetry/opentelemetry-collector-contrib"
 
 // DirResolver is used to resolve the base directory of a given reflect.Type.
 type DirResolver struct {
