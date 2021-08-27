@@ -2436,7 +2436,7 @@ func generateTestMetrics(tm testMetric) pdata.Metrics {
 		m.SetDataType(pdata.MetricDataTypeGauge)
 		for _, value := range tm.metricValues[i] {
 			dp := m.Gauge().DataPoints().AppendEmpty()
-			dp.SetTimestamp(pdata.TimestampFromTime(now.Add(10 * time.Second)))
+			dp.SetTimestamp(pdata.NewTimestampFromTime(now.Add(10 * time.Second)))
 			dp.SetDoubleVal(value)
 			dp.Attributes().InitFromMap(tm.attributeMap)
 		}

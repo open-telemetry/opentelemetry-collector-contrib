@@ -67,7 +67,7 @@ func Test_signalFxV2ToMetricsData(t *testing.T) {
 		})
 		dp.Attributes().Sort()
 
-		dp.SetTimestamp(pdata.TimestampFromTime(now.Truncate(time.Millisecond)))
+		dp.SetTimestamp(pdata.NewTimestampFromTime(now.Truncate(time.Millisecond)))
 
 		switch val := value.(type) {
 		case int:
