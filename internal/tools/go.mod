@@ -33,6 +33,7 @@ require (
 	github.com/ashanbrown/makezero v0.0.0-20210520155254-b6261585ddde // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/bkielbasa/cyclop v1.2.0 // indirect
+	github.com/bmatcuk/doublestar/v4 v4.0.2 // indirect
 	github.com/bombsimon/wsl/v3 v3.3.0 // indirect
 	github.com/cespare/xxhash/v2 v2.1.1 // indirect
 	github.com/charithe/durationcheck v0.0.8 // indirect
