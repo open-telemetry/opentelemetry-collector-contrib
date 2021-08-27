@@ -23,12 +23,11 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver"
-	"go.opentelemetry.io/collector/service/defaultcomponents"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/configschema"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/components"
 )
 
 func TestWriteConfigDoc(t *testing.T) {
@@ -99,7 +98,7 @@ func testHandleCLI(t *testing.T, cs component.Factories, wr *fakeFilesystemWrite
 }
 
 func defaultComponents(t *testing.T) component.Factories {
-	cmps, err := defaultcomponents.Components()
+	cmps, err := components.Components()
 	require.NoError(t, err)
 	return cmps
 }
