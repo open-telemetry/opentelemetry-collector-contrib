@@ -13,3 +13,11 @@
 // limitations under the License.
 
 package filterconfig
+
+package iruntime
+
+// TotalMemory returns total available memory for non-linux platforms.
+func TotalMemory() (uint64, error) {
+	return readMemInfo()
+}
+>>>>>>> Upgrade to Go 1.17:internal/core/internal/iruntime/total_memory_other.go

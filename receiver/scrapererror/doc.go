@@ -14,3 +14,16 @@
 
 // Package scraperror provides custom error types for scrapers.
 package scrapererror
+
+import (
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+)
+
+func TestTotalMemory(t *testing.T) {
+	totalMemory, err := TotalMemory()
+	assert.NoError(t, err)
+	assert.True(t, totalMemory > 0)
+}
+>>>>>>> Upgrade to Go 1.17:internal/core/internal/iruntime/total_memory_other_test.go
