@@ -7,8 +7,8 @@ require (
 	github.com/google/uuid v1.3.0
 	github.com/open-telemetry/opentelemetry-collector-contrib v0.0.0-00010101000000-000000000000
 	github.com/stretchr/testify v1.7.0
-	go.opentelemetry.io/collector v0.33.1-0.20210826200354-479f46434f9a
-	go.opentelemetry.io/collector/model v0.33.1-0.20210826200354-479f46434f9a
+	go.opentelemetry.io/collector v0.33.1-0.20210827152330-09258f969908
+	go.opentelemetry.io/collector/model v0.33.1-0.20210827152330-09258f969908
 	golang.org/x/mod v0.4.2
 )
 
