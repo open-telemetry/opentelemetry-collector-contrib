@@ -1,4 +1,4 @@
-module github.com/open-telemetry/opentelemetry-collector-contrib/internal/core/cmd/configschema
+module github.com/open-telemetry/opentelemetry-collector-contrib/cmd/configschema
 
 go 1.16
 
@@ -11,4 +11,4 @@ require (
 	golang.org/x/mod v0.4.2
 )
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/core/cmd/configschema => ./
+replace github.com/open-telemetry/opentelemetry-collector-contrib/cmd/configschema => ./
