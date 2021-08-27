@@ -28,7 +28,7 @@ import (
 	"go.opentelemetry.io/collector/receiver/otlpreceiver"
 	"go.opentelemetry.io/collector/service/defaultcomponents"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/core/cmd/configschema"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/configschema"
 )
 
 func TestWriteConfigDoc(t *testing.T) {
