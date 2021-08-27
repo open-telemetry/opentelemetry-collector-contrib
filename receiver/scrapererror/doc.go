@@ -26,4 +26,3 @@ func TestTotalMemory(t *testing.T) {
 	assert.NoError(t, err)
 	assert.True(t, totalMemory > 0)
 }
->>>>>>> Upgrade to Go 1.17:internal/core/internal/iruntime/total_memory_other_test.go
