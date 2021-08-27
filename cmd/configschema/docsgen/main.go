@@ -15,9 +15,10 @@
 package main
 
 import (
-	"go.opentelemetry.io/collector/cmd/configschema"
-	"go.opentelemetry.io/collector/cmd/configschema/docsgen/docsgen"
 	"go.opentelemetry.io/collector/service/defaultcomponents"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/configschema"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/configschema/docsgen/docsgen"
 )
 
 func main() {
