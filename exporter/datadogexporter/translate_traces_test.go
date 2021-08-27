@@ -52,9 +52,9 @@ func NewResourceSpansData(mockTraceID [16]byte, mockSpanID [8]byte, mockParentSp
 	// The goal of this test is to ensure that each span in
 	// pdata.ResourceSpans is transformed to its *trace.SpanData correctly!
 
-	pdataEndTime := pdata.TimestampFromTime(endTime)
+	pdataEndTime := pdata.NewTimestampFromTime(endTime)
 	startTime := endTime.Add(-90 * time.Second)
-	pdataStartTime := pdata.TimestampFromTime(startTime)
+	pdataStartTime := pdata.NewTimestampFromTime(startTime)
 
 	rs := pdata.NewResourceSpans()
 	ilss := rs.InstrumentationLibrarySpans()
@@ -295,8 +295,8 @@ func TestBasicTracesTranslation(t *testing.T) {
 	assert.NotNil(t, datadogPayload.Traces[0].Spans[0].Start)
 	assert.NotNil(t, datadogPayload.Traces[0].Spans[0].Duration)
 
-	pdataMockEndTime := pdata.TimestampFromTime(mockEndTime)
-	pdataMockStartTime := pdata.TimestampFromTime(mockEndTime.Add(-90 * time.Second))
+	pdataMockEndTime := pdata.NewTimestampFromTime(mockEndTime)
+	pdataMockStartTime := pdata.NewTimestampFromTime(mockEndTime.Add(-90 * time.Second))
 	mockEventsString := fmt.Sprintf("[{\"attributes\":{},\"name\":\"start\",\"time\":%d},{\"attributes\":{\"flag\":false},\"name\":\"end\",\"time\":%d}]", pdataMockStartTime, pdataMockEndTime)
 
 	// ensure that events tag is set if span events exist and contains structured json fields
@@ -395,9 +395,9 @@ func TestTracesFallbackErrorMessage(t *testing.T) {
 	mockSpanID := [8]byte{0xF1, 0xF2, 0xF3, 0xF4, 0xF5, 0xF6, 0xF7, 0xF8}
 	mockParentSpanID := [8]byte{0xEF, 0xEE, 0xED, 0xEC, 0xEB, 0xEA, 0xE9, 0xE8}
 	mockEndTime := time.Now().Round(time.Second)
-	pdataEndTime := pdata.TimestampFromTime(mockEndTime)
+	pdataEndTime := pdata.NewTimestampFromTime(mockEndTime)
 	startTime := mockEndTime.Add(-90 * time.Second)
-	pdataStartTime := pdata.TimestampFromTime(startTime)
+	pdataStartTime := pdata.NewTimestampFromTime(startTime)
 
 	rs := pdata.NewResourceSpans()
 	ilss := rs.InstrumentationLibrarySpans()
@@ -821,8 +821,8 @@ func TestTracesTranslationServicePeerName(t *testing.T) {
 	assert.NotNil(t, datadogPayload.Traces[0].Spans[0].Start)
 	assert.NotNil(t, datadogPayload.Traces[0].Spans[0].Duration)
 
-	pdataMockEndTime := pdata.TimestampFromTime(mockEndTime)
-	pdataMockStartTime := pdata.TimestampFromTime(mockEndTime.Add(-90 * time.Second))
+	pdataMockEndTime := pdata.NewTimestampFromTime(mockEndTime)
+	pdataMockStartTime := pdata.NewTimestampFromTime(mockEndTime.Add(-90 * time.Second))
 	mockEventsString := fmt.Sprintf("[{\"attributes\":{},\"name\":\"start\",\"time\":%d},{\"attributes\":{\"flag\":false},\"name\":\"end\",\"time\":%d}]", pdataMockStartTime, pdataMockEndTime)
 
 	// ensure that events tag is set if span events exist and contains structured json fields
@@ -896,8 +896,8 @@ func TestTracesTranslationTruncatetag(t *testing.T) {
 	assert.NotNil(t, datadogPayload.Traces[0].Spans[0].Start)
 	assert.NotNil(t, datadogPayload.Traces[0].Spans[0].Duration)
 
-	pdataMockEndTime := pdata.TimestampFromTime(mockEndTime)
-	pdataMockStartTime := pdata.TimestampFromTime(mockEndTime.Add(-90 * time.Second))
+	pdataMockEndTime := pdata.NewTimestampFromTime(mockEndTime)
+	pdataMockStartTime := pdata.NewTimestampFromTime(mockEndTime.Add(-90 * time.Second))
 	mockEventsString := fmt.Sprintf("[{\"attributes\":{},\"name\":\"start\",\"time\":%d},{\"attributes\":{\"flag\":false},\"name\":\"end\",\"time\":%d}]", pdataMockStartTime, pdataMockEndTime)
 
 	// ensure that events tag is set if span events exist and contains structured json fields
@@ -1411,9 +1411,9 @@ func TestSpanNameMapping(t *testing.T) {
 	mockSpanID := [8]byte{0xF1, 0xF2, 0xF3, 0xF4, 0xF5, 0xF6, 0xF7, 0xF8}
 	mockParentSpanID := [8]byte{0xEF, 0xEE, 0xED, 0xEC, 0xEB, 0xEA, 0xE9, 0xE8}
 	endTime := time.Now().Round(time.Second)
-	pdataEndTime := pdata.TimestampFromTime(endTime)
+	pdataEndTime := pdata.NewTimestampFromTime(endTime)
 	startTime := endTime.Add(-90 * time.Second)
-	pdataStartTime := pdata.TimestampFromTime(startTime)
+	pdataStartTime := pdata.NewTimestampFromTime(startTime)
 
 	denylister := newDenylister([]string{})
 	buildInfo := component.BuildInfo{
@@ -1463,9 +1463,9 @@ func TestSpanEnvClobbering(t *testing.T) {
 	mockSpanID := [8]byte{0xF1, 0xF2, 0xF3, 0xF4, 0xF5, 0xF6, 0xF7, 0xF8}
 	mockParentSpanID := [8]byte{0xEF, 0xEE, 0xED, 0xEC, 0xEB, 0xEA, 0xE9, 0xE8}
 	endTime := time.Now().Round(time.Second)
-	pdataEndTime := pdata.TimestampFromTime(endTime)
+	pdataEndTime := pdata.NewTimestampFromTime(endTime)
 	startTime := endTime.Add(-90 * time.Second)
-	pdataStartTime := pdata.TimestampFromTime(startTime)
+	pdataStartTime := pdata.NewTimestampFromTime(startTime)
 
 	denylister := newDenylister([]string{})
 	buildInfo := component.BuildInfo{
@@ -1512,9 +1512,9 @@ func TestSpanRateLimitTag(t *testing.T) {
 	mockSpanID := [8]byte{0xF1, 0xF2, 0xF3, 0xF4, 0xF5, 0xF6, 0xF7, 0xF8}
 	mockParentSpanID := [8]byte{0xEF, 0xEE, 0xED, 0xEC, 0xEB, 0xEA, 0xE9, 0xE8}
 	endTime := time.Now().Round(time.Second)
-	pdataEndTime := pdata.TimestampFromTime(endTime)
+	pdataEndTime := pdata.NewTimestampFromTime(endTime)
 	startTime := endTime.Add(-90 * time.Second)
-	pdataStartTime := pdata.TimestampFromTime(startTime)
+	pdataStartTime := pdata.NewTimestampFromTime(startTime)
 
 	denylister := newDenylister([]string{})
 	buildInfo := component.BuildInfo{

@@ -24,7 +24,7 @@ import (
 )
 
 func TestConvertToOTMetrics(t *testing.T) {
-	timestamp := pdata.TimestampFromTime(time.Now())
+	timestamp := pdata.NewTimestampFromTime(time.Now())
 	m := ECSMetrics{}
 
 	m.MemoryUsage = 100
@@ -41,7 +41,7 @@ func TestConvertToOTMetrics(t *testing.T) {
 
 func TestIntGauge(t *testing.T) {
 	intValue := int64(100)
-	timestamp := pdata.TimestampFromTime(time.Now())
+	timestamp := pdata.NewTimestampFromTime(time.Now())
 
 	ilm := pdata.NewInstrumentationLibraryMetrics()
 	appendIntGauge("cpu_utilized", "Count", intValue, timestamp, ilm)
@@ -49,7 +49,7 @@ func TestIntGauge(t *testing.T) {
 }
 
 func TestDoubleGauge(t *testing.T) {
-	timestamp := pdata.TimestampFromTime(time.Now())
+	timestamp := pdata.NewTimestampFromTime(time.Now())
 	floatValue := 100.01
 
 	ilm := pdata.NewInstrumentationLibraryMetrics()
@@ -58,7 +58,7 @@ func TestDoubleGauge(t *testing.T) {
 }
 
 func TestIntSum(t *testing.T) {
-	timestamp := pdata.TimestampFromTime(time.Now())
+	timestamp := pdata.NewTimestampFromTime(time.Now())
 	intValue := int64(100)
 
 	ilm := pdata.NewInstrumentationLibraryMetrics()
@@ -67,7 +67,7 @@ func TestIntSum(t *testing.T) {
 }
 
 func TestConvertStoppedContainerDataToOTMetrics(t *testing.T) {
-	timestamp := pdata.TimestampFromTime(time.Now())
+	timestamp := pdata.NewTimestampFromTime(time.Now())
 	resource := pdata.NewResource()
 	duration := 1200000000.32132
 	md := convertStoppedContainerDataToOTMetrics("container.", resource, timestamp, duration)

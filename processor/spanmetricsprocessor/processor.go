@@ -242,8 +242,8 @@ func (p *processorImp) collectLatencyMetrics(ilm pdata.InstrumentationLibraryMet
 		mLatency.Histogram().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
 
 		dpLatency := mLatency.Histogram().DataPoints().AppendEmpty()
-		dpLatency.SetStartTimestamp(pdata.TimestampFromTime(p.startTime))
-		dpLatency.SetTimestamp(pdata.TimestampFromTime(time.Now()))
+		dpLatency.SetStartTimestamp(pdata.NewTimestampFromTime(p.startTime))
+		dpLatency.SetTimestamp(pdata.NewTimestampFromTime(time.Now()))
 		dpLatency.SetExplicitBounds(p.latencyBounds)
 		dpLatency.SetBucketCounts(p.latencyBucketCounts[key])
 		dpLatency.SetCount(p.latencyCount[key])
@@ -264,8 +264,8 @@ func (p *processorImp) collectCallMetrics(ilm pdata.InstrumentationLibraryMetric
 		mCalls.Sum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
 
 		dpCalls := mCalls.Sum().DataPoints().AppendEmpty()
-		dpCalls.SetStartTimestamp(pdata.TimestampFromTime(p.startTime))
-		dpCalls.SetTimestamp(pdata.TimestampFromTime(time.Now()))
+		dpCalls.SetStartTimestamp(pdata.NewTimestampFromTime(p.startTime))
+		dpCalls.SetTimestamp(pdata.NewTimestampFromTime(time.Now()))
 		dpCalls.SetIntVal(p.callSum[key])
 
 		p.metricKeyToDimensions[key].CopyTo(dpCalls.Attributes())

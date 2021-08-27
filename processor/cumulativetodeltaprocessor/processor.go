@@ -76,7 +76,7 @@ func (ctdp *cumulativeToDeltaProcessor) processMetrics(_ context.Context, md pda
 							result, _ := ctdp.deltaCalculator.Calculate(metric.Name(), labelMap, fromDataPoint.DoubleVal(), fromDataPoint.Timestamp().AsTime())
 
 							fromDataPoint.SetDoubleVal(result.(delta).value)
-							fromDataPoint.SetStartTimestamp(pdata.TimestampFromTime(result.(delta).prevTimestamp))
+							fromDataPoint.SetStartTimestamp(pdata.NewTimestampFromTime(result.(delta).prevTimestamp))
 						}
 						metric.Sum().SetAggregationTemporality(pdata.AggregationTemporalityDelta)
 					}
