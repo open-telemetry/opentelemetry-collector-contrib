@@ -23,6 +23,8 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry"
 )
 
 const (
@@ -57,7 +59,7 @@ func createMetricsExporter(_ context.Context, set component.ExporterCreateSettin
 	// order for each timeseries. If we shard the incoming metrics
 	// without considering this limitation, we experience
 	// "out of order samples" errors.
-	return exporterhelper.NewMetricsExporter(
+	exporter, err := exporterhelper.NewMetricsExporter(
 		cfg,
 		set,
 		prwe.PushMetrics,
@@ -68,10 +70,13 @@ func createMetricsExporter(_ context.Context, set component.ExporterCreateSettin
 			QueueSize:    prwCfg.RemoteWriteQueue.QueueSize,
 		}),
 		exporterhelper.WithRetry(prwCfg.RetrySettings),
-		exporterhelper.WithResourceToTelemetryConversion(prwCfg.ResourceToTelemetrySettings),
 		exporterhelper.WithStart(prwe.Start),
 		exporterhelper.WithShutdown(prwe.Shutdown),
 	)
+	if err != nil {
+		return nil, err
+	}
+	return resourcetotelemetry.WrapMetricsExporter(prwCfg.ResourceToTelemetrySettings, exporter), nil
 }
 
 func createDefaultConfig() config.Exporter {

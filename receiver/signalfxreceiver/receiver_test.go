@@ -112,7 +112,7 @@ func Test_signalfxeceiver_EndToEnd(t *testing.T) {
 
 	unixSecs := int64(1574092046)
 	unixNSecs := int64(11 * time.Millisecond)
-	ts := pdata.TimestampFromTime(time.Unix(unixSecs, unixNSecs))
+	ts := pdata.NewTimestampFromTime(time.Unix(unixSecs, unixNSecs))
 
 	const doubleVal = 1234.5678
 	const int64Val = int64(123)

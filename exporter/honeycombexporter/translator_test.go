@@ -70,7 +70,7 @@ func TestTimestampToTime(t *testing.T) {
 
 	t2 := time.Now()
 	seconds := t2.UnixNano() / 1000000000
-	nowTime := timestampToTime(pdata.TimestampFromTime(
+	nowTime := timestampToTime(pdata.NewTimestampFromTime(
 		(&timestamppb.Timestamp{
 			Seconds: seconds,
 			Nanos:   int32(t2.UnixNano() - (seconds * 1000000000)),

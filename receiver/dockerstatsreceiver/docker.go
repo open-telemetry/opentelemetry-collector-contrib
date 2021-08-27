@@ -159,7 +159,7 @@ func (dc *dockerClient) FetchContainerStatsAndConvertToMetrics(
 		return pdata.NewMetrics(), err
 	}
 
-	md, err := ContainerStatsToMetrics(pdata.TimestampFromTime(time.Now()), statsJSON, &container, dc.config)
+	md, err := ContainerStatsToMetrics(pdata.NewTimestampFromTime(time.Now()), statsJSON, &container, dc.config)
 	if err != nil {
 		dc.logger.Error(
 			"Could not convert docker containerStats for container id",
