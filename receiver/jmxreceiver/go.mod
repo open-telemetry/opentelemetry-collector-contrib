@@ -7,8 +7,8 @@ require (
 	github.com/shirou/gopsutil v3.21.7+incompatible
 	github.com/stretchr/testify v1.7.0
 	github.com/testcontainers/testcontainers-go v0.11.1
-	go.opentelemetry.io/collector v0.33.1-0.20210826200354-479f46434f9a
-	go.opentelemetry.io/collector/model v0.33.1-0.20210826200354-479f46434f9a
+	go.opentelemetry.io/collector v0.33.1-0.20210827152330-09258f969908
+	go.opentelemetry.io/collector/model v0.33.1-0.20210827152330-09258f969908
 	go.uber.org/atomic v1.9.0
 	go.uber.org/zap v1.19.0
 
