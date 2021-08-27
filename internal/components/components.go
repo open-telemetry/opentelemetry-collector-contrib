@@ -118,6 +118,7 @@ func Components() (component.Factories, error) {
 		return component.Factories{}, err
 	}
 
+	delete(factories.Extensions, "health_check")
 	delete(factories.Extensions, "pprof")
 
 	extensions := []component.ExtensionFactory{
