@@ -144,7 +144,7 @@ func TestKeyspaceMetrics(t *testing.T) {
 }
 
 func TestNewPDM(t *testing.T) {
-	serverStartTime := pdata.TimestampFromTime(time.Unix(900, 0))
+	serverStartTime := pdata.NewTimestampFromTime(time.Unix(900, 0))
 	tb := testTimeBundle()
 
 	pdm := pdata.NewMetric()

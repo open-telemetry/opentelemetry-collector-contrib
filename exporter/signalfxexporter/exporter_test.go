@@ -707,7 +707,7 @@ func generateLargeDPBatch() pdata.Metrics {
 		m.SetDataType(pdata.MetricDataTypeGauge)
 
 		dp := m.Gauge().DataPoints().AppendEmpty()
-		dp.SetTimestamp(pdata.TimestampFromTime(ts))
+		dp.SetTimestamp(pdata.NewTimestampFromTime(ts))
 		dp.Attributes().InitFromMap(map[string]pdata.AttributeValue{
 			"k0": pdata.NewAttributeValueString("v0"),
 			"k1": pdata.NewAttributeValueString("v1"),
@@ -730,7 +730,7 @@ func generateLargeEventBatch() pdata.Logs {
 		lr.SetName("test_" + strconv.Itoa(i))
 		lr.Attributes().InsertString("k0", "k1")
 		lr.Attributes().InsertNull("com.splunk.signalfx.event_category")
-		lr.SetTimestamp(pdata.TimestampFromTime(ts))
+		lr.SetTimestamp(pdata.NewTimestampFromTime(ts))
 	}
 
 	return out
