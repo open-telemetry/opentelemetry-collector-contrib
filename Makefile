@@ -158,7 +158,7 @@ install-tools:
 	cd $(TOOLS_MOD_DIR) && go install github.com/tcnksm/ghr
 	cd $(TOOLS_MOD_DIR) && go install go.opentelemetry.io/build-tools/checkdoc
 	cd $(TOOLS_MOD_DIR) && go install go.opentelemetry.io/build-tools/issuegenerator
-	cd $(TOOLS_MOD_DIR) && go install go.opentelemetry.io/collector/cmd/mdatagen
+	cd $(TOOLS_MOD_DIR) && go install github.com/open-telemetry/opentelemetry-collector-contrib/cmd/mdatagen
 	cd $(TOOLS_MOD_DIR) && go install golang.org/x/tools/cmd/goimports
 
 .PHONY: run
@@ -229,7 +229,6 @@ update-dep:
 
 .PHONY: update-otel
 update-otel:
-	cd $(TOOLS_MOD_DIR) && go get go.opentelemetry.io/collector/cmd/mdatagen@$(OTEL_VERSION)
 	$(MAKE) update-dep MODULE=go.opentelemetry.io/collector VERSION=$(OTEL_VERSION)
 
 .PHONY: otel-from-tree

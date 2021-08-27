@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//go:build tools
 // +build tools
 
 package tools
@@ -30,6 +31,7 @@ import (
 	_ "github.com/tcnksm/ghr"
 	_ "go.opentelemetry.io/build-tools/checkdoc"
 	_ "go.opentelemetry.io/build-tools/issuegenerator"
-	_ "go.opentelemetry.io/collector/cmd/mdatagen"
 	_ "golang.org/x/tools/cmd/goimports"
+
+	_ "github.com/open-telemetry/opentelemetry-collector-contrib/cmd/mdatagen"
 )
