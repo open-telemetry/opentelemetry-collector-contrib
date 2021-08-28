@@ -14,13 +14,26 @@ The `journald_input` operator will use the `__REALTIME_TIMESTAMP` field of the j
 | `output`          | Next in pipeline | The connected operator(s) that will receive all outbound entries                                 |
 | `directory`       |                  | A directory containing journal files to read entries from                                        |
 | `files`           |                  | A list of journal files to read entries from                                                     |
-| `write_to`        | `$body`          | The body [field](/docs/types/field.md) written to when creating a new log entry                |
+| `units`           |                  | A list of units to read entries from                                                             |
+| `priority`        | `info`           | Filter output by message priorities or priority ranges                                           |
+| `write_to`        | `$body`          | The body [field](/docs/types/field.md) written to when creating a new log entry                  |
 | `start_at`        | `end`            | At startup, where to start reading logs from the file. Options are `beginning` or `end`          |
-| `attributes`      | {}               | A map of `key: value` pairs to add to the entry's attributes                                        |
-| `resource`        | {}               | A map of `key: value` pairs to add to the entry's resource                                      |
+| `attributes`      | {}               | A map of `key: value` pairs to add to the entry's attributes                                     |
+| `resource`        | {}               | A map of `key: value` pairs to add to the entry's resource                                       |
 
 ### Example Configurations
+```yaml
+- type: journald_input
+  units:
+    - ssh
+    - kubelet
+  priority: info
+```
 
+```yaml
+- type: journald_input
+  priority: emerg..err
+```
 #### Simple journald input
 
 Configuration:
