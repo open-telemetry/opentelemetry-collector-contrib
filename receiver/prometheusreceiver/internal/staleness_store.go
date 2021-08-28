@@ -31,7 +31,12 @@ var stalenessSpecialValue = math.Float64frombits(value.StaleNaN)
 // issue a staleness marker aka a special NaN value.
 // See https://github.com/open-telemetry/opentelemetry-collector/issues/3413
 type stalenessStore struct {
-	mu             sync.Mutex // mu protects all the fields below.
+	mu sync.Mutex // mu protects all the fields below.
+
+	byInstance map[string]*byInstance
+}
+
+type byInstance struct {
 	currentHashes  map[uint64]int64
 	previousHashes map[uint64]int64
 	previous       []labels.Labels
@@ -40,6 +45,12 @@ type stalenessStore struct {
 
 func newStalenessStore() *stalenessStore {
 	return &stalenessStore{
+		byInstance: make(map[string]*byInstance),
+	}
+}
+
+func newByInstance() *byInstance {
+	return &byInstance{
 		previousHashes: make(map[uint64]int64),
 		currentHashes:  make(map[uint64]int64),
 	}
@@ -51,29 +62,46 @@ func (ss *stalenessStore) refresh() {
 	ss.mu.Lock()
 	defer ss.mu.Unlock()
 
-	// 1. Clear ss.previousHashes firstly. Please don't edit
+	for _, bi := range ss.byInstance {
+		// TODO(@odeke-em): perhaps run this codd concurrently.
+		bi.refresh()
+	}
+}
+
+func (bi *byInstance) refresh() {
+	// 1. Clear bi.previousHashes firstly. Please don't edit
 	// this map clearing idiom as it ensures speed.
 	// See:
 	// * https://github.com/golang/go/issues/20138
 	// * https://github.com/golang/go/commit/aee71dd70b3779c66950ce6a952deca13d48e55e
-	for hash := range ss.previousHashes {
-		delete(ss.previousHashes, hash)
+	for hash := range bi.previousHashes {
+		delete(bi.previousHashes, hash)
 	}
 	// 2. Copy over ss.currentHashes to ss.previousHashes.
-	for hash := range ss.currentHashes {
-		ss.previousHashes[hash] = ss.currentHashes[hash]
+	for hash := range bi.currentHashes {
+		bi.previousHashes[hash] = bi.currentHashes[hash]
 	}
-	// 3. Clear ss.currentHashes, with the map clearing idiom for speed.
+	// 3. Clear bi.currentHashes, with the map clearing idiom for speed.
 	// See:
 	// * https://github.com/golang/go/issues/20138
 	// * https://github.com/golang/go/commit/aee71dd70b3779c66950ce6a952deca13d48e55e
-	for hash := range ss.currentHashes {
-		delete(ss.currentHashes, hash)
+	for hash := range bi.currentHashes {
+		delete(bi.currentHashes, hash)
 	}
 	// 4. Copy all the prior labels from what was previously ss.current.
-	ss.previous = ss.current
+	bi.previous = bi.current
 	// 5. Clear ss.current to make for another cycle.
-	ss.current = nil
+	bi.current = nil
+}
+
+func (bi *byInstance) emitStaleLabels() (stale []*staleEntry) {
+	for _, labels := range bi.previous {
+		hash := labels.Hash()
+		if _, ok := bi.currentHashes[hash]; !ok {
+			stale = append(stale, &staleEntry{seenAtMs: bi.previousHashes[hash], labels: labels})
+		}
+	}
+	return stale
 }
 
 // isStale returns whether lbl was seen only in the previous scrape and not the current.
@@ -81,9 +109,15 @@ func (ss *stalenessStore) isStale(lbl labels.Labels) bool {
 	ss.mu.Lock()
 	defer ss.mu.Unlock()
 
+	instanceID := lbl.Get("instance")
+	bi := ss.byInstance[instanceID]
+	if bi == nil {
+		return false
+	}
+
 	hash := lbl.Hash()
-	_, inPrev := ss.previousHashes[hash]
-	_, inCurrent := ss.currentHashes[hash]
+	_, inPrev := bi.previousHashes[hash]
+	_, inCurrent := bi.currentHashes[hash]
 	return inPrev && !inCurrent
 }
 
@@ -93,8 +127,15 @@ func (ss *stalenessStore) markAsCurrentlySeen(lbl labels.Labels, seenAtMs int64)
 	ss.mu.Lock()
 	defer ss.mu.Unlock()
 
-	ss.currentHashes[lbl.Hash()] = seenAtMs
-	ss.current = append(ss.current, lbl)
+	instanceID := lbl.Get("instance")
+	bi := ss.byInstance[instanceID]
+	if bi == nil {
+		bi = newByInstance()
+		ss.byInstance[instanceID] = bi
+	}
+
+	bi.currentHashes[lbl.Hash()] = seenAtMs
+	bi.current = append(bi.current, lbl)
 }
 
 type staleEntry struct {
@@ -108,11 +149,10 @@ func (ss *stalenessStore) emitStaleLabels() (stale []*staleEntry) {
 	ss.mu.Lock()
 	defer ss.mu.Unlock()
 
-	for _, labels := range ss.previous {
-		hash := labels.Hash()
-		if _, ok := ss.currentHashes[hash]; !ok {
-			stale = append(stale, &staleEntry{seenAtMs: ss.previousHashes[hash], labels: labels})
-		}
+	for _, bi := range ss.byInstance {
+		// TODO(@odeke-em): perhaps run this codd concurrently.
+		stale = append(stale, bi.emitStaleLabels()...)
 	}
+
 	return stale
 }
