@@ -15,13 +15,21 @@
 package prometheusreceiver
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
+	"io/ioutil"
+	"os"
+	"path/filepath"
 	"sort"
 	"strings"
 	"time"
 
+	config_util "github.com/prometheus/common/config"
 	promconfig "github.com/prometheus/prometheus/config"
+	"github.com/prometheus/prometheus/discovery/file"
+	"github.com/prometheus/prometheus/discovery/kubernetes"
+	"github.com/prometheus/prometheus/discovery/targetgroup"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configparser"
 	"gopkg.in/yaml.v2"
@@ -49,6 +57,66 @@ type Config struct {
 
 var _ config.Receiver = (*Config)(nil)
 var _ config.Unmarshallable = (*Config)(nil)
+
+func checkFileExists(fn string) error {
+	// Nothing set, nothing to error on.
+	if fn == "" {
+		return nil
+	}
+	_, err := os.Stat(fn)
+	return err
+}
+
+func checkTLSConfig(tlsConfig config_util.TLSConfig) error {
+	if err := checkFileExists(tlsConfig.CertFile); err != nil {
+		return fmt.Errorf("error checking client cert file %q - &v", tlsConfig.CertFile, err)
+	}
+	if err := checkFileExists(tlsConfig.KeyFile); err != nil {
+		return fmt.Errorf("error checking client key file %q - &v", tlsConfig.KeyFile, err)
+	}
+	if len(tlsConfig.CertFile) > 0 && len(tlsConfig.KeyFile) == 0 {
+		return fmt.Errorf("client cert file %q specified without client key file", tlsConfig.CertFile)
+	}
+	if len(tlsConfig.KeyFile) > 0 && len(tlsConfig.CertFile) == 0 {
+		return fmt.Errorf("client key file %q specified without client cert file", tlsConfig.KeyFile)
+	}
+	return nil
+}
+
+func checkSDFile(filename string) error {
+	fd, err := os.Open(filename)
+	if err != nil {
+		return err
+	}
+	defer fd.Close()
+
+	content, err := ioutil.ReadAll(fd)
+	if err != nil {
+		return err
+	}
+
+	var targetGroups []*targetgroup.Group
+
+	switch ext := filepath.Ext(filename); strings.ToLower(ext) {
+	case ".json":
+		if err := json.Unmarshal(content, &targetGroups); err != nil {
+			return fmt.Errorf("Error in unmarshaling json file extension - %v", err)
+		}
+	case ".yml", ".yaml":
+		if err := yaml.UnmarshalStrict(content, &targetGroups); err != nil {
+			return fmt.Errorf("Error in unmarshaling yaml file extension - %v", err)
+		}
+	default:
+		return fmt.Errorf("invalid file extension: %q", ext)
+	}
+
+	for i, tg := range targetGroups {
+		if tg == nil {
+			return fmt.Errorf("nil target group item found (index %d)", i)
+		}
+	}
+	return nil
+}
 
 // Validate checks the receiver configuration is valid.
 func (cfg *Config) Validate() error {
@@ -91,6 +159,47 @@ func (cfg *Config) Validate() error {
 			if rc.TargetLabel == "__name__" {
 				// TODO(#2297): Remove validation after renaming is fixed
 				return fmt.Errorf("error validating scrapeconfig for job %v: %w", sc.JobName, errRenamingDisallowed)
+			}
+		}
+
+		// Providing support for older version on prometheus config
+		if err := checkFileExists(sc.HTTPClientConfig.BearerTokenFile); err != nil {
+			return fmt.Errorf("error checking bearer token file %q - %s", sc.HTTPClientConfig.BearerTokenFile, err)
+		}
+
+		if sc.HTTPClientConfig.Authorization != nil {
+			if err := checkFileExists(sc.HTTPClientConfig.Authorization.CredentialsFile); err != nil {
+				return fmt.Errorf("error checking authorization credentials file %q - %s", sc.HTTPClientConfig.Authorization.CredentialsFile, err)
+			}
+		}
+
+		if err := checkTLSConfig(sc.HTTPClientConfig.TLSConfig); err != nil {
+			return err
+		}
+
+		for _, c := range sc.ServiceDiscoveryConfigs {
+			switch c := c.(type) {
+			case *kubernetes.SDConfig:
+				if err := checkTLSConfig(c.HTTPClientConfig.TLSConfig); err != nil {
+					return err
+				}
+			case *file.SDConfig:
+				for _, file := range c.Files {
+					files, err := filepath.Glob(file)
+					if err != nil {
+						return err
+					}
+					if len(files) != 0 {
+						for _, f := range files {
+							err = checkSDFile(f)
+							if err != nil {
+								return fmt.Errorf("checking SD file %q: %v", file, err)
+							}
+						}
+						continue
+					}
+					fmt.Printf("WARNING: file %q for file_sd in scrape job %q does not exist\n", file, scfg.JobName)
+				}
 			}
 		}
 	}
