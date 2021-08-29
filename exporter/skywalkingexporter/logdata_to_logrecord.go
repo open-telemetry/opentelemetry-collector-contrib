@@ -20,6 +20,7 @@ import (
 	common "skywalking.apache.org/repo/goapi/collect/common/v3"
 	logpb "skywalking.apache.org/repo/goapi/collect/logging/v3"
 	"strconv"
+	"time"
 )
 
 const (
@@ -102,7 +103,7 @@ func mapLogRecordToLogService(lr pdata.LogRecord, logData *logpb.LogData) {
 	}
 
 	if timestamp := lr.Timestamp(); timestamp > 0 {
-		logData.Timestamp = lr.Timestamp().AsTime().UnixMilli()
+		logData.Timestamp = lr.Timestamp().AsTime().UnixNano() / int64(time.Millisecond)
 	}
 
 	if sn := strconv.FormatInt(int64(lr.SeverityNumber()), 10); sn != "" {
