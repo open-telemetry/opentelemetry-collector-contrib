@@ -16,6 +16,7 @@ package sampling
 import (
 	"github.com/stretchr/testify/require"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/model/pdata"
@@ -35,6 +36,34 @@ var traceID = pdata.NewTraceID([16]byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
 func createTrace() *TraceData {
 	trace := &TraceData{SpanCount: 1}
 	return trace
+}
+
+func newTraceID() pdata.TraceID {
+	r := [16]byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x52, 0x96, 0x9A, 0x89, 0x55, 0x57, 0x1A, 0x3F}
+	return pdata.NewTraceID(r)
+}
+
+func newTraceWithKV(traceId pdata.TraceID, key string, val int64) *TraceData {
+	var traceBatches []pdata.Traces
+	traces := pdata.NewTraces()
+	rs := traces.ResourceSpans().AppendEmpty()
+	ils := rs.InstrumentationLibrarySpans().AppendEmpty()
+	span := ils.Spans().AppendEmpty()
+	span.SetTraceID(traceId)
+	span.SetSpanID(pdata.NewSpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8}))
+	span.SetStartTimestamp(pdata.NewTimestampFromTime(
+		time.Date(2020, 1, 1, 12, 0, 0, 0, time.UTC),
+	))
+	span.SetEndTimestamp(pdata.NewTimestampFromTime(
+		time.Date(2020, 1, 1, 12, 0, 16, 0, time.UTC),
+	))
+	span.Attributes().InsertInt(key, val)
+
+	traceBatches = append(traceBatches, traces)
+	return &TraceData{
+		ReceivedBatches: traceBatches,
+		SpanCount: 1,
+	}
 }
 
 func TestCompositeEvaluatorNotSampled(t *testing.T) {
@@ -72,6 +101,45 @@ func TestCompositeEvaluatorSampled(t *testing.T) {
 	assert.Equal(t, decision, expected)
 }
 
+func TestCompositeEvaluator_OverflowAlwaysSampled(t *testing.T) {
+
+	timeProvider := &FakeTimeProvider{second: 0}
+
+	// Create 2 subpolicies. First results in 100% NotSampled, the second in 100% Sampled.
+	n1 := NewNumericAttributeFilter(zap.NewNop(), "tag", 0, 100)
+	n2 := NewAlwaysSample(zap.NewNop())
+	c := NewComposite(zap.NewNop(), 3, []SubPolicyEvalParams{{n1, 1}, {n2, 1}}, timeProvider)
+
+	traceId := newTraceID()
+	trace := newTraceWithKV(traceId, "tag", int64(10))
+
+	decision, err := c.Evaluate(traceId, trace)
+	require.NoError(t, err, "Failed to evaluate composite policy: %v", err)
+
+	// The first policy is NewNumericAttributeFilter and trace tag matches criteria, so the decision should be Sampled.
+	expected := Sampled
+	assert.Equal(t, decision, expected)
+
+	traceId = newTraceID()
+	trace = newTraceWithKV(traceId, "tag", int64(11))
+
+	decision, err = c.Evaluate(traceId, trace)
+	require.NoError(t, err, "Failed to evaluate composite policy: %v", err)
+
+	// The first policy is NewNumericAttributeFilter and trace tag matches criteria, so the decision should be Sampled.
+	expected = NotSampled
+	assert.Equal(t, decision, expected)
+
+	traceId = newTraceID()
+	trace = newTraceWithKV(traceId, "tag", int64(1001))
+	decision, err = c.Evaluate(traceId, trace)
+	require.NoError(t, err, "Failed to evaluate composite policy: %v", err)
+
+	// The first policy fails as the tag value is higher than the range set where as the second policy is AlwaysSample, so the decision should be Sampled.
+	expected = Sampled
+	assert.Equal(t, decision, expected)
+}
+
 func TestCompositeEvaluatorSampled_AlwaysSampled(t *testing.T) {
 
 	// Create 2 subpolicies. First results in 100% NotSampled, the second in 100% Sampled.
@@ -84,7 +152,6 @@ func TestCompositeEvaluatorSampled_AlwaysSampled(t *testing.T) {
 
 		decision, err := c.Evaluate(traceID, trace)
 		require.NoError(t, err, "Failed to evaluate composite policy: %v", err)
-
 
 		// The second policy is AlwaysSample, so the decision should be Sampled.
 		expected := Sampled
