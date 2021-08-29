@@ -2928,4 +2928,6 @@ sigs.k8s.io/structured-merge-diff/v4 v4.1.2/go.mod h1:j/nl6xW8vLS49O8YvXW1ocPhZa
 sigs.k8s.io/yaml v1.1.0/go.mod h1:UJmg0vDUVViEyp3mgSv9WPwZCDxu4rQW1olrI1uml+o=
 sigs.k8s.io/yaml v1.2.0 h1:kr/MCeFWJWTwyaHoR9c8EjH9OumOmoF9YGiZd7lFm/Q=
 sigs.k8s.io/yaml v1.2.0/go.mod h1:yfXDCHCao9+ENCvLSE62v9VSji2MKu5jeNfTrofGhJc=
+skywalking.apache.org/repo/goapi v0.0.0-20210820070710-e10b78bbf481 h1:K8jQuADJdwsl4+3P6g/nFjRo9ADNhal2MWUW2R4D8Xk=
+skywalking.apache.org/repo/goapi v0.0.0-20210820070710-e10b78bbf481/go.mod h1:2abOB2LaQEsJLmollzCt5kNfVMWFGKE58905uYzs+sc=
 sourcegraph.com/sourcegraph/appdash v0.0.0-20190731080439-ebfcffb1b5c0/go.mod h1:hI742Nqp5OhwiqlzhgfbWU4mW4yO10fP+LoT9WOswdU=
