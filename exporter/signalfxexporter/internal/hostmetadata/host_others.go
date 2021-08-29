@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//go:build !linux
 // +build !linux
 
 // Taken from https://github.com/signalfx/golib/blob/master/metadata/hostmetadata/host-not-linux.go as is.
