@@ -35,7 +35,6 @@ all: common gotest otelcontribcol otelcontribcol-unstable
 .PHONY: e2e-test
 e2e-test: otelcontribcol otelcontribcol-unstable
 	$(MAKE) -C testbed run-tests
-	$(MAKE) -C testbed run-tests TESTS_DIR=tests_unstable_exe
 
 .PHONY: unit-tests-with-cover
 unit-tests-with-cover:
@@ -157,9 +156,9 @@ install-tools:
 	cd $(TOOLS_MOD_DIR) && go install github.com/jstemmer/go-junit-report
 	cd $(TOOLS_MOD_DIR) && go install github.com/pavius/impi/cmd/impi
 	cd $(TOOLS_MOD_DIR) && go install github.com/tcnksm/ghr
-	cd $(TOOLS_MOD_DIR) && go install go.opentelemetry.io/collector/cmd/checkdoc
-	cd $(TOOLS_MOD_DIR) && go install go.opentelemetry.io/collector/cmd/issuegenerator
-	cd $(TOOLS_MOD_DIR) && go install go.opentelemetry.io/collector/cmd/mdatagen
+	cd $(TOOLS_MOD_DIR) && go install go.opentelemetry.io/build-tools/checkdoc
+	cd $(TOOLS_MOD_DIR) && go install go.opentelemetry.io/build-tools/issuegenerator
+	cd $(TOOLS_MOD_DIR) && go install github.com/open-telemetry/opentelemetry-collector-contrib/cmd/mdatagen
 	cd $(TOOLS_MOD_DIR) && go install golang.org/x/tools/cmd/goimports
 
 .PHONY: run
@@ -230,9 +229,6 @@ update-dep:
 
 .PHONY: update-otel
 update-otel:
-	cd $(TOOLS_MOD_DIR) && go get go.opentelemetry.io/collector/cmd/checkdoc@$(OTEL_VERSION)
-	cd $(TOOLS_MOD_DIR) && go get go.opentelemetry.io/collector/cmd/issuegenerator@$(OTEL_VERSION)
-	cd $(TOOLS_MOD_DIR) && go get go.opentelemetry.io/collector/cmd/mdatagen@$(OTEL_VERSION)
 	$(MAKE) update-dep MODULE=go.opentelemetry.io/collector VERSION=$(OTEL_VERSION)
 
 .PHONY: otel-from-tree

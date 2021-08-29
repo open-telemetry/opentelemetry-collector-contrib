@@ -207,7 +207,7 @@ func TestZeroValueStats(t *testing.T) {
 	containers := containerJSON(t)
 	config := &Config{}
 
-	now := pdata.TimestampFromTime(time.Now())
+	now := pdata.NewTimestampFromTime(time.Now())
 	md, err := ContainerStatsToMetrics(now, stats, containers, config)
 	assert.Nil(t, err)
 	assert.NotNil(t, md)
@@ -265,7 +265,7 @@ func TestStatsToDefaultMetrics(t *testing.T) {
 	containers := containerJSON(t)
 	config := &Config{}
 
-	now := pdata.TimestampFromTime(time.Now())
+	now := pdata.NewTimestampFromTime(time.Now())
 	md, err := ContainerStatsToMetrics(now, stats, containers, config)
 	assert.Nil(t, err)
 	assert.NotNil(t, md)
@@ -280,7 +280,7 @@ func TestStatsToAllMetrics(t *testing.T) {
 		ProvidePerCoreCPUMetrics: true,
 	}
 
-	now := pdata.TimestampFromTime(time.Now())
+	now := pdata.NewTimestampFromTime(time.Now())
 	md, err := ContainerStatsToMetrics(now, stats, containers, config)
 	assert.Nil(t, err)
 	assert.NotNil(t, md)
@@ -381,7 +381,7 @@ func TestEnvVarToMetricLabels(t *testing.T) {
 		},
 	}
 
-	now := pdata.TimestampFromTime(time.Now())
+	now := pdata.NewTimestampFromTime(time.Now())
 	md, err := ContainerStatsToMetrics(now, stats, containers, config)
 	assert.Nil(t, err)
 	assert.NotNil(t, md)
@@ -404,7 +404,7 @@ func TestContainerLabelToMetricLabels(t *testing.T) {
 		},
 	}
 
-	now := pdata.TimestampFromTime(time.Now())
+	now := pdata.NewTimestampFromTime(time.Now())
 	md, err := ContainerStatsToMetrics(now, stats, containers, config)
 	assert.Nil(t, err)
 	assert.NotNil(t, md)

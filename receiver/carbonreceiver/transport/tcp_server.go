@@ -27,8 +27,8 @@ import (
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	"go.opencensus.io/trace"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/translator/internaldata"
 
+	internaldata "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver/protocol"
 )
 

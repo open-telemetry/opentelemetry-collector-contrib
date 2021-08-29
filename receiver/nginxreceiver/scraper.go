@@ -73,7 +73,7 @@ func (r *nginxScraper) scrape(context.Context) (pdata.ResourceMetricsSlice, erro
 		return pdata.ResourceMetricsSlice{}, err
 	}
 
-	now := pdata.TimestampFromTime(time.Now())
+	now := pdata.NewTimestampFromTime(time.Now())
 	metrics := pdata.NewMetrics()
 	ilm := metrics.ResourceMetrics().AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty()
 	ilm.InstrumentationLibrary().SetName("otelcol/nginx")

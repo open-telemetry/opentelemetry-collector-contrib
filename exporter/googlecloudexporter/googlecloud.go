@@ -30,10 +30,11 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/model/pdata"
 	conventions "go.opentelemetry.io/collector/translator/conventions/v1.5.0"
-	"go.opentelemetry.io/collector/translator/internaldata"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	"google.golang.org/api/option"
 	"google.golang.org/grpc"
+
+	internaldata "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus"
 )
 
 // traceExporter is a wrapper struct of OT cloud trace exporter

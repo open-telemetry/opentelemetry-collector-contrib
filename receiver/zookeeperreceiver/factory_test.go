@@ -24,7 +24,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confignet"
-	"go.opentelemetry.io/collector/testbed/testbed"
+	"go.opentelemetry.io/collector/consumer/consumertest"
 )
 
 func TestFactory(t *testing.T) {
@@ -70,7 +70,7 @@ func TestFactory(t *testing.T) {
 				context.Background(),
 				componenttest.NewNopReceiverCreateSettings(),
 				test.config,
-				&testbed.MockMetricConsumer{},
+				consumertest.NewNop(),
 			)
 
 			if test.wantErr {

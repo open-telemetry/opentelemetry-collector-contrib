@@ -22,13 +22,12 @@ import (
 	ocresource "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	octrace "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"go.opencensus.io/trace"
+	"go.opentelemetry.io/collector/model/pdata"
+	conventions "go.opentelemetry.io/collector/translator/conventions/v1.5.0"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/occonventions"
-
-	"go.opentelemetry.io/collector/model/pdata"
-	conventions "go.opentelemetry.io/collector/translator/conventions/v1.5.0"
-	tracetranslator "go.opentelemetry.io/collector/translator/trace"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/tracetranslator"
 )
 
 var (

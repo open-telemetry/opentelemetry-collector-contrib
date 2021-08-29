@@ -20,23 +20,22 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/model/pdata"
-	"go.opentelemetry.io/collector/processor/processorhelper"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/attraction"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
 )
 
 var (
 	cfg = &Config{
 		ProcessorSettings: config.NewProcessorSettings(config.NewID(typeStr)),
-		AttributesActions: []processorhelper.ActionKeyValue{
-			{Key: "cloud.availability_zone", Value: "zone-1", Action: processorhelper.UPSERT},
-			{Key: "k8s.cluster.name", FromAttribute: "k8s-cluster", Action: processorhelper.INSERT},
-			{Key: "redundant-attribute", Action: processorhelper.DELETE},
+		AttributesActions: []attraction.ActionKeyValue{
+			{Key: "cloud.availability_zone", Value: "zone-1", Action: attraction.UPSERT},
+			{Key: "k8s.cluster.name", FromAttribute: "k8s-cluster", Action: attraction.INSERT},
+			{Key: "redundant-attribute", Action: attraction.DELETE},
 		},
 	}
 )
@@ -82,9 +81,9 @@ func TestResourceProcessorAttributesUpsert(t *testing.T) {
 			name: "config_attributes_replacement",
 			config: &Config{
 				ProcessorSettings: config.NewProcessorSettings(config.NewID(typeStr)),
-				AttributesActions: []processorhelper.ActionKeyValue{
-					{Key: "k8s.cluster.name", FromAttribute: "k8s-cluster", Action: processorhelper.INSERT},
-					{Key: "k8s-cluster", Action: processorhelper.DELETE},
+				AttributesActions: []attraction.ActionKeyValue{
+					{Key: "k8s.cluster.name", FromAttribute: "k8s-cluster", Action: attraction.INSERT},
+					{Key: "k8s-cluster", Action: attraction.DELETE},
 				},
 			},
 			sourceAttributes: map[string]string{

@@ -19,11 +19,11 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtest"
-	"go.opentelemetry.io/collector/processor/processorhelper"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/attraction"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -38,10 +38,10 @@ func TestLoadConfig(t *testing.T) {
 
 	assert.Equal(t, cfg.Processors[config.NewID(typeStr)], &Config{
 		ProcessorSettings: config.NewProcessorSettings(config.NewID(typeStr)),
-		AttributesActions: []processorhelper.ActionKeyValue{
-			{Key: "cloud.availability_zone", Value: "zone-1", Action: processorhelper.UPSERT},
-			{Key: "k8s.cluster.name", FromAttribute: "k8s-cluster", Action: processorhelper.INSERT},
-			{Key: "redundant-attribute", Action: processorhelper.DELETE},
+		AttributesActions: []attraction.ActionKeyValue{
+			{Key: "cloud.availability_zone", Value: "zone-1", Action: attraction.UPSERT},
+			{Key: "k8s.cluster.name", FromAttribute: "k8s-cluster", Action: attraction.INSERT},
+			{Key: "redundant-attribute", Action: attraction.DELETE},
 		},
 	})
 

@@ -27,8 +27,9 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/translator/internaldata"
 	"go.uber.org/zap"
+
+	internaldata "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus"
 )
 
 var _ component.MetricsReceiver = (*collectdReceiver)(nil)

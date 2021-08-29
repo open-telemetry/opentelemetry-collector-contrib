@@ -16,7 +16,8 @@ package resourceprocessor
 
 import (
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/processor/processorhelper"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/attraction"
 )
 
 // Config defines configuration for Resource processor.
@@ -25,7 +26,7 @@ type Config struct {
 
 	// AttributesActions specifies the list of actions to be applied on resource attributes.
 	// The set of actions are {INSERT, UPDATE, UPSERT, DELETE, HASH, EXTRACT}.
-	AttributesActions []processorhelper.ActionKeyValue `mapstructure:"attributes"`
+	AttributesActions []attraction.ActionKeyValue `mapstructure:"attributes"`
 }
 
 var _ config.Processor = (*Config)(nil)

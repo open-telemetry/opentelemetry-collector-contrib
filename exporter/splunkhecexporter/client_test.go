@@ -86,7 +86,7 @@ func createMetricsData(numberOfDataPoints int) pdata.Metrics {
 		metric.SetName("gauge_double_with_dims")
 		metric.SetDataType(pdata.MetricDataTypeGauge)
 		doublePt := metric.Gauge().DataPoints().AppendEmpty()
-		doublePt.SetTimestamp(pdata.TimestampFromTime(tsUnix))
+		doublePt.SetTimestamp(pdata.NewTimestampFromTime(tsUnix))
 		doublePt.SetDoubleVal(doubleVal)
 		doublePt.Attributes().InsertString("k/n0", "vn0")
 		doublePt.Attributes().InsertString("k/n1", "vn1")
