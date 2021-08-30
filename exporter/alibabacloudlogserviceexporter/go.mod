@@ -4,7 +4,7 @@ go 1.17
 
 require (
 	github.com/HdrHistogram/hdrhistogram-go v1.1.2 // indirect
-	github.com/aliyun/aliyun-log-go-sdk v0.1.21
+	github.com/aliyun/aliyun-log-go-sdk v0.1.22
 	github.com/gogo/protobuf v1.3.2
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.0.0-00010101000000-000000000000
 	github.com/stretchr/testify v1.7.0
