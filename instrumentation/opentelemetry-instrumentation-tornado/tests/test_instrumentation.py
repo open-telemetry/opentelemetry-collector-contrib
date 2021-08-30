@@ -135,7 +135,7 @@ class TestTornadoInstrumentation(TornadoTest):
         self.assertEqual(server.parent.span_id, client.context.span_id)
         self.assertEqual(server.context.trace_id, client.context.trace_id)
         self.assertEqual(server.kind, SpanKind.SERVER)
-        self.assert_span_has_attributes(
+        self.assertSpanHasAttributes(
             server,
             {
                 SpanAttributes.HTTP_METHOD: method,
@@ -152,7 +152,7 @@ class TestTornadoInstrumentation(TornadoTest):
         self.assertFalse(client.context.is_remote)
         self.assertIsNone(client.parent)
         self.assertEqual(client.kind, SpanKind.CLIENT)
-        self.assert_span_has_attributes(
+        self.assertSpanHasAttributes(
             client,
             {
                 SpanAttributes.HTTP_URL: self.get_url("/"),
@@ -208,7 +208,7 @@ class TestTornadoInstrumentation(TornadoTest):
         self.assertEqual(server.parent.span_id, client.context.span_id)
         self.assertEqual(server.context.trace_id, client.context.trace_id)
         self.assertEqual(server.kind, SpanKind.SERVER)
-        self.assert_span_has_attributes(
+        self.assertSpanHasAttributes(
             server,
             {
                 SpanAttributes.HTTP_METHOD: "GET",
@@ -225,7 +225,7 @@ class TestTornadoInstrumentation(TornadoTest):
         self.assertFalse(client.context.is_remote)
         self.assertIsNone(client.parent)
         self.assertEqual(client.kind, SpanKind.CLIENT)
-        self.assert_span_has_attributes(
+        self.assertSpanHasAttributes(
             client,
             {
                 SpanAttributes.HTTP_URL: self.get_url(url),
@@ -244,7 +244,7 @@ class TestTornadoInstrumentation(TornadoTest):
 
         self.assertEqual(server.name, "BadHandler.get")
         self.assertEqual(server.kind, SpanKind.SERVER)
-        self.assert_span_has_attributes(
+        self.assertSpanHasAttributes(
             server,
             {
                 SpanAttributes.HTTP_METHOD: "GET",
@@ -259,7 +259,7 @@ class TestTornadoInstrumentation(TornadoTest):
 
         self.assertEqual(client.name, "GET")
         self.assertEqual(client.kind, SpanKind.CLIENT)
-        self.assert_span_has_attributes(
+        self.assertSpanHasAttributes(
             client,
             {
                 SpanAttributes.HTTP_URL: self.get_url("/error"),
@@ -278,7 +278,7 @@ class TestTornadoInstrumentation(TornadoTest):
 
         self.assertEqual(server.name, "ErrorHandler.get")
         self.assertEqual(server.kind, SpanKind.SERVER)
-        self.assert_span_has_attributes(
+        self.assertSpanHasAttributes(
             server,
             {
                 SpanAttributes.HTTP_METHOD: "GET",
@@ -293,7 +293,7 @@ class TestTornadoInstrumentation(TornadoTest):
 
         self.assertEqual(client.name, "GET")
         self.assertEqual(client.kind, SpanKind.CLIENT)
-        self.assert_span_has_attributes(
+        self.assertSpanHasAttributes(
             client,
             {
                 SpanAttributes.HTTP_URL: self.get_url("/missing-url"),
@@ -322,7 +322,7 @@ class TestTornadoInstrumentation(TornadoTest):
         self.assertEqual(server.parent.span_id, client.context.span_id)
         self.assertEqual(server.context.trace_id, client.context.trace_id)
         self.assertEqual(server.kind, SpanKind.SERVER)
-        self.assert_span_has_attributes(
+        self.assertSpanHasAttributes(
             server,
             {
                 SpanAttributes.HTTP_METHOD: "GET",
@@ -339,7 +339,7 @@ class TestTornadoInstrumentation(TornadoTest):
         self.assertFalse(client.context.is_remote)
         self.assertIsNone(client.parent)
         self.assertEqual(client.kind, SpanKind.CLIENT)
-        self.assert_span_has_attributes(
+        self.assertSpanHasAttributes(
             client,
             {
                 SpanAttributes.HTTP_URL: self.get_url("/dyna"),
@@ -363,7 +363,7 @@ class TestTornadoInstrumentation(TornadoTest):
         self.assertEqual(server.parent.span_id, client.context.span_id)
         self.assertEqual(server.context.trace_id, client.context.trace_id)
         self.assertEqual(server.kind, SpanKind.SERVER)
-        self.assert_span_has_attributes(
+        self.assertSpanHasAttributes(
             server,
             {
                 SpanAttributes.HTTP_METHOD: "GET",
@@ -380,7 +380,7 @@ class TestTornadoInstrumentation(TornadoTest):
         self.assertFalse(client.context.is_remote)
         self.assertIsNone(client.parent)
         self.assertEqual(client.kind, SpanKind.CLIENT)
-        self.assert_span_has_attributes(
+        self.assertSpanHasAttributes(
             client,
             {
                 SpanAttributes.HTTP_URL: self.get_url("/on_finish"),
@@ -406,7 +406,7 @@ class TestTornadoInstrumentation(TornadoTest):
             client = spans[0]
             self.assertEqual(client.name, "GET")
             self.assertEqual(client.kind, SpanKind.CLIENT)
-            self.assert_span_has_attributes(
+            self.assertSpanHasAttributes(
                 client,
                 {
                     SpanAttributes.HTTP_URL: self.get_url(path),
@@ -425,7 +425,7 @@ class TestTornadoInstrumentation(TornadoTest):
         self.assertEqual(len(spans), 2)
         server_span = spans[0]
         self.assertEqual(server_span.kind, SpanKind.SERVER)
-        self.assert_span_has_attributes(
+        self.assertSpanHasAttributes(
             server_span, {"uri": "/pong?q=abc&b=123", "query": "q=abc&b=123"}
         )
         self.memory_exporter.clear()
@@ -468,7 +468,7 @@ class TestTornadoInstrumentation(TornadoTest):
 
         self.assertEqual(client.name, "GET")
         self.assertEqual(client.kind, SpanKind.CLIENT)
-        self.assert_span_has_attributes(
+        self.assertSpanHasAttributes(
             client,
             {
                 SpanAttributes.HTTP_URL: "http://httpbin.org/status/200",
@@ -520,15 +520,13 @@ class TornadoHookTest(TornadoTest):
         server_span = spans[1]
         self.assertEqual(server_span.kind, SpanKind.SERVER)
         self.assertEqual(server_span.name, "name from server hook")
-        self.assert_span_has_attributes(server_span, {"uri": "/"})
+        self.assertSpanHasAttributes(server_span, {"uri": "/"})
         self.memory_exporter.clear()
 
         client_span = spans[2]
         self.assertEqual(client_span.kind, SpanKind.CLIENT)
         self.assertEqual(client_span.name, "name from client hook")
-        self.assert_span_has_attributes(
-            client_span, {"attr-from-hook": "value"}
-        )
+        self.assertSpanHasAttributes(client_span, {"attr-from-hook": "value"})
 
         self.memory_exporter.clear()
 

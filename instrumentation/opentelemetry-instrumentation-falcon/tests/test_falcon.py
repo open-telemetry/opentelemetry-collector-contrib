@@ -103,7 +103,7 @@ class TestFalconInstrumentation(TestFalconBase):
             span.name, "HelloWorldResource.on_{0}".format(method.lower())
         )
         self.assertEqual(span.status.status_code, StatusCode.UNSET)
-        self.assert_span_has_attributes(
+        self.assertSpanHasAttributes(
             span,
             {
                 SpanAttributes.HTTP_METHOD: method,
@@ -128,7 +128,7 @@ class TestFalconInstrumentation(TestFalconBase):
         span = spans[0]
         self.assertEqual(span.name, "HTTP GET")
         self.assertEqual(span.status.status_code, StatusCode.ERROR)
-        self.assert_span_has_attributes(
+        self.assertSpanHasAttributes(
             span,
             {
                 SpanAttributes.HTTP_METHOD: "GET",
@@ -159,7 +159,7 @@ class TestFalconInstrumentation(TestFalconBase):
             span.status.description,
             "NameError: name 'non_existent_var' is not defined",
         )
-        self.assert_span_has_attributes(
+        self.assertSpanHasAttributes(
             span,
             {
                 SpanAttributes.HTTP_METHOD: "GET",

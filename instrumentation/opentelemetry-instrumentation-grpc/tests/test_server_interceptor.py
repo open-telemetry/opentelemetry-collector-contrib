@@ -106,12 +106,12 @@ class TestOpenTelemetryServerInterceptor(TestBase):
             self.assertIs(span.kind, trace.SpanKind.SERVER)
 
             # Check version and name in span's instrumentation info
-            self.check_span_instrumentation_info(
+            self.assertEqualSpanInstrumentationInfo(
                 span, opentelemetry.instrumentation.grpc
             )
 
             # Check attributes
-            self.assert_span_has_attributes(
+            self.assertSpanHasAttributes(
                 span,
                 {
                     SpanAttributes.NET_PEER_IP: "[::1]",
@@ -187,12 +187,12 @@ class TestOpenTelemetryServerInterceptor(TestBase):
         self.assertIs(span.kind, trace.SpanKind.SERVER)
 
         # Check version and name in span's instrumentation info
-        self.check_span_instrumentation_info(
+        self.assertEqualSpanInstrumentationInfo(
             span, opentelemetry.instrumentation.grpc
         )
 
         # Check attributes
-        self.assert_span_has_attributes(
+        self.assertSpanHasAttributes(
             span,
             {
                 SpanAttributes.NET_PEER_IP: "[::1]",
@@ -257,12 +257,12 @@ class TestOpenTelemetryServerInterceptor(TestBase):
         self.assertIs(parent_span.kind, trace.SpanKind.SERVER)
 
         # Check version and name in span's instrumentation info
-        self.check_span_instrumentation_info(
+        self.assertEqualSpanInstrumentationInfo(
             parent_span, opentelemetry.instrumentation.grpc
         )
 
         # Check attributes
-        self.assert_span_has_attributes(
+        self.assertSpanHasAttributes(
             parent_span,
             {
                 SpanAttributes.NET_PEER_IP: "[::1]",
@@ -317,12 +317,12 @@ class TestOpenTelemetryServerInterceptor(TestBase):
         self.assertIs(span.kind, trace.SpanKind.SERVER)
 
         # Check version and name in span's instrumentation info
-        self.check_span_instrumentation_info(
+        self.assertEqualSpanInstrumentationInfo(
             span, opentelemetry.instrumentation.grpc
         )
 
         # Check attributes
-        self.assert_span_has_attributes(
+        self.assertSpanHasAttributes(
             span,
             {
                 SpanAttributes.NET_PEER_IP: "[::1]",
@@ -386,12 +386,12 @@ class TestOpenTelemetryServerInterceptor(TestBase):
         self.assertIs(parent_span.kind, trace.SpanKind.SERVER)
 
         # Check version and name in span's instrumentation info
-        self.check_span_instrumentation_info(
+        self.assertEqualSpanInstrumentationInfo(
             parent_span, opentelemetry.instrumentation.grpc
         )
 
         # Check attributes
-        self.assert_span_has_attributes(
+        self.assertSpanHasAttributes(
             parent_span,
             {
                 SpanAttributes.NET_PEER_IP: "[::1]",
@@ -490,7 +490,7 @@ class TestOpenTelemetryServerInterceptor(TestBase):
             self.assertIsNone(span2.parent)
 
             # check attributes
-            self.assert_span_has_attributes(
+            self.assertSpanHasAttributes(
                 span,
                 {
                     SpanAttributes.NET_PEER_IP: "[::1]",
@@ -562,7 +562,7 @@ class TestOpenTelemetryServerInterceptor(TestBase):
             self.assertIsNone(span2.parent)
 
             # check attributes
-            self.assert_span_has_attributes(
+            self.assertSpanHasAttributes(
                 span,
                 {
                     SpanAttributes.NET_PEER_IP: "[::1]",
@@ -617,7 +617,7 @@ class TestOpenTelemetryServerInterceptor(TestBase):
         self.assertIs(span.kind, trace.SpanKind.SERVER)
 
         # Check version and name in span's instrumentation info
-        self.check_span_instrumentation_info(
+        self.assertEqualSpanInstrumentationInfo(
             span, opentelemetry.instrumentation.grpc
         )
 
@@ -631,7 +631,7 @@ class TestOpenTelemetryServerInterceptor(TestBase):
         )
 
         # Check attributes
-        self.assert_span_has_attributes(
+        self.assertSpanHasAttributes(
             span,
             {
                 SpanAttributes.NET_PEER_IP: "[::1]",

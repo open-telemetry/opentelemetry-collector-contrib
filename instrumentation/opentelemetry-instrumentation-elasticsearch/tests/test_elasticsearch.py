@@ -77,8 +77,8 @@ class TestElasticsearchIntegration(TestBase):
         span = spans_list[0]
 
         # Check version and name in span's instrumentation info
-        # self.check_span_instrumentation_info(span, opentelemetry.instrumentation.elasticsearch)
-        self.check_span_instrumentation_info(
+        # self.assertEqualSpanInstrumentationInfo(span, opentelemetry.instrumentation.elasticsearch)
+        self.assertEqualSpanInstrumentationInfo(
             span, opentelemetry.instrumentation.elasticsearch
         )
 
@@ -289,7 +289,7 @@ class TestElasticsearchIntegration(TestBase):
             "elasticsearch.url": "/test-index",
             "elasticsearch.method": "PUT",
         }
-        self.assert_span_has_attributes(span2, attributes)
+        self.assertSpanHasAttributes(span2, attributes)
         self.assertEqual(
             literal_eval(span2.attributes[SpanAttributes.DB_STATEMENT]),
             helpers.dsl_create_statement,
@@ -315,7 +315,7 @@ class TestElasticsearchIntegration(TestBase):
             "elasticsearch.url": helpers.dsl_index_url,
             "elasticsearch.method": "PUT",
         }
-        self.assert_span_has_attributes(span, attributes)
+        self.assertSpanHasAttributes(span, attributes)
         self.assertEqual(
             literal_eval(span.attributes[SpanAttributes.DB_STATEMENT]),
             {

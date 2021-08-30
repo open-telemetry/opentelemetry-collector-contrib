@@ -153,7 +153,7 @@ class TestStarletteManualInstrumentationHooks(
         response_spans = spans[:2]
         for span in response_spans:
             self.assertEqual(span.name, "name from response hook")
-            self.assert_span_has_attributes(
+            self.assertSpanHasAttributes(
                 span, {"attr-from-response-hook": "value"}
             )
 

@@ -50,7 +50,7 @@ class TestCeleryInstrumentation(TestBase):
 
         self.assertEqual(consumer.name, "run/tests.celery_test_tasks.task_add")
         self.assertEqual(consumer.kind, SpanKind.CONSUMER)
-        self.assert_span_has_attributes(
+        self.assertSpanHasAttributes(
             consumer,
             {
                 "celery.action": "run",
@@ -64,7 +64,7 @@ class TestCeleryInstrumentation(TestBase):
             producer.name, "apply_async/tests.celery_test_tasks.task_add"
         )
         self.assertEqual(producer.kind, SpanKind.PRODUCER)
-        self.assert_span_has_attributes(
+        self.assertSpanHasAttributes(
             producer,
             {
                 "celery.action": "apply_async",

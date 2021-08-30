@@ -112,7 +112,7 @@ class TestClientProto(TestBase):
         self.assertIs(span.kind, trace.SpanKind.CLIENT)
 
         # Check version and name in span's instrumentation info
-        self.check_span_instrumentation_info(
+        self.assertEqualSpanInstrumentationInfo(
             span, opentelemetry.instrumentation.grpc
         )
 
@@ -126,11 +126,11 @@ class TestClientProto(TestBase):
         self.assertIs(span.kind, trace.SpanKind.CLIENT)
 
         # Check version and name in span's instrumentation info
-        self.check_span_instrumentation_info(
+        self.assertEqualSpanInstrumentationInfo(
             span, opentelemetry.instrumentation.grpc
         )
 
-        self.assert_span_has_attributes(
+        self.assertSpanHasAttributes(
             span,
             {
                 SpanAttributes.RPC_METHOD: "SimpleMethod",
@@ -152,11 +152,11 @@ class TestClientProto(TestBase):
         self.assertIs(span.kind, trace.SpanKind.CLIENT)
 
         # Check version and name in span's instrumentation info
-        self.check_span_instrumentation_info(
+        self.assertEqualSpanInstrumentationInfo(
             span, opentelemetry.instrumentation.grpc
         )
 
-        self.assert_span_has_attributes(
+        self.assertSpanHasAttributes(
             span,
             {
                 SpanAttributes.RPC_METHOD: "ServerStreamingMethod",
@@ -178,11 +178,11 @@ class TestClientProto(TestBase):
         self.assertIs(span.kind, trace.SpanKind.CLIENT)
 
         # Check version and name in span's instrumentation info
-        self.check_span_instrumentation_info(
+        self.assertEqualSpanInstrumentationInfo(
             span, opentelemetry.instrumentation.grpc
         )
 
-        self.assert_span_has_attributes(
+        self.assertSpanHasAttributes(
             span,
             {
                 SpanAttributes.RPC_METHOD: "ClientStreamingMethod",
@@ -206,11 +206,11 @@ class TestClientProto(TestBase):
         self.assertIs(span.kind, trace.SpanKind.CLIENT)
 
         # Check version and name in span's instrumentation info
-        self.check_span_instrumentation_info(
+        self.assertEqualSpanInstrumentationInfo(
             span, opentelemetry.instrumentation.grpc
         )
 
-        self.assert_span_has_attributes(
+        self.assertSpanHasAttributes(
             span,
             {
                 SpanAttributes.RPC_METHOD: "BidirectionalStreamingMethod",

@@ -153,7 +153,7 @@ class BaseTestCases:
 
             self.assertIs(span.status.status_code, trace.StatusCode.UNSET)
 
-            self.check_span_instrumentation_info(
+            self.assertEqualSpanInstrumentationInfo(
                 span, opentelemetry.instrumentation.httpx
             )
 

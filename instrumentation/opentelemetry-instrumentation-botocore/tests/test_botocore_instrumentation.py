@@ -132,8 +132,8 @@ class TestBotocoreInstrumentor(TestBase):
         assert spans
         span = spans[0]
         self.assertEqual(len(spans), 2)
-        self.assertEqual(
-            span.attributes,
+        self.assertSpanHasAttributes(
+            span,
             {
                 "aws.operation": "ListBuckets",
                 "aws.region": "us-west-2",
@@ -150,8 +150,8 @@ class TestBotocoreInstrumentor(TestBase):
         spans = self.memory_exporter.get_finished_spans()
         assert spans
         span = spans[2]
-        self.assertEqual(
-            span.attributes,
+        self.assertSpanHasAttributes(
+            span,
             {
                 "aws.operation": "ListObjects",
                 "aws.region": "us-west-2",
@@ -175,9 +175,9 @@ class TestBotocoreInstrumentor(TestBase):
         spans = self.memory_exporter.get_finished_spans()
         assert spans
         self.assertEqual(len(spans), 3)
-        create_bucket_attributes = spans[0].attributes
-        self.assertEqual(
-            create_bucket_attributes,
+        create_span = spans[0]
+        self.assertSpanHasAttributes(
+            create_span,
             {
                 "aws.operation": "CreateBucket",
                 "aws.region": "us-west-2",
@@ -186,9 +186,9 @@ class TestBotocoreInstrumentor(TestBase):
                 SpanAttributes.HTTP_STATUS_CODE: 200,
             },
         )
-        put_object_attributes = spans[1].attributes
-        self.assertEqual(
-            put_object_attributes,
+        put_span = spans[1]
+        self.assertSpanHasAttributes(
+            put_span,
             {
                 "aws.operation": "PutObject",
                 "aws.region": "us-west-2",
@@ -198,9 +198,9 @@ class TestBotocoreInstrumentor(TestBase):
             },
         )
         self.assertTrue("params.Body" not in spans[1].attributes.keys())
-        get_object_attributes = spans[2].attributes
-        self.assertEqual(
-            get_object_attributes,
+        get_span = spans[2]
+        self.assertSpanHasAttributes(
+            get_span,
             {
                 "aws.operation": "GetObject",
                 "aws.region": "us-west-2",
