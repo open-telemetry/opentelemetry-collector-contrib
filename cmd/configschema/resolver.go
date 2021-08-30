@@ -109,7 +109,7 @@ func grepMod(goModPath string, pkg string) (pkgPath string, version string, err 
 		switch {
 		case line.Old.Path == DefaultModule:
 			pkgPath, version = line.New.Path, line.New.Version
-		case strings.Contains(line.Old.Path, pkg):
+		case strings.HasPrefix(pkg, line.Old.Path):
 			return line.New.Path, line.New.Version, nil
 		}
 	}
@@ -117,7 +117,7 @@ func grepMod(goModPath string, pkg string) (pkgPath string, version string, err 
 		switch {
 		case pkgPath == "" && line.Mod.Path == DefaultModule:
 			pkgPath, version = line.Mod.Path, line.Mod.Version
-		case strings.Contains(line.Mod.Path, pkg):
+		case strings.HasPrefix(pkg, line.Mod.Path):
 			return line.Mod.Path, line.Mod.Version, nil
 		}
 	}

@@ -24,27 +24,27 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/receiver/otlpreceiver"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/configschema"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/components"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jaegerreceiver"
 )
 
 func TestWriteConfigDoc(t *testing.T) {
-	cfg := otlpreceiver.NewFactory().CreateDefaultConfig()
+	cfg := jaegerreceiver.NewFactory().CreateDefaultConfig()
 	root := path.Join("..", "..", "..", "..")
 	dr := configschema.NewDirResolver(root, configschema.DefaultModule)
 	outputFilename := ""
 	tmpl := testTemplate(t)
 	writeConfigDoc(tmpl, dr, configschema.CfgInfo{
-		Type:        "otlp",
+		Type:        "jaeger",
 		Group:       "receiver",
 		CfgInstance: cfg,
 	}, func(dir string, bytes []byte, perm os.FileMode) error {
 		outputFilename = dir
 		return nil
 	})
-	expectedPath := path.Join(root, "receiver/otlpreceiver/config.md")
+	expectedPath := path.Join(root, "receiver/jaegerreceiver/config.md")
 	assert.Equal(t, expectedPath, outputFilename)
 }
 
@@ -67,7 +67,7 @@ func TestHandleCLI_NoArgs(t *testing.T) {
 }
 
 func TestHandleCLI_Single(t *testing.T) {
-	args := []string{"", "receiver", "otlp"}
+	args := []string{"", "receiver", "jaeger"}
 	cs := defaultComponents(t)
 	wr := &fakeFilesystemWriter{}
 
@@ -75,7 +75,7 @@ func TestHandleCLI_Single(t *testing.T) {
 
 	assert.Equal(t, 1, len(wr.configFiles))
 	assert.Equal(t, 1, len(wr.fileContents))
-	assert.True(t, strings.Contains(wr.fileContents[0], `"otlp" Receiver Reference`))
+	assert.True(t, strings.Contains(wr.fileContents[0], `"jaeger" Receiver Reference`))
 }
 
 func TestHandleCLI_All(t *testing.T) {
