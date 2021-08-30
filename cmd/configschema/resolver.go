@@ -137,6 +137,6 @@ func (dr DirResolver) buildExternalPath(goPath, pkg, line, v string) string {
 	case strings.HasPrefix(line, "../"):
 		return path.Join(dr.SrcRoot, line, strings.TrimPrefix(pkg, DefaultModule))
 	default:
-		return path.Join(goPath, "pkg", "mod", line+"@"+v)
+		return path.Join(goPath, "pkg", "mod", line+"@"+v, strings.TrimPrefix(pkg, line))
 	}
 }

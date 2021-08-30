@@ -24,28 +24,28 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/receiver/otlpreceiver"
+	"go.opentelemetry.io/collector/service/defaultcomponents"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/configschema"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/components"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jaegerreceiver"
 )
 
 func TestWriteConfigDoc(t *testing.T) {
-	cfg := jaegerreceiver.NewFactory().CreateDefaultConfig()
+	cfg := otlpreceiver.NewFactory().CreateDefaultConfig()
 	root := path.Join("..", "..", "..", "..")
 	dr := configschema.NewDirResolver(root, configschema.DefaultModule)
 	outputFilename := ""
 	tmpl := testTemplate(t)
 	writeConfigDoc(tmpl, dr, configschema.CfgInfo{
-		Type:        "jaeger",
+		Type:        "otlp",
 		Group:       "receiver",
 		CfgInstance: cfg,
 	}, func(dir string, bytes []byte, perm os.FileMode) error {
 		outputFilename = dir
 		return nil
 	})
-	expectedPath := path.Join(root, "receiver/jaegerreceiver/config.md")
-	assert.Equal(t, expectedPath, outputFilename)
+	expectedPath := "receiver/otlpreceiver/config.md"
+	assert.True(t, strings.HasSuffix(outputFilename, expectedPath))
 }
 
 func testTemplate(t *testing.T) *template.Template {
@@ -67,7 +67,7 @@ func TestHandleCLI_NoArgs(t *testing.T) {
 }
 
 func TestHandleCLI_Single(t *testing.T) {
-	args := []string{"", "receiver", "jaeger"}
+	args := []string{"", "receiver", "otlp"}
 	cs := defaultComponents(t)
 	wr := &fakeFilesystemWriter{}
 
@@ -75,7 +75,7 @@ func TestHandleCLI_Single(t *testing.T) {
 
 	assert.Equal(t, 1, len(wr.configFiles))
 	assert.Equal(t, 1, len(wr.fileContents))
-	assert.True(t, strings.Contains(wr.fileContents[0], `"jaeger" Receiver Reference`))
+	assert.True(t, strings.Contains(wr.fileContents[0], `"otlp" Receiver Reference`))
 }
 
 func TestHandleCLI_All(t *testing.T) {
@@ -98,7 +98,7 @@ func testHandleCLI(t *testing.T, cs component.Factories, wr *fakeFilesystemWrite
 }
 
 func defaultComponents(t *testing.T) component.Factories {
-	cmps, err := components.Components()
+	cmps, err := defaultcomponents.Components()
 	require.NoError(t, err)
 	return cmps
 }
