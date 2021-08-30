@@ -17,7 +17,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v2.1.3
         with:
-          go-version: 1.16
+          go-version: 1.17
       - name: Setup Go Environment
         run: |
           echo "GOPATH=$(go env GOPATH)" >> $GITHUB_ENV
@@ -49,7 +49,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v2.1.3
         with:
-          go-version: 1.16
+          go-version: 1.17
       - name: Setup Go Environment
         run: |
           echo "GOPATH=$(go env GOPATH)" >> $GITHUB_ENV
@@ -93,7 +93,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v2.1.3
         with:
-          go-version: 1.16
+          go-version: 1.17
       - name: Setup Go Environment
         run: |
           echo "GOPATH=$(go env GOPATH)" >> $GITHUB_ENV
@@ -133,7 +133,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v2.1.3
         with:
-          go-version: 1.16
+          go-version: 1.17
       - name: Setup Go Environment
         run: |
           echo "GOPATH=$(go env GOPATH)" >> $GITHUB_ENV
@@ -167,7 +167,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v2.1.3
         with:
-          go-version: 1.16
+          go-version: 1.17
       - name: Setup Go Environment
         run: |
           echo "GOPATH=$(go env GOPATH)" >> $GITHUB_ENV
@@ -202,7 +202,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v2.1.3
         with:
-          go-version: 1.16
+          go-version: 1.17
       - name: Setup Go Environment
         run: |
           echo "GOPATH=$(go env GOPATH)" >> $GITHUB_ENV
@@ -236,7 +236,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v2.1.3
         with:
-          go-version: 1.16
+          go-version: 1.17
       - name: Setup Go Environment
         run: |
           echo "GOPATH=$(go env GOPATH)" >> $GITHUB_ENV
@@ -278,7 +278,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v2.1.3
         with:
-          go-version: 1.16
+          go-version: 1.17
       - name: Setup Go Environment
         run: |
           echo "GOPATH=$(go env GOPATH)" >> $GITHUB_ENV
@@ -329,7 +329,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v2.1.3
         with:
-          go-version: 1.16
+          go-version: 1.17
       - name: Setup Go Environment
         run: |
           echo "GOPATH=$(go env GOPATH)" >> $GITHUB_ENV
@@ -386,7 +386,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v2.1.3
         with:
-          go-version: 1.16
+          go-version: 1.17
       - name: Setup Go Environment
         run: |
           echo "GOPATH=$(go env GOPATH)" >> $GITHUB_ENV
@@ -533,7 +533,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v2.1.3
         with:
-          go-version: 1.16
+          go-version: 1.17
       - name: Setup Go Environment
         run: |
           echo "GOPATH=$(go env GOPATH)" >> $GITHUB_ENV
@@ -592,7 +592,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v2.1.3
         with:
-          go-version: 1.16
+          go-version: 1.17
       - name: Setup Go Environment
         run: |
           echo "GOPATH=$(go env GOPATH)" >> $GITHUB_ENV
