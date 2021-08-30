@@ -289,7 +289,7 @@ func TestSpanToSentrySpan(t *testing.T) {
 
 		sentrySpan := convertToSentrySpan(testSpan, pdata.NewInstrumentationLibrary(), map[string]string{})
 		assert.NotNil(t, sentrySpan)
-		assert.True(t, isRootSpan(sentrySpan))
+		assert.True(t, spanIsTransaction(testSpan))
 	})
 
 	t.Run("with full span", func(t *testing.T) {
@@ -329,7 +329,7 @@ func TestSpanToSentrySpan(t *testing.T) {
 		actual := convertToSentrySpan(testSpan, library, resourceTags)
 
 		assert.NotNil(t, actual)
-		assert.False(t, isRootSpan(actual))
+		assert.False(t, spanIsTransaction(testSpan))
 
 		expected := &sentry.Span{
 			TraceID:      TraceIDFromHex("01020304050607080807060504030201"),
