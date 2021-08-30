@@ -154,7 +154,7 @@ func (r *Reader) ReadToEnd(ctx context.Context) {
 func (r *Reader) Close() {
 	if r.file != nil {
 		if err := r.file.Close(); err != nil {
-			r.Debugf("Problem closing reader", "Error", err.Error())
+			r.Debugw("Problem closing reader", zap.Error(err))
 		}
 	}
 }
