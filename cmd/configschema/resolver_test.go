@@ -68,7 +68,7 @@ func TestExternalPkgDir(t *testing.T) {
 	}
 	testLine, testVers, err := grepMod(path.Join(dr.SrcRoot, "go.mod"), testPkg)
 	assert.NoError(t, err)
-	expected := fmt.Sprint(path.Join(goPath, "pkg", "mod", testLine+"@"+testVers))
+	expected := fmt.Sprint(path.Join(goPath, "pkg", "mod", testLine+"@"+testVers, "runtime"))
 	assert.Equal(t, expected, pkgPath)
 }
 
