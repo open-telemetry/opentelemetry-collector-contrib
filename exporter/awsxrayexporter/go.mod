@@ -4,7 +4,7 @@ go 1.17
 
 require (
 	github.com/StackExchange/wmi v1.2.1 // indirect
-	github.com/aws/aws-sdk-go v1.40.27
+	github.com/aws/aws-sdk-go v1.40.33
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil v0.0.0-00010101000000-000000000000
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray v0.0.0-00010101000000-000000000000
 	github.com/stretchr/objx v0.2.0 // indirect
