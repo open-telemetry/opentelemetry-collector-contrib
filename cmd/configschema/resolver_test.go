@@ -23,17 +23,18 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-
 	"go.opentelemetry.io/collector/model/pdata"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry"
 )
 
 func TestPackageDirLocal(t *testing.T) {
-	pkg := pdata.NewSum()
+	pkg := resourcetotelemetry.Settings{}
 	pkgValue := reflect.ValueOf(pkg)
 	dr := testDR("../..")
 	output, err := dr.PackageDir(pkgValue.Type())
 	assert.NoError(t, err)
-	assert.Equal(t, "../../model/pdata", output)
+	assert.Equal(t, "../../pkg/resourcetotelemetry", output)
 }
 
 func TestPackageDirError(t *testing.T) {
@@ -58,7 +59,7 @@ func TestExternalPkgDirErr(t *testing.T) {
 
 func TestExternalPkgDir(t *testing.T) {
 	dr := testDR("../..")
-	testPkg := "grpc-ecosystem/grpc-gateway"
+	testPkg := "github.com/grpc-ecosystem/grpc-gateway/runtime"
 	pkgPath, err := dr.externalPackageDir(testPkg)
 	assert.NoError(t, err)
 	goPath := os.Getenv("GOPATH")
@@ -72,8 +73,8 @@ func TestExternalPkgDir(t *testing.T) {
 }
 
 func TestExternalPkgDirReplace(t *testing.T) {
-	pkg := DefaultModule + "/model"
+	pkg := DefaultModule + "/pkg/resourcetotelemetry"
 	pkgPath, err := testDR("../..").externalPackageDir(pkg)
 	assert.NoError(t, err)
-	assert.Equal(t, "../../model", pkgPath)
+	assert.Equal(t, "../../pkg/resourcetotelemetry", pkgPath)
 }
