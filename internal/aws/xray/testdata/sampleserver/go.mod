@@ -1,4 +1,4 @@
-module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsxrayreceiver/testdata/rawsegment/sampleserver
+module github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray/testdata/sampleserver
 
 go 1.17
 
