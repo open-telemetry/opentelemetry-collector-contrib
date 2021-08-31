@@ -69,10 +69,10 @@ func checkFileExists(fn string) error {
 
 func checkTLSConfig(tlsConfig config_util.TLSConfig) error {
 	if err := checkFileExists(tlsConfig.CertFile); err != nil {
-		return fmt.Errorf("error checking client cert file %q - &v", tlsConfig.CertFile, err)
+		return fmt.Errorf("error checking client cert file %q - %v", tlsConfig.CertFile, err)
 	}
 	if err := checkFileExists(tlsConfig.KeyFile); err != nil {
-		return fmt.Errorf("error checking client key file %q - &v", tlsConfig.KeyFile, err)
+		return fmt.Errorf("error checking client key file %q - %v", tlsConfig.KeyFile, err)
 	}
 	if len(tlsConfig.CertFile) > 0 && len(tlsConfig.KeyFile) == 0 {
 		return fmt.Errorf("client cert file %q specified without client key file", tlsConfig.CertFile)
@@ -163,9 +163,9 @@ func (cfg *Config) Validate() error {
 		}
 
 		// Providing support for older version on prometheus config
-		if err := checkFileExists(sc.HTTPClientConfig.BearerTokenFile); err != nil {
-			return fmt.Errorf("error checking bearer token file %q - %s", sc.HTTPClientConfig.BearerTokenFile, err)
-		}
+		// if err := checkFileExists(sc.HTTPClientConfig.BearerTokenFile); err != nil {
+		// 	return fmt.Errorf("error checking bearer token file %q - %s", sc.HTTPClientConfig.BearerTokenFile, err)
+		// }
 
 		if sc.HTTPClientConfig.Authorization != nil {
 			if err := checkFileExists(sc.HTTPClientConfig.Authorization.CredentialsFile); err != nil {
@@ -198,7 +198,7 @@ func (cfg *Config) Validate() error {
 						}
 						continue
 					}
-					fmt.Printf("WARNING: file %q for file_sd in scrape job %q does not exist\n", file, scfg.JobName)
+					fmt.Printf("WARNING: file %q for file_sd in scrape job %q does not exist\n", file, sc.JobName)
 				}
 			}
 		}

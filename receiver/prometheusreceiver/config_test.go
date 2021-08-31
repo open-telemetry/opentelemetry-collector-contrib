@@ -161,3 +161,21 @@ func TestRejectUnsupportedPrometheusFeatures(t *testing.T) {
 	require.Equal(t, wantErrMsg, gotErrMsg)
 
 }
+
+func TestNonExistentAuthCredentialsFile(t *testing.T) {
+	factories, err := componenttest.NopFactories()
+	assert.NoError(t, err)
+
+	factory := NewFactory()
+	factories.Receivers[typeStr] = factory
+	cfg, err := configtest.LoadConfig(path.Join(".", "testdata", "invalid-config-prometheus-no-auth-credentials-file.yaml"), factories)
+	require.NoError(t, err)
+	require.NotNil(t, cfg)
+	err = cfg.Validate()
+	require.NotNil(t, err, "Expected a non-nil error")
+
+	wantErrMsg := `receiver "prometheus" has invalid configuration: error checking authorization credentials file "/authcredentialsfile" - stat /authcredentialsfile: no such file or directory`
+
+	gotErrMsg := err.Error()
+	require.Equal(t, wantErrMsg, gotErrMsg)
+}
