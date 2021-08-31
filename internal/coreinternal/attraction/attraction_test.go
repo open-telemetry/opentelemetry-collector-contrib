@@ -38,10 +38,10 @@ type testCase struct {
 // runIndividualTestCase is the common logic of passing trace data through a configured attributes processor.
 func runIndividualTestCase(t *testing.T, tt testCase, ap *AttrProc) {
 	t.Run(tt.name, func(t *testing.T) {
-		attrMap := pdata.NewAttributeMap().InitFromMap(tt.inputAttributes)
+		attrMap := pdata.NewAttributeMapFromMap(tt.inputAttributes)
 		ap.Process(attrMap)
 		attrMap.Sort()
-		require.Equal(t, pdata.NewAttributeMap().InitFromMap(tt.expectedAttributes).Sort(), attrMap)
+		require.Equal(t, pdata.NewAttributeMapFromMap(tt.expectedAttributes).Sort(), attrMap)
 	})
 }
 

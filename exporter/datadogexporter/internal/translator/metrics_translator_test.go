@@ -49,7 +49,7 @@ func TestMetricValue(t *testing.T) {
 }
 
 func TestGetTags(t *testing.T) {
-	attributes := pdata.NewAttributeMap().InitFromMap(map[string]pdata.AttributeValue{
+	attributes := pdata.NewAttributeMapFromMap(map[string]pdata.AttributeValue{
 		"key1": pdata.NewAttributeValueString("val1"),
 		"key2": pdata.NewAttributeValueString("val2"),
 		"key3": pdata.NewAttributeValueString(""),

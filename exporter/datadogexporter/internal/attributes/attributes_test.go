@@ -36,7 +36,7 @@ func TestTagsFromAttributes(t *testing.T) {
 		conventions.AttributeAWSECSClusterARN:      pdata.NewAttributeValueString("cluster_arn"),
 		"tags.datadoghq.com/service":               pdata.NewAttributeValueString("service_name"),
 	}
-	attrs := pdata.NewAttributeMap().InitFromMap(attributeMap)
+	attrs := pdata.NewAttributeMapFromMap(attributeMap)
 
 	assert.ElementsMatch(t, []string{
 		fmt.Sprintf("%s:%s", conventions.AttributeProcessExecutableName, "otelcol"),
