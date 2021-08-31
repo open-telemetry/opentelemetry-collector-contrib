@@ -269,3 +269,39 @@ func TestKubernetesSDConfig(t *testing.T) {
 	gotErrMsg := err.Error()
 	require.Equal(t, wantErrMsg, gotErrMsg)
 }
+
+func TestFileSDConfigJsonNilTargetGroup(t *testing.T) {
+	factories, err := componenttest.NopFactories()
+	assert.NoError(t, err)
+
+	factory := NewFactory()
+	factories.Receivers[typeStr] = factory
+	cfg, err := configtest.LoadConfig(path.Join(".", "testdata", "invalid-config-prometheus-file-sd-config-json.yaml"), factories)
+	require.NoError(t, err)
+	require.NotNil(t, cfg)
+	err = cfg.Validate()
+	require.NotNil(t, err, "Expected a non-nil error")
+
+	wantErrMsg := `receiver "prometheus" has invalid configuration: checking SD file "./testdata/dummy-sd-config.json": nil target group item found (index 1)`
+
+	gotErrMsg := err.Error()
+	require.Equal(t, wantErrMsg, gotErrMsg)
+}
+
+func TestFileSDConfigYamlNilTargetGroup(t *testing.T) {
+	factories, err := componenttest.NopFactories()
+	assert.NoError(t, err)
+
+	factory := NewFactory()
+	factories.Receivers[typeStr] = factory
+	cfg, err := configtest.LoadConfig(path.Join(".", "testdata", "invalid-config-prometheus-file-sd-config-yaml.yaml"), factories)
+	require.NoError(t, err)
+	require.NotNil(t, cfg)
+	err = cfg.Validate()
+	require.NotNil(t, err, "Expected a non-nil error")
+
+	wantErrMsg := `receiver "prometheus" has invalid configuration: checking SD file "./testdata/dummy-sd-config.yaml": nil target group item found (index 1)`
+
+	gotErrMsg := err.Error()
+	require.Equal(t, wantErrMsg, gotErrMsg)
+}

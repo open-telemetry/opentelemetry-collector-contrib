@@ -162,7 +162,6 @@ func (cfg *Config) Validate() error {
 			}
 		}
 
-
 		if sc.HTTPClientConfig.Authorization != nil {
 			if err := checkFileExists(sc.HTTPClientConfig.Authorization.CredentialsFile); err != nil {
 				return fmt.Errorf("error checking authorization credentials file %q - %s", sc.HTTPClientConfig.Authorization.CredentialsFile, err)
