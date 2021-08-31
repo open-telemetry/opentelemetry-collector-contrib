@@ -4,8 +4,8 @@ receivers:
       scrape_configs:
         - job_name: 'demo'
           scrape_interval: 5s
-          authorization:
-            credentials_file: /authcredentialsfile
+          tls_config:
+            key_file: /nonexistentkeyfile
 
 processors:
   nop:

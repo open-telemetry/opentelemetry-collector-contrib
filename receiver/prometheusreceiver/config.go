@@ -162,10 +162,6 @@ func (cfg *Config) Validate() error {
 			}
 		}
 
-		// Providing support for older version on prometheus config
-		// if err := checkFileExists(sc.HTTPClientConfig.BearerTokenFile); err != nil {
-		// 	return fmt.Errorf("error checking bearer token file %q - %s", sc.HTTPClientConfig.BearerTokenFile, err)
-		// }
 
 		if sc.HTTPClientConfig.Authorization != nil {
 			if err := checkFileExists(sc.HTTPClientConfig.Authorization.CredentialsFile); err != nil {
