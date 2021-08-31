@@ -57,7 +57,7 @@ func (c *Config) ValidateAndConfigureHTTPClientSettings() error {
 		c.Endpoint = apiconstants.GetDefaultOneAgentEndpoint()
 	} else {
 		if c.APIToken == "" {
-			return errors.New("APIToken is required if Endpoint is provided")
+			return errors.New("api_token is required if Endpoint is provided")
 		}
 
 		c.HTTPClientSettings.Headers["Authorization"] = fmt.Sprintf("Api-Token %s", c.APIToken)
