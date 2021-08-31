@@ -3,12 +3,11 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/extension/oidca
 go 1.17
 
 require (
-	github.com/StackExchange/wmi v1.2.1 // indirect
 	github.com/coreos/go-oidc v2.2.1+incompatible
 	github.com/pquerna/cachecontrol v0.1.0 // indirect
 	github.com/stretchr/testify v1.7.0
-	go.opentelemetry.io/collector v0.33.1-0.20210827152330-09258f969908
-	go.opentelemetry.io/collector/model v0.33.1-0.20210827152330-09258f969908 // indirect
+	go.opentelemetry.io/collector v0.33.1-0.20210831015230-f3de064f3845
+	go.opentelemetry.io/collector/model v0.33.1-0.20210831015230-f3de064f3845 // indirect
 	go.uber.org/zap v1.19.0
 	golang.org/x/crypto v0.0.0-20210616213533-5ff15b29337e // indirect
 	golang.org/x/text v0.3.7 // indirect

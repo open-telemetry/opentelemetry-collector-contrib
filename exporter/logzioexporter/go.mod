@@ -8,13 +8,13 @@ require (
 	github.com/logzio/jaeger-logzio v1.0.3
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.0.0-00010101000000-000000000000
 	github.com/stretchr/testify v1.7.0
-	go.opentelemetry.io/collector v0.33.1-0.20210827152330-09258f969908
-	go.opentelemetry.io/collector/model v0.33.1-0.20210827152330-09258f969908
+	go.opentelemetry.io/collector v0.33.1-0.20210831015230-f3de064f3845
+	go.opentelemetry.io/collector/model v0.33.1-0.20210831015230-f3de064f3845
 	go.uber.org/zap v1.19.0
 )
 
 require (
-	github.com/StackExchange/wmi v0.0.0-20210224194228-fe8f1750fd46 // indirect
+	github.com/StackExchange/wmi v1.2.1 // indirect
 	github.com/apache/thrift v0.14.2 // indirect
 	github.com/avast/retry-go v3.0.0+incompatible // indirect
 	github.com/beeker1121/goque v2.1.0+incompatible // indirect

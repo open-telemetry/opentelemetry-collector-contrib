@@ -17,7 +17,7 @@ package attributes
 import (
 	"fmt"
 
-	conventions "go.opentelemetry.io/collector/translator/conventions/v1.5.0"
+	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
 )
 
 type processAttributes struct {
@@ -34,7 +34,7 @@ func (pattrs *processAttributes) extractTags() []string {
 
 	// According to OTel conventions: https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/resource/semantic_conventions/process.md,
 	// a process can be defined by any of the 4 following attributes: process.executable.name, process.executable.path, process.command or process.command_line
-	// (process.command_args isn't in the current attribute conventions: https://github.com/open-telemetry/opentelemetry-collector/blob/ecb27f49d4e26ae42d82e6ea18d57b08e252452d/translator/conventions/opentelemetry.go#L58-L63)
+	// (process.command_args isn't in the current attribute conventions: https://github.com/open-telemetry/opentelemetry-collector/blob/ecb27f49d4e26ae42d82e6ea18d57b08e252452d/model/semconv/opentelemetry.go#L58-L63)
 	// We go through them, and add the first available one as a tag to identify the process.
 	// We don't want to add all of them to avoid unnecessarily increasing the number of tags attached to a metric.
 
