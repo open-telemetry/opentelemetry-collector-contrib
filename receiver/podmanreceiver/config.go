@@ -18,7 +18,8 @@ import (
 	"errors"
 
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/receiver/scraperhelper"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/scraperhelper"
 )
 
 var _ config.Receiver = (*Config)(nil)

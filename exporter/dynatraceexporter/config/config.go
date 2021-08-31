@@ -23,6 +23,8 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry"
 )
 
 // Config defines configuration for the Dynatrace exporter.
@@ -30,9 +32,9 @@ type Config struct {
 	config.ExporterSettings       `mapstructure:",squash"`
 	confighttp.HTTPClientSettings `mapstructure:",squash"`
 
-	exporterhelper.QueueSettings               `mapstructure:"sending_queue"`
-	exporterhelper.RetrySettings               `mapstructure:"retry_on_failure"`
-	exporterhelper.ResourceToTelemetrySettings `mapstructure:"resource_to_telemetry_conversion"`
+	exporterhelper.QueueSettings `mapstructure:"sending_queue"`
+	exporterhelper.RetrySettings `mapstructure:"retry_on_failure"`
+	ResourceToTelemetrySettings  resourcetotelemetry.Settings `mapstructure:"resource_to_telemetry_conversion"`
 
 	// Dynatrace API token with metrics ingest permission
 	APIToken string `mapstructure:"api_token"`

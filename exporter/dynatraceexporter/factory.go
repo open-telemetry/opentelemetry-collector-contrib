@@ -23,6 +23,7 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
 	dtconfig "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/dynatraceexporter/config"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry"
 )
 
 const (
@@ -45,7 +46,7 @@ func createDefaultConfig() config.Exporter {
 		ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
 		RetrySettings:    exporterhelper.DefaultRetrySettings(),
 		QueueSettings:    exporterhelper.DefaultQueueSettings(),
-		ResourceToTelemetrySettings: exporterhelper.ResourceToTelemetrySettings{
+		ResourceToTelemetrySettings: resourcetotelemetry.Settings{
 			Enabled: false,
 		},
 
@@ -72,13 +73,16 @@ func createMetricsExporter(
 
 	exp := newMetricsExporter(set, cfg)
 
-	return exporterhelper.NewMetricsExporter(
+	exporter, err := exporterhelper.NewMetricsExporter(
 		cfg,
 		set,
 		exp.PushMetricsData,
 		exporterhelper.WithQueue(cfg.QueueSettings),
 		exporterhelper.WithRetry(cfg.RetrySettings),
 		exporterhelper.WithStart(exp.start),
-		exporterhelper.WithResourceToTelemetryConversion(cfg.ResourceToTelemetrySettings),
 	)
+	if err != nil {
+		return nil, err
+	}
+	return resourcetotelemetry.WrapMetricsExporter(cfg.ResourceToTelemetrySettings, exporter), nil
 }

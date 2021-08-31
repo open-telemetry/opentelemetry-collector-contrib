@@ -404,7 +404,7 @@ func TestExportMetricUnsupported(t *testing.T) {
 	dp := m.Histogram().DataPoints().AppendEmpty()
 	dp.SetCount(1)
 	dp.SetSum(1)
-	dp.SetTimestamp(pdata.TimestampFromTime(time.Now()))
+	dp.SetTimestamp(pdata.NewTimestampFromTime(time.Now()))
 
 	_, err := runMetricMock(context.Background(), ms, mockConfig{useAPIKeyHeader: false})
 	var unsupportedErr *errUnsupportedMetricType
@@ -653,7 +653,7 @@ func TestExportLogs(t *testing.T) {
 	rlog.Resource().Attributes().InsertString("service.name", "test-service")
 	l := rlog.InstrumentationLibraryLogs().AppendEmpty().Logs().AppendEmpty()
 	l.SetName("logname")
-	l.SetTimestamp(pdata.TimestampFromTime(timestamp))
+	l.SetTimestamp(pdata.NewTimestampFromTime(timestamp))
 	l.Body().SetStringVal("log body")
 	l.Attributes().InsertString("foo", "bar")
 

@@ -166,7 +166,7 @@ func generateTestMetrics(tm testMetric) pdata.Metrics {
 
 		for _, value := range tm.metricValues[i] {
 			dp := m.Sum().DataPoints().AppendEmpty()
-			dp.SetTimestamp(pdata.TimestampFromTime(now.Add(10 * time.Second)))
+			dp.SetTimestamp(pdata.NewTimestampFromTime(now.Add(10 * time.Second)))
 			dp.SetDoubleVal(value)
 		}
 	}
