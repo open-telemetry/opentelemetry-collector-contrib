@@ -70,7 +70,7 @@ func (ctdp *cumulativeToDeltaProcessor) processMetrics(_ context.Context, md pda
 							labelMap := make(map[string]string)
 
 							fromDataPoint.Attributes().Range(func(k string, v pdata.AttributeValue) bool {
-								labelMap[k] = pdata.AttributeValueToString(v)
+								labelMap[k] = v.AsString()
 								return true
 							})
 							datapointValue := fromDataPoint.DoubleVal()

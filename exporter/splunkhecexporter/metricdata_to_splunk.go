@@ -66,12 +66,12 @@ func metricDataToSplunk(logger *zap.Logger, data pdata.Metrics, config *Config) 
 			index = indexSet.StringVal()
 		}
 		attributes.Range(func(k string, v pdata.AttributeValue) bool {
-			commonFields[k] = pdata.AttributeValueToString(v)
+			commonFields[k] = v.AsString()
 			return true
 		})
 
 		rm.Resource().Attributes().Range(func(k string, v pdata.AttributeValue) bool {
-			commonFields[k] = pdata.AttributeValueToString(v)
+			commonFields[k] = v.AsString()
 			return true
 		})
 		ilms := rm.InstrumentationLibraryMetrics()
@@ -229,7 +229,7 @@ func createEvent(timestamp pdata.Timestamp, host string, source string, sourceTy
 
 func populateAttributes(fields map[string]interface{}, attributeMap pdata.AttributeMap) {
 	attributeMap.Range(func(k string, v pdata.AttributeValue) bool {
-		fields[k] = pdata.AttributeValueToString(v)
+		fields[k] = v.AsString()
 		return true
 	})
 }

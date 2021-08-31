@@ -83,7 +83,7 @@ func (c *collector) getMetricMetadata(metric pdata.Metric, attributes pdata.Attr
 
 	attributes.Range(func(k string, v pdata.AttributeValue) bool {
 		keys = append(keys, sanitize(k))
-		values = append(values, pdata.AttributeValueToString(v))
+		values = append(values, v.AsString())
 		return true
 	})
 
