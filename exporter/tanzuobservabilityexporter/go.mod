@@ -7,8 +7,8 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.34.0
 	github.com/stretchr/testify v1.7.0
 	github.com/wavefronthq/wavefront-sdk-go v0.9.9
-	go.opentelemetry.io/collector v0.33.1-0.20210831015230-f3de064f3845
-	go.opentelemetry.io/collector/model v0.33.1-0.20210831015230-f3de064f3845
+	go.opentelemetry.io/collector v0.34.0
+	go.opentelemetry.io/collector/model v0.34.0
 	go.uber.org/zap v1.19.0
 )
 
