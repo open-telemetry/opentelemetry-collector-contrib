@@ -85,7 +85,6 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/tcplogreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/redisreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/podmanreceiver
-      - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/scrapererror
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/splunkhecreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jaegerreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/signalfxreceiver
