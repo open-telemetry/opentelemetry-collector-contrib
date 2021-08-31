@@ -22,8 +22,7 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/obsreport"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/scrapererror"
+	"go.opentelemetry.io/collector/receiver/scrapererror"
 )
 
 // ScrapeMetrics scrapes metrics.
