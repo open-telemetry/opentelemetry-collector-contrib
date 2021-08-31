@@ -39,7 +39,7 @@ func buildCounterMetric(parsedMetric statsDMetric, isMonotonicCounter bool, time
 
 	dp := nm.Sum().DataPoints().AppendEmpty()
 	dp.SetIntVal(parsedMetric.intvalue)
-	dp.SetTimestamp(pdata.TimestampFromTime(timeNow))
+	dp.SetTimestamp(pdata.NewTimestampFromTime(timeNow))
 	for i, key := range parsedMetric.labelKeys {
 		dp.Attributes().InsertString(key, parsedMetric.labelValues[i])
 	}
@@ -57,7 +57,7 @@ func buildGaugeMetric(parsedMetric statsDMetric, timeNow time.Time) pdata.Instru
 	nm.SetDataType(pdata.MetricDataTypeGauge)
 	dp := nm.Gauge().DataPoints().AppendEmpty()
 	dp.SetDoubleVal(parsedMetric.floatvalue)
-	dp.SetTimestamp(pdata.TimestampFromTime(timeNow))
+	dp.SetTimestamp(pdata.NewTimestampFromTime(timeNow))
 	for i, key := range parsedMetric.labelKeys {
 		dp.Attributes().InsertString(key, parsedMetric.labelValues[i])
 	}
@@ -75,7 +75,7 @@ func buildSummaryMetric(summaryMetric summaryMetric) pdata.InstrumentationLibrar
 	dp.SetCount(uint64(len(summaryMetric.summaryPoints)))
 	sum, _ := stats.Sum(summaryMetric.summaryPoints)
 	dp.SetSum(sum)
-	dp.SetTimestamp(pdata.TimestampFromTime(summaryMetric.timeNow))
+	dp.SetTimestamp(pdata.NewTimestampFromTime(summaryMetric.timeNow))
 	for i, key := range summaryMetric.labelKeys {
 		dp.Attributes().InsertString(key, summaryMetric.labelValues[i])
 	}

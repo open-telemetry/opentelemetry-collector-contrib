@@ -23,12 +23,12 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.uber.org/zap"
-
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confignet"
-	"go.opentelemetry.io/collector/testutil"
+	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testutil"
 )
 
 func TestHealthCheckExtensionUsage(t *testing.T) {

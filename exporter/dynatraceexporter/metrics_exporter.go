@@ -24,6 +24,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/dynatrace-oss/dynatrace-metric-utils-go/metric/dimensions"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/model/pdata"
@@ -38,9 +39,14 @@ const maxChunkSize = 1000
 
 // NewExporter exports to a Dynatrace Metrics v2 API
 func newMetricsExporter(params component.ExporterCreateSettings, cfg *config.Config) *exporter {
+	defaultDimensions := dimensionsFromTags(cfg.Tags)
+	staticDimensions := dimensions.NewNormalizedDimensionList(dimensions.NewDimension("dt.metrics.source", "opentelemetry"))
+
 	return &exporter{
-		logger: params.Logger,
-		cfg:    cfg,
+		logger:            params.Logger,
+		cfg:               cfg,
+		defaultDimensions: defaultDimensions,
+		staticDimensions:  staticDimensions,
 	}
 }
 
@@ -50,18 +56,29 @@ type exporter struct {
 	cfg        *config.Config
 	client     *http.Client
 	isDisabled bool
+
+	defaultDimensions dimensions.NormalizedDimensionList
+	staticDimensions  dimensions.NormalizedDimensionList
 }
 
-const (
-	maxMetricKeyLen = 250
-)
+// for backwards-compatibility with deprecated `Tags` config option
+func dimensionsFromTags(tags []string) dimensions.NormalizedDimensionList {
+	dims := []dimensions.Dimension{}
+	for _, tag := range tags {
+		parts := strings.SplitN(tag, "=", 2)
+		if len(parts) == 2 {
+			dims = append(dims, dimensions.NewDimension(parts[0], parts[1]))
+		}
+	}
+	return dimensions.NewNormalizedDimensionList(dims...)
+}
 
 func (e *exporter) PushMetricsData(ctx context.Context, md pdata.Metrics) error {
 	if e.isDisabled {
 		return nil
 	}
 
-	lines, _ := e.serializeMetrics(md)
+	lines := e.serializeMetrics(md)
 
 	// If request is empty string, there are no serializable metrics in the batch.
 	// This can happen if all metric names are invalid
@@ -78,13 +95,10 @@ func (e *exporter) PushMetricsData(ctx context.Context, md pdata.Metrics) error 
 	return nil
 }
 
-func (e *exporter) serializeMetrics(md pdata.Metrics) ([]string, int) {
+func (e *exporter) serializeMetrics(md pdata.Metrics) []string {
 	lines := make([]string, 0)
-	dropped := 0
 
 	resourceMetrics := md.ResourceMetrics()
-
-	e.logger.Debug(fmt.Sprintf("res metric len: %d, e.cfg.Tags: %v\n", resourceMetrics.Len(), e.cfg.Tags))
 
 	for i := 0; i < resourceMetrics.Len(); i++ {
 		resourceMetric := resourceMetrics.At(i)
@@ -94,31 +108,25 @@ func (e *exporter) serializeMetrics(md pdata.Metrics) ([]string, int) {
 			metrics := libraryMetric.Metrics()
 			for k := 0; k < metrics.Len(); k++ {
 				metric := metrics.At(k)
-				name, normalizationError := normalizeMetricName(e.cfg.Prefix, metric.Name())
-				if normalizationError != nil {
-					dropped++
-					e.logger.Error(fmt.Sprintf("Failed to normalize metric name: %s", metric.Name()))
-					continue
-				}
 
 				var l []string
 				switch metric.DataType() {
 				case pdata.MetricDataTypeNone:
 					continue
 				case pdata.MetricDataTypeGauge:
-					l = serialization.SerializeNumberDataPoints(name, metric.Gauge().DataPoints(), e.cfg.Tags)
+					l = serialization.SerializeNumberDataPoints(e.cfg.Prefix, metric.Name(), metric.Gauge().DataPoints(), e.defaultDimensions)
 				case pdata.MetricDataTypeSum:
-					l = serialization.SerializeNumberDataPoints(name, metric.Sum().DataPoints(), e.cfg.Tags)
+					l = serialization.SerializeNumberDataPoints(e.cfg.Prefix, metric.Name(), metric.Sum().DataPoints(), e.defaultDimensions)
 				case pdata.MetricDataTypeHistogram:
-					l = serialization.SerializeHistogramMetrics(name, metric.Histogram().DataPoints(), e.cfg.Tags)
+					l = serialization.SerializeHistogramMetrics(e.cfg.Prefix, metric.Name(), metric.Histogram().DataPoints(), e.defaultDimensions)
 				}
 				lines = append(lines, l...)
-				e.logger.Debug(fmt.Sprintf("Exporting type %s, Name: %s, len: %d ", metric.DataType().String(), name, len(l)))
+				e.logger.Debug(fmt.Sprintf("Exporting type %s, Name: %s, len: %d ", metric.DataType().String(), metric.Name(), len(l)))
 			}
 		}
 	}
 
-	return lines, dropped
+	return lines
 }
 
 var lastLog int64
@@ -231,26 +239,6 @@ func (e *exporter) start(_ context.Context, host component.Host) (err error) {
 	e.client = client
 
 	return nil
-}
-
-// normalizeMetricName formats the custom namespace and view name to
-// Metric naming Conventions
-func normalizeMetricName(prefix, name string) (string, error) {
-	normalizedLen := maxMetricKeyLen
-	if l := len(prefix); l != 0 {
-		normalizedLen -= l + 1
-	}
-
-	name, err := serialization.NormalizeString(name, normalizedLen)
-	if err != nil {
-		return "", err
-	}
-
-	if prefix != "" {
-		name = prefix + "." + name
-	}
-
-	return name, nil
 }
 
 // Response from Dynatrace is expected to be in JSON format

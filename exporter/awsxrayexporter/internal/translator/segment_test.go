@@ -24,7 +24,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/model/pdata"
-	conventions "go.opentelemetry.io/collector/translator/conventions/v1.5.0"
+	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
 
 	awsxray "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray"
 )
@@ -166,8 +166,8 @@ func TestSpanNoParentId(t *testing.T) {
 	span.SetSpanID(newSegmentID())
 	span.SetParentSpanID(pdata.InvalidSpanID())
 	span.SetKind(pdata.SpanKindProducer)
-	span.SetStartTimestamp(pdata.TimestampFromTime(time.Now()))
-	span.SetEndTimestamp(pdata.TimestampFromTime(time.Now().Add(10)))
+	span.SetStartTimestamp(pdata.NewTimestampFromTime(time.Now()))
+	span.SetEndTimestamp(pdata.NewTimestampFromTime(time.Now().Add(10)))
 	resource := pdata.NewResource()
 	segment, _ := MakeSegment(span, resource, nil, false)
 
@@ -181,8 +181,8 @@ func TestSpanWithNoStatus(t *testing.T) {
 	span.SetSpanID(newSegmentID())
 	span.SetParentSpanID(newSegmentID())
 	span.SetKind(pdata.SpanKindServer)
-	span.SetStartTimestamp(pdata.TimestampFromTime(time.Now()))
-	span.SetEndTimestamp(pdata.TimestampFromTime(time.Now().Add(10)))
+	span.SetStartTimestamp(pdata.NewTimestampFromTime(time.Now()))
+	span.SetEndTimestamp(pdata.NewTimestampFromTime(time.Now().Add(10)))
 
 	resource := pdata.NewResource()
 	segment, _ := MakeSegment(span, resource, nil, false)
@@ -739,8 +739,8 @@ func constructClientSpan(parentSpanID pdata.SpanID, name string, code pdata.Stat
 	span.SetParentSpanID(parentSpanID)
 	span.SetName(name)
 	span.SetKind(pdata.SpanKindClient)
-	span.SetStartTimestamp(pdata.TimestampFromTime(startTime))
-	span.SetEndTimestamp(pdata.TimestampFromTime(endTime))
+	span.SetStartTimestamp(pdata.NewTimestampFromTime(startTime))
+	span.SetEndTimestamp(pdata.NewTimestampFromTime(endTime))
 
 	status := pdata.NewSpanStatus()
 	status.SetCode(code)
@@ -766,8 +766,8 @@ func constructServerSpan(parentSpanID pdata.SpanID, name string, code pdata.Stat
 	span.SetParentSpanID(parentSpanID)
 	span.SetName(name)
 	span.SetKind(pdata.SpanKindServer)
-	span.SetStartTimestamp(pdata.TimestampFromTime(startTime))
-	span.SetEndTimestamp(pdata.TimestampFromTime(endTime))
+	span.SetStartTimestamp(pdata.NewTimestampFromTime(startTime))
+	span.SetEndTimestamp(pdata.NewTimestampFromTime(endTime))
 
 	status := pdata.NewSpanStatus()
 	status.SetCode(code)

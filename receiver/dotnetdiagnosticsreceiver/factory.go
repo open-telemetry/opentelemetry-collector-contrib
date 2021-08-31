@@ -27,9 +27,8 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/scraperhelper"
-
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dotnetdiagnosticsreceiver/network"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/scraperhelper"
 )
 
 const typeStr = "dotnet_diagnostics"

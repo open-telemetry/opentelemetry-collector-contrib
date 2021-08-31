@@ -23,9 +23,8 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/scraperhelper"
-
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/scraperhelper"
 )
 
 const (

@@ -119,7 +119,7 @@ func (z *zookeeperMetricsScraper) getResourceMetrics(conn net.Conn) (pdata.Resou
 }
 
 func (z *zookeeperMetricsScraper) appendMetrics(scanner *bufio.Scanner, rms pdata.ResourceMetricsSlice) {
-	now := pdata.TimestampFromTime(time.Now())
+	now := pdata.NewTimestampFromTime(time.Now())
 	rm := pdata.NewResourceMetrics()
 	ilm := rm.InstrumentationLibraryMetrics().AppendEmpty()
 	ilm.InstrumentationLibrary().SetName("otelcol/zookeeper")

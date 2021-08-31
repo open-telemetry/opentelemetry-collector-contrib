@@ -1,4 +1,4 @@
-FROM golang:1.16-stretch
+FROM golang:1.17-stretch
 
 WORKDIR /go/src/app
 
