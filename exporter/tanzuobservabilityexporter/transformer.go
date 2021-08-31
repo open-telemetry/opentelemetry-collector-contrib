@@ -156,7 +156,7 @@ func attributesToTags(attributes ...pdata.AttributeMap) map[string]string {
 	tags := map[string]string{}
 
 	extractTag := func(k string, v pdata.AttributeValue) bool {
-		tags[k] = pdata.AttributeValueToString(v)
+		tags[k] = v.AsString()
 		return true
 	}
 

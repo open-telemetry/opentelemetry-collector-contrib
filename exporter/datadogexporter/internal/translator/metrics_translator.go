@@ -53,7 +53,7 @@ func New(cache *TTLCache, params component.ExporterCreateSettings, cfg config.Me
 func getTags(labels pdata.AttributeMap) []string {
 	tags := make([]string, 0, labels.Len())
 	labels.Range(func(key string, value pdata.AttributeValue) bool {
-		v := pdata.AttributeValueToString(value)
+		v := value.AsString()
 		if v == "" {
 			// Tags can't end with ":" so we replace empty values with "n/a"
 			v = "n/a"

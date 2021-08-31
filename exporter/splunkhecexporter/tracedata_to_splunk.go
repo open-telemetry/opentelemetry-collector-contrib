@@ -84,7 +84,7 @@ func traceDataToSplunk(logger *zap.Logger, data pdata.Traces, config *Config) ([
 			index = indexSet.StringVal()
 		}
 		attributes.Range(func(k string, v pdata.AttributeValue) bool {
-			commonFields[k] = pdata.AttributeValueToString(v)
+			commonFields[k] = v.AsString()
 			return true
 		})
 		ilss := rs.InstrumentationLibrarySpans()

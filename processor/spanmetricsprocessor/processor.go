@@ -377,7 +377,7 @@ func buildKey(serviceName string, span pdata.Span, optionalDims []Dimension) met
 			value = *d.Default
 		}
 		if attr, ok := spanAttr.Get(d.Name); ok {
-			value = pdata.AttributeValueToString(attr)
+			value = attr.AsString()
 		}
 		concatDimensionValue(&metricKeyBuilder, value, true)
 	}
