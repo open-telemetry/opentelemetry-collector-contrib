@@ -65,7 +65,7 @@ func getField(fields []*Field, name string) *Field {
 func testReadFields(t *testing.T, s testStruct, defaults map[string]interface{}) {
 	root, _ := ReadFields(
 		reflect.ValueOf(s),
-		testDR(),
+		testDR("../.."),
 	)
 
 	assert.Equal(t, "testStruct comment\n", root.Doc)
