@@ -8,8 +8,8 @@ require (
 	github.com/stretchr/testify v1.7.0
 	go.elastic.co/apm v1.13.1
 	go.elastic.co/fastjson v1.1.0
-	go.opentelemetry.io/collector v0.33.1-0.20210831015230-f3de064f3845
-	go.opentelemetry.io/collector/model v0.33.1-0.20210831015230-f3de064f3845
+	go.opentelemetry.io/collector v0.34.0
+	go.opentelemetry.io/collector/model v0.34.0
 	go.uber.org/zap v1.19.0
 	golang.org/x/text v0.3.7 // indirect
 	golang.org/x/tools v0.1.3 // indirect
