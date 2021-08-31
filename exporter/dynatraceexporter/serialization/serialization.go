@@ -83,7 +83,6 @@ func SerializeHistogramMetrics(prefix, name string, data pdata.HistogramDataPoin
 	output := []string{}
 	for i := 0; i < data.Len(); i++ {
 		p := data.At(i)
-		// tagline := serializeDimensions(p.Attributes(), tags)
 		if p.Count() == 0 {
 			continue
 		}
