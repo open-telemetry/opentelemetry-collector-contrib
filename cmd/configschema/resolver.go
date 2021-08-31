@@ -31,7 +31,7 @@ const DefaultSrcRoot = "."
 
 // DefaultModule is the module prefix of otelcol. Can be used to create a
 // DirResolver.
-const DefaultModule = "go.opentelemetry.io/collector"
+const DefaultModule = "github.com/open-telemetry/opentelemetry-collector-contrib"
 
 // DirResolver is used to resolve the base directory of a given reflect.Type.
 type DirResolver struct {
@@ -109,7 +109,7 @@ func grepMod(goModPath string, pkg string) (pkgPath string, version string, err 
 		switch {
 		case line.Old.Path == DefaultModule:
 			pkgPath, version = line.New.Path, line.New.Version
-		case strings.Contains(line.Old.Path, pkg):
+		case strings.HasPrefix(pkg, line.Old.Path):
 			return line.New.Path, line.New.Version, nil
 		}
 	}
@@ -117,7 +117,7 @@ func grepMod(goModPath string, pkg string) (pkgPath string, version string, err 
 		switch {
 		case pkgPath == "" && line.Mod.Path == DefaultModule:
 			pkgPath, version = line.Mod.Path, line.Mod.Version
-		case strings.Contains(line.Mod.Path, pkg):
+		case strings.HasPrefix(pkg, line.Mod.Path):
 			return line.Mod.Path, line.Mod.Version, nil
 		}
 	}
@@ -137,6 +137,6 @@ func (dr DirResolver) buildExternalPath(goPath, pkg, line, v string) string {
 	case strings.HasPrefix(line, "../"):
 		return path.Join(dr.SrcRoot, line, strings.TrimPrefix(pkg, DefaultModule))
 	default:
-		return path.Join(goPath, "pkg", "mod", line+"@"+v)
+		return path.Join(goPath, "pkg", "mod", line+"@"+v, strings.TrimPrefix(pkg, line))
 	}
 }

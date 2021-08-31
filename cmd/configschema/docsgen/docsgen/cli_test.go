@@ -23,11 +23,11 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-
-	"go.opentelemetry.io/collector/cmd/configschema"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver"
 	"go.opentelemetry.io/collector/service/defaultcomponents"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/configschema"
 )
 
 func TestWriteConfigDoc(t *testing.T) {
@@ -44,8 +44,8 @@ func TestWriteConfigDoc(t *testing.T) {
 		outputFilename = dir
 		return nil
 	})
-	expectedPath := path.Join(root, "receiver/otlpreceiver/config.md")
-	assert.Equal(t, expectedPath, outputFilename)
+	expectedPath := "receiver/otlpreceiver/config.md"
+	assert.True(t, strings.HasSuffix(outputFilename, expectedPath))
 }
 
 func testTemplate(t *testing.T) *template.Template {

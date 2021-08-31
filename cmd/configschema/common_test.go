@@ -36,9 +36,9 @@ type testStruct struct {
 	Ignored       string        `mapstructure:"-"`
 }
 
-func testDR() DirResolver {
+func testDR(root string) DirResolver {
 	return DirResolver{
-		SrcRoot:    "../..",
+		SrcRoot:    root,
 		ModuleName: DefaultModule,
 	}
 }
