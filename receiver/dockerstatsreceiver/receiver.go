@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"net/url"
 	"sync"
+	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
@@ -134,12 +135,12 @@ func (r *Receiver) Run() error {
 		go func(c docker.Container) {
 			statsJSON, err := r.client.FetchContainerStatsAsJSON(ctx, c)
 			if err != nil {
-				results <- result{nil, err}
+				results <- result{pdata.NewMetrics(), err}
 				wg.Done()
 				return
 			}
 
-			md, err := ContainerStatsToMetrics(statsJSON, c, r.config)
+			md, err := ContainerStatsToMetrics(pdata.NewTimestampFromTime(time.Now()), statsJSON, c, r.config)
 			if err != nil {
 				r.logger.Error(
 					"Could not convert docker containerStats for container id",

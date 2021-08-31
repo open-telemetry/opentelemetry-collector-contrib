@@ -295,6 +295,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/proxy v0.36.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray v0.36.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.36.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/docker v0.36.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/interval v0.36.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.36.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/kubelet v0.36.0 // indirect
@@ -454,6 +455,8 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/a
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/stanza => ./internal/stanza
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/interval => ./internal/interval
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/docker => ./internal/docker
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/alibabacloudlogserviceexporter => ./exporter/alibabacloudlogserviceexporter
 

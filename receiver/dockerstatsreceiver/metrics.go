@@ -21,9 +21,10 @@ import (
 	"strings"
 
 	dtypes "github.com/docker/docker/api/types"
-	docker "github.com/open-telemetry/opentelemetry-collector-contrib/internal/docker"
 	"go.opentelemetry.io/collector/model/pdata"
 	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/docker"
 )
 
 const (
@@ -55,7 +56,7 @@ func ContainerStatsToMetrics(
 	return md, nil
 }
 
-func updateConfiguredResourceAttributes(resourceAttr pdata.AttributeMap, container *DockerContainer, config *Config) {
+func updateConfiguredResourceAttributes(resourceAttr pdata.AttributeMap, container docker.Container, config *Config) {
 	for k, label := range config.EnvVarsToMetricLabels {
 		if v := container.EnvMap[k]; v != "" {
 			resourceAttr.UpsertString(label, v)
