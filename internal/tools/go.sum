@@ -781,8 +781,8 @@ go.opentelemetry.io/build-tools/checkdoc v0.0.0-20210826185254-a20c5b1e2d7c h1:P
 go.opentelemetry.io/build-tools/checkdoc v0.0.0-20210826185254-a20c5b1e2d7c/go.mod h1:LSxCgynkoVzMPV/OEMaGXWm48o0WVAXocdfpvmJX1pE=
 go.opentelemetry.io/build-tools/issuegenerator v0.0.0-20210826185254-a20c5b1e2d7c h1:JW6d8hV1v8azYP9SAjA3Yh0uqLDBjYHz2VcvI+TPHLw=
 go.opentelemetry.io/build-tools/issuegenerator v0.0.0-20210826185254-a20c5b1e2d7c/go.mod h1:NSrnkWJbEC6r27HIE2fnIpQ/ttCgXEaIyVGzOGE8nqs=
-go.opentelemetry.io/build-tools/multimod v0.0.0-20210826185254-a20c5b1e2d7c h1:E+nIxuc5xD3PuuX9s6jLu+WUBM+YBEpYyqQE2pZ1d5Q=
-go.opentelemetry.io/build-tools/multimod v0.0.0-20210826185254-a20c5b1e2d7c/go.mod h1:dfkKkcGHOm8THLcgxygDBPJsbtppr0yoZuphRDeb06U=
+go.opentelemetry.io/build-tools/multimod v0.0.0-20210831190859-d115afa5390e h1:OS/4bGPu4DGjxcAlQZzgUpyux7T6xqmkdCNBq9llHHg=
+go.opentelemetry.io/build-tools/multimod v0.0.0-20210831190859-d115afa5390e/go.mod h1:dfkKkcGHOm8THLcgxygDBPJsbtppr0yoZuphRDeb06U=
 go.uber.org/atomic v1.3.2/go.mod h1:gD2HeocX3+yG+ygLZcrzQJaqmWj9AIm7n08wl/qW/PE=
 go.uber.org/atomic v1.4.0/go.mod h1:gD2HeocX3+yG+ygLZcrzQJaqmWj9AIm7n08wl/qW/PE=
 go.uber.org/atomic v1.5.0/go.mod h1:sABNBOSYdrvTF6hTgEIbc7YasKWGhgEQZyfxyTvoXHQ=
