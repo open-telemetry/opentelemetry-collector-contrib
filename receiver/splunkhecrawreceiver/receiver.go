@@ -188,7 +188,7 @@ func (r *splunkReceiver) handleReq(resp http.ResponseWriter, req *http.Request) 
 	for sc.Scan() {
 		logRecord := ill.Logs().AppendEmpty()
 		logLine := sc.Text()
-		pdata.NewAttributeValueString(logLine).CopyTo(logRecord.Body())
+		logRecord.Body().SetStringVal(logLine)
 	}
 	decodeErr := r.logsConsumer.ConsumeLogs(ctx, ld)
 
