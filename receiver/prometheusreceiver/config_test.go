@@ -251,3 +251,21 @@ func TestTLSConfigKeyFileWithNoCertFile(t *testing.T) {
 	gotErrMsg := err.Error()
 	require.Equal(t, wantErrMsg, gotErrMsg)
 }
+
+func TestKubernetesSDConfig(t *testing.T) {
+	factories, err := componenttest.NopFactories()
+	assert.NoError(t, err)
+
+	factory := NewFactory()
+	factories.Receivers[typeStr] = factory
+	cfg, err := configtest.LoadConfig(path.Join(".", "testdata", "invalid-config-prometheus-kubernetes-sd-config.yaml"), factories)
+	require.NoError(t, err)
+	require.NotNil(t, cfg)
+	err = cfg.Validate()
+	require.NotNil(t, err, "Expected a non-nil error")
+
+	wantErrMsg := `receiver "prometheus" has invalid configuration: client cert file "./testdata/dummy-tls-cert-file" specified without client key file`
+
+	gotErrMsg := err.Error()
+	require.Equal(t, wantErrMsg, gotErrMsg)
+}
