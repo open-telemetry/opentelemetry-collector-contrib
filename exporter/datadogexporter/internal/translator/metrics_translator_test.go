@@ -12,9 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package datadogexporter
+package translator
 
 import (
+	"context"
 	"math"
 	"testing"
 	"time"
@@ -22,6 +23,7 @@ import (
 	gocache "github.com/patrickmn/go-cache"
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/model/pdata"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -113,16 +115,20 @@ func TestIsCumulativeMonotonic(t *testing.T) {
 	}
 }
 
-func TestMetricDimensionsToMapKey(t *testing.T) {
-	metricName := "metric.name"
-	noTags := metricDimensionsToMapKey(metricName, []string{})
-	someTags := metricDimensionsToMapKey(metricName, []string{"key1:val1", "key2:val2"})
-	sameTags := metricDimensionsToMapKey(metricName, []string{"key2:val2", "key1:val1"})
-	diffTags := metricDimensionsToMapKey(metricName, []string{"key3:val3"})
+type testProvider string
 
-	assert.NotEqual(t, noTags, someTags)
-	assert.NotEqual(t, someTags, diffTags)
-	assert.Equal(t, someTags, sameTags)
+func (t testProvider) Hostname(context.Context) (string, error) {
+	return string(t), nil
+}
+
+func newTranslator(logger *zap.Logger, cfg config.MetricsConfig) *Translator {
+	params := component.ExporterCreateSettings{
+		BuildInfo: component.BuildInfo{
+			Version: "1.0",
+		},
+		Logger: logger,
+	}
+	return New(newTestCache(), params, cfg, testProvider("fallbackHostname"))
 }
 
 func TestMapIntMetrics(t *testing.T) {
@@ -131,20 +137,21 @@ func TestMapIntMetrics(t *testing.T) {
 	point := slice.AppendEmpty()
 	point.SetIntVal(17)
 	point.SetTimestamp(ts)
+	tr := newTranslator(zap.NewNop(), config.MetricsConfig{})
 
 	assert.ElementsMatch(t,
-		mapNumberMetrics("int64.test", metrics.Gauge, slice, []string{}),
+		tr.mapNumberMetrics("int64.test", metrics.Gauge, slice, []string{}),
 		[]datadog.Metric{metrics.NewGauge("int64.test", uint64(ts), 17, []string{})},
 	)
 
 	assert.ElementsMatch(t,
-		mapNumberMetrics("int64.delta.test", metrics.Count, slice, []string{}),
+		tr.mapNumberMetrics("int64.delta.test", metrics.Count, slice, []string{}),
 		[]datadog.Metric{metrics.NewCount("int64.delta.test", uint64(ts), 17, []string{})},
 	)
 
 	// With attribute tags
 	assert.ElementsMatch(t,
-		mapNumberMetrics("int64.test", metrics.Gauge, slice, []string{"attribute_tag:attribute_value"}),
+		tr.mapNumberMetrics("int64.test", metrics.Gauge, slice, []string{"attribute_tag:attribute_value"}),
 		[]datadog.Metric{metrics.NewGauge("int64.test", uint64(ts), 17, []string{"attribute_tag:attribute_value"})},
 	)
 }
@@ -155,48 +162,27 @@ func TestMapDoubleMetrics(t *testing.T) {
 	point := slice.AppendEmpty()
 	point.SetDoubleVal(math.Pi)
 	point.SetTimestamp(ts)
+	tr := newTranslator(zap.NewNop(), config.MetricsConfig{})
 
 	assert.ElementsMatch(t,
-		mapNumberMetrics("float64.test", metrics.Gauge, slice, []string{}),
+		tr.mapNumberMetrics("float64.test", metrics.Gauge, slice, []string{}),
 		[]datadog.Metric{metrics.NewGauge("float64.test", uint64(ts), math.Pi, []string{})},
 	)
 
 	assert.ElementsMatch(t,
-		mapNumberMetrics("float64.delta.test", metrics.Count, slice, []string{}),
+		tr.mapNumberMetrics("float64.delta.test", metrics.Count, slice, []string{}),
 		[]datadog.Metric{metrics.NewCount("float64.delta.test", uint64(ts), math.Pi, []string{})},
 	)
 
 	// With attribute tags
 	assert.ElementsMatch(t,
-		mapNumberMetrics("float64.test", metrics.Gauge, slice, []string{"attribute_tag:attribute_value"}),
+		tr.mapNumberMetrics("float64.test", metrics.Gauge, slice, []string{"attribute_tag:attribute_value"}),
 		[]datadog.Metric{metrics.NewGauge("float64.test", uint64(ts), math.Pi, []string{"attribute_tag:attribute_value"})},
 	)
 }
 
-func newTestCache() *ttlCache {
-	cache := newTTLCache(1800, 3600)
-	return cache
-}
-
 func seconds(i int) pdata.Timestamp {
 	return pdata.NewTimestampFromTime(time.Unix(int64(i), 0))
-}
-
-func TestPutAndGetDiff(t *testing.T) {
-	prevPts := newTestCache()
-	_, ok := prevPts.putAndGetDiff("test", 1, 5)
-	// no diff since it is the first point
-	assert.False(t, ok)
-	_, ok = prevPts.putAndGetDiff("test", 0, 0)
-	// no diff since ts is lower than the stored point
-	assert.False(t, ok)
-	_, ok = prevPts.putAndGetDiff("test", 2, 2)
-	// no diff since the value is lower than the stored value
-	assert.False(t, ok)
-	dx, ok := prevPts.putAndGetDiff("test", 3, 4)
-	// diff with the most recent point (2,2)
-	assert.True(t, ok)
-	assert.Equal(t, 2.0, dx)
 }
 
 func TestMapIntMonotonicMetrics(t *testing.T) {
@@ -224,8 +210,8 @@ func TestMapIntMonotonicMetrics(t *testing.T) {
 		expected[i] = metrics.NewCount(metricName, uint64(seconds(i+1)), float64(val), []string{})
 	}
 
-	prevPts := newTestCache()
-	output := mapNumberMonotonicMetrics(metricName, prevPts, slice, []string{})
+	tr := newTranslator(zap.NewNop(), config.MetricsConfig{SendMonotonic: true})
+	output := tr.mapNumberMonotonicMetrics(metricName, slice, []string{})
 
 	assert.ElementsMatch(t, output, expected)
 }
@@ -262,10 +248,10 @@ func TestMapIntMonotonicDifferentDimensions(t *testing.T) {
 	point.SetTimestamp(seconds(1))
 	point.Attributes().InsertString("key1", "valB")
 
-	prevPts := newTestCache()
+	tr := newTranslator(zap.NewNop(), config.MetricsConfig{SendMonotonic: true})
 
 	assert.ElementsMatch(t,
-		mapNumberMonotonicMetrics(metricName, prevPts, slice, []string{}),
+		tr.mapNumberMonotonicMetrics(metricName, slice, []string{}),
 		[]datadog.Metric{
 			metrics.NewCount(metricName, uint64(seconds(1)), 20, []string{}),
 			metrics.NewCount(metricName, uint64(seconds(1)), 30, []string{"key1:valA"}),
@@ -286,9 +272,9 @@ func TestMapIntMonotonicWithReboot(t *testing.T) {
 		point.SetIntVal(val)
 	}
 
-	prevPts := newTestCache()
+	tr := newTranslator(zap.NewNop(), config.MetricsConfig{SendMonotonic: true})
 	assert.ElementsMatch(t,
-		mapNumberMonotonicMetrics(metricName, prevPts, slice, []string{}),
+		tr.mapNumberMonotonicMetrics(metricName, slice, []string{}),
 		[]datadog.Metric{
 			metrics.NewCount(metricName, uint64(seconds(1)), 30, []string{}),
 			metrics.NewCount(metricName, uint64(seconds(3)), 20, []string{}),
@@ -310,9 +296,9 @@ func TestMapIntMonotonicOutOfOrder(t *testing.T) {
 		point.SetIntVal(val)
 	}
 
-	prevPts := newTestCache()
+	tr := newTranslator(zap.NewNop(), config.MetricsConfig{SendMonotonic: true})
 	assert.ElementsMatch(t,
-		mapNumberMonotonicMetrics(metricName, prevPts, slice, []string{}),
+		tr.mapNumberMonotonicMetrics(metricName, slice, []string{}),
 		[]datadog.Metric{
 			metrics.NewCount(metricName, uint64(seconds(2)), 2, []string{}),
 			metrics.NewCount(metricName, uint64(seconds(3)), 1, []string{}),
@@ -344,8 +330,8 @@ func TestMapDoubleMonotonicMetrics(t *testing.T) {
 		expected[i] = metrics.NewCount(metricName, uint64(seconds(i+1)), val, []string{})
 	}
 
-	prevPts := newTestCache()
-	output := mapNumberMonotonicMetrics(metricName, prevPts, slice, []string{})
+	tr := newTranslator(zap.NewNop(), config.MetricsConfig{SendMonotonic: true})
+	output := tr.mapNumberMonotonicMetrics(metricName, slice, []string{})
 
 	assert.ElementsMatch(t, expected, output)
 }
@@ -382,10 +368,10 @@ func TestMapDoubleMonotonicDifferentDimensions(t *testing.T) {
 	point.SetTimestamp(seconds(1))
 	point.Attributes().InsertString("key1", "valB")
 
-	prevPts := newTestCache()
+	tr := newTranslator(zap.NewNop(), config.MetricsConfig{SendMonotonic: true})
 
 	assert.ElementsMatch(t,
-		mapNumberMonotonicMetrics(metricName, prevPts, slice, []string{}),
+		tr.mapNumberMonotonicMetrics(metricName, slice, []string{}),
 		[]datadog.Metric{
 			metrics.NewCount(metricName, uint64(seconds(1)), 20, []string{}),
 			metrics.NewCount(metricName, uint64(seconds(1)), 30, []string{"key1:valA"}),
@@ -406,9 +392,9 @@ func TestMapDoubleMonotonicWithReboot(t *testing.T) {
 		point.SetDoubleVal(val)
 	}
 
-	prevPts := newTestCache()
+	tr := newTranslator(zap.NewNop(), config.MetricsConfig{SendMonotonic: true})
 	assert.ElementsMatch(t,
-		mapNumberMonotonicMetrics(metricName, prevPts, slice, []string{}),
+		tr.mapNumberMonotonicMetrics(metricName, slice, []string{}),
 		[]datadog.Metric{
 			metrics.NewCount(metricName, uint64(seconds(2)), 30, []string{}),
 			metrics.NewCount(metricName, uint64(seconds(6)), 20, []string{}),
@@ -430,9 +416,9 @@ func TestMapDoubleMonotonicOutOfOrder(t *testing.T) {
 		point.SetDoubleVal(val)
 	}
 
-	prevPts := newTestCache()
+	tr := newTranslator(zap.NewNop(), config.MetricsConfig{SendMonotonic: true})
 	assert.ElementsMatch(t,
-		mapNumberMonotonicMetrics(metricName, prevPts, slice, []string{}),
+		tr.mapNumberMonotonicMetrics(metricName, slice, []string{}),
 		[]datadog.Metric{
 			metrics.NewCount(metricName, uint64(seconds(2)), 2, []string{}),
 			metrics.NewCount(metricName, uint64(seconds(3)), 1, []string{}),
@@ -459,13 +445,17 @@ func TestMapHistogramMetrics(t *testing.T) {
 		metrics.NewGauge("doubleHist.test.count_per_bucket", uint64(ts), 18, []string{"bucket_idx:1"}),
 	}
 
+	tr := newTranslator(zap.NewNop(), config.MetricsConfig{SendMonotonic: true})
+
+	tr.cfg.Buckets = false
 	assert.ElementsMatch(t,
-		mapHistogramMetrics("doubleHist.test", slice, false, []string{}), // No buckets
+		tr.mapHistogramMetrics("doubleHist.test", slice, []string{}), // No buckets
 		noBuckets,
 	)
 
+	tr.cfg.Buckets = true
 	assert.ElementsMatch(t,
-		mapHistogramMetrics("doubleHist.test", slice, true, []string{}), // buckets
+		tr.mapHistogramMetrics("doubleHist.test", slice, []string{}), // buckets
 		append(noBuckets, buckets...),
 	)
 
@@ -480,13 +470,15 @@ func TestMapHistogramMetrics(t *testing.T) {
 		metrics.NewGauge("doubleHist.test.count_per_bucket", uint64(ts), 18, []string{"attribute_tag:attribute_value", "bucket_idx:1"}),
 	}
 
+	tr.cfg.Buckets = false
 	assert.ElementsMatch(t,
-		mapHistogramMetrics("doubleHist.test", slice, false, []string{"attribute_tag:attribute_value"}), // No buckets
+		tr.mapHistogramMetrics("doubleHist.test", slice, []string{"attribute_tag:attribute_value"}), // No buckets
 		noBucketsAttributeTags,
 	)
 
+	tr.cfg.Buckets = true
 	assert.ElementsMatch(t,
-		mapHistogramMetrics("doubleHist.test", slice, true, []string{"attribute_tag:attribute_value"}), // buckets
+		tr.mapHistogramMetrics("doubleHist.test", slice, []string{"attribute_tag:attribute_value"}), // buckets
 		append(noBucketsAttributeTags, bucketsAttributeTags...),
 	)
 }
@@ -541,11 +533,11 @@ func TestMapSummaryMetrics(t *testing.T) {
 	ts := pdata.NewTimestampFromTime(time.Now())
 	slice := exampleSummaryDataPointSlice(ts, 10_001, 101)
 
-	newPrevPts := func(tags []string) *ttlCache {
-		prevPts := newTestCache()
-		prevPts.cache.Set(metricDimensionsToMapKey("summary.example.count", tags), numberCounter{0, 1}, gocache.NoExpiration)
-		prevPts.cache.Set(metricDimensionsToMapKey("summary.example.sum", tags), numberCounter{0, 1}, gocache.NoExpiration)
-		return prevPts
+	newTranslator := func(tags []string, quantiles bool) *Translator {
+		c := newTestCache()
+		c.cache.Set(c.metricDimensionsToMapKey("summary.example.count", tags), numberCounter{0, 1}, gocache.NoExpiration)
+		c.cache.Set(c.metricDimensionsToMapKey("summary.example.sum", tags), numberCounter{0, 1}, gocache.NoExpiration)
+		return New(c, componenttest.NewNopExporterCreateSettings(), config.MetricsConfig{Quantiles: quantiles}, testProvider("fallbackHostname"))
 	}
 
 	noQuantiles := []datadog.Metric{
@@ -558,14 +550,14 @@ func TestMapSummaryMetrics(t *testing.T) {
 		metrics.NewGauge("summary.example.quantile", uint64(ts), 500, []string{"quantile:0.999"}),
 		metrics.NewGauge("summary.example.quantile", uint64(ts), 600, []string{"quantile:1.0"}),
 	}
-	prevPts := newPrevPts([]string{})
+	tr := newTranslator([]string{}, false)
 	assert.ElementsMatch(t,
-		mapSummaryMetrics("summary.example", prevPts, slice, false, []string{}),
+		tr.mapSummaryMetrics("summary.example", slice, []string{}),
 		noQuantiles,
 	)
-	prevPts = newPrevPts([]string{})
+	tr = newTranslator([]string{}, true)
 	assert.ElementsMatch(t,
-		mapSummaryMetrics("summary.example", prevPts, slice, true, []string{}),
+		tr.mapSummaryMetrics("summary.example", slice, []string{}),
 		append(noQuantiles, quantiles...),
 	)
 
@@ -579,14 +571,14 @@ func TestMapSummaryMetrics(t *testing.T) {
 		metrics.NewGauge("summary.example.quantile", uint64(ts), 500, []string{"attribute_tag:attribute_value", "quantile:0.999"}),
 		metrics.NewGauge("summary.example.quantile", uint64(ts), 600, []string{"attribute_tag:attribute_value", "quantile:1.0"}),
 	}
-	prevPts = newPrevPts([]string{"attribute_tag:attribute_value"})
+	tr = newTranslator([]string{"attribute_tag:attribute_value"}, false)
 	assert.ElementsMatch(t,
-		mapSummaryMetrics("summary.example", prevPts, slice, false, []string{"attribute_tag:attribute_value"}),
+		tr.mapSummaryMetrics("summary.example", slice, []string{"attribute_tag:attribute_value"}),
 		noQuantilesAttr,
 	)
-	prevPts = newPrevPts([]string{"attribute_tag:attribute_value"})
+	tr = newTranslator([]string{"attribute_tag:attribute_value"}, true)
 	assert.ElementsMatch(t,
-		mapSummaryMetrics("summary.example", prevPts, slice, true, []string{"attribute_tag:attribute_value"}),
+		tr.mapSummaryMetrics("summary.example", slice, []string{"attribute_tag:attribute_value"}),
 		append(noQuantilesAttr, quantilesAttr...),
 	)
 }
@@ -610,13 +602,9 @@ func TestRunningMetrics(t *testing.T) {
 	rms.AppendEmpty()
 
 	cfg := config.MetricsConfig{}
-	prevPts := newTestCache()
+	tr := newTranslator(zap.NewNop(), cfg)
 
-	buildInfo := component.BuildInfo{
-		Version: "1.0",
-	}
-
-	series, _ := mapMetrics(zap.NewNop(), cfg, prevPts, "fallbackHostname", ms, buildInfo)
+	series := tr.MapMetrics(ms)
 
 	runningHostnames := []string{}
 
@@ -818,15 +806,12 @@ func testCount(name string, val float64, seconds uint64) datadog.Metric {
 func TestMapMetrics(t *testing.T) {
 	md := createTestMetrics()
 	cfg := config.MetricsConfig{SendMonotonic: true}
-	buildInfo := component.BuildInfo{
-		Version: "1.0",
-	}
 
 	core, observed := observer.New(zapcore.DebugLevel)
 	testLogger := zap.New(core)
-	series, dropped := mapMetrics(testLogger, cfg, newTestCache(), "", md, buildInfo)
+	tr := newTranslator(testLogger, cfg)
+	series := tr.MapMetrics(md)
 
-	assert.Equal(t, dropped, 0)
 	filtered := removeRunningMetrics(series)
 	assert.ElementsMatch(t, filtered, []datadog.Metric{
 		testGauge("int.gauge", 1),
