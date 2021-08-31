@@ -26,9 +26,8 @@ import (
 	"sync/atomic"
 	"unsafe"
 
-	"go.uber.org/zap"
-
 	"go.opentelemetry.io/collector/component"
+	"go.uber.org/zap"
 )
 
 // Tracks that only a single instance is active per process.

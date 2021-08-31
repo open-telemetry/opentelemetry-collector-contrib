@@ -21,9 +21,8 @@ import (
 	"strconv"
 
 	"github.com/jaegertracing/jaeger/pkg/healthcheck"
-	"go.uber.org/zap"
-
 	"go.opentelemetry.io/collector/component"
+	"go.uber.org/zap"
 )
 
 type healthCheckExtension struct {
