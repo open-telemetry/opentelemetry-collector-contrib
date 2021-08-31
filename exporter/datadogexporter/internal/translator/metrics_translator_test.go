@@ -132,7 +132,7 @@ func newTranslator(logger *zap.Logger, cfg config.MetricsConfig) *Translator {
 }
 
 func TestMapIntMetrics(t *testing.T) {
-	ts := pdata.TimestampFromTime(time.Now())
+	ts := pdata.NewTimestampFromTime(time.Now())
 	slice := pdata.NewNumberDataPointSlice()
 	point := slice.AppendEmpty()
 	point.SetIntVal(17)
@@ -157,7 +157,7 @@ func TestMapIntMetrics(t *testing.T) {
 }
 
 func TestMapDoubleMetrics(t *testing.T) {
-	ts := pdata.TimestampFromTime(time.Now())
+	ts := pdata.NewTimestampFromTime(time.Now())
 	slice := pdata.NewNumberDataPointSlice()
 	point := slice.AppendEmpty()
 	point.SetDoubleVal(math.Pi)
@@ -182,7 +182,7 @@ func TestMapDoubleMetrics(t *testing.T) {
 }
 
 func seconds(i int) pdata.Timestamp {
-	return pdata.TimestampFromTime(time.Unix(int64(i), 0))
+	return pdata.NewTimestampFromTime(time.Unix(int64(i), 0))
 }
 
 func TestMapIntMonotonicMetrics(t *testing.T) {
@@ -427,7 +427,7 @@ func TestMapDoubleMonotonicOutOfOrder(t *testing.T) {
 }
 
 func TestMapHistogramMetrics(t *testing.T) {
-	ts := pdata.TimestampFromTime(time.Now())
+	ts := pdata.NewTimestampFromTime(time.Now())
 	slice := pdata.NewHistogramDataPointSlice()
 	point := slice.AppendEmpty()
 	point.SetCount(20)
@@ -530,7 +530,7 @@ func exampleSummaryDataPointSlice(ts pdata.Timestamp, sum float64, count uint64)
 }
 
 func TestMapSummaryMetrics(t *testing.T) {
-	ts := pdata.TimestampFromTime(time.Now())
+	ts := pdata.NewTimestampFromTime(time.Now())
 	slice := exampleSummaryDataPointSlice(ts, 10_001, 101)
 
 	newTranslator := func(tags []string, quantiles bool) *Translator {

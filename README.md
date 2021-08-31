@@ -66,11 +66,11 @@ Triagers ([@open-telemetry/collector-contrib-triagers](https://github.com/orgs/o
 
 Approvers ([@open-telemetry/collector-contrib-approvers](https://github.com/orgs/open-telemetry/teams/collector-contrib-approvers)):
 
+- [Alex Boten](https://github.com/codeboten), Lightstep
 - [Anthony Mirabella](https://github.com/Aneurysm9), AWS
 - [Anuraag Agrawal](https://github.com/anuraaga), AWS
 - [Daniel Jaglowski](https://github.com/djaglowski), observIQ
 - [Dmitrii Anoshin](https://github.com/dmitryax), Splunk
-- [Jay Camp](https://github.com/jrcamp), Splunk
 - [Juraci Paixão Kröhling](https://github.com/jpkrohling), Red Hat
 - [Kevin Brockhoff](https://github.com/kbrockhoff), Daugherty Business Solutions
 - [Pablo Baeyens](https://github.com/mx-psi), DataDog

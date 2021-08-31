@@ -22,7 +22,13 @@ This exporter supports sending traces to [Tanzu Observability](https://tanzu.vmw
     - `application` is set to "defaultApp".
     - `service` is set to "defaultService".
 
-## Example Configuration
+## Configuration
+
+The only required configuration is a Wavefront proxy API endpoint to receive traces from the Tanzu Observability Exporter.
+
+Given a Wavefront proxy at `10.10.10.10`, configured with `customTracingListenerPorts` set to `30001`, the traces endpoint would be `http://10.10.10.10:30001`.
+
+### Example Configuration
 
 ```yaml
 receivers:
@@ -35,8 +41,46 @@ processors:
 exporters:
   tanzuobservability:
     traces:
-      # Hostname and `customTracingListenerPorts` of the Wavefront Proxy
-      endpoint: "http://localhost:30001"
+      endpoint: "http://10.10.10.10:30001"
+
+service:
+  pipelines:
+    traces:
+      receivers: [examplereceiver]
+      processors: [batch]
+      exporters: [tanzuobservability]
+```
+
+### Advanced Configuration
+
+This exporter uses [queuing and retry helpers](https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/exporterhelper/README.md) provided by the core OpenTelemetry Collector. The `retry_on_failure` and `sending_queue` features are enabled by default, but can be disabled using the options below.
+
+* `retry_on_failure` [Details and defaults here](https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/exporterhelper/README.md#configuration). Enabled by default.
+    * `enabled`
+    * `initial_interval`
+    * `max_interval`
+    * `max_elapsed_time`
+* `sending_queue` [Details and defaults here](https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/exporterhelper/README.md#configuration). Enabled by default.
+    * `enabled`
+    * `num_consumers`
+    * `queue_size`
+
+```yaml
+receivers:
+  examplereceiver:
+
+processors:
+  batch:
+    timeout: 10s
+
+exporters:
+  tanzuobservability:
+    traces:
+      endpoint: "http://10.10.10.10:30001"
+    retry_on_failure:
+      max_elapsed_time: 3m
+    sending_queue:
+      queue_size: 10000
 
 service:
   pipelines:

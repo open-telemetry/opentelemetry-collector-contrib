@@ -200,8 +200,8 @@ func generateSumMetrics(tm testMetric) pdata.Metrics {
 
 		for _, value := range tm.metricValues[i] {
 			dp := m.Sum().DataPoints().AppendEmpty()
-			dp.SetStartTimestamp(pdata.TimestampFromTime(now))
-			dp.SetTimestamp(pdata.TimestampFromTime(now.Add(delta * time.Second)))
+			dp.SetStartTimestamp(pdata.NewTimestampFromTime(now))
+			dp.SetTimestamp(pdata.NewTimestampFromTime(now.Add(delta * time.Second)))
 			dp.SetDoubleVal(value)
 		}
 	}
@@ -221,7 +221,7 @@ func generateGaugeMetrics(tm testMetric) pdata.Metrics {
 		m.SetDataType(pdata.MetricDataTypeGauge)
 		for _, value := range tm.metricValues[i] {
 			dp := m.Gauge().DataPoints().AppendEmpty()
-			dp.SetTimestamp(pdata.TimestampFromTime(now.Add(120 * time.Second)))
+			dp.SetTimestamp(pdata.NewTimestampFromTime(now.Add(120 * time.Second)))
 			dp.SetDoubleVal(value)
 		}
 	}

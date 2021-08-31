@@ -64,7 +64,7 @@ func TestLogDataToSignalFxEvents(t *testing.T) {
 
 		l := logSlice.AppendEmpty()
 		l.SetName("shutdown")
-		l.SetTimestamp(pdata.TimestampFromTime(now.Truncate(time.Millisecond)))
+		l.SetTimestamp(pdata.NewTimestampFromTime(now.Truncate(time.Millisecond)))
 		attrs := l.Attributes()
 
 		attrs.InitFromMap(map[string]pdata.AttributeValue{

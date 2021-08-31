@@ -12,7 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//go:build !windows
 // +build !windows
+
 // TODO review if tests should succeed on Windows
 
 package kubeletstatsreceiver
@@ -29,7 +31,7 @@ import (
 	"go.opentelemetry.io/collector/config/configcheck"
 	"go.opentelemetry.io/collector/config/configparser"
 	"go.opentelemetry.io/collector/config/configtls"
-	"go.opentelemetry.io/collector/testbed/testbed"
+	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
@@ -67,7 +69,7 @@ func TestCreateMetricsReceiver(t *testing.T) {
 		context.Background(),
 		componenttest.NewNopReceiverCreateSettings(),
 		tlsConfig(),
-		&testbed.MockMetricConsumer{},
+		consumertest.NewNop(),
 	)
 	require.NoError(t, err)
 	require.NotNil(t, metricsReceiver)
@@ -82,7 +84,7 @@ func TestFactoryInvalidExtraMetadataLabels(t *testing.T) {
 		context.Background(),
 		componenttest.NewNopReceiverCreateSettings(),
 		&cfg,
-		&testbed.MockMetricConsumer{},
+		consumertest.NewNop(),
 	)
 	require.Error(t, err)
 	require.Equal(t, "label \"invalid-label\" is not supported", err.Error())
@@ -102,7 +104,7 @@ func TestFactoryBadAuthType(t *testing.T) {
 		context.Background(),
 		componenttest.NewNopReceiverCreateSettings(),
 		cfg,
-		&testbed.MockMetricConsumer{},
+		consumertest.NewNop(),
 	)
 	require.Error(t, err)
 }

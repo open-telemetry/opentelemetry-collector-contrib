@@ -29,6 +29,7 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
 	dtconfig "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/dynatraceexporter/config"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry"
 )
 
 // Test that the factory creates the default configuration
@@ -40,7 +41,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 		ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
 		RetrySettings:    exporterhelper.DefaultRetrySettings(),
 		QueueSettings:    exporterhelper.DefaultQueueSettings(),
-		ResourceToTelemetrySettings: exporterhelper.ResourceToTelemetrySettings{
+		ResourceToTelemetrySettings: resourcetotelemetry.Settings{
 			Enabled: false,
 		},
 

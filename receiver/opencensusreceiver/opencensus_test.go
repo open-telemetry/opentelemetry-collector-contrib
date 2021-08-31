@@ -43,7 +43,6 @@ import (
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/obsreport/obsreporttest"
-	"go.opentelemetry.io/collector/testutil"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -51,7 +50,8 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/internalconsumertest"
-	internaldata "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testutil"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus"
 )
 
 var ocReceiverID = config.NewIDWithName(typeStr, "receiver_test")
@@ -125,7 +125,7 @@ func TestGrpcGateway_endToEnd(t *testing.T) {
 	got := sink.AllTraces()
 	require.Len(t, got, 1)
 	require.Equal(t, 1, got[0].ResourceSpans().Len())
-	gotNode, gotResource, gotSpans := internaldata.ResourceSpansToOC(got[0].ResourceSpans().At(0))
+	gotNode, gotResource, gotSpans := opencensus.ResourceSpansToOC(got[0].ResourceSpans().At(0))
 
 	wantNode := &commonpb.Node{Identifier: &commonpb.ProcessIdentifier{HostName: "testHost"}}
 	wantResource := &resourcepb.Resource{}
