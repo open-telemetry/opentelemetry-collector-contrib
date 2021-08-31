@@ -350,13 +350,13 @@ func TestSetInternalSpanStatus(t *testing.T) {
 	}{
 		{
 			name:             "No tags set -> OK status",
-			attrs:            pdata.NewAttributeMap().InitFromMap(map[string]pdata.AttributeValue{}),
+			attrs:            pdata.NewAttributeMapFromMap(map[string]pdata.AttributeValue{}),
 			status:           emptyStatus,
 			attrsModifiedLen: 0,
 		},
 		{
 			name: "error tag set -> Error status",
-			attrs: pdata.NewAttributeMap().InitFromMap(map[string]pdata.AttributeValue{
+			attrs: pdata.NewAttributeMapFromMap(map[string]pdata.AttributeValue{
 				tracetranslator.TagError: pdata.NewAttributeValueBool(true),
 			}),
 			status:           errorStatus,
@@ -364,7 +364,7 @@ func TestSetInternalSpanStatus(t *testing.T) {
 		},
 		{
 			name: "status.code is set as int",
-			attrs: pdata.NewAttributeMap().InitFromMap(map[string]pdata.AttributeValue{
+			attrs: pdata.NewAttributeMapFromMap(map[string]pdata.AttributeValue{
 				conventions.OtelStatusCode: pdata.NewAttributeValueInt(1),
 			}),
 			status:           okStatus,
@@ -372,7 +372,7 @@ func TestSetInternalSpanStatus(t *testing.T) {
 		},
 		{
 			name: "status.code, status.message and error tags are set",
-			attrs: pdata.NewAttributeMap().InitFromMap(map[string]pdata.AttributeValue{
+			attrs: pdata.NewAttributeMapFromMap(map[string]pdata.AttributeValue{
 				tracetranslator.TagError:          pdata.NewAttributeValueBool(true),
 				conventions.OtelStatusCode:        pdata.NewAttributeValueInt(int64(pdata.StatusCodeError)),
 				conventions.OtelStatusDescription: pdata.NewAttributeValueString("Error: Invalid argument"),
@@ -382,7 +382,7 @@ func TestSetInternalSpanStatus(t *testing.T) {
 		},
 		{
 			name: "http.status_code tag is set as string",
-			attrs: pdata.NewAttributeMap().InitFromMap(map[string]pdata.AttributeValue{
+			attrs: pdata.NewAttributeMapFromMap(map[string]pdata.AttributeValue{
 				conventions.AttributeHTTPStatusCode: pdata.NewAttributeValueString("404"),
 			}),
 			status:           errorStatus,
@@ -390,7 +390,7 @@ func TestSetInternalSpanStatus(t *testing.T) {
 		},
 		{
 			name: "http.status_code, http.status_message and error tags are set",
-			attrs: pdata.NewAttributeMap().InitFromMap(map[string]pdata.AttributeValue{
+			attrs: pdata.NewAttributeMapFromMap(map[string]pdata.AttributeValue{
 				tracetranslator.TagError:            pdata.NewAttributeValueBool(true),
 				conventions.AttributeHTTPStatusCode: pdata.NewAttributeValueInt(404),
 				tracetranslator.TagHTTPStatusMsg:    pdata.NewAttributeValueString("HTTP 404: Not Found"),
@@ -400,7 +400,7 @@ func TestSetInternalSpanStatus(t *testing.T) {
 		},
 		{
 			name: "status.code has precedence over http.status_code.",
-			attrs: pdata.NewAttributeMap().InitFromMap(map[string]pdata.AttributeValue{
+			attrs: pdata.NewAttributeMapFromMap(map[string]pdata.AttributeValue{
 				conventions.OtelStatusCode:          pdata.NewAttributeValueInt(1),
 				conventions.AttributeHTTPStatusCode: pdata.NewAttributeValueInt(500),
 				tracetranslator.TagHTTPStatusMsg:    pdata.NewAttributeValueString("Server Error"),
@@ -410,7 +410,7 @@ func TestSetInternalSpanStatus(t *testing.T) {
 		},
 		{
 			name: "Ignore http.status_code == 200 if error set to true.",
-			attrs: pdata.NewAttributeMap().InitFromMap(map[string]pdata.AttributeValue{
+			attrs: pdata.NewAttributeMapFromMap(map[string]pdata.AttributeValue{
 				tracetranslator.TagError:            pdata.NewAttributeValueBool(true),
 				conventions.AttributeHTTPStatusCode: pdata.NewAttributeValueInt(200),
 			}),
