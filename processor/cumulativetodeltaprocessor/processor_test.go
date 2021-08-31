@@ -16,6 +16,7 @@ package cumulativetodeltaprocessor
 
 import (
 	"context"
+	"math"
 	"testing"
 	"time"
 
@@ -67,6 +68,20 @@ var (
 			outMetrics: generateTestMetrics(testMetric{
 				metricNames:  []string{"metric_1", "metric_2"},
 				metricValues: [][]float64{{100, 100, 300}, {4}},
+				isCumulative: []bool{false, true},
+			}),
+		},
+		{
+			name:    "cumulative_to_delta_nan_value",
+			metrics: []string{"metric_1"},
+			inMetrics: generateTestMetrics(testMetric{
+				metricNames:  []string{"metric_1", "metric_2"},
+				metricValues: [][]float64{{100, 200, math.NaN()}, {4}},
+				isCumulative: []bool{true, true},
+			}),
+			outMetrics: generateTestMetrics(testMetric{
+				metricNames:  []string{"metric_1", "metric_2"},
+				metricValues: [][]float64{{100, 100, math.NaN()}, {4}},
 				isCumulative: []bool{false, true},
 			}),
 		},
@@ -133,7 +148,11 @@ func TestCumulativeToDeltaProcessor(t *testing.T) {
 					require.Equal(t, eM.Sum().AggregationTemporality(), aM.Sum().AggregationTemporality())
 
 					for j := 0; j < eDataPoints.Len(); j++ {
-						require.Equal(t, eDataPoints.At(j).DoubleVal(), aDataPoints.At(j).DoubleVal())
+						if math.IsNaN(eDataPoints.At(j).DoubleVal()) {
+							assert.True(t, math.IsNaN(aDataPoints.At(j).DoubleVal()))
+						} else {
+							require.Equal(t, eDataPoints.At(j).DoubleVal(), aDataPoints.At(j).DoubleVal())
+						}
 					}
 				}
 
