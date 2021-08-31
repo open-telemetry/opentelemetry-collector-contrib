@@ -117,7 +117,7 @@ jobs:
           path: /home/runner/go/bin
           key: v1-tools-${{ runner.os }}-${{ hashFiles('./internal/tools/go.mod') }}
       - name: Lint
-        run: make -j4 golint
+        run: make -j2 golint
       - name: Checks 
         run: make -j4 checklicense misspell checkdoc
       - name: Codegem
