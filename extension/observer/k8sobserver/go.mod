@@ -3,8 +3,8 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/extension/obser
 go 1.17
 
 require (
-	github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer v0.0.0-00010101000000-000000000000
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.0.0-00010101000000-000000000000
+	github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer v0.34.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.34.0
 	github.com/stretchr/testify v1.7.0
 	go.opentelemetry.io/collector v0.33.1-0.20210831015230-f3de064f3845
 	go.opentelemetry.io/collector/model v0.33.1-0.20210831015230-f3de064f3845 // indirect

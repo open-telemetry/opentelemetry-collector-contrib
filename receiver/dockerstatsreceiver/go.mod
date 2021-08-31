@@ -5,8 +5,8 @@ go 1.17
 require (
 	github.com/docker/docker v20.10.8+incompatible
 	github.com/gobwas/glob v0.2.3
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.0.0-00010101000000-000000000000
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/interval v0.0.0-00010101000000-000000000000
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.34.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/interval v0.34.0
 	github.com/stretchr/testify v1.7.0
 	go.opentelemetry.io/collector v0.33.1-0.20210831015230-f3de064f3845
 	go.opentelemetry.io/collector/model v0.33.1-0.20210831015230-f3de064f3845

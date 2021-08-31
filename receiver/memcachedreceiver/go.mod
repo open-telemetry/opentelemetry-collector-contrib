@@ -4,8 +4,8 @@ go 1.17
 
 require (
 	github.com/grobie/gomemcache v0.0.0-20180201122607-1f779c573665
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.0.0-00010101000000-000000000000
-	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/scraperhelper v0.0.0-00010101000000-000000000000
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.34.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/scraperhelper v0.34.0
 	github.com/stretchr/testify v1.7.0
 	go.opentelemetry.io/collector v0.33.1-0.20210831015230-f3de064f3845
 	go.opentelemetry.io/collector/model v0.33.1-0.20210831015230-f3de064f3845
