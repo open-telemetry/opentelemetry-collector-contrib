@@ -74,7 +74,6 @@ require (
 )
 
 replace (
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common => ../../internal/common
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal => ../../internal/coreinternal
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/interval => ../../internal/interval
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig => ../../internal/k8sconfig
