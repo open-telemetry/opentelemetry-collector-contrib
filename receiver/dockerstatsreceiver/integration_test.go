@@ -28,7 +28,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	conventions "go.opentelemetry.io/collector/translator/conventions/v1.5.0"
+	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
 

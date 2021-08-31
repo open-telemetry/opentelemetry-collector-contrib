@@ -9,8 +9,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.0.0-00010101000000-000000000000
 	github.com/stretchr/testify v1.7.0
 	go.opencensus.io v0.23.0
-	go.opentelemetry.io/collector v0.33.1-0.20210827152330-09258f969908
-	go.opentelemetry.io/collector/model v0.33.1-0.20210827152330-09258f969908
+	go.opentelemetry.io/collector/model v0.33.1-0.20210831015230-f3de064f3845
 	google.golang.org/protobuf v1.27.1
 )
 
@@ -19,6 +18,7 @@ require (
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/grpc-ecosystem/grpc-gateway v1.16.0 // indirect
+	github.com/kr/pretty v0.3.0 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	golang.org/x/net v0.0.0-20210614182718-04defd469f4e // indirect
 	golang.org/x/sys v0.0.0-20210615035016-665e8c7367d1 // indirect
