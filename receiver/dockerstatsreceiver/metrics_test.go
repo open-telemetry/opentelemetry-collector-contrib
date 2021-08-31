@@ -22,7 +22,6 @@ import (
 	"time"
 
 	dtypes "github.com/docker/docker/api/types"
-	docker "github.com/open-telemetry/opentelemetry-collector-contrib/internal/docker"
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/model/pdata"
 	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
