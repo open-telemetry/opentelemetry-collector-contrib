@@ -23,7 +23,7 @@ import (
 func getDimsFromMetric(attributes pdata.AttributeMap) dimensions.NormalizedDimensionList {
 	dimsFromMetric := []dimensions.Dimension{}
 	attributes.Range(func(k string, v pdata.AttributeValue) bool {
-		dimsFromMetric = append(dimsFromMetric, dimensions.NewDimension(k, pdata.AttributeValueToString(v)))
+		dimsFromMetric = append(dimsFromMetric, dimensions.NewDimension(k, v.AsString()))
 		return true
 	})
 	return dimensions.NewNormalizedDimensionList(dimsFromMetric...)

@@ -327,7 +327,7 @@ func resourceToDatadogServiceNameAndAttributeMap(
 	}
 
 	attrs.Range(func(k string, v pdata.AttributeValue) bool {
-		datadogTags[k] = pdata.AttributeValueToString(v)
+		datadogTags[k] = v.AsString()
 		return true
 	})
 
@@ -378,11 +378,11 @@ func aggregateSpanTags(span pdata.Span, datadogTags map[string]string) map[strin
 	span.Attributes().Range(func(k string, v pdata.AttributeValue) bool {
 		switch k {
 		case keySamplingPriority:
-			spanTags[k] = pdata.AttributeValueToString(v)
+			spanTags[k] = v.AsString()
 		case keySamplingRate:
-			spanTags[k] = pdata.AttributeValueToString(v)
+			spanTags[k] = v.AsString()
 		default:
-			spanTags[utils.NormalizeTag(k)] = pdata.AttributeValueToString(v)
+			spanTags[utils.NormalizeTag(k)] = v.AsString()
 		}
 
 		return true

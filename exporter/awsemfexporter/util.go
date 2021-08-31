@@ -172,7 +172,7 @@ func attrMaptoStringMap(attrMap pdata.AttributeMap) map[string]string {
 	strMap := make(map[string]string, attrMap.Len())
 
 	attrMap.Range(func(k string, v pdata.AttributeValue) bool {
-		strMap[k] = pdata.AttributeValueToString(v)
+		strMap[k] = v.AsString()
 		return true
 	})
 	return strMap

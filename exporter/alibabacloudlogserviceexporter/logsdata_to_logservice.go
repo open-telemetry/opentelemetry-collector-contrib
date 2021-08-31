@@ -71,7 +71,7 @@ func resourceToLogContents(resource pdata.Resource) []*sls.LogContent {
 	if hostName, ok := attrs.Get(conventions.AttributeHostName); ok {
 		logContents[0] = &sls.LogContent{
 			Key:   proto.String(slsLogHost),
-			Value: proto.String(pdata.AttributeValueToString(hostName)),
+			Value: proto.String(hostName.AsString()),
 		}
 	} else {
 		logContents[0] = &sls.LogContent{
@@ -83,7 +83,7 @@ func resourceToLogContents(resource pdata.Resource) []*sls.LogContent {
 	if serviceName, ok := attrs.Get(conventions.AttributeServiceName); ok {
 		logContents[1] = &sls.LogContent{
 			Key:   proto.String(slsLogService),
-			Value: proto.String(pdata.AttributeValueToString(serviceName)),
+			Value: proto.String(serviceName.AsString()),
 		}
 	} else {
 		logContents[1] = &sls.LogContent{
@@ -97,7 +97,7 @@ func resourceToLogContents(resource pdata.Resource) []*sls.LogContent {
 		if k == conventions.AttributeServiceName || k == conventions.AttributeHostName {
 			return true
 		}
-		fields[k] = pdata.AttributeValueToString(v)
+		fields[k] = v.AsString()
 		return true
 	})
 	attributeBuffer, _ := json.Marshal(fields)
@@ -160,7 +160,7 @@ func mapLogRecordToLogService(lr pdata.LogRecord,
 
 	fields := map[string]interface{}{}
 	lr.Attributes().Range(func(k string, v pdata.AttributeValue) bool {
-		fields[k] = pdata.AttributeValueToString(v)
+		fields[k] = v.AsString()
 		return true
 	})
 	attributeBuffer, _ := json.Marshal(fields)
@@ -171,7 +171,7 @@ func mapLogRecordToLogService(lr pdata.LogRecord,
 
 	contentsBuffer = append(contentsBuffer, sls.LogContent{
 		Key:   proto.String(slsLogContent),
-		Value: proto.String(pdata.AttributeValueToString(lr.Body())),
+		Value: proto.String(lr.Body().AsString()),
 	})
 
 	contentsBuffer = append(contentsBuffer, sls.LogContent{
