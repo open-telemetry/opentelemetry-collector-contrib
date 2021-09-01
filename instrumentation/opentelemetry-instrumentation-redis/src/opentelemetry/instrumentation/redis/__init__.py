@@ -45,7 +45,7 @@ API
 from typing import Collection
 
 import redis
-from wrapt import ObjectProxy, wrap_function_wrapper
+from wrapt import wrap_function_wrapper
 
 from opentelemetry import trace
 from opentelemetry.instrumentation.instrumentor import BaseInstrumentor

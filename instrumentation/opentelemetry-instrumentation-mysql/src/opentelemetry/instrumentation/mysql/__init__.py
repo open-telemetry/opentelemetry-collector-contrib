@@ -46,7 +46,6 @@ from opentelemetry.instrumentation import dbapi
 from opentelemetry.instrumentation.instrumentor import BaseInstrumentor
 from opentelemetry.instrumentation.mysql.package import _instruments
 from opentelemetry.instrumentation.mysql.version import __version__
-from opentelemetry.trace import get_tracer
 
 
 class MySQLInstrumentor(BaseInstrumentor):

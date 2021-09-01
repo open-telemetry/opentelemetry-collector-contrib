@@ -60,7 +60,6 @@ from opentelemetry.instrumentation.instrumentor import BaseInstrumentor
 from opentelemetry.instrumentation.utils import unwrap
 from opentelemetry.semconv.trace import SpanAttributes
 from opentelemetry.trace import SpanKind, get_tracer
-from opentelemetry.trace.status import Status, StatusCode
 
 logger = getLogger(__name__)
 

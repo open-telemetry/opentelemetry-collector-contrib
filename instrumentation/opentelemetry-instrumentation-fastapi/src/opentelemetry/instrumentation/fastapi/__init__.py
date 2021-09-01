@@ -17,7 +17,6 @@ import typing
 from typing import Collection
 
 import fastapi
-from starlette import middleware
 from starlette.routing import Match
 
 from opentelemetry.instrumentation.asgi import OpenTelemetryMiddleware

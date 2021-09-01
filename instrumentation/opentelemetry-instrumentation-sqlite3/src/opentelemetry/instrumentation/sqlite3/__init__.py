@@ -46,7 +46,6 @@ from opentelemetry.instrumentation import dbapi
 from opentelemetry.instrumentation.instrumentor import BaseInstrumentor
 from opentelemetry.instrumentation.sqlite3.package import _instruments
 from opentelemetry.instrumentation.sqlite3.version import __version__
-from opentelemetry.trace import get_tracer
 
 # No useful attributes of sqlite3 connection object
 _CONNECTION_ATTRIBUTES = {}

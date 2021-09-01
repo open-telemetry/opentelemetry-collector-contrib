@@ -13,7 +13,6 @@
 # limitations under the License.
 
 import os
-import unittest
 
 import psycopg2
 import pytest

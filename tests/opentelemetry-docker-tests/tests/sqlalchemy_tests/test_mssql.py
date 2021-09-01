@@ -13,7 +13,6 @@
 # limitations under the License.
 
 import os
-import unittest
 
 import pytest
 from sqlalchemy.exc import ProgrammingError

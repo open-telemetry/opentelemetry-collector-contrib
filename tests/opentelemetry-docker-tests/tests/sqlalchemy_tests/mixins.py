@@ -15,9 +15,8 @@
 import contextlib
 import logging
 import threading
-import unittest
 
-from sqlalchemy import Column, Integer, String, create_engine, insert
+from sqlalchemy import Column, Integer, String, create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import close_all_sessions, scoped_session, sessionmaker
 

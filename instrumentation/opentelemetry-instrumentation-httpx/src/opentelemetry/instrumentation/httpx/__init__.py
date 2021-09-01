@@ -16,19 +16,15 @@ import logging
 import typing
 
 import httpx
-import wrapt
 
 from opentelemetry import context
 from opentelemetry.instrumentation.httpx.package import _instruments
 from opentelemetry.instrumentation.httpx.version import __version__
 from opentelemetry.instrumentation.instrumentor import BaseInstrumentor
-from opentelemetry.instrumentation.utils import (
-    http_status_to_status_code,
-    unwrap,
-)
+from opentelemetry.instrumentation.utils import http_status_to_status_code
 from opentelemetry.propagate import inject
 from opentelemetry.semconv.trace import SpanAttributes
-from opentelemetry.trace import SpanKind, Tracer, TracerProvider, get_tracer
+from opentelemetry.trace import SpanKind, TracerProvider, get_tracer
 from opentelemetry.trace.span import Span
 from opentelemetry.trace.status import Status
 

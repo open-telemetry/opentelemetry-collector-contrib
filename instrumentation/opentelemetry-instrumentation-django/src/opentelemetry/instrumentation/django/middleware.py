@@ -20,7 +20,6 @@ from django import VERSION as django_version
 from django.http import HttpRequest, HttpResponse
 
 from opentelemetry.context import attach, detach
-from opentelemetry.instrumentation.django.version import __version__
 from opentelemetry.instrumentation.propagators import (
     get_global_response_propagator,
 )

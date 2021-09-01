@@ -41,7 +41,6 @@ from typing import Collection
 
 from pymongo import monitoring
 
-from opentelemetry import trace
 from opentelemetry.instrumentation.instrumentor import BaseInstrumentor
 from opentelemetry.instrumentation.pymongo.package import _instruments
 from opentelemetry.instrumentation.pymongo.version import __version__

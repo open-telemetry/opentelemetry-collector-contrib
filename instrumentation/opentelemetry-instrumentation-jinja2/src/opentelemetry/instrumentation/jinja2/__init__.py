@@ -43,7 +43,6 @@ import logging
 from typing import Collection
 
 import jinja2
-from wrapt import ObjectProxy
 from wrapt import wrap_function_wrapper as _wrap
 
 from opentelemetry.instrumentation.instrumentor import BaseInstrumentor

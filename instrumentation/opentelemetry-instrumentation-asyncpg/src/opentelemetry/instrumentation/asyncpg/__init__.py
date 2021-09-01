@@ -38,7 +38,6 @@ from typing import Collection
 
 import asyncpg
 import wrapt
-from asyncpg import exceptions
 
 from opentelemetry import trace
 from opentelemetry.instrumentation.asyncpg.package import _instruments
