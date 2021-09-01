@@ -112,9 +112,9 @@ require (
 	github.com/honeycombio/libhoney-go v1.15.4 // indirect
 	github.com/iancoleman/strcase v0.2.0 // indirect
 	github.com/imdario/mergo v0.3.11 // indirect
-	github.com/influxdata/influxdb-observability/common v0.2.5 // indirect
-	github.com/influxdata/influxdb-observability/influx2otel v0.2.5 // indirect
-	github.com/influxdata/influxdb-observability/otel2influx v0.2.5 // indirect
+	github.com/influxdata/influxdb-observability/common v0.2.6 // indirect
+	github.com/influxdata/influxdb-observability/influx2otel v0.2.6 // indirect
+	github.com/influxdata/influxdb-observability/otel2influx v0.2.6 // indirect
 	github.com/influxdata/line-protocol/v2 v2.0.0-20210520103755-6551a972d603 // indirect
 	github.com/jaegertracing/jaeger v1.25.0 // indirect
 	github.com/jcmturner/aescts/v2 v2.0.0 // indirect

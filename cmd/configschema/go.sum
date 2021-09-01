@@ -1128,12 +1128,12 @@ github.com/influxdata/httprouter v1.3.1-0.20191122104820-ee83e2772f69/go.mod h1:
 github.com/influxdata/influxdb v1.8.0/go.mod h1:SIzcnsjaHRFpmlxpJ4S3NT64qtEKYweNTUMb/vh0OMQ=
 github.com/influxdata/influxdb v1.8.4/go.mod h1:JugdFhsvvI8gadxOI6noqNeeBHvWNTbfYGtiAn+2jhI=
 github.com/influxdata/influxdb v1.9.2/go.mod h1:UEe3MeD9AaP5rlPIes102IhYua3FhIWZuOXNHxDjSrI=
-github.com/influxdata/influxdb-observability/common v0.2.5 h1:cbQN71qeQ1qU1nJ9poRFq1APVz4DyEZNp30wKyX0wHc=
-github.com/influxdata/influxdb-observability/common v0.2.5/go.mod h1:z2HgcwMehYQKxhXUWJHBr2nLboNdcGofowD69yp410k=
-github.com/influxdata/influxdb-observability/influx2otel v0.2.5 h1:YngdGUcpWvV7d+LV8wxDplAGWE1b4qFFCwDZ8pMVJVw=
-github.com/influxdata/influxdb-observability/influx2otel v0.2.5/go.mod h1:N7LZulD1jZzSEz9l1V/VuP4n+hILYEn/icDHfoK/GEU=
-github.com/influxdata/influxdb-observability/otel2influx v0.2.5 h1:s0xE93/OPpleTCTcdlqOvm8CqLb5TITni9Z4xC+X8nk=
-github.com/influxdata/influxdb-observability/otel2influx v0.2.5/go.mod h1:WUryAytsEC5WEgeCwLoZ03N1B7nBqQeCuM3b00feWXU=
+github.com/influxdata/influxdb-observability/common v0.2.6 h1:mo8JUPWSMrhPSad0B9/M2Mx5r7TFm7nZYpHrHkiRkGY=
+github.com/influxdata/influxdb-observability/common v0.2.6/go.mod h1:mycCRjnw99xT1swTcCmG5+PWDYeVUkeSJIUm2nz0Ltw=
+github.com/influxdata/influxdb-observability/influx2otel v0.2.6 h1:X4zDckD5yikm0BfKR0bsidUMyfFuf7vngcnciP6Uo7I=
+github.com/influxdata/influxdb-observability/influx2otel v0.2.6/go.mod h1:EazOEcALeyUn+H1OFMmkxQEgfrt3VeM7/gdwNvP5xUY=
+github.com/influxdata/influxdb-observability/otel2influx v0.2.6 h1:UP0bwSxxtTxfvSLsEMBHtFuwqC94q82eNK40KJVnSLk=
+github.com/influxdata/influxdb-observability/otel2influx v0.2.6/go.mod h1:oAGCp8sJBJqY1ZtNdUJy5SIlvuLxpgKs/8S+TF+jxtg=
 github.com/influxdata/influxdb1-client v0.0.0-20191209144304-8bf82d3c094d/go.mod h1:qj24IKcXYK6Iy9ceXlo3Tc+vtHo9lIhSX5JddghvEPo=
 github.com/influxdata/influxdb1-client v0.0.0-20200827194710-b269163b24ab/go.mod h1:qj24IKcXYK6Iy9ceXlo3Tc+vtHo9lIhSX5JddghvEPo=
 github.com/influxdata/influxql v1.1.0/go.mod h1:KpVI7okXjK6PRi3Z5B+mtKZli+R1DnZgb3N+tzevNgo=
@@ -2033,7 +2033,6 @@ go.opentelemetry.io/collector v0.34.0 h1:JvIIYAOU78YnU9EBfBOrQDuWgo82zq+p8rpyCKY
 go.opentelemetry.io/collector v0.34.0/go.mod h1:dC/us+doKaoNPEFYK9rwVQKxE2thQbl46T0juCwVbuc=
 go.opentelemetry.io/collector/model v0.30.0/go.mod h1:PcHNnM+RUl0uD8VkSn93PO78N7kQYhfqpI/eki57pl4=
 go.opentelemetry.io/collector/model v0.30.2-0.20210719230137-809cae954ed3/go.mod h1:PcHNnM+RUl0uD8VkSn93PO78N7kQYhfqpI/eki57pl4=
-go.opentelemetry.io/collector/model v0.33.0/go.mod h1:aiTz6Kb1u6CYEx8zblcE2JdgxFtUjaWH9Z2h+g2jEQI=
 go.opentelemetry.io/collector/model v0.34.0 h1:JmuBhBvX0l0bYDBAG9GtJVQKcIQRspPLgHfZqgHLpJc=
 go.opentelemetry.io/collector/model v0.34.0/go.mod h1:+7YCSjJG+MqiIFjauzt7oM2qkqBsaJWh5hcsO4fwsAc=
 go.opentelemetry.io/contrib v0.20.0/go.mod h1:G/EtFaa6qaN7+LxqfIAT3GiZa7Wv5DTBUzl5H4LY0Kc=
