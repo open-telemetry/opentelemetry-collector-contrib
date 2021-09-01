@@ -18,11 +18,10 @@ import (
 	"context"
 	"fmt"
 
-	"go.uber.org/zap"
-	"google.golang.org/grpc/credentials"
-
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configauth"
+	"go.uber.org/zap"
+	"google.golang.org/grpc/credentials"
 )
 
 var _ credentials.PerRPCCredentials = (*PerRPCAuth)(nil)
