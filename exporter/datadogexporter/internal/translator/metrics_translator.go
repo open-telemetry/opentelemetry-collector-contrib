@@ -27,7 +27,6 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/config"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/attributes"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metrics"
 )
 
@@ -233,7 +232,7 @@ func (t *Translator) MapMetrics(md pdata.Metrics) (series []datadog.Metric) {
 			attributeTags = attributes.TagsFromAttributes(rm.Resource().Attributes())
 		}
 
-		host, ok := metadata.HostnameFromAttributes(rm.Resource().Attributes())
+		host, ok := attributes.HostnameFromAttributes(rm.Resource().Attributes())
 		if !ok {
 			fallbackHost, err := t.fallbackHostnameProvider.Hostname(context.Background())
 			host = ""
