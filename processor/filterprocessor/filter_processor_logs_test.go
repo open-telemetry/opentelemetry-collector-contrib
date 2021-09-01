@@ -118,6 +118,29 @@ var (
 				{"log3", "log4"},
 			},
 		},
+		{
+			name:   "emptyFilterIncludeAndExclude",
+			inc:    &LogMatchProperties{LogMatchType: Strict, ResourceAttributes: []filterconfig.Attribute{}},
+			exc:    &LogMatchProperties{LogMatchType: Strict, ResourceAttributes: []filterconfig.Attribute{}},
+			inLogs: testResourceLogs([]logWithResource{{logNames: inLogNames}}),
+			outLN:  [][]string{inLogNames},
+		},
+		{
+			name:   "nilWithResourceAttributesIncludeAndExclude",
+			inc:    &LogMatchProperties{LogMatchType: Strict, ResourceAttributes: []filterconfig.Attribute{}},
+			exc:    &LogMatchProperties{LogMatchType: Strict, ResourceAttributes: []filterconfig.Attribute{}},
+			inLogs: testResourceLogs([]logWithResource{{logNames: inLogNames}}),
+			outLN:  [][]string{inLogNames},
+		},
+		{
+			name:   "allWithMissingResourceAttributesIncludeAndExclude",
+			inc:    &LogMatchProperties{LogMatchType: Strict, ResourceAttributes: []filterconfig.Attribute{{Key: "attr1", Value: "attr1/val2"}}},
+			exc:    &LogMatchProperties{LogMatchType: Strict, ResourceAttributes: []filterconfig.Attribute{{Key: "attr1", Value: "attr1/val1"}}},
+			inLogs: testResourceLogs(inLogForTwoResource),
+			outLN: [][]string{
+				{"log3", "log4"},
+			},
+		},
 	}
 )
 
