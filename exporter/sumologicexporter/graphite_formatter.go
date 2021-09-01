@@ -65,7 +65,7 @@ func (gf *graphiteFormatter) format(f fields, metricName string) string {
 			attr, ok := f.orig.Get(matchset)
 			var value string
 			if ok {
-				value = pdata.AttributeValueToString(attr)
+				value = attr.AsString()
 			} else {
 				value = ""
 			}

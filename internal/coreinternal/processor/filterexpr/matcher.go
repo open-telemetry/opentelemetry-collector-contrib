@@ -17,7 +17,6 @@ package filterexpr
 import (
 	"github.com/antonmedv/expr"
 	"github.com/antonmedv/expr/vm"
-
 	"go.opentelemetry.io/collector/model/pdata"
 )
 

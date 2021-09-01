@@ -32,11 +32,10 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.uber.org/zap"
-	"google.golang.org/grpc"
-
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configauth"
+	"go.uber.org/zap"
+	"google.golang.org/grpc"
 )
 
 func TestOIDCAuthenticationSucceeded(t *testing.T) {
