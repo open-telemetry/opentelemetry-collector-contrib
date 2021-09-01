@@ -6,6 +6,7 @@ import (
 
 	"go.uber.org/zap"
 
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/model/pdata"
 )
 
@@ -14,9 +15,15 @@ type filterMetricProcessor struct {
 	logger *zap.Logger
 }
 
-func newTimestampMetricProcessor(logger *zap.Logger, cfg *Config) (*filterMetricProcessor, error) {
-	logger.Info("Metric timestamp processor configured")
-	return &filterMetricProcessor{cfg: cfg, logger: logger}, nil
+func newTimestampMetricProcessor(logger *zap.Logger, cfg config.Processor) (*filterMetricProcessor, error) {
+	logger.Info("Building metric timestamp processor")
+
+	oCfg := cfg.(*Config)
+	if oCfg.RoundToNearest == nil {
+		return nil, fmt.Errorf("error creating \"timestamp\" processor due to missing required field \"round_to_nearest\" of processor %v", oCfg.ID())
+	}
+
+	return &filterMetricProcessor{cfg: oCfg, logger: logger}, nil
 }
 
 // processMetrics takes incoming metrics and adjusts their timestamps to
