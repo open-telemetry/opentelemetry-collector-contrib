@@ -185,15 +185,19 @@ class TestTornadoInstrumentation(TornadoTest):
     def _test_async_handler(self, url, handler_name):
         response = self.fetch(url)
         self.assertEqual(response.code, 201)
-        spans = self.memory_exporter.get_finished_spans()
+        spans = self.get_finished_spans()
         self.assertEqual(len(spans), 5)
 
-        sub2, sub1, sub_wrapper, server, client = self.sorted_spans(spans)
+        client = spans.by_name("GET")
+        server = spans.by_name(handler_name + ".get")
+        sub_wrapper = spans.by_name("sub-task-wrapper")
 
+        sub2 = spans.by_name("sub-task-2")
         self.assertEqual(sub2.name, "sub-task-2")
         self.assertEqual(sub2.parent, sub_wrapper.context)
         self.assertEqual(sub2.context.trace_id, client.context.trace_id)
 
+        sub1 = spans.by_name("sub-task-1")
         self.assertEqual(sub1.name, "sub-task-1")
         self.assertEqual(sub1.parent, sub_wrapper.context)
         self.assertEqual(sub1.context.trace_id, client.context.trace_id)
@@ -238,9 +242,11 @@ class TestTornadoInstrumentation(TornadoTest):
         response = self.fetch("/error")
         self.assertEqual(response.code, 500)
 
-        spans = self.sorted_spans(self.memory_exporter.get_finished_spans())
+        spans = self.get_finished_spans()
         self.assertEqual(len(spans), 2)
-        server, client = spans
+
+        client = spans.by_name("GET")
+        server = spans.by_name("BadHandler.get")
 
         self.assertEqual(server.name, "BadHandler.get")
         self.assertEqual(server.kind, SpanKind.SERVER)

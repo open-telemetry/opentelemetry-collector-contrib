@@ -14,12 +14,14 @@
 
 import itertools
 import logging
+import sys
 import time
 import unittest
 from unittest import mock
 
 from ddtrace.internal.writer import AgentWriter
 from flaky import flaky
+from pytest import mark
 
 from opentelemetry import trace as trace_api
 from opentelemetry.context import Context
@@ -469,6 +471,9 @@ class TestDatadogSpanExporter(unittest.TestCase):
         self.assertEqual(len(datadog_spans), 128)
         tracer_provider.shutdown()
 
+    @mark.skipif(
+        sys.platform == "win32", reason="unreliable test on windows",
+    )
     def test_span_processor_scheduled_delay(self):
         """Test that spans are exported each schedule_delay_millis"""
         delay = 300

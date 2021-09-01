@@ -13,6 +13,7 @@
 # limitations under the License.
 import io
 import json
+import sys
 import zipfile
 from unittest.mock import Mock, patch
 
@@ -30,6 +31,7 @@ from moto import (  # pylint: disable=import-error
     mock_sts,
     mock_xray,
 )
+from pytest import mark
 
 from opentelemetry import trace as trace_api
 from opentelemetry.context import attach, detach, set_value
@@ -128,12 +130,13 @@ class TestBotocoreInstrumentor(TestBase):
         s3.list_buckets()
         s3.list_buckets()
 
-        spans = self.memory_exporter.get_finished_spans()
+        spans = self.get_finished_spans()
         assert spans
-        span = spans[0]
         self.assertEqual(len(spans), 2)
+
+        buckets_span = spans.by_attr("aws.operation", "ListBuckets")
         self.assertSpanHasAttributes(
-            span,
+            buckets_span,
             {
                 "aws.operation": "ListBuckets",
                 "aws.region": "us-west-2",
@@ -144,14 +147,13 @@ class TestBotocoreInstrumentor(TestBase):
         )
 
         # testing for span error
-        self.memory_exporter.get_finished_spans()
         with self.assertRaises(ParamValidationError):
             s3.list_objects(bucket="mybucket")
-        spans = self.memory_exporter.get_finished_spans()
+        spans = self.get_finished_spans()
         assert spans
-        span = spans[2]
+        objects_span = spans.by_attr("aws.operation", "ListObjects")
         self.assertSpanHasAttributes(
-            span,
+            objects_span,
             {
                 "aws.operation": "ListObjects",
                 "aws.region": "us-west-2",
@@ -159,7 +161,7 @@ class TestBotocoreInstrumentor(TestBase):
             },
         )
         self.assertIs(
-            span.status.status_code, trace_api.StatusCode.ERROR,
+            objects_span.status.status_code, trace_api.StatusCode.ERROR,
         )
 
     # Comment test for issue 1088
@@ -172,10 +174,11 @@ class TestBotocoreInstrumentor(TestBase):
         s3.put_object(**params)
         s3.get_object(Bucket="mybucket", Key="foo")
 
-        spans = self.memory_exporter.get_finished_spans()
+        spans = self.get_finished_spans()
         assert spans
         self.assertEqual(len(spans), 3)
-        create_span = spans[0]
+
+        create_span = spans.by_attr("aws.operation", "CreateBucket")
         self.assertSpanHasAttributes(
             create_span,
             {
@@ -186,7 +189,8 @@ class TestBotocoreInstrumentor(TestBase):
                 SpanAttributes.HTTP_STATUS_CODE: 200,
             },
         )
-        put_span = spans[1]
+
+        put_span = spans.by_attr("aws.operation", "PutObject")
         self.assertSpanHasAttributes(
             put_span,
             {
@@ -197,8 +201,10 @@ class TestBotocoreInstrumentor(TestBase):
                 SpanAttributes.HTTP_STATUS_CODE: 200,
             },
         )
-        self.assertTrue("params.Body" not in spans[1].attributes.keys())
-        get_span = spans[2]
+        self.assertTrue("params.Body" not in put_span.attributes.keys())
+
+        get_span = spans.by_attr("aws.operation", "GetObject")
+
         self.assertSpanHasAttributes(
             get_span,
             {
@@ -359,6 +365,10 @@ class TestBotocoreInstrumentor(TestBase):
             Path="/my-path/",
         )["Role"]["Arn"]
 
+    @mark.skipif(
+        sys.platform == "win32",
+        reason="requires docker and Github CI Windows does not have docker installed by default",
+    )
     @mock_lambda
     def test_lambda_invoke_propagation(self):
 
