@@ -61,7 +61,7 @@ func (fmp *filterMetricProcessor) processMetrics(_ context.Context, src pdata.Me
 					}
 				default:
 					fmt.Printf("Unknown type")
-					return src, fmt.Errorf("unknwon type: %s", m.DataType().String())
+					return src, fmt.Errorf("unknown type: %s", m.DataType().String())
 				}
 			}
 		}
