@@ -53,12 +53,12 @@ func (hc *ecsHealthCheckExtension) Start(_ context.Context, host component.Host)
 		err error
 	)
 
-	err = hc.initExporter()
+	err = hc.config.Validate()
 	if err != nil {
 		return err
 	}
 
-	err = hc.config.Validate()
+	err = hc.initExporter()
 	if err != nil {
 		return err
 	}
@@ -121,11 +121,10 @@ func (hc *ecsHealthCheckExtension) Shutdown(context.Context) error {
 
 func newServer(config Config, logger *zap.Logger) *ecsHealthCheckExtension {
 	hc := &ecsHealthCheckExtension{
-		config:   config,
-		logger:   logger,
-		state:    healthcheck.New(),
-		server:   http.Server{},
-		exporter: newECSHealthCheckExporter(),
+		config: config,
+		logger: logger,
+		state:  healthcheck.New(),
+		server: http.Server{},
 	}
 
 	hc.state.SetLogger(logger)
