@@ -1,6 +1,7 @@
 # Splunk HEC Raw Receiver
 
 The Splunk HEC raw receiver accepts data delimited by newline separators and ingests them as logs.
+See [this example](https://docs.splunk.com/Documentation/Splunk/8.2.2/Data/HECExamples#Example_3:_Send_raw_text_to_HEC) for a use of this receiver.
 
 Supported pipeline types: logs
 

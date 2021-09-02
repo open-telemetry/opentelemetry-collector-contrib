@@ -143,9 +143,7 @@ func (r *splunkReceiver) Shutdown(context.Context) error {
 
 func (r *splunkReceiver) handleReq(resp http.ResponseWriter, req *http.Request) {
 	ctx := req.Context()
-	if r.logsConsumer == nil {
-		ctx = r.obsrecv.StartMetricsOp(ctx)
-	}
+	ctx = r.obsrecv.StartLogsOp(ctx)
 	reqPath := req.URL.Path
 	if !r.config.pathGlob.Match(reqPath) {
 		r.failRequest(ctx, resp, http.StatusNotFound, notFoundRespBody, nil)
@@ -163,6 +161,11 @@ func (r *splunkReceiver) handleReq(resp http.ResponseWriter, req *http.Request) 
 		return
 	}
 
+	if req.ContentLength == 0 {
+		resp.Write(okRespBody)
+		return
+	}
+
 	bodyReader := req.Body
 	if encoding == gzipEncoding {
 		var err error
@@ -171,11 +174,6 @@ func (r *splunkReceiver) handleReq(resp http.ResponseWriter, req *http.Request) 
 			r.failRequest(ctx, resp, http.StatusBadRequest, errGzipReaderRespBody, err)
 			return
 		}
-	}
-
-	if req.ContentLength == 0 {
-		resp.Write(okRespBody)
-		return
 	}
 
 	sc := bufio.NewScanner(bodyReader)
@@ -210,6 +208,7 @@ func (r *splunkReceiver) failRequest(
 	resp.WriteHeader(httpStatusCode)
 	if len(jsonResponse) > 0 {
 		// The response needs to be written as a JSON string.
+		resp.Header().Add("Content-Type", "application/json")
 		_, writeErr := resp.Write(jsonResponse)
 		if writeErr != nil {
 			r.logger.Warn("Error writing HTTP response message", zap.Error(writeErr))
