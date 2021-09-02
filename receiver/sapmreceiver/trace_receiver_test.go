@@ -36,10 +36,9 @@ import (
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/model/pdata"
-	"go.opentelemetry.io/collector/testutil"
-	conventions "go.opentelemetry.io/collector/translator/conventions/v1.5.0"
-	tracetranslator "go.opentelemetry.io/collector/translator/trace"
+	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 )
 
@@ -62,8 +61,8 @@ func expectedTraceData(t1, t2, t3 time.Time) pdata.Traces {
 	span0.SetParentSpanID(parentSpanID)
 	span0.SetTraceID(traceID)
 	span0.SetName("DBSearch")
-	span0.SetStartTimestamp(pdata.TimestampFromTime(t1))
-	span0.SetEndTimestamp(pdata.TimestampFromTime(t2))
+	span0.SetStartTimestamp(pdata.NewTimestampFromTime(t1))
+	span0.SetEndTimestamp(pdata.NewTimestampFromTime(t2))
 	// Set invalid status code that is not with the valid list of value.
 	// This will be set from incoming invalid code.
 	span0.Status().SetCode(trace.StatusCodeNotFound)
@@ -73,8 +72,8 @@ func expectedTraceData(t1, t2, t3 time.Time) pdata.Traces {
 	span1.SetSpanID(parentSpanID)
 	span1.SetTraceID(traceID)
 	span1.SetName("ProxyFetch")
-	span1.SetStartTimestamp(pdata.TimestampFromTime(t2))
-	span1.SetEndTimestamp(pdata.TimestampFromTime(t3))
+	span1.SetStartTimestamp(pdata.NewTimestampFromTime(t2))
+	span1.SetEndTimestamp(pdata.NewTimestampFromTime(t3))
 	// Set invalid status code that is not with the valid list of value.
 	// This will be set from incoming invalid code.
 	span1.Status().SetCode(trace.StatusCodeInternal)
@@ -106,8 +105,8 @@ func grpcFixture(t1 time.Time) *model.Batch {
 				StartTime:     t1,
 				Duration:      10 * time.Minute,
 				Tags: []model.KeyValue{
-					model.String(tracetranslator.TagStatusMsg, "Stale indices"),
-					model.Int64(tracetranslator.TagStatusCode, trace.StatusCodeNotFound),
+					model.String(conventions.OtelStatusDescription, "Stale indices"),
+					model.Int64(conventions.OtelStatusCode, trace.StatusCodeNotFound),
 					model.Bool("error", true),
 				},
 				References: []model.SpanRef{
@@ -125,8 +124,8 @@ func grpcFixture(t1 time.Time) *model.Batch {
 				StartTime:     t1.Add(10 * time.Minute),
 				Duration:      2 * time.Second,
 				Tags: []model.KeyValue{
-					model.String(tracetranslator.TagStatusMsg, "Frontend crash"),
-					model.Int64(tracetranslator.TagStatusCode, trace.StatusCodeInternal),
+					model.String(conventions.OtelStatusDescription, "Frontend crash"),
+					model.Int64(conventions.OtelStatusCode, trace.StatusCodeInternal),
 					model.Bool("error", true),
 				},
 			},

@@ -17,8 +17,6 @@ package sumologicexporter
 import (
 	"fmt"
 	"regexp"
-
-	tracetranslator "go.opentelemetry.io/collector/translator/trace"
 )
 
 type sourceFormats struct {
@@ -78,7 +76,7 @@ func (s *sourceFormat) format(f fields) string {
 	for _, matchset := range s.matches {
 		v, ok := f.orig.Get(matchset)
 		if ok {
-			labels = append(labels, tracetranslator.AttributeValueToString(v))
+			labels = append(labels, v.AsString())
 		} else {
 			labels = append(labels, "")
 		}

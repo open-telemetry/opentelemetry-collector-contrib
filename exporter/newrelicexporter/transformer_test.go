@@ -347,8 +347,8 @@ func TestTransformSpan(t *testing.T) {
 				s.SetTraceID(pdata.NewTraceID([...]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}))
 				s.SetSpanID(pdata.NewSpanID([...]byte{0, 0, 0, 0, 0, 0, 0, 5}))
 				s.SetName("with time")
-				s.SetStartTimestamp(pdata.TimestampFromTime(now))
-				s.SetEndTimestamp(pdata.TimestampFromTime(now.Add(time.Second * 5)))
+				s.SetStartTimestamp(pdata.NewTimestampFromTime(now))
+				s.SetEndTimestamp(pdata.NewTimestampFromTime(now.Add(time.Second * 5)))
 				return s
 			},
 			want: telemetry.Span{
@@ -392,7 +392,7 @@ func TestTransformSpan(t *testing.T) {
 
 				event := s.Events().AppendEmpty()
 				event.SetName("this is the event name")
-				event.SetTimestamp(pdata.TimestampFromTime(now))
+				event.SetTimestamp(pdata.NewTimestampFromTime(now))
 				return s
 			},
 			want: telemetry.Span{
@@ -464,7 +464,7 @@ func TestTransformSpan(t *testing.T) {
 				ev.EnsureCapacity(1)
 				event := ev.AppendEmpty()
 				event.SetName("this is the event name")
-				event.SetTimestamp(pdata.TimestampFromTime(now))
+				event.SetTimestamp(pdata.NewTimestampFromTime(now))
 				event.SetDroppedAttributesCount(1)
 				tgt := s.Events().AppendEmpty()
 				event.CopyTo(tgt)
@@ -543,7 +543,7 @@ func testTransformMetricWithError(t *testing.T, metric pdata.Metric, expectedErr
 }
 
 func TestTransformGauge(t *testing.T) {
-	ts := pdata.TimestampFromTime(time.Unix(1, 0))
+	ts := pdata.NewTimestampFromTime(time.Unix(1, 0))
 	expected := []telemetry.Metric{
 		telemetry.Gauge{
 			Name:      "gauge",
@@ -582,8 +582,8 @@ func TestTransformGauge(t *testing.T) {
 }
 
 func TestTransformSum(t *testing.T) {
-	start := pdata.TimestampFromTime(time.Unix(1, 0))
-	end := pdata.TimestampFromTime(time.Unix(3, 0))
+	start := pdata.NewTimestampFromTime(time.Unix(1, 0))
+	end := pdata.NewTimestampFromTime(time.Unix(3, 0))
 
 	expected := []telemetry.Metric{
 		telemetry.Count{
@@ -676,8 +676,8 @@ func TestTransformDeltaSummary(t *testing.T) {
 }
 
 func testTransformDeltaSummaryWithValues(t *testing.T, testName string, count uint64, sum float64, min float64, max float64) {
-	start := pdata.TimestampFromTime(time.Unix(1, 0))
-	end := pdata.TimestampFromTime(time.Unix(3, 0))
+	start := pdata.NewTimestampFromTime(time.Unix(1, 0))
+	end := pdata.NewTimestampFromTime(time.Unix(3, 0))
 
 	expected := []telemetry.Metric{
 		telemetry.Summary{
@@ -751,8 +751,8 @@ func testTransformDeltaSummaryWithValues(t *testing.T, testName string, count ui
 }
 
 func TestUnsupportedMetricTypes(t *testing.T) {
-	start := pdata.TimestampFromTime(time.Unix(1, 0))
-	end := pdata.TimestampFromTime(time.Unix(3, 0))
+	start := pdata.NewTimestampFromTime(time.Unix(1, 0))
+	end := pdata.NewTimestampFromTime(time.Unix(3, 0))
 	{
 		m := pdata.NewMetric()
 		m.SetName("no")
@@ -800,7 +800,7 @@ func TestTransformer_Log(t *testing.T) {
 			name: "Basic Conversion",
 			logFunc: func() pdata.LogRecord {
 				log := pdata.NewLogRecord()
-				timestamp := pdata.TimestampFromTime(time.Unix(0, 0).UTC())
+				timestamp := pdata.NewTimestampFromTime(time.Unix(0, 0).UTC())
 				log.SetTimestamp(timestamp)
 				return log
 			},
@@ -857,7 +857,7 @@ func TestTransformer_Log(t *testing.T) {
 			name: "With traceID and spanID",
 			logFunc: func() pdata.LogRecord {
 				log := pdata.NewLogRecord()
-				timestamp := pdata.TimestampFromTime(time.Unix(0, 0).UTC())
+				timestamp := pdata.NewTimestampFromTime(time.Unix(0, 0).UTC())
 				log.SetTraceID(pdata.NewTraceID([...]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}))
 				log.SetSpanID(pdata.NewSpanID([...]byte{0, 0, 0, 0, 0, 0, 0, 1}))
 				log.SetTimestamp(timestamp)
@@ -877,7 +877,7 @@ func TestTransformer_Log(t *testing.T) {
 			name: "With dropped attribute count",
 			logFunc: func() pdata.LogRecord {
 				log := pdata.NewLogRecord()
-				timestamp := pdata.TimestampFromTime(time.Unix(0, 0).UTC())
+				timestamp := pdata.NewTimestampFromTime(time.Unix(0, 0).UTC())
 				log.SetTimestamp(timestamp)
 				log.SetDroppedAttributesCount(4)
 				return log

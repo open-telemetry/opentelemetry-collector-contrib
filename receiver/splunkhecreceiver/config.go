@@ -22,11 +22,12 @@ import (
 	"github.com/gobwas/glob"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
+	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 )
 
-// Config defines configuration for the SignalFx receiver.
+// Config defines configuration for the Splunk HEC receiver.
 type Config struct {
 	config.ReceiverSettings       `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
 	confighttp.HTTPServerSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
@@ -35,10 +36,31 @@ type Config struct {
 	// Path we will listen on, defaults to `*` (anything matches)
 	Path     string `mapstructure:"path"`
 	pathGlob glob.Glob
+	// SourceKey informs the receiver to map the source field to a specific unified model attribute.
+	SourceKey string `mapstructure:"source_key"`
+	// SourceTypeKey informs the receiver to map the sourcetype field to a specific unified model attribute.
+	SourceTypeKey string `mapstructure:"sourcetype_key"`
+	// IndexKey informs the receiver to map the index field to a specific unified model attribute.
+	IndexKey string `mapstructure:"index_key"`
+	// HostKey informs the receiver to map the host field to a specific unified model attribute.
+	HostKey string `mapstructure:"host_key"`
 }
 
 // initialize and initialize the configuration
 func (c *Config) initialize() error {
+	if c.SourceKey == "" {
+		c.SourceKey = splunk.DefaultSourceLabel
+	}
+	if c.SourceTypeKey == "" {
+		c.SourceTypeKey = splunk.DefaultSourceTypeLabel
+	}
+	if c.IndexKey == "" {
+		c.IndexKey = splunk.DefaultIndexLabel
+	}
+	if c.HostKey == "" {
+		c.HostKey = conventions.AttributeHostName
+	}
+
 	path := c.Path
 	if path == "" {
 		path = "*"
@@ -50,6 +72,22 @@ func (c *Config) initialize() error {
 	c.pathGlob = glob
 	_, err = extractPortFromEndpoint(c.Endpoint)
 	return err
+}
+
+func (c *Config) GetSourceKey() string {
+	return c.SourceKey
+}
+
+func (c *Config) GetSourceTypeKey() string {
+	return c.SourceTypeKey
+}
+
+func (c *Config) GetIndexKey() string {
+	return c.IndexKey
+}
+
+func (c *Config) GetHostKey() string {
+	return c.HostKey
 }
 
 // extract the port number from string in "address:port" format. If the

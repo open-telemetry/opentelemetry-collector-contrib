@@ -21,7 +21,6 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/model/pdata"
-	tracetranslator "go.opentelemetry.io/collector/translator/trace"
 )
 
 type graphiteFormatter struct {
@@ -66,7 +65,7 @@ func (gf *graphiteFormatter) format(f fields, metricName string) string {
 			attr, ok := f.orig.Get(matchset)
 			var value string
 			if ok {
-				value = tracetranslator.AttributeValueToString(attr)
+				value = attr.AsString()
 			} else {
 				value = ""
 			}

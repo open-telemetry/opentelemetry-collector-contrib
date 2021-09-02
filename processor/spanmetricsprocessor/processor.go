@@ -28,16 +28,15 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/model/pdata"
-	conventions "go.opentelemetry.io/collector/translator/conventions/v1.5.0"
-	tracetranslator "go.opentelemetry.io/collector/translator/trace"
+	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
 	"go.uber.org/zap"
 )
 
 const (
 	serviceNameKey     = conventions.AttributeServiceName
-	operationKey       = "operation" // is there a constant we can refer to?
-	spanKindKey        = tracetranslator.TagSpanKind
-	statusCodeKey      = tracetranslator.TagStatusCode
+	operationKey       = "operation"   // OpenTelemetry non-standard constant.
+	spanKindKey        = "span.kind"   // OpenTelemetry non-standard constant.
+	statusCodeKey      = "status.code" // OpenTelemetry non-standard constant.
 	metricKeySeparator = string(byte(0))
 )
 
@@ -49,9 +48,6 @@ var (
 		2, 4, 6, 8, 10, 50, 100, 200, 400, 800, 1000, 1400, 2000, 5000, 10_000, 15_000, maxDurationMs,
 	}
 )
-
-// dimKV represents the dimension key-value pairs for a metric.
-type dimKV map[string]string
 
 type metricKey string
 
@@ -80,7 +76,7 @@ type processorImp struct {
 
 	// A cache of dimension key-value maps keyed by a unique identifier formed by a concatenation of its values:
 	// e.g. { "foo/barOK": { "serviceName": "foo", "operation": "/bar", "status_code": "OK" }}
-	metricKeyToDimensions map[metricKey]dimKV
+	metricKeyToDimensions map[metricKey]pdata.AttributeMap
 }
 
 func newProcessor(logger *zap.Logger, config config.Processor, nextConsumer consumer.Traces) (*processorImp, error) {
@@ -112,7 +108,7 @@ func newProcessor(logger *zap.Logger, config config.Processor, nextConsumer cons
 		latencyBucketCounts:   make(map[metricKey][]uint64),
 		nextConsumer:          nextConsumer,
 		dimensions:            pConfig.Dimensions,
-		metricKeyToDimensions: make(map[metricKey]dimKV),
+		metricKeyToDimensions: make(map[metricKey]pdata.AttributeMap),
 	}, nil
 }
 
@@ -246,14 +242,14 @@ func (p *processorImp) collectLatencyMetrics(ilm pdata.InstrumentationLibraryMet
 		mLatency.Histogram().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
 
 		dpLatency := mLatency.Histogram().DataPoints().AppendEmpty()
-		dpLatency.SetStartTimestamp(pdata.TimestampFromTime(p.startTime))
-		dpLatency.SetTimestamp(pdata.TimestampFromTime(time.Now()))
+		dpLatency.SetStartTimestamp(pdata.NewTimestampFromTime(p.startTime))
+		dpLatency.SetTimestamp(pdata.NewTimestampFromTime(time.Now()))
 		dpLatency.SetExplicitBounds(p.latencyBounds)
 		dpLatency.SetBucketCounts(p.latencyBucketCounts[key])
 		dpLatency.SetCount(p.latencyCount[key])
 		dpLatency.SetSum(p.latencySum[key])
 
-		dpLatency.LabelsMap().InitFromMap(p.metricKeyToDimensions[key])
+		p.metricKeyToDimensions[key].CopyTo(dpLatency.Attributes())
 	}
 }
 
@@ -268,11 +264,11 @@ func (p *processorImp) collectCallMetrics(ilm pdata.InstrumentationLibraryMetric
 		mCalls.Sum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
 
 		dpCalls := mCalls.Sum().DataPoints().AppendEmpty()
-		dpCalls.SetStartTimestamp(pdata.TimestampFromTime(p.startTime))
-		dpCalls.SetTimestamp(pdata.TimestampFromTime(time.Now()))
+		dpCalls.SetStartTimestamp(pdata.NewTimestampFromTime(p.startTime))
+		dpCalls.SetTimestamp(pdata.NewTimestampFromTime(time.Now()))
 		dpCalls.SetIntVal(p.callSum[key])
 
-		dpCalls.LabelsMap().InitFromMap(p.metricKeyToDimensions[key])
+		p.metricKeyToDimensions[key].CopyTo(dpCalls.Attributes())
 	}
 }
 
@@ -336,19 +332,19 @@ func (p *processorImp) updateLatencyMetrics(key metricKey, latency float64, inde
 	p.latencyBucketCounts[key][index]++
 }
 
-func buildDimensionKVs(serviceName string, span pdata.Span, optionalDims []Dimension) dimKV {
-	dims := make(dimKV)
-	dims[serviceNameKey] = serviceName
-	dims[operationKey] = span.Name()
-	dims[spanKindKey] = span.Kind().String()
-	dims[statusCodeKey] = span.Status().Code().String()
+func buildDimensionKVs(serviceName string, span pdata.Span, optionalDims []Dimension) pdata.AttributeMap {
+	dims := pdata.NewAttributeMap()
+	dims.UpsertString(serviceNameKey, serviceName)
+	dims.UpsertString(operationKey, span.Name())
+	dims.UpsertString(spanKindKey, span.Kind().String())
+	dims.UpsertString(statusCodeKey, span.Status().Code().String())
 	spanAttr := span.Attributes()
 	for _, d := range optionalDims {
 		if attr, ok := spanAttr.Get(d.Name); ok {
-			dims[d.Name] = tracetranslator.AttributeValueToString(attr)
+			dims.Upsert(d.Name, attr)
 		} else if d.Default != nil {
 			// Set the default if configured, otherwise this metric should have no value set for the dimension.
-			dims[d.Name] = *d.Default
+			dims.UpsertString(d.Name, *d.Default)
 		}
 	}
 	return dims
@@ -381,7 +377,7 @@ func buildKey(serviceName string, span pdata.Span, optionalDims []Dimension) met
 			value = *d.Default
 		}
 		if attr, ok := spanAttr.Get(d.Name); ok {
-			value = tracetranslator.AttributeValueToString(attr)
+			value = attr.AsString()
 		}
 		concatDimensionValue(&metricKeyBuilder, value, true)
 	}

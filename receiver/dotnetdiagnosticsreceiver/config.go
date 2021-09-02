@@ -15,7 +15,7 @@
 package dotnetdiagnosticsreceiver
 
 import (
-	"go.opentelemetry.io/collector/receiver/scraperhelper"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/scraperhelper"
 )
 
 type Config struct {

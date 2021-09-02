@@ -18,7 +18,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/model/pdata"
-	conventions "go.opentelemetry.io/collector/translator/conventions/v1.5.0"
+	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
@@ -69,12 +69,12 @@ func mapLogRecordToSplunkEvent(res pdata.Resource, lr pdata.LogRecord, config *C
 		case conventions.AttributeHostName:
 			host = v.StringVal()
 			fields[k] = v.StringVal()
-		case splunk.SourceLabel:
+		case splunk.DefaultSourceLabel:
 			source = v.StringVal()
 			fields[k] = v.StringVal()
-		case splunk.SourcetypeLabel:
+		case splunk.DefaultSourceTypeLabel:
 			sourcetype = v.StringVal()
-		case splunk.IndexLabel:
+		case splunk.DefaultIndexLabel:
 			index = v.StringVal()
 		default:
 			fields[k] = convertAttributeValue(v, logger)
@@ -86,12 +86,12 @@ func mapLogRecordToSplunkEvent(res pdata.Resource, lr pdata.LogRecord, config *C
 		case conventions.AttributeHostName:
 			host = v.StringVal()
 			fields[k] = v.StringVal()
-		case splunk.SourceLabel:
+		case splunk.DefaultSourceLabel:
 			source = v.StringVal()
 			fields[k] = v.StringVal()
-		case splunk.SourcetypeLabel:
+		case splunk.DefaultSourceTypeLabel:
 			sourcetype = v.StringVal()
-		case splunk.IndexLabel:
+		case splunk.DefaultIndexLabel:
 			index = v.StringVal()
 		default:
 			fields[k] = convertAttributeValue(v, logger)

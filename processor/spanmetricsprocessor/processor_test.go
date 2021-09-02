@@ -30,7 +30,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/exporter/otlpexporter"
 	"go.opentelemetry.io/collector/model/pdata"
-	conventions "go.opentelemetry.io/collector/translator/conventions/v1.5.0"
+	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
 	"go.uber.org/zap"
 	"google.golang.org/grpc/metadata"
 
@@ -61,7 +61,7 @@ type metricID struct {
 }
 
 type metricDataPoint interface {
-	LabelsMap() pdata.StringMap
+	Attributes() pdata.AttributeMap
 }
 
 type serviceSpans struct {
@@ -257,7 +257,7 @@ func TestMetricKeyCache(t *testing.T) {
 	// Validate
 	require.NoError(t, err)
 
-	origKeyCache := make(map[metricKey]dimKV)
+	origKeyCache := make(map[metricKey]pdata.AttributeMap)
 	for k, v := range p.metricKeyToDimensions {
 		origKeyCache[k] = v
 	}
@@ -313,7 +313,7 @@ func newProcessorImp(mexp *mocks.MetricsExporter, tcon *mocks.TracesConsumer, de
 			// Leave the default value unset to test that this dimension should not be added to the metric.
 			{notInSpanAttrName1, nil},
 		},
-		metricKeyToDimensions: make(map[metricKey]dimKV),
+		metricKeyToDimensions: make(map[metricKey]pdata.AttributeMap),
 	}
 }
 
@@ -395,26 +395,26 @@ func verifyConsumeMetricsInput(input pdata.Metrics, t *testing.T) bool {
 
 func verifyMetricLabels(dp metricDataPoint, t *testing.T, seenMetricIDs map[metricID]bool) {
 	mID := metricID{}
-	wantDimensions := map[string]string{
-		stringAttrName:     "stringAttrValue",
-		intAttrName:        "99",
-		doubleAttrName:     "99.99",
-		boolAttrName:       "true",
-		nullAttrName:       "",
-		arrayAttrName:      "[]",
-		mapAttrName:        "{}",
-		notInSpanAttrName0: "defaultNotInSpanAttrVal",
+	wantDimensions := map[string]pdata.AttributeValue{
+		stringAttrName:     pdata.NewAttributeValueString("stringAttrValue"),
+		intAttrName:        pdata.NewAttributeValueInt(99),
+		doubleAttrName:     pdata.NewAttributeValueDouble(99.99),
+		boolAttrName:       pdata.NewAttributeValueBool(true),
+		nullAttrName:       pdata.NewAttributeValueNull(),
+		arrayAttrName:      pdata.NewAttributeValueArray(),
+		mapAttrName:        pdata.NewAttributeValueMap(),
+		notInSpanAttrName0: pdata.NewAttributeValueString("defaultNotInSpanAttrVal"),
 	}
-	dp.LabelsMap().Range(func(k string, v string) bool {
+	dp.Attributes().Range(func(k string, v pdata.AttributeValue) bool {
 		switch k {
 		case serviceNameKey:
-			mID.service = v
+			mID.service = v.StringVal()
 		case operationKey:
-			mID.operation = v
+			mID.operation = v.StringVal()
 		case spanKindKey:
-			mID.kind = v
+			mID.kind = v.StringVal()
 		case statusCodeKey:
-			mID.statusCode = v
+			mID.statusCode = v.StringVal()
 		case notInSpanAttrName1:
 			assert.Fail(t, notInSpanAttrName1+" should not be in this metric")
 		default:
@@ -485,8 +485,8 @@ func initSpan(span span, s pdata.Span) {
 	s.SetKind(span.kind)
 	s.Status().SetCode(span.statusCode)
 	now := time.Now()
-	s.SetStartTimestamp(pdata.TimestampFromTime(now))
-	s.SetEndTimestamp(pdata.TimestampFromTime(now.Add(sampleLatencyDuration)))
+	s.SetStartTimestamp(pdata.NewTimestampFromTime(now))
+	s.SetEndTimestamp(pdata.NewTimestampFromTime(now.Add(sampleLatencyDuration)))
 	s.Attributes().InsertString(stringAttrName, "stringAttrValue")
 	s.Attributes().InsertInt(intAttrName, 99)
 	s.Attributes().InsertDouble(doubleAttrName, 99.99)

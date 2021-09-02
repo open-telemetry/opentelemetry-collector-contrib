@@ -21,7 +21,7 @@ import (
 
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
-	conventions "go.opentelemetry.io/collector/translator/conventions/v1.5.0"
+	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
 	"go.uber.org/zap"
 	appsv1 "k8s.io/api/apps/v1"
 	batchv1 "k8s.io/api/batch/v1"
@@ -228,7 +228,7 @@ func collectPodReplicaSetProperties(pod *corev1.Pod, replicaSetstore cache.Store
 		if deployRef := utils.FindOwnerWithKind(replicaSetObj.OwnerReferences, k8sKindDeployment); deployRef != nil {
 			return getWorkloadProperties(deployRef, conventions.AttributeK8SDeploymentName)
 		}
-		return getWorkloadProperties(rsRef, conventions.AttributeK8SReplicasetName)
+		return getWorkloadProperties(rsRef, conventions.AttributeK8SReplicaSetName)
 	}
 	return nil
 }

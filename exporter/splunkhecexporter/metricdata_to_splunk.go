@@ -19,8 +19,7 @@ import (
 	"strconv"
 
 	"go.opentelemetry.io/collector/model/pdata"
-	conventions "go.opentelemetry.io/collector/translator/conventions/v1.5.0"
-	tracetranslator "go.opentelemetry.io/collector/translator/trace"
+	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
@@ -57,22 +56,22 @@ func metricDataToSplunk(logger *zap.Logger, data pdata.Metrics, config *Config) 
 		if conventionHost, isSet := attributes.Get(conventions.AttributeHostName); isSet {
 			host = conventionHost.StringVal()
 		}
-		if sourceSet, isSet := attributes.Get(splunk.SourceLabel); isSet {
+		if sourceSet, isSet := attributes.Get(splunk.DefaultSourceLabel); isSet {
 			source = sourceSet.StringVal()
 		}
-		if sourcetypeSet, isSet := attributes.Get(splunk.SourcetypeLabel); isSet {
+		if sourcetypeSet, isSet := attributes.Get(splunk.DefaultSourceTypeLabel); isSet {
 			sourceType = sourcetypeSet.StringVal()
 		}
-		if indexSet, isSet := attributes.Get(splunk.IndexLabel); isSet {
+		if indexSet, isSet := attributes.Get(splunk.DefaultIndexLabel); isSet {
 			index = indexSet.StringVal()
 		}
 		attributes.Range(func(k string, v pdata.AttributeValue) bool {
-			commonFields[k] = tracetranslator.AttributeValueToString(v)
+			commonFields[k] = v.AsString()
 			return true
 		})
 
 		rm.Resource().Attributes().Range(func(k string, v pdata.AttributeValue) bool {
-			commonFields[k] = tracetranslator.AttributeValueToString(v)
+			commonFields[k] = v.AsString()
 			return true
 		})
 		ilms := rm.InstrumentationLibraryMetrics()
@@ -230,7 +229,7 @@ func createEvent(timestamp pdata.Timestamp, host string, source string, sourceTy
 
 func populateAttributes(fields map[string]interface{}, attributeMap pdata.AttributeMap) {
 	attributeMap.Range(func(k string, v pdata.AttributeValue) bool {
-		fields[k] = v.StringVal()
+		fields[k] = v.AsString()
 		return true
 	})
 }

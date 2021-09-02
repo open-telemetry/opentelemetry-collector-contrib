@@ -5,19 +5,14 @@ CMD?=
 OTEL_VERSION=main
 
 BUILD_INFO_IMPORT_PATH=github.com/open-telemetry/opentelemetry-collector-contrib/internal/version
-GIT_SHA=$(shell git rev-parse --short HEAD)
-BUILD_X1=-X $(BUILD_INFO_IMPORT_PATH).GitHash=$(GIT_SHA)
-VERSION ?= $(shell git describe --match "v[0-9]*" HEAD)
-BUILD_X2=-X $(BUILD_INFO_IMPORT_PATH).Version=$(VERSION)
-BUILD_X3=-X go.opentelemetry.io/collector/internal/version.BuildType=$(BUILD_TYPE)
-BUILD_INFO=-ldflags "${BUILD_X1} ${BUILD_X2} ${BUILD_X3}"
+VERSION=$(shell git describe --always --match "v[0-9]*" HEAD)
+BUILD_INFO=-ldflags "-X $(BUILD_INFO_IMPORT_PATH).Version=$(VERSION)"
 
-COMP_REL_PATH=cmd/otelcontribcol/components.go
+COMP_REL_PATH=internal/components/components.go
 MOD_NAME=github.com/open-telemetry/opentelemetry-collector-contrib
 
 # ALL_MODULES includes ./* dirs (excludes . dir and example with go code)
-ALL_MODULES := $(shell find . -type f -name "go.mod" -exec dirname {} \; | sort | egrep  '^./' )
-
+ALL_MODULES := $(shell find . -type f -name "go.mod" -not -path './internal/core/*' -exec dirname {} \; | sort | egrep '^./' )
 # Modules to run integration tests on.
 # XXX: Find a way to automatically populate this. Too slow to run across all modules when there are just a few.
 INTEGRATION_TEST_MODULES := \
@@ -40,7 +35,6 @@ all: common gotest otelcontribcol otelcontribcol-unstable
 .PHONY: e2e-test
 e2e-test: otelcontribcol otelcontribcol-unstable
 	$(MAKE) -C testbed run-tests
-	$(MAKE) -C testbed run-tests TESTS_DIR=tests_unstable_exe
 
 .PHONY: unit-tests-with-cover
 unit-tests-with-cover:
@@ -62,7 +56,8 @@ stability-tests: otelcontribcol
 .PHONY: gotidy
 gotidy:
 	$(MAKE) for-all CMD="rm -fr go.sum"
-	$(MAKE) for-all CMD="go mod tidy"
+	$(MAKE) for-all CMD="go mod tidy -go=1.16"
+	$(MAKE) for-all CMD="go mod tidy -go=1.17"
 
 .PHONY: gomoddownload
 gomoddownload:
@@ -162,9 +157,11 @@ install-tools:
 	cd $(TOOLS_MOD_DIR) && go install github.com/jstemmer/go-junit-report
 	cd $(TOOLS_MOD_DIR) && go install github.com/pavius/impi/cmd/impi
 	cd $(TOOLS_MOD_DIR) && go install github.com/tcnksm/ghr
-	cd $(TOOLS_MOD_DIR) && go install go.opentelemetry.io/collector/cmd/checkdoc
-	cd $(TOOLS_MOD_DIR) && go install go.opentelemetry.io/collector/cmd/issuegenerator
-	cd $(TOOLS_MOD_DIR) && go install go.opentelemetry.io/collector/cmd/mdatagen
+	cd $(TOOLS_MOD_DIR) && go install go.opentelemetry.io/build-tools/checkdoc
+	cd $(TOOLS_MOD_DIR) && go install go.opentelemetry.io/build-tools/issuegenerator
+	cd $(TOOLS_MOD_DIR) && go install github.com/open-telemetry/opentelemetry-collector-contrib/cmd/mdatagen
+	cd $(TOOLS_MOD_DIR) && go install golang.org/x/tools/cmd/goimports
+	cd $(TOOLS_MOD_DIR) && go install go.opentelemetry.io/build-tools/multimod
 
 .PHONY: run
 run:
@@ -234,9 +231,6 @@ update-dep:
 
 .PHONY: update-otel
 update-otel:
-	cd $(TOOLS_MOD_DIR) && go get go.opentelemetry.io/collector/cmd/checkdoc@$(OTEL_VERSION)
-	cd $(TOOLS_MOD_DIR) && go get go.opentelemetry.io/collector/cmd/issuegenerator@$(OTEL_VERSION)
-	cd $(TOOLS_MOD_DIR) && go get go.opentelemetry.io/collector/cmd/mdatagen@$(OTEL_VERSION)
 	$(MAKE) update-dep MODULE=go.opentelemetry.io/collector VERSION=$(OTEL_VERSION)
 
 .PHONY: otel-from-tree

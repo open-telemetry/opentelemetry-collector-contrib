@@ -22,8 +22,9 @@ import (
 	"github.com/google/uuid"
 	"github.com/wavefronthq/wavefront-sdk-go/senders"
 	"go.opentelemetry.io/collector/model/pdata"
-	conventions "go.opentelemetry.io/collector/translator/conventions/v1.5.0"
-	tracetranslator "go.opentelemetry.io/collector/translator/trace"
+	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/tracetranslator"
 )
 
 type traceTransformer struct {
@@ -155,7 +156,7 @@ func attributesToTags(attributes ...pdata.AttributeMap) map[string]string {
 	tags := map[string]string{}
 
 	extractTag := func(k string, v pdata.AttributeValue) bool {
-		tags[k] = tracetranslator.AttributeValueToString(v)
+		tags[k] = v.AsString()
 		return true
 	}
 

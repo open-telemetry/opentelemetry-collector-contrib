@@ -25,7 +25,8 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/model/pdata"
-	"go.opentelemetry.io/collector/translator/internaldata"
+
+	internaldata "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus"
 )
 
 // newCarbonExporter returns a new Carbon exporter.

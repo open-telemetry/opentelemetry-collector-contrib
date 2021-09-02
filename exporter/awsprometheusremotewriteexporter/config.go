@@ -15,7 +15,7 @@
 package awsprometheusremotewriteexporter
 
 import (
-	prw "go.opentelemetry.io/collector/exporter/prometheusremotewriteexporter"
+	prw "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusremotewriteexporter"
 )
 
 // Config defines configuration for Remote Write exporter.

@@ -18,7 +18,7 @@ import (
 	"fmt"
 
 	"go.opentelemetry.io/collector/model/pdata"
-	conventions "go.opentelemetry.io/collector/translator/conventions/v1.5.0"
+	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
 )
 
 var (
@@ -47,9 +47,9 @@ var (
 		// https://github.com/DataDog/datadog-agent/blob/e081bed/pkg/util/kubernetes/const.go
 		conventions.AttributeK8SPodName:         "pod_name",
 		conventions.AttributeK8SDeploymentName:  "kube_deployment",
-		conventions.AttributeK8SReplicasetName:  "kube_replica_set",
-		conventions.AttributeK8SStatefulsetName: "kube_stateful_set",
-		conventions.AttributeK8SDaemonsetName:   "kube_daemon_set",
+		conventions.AttributeK8SReplicaSetName:  "kube_replica_set",
+		conventions.AttributeK8SStatefulSetName: "kube_stateful_set",
+		conventions.AttributeK8SDaemonSetName:   "kube_daemon_set",
 		conventions.AttributeK8SJobName:         "kube_job",
 		conventions.AttributeK8SCronJobName:     "kube_cronjob",
 	}

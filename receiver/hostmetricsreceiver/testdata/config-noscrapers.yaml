@@ -1,0 +1,15 @@
+receivers:
+  hostmetrics:
+
+processors:
+  nop:
+
+exporters:
+  nop:
+
+service:
+  pipelines:
+    metrics:
+      receivers: [hostmetrics]
+      processors: [nop]
+      exporters: [nop]

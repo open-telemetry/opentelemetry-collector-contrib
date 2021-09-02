@@ -22,7 +22,6 @@ import (
 	sls "github.com/aliyun/aliyun-log-go-sdk"
 	"github.com/gogo/protobuf/proto"
 	"go.opentelemetry.io/collector/model/pdata"
-	tracetranslator "go.opentelemetry.io/collector/translator/trace"
 	"go.uber.org/zap"
 )
 
@@ -162,7 +161,7 @@ func resourceToMetricLabels(labels *KeyValues, resource pdata.Resource) {
 	attrs.Range(func(k string, v pdata.AttributeValue) bool {
 		labels.keyValues = append(labels.keyValues, KeyValue{
 			Key:   k,
-			Value: tracetranslator.AttributeValueToString(v),
+			Value: v.AsString(),
 		})
 		return true
 	})
@@ -174,7 +173,7 @@ func numberMetricsToLogs(name string, data pdata.NumberDataPointSlice, defaultLa
 		attributeMap := dataPoint.Attributes()
 		labels := defaultLabels.Clone()
 		attributeMap.Range(func(k string, v pdata.AttributeValue) bool {
-			labels.Append(k, v.StringVal()) // TODO(codeboten): Fix as part of https://github.com/open-telemetry/opentelemetry-collector/issues/3815
+			labels.Append(k, v.AsString())
 			return true
 		})
 		switch dataPoint.Type() {
@@ -205,7 +204,7 @@ func doubleHistogramMetricsToLogs(name string, data pdata.HistogramDataPointSlic
 		attributeMap := dataPoint.Attributes()
 		labels := defaultLabels.Clone()
 		attributeMap.Range(func(k string, v pdata.AttributeValue) bool {
-			labels.Append(k, v.StringVal()) // TODO(codeboten): Fix as part of https://github.com/open-telemetry/opentelemetry-collector/issues/3815
+			labels.Append(k, v.AsString())
 			return true
 		})
 		logs = append(logs, newMetricLogFromRaw(name+"_sum",
@@ -253,7 +252,7 @@ func doubleSummaryMetricsToLogs(name string, data pdata.SummaryDataPointSlice, d
 		attributeMap := dataPoint.Attributes()
 		labels := defaultLabels.Clone()
 		attributeMap.Range(func(k string, v pdata.AttributeValue) bool {
-			labels.Append(k, v.StringVal()) // TODO(codeboten): Fix as part of https://github.com/open-telemetry/opentelemetry-collector/issues/3815
+			labels.Append(k, v.AsString())
 			return true
 		})
 		logs = append(logs, newMetricLogFromRaw(name+"_sum",

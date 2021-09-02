@@ -1,0 +1,22 @@
+receivers:
+  nop: {}
+
+exporters:
+  awscloudwatchlogs/e1-defaults:
+    log_group_name: "test-1"
+    log_stream_name: "testing"
+  awscloudwatchlogs/e2-no-retries-short-queue:
+    log_group_name: "test-2"
+    log_stream_name: "testing"
+    sending_queue:
+      queue_size: 2
+    retry_on_failure:
+      enabled: false
+
+service:
+  pipelines:
+    logs:
+      receivers: [nop]
+      exporters:
+      - awscloudwatchlogs/e1-defaults
+      - awscloudwatchlogs/e2-no-retries-short-queue

@@ -25,10 +25,10 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
-	"go.opentelemetry.io/collector/receiver/scraperhelper"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkametricsreceiver/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/scraperhelper"
 )
 
 type consumerScraper struct {
@@ -120,13 +120,13 @@ func (s *consumerScraper) scrape(context.Context) (pdata.ResourceMetricsSlice, e
 		return pdata.ResourceMetricsSlice{}, listErr
 	}
 
-	now := pdata.TimestampFromTime(time.Now())
+	now := pdata.NewTimestampFromTime(time.Now())
 	rms := pdata.NewResourceMetricsSlice()
 	ilm := rms.AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty()
 	ilm.InstrumentationLibrary().SetName(instrumentationLibName)
 	for _, group := range consumerGroups {
-		labels := pdata.NewStringMap()
-		labels.Upsert(metadata.L.Group, group.GroupId)
+		labels := pdata.NewAttributeMap()
+		labels.UpsertString(metadata.L.Group, group.GroupId)
 		addIntGauge(ilm.Metrics(), metadata.M.KafkaConsumerGroupMembers.Name(), now, labels, int64(len(group.Members)))
 		groupOffsetFetchResponse, err := s.clusterAdmin.ListConsumerGroupOffsets(group.GroupId, topicPartitions)
 		if err != nil {
@@ -143,12 +143,12 @@ func (s *consumerScraper) scrape(context.Context) (pdata.ResourceMetricsSlice, e
 					break
 				}
 			}
-			labels.Upsert(metadata.L.Topic, topic)
+			labels.UpsertString(metadata.L.Topic, topic)
 			if isConsumed {
 				var lagSum int64
 				var offsetSum int64
 				for partition, block := range partitions {
-					labels.Upsert(metadata.L.Partition, string(partition))
+					labels.UpsertInt(metadata.L.Partition, int64(partition))
 					consumerOffset := block.Offset
 					offsetSum += consumerOffset
 					addIntGauge(ilm.Metrics(), metadata.M.KafkaConsumerGroupOffset.Name(), now, labels, consumerOffset)

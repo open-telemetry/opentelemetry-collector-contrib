@@ -20,7 +20,6 @@ import (
 	"strings"
 
 	"go.opentelemetry.io/collector/model/pdata"
-	tracetranslator "go.opentelemetry.io/collector/translator/trace"
 )
 
 // fields represents metadata
@@ -45,7 +44,7 @@ func (f fields) string() string {
 			fmt.Sprintf(
 				"%s=%s",
 				f.sanitizeField(k),
-				f.sanitizeField(tracetranslator.AttributeValueToString(v)),
+				f.sanitizeField(v.AsString()),
 			),
 		)
 		return true

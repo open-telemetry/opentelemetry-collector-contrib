@@ -33,7 +33,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/model/pdata"
-	conventions "go.opentelemetry.io/collector/translator/conventions/v1.5.0"
+	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
 	"go.uber.org/zap/zaptest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
@@ -86,7 +86,7 @@ func createMetricsData(numberOfDataPoints int) pdata.Metrics {
 		metric.SetName("gauge_double_with_dims")
 		metric.SetDataType(pdata.MetricDataTypeGauge)
 		doublePt := metric.Gauge().DataPoints().AppendEmpty()
-		doublePt.SetTimestamp(pdata.TimestampFromTime(tsUnix))
+		doublePt.SetTimestamp(pdata.NewTimestampFromTime(tsUnix))
 		doublePt.SetDoubleVal(doubleVal)
 		doublePt.Attributes().InsertString("k/n0", "vn0")
 		doublePt.Attributes().InsertString("k/n1", "vn1")
@@ -148,9 +148,9 @@ func createLogDataWithCustomLibraries(numResources int, libraries []string, numR
 				logRecord := ill.Logs().AppendEmpty()
 				logRecord.SetName(fmt.Sprintf("%d_%d_%d", i, j, k))
 				logRecord.Body().SetStringVal("mylog")
-				logRecord.Attributes().InsertString(splunk.SourceLabel, "myapp")
-				logRecord.Attributes().InsertString(splunk.SourcetypeLabel, "myapp-type")
-				logRecord.Attributes().InsertString(splunk.IndexLabel, "myindex")
+				logRecord.Attributes().InsertString(splunk.DefaultSourceLabel, "myapp")
+				logRecord.Attributes().InsertString(splunk.DefaultSourceTypeLabel, "myapp-type")
+				logRecord.Attributes().InsertString(splunk.DefaultIndexLabel, "myindex")
 				logRecord.Attributes().InsertString(conventions.AttributeHostName, "myhost")
 				logRecord.Attributes().InsertString("custom", "custom")
 				logRecord.SetTimestamp(ts)

@@ -107,7 +107,7 @@ func asStringMap(in pdata.AttributeMap) model.StringMap {
 	in.Range(func(k string, v pdata.AttributeValue) bool {
 		out = append(out, model.StringMapItem{
 			Key:   k,
-			Value: v.StringVal(),
+			Value: v.AsString(),
 		})
 		return true
 	})

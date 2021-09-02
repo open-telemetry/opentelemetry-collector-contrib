@@ -37,13 +37,13 @@ import (
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/model/pdata"
-	"go.opentelemetry.io/collector/testutil/metricstestutil"
-	conventions "go.opentelemetry.io/collector/translator/conventions/v1.5.0"
-	"go.opentelemetry.io/collector/translator/internaldata"
+	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/metricstestutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
+	internaldata "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus"
 )
 
 func TestNew(t *testing.T) {
@@ -225,9 +225,9 @@ func generateLargeLogsBatch() pdata.Logs {
 	for i := 0; i < 65000; i++ {
 		logRecord := ill.Logs().AppendEmpty()
 		logRecord.Body().SetStringVal("mylog")
-		logRecord.Attributes().InsertString(splunk.SourceLabel, "myapp")
-		logRecord.Attributes().InsertString(splunk.SourcetypeLabel, "myapp-type")
-		logRecord.Attributes().InsertString(splunk.IndexLabel, "myindex")
+		logRecord.Attributes().InsertString(splunk.DefaultSourceLabel, "myapp")
+		logRecord.Attributes().InsertString(splunk.DefaultSourceTypeLabel, "myapp-type")
+		logRecord.Attributes().InsertString(splunk.DefaultIndexLabel, "myindex")
 		logRecord.Attributes().InsertString(conventions.AttributeHostName, "myhost")
 		logRecord.Attributes().InsertString("custom", "custom")
 		logRecord.SetTimestamp(ts)

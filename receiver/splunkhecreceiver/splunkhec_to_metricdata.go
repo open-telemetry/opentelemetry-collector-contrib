@@ -20,7 +20,6 @@ import (
 	"strings"
 
 	"go.opentelemetry.io/collector/model/pdata"
-	conventions "go.opentelemetry.io/collector/translator/conventions/v1.5.0"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
@@ -29,7 +28,7 @@ import (
 // splunkHecToMetricsData converts Splunk HEC metric points to
 // pdata.Metrics. Returning the converted data and the number of
 // dropped time series.
-func splunkHecToMetricsData(logger *zap.Logger, events []*splunk.Event, resourceCustomizer func(pdata.Resource)) (pdata.Metrics, int) {
+func splunkHecToMetricsData(logger *zap.Logger, events []*splunk.Event, resourceCustomizer func(pdata.Resource), config splunk.HECConfiguration) (pdata.Metrics, int) {
 	numDroppedTimeSeries := 0
 	md := pdata.NewMetrics()
 
@@ -37,16 +36,16 @@ func splunkHecToMetricsData(logger *zap.Logger, events []*splunk.Event, resource
 		resourceMetrics := pdata.NewResourceMetrics()
 		attrs := resourceMetrics.Resource().Attributes()
 		if event.Host != "" {
-			attrs.InsertString(conventions.AttributeHostName, event.Host)
+			attrs.InsertString(config.GetHostKey(), event.Host)
 		}
 		if event.Source != "" {
-			attrs.InsertString(splunk.SourceLabel, event.Source)
+			attrs.InsertString(config.GetSourceKey(), event.Source)
 		}
 		if event.SourceType != "" {
-			attrs.InsertString(splunk.SourcetypeLabel, event.SourceType)
+			attrs.InsertString(config.GetSourceTypeKey(), event.SourceType)
 		}
 		if event.Index != "" {
-			attrs.InsertString(splunk.IndexLabel, event.Index)
+			attrs.InsertString(config.GetIndexKey(), event.Index)
 		}
 		resourceCustomizer(resourceMetrics.Resource())
 

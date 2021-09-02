@@ -21,8 +21,8 @@ import (
 	"github.com/spf13/cast"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/config/configloader"
 	"go.opentelemetry.io/collector/config/configparser"
+	"go.opentelemetry.io/collector/config/configunmarshaler"
 	"go.opentelemetry.io/collector/consumer"
 )
 
@@ -97,7 +97,7 @@ func (run *receiverRunner) loadRuntimeReceiverConfig(
 		return nil, fmt.Errorf("failed to merge template config from discovered runtime values: %v", err)
 	}
 
-	receiverConfig, err := configloader.LoadReceiver(mergedConfig, receiver.id, factory)
+	receiverConfig, err := configunmarshaler.LoadReceiver(mergedConfig, receiver.id, factory)
 	if err != nil {
 		return nil, fmt.Errorf("failed to load template config: %v", err)
 	}

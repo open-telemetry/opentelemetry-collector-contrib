@@ -19,7 +19,6 @@ import (
 	"strings"
 
 	"go.opentelemetry.io/collector/model/pdata"
-	tracetranslator "go.opentelemetry.io/collector/translator/trace"
 )
 
 // carbon2TagString returns all attributes as space spearated key=value pairs.
@@ -45,7 +44,7 @@ func carbon2TagString(record metricPair) string {
 		returnValue = append(returnValue, fmt.Sprintf(
 			"%s=%s",
 			sanitizeCarbonString(k),
-			sanitizeCarbonString(tracetranslator.AttributeValueToString(v)),
+			sanitizeCarbonString(v.AsString()),
 		))
 		return true
 	})

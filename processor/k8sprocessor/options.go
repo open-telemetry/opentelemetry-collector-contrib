@@ -19,7 +19,7 @@ import (
 	"os"
 	"regexp"
 
-	conventions "go.opentelemetry.io/collector/translator/conventions/v1.5.0"
+	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
 	"k8s.io/apimachinery/pkg/selection"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
@@ -39,7 +39,7 @@ const (
 	metadataDeployment = "deployment"
 	metadataCluster    = "cluster"
 	metadataNode       = "node"
-	// Will be removed when new fields get merged to https://github.com/open-telemetry/opentelemetry-collector/blob/main/translator/conventions/opentelemetry.go
+	// Will be removed when new fields get merged to https://github.com/open-telemetry/opentelemetry-collector/blob/main/model/semconv/opentelemetry.go
 	metadataPodStartTime = "k8s.pod.start_time"
 )
 
@@ -84,7 +84,7 @@ func WithExtractMetadata(fields ...string) Option {
 			switch field {
 			// Old conventions handled by the cases metdataNamespace, metadataPodName, metadataPodUID,
 			// metadataStartTime, metadataDeployment, metadataCluster, metadataNode are being supported for backward compatibility.
-			// These will be removed when new conventions get merged to https://github.com/open-telemetry/opentelemetry-collector/blob/main/translator/conventions/opentelemetry.go
+			// These will be removed when new conventions get merged to https://github.com/open-telemetry/opentelemetry-collector/blob/main/model/semconv/opentelemetry.go
 			case metdataNamespace, conventions.AttributeK8SNamespaceName:
 				p.rules.Namespace = true
 			case metadataPodName, conventions.AttributeK8SPodName:
