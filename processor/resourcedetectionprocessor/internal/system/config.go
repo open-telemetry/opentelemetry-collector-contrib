@@ -16,7 +16,6 @@ package system
 
 // Config defines user-specified configurations unique to the system detector
 type Config struct {
-	// If true, the Hostname will be used without trying to fetch a FQDN.
-	// (**default**: `false`)
-	UseHostname bool `mapstructure:"use_hostname" default:"false"`
+	// The SystemSource will be set as hostname(ex. 'hostname' or 'FQDN')
+	SystemSource string `mapstructure:"system_source"`
 }

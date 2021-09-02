@@ -31,19 +31,28 @@ const (
 	TypeStr = "system"
 )
 
+var systemSources = []string{"hostname", "FQDN"}
 var _ internal.Detector = (*Detector)(nil)
 
 // Detector is a system metadata detector
 type Detector struct {
-	provider    systemMetadata
-	logger      *zap.Logger
-	useHostname bool
+	provider     systemMetadata
+	logger       *zap.Logger
+	systemSource string
 }
 
 // NewDetector creates a new system metadata detector
 func NewDetector(p component.ProcessorCreateSettings, dcfg internal.DetectorConfig) (internal.Detector, error) {
 	cfg := dcfg.(Config)
-	return &Detector{provider: &systemMetadataImpl{}, logger: p.Logger, useHostname: cfg.UseHostname}, nil
+	// if no value is provided then set to default value
+	if cfg.SystemSource == "" {
+		cfg.SystemSource = "FQDN"
+	}
+	err := checkSystemSources(cfg.SystemSource)
+	if err != nil {
+		return nil, err
+	}
+	return &Detector{provider: &systemMetadataImpl{}, logger: p.Logger, systemSource: cfg.SystemSource}, nil
 }
 
 // Detect detects system metadata and returns a resource with the available ones
@@ -58,15 +67,13 @@ func (d *Detector) Detect(_ context.Context) (resource pdata.Resource, schemaURL
 		return res, "", fmt.Errorf("failed getting OS type: %w", err)
 	}
 
-	if d.useHostname {
+	if d.systemSource == "hostname" {
 		hostname, err = d.getHostname()
-		fmt.Println("Forcing to use hostname: ", hostname)
 		if err != nil {
 			return res, "", err
 		}
-	} else {
+	} else if d.systemSource == "FQDN" {
 		hostname, err = d.provider.FQDN()
-		fmt.Println("Using FQDN: ", hostname)
 		if err != nil {
 			// Fallback to OS hostname
 			d.logger.Debug("FQDN query failed, falling back to OS hostname", zap.Error(err))
@@ -90,4 +97,13 @@ func (d *Detector) getHostname() (string, error) {
 		return "", fmt.Errorf("failed getting OS hostname: %w", err)
 	}
 	return hostname, nil
+}
+
+func checkSystemSources(systemSource string) error {
+	for _, source := range systemSources {
+		if source == systemSource {
+			return nil
+		}
+	}
+	return fmt.Errorf("invalid system_source value: %q", systemSource)
 }

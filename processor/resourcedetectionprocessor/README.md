@@ -17,13 +17,13 @@ details of which are currently pending confirmation in the OpenTelemetry specifi
     * host.name
     * os.type
 
-system detector custom configuration example:
-```yaml
-detectors: ["system"]
-system:
-    # Force the detector to use 'hostname' instead of FQDN
-    use_hostname: true
-```
+* System detector custom configuration example:
+    ```yaml
+    detectors: ["system"]
+    system:
+        # Force the detector to use 'hostname' instead of 'FQDN'
+        system_source: hostname
+    ```
 
 Use the Docker detector (see below) if running the Collector as a Docker container.
 
