@@ -35,17 +35,21 @@ var _ internal.Detector = (*Detector)(nil)
 
 // Detector is a system metadata detector
 type Detector struct {
-	provider systemMetadata
-	logger   *zap.Logger
+	provider    systemMetadata
+	logger      *zap.Logger
+	useHostname bool
 }
 
 // NewDetector creates a new system metadata detector
-func NewDetector(p component.ProcessorCreateSettings, _ internal.DetectorConfig) (internal.Detector, error) {
-	return &Detector{provider: &systemMetadataImpl{}, logger: p.Logger}, nil
+func NewDetector(p component.ProcessorCreateSettings, dcfg internal.DetectorConfig) (internal.Detector, error) {
+	cfg := dcfg.(Config)
+	return &Detector{provider: &systemMetadataImpl{}, logger: p.Logger, useHostname: cfg.UseHostname}, nil
 }
 
 // Detect detects system metadata and returns a resource with the available ones
 func (d *Detector) Detect(_ context.Context) (resource pdata.Resource, schemaURL string, err error) {
+	var hostname string
+
 	res := pdata.NewResource()
 	attrs := res.Attributes()
 
@@ -54,13 +58,22 @@ func (d *Detector) Detect(_ context.Context) (resource pdata.Resource, schemaURL
 		return res, "", fmt.Errorf("failed getting OS type: %w", err)
 	}
 
-	hostname, err := d.provider.FQDN()
-	if err != nil {
-		// Fallback to OS hostname
-		d.logger.Debug("FQDN query failed, falling back to OS hostname", zap.Error(err))
-		hostname, err = d.provider.Hostname()
+	if d.useHostname {
+		hostname, err = d.getHostname()
+		fmt.Println("Forcing to use hostname: ", hostname)
 		if err != nil {
-			return res, "", fmt.Errorf("failed getting OS hostname: %w", err)
+			return res, "", err
+		}
+	} else {
+		hostname, err = d.provider.FQDN()
+		fmt.Println("Using FQDN: ", hostname)
+		if err != nil {
+			// Fallback to OS hostname
+			d.logger.Debug("FQDN query failed, falling back to OS hostname", zap.Error(err))
+			hostname, err = d.getHostname()
+			if err != nil {
+				return res, "", err
+			}
 		}
 	}
 
@@ -68,4 +81,13 @@ func (d *Detector) Detect(_ context.Context) (resource pdata.Resource, schemaURL
 	attrs.InsertString(conventions.AttributeOSType, osType)
 
 	return res, conventions.SchemaURL, nil
+}
+
+// getHostname returns OS hostname
+func (d *Detector) getHostname() (string, error) {
+	hostname, err := d.provider.Hostname()
+	if err != nil {
+		return "", fmt.Errorf("failed getting OS hostname: %w", err)
+	}
+	return hostname, nil
 }

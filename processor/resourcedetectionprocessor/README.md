@@ -17,6 +17,14 @@ details of which are currently pending confirmation in the OpenTelemetry specifi
     * host.name
     * os.type
 
+system detector custom configuration example:
+```yaml
+detectors: ["system"]
+system:
+    # Force the detector to use 'hostname' instead of FQDN
+    use_hostname: true
+```
+
 Use the Docker detector (see below) if running the Collector as a Docker container.
 
 * Docker metadata: Queries the Docker daemon to retrieve the following resource attributes from the host machine:
