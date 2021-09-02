@@ -26,7 +26,6 @@ from opentelemetry.sdk.resources import Resource
 from opentelemetry.semconv.trace import SpanAttributes
 from opentelemetry.test.test_base import TestBase
 from opentelemetry.trace import StatusCode, format_span_id, format_trace_id
-from opentelemetry.util.http import get_excluded_urls, get_traced_request_attrs
 
 from .app import make_app
 
@@ -34,12 +33,6 @@ from .app import make_app
 class TestFalconBase(TestBase):
     def setUp(self):
         super().setUp()
-        FalconInstrumentor().instrument(
-            request_hook=getattr(self, "request_hook", None),
-            response_hook=getattr(self, "response_hook", None),
-        )
-        self.app = make_app()
-        # pylint: disable=protected-access
         self.env_patch = patch.dict(
             "os.environ",
             {
@@ -48,20 +41,12 @@ class TestFalconBase(TestBase):
             },
         )
         self.env_patch.start()
-        self.exclude_patch = patch(
-            "opentelemetry.instrumentation.falcon._excluded_urls",
-            get_excluded_urls("FALCON"),
+
+        FalconInstrumentor().instrument(
+            request_hook=getattr(self, "request_hook", None),
+            response_hook=getattr(self, "response_hook", None),
         )
-        middleware = self.app._middleware[0][  # pylint:disable=W0212
-            0
-        ].__self__
-        self.traced_patch = patch.object(
-            middleware,
-            "_traced_request_attrs",
-            get_traced_request_attrs("FALCON"),
-        )
-        self.exclude_patch.start()
-        self.traced_patch.start()
+        self.app = make_app()
 
     def client(self):
         return testing.TestClient(self.app)
@@ -71,8 +56,6 @@ class TestFalconBase(TestBase):
         with self.disable_logging():
             FalconInstrumentor().uninstrument()
         self.env_patch.stop()
-        self.exclude_patch.stop()
-        self.traced_patch.stop()
 
 
 class TestFalconInstrumentation(TestFalconBase):

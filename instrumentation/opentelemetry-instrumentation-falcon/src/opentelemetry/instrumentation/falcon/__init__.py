@@ -124,8 +124,6 @@ _ENVIRON_TOKEN = "opentelemetry-falcon.token"
 _ENVIRON_EXC = "opentelemetry-falcon.exc"
 
 
-_excluded_urls = get_excluded_urls("FALCON")
-_traced_request_attrs = get_traced_request_attrs("FALCON")
 _response_propagation_setter = FuncSetter(falcon.Response.append_header)
 
 
@@ -159,17 +157,21 @@ class _InstrumentedFalconAPI(falcon.API):
 
         trace_middleware = _TraceMiddleware(
             self._tracer,
-            kwargs.pop("traced_request_attributes", _traced_request_attrs),
+            kwargs.pop(
+                "traced_request_attributes", get_traced_request_attrs("FALCON")
+            ),
             kwargs.pop("request_hook", None),
             kwargs.pop("response_hook", None),
         )
         middlewares.insert(0, trace_middleware)
         kwargs["middleware"] = middlewares
+
+        self._excluded_urls = get_excluded_urls("FALCON")
         super().__init__(*args, **kwargs)
 
     def __call__(self, env, start_response):
         # pylint: disable=E1101
-        if _excluded_urls.url_disabled(env.get("PATH_INFO", "/")):
+        if self._excluded_urls.url_disabled(env.get("PATH_INFO", "/")):
             return super().__call__(env, start_response)
 
         start_time = _time_ns()
