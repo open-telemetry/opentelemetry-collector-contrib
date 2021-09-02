@@ -192,6 +192,8 @@ func (r *splunkReceiver) handleReq(resp http.ResponseWriter, req *http.Request) 
 	ctx := req.Context()
 	if r.logsConsumer == nil {
 		ctx = r.obsrecv.StartMetricsOp(ctx)
+	} else {
+		ctx = r.obsrecv.StartLogsOp(ctx)
 	}
 	reqPath := req.URL.Path
 	if !r.config.pathGlob.Match(reqPath) {
