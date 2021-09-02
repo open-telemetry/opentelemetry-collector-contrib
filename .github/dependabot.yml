@@ -10,6 +10,10 @@ updates:
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
+    directory: "/cmd/configschema"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
     directory: "/cmd/mdatagen"
     schedule:
       interval: "weekly"
@@ -167,6 +171,10 @@ updates:
       interval: "weekly"
   - package-ecosystem: "gomod"
     directory: "/exporter/zipkinexporter"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
+    directory: "/extension/awsecshealthcheckextension"
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
@@ -491,10 +499,6 @@ updates:
       interval: "weekly"
   - package-ecosystem: "gomod"
     directory: "/receiver/sapmreceiver"
-    schedule:
-      interval: "weekly"
-  - package-ecosystem: "gomod"
-    directory: "/receiver/scrapererror"
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
