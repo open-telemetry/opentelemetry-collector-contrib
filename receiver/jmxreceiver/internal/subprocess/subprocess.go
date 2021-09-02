@@ -21,12 +21,14 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"strings"
 	"sync"
 	"syscall"
 	"time"
 
 	"go.uber.org/atomic"
 	"go.uber.org/zap"
+	"google.golang.org/grpc/codes"
 )
 
 const (
@@ -48,7 +50,7 @@ type Config struct {
 
 // Subprocess exported to be used by jmx metric receiver.
 type Subprocess struct {
-	Stdout         chan string
+	stdout         chan string
 	cancel         context.CancelFunc
 	config         *Config
 	envVars        []string
@@ -96,7 +98,7 @@ func NewSubprocess(conf *Config, logger *zap.Logger) *Subprocess {
 	}
 
 	return &Subprocess{
-		Stdout:         make(chan string),
+		stdout:         make(chan string),
 		pid:            pid{pid: noPid, pidLock: sync.Mutex{}},
 		config:         conf,
 		logger:         logger,
@@ -113,6 +115,10 @@ const (
 	restarting   = "Restarting"
 	errored      = "Errored"
 )
+
+func (subprocess *Subprocess) Stdout() chan string {
+	return subprocess.stdout
+}
 
 func (subprocess *Subprocess) Start(ctx context.Context) error {
 	var cancelCtx context.Context
@@ -210,7 +216,7 @@ func (subprocess *Subprocess) run(ctx context.Context) {
 				subprocess.envVars,
 			)
 
-			go collectStdout(bufio.NewScanner(stdout), subprocess.Stdout, subprocess.logger)
+			go CollectStdout(bufio.NewScanner(stdout), subprocess.Stdout(), subprocess.logger)
 
 			subprocess.logger.Debug("starting subprocess", zap.String("command", cmd.String()))
 			err = cmd.Start()
@@ -279,15 +285,46 @@ func signalWhenProcessReturned(cmd *exec.Cmd, pr *processReturned) {
 	pr.signal(err)
 }
 
-func collectStdout(stdoutScanner *bufio.Scanner, stdoutChan chan<- string, logger *zap.Logger) {
+func CollectStdout(stdoutScanner *bufio.Scanner, stdoutChan chan<- string, logger *zap.Logger) {
 	for stdoutScanner.Scan() {
 		text := stdoutScanner.Text()
 		if text != "" {
 			stdoutChan <- text
 			logger.Debug(text)
+
+			if statusCode := checkForStatusCode(text); statusCode != "" {
+				logger.Error(text, zap.String("status_code", statusCode))
+			}
 		}
 	}
 	// Returns when stdout is closed when the process ends
+}
+
+func checkForStatusCode(text string) string {
+	if strings.Contains(text, "Could not connect to remote JMX server") {
+		return "UNAVAILABLE"
+	} else if strings.Contains(text, "`interval` must be positive:") {
+		return codes.InvalidArgument.String()
+	} else if strings.Contains(text, "`otlp.timeout` must be positive:") {
+		return codes.InvalidArgument.String()
+	} else if strings.Contains(text, "jmx missing required fields:") {
+		return codes.InvalidArgument.String()
+	} else if strings.Contains(text, "failed to parse OTLPExporterConfig.Endpoint") {
+		return codes.InvalidArgument.String()
+	} else if strings.Contains(text, "failed to parse Endpoint") {
+		return codes.InvalidArgument.String()
+	} else if strings.Contains(text, "no subprocess.cancel().") {
+		return codes.Internal.String()
+	} else if strings.Contains(text, "subprocess hasn't returned within shutdown timeout.") {
+		return codes.OutOfRange.String()
+	} else if strings.Contains(text, "unexpected shutdown:") {
+		return codes.Aborted.String()
+	} else if strings.Contains(text, "Input pipe could not be created for subprocess") {
+		return codes.Internal.String()
+	} else if strings.Contains(text, "Output pipe could not be created for subprocess") {
+		return codes.Internal.String()
+	}
+	return ""
 }
 
 func sendToStdIn(contents string, writer io.Writer) error {

@@ -33,10 +33,18 @@ import (
 
 var _ component.MetricsReceiver = (*jmxMetricReceiver)(nil)
 
+type SubprocessInt interface {
+	Stdout() chan string
+	Start(context.Context) error
+	Shutdown(context.Context) error
+}
+
+var _ SubprocessInt = (*subprocess.Subprocess)(nil)
+
 type jmxMetricReceiver struct {
 	logger       *zap.Logger
 	config       *Config
-	subprocess   *subprocess.Subprocess
+	subprocess   SubprocessInt
 	params       component.ReceiverCreateSettings
 	otlpReceiver component.MetricsReceiver
 	nextConsumer consumer.Metrics
@@ -46,28 +54,23 @@ func newJMXMetricReceiver(
 	params component.ReceiverCreateSettings,
 	config *Config,
 	nextConsumer consumer.Metrics,
-) *jmxMetricReceiver {
-	return &jmxMetricReceiver{
+) (*jmxMetricReceiver, error) {
+	jmx := jmxMetricReceiver{
 		logger:       params.Logger,
 		params:       params,
 		config:       config,
 		nextConsumer: nextConsumer,
 	}
-}
-
-func (jmx *jmxMetricReceiver) Start(ctx context.Context, host component.Host) (err error) {
-	jmx.logger.Debug("starting JMX Receiver")
-
+	var err error
 	jmx.otlpReceiver, err = jmx.buildOTLPReceiver()
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	javaConfig, err := jmx.buildJMXMetricGathererConfig()
 	if err != nil {
-		return err
+		return nil, err
 	}
-
 	subprocessConfig := subprocess.Config{
 		ExecutablePath: "java",
 		Args:           append(jmx.config.parseProperties(), "-Dorg.slf4j.simpleLogger.defaultLogLevel=info", "-jar", jmx.config.JARPath, "-config", "-"),
@@ -75,13 +78,18 @@ func (jmx *jmxMetricReceiver) Start(ctx context.Context, host component.Host) (e
 	}
 
 	jmx.subprocess = subprocess.NewSubprocess(&subprocessConfig, jmx.logger)
+	return &jmx, nil
+}
+
+func (jmx *jmxMetricReceiver) Start(ctx context.Context, host component.Host) (err error) {
+	jmx.logger.Debug("starting JMX Receiver")
 
 	err = jmx.otlpReceiver.Start(ctx, host)
 	if err != nil {
 		return err
 	}
 	go func() {
-		for range jmx.subprocess.Stdout {
+		for range jmx.subprocess.Stdout() {
 			// ensure stdout/stderr buffer is read from.
 			// these messages are already debug logged when captured.
 		}
