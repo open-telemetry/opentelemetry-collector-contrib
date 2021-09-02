@@ -15,7 +15,6 @@
 
 import celery
 from celery.exceptions import Retry
-from flaky import flaky
 from pytest import mark
 
 import opentelemetry.instrumentation.celery
@@ -559,8 +558,6 @@ def test_apply_async_previous_style_tasks(
     ) == async_run_span.attributes.get(SpanAttributes.MESSAGING_MESSAGE_ID)
 
 
-# FIXME find a permanent solution for the flakiness of this test
-@flaky
 def test_custom_tracer_provider(celery_app, memory_exporter):
     @celery_app.task
     def fn_task():
@@ -576,7 +573,7 @@ def test_custom_tracer_provider(celery_app, memory_exporter):
     CeleryInstrumentor().uninstrument()
     CeleryInstrumentor().instrument(tracer_provider=tracer_provider)
 
-    fn_task.delay()
+    fn_task.apply()
 
     spans_list = memory_exporter.get_finished_spans()
     assert len(spans_list) == 1
