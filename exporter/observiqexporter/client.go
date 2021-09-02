@@ -90,6 +90,9 @@ func (c *client) sendLogs(
 
 	request.Header.Set("Content-Type", "application/json")
 	request.Header.Set("Content-Encoding", "gzip")
+	request.Header.Set("x-cabin-agent-id", c.config.AgentID)
+	request.Header.Set("x-cabin-agent-name", c.config.AgentName)
+	request.Header.Set("x-cabin-agent-version", c.buildVersion)
 
 	res, err := c.client.Do(request)
 
