@@ -39,7 +39,6 @@ const (
 	defaultServerTimeout = 20 * time.Second
 
 	responseOK                     = "OK"
-	responseNotFound               = "Not found"
 	responseInvalidMethod          = `Only "POST" method is supported`
 	responseInvalidEncoding        = `"Content-Encoding" must be "gzip" or empty`
 	responseErrGzipReader          = "Error on gzip body"
