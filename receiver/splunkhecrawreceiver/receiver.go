@@ -26,11 +26,9 @@ import (
 	"time"
 
 	"github.com/gorilla/mux"
-	"go.opencensus.io/trace"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/model/pdata"
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
 	"go.opentelemetry.io/collector/obsreport"
 	"go.uber.org/zap"
 
@@ -55,6 +53,9 @@ const (
 var (
 	errNilNextLogsConsumer = errors.New("nil logsConsumer")
 	errEmptyEndpoint       = errors.New("empty endpoint")
+	errInvalidPath         = errors.New("invalid path")
+	errInvalidMethod       = errors.New("invalid http method")
+	errInvalidEncoding     = errors.New("invalid encoding")
 
 	okRespBody              = initJSONResponse(responseOK)
 	notFoundRespBody        = initJSONResponse(responseNotFound)
@@ -78,6 +79,11 @@ func newLogsReceiver(
 		return nil, errEmptyEndpoint
 	}
 
+	transport := "http"
+	if config.TLSSetting != nil {
+		transport = "https"
+	}
+
 	r := &splunkReceiver{
 		logger:       logger,
 		config:       &config,
@@ -89,6 +95,7 @@ func newLogsReceiver(
 			ReadHeaderTimeout: defaultServerTimeout,
 			WriteTimeout:      defaultServerTimeout,
 		},
+		obsrecv: obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverID: config.ID(), Transport: transport}),
 	}
 
 	return r, nil
@@ -146,18 +153,18 @@ func (r *splunkReceiver) handleReq(resp http.ResponseWriter, req *http.Request) 
 	ctx = r.obsrecv.StartLogsOp(ctx)
 	reqPath := req.URL.Path
 	if !r.config.pathGlob.Match(reqPath) {
-		r.failRequest(ctx, resp, http.StatusNotFound, notFoundRespBody, nil)
+		r.failRequest(ctx, resp, http.StatusNotFound, notFoundRespBody, 0, errInvalidPath)
 		return
 	}
 
 	if req.Method != http.MethodPost {
-		r.failRequest(ctx, resp, http.StatusBadRequest, invalidMethodRespBody, nil)
+		r.failRequest(ctx, resp, http.StatusBadRequest, invalidMethodRespBody, 0, errInvalidMethod)
 		return
 	}
 
 	encoding := req.Header.Get(httpContentEncodingHeader)
 	if encoding != "" && encoding != gzipEncoding {
-		r.failRequest(ctx, resp, http.StatusUnsupportedMediaType, invalidEncodingRespBody, nil)
+		r.failRequest(ctx, resp, http.StatusUnsupportedMediaType, invalidEncodingRespBody, 0, errInvalidEncoding)
 		return
 	}
 
@@ -171,7 +178,7 @@ func (r *splunkReceiver) handleReq(resp http.ResponseWriter, req *http.Request) 
 		var err error
 		bodyReader, err = gzip.NewReader(bodyReader)
 		if err != nil {
-			r.failRequest(ctx, resp, http.StatusBadRequest, errGzipReaderRespBody, err)
+			r.failRequest(ctx, resp, http.StatusBadRequest, errGzipReaderRespBody, 0, err)
 			return
 		}
 	}
@@ -191,10 +198,11 @@ func (r *splunkReceiver) handleReq(resp http.ResponseWriter, req *http.Request) 
 	decodeErr := r.logsConsumer.ConsumeLogs(ctx, ld)
 
 	if decodeErr != nil {
-		r.failRequest(ctx, resp, http.StatusInternalServerError, errInternalServerError, decodeErr)
+		r.failRequest(ctx, resp, http.StatusInternalServerError, errInternalServerError, ill.Logs().Len(), decodeErr)
 	} else {
 		resp.WriteHeader(http.StatusAccepted)
 		resp.Write(okRespBody)
+		r.obsrecv.EndLogsOp(ctx, typeStr, ill.Logs().Len(), nil)
 	}
 }
 
@@ -203,6 +211,7 @@ func (r *splunkReceiver) failRequest(
 	resp http.ResponseWriter,
 	httpStatusCode int,
 	jsonResponse []byte,
+	numLogsReceived int,
 	err error,
 ) {
 	resp.WriteHeader(httpStatusCode)
@@ -215,30 +224,17 @@ func (r *splunkReceiver) failRequest(
 		}
 	}
 
-	msg := string(jsonResponse)
+	r.obsrecv.EndLogsOp(ctx, typeStr, numLogsReceived, err)
 
-	reqSpan := trace.FromContext(ctx)
-	reqSpan.AddAttributes(
-		trace.Int64Attribute(conventions.AttributeHTTPStatusCode, int64(httpStatusCode)),
-		trace.StringAttribute(conventions.AttributeHTTPStatusText, msg))
-	traceStatus := trace.Status{
-		Code: trace.StatusCodeInvalidArgument,
+	if r.logger.Core().Enabled(zap.DebugLevel) {
+		msg := string(jsonResponse)
+		r.logger.Debug(
+			"Splunk HEC raw receiver request failed",
+			zap.Int("http_status_code", httpStatusCode),
+			zap.String("msg", msg),
+			zap.Error(err), // It handles nil error
+		)
 	}
-	if httpStatusCode == http.StatusInternalServerError {
-		traceStatus.Code = trace.StatusCodeInternal
-	}
-	if err != nil {
-		traceStatus.Message = err.Error()
-	}
-	reqSpan.SetStatus(traceStatus)
-	reqSpan.End()
-
-	r.logger.Debug(
-		"Splunk HEC raw receiver request failed",
-		zap.Int("http_status_code", httpStatusCode),
-		zap.String("msg", msg),
-		zap.Error(err), // It handles nil error
-	)
 }
 
 func initJSONResponse(s string) []byte {
