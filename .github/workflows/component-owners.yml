@@ -4,9 +4,7 @@
 name: 'Component Owners'
 
 on:
-  pull_request:
-    branches:
-      - main
+  pull_request_target:
 
 jobs:
   run_self:
