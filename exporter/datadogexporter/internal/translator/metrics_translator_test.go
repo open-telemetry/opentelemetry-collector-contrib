@@ -842,7 +842,7 @@ func createNaNMetrics() pdata.Metrics {
 	rm := rms.AppendEmpty()
 
 	attrs := rm.Resource().Attributes()
-	attrs.InsertString(metadata.AttributeDatadogHostname, testHostname)
+	attrs.InsertString(attributes.AttributeDatadogHostname, testHostname)
 	ilms := rm.InstrumentationLibraryMetrics()
 
 	metricsArray := ilms.AppendEmpty().Metrics()
