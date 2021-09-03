@@ -125,7 +125,6 @@ func (c *Config) validate() error {
 	if c.CollectionInterval < 0 {
 		return fmt.Errorf("%v `interval` must be positive: %vms", c.ID(), c.CollectionInterval.Milliseconds())
 	}
-
 	if c.OTLPExporterConfig.Timeout < 0 {
 		return fmt.Errorf("%v `otlp.timeout` must be positive: %vms", c.ID(), c.OTLPExporterConfig.Timeout.Milliseconds())
 	}
