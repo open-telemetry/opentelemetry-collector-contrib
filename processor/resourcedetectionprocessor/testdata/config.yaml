@@ -24,7 +24,7 @@ processors:
     timeout: 2s
     override: false
     system:
-      system_source: hostname
+      hostname_sources: [dns, os]
   resourcedetection/docker:
     detectors: [env, docker]
     timeout: 2s

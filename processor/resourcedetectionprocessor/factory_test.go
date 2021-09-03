@@ -18,6 +18,7 @@ import (
 	"context"
 	"testing"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/system"
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configcheck"
@@ -51,7 +52,12 @@ func TestInvalidConfig(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	oCfg := cfg.(*Config)
-	oCfg.Detectors = []string{"not-existing"}
+	oCfg.Detectors = []string{"not-existing", "system"}
+	oCfg.DetectorConfig = DetectorConfig{
+		SystemConfig: system.Config{
+			HostnameSources: []string{"dns", "invalid"},
+		},
+	}
 
 	tp, err := factory.CreateTracesProcessor(context.Background(), componenttest.NewNopProcessorCreateSettings(), cfg, consumertest.NewNop())
 	assert.Error(t, err)

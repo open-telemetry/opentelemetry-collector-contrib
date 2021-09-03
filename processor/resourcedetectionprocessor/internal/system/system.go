@@ -49,9 +49,8 @@ type Detector struct {
 // NewDetector creates a new system metadata detector
 func NewDetector(p component.ProcessorCreateSettings, dcfg internal.DetectorConfig) (internal.Detector, error) {
 	cfg := dcfg.(Config)
-	err := cfg.Validate()
-	if err != nil {
-		return nil, err
+	if len(cfg.HostnameSources) == 0 {
+		cfg.HostnameSources = []string{"dns", "os"}
 	}
 	return &Detector{provider: &systemMetadataImpl{}, logger: p.Logger, hostnameSources: cfg.HostnameSources}, nil
 }
@@ -70,16 +69,15 @@ func (d *Detector) Detect(_ context.Context) (resource pdata.Resource, schemaURL
 	}
 
 	for _, source := range d.hostnameSources {
-		getHostname := hostnameSourcesMap[source]
-		hostname, err = getHostname(d)
+		getHostFromSource := hostnameSourcesMap[source]
+		hostname, err = getHostFromSource(d)
 		if err == nil {
 			attrs.InsertString(conventions.AttributeHostName, hostname)
 			attrs.InsertString(conventions.AttributeOSType, osType)
 
 			return res, conventions.SchemaURL, nil
-		} else {
-			errs = append(errs, err)
 		}
+		errs = append(errs, err)
 	}
 
 	return res, "", consumererror.Combine(errs)

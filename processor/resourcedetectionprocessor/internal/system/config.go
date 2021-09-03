@@ -25,12 +25,8 @@ type Config struct {
 }
 
 // Validate config
-func (config *Config) Validate() error {
-	if len(config.HostnameSources) == 0 {
-		config.HostnameSources = []string{"dns", "os"}
-		return nil
-	}
-	for _, hostnameSource := range config.HostnameSources {
+func (cfg *Config) Validate() error {
+	for _, hostnameSource := range cfg.HostnameSources {
 		_, exists := hostnameSourcesMap[hostnameSource]
 		if !exists {
 			return fmt.Errorf("hostname_sources contains invalid value: %q", hostnameSource)

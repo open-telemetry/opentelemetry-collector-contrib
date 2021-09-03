@@ -73,24 +73,12 @@ func TestNewDetector(t *testing.T) {
 			},
 			shouldError: false,
 		},
-		{
-			name: "Error Case Invalid Config",
-			cfg: Config{
-				HostnameSources: []string{"invalid"},
-			},
-			shouldError: true,
-		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			detector, err := NewDetector(componenttest.NewNopProcessorCreateSettings(), tt.cfg)
-			if tt.shouldError {
-				assert.Error(t, err)
-				assert.Nil(t, detector)
-			} else {
-				assert.NotNil(t, detector)
-				assert.NoError(t, err)
-			}
+			assert.NotNil(t, detector)
+			assert.NoError(t, err)
 		})
 	}
 }

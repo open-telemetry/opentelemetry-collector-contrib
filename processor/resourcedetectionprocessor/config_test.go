@@ -26,6 +26,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/aws/ec2"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/system"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -62,6 +63,19 @@ func TestLoadConfig(t *testing.T) {
 		Timeout:  2 * time.Second,
 		Override: false,
 	})
+
+	p4 := cfg.Processors[config.NewIDWithName(typeStr, "system")]
+	assert.Equal(t, p4, &Config{
+		ProcessorSettings: config.NewProcessorSettings(config.NewIDWithName(typeStr, "system")),
+		Detectors:         []string{"env", "system"},
+		DetectorConfig: DetectorConfig{
+			SystemConfig: system.Config{
+				HostnameSources: []string{"dns", "os"},
+			},
+		},
+		Timeout:  2 * time.Second,
+		Override: false,
+	})
 }
 
 func TestGetConfigFromType(t *testing.T) {
@@ -92,6 +106,18 @@ func TestGetConfigFromType(t *testing.T) {
 				},
 			},
 			expectedConfig: nil,
+		},
+		{
+			name:         "Get System Config",
+			detectorType: system.TypeStr,
+			inputDetectorConfig: DetectorConfig{
+				SystemConfig: system.Config{
+					HostnameSources: []string{"dns", "os"},
+				},
+			},
+			expectedConfig: system.Config{
+				HostnameSources: []string{"dns", "os"},
+			},
 		},
 	}
 
