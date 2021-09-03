@@ -278,6 +278,7 @@ endef
 # List of directories where certificates are stored for unit tests.
 CERT_DIRS := receiver/sapmreceiver/testdata \
              receiver/signalfxreceiver/testdata \
+             receiver/splunkhecrawreceiver/testdata \
              receiver/splunkhecreceiver/testdata
 
 # Generate certificates for unit tests relying on certificates.
