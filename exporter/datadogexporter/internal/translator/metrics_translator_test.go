@@ -31,7 +31,7 @@ import (
 	"gopkg.in/zorkian/go-datadog-api.v2"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/config"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/attributes"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metrics"
 )
 
@@ -589,15 +589,15 @@ func TestRunningMetrics(t *testing.T) {
 
 	rm := rms.AppendEmpty()
 	resAttrs := rm.Resource().Attributes()
-	resAttrs.Insert(metadata.AttributeDatadogHostname, pdata.NewAttributeValueString("resource-hostname-1"))
+	resAttrs.Insert(attributes.AttributeDatadogHostname, pdata.NewAttributeValueString("resource-hostname-1"))
 
 	rm = rms.AppendEmpty()
 	resAttrs = rm.Resource().Attributes()
-	resAttrs.Insert(metadata.AttributeDatadogHostname, pdata.NewAttributeValueString("resource-hostname-1"))
+	resAttrs.Insert(attributes.AttributeDatadogHostname, pdata.NewAttributeValueString("resource-hostname-1"))
 
 	rm = rms.AppendEmpty()
 	resAttrs = rm.Resource().Attributes()
-	resAttrs.Insert(metadata.AttributeDatadogHostname, pdata.NewAttributeValueString("resource-hostname-2"))
+	resAttrs.Insert(attributes.AttributeDatadogHostname, pdata.NewAttributeValueString("resource-hostname-2"))
 
 	rms.AppendEmpty()
 
@@ -633,7 +633,7 @@ func createTestMetrics() pdata.Metrics {
 	rm := rms.AppendEmpty()
 
 	attrs := rm.Resource().Attributes()
-	attrs.InsertString(metadata.AttributeDatadogHostname, testHostname)
+	attrs.InsertString(attributes.AttributeDatadogHostname, testHostname)
 	ilms := rm.InstrumentationLibraryMetrics()
 
 	metricsArray := ilms.AppendEmpty().Metrics()
