@@ -835,3 +835,111 @@ func TestMapMetrics(t *testing.T) {
 	// One metric aggregation temporality was unknown or unsupported
 	assert.Equal(t, observed.FilterMessage("Unknown or unsupported aggregation temporality").Len(), 1)
 }
+
+func createNaNMetrics() pdata.Metrics {
+	md := pdata.NewMetrics()
+	rms := md.ResourceMetrics()
+	rm := rms.AppendEmpty()
+
+	attrs := rm.Resource().Attributes()
+	attrs.InsertString(metadata.AttributeDatadogHostname, testHostname)
+	ilms := rm.InstrumentationLibraryMetrics()
+
+	metricsArray := ilms.AppendEmpty().Metrics()
+
+	// DoubleGauge
+	met := metricsArray.AppendEmpty()
+	met.SetName("nan.gauge")
+	met.SetDataType(pdata.MetricDataTypeGauge)
+	dpsDouble := met.Gauge().DataPoints()
+	dpDouble := dpsDouble.AppendEmpty()
+	dpDouble.SetTimestamp(seconds(0))
+	dpDouble.SetDoubleVal(math.NaN())
+
+	// Double Sum (delta)
+	met = metricsArray.AppendEmpty()
+	met.SetName("nan.delta.sum")
+	met.SetDataType(pdata.MetricDataTypeSum)
+	met.Sum().SetAggregationTemporality(pdata.AggregationTemporalityDelta)
+	dpsDouble = met.Sum().DataPoints()
+	dpDouble = dpsDouble.AppendEmpty()
+	dpDouble.SetTimestamp(seconds(0))
+	dpDouble.SetDoubleVal(math.NaN())
+
+	// Double Sum (delta monotonic)
+	met = metricsArray.AppendEmpty()
+	met.SetName("nan.delta.monotonic.sum")
+	met.SetDataType(pdata.MetricDataTypeSum)
+	met.Sum().SetAggregationTemporality(pdata.AggregationTemporalityDelta)
+	dpsDouble = met.Sum().DataPoints()
+	dpDouble = dpsDouble.AppendEmpty()
+	dpDouble.SetTimestamp(seconds(0))
+	dpDouble.SetDoubleVal(math.NaN())
+
+	// Histogram
+	met = metricsArray.AppendEmpty()
+	met.SetName("nan.histogram")
+	met.SetDataType(pdata.MetricDataTypeHistogram)
+	dpsDoubleHist := met.Histogram().DataPoints()
+	dpDoubleHist := dpsDoubleHist.AppendEmpty()
+	dpDoubleHist.SetCount(20)
+	dpDoubleHist.SetSum(math.NaN())
+	dpDoubleHist.SetBucketCounts([]uint64{2, 18})
+	dpDoubleHist.SetTimestamp(seconds(0))
+
+	// Double Sum (cumulative)
+	met = metricsArray.AppendEmpty()
+	met.SetName("nan.cumulative.sum")
+	met.SetDataType(pdata.MetricDataTypeSum)
+	met.Sum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+	dpsDouble = met.Sum().DataPoints()
+	dpsDouble.EnsureCapacity(2)
+	dpDouble = dpsDouble.AppendEmpty()
+	dpDouble.SetTimestamp(seconds(0))
+	dpDouble.SetDoubleVal(math.NaN())
+
+	// Double Sum (cumulative monotonic)
+	met = metricsArray.AppendEmpty()
+	met.SetName("nan.cumulative.monotonic.sum")
+	met.SetDataType(pdata.MetricDataTypeSum)
+	met.Sum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+	met.Sum().SetIsMonotonic(true)
+	dpsDouble = met.Sum().DataPoints()
+	dpsDouble.EnsureCapacity(2)
+	dpDouble = dpsDouble.AppendEmpty()
+	dpDouble.SetTimestamp(seconds(0))
+	dpDouble.SetDoubleVal(math.NaN())
+
+	// Summary
+	met = metricsArray.AppendEmpty()
+	met.SetName("nan.summary")
+	met.SetDataType(pdata.MetricDataTypeSummary)
+	slice := exampleSummaryDataPointSlice(seconds(0), math.NaN(), 1)
+	slice.CopyTo(met.Summary().DataPoints())
+
+	met = metricsArray.AppendEmpty()
+	met.SetName("nan.summary")
+	met.SetDataType(pdata.MetricDataTypeSummary)
+	slice = exampleSummaryDataPointSlice(seconds(2), 10_001, 101)
+	slice.CopyTo(met.Summary().DataPoints())
+	return md
+}
+
+func TestNaNMetrics(t *testing.T) {
+	md := createNaNMetrics()
+	cfg := config.MetricsConfig{SendMonotonic: true}
+
+	core, observed := observer.New(zapcore.DebugLevel)
+	testLogger := zap.New(core)
+	tr := newTranslator(testLogger, cfg)
+	series := tr.MapMetrics(md)
+
+	filtered := removeRunningMetrics(series)
+	assert.ElementsMatch(t, filtered, []datadog.Metric{
+		testGauge("nan.histogram.count", 20),
+		testCount("nan.summary.count", 100, 2),
+	})
+
+	// One metric type was unknown or unsupported
+	assert.Equal(t, observed.FilterMessage("Unsupported metric value").Len(), 7)
+}
