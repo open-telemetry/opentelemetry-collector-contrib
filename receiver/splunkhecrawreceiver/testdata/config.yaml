@@ -5,7 +5,6 @@ receivers:
     # Splunk metrics.
     endpoint: localhost:8088
     access_token_passthrough: true
-    path: "/foo"
   splunk_hec_raw/tls:
     tls_settings:
       cert_file: /test.crt

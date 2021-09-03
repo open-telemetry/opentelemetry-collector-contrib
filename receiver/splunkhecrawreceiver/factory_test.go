@@ -59,11 +59,10 @@ func TestValidateBadEndpoint(t *testing.T) {
 
 func TestCreateLogsReceiverWithBadConfig(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	cfg.Endpoint = "localhost:1"
-	cfg.Path = " *[* "
+	cfg.Endpoint = ""
 
 	mReceiver, err := createLogsReceiver(context.Background(), componenttest.NewNopReceiverCreateSettings(), cfg, consumertest.NewNop())
-	assert.EqualError(t, err, "unexpected end of input")
+	assert.EqualError(t, err, "endpoint is not formatted correctly: missing port in address")
 	assert.Nil(t, mReceiver, "receiver creation failed")
 }
 

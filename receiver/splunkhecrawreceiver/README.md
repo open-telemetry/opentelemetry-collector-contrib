@@ -28,7 +28,6 @@ The following settings are optional:
       Note: Both `key_file` and `cert_file` are required for TLS connection.
     * `key_file`: Specifies the key file to use for TLS connection. Note: Both
       `key_file` and `cert_file` are required for TLS connection.
-* `path` (default = '/*'): The path to listen on, as a glob expression.
 Example:
 
 ```yaml
@@ -39,7 +38,6 @@ receivers:
     tls:
       cert_file: /test.crt
       key_file: /test.key
-    path: "/myhecreceiver"
 ```
 
 The full list of settings exposed for this receiver are documented [here](./config.go)

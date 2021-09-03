@@ -53,12 +53,10 @@ const (
 var (
 	errNilNextLogsConsumer = errors.New("nil logsConsumer")
 	errEmptyEndpoint       = errors.New("empty endpoint")
-	errInvalidPath         = errors.New("invalid path")
 	errInvalidMethod       = errors.New("invalid http method")
 	errInvalidEncoding     = errors.New("invalid encoding")
 
 	okRespBody              = initJSONResponse(responseOK)
-	notFoundRespBody        = initJSONResponse(responseNotFound)
 	invalidMethodRespBody   = initJSONResponse(responseInvalidMethod)
 	invalidEncodingRespBody = initJSONResponse(responseInvalidEncoding)
 	errGzipReaderRespBody   = initJSONResponse(responseErrGzipReader)
@@ -151,11 +149,6 @@ func (r *splunkReceiver) Shutdown(context.Context) error {
 func (r *splunkReceiver) handleReq(resp http.ResponseWriter, req *http.Request) {
 	ctx := req.Context()
 	ctx = r.obsrecv.StartLogsOp(ctx)
-	reqPath := req.URL.Path
-	if !r.config.pathGlob.Match(reqPath) {
-		r.failRequest(ctx, resp, http.StatusNotFound, notFoundRespBody, 0, errInvalidPath)
-		return
-	}
 
 	if req.Method != http.MethodPost {
 		r.failRequest(ctx, resp, http.StatusBadRequest, invalidMethodRespBody, 0, errInvalidMethod)

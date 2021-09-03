@@ -19,42 +19,29 @@ import (
 	"net"
 	"strconv"
 
-	"github.com/gobwas/glob"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 )
 
-// Config defines configuration for the Splunk HEC receiver.
+// Config defines configuration for the Splunk HEC raw receiver.
 type Config struct {
 	config.ReceiverSettings       `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
 	confighttp.HTTPServerSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
 
 	splunk.AccessTokenPassthroughConfig `mapstructure:",squash"`
-	// Path we will listen on, defaults to `*` (anything matches)
-	Path     string `mapstructure:"path"`
-	pathGlob glob.Glob
 }
 
-// initialize and initialize the configuration
+// initialize the configuration
 func (c *Config) initialize() error {
 
-	path := c.Path
-	if path == "" {
-		path = "*"
-	}
-	glob, err := glob.Compile(path)
-	if err != nil {
-		return err
-	}
-	c.pathGlob = glob
-	_, err = extractPortFromEndpoint(c.Endpoint)
+	_, err := extractPortFromEndpoint(c.Endpoint)
 	return err
 }
 
 // extract the port number from string in "address:port" format. If the
-// port number cannot be extracted returns an error.
+// port number cannot be extracted return an error.
 func extractPortFromEndpoint(endpoint string) (int, error) {
 	_, portStr, err := net.SplitHostPort(endpoint)
 	if err != nil {

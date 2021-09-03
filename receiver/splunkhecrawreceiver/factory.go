@@ -52,7 +52,6 @@ func createDefaultConfig() config.Receiver {
 			Endpoint: defaultEndpoint,
 		},
 		AccessTokenPassthroughConfig: splunk.AccessTokenPassthroughConfig{},
-		Path:                         "",
 	}
 }
 

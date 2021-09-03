@@ -107,7 +107,6 @@ func Test_splunkhecreceiver_NewLogsReceiver(t *testing.T) {
 func Test_splunkhecReceiver_handleReq(t *testing.T) {
 	config := createDefaultConfig().(*Config)
 	config.Endpoint = "localhost:0" // Actually not creating the endpoint
-	config.Path = "/foo"
 	config.initialize()
 
 	currentTime := float64(time.Now().UnixNano()) / 1e6
@@ -124,14 +123,6 @@ func Test_splunkhecReceiver_handleReq(t *testing.T) {
 			assertResponse: func(t *testing.T, status int, body string) {
 				assert.Equal(t, http.StatusBadRequest, status)
 				assert.Equal(t, responseInvalidMethod, body)
-			},
-		},
-		{
-			name: "incorrect_path",
-			req:  httptest.NewRequest("POST", "http://localhost/bar", nil),
-			assertResponse: func(t *testing.T, status int, body string) {
-				assert.Equal(t, http.StatusNotFound, status)
-				assert.Equal(t, responseNotFound, body)
 			},
 		},
 		{
