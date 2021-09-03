@@ -134,7 +134,6 @@ func Test_splunkhecReceiver_handleReq(t *testing.T) {
 			}(),
 			assertResponse: func(t *testing.T, status int, body string) {
 				assert.Equal(t, http.StatusOK, status)
-				assert.Equal(t, responseOK, body)
 			},
 		},
 		{
@@ -157,7 +156,6 @@ func Test_splunkhecReceiver_handleReq(t *testing.T) {
 			}(),
 			assertResponse: func(t *testing.T, status int, body string) {
 				assert.Equal(t, http.StatusOK, status)
-				assert.Equal(t, responseOK, body)
 			},
 		},
 
@@ -169,7 +167,6 @@ func Test_splunkhecReceiver_handleReq(t *testing.T) {
 			}(),
 			assertResponse: func(t *testing.T, status int, body string) {
 				assert.Equal(t, http.StatusAccepted, status)
-				assert.Equal(t, responseOK, body)
 			},
 		},
 		{
@@ -182,7 +179,6 @@ func Test_splunkhecReceiver_handleReq(t *testing.T) {
 			}(),
 			assertResponse: func(t *testing.T, status int, body string) {
 				assert.Equal(t, http.StatusAccepted, status)
-				assert.Equal(t, responseOK, body)
 			},
 		},
 		{
@@ -203,7 +199,6 @@ func Test_splunkhecReceiver_handleReq(t *testing.T) {
 			}(),
 			assertResponse: func(t *testing.T, status int, body string) {
 				assert.Equal(t, http.StatusAccepted, status)
-				assert.Equal(t, responseOK, body)
 			},
 		},
 		{
@@ -230,7 +225,7 @@ func Test_splunkhecReceiver_handleReq(t *testing.T) {
 			assert.NoError(t, err)
 
 			r := rcv.(*splunkReceiver)
-			r.Start(context.Background(), componenttest.NewNopHost())
+			assert.NoError(t, r.Start(context.Background(), componenttest.NewNopHost()))
 			defer r.Shutdown(context.Background())
 			w := httptest.NewRecorder()
 			r.handleReq(w, tt.req)
@@ -240,7 +235,11 @@ func Test_splunkhecReceiver_handleReq(t *testing.T) {
 			assert.NoError(t, err)
 
 			var bodyStr string
-			assert.NoError(t, json.Unmarshal(respBytes, &bodyStr))
+			if len(respBytes) > 0 {
+				assert.NoError(t, json.Unmarshal(respBytes, &bodyStr))
+			} else {
+				bodyStr = ""
+			}
 
 			tt.assertResponse(t, resp.StatusCode, bodyStr)
 		})
@@ -397,10 +396,14 @@ func Test_splunkhecReceiver_AccessTokenPassthrough(t *testing.T) {
 			assert.NoError(t, err)
 
 			var bodyStr string
-			assert.NoError(t, json.Unmarshal(respBytes, &bodyStr))
+
+			if len(respBytes) > 0 {
+				assert.NoError(t, json.Unmarshal(respBytes, &bodyStr))
+			} else {
+				bodyStr = ""
+			}
 
 			assert.Equal(t, http.StatusAccepted, resp.StatusCode)
-			assert.Equal(t, responseOK, bodyStr)
 
 			got := sink.AllLogs()
 

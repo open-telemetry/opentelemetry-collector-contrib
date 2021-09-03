@@ -21,6 +21,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"net"
 	"net/http"
 	"time"
@@ -38,7 +39,6 @@ import (
 const (
 	defaultServerTimeout = 20 * time.Second
 
-	responseOK                     = "OK"
 	responseInvalidMethod          = `Only "POST" method is supported`
 	responseInvalidEncoding        = `"Content-Encoding" must be "gzip" or empty`
 	responseErrGzipReader          = "Error on gzip body"
@@ -55,7 +55,6 @@ var (
 	errInvalidMethod       = errors.New("invalid http method")
 	errInvalidEncoding     = errors.New("invalid encoding")
 
-	okRespBody              = initJSONResponse(responseOK)
 	invalidMethodRespBody   = initJSONResponse(responseInvalidMethod)
 	invalidEncodingRespBody = initJSONResponse(responseInvalidEncoding)
 	errGzipReaderRespBody   = initJSONResponse(responseErrGzipReader)
@@ -106,6 +105,7 @@ type splunkReceiver struct {
 	server             *http.Server
 	obsrecv            *obsreport.Receiver
 	resourceCustomizer func(*http.Request, pdata.Resource)
+	gzipReader         *gzip.Reader
 }
 
 // Start tells the receiver to start its processing.
@@ -161,18 +161,26 @@ func (r *splunkReceiver) handleReq(resp http.ResponseWriter, req *http.Request) 
 	}
 
 	if req.ContentLength == 0 {
-		resp.Write(okRespBody)
+		r.obsrecv.EndLogsOp(ctx, typeStr, 0, nil)
 		return
 	}
 
 	bodyReader := req.Body
 	if encoding == gzipEncoding {
 		var err error
-		bodyReader, err = gzip.NewReader(bodyReader)
+		if r.gzipReader == nil {
+			r.gzipReader, err = gzip.NewReader(bodyReader)
+		} else {
+			err = r.gzipReader.Reset(bodyReader)
+			bodyReader = r.gzipReader
+		}
 		if err != nil {
 			r.failRequest(ctx, resp, http.StatusBadRequest, errGzipReaderRespBody, 0, err)
+			_, _ = ioutil.ReadAll(req.Body)
+			_ = req.Body.Close()
 			return
 		}
+
 	}
 
 	sc := bufio.NewScanner(bodyReader)
@@ -189,11 +197,12 @@ func (r *splunkReceiver) handleReq(resp http.ResponseWriter, req *http.Request) 
 	}
 	decodeErr := r.logsConsumer.ConsumeLogs(ctx, ld)
 
+	_ = bodyReader.Close()
+
 	if decodeErr != nil {
 		r.failRequest(ctx, resp, http.StatusInternalServerError, errInternalServerError, ill.Logs().Len(), decodeErr)
 	} else {
 		resp.WriteHeader(http.StatusAccepted)
-		resp.Write(okRespBody)
 		r.obsrecv.EndLogsOp(ctx, typeStr, ill.Logs().Len(), nil)
 	}
 }
