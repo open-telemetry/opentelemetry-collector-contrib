@@ -14,8 +14,27 @@
 
 package system
 
+import "fmt"
+
 // Config defines user-specified configurations unique to the system detector
 type Config struct {
-	// The SystemSource will be set as hostname(ex. 'hostname' or 'FQDN')
-	SystemSource string `mapstructure:"system_source"`
+	// The HostnameSources is a priority list of sources from which hostname will be fetched.
+	// In case of the error in fetching hostname from source,
+	// the next source from the list will be considered.(**default**: `["dns", "os"]`)
+	HostnameSources []string `mapstructure:"hostname_sources"`
+}
+
+// Validate config
+func (config *Config) Validate() error {
+	if len(config.HostnameSources) == 0 {
+		config.HostnameSources = []string{"dns", "os"}
+		return nil
+	}
+	for _, hostnameSource := range config.HostnameSources {
+		_, exists := hostnameSourcesMap[hostnameSource]
+		if !exists {
+			return fmt.Errorf("hostname_sources contains invalid value: %q", hostnameSource)
+		}
+	}
+	return nil
 }

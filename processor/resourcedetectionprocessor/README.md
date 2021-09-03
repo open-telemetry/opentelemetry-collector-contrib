@@ -21,8 +21,8 @@ details of which are currently pending confirmation in the OpenTelemetry specifi
     ```yaml
     detectors: ["system"]
     system:
-        # Force the detector to use 'hostname' instead of 'FQDN'
-        system_source: hostname
+        # A priority list of sources to get the hostname 
+        hostname_sources: ["dns", "os"]
     ```
 
 Use the Docker detector (see below) if running the Collector as a Docker container.

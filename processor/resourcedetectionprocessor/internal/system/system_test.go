@@ -60,23 +60,23 @@ func TestNewDetector(t *testing.T) {
 			shouldError: false,
 		},
 		{
-			name: "Success Case Valid Config 'SystemSource' set to 'hostname'",
+			name: "Success Case Valid Config 'HostnameSources' set to 'os'",
 			cfg: Config{
-				SystemSource: "hostname",
+				HostnameSources: []string{"os"},
 			},
 			shouldError: false,
 		},
 		{
-			name: "Success Case Valid Config 'SystemSource' set to 'FQDN'",
+			name: "Success Case Valid Config 'HostnameSources' set to 'dns'",
 			cfg: Config{
-				SystemSource: "FQDN",
+				HostnameSources: []string{"dns"},
 			},
 			shouldError: false,
 		},
 		{
 			name: "Error Case Invalid Config",
 			cfg: Config{
-				SystemSource: "invalid",
+				HostnameSources: []string{"invalid"},
 			},
 			shouldError: true,
 		},
@@ -100,7 +100,7 @@ func TestDetectFQDNAvailable(t *testing.T) {
 	md.On("FQDN").Return("fqdn", nil)
 	md.On("OSType").Return("DARWIN", nil)
 
-	detector := &Detector{provider: md, logger: zap.NewNop(), systemSource: "FQDN"}
+	detector := &Detector{provider: md, logger: zap.NewNop(), hostnameSources: []string{"dns"}}
 	res, schemaURL, err := detector.Detect(context.Background())
 	require.NoError(t, err)
 	assert.Equal(t, conventions.SchemaURL, schemaURL)
@@ -123,7 +123,7 @@ func TestFallbackHostname(t *testing.T) {
 	mdHostname.On("FQDN").Return("", errors.New("err"))
 	mdHostname.On("OSType").Return("DARWIN", nil)
 
-	detector := &Detector{provider: mdHostname, logger: zap.NewNop(), systemSource: "FQDN"}
+	detector := &Detector{provider: mdHostname, logger: zap.NewNop(), hostnameSources: []string{"dns", "os"}}
 	res, schemaURL, err := detector.Detect(context.Background())
 	require.NoError(t, err)
 	assert.Equal(t, conventions.SchemaURL, schemaURL)
@@ -144,7 +144,7 @@ func TestUseHostname(t *testing.T) {
 	mdHostname.On("Hostname").Return("hostname", nil)
 	mdHostname.On("OSType").Return("DARWIN", nil)
 
-	detector := &Detector{provider: mdHostname, logger: zap.NewNop(), systemSource: "hostname"}
+	detector := &Detector{provider: mdHostname, logger: zap.NewNop(), hostnameSources: []string{"os"}}
 	res, schemaURL, err := detector.Detect(context.Background())
 	require.NoError(t, err)
 	assert.Equal(t, conventions.SchemaURL, schemaURL)
@@ -161,24 +161,24 @@ func TestUseHostname(t *testing.T) {
 }
 
 func TestDetectError(t *testing.T) {
-	// FQDN and hostname fail with 'systemSource' set to 'FQDN'
+	// FQDN and hostname fail with 'hostnameSources' set to 'dns'
 	mdFQDN := &mockMetadata{}
 	mdFQDN.On("OSType").Return("WINDOWS", nil)
 	mdFQDN.On("FQDN").Return("", errors.New("err"))
 	mdFQDN.On("Hostname").Return("", errors.New("err"))
 
-	detector := &Detector{provider: mdFQDN, logger: zap.NewNop(), systemSource: "FQDN"}
+	detector := &Detector{provider: mdFQDN, logger: zap.NewNop(), hostnameSources: []string{"dns"}}
 	res, schemaURL, err := detector.Detect(context.Background())
 	assert.Error(t, err)
 	assert.Equal(t, "", schemaURL)
 	assert.True(t, internal.IsEmptyResource(res))
 
-	// hostname fail with 'systemSource' set to 'hostname'
+	// hostname fail with 'hostnameSources' set to 'os'
 	mdHostname := &mockMetadata{}
 	mdHostname.On("OSType").Return("WINDOWS", nil)
 	mdHostname.On("Hostname").Return("", errors.New("err"))
 
-	detector = &Detector{provider: mdHostname, logger: zap.NewNop(), systemSource: "hostname"}
+	detector = &Detector{provider: mdHostname, logger: zap.NewNop(), hostnameSources: []string{"os"}}
 	res, schemaURL, err = detector.Detect(context.Background())
 	assert.Error(t, err)
 	assert.Equal(t, "", schemaURL)
@@ -189,7 +189,7 @@ func TestDetectError(t *testing.T) {
 	mdOSType.On("FQDN").Return("fqdn", nil)
 	mdOSType.On("OSType").Return("", errors.New("err"))
 
-	detector = &Detector{provider: mdOSType, logger: zap.NewNop(), systemSource: "FQDN"}
+	detector = &Detector{provider: mdOSType, logger: zap.NewNop(), hostnameSources: []string{"dns"}}
 	res, schemaURL, err = detector.Detect(context.Background())
 	assert.Error(t, err)
 	assert.Equal(t, "", schemaURL)

@@ -19,6 +19,7 @@ import (
 	"fmt"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/model/pdata"
 	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
 	"go.uber.org/zap"
@@ -31,33 +32,34 @@ const (
 	TypeStr = "system"
 )
 
-var systemSources = []string{"hostname", "FQDN"}
+var hostnameSourcesMap = map[string]func(*Detector) (string, error){
+	"dns": getFQDN,
+	"os":  getHostname,
+}
+
 var _ internal.Detector = (*Detector)(nil)
 
 // Detector is a system metadata detector
 type Detector struct {
-	provider     systemMetadata
-	logger       *zap.Logger
-	systemSource string
+	provider        systemMetadata
+	logger          *zap.Logger
+	hostnameSources []string
 }
 
 // NewDetector creates a new system metadata detector
 func NewDetector(p component.ProcessorCreateSettings, dcfg internal.DetectorConfig) (internal.Detector, error) {
 	cfg := dcfg.(Config)
-	// if no value is provided then set to default value
-	if cfg.SystemSource == "" {
-		cfg.SystemSource = "FQDN"
-	}
-	err := checkSystemSources(cfg.SystemSource)
+	err := cfg.Validate()
 	if err != nil {
 		return nil, err
 	}
-	return &Detector{provider: &systemMetadataImpl{}, logger: p.Logger, systemSource: cfg.SystemSource}, nil
+	return &Detector{provider: &systemMetadataImpl{}, logger: p.Logger, hostnameSources: cfg.HostnameSources}, nil
 }
 
 // Detect detects system metadata and returns a resource with the available ones
 func (d *Detector) Detect(_ context.Context) (resource pdata.Resource, schemaURL string, err error) {
 	var hostname string
+	var errs []error
 
 	res := pdata.NewResource()
 	attrs := res.Attributes()
@@ -67,31 +69,24 @@ func (d *Detector) Detect(_ context.Context) (resource pdata.Resource, schemaURL
 		return res, "", fmt.Errorf("failed getting OS type: %w", err)
 	}
 
-	if d.systemSource == "hostname" {
-		hostname, err = d.getHostname()
-		if err != nil {
-			return res, "", err
-		}
-	} else if d.systemSource == "FQDN" {
-		hostname, err = d.provider.FQDN()
-		if err != nil {
-			// Fallback to OS hostname
-			d.logger.Debug("FQDN query failed, falling back to OS hostname", zap.Error(err))
-			hostname, err = d.getHostname()
-			if err != nil {
-				return res, "", err
-			}
+	for _, source := range d.hostnameSources {
+		getHostname := hostnameSourcesMap[source]
+		hostname, err = getHostname(d)
+		if err == nil {
+			attrs.InsertString(conventions.AttributeHostName, hostname)
+			attrs.InsertString(conventions.AttributeOSType, osType)
+
+			return res, conventions.SchemaURL, nil
+		} else {
+			errs = append(errs, err)
 		}
 	}
 
-	attrs.InsertString(conventions.AttributeHostName, hostname)
-	attrs.InsertString(conventions.AttributeOSType, osType)
-
-	return res, conventions.SchemaURL, nil
+	return res, "", consumererror.Combine(errs)
 }
 
 // getHostname returns OS hostname
-func (d *Detector) getHostname() (string, error) {
+func getHostname(d *Detector) (string, error) {
 	hostname, err := d.provider.Hostname()
 	if err != nil {
 		return "", fmt.Errorf("failed getting OS hostname: %w", err)
@@ -99,11 +94,11 @@ func (d *Detector) getHostname() (string, error) {
 	return hostname, nil
 }
 
-func checkSystemSources(systemSource string) error {
-	for _, source := range systemSources {
-		if source == systemSource {
-			return nil
-		}
+// getFQDN returns FQDN
+func getFQDN(d *Detector) (string, error) {
+	hostname, err := d.provider.FQDN()
+	if err != nil {
+		return "", fmt.Errorf("failed getting FQDN: %w", err)
 	}
-	return fmt.Errorf("invalid system_source value: %q", systemSource)
+	return hostname, nil
 }
