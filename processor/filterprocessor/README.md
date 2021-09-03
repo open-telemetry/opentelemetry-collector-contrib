@@ -44,7 +44,7 @@ processors:
 Refer to the config files in [testdata](./testdata) for detailed
 examples on using the processor.
 
-### Using an 'expr' match_type
+## Using an 'expr' match_type
 
 In addition to matching metric names with the 'strict' or 'regexp' match types, the filter processor
 supports matching entire `Metric`s using the [expr](https://github.com/antonmedv/expr) expression engine.
@@ -79,7 +79,7 @@ processors:
 The above config will filter out any Metric that both has the name "my.metric" and has at least one datapoint
 with a label of 'my_label="abc123"'.
 
-##### Support for multiple expressions
+### Support for multiple expressions
 
 As with "strict" and "regexp", multiple "expr" `expressions` are allowed.
 
@@ -111,7 +111,7 @@ the above example the Metric will be excluded. If after testing all the datapoin
 expressions there isn't a match, the entire Metric is considered to be not matching.
 
 
-##### Filter metrics using resource attributes
+### Filter metrics using resource attributes
 In addition to the names, metrics can be filtered using resource attributes. `resource_attributes` takes a list of resource attributes to filter metrics against. 
 
 Following example will include only the metrics coming from `app_container_1` (the value for `container.name` resource attribute is `app_container_1`). 

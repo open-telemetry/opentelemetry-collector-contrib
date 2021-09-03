@@ -5,7 +5,7 @@ Supported pipeline types: traces, logs.
 The attributes processor modifies attributes of a span. Please refer to
 [config.go](./config.go) for the config spec.
 
-It optionally supports the ability to [include/exclude spans](../README.md#includeexclude-spans).
+It optionally supports the ability to [include/exclude spans](#includeexclude-spans).
 
 It takes a list of actions which are performed in order specified in the config.
 The supported actions are:
@@ -104,3 +104,68 @@ processors:
 
 Refer to [config.yaml](./testdata/config.yaml) for detailed
 examples on using the processor.
+
+## Include/Exclude Spans
+
+The [attribute processor](attributesprocessor/README.md) and the [span processor](spanprocessor/README.md) expose
+the option to provide a set of properties of a span to match against to determine
+if the span should be included or excluded from the processor. To configure
+this option, under `include` and/or `exclude` at least `match_type` and one of
+`services`, `span_names` or `attributes` is required.
+
+Note: If both `include` and `exclude` are specified, the `include` properties
+are checked before the `exclude` properties.
+
+```yaml
+{span, attributes}:
+    # include and/or exclude can be specified. However, the include properties
+    # are always checked before the exclude properties.
+    {include, exclude}:
+      # At least one of services, span_names or attributes must be specified.
+      # It is supported to have more than one specified, but all of the specified
+      # conditions must evaluate to true for a match to occur.
+
+      # match_type controls how items in "services" and "span_names" arrays are
+      # interpreted. Possible values are "regexp" or "strict".
+      # This is a required field.
+      match_type: {strict, regexp}
+
+      # regexp is an optional configuration section for match_type regexp.
+      regexp:
+        # < see "Match Configuration" below >
+
+      # services specify an array of items to match the service name against.
+      # A match occurs if the span service name matches at least of the items.
+      # This is an optional field.
+      services: [<item1>, ..., <itemN>]
+
+      # The span name must match at least one of the items.
+      # This is an optional field.
+      span_names: [<item1>, ..., <itemN>]
+
+      # Attributes specifies the list of attributes to match against.
+      # All of these attributes must match exactly for a match to occur.
+      # This is an optional field.
+      attributes:
+          # Key specifies the attribute to match against.
+        - key: <key>
+          # Value specifies the exact value to match against.
+          # If not specified, a match occurs if the key is present in the attributes.
+          value: {value}
+```
+
+### Match Configuration
+
+Some `match_type` values have additional configuration options that can be
+specified. The `match_type` value is the name of the configuration section.
+These sections are optional.
+
+```yaml
+# regexp is an optional configuration section for match_type regexp.
+regexp:
+  # cacheenabled determines whether match results are LRU cached to make subsequent matches faster.
+  # Cache size is unlimited unless cachemaxnumentries is also specified.
+  cacheenabled: <bool>
+  # cachemaxnumentries is the max number of entries of the LRU cache; ignored if cacheenabled is false.
+  cachemaxnumentries: <int>
+```
