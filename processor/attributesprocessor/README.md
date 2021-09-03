@@ -107,7 +107,7 @@ examples on using the processor.
 
 ## Include/Exclude Spans
 
-The [attribute processor](attributesprocessor/README.md) and the [span processor](spanprocessor/README.md) expose
+The [attribute processor](README.md) and the [span processor](../spanprocessor/README.md) expose
 the option to provide a set of properties of a span to match against to determine
 if the span should be included or excluded from the processor. To configure
 this option, under `include` and/or `exclude` at least `match_type` and one of
