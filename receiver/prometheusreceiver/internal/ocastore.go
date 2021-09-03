@@ -23,9 +23,10 @@ import (
 	"github.com/prometheus/prometheus/pkg/labels"
 	"github.com/prometheus/prometheus/scrape"
 	"github.com/prometheus/prometheus/storage"
+	"go.uber.org/zap"
+
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
-	"go.uber.org/zap"
 )
 
 const (
@@ -44,7 +45,7 @@ type OcaStore struct {
 	running              int32 // access atomically
 	sink                 consumer.Metrics
 	mc                   *metadataService
-	jobsMap              *JobsMap
+	jobsMap              *JobsMapPdata
 	useStartTimeMetric   bool
 	startTimeMetricRegex string
 	receiverID           config.ComponentID
@@ -58,7 +59,7 @@ func NewOcaStore(
 	ctx context.Context,
 	sink consumer.Metrics,
 	logger *zap.Logger,
-	jobsMap *JobsMap,
+	jobsMap *JobsMapPdata,
 	useStartTimeMetric bool,
 	startTimeMetricRegex string,
 	receiverID config.ComponentID,
@@ -87,16 +88,18 @@ func (o *OcaStore) SetScrapeManager(scrapeManager *scrape.Manager) {
 func (o *OcaStore) Appender(context.Context) storage.Appender {
 	state := atomic.LoadInt32(&o.running)
 	if state == runningStateReady {
-		return newTransaction(
+		return newTransactionPdata(
 			o.ctx,
-			o.jobsMap,
-			o.useStartTimeMetric,
-			o.startTimeMetricRegex,
-			o.receiverID,
-			o.mc,
-			o.sink,
-			o.externalLabels,
-			o.logger,
+			&txConfig{
+				jobsMap:              o.jobsMap,
+				useStartTimeMetric:   o.useStartTimeMetric,
+				startTimeMetricRegex: o.startTimeMetricRegex,
+				receiverID:           o.receiverID,
+				ms:                   o.mc,
+				sink:                 o.sink,
+				externalLabels:       o.externalLabels,
+				logger:               o.logger,
+			},
 		)
 	} else if state == runningStateInit {
 		panic("ScrapeManager is not set")

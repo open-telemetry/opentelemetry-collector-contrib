@@ -17,42 +17,16 @@ package internal
 import (
 	"testing"
 
-	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	"github.com/stretchr/testify/require"
+
 	"go.opentelemetry.io/collector/model/pdata"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus"
 )
-
-// Parity test to ensure that createNodeAndResource produces identical results to createNodeAndResourcePdata.
-func TestCreateNodeAndResourceEquivalence(t *testing.T) {
-	job, instance, scheme := "converter", "ocmetrics", "http"
-	ocNode, ocResource := createNodeAndResource(job, instance, scheme)
-	mdFromOC := opencensus.OCToMetrics(ocNode, ocResource,
-		// We need to pass in a dummy set of metrics
-		// just to populate and allow for full conversion.
-		[]*metricspb.Metric{
-			{
-				MetricDescriptor: &metricspb.MetricDescriptor{
-					Name:        "m1",
-					Description: "d1",
-					Unit:        "By",
-				},
-			},
-		},
-	)
-
-	fromOCResource := mdFromOC.ResourceMetrics().At(0).Resource().Attributes().Sort()
-	byDirectOTLPResource := createNodeAndResourcePdata(job, instance, scheme).Attributes().Sort()
-
-	require.Equal(t, byDirectOTLPResource, fromOCResource)
-}
 
 type jobInstanceDefinition struct {
 	job, instance, host, scheme, port string
 }
 
-func makeResourceWithJobInstanceScheme(def *jobInstanceDefinition) pdata.Resource {
+func makeResourceWithJobInstanceScheme(def *jobInstanceDefinition) *pdata.Resource {
 	resource := pdata.NewResource()
 	attrs := resource.Attributes()
 	// Using hardcoded values to assert on outward expectations so that
@@ -63,7 +37,7 @@ func makeResourceWithJobInstanceScheme(def *jobInstanceDefinition) pdata.Resourc
 	attrs.UpsertString("instance", def.instance)
 	attrs.UpsertString("port", def.port)
 	attrs.UpsertString("scheme", def.scheme)
-	return resource
+	return &resource
 }
 
 func TestCreateNodeAndResourcePromToOTLP(t *testing.T) {
@@ -71,7 +45,7 @@ func TestCreateNodeAndResourcePromToOTLP(t *testing.T) {
 		name, job string
 		instance  string
 		scheme    string
-		want      pdata.Resource
+		want      *pdata.Resource
 	}{
 		{
 			name: "all attributes proper",

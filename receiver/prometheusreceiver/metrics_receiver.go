@@ -20,9 +20,10 @@ import (
 
 	"github.com/prometheus/prometheus/discovery"
 	"github.com/prometheus/prometheus/scrape"
+	"go.uber.org/zap"
+
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
-	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver/internal"
 )
@@ -71,9 +72,9 @@ func (r *pReceiver) Start(_ context.Context, host component.Host) error {
 		}
 	}()
 
-	var jobsMap *internal.JobsMap
+	var jobsMap *internal.JobsMapPdata
 	if !r.cfg.UseStartTimeMetric {
-		jobsMap = internal.NewJobsMap(2 * time.Minute)
+		jobsMap = internal.NewJobsMapPdata(2 * time.Minute)
 	}
 	// Per component.Component Start instructions, for async operations we should not use the
 	// incoming context, it may get cancelled.
