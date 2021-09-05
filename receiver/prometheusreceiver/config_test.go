@@ -161,3 +161,40 @@ func TestRejectUnsupportedPrometheusFeatures(t *testing.T) {
 	require.Equal(t, wantErrMsg, gotErrMsg)
 
 }
+
+func TestConfigFromFile(t *testing.T) {
+	factories, err := componenttest.NopFactories()
+	assert.NoError(t, err)
+
+	factory := NewFactory()
+	factories.Receivers[typeStr] = factory
+	cfg, err := configtest.LoadConfig(path.Join(".", "testdata", "config_from_file.yaml"), factories)
+	require.NoError(t, err)
+	require.NotNil(t, cfg)
+	err = cfg.Validate()
+	require.Nil(t, err, "Expected no error")
+}
+
+func TestConfigFromFileNonExistentFile(t *testing.T) {
+	factories, err := componenttest.NopFactories()
+	assert.NoError(t, err)
+
+	factory := NewFactory()
+	factories.Receivers[typeStr] = factory
+	cfg, err := configtest.LoadConfig(path.Join(".", "testdata", "config_from_file_nonexistent_file.yaml"), factories)
+	require.Nil(t, cfg, "The config should be nil")
+	require.NotNil(t, err, "Expected an error")
+	require.Contains(t, err.Error(), `failed to read config_file for prometheus config`)
+}
+
+func TestRejectFileAndConfig(t *testing.T) {
+	factories, err := componenttest.NopFactories()
+	assert.NoError(t, err)
+
+	factory := NewFactory()
+	factories.Receivers[typeStr] = factory
+	cfg, err := configtest.LoadConfig(path.Join(".", "testdata", "config_from_file_filled.yaml"), factories)
+	require.Nil(t, cfg, "The config should be nil")
+	require.NotNil(t, err, "Expected an error")
+	require.Contains(t, err.Error(), `either "config_file" or the Prometheus configuration can be set but not both`)
+}

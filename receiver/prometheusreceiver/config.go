@@ -17,6 +17,7 @@ package prometheusreceiver
 import (
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"sort"
 	"strings"
 	"time"
@@ -40,6 +41,8 @@ type Config struct {
 	BufferCount             int                      `mapstructure:"buffer_count"`
 	UseStartTimeMetric      bool                     `mapstructure:"use_start_time_metric"`
 	StartTimeMetricRegex    string                   `mapstructure:"start_time_metric_regex"`
+
+	File string `mapstructure:"config_file"`
 
 	// ConfigPlaceholder is just an entry to make the configuration pass a check
 	// that requires that all keys present in the config actually exist on the
@@ -97,6 +100,14 @@ func (cfg *Config) Validate() error {
 	return nil
 }
 
+func configMapForNonFileRead(componentParser *configparser.Parser) (map[string]interface{}, error) {
+	promCfg, perr := componentParser.Sub(prometheusConfigKey)
+	if perr != nil {
+		return nil, perr
+	}
+	return promCfg.ToStringMap(), nil
+}
+
 // Unmarshal a config.Parser into the config struct.
 func (cfg *Config) Unmarshal(componentParser *configparser.Parser) error {
 	if componentParser == nil {
@@ -107,21 +118,43 @@ func (cfg *Config) Unmarshal(componentParser *configparser.Parser) error {
 
 	err := componentParser.UnmarshalExact(cfg)
 	if err != nil {
-		return fmt.Errorf("prometheus receiver failed to parse config: %s", err)
+		return fmt.Errorf("prometheus receiver failed to parse config: %w", err)
 	}
 
-	// Unmarshal prometheus's config values. Since prometheus uses `yaml` tags, so use `yaml`.
-	promCfg, err := componentParser.Sub(prometheusConfigKey)
-	if err != nil || len(promCfg.ToStringMap()) == 0 {
-		return err
-	}
-	out, err := yaml.Marshal(promCfg.ToStringMap())
-	if err != nil {
-		return fmt.Errorf("prometheus receiver failed to marshal config to yaml: %s", err)
+	var yamlBlob []byte
+
+	// Ensure that only 1 of "config_file" or the configuration exist, but not both.
+	cfgStringMap, cerr := configMapForNonFileRead(componentParser)
+	if cfg.File != "" && len(cfgStringMap) != 0 {
+		return errors.New(`prometheus receiver: either "config_file" or the Prometheus configuration can be set but not both`)
 	}
 
-	err = yaml.UnmarshalStrict(out, &cfg.PrometheusConfig)
-	if err != nil {
+	if cfg.File != "" { // The config file was provided, so read from it.
+		yamlBlob, err = ioutil.ReadFile(cfg.File)
+		if err != nil {
+			return fmt.Errorf("prometheus receiver failed to read config_file for prometheus config: %s", err)
+		}
+	} else { // No file was provided, the common case, parse from the YAML configuration.
+		if cerr != nil {
+			return fmt.Errorf("prometheus receiver failure: %w", cerr)
+		}
+		if len(cfgStringMap) == 0 {
+			// Preserving legacy behavior so that one can just do:
+			//   receivers:
+			//     prometheus:
+			//     other_receiver:
+			//       key1: "value1"
+			// without any errors.
+			return nil
+		}
+		// Unmarshal prometheus's config values. Since prometheus uses `yaml` tags, so use `yaml`.
+		yamlBlob, cerr = yaml.Marshal(cfgStringMap)
+		if cerr != nil {
+			return fmt.Errorf("prometheus receiver failed to marshal config to yaml: %w", cerr)
+		}
+	}
+
+	if err = yaml.UnmarshalStrict(yamlBlob, &cfg.PrometheusConfig); err != nil {
 		return fmt.Errorf("prometheus receiver failed to unmarshal yaml to prometheus config: %s", err)
 	}
 

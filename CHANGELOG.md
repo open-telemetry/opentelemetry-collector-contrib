@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+## 🚀 New components 🚀
+
+- [`prometheus` receiver](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/prometheusreceiver) now supports reading Prometheus configurations from a target file per ([#4980](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/4980)) This allows Prometheus configurations to be supplied verbatim directly from other sources.
+
+
 ## v0.34.0
 
 ## 🚀 New components 🚀
