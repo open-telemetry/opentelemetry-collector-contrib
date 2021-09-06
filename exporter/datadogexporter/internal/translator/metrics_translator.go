@@ -186,20 +186,31 @@ func (t *Translator) mapHistogramMetrics(name string, slice pdata.HistogramDataP
 	return ms
 }
 
-// getQuantileTag returns the quantile tag for summary types.
-// Since the summary type is provided as a compatibility feature, we try to format the float number as close as possible to what
+// formatFloat formats a float number as close as possible to what
 // we do on the Datadog Agent Python OpenMetrics check, which, in turn, tries to
 // follow https://github.com/OpenObservability/OpenMetrics/blob/v1.0.0/specification/OpenMetrics.md#considerations-canonical-numbers
-func getQuantileTag(quantile float64) string {
-	// We handle 0 and 1 separately since they are special
-	if quantile == 0 {
-		// we do this differently on our check
-		return "quantile:0"
-	} else if quantile == 1.0 {
-		// it needs to have a '.0' added at the end according to the spec
-		return "quantile:1.0"
+func formatFloat(f float64) string {
+	if math.IsInf(f, 1) {
+		return "inf"
+	} else if math.IsInf(f, -1) {
+		return "-inf"
+	} else if math.IsNaN(f) {
+		return "nan"
+	} else if f == 0 {
+		return "0"
 	}
-	return fmt.Sprintf("quantile:%s", strconv.FormatFloat(quantile, 'g', -1, 64))
+
+	// Add .0 to whole numbers
+	s := strconv.FormatFloat(f, 'g', -1, 64)
+	if f == math.Floor(f) {
+		s = s + ".0"
+	}
+	return s
+}
+
+// getQuantileTag returns the quantile tag for summary types.
+func getQuantileTag(quantile float64) string {
+	return fmt.Sprintf("quantile:%s", formatFloat(quantile))
 }
 
 // mapSummaryMetrics maps summary datapoints into Datadog metrics

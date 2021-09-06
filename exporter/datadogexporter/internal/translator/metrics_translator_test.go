@@ -483,23 +483,27 @@ func TestMapHistogramMetrics(t *testing.T) {
 	)
 }
 
-func TestQuantileTag(t *testing.T) {
+func TestFormatFloat(t *testing.T) {
 	tests := []struct {
-		quantile float64
-		tag      string
+		f float64
+		s string
 	}{
-		{quantile: 0, tag: "quantile:0"},
-		{quantile: 0.001, tag: "quantile:0.001"},
-		{quantile: 0.9, tag: "quantile:0.9"},
-		{quantile: 0.95, tag: "quantile:0.95"},
-		{quantile: 0.99, tag: "quantile:0.99"},
-		{quantile: 0.999, tag: "quantile:0.999"},
-		{quantile: 1, tag: "quantile:1.0"},
-		{quantile: 1e-10, tag: "quantile:1e-10"},
+		{f: 0, s: "0"},
+		{f: 0.001, s: "0.001"},
+		{f: 0.9, s: "0.9"},
+		{f: 0.95, s: "0.95"},
+		{f: 0.99, s: "0.99"},
+		{f: 0.999, s: "0.999"},
+		{f: 1, s: "1.0"},
+		{f: 2, s: "2.0"},
+		{f: math.Inf(1), s: "inf"},
+		{f: math.Inf(-1), s: "-inf"},
+		{f: math.NaN(), s: "nan"},
+		{f: 1e-10, s: "1e-10"},
 	}
 
 	for _, test := range tests {
-		assert.Equal(t, test.tag, getQuantileTag(test.quantile))
+		assert.Equal(t, test.s, formatFloat(test.f))
 	}
 }
 
