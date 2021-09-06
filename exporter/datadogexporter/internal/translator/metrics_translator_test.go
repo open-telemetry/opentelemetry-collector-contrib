@@ -700,7 +700,8 @@ func TestRunningMetrics(t *testing.T) {
 	cfg := config.MetricsConfig{}
 	tr := newTranslator(zap.NewNop(), cfg)
 
-	series, _ := tr.MapMetrics(ms)
+	series, sl := tr.MapMetrics(ms)
+	require.Empty(t, sl)
 
 	runningHostnames := []string{}
 
@@ -1029,7 +1030,8 @@ func TestNaNMetrics(t *testing.T) {
 	core, observed := observer.New(zapcore.DebugLevel)
 	testLogger := zap.New(core)
 	tr := newTranslator(testLogger, cfg)
-	series, _ := tr.MapMetrics(md)
+	series, sl := tr.MapMetrics(md)
+	require.Empty(t, sl)
 
 	filtered := removeRunningMetrics(series)
 	assert.ElementsMatch(t, filtered, []datadog.Metric{
