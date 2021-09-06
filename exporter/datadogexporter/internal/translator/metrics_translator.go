@@ -159,7 +159,7 @@ func (t *Translator) getSketchBuckets(name string, ts uint64, p pdata.HistogramD
 	for j := range p.BucketCounts() {
 		lowerBound, upperBound := getBounds(p, j)
 		if math.IsInf(upperBound, 1) {
-			// Set it to the lower bound because of this misterious comment:
+			// Set it to the lower bound because of this mysterious comment:
 			// https://github.com/DataDog/datadog-agent/blob/7.30.1/pkg/aggregator/check_sampler.go#L107-L111
 			upperBound = lowerBound
 		}
