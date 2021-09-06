@@ -20,7 +20,6 @@ import (
 
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/model/pdata"
-
 	"go.uber.org/zap"
 )
 
