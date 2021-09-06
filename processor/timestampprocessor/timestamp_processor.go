@@ -18,10 +18,10 @@ import (
 	"context"
 	"fmt"
 
-	"go.uber.org/zap"
-
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/model/pdata"
+
+	"go.uber.org/zap"
 )
 
 type filterMetricProcessor struct {
