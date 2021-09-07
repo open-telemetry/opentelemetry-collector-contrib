@@ -49,21 +49,25 @@ func createDefaultConfig() config.Exporter {
 		NumWorkers: 2,
 	}
 }
+
 func createLogsExporter(
 	ctx context.Context,
 	set component.ExporterCreateSettings,
 	cfg config.Exporter,
 ) (component.LogsExporter, error) {
-
 	oCfg := cfg.(*Config)
+	oce, err := newExporter(ctx, oCfg)
+	if err != nil {
+		return nil, err
+	}
 	return exporterhelper.NewLogsExporter(
 		cfg,
 		set,
-		nil,
+		oce.pushLogs,
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		exporterhelper.WithRetry(oCfg.RetrySettings),
 		exporterhelper.WithQueue(oCfg.QueueSettings),
-		exporterhelper.WithStart(nil),
-		exporterhelper.WithShutdown(nil),
+		exporterhelper.WithStart(oce.start),
+		exporterhelper.WithShutdown(oce.shutdown),
 	)
 }

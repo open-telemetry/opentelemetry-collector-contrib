@@ -12,5 +12,5 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package skywalkingexporter exports data by using skywalking data collect protocol to a gPRC endpoint.
+// Package skywalkingexporter exports data by using SkyWalking data collect protocol to a gPRC endpoint.
 package skywalkingexporter
