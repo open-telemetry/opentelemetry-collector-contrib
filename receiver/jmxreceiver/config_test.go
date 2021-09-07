@@ -78,8 +78,9 @@ func TestLoadConfig(t *testing.T) {
 			RemoteProfile:      "myremoteprofile",
 			Realm:              "myrealm",
 			Properties: map[string]string{
-				"property.one": "value.one",
-				"property.two": "value.two.a=value.two.b,value.two.c=value.two.d",
+				"property.one":                           "value.one",
+				"property.two":                           "value.two.a=value.two.b,value.two.c=value.two.d",
+				"org.slf4j.simpleLogger.defaultLogLevel": "info",
 			},
 		}, r1)
 
@@ -96,7 +97,7 @@ func TestLoadConfig(t *testing.T) {
 			JARPath:            "/opt/opentelemetry-java-contrib-jmx-metrics.jar",
 			GroovyScript:       "mygroovyscriptpath",
 			CollectionInterval: 10 * time.Second,
-			Properties:         make(map[string]string),
+			Properties:         map[string]string{"org.slf4j.simpleLogger.defaultLogLevel": "info"},
 			OTLPExporterConfig: otlpExporterConfig{
 				Endpoint: "0.0.0.0:0",
 				TimeoutSettings: exporterhelper.TimeoutSettings{
@@ -115,7 +116,7 @@ func TestLoadConfig(t *testing.T) {
 			ReceiverSettings:   config.NewReceiverSettings(config.NewIDWithName(typeStr, "missinggroovy")),
 			JARPath:            "/opt/opentelemetry-java-contrib-jmx-metrics.jar",
 			Endpoint:           "service:jmx:rmi:///jndi/rmi://host:12345/jmxrmi",
-			Properties:         make(map[string]string),
+			Properties:         map[string]string{"org.slf4j.simpleLogger.defaultLogLevel": "info"},
 			CollectionInterval: 10 * time.Second,
 			OTLPExporterConfig: otlpExporterConfig{
 				Endpoint: "0.0.0.0:0",
@@ -136,7 +137,7 @@ func TestLoadConfig(t *testing.T) {
 			JARPath:            "/opt/opentelemetry-java-contrib-jmx-metrics.jar",
 			Endpoint:           "myendpoint:23456",
 			GroovyScript:       "mygroovyscriptpath",
-			Properties:         make(map[string]string),
+			Properties:         map[string]string{"org.slf4j.simpleLogger.defaultLogLevel": "info"},
 			CollectionInterval: -100 * time.Millisecond,
 			OTLPExporterConfig: otlpExporterConfig{
 				Endpoint: "0.0.0.0:0",
@@ -157,7 +158,7 @@ func TestLoadConfig(t *testing.T) {
 			JARPath:            "/opt/opentelemetry-java-contrib-jmx-metrics.jar",
 			Endpoint:           "myendpoint:34567",
 			GroovyScript:       "mygroovyscriptpath",
-			Properties:         make(map[string]string),
+			Properties:         map[string]string{"org.slf4j.simpleLogger.defaultLogLevel": "info"},
 			CollectionInterval: 10 * time.Second,
 			OTLPExporterConfig: otlpExporterConfig{
 				Endpoint: "0.0.0.0:0",
