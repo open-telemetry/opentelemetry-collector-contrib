@@ -16,6 +16,7 @@ package cumulativetodeltaprocessor
 
 import (
 	"context"
+	"math"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
@@ -69,11 +70,14 @@ func (ctdp *cumulativeToDeltaProcessor) processMetrics(_ context.Context, md pda
 							labelMap := make(map[string]string)
 
 							fromDataPoint.Attributes().Range(func(k string, v pdata.AttributeValue) bool {
-								labelMap[k] = pdata.AttributeValueToString(v)
+								labelMap[k] = v.AsString()
 								return true
 							})
-
-							result, _ := ctdp.deltaCalculator.Calculate(metric.Name(), labelMap, fromDataPoint.DoubleVal(), fromDataPoint.Timestamp().AsTime())
+							datapointValue := fromDataPoint.DoubleVal()
+							if math.IsNaN(datapointValue) {
+								continue
+							}
+							result, _ := ctdp.deltaCalculator.Calculate(metric.Name(), labelMap, datapointValue, fromDataPoint.Timestamp().AsTime())
 
 							fromDataPoint.SetDoubleVal(result.(delta).value)
 							fromDataPoint.SetStartTimestamp(pdata.NewTimestampFromTime(result.(delta).prevTimestamp))

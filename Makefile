@@ -56,7 +56,8 @@ stability-tests: otelcontribcol
 .PHONY: gotidy
 gotidy:
 	$(MAKE) for-all CMD="rm -fr go.sum"
-	$(MAKE) for-all CMD="go mod tidy"
+	$(MAKE) for-all CMD="go mod tidy -go=1.16"
+	$(MAKE) for-all CMD="go mod tidy -go=1.17"
 
 .PHONY: gomoddownload
 gomoddownload:
@@ -160,6 +161,7 @@ install-tools:
 	cd $(TOOLS_MOD_DIR) && go install go.opentelemetry.io/build-tools/issuegenerator
 	cd $(TOOLS_MOD_DIR) && go install github.com/open-telemetry/opentelemetry-collector-contrib/cmd/mdatagen
 	cd $(TOOLS_MOD_DIR) && go install golang.org/x/tools/cmd/goimports
+	cd $(TOOLS_MOD_DIR) && go install go.opentelemetry.io/build-tools/multimod
 
 .PHONY: run
 run:

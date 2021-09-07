@@ -20,7 +20,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/model/pdata"
-	conventions "go.opentelemetry.io/collector/translator/conventions/v1.5.0"
+	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterconfig"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterset"
@@ -204,7 +204,7 @@ func Test_Matching_False(t *testing.T) {
 		},
 	}
 
-	atts := pdata.NewAttributeMap().InitFromMap(map[string]pdata.AttributeValue{
+	atts := pdata.NewAttributeMapFromMap(map[string]pdata.AttributeValue{
 		"keyInt": pdata.NewAttributeValueInt(123),
 		"keyMap": pdata.NewAttributeValueMap(),
 	})
@@ -358,7 +358,7 @@ func Test_Matching_True(t *testing.T) {
 		},
 	}
 
-	atts := pdata.NewAttributeMap().InitFromMap(map[string]pdata.AttributeValue{
+	atts := pdata.NewAttributeMapFromMap(map[string]pdata.AttributeValue{
 		"keyString": pdata.NewAttributeValueString("arithmetic"),
 		"keyInt":    pdata.NewAttributeValueInt(123),
 		"keyDouble": pdata.NewAttributeValueDouble(3245.6),

@@ -26,16 +26,16 @@ import (
 func TestSpanAttributesToMap(t *testing.T) {
 
 	spanAttrs := []pdata.AttributeMap{
-		pdata.NewAttributeMap().InitFromMap(map[string]pdata.AttributeValue{
+		pdata.NewAttributeMapFromMap(map[string]pdata.AttributeValue{
 			"foo": pdata.NewAttributeValueString("bar"),
 		}),
-		pdata.NewAttributeMap().InitFromMap(map[string]pdata.AttributeValue{
+		pdata.NewAttributeMapFromMap(map[string]pdata.AttributeValue{
 			"foo": pdata.NewAttributeValueInt(1234),
 		}),
-		pdata.NewAttributeMap().InitFromMap(map[string]pdata.AttributeValue{
+		pdata.NewAttributeMapFromMap(map[string]pdata.AttributeValue{
 			"foo": pdata.NewAttributeValueBool(true),
 		}),
-		pdata.NewAttributeMap().InitFromMap(map[string]pdata.AttributeValue{
+		pdata.NewAttributeMapFromMap(map[string]pdata.AttributeValue{
 			"foo": pdata.NewAttributeValueDouble(0.3145),
 		}),
 		pdata.NewAttributeMap(),
