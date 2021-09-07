@@ -4,7 +4,7 @@ go 1.17
 
 require (
 	github.com/hashicorp/go-hclog v0.16.2
-	github.com/jaegertracing/jaeger v1.25.0
+	github.com/jaegertracing/jaeger v1.26.0
 	github.com/logzio/jaeger-logzio v1.0.3
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.34.0
 	github.com/stretchr/testify v1.7.0
@@ -21,7 +21,7 @@ require (
 	github.com/cenkalti/backoff/v4 v4.1.1 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/fatih/color v1.9.0 // indirect
-	github.com/fsnotify/fsnotify v1.4.9 // indirect
+	github.com/fsnotify/fsnotify v1.5.1 // indirect
 	github.com/go-ole/go-ole v1.2.5 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
