@@ -153,7 +153,7 @@ func getBounds(p pdata.HistogramDataPoint, idx int) (lowerBound float64, upperBo
 }
 
 func (t *Translator) getLegacyBuckets(name string, p pdata.HistogramDataPoint, delta bool, tags []string) []datadog.Metric {
-	// We have a single metric, 'bucket', which is tagged with the bucket id. See:
+	// We have a single metric, 'bucket', which is tagged with the bucket bounds. See:
 	// https://github.com/DataDog/integrations-core/blob/7.30.1/datadog_checks_base/datadog_checks/base/checks/openmetrics/v2/transformers/histogram.py
 	ms := make([]datadog.Metric, 0, len(p.BucketCounts()))
 	fullName := fmt.Sprintf("%s.bucket", name)
