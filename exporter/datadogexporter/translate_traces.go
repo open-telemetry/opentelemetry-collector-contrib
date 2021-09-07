@@ -26,12 +26,12 @@ import (
 	"github.com/DataDog/datadog-agent/pkg/trace/exportable/traceutil"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/model/pdata"
-	conventions "go.opentelemetry.io/collector/translator/conventions/v1.5.0"
+	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
 	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace/ext"
 	"gopkg.in/zorkian/go-datadog-api.v2"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/config"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/attributes"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metrics"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/utils"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/tracetranslator"
@@ -82,13 +82,13 @@ func convertToDatadogTd(td pdata.Traces, fallbackHost string, cfg *config.Config
 
 	seenHosts := make(map[string]struct{})
 	var series []datadog.Metric
-	pushTime := pdata.TimestampFromTime(time.Now())
+	pushTime := pdata.NewTimestampFromTime(time.Now())
 
 	spanNameMap := cfg.Traces.SpanNameRemappings
 
 	for i := 0; i < resourceSpans.Len(); i++ {
 		rs := resourceSpans.At(i)
-		host, ok := metadata.HostnameFromAttributes(rs.Resource().Attributes())
+		host, ok := attributes.HostnameFromAttributes(rs.Resource().Attributes())
 		if !ok {
 			host = fallbackHost
 		}
@@ -327,7 +327,7 @@ func resourceToDatadogServiceNameAndAttributeMap(
 	}
 
 	attrs.Range(func(k string, v pdata.AttributeValue) bool {
-		datadogTags[k] = pdata.AttributeValueToString(v)
+		datadogTags[k] = v.AsString()
 		return true
 	})
 
@@ -378,11 +378,11 @@ func aggregateSpanTags(span pdata.Span, datadogTags map[string]string) map[strin
 	span.Attributes().Range(func(k string, v pdata.AttributeValue) bool {
 		switch k {
 		case keySamplingPriority:
-			spanTags[k] = pdata.AttributeValueToString(v)
+			spanTags[k] = v.AsString()
 		case keySamplingRate:
-			spanTags[k] = pdata.AttributeValueToString(v)
+			spanTags[k] = v.AsString()
 		default:
-			spanTags[utils.NormalizeTag(k)] = pdata.AttributeValueToString(v)
+			spanTags[utils.NormalizeTag(k)] = v.AsString()
 		}
 
 		return true

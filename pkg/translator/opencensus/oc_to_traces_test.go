@@ -92,7 +92,7 @@ func TestInitAttributeMapFromOC(t *testing.T) {
 	attrs = pdata.NewAttributeMap()
 	initAttributeMapFromOC(ocAttrs, attrs)
 	assert.EqualValues(t,
-		pdata.NewAttributeMap().InitFromMap(
+		pdata.NewAttributeMapFromMap(
 			map[string]pdata.AttributeValue{
 				"abc": pdata.NewAttributeValueString("def"),
 			}),
@@ -111,7 +111,7 @@ func TestInitAttributeMapFromOC(t *testing.T) {
 	attrs = pdata.NewAttributeMap()
 	initAttributeMapFromOC(ocAttrs, attrs)
 
-	expectedAttr := pdata.NewAttributeMap().InitFromMap(map[string]pdata.AttributeValue{
+	expectedAttr := pdata.NewAttributeMapFromMap(map[string]pdata.AttributeValue{
 		"abc":       pdata.NewAttributeValueString("def"),
 		"intval":    pdata.NewAttributeValueInt(345),
 		"boolval":   pdata.NewAttributeValueBool(true),

@@ -40,7 +40,7 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/model/pdata"
-	conventions "go.opentelemetry.io/collector/translator/conventions/v1.5.0"
+	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
 )
 
 const (
@@ -403,7 +403,7 @@ func TestReceiverConvertsStringsToTypes(t *testing.T) {
 	td := next.AllTraces()[0]
 	span := td.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().At(0)
 
-	expected := pdata.NewAttributeMap().InitFromMap(map[string]pdata.AttributeValue{
+	expected := pdata.NewAttributeMapFromMap(map[string]pdata.AttributeValue{
 		"cache_hit":            pdata.NewAttributeValueBool(true),
 		"ping_count":           pdata.NewAttributeValueInt(25),
 		"timeout":              pdata.NewAttributeValueDouble(12.3),

@@ -17,10 +17,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	conventions "go.opentelemetry.io/collector/translator/conventions/v1.5.0"
 	"go.uber.org/zap"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/testutils"
 )
 
 const (
@@ -52,43 +49,4 @@ func TestGetHostname(t *testing.T) {
 		EC2Hostname: customHost,
 	}
 	assert.Equal(t, customHost, hostInfo.GetHostname(logger))
-}
-
-func TestHostnameFromAttributes(t *testing.T) {
-	attrs := testutils.NewAttributeMap(map[string]string{
-		conventions.AttributeCloudProvider: conventions.AttributeCloudProviderAWS,
-		conventions.AttributeHostID:        testInstanceID,
-		conventions.AttributeHostName:      testIP,
-	})
-	hostname, ok := HostnameFromAttributes(attrs)
-	assert.True(t, ok)
-	assert.Equal(t, hostname, testInstanceID)
-}
-
-func TestHostInfoFromAttributes(t *testing.T) {
-	attrs := testutils.NewAttributeMap(map[string]string{
-		conventions.AttributeCloudProvider: conventions.AttributeCloudProviderAWS,
-		conventions.AttributeHostID:        testInstanceID,
-		conventions.AttributeHostName:      testIP,
-		"ec2.tag.tag1":                     "val1",
-		"ec2.tag.tag2":                     "val2",
-		"ignored":                          "ignored",
-	})
-
-	hostInfo := HostInfoFromAttributes(attrs)
-
-	assert.Equal(t, hostInfo.InstanceID, testInstanceID)
-	assert.Equal(t, hostInfo.EC2Hostname, testIP)
-	assert.ElementsMatch(t, hostInfo.EC2Tags, []string{"tag1:val1", "tag2:val2"})
-}
-
-func TestClusterNameFromAttributes(t *testing.T) {
-	cluster, ok := ClusterNameFromAttributes(testutils.NewAttributeMap(map[string]string{
-		"ec2.tag.kubernetes.io/cluster/clustername": "dummy_value",
-	}))
-	assert.True(t, ok)
-	assert.Equal(t, cluster, "clustername")
-
-	_, ok = ClusterNameFromAttributes(testutils.NewAttributeMap(map[string]string{}))
-	assert.False(t, ok)
 }

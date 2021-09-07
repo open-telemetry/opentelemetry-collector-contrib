@@ -27,10 +27,11 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	conventions "go.opentelemetry.io/collector/translator/conventions/v1.5.0"
+	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/config"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata/azure"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/attributes"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/attributes/azure"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/testutils"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/utils/cache"
 )
@@ -140,7 +141,7 @@ func TestMetadataFromAttributes(t *testing.T) {
 
 	// Other
 	attrsOther := testutils.NewAttributeMap(map[string]string{
-		AttributeDatadogHostname: "custom-name",
+		attributes.AttributeDatadogHostname: "custom-name",
 	})
 	metadataOther := metadataFromAttributes(attrsOther)
 	assert.Equal(t, metadataOther.InternalHostname, "custom-name")
@@ -197,7 +198,7 @@ func TestPusher(t *testing.T) {
 	params.BuildInfo = mockBuildInfo
 
 	attrs := testutils.NewAttributeMap(map[string]string{
-		AttributeDatadogHostname: "datadog-hostname",
+		attributes.AttributeDatadogHostname: "datadog-hostname",
 	})
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
