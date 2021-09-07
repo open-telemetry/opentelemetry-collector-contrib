@@ -22,28 +22,14 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/scraperhelper"
 )
 
-// BaseFactory for creating Scrapers.
-type BaseFactory interface {
-	// CreateDefaultConfig creates the default configuration for the Scraper.
-	CreateDefaultConfig() Config
-}
-
 // ScraperFactory can create a MetricScraper.
 type ScraperFactory interface {
-	BaseFactory
+	// CreateDefaultConfig creates the default configuration for the Scraper.
+	CreateDefaultConfig() Config
 
 	// CreateMetricsScraper creates a scraper based on this config.
 	// If the config is not valid, error will be returned instead.
 	CreateMetricsScraper(ctx context.Context, logger *zap.Logger, cfg Config) (scraperhelper.Scraper, error)
-}
-
-// ResourceScraperFactory can create a ResourceScraper.
-type ResourceScraperFactory interface {
-	BaseFactory
-
-	// CreateResourceMetricsScraper creates a resource scraper based on this
-	// config. If the config is not valid, error will be returned instead.
-	CreateResourceMetricsScraper(ctx context.Context, logger *zap.Logger, cfg Config) (scraperhelper.Scraper, error)
 }
 
 // Config is the configuration of a scraper.
