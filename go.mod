@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-log-collection
 go 1.17
 
 require (
-	github.com/antonmedv/expr v1.8.9
+	github.com/antonmedv/expr v1.9.0
 	github.com/bmatcuk/doublestar/v3 v3.0.0
 	github.com/jpillora/backoff v1.0.0
 	github.com/json-iterator/go v1.1.11
