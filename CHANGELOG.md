@@ -2,9 +2,14 @@
 
 ## Unreleased
 
+## 🛑 Breaking changes 🛑
+
+- `filter` processor: The configs for `logs` filter processor have been changed to be consistent with the `metrics` filter processor. (#4895)
+
 ## 💡 Enhancements 💡
 
 - `tailsampling` processor: Add new policy `probabilistic` (#3876)
+- `filter` processor: Add ability to `include` logs based on resource attributes in addition to excluding logs based on resource attributes for strict matching. (#4895)
 
 ## v0.33.0
 
