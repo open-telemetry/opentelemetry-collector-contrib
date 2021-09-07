@@ -24,10 +24,10 @@ import (
 
 	zipkinmodel "github.com/openzipkin/zipkin-go/model"
 	"go.opentelemetry.io/collector/model/pdata"
-	conventions "go.opentelemetry.io/collector/translator/conventions/v1.5.0"
-	tracetranslator "go.opentelemetry.io/collector/translator/trace"
+	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/idutils"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/tracetranslator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin/internal/zipkin"
 )
 
@@ -234,7 +234,7 @@ func spanLinksToZipkinTags(links pdata.SpanLinkSlice, zTags map[string]string) e
 func attributeMapToStringMap(attrMap pdata.AttributeMap) map[string]string {
 	rawMap := make(map[string]string)
 	attrMap.Range(func(k string, v pdata.AttributeValue) bool {
-		rawMap[k] = pdata.AttributeValueToString(v)
+		rawMap[k] = v.AsString()
 		return true
 	})
 	return rawMap
@@ -258,7 +258,7 @@ func resourceToZipkinEndpointServiceNameAndAttributeMap(
 	}
 
 	attrs.Range(func(k string, v pdata.AttributeValue) bool {
-		zTags[k] = pdata.AttributeValueToString(v)
+		zTags[k] = v.AsString()
 		return true
 	})
 

@@ -20,11 +20,10 @@ import (
 	"time"
 
 	"github.com/shirou/gopsutil/disk"
-
 	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/receiver/scrapererror"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/filesystemscraper/internal/metadata"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/scrapererror"
 )
 
 const (

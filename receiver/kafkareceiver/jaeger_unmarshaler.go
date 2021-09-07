@@ -19,7 +19,6 @@ import (
 
 	"github.com/gogo/protobuf/jsonpb"
 	jaegerproto "github.com/jaegertracing/jaeger/model"
-
 	"go.opentelemetry.io/collector/model/pdata"
 
 	jaegertranslator "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger"

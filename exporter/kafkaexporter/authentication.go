@@ -20,7 +20,6 @@ import (
 	"fmt"
 
 	"github.com/Shopify/sarama"
-
 	"go.opentelemetry.io/collector/config/configtls"
 )
 

@@ -21,16 +21,15 @@ import (
 	ocresource "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	octrace "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"github.com/stretchr/testify/assert"
+	"go.opentelemetry.io/collector/model/pdata"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/timestamppb"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
-	"go.opentelemetry.io/collector/model/pdata"
-	tracetranslator "go.opentelemetry.io/collector/translator/trace"
-
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/goldendataset"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/occonventions"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/tracetranslator"
 )
 
 func TestInternalTraceStateToOC(t *testing.T) {
@@ -72,7 +71,7 @@ func TestAttributesMapToOC(t *testing.T) {
 	}
 	assert.EqualValues(t, ocAttrs,
 		attributesMapToOCSpanAttributes(
-			pdata.NewAttributeMap().InitFromMap(map[string]pdata.AttributeValue{
+			pdata.NewAttributeMapFromMap(map[string]pdata.AttributeValue{
 				"abc": pdata.NewAttributeValueString("def"),
 			}),
 			234))
@@ -87,7 +86,7 @@ func TestAttributesMapToOC(t *testing.T) {
 		Value: &octrace.AttributeValue_DoubleValue{DoubleValue: 4.5},
 	}
 	assert.EqualValues(t, ocAttrs,
-		attributesMapToOCSpanAttributes(pdata.NewAttributeMap().InitFromMap(
+		attributesMapToOCSpanAttributes(pdata.NewAttributeMapFromMap(
 			map[string]pdata.AttributeValue{
 				"abc":       pdata.NewAttributeValueString("def"),
 				"intval":    pdata.NewAttributeValueInt(345),

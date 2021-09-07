@@ -21,11 +21,10 @@ import (
 	agentmetricspb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/metrics/v1"
 	ocmetrics "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	ocresource "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
+	"go.opentelemetry.io/collector/model/pdata"
+	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
 	"google.golang.org/protobuf/types/known/timestamppb"
 	"google.golang.org/protobuf/types/known/wrapperspb"
-
-	"go.opentelemetry.io/collector/model/pdata"
-	conventions "go.opentelemetry.io/collector/translator/conventions/v1.5.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/occonventions"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"

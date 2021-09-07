@@ -16,7 +16,8 @@ package zipkinv1
 
 import (
 	"go.opentelemetry.io/collector/model/pdata"
-	"go.opentelemetry.io/collector/translator/internaldata"
+
+	internaldata "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus"
 )
 
 func toTraces(ocTraces []traceData) (pdata.Traces, error) {

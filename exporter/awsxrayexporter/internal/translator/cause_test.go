@@ -21,7 +21,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/model/pdata"
-	conventions "go.opentelemetry.io/collector/translator/conventions/v1.5.0"
+	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
 )
 
 func TestCauseWithExceptions(t *testing.T) {
@@ -203,8 +203,8 @@ func constructExceptionServerSpan(attributes map[string]interface{}, statuscode 
 	span.SetParentSpanID(newSegmentID())
 	span.SetName("/widgets")
 	span.SetKind(pdata.SpanKindServer)
-	span.SetStartTimestamp(pdata.TimestampFromTime(startTime))
-	span.SetEndTimestamp(pdata.TimestampFromTime(endTime))
+	span.SetStartTimestamp(pdata.NewTimestampFromTime(startTime))
+	span.SetEndTimestamp(pdata.NewTimestampFromTime(endTime))
 
 	status := pdata.NewSpanStatus()
 	status.SetCode(statuscode)

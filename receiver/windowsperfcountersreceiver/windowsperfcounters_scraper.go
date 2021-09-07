@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//go:build windows
 // +build windows
 
 package windowsperfcountersreceiver
@@ -106,7 +107,7 @@ func (s *scraper) shutdown(context.Context) error {
 func (s *scraper) scrape(context.Context) (pdata.MetricSlice, error) {
 	metrics := pdata.NewMetricSlice()
 
-	now := pdata.TimestampFromTime(time.Now())
+	now := pdata.NewTimestampFromTime(time.Now())
 
 	var errors []error
 

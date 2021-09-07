@@ -23,13 +23,12 @@ import (
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/oteltest"
-	"go.opentelemetry.io/otel/trace"
-
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/obsreport/obsreporttest"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/oteltest"
+	"go.opentelemetry.io/otel/trace"
 )
 
 // Ensure that if we add a metrics exporter that our target metrics

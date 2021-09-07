@@ -25,11 +25,10 @@ import (
 	"testing"
 	"time"
 
-	"go.opentelemetry.io/collector/testbed/testbed"
-	scenarios "go.opentelemetry.io/collector/testbed/tests"
-
 	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/datareceivers"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/datasenders"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/testbed"
+	scenarios "github.com/open-telemetry/opentelemetry-collector-contrib/testbed/tests"
 )
 
 var (
@@ -50,8 +49,8 @@ func TestMain(m *testing.M) {
 func TestStabilityTracesOpenCensus(t *testing.T) {
 	scenarios.Scenario10kItemsPerSecond(
 		t,
-		testbed.NewOCTraceDataSender(testbed.DefaultHost, testbed.GetAvailablePort(t)),
-		testbed.NewOCDataReceiver(testbed.GetAvailablePort(t)),
+		datasenders.NewOCTraceDataSender(testbed.DefaultHost, testbed.GetAvailablePort(t)),
+		datareceivers.NewOCDataReceiver(testbed.GetAvailablePort(t)),
 		testbed.ResourceSpec{
 			ExpectedMaxCPU:      39,
 			ExpectedMaxRAM:      90,
@@ -98,8 +97,8 @@ func TestStabilityTracesOTLP(t *testing.T) {
 func TestStabilityTracesJaegerGRPC(t *testing.T) {
 	scenarios.Scenario10kItemsPerSecond(
 		t,
-		testbed.NewJaegerGRPCDataSender(testbed.DefaultHost, testbed.GetAvailablePort(t)),
-		testbed.NewJaegerDataReceiver(testbed.GetAvailablePort(t)),
+		datasenders.NewJaegerGRPCDataSender(testbed.DefaultHost, testbed.GetAvailablePort(t)),
+		datareceivers.NewJaegerDataReceiver(testbed.GetAvailablePort(t)),
 		testbed.ResourceSpec{
 			ExpectedMaxCPU:      40,
 			ExpectedMaxRAM:      90,
@@ -114,8 +113,8 @@ func TestStabilityTracesJaegerGRPC(t *testing.T) {
 func TestStabilityTracesZipkin(t *testing.T) {
 	scenarios.Scenario10kItemsPerSecond(
 		t,
-		testbed.NewZipkinDataSender(testbed.DefaultHost, testbed.GetAvailablePort(t)),
-		testbed.NewZipkinDataReceiver(testbed.GetAvailablePort(t)),
+		datasenders.NewZipkinDataSender(testbed.DefaultHost, testbed.GetAvailablePort(t)),
+		datareceivers.NewZipkinDataReceiver(testbed.GetAvailablePort(t)),
 		testbed.ResourceSpec{
 			ExpectedMaxCPU:      80,
 			ExpectedMaxRAM:      110,

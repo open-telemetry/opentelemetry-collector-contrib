@@ -25,10 +25,10 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
-	"go.opentelemetry.io/collector/receiver/scraperhelper"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkametricsreceiver/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/scraperhelper"
 )
 
 type topicScraper struct {
@@ -68,7 +68,7 @@ func (s *topicScraper) scrape(context.Context) (pdata.ResourceMetricsSlice, erro
 
 	var scrapeErrors = scrapererror.ScrapeErrors{}
 
-	now := pdata.TimestampFromTime(time.Now())
+	now := pdata.NewTimestampFromTime(time.Now())
 	rms := pdata.NewResourceMetricsSlice()
 	ilm := rms.AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty()
 	ilm.InstrumentationLibrary().SetName(instrumentationLibName)

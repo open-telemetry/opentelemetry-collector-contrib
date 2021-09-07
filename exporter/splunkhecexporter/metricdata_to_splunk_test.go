@@ -32,7 +32,7 @@ func Test_metricDataToSplunk(t *testing.T) {
 	unixSecs := int64(1574092046)
 	unixNSecs := int64(11 * time.Millisecond)
 	tsUnix := time.Unix(unixSecs, unixNSecs)
-	ts := pdata.TimestampFromTime(tsUnix)
+	ts := pdata.NewTimestampFromTime(tsUnix)
 	tsMSecs := timestampToSecondsWithMillisecondPrecision(ts)
 
 	doubleVal := 1234.5678
@@ -159,15 +159,15 @@ func Test_metricDataToSplunk(t *testing.T) {
 				doubleGauge.SetDataType(pdata.MetricDataTypeGauge)
 				doubleDataPt := doubleGauge.Gauge().DataPoints().AppendEmpty()
 				doubleDataPt.SetDoubleVal(doubleVal)
-				doubleDataPt.SetTimestamp(pdata.TimestampFromTime(tsUnix))
+				doubleDataPt.SetTimestamp(pdata.NewTimestampFromTime(tsUnix))
 
 				intGauge := ilm.Metrics().AppendEmpty()
 				intGauge.SetName("gauge_int_with_dims")
 				intGauge.SetDataType(pdata.MetricDataTypeGauge)
 				intDataPt := intGauge.Gauge().DataPoints().AppendEmpty()
 				intDataPt.SetIntVal(int64Val)
-				intDataPt.SetTimestamp(pdata.TimestampFromTime(tsUnix))
-				intDataPt.SetTimestamp(pdata.TimestampFromTime(tsUnix))
+				intDataPt.SetTimestamp(pdata.NewTimestampFromTime(tsUnix))
+				intDataPt.SetTimestamp(pdata.NewTimestampFromTime(tsUnix))
 
 				return metrics
 			},
@@ -190,7 +190,7 @@ func Test_metricDataToSplunk(t *testing.T) {
 				histogramPt.SetBucketCounts([]uint64{4, 2, 3})
 				histogramPt.SetSum(23)
 				histogramPt.SetCount(7)
-				histogramPt.SetTimestamp(pdata.TimestampFromTime(tsUnix))
+				histogramPt.SetTimestamp(pdata.NewTimestampFromTime(tsUnix))
 				return metrics
 			},
 		},
@@ -207,7 +207,7 @@ func Test_metricDataToSplunk(t *testing.T) {
 				histogramPt.SetBucketCounts(distributionCounts)
 				histogramPt.SetSum(23)
 				histogramPt.SetCount(7)
-				histogramPt.SetTimestamp(pdata.TimestampFromTime(tsUnix))
+				histogramPt.SetTimestamp(pdata.NewTimestampFromTime(tsUnix))
 				return metrics
 			},
 			wantSplunkMetrics: []*splunk.Event{

@@ -25,7 +25,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/model/pdata"
-	conventions "go.opentelemetry.io/collector/translator/conventions/v1.5.0"
+	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
 	"go.uber.org/zap"
 )
 
@@ -421,7 +421,7 @@ func (t *transformer) MetricAttributes(baseAttributes map[string]interface{}, at
 	attrMap.Range(func(k string, v pdata.AttributeValue) bool {
 		// Only include attribute if not an override attribute
 		if _, isOverrideKey := t.OverrideAttributes[k]; !isOverrideKey {
-			rawMap[k] = pdata.AttributeValueToString(v)
+			rawMap[k] = v.AsString()
 		}
 		return true
 	})

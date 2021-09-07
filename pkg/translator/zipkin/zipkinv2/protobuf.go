@@ -16,7 +16,6 @@ package zipkinv2
 
 import (
 	"github.com/openzipkin/zipkin-go/proto/zipkin_proto3"
-
 	"go.opentelemetry.io/collector/model/pdata"
 )
 

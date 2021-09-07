@@ -18,11 +18,12 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/model/pdata"
-	"go.opentelemetry.io/collector/processor/processorhelper"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/attraction"
 )
 
 type resourceProcessor struct {
-	attrProc *processorhelper.AttrProc
+	attrProc *attraction.AttrProc
 }
 
 func (rp *resourceProcessor) processTraces(_ context.Context, td pdata.Traces) (pdata.Traces, error) {

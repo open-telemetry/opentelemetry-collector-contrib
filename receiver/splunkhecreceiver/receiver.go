@@ -29,8 +29,8 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/model/pdata"
+	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
 	"go.opentelemetry.io/collector/obsreport"
-	conventions "go.opentelemetry.io/collector/translator/conventions/v1.5.0"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"

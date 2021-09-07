@@ -22,14 +22,13 @@ import (
 	"github.com/shirou/gopsutil/net"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/receiver/scrapererror"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterset"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/networkscraper/internal/metadata"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/scrapererror"
 )
 
 func TestScrape(t *testing.T) {
