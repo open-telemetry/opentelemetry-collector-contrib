@@ -1,7 +1,6 @@
-# skywalking gRPC Exporter
+# SkyWalking gRPC Exporter
 
-Exports data via gRPC using [skywalking-data-collect-protocol)](
-https://github.com/apache/skywalking-data-collect-protocol)
+Exports data via gRPC using [skywalking-data-collect-protocol](https://github.com/apache/skywalking-data-collect-protocol)
 format. By default, this exporter requires TLS and offers queued retry capabilities.
 
 Supported pipeline types: logs
@@ -10,7 +9,7 @@ Supported pipeline types: logs
 
 The following settings are required:
 
-- `endpoint` (no default): host:port to which the exporter is going to send skywalking log data,
+- `endpoint` (no default): host:port to which the exporter is going to send SkyWalking log data,
 using the gRPC protocol. The valid syntax is described
 [here](https://github.com/grpc/grpc/blob/master/doc/naming.md).
 If a scheme of `https` is used then client transport security is enabled and overrides the `insecure` setting.
@@ -33,7 +32,7 @@ Example:
 exporters:
   skywalking:
     endpoint: "1.2.3.4:11800"
-    Insecure: true
+    insecure: true
 ```
 
 ## Advanced Configuration

@@ -56,18 +56,14 @@ func createLogsExporter(
 ) (component.LogsExporter, error) {
 
 	oCfg := cfg.(*Config)
-	oce, err := newExporter(ctx, oCfg)
-	if err != nil {
-		return nil, err
-	}
 	return exporterhelper.NewLogsExporter(
 		cfg,
 		set,
-		oce.pushLogs,
+		nil,
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		exporterhelper.WithRetry(oCfg.RetrySettings),
 		exporterhelper.WithQueue(oCfg.QueueSettings),
-		exporterhelper.WithStart(oce.start),
-		exporterhelper.WithShutdown(oce.shutdown),
+		exporterhelper.WithStart(nil),
+		exporterhelper.WithShutdown(nil),
 	)
 }

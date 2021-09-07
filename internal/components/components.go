@@ -46,7 +46,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sapmexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sentryexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/skywalkingexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/splunkhecexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/stackdriverexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sumologicexporter"
@@ -192,7 +191,6 @@ func Components() (component.Factories, error) {
 
 	exporters := []component.ExporterFactory{
 		alibabacloudlogserviceexporter.NewFactory(),
-		skywalkingexporter.NewFactory(),
 		awsemfexporter.NewFactory(),
 		awskinesisexporter.NewFactory(),
 		awsprometheusremotewriteexporter.NewFactory(),
