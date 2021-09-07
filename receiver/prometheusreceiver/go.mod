@@ -13,8 +13,8 @@ require (
 	github.com/prometheus/common v0.30.0
 	github.com/prometheus/prometheus v1.8.2-0.20210621150501-ff58416a0b02
 	github.com/stretchr/testify v1.7.0
-	go.opentelemetry.io/collector v0.34.0
-	go.opentelemetry.io/collector/model v0.34.0
+	go.opentelemetry.io/collector v0.34.1-0.20210907092920-53379c5fc0c8
+	go.opentelemetry.io/collector/model v0.34.1-0.20210907092920-53379c5fc0c8
 	go.uber.org/zap v1.19.0
 	google.golang.org/protobuf v1.27.1
 	gopkg.in/yaml.v2 v2.4.0
@@ -80,7 +80,7 @@ require (
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
 	github.com/jpillora/backoff v1.0.0 // indirect
 	github.com/json-iterator/go v1.1.11 // indirect
-	github.com/knadh/koanf v1.2.1 // indirect
+	github.com/knadh/koanf v1.2.2 // indirect
 	github.com/linode/linodego v0.28.5 // indirect
 	github.com/magiconair/properties v1.8.5 // indirect
 	github.com/mattn/go-colorable v0.1.6 // indirect
@@ -105,7 +105,7 @@ require (
 	github.com/prometheus/statsd_exporter v0.21.0 // indirect
 	github.com/rs/cors v1.8.0 // indirect
 	github.com/scaleway/scaleway-sdk-go v1.0.0-beta.7.0.20210223165440-c65ae3540d44 // indirect
-	github.com/shirou/gopsutil v3.21.7+incompatible // indirect
+	github.com/shirou/gopsutil v3.21.8+incompatible // indirect
 	github.com/sirupsen/logrus v1.8.1 // indirect
 	github.com/spf13/cast v1.4.1 // indirect
 	github.com/spf13/cobra v1.2.1 // indirect
@@ -121,11 +121,11 @@ require (
 	go.opentelemetry.io/contrib v0.22.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.22.0 // indirect
 	go.opentelemetry.io/contrib/zpages v0.22.0 // indirect
-	go.opentelemetry.io/otel v1.0.0-RC2 // indirect
+	go.opentelemetry.io/otel v1.0.0-RC3 // indirect
 	go.opentelemetry.io/otel/internal/metric v0.22.0 // indirect
 	go.opentelemetry.io/otel/metric v0.22.0 // indirect
-	go.opentelemetry.io/otel/sdk v1.0.0-RC2 // indirect
-	go.opentelemetry.io/otel/trace v1.0.0-RC2 // indirect
+	go.opentelemetry.io/otel/sdk v1.0.0-RC3 // indirect
+	go.opentelemetry.io/otel/trace v1.0.0-RC3 // indirect
 	go.uber.org/atomic v1.9.0 // indirect
 	go.uber.org/multierr v1.6.0 // indirect
 	golang.org/x/crypto v0.0.0-20210314154223-e6e6c4f2bb5b // indirect
