@@ -144,7 +144,7 @@ func testProcessor(t *testing.T, include []string, exclude []string) (component.
 	proc, err := factory.CreateMetricsProcessor(
 		ctx,
 		component.ProcessorCreateSettings{
-			TelemetryCreateSettings: component.TelemetryCreateSettings{
+			TelemetrySettings: component.TelemetrySettings{
 				Logger: zap.New(core),
 			},
 		},

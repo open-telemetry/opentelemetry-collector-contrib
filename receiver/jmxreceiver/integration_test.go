@@ -137,7 +137,7 @@ func (suite *JMXIntegrationSuite) TestJMXReceiverHappyPath() {
 
 	logger := zap.New(logCore)
 	params := component.ReceiverCreateSettings{
-		TelemetryCreateSettings: component.TelemetryCreateSettings{
+		TelemetrySettings: component.TelemetrySettings{
 			Logger: logger,
 		},
 	}
