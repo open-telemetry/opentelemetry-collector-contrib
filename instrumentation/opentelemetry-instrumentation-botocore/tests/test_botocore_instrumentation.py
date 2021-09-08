@@ -61,6 +61,7 @@ def lambda_handler(event, context):
     return pfunc
 
 
+# pylint:disable=too-many-public-methods
 class TestBotocoreInstrumentor(TestBase):
     """Botocore integration testsuite"""
 
@@ -321,6 +322,31 @@ class TestBotocoreInstrumentor(TestBase):
         kinesis.list_streams()
         spans = self.memory_exporter.get_finished_spans()
         assert not spans, spans
+
+    @mock_ec2
+    def test_uninstrument_does_not_inject_headers(self):
+        headers = {}
+        previous_propagator = get_global_textmap()
+        try:
+            set_global_textmap(MockTextMapPropagator())
+
+            def intercept_headers(**kwargs):
+                headers.update(kwargs["request"].headers)
+
+            ec2 = self.session.create_client("ec2", region_name="us-west-2")
+
+            BotocoreInstrumentor().uninstrument()
+
+            ec2.meta.events.register_first(
+                "before-send.ec2.DescribeInstances", intercept_headers
+            )
+            with self.tracer_provider.get_tracer("test").start_span("parent"):
+                ec2.describe_instances()
+
+            self.assertNotIn(MockTextMapPropagator.TRACE_ID_KEY, headers)
+            self.assertNotIn(MockTextMapPropagator.SPAN_ID_KEY, headers)
+        finally:
+            set_global_textmap(previous_propagator)
 
     @mock_sqs
     def test_double_patch(self):
