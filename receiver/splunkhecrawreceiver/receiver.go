@@ -106,7 +106,7 @@ type splunkReceiver struct {
 	server             *http.Server
 	obsrecv            *obsreport.Receiver
 	resourceCustomizer func(*http.Request, pdata.Resource)
-	gzipReaderPool     sync.Pool
+	gzipReaderPool     *sync.Pool
 }
 
 // Start tells the receiver to start its processing.
@@ -130,7 +130,7 @@ func (r *splunkReceiver) Start(_ context.Context, host component.Host) error {
 	r.server.ReadHeaderTimeout = defaultServerTimeout
 	r.server.WriteTimeout = defaultServerTimeout
 	r.resourceCustomizer = r.createResourceCustomizer()
-	r.gzipReaderPool = sync.Pool{New: func() interface{} { return new(gzip.Reader) }}
+	r.gzipReaderPool = &sync.Pool{New: func() interface{} { return new(gzip.Reader) }}
 
 	go func() {
 		if errHTTP := r.server.Serve(ln); errHTTP != http.ErrServerClosed {
@@ -171,7 +171,6 @@ func (r *splunkReceiver) handleReq(resp http.ResponseWriter, req *http.Request) 
 	if encoding == gzipEncoding {
 		reader := r.gzipReaderPool.Get().(*gzip.Reader)
 		err := reader.Reset(bodyReader)
-		bodyReader = reader
 
 		if err != nil {
 			r.failRequest(ctx, resp, http.StatusBadRequest, errGzipReaderRespBody, 0, err)
@@ -179,6 +178,8 @@ func (r *splunkReceiver) handleReq(resp http.ResponseWriter, req *http.Request) 
 			_ = req.Body.Close()
 			return
 		}
+		bodyReader = reader
+		defer r.gzipReaderPool.Put(reader)
 	}
 
 	sc := bufio.NewScanner(bodyReader)
