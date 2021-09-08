@@ -6,7 +6,7 @@ require (
 	github.com/coreos/go-oidc v2.2.1+incompatible
 	github.com/pquerna/cachecontrol v0.1.0 // indirect
 	github.com/stretchr/testify v1.7.0
-	go.opentelemetry.io/collector v0.34.1-0.20210908155730-95a24f145304
+	go.opentelemetry.io/collector v0.34.1-0.20210908172238-e8bd3be6d4c3
 	go.uber.org/zap v1.19.0
 	golang.org/x/crypto v0.0.0-20210616213533-5ff15b29337e // indirect
 	golang.org/x/text v0.3.7 // indirect
@@ -29,7 +29,7 @@ require (
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/rogpeppe/go-internal v1.6.1 // indirect
 	github.com/spf13/cast v1.4.1 // indirect
-	go.opentelemetry.io/collector/model v0.34.1-0.20210908155730-95a24f145304 // indirect
+	go.opentelemetry.io/collector/model v0.34.1-0.20210908172238-e8bd3be6d4c3 // indirect
 	go.opentelemetry.io/otel v1.0.0-RC3 // indirect
 	go.opentelemetry.io/otel/trace v1.0.0-RC3 // indirect
 	go.uber.org/atomic v1.9.0 // indirect

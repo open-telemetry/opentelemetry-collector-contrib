@@ -6,7 +6,7 @@ require (
 	github.com/aws/aws-sdk-go v1.40.38
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusremotewriteexporter v0.34.0
 	github.com/stretchr/testify v1.7.0
-	go.opentelemetry.io/collector v0.34.1-0.20210908155730-95a24f145304
+	go.opentelemetry.io/collector v0.34.1-0.20210908172238-e8bd3be6d4c3
 )
 
 require (
@@ -34,7 +34,7 @@ require (
 	github.com/tidwall/tinylru v1.0.2 // indirect
 	github.com/tidwall/wal v0.1.5 // indirect
 	go.opencensus.io v0.23.0 // indirect
-	go.opentelemetry.io/collector/model v0.34.1-0.20210908155730-95a24f145304 // indirect
+	go.opentelemetry.io/collector/model v0.34.1-0.20210908172238-e8bd3be6d4c3 // indirect
 	go.opentelemetry.io/contrib v0.22.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.22.0 // indirect
 	go.opentelemetry.io/otel v1.0.0-RC3 // indirect

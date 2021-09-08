@@ -10,8 +10,8 @@ require (
 	github.com/rs/cors v1.8.0
 	github.com/soheilhy/cmux v0.1.5
 	github.com/stretchr/testify v1.7.0
-	go.opentelemetry.io/collector v0.34.1-0.20210908155730-95a24f145304
-	go.opentelemetry.io/collector/model v0.34.1-0.20210908155730-95a24f145304
+	go.opentelemetry.io/collector v0.34.1-0.20210908172238-e8bd3be6d4c3
+	go.opentelemetry.io/collector/model v0.34.1-0.20210908172238-e8bd3be6d4c3
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.22.0
 	go.opentelemetry.io/otel v1.0.0-RC3
 	go.opentelemetry.io/otel/oteltest v1.0.0-RC2
