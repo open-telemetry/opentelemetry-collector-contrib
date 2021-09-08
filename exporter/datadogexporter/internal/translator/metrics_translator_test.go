@@ -126,7 +126,7 @@ func newTranslator(logger *zap.Logger, cfg config.MetricsConfig) *Translator {
 		BuildInfo: component.BuildInfo{
 			Version: "1.0",
 		},
-		TelemetryCreateSettings: component.TelemetryCreateSettings{
+		TelemetrySettings: component.TelemetrySettings{
 			Logger: logger,
 		},
 	}

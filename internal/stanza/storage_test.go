@@ -87,7 +87,7 @@ func TestFailOnMultipleStorageExtensions(t *testing.T) {
 
 func createReceiver(t *testing.T) *receiver {
 	params := component.ReceiverCreateSettings{
-		TelemetryCreateSettings: component.TelemetryCreateSettings{
+		TelemetrySettings: component.TelemetrySettings{
 			Logger: zaptest.NewLogger(t),
 		},
 	}

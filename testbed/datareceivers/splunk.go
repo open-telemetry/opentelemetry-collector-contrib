@@ -51,7 +51,7 @@ func (sr *SplunkHECDataReceiver) Start(_ consumer.Traces, _ consumer.Metrics, lc
 	}
 	var err error
 	f := splunkhecreceiver.NewFactory()
-	sr.receiver, err = f.CreateLogsReceiver(context.Background(), component.ReceiverCreateSettings{TelemetryCreateSettings: component.TelemetryCreateSettings{Logger: zap.L()}}, &config, lc)
+	sr.receiver, err = f.CreateLogsReceiver(context.Background(), component.ReceiverCreateSettings{TelemetrySettings: component.TelemetrySettings{Logger: zap.L()}}, &config, lc)
 	if err != nil {
 		return err
 	}
