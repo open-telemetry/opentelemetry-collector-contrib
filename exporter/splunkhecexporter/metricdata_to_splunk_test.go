@@ -513,15 +513,15 @@ func Test_metricDataToSplunk(t *testing.T) {
 				doubleGauge.SetDataType(pdata.MetricDataTypeGauge)
 				doubleDataPt := doubleGauge.Gauge().DataPoints().AppendEmpty()
 				doubleDataPt.SetDoubleVal(doubleVal)
-				doubleDataPt.SetTimestamp(pdata.TimestampFromTime(tsUnix))
+				doubleDataPt.SetTimestamp(pdata.NewTimestampFromTime(tsUnix))
 
 				intGauge := ilm.Metrics().AppendEmpty()
 				intGauge.SetName("gauge_int_with_dims")
 				intGauge.SetDataType(pdata.MetricDataTypeGauge)
 				intDataPt := intGauge.Gauge().DataPoints().AppendEmpty()
 				intDataPt.SetIntVal(int64Val)
-				intDataPt.SetTimestamp(pdata.TimestampFromTime(tsUnix))
-				intDataPt.SetTimestamp(pdata.TimestampFromTime(tsUnix))
+				intDataPt.SetTimestamp(pdata.NewTimestampFromTime(tsUnix))
+				intDataPt.SetTimestamp(pdata.NewTimestampFromTime(tsUnix))
 
 				return metrics
 			},
