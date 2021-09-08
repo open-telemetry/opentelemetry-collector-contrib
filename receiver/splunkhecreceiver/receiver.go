@@ -134,6 +134,10 @@ func newLogsReceiver(
 	if config.Endpoint == "" {
 		return nil, errEmptyEndpoint
 	}
+	transport := "http"
+	if config.TLSSetting != nil {
+		transport = "https"
+	}
 
 	r := &splunkReceiver{
 		logger:       logger,
@@ -147,6 +151,7 @@ func newLogsReceiver(
 			WriteTimeout:      defaultServerTimeout,
 		},
 		gzipReaderPool: &sync.Pool{New: func() interface{} { return new(gzip.Reader) }},
+		obsrecv:        obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverID: config.ID(), Transport: transport}),
 	}
 
 	return r, nil
@@ -192,6 +197,8 @@ func (r *splunkReceiver) handleReq(resp http.ResponseWriter, req *http.Request) 
 	ctx := req.Context()
 	if r.logsConsumer == nil {
 		ctx = r.obsrecv.StartMetricsOp(ctx)
+	} else {
+		ctx = r.obsrecv.StartLogsOp(ctx)
 	}
 	reqPath := req.URL.Path
 	if !r.config.pathGlob.Match(reqPath) {
