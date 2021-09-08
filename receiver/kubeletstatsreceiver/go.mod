@@ -11,8 +11,8 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/kubelet v0.34.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus v0.34.0
 	github.com/stretchr/testify v1.7.0
-	go.opentelemetry.io/collector v0.34.1-0.20210907092920-53379c5fc0c8
-	go.opentelemetry.io/collector/model v0.34.1-0.20210907092920-53379c5fc0c8
+	go.opentelemetry.io/collector v0.34.1-0.20210908155730-95a24f145304
+	go.opentelemetry.io/collector/model v0.34.1-0.20210908155730-95a24f145304
 	go.uber.org/zap v1.19.0
 	google.golang.org/protobuf v1.27.1
 	gopkg.in/yaml.v2 v2.4.0

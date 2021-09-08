@@ -6,8 +6,8 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage v0.34.0
 	github.com/open-telemetry/opentelemetry-log-collection v0.20.0
 	github.com/stretchr/testify v1.7.0
-	go.opentelemetry.io/collector v0.34.1-0.20210906070714-e676d678f9fd
-	go.opentelemetry.io/collector/model v0.34.1-0.20210906070714-e676d678f9fd
+	go.opentelemetry.io/collector v0.34.1-0.20210908155730-95a24f145304
+	go.opentelemetry.io/collector/model v0.34.1-0.20210908155730-95a24f145304
 	go.uber.org/multierr v1.6.0
 	go.uber.org/zap v1.19.0
 	gopkg.in/yaml.v2 v2.4.0

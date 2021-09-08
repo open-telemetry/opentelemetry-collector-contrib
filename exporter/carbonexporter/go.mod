@@ -7,8 +7,8 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.34.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus v0.34.0
 	github.com/stretchr/testify v1.7.0
-	go.opentelemetry.io/collector v0.34.1-0.20210906070714-e676d678f9fd
-	go.opentelemetry.io/collector/model v0.34.1-0.20210906070714-e676d678f9fd
+	go.opentelemetry.io/collector v0.34.1-0.20210908155730-95a24f145304
+	go.opentelemetry.io/collector/model v0.34.1-0.20210908155730-95a24f145304
 	google.golang.org/protobuf v1.27.1
 
 )

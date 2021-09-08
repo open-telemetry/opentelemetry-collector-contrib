@@ -71,7 +71,7 @@ type ParserConfig interface {
 // LoadParserConfig is used to load the parser configuration according to the
 // specified parser type. It expects the passed viper to be pointing at the level
 // of the Config reference.
-func LoadParserConfig(cp *configparser.Parser, cfg *Config) error {
+func LoadParserConfig(cp *configparser.ConfigMap, cfg *Config) error {
 	defaultCfgFn, ok := parserMap[cfg.Type]
 	if !ok {
 		return fmt.Errorf(
