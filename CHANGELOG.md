@@ -15,6 +15,7 @@
 ## 🚀 New components 🚀
 
 - [`cumulativetodelta` processor](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/cumulativetodeltaprocessor) to convert cumulative sum metrics to cumulative delta
+
 - [`file` exporter](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/exporter/fileexporter) from core repository ([#3474](https://github.com/open-telemetry/opentelemetry-collector/issues/3474))
 - [`jaeger` exporter](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/exporter/jaegerexporter) from core repository ([#3474](https://github.com/open-telemetry/opentelemetry-collector/issues/3474))
 - [`kafka` exporter](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/exporter/kafkaexporter) from core repository ([#3474](https://github.com/open-telemetry/opentelemetry-collector/issues/3474))
@@ -38,6 +39,10 @@
 - [`oidcauth` extension](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/extension/oidcauthextension) from core repository ([#3474](https://github.com/open-telemetry/opentelemetry-collector/issues/3474))
 - [`pprof` extension](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/extension/pprofextension) from core repository ([#3474](https://github.com/open-telemetry/opentelemetry-collector/issues/3474))
 - [`testbed`](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/testbed) from core repository ([#3474](https://github.com/open-telemetry/opentelemetry-collector/issues/3474))
+
+## 💡 Enhancements 💡
+
+- `tailsampling` processor: Add new policy `probabilistic` (#3876)
 
 ## v0.33.0
 
