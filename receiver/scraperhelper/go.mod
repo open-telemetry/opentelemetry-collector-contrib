@@ -4,8 +4,8 @@ go 1.17
 
 require (
 	github.com/stretchr/testify v1.7.0
-	go.opentelemetry.io/collector v0.34.1-0.20210908172238-e8bd3be6d4c3
-	go.opentelemetry.io/collector/model v0.34.1-0.20210908172238-e8bd3be6d4c3
+	go.opentelemetry.io/collector v0.35.0
+	go.opentelemetry.io/collector/model v0.35.0
 	go.opentelemetry.io/otel v1.0.0-RC3
 	go.opentelemetry.io/otel/oteltest v1.0.0-RC2
 	go.opentelemetry.io/otel/trace v1.0.0-RC3
