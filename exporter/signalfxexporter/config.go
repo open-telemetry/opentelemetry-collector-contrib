@@ -176,7 +176,7 @@ func (cfg *Config) getAPIURL() (*url.URL, error) {
 	return url.Parse(fmt.Sprintf("https://api.%s.signalfx.com", cfg.Realm))
 }
 
-func (cfg *Config) Unmarshal(componentParser *configparser.Parser) (err error) {
+func (cfg *Config) Unmarshal(componentParser *configparser.ConfigMap) (err error) {
 	if componentParser == nil {
 		// Nothing to do if there is no config given.
 		return nil

@@ -136,7 +136,11 @@ func (suite *JMXIntegrationSuite) TestJMXReceiverHappyPath() {
 	defer getLogsOnFailure(t, logObserver)
 
 	logger := zap.New(logCore)
-	params := component.ReceiverCreateSettings{Logger: logger}
+	params := component.ReceiverCreateSettings{
+		TelemetryCreateSettings: component.TelemetryCreateSettings{
+			Logger: logger,
+		},
+	}
 
 	cfg := &Config{
 		CollectionInterval: 100 * time.Millisecond,

@@ -138,7 +138,7 @@ func tlsConfig() *Config {
 
 func TestCustomUnmarshaller(t *testing.T) {
 	type args struct {
-		componentParser *configparser.Parser
+		componentParser *configparser.ConfigMap
 		intoCfg         *Config
 	}
 	tests := []struct {
