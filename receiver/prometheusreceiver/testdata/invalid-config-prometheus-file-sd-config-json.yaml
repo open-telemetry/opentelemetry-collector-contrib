@@ -5,7 +5,7 @@ receivers:
         - job_name: 'demo'
           scrape_interval: 5s
           file_sd_configs:
-          - files: ["./testdata/dummy-sd-config.json"]
+          - files: ["./testdata/sd-config-with-null-target-group.json"]
 
 processors:
   nop:
