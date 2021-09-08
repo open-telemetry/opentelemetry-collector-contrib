@@ -31,6 +31,7 @@ type FakeBuilder struct {
 func (f *FakeBuilder) Build(context BuildContext) ([]Operator, error) { return nil, nil }
 func (f *FakeBuilder) ID() string                                     { return "plugin" }
 func (f *FakeBuilder) Type() string                                   { return "plugin" }
+func (f *FakeBuilder) SetID(s string)                                 {}
 func (f *FakeBuilder) BuildsMultipleOps() bool                        { return false }
 
 func TestUnmarshalJSONErrors(t *testing.T) {

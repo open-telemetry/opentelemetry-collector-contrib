@@ -15,6 +15,8 @@
 package pipeline
 
 import (
+	"fmt"
+
 	"github.com/open-telemetry/opentelemetry-log-collection/operator"
 )
 
@@ -23,6 +25,7 @@ type Config []operator.Config
 
 // BuildOperators builds the operators from the list of configs into operators.
 func (c Config) BuildOperators(bc operator.BuildContext, defaultOperator operator.Operator) ([]operator.Operator, error) {
+	c.dedeplucateIDs()
 	// buildsMulti's key represents an operator's ID that builds multiple operators, e.g. Plugins.
 	// the value is the plugin's first operator's ID.
 	buildsMulti := make(map[string]string)
@@ -48,6 +51,32 @@ func (c Config) BuildOperators(bc operator.BuildContext, defaultOperator operato
 	}
 
 	return operators, nil
+}
+
+func (c Config) dedeplucateIDs() {
+	typeMap := make(map[string]int)
+	for _, op := range c {
+		if op.Type() != op.ID() {
+			continue
+		}
+
+		if typeMap[op.Type()] == 0 {
+			typeMap[op.Type()]++
+			continue
+		}
+		newID := fmt.Sprintf("%s%d", op.Type(), typeMap[op.Type()])
+
+		for j := 0; j < len(c); j++ {
+			if newID == c[j].ID() {
+				j = 0
+				typeMap[op.Type()]++
+				newID = fmt.Sprintf("%s%d", op.Type(), typeMap[op.Type()])
+			}
+		}
+
+		typeMap[op.Type()]++
+		op.SetID(newID)
+	}
 }
 
 // BuildPipeline will build a pipeline from the config.
