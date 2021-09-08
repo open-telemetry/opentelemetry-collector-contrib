@@ -180,7 +180,7 @@ func TestNonExistentAuthCredentialsFile(t *testing.T) {
 	require.Equal(t, wantErrMsg, gotErrMsg)
 }
 
-func TestTLSConfigCertFileExists(t *testing.T) {
+func TestTLSConfigNonExistentCertFile(t *testing.T) {
 	factories, err := componenttest.NopFactories()
 	assert.NoError(t, err)
 
@@ -198,7 +198,7 @@ func TestTLSConfigCertFileExists(t *testing.T) {
 	require.Equal(t, wantErrMsg, gotErrMsg)
 }
 
-func TestTLSConfigKeyFileExists(t *testing.T) {
+func TestTLSConfigNonExistentKeyFile(t *testing.T) {
 	factories, err := componenttest.NopFactories()
 	assert.NoError(t, err)
 
@@ -216,7 +216,7 @@ func TestTLSConfigKeyFileExists(t *testing.T) {
 	require.Equal(t, wantErrMsg, gotErrMsg)
 }
 
-func TestTLSConfigCertFileWithNoKeyFile(t *testing.T) {
+func TestTLSConfigCertFileWithoutKeyFile(t *testing.T) {
 	factories, err := componenttest.NopFactories()
 	assert.NoError(t, err)
 
@@ -234,7 +234,7 @@ func TestTLSConfigCertFileWithNoKeyFile(t *testing.T) {
 	require.Equal(t, wantErrMsg, gotErrMsg)
 }
 
-func TestTLSConfigKeyFileWithNoCertFile(t *testing.T) {
+func TestTLSConfigKeyFileWithoutCertFile(t *testing.T) {
 	factories, err := componenttest.NopFactories()
 	assert.NoError(t, err)
 
@@ -252,7 +252,7 @@ func TestTLSConfigKeyFileWithNoCertFile(t *testing.T) {
 	require.Equal(t, wantErrMsg, gotErrMsg)
 }
 
-func TestKubernetesSDConfig(t *testing.T) {
+func TestKubernetesSDConfigWithoutKeyFile(t *testing.T) {
 	factories, err := componenttest.NopFactories()
 	assert.NoError(t, err)
 
@@ -282,7 +282,7 @@ func TestFileSDConfigJsonNilTargetGroup(t *testing.T) {
 	err = cfg.Validate()
 	require.NotNil(t, err, "Expected a non-nil error")
 
-	wantErrMsg := `receiver "prometheus" has invalid configuration: checking SD file "./testdata/dummy-sd-config.json": nil target group item found (index 1)`
+	wantErrMsg := `receiver "prometheus" has invalid configuration: checking SD file "./testdata/sd-config-with-null-target-group.json": nil target group item found (index 1)`
 
 	gotErrMsg := err.Error()
 	require.Equal(t, wantErrMsg, gotErrMsg)
@@ -300,7 +300,7 @@ func TestFileSDConfigYamlNilTargetGroup(t *testing.T) {
 	err = cfg.Validate()
 	require.NotNil(t, err, "Expected a non-nil error")
 
-	wantErrMsg := `receiver "prometheus" has invalid configuration: checking SD file "./testdata/dummy-sd-config.yaml": nil target group item found (index 1)`
+	wantErrMsg := `receiver "prometheus" has invalid configuration: checking SD file "./testdata/sd-config-with-null-target-group.yaml": nil target group item found (index 1)`
 
 	gotErrMsg := err.Error()
 	require.Equal(t, wantErrMsg, gotErrMsg)
