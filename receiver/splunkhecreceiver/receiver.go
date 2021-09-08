@@ -114,7 +114,7 @@ func newMetricsReceiver(
 			ReadHeaderTimeout: defaultServerTimeout,
 			WriteTimeout:      defaultServerTimeout,
 		},
-		obsrecv: obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverID: config.ID(), Transport: transport}),
+		obsrecv:        obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverID: config.ID(), Transport: transport}),
 		gzipReaderPool: &sync.Pool{New: func() interface{} { return new(gzip.Reader) }},
 	}
 
