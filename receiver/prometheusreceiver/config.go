@@ -25,7 +25,7 @@ import (
 	"strings"
 	"time"
 
-	config_util "github.com/prometheus/common/config"
+	commonconfig "github.com/prometheus/common/config"
 	promconfig "github.com/prometheus/prometheus/config"
 	"github.com/prometheus/prometheus/discovery/file"
 	"github.com/prometheus/prometheus/discovery/kubernetes"
@@ -58,7 +58,7 @@ type Config struct {
 var _ config.Receiver = (*Config)(nil)
 var _ config.Unmarshallable = (*Config)(nil)
 
-func checkFileExists(fn string) error {
+func checkFile(fn string) error {
 	// Nothing set, nothing to error on.
 	if fn == "" {
 		return nil
@@ -67,11 +67,11 @@ func checkFileExists(fn string) error {
 	return err
 }
 
-func checkTLSConfig(tlsConfig config_util.TLSConfig) error {
-	if err := checkFileExists(tlsConfig.CertFile); err != nil {
+func checkTLSConfig(tlsConfig commonconfig.TLSConfig) error {
+	if err := checkFile(tlsConfig.CertFile); err != nil {
 		return fmt.Errorf("error checking client cert file %q - %v", tlsConfig.CertFile, err)
 	}
-	if err := checkFileExists(tlsConfig.KeyFile); err != nil {
+	if err := checkFile(tlsConfig.KeyFile); err != nil {
 		return fmt.Errorf("error checking client key file %q - %v", tlsConfig.KeyFile, err)
 	}
 	if len(tlsConfig.CertFile) > 0 && len(tlsConfig.KeyFile) == 0 {
@@ -83,6 +83,8 @@ func checkTLSConfig(tlsConfig config_util.TLSConfig) error {
 	return nil
 }
 
+// Method to exercise the prometheus file discovery behaviour to ensure there are no errors
+// - reference https://github.com/prometheus/prometheus/blob/c0c22ed04200a8d24d1d5719f605c85710f0d008/discovery/file/file.go#L372
 func checkSDFile(filename string) error {
 	fd, err := os.Open(filename)
 	if err != nil {
@@ -163,7 +165,7 @@ func (cfg *Config) Validate() error {
 		}
 
 		if sc.HTTPClientConfig.Authorization != nil {
-			if err := checkFileExists(sc.HTTPClientConfig.Authorization.CredentialsFile); err != nil {
+			if err := checkFile(sc.HTTPClientConfig.Authorization.CredentialsFile); err != nil {
 				return fmt.Errorf("error checking authorization credentials file %q - %s", sc.HTTPClientConfig.Authorization.CredentialsFile, err)
 			}
 		}
