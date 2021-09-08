@@ -79,7 +79,7 @@ type splunkReceiver struct {
 	metricsConsumer consumer.Metrics
 	server          *http.Server
 	obsrecv         *obsreport.Receiver
-	gzipReaderPool  sync.Pool
+	gzipReaderPool  *sync.Pool
 }
 
 var _ component.MetricsReceiver = (*splunkReceiver)(nil)
@@ -115,6 +115,7 @@ func newMetricsReceiver(
 			WriteTimeout:      defaultServerTimeout,
 		},
 		obsrecv: obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverID: config.ID(), Transport: transport}),
+		gzipReaderPool: &sync.Pool{New: func() interface{} { return new(gzip.Reader) }},
 	}
 
 	return r, nil
@@ -145,7 +146,7 @@ func newLogsReceiver(
 			ReadHeaderTimeout: defaultServerTimeout,
 			WriteTimeout:      defaultServerTimeout,
 		},
-		gzipReaderPool: sync.Pool{New: func() interface{} { return new(gzip.Reader) }},
+		gzipReaderPool: &sync.Pool{New: func() interface{} { return new(gzip.Reader) }},
 	}
 
 	return r, nil
@@ -218,6 +219,7 @@ func (r *splunkReceiver) handleReq(resp http.ResponseWriter, req *http.Request) 
 			return
 		}
 		bodyReader = reader
+		defer r.gzipReaderPool.Put(reader)
 	}
 
 	if req.ContentLength == 0 {
