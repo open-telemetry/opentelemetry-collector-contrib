@@ -24,7 +24,7 @@ import (
 	"go.elastic.co/apm/transport/transporttest"
 	"go.elastic.co/fastjson"
 	"go.opentelemetry.io/collector/model/pdata"
-	conventions "go.opentelemetry.io/collector/translator/conventions/v1.5.0"
+	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticexporter/internal/translator/elastic"
 )
@@ -48,7 +48,7 @@ func TestEncodeSpanEventsJavaExceptions(t *testing.T) {
 	timestamp := time.Unix(123, 0).UTC()
 
 	exceptionEvent1 := pdata.NewSpanEvent()
-	exceptionEvent1.SetTimestamp(pdata.TimestampFromTime(timestamp))
+	exceptionEvent1.SetTimestamp(pdata.NewTimestampFromTime(timestamp))
 	exceptionEvent1.SetName("exception")
 	exceptionEvent1.Attributes().InitFromMap(map[string]pdata.AttributeValue{
 		"exception.type":    pdata.NewAttributeValueString("java.net.ConnectException.OSError"),
@@ -66,7 +66,7 @@ Exception in thread "main" java.lang.RuntimeException: Test exception
 		),
 	})
 	exceptionEvent2 := pdata.NewSpanEvent()
-	exceptionEvent2.SetTimestamp(pdata.TimestampFromTime(timestamp))
+	exceptionEvent2.SetTimestamp(pdata.NewTimestampFromTime(timestamp))
 	exceptionEvent2.SetName("exception")
 	exceptionEvent2.Attributes().InitFromMap(map[string]pdata.AttributeValue{
 		"exception.type":    pdata.NewAttributeValueString("HighLevelException"),
@@ -267,7 +267,7 @@ func TestEncodeSpanEventsNonJavaExceptions(t *testing.T) {
 	timestamp := time.Unix(123, 0).UTC()
 
 	exceptionEvent := pdata.NewSpanEvent()
-	exceptionEvent.SetTimestamp(pdata.TimestampFromTime(timestamp))
+	exceptionEvent.SetTimestamp(pdata.NewTimestampFromTime(timestamp))
 	exceptionEvent.SetName("exception")
 	exceptionEvent.Attributes().InitFromMap(map[string]pdata.AttributeValue{
 		"exception.type":       pdata.NewAttributeValueString("the_type"),

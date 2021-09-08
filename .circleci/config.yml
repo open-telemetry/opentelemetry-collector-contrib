@@ -40,7 +40,7 @@ orbs:
 executors:
   golang:
     docker:
-      - image: cimg/go:1.16
+      - image: cimg/go:1.17
   machine:
     machine:
       image: ubuntu-1604:201903-01
@@ -89,10 +89,10 @@ commands:
   setup_go:
     steps:
       - run:
-          name: Install Go 1.16
+          name: Install Go 1.17
           command: |
             sudo rm -rf /usr/local/go
-            curl -L https://dl.google.com/go/go1.16.4.linux-amd64.tar.gz | sudo tar xz -C /usr/local
+            curl -L https://golang.org/dl/go1.17.linux-amd64.tar.gz | sudo tar xz -C /usr/local
       - run:
           name: Add ~/go/bin to PATH
           command: |
@@ -182,7 +182,7 @@ commands:
       - install_fluentbit
       - run:
           name: Loadtest
-          command: make e2e-test
+          command: TEST_ARGS="-test.run=$(make -C testbed -s list-loadtest-tests | circleci tests split|xargs echo|sed 's/ /|/g')" make e2e-test
       - store_artifacts:
           path: testbed/tests/results
       - store_test_results:
@@ -334,7 +334,7 @@ jobs:
 
   build-examples:
     docker:
-      - image: cimg/go:1.16
+      - image: cimg/go:1.17
     steps:
       - restore_workspace
       - setup_remote_docker
@@ -359,6 +359,7 @@ jobs:
 
   loadtest-with-github-reports:
     executor: golang
+    parallelism: 6
     resource_class: medium+
     environment:
       TEST_RESULTS: testbed/tests/results/junit/results.xml
@@ -368,6 +369,7 @@ jobs:
 
   loadtest:
     executor: golang
+    parallelism: 6
     resource_class: medium+
     environment:
       TEST_RESULTS: testbed/tests/results/junit/results.xml
@@ -399,7 +401,7 @@ jobs:
 
   publish-check:
     docker:
-      - image: cimg/go:1.16
+      - image: cimg/go:1.17
     steps:
       - attach_to_workspace
       - setup_remote_docker
@@ -417,7 +419,7 @@ jobs:
   # and "dockerhub-token" contexts
   publish-stable:
     docker:
-      - image: cimg/go:1.16
+      - image: cimg/go:1.17
     steps:
       - restore_workspace
       - verify_dist_files_exist

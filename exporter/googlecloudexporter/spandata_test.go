@@ -32,9 +32,9 @@ func TestPDataResourceSpansToOTSpanData_endToEnd(t *testing.T) {
 	// pdata.ResourceSpans is transformed to its *trace.SpanData correctly!
 
 	endTime := time.Now().Round(time.Second)
-	pdataEndTime := pdata.TimestampFromTime(endTime)
+	pdataEndTime := pdata.NewTimestampFromTime(endTime)
 	startTime := endTime.Add(-90 * time.Second)
-	pdataStartTime := pdata.TimestampFromTime(startTime)
+	pdataStartTime := pdata.NewTimestampFromTime(startTime)
 
 	rs := pdata.NewResourceSpans()
 	resource := rs.Resource()

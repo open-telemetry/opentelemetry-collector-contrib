@@ -19,7 +19,6 @@ import (
 
 	zipkinmodel "github.com/openzipkin/zipkin-go/model"
 	zipkinreporter "github.com/openzipkin/zipkin-go/reporter"
-
 	"go.opentelemetry.io/collector/model/pdata"
 )
 

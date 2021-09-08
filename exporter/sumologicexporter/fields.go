@@ -44,7 +44,7 @@ func (f fields) string() string {
 			fmt.Sprintf(
 				"%s=%s",
 				f.sanitizeField(k),
-				f.sanitizeField(pdata.AttributeValueToString(v)),
+				f.sanitizeField(v.AsString()),
 			),
 		)
 		return true

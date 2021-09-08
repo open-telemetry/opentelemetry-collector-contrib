@@ -28,16 +28,15 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/model/pdata"
-	conventions "go.opentelemetry.io/collector/translator/conventions/v1.5.0"
-	tracetranslator "go.opentelemetry.io/collector/translator/trace"
+	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
 	"go.uber.org/zap"
 )
 
 const (
 	serviceNameKey     = conventions.AttributeServiceName
-	operationKey       = "operation" // is there a constant we can refer to?
-	spanKindKey        = tracetranslator.TagSpanKind
-	statusCodeKey      = "status.code" // Otel core removed this and changed to semantic conventions "otel.status_code"
+	operationKey       = "operation"   // OpenTelemetry non-standard constant.
+	spanKindKey        = "span.kind"   // OpenTelemetry non-standard constant.
+	statusCodeKey      = "status.code" // OpenTelemetry non-standard constant.
 	metricKeySeparator = string(byte(0))
 )
 
@@ -243,8 +242,8 @@ func (p *processorImp) collectLatencyMetrics(ilm pdata.InstrumentationLibraryMet
 		mLatency.Histogram().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
 
 		dpLatency := mLatency.Histogram().DataPoints().AppendEmpty()
-		dpLatency.SetStartTimestamp(pdata.TimestampFromTime(p.startTime))
-		dpLatency.SetTimestamp(pdata.TimestampFromTime(time.Now()))
+		dpLatency.SetStartTimestamp(pdata.NewTimestampFromTime(p.startTime))
+		dpLatency.SetTimestamp(pdata.NewTimestampFromTime(time.Now()))
 		dpLatency.SetExplicitBounds(p.latencyBounds)
 		dpLatency.SetBucketCounts(p.latencyBucketCounts[key])
 		dpLatency.SetCount(p.latencyCount[key])
@@ -265,8 +264,8 @@ func (p *processorImp) collectCallMetrics(ilm pdata.InstrumentationLibraryMetric
 		mCalls.Sum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
 
 		dpCalls := mCalls.Sum().DataPoints().AppendEmpty()
-		dpCalls.SetStartTimestamp(pdata.TimestampFromTime(p.startTime))
-		dpCalls.SetTimestamp(pdata.TimestampFromTime(time.Now()))
+		dpCalls.SetStartTimestamp(pdata.NewTimestampFromTime(p.startTime))
+		dpCalls.SetTimestamp(pdata.NewTimestampFromTime(time.Now()))
 		dpCalls.SetIntVal(p.callSum[key])
 
 		p.metricKeyToDimensions[key].CopyTo(dpCalls.Attributes())
@@ -378,7 +377,7 @@ func buildKey(serviceName string, span pdata.Span, optionalDims []Dimension) met
 			value = *d.Default
 		}
 		if attr, ok := spanAttr.Get(d.Name); ok {
-			value = pdata.AttributeValueToString(attr)
+			value = attr.AsString()
 		}
 		concatDimensionValue(&metricKeyBuilder, value, true)
 	}

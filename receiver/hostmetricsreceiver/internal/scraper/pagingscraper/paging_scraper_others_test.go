@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//go:build !windows
 // +build !windows
 
 package pagingscraper
@@ -24,10 +25,8 @@ import (
 	"github.com/shirou/gopsutil/mem"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-
 	"go.opentelemetry.io/collector/component/componenttest"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/scrapererror"
+	"go.opentelemetry.io/collector/receiver/scrapererror"
 )
 
 func TestScrape_Errors(t *testing.T) {

@@ -29,18 +29,15 @@ import (
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"google.golang.org/grpc"
 	"google.golang.org/protobuf/proto"
 
-	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/consumer/consumertest"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opencensusexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
-	internaldata "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus"
 )
 
 func TestReceiver_endToEnd(t *testing.T) {
@@ -49,22 +46,12 @@ func TestReceiver_endToEnd(t *testing.T) {
 	addr, doneFn := ocReceiverOnGRPCServer(t, spanSink)
 	defer doneFn()
 
-	expFactory := opencensusexporter.NewFactory()
-	expCfg := expFactory.CreateDefaultConfig().(*opencensusexporter.Config)
-	expCfg.GRPCClientSettings.TLSSetting.Insecure = true
-	expCfg.Endpoint = addr.String()
-	expCfg.WaitForReady = true
-	oce, err := expFactory.CreateTracesExporter(context.Background(), componenttest.NewNopExporterCreateSettings(), expCfg)
-	require.NoError(t, err)
-	err = oce.Start(context.Background(), componenttest.NewNopHost())
-	require.NoError(t, err)
-
-	defer func() {
-		require.NoError(t, oce.Shutdown(context.Background()))
-	}()
-
+	traceClient, traceClientDoneFn, err := makeTraceServiceClient(addr)
+	require.NoError(t, err, "Failed to create the gRPC TraceService_ExportClient: %v", err)
+	defer traceClientDoneFn()
 	td := testdata.GenerateTracesOneSpan()
-	assert.NoError(t, oce.ConsumeTraces(context.Background(), td))
+	node, resource, spans := opencensus.ResourceSpansToOC(td.ResourceSpans().At(0))
+	assert.NoError(t, traceClient.Send(&agenttracepb.ExportTraceServiceRequest{Node: node, Resource: resource, Spans: spans}))
 
 	assert.Eventually(t, func() bool {
 		return len(spanSink.AllTraces()) != 0
@@ -83,10 +70,10 @@ func TestReceiver_endToEnd(t *testing.T) {
 func TestExportMultiplexing(t *testing.T) {
 	spanSink := new(consumertest.TracesSink)
 
-	port, doneFn := ocReceiverOnGRPCServer(t, spanSink)
+	addr, doneFn := ocReceiverOnGRPCServer(t, spanSink)
 	defer doneFn()
 
-	traceClient, traceClientDoneFn, err := makeTraceServiceClient(port)
+	traceClient, traceClientDoneFn, err := makeTraceServiceClient(addr)
 	require.NoError(t, err, "Failed to create the gRPC TraceService_ExportClient: %v", err)
 	defer traceClientDoneFn()
 
@@ -149,7 +136,7 @@ func TestExportMultiplexing(t *testing.T) {
 	for _, td := range spanSink.AllTraces() {
 		rss := td.ResourceSpans()
 		for i := 0; i < rss.Len(); i++ {
-			node, _, spans := internaldata.ResourceSpansToOC(rss.At(i))
+			node, _, spans := opencensus.ResourceSpansToOC(rss.At(i))
 			resultsMapping[nodeToKey(node)] = append(resultsMapping[nodeToKey(node)], spans...)
 		}
 	}
@@ -307,7 +294,7 @@ func TestExportProtocolConformation_spansInFirstMessage(t *testing.T) {
 	for _, td := range spanSink.AllTraces() {
 		rss := td.ResourceSpans()
 		for i := 0; i < rss.Len(); i++ {
-			node, _, spans := internaldata.ResourceSpansToOC(rss.At(i))
+			node, _, spans := opencensus.ResourceSpansToOC(rss.At(i))
 			resultsMapping[nodeToKey(node)] = append(resultsMapping[nodeToKey(node)], spans...)
 		}
 	}

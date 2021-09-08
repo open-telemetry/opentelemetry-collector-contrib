@@ -168,7 +168,7 @@ func (s *sender) send(ctx context.Context, pipeline PipelineType, body io.Reader
 
 // logToText converts LogRecord to a plain text line, returns it and error eventually
 func (s *sender) logToText(record pdata.LogRecord) string {
-	return pdata.AttributeValueToString(record.Body())
+	return record.Body().AsString()
 }
 
 // logToJSON converts LogRecord to a json line, returns it and error eventually

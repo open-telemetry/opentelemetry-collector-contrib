@@ -23,8 +23,9 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtest"
-	"go.opentelemetry.io/collector/exporter/jaegerexporter"
 	"go.opentelemetry.io/collector/exporter/otlpexporter"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/jaegerexporter"
 )
 
 func TestLoadConfig(t *testing.T) {

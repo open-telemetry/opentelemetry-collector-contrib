@@ -20,13 +20,13 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-
 	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configcheck"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.opentelemetry.io/collector/processor/processorhelper"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/attraction"
 )
 
 func TestFactory_Type(t *testing.T) {
@@ -56,8 +56,8 @@ func TestFactoryCreateTracesProcessor_InvalidActions(t *testing.T) {
 	cfg := factory.CreateDefaultConfig()
 	oCfg := cfg.(*Config)
 	// Missing key
-	oCfg.Actions = []processorhelper.ActionKeyValue{
-		{Key: "", Value: 123, Action: processorhelper.UPSERT},
+	oCfg.Actions = []attraction.ActionKeyValue{
+		{Key: "", Value: 123, Action: attraction.UPSERT},
 	}
 	ap, err := factory.CreateTracesProcessor(context.Background(), componenttest.NewNopProcessorCreateSettings(), cfg, consumertest.NewNop())
 	assert.Error(t, err)
@@ -68,8 +68,8 @@ func TestFactoryCreateTracesProcessor(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	oCfg := cfg.(*Config)
-	oCfg.Actions = []processorhelper.ActionKeyValue{
-		{Key: "a key", Action: processorhelper.DELETE},
+	oCfg.Actions = []attraction.ActionKeyValue{
+		{Key: "a key", Action: attraction.DELETE},
 	}
 
 	tp, err := factory.CreateTracesProcessor(context.Background(), componenttest.NewNopProcessorCreateSettings(), cfg, consumertest.NewNop())
@@ -80,8 +80,8 @@ func TestFactoryCreateTracesProcessor(t *testing.T) {
 	assert.Nil(t, tp)
 	assert.Error(t, err)
 
-	oCfg.Actions = []processorhelper.ActionKeyValue{
-		{Action: processorhelper.DELETE},
+	oCfg.Actions = []attraction.ActionKeyValue{
+		{Action: attraction.DELETE},
 	}
 	tp, err = factory.CreateTracesProcessor(context.Background(), componenttest.NewNopProcessorCreateSettings(), cfg, consumertest.NewNop())
 	assert.Nil(t, tp)
@@ -110,8 +110,8 @@ func TestFactoryCreateLogsProcessor_InvalidActions(t *testing.T) {
 	cfg := factory.CreateDefaultConfig()
 	oCfg := cfg.(*Config)
 	// Missing key
-	oCfg.Actions = []processorhelper.ActionKeyValue{
-		{Key: "", Value: 123, Action: processorhelper.UPSERT},
+	oCfg.Actions = []attraction.ActionKeyValue{
+		{Key: "", Value: 123, Action: attraction.UPSERT},
 	}
 	ap, err := factory.CreateLogsProcessor(context.Background(), componenttest.NewNopProcessorCreateSettings(), cfg, consumertest.NewNop())
 	assert.Error(t, err)
@@ -122,8 +122,8 @@ func TestFactoryCreateLogsProcessor(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	oCfg := cfg.(*Config)
-	oCfg.Actions = []processorhelper.ActionKeyValue{
-		{Key: "a key", Action: processorhelper.DELETE},
+	oCfg.Actions = []attraction.ActionKeyValue{
+		{Key: "a key", Action: attraction.DELETE},
 	}
 
 	tp, err := factory.CreateLogsProcessor(
@@ -136,8 +136,8 @@ func TestFactoryCreateLogsProcessor(t *testing.T) {
 	assert.Nil(t, tp)
 	assert.Error(t, err)
 
-	oCfg.Actions = []processorhelper.ActionKeyValue{
-		{Action: processorhelper.DELETE},
+	oCfg.Actions = []attraction.ActionKeyValue{
+		{Action: attraction.DELETE},
 	}
 	tp, err = factory.CreateLogsProcessor(
 		context.Background(), componenttest.NewNopProcessorCreateSettings(), cfg, consumertest.NewNop())

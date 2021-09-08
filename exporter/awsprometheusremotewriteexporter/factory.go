@@ -26,7 +26,8 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
-	prw "go.opentelemetry.io/collector/exporter/prometheusremotewriteexporter"
+
+	prw "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusremotewriteexporter"
 )
 
 const typeStr = "awsprometheusremotewrite" // The value of "type" key in configuration.

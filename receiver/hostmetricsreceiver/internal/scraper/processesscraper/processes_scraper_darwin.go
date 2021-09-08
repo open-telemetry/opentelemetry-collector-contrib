@@ -12,13 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//go:build darwin || freebsd
 // +build darwin freebsd
 
 package processesscraper
 
 import (
 	"github.com/shirou/gopsutil/load"
-
 	"go.opentelemetry.io/collector/model/pdata"
 )
 

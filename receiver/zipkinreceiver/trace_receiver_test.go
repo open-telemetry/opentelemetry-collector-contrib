@@ -19,15 +19,12 @@ import (
 	"compress/gzip"
 	"compress/zlib"
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
 	"io/ioutil"
 	"net"
 	"net/http"
 	"net/http/httptest"
-	"strings"
 	"testing"
 	"time"
 
@@ -42,9 +39,8 @@ import (
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.opentelemetry.io/collector/exporter/zipkinexporter"
 	"go.opentelemetry.io/collector/model/pdata"
-	conventions "go.opentelemetry.io/collector/translator/conventions/v1.5.0"
+	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
 )
 
 const (
@@ -130,143 +126,6 @@ func TestConvertSpansToTraceSpans_json(t *testing.T) {
 
 	// Expecting 9 non-nil spans
 	require.Equal(t, 9, reqs.SpanCount(), "Incorrect non-nil spans count")
-}
-
-func TestConversionRoundtrip(t *testing.T) {
-	// The goal is to convert from:
-	// 1. Original Zipkin JSON as that's the format that Zipkin receivers will receive
-	// 2. Into TraceProtoSpans
-	// 3. Into SpanData
-	// 4. Back into Zipkin JSON (in this case the Zipkin exporter has been configured)
-	receiverInputJSON := []byte(`
-[{
-  "traceId": "4d1e00c0db9010db86154a4ba6e91385",
-  "parentId": "86154a4ba6e91385",
-  "id": "4d1e00c0db9010db",
-  "kind": "CLIENT",
-  "name": "get",
-  "timestamp": 1472470996199000,
-  "duration": 207000,
-  "localEndpoint": {
-    "serviceName": "frontend",
-    "ipv6": "7::80:807f"
-  },
-  "remoteEndpoint": {
-    "serviceName": "backend",
-    "ipv4": "192.168.99.101",
-    "port": 9000
-  },
-  "annotations": [
-    {
-      "timestamp": 1472470996238000,
-      "value": "foo"
-    },
-    {
-      "timestamp": 1472470996403000,
-      "value": "bar"
-    }
-  ],
-  "tags": {
-    "http.path": "/api",
-    "clnt/finagle.version": "6.45.0",
-	"otel.status_code": "STATUS_CODE_UNSET"
-  }
-},
-{
-  "traceId": "4d1e00c0db9010db86154a4ba6e91385",
-  "parentId": "86154a4ba6e91386",
-  "id": "4d1e00c0db9010db",
-  "kind": "SERVER",
-  "name": "put",
-  "timestamp": 1472470996199000,
-  "duration": 207000,
-  "localEndpoint": {
-    "serviceName": "frontend",
-    "ipv6": "7::80:807f"
-  },
-  "remoteEndpoint": {
-    "serviceName": "frontend",
-    "ipv4": "192.168.99.101",
-    "port": 9000
-  },
-  "annotations": [
-    {
-      "timestamp": 1472470996238000,
-      "value": "foo"
-    },
-    {
-      "timestamp": 1472470996403000,
-      "value": "bar"
-    }
-  ],
-  "tags": {
-    "http.path": "/api",
-    "clnt/finagle.version": "6.45.0",
-	"otel.status_code": "STATUS_CODE_UNSET"
-  }
-}]`)
-
-	zi := newTestZipkinReceiver()
-	zi.nextConsumer = consumertest.NewNop()
-	zi.config = &Config{}
-	ereqs, err := zi.v2ToTraceSpans(receiverInputJSON, nil)
-	require.NoError(t, err)
-
-	require.Equal(t, 2, ereqs.SpanCount())
-
-	// Now the last phase is to transmit them over the wire and then compare the JSONs
-
-	buf := new(bytes.Buffer)
-	// This will act as the final Zipkin server.
-	backend := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		_, err = io.Copy(buf, r.Body)
-		require.NoError(t, err)
-		_ = r.Body.Close()
-	}))
-	defer backend.Close()
-
-	factory := zipkinexporter.NewFactory()
-	config := factory.CreateDefaultConfig().(*zipkinexporter.Config)
-	config.Endpoint = backend.URL
-	set := componenttest.NewNopExporterCreateSettings()
-	ze, err := factory.CreateTracesExporter(context.Background(), set, config)
-	require.NoError(t, err)
-	require.NotNil(t, ze)
-	require.NoError(t, ze.Start(context.Background(), componenttest.NewNopHost()))
-
-	require.NoError(t, ze.ConsumeTraces(context.Background(), ereqs))
-
-	// Shutdown the exporter so it can flush any remaining data.
-	assert.NoError(t, ze.Shutdown(context.Background()))
-	backend.Close()
-
-	// The received JSON messages are inside arrays, so reading then directly will
-	// fail with error. Use a small hack to transform the multiple arrays into a
-	// single one.
-	accumulatedJSONMsgs := strings.ReplaceAll(buf.String(), "][", ",")
-	gj := generateNormalizedJSON(t, accumulatedJSONMsgs)
-	wj := generateNormalizedJSON(t, string(receiverInputJSON))
-	// translation to OTLP sorts spans so do a span-by-span comparison
-	gj = gj[1 : len(gj)-1]
-	wj = wj[1 : len(wj)-1]
-	gjSpans := strings.Split(gj, "{\"annotations\":")
-	wjSpans := strings.Split(wj, "{\"annotations\":")
-	assert.Equal(t, len(wjSpans), len(gjSpans))
-	for _, wjspan := range wjSpans {
-		if len(wjspan) > 3 && wjspan[len(wjspan)-1:] == "," {
-			wjspan = wjspan[0 : len(wjspan)-1]
-		}
-		matchFound := false
-		for _, gjspan := range gjSpans {
-			if len(gjspan) > 3 && gjspan[len(gjspan)-1:] == "," {
-				gjspan = gjspan[0 : len(gjspan)-1]
-			}
-			if wjspan == gjspan {
-				matchFound = true
-			}
-		}
-		assert.True(t, matchFound, fmt.Sprintf("no match found for {\"annotations\":%s %v", wjspan, gjSpans))
-	}
 }
 
 func TestStartTraceReception(t *testing.T) {
@@ -544,7 +403,7 @@ func TestReceiverConvertsStringsToTypes(t *testing.T) {
 	td := next.AllTraces()[0]
 	span := td.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().At(0)
 
-	expected := pdata.NewAttributeMap().InitFromMap(map[string]pdata.AttributeValue{
+	expected := pdata.NewAttributeMapFromMap(map[string]pdata.AttributeValue{
 		"cache_hit":            pdata.NewAttributeValueBool(true),
 		"ping_count":           pdata.NewAttributeValueInt(25),
 		"timeout":              pdata.NewAttributeValueDouble(12.3),
@@ -604,20 +463,4 @@ func TestFromBytesWithNoTimestamp(t *testing.T) {
 	wasAbsent, mapContainedKey := gs.Attributes().Get("otel.zipkin.absentField.startTime")
 	assert.True(t, mapContainedKey)
 	assert.True(t, wasAbsent.BoolVal())
-}
-
-// generateNormalizedJSON generates a normalized JSON from the string
-// given to the function. Useful to compare JSON contents that
-// may have differences due to formatting. It returns nil in case of
-// invalid JSON.
-func generateNormalizedJSON(t *testing.T, jsonStr string) string {
-	var i interface{}
-
-	err := json.Unmarshal([]byte(jsonStr), &i)
-	require.NoError(t, err)
-
-	n, err := json.Marshal(i)
-	require.NoError(t, err)
-
-	return string(n)
 }

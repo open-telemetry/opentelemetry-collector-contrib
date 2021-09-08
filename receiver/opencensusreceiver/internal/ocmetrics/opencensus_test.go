@@ -31,18 +31,15 @@ import (
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/consumertest"
 	"google.golang.org/grpc"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
-	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/consumer/consumertest"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opencensusexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
-	internaldata "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus"
 )
 
 func TestReceiver_endToEnd(t *testing.T) {
@@ -51,22 +48,12 @@ func TestReceiver_endToEnd(t *testing.T) {
 	addr, doneFn := ocReceiverOnGRPCServer(t, metricSink)
 	defer doneFn()
 
-	expFactory := opencensusexporter.NewFactory()
-	expCfg := expFactory.CreateDefaultConfig().(*opencensusexporter.Config)
-	expCfg.GRPCClientSettings.TLSSetting.Insecure = true
-	expCfg.Endpoint = addr.String()
-	expCfg.WaitForReady = true
-	oce, err := expFactory.CreateMetricsExporter(context.Background(), componenttest.NewNopExporterCreateSettings(), expCfg)
-	require.NoError(t, err)
-	err = oce.Start(context.Background(), componenttest.NewNopHost())
-	require.NoError(t, err)
-
-	defer func() {
-		require.NoError(t, oce.Shutdown(context.Background()))
-	}()
-
+	metricsClient, metricsClientDoneFn, err := makeMetricsServiceClient(addr)
+	require.NoError(t, err, "Failed to create the gRPC MetricsService_ExportClient: %v", err)
+	defer metricsClientDoneFn()
 	md := testdata.GenerateMetricsOneMetric()
-	assert.NoError(t, oce.ConsumeMetrics(context.Background(), md))
+	node, resource, metrics := opencensus.ResourceMetricsToOC(md.ResourceMetrics().At(0))
+	assert.NoError(t, metricsClient.Send(&agentmetricspb.ExportMetricsServiceRequest{Node: node, Resource: resource, Metrics: metrics}))
 
 	assert.Eventually(t, func() bool {
 		return len(metricSink.AllMetrics()) != 0
@@ -151,7 +138,7 @@ func TestExportMultiplexing(t *testing.T) {
 	for _, md := range metricSink.AllMetrics() {
 		rms := md.ResourceMetrics()
 		for i := 0; i < rms.Len(); i++ {
-			node, _, metrics := internaldata.ResourceMetricsToOC(rms.At(i))
+			node, _, metrics := opencensus.ResourceMetricsToOC(rms.At(i))
 			resultsMapping[nodeToKey(node)] = append(resultsMapping[nodeToKey(node)], metrics...)
 		}
 	}
@@ -293,7 +280,7 @@ func TestExportProtocolConformation_metricsInFirstMessage(t *testing.T) {
 	for _, md := range metricSink.AllMetrics() {
 		rms := md.ResourceMetrics()
 		for i := 0; i < rms.Len(); i++ {
-			node, _, metrics := internaldata.ResourceMetricsToOC(rms.At(i))
+			node, _, metrics := opencensus.ResourceMetricsToOC(rms.At(i))
 			resultsMapping[nodeToKey(node)] = append(resultsMapping[nodeToKey(node)], metrics...)
 		}
 	}
