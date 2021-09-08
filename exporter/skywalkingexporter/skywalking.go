@@ -17,6 +17,7 @@ package skywalkingexporter
 import (
 	"context"
 	"errors"
+
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/model/pdata"
 )
