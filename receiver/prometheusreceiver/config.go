@@ -195,7 +195,7 @@ func (cfg *Config) Validate() error {
 						}
 						continue
 					}
-					fmt.Printf("WARNING: file %q for file_sd in scrape job %q does not exist\n", file, sc.JobName)
+					return fmt.Errorf("file %q for file_sd in scrape job %q does not exist\n", file, sc.JobName)
 				}
 			}
 		}
