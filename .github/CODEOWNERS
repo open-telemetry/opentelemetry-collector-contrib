@@ -1,5 +1,26 @@
 # Code owners file.
 # This file controls who is tagged for review for any given pull request.
+#
+# What is a "CODEOWNER"?
+#
+# A CODEOWNER lends their expertise to a specific package hosted by an OpenTelemetry repository.
+#
+# A CODEOWNER MUST:
+# - introduce themselves on the CNCF OTel Python channel: https://cloud-native.slack.com/archives/C01PD4HUVBL
+# - have enough knowledge of the corresponding instrumented library
+# - respond to issues
+# - fix failing unit tests or any other blockers to the CI/CD workflow
+# - update usage of `opentelemetry-python-core` APIs upon the introduction of breaking changes
+# - be a member of the OpenTelemetry community so that the `component-owners.yml` action to automatically assign CODEOWNERS to PRs works correctly.
+#
+
 
 # For anything not explicitly taken by someone else:
 * @open-telemetry/opentelemetry-python-contrib-approvers
+
+# Learn about CODEOWNERS file format:
+# https://help.github.com/en/articles/about-code-owners
+#
+# Learn about membership in OpenTelemetry community:
+# https://github.com/open-telemetry/community/blob/main/community-membership.md
+#

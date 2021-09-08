@@ -66,6 +66,24 @@ install](https://pip.pypa.io/en/stable/reference/pip_install/#editable-installs)
 pip install -e ./instrumentation/opentelemetry-instrumentation-{integration}
 ```
 
+## Releasing
+
+Maintainers aim to periodically release new versions of the packages in `opentelemetry-python-contrib`.
+
+Contributions that enhance OTel for Python are welcome to be hosted upstream for the benefit of group collaboration. Maintainers will look for things like good documentation, good unit tests, and in general their own confidence when deciding to release a package with the stability guarantees that are implied with a `1.0` release.
+
+To resolve this, members of the community are encouraged to commit to becoming a CODEOWNER for packages in `-contrib` that they feel experienced enough to maintain. CODEOWNERS can then follow the checklist below to release `-contrib` packages as 1.0 stable:
+
+### Releasing a package as `1.0` stable
+
+To release a package as `1.0` stable, the package:
+- SHOULD have a CODEOWNER. To become one, submit an issue and explain why you meet the responsibilities found in [CODEOWNERS](.github/CODEOWNERS).
+- MUST have unit tests that cover all supported versions of the instrumented library.
+  - e.g. Instrumentation packages might use different techniques to instrument different major versions of python packages
+- MUST have clear documentation for non-obvious usages of the package
+  - e.g. If an instrumentation package uses flags, a token as context, or parameters that are not typical of the `BaseInstrumentor` class, these are documented
+- After the release of `1.0`, a CODEOWNER may no longer feel like they have the bandwidth to meet the responsibilities of maintaining the package. That's not a problem at all, life happens! However, if that is the case, we ask that the CODEOWNER please raise an issue indicating that they would like to be removed as a CODEOWNER so that they don't get pinged on future PRs. Ultimately, we hope to use that issue to find a new CODEOWNER.
+
 ## Contributing
 
 See [CONTRIBUTING.md](CONTRIBUTING.md)
