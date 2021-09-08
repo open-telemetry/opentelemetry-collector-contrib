@@ -18,8 +18,16 @@ AWS X-Ray Propagator
 
 The **AWS X-Ray Propagator** provides a propagator that when used, adds a `trace
 header`_ to outgoing traces that is compatible with the AWS X-Ray backend service.
-This allows the trace context to be propagated when a trace span multiple AWS
+This allows the trace context to be propagated when a trace spans multiple AWS
 services.
+
+The same propagator setup is used to extract a context sent by external systems
+so that child span have the correct parent context.
+
+**NOTE**: Because the parent context parsed from the ``X-Amzn-Trace-Id`` header
+assumes the context is _not_ sampled by default, users should make sure to add
+``Sampled=1`` to their ``X-Amzn-Trace-Id`` headers so that the child spans are
+sampled.
 
 Usage
 -----
