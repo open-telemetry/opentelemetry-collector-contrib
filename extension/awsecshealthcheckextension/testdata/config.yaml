@@ -1,12 +1,12 @@
 extensions:
-  ecs_health_check:
-  ecs_health_check/1:
+  aws_ecs_health_check:
+  aws_ecs_health_check/1:
     endpoint: "localhost:13134"
     interval: "5m"
     exporter_error_limit: 5
 
 service:
-  extensions: [ecs_health_check/1]
+  extensions: [aws_ecs_health_check/1]
   pipelines:
     traces:
       receivers: [nop]
@@ -15,8 +15,8 @@ service:
 
 # Data pipeline is required to load the config.
 receivers:
-  [nop]
+  nop:
 processors:
-  [nop]
+  nop:
 exporters:
-  [nop]
+  nop:
