@@ -47,6 +47,8 @@ type kafkaTracesConsumer struct {
 	unmarshaler       TracesUnmarshaler
 
 	settings component.ReceiverCreateSettings
+
+	autocommitEnabled bool
 }
 
 // kafkaMetricsConsumer uses sarama to consume and handle messages from kafka.
@@ -59,6 +61,8 @@ type kafkaMetricsConsumer struct {
 	unmarshaler       MetricsUnmarshaler
 
 	settings component.ReceiverCreateSettings
+
+	autocommitEnabled bool
 }
 
 // kafkaLogsConsumer uses sarama to consume and handle messages from kafka.
@@ -71,6 +75,8 @@ type kafkaLogsConsumer struct {
 	unmarshaler       LogsUnmarshaler
 
 	settings component.ReceiverCreateSettings
+
+	autocommitEnabled bool
 }
 
 var _ component.Receiver = (*kafkaTracesConsumer)(nil)
@@ -103,12 +109,13 @@ func newTracesReceiver(config Config, set component.ReceiverCreateSettings, unma
 		return nil, err
 	}
 	return &kafkaTracesConsumer{
-		id:            config.ID(),
-		consumerGroup: client,
-		topics:        []string{config.Topic},
-		nextConsumer:  nextConsumer,
-		unmarshaler:   unmarshaler,
-		settings:      set,
+		id:                config.ID(),
+		consumerGroup:     client,
+		topics:            []string{config.Topic},
+		nextConsumer:      nextConsumer,
+		unmarshaler:       unmarshaler,
+		settings:          set,
+		autocommitEnabled: config.AutoCommit.Enable,
 	}, nil
 }
 
@@ -126,6 +133,7 @@ func (c *kafkaTracesConsumer) Start(context.Context, component.Host) error {
 			Transport:              transport,
 			ReceiverCreateSettings: c.settings,
 		}),
+		autocommitEnabled: c.autocommitEnabled,
 	}
 	go c.consumeLoop(ctx, consumerGroup) // nolint:errcheck
 	<-consumerGroup.ready
@@ -164,6 +172,9 @@ func newMetricsReceiver(config Config, set component.ReceiverCreateSettings, unm
 	c.Metadata.Full = config.Metadata.Full
 	c.Metadata.Retry.Max = config.Metadata.Retry.Max
 	c.Metadata.Retry.Backoff = config.Metadata.Retry.Backoff
+	c.Consumer.Offsets.AutoCommit.Enable = config.AutoCommit.Enable
+	c.Consumer.Offsets.AutoCommit.Interval = config.AutoCommit.Interval
+
 	if config.ProtocolVersion != "" {
 		version, err := sarama.ParseKafkaVersion(config.ProtocolVersion)
 		if err != nil {
@@ -179,12 +190,13 @@ func newMetricsReceiver(config Config, set component.ReceiverCreateSettings, unm
 		return nil, err
 	}
 	return &kafkaMetricsConsumer{
-		id:            config.ID(),
-		consumerGroup: client,
-		topics:        []string{config.Topic},
-		nextConsumer:  nextConsumer,
-		unmarshaler:   unmarshaler,
-		settings:      set,
+		id:                config.ID(),
+		consumerGroup:     client,
+		topics:            []string{config.Topic},
+		nextConsumer:      nextConsumer,
+		unmarshaler:       unmarshaler,
+		settings:          set,
+		autocommitEnabled: config.AutoCommit.Enable,
 	}, nil
 }
 
@@ -202,6 +214,7 @@ func (c *kafkaMetricsConsumer) Start(context.Context, component.Host) error {
 			Transport:              transport,
 			ReceiverCreateSettings: c.settings,
 		}),
+		autocommitEnabled: c.autocommitEnabled,
 	}
 	go c.consumeLoop(ctx, metricsConsumerGroup)
 	<-metricsConsumerGroup.ready
@@ -254,12 +267,13 @@ func newLogsReceiver(config Config, set component.ReceiverCreateSettings, unmars
 		return nil, err
 	}
 	return &kafkaLogsConsumer{
-		id:            config.ID(),
-		consumerGroup: client,
-		topics:        []string{config.Topic},
-		nextConsumer:  nextConsumer,
-		unmarshaler:   unmarshaler,
-		settings:      set,
+		id:                config.ID(),
+		consumerGroup:     client,
+		topics:            []string{config.Topic},
+		nextConsumer:      nextConsumer,
+		unmarshaler:       unmarshaler,
+		settings:          set,
+		autocommitEnabled: config.AutoCommit.Enable,
 	}, nil
 }
 
@@ -277,6 +291,7 @@ func (c *kafkaLogsConsumer) Start(context.Context, component.Host) error {
 			Transport:              transport,
 			ReceiverCreateSettings: c.settings,
 		}),
+		autocommitEnabled: c.autocommitEnabled,
 	}
 	go c.consumeLoop(ctx, logsConsumerGroup)
 	<-logsConsumerGroup.ready
@@ -314,6 +329,8 @@ type tracesConsumerGroupHandler struct {
 	logger *zap.Logger
 
 	obsrecv *obsreport.Receiver
+
+	autocommitEnabled bool
 }
 
 type metricsConsumerGroupHandler struct {
@@ -326,6 +343,8 @@ type metricsConsumerGroupHandler struct {
 	logger *zap.Logger
 
 	obsrecv *obsreport.Receiver
+
+	autocommitEnabled bool
 }
 
 type logsConsumerGroupHandler struct {
@@ -338,6 +357,8 @@ type logsConsumerGroupHandler struct {
 	logger *zap.Logger
 
 	obsrecv *obsreport.Receiver
+
+	autocommitEnabled bool
 }
 
 var _ sarama.ConsumerGroupHandler = (*tracesConsumerGroupHandler)(nil)
@@ -387,6 +408,10 @@ func (c *tracesConsumerGroupHandler) ConsumeClaim(session sarama.ConsumerGroupSe
 		if err != nil {
 			return err
 		}
+		if !c.autocommitEnabled {
+			session.MarkMessage(message, "")
+			session.Commit()
+		}
 	}
 	return nil
 }
@@ -433,6 +458,10 @@ func (c *metricsConsumerGroupHandler) ConsumeClaim(session sarama.ConsumerGroupS
 		c.obsrecv.EndMetricsOp(ctx, c.unmarshaler.Encoding(), dataPointCount, err)
 		if err != nil {
 			return err
+		}
+		if !c.autocommitEnabled {
+			session.MarkMessage(message, "")
+			session.Commit()
 		}
 	}
 	return nil
@@ -485,6 +514,10 @@ func (c *logsConsumerGroupHandler) ConsumeClaim(session sarama.ConsumerGroupSess
 		c.obsrecv.EndTracesOp(ctx, c.unmarshaler.Encoding(), logs.LogRecordCount(), err)
 		if err != nil {
 			return err
+		}
+		if !c.autocommitEnabled {
+			session.MarkMessage(message, "")
+			session.Commit()
 		}
 	}
 	return nil

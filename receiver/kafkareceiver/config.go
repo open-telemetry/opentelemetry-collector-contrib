@@ -15,10 +15,21 @@
 package kafkareceiver
 
 import (
+	"time"
+
 	"go.opentelemetry.io/collector/config"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter"
 )
+
+type AutoCommit struct {
+	// Whether or not to auto-commit updated offsets back to the broker.
+	// (default enabled).
+	Enable bool `mapstructure:"enable"`
+	// How frequently to commit updated offsets. Ineffective unless
+	// auto-commit is enabled (default 1s)
+	Interval time.Duration `mapstructure:"interval"`
+}
 
 // Config defines configuration for Kafka receiver.
 type Config struct {
@@ -41,6 +52,9 @@ type Config struct {
 	Metadata kafkaexporter.Metadata `mapstructure:"metadata"`
 
 	Authentication kafkaexporter.Authentication `mapstructure:"auth"`
+
+	// Controls the auto-commit funcionality
+	AutoCommit AutoCommit `mapstructure:"autocommit"`
 }
 
 var _ config.Receiver = (*Config)(nil)
