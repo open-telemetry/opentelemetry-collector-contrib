@@ -67,7 +67,7 @@ func (config Config) Validate() error {
 		return errors.New("config.CollectionInterval must be specified")
 	}
 	if config.DockerAPIVersion < minimalRequiredDockerAPIVersion {
-		return errors.New(fmt.Sprintf("Docker API version must be at least %v", minimalRequiredDockerAPIVersion))
+		return fmt.Errorf("Docker API version must be at least %v", minimalRequiredDockerAPIVersion)
 	}
 	return nil
 }
