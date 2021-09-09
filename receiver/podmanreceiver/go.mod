@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/podman
 go 1.17
 
 require (
-	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/scraperhelper v0.34.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/scraperhelper v0.35.0
 	github.com/stretchr/testify v1.7.0
 	go.opentelemetry.io/collector v0.35.0
 	go.uber.org/zap v1.19.0
