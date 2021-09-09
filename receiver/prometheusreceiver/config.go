@@ -83,7 +83,7 @@ func checkTLSConfig(tlsConfig commonconfig.TLSConfig) error {
 	return nil
 }
 
-// Method to exercise the prometheus file discovery behaviour to ensure there are no errors
+// Method to exercise the prometheus file discovery behavior to ensure there are no errors
 // - reference https://github.com/prometheus/prometheus/blob/c0c22ed04200a8d24d1d5719f605c85710f0d008/discovery/file/file.go#L372
 func checkSDFile(filename string) error {
 	fd, err := os.Open(filename)
@@ -195,7 +195,7 @@ func (cfg *Config) Validate() error {
 						}
 						continue
 					}
-					return fmt.Errorf("file %q for file_sd in scrape job %q does not exist\n", file, sc.JobName)
+					return fmt.Errorf("file %q for file_sd in scrape job %q does not exist", file, sc.JobName)
 				}
 			}
 		}
