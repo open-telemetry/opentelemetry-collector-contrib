@@ -235,7 +235,7 @@ func attrValue(value pdata.AttributeValue) interface{} {
 			values[i] = attrValue(arrayVal.At(i))
 		}
 		return values
-	case pdata.AttributeValueTypeNull:
+	case pdata.AttributeValueTypeEmpty:
 		return nil
 	default:
 		return nil

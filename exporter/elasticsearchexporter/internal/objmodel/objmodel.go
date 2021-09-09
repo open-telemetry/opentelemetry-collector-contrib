@@ -162,7 +162,7 @@ func (doc *Document) AddAttributes(key string, attributes pdata.AttributeMap) {
 // the fields will be flattened.
 func (doc *Document) AddAttribute(key string, attribute pdata.AttributeValue) {
 	switch attribute.Type() {
-	case pdata.AttributeValueTypeNull:
+	case pdata.AttributeValueTypeEmpty:
 		// do not add 'null'
 	case pdata.AttributeValueTypeMap:
 		doc.AddAttributes(key, attribute.MapVal())
@@ -485,7 +485,7 @@ func appendAttributeFields(fields []field, path string, am pdata.AttributeMap) [
 }
 
 func appendAttributeValue(fields []field, path string, key string, attr pdata.AttributeValue) []field {
-	if attr.Type() == pdata.AttributeValueTypeNull {
+	if attr.Type() == pdata.AttributeValueTypeEmpty {
 		return fields
 	}
 
