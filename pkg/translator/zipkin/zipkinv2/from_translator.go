@@ -201,7 +201,7 @@ func spanEventsToZipkinAnnotations(events pdata.SpanEventSlice, zs *zipkinmodel.
 					Value:     event.Name(),
 				}
 			} else {
-				jsonStr, err := json.Marshal(pdata.AttributeMapToMap(event.Attributes()))
+				jsonStr, err := json.Marshal(event.Attributes().AsRaw())
 				if err != nil {
 					return err
 				}
@@ -221,7 +221,7 @@ func spanLinksToZipkinTags(links pdata.SpanLinkSlice, zTags map[string]string) e
 	for i := 0; i < links.Len(); i++ {
 		link := links.At(i)
 		key := fmt.Sprintf("otlp.link.%d", i)
-		jsonStr, err := json.Marshal(pdata.AttributeMapToMap(link.Attributes()))
+		jsonStr, err := json.Marshal(link.Attributes().AsRaw())
 		if err != nil {
 			return err
 		}

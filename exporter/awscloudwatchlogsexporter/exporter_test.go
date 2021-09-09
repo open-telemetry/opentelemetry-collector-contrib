@@ -128,7 +128,7 @@ func TestAttrValue(t *testing.T) {
 		{
 			name: "null",
 			builder: func() pdata.AttributeValue {
-				return pdata.NewAttributeValueNull()
+				return pdata.NewAttributeValueEmpty()
 			},
 			want: nil,
 		},
@@ -183,7 +183,7 @@ func TestAttrValue(t *testing.T) {
 					pdata.NewAttributeValueDouble(1.6),
 					pdata.NewAttributeValueBool(true),
 					pdata.NewAttributeValueString("hello"),
-					pdata.NewAttributeValueNull(),
+					pdata.NewAttributeValueEmpty(),
 				} {
 					tgt := arr.AppendEmpty()
 					av.CopyTo(tgt)
