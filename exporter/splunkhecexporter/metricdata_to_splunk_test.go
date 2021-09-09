@@ -531,10 +531,10 @@ func Test_metricDataToSplunk(t *testing.T) {
 			},
 			configFn: func() *Config {
 				cfg := NewConfig(&Config{})
-				cfg.SourceTypeKey = "mysourcetype"
-				cfg.SourceKey = "mysource"
-				cfg.HostKey = "myhost"
-				cfg.IndexKey = "myindex"
+				cfg.HecFields.SourceType = "mysourcetype"
+				cfg.HecFields.Source = "mysource"
+				cfg.HecFields.Host = "myhost"
+				cfg.HecFields.Index = "myindex"
 				return cfg
 			},
 		},

@@ -146,12 +146,14 @@ func Test_mapLogRecordToSplunkEvent(t *testing.T) {
 			logResourceFn: pdata.NewResource,
 			configDataFn: func() *Config {
 				return &Config{
-					SourceKey:         "mysource",
-					SourceTypeKey:     "mysourcetype",
-					IndexKey:          "myindex",
-					HostKey:           "myhost",
-					SeverityTextKey:   "myseverity",
-					SeverityNumberKey: "myseveritynum",
+					HecFields: HecFields{
+						Source:         "mysource",
+						SourceType:     "mysourcetype",
+						Index:          "myindex",
+						Host:           "myhost",
+						SeverityNumber: "myseveritynum",
+						SeverityText:   "myseverity",
+					},
 				}
 			},
 			wantSplunkEvents: []*splunk.Event{

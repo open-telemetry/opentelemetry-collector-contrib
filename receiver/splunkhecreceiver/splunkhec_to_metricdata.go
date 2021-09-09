@@ -28,7 +28,7 @@ import (
 // splunkHecToMetricsData converts Splunk HEC metric points to
 // pdata.Metrics. Returning the converted data and the number of
 // dropped time series.
-func splunkHecToMetricsData(logger *zap.Logger, events []*splunk.Event, resourceCustomizer func(pdata.Resource), config splunk.HECConfiguration) (pdata.Metrics, int) {
+func splunkHecToMetricsData(logger *zap.Logger, events []*splunk.Event, resourceCustomizer func(pdata.Resource), config *Config) (pdata.Metrics, int) {
 	numDroppedTimeSeries := 0
 	md := pdata.NewMetrics()
 

@@ -108,14 +108,3 @@ func (e *Event) UnmarshalJSON(b []byte) error {
 	}
 	return nil
 }
-
-// HECConfiguration provides information to map data to HEC events.
-type HECConfiguration interface {
-	GetSourceKey() string
-	GetSourceTypeKey() string
-	GetIndexKey() string
-	GetHostKey() string
-	GetNameKey() string
-	GetSeverityTextKey() string
-	GetSeverityNumberKey() string
-}

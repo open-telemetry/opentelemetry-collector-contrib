@@ -40,6 +40,24 @@ func NewConfig(config *Config) *Config {
 	return config
 }
 
+// HecFields defines the mapping of attributes to fields
+type HecFields struct {
+	// Source informs the exporter to map a specific unified model attribute value to the standard source field of a HEC event.
+	Source string `mapstructure:"source"`
+	// SourceType informs the exporter to map a specific unified model attribute value to the standard sourcetype field of a HEC event.
+	SourceType string `mapstructure:"sourcetype"`
+	// Index informs the exporter to map the index field to a specific unified model attribute.
+	Index string `mapstructure:"index"`
+	// Host informs the exporter to map a specific unified model attribute value to the standard Host field and the host.name field of a HEC event.
+	Host string `mapstructure:"host"`
+	// SeverityText informs the exporter to map the severity text field to a specific HEC field.
+	SeverityText string `mapstructure:"severity_text"`
+	// SeverityNumber informs the exporter to map the severity number field to a specific HEC field.
+	SeverityNumber string `mapstructure:"severity_number"`
+	// Name informs the exporter to map the name field to a specific HEC field.
+	Name string `mapstructure:"name"`
+}
+
 // Config defines configuration for Splunk exporter.
 type Config struct {
 	config.ExporterSettings        `mapstructure:",squash"`
@@ -80,21 +98,8 @@ type Config struct {
 
 	// App version is used to track telemetry information for Splunk App's using HEC by App version. Defaults to the current OpenTelemetry Collector Contrib build version.
 	SplunkAppVersion string `mapstructure:"splunk_app_version"`
-
-	// SourceKey informs the exporter to map a specific unified model attribute value to the standard source field of a HEC event.
-	SourceKey string `mapstructure:"source_key"`
-	// SourceTypeKey informs the exporter to map a specific unified model attribute value to the standard sourcetype field of a HEC event.
-	SourceTypeKey string `mapstructure:"sourcetype_key"`
-	// IndexKey informs the exporter to map the index field to a specific unified model attribute.
-	IndexKey string `mapstructure:"index_key"`
-	// HostKey informs the exporter to map a specific unified model attribute value to the standard Host field and the host.name field of a HEC event.
-	HostKey string `mapstructure:"host_key"`
-	// SeverityTextKey informs the exporter to map the severity text field to a specific HEC field.
-	SeverityTextKey string `mapstructure:"severity_text_key"`
-	// SeverityNumberKey informs the exporter to map the severity number field to a specific HEC field.
-	SeverityNumberKey string `mapstructure:"severity_number_key"`
-	// NameKey informs the exporter to map the name field to a specific HEC field.
-	NameKey string `mapstructure:"name_key"`
+	// HecFields creates a mapping from attributes to HEC fields.
+	HecFields HecFields `mapstructure:"hec_fields"`
 }
 
 func (cfg *Config) getOptionsFromConfig() (*exporterOptions, error) {
@@ -143,54 +148,54 @@ func (cfg *Config) getURL() (out *url.URL, err error) {
 }
 
 func (cfg *Config) GetSourceKey() string {
-	return cfg.SourceKey
+	return cfg.HecFields.Source
 }
 
 func (cfg *Config) GetSourceTypeKey() string {
-	return cfg.SourceTypeKey
+	return cfg.HecFields.SourceType
 }
 
 func (cfg *Config) GetIndexKey() string {
-	return cfg.IndexKey
+	return cfg.HecFields.Index
 }
 
 func (cfg *Config) GetHostKey() string {
-	return cfg.HostKey
+	return cfg.HecFields.Host
 }
 
 func (cfg *Config) GetNameKey() string {
-	return cfg.NameKey
+	return cfg.HecFields.Name
 }
 
 func (cfg *Config) GetSeverityTextKey() string {
-	return cfg.SeverityTextKey
+	return cfg.HecFields.SeverityText
 }
 
 func (cfg *Config) GetSeverityNumberKey() string {
-	return cfg.SeverityNumberKey
+	return cfg.HecFields.SeverityNumber
 }
 
 // initialize the configuration
 func (cfg *Config) initialize() {
-	if cfg.SourceKey == "" {
-		cfg.SourceKey = splunk.DefaultSourceLabel
+	if cfg.HecFields.Source == "" {
+		cfg.HecFields.Source = splunk.DefaultSourceLabel
 	}
-	if cfg.SourceTypeKey == "" {
-		cfg.SourceTypeKey = splunk.DefaultSourceTypeLabel
+	if cfg.HecFields.SourceType == "" {
+		cfg.HecFields.SourceType = splunk.DefaultSourceTypeLabel
 	}
-	if cfg.IndexKey == "" {
-		cfg.IndexKey = splunk.DefaultIndexLabel
+	if cfg.HecFields.Index == "" {
+		cfg.HecFields.Index = splunk.DefaultIndexLabel
 	}
-	if cfg.HostKey == "" {
-		cfg.HostKey = conventions.AttributeHostName
+	if cfg.HecFields.Host == "" {
+		cfg.HecFields.Host = conventions.AttributeHostName
 	}
-	if cfg.SeverityTextKey == "" {
-		cfg.SeverityTextKey = splunk.DefaultSeverityTextLabel
+	if cfg.HecFields.SeverityText == "" {
+		cfg.HecFields.SeverityText = splunk.DefaultSeverityTextLabel
 	}
-	if cfg.SeverityNumberKey == "" {
-		cfg.SeverityNumberKey = splunk.DefaultSeverityNumberLabel
+	if cfg.HecFields.SeverityNumber == "" {
+		cfg.HecFields.SeverityNumber = splunk.DefaultSeverityNumberLabel
 	}
-	if cfg.NameKey == "" {
-		cfg.NameKey = splunk.DefaultNameLabel
+	if cfg.HecFields.Name == "" {
+		cfg.HecFields.Name = splunk.DefaultNameLabel
 	}
 }

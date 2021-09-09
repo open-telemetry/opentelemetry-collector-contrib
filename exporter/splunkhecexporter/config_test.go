@@ -86,13 +86,15 @@ func TestLoadConfig(t *testing.T) {
 			},
 			InsecureSkipVerify: false,
 		},
-		SourceKey:         "mysource",
-		SourceTypeKey:     "mysourcetype",
-		IndexKey:          "myindex",
-		SeverityNumberKey: "myseveritynumfield",
-		SeverityTextKey:   "myseverityfield",
-		NameKey:           "mynamefield",
-		HostKey:           "myhost",
+		HecFields: HecFields{
+			Source:         "mysource",
+			SourceType:     "mysourcetype",
+			Index:          "myindex",
+			Host:           "myhost",
+			SeverityText:   "myseverityfield",
+			SeverityNumber: "myseveritynumfield",
+			Name:           "mynamefield",
+		},
 	}
 	expectedCfg.initialize()
 	assert.Equal(t, &expectedCfg, e1)

@@ -27,6 +27,20 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 )
 
+// OtelAttrs defines the mapping of Splunk HEC metadata to attributes
+type OtelAttrs struct {
+	// Source informs the receiver to map the source field to a specific unified model attribute.
+	Source string `mapstructure:"source"`
+	// SourceType informs the receiver to map the sourcetype field to a specific unified model attribute.
+	SourceType string `mapstructure:"sourcetype"`
+	// Index informs the receiver to map the index field to a specific unified model attribute.
+	Index string `mapstructure:"index"`
+	// Host informs the receiver to map the host field to a specific unified model attribute.
+	Host string `mapstructure:"host"`
+	// Name informs the receiver to map a HEC field to the name field.
+	Name string `mapstructure:"name"`
+}
+
 // Config defines configuration for the Splunk HEC receiver.
 type Config struct {
 	config.ReceiverSettings       `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
@@ -36,44 +50,26 @@ type Config struct {
 	// Path we will listen on, defaults to `*` (anything matches)
 	Path     string `mapstructure:"path"`
 	pathGlob glob.Glob
-	// SourceKey informs the receiver to map the source field to a specific unified model attribute.
-	SourceKey string `mapstructure:"source_key"`
-	// SourceTypeKey informs the receiver to map the sourcetype field to a specific unified model attribute.
-	SourceTypeKey string `mapstructure:"sourcetype_key"`
-	// IndexKey informs the receiver to map the index field to a specific unified model attribute.
-	IndexKey string `mapstructure:"index_key"`
-	// HostKey informs the receiver to map the host field to a specific unified model attribute.
-	HostKey string `mapstructure:"host_key"`
-	// SeverityTextKey informs the receiver to map the severity text field to a specific HEC field.
-	SeverityTextKey string `mapstructure:"severity_text_key"`
-	// SeverityNumberKey informs the receiver to map the severity number field to a specific HEC field.
-	SeverityNumberKey string `mapstructure:"severity_number_key"`
-	// DefaultNameLabel informs the receiver to map the name field to a specific HEC field.
-	NameKey string `mapstructure:"name_key"`
+	// Attrs creates a mapping from HEC metadata to attributes.
+	Attrs OtelAttrs `mapstructure:"attrs"`
 }
 
 // initialize the configuration
 func (c *Config) initialize() error {
-	if c.SourceKey == "" {
-		c.SourceKey = splunk.DefaultSourceLabel
+	if c.Attrs.Source == "" {
+		c.Attrs.Source = splunk.DefaultSourceLabel
 	}
-	if c.SourceTypeKey == "" {
-		c.SourceTypeKey = splunk.DefaultSourceTypeLabel
+	if c.Attrs.SourceType == "" {
+		c.Attrs.SourceType = splunk.DefaultSourceTypeLabel
 	}
-	if c.IndexKey == "" {
-		c.IndexKey = splunk.DefaultIndexLabel
+	if c.Attrs.Index == "" {
+		c.Attrs.Index = splunk.DefaultIndexLabel
 	}
-	if c.HostKey == "" {
-		c.HostKey = conventions.AttributeHostName
+	if c.Attrs.Host == "" {
+		c.Attrs.Host = conventions.AttributeHostName
 	}
-	if c.SeverityTextKey == "" {
-		c.SeverityTextKey = splunk.DefaultSeverityTextLabel
-	}
-	if c.SeverityNumberKey == "" {
-		c.SeverityNumberKey = splunk.DefaultSeverityNumberLabel
-	}
-	if c.NameKey == "" {
-		c.NameKey = splunk.DefaultNameLabel
+	if c.Attrs.Name == "" {
+		c.Attrs.Name = splunk.DefaultNameLabel
 	}
 
 	path := c.Path
@@ -90,31 +86,23 @@ func (c *Config) initialize() error {
 }
 
 func (c *Config) GetSourceKey() string {
-	return c.SourceKey
+	return c.Attrs.Source
 }
 
 func (c *Config) GetSourceTypeKey() string {
-	return c.SourceTypeKey
+	return c.Attrs.SourceType
 }
 
 func (c *Config) GetIndexKey() string {
-	return c.IndexKey
+	return c.Attrs.Index
 }
 
 func (c *Config) GetHostKey() string {
-	return c.HostKey
+	return c.Attrs.Host
 }
 
 func (c *Config) GetNameKey() string {
-	return c.NameKey
-}
-
-func (c *Config) GetSeverityTextKey() string {
-	return c.SeverityTextKey
-}
-
-func (c *Config) GetSeverityNumberKey() string {
-	return c.SeverityNumberKey
+	return c.Attrs.Name
 }
 
 // extract the port number from string in "address:port" format. If the

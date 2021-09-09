@@ -102,10 +102,12 @@ func Test_traceDataToSplunk(t *testing.T) {
 			},
 			configFn: func() *Config {
 				cfg := NewConfig(&Config{
-					SourceKey:     "mysource",
-					SourceTypeKey: "mysourcetype",
-					HostKey:       "myhost",
-					IndexKey:      "myindex",
+					HecFields: HecFields{
+						Source:     "mysource",
+						SourceType: "mysourcetype",
+						Host:       "myhost",
+						Index:      "myindex",
+					},
 				})
 				return cfg
 			},

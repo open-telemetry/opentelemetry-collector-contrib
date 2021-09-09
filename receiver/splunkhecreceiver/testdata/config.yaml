@@ -6,10 +6,11 @@ receivers:
     endpoint: localhost:8088
     access_token_passthrough: true
     path: "/foo"
-    source_key: "file.name"
-    sourcetype_key: "foobar"
-    index_key: "myindex"
-    host_key: "myhostfield"
+    attrs:
+      source: "file.name"
+      sourcetype: "foobar"
+      index: "myindex"
+      host: "myhostfield"
   splunk_hec/tls:
     tls_settings:
       cert_file: /test.crt
