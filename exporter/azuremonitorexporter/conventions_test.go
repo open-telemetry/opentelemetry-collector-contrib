@@ -32,7 +32,7 @@ func TestHTTPAttributeMapping(t *testing.T) {
 
 		// Exercise the INT or STRING logic
 		conventions.AttributeHTTPStatusCode:                        pdata.NewAttributeValueString("200"),
-		"http.status_text":                        					pdata.NewAttributeValueString("http.status_text"),
+		"http.status_text":                                         pdata.NewAttributeValueString("http.status_text"),
 		conventions.AttributeHTTPFlavor:                            pdata.NewAttributeValueString(conventions.AttributeHTTPFlavor),
 		conventions.AttributeHTTPUserAgent:                         pdata.NewAttributeValueString(conventions.AttributeHTTPUserAgent),
 		conventions.AttributeHTTPRequestContentLength:              pdata.NewAttributeValueInt(1),
