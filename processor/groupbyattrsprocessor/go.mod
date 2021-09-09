@@ -5,8 +5,8 @@ go 1.17
 require (
 	github.com/stretchr/testify v1.7.0
 	go.opencensus.io v0.23.0
-	go.opentelemetry.io/collector v0.34.1-0.20210908172238-e8bd3be6d4c3
-	go.opentelemetry.io/collector/model v0.34.1-0.20210908172238-e8bd3be6d4c3
+	go.opentelemetry.io/collector v0.35.0
+	go.opentelemetry.io/collector/model v0.35.0
 	go.uber.org/zap v1.19.0
 	golang.org/x/text v0.3.7 // indirect
 	golang.org/x/tools v0.1.3 // indirect

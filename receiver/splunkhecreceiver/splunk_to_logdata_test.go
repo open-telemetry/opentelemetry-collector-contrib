@@ -248,10 +248,10 @@ func createLogsSlice(nanoseconds int) pdata.ResourceLogsSlice {
 	return lrs
 }
 
-func Test_ConvertAttributeValueNull(t *testing.T) {
+func Test_ConvertAttributeValueEmpty(t *testing.T) {
 	value, err := convertInterfaceToAttributeValue(zap.NewNop(), nil)
 	assert.NoError(t, err)
-	assert.Equal(t, pdata.NewAttributeValueNull(), value)
+	assert.Equal(t, pdata.NewAttributeValueEmpty(), value)
 }
 
 func Test_ConvertAttributeValueString(t *testing.T) {
@@ -293,17 +293,17 @@ func Test_ConvertAttributeValueArray(t *testing.T) {
 func Test_ConvertAttributeValueInvalid(t *testing.T) {
 	value, err := convertInterfaceToAttributeValue(zap.NewNop(), splunk.Event{})
 	assert.Error(t, err)
-	assert.Equal(t, pdata.NewAttributeValueNull(), value)
+	assert.Equal(t, pdata.NewAttributeValueEmpty(), value)
 }
 
 func Test_ConvertAttributeValueInvalidInMap(t *testing.T) {
 	value, err := convertInterfaceToAttributeValue(zap.NewNop(), map[string]interface{}{"foo": splunk.Event{}})
 	assert.Error(t, err)
-	assert.Equal(t, pdata.NewAttributeValueNull(), value)
+	assert.Equal(t, pdata.NewAttributeValueEmpty(), value)
 }
 
 func Test_ConvertAttributeValueInvalidInArray(t *testing.T) {
 	value, err := convertInterfaceToAttributeValue(zap.NewNop(), []interface{}{splunk.Event{}})
 	assert.Error(t, err)
-	assert.Equal(t, pdata.NewAttributeValueNull(), value)
+	assert.Equal(t, pdata.NewAttributeValueEmpty(), value)
 }
