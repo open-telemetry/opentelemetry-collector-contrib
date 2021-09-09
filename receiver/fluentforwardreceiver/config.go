@@ -31,7 +31,7 @@ type Config struct {
 
 	Mappings MappingWhitelist `mapstructure:"mappings"`
 
-	BodyAsString bool `mapstructure:"body_as_string"`
+	BodyAsString string `mapstructure:"body_encoding"`
 }
 
 func (c *Config) validate() error {
@@ -39,9 +39,12 @@ func (c *Config) validate() error {
 		return errors.New("`endpoint` not specified")
 	}
 
-	/*if c.BodyAsString == nil {
-		c.BodyAsString = true
-	}*/
+	if c.BodyAsString == "" {
+		c.BodyAsString = "otel"
+	}
+	if !Contains([]string{"otel", "map"}, c.BodyAsString) {
+		return errors.New("Invalid body_encoding")
+	}
 
 	if len(c.Mappings.Body) == 0 {
 		c.Mappings.Body = []string{"log", "message"}

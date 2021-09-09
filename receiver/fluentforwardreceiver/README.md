@@ -22,6 +22,7 @@ Fluentforward doesn't have a native notion of log body, severity, resources and 
 We could considere evething as structured body or attributes. Attributes has been choosed to ease processors manipulation.
 With `mappings` config you can move a fluent attribute to a body attribute or as severity text.
 In this case, all found attributes will be moved.
+If you set body_encoding to map it will not be serialized.
 
 Here is a basic example config that makes the receiver listen on all interfaces
 on port 8006:
@@ -30,7 +31,7 @@ on port 8006:
 receivers:
   fluentforward:
     endpoint: 0.0.0.0:8006
-    body_as_string: true
+    body_encoding: otel
     mappings:
       body:
         - log

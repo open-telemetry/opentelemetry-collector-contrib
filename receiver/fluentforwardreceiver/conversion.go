@@ -162,20 +162,19 @@ func parseRecordToLogRecord(dc *msgp.Reader, lr pdata.LogRecord, conf *Config) e
 			return msgp.WrapError(err, "Record", key)
 		}
 
-		s, err := ValueToString(val)
-		if err != nil {
-			return err
-		}
-
 		if Contains(conf.Mappings.Body, key) {
 			insertToAttributeMap(key, val, &bodyMap)
 		} else if Contains(conf.Mappings.Severity, key) {
+			s, err := ValueToString(val)
+			if err != nil {
+				return err
+			}
 			lr.SetSeverityText(s)
 		} else {
 			insertToAttributeMap(key, val, &attrs)
 		}
 	}
-	if conf.BodyAsString {
+	if conf.BodyAsString == "otel" {
 		lr.Body().SetStringVal(lr.Body().AsString())
 	}
 
