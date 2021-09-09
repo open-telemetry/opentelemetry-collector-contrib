@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased](https://github.com/open-telemetry/opentelemetry-python/compare/v1.5.0-0.24b0...HEAD)
+- `opentelemetry-sdk-extension-aws` Release AWS Python SDK Extension as 1.0.0
+  ([#667](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/667))
 
 ### Changed
 - `opentelemetry-instrumentation-botocore` Unpatch botocore Endpoint.prepare_request on uninstrument
