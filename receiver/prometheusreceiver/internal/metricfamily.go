@@ -69,7 +69,7 @@ func newMetricFamily(metricName string, mc MetadataCache, logger *zap.Logger, in
 		metadata = defineInternalMetric(metricName, metadata, logger)
 	} else if !ok {
 		// Prometheus sends metrics without a type hint as gauges.
-		// MetricTypeUnknown is converted a gauge in convToOCAMetricType()
+		// MetricTypeUnknown is converted to a gauge in convToOCAMetricType()
 		metadata.Type = textparse.MetricTypeUnknown
 	}
 	ocaMetricType := convToOCAMetricType(metadata.Type)

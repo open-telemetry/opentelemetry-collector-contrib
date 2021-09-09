@@ -69,7 +69,7 @@ func newMetricFamilyPdata(metricName string, mc MetadataCache, intervalStartTime
 		}
 	} else if !ok {
 		// Prometheus sends metrics without a type hint as gauges.
-		// MetricTypeUnknown is converted a gauge in convToOCAMetricType()
+		// MetricTypeUnknown is converted to a gauge in convToOCAMetricType()
 		metadata.Type = textparse.MetricTypeUnknown
 	}
 	mtype := convToPdataMetricType(metadata.Type)
