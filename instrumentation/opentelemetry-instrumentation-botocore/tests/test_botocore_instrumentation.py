@@ -435,11 +435,13 @@ class TestBotocoreInstrumentor(TestBase):
 
             self.assertIn(MockTextMapPropagator.TRACE_ID_KEY, headers)
             self.assertEqual(
-                "0", headers[MockTextMapPropagator.TRACE_ID_KEY],
+                str(spans[2].get_span_context().trace_id),
+                headers[MockTextMapPropagator.TRACE_ID_KEY],
             )
             self.assertIn(MockTextMapPropagator.SPAN_ID_KEY, headers)
             self.assertEqual(
-                "0", headers[MockTextMapPropagator.SPAN_ID_KEY],
+                str(spans[2].get_span_context().span_id),
+                headers[MockTextMapPropagator.SPAN_ID_KEY],
             )
         finally:
             set_global_textmap(previous_propagator)

@@ -150,15 +150,15 @@ class BotocoreInstrumentor(BaseInstrumentor):
         error = None
         result = None
 
-        # inject trace context into payload headers for lambda Invoke
-        if BotocoreInstrumentor._is_lambda_invoke(
-            service_name, operation_name, api_params
-        ):
-            BotocoreInstrumentor._patch_lambda_invoke(api_params)
-
         with self._tracer.start_as_current_span(
             "{}".format(service_name), kind=SpanKind.CLIENT,
         ) as span:
+            # inject trace context into payload headers for lambda Invoke
+            if BotocoreInstrumentor._is_lambda_invoke(
+                service_name, operation_name, api_params
+            ):
+                BotocoreInstrumentor._patch_lambda_invoke(api_params)
+
             if span.is_recording():
                 span.set_attribute("aws.operation", operation_name)
                 span.set_attribute("aws.region", instance.meta.region_name)

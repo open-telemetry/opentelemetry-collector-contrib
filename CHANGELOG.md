@@ -10,6 +10,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - `opentelemetry-instrumentation-botocore` Unpatch botocore Endpoint.prepare_request on uninstrument
   ([#664](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/664))
+- `opentelemetry-instrumentation-botocore` Fix span injection for lambda invoke
+  ([#663](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/663))
 
 ## [1.5.0-0.24b0](https://github.com/open-telemetry/opentelemetry-python/releases/tag/v1.5.0-0.24b0) - 2021-08-26
 
@@ -24,8 +26,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - `opentelemetry-instrumentation-fastapi` Allow instrumentation of newer FastAPI versions.
   ([#602](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/602))
-
-### Changed
 - Enable explicit `excluded_urls` argument in `opentelemetry-instrumentation-flask`
   ([#604](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/604))
 
