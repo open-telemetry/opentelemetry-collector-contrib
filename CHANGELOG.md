@@ -17,6 +17,7 @@
 - Reuse the gzip reader with a sync.Pool (#5145)
 - Add a trace observer when splunkhecreceiver is used for logs (#5063)
 - Remove usage of deprecated pdata.AttributeValueMapToMap (#5174)
+- Podman Stats Receiver: Receiver and Metrics implementation (#4577)
 
 ## 🧰 Bug fixes 🧰
 
