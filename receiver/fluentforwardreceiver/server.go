@@ -37,12 +37,14 @@ const readBufferSize = 10 * 1024
 type server struct {
 	outCh  chan<- Event
 	logger *zap.Logger
+	conf   *Config
 }
 
-func newServer(outCh chan<- Event, logger *zap.Logger) *server {
+func newServer(outCh chan<- Event, logger *zap.Logger, conf *Config) *server {
 	return &server{
 		outCh:  outCh,
 		logger: logger,
+		conf:   conf,
 	}
 }
 
@@ -111,7 +113,7 @@ func (s *server) handleConn(ctx context.Context, conn net.Conn) error {
 			panic("programmer bug in mode handling")
 		}
 
-		err = event.DecodeMsg(reader)
+		err = event.DecodeMsg(reader, s.conf)
 		if err != nil {
 			if err != io.EOF {
 				stats.Record(ctx, observ.FailedToParse.M(1))

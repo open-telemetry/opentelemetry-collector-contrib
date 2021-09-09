@@ -27,9 +27,13 @@ import (
 func TestMessageEventConversion(t *testing.T) {
 	eventBytes := parseHexDump("testdata/message-event")
 	reader := msgp.NewReader(bytes.NewReader(eventBytes))
+	config := &Config{
+		ListenAddress: "127.0.0.1:0",
+		Mappings:      MappingWhitelist{Severity: []string{"severity"}},
+	}
 
 	var event MessageEventLogRecord
-	err := event.DecodeMsg(reader)
+	err := event.DecodeMsg(reader, config)
 	require.Nil(t, err)
 
 	le := event.LogRecords().At(0)
@@ -93,9 +97,13 @@ func TestAttributeTypeConversion(t *testing.T) {
 	require.NoError(t, err)
 
 	reader := msgp.NewReader(bytes.NewReader(b))
+	config := &Config{
+		ListenAddress: "127.0.0.1:0",
+		Mappings:      MappingWhitelist{Severity: []string{"severity"}},
+	}
 
 	var event MessageEventLogRecord
-	err = event.DecodeMsg(reader)
+	err = event.DecodeMsg(reader, config)
 	require.Nil(t, err)
 
 	le := event.LogRecords().At(0)
@@ -150,13 +158,17 @@ func TestMessageEventConversionWithErrors(t *testing.T) {
 	b = msgp.AppendMapHeader(b, 1)
 	b = msgp.AppendString(b, "a")
 	b = msgp.AppendFloat64(b, 5.0)
+	config := &Config{
+		ListenAddress: "127.0.0.1:0",
+		Mappings:      MappingWhitelist{Severity: []string{"severity"}},
+	}
 
 	for i := 0; i < len(b)-1; i++ {
 		t.Run(fmt.Sprintf("EOF at byte %d", i), func(t *testing.T) {
 			reader := msgp.NewReader(bytes.NewReader(b[:i]))
 
 			var event MessageEventLogRecord
-			err := event.DecodeMsg(reader)
+			err := event.DecodeMsg(reader, config)
 			require.NotNil(t, err)
 		})
 	}
@@ -168,20 +180,24 @@ func TestMessageEventConversionWithErrors(t *testing.T) {
 		reader := msgp.NewReader(bytes.NewReader(in))
 
 		var event MessageEventLogRecord
-		err := event.DecodeMsg(reader)
+		err := event.DecodeMsg(reader, config)
 		require.NotNil(t, err)
 	})
 }
 
 func TestForwardEventConversionWithErrors(t *testing.T) {
 	b := parseHexDump("testdata/forward-event")
+	config := &Config{
+		ListenAddress: "127.0.0.1:0",
+		Mappings:      MappingWhitelist{Severity: []string{"severity"}},
+	}
 
 	for i := 0; i < len(b)-1; i++ {
 		t.Run(fmt.Sprintf("EOF at byte %d", i), func(t *testing.T) {
 			reader := msgp.NewReader(bytes.NewReader(b[:i]))
 
 			var event ForwardEventLogRecords
-			err := event.DecodeMsg(reader)
+			err := event.DecodeMsg(reader, config)
 			require.NotNil(t, err)
 		})
 	}
@@ -189,13 +205,17 @@ func TestForwardEventConversionWithErrors(t *testing.T) {
 
 func TestPackedForwardEventConversionWithErrors(t *testing.T) {
 	b := parseHexDump("testdata/forward-packed-compressed")
+	config := &Config{
+		ListenAddress: "127.0.0.1:0",
+		Mappings:      MappingWhitelist{Severity: []string{"severity"}},
+	}
 
 	for i := 0; i < len(b)-1; i++ {
 		t.Run(fmt.Sprintf("EOF at byte %d", i), func(t *testing.T) {
 			reader := msgp.NewReader(bytes.NewReader(b[:i]))
 
 			var event PackedForwardEventLogRecords
-			err := event.DecodeMsg(reader)
+			err := event.DecodeMsg(reader, config)
 			require.NotNil(t, err)
 		})
 	}
@@ -207,7 +227,7 @@ func TestPackedForwardEventConversionWithErrors(t *testing.T) {
 		reader := msgp.NewReader(bytes.NewReader(in))
 
 		var event PackedForwardEventLogRecords
-		err := event.DecodeMsg(reader)
+		err := event.DecodeMsg(reader, config)
 		require.NotNil(t, err)
 		require.Contains(t, err.Error(), "gzip")
 		print(err.Error())

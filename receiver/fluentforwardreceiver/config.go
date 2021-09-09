@@ -14,7 +14,11 @@
 
 package fluentforwardreceiver
 
-import "go.opentelemetry.io/collector/config"
+import (
+	"errors"
+
+	"go.opentelemetry.io/collector/config"
+)
 
 // Config defines configuration for the SignalFx receiver.
 type Config struct {
@@ -24,4 +28,32 @@ type Config struct {
 	// of the form `<ip addr>:<port>` (TCP) or `unix://<socket_path>` (Unix
 	// domain socket).
 	ListenAddress string `mapstructure:"endpoint"`
+
+	Mappings MappingWhitelist `mapstructure:"mappings"`
+
+	BodyAsString bool `mapstructure:"body_as_string"`
+}
+
+func (c *Config) validate() error {
+	if c.ListenAddress == "" {
+		return errors.New("`endpoint` not specified")
+	}
+
+	/*if c.BodyAsString == nil {
+		c.BodyAsString = true
+	}*/
+
+	if len(c.Mappings.Body) == 0 {
+		c.Mappings.Body = []string{"log", "message"}
+	}
+	return nil
+}
+
+// MappingWhitelist defines the fluent attributes mapping configuration
+type MappingWhitelist struct {
+	// Body is the list of fluent attributes ok to become the OTEL body
+	Body []string `mapstructure:"body"`
+
+	// Severity is the list of fluent attributes ok to become the OTEL SeverityText
+	Severity []string `mapstructure:"severity"`
 }

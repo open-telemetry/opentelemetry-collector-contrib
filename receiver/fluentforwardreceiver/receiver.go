@@ -39,10 +39,11 @@ type fluentReceiver struct {
 
 func newFluentReceiver(logger *zap.Logger, conf *Config, next consumer.Logs) (component.LogsReceiver, error) {
 	eventCh := make(chan Event, eventChannelLength)
+	conf.validate()
 
 	collector := newCollector(eventCh, next, logger)
 
-	server := newServer(eventCh, logger)
+	server := newServer(eventCh, logger, conf)
 
 	return &fluentReceiver{
 		collector: collector,
