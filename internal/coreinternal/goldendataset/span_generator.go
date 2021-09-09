@@ -279,7 +279,7 @@ func appendHTTPClientAttributes(includeStatus bool, attrMap pdata.AttributeMap) 
 	attrMap.UpsertString(conventions.AttributeHTTPURL, "https://opentelemetry.io/registry/")
 	if includeStatus {
 		attrMap.UpsertInt(conventions.AttributeHTTPStatusCode, 200)
-		attrMap.UpsertString(conventions.AttributeHTTPStatusText, "More Than OK")
+		attrMap.UpsertString("http.status_text", "More Than OK")
 	}
 	attrMap.UpsertString(conventions.AttributeEnduserID, "unittest")
 }
@@ -348,7 +348,7 @@ func appendMaxCountAttributes(includeStatus bool, attrMap pdata.AttributeMap) {
 	attrMap.UpsertString(conventions.AttributeHTTPFlavor, "2")
 	if includeStatus {
 		attrMap.UpsertInt(conventions.AttributeHTTPStatusCode, 201)
-		attrMap.UpsertString(conventions.AttributeHTTPStatusText, "Created")
+		attrMap.UpsertString("http.status_text", "Created")
 	}
 	attrMap.UpsertString(conventions.AttributeHTTPUserAgent,
 		"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/81.0.4044.138 Safari/537.36")

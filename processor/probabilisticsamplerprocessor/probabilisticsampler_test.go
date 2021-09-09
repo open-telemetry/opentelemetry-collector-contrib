@@ -471,7 +471,7 @@ func genRandomTestData(numBatches, numTracesPerBatch int, serviceName string, re
 				span.SetSpanID(idutils.UInt64ToSpanID(r.Uint64()))
 				attributes := make(map[string]pdata.AttributeValue)
 				attributes[conventions.AttributeHTTPStatusCode] = pdata.NewAttributeValueInt(404)
-				attributes[conventions.AttributeHTTPStatusText] = pdata.NewAttributeValueString("Not Found")
+				attributes["http.status_text"] = pdata.NewAttributeValueString("Not Found")
 				span.Attributes().InitFromMap(attributes)
 			}
 		}

@@ -329,7 +329,7 @@ func (r *sfxReceiver) failRequest(
 	reqSpan := trace.FromContext(ctx)
 	reqSpan.AddAttributes(
 		trace.Int64Attribute(conventions.AttributeHTTPStatusCode, int64(httpStatusCode)),
-		trace.StringAttribute(conventions.AttributeHTTPStatusText, msg))
+		trace.StringAttribute("http.status_text", msg))
 	traceStatus := trace.Status{
 		Code: trace.StatusCodeInvalidArgument,
 	}
