@@ -56,6 +56,7 @@ func TestECSHealthCheckExporter_rotate(t *testing.T) {
 	}
 	exporter.ExportView(vd1)
 	exporter.ExportView(vd2)
+	assert.Equal(t, 2, len(exporter.exporterErrorQueue))
 	exporter.rotate(5 * time.Minute)
 	assert.Equal(t, 1, len(exporter.exporterErrorQueue))
 }

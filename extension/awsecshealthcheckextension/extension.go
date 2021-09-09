@@ -20,7 +20,6 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/jaegertracing/jaeger/pkg/healthcheck"
 	"go.uber.org/zap"
 
 	"go.opencensus.io/stats/view"
@@ -30,7 +29,6 @@ import (
 type ecsHealthCheckExtension struct {
 	config   Config
 	logger   *zap.Logger
-	state    *healthcheck.HealthCheck
 	server   http.Server
 	interval time.Duration
 	stopCh   chan struct{}
@@ -80,11 +78,16 @@ func (hc *ecsHealthCheckExtension) Start(_ context.Context, host component.Host)
 	go func() {
 		defer close(hc.stopCh)
 
-		select {
-		case <-ticker.C:
-			hc.exporter.rotate(hc.interval)
-		default:
-		}
+		go func() {
+			for {
+				select {
+				case <-ticker.C:
+					hc.exporter.rotate(hc.interval)
+				case <-hc.stopCh:
+					return
+				}
+			}
+		}()
 
 		if err := hc.server.Serve(ln); err != http.ErrServerClosed && err != nil {
 			host.ReportFatalError(err)
@@ -123,11 +126,8 @@ func newServer(config Config, logger *zap.Logger) *ecsHealthCheckExtension {
 	hc := &ecsHealthCheckExtension{
 		config: config,
 		logger: logger,
-		state:  healthcheck.New(),
 		server: http.Server{},
 	}
-
-	hc.state.SetLogger(logger)
 
 	return hc
 }

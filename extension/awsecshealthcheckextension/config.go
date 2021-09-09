@@ -29,9 +29,10 @@ type Config struct {
 	// The default endpoint is "127.0.0.1:13134".
 	TCPAddr confignet.TCPAddr `mapstructure:",squash"`
 
-	// Interval is the time error kept, and error limit is the threshold of number of error happened during the interval
+	// Interval is the time error kept
 	Interval string `mapstructure:"interval"`
 
+	// Error limit is the threshold of number of error happened during the interval
 	// current scope will be focus on exporter failures
 	// TODO receiver/processor failures
 	ExporterErrorLimit int `mapstructure:"exporter_error_limit"`
