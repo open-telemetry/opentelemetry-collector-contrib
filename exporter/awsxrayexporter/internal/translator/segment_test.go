@@ -830,7 +830,7 @@ func constructDefaultResource() pdata.Resource {
 
 func constructTimedEventsWithReceivedMessageEvent(tm pdata.Timestamp) pdata.SpanEventSlice {
 	eventAttr := pdata.NewAttributeMap()
-	eventAttr.InsertString(conventions.AttributeMessageType, "RECEIVED")
+	eventAttr.InsertString("message.type", "RECEIVED")
 	eventAttr.InsertInt(conventions.AttributeMessagingMessageID, 1)
 	eventAttr.InsertInt(conventions.AttributeMessagingMessagePayloadCompressedSizeBytes, 6478)
 	eventAttr.InsertInt(conventions.AttributeMessagingMessagePayloadSizeBytes, 12452)
@@ -847,7 +847,7 @@ func constructTimedEventsWithReceivedMessageEvent(tm pdata.Timestamp) pdata.Span
 
 func constructTimedEventsWithSentMessageEvent(tm pdata.Timestamp) pdata.SpanEventSlice {
 	eventAttr := pdata.NewAttributeMap()
-	eventAttr.InsertString(conventions.AttributeMessageType, "SENT")
+	eventAttr.InsertString("message.type", "SENT")
 	eventAttr.InsertInt(conventions.AttributeMessagingMessageID, 1)
 	eventAttr.InsertInt(conventions.AttributeMessagingMessagePayloadSizeBytes, 7480)
 

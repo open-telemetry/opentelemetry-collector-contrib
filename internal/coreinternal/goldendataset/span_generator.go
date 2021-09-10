@@ -421,9 +421,9 @@ func appendSpanEvent(index int, spanEvents pdata.SpanEventSlice) {
 		spanEvent.SetName("message")
 		attrMap := spanEvent.Attributes()
 		if index%2 == 0 {
-			attrMap.UpsertString(conventions.AttributeMessageType, "SENT")
+			attrMap.UpsertString("message.type", "SENT")
 		} else {
-			attrMap.UpsertString(conventions.AttributeMessageType, "RECEIVED")
+			attrMap.UpsertString("message.type", "RECEIVED")
 		}
 		attrMap.UpsertInt(conventions.AttributeMessagingMessageID, int64(index/4))
 		attrMap.UpsertInt(conventions.AttributeMessagingMessagePayloadCompressedSizeBytes, int64(17*index))
