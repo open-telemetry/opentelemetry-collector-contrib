@@ -4,11 +4,11 @@ go 1.17
 
 require (
 	github.com/census-instrumentation/opencensus-proto v0.3.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.34.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus v0.34.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.35.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus v0.35.0
 	github.com/stretchr/testify v1.7.0
 	go.opencensus.io v0.23.0
-	go.opentelemetry.io/collector v0.34.1-0.20210906070714-e676d678f9fd
+	go.opentelemetry.io/collector v0.35.0
 	go.uber.org/zap v1.19.0
 	google.golang.org/protobuf v1.27.1
 
@@ -26,7 +26,7 @@ require (
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/spf13/cast v1.4.1 // indirect
-	go.opentelemetry.io/collector/model v0.34.1-0.20210906070714-e676d678f9fd // indirect
+	go.opentelemetry.io/collector/model v0.35.0 // indirect
 	go.opentelemetry.io/otel v1.0.0-RC3 // indirect
 	go.opentelemetry.io/otel/trace v1.0.0-RC3 // indirect
 	go.uber.org/atomic v1.9.0 // indirect

@@ -7,15 +7,15 @@ require (
 	github.com/iancoleman/strcase v0.2.0
 	github.com/onsi/ginkgo v1.14.1 // indirect
 	github.com/onsi/gomega v1.10.2 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.34.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.34.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata v0.34.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus v0.34.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.35.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.35.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata v0.35.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus v0.35.0
 	github.com/openshift/api v0.0.0-20210521075222-e273a339932a
 	github.com/openshift/client-go v0.0.0-20210521082421-73d9475a9142
 	github.com/stretchr/testify v1.7.0
-	go.opentelemetry.io/collector v0.34.1-0.20210907092920-53379c5fc0c8
-	go.opentelemetry.io/collector/model v0.34.1-0.20210907092920-53379c5fc0c8
+	go.opentelemetry.io/collector v0.35.0
+	go.opentelemetry.io/collector/model v0.35.0
 	go.uber.org/atomic v1.9.0
 	go.uber.org/zap v1.19.0
 	google.golang.org/protobuf v1.27.1
@@ -44,7 +44,7 @@ require (
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.1 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.34.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.35.0 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/spf13/cast v1.4.1 // indirect

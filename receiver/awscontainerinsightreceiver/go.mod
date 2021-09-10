@@ -3,18 +3,18 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscon
 go 1.17
 
 require (
-	github.com/aws/aws-sdk-go v1.40.33
+	github.com/aws/aws-sdk-go v1.40.38
 	github.com/google/cadvisor v0.39.2
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil v0.34.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/containerinsight v0.34.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/k8s v0.34.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/metrics v0.34.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.34.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/kubelet v0.34.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil v0.35.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/containerinsight v0.35.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/k8s v0.35.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/metrics v0.35.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.35.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/kubelet v0.35.0
 	github.com/shirou/gopsutil v3.21.8+incompatible
 	github.com/stretchr/testify v1.7.0
-	go.opentelemetry.io/collector v0.34.1-0.20210906070714-e676d678f9fd
-	go.opentelemetry.io/collector/model v0.34.1-0.20210906070714-e676d678f9fd
+	go.opentelemetry.io/collector v0.35.0
+	go.opentelemetry.io/collector/model v0.35.0
 	go.uber.org/zap v1.19.0
 	k8s.io/api v0.22.1
 	k8s.io/apimachinery v0.22.1
@@ -91,11 +91,11 @@ require (
 	github.com/vishvananda/netlink v1.1.0 // indirect
 	github.com/vishvananda/netns v0.0.0-20200728191858-db3c7e526aae // indirect
 	github.com/willf/bitset v1.1.11 // indirect
-	go.opentelemetry.io/contrib v0.22.0 // indirect
-	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.22.0 // indirect
+	go.opentelemetry.io/contrib v0.23.0 // indirect
+	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.23.0 // indirect
 	go.opentelemetry.io/otel v1.0.0-RC3 // indirect
-	go.opentelemetry.io/otel/internal/metric v0.22.0 // indirect
-	go.opentelemetry.io/otel/metric v0.22.0 // indirect
+	go.opentelemetry.io/otel/internal/metric v0.23.0 // indirect
+	go.opentelemetry.io/otel/metric v0.23.0 // indirect
 	go.opentelemetry.io/otel/trace v1.0.0-RC3 // indirect
 	go.uber.org/atomic v1.9.0 // indirect
 	go.uber.org/multierr v1.6.0 // indirect

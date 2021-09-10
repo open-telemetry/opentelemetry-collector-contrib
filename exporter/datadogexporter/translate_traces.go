@@ -674,7 +674,7 @@ func eventsToString(evts pdata.SpanEventSlice) string {
 		event := map[string]interface{}{}
 		event[eventNameTag] = spanEvent.Name()
 		event[eventTimeTag] = spanEvent.Timestamp()
-		event[eventAttrTag] = pdata.AttributeMapToMap(spanEvent.Attributes())
+		event[eventAttrTag] = spanEvent.Attributes().AsRaw()
 		eventArray = append(eventArray, event)
 	}
 	eventArrayBytes, _ := json.Marshal(&eventArray)

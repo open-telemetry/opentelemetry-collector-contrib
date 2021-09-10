@@ -6,11 +6,11 @@ require (
 	github.com/go-redis/redis/v7 v7.4.1
 	github.com/onsi/ginkgo v1.14.1 // indirect
 	github.com/onsi/gomega v1.10.2 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.34.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/interval v0.34.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.35.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/interval v0.35.0
 	github.com/stretchr/testify v1.7.0
-	go.opentelemetry.io/collector v0.34.1-0.20210907092920-53379c5fc0c8
-	go.opentelemetry.io/collector/model v0.34.1-0.20210907092920-53379c5fc0c8
+	go.opentelemetry.io/collector v0.35.0
+	go.opentelemetry.io/collector/model v0.35.0
 	go.uber.org/zap v1.19.0
 	golang.org/x/text v0.3.7 // indirect
 	golang.org/x/tools v0.1.3 // indirect

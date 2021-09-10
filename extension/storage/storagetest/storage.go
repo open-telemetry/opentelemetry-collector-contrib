@@ -52,7 +52,7 @@ func NewTestExtension(t *testing.T, directory string) storage.Extension {
 	f := filestorage.NewFactory()
 	cfg := f.CreateDefaultConfig().(*filestorage.Config)
 	cfg.Directory = directory
-	params := component.ExtensionCreateSettings{Logger: zaptest.NewLogger(t)}
+	params := component.ExtensionCreateSettings{TelemetrySettings: component.TelemetrySettings{Logger: zaptest.NewLogger(t)}}
 	extension, _ := f.CreateExtension(context.Background(), params, cfg)
 	se, _ := extension.(storage.Extension)
 	return se

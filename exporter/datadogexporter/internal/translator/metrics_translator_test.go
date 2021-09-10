@@ -126,7 +126,9 @@ func newTranslator(logger *zap.Logger, cfg config.MetricsConfig) *Translator {
 		BuildInfo: component.BuildInfo{
 			Version: "1.0",
 		},
-		Logger: logger,
+		TelemetrySettings: component.TelemetrySettings{
+			Logger: logger,
+		},
 	}
 	return New(newTestCache(), params, cfg, testProvider("fallbackHostname"))
 }

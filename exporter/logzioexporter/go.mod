@@ -4,12 +4,12 @@ go 1.17
 
 require (
 	github.com/hashicorp/go-hclog v0.16.2
-	github.com/jaegertracing/jaeger v1.25.0
+	github.com/jaegertracing/jaeger v1.26.0
 	github.com/logzio/jaeger-logzio v1.0.3
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.34.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.35.0
 	github.com/stretchr/testify v1.7.0
-	go.opentelemetry.io/collector v0.34.1-0.20210906070714-e676d678f9fd
-	go.opentelemetry.io/collector/model v0.34.1-0.20210906070714-e676d678f9fd
+	go.opentelemetry.io/collector v0.35.0
+	go.opentelemetry.io/collector/model v0.35.0
 	go.uber.org/zap v1.19.0
 )
 
@@ -21,7 +21,7 @@ require (
 	github.com/cenkalti/backoff/v4 v4.1.1 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/fatih/color v1.9.0 // indirect
-	github.com/fsnotify/fsnotify v1.4.9 // indirect
+	github.com/fsnotify/fsnotify v1.5.1 // indirect
 	github.com/go-ole/go-ole v1.2.5 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
@@ -38,7 +38,7 @@ require (
 	github.com/mitchellh/mapstructure v1.4.1 // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/olivere/elastic v6.2.37+incompatible // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.34.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.35.0 // indirect
 	github.com/opentracing/opentracing-go v1.2.0 // indirect
 	github.com/pelletier/go-toml v1.9.3 // indirect
 	github.com/pkg/errors v0.9.1 // indirect

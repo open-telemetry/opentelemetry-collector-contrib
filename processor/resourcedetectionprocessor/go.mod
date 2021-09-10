@@ -5,17 +5,17 @@ go 1.17
 require (
 	cloud.google.com/go v0.93.3
 	github.com/Showmax/go-fqdn v1.0.0
-	github.com/aws/aws-sdk-go v1.40.33
+	github.com/aws/aws-sdk-go v1.40.38
 	github.com/census-instrumentation/opencensus-proto v0.3.0
 	github.com/containerd/containerd v1.5.5 // indirect
 	github.com/docker/docker v20.10.8+incompatible
 	github.com/docker/go-connections v0.4.0 // indirect
 	github.com/moby/term v0.0.0-20210619224110-3f7ff695adc6 // indirect
 	github.com/morikuni/aec v1.0.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus v0.34.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus v0.35.0
 	github.com/stretchr/testify v1.7.0
-	go.opentelemetry.io/collector v0.34.1-0.20210906070714-e676d678f9fd
-	go.opentelemetry.io/collector/model v0.34.1-0.20210906070714-e676d678f9fd
+	go.opentelemetry.io/collector v0.35.0
+	go.opentelemetry.io/collector/model v0.35.0
 	go.uber.org/zap v1.19.0
 
 )
@@ -34,7 +34,7 @@ require (
 	github.com/mitchellh/copystructure v1.2.0 // indirect
 	github.com/mitchellh/mapstructure v1.4.1 // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.34.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.35.0 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/opencontainers/image-spec v1.0.1 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
