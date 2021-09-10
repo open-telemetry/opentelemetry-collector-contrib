@@ -22,6 +22,8 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/processor/processorhelper"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/attraction"
 )
 
 const (
@@ -99,11 +101,11 @@ func createLogsProcessor(
 		processorhelper.WithCapabilities(processorCapabilities))
 }
 
-func createAttrProcessor(cfg *Config) (*processorhelper.AttrProc, error) {
+func createAttrProcessor(cfg *Config) (*attraction.AttrProc, error) {
 	if len(cfg.AttributesActions) == 0 {
 		return nil, fmt.Errorf("error creating \"%v\" processor due to missing required field \"attributes\"", cfg.ID())
 	}
-	attrProc, err := processorhelper.NewAttrProc(&processorhelper.Settings{Actions: cfg.AttributesActions})
+	attrProc, err := attraction.NewAttrProc(&attraction.Settings{Actions: cfg.AttributesActions})
 	if err != nil {
 		return nil, fmt.Errorf("error creating \"%v\" processor: %w", cfg.ID(), err)
 	}

@@ -21,14 +21,13 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
-	"go.uber.org/zap/zaptest/observer"
-
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/model/pdata"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
+	"go.uber.org/zap/zaptest/observer"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/goldendataset"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filtermetric"
@@ -144,7 +143,11 @@ func testProcessor(t *testing.T, include []string, exclude []string) (component.
 	core, logs := observer.New(zapcore.WarnLevel)
 	proc, err := factory.CreateMetricsProcessor(
 		ctx,
-		component.ProcessorCreateSettings{Logger: zap.New(core)},
+		component.ProcessorCreateSettings{
+			TelemetrySettings: component.TelemetrySettings{
+				Logger: zap.New(core),
+			},
+		},
 		cfg,
 		next,
 	)

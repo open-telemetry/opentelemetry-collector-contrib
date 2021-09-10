@@ -26,6 +26,7 @@ import (
 	"net/http"
 	"os"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -37,22 +38,22 @@ import (
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/config/configgrpc"
+	"go.opentelemetry.io/collector/config/configtls"
+	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/obsreport/obsreporttest"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
-	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/config/configgrpc"
-	"go.opentelemetry.io/collector/config/configtls"
-	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.opentelemetry.io/collector/obsreport/obsreporttest"
-	"go.opentelemetry.io/collector/testutil"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/internalconsumertest"
-	internaldata "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testutil"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus"
 )
 
 var ocReceiverID = config.NewIDWithName(typeStr, "receiver_test")
@@ -126,7 +127,7 @@ func TestGrpcGateway_endToEnd(t *testing.T) {
 	got := sink.AllTraces()
 	require.Len(t, got, 1)
 	require.Equal(t, 1, got[0].ResourceSpans().Len())
-	gotNode, gotResource, gotSpans := internaldata.ResourceSpansToOC(got[0].ResourceSpans().At(0))
+	gotNode, gotResource, gotSpans := opencensus.ResourceSpansToOC(got[0].ResourceSpans().At(0))
 
 	wantNode := &commonpb.Node{Identifier: &commonpb.ProcessIdentifier{HostName: "testHost"}}
 	wantResource := &resourcepb.Resource{}
@@ -430,7 +431,7 @@ func TestOCReceiverTrace_HandleNextConsumerResponse(t *testing.T) {
 				require.NoError(t, err)
 				defer doneFn()
 
-				sink := &internalconsumertest.ErrOrSinkConsumer{TracesSink: new(consumertest.TracesSink)}
+				sink := &errOrSinkConsumer{TracesSink: new(consumertest.TracesSink)}
 
 				var opts []ocOption
 				ocr, err := newOpenCensusReceiver(exporter.receiverID, "tcp", addr, nil, nil, opts...)
@@ -579,7 +580,7 @@ func TestOCReceiverMetrics_HandleNextConsumerResponse(t *testing.T) {
 				require.NoError(t, err)
 				defer doneFn()
 
-				sink := &internalconsumertest.ErrOrSinkConsumer{MetricsSink: new(consumertest.MetricsSink)}
+				sink := &errOrSinkConsumer{MetricsSink: new(consumertest.MetricsSink)}
 
 				var opts []ocOption
 				ocr, err := newOpenCensusReceiver(exporter.receiverID, "tcp", addr, nil, nil, opts...)
@@ -639,4 +640,60 @@ func TestInvalidTLSCredentials(t *testing.T) {
 	srv, err := ocr.grpcServer(componenttest.NewNopHost())
 	assert.EqualError(t, err, `failed to load TLS config: for auth via TLS, either both certificate and key must be supplied, or neither`)
 	assert.Nil(t, srv)
+}
+
+type errOrSinkConsumer struct {
+	*consumertest.TracesSink
+	*consumertest.MetricsSink
+	mu           sync.Mutex
+	consumeError error // to be returned by ConsumeTraces, if set
+}
+
+// SetConsumeError sets an error that will be returned by the Consume function.
+func (esc *errOrSinkConsumer) SetConsumeError(err error) {
+	esc.mu.Lock()
+	defer esc.mu.Unlock()
+	esc.consumeError = err
+}
+
+func (esc *errOrSinkConsumer) Capabilities() consumer.Capabilities {
+	return consumer.Capabilities{MutatesData: false}
+}
+
+// ConsumeTraces stores traces to this sink.
+func (esc *errOrSinkConsumer) ConsumeTraces(ctx context.Context, td pdata.Traces) error {
+	esc.mu.Lock()
+	defer esc.mu.Unlock()
+
+	if esc.consumeError != nil {
+		return esc.consumeError
+	}
+
+	return esc.TracesSink.ConsumeTraces(ctx, td)
+}
+
+// ConsumeMetrics stores metrics to this sink.
+func (esc *errOrSinkConsumer) ConsumeMetrics(ctx context.Context, md pdata.Metrics) error {
+	esc.mu.Lock()
+	defer esc.mu.Unlock()
+
+	if esc.consumeError != nil {
+		return esc.consumeError
+	}
+
+	return esc.MetricsSink.ConsumeMetrics(ctx, md)
+}
+
+// Reset deletes any stored in the sinks, resets error to nil.
+func (esc *errOrSinkConsumer) Reset() {
+	esc.mu.Lock()
+	defer esc.mu.Unlock()
+
+	esc.consumeError = nil
+	if esc.TracesSink != nil {
+		esc.TracesSink.Reset()
+	}
+	if esc.MetricsSink != nil {
+		esc.MetricsSink.Reset()
+	}
 }

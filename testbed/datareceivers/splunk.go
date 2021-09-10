@@ -21,10 +21,10 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/testbed/testbed"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/splunkhecreceiver"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/testbed"
 )
 
 // SplunkHECDataReceiver implements Splunk HEC format receiver.
@@ -51,7 +51,7 @@ func (sr *SplunkHECDataReceiver) Start(_ consumer.Traces, _ consumer.Metrics, lc
 	}
 	var err error
 	f := splunkhecreceiver.NewFactory()
-	sr.receiver, err = f.CreateLogsReceiver(context.Background(), component.ReceiverCreateSettings{Logger: zap.L()}, &config, lc)
+	sr.receiver, err = f.CreateLogsReceiver(context.Background(), component.ReceiverCreateSettings{TelemetrySettings: component.TelemetrySettings{Logger: zap.L()}}, &config, lc)
 	if err != nil {
 		return err
 	}

@@ -28,8 +28,8 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/processor/memorylimiter"
-	"go.opentelemetry.io/collector/processor/processorhelper"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/attraction"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/attributesprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourceprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanprocessor"
@@ -49,8 +49,8 @@ func TestDefaultProcessors(t *testing.T) {
 			processor: "attributes",
 			getConfigFn: func() config.Processor {
 				cfg := procFactories["attributes"].CreateDefaultConfig().(*attributesprocessor.Config)
-				cfg.Actions = []processorhelper.ActionKeyValue{
-					{Key: "attribute1", Action: processorhelper.INSERT, Value: 123},
+				cfg.Actions = []attraction.ActionKeyValue{
+					{Key: "attribute1", Action: attraction.INSERT, Value: 123},
 				}
 				return cfg
 			},
@@ -77,8 +77,8 @@ func TestDefaultProcessors(t *testing.T) {
 			processor: "resource",
 			getConfigFn: func() config.Processor {
 				cfg := procFactories["resource"].CreateDefaultConfig().(*resourceprocessor.Config)
-				cfg.AttributesActions = []processorhelper.ActionKeyValue{
-					{Key: "attribute1", Action: processorhelper.INSERT, Value: 123},
+				cfg.AttributesActions = []attraction.ActionKeyValue{
+					{Key: "attribute1", Action: attraction.INSERT, Value: 123},
 				}
 				return cfg
 			},

@@ -25,8 +25,9 @@ import (
 	"github.com/prometheus/prometheus/discovery"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/receiver/prometheusreceiver"
 	"k8s.io/client-go/rest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver"
 )
 
 type prometheusReceiverWrapper struct {

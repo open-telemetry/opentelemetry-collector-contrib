@@ -19,9 +19,8 @@ import (
 	"errors"
 	"runtime"
 
-	"go.uber.org/zap"
-
 	"go.opentelemetry.io/collector/config"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/scraperhelper"

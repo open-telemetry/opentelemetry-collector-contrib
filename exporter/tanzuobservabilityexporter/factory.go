@@ -40,6 +40,8 @@ func createDefaultConfig() config.Exporter {
 	}
 	return &Config{
 		ExporterSettings: config.NewExporterSettings(config.NewID(exporterType)),
+		QueueSettings:    exporterhelper.DefaultQueueSettings(),
+		RetrySettings:    exporterhelper.DefaultRetrySettings(),
 		Traces:           tracesCfg,
 	}
 }
@@ -56,10 +58,14 @@ func createTracesExporter(
 		return nil, err
 	}
 
+	tobsCfg := cfg.(*Config)
+
 	return exporterhelper.NewTracesExporter(
 		cfg,
 		set,
 		exp.pushTraceData,
+		exporterhelper.WithQueue(tobsCfg.QueueSettings),
+		exporterhelper.WithRetry(tobsCfg.RetrySettings),
 		exporterhelper.WithShutdown(exp.shutdown),
 	)
 }

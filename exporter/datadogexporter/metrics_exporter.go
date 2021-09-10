@@ -20,20 +20,34 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/model/pdata"
+	"go.uber.org/zap"
 	"gopkg.in/zorkian/go-datadog-api.v2"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/config"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metrics"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/translator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/utils"
 )
 
 type metricsExporter struct {
-	params  component.ExporterCreateSettings
-	cfg     *config.Config
-	ctx     context.Context
-	client  *datadog.Client
-	prevPts *ttlCache
+	params component.ExporterCreateSettings
+	cfg    *config.Config
+	ctx    context.Context
+	client *datadog.Client
+	tr     *translator.Translator
+}
+
+// assert `hostProvider` implements HostnameProvider interface
+var _ translator.HostnameProvider = (*hostProvider)(nil)
+
+type hostProvider struct {
+	logger *zap.Logger
+	cfg    *config.Config
+}
+
+func (p *hostProvider) Hostname(context.Context) (string, error) {
+	return metadata.GetHost(p.logger, p.cfg), nil
 }
 
 func newMetricsExporter(ctx context.Context, params component.ExporterCreateSettings, cfg *config.Config) *metricsExporter {
@@ -47,8 +61,9 @@ func newMetricsExporter(ctx context.Context, params component.ExporterCreateSett
 	if cfg.Metrics.DeltaTTL > 1 {
 		sweepInterval = cfg.Metrics.DeltaTTL / 2
 	}
-	prevPts := newTTLCache(sweepInterval, cfg.Metrics.DeltaTTL)
-	return &metricsExporter{params, cfg, ctx, client, prevPts}
+	prevPts := translator.NewTTLCache(sweepInterval, cfg.Metrics.DeltaTTL)
+	tr := translator.New(prevPts, params, cfg.Metrics, &hostProvider{params.Logger, cfg})
+	return &metricsExporter{params, cfg, ctx, client, tr}
 }
 
 func (exp *metricsExporter) PushMetricsData(ctx context.Context, md pdata.Metrics) error {
@@ -66,8 +81,7 @@ func (exp *metricsExporter) PushMetricsData(ctx context.Context, md pdata.Metric
 		})
 	}
 
-	fallbackHost := metadata.GetHost(exp.params.Logger, exp.cfg)
-	ms, _ := mapMetrics(exp.params.Logger, exp.cfg.Metrics, exp.prevPts, fallbackHost, md, exp.params.BuildInfo)
+	ms := exp.tr.MapMetrics(md)
 	metrics.ProcessMetrics(ms, exp.cfg)
 
 	err := exp.client.PostMetrics(ms)
