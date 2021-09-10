@@ -32,6 +32,7 @@ only unmatched container image names should be monitored.
     `!my*container` will monitor all containers whose image name doesn't match the blob `my*container`.
 - `provide_per_core_cpu_metrics` (default = `false`): Whether to report `cpu.usage.percpu` metrics.
 - `timeout` (default = `5s`): The request timeout for any docker daemon query.
+- `api_version` (default = `1.22`): The Docker client API version (must be 1.22+). [Docker API versions](https://docs.docker.com/engine/api/).
 
 Example:
 
@@ -41,6 +42,7 @@ receivers:
     endpoint: http://example.com/
     collection_interval: 2s
     timeout: 20s
+    api_version: 1.24
     container_labels_to_metric_labels:
       my.container.label: my-metric-label
       my.other.container.label: my-other-metric-label
