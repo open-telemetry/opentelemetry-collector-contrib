@@ -10,8 +10,8 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus v0.35.0
 	github.com/stretchr/testify v1.7.0
 	go.opencensus.io v0.23.0
-	go.opentelemetry.io/collector v0.35.0
-	go.opentelemetry.io/collector/model v0.35.0
+	go.opentelemetry.io/collector v0.35.1-0.20210910152225-47e125a5e129
+	go.opentelemetry.io/collector/model v0.35.1-0.20210910152225-47e125a5e129
 	go.opentelemetry.io/otel v1.0.0-RC3
 	go.opentelemetry.io/otel/sdk v1.0.0-RC3
 	go.opentelemetry.io/otel/trace v1.0.0-RC3
