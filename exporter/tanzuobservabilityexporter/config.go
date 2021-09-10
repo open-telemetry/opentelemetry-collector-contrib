@@ -15,6 +15,7 @@
 package tanzuobservabilityexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/tanzuobservabilityexporter"
 
 import (
+	"errors"
 	"fmt"
 	"net/url"
 
@@ -27,6 +28,10 @@ type TracesConfig struct {
 	confighttp.HTTPClientSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
 }
 
+type MetricsConfig struct {
+	confighttp.HTTPClientSettings `mapstructure:",squash"`
+}
+
 // Config defines configuration options for the exporter.
 type Config struct {
 	config.ExporterSettings      `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
@@ -34,15 +39,32 @@ type Config struct {
 	exporterhelper.RetrySettings `mapstructure:"retry_on_failure"`
 
 	// Traces defines the Traces exporter specific configuration
-	Traces TracesConfig `mapstructure:"traces"`
+	Traces  TracesConfig  `mapstructure:"traces"`
+	Metrics MetricsConfig `mapstructure:"metrics"`
 }
 
 func (c *Config) Validate() error {
-	if c.Traces.Endpoint == "" {
-		return fmt.Errorf("A non-empty traces.endpoint is required")
+	tracesURL, err := parseEndpoint("traces", c.Traces.Endpoint)
+	if err != nil {
+		return err
 	}
-	if _, err := url.Parse(c.Traces.Endpoint); err != nil {
-		return fmt.Errorf("invalid traces.endpoint %s", err)
+	metricsURL, err := parseEndpoint("metrics", c.Metrics.Endpoint)
+	if err != nil {
+		return err
+	}
+	if tracesURL.Hostname() != metricsURL.Hostname() {
+		return errors.New("host for metrics and traces must be the same")
 	}
 	return nil
+}
+
+func parseEndpoint(name string, endpoint string) (*url.URL, error) {
+	if endpoint == "" {
+		return nil, fmt.Errorf("A non-empty %s.endpoint is required", name)
+	}
+	u, err := url.Parse(endpoint)
+	if err != nil {
+		return nil, fmt.Errorf("invalid %s.endpoint %s", name, err)
+	}
+	return u, nil
 }

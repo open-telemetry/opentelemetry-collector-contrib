@@ -37,6 +37,7 @@
 - `scrapertest`: Improve comparison logic (#7305)
 - `hostmetricsreceiver`: add `cpu_average` option for load scraper to report the average cpu load (#6999)
 - `tracegen`: Add option to pass in custom headers to export calls via command line (#7308)
+- `tanzuobservabilityexporter`: Turn on metrics exporter (#7281)
 
 ## 🛑 Breaking changes 🛑
 
