@@ -38,7 +38,7 @@ func (x xrayProxy) Start(ctx context.Context, host component.Host) error {
 }
 
 func (x xrayProxy) Shutdown(ctx context.Context) error {
-	return x.server.Close()
+	return x.server.Shutdown(ctx)
 }
 
 func newXrayProxy(config *Config, logger *zap.Logger) (component.Extension, error) {
