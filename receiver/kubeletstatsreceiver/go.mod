@@ -6,10 +6,10 @@ require (
 	github.com/census-instrumentation/opencensus-proto v0.3.0
 	github.com/onsi/ginkgo v1.14.1 // indirect
 	github.com/onsi/gomega v1.10.2 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/interval v0.34.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.34.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/kubelet v0.34.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus v0.34.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/interval v0.35.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.35.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/kubelet v0.35.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus v0.35.0
 	github.com/stretchr/testify v1.7.0
 	go.opentelemetry.io/collector v0.35.0
 	go.opentelemetry.io/collector/model v0.35.0
@@ -43,7 +43,7 @@ require (
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.1 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.34.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.35.0 // indirect
 	github.com/openshift/api v0.0.0-20210521075222-e273a339932a // indirect
 	github.com/openshift/client-go v0.0.0-20210521082421-73d9475a9142 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
