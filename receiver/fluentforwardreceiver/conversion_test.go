@@ -103,7 +103,7 @@ func TestAttributeTypeConversion(t *testing.T) {
 	require.EqualValues(t, Logs(
 		Log{
 			Timestamp: 5000000000000,
-			Body:      pdata.NewAttributeValueNull(),
+			Body:      pdata.NewAttributeValueEmpty(),
 			Attributes: map[string]pdata.AttributeValue{
 				"a":          pdata.NewAttributeValueDouble(5.0),
 				"b":          pdata.NewAttributeValueDouble(6.0),

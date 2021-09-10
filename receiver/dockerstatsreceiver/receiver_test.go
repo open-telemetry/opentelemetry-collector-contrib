@@ -37,6 +37,7 @@ func TestNewReceiver(t *testing.T) {
 	config := &Config{
 		Endpoint:           "unix:///run/some.sock",
 		CollectionInterval: 1 * time.Second,
+		DockerAPIVersion:   defaultDockerAPIVersion,
 	}
 	logger := zap.NewNop()
 	nextConsumer := consumertest.NewNop()
@@ -70,6 +71,7 @@ func TestErrorsInStart(t *testing.T) {
 	config := &Config{
 		Endpoint:           unreachable,
 		CollectionInterval: 1 * time.Second,
+		DockerAPIVersion:   defaultDockerAPIVersion,
 	}
 	logger := zap.NewNop()
 	receiver, err := NewReceiver(context.Background(), logger, config, consumertest.NewNop())

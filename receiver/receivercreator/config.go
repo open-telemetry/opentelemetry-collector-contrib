@@ -87,7 +87,7 @@ type Config struct {
 	ResourceAttributes resourceAttributes `mapstructure:"resource_attributes"`
 }
 
-func (cfg *Config) Unmarshal(componentParser *configparser.Parser) error {
+func (cfg *Config) Unmarshal(componentParser *configparser.ConfigMap) error {
 	if componentParser == nil {
 		// Nothing to do if there is no config given.
 		return nil

@@ -135,7 +135,7 @@ func convertAttributeValue(value pdata.AttributeValue, logger *zap.Logger) inter
 			values[i] = convertAttributeValue(arrayVal.At(i), logger)
 		}
 		return values
-	case pdata.AttributeValueTypeNull:
+	case pdata.AttributeValueTypeEmpty:
 		return nil
 	default:
 		logger.Debug("Unhandled value type", zap.String("type", value.Type().String()))

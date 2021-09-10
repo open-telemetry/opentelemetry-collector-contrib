@@ -49,7 +49,7 @@ type Config struct {
 	Parser *protocol.Config `mapstructure:"parser"`
 }
 
-func (cfg *Config) Unmarshal(componentParser *configparser.Parser) error {
+func (cfg *Config) Unmarshal(componentParser *configparser.ConfigMap) error {
 	if componentParser == nil {
 		// The section is empty nothing to do, using the default config.
 		return nil

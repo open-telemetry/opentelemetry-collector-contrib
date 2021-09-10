@@ -17,6 +17,7 @@ package translator
 import (
 	"context"
 	"fmt"
+	"math"
 	"strconv"
 	"time"
 
@@ -27,9 +28,10 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/config"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/attributes"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metrics"
 )
+
+const metricName string = "metric name"
 
 // HostnameProvider gets a hostname
 type HostnameProvider interface {
@@ -74,6 +76,16 @@ func isCumulativeMonotonic(md pdata.Metric) bool {
 	return false
 }
 
+// isSkippable checks if a value can be skipped (because it is not supported by the backend).
+// It logs that the value is unsupported for debugging since this sometimes means there is a bug.
+func (t *Translator) isSkippable(name string, v float64) bool {
+	skippable := math.IsInf(v, 0) || math.IsNaN(v)
+	if skippable {
+		t.logger.Debug("Unsupported metric value", zap.String(metricName, name), zap.Float64("value", v))
+	}
+	return skippable
+}
+
 // mapNumberMetrics maps double datapoints into Datadog metrics
 func (t *Translator) mapNumberMetrics(name string, dt metrics.MetricDataType, slice pdata.NumberDataPointSlice, attrTags []string) []datadog.Metric {
 	ms := make([]datadog.Metric, 0, slice.Len())
@@ -88,6 +100,11 @@ func (t *Translator) mapNumberMetrics(name string, dt metrics.MetricDataType, sl
 		case pdata.MetricValueTypeInt:
 			val = float64(p.IntVal())
 		}
+
+		if t.isSkippable(name, val) {
+			continue
+		}
+
 		ms = append(ms,
 			metrics.NewMetric(name, dt, uint64(p.Timestamp()), val, tags),
 		)
@@ -110,6 +127,10 @@ func (t *Translator) mapNumberMonotonicMetrics(name string, slice pdata.NumberDa
 			val = p.DoubleVal()
 		case pdata.MetricValueTypeInt:
 			val = float64(p.IntVal())
+		}
+
+		if t.isSkippable(name, val) {
+			continue
 		}
 
 		if dx, ok := t.prevPts.putAndGetDiff(name, tags, ts, val); ok {
@@ -143,8 +164,12 @@ func (t *Translator) mapHistogramMetrics(name string, slice pdata.HistogramDataP
 
 		ms = append(ms,
 			metrics.NewGauge(fmt.Sprintf("%s.count", name), ts, float64(p.Count()), tags),
-			metrics.NewGauge(fmt.Sprintf("%s.sum", name), ts, p.Sum(), tags),
 		)
+
+		sumName := fmt.Sprintf("%s.sum", name)
+		if !t.isSkippable(sumName, p.Sum()) {
+			ms = append(ms, metrics.NewGauge(sumName, ts, p.Sum(), tags))
+		}
 
 		if t.cfg.Buckets {
 			// We have a single metric, 'count_per_bucket', which is tagged with the bucket id. See:
@@ -190,15 +215,17 @@ func (t *Translator) mapSummaryMetrics(name string, slice pdata.SummaryDataPoint
 		// count and sum are increasing; we treat them as cumulative monotonic sums.
 		{
 			countName := fmt.Sprintf("%s.count", name)
-			if dx, ok := t.prevPts.putAndGetDiff(countName, tags, ts, float64(p.Count())); ok {
+			if dx, ok := t.prevPts.putAndGetDiff(countName, tags, ts, float64(p.Count())); ok && !t.isSkippable(countName, dx) {
 				ms = append(ms, metrics.NewCount(countName, ts, dx, tags))
 			}
 		}
 
 		{
 			sumName := fmt.Sprintf("%s.sum", name)
-			if dx, ok := t.prevPts.putAndGetDiff(sumName, tags, ts, p.Sum()); ok {
-				ms = append(ms, metrics.NewCount(sumName, ts, dx, tags))
+			if !t.isSkippable(sumName, p.Sum()) {
+				if dx, ok := t.prevPts.putAndGetDiff(sumName, tags, ts, p.Sum()); ok {
+					ms = append(ms, metrics.NewCount(sumName, ts, dx, tags))
+				}
 			}
 		}
 
@@ -207,6 +234,11 @@ func (t *Translator) mapSummaryMetrics(name string, slice pdata.SummaryDataPoint
 			quantiles := p.QuantileValues()
 			for i := 0; i < quantiles.Len(); i++ {
 				q := quantiles.At(i)
+
+				if t.isSkippable(fullName, q.Value()) {
+					continue
+				}
+
 				quantileTags := append(tags, getQuantileTag(q.Quantile()))
 				ms = append(ms,
 					metrics.NewGauge(fullName, ts, q.Value(), quantileTags),
@@ -233,7 +265,7 @@ func (t *Translator) MapMetrics(md pdata.Metrics) (series []datadog.Metric) {
 			attributeTags = attributes.TagsFromAttributes(rm.Resource().Attributes())
 		}
 
-		host, ok := metadata.HostnameFromAttributes(rm.Resource().Attributes())
+		host, ok := attributes.HostnameFromAttributes(rm.Resource().Attributes())
 		if !ok {
 			fallbackHost, err := t.fallbackHostnameProvider.Hostname(context.Background())
 			host = ""
@@ -265,7 +297,7 @@ func (t *Translator) MapMetrics(md pdata.Metrics) (series []datadog.Metric) {
 						datapoints = t.mapNumberMetrics(md.Name(), metrics.Count, md.Sum().DataPoints(), attributeTags)
 					default: // pdata.AggregationTemporalityUnspecified or any other not supported type
 						t.logger.Debug("Unknown or unsupported aggregation temporality",
-							zap.String("metric name", md.Name()),
+							zap.String(metricName, md.Name()),
 							zap.Any("aggregation temporality", md.Sum().AggregationTemporality()),
 						)
 						continue
@@ -275,7 +307,7 @@ func (t *Translator) MapMetrics(md pdata.Metrics) (series []datadog.Metric) {
 				case pdata.MetricDataTypeSummary:
 					datapoints = t.mapSummaryMetrics(md.Name(), md.Summary().DataPoints(), attributeTags)
 				default: // pdata.MetricDataTypeNone or any other not supported type
-					t.logger.Debug("Unknown or unsupported metric type", zap.String("metric name", md.Name()), zap.Any("data type", md.DataType()))
+					t.logger.Debug("Unknown or unsupported metric type", zap.String(metricName, md.Name()), zap.Any("data type", md.DataType()))
 					continue
 				}
 

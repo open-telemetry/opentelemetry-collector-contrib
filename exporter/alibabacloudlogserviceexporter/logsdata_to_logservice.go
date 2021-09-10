@@ -125,7 +125,7 @@ func instrumentationLibraryToLogContents(instrumentationLibrary pdata.Instrument
 func mapLogRecordToLogService(lr pdata.LogRecord,
 	resourceContents,
 	instrumentationLibraryContents []*sls.LogContent) *sls.Log {
-	if lr.Body().Type() == pdata.AttributeValueTypeNull {
+	if lr.Body().Type() == pdata.AttributeValueTypeEmpty {
 		return nil
 	}
 	var slsLog sls.Log
