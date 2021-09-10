@@ -1253,6 +1253,7 @@ github.com/jaegertracing/jaeger v1.15.1/go.mod h1:LUWPSnzNPGRubM8pk0inANGitpiMOO
 github.com/jaegertracing/jaeger v1.22.0/go.mod h1:WnwW68MjJEViSLRQhe0nkIsBDaF3CzfFd8wJcpJv24k=
 github.com/jaegertracing/jaeger v1.23.0/go.mod h1:gB6Qc+Kjd/IX1G82oGTArbHI3ZRO//iUkaMW+gzL9uw=
 github.com/jaegertracing/jaeger v1.24.0/go.mod h1:mqdtFDA447va5j0UewDaAWyNlGreGQyhGxXVhbF58gQ=
+github.com/jaegertracing/jaeger v1.25.0/go.mod h1:2OPl4X+hPgPPat+u6FfwdItUR8V0qfynfWfVPcsZ9c0=
 github.com/jaegertracing/jaeger v1.26.0 h1:4LbUdb9l/Mx83zYvjLbkrayheX+Aga26NEI+feo3xzA=
 github.com/jaegertracing/jaeger v1.26.0/go.mod h1:SwHsl1PLZVAdkQTPrziQ+4xV9FxzJXRvTDW1YrUIWEA=
 github.com/jcchavezs/porto v0.1.0 h1:Xmxxn25zQMmgE7/yHYmh19KcItG81hIwfbEEFnd6w/Q=
