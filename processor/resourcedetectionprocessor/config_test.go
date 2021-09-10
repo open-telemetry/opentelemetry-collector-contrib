@@ -70,12 +70,24 @@ func TestLoadConfig(t *testing.T) {
 		Detectors:         []string{"env", "system"},
 		DetectorConfig: DetectorConfig{
 			SystemConfig: system.Config{
-				HostnameSources: []string{"dns", "os"},
+				HostnameSources: []string{"os"},
 			},
 		},
 		Timeout:  2 * time.Second,
 		Override: false,
 	})
+}
+
+func TestLoadInvalidConfig(t *testing.T) {
+	factories, err := componenttest.NopFactories()
+	assert.NoError(t, err)
+
+	factory := NewFactory()
+	factories.Processors[typeStr] = factory
+
+	cfg, err := configtest.LoadConfigAndValidate(path.Join(".", "testdata", "invalid_config.yaml"), factories)
+	assert.Error(t, err)
+	assert.NotNil(t, cfg)
 }
 
 func TestGetConfigFromType(t *testing.T) {
@@ -112,11 +124,11 @@ func TestGetConfigFromType(t *testing.T) {
 			detectorType: system.TypeStr,
 			inputDetectorConfig: DetectorConfig{
 				SystemConfig: system.Config{
-					HostnameSources: []string{"dns", "os"},
+					HostnameSources: []string{"os"},
 				},
 			},
 			expectedConfig: system.Config{
-				HostnameSources: []string{"dns", "os"},
+				HostnameSources: []string{"os"},
 			},
 		},
 	}

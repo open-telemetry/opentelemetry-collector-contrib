@@ -50,28 +50,20 @@ func (m *mockMetadata) OSType() (string, error) {
 
 func TestNewDetector(t *testing.T) {
 	tests := []struct {
-		name        string
-		cfg         Config
-		shouldError bool
+		name string
+		cfg  Config
 	}{
-		{
-			name:        "Success Case Empty Config",
-			cfg:         Config{},
-			shouldError: false,
-		},
 		{
 			name: "Success Case Valid Config 'HostnameSources' set to 'os'",
 			cfg: Config{
 				HostnameSources: []string{"os"},
 			},
-			shouldError: false,
 		},
 		{
 			name: "Success Case Valid Config 'HostnameSources' set to 'dns'",
 			cfg: Config{
 				HostnameSources: []string{"dns"},
 			},
-			shouldError: false,
 		},
 	}
 	for _, tt := range tests {

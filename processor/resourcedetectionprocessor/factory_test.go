@@ -55,7 +55,7 @@ func TestInvalidConfig(t *testing.T) {
 	oCfg.Detectors = []string{"not-existing", "system"}
 	oCfg.DetectorConfig = DetectorConfig{
 		SystemConfig: system.Config{
-			HostnameSources: []string{"dns", "invalid"},
+			HostnameSources: []string{"dns"},
 		},
 	}
 

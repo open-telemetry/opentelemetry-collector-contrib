@@ -93,6 +93,8 @@ func createDefaultConfig() config.Processor {
 		Detectors:         []string{env.TypeStr},
 		Timeout:           5 * time.Second,
 		Override:          true,
+		// TODO: Once issue(https://github.com/open-telemetry/opentelemetry-collector/issues/4001) gets resolved,
+		// 		 Set the default value of 'hostname_source' here instead of 'system' detector
 	}
 }
 
@@ -158,11 +160,6 @@ func (f *factory) getResourceDetectionProcessor(
 	cfg config.Processor,
 ) (*resourceDetectionProcessor, error) {
 	oCfg := cfg.(*Config)
-	err := oCfg.Validate()
-	if err != nil {
-		return nil, err
-	}
-
 	provider, err := f.getResourceProvider(params, cfg.ID(), oCfg.Timeout, oCfg.Detectors, oCfg.DetectorConfig)
 	if err != nil {
 		return nil, err

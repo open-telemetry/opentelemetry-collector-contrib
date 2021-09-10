@@ -16,10 +16,10 @@ package system
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/model/pdata"
 	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
 	"go.uber.org/zap"
@@ -58,7 +58,6 @@ func NewDetector(p component.ProcessorCreateSettings, dcfg internal.DetectorConf
 // Detect detects system metadata and returns a resource with the available ones
 func (d *Detector) Detect(_ context.Context) (resource pdata.Resource, schemaURL string, err error) {
 	var hostname string
-	var errs []error
 
 	res := pdata.NewResource()
 	attrs := res.Attributes()
@@ -67,7 +66,6 @@ func (d *Detector) Detect(_ context.Context) (resource pdata.Resource, schemaURL
 	if err != nil {
 		return res, "", fmt.Errorf("failed getting OS type: %w", err)
 	}
-
 	for _, source := range d.hostnameSources {
 		getHostFromSource := hostnameSourcesMap[source]
 		hostname, err = getHostFromSource(d)
@@ -77,10 +75,10 @@ func (d *Detector) Detect(_ context.Context) (resource pdata.Resource, schemaURL
 
 			return res, conventions.SchemaURL, nil
 		}
-		errs = append(errs, err)
+		d.logger.Debug(err.Error())
 	}
 
-	return res, "", consumererror.Combine(errs)
+	return res, "", errors.New("all hostname sources are failed to get hostname")
 }
 
 // getHostname returns OS hostname
@@ -92,7 +90,7 @@ func getHostname(d *Detector) (string, error) {
 	return hostname, nil
 }
 
-// getFQDN returns FQDN
+// getFQDN returns FQDN of the host
 func getFQDN(d *Detector) (string, error) {
 	hostname, err := d.provider.FQDN()
 	if err != nil {
