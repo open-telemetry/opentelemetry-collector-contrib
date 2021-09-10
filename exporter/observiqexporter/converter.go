@@ -158,10 +158,10 @@ var severityNumberToObservIQName = map[int32]string{
 	7:  "debug",
 	8:  "debug",
 	9:  "info",
-	10: "info",
-	11: "info",
-	12: "info",
-	13: "notice",
+	10: "notice",
+	11: "notice",
+	12: "notice",
+	13: "warning",
 	14: "warning",
 	15: "warning",
 	16: "warning",
@@ -171,7 +171,7 @@ var severityNumberToObservIQName = map[int32]string{
 	20: "alert",
 	21: "emergency",
 	22: "emergency",
-	23: "emergency",
+	23: "catastrophe",
 	24: "catastrophe",
 }
 
