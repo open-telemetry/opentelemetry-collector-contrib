@@ -31,8 +31,9 @@ import (
 )
 
 const (
-	dockerAPIVersion = "v1.22"
-	userAgent        = "OpenTelemetry-Collector Docker Stats Receiver/v0.0.1"
+	defaultDockerAPIVersion         = 1.22
+	minimalRequiredDockerAPIVersion = 1.22
+	userAgent                       = "OpenTelemetry-Collector Docker Stats Receiver/v0.0.1"
 )
 
 // dockerClient provides the core metric gathering functionality from the Docker Daemon.
@@ -51,7 +52,7 @@ type dockerClient struct {
 func newDockerClient(config *Config, logger *zap.Logger) (*dockerClient, error) {
 	client, err := docker.NewClientWithOpts(
 		docker.WithHost(config.Endpoint),
-		docker.WithVersion(dockerAPIVersion),
+		docker.WithVersion(fmt.Sprintf("v%v", config.DockerAPIVersion)),
 		docker.WithHTTPHeaders(map[string]string{"User-Agent": userAgent}),
 	)
 	if err != nil {
