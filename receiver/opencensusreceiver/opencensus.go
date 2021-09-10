@@ -56,7 +56,8 @@ type ocReceiver struct {
 	startTracesReceiverOnce  sync.Once
 	startMetricsReceiverOnce sync.Once
 
-	id config.ComponentID
+	id       config.ComponentID
+	settings component.TelemetrySettings
 }
 
 // newOpenCensusReceiver just creates the OpenCensus receiver services. It is the caller's
@@ -68,6 +69,7 @@ func newOpenCensusReceiver(
 	addr string,
 	tc consumer.Traces,
 	mc consumer.Metrics,
+	settings component.TelemetrySettings,
 	opts ...ocOption,
 ) (*ocReceiver, error) {
 	// TODO: (@odeke-em) use options to enable address binding changes.
@@ -83,6 +85,7 @@ func newOpenCensusReceiver(
 		gatewayMux:      gatewayruntime.NewServeMux(),
 		traceConsumer:   tc,
 		metricsConsumer: mc,
+		settings:        settings,
 	}
 
 	for _, opt := range opts {
@@ -170,7 +173,7 @@ func (ocr *ocReceiver) grpcServer(host component.Host) (*grpc.Server, error) {
 	defer ocr.mu.Unlock()
 
 	if ocr.serverGRPC == nil {
-		opts, err := ocr.grpcServerSettings.ToServerOption(host.GetExtensions())
+		opts, err := ocr.grpcServerSettings.ToServerOption(host.GetExtensions(), ocr.settings)
 		if err != nil {
 			return nil, err
 		}
