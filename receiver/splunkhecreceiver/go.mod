@@ -10,8 +10,8 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk v0.35.0
 	github.com/stretchr/testify v1.7.0
 	go.opencensus.io v0.23.0
-	go.opentelemetry.io/collector v0.35.0
-	go.opentelemetry.io/collector/model v0.35.0
+	go.opentelemetry.io/collector v0.35.1-0.20210910152225-47e125a5e129
+	go.opentelemetry.io/collector/model v0.35.1-0.20210910152225-47e125a5e129
 	go.uber.org/zap v1.19.0
 )
 
