@@ -61,7 +61,7 @@ type Config struct {
 	LogsConfig EndpointConfig `mapstructure:"logs"`
 }
 
-func (c *Config) Unmarshal(componentSection *configparser.Parser) error {
+func (c *Config) Unmarshal(componentSection *configparser.ConfigMap) error {
 	if err := componentSection.UnmarshalExact(c); err != nil {
 		return err
 	}

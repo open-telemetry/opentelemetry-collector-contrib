@@ -28,7 +28,7 @@ const (
 )
 
 var attrValDescriptions = []*attrValDescript{
-	constructAttrValDescript("^$", pdata.AttributeValueTypeNull),
+	constructAttrValDescript("^$", pdata.AttributeValueTypeEmpty),
 	constructAttrValDescript(`^-?\d+$`, pdata.AttributeValueTypeInt),
 	constructAttrValDescript(`^-?\d+\.\d+$`, pdata.AttributeValueTypeDouble),
 	constructAttrValDescript(`^(true|false)$`, pdata.AttributeValueTypeBool),

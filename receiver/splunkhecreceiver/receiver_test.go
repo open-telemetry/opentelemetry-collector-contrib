@@ -468,12 +468,12 @@ func Test_splunkhecReceiver_AccessTokenPassthrough(t *testing.T) {
 		{
 			name:        "No token provided and passthrough false",
 			passthrough: false,
-			token:       pdata.NewAttributeValueNull(),
+			token:       pdata.NewAttributeValueEmpty(),
 		},
 		{
 			name:        "No token provided and passthrough true",
 			passthrough: true,
-			token:       pdata.NewAttributeValueNull(),
+			token:       pdata.NewAttributeValueEmpty(),
 		},
 		{
 			name:        "token provided and passthrough false",
@@ -502,7 +502,7 @@ func Test_splunkhecReceiver_AccessTokenPassthrough(t *testing.T) {
 			splunkhecMsg := buildSplunkHecMsg(currentTime, 3)
 			msgBytes, _ := json.Marshal(splunkhecMsg)
 			req := httptest.NewRequest("POST", "http://localhost", bytes.NewReader(msgBytes))
-			if tt.token.Type() != pdata.AttributeValueTypeNull {
+			if tt.token.Type() != pdata.AttributeValueTypeEmpty {
 				req.Header.Set("Splunk", tt.token.StringVal())
 			}
 
@@ -526,7 +526,7 @@ func Test_splunkhecReceiver_AccessTokenPassthrough(t *testing.T) {
 			tokenLabel, exists := resource.Attributes().Get("com.splunk.hec.access_token")
 
 			if tt.passthrough {
-				if tt.token.Type() == pdata.AttributeValueTypeNull {
+				if tt.token.Type() == pdata.AttributeValueTypeEmpty {
 					assert.False(t, exists)
 				} else {
 					assert.Equal(t, tt.token.StringVal(), tokenLabel.StringVal())

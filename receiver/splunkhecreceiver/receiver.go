@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"sync"
 	"time"
 
 	"github.com/gorilla/mux"
@@ -78,6 +79,7 @@ type splunkReceiver struct {
 	metricsConsumer consumer.Metrics
 	server          *http.Server
 	obsrecv         *obsreport.Receiver
+	gzipReaderPool  *sync.Pool
 }
 
 var _ component.MetricsReceiver = (*splunkReceiver)(nil)
@@ -112,7 +114,8 @@ func newMetricsReceiver(
 			ReadHeaderTimeout: defaultServerTimeout,
 			WriteTimeout:      defaultServerTimeout,
 		},
-		obsrecv: obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverID: config.ID(), Transport: transport}),
+		obsrecv:        obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverID: config.ID(), Transport: transport}),
+		gzipReaderPool: &sync.Pool{New: func() interface{} { return new(gzip.Reader) }},
 	}
 
 	return r, nil
@@ -131,6 +134,10 @@ func newLogsReceiver(
 	if config.Endpoint == "" {
 		return nil, errEmptyEndpoint
 	}
+	transport := "http"
+	if config.TLSSetting != nil {
+		transport = "https"
+	}
 
 	r := &splunkReceiver{
 		logger:       logger,
@@ -143,6 +150,8 @@ func newLogsReceiver(
 			ReadHeaderTimeout: defaultServerTimeout,
 			WriteTimeout:      defaultServerTimeout,
 		},
+		gzipReaderPool: &sync.Pool{New: func() interface{} { return new(gzip.Reader) }},
+		obsrecv:        obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverID: config.ID(), Transport: transport}),
 	}
 
 	return r, nil
@@ -188,6 +197,8 @@ func (r *splunkReceiver) handleReq(resp http.ResponseWriter, req *http.Request) 
 	ctx := req.Context()
 	if r.logsConsumer == nil {
 		ctx = r.obsrecv.StartMetricsOp(ctx)
+	} else {
+		ctx = r.obsrecv.StartLogsOp(ctx)
 	}
 	reqPath := req.URL.Path
 	if !r.config.pathGlob.Match(reqPath) {
@@ -208,12 +219,14 @@ func (r *splunkReceiver) handleReq(resp http.ResponseWriter, req *http.Request) 
 
 	bodyReader := req.Body
 	if encoding == gzipEncoding {
-		var err error
-		bodyReader, err = gzip.NewReader(bodyReader)
+		reader := r.gzipReaderPool.Get().(*gzip.Reader)
+		err := reader.Reset(bodyReader)
 		if err != nil {
 			r.failRequest(ctx, resp, http.StatusBadRequest, errGzipReaderRespBody, err)
 			return
 		}
+		bodyReader = reader
+		defer r.gzipReaderPool.Put(reader)
 	}
 
 	if req.ContentLength == 0 {

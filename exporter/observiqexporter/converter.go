@@ -231,7 +231,7 @@ func attributeValueToBaseType(attrib pdata.AttributeValue) interface{} {
 			}
 		}
 		return slice
-	case pdata.AttributeValueTypeNull:
+	case pdata.AttributeValueTypeEmpty:
 		return nil
 	}
 	return nil

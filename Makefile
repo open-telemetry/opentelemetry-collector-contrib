@@ -192,13 +192,13 @@ generate:
 .PHONY: otelcontribcol
 otelcontribcol:
 	GO111MODULE=on CGO_ENABLED=0 go build -trimpath -o ./bin/otelcontribcol_$(GOOS)_$(GOARCH)$(EXTENSION) \
-		$(BUILD_INFO) ./cmd/otelcontribcol
+		$(BUILD_INFO) -tags $(GO_BUILD_TAGS) ./cmd/otelcontribcol
 
 # Build the Collector executable, including unstable functionality.
 .PHONY: otelcontribcol-unstable
 otelcontribcol-unstable:
 	GO111MODULE=on CGO_ENABLED=0 go build -trimpath -o ./bin/otelcontribcol_unstable_$(GOOS)_$(GOARCH)$(EXTENSION) \
-		$(BUILD_INFO) -tags enable_unstable ./cmd/otelcontribcol
+		$(BUILD_INFO) -tags $(GO_BUILD_TAGS),enable_unstable ./cmd/otelcontribcol
 
 .PHONY: otelcontribcol-all-sys
 otelcontribcol-all-sys: otelcontribcol-darwin_amd64 otelcontribcol-darwin_arm64 otelcontribcol-linux_amd64 otelcontribcol-linux_arm64 otelcontribcol-windows_amd64
