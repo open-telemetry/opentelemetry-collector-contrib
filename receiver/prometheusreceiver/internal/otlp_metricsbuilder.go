@@ -163,9 +163,9 @@ func (b *metricBuilderPdata) AddDataPoint(ls labels.Labels, t int64, v float64) 
 		ts, dts := b.currentMf.ToMetricPdata(&b.metrics)
 		b.numTimeseries += ts
 		b.droppedTimeseries += dts
-		b.currentMf = newMetricFamilyPdata(metricName, b.mc, b.intervalStartTimeMs)
+		b.currentMf = newMetricFamilyPdata(metricName, b.mc, b.logger, b.intervalStartTimeMs)
 	} else if b.currentMf == nil {
-		b.currentMf = newMetricFamilyPdata(metricName, b.mc, b.intervalStartTimeMs)
+		b.currentMf = newMetricFamilyPdata(metricName, b.mc, b.logger, b.intervalStartTimeMs)
 	}
 
 	return b.currentMf.Add(metricName, ls, t, v)

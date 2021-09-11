@@ -94,7 +94,7 @@ func TestIsCumulativeEquivalence(t *testing.T) {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			mf := newMetricFamily(tt.name, mc, zap.NewNop(), 1).(*metricFamily)
-			mfp := newMetricFamilyPdata(tt.name, mc, 1).(*metricFamilyPdata)
+			mfp := newMetricFamilyPdata(tt.name, mc, testLogger, 1).(*metricFamilyPdata)
 			assert.Equal(t, mf.isCumulativeType(), mfp.isCumulativeTypePdata(), "mismatch in isCumulative")
 			assert.Equal(t, mf.isCumulativeType(), tt.want, "isCumulative does not match for regular metricFamily")
 			assert.Equal(t, mfp.isCumulativeTypePdata(), tt.want, "isCumulative does not match for pdata metricFamily")
@@ -145,7 +145,7 @@ func TestMetricGroupData_toDistributionUnitTest(t *testing.T) {
 	for _, tt := range tests {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
-			mp := newMetricFamilyPdata(tt.metricName, mc, tt.intervalStartTimeMs).(*metricFamilyPdata)
+			mp := newMetricFamilyPdata(tt.metricName, mc, testLogger, tt.intervalStartTimeMs).(*metricFamilyPdata)
 			for _, tv := range tt.scrapes {
 				require.NoError(t, mp.Add(tv.metric, tt.labels.Copy(), tv.at, tv.value))
 			}
@@ -191,7 +191,7 @@ func TestMetricGroupData_toDistributionPointEquivalence(t *testing.T) {
 		intervalStartTimeMs := int64(i + 1)
 		t.Run(tt.name, func(t *testing.T) {
 			mf := newMetricFamily(tt.name, mc, zap.NewNop(), intervalStartTimeMs).(*metricFamily)
-			mp := newMetricFamilyPdata(tt.name, mc, intervalStartTimeMs).(*metricFamilyPdata)
+			mp := newMetricFamilyPdata(tt.name, mc, testLogger, intervalStartTimeMs).(*metricFamilyPdata)
 			for _, tv := range tt.scrapes {
 				require.NoError(t, mp.Add(tv.metric, tt.labels.Copy(), tv.at, tv.value))
 				require.NoError(t, mf.Add(tv.metric, tt.labels.Copy(), tv.at, tv.value))
@@ -354,7 +354,7 @@ func TestMetricGroupData_toSummaryUnitTest(t *testing.T) {
 	for _, tt := range tests {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
-			mp := newMetricFamilyPdata(tt.name, mc, 1).(*metricFamilyPdata)
+			mp := newMetricFamilyPdata(tt.name, mc, testLogger, 1).(*metricFamilyPdata)
 			for _, lbs := range tt.labelsScrapes {
 				for _, scrape := range lbs.scrapes {
 					require.NoError(t, mp.Add(scrape.metric, lbs.labels.Copy(), scrape.at, scrape.value))
@@ -405,7 +405,7 @@ func TestMetricGroupData_toSummaryPointEquivalence(t *testing.T) {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			mf := newMetricFamily(tt.name, mc, zap.NewNop(), 1).(*metricFamily)
-			mp := newMetricFamilyPdata(tt.name, mc, 1).(*metricFamilyPdata)
+			mp := newMetricFamilyPdata(tt.name, mc, testLogger, 1).(*metricFamilyPdata)
 			for _, tv := range tt.scrapes {
 				require.NoError(t, mp.Add(tv.metric, tt.labels.Copy(), tv.at, tv.value))
 				require.NoError(t, mf.Add(tv.metric, tt.labels.Copy(), tv.at, tv.value))
@@ -507,7 +507,7 @@ func TestMetricGroupData_toNumberDataUnitTest(t *testing.T) {
 	for _, tt := range tests {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
-			mp := newMetricFamilyPdata(tt.metricKind, mc, tt.intervalStartTimestampMs).(*metricFamilyPdata)
+			mp := newMetricFamilyPdata(tt.metricKind, mc, testLogger, tt.intervalStartTimestampMs).(*metricFamilyPdata)
 			for _, tv := range tt.scrapes {
 				require.NoError(t, mp.Add(tv.metric, tt.labels.Copy(), tv.at, tv.value))
 			}
@@ -553,7 +553,7 @@ func TestMetricGroupData_toNumberDataPointEquivalence(t *testing.T) {
 		intervalStartTimeMs := int64(11 + i)
 		t.Run(tt.name, func(t *testing.T) {
 			mf := newMetricFamily(tt.name, mc, zap.NewNop(), intervalStartTimeMs).(*metricFamily)
-			mp := newMetricFamilyPdata(tt.name, mc, intervalStartTimeMs).(*metricFamilyPdata)
+			mp := newMetricFamilyPdata(tt.name, mc, testLogger, intervalStartTimeMs).(*metricFamilyPdata)
 			for _, tv := range tt.scrapes {
 				require.NoError(t, mp.Add(tv.metric, tt.labels.Copy(), tv.at, tv.value))
 				require.NoError(t, mf.Add(tv.metric, tt.labels.Copy(), tv.at, tv.value))

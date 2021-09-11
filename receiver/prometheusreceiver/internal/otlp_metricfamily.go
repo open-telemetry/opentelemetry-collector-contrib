@@ -15,12 +15,14 @@
 package internal
 
 import (
+	"fmt"
 	"sort"
 	"strings"
 
 	"github.com/prometheus/prometheus/pkg/labels"
 	"github.com/prometheus/prometheus/pkg/textparse"
 	"go.opentelemetry.io/collector/model/pdata"
+	"go.uber.org/zap"
 )
 
 // MetricFamilyPdata is unit which is corresponding to the metrics items which shared the same TYPE/UNIT/... metadata from
@@ -51,7 +53,7 @@ type metricGroupPdata struct {
 	family *metricFamilyPdata
 }
 
-func newMetricFamilyPdata(metricName string, mc MetadataCache, intervalStartTimeMs int64) MetricFamilyPdata {
+func newMetricFamilyPdata(metricName string, mc MetadataCache, logger *zap.Logger, intervalStartTimeMs int64) MetricFamilyPdata {
 	familyName := normalizeMetricName(metricName)
 
 	// lookup metadata based on familyName
@@ -67,6 +69,13 @@ func newMetricFamilyPdata(metricName string, mc MetadataCache, intervalStartTime
 			metadata.Metric = familyName
 			metadata.Type = textparse.MetricTypeUnknown
 		}
+	} else if !ok && isInternalMetric(metricName) {
+		metadata = defineInternalMetric(metricName, metadata, logger)
+	}
+
+	mtype := convToPdataMetricType(metadata.Type)
+	if mtype == pdata.MetricDataTypeNone {
+		logger.Debug(fmt.Sprintf("Invalid metric : %s %+v", metricName, metadata))
 	}
 
 	return &metricFamilyPdata{
@@ -83,6 +92,12 @@ func newMetricFamilyPdata(metricName string, mc MetadataCache, intervalStartTime
 			intervalStartTimeMs: intervalStartTimeMs,
 		},
 	}
+}
+
+func (mf *metricFamilyPdata) IsSameFamily(metricName string) bool {
+	// trim known suffix if necessary
+	familyName := normalizeMetricName(metricName)
+	return mf.name == familyName || familyName != metricName && mf.name == metricName
 }
 
 // updateLabelKeys is used to store all the label keys of a same metric family in observed order. since prometheus
@@ -107,6 +122,12 @@ func (mf *metricFamilyPdata) updateLabelKeys(ls labels.Labels) {
 func (mf *metricFamilyPdata) getGroupKey(ls labels.Labels) string {
 	mf.updateLabelKeys(ls)
 	return dpgSignature(mf.labelKeysOrdered, ls)
+}
+
+func (mg *metricGroupPdata) sortPoints() {
+	sort.Slice(mg.complexValue, func(i, j int) bool {
+		return mg.complexValue[i].boundary < mg.complexValue[j].boundary
+	})
 }
 
 func (mg *metricGroupPdata) toDistributionPoint(orderedLabelKeys []string, dest *pdata.HistogramDataPointSlice) bool {
@@ -273,6 +294,9 @@ func (mf *metricFamilyPdata) getGroups() []*metricGroupPdata {
 
 func (mf *metricFamilyPdata) ToMetricPdata(metrics *pdata.MetricSlice) (int, int) {
 	metric := pdata.NewMetric()
+	metric.SetDataType(mf.mtype)
+	metric.SetName(mf.name)
+
 	pointCount := 0
 
 	switch mf.mtype {
@@ -307,6 +331,8 @@ func (mf *metricFamilyPdata) ToMetricPdata(metrics *pdata.MetricSlice) (int, int
 		pointCount = sdpL.Len()
 
 	default:
+		// Everything else should be a gauge.
+		metric.SetDataType(pdata.MetricDataTypeGauge)
 		gauge := metric.Gauge()
 		gdpL := gauge.DataPoints()
 		for _, mg := range mf.getGroups() {
