@@ -46,6 +46,7 @@ func TestLoadConfig(t *testing.T) {
 	assert.Equal(t, "unix:///var/run/docker.sock", dcfg.Endpoint)
 	assert.Equal(t, 10*time.Second, dcfg.CollectionInterval)
 	assert.Equal(t, 5*time.Second, dcfg.Timeout)
+	assert.Equal(t, defaultDockerAPIVersion, dcfg.DockerAPIVersion)
 
 	assert.Nil(t, dcfg.ExcludedImages)
 	assert.Nil(t, dcfg.ContainerLabelsToMetricLabels)
@@ -58,6 +59,7 @@ func TestLoadConfig(t *testing.T) {
 	assert.Equal(t, "http://example.com/", ascfg.Endpoint)
 	assert.Equal(t, 2*time.Second, ascfg.CollectionInterval)
 	assert.Equal(t, 20*time.Second, ascfg.Timeout)
+	assert.Equal(t, 1.24, ascfg.DockerAPIVersion)
 
 	assert.Equal(t, []string{
 		"undesired-container",

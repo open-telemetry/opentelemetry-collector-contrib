@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/f5clou
 go 1.17
 
 require (
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.34.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.35.0
 	github.com/stretchr/testify v1.7.0
 	go.opentelemetry.io/collector v0.35.0
 	golang.org/x/oauth2 v0.0.0-20210819190943-2bc19b11175f
@@ -29,12 +29,12 @@ require (
 	github.com/spf13/cast v1.4.1 // indirect
 	go.opencensus.io v0.23.0 // indirect
 	go.opentelemetry.io/collector/model v0.35.0 // indirect
-	go.opentelemetry.io/contrib v0.22.0 // indirect
-	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.22.0 // indirect
-	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.22.0 // indirect
+	go.opentelemetry.io/contrib v0.23.0 // indirect
+	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.23.0 // indirect
+	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.23.0 // indirect
 	go.opentelemetry.io/otel v1.0.0-RC3 // indirect
-	go.opentelemetry.io/otel/internal/metric v0.22.0 // indirect
-	go.opentelemetry.io/otel/metric v0.22.0 // indirect
+	go.opentelemetry.io/otel/internal/metric v0.23.0 // indirect
+	go.opentelemetry.io/otel/metric v0.23.0 // indirect
 	go.opentelemetry.io/otel/trace v1.0.0-RC3 // indirect
 	go.uber.org/atomic v1.9.0 // indirect
 	go.uber.org/multierr v1.6.0 // indirect
