@@ -17,12 +17,16 @@ details of which are currently pending confirmation in the OpenTelemetry specifi
     * host.name
     * os.type
 
-* System detector custom configuration example:
+* By default `host.name` is being set to FQND if possible, and a hostname provided by OS used as fallback.
+This logic can be changed with `hostname_sources` configuration which is set to `["dns", "os"]` by default.
+
+Use the following config to avoid getting FQDN and apply hostname provided by OS only:
+
     ```yaml
     detectors: ["system"]
     system:
         # A priority list of sources to get the hostname(**default**: `["dns", "os"]`)
-        hostname_sources: ["dns", "os"]
+        hostname_sources: ["os"]
     ```
 
     * all valid options for hostname_sources:

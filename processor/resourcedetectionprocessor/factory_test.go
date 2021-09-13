@@ -52,12 +52,7 @@ func TestInvalidConfig(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	oCfg := cfg.(*Config)
-	oCfg.Detectors = []string{"not-existing", "system"}
-	oCfg.DetectorConfig = DetectorConfig{
-		SystemConfig: system.Config{
-			HostnameSources: []string{"dns"},
-		},
-	}
+	oCfg.Detectors = []string{"not-existing"}
 
 	tp, err := factory.CreateTracesProcessor(context.Background(), componenttest.NewNopProcessorCreateSettings(), cfg, consumertest.NewNop())
 	assert.Error(t, err)
