@@ -116,6 +116,10 @@ func createDefaultConfig() config.Receiver {
 			Enable:   defaultAutoCommitEnable,
 			Interval: defaultAutoCommitInterval,
 		},
+		MessageMarking: MessageMarking{
+			After:   false,
+			OnError: false,
+		},
 	}
 }
 

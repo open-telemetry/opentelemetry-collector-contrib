@@ -31,6 +31,17 @@ type AutoCommit struct {
 	Interval time.Duration `mapstructure:"interval"`
 }
 
+type MessageMarking struct {
+	// If true, the messages are marked after the pipeline execution
+	After bool `mapstructure:"after"`
+
+	// If false, only the successfully processed messages are marked, it has no impact if
+	// After is set to false.
+	// Note: this can block the entire partition in case a message precessing returns
+	// a permanent error.
+	OnError bool `mapstructure:"on_error"`
+}
+
 // Config defines configuration for Kafka receiver.
 type Config struct {
 	config.ReceiverSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
@@ -55,6 +66,9 @@ type Config struct {
 
 	// Controls the auto-commit funcionality
 	AutoCommit AutoCommit `mapstructure:"autocommit"`
+
+	// Controls the way the messages are marked as consumed
+	MessageMarking MessageMarking `mapstructure:"message_marking"`
 }
 
 var _ config.Receiver = (*Config)(nil)
