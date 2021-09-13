@@ -190,15 +190,9 @@ func verifyNumScrapeResults(t *testing.T, td *testData, mds []*agentmetricspb.Ex
 	}
 }
 
-func doCompare(name string, t *testing.T, want, got *agentmetricspb.ExportMetricsServiceRequest, expectations []testExpectation) {
+func doCompare(name string, t *testing.T, want, got pdata.ResourceMetrics) {
 	t.Run(name, func(t *testing.T) {
-		numScrapeMetrics := countScrapeMetrics(got)
-		assert.Equal(t, expectedScrapeMetricCount, numScrapeMetrics)
-		assert.EqualValues(t, want.Node, got.Node)
-		assert.EqualValues(t, want.Resource, got.Resource)
-		for _, e := range expectations {
-			assert.True(t, e(t, got.Metrics))
-		}
+		assert.True(t, want, got)
 	})
 }
 

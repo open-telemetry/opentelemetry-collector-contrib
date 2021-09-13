@@ -62,7 +62,7 @@ func TestExternalLabels(t *testing.T) {
 	metrics := cms.AllMetrics()
 
 	// split and store results by target name
-	results := make(map[string][]*pdata.MetricSlice)
+	results := make(map[string][]pdata.Metric)
 	for _, md := range metrics {
 		rms := md.ResourceMetrics()
 		for i := 0; i < rms.Len(); i++ {
@@ -70,12 +70,7 @@ func TestExternalLabels(t *testing.T) {
 			serviceNameAttr, ok := rmi.Resource().Attributes().Get("service.name")
 			assert.True(t, ok, `expected "service.name" as a known attribute`)
 			serviceName := serviceNameAttr.StringVal()
-			ilmL := rmi.InstrumentationLibraryMetrics()
-			for j := 0; j < ilmL.Len(); j++ {
-				ilm := ilmL.At(j)
-				metricL := ilm.Metrics()
-				results[serviceName] = append(results[serviceName], &metricL)
-			}
+			results[serviceName] = append(results[serviceName], md)
 		}
 	}
 	for _, target := range targets {
@@ -83,8 +78,25 @@ func TestExternalLabels(t *testing.T) {
 	}
 }
 
-func verifyExternalLabels(t *testing.T, td *testData, mds []*pdata.MetricSlice) {
+func makeMetric(td *testData, metricL []pdata.Metric) pdata.ResourceMetrics {
+	rms := pdata.NewResourceMetrics()
+	td.resource.CopyTo(rms.Resource())
+	ilm := rms.InstrumentationLibraryMetrics().AppendEmpty()
+	destMetricL := ilm.Metrics()
+	for _, metric := range metricL {
+		destMetric := destMetricL.AppendMetric()
+		metric.CopyTo(destMetric)
+	}
+	return rms
+}
+
+func verifyExternalLabels(t *testing.T, td *testData, mds []pdata.Metric) {
 	verifyNumScrapeResults(t, td, mds)
+
+        want := makeMetric(td, []pdata.Metric{
+            internal.GaugeMetric("go_threads", k1v2, t1Ms, internal.DoublePoint(t1Ms, 19))
+        })
+
 	// TODO: Translate me.
 	/*
 		want := &agentmetricspb.ExportMetricsServiceRequest{
