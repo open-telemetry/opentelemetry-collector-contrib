@@ -32,7 +32,6 @@ import (
 	"github.com/stretchr/testify/suite"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -149,11 +148,8 @@ func (suite *JMXIntegrationSuite) TestJMXReceiverHappyPath() {
 			defer getLogsOnFailure(t, logObserver)
 
 			logger := zap.New(logCore)
-			params := component.ReceiverCreateSettings{
-				TelemetrySettings: component.TelemetrySettings{
-					Logger: logger,
-				},
-			}
+			params := componenttest.NewNopReceiverCreateSettings()
+			params.Logger = logger
 
 			cfg := &Config{
 				CollectionInterval: 100 * time.Millisecond,
@@ -260,6 +256,7 @@ func TestJMXReceiverInvalidOTLPEndpointIntegration(t *testing.T) {
 		CollectionInterval: 100 * time.Millisecond,
 		Endpoint:           fmt.Sprintf("service:jmx:rmi:///jndi/rmi://localhost:7199/jmxrmi"),
 		JARPath:            "/notavalidpath",
+		Properties:         make(map[string]string),
 		GroovyScript:       path.Join(".", "testdata", "script.groovy"),
 		OTLPExporterConfig: otlpExporterConfig{
 			Endpoint: "<invalid>:123",

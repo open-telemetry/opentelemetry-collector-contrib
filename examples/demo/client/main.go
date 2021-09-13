@@ -144,7 +144,7 @@ func main() {
 
 	// Recorder metric example
 	requestLatency := metric.Must(meter).
-		NewFloat64ValueRecorder(
+		NewFloat64Histogram(
 			"demo_client/request_latency",
 			metric.WithDescription("The latency of requests processed"),
 		)
@@ -157,7 +157,7 @@ func main() {
 		)
 
 	lineLengths := metric.Must(meter).
-		NewInt64ValueRecorder(
+		NewInt64Histogram(
 			"demo_client/line_lengths",
 			metric.WithDescription("The lengths of the various lines in"),
 		)
