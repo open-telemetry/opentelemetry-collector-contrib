@@ -41,6 +41,11 @@ import (
 	"go.uber.org/zap/zaptest/observer"
 )
 
+var jmxJarReleases = map[string]string{
+	"1.0.0-alpha": "https://repo1.maven.org/maven2/io/opentelemetry/contrib/opentelemetry-java-contrib-jmx-metrics/1.0.0-alpha/opentelemetry-java-contrib-jmx-metrics-1.0.0-alpha.jar",
+	"1.4.0-alpha": "https://repo1.maven.org/maven2/io/opentelemetry/contrib/opentelemetry-jmx-metrics/1.4.0-alpha/opentelemetry-jmx-metrics-1.4.0-alpha.jar",
+}
+
 type JMXIntegrationSuite struct {
 	suite.Suite
 	VersionToJar map[string]string
@@ -51,10 +56,6 @@ func TestJMXIntegration(t *testing.T) {
 }
 
 func (suite *JMXIntegrationSuite) SetupSuite() {
-	jmxJarReleases := map[string]string{
-		"1.0.0-alpha": "https://repo1.maven.org/maven2/io/opentelemetry/contrib/opentelemetry-java-contrib-jmx-metrics/1.0.0-alpha/opentelemetry-java-contrib-jmx-metrics-1.0.0-alpha.jar",
-		"1.4.0-alpha": "https://repo1.maven.org/maven2/io/opentelemetry/contrib/opentelemetry-jmx-metrics/1.4.0-alpha/opentelemetry-jmx-metrics-1.4.0-alpha.jar",
-	}
 	suite.VersionToJar = make(map[string]string)
 	for version, url := range jmxJarReleases {
 		jarPath, err := downloadJMXMetricGathererJAR(url)
