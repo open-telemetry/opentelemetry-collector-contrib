@@ -103,7 +103,7 @@ func TestServerSpanWithInternalServerError(t *testing.T) {
 	attributes[conventions.AttributeHTTPURL] = "https://api.example.org/api/locations"
 	attributes[conventions.AttributeHTTPTarget] = "/api/locations"
 	attributes[conventions.AttributeHTTPStatusCode] = 500
-	attributes[conventions.AttributeHTTPStatusText] = "java.lang.NullPointerException"
+	attributes["http.status_text"] = "java.lang.NullPointerException"
 	attributes[conventions.AttributeHTTPUserAgent] = userAgent
 	attributes[conventions.AttributeEnduserID] = enduser
 	resource := constructDefaultResource()
@@ -130,7 +130,7 @@ func TestServerSpanWithThrottle(t *testing.T) {
 	attributes[conventions.AttributeHTTPURL] = "https://api.example.org/api/locations"
 	attributes[conventions.AttributeHTTPTarget] = "/api/locations"
 	attributes[conventions.AttributeHTTPStatusCode] = 429
-	attributes[conventions.AttributeHTTPStatusText] = "java.lang.NullPointerException"
+	attributes["http.status_text"] = "java.lang.NullPointerException"
 	attributes[conventions.AttributeHTTPUserAgent] = userAgent
 	attributes[conventions.AttributeEnduserID] = enduser
 	resource := constructDefaultResource()
