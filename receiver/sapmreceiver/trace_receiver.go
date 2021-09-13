@@ -29,7 +29,6 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/obsreport"
-	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger"
@@ -43,7 +42,7 @@ var gzipWriterPool = &sync.Pool{
 
 // sapmReceiver receives spans in the Splunk SAPM format over HTTP
 type sapmReceiver struct {
-	logger *zap.Logger
+	settings component.TelemetrySettings
 
 	config *Config
 	server *http.Server
@@ -162,7 +161,7 @@ func (sr *sapmReceiver) Start(_ context.Context, host component.Host) error {
 	nr.HandleFunc(sapmprotocol.TraceEndpointV2, sr.HTTPHandlerFunc)
 
 	// create a server with the handler
-	sr.server = sr.config.HTTPServerSettings.ToServer(nr)
+	sr.server = sr.config.HTTPServerSettings.ToServer(nr, sr.settings)
 
 	// run the server on a routine
 	go func() {
@@ -198,7 +197,7 @@ func newReceiver(
 		transport = "https"
 	}
 	return &sapmReceiver{
-		logger:          params.Logger,
+		settings:        params.TelemetrySettings,
 		config:          config,
 		nextConsumer:    nextConsumer,
 		defaultResponse: defaultResponseBytes,
