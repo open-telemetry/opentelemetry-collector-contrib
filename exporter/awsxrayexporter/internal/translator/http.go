@@ -19,7 +19,7 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws"
 	"go.opentelemetry.io/collector/model/pdata"
-	conventions "go.opentelemetry.io/collector/translator/conventions/v1.5.0"
+	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
 
 	awsxray "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray"
 )
@@ -141,7 +141,7 @@ func extractResponseSizeFromEvents(span pdata.Span) int64 {
 }
 
 func extractResponseSizeFromAttributes(attributes pdata.AttributeMap) int64 {
-	typeVal, ok := attributes.Get(conventions.AttributeMessageType)
+	typeVal, ok := attributes.Get("message.type")
 	if ok && typeVal.StringVal() == "RECEIVED" {
 		if sizeVal, ok := attributes.Get(conventions.AttributeMessagingMessagePayloadSizeBytes); ok {
 			return sizeVal.IntVal()

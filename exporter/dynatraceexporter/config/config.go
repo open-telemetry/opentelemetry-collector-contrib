@@ -19,9 +19,12 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/dynatrace-oss/dynatrace-metric-utils-go/metric/apiconstants"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry"
 )
 
 // Config defines configuration for the Dynatrace exporter.
@@ -29,42 +32,46 @@ type Config struct {
 	config.ExporterSettings       `mapstructure:",squash"`
 	confighttp.HTTPClientSettings `mapstructure:",squash"`
 
-	exporterhelper.QueueSettings               `mapstructure:"sending_queue"`
-	exporterhelper.RetrySettings               `mapstructure:"retry_on_failure"`
-	exporterhelper.ResourceToTelemetrySettings `mapstructure:"resource_to_telemetry_conversion"`
+	exporterhelper.QueueSettings `mapstructure:"sending_queue"`
+	exporterhelper.RetrySettings `mapstructure:"retry_on_failure"`
+	ResourceToTelemetrySettings  resourcetotelemetry.Settings `mapstructure:"resource_to_telemetry_conversion"`
 
 	// Dynatrace API token with metrics ingest permission
 	APIToken string `mapstructure:"api_token"`
 
-	// Tags will be added to all exported metrics
-	Tags []string `mapstructure:"tags"`
+	// DefaultDimensions will be added to all exported metrics
+	DefaultDimensions map[string]string `mapstructure:"default_dimensions"`
 
 	// String to prefix all metric names
 	Prefix string `mapstructure:"prefix"`
+
+	// Tags will be added to all exported metrics
+	// Deprecated: Please use DefaultDimensions instead
+	Tags []string `mapstructure:"tags"`
 }
 
-// Sanitize ensures an API token has been provided
-func (c *Config) Sanitize() error {
+// ValidateAndConfigureHTTPClientSettings validates the configuration and sets default values
+func (c *Config) ValidateAndConfigureHTTPClientSettings() error {
+	if c.HTTPClientSettings.Headers == nil {
+		c.HTTPClientSettings.Headers = make(map[string]string)
+	}
 	c.APIToken = strings.TrimSpace(c.APIToken)
 
-	if c.APIToken == "" {
-		return errors.New("missing api_token")
-	}
-
 	if c.Endpoint == "" {
-		return errors.New("missing endpoint")
+		c.Endpoint = apiconstants.GetDefaultOneAgentEndpoint()
+	} else {
+		if c.APIToken == "" {
+			return errors.New("api_token is required if Endpoint is provided")
+		}
+
+		c.HTTPClientSettings.Headers["Authorization"] = fmt.Sprintf("Api-Token %s", c.APIToken)
 	}
 
 	if !(strings.HasPrefix(c.Endpoint, "http://") || strings.HasPrefix(c.Endpoint, "https://")) {
 		return errors.New("endpoint must start with https:// or http://")
 	}
 
-	if c.HTTPClientSettings.Headers == nil {
-		c.HTTPClientSettings.Headers = make(map[string]string)
-	}
-
 	c.HTTPClientSettings.Headers["Content-Type"] = "text/plain; charset=UTF-8"
-	c.HTTPClientSettings.Headers["Authorization"] = fmt.Sprintf("Api-Token %s", c.APIToken)
 	c.HTTPClientSettings.Headers["User-Agent"] = "opentelemetry-collector"
 
 	return nil

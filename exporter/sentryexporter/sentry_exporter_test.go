@@ -25,7 +25,7 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/model/pdata"
-	conventions "go.opentelemetry.io/collector/translator/conventions/v1.5.0"
+	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
 )
 
 /*
@@ -369,7 +369,7 @@ func TestGenerateSpanDescriptors(t *testing.T) {
 		{
 			testName: "http-client",
 			name:     "/api/users/{user_id}",
-			attrs: pdata.NewAttributeMap().InitFromMap(map[string]pdata.AttributeValue{
+			attrs: pdata.NewAttributeMapFromMap(map[string]pdata.AttributeValue{
 				conventions.AttributeHTTPMethod: pdata.NewAttributeValueString("GET"),
 			}),
 			spanKind:    pdata.SpanKindClient,
@@ -379,7 +379,7 @@ func TestGenerateSpanDescriptors(t *testing.T) {
 		{
 			testName: "http-server",
 			name:     "/api/users/{user_id}",
-			attrs: pdata.NewAttributeMap().InitFromMap(map[string]pdata.AttributeValue{
+			attrs: pdata.NewAttributeMapFromMap(map[string]pdata.AttributeValue{
 				conventions.AttributeHTTPMethod: pdata.NewAttributeValueString("POST"),
 			}),
 			spanKind:    pdata.SpanKindServer,
@@ -389,7 +389,7 @@ func TestGenerateSpanDescriptors(t *testing.T) {
 		{
 			testName: "db-call-without-statement",
 			name:     "SET mykey 'Val'",
-			attrs: pdata.NewAttributeMap().InitFromMap(map[string]pdata.AttributeValue{
+			attrs: pdata.NewAttributeMapFromMap(map[string]pdata.AttributeValue{
 				conventions.AttributeDBSystem: pdata.NewAttributeValueString("redis"),
 			}),
 			spanKind:    pdata.SpanKindClient,
@@ -399,7 +399,7 @@ func TestGenerateSpanDescriptors(t *testing.T) {
 		{
 			testName: "db-call-with-statement",
 			name:     "mysql call",
-			attrs: pdata.NewAttributeMap().InitFromMap(map[string]pdata.AttributeValue{
+			attrs: pdata.NewAttributeMapFromMap(map[string]pdata.AttributeValue{
 				conventions.AttributeDBSystem:    pdata.NewAttributeValueString("sqlite"),
 				conventions.AttributeDBStatement: pdata.NewAttributeValueString("SELECT * FROM table"),
 			}),
@@ -410,7 +410,7 @@ func TestGenerateSpanDescriptors(t *testing.T) {
 		{
 			testName: "rpc",
 			name:     "grpc.test.EchoService/Echo",
-			attrs: pdata.NewAttributeMap().InitFromMap(map[string]pdata.AttributeValue{
+			attrs: pdata.NewAttributeMapFromMap(map[string]pdata.AttributeValue{
 				conventions.AttributeRPCService: pdata.NewAttributeValueString("EchoService"),
 			}),
 			spanKind:    pdata.SpanKindClient,
@@ -420,7 +420,7 @@ func TestGenerateSpanDescriptors(t *testing.T) {
 		{
 			testName: "message-system",
 			name:     "message-destination",
-			attrs: pdata.NewAttributeMap().InitFromMap(map[string]pdata.AttributeValue{
+			attrs: pdata.NewAttributeMapFromMap(map[string]pdata.AttributeValue{
 				"messaging.system": pdata.NewAttributeValueString("kafka"),
 			}),
 			spanKind:    pdata.SpanKindProducer,
@@ -430,7 +430,7 @@ func TestGenerateSpanDescriptors(t *testing.T) {
 		{
 			testName: "faas",
 			name:     "message-destination",
-			attrs: pdata.NewAttributeMap().InitFromMap(map[string]pdata.AttributeValue{
+			attrs: pdata.NewAttributeMapFromMap(map[string]pdata.AttributeValue{
 				"faas.trigger": pdata.NewAttributeValueString("pubsub"),
 			}),
 			spanKind:    pdata.SpanKindServer,

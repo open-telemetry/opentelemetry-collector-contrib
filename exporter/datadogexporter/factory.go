@@ -26,6 +26,7 @@ import (
 
 	ddconfig "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/config"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry"
 )
 
 const (
@@ -99,6 +100,11 @@ func createMetricsExporter(
 		return nil, err
 	}
 
+	// TODO: Remove after two releases
+	if cfg.Metrics.Buckets {
+		set.Logger.Warn("Histogram bucket metrics now end with .bucket instead of .count_per_bucket")
+	}
+
 	ctx, cancel := context.WithCancel(ctx)
 	var pushMetricsFn consumerhelper.ConsumeMetricsFunc
 
@@ -119,7 +125,7 @@ func createMetricsExporter(
 		pushMetricsFn = newMetricsExporter(ctx, set, cfg).PushMetricsData
 	}
 
-	return exporterhelper.NewMetricsExporter(
+	exporter, err := exporterhelper.NewMetricsExporter(
 		cfg,
 		set,
 		pushMetricsFn,
@@ -129,10 +135,12 @@ func createMetricsExporter(
 			cancel()
 			return nil
 		}),
-		exporterhelper.WithResourceToTelemetryConversion(exporterhelper.ResourceToTelemetrySettings{
-			Enabled: cfg.Metrics.ExporterConfig.ResourceAttributesAsTags,
-		}),
 	)
+	if err != nil {
+		return nil, err
+	}
+	return resourcetotelemetry.WrapMetricsExporter(
+		resourcetotelemetry.Settings{Enabled: cfg.Metrics.ExporterConfig.ResourceAttributesAsTags}, exporter), nil
 }
 
 // createTracesExporter creates a trace exporter based on this config.

@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//go:build integration
 // +build integration
 
 package jmxreceiver
@@ -135,7 +136,11 @@ func (suite *JMXIntegrationSuite) TestJMXReceiverHappyPath() {
 	defer getLogsOnFailure(t, logObserver)
 
 	logger := zap.New(logCore)
-	params := component.ReceiverCreateSettings{Logger: logger}
+	params := component.ReceiverCreateSettings{
+		TelemetrySettings: component.TelemetrySettings{
+			Logger: logger,
+		},
+	}
 
 	cfg := &Config{
 		CollectionInterval: 100 * time.Millisecond,
@@ -240,6 +245,7 @@ func TestJMXReceiverInvalidOTLPEndpointIntegration(t *testing.T) {
 		CollectionInterval: 100 * time.Millisecond,
 		Endpoint:           fmt.Sprintf("service:jmx:rmi:///jndi/rmi://localhost:7199/jmxrmi"),
 		JARPath:            "/notavalidpath",
+		Properties:         make(map[string]string),
 		GroovyScript:       path.Join(".", "testdata", "script.groovy"),
 		OTLPExporterConfig: otlpExporterConfig{
 			Endpoint: "<invalid>:123",

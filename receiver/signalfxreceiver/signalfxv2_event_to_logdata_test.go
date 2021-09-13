@@ -52,7 +52,7 @@ func TestSignalFxV2EventsToLogData(t *testing.T) {
 		logSlice := pdata.NewLogSlice()
 		l := logSlice.AppendEmpty()
 		l.SetName("shutdown")
-		l.SetTimestamp(pdata.TimestampFromTime(now.Truncate(time.Millisecond)))
+		l.SetTimestamp(pdata.NewTimestampFromTime(now.Truncate(time.Millisecond)))
 		attrs := l.Attributes()
 
 		attrs.InitFromMap(map[string]pdata.AttributeValue{
@@ -68,7 +68,7 @@ func TestSignalFxV2EventsToLogData(t *testing.T) {
 			"isActive": pdata.NewAttributeValueBool(true),
 			"rack":     pdata.NewAttributeValueInt(5),
 			"temp":     pdata.NewAttributeValueDouble(40.5),
-			"nullProp": pdata.NewAttributeValueNull(),
+			"nullProp": pdata.NewAttributeValueEmpty(),
 		})
 		propMap.Sort()
 		attrs.Insert("com.splunk.signalfx.event_properties", propMapVal)
@@ -97,7 +97,7 @@ func TestSignalFxV2EventsToLogData(t *testing.T) {
 			}(),
 			expected: func() pdata.LogSlice {
 				lrs := buildDefaultLogs()
-				lrs.At(0).Attributes().Upsert("com.splunk.signalfx.event_category", pdata.NewAttributeValueNull())
+				lrs.At(0).Attributes().Upsert("com.splunk.signalfx.event_category", pdata.NewAttributeValueEmpty())
 				return lrs
 			}(),
 		},

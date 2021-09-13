@@ -30,7 +30,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/exporter/otlpexporter"
 	"go.opentelemetry.io/collector/model/pdata"
-	conventions "go.opentelemetry.io/collector/translator/conventions/v1.5.0"
+	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
 	"go.uber.org/zap"
 	"google.golang.org/grpc/metadata"
 
@@ -404,7 +404,7 @@ func verifyMetricLabels(dp metricDataPoint, t *testing.T, seenMetricIDs map[metr
 		intAttrName:            pdata.NewAttributeValueInt(99),
 		doubleAttrName:         pdata.NewAttributeValueDouble(99.99),
 		boolAttrName:           pdata.NewAttributeValueBool(true),
-		nullAttrName:           pdata.NewAttributeValueNull(),
+		nullAttrName:           pdata.NewAttributeValueEmpty(),
 		arrayAttrName:          pdata.NewAttributeValueArray(),
 		mapAttrName:            pdata.NewAttributeValueMap(),
 		notInSpanAttrName0:     pdata.NewAttributeValueString("defaultNotInSpanAttrVal"),
@@ -492,8 +492,8 @@ func initSpan(span span, s pdata.Span) {
 	s.SetKind(span.kind)
 	s.Status().SetCode(span.statusCode)
 	now := time.Now()
-	s.SetStartTimestamp(pdata.TimestampFromTime(now))
-	s.SetEndTimestamp(pdata.TimestampFromTime(now.Add(sampleLatencyDuration)))
+	s.SetStartTimestamp(pdata.NewTimestampFromTime(now))
+	s.SetEndTimestamp(pdata.NewTimestampFromTime(now.Add(sampleLatencyDuration)))
 	s.Attributes().InsertString(stringAttrName, "stringAttrValue")
 	s.Attributes().InsertInt(intAttrName, 99)
 	s.Attributes().InsertDouble(doubleAttrName, 99.99)
@@ -595,10 +595,9 @@ func TestBuildKeyWithDimensions(t *testing.T) {
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			resAttr := pdata.NewAttributeMap()
-			resAttr.InitFromMap(tc.resourceAttrMap)
+			resAttr := pdata.NewAttributeMapFromMap(tc.resourceAttrMap)
 			span0 := pdata.NewSpan()
-			span0.Attributes().InitFromMap(tc.spanAttrMap)
+			pdata.NewAttributeMapFromMap(tc.spanAttrMap).CopyTo(span0.Attributes())
 			span0.SetName("c")
 			k := buildKey("ab", span0, tc.optionalDims, resAttr)
 

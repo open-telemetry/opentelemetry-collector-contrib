@@ -19,7 +19,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/model/pdata"
-	conventions "go.opentelemetry.io/collector/translator/conventions/v1.5.0"
+	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
 )
 
 func TestHTTPAttributeMapping(t *testing.T) {
@@ -32,7 +32,7 @@ func TestHTTPAttributeMapping(t *testing.T) {
 
 		// Exercise the INT or STRING logic
 		conventions.AttributeHTTPStatusCode:                        pdata.NewAttributeValueString("200"),
-		conventions.AttributeHTTPStatusText:                        pdata.NewAttributeValueString(conventions.AttributeHTTPStatusText),
+		"http.status_text":                                         pdata.NewAttributeValueString("http.status_text"),
 		conventions.AttributeHTTPFlavor:                            pdata.NewAttributeValueString(conventions.AttributeHTTPFlavor),
 		conventions.AttributeHTTPUserAgent:                         pdata.NewAttributeValueString(conventions.AttributeHTTPUserAgent),
 		conventions.AttributeHTTPRequestContentLength:              pdata.NewAttributeValueInt(1),
@@ -60,7 +60,7 @@ func TestHTTPAttributeMapping(t *testing.T) {
 	assert.Equal(t, conventions.AttributeHTTPHost, httpAttributes.HTTPHost)
 	assert.Equal(t, conventions.AttributeHTTPScheme, httpAttributes.HTTPScheme)
 	assert.Equal(t, int64(200), httpAttributes.HTTPStatusCode)
-	assert.Equal(t, conventions.AttributeHTTPStatusText, httpAttributes.HTTPStatusText)
+	assert.Equal(t, "http.status_text", httpAttributes.HTTPStatusText)
 	assert.Equal(t, conventions.AttributeHTTPFlavor, httpAttributes.HTTPFlavor)
 	assert.Equal(t, conventions.AttributeHTTPUserAgent, httpAttributes.HTTPUserAgent)
 	assert.Equal(t, int64(1), httpAttributes.HTTPRequestContentLength)

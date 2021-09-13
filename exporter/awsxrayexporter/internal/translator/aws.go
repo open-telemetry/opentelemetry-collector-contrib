@@ -20,7 +20,7 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws"
 	"go.opentelemetry.io/collector/model/pdata"
-	conventions "go.opentelemetry.io/collector/translator/conventions/v1.5.0"
+	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
 
 	awsxray "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray"
 )
@@ -129,7 +129,7 @@ func makeAws(attributes map[string]pdata.AttributeValue, resource pdata.Resource
 		case awsxray.AWSOperationAttribute:
 			operation = value.StringVal()
 		case awsxray.AWSAccountAttribute:
-			if value.Type() != pdata.AttributeValueTypeNull {
+			if value.Type() != pdata.AttributeValueTypeEmpty {
 				account = value.StringVal()
 			}
 		case awsxray.AWSRegionAttribute:

@@ -19,12 +19,12 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configcheck"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.opentelemetry.io/collector/processor/processorhelper"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/attraction"
 )
 
 func TestCreateDefaultConfig(t *testing.T) {
@@ -38,8 +38,8 @@ func TestCreateProcessor(t *testing.T) {
 	factory := NewFactory()
 	cfg := &Config{
 		ProcessorSettings: config.NewProcessorSettings(config.NewID(typeStr)),
-		AttributesActions: []processorhelper.ActionKeyValue{
-			{Key: "cloud.availability_zone", Value: "zone-1", Action: processorhelper.UPSERT},
+		AttributesActions: []attraction.ActionKeyValue{
+			{Key: "cloud.availability_zone", Value: "zone-1", Action: attraction.UPSERT},
 		},
 	}
 
@@ -67,7 +67,7 @@ func TestInvalidAttributeActions(t *testing.T) {
 	factory := NewFactory()
 	cfg := &Config{
 		ProcessorSettings: config.NewProcessorSettings(config.NewID(typeStr)),
-		AttributesActions: []processorhelper.ActionKeyValue{
+		AttributesActions: []attraction.ActionKeyValue{
 			{Key: "k", Value: "v", Action: "invalid-action"},
 		},
 	}

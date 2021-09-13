@@ -28,16 +28,15 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/model/pdata"
-	conventions "go.opentelemetry.io/collector/translator/conventions/v1.5.0"
-	tracetranslator "go.opentelemetry.io/collector/translator/trace"
+	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
 	"go.uber.org/zap"
 )
 
 const (
 	serviceNameKey     = conventions.AttributeServiceName
-	operationKey       = "operation" // is there a constant we can refer to?
-	spanKindKey        = tracetranslator.TagSpanKind
-	statusCodeKey      = "status.code" // Otel core removed this and changed to semantic conventions "otel.status_code"
+	operationKey       = "operation"   // OpenTelemetry non-standard constant.
+	spanKindKey        = "span.kind"   // OpenTelemetry non-standard constant.
+	statusCodeKey      = "status.code" // OpenTelemetry non-standard constant.
 	metricKeySeparator = string(byte(0))
 )
 
@@ -243,8 +242,8 @@ func (p *processorImp) collectLatencyMetrics(ilm pdata.InstrumentationLibraryMet
 		mLatency.Histogram().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
 
 		dpLatency := mLatency.Histogram().DataPoints().AppendEmpty()
-		dpLatency.SetStartTimestamp(pdata.TimestampFromTime(p.startTime))
-		dpLatency.SetTimestamp(pdata.TimestampFromTime(time.Now()))
+		dpLatency.SetStartTimestamp(pdata.NewTimestampFromTime(p.startTime))
+		dpLatency.SetTimestamp(pdata.NewTimestampFromTime(time.Now()))
 		dpLatency.SetExplicitBounds(p.latencyBounds)
 		dpLatency.SetBucketCounts(p.latencyBucketCounts[key])
 		dpLatency.SetCount(p.latencyCount[key])
@@ -265,8 +264,8 @@ func (p *processorImp) collectCallMetrics(ilm pdata.InstrumentationLibraryMetric
 		mCalls.Sum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
 
 		dpCalls := mCalls.Sum().DataPoints().AppendEmpty()
-		dpCalls.SetStartTimestamp(pdata.TimestampFromTime(p.startTime))
-		dpCalls.SetTimestamp(pdata.TimestampFromTime(time.Now()))
+		dpCalls.SetStartTimestamp(pdata.NewTimestampFromTime(p.startTime))
+		dpCalls.SetTimestamp(pdata.NewTimestampFromTime(time.Now()))
 		dpCalls.SetIntVal(p.callSum[key])
 
 		p.metricKeyToDimensions[key].CopyTo(dpCalls.Attributes())
@@ -340,7 +339,7 @@ func (p *processorImp) buildDimensionKVs(serviceName string, span pdata.Span, op
 	dims.UpsertString(spanKindKey, span.Kind().String())
 	dims.UpsertString(statusCodeKey, span.Status().Code().String())
 	for _, d := range optionalDims {
-		if v, ok := getDimensionValue(d, span, resourceAttrs); ok {
+		if v, ok := getDimensionValue(d, span.Attributes(), resourceAttrs); ok {
 			dims.Upsert(d.Name, v)
 		} else {
 			p.logger.Debug(fmt.Sprintf("%q metric dimension omitted; not found and no default configured", d.Name),
@@ -375,8 +374,8 @@ func buildKey(serviceName string, span pdata.Span, optionalDims []Dimension, res
 	concatDimensionValue(&metricKeyBuilder, span.Status().Code().String(), true)
 
 	for _, d := range optionalDims {
-		if v, ok := getDimensionValue(d, span, resourceAttrs); ok {
-			concatDimensionValue(&metricKeyBuilder, pdata.AttributeValueToString(v), true)
+		if v, ok := getDimensionValue(d, span.Attributes(), resourceAttrs); ok {
+			concatDimensionValue(&metricKeyBuilder, v.AsString(), true)
 		}
 	}
 
@@ -391,9 +390,9 @@ func buildKey(serviceName string, span pdata.Span, optionalDims []Dimension, res
 //
 // The ok flag indicates if a dimension value was fetched in order to differentiate
 // an empty string value from a state where no value was found.
-func getDimensionValue(d Dimension, span pdata.Span, resourceAttr pdata.AttributeMap) (v pdata.AttributeValue, ok bool) {
+func getDimensionValue(d Dimension, attr pdata.AttributeMap, resourceAttr pdata.AttributeMap) (v pdata.AttributeValue, ok bool) {
 	// The more specific span attribute should take precedence.
-	for _, attrMap := range []pdata.AttributeMap{span.Attributes(), resourceAttr} {
+	for _, attrMap := range []pdata.AttributeMap{attr, resourceAttr} {
 		if attr, exists := attrMap.Get(d.Name); exists {
 			return attr, true
 		}

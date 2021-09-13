@@ -20,10 +20,10 @@ import (
 
 	"github.com/grobie/gomemcache/memcache"
 	"go.opentelemetry.io/collector/model/pdata"
-	"go.opentelemetry.io/collector/receiver/scraperhelper"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/memcachedreceiver/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/scraperhelper"
 )
 
 type memcachedScraper struct {
@@ -64,9 +64,9 @@ func (r *memcachedScraper) scrape(_ context.Context) (pdata.ResourceMetricsSlice
 		return pdata.ResourceMetricsSlice{}, err
 	}
 
-	now := pdata.TimestampFromTime(time.Now())
-	metrics := pdata.NewMetrics()
-	ilm := metrics.ResourceMetrics().AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty()
+	now := pdata.NewTimestampFromTime(time.Now())
+	metrics := pdata.NewResourceMetricsSlice()
+	ilm := metrics.AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty()
 	ilm.InstrumentationLibrary().SetName("otelcol/memcached")
 
 	for _, stats := range stats {
@@ -86,7 +86,7 @@ func (r *memcachedScraper) scrape(_ context.Context) (pdata.ResourceMetricsSlice
 		}
 	}
 
-	return metrics.ResourceMetrics(), nil
+	return metrics, nil
 }
 
 func addIntGauge(metrics pdata.MetricSlice, initFunc func(pdata.Metric), now pdata.Timestamp, value int64) {

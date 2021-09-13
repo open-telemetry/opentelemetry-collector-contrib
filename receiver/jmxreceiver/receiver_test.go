@@ -24,7 +24,8 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-	"go.opentelemetry.io/collector/testutil"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testutil"
 )
 
 func TestReceiver(t *testing.T) {
@@ -34,6 +35,7 @@ func TestReceiver(t *testing.T) {
 		OTLPExporterConfig: otlpExporterConfig{
 			Endpoint: fmt.Sprintf("localhost:%d", testutil.GetAvailablePort(t)),
 		},
+		Properties: make(map[string]string),
 	}
 
 	receiver := newJMXMetricReceiver(params, config, consumertest.NewNop())

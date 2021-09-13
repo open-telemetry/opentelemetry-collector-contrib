@@ -143,7 +143,7 @@ func attributesToDimensions(attributes pdata.AttributeMap, extraDims []*sfxpb.Di
 	pos := 0
 	attributes.Range(func(k string, v pdata.AttributeValue) bool {
 		dimensionsValue[pos].Key = k
-		dimensionsValue[pos].Value = pdata.AttributeValueToString(v)
+		dimensionsValue[pos].Value = v.AsString()
 		dimensions = append(dimensions, &dimensionsValue[pos])
 		pos++
 		return true
@@ -358,7 +358,7 @@ func resourceToDimensions(res pdata.Resource) []*sfxpb.Dimension {
 
 		dims = append(dims, &sfxpb.Dimension{
 			Key:   k,
-			Value: pdata.AttributeValueToString(val),
+			Value: val.AsString(),
 		})
 		return true
 	})

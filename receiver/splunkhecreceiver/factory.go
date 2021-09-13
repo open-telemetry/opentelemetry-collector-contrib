@@ -36,7 +36,7 @@ const (
 	defaultEndpoint = ":8088"
 )
 
-// NewFactory creates a factory for SignalFx receiver.
+// NewFactory creates a factory for Splunk HEC receiver.
 func NewFactory() component.ReceiverFactory {
 	return receiverhelper.NewFactory(
 		typeStr,
