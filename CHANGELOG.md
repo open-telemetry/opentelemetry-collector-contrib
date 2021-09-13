@@ -15,6 +15,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `opentelemetry-instrumentation-botocore` Fix span injection for lambda invoke
   ([#663](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/663))
 
+### Changed
+
+- `opentelemetry-instrumentation-urllib3` Updated `_RequestHookT` with two additional fields - the request body and the request headers
+([#660](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/660))
+
 ## [1.5.0-0.24b0](https://github.com/open-telemetry/opentelemetry-python/releases/tag/v1.5.0-0.24b0) - 2021-08-26
 
 ### Added
