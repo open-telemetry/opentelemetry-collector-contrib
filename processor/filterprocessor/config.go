@@ -63,6 +63,7 @@ type LogMatchType string
 // `pdata.Log`s.
 const (
 	Strict = LogMatchType(filterset.Strict)
+	Regexp = LogMatchType(filterset.Regexp)
 )
 
 // LogMatchProperties specifies the set of properties in a log to match against and the
