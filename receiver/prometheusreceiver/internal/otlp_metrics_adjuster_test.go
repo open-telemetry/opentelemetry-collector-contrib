@@ -23,6 +23,8 @@ import (
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/model/pdata"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/metricstestutil"
 )
 
 var (
@@ -503,131 +505,18 @@ func Test_summary(t *testing.T) {
 	runScript(t, NewJobsMapPdata(time.Minute).get("job", "0"), script)
 }
 
-func distPoint(ts pdata.Timestamp, bounds []float64, counts []uint64) *pdata.HistogramDataPoint {
-	hdp := pdata.NewHistogramDataPoint()
-	hdp.SetExplicitBounds(bounds)
-	hdp.SetBucketCounts(counts)
-	hdp.SetTimestamp(ts)
-	var sum float64
-	var count uint64
-	for i, bcount := range counts {
-		count += bcount
-		if i > 0 {
-			sum += float64(bcount) * bounds[i-1]
-		}
-	}
-	hdp.SetCount(count)
-	hdp.SetSum(sum)
+type kv = metricstestutil.KV
 
-	return &hdp
-}
-
-type kv struct {
-	key, value string
-}
-
-func gaugeDistMetric(name string, kvp []*kv, startTs pdata.Timestamp, points ...*pdata.HistogramDataPoint) *pdata.Metric {
-	hMetric := histogramMetric(name, kvp, startTs, points...)
-	hMetric.Histogram().SetAggregationTemporality(pdata.AggregationTemporalityDelta)
-	return hMetric
-}
-
-func histogramMetric(name string, kvp []*kv, startTs pdata.Timestamp, points ...*pdata.HistogramDataPoint) *pdata.Metric {
-	metric := pdata.NewMetric()
-	metric.SetName(name)
-	metric.SetDataType(pdata.MetricDataTypeHistogram)
-	histogram := metric.Histogram()
-	histogram.SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
-
-	destPointL := histogram.DataPoints()
-	// By default the AggregationTemporality is Cumulative until it'll be changed by the caller.
-	for _, point := range points {
-		destPoint := destPointL.AppendEmpty()
-		point.CopyTo(destPoint)
-		point.SetStartTimestamp(startTs)
-		attrs := destPoint.Attributes()
-		for _, kv := range kvp {
-			attrs.InsertString(kv.key, kv.value)
-		}
-	}
-	return &metric
-}
-
-func doublePoint(ts pdata.Timestamp, value float64) *pdata.NumberDataPoint {
-	ndp := pdata.NewNumberDataPoint()
-	ndp.SetTimestamp(ts)
-	ndp.SetDoubleVal(value)
-
-	return &ndp
-}
-
-func gaugeMetric(name string, kvp []*kv, startTs pdata.Timestamp, points ...*pdata.NumberDataPoint) *pdata.Metric {
-	metric := pdata.NewMetric()
-	metric.SetName(name)
-	metric.SetDataType(pdata.MetricDataTypeGauge)
-
-	destPointL := metric.Gauge().DataPoints()
-	for _, point := range points {
-		destPoint := destPointL.AppendEmpty()
-		point.CopyTo(destPoint)
-		point.SetStartTimestamp(startTs)
-		attrs := destPoint.Attributes()
-		for _, kv := range kvp {
-			attrs.InsertString(kv.key, kv.value)
-		}
-	}
-	return &metric
-}
-
-func summaryPoint(ts pdata.Timestamp, count uint64, sum float64, quantiles, values []float64) *pdata.SummaryDataPoint {
-	sdp := pdata.NewSummaryDataPoint()
-	sdp.SetTimestamp(ts)
-	sdp.SetCount(count)
-	sdp.SetSum(sum)
-	qvL := sdp.QuantileValues()
-	for i := 0; i < len(quantiles); i++ {
-		qvi := qvL.AppendEmpty()
-		qvi.SetQuantile(quantiles[i])
-		qvi.SetValue(values[i])
-	}
-	return &sdp
-}
-
-func summaryMetric(name string, kvp []*kv, startTs pdata.Timestamp, points ...*pdata.SummaryDataPoint) *pdata.Metric {
-	metric := pdata.NewMetric()
-	metric.SetName(name)
-	metric.SetDataType(pdata.MetricDataTypeSummary)
-
-	destPointL := metric.Summary().DataPoints()
-	for _, point := range points {
-		destPoint := destPointL.AppendEmpty()
-		point.CopyTo(destPoint)
-		point.SetStartTimestamp(startTs)
-		attrs := destPoint.Attributes()
-		for _, kv := range kvp {
-			attrs.InsertString(kv.key, kv.value)
-		}
-	}
-	return &metric
-}
-
-func sumMetric(name string, kvp []*kv, startTs pdata.Timestamp, points ...*pdata.NumberDataPoint) *pdata.Metric {
-	metric := pdata.NewMetric()
-	metric.SetName(name)
-	metric.SetDataType(pdata.MetricDataTypeSum)
-
-	destPointL := metric.Sum().DataPoints()
-	for _, point := range points {
-		destPoint := destPointL.AppendEmpty()
-		point.CopyTo(destPoint)
-		point.SetStartTimestamp(startTs)
-		attrs := destPoint.Attributes()
-		for _, kv := range kvp {
-			attrs.InsertString(kv.key, kv.value)
-		}
-	}
-	return &metric
-}
+var (
+	distPoint       = metricstestutil.DistPointPdata
+	gaugeDistMetric = metricstestutil.GaugeDistMetricPdata
+	histogramMetric = metricstestutil.CumulativeDistMetricPdata
+	doublePoint     = metricstestutil.DoublePointPdata
+	gaugeMetric     = metricstestutil.GaugeMetricPdata
+	summaryPoint    = metricstestutil.SummaryPointPdata
+	summaryMetric   = metricstestutil.SummaryMetricPdata
+	sumMetric       = metricstestutil.SumMetricPdata
+)
 
 func metricSlice(metrics ...*pdata.Metric) *pdata.MetricSlice {
 	ms := pdata.NewMetricSlice()
