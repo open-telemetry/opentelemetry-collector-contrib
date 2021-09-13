@@ -245,6 +245,7 @@ func TestJMXReceiverInvalidOTLPEndpointIntegration(t *testing.T) {
 		CollectionInterval: 100 * time.Millisecond,
 		Endpoint:           fmt.Sprintf("service:jmx:rmi:///jndi/rmi://localhost:7199/jmxrmi"),
 		JARPath:            "/notavalidpath",
+		Properties:         make(map[string]string),
 		GroovyScript:       path.Join(".", "testdata", "script.groovy"),
 		OTLPExporterConfig: otlpExporterConfig{
 			Endpoint: "<invalid>:123",
