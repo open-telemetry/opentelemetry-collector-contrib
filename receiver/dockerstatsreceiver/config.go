@@ -16,7 +16,6 @@ package dockerstatsreceiver
 
 import (
 	"errors"
-	"fmt"
 	"time"
 
 	"go.opentelemetry.io/collector/config"
@@ -65,9 +64,6 @@ func (config Config) Validate() error {
 	}
 	if config.CollectionInterval == 0 {
 		return errors.New("config.CollectionInterval must be specified")
-	}
-	if config.DockerAPIVersion < minimalRequiredDockerAPIVersion {
-		return fmt.Errorf("Docker API version must be at least %v", minimalRequiredDockerAPIVersion)
 	}
 	return nil
 }

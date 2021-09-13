@@ -30,7 +30,6 @@ import (
 )
 
 const (
-	defaultDockerAPIVersion         = 1.22
 	minimalRequiredDockerAPIVersion = 1.22
 	userAgent                       = "OpenTelemetry-Collector Docker Stats Receiver/v0.0.1"
 )

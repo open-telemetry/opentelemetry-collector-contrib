@@ -34,6 +34,8 @@ import (
 var _ component.MetricsReceiver = (*Receiver)(nil)
 var _ interval.Runnable = (*Receiver)(nil)
 
+const defaultDockerAPIVersion = 1.22
+
 type Receiver struct {
 	config            *Config
 	logger            *zap.Logger
@@ -75,7 +77,11 @@ func NewReceiver(
 }
 
 func (r *Receiver) Start(ctx context.Context, host component.Host) error {
-	dConfig, err := docker.NewConfig(r.config.Endpoint, r.config.Timeout, r.config.ExcludedImages)
+	if r.config.DockerAPIVersion == 0 {
+		r.config.DockerAPIVersion = defaultDockerAPIVersion
+	}
+
+	dConfig, err := docker.NewConfig(r.config.Endpoint, r.config.Timeout, r.config.ExcludedImages, r.config.DockerAPIVersion)
 	if err != nil {
 		return err
 	}

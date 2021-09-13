@@ -16,6 +16,7 @@ package docker
 
 import (
 	"errors"
+	"fmt"
 	"time"
 )
 
@@ -28,15 +29,19 @@ type Config struct {
 
 	// A list of filters whose matching images are to be excluded. Supports literals, globs, and regex.
 	ExcludedImages []string `mapstructure:"excluded_images"`
+
+	// Docker client API version.
+	DockerAPIVersion float64 `mapstructure:"api_version"`
 }
 
 // NewConfig creates a new config to be used when creating
 // a docker client
-func NewConfig(endpoint string, timeout time.Duration, excludedImages []string) (*Config, error) {
+func NewConfig(endpoint string, timeout time.Duration, excludedImages []string, apiVersion float64) (*Config, error) {
 	cfg := &Config{
-		Endpoint:       endpoint,
-		Timeout:        timeout,
-		ExcludedImages: excludedImages,
+		Endpoint:         endpoint,
+		Timeout:          timeout,
+		ExcludedImages:   excludedImages,
+		DockerAPIVersion: apiVersion,
 	}
 
 	err := cfg.validate()
@@ -47,8 +52,9 @@ func NewConfig(endpoint string, timeout time.Duration, excludedImages []string) 
 // to be used when creating a docker client
 func NewDefaultConfig() *Config {
 	cfg := &Config{
-		Endpoint: "unix:///var/run/docker.sock",
-		Timeout:  5 * time.Second,
+		Endpoint:         "unix:///var/run/docker.sock",
+		Timeout:          5 * time.Second,
+		DockerAPIVersion: minimalRequiredDockerAPIVersion,
 	}
 
 	return cfg
@@ -59,6 +65,9 @@ func NewDefaultConfig() *Config {
 func (config Config) validate() error {
 	if config.Endpoint == "" {
 		return errors.New("config.Endpoint must be specified")
+	}
+	if config.DockerAPIVersion < minimalRequiredDockerAPIVersion {
+		return fmt.Errorf("Docker API version must be at least %v", minimalRequiredDockerAPIVersion)
 	}
 	return nil
 }
