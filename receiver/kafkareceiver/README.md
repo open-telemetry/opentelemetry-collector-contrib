@@ -55,6 +55,13 @@ The following settings can be optionally configured:
   - `retry`
     - `max` (default = 3): The number of retries to get metadata
     - `backoff` (default = 250ms): How long to wait between metadata retries
+- `autocommit`
+  - `enable`: (default = true) Whether or not to auto-commit updated offsets back to the broker
+  - `interval`: (default = 1s) How frequently to commit updated offsets. Ineffective unless auto-commit is enabled
+- `message_marking`:
+  - `after`: (default =  false)  If true, the messages are marked after the pipeline execution
+  - `on_error`: (default = false) If false, only the successfully processed messages are marked
+     **Note: this can block the entire partition in case a message precessing returns a permanent error**
 
 Example:
 
