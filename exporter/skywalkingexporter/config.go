@@ -22,13 +22,11 @@ import (
 
 // Config defines configuration for SkyWalking exporter.
 type Config struct {
-	config.ExporterSettings       `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
-	configgrpc.GRPCClientSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
-	exporterhelper.QueueSettings  `mapstructure:"sending_queue"`
-	exporterhelper.RetrySettings  `mapstructure:"retry_on_failure"`
-
-	// The number of workers that send the gRPC requests.
-	NumWorkers int `mapstructure:"num_workers"`
+	config.ExporterSettings        `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
+	configgrpc.GRPCClientSettings  `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
+	exporterhelper.QueueSettings   `mapstructure:"sending_queue"`
+	exporterhelper.RetrySettings   `mapstructure:"retry_on_failure"`
+	exporterhelper.TimeoutSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
 }
 
 var _ config.Exporter = (*Config)(nil)

@@ -58,6 +58,9 @@ func TestLoadConfig(t *testing.T) {
 				NumConsumers: 2,
 				QueueSize:    10,
 			},
+			TimeoutSettings: exporterhelper.TimeoutSettings{
+				Timeout: 10 * time.Second,
+			},
 			GRPCClientSettings: configgrpc.GRPCClientSettings{
 				Headers: map[string]string{
 					"can you have a . here?": "F0000000-0000-0000-0000-000000000000",
@@ -80,6 +83,5 @@ func TestLoadConfig(t *testing.T) {
 				WriteBufferSize: 512 * 1024,
 				BalancerName:    "round_robin",
 			},
-			NumWorkers: 123,
 		})
 }
