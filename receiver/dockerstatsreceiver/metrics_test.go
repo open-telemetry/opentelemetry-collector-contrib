@@ -24,6 +24,7 @@ import (
 	dtypes "github.com/docker/docker/api/types"
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/model/pdata"
+	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
 )
 
 type MetricType int32
@@ -56,6 +57,7 @@ func metricsData(
 	rLabels := mergeMaps(defaultLabels(), resourceLabels)
 	md := pdata.NewMetrics()
 	rs := md.ResourceMetrics().AppendEmpty()
+	rs.SetSchemaUrl(conventions.SchemaURL)
 	rsAttr := rs.Resource().Attributes()
 	for k, v := range rLabels {
 		rsAttr.UpsertString(k, v)
