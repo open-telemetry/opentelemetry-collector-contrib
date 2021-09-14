@@ -451,7 +451,7 @@ func TestMapDeltaHistogramMetrics(t *testing.T) {
 		metrics.NewCount("doubleHist.test.bucket", uint64(ts), 18, []string{"lower_bound:0", "upper_bound:inf"}),
 	}
 
-	tr := newTranslator(zap.NewNop(), config.MetricsConfig{SendMonotonic: true})
+	tr := newTranslator(zap.NewNop(), config.MetricsConfig{SendMonotonic: true, BucketsAsCounts: true})
 	delta := true
 
 	tr.cfg.Buckets = false
@@ -980,7 +980,7 @@ func testCount(name string, val float64, seconds uint64) datadog.Metric {
 
 func TestMapMetrics(t *testing.T) {
 	md := createTestMetrics()
-	cfg := config.MetricsConfig{SendMonotonic: true}
+	cfg := config.MetricsConfig{SendMonotonic: true, BucketsAsCounts: true}
 
 	core, observed := observer.New(zapcore.DebugLevel)
 	testLogger := zap.New(core)
@@ -1104,7 +1104,7 @@ func createNaNMetrics() pdata.Metrics {
 
 func TestNaNMetrics(t *testing.T) {
 	md := createNaNMetrics()
-	cfg := config.MetricsConfig{SendMonotonic: true}
+	cfg := config.MetricsConfig{SendMonotonic: true, BucketsAsCounts: true}
 
 	core, observed := observer.New(zapcore.DebugLevel)
 	testLogger := zap.New(core)

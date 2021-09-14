@@ -232,7 +232,7 @@ func (t *Translator) mapHistogramMetrics(name string, slice pdata.HistogramDataP
 		tags := getTags(p.Attributes())
 		tags = append(tags, attrTags...)
 
-		{
+		if t.cfg.BucketsAsCounts {
 			count := float64(p.Count())
 			countName := fmt.Sprintf("%s.count", name)
 			if delta {
@@ -242,7 +242,7 @@ func (t *Translator) mapHistogramMetrics(name string, slice pdata.HistogramDataP
 			}
 		}
 
-		{
+		if t.cfg.BucketsAsCounts {
 			sum := p.Sum()
 			sumName := fmt.Sprintf("%s.sum", name)
 			if !t.isSkippable(sumName, p.Sum()) {
