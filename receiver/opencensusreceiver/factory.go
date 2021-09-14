@@ -54,7 +54,7 @@ func createDefaultConfig() config.Receiver {
 
 func createTracesReceiver(
 	_ context.Context,
-	_ component.ReceiverCreateSettings,
+	set component.ReceiverCreateSettings,
 	cfg config.Receiver,
 	nextConsumer consumer.Traces,
 ) (component.TracesReceiver, error) {
@@ -62,7 +62,7 @@ func createTracesReceiver(
 	r := receivers.GetOrAdd(cfg, func() component.Component {
 		rCfg := cfg.(*Config)
 		var recv *ocReceiver
-		recv, err = newOpenCensusReceiver(rCfg.ID(), rCfg.NetAddr.Transport, rCfg.NetAddr.Endpoint, nil, nil, rCfg.buildOptions()...)
+		recv, err = newOpenCensusReceiver(rCfg.ID(), rCfg.NetAddr.Transport, rCfg.NetAddr.Endpoint, nil, nil, set.TelemetrySettings, rCfg.buildOptions()...)
 		return recv
 	})
 	if err != nil {
@@ -75,7 +75,7 @@ func createTracesReceiver(
 
 func createMetricsReceiver(
 	_ context.Context,
-	_ component.ReceiverCreateSettings,
+	set component.ReceiverCreateSettings,
 	cfg config.Receiver,
 	nextConsumer consumer.Metrics,
 ) (component.MetricsReceiver, error) {
@@ -83,7 +83,7 @@ func createMetricsReceiver(
 	r := receivers.GetOrAdd(cfg, func() component.Component {
 		rCfg := cfg.(*Config)
 		var recv *ocReceiver
-		recv, err = newOpenCensusReceiver(rCfg.ID(), rCfg.NetAddr.Transport, rCfg.NetAddr.Endpoint, nil, nil, rCfg.buildOptions()...)
+		recv, err = newOpenCensusReceiver(rCfg.ID(), rCfg.NetAddr.Transport, rCfg.NetAddr.Endpoint, nil, nil, set.TelemetrySettings, rCfg.buildOptions()...)
 		return recv
 	})
 	if err != nil {

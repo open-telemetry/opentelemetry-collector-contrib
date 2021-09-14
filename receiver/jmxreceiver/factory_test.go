@@ -58,3 +58,22 @@ func TestWithValidConfig(t *testing.T) {
 	assert.Same(t, receiver.logger, params.Logger)
 	assert.Same(t, receiver.config, cfg)
 }
+
+func TestWithSetProperties(t *testing.T) {
+	f := NewFactory()
+	assert.Equal(t, config.Type("jmx"), f.Type())
+
+	cfg := f.CreateDefaultConfig()
+	cfg.(*Config).Endpoint = "myendpoint:12345"
+	cfg.(*Config).GroovyScript = "mygroovyscriptpath"
+	cfg.(*Config).Properties["org.slf4j.simpleLogger.defaultLogLevel"] = "trace"
+	cfg.(*Config).Properties["org.java.fake.property"] = "true"
+
+	params := componenttest.NewNopReceiverCreateSettings()
+	r, err := f.CreateMetricsReceiver(context.Background(), params, cfg, consumertest.NewNop())
+	require.NoError(t, err)
+	require.NotNil(t, r)
+	receiver := r.(*jmxMetricReceiver)
+	assert.Same(t, receiver.logger, params.Logger)
+	assert.Same(t, receiver.config, cfg)
+}
