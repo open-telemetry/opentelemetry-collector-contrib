@@ -57,5 +57,5 @@ func createExtension(
 	params component.ExtensionCreateSettings,
 	cfg config.Extension,
 ) (component.Extension, error) {
-	return newHTTPForwarder(cfg.(*Config), params.Logger)
+	return newHTTPForwarder(cfg.(*Config), params.TelemetrySettings)
 }

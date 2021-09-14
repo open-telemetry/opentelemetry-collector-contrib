@@ -100,6 +100,11 @@ func createMetricsExporter(
 		return nil, err
 	}
 
+	// TODO: Remove after two releases
+	if cfg.Metrics.Buckets {
+		set.Logger.Warn("Histogram bucket metrics now end with .bucket instead of .count_per_bucket")
+	}
+
 	ctx, cancel := context.WithCancel(ctx)
 	var pushMetricsFn consumerhelper.ConsumeMetricsFunc
 

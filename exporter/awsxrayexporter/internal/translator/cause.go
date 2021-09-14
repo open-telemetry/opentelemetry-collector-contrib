@@ -94,7 +94,7 @@ func makeCause(span pdata.Span, attributes map[string]pdata.AttributeValue, reso
 		filtered = make(map[string]pdata.AttributeValue)
 		for key, value := range attributes {
 			switch key {
-			case conventions.AttributeHTTPStatusText:
+			case "http.status_text":
 				if message == "" {
 					message = value.StringVal()
 				}
