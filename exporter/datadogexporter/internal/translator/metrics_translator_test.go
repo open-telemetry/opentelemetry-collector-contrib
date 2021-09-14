@@ -538,56 +538,50 @@ func TestMapCumulativeHistogramMetrics(t *testing.T) {
 
 func TestHistogramSketches(t *testing.T) {
 	N := 1_000
-	M := 20_000.0
+	M := 50_000.0
 
-	// Given a probability distribution function for a distribution
+	// Given a cumulative distribution function for a distribution
 	// with support [0, N], generate an OTLP Histogram data point with N buckets,
 	// (-inf, 0], (0, 1], ..., (N-1, N], (N, inf)
 	// which contains N*M uniform samples of the distribution.
-	fromPDF := func(pdf func(x float64) float64) pdata.HistogramDataPoint {
+	fromCDF := func(cdf func(x float64) float64) pdata.HistogramDataPoint {
 		p := pdata.NewHistogramDataPoint()
 		bounds := make([]float64, N+1)
 		buckets := make([]uint64, N+2)
 		buckets[0] = 0
-		for i := 0; i <= N; i++ {
+		count := uint64(0)
+		for i := 0; i < N; i++ {
 			bounds[i] = float64(i)
-			// the bucket with bounds (i, i+1) has the value
-			// of the pdf in the midpoint of the bucket (i + .5)
-			buckets[i+1] = uint64(pdf((float64(i) + 0.5)) * M)
+			// the bucket with bounds (i, i+1) has the
+			// cdf delta between the bounds as a value.
+			buckets[i+1] = uint64((cdf(float64(i+1)) - cdf(float64(i))) * M)
+			count += buckets[i+1]
 		}
+		bounds[N] = float64(N)
 		buckets[N+1] = 0
 		p.SetExplicitBounds(bounds)
 		p.SetBucketCounts(buckets)
+		p.SetCount(count)
 		return p
 	}
 
 	tests := []struct {
 		// distribution name
 		name string
-		// the probability distribution function (within [0,N])
-		pdf func(x float64) float64
 		// the cumulative distribution function (within [0,N])
-		cdf func(quantile float64) float64
+		cdf func(x float64) float64
 		// error tolerance for testing cdf(quantile(q)) ≈ q
 		epsilon float64
 	}{
 		{
 			// https://en.wikipedia.org/wiki/Continuous_uniform_distribution
 			name:    "Uniform distribution (a=0,b=N)",
-			pdf:     func(x float64) float64 { return 1 / float64(N) },
-			cdf:     func(q float64) float64 { return q / float64(N) },
+			cdf:     func(x float64) float64 { return x / float64(N) },
 			epsilon: 0.01,
 		},
 		{
 			// https://en.wikipedia.org/wiki/U-quadratic_distribution
 			name: "U-quadratic distribution (a=0,b=N)",
-			pdf: func(x float64) float64 {
-				a := 0.0
-				b := float64(N)
-				alpha := 12.0 / math.Pow(b-a, 3)
-				beta := (b + a) / 2.0
-				return alpha * math.Pow(x-beta, 2)
-			},
 			cdf: func(x float64) float64 {
 				a := 0.0
 				b := float64(N)
@@ -599,21 +593,53 @@ func TestHistogramSketches(t *testing.T) {
 		},
 	}
 
+	defaultEps := 1.0 / 128.0
+	tol := 1e-8
+	cfg := quantile.Default()
+	tr := newTranslator(zap.NewNop(), config.MetricsConfig{})
+
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			tr := newTranslator(zap.NewNop(), config.MetricsConfig{})
-			p := fromPDF(test.pdf)
+			p := fromCDF(test.cdf)
 			sk := tr.getSketchBuckets("test", 0, p, true, []string{}).Points[0].Sketch
-			assert.Equal(t, 0.0, sk.Quantile(quantile.Default(), 0))
+
+			// Check the minimum is 0.0
+			assert.Equal(t, 0.0, sk.Quantile(cfg, 0))
+			// Check the quantiles are approximately correct
 			for i := 1; i <= 99; i++ {
 				q := (float64(i)) / 100.0
 				assert.InEpsilon(t,
 					// test that the CDF is the (approximate) inverse of the quantile function
-					test.cdf(sk.Quantile(quantile.Default(), q)),
+					test.cdf(sk.Quantile(cfg, q)),
 					q,
 					test.epsilon,
 					fmt.Sprintf("error too high for p%d", i),
 				)
+			}
+
+			cumulSum := uint64(0)
+			for i := 0; i < len(p.BucketCounts())-3; i++ {
+				{
+					q := float64(cumulSum) / float64(p.Count()) * (1 - tol)
+					quantileValue := sk.Quantile(cfg, q)
+					// quantileValue, if computed from the explicit buckets, would have to be <= bounds[i].
+					// Because of remapping, it is <= bounds[i+1].
+					// Because of DDSketch accuracy guarantees, it is <= bounds[i+1] * (1 + defaultEps)
+					maxExpectedQuantileValue := p.ExplicitBounds()[i+1] * (1 + defaultEps)
+					assert.LessOrEqual(t, quantileValue, maxExpectedQuantileValue)
+				}
+
+				cumulSum += p.BucketCounts()[i+1]
+
+				{
+					q := float64(cumulSum) / float64(p.Count()) * (1 + tol)
+					quantileValue := sk.Quantile(cfg, q)
+					// quantileValue, if computed from the explicit buckets, would have to be >= bounds[i+1].
+					// Because of remapping, it is >= bounds[i].
+					// Because of DDSketch accuracy guarantees, it is >= bounds[i] * (1 - defaultEps)
+					minExpectedQuantileValue := p.ExplicitBounds()[i] * (1 - defaultEps)
+					assert.GreaterOrEqual(t, quantileValue, minExpectedQuantileValue)
+				}
 			}
 		})
 	}
