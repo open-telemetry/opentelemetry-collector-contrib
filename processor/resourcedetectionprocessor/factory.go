@@ -160,6 +160,7 @@ func (f *factory) getResourceDetectionProcessor(
 	cfg config.Processor,
 ) (*resourceDetectionProcessor, error) {
 	oCfg := cfg.(*Config)
+
 	provider, err := f.getResourceProvider(params, cfg.ID(), oCfg.Timeout, oCfg.Detectors, oCfg.DetectorConfig)
 	if err != nil {
 		return nil, err
