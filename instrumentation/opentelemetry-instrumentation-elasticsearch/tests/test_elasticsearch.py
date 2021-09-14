@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
+import json
 import os
 import threading
 from ast import literal_eval
@@ -315,4 +315,102 @@ class TestElasticsearchIntegration(TestBase):
                 "body": "A few words here, a few words there",
                 "title": "About searching",
             },
+        )
+
+    def test_request_hook(self, request_mock):
+        request_hook_method_attribute = "request_hook.method"
+        request_hook_url_attribute = "request_hook.url"
+        request_hook_kwargs_attribute = "request_hook.kwargs"
+
+        def request_hook(span, method, url, kwargs):
+
+            attributes = {
+                request_hook_method_attribute: method,
+                request_hook_url_attribute: url,
+                request_hook_kwargs_attribute: json.dumps(kwargs),
+            }
+
+            if span and span.is_recording():
+                span.set_attributes(attributes)
+
+        ElasticsearchInstrumentor().uninstrument()
+        ElasticsearchInstrumentor().instrument(request_hook=request_hook)
+
+        request_mock.return_value = (
+            1,
+            {},
+            '{"found": false, "timed_out": true, "took": 7}',
+        )
+        es = Elasticsearch()
+        index = "test-index"
+        doc_type = "tweet"
+        doc_id = 1
+        kwargs = {"params": {"test": True}}
+        es.get(index=index, doc_type=doc_type, id=doc_id, **kwargs)
+
+        spans = self.get_finished_spans()
+
+        self.assertEqual(1, len(spans))
+        self.assertEqual(
+            "GET", spans[0].attributes[request_hook_method_attribute]
+        )
+        self.assertEqual(
+            f"/{index}/{doc_type}/{doc_id}",
+            spans[0].attributes[request_hook_url_attribute],
+        )
+        self.assertEqual(
+            json.dumps(kwargs),
+            spans[0].attributes[request_hook_kwargs_attribute],
+        )
+
+    def test_response_hook(self, request_mock):
+        response_attribute_name = "db.query_result"
+
+        def response_hook(span, response):
+            if span and span.is_recording():
+                span.set_attribute(
+                    response_attribute_name, json.dumps(response)
+                )
+
+        ElasticsearchInstrumentor().uninstrument()
+        ElasticsearchInstrumentor().instrument(response_hook=response_hook)
+
+        response_payload = {
+            "took": 9,
+            "timed_out": False,
+            "_shards": {
+                "total": 1,
+                "successful": 1,
+                "skipped": 0,
+                "failed": 0,
+            },
+            "hits": {
+                "total": {"value": 1, "relation": "eq"},
+                "max_score": 0.18232156,
+                "hits": [
+                    {
+                        "_index": "test-index",
+                        "_type": "tweet",
+                        "_id": "1",
+                        "_score": 0.18232156,
+                        "_source": {"name": "tester"},
+                    }
+                ],
+            },
+        }
+
+        request_mock.return_value = (
+            1,
+            {},
+            json.dumps(response_payload),
+        )
+        es = Elasticsearch()
+        es.get(index="test-index", doc_type="tweet", id=1)
+
+        spans = self.get_finished_spans()
+
+        self.assertEqual(1, len(spans))
+        self.assertEqual(
+            json.dumps(response_payload),
+            spans[0].attributes[response_attribute_name],
         )

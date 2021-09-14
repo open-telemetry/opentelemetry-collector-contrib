@@ -44,6 +44,41 @@ environment variable or by passing the prefix as an argument to the instrumentor
 .. code-block:: python
 
     ElasticsearchInstrumentor("my-custom-prefix").instrument()
+
+
+The `instrument` method accepts the following keyword args:
+
+tracer_provider (TracerProvider) - an optional tracer provider
+request_hook (Callable) - a function with extra user-defined logic to be performed before performing the request
+                          this function signature is:
+                          def request_hook(span: Span, method: str, url: str, kwargs)
+response_hook (Callable) - a function with extra user-defined logic to be performed after performing the request
+                          this function signature is:
+                          def response_hook(span: Span, response: dict)
+
+for example:
+
+.. code: python
+
+    from opentelemetry.instrumentation.elasticsearch import ElasticsearchInstrumentor
+    import elasticsearch
+
+    def request_hook(span, method, url, kwargs):
+        if span and span.is_recording():
+            span.set_attribute("custom_user_attribute_from_request_hook", "some-value")
+
+    def response_hook(span, response):
+        if span and span.is_recording():
+            span.set_attribute("custom_user_attribute_from_response_hook", "some-value")
+
+    # instrument elasticsearch with request and response hooks
+    ElasticsearchInstrumentor().instrument(request_hook=request_hook, response_hook=response_hook)
+
+    # Using elasticsearch as normal now will automatically generate spans,
+    # including user custom attributes added from the hooks
+    es = elasticsearch.Elasticsearch()
+    es.index(index='my-index', doc_type='my-type', id=1, body={'my': 'data', 'timestamp': datetime.now()})
+    es.get(index='my-index', doc_type='my-type', id=1)
 """
 
 from logging import getLogger
@@ -97,17 +132,23 @@ class ElasticsearchInstrumentor(BaseInstrumentor):
         """
         tracer_provider = kwargs.get("tracer_provider")
         tracer = get_tracer(__name__, __version__, tracer_provider)
+        request_hook = kwargs.get("request_hook")
+        response_hook = kwargs.get("response_hook")
         _wrap(
             elasticsearch,
             "Transport.perform_request",
-            _wrap_perform_request(tracer, self._span_name_prefix),
+            _wrap_perform_request(
+                tracer, self._span_name_prefix, request_hook, response_hook
+            ),
         )
 
     def _uninstrument(self, **kwargs):
         unwrap(elasticsearch.Transport, "perform_request")
 
 
-def _wrap_perform_request(tracer, span_name_prefix):
+def _wrap_perform_request(
+    tracer, span_name_prefix, request_hook=None, response_hook=None
+):
     # pylint: disable=R0912
     def wrapper(wrapped, _, args, kwargs):
         method = url = None
@@ -127,6 +168,10 @@ def _wrap_perform_request(tracer, span_name_prefix):
         with tracer.start_as_current_span(
             op_name, kind=SpanKind.CLIENT,
         ) as span:
+
+            if callable(request_hook):
+                request_hook(span, method, url, kwargs)
+
             if span.is_recording():
                 attributes = {
                     SpanAttributes.DB_SYSTEM: "elasticsearch",
@@ -150,6 +195,9 @@ def _wrap_perform_request(tracer, span_name_prefix):
                             "elasticsearch.{0}".format(member),
                             str(rv[member]),
                         )
+
+            if callable(response_hook):
+                response_hook(span, rv)
             return rv
 
     return wrapper
