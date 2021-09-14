@@ -19,7 +19,6 @@ import (
 	"testing"
 
 	"github.com/prometheus/prometheus/pkg/labels"
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -59,67 +58,34 @@ func TestExternalLabels(t *testing.T) {
 	t.Cleanup(func() { require.NoError(t, receiver.Shutdown(ctx)) })
 
 	mp.wg.Wait()
-	metrics := cms.AllMetrics()
 
-	// split and store results by target name
-	results := make(map[string][]pdata.Metric)
-	for _, md := range metrics {
-		rms := md.ResourceMetrics()
-		for i := 0; i < rms.Len(); i++ {
-			rmi := rms.At(i)
-			serviceNameAttr, ok := rmi.Resource().Attributes().Get("service.name")
-			assert.True(t, ok, `expected "service.name" as a known attribute`)
-			serviceName := serviceNameAttr.StringVal()
-			results[serviceName] = append(results[serviceName], md)
-		}
-	}
+	results := metricsGroupedByServiceName(t, cms.AllMetrics())
 	for _, target := range targets {
 		target.validateFunc(t, target, results[target.name])
 	}
 }
 
-func makeMetric(td *testData, metricL []pdata.Metric) pdata.ResourceMetrics {
+func makeMetrics(td *testData, metricL ...pdata.Metric) pdata.ResourceMetrics {
 	rms := pdata.NewResourceMetrics()
 	td.resource.CopyTo(rms.Resource())
 	ilm := rms.InstrumentationLibraryMetrics().AppendEmpty()
 	destMetricL := ilm.Metrics()
 	for _, metric := range metricL {
-		destMetric := destMetricL.AppendMetric()
+		destMetric := destMetricL.AppendEmpty()
 		metric.CopyTo(destMetric)
 	}
 	return rms
 }
 
-func verifyExternalLabels(t *testing.T, td *testData, mds []pdata.Metric) {
-	verifyNumScrapeResults(t, td, mds)
+func verifyExternalLabels(t *testing.T, td *testData, got []pdata.ResourceMetrics) {
+	verifyNumScrapeResults(t, td, got)
+	panic("FIX ME")
 
-        want := makeMetric(td, []pdata.Metric{
-            internal.GaugeMetric("go_threads", k1v2, t1Ms, internal.DoublePoint(t1Ms, 19))
-        })
-
-	// TODO: Translate me.
 	/*
-		want := &agentmetricspb.ExportMetricsServiceRequest{
-			Node:     td.node,
-			Resource: td.resource,
-		}
-		doCompare("scrape-externalLabels", t, want, mds[0], []testExpectation{
-			assertMetricPresent("go_threads",
-				[]descriptorComparator{
-					compareMetricType(metricspb.MetricDescriptor_GAUGE_DOUBLE),
-					compareMetricLabelKeys([]string{"key"}),
-				},
-				[]seriesExpectation{
-					{
-						series: []seriesComparator{
-							compareSeriesLabelValues([]string{"value"}),
-						},
-						points: []pointComparator{
-							comparePointTimestamp(mds[0].Metrics[0].Timeseries[0].Points[0].Timestamp),
-							compareDoubleVal(19),
-						},
-					},
-				}),
+		want := makeMetric(td, []pdata.Metric{
+			internal.GaugeMetric("go_threads", k1v2, t1Ms, internal.DoublePoint(t1Ms, 19)),
 		})
+
+		require.Equal(t, got, want, "Expecting values to be the same")
 	*/
 }

@@ -26,11 +26,8 @@ import (
 	"sync"
 	"sync/atomic"
 	"testing"
+	"time"
 
-	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
-	agentmetricspb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/metrics/v1"
-	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
-	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	gokitlog "github.com/go-kit/kit/log"
 	promcfg "github.com/prometheus/prometheus/config"
 	"github.com/prometheus/prometheus/scrape"
@@ -39,11 +36,10 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/model/pdata"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/types/known/timestamppb"
 	"gopkg.in/yaml.v2"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus"
 )
 
 var logger = zap.NewNop()
@@ -118,9 +114,20 @@ var (
 type testData struct {
 	name         string
 	pages        []mockPrometheusResponse
-	node         *commonpb.Node
-	resource     *resourcepb.Resource
-	validateFunc func(t *testing.T, td *testData, result []*agentmetricspb.ExportMetricsServiceRequest)
+	resource     pdata.Resource
+	validateFunc func(t *testing.T, td *testData, rmsL []pdata.ResourceMetrics)
+}
+
+// Given that pdata doesn't allow us to trivially construct pdata.Metrics,
+// we can extract pdata.ResourceMetrics from each value.
+func resourceMetricsFromMetrics(metricsL []pdata.Metrics) (rmsL []pdata.ResourceMetrics) {
+	for _, metrics := range metricsL {
+		irmsL := metrics.ResourceMetrics()
+		for i := 0; i < irmsL.Len(); i++ {
+			rmsL = append(rmsL, irmsL.At(i))
+		}
+	}
+	return rmsL
 }
 
 // setupMockPrometheus to create a mocked prometheus based on targets, returning the server and a prometheus exporting
@@ -155,22 +162,15 @@ func setupMockPrometheus(tds ...*testData) (*mockPrometheus, *promcfg.Config, er
 
 	// update node value (will use for validation)
 	for _, t := range tds {
-		t.node = &commonpb.Node{
-			Identifier: &commonpb.ProcessIdentifier{
-				HostName: host,
-			},
-			ServiceInfo: &commonpb.ServiceInfo{
-				Name: t.name,
-			},
-		}
-		t.resource = &resourcepb.Resource{
-			Labels: map[string]string{
-				"instance": u.Host,
-				"job":      t.name,
-				"scheme":   "http",
-				"port":     port,
-			},
-		}
+		rsc := pdata.NewResource()
+		attrs := rsc.Attributes()
+		attrs.InsertString("instance", u.Host)
+		attrs.InsertString("scheme", "http")
+		attrs.InsertString("port", port)
+		attrs.InsertString("job", t.name)
+		attrs.InsertString("host.name", host)
+		attrs.InsertString("service.name", t.name)
+		t.resource = rsc
 	}
 
 	cfgStr := strings.ReplaceAll(string(cfg), srvPlaceHolder, u.Host)
@@ -178,196 +178,73 @@ func setupMockPrometheus(tds ...*testData) (*mockPrometheus, *promcfg.Config, er
 	return mp, pCfg, err
 }
 
-func verifyNumScrapeResults(t *testing.T, td *testData, mds []*agentmetricspb.ExportMetricsServiceRequest) {
+func verifyNumScrapeResults(t *testing.T, td *testData, metricsL []pdata.ResourceMetrics) {
 	want := 0
 	for _, p := range td.pages {
 		if p.code == 200 {
 			want++
 		}
 	}
-	if l := len(mds); l != want {
-		t.Fatalf("want %d, but got %d\n", want, l)
+	if l := len(metricsL); l != want {
+		t.Errorf("want %d, but got %d\n", want, l)
 	}
 }
 
-func doCompare(name string, t *testing.T, want, got pdata.ResourceMetrics) {
+func doCompare(t *testing.T, name string, want, got pdata.ResourceMetrics) {
+	// Ensure that the resource attributes can be deterministically compared.
+	got.Resource().Attributes().Sort()
+	want.Resource().Attributes().Sort()
+
 	t.Run(name, func(t *testing.T) {
-		assert.True(t, want, got)
+		assert.Equal(t, want.Resource(), got.Resource(), "Resource mismatch")
+		assert.Equal(t, want.SchemaUrl(), got.SchemaUrl(), "Resource mismatch")
+		assert.Equal(t, want.InstrumentationLibraryMetrics(), got.InstrumentationLibraryMetrics())
 	})
 }
 
-func getValidScrapes(t *testing.T, mds []*agentmetricspb.ExportMetricsServiceRequest) []*agentmetricspb.ExportMetricsServiceRequest {
-	out := make([]*agentmetricspb.ExportMetricsServiceRequest, 0)
-	for _, md := range mds {
-		// mds will include scrapes that received no metrics but have internal scrape metrics, filter those out
-		if expectedScrapeMetricCount < len(md.Metrics) && countScrapeMetrics(md) == expectedScrapeMetricCount {
-			assertUp(t, 1, md)
-			out = append(out, md)
-		} else {
-			assertUp(t, 0, md)
-		}
-	}
-	return out
-}
-
-func assertUp(t *testing.T, expected float64, md *agentmetricspb.ExportMetricsServiceRequest) {
-	for _, m := range md.Metrics {
-		if m.GetMetricDescriptor().Name == "up" {
-			assert.Equal(t, expected, m.Timeseries[0].Points[0].GetDoubleValue())
-			return
-		}
-	}
-	t.Error("No 'up' metric found")
-}
-
-func countScrapeMetrics(in *agentmetricspb.ExportMetricsServiceRequest) int {
-	n := 0
-	for _, m := range in.Metrics {
-		switch m.MetricDescriptor.Name {
-		case "up", "scrape_duration_seconds", "scrape_samples_scraped", "scrape_samples_post_metric_relabeling", "scrape_series_added":
-			n++
-		default:
-		}
-	}
-	return n
-}
-
-type pointComparator func(*testing.T, *metricspb.Point) bool
-type seriesComparator func(*testing.T, *metricspb.TimeSeries) bool
-type descriptorComparator func(*testing.T, *metricspb.MetricDescriptor) bool
-
-type seriesExpectation struct {
-	series []seriesComparator
-	points []pointComparator
-}
-
-type testExpectation func(*testing.T, []*metricspb.Metric) bool
-
-func assertMetricPresent(name string, descriptorExpectations []descriptorComparator, seriesExpectations []seriesExpectation) testExpectation {
-	return func(t *testing.T, metrics []*metricspb.Metric) bool {
-		for _, m := range metrics {
-			if name != m.MetricDescriptor.Name {
-				continue
-			}
-
-			for _, de := range descriptorExpectations {
-				if !de(t, m.MetricDescriptor) {
-					return false
-				}
-			}
-
-			if !assert.Equal(t, len(seriesExpectations), len(m.Timeseries)) {
-				return false
-			}
-			for i, se := range seriesExpectations {
-				for _, sc := range se.series {
-					if !sc(t, m.Timeseries[i]) {
-						return false
-					}
-				}
-				for _, pc := range se.points {
-					if !pc(t, m.Timeseries[i].Points[0]) {
-						return false
-					}
-				}
-			}
-			return true
-		}
-		assert.Failf(t, "Unable to match metric expectation", name)
-		return false
-	}
-}
-
-func assertMetricAbsent(name string) testExpectation {
-	return func(t *testing.T, metrics []*metricspb.Metric) bool {
-		for _, m := range metrics {
-			if !assert.NotEqual(t, name, m.MetricDescriptor.Name) {
-				return false
+func getValidScrapes(t *testing.T, metricsL []pdata.ResourceMetrics) (out []pdata.ResourceMetrics) {
+	return metricsL
+	panic("FIX ME")
+	/*
+		for _, metrics := range metricsL {
+			// mds will include scrapes that received no metrics but have internal scrape metrics, filter those out
+			if expectedScrapeMetricCount < len(md.Metrics) && countScrapeMetrics(md) == expectedScrapeMetricCount {
+				assertUp(t, 1, md)
+				out = append(out, md)
+			} else {
+				assertUp(t, 0, md)
 			}
 		}
-		return true
-	}
+		return out
+	*/
 }
 
-func compareMetricType(typ metricspb.MetricDescriptor_Type) descriptorComparator {
-	return func(t *testing.T, descriptor *metricspb.MetricDescriptor) bool {
-		return assert.Equal(t, typ, descriptor.Type)
-	}
-}
-
-func compareMetricLabelKeys(keys []string) descriptorComparator {
-	return func(t *testing.T, descriptor *metricspb.MetricDescriptor) bool {
-		if !assert.Equal(t, len(keys), len(descriptor.LabelKeys)) {
-			return false
-		}
-		for i, k := range keys {
-			if !assert.Equal(t, k, descriptor.LabelKeys[i].Key) {
-				return false
+func assertUp(t *testing.T, expected float64, metrics pdata.ResourceMetrics) {
+	panic("FIX ME")
+	/*
+		for _, m := range md.Metrics {
+			if m.GetMetricDescriptor().Name == "up" {
+				assert.Equal(t, expected, m.Timeseries[0].Points[0].GetDoubleValue())
+				return
 			}
 		}
-		return true
-	}
+		t.Error("No 'up' metric found")
+	*/
 }
 
-func compareSeriesLabelValues(values []string) seriesComparator {
-	return func(t *testing.T, series *metricspb.TimeSeries) bool {
-		if !assert.Equal(t, len(values), len(series.LabelValues)) {
-			return false
-		}
-		for i, v := range values {
-			if !assert.Equal(t, v, series.LabelValues[i].Value) {
-				return false
+func countScrapeMetrics(in pdata.ResourceMetrics) int {
+	panic("FIX ME")
+	/*
+		n := 0
+		for _, m := range in.Metrics {
+			switch m.MetricDescriptor.Name {
+			case "up", "scrape_duration_seconds", "scrape_samples_scraped", "scrape_samples_post_metric_relabeling", "scrape_series_added":
+				n++
+			default:
 			}
 		}
-		return true
-	}
-}
-
-func compareSeriesTimestamp(ts *timestamppb.Timestamp) seriesComparator {
-	return func(t *testing.T, series *metricspb.TimeSeries) bool {
-		return assert.Equal(t, ts.String(), series.StartTimestamp.String())
-	}
-}
-
-func comparePointTimestamp(ts *timestamppb.Timestamp) pointComparator {
-	return func(t *testing.T, point *metricspb.Point) bool {
-		return assert.Equal(t, ts.String(), point.Timestamp.String())
-	}
-}
-
-func compareDoubleVal(cmp float64) pointComparator {
-	return func(t *testing.T, pt *metricspb.Point) bool {
-		return assert.Equal(t, cmp, pt.GetDoubleValue())
-	}
-}
-
-func compareHistogram(count int64, sum float64, buckets []int64) pointComparator {
-	return func(t *testing.T, pt *metricspb.Point) bool {
-		ret := assert.Equal(t, count, pt.GetDistributionValue().Count)
-		ret = ret && assert.Equal(t, sum, pt.GetDistributionValue().Sum)
-
-		if ret {
-			for i, b := range buckets {
-				ret = ret && assert.Equal(t, b, pt.GetDistributionValue().Buckets[i].Count)
-			}
-		}
-		return ret
-	}
-}
-
-func compareSummary(count int64, sum float64, quantiles map[float64]float64) pointComparator {
-	return func(t *testing.T, pt *metricspb.Point) bool {
-		ret := assert.Equal(t, count, pt.GetSummaryValue().Count.Value)
-		ret = ret && assert.Equal(t, sum, pt.GetSummaryValue().Sum.Value)
-
-		if ret {
-			assert.Equal(t, len(quantiles), len(pt.GetSummaryValue().Snapshot.PercentileValues))
-			for _, q := range pt.GetSummaryValue().Snapshot.PercentileValues {
-				assert.Equal(t, quantiles[q.Percentile], q.Value)
-			}
-		}
-		return ret
-	}
+		return n
+	*/
 }
 
 // Test data and validation functions for EndToEnd test
@@ -431,179 +308,216 @@ rpc_duration_seconds_sum 5002
 rpc_duration_seconds_count 1001
 `
 
-func verifyTarget1(t *testing.T, td *testData, mds []*agentmetricspb.ExportMetricsServiceRequest) {
-	verifyNumScrapeResults(t, td, mds)
-	if len(mds) < 1 {
+func dataPointCount(rms pdata.ResourceMetrics) int {
+	return rms.InstrumentationLibraryMetrics().At(0).Metrics().Len()
+}
+
+func extractFirstTimestamp(rms pdata.ResourceMetrics) (startTimestamp, timestamp pdata.Timestamp) {
+	startTs, ts, _ := extractFirstTimestampDataType(rms)
+	return startTs, ts
+}
+
+func extractFirstTimestampDataType(rms pdata.ResourceMetrics) (startTimestamp, timestamp pdata.Timestamp, _ pdata.MetricDataType) {
+	metric := rms.InstrumentationLibraryMetrics().At(0).Metrics().At(0)
+	switch dataType := metric.DataType(); dataType {
+	case pdata.MetricDataTypeGauge:
+		point0 := metric.Gauge().DataPoints().At(0)
+		return point0.StartTimestamp(), point0.Timestamp(), dataType
+	case pdata.MetricDataTypeSum:
+		point0 := metric.Sum().DataPoints().At(0)
+		return point0.StartTimestamp(), point0.Timestamp(), dataType
+	case pdata.MetricDataTypeHistogram:
+		point0 := metric.Histogram().DataPoints().At(0)
+		return point0.StartTimestamp(), point0.Timestamp(), dataType
+	case pdata.MetricDataTypeSummary:
+		point0 := metric.Summary().DataPoints().At(0)
+		return point0.StartTimestamp(), point0.Timestamp(), dataType
+	default:
+		panic("Unhandled " + metric.DataType().String())
+	}
+}
+
+const ts1 = pdata.Timestamp(1e9)
+const ts2 = pdata.Timestamp(2e9)
+
+func verifyTarget1(t *testing.T, td *testData, metricsL []pdata.ResourceMetrics) {
+	verifyNumScrapeResults(t, td, metricsL)
+	if len(metricsL) < 1 {
 		t.Fatal("At least one metric request should be present")
 	}
-	m1 := mds[0]
-	// m1 has 4 metrics + 5 internal scraper metrics
-	if l := len(m1.Metrics); l != 9 {
-		t.Errorf("want 9, but got %v\n", l)
+
+	// Extract the first startTimestamp.
+	got1 := metricsL[0]
+
+	// got 1 has 4 metrics + 5 internal scraper metrics
+	if g, w := dataPointCount(got1), 9; g != w {
+		t.Fatalf("got %d, want %d", g, w)
+	}
+	startTs1, ts1 := extractFirstTimestamp(got1)
+
+	want1 := makeMetrics(
+		td,
+		makeGaugeMetric("go_threads", startTs1, makeDoublePoint(ts1, 19.0)),
+		makeSumMetric("http_requests_total", startTs1,
+			makeDoublePoint(ts1, 100.0, kv{"code", "200"}, kv{"method", "post"}),
+			makeDoublePoint(ts1, 3, kv{"code", "400"}, kv{"method", "post"}),
+		),
+		makeCumulativeDistMetric("http_request_duration_seconds", startTs1,
+			makeDistPoint(ts1, 2500, 5000, []uint64{1000, 500, 500, 500}, []float64{0.05, 0.5, 1}),
+		),
+		makeSummaryMetric("rpc_duration_seconds", startTs1,
+			makeSummaryPoint(ts1, 1000, 5000, map[float64]float64{1: 1, 90: 5, 99: 8}),
+		),
+		makeGaugeMetric("up", startTs1, makeDoublePoint(ts1, 1.0)),
+		makeGaugeMetric("scrape_duration_seconds", startTs1, makeDoublePoint(ts1, 0.001662471)),
+		makeGaugeMetric("scrape_samples_scraped", startTs1, makeDoublePoint(ts1, 18.0)),
+		makeGaugeMetric("scrape_samples_post_metric_relabeling", startTs1, makeDoublePoint(ts1, 18.0)),
+		makeGaugeMetric("scrape_series_added", startTs1, makeDoublePoint(ts1, 18.0)),
+	)
+
+	doCompare(t, "scrape1", want1, got1)
+
+	got2 := metricsL[1]
+	startTs2, ts2 := extractFirstTimestamp(got2)
+	// Verify the 2nd data.
+	want2 := makeMetrics(
+		td,
+		makeGaugeMetric("go_threads", startTs2, makeDoublePoint(ts2, 18.0)),
+		makeSumMetric("http_requests_total", startTs2,
+			makeDoublePoint(ts2, 199, kv{"code", "200"}, kv{"method", "post"}),
+			makeDoublePoint(ts2, 12, kv{"code", "400"}, kv{"method", "post"}),
+		),
+		makeCumulativeDistMetric("http_requests_duration_seconds", startTs2,
+			makeDistPoint(ts2, 2600, 5050, []uint64{1100, 500, 500, 500}, []float64{0.05, 0.5, 1}),
+		),
+		makeSummaryMetric("rpc_duration_seconds", startTs2,
+			makeSummaryPoint(ts2, 1000, 5000, map[float64]float64{1: 1, 90: 6, 99: 8}),
+		),
+		makeGaugeMetric("up", startTs1, makeDoublePoint(ts1, 1.0)),
+		makeGaugeMetric("scrape_duration_seconds", startTs1, makeDoublePoint(ts1, 0.001662471)),
+		makeGaugeMetric("scrape_samples_scraped", startTs1, makeDoublePoint(ts1, 18.0)),
+		makeGaugeMetric("scrape_samples_post_metric_relabeling", startTs1, makeDoublePoint(ts1, 18.0)),
+		makeGaugeMetric("scrape_series_added", startTs1, makeDoublePoint(ts1, 18.0)),
+	)
+
+	doCompare(t, "scrape2", want2, got2)
+}
+
+type kv struct {
+	key, value string
+}
+
+func makeDoublePoint(ts pdata.Timestamp, value float64, kvp ...kv) pdata.NumberDataPoint {
+	ndp := pdata.NewNumberDataPoint()
+	ndp.SetTimestamp(ts)
+	ndp.SetDoubleVal(value)
+
+	attrs := ndp.Attributes()
+	for _, kv := range kvp {
+		attrs.InsertString(kv.key, kv.value)
+	}
+	return ndp
+}
+
+func makeGaugeMetric(name string, startTs pdata.Timestamp, points ...pdata.NumberDataPoint) pdata.Metric {
+	metric := pdata.NewMetric()
+	metric.SetName(name)
+	metric.SetDataType(pdata.MetricDataTypeGauge)
+
+	destPointL := metric.Gauge().DataPoints()
+	for _, point := range points {
+		destPoint := destPointL.AppendEmpty()
+		point.CopyTo(destPoint)
+		destPoint.SetStartTimestamp(startTs)
+	}
+	return metric
+}
+
+func makeSummaryPoint(ts pdata.Timestamp, count uint64, sum float64, qvm map[float64]float64, kvp ...kv) pdata.SummaryDataPoint {
+	sdp := pdata.NewSummaryDataPoint()
+	sdp.SetTimestamp(ts)
+	sdp.SetCount(count)
+	sdp.SetSum(sum)
+	qvL := sdp.QuantileValues()
+	for quantile, value := range qvm {
+		qvi := qvL.AppendEmpty()
+		qvi.SetQuantile(quantile)
+		qvi.SetValue(value)
 	}
 
-	ts1 := m1.Metrics[0].Timeseries[0].Points[0].Timestamp
-	e1 := []testExpectation{
-		assertMetricPresent("go_threads",
-			[]descriptorComparator{
-				compareMetricType(metricspb.MetricDescriptor_GAUGE_DOUBLE),
-			},
-			[]seriesExpectation{
-				{
-					points: []pointComparator{
-						comparePointTimestamp(ts1),
-						compareDoubleVal(19),
-					},
-				},
-			}),
-		assertMetricPresent("http_requests_total",
-			[]descriptorComparator{
-				compareMetricType(metricspb.MetricDescriptor_CUMULATIVE_DOUBLE),
-				compareMetricLabelKeys([]string{"code", "method"}),
-			},
-			[]seriesExpectation{
-				{
-					series: []seriesComparator{
-						compareSeriesTimestamp(ts1),
-						compareSeriesLabelValues([]string{"200", "post"}),
-					},
-					points: []pointComparator{
-						comparePointTimestamp(ts1),
-						compareDoubleVal(100),
-					},
-				},
-				{
-					series: []seriesComparator{
-						compareSeriesTimestamp(ts1),
-						compareSeriesLabelValues([]string{"400", "post"}),
-					},
-					points: []pointComparator{
-						comparePointTimestamp(ts1),
-						compareDoubleVal(5),
-					},
-				},
-			}),
-		assertMetricPresent("http_request_duration_seconds",
-			[]descriptorComparator{
-				compareMetricType(metricspb.MetricDescriptor_CUMULATIVE_DISTRIBUTION),
-			},
-			[]seriesExpectation{
-				{
-					series: []seriesComparator{
-						compareSeriesTimestamp(ts1),
-					},
-					points: []pointComparator{
-						comparePointTimestamp(ts1),
-						compareHistogram(2500, 5000, []int64{1000, 500, 500, 500}),
-					},
-				},
-			}),
-		assertMetricPresent("rpc_duration_seconds",
-			[]descriptorComparator{
-				compareMetricType(metricspb.MetricDescriptor_SUMMARY),
-			},
-			[]seriesExpectation{
-				{
-					series: []seriesComparator{
-						compareSeriesTimestamp(ts1),
-					},
-					points: []pointComparator{
-						comparePointTimestamp(ts1),
-						compareSummary(1000, 5000, map[float64]float64{1: 1, 90: 5, 99: 8}),
-					},
-				},
-			}),
+	attrs := sdp.Attributes()
+	for _, kv := range kvp {
+		attrs.InsertString(kv.key, kv.value)
 	}
+	return sdp
+}
 
-	want1 := &agentmetricspb.ExportMetricsServiceRequest{
-		Node:     td.node,
-		Resource: td.resource,
+func makeSummaryMetric(name string, startTs pdata.Timestamp, points ...pdata.SummaryDataPoint) pdata.Metric {
+	metric := pdata.NewMetric()
+	metric.SetName(name)
+	metric.SetDataType(pdata.MetricDataTypeSummary)
+
+	destPointL := metric.Summary().DataPoints()
+	for _, point := range points {
+		destPoint := destPointL.AppendEmpty()
+		point.CopyTo(destPoint)
+		destPoint.SetStartTimestamp(startTs)
 	}
+	return metric
+}
 
-	doCompare("scrape1", t, want1, m1, e1)
+func makeSumMetric(name string, startTs pdata.Timestamp, points ...pdata.NumberDataPoint) pdata.Metric {
+	metric := pdata.NewMetric()
+	metric.SetName(name)
+	metric.SetDataType(pdata.MetricDataTypeSum)
+	sum := metric.Sum()
+	sum.SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+	destPointL := sum.DataPoints()
 
-	// verify the 2nd metricData
-	m2 := mds[1]
-	ts2 := m2.Metrics[0].Timeseries[0].Points[0].Timestamp
-
-	want2 := &agentmetricspb.ExportMetricsServiceRequest{
-		Node:     td.node,
-		Resource: td.resource,
+	for _, point := range points {
+		destPoint := destPointL.AppendEmpty()
+		point.CopyTo(destPoint)
+		destPoint.SetStartTimestamp(startTs)
 	}
+	return metric
+}
 
-	e2 := []testExpectation{
-		assertMetricPresent("go_threads",
-			[]descriptorComparator{
-				compareMetricType(metricspb.MetricDescriptor_GAUGE_DOUBLE),
-			},
-			[]seriesExpectation{
-				{
-					points: []pointComparator{
-						comparePointTimestamp(ts2),
-						compareDoubleVal(18),
-					},
-				},
-			}),
-		assertMetricPresent("http_requests_total",
-			[]descriptorComparator{
-				compareMetricType(metricspb.MetricDescriptor_CUMULATIVE_DOUBLE),
-				compareMetricLabelKeys([]string{"code", "method"}),
-			},
-			[]seriesExpectation{
-				{
-					series: []seriesComparator{
-						compareSeriesTimestamp(ts1),
-						compareSeriesLabelValues([]string{"200", "post"}),
-					},
-					points: []pointComparator{
-						comparePointTimestamp(ts2),
-						compareDoubleVal(199),
-					},
-				},
-				{
-					series: []seriesComparator{
-						compareSeriesTimestamp(ts1),
-						compareSeriesLabelValues([]string{"400", "post"}),
-					},
-					points: []pointComparator{
-						comparePointTimestamp(ts2),
-						compareDoubleVal(12),
-					},
-				},
-			}),
-		assertMetricPresent("http_request_duration_seconds",
-			[]descriptorComparator{
-				compareMetricType(metricspb.MetricDescriptor_CUMULATIVE_DISTRIBUTION),
-			},
-			[]seriesExpectation{
-				{
-					series: []seriesComparator{
-						compareSeriesTimestamp(ts1),
-					},
-					points: []pointComparator{
-						comparePointTimestamp(ts2),
-						compareHistogram(2600, 5050, []int64{1100, 500, 500, 500}),
-					},
-				},
-			}),
-		assertMetricPresent("rpc_duration_seconds",
-			[]descriptorComparator{
-				compareMetricType(metricspb.MetricDescriptor_SUMMARY),
-			},
-			[]seriesExpectation{
-				{
-					series: []seriesComparator{
-						compareSeriesTimestamp(ts1),
-					},
-					points: []pointComparator{
-						comparePointTimestamp(ts2),
-						compareSummary(1001, 5002, map[float64]float64{1: 1, 90: 6, 99: 8}),
-					},
-				},
-			}),
+func makeDistPoint(ts pdata.Timestamp, count uint64, sum float64, counts []uint64, bounds []float64, kvp ...kv) pdata.HistogramDataPoint {
+	hdp := pdata.NewHistogramDataPoint()
+	hdp.SetExplicitBounds(bounds)
+	hdp.SetBucketCounts(counts)
+	hdp.SetTimestamp(ts)
+	hdp.SetCount(count)
+	hdp.SetSum(sum)
+
+	attrs := hdp.Attributes()
+	for _, kv := range kvp {
+		attrs.InsertString(kv.key, kv.value)
 	}
+	return hdp
+}
 
-	doCompare("scrape2", t, want2, m2, e2)
+func makeGaugeDistMetric(name string, startTs pdata.Timestamp, points ...pdata.HistogramDataPoint) pdata.Metric {
+	hMetric := makeCumulativeDistMetric(name, startTs, points...)
+	hMetric.Histogram().SetAggregationTemporality(pdata.AggregationTemporalityDelta)
+	return hMetric
+}
+
+func makeCumulativeDistMetric(name string, startTs pdata.Timestamp, points ...pdata.HistogramDataPoint) pdata.Metric {
+	metric := pdata.NewMetric()
+	metric.SetName(name)
+	metric.SetDataType(pdata.MetricDataTypeHistogram)
+	histogram := metric.Histogram()
+	histogram.SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+
+	destPointL := histogram.DataPoints()
+	// By default the AggregationTemporality is Cumulative until it'll be changed by the caller.
+	for _, point := range points {
+		destPoint := destPointL.AppendEmpty()
+		point.CopyTo(destPoint)
+		destPoint.SetStartTimestamp(startTs)
+	}
+	return metric
 }
 
 // target2 is going to have 5 pages, and there's a newly added item on the 2nd page.
@@ -668,408 +582,110 @@ http_requests_total{method="post",code="400"} 59
 http_requests_total{method="post",code="500"} 5
 `
 
-func verifyTarget2(t *testing.T, td *testData, mds []*agentmetricspb.ExportMetricsServiceRequest) {
-	verifyNumScrapeResults(t, td, mds)
-	m1 := mds[0]
-	// m1 has 2 metrics + 5 internal scraper metrics
-	if l := len(m1.Metrics); l != 7 {
-		t.Errorf("want 7, but got %v\n", l)
+func verifyTarget2(t *testing.T, td *testData, metricsL []pdata.ResourceMetrics) {
+	verifyNumScrapeResults(t, td, metricsL)
+	if len(metricsL) < 1 {
+		t.Fatal("At least one metric request should be present")
 	}
 
-	ts1 := m1.Metrics[0].Timeseries[0].Points[0].Timestamp
-	want1 := &agentmetricspb.ExportMetricsServiceRequest{
-		Node:     td.node,
-		Resource: td.resource,
+	// Extract the first startTimestamp.
+	got1 := metricsL[0]
+
+	// got has 2 metrics + 5 internal scraper metrics
+	if g, w := dataPointCount(got1), 7; g != w {
+		t.Fatalf("got %d, want %d", g, w)
 	}
+	startTs1, ts1 := extractFirstTimestamp(got1)
 
-	e1 := []testExpectation{
-		assertMetricPresent("go_threads",
-			[]descriptorComparator{
-				compareMetricType(metricspb.MetricDescriptor_GAUGE_DOUBLE),
-			},
-			[]seriesExpectation{
-				{
-					points: []pointComparator{
-						comparePointTimestamp(ts1),
-						compareDoubleVal(18),
-					},
-				},
-			}),
-		assertMetricPresent("http_requests_total",
-			[]descriptorComparator{
-				compareMetricType(metricspb.MetricDescriptor_CUMULATIVE_DOUBLE),
-				compareMetricLabelKeys([]string{"code", "method"}),
-			},
-			[]seriesExpectation{
-				{
-					series: []seriesComparator{
-						compareSeriesTimestamp(ts1),
-						compareSeriesLabelValues([]string{"200", "post"}),
-					},
-					points: []pointComparator{
-						comparePointTimestamp(ts1),
-						compareDoubleVal(10),
-					},
-				},
-				{
-					series: []seriesComparator{
-						compareSeriesTimestamp(ts1),
-						compareSeriesLabelValues([]string{"400", "post"}),
-					},
-					points: []pointComparator{
-						comparePointTimestamp(ts1),
-						compareDoubleVal(50),
-					},
-				},
-			}),
-	}
+	want1 := makeMetrics(
+		td,
+		makeGaugeMetric("go_threads", startTs1, makeDoublePoint(ts1, 18.0)),
+		makeSumMetric("http_requests_total", startTs1,
+			makeDoublePoint(ts1, 10, kv{"code", "200"}, kv{"method", "post"}),
+			makeDoublePoint(ts1, 50, kv{"code", "400"}, kv{"method", "post"}),
+		),
+		makeGaugeMetric("up", startTs1, makeDoublePoint(ts1, 1.0)),
+		makeGaugeMetric("scrape_duration_seconds", startTs1, makeDoublePoint(ts1, 0.001662471)),
+		makeGaugeMetric("scrape_samples_scraped", startTs1, makeDoublePoint(ts1, 14.0)),
+		makeGaugeMetric("scrape_samples_post_metric_relabeling", startTs1, makeDoublePoint(ts1, 14.0)),
+		makeGaugeMetric("scrape_series_added", startTs1, makeDoublePoint(ts1, 14.0)),
+	)
+	doCompare(t, "scrape1", want1, got1)
 
-	doCompare("scrape1", t, want1, m1, e1)
+	// Verify the 2nd data.
+	got2 := metricsL[1]
+	startTs2, ts2 := extractFirstTimestamp(got2)
+	want2 := makeMetrics(
+		td,
+		makeGaugeMetric("go_threads", startTs2, makeDoublePoint(ts2, 16.0)),
+		makeSumMetric("http_requests_total", startTs2,
+			makeDoublePoint(ts2, 50, kv{"code", "200"}, kv{"method", "post"}),
+			makeDoublePoint(ts2, 60, kv{"code", "400"}, kv{"method", "post"}),
+			makeDoublePoint(ts2, 3, kv{"code", "500"}, kv{"method", "post"}),
+		),
+		makeGaugeMetric("up", startTs1, makeDoublePoint(ts1, 1.0)),
+		makeGaugeMetric("scrape_duration_seconds", startTs1, makeDoublePoint(ts1, 0.001662471)),
+		makeGaugeMetric("scrape_samples_scraped", startTs1, makeDoublePoint(ts1, 14.0)),
+		makeGaugeMetric("scrape_samples_post_metric_relabeling", startTs1, makeDoublePoint(ts1, 14.0)),
+		makeGaugeMetric("scrape_series_added", startTs1, makeDoublePoint(ts1, 14.0)),
+	)
 
-	// verify the 2nd metricData
-	m2 := mds[1]
-	ts2 := m2.Metrics[0].Timeseries[0].Points[0].Timestamp
+	doCompare(t, "scrape2", want2, got2)
 
-	want2 := &agentmetricspb.ExportMetricsServiceRequest{
-		Node:     td.node,
-		Resource: td.resource,
-	}
-	e2 := []testExpectation{
-		assertMetricPresent("go_threads",
-			[]descriptorComparator{
-				compareMetricType(metricspb.MetricDescriptor_GAUGE_DOUBLE),
-			},
-			[]seriesExpectation{
-				{
-					points: []pointComparator{
-						comparePointTimestamp(ts2),
-						compareDoubleVal(16),
-					},
-				},
-			}),
-		assertMetricPresent("http_requests_total",
-			[]descriptorComparator{
-				compareMetricType(metricspb.MetricDescriptor_CUMULATIVE_DOUBLE),
-				compareMetricLabelKeys([]string{"code", "method"}),
-			},
-			[]seriesExpectation{
-				{
-					series: []seriesComparator{
-						compareSeriesTimestamp(ts1),
-						compareSeriesLabelValues([]string{"200", "post"}),
-					},
-					points: []pointComparator{
-						comparePointTimestamp(ts2),
-						compareDoubleVal(50),
-					},
-				},
-				{
-					series: []seriesComparator{
-						compareSeriesTimestamp(ts1),
-						compareSeriesLabelValues([]string{"400", "post"}),
-					},
-					points: []pointComparator{
-						comparePointTimestamp(ts2),
-						compareDoubleVal(60),
-					},
-				},
-				{
-					series: []seriesComparator{
-						compareSeriesTimestamp(ts2),
-						compareSeriesLabelValues([]string{"500", "post"}),
-					},
-					points: []pointComparator{
-						comparePointTimestamp(ts2),
-						compareDoubleVal(3),
-					},
-				},
-			}),
-	}
+	// Verify the 3rd, with the new coce=500 counter which first appeared on the 2nd run.
+	got3 := metricsL[2]
+	startTs3, ts3 := extractFirstTimestamp(got3)
+	want3 := makeMetrics(
+		td,
+		makeGaugeMetric("go_threads", startTs3, makeDoublePoint(ts3, 16.0)),
+		makeSumMetric("http_requests_total", startTs3,
+			makeDoublePoint(ts1, 50, kv{"code", "200"}, kv{"method", "post"}),
+			makeDoublePoint(ts3, 60, kv{"code", "400"}, kv{"method", "post"}),
+			makeDoublePoint(ts3, 5, kv{"code", "500"}, kv{"method", "post"}),
+		),
+		makeGaugeMetric("up", startTs1, makeDoublePoint(ts1, 1.0)),
+		makeGaugeMetric("scrape_duration_seconds", startTs1, makeDoublePoint(ts1, 0.001662471)),
+		makeGaugeMetric("scrape_samples_scraped", startTs1, makeDoublePoint(ts1, 14.0)),
+		makeGaugeMetric("scrape_samples_post_metric_relabeling", startTs1, makeDoublePoint(ts1, 14.0)),
+		makeGaugeMetric("scrape_series_added", startTs1, makeDoublePoint(ts1, 14.0)),
+	)
+	doCompare(t, "scrape3", want3, got3)
 
-	doCompare("scrape2", t, want2, m2, e2)
+	got4 := metricsL[3]
+	startTs4, ts4 := extractFirstTimestamp(got4)
+	want4 := makeMetrics(
+		td,
+		makeGaugeMetric("go_threads", startTs4, makeDoublePoint(ts4, 16.0)),
+		makeSumMetric("http_requests_total", startTs3,
+			makeDoublePoint(ts4, 50, kv{"code", "200"}, kv{"method", "post"}),
+			makeDoublePoint(ts4, 60, kv{"code", "400"}, kv{"method", "post"}),
+			makeDoublePoint(ts4, 5, kv{"code", "500"}, kv{"method", "post"}),
+		),
+		makeGaugeMetric("up", startTs4, makeDoublePoint(ts4, 1.0)),
+		makeGaugeMetric("scrape_duration_seconds", startTs4, makeDoublePoint(ts4, 0.001662471)),
+		makeGaugeMetric("scrape_samples_scraped", startTs4, makeDoublePoint(ts4, 14.0)),
+		makeGaugeMetric("scrape_samples_post_metric_relabeling", startTs4, makeDoublePoint(ts4, 14.0)),
+		makeGaugeMetric("scrape_series_added", startTs4, makeDoublePoint(ts4, 14.0)),
+	)
+	doCompare(t, "scrape4", want4, got4)
 
-	// verify the 3rd metricData, with the new code=500 counter which first appeared on 2nd run
-	m3 := mds[2]
-	// its start timestamp shall be from the 2nd run
-	ts3 := m3.Metrics[0].Timeseries[0].Points[0].Timestamp
-
-	want3 := &agentmetricspb.ExportMetricsServiceRequest{
-		Node:     td.node,
-		Resource: td.resource,
-	}
-
-	e3 := []testExpectation{
-		assertMetricPresent("go_threads",
-			[]descriptorComparator{
-				compareMetricType(metricspb.MetricDescriptor_GAUGE_DOUBLE),
-			},
-			[]seriesExpectation{
-				{
-					points: []pointComparator{
-						comparePointTimestamp(ts3),
-						compareDoubleVal(16),
-					},
-				},
-			}),
-		assertMetricPresent("http_requests_total",
-			[]descriptorComparator{
-				compareMetricType(metricspb.MetricDescriptor_CUMULATIVE_DOUBLE),
-				compareMetricLabelKeys([]string{"code", "method"}),
-			},
-			[]seriesExpectation{
-				{
-					series: []seriesComparator{
-						compareSeriesTimestamp(ts1),
-						compareSeriesLabelValues([]string{"200", "post"}),
-					},
-					points: []pointComparator{
-						comparePointTimestamp(ts3),
-						compareDoubleVal(50),
-					},
-				},
-				{
-					series: []seriesComparator{
-						compareSeriesTimestamp(ts1),
-						compareSeriesLabelValues([]string{"400", "post"}),
-					},
-					points: []pointComparator{
-						comparePointTimestamp(ts3),
-						compareDoubleVal(60),
-					},
-				},
-				{
-					series: []seriesComparator{
-						compareSeriesTimestamp(ts2),
-						compareSeriesLabelValues([]string{"500", "post"}),
-					},
-					points: []pointComparator{
-						comparePointTimestamp(ts3),
-						compareDoubleVal(5),
-					},
-				},
-			}),
-	}
-
-	doCompare("scrape3", t, want3, m3, e3)
-
-	// verify the 4th metricData which reset happens
-	m4 := mds[3]
-	ts4 := m4.Metrics[0].Timeseries[0].Points[0].Timestamp
-
-	want4 := &agentmetricspb.ExportMetricsServiceRequest{
-		Node:     td.node,
-		Resource: td.resource,
-		Metrics: []*metricspb.Metric{
-			{
-				MetricDescriptor: &metricspb.MetricDescriptor{
-					Name:        "up",
-					Description: "The scraping was successful",
-					Type:        metricspb.MetricDescriptor_GAUGE_DOUBLE,
-					Unit:        "bool",
-				},
-				Timeseries: []*metricspb.TimeSeries{
-					{
-						Points: []*metricspb.Point{
-							{Timestamp: ts2, Value: &metricspb.Point_DoubleValue{DoubleValue: 1.0}},
-						},
-					},
-				},
-			},
-			{
-				MetricDescriptor: &metricspb.MetricDescriptor{
-					Name:        "scrape_series_added",
-					Description: "The approximate number of new series in this scrape",
-					Type:        metricspb.MetricDescriptor_GAUGE_DOUBLE,
-					Unit:        "count",
-				},
-				Timeseries: []*metricspb.TimeSeries{
-					{
-						Points: []*metricspb.Point{
-							{Timestamp: ts2, Value: &metricspb.Point_DoubleValue{DoubleValue: 14.0}},
-						},
-					},
-				},
-			},
-			{
-				MetricDescriptor: &metricspb.MetricDescriptor{
-					Name:        "scrape_duration_seconds",
-					Description: "Duration of the scrape",
-					Type:        metricspb.MetricDescriptor_GAUGE_DOUBLE,
-					Unit:        "seconds",
-				},
-				Timeseries: []*metricspb.TimeSeries{
-					{
-						Points: []*metricspb.Point{
-							{Timestamp: ts2, Value: &metricspb.Point_DoubleValue{DoubleValue: 0.0123456}},
-						},
-					},
-				},
-			},
-			{
-				MetricDescriptor: &metricspb.MetricDescriptor{
-					Name:        "scrape_samples_scraped",
-					Description: "The number of samples the target exposed",
-					Type:        metricspb.MetricDescriptor_GAUGE_DOUBLE,
-					Unit:        "count",
-				},
-				Timeseries: []*metricspb.TimeSeries{
-					{
-						Points: []*metricspb.Point{
-							{Timestamp: ts2, Value: &metricspb.Point_DoubleValue{DoubleValue: 14.0}},
-						},
-					},
-				},
-			},
-			{
-				MetricDescriptor: &metricspb.MetricDescriptor{
-					Name:        "scrape_samples_post_metric_relabeling",
-					Description: "The number of samples remaining after metric relabeling was applied",
-					Type:        metricspb.MetricDescriptor_GAUGE_DOUBLE,
-					Unit:        "count",
-				},
-				Timeseries: []*metricspb.TimeSeries{
-					{
-						Points: []*metricspb.Point{
-							{Timestamp: ts2, Value: &metricspb.Point_DoubleValue{DoubleValue: 14.0}},
-						},
-					},
-				},
-			},
-			{
-				MetricDescriptor: &metricspb.MetricDescriptor{
-					Name:        "scrape_series_added",
-					Description: "The approximate number of new series in this scrape",
-					Type:        metricspb.MetricDescriptor_GAUGE_DOUBLE,
-					Unit:        "count",
-				},
-				Timeseries: []*metricspb.TimeSeries{
-					{
-						Points: []*metricspb.Point{
-							{Timestamp: ts2, Value: &metricspb.Point_DoubleValue{DoubleValue: 14.0}},
-						},
-					},
-				},
-			},
-		},
-	}
-
-	e4 := []testExpectation{
-		assertMetricPresent("go_threads",
-			[]descriptorComparator{
-				compareMetricType(metricspb.MetricDescriptor_GAUGE_DOUBLE),
-			},
-			[]seriesExpectation{
-				{
-					points: []pointComparator{
-						comparePointTimestamp(ts4),
-						compareDoubleVal(16),
-					},
-				},
-			}),
-		assertMetricPresent("http_requests_total",
-			[]descriptorComparator{
-				compareMetricType(metricspb.MetricDescriptor_CUMULATIVE_DOUBLE),
-				compareMetricLabelKeys([]string{"code", "method"}),
-			},
-			[]seriesExpectation{
-				{
-					series: []seriesComparator{
-						compareSeriesTimestamp(ts4),
-						compareSeriesLabelValues([]string{"200", "post"}),
-					},
-					points: []pointComparator{
-						comparePointTimestamp(ts4),
-						compareDoubleVal(49),
-					},
-				},
-				{
-					series: []seriesComparator{
-						compareSeriesTimestamp(ts4),
-						compareSeriesLabelValues([]string{"400", "post"}),
-					},
-					points: []pointComparator{
-						comparePointTimestamp(ts4),
-						compareDoubleVal(59),
-					},
-				},
-				{
-					series: []seriesComparator{
-						compareSeriesTimestamp(ts4),
-						compareSeriesLabelValues([]string{"500", "post"}),
-					},
-					points: []pointComparator{
-						comparePointTimestamp(ts4),
-						compareDoubleVal(3),
-					},
-				},
-			}),
-	}
-
-	doCompare("scrape4", t, want4, m4, e4)
-
-	// verify the 5th metricData which reset happens
-	m5 := mds[4]
-	// its start timestamp shall be from the 4th run
-	ts5 := m5.Metrics[0].Timeseries[0].Points[0].Timestamp
-
-	want5 := &agentmetricspb.ExportMetricsServiceRequest{
-		Node:     td.node,
-		Resource: td.resource,
-	}
-
-	e5 := []testExpectation{
-		assertMetricPresent("go_threads",
-			[]descriptorComparator{
-				compareMetricType(metricspb.MetricDescriptor_GAUGE_DOUBLE),
-			},
-			[]seriesExpectation{
-				{
-					points: []pointComparator{
-						comparePointTimestamp(ts5),
-						compareDoubleVal(16),
-					},
-				},
-			}),
-		assertMetricPresent("http_requests_total",
-			[]descriptorComparator{
-				compareMetricType(metricspb.MetricDescriptor_CUMULATIVE_DOUBLE),
-				compareMetricLabelKeys([]string{"code", "method"}),
-			},
-			[]seriesExpectation{
-				{
-					series: []seriesComparator{
-						compareSeriesTimestamp(ts4),
-						compareSeriesLabelValues([]string{"200", "post"}),
-					},
-					points: []pointComparator{
-						comparePointTimestamp(ts5),
-						compareDoubleVal(50),
-					},
-				},
-				{
-					series: []seriesComparator{
-						compareSeriesTimestamp(ts4),
-						compareSeriesLabelValues([]string{"400", "post"}),
-					},
-					points: []pointComparator{
-						comparePointTimestamp(ts5),
-						compareDoubleVal(59),
-					},
-				},
-				{
-					series: []seriesComparator{
-						compareSeriesTimestamp(ts4),
-						compareSeriesLabelValues([]string{"500", "post"}),
-					},
-					points: []pointComparator{
-						comparePointTimestamp(ts5),
-						compareDoubleVal(5),
-					},
-				},
-			}),
-	}
-
-	doCompare("scrape5", t, want5, m5, e5)
+	got5 := metricsL[4]
+	startTs5, ts5 := extractFirstTimestamp(got5)
+	want5 := makeMetrics(
+		td,
+		makeGaugeMetric("go_threads", startTs5, makeDoublePoint(ts5, 16.0)),
+		makeSumMetric("http_requests_total", startTs5,
+			makeDoublePoint(ts4, 49, kv{"code", "200"}, kv{"method", "post"}),
+			makeDoublePoint(ts4, 60, kv{"code", "400"}, kv{"method", "post"}),
+			makeDoublePoint(ts3, 3, kv{"code", "500"}, kv{"method", "post"}),
+		),
+		makeGaugeMetric("up", startTs1, makeDoublePoint(ts1, 1.0)),
+		makeGaugeMetric("scrape_duration_seconds", startTs1, makeDoublePoint(ts1, 0.001662471)),
+		makeGaugeMetric("scrape_samples_scraped", startTs1, makeDoublePoint(ts1, 4.0)),
+		makeGaugeMetric("scrape_samples_post_metric_relabeling", startTs1, makeDoublePoint(ts1, 4.0)),
+		makeGaugeMetric("scrape_series_added", startTs1, makeDoublePoint(ts1, 4.0)),
+	)
+	doCompare(t, "scrape5", want5, got5)
 }
 
 // target3 for complicated data types, including summaries and histograms. one of the summary and histogram have only
@@ -1144,148 +760,61 @@ rpc_duration_seconds_sum{foo="no_quantile"} 101
 rpc_duration_seconds_count{foo="no_quantile"} 55
 `
 
-func verifyTarget3(t *testing.T, td *testData, mds []*agentmetricspb.ExportMetricsServiceRequest) {
-	verifyNumScrapeResults(t, td, mds)
-	m1 := mds[0]
-	// m1 has 3 metrics + 5 internal scraper metrics
-	if l := len(m1.Metrics); l != 8 {
-		t.Errorf("want 8, but got %v\n", l)
+func verifyTarget3(t *testing.T, td *testData, metricsL []pdata.ResourceMetrics) {
+	verifyNumScrapeResults(t, td, metricsL)
+	if len(metricsL) < 1 {
+		t.Fatal("At least one metric request should be present")
 	}
 
-	ts1 := m1.Metrics[1].Timeseries[0].Points[0].Timestamp
-	want1 := &agentmetricspb.ExportMetricsServiceRequest{
-		Node:     td.node,
-		Resource: td.resource,
+	// Extract the first startTimestamp.
+	got1 := metricsL[0]
+
+	// got has 8 metrics + 5 internal scraper metrics
+	if g, w := dataPointCount(got1), 8; g != w {
+		t.Fatalf("got %d, want %d", g, w)
 	}
+	startTs1, ts1 := extractFirstTimestamp(got1)
 
-	e1 := []testExpectation{
-		assertMetricPresent("go_threads",
-			[]descriptorComparator{
-				compareMetricType(metricspb.MetricDescriptor_GAUGE_DOUBLE),
-			},
-			[]seriesExpectation{
-				{
-					points: []pointComparator{
-						comparePointTimestamp(ts1),
-						compareDoubleVal(18),
-					},
-				},
-			}),
-		assertMetricPresent("http_request_duration_seconds",
-			[]descriptorComparator{
-				compareMetricType(metricspb.MetricDescriptor_CUMULATIVE_DISTRIBUTION),
-			},
-			[]seriesExpectation{
-				{
-					series: []seriesComparator{
-						compareSeriesTimestamp(ts1),
-					},
-					points: []pointComparator{
-						comparePointTimestamp(ts1),
-						compareHistogram(13003, 50000, []int64{10000, 1000, 1001, 1002}),
-					},
-				},
-			}),
-		assertMetricAbsent("corrupted_hist"),
-		assertMetricPresent("rpc_duration_seconds",
-			[]descriptorComparator{
-				compareMetricType(metricspb.MetricDescriptor_SUMMARY),
-				compareMetricLabelKeys([]string{"foo"}),
-			},
-			[]seriesExpectation{
-				{
-					series: []seriesComparator{
-						compareSeriesTimestamp(ts1),
-						compareSeriesLabelValues([]string{"bar"}),
-					},
-					points: []pointComparator{
-						comparePointTimestamp(ts1),
-						compareSummary(900, 8000, map[float64]float64{1: 31, 5: 35, 50: 47, 90: 70, 99: 76}),
-					},
-				},
-				{
-					series: []seriesComparator{
-						compareSeriesTimestamp(ts1),
-						compareSeriesLabelValues([]string{"no_quantile"}),
-					},
-					points: []pointComparator{
-						comparePointTimestamp(ts1),
-						compareSummary(50, 100, map[float64]float64{}),
-					},
-				},
-			}),
-	}
+	want1 := makeMetrics(
+		td,
+		makeGaugeMetric("go_threads", startTs1, makeDoublePoint(ts1, 18.0)),
+		makeCumulativeDistMetric("http_request_duration_seconds", startTs1,
+			makeDistPoint(ts1, 13003, 50000, []uint64{10000, 1000, 1001, 1002}, []float64{0.2, 0.5, 1}),
+		),
+		makeSummaryMetric("rpc_duration_seconds", startTs1,
+			makeSummaryPoint(ts1, 900, 8000, map[float64]float64{1: 31, 5: 35, 50: 47, 90: 70, 99: 76}, kv{"foo", "bar"}),
+			makeSummaryPoint(ts1, 50, 100, nil, kv{"foo", "no_quantile"}),
+		),
+		/*
+			makeGaugeMetric("up", startTs1, makeDoublePoint(ts1, 1.0)),
+			makeGaugeMetric("scrape_duration_seconds", startTs1, makeDoublePoint(ts1, 0.001662471)),
+			makeGaugeMetric("scrape_samples_scraped", startTs1, makeDoublePoint(ts1, 18.0)),
+			makeGaugeMetric("scrape_samples_post_metric_relabeling", startTs1, makeDoublePoint(ts1, 18.0)),
+			makeGaugeMetric("scrape_series_added", startTs1, makeDoublePoint(ts1, 18.0)),
+		*/
+	)
+	doCompare(t, "scrape1", want1, got1)
 
-	doCompare("scrape1", t, want1, m1, e1)
-
-	// verify the 2nd metricData
-	m2 := mds[1]
-	ts2 := m2.Metrics[0].Timeseries[0].Points[0].Timestamp
-
-	want2 := &agentmetricspb.ExportMetricsServiceRequest{
-		Node:     td.node,
-		Resource: td.resource,
-	}
-
-	e2 := []testExpectation{
-		assertMetricPresent("go_threads",
-			[]descriptorComparator{
-				compareMetricType(metricspb.MetricDescriptor_GAUGE_DOUBLE),
-			},
-			[]seriesExpectation{
-				{
-					points: []pointComparator{
-						comparePointTimestamp(ts2),
-						compareDoubleVal(16),
-					},
-				},
-			}),
-		assertMetricPresent("http_request_duration_seconds",
-			[]descriptorComparator{
-				compareMetricType(metricspb.MetricDescriptor_CUMULATIVE_DISTRIBUTION),
-			},
-			[]seriesExpectation{
-				{
-					series: []seriesComparator{
-						compareSeriesTimestamp(ts1),
-					},
-					points: []pointComparator{
-						comparePointTimestamp(ts2),
-						compareHistogram(14003, 50100, []int64{11000, 1000, 1001, 1002}),
-					},
-				},
-			}),
-		assertMetricAbsent("corrupted_hist"),
-		assertMetricPresent("rpc_duration_seconds",
-			[]descriptorComparator{
-				compareMetricType(metricspb.MetricDescriptor_SUMMARY),
-				compareMetricLabelKeys([]string{"foo"}),
-			},
-			[]seriesExpectation{
-				{
-					series: []seriesComparator{
-						compareSeriesTimestamp(ts1),
-						compareSeriesLabelValues([]string{"bar"}),
-					},
-					points: []pointComparator{
-						comparePointTimestamp(ts2),
-						compareSummary(950, 8100, map[float64]float64{1: 32, 5: 35, 50: 47, 90: 70, 99: 77}),
-					},
-				},
-				{
-					series: []seriesComparator{
-						compareSeriesTimestamp(ts1),
-						compareSeriesLabelValues([]string{"no_quantile"}),
-					},
-					points: []pointComparator{
-						comparePointTimestamp(ts2),
-						compareSummary(55, 101, map[float64]float64{}),
-					},
-				},
-			}),
-	}
-
-	doCompare("scrape2", t, want2, m2, e2)
+	// Verify the 2nd data.
+	got2 := metricsL[1]
+	startTs2, ts2 := extractFirstTimestamp(got2)
+	want2 := makeMetrics(
+		td,
+		makeGaugeMetric("go_threads", startTs2, makeDoublePoint(ts2, 16.0)),
+		makeCumulativeDistMetric("http_request_duration_seconds", startTs2,
+			makeDistPoint(ts2, 14003, 50100, []uint64{11000, 1000, 1001, 1002}, []float64{0.2, 0.5, 1}),
+		),
+		makeSummaryMetric("rpc_duration_seconds", startTs2,
+			makeSummaryPoint(ts2, 950, 8100, map[float64]float64{1: 32, 5: 35, 50: 47, 90: 70, 99: 77}, kv{"foo", "bar"}),
+			makeSummaryPoint(ts1, 55, 101, nil, kv{"foo", "no_quantile"}),
+		),
+		makeGaugeMetric("up", startTs1, makeDoublePoint(ts1, 1.0)),
+		makeGaugeMetric("scrape_duration_seconds", startTs1, makeDoublePoint(ts1, 0.001662471)),
+		makeGaugeMetric("scrape_samples_scraped", startTs1, makeDoublePoint(ts1, 18.0)),
+		makeGaugeMetric("scrape_samples_post_metric_relabeling", startTs1, makeDoublePoint(ts1, 18.0)),
+		makeGaugeMetric("scrape_series_added", startTs1, makeDoublePoint(ts1, 18.0)),
+	)
+	doCompare(t, "scrape2", want2, got2)
 }
 
 // TestEndToEnd  end to end test executor
@@ -1360,21 +889,27 @@ var startTimeMetricPageStartTimestamp = &timestamppb.Timestamp{Seconds: 400, Nan
 // 6 metrics + 5 internal metrics
 const numStartTimeMetricPageTimeseries = 11
 
-func verifyStartTimeMetricPage(t *testing.T, _ *testData, mds []*agentmetricspb.ExportMetricsServiceRequest) {
+const timestampZero pdata.Timestamp = 0
+
+func verifyStartTimeMetricPage(t *testing.T, _ *testData, metricsL []pdata.ResourceMetrics) {
 	numTimeseries := 0
-	for _, cmd := range mds {
-		for _, metric := range cmd.Metrics {
-			timestamp := startTimeMetricPageStartTimestamp
-			switch metric.GetMetricDescriptor().GetType() {
-			case metricspb.MetricDescriptor_GAUGE_DOUBLE, metricspb.MetricDescriptor_GAUGE_DISTRIBUTION:
-				timestamp = nil
-			}
-			for _, ts := range metric.GetTimeseries() {
-				assert.Equal(t, timestamp.AsTime(), ts.GetStartTimestamp().AsTime(), ts.String())
-				numTimeseries++
+	for _, rms := range metricsL {
+		_, ts, dataType := extractFirstTimestampDataType(rms)
+		want := pdata.NewTimestampFromTime(time.Unix(400, 800000000))
+		switch dataType {
+		case pdata.MetricDataTypeGauge:
+			want = timestampZero
+
+		case pdata.MetricDataTypeHistogram:
+			histogram := rms.InstrumentationLibraryMetrics().At(0).Metrics().At(0).Histogram()
+			if histogram.AggregationTemporality() == pdata.AggregationTemporalityDelta {
+				want = timestampZero
 			}
 		}
+		assert.Equal(t, want, ts, "Timestamp mismatch")
+		numTimeseries++
 	}
+
 	assert.Equal(t, numStartTimeMetricPageTimeseries, numTimeseries)
 }
 
@@ -1414,29 +949,16 @@ func testEndToEnd(t *testing.T, targets []*testData, useStartTimeMetric bool) {
 
 	// wait for all provided data to be scraped
 	mp.wg.Wait()
-	metrics := cms.AllMetrics()
 
 	// split and store results by target name
-	results := make(map[string][]*agentmetricspb.ExportMetricsServiceRequest)
-	for _, md := range metrics {
-		rms := md.ResourceMetrics()
-		for i := 0; i < rms.Len(); i++ {
-			ocmd := &agentmetricspb.ExportMetricsServiceRequest{}
-			ocmd.Node, ocmd.Resource, ocmd.Metrics = opencensus.ResourceMetricsToOC(rms.At(i))
-			result, ok := results[ocmd.Node.ServiceInfo.Name]
-			if !ok {
-				result = make([]*agentmetricspb.ExportMetricsServiceRequest, 0)
-			}
-			results[ocmd.Node.ServiceInfo.Name] = append(result, ocmd)
-		}
-	}
+	results := metricsGroupedByServiceName(t, cms.AllMetrics())
 
 	lres, lep := len(results), len(mp.endpoints)
 	assert.Equalf(t, lep, lres, "want %d targets, but got %v\n", lep, lres)
 
 	// Skipping the validate loop below, because it falsely assumed that
 	// staleness markers would not be returned, yet the tests are a bit rigid.
-	if true {
+	if false {
 		t.Log(`Skipping the "up" metric checks as they seem to be spuriously failing after staleness marker insertions`)
 		return
 	}
@@ -1515,6 +1037,22 @@ func TestStartTimeMetricRegex(t *testing.T) {
 	}
 }
 
+func metricsGroupedByServiceName(t *testing.T, metricsL []pdata.Metrics) map[string][]pdata.ResourceMetrics {
+	// split and store results by target name
+	splits := make(map[string][]pdata.ResourceMetrics)
+	for _, metrics := range metricsL {
+		rms := metrics.ResourceMetrics()
+		for i := 0; i < rms.Len(); i++ {
+			rmi := rms.At(i)
+			serviceNameAttr, ok := rmi.Resource().Attributes().Get("service.name")
+			assert.True(t, ok, `expected "service.name" as a known attribute`)
+			serviceName := serviceNameAttr.StringVal()
+			splits[serviceName] = append(splits[serviceName], rmi)
+		}
+	}
+	return splits
+}
+
 func testEndToEndRegex(t *testing.T, targets []*testData, useStartTimeMetric bool, startTimeMetricRegex string) {
 	// 1. setup mock server
 	mp, cfg, err := setupMockPrometheus(targets...)
@@ -1533,22 +1071,7 @@ func testEndToEndRegex(t *testing.T, targets []*testData, useStartTimeMetric boo
 
 	// wait for all provided data to be scraped
 	mp.wg.Wait()
-	metrics := cms.AllMetrics()
-
-	// split and store results by target name
-	results := make(map[string][]*agentmetricspb.ExportMetricsServiceRequest)
-	for _, md := range metrics {
-		rms := md.ResourceMetrics()
-		for i := 0; i < rms.Len(); i++ {
-			ocmd := &agentmetricspb.ExportMetricsServiceRequest{}
-			ocmd.Node, ocmd.Resource, ocmd.Metrics = opencensus.ResourceMetricsToOC(rms.At(i))
-			result, ok := results[ocmd.Node.ServiceInfo.Name]
-			if !ok {
-				result = make([]*agentmetricspb.ExportMetricsServiceRequest, 0)
-			}
-			results[ocmd.Node.ServiceInfo.Name] = append(result, ocmd)
-		}
-	}
+	results := metricsGroupedByServiceName(t, cms.AllMetrics())
 
 	lres, lep := len(results), len(mp.endpoints)
 	assert.Equalf(t, lep, lres, "want %d targets, but got %v\n", lep, lres)

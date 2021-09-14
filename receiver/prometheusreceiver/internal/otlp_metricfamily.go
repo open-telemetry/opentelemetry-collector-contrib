@@ -176,7 +176,9 @@ func (mg *metricGroupPdata) toDistributionPoint(orderedLabelKeys []string, dest 
 	point.SetBucketCounts(bucketCounts)
 	// The timestamp MUST be in retrieved from milliseconds and converted to nanoseconds.
 	tsNanos := timestampFromMs(mg.ts)
-	point.SetStartTimestamp(tsNanos)
+	if mg.family.isCumulativeTypePdata() {
+		point.SetStartTimestamp(timestampFromMs(mg.intervalStartTimeMs))
+	}
 	point.SetTimestamp(tsNanos)
 	populateAttributesPdata(orderedLabelKeys, mg.ls, point.Attributes())
 
@@ -322,6 +324,7 @@ func (mf *metricFamilyPdata) ToMetricPdata(metrics *pdata.MetricSlice) (int, int
 	switch mf.mtype {
 	case pdata.MetricDataTypeHistogram:
 		histogram := metric.Histogram()
+		histogram.SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
 		hdpL := histogram.DataPoints()
 		for _, mg := range mf.getGroups() {
 			if !mg.toDistributionPoint(mf.labelKeysOrdered, &hdpL) {
@@ -342,6 +345,7 @@ func (mf *metricFamilyPdata) ToMetricPdata(metrics *pdata.MetricSlice) (int, int
 
 	case pdata.MetricDataTypeSum:
 		sum := metric.Sum()
+		sum.SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
 		sdpL := sum.DataPoints()
 		for _, mg := range mf.getGroups() {
 			if !mg.toNumberDataPoint(mf.labelKeysOrdered, &sdpL) {

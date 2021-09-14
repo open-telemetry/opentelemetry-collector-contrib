@@ -3,13 +3,11 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/promet
 go 1.17
 
 require (
-	github.com/census-instrumentation/opencensus-proto v0.3.0
 	github.com/go-kit/kit v0.11.0
 	github.com/gogo/protobuf v1.3.2
 	github.com/golang/snappy v0.0.4
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusremotewriteexporter v0.35.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.35.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus v0.35.0
 	github.com/prometheus/common v0.30.0
 	github.com/prometheus/prometheus v1.8.2-0.20210621150501-ff58416a0b02
 	github.com/stretchr/testify v1.7.0
@@ -39,6 +37,7 @@ require (
 	github.com/aws/aws-sdk-go v1.38.68 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cenkalti/backoff/v4 v4.1.1 // indirect
+	github.com/census-instrumentation/opencensus-proto v0.3.0 // indirect
 	github.com/cespare/xxhash/v2 v2.1.1 // indirect
 	github.com/containerd/containerd v1.4.3 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
@@ -66,7 +65,6 @@ require (
 	github.com/googleapis/gax-go/v2 v2.0.5 // indirect
 	github.com/googleapis/gnostic v0.4.1 // indirect
 	github.com/gophercloud/gophercloud v0.18.0 // indirect
-	github.com/grpc-ecosystem/grpc-gateway v1.16.0 // indirect
 	github.com/hashicorp/consul/api v1.8.1 // indirect
 	github.com/hashicorp/go-cleanhttp v0.5.1 // indirect
 	github.com/hashicorp/go-hclog v0.12.2 // indirect
@@ -156,5 +154,3 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prome
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal => ../../internal/coreinternal
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry => ../../pkg/resourcetotelemetry
-
-replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus => ../../pkg/translator/opencensus
