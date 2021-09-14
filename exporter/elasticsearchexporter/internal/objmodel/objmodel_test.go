@@ -50,7 +50,7 @@ func TestObjectModel_CreateMap(t *testing.T) {
 		"ignores nil values": {
 			build: func() Document {
 				return DocumentFromAttributes(pdata.NewAttributeMapFromMap(map[string]pdata.AttributeValue{
-					"null": pdata.NewAttributeValueNull(),
+					"null": pdata.NewAttributeValueEmpty(),
 					"str":  pdata.NewAttributeValueString("test"),
 				}))
 			},
@@ -230,7 +230,7 @@ func TestValue_FromAttribute(t *testing.T) {
 		want Value
 	}{
 		"null": {
-			in:   pdata.NewAttributeValueNull(),
+			in:   pdata.NewAttributeValueEmpty(),
 			want: nilValue,
 		},
 		"string": {

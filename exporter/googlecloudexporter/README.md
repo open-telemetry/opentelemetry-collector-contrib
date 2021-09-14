@@ -20,7 +20,7 @@ These instructions are to get you up and running quickly with the GCP exporter i
     *   Use the [OpenTelemetry Collector Builder](https://github.com/open-telemetry/opentelemetry-collector-builder) to generate the Go main package and `go.mod`.
 
     </details>
-    
+
 
 2.  **Create a configuration file `config.yaml`.** The example below shows a minimal recommended configuration that receives OTLP and sends data to GCP, in addition to verbose logging to help understand what is going on. It uses application default credentials (which we will set up in the next step).
 
@@ -116,7 +116,6 @@ The following configuration options are supported:
 - `user_agent` (optional): Override the user agent string sent on requests to Cloud Monitoring (currently only applies to metrics). Specify `{{version}}` to include the application version number. Defaults to `opentelemetry-collector-contrib {{version}}`.
 - `use_insecure` (optional): If true. use gRPC as their communication transport. Only has effect if Endpoint is not "".
 - `timeout` (optional): Timeout for all API calls. If not set, defaults to 12 seconds.
-- `number_of_workers` (optional): NumberOfWorkers sets the number of go rountines that send requests. The minimum number of workers is 1.
 - `resource_mappings` (optional): ResourceMapping defines mapping of resources from source (OpenCensus) to target (Google Cloud).
   - `label_mappings` (optional): Optional flag signals whether we can proceed with transformation if a label is missing in the resource.
 - `retry_on_failure` (optional): Configuration for how to handle retries when sending data to Google Cloud fails.

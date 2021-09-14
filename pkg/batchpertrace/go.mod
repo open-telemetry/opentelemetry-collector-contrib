@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchpertra
 go 1.17
 
 require (
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchpersignal v0.34.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchpersignal v0.35.0
 	github.com/stretchr/testify v1.7.0
 	go.opentelemetry.io/collector/model v0.30.2-0.20210719230137-809cae954ed3
 )

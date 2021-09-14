@@ -183,6 +183,29 @@ func (t *Translator) getSketchBuckets(name string, ts uint64, p pdata.HistogramD
 	}
 }
 
+func (t *Translator) getLegacyBuckets(name string, p pdata.HistogramDataPoint, delta bool, tags []string) []datadog.Metric {
+	// We have a single metric, 'bucket', which is tagged with the bucket bounds. See:
+	// https://github.com/DataDog/integrations-core/blob/7.30.1/datadog_checks_base/datadog_checks/base/checks/openmetrics/v2/transformers/histogram.py
+	ms := make([]datadog.Metric, 0, len(p.BucketCounts()))
+	fullName := fmt.Sprintf("%s.bucket", name)
+	for idx, val := range p.BucketCounts() {
+		lowerBound, upperBound := getBounds(p, idx)
+		bucketTags := append(tags,
+			fmt.Sprintf("lower_bound:%s", formatFloat(lowerBound)),
+			fmt.Sprintf("upper_bound:%s", formatFloat(upperBound)),
+		)
+
+		count := float64(val)
+		ts := uint64(p.Timestamp())
+		if delta {
+			ms = append(ms, metrics.NewCount(fullName, ts, count, bucketTags))
+		} else if dx, ok := t.prevPts.putAndGetDiff(fullName, bucketTags, ts, count); ok {
+			ms = append(ms, metrics.NewCount(fullName, ts, dx, bucketTags))
+		}
+	}
+	return ms
+}
+
 // mapHistogramMetrics maps double histogram metrics slices to Datadog metrics
 //
 // A Histogram metric has:
@@ -193,10 +216,10 @@ func (t *Translator) getSketchBuckets(name string, ts uint64, p pdata.HistogramD
 //    - the count of the number of items in that bucket
 //    - a sample value from each bucket
 //
-// We follow a similar approach to our OpenCensus exporter:
+// We follow a similar approach to our OpenMetrics check:
 // we report sum and count by default; buckets count can also
-// be reported (opt-in), but bounds are ignored.
-func (t *Translator) mapHistogramMetrics(name string, slice pdata.HistogramDataPointSlice, attrTags []string) (ms []datadog.Metric, sl sketches.SketchSeriesList) {
+// be reported (opt-in) tagged by lower bound.
+func (t *Translator) mapHistogramMetrics(name string, slice pdata.HistogramDataPointSlice, delta bool, attrTags []string) (ms []datadog.Metric, sl sketches.SketchSeriesList) {
 	// Allocate assuming none are nil and no buckets
 	ms = make([]datadog.Metric, 0, 2*slice.Len())
 	if !t.cfg.BucketsAsCounts {
@@ -208,49 +231,64 @@ func (t *Translator) mapHistogramMetrics(name string, slice pdata.HistogramDataP
 		tags := getTags(p.Attributes())
 		tags = append(tags, attrTags...)
 
-		ms = append(ms,
-			metrics.NewGauge(fmt.Sprintf("%s.count", name), ts, float64(p.Count()), tags),
-		)
+		{
+			count := float64(p.Count())
+			countName := fmt.Sprintf("%s.count", name)
+			if delta {
+				ms = append(ms, metrics.NewCount(countName, ts, count, tags))
+			} else if dx, ok := t.prevPts.putAndGetDiff(countName, tags, ts, count); ok {
+				ms = append(ms, metrics.NewCount(countName, ts, dx, tags))
+			}
+		}
 
-		sumName := fmt.Sprintf("%s.sum", name)
-		if !t.isSkippable(sumName, p.Sum()) {
-			ms = append(ms, metrics.NewGauge(sumName, ts, p.Sum(), tags))
+		{
+			sum := p.Sum()
+			sumName := fmt.Sprintf("%s.sum", name)
+			if !t.isSkippable(sumName, p.Sum()) {
+				if delta {
+					ms = append(ms, metrics.NewCount(sumName, ts, sum, tags))
+				} else if dx, ok := t.prevPts.putAndGetDiff(sumName, tags, ts, sum); ok {
+					ms = append(ms, metrics.NewCount(sumName, ts, dx, tags))
+				}
+			}
 		}
 
 		if t.cfg.Buckets {
-			if !t.cfg.BucketsAsCounts {
-				// TODO: pass the delta value when PR #5065 is merged.
-				sl = append(sl, t.getSketchBuckets(name, ts, p, true, tags))
+			if t.cfg.BucketsAsCounts {
+				ms = append(ms, t.getLegacyBuckets(name, p, delta, tags)...)
 			} else {
-				// We have a single metric, 'count_per_bucket', which is tagged with the bucket id. See:
-				// https://github.com/DataDog/opencensus-go-exporter-datadog/blob/c3b47f1c6dcf1c47b59c32e8dbb7df5f78162daa/stats.go#L99-L104
-				fullName := fmt.Sprintf("%s.count_per_bucket", name)
-				for idx, count := range p.BucketCounts() {
-					bucketTags := append(tags, fmt.Sprintf("bucket_idx:%d", idx))
-					ms = append(ms,
-						metrics.NewGauge(fullName, ts, float64(count), bucketTags),
-					)
-				}
+				sl = append(sl, t.getSketchBuckets(name, ts, p, true, tags))
 			}
 		}
 	}
 	return
 }
 
-// getQuantileTag returns the quantile tag for summary types.
-// Since the summary type is provided as a compatibility feature, we try to format the float number as close as possible to what
+// formatFloat formats a float number as close as possible to what
 // we do on the Datadog Agent Python OpenMetrics check, which, in turn, tries to
 // follow https://github.com/OpenObservability/OpenMetrics/blob/v1.0.0/specification/OpenMetrics.md#considerations-canonical-numbers
-func getQuantileTag(quantile float64) string {
-	// We handle 0 and 1 separately since they are special
-	if quantile == 0 {
-		// we do this differently on our check
-		return "quantile:0"
-	} else if quantile == 1.0 {
-		// it needs to have a '.0' added at the end according to the spec
-		return "quantile:1.0"
+func formatFloat(f float64) string {
+	if math.IsInf(f, 1) {
+		return "inf"
+	} else if math.IsInf(f, -1) {
+		return "-inf"
+	} else if math.IsNaN(f) {
+		return "nan"
+	} else if f == 0 {
+		return "0"
 	}
-	return fmt.Sprintf("quantile:%s", strconv.FormatFloat(quantile, 'g', -1, 64))
+
+	// Add .0 to whole numbers
+	s := strconv.FormatFloat(f, 'g', -1, 64)
+	if f == math.Floor(f) {
+		s = s + ".0"
+	}
+	return s
+}
+
+// getQuantileTag returns the quantile tag for summary types.
+func getQuantileTag(quantile float64) string {
+	return fmt.Sprintf("quantile:%s", formatFloat(quantile))
 }
 
 // mapSummaryMetrics maps summary datapoints into Datadog metrics
@@ -355,7 +393,17 @@ func (t *Translator) MapMetrics(md pdata.Metrics) (series []datadog.Metric, sl s
 						continue
 					}
 				case pdata.MetricDataTypeHistogram:
-					datapoints, sketchesPoints = t.mapHistogramMetrics(md.Name(), md.Histogram().DataPoints(), attributeTags)
+					switch md.Histogram().AggregationTemporality() {
+					case pdata.AggregationTemporalityCumulative, pdata.AggregationTemporalityDelta:
+						delta := md.Histogram().AggregationTemporality() == pdata.AggregationTemporalityDelta
+						datapoints, sketchesPoints = t.mapHistogramMetrics(md.Name(), md.Histogram().DataPoints(), delta, attributeTags)
+					default: // pdata.AggregationTemporalityUnspecified or any other not supported type
+						t.logger.Debug("Unknown or unsupported aggregation temporality",
+							zap.String("metric name", md.Name()),
+							zap.Any("aggregation temporality", md.Histogram().AggregationTemporality()),
+						)
+						continue
+					}
 				case pdata.MetricDataTypeSummary:
 					datapoints = t.mapSummaryMetrics(md.Name(), md.Summary().DataPoints(), attributeTags)
 				default: // pdata.MetricDataTypeNone or any other not supported type

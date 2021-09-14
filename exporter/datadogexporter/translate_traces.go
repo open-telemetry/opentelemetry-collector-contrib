@@ -592,7 +592,7 @@ func getSpanErrorAndSetTags(s pdata.Span, tags map[string]string) int32 {
 				tags[ext.ErrorMsg] = status.Message()
 				// look for useful http metadata if it exists and add that as a fallback for the error message
 			} else if statusCode, ok := tags[conventions.AttributeHTTPStatusCode]; ok {
-				if statusText, ok := tags[conventions.AttributeHTTPStatusText]; ok {
+				if statusText, ok := tags["http.status_text"]; ok {
 					tags[ext.ErrorMsg] = fmt.Sprintf("%s %s", statusCode, statusText)
 				} else {
 					tags[ext.ErrorMsg] = statusCode
@@ -674,7 +674,7 @@ func eventsToString(evts pdata.SpanEventSlice) string {
 		event := map[string]interface{}{}
 		event[eventNameTag] = spanEvent.Name()
 		event[eventTimeTag] = spanEvent.Timestamp()
-		event[eventAttrTag] = pdata.AttributeMapToMap(spanEvent.Attributes())
+		event[eventAttrTag] = spanEvent.Attributes().AsRaw()
 		eventArray = append(eventArray, event)
 	}
 	eventArrayBytes, _ := json.Marshal(&eventArray)
