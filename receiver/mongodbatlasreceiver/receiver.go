@@ -84,7 +84,7 @@ func (s *receiver) Shutdown(ctx context.Context) error {
 	return nil
 }
 
-func (s *receiver) poll(start string, end string, resolution string) {
+func (s *receiver) poll(start string, end string, resolution string) { //nolint
 	ctx := s.ctx
 	for _, org := range s.client.Organizations(ctx) {
 		// Metrics collection starts here
