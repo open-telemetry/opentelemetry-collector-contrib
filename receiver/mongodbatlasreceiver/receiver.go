@@ -72,7 +72,7 @@ func (s *receiver) Run() error {
 		start = time.Now().Add(s.runFreq * -1)
 	}
 	now := time.Now()
-	s.poll(start.UTC().Format(time.RFC3339), now.UTC().Format(time.RFC3339), "PT1M")
+	s.poll(start.UTC().Format(time.RFC3339), now.UTC().Format(time.RFC3339), s.cfg.Granularity)
 	s.lastRun = &now
 	return nil
 }

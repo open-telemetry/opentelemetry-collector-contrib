@@ -68,7 +68,7 @@ func hasNext(links []*mongodbatlas.Link) bool {
 
 // Return a list of all organizations available with the supplied credentials
 func (s *MongoDBAtlasClient) Organizations(ctx context.Context) []*mongodbatlas.Organization {
-	allOrgs := make([]*mongodbatlas.Organization, 0, 0)
+	allOrgs := make([]*mongodbatlas.Organization, 0)
 	page := 1
 
 	for {
