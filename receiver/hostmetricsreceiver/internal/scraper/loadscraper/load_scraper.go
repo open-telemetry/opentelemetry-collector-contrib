@@ -16,6 +16,7 @@ package loadscraper
 
 import (
 	"context"
+	"runtime"
 	"time"
 
 	"github.com/shirou/gopsutil/load"
@@ -61,6 +62,13 @@ func (s *scraper) scrape(_ context.Context) (pdata.MetricSlice, error) {
 	avgLoadValues, err := s.load()
 	if err != nil {
 		return metrics, scrapererror.NewPartialScrapeError(err, metricsLen)
+	}
+
+	if s.config.PerCPU {
+		divisor := float64(runtime.NumCPU())
+		avgLoadValues.Load1 = avgLoadValues.Load1 * divisor
+		avgLoadValues.Load5 = avgLoadValues.Load1 * divisor
+		avgLoadValues.Load15 = avgLoadValues.Load1 * divisor
 	}
 
 	metrics.EnsureCapacity(metricsLen)
