@@ -28,5 +28,5 @@ func TestWriteLocalFile(t *testing.T) {
 	outPut, err := os.ReadFile(fileName)
 	assert.Equal(t, err, nil)
 	assert.Equal(t, fileContent, string(outPut))
-	os.Remove(fileName)
+	_ = os.Remove(fileName)
 }
