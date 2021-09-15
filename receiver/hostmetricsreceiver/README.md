@@ -69,7 +69,7 @@ filesystem:
 `per_cpu` divides the average load per CPU (default: `false`).
 
 ```yaml
-disk:
+load:
   per_cpu: <false|true>
 ```
 
