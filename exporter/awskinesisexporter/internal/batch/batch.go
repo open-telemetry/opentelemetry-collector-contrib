@@ -20,9 +20,8 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/kinesis"
 	protov1 "github.com/golang/protobuf/proto" //nolint:staticcheck // Some encoding types uses legacy prototype version
-	protov2 "google.golang.org/protobuf/proto"
-
 	"go.opentelemetry.io/collector/consumer/consumererror"
+	protov2 "google.golang.org/protobuf/proto"
 )
 
 const (
