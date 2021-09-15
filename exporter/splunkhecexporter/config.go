@@ -40,8 +40,8 @@ func NewConfig(config *Config) *Config {
 	return config
 }
 
-// HecFields defines the mapping of attributes to fields
-type HecFields struct {
+// OtelToHecMetadata defines the mapping of attributes to HEC metadata
+type OtelToHecMetadata struct {
 	// Source informs the exporter to map a specific unified model attribute value to the standard source field of a HEC event.
 	Source string `mapstructure:"source"`
 	// SourceType informs the exporter to map a specific unified model attribute value to the standard sourcetype field of a HEC event.
@@ -50,6 +50,10 @@ type HecFields struct {
 	Index string `mapstructure:"index"`
 	// Host informs the exporter to map a specific unified model attribute value to the standard Host field and the host.name field of a HEC event.
 	Host string `mapstructure:"host"`
+}
+
+// OtelToHecFields defines the mapping of attributes to HEC fields
+type OtelToHecFields struct {
 	// SeverityText informs the exporter to map the severity text field to a specific HEC field.
 	SeverityText string `mapstructure:"severity_text"`
 	// SeverityNumber informs the exporter to map the severity number field to a specific HEC field.
@@ -98,8 +102,10 @@ type Config struct {
 
 	// App version is used to track telemetry information for Splunk App's using HEC by App version. Defaults to the current OpenTelemetry Collector Contrib build version.
 	SplunkAppVersion string `mapstructure:"splunk_app_version"`
+	// HecMetadata creates a mapping from attributes to HEC specific metadata: source, sourcetype, index and host.
+	HecMetadata OtelToHecMetadata `mapstructure:"otel_to_hec"`
 	// HecFields creates a mapping from attributes to HEC fields.
-	HecFields HecFields `mapstructure:"hec_fields"`
+	HecFields OtelToHecFields `mapstructure:"otel_to_hec_fields"`
 }
 
 func (cfg *Config) getOptionsFromConfig() (*exporterOptions, error) {
@@ -148,19 +154,19 @@ func (cfg *Config) getURL() (out *url.URL, err error) {
 }
 
 func (cfg *Config) GetSourceKey() string {
-	return cfg.HecFields.Source
+	return cfg.HecMetadata.Source
 }
 
 func (cfg *Config) GetSourceTypeKey() string {
-	return cfg.HecFields.SourceType
+	return cfg.HecMetadata.SourceType
 }
 
 func (cfg *Config) GetIndexKey() string {
-	return cfg.HecFields.Index
+	return cfg.HecMetadata.Index
 }
 
 func (cfg *Config) GetHostKey() string {
-	return cfg.HecFields.Host
+	return cfg.HecMetadata.Host
 }
 
 func (cfg *Config) GetNameKey() string {
@@ -177,17 +183,17 @@ func (cfg *Config) GetSeverityNumberKey() string {
 
 // initialize the configuration
 func (cfg *Config) initialize() {
-	if cfg.HecFields.Source == "" {
-		cfg.HecFields.Source = splunk.DefaultSourceLabel
+	if cfg.HecMetadata.Source == "" {
+		cfg.HecMetadata.Source = splunk.DefaultSourceLabel
 	}
-	if cfg.HecFields.SourceType == "" {
-		cfg.HecFields.SourceType = splunk.DefaultSourceTypeLabel
+	if cfg.HecMetadata.SourceType == "" {
+		cfg.HecMetadata.SourceType = splunk.DefaultSourceTypeLabel
 	}
-	if cfg.HecFields.Index == "" {
-		cfg.HecFields.Index = splunk.DefaultIndexLabel
+	if cfg.HecMetadata.Index == "" {
+		cfg.HecMetadata.Index = splunk.DefaultIndexLabel
 	}
-	if cfg.HecFields.Host == "" {
-		cfg.HecFields.Host = conventions.AttributeHostName
+	if cfg.HecMetadata.Host == "" {
+		cfg.HecMetadata.Host = conventions.AttributeHostName
 	}
 	if cfg.HecFields.SeverityText == "" {
 		cfg.HecFields.SeverityText = splunk.DefaultSeverityTextLabel

@@ -86,11 +86,13 @@ func TestLoadConfig(t *testing.T) {
 			},
 			InsecureSkipVerify: false,
 		},
-		HecFields: HecFields{
-			Source:         "mysource",
-			SourceType:     "mysourcetype",
-			Index:          "myindex",
-			Host:           "myhost",
+		HecMetadata: OtelToHecMetadata{
+			Source:     "mysource",
+			SourceType: "mysourcetype",
+			Index:      "myindex",
+			Host:       "myhost",
+		},
+		HecFields: OtelToHecFields{
 			SeverityText:   "myseverityfield",
 			SeverityNumber: "myseveritynumfield",
 			Name:           "mynamefield",

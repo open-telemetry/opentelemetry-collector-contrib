@@ -102,7 +102,7 @@ func Test_traceDataToSplunk(t *testing.T) {
 			},
 			configFn: func() *Config {
 				cfg := NewConfig(&Config{
-					HecFields: HecFields{
+					HecMetadata: OtelToHecMetadata{
 						Source:     "mysource",
 						SourceType: "mysourcetype",
 						Host:       "myhost",

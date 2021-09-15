@@ -52,7 +52,7 @@ func createDefaultConfig() config.Exporter {
 		DisableCompression:   false,
 		MaxConnections:       defaultMaxIdleCons,
 		MaxContentLengthLogs: maxContentLengthLogsLimit,
-		HecFields:            HecFields{},
+		HecMetadata:          OtelToHecMetadata{},
 	}
 }
 

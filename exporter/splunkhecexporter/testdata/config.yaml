@@ -30,11 +30,12 @@ exporters:
       max_elapsed_time: 10m
     splunk_app_name: "OpenTelemetry-Collector Splunk Exporter"
     splunk_app_version: "v0.0.1"
-    hec_fields:
+    otel_to_hec:
       source: "mysource"
       sourcetype: "mysourcetype"
       index: "myindex"
       host: "myhost"
+    otel_to_hec_fields:
       severity_text: "myseverityfield"
       severity_number: "myseveritynumfield"
       name: "mynamefield"
