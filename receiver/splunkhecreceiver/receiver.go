@@ -169,10 +169,11 @@ func (r *splunkReceiver) Start(_ context.Context, host component.Host) error {
 	}
 
 	mx := mux.NewRouter()
-	mx.NewRoute().HandlerFunc(r.handleReq)
 	if r.metricsConsumer == nil {
 		mx.NewRoute().Path(r.config.RawPath).HandlerFunc(r.handleRawReq)
 	}
+	mx.NewRoute().HandlerFunc(r.handleReq)
+
 
 	r.server = r.config.HTTPServerSettings.ToServer(mx, r.settings)
 
