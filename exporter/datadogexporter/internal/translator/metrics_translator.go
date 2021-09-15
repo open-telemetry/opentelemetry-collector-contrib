@@ -223,7 +223,7 @@ func (t *Translator) getLegacyBuckets(name string, p pdata.HistogramDataPoint, d
 func (t *Translator) mapHistogramMetrics(name string, slice pdata.HistogramDataPointSlice, delta bool, attrTags []string) (ms []datadog.Metric, sl sketches.SketchSeriesList) {
 	// Allocate assuming none are nil and no buckets
 	ms = make([]datadog.Metric, 0, 2*slice.Len())
-	if !t.cfg.BucketsAsCounts {
+	if t.cfg.BucketsAsDistributions {
 		sl = make(sketches.SketchSeriesList, 0, slice.Len())
 	}
 	for i := 0; i < slice.Len(); i++ {
@@ -232,7 +232,7 @@ func (t *Translator) mapHistogramMetrics(name string, slice pdata.HistogramDataP
 		tags := getTags(p.Attributes())
 		tags = append(tags, attrTags...)
 
-		if t.cfg.BucketsAsCounts {
+		if !t.cfg.BucketsAsDistributions {
 			count := float64(p.Count())
 			countName := fmt.Sprintf("%s.count", name)
 			if delta {
@@ -242,7 +242,7 @@ func (t *Translator) mapHistogramMetrics(name string, slice pdata.HistogramDataP
 			}
 		}
 
-		if t.cfg.BucketsAsCounts {
+		if !t.cfg.BucketsAsDistributions {
 			sum := p.Sum()
 			sumName := fmt.Sprintf("%s.sum", name)
 			if !t.isSkippable(sumName, p.Sum()) {
@@ -255,10 +255,10 @@ func (t *Translator) mapHistogramMetrics(name string, slice pdata.HistogramDataP
 		}
 
 		if t.cfg.Buckets {
-			if t.cfg.BucketsAsCounts {
-				ms = append(ms, t.getLegacyBuckets(name, p, delta, tags)...)
-			} else {
+			if t.cfg.BucketsAsDistributions {
 				sl = append(sl, t.getSketchBuckets(name, ts, p, true, tags))
+			} else {
+				ms = append(ms, t.getLegacyBuckets(name, p, delta, tags)...)
 			}
 		}
 	}
