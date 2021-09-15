@@ -11,8 +11,8 @@ require (
 	github.com/prometheus/prometheus v1.8.2-0.20210621150501-ff58416a0b02
 	github.com/stretchr/testify v1.7.0
 	github.com/tidwall/wal v0.1.5
-	go.opentelemetry.io/collector v0.35.1-0.20210913155934-36e0bbaf40b2
-	go.opentelemetry.io/collector/model v0.35.1-0.20210913155934-36e0bbaf40b2
+	go.opentelemetry.io/collector v0.35.1-0.20210915171347-6bc5ed0cf157
+	go.opentelemetry.io/collector/model v0.35.1-0.20210915171347-6bc5ed0cf157
 )
 
 require (
