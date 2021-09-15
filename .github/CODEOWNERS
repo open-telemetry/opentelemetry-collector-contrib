@@ -81,7 +81,6 @@ receiver/redisreceiver/                              @open-telemetry/collector-c
 receiver/sapmreceiver/                               @open-telemetry/collector-contrib-approvers @owais
 receiver/signalfxreceiver/                           @open-telemetry/collector-contrib-approvers @pjanotti @asuresh4
 receiver/simpleprometheusreceiver/                   @open-telemetry/collector-contrib-approvers @asuresh4
-receiver/splunkhecrawreceiver/                       @open-telemetry/collector-contrib-approvers @atoulme @keitwb
 receiver/splunkhecreceiver/                          @open-telemetry/collector-contrib-approvers @atoulme @keitwb
 receiver/filelogreceiver/                            @open-telemetry/collector-contrib-approvers @djaglowski
 receiver/statsdreceiver/                             @open-telemetry/collector-contrib-approvers @keitwb @jmacd

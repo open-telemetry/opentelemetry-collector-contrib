@@ -514,10 +514,6 @@ updates:
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
-    directory: "/receiver/splunkhecrawreceiver"
-    schedule:
-      interval: "weekly"
-  - package-ecosystem: "gomod"
     directory: "/receiver/splunkhecreceiver"
     schedule:
       interval: "weekly"

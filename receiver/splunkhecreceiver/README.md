@@ -29,7 +29,7 @@ The following settings are optional:
       Note: Both `key_file` and `cert_file` are required for TLS connection.
     * `key_file`: Specifies the key file to use for TLS connection. Note: Both
       `key_file` and `cert_file` are required for TLS connection.
-* `path` (default = '/*'): The path to listen on, as a glob expression.
+* `raw_path` (default = '/services/collector/raw'): The path accepting [raw HEC events](https://docs.splunk.com/Documentation/Splunk/8.2.2/Data/HECExamples#Example_3:_Send_raw_text_to_HEC). Only applies when the receiver is used for logs.
 * `hec_metadata_to_otel_attrs/source` (default = 'com.splunk.source'): Specifies the mapping of the source field to a specific unified model attribute.
 * `hec_metadata_to_otel_attrs/sourcetype` (default = 'com.splunk.sourcetype'): Specifies the mapping of the sourcetype field to a specific unified model attribute.
 * `hec_metadata_to_otel_attrs/index` (default = 'com.splunk.index'): Specifies the mapping of the  index field to a specific unified model attribute.
@@ -44,7 +44,7 @@ receivers:
     tls:
       cert_file: /test.crt
       key_file: /test.key
-    path: "/myhecreceiver"
+    raw_path: "/raw"
     hec_metadata_to_otel_attrs:
       source: "mysource"
       sourcetype: "mysourcetype"

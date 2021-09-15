@@ -73,21 +73,19 @@ func TestCreateNilNextConsumerMetrics(t *testing.T) {
 
 func TestCreateMetricsReceiverWithBadConfig(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	cfg.Endpoint = "localhost:1"
-	cfg.Path = " *[* "
+	cfg.Endpoint = "localhost:::1"
 
 	mReceiver, err := createMetricsReceiver(context.Background(), componenttest.NewNopReceiverCreateSettings(), cfg, consumertest.NewNop())
-	assert.EqualError(t, err, "unexpected end of input")
+	assert.EqualError(t, err, "endpoint is not formatted correctly: address localhost:::1: too many colons in address")
 	assert.Nil(t, mReceiver, "receiver creation failed")
 }
 
 func TestCreateLogsReceiverWithBadConfig(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	cfg.Endpoint = "localhost:1"
-	cfg.Path = " *[* "
+	cfg.Endpoint = "localhost:::1"
 
 	mReceiver, err := createLogsReceiver(context.Background(), componenttest.NewNopReceiverCreateSettings(), cfg, consumertest.NewNop())
-	assert.EqualError(t, err, "unexpected end of input")
+	assert.EqualError(t, err, "endpoint is not formatted correctly: address localhost:::1: too many colons in address")
 	assert.Nil(t, mReceiver, "receiver creation failed")
 }
 

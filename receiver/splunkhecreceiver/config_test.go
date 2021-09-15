@@ -18,7 +18,6 @@ import (
 	"path"
 	"testing"
 
-	"github.com/gobwas/glob"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -29,54 +28,6 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 )
-
-func TestDefaultPath(t *testing.T) {
-	c := createDefaultConfig()
-	err := c.(*Config).initialize()
-	assert.NoError(t, err)
-	assert.True(t, c.(*Config).pathGlob.Match("/foo"))
-	assert.True(t, c.(*Config).pathGlob.Match("/foo/bar"))
-	assert.True(t, c.(*Config).pathGlob.Match("/bar"))
-}
-
-func TestBadGlob(t *testing.T) {
-	c := createDefaultConfig().(*Config)
-	c.Path = "["
-	err := c.initialize()
-	assert.Error(t, err)
-}
-
-func TestFixedPath(t *testing.T) {
-	c := createDefaultConfig()
-	c.(*Config).Path = "/foo"
-	err := c.(*Config).initialize()
-	assert.NoError(t, err)
-	assert.True(t, c.(*Config).pathGlob.Match("/foo"))
-	assert.False(t, c.(*Config).pathGlob.Match("/foo/bar"))
-	assert.False(t, c.(*Config).pathGlob.Match("/bar"))
-}
-
-func TestPathWithGlob(t *testing.T) {
-	c := createDefaultConfig()
-	c.(*Config).Path = "/foo/*"
-	err := c.(*Config).initialize()
-	assert.NoError(t, err)
-	assert.False(t, c.(*Config).pathGlob.Match("/foo"))
-	assert.True(t, c.(*Config).pathGlob.Match("/foo/bar"))
-	assert.False(t, c.(*Config).pathGlob.Match("/bar"))
-}
-
-func TestInvalidPathGlobPattern(t *testing.T) {
-	c := Config{Path: "**/ "}
-	err := c.initialize()
-	assert.Error(t, err)
-}
-
-func TestInvalidPathSpaces(t *testing.T) {
-	c := Config{Path: "  foo  "}
-	err := c.initialize()
-	assert.Error(t, err)
-}
 
 func TestCreateValidEndpoint(t *testing.T) {
 	endpoint, err := extractPortFromEndpoint("localhost:123")
@@ -129,7 +80,7 @@ func TestLoadConfig(t *testing.T) {
 		AccessTokenPassthroughConfig: splunk.AccessTokenPassthroughConfig{
 			AccessTokenPassthrough: true,
 		},
-		Path: "/foo",
+		RawPath:       "/foo",
 		HecToOtelAttrs: splunk.HecToOtelAttrs{
 			Source:     "file.name",
 			SourceType: "foobar",
@@ -137,7 +88,6 @@ func TestLoadConfig(t *testing.T) {
 			Host:       "myhostfield",
 		},
 	}
-	expectedAllSettings.pathGlob, _ = glob.Compile("/foo")
 	assert.Equal(t, expectedAllSettings, r1)
 
 	r2 := cfg.Receivers[config.NewIDWithName(typeStr, "tls")].(*Config)
@@ -156,7 +106,7 @@ func TestLoadConfig(t *testing.T) {
 		AccessTokenPassthroughConfig: splunk.AccessTokenPassthroughConfig{
 			AccessTokenPassthrough: false,
 		},
-		Path: "",
+		RawPath:       "/services/collector/raw",
 		HecToOtelAttrs: splunk.HecToOtelAttrs{
 			Source:     "com.splunk.source",
 			SourceType: "com.splunk.sourcetype",
@@ -164,6 +114,5 @@ func TestLoadConfig(t *testing.T) {
 			Host:       "host.name",
 		},
 	}
-	expectedTLSConfig.pathGlob, _ = glob.Compile("*")
 	assert.Equal(t, expectedTLSConfig, r2)
 }

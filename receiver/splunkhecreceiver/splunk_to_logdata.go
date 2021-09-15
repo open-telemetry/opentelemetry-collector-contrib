@@ -62,7 +62,9 @@ func splunkHecToLogData(logger *zap.Logger, events []*splunk.Event, resourceCust
 		if event.Index != "" {
 			logRecord.Attributes().InsertString(config.HecToOtelAttrs.Index, event.Index)
 		}
-		resourceCustomizer(rl.Resource())
+		if resourceCustomizer != nil {
+			resourceCustomizer(rl.Resource())
+		}
 		keys := make([]string, 0, len(event.Fields))
 		for k := range event.Fields {
 			keys = append(keys, k)

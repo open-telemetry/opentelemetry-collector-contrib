@@ -19,7 +19,6 @@ import (
 	"net"
 	"strconv"
 
-	"github.com/gobwas/glob"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
 	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
@@ -33,9 +32,8 @@ type Config struct {
 	confighttp.HTTPServerSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
 
 	splunk.AccessTokenPassthroughConfig `mapstructure:",squash"`
-	// Path we will listen on, defaults to `*` (anything matches)
-	Path     string `mapstructure:"path"`
-	pathGlob glob.Glob
+	// RawPath for raw data collection, default is '/services/collector/raw'
+	RawPath string `mapstructure:"raw_path"`
 	// HecToOtelAttrs creates a mapping from HEC metadata to attributes.
 	HecToOtelAttrs splunk.HecToOtelAttrs `mapstructure:"hec_metadata_to_otel_attrs"`
 }
@@ -54,17 +52,10 @@ func (c *Config) initialize() error {
 	if c.HecToOtelAttrs.Host == "" {
 		c.HecToOtelAttrs.Host = conventions.AttributeHostName
 	}
-
-	path := c.Path
-	if path == "" {
-		path = "*"
+	if c.RawPath == "" {
+		c.RawPath = splunk.DefaultRawPath
 	}
-	glob, err := glob.Compile(path)
-	if err != nil {
-		return err
-	}
-	c.pathGlob = glob
-	_, err = extractPortFromEndpoint(c.Endpoint)
+	_, err := extractPortFromEndpoint(c.Endpoint)
 	return err
 }
 
