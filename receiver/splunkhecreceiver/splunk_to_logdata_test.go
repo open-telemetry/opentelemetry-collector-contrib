@@ -26,7 +26,7 @@ import (
 )
 
 var defaultTestingHecConfig = &Config{
-	Attrs: OtelAttrs{
+	Attrs: HecToOtelAttrs{
 		Source:     splunk.DefaultSourceLabel,
 		SourceType: splunk.DefaultSourceTypeLabel,
 		Index:      splunk.DefaultIndexLabel,
@@ -178,7 +178,7 @@ func Test_SplunkHecToLogData(t *testing.T) {
 				},
 			},
 			hecConfig: &Config{
-				Attrs: OtelAttrs{
+				Attrs: HecToOtelAttrs{
 					Source:     "mysource",
 					SourceType: "mysourcetype",
 					Index:      "myindex",

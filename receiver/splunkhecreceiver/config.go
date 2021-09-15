@@ -27,8 +27,8 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 )
 
-// OtelAttrs defines the mapping of Splunk HEC metadata to attributes
-type OtelAttrs struct {
+// HecToOtelAttrs defines the mapping of Splunk HEC metadata to attributes
+type HecToOtelAttrs struct {
 	// Source informs the receiver to map the source field to a specific unified model attribute.
 	Source string `mapstructure:"source"`
 	// SourceType informs the receiver to map the sourcetype field to a specific unified model attribute.
@@ -51,7 +51,7 @@ type Config struct {
 	Path     string `mapstructure:"path"`
 	pathGlob glob.Glob
 	// Attrs creates a mapping from HEC metadata to attributes.
-	Attrs OtelAttrs `mapstructure:"attrs"`
+	Attrs HecToOtelAttrs `mapstructure:"hec_to_otel_attrs"`
 }
 
 // initialize the configuration

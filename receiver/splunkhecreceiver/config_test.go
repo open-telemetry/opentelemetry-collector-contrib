@@ -130,7 +130,7 @@ func TestLoadConfig(t *testing.T) {
 			AccessTokenPassthrough: true,
 		},
 		Path: "/foo",
-		Attrs: OtelAttrs{
+		Attrs: HecToOtelAttrs{
 			Source:     "file.name",
 			SourceType: "foobar",
 			Index:      "myindex",
@@ -158,7 +158,7 @@ func TestLoadConfig(t *testing.T) {
 			AccessTokenPassthrough: false,
 		},
 		Path: "",
-		Attrs: OtelAttrs{
+		Attrs: HecToOtelAttrs{
 			Source:     "com.splunk.source",
 			SourceType: "com.splunk.sourcetype",
 			Index:      "com.splunk.index",
