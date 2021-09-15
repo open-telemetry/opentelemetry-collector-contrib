@@ -119,7 +119,7 @@ func (c InputConfig) Build(context operator.BuildContext) ([]operator.Operator, 
 	}
 
 	// Ensure that multiline is buildable
-	_, err = c.Splitter.Build(encoding.Encoding, false)
+	_, err = c.Splitter.Build(encoding.Encoding, false, int(c.MaxLogSize))
 	if err != nil {
 		return nil, err
 	}

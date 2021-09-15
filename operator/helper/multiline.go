@@ -116,20 +116,24 @@ type MultilineConfig struct {
 }
 
 // Build will build a Multiline operator.
-func (c MultilineConfig) Build(encoding encoding.Encoding, flushAtEOF bool, force *Flusher) (bufio.SplitFunc, error) {
-	return c.getSplitFunc(encoding, flushAtEOF, force)
+func (c MultilineConfig) Build(encoding encoding.Encoding, flushAtEOF bool, force *Flusher, maxLogSize int) (bufio.SplitFunc, error) {
+	return c.getSplitFunc(encoding, flushAtEOF, force, maxLogSize)
 }
 
 // getSplitFunc returns split function for bufio.Scanner basing on configured pattern
-func (c MultilineConfig) getSplitFunc(encoding encoding.Encoding, flushAtEOF bool, force *Flusher) (bufio.SplitFunc, error) {
+func (c MultilineConfig) getSplitFunc(encodingVar encoding.Encoding, flushAtEOF bool, force *Flusher, maxLogSize int) (bufio.SplitFunc, error) {
 	endPattern := c.LineEndPattern
 	startPattern := c.LineStartPattern
 
 	switch {
 	case endPattern != "" && startPattern != "":
 		return nil, fmt.Errorf("only one of line_start_pattern or line_end_pattern can be set")
+	case encodingVar == encoding.Nop && (endPattern != "" || startPattern != ""):
+		return nil, fmt.Errorf("line_start_pattern or line_end_pattern should not be set when using nop encoding")
+	case encodingVar == encoding.Nop:
+		return SplitNone(maxLogSize), nil
 	case endPattern == "" && startPattern == "":
-		return NewNewlineSplitFunc(encoding, flushAtEOF, force)
+		return NewNewlineSplitFunc(encodingVar, flushAtEOF, force)
 	case endPattern != "":
 		re, err := regexp.Compile("(?m)" + c.LineEndPattern)
 		if err != nil {
@@ -201,6 +205,24 @@ func NewLineStartSplitFunc(re *regexp.Regexp, flushAtEOF bool, force *Flusher) b
 		token = trimWhitespaces(data[firstMatchStart:secondMatchStart]) // the token begins at the first match, and ends at the beginning of the second match
 		err = nil
 		return
+	}
+}
+
+// SplitNone doesn't split any of the bytes, it reads in all of the bytes and returns it all at once. This is for when the encoding is nop
+func SplitNone(maxLogSize int) bufio.SplitFunc {
+	return func(data []byte, atEOF bool) (advance int, token []byte, err error) {
+		if len(data) >= maxLogSize {
+			return maxLogSize, data[:maxLogSize], nil
+		}
+
+		if !atEOF {
+			return 0, nil, nil
+		}
+
+		if len(data) == 0 {
+			return 0, nil, nil
+		}
+		return len(data), data, nil
 	}
 }
 
@@ -313,9 +335,9 @@ func NewSplitterConfig() SplitterConfig {
 }
 
 // Build builds Splitter struct
-func (c *SplitterConfig) Build(encoding encoding.Encoding, flushAtEOF bool) (*Splitter, error) {
+func (c *SplitterConfig) Build(encoding encoding.Encoding, flushAtEOF bool, maxLogSize int) (*Splitter, error) {
 	flusher := c.Flusher.Build()
-	splitFunc, err := c.Multiline.Build(encoding, flushAtEOF, flusher)
+	splitFunc, err := c.Multiline.Build(encoding, flushAtEOF, flusher, maxLogSize)
 
 	if err != nil {
 		return nil, err
