@@ -36,11 +36,16 @@ func TestScrape(t *testing.T) {
 		name        string
 		loadFunc    func() (*load.AvgStat, error)
 		expectedErr string
+		perCPU      bool
 	}
 
 	testCases := []testCase{
 		{
 			name: "Standard",
+		},
+		{
+			name:   "PerCPUEnabled",
+			perCPU: true,
 		},
 		{
 			name:        "Load Error",
@@ -51,7 +56,7 @@ func TestScrape(t *testing.T) {
 
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
-			scraper := newLoadScraper(context.Background(), zap.NewNop(), &Config{})
+			scraper := newLoadScraper(context.Background(), zap.NewNop(), &Config{PerCPU: test.perCPU})
 			if test.loadFunc != nil {
 				scraper.load = test.loadFunc
 			}
