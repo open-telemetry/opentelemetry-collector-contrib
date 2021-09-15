@@ -41,7 +41,6 @@ const (
 	defaultServerTimeout = 20 * time.Second
 
 	responseOK                        = "OK"
-	responseNotFound                  = "Not found"
 	responseInvalidMethod             = `Only "POST" method is supported`
 	responseInvalidEncoding           = `"Content-Encoding" must be "gzip" or empty`
 	responseErrGzipReader             = "Error on gzip body"
@@ -325,17 +324,6 @@ func (r *splunkReceiver) handleReq(resp http.ResponseWriter, req *http.Request) 
 	} else {
 		r.consumeMetrics(ctx, events, resp, req)
 	}
-}
-
-func (r *splunkReceiver) createResourceCustomizer() func(*http.Request, pdata.Resource) {
-	if r.config.AccessTokenPassthrough {
-		return func(req *http.Request, resource pdata.Resource) {
-			if accessToken := req.Header.Get(splunk.HECTokenHeader); accessToken != "" {
-				resource.Attributes().InsertString(splunk.HecTokenLabel, accessToken)
-			}
-		}
-	}
-	return func(req *http.Request, resource pdata.Resource) {}
 }
 
 func (r *splunkReceiver) consumeMetrics(ctx context.Context, events []*splunk.Event, resp http.ResponseWriter, req *http.Request) {
