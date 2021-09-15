@@ -16,6 +16,7 @@ package loadscraper // import "github.com/open-telemetry/opentelemetry-collector
 
 import (
 	"context"
+	"runtime"
 	"time"
 
 	"github.com/shirou/gopsutil/v3/load"
@@ -62,6 +63,13 @@ func (s *scraper) scrape(_ context.Context) (pdata.Metrics, error) {
 	avgLoadValues, err := s.load()
 	if err != nil {
 		return md, scrapererror.NewPartialScrapeError(err, metricsLen)
+	}
+
+	if s.config.PerCPU {
+		divisor := float64(runtime.NumCPU())
+		avgLoadValues.Load1 = avgLoadValues.Load1 * divisor
+		avgLoadValues.Load5 = avgLoadValues.Load1 * divisor
+		avgLoadValues.Load15 = avgLoadValues.Load1 * divisor
 	}
 
 	metrics.EnsureCapacity(metricsLen)

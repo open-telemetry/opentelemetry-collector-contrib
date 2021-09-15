@@ -64,6 +64,15 @@ filesystem:
     match_type: <strict|regexp>
 ```
 
+### Load
+
+`per_cpu` divides the average load per CPU (default: `false`).
+
+```yaml
+disk:
+  per_cpu: <false|true>
+```
+
 ### Network
 
 ```yaml
