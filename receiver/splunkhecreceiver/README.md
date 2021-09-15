@@ -3,6 +3,7 @@
 The Splunk HEC receiver accepts events in the [Splunk HEC
 format](https://docs.splunk.com/Documentation/Splunk/8.0.5/Data/FormateventsforHTTPEventCollector).
 This allows the collector to receive logs and metrics.
+Logs can be received as [JSON data](https://docs.splunk.com/Documentation/Splunk/8.2.2/Data/FormateventsforHTTPEventCollector#Event_data) or as [raw data](https://docs.splunk.com/Documentation/Splunk/8.2.2/Data/FormateventsforHTTPEventCollector#Raw_event_parsing) for logs under the `raw_path` path.
 
 Supported pipeline types: logs, metrics
 
