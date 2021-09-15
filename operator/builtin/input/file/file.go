@@ -415,5 +415,5 @@ func (f *InputOperator) loadLastPollFiles(ctx context.Context) error {
 
 // getMultiline returns helper.Splitter structure and error eventually
 func (f *InputOperator) getMultiline() (*helper.Splitter, error) {
-	return f.Splitter.Build(f.encoding.Encoding, false)
+	return f.Splitter.Build(f.encoding.Encoding, false, f.MaxLogSize)
 }

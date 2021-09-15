@@ -18,6 +18,7 @@ import (
 	"bufio"
 	"bytes"
 	"errors"
+	"fmt"
 	"regexp"
 	"testing"
 	"time"
@@ -174,7 +175,7 @@ func TestLineStartSplitFunc(t *testing.T) {
 			LineStartPattern: tc.Pattern,
 		}
 
-		splitFunc, err := cfg.getSplitFunc(unicode.UTF8, false, tc.Flusher)
+		splitFunc, err := cfg.getSplitFunc(unicode.UTF8, false, tc.Flusher, 0)
 		require.NoError(t, err)
 		t.Run(tc.Name, tc.RunFunc(splitFunc))
 	}
@@ -314,7 +315,7 @@ func TestLineEndSplitFunc(t *testing.T) {
 			LineEndPattern: tc.Pattern,
 		}
 
-		splitFunc, err := cfg.getSplitFunc(unicode.UTF8, false, tc.Flusher)
+		splitFunc, err := cfg.getSplitFunc(unicode.UTF8, false, tc.Flusher, 0)
 		require.NoError(t, err)
 		t.Run(tc.Name, tc.RunFunc(splitFunc))
 	}
@@ -418,6 +419,114 @@ func TestNewlineSplitFunc(t *testing.T) {
 		require.NoError(t, err)
 		t.Run(tc.Name, tc.RunFunc(splitFunc))
 	}
+}
+
+type noSplitTestCase struct {
+	Name              string
+	Raw               []byte
+	ExpectedTokenized [][]byte
+}
+
+func (tc noSplitTestCase) RunFunc(splitFunc bufio.SplitFunc) func(t *testing.T) {
+	return func(t *testing.T) {
+		scanner := bufio.NewScanner(bytes.NewReader(tc.Raw))
+		scanner.Split(splitFunc)
+		tokenized := make([][]byte, 0)
+		for {
+			ok := scanner.Scan()
+			if !ok {
+				break
+			}
+			tokenized = append(tokenized, scanner.Bytes())
+		}
+
+		assert.Equal(t, tc.ExpectedTokenized, tokenized)
+	}
+}
+
+func TestNoSplitFunc(t *testing.T) {
+	const largeLogSize = 100
+	testCases := []noSplitTestCase{
+		{
+			Name: "OneLogSimple",
+			Raw:  []byte("my log\n"),
+			ExpectedTokenized: [][]byte{
+				[]byte("my log\n"),
+			},
+		},
+		{
+			Name: "TwoLogsSimple",
+			Raw:  []byte("log1\nlog2\n"),
+			ExpectedTokenized: [][]byte{
+				[]byte("log1\nlog2\n"),
+			},
+		},
+		{
+			Name: "TwoLogsCarriageReturn",
+			Raw:  []byte("log1\r\nlog2\r\n"),
+			ExpectedTokenized: [][]byte{
+				[]byte("log1\r\nlog2\r\n"),
+			},
+		},
+		{
+			Name:              "NoTailingNewline",
+			Raw:               []byte(`foo`),
+			ExpectedTokenized: [][]byte{[]byte("foo")},
+		},
+		{
+			Name: "HugeLog100",
+			Raw: func() []byte {
+				return generatedByteSliceOfLength(largeLogSize)
+			}(),
+			ExpectedTokenized: [][]byte{
+				generatedByteSliceOfLength(100),
+			},
+		},
+		{
+			Name: "HugeLog300",
+			Raw: func() []byte {
+				return generatedByteSliceOfLength(largeLogSize * 3)
+			}(),
+			ExpectedTokenized: [][]byte{
+				[]byte("abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuv"),
+				[]byte("wxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqr"),
+				[]byte("stuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmn"),
+			},
+		},
+		{
+			Name: "EOFBeforeMaxLogSize",
+			Raw: func() []byte {
+				return generatedByteSliceOfLength(largeLogSize * 3.5)
+			}(),
+			ExpectedTokenized: [][]byte{
+				[]byte("abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuv"),
+				[]byte("wxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqr"),
+				[]byte("stuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmn"),
+				[]byte("opqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijkl"),
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		splitFunc := SplitNone(largeLogSize)
+		t.Run(tc.Name, tc.RunFunc(splitFunc))
+	}
+}
+
+func TestNoopEncodingError(t *testing.T) {
+	cfg := &MultilineConfig{
+		LineEndPattern: "\n",
+	}
+
+	_, err := cfg.getSplitFunc(encoding.Nop, false, nil, 0)
+	require.Equal(t, err, fmt.Errorf("line_start_pattern or line_end_pattern should not be set when using nop encoding"))
+
+	cfg = &MultilineConfig{
+		LineStartPattern: "\n",
+	}
+
+	_, err = cfg.getSplitFunc(encoding.Nop, false, nil, 0)
+	require.Equal(t, err, fmt.Errorf("line_start_pattern or line_end_pattern should not be set when using nop encoding"))
 }
 
 func TestNewlineSplitFunc_Encodings(t *testing.T) {

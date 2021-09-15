@@ -151,6 +151,15 @@ func waitForMessage(t *testing.T, c chan *entry.Entry, expected string) {
 	}
 }
 
+func waitForByteMessage(t *testing.T, c chan *entry.Entry, expected []byte) {
+	select {
+	case e := <-c:
+		require.Equal(t, expected, e.Body.([]byte))
+	case <-time.After(3 * time.Second):
+		require.FailNow(t, "Timed out waiting for message", expected)
+	}
+}
+
 func waitForMessages(t *testing.T, c chan *entry.Entry, expected []string) {
 	receivedMessages := make([]string, 0, len(expected))
 LOOP:

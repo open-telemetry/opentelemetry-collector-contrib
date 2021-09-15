@@ -205,6 +205,148 @@ func TestReadExistingLogs(t *testing.T) {
 	waitForMessage(t, logReceived, "testlog2")
 }
 
+// TestReadUsingNopEncoding tests when nop encoding is set, that the splitfunction returns all bytes unchanged.
+func TestReadUsingNopEncoding(t *testing.T) {
+	tcs := []struct {
+		testName string
+		input    []byte
+		test     func(*testing.T, chan *entry.Entry)
+	}{
+		{
+			"simple",
+			[]byte("testlog1"),
+			func(t *testing.T, c chan *entry.Entry) {
+				waitForByteMessage(t, c, []byte("testlog1"))
+			},
+		},
+		{
+			"longer than maxlogsize",
+			[]byte("testlog1testlog2testlog3"),
+			func(t *testing.T, c chan *entry.Entry) {
+				waitForByteMessage(t, c, []byte("testlog1"))
+				waitForByteMessage(t, c, []byte("testlog2"))
+				waitForByteMessage(t, c, []byte("testlog3"))
+			},
+		},
+		{
+			"doesn't hit max log size before eof",
+			[]byte("testlog1testlog2test"),
+			func(t *testing.T, c chan *entry.Entry) {
+				waitForByteMessage(t, c, []byte("testlog1"))
+				waitForByteMessage(t, c, []byte("testlog2"))
+				waitForByteMessage(t, c, []byte("test"))
+			},
+		},
+		{
+			"special characters",
+			[]byte("testlog1\n\ttestlog2\n\t"),
+			func(t *testing.T, c chan *entry.Entry) {
+				waitForByteMessage(t, c, []byte("testlog1"))
+				waitForByteMessage(t, c, []byte("\n\ttestlo"))
+				waitForByteMessage(t, c, []byte("g2\n\t"))
+			},
+		},
+	}
+
+	t.Parallel()
+
+	for _, tc := range tcs {
+		t.Run(tc.testName, func(t *testing.T) {
+			operator, logReceived, tempDir := newTestFileOperator(t, func(cfg *InputConfig) {
+				cfg.MaxLogSize = 8
+				cfg.Encoding.Encoding = "nop"
+			}, nil)
+			// Create a file, then start
+			temp := openTemp(t, tempDir)
+			bytesWritten, err := temp.Write(tc.input)
+			require.Greater(t, bytesWritten, 0)
+			require.NoError(t, err)
+			require.NoError(t, operator.Start(testutil.NewMockPersister("test")))
+			defer operator.Stop()
+
+			tc.test(t, logReceived)
+		})
+	}
+}
+
+func TestNopEncodingDifferentLogSizes(t *testing.T) {
+	tcs := []struct {
+		testName   string
+		input      []byte
+		test       func(*testing.T, chan *entry.Entry)
+		maxLogSize helper.ByteSize
+	}{
+		{
+			"same size",
+			[]byte("testlog1"),
+			func(t *testing.T, c chan *entry.Entry) {
+				waitForByteMessage(t, c, []byte("testlog1"))
+			},
+			8,
+		},
+		{
+			"massive log size",
+			[]byte("testlog1"),
+			func(t *testing.T, c chan *entry.Entry) {
+				waitForByteMessage(t, c, []byte("testlog1"))
+			},
+			8000000,
+		},
+		{
+			"slightly larger log size",
+			[]byte("testlog1"),
+			func(t *testing.T, c chan *entry.Entry) {
+				waitForByteMessage(t, c, []byte("testlog1"))
+			},
+			9,
+		},
+		{
+			"slightly smaller log size",
+			[]byte("testlog1"),
+			func(t *testing.T, c chan *entry.Entry) {
+				waitForByteMessage(t, c, []byte("testlog"))
+				waitForByteMessage(t, c, []byte("1"))
+			},
+			7,
+		},
+		{
+			"tiny log size",
+			[]byte("testlog1"),
+			func(t *testing.T, c chan *entry.Entry) {
+				waitForByteMessage(t, c, []byte("t"))
+				waitForByteMessage(t, c, []byte("e"))
+				waitForByteMessage(t, c, []byte("s"))
+				waitForByteMessage(t, c, []byte("t"))
+				waitForByteMessage(t, c, []byte("l"))
+				waitForByteMessage(t, c, []byte("o"))
+				waitForByteMessage(t, c, []byte("g"))
+				waitForByteMessage(t, c, []byte("1"))
+			},
+			1,
+		},
+	}
+
+	t.Parallel()
+
+	for _, tc := range tcs {
+		t.Run(tc.testName, func(t *testing.T) {
+			operator, logReceived, tempDir := newTestFileOperator(t, func(cfg *InputConfig) {
+				cfg.MaxLogSize = tc.maxLogSize
+				cfg.Encoding.Encoding = "nop"
+			}, nil)
+			// Create a file, then start
+			temp := openTemp(t, tempDir)
+			bytesWritten, err := temp.Write(tc.input)
+			require.Greater(t, bytesWritten, 0)
+			require.NoError(t, err)
+			require.NoError(t, operator.Start(testutil.NewMockPersister("test")))
+			defer operator.Stop()
+
+			tc.test(t, logReceived)
+		})
+	}
+}
+
 // ReadNewLogs tests that, after starting, if a new file is created
 // all the entries in that file are read from the beginning
 func TestReadNewLogs(t *testing.T) {
