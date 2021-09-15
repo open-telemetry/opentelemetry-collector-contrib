@@ -27,7 +27,7 @@ import (
 
 func readTestdataConfigYamls(t *testing.T, filename string) map[string]*Config {
 	testFile := path.Join(".", "testdata", filename)
-	v, err := configparser.NewParserFromFile(testFile)
+	v, err := configparser.NewConfigMapFromFile(testFile)
 	require.NoError(t, err)
 
 	cfgs := map[string]*Config{}
