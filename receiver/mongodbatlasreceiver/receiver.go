@@ -88,6 +88,6 @@ func (s *receiver) poll(start string, end string, resolution string) { //nolint
 	ctx := s.ctx
 	for _, org := range s.client.Organizations(ctx) {
 		// Metrics collection starts here
-		s.log.Info("fetch resources for MongoDB Organization", zap.String("org", org.Name))
+		s.log.Debug("fetch resources for MongoDB Organization", zap.String("org", org.Name))
 	}
 }

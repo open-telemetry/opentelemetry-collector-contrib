@@ -16,6 +16,7 @@ package internal
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/mongodb-forks/digest"
 	"go.mongodb.org/atlas/mongodbatlas"
@@ -37,7 +38,7 @@ func NewMongoDBAtlasClient(
 	t := digest.NewTransport(publicKey, privateKey)
 	tc, err := t.Client()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("Could not create MongoDB Atlas transport HTTP client: %w", err)
 	}
 	client := mongodbatlas.NewClient(tc)
 	return &MongoDBAtlasClient{
@@ -75,7 +76,8 @@ func (s *MongoDBAtlasClient) Organizations(ctx context.Context) []*mongodbatlas.
 		orgs, hasNext, err := s.getOrganizationsPage(ctx, page)
 		page++
 		if err != nil {
-			// Error was reported in getOrganizationsPage
+			// TODO: Add error to a metric
+			s.log.Debug("Error retrieving organizations from MongoDB Atlas API", zap.Error(err))
 			break // Stop, returning what we have (probably empty slice)
 		}
 		allOrgs = append(allOrgs, orgs...)
@@ -97,8 +99,7 @@ func (s *MongoDBAtlasClient) getOrganizationsPage(
 	})
 	err = checkMongoDBClientErr(err, response)
 	if err != nil {
-		s.log.Error("Error retrieving organizations from MongoDB Atlas API", zap.Error(err))
-		return nil, false, err
+		return nil, false, fmt.Errorf("Error in retrieving organizations: %w", err)
 	}
 	return orgs.Results, hasNext(orgs.Links), nil
 }
