@@ -136,7 +136,7 @@ func TestDetectResource_Error(t *testing.T) {
 
 	p := NewResourceProvider(zap.NewNop(), time.Second, md1, md2)
 	_, _, err := p.Get(context.Background())
-	require.EqualError(t, err, "err1")
+	require.NoError(t, err)
 }
 
 func TestMergeResource(t *testing.T) {
