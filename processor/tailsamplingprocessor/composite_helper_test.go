@@ -77,6 +77,10 @@ func TestCompositeHelper(t *testing.T) {
 	rlfCfg := cfg.PolicyCfgs[0].CompositeCfg
 	composite, e := getNewCompositePolicy(zap.NewNop(), rlfCfg)
 	require.NotNil(t, composite)
+	require.NotNil(t, cfg.ProcessorSettings)
+	require.Equal(t, 10 * time.Second, cfg.DecisionWait)
+	require.Equal(t, uint64(100), cfg.NumTraces)
+	require.Equal(t, uint64(10), cfg.ExpectedNewTracesPerSec)
 	require.NoError(t, e)
 	// TBD add more assertions
 }
