@@ -173,7 +173,7 @@ func (ocr *ocReceiver) grpcServer(host component.Host) (*grpc.Server, error) {
 	defer ocr.mu.Unlock()
 
 	if ocr.serverGRPC == nil {
-		opts, err := ocr.grpcServerSettings.ToServerOption(host.GetExtensions(), ocr.settings)
+		opts, err := ocr.grpcServerSettings.ToServerOption(host, ocr.settings)
 		if err != nil {
 			return nil, err
 		}
