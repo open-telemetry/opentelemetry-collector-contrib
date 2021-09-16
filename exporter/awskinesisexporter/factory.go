@@ -16,18 +16,12 @@ package awskinesisexporter
 
 import (
 	"context"
-	"errors"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/credentials/stscreds"
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/kinesis"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awskinesisexporter/internal/batch"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awskinesisexporter/internal/producer"
 )
 
 const (
@@ -61,7 +55,7 @@ func createDefaultConfig() config.Exporter {
 }
 
 func NewTracesExporter(ctx context.Context, params component.ExporterCreateSettings, conf config.Exporter) (component.TracesExporter, error) {
-	exp, err := createExporter(ctx, params, conf)
+	exp, err := createExporter(conf, params.Logger)
 	if err != nil {
 		return nil, err
 	}
@@ -77,7 +71,7 @@ func NewTracesExporter(ctx context.Context, params component.ExporterCreateSetti
 }
 
 func NewMetricsExporter(ctx context.Context, params component.ExporterCreateSettings, conf config.Exporter) (component.MetricsExporter, error) {
-	exp, err := createExporter(ctx, params, conf)
+	exp, err := createExporter(conf, params.Logger)
 	if err != nil {
 		return nil, err
 	}
@@ -93,7 +87,7 @@ func NewMetricsExporter(ctx context.Context, params component.ExporterCreateSett
 }
 
 func NewLogsExporter(ctx context.Context, params component.ExporterCreateSettings, conf config.Exporter) (component.LogsExporter, error) {
-	exp, err := createExporter(ctx, params, conf)
+	exp, err := createExporter(conf, params.Logger)
 	if err != nil {
 		return nil, err
 	}
@@ -106,34 +100,4 @@ func NewLogsExporter(ctx context.Context, params component.ExporterCreateSetting
 		exporterhelper.WithRetry(c.RetrySettings),
 		exporterhelper.WithQueue(c.QueueSettings),
 	)
-}
-
-func createExporter(_ context.Context, params component.ExporterCreateSettings, conf config.Exporter) (*Exporter, error) {
-	c, ok := conf.(*Config)
-
-	if !ok {
-		return nil, errors.New("unable to cast provided config")
-	}
-
-	sess, err := session.NewSession(aws.NewConfig().WithRegion(c.AWS.Region))
-	if err != nil {
-		return nil, err
-	}
-
-	var cfgs []*aws.Config
-	if c.AWS.Role != "" {
-		cfgs = append(cfgs, &aws.Config{Credentials: stscreds.NewCredentials(sess, c.AWS.Role)})
-	}
-	if c.AWS.KinesisEndpoint != "" {
-		cfgs = append(cfgs, &aws.Config{Endpoint: aws.String(c.AWS.KinesisEndpoint)})
-	}
-
-	producer, err := producer.NewBatcher(kinesis.New(sess, cfgs...), c.AWS.StreamName,
-		producer.WithLogger(params.Logger),
-	)
-
-	return &Exporter{
-		producer: producer,
-		batcher:  batch.NewJaeger(c.MaxRecordsPerBatch, c.MaxRecordSize),
-	}, err
 }

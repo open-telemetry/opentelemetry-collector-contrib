@@ -16,10 +16,17 @@ package awskinesisexporter
 
 import (
 	"context"
+	"errors"
 
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/credentials/stscreds"
+	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/kinesis"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/model/pdata"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awskinesisexporter/internal/batch"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awskinesisexporter/internal/producer"
@@ -36,6 +43,34 @@ var (
 	_ component.MetricsExporter = (*Exporter)(nil)
 	_ component.LogsExporter    = (*Exporter)(nil)
 )
+
+func createExporter(c config.Exporter, log *zap.Logger) (*Exporter, error) {
+	conf, ok := c.(*Config)
+	if !ok || conf == nil {
+		return nil, errors.New("incorrect config provided")
+	}
+	sess, err := session.NewSession(aws.NewConfig().WithRegion(conf.AWS.Region))
+	if err != nil {
+		return nil, err
+	}
+
+	var cfgs []*aws.Config
+	if conf.AWS.Role != "" {
+		cfgs = append(cfgs, &aws.Config{Credentials: stscreds.NewCredentials(sess, conf.AWS.Role)})
+	}
+	if conf.AWS.KinesisEndpoint != "" {
+		cfgs = append(cfgs, &aws.Config{Endpoint: aws.String(conf.AWS.KinesisEndpoint)})
+	}
+
+	producer, err := producer.NewBatcher(kinesis.New(sess, cfgs...), conf.AWS.StreamName,
+		producer.WithLogger(log),
+	)
+
+	return &Exporter{
+		producer: producer,
+		batcher:  batch.NewJaeger(conf.MaxRecordsPerBatch, conf.MaxRecordSize),
+	}, err
+}
 
 // Start tells the exporter to start. The exporter may prepare for exporting
 // by connecting to the endpoint. Host parameter can be used for communicating
