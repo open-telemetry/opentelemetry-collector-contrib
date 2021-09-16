@@ -42,17 +42,14 @@ func TestLoadConfig(t *testing.T) {
 	require.NotNil(t, cfg)
 
 	e0 := cfg.Exporters[config.NewID(typeStr)]
-	e0.(*Config).initialize()
 
 	// Endpoint and Token do not have a default value so set them directly.
 	defaultCfg := factory.CreateDefaultConfig().(*Config)
-	defaultCfg.initialize()
 	defaultCfg.Token = "00000000-0000-0000-0000-0000000000000"
 	defaultCfg.Endpoint = "https://splunk:8088/services/collector"
 	assert.Equal(t, defaultCfg, e0)
 
 	e1 := cfg.Exporters[config.NewIDWithName(typeStr, "allsettings")]
-	e1.(*Config).initialize()
 	expectedCfg := Config{
 		ExporterSettings:     config.NewExporterSettings(config.NewIDWithName(typeStr, "allsettings")),
 		Token:                "00000000-0000-0000-0000-0000000000000",
@@ -98,7 +95,6 @@ func TestLoadConfig(t *testing.T) {
 			Name:           "mynamefield",
 		},
 	}
-	expectedCfg.initialize()
 	assert.Equal(t, &expectedCfg, e1)
 
 	params := componenttest.NewNopExporterCreateSettings()

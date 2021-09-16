@@ -56,7 +56,7 @@ func Test_metricDataToSplunk(t *testing.T) {
 				return metrics
 			},
 			configFn: func() *Config {
-				return NewConfig(&Config{})
+				return createDefaultConfig().(*Config)
 			},
 		},
 		{
@@ -65,7 +65,7 @@ func Test_metricDataToSplunk(t *testing.T) {
 				return newMetricsWithResources()
 			},
 			configFn: func() *Config {
-				return NewConfig(&Config{})
+				return createDefaultConfig().(*Config)
 			},
 		},
 		{
@@ -77,7 +77,7 @@ func Test_metricDataToSplunk(t *testing.T) {
 				return metrics
 			},
 			configFn: func() *Config {
-				return NewConfig(&Config{})
+				return createDefaultConfig().(*Config)
 			},
 			wantNumDroppedTimeseries: 1,
 		},
@@ -92,7 +92,7 @@ func Test_metricDataToSplunk(t *testing.T) {
 				return metrics
 			},
 			configFn: func() *Config {
-				return NewConfig(&Config{})
+				return createDefaultConfig().(*Config)
 			},
 		},
 		{
@@ -106,7 +106,7 @@ func Test_metricDataToSplunk(t *testing.T) {
 				return metrics
 			},
 			configFn: func() *Config {
-				return NewConfig(&Config{})
+				return createDefaultConfig().(*Config)
 			},
 		},
 		{
@@ -120,7 +120,7 @@ func Test_metricDataToSplunk(t *testing.T) {
 				return metrics
 			},
 			configFn: func() *Config {
-				return NewConfig(&Config{})
+				return createDefaultConfig().(*Config)
 			},
 		},
 		{
@@ -135,7 +135,7 @@ func Test_metricDataToSplunk(t *testing.T) {
 				return metrics
 			},
 			configFn: func() *Config {
-				return NewConfig(&Config{})
+				return createDefaultConfig().(*Config)
 			},
 		},
 		{
@@ -150,7 +150,7 @@ func Test_metricDataToSplunk(t *testing.T) {
 				return metrics
 			},
 			configFn: func() *Config {
-				return NewConfig(&Config{})
+				return createDefaultConfig().(*Config)
 			},
 		},
 		{
@@ -165,7 +165,7 @@ func Test_metricDataToSplunk(t *testing.T) {
 				return metrics
 			},
 			configFn: func() *Config {
-				return NewConfig(&Config{})
+				return createDefaultConfig().(*Config)
 			},
 		},
 		{
@@ -204,7 +204,7 @@ func Test_metricDataToSplunk(t *testing.T) {
 				commonSplunkMetric("gauge_int_with_dims", tsMSecs, []string{"com.splunk.index", "com.splunk.sourcetype", "host.name", "com.splunk.source", "k0", "k1", "metric_type"}, []interface{}{"myindex", "mysourcetype", "myhost", "mysource", "v0", "v1", "Gauge"}, int64Val, "mysource", "mysourcetype", "myindex", "myhost"),
 			},
 			configFn: func() *Config {
-				return NewConfig(&Config{})
+				return createDefaultConfig().(*Config)
 			},
 		},
 
@@ -225,7 +225,7 @@ func Test_metricDataToSplunk(t *testing.T) {
 				return metrics
 			},
 			configFn: func() *Config {
-				return NewConfig(&Config{})
+				return createDefaultConfig().(*Config)
 			},
 		},
 		{
@@ -329,7 +329,7 @@ func Test_metricDataToSplunk(t *testing.T) {
 				},
 			},
 			configFn: func() *Config {
-				return NewConfig(&Config{})
+				return createDefaultConfig().(*Config)
 			},
 		},
 
@@ -362,7 +362,7 @@ func Test_metricDataToSplunk(t *testing.T) {
 				},
 			},
 			configFn: func() *Config {
-				return NewConfig(&Config{})
+				return createDefaultConfig().(*Config)
 			},
 		},
 		{
@@ -394,7 +394,7 @@ func Test_metricDataToSplunk(t *testing.T) {
 				},
 			},
 			configFn: func() *Config {
-				return NewConfig(&Config{})
+				return createDefaultConfig().(*Config)
 			},
 		},
 		{
@@ -475,7 +475,7 @@ func Test_metricDataToSplunk(t *testing.T) {
 				},
 			},
 			configFn: func() *Config {
-				return NewConfig(&Config{})
+				return createDefaultConfig().(*Config)
 			},
 		},
 		{
@@ -490,7 +490,7 @@ func Test_metricDataToSplunk(t *testing.T) {
 			},
 			wantNumDroppedTimeseries: 1,
 			configFn: func() *Config {
-				return NewConfig(&Config{})
+				return createDefaultConfig().(*Config)
 			},
 		},
 
@@ -530,7 +530,7 @@ func Test_metricDataToSplunk(t *testing.T) {
 				commonSplunkMetric("gauge_int_with_dims", tsMSecs, []string{"myindex", "mysourcetype", "myhost", "mysource", "k0", "k1", "metric_type"}, []interface{}{"myindex2", "mysourcetype2", "myhost2", "mysource2", "v0", "v1", "Gauge"}, int64Val, "mysource2", "mysourcetype2", "myindex2", "myhost2"),
 			},
 			configFn: func() *Config {
-				cfg := NewConfig(&Config{})
+				cfg := createDefaultConfig().(*Config)
 				cfg.HecMetadata.SourceType = "mysourcetype"
 				cfg.HecMetadata.Source = "mysource"
 				cfg.HecMetadata.Host = "myhost"

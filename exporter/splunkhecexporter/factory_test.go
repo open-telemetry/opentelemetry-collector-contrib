@@ -33,7 +33,6 @@ func TestCreateDefaultConfig(t *testing.T) {
 
 func TestCreateMetricsExporter(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	cfg.initialize()
 	cfg.Endpoint = "https://example.com:8088/services/collector"
 	cfg.Token = "1234-1234"
 
@@ -50,7 +49,6 @@ func TestCreateMetricsExporterNoConfig(t *testing.T) {
 
 func TestCreateTracesExporter(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	cfg.initialize()
 	cfg.Endpoint = "https://example.com:8088/services/collector"
 	cfg.Token = "1234-1234"
 
@@ -67,7 +65,6 @@ func TestCreateTracesExporterNoConfig(t *testing.T) {
 
 func TestCreateTracesExporterInvalidEndpoint(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	cfg.initialize()
 	cfg.Endpoint = "urn:something:12345"
 	params := componenttest.NewNopExporterCreateSettings()
 	_, err := createTracesExporter(context.Background(), params, cfg)
@@ -76,7 +73,6 @@ func TestCreateTracesExporterInvalidEndpoint(t *testing.T) {
 
 func TestCreateLogsExporter(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	cfg.initialize()
 	cfg.Endpoint = "https://example.com:8088/services/collector"
 	cfg.Token = "1234-1234"
 
@@ -93,7 +89,6 @@ func TestCreateLogsExporterNoConfig(t *testing.T) {
 
 func TestCreateLogsExporterInvalidEndpoint(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	cfg.initialize()
 	cfg.Endpoint = "urn:something:12345"
 	params := componenttest.NewNopExporterCreateSettings()
 	_, err := createLogsExporter(context.Background(), params, cfg)
@@ -104,7 +99,6 @@ func TestCreateInstanceViaFactory(t *testing.T) {
 	factory := NewFactory()
 
 	cfg := factory.CreateDefaultConfig().(*Config)
-	cfg.initialize()
 	cfg.Endpoint = "https://example.com:8088/services/collector"
 	cfg.Token = "1234-1234"
 	params := componenttest.NewNopExporterCreateSettings()

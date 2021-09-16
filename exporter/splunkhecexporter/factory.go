@@ -22,6 +22,9 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 )
 
 const (
@@ -52,7 +55,17 @@ func createDefaultConfig() config.Exporter {
 		DisableCompression:   false,
 		MaxConnections:       defaultMaxIdleCons,
 		MaxContentLengthLogs: maxContentLengthLogsLimit,
-		HecMetadata:          OtelToHecMetadata{},
+		HecMetadata: OtelToHecMetadata{
+			Source:     splunk.DefaultSourceLabel,
+			SourceType: splunk.DefaultSourceTypeLabel,
+			Index:      splunk.DefaultIndexLabel,
+			Host:       conventions.AttributeHostName,
+		},
+		HecFields: OtelToHecFields{
+			SeverityText:   splunk.DefaultSeverityTextLabel,
+			SeverityNumber: splunk.DefaultSeverityNumberLabel,
+			Name:           splunk.DefaultNameLabel,
+		},
 	}
 }
 
@@ -65,7 +78,6 @@ func createTracesExporter(
 		return nil, errors.New("nil config")
 	}
 	expCfg := config.(*Config)
-	expCfg.initialize()
 
 	exp, err := createExporter(expCfg, set.Logger, &set.BuildInfo)
 	if err != nil {
@@ -93,7 +105,6 @@ func createMetricsExporter(
 		return nil, errors.New("nil config")
 	}
 	expCfg := config.(*Config)
-	expCfg.initialize()
 
 	exp, err := createExporter(expCfg, set.Logger, &set.BuildInfo)
 
@@ -122,7 +133,6 @@ func createLogsExporter(
 		return nil, errors.New("nil config")
 	}
 	expCfg := config.(*Config)
-	expCfg.initialize()
 
 	exp, err := createExporter(expCfg, set.Logger, &set.BuildInfo)
 

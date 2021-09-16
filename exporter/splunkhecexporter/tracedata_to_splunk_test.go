@@ -54,7 +54,7 @@ func Test_traceDataToSplunk(t *testing.T) {
 				commonSplunkEvent("myspan", ts),
 			},
 			configFn: func() *Config {
-				return NewConfig(&Config{})
+				return createDefaultConfig().(*Config)
 			},
 			wantNumDroppedSpans: 0,
 		},
@@ -66,7 +66,7 @@ func Test_traceDataToSplunk(t *testing.T) {
 				return traces
 			},
 			configFn: func() *Config {
-				return NewConfig(&Config{})
+				return createDefaultConfig().(*Config)
 			},
 			wantSplunkEvents:    []*splunk.Event{},
 			wantNumDroppedSpans: 0,
@@ -83,7 +83,7 @@ func Test_traceDataToSplunk(t *testing.T) {
 				return traces
 			},
 			configFn: func() *Config {
-				return NewConfig(&Config{})
+				return createDefaultConfig().(*Config)
 			},
 			wantSplunkEvents:    []*splunk.Event{},
 			wantNumDroppedSpans: 0,
@@ -101,14 +101,14 @@ func Test_traceDataToSplunk(t *testing.T) {
 				return traces
 			},
 			configFn: func() *Config {
-				cfg := NewConfig(&Config{
-					HecMetadata: OtelToHecMetadata{
-						Source:     "mysource",
-						SourceType: "mysourcetype",
-						Host:       "myhost",
-						Index:      "myindex",
-					},
-				})
+				cfg := createDefaultConfig().(*Config)
+				cfg.HecMetadata = OtelToHecMetadata{
+					Source:     "mysource",
+					SourceType: "mysourcetype",
+					Host:       "myhost",
+					Index:      "myindex",
+				}
+
 				return cfg
 			},
 			wantSplunkEvents:    []*splunk.Event{},

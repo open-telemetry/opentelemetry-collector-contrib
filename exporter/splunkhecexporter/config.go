@@ -23,9 +23,6 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 )
 
 const (
@@ -33,12 +30,6 @@ const (
 	hecPath                   = "services/collector"
 	maxContentLengthLogsLimit = 2 * 1024 * 1024
 )
-
-// NewConfig allows to create a config struct and initialize it.
-func NewConfig(config *Config) *Config {
-	config.initialize()
-	return config
-}
 
 // OtelToHecMetadata defines the mapping of attributes to HEC metadata
 type OtelToHecMetadata struct {
@@ -179,29 +170,4 @@ func (cfg *Config) GetSeverityTextKey() string {
 
 func (cfg *Config) GetSeverityNumberKey() string {
 	return cfg.HecFields.SeverityNumber
-}
-
-// initialize the configuration
-func (cfg *Config) initialize() {
-	if cfg.HecMetadata.Source == "" {
-		cfg.HecMetadata.Source = splunk.DefaultSourceLabel
-	}
-	if cfg.HecMetadata.SourceType == "" {
-		cfg.HecMetadata.SourceType = splunk.DefaultSourceTypeLabel
-	}
-	if cfg.HecMetadata.Index == "" {
-		cfg.HecMetadata.Index = splunk.DefaultIndexLabel
-	}
-	if cfg.HecMetadata.Host == "" {
-		cfg.HecMetadata.Host = conventions.AttributeHostName
-	}
-	if cfg.HecFields.SeverityText == "" {
-		cfg.HecFields.SeverityText = splunk.DefaultSeverityTextLabel
-	}
-	if cfg.HecFields.SeverityNumber == "" {
-		cfg.HecFields.SeverityNumber = splunk.DefaultSeverityNumberLabel
-	}
-	if cfg.HecFields.Name == "" {
-		cfg.HecFields.Name = splunk.DefaultNameLabel
-	}
 }
