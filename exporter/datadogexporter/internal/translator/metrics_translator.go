@@ -159,10 +159,12 @@ func (t *Translator) getSketchBuckets(name string, ts uint64, p pdata.HistogramD
 	as := &quantile.Agent{}
 	for j := range p.BucketCounts() {
 		lowerBound, upperBound := getBounds(p, j)
+		// InsertInterpolate doesn't work with an infinite bound; insert in to the bucket that contains the non-infinite bound
+		// https://github.com/DataDog/datadog-agent/blob/7.31.0/pkg/aggregator/check_sampler.go#L107-L111
 		if math.IsInf(upperBound, 1) {
-			// Set it to the lower bound because of this mysterious comment:
-			// https://github.com/DataDog/datadog-agent/blob/7.30.1/pkg/aggregator/check_sampler.go#L107-L111
 			upperBound = lowerBound
+		} else if math.IsInf(lowerBound, -1) {
+			lowerBound = upperBound
 		}
 
 		count := p.BucketCounts()[j]
