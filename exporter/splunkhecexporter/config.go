@@ -23,6 +23,8 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 )
 
 const (
@@ -30,18 +32,6 @@ const (
 	hecPath                   = "services/collector"
 	maxContentLengthLogsLimit = 2 * 1024 * 1024
 )
-
-// OtelToHecMetadata defines the mapping of attributes to HEC metadata
-type OtelToHecMetadata struct {
-	// Source informs the exporter to map a specific unified model attribute value to the standard source field of a HEC event.
-	Source string `mapstructure:"source"`
-	// SourceType informs the exporter to map a specific unified model attribute value to the standard sourcetype field of a HEC event.
-	SourceType string `mapstructure:"sourcetype"`
-	// Index informs the exporter to map the index field to a specific unified model attribute.
-	Index string `mapstructure:"index"`
-	// Host informs the exporter to map a specific unified model attribute value to the standard Host field and the host.name field of a HEC event.
-	Host string `mapstructure:"host"`
-}
 
 // OtelToHecFields defines the mapping of attributes to HEC fields
 type OtelToHecFields struct {
@@ -93,8 +83,8 @@ type Config struct {
 
 	// App version is used to track telemetry information for Splunk App's using HEC by App version. Defaults to the current OpenTelemetry Collector Contrib build version.
 	SplunkAppVersion string `mapstructure:"splunk_app_version"`
-	// HecMetadata creates a mapping from attributes to HEC specific metadata: source, sourcetype, index and host.
-	HecMetadata OtelToHecMetadata `mapstructure:"hec_to_otel_attrs"`
+	// HecToOtelAttrs creates a mapping from attributes to HEC specific metadata: source, sourcetype, index and host.
+	HecToOtelAttrs splunk.HecToOtelAttrs `mapstructure:"hec_to_otel_attrs"`
 	// HecFields creates a mapping from attributes to HEC fields.
 	HecFields OtelToHecFields `mapstructure:"otel_to_hec_fields"`
 }
@@ -142,32 +132,4 @@ func (cfg *Config) getURL() (out *url.URL, err error) {
 	}
 
 	return
-}
-
-func (cfg *Config) GetSourceKey() string {
-	return cfg.HecMetadata.Source
-}
-
-func (cfg *Config) GetSourceTypeKey() string {
-	return cfg.HecMetadata.SourceType
-}
-
-func (cfg *Config) GetIndexKey() string {
-	return cfg.HecMetadata.Index
-}
-
-func (cfg *Config) GetHostKey() string {
-	return cfg.HecMetadata.Host
-}
-
-func (cfg *Config) GetNameKey() string {
-	return cfg.HecFields.Name
-}
-
-func (cfg *Config) GetSeverityTextKey() string {
-	return cfg.HecFields.SeverityText
-}
-
-func (cfg *Config) GetSeverityNumberKey() string {
-	return cfg.HecFields.SeverityNumber
 }

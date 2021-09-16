@@ -108,3 +108,15 @@ func (e *Event) UnmarshalJSON(b []byte) error {
 	}
 	return nil
 }
+
+// HecToOtelAttrs defines the mapping of Splunk HEC metadata to attributes
+type HecToOtelAttrs struct {
+	// Source indicates the mapping of the source field to a specific unified model attribute.
+	Source string `mapstructure:"source"`
+	// SourceType indicates the mapping of the sourcetype field to a specific unified model attribute.
+	SourceType string `mapstructure:"sourcetype"`
+	// Index indicates the mapping of the index field to a specific unified model attribute.
+	Index string `mapstructure:"index"`
+	// Host indicates the mapping of the host field to a specific unified model attribute.
+	Host string `mapstructure:"host"`
+}

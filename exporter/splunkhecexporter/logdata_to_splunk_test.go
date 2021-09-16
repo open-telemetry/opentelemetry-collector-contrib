@@ -146,7 +146,7 @@ func Test_mapLogRecordToSplunkEvent(t *testing.T) {
 			logResourceFn: pdata.NewResource,
 			configDataFn: func() *Config {
 				return &Config{
-					HecMetadata: OtelToHecMetadata{
+					HecToOtelAttrs: splunk.HecToOtelAttrs{
 						Source:     "mysource",
 						SourceType: "mysourcetype",
 						Index:      "myindex",

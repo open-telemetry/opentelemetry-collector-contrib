@@ -27,20 +27,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 )
 
-// HecToOtelAttrs defines the mapping of Splunk HEC metadata to attributes
-type HecToOtelAttrs struct {
-	// Source informs the receiver to map the source field to a specific unified model attribute.
-	Source string `mapstructure:"source"`
-	// SourceType informs the receiver to map the sourcetype field to a specific unified model attribute.
-	SourceType string `mapstructure:"sourcetype"`
-	// Index informs the receiver to map the index field to a specific unified model attribute.
-	Index string `mapstructure:"index"`
-	// Host informs the receiver to map the host field to a specific unified model attribute.
-	Host string `mapstructure:"host"`
-	// Name informs the receiver to map a HEC field to the name field.
-	Name string `mapstructure:"name"`
-}
-
 // Config defines configuration for the Splunk HEC receiver.
 type Config struct {
 	config.ReceiverSettings       `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
@@ -50,26 +36,23 @@ type Config struct {
 	// Path we will listen on, defaults to `*` (anything matches)
 	Path     string `mapstructure:"path"`
 	pathGlob glob.Glob
-	// Attrs creates a mapping from HEC metadata to attributes.
-	Attrs HecToOtelAttrs `mapstructure:"hec_to_otel_attrs"`
+	// HecToOtelAttrs creates a mapping from HEC metadata to attributes.
+	HecToOtelAttrs splunk.HecToOtelAttrs `mapstructure:"hec_to_otel_attrs"`
 }
 
 // initialize the configuration
 func (c *Config) initialize() error {
-	if c.Attrs.Source == "" {
-		c.Attrs.Source = splunk.DefaultSourceLabel
+	if c.HecToOtelAttrs.Source == "" {
+		c.HecToOtelAttrs.Source = splunk.DefaultSourceLabel
 	}
-	if c.Attrs.SourceType == "" {
-		c.Attrs.SourceType = splunk.DefaultSourceTypeLabel
+	if c.HecToOtelAttrs.SourceType == "" {
+		c.HecToOtelAttrs.SourceType = splunk.DefaultSourceTypeLabel
 	}
-	if c.Attrs.Index == "" {
-		c.Attrs.Index = splunk.DefaultIndexLabel
+	if c.HecToOtelAttrs.Index == "" {
+		c.HecToOtelAttrs.Index = splunk.DefaultIndexLabel
 	}
-	if c.Attrs.Host == "" {
-		c.Attrs.Host = conventions.AttributeHostName
-	}
-	if c.Attrs.Name == "" {
-		c.Attrs.Name = splunk.DefaultNameLabel
+	if c.HecToOtelAttrs.Host == "" {
+		c.HecToOtelAttrs.Host = conventions.AttributeHostName
 	}
 
 	path := c.Path
@@ -83,26 +66,6 @@ func (c *Config) initialize() error {
 	c.pathGlob = glob
 	_, err = extractPortFromEndpoint(c.Endpoint)
 	return err
-}
-
-func (c *Config) GetSourceKey() string {
-	return c.Attrs.Source
-}
-
-func (c *Config) GetSourceTypeKey() string {
-	return c.Attrs.SourceType
-}
-
-func (c *Config) GetIndexKey() string {
-	return c.Attrs.Index
-}
-
-func (c *Config) GetHostKey() string {
-	return c.Attrs.Host
-}
-
-func (c *Config) GetNameKey() string {
-	return c.Attrs.Name
 }
 
 // extract the port number from string in "address:port" format. If the

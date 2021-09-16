@@ -58,10 +58,10 @@ type hecSpan struct {
 }
 
 func traceDataToSplunk(logger *zap.Logger, data pdata.Traces, config *Config) ([]*splunk.Event, int) {
-	sourceKey := config.GetSourceKey()
-	sourceTypeKey := config.GetSourceTypeKey()
-	indexKey := config.GetIndexKey()
-	hostKey := config.GetHostKey()
+	sourceKey := config.HecToOtelAttrs.Source
+	sourceTypeKey := config.HecToOtelAttrs.SourceType
+	indexKey := config.HecToOtelAttrs.Index
+	hostKey := config.HecToOtelAttrs.Host
 
 	numDroppedSpans := 0
 	splunkEvents := make([]*splunk.Event, 0, data.SpanCount())

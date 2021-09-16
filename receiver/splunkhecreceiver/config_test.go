@@ -130,12 +130,11 @@ func TestLoadConfig(t *testing.T) {
 			AccessTokenPassthrough: true,
 		},
 		Path: "/foo",
-		Attrs: HecToOtelAttrs{
+		HecToOtelAttrs: splunk.HecToOtelAttrs{
 			Source:     "file.name",
 			SourceType: "foobar",
 			Index:      "myindex",
 			Host:       "myhostfield",
-			Name:       "otel.log.name",
 		},
 	}
 	expectedAllSettings.pathGlob, _ = glob.Compile("/foo")
@@ -158,12 +157,11 @@ func TestLoadConfig(t *testing.T) {
 			AccessTokenPassthrough: false,
 		},
 		Path: "",
-		Attrs: HecToOtelAttrs{
+		HecToOtelAttrs: splunk.HecToOtelAttrs{
 			Source:     "com.splunk.source",
 			SourceType: "com.splunk.sourcetype",
 			Index:      "com.splunk.index",
 			Host:       "host.name",
-			Name:       "otel.log.name",
 		},
 	}
 	expectedTLSConfig.pathGlob, _ = glob.Compile("*")

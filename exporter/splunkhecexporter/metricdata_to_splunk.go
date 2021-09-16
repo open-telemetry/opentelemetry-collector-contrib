@@ -43,10 +43,10 @@ func metricDataToSplunk(logger *zap.Logger, data pdata.Metrics, config *Config) 
 	numDroppedTimeSeries := 0
 	splunkMetrics := make([]*splunk.Event, 0, data.DataPointCount())
 	rms := data.ResourceMetrics()
-	sourceKey := config.GetSourceKey()
-	sourceTypeKey := config.GetSourceTypeKey()
-	indexKey := config.GetIndexKey()
-	hostKey := config.GetHostKey()
+	sourceKey := config.HecToOtelAttrs.Source
+	sourceTypeKey := config.HecToOtelAttrs.SourceType
+	indexKey := config.HecToOtelAttrs.Index
+	hostKey := config.HecToOtelAttrs.Host
 	for i := 0; i < rms.Len(); i++ {
 		rm := rms.At(i)
 		host := unknownHostName

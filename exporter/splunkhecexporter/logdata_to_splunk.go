@@ -48,13 +48,13 @@ func mapLogRecordToSplunkEvent(res pdata.Resource, lr pdata.LogRecord, config *C
 	sourcetype := config.SourceType
 	index := config.Index
 	fields := map[string]interface{}{}
-	sourceKey := config.GetSourceKey()
-	sourceTypeKey := config.GetSourceTypeKey()
-	indexKey := config.GetIndexKey()
-	hostKey := config.GetHostKey()
-	nameKey := config.GetNameKey()
-	severityTextKey := config.GetSeverityTextKey()
-	severityNumberKey := config.GetSeverityNumberKey()
+	sourceKey := config.HecToOtelAttrs.Source
+	sourceTypeKey := config.HecToOtelAttrs.SourceType
+	indexKey := config.HecToOtelAttrs.Index
+	hostKey := config.HecToOtelAttrs.Host
+	nameKey := config.HecFields.Name
+	severityTextKey := config.HecFields.SeverityText
+	severityNumberKey := config.HecFields.SeverityNumber
 	if lr.Name() != "" {
 		fields[nameKey] = lr.Name()
 	}

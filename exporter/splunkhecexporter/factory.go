@@ -55,7 +55,7 @@ func createDefaultConfig() config.Exporter {
 		DisableCompression:   false,
 		MaxConnections:       defaultMaxIdleCons,
 		MaxContentLengthLogs: maxContentLengthLogsLimit,
-		HecMetadata: OtelToHecMetadata{
+		HecToOtelAttrs: splunk.HecToOtelAttrs{
 			Source:     splunk.DefaultSourceLabel,
 			SourceType: splunk.DefaultSourceTypeLabel,
 			Index:      splunk.DefaultIndexLabel,
