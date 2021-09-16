@@ -49,6 +49,9 @@ func NewFactory() component.ExporterFactory {
 func createDefaultConfig() config.Exporter {
 	return &Config{
 		ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
+		TimeoutSettings:  exporterhelper.DefaultTimeoutSettings(),
+		RetrySettings:    exporterhelper.DefaultRetrySettings(),
+		QueueSettings:    exporterhelper.DefaultQueueSettings(),
 		AWS: AWSConfig{
 			Region: "us-west-2",
 		},
@@ -58,15 +61,51 @@ func createDefaultConfig() config.Exporter {
 }
 
 func NewTracesExporter(ctx context.Context, params component.ExporterCreateSettings, conf config.Exporter) (component.TracesExporter, error) {
-	return createExporter(ctx, params, conf)
+	exp, err := createExporter(ctx, params, conf)
+	if err != nil {
+		return nil, err
+	}
+	c := conf.(*Config)
+	return exporterhelper.NewTracesExporter(
+		conf,
+		params,
+		exp.ConsumeTraces,
+		exporterhelper.WithTimeout(c.TimeoutSettings),
+		exporterhelper.WithRetry(c.RetrySettings),
+		exporterhelper.WithQueue(c.QueueSettings),
+	)
 }
 
 func NewMetricsExporter(ctx context.Context, params component.ExporterCreateSettings, conf config.Exporter) (component.MetricsExporter, error) {
-	return createExporter(ctx, params, conf)
+	exp, err := createExporter(ctx, params, conf)
+	if err != nil {
+		return nil, err
+	}
+	c := conf.(*Config)
+	return exporterhelper.NewMetricsExporter(
+		c,
+		params,
+		exp.ConsumeMetrics,
+		exporterhelper.WithTimeout(c.TimeoutSettings),
+		exporterhelper.WithRetry(c.RetrySettings),
+		exporterhelper.WithQueue(c.QueueSettings),
+	)
 }
 
 func NewLogsExporter(ctx context.Context, params component.ExporterCreateSettings, conf config.Exporter) (component.LogsExporter, error) {
-	return createExporter(ctx, params, conf)
+	exp, err := createExporter(ctx, params, conf)
+	if err != nil {
+		return nil, err
+	}
+	c := conf.(*Config)
+	return exporterhelper.NewLogsExporter(
+		c,
+		params,
+		exp.ConsumeLogs,
+		exporterhelper.WithTimeout(c.TimeoutSettings),
+		exporterhelper.WithRetry(c.RetrySettings),
+		exporterhelper.WithQueue(c.QueueSettings),
+	)
 }
 
 func createExporter(_ context.Context, params component.ExporterCreateSettings, conf config.Exporter) (*Exporter, error) {

@@ -16,6 +16,7 @@ package awskinesisexporter
 
 import (
 	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
 // AWSConfig contains AWS specific configuration such as awskinesis stream, region, etc.
@@ -28,9 +29,14 @@ type AWSConfig struct {
 
 // Config contains the main configuration options for the awskinesis exporter
 type Config struct {
-	config.ExporterSettings `mapstructure:",squash"`
+	config.ExporterSettings        `mapstructure:",squash"`
+	exporterhelper.TimeoutSettings `mapstructure:",squash"`
+	exporterhelper.QueueSettings   `mapstructure:"sending_queue"`
+	exporterhelper.RetrySettings   `mapstructure:"retry_on_failure"`
 
 	AWS                AWSConfig `mapstructure:"aws"`
 	MaxRecordsPerBatch int       `mapstructure:"max_records_per_batch"`
 	MaxRecordSize      int       `mapstructure:"max_record_size"`
 }
+
+var _ config.Exporter = (*Config)(nil)

@@ -10,6 +10,9 @@ exporters:
         region: mars-1
         role: arn:test-role
         kinesis_endpoint: awskinesis.mars-1.aws.galactic
+    retry_on_failure:
+      enabled: false
+
 
 processors:
   nop:

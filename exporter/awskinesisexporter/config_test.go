@@ -17,6 +17,7 @@ package awskinesisexporter
 import (
 	"path"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -24,6 +25,7 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configcheck"
 	"go.opentelemetry.io/collector/config/configtest"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awskinesisexporter/internal/batch"
 )
@@ -43,6 +45,9 @@ func TestDefaultConfig(t *testing.T) {
 	assert.Equal(t, e,
 		&Config{
 			ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
+			QueueSettings:    exporterhelper.DefaultQueueSettings(),
+			RetrySettings:    exporterhelper.DefaultRetrySettings(),
+			TimeoutSettings:  exporterhelper.DefaultTimeoutSettings(),
 			AWS: AWSConfig{
 				Region: "us-west-2",
 			},
@@ -68,6 +73,14 @@ func TestConfig(t *testing.T) {
 	assert.Equal(t, e,
 		&Config{
 			ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
+			RetrySettings: exporterhelper.RetrySettings{
+				Enabled:         false,
+				MaxInterval:     30 * time.Second,
+				InitialInterval: 5 * time.Second,
+				MaxElapsedTime:  300 * time.Second,
+			},
+			TimeoutSettings: exporterhelper.DefaultTimeoutSettings(),
+			QueueSettings:   exporterhelper.DefaultQueueSettings(),
 			AWS: AWSConfig{
 				StreamName:      "test-stream",
 				KinesisEndpoint: "awskinesis.mars-1.aws.galactic",
