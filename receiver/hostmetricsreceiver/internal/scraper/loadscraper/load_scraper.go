@@ -66,9 +66,9 @@ func (s *scraper) scrape(_ context.Context) (pdata.MetricSlice, error) {
 
 	if s.config.PerCPU {
 		divisor := float64(runtime.NumCPU())
-		avgLoadValues.Load1 = avgLoadValues.Load1 * divisor
-		avgLoadValues.Load5 = avgLoadValues.Load1 * divisor
-		avgLoadValues.Load15 = avgLoadValues.Load1 * divisor
+		avgLoadValues.Load1 = avgLoadValues.Load1 / divisor
+		avgLoadValues.Load5 = avgLoadValues.Load1 / divisor
+		avgLoadValues.Load15 = avgLoadValues.Load1 / divisor
 	}
 
 	metrics.EnsureCapacity(metricsLen)
