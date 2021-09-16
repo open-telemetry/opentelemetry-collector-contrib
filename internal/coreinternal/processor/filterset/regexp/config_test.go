@@ -25,7 +25,7 @@ import (
 
 func TestConfig(t *testing.T) {
 	testFile := path.Join(".", "testdata", "config.yaml")
-	v, err := configparser.NewParserFromFile(testFile)
+	v, err := configparser.NewConfigMapFromFile(testFile)
 	require.NoError(t, err)
 
 	actualConfigs := map[string]*Config{}
