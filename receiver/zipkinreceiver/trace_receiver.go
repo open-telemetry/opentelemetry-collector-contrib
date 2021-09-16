@@ -63,12 +63,14 @@ type zipkinReceiver struct {
 	jsonUnmarshaler          pdata.TracesUnmarshaler
 	protobufUnmarshaler      pdata.TracesUnmarshaler
 	protobufDebugUnmarshaler pdata.TracesUnmarshaler
+
+	settings component.TelemetrySettings
 }
 
 var _ http.Handler = (*zipkinReceiver)(nil)
 
 // newReceiver creates a new zipkinreceiver.zipkinReceiver reference.
-func newReceiver(config *Config, nextConsumer consumer.Traces) (*zipkinReceiver, error) {
+func newReceiver(config *Config, nextConsumer consumer.Traces, settings component.TelemetrySettings) (*zipkinReceiver, error) {
 	if nextConsumer == nil {
 		return nil, componenterror.ErrNilNextConsumer
 	}
@@ -82,6 +84,7 @@ func newReceiver(config *Config, nextConsumer consumer.Traces) (*zipkinReceiver,
 		jsonUnmarshaler:          zipkinv2.NewJSONTracesUnmarshaler(config.ParseStringTags),
 		protobufUnmarshaler:      zipkinv2.NewProtobufTracesUnmarshaler(false, config.ParseStringTags),
 		protobufDebugUnmarshaler: zipkinv2.NewProtobufTracesUnmarshaler(true, config.ParseStringTags),
+		settings:                 settings,
 	}
 	return zr, nil
 }
@@ -93,7 +96,7 @@ func (zr *zipkinReceiver) Start(_ context.Context, host component.Host) error {
 	}
 
 	zr.host = host
-	zr.server = zr.config.HTTPServerSettings.ToServer(zr)
+	zr.server = zr.config.HTTPServerSettings.ToServer(zr, zr.settings)
 	var listener net.Listener
 	listener, err := zr.config.HTTPServerSettings.ToListener()
 	if err != nil {

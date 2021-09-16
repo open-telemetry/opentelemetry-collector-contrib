@@ -11,21 +11,59 @@ The requests sent to Dynatrace are authenticated using an API token mechanism do
 > which contains recommendations on securing sensitive information such as the
 > API key required by this exporter.
 
-## Configuration
+## Requirements
 
-A Dynatrace API Token and metrics ingest endpoint are required.
+You will either need a Dynatrace OneAgent (version 1.201 or higher) installed on the same host as the Collector; or a Dynatrace environment with version 1.202 or higher.
 
-Creating an API token for your Dynatrace environment is described in the [Dynatrace API documentation](https://www.dynatrace.com/support/help/dynatrace-api/basics/dynatrace-api-authentication/).
-The only access scope required for exporting metrics is the **Ingest metrics** (`metrics.ingest`) scope listed in the **API v2** section.
+- Collector contrib minimum version: 0.18.0
 
-Given an environment ID `abc12345` on Dynatrace SaaS, the [metrics ingest endpoint](https://www.dynatrace.com/support/help/dynatrace-api/environment-api/metric-v2/post-ingest-metrics/) would be `https://abc12345.live.dynatrace.com/api/v2/metrics/ingest`.
 
- ```yaml
-dynatrace:
-  # Token must at least have the Ingest metrics (metrics.ingest) permission
-  api_token: "my_api_token"
-  endpoint: https://abc12345.live.dynatrace.com/api/v2/metrics/ingest
- ```
+## Getting Started
+
+The Dynatrace exporter is enabled by adding a `dynatrace` entry to the `exporters` section of your config file.
+All configurations are optional, but if an `endpoint` other than the OneAgent metric ingestion endpoint is specified then an `api_token` is required.
+To see all available options, see [Advanced Configuration](#advanced-configuration) below.
+
+### Running alongside Dynatrace OneAgent (preferred)
+
+If you run the Collector on a host or VM that is monitored by the Dynatrace OneAgent then you only need to enable the exporter. No further configurations needed. The Dynatrace exporter will send all metrics to the OneAgent which will use its secure and load balanced connection to send the metrics to your Dynatrace SaaS or Managed environment.
+Depending on your environment, you might have to enable metrics ingestion on the OneAgent first as described in the [Dynatrace documentation](https://www.dynatrace.com/support/help/how-to-use-dynatrace/metrics/metric-ingestion/ingestion-methods/opentelemetry/).
+
+> Note: The name and identifier of the host running the Collector will be added as a dimension to every metric. If this is undesirable, then the output plugin may be used in standalone mode using the directions below.
+
+```yaml
+exporters:
+  dynatrace:
+    ## No options are required. By default, metrics will be exported via the OneAgent on the local host.
+```
+
+### Running standalone
+
+If you run the Collector on a host or VM without a OneAgent you will need to configure the Metrics v2 API endpoint of your Dynatrace environment to send the metrics to as well as an API token.
+
+Find out how to create a token in the [Dynatrace documentation](https://www.dynatrace.com/support/help/dynatrace-api/basics/dynatrace-api-authentication/) or navigate to **Settings > Integration > Dynatrace API** in your Dynatrace environment and create a token with the 'Ingest metrics' (`metrics.ingest`) scope enabled. It is recommended to limit token scope to only this permission.
+
+The endpoint for the Dynatrace Metrics API v2 is:
+
+* on Dynatrace Managed: `https://{your-domain}/e/{your-environment-id}/api/v2/metrics/ingest`
+* on Dynatrace SaaS: `https://{your-environment-id}.live.dynatrace.com/api/v2/metrics/ingest`
+
+More details can be found in the [Dynatrace documentation for the Metrics v2 API](https://www.dynatrace.com/support/help/dynatrace-api/environment-api/metric-v2/post-ingest-metrics/).
+
+```yaml
+exporters:
+  dynatrace:
+    ## If no OneAgent is running on the host, endpoint and api_token need to be set
+
+    ## Dynatrace Metrics Ingest v2 endpoint to receive metrics
+    endpoint: "https://{your-environment-id}.live.dynatrace.com/api/v2/metrics/ingest"
+
+    ## API token is required if an endpoint is specified and should be restricted to the 'Ingest metrics' scope
+    ## hard-coded for illustration only, should be read from a secure source
+    api_token: "your API token here" 
+```
+
+You can learn more about how to use the Dynatrace API [here](https://www.dynatrace.com/support/help/dynatrace-api/).
 
 ### Metric Batching
 
@@ -52,9 +90,10 @@ processors:
 
 exporters:
   dynatrace:
-    # optional - tags specified here will be included as a dimension on every exported metric
-    tags:
-      - example=tag
+    # optional - Dimensions specified here will be included as a dimension on every exported metric
+    #            unless that metric already has a dimension with the same key.
+    default_dimensions:
+      example_dimension: example value
 
     # optional - prefix will be prepended to each metric name in prefix.name format
     prefix: my_prefix
@@ -90,8 +129,8 @@ exporters:
   dynatrace:
     endpoint: https://ab12345.live.dynatrace.com
     api_token: <api token must have metrics.write permission>
-    tags:
-      - example=tag
+    default_dimensions:
+      example_dimension: example value
     prefix: my_prefix
     headers:
       - header1: value1
@@ -116,10 +155,10 @@ service:
       exporters: [dynatrace]
 ```
 
-### tags (Optional)
+### default_dimensions (Optional)
 
-Tags are included as dimensions on all exported metrics.
-Tags must be in the `key=value` dimension format specified by the [metrics ingestion protocol](https://www.dynatrace.com/support/help/how-to-use-dynatrace/metrics/metric-ingestion/metric-ingestion-protocol/).
+`default_dimensions` are included as dimensions on all exported metrics unless that metric already has a dimension with the same key.
+`default_dimensions` is specified as a map of string key-value pairs.
 
 ### prefix (Optional)
 
@@ -202,3 +241,7 @@ User should calculate this as `num_seconds * requests_per_second` where:
 - `requests_per_second` is the average number of requests per seconds.
 
 Default: `5000`
+
+### tags (Deprecated, Optional)
+
+**Deprecated: Please use [default_dimensions](#default_dimensions-optional) instead**

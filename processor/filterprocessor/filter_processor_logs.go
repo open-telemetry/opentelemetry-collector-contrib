@@ -21,7 +21,6 @@ import (
 	"go.opentelemetry.io/collector/processor/processorhelper"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterconfig"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filtermatcher"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterset"
 )
@@ -29,14 +28,25 @@ import (
 type filterLogProcessor struct {
 	cfg              *Config
 	excludeResources filtermatcher.AttributesMatcher
+	includeResources filtermatcher.AttributesMatcher
 	logger           *zap.Logger
 }
 
 func newFilterLogsProcessor(logger *zap.Logger, cfg *Config) (*filterLogProcessor, error) {
-	excludeResources, err := createLogsMatcher(cfg.Logs.ResourceAttributes)
+
+	includeResources, err := createLogsMatcher(cfg.Logs.Include)
 	if err != nil {
 		logger.Error(
-			"filterlog: Error creating logs resources matcher",
+			"filterlog: Error creating include logs resources matcher",
+			zap.Error(err),
+		)
+		return nil, err
+	}
+
+	excludeResources, err := createLogsMatcher(cfg.Logs.Exclude)
+	if err != nil {
+		logger.Error(
+			"filterlog: Error creating exclude logs resources matcher",
 			zap.Error(err),
 		)
 		return nil, err
@@ -44,14 +54,15 @@ func newFilterLogsProcessor(logger *zap.Logger, cfg *Config) (*filterLogProcesso
 
 	return &filterLogProcessor{
 		cfg:              cfg,
+		includeResources: includeResources,
 		excludeResources: excludeResources,
 		logger:           logger,
 	}, nil
 }
 
-func createLogsMatcher(excludeResources []filterconfig.Attribute) (filtermatcher.AttributesMatcher, error) {
+func createLogsMatcher(lp *LogMatchProperties) (filtermatcher.AttributesMatcher, error) {
 	// Nothing specified in configuration
-	if excludeResources == nil {
+	if lp == nil {
 		return nil, nil
 	}
 	var attributeMatcher filtermatcher.AttributesMatcher
@@ -59,7 +70,7 @@ func createLogsMatcher(excludeResources []filterconfig.Attribute) (filtermatcher
 		filterset.Config{
 			MatchType: filterset.MatchType("strict"),
 		},
-		excludeResources,
+		lp.ResourceAttributes,
 	)
 	if err != nil {
 		return attributeMatcher, err
@@ -85,6 +96,13 @@ func (flp *filterLogProcessor) ProcessLogs(ctx context.Context, logs pdata.Logs)
 // The logic determining if a log should be skipped is set in the resource attribute configuration.
 func (flp *filterLogProcessor) shouldSkipLogsForResource(resource pdata.Resource) bool {
 	resourceAttributes := resource.Attributes()
+
+	if flp.includeResources != nil {
+		matches := flp.includeResources.Match(resourceAttributes)
+		if !matches {
+			return true
+		}
+	}
 
 	if flp.excludeResources != nil {
 		matches := flp.excludeResources.Match(resourceAttributes)

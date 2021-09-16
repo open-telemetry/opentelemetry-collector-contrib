@@ -234,7 +234,7 @@ func TestMetricGroupData_toDistributionPointEquivalence(t *testing.T) {
 				require.Equal(t, ocExemplar.Value, pdataExemplar.DoubleVal(), msgPrefix+"value mismatch")
 				pdataExemplarAttachments := make(map[string]string)
 				pdataExemplar.FilteredAttributes().Range(func(key string, value pdata.AttributeValue) bool {
-					pdataExemplarAttachments[key] = pdata.AttributeValueToString(value)
+					pdataExemplarAttachments[key] = value.AsString()
 					return true
 				})
 				require.Equal(t, ocExemplar.Attachments, pdataExemplarAttachments, msgPrefix+"attachments mismatch")

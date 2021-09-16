@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//go:build !windows
 // +build !windows
-// TODO review if tests should succeed on Windows
 
 package podmanreceiver
 
@@ -22,9 +22,14 @@ import (
 	"testing"
 	"time"
 
+	"github.com/containers/podman/v3/libpod/define"
+	"github.com/containers/podman/v3/pkg/domain/entities"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/model/pdata"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/scraperhelper"
@@ -39,11 +44,12 @@ func TestNewReceiver(t *testing.T) {
 	}
 	logger := zap.NewNop()
 	nextConsumer := consumertest.NewNop()
-	mr, err := NewReceiver(context.Background(), logger, config, consumertest.NewNop())
+	mr, err := newReceiver(context.Background(), logger, config, nextConsumer, nil)
+
 	assert.NotNil(t, mr)
 	assert.Nil(t, err)
 
-	receiver := mr.(*Receiver)
+	receiver := mr.(*receiver)
 	assert.Equal(t, config, receiver.config)
 	assert.Same(t, nextConsumer, receiver.nextConsumer)
 	assert.Equal(t, logger, receiver.logger)
@@ -52,13 +58,65 @@ func TestNewReceiver(t *testing.T) {
 func TestNewReceiverErrors(t *testing.T) {
 	logger := zap.NewNop()
 
-	r, err := NewReceiver(context.Background(), logger, &Config{}, consumertest.NewNop())
+	r, err := newReceiver(context.Background(), logger, &Config{}, consumertest.NewNop(), nil)
 	assert.Nil(t, r)
 	require.Error(t, err)
 	assert.Equal(t, "config.Endpoint must be specified", err.Error())
 
-	r, err = NewReceiver(context.Background(), logger, &Config{Endpoint: "someEndpoint"}, consumertest.NewNop())
+	r, err = newReceiver(context.Background(), logger, &Config{Endpoint: "someEndpoint"}, consumertest.NewNop(), nil)
 	assert.Nil(t, r)
 	require.Error(t, err)
 	assert.Equal(t, "config.CollectionInterval must be specified", err.Error())
+}
+
+func TestScraperLoop(t *testing.T) {
+	logger := zap.NewNop()
+
+	cfg := createDefaultConfig()
+	cfg.CollectionInterval = 100 * time.Millisecond
+
+	client := make(mockClient)
+	consumer := make(mockConsumer)
+
+	r, err := newReceiver(context.Background(), logger, cfg, consumer, client.factory)
+	assert.NotNil(t, r)
+	require.NoError(t, err)
+
+	go func() {
+		client <- entities.ContainerStatsReport{
+			Stats: []define.ContainerStats{{
+				ContainerID: "c1",
+			}},
+			Error: nil,
+		}
+	}()
+
+	r.Start(context.Background(), componenttest.NewNopHost())
+
+	md := <-consumer
+	assert.Equal(t, md.ResourceMetrics().Len(), 1)
+
+	r.Shutdown(context.Background())
+}
+
+type mockClient chan entities.ContainerStatsReport
+
+func (c mockClient) factory(endpoint string) (client, error) {
+	return c, nil
+}
+
+func (c mockClient) stats() ([]define.ContainerStats, error) {
+	report := <-c
+	return report.Stats, report.Error
+}
+
+type mockConsumer chan pdata.Metrics
+
+func (m mockConsumer) Capabilities() consumer.Capabilities {
+	return consumer.Capabilities{}
+}
+
+func (m mockConsumer) ConsumeMetrics(ctx context.Context, md pdata.Metrics) error {
+	m <- md
+	return nil
 }

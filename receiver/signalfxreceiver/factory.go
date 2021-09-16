@@ -103,7 +103,7 @@ func createMetricsReceiver(
 	receiverLock.Lock()
 	r := receivers[rCfg]
 	if r == nil {
-		r = newReceiver(params.Logger, *rCfg)
+		r = newReceiver(params.TelemetrySettings, *rCfg)
 		receivers[rCfg] = r
 	}
 	receiverLock.Unlock()
@@ -130,7 +130,7 @@ func createLogsReceiver(
 	receiverLock.Lock()
 	r := receivers[rCfg]
 	if r == nil {
-		r = newReceiver(params.Logger, *rCfg)
+		r = newReceiver(params.TelemetrySettings, *rCfg)
 		receivers[rCfg] = r
 	}
 	receiverLock.Unlock()

@@ -21,7 +21,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/model/pdata"
-	conventions "go.opentelemetry.io/collector/translator/conventions/v1.5.0"
+	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
 )
 
 func TestCauseWithExceptions(t *testing.T) {
@@ -105,7 +105,7 @@ func TestCauseWithHttpStatusMessage(t *testing.T) {
 	attributes[conventions.AttributeHTTPMethod] = "POST"
 	attributes[conventions.AttributeHTTPURL] = "https://api.example.com/widgets"
 	attributes[conventions.AttributeHTTPStatusCode] = 500
-	attributes[conventions.AttributeHTTPStatusText] = errorMsg
+	attributes["http.status_text"] = errorMsg
 	span := constructExceptionServerSpan(attributes, pdata.StatusCodeError)
 	filtered, _ := makeHTTP(span)
 
@@ -132,7 +132,7 @@ func TestCauseWithZeroStatusMessage(t *testing.T) {
 	attributes[conventions.AttributeHTTPMethod] = "POST"
 	attributes[conventions.AttributeHTTPURL] = "https://api.example.com/widgets"
 	attributes[conventions.AttributeHTTPStatusCode] = 500
-	attributes[conventions.AttributeHTTPStatusText] = errorMsg
+	attributes["http.status_text"] = errorMsg
 
 	span := constructExceptionServerSpan(attributes, pdata.StatusCodeUnset)
 	filtered, _ := makeHTTP(span)
@@ -156,7 +156,7 @@ func TestCauseWithClientErrorMessage(t *testing.T) {
 	attributes[conventions.AttributeHTTPMethod] = "POST"
 	attributes[conventions.AttributeHTTPURL] = "https://api.example.com/widgets"
 	attributes[conventions.AttributeHTTPStatusCode] = 499
-	attributes[conventions.AttributeHTTPStatusText] = errorMsg
+	attributes["http.status_text"] = errorMsg
 
 	span := constructExceptionServerSpan(attributes, pdata.StatusCodeError)
 	filtered, _ := makeHTTP(span)
@@ -177,7 +177,7 @@ func TestCauseWithThrottled(t *testing.T) {
 	attributes[conventions.AttributeHTTPMethod] = "POST"
 	attributes[conventions.AttributeHTTPURL] = "https://api.example.com/widgets"
 	attributes[conventions.AttributeHTTPStatusCode] = 429
-	attributes[conventions.AttributeHTTPStatusText] = errorMsg
+	attributes["http.status_text"] = errorMsg
 
 	span := constructExceptionServerSpan(attributes, pdata.StatusCodeError)
 	filtered, _ := makeHTTP(span)

@@ -30,7 +30,8 @@ import (
 
 type logNameTest struct {
 	name   string
-	exc    []filterconfig.Attribute
+	inc    *LogMatchProperties
+	exc    *LogMatchProperties
 	inLogs pdata.Logs
 	outLN  [][]string // output Log names per Resource
 }
@@ -74,14 +75,36 @@ var (
 
 	standardLogTests = []logNameTest{
 		{
+			name:   "emptyFilterInclude",
+			inc:    &LogMatchProperties{LogMatchType: Strict, ResourceAttributes: []filterconfig.Attribute{}},
+			inLogs: testResourceLogs([]logWithResource{{logNames: inLogNames}}),
+			outLN:  [][]string{inLogNames},
+		},
+		{
+			name:   "includeNilWithResourceAttributes",
+			inc:    &LogMatchProperties{LogMatchType: Strict, ResourceAttributes: []filterconfig.Attribute{}},
+			inLogs: testResourceLogs(inLogForResourceTest),
+			outLN: [][]string{
+				{"log1", "log2"},
+			},
+		},
+		{
+			name:   "includeAllWithMissingResourceAttributes",
+			inc:    &LogMatchProperties{LogMatchType: Strict, ResourceAttributes: []filterconfig.Attribute{{Key: "attr1", Value: "attr1/val2"}}},
+			inLogs: testResourceLogs(inLogForTwoResource),
+			outLN: [][]string{
+				{"log3", "log4"},
+			},
+		},
+		{
 			name:   "emptyFilterExclude",
-			exc:    []filterconfig.Attribute{},
+			exc:    &LogMatchProperties{LogMatchType: Strict, ResourceAttributes: []filterconfig.Attribute{}},
 			inLogs: testResourceLogs([]logWithResource{{logNames: inLogNames}}),
 			outLN:  [][]string{inLogNames},
 		},
 		{
 			name:   "excludeNilWithResourceAttributes",
-			exc:    []filterconfig.Attribute{},
+			exc:    &LogMatchProperties{LogMatchType: Strict, ResourceAttributes: []filterconfig.Attribute{}},
 			inLogs: testResourceLogs(inLogForResourceTest),
 			outLN: [][]string{
 				{"log1", "log2"},
@@ -89,7 +112,30 @@ var (
 		},
 		{
 			name:   "excludeAllWithMissingResourceAttributes",
-			exc:    []filterconfig.Attribute{{Key: "attr1", Value: "attr1/val1"}},
+			exc:    &LogMatchProperties{LogMatchType: Strict, ResourceAttributes: []filterconfig.Attribute{{Key: "attr1", Value: "attr1/val1"}}},
+			inLogs: testResourceLogs(inLogForTwoResource),
+			outLN: [][]string{
+				{"log3", "log4"},
+			},
+		},
+		{
+			name:   "emptyFilterIncludeAndExclude",
+			inc:    &LogMatchProperties{LogMatchType: Strict, ResourceAttributes: []filterconfig.Attribute{}},
+			exc:    &LogMatchProperties{LogMatchType: Strict, ResourceAttributes: []filterconfig.Attribute{}},
+			inLogs: testResourceLogs([]logWithResource{{logNames: inLogNames}}),
+			outLN:  [][]string{inLogNames},
+		},
+		{
+			name:   "nilWithResourceAttributesIncludeAndExclude",
+			inc:    &LogMatchProperties{LogMatchType: Strict, ResourceAttributes: []filterconfig.Attribute{}},
+			exc:    &LogMatchProperties{LogMatchType: Strict, ResourceAttributes: []filterconfig.Attribute{}},
+			inLogs: testResourceLogs([]logWithResource{{logNames: inLogNames}}),
+			outLN:  [][]string{inLogNames},
+		},
+		{
+			name:   "allWithMissingResourceAttributesIncludeAndExclude",
+			inc:    &LogMatchProperties{LogMatchType: Strict, ResourceAttributes: []filterconfig.Attribute{{Key: "attr1", Value: "attr1/val2"}}},
+			exc:    &LogMatchProperties{LogMatchType: Strict, ResourceAttributes: []filterconfig.Attribute{{Key: "attr1", Value: "attr1/val1"}}},
 			inLogs: testResourceLogs(inLogForTwoResource),
 			outLN: [][]string{
 				{"log3", "log4"},
@@ -106,7 +152,8 @@ func TestFilterLogProcessor(t *testing.T) {
 			cfg := &Config{
 				ProcessorSettings: config.NewProcessorSettings(config.NewID(typeStr)),
 				Logs: LogFilters{
-					ResourceAttributes: test.exc,
+					Include: test.inc,
+					Exclude: test.exc,
 				},
 			}
 			factory := NewFactory()
@@ -189,7 +236,7 @@ func requireNotPanicsLogs(t *testing.T, logs pdata.Logs) {
 	cfg := factory.CreateDefaultConfig()
 	pcfg := cfg.(*Config)
 	pcfg.Logs = LogFilters{
-		ResourceAttributes: nil,
+		Exclude: nil,
 	}
 	ctx := context.Background()
 	proc, _ := factory.CreateLogsProcessor(

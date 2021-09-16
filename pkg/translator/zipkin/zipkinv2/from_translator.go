@@ -24,7 +24,7 @@ import (
 
 	zipkinmodel "github.com/openzipkin/zipkin-go/model"
 	"go.opentelemetry.io/collector/model/pdata"
-	conventions "go.opentelemetry.io/collector/translator/conventions/v1.5.0"
+	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/idutils"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/tracetranslator"
@@ -201,7 +201,7 @@ func spanEventsToZipkinAnnotations(events pdata.SpanEventSlice, zs *zipkinmodel.
 					Value:     event.Name(),
 				}
 			} else {
-				jsonStr, err := json.Marshal(pdata.AttributeMapToMap(event.Attributes()))
+				jsonStr, err := json.Marshal(event.Attributes().AsRaw())
 				if err != nil {
 					return err
 				}
@@ -221,7 +221,7 @@ func spanLinksToZipkinTags(links pdata.SpanLinkSlice, zTags map[string]string) e
 	for i := 0; i < links.Len(); i++ {
 		link := links.At(i)
 		key := fmt.Sprintf("otlp.link.%d", i)
-		jsonStr, err := json.Marshal(pdata.AttributeMapToMap(link.Attributes()))
+		jsonStr, err := json.Marshal(link.Attributes().AsRaw())
 		if err != nil {
 			return err
 		}
@@ -234,7 +234,7 @@ func spanLinksToZipkinTags(links pdata.SpanLinkSlice, zTags map[string]string) e
 func attributeMapToStringMap(attrMap pdata.AttributeMap) map[string]string {
 	rawMap := make(map[string]string)
 	attrMap.Range(func(k string, v pdata.AttributeValue) bool {
-		rawMap[k] = pdata.AttributeValueToString(v)
+		rawMap[k] = v.AsString()
 		return true
 	})
 	return rawMap
@@ -258,7 +258,7 @@ func resourceToZipkinEndpointServiceNameAndAttributeMap(
 	}
 
 	attrs.Range(func(k string, v pdata.AttributeValue) bool {
-		zTags[k] = pdata.AttributeValueToString(v)
+		zTags[k] = v.AsString()
 		return true
 	})
 

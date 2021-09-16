@@ -26,7 +26,7 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/model/pdata"
-	conventions "go.opentelemetry.io/collector/translator/conventions/v1.5.0"
+	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/idutils"
 )
@@ -471,7 +471,7 @@ func genRandomTestData(numBatches, numTracesPerBatch int, serviceName string, re
 				span.SetSpanID(idutils.UInt64ToSpanID(r.Uint64()))
 				attributes := make(map[string]pdata.AttributeValue)
 				attributes[conventions.AttributeHTTPStatusCode] = pdata.NewAttributeValueInt(404)
-				attributes[conventions.AttributeHTTPStatusText] = pdata.NewAttributeValueString("Not Found")
+				attributes["http.status_text"] = pdata.NewAttributeValueString("Not Found")
 				span.Attributes().InitFromMap(attributes)
 			}
 		}

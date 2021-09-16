@@ -22,7 +22,7 @@ import (
 
 	dtypes "github.com/docker/docker/api/types"
 	"go.opentelemetry.io/collector/model/pdata"
-	conventions "go.opentelemetry.io/collector/translator/conventions/v1.5.0"
+	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
 )
 
 const (
@@ -44,6 +44,7 @@ func ContainerStatsToMetrics(
 ) (pdata.Metrics, error) {
 	md := pdata.NewMetrics()
 	rs := md.ResourceMetrics().AppendEmpty()
+	rs.SetSchemaUrl(conventions.SchemaURL)
 	resourceAttr := rs.Resource().Attributes()
 	resourceAttr.UpsertString(conventions.AttributeContainerID, container.ID)
 	resourceAttr.UpsertString(conventions.AttributeContainerImageName, container.Config.Image)

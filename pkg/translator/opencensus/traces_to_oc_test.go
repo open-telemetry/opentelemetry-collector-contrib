@@ -71,7 +71,7 @@ func TestAttributesMapToOC(t *testing.T) {
 	}
 	assert.EqualValues(t, ocAttrs,
 		attributesMapToOCSpanAttributes(
-			pdata.NewAttributeMap().InitFromMap(map[string]pdata.AttributeValue{
+			pdata.NewAttributeMapFromMap(map[string]pdata.AttributeValue{
 				"abc": pdata.NewAttributeValueString("def"),
 			}),
 			234))
@@ -86,7 +86,7 @@ func TestAttributesMapToOC(t *testing.T) {
 		Value: &octrace.AttributeValue_DoubleValue{DoubleValue: 4.5},
 	}
 	assert.EqualValues(t, ocAttrs,
-		attributesMapToOCSpanAttributes(pdata.NewAttributeMap().InitFromMap(
+		attributesMapToOCSpanAttributes(pdata.NewAttributeMapFromMap(
 			map[string]pdata.AttributeValue{
 				"abc":       pdata.NewAttributeValueString("def"),
 				"intval":    pdata.NewAttributeValueInt(345),

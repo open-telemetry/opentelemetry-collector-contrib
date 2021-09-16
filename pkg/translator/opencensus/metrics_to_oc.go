@@ -386,7 +386,7 @@ func exemplarToOC(filteredLabels pdata.AttributeMap, value float64, timestamp pd
 	if filteredLabels.Len() != 0 {
 		labels = make(map[string]string, filteredLabels.Len())
 		filteredLabels.Range(func(k string, v pdata.AttributeValue) bool {
-			labels[k] = pdata.AttributeValueToString(v)
+			labels[k] = v.AsString()
 			return true
 		})
 	}
@@ -418,7 +418,7 @@ func attributeValuesToOC(labels pdata.AttributeMap, labelKeys *labelKeysAndType)
 		labelValue := labelValues[keyIndex]
 
 		// Update label value
-		labelValue.Value = pdata.AttributeValueToString(v)
+		labelValue.Value = v.AsString()
 		labelValue.HasValue = true
 		return true
 	})

@@ -58,6 +58,9 @@ func TestCreateProcessors(t *testing.T) {
 		}, {
 			configName: "config_invalid.yaml",
 			succeed:    false,
+		}, {
+			configName: "config_logs_strict.yaml",
+			succeed:    true,
 		},
 	}
 

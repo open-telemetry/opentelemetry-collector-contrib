@@ -12,7 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//go:build !windows
 // +build !windows
+
 // TODO review if tests should succeed on Windows
 
 package kubeletstatsreceiver
@@ -136,7 +138,7 @@ func tlsConfig() *Config {
 
 func TestCustomUnmarshaller(t *testing.T) {
 	type args struct {
-		componentParser *configparser.Parser
+		componentParser *configparser.ConfigMap
 		intoCfg         *Config
 	}
 	tests := []struct {
@@ -154,14 +156,14 @@ func TestCustomUnmarshaller(t *testing.T) {
 		{
 			name: "Fail initial unmarshal",
 			args: args{
-				componentParser: configparser.NewParser(),
+				componentParser: configparser.NewConfigMap(),
 			},
 			wantErr: true,
 		},
 		{
 			name: "metric_group unset",
 			args: args{
-				componentParser: configparser.NewParser(),
+				componentParser: configparser.NewConfigMap(),
 				intoCfg:         &Config{},
 			},
 			result: &Config{
@@ -171,7 +173,7 @@ func TestCustomUnmarshaller(t *testing.T) {
 		{
 			name: "fail to unmarshall metric_groups",
 			args: args{
-				componentParser: configparser.NewParser(),
+				componentParser: configparser.NewConfigMap(),
 				intoCfg:         &Config{},
 			},
 			mockUnmarshallFailure: true,
@@ -180,7 +182,7 @@ func TestCustomUnmarshaller(t *testing.T) {
 		{
 			name: "successfully override metric_group",
 			args: args{
-				componentParser: configparser.NewParser(),
+				componentParser: configparser.NewConfigMap(),
 				intoCfg: &Config{
 					CollectionInterval: 10 * time.Second,
 				},

@@ -53,7 +53,8 @@ func createDefaultConfig() config.Exporter {
 		APIToken:           "",
 		HTTPClientSettings: confighttp.HTTPClientSettings{Endpoint: ""},
 
-		Tags: []string{},
+		Tags:              []string{},
+		DefaultDimensions: make(map[string]string),
 	}
 }
 
@@ -66,7 +67,7 @@ func createMetricsExporter(
 
 	cfg := c.(*dtconfig.Config)
 
-	if err := cfg.Sanitize(); err != nil {
+	if err := cfg.ValidateAndConfigureHTTPClientSettings(); err != nil {
 		return nil, err
 	}
 

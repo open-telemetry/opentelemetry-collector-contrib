@@ -30,7 +30,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/exporter/otlpexporter"
 	"go.opentelemetry.io/collector/model/pdata"
-	conventions "go.opentelemetry.io/collector/translator/conventions/v1.5.0"
+	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
 	"go.uber.org/zap"
 	"google.golang.org/grpc/metadata"
 
@@ -400,7 +400,7 @@ func verifyMetricLabels(dp metricDataPoint, t *testing.T, seenMetricIDs map[metr
 		intAttrName:        pdata.NewAttributeValueInt(99),
 		doubleAttrName:     pdata.NewAttributeValueDouble(99.99),
 		boolAttrName:       pdata.NewAttributeValueBool(true),
-		nullAttrName:       pdata.NewAttributeValueNull(),
+		nullAttrName:       pdata.NewAttributeValueEmpty(),
 		arrayAttrName:      pdata.NewAttributeValueArray(),
 		mapAttrName:        pdata.NewAttributeValueMap(),
 		notInSpanAttrName0: pdata.NewAttributeValueString("defaultNotInSpanAttrVal"),

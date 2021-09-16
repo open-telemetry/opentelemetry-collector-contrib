@@ -22,8 +22,7 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/obsreport"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/scrapererror"
+	"go.opentelemetry.io/collector/receiver/scrapererror"
 )
 
 // ScrapeMetrics scrapes metrics.
@@ -103,7 +102,6 @@ func NewMetricsScraper(
 }
 
 func (ms metricsScraper) Scrape(ctx context.Context, receiverID config.ComponentID) (pdata.Metrics, error) {
-	ctx = obsreport.ScraperContext(ctx, receiverID, ms.ID())
 	scrp := obsreport.NewScraper(obsreport.ScraperSettings{ReceiverID: receiverID, Scraper: ms.ID()})
 	ctx = scrp.StartMetricsOp(ctx)
 	metrics, err := ms.ScrapeMetrics(ctx)
@@ -150,7 +148,6 @@ func NewResourceMetricsScraper(
 }
 
 func (rms resourceMetricsScraper) Scrape(ctx context.Context, receiverID config.ComponentID) (pdata.Metrics, error) {
-	ctx = obsreport.ScraperContext(ctx, receiverID, rms.ID())
 	scrp := obsreport.NewScraper(obsreport.ScraperSettings{ReceiverID: receiverID, Scraper: rms.ID()})
 	ctx = scrp.StartMetricsOp(ctx)
 	resourceMetrics, err := rms.ScrapeResourceMetrics(ctx)

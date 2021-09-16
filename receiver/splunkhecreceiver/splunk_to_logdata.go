@@ -83,7 +83,7 @@ func splunkHecToLogData(logger *zap.Logger, events []*splunk.Event, resourceCust
 
 func convertInterfaceToAttributeValue(logger *zap.Logger, originalValue interface{}) (pdata.AttributeValue, error) {
 	if originalValue == nil {
-		return pdata.NewAttributeValueNull(), nil
+		return pdata.NewAttributeValueEmpty(), nil
 	} else if value, ok := originalValue.(string); ok {
 		return pdata.NewAttributeValueString(value), nil
 	} else if value, ok := originalValue.(int64); ok {
@@ -95,18 +95,18 @@ func convertInterfaceToAttributeValue(logger *zap.Logger, originalValue interfac
 	} else if value, ok := originalValue.(map[string]interface{}); ok {
 		mapValue, err := convertToAttributeMap(logger, value)
 		if err != nil {
-			return pdata.NewAttributeValueNull(), err
+			return pdata.NewAttributeValueEmpty(), err
 		}
 		return mapValue, nil
 	} else if value, ok := originalValue.([]interface{}); ok {
 		arrValue, err := convertToArrayVal(logger, value)
 		if err != nil {
-			return pdata.NewAttributeValueNull(), err
+			return pdata.NewAttributeValueEmpty(), err
 		}
 		return arrValue, nil
 	} else {
 		logger.Debug("Unsupported value conversion", zap.Any("value", originalValue))
-		return pdata.NewAttributeValueNull(), errors.New(cannotConvertValue)
+		return pdata.NewAttributeValueEmpty(), errors.New(cannotConvertValue)
 	}
 }
 

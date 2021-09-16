@@ -15,9 +15,9 @@ jobs:
       - name: Checkout Repo
         uses: actions/checkout@v2
       - name: Setup Go
-        uses: actions/setup-go@v2.1.3
+        uses: actions/setup-go@v2.1.4
         with:
-          go-version: 1.16
+          go-version: 1.17
       - name: Setup Go Environment
         run: |
           echo "GOPATH=$(go env GOPATH)" >> $GITHUB_ENV
@@ -33,7 +33,8 @@ jobs:
             %LocalAppData%\go-build
           key: v1-go-pkg-mod-${{ runner.os }}-${{ hashFiles('**/go.mod', '**/go.sum') }}
       - name: Run Unit tests
-        run: go test ./...
+        # use default Go build tags from Makefile.common
+        run: go test --tags containers_image_openpgp,exclude_graphdriver_btrfs,exclude_graphdriver_devicemapper ./...
       - name: GitHub Issue Generator
         if: ${{ failure() && github.ref == 'ref/head/main' }}
         run: |
@@ -47,9 +48,9 @@ jobs:
       - name: Checkout Repo
         uses: actions/checkout@v2
       - name: Setup Go
-        uses: actions/setup-go@v2.1.3
+        uses: actions/setup-go@v2.1.4
         with:
-          go-version: 1.16
+          go-version: 1.17
       - name: Setup Go Environment
         run: |
           echo "GOPATH=$(go env GOPATH)" >> $GITHUB_ENV
@@ -91,9 +92,9 @@ jobs:
       - name: Checkout Repo
         uses: actions/checkout@v2
       - name: Setup Go
-        uses: actions/setup-go@v2.1.3
+        uses: actions/setup-go@v2.1.4
         with:
-          go-version: 1.16
+          go-version: 1.17
       - name: Setup Go Environment
         run: |
           echo "GOPATH=$(go env GOPATH)" >> $GITHUB_ENV
@@ -117,9 +118,9 @@ jobs:
           path: /home/runner/go/bin
           key: v1-tools-${{ runner.os }}-${{ hashFiles('./internal/tools/go.mod') }}
       - name: Lint
-        run: make -j4 golint
+        run: make -j2 golint
       - name: Checks 
-        run: make -j4 checklicense misspell checkdoc
+        run: make -j4 checklicense misspell checkdoc impi
       - name: Codegem
         run: |
           make generate
@@ -131,9 +132,9 @@ jobs:
       - name: Checkout Repo
         uses: actions/checkout@v2
       - name: Setup Go
-        uses: actions/setup-go@v2.1.3
+        uses: actions/setup-go@v2.1.4
         with:
-          go-version: 1.16
+          go-version: 1.17
       - name: Setup Go Environment
         run: |
           echo "GOPATH=$(go env GOPATH)" >> $GITHUB_ENV
@@ -165,9 +166,9 @@ jobs:
       - name: Checkout Repo
         uses: actions/checkout@v2
       - name: Setup Go
-        uses: actions/setup-go@v2.1.3
+        uses: actions/setup-go@v2.1.4
         with:
-          go-version: 1.16
+          go-version: 1.17
       - name: Setup Go Environment
         run: |
           echo "GOPATH=$(go env GOPATH)" >> $GITHUB_ENV
@@ -200,9 +201,9 @@ jobs:
       - name: Checkout Repo
         uses: actions/checkout@v2
       - name: Setup Go
-        uses: actions/setup-go@v2.1.3
+        uses: actions/setup-go@v2.1.4
         with:
-          go-version: 1.16
+          go-version: 1.17
       - name: Setup Go Environment
         run: |
           echo "GOPATH=$(go env GOPATH)" >> $GITHUB_ENV
@@ -234,9 +235,9 @@ jobs:
       - name: Checkout Repo
         uses: actions/checkout@v2
       - name: Setup Go
-        uses: actions/setup-go@v2.1.3
+        uses: actions/setup-go@v2.1.4
         with:
-          go-version: 1.16
+          go-version: 1.17
       - name: Setup Go Environment
         run: |
           echo "GOPATH=$(go env GOPATH)" >> $GITHUB_ENV
@@ -276,9 +277,9 @@ jobs:
       - name: Checkout Repo
         uses: actions/checkout@v2
       - name: Setup Go
-        uses: actions/setup-go@v2.1.3
+        uses: actions/setup-go@v2.1.4
         with:
-          go-version: 1.16
+          go-version: 1.17
       - name: Setup Go Environment
         run: |
           echo "GOPATH=$(go env GOPATH)" >> $GITHUB_ENV
@@ -327,9 +328,9 @@ jobs:
       - name: Checkout Repo
         uses: actions/checkout@v2
       - name: Setup Go
-        uses: actions/setup-go@v2.1.3
+        uses: actions/setup-go@v2.1.4
         with:
-          go-version: 1.16
+          go-version: 1.17
       - name: Setup Go Environment
         run: |
           echo "GOPATH=$(go env GOPATH)" >> $GITHUB_ENV
@@ -384,9 +385,9 @@ jobs:
           wget https://packages.fluentbit.io/ubuntu/bionic/pool/main/t/td-agent-bit/td-agent-bit_1.5.3_amd64.deb
           sudo dpkg -i ./td-agent-bit*.deb
       - name: Setup Go
-        uses: actions/setup-go@v2.1.3
+        uses: actions/setup-go@v2.1.4
         with:
-          go-version: 1.16
+          go-version: 1.17
       - name: Setup Go Environment
         run: |
           echo "GOPATH=$(go env GOPATH)" >> $GITHUB_ENV
@@ -531,9 +532,9 @@ jobs:
       - name: Checkout Repo
         uses: actions/checkout@v2
       - name: Setup Go
-        uses: actions/setup-go@v2.1.3
+        uses: actions/setup-go@v2.1.4
         with:
-          go-version: 1.16
+          go-version: 1.17
       - name: Setup Go Environment
         run: |
           echo "GOPATH=$(go env GOPATH)" >> $GITHUB_ENV
@@ -590,9 +591,9 @@ jobs:
       - name: Checkout Repo
         uses: actions/checkout@v2
       - name: Setup Go
-        uses: actions/setup-go@v2.1.3
+        uses: actions/setup-go@v2.1.4
         with:
-          go-version: 1.16
+          go-version: 1.17
       - name: Setup Go Environment
         run: |
           echo "GOPATH=$(go env GOPATH)" >> $GITHUB_ENV
