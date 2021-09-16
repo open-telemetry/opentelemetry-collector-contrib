@@ -90,9 +90,10 @@ processors:
 
 exporters:
   dynatrace:
-    # optional - tags specified here will be included as a dimension on every exported metric
-    tags:
-      - example=tag
+    # optional - Dimensions specified here will be included as a dimension on every exported metric
+    #            unless that metric already has a dimension with the same key.
+    default_dimensions:
+      example_dimension: example value
 
     # optional - prefix will be prepended to each metric name in prefix.name format
     prefix: my_prefix
@@ -128,8 +129,8 @@ exporters:
   dynatrace:
     endpoint: https://ab12345.live.dynatrace.com
     api_token: <api token must have metrics.write permission>
-    tags:
-      - example=tag
+    default_dimensions:
+      example_dimension: example value
     prefix: my_prefix
     headers:
       - header1: value1
@@ -154,10 +155,10 @@ service:
       exporters: [dynatrace]
 ```
 
-### tags (Optional)
+### default_dimensions (Optional)
 
-Tags are included as dimensions on all exported metrics.
-Tags must be in the `key=value` dimension format specified by the [metrics ingestion protocol](https://www.dynatrace.com/support/help/how-to-use-dynatrace/metrics/metric-ingestion/metric-ingestion-protocol/).
+`default_dimensions` are included as dimensions on all exported metrics unless that metric already has a dimension with the same key.
+`default_dimensions` is specified as a map of string key-value pairs.
 
 ### prefix (Optional)
 
@@ -240,3 +241,7 @@ User should calculate this as `num_seconds * requests_per_second` where:
 - `requests_per_second` is the average number of requests per seconds.
 
 Default: `5000`
+
+### tags (Deprecated, Optional)
+
+**Deprecated: Please use [default_dimensions](#default_dimensions-optional) instead**

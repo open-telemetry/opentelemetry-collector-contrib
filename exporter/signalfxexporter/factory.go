@@ -145,7 +145,7 @@ func createMetricsExporter(
 func loadDefaultTranslationRules() ([]translation.Rule, error) {
 	cfg := Config{}
 
-	cp, err := configparser.NewParserFromBuffer(strings.NewReader(translation.DefaultTranslationRulesYaml))
+	cp, err := configparser.NewConfigMapFromBuffer(strings.NewReader(translation.DefaultTranslationRulesYaml))
 	if err != nil {
 		return nil, err
 	}
@@ -172,7 +172,7 @@ func setDefaultExcludes(cfg *Config) error {
 func loadDefaultExcludes() ([]dpfilters.MetricFilter, error) {
 	cfg := Config{}
 
-	v, err := configparser.NewParserFromBuffer(strings.NewReader(translation.DefaultExcludeMetricsYaml))
+	v, err := configparser.NewConfigMapFromBuffer(strings.NewReader(translation.DefaultExcludeMetricsYaml))
 	if err != nil {
 		return nil, err
 	}

@@ -69,7 +69,7 @@ config:
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			v, err := configparser.NewParserFromBuffer(strings.NewReader(tt.yaml))
+			v, err := configparser.NewConfigMapFromBuffer(strings.NewReader(tt.yaml))
 			require.NoError(t, err)
 
 			got := tt.cfg // Not strictly necessary but it makes easier to debug issues.

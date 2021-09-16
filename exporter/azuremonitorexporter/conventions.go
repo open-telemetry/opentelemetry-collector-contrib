@@ -114,7 +114,7 @@ func (attrs *HTTPAttributes) MapAttribute(k string, v pdata.AttributeValue) bool
 		if val, err := getAttributeValueAsInt(v); err == nil {
 			attrs.HTTPStatusCode = val
 		}
-	case conventions.AttributeHTTPStatusText:
+	case "http.status_text":
 		attrs.HTTPStatusText = v.StringVal()
 	case conventions.AttributeHTTPFlavor:
 		attrs.HTTPFlavor = v.StringVal()

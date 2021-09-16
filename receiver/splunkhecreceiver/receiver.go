@@ -73,7 +73,7 @@ var (
 
 // splunkReceiver implements the component.MetricsReceiver for Splunk HEC metric protocol.
 type splunkReceiver struct {
-	logger          *zap.Logger
+	settings        component.TelemetrySettings
 	config          *Config
 	logsConsumer    consumer.Logs
 	metricsConsumer consumer.Metrics
@@ -86,7 +86,7 @@ var _ component.MetricsReceiver = (*splunkReceiver)(nil)
 
 // newMetricsReceiver creates the Splunk HEC receiver with the given configuration.
 func newMetricsReceiver(
-	logger *zap.Logger,
+	settings component.TelemetrySettings,
 	config Config,
 	nextConsumer consumer.Metrics,
 ) (component.MetricsReceiver, error) {
@@ -104,7 +104,7 @@ func newMetricsReceiver(
 	}
 
 	r := &splunkReceiver{
-		logger:          logger,
+		settings:        settings,
 		config:          &config,
 		metricsConsumer: nextConsumer,
 		server: &http.Server{
@@ -123,7 +123,7 @@ func newMetricsReceiver(
 
 // newLogsReceiver creates the Splunk HEC receiver with the given configuration.
 func newLogsReceiver(
-	logger *zap.Logger,
+	settings component.TelemetrySettings,
 	config Config,
 	nextConsumer consumer.Logs,
 ) (component.LogsReceiver, error) {
@@ -140,7 +140,7 @@ func newLogsReceiver(
 	}
 
 	r := &splunkReceiver{
-		logger:       logger,
+		settings:     settings,
 		config:       &config,
 		logsConsumer: nextConsumer,
 		server: &http.Server{
@@ -171,7 +171,7 @@ func (r *splunkReceiver) Start(_ context.Context, host component.Host) error {
 	mx := mux.NewRouter()
 	mx.NewRoute().HandlerFunc(r.handleReq)
 
-	r.server = r.config.HTTPServerSettings.ToServer(mx)
+	r.server = r.config.HTTPServerSettings.ToServer(mx, r.settings)
 
 	// TODO: Evaluate what properties should be configurable, for now
 	//		set some hard-coded values.
@@ -276,7 +276,7 @@ func (r *splunkReceiver) createResourceCustomizer(req *http.Request) func(pdata.
 }
 
 func (r *splunkReceiver) consumeMetrics(ctx context.Context, events []*splunk.Event, resp http.ResponseWriter, req *http.Request) {
-	md, _ := splunkHecToMetricsData(r.logger, events, r.createResourceCustomizer(req), r.config)
+	md, _ := splunkHecToMetricsData(r.settings.Logger, events, r.createResourceCustomizer(req), r.config)
 
 	decodeErr := r.metricsConsumer.ConsumeMetrics(ctx, md)
 	r.obsrecv.EndMetricsOp(ctx, typeStr, len(events), decodeErr)
@@ -290,7 +290,7 @@ func (r *splunkReceiver) consumeMetrics(ctx context.Context, events []*splunk.Ev
 }
 
 func (r *splunkReceiver) consumeLogs(ctx context.Context, events []*splunk.Event, resp http.ResponseWriter, req *http.Request) {
-	ld, err := splunkHecToLogData(r.logger, events, r.createResourceCustomizer(req), r.config)
+	ld, err := splunkHecToLogData(r.settings.Logger, events, r.createResourceCustomizer(req), r.config)
 	if err != nil {
 		r.failRequest(ctx, resp, http.StatusBadRequest, errUnmarshalBodyRespBody, err)
 		return
@@ -318,7 +318,7 @@ func (r *splunkReceiver) failRequest(
 		// The response needs to be written as a JSON string.
 		_, writeErr := resp.Write(jsonResponse)
 		if writeErr != nil {
-			r.logger.Warn("Error writing HTTP response message", zap.Error(writeErr))
+			r.settings.Logger.Warn("Error writing HTTP response message", zap.Error(writeErr))
 		}
 	}
 
@@ -327,7 +327,7 @@ func (r *splunkReceiver) failRequest(
 	reqSpan := trace.FromContext(ctx)
 	reqSpan.AddAttributes(
 		trace.Int64Attribute(conventions.AttributeHTTPStatusCode, int64(httpStatusCode)),
-		trace.StringAttribute(conventions.AttributeHTTPStatusText, msg))
+		trace.StringAttribute("http.status_text", msg))
 	traceStatus := trace.Status{
 		Code: trace.StatusCodeInvalidArgument,
 	}
@@ -340,7 +340,7 @@ func (r *splunkReceiver) failRequest(
 	reqSpan.SetStatus(traceStatus)
 	reqSpan.End()
 
-	r.logger.Debug(
+	r.settings.Logger.Debug(
 		"Splunk HEC receiver request failed",
 		zap.Int("http_status_code", httpStatusCode),
 		zap.String("msg", msg),

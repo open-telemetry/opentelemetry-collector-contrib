@@ -39,9 +39,12 @@ type metricsReceiver struct {
 	wg     sync.WaitGroup
 
 	logger common.Logger
+
+	settings component.TelemetrySettings
 }
 
-func newMetricsReceiver(config *Config, influxLogger common.Logger, nextConsumer consumer.Metrics) (*metricsReceiver, error) {
+func newMetricsReceiver(config *Config, settings component.TelemetrySettings, nextConsumer consumer.Metrics) (*metricsReceiver, error) {
+	influxLogger := newZapInfluxLogger(settings.Logger)
 	converter, err := influx2otel.NewLineProtocolToOtelMetrics(influxLogger)
 	if err != nil {
 		return nil, err
@@ -51,6 +54,7 @@ func newMetricsReceiver(config *Config, influxLogger common.Logger, nextConsumer
 		httpServerSettings: &config.HTTPServerSettings,
 		converter:          converter,
 		logger:             influxLogger,
+		settings:           settings,
 	}
 	return receiver, nil
 }
@@ -66,7 +70,7 @@ func (r *metricsReceiver) Start(_ context.Context, host component.Host) error {
 	router.HandleFunc("/api/v2/write", r.handleWrite) // InfluxDB 2.x
 
 	r.wg.Add(1)
-	r.server = r.httpServerSettings.ToServer(router)
+	r.server = r.httpServerSettings.ToServer(router, r.settings)
 	go func() {
 		defer r.wg.Done()
 		if err := r.server.Serve(ln); err != nil && err != http.ErrServerClosed {

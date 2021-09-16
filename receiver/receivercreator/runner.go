@@ -85,7 +85,7 @@ func (run *receiverRunner) loadRuntimeReceiverConfig(
 	receiver receiverConfig,
 	discoveredConfig userConfigMap,
 ) (config.Receiver, error) {
-	mergedConfig := configparser.NewParser()
+	mergedConfig := configparser.NewConfigMap()
 
 	// Merge in the config values specified in the config file.
 	if err := mergedConfig.MergeStringMap(receiver.config); err != nil {
