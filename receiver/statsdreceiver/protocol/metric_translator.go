@@ -87,7 +87,6 @@ func buildSummaryMetric(summaryMetric summaryMetric) pdata.InstrumentationLibrar
 		eachQuantileValue, _ := stats.PercentileNearestRank(summaryMetric.summaryPoints, v)
 		eachQuantile.SetValue(eachQuantileValue)
 	}
-
 	return ilm
 
 }
@@ -115,7 +114,7 @@ func (s statsDMetric) summaryValue() float64 {
 	// recorded by the histogram/timer, not to scale the value
 	// observed.  This should return gaugeValue(), and the
 	// consumer of this value should track the effective count of
-	// each item to compute percentiles.
+	// each item to compute percentiles. See #5252.
 	x := s.asFloat
 	if 0 < s.sampleRate && s.sampleRate < 1 {
 		x = x / s.sampleRate

@@ -52,6 +52,9 @@ const (
 
 	GaugeObserver   ObserverType = "gauge"
 	SummaryObserver ObserverType = "summary"
+	DisableObserver ObserverType = "disabled"
+
+	DefaultObserverType = DisableObserver
 )
 
 type TimerHistogramMapping struct {
@@ -115,6 +118,8 @@ func (p *StatsDParser) Initialize(enableMetricType bool, isMonotonicCounter bool
 	p.timersAndDistributions = make([]pdata.InstrumentationLibraryMetrics, 0)
 	p.summaries = make(map[statsDMetricdescription]summaryMetric)
 
+	p.observeHistogram = DefaultObserverType
+	p.observeTimer = DefaultObserverType
 	p.enableMetricType = enableMetricType
 	p.isMonotonicCounter = isMonotonicCounter
 	// Note: validation occurs in ("../".Config).vaidate()
@@ -147,8 +152,9 @@ func (p *StatsDParser) GetMetrics() pdata.Metrics {
 	}
 
 	for _, summaryMetric := range p.summaries {
-		tgt := metrics.ResourceMetrics().At(0).InstrumentationLibraryMetrics().AppendEmpty()
-		buildSummaryMetric(summaryMetric).CopyTo(tgt)
+		buildSummaryMetric(summaryMetric).CopyTo(
+			rm.InstrumentationLibraryMetrics().AppendEmpty(),
+		)
 	}
 
 	p.gauges = make(map[statsDMetricdescription]pdata.InstrumentationLibraryMetrics)
@@ -169,7 +175,7 @@ func (p *StatsDParser) observerTypeFor(t MetricType) ObserverType {
 	case TimingType:
 		return p.observeTimer
 	}
-	return ""
+	return DisableObserver
 }
 
 // Aggregate for each metric line.
@@ -224,6 +230,8 @@ func (p *StatsDParser) Aggregate(line string) error {
 					timeNow:       timeNowFunc(),
 				}
 			}
+		case DisableObserver:
+			// No action.
 		}
 	}
 

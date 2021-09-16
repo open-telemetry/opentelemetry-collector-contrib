@@ -810,7 +810,7 @@ func TestStatsDParser_AggregateWithIsMonotonicCounter(t *testing.T) {
 	}
 }
 
-func TestStatsDParser_AggregateTimmerWithSummary(t *testing.T) {
+func TestStatsDParser_AggregateTimerWithSummary(t *testing.T) {
 	timeNowFunc = func() time.Time {
 		return time.Unix(711, 0)
 	}
@@ -923,7 +923,7 @@ func TestStatsDParser_Initialize(t *testing.T) {
 	assert.Equal(t, GaugeObserver, p.observeHistogram)
 }
 
-func TestStatsDParser_GetMetrics(t *testing.T) {
+func TestStatsDParser_GetMetricsWithMetricType(t *testing.T) {
 	p := &StatsDParser{}
 	p.Initialize(true, false, []TimerHistogramMapping{{StatsdType: "timer", ObserverType: "gauge"}, {StatsdType: "histogram", ObserverType: "gauge"}})
 	p.gauges[testDescription("statsdTestMetric1", "g",
@@ -947,6 +947,80 @@ func TestStatsDParser_GetMetrics(t *testing.T) {
 		}}
 	metrics := p.GetMetrics()
 	assert.Equal(t, 5, metrics.ResourceMetrics().At(0).InstrumentationLibraryMetrics().Len())
+}
+
+func TestStatsDParser_Mappings(t *testing.T) {
+	type testCase struct {
+		name    string
+		mapping []TimerHistogramMapping
+		expect  map[string]string
+	}
+
+	for _, tc := range []testCase{
+		{
+			name: "timer-gauge-histo-summary",
+			mapping: []TimerHistogramMapping{
+				{StatsdType: "timer", ObserverType: "gauge"},
+				{StatsdType: "histogram", ObserverType: "summary"},
+			},
+			expect: map[string]string{
+				"Summary": "H",
+				"Gauge":   "T",
+			},
+		},
+		{
+			name: "histo-to-summary",
+			mapping: []TimerHistogramMapping{
+				{StatsdType: "histogram", ObserverType: "summary"},
+			},
+			expect: map[string]string{
+				"Summary": "H",
+			},
+		},
+		{
+			name: "timer-summary-histo-gauge",
+			mapping: []TimerHistogramMapping{
+				{StatsdType: "timer", ObserverType: "summary"},
+				{StatsdType: "histogram", ObserverType: "gauge"},
+			},
+			expect: map[string]string{
+				"Summary": "T",
+				"Gauge":   "H",
+			},
+		},
+		{
+			name: "timer-to-gauge",
+			mapping: []TimerHistogramMapping{
+				{StatsdType: "timer", ObserverType: "gauge"},
+			},
+			expect: map[string]string{
+				"Gauge": "T",
+			},
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			p := &StatsDParser{}
+
+			p.Initialize(false, false, tc.mapping)
+
+			p.Aggregate("H:10|h")
+			p.Aggregate("T:10|ms")
+
+			typeNames := map[string]string{}
+
+			metrics := p.GetMetrics()
+			ilm := metrics.ResourceMetrics().At(0).InstrumentationLibraryMetrics()
+			for i := 0; i < ilm.Len(); i++ {
+				ilms := ilm.At(i).Metrics()
+				for j := 0; j < ilms.Len(); j++ {
+					m := ilms.At(j)
+					typeNames[m.DataType().String()] = m.Name()
+				}
+			}
+
+			assert.Equal(t, tc.expect, typeNames)
+		})
+	}
 }
 
 func TestTimeNowFunc(t *testing.T) {
