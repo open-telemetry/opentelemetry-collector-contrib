@@ -110,29 +110,29 @@ func TestCompositeEvaluator_OverflowAlwaysSampled(t *testing.T) {
 	n2 := NewAlwaysSample(zap.NewNop())
 	c := NewComposite(zap.NewNop(), 3, []SubPolicyEvalParams{{n1, 1}, {n2, 1}}, timeProvider)
 
-	traceID := newTraceID()
-	trace := newTraceWithKV(traceID, "tag", int64(10))
+	trcID := newTraceID()
+	trace := newTraceWithKV(trcID, "tag", int64(10))
 
-	decision, err := c.Evaluate(traceID, trace)
+	decision, err := c.Evaluate(trcID, trace)
 	require.NoError(t, err, "Failed to evaluate composite policy: %v", err)
 
 	// The first policy is NewNumericAttributeFilter and trace tag matches criteria, so the decision should be Sampled.
 	expected := Sampled
 	assert.Equal(t, decision, expected)
 
-	traceID = newTraceID()
-	trace = newTraceWithKV(traceID, "tag", int64(11))
+	trcID = newTraceID()
+	trace = newTraceWithKV(trcID, "tag", int64(11))
 
-	decision, err = c.Evaluate(traceID, trace)
+	decision, err = c.Evaluate(trcID, trace)
 	require.NoError(t, err, "Failed to evaluate composite policy: %v", err)
 
 	// The first policy is NewNumericAttributeFilter and trace tag matches criteria, so the decision should be Sampled.
 	expected = NotSampled
 	assert.Equal(t, decision, expected)
 
-	traceID = newTraceID()
-	trace = newTraceWithKV(traceID, "tag", int64(1001))
-	decision, err = c.Evaluate(traceID, trace)
+	trcID = newTraceID()
+	trace = newTraceWithKV(trcID, "tag", int64(1001))
+	decision, err = c.Evaluate(trcID, trace)
 	require.NoError(t, err, "Failed to evaluate composite policy: %v", err)
 
 	// The first policy fails as the tag value is higher than the range set where as the second policy is AlwaysSample, so the decision should be Sampled.
