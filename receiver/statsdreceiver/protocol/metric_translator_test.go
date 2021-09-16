@@ -35,7 +35,7 @@ func TestBuildCounterMetric(t *testing.T) {
 		labelValues: []string{"myvalue"},
 	}
 	isMonotonicCounter := false
-	metric := buildCounterMetric(parsedMetric, isMonotonicCounter, timeNow, parsedMetric.counterValue())
+	metric := buildCounterMetric(parsedMetric, isMonotonicCounter, timeNow)
 	expectedMetrics := pdata.NewInstrumentationLibraryMetrics()
 	expectedMetric := expectedMetrics.Metrics().AppendEmpty()
 	expectedMetric.SetName("testCounter")
@@ -62,7 +62,7 @@ func TestBuildGaugeMetric(t *testing.T) {
 		labelKeys:   []string{"mykey", "mykey2"},
 		labelValues: []string{"myvalue", "myvalue2"},
 	}
-	metric := buildGaugeMetric(parsedMetric, timeNow, parsedMetric.gaugeValue())
+	metric := buildGaugeMetric(parsedMetric, timeNow)
 	expectedMetrics := pdata.NewInstrumentationLibraryMetrics()
 	expectedMetric := expectedMetrics.Metrics().AppendEmpty()
 	expectedMetric.SetName("testGauge")

@@ -188,29 +188,29 @@ func (p *StatsDParser) Aggregate(line string) error {
 	case GaugeType:
 		_, ok := p.gauges[parsedMetric.description]
 		if !ok {
-			p.gauges[parsedMetric.description] = buildGaugeMetric(parsedMetric, timeNowFunc(), parsedMetric.gaugeValue())
+			p.gauges[parsedMetric.description] = buildGaugeMetric(parsedMetric, timeNowFunc())
 		} else {
 			if parsedMetric.addition {
-				savedValue := p.gauges[parsedMetric.description].Metrics().At(0).Gauge().DataPoints().At(0).DoubleVal()
-				p.gauges[parsedMetric.description] = buildGaugeMetric(parsedMetric, timeNowFunc(), parsedMetric.gaugeValue()+savedValue)
+				point := p.gauges[parsedMetric.description].Metrics().At(0).Gauge().DataPoints().At(0)
+				point.SetDoubleVal(point.DoubleVal() + parsedMetric.gaugeValue())
 			} else {
-				p.gauges[parsedMetric.description] = buildGaugeMetric(parsedMetric, timeNowFunc(), parsedMetric.gaugeValue())
+				p.gauges[parsedMetric.description] = buildGaugeMetric(parsedMetric, timeNowFunc())
 			}
 		}
 
 	case CounterType:
 		_, ok := p.counters[parsedMetric.description]
 		if !ok {
-			p.counters[parsedMetric.description] = buildCounterMetric(parsedMetric, p.isMonotonicCounter, timeNowFunc(), parsedMetric.counterValue())
+			p.counters[parsedMetric.description] = buildCounterMetric(parsedMetric, p.isMonotonicCounter, timeNowFunc())
 		} else {
-			savedValue := p.counters[parsedMetric.description].Metrics().At(0).Sum().DataPoints().At(0).IntVal()
-			p.counters[parsedMetric.description] = buildCounterMetric(parsedMetric, p.isMonotonicCounter, timeNowFunc(), parsedMetric.counterValue()+savedValue)
+			point := p.counters[parsedMetric.description].Metrics().At(0).Sum().DataPoints().At(0)
+			point.SetIntVal(point.IntVal() + parsedMetric.counterValue())
 		}
 
 	case TimingType, HistogramType:
 		switch p.observerTypeFor(parsedMetric.description.metricType) {
 		case GaugeObserver:
-			p.timersAndDistributions = append(p.timersAndDistributions, buildGaugeMetric(parsedMetric, timeNowFunc(), parsedMetric.gaugeValue()))
+			p.timersAndDistributions = append(p.timersAndDistributions, buildGaugeMetric(parsedMetric, timeNowFunc()))
 		case SummaryObserver:
 			if eachSummaryMetric, ok := p.summaries[parsedMetric.description]; !ok {
 				p.summaries[parsedMetric.description] = summaryMetric{

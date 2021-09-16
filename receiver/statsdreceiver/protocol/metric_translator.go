@@ -21,7 +21,7 @@ import (
 	"go.opentelemetry.io/collector/model/pdata"
 )
 
-func buildCounterMetric(parsedMetric statsDMetric, isMonotonicCounter bool, timeNow time.Time, value int64) pdata.InstrumentationLibraryMetrics {
+func buildCounterMetric(parsedMetric statsDMetric, isMonotonicCounter bool, timeNow time.Time) pdata.InstrumentationLibraryMetrics {
 	ilm := pdata.NewInstrumentationLibraryMetrics()
 	nm := ilm.Metrics().AppendEmpty()
 	nm.SetName(parsedMetric.description.name)
@@ -38,7 +38,7 @@ func buildCounterMetric(parsedMetric statsDMetric, isMonotonicCounter bool, time
 	nm.Sum().SetIsMonotonic(true)
 
 	dp := nm.Sum().DataPoints().AppendEmpty()
-	dp.SetIntVal(value)
+	dp.SetIntVal(parsedMetric.counterValue())
 	dp.SetTimestamp(pdata.NewTimestampFromTime(timeNow))
 	for i, key := range parsedMetric.labelKeys {
 		dp.Attributes().InsertString(key, parsedMetric.labelValues[i])
@@ -47,7 +47,7 @@ func buildCounterMetric(parsedMetric statsDMetric, isMonotonicCounter bool, time
 	return ilm
 }
 
-func buildGaugeMetric(parsedMetric statsDMetric, timeNow time.Time, value float64) pdata.InstrumentationLibraryMetrics {
+func buildGaugeMetric(parsedMetric statsDMetric, timeNow time.Time) pdata.InstrumentationLibraryMetrics {
 	ilm := pdata.NewInstrumentationLibraryMetrics()
 	nm := ilm.Metrics().AppendEmpty()
 	nm.SetName(parsedMetric.description.name)
@@ -56,7 +56,7 @@ func buildGaugeMetric(parsedMetric statsDMetric, timeNow time.Time, value float6
 	}
 	nm.SetDataType(pdata.MetricDataTypeGauge)
 	dp := nm.Gauge().DataPoints().AppendEmpty()
-	dp.SetDoubleVal(value)
+	dp.SetDoubleVal(parsedMetric.gaugeValue())
 	dp.SetTimestamp(pdata.NewTimestampFromTime(timeNow))
 	for i, key := range parsedMetric.labelKeys {
 		dp.Attributes().InsertString(key, parsedMetric.labelValues[i])
