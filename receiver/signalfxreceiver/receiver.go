@@ -79,7 +79,7 @@ var (
 // sfxReceiver implements the component.MetricsReceiver for SignalFx metric protocol.
 type sfxReceiver struct {
 	sync.Mutex
-	logger          *zap.Logger
+	settings        component.TelemetrySettings
 	config          *Config
 	metricsConsumer consumer.Metrics
 	logsConsumer    consumer.Logs
@@ -91,7 +91,7 @@ var _ component.MetricsReceiver = (*sfxReceiver)(nil)
 
 // New creates the SignalFx receiver with the given configuration.
 func newReceiver(
-	logger *zap.Logger,
+	settings component.TelemetrySettings,
 	config Config,
 ) *sfxReceiver {
 	transport := "http"
@@ -99,9 +99,9 @@ func newReceiver(
 		transport = "https"
 	}
 	r := &sfxReceiver{
-		logger:  logger,
-		config:  &config,
-		obsrecv: obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverID: config.ID(), Transport: transport}),
+		settings: settings,
+		config:   &config,
+		obsrecv:  obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverID: config.ID(), Transport: transport}),
 	}
 
 	return r
@@ -142,7 +142,7 @@ func (r *sfxReceiver) Start(_ context.Context, host component.Host) error {
 	mx.HandleFunc("/v2/datapoint", r.handleDatapointReq)
 	mx.HandleFunc("/v2/event", r.handleEventReq)
 
-	r.server = r.config.HTTPServerSettings.ToServer(mx)
+	r.server = r.config.HTTPServerSettings.ToServer(mx, r.settings)
 
 	// TODO: Evaluate what properties should be configurable, for now
 	//		set some hard-coded values.
@@ -236,7 +236,7 @@ func (r *sfxReceiver) handleDatapointReq(resp http.ResponseWriter, req *http.Req
 		return
 	}
 
-	md, _ := signalFxV2ToMetrics(r.logger, msg.Datapoints)
+	md, _ := signalFxV2ToMetrics(r.settings.Logger, msg.Datapoints)
 
 	if r.config.AccessTokenPassthrough {
 		if accessToken := req.Header.Get(splunk.SFxAccessTokenHeader); accessToken != "" {
@@ -316,7 +316,7 @@ func (r *sfxReceiver) failRequest(
 		// The response needs to be written as a JSON string.
 		_, writeErr := resp.Write(jsonResponse)
 		if writeErr != nil {
-			r.logger.Warn(
+			r.settings.Logger.Warn(
 				"Error writing HTTP response message",
 				zap.Error(writeErr),
 				zap.String("receiver", r.config.ID().String()))
@@ -329,7 +329,7 @@ func (r *sfxReceiver) failRequest(
 	reqSpan := trace.FromContext(ctx)
 	reqSpan.AddAttributes(
 		trace.Int64Attribute(conventions.AttributeHTTPStatusCode, int64(httpStatusCode)),
-		trace.StringAttribute(conventions.AttributeHTTPStatusText, msg))
+		trace.StringAttribute("http.status_text", msg))
 	traceStatus := trace.Status{
 		Code: trace.StatusCodeInvalidArgument,
 	}
@@ -342,7 +342,7 @@ func (r *sfxReceiver) failRequest(
 	reqSpan.SetStatus(traceStatus)
 	reqSpan.End()
 
-	r.logger.Debug(
+	r.settings.Logger.Debug(
 		"SignalFx receiver request failed",
 		zap.Int("http_status_code", httpStatusCode),
 		zap.String("msg", msg),

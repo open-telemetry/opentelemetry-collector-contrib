@@ -37,7 +37,16 @@ import (
 
 // NewExporter exports to a Dynatrace Metrics v2 API
 func newMetricsExporter(params component.ExporterCreateSettings, cfg *config.Config) *exporter {
-	defaultDimensions := dimensionsFromTags(cfg.Tags)
+	confDefaultDims := []dimensions.Dimension{}
+	for key, value := range cfg.DefaultDimensions {
+		confDefaultDims = append(confDefaultDims, dimensions.NewDimension(key, value))
+	}
+
+	defaultDimensions := dimensions.MergeLists(
+		dimensionsFromTags(cfg.Tags),
+		dimensions.NewNormalizedDimensionList(confDefaultDims...),
+	)
+
 	staticDimensions := dimensions.NewNormalizedDimensionList(dimensions.NewDimension("dt.metrics.source", "opentelemetry"))
 
 	return &exporter{

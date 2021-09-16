@@ -1,0 +1,21 @@
+receivers:
+  prometheus:
+    config:
+      scrape_configs:
+        - job_name: 'demo'
+          scrape_interval: 5s
+          tls_config:
+            cert_file: /nonexistentcertfile
+
+processors:
+  nop:
+
+exporters:
+  nop:
+
+service:
+  pipelines:
+    traces:
+      receivers: [prometheus]
+      processors: [nop]
+      exporters: [nop]
