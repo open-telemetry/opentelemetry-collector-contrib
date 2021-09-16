@@ -9,6 +9,7 @@
 ## 💡 Enhancements 💡
 
 - `filter` processor: Add ability to `include` logs based on resource attributes in addition to excluding logs based on resource attributes for strict matching. (#4895)
+- `kubelet` API: Add ability to create a empty CertPool when the system run environment is windows
 
 ## v0.35.0
 
