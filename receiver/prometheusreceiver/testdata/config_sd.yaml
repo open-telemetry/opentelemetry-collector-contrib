@@ -5,7 +5,7 @@ receivers:
       - job_name: file
         file_sd_configs:
         - files:
-          - 'dummy.json'
+          - './testdata/dummy.json'
       - job_name: k8s
         kubernetes_sd_configs:
         - role: node
