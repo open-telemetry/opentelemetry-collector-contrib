@@ -29,13 +29,13 @@ func TestBuildCounterMetric(t *testing.T) {
 	}
 	parsedMetric := statsDMetric{
 		description: metricDescription,
-		intvalue:    32,
+		asFloat:     32,
 		unit:        "meter",
 		labelKeys:   []string{"mykey"},
 		labelValues: []string{"myvalue"},
 	}
 	isMonotonicCounter := false
-	metric := buildCounterMetric(parsedMetric, isMonotonicCounter, timeNow)
+	metric := buildCounterMetric(parsedMetric, isMonotonicCounter, timeNow, parsedMetric.counterValue())
 	expectedMetrics := pdata.NewInstrumentationLibraryMetrics()
 	expectedMetric := expectedMetrics.Metrics().AppendEmpty()
 	expectedMetric.SetName("testCounter")
@@ -57,12 +57,12 @@ func TestBuildGaugeMetric(t *testing.T) {
 	}
 	parsedMetric := statsDMetric{
 		description: metricDescription,
-		floatvalue:  32.3,
+		asFloat:     32.3,
 		unit:        "meter",
 		labelKeys:   []string{"mykey", "mykey2"},
 		labelValues: []string{"myvalue", "myvalue2"},
 	}
-	metric := buildGaugeMetric(parsedMetric, timeNow)
+	metric := buildGaugeMetric(parsedMetric, timeNow, parsedMetric.gaugeValue())
 	expectedMetrics := pdata.NewInstrumentationLibraryMetrics()
 	expectedMetric := expectedMetrics.Metrics().AppendEmpty()
 	expectedMetric.SetName("testGauge")

@@ -72,16 +72,14 @@ func Test_ParseMessageToMetric(t *testing.T) {
 			input: "test.metric:42|c",
 			wantMetric: testStatsDMetric(
 				"test.metric",
-				"42",
 				42,
-				0,
 				false,
 				"c", 0, nil, nil),
 		},
 		{
 			name:  "invalid  counter metric value",
 			input: "test.metric:42.abc|c",
-			err:   errors.New("counter: parse metric value string: 42.abc"),
+			err:   errors.New("parse metric value string: 42.abc"),
 		},
 		{
 			name:  "unhandled metric type",
@@ -93,9 +91,7 @@ func Test_ParseMessageToMetric(t *testing.T) {
 			input: "test.metric:42|c|@0.1|#key:value",
 			wantMetric: testStatsDMetric(
 				"test.metric",
-				"42",
-				420,
-				0,
+				42,
 				false,
 				"c",
 				0.1,
@@ -107,9 +103,7 @@ func Test_ParseMessageToMetric(t *testing.T) {
 			input: "test.metric:42|c|@0.8|#key:value",
 			wantMetric: testStatsDMetric(
 				"test.metric",
-				"42",
-				52,
-				0,
+				42,
 				false,
 				"c",
 				0.8,
@@ -121,9 +115,7 @@ func Test_ParseMessageToMetric(t *testing.T) {
 			input: "test.metric:42|c|@0.8|#key:value,key2:value2",
 			wantMetric: testStatsDMetric(
 				"test.metric",
-				"42",
-				52,
-				0,
+				42,
 				false,
 				"c",
 				0.8,
@@ -135,8 +127,6 @@ func Test_ParseMessageToMetric(t *testing.T) {
 			input: "test.metric:42.0|g",
 			wantMetric: testStatsDMetric(
 				"test.metric",
-				"42.0",
-				0,
 				42,
 				false,
 				"g", 0, nil, nil),
@@ -146,8 +136,6 @@ func Test_ParseMessageToMetric(t *testing.T) {
 			input: "test.metric:42|g",
 			wantMetric: testStatsDMetric(
 				"test.metric",
-				"42",
-				0,
 				42,
 				false,
 				"g", 0, nil, nil),
@@ -155,15 +143,13 @@ func Test_ParseMessageToMetric(t *testing.T) {
 		{
 			name:  "invalid gauge metric value",
 			input: "test.metric:42.abc|g",
-			err:   errors.New("gauge: parse metric value string: 42.abc"),
+			err:   errors.New("parse metric value string: 42.abc"),
 		},
 		{
 			name:  "gauge metric with sample rate and tag",
 			input: "test.metric:11|g|@0.1|#key:value",
 			wantMetric: testStatsDMetric(
 				"test.metric",
-				"11",
-				0,
 				11,
 				false,
 				"g",
@@ -176,8 +162,6 @@ func Test_ParseMessageToMetric(t *testing.T) {
 			input: "test.metric:11|g|@0.8|#key:value,key2:value2",
 			wantMetric: testStatsDMetric(
 				"test.metric",
-				"11",
-				0,
 				11,
 				false,
 				"g",
@@ -190,8 +174,6 @@ func Test_ParseMessageToMetric(t *testing.T) {
 			input: "test.metric:+42.0|g",
 			wantMetric: testStatsDMetric(
 				"test.metric",
-				"+42.0",
-				0,
 				42,
 				true,
 				"g", 0, nil, nil),
@@ -201,8 +183,6 @@ func Test_ParseMessageToMetric(t *testing.T) {
 			input: "test.metric:-42.0|g",
 			wantMetric: testStatsDMetric(
 				"test.metric",
-				"-42.0",
-				0,
 				-42,
 				true,
 				"g", 0, nil, nil),
@@ -212,8 +192,6 @@ func Test_ParseMessageToMetric(t *testing.T) {
 			input: "test.metric:+42|g",
 			wantMetric: testStatsDMetric(
 				"test.metric",
-				"+42",
-				0,
 				42,
 				true,
 				"g", 0, nil, nil),
@@ -223,8 +201,6 @@ func Test_ParseMessageToMetric(t *testing.T) {
 			input: "test.metric:-42|g",
 			wantMetric: testStatsDMetric(
 				"test.metric",
-				"-42",
-				0,
 				-42,
 				true,
 				"g", 0, nil, nil),
@@ -232,15 +208,13 @@ func Test_ParseMessageToMetric(t *testing.T) {
 		{
 			name:  "invalid histogram metric value",
 			input: "test.metric:42.abc|h",
-			err:   errors.New("timing/histogram: parse metric value string: 42.abc"),
+			err:   errors.New("parse metric value string: 42.abc"),
 		},
 		{
 			name:  "int timer",
 			input: "test.metric:-42|ms",
 			wantMetric: testStatsDMetric(
 				"test.metric",
-				"-42",
-				0,
 				-42,
 				true,
 				"ms", 0, nil, nil),
@@ -250,8 +224,6 @@ func Test_ParseMessageToMetric(t *testing.T) {
 			input: "test.metric:42|h",
 			wantMetric: testStatsDMetric(
 				"test.metric",
-				"42",
-				0,
 				42,
 				false,
 				"h", 0, nil, nil),
@@ -286,9 +258,7 @@ func Test_ParseMessageToMetricWithMetricType(t *testing.T) {
 			input: "test.metric:42|c",
 			wantMetric: testStatsDMetric(
 				"test.metric",
-				"42",
 				42,
-				0,
 				false,
 				"c", 0,
 				[]string{"metric_type"},
@@ -299,9 +269,7 @@ func Test_ParseMessageToMetricWithMetricType(t *testing.T) {
 			input: "test.metric:42|c|@0.1|#key:value",
 			wantMetric: testStatsDMetric(
 				"test.metric",
-				"42",
-				420,
-				0,
+				42,
 				false,
 				"c",
 				0.1,
@@ -313,9 +281,7 @@ func Test_ParseMessageToMetricWithMetricType(t *testing.T) {
 			input: "test.metric:42|c|@0.8|#key:value",
 			wantMetric: testStatsDMetric(
 				"test.metric",
-				"42",
-				52,
-				0,
+				42,
 				false,
 				"c",
 				0.8,
@@ -327,9 +293,7 @@ func Test_ParseMessageToMetricWithMetricType(t *testing.T) {
 			input: "test.metric:42|c|@0.8|#key:value,key2:value2",
 			wantMetric: testStatsDMetric(
 				"test.metric",
-				"42",
-				52,
-				0,
+				42,
 				false,
 				"c",
 				0.8,
@@ -341,8 +305,6 @@ func Test_ParseMessageToMetricWithMetricType(t *testing.T) {
 			input: "test.metric:42.0|g",
 			wantMetric: testStatsDMetric(
 				"test.metric",
-				"42.0",
-				0,
 				42,
 				false,
 				"g", 0,
@@ -354,8 +316,6 @@ func Test_ParseMessageToMetricWithMetricType(t *testing.T) {
 			input: "test.metric:42|g",
 			wantMetric: testStatsDMetric(
 				"test.metric",
-				"42",
-				0,
 				42,
 				false,
 				"g", 0,
@@ -365,15 +325,13 @@ func Test_ParseMessageToMetricWithMetricType(t *testing.T) {
 		{
 			name:  "invalid gauge metric value",
 			input: "test.metric:42.abc|g",
-			err:   errors.New("gauge: parse metric value string: 42.abc"),
+			err:   errors.New("parse metric value string: 42.abc"),
 		},
 		{
 			name:  "gauge metric with sample rate and tag",
 			input: "test.metric:11|g|@0.1|#key:value",
 			wantMetric: testStatsDMetric(
 				"test.metric",
-				"11",
-				0,
 				11,
 				false,
 				"g",
@@ -386,8 +344,6 @@ func Test_ParseMessageToMetricWithMetricType(t *testing.T) {
 			input: "test.metric:11|g|@0.8|#key:value,key2:value2",
 			wantMetric: testStatsDMetric(
 				"test.metric",
-				"11",
-				0,
 				11,
 				false,
 				"g",
@@ -400,8 +356,6 @@ func Test_ParseMessageToMetricWithMetricType(t *testing.T) {
 			input: "test.metric:+42.0|g",
 			wantMetric: testStatsDMetric(
 				"test.metric",
-				"+42.0",
-				0,
 				42,
 				true,
 				"g", 0,
@@ -413,8 +367,6 @@ func Test_ParseMessageToMetricWithMetricType(t *testing.T) {
 			input: "test.metric:-42.0|g",
 			wantMetric: testStatsDMetric(
 				"test.metric",
-				"-42.0",
-				0,
 				-42,
 				true,
 				"g", 0,
@@ -426,8 +378,6 @@ func Test_ParseMessageToMetricWithMetricType(t *testing.T) {
 			input: "test.metric:+42|g",
 			wantMetric: testStatsDMetric(
 				"test.metric",
-				"+42",
-				0,
 				42,
 				true,
 				"g", 0,
@@ -439,8 +389,6 @@ func Test_ParseMessageToMetricWithMetricType(t *testing.T) {
 			input: "test.metric:-42|g",
 			wantMetric: testStatsDMetric(
 				"test.metric",
-				"-42",
-				0,
 				-42,
 				true,
 				"g", 0,
@@ -452,8 +400,6 @@ func Test_ParseMessageToMetricWithMetricType(t *testing.T) {
 			input: "test.metric:-42|ms",
 			wantMetric: testStatsDMetric(
 				"test.metric",
-				"-42",
-				0,
 				-42,
 				true,
 				"ms", 0,
@@ -465,8 +411,6 @@ func Test_ParseMessageToMetricWithMetricType(t *testing.T) {
 			input: "test.metric:42|h",
 			wantMetric: testStatsDMetric(
 				"test.metric",
-				"42",
-				0,
 				42,
 				false,
 				"h", 0,
@@ -490,9 +434,9 @@ func Test_ParseMessageToMetricWithMetricType(t *testing.T) {
 	}
 }
 
-func testStatsDMetric(name string, value string,
-	intValue int64, floatValue float64,
-	addition bool, statsdMetricType string,
+func testStatsDMetric(
+	name string, asFloat float64,
+	addition bool, statsdMetricType statsdMetricType,
 	sampleRate float64, labelKeys []string,
 	labelValue []string) statsDMetric {
 	if len(labelKeys) > 0 {
@@ -508,9 +452,7 @@ func testStatsDMetric(name string, value string,
 				statsdMetricType: statsdMetricType,
 				labels:           set.Equivalent(),
 			},
-			value:       value,
-			intvalue:    intValue,
-			floatvalue:  floatValue,
+			asFloat:     asFloat,
 			addition:    addition,
 			unit:        "",
 			sampleRate:  sampleRate,
@@ -523,9 +465,7 @@ func testStatsDMetric(name string, value string,
 			name:             name,
 			statsdMetricType: statsdMetricType,
 		},
-		value:       value,
-		intvalue:    intValue,
-		floatvalue:  floatValue,
+		asFloat:     asFloat,
 		addition:    addition,
 		unit:        "",
 		sampleRate:  sampleRate,
@@ -534,7 +474,15 @@ func testStatsDMetric(name string, value string,
 	}
 }
 
-func testDescription(name string, statsdMetricType string, keys []string, values []string) statsDMetricdescription {
+func testBuildGaugeMetric(s statsDMetric, t time.Time) pdata.InstrumentationLibraryMetrics {
+	return buildGaugeMetric(s, t, s.gaugeValue())
+}
+
+func testBuildCounterMetric(s statsDMetric, isMonotonicCounter bool, timeNow time.Time) pdata.InstrumentationLibraryMetrics {
+	return buildCounterMetric(s, isMonotonicCounter, timeNow, s.counterValue())
+}
+
+func testDescription(name string, statsdMetricType statsdMetricType, keys []string, values []string) statsDMetricdescription {
 	var kvs []attribute.KeyValue
 	var sortable attribute.Sortable
 	for n, k := range keys {
@@ -547,6 +495,7 @@ func testDescription(name string, statsdMetricType string, keys []string, values
 		labels:           set.Equivalent(),
 	}
 }
+
 func TestStatsDParser_Aggregate(t *testing.T) {
 	timeNowFunc = func() time.Time {
 		return time.Unix(711, 0)
@@ -587,9 +536,9 @@ func TestStatsDParser_Aggregate(t *testing.T) {
 			},
 			expectedGauges: map[statsDMetricdescription]pdata.InstrumentationLibraryMetrics{
 				testDescription("statsdTestMetric1", "g",
-					[]string{"mykey"}, []string{"myvalue"}): buildGaugeMetric(testStatsDMetric("statsdTestMetric1", "", 0, 10102, false, "g", 0, []string{"mykey"}, []string{"myvalue"}), time.Unix(711, 0)),
+					[]string{"mykey"}, []string{"myvalue"}): testBuildGaugeMetric(testStatsDMetric("statsdTestMetric1", 10102, false, "g", 0, []string{"mykey"}, []string{"myvalue"}), time.Unix(711, 0)),
 				testDescription("statsdTestMetric2", "g",
-					[]string{"mykey"}, []string{"myvalue"}): buildGaugeMetric(testStatsDMetric("statsdTestMetric2", "", 0, 507, false, "g", 0, []string{"mykey"}, []string{"myvalue"}), time.Unix(711, 0)),
+					[]string{"mykey"}, []string{"myvalue"}): testBuildGaugeMetric(testStatsDMetric("statsdTestMetric2", 507, false, "g", 0, []string{"mykey"}, []string{"myvalue"}), time.Unix(711, 0)),
 			},
 			expectedCounters: map[statsDMetricdescription]pdata.InstrumentationLibraryMetrics{},
 			expectedTimer:    []pdata.InstrumentationLibraryMetrics{},
@@ -610,9 +559,9 @@ func TestStatsDParser_Aggregate(t *testing.T) {
 			},
 			expectedGauges: map[statsDMetricdescription]pdata.InstrumentationLibraryMetrics{
 				testDescription("statsdTestMetric1", "g",
-					[]string{"mykey"}, []string{"myvalue"}): buildGaugeMetric(testStatsDMetric("statsdTestMetric1", "", 0, 4885, false, "g", 0, []string{"mykey"}, []string{"myvalue"}), time.Unix(711, 0)),
+					[]string{"mykey"}, []string{"myvalue"}): testBuildGaugeMetric(testStatsDMetric("statsdTestMetric1", 4885, false, "g", 0, []string{"mykey"}, []string{"myvalue"}), time.Unix(711, 0)),
 				testDescription("statsdTestMetric2", "g",
-					[]string{"mykey"}, []string{"myvalue"}): buildGaugeMetric(testStatsDMetric("statsdTestMetric2", "", 0, 5, false, "g", 0, []string{"mykey"}, []string{"myvalue"}), time.Unix(711, 0)),
+					[]string{"mykey"}, []string{"myvalue"}): testBuildGaugeMetric(testStatsDMetric("statsdTestMetric2", 5, false, "g", 0, []string{"mykey"}, []string{"myvalue"}), time.Unix(711, 0)),
 			},
 			expectedCounters: map[statsDMetricdescription]pdata.InstrumentationLibraryMetrics{},
 			expectedTimer:    []pdata.InstrumentationLibraryMetrics{},
@@ -633,9 +582,9 @@ func TestStatsDParser_Aggregate(t *testing.T) {
 			},
 			expectedGauges: map[statsDMetricdescription]pdata.InstrumentationLibraryMetrics{
 				testDescription("statsdTestMetric1", "g",
-					[]string{"mykey"}, []string{"myvalue"}): buildGaugeMetric(testStatsDMetric("statsdTestMetric1", "", 0, 4101, false, "g", 0, []string{"mykey"}, []string{"myvalue"}), time.Unix(711, 0)),
+					[]string{"mykey"}, []string{"myvalue"}): testBuildGaugeMetric(testStatsDMetric("statsdTestMetric1", 4101, false, "g", 0, []string{"mykey"}, []string{"myvalue"}), time.Unix(711, 0)),
 				testDescription("statsdTestMetric2", "g",
-					[]string{"mykey"}, []string{"myvalue"}): buildGaugeMetric(testStatsDMetric("statsdTestMetric2", "", 0, 200, false, "g", 0, []string{"mykey"}, []string{"myvalue"}), time.Unix(711, 0)),
+					[]string{"mykey"}, []string{"myvalue"}): testBuildGaugeMetric(testStatsDMetric("statsdTestMetric2", 200, false, "g", 0, []string{"mykey"}, []string{"myvalue"}), time.Unix(711, 0)),
 			},
 			expectedCounters: map[statsDMetricdescription]pdata.InstrumentationLibraryMetrics{},
 			expectedTimer:    []pdata.InstrumentationLibraryMetrics{},
@@ -651,9 +600,9 @@ func TestStatsDParser_Aggregate(t *testing.T) {
 			expectedGauges: map[statsDMetricdescription]pdata.InstrumentationLibraryMetrics{},
 			expectedCounters: map[statsDMetricdescription]pdata.InstrumentationLibraryMetrics{
 				testDescription("statsdTestMetric1", "c",
-					[]string{"mykey"}, []string{"myvalue"}): buildCounterMetric(testStatsDMetric("statsdTestMetric1", "", 7000, 0, false, "c", 0, []string{"mykey"}, []string{"myvalue"}), false, time.Unix(711, 0)),
+					[]string{"mykey"}, []string{"myvalue"}): testBuildCounterMetric(testStatsDMetric("statsdTestMetric1", 7000, false, "c", 0, []string{"mykey"}, []string{"myvalue"}), false, time.Unix(711, 0)),
 				testDescription("statsdTestMetric2", "c",
-					[]string{"mykey"}, []string{"myvalue"}): buildCounterMetric(testStatsDMetric("statsdTestMetric2", "", 50, 0, false, "c", 0, []string{"mykey"}, []string{"myvalue"}), false, time.Unix(711, 0)),
+					[]string{"mykey"}, []string{"myvalue"}): testBuildCounterMetric(testStatsDMetric("statsdTestMetric2", 50, false, "c", 0, []string{"mykey"}, []string{"myvalue"}), false, time.Unix(711, 0)),
 			},
 			expectedTimer: []pdata.InstrumentationLibraryMetrics{},
 		},
@@ -672,13 +621,13 @@ func TestStatsDParser_Aggregate(t *testing.T) {
 			},
 			expectedGauges: map[statsDMetricdescription]pdata.InstrumentationLibraryMetrics{
 				testDescription("statsdTestMetric1", "g",
-					[]string{"mykey"}, []string{"myvalue"}): buildGaugeMetric(testStatsDMetric("statsdTestMetric1", "", 0, 421, false, "g", 0, []string{"mykey"}, []string{"myvalue"}), time.Unix(711, 0)),
+					[]string{"mykey"}, []string{"myvalue"}): testBuildGaugeMetric(testStatsDMetric("statsdTestMetric1", 421, false, "g", 0, []string{"mykey"}, []string{"myvalue"}), time.Unix(711, 0)),
 			},
 			expectedCounters: map[statsDMetricdescription]pdata.InstrumentationLibraryMetrics{
 				testDescription("statsdTestMetric1", "c",
-					[]string{"mykey"}, []string{"myvalue"}): buildCounterMetric(testStatsDMetric("statsdTestMetric1", "", 7000, 0, false, "c", 0, []string{"mykey"}, []string{"myvalue"}), false, time.Unix(711, 0)),
+					[]string{"mykey"}, []string{"myvalue"}): testBuildCounterMetric(testStatsDMetric("statsdTestMetric1", 7000, false, "c", 0, []string{"mykey"}, []string{"myvalue"}), false, time.Unix(711, 0)),
 				testDescription("statsdTestMetric2", "c",
-					[]string{"mykey"}, []string{"myvalue"}): buildCounterMetric(testStatsDMetric("statsdTestMetric2", "", 50, 0, false, "c", 0, []string{"mykey"}, []string{"myvalue"}), false, time.Unix(711, 0)),
+					[]string{"mykey"}, []string{"myvalue"}): testBuildCounterMetric(testStatsDMetric("statsdTestMetric2", 50, false, "c", 0, []string{"mykey"}, []string{"myvalue"}), false, time.Unix(711, 0)),
 			},
 			expectedTimer: []pdata.InstrumentationLibraryMetrics{},
 		},
@@ -698,15 +647,15 @@ func TestStatsDParser_Aggregate(t *testing.T) {
 			},
 			expectedGauges: map[statsDMetricdescription]pdata.InstrumentationLibraryMetrics{
 				testDescription("statsdTestMetric1", "g",
-					[]string{"mykey"}, []string{"myvalue"}): buildGaugeMetric(testStatsDMetric("statsdTestMetric1", "", 0, 319, false, "g", 0, []string{"mykey"}, []string{"myvalue"}), time.Unix(711, 0)),
+					[]string{"mykey"}, []string{"myvalue"}): testBuildGaugeMetric(testStatsDMetric("statsdTestMetric1", 319, false, "g", 0, []string{"mykey"}, []string{"myvalue"}), time.Unix(711, 0)),
 				testDescription("statsdTestMetric1", "g",
-					[]string{"mykey"}, []string{"myvalue1"}): buildGaugeMetric(testStatsDMetric("statsdTestMetric1", "", 0, 399, false, "g", 0, []string{"mykey"}, []string{"myvalue1"}), time.Unix(711, 0)),
+					[]string{"mykey"}, []string{"myvalue1"}): testBuildGaugeMetric(testStatsDMetric("statsdTestMetric1", 399, false, "g", 0, []string{"mykey"}, []string{"myvalue1"}), time.Unix(711, 0)),
 			},
 			expectedCounters: map[statsDMetricdescription]pdata.InstrumentationLibraryMetrics{
 				testDescription("statsdTestMetric1", "c",
-					[]string{"mykey"}, []string{"myvalue"}): buildCounterMetric(testStatsDMetric("statsdTestMetric1", "", 215, 0, false, "c", 0, []string{"mykey"}, []string{"myvalue"}), false, time.Unix(711, 0)),
+					[]string{"mykey"}, []string{"myvalue"}): testBuildCounterMetric(testStatsDMetric("statsdTestMetric1", 215, false, "c", 0, []string{"mykey"}, []string{"myvalue"}), false, time.Unix(711, 0)),
 				testDescription("statsdTestMetric2", "c",
-					[]string{"mykey"}, []string{"myvalue"}): buildCounterMetric(testStatsDMetric("statsdTestMetric2", "", 75, 0, false, "c", 0, []string{"mykey"}, []string{"myvalue"}), false, time.Unix(711, 0)),
+					[]string{"mykey"}, []string{"myvalue"}): testBuildCounterMetric(testStatsDMetric("statsdTestMetric2", 75, false, "c", 0, []string{"mykey"}, []string{"myvalue"}), false, time.Unix(711, 0)),
 			},
 			expectedTimer: []pdata.InstrumentationLibraryMetrics{},
 		},
@@ -721,10 +670,10 @@ func TestStatsDParser_Aggregate(t *testing.T) {
 			expectedGauges:   map[statsDMetricdescription]pdata.InstrumentationLibraryMetrics{},
 			expectedCounters: map[statsDMetricdescription]pdata.InstrumentationLibraryMetrics{},
 			expectedTimer: []pdata.InstrumentationLibraryMetrics{
-				buildGaugeMetric(testStatsDMetric("statsdTestMetric1", "", 0, 500, false, "ms", 0, []string{"mykey"}, []string{"myvalue"}), time.Unix(711, 0)),
-				buildGaugeMetric(testStatsDMetric("statsdTestMetric1", "", 0, 400, false, "h", 0, []string{"mykey"}, []string{"myvalue"}), time.Unix(711, 0)),
-				buildGaugeMetric(testStatsDMetric("statsdTestMetric1", "", 0, 300, false, "ms", 0, []string{"mykey"}, []string{"myvalue"}), time.Unix(711, 0)),
-				buildGaugeMetric(testStatsDMetric("statsdTestMetric1", "", 0, 100, false, "h", 0, []string{"mykey"}, []string{"myvalue"}), time.Unix(711, 0)),
+				testBuildGaugeMetric(testStatsDMetric("statsdTestMetric1", 500, false, "ms", 0, []string{"mykey"}, []string{"myvalue"}), time.Unix(711, 0)),
+				testBuildGaugeMetric(testStatsDMetric("statsdTestMetric1", 400, false, "h", 0, []string{"mykey"}, []string{"myvalue"}), time.Unix(711, 0)),
+				testBuildGaugeMetric(testStatsDMetric("statsdTestMetric1", 300, false, "ms", 0, []string{"mykey"}, []string{"myvalue"}), time.Unix(711, 0)),
+				testBuildGaugeMetric(testStatsDMetric("statsdTestMetric1", 10, false, "h", 0, []string{"mykey"}, []string{"myvalue"}), time.Unix(711, 0)),
 			},
 		},
 	}
@@ -772,9 +721,9 @@ func TestStatsDParser_AggregateWithMetricType(t *testing.T) {
 			},
 			expectedGauges: map[statsDMetricdescription]pdata.InstrumentationLibraryMetrics{
 				testDescription("statsdTestMetric1", "g",
-					[]string{"mykey", "metric_type"}, []string{"myvalue", "gauge"}): buildGaugeMetric(testStatsDMetric("statsdTestMetric1", "", 0, 10102, false, "g", 0, []string{"mykey", "metric_type"}, []string{"myvalue", "gauge"}), time.Unix(711, 0)),
+					[]string{"mykey", "metric_type"}, []string{"myvalue", "gauge"}): testBuildGaugeMetric(testStatsDMetric("statsdTestMetric1", 10102, false, "g", 0, []string{"mykey", "metric_type"}, []string{"myvalue", "gauge"}), time.Unix(711, 0)),
 				testDescription("statsdTestMetric2", "g",
-					[]string{"mykey", "metric_type"}, []string{"myvalue", "gauge"}): buildGaugeMetric(testStatsDMetric("statsdTestMetric2", "", 0, 507, false, "g", 0, []string{"mykey", "metric_type"}, []string{"myvalue", "gauge"}), time.Unix(711, 0)),
+					[]string{"mykey", "metric_type"}, []string{"myvalue", "gauge"}): testBuildGaugeMetric(testStatsDMetric("statsdTestMetric2", 507, false, "g", 0, []string{"mykey", "metric_type"}, []string{"myvalue", "gauge"}), time.Unix(711, 0)),
 			},
 			expectedCounters: map[statsDMetricdescription]pdata.InstrumentationLibraryMetrics{},
 		},
@@ -790,9 +739,9 @@ func TestStatsDParser_AggregateWithMetricType(t *testing.T) {
 			expectedGauges: map[statsDMetricdescription]pdata.InstrumentationLibraryMetrics{},
 			expectedCounters: map[statsDMetricdescription]pdata.InstrumentationLibraryMetrics{
 				testDescription("statsdTestMetric1", "c",
-					[]string{"mykey", "metric_type"}, []string{"myvalue", "counter"}): buildCounterMetric(testStatsDMetric("statsdTestMetric1", "", 7000, 0, false, "c", 0, []string{"mykey", "metric_type"}, []string{"myvalue", "counter"}), false, time.Unix(711, 0)),
+					[]string{"mykey", "metric_type"}, []string{"myvalue", "counter"}): testBuildCounterMetric(testStatsDMetric("statsdTestMetric1", 7000, false, "c", 0, []string{"mykey", "metric_type"}, []string{"myvalue", "counter"}), false, time.Unix(711, 0)),
 				testDescription("statsdTestMetric2", "c",
-					[]string{"mykey", "metric_type"}, []string{"myvalue", "counter"}): buildCounterMetric(testStatsDMetric("statsdTestMetric2", "", 50, 0, false, "c", 0, []string{"mykey", "metric_type"}, []string{"myvalue", "counter"}), false, time.Unix(711, 0)),
+					[]string{"mykey", "metric_type"}, []string{"myvalue", "counter"}): testBuildCounterMetric(testStatsDMetric("statsdTestMetric2", 50, false, "c", 0, []string{"mykey", "metric_type"}, []string{"myvalue", "counter"}), false, time.Unix(711, 0)),
 			},
 		},
 	}
@@ -837,9 +786,9 @@ func TestStatsDParser_AggregateWithIsMonotonicCounter(t *testing.T) {
 			expectedGauges: map[statsDMetricdescription]pdata.InstrumentationLibraryMetrics{},
 			expectedCounters: map[statsDMetricdescription]pdata.InstrumentationLibraryMetrics{
 				testDescription("statsdTestMetric1", "c",
-					[]string{"mykey"}, []string{"myvalue"}): buildCounterMetric(testStatsDMetric("statsdTestMetric1", "", 7000, 0, false, "c", 0, []string{"mykey"}, []string{"myvalue"}), true, time.Unix(711, 0)),
+					[]string{"mykey"}, []string{"myvalue"}): testBuildCounterMetric(testStatsDMetric("statsdTestMetric1", 7000, false, "c", 0, []string{"mykey"}, []string{"myvalue"}), true, time.Unix(711, 0)),
 				testDescription("statsdTestMetric2", "c",
-					[]string{"mykey"}, []string{"myvalue"}): buildCounterMetric(testStatsDMetric("statsdTestMetric2", "", 50, 0, false, "c", 0, []string{"mykey"}, []string{"myvalue"}), true, time.Unix(711, 0)),
+					[]string{"mykey"}, []string{"myvalue"}): testBuildCounterMetric(testStatsDMetric("statsdTestMetric2", 50, false, "c", 0, []string{"mykey"}, []string{"myvalue"}), true, time.Unix(711, 0)),
 			},
 		},
 	}
@@ -887,7 +836,16 @@ func TestStatsDParser_AggregateTimmerWithSummary(t *testing.T) {
 			expectedSummaries: map[statsDMetricdescription]summaryMetric{
 				testDescription("statsdTestMetric1", "ms",
 					[]string{"mykey"}, []string{"myvalue"}): {
-					name:          "statsdTestMetric1",
+					name: "statsdTestMetric1",
+					// Note: the "200" below is an incorrect
+					// result.  When statsd sampling is
+					// applied to histogram/timer events,
+					// unlike the counter, the sample rate
+					// is meant to apply to the count of
+					// observations, not to scale the value.
+					// There should really be ten 200 values
+					// in `summaryPoints` below.  See: issue
+					// #5252.
 					summaryPoints: []float64{1, 1, 10, 20, 200},
 					labelKeys:     []string{"mykey"},
 					labelValues:   []string{"myvalue"},
@@ -970,14 +928,14 @@ func TestStatsDParser_GetMetrics(t *testing.T) {
 	p.Initialize(true, false, []TimerHistogramMapping{{StatsdType: "timer", ObserverType: "gauge"}, {StatsdType: "histogram", ObserverType: "gauge"}})
 	p.gauges[testDescription("statsdTestMetric1", "g",
 		[]string{"mykey", "metric_type"}, []string{"myvalue", "gauge"})] =
-		buildGaugeMetric(testStatsDMetric("testGauge1", "", 0, 1, false, "g", 0, []string{"mykey", "metric_type"}, []string{"myvalue", "gauge"}), time.Unix(711, 0))
+		testBuildGaugeMetric(testStatsDMetric("testGauge1", 1, false, "g", 0, []string{"mykey", "metric_type"}, []string{"myvalue", "gauge"}), time.Unix(711, 0))
 	p.gauges[testDescription("statsdTestMetric1", "g",
 		[]string{"mykey2", "metric_type"}, []string{"myvalue2", "gauge"})] =
-		buildGaugeMetric(testStatsDMetric("statsdTestMetric1", "", 0, 10102, false, "g", 0, []string{"mykey2", "metric_type"}, []string{"myvalue2", "gauge"}), time.Unix(711, 0))
+		testBuildGaugeMetric(testStatsDMetric("statsdTestMetric1", 10102, false, "g", 0, []string{"mykey2", "metric_type"}, []string{"myvalue2", "gauge"}), time.Unix(711, 0))
 	p.counters[testDescription("statsdTestMetric1", "g",
 		[]string{"mykey", "metric_type"}, []string{"myvalue", "gauge"})] =
-		buildGaugeMetric(testStatsDMetric("statsdTestMetric1", "", 0, 10102, false, "g", 0, []string{"mykey", "metric_type"}, []string{"myvalue", "gauge"}), time.Unix(711, 0))
-	p.timersAndDistributions = append(p.timersAndDistributions, buildGaugeMetric(testStatsDMetric("statsdTestMetric1", "", 0, 10102, false, "ms", 0, []string{"mykey2", "metric_type"}, []string{"myvalue2", "gauge"}), time.Unix(711, 0)))
+		testBuildGaugeMetric(testStatsDMetric("statsdTestMetric1", 10102, false, "g", 0, []string{"mykey", "metric_type"}, []string{"myvalue", "gauge"}), time.Unix(711, 0))
+	p.timersAndDistributions = append(p.timersAndDistributions, testBuildGaugeMetric(testStatsDMetric("statsdTestMetric1", 10102, false, "ms", 0, []string{"mykey2", "metric_type"}, []string{"myvalue2", "gauge"}), time.Unix(711, 0)))
 	p.summaries = map[statsDMetricdescription]summaryMetric{
 		testDescription("statsdTestMetric1", "h",
 			[]string{"mykey"}, []string{"myvalue"}): {
