@@ -392,8 +392,7 @@ func TestReceiveLogs(t *testing.T) {
 			name: "1 compressed batch of 2037 bytes, make sure the event size is more than minCompressionLen=1500 to trigger compression",
 			logs: createLogData(1, 1, 10),
 			conf: func() *Config {
-				cfg := NewFactory().CreateDefaultConfig().(*Config)
-				return cfg
+				return NewFactory().CreateDefaultConfig().(*Config)
 			}(),
 			want: wantType{
 				batches: []string{
@@ -678,12 +677,11 @@ func Test_pushLogData_nil_Logs(t *testing.T) {
 		},
 	}
 
-	config := NewFactory().CreateDefaultConfig().(*Config)
 	c := client{
 		zippers: sync.Pool{New: func() interface{} {
 			return gzip.NewWriter(nil)
 		}},
-		config: config,
+		config: NewFactory().CreateDefaultConfig().(*Config),
 		logger: zaptest.NewLogger(t),
 	}
 
@@ -719,13 +717,12 @@ func Test_pushLogData_InvalidLog(t *testing.T) {
 }
 
 func Test_pushLogData_PostError(t *testing.T) {
-	config := NewFactory().CreateDefaultConfig().(*Config)
 	c := client{
 		url: &url.URL{Host: "in va lid"},
 		zippers: sync.Pool{New: func() interface{} {
 			return gzip.NewWriter(nil)
 		}},
-		config: config,
+		config: NewFactory().CreateDefaultConfig().(*Config),
 		logger: zaptest.NewLogger(t),
 	}
 
@@ -762,13 +759,12 @@ func Test_pushLogData_PostError(t *testing.T) {
 }
 
 func Test_pushLogData_ShouldAddResponseTo400Error(t *testing.T) {
-	config := NewFactory().CreateDefaultConfig().(*Config)
 	splunkClient := client{
 		url: &url.URL{Scheme: "http", Host: "splunk"},
 		zippers: sync.Pool{New: func() interface{} {
 			return gzip.NewWriter(nil)
 		}},
-		config: config,
+		config: NewFactory().CreateDefaultConfig().(*Config),
 		logger: zaptest.NewLogger(t),
 	}
 	logs := createLogData(1, 1, 1)
@@ -826,13 +822,12 @@ func Test_pushLogData_ShouldReturnUnsentLogsOnly(t *testing.T) {
 }
 
 func Test_pushLogData_ShouldAddHeadersForProfilingData(t *testing.T) {
-	config := NewFactory().CreateDefaultConfig().(*Config)
 	c := client{
 		url: &url.URL{Scheme: "http", Host: "splunk"},
 		zippers: sync.Pool{New: func() interface{} {
 			return gzip.NewWriter(nil)
 		}},
-		config: config,
+		config: NewFactory().CreateDefaultConfig().(*Config),
 		logger: zaptest.NewLogger(t),
 	}
 
@@ -896,13 +891,12 @@ func Benchmark_pushLogData_10_1_1_1024(b *testing.B) {
 }
 
 func benchPushLogData(b *testing.B, numResources int, numProfiling int, numNonProfiling int, bufSize uint) {
-	config := NewFactory().CreateDefaultConfig().(*Config)
 	c := client{
 		url: &url.URL{Scheme: "http", Host: "splunk"},
 		zippers: sync.Pool{New: func() interface{} {
 			return gzip.NewWriter(nil)
 		}},
-		config: config,
+		config: NewFactory().CreateDefaultConfig().(*Config),
 		logger: zaptest.NewLogger(b),
 	}
 
