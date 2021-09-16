@@ -103,7 +103,7 @@ type Config struct {
 	// App version is used to track telemetry information for Splunk App's using HEC by App version. Defaults to the current OpenTelemetry Collector Contrib build version.
 	SplunkAppVersion string `mapstructure:"splunk_app_version"`
 	// HecMetadata creates a mapping from attributes to HEC specific metadata: source, sourcetype, index and host.
-	HecMetadata OtelToHecMetadata `mapstructure:"otel_to_hec"`
+	HecMetadata OtelToHecMetadata `mapstructure:"hec_to_otel_attrs"`
 	// HecFields creates a mapping from attributes to HEC fields.
 	HecFields OtelToHecFields `mapstructure:"otel_to_hec_fields"`
 }
