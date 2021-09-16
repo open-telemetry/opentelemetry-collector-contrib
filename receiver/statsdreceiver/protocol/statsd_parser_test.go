@@ -436,7 +436,7 @@ func Test_ParseMessageToMetricWithMetricType(t *testing.T) {
 
 func testStatsDMetric(
 	name string, asFloat float64,
-	addition bool, statsdMetricType statsdMetricType,
+	addition bool, metricType MetricType,
 	sampleRate float64, labelKeys []string,
 	labelValue []string) statsDMetric {
 	if len(labelKeys) > 0 {
@@ -448,9 +448,9 @@ func testStatsDMetric(
 		set := attribute.NewSetWithSortable(kvs, &sortable)
 		return statsDMetric{
 			description: statsDMetricdescription{
-				name:             name,
-				statsdMetricType: statsdMetricType,
-				labels:           set.Equivalent(),
+				name:       name,
+				metricType: metricType,
+				labels:     set.Equivalent(),
 			},
 			asFloat:     asFloat,
 			addition:    addition,
@@ -462,8 +462,8 @@ func testStatsDMetric(
 	}
 	return statsDMetric{
 		description: statsDMetricdescription{
-			name:             name,
-			statsdMetricType: statsdMetricType,
+			name:       name,
+			metricType: metricType,
 		},
 		asFloat:     asFloat,
 		addition:    addition,
@@ -482,7 +482,7 @@ func testBuildCounterMetric(s statsDMetric, isMonotonicCounter bool, timeNow tim
 	return buildCounterMetric(s, isMonotonicCounter, timeNow, s.counterValue())
 }
 
-func testDescription(name string, statsdMetricType statsdMetricType, keys []string, values []string) statsDMetricdescription {
+func testDescription(name string, metricType MetricType, keys []string, values []string) statsDMetricdescription {
 	var kvs []attribute.KeyValue
 	var sortable attribute.Sortable
 	for n, k := range keys {
@@ -490,9 +490,9 @@ func testDescription(name string, statsdMetricType statsdMetricType, keys []stri
 	}
 	set := attribute.NewSetWithSortable(kvs, &sortable)
 	return statsDMetricdescription{
-		name:             name,
-		statsdMetricType: statsdMetricType,
-		labels:           set.Equivalent(),
+		name:       name,
+		metricType: metricType,
+		labels:     set.Equivalent(),
 	}
 }
 
@@ -914,13 +914,13 @@ func TestStatsDParser_Initialize(t *testing.T) {
 	p.Initialize(true, false, []TimerHistogramMapping{{StatsdType: "timer", ObserverType: "gauge"}, {StatsdType: "histogram", ObserverType: "gauge"}})
 	labels := attribute.Distinct{}
 	teststatsdDMetricdescription := statsDMetricdescription{
-		name:             "test",
-		statsdMetricType: "g",
-		labels:           labels}
+		name:       "test",
+		metricType: "g",
+		labels:     labels}
 	p.gauges[teststatsdDMetricdescription] = pdata.InstrumentationLibraryMetrics{}
 	assert.Equal(t, 1, len(p.gauges))
-	assert.Equal(t, "gauge", p.observeTimer)
-	assert.Equal(t, "gauge", p.observeHistogram)
+	assert.Equal(t, GaugeObserver, p.observeTimer)
+	assert.Equal(t, GaugeObserver, p.observeHistogram)
 }
 
 func TestStatsDParser_GetMetrics(t *testing.T) {
