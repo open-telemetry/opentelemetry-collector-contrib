@@ -94,9 +94,10 @@ func buildSummaryMetric(summaryMetric summaryMetric) pdata.InstrumentationLibrar
 func (s statsDMetric) counterValue() int64 {
 	x := s.asFloat
 	// Note statds counters are always represented as integers.
-	// Since there is no statsd specification, it's difficult to
-	// argue against this statement.  Rounding may occur for
-	// sample rates that are not integer reciprocals.
+	// There is no statsd specification that says what should or
+	// shouldn't be done here.  Rounding may occur for sample
+	// rates that are not integer reciprocals.  Recommendation:
+	// use integer reciprocal sampling rates.
 	if 0 < s.sampleRate && s.sampleRate < 1 {
 		x = x / s.sampleRate
 	}
