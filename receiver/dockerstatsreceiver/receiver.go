@@ -34,7 +34,10 @@ import (
 var _ component.MetricsReceiver = (*Receiver)(nil)
 var _ interval.Runnable = (*Receiver)(nil)
 
-const defaultDockerAPIVersion = 1.22
+const (
+	defaultDockerAPIVersion         = 1.22
+	minimalRequiredDockerAPIVersion = 1.22
+)
 
 type Receiver struct {
 	config            *Config
@@ -77,10 +80,6 @@ func NewReceiver(
 }
 
 func (r *Receiver) Start(ctx context.Context, host component.Host) error {
-	if r.config.DockerAPIVersion == 0 {
-		r.config.DockerAPIVersion = defaultDockerAPIVersion
-	}
-
 	dConfig, err := docker.NewConfig(r.config.Endpoint, r.config.Timeout, r.config.ExcludedImages, r.config.DockerAPIVersion)
 	if err != nil {
 		return err
@@ -139,10 +138,10 @@ func (r *Receiver) Run() error {
 	wg.Add(len(containers))
 	for _, container := range containers {
 		go func(c docker.Container) {
+			defer wg.Done()
 			statsJSON, err := r.client.FetchContainerStatsAsJSON(ctx, c)
 			if err != nil {
 				results <- result{pdata.NewMetrics(), err}
-				wg.Done()
 				return
 			}
 
@@ -156,7 +155,6 @@ func (r *Receiver) Run() error {
 			}
 
 			results <- result{md, err}
-			wg.Done()
 		}(container)
 	}
 
