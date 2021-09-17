@@ -749,6 +749,8 @@ github.com/onsi/gomega v1.7.0/go.mod h1:ex+gbHU/CVuBBDIJjb2X0qEXbFg53c61hWP/1Cpa
 github.com/onsi/gomega v1.7.1/go.mod h1:XdKZgCCFLUoM/7CFJVPcG8C1xQ1AJ0vpAezJrB7JYyY=
 github.com/onsi/gomega v1.9.0/go.mod h1:Ho0h+IUsWyvy1OpqCwxlQ/21gkhVunqlU8fDGcoTdcA=
 github.com/op/go-logging v0.0.0-20160315200505-970db520ece7/go.mod h1:HzydrMdWErDVzsI23lYNej1Htcns9BCg93Dk0bBINWk=
+github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchpersignal v0.35.0 h1:pvuXpYVlovpdfxPpAxMyybgEmjcVbO3bdRNmp0IAc4w=
+github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchpersignal v0.35.0/go.mod h1:ju51QV24qrZBYXdgjvd1htQ8iQbFyfka/vNmikAVfVM=
 github.com/opencontainers/go-digest v1.0.0/go.mod h1:0JzlMkj0TRzQZfJkVvzbP0HBR3IKzErnv2BNG4W4MAM=
 github.com/opencontainers/image-spec v1.0.1/go.mod h1:BtxoFyWECRxE4U/7sNtV5W15zMzWCbyJoFRP3s7yZA0=
 github.com/opentracing-contrib/go-grpc v0.0.0-20191001143057-db30781987df/go.mod h1:DYR5Eij8rJl8h7gblRrOZ8g0kW1umSpKqYIBTgeDtLo=
@@ -1007,6 +1009,7 @@ go.opencensus.io v0.23.0/go.mod h1:XItmlyltB5F7CS4xOC1DcqMoFqwtC6OG2xF7mCv7P7E=
 go.opentelemetry.io/collector v0.28.0/go.mod h1:AP/BTXwo1eedoJO7V+HQ68CSvJU1lcdqOzJCgt1VsNs=
 go.opentelemetry.io/collector v0.35.1-0.20210915180232-9fcd2bb61979 h1:lHdDlokssqj+G8kU1jN1iUyexJk8Xb/5yhBguCQPwrc=
 go.opentelemetry.io/collector v0.35.1-0.20210915180232-9fcd2bb61979/go.mod h1:NCDJ8/IMS+RjM4+HsWrlFDMIgcx8Qom0ZKqZnYK42qI=
+go.opentelemetry.io/collector/model v0.30.2-0.20210719230137-809cae954ed3/go.mod h1:PcHNnM+RUl0uD8VkSn93PO78N7kQYhfqpI/eki57pl4=
 go.opentelemetry.io/collector/model v0.35.0/go.mod h1:+7YCSjJG+MqiIFjauzt7oM2qkqBsaJWh5hcsO4fwsAc=
 go.opentelemetry.io/collector/model v0.35.1-0.20210915180232-9fcd2bb61979 h1:Zo0ExoOI18KTUIJ2FKHNsKKgu0bjKUSdkohY8nqzi6s=
 go.opentelemetry.io/collector/model v0.35.1-0.20210915180232-9fcd2bb61979/go.mod h1:+7YCSjJG+MqiIFjauzt7oM2qkqBsaJWh5hcsO4fwsAc=
@@ -1503,6 +1506,7 @@ google.golang.org/grpc v1.35.0/go.mod h1:qjiiYl8FncCW8feJPdyg3v6XW24KsRHe+dy9BAG
 google.golang.org/grpc v1.36.0/go.mod h1:qjiiYl8FncCW8feJPdyg3v6XW24KsRHe+dy9BAGRRjU=
 google.golang.org/grpc v1.36.1/go.mod h1:qjiiYl8FncCW8feJPdyg3v6XW24KsRHe+dy9BAGRRjU=
 google.golang.org/grpc v1.38.0/go.mod h1:NREThFqKR1f3iQ6oBuvc5LadQuXVGo9rkm5ZGrQdJfM=
+google.golang.org/grpc v1.39.0/go.mod h1:PImNr+rS9TWYb2O4/emRugxiyHZ5JyHW5F+RPnDzfrE=
 google.golang.org/grpc v1.40.0 h1:AGJ0Ih4mHjSeibYkFGh1dD9KJ/eOtZ93I6hoHhukQ5Q=
 google.golang.org/grpc v1.40.0/go.mod h1:ogyxbiOoUXAkP+4+xa6PZSE9DZgIHtSpzjDTB9KAK34=
 google.golang.org/protobuf v0.0.0-20200109180630-ec00e32a8dfd/go.mod h1:DFci5gLYBciE7Vtevhsrf46CRTquxDuWsQurQQe4oz8=
