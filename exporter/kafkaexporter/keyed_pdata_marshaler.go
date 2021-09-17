@@ -2,8 +2,9 @@ package kafkaexporter
 
 import (
 	"github.com/Shopify/sarama"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchpersignal"
 	"go.opentelemetry.io/collector/model/pdata"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchpersignal"
 )
 
 const (
