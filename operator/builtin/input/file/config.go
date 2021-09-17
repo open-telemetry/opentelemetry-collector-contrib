@@ -55,9 +55,7 @@ func NewInputConfig(operatorID string) *InputConfig {
 // InputConfig is the configuration of a file input operator
 type InputConfig struct {
 	helper.InputConfig `mapstructure:",squash" yaml:",inline"`
-
-	Include []string `mapstructure:"include,omitempty" json:"include,omitempty" yaml:"include,omitempty"`
-	Exclude []string `mapstructure:"exclude,omitempty" json:"exclude,omitempty" yaml:"exclude,omitempty"`
+	Finder             `mapstructure:",squash" yaml:",inline"`
 
 	PollInterval            helper.Duration       `mapstructure:"poll_interval,omitempty"                  json:"poll_interval,omitempty"                 yaml:"poll_interval,omitempty"`
 	IncludeFileName         bool                  `mapstructure:"include_file_name,omitempty"              json:"include_file_name,omitempty"             yaml:"include_file_name,omitempty"`
@@ -156,8 +154,7 @@ func (c InputConfig) Build(context operator.BuildContext) ([]operator.Operator, 
 
 	op := &InputOperator{
 		InputOperator:         inputOperator,
-		Include:               c.Include,
-		Exclude:               c.Exclude,
+		finder:                c.Finder,
 		PollInterval:          c.PollInterval.Raw(),
 		FilePathField:         filePathField,
 		FileNameField:         fileNameField,
