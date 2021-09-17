@@ -37,7 +37,7 @@ type Config struct {
 	Path     string `mapstructure:"path"`
 	pathGlob glob.Glob
 	// HecToOtelAttrs creates a mapping from HEC metadata to attributes.
-	HecToOtelAttrs splunk.HecToOtelAttrs `mapstructure:"hec_to_otel_attrs"`
+	HecToOtelAttrs splunk.HecToOtelAttrs `mapstructure:"hec_metadata_to_otel_attrs"`
 }
 
 // initialize the configuration

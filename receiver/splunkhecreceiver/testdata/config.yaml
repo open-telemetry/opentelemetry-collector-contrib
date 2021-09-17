@@ -6,7 +6,7 @@ receivers:
     endpoint: localhost:8088
     access_token_passthrough: true
     path: "/foo"
-    hec_to_otel_attrs:
+    hec_metadata_to_otel_attrs:
       source: "file.name"
       sourcetype: "foobar"
       index: "myindex"
