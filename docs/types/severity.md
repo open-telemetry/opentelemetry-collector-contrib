@@ -8,12 +8,12 @@ Severity is represented as a number from 1 to 24. The meaning of these severity 
 
 Parser operators can parse a severity and attach the resulting value to a log entry.
 
-| Field          | Default   | Description                                                                        |
-| ---            | ---       | ---                                                                                |
-| `parse_from`   | required  | A [field](/docs/types/field.md) that indicates the field to be parsed as JSON      |
-| `preserve_to` |                  | Preserves the unparsed value at the specified [field](/docs/types/field.md)  |
-| `preset`       | `default` | A predefined set of values that should be interpretted at specific severity levels |
-| `mapping`      |           | A custom set of values that should be interpretted at designated severity levels   |
+| Field          | Default   | Description |
+| ---            | ---       | ---         |
+| `parse_from`   | required  | The [field](/docs/types/field.md) from which the value will be parsed. |
+| `preserve_to`  |           | Preserves the unparsed value at the specified [field](/docs/types/field.md). |
+| `preset`       | `default` | A predefined set of values that should be interpretted at specific severity levels. |
+| `mapping`      |           | A custom set of values that should be interpretted at designated severity levels. |
 
 
 ### How severity `mapping` works

@@ -4,15 +4,15 @@ The `syslog_input` operator listens for syslog format logs from UDP/TCP packages
 
 ### Configuration Fields
 
-| Field        | Default          | Description                                                  |
-| ----------   | ---------------- | ------------------------------------------------------------ |
-| `id`         | `syslog_input`   | A unique identifier for the operator                         |
-| `output`     | Next in pipeline | The connected operator(s) that will receive all outbound entries |
+| Field        | Default          | Description |
+| ---          | ---              | ---         |
+| `id`         | `syslog_input`   | A unique identifier for the operator. |
+| `output`     | Next in pipeline | The connected operator(s) that will receive all outbound entries. |
 | `tcp`        | {}               | A [tcp_input config](./tcp_input.md#configuration-fields)  to defined syslog_parser operator. |
 | `udp`        | {}               | A [udp_input config](./udp_input.md#configuration-fields)  to defined syslog_parser operator. |
 | `syslog`     | required         | A [syslog parser config](./syslog_parser.md#configuration-fields)  to defined syslog_parser operator. |
-| `attributes` | {}               | A map of `key: value` pairs to add to the entry's attributes    |
-| `resource`   | {}               | A map of `key: value` pairs to add to the entry's resource  |
+| `attributes` | {}               | A map of `key: value` pairs to add to the entry's attributes. |
+| `resource`   | {}               | A map of `key: value` pairs to add to the entry's resource. |
 
 
 

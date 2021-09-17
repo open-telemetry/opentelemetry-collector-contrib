@@ -10,19 +10,19 @@ An entry that does not match any of the routes is dropped and not processed furt
 
 ### Configuration Fields
 
-| Field     | Default  | Description                                                                    | 
-| ---       | ---      | ---                                                                            |
-| `id`      | `router` | A unique identifier for the operator                                           |
-| `routes`  | required | A list of routes. See below for details                                        |
-| `default` |          | The operator(s) that will receive any entries not matched by any of the routes |
+| Field     | Default  | Description | 
+| ---       | ---      | ---         |
+| `id`      | `router` | A unique identifier for the operator. |
+| `routes`  | required | A list of routes. See below for details. |
+| `default` |          | The operator(s) that will receive any entries not matched by any of the routes. |
 
 #### Route configuration
 
-| Field        | Default  | Description                                                                                                           |
-| ---          | ---      | ---                                                                                                                   |
-| `output`     | required | The connected operator(s) that will receive all outbound entries for this route                                       |
-| `expr`       | required | An [expression](/docs/types/expression.md) that returns a boolean. The body of the routed entry is available as `$` |
-| `attributes` | {}       | A map of `key: value` pairs to add to an entry that matches the route                                                |
+| Field        | Default  | Description |
+| ---          | ---      | ---         |
+| `output`     | required | The connected operator(s) that will receive all outbound entries for this route. |
+| `expr`       | required | An [expression](/docs/types/expression.md) that returns a boolean. The body of the routed entry is available as `$`. |
+| `attributes` | {}       | A map of `key: value` pairs to add to an entry that matches the route. |
 
 
 ### Examples
