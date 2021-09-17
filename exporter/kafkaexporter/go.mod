@@ -7,6 +7,7 @@ require (
 	github.com/gogo/protobuf v1.3.2
 	github.com/jaegertracing/jaeger v1.26.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.35.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchpersignal v0.35.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.35.0
 	github.com/stretchr/testify v1.7.0
 	github.com/xdg-go/scram v1.0.2

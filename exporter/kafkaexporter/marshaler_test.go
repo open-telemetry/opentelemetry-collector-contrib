@@ -23,6 +23,7 @@ import (
 
 func TestDefaultTracesMarshalers(t *testing.T) {
 	expectedEncodings := []string{
+		"keyed_otlp_proto",
 		"otlp_proto",
 		"jaeger_proto",
 		"jaeger_json",
