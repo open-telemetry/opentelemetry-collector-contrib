@@ -235,7 +235,10 @@ func (r *splunkReceiver) handleRawReq(resp http.ResponseWriter, req *http.Reques
 
 	ld := pdata.NewLogs()
 	rl := ld.ResourceLogs().AppendEmpty()
-	r.createResourceCustomizer(req)(rl.Resource())
+	resourceCustomizer := r.createResourceCustomizer(req)
+	if resourceCustomizer != nil {
+		resourceCustomizer(rl.Resource())
+	}
 	ill := rl.InstrumentationLibraryLogs().AppendEmpty()
 
 	for sc.Scan() {
