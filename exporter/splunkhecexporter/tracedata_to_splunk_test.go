@@ -199,7 +199,7 @@ func commonSplunkEvent(
 			},
 		},
 		Fields: map[string]interface{}{
-			"com.splunk.sourcetype": "mysourcetype", "com.splunk.index": "myindex", "host.name": "myhost", "com.splunk.source": "myservice",
+			"host.name": "myhost",
 		},
 	}
 }
