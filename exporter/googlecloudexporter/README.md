@@ -192,7 +192,7 @@ will or will not proxy traffic as defined by these environment variables.
 It is recommended to always run a [batch processor](https://github.com/open-telemetry/opentelemetry-collector/tree/main/processor/batchprocessor)
 and [memory limiter](https://github.com/open-telemetry/opentelemetry-collector/tree/main/processor/memorylimiter) for tracing pipelines to ensure
 optimal network usage and avoiding memory overruns.  You may also want to run an additional
-[sampler](https://github.com/open-telemetry/opentelemetry-collector/tree/main/processor/probabilisticsamplerprocessor), depending on your needs.
+[sampler](../../processor/probabilisticsamplerprocessor), depending on your needs.
 
 
 ## Deprecatations
