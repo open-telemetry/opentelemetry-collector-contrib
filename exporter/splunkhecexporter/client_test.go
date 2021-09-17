@@ -793,12 +793,13 @@ func Test_pushLogData_ShouldAddResponseTo400Error(t *testing.T) {
 }
 
 func Test_pushLogData_ShouldReturnUnsentLogsOnly(t *testing.T) {
+	config := NewFactory().CreateDefaultConfig().(*Config)
 	c := client{
 		url: &url.URL{Scheme: "http", Host: "splunk"},
 		zippers: sync.Pool{New: func() interface{} {
 			return gzip.NewWriter(nil)
 		}},
-		config: NewFactory().CreateDefaultConfig().(*Config),
+		config: config,
 		logger: zaptest.NewLogger(t),
 	}
 

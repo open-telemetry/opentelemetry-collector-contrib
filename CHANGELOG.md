@@ -5,6 +5,7 @@
 ## 🛑 Breaking changes 🛑
 
 - `filter` processor: The configs for `logs` filter processor have been changed to be consistent with the `metrics` filter processor. (#4895)
+- `splunk_hec` receiver: `source_key`, `sourcetype_key`, `host_key` and `index_key` have now moved under `hec_metadata_to_otel_attrs` (#4726)
 
 ## 💡 Enhancements 💡
 
