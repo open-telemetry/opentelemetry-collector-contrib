@@ -16,6 +16,7 @@ package cumulativetodeltaprocessor
 
 import (
 	"context"
+	"math"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/model/pdata"
@@ -116,6 +117,10 @@ func (ctdp *cumulativeToDeltaProcessor) convertDataPoints(in interface{}, baseId
 				ObservedTimestamp: dp.Timestamp(),
 			}
 			if id.IsFloatVal() {
+				// Do not attempt to transform NaN values
+				if math.IsNaN(dp.DoubleVal()) {
+					return false
+				}
 				point.FloatValue = dp.DoubleVal()
 			} else {
 				point.IntValue = dp.IntVal()
