@@ -23,6 +23,8 @@ import (
 
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confignet"
+	"go.opentelemetry.io/collector/config/configparser"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata/valid"
 )
@@ -60,7 +62,8 @@ func (api *APIConfig) GetCensoredKey() string {
 
 // MetricsConfig defines the metrics exporter specific configuration options
 type MetricsConfig struct {
-	// Buckets states whether to report buckets from distribution metrics
+	// Buckets states whether to report buckets from histogram metrics.
+	// Deprecated: use `metrics::histograms::mode`.
 	Buckets bool `mapstructure:"report_buckets"`
 
 	// Quantiles states whether to report quantiles from summary metrics.
@@ -81,6 +84,31 @@ type MetricsConfig struct {
 	confignet.TCPAddr `mapstructure:",squash"`
 
 	ExporterConfig MetricsExporterConfig `mapstructure:",squash"`
+
+	// HistConfig defines the export of OTLP Histograms.
+	HistConfig HistogramConfig `mapstructure:"histograms"`
+}
+
+// HistogramConfig customizes export of OTLP Histograms.
+type HistogramConfig struct {
+	// Mode for exporting histograms. Valid values are 'counters' or 'off'.
+	//  - 'counters' sends histograms as Datadog counts, one metric per bucket.
+	//  - 'off' sends no bucket histogram metrics. .sum and .count metrics will still be sent
+	//    if `send_count_sum_metrics` is enabled.
+	//
+	// The current default is 'off'.
+	Mode string `mapstructure:"mode"`
+
+	// SendCountSum states if the export should send .sum and .count metrics for histograms.
+	// The current default is true.
+	SendCountSum bool `mapstructure:"send_count_sum_metrics"`
+}
+
+func (c *HistogramConfig) validate() error {
+	if c.Mode == "off" && !c.SendCountSum {
+		return fmt.Errorf("'off' mode and `send_count_sum_metrics` set to false will send no histogram metrics")
+	}
+	return nil
 }
 
 // MetricsExporterConfig provides options for a user to customize the behavior of the
@@ -202,6 +230,9 @@ type Config struct {
 
 	// onceMetadata ensures only one exporter (metrics/traces) sends host metadata
 	onceMetadata sync.Once
+
+	// warnings stores non-fatal configuration errors.
+	warnings []error
 }
 
 func (c *Config) OnceMetadata() *sync.Once {
@@ -209,7 +240,7 @@ func (c *Config) OnceMetadata() *sync.Once {
 }
 
 // Sanitize tries to sanitize a given configuration
-func (c *Config) Sanitize() error {
+func (c *Config) Sanitize(logger *zap.Logger) error {
 	if c.TagsConfig.Env == "" {
 		c.TagsConfig.Env = "none"
 	}
@@ -242,6 +273,10 @@ func (c *Config) Sanitize() error {
 		c.Traces.TCPAddr.Endpoint = fmt.Sprintf("https://trace.agent.%s", c.API.Site)
 	}
 
+	for _, err := range c.warnings {
+		logger.Warn("configuration warning", zap.Error(err))
+	}
+
 	return nil
 }
 
@@ -265,5 +300,38 @@ func (c *Config) Validate() error {
 			}
 		}
 	}
+
+	err := c.Metrics.HistConfig.validate()
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (c *Config) Unmarshal(configMap *configparser.ConfigMap) error {
+	err := configMap.UnmarshalExact(c)
+	if err != nil {
+		return err
+	}
+
+	// Deprecation of `report_buckets`: add warning and set `HistConfig.Mode` instead.
+	if configMap.IsSet("metrics::report_buckets") {
+		if c.Metrics.Buckets {
+			c.warnings = append(c.warnings, fmt.Errorf("'metrics::report_buckets' is deprecated. Set 'metrics::histograms::mode' to 'counters' instead"))
+			c.Metrics.HistConfig.Mode = "counters"
+		} else {
+			c.warnings = append(c.warnings, fmt.Errorf("'metrics::report_buckets' is deprecated. Set 'metrics::histograms::mode' to 'off' instead"))
+			c.Metrics.HistConfig.Mode = "off"
+		}
+	}
+
+	switch c.Metrics.HistConfig.Mode {
+	case "counters", "off":
+		// Do nothing
+	default:
+		return fmt.Errorf("invalid `mode` %s", c.Metrics.HistConfig.Mode)
+	}
+
 	return nil
 }

@@ -71,6 +71,10 @@ func createDefaultConfig() config.Exporter {
 			ExporterConfig: ddconfig.MetricsExporterConfig{
 				ResourceAttributesAsTags: false,
 			},
+			HistConfig: ddconfig.HistogramConfig{
+				Mode:         "off",
+				SendCountSum: true,
+			},
 		},
 
 		Traces: ddconfig.TracesConfig{
@@ -96,7 +100,7 @@ func createMetricsExporter(
 	cfg := c.(*ddconfig.Config)
 
 	set.Logger.Info("sanitizing Datadog metrics exporter configuration")
-	if err := cfg.Sanitize(); err != nil {
+	if err := cfg.Sanitize(set.Logger); err != nil {
 		return nil, err
 	}
 
@@ -153,7 +157,7 @@ func createTracesExporter(
 	cfg := c.(*ddconfig.Config)
 
 	set.Logger.Info("sanitizing Datadog metrics exporter configuration")
-	if err := cfg.Sanitize(); err != nil {
+	if err := cfg.Sanitize(set.Logger); err != nil {
 		return nil, err
 	}
 

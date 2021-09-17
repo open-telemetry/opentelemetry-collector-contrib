@@ -28,6 +28,7 @@ import (
 	"go.opentelemetry.io/collector/config/configcheck"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configtest"
+	"go.uber.org/zap"
 
 	ddconfig "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/config"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata"
@@ -56,6 +57,10 @@ func TestCreateDefaultConfig(t *testing.T) {
 			DeltaTTL:      3600,
 			SendMonotonic: true,
 			Quantiles:     true,
+			HistConfig: ddconfig.HistogramConfig{
+				Mode:         "off",
+				SendCountSum: true,
+			},
 		},
 
 		Traces: ddconfig.TracesConfig{
@@ -95,7 +100,7 @@ func TestLoadConfig(t *testing.T) {
 	require.NotNil(t, cfg)
 
 	apiConfig := cfg.Exporters[config.NewIDWithName(typeStr, "api")].(*ddconfig.Config)
-	err = apiConfig.Sanitize()
+	err = apiConfig.Sanitize(zap.NewNop())
 
 	require.NoError(t, err)
 	assert.Equal(t, &ddconfig.Config{
@@ -121,6 +126,10 @@ func TestLoadConfig(t *testing.T) {
 			DeltaTTL:      3600,
 			SendMonotonic: true,
 			Quantiles:     true,
+			HistConfig: ddconfig.HistogramConfig{
+				Mode:         "off",
+				SendCountSum: true,
+			},
 		},
 
 		Traces: ddconfig.TracesConfig{
@@ -136,7 +145,7 @@ func TestLoadConfig(t *testing.T) {
 	}, apiConfig)
 
 	defaultConfig := cfg.Exporters[config.NewIDWithName(typeStr, "default")].(*ddconfig.Config)
-	err = defaultConfig.Sanitize()
+	err = defaultConfig.Sanitize(zap.NewNop())
 
 	require.NoError(t, err)
 	assert.Equal(t, &ddconfig.Config{
@@ -161,6 +170,10 @@ func TestLoadConfig(t *testing.T) {
 			SendMonotonic: true,
 			DeltaTTL:      3600,
 			Quantiles:     true,
+			HistConfig: ddconfig.HistogramConfig{
+				Mode:         "off",
+				SendCountSum: true,
+			},
 		},
 
 		Traces: ddconfig.TracesConfig{
@@ -176,7 +189,7 @@ func TestLoadConfig(t *testing.T) {
 	}, defaultConfig)
 
 	invalidConfig := cfg.Exporters[config.NewIDWithName(typeStr, "invalid")].(*ddconfig.Config)
-	err = invalidConfig.Sanitize()
+	err = invalidConfig.Sanitize(zap.NewNop())
 	require.Error(t, err)
 }
 
@@ -216,7 +229,7 @@ func TestLoadConfigEnvVariables(t *testing.T) {
 	require.NotNil(t, cfg)
 
 	apiConfig := cfg.Exporters[config.NewIDWithName(typeStr, "api2")].(*ddconfig.Config)
-	err = apiConfig.Sanitize()
+	err = apiConfig.Sanitize(zap.NewNop())
 
 	// Check that settings with env variables get overridden when explicitly set in config
 	require.NoError(t, err)
@@ -244,6 +257,10 @@ func TestLoadConfigEnvVariables(t *testing.T) {
 			SendMonotonic: true,
 			Quantiles:     false,
 			DeltaTTL:      3600,
+			HistConfig: ddconfig.HistogramConfig{
+				Mode:         "off",
+				SendCountSum: true,
+			},
 		},
 
 		Traces: ddconfig.TracesConfig{
@@ -259,7 +276,7 @@ func TestLoadConfigEnvVariables(t *testing.T) {
 	}, apiConfig)
 
 	defaultConfig := cfg.Exporters[config.NewIDWithName(typeStr, "default2")].(*ddconfig.Config)
-	err = defaultConfig.Sanitize()
+	err = defaultConfig.Sanitize(zap.NewNop())
 
 	require.NoError(t, err)
 
@@ -288,6 +305,10 @@ func TestLoadConfigEnvVariables(t *testing.T) {
 			SendMonotonic: true,
 			DeltaTTL:      3600,
 			Quantiles:     true,
+			HistConfig: ddconfig.HistogramConfig{
+				Mode:         "off",
+				SendCountSum: true,
+			},
 		},
 
 		Traces: ddconfig.TracesConfig{
