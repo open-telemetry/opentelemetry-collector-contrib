@@ -758,6 +758,8 @@ github.com/onsi/gomega v1.7.0/go.mod h1:ex+gbHU/CVuBBDIJjb2X0qEXbFg53c61hWP/1Cpa
 github.com/onsi/gomega v1.7.1/go.mod h1:XdKZgCCFLUoM/7CFJVPcG8C1xQ1AJ0vpAezJrB7JYyY=
 github.com/onsi/gomega v1.9.0/go.mod h1:Ho0h+IUsWyvy1OpqCwxlQ/21gkhVunqlU8fDGcoTdcA=
 github.com/op/go-logging v0.0.0-20160315200505-970db520ece7/go.mod h1:HzydrMdWErDVzsI23lYNej1Htcns9BCg93Dk0bBINWk=
+github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchpersignal v0.35.0 h1:pvuXpYVlovpdfxPpAxMyybgEmjcVbO3bdRNmp0IAc4w=
+github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchpersignal v0.35.0/go.mod h1:ju51QV24qrZBYXdgjvd1htQ8iQbFyfka/vNmikAVfVM=
 github.com/opencontainers/go-digest v1.0.0 h1:apOUWs51W5PlhuyGyz9FCeeBIOUDA/6nW8Oi/yOhh5U=
 github.com/opencontainers/go-digest v1.0.0/go.mod h1:0JzlMkj0TRzQZfJkVvzbP0HBR3IKzErnv2BNG4W4MAM=
 github.com/opencontainers/image-spec v1.0.1 h1:JMemWkRwHx4Zj+fVxWoMCFm/8sYGGrUVojFA6h/TRcI=
@@ -1020,6 +1022,7 @@ go.opencensus.io v0.23.0/go.mod h1:XItmlyltB5F7CS4xOC1DcqMoFqwtC6OG2xF7mCv7P7E=
 go.opentelemetry.io/collector v0.28.0/go.mod h1:AP/BTXwo1eedoJO7V+HQ68CSvJU1lcdqOzJCgt1VsNs=
 go.opentelemetry.io/collector v0.35.1-0.20210915180232-9fcd2bb61979 h1:lHdDlokssqj+G8kU1jN1iUyexJk8Xb/5yhBguCQPwrc=
 go.opentelemetry.io/collector v0.35.1-0.20210915180232-9fcd2bb61979/go.mod h1:NCDJ8/IMS+RjM4+HsWrlFDMIgcx8Qom0ZKqZnYK42qI=
+go.opentelemetry.io/collector/model v0.30.2-0.20210719230137-809cae954ed3/go.mod h1:PcHNnM+RUl0uD8VkSn93PO78N7kQYhfqpI/eki57pl4=
 go.opentelemetry.io/collector/model v0.35.0/go.mod h1:+7YCSjJG+MqiIFjauzt7oM2qkqBsaJWh5hcsO4fwsAc=
 go.opentelemetry.io/collector/model v0.35.1-0.20210915180232-9fcd2bb61979 h1:Zo0ExoOI18KTUIJ2FKHNsKKgu0bjKUSdkohY8nqzi6s=
 go.opentelemetry.io/collector/model v0.35.1-0.20210915180232-9fcd2bb61979/go.mod h1:+7YCSjJG+MqiIFjauzt7oM2qkqBsaJWh5hcsO4fwsAc=
