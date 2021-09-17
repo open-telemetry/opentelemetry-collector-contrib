@@ -14,8 +14,8 @@ require (
 	github.com/stretchr/testify v1.7.0
 	github.com/tinylib/msgp v1.1.5 // indirect
 	github.com/zorkian/go-datadog-api v2.29.0+incompatible // indirect
-	go.opentelemetry.io/collector v0.35.1-0.20210913155934-36e0bbaf40b2
-	go.opentelemetry.io/collector/model v0.35.1-0.20210913155934-36e0bbaf40b2
+	go.opentelemetry.io/collector v0.35.1-0.20210915180232-9fcd2bb61979
+	go.opentelemetry.io/collector/model v0.35.1-0.20210915180232-9fcd2bb61979
 	go.uber.org/zap v1.19.1
 	gopkg.in/DataDog/dd-trace-go.v1 v1.33.0
 	gopkg.in/zorkian/go-datadog-api.v2 v2.30.0
@@ -46,6 +46,7 @@ require (
 	github.com/tklauser/numcpus v0.2.2 // indirect
 	go.opencensus.io v0.23.0 // indirect
 	go.opentelemetry.io/otel v1.0.0-RC3 // indirect
+	go.opentelemetry.io/otel/metric v0.23.0 // indirect
 	go.opentelemetry.io/otel/trace v1.0.0-RC3 // indirect
 	go.uber.org/atomic v1.9.0 // indirect
 	go.uber.org/multierr v1.6.0 // indirect
