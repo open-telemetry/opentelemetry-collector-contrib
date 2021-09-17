@@ -4,11 +4,11 @@ The `stdin` generates entries from lines written to stdin.
 
 ### Configuration Fields
 
-| Field             | Default          | Description                                                                                      |
-| ---               | ---              | ---                                                                                              |
-| `id`              | `generate_input` | A unique identifier for the operator                                                             |
-| `output`          | Next in pipeline | The connected operator(s) that will receive all outbound entries                                 |
-| `write_to`        | `$body`          | A [field](/docs/types/field.md) that will be set to the path of the file the entry was read from |
+| Field             | Default          | Description |
+| ---               | ---              | ---         |
+| `id`              | `stdin`          | A unique identifier for the operator. |
+| `output`          | Next in pipeline | The connected operator(s) that will receive all outbound entries. |
+| `write_to`        | `$body`          | A [field](/docs/types/field.md) that will be set to the path of the file the entry was read from. |
 
 ### Example Configurations
 

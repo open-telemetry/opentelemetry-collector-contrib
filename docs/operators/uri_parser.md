@@ -13,14 +13,14 @@ The `uri_parser` operator parses the string-type field selected by `parse_from` 
 
 ### Configuration Fields
 
-| Field         | Default          | Description                                                                                                                                                                                                                              |
-| ---           | ---              | ---                                                                                                                                                                                                                                      |
-| `id`          | `uri_parser`    | A unique identifier for the operator                                                                                                                                                                                                     |
-| `output`      | Next in pipeline | The connected operator(s) that will receive all outbound entries                                                                                                                                                                         |
-| `parse_from`  | `$body`          | A [field](/docs/types/field.md) that indicates the field to be parsed as JSON                                                                                                                                                            |
-| `parse_to`    | `$body`          | A [field](/docs/types/field.md) that indicates the field to be parsed as JSON                                                                                                                                                            |
-| `preserve_to` |                  | Preserves the unparsed value at the specified [field](/docs/types/field.md)                                                                                                                                                              |
-| `on_error`    | `send`           | The behavior of the operator if it encounters an error. See [on_error](/docs/types/on_error.md)                                                                                                                                          |
+| Field         | Default          | Description |
+| ---           | ---              | ---         |
+| `id`          | `uri_parser`     | A unique identifier for the operator. |
+| `output`      | Next in pipeline | The connected operator(s) that will receive all outbound entries. |
+| `parse_from`  | `$body`          | The [field](/docs/types/field.md) from which the value will be parsed. |
+| `parse_to`    | `$body`          | The [field](/docs/types/field.md) to which the value will be parsed. |
+| `preserve_to` |                  | Preserves the unparsed value at the specified [field](/docs/types/field.md). |
+| `on_error`    | `send`           | The behavior of the operator if it encounters an error. See [on_error](/docs/types/on_error.md). |
 | `if`          |                  | An [expression](/docs/types/expression.md) that, when set, will be evaluated to determine whether this operator should be used for the given entry. This allows you to do easy conditional parsing without branching logic with routers. |
 
 
@@ -28,13 +28,13 @@ The `uri_parser` operator parses the string-type field selected by `parse_from` 
 
 The following fields are returned. Empty fields are not returned.
 
-| Field  | Type     | Example          | Description |
-| ---    | ---      | ---              | ---         |
-| scheme | `string` | `"http"`           | [URI Scheme](https://www.iana.org/assignments/uri-schemes/uri-schemes.xhtml). HTTP, HTTPS, FTP, etc. |
-| user   | `string`  | `"dev"`            | [Userinfo](https://tools.ietf.org/html/rfc3986#section-3.2) username. Password is always ignored. |
-| host   | `string`  | `"golang.org"`     | The [hostname](https://tools.ietf.org/html/rfc3986#section-3.2.2) such as `www.example.com`, `example.com`, `example`. A scheme is required in order to parse the `host` field. |
-| port   | `string`  | `"8443"`           | The [port](https://tools.ietf.org/html/rfc3986#section-3.2.3) the request is sent to. A scheme is required in order to parse the `port` field. |
-| path   | `string`  | `"/v1/app"`        | URI request [path](https://tools.ietf.org/html/rfc3986#section-3.3). |
+| Field  | Type                  | Example                      | Description |
+| ---    | ---                   | ---                          | ---         |
+| scheme | `string`              | `"http"`                     | [URI Scheme](https://www.iana.org/assignments/uri-schemes/uri-schemes.xhtml). HTTP, HTTPS, FTP, etc. |
+| user   | `string`              | `"dev"`                      | [Userinfo](https://tools.ietf.org/html/rfc3986#section-3.2) username. Password is always ignored. |
+| host   | `string`              | `"golang.org"`               | The [hostname](https://tools.ietf.org/html/rfc3986#section-3.2.2) such as `www.example.com`, `example.com`, `example`. A scheme is required in order to parse the `host` field. |
+| port   | `string`              | `"8443"`                     | The [port](https://tools.ietf.org/html/rfc3986#section-3.2.3) the request is sent to. A scheme is required in order to parse the `port` field. |
+| path   | `string`              | `"/v1/app"`                  | URI request [path](https://tools.ietf.org/html/rfc3986#section-3.3). |
 | query  | `map[string][]string` | `"query":{"user":["admin"]}` | Parsed URI [query string](https://tools.ietf.org/html/rfc3986#section-3.4). |
 
 

@@ -5,9 +5,9 @@ or running one-time batch processing jobs.
 
 ### Configuration Fields
 
-| Field         | Default  | Description                           |
-| ---           | ---      | ---                                   |
-| `id`          | required | A unique identifier for the operator  |
+| Field         | Default  | Description |
+| ---           | ---      | ---         |
+| `id`          | `stdout` | A unique identifier for the operator. |
 
 
 ### Example Configurations

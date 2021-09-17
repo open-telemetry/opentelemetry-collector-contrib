@@ -4,11 +4,11 @@ The `file_output` operator will write log entries to a file. By default, they wi
 
 ### Configuration Fields
 
-| Field    | Default       | Description                                                                                                   |
-| ---      | ---           | ---                                                                                                           |
-| `id`     | `file_output` | A unique identifier for the operator                                                                          |
-| `path`   | required      | A path to write the entries to                                                                                |
-| `format` |               | A [go template](https://golang.org/pkg/text/template/) that will be used to render each entry into a log line |
+| Field    | Default       | Description |
+| ---      | ---           | ---         |
+| `id`     | `file_output` | A unique identifier for the operator. |
+| `path`   | required      | The file path to which entries will be written. |
+| `format` |               | A [go template](https://golang.org/pkg/text/template/) that will be used to render each entry into a log line. |
 
 
 ### Example Configurations

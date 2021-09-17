@@ -2,12 +2,12 @@
 
 Parser operators can parse a timestamp and attach the resulting time value to a log entry.
 
-| Field         | Default    | Description                                                                       |
-| ---           | ---        | ---                                                                               |
-| `parse_from`  | required   | A [field](/docs/types/field.md) that indicates the field to be parsed as JSON     |
-| `layout_type` | `strptime` | The type of timestamp. Valid values are `strptime`, `gotime`, and `epoch`         |
-| `layout`      | required   | The exact layout of the timestamp to be parsed                                    |
-| `preserve_to` |            | Preserves the unparsed value at the specified [field](/docs/types/field.md)       |
+| Field         | Default    | Description |
+| ---           | ---        | ---         |
+| `parse_from`  | required   | The [field](/docs/types/field.md) from which the value will be parsed. |
+| `layout_type` | `strptime` | The type of timestamp. Valid values are `strptime`, `gotime`, and `epoch`. |
+| `layout`      | required   | The exact layout of the timestamp to be parsed. |
+| `preserve_to` |            | Preserves the unparsed value at the specified [field](/docs/types/field.md). |
 | `location`    | `Local`    | The geographic location (timezone) to use when parsing a timestamp that does not include a timezone. The available locations depend on the local IANA Time Zone database. [This page](https://en.wikipedia.org/wiki/List_of_tz_database_time_zones) contains many examples, such as `America/New_York`. |
 
 

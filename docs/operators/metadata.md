@@ -4,13 +4,13 @@ The `metadata` operator adds attributes to incoming entries.
 
 ### Configuration Fields
 
-| Field        | Default          | Description                                                                                     |
-| ---          | ---              | ---                                                                                             |
-| `id`         | `metadata`       | A unique identifier for the operator                                                            |
-| `output`     | Next in pipeline | The connected operator(s) that will receive all outbound entries                                |
-| `attributes` | {}               | A map of `key: value` pairs to add to the entry's attributes                                       |
-| `resource`   | {}               | A map of `key: value` pairs to add to the entry's resource                                     |
-| `on_error`   | `send`           | The behavior of the operator if it encounters an error. See [on_error](/docs/types/on_error.md) |
+| Field        | Default          | Description |
+| ---          | ---              | ---         |
+| `id`         | `metadata`       | A unique identifier for the operator. |
+| `output`     | Next in pipeline | The connected operator(s) that will receive all outbound entries. |
+| `attributes` | {}               | A map of `key: value` pairs to add to the entry's attributes. |
+| `resource`   | {}               | A map of `key: value` pairs to add to the entry's resource. |
+| `on_error`   | `send`           | The behavior of the operator if it encounters an error. See [on_error](/docs/types/on_error.md). |
 
 Inside the label values, an [expression](/docs/types/expression.md) surrounded by `EXPR()`
 will be replaced with the evaluated form of the expression. The entry's body can be accessed
