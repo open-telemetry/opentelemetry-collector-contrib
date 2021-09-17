@@ -8,8 +8,8 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib v0.35.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry v0.35.0
 	github.com/stretchr/testify v1.7.0
-	go.opentelemetry.io/collector v0.35.1-0.20210915180232-9fcd2bb61979
-	go.opentelemetry.io/collector/model v0.35.1-0.20210915180232-9fcd2bb61979
+	go.opentelemetry.io/collector v0.35.1-0.20210917100632-e056aa8c4e20
+	go.opentelemetry.io/collector/model v0.35.1-0.20210917100632-e056aa8c4e20
 	golang.org/x/mod v0.4.2
 )
 
