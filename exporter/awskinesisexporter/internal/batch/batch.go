@@ -114,17 +114,18 @@ func (b *Batch) AddProtobufV2(message protov2.Message, key string) error {
 
 // Chunk breaks up the iternal queue into blocks that can be used
 // to be written to he kinesis.PutRecords endpoint
-func (b *Batch) Chunk() [][]*kinesis.PutRecordsRequestEntry {
-	length, chunk := len(b.records), make([][]*kinesis.PutRecordsRequestEntry, 0, len(b.records)/b.maxBatchSize+1)
-	for i, end := 0, min(length, b.maxBatchSize); i < length; i, end = i+b.maxBatchSize, i+end+min(b.maxBatchSize, length-end) {
-		chunk = append(chunk, b.records[i:end])
+func (b *Batch) Chunk() (chunks [][]*kinesis.PutRecordsRequestEntry) {
+	// Using local copies to avoid mutating internal data
+	var (
+		slice = b.records
+		size  = b.maxBatchSize
+	)
+	for len(slice) != 0 {
+		if len(slice) < size {
+			size = len(slice)
+		}
+		chunks = append(chunks, slice[0:size])
+		slice = slice[size:]
 	}
-	return chunk
-}
-
-func min(a, b int) int {
-	if a < b {
-		return a
-	}
-	return b
+	return chunks
 }

@@ -20,7 +20,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awskinesisexporter/internal/batch"
 )
 
-// Batcher abstracts the raw kinesis client to reduce complexity with delievering dynamic encoded data.
+// Batcher abstracts the raw kinesis client to reduce complexity with delivering dynamic encoded data.
 type Batcher interface {
 	// Put is a blocking operation that will attempt to write the data at most once to kinesis.
 	// Any unrecoverable errors such as misconfigured client or hard limits being exceeded
