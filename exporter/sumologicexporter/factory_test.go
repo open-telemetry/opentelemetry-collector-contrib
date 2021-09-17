@@ -20,8 +20,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/config/configcheck"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configtest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
@@ -55,5 +55,5 @@ func TestCreateDefaultConfig(t *testing.T) {
 		RetrySettings: exporterhelper.DefaultRetrySettings(),
 		QueueSettings: qs,
 	})
-	assert.NoError(t, configcheck.ValidateConfig(cfg))
+	assert.NoError(t, configtest.CheckConfigStruct(cfg))
 }
