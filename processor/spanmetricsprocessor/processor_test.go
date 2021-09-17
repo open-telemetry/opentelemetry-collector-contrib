@@ -293,12 +293,14 @@ func newProcessorImp(mexp *mocks.MetricsExporter, tcon *mocks.TracesConsumer, de
 		metricsExporter: mexp,
 		nextConsumer:    tcon,
 
-		startTime:           time.Now(),
-		callSum:             make(map[metricKey]int64),
-		latencySum:          make(map[metricKey]float64),
-		latencyCount:        make(map[metricKey]uint64),
-		latencyBucketCounts: make(map[metricKey][]uint64),
-		latencyBounds:       defaultLatencyHistogramBucketsMs,
+		startTime:               time.Now(),
+		callSum:                 make(map[metricKey]int64),
+		latencySum:              make(map[metricKey]float64),
+		latencyCount:            make(map[metricKey]uint64),
+		latencyBucketCounts:     make(map[metricKey][]uint64),
+		latencyBounds:           defaultLatencyHistogramBucketsMs,
+		latencyExemplarTraceIDs: make(map[metricKey][]pdata.TraceID),
+		latencyExemplarValues:   make(map[metricKey][]float64),
 		dimensions: []Dimension{
 			// Set nil defaults to force a lookup for the attribute in the span.
 			{stringAttrName, nil},
@@ -494,6 +496,7 @@ func initSpan(span span, s pdata.Span) {
 	s.Attributes().InsertNull(nullAttrName)
 	s.Attributes().Insert(mapAttrName, pdata.NewAttributeValueMap())
 	s.Attributes().Insert(arrayAttrName, pdata.NewAttributeValueArray())
+	s.SetTraceID(pdata.NewTraceID([16]byte{byte(42)}))
 }
 
 func newOTLPExporters(t *testing.T) (*otlpexporter.Config, component.MetricsExporter, component.TracesExporter) {
@@ -611,4 +614,48 @@ func TestSanitize(t *testing.T) {
 	require.Equal(t, "key_0test", sanitize("0test"))
 	require.Equal(t, "test", sanitize("test"))
 	require.Equal(t, "test__", sanitize("test_/"))
+}
+
+func TestSetLatencyExemplars(t *testing.T) {
+	// ----- conditions -------------------------------------------------------
+	traces := buildSampleTrace()
+	traceID := traces.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().At(0).TraceID()
+	traceIDs := []pdata.TraceID{traceID}
+	exemplarSlice := pdata.NewExemplarSlice()
+	timestamp := pdata.NewTimestampFromTime(time.Now())
+	values := []float64{float64(42)}
+
+	// ----- call -------------------------------------------------------------
+	setLatencyExemplars(traceIDs, values, timestamp, exemplarSlice)
+
+	// ----- verify -----------------------------------------------------------
+	traceIDValue, exist := exemplarSlice.At(0).FilteredAttributes().Get(traceIDKey)
+
+	assert.NotEmpty(t, exemplarSlice)
+	assert.True(t, exist)
+	assert.Equal(t, traceIDValue.AsString(), traceID.HexString())
+	assert.Equal(t, exemplarSlice.At(0).Timestamp(), timestamp)
+	assert.Equal(t, exemplarSlice.At(0).DoubleVal(), values[0])
+}
+
+func TestProcessorUpdateLatencyExemplars(t *testing.T) {
+	// ----- conditions -------------------------------------------------------
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+	traces := buildSampleTrace()
+	traceID := traces.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().At(0).TraceID()
+	key := metricKey("metricKey")
+	next := new(consumertest.TracesSink)
+	p, err := newProcessor(zap.NewNop(), cfg, next)
+	value := float64(42)
+	index := 12
+
+	// ----- call -------------------------------------------------------------
+	p.updateLatencyExemplars(key, value, index, traceID)
+
+	// ----- verify -----------------------------------------------------------
+	assert.NoError(t, err)
+	assert.NotEmpty(t, p.latencyExemplarTraceIDs[key])
+	assert.Equal(t, p.latencyExemplarTraceIDs[key][index], traceID)
+	assert.Equal(t, p.latencyExemplarValues[key][index], value)
 }

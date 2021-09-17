@@ -38,6 +38,7 @@ const (
 	spanKindKey        = "span.kind"   // OpenTelemetry non-standard constant.
 	statusCodeKey      = "status.code" // OpenTelemetry non-standard constant.
 	metricKeySeparator = string(byte(0))
+	traceIDKey         = "trace_id"
 )
 
 var (
@@ -69,10 +70,12 @@ type processorImp struct {
 	callSum map[metricKey]int64
 
 	// Latency histogram.
-	latencyCount        map[metricKey]uint64
-	latencySum          map[metricKey]float64
-	latencyBucketCounts map[metricKey][]uint64
-	latencyBounds       []float64
+	latencyCount            map[metricKey]uint64
+	latencySum              map[metricKey]float64
+	latencyBucketCounts     map[metricKey][]uint64
+	latencyBounds           []float64
+	latencyExemplarTraceIDs map[metricKey][]pdata.TraceID
+	latencyExemplarValues   map[metricKey][]float64
 
 	// A cache of dimension key-value maps keyed by a unique identifier formed by a concatenation of its values:
 	// e.g. { "foo/barOK": { "serviceName": "foo", "operation": "/bar", "status_code": "OK" }}
@@ -98,17 +101,19 @@ func newProcessor(logger *zap.Logger, config config.Processor, nextConsumer cons
 	}
 
 	return &processorImp{
-		logger:                logger,
-		config:                *pConfig,
-		startTime:             time.Now(),
-		callSum:               make(map[metricKey]int64),
-		latencyBounds:         bounds,
-		latencySum:            make(map[metricKey]float64),
-		latencyCount:          make(map[metricKey]uint64),
-		latencyBucketCounts:   make(map[metricKey][]uint64),
-		nextConsumer:          nextConsumer,
-		dimensions:            pConfig.Dimensions,
-		metricKeyToDimensions: make(map[metricKey]pdata.AttributeMap),
+		logger:                  logger,
+		config:                  *pConfig,
+		startTime:               time.Now(),
+		callSum:                 make(map[metricKey]int64),
+		latencyBounds:           bounds,
+		latencySum:              make(map[metricKey]float64),
+		latencyCount:            make(map[metricKey]uint64),
+		latencyBucketCounts:     make(map[metricKey][]uint64),
+		latencyExemplarTraceIDs: make(map[metricKey][]pdata.TraceID),
+		latencyExemplarValues:   make(map[metricKey][]float64),
+		nextConsumer:            nextConsumer,
+		dimensions:              pConfig.Dimensions,
+		metricKeyToDimensions:   make(map[metricKey]pdata.AttributeMap),
 	}, nil
 }
 
@@ -241,13 +246,17 @@ func (p *processorImp) collectLatencyMetrics(ilm pdata.InstrumentationLibraryMet
 		mLatency.SetName("latency")
 		mLatency.Histogram().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
 
+		timestamp := pdata.NewTimestampFromTime(time.Now())
+
 		dpLatency := mLatency.Histogram().DataPoints().AppendEmpty()
 		dpLatency.SetStartTimestamp(pdata.NewTimestampFromTime(p.startTime))
-		dpLatency.SetTimestamp(pdata.NewTimestampFromTime(time.Now()))
+		dpLatency.SetTimestamp(timestamp)
 		dpLatency.SetExplicitBounds(p.latencyBounds)
 		dpLatency.SetBucketCounts(p.latencyBucketCounts[key])
 		dpLatency.SetCount(p.latencyCount[key])
 		dpLatency.SetSum(p.latencySum[key])
+
+		setLatencyExemplars(p.latencyExemplarTraceIDs[key], p.latencyExemplarValues[key], timestamp, dpLatency.Exemplars())
 
 		p.metricKeyToDimensions[key].CopyTo(dpLatency.Attributes())
 	}
@@ -314,12 +323,25 @@ func (p *processorImp) aggregateMetricsForSpan(serviceName string, span pdata.Sp
 	p.cache(serviceName, span, key)
 	p.updateCallMetrics(key)
 	p.updateLatencyMetrics(key, latencyInMilliseconds, index)
+	p.updateLatencyExemplars(key, latencyInMilliseconds, index, span.TraceID())
 	p.lock.Unlock()
 }
 
 // updateCallMetrics increments the call count for the given metric key.
 func (p *processorImp) updateCallMetrics(key metricKey) {
 	p.callSum[key]++
+}
+
+// updateLatencyExemplars sets the histogram exemplars for the given metric key and bucket index.
+func (p *processorImp) updateLatencyExemplars(key metricKey, value float64, index int, traceID pdata.TraceID) {
+	if _, ok := p.latencyExemplarTraceIDs[key]; !ok {
+		p.latencyExemplarTraceIDs[key] = make([]pdata.TraceID, len(p.latencyBounds))
+	}
+	if _, ok := p.latencyExemplarValues[key]; !ok {
+		p.latencyExemplarValues[key] = make([]float64, len(p.latencyBounds))
+	}
+	p.latencyExemplarTraceIDs[key][index] = traceID
+	p.latencyExemplarValues[key][index] = value
 }
 
 // updateLatencyMetrics increments the histogram counts for the given metric key and bucket index.
@@ -423,4 +445,24 @@ func sanitizeRune(r rune) rune {
 	}
 	// Everything else turns into an underscore
 	return '_'
+}
+
+// setLatencyExemplars sets the histogram exemplars.
+func setLatencyExemplars(traceIDs []pdata.TraceID, values []float64, timestamp pdata.Timestamp, exemplars pdata.ExemplarSlice) {
+	es := pdata.NewExemplarSlice()
+	es.EnsureCapacity(len(traceIDs))
+
+	for index, traceID := range traceIDs {
+		exemplar := es.AppendEmpty()
+
+		if traceID.IsEmpty() {
+			continue
+		}
+
+		exemplar.SetDoubleVal(values[index])
+		exemplar.SetTimestamp(timestamp)
+		exemplar.FilteredAttributes().Insert(traceIDKey, pdata.NewAttributeValueString(traceID.HexString()))
+	}
+
+	es.CopyTo(exemplars)
 }
