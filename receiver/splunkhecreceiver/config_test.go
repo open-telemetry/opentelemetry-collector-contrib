@@ -129,11 +129,13 @@ func TestLoadConfig(t *testing.T) {
 		AccessTokenPassthroughConfig: splunk.AccessTokenPassthroughConfig{
 			AccessTokenPassthrough: true,
 		},
-		Path:          "/foo",
-		SourceKey:     "file.name",
-		SourceTypeKey: "foobar",
-		IndexKey:      "myindex",
-		HostKey:       "myhostfield",
+		Path: "/foo",
+		HecToOtelAttrs: splunk.HecToOtelAttrs{
+			Source:     "file.name",
+			SourceType: "foobar",
+			Index:      "myindex",
+			Host:       "myhostfield",
+		},
 	}
 	expectedAllSettings.pathGlob, _ = glob.Compile("/foo")
 	assert.Equal(t, expectedAllSettings, r1)
@@ -154,11 +156,13 @@ func TestLoadConfig(t *testing.T) {
 		AccessTokenPassthroughConfig: splunk.AccessTokenPassthroughConfig{
 			AccessTokenPassthrough: false,
 		},
-		Path:          "",
-		SourceKey:     "com.splunk.source",
-		SourceTypeKey: "com.splunk.sourcetype",
-		IndexKey:      "com.splunk.index",
-		HostKey:       "host.name",
+		Path: "",
+		HecToOtelAttrs: splunk.HecToOtelAttrs{
+			Source:     "com.splunk.source",
+			SourceType: "com.splunk.sourcetype",
+			Index:      "com.splunk.index",
+			Host:       "host.name",
+		},
 	}
 	expectedTLSConfig.pathGlob, _ = glob.Compile("*")
 	assert.Equal(t, expectedTLSConfig, r2)

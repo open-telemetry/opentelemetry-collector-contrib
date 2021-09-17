@@ -16,7 +16,6 @@ package splunkhecexporter
 
 import (
 	"go.opentelemetry.io/collector/model/pdata"
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
@@ -59,6 +58,11 @@ type hecSpan struct {
 }
 
 func traceDataToSplunk(logger *zap.Logger, data pdata.Traces, config *Config) ([]*splunk.Event, int) {
+	sourceKey := config.HecToOtelAttrs.Source
+	sourceTypeKey := config.HecToOtelAttrs.SourceType
+	indexKey := config.HecToOtelAttrs.Index
+	hostKey := config.HecToOtelAttrs.Host
+
 	numDroppedSpans := 0
 	splunkEvents := make([]*splunk.Event, 0, data.SpanCount())
 	rss := data.ResourceSpans()
@@ -71,16 +75,16 @@ func traceDataToSplunk(logger *zap.Logger, data pdata.Traces, config *Config) ([
 		commonFields := map[string]interface{}{}
 		resource := rs.Resource()
 		attributes := resource.Attributes()
-		if conventionHost, isSet := attributes.Get(conventions.AttributeHostName); isSet {
+		if conventionHost, isSet := attributes.Get(hostKey); isSet {
 			host = conventionHost.StringVal()
 		}
-		if sourceSet, isSet := attributes.Get(splunk.DefaultSourceLabel); isSet {
+		if sourceSet, isSet := attributes.Get(sourceKey); isSet {
 			source = sourceSet.StringVal()
 		}
-		if sourcetypeSet, isSet := attributes.Get(splunk.DefaultSourceTypeLabel); isSet {
+		if sourcetypeSet, isSet := attributes.Get(sourceTypeKey); isSet {
 			sourceType = sourcetypeSet.StringVal()
 		}
-		if indexSet, isSet := attributes.Get(splunk.DefaultIndexLabel); isSet {
+		if indexSet, isSet := attributes.Get(indexKey); isSet {
 			index = indexSet.StringVal()
 		}
 		attributes.Range(func(k string, v pdata.AttributeValue) bool {
