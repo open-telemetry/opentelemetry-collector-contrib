@@ -105,7 +105,7 @@ func createMetricsExporter(
 	}
 
 	// TODO: Remove after two releases
-	if cfg.Metrics.Buckets {
+	if cfg.Metrics.HistConfig.Mode == "counters" {
 		set.Logger.Warn("Histogram bucket metrics now end with .bucket instead of .count_per_bucket")
 	}
 
