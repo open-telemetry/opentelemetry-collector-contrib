@@ -19,7 +19,6 @@ import (
 	"strconv"
 
 	"go.opentelemetry.io/collector/model/pdata"
-	tracetranslator "go.opentelemetry.io/collector/translator/trace"
 )
 
 type MetricIdentity struct {
@@ -46,7 +45,7 @@ func (mi *MetricIdentity) Write(b *bytes.Buffer) {
 		b.WriteByte(SEP)
 		b.WriteString(k)
 		b.WriteByte(':')
-		b.WriteString(tracetranslator.AttributeValueToString(v))
+		b.WriteString(v.AsString())
 		return true
 	})
 
@@ -70,7 +69,7 @@ func (mi *MetricIdentity) Write(b *bytes.Buffer) {
 		b.WriteByte(SEP)
 		b.WriteString(k)
 		b.WriteByte(':')
-		b.WriteString(tracetranslator.AttributeValueToString(v))
+		b.WriteString(v.AsString())
 		return true
 	})
 	b.WriteByte(SEP)

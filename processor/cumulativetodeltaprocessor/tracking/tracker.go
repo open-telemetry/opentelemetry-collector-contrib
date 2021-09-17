@@ -181,7 +181,7 @@ func (t *metricTracker) sweeper(ctx context.Context, remove func(pdata.Timestamp
 	for {
 		select {
 		case currentTime := <-ticker.C:
-			staleBefore := pdata.TimestampFromTime(currentTime.Add(-t.maxStale))
+			staleBefore := pdata.NewTimestampFromTime(currentTime.Add(-t.maxStale))
 			remove(staleBefore)
 		case <-ctx.Done():
 			ticker.Stop()

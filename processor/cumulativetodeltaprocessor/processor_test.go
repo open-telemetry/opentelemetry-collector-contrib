@@ -198,9 +198,10 @@ func generateTestMetrics(tm testMetric) pdata.Metrics {
 func BenchmarkConsumeMetrics(b *testing.B) {
 	c := consumertest.NewNop()
 	params := component.ProcessorCreateSettings{
-		Logger:         zap.NewNop(),
-		TracerProvider: nil,
-		BuildInfo:      component.BuildInfo{},
+		TelemetrySettings: component.TelemetrySettings{
+			Logger: zap.NewNop(),
+		},
+		BuildInfo: component.BuildInfo{},
 	}
 	cfg := createDefaultConfig().(*Config)
 	cfg.Metrics = []string{""}
@@ -220,7 +221,7 @@ func BenchmarkConsumeMetrics(b *testing.B) {
 	m.SetDataType(pdata.MetricDataTypeSum)
 	m.Sum().SetIsMonotonic(true)
 	dp := m.Sum().DataPoints().AppendEmpty()
-	dp.LabelsMap().Insert("tag", "value")
+	dp.Attributes().Insert("tag", pdata.NewAttributeValueString("value"))
 
 	reset := func() {
 		m.Sum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
