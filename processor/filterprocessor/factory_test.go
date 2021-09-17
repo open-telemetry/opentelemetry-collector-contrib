@@ -63,6 +63,12 @@ func TestCreateProcessors(t *testing.T) {
 		}, {
 			configName: "config_logs_regexp.yaml",
 			succeed:    true,
+		}, {
+			configName: "config_logs_record_attributes_strict.yaml",
+			succeed:    true,
+		}, {
+			configName: "config_logs_record_attributes_regexp.yaml",
+			succeed:    true,
 		},
 	}
 
