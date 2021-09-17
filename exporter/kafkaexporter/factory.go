@@ -25,12 +25,13 @@ import (
 )
 
 const (
-	typeStr             = "kafka"
-	defaultTracesTopic  = "otlp_spans"
-	defaultMetricsTopic = "otlp_metrics"
-	defaultLogsTopic    = "otlp_logs"
-	defaultEncoding     = "otlp_proto"
-	defaultBroker       = "localhost:9092"
+	typeStr              = "kafka"
+	defaultTracesTopic   = "otlp_spans"
+	defaultMetricsTopic  = "otlp_metrics"
+	defaultLogsTopic     = "otlp_logs"
+	defaultEncoding      = "otlp_proto"
+	defaultKeyedEncoding = "keyed_otlp_proto"
+	defaultBroker        = "localhost:9092"
 	// default from sarama.NewConfig()
 	defaultMetadataRetryMax = 3
 	// default from sarama.NewConfig()

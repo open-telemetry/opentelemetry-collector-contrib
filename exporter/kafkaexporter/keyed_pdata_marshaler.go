@@ -7,10 +7,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchpersignal"
 )
 
-const (
-	defaultKeyedEncoding = "keyed_otlp_proto"
-)
-
 type keyedPdataTracesMarshaler struct {
 	marshaler pdata.TracesMarshaler
 	encoding  string
