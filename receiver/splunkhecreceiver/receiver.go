@@ -235,12 +235,7 @@ func (r *splunkReceiver) handleRawReq(resp http.ResponseWriter, req *http.Reques
 
 	ld := pdata.NewLogs()
 	rl := ld.ResourceLogs().AppendEmpty()
-	if r.config.AccessTokenPassthrough {
-		accessToken := req.Header.Get(splunk.HECTokenHeader)
-		if accessToken != "" {
-			rl.Resource().Attributes().InsertString(splunk.HecTokenLabel, accessToken)
-		}
-	}
+	r.createResourceCustomizer(req)(rl.Resource())
 	ill := rl.InstrumentationLibraryLogs().AppendEmpty()
 
 	for sc.Scan() {
@@ -248,12 +243,12 @@ func (r *splunkReceiver) handleRawReq(resp http.ResponseWriter, req *http.Reques
 		logLine := sc.Text()
 		logRecord.Body().SetStringVal(logLine)
 	}
-	decodeErr := r.logsConsumer.ConsumeLogs(ctx, ld)
+	consumerErr := r.logsConsumer.ConsumeLogs(ctx, ld)
 
 	_ = bodyReader.Close()
 
-	if decodeErr != nil {
-		r.failRequest(ctx, resp, http.StatusInternalServerError, errInternalServerError, ill.Logs().Len(), decodeErr)
+	if consumerErr != nil {
+		r.failRequest(ctx, resp, http.StatusInternalServerError, errInternalServerError, ill.Logs().Len(), consumerErr)
 	} else {
 		resp.WriteHeader(http.StatusAccepted)
 		r.obsrecv.EndLogsOp(ctx, typeStr, ill.Logs().Len(), nil)
@@ -327,16 +322,8 @@ func (r *splunkReceiver) handleReq(resp http.ResponseWriter, req *http.Request) 
 }
 
 func (r *splunkReceiver) consumeMetrics(ctx context.Context, events []*splunk.Event, resp http.ResponseWriter, req *http.Request) {
-	var resourceCustomer func(resource pdata.Resource)
-	if r.config.AccessTokenPassthrough {
-		accessToken := req.Header.Get(splunk.HECTokenHeader)
-		if accessToken != "" {
-			resourceCustomer = func(resource pdata.Resource) {
-				resource.Attributes().InsertString(splunk.HecTokenLabel, accessToken)
-			}
-		}
-	}
-	md, _ := splunkHecToMetricsData(r.settings.Logger, events, resourceCustomer, r.config)
+	resourceCustomizer := r.createResourceCustomizer(req)
+	md, _ := splunkHecToMetricsData(r.settings.Logger, events, resourceCustomizer, r.config)
 
 	decodeErr := r.metricsConsumer.ConsumeMetrics(ctx, md)
 	r.obsrecv.EndMetricsOp(ctx, typeStr, len(events), decodeErr)
@@ -350,16 +337,8 @@ func (r *splunkReceiver) consumeMetrics(ctx context.Context, events []*splunk.Ev
 }
 
 func (r *splunkReceiver) consumeLogs(ctx context.Context, events []*splunk.Event, resp http.ResponseWriter, req *http.Request) {
-	var resourceCustomer func(resource pdata.Resource)
-	if r.config.AccessTokenPassthrough {
-		accessToken := req.Header.Get(splunk.HECTokenHeader)
-		if accessToken != "" {
-			resourceCustomer = func(resource pdata.Resource) {
-				resource.Attributes().InsertString(splunk.HecTokenLabel, accessToken)
-			}
-		}
-	}
-	ld, err := splunkHecToLogData(r.settings.Logger, events, resourceCustomer, r.config)
+	resourceCustomizer := r.createResourceCustomizer(req)
+	ld, err := splunkHecToLogData(r.settings.Logger, events, resourceCustomizer, r.config)
 	if err != nil {
 		r.failRequest(ctx, resp, http.StatusBadRequest, errUnmarshalBodyRespBody, len(events), err)
 		return
@@ -373,6 +352,18 @@ func (r *splunkReceiver) consumeLogs(ctx context.Context, events []*splunk.Event
 		resp.WriteHeader(http.StatusAccepted)
 		resp.Write(okRespBody)
 	}
+}
+
+func (r *splunkReceiver) createResourceCustomizer(req *http.Request) func(resource pdata.Resource) {
+	if r.config.AccessTokenPassthrough {
+		accessToken := req.Header.Get(splunk.HECTokenHeader)
+		if accessToken != "" {
+			return func(resource pdata.Resource) {
+				resource.Attributes().InsertString(splunk.HecTokenLabel, accessToken)
+			}
+		}
+	}
+	return nil
 }
 
 func (r *splunkReceiver) failRequest(

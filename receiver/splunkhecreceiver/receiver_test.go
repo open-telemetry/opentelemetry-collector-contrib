@@ -167,7 +167,6 @@ func Test_splunkhecreceiver_NewMetricsReceiver(t *testing.T) {
 func Test_splunkhecReceiver_handleReq(t *testing.T) {
 	config := createDefaultConfig().(*Config)
 	config.Endpoint = "localhost:0" // Actually not creating the endpoint
-	config.initialize()
 
 	currentTime := float64(time.Now().UnixNano()) / 1e6
 	splunkMsg := buildSplunkHecMsg(currentTime, 3)
@@ -324,7 +323,6 @@ func Test_consumer_err(t *testing.T) {
 	splunkMsg := buildSplunkHecMsg(currentTime, 3)
 	config := createDefaultConfig().(*Config)
 	config.Endpoint = "localhost:0" // Actually not creating the endpoint
-	config.initialize()
 	rcv, err := newLogsReceiver(componenttest.NewNopTelemetrySettings(), *config, consumertest.NewErr(errors.New("bad consumer")))
 	assert.NoError(t, err)
 
@@ -352,7 +350,6 @@ func Test_consumer_err_metrics(t *testing.T) {
 	assert.True(t, splunkMsg.IsMetric())
 	config := createDefaultConfig().(*Config)
 	config.Endpoint = "localhost:0" // Actually not creating the endpoint\
-	config.initialize()
 	rcv, err := newMetricsReceiver(componenttest.NewNopTelemetrySettings(), *config, consumertest.NewErr(errors.New("bad consumer")))
 	assert.NoError(t, err)
 
@@ -384,7 +381,6 @@ func Test_splunkhecReceiver_TLS(t *testing.T) {
 			KeyFile:  "./testdata/server.key",
 		},
 	}
-	cfg.initialize()
 	sink := new(consumertest.LogsSink)
 	r, err := newLogsReceiver(componenttest.NewNopTelemetrySettings(), *cfg, sink)
 	require.NoError(t, err)
@@ -482,7 +478,6 @@ func Test_splunkhecReceiver_AccessTokenPassthrough(t *testing.T) {
 			config := createDefaultConfig().(*Config)
 			config.Endpoint = "localhost:0"
 			config.AccessTokenPassthrough = tt.passthrough
-			config.initialize()
 
 			sink := new(consumertest.LogsSink)
 			rcv, err := newLogsReceiver(componenttest.NewNopTelemetrySettings(), *config, sink)
@@ -552,7 +547,6 @@ func Test_Logs_splunkhecReceiver_IndexSourceTypePassthrough(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := createDefaultConfig().(*Config)
 			cfg.Endpoint = "localhost:0"
-			cfg.initialize()
 
 			receivedSplunkLogs := make(chan []byte)
 			endServer := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
@@ -646,7 +640,6 @@ func Test_Metrics_splunkhecReceiver_IndexSourceTypePassthrough(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := createDefaultConfig().(*Config)
 			cfg.Endpoint = "localhost:0"
-			cfg.initialize()
 
 			receivedSplunkMetrics := make(chan []byte)
 			endServer := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
@@ -781,7 +774,6 @@ func Test_splunkhecReceiver_handleRawReq(t *testing.T) {
 	config := createDefaultConfig().(*Config)
 	config.Endpoint = "localhost:0" // Actually not creating the endpoint
 	config.RawPath = "/foo"
-	config.initialize()
 
 	currentTime := float64(time.Now().UnixNano()) / 1e6
 	splunkMsg := buildSplunkHecMsg(currentTime, 3)

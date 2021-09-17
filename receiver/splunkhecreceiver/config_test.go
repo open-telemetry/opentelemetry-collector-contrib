@@ -29,30 +29,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 )
 
-func TestCreateValidEndpoint(t *testing.T) {
-	endpoint, err := extractPortFromEndpoint("localhost:123")
-	assert.NoError(t, err)
-	assert.Equal(t, 123, endpoint)
-}
-
-func TestCreateInvalidEndpoint(t *testing.T) {
-	endpoint, err := extractPortFromEndpoint("")
-	assert.EqualError(t, err, "endpoint is not formatted correctly: missing port in address")
-	assert.Equal(t, 0, endpoint)
-}
-
-func TestCreateNoPort(t *testing.T) {
-	endpoint, err := extractPortFromEndpoint("localhost:")
-	assert.EqualError(t, err, "endpoint port is not a number: strconv.ParseInt: parsing \"\": invalid syntax")
-	assert.Equal(t, 0, endpoint)
-}
-
-func TestCreateLargePort(t *testing.T) {
-	endpoint, err := extractPortFromEndpoint("localhost:65536")
-	assert.EqualError(t, err, "port number must be between 1 and 65535")
-	assert.Equal(t, 0, endpoint)
-}
-
 func TestLoadConfig(t *testing.T) {
 	factories, err := componenttest.NopFactories()
 	assert.Nil(t, err)
@@ -68,10 +44,8 @@ func TestLoadConfig(t *testing.T) {
 
 	r0 := cfg.Receivers[config.NewID(typeStr)].(*Config)
 	assert.Equal(t, r0, createDefaultConfig())
-	assert.NoError(t, r0.initialize())
 
 	r1 := cfg.Receivers[config.NewIDWithName(typeStr, "allsettings")].(*Config)
-	assert.NoError(t, r1.initialize())
 	expectedAllSettings := &Config{
 		ReceiverSettings: config.NewReceiverSettings(config.NewIDWithName(typeStr, "allsettings")),
 		HTTPServerSettings: confighttp.HTTPServerSettings{
@@ -80,7 +54,7 @@ func TestLoadConfig(t *testing.T) {
 		AccessTokenPassthroughConfig: splunk.AccessTokenPassthroughConfig{
 			AccessTokenPassthrough: true,
 		},
-		RawPath:       "/foo",
+		RawPath: "/foo",
 		HecToOtelAttrs: splunk.HecToOtelAttrs{
 			Source:     "file.name",
 			SourceType: "foobar",
@@ -91,7 +65,6 @@ func TestLoadConfig(t *testing.T) {
 	assert.Equal(t, expectedAllSettings, r1)
 
 	r2 := cfg.Receivers[config.NewIDWithName(typeStr, "tls")].(*Config)
-	assert.NoError(t, r2.initialize())
 	expectedTLSConfig := &Config{
 		ReceiverSettings: config.NewReceiverSettings(config.NewIDWithName(typeStr, "tls")),
 		HTTPServerSettings: confighttp.HTTPServerSettings{
@@ -106,7 +79,7 @@ func TestLoadConfig(t *testing.T) {
 		AccessTokenPassthroughConfig: splunk.AccessTokenPassthroughConfig{
 			AccessTokenPassthrough: false,
 		},
-		RawPath:       "/services/collector/raw",
+		RawPath: "/services/collector/raw",
 		HecToOtelAttrs: splunk.HecToOtelAttrs{
 			Source:     "com.splunk.source",
 			SourceType: "com.splunk.sourcetype",
