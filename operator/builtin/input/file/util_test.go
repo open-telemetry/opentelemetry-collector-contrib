@@ -186,14 +186,3 @@ func expectNoMessagesUntil(t *testing.T, c chan *entry.Entry, d time.Duration) {
 	case <-time.After(d):
 	}
 }
-
-// writes file with the specified file names and returns their full paths in order
-func writeTempFiles(tempDir string, names []string) []string {
-	result := make([]string, 0, len(names))
-	for _, name := range names {
-		path := filepath.Join(tempDir, name)
-		ioutil.WriteFile(path, []byte(name), 0755)
-		result = append(result, path)
-	}
-	return result
-}

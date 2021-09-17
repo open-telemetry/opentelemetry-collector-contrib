@@ -20,11 +20,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"path/filepath"
 	"sync"
 	"time"
 
-	"github.com/bmatcuk/doublestar/v3"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-log-collection/entry"
@@ -36,8 +34,7 @@ import (
 type InputOperator struct {
 	helper.InputOperator
 
-	Include               []string
-	Exclude               []string
+	finder                Finder
 	FilePathField         entry.Field
 	FileNameField         entry.Field
 	FilePathResolvedField entry.Field
@@ -137,9 +134,11 @@ func (f *InputOperator) poll(ctx context.Context) {
 			}
 
 			// Get the list of paths on disk
-			matches = getMatches(f.Include, f.Exclude)
+			matches = f.finder.FindFiles()
 			if f.firstCheck && len(matches) == 0 {
-				f.Warnw("no files match the configured include patterns", "include", f.Include)
+				f.Warnw("no files match the configured include patterns",
+					"include", f.finder.Include,
+					"exclude", f.finder.Exclude)
 			} else if len(matches) > f.maxBatchFiles {
 				matches, f.queuedMatches = matches[:f.maxBatchFiles], matches[f.maxBatchFiles:]
 			}
@@ -190,32 +189,6 @@ OUTER:
 
 	f.saveCurrent(readers)
 	f.syncLastPollFiles(ctx)
-}
-
-// getMatches gets a list of paths given an array of glob patterns to include and exclude
-func getMatches(includes, excludes []string) []string {
-	all := make([]string, 0, len(includes))
-	for _, include := range includes {
-		matches, _ := filepath.Glob(include) // compile error checked in build
-	INCLUDE:
-		for _, match := range matches {
-			for _, exclude := range excludes {
-				if itMatches, _ := doublestar.PathMatch(exclude, match); itMatches {
-					continue INCLUDE
-				}
-			}
-
-			for _, existing := range all {
-				if existing == match {
-					continue INCLUDE
-				}
-			}
-
-			all = append(all, match)
-		}
-	}
-
-	return all
 }
 
 // makeReaders takes a list of paths, then creates readers from each of those paths,
