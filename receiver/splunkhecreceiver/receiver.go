@@ -169,7 +169,7 @@ func (r *splunkReceiver) Start(_ context.Context, host component.Host) error {
 	}
 
 	mx := mux.NewRouter()
-	if r.metricsConsumer == nil {
+	if r.logsConsumer != nil {
 		mx.NewRoute().Path(r.config.RawPath).HandlerFunc(r.handleRawReq)
 	}
 	mx.NewRoute().HandlerFunc(r.handleReq)
