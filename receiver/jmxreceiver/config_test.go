@@ -23,7 +23,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/config/configcheck"
 	"go.opentelemetry.io/collector/config/configtest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
@@ -42,14 +41,14 @@ func TestLoadConfig(t *testing.T) {
 	assert.Equal(t, len(cfg.Receivers), 6)
 
 	r0 := cfg.Receivers[config.NewID(typeStr)].(*Config)
-	require.NoError(t, configcheck.ValidateConfig(r0))
+	require.NoError(t, configtest.CheckConfigStruct(r0))
 	assert.Equal(t, r0, factory.CreateDefaultConfig())
 	err = r0.validate()
 	require.Error(t, err)
 	assert.Equal(t, "jmx missing required fields: `endpoint`, `target_system` or `groovy_script`", err.Error())
 
 	r1 := cfg.Receivers[config.NewIDWithName(typeStr, "all")].(*Config)
-	require.NoError(t, configcheck.ValidateConfig(r1))
+	require.NoError(t, configtest.CheckConfigStruct(r1))
 	require.NoError(t, r1.validate())
 	assert.Equal(t,
 		&Config{
@@ -90,7 +89,7 @@ func TestLoadConfig(t *testing.T) {
 	)
 
 	r2 := cfg.Receivers[config.NewIDWithName(typeStr, "missingendpoint")].(*Config)
-	require.NoError(t, configcheck.ValidateConfig(r2))
+	require.NoError(t, configtest.CheckConfigStruct(r2))
 	assert.Equal(t,
 		&Config{
 			ReceiverSettings:   config.NewReceiverSettings(config.NewIDWithName(typeStr, "missingendpoint")),
@@ -110,7 +109,7 @@ func TestLoadConfig(t *testing.T) {
 	assert.Equal(t, "jmx/missingendpoint missing required field: `endpoint`", err.Error())
 
 	r3 := cfg.Receivers[config.NewIDWithName(typeStr, "missinggroovy")].(*Config)
-	require.NoError(t, configcheck.ValidateConfig(r3))
+	require.NoError(t, configtest.CheckConfigStruct(r3))
 	assert.Equal(t,
 		&Config{
 			ReceiverSettings:   config.NewReceiverSettings(config.NewIDWithName(typeStr, "missinggroovy")),
@@ -130,7 +129,7 @@ func TestLoadConfig(t *testing.T) {
 	assert.Equal(t, "jmx/missinggroovy missing required field: `target_system` or `groovy_script`", err.Error())
 
 	r4 := cfg.Receivers[config.NewIDWithName(typeStr, "invalidinterval")].(*Config)
-	require.NoError(t, configcheck.ValidateConfig(r4))
+	require.NoError(t, configtest.CheckConfigStruct(r4))
 	assert.Equal(t,
 		&Config{
 			ReceiverSettings:   config.NewReceiverSettings(config.NewIDWithName(typeStr, "invalidinterval")),
@@ -151,7 +150,7 @@ func TestLoadConfig(t *testing.T) {
 	assert.Equal(t, "jmx/invalidinterval `interval` must be positive: -100ms", err.Error())
 
 	r5 := cfg.Receivers[config.NewIDWithName(typeStr, "invalidotlptimeout")].(*Config)
-	require.NoError(t, configcheck.ValidateConfig(r5))
+	require.NoError(t, configtest.CheckConfigStruct(r5))
 	assert.Equal(t,
 		&Config{
 			ReceiverSettings:   config.NewReceiverSettings(config.NewIDWithName(typeStr, "invalidotlptimeout")),

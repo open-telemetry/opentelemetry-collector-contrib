@@ -27,7 +27,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.opentelemetry.io/collector/processor/memorylimiter"
+	"go.opentelemetry.io/collector/processor/memorylimiterprocessor"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/attraction"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/attributesprocessor"
@@ -64,7 +64,7 @@ func TestDefaultProcessors(t *testing.T) {
 		{
 			processor: "memory_limiter",
 			getConfigFn: func() config.Processor {
-				cfg := procFactories["memory_limiter"].CreateDefaultConfig().(*memorylimiter.Config)
+				cfg := procFactories["memory_limiter"].CreateDefaultConfig().(*memorylimiterprocessor.Config)
 				cfg.CheckInterval = 100 * time.Millisecond
 				cfg.MemoryLimitMiB = 1024 * 1024
 				return cfg
