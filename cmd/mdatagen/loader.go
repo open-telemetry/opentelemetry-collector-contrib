@@ -45,7 +45,7 @@ type metric struct {
 	// Unit of the metric.
 	Unit string `yaml:"unit"`
 
-	// handleRawReq data that is used to set Data interface below.
+	// Raw data that is used to set Data interface below.
 	YmlData *ymlMetricData `yaml:"data" validate:"required"`
 	// Date is set to generic metric data interface after validating.
 	Data MetricData `yaml:"-"`
