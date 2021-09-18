@@ -14,7 +14,7 @@ processors:
   # collector's memory up to 2GB. In addition, the "--mem-ballast-size-mib" CLI
   # flag must be set to the same value as the "ballast_size_mib". For more
   # information, see
-  # https://github.com/open-telemetry/opentelemetry-collector/blob/main/processor/memorylimiter/README.md
+  # https://github.com/open-telemetry/opentelemetry-collector/blob/main/processor/memorylimiterprocessor/README.md
   memory_limiter:
     ballast_size_mib: 683
     check_interval: 2s

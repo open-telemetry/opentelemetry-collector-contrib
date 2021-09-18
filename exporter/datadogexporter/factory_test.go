@@ -25,7 +25,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/config/configcheck"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configtest"
 
@@ -79,7 +78,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 		UseResourceMetadata: true,
 	}, cfg, "failed to create default config")
 
-	assert.NoError(t, configcheck.ValidateConfig(cfg))
+	assert.NoError(t, configtest.CheckConfigStruct(cfg))
 }
 
 // TestLoadConfig tests that the configuration is loaded correctly
