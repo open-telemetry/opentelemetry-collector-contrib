@@ -12,6 +12,20 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Copyright The OpenTelemetry Authors
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//       http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package configwiz
 
 import (
@@ -19,7 +33,6 @@ import (
 	"reflect"
 	"strconv"
 	"strings"
-	"time"
 
 	"go.opentelemetry.io/collector/component"
 
@@ -40,6 +53,9 @@ func serviceToComponentNames(service map[string]interface{}) map[string][]string
 			}
 			if r.Exporters != nil {
 				out["exporter"] = append(out["exporter"], r.Exporters...)
+			}
+			if r.Extensions != nil {
+				out["extension"] = append(out["extension"], r.Extensions...)
 			}
 		}
 	}
@@ -67,7 +83,7 @@ func handleComponent(
 		if err != nil {
 			panic(err)
 		}
-		typeMap[name] = componentWizard(io, 1, f)
+		typeMap[name] = componentWizard(io, 0, f)
 	}
 }
 
@@ -107,27 +123,28 @@ func handleField(io Clio, pr indentingPrinter, field *configschema.Field, out ma
 	if field.Doc != "" {
 		pr.println("Docs: " + strings.ReplaceAll(field.Doc, "\n", " "))
 	}
-	defaultVal := ""
 	if field.Default != nil {
 		pr.println(fmt.Sprintf("Default (enter to accept): %v", field.Default))
-		defaultVal = fmt.Sprintf("%v", field.Default)
 	}
 	pr.print("> ")
+	defaultVal := ""
+	if field.Default != nil {
+		defaultVal = fmt.Sprintf("%v", field.Default)
+	}
 	in := io.Read(defaultVal)
 	if in == "" {
 		return
 	}
 	switch field.Kind {
 	case "bool":
-		out[field.Name], _ = strconv.ParseBool(in)
+		b, _ := strconv.ParseBool(in)
+		out[field.Name] = b
 	case "int", "int8", "int16", "int32", "int64":
-		if field.Type == "time.Duration" {
-			out[field.Name], _ = time.ParseDuration(in)
-		} else {
-			out[field.Name], _ = strconv.Atoi(in)
-		}
+		atoi, _ := strconv.Atoi(in)
+		out[field.Name] = atoi
 	case "float32", "float64":
-		out[field.Name], _ = strconv.ParseFloat(in, 32)
+		f, _ := strconv.ParseFloat(in, 32)
+		out[field.Name] = f
 	case "[]string":
 		out[field.Name] = parseCSV(in)
 	default:

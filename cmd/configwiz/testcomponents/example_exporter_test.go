@@ -26,35 +26,38 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package configwiz
+package testcomponents
 
 import (
-	"fmt"
+	"context"
+	"testing"
 
-	"go.opentelemetry.io/collector/component"
+	"github.com/stretchr/testify/assert"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/configschema"
+	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/model/pdata"
 )
 
-func CLI(io Clio, factories component.Factories) {
-	fileName := promptFileName(io)
-	service := map[string]interface{}{
-		// this is the overview (top-level) part of the wizard, where the user just creates the pipelines
-		"pipelines": pipelinesWizard(io, factories),
-	}
-	m := map[string]interface{}{
-		"service": service,
-	}
-	dr := configschema.NewDirResolver(".", "github.com/open-telemetry/opentelemetry-collector-contrib")
-	for componentGroup, names := range serviceToComponentNames(service) {
-		handleComponent(io, factories, m, componentGroup, names, dr)
-	}
-	pr := io.newIndentingPrinter(0)
-	yamlContents := buildYamlFile(m)
-	pr.println("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
-	pr.println(yamlContents)
-	writeFile(fileName, yamlContents)
-	if !checkYamlFile(fileName) {
-		panic(fmt.Errorf("invalid pipeline. Update file contents before trying to deploy"))
-	}
+func TestExampleExporterConsumer(t *testing.T) {
+	exp := &ExampleExporterConsumer{}
+	host := componenttest.NewNopHost()
+	assert.False(t, exp.ExporterStarted)
+	err := exp.Start(context.Background(), host)
+	assert.NoError(t, err)
+	assert.True(t, exp.ExporterStarted)
+
+	assert.Equal(t, 0, len(exp.Traces))
+	err = exp.ConsumeTraces(context.Background(), pdata.Traces{})
+	assert.NoError(t, err)
+	assert.Equal(t, 1, len(exp.Traces))
+
+	assert.Equal(t, 0, len(exp.Metrics))
+	err = exp.ConsumeMetrics(context.Background(), pdata.Metrics{})
+	assert.NoError(t, err)
+	assert.Equal(t, 1, len(exp.Metrics))
+
+	assert.False(t, exp.ExporterShutdown)
+	err = exp.Shutdown(context.Background())
+	assert.NoError(t, err)
+	assert.True(t, exp.ExporterShutdown)
 }

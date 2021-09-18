@@ -12,6 +12,20 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Copyright The OpenTelemetry Authors
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//       http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package configwiz
 
 import (
@@ -28,7 +42,7 @@ import (
 	"go.uber.org/zap"
 )
 
-const invalidMsg = "Invalid input. Please try again."
+const invalidMsg = "Invalid input. Try again."
 
 func pipelinesWizard(io Clio, factories component.Factories) map[string]interface{} {
 	out := map[string]interface{}{}
@@ -71,7 +85,7 @@ func singlePipelineWizard(io Clio, factories component.Factories) (string, rpe) 
 			receiverNames(factories, isMetricsReceiver),
 			processorNames(factories, isMetricProcessor),
 			exporterNames(factories, isMetricsExporter),
-		)
+			extensionNames(factories, isExtension))
 	case "2":
 		return pipelineTypeWizard(
 			io,
@@ -79,7 +93,7 @@ func singlePipelineWizard(io Clio, factories component.Factories) (string, rpe) 
 			receiverNames(factories, isTracesReceiver),
 			processorNames(factories, isTracesProcessor),
 			exporterNames(factories, isTracesExporter),
-		)
+			extensionNames(factories, isExtension))
 	}
 	pr.println(invalidMsg)
 	return singlePipelineWizard(io, factories)
@@ -92,6 +106,7 @@ func pipelineTypeWizard(
 	receivers []string,
 	processors []string,
 	exporters []string,
+	extensions []string,
 ) (string, rpe) {
 	pr := io.newIndentingPrinter(1)
 	pr.print(fmt.Sprintf("%s pipeline extended name (optional) > ", strings.Title(pipelineType)))
@@ -101,7 +116,7 @@ func pipelineTypeWizard(
 		name += "/" + nameExt
 	}
 	pr.print(fmt.Sprintf("Pipeline %q\n", name))
-	rpeWiz := rpeWizard(io, pr, receivers, processors, exporters)
+	rpeWiz := rpeWizard(io, pr, receivers, processors, exporters, extensions)
 	return name, rpeWiz
 }
 
@@ -111,11 +126,13 @@ func rpeWizard(
 	receiverNames []string,
 	processorNames []string,
 	exporterNames []string,
+	extensionNames []string,
 ) rpe {
 	out := rpe{}
 	out.Receivers = componentListWizard(io, pr, "receiver", receiverNames)
 	out.Processors = componentListWizard(io, pr, "processor", processorNames)
 	out.Exporters = componentListWizard(io, pr, "exporter", exporterNames)
+	out.Extensions = componentListWizard(io, pr, "extension", extensionNames)
 	return out
 }
 
@@ -123,6 +140,7 @@ type rpe struct {
 	Receivers  []string
 	Processors []string
 	Exporters  []string
+	Extensions []string
 }
 
 func componentListWizard(io Clio, pr indentingPrinter, componentGroup string, componentNames []string) (out []string) {
@@ -143,7 +161,7 @@ func componentListWizard(io Clio, pr indentingPrinter, componentGroup string, co
 func componentNameWizard(io Clio, pr indentingPrinter, componentType string, componentNames []string) (string, string) {
 	pr.println(fmt.Sprintf("Add %s (enter to skip)", componentType))
 	for i, name := range componentNames {
-		pr.println(fmt.Sprintf("%2d: %s", i, name))
+		pr.println(fmt.Sprintf("%d: %s", i, name))
 	}
 	pr.print("> ")
 	choice := io.Read("")

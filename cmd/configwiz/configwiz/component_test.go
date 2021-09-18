@@ -12,6 +12,20 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Copyright The OpenTelemetry Authors
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//       http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package configwiz
 
 import (
@@ -49,34 +63,35 @@ func (r *fakeReader) read(defaultVal string) string {
 }
 
 func TestComponentWizardSquash(t *testing.T) {
-	wr := fakeWriter{}
-	rdr := fakeReader{}
-	io := Clio{wr.write, rdr.read}
-	cfgSquash := testRunCompWizard(io, "squash", "test1", "helper", "testing compWizardSquash")
+	writerSquash := fakeWriter{}
+	readerSquash := fakeReader{}
+	ioSquash := Clio{writerSquash.write, readerSquash.read}
+	cfgSquash := runCompWizard(ioSquash, "squash", "test1", "helper", "testing compWizardSquash")
 	squash := cfgSquash.Fields[0].Fields[0]
-	expectedSquash := testBuildExpectedOutput(0, "", squash.Name, squash.Type, true, squash.Doc)
-	assert.Equal(t, expectedSquash, wr.programOutput)
+	expectedSquash := buildExpectedOutput(0, "", squash.Name, squash.Type, true, squash.Doc)
+	assert.Equal(t, expectedSquash, writerSquash.programOutput)
 }
 
 func TestComponentWizardStruct(t *testing.T) {
 	writerStruct := fakeWriter{}
 	readerStruct := fakeReader{}
 	ioStruct := Clio{writerStruct.write, readerStruct.read}
-	cfgStruct := testRunCompWizard(ioStruct, "struct", "test2", "struct", "testing CompWizard Struct")
+	cfgStruct := runCompWizard(ioStruct, "struct", "test2", "struct", "testing CompWizard Struct")
 	struc := cfgStruct.Fields[0].Fields[0]
 	expectedStruct := fmt.Sprintf("%s\n", cfgStruct.Fields[0].Name)
-	expectedStruct = testBuildExpectedOutput(1, expectedStruct, struc.Name, struc.Type, true, struc.Doc)
+	expectedStruct = buildExpectedOutput(1, expectedStruct, struc.Name, struc.Type, true, struc.Doc)
 	assert.Equal(t, expectedStruct, writerStruct.programOutput)
+
 }
 
 func TestComponentWizardPtr(t *testing.T) {
 	writerPtr := fakeWriter{}
 	readerPtr := fakeReader{userInput: []string{"n"}}
 	ioPtr := Clio{writerPtr.write, readerPtr.read}
-	cfgPtr := testRunCompWizard(ioPtr, "ptr", "test", "ptr", "testing CompWizard ptr")
+	cfgPtr := runCompWizard(ioPtr, "ptr", "test", "ptr", "testing CompWizard ptr")
 	ptr := cfgPtr.Fields[0].Fields[0]
 	expectedPtr := fmt.Sprintf("%s (optional) skip (Y/n)> ", cfgPtr.Fields[0].Name)
-	expectedPtr = testBuildExpectedOutput(1, expectedPtr, ptr.Name, ptr.Type, true, ptr.Doc)
+	expectedPtr = buildExpectedOutput(1, expectedPtr, ptr.Name, ptr.Type, true, ptr.Doc)
 	assert.Equal(t, expectedPtr, writerPtr.programOutput)
 }
 
@@ -84,9 +99,9 @@ func TestComponentWizardHandle(t *testing.T) {
 	writerHandle := fakeWriter{}
 	readerHandle := fakeReader{}
 	ioHandle := Clio{writerHandle.write, readerHandle.read}
-	cfgHandle := testRunCompWizard(ioHandle, "handle", "test3", "helper", "testing CompWizard handle")
+	cfgHandle := runCompWizard(ioHandle, "handle", "test3", "helper", "testing CompWizard handle")
 	field := cfgHandle.Fields[0]
-	expectedHandle := testBuildExpectedOutput(0, "", field.Name, field.Type, false, field.Doc)
+	expectedHandle := buildExpectedOutput(0, "", field.Name, field.Type, false, field.Doc)
 	assert.Equal(t, expectedHandle, writerHandle.programOutput)
 }
 
@@ -96,7 +111,7 @@ func TestHandleField(t *testing.T) {
 	io := Clio{writer.write, handleReader.read}
 	p := io.newIndentingPrinter(0)
 	out := map[string]interface{}{}
-	cfgField := testBuildTestCFGFields(
+	cfgField := buildTestCFGFields(
 		"testHandleField",
 		"test",
 		"[]string",
@@ -104,7 +119,7 @@ func TestHandleField(t *testing.T) {
 		"we are testing handleField",
 	)
 	handleField(io, p, &cfgField, out)
-	expected := testBuildExpectedOutput(0, "", cfgField.Name, cfgField.Type, true, cfgField.Doc)
+	expected := buildExpectedOutput(0, "", cfgField.Name, cfgField.Type, true, cfgField.Doc)
 	assert.Equal(t, expected, writer.programOutput)
 }
 
@@ -116,7 +131,7 @@ func TestParseCSV(t *testing.T) {
 	assert.Equal(t, []string{"a"}, parseCSV(" a "))
 }
 
-func testBuildExpectedOutput(indent int, prefix string, name string, typ string, defaultStr bool, doc string) string {
+func buildExpectedOutput(indent int, prefix string, name string, typ string, defaultStr bool, doc string) string {
 	const tabSize = 4
 	space := indent * tabSize
 	tabs := strings.Repeat(" ", space)
@@ -138,7 +153,7 @@ func testBuildExpectedOutput(indent int, prefix string, name string, typ string,
 	return prefix
 }
 
-func testBuildTestCFGFields(name string, typ string, kind string, defaultStr string, doc string) configschema.Field {
+func buildTestCFGFields(name string, typ string, kind string, defaultStr string, doc string) configschema.Field {
 	var fields []*configschema.Field
 	cfgField2 := configschema.Field{
 		Name:    name + "1",
@@ -159,16 +174,16 @@ func testBuildTestCFGFields(name string, typ string, kind string, defaultStr str
 	return cfgField
 }
 
-func testRunCompWizard(io Clio, name string, typ string, kind string, doc string) configschema.Field {
+func runCompWizard(io Clio, name string, typ string, kind string, doc string) configschema.Field {
 	const test = "test"
-	cfgField := testBuildTestCFGFields(
+	cfgField := buildTestCFGFields(
 		name+test,
 		typ+test,
 		kind+test,
 		"defaultStr",
 		doc+test,
 	)
-	newField := testBuildTestCFGFields(
+	newField := buildTestCFGFields(
 		name,
 		test+typ,
 		kind,

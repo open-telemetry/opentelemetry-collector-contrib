@@ -15,8 +15,6 @@
 package main
 
 import (
-	"log"
-
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/configwiz/configwiz"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/components"
 )
@@ -24,7 +22,7 @@ import (
 func main() {
 	c, err := components.Components()
 	if err != nil {
-		log.Fatalf("attempt to load all components failed: %v", err)
+		panic(err)
 	}
 	io := configwiz.Clio{Write: configwiz.PrintLine, Read: configwiz.Readline}
 	configwiz.CLI(io, c)

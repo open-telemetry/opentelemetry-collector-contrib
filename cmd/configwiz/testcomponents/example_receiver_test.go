@@ -26,35 +26,26 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package configwiz
+package testcomponents
 
 import (
-	"fmt"
+	"context"
+	"testing"
 
-	"go.opentelemetry.io/collector/component"
+	"github.com/stretchr/testify/assert"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/configschema"
+	"go.opentelemetry.io/collector/component/componenttest"
 )
 
-func CLI(io Clio, factories component.Factories) {
-	fileName := promptFileName(io)
-	service := map[string]interface{}{
-		// this is the overview (top-level) part of the wizard, where the user just creates the pipelines
-		"pipelines": pipelinesWizard(io, factories),
-	}
-	m := map[string]interface{}{
-		"service": service,
-	}
-	dr := configschema.NewDirResolver(".", "github.com/open-telemetry/opentelemetry-collector-contrib")
-	for componentGroup, names := range serviceToComponentNames(service) {
-		handleComponent(io, factories, m, componentGroup, names, dr)
-	}
-	pr := io.newIndentingPrinter(0)
-	yamlContents := buildYamlFile(m)
-	pr.println("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
-	pr.println(yamlContents)
-	writeFile(fileName, yamlContents)
-	if !checkYamlFile(fileName) {
-		panic(fmt.Errorf("invalid pipeline. Update file contents before trying to deploy"))
-	}
+func TestExampleReceiverProducer(t *testing.T) {
+	rcv := &ExampleReceiverProducer{}
+	host := componenttest.NewNopHost()
+	assert.False(t, rcv.Started)
+	err := rcv.Start(context.Background(), host)
+	assert.NoError(t, err)
+	assert.True(t, rcv.Started)
+
+	err = rcv.Shutdown(context.Background())
+	assert.NoError(t, err)
+	assert.True(t, rcv.Started)
 }
