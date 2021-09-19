@@ -22,7 +22,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/config/configcheck"
 	"go.opentelemetry.io/collector/config/configtest"
 )
 
@@ -106,5 +105,5 @@ func TestConfig(t *testing.T) {
 
 func TestConfigCheck(t *testing.T) {
 	cfg := (NewFactory()).CreateDefaultConfig()
-	assert.NoError(t, configcheck.ValidateConfig(cfg))
+	assert.NoError(t, configtest.CheckConfigStruct(cfg))
 }
