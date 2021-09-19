@@ -99,13 +99,13 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zookeeperreceiver v0.35.0
 	github.com/prometheus/prometheus v1.8.2-0.20210621150501-ff58416a0b02
 	github.com/stretchr/testify v1.7.0
-	go.opentelemetry.io/collector v0.35.1-0.20210913155934-36e0bbaf40b2
+	go.opentelemetry.io/collector v0.35.1-0.20210917100632-e056aa8c4e20
 	golang.org/x/sys v0.0.0-20210823070655-63515b42dcdf
 )
 
 require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/cmd/configschema v0.35.0
-	go.opentelemetry.io/collector/model v0.35.1-0.20210913155934-36e0bbaf40b2
+	go.opentelemetry.io/collector/model v0.35.1-0.20210917100632-e056aa8c4e20
 	go.opentelemetry.io/otel/trace v1.0.0-RC3
 	go.uber.org/zap v1.19.1
 	gopkg.in/yaml.v2 v2.4.0
