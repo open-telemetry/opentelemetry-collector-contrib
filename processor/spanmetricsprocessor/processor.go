@@ -50,6 +50,11 @@ var (
 	}
 )
 
+type exemplarData struct {
+	traceID pdata.TraceID
+	value   float64
+}
+
 type metricKey string
 
 type processorImp struct {
@@ -70,12 +75,11 @@ type processorImp struct {
 	callSum map[metricKey]int64
 
 	// Latency histogram.
-	latencyCount            map[metricKey]uint64
-	latencySum              map[metricKey]float64
-	latencyBucketCounts     map[metricKey][]uint64
-	latencyBounds           []float64
-	latencyExemplarTraceIDs map[metricKey][]pdata.TraceID
-	latencyExemplarValues   map[metricKey][]float64
+	latencyCount         map[metricKey]uint64
+	latencySum           map[metricKey]float64
+	latencyBucketCounts  map[metricKey][]uint64
+	latencyBounds        []float64
+	latencyExemplarsData map[metricKey][]exemplarData
 
 	// A cache of dimension key-value maps keyed by a unique identifier formed by a concatenation of its values:
 	// e.g. { "foo/barOK": { "serviceName": "foo", "operation": "/bar", "status_code": "OK" }}
@@ -101,19 +105,18 @@ func newProcessor(logger *zap.Logger, config config.Processor, nextConsumer cons
 	}
 
 	return &processorImp{
-		logger:                  logger,
-		config:                  *pConfig,
-		startTime:               time.Now(),
-		callSum:                 make(map[metricKey]int64),
-		latencyBounds:           bounds,
-		latencySum:              make(map[metricKey]float64),
-		latencyCount:            make(map[metricKey]uint64),
-		latencyBucketCounts:     make(map[metricKey][]uint64),
-		latencyExemplarTraceIDs: make(map[metricKey][]pdata.TraceID),
-		latencyExemplarValues:   make(map[metricKey][]float64),
-		nextConsumer:            nextConsumer,
-		dimensions:              pConfig.Dimensions,
-		metricKeyToDimensions:   make(map[metricKey]pdata.AttributeMap),
+		logger:                logger,
+		config:                *pConfig,
+		startTime:             time.Now(),
+		callSum:               make(map[metricKey]int64),
+		latencyBounds:         bounds,
+		latencySum:            make(map[metricKey]float64),
+		latencyCount:          make(map[metricKey]uint64),
+		latencyBucketCounts:   make(map[metricKey][]uint64),
+		latencyExemplarsData:  make(map[metricKey][]exemplarData),
+		nextConsumer:          nextConsumer,
+		dimensions:            pConfig.Dimensions,
+		metricKeyToDimensions: make(map[metricKey]pdata.AttributeMap),
 	}, nil
 }
 
@@ -256,7 +259,7 @@ func (p *processorImp) collectLatencyMetrics(ilm pdata.InstrumentationLibraryMet
 		dpLatency.SetCount(p.latencyCount[key])
 		dpLatency.SetSum(p.latencySum[key])
 
-		setLatencyExemplars(p.latencyExemplarTraceIDs[key], p.latencyExemplarValues[key], timestamp, dpLatency.Exemplars())
+		setLatencyExemplars(p.latencyExemplarsData[key], timestamp, dpLatency.Exemplars())
 
 		p.metricKeyToDimensions[key].CopyTo(dpLatency.Attributes())
 	}
@@ -334,14 +337,13 @@ func (p *processorImp) updateCallMetrics(key metricKey) {
 
 // updateLatencyExemplars sets the histogram exemplars for the given metric key and bucket index.
 func (p *processorImp) updateLatencyExemplars(key metricKey, value float64, index int, traceID pdata.TraceID) {
-	if _, ok := p.latencyExemplarTraceIDs[key]; !ok {
-		p.latencyExemplarTraceIDs[key] = make([]pdata.TraceID, len(p.latencyBounds))
+	if _, ok := p.latencyExemplarsData[key]; !ok {
+		p.latencyExemplarsData[key] = make([]exemplarData, len(p.latencyBounds))
 	}
-	if _, ok := p.latencyExemplarValues[key]; !ok {
-		p.latencyExemplarValues[key] = make([]float64, len(p.latencyBounds))
+	p.latencyExemplarsData[key][index] = exemplarData{
+		traceID: traceID,
+		value:   value,
 	}
-	p.latencyExemplarTraceIDs[key][index] = traceID
-	p.latencyExemplarValues[key][index] = value
 }
 
 // updateLatencyMetrics increments the histogram counts for the given metric key and bucket index.
@@ -448,18 +450,21 @@ func sanitizeRune(r rune) rune {
 }
 
 // setLatencyExemplars sets the histogram exemplars.
-func setLatencyExemplars(traceIDs []pdata.TraceID, values []float64, timestamp pdata.Timestamp, exemplars pdata.ExemplarSlice) {
+func setLatencyExemplars(exemplarsData []exemplarData, timestamp pdata.Timestamp, exemplars pdata.ExemplarSlice) {
 	es := pdata.NewExemplarSlice()
-	es.EnsureCapacity(len(traceIDs))
+	es.EnsureCapacity(len(exemplarsData))
 
-	for index, traceID := range traceIDs {
+	for _, ed := range exemplarsData {
+		values := ed.value
+		traceID := ed.traceID
+
 		exemplar := es.AppendEmpty()
 
 		if traceID.IsEmpty() {
 			continue
 		}
 
-		exemplar.SetDoubleVal(values[index])
+		exemplar.SetDoubleVal(values)
 		exemplar.SetTimestamp(timestamp)
 		exemplar.FilteredAttributes().Insert(traceIDKey, pdata.NewAttributeValueString(traceID.HexString()))
 	}

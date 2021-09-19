@@ -293,14 +293,13 @@ func newProcessorImp(mexp *mocks.MetricsExporter, tcon *mocks.TracesConsumer, de
 		metricsExporter: mexp,
 		nextConsumer:    tcon,
 
-		startTime:               time.Now(),
-		callSum:                 make(map[metricKey]int64),
-		latencySum:              make(map[metricKey]float64),
-		latencyCount:            make(map[metricKey]uint64),
-		latencyBucketCounts:     make(map[metricKey][]uint64),
-		latencyBounds:           defaultLatencyHistogramBucketsMs,
-		latencyExemplarTraceIDs: make(map[metricKey][]pdata.TraceID),
-		latencyExemplarValues:   make(map[metricKey][]float64),
+		startTime:            time.Now(),
+		callSum:              make(map[metricKey]int64),
+		latencySum:           make(map[metricKey]float64),
+		latencyCount:         make(map[metricKey]uint64),
+		latencyBucketCounts:  make(map[metricKey][]uint64),
+		latencyBounds:        defaultLatencyHistogramBucketsMs,
+		latencyExemplarsData: make(map[metricKey][]exemplarData),
 		dimensions: []Dimension{
 			// Set nil defaults to force a lookup for the attribute in the span.
 			{stringAttrName, nil},
@@ -620,13 +619,14 @@ func TestSetLatencyExemplars(t *testing.T) {
 	// ----- conditions -------------------------------------------------------
 	traces := buildSampleTrace()
 	traceID := traces.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().At(0).TraceID()
-	traceIDs := []pdata.TraceID{traceID}
 	exemplarSlice := pdata.NewExemplarSlice()
 	timestamp := pdata.NewTimestampFromTime(time.Now())
-	values := []float64{float64(42)}
+	value := float64(42)
+
+	ed := []exemplarData{{traceID: traceID, value: value}}
 
 	// ----- call -------------------------------------------------------------
-	setLatencyExemplars(traceIDs, values, timestamp, exemplarSlice)
+	setLatencyExemplars(ed, timestamp, exemplarSlice)
 
 	// ----- verify -----------------------------------------------------------
 	traceIDValue, exist := exemplarSlice.At(0).FilteredAttributes().Get(traceIDKey)
@@ -635,7 +635,7 @@ func TestSetLatencyExemplars(t *testing.T) {
 	assert.True(t, exist)
 	assert.Equal(t, traceIDValue.AsString(), traceID.HexString())
 	assert.Equal(t, exemplarSlice.At(0).Timestamp(), timestamp)
-	assert.Equal(t, exemplarSlice.At(0).DoubleVal(), values[0])
+	assert.Equal(t, exemplarSlice.At(0).DoubleVal(), value)
 }
 
 func TestProcessorUpdateLatencyExemplars(t *testing.T) {
@@ -655,7 +655,6 @@ func TestProcessorUpdateLatencyExemplars(t *testing.T) {
 
 	// ----- verify -----------------------------------------------------------
 	assert.NoError(t, err)
-	assert.NotEmpty(t, p.latencyExemplarTraceIDs[key])
-	assert.Equal(t, p.latencyExemplarTraceIDs[key][index], traceID)
-	assert.Equal(t, p.latencyExemplarValues[key][index], value)
+	assert.NotEmpty(t, p.latencyExemplarsData[key])
+	assert.Equal(t, p.latencyExemplarsData[key][index], exemplarData{traceID: traceID, value: value})
 }
