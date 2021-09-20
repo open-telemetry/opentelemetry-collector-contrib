@@ -34,6 +34,9 @@ func splunkHecToMetricsData(logger *zap.Logger, events []*splunk.Event, resource
 
 	for _, event := range events {
 		resourceMetrics := pdata.NewResourceMetrics()
+		if resourceCustomizer != nil {
+			resourceCustomizer(resourceMetrics.Resource())
+		}
 		attrs := resourceMetrics.Resource().Attributes()
 		if event.Host != "" {
 			attrs.InsertString(config.HecToOtelAttrs.Host, event.Host)
@@ -47,7 +50,6 @@ func splunkHecToMetricsData(logger *zap.Logger, events []*splunk.Event, resource
 		if event.Index != "" {
 			attrs.InsertString(config.HecToOtelAttrs.Index, event.Index)
 		}
-		resourceCustomizer(resourceMetrics.Resource())
 
 		values := event.GetMetricValues()
 
