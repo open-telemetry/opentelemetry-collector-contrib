@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package translate_test
+package batch_test
 
 import (
 	"testing"
@@ -20,23 +20,21 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/model/pdata"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awskinesisexporter/internal/translate"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awskinesisexporter/internal/batch"
 )
 
-func TestEncodingTraceData(t *testing.T) {
+func TestJaegerBatchEncoder(t *testing.T) {
 	t.Parallel()
 
-	assert.NoError(t, translate.JaegerExporter(nil).WriteTraces(pdata.NewTraces()), "Must not error when processing spans")
-}
+	jbe := batch.NewJaeger(1, 1)
 
-func TestEncodingMetricData(t *testing.T) {
-	t.Parallel()
+	_, err := jbe.Logs(pdata.NewLogs())
+	assert.Equal(t, err, batch.ErrUnsupportedEncodedType)
 
-	assert.Error(t, translate.JaegerExporter(nil).WriteMetrics(pdata.NewMetrics()), "Must error when trying to encode unsupported type")
-}
+	_, err = jbe.Metrics(pdata.NewMetrics())
+	assert.Equal(t, err, batch.ErrUnsupportedEncodedType)
 
-func TestEncodingLogData(t *testing.T) {
-	t.Parallel()
-
-	assert.Error(t, translate.JaegerExporter(nil).WriteLogs(pdata.NewLogs()), "Must error when trying to encode unsupported type")
+	bt, err := jbe.Traces(pdata.NewTraces())
+	assert.NoError(t, err)
+	assert.NotNil(t, bt)
 }
