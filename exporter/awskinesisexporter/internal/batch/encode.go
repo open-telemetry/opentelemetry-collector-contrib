@@ -20,8 +20,12 @@ import (
 	"go.opentelemetry.io/collector/model/pdata"
 )
 
-// ErrUnsupportedEncodedType is used when the encoder type does not support the type of encoding
-var ErrUnsupportedEncodedType = errors.New("unsupported type to encode")
+var (
+	// ErrUnsupportedEncoding is used when the encoder type does not support the type of encoding
+	ErrUnsupportedEncoding = errors.New("unsupported type to encode")
+	// ErrUnknownExportEncoder is used when a named encoding doesn't not exist
+	ErrUnknownExportEncoder = errors.New("unknown encoding export format")
+)
 
 // Encoder transforms the internal pipeline format into a configurable
 // format that is then used to export to kinesis.

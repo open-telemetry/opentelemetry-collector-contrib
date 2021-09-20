@@ -12,6 +12,28 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package batch_test
+package compress
 
-// Tests for jeager encoder are part of the encode_marshaler_test.go
+import "io"
+
+type noop struct {
+	data io.Writer
+}
+
+func NewNoopCompressor() Compressor {
+	return &compressor{
+		compression: &noop{},
+	}
+}
+
+func (n *noop) Reset(w io.Writer) {
+	n.data = w
+}
+
+func (n noop) Write(p []byte) (int, error) {
+	return n.data.Write(p)
+}
+
+func (n noop) Flush() error {
+	return nil
+}

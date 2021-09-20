@@ -12,6 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package batch_test
+package key
 
-// Tests for jeager encoder are part of the encode_marshaler_test.go
+import (
+	"github.com/google/uuid"
+)
+
+// Partition allows for switching our partitioning behavior
+// when sending data to kinesis.
+type Partition func(v interface{}) string
+
+func Randomized(_ interface{}) string {
+	return uuid.NewString()
+}
