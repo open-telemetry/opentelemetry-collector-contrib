@@ -23,6 +23,8 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 )
 
 const (
@@ -30,6 +32,16 @@ const (
 	hecPath                   = "services/collector"
 	maxContentLengthLogsLimit = 2 * 1024 * 1024
 )
+
+// OtelToHecFields defines the mapping of attributes to HEC fields
+type OtelToHecFields struct {
+	// SeverityText informs the exporter to map the severity text field to a specific HEC field.
+	SeverityText string `mapstructure:"severity_text"`
+	// SeverityNumber informs the exporter to map the severity number field to a specific HEC field.
+	SeverityNumber string `mapstructure:"severity_number"`
+	// Name informs the exporter to map the name field to a specific HEC field.
+	Name string `mapstructure:"name"`
+}
 
 // Config defines configuration for Splunk exporter.
 type Config struct {
@@ -71,6 +83,10 @@ type Config struct {
 
 	// App version is used to track telemetry information for Splunk App's using HEC by App version. Defaults to the current OpenTelemetry Collector Contrib build version.
 	SplunkAppVersion string `mapstructure:"splunk_app_version"`
+	// HecToOtelAttrs creates a mapping from attributes to HEC specific metadata: source, sourcetype, index and host.
+	HecToOtelAttrs splunk.HecToOtelAttrs `mapstructure:"hec_metadata_to_otel_attrs"`
+	// HecFields creates a mapping from attributes to HEC fields.
+	HecFields OtelToHecFields `mapstructure:"otel_to_hec_fields"`
 }
 
 func (cfg *Config) getOptionsFromConfig() (*exporterOptions, error) {

@@ -28,6 +28,8 @@ import (
 	"go.opentelemetry.io/collector/config/configtest"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -82,6 +84,17 @@ func TestLoadConfig(t *testing.T) {
 				KeyFile:  "",
 			},
 			InsecureSkipVerify: false,
+		},
+		HecToOtelAttrs: splunk.HecToOtelAttrs{
+			Source:     "mysource",
+			SourceType: "mysourcetype",
+			Index:      "myindex",
+			Host:       "myhost",
+		},
+		HecFields: OtelToHecFields{
+			SeverityText:   "myseverityfield",
+			SeverityNumber: "myseveritynumfield",
+			Name:           "mynamefield",
 		},
 	}
 	assert.Equal(t, &expectedCfg, e1)

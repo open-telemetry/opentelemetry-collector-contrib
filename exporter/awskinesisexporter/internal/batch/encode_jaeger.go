@@ -12,10 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package translate
+package batch
 
 import (
-	awskinesis "github.com/signalfx/opencensus-go-exporter-kinesis"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/model/pdata"
 
@@ -23,36 +22,48 @@ import (
 )
 
 type jaeger struct {
-	kinesis *awskinesis.Exporter
+	batchSize  int
+	recordSize int
 }
 
-// Ensure the jaeger encoder meets the interface at compile time.
-var _ ExportWriter = (*jaeger)(nil)
+var _ Encoder = (*jaeger)(nil)
 
-func JaegerExporter(kinesis *awskinesis.Exporter) ExportWriter {
-	return &jaeger{kinesis: kinesis}
+func NewJaeger(batchSize, recordSize int) Encoder {
+	return jaeger{
+		batchSize:  batchSize,
+		recordSize: recordSize,
+	}
 }
 
-func (j *jaeger) WriteTraces(td pdata.Traces) error {
+func (j jaeger) Traces(td pdata.Traces) (*Batch, error) {
 	traces, err := jaegertranslator.InternalTracesToJaegerProto(td)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
+	bt := New(
+		WithMaxRecordSize(j.recordSize),
+		WithMaxRecordsPerBatch(j.batchSize),
+	)
 	var errs []error
 	for _, trace := range traces {
 		for _, span := range trace.GetSpans() {
 			if span.Process == nil {
 				span.Process = trace.Process
 			}
-			if err := j.kinesis.ExportSpan(span); err != nil {
+			if err := bt.AddProtobufV1(span, span.TraceID.String()); err != nil {
 				errs = append(errs, err)
 			}
 		}
 	}
 
-	return consumererror.Combine(errs)
+	return bt, consumererror.Combine(errs)
 }
 
-func (j *jaeger) WriteMetrics(_ pdata.Metrics) error { return ErrUnsupportedEncodedType }
-func (j *jaeger) WriteLogs(_ pdata.Logs) error       { return ErrUnsupportedEncodedType }
+func (jaeger) Metrics(_ pdata.Metrics) (*Batch, error) {
+	return nil, ErrUnsupportedEncodedType
+}
+
+func (jaeger) Logs(_ pdata.Logs) (*Batch, error) {
+	return nil, ErrUnsupportedEncodedType
+}

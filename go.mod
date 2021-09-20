@@ -99,7 +99,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zookeeperreceiver v0.35.0
 	github.com/prometheus/prometheus v1.8.2-0.20210621150501-ff58416a0b02
 	github.com/stretchr/testify v1.7.0
-	go.opentelemetry.io/collector v0.35.1-0.20210913155934-36e0bbaf40b2
+	go.opentelemetry.io/collector v0.35.1-0.20210917100632-e056aa8c4e20
 	golang.org/x/sys v0.0.0-20210823070655-63515b42dcdf
 )
 
@@ -135,7 +135,7 @@ require (
 	github.com/alecthomas/units v0.0.0-20210208195552-ff826a37aa15 // indirect
 	github.com/aliyun/aliyun-log-go-sdk v0.1.22 // indirect
 	github.com/antonmedv/expr v1.9.0 // indirect
-	github.com/apache/thrift v0.14.2 // indirect
+	github.com/apache/thrift v0.15.0 // indirect
 	github.com/armon/go-metrics v0.3.3 // indirect
 	github.com/avast/retry-go v3.0.0+incompatible // indirect
 	github.com/aws/aws-sdk-go v1.40.42 // indirect
@@ -341,8 +341,6 @@ require (
 	github.com/signalfx/com_signalfx_metrics_protobuf v0.0.2 // indirect
 	github.com/signalfx/gohistogram v0.0.0-20160107210732-1ccfd2ff5083 // indirect
 	github.com/signalfx/golib/v3 v3.3.13 // indirect
-	github.com/signalfx/omnition-kinesis-producer v0.5.0 // indirect
-	github.com/signalfx/opencensus-go-exporter-kinesis v0.6.3 // indirect
 	github.com/signalfx/sapm-proto v0.7.0 // indirect
 	github.com/signalfx/signalfx-agent/pkg/apm v0.0.0-20201202163743-65b4fa925fc8 // indirect
 	github.com/sirupsen/logrus v1.8.1 // indirect
@@ -384,7 +382,7 @@ require (
 	go.etcd.io/bbolt v1.3.6 // indirect
 	go.mozilla.org/pkcs7 v0.0.0-20200128120323-432b2356ecb1 // indirect
 	go.opencensus.io v0.23.0 // indirect
-	go.opentelemetry.io/collector/model v0.35.1-0.20210913155934-36e0bbaf40b2 // indirect
+	go.opentelemetry.io/collector/model v0.35.1-0.20210917100632-e056aa8c4e20 // indirect
 	go.opentelemetry.io/contrib v0.23.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.23.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.23.0 // indirect
@@ -395,7 +393,7 @@ require (
 	go.opentelemetry.io/otel/sdk v1.0.0-RC3 // indirect
 	go.opentelemetry.io/otel/trace v1.0.0-RC3 // indirect
 	go.uber.org/atomic v1.9.0 // indirect
-	go.uber.org/multierr v1.6.0 // indirect
+	go.uber.org/multierr v1.7.0 // indirect
 	go.uber.org/zap v1.19.1 // indirect
 	golang.org/x/crypto v0.0.0-20210616213533-5ff15b29337e // indirect
 	golang.org/x/net v0.0.0-20210716203947-853a461950ff // indirect
@@ -407,7 +405,7 @@ require (
 	gonum.org/v1/gonum v0.9.3 // indirect
 	google.golang.org/api v0.56.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
-	google.golang.org/genproto v0.0.0-20210828152312-66f60bf46e71 // indirect
+	google.golang.org/genproto v0.0.0-20210909211513-a8c4777a87af // indirect
 	google.golang.org/grpc v1.40.0 // indirect
 	google.golang.org/protobuf v1.27.1 // indirect
 	gopkg.in/DataDog/dd-trace-go.v1 v1.33.0 // indirect

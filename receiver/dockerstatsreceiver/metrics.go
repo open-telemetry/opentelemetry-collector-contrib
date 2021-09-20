@@ -44,6 +44,7 @@ func ContainerStatsToMetrics(
 ) (pdata.Metrics, error) {
 	md := pdata.NewMetrics()
 	rs := md.ResourceMetrics().AppendEmpty()
+	rs.SetSchemaUrl(conventions.SchemaURL)
 	resourceAttr := rs.Resource().Attributes()
 	resourceAttr.UpsertString(conventions.AttributeContainerID, container.ID)
 	resourceAttr.UpsertString(conventions.AttributeContainerImageName, container.Config.Image)

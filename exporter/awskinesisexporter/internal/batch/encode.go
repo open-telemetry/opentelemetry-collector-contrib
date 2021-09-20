@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package translate
+package batch
 
 import (
 	"errors"
@@ -20,17 +20,15 @@ import (
 	"go.opentelemetry.io/collector/model/pdata"
 )
 
-var (
-	// ErrUnsupportedEncodedType is used when the encoder type does not support the type of encoding
-	ErrUnsupportedEncodedType = errors.New("unsupported type to encode")
-)
+// ErrUnsupportedEncodedType is used when the encoder type does not support the type of encoding
+var ErrUnsupportedEncodedType = errors.New("unsupported type to encode")
 
-// ExportWriter wraps the kinesis exporter and transforms the data into
-// the desired output format.
-type ExportWriter interface {
-	WriteMetrics(md pdata.Metrics) error
+// Encoder transforms the internal pipeline format into a configurable
+// format that is then used to export to kinesis.
+type Encoder interface {
+	Metrics(md pdata.Metrics) (*Batch, error)
 
-	WriteTraces(td pdata.Traces) error
+	Traces(td pdata.Traces) (*Batch, error)
 
-	WriteLogs(ld pdata.Logs) error
+	Logs(ld pdata.Logs) (*Batch, error)
 }
