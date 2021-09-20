@@ -34,8 +34,8 @@ import (
 const metricName string = "metric name"
 
 const (
-	histogramModeOff      = "off"
-	histogramModeCounters = "counters"
+	histogramModeNoBuckets = "nobuckets"
+	histogramModeCounters  = "counters"
 )
 
 // HostnameProvider gets a hostname

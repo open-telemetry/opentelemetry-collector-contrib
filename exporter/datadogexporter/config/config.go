@@ -35,6 +35,12 @@ var (
 	errBuckets     = errors.New("can't use 'metrics::report_buckets' and 'metrics::histograms::mode' at the same time")
 )
 
+// TODO: Import these from translator when we eliminate cyclic dependency.
+const (
+	histogramModeNoBuckets = "nobuckets"
+	histogramModeCounters  = "counters"
+)
+
 const (
 	// DefaultSite is the default site of the Datadog intake to send data to
 	DefaultSite = "datadoghq.com"
@@ -92,12 +98,12 @@ type MetricsConfig struct {
 
 // HistogramConfig customizes export of OTLP Histograms.
 type HistogramConfig struct {
-	// Mode for exporting histograms. Valid values are 'counters' or 'off'.
+	// Mode for exporting histograms. Valid values are 'counters' or 'nobuckets'.
 	//  - 'counters' sends histograms as Datadog counts, one metric per bucket.
-	//  - 'off' sends no bucket histogram metrics. .sum and .count metrics will still be sent
+	//  - 'nobuckets' sends no bucket histogram metrics. .sum and .count metrics will still be sent
 	//    if `send_count_sum_metrics` is enabled.
 	//
-	// The current default is 'off'.
+	// The current default is 'nobuckets'.
 	Mode string `mapstructure:"mode"`
 
 	// SendCountSum states if the export should send .sum and .count metrics for histograms.
@@ -106,8 +112,8 @@ type HistogramConfig struct {
 }
 
 func (c *HistogramConfig) validate() error {
-	if c.Mode == "off" && !c.SendCountSum {
-		return fmt.Errorf("'off' mode and `send_count_sum_metrics` set to false will send no histogram metrics")
+	if c.Mode == histogramModeNoBuckets && !c.SendCountSum {
+		return fmt.Errorf("'nobuckets' mode and `send_count_sum_metrics` set to false will send no histogram metrics")
 	}
 	return nil
 }
@@ -324,15 +330,15 @@ func (c *Config) Unmarshal(configMap *configparser.ConfigMap) error {
 	if configMap.IsSet("metrics::report_buckets") {
 		if c.Metrics.Buckets {
 			c.warnings = append(c.warnings, fmt.Errorf("'metrics::report_buckets' is deprecated. Set 'metrics::histograms::mode' to 'counters' instead"))
-			c.Metrics.HistConfig.Mode = "counters"
+			c.Metrics.HistConfig.Mode = histogramModeCounters
 		} else {
-			c.warnings = append(c.warnings, fmt.Errorf("'metrics::report_buckets' is deprecated. Set 'metrics::histograms::mode' to 'off' instead"))
-			c.Metrics.HistConfig.Mode = "off"
+			c.warnings = append(c.warnings, fmt.Errorf("'metrics::report_buckets' is deprecated. Set 'metrics::histograms::mode' to 'nobuckets' instead"))
+			c.Metrics.HistConfig.Mode = histogramModeNoBuckets
 		}
 	}
 
 	switch c.Metrics.HistConfig.Mode {
-	case "counters", "off":
+	case histogramModeCounters, histogramModeNoBuckets:
 		// Do nothing
 	default:
 		return fmt.Errorf("invalid `mode` %s", c.Metrics.HistConfig.Mode)

@@ -38,7 +38,7 @@ import (
 var defaultCfg = config.MetricsConfig{
 	SendMonotonic: true,
 	HistConfig: config.HistogramConfig{
-		Mode:         histogramModeOff,
+		Mode:         histogramModeNoBuckets,
 		SendCountSum: true,
 	},
 }
@@ -459,7 +459,7 @@ func TestMapDeltaHistogramMetrics(t *testing.T) {
 	tr := newTranslator(zap.NewNop(), defaultCfg)
 	delta := true
 
-	tr.cfg.HistConfig.Mode = histogramModeOff
+	tr.cfg.HistConfig.Mode = histogramModeNoBuckets
 	assert.ElementsMatch(t,
 		tr.mapHistogramMetrics("doubleHist.test", slice, delta, []string{}), // No buckets
 		noBuckets,
@@ -482,7 +482,7 @@ func TestMapDeltaHistogramMetrics(t *testing.T) {
 		metrics.NewCount("doubleHist.test.bucket", uint64(ts), 18, []string{"attribute_tag:attribute_value", "lower_bound:0", "upper_bound:inf"}),
 	}
 
-	tr.cfg.HistConfig.Mode = histogramModeOff
+	tr.cfg.HistConfig.Mode = histogramModeNoBuckets
 	assert.ElementsMatch(t,
 		tr.mapHistogramMetrics("doubleHist.test", slice, delta, []string{"attribute_tag:attribute_value"}), // No buckets
 		noBucketsAttributeTags,

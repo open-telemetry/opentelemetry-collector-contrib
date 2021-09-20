@@ -185,7 +185,7 @@ func TestDeprecationReportBuckets(t *testing.T) {
 					"report_buckets": false,
 				},
 			},
-			expectedMode:     "off",
+			expectedMode:     histogramModeNoBuckets,
 			expectedWarnings: 1,
 		},
 		{
@@ -196,7 +196,7 @@ func TestDeprecationReportBuckets(t *testing.T) {
 					"report_buckets": true,
 				},
 			},
-			expectedMode:     "counters",
+			expectedMode:     histogramModeCounters,
 			expectedWarnings: 1,
 		},
 		{
@@ -204,7 +204,7 @@ func TestDeprecationReportBuckets(t *testing.T) {
 			stringMap: map[string]interface{}{
 				"api": map[string]interface{}{"key": "aaa"},
 			},
-			expectedMode:     "off",
+			expectedMode:     histogramModeNoBuckets,
 			expectedWarnings: 0,
 		},
 	}
@@ -212,7 +212,7 @@ func TestDeprecationReportBuckets(t *testing.T) {
 	for _, testInstance := range tests {
 		t.Run(testInstance.name, func(t *testing.T) {
 			// default config for buckets
-			config := Config{Metrics: MetricsConfig{Buckets: false, HistConfig: HistogramConfig{Mode: "off"}}}
+			config := Config{Metrics: MetricsConfig{Buckets: false, HistConfig: HistogramConfig{Mode: histogramModeNoBuckets}}}
 			configMap := configparser.NewConfigMapFromStringMap(testInstance.stringMap)
 			err := config.Unmarshal(configMap)
 			require.NoError(t, err)
@@ -232,12 +232,12 @@ func TestNoBucketsAndHistogram(t *testing.T) {
 		"metrics": map[string]interface{}{
 			"report_buckets": false,
 			"histograms": map[string]interface{}{
-				"mode": "counters",
+				"mode": histogramModeCounters,
 			},
 		},
 	}
 
-	config := Config{Metrics: MetricsConfig{Buckets: false, HistConfig: HistogramConfig{Mode: "off"}}}
+	config := Config{Metrics: MetricsConfig{Buckets: false, HistConfig: HistogramConfig{Mode: histogramModeNoBuckets}}}
 	configMap := configparser.NewConfigMapFromStringMap(stringMap)
 	err := config.Unmarshal(configMap)
 

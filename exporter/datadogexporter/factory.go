@@ -72,7 +72,7 @@ func createDefaultConfig() config.Exporter {
 				ResourceAttributesAsTags: false,
 			},
 			HistConfig: ddconfig.HistogramConfig{
-				Mode:         "off",
+				Mode:         "nobuckets",
 				SendCountSum: true,
 			},
 		},
