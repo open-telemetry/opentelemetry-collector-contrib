@@ -15,6 +15,7 @@
 package compliance
 
 import (
+	"context"
 	"fmt"
 	"net"
 	"net/http"
@@ -171,7 +172,7 @@ func startCollector(t *testing.T, addr net.Addr) func() {
 	require.Nil(t, err)
 
 	go func() {
-		if err := app.Run(); err != nil {
+		if err := app.Run(context.Background()); err != nil {
 			t.Error(err)
 		}
 	}()

@@ -864,8 +864,6 @@ github.com/onsi/gomega v1.4.3/go.mod h1:ex+gbHU/CVuBBDIJjb2X0qEXbFg53c61hWP/1Cpa
 github.com/onsi/gomega v1.7.0/go.mod h1:ex+gbHU/CVuBBDIJjb2X0qEXbFg53c61hWP/1CpauHY=
 github.com/op/go-logging v0.0.0-20160315200505-970db520ece7/go.mod h1:HzydrMdWErDVzsI23lYNej1Htcns9BCg93Dk0bBINWk=
 github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusremotewriteexporter v0.35.0/go.mod h1:bNPPUfZcC/3W4l6TxQs324L6yKEWrENmzxPfY9Jw1yw=
-github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus v0.35.0 h1:zigijeax6kQvsd8VTp7UAy+iLjnrEA2VrI0gxcZgxSg=
-github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus v0.35.0/go.mod h1:EhkmUu/guOaYXHmPeKE0LGUrWY/TksT4zuhSyKPMQs8=
 github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver v0.35.0 h1:mhbvYBYdhp5EkJNBoNpLnJ/ZIRw/SDFhCDtMNhCZ17U=
 github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver v0.35.0/go.mod h1:nuBYa5n26zlNP1OpOS389LE/yikq4nNs98AUd/EKl/g=
 github.com/opencontainers/go-digest v1.0.0 h1:apOUWs51W5PlhuyGyz9FCeeBIOUDA/6nW8Oi/yOhh5U=
