@@ -12,11 +12,12 @@ exporters:
   humio/allsettings:
     endpoint: http://localhost:8080/
     timeout: 10s
-    insecure: false
-    insecure_skip_verify: false
-    ca_file: server.crt
-    cert_file: client.crt
-    key_file: client.key
+    tls:
+      insecure: false
+      insecure_skip_verify: false
+      ca_file: server.crt
+      cert_file: client.crt
+      key_file: client.key
     read_buffer_size: 4096
     write_buffer_size: 4096
     disable_compression: true

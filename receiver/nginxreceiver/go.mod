@@ -9,8 +9,8 @@ require (
 	github.com/sirupsen/logrus v1.8.1 // indirect
 	github.com/stretchr/testify v1.7.0
 	github.com/testcontainers/testcontainers-go v0.11.1
-	go.opentelemetry.io/collector v0.35.1-0.20210917100632-e056aa8c4e20
-	go.opentelemetry.io/collector/model v0.35.1-0.20210917100632-e056aa8c4e20
+	go.opentelemetry.io/collector v0.35.1-0.20210920153812-16c681ea0d17
+	go.opentelemetry.io/collector/model v0.35.1-0.20210920153812-16c681ea0d17
 	go.uber.org/zap v1.19.1
 	golang.org/x/time v0.0.0-20210611083556-38a9dc6acbc6 // indirect
 
@@ -36,7 +36,7 @@ require (
 	github.com/google/uuid v1.3.0 // indirect
 	github.com/knadh/koanf v1.2.3 // indirect
 	github.com/mitchellh/copystructure v1.2.0 // indirect
-	github.com/mitchellh/mapstructure v1.4.1 // indirect
+	github.com/mitchellh/mapstructure v1.4.2 // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/moby/sys/mount v0.2.0 // indirect
 	github.com/moby/sys/mountinfo v0.4.1 // indirect

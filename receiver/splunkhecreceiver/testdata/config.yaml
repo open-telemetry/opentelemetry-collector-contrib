@@ -12,7 +12,7 @@ receivers:
       index: "myindex"
       host: "myhostfield"
   splunk_hec/tls:
-    tls_settings:
+    tls:
       cert_file: /test.crt
       key_file: /test.key
 
