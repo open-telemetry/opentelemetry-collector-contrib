@@ -36,6 +36,7 @@ const (
 	HecTokenLabel              = "com.splunk.hec.access_token" // #nosec
 	// HecEventMetricType is the type of HEC event. Set to metric, as per https://docs.splunk.com/Documentation/Splunk/8.0.3/Metrics/GetMetricsInOther.
 	HecEventMetricType = "metric"
+	DefaultRawPath     = "/services/collector/raw"
 )
 
 // AccessTokenPassthroughConfig configures passing through access tokens.

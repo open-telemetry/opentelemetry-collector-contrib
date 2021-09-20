@@ -15,14 +15,8 @@
 package splunkhecreceiver
 
 import (
-	"fmt"
-	"net"
-	"strconv"
-
-	"github.com/gobwas/glob"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 )
@@ -33,54 +27,10 @@ type Config struct {
 	confighttp.HTTPServerSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
 
 	splunk.AccessTokenPassthroughConfig `mapstructure:",squash"`
-	// Path we will listen on, defaults to `*` (anything matches)
-	Path     string `mapstructure:"path"`
-	pathGlob glob.Glob
+	// Path was used to map the receiver to a specific subset of the path. Now ignored as we match all incoming requests.
+	Path string `mapstructure:"path"`
+	// RawPath for raw data collection, default is '/services/collector/raw'
+	RawPath string `mapstructure:"raw_path"`
 	// HecToOtelAttrs creates a mapping from HEC metadata to attributes.
 	HecToOtelAttrs splunk.HecToOtelAttrs `mapstructure:"hec_metadata_to_otel_attrs"`
-}
-
-// initialize the configuration
-func (c *Config) initialize() error {
-	if c.HecToOtelAttrs.Source == "" {
-		c.HecToOtelAttrs.Source = splunk.DefaultSourceLabel
-	}
-	if c.HecToOtelAttrs.SourceType == "" {
-		c.HecToOtelAttrs.SourceType = splunk.DefaultSourceTypeLabel
-	}
-	if c.HecToOtelAttrs.Index == "" {
-		c.HecToOtelAttrs.Index = splunk.DefaultIndexLabel
-	}
-	if c.HecToOtelAttrs.Host == "" {
-		c.HecToOtelAttrs.Host = conventions.AttributeHostName
-	}
-
-	path := c.Path
-	if path == "" {
-		path = "*"
-	}
-	glob, err := glob.Compile(path)
-	if err != nil {
-		return err
-	}
-	c.pathGlob = glob
-	_, err = extractPortFromEndpoint(c.Endpoint)
-	return err
-}
-
-// extract the port number from string in "address:port" format. If the
-// port number cannot be extracted returns an error.
-func extractPortFromEndpoint(endpoint string) (int, error) {
-	_, portStr, err := net.SplitHostPort(endpoint)
-	if err != nil {
-		return 0, fmt.Errorf("endpoint is not formatted correctly: %s", err.Error())
-	}
-	port, err := strconv.ParseInt(portStr, 10, 0)
-	if err != nil {
-		return 0, fmt.Errorf("endpoint port is not a number: %s", err.Error())
-	}
-	if port < 1 || port > 65535 {
-		return 0, fmt.Errorf("port number must be between 1 and 65535")
-	}
-	return int(port), nil
 }
