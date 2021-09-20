@@ -32,6 +32,7 @@ import (
 var (
 	errUnsetAPIKey = errors.New("api.key is not set")
 	errNoMetadata  = errors.New("only_metadata can't be enabled when send_metadata or use_resource_metadata is disabled")
+	errBuckets     = errors.New("can't use 'metrics::report_buckets' and 'metrics::histograms::mode' at the same time")
 )
 
 const (
@@ -274,7 +275,7 @@ func (c *Config) Sanitize(logger *zap.Logger) error {
 	}
 
 	for _, err := range c.warnings {
-		logger.Warn("configuration warning", zap.Error(err))
+		logger.Warn("deprecation warning", zap.Error(err))
 	}
 
 	return nil
@@ -313,6 +314,10 @@ func (c *Config) Unmarshal(configMap *configparser.ConfigMap) error {
 	err := configMap.UnmarshalExact(c)
 	if err != nil {
 		return err
+	}
+
+	if configMap.IsSet("metrics::report_buckets") && configMap.IsSet("metrics::histograms::mode") {
+		return errBuckets
 	}
 
 	// Deprecation of `report_buckets`: add warning and set `HistConfig.Mode` instead.

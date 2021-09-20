@@ -225,3 +225,21 @@ func TestDeprecationReportBuckets(t *testing.T) {
 		})
 	}
 }
+
+func TestNoBucketsAndHistogram(t *testing.T) {
+	stringMap := map[string]interface{}{
+		"api": map[string]interface{}{"key": "aaa"},
+		"metrics": map[string]interface{}{
+			"report_buckets": false,
+			"histograms": map[string]interface{}{
+				"mode": "counters",
+			},
+		},
+	}
+
+	config := Config{Metrics: MetricsConfig{Buckets: false, HistConfig: HistogramConfig{Mode: "off"}}}
+	configMap := configparser.NewConfigMapFromStringMap(stringMap)
+	err := config.Unmarshal(configMap)
+
+	assert.Error(t, errBuckets, err)
+}
