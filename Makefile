@@ -12,7 +12,7 @@ COMP_REL_PATH=internal/components/components.go
 MOD_NAME=github.com/open-telemetry/opentelemetry-collector-contrib
 
 # ALL_MODULES includes ./* dirs (excludes . dir and example with go code)
-ALL_MODULES := $(shell find . -type f -name "go.mod" -not -path './internal/core/*' -exec dirname {} \; | sort | egrep '^./' )
+ALL_MODULES := $(shell find . -type f -name "go.mod" -not -path './cmd/configschema/*' -exec dirname {} \; | sort | egrep '^./' )
 # Modules to run integration tests on.
 # XXX: Find a way to automatically populate this. Too slow to run across all modules when there are just a few.
 INTEGRATION_TEST_MODULES := \
