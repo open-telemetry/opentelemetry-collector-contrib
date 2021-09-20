@@ -10,8 +10,8 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus v0.35.0
 	github.com/stretchr/testify v1.7.0
 	go.opencensus.io v0.23.0
-	go.opentelemetry.io/collector v0.35.1-0.20210917100632-e056aa8c4e20
-	go.opentelemetry.io/collector/model v0.35.1-0.20210917100632-e056aa8c4e20
+	go.opentelemetry.io/collector v0.35.1-0.20210920153812-16c681ea0d17
+	go.opentelemetry.io/collector/model v0.35.1-0.20210920153812-16c681ea0d17
 	go.opentelemetry.io/otel v1.0.0-RC3
 	go.opentelemetry.io/otel/sdk v1.0.0-RC3
 	go.opentelemetry.io/otel/trace v1.0.0-RC3
@@ -38,7 +38,7 @@ require (
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
 	github.com/knadh/koanf v1.2.3 // indirect
 	github.com/mitchellh/copystructure v1.2.0 // indirect
-	github.com/mitchellh/mapstructure v1.4.1 // indirect
+	github.com/mitchellh/mapstructure v1.4.2 // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/spf13/cast v1.4.1 // indirect

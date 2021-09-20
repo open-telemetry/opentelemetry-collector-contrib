@@ -7,8 +7,8 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/interval v0.35.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/scraperhelper v0.35.0
 	github.com/stretchr/testify v1.7.0
-	go.opentelemetry.io/collector v0.35.1-0.20210917100632-e056aa8c4e20
-	go.opentelemetry.io/collector/model v0.35.1-0.20210917100632-e056aa8c4e20
+	go.opentelemetry.io/collector v0.35.1-0.20210920153812-16c681ea0d17
+	go.opentelemetry.io/collector/model v0.35.1-0.20210920153812-16c681ea0d17
 	go.uber.org/zap v1.19.1
 
 )
@@ -79,7 +79,7 @@ require (
 	github.com/miekg/pkcs11 v1.0.3 // indirect
 	github.com/mistifyio/go-zfs v2.1.2-0.20190413222219-f784269be439+incompatible // indirect
 	github.com/mitchellh/copystructure v1.2.0 // indirect
-	github.com/mitchellh/mapstructure v1.4.1 // indirect
+	github.com/mitchellh/mapstructure v1.4.2 // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/moby/sys/mountinfo v0.4.1 // indirect
 	github.com/moby/term v0.0.0-20201216013528-df9cb8a40635 // indirect

@@ -26,14 +26,14 @@ The following settings can be optionally configured:
 - `tenant_id` (no default): The tenant ID used to identify the tenant the logs are associated to. This will set the 
   "X-Scope-OrgID" header used by Loki. If left unset, this header will not be added.
 
-
-- `insecure` (default = false): When set to true disables verifying the server's certificate chain and host name. The
+- `tls`:
+  - `insecure` (default = false): When set to true disables verifying the server's certificate chain and host name. The
   connection is still encrypted but server identity is not verified.
-- `ca_file` (no default) Path to the CA cert to verify the server being connected to. Should only be used if `insecure` 
+  - `ca_file` (no default) Path to the CA cert to verify the server being connected to. Should only be used if `insecure` 
   is set to false.
-- `cert_file` (no default) Path to the TLS cert to use for client connections when TLS client auth is required. 
+  - `cert_file` (no default) Path to the TLS cert to use for client connections when TLS client auth is required. 
   Should only be used if `insecure` is set to false.
-- `key_file` (no default) Path to the TLS key to use for TLS required connections. Should only be used if `insecure` is
+  - `key_file` (no default) Path to the TLS key to use for TLS required connections. Should only be used if `insecure` is
   set to false.
 
 
