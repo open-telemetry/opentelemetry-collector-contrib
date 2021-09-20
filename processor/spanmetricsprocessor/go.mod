@@ -4,9 +4,9 @@ go 1.17
 
 require (
 	github.com/mattn/go-colorable v0.1.7 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/jaegerexporter v0.35.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusexporter v0.35.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jaegerreceiver v0.35.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/jaegerexporter v0.36.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusexporter v0.36.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jaegerreceiver v0.36.0
 	github.com/stretchr/testify v1.7.0
 	go.opentelemetry.io/collector v0.36.0
 	go.opentelemetry.io/collector/model v0.36.0
@@ -34,9 +34,9 @@ require (
 	github.com/mitchellh/copystructure v1.2.0 // indirect
 	github.com/mitchellh/mapstructure v1.4.2 // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.35.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry v0.35.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.35.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.36.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry v0.36.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.36.0 // indirect
 	github.com/opentracing/opentracing-go v1.2.0 // indirect
 	github.com/pelletier/go-toml v1.9.3 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
