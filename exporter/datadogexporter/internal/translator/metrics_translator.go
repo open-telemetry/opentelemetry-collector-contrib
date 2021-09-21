@@ -231,7 +231,7 @@ func (t *Translator) getLegacyBuckets(name string, p pdata.HistogramDataPoint, d
 func (t *Translator) mapHistogramMetrics(name string, slice pdata.HistogramDataPointSlice, delta bool, attrTags []string) (ms []datadog.Metric, sl sketches.SketchSeriesList) {
 	// Allocate assuming none are nil and no buckets
 	ms = make([]datadog.Metric, 0, 2*slice.Len())
-	if t.cfg.BucketsAsDistributions {
+	if t.cfg.HistConfig.Mode == histogramModeDistributions {
 		sl = make(sketches.SketchSeriesList, 0, slice.Len())
 	}
 	for i := 0; i < slice.Len(); i++ {

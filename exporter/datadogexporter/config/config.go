@@ -37,8 +37,9 @@ var (
 
 // TODO: Import these from translator when we eliminate cyclic dependency.
 const (
-	histogramModeNoBuckets = "nobuckets"
-	histogramModeCounters  = "counters"
+	histogramModeNoBuckets     = "nobuckets"
+	histogramModeCounters      = "counters"
+	histogramModeDistributions = "distributions"
 )
 
 const (
@@ -73,9 +74,6 @@ type MetricsConfig struct {
 	// Deprecated: use `metrics::histograms::mode`.
 	Buckets bool `mapstructure:"report_buckets"`
 
-	// BucketsAsDistributions states whether to send histogram buckets as Datadog distribution metrics.
-	BucketsAsDistributions bool `mapstructure:"histogram_buckets_as_distributions"`
-
 	// Quantiles states whether to report quantiles from summary metrics.
 	// By default, the minimum, maximum and average are reported.
 	Quantiles bool `mapstructure:"report_quantiles"`
@@ -105,6 +103,7 @@ type HistogramConfig struct {
 	//  - 'counters' sends histograms as Datadog counts, one metric per bucket.
 	//  - 'nobuckets' sends no bucket histogram metrics. .sum and .count metrics will still be sent
 	//    if `send_count_sum_metrics` is enabled.
+	//  - 'distributions' sends histograms as Datadog distributions (recommended).
 	//
 	// The current default is 'nobuckets'.
 	Mode string `mapstructure:"mode"`
@@ -341,7 +340,7 @@ func (c *Config) Unmarshal(configMap *configparser.ConfigMap) error {
 	}
 
 	switch c.Metrics.HistConfig.Mode {
-	case histogramModeCounters, histogramModeNoBuckets:
+	case histogramModeCounters, histogramModeNoBuckets, histogramModeDistributions:
 		// Do nothing
 	default:
 		return fmt.Errorf("invalid `mode` %s", c.Metrics.HistConfig.Mode)
