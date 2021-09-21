@@ -90,7 +90,8 @@ exporters:
 
   otlp/spanmetrics:
     endpoint: "localhost:55677"
-    insecure: true
+    tls:
+      insecure: true
 
   prometheus:
     endpoint: "0.0.0.0:8889"

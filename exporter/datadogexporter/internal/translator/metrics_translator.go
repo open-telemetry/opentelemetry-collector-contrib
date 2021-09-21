@@ -33,6 +33,11 @@ import (
 
 const metricName string = "metric name"
 
+const (
+	histogramModeNoBuckets = "nobuckets"
+	histogramModeCounters  = "counters"
+)
+
 // HostnameProvider gets a hostname
 type HostnameProvider interface {
 	// Hostname gets the hostname from the machine.
@@ -197,7 +202,7 @@ func (t *Translator) mapHistogramMetrics(name string, slice pdata.HistogramDataP
 		tags := getTags(p.Attributes())
 		tags = append(tags, attrTags...)
 
-		{
+		if t.cfg.HistConfig.SendCountSum {
 			count := float64(p.Count())
 			countName := fmt.Sprintf("%s.count", name)
 			if delta {
@@ -207,7 +212,7 @@ func (t *Translator) mapHistogramMetrics(name string, slice pdata.HistogramDataP
 			}
 		}
 
-		{
+		if t.cfg.HistConfig.SendCountSum {
 			sum := p.Sum()
 			sumName := fmt.Sprintf("%s.sum", name)
 			if !t.isSkippable(sumName, p.Sum()) {
@@ -219,7 +224,7 @@ func (t *Translator) mapHistogramMetrics(name string, slice pdata.HistogramDataP
 			}
 		}
 
-		if t.cfg.Buckets {
+		if t.cfg.HistConfig.Mode == histogramModeCounters {
 			ms = append(ms, t.getLegacyBuckets(name, p, delta, tags)...)
 		}
 	}

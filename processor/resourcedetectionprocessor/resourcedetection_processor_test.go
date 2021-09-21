@@ -176,7 +176,7 @@ func TestResourceProcessor(t *testing.T) {
 				Timeout:           time.Second,
 			}
 
-			// Test trace consuner
+			// Test trace consumer
 			ttn := new(consumertest.TracesSink)
 			rtp, err := factory.createTracesProcessor(context.Background(), componenttest.NewNopProcessorCreateSettings(), cfg, ttn)
 
