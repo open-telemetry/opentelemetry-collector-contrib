@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## v0.36.0
+
 ## 🛑 Breaking changes 🛑
 
 - `filter` processor: The configs for `logs` filter processor have been changed to be consistent with the `metrics` filter processor. (#4895)
