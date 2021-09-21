@@ -12,6 +12,7 @@ UAA, username and password/secret combination is used (`uaa_username` and `uaa_p
 UAA user must have the `client_credentials` and `refresh_token` authorized grant types, and `logs.admin` authority.
 
 The following is an example sequence of commands to create the UAA user using the `uaac` command line utility:
+
 * `uaac target https://uaa.<cf-system-domain>`
 * `uaac token client get identity -s <identity-user-secret>`
 * `uaac client add <uaa_username> --name opentelemetry --secret <uaa_password> --authorized_grant_types client_credentials,refresh_token --authorities logs.admin`
@@ -23,16 +24,17 @@ have a different name on different setups. The value of `--name` is not used for
 ## Configuration
 
 The receiver takes the following configuration options:
-* `rlp_gateway_url` - URL of the RLP gateway, required, typically `https://log-stream.<cf-system-domain>`
-* `rlp_gateway_skip_tls_verify` - whether to skip TLS verify for the RLP Gateway endpoint, default `false`
-* `rlp_gateway_shard_id` - metrics are load balanced among receivers that use the same shard ID, therefore this must 
-  only be set if there are multiple receivers which must both receive all the metrics instead of them being balanced
-  between them. Default value is `opentelemetry`
-* `uaa_url` - URL of the UAA provider, required, typically `https://uaa.<cf-system-domain>`
-* `uaa_skip_tls_verify` - whether to skip TLS verify for the UAA endpoint, default `false`
-* `uaa_username` - name of the UAA user (required grant types/authorities described above)
-* `uaa_username` - password of the UAA user
-* `http_timeout` - HTTP socket timeout used for RLP Gateway, default `10s`
+
+| Field | Default | Description |
+| --- | --- | --- |
+| `rlp_gateway_url` | required | URL of the RLP gateway, typically `https://log-stream.<cf-system-domain>` |
+| `rlp_gateway_skip_tls_verify` | `false` | whether to skip TLS verify for the RLP Gateway endpoint |
+| `rlp_gateway_shard_id` | `opentelemetry` | metrics are load balanced among receivers that use the same shard ID, therefore this must only be set if there are multiple receivers which must both receive all the metrics instead of them being balanced between them |
+| `uaa_url` | required | URL of the UAA provider, typically `https://uaa.<cf-system-domain>` |
+| `uaa_skip_tls_verify` | `false` | whether to skip TLS verify for the UAA endpoint |
+| `uaa_username` | required | name of the UAA user (required grant types/authorities described above) |
+| `uaa_password` | required | password of the UAA user |
+| `http_timeout` | `10s` | HTTP socket timeout used for RLP Gateway |
 
 Example:
 

@@ -61,7 +61,7 @@ func validateURLOption(name string, value string) error {
 
 	_, err := url.Parse(value)
 	if err != nil {
-		return fmt.Errorf("failed to parse %s value %s as url: %v", name, value, err)
+		return fmt.Errorf("failed to parse %s as url: %v", name, err)
 	}
 
 	return nil

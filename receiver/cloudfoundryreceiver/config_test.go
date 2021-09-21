@@ -28,7 +28,7 @@ import (
 
 func TestLoadConfig(t *testing.T) {
 	factories, err := componenttest.NopFactories()
-	assert.Nil(t, err)
+	require.NoError(t, err)
 
 	factory := NewFactory()
 	factories.Receivers[typeStr] = factory
@@ -37,13 +37,13 @@ func TestLoadConfig(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 
-	assert.Equal(t, len(cfg.Receivers), 2)
+	require.Len(t, cfg.Receivers, 2)
 
 	r0 := cfg.Receivers[config.NewID(typeStr)]
-	assert.Equal(t, r0, factory.CreateDefaultConfig())
+	assert.Equal(t, factory.CreateDefaultConfig(), r0)
 
 	r1 := cfg.Receivers[config.NewIDWithName(typeStr, "one")].(*Config)
-	assert.Equal(t, r1,
+	assert.Equal(t,
 		&Config{
 			ReceiverSettings:        config.NewReceiverSettings(config.NewIDWithName(typeStr, "one")),
 			RLPGatewayURL:           "https://log-stream.sys.example.internal",
@@ -54,5 +54,5 @@ func TestLoadConfig(t *testing.T) {
 			UAAUsername:             "admin",
 			UAAPassword:             "test",
 			HTTPTimeout:             time.Second * 20,
-		})
+		}, r1)
 }
