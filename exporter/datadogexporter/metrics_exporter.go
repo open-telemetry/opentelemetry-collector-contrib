@@ -118,11 +118,17 @@ func (exp *metricsExporter) PushMetricsData(ctx context.Context, md pdata.Metric
 	ms, sl := exp.tr.MapMetrics(md)
 	metrics.ProcessMetrics(ms, exp.cfg)
 
-	err := exp.client.PostMetrics(ms)
-	if err != nil {
-		return err
+	if len(ms) > 0 {
+		if err := exp.client.PostMetrics(ms); err != nil {
+			return err
+		}
 	}
 
-	err = exp.pushSketches(ctx, sl)
-	return err
+	if len(sl) > 0 {
+		if err := exp.pushSketches(ctx, sl); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
