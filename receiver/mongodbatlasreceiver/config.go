@@ -1,4 +1,4 @@
-// Copyright The OpenTelemetry Authors
+// Copyright  OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,18 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//go:build enable_unstable
-// +build enable_unstable
+package mongodbatlasreceiver
 
-package components
+import "go.opentelemetry.io/collector/config"
 
-import (
-	"go.opentelemetry.io/collector/component"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbatlasreceiver"
-)
-
-func extraReceivers() []component.ReceiverFactory {
-	mongoAtlasFactory := mongodbatlasreceiver.NewFactory()
-	return []component.ReceiverFactory{mongoAtlasFactory}
+type Config struct {
+	config.ReceiverSettings `mapstructure:",squash"`
+	PublicKey               string `mapstructure:"public_key"`
+	PrivateKey              string `mapstructure:"private_key"`
+	Granularity             string `mapstructure:"granularity"`
 }
