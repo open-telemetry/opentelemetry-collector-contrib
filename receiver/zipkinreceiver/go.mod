@@ -4,12 +4,12 @@ go 1.17
 
 require (
 	github.com/jaegertracing/jaeger v1.26.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.35.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin v0.35.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.36.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin v0.36.0
 	github.com/openzipkin/zipkin-go v0.2.5
 	github.com/stretchr/testify v1.7.0
-	go.opentelemetry.io/collector v0.35.1-0.20210913155934-36e0bbaf40b2
-	go.opentelemetry.io/collector/model v0.35.1-0.20210913155934-36e0bbaf40b2
+	go.opentelemetry.io/collector v0.36.0
+	go.opentelemetry.io/collector/model v0.36.0
 	google.golang.org/protobuf v1.27.1
 )
 
@@ -24,9 +24,9 @@ require (
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/knadh/koanf v1.2.3 // indirect
 	github.com/mitchellh/copystructure v1.2.0 // indirect
-	github.com/mitchellh/mapstructure v1.4.1 // indirect
+	github.com/mitchellh/mapstructure v1.4.2 // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus v0.35.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus v0.36.0 // indirect
 	github.com/opentracing/opentracing-go v1.2.0 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/rs/cors v1.8.0 // indirect

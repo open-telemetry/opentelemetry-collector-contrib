@@ -21,7 +21,9 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer"
+	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 )
@@ -53,7 +55,13 @@ func createDefaultConfig() config.Receiver {
 			Endpoint: defaultEndpoint,
 		},
 		AccessTokenPassthroughConfig: splunk.AccessTokenPassthroughConfig{},
-		Path:                         "",
+		HecToOtelAttrs: splunk.HecToOtelAttrs{
+			Source:     splunk.DefaultSourceLabel,
+			SourceType: splunk.DefaultSourceTypeLabel,
+			Index:      splunk.DefaultIndexLabel,
+			Host:       conventions.AttributeHostName,
+		},
+		RawPath: splunk.DefaultRawPath,
 	}
 }
 
@@ -67,9 +75,8 @@ func createMetricsReceiver(
 
 	rCfg := cfg.(*Config)
 
-	err := rCfg.initialize()
-	if err != nil {
-		return nil, err
+	if rCfg.Path != "" {
+		params.Logger.Warn("splunk_hec receiver path is deprecated", zap.String("path", rCfg.Path))
 	}
 
 	return newMetricsReceiver(params.TelemetrySettings, *rCfg, consumer)
@@ -85,9 +92,8 @@ func createLogsReceiver(
 
 	rCfg := cfg.(*Config)
 
-	err := rCfg.initialize()
-	if err != nil {
-		return nil, err
+	if rCfg.Path != "" {
+		params.Logger.Warn("splunk_hec receiver path is deprecated", zap.String("path", rCfg.Path))
 	}
 
 	return newLogsReceiver(params.TelemetrySettings, *rCfg, consumer)

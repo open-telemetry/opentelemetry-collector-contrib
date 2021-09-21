@@ -16,7 +16,7 @@ For the actions the following parameters are required:
  - `match_type`: strict|regexp|expr
  - `metric_names`: (only for a `match_type` of 'strict' or 'regexp') list of strings or re2 regex patterns
  - `expressions`: (only for a `match_type` of 'expr') list of expr expressions (see "Using an 'expr' match_type" below)
- - `resource_attributes`: ResourceAttributes defines a list of possible resource attributes to match metrics against. A match occurs if any resource attribute matches at least one expression in this given list. 
+ - `resource_attributes`: ResourceAttributes defines a list of possible resource attributes to match metrics against. A match occurs if any resource attribute matches all expressions in this given list. 
 
 More details can found at [include/exclude metrics](../README.md#includeexclude-metrics).
 

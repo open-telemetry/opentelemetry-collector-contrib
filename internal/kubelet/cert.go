@@ -19,10 +19,17 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"runtime"
 )
 
 func systemCertPoolPlusPath(certPath string) (*x509.CertPool, error) {
-	sysCerts, err := x509.SystemCertPool()
+	var sysCerts *x509.CertPool
+	var err error
+	if runtime.GOOS == "windows" {
+		sysCerts, err = x509.NewCertPool(), nil
+	} else {
+		sysCerts, err = x509.SystemCertPool()
+	}
 	if err != nil {
 		return nil, fmt.Errorf("could not load system x509 cert pool: %w", err)
 	}

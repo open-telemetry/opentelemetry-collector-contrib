@@ -144,7 +144,8 @@ func (bor *BaseOTLPDataReceiver) GenConfigYAMLStr() string {
 	str := fmt.Sprintf(`
   %s:
     endpoint: "%s"
-    insecure: true`, bor.exporterType, addr)
+    tls:
+      insecure: true`, bor.exporterType, addr)
 
 	if bor.compression != "" {
 		str += fmt.Sprintf(`

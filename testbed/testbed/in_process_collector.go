@@ -60,13 +60,13 @@ func (ipp *inProcessCollector) Start(args StartParams) error {
 	if err != nil {
 		return err
 	}
-	ipp.svc.Command().SetArgs(args.CmdArgs)
+	cmd := service.NewCommand(ipp.svc)
+	cmd.SetArgs(args.CmdArgs)
 
 	ipp.appDone = make(chan struct{})
 	go func() {
 		defer close(ipp.appDone)
-		appErr := ipp.svc.Run()
-		if appErr != nil {
+		if appErr := cmd.Execute(); appErr != nil {
 			err = appErr
 		}
 	}()
