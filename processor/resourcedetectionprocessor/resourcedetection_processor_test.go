@@ -47,14 +47,14 @@ func (p *MockDetector) Detect(ctx context.Context) (resource pdata.Resource, sch
 
 func TestResourceProcessor(t *testing.T) {
 	tests := []struct {
-		name               string
-		detectorKeys       []string
-		override           bool
-		sourceResource     pdata.Resource
-		detectedResource   pdata.Resource
-		detectedError      error
-		expectedResource   pdata.Resource
-		expectedNewError   string
+		name             string
+		detectorKeys     []string
+		override         bool
+		sourceResource   pdata.Resource
+		detectedResource pdata.Resource
+		detectedError    error
+		expectedResource pdata.Resource
+		expectedNewError string
 	}{
 		{
 			name:     "Resource is not overridden",
@@ -143,7 +143,7 @@ func TestResourceProcessor(t *testing.T) {
 				"original-label":          "original-value",
 				"cloud.availability_zone": "original-zone",
 			}),
-			detectedError:      errors.New("err1"),
+			detectedError: errors.New("err1"),
 		},
 		{
 			name:             "Invalid detector key",
