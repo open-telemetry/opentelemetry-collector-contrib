@@ -455,7 +455,7 @@ func setLatencyExemplars(exemplarsData []exemplarData, timestamp pdata.Timestamp
 	es.EnsureCapacity(len(exemplarsData))
 
 	for _, ed := range exemplarsData {
-		values := ed.value
+		value := ed.value
 		traceID := ed.traceID
 
 		exemplar := es.AppendEmpty()
@@ -464,7 +464,7 @@ func setLatencyExemplars(exemplarsData []exemplarData, timestamp pdata.Timestamp
 			continue
 		}
 
-		exemplar.SetDoubleVal(values)
+		exemplar.SetDoubleVal(value)
 		exemplar.SetTimestamp(timestamp)
 		exemplar.FilteredAttributes().Insert(traceIDKey, pdata.NewAttributeValueString(traceID.HexString()))
 	}
