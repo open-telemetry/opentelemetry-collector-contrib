@@ -1,0 +1,69 @@
+// Copyright The OpenTelemetry Authors
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+package translator
+
+import (
+	"context"
+
+	"github.com/DataDog/datadog-agent/pkg/quantile"
+)
+
+type MetricDataType int
+
+const (
+	// Gauge is the Datadog Gauge metric type.
+	Gauge MetricDataType = iota
+	// Count is the Datadog Count metric type.
+	Count
+)
+
+// TimeSeriesConsumer is timeseries consumer.
+type TimeSeriesConsumer interface {
+	// ConsumeTimeSeries consumes a timeseries-style metric.
+	ConsumeTimeSeries(
+		ctx context.Context,
+		name string,
+		typ MetricDataType,
+		timestamp uint64,
+		value float64,
+		tags []string,
+		host string,
+	)
+}
+
+// SketchConsumer is a pkg/quantile sketch consumer.
+type SketchConsumer interface {
+	// ConsumeSketch consumes a pkg/quantile-style sketch.
+	ConsumeSketch(
+		ctx context.Context,
+		name string,
+		timestamp uint64,
+		sketch *quantile.Sketch,
+		tags []string,
+		host string,
+	)
+}
+
+// Consumer is a metrics consumer.
+type Consumer interface {
+	TimeSeriesConsumer
+	SketchConsumer
+}
+
+// HostConsumer is a hostname consumer.
+type HostConsumer interface {
+	// ConsumeHost consumes a hostname.
+	ConsumeHost(host string)
+}

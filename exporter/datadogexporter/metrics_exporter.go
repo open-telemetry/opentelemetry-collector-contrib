@@ -66,7 +66,7 @@ func newMetricsExporter(ctx context.Context, params component.ExporterCreateSett
 		sweepInterval = cfg.Metrics.DeltaTTL / 2
 	}
 	prevPts := translator.NewTTLCache(sweepInterval, cfg.Metrics.DeltaTTL)
-	tr := translator.New(prevPts, params, cfg.Metrics, &hostProvider{params.Logger, cfg})
+	tr := translator.New(prevPts, params.Logger, cfg.Metrics, &hostProvider{params.Logger, cfg})
 	return &metricsExporter{params, cfg, ctx, client, tr}
 }
 
@@ -115,7 +115,10 @@ func (exp *metricsExporter) PushMetricsData(ctx context.Context, md pdata.Metric
 		})
 	}
 
-	ms, sl := exp.tr.MapMetrics(md)
+	consumer := metrics.NewConsumer()
+	pushTime := uint64(time.Now().UTC().UnixNano())
+	exp.tr.MapMetrics(ctx, md, consumer)
+	ms, sl := consumer.All(pushTime, exp.params.BuildInfo)
 	metrics.ProcessMetrics(ms, exp.cfg)
 
 	if len(ms) > 0 {
