@@ -17,7 +17,7 @@
 // monitors.  Filter instances have a Matches function which takes an instance
 // of the type that they items and return whether that instance matches the
 // items.
-package dockerstatsreceiver
+package docker
 
 import (
 	"fmt"
