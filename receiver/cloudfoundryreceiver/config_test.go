@@ -26,6 +26,7 @@ import (
 	"go.opentelemetry.io/collector/config/configtest"
 )
 
+// todo implement - implement negative tests in stage 2 PR
 func TestLoadConfig(t *testing.T) {
 	factories, err := componenttest.NopFactories()
 	require.NoError(t, err)
