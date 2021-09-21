@@ -69,6 +69,7 @@ receiver/awscontainerinsightreceiver/                @open-telemetry/collector-c
 receiver/awsecscontainermetricsreceiver/             @open-telemetry/collector-contrib-approvers @kbrockhoff @anuraaga
 receiver/awsxrayreceiver/                            @open-telemetry/collector-contrib-approvers @kbrockhoff @anuraaga
 receiver/carbonreceiver/                             @open-telemetry/collector-contrib-approvers @pjanotti
+receiver/cloudfoundryreceiver/                       @open-telemetry/collector-contrib-approvers @agoallikmaa @pellared
 receiver/collectdreceiver/                           @open-telemetry/collector-contrib-approvers @owais
 receiver/dockerstatsreceiver/                        @open-telemetry/collector-contrib-approvers @rmfitzpatrick
 receiver/dotnetdiagnosticsreceiver/                  @open-telemetry/collector-contrib-approvers @pmcollins @davmason
