@@ -3,10 +3,10 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/udplog
 go 1.17
 
 require (
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/stanza v0.35.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/stanza v0.36.0
 	github.com/open-telemetry/opentelemetry-log-collection v0.20.0
 	github.com/stretchr/testify v1.7.0
-	go.opentelemetry.io/collector v0.35.1-0.20210920153812-16c681ea0d17
+	go.opentelemetry.io/collector v0.36.0
 	gopkg.in/yaml.v2 v2.4.0
 )
 
@@ -27,7 +27,7 @@ require (
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/rogpeppe/go-internal v1.6.1 // indirect
 	github.com/spf13/cast v1.4.1 // indirect
-	go.opentelemetry.io/collector/model v0.35.1-0.20210920153812-16c681ea0d17 // indirect
+	go.opentelemetry.io/collector/model v0.36.0 // indirect
 	go.opentelemetry.io/otel v1.0.0-RC3 // indirect
 	go.opentelemetry.io/otel/metric v0.23.0 // indirect
 	go.opentelemetry.io/otel/trace v1.0.0-RC3 // indirect

@@ -5,12 +5,12 @@ go 1.17
 require (
 	github.com/aws/aws-sdk-go v1.40.45
 	github.com/google/uuid v1.3.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/proxy v0.35.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray v0.35.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.35.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/proxy v0.36.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray v0.36.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.36.0
 	github.com/stretchr/testify v1.7.0
-	go.opentelemetry.io/collector v0.35.1-0.20210920153812-16c681ea0d17
-	go.opentelemetry.io/collector/model v0.35.1-0.20210920153812-16c681ea0d17
+	go.opentelemetry.io/collector v0.36.0
+	go.opentelemetry.io/collector/model v0.36.0
 	go.uber.org/zap v1.19.1
 )
 
