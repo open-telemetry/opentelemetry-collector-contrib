@@ -49,6 +49,8 @@ extension/httpforwarder/                             @open-telemetry/collector-c
 extension/observer/                                  @open-telemetry/collector-contrib-approvers @asuresh4 @jrcamp
 
 internal/aws/                                        @open-telemetry/collector-contrib-approvers @anuraaga @mxiamxia
+internal/docker/                                     @open-telemetry/collector-contrib-approvers @mstumpfx @rmfitzpatrick
+
 internal/k8sconfig/                                  @open-telemetry/collector-contrib-approvers @pmcollins @asuresh4
 internal/splunk/                                     @open-telemetry/collector-contrib-approvers @pmcollins @asuresh4
 internal/stanza/                                     @open-telemetry/collector-contrib-approvers @djaglowski
