@@ -55,7 +55,7 @@ internal/k8sconfig/                                  @open-telemetry/collector-c
 internal/splunk/                                     @open-telemetry/collector-contrib-approvers @pmcollins @asuresh4
 internal/stanza/                                     @open-telemetry/collector-contrib-approvers @djaglowski
 
-pkg/batchpertrace/                                   @open-telemetry/collector-contrib-approvers @jpkrohling
+pkg/batchpersignal/                                  @open-telemetry/collector-contrib-approvers @jpkrohling
 
 processor/groupbyattrsprocessor/                     @open-telemetry/collector-contrib-approvers @pmm-sumo
 processor/groupbytraceprocessor/                     @open-telemetry/collector-contrib-approvers @jpkrohling

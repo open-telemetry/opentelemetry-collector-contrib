@@ -147,7 +147,6 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/honeycombexporter
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opencensusexporter
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/alibabacloudlogserviceexporter
-      - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchpertrace
       - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus
       - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger
       - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin

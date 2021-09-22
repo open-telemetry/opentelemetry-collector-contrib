@@ -266,6 +266,10 @@ updates:
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
+    directory: "/internal/docker"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
     directory: "/internal/interval"
     schedule:
       interval: "weekly"
@@ -295,10 +299,6 @@ updates:
       interval: "weekly"
   - package-ecosystem: "gomod"
     directory: "/pkg/batchpersignal"
-    schedule:
-      interval: "weekly"
-  - package-ecosystem: "gomod"
-    directory: "/pkg/batchpertrace"
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
@@ -466,6 +466,10 @@ updates:
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
+    directory: "/receiver/mongodbatlasreceiver"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
     directory: "/receiver/nginxreceiver"
     schedule:
       interval: "weekly"
@@ -495,10 +499,6 @@ updates:
       interval: "weekly"
   - package-ecosystem: "gomod"
     directory: "/receiver/sapmreceiver"
-    schedule:
-      interval: "weekly"
-  - package-ecosystem: "gomod"
-    directory: "/receiver/scrapererror"
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
