@@ -386,6 +386,7 @@ func (t *Translator) MapMetrics(ctx context.Context, md pdata.Metrics, consumer 
 			}
 		}
 
+		// Track hosts if the consumer is a HostConsumer.
 		if c, ok := consumer.(HostConsumer); ok {
 			c.ConsumeHost(host)
 		}

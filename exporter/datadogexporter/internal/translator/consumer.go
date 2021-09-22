@@ -63,6 +63,7 @@ type Consumer interface {
 }
 
 // HostConsumer is a hostname consumer.
+// It is an optional interface that can be implemented by a Consumer.
 type HostConsumer interface {
 	// ConsumeHost consumes a hostname.
 	ConsumeHost(host string)
