@@ -33,6 +33,12 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/dynatraceexporter/config"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/dynatraceexporter/serialization"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/ttlmap"
+)
+
+const (
+	cSweepIntervalSeconds = 300
+	cMaxAgeSeconds        = 900
 )
 
 // NewExporter exports to a Dynatrace Metrics v2 API
@@ -49,11 +55,15 @@ func newMetricsExporter(params component.ExporterCreateSettings, cfg *config.Con
 
 	staticDimensions := dimensions.NewNormalizedDimensionList(dimensions.NewDimension("dt.metrics.source", "opentelemetry"))
 
+	prevPts := ttlmap.New(cSweepIntervalSeconds, cMaxAgeSeconds)
+	prevPts.Start()
+
 	return &exporter{
 		logger:            params.Logger,
 		cfg:               cfg,
 		defaultDimensions: defaultDimensions,
 		staticDimensions:  staticDimensions,
+		prevPts:           prevPts,
 	}
 }
 
@@ -66,6 +76,8 @@ type exporter struct {
 
 	defaultDimensions dimensions.NormalizedDimensionList
 	staticDimensions  dimensions.NormalizedDimensionList
+
+	prevPts *ttlmap.TTLMap
 }
 
 // for backwards-compatibility with deprecated `Tags` config option
@@ -116,19 +128,16 @@ func (e *exporter) serializeMetrics(md pdata.Metrics) []string {
 			for k := 0; k < metrics.Len(); k++ {
 				metric := metrics.At(k)
 
-				var l []string
-				switch metric.DataType() {
-				case pdata.MetricDataTypeNone:
-					continue
-				case pdata.MetricDataTypeGauge:
-					l = serialization.SerializeNumberDataPoints(e.cfg.Prefix, metric.Name(), metric.Gauge().DataPoints(), e.defaultDimensions)
-				case pdata.MetricDataTypeSum:
-					l = serialization.SerializeNumberDataPoints(e.cfg.Prefix, metric.Name(), metric.Sum().DataPoints(), e.defaultDimensions)
-				case pdata.MetricDataTypeHistogram:
-					l = serialization.SerializeHistogramMetrics(e.cfg.Prefix, metric.Name(), metric.Histogram().DataPoints(), e.defaultDimensions)
+				metricLines, err := serialization.SerializeMetric(e.cfg.Prefix, metric, e.defaultDimensions, e.staticDimensions, e.prevPts)
+
+				if err != nil {
+					e.logger.Sugar().Errorf("failed to serialize %s %s: %s", metric.DataType().String(), metric.Name(), err.Error())
 				}
-				lines = append(lines, l...)
-				e.logger.Debug(fmt.Sprintf("Exporting type %s, Name: %s, len: %d ", metric.DataType().String(), metric.Name(), len(l)))
+
+				if len(metricLines) > 0 {
+					lines = append(lines, metricLines...)
+					e.logger.Debug(fmt.Sprintf("Serialized %s %s - %d lines", metric.DataType().String(), metric.Name(), len(metricLines)))
+				}
 			}
 		}
 	}
