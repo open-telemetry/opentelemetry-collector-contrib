@@ -71,6 +71,10 @@ func createDefaultConfig() config.Exporter {
 			ExporterConfig: ddconfig.MetricsExporterConfig{
 				ResourceAttributesAsTags: false,
 			},
+			HistConfig: ddconfig.HistogramConfig{
+				Mode:         "nobuckets",
+				SendCountSum: true,
+			},
 		},
 
 		Traces: ddconfig.TracesConfig{
@@ -96,8 +100,13 @@ func createMetricsExporter(
 	cfg := c.(*ddconfig.Config)
 
 	set.Logger.Info("sanitizing Datadog metrics exporter configuration")
-	if err := cfg.Sanitize(); err != nil {
+	if err := cfg.Sanitize(set.Logger); err != nil {
 		return nil, err
+	}
+
+	// TODO: Remove after two releases
+	if cfg.Metrics.HistConfig.Mode == "counters" {
+		set.Logger.Warn("Histogram bucket metrics now end with .bucket instead of .count_per_bucket")
 	}
 
 	ctx, cancel := context.WithCancel(ctx)
@@ -148,7 +157,7 @@ func createTracesExporter(
 	cfg := c.(*ddconfig.Config)
 
 	set.Logger.Info("sanitizing Datadog metrics exporter configuration")
-	if err := cfg.Sanitize(); err != nil {
+	if err := cfg.Sanitize(set.Logger); err != nil {
 		return nil, err
 	}
 

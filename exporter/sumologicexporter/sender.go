@@ -176,7 +176,7 @@ func (s *sender) logToJSON(record pdata.LogRecord) (string, error) {
 	data := s.filter.filterOut(record.Attributes())
 	data.orig.Upsert(logKey, record.Body())
 
-	nextLine, err := json.Marshal(pdata.AttributeMapToMap(data.orig))
+	nextLine, err := json.Marshal(data.orig.AsRaw())
 	if err != nil {
 		return "", err
 	}

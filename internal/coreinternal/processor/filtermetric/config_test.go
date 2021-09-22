@@ -48,7 +48,7 @@ func createConfigWithRegexpOptions(filters []string, rCfg *regexp.Config) *Match
 
 func TestConfig(t *testing.T) {
 	testFile := path.Join(".", "testdata", "config.yaml")
-	v, err := configparser.NewParserFromFile(testFile)
+	v, err := configparser.NewConfigMapFromFile(testFile)
 	require.NoError(t, err)
 	testYamls := map[string]MatchProperties{}
 	require.NoErrorf(t, v.UnmarshalExact(&testYamls), "unable to unmarshal yaml from file %v", testFile)

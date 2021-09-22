@@ -70,7 +70,8 @@ func (or *ocDataReceiver) GenConfigYAMLStr() string {
 	return fmt.Sprintf(`
   opencensus:
     endpoint: "localhost:%d"
-    insecure: true`, or.Port)
+    tls:
+      insecure: true`, or.Port)
 }
 
 func (or *ocDataReceiver) ProtocolName() string {

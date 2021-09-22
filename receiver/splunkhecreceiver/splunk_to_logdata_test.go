@@ -25,34 +25,13 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 )
 
-type testingHecConfiguration struct {
-	sourceKey     string
-	sourceTypeKey string
-	indexKey      string
-	hostKey       string
-}
-
-func (t *testingHecConfiguration) GetSourceKey() string {
-	return t.sourceKey
-}
-
-func (t *testingHecConfiguration) GetSourceTypeKey() string {
-	return t.sourceTypeKey
-}
-
-func (t *testingHecConfiguration) GetIndexKey() string {
-	return t.indexKey
-}
-
-func (t *testingHecConfiguration) GetHostKey() string {
-	return t.hostKey
-}
-
-var defaultTestingHecConfig = &testingHecConfiguration{
-	sourceKey:     splunk.DefaultSourceLabel,
-	sourceTypeKey: splunk.DefaultSourceTypeLabel,
-	indexKey:      splunk.DefaultIndexLabel,
-	hostKey:       conventions.AttributeHostName,
+var defaultTestingHecConfig = &Config{
+	HecToOtelAttrs: splunk.HecToOtelAttrs{
+		Source:     splunk.DefaultSourceLabel,
+		SourceType: splunk.DefaultSourceTypeLabel,
+		Index:      splunk.DefaultIndexLabel,
+		Host:       conventions.AttributeHostName,
+	},
 }
 
 func Test_SplunkHecToLogData(t *testing.T) {
@@ -64,7 +43,7 @@ func Test_SplunkHecToLogData(t *testing.T) {
 		name      string
 		event     splunk.Event
 		output    pdata.ResourceLogsSlice
-		hecConfig splunk.HECConfiguration
+		hecConfig *Config
 		wantErr   error
 	}{
 		{
@@ -197,11 +176,13 @@ func Test_SplunkHecToLogData(t *testing.T) {
 					"foo": "bar",
 				},
 			},
-			hecConfig: &testingHecConfiguration{
-				sourceKey:     "mysource",
-				sourceTypeKey: "mysourcetype",
-				indexKey:      "myindex",
-				hostKey:       "myhost",
+			hecConfig: &Config{
+				HecToOtelAttrs: splunk.HecToOtelAttrs{
+					Source:     "mysource",
+					SourceType: "mysourcetype",
+					Index:      "myindex",
+					Host:       "myhost",
+				},
 			},
 			output: func() pdata.ResourceLogsSlice {
 				lrs := pdata.NewResourceLogsSlice()
@@ -248,10 +229,10 @@ func createLogsSlice(nanoseconds int) pdata.ResourceLogsSlice {
 	return lrs
 }
 
-func Test_ConvertAttributeValueNull(t *testing.T) {
+func Test_ConvertAttributeValueEmpty(t *testing.T) {
 	value, err := convertInterfaceToAttributeValue(zap.NewNop(), nil)
 	assert.NoError(t, err)
-	assert.Equal(t, pdata.NewAttributeValueNull(), value)
+	assert.Equal(t, pdata.NewAttributeValueEmpty(), value)
 }
 
 func Test_ConvertAttributeValueString(t *testing.T) {
@@ -293,17 +274,17 @@ func Test_ConvertAttributeValueArray(t *testing.T) {
 func Test_ConvertAttributeValueInvalid(t *testing.T) {
 	value, err := convertInterfaceToAttributeValue(zap.NewNop(), splunk.Event{})
 	assert.Error(t, err)
-	assert.Equal(t, pdata.NewAttributeValueNull(), value)
+	assert.Equal(t, pdata.NewAttributeValueEmpty(), value)
 }
 
 func Test_ConvertAttributeValueInvalidInMap(t *testing.T) {
 	value, err := convertInterfaceToAttributeValue(zap.NewNop(), map[string]interface{}{"foo": splunk.Event{}})
 	assert.Error(t, err)
-	assert.Equal(t, pdata.NewAttributeValueNull(), value)
+	assert.Equal(t, pdata.NewAttributeValueEmpty(), value)
 }
 
 func Test_ConvertAttributeValueInvalidInArray(t *testing.T) {
 	value, err := convertInterfaceToAttributeValue(zap.NewNop(), []interface{}{splunk.Event{}})
 	assert.Error(t, err)
-	assert.Equal(t, pdata.NewAttributeValueNull(), value)
+	assert.Equal(t, pdata.NewAttributeValueEmpty(), value)
 }

@@ -16,6 +16,7 @@ package dockerstatsreceiver
 
 import (
 	"errors"
+	"fmt"
 	"time"
 
 	"go.opentelemetry.io/collector/config"
@@ -53,6 +54,9 @@ type Config struct {
 
 	// Whether to report all CPU metrics.  Default is false
 	ProvidePerCoreCPUMetrics bool `mapstructure:"provide_per_core_cpu_metrics"`
+
+	// Docker client API version. Default is 1.22
+	DockerAPIVersion float64 `mapstructure:"api_version"`
 }
 
 func (config Config) Validate() error {
@@ -61,6 +65,12 @@ func (config Config) Validate() error {
 	}
 	if config.CollectionInterval == 0 {
 		return errors.New("config.CollectionInterval must be specified")
+	}
+	if config.DockerAPIVersion == 0 {
+		config.DockerAPIVersion = defaultDockerAPIVersion
+	}
+	if config.DockerAPIVersion < minimalRequiredDockerAPIVersion {
+		return fmt.Errorf("Docker API version must be at least %v", minimalRequiredDockerAPIVersion)
 	}
 	return nil
 }

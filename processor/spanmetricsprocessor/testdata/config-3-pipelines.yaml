@@ -29,11 +29,13 @@ exporters:
 
   jaeger:
     endpoint: "localhost:14250"
-    insecure: true
+    tls:
+      insecure: true
 
   otlp/spanmetrics:
     endpoint: "localhost: 55677"
-    insecure: true
+    tls:
+      insecure: true
 
 processors:
   batch:

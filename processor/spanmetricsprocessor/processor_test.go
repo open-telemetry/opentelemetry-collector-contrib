@@ -293,12 +293,13 @@ func newProcessorImp(mexp *mocks.MetricsExporter, tcon *mocks.TracesConsumer, de
 		metricsExporter: mexp,
 		nextConsumer:    tcon,
 
-		startTime:           time.Now(),
-		callSum:             make(map[metricKey]int64),
-		latencySum:          make(map[metricKey]float64),
-		latencyCount:        make(map[metricKey]uint64),
-		latencyBucketCounts: make(map[metricKey][]uint64),
-		latencyBounds:       defaultLatencyHistogramBucketsMs,
+		startTime:            time.Now(),
+		callSum:              make(map[metricKey]int64),
+		latencySum:           make(map[metricKey]float64),
+		latencyCount:         make(map[metricKey]uint64),
+		latencyBucketCounts:  make(map[metricKey][]uint64),
+		latencyBounds:        defaultLatencyHistogramBucketsMs,
+		latencyExemplarsData: make(map[metricKey][]exemplarData),
 		dimensions: []Dimension{
 			// Set nil defaults to force a lookup for the attribute in the span.
 			{stringAttrName, nil},
@@ -400,7 +401,7 @@ func verifyMetricLabels(dp metricDataPoint, t *testing.T, seenMetricIDs map[metr
 		intAttrName:        pdata.NewAttributeValueInt(99),
 		doubleAttrName:     pdata.NewAttributeValueDouble(99.99),
 		boolAttrName:       pdata.NewAttributeValueBool(true),
-		nullAttrName:       pdata.NewAttributeValueNull(),
+		nullAttrName:       pdata.NewAttributeValueEmpty(),
 		arrayAttrName:      pdata.NewAttributeValueArray(),
 		mapAttrName:        pdata.NewAttributeValueMap(),
 		notInSpanAttrName0: pdata.NewAttributeValueString("defaultNotInSpanAttrVal"),
@@ -494,6 +495,7 @@ func initSpan(span span, s pdata.Span) {
 	s.Attributes().InsertNull(nullAttrName)
 	s.Attributes().Insert(mapAttrName, pdata.NewAttributeValueMap())
 	s.Attributes().Insert(arrayAttrName, pdata.NewAttributeValueArray())
+	s.SetTraceID(pdata.NewTraceID([16]byte{byte(42)}))
 }
 
 func newOTLPExporters(t *testing.T) (*otlpexporter.Config, component.MetricsExporter, component.TracesExporter) {
@@ -611,4 +613,48 @@ func TestSanitize(t *testing.T) {
 	require.Equal(t, "key_0test", sanitize("0test"))
 	require.Equal(t, "test", sanitize("test"))
 	require.Equal(t, "test__", sanitize("test_/"))
+}
+
+func TestSetLatencyExemplars(t *testing.T) {
+	// ----- conditions -------------------------------------------------------
+	traces := buildSampleTrace()
+	traceID := traces.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().At(0).TraceID()
+	exemplarSlice := pdata.NewExemplarSlice()
+	timestamp := pdata.NewTimestampFromTime(time.Now())
+	value := float64(42)
+
+	ed := []exemplarData{{traceID: traceID, value: value}}
+
+	// ----- call -------------------------------------------------------------
+	setLatencyExemplars(ed, timestamp, exemplarSlice)
+
+	// ----- verify -----------------------------------------------------------
+	traceIDValue, exist := exemplarSlice.At(0).FilteredAttributes().Get(traceIDKey)
+
+	assert.NotEmpty(t, exemplarSlice)
+	assert.True(t, exist)
+	assert.Equal(t, traceIDValue.AsString(), traceID.HexString())
+	assert.Equal(t, exemplarSlice.At(0).Timestamp(), timestamp)
+	assert.Equal(t, exemplarSlice.At(0).DoubleVal(), value)
+}
+
+func TestProcessorUpdateLatencyExemplars(t *testing.T) {
+	// ----- conditions -------------------------------------------------------
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+	traces := buildSampleTrace()
+	traceID := traces.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().At(0).TraceID()
+	key := metricKey("metricKey")
+	next := new(consumertest.TracesSink)
+	p, err := newProcessor(zap.NewNop(), cfg, next)
+	value := float64(42)
+	index := 12
+
+	// ----- call -------------------------------------------------------------
+	p.updateLatencyExemplars(key, value, index, traceID)
+
+	// ----- verify -----------------------------------------------------------
+	assert.NoError(t, err)
+	assert.NotEmpty(t, p.latencyExemplarsData[key])
+	assert.Equal(t, p.latencyExemplarsData[key][index], exemplarData{traceID: traceID, value: value})
 }

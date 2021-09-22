@@ -17,6 +17,7 @@ package translator
 import (
 	"context"
 	"fmt"
+	"math"
 	"strconv"
 	"time"
 
@@ -27,8 +28,14 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/config"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/attributes"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metrics"
+)
+
+const metricName string = "metric name"
+
+const (
+	histogramModeNoBuckets = "nobuckets"
+	histogramModeCounters  = "counters"
 )
 
 // HostnameProvider gets a hostname
@@ -74,6 +81,16 @@ func isCumulativeMonotonic(md pdata.Metric) bool {
 	return false
 }
 
+// isSkippable checks if a value can be skipped (because it is not supported by the backend).
+// It logs that the value is unsupported for debugging since this sometimes means there is a bug.
+func (t *Translator) isSkippable(name string, v float64) bool {
+	skippable := math.IsInf(v, 0) || math.IsNaN(v)
+	if skippable {
+		t.logger.Debug("Unsupported metric value", zap.String(metricName, name), zap.Float64("value", v))
+	}
+	return skippable
+}
+
 // mapNumberMetrics maps double datapoints into Datadog metrics
 func (t *Translator) mapNumberMetrics(name string, dt metrics.MetricDataType, slice pdata.NumberDataPointSlice, attrTags []string) []datadog.Metric {
 	ms := make([]datadog.Metric, 0, slice.Len())
@@ -88,6 +105,11 @@ func (t *Translator) mapNumberMetrics(name string, dt metrics.MetricDataType, sl
 		case pdata.MetricValueTypeInt:
 			val = float64(p.IntVal())
 		}
+
+		if t.isSkippable(name, val) {
+			continue
+		}
+
 		ms = append(ms,
 			metrics.NewMetric(name, dt, uint64(p.Timestamp()), val, tags),
 		)
@@ -112,8 +134,47 @@ func (t *Translator) mapNumberMonotonicMetrics(name string, slice pdata.NumberDa
 			val = float64(p.IntVal())
 		}
 
+		if t.isSkippable(name, val) {
+			continue
+		}
+
 		if dx, ok := t.prevPts.putAndGetDiff(name, tags, ts, val); ok {
 			ms = append(ms, metrics.NewCount(name, ts, dx, tags))
+		}
+	}
+	return ms
+}
+
+func getBounds(p pdata.HistogramDataPoint, idx int) (lowerBound float64, upperBound float64) {
+	lowerBound = math.Inf(-1)
+	upperBound = math.Inf(1)
+	if idx > 0 {
+		lowerBound = p.ExplicitBounds()[idx-1]
+	}
+	if idx < len(p.ExplicitBounds()) {
+		upperBound = p.ExplicitBounds()[idx]
+	}
+	return
+}
+
+func (t *Translator) getLegacyBuckets(name string, p pdata.HistogramDataPoint, delta bool, tags []string) []datadog.Metric {
+	// We have a single metric, 'bucket', which is tagged with the bucket bounds. See:
+	// https://github.com/DataDog/integrations-core/blob/7.30.1/datadog_checks_base/datadog_checks/base/checks/openmetrics/v2/transformers/histogram.py
+	ms := make([]datadog.Metric, 0, len(p.BucketCounts()))
+	fullName := fmt.Sprintf("%s.bucket", name)
+	for idx, val := range p.BucketCounts() {
+		lowerBound, upperBound := getBounds(p, idx)
+		bucketTags := append(tags,
+			fmt.Sprintf("lower_bound:%s", formatFloat(lowerBound)),
+			fmt.Sprintf("upper_bound:%s", formatFloat(upperBound)),
+		)
+
+		count := float64(val)
+		ts := uint64(p.Timestamp())
+		if delta {
+			ms = append(ms, metrics.NewCount(fullName, ts, count, bucketTags))
+		} else if dx, ok := t.prevPts.putAndGetDiff(fullName, bucketTags, ts, count); ok {
+			ms = append(ms, metrics.NewCount(fullName, ts, dx, bucketTags))
 		}
 	}
 	return ms
@@ -129,10 +190,10 @@ func (t *Translator) mapNumberMonotonicMetrics(name string, slice pdata.NumberDa
 //    - the count of the number of items in that bucket
 //    - a sample value from each bucket
 //
-// We follow a similar approach to our OpenCensus exporter:
+// We follow a similar approach to our OpenMetrics check:
 // we report sum and count by default; buckets count can also
-// be reported (opt-in), but bounds are ignored.
-func (t *Translator) mapHistogramMetrics(name string, slice pdata.HistogramDataPointSlice, attrTags []string) []datadog.Metric {
+// be reported (opt-in) tagged by lower bound.
+func (t *Translator) mapHistogramMetrics(name string, slice pdata.HistogramDataPointSlice, delta bool, attrTags []string) []datadog.Metric {
 	// Allocate assuming none are nil and no buckets
 	ms := make([]datadog.Metric, 0, 2*slice.Len())
 	for i := 0; i < slice.Len(); i++ {
@@ -141,40 +202,60 @@ func (t *Translator) mapHistogramMetrics(name string, slice pdata.HistogramDataP
 		tags := getTags(p.Attributes())
 		tags = append(tags, attrTags...)
 
-		ms = append(ms,
-			metrics.NewGauge(fmt.Sprintf("%s.count", name), ts, float64(p.Count()), tags),
-			metrics.NewGauge(fmt.Sprintf("%s.sum", name), ts, p.Sum(), tags),
-		)
-
-		if t.cfg.Buckets {
-			// We have a single metric, 'count_per_bucket', which is tagged with the bucket id. See:
-			// https://github.com/DataDog/opencensus-go-exporter-datadog/blob/c3b47f1c6dcf1c47b59c32e8dbb7df5f78162daa/stats.go#L99-L104
-			fullName := fmt.Sprintf("%s.count_per_bucket", name)
-			for idx, count := range p.BucketCounts() {
-				bucketTags := append(tags, fmt.Sprintf("bucket_idx:%d", idx))
-				ms = append(ms,
-					metrics.NewGauge(fullName, ts, float64(count), bucketTags),
-				)
+		if t.cfg.HistConfig.SendCountSum {
+			count := float64(p.Count())
+			countName := fmt.Sprintf("%s.count", name)
+			if delta {
+				ms = append(ms, metrics.NewCount(countName, ts, count, tags))
+			} else if dx, ok := t.prevPts.putAndGetDiff(countName, tags, ts, count); ok {
+				ms = append(ms, metrics.NewCount(countName, ts, dx, tags))
 			}
+		}
+
+		if t.cfg.HistConfig.SendCountSum {
+			sum := p.Sum()
+			sumName := fmt.Sprintf("%s.sum", name)
+			if !t.isSkippable(sumName, p.Sum()) {
+				if delta {
+					ms = append(ms, metrics.NewCount(sumName, ts, sum, tags))
+				} else if dx, ok := t.prevPts.putAndGetDiff(sumName, tags, ts, sum); ok {
+					ms = append(ms, metrics.NewCount(sumName, ts, dx, tags))
+				}
+			}
+		}
+
+		if t.cfg.HistConfig.Mode == histogramModeCounters {
+			ms = append(ms, t.getLegacyBuckets(name, p, delta, tags)...)
 		}
 	}
 	return ms
 }
 
-// getQuantileTag returns the quantile tag for summary types.
-// Since the summary type is provided as a compatibility feature, we try to format the float number as close as possible to what
+// formatFloat formats a float number as close as possible to what
 // we do on the Datadog Agent Python OpenMetrics check, which, in turn, tries to
 // follow https://github.com/OpenObservability/OpenMetrics/blob/v1.0.0/specification/OpenMetrics.md#considerations-canonical-numbers
-func getQuantileTag(quantile float64) string {
-	// We handle 0 and 1 separately since they are special
-	if quantile == 0 {
-		// we do this differently on our check
-		return "quantile:0"
-	} else if quantile == 1.0 {
-		// it needs to have a '.0' added at the end according to the spec
-		return "quantile:1.0"
+func formatFloat(f float64) string {
+	if math.IsInf(f, 1) {
+		return "inf"
+	} else if math.IsInf(f, -1) {
+		return "-inf"
+	} else if math.IsNaN(f) {
+		return "nan"
+	} else if f == 0 {
+		return "0"
 	}
-	return fmt.Sprintf("quantile:%s", strconv.FormatFloat(quantile, 'g', -1, 64))
+
+	// Add .0 to whole numbers
+	s := strconv.FormatFloat(f, 'g', -1, 64)
+	if f == math.Floor(f) {
+		s = s + ".0"
+	}
+	return s
+}
+
+// getQuantileTag returns the quantile tag for summary types.
+func getQuantileTag(quantile float64) string {
+	return fmt.Sprintf("quantile:%s", formatFloat(quantile))
 }
 
 // mapSummaryMetrics maps summary datapoints into Datadog metrics
@@ -190,15 +271,17 @@ func (t *Translator) mapSummaryMetrics(name string, slice pdata.SummaryDataPoint
 		// count and sum are increasing; we treat them as cumulative monotonic sums.
 		{
 			countName := fmt.Sprintf("%s.count", name)
-			if dx, ok := t.prevPts.putAndGetDiff(countName, tags, ts, float64(p.Count())); ok {
+			if dx, ok := t.prevPts.putAndGetDiff(countName, tags, ts, float64(p.Count())); ok && !t.isSkippable(countName, dx) {
 				ms = append(ms, metrics.NewCount(countName, ts, dx, tags))
 			}
 		}
 
 		{
 			sumName := fmt.Sprintf("%s.sum", name)
-			if dx, ok := t.prevPts.putAndGetDiff(sumName, tags, ts, p.Sum()); ok {
-				ms = append(ms, metrics.NewCount(sumName, ts, dx, tags))
+			if !t.isSkippable(sumName, p.Sum()) {
+				if dx, ok := t.prevPts.putAndGetDiff(sumName, tags, ts, p.Sum()); ok {
+					ms = append(ms, metrics.NewCount(sumName, ts, dx, tags))
+				}
 			}
 		}
 
@@ -207,6 +290,11 @@ func (t *Translator) mapSummaryMetrics(name string, slice pdata.SummaryDataPoint
 			quantiles := p.QuantileValues()
 			for i := 0; i < quantiles.Len(); i++ {
 				q := quantiles.At(i)
+
+				if t.isSkippable(fullName, q.Value()) {
+					continue
+				}
+
 				quantileTags := append(tags, getQuantileTag(q.Quantile()))
 				ms = append(ms,
 					metrics.NewGauge(fullName, ts, q.Value(), quantileTags),
@@ -233,7 +321,7 @@ func (t *Translator) MapMetrics(md pdata.Metrics) (series []datadog.Metric) {
 			attributeTags = attributes.TagsFromAttributes(rm.Resource().Attributes())
 		}
 
-		host, ok := metadata.HostnameFromAttributes(rm.Resource().Attributes())
+		host, ok := attributes.HostnameFromAttributes(rm.Resource().Attributes())
 		if !ok {
 			fallbackHost, err := t.fallbackHostnameProvider.Hostname(context.Background())
 			host = ""
@@ -265,17 +353,27 @@ func (t *Translator) MapMetrics(md pdata.Metrics) (series []datadog.Metric) {
 						datapoints = t.mapNumberMetrics(md.Name(), metrics.Count, md.Sum().DataPoints(), attributeTags)
 					default: // pdata.AggregationTemporalityUnspecified or any other not supported type
 						t.logger.Debug("Unknown or unsupported aggregation temporality",
-							zap.String("metric name", md.Name()),
+							zap.String(metricName, md.Name()),
 							zap.Any("aggregation temporality", md.Sum().AggregationTemporality()),
 						)
 						continue
 					}
 				case pdata.MetricDataTypeHistogram:
-					datapoints = t.mapHistogramMetrics(md.Name(), md.Histogram().DataPoints(), attributeTags)
+					switch md.Histogram().AggregationTemporality() {
+					case pdata.AggregationTemporalityCumulative, pdata.AggregationTemporalityDelta:
+						delta := md.Histogram().AggregationTemporality() == pdata.AggregationTemporalityDelta
+						datapoints = t.mapHistogramMetrics(md.Name(), md.Histogram().DataPoints(), delta, attributeTags)
+					default: // pdata.AggregationTemporalityUnspecified or any other not supported type
+						t.logger.Debug("Unknown or unsupported aggregation temporality",
+							zap.String("metric name", md.Name()),
+							zap.Any("aggregation temporality", md.Histogram().AggregationTemporality()),
+						)
+						continue
+					}
 				case pdata.MetricDataTypeSummary:
 					datapoints = t.mapSummaryMetrics(md.Name(), md.Summary().DataPoints(), attributeTags)
 				default: // pdata.MetricDataTypeNone or any other not supported type
-					t.logger.Debug("Unknown or unsupported metric type", zap.String("metric name", md.Name()), zap.Any("data type", md.DataType()))
+					t.logger.Debug("Unknown or unsupported metric type", zap.String(metricName, md.Name()), zap.Any("data type", md.DataType()))
 					continue
 				}
 

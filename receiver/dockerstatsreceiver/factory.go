@@ -41,6 +41,7 @@ func createDefaultConfig() config.Receiver {
 		Endpoint:           "unix:///var/run/docker.sock",
 		CollectionInterval: 10 * time.Second,
 		Timeout:            5 * time.Second,
+		DockerAPIVersion:   defaultDockerAPIVersion,
 	}
 }
 
