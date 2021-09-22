@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package k8sprocessor allow automatic tagging of spans, metrics and logs with k8s metadata.
+// Package k8sattributesprocessor allow automatic tagging of spans, metrics and logs with k8s metadata.
 //
 // The processor automatically discovers k8s resources (pods), extracts metadata from them and adds the
 // extracted metadata to the relevant spans, metrics and logs. The processor uses the kubernetes API to discover all pods
@@ -41,7 +41,7 @@
 // If Pod association rules are not configured resources are associated with metadata only by connection's IP Address.
 //
 //
-//The k8sprocessor can be used for automatic tagging of spans, metrics and logs with k8s labels and annotations from pods and namespaces.
+//The k8sattributesprocessor can be used for automatic tagging of spans, metrics and logs with k8s labels and annotations from pods and namespaces.
 //The config for associating the data passing through the processor (spans, metrics and logs) with specific Pod/Namespace annotations/labels is configured via "annotations"  and "labels" keys.
 //This config represents a list of annotations/labels that are extracted from pods/namespaces and added to spans, metrics and logs.
 //Each item is specified as a config of tag_name (representing the tag name to tag the spans with),
@@ -158,4 +158,4 @@
 // as a sidecar. While this can be done, we think it is simpler to just use the kubernetes
 // downward API to inject environment variables into the pods and directly use their values
 // as tags.
-package k8sprocessor
+package k8sattributesprocessor

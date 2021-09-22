@@ -4,7 +4,7 @@
 ---
 # The k8sattributes processor may require additional
 # RBAC Config. More on this here:
-# https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/12dbcfc3faf80ec532d832fc7e6650222be33ff9/processor/k8sprocessor/doc.go#L26-L28
+# https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/12dbcfc3faf80ec532d832fc7e6650222be33ff9/processor/k8sattributesprocessor/doc.go#L26-L28
 ---
 apiVersion: v1
 kind: ConfigMap

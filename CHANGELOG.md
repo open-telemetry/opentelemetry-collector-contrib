@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+## 🛑 Breaking changes 🛑
+
+- Move `k8sprocessor` to `k8sattributesprocessor`.
+- Rename `k8s_tagger` configuration `k8sattributes`.
+
 ## v0.36.0
 
 ## 🛑 Breaking changes 🛑
