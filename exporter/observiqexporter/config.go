@@ -51,7 +51,7 @@ func (c *Config) validateConfig() error {
 	}
 
 	if c.APIKey != "" && c.SecretKey != "" {
-		return errors.New("only one of api_key OR secret_key should be specified, not both")
+		return errors.New("only one of api_key OR secret_key can be specified, not both")
 	}
 
 	if c.Endpoint == "" {
