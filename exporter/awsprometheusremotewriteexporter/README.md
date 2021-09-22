@@ -6,7 +6,7 @@ The exporter uses AWS Signature Version 4 signing process for authentication
 and uses credentials from the 
 [default credential chain](https://docs.aws.amazon.com/sdk-for-go/v1/developer-guide/configuring-sdk.html#specifying-credentials).
 
-Note: This exporter is similar to [Prometheus remote write exporter](https://github.com/open-telemetry/opentelemetry-collector/tree/main/exporter/prometheusremotewriteexporter)
+Note: This exporter is similar to [Prometheus remote write exporter](../prometheusremotewriteexporter)
 and it only adds SigV4 support to it.
 
 Similar to the Prometheus remote write exporter, the exporter checks the
