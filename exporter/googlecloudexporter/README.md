@@ -34,11 +34,19 @@ These instructions are to get you up and running quickly with the GCP exporter i
           http:
     exporters:
       googlecloud:
+        # Google Cloud Monitoring returns an error if any of the points are invalid, but still accepts the valid points.
+        # Retrying successfully sent points is guaranteed to fail because the points were already written.
+        # This results in a loop of unnecessary retries.  For now, disable retry_on_failure.
+        retry_on_failure:
+          enabled: false
       logging:
         loglevel: debug
     processors:
       memory_limiter:
       batch:
+        # Google Cloud Monitoring limits batches to 200 metric points.
+        send_batch_max_size: 200
+        send_batch_size: 200
     service:
       pipelines:
         traces:
@@ -143,6 +151,11 @@ Example:
 ```yaml
 exporters:
   googlecloud:
+    # Google Cloud Monitoring returns an error if any of the points are invalid, but still accepts the valid points.
+    # Retrying successfully sent points is guaranteed to fail because the points were already written.
+    # This results in a loop of unnecessary retries.  For now, disable retry_on_failure.
+    retry_on_failure:
+      enabled: false
     project: my-project
     endpoint: test-endpoint
     user_agent: my-collector {{version}}
@@ -160,11 +173,6 @@ exporters:
           - source_key: source.label1
             target_key: target_label_1
 
-    retry_on_failure:
-      enabled: true
-      initial_interval: 5s
-      max_interval: 30s
-      max_elapsed_time: 120s
     sending_queue:
       enabled: true
       num_consumers: 2
