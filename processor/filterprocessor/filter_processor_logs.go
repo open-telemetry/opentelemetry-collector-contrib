@@ -68,7 +68,7 @@ func createLogsMatcher(lp *LogMatchProperties) (filtermatcher.AttributesMatcher,
 	var attributeMatcher filtermatcher.AttributesMatcher
 	attributeMatcher, err := filtermatcher.NewAttributesMatcher(
 		filterset.Config{
-			MatchType: filterset.MatchType("strict"),
+			MatchType: filterset.MatchType(lp.LogMatchType),
 		},
 		lp.ResourceAttributes,
 	)

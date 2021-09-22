@@ -73,6 +73,33 @@ var (
 		},
 	}
 
+	inLogForFourResource = []logWithResource{
+		{
+			logNames: []string{"log1"},
+			resourceAttributes: map[string]pdata.AttributeValue{
+				"attr": pdata.NewAttributeValueString("attr/val1"),
+			},
+		},
+		{
+			logNames: []string{"log2"},
+			resourceAttributes: map[string]pdata.AttributeValue{
+				"attr": pdata.NewAttributeValueString("attr/val2"),
+			},
+		},
+		{
+			logNames: []string{"log3"},
+			resourceAttributes: map[string]pdata.AttributeValue{
+				"attr": pdata.NewAttributeValueString("attr/val3"),
+			},
+		},
+		{
+			logNames: []string{"log4"},
+			resourceAttributes: map[string]pdata.AttributeValue{
+				"attr": pdata.NewAttributeValueString("attr/val4"),
+			},
+		},
+	}
+
 	standardLogTests = []logNameTest{
 		{
 			name:   "emptyFilterInclude",
@@ -139,6 +166,53 @@ var (
 			inLogs: testResourceLogs(inLogForTwoResource),
 			outLN: [][]string{
 				{"log3", "log4"},
+			},
+		},
+		{
+			name:   "matchAttributesWithRegexpInclude",
+			inc:    &LogMatchProperties{LogMatchType: Regexp, ResourceAttributes: []filterconfig.Attribute{{Key: "attr", Value: "attr/val2"}}},
+			inLogs: testResourceLogs(inLogForFourResource),
+			outLN: [][]string{
+				{"log2"},
+			},
+		},
+		{
+			name:   "matchAttributesWithRegexpInclude2",
+			inc:    &LogMatchProperties{LogMatchType: Regexp, ResourceAttributes: []filterconfig.Attribute{{Key: "attr", Value: "attr/val(2|3)"}}},
+			inLogs: testResourceLogs(inLogForFourResource),
+			outLN: [][]string{
+				{"log2"},
+				{"log3"},
+			},
+		},
+		{
+			name:   "matchAttributesWithRegexpInclude3",
+			inc:    &LogMatchProperties{LogMatchType: Regexp, ResourceAttributes: []filterconfig.Attribute{{Key: "attr", Value: "attr/val[234]"}}},
+			inLogs: testResourceLogs(inLogForFourResource),
+			outLN: [][]string{
+				{"log2"},
+				{"log3"},
+				{"log4"},
+			},
+		},
+		{
+			name:   "matchAttributesWithRegexpInclude4",
+			inc:    &LogMatchProperties{LogMatchType: Regexp, ResourceAttributes: []filterconfig.Attribute{{Key: "attr", Value: "attr/val.*"}}},
+			inLogs: testResourceLogs(inLogForFourResource),
+			outLN: [][]string{
+				{"log1"},
+				{"log2"},
+				{"log3"},
+				{"log4"},
+			},
+		},
+		{
+			name:   "matchAttributesWithRegexpExclude",
+			exc:    &LogMatchProperties{LogMatchType: Regexp, ResourceAttributes: []filterconfig.Attribute{{Key: "attr", Value: "attr/val[23]"}}},
+			inLogs: testResourceLogs(inLogForFourResource),
+			outLN: [][]string{
+				{"log1"},
+				{"log4"},
 			},
 		},
 	}
