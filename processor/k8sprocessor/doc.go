@@ -107,7 +107,7 @@
 //
 // 2. Set "filter.node_from_env_var" to the name of the environment variable holding the node name.
 //
-//    k8s_tagger:
+//    k8sattributes:
 //      filter:
 //        node_from_env_var: KUBE_NODE_NAME # this should be same as the var name used in previous step
 //
@@ -121,16 +121,16 @@
 // When running as a collector, the processor cannot correctly detect the IP address of the pods generating
 // the telemetry data without any of the well-known IP attributes, when it receives them
 // from an agent instead of receiving them directly from the pods. To
-// workaround this issue, agents deployed with the k8s_tagger processor can be configured to detect
+// workaround this issue, agents deployed with the k8sattributes processor can be configured to detect
 // the IP addresses and forward them along with the telemetry data resources. Collector can then match this IP address
 // with k8s pods and enrich the records with the metadata. In order to set this up, you'll need to complete the
 // following steps:
 //
 // 1. Setup agents in passthrough mode
-// Configure the agents' k8s_tagger processors to run in passthrough mode.
+// Configure the agents' k8sattributes processors to run in passthrough mode.
 //
-//    # k8s_tagger config for agent
-//    k8s_tagger:
+//    # k8sattributes config for agent
+//    k8sattributes:
 //      passthrough: true
 //
 // This will ensure that the agents detect the IP address as add it as an attribute to all telemetry resources.
@@ -143,7 +143,7 @@
 //
 // Caveats
 //
-// There are some edge-cases and scenarios where k8s_tagger will not work properly.
+// There are some edge-cases and scenarios where k8sattributes will not work properly.
 //
 //
 // Host networking mode

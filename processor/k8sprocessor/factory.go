@@ -31,7 +31,7 @@ import (
 
 const (
 	// The value of "type" key in configuration.
-	typeStr = "k8s_tagger"
+	typeStr = "k8sattributes"
 )
 
 var kubeClientProvider = kube.ClientProvider(nil)
