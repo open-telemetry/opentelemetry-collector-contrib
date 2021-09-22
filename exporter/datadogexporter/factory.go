@@ -109,6 +109,9 @@ func createMetricsExporter(
 		set.Logger.Warn("Histogram bucket metrics now end with .bucket instead of .count_per_bucket")
 	}
 
+	// TODO: Remove after changing the default mode.
+	set.Logger.Warn("Default histograms configuration will change to mode 'distributions' and no .count and .sum metrics in a future release.")
+
 	ctx, cancel := context.WithCancel(ctx)
 	var pushMetricsFn consumerhelper.ConsumeMetricsFunc
 
