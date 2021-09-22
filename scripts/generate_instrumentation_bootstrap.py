@@ -85,12 +85,12 @@ def main():
     source = astor.to_source(tree)
 
     with open(
-        os.path.join(scripts_path, "license_header.txt"), "r"
+        os.path.join(scripts_path, "license_header.txt"), "r", encoding="utf-8"
     ) as header_file:
         header = header_file.read()
         source = _template.format(header=header, source=source)
 
-    with open(gen_path, "w") as gen_file:
+    with open(gen_path, "w", encoding="utf-8") as gen_file:
         gen_file.write(source)
 
     subprocess.run(

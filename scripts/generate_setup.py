@@ -36,7 +36,9 @@ _prefix = "opentelemetry-instrumentation-"
 def main():
     root_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     with open(
-        os.path.join(root_path, _template_dir, _template_name), "r"
+        os.path.join(root_path, _template_dir, _template_name),
+        "r",
+        encoding="utf-8",
     ) as template:
         setuppy_tmpl = Template(template.read())
     base_instrumentation_path = os.path.join(root_path, "instrumentation")
@@ -69,7 +71,7 @@ def main():
 
         generated_file = os.path.join(instrumentation_path, "setup.py")
         logger.info("generated %s", generated_file)
-        with open(generated_file, "w") as fh:
+        with open(generated_file, "w", encoding="utf-8") as fh:
             fh.write(generated)
             fh.flush()
 

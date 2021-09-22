@@ -546,13 +546,13 @@ def lint_args(args):
 def update_changelog(path, version, new_entry):
     unreleased_changes = False
     try:
-        with open(path) as changelog:
+        with open(path, encoding="utf-8") as changelog:
             text = changelog.read()
             if "## [{}]".format(version) in text:
                 raise AttributeError(
                     "{} already contans version {}".format(path, version)
                 )
-        with open(path) as changelog:
+        with open(path, encoding="utf-8") as changelog:
             for line in changelog:
                 if line.startswith("## [Unreleased]"):
                     unreleased_changes = False
@@ -568,7 +568,7 @@ def update_changelog(path, version, new_entry):
     if unreleased_changes:
         print("updating: {}".format(path))
         text = re.sub(r"## \[Unreleased\].*", new_entry, text)
-        with open(path, "w") as changelog:
+        with open(path, "w", encoding="utf-8") as changelog:
             changelog.write(text)
 
 
@@ -651,14 +651,14 @@ def update_files(targets, filename, search, replace):
             print("file missing: {}/{}".format(target, filename))
             continue
 
-        with open(curr_file) as _file:
+        with open(curr_file, encoding="utf-8") as _file:
             text = _file.read()
 
         if replace in text:
             print("{} already contains {}".format(curr_file, replace))
             continue
 
-        with open(curr_file, "w") as _file:
+        with open(curr_file, "w", encoding="utf-8") as _file:
             _file.write(re.sub(search, replace, text))
 
     if errors:

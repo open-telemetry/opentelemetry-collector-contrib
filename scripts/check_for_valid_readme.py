@@ -8,7 +8,7 @@ import readme_renderer.rst
 
 def is_valid_rst(path):
     """Checks if RST can be rendered on PyPI."""
-    with open(path) as readme_file:
+    with open(path, encoding="utf-8") as readme_file:
         markup = readme_file.read()
     return readme_renderer.rst.render(markup, stream=sys.stderr) is not None
 

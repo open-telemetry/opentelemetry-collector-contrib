@@ -42,7 +42,7 @@ class AwsBeanstalkResourceDetector(ResourceDetector):
             conf_file_path = "/var/elasticbeanstalk/xray/environment.conf"
 
         try:
-            with open(conf_file_path) as conf_file:
+            with open(conf_file_path, encoding="utf-8") as conf_file:
                 parsed_data = json.load(conf_file)
 
             return Resource(

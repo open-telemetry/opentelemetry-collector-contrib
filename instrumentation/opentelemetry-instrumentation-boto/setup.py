@@ -41,13 +41,13 @@ PACKAGE_INFO = {}
 VERSION_FILENAME = os.path.join(
     BASE_DIR, "src", "opentelemetry", "instrumentation", "boto", "version.py"
 )
-with open(VERSION_FILENAME) as f:
+with open(VERSION_FILENAME, encoding="utf-8") as f:
     exec(f.read(), PACKAGE_INFO)
 
 PACKAGE_FILENAME = os.path.join(
     BASE_DIR, "src", "opentelemetry", "instrumentation", "boto", "package.py"
 )
-with open(PACKAGE_FILENAME) as f:
+with open(PACKAGE_FILENAME, encoding="utf-8") as f:
     exec(f.read(), PACKAGE_INFO)
 
 # Mark any instruments/runtime dependencies as test dependencies as well.

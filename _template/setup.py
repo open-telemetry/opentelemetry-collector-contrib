@@ -27,7 +27,7 @@ VERSION_FILENAME = os.path.join(
     "version.py",
 )
 PACKAGE_INFO = {}
-with open(VERSION_FILENAME) as f:
+with open(VERSION_FILENAME, encoding="utf-8") as f:
     exec(f.read(), PACKAGE_INFO)
 
 setuptools.setup(
