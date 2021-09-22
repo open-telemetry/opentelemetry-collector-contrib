@@ -131,7 +131,7 @@ def attach_span(task, task_id, span, is_publish=False):
     """
     span_dict = getattr(task, CTX_KEY, None)
     if span_dict is None:
-        span_dict = dict()
+        span_dict = {}
         setattr(task, CTX_KEY, span_dict)
 
     span_dict[(task_id, is_publish)] = span

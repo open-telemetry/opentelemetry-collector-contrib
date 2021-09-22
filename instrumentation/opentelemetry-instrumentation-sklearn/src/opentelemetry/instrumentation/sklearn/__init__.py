@@ -194,7 +194,7 @@ def get_base_estimators(packages: List[str]) -> Dict[str, Type[BaseEstimator]]:
         A dictionary of qualnames and classes inheriting from
         ``BaseEstimator``.
     """
-    klasses = dict()
+    klasses = {}
     for package_name in packages:
         lib = import_module(package_name)
         package_dir = os.path.dirname(lib.__file__)
