@@ -47,7 +47,7 @@ func Makeseries(i int) SketchSeries {
 		Interval: int64(i),
 	}
 
-	// We create i+5 Sketch Points to insure all hosts have at least 5 Sketch Points for tests
+	// We create i+5 Sketch Points to ensure all hosts have at least 5 Sketch Points for tests
 	for j := 0; j < i+5; j++ {
 		ss.Points = append(ss.Points, SketchPoint{
 			Ts:     10 * int64(j),
