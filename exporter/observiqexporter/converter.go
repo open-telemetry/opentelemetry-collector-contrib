@@ -48,7 +48,7 @@ type observIQLogEntry struct {
 	Severity  string                 `json:"severity,omitempty"`
 	EntryType string                 `json:"type,omitempty"`
 	Message   string                 `json:"message,omitempty"`
-	Resource  interface{}            `json:"resource,omitempty"`
+	Resource  map[string]interface{} `json:"resource,omitempty"`
 	Agent     *observIQAgentInfo     `json:"agent,omitempty"`
 	Data      map[string]interface{} `json:"data,omitempty"`
 	Body      interface{}            `json:"body,omitempty"`
@@ -111,7 +111,7 @@ func logdataToObservIQFormat(ld pdata.Logs, agentID string, agentName string, bu
 // Output timestamp format, an ISO8601 compliant timestamp with millisecond precision
 const timestampFieldOutputLayout = "2006-01-02T15:04:05.000Z07:00"
 
-func resourceAndInstrumentationLogToEntry(resMap interface{}, log pdata.LogRecord, agentID string, agentName string, buildVersion string) *observIQLogEntry {
+func resourceAndInstrumentationLogToEntry(resMap map[string]interface{}, log pdata.LogRecord, agentID string, agentName string, buildVersion string) *observIQLogEntry {
 	return &observIQLogEntry{
 		Timestamp: timestampFromRecord(log),
 		Severity:  severityFromRecord(log),
@@ -138,7 +138,7 @@ func messageFromRecord(log pdata.LogRecord) string {
 	return ""
 }
 
-// If Body is not a string, it is suitable to be used on the observIQ log entry as "body"
+// bodyFromRecord returns what the "body" field should be on the observiq entry from the given LogRecord.
 func bodyFromRecord(log pdata.LogRecord) interface{} {
 	if log.Body().Type() != pdata.AttributeValueTypeString {
 		return attributeValueToBaseType(log.Body())
