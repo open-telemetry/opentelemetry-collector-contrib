@@ -157,7 +157,6 @@ func TestClientSendLogs(t *testing.T) {
 		},
 		Message:  "message",
 		Severity: "default",
-		Resource: map[string]interface{}{},
 		Agent:    &observIQAgentInfo{ID: "0", Name: "agent", Version: "latest"},
 	}
 
