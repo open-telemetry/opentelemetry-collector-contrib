@@ -43,6 +43,7 @@ import (
 var jmxJarReleases = map[string]string{
 	"1.0.0-alpha": "https://repo1.maven.org/maven2/io/opentelemetry/contrib/opentelemetry-java-contrib-jmx-metrics/1.0.0-alpha/opentelemetry-java-contrib-jmx-metrics-1.0.0-alpha.jar",
 	"1.4.0-alpha": "https://repo1.maven.org/maven2/io/opentelemetry/contrib/opentelemetry-jmx-metrics/1.4.0-alpha/opentelemetry-jmx-metrics-1.4.0-alpha.jar",
+	"1.6.0-alpha": "https://github.com/open-telemetry/opentelemetry-java-contrib/releases/download/v1.6.0/opentelemetry-jmx-metrics.jar",
 }
 
 type JMXIntegrationSuite struct {
