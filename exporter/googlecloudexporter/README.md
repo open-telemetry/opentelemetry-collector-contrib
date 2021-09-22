@@ -36,7 +36,7 @@ These instructions are to get you up and running quickly with the GCP exporter i
       googlecloud:
         # Google Cloud Monitoring returns an error if any of the points are invalid, but still accepts the valid points.
         # Retrying successfully sent points is guaranteed to fail because the points were already written.
-        # This results in a loop of unneccessary retries.  For now, disable retry_on_failure.
+        # This results in a loop of unnecessary retries.  For now, disable retry_on_failure.
         retry_on_failure:
           enabled: false
       logging:
@@ -153,7 +153,7 @@ exporters:
   googlecloud:
     # Google Cloud Monitoring returns an error if any of the points are invalid, but still accepts the valid points.
     # Retrying successfully sent points is guaranteed to fail because the points were already written.
-    # This results in a loop of unneccessary retries.  For now, disable retry_on_failure.
+    # This results in a loop of unnecessary retries.  For now, disable retry_on_failure.
     retry_on_failure:
       enabled: false
     project: my-project
