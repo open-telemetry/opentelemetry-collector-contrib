@@ -160,7 +160,7 @@ require (
 	github.com/uber/jaeger-lib v2.4.1+incompatible // indirect
 	go.opencensus.io v0.23.0 // indirect
 	go.opentelemetry.io/contrib v0.23.0 // indirect
-	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.23.0 // indirect
+	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.24.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.23.0 // indirect
 	go.opentelemetry.io/contrib/zpages v0.23.0 // indirect
 	go.opentelemetry.io/otel v1.0.0 // indirect
