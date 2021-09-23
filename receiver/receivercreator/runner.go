@@ -85,15 +85,11 @@ func (run *receiverRunner) loadRuntimeReceiverConfig(
 	receiver receiverConfig,
 	discoveredConfig userConfigMap,
 ) (config.Receiver, error) {
-	mergedConfig := configparser.NewConfigMap()
-
 	// Merge in the config values specified in the config file.
-	if err := mergedConfig.MergeStringMap(receiver.config); err != nil {
-		return nil, fmt.Errorf("failed to merge template config from config file: %v", err)
-	}
+	mergedConfig := configparser.NewConfigMapFromStringMap(receiver.config)
 
 	// Merge in discoveredConfig containing values discovered at runtime.
-	if err := mergedConfig.MergeStringMap(discoveredConfig); err != nil {
+	if err := mergedConfig.Merge(configparser.NewConfigMapFromStringMap(discoveredConfig)); err != nil {
 		return nil, fmt.Errorf("failed to merge template config from discovered runtime values: %v", err)
 	}
 
