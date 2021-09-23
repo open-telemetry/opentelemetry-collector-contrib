@@ -17,7 +17,7 @@
 
 // TODO review if tests should succeed on Windows
 
-package dockerstatsreceiver
+package docker
 
 import (
 	"context"
@@ -45,16 +45,16 @@ func TestInvalidEndpoint(t *testing.T) {
 	config := &Config{
 		Endpoint: "$notavalidendpoint*",
 	}
-	cli, err := newDockerClient(config, zap.NewNop())
+	cli, err := NewDockerClient(config, zap.NewNop())
 	assert.Nil(t, cli)
 	require.Error(t, err)
 	assert.Equal(t, "could not create docker client: unable to parse docker host `$notavalidendpoint*`", err.Error())
 }
 
 func TestInvalidExclude(t *testing.T) {
-	config := NewFactory().CreateDefaultConfig().(*Config)
+	config := NewDefaultConfig()
 	config.ExcludedImages = []string{"["}
-	cli, err := newDockerClient(config, zap.NewNop())
+	cli, err := NewDockerClient(config, zap.NewNop())
 	assert.Nil(t, cli)
 	require.Error(t, err)
 	assert.Equal(t, "could not determine docker client excluded images: invalid glob item: unexpected end of input", err.Error())
@@ -86,7 +86,7 @@ func TestWatchingTimeouts(t *testing.T) {
 		Timeout:  50 * time.Millisecond,
 	}
 
-	cli, err := newDockerClient(config, zap.NewNop())
+	cli, err := NewDockerClient(config, zap.NewNop())
 	assert.NotNil(t, cli)
 	assert.Nil(t, err)
 
@@ -99,7 +99,7 @@ func TestWatchingTimeouts(t *testing.T) {
 	assert.Contains(t, err.Error(), expectedError)
 
 	observed, logs := observer.New(zapcore.WarnLevel)
-	cli, err = newDockerClient(config, zap.New(observed))
+	cli, err = NewDockerClient(config, zap.New(observed))
 	assert.NotNil(t, cli)
 	assert.Nil(t, err)
 
@@ -127,7 +127,7 @@ func TestFetchingTimeouts(t *testing.T) {
 		Timeout:  50 * time.Millisecond,
 	}
 
-	cli, err := newDockerClient(config, zap.NewNop())
+	cli, err := NewDockerClient(config, zap.NewNop())
 	assert.NotNil(t, cli)
 	assert.Nil(t, err)
 
@@ -136,13 +136,13 @@ func TestFetchingTimeouts(t *testing.T) {
 	shouldHaveTaken := time.Now().Add(50 * time.Millisecond).UnixNano()
 
 	observed, logs := observer.New(zapcore.WarnLevel)
-	cli, err = newDockerClient(config, zap.New(observed))
+	cli, err = NewDockerClient(config, zap.New(observed))
 	assert.NotNil(t, cli)
 	assert.Nil(t, err)
 
-	md, err := cli.FetchContainerStatsAndConvertToMetrics(
+	statsJSON, err := cli.FetchContainerStatsAsJSON(
 		context.Background(),
-		DockerContainer{
+		Container{
 			ContainerJSON: &dtypes.ContainerJSON{
 				ContainerJSONBase: &dtypes.ContainerJSONBase{
 					ID: "notARealContainerId",
@@ -151,7 +151,7 @@ func TestFetchingTimeouts(t *testing.T) {
 		},
 	)
 
-	assert.Zero(t, md.DataPointCount())
+	assert.Nil(t, statsJSON)
 	require.Error(t, err)
 
 	assert.Contains(t, err.Error(), expectedError)
@@ -178,11 +178,11 @@ func TestToStatsJSONErrorHandling(t *testing.T) {
 		Timeout:  50 * time.Millisecond,
 	}
 
-	cli, err := newDockerClient(config, zap.NewNop())
+	cli, err := NewDockerClient(config, zap.NewNop())
 	assert.NotNil(t, cli)
 	assert.Nil(t, err)
 
-	dc := &DockerContainer{
+	dc := &Container{
 		ContainerJSON: &dtypes.ContainerJSON{
 			ContainerJSONBase: &dtypes.ContainerJSONBase{
 				ID: "notARealContainerId",
@@ -224,7 +224,7 @@ func TestEventLoopHandlesError(t *testing.T) {
 		Timeout:  50 * time.Millisecond,
 	}
 
-	cli, err := newDockerClient(config, zap.New(observed))
+	cli, err := NewDockerClient(config, zap.New(observed))
 	assert.NotNil(t, cli)
 	assert.Nil(t, err)
 

@@ -44,6 +44,10 @@ func metricDataToSplunk(logger *zap.Logger, data pdata.Metrics, config *Config) 
 	numDroppedTimeSeries := 0
 	splunkMetrics := make([]*splunk.Event, 0, data.DataPointCount())
 	rms := data.ResourceMetrics()
+	sourceKey := config.HecToOtelAttrs.Source
+	sourceTypeKey := config.HecToOtelAttrs.SourceType
+	indexKey := config.HecToOtelAttrs.Index
+	hostKey := config.HecToOtelAttrs.Host
 	for i := 0; i < rms.Len(); i++ {
 		rm := rms.At(i)
 		host := unknownHostName
@@ -51,27 +55,21 @@ func metricDataToSplunk(logger *zap.Logger, data pdata.Metrics, config *Config) 
 		sourceType := config.SourceType
 		index := config.Index
 		commonFields := map[string]interface{}{}
-		resource := rm.Resource()
-		attributes := resource.Attributes()
-		if conventionHost, isSet := attributes.Get(conventions.AttributeHostName); isSet {
-			host = conventionHost.StringVal()
-		}
-		if sourceSet, isSet := attributes.Get(splunk.DefaultSourceLabel); isSet {
-			source = sourceSet.StringVal()
-		}
-		if sourcetypeSet, isSet := attributes.Get(splunk.DefaultSourceTypeLabel); isSet {
-			sourceType = sourcetypeSet.StringVal()
-		}
-		if indexSet, isSet := attributes.Get(splunk.DefaultIndexLabel); isSet {
-			index = indexSet.StringVal()
-		}
-		attributes.Range(func(k string, v pdata.AttributeValue) bool {
-			commonFields[k] = v.AsString()
-			return true
-		})
 
 		rm.Resource().Attributes().Range(func(k string, v pdata.AttributeValue) bool {
-			commonFields[k] = v.AsString()
+			switch k {
+			case hostKey:
+				host = v.StringVal()
+				commonFields[conventions.AttributeHostName] = host
+			case sourceKey:
+				source = v.StringVal()
+			case sourceTypeKey:
+				sourceType = v.StringVal()
+			case indexKey:
+				index = v.StringVal()
+			default:
+				commonFields[k] = v.AsString()
+			}
 			return true
 		})
 		ilms := rm.InstrumentationLibraryMetrics()

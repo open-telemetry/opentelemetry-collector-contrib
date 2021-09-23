@@ -23,23 +23,18 @@ import (
 	dtypes "github.com/docker/docker/api/types"
 	"go.opentelemetry.io/collector/model/pdata"
 	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/docker"
 )
 
 const (
 	metricPrefix = "container."
 )
 
-// DockerContainer is client.ContainerInspect() response container
-// stats and translated environment string map for potential labels.
-type DockerContainer struct {
-	*dtypes.ContainerJSON
-	EnvMap map[string]string
-}
-
 func ContainerStatsToMetrics(
 	now pdata.Timestamp,
 	containerStats *dtypes.StatsJSON,
-	container *DockerContainer,
+	container docker.Container,
 	config *Config,
 ) (pdata.Metrics, error) {
 	md := pdata.NewMetrics()
@@ -61,7 +56,7 @@ func ContainerStatsToMetrics(
 	return md, nil
 }
 
-func updateConfiguredResourceAttributes(resourceAttr pdata.AttributeMap, container *DockerContainer, config *Config) {
+func updateConfiguredResourceAttributes(resourceAttr pdata.AttributeMap, container docker.Container, config *Config) {
 	for k, label := range config.EnvVarsToMetricLabels {
 		if v := container.EnvMap[k]; v != "" {
 			resourceAttr.UpsertString(label, v)

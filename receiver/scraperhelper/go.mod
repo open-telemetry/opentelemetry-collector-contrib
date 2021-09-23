@@ -4,15 +4,15 @@ go 1.17
 
 require (
 	github.com/stretchr/testify v1.7.0
-	go.opentelemetry.io/collector v0.35.1-0.20210915180232-9fcd2bb61979
-	go.opentelemetry.io/collector/model v0.35.1-0.20210915180232-9fcd2bb61979
-	go.opentelemetry.io/otel v1.0.0-RC3
-	go.opentelemetry.io/otel/trace v1.0.0-RC3
+	go.opentelemetry.io/collector v0.36.0
+	go.opentelemetry.io/collector/model v0.36.0
+	go.opentelemetry.io/otel v1.0.0
+	go.opentelemetry.io/otel/trace v1.0.0
 	go.uber.org/zap v1.19.1
 
 )
 
-require go.opentelemetry.io/otel/sdk v1.0.0-RC3
+require go.opentelemetry.io/otel/sdk v1.0.0
 
 require (
 	github.com/davecgh/go-spew v1.1.1 // indirect
@@ -21,7 +21,7 @@ require (
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/knadh/koanf v1.2.3 // indirect
 	github.com/mitchellh/copystructure v1.2.0 // indirect
-	github.com/mitchellh/mapstructure v1.4.1 // indirect
+	github.com/mitchellh/mapstructure v1.4.2 // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/pelletier/go-toml v1.9.3 // indirect
 	github.com/pkg/errors v0.9.1 // indirect

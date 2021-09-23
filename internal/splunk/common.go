@@ -22,20 +22,21 @@ import (
 
 // Constants for Splunk components.
 const (
-	SFxAccessTokenHeader   = "X-Sf-Token"                       // #nosec
-	SFxAccessTokenLabel    = "com.splunk.signalfx.access_token" // #nosec
-	SFxEventCategoryKey    = "com.splunk.signalfx.event_category"
-	SFxEventPropertiesKey  = "com.splunk.signalfx.event_properties"
-	DefaultSourceTypeLabel = "com.splunk.sourcetype"
-	DefaultSourceLabel     = "com.splunk.source"
-	DefaultIndexLabel      = "com.splunk.index"
-	NameLabel              = "otel.log.name"
-	SeverityTextLabel      = "otel.log.severity.text"
-	SeverityNumberLabel    = "otel.log.severity.number"
-	HECTokenHeader         = "Splunk"
-	HecTokenLabel          = "com.splunk.hec.access_token" // #nosec
+	SFxAccessTokenHeader       = "X-Sf-Token"                       // #nosec
+	SFxAccessTokenLabel        = "com.splunk.signalfx.access_token" // #nosec
+	SFxEventCategoryKey        = "com.splunk.signalfx.event_category"
+	SFxEventPropertiesKey      = "com.splunk.signalfx.event_properties"
+	DefaultSourceTypeLabel     = "com.splunk.sourcetype"
+	DefaultSourceLabel         = "com.splunk.source"
+	DefaultIndexLabel          = "com.splunk.index"
+	DefaultNameLabel           = "otel.log.name"
+	DefaultSeverityTextLabel   = "otel.log.severity.text"
+	DefaultSeverityNumberLabel = "otel.log.severity.number"
+	HECTokenHeader             = "Splunk"
+	HecTokenLabel              = "com.splunk.hec.access_token" // #nosec
 	// HecEventMetricType is the type of HEC event. Set to metric, as per https://docs.splunk.com/Documentation/Splunk/8.0.3/Metrics/GetMetricsInOther.
 	HecEventMetricType = "metric"
+	DefaultRawPath     = "/services/collector/raw"
 )
 
 // AccessTokenPassthroughConfig configures passing through access tokens.
@@ -109,10 +110,14 @@ func (e *Event) UnmarshalJSON(b []byte) error {
 	return nil
 }
 
-// HECConfiguration provides information to map data to HEC events.
-type HECConfiguration interface {
-	GetSourceKey() string
-	GetSourceTypeKey() string
-	GetIndexKey() string
-	GetHostKey() string
+// HecToOtelAttrs defines the mapping of Splunk HEC metadata to attributes
+type HecToOtelAttrs struct {
+	// Source indicates the mapping of the source field to a specific unified model attribute.
+	Source string `mapstructure:"source"`
+	// SourceType indicates the mapping of the sourcetype field to a specific unified model attribute.
+	SourceType string `mapstructure:"sourcetype"`
+	// Index indicates the mapping of the index field to a specific unified model attribute.
+	Index string `mapstructure:"index"`
+	// Host indicates the mapping of the host field to a specific unified model attribute.
+	Host string `mapstructure:"host"`
 }

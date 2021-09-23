@@ -97,3 +97,5 @@ There are a number of optional settings for configuring how to send your metrics
 | `send_monotonic_counter` | Cumulative monotonic metrics are sent as deltas between successive measurements. Disable this flag to send get the raw, monotonically increasing value. | `true` |
 | `delta_ttl` | Maximum number of seconds values from cumulative monotonic metrics are kept in memory. | 3600 |
 | `report_quantiles` | Whether to report quantile values for summary type metrics. | `true` |
+| `histograms::mode` | Mode for histograms. Valid values are `nobuckets` (no bucket metrics), `counters` (one metric per bucket) and `distributions` (send as Datadog distributions, recommended). | `nobuckets` |
+| `histograms::send_count_sum_metrics` | Whether to report sum and count for histograms as separate metrics. | `true` |

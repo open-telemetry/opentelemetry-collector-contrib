@@ -22,6 +22,7 @@ import (
 
 	gocache "github.com/patrickmn/go-cache"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/model/pdata"
@@ -34,6 +35,14 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/attributes"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metrics"
 )
+
+var defaultCfg = config.MetricsConfig{
+	SendMonotonic: true,
+	HistConfig: config.HistogramConfig{
+		Mode:         histogramModeNoBuckets,
+		SendCountSum: true,
+	},
+}
 
 func TestMetricValue(t *testing.T) {
 	var (
@@ -212,7 +221,7 @@ func TestMapIntMonotonicMetrics(t *testing.T) {
 		expected[i] = metrics.NewCount(metricName, uint64(seconds(i+1)), float64(val), []string{})
 	}
 
-	tr := newTranslator(zap.NewNop(), config.MetricsConfig{SendMonotonic: true})
+	tr := newTranslator(zap.NewNop(), defaultCfg)
 	output := tr.mapNumberMonotonicMetrics(metricName, slice, []string{})
 
 	assert.ElementsMatch(t, output, expected)
@@ -250,7 +259,7 @@ func TestMapIntMonotonicDifferentDimensions(t *testing.T) {
 	point.SetTimestamp(seconds(1))
 	point.Attributes().InsertString("key1", "valB")
 
-	tr := newTranslator(zap.NewNop(), config.MetricsConfig{SendMonotonic: true})
+	tr := newTranslator(zap.NewNop(), defaultCfg)
 
 	assert.ElementsMatch(t,
 		tr.mapNumberMonotonicMetrics(metricName, slice, []string{}),
@@ -274,7 +283,7 @@ func TestMapIntMonotonicWithReboot(t *testing.T) {
 		point.SetIntVal(val)
 	}
 
-	tr := newTranslator(zap.NewNop(), config.MetricsConfig{SendMonotonic: true})
+	tr := newTranslator(zap.NewNop(), defaultCfg)
 	assert.ElementsMatch(t,
 		tr.mapNumberMonotonicMetrics(metricName, slice, []string{}),
 		[]datadog.Metric{
@@ -298,7 +307,7 @@ func TestMapIntMonotonicOutOfOrder(t *testing.T) {
 		point.SetIntVal(val)
 	}
 
-	tr := newTranslator(zap.NewNop(), config.MetricsConfig{SendMonotonic: true})
+	tr := newTranslator(zap.NewNop(), defaultCfg)
 	assert.ElementsMatch(t,
 		tr.mapNumberMonotonicMetrics(metricName, slice, []string{}),
 		[]datadog.Metric{
@@ -332,7 +341,7 @@ func TestMapDoubleMonotonicMetrics(t *testing.T) {
 		expected[i] = metrics.NewCount(metricName, uint64(seconds(i+1)), val, []string{})
 	}
 
-	tr := newTranslator(zap.NewNop(), config.MetricsConfig{SendMonotonic: true})
+	tr := newTranslator(zap.NewNop(), defaultCfg)
 	output := tr.mapNumberMonotonicMetrics(metricName, slice, []string{})
 
 	assert.ElementsMatch(t, expected, output)
@@ -370,7 +379,7 @@ func TestMapDoubleMonotonicDifferentDimensions(t *testing.T) {
 	point.SetTimestamp(seconds(1))
 	point.Attributes().InsertString("key1", "valB")
 
-	tr := newTranslator(zap.NewNop(), config.MetricsConfig{SendMonotonic: true})
+	tr := newTranslator(zap.NewNop(), defaultCfg)
 
 	assert.ElementsMatch(t,
 		tr.mapNumberMonotonicMetrics(metricName, slice, []string{}),
@@ -394,7 +403,7 @@ func TestMapDoubleMonotonicWithReboot(t *testing.T) {
 		point.SetDoubleVal(val)
 	}
 
-	tr := newTranslator(zap.NewNop(), config.MetricsConfig{SendMonotonic: true})
+	tr := newTranslator(zap.NewNop(), defaultCfg)
 	assert.ElementsMatch(t,
 		tr.mapNumberMonotonicMetrics(metricName, slice, []string{}),
 		[]datadog.Metric{
@@ -418,7 +427,7 @@ func TestMapDoubleMonotonicOutOfOrder(t *testing.T) {
 		point.SetDoubleVal(val)
 	}
 
-	tr := newTranslator(zap.NewNop(), config.MetricsConfig{SendMonotonic: true})
+	tr := newTranslator(zap.NewNop(), defaultCfg)
 	assert.ElementsMatch(t,
 		tr.mapNumberMonotonicMetrics(metricName, slice, []string{}),
 		[]datadog.Metric{
@@ -448,18 +457,22 @@ func TestMapDeltaHistogramMetrics(t *testing.T) {
 		metrics.NewCount("doubleHist.test.bucket", uint64(ts), 18, []string{"lower_bound:0", "upper_bound:inf"}),
 	}
 
-	tr := newTranslator(zap.NewNop(), config.MetricsConfig{SendMonotonic: true})
+	tr := newTranslator(zap.NewNop(), defaultCfg)
 	delta := true
 
-	tr.cfg.Buckets = false
+	tr.cfg.HistConfig.Mode = histogramModeNoBuckets
+	res, sl := tr.mapHistogramMetrics("doubleHist.test", slice, delta, []string{})
+	require.Empty(t, sl)
 	assert.ElementsMatch(t,
-		tr.mapHistogramMetrics("doubleHist.test", slice, delta, []string{}), // No buckets
+		res, // No buckets
 		noBuckets,
 	)
 
-	tr.cfg.Buckets = true
+	tr.cfg.HistConfig.Mode = histogramModeCounters
+	res, sl = tr.mapHistogramMetrics("doubleHist.test", slice, delta, []string{})
+	require.Empty(t, sl)
 	assert.ElementsMatch(t,
-		tr.mapHistogramMetrics("doubleHist.test", slice, delta, []string{}), // buckets
+		res, // buckets
 		append(noBuckets, buckets...),
 	)
 
@@ -474,15 +487,19 @@ func TestMapDeltaHistogramMetrics(t *testing.T) {
 		metrics.NewCount("doubleHist.test.bucket", uint64(ts), 18, []string{"attribute_tag:attribute_value", "lower_bound:0", "upper_bound:inf"}),
 	}
 
-	tr.cfg.Buckets = false
+	tr.cfg.HistConfig.Mode = histogramModeNoBuckets
+	res, sl = tr.mapHistogramMetrics("doubleHist.test", slice, delta, []string{"attribute_tag:attribute_value"})
+	require.Empty(t, sl)
 	assert.ElementsMatch(t,
-		tr.mapHistogramMetrics("doubleHist.test", slice, delta, []string{"attribute_tag:attribute_value"}), // No buckets
+		res, // No buckets
 		noBucketsAttributeTags,
 	)
 
-	tr.cfg.Buckets = true
+	tr.cfg.HistConfig.Mode = histogramModeCounters
+	res, sl = tr.mapHistogramMetrics("doubleHist.test", slice, delta, []string{"attribute_tag:attribute_value"})
+	require.Empty(t, sl)
 	assert.ElementsMatch(t,
-		tr.mapHistogramMetrics("doubleHist.test", slice, delta, []string{"attribute_tag:attribute_value"}), // buckets
+		res, // buckets
 		append(noBucketsAttributeTags, bucketsAttributeTags...),
 	)
 }
@@ -510,12 +527,14 @@ func TestMapCumulativeHistogramMetrics(t *testing.T) {
 		metrics.NewCount("doubleHist.test.bucket", uint64(seconds(2)), 2, []string{"lower_bound:0", "upper_bound:inf"}),
 	}
 
-	tr := newTranslator(zap.NewNop(), config.MetricsConfig{SendMonotonic: true})
+	tr := newTranslator(zap.NewNop(), defaultCfg)
 	delta := false
 
-	tr.cfg.Buckets = true
+	tr.cfg.HistConfig.Mode = histogramModeCounters
+	res, sl := tr.mapHistogramMetrics("doubleHist.test", slice, delta, []string{})
+	require.Empty(t, sl)
 	assert.ElementsMatch(t,
-		tr.mapHistogramMetrics("doubleHist.test", slice, delta, []string{}),
+		res,
 		expected,
 	)
 }
@@ -645,7 +664,8 @@ func TestRunningMetrics(t *testing.T) {
 	cfg := config.MetricsConfig{}
 	tr := newTranslator(zap.NewNop(), cfg)
 
-	series := tr.MapMetrics(ms)
+	series, sl := tr.MapMetrics(ms)
+	require.Empty(t, sl)
 
 	runningHostnames := []string{}
 
@@ -854,12 +874,12 @@ func testCount(name string, val float64, seconds uint64) datadog.Metric {
 
 func TestMapMetrics(t *testing.T) {
 	md := createTestMetrics()
-	cfg := config.MetricsConfig{SendMonotonic: true}
 
 	core, observed := observer.New(zapcore.DebugLevel)
 	testLogger := zap.New(core)
-	tr := newTranslator(testLogger, cfg)
-	series := tr.MapMetrics(md)
+	tr := newTranslator(testLogger, defaultCfg)
+	series, sl := tr.MapMetrics(md)
+	require.Empty(t, sl)
 
 	filtered := removeRunningMetrics(series)
 	assert.ElementsMatch(t, filtered, []datadog.Metric{
@@ -977,12 +997,12 @@ func createNaNMetrics() pdata.Metrics {
 
 func TestNaNMetrics(t *testing.T) {
 	md := createNaNMetrics()
-	cfg := config.MetricsConfig{SendMonotonic: true}
 
 	core, observed := observer.New(zapcore.DebugLevel)
 	testLogger := zap.New(core)
-	tr := newTranslator(testLogger, cfg)
-	series := tr.MapMetrics(md)
+	tr := newTranslator(testLogger, defaultCfg)
+	series, sl := tr.MapMetrics(md)
+	require.Empty(t, sl)
 
 	filtered := removeRunningMetrics(series)
 	assert.ElementsMatch(t, filtered, []datadog.Metric{
