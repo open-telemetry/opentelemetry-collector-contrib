@@ -20,10 +20,10 @@ import (
 	"math"
 	"strconv"
 
+	"github.com/DataDog/datadog-agent/pkg/quantile"
 	"go.opentelemetry.io/collector/model/pdata"
 	"go.uber.org/zap"
 
-	"github.com/DataDog/datadog-agent/pkg/quantile"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/config"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/attributes"
 )
@@ -359,7 +359,7 @@ func (t *Translator) mapSummaryMetrics(
 
 				quantileTags := []string{getQuantileTag(q.Quantile())}
 				quantileTags = append(quantileTags, tags...)
-        consumer.ConsumeTimeSeries(ctx, fullName, Gauge, ts, q.Value(), quantileTags, host)
+				consumer.ConsumeTimeSeries(ctx, fullName, Gauge, ts, q.Value(), quantileTags, host)
 			}
 		}
 	}

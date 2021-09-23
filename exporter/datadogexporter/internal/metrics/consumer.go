@@ -17,10 +17,10 @@ package metrics
 import (
 	"context"
 
+	"github.com/DataDog/datadog-agent/pkg/quantile"
 	"go.opentelemetry.io/collector/component"
 	"gopkg.in/zorkian/go-datadog-api.v2"
 
-	"github.com/DataDog/datadog-agent/pkg/quantile"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/sketches"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/translator"
 )

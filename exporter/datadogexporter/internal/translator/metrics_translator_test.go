@@ -601,6 +601,7 @@ func TestMapCumulativeHistogramMetrics(t *testing.T) {
 func TestLegacyBucketsTags(t *testing.T) {
 	// Test that passing the same tags slice doesn't reuse the slice.
 	cfg := config.MetricsConfig{}
+	ctx := context.Background()
 	tr := newTranslator(zap.NewNop(), cfg)
 
 	tags := make([]string, 0, 10)
@@ -609,16 +610,20 @@ func TestLegacyBucketsTags(t *testing.T) {
 	pointOne.SetBucketCounts([]uint64{2, 18})
 	pointOne.SetExplicitBounds([]float64{0})
 	pointOne.SetTimestamp(seconds(0))
-	seriesOne := tr.getLegacyBuckets("test.histogram.one", pointOne, true, tags)
+	consumer := &mockTimeSeriesConsumer{}
+	tr.getLegacyBuckets(ctx, consumer, "test.histogram.one", pointOne, true, tags, "")
+	seriesOne := consumer.metrics
 
 	pointTwo := pdata.NewHistogramDataPoint()
 	pointTwo.SetBucketCounts([]uint64{2, 18})
 	pointTwo.SetExplicitBounds([]float64{1})
 	pointTwo.SetTimestamp(seconds(0))
-	seriesTwo := tr.getLegacyBuckets("test.histogram.two", pointTwo, true, tags)
+	consumer = &mockTimeSeriesConsumer{}
+	tr.getLegacyBuckets(ctx, consumer, "test.histogram.two", pointTwo, true, tags, "")
+	seriesTwo := consumer.metrics
 
-	assert.ElementsMatch(t, seriesOne[0].Tags, []string{"lower_bound:-inf", "upper_bound:0"})
-	assert.ElementsMatch(t, seriesTwo[0].Tags, []string{"lower_bound:-inf", "upper_bound:1.0"})
+	assert.ElementsMatch(t, seriesOne[0].tags, []string{"lower_bound:-inf", "upper_bound:0"})
+	assert.ElementsMatch(t, seriesTwo[0].tags, []string{"lower_bound:-inf", "upper_bound:1.0"})
 }
 
 func TestFormatFloat(t *testing.T) {
