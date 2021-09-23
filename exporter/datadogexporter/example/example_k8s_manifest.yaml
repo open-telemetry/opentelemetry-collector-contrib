@@ -169,6 +169,9 @@ data:
         api:
           key: <YOUR_API_KEY>
     service:
+      telemetry:
+        logs:
+          level: "DEBUG"
       extensions: [health_check, zpages]
       pipelines:
         metrics/2:
@@ -223,7 +226,6 @@ spec:
       - command:
           - "/otelcontribcol"
           - "--config=/conf/otel-collectorcollector-config.yaml"
-          - "--log-level=debug"
         image: otel/opentelemetry-collector-contrib:latest
         name: otel-collector
         resources:
