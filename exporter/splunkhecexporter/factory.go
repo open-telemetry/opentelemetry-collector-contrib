@@ -22,6 +22,9 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 )
 
 const (
@@ -52,6 +55,17 @@ func createDefaultConfig() config.Exporter {
 		DisableCompression:   false,
 		MaxConnections:       defaultMaxIdleCons,
 		MaxContentLengthLogs: maxContentLengthLogsLimit,
+		HecToOtelAttrs: splunk.HecToOtelAttrs{
+			Source:     splunk.DefaultSourceLabel,
+			SourceType: splunk.DefaultSourceTypeLabel,
+			Index:      splunk.DefaultIndexLabel,
+			Host:       conventions.AttributeHostName,
+		},
+		HecFields: OtelToHecFields{
+			SeverityText:   splunk.DefaultSeverityTextLabel,
+			SeverityNumber: splunk.DefaultSeverityNumberLabel,
+			Name:           splunk.DefaultNameLabel,
+		},
 	}
 }
 

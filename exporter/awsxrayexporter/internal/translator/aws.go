@@ -129,7 +129,7 @@ func makeAws(attributes map[string]pdata.AttributeValue, resource pdata.Resource
 		case awsxray.AWSOperationAttribute:
 			operation = value.StringVal()
 		case awsxray.AWSAccountAttribute:
-			if value.Type() != pdata.AttributeValueTypeNull {
+			if value.Type() != pdata.AttributeValueTypeEmpty {
 				account = value.StringVal()
 			}
 		case awsxray.AWSRegionAttribute:

@@ -16,10 +16,11 @@ exporters:
   loki/allsettings:
     endpoint: "https://loki:3100/loki/api/v1/push"
     tenant_id: "example"
-    insecure: true
-    ca_file: /var/lib/mycert.pem
-    cert_file: certfile
-    key_file: keyfile
+    tls:
+      insecure: true
+      ca_file: /var/lib/mycert.pem
+      cert_file: certfile
+      key_file: keyfile
     timeout: 10s
     read_buffer_size: 123
     write_buffer_size: 345

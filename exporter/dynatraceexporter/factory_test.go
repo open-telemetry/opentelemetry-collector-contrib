@@ -23,7 +23,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/config/configcheck"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configtest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -45,10 +44,11 @@ func TestCreateDefaultConfig(t *testing.T) {
 			Enabled: false,
 		},
 
-		Tags: []string{},
+		Tags:              []string{},
+		DefaultDimensions: make(map[string]string),
 	}, cfg, "failed to create default config")
 
-	assert.NoError(t, configcheck.ValidateConfig(cfg))
+	assert.NoError(t, configtest.CheckConfigStruct(cfg))
 }
 
 // TestLoadConfig tests that the configuration is loaded correctly
@@ -78,7 +78,8 @@ func TestLoadConfig(t *testing.T) {
 					"Content-Type": "text/plain; charset=UTF-8",
 					"User-Agent":   "opentelemetry-collector"},
 			},
-			Tags: []string{},
+			Tags:              []string{},
+			DefaultDimensions: make(map[string]string),
 		}, defaultConfig)
 	})
 	t.Run("valid config", func(t *testing.T) {
@@ -102,7 +103,35 @@ func TestLoadConfig(t *testing.T) {
 
 			Prefix: "myprefix",
 
-			Tags: []string{"tag_example=tag_value"},
+			Tags: []string{},
+			DefaultDimensions: map[string]string{
+				"dimension_example": "dimension_value",
+			},
+		}, validConfig)
+	})
+	t.Run("valid config with tags", func(t *testing.T) {
+		validConfig := cfg.Exporters[config.NewIDWithName(typeStr, "valid_tags")].(*dtconfig.Config)
+		err = validConfig.ValidateAndConfigureHTTPClientSettings()
+
+		require.NoError(t, err)
+		assert.Equal(t, &dtconfig.Config{
+			ExporterSettings: config.NewExporterSettings(config.NewIDWithName(typeStr, "valid_tags")),
+			RetrySettings:    exporterhelper.DefaultRetrySettings(),
+			QueueSettings:    exporterhelper.DefaultQueueSettings(),
+
+			HTTPClientSettings: confighttp.HTTPClientSettings{
+				Endpoint: "http://example.com/api/v2/metrics/ingest",
+				Headers: map[string]string{
+					"Authorization": "Api-Token token",
+					"Content-Type":  "text/plain; charset=UTF-8",
+					"User-Agent":    "opentelemetry-collector"},
+			},
+			APIToken: "token",
+
+			Prefix: "myprefix",
+
+			Tags:              []string{"tag_example=tag_value"},
+			DefaultDimensions: make(map[string]string),
 		}, validConfig)
 	})
 	t.Run("bad endpoint", func(t *testing.T) {

@@ -1,0 +1,22 @@
+receivers:
+  nop:
+
+processors:
+  resourcedetection/system:
+    detectors: [env, system]
+    timeout: 2s
+    override: false
+    system:
+      hostname_sources: [invalid_source]
+
+exporters:
+  nop:
+
+service:
+  pipelines:
+    metrics:
+      receivers: [nop]
+      processors:
+      # Choose one depending on your cloud provider and environment:
+      # - resourcedetection/system
+      exporters: [nop]

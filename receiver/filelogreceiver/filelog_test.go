@@ -32,7 +32,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/config/configcheck"
 	"go.opentelemetry.io/collector/config/configtest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/model/pdata"
@@ -44,7 +43,7 @@ func TestDefaultConfig(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	require.NotNil(t, cfg, "failed to create default config")
-	require.NoError(t, configcheck.ValidateConfig(cfg))
+	require.NoError(t, configtest.CheckConfigStruct(cfg))
 }
 
 func TestLoadConfig(t *testing.T) {

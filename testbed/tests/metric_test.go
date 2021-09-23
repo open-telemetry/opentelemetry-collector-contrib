@@ -141,7 +141,7 @@ func TestMetricsFromFile(t *testing.T) {
 	defer tc.Stop()
 
 	tc.StartBackend()
-	tc.StartAgent("--log-level=debug")
+	tc.StartAgent()
 
 	tc.StartLoad(options)
 

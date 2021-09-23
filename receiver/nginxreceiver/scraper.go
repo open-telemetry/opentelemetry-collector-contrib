@@ -121,8 +121,8 @@ func (r *nginxScraper) scrape(context.Context) (pdata.ResourceMetricsSlice, erro
 	}
 
 	now := pdata.NewTimestampFromTime(time.Now())
-	metrics := pdata.NewMetrics()
-	ilm := metrics.ResourceMetrics().AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty()
+	metrics := pdata.NewResourceMetricsSlice()
+	ilm := metrics.AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty()
 	ilm.InstrumentationLibrary().SetName("otelcol/nginx")
 
 	addIntSum(ilm.Metrics(), metadata.M.NginxRequests.Init, now, stats.Requests)
@@ -137,7 +137,7 @@ func (r *nginxScraper) scrape(context.Context) (pdata.ResourceMetricsSlice, erro
 	addCurrentConnectionDataPoint(dps, metadata.LabelState.Writing, now, stats.Connections.Writing)
 	addCurrentConnectionDataPoint(dps, metadata.LabelState.Waiting, now, stats.Connections.Waiting)
 
-	return metrics.ResourceMetrics(), nil
+	return metrics, nil
 }
 
 func addIntSum(metrics pdata.MetricSlice, initFunc func(pdata.Metric), now pdata.Timestamp, value int64) {

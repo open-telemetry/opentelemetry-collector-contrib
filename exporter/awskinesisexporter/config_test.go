@@ -17,13 +17,16 @@ package awskinesisexporter
 import (
 	"path"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/config/configcheck"
 	"go.opentelemetry.io/collector/config/configtest"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awskinesisexporter/internal/batch"
 )
 
 func TestDefaultConfig(t *testing.T) {
@@ -41,22 +44,14 @@ func TestDefaultConfig(t *testing.T) {
 	assert.Equal(t, e,
 		&Config{
 			ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
+			QueueSettings:    exporterhelper.DefaultQueueSettings(),
+			RetrySettings:    exporterhelper.DefaultRetrySettings(),
+			TimeoutSettings:  exporterhelper.DefaultTimeoutSettings(),
 			AWS: AWSConfig{
 				Region: "us-west-2",
 			},
-			KPL: KPLConfig{
-				BatchSize:            5242880,
-				BatchCount:           1000,
-				BacklogCount:         2000,
-				FlushIntervalSeconds: 5,
-				MaxConnections:       24,
-			},
-
-			QueueSize:            100000,
-			NumWorkers:           8,
-			FlushIntervalSeconds: 5,
-			MaxBytesPerBatch:     100000,
-			MaxBytesPerSpan:      900000,
+			MaxRecordsPerBatch: batch.MaxBatchedRecords,
+			MaxRecordSize:      batch.MaxRecordSize,
 		},
 	)
 }
@@ -77,34 +72,27 @@ func TestConfig(t *testing.T) {
 	assert.Equal(t, e,
 		&Config{
 			ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
+			RetrySettings: exporterhelper.RetrySettings{
+				Enabled:         false,
+				MaxInterval:     30 * time.Second,
+				InitialInterval: 5 * time.Second,
+				MaxElapsedTime:  300 * time.Second,
+			},
+			TimeoutSettings: exporterhelper.DefaultTimeoutSettings(),
+			QueueSettings:   exporterhelper.DefaultQueueSettings(),
 			AWS: AWSConfig{
 				StreamName:      "test-stream",
 				KinesisEndpoint: "awskinesis.mars-1.aws.galactic",
 				Region:          "mars-1",
 				Role:            "arn:test-role",
 			},
-			KPL: KPLConfig{
-				AggregateBatchCount:  10,
-				AggregateBatchSize:   11,
-				BatchSize:            12,
-				BatchCount:           13,
-				BacklogCount:         14,
-				FlushIntervalSeconds: 15,
-				MaxConnections:       16,
-				MaxRetries:           17,
-				MaxBackoffSeconds:    18,
-			},
-
-			QueueSize:            1,
-			NumWorkers:           2,
-			FlushIntervalSeconds: 3,
-			MaxBytesPerBatch:     4,
-			MaxBytesPerSpan:      5,
+			MaxRecordSize:      1000,
+			MaxRecordsPerBatch: 10,
 		},
 	)
 }
 
 func TestConfigCheck(t *testing.T) {
 	cfg := (NewFactory()).CreateDefaultConfig()
-	assert.NoError(t, configcheck.ValidateConfig(cfg))
+	assert.NoError(t, configtest.CheckConfigStruct(cfg))
 }

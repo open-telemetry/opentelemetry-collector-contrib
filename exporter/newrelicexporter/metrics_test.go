@@ -298,7 +298,7 @@ func TestRecordAttributeMetadata(t *testing.T) {
 			{attributeType: pdata.AttributeValueTypeMap, location: attributeLocationSpanEvent}:    1,
 			{attributeType: pdata.AttributeValueTypeDouble, location: attributeLocationLog}:       1,
 			{attributeType: pdata.AttributeValueTypeInt, location: attributeLocationResource}:     1,
-			{attributeType: pdata.AttributeValueTypeNull, location: attributeLocationSpan}:        1,
+			{attributeType: pdata.AttributeValueTypeEmpty, location: attributeLocationSpan}:       1,
 			{attributeType: pdata.AttributeValueTypeString, location: attributeLocationSpanEvent}: 1,
 		},
 	}

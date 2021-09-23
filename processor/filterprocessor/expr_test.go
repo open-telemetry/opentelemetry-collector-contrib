@@ -143,7 +143,11 @@ func testProcessor(t *testing.T, include []string, exclude []string) (component.
 	core, logs := observer.New(zapcore.WarnLevel)
 	proc, err := factory.CreateMetricsProcessor(
 		ctx,
-		component.ProcessorCreateSettings{Logger: zap.New(core)},
+		component.ProcessorCreateSettings{
+			TelemetrySettings: component.TelemetrySettings{
+				Logger: zap.New(core),
+			},
+		},
 		cfg,
 		next,
 	)
