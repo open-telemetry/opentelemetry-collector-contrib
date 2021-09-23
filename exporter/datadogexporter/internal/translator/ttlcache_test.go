@@ -57,7 +57,7 @@ func TestMetricDimensionsToMapKey(t *testing.T) {
 	// - if the capacity of the tags array passed to it was higher than its length
 	// - and the metric name is earlier (in alphabetical order) than one of the tags
 	// then the original tag array would be modified (without a reallocation, since there is enough capacity),
-	// and would contain a tag labelled as the metric name, while the final tag (in alphabetical order)
+	// and would contain a tag labeled as the metric name, while the final tag (in alphabetical order)
 	// would get left out.
 	// This test checks that this doesn't happen anymore.
 	originalTags := make([]string, 2, 3)
