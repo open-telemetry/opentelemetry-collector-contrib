@@ -199,10 +199,11 @@ func (t *Translator) getLegacyBuckets(name string, p pdata.HistogramDataPoint, d
 	fullName := fmt.Sprintf("%s.bucket", name)
 	for idx, val := range p.BucketCounts() {
 		lowerBound, upperBound := getBounds(p, idx)
-		bucketTags := append(tags,
+		bucketTags := []string{
 			fmt.Sprintf("lower_bound:%s", formatFloat(lowerBound)),
 			fmt.Sprintf("upper_bound:%s", formatFloat(upperBound)),
-		)
+		}
+		bucketTags = append(bucketTags, tags...)
 
 		count := float64(val)
 		ts := uint64(p.Timestamp())
@@ -336,7 +337,8 @@ func (t *Translator) mapSummaryMetrics(name string, slice pdata.SummaryDataPoint
 					continue
 				}
 
-				quantileTags := append(tags, getQuantileTag(q.Quantile()))
+				quantileTags := []string{getQuantileTag(q.Quantile())}
+				quantileTags = append(quantileTags, tags...)
 				ms = append(ms,
 					metrics.NewGauge(fullName, ts, q.Value(), quantileTags),
 				)
