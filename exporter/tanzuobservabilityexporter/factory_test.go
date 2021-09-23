@@ -18,20 +18,21 @@ import (
 	"context"
 	"path"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/config/configcheck"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configtest"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
 func TestCreateDefaultConfig(t *testing.T) {
 	cfg := createDefaultConfig()
 	assert.NotNil(t, cfg, "failed to create default config")
-	require.NoError(t, configcheck.ValidateConfig(cfg))
+	require.NoError(t, configtest.CheckConfigStruct(cfg))
 
 	actual, ok := cfg.(*Config)
 	require.True(t, ok, "invalid Config: %#v", cfg)
@@ -55,6 +56,17 @@ func TestLoadConfig(t *testing.T) {
 		ExporterSettings: config.NewExporterSettings(config.NewID("tanzuobservability")),
 		Traces: TracesConfig{
 			HTTPClientSettings: confighttp.HTTPClientSettings{Endpoint: "http://localhost:40001"},
+		},
+		QueueSettings: exporterhelper.QueueSettings{
+			Enabled:      true,
+			NumConsumers: 2,
+			QueueSize:    10,
+		},
+		RetrySettings: exporterhelper.RetrySettings{
+			Enabled:         true,
+			InitialInterval: 10 * time.Second,
+			MaxInterval:     60 * time.Second,
+			MaxElapsedTime:  10 * time.Minute,
 		},
 	}
 	assert.Equal(t, expected, actual)

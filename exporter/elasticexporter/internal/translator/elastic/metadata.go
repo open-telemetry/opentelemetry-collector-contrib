@@ -21,7 +21,7 @@ import (
 	"go.elastic.co/apm/model"
 	"go.elastic.co/fastjson"
 	"go.opentelemetry.io/collector/model/pdata"
-	"go.opentelemetry.io/collector/translator/conventions"
+	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
 )
 
 // EncodeResourceMetadata encodes a metadata line from resource, writing to w.
@@ -41,7 +41,7 @@ func EncodeResourceMetadata(resource pdata.Resource, w *fastjson.Writer) {
 			service.Name = cleanServiceName(v.StringVal())
 		case conventions.AttributeServiceVersion:
 			service.Version = truncate(v.StringVal())
-		case conventions.AttributeServiceInstance:
+		case conventions.AttributeServiceInstanceID:
 			serviceNode.ConfiguredName = truncate(v.StringVal())
 			service.Node = &serviceNode
 		case conventions.AttributeDeploymentEnvironment:
@@ -55,14 +55,14 @@ func EncodeResourceMetadata(resource pdata.Resource, w *fastjson.Writer) {
 		case conventions.AttributeTelemetrySDKVersion:
 			agent.Version = truncate(v.StringVal())
 
-		case conventions.AttributeK8sNamespace:
+		case conventions.AttributeK8SNamespaceName:
 			k8s.Namespace = truncate(v.StringVal())
 			system.Kubernetes = &k8s
-		case conventions.AttributeK8sPod:
+		case conventions.AttributeK8SPodName:
 			k8sPod.Name = truncate(v.StringVal())
 			k8s.Pod = &k8sPod
 			system.Kubernetes = &k8s
-		case conventions.AttributeK8sPodUID:
+		case conventions.AttributeK8SPodUID:
 			k8sPod.UID = truncate(v.StringVal())
 			k8s.Pod = &k8sPod
 			system.Kubernetes = &k8s

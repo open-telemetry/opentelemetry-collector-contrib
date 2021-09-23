@@ -41,12 +41,12 @@ func TestParseMetric_Labels(t *testing.T) {
 	require.NoError(t, err)
 
 	pt := pdm.Sum().DataPoints().At(0)
-	labelsMap := pt.LabelsMap()
-	l := labelsMap.Len()
+	attributesMap := pt.Attributes()
+	l := attributesMap.Len()
 	assert.Equal(t, 1, l)
-	state, ok := labelsMap.Get("state")
+	state, ok := attributesMap.Get("state")
 	assert.True(t, ok)
-	assert.Equal(t, "sys", state)
+	assert.Equal(t, "sys", state.StringVal())
 }
 
 func TestParseMetric_Errors(t *testing.T) {

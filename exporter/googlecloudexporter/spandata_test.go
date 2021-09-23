@@ -32,9 +32,9 @@ func TestPDataResourceSpansToOTSpanData_endToEnd(t *testing.T) {
 	// pdata.ResourceSpans is transformed to its *trace.SpanData correctly!
 
 	endTime := time.Now().Round(time.Second)
-	pdataEndTime := pdata.TimestampFromTime(endTime)
+	pdataEndTime := pdata.NewTimestampFromTime(endTime)
 	startTime := endTime.Add(-90 * time.Second)
-	pdataStartTime := pdata.TimestampFromTime(startTime)
+	pdataStartTime := pdata.NewTimestampFromTime(startTime)
 
 	rs := pdata.NewResourceSpans()
 	resource := rs.Resource()
@@ -115,7 +115,7 @@ func TestPDataResourceSpansToOTSpanData_endToEnd(t *testing.T) {
 				Attributes: []attribute.KeyValue{attribute.Bool("flag", false)},
 			},
 		},
-		links: []apitrace.Link{
+		links: []sdktrace.Link{
 			{
 				SpanContext: apitrace.NewSpanContext(apitrace.SpanContextConfig{
 					TraceID: apitrace.TraceID{0xC0, 0xC1, 0xC2, 0xC3, 0xC4, 0xC5, 0xC6, 0xC7, 0xC8, 0xC9, 0xCA, 0xCB, 0xCC, 0xCD, 0xCE, 0xCF},

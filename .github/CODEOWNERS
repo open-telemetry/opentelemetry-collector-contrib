@@ -20,7 +20,7 @@ exporter/awsprometheusremotewriteexporter/           @open-telemetry/collector-c
 exporter/awsxrayexporter/                            @open-telemetry/collector-contrib-approvers @kbrockhoff @anuraaga
 exporter/azuremonitorexporter/                       @open-telemetry/collector-contrib-approvers @pcwiese
 exporter/carbonexporter/                             @open-telemetry/collector-contrib-approvers @pjanotti
-exporter/datadogexporter/                            @open-telemetry/collector-contrib-approvers @KSerrania @ericmustin @mx-psi
+exporter/datadogexporter/                            @open-telemetry/collector-contrib-approvers @KSerrania @mx-psi
 exporter/dynatraceexporter/                          @open-telemetry/collector-contrib-approvers @dyladan @arminru
 exporter/elasticexporter/                            @open-telemetry/collector-contrib-approvers @axw @simitt @jalvz
 exporter/elasticsearchexporter/                      @open-telemetry/collector-contrib-approvers @urso @faec @blakerouse
@@ -29,7 +29,7 @@ exporter/honeycombexporter/                          @open-telemetry/collector-c
 exporter/humioexporter/                              @open-telemetry/collector-contrib-approvers @xitric
 exporter/awskinesisexporter/                         @open-telemetry/collector-contrib-approvers @owais @anuraaga
 exporter/loadbalancingexporter/                      @open-telemetry/collector-contrib-approvers @jpkrohling
-exporter/logzioexporter/                             @open-telemetry/collector-contrib-approvers @yyyogev @jkowall @albertteoh
+exporter/logzioexporter/                             @open-telemetry/collector-contrib-approvers @jkowall @Doron-Bargo @yotamloe
 exporter/lokiexporter/                               @open-telemetry/collector-contrib-approvers @gramidt
 exporter/newrelicexporter/                           @open-telemetry/collector-contrib-approvers @alanwest @a-feld @jack-berg @nrcventura
 exporter/sapmexporter/                               @open-telemetry/collector-contrib-approvers @owais @dmitryax
@@ -44,19 +44,22 @@ exporter/googlecloudpubsubexporter/                  @open-telemetry/collector-c
 exporter/tanzuobservabilityexporter/                 @open-telemetry/collector-contrib-approvers @oppegard @thepeterstone
 exporter/influxdbexporter/                           @open-telemetry/collector-contrib-approvers @jacobmarble @8none1
 
+extension/awsxrayproxy/                              @open-telemetry/collector-contrib-approvers @anuraaga @Aneurysm9 @mxiamxia
 extension/httpforwarder/                             @open-telemetry/collector-contrib-approvers @asuresh4
 extension/observer/                                  @open-telemetry/collector-contrib-approvers @asuresh4 @jrcamp
 
 internal/aws/                                        @open-telemetry/collector-contrib-approvers @anuraaga @mxiamxia
+internal/docker/                                     @open-telemetry/collector-contrib-approvers @mstumpfx @rmfitzpatrick
+
 internal/k8sconfig/                                  @open-telemetry/collector-contrib-approvers @pmcollins @asuresh4
 internal/splunk/                                     @open-telemetry/collector-contrib-approvers @pmcollins @asuresh4
 internal/stanza/                                     @open-telemetry/collector-contrib-approvers @djaglowski
 
-pkg/batchpertrace/                                   @open-telemetry/collector-contrib-approvers @jpkrohling
+pkg/batchpersignal/                                  @open-telemetry/collector-contrib-approvers @jpkrohling
 
 processor/groupbyattrsprocessor/                     @open-telemetry/collector-contrib-approvers @pmm-sumo
 processor/groupbytraceprocessor/                     @open-telemetry/collector-contrib-approvers @jpkrohling
-processor/k8sprocessor/                              @open-telemetry/collector-contrib-approvers @owais @dmitryax @pmm-sumo
+processor/k8sattributesprocessor/                    @open-telemetry/collector-contrib-approvers @owais @dmitryax @pmm-sumo
 processor/metricstransformprocessor/                 @open-telemetry/collector-contrib-approvers @james-bebbington
 processor/resourcedetectionprocessor/                @open-telemetry/collector-contrib-approvers @jrcamp @pmm-sumo @anuraaga @dashpole
 processor/resourcedetectionprocessor/internal/azure  @open-telemetry/collector-contrib-approvers @mx-psi
@@ -68,6 +71,7 @@ receiver/awscontainerinsightreceiver/                @open-telemetry/collector-c
 receiver/awsecscontainermetricsreceiver/             @open-telemetry/collector-contrib-approvers @kbrockhoff @anuraaga
 receiver/awsxrayreceiver/                            @open-telemetry/collector-contrib-approvers @kbrockhoff @anuraaga
 receiver/carbonreceiver/                             @open-telemetry/collector-contrib-approvers @pjanotti
+receiver/cloudfoundryreceiver/                       @open-telemetry/collector-contrib-approvers @agoallikmaa @pellared
 receiver/collectdreceiver/                           @open-telemetry/collector-contrib-approvers @owais
 receiver/dockerstatsreceiver/                        @open-telemetry/collector-contrib-approvers @rmfitzpatrick
 receiver/dotnetdiagnosticsreceiver/                  @open-telemetry/collector-contrib-approvers @pmcollins @davmason

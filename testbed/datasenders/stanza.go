@@ -26,7 +26,8 @@ import (
 
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/model/pdata"
-	"go.opentelemetry.io/collector/testbed/testbed"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/testbed"
 )
 
 // TODO: Extract common bits from FileLogWriter and NewFluentBitFileLogWriter

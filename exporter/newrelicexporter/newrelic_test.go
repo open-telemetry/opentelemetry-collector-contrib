@@ -29,16 +29,16 @@ import (
 	agentmetricspb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/metrics/v1"
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
-	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opencensus.io/stats/view"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/model/pdata"
-	"go.opentelemetry.io/collector/translator/internaldata"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/protobuf/types/known/timestamppb"
+
+	internaldata "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus"
 )
 
 const (
@@ -186,14 +186,14 @@ func runLogMock(initialContext context.Context, plogs pdata.Logs, cfg mockConfig
 	return m, nil
 }
 
-func testTraceData(t *testing.T, expected []Batch, resource *resourcepb.Resource, spans []*tracepb.Span, apiKey string) {
+func testTraceData(t *testing.T, expected []Batch, td pdata.Traces, apiKey string) {
 	ctx := context.Background()
 	useAPIKeyHeader := apiKey != ""
 	if useAPIKeyHeader {
 		ctx = metadata.NewIncomingContext(ctx, metadata.MD{"api-key": []string{apiKey}})
 	}
 
-	m, err := runTraceMock(ctx, internaldata.OCToTraces(nil, resource, spans), mockConfig{useAPIKeyHeader: useAPIKeyHeader})
+	m, err := runTraceMock(ctx, td, mockConfig{useAPIKeyHeader: useAPIKeyHeader})
 	require.NoError(t, err)
 	assert.Equal(t, expected, m.Batches)
 	if !useAPIKeyHeader {
@@ -230,45 +230,21 @@ func testLogData(t *testing.T, expected []Batch, logs pdata.Logs, apiKey string)
 }
 
 func TestExportTraceWithBadURL(t *testing.T) {
-	ptrace := internaldata.OCToTraces(nil, nil,
-		[]*tracepb.Span{
-			{
-				SpanId: []byte{0, 0, 0, 0, 0, 0, 0, 1},
-				Name:   &tracepb.TruncatableString{Value: "a"},
-			},
-		})
-
-	_, err := runTraceMock(context.Background(), ptrace, mockConfig{serverURL: "http://badurl"})
+	_, err := runTraceMock(context.Background(), newTestTraces(), mockConfig{serverURL: "http://badurl"})
 	require.Error(t, err)
 }
 
 func TestExportTraceWithErrorStatusCode(t *testing.T) {
-	ptrace := internaldata.OCToTraces(nil, nil,
-		[]*tracepb.Span{
-			{
-				SpanId: []byte{0, 0, 0, 0, 0, 0, 0, 1},
-				Name:   &tracepb.TruncatableString{Value: "a"},
-			},
-		})
-
-	_, err := runTraceMock(context.Background(), ptrace, mockConfig{statusCode: 500})
+	_, err := runTraceMock(context.Background(), newTestTraces(), mockConfig{statusCode: 500})
 	require.Error(t, err)
 }
 
 func TestExportTraceWith429StatusCodeAndRetryAfter(t *testing.T) {
-	ptrace := internaldata.OCToTraces(nil, nil,
-		[]*tracepb.Span{
-			{
-				SpanId: []byte{0, 0, 0, 0, 0, 0, 0, 1},
-				Name:   &tracepb.TruncatableString{Value: "a"},
-			},
-		})
-
 	expected := exporterhelper.NewThrottleRetry(
 		fmt.Errorf("new relic HTTP call failed. Status Code: 429"),
 		time.Duration(10)*time.Second)
 
-	_, err := runTraceMock(context.Background(), ptrace, mockConfig{statusCode: 429, responseHeaders: map[string]string{"Retry-After": "10"}})
+	_, err := runTraceMock(context.Background(), newTestTraces(), mockConfig{statusCode: 429, responseHeaders: map[string]string{"Retry-After": "10"}})
 
 	actual := errors.Unwrap(err)
 
@@ -276,76 +252,48 @@ func TestExportTraceWith429StatusCodeAndRetryAfter(t *testing.T) {
 }
 
 func TestExportTraceWithNot202StatusCode(t *testing.T) {
-	ptrace := internaldata.OCToTraces(nil, nil,
-		[]*tracepb.Span{
-			{
-				SpanId: []byte{0, 0, 0, 0, 0, 0, 0, 1},
-				Name:   &tracepb.TruncatableString{Value: "a"},
-			},
-		})
-
 	{
-		_, err := runTraceMock(context.Background(), ptrace, mockConfig{statusCode: 403})
+		_, err := runTraceMock(context.Background(), newTestTraces(), mockConfig{statusCode: 403})
 		require.Error(t, err)
 	}
 	{
-		_, err := runTraceMock(context.Background(), ptrace, mockConfig{statusCode: 429})
+		_, err := runTraceMock(context.Background(), newTestTraces(), mockConfig{statusCode: 429})
 		require.Error(t, err)
 	}
 }
 
 func TestExportTraceWithBadPayload(t *testing.T) {
-	ptrace := internaldata.OCToTraces(nil, nil,
-		[]*tracepb.Span{
-			{
-				SpanId: []byte{0, 0, 0, 0, 0, 0, 0, 1},
-				Name:   &tracepb.TruncatableString{Value: "a"},
-			},
-		})
-
-	_, err := runTraceMock(context.Background(), ptrace, mockConfig{statusCode: 400})
+	_, err := runTraceMock(context.Background(), newTestTraces(), mockConfig{statusCode: 400})
 	require.Error(t, err)
 }
 
 func TestExportTraceWithInvalidMetadata(t *testing.T) {
-	ptrace := internaldata.OCToTraces(nil, nil,
-		[]*tracepb.Span{
-			{
-				SpanId: []byte{0, 0, 0, 0, 0, 0, 0, 1},
-				Name:   &tracepb.TruncatableString{Value: "a"},
-			},
-		})
+	// TODO: Newrelic owners to investigate why passing valid data "newTestTraces()" does not return error.
+	td := pdata.NewTraces()
+	s := td.ResourceSpans().AppendEmpty().InstrumentationLibrarySpans().AppendEmpty().Spans().AppendEmpty()
+	s.SetName("a")
+	s.SetSpanID(pdata.NewSpanID([8]byte{0, 0, 0, 0, 0, 0, 0, 1}))
 
-	_, err := runTraceMock(context.Background(), ptrace, mockConfig{useAPIKeyHeader: true})
+	_, err := runTraceMock(context.Background(), td, mockConfig{useAPIKeyHeader: true})
 	require.Error(t, err)
 }
 
 func TestExportTraceWithNoAPIKeyInMetadata(t *testing.T) {
-	ptrace := internaldata.OCToTraces(nil, nil,
-		[]*tracepb.Span{
-			{
-				SpanId: []byte{0, 0, 0, 0, 0, 0, 0, 1},
-				Name:   &tracepb.TruncatableString{Value: "a"},
-			},
-		})
+	// TODO: Newrelic owners to investigate why passing valid data "newTestTraces()" does not return error.
+	td := pdata.NewTraces()
+	s := td.ResourceSpans().AppendEmpty().InstrumentationLibrarySpans().AppendEmpty().Spans().AppendEmpty()
+	s.SetName("a")
+	s.SetSpanID(pdata.NewSpanID([8]byte{0, 0, 0, 0, 0, 0, 0, 1}))
 
 	ctx := metadata.NewIncomingContext(context.Background(), metadata.MD{})
-	_, err := runTraceMock(ctx, ptrace, mockConfig{useAPIKeyHeader: true})
+	_, err := runTraceMock(ctx, td, mockConfig{useAPIKeyHeader: true})
 	require.Error(t, err)
 }
 
 func TestExportTracePartialData(t *testing.T) {
-	ptrace := internaldata.OCToTraces(nil, nil,
-		[]*tracepb.Span{
-			{
-				SpanId: []byte{0, 0, 0, 0, 0, 0, 0, 1},
-				Name:   &tracepb.TruncatableString{Value: "no trace id"},
-			},
-			{
-				TraceId: []byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
-				Name:    &tracepb.TruncatableString{Value: "no span id"},
-			},
-		})
+	ptrace := newTestTraces()
+	ptrace.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().At(0).SetTraceID(pdata.NewTraceID([16]byte{}))
+	ptrace.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().At(1).SetSpanID(pdata.NewSpanID([8]byte{}))
 
 	_, err := runTraceMock(context.Background(), ptrace, mockConfig{useAPIKeyHeader: false})
 	require.Error(t, err)
@@ -354,13 +302,11 @@ func TestExportTracePartialData(t *testing.T) {
 }
 
 func TestExportTraceDataMinimum(t *testing.T) {
-	spans := []*tracepb.Span{
-		{
-			TraceId: []byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
-			SpanId:  []byte{0, 0, 0, 0, 0, 0, 0, 1},
-			Name:    &tracepb.TruncatableString{Value: "root"},
-		},
-	}
+	td := pdata.NewTraces()
+	s1 := td.ResourceSpans().AppendEmpty().InstrumentationLibrarySpans().AppendEmpty().Spans().AppendEmpty()
+	s1.SetName("root")
+	s1.SetTraceID(pdata.NewTraceID([16]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}))
+	s1.SetSpanID(pdata.NewSpanID([8]byte{0, 0, 0, 0, 0, 0, 0, 1}))
 
 	expected := []Batch{
 		{
@@ -382,41 +328,31 @@ func TestExportTraceDataMinimum(t *testing.T) {
 		},
 	}
 
-	testTraceData(t, expected, nil, spans, "")
-	testTraceData(t, expected, nil, spans, "0000000000000000000000000000000000000000")
-	testTraceData(t, expected, nil, spans, "NRII-api-key")
+	testTraceData(t, expected, td, "")
+	testTraceData(t, expected, td, "0000000000000000000000000000000000000000")
+	testTraceData(t, expected, td, "NRII-api-key")
 }
 
 func TestExportTraceDataFullTrace(t *testing.T) {
-	resource := &resourcepb.Resource{
-		Labels: map[string]string{
-			"service.name": "test-service",
-			"resource":     "R1",
-		},
-	}
-
-	spans := []*tracepb.Span{
-		{
-			TraceId: []byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
-			SpanId:  []byte{0, 0, 0, 0, 0, 0, 0, 1},
-			Name:    &tracepb.TruncatableString{Value: "root"},
-			Status:  &tracepb.Status{},
-		},
-		{
-			TraceId:      []byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
-			SpanId:       []byte{0, 0, 0, 0, 0, 0, 0, 2},
-			ParentSpanId: []byte{0, 0, 0, 0, 0, 0, 0, 1},
-			Name:         &tracepb.TruncatableString{Value: "client"},
-			Status:       &tracepb.Status{},
-		},
-		{
-			TraceId:      []byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
-			SpanId:       []byte{0, 0, 0, 0, 0, 0, 0, 3},
-			ParentSpanId: []byte{0, 0, 0, 0, 0, 0, 0, 2},
-			Name:         &tracepb.TruncatableString{Value: "server"},
-			Status:       &tracepb.Status{},
-		},
-	}
+	td := pdata.NewTraces()
+	rs := td.ResourceSpans().AppendEmpty()
+	rs.Resource().Attributes().UpsertString("service.name", "test-service")
+	rs.Resource().Attributes().UpsertString("resource", "R1")
+	sps := rs.InstrumentationLibrarySpans().AppendEmpty().Spans()
+	s1 := sps.AppendEmpty()
+	s1.SetName("root")
+	s1.SetTraceID(pdata.NewTraceID([16]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}))
+	s1.SetSpanID(pdata.NewSpanID([8]byte{0, 0, 0, 0, 0, 0, 0, 1}))
+	s2 := sps.AppendEmpty()
+	s2.SetName("client")
+	s2.SetTraceID(pdata.NewTraceID([16]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}))
+	s2.SetSpanID(pdata.NewSpanID([8]byte{0, 0, 0, 0, 0, 0, 0, 2}))
+	s2.SetParentSpanID(pdata.NewSpanID([8]byte{0, 0, 0, 0, 0, 0, 0, 1}))
+	s3 := sps.AppendEmpty()
+	s3.SetName("server")
+	s3.SetTraceID(pdata.NewTraceID([16]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}))
+	s3.SetSpanID(pdata.NewSpanID([8]byte{0, 0, 0, 0, 0, 0, 0, 3}))
+	s3.SetParentSpanID(pdata.NewSpanID([8]byte{0, 0, 0, 0, 0, 0, 0, 2}))
 
 	expected := []Batch{
 		{
@@ -456,9 +392,9 @@ func TestExportTraceDataFullTrace(t *testing.T) {
 		},
 	}
 
-	testTraceData(t, expected, resource, spans, "")
-	testTraceData(t, expected, resource, spans, "0000000000000000000000000000000000000000")
-	testTraceData(t, expected, resource, spans, "NRII-api-key")
+	testTraceData(t, expected, td, "")
+	testTraceData(t, expected, td, "0000000000000000000000000000000000000000")
+	testTraceData(t, expected, td, "NRII-api-key")
 }
 
 func TestExportMetricUnsupported(t *testing.T) {
@@ -468,7 +404,7 @@ func TestExportMetricUnsupported(t *testing.T) {
 	dp := m.Histogram().DataPoints().AppendEmpty()
 	dp.SetCount(1)
 	dp.SetSum(1)
-	dp.SetTimestamp(pdata.TimestampFromTime(time.Now()))
+	dp.SetTimestamp(pdata.NewTimestampFromTime(time.Now()))
 
 	_, err := runMetricMock(context.Background(), ms, mockConfig{useAPIKeyHeader: false})
 	var unsupportedErr *errUnsupportedMetricType
@@ -717,7 +653,7 @@ func TestExportLogs(t *testing.T) {
 	rlog.Resource().Attributes().InsertString("service.name", "test-service")
 	l := rlog.InstrumentationLibraryLogs().AppendEmpty().Logs().AppendEmpty()
 	l.SetName("logname")
-	l.SetTimestamp(pdata.TimestampFromTime(timestamp))
+	l.SetTimestamp(pdata.NewTimestampFromTime(timestamp))
 	l.Body().SetStringVal("log body")
 	l.Attributes().InsertString("foo", "bar")
 
@@ -985,4 +921,18 @@ func TestFailureToRecordMetricsDoesNotAffectExportingData(t *testing.T) {
 	require.NoError(t, err)
 
 	assert.Contains(t, m.Header[http.CanonicalHeaderKey("user-agent")][0], testCollectorName)
+}
+
+func newTestTraces() pdata.Traces {
+	td := pdata.NewTraces()
+	sps := td.ResourceSpans().AppendEmpty().InstrumentationLibrarySpans().AppendEmpty().Spans()
+	s1 := sps.AppendEmpty()
+	s1.SetName("a")
+	s1.SetTraceID(pdata.NewTraceID([16]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}))
+	s1.SetSpanID(pdata.NewSpanID([8]byte{0, 0, 0, 0, 0, 0, 0, 1}))
+	s2 := sps.AppendEmpty()
+	s2.SetName("b")
+	s2.SetTraceID(pdata.NewTraceID([16]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}))
+	s2.SetSpanID(pdata.NewSpanID([8]byte{0, 0, 0, 0, 0, 0, 0, 2}))
+	return td
 }

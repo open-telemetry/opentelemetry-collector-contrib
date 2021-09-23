@@ -26,6 +26,7 @@ import (
 
 	ddconfig "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/config"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry"
 )
 
 const (
@@ -70,6 +71,10 @@ func createDefaultConfig() config.Exporter {
 			ExporterConfig: ddconfig.MetricsExporterConfig{
 				ResourceAttributesAsTags: false,
 			},
+			HistConfig: ddconfig.HistogramConfig{
+				Mode:         "nobuckets",
+				SendCountSum: true,
+			},
 		},
 
 		Traces: ddconfig.TracesConfig{
@@ -95,9 +100,17 @@ func createMetricsExporter(
 	cfg := c.(*ddconfig.Config)
 
 	set.Logger.Info("sanitizing Datadog metrics exporter configuration")
-	if err := cfg.Sanitize(); err != nil {
+	if err := cfg.Sanitize(set.Logger); err != nil {
 		return nil, err
 	}
+
+	// TODO: Remove after two releases
+	if cfg.Metrics.HistConfig.Mode == "counters" {
+		set.Logger.Warn("Histogram bucket metrics now end with .bucket instead of .count_per_bucket")
+	}
+
+	// TODO: Remove after changing the default mode.
+	set.Logger.Warn("Default histograms configuration will change to mode 'distributions' and no .count and .sum metrics in a future release.")
 
 	ctx, cancel := context.WithCancel(ctx)
 	var pushMetricsFn consumerhelper.ConsumeMetricsFunc
@@ -119,7 +132,7 @@ func createMetricsExporter(
 		pushMetricsFn = newMetricsExporter(ctx, set, cfg).PushMetricsData
 	}
 
-	return exporterhelper.NewMetricsExporter(
+	exporter, err := exporterhelper.NewMetricsExporter(
 		cfg,
 		set,
 		pushMetricsFn,
@@ -129,10 +142,12 @@ func createMetricsExporter(
 			cancel()
 			return nil
 		}),
-		exporterhelper.WithResourceToTelemetryConversion(exporterhelper.ResourceToTelemetrySettings{
-			Enabled: cfg.Metrics.ExporterConfig.ResourceAttributesAsTags,
-		}),
 	)
+	if err != nil {
+		return nil, err
+	}
+	return resourcetotelemetry.WrapMetricsExporter(
+		resourcetotelemetry.Settings{Enabled: cfg.Metrics.ExporterConfig.ResourceAttributesAsTags}, exporter), nil
 }
 
 // createTracesExporter creates a trace exporter based on this config.
@@ -145,7 +160,7 @@ func createTracesExporter(
 	cfg := c.(*ddconfig.Config)
 
 	set.Logger.Info("sanitizing Datadog metrics exporter configuration")
-	if err := cfg.Sanitize(); err != nil {
+	if err := cfg.Sanitize(set.Logger); err != nil {
 		return nil, err
 	}
 

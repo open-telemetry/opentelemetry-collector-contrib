@@ -22,7 +22,8 @@ import (
 	sls "github.com/aliyun/aliyun-log-go-sdk"
 	"github.com/gogo/protobuf/proto"
 	"go.opentelemetry.io/collector/model/pdata"
-	tracetranslator "go.opentelemetry.io/collector/translator/trace"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/tracetranslator"
 )
 
 const (
@@ -134,7 +135,7 @@ func spanToLogServiceData(span pdata.Span, resourceContents, instrumentationLibr
 		Key:   proto.String(durationField),
 		Value: proto.String(strconv.FormatUint(uint64((span.EndTimestamp()-span.StartTimestamp())/1000), 10)),
 	})
-	attributeMap := tracetranslator.AttributeMapToMap(span.Attributes())
+	attributeMap := span.Attributes().AsRaw()
 	attributeJSONBytes, _ := json.Marshal(attributeMap)
 	contentsBuffer = append(contentsBuffer, sls.LogContent{
 		Key:   proto.String(attributeField),
@@ -192,7 +193,7 @@ func eventsToString(events pdata.SpanEventSlice) string {
 		event := map[string]interface{}{}
 		event[nameField] = spanEvent.Name()
 		event[timeField] = spanEvent.Timestamp()
-		event[attributeField] = tracetranslator.AttributeMapToMap(spanEvent.Attributes())
+		event[attributeField] = spanEvent.Attributes().AsRaw()
 		eventArray = append(eventArray, event)
 	}
 	eventArrayBytes, _ := json.Marshal(&eventArray)
@@ -207,7 +208,7 @@ func spanLinksToString(spanLinkSlice pdata.SpanLinkSlice) string {
 		link := map[string]interface{}{}
 		link[spanIDField] = spanLink.SpanID().HexString()
 		link[traceIDField] = spanLink.TraceID().HexString()
-		link[attributeField] = tracetranslator.AttributeMapToMap(spanLink.Attributes())
+		link[attributeField] = spanLink.Attributes().AsRaw()
 		linkArray = append(linkArray, link)
 	}
 	linkArrayBytes, _ := json.Marshal(&linkArray)

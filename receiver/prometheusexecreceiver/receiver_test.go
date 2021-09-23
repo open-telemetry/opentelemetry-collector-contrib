@@ -31,9 +31,9 @@ import (
 	"go.opentelemetry.io/collector/config/configtest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/model/pdata"
-	"go.opentelemetry.io/collector/receiver/prometheusreceiver"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusexecreceiver/subprocessmanager"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver"
 )
 
 // loadConfigAssertNoError loads the test config and asserts there are no errors, and returns the receiver wanted
@@ -117,7 +117,7 @@ func assertTwoUniqueValuesScraped(t *testing.T, metricsSlice []pdata.Metrics) {
 		}
 		require.True(t, ok, "timestamp_now metric not found")
 		assert.Equal(t, pdata.MetricDataTypeGauge, tempM.DataType())
-		tempV := tempM.Gauge().DataPoints().At(0).Value()
+		tempV := tempM.Gauge().DataPoints().At(0).DoubleVal()
 		if i != 0 && tempV != value {
 			return
 		}

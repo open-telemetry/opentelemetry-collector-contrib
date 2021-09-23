@@ -208,7 +208,6 @@ data:
 
       extensions: [health_check]
 
-
 ---
 # create Daemonset
 apiVersion: apps/v1
@@ -250,7 +249,6 @@ spec:
           imagePullPolicy: Always
           command:
             - "/awscollector"
-              #- "--log-level=DEBUG"
             - "--config=/conf/otel-agent-config.yaml"
           volumeMounts:
             - name: rootfs

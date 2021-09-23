@@ -17,7 +17,7 @@ package correlation
 import (
 	"github.com/signalfx/signalfx-agent/pkg/apm/tracetracker"
 	"go.opentelemetry.io/collector/model/pdata"
-	"go.opentelemetry.io/collector/translator/conventions"
+	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
 )
 
 var (

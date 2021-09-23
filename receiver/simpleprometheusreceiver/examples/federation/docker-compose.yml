@@ -18,7 +18,7 @@ services:
   otelcollector:
     image: otel/opentelemetry-collector-contrib-dev:latest
     container_name: otelcollector
-    command: ["--config=/etc/otel-collector-config.yml", "--log-level=DEBUG"]
+    command: ["--config=/etc/otel-collector-config.yml"]
     volumes:
       - ./otel-collector-config.yml:/etc/otel-collector-config.yml
     depends_on:

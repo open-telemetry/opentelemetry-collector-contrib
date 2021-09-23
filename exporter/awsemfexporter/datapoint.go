@@ -110,7 +110,7 @@ type summaryMetricEntry struct {
 // At retrieves the NumberDataPoint at the given index and performs rate/delta calculation if necessary.
 func (dps numberDataPointSlice) At(i int) (dataPoint, bool) {
 	metric := dps.NumberDataPointSlice.At(i)
-	labels := createLabels(metric.LabelsMap(), dps.instrumentationLibraryName)
+	labels := createLabels(metric.Attributes(), dps.instrumentationLibraryName)
 	timestampMs := unixNanoToMilliseconds(metric.Timestamp())
 
 	var metricVal float64
@@ -146,7 +146,7 @@ func (dps numberDataPointSlice) At(i int) (dataPoint, bool) {
 // At retrieves the HistogramDataPoint at the given index.
 func (dps histogramDataPointSlice) At(i int) (dataPoint, bool) {
 	metric := dps.HistogramDataPointSlice.At(i)
-	labels := createLabels(metric.LabelsMap(), dps.instrumentationLibraryName)
+	labels := createLabels(metric.Attributes(), dps.instrumentationLibraryName)
 	timestamp := unixNanoToMilliseconds(metric.Timestamp())
 
 	return dataPoint{
@@ -162,7 +162,7 @@ func (dps histogramDataPointSlice) At(i int) (dataPoint, bool) {
 // At retrieves the SummaryDataPoint at the given index.
 func (dps summaryDataPointSlice) At(i int) (dataPoint, bool) {
 	metric := dps.SummaryDataPointSlice.At(i)
-	labels := createLabels(metric.LabelsMap(), dps.instrumentationLibraryName)
+	labels := createLabels(metric.Attributes(), dps.instrumentationLibraryName)
 	timestampMs := unixNanoToMilliseconds(metric.Timestamp())
 
 	sum := metric.Sum()
@@ -196,12 +196,12 @@ func (dps summaryDataPointSlice) At(i int) (dataPoint, bool) {
 	}, retained
 }
 
-// createLabels converts OTel StringMap labels to a map
+// createLabels converts OTel AttributesMap attributes to a map
 // and optionally adds in the OTel instrumentation library name
-func createLabels(labelsMap pdata.StringMap, instrLibName string) map[string]string {
-	labels := make(map[string]string, labelsMap.Len()+1)
-	labelsMap.Range(func(k, v string) bool {
-		labels[k] = v
+func createLabels(attributes pdata.AttributeMap, instrLibName string) map[string]string {
+	labels := make(map[string]string, attributes.Len()+1)
+	attributes.Range(func(k string, v pdata.AttributeValue) bool {
+		labels[k] = v.AsString()
 		return true
 	})
 

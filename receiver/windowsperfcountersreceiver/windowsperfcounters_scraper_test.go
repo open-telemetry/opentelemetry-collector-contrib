@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//go:build windows
 // +build windows
 
 package windowsperfcountersreceiver
@@ -25,11 +26,11 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/receiver/scraperhelper"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest/observer"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/scraperhelper"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowsperfcountersreceiver/internal/third_party/telegraf/win_perf_counters"
 )
 
@@ -202,9 +203,9 @@ func Test_WindowsPerfCounterScraper(t *testing.T) {
 				if len(e.instanceLabelValues) > 0 {
 					instanceLabelValues := make([]string, 0, ddp.Len())
 					for i := 0; i < ddp.Len(); i++ {
-						instanceLabelValue, ok := ddp.At(i).LabelsMap().Get(instanceLabelName)
+						instanceLabelValue, ok := ddp.At(i).Attributes().Get(instanceLabelName)
 						require.Truef(t, ok, "data point was missing %q label", instanceLabelName)
-						instanceLabelValues = append(instanceLabelValues, instanceLabelValue)
+						instanceLabelValues = append(instanceLabelValues, instanceLabelValue.StringVal())
 					}
 
 					if !allInstances {

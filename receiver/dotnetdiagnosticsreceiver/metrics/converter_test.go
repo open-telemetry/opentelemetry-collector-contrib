@@ -36,8 +36,8 @@ func TestMeanMetricToPdata(t *testing.T) {
 	assert.Equal(t, 1, pts.Len())
 	pt := pts.At(0)
 	assert.EqualValues(t, 0, pt.StartTimestamp())
-	assert.Equal(t, pdata.TimestampFromTime(time.Unix(111, 0)), pt.Timestamp())
-	assert.Equal(t, 0.5, pt.Value())
+	assert.Equal(t, pdata.NewTimestampFromTime(time.Unix(111, 0)), pt.Timestamp())
+	assert.Equal(t, 0.5, pt.DoubleVal())
 }
 
 func TestSumMetricToPdata(t *testing.T) {
@@ -50,9 +50,9 @@ func TestSumMetricToPdata(t *testing.T) {
 	pts := sum.DataPoints()
 	assert.Equal(t, 1, pts.Len())
 	pt := pts.At(0)
-	assert.Equal(t, pdata.TimestampFromTime(time.Unix(42, 0)), pt.StartTimestamp())
-	assert.Equal(t, pdata.TimestampFromTime(time.Unix(111, 0)), pt.Timestamp())
-	assert.Equal(t, 262672.0, pt.Value())
+	assert.Equal(t, pdata.NewTimestampFromTime(time.Unix(42, 0)), pt.StartTimestamp())
+	assert.Equal(t, pdata.NewTimestampFromTime(time.Unix(111, 0)), pt.Timestamp())
+	assert.Equal(t, 262672.0, pt.DoubleVal())
 }
 
 func testMetricConversion(t *testing.T, metricFile int, expectedName string, expectedUnits string) pdata.Metric {

@@ -35,12 +35,12 @@ func TestObjectModel_CreateMap(t *testing.T) {
 	}{
 		"from empty map": {
 			build: func() Document {
-				return DocumentFromAttributes(pdata.NewAttributeMap().InitFromMap(map[string]pdata.AttributeValue{}))
+				return DocumentFromAttributes(pdata.NewAttributeMapFromMap(map[string]pdata.AttributeValue{}))
 			},
 		},
 		"from map": {
 			build: func() Document {
-				return DocumentFromAttributes(pdata.NewAttributeMap().InitFromMap(map[string]pdata.AttributeValue{
+				return DocumentFromAttributes(pdata.NewAttributeMapFromMap(map[string]pdata.AttributeValue{
 					"i":   pdata.NewAttributeValueInt(42),
 					"str": pdata.NewAttributeValueString("test"),
 				}))
@@ -49,8 +49,8 @@ func TestObjectModel_CreateMap(t *testing.T) {
 		},
 		"ignores nil values": {
 			build: func() Document {
-				return DocumentFromAttributes(pdata.NewAttributeMap().InitFromMap(map[string]pdata.AttributeValue{
-					"null": pdata.NewAttributeValueNull(),
+				return DocumentFromAttributes(pdata.NewAttributeMapFromMap(map[string]pdata.AttributeValue{
+					"null": pdata.NewAttributeValueEmpty(),
 					"str":  pdata.NewAttributeValueString("test"),
 				}))
 			},
@@ -58,7 +58,7 @@ func TestObjectModel_CreateMap(t *testing.T) {
 		},
 		"from map with prefix": {
 			build: func() Document {
-				return DocumentFromAttributesWithPath("prefix", pdata.NewAttributeMap().InitFromMap(map[string]pdata.AttributeValue{
+				return DocumentFromAttributesWithPath("prefix", pdata.NewAttributeMapFromMap(map[string]pdata.AttributeValue{
 					"i":   pdata.NewAttributeValueInt(42),
 					"str": pdata.NewAttributeValueString("test"),
 				}))
@@ -67,7 +67,7 @@ func TestObjectModel_CreateMap(t *testing.T) {
 		},
 		"add attributes with key": {
 			build: func() (doc Document) {
-				doc.AddAttributes("prefix", pdata.NewAttributeMap().InitFromMap(map[string]pdata.AttributeValue{
+				doc.AddAttributes("prefix", pdata.NewAttributeMapFromMap(map[string]pdata.AttributeValue{
 					"i":   pdata.NewAttributeValueInt(42),
 					"str": pdata.NewAttributeValueString("test"),
 				}))
@@ -230,7 +230,7 @@ func TestValue_FromAttribute(t *testing.T) {
 		want Value
 	}{
 		"null": {
-			in:   pdata.NewAttributeValueNull(),
+			in:   pdata.NewAttributeValueEmpty(),
 			want: nilValue,
 		},
 		"string": {
@@ -281,6 +281,130 @@ func TestValue_FromAttribute(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			v := ValueFromAttribute(test.in)
 			assert.Equal(t, test.want, v)
+		})
+	}
+}
+
+func TestDocument_Serialize_Flat(t *testing.T) {
+	tests := map[string]struct {
+		doc  Document
+		want string
+	}{
+		"no nesting with multiple fields": {
+			doc: DocumentFromAttributes(pdata.NewAttributeMapFromMap(map[string]pdata.AttributeValue{
+				"a": pdata.NewAttributeValueString("test"),
+				"b": pdata.NewAttributeValueInt(1),
+			})),
+			want: `{"a":"test","b":1}`,
+		},
+		"shared prefix": {
+			doc: DocumentFromAttributes(pdata.NewAttributeMapFromMap(map[string]pdata.AttributeValue{
+				"a.str": pdata.NewAttributeValueString("test"),
+				"a.i":   pdata.NewAttributeValueInt(1),
+			})),
+			want: `{"a.i":1,"a.str":"test"}`,
+		},
+		"multiple namespaces with dot": {
+			doc: DocumentFromAttributes(pdata.NewAttributeMapFromMap(map[string]pdata.AttributeValue{
+				"a.str": pdata.NewAttributeValueString("test"),
+				"b.i":   pdata.NewAttributeValueInt(1),
+			})),
+			want: `{"a.str":"test","b.i":1}`,
+		},
+		"nested maps": {
+			doc: DocumentFromAttributes(pdata.NewAttributeMapFromMap(map[string]pdata.AttributeValue{
+				"a": func() pdata.AttributeValue {
+					m := pdata.NewAttributeValueMap()
+					m.MapVal().InsertString("str", "test")
+					m.MapVal().InsertInt("i", 1)
+					return m
+				}(),
+			})),
+			want: `{"a.i":1,"a.str":"test"}`,
+		},
+		"multi-level nested namespace maps": {
+			doc: DocumentFromAttributes(pdata.NewAttributeMapFromMap(map[string]pdata.AttributeValue{
+				"a": func() pdata.AttributeValue {
+					m := pdata.NewAttributeValueMap()
+					m.MapVal().InsertString("b.str", "test")
+					m.MapVal().InsertInt("i", 1)
+					return m
+				}(),
+			})),
+			want: `{"a.b.str":"test","a.i":1}`,
+		},
+	}
+
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			var buf strings.Builder
+			test.doc.Dedup()
+			err := test.doc.Serialize(&buf, false)
+			require.NoError(t, err)
+
+			assert.Equal(t, test.want, buf.String())
+		})
+	}
+}
+
+func TestDocument_Serialize_Dedot(t *testing.T) {
+	tests := map[string]struct {
+		doc  Document
+		want string
+	}{
+		"no nesting with multiple fields": {
+			doc: DocumentFromAttributes(pdata.NewAttributeMapFromMap(map[string]pdata.AttributeValue{
+				"a": pdata.NewAttributeValueString("test"),
+				"b": pdata.NewAttributeValueInt(1),
+			})),
+			want: `{"a":"test","b":1}`,
+		},
+		"shared prefix": {
+			doc: DocumentFromAttributes(pdata.NewAttributeMapFromMap(map[string]pdata.AttributeValue{
+				"a.str": pdata.NewAttributeValueString("test"),
+				"a.i":   pdata.NewAttributeValueInt(1),
+			})),
+			want: `{"a":{"i":1,"str":"test"}}`,
+		},
+		"multiple namespaces": {
+			doc: DocumentFromAttributes(pdata.NewAttributeMapFromMap(map[string]pdata.AttributeValue{
+				"a.str": pdata.NewAttributeValueString("test"),
+				"b.i":   pdata.NewAttributeValueInt(1),
+			})),
+			want: `{"a":{"str":"test"},"b":{"i":1}}`,
+		},
+		"nested maps": {
+			doc: DocumentFromAttributes(pdata.NewAttributeMapFromMap(map[string]pdata.AttributeValue{
+				"a": func() pdata.AttributeValue {
+					m := pdata.NewAttributeValueMap()
+					m.MapVal().InsertString("str", "test")
+					m.MapVal().InsertInt("i", 1)
+					return m
+				}(),
+			})),
+			want: `{"a":{"i":1,"str":"test"}}`,
+		},
+		"multi-level nested namespace maps": {
+			doc: DocumentFromAttributes(pdata.NewAttributeMapFromMap(map[string]pdata.AttributeValue{
+				"a": func() pdata.AttributeValue {
+					m := pdata.NewAttributeValueMap()
+					m.MapVal().InsertString("b.c.str", "test")
+					m.MapVal().InsertInt("i", 1)
+					return m
+				}(),
+			})),
+			want: `{"a":{"b":{"c":{"str":"test"}},"i":1}}`,
+		},
+	}
+
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			var buf strings.Builder
+			test.doc.Dedup()
+			err := test.doc.Serialize(&buf, true)
+			require.NoError(t, err)
+
+			assert.Equal(t, test.want, buf.String())
 		})
 	}
 }

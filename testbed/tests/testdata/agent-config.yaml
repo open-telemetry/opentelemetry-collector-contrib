@@ -1,0 +1,27 @@
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: "localhost:4317"
+
+exporters:
+  otlp:
+    endpoint: "localhost:55680"
+    tls:
+      insecure: true
+  logging:
+    loglevel: info
+
+processors:
+  batch:
+
+service:
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [otlp, logging]
+    metrics:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [otlp, logging]

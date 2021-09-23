@@ -66,7 +66,7 @@ func TestUsedCpuSys(t *testing.T) {
 		m.DataType(),
 	)
 	assert.Equal(t, units, m.Unit())
-	assert.Equal(t, v, m.Sum().DataPoints().At(0).Value())
+	assert.Equal(t, v, m.Sum().DataPoints().At(0).DoubleVal())
 }
 
 func TestMissingMetricValue(t *testing.T) {
@@ -104,14 +104,15 @@ func TestKeyspaceMetrics(t *testing.T) {
 	assert.Equal(t, 6, ms.Len())
 
 	const lblKey = "db"
-	const lblVal = "0"
 	const name1 = "redis/db/keys"
+
+	lblVal := pdata.NewAttributeValueString("0")
 
 	pdm := ms.At(0)
 	assert.Equal(t, name1, pdm.Name())
 	dps := pdm.Gauge().DataPoints()
 	pt := dps.At(0)
-	v, ok := pt.LabelsMap().Get(lblKey)
+	v, ok := pt.Attributes().Get(lblKey)
 	assert.True(t, ok)
 	assert.Equal(t, lblVal, v)
 	assert.Equal(t, pdata.MetricDataTypeGauge, pdm.DataType())
@@ -123,7 +124,7 @@ func TestKeyspaceMetrics(t *testing.T) {
 	assert.Equal(t, name2, pdm.Name())
 	dps = pdm.Gauge().DataPoints()
 	pt = dps.At(0)
-	v, ok = pt.LabelsMap().Get(lblKey)
+	v, ok = pt.Attributes().Get(lblKey)
 	assert.True(t, ok)
 	assert.Equal(t, lblVal, v)
 	assert.Equal(t, pdata.MetricDataTypeGauge, pdm.DataType())
@@ -135,7 +136,7 @@ func TestKeyspaceMetrics(t *testing.T) {
 	assert.Equal(t, name3, pdm.Name())
 	dps = pdm.Gauge().DataPoints()
 	pt = dps.At(0)
-	v, ok = pt.LabelsMap().Get(lblKey)
+	v, ok = pt.Attributes().Get(lblKey)
 	assert.True(t, ok)
 	assert.Equal(t, lblVal, v)
 	assert.Equal(t, pdata.MetricDataTypeGauge, pdm.DataType())
@@ -143,7 +144,7 @@ func TestKeyspaceMetrics(t *testing.T) {
 }
 
 func TestNewPDM(t *testing.T) {
-	serverStartTime := pdata.TimestampFromTime(time.Unix(900, 0))
+	serverStartTime := pdata.NewTimestampFromTime(time.Unix(900, 0))
 	tb := testTimeBundle()
 
 	pdm := pdata.NewMetric()

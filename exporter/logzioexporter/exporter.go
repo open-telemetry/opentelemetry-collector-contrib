@@ -25,7 +25,8 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/model/pdata"
-	"go.opentelemetry.io/collector/translator/trace/jaeger"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger"
 )
 
 const (
@@ -42,7 +43,7 @@ type logzioExporter struct {
 }
 
 func newLogzioExporter(config *Config, params component.ExporterCreateSettings) (*logzioExporter, error) {
-	logger := Hclog2ZapLogger{
+	logger := hclog2ZapLogger{
 		Zap:  params.Logger,
 		name: loggerName,
 	}
@@ -54,9 +55,13 @@ func newLogzioExporter(config *Config, params component.ExporterCreateSettings) 
 		Region:            config.Region,
 		AccountToken:      config.TracesToken,
 		CustomListenerURL: config.CustomEndpoint,
+		InMemoryQueue:     true,
+		Compress:          true,
+		InMemoryCapacity:  uint64(config.QueueCapacity),
+		LogCountLimit:     config.QueueMaxLength,
+		DrainInterval:     config.DrainInterval,
 	}
-
-	spanWriter, err := store.NewLogzioSpanWriter(writerConfig, logger)
+	spanWriter, err := store.NewLogzioSpanWriter(writerConfig, &logger)
 	if err != nil {
 		return nil, err
 	}
@@ -64,7 +69,7 @@ func newLogzioExporter(config *Config, params component.ExporterCreateSettings) 
 	return &logzioExporter{
 		writer:                       spanWriter,
 		accountToken:                 config.TracesToken,
-		logger:                       logger,
+		logger:                       &logger,
 		InternalTracesToJaegerTraces: jaeger.InternalTracesToJaegerProto,
 		WriteSpanFunc:                spanWriter.WriteSpan,
 	}, nil

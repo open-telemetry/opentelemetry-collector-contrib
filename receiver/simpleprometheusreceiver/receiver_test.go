@@ -28,8 +28,9 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confignet"
-	"go.opentelemetry.io/collector/receiver/prometheusreceiver"
-	"go.opentelemetry.io/collector/testbed/testbed"
+	"go.opentelemetry.io/collector/consumer/consumertest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver"
 )
 
 func TestReceiver(t *testing.T) {
@@ -57,7 +58,7 @@ func TestReceiver(t *testing.T) {
 				context.Background(),
 				componenttest.NewNopReceiverCreateSettings(),
 				cfg,
-				&testbed.MockMetricConsumer{},
+				consumertest.NewNop(),
 			)
 
 			if !tt.wantError {

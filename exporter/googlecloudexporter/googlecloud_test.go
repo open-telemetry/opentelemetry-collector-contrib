@@ -30,9 +30,6 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/model/pdata"
-	"go.opentelemetry.io/collector/testutil/metricstestutil"
-	"go.opentelemetry.io/collector/translator/internaldata"
-	"go.uber.org/zap"
 	"google.golang.org/api/option"
 	cloudmetricpb "google.golang.org/genproto/googleapis/api/metric"
 	cloudtracepb "google.golang.org/genproto/googleapis/devtools/cloudtrace/v2"
@@ -41,6 +38,9 @@ import (
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/protobuf/types/known/emptypb"
 	"google.golang.org/protobuf/types/known/timestamppb"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/metricstestutil"
+	internaldata "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus"
 )
 
 type testServer struct {
@@ -118,7 +118,7 @@ func TestGoogleCloudTraceExport(t *testing.T) {
 			ispans := rspans.InstrumentationLibrarySpans().AppendEmpty()
 			span := ispans.Spans().AppendEmpty()
 			span.SetName(spanName)
-			span.SetStartTimestamp(pdata.TimestampFromTime(testTime))
+			span.SetStartTimestamp(pdata.NewTimestampFromTime(testTime))
 			err = sde.ConsumeTraces(context.Background(), traces)
 			assert.NoError(t, err)
 
@@ -185,6 +185,11 @@ func TestGoogleCloudMetricExport(t *testing.T) {
 		option.WithTelemetryDisabled(),
 	}
 
+	creationParams := componenttest.NewNopExporterCreateSettings()
+	creationParams.BuildInfo = component.BuildInfo{
+		Version: "v0.0.1",
+	}
+
 	sde, err := newGoogleCloudMetricsExporter(&Config{
 		ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
 		ProjectID:        "idk",
@@ -194,14 +199,7 @@ func TestGoogleCloudMetricExport(t *testing.T) {
 		GetClientOptions: func() []option.ClientOption {
 			return clientOptions
 		},
-	},
-		component.ExporterCreateSettings{
-			Logger: zap.NewNop(),
-			BuildInfo: component.BuildInfo{
-				Version: "v0.0.1",
-			},
-		},
-	)
+	}, creationParams)
 	require.NoError(t, err)
 	defer func() { require.NoError(t, sde.Shutdown(context.Background())) }()
 

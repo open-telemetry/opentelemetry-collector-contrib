@@ -42,10 +42,9 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/model/pdata"
-	"go.opentelemetry.io/collector/testutil"
-	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testutil"
 )
 
 func Test_signalfxeceiver_New(t *testing.T) {
@@ -87,7 +86,7 @@ func Test_signalfxeceiver_New(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := newReceiver(zap.NewNop(), tt.args.config)
+			got := newReceiver(componenttest.NewNopTelemetrySettings(), tt.args.config)
 			if tt.args.nextConsumer != nil {
 				got.RegisterMetricsConsumer(tt.args.nextConsumer)
 			}
@@ -103,7 +102,7 @@ func Test_signalfxeceiver_EndToEnd(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.Endpoint = addr
 	sink := new(consumertest.MetricsSink)
-	r := newReceiver(zap.NewNop(), *cfg)
+	r := newReceiver(componenttest.NewNopTelemetrySettings(), *cfg)
 	r.RegisterMetricsConsumer(sink)
 
 	require.NoError(t, r.Start(context.Background(), componenttest.NewNopHost()))
@@ -112,7 +111,7 @@ func Test_signalfxeceiver_EndToEnd(t *testing.T) {
 
 	unixSecs := int64(1574092046)
 	unixNSecs := int64(11 * time.Millisecond)
-	ts := pdata.TimestampFromTime(time.Unix(unixSecs, unixNSecs))
+	ts := pdata.NewTimestampFromTime(time.Unix(unixSecs, unixNSecs))
 
 	const doubleVal = 1234.5678
 	const int64Val = int64(123)
@@ -342,7 +341,7 @@ func Test_sfxReceiver_handleReq(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			sink := new(consumertest.MetricsSink)
-			rcv := newReceiver(zap.NewNop(), *config)
+			rcv := newReceiver(componenttest.NewNopTelemetrySettings(), *config)
 			if !tt.skipRegistration {
 				rcv.RegisterMetricsConsumer(sink)
 			}
@@ -517,7 +516,7 @@ func Test_sfxReceiver_handleEventReq(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			sink := new(consumertest.LogsSink)
-			rcv := newReceiver(zap.NewNop(), *config)
+			rcv := newReceiver(componenttest.NewNopTelemetrySettings(), *config)
 			if !tt.skipRegistration {
 				rcv.RegisterLogsConsumer(sink)
 			}
@@ -548,7 +547,7 @@ func Test_sfxReceiver_TLS(t *testing.T) {
 		},
 	}
 	sink := new(consumertest.MetricsSink)
-	r := newReceiver(zap.NewNop(), *cfg)
+	r := newReceiver(componenttest.NewNopTelemetrySettings(), *cfg)
 	r.RegisterMetricsConsumer(sink)
 	defer r.Shutdown(context.Background())
 
@@ -571,12 +570,12 @@ func Test_sfxReceiver_TLS(t *testing.T) {
 	dp.SetTimestamp(pdata.Timestamp(msec * 1e6))
 	dp.SetIntVal(13)
 
-	dp.LabelsMap().InitFromMap(map[string]string{
-		"k0": "v0",
-		"k1": "v1",
-		"k2": "v2",
+	dp.Attributes().InitFromMap(map[string]pdata.AttributeValue{
+		"k0": pdata.NewAttributeValueString("v0"),
+		"k1": pdata.NewAttributeValueString("v1"),
+		"k2": pdata.NewAttributeValueString("v2"),
 	})
-	dp.LabelsMap().Sort()
+	dp.Attributes().Sort()
 
 	t.Log("Sending SignalFx metric data Request")
 
@@ -653,7 +652,7 @@ func Test_sfxReceiver_DatapointAccessTokenPassthrough(t *testing.T) {
 			config.AccessTokenPassthrough = tt.passthrough
 
 			sink := new(consumertest.MetricsSink)
-			rcv := newReceiver(zap.NewNop(), *config)
+			rcv := newReceiver(componenttest.NewNopTelemetrySettings(), *config)
 			rcv.RegisterMetricsConsumer(sink)
 
 			currentTime := time.Now().Unix() * 1e3
@@ -730,7 +729,7 @@ func Test_sfxReceiver_EventAccessTokenPassthrough(t *testing.T) {
 			config.AccessTokenPassthrough = tt.passthrough
 
 			sink := new(consumertest.LogsSink)
-			rcv := newReceiver(zap.NewNop(), *config)
+			rcv := newReceiver(componenttest.NewNopTelemetrySettings(), *config)
 			rcv.RegisterLogsConsumer(sink)
 
 			currentTime := time.Now().Unix() * 1e3

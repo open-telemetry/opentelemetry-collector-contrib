@@ -18,7 +18,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/model/pdata"
-	"go.opentelemetry.io/collector/translator/conventions"
+	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
@@ -42,18 +42,21 @@ type logIndex struct {
 	record int
 }
 
-func (i *logIndex) zero() bool {
-	return i.resource == 0 && i.library == 0 && i.record == 0
-}
-
 func mapLogRecordToSplunkEvent(res pdata.Resource, lr pdata.LogRecord, config *Config, logger *zap.Logger) *splunk.Event {
 	host := unknownHostName
 	source := config.Source
 	sourcetype := config.SourceType
 	index := config.Index
 	fields := map[string]interface{}{}
+	sourceKey := config.HecToOtelAttrs.Source
+	sourceTypeKey := config.HecToOtelAttrs.SourceType
+	indexKey := config.HecToOtelAttrs.Index
+	hostKey := config.HecToOtelAttrs.Host
+	nameKey := config.HecFields.Name
+	severityTextKey := config.HecFields.SeverityText
+	severityNumberKey := config.HecFields.SeverityNumber
 	if lr.Name() != "" {
-		fields[splunk.NameLabel] = lr.Name()
+		fields[nameKey] = lr.Name()
 	}
 	if spanID := lr.SpanID().HexString(); spanID != "" {
 		fields[spanIDFieldKey] = spanID
@@ -61,17 +64,23 @@ func mapLogRecordToSplunkEvent(res pdata.Resource, lr pdata.LogRecord, config *C
 	if traceID := lr.TraceID().HexString(); traceID != "" {
 		fields[traceIDFieldKey] = traceID
 	}
+	if lr.SeverityText() != "" {
+		fields[severityTextKey] = lr.SeverityText()
+	}
+	if lr.SeverityNumber() != pdata.SeverityNumberUNDEFINED {
+		fields[severityNumberKey] = lr.SeverityNumber()
+	}
+
 	res.Attributes().Range(func(k string, v pdata.AttributeValue) bool {
 		switch k {
-		case conventions.AttributeHostName:
+		case hostKey:
 			host = v.StringVal()
-			fields[k] = v.StringVal()
-		case conventions.AttributeServiceName:
+			fields[conventions.AttributeHostName] = v.StringVal()
+		case sourceKey:
 			source = v.StringVal()
-			fields[k] = v.StringVal()
-		case splunk.SourcetypeLabel:
+		case sourceTypeKey:
 			sourcetype = v.StringVal()
-		case splunk.IndexLabel:
+		case indexKey:
 			index = v.StringVal()
 		default:
 			fields[k] = convertAttributeValue(v, logger)
@@ -80,15 +89,14 @@ func mapLogRecordToSplunkEvent(res pdata.Resource, lr pdata.LogRecord, config *C
 	})
 	lr.Attributes().Range(func(k string, v pdata.AttributeValue) bool {
 		switch k {
-		case conventions.AttributeHostName:
+		case hostKey:
 			host = v.StringVal()
-			fields[k] = v.StringVal()
-		case conventions.AttributeServiceName:
+			fields[conventions.AttributeHostName] = v.StringVal()
+		case sourceKey:
 			source = v.StringVal()
-			fields[k] = v.StringVal()
-		case splunk.SourcetypeLabel:
+		case sourceTypeKey:
 			sourcetype = v.StringVal()
-		case splunk.IndexLabel:
+		case indexKey:
 			index = v.StringVal()
 		default:
 			fields[k] = convertAttributeValue(v, logger)
@@ -132,7 +140,7 @@ func convertAttributeValue(value pdata.AttributeValue, logger *zap.Logger) inter
 			values[i] = convertAttributeValue(arrayVal.At(i), logger)
 		}
 		return values
-	case pdata.AttributeValueTypeNull:
+	case pdata.AttributeValueTypeEmpty:
 		return nil
 	default:
 		logger.Debug("Unhandled value type", zap.String("type", value.Type().String()))

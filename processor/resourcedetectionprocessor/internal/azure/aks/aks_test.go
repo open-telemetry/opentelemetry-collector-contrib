@@ -23,6 +23,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
+	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/azure"
@@ -38,8 +39,9 @@ func TestDetector_Detect_K8s_Azure(t *testing.T) {
 	os.Clearenv()
 	setK8sEnv(t)
 	detector := &Detector{provider: mockProvider()}
-	res, err := detector.Detect(context.Background())
+	res, schemaURL, err := detector.Detect(context.Background())
 	require.NoError(t, err)
+	assert.Equal(t, conventions.SchemaURL, schemaURL)
 	assert.Equal(t, map[string]interface{}{
 		"cloud.provider": "azure",
 		"cloud.platform": "azure_aks",
@@ -52,7 +54,7 @@ func TestDetector_Detect_K8s_NonAzure(t *testing.T) {
 	mp := &azure.MockProvider{}
 	mp.On("Metadata").Return(nil, errors.New(""))
 	detector := &Detector{provider: mp}
-	res, err := detector.Detect(context.Background())
+	res, _, err := detector.Detect(context.Background())
 	require.NoError(t, err)
 	attrs := res.Attributes()
 	assert.Equal(t, 0, attrs.Len())
@@ -61,7 +63,7 @@ func TestDetector_Detect_K8s_NonAzure(t *testing.T) {
 func TestDetector_Detect_NonK8s(t *testing.T) {
 	os.Clearenv()
 	detector := &Detector{provider: mockProvider()}
-	res, err := detector.Detect(context.Background())
+	res, _, err := detector.Detect(context.Background())
 	require.NoError(t, err)
 	attrs := res.Attributes()
 	assert.Equal(t, 0, attrs.Len())

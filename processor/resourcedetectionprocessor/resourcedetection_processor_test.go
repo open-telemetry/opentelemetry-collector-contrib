@@ -29,8 +29,8 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/model/pdata"
-	"go.opentelemetry.io/collector/translator/internaldata"
 
+	internaldata "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/env"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/gcp/gce"
@@ -40,9 +40,9 @@ type MockDetector struct {
 	mock.Mock
 }
 
-func (p *MockDetector) Detect(ctx context.Context) (pdata.Resource, error) {
+func (p *MockDetector) Detect(ctx context.Context) (resource pdata.Resource, schemaURL string, err error) {
 	args := p.Called()
-	return args.Get(0).(pdata.Resource), args.Error(1)
+	return args.Get(0).(pdata.Resource), "", args.Error(1)
 }
 
 func TestResourceProcessor(t *testing.T) {
@@ -176,7 +176,7 @@ func TestResourceProcessor(t *testing.T) {
 				Timeout:           time.Second,
 			}
 
-			// Test trace consuner
+			// Test trace consumer
 			ttn := new(consumertest.TracesSink)
 			rtp, err := factory.createTracesProcessor(context.Background(), componenttest.NewNopProcessorCreateSettings(), cfg, ttn)
 

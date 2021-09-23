@@ -21,7 +21,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/translator/conventions"
+	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
@@ -47,8 +47,9 @@ func TestDetect(t *testing.T) {
 	md.On("OSType").Return("DARWIN", nil)
 
 	detector := &Detector{provider: md, logger: zap.NewNop()}
-	res, err := detector.Detect(context.Background())
+	res, schemaURL, err := detector.Detect(context.Background())
 	require.NoError(t, err)
+	assert.Equal(t, conventions.SchemaURL, schemaURL)
 	md.AssertExpectations(t)
 	res.Attributes().Sort()
 

@@ -52,7 +52,7 @@ func EncodeMetrics(otlpMetrics pdata.MetricSlice, otlpLibrary pdata.Instrumentat
 				}
 				metricsets.upsert(model.Metrics{
 					Timestamp: asTime(dp.Timestamp()),
-					Labels:    asStringMap(dp.LabelsMap()),
+					Labels:    asStringMap(dp.Attributes()),
 					Samples: map[string]model.Metric{name: {
 						Value: val,
 					}},
@@ -72,7 +72,7 @@ func EncodeMetrics(otlpMetrics pdata.MetricSlice, otlpLibrary pdata.Instrumentat
 				}
 				metricsets.upsert(model.Metrics{
 					Timestamp: asTime(dp.Timestamp()),
-					Labels:    asStringMap(dp.LabelsMap()),
+					Labels:    asStringMap(dp.Attributes()),
 					Samples: map[string]model.Metric{name: {
 						Value: val,
 					}},
@@ -101,13 +101,13 @@ func asTime(in pdata.Timestamp) model.Time {
 	return model.Time(time.Unix(0, int64(in)))
 }
 
-func asStringMap(in pdata.StringMap) model.StringMap {
+func asStringMap(in pdata.AttributeMap) model.StringMap {
 	var out model.StringMap
 	in.Sort()
-	in.Range(func(k string, v string) bool {
+	in.Range(func(k string, v pdata.AttributeValue) bool {
 		out = append(out, model.StringMapItem{
 			Key:   k,
-			Value: v,
+			Value: v.AsString(),
 		})
 		return true
 	})

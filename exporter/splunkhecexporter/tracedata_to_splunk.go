@@ -16,8 +16,7 @@ package splunkhecexporter
 
 import (
 	"go.opentelemetry.io/collector/model/pdata"
-	"go.opentelemetry.io/collector/translator/conventions"
-	tracetranslator "go.opentelemetry.io/collector/translator/trace"
+	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
@@ -60,6 +59,11 @@ type hecSpan struct {
 }
 
 func traceDataToSplunk(logger *zap.Logger, data pdata.Traces, config *Config) ([]*splunk.Event, int) {
+	sourceKey := config.HecToOtelAttrs.Source
+	sourceTypeKey := config.HecToOtelAttrs.SourceType
+	indexKey := config.HecToOtelAttrs.Index
+	hostKey := config.HecToOtelAttrs.Host
+
 	numDroppedSpans := 0
 	splunkEvents := make([]*splunk.Event, 0, data.SpanCount())
 	rss := data.ResourceSpans()
@@ -70,22 +74,20 @@ func traceDataToSplunk(logger *zap.Logger, data pdata.Traces, config *Config) ([
 		sourceType := config.SourceType
 		index := config.Index
 		commonFields := map[string]interface{}{}
-		resource := rs.Resource()
-		attributes := resource.Attributes()
-		if conventionHost, isSet := attributes.Get(conventions.AttributeHostName); isSet {
-			host = conventionHost.StringVal()
-		}
-		if sourceSet, isSet := attributes.Get(conventions.AttributeServiceName); isSet {
-			source = sourceSet.StringVal()
-		}
-		if sourcetypeSet, isSet := attributes.Get(splunk.SourcetypeLabel); isSet {
-			sourceType = sourcetypeSet.StringVal()
-		}
-		if indexSet, isSet := attributes.Get(splunk.IndexLabel); isSet {
-			index = indexSet.StringVal()
-		}
-		attributes.Range(func(k string, v pdata.AttributeValue) bool {
-			commonFields[k] = tracetranslator.AttributeValueToString(v)
+		rs.Resource().Attributes().Range(func(k string, v pdata.AttributeValue) bool {
+			switch k {
+			case hostKey:
+				host = v.StringVal()
+				commonFields[conventions.AttributeHostName] = host
+			case sourceKey:
+				source = v.StringVal()
+			case sourceTypeKey:
+				sourceType = v.StringVal()
+			case indexKey:
+				index = v.StringVal()
+			default:
+				commonFields[k] = v.AsString()
+			}
 			return true
 		})
 		ilss := rs.InstrumentationLibrarySpans()

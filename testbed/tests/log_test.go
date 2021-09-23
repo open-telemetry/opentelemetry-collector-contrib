@@ -20,11 +20,9 @@ package tests
 import (
 	"testing"
 
-	"go.opentelemetry.io/collector/testbed/testbed"
-	scenarios "go.opentelemetry.io/collector/testbed/tests"
-
 	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/datareceivers"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/datasenders"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/testbed"
 )
 
 func TestLog10kDPS(t *testing.T) {
@@ -41,8 +39,17 @@ func TestLog10kDPS(t *testing.T) {
 			sender:   testbed.NewOTLPLogsDataSender(testbed.DefaultHost, testbed.GetAvailablePort(t)),
 			receiver: testbed.NewOTLPDataReceiver(testbed.GetAvailablePort(t)),
 			resourceSpec: testbed.ResourceSpec{
-				ExpectedMaxCPU: 35,
-				ExpectedMaxRAM: 82,
+				ExpectedMaxCPU: 30,
+				ExpectedMaxRAM: 85,
+			},
+		},
+		{
+			name:     "OTLP-HTTP",
+			sender:   testbed.NewOTLPHTTPLogsDataSender(testbed.DefaultHost, testbed.GetAvailablePort(t)),
+			receiver: testbed.NewOTLPHTTPDataReceiver(testbed.GetAvailablePort(t)),
+			resourceSpec: testbed.ResourceSpec{
+				ExpectedMaxCPU: 30,
+				ExpectedMaxRAM: 85,
 			},
 		},
 		{
@@ -60,7 +67,7 @@ func TestLog10kDPS(t *testing.T) {
 			receiver: testbed.NewOTLPDataReceiver(testbed.GetAvailablePort(t)),
 			resourceSpec: testbed.ResourceSpec{
 				ExpectedMaxCPU: 30,
-				ExpectedMaxRAM: 85,
+				ExpectedMaxRAM: 86,
 			},
 			extensions: datasenders.NewLocalFileStorageExtension(),
 		},
@@ -165,12 +172,12 @@ func TestLog10kDPS(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			scenarios.Scenario10kItemsPerSecond(
+			Scenario10kItemsPerSecond(
 				t,
 				test.sender,
 				test.receiver,
 				test.resourceSpec,
-				contribPerfResultsSummary,
+				performanceResultsSummary,
 				processors,
 				test.extensions,
 			)

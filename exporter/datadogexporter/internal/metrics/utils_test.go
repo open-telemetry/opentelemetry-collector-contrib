@@ -19,6 +19,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component"
+	"go.uber.org/zap"
 	"gopkg.in/zorkian/go-datadog-api.v2"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/config"
@@ -49,10 +50,10 @@ func TestNewType(t *testing.T) {
 	tags := []string{"tag:value"}
 
 	gauge := NewGauge(name, ts, value, tags)
-	assert.Equal(t, gauge.GetType(), Gauge)
+	assert.Equal(t, gauge.GetType(), string(Gauge))
 
 	count := NewCount(name, ts, value, tags)
-	assert.Equal(t, count.GetType(), Count)
+	assert.Equal(t, count.GetType(), string(Count))
 
 }
 
@@ -88,7 +89,7 @@ func TestProcessMetrics(t *testing.T) {
 			Tags: []string{"key:val"},
 		},
 	}
-	cfg.Sanitize()
+	cfg.Sanitize(zap.NewNop())
 
 	ms := []datadog.Metric{
 		NewGauge(

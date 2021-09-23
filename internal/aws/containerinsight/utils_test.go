@@ -115,6 +115,12 @@ func convertToInt64(value interface{}) int64 {
 		return int64(t)
 	case int64:
 		return t
+	case uint:
+		return int64(t)
+	case uint32:
+		return int64(t)
+	case uint64:
+		return int64(t)
 	default:
 		valueType := fmt.Sprintf("%T", value)
 		log.Printf("Detected unexpected type: %v", valueType)
@@ -124,12 +130,6 @@ func convertToInt64(value interface{}) int64 {
 
 func convertToFloat64(value interface{}) float64 {
 	switch t := value.(type) {
-	case uint:
-		return float64(t)
-	case uint32:
-		return float64(t)
-	case uint64:
-		return float64(t)
 	case float32:
 		return float64(t)
 	case float64:

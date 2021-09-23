@@ -19,13 +19,13 @@ import (
 	"fmt"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/testbed/testbed"
-	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sapmreceiver"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/testbed"
 )
 
 // SapmDataReceiver implements Sapm format receiver.
@@ -48,7 +48,7 @@ func (sr *SapmDataReceiver) Start(tc consumer.Traces, _ consumer.Metrics, _ cons
 		AccessTokenPassthroughConfig: splunk.AccessTokenPassthroughConfig{AccessTokenPassthrough: true},
 	}
 	var err error
-	params := component.ReceiverCreateSettings{Logger: zap.L()}
+	params := componenttest.NewNopReceiverCreateSettings()
 	sr.receiver, err = sapmreceiver.NewFactory().CreateTracesReceiver(context.Background(), params, &sapmCfg, tc)
 	if err != nil {
 		return err

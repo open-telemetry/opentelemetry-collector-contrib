@@ -16,6 +16,7 @@ package filestorage
 
 import (
 	"context"
+	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -24,6 +25,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"go.etcd.io/bbolt"
+	"go.opentelemetry.io/collector/extension/storage"
 )
 
 func TestClientOperations(t *testing.T) {
@@ -59,6 +61,75 @@ func TestClientOperations(t *testing.T) {
 	value, err = client.Get(ctx, testKey)
 	require.NoError(t, err)
 	require.Nil(t, value)
+}
+
+func TestClientBatchOperations(t *testing.T) {
+	tempDir := newTempDir(t)
+	dbFile := filepath.Join(tempDir, "my_db")
+
+	client, err := newClient(dbFile, time.Second)
+	require.NoError(t, err)
+
+	ctx := context.Background()
+	testSetEntries := []storage.Operation{
+		storage.SetOperation("testKey1", []byte("testValue1")),
+		storage.SetOperation("testKey2", []byte("testValue2")),
+	}
+
+	testGetEntries := []storage.Operation{
+		storage.GetOperation("testKey1"),
+		storage.GetOperation("testKey2"),
+	}
+
+	// Make sure nothing is there
+	err = client.Batch(ctx, testGetEntries...)
+	require.NoError(t, err)
+	require.Equal(t, testGetEntries, testGetEntries)
+
+	// Set it
+	err = client.Batch(ctx, testSetEntries...)
+	require.NoError(t, err)
+
+	// Get it back out, make sure it's right
+	err = client.Batch(ctx, testGetEntries...)
+	require.NoError(t, err)
+	for i := range testGetEntries {
+		require.Equal(t, testSetEntries[i].Key, testGetEntries[i].Key)
+		require.Equal(t, testSetEntries[i].Value, testGetEntries[i].Value)
+	}
+
+	// Update it (the first entry should be empty and the second one removed)
+	testEntriesUpdate := []storage.Operation{
+		storage.SetOperation("testKey1", []byte{}),
+		storage.DeleteOperation("testKey2"),
+	}
+	err = client.Batch(ctx, testEntriesUpdate...)
+	require.NoError(t, err)
+
+	// Get it back out, make sure it's right
+	err = client.Batch(ctx, testGetEntries...)
+	require.NoError(t, err)
+	for i := range testGetEntries {
+		require.Equal(t, testEntriesUpdate[i].Key, testGetEntries[i].Key)
+		require.Equal(t, testEntriesUpdate[i].Value, testGetEntries[i].Value)
+	}
+
+	// Delete it all
+	testEntriesDelete := []storage.Operation{
+		storage.DeleteOperation("testKey1"),
+		storage.DeleteOperation("testKey2"),
+	}
+	err = client.Batch(ctx, testEntriesDelete...)
+	require.NoError(t, err)
+
+	// Make sure it's gone
+	err = client.Batch(ctx, testGetEntries...)
+	require.NoError(t, err)
+	for i := range testGetEntries {
+		require.Equal(t, testGetEntries[i].Key, testEntriesDelete[i].Key)
+		require.Nil(t, testGetEntries[i].Value)
+
+	}
 }
 
 func TestNewClientTransactionErrors(t *testing.T) {
@@ -150,8 +221,29 @@ func BenchmarkClientGet(b *testing.B) {
 	ctx := context.Background()
 	testKey := "testKey"
 
+	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
 		client.Get(ctx, testKey)
+	}
+}
+
+func BenchmarkClientGet100(b *testing.B) {
+	tempDir := newTempDir(b)
+	dbFile := filepath.Join(tempDir, "my_db")
+
+	client, err := newClient(dbFile, time.Second)
+	require.NoError(b, err)
+
+	ctx := context.Background()
+
+	testEntries := make([]storage.Operation, 100)
+	for i := 0; i < 100; i++ {
+		testEntries[i] = storage.GetOperation(fmt.Sprintf("testKey-%d", i))
+	}
+
+	b.ResetTimer()
+	for n := 0; n < b.N; n++ {
+		client.Batch(ctx, testEntries...)
 	}
 }
 
@@ -166,8 +258,29 @@ func BenchmarkClientSet(b *testing.B) {
 	testKey := "testKey"
 	testValue := []byte("testValue")
 
+	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
 		client.Set(ctx, testKey, testValue)
+	}
+}
+
+func BenchmarkClientSet100(b *testing.B) {
+	tempDir := newTempDir(b)
+	dbFile := filepath.Join(tempDir, "my_db")
+
+	client, err := newClient(dbFile, time.Second)
+	require.NoError(b, err)
+
+	ctx := context.Background()
+
+	testEntries := make([]storage.Operation, 100)
+	for i := 0; i < 100; i++ {
+		testEntries[i] = storage.SetOperation(fmt.Sprintf("testKey-%d", i), []byte("testValue"))
+	}
+
+	b.ResetTimer()
+	for n := 0; n < b.N; n++ {
+		client.Batch(ctx, testEntries...)
 	}
 }
 
@@ -181,6 +294,7 @@ func BenchmarkClientDelete(b *testing.B) {
 	ctx := context.Background()
 	testKey := "testKey"
 
+	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
 		client.Delete(ctx, testKey)
 	}

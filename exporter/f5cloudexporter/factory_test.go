@@ -24,10 +24,10 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/config/configcheck"
-	"go.opentelemetry.io/collector/testutil"
-	"go.uber.org/zap"
+	"go.opentelemetry.io/collector/config/configtest"
 	"golang.org/x/oauth2"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testutil"
 )
 
 func TestFactory_TestType(t *testing.T) {
@@ -39,7 +39,7 @@ func TestFactory_CreateDefaultConfig(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	assert.NotNil(t, cfg, "failed to create default config")
-	assert.NoError(t, configcheck.ValidateConfig(cfg))
+	assert.NoError(t, configtest.CheckConfigStruct(cfg))
 	ocfg, ok := factory.CreateDefaultConfig().(*Config)
 	assert.True(t, ok)
 	assert.Equal(t, ocfg.HTTPClientSettings.Endpoint, "")
@@ -61,11 +61,9 @@ func TestFactory_CreateMetricsExporter(t *testing.T) {
 		Audience:       "tests",
 	}
 
-	creationParams := component.ExporterCreateSettings{
-		Logger: zap.NewNop(),
-		BuildInfo: component.BuildInfo{
-			Version: "0.0.0",
-		},
+	creationParams := componenttest.NewNopExporterCreateSettings()
+	creationParams.BuildInfo = component.BuildInfo{
+		Version: "0.0.0",
 	}
 	oexp, err := factory.CreateMetricsExporter(context.Background(), creationParams, cfg)
 	require.Nil(t, err)
@@ -94,11 +92,9 @@ func TestFactory_CreateTracesExporter(t *testing.T) {
 		Audience:       "tests",
 	}
 
-	creationParams := component.ExporterCreateSettings{
-		Logger: zap.NewNop(),
-		BuildInfo: component.BuildInfo{
-			Version: "0.0.0",
-		},
+	creationParams := componenttest.NewNopExporterCreateSettings()
+	creationParams.BuildInfo = component.BuildInfo{
+		Version: "0.0.0",
 	}
 	oexp, err := factory.CreateTracesExporter(context.Background(), creationParams, cfg)
 	require.Nil(t, err)
@@ -127,11 +123,9 @@ func TestFactory_CreateLogsExporter(t *testing.T) {
 		Audience:       "tests",
 	}
 
-	creationParams := component.ExporterCreateSettings{
-		Logger: zap.NewNop(),
-		BuildInfo: component.BuildInfo{
-			Version: "0.0.0",
-		},
+	creationParams := componenttest.NewNopExporterCreateSettings()
+	creationParams.BuildInfo = component.BuildInfo{
+		Version: "0.0.0",
 	}
 	oexp, err := factory.CreateLogsExporter(context.Background(), creationParams, cfg)
 	require.Nil(t, err)

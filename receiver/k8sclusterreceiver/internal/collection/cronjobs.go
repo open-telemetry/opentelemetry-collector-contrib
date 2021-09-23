@@ -17,7 +17,7 @@ package collection
 import (
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
-	"go.opentelemetry.io/collector/translator/conventions"
+	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
 	batchv1beta1 "k8s.io/api/batch/v1beta1"
 
 	metadata "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata"
@@ -59,10 +59,10 @@ func getResourceForCronJob(cj *batchv1beta1.CronJob) *resourcepb.Resource {
 	return &resourcepb.Resource{
 		Type: k8sType,
 		Labels: map[string]string{
-			conventions.AttributeK8sCronJobUID: string(cj.UID),
-			conventions.AttributeK8sCronJob:    cj.Name,
-			conventions.AttributeK8sNamespace:  cj.Namespace,
-			conventions.AttributeK8sCluster:    cj.ClusterName,
+			conventions.AttributeK8SCronJobUID:    string(cj.UID),
+			conventions.AttributeK8SCronJobName:   cj.Name,
+			conventions.AttributeK8SNamespaceName: cj.Namespace,
+			conventions.AttributeK8SClusterName:   cj.ClusterName,
 		},
 	}
 }

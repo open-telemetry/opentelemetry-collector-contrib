@@ -26,16 +26,16 @@ import (
 func TestSpanAttributesToMap(t *testing.T) {
 
 	spanAttrs := []pdata.AttributeMap{
-		pdata.NewAttributeMap().InitFromMap(map[string]pdata.AttributeValue{
+		pdata.NewAttributeMapFromMap(map[string]pdata.AttributeValue{
 			"foo": pdata.NewAttributeValueString("bar"),
 		}),
-		pdata.NewAttributeMap().InitFromMap(map[string]pdata.AttributeValue{
+		pdata.NewAttributeMapFromMap(map[string]pdata.AttributeValue{
 			"foo": pdata.NewAttributeValueInt(1234),
 		}),
-		pdata.NewAttributeMap().InitFromMap(map[string]pdata.AttributeValue{
+		pdata.NewAttributeMapFromMap(map[string]pdata.AttributeValue{
 			"foo": pdata.NewAttributeValueBool(true),
 		}),
-		pdata.NewAttributeMap().InitFromMap(map[string]pdata.AttributeValue{
+		pdata.NewAttributeMapFromMap(map[string]pdata.AttributeValue{
 			"foo": pdata.NewAttributeValueDouble(0.3145),
 		}),
 		pdata.NewAttributeMap(),
@@ -70,7 +70,7 @@ func TestTimestampToTime(t *testing.T) {
 
 	t2 := time.Now()
 	seconds := t2.UnixNano() / 1000000000
-	nowTime := timestampToTime(pdata.TimestampFromTime(
+	nowTime := timestampToTime(pdata.NewTimestampFromTime(
 		(&timestamppb.Timestamp{
 			Seconds: seconds,
 			Nanos:   int32(t2.UnixNano() - (seconds * 1000000000)),

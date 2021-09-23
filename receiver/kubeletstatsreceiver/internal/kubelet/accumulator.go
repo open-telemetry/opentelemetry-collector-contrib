@@ -20,7 +20,7 @@ import (
 	agentmetricspb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/metrics/v1"
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
-	"go.opentelemetry.io/collector/translator/conventions"
+	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/types/known/timestamppb"
 	stats "k8s.io/kubelet/pkg/apis/stats/v1alpha1"
@@ -100,8 +100,8 @@ func (a *metricDataAccumulator) containerStats(podResource *resourcepb.Resource,
 
 	resource, err := containerResource(podResource, s, a.metadata)
 	if err != nil {
-		a.logger.Warn("failed to fetch container metrics", zap.String("pod", podResource.Labels[conventions.AttributeK8sPod]),
-			zap.String("container", podResource.Labels[conventions.AttributeK8sContainer]), zap.Error(err))
+		a.logger.Warn("failed to fetch container metrics", zap.String("pod", podResource.Labels[conventions.AttributeK8SPodName]),
+			zap.String("container", podResource.Labels[conventions.AttributeK8SContainerName]), zap.Error(err))
 		return
 	}
 
@@ -125,7 +125,7 @@ func (a *metricDataAccumulator) volumeStats(podResource *resourcepb.Resource, s 
 	if err != nil {
 		a.logger.Warn(
 			"Failed to gather additional volume metadata. Skipping metric collection.",
-			zap.String("pod", podResource.Labels[conventions.AttributeK8sPod]),
+			zap.String("pod", podResource.Labels[conventions.AttributeK8SPodName]),
 			zap.String("volume", podResource.Labels[labelVolumeName]),
 			zap.Error(err),
 		)

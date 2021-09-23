@@ -23,6 +23,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
+	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
@@ -37,7 +38,7 @@ func TestNotGCE(t *testing.T) {
 	}
 
 	metadata.On("OnGCE").Return(false)
-	res, err := detector.Detect(context.Background())
+	res, _, err := detector.Detect(context.Background())
 	require.NoError(t, err)
 	assert.Equal(t, 0, res.Attributes().Len())
 
@@ -56,12 +57,13 @@ func TestDetectWithoutCluster(t *testing.T) {
 
 	require.NoError(t, os.Setenv("KUBERNETES_SERVICE_HOST", "localhost"))
 
-	res, err := detector.Detect(context.Background())
+	res, schemaURL, err := detector.Detect(context.Background())
 	require.NoError(t, err)
+	assert.Equal(t, conventions.SchemaURL, schemaURL)
 
 	assert.Equal(t, map[string]interface{}{
 		"cloud.provider": "gcp",
-		"cloud.platform": "gcp_gke",
+		"cloud.platform": "gcp_kubernetes_engine",
 	}, internal.AttributesToMap(res.Attributes()))
 
 	metadata.AssertExpectations(t)
@@ -78,7 +80,7 @@ func TestDetectWithoutK8s(t *testing.T) {
 
 	require.NoError(t, os.Unsetenv("KUBERNETES_SERVICE_HOST"))
 
-	res, err := detector.Detect(context.Background())
+	res, _, err := detector.Detect(context.Background())
 	require.NoError(t, err)
 
 	assert.Equal(t, map[string]interface{}{
@@ -100,12 +102,13 @@ func TestDetector_Detect(t *testing.T) {
 
 	require.NoError(t, os.Setenv("KUBERNETES_SERVICE_HOST", "localhost"))
 
-	res, err := detector.Detect(context.Background())
+	res, schemaURL, err := detector.Detect(context.Background())
 	require.NoError(t, err)
+	assert.Equal(t, conventions.SchemaURL, schemaURL)
 
 	assert.Equal(t, map[string]interface{}{
 		"cloud.provider":   "gcp",
-		"cloud.platform":   "gcp_gke",
+		"cloud.platform":   "gcp_kubernetes_engine",
 		"k8s.cluster.name": "cluster-a",
 	}, internal.AttributesToMap(res.Attributes()))
 

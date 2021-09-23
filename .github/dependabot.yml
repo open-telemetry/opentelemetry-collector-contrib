@@ -10,7 +10,23 @@ updates:
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
+    directory: "/cmd/mdatagen"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
+    directory: "/examples/demo/client"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
+    directory: "/examples/demo/server"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
     directory: "/exporter/alibabacloudlogserviceexporter"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
+    directory: "/exporter/awscloudwatchlogsexporter"
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
@@ -58,6 +74,10 @@ updates:
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
+    directory: "/exporter/fileexporter"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
     directory: "/exporter/googlecloudexporter"
     schedule:
       interval: "weekly"
@@ -78,6 +98,14 @@ updates:
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
+    directory: "/exporter/jaegerexporter"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
+    directory: "/exporter/kafkaexporter"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
     directory: "/exporter/loadbalancingexporter"
     schedule:
       interval: "weekly"
@@ -91,6 +119,22 @@ updates:
       interval: "weekly"
   - package-ecosystem: "gomod"
     directory: "/exporter/newrelicexporter"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
+    directory: "/exporter/observiqexporter"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
+    directory: "/exporter/opencensusexporter"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
+    directory: "/exporter/prometheusexporter"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
+    directory: "/exporter/prometheusremotewriteexporter"
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
@@ -122,7 +166,15 @@ updates:
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
-    directory: "/exporter/uptraceexporter"
+    directory: "/exporter/zipkinexporter"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
+    directory: "/extension/awsxrayproxy"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
+    directory: "/extension/bearertokenauthextension"
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
@@ -130,11 +182,23 @@ updates:
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
+    directory: "/extension/healthcheckextension"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
     directory: "/extension/httpforwarder"
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
+    directory: "/extension/oauth2clientauthextension"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
     directory: "/extension/observer"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
+    directory: "/extension/observer/dockerobserver"
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
@@ -150,6 +214,14 @@ updates:
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
+    directory: "/extension/oidcauthextension"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
+    directory: "/extension/pprofextension"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
     directory: "/extension/storage"
     schedule:
       interval: "weekly"
@@ -162,7 +234,15 @@ updates:
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
+    directory: "/internal/aws/k8s"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
     directory: "/internal/aws/metrics"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
+    directory: "/internal/aws/proxy"
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
@@ -182,7 +262,23 @@ updates:
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
+    directory: "/internal/coreinternal"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
+    directory: "/internal/docker"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
+    directory: "/internal/interval"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
     directory: "/internal/k8sconfig"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
+    directory: "/internal/kubelet"
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
@@ -206,11 +302,39 @@ updates:
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
-    directory: "/pkg/batchpertrace"
+    directory: "/pkg/experimentalmetricmetadata"
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
-    directory: "/pkg/experimentalmetricmetadata"
+    directory: "/pkg/resourcetotelemetry"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
+    directory: "/pkg/translator/jaeger"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
+    directory: "/pkg/translator/opencensus"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
+    directory: "/pkg/translator/zipkin"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
+    directory: "/processor/attributesprocessor"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
+    directory: "/processor/cumulativetodeltaprocessor"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
+    directory: "/processor/deltatorateprocessor"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
+    directory: "/processor/filterprocessor"
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
@@ -222,7 +346,7 @@ updates:
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
-    directory: "/processor/k8sprocessor"
+    directory: "/processor/k8sattributesprocessor"
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
@@ -234,7 +358,15 @@ updates:
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
+    directory: "/processor/probabilisticsamplerprocessor"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
     directory: "/processor/resourcedetectionprocessor"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
+    directory: "/processor/resourceprocessor"
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
@@ -243,6 +375,10 @@ updates:
       interval: "weekly"
   - package-ecosystem: "gomod"
     directory: "/processor/spanmetricsprocessor"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
+    directory: "/processor/spanprocessor"
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
@@ -263,6 +399,10 @@ updates:
       interval: "weekly"
   - package-ecosystem: "gomod"
     directory: "/receiver/carbonreceiver"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
+    directory: "/receiver/cloudfoundryreceiver"
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
@@ -290,7 +430,15 @@ updates:
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
+    directory: "/receiver/hostmetricsreceiver"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
     directory: "/receiver/influxdbreceiver"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
+    directory: "/receiver/jaegerreceiver"
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
@@ -306,6 +454,10 @@ updates:
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
+    directory: "/receiver/kafkareceiver"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
     directory: "/receiver/kubeletstatsreceiver"
     schedule:
       interval: "weekly"
@@ -314,11 +466,27 @@ updates:
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
+    directory: "/receiver/mongodbatlasreceiver"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
     directory: "/receiver/nginxreceiver"
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
+    directory: "/receiver/opencensusreceiver"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
+    directory: "/receiver/podmanreceiver"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
     directory: "/receiver/prometheusexecreceiver"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
+    directory: "/receiver/prometheusreceiver"
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
@@ -331,6 +499,10 @@ updates:
       interval: "weekly"
   - package-ecosystem: "gomod"
     directory: "/receiver/sapmreceiver"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
+    directory: "/receiver/scraperhelper"
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
@@ -371,6 +543,10 @@ updates:
       interval: "weekly"
   - package-ecosystem: "gomod"
     directory: "/receiver/windowsperfcountersreceiver"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
+    directory: "/receiver/zipkinreceiver"
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"

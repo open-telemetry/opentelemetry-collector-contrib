@@ -6,7 +6,7 @@ receivers:
     endpoint: localhost:9943
     access_token_passthrough: true
   signalfx/tls:
-    tls_settings:
+    tls:
       cert_file: /test.crt
       key_file: /test.key
 

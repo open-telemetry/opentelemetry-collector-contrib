@@ -36,15 +36,15 @@ translation_rules:
 - action: rename_metrics
   mapping:
     # kubeletstats container cpu needed for calculation below
-    container.cpu.time: container_cpu_utilization
+    container.cpu.time: sf_temp.container_cpu_utilization
 
 # compute cpu utilization metrics: cpu.utilization_per_core (excluded by default) and cpu.utilization
 - action: delta_metric
   mapping:
-    system.cpu.time: system.cpu.delta
+    system.cpu.time: sf_temp.system.cpu.delta
 - action: copy_metrics
   mapping:
-    system.cpu.delta: system.cpu.usage
+    sf_temp.system.cpu.delta: sf_temp.system.cpu.usage
   dimension_key: state
   dimension_values:
     interrupt: true
@@ -55,115 +55,118 @@ translation_rules:
     user: true
     wait: true
 - action: aggregate_metric
-  metric_name: system.cpu.usage
+  metric_name: sf_temp.system.cpu.usage
   aggregation_method: sum
   without_dimensions:
   - state
 - action: copy_metrics
   mapping:
-    system.cpu.delta: system.cpu.total
+    sf_temp.system.cpu.delta: sf_temp.system.cpu.total
 - action: aggregate_metric
-  metric_name: system.cpu.total
+  metric_name: sf_temp.system.cpu.total
   aggregation_method: sum
   without_dimensions:
   - state
 - action: calculate_new_metric
   metric_name: cpu.utilization_per_core
-  operand1_metric: system.cpu.usage
-  operand2_metric: system.cpu.total
+  operand1_metric: sf_temp.system.cpu.usage
+  operand2_metric: sf_temp.system.cpu.total
   operator: /
 - action: copy_metrics
   mapping:
-    cpu.utilization_per_core: cpu.utilization
+    cpu.utilization_per_core: sf_temp.cpu.utilization
 - action: aggregate_metric
-  metric_name: cpu.utilization
+  metric_name: sf_temp.cpu.utilization
   aggregation_method: avg
   without_dimensions:
   - cpu
+- action: multiply_float
+  scale_factors_float:
+    sf_temp.cpu.utilization: 100
 
 # convert cpu metrics
 - action: split_metric
   metric_name: system.cpu.time
   dimension_key: state
   mapping:
-    idle: cpu.idle
-    interrupt: cpu.interrupt
-    system: cpu.system
-    user: cpu.user
-    steal: cpu.steal
-    wait: cpu.wait
-    softirq: cpu.softirq
-    nice: cpu.nice
+    idle: sf_temp.cpu.idle
+    interrupt: sf_temp.cpu.interrupt
+    system: sf_temp.cpu.system
+    user: sf_temp.cpu.user
+    steal: sf_temp.cpu.steal
+    wait: sf_temp.cpu.wait
+    softirq: sf_temp.cpu.softirq
+    nice: sf_temp.cpu.nice
 - action: multiply_float
   scale_factors_float:
-    container_cpu_utilization: 100
-    cpu.idle: 100
-    cpu.interrupt: 100
-    cpu.system: 100
-    cpu.user: 100
-    cpu.steal: 100
-    cpu.wait: 100
-    cpu.softirq: 100
-    cpu.nice: 100
+    sf_temp.container_cpu_utilization: 100
+    sf_temp.cpu.idle: 100
+    sf_temp.cpu.interrupt: 100
+    sf_temp.cpu.system: 100
+    sf_temp.cpu.user: 100
+    sf_temp.cpu.steal: 100
+    sf_temp.cpu.wait: 100
+    sf_temp.cpu.softirq: 100
+    sf_temp.cpu.nice: 100
 - action: convert_values
   types_mapping:
-    container_cpu_utilization: int
-    cpu.idle: int
-    cpu.interrupt: int
-    cpu.system: int
-    cpu.user: int
-    cpu.steal: int
-    cpu.wait: int
-    cpu.softirq: int
-    cpu.nice: int
+    sf_temp.container_cpu_utilization: int
+    sf_temp.cpu.idle: int
+    sf_temp.cpu.interrupt: int
+    sf_temp.cpu.system: int
+    sf_temp.cpu.user: int
+    sf_temp.cpu.steal: int
+    sf_temp.cpu.wait: int
+    sf_temp.cpu.softirq: int
+    sf_temp.cpu.nice: int
 
 # compute cpu.num_processors
 - action: copy_metrics
   mapping:
-    cpu.idle: cpu.num_processors
+    sf_temp.cpu.idle: sf_temp.cpu.num_processors
 - action: aggregate_metric
-  metric_name: cpu.num_processors
+  metric_name: sf_temp.cpu.num_processors
   aggregation_method: count
   without_dimensions:
   - cpu
 
 - action: aggregate_metric
-  metric_name: cpu.idle
+  metric_name: sf_temp.cpu.idle
   aggregation_method: sum
   without_dimensions:
   - cpu
 - action: aggregate_metric
-  metric_name: cpu.interrupt
+  metric_name: sf_temp.cpu.interrupt
   aggregation_method: sum
   without_dimensions:
   - cpu
 - action: aggregate_metric
-  metric_name: cpu.system
+  metric_name: sf_temp.cpu.system
   aggregation_method: sum
   without_dimensions:
   - cpu
 - action: aggregate_metric
-  metric_name: cpu.user
+  metric_name: sf_temp.cpu.user
   aggregation_method: sum
   without_dimensions:
   - cpu
 - action: aggregate_metric
-  metric_name: cpu.steal
+  metric_name: sf_temp.cpu.steal
   aggregation_method: sum
   without_dimensions:
   - cpu
 - action: aggregate_metric
-  metric_name: cpu.wait
+  metric_name: sf_temp.cpu.wait
   aggregation_method: sum
   without_dimensions:
   - cpu
 - action: aggregate_metric
-  metric_name: cpu.softirq
+  metric_name: sf_temp.cpu.softirq
   aggregation_method: sum
   without_dimensions:
   - cpu
 - action: aggregate_metric
-  metric_name: cpu.nice
+  metric_name: sf_temp.cpu.nice
   aggregation_method: sum
   without_dimensions:
   - cpu
@@ -171,7 +174,7 @@ translation_rules:
 # compute memory.total
 - action: copy_metrics
   mapping:
-    system.memory.usage: memory.total
+    system.memory.usage: sf_temp.memory.total
   dimension_key: state
   dimension_values:
     buffered: true
@@ -179,7 +182,7 @@ translation_rules:
     free: true
     used: true
 - action: aggregate_metric
-  metric_name: memory.total
+  metric_name: sf_temp.memory.total
   aggregation_method: sum
   without_dimensions:
   - state
@@ -187,93 +190,92 @@ translation_rules:
 # convert memory metrics
 - action: copy_metrics
   mapping:
-    system.memory.usage: system.memory.usage.copy
+    system.memory.usage: sf_temp.system.memory.usage
 
-# memory.used needed to calculate memory.utilization
+# sf_temp.memory.used needed to calculate memory.utilization
 - action: split_metric
-  metric_name: system.memory.usage.copy
+  metric_name: sf_temp.system.memory.usage
   dimension_key: state
   mapping:
-    used: memory.used
+    used: sf_temp.memory.used
 
 # Translations to derive filesystem metrics
-## disk.total, required to compute disk.utilization
+## sf_temp.disk.total, required to compute disk.utilization
 - action: copy_metrics
   mapping:
-    system.filesystem.usage: disk.total
+    system.filesystem.usage: sf_temp.disk.total
 - action: aggregate_metric
-  metric_name: disk.total
+  metric_name: sf_temp.disk.total
   aggregation_method: sum
   without_dimensions:
     - state
 
-## disk.summary_total, required to compute disk.summary_utilization
+## sf_temp.disk.summary_total, required to compute disk.summary_utilization
 - action: copy_metrics
   mapping:
-    system.filesystem.usage: disk.summary_total
+    system.filesystem.usage: sf_temp.disk.summary_total
 - action: aggregate_metric
-  metric_name: disk.summary_total
+  metric_name: sf_temp.disk.summary_total
   aggregation_method: avg
   without_dimensions:
     - mode
     - mountpoint
 - action: aggregate_metric
-  metric_name: disk.summary_total
+  metric_name: sf_temp.disk.summary_total
   aggregation_method: sum
   without_dimensions:
     - state
     - device
     - type
 
-## df_complex.used needed to calculate disk.utilization
+## sf_temp.df_complex.used needed to calculate disk.utilization
 - action: copy_metrics
   mapping:
-    system.filesystem.usage: system.filesystem.usage.copy
+    system.filesystem.usage: sf_temp.system.filesystem.usage
 
 - action: split_metric
-  metric_name: system.filesystem.usage.copy
+  metric_name: sf_temp.system.filesystem.usage
   dimension_key: state
   mapping:
-    used: df_complex.used
+    used: sf_temp.df_complex.used
 
 ## disk.utilization
 - action: calculate_new_metric
-  metric_name: disk.utilization
-  operand1_metric: df_complex.used
-  operand2_metric: disk.total
+  metric_name: sf_temp.disk.utilization
+  operand1_metric: sf_temp.df_complex.used
+  operand2_metric: sf_temp.disk.total
   operator: /
 - action: multiply_float
   scale_factors_float:
-    disk.utilization: 100
-
+    sf_temp.disk.utilization: 100
 
 ## disk.summary_utilization
 - action: copy_metrics
   mapping:
-    df_complex.used: df_complex.used_total
+    sf_temp.df_complex.used: sf_temp.df_complex.used_total
 
 - action: aggregate_metric
-  metric_name: df_complex.used_total
+  metric_name: sf_temp.df_complex.used_total
   aggregation_method: avg
   without_dimensions:
     - mode
     - mountpoint
 
 - action: aggregate_metric
-  metric_name: df_complex.used_total
+  metric_name: sf_temp.df_complex.used_total
   aggregation_method: sum
   without_dimensions:
   - device
   - type
 
 - action: calculate_new_metric
-  metric_name: disk.summary_utilization
-  operand1_metric: df_complex.used_total
-  operand2_metric: disk.summary_total
+  metric_name: sf_temp.disk.summary_utilization
+  operand1_metric: sf_temp.df_complex.used_total
+  operand2_metric: sf_temp.disk.summary_total
   operator: /
 - action: multiply_float
   scale_factors_float:
-    disk.summary_utilization: 100
+    sf_temp.disk.summary_utilization: 100
 
 
 # Translations to derive disk I/O metrics.
@@ -281,15 +283,15 @@ translation_rules:
 ## Calculate extra system.disk.operations.total and system.disk.io.total metrics summing up read/write ops/IO across all devices.
 - action: copy_metrics
   mapping:
-    system.disk.operations: system.disk.operations.total
-    system.disk.io: system.disk.io.total
+    system.disk.operations: sf_temp.system.disk.operations.total
+    system.disk.io: sf_temp.system.disk.io.total
 - action: aggregate_metric
-  metric_name: system.disk.operations.total
+  metric_name: sf_temp.system.disk.operations.total
   aggregation_method: sum
   without_dimensions:
     - device
 - action: aggregate_metric
-  metric_name: system.disk.io.total
+  metric_name: sf_temp.system.disk.io.total
   aggregation_method: sum
   without_dimensions:
     - device
@@ -297,16 +299,16 @@ translation_rules:
 ## Calculate an extra disk_ops.total metric as number all all read and write operations happened since the last report.
 - action: copy_metrics
   mapping:
-    system.disk.operations: disk.ops
+    system.disk.operations: sf_temp.disk.ops
 - action: aggregate_metric
-  metric_name: disk.ops
+  metric_name: sf_temp.disk.ops
   aggregation_method: sum
   without_dimensions:
     - direction
     - device
 - action: delta_metric
   mapping:
-    disk.ops: disk_ops.total
+    sf_temp.disk.ops: disk_ops.total
 
 - action: delta_metric
   mapping:
@@ -317,15 +319,15 @@ translation_rules:
 ## Calculate extra network I/O metrics system.network.packets.total and system.network.io.total.
 - action: copy_metrics
   mapping:
-    system.network.packets: system.network.packets.total
-    system.network.io: system.network.io.total
+    system.network.packets: sf_temp.system.network.packets.total
+    system.network.io: sf_temp.system.network.io.total
 - action: aggregate_metric
-  metric_name: system.network.packets.total
+  metric_name: sf_temp.system.network.packets.total
   aggregation_method: sum
   without_dimensions:
   - device
 - action: aggregate_metric
-  metric_name: system.network.io.total
+  metric_name: sf_temp.system.network.io.total
   aggregation_method: sum
   without_dimensions:
   - device
@@ -333,13 +335,13 @@ translation_rules:
 ## Calculate extra network.total metric.
 - action: copy_metrics
   mapping:
-    system.network.io: network.total
+    system.network.io: sf_temp.network.total
   dimension_key: direction
   dimension_values:
     receive: true
     transmit: true
 - action: aggregate_metric
-  metric_name: network.total
+  metric_name: sf_temp.network.total
   aggregation_method: sum
   without_dimensions:
   - direction
@@ -347,53 +349,91 @@ translation_rules:
 
 # memory utilization
 - action: calculate_new_metric
-  metric_name: memory.utilization
-  operand1_metric: memory.used
-  operand2_metric: memory.total
+  metric_name: sf_temp.memory.utilization
+  operand1_metric: sf_temp.memory.used
+  operand2_metric: sf_temp.memory.total
   operator: /
 
 - action: multiply_float
   scale_factors_float:
-    memory.utilization: 100
-    cpu.utilization: 100
+    sf_temp.memory.utilization: 100
 
 # Virtual memory metrics
 - action: split_metric
   metric_name: system.paging.operations
   dimension_key: direction
   mapping:
-    page_in: system.paging.operations.page_in
-    page_out: system.paging.operations.page_out
+    page_in: sf_temp.system.paging.operations.page_in
+    page_out: sf_temp.system.paging.operations.page_out
 
 - action: split_metric
-  metric_name: system.paging.operations.page_in
+  metric_name: sf_temp.system.paging.operations.page_in
   dimension_key: type
   mapping:
     major: vmpage_io.swap.in
     minor: vmpage_io.memory.in
 
 - action: split_metric
-  metric_name: system.paging.operations.page_out
+  metric_name: sf_temp.system.paging.operations.page_out
   dimension_key: type
   mapping:
     major: vmpage_io.swap.out
     minor: vmpage_io.memory.out
 
+# process metric
+- action: copy_metrics
+  mapping:
+    process.cpu.time: sf_temp.process.cpu.time
+  dimension_key: state
+  dimension_values:
+    user: true
+    system: true
+
+- action: aggregate_metric
+  metric_name: sf_temp.process.cpu.time
+  aggregation_method: sum
+  without_dimensions:
+  - state
+
+- action: rename_metrics
+  mapping:
+    sf_temp.container_cpu_utilization: container_cpu_utilization
+    sf_temp.cpu.idle: cpu.idle
+    sf_temp.cpu.interrupt: cpu.interrupt
+    sf_temp.cpu.nice: cpu.nice
+    sf_temp.cpu.num_processors: cpu.num_processors
+    sf_temp.cpu.softirq: cpu.softirq
+    sf_temp.cpu.steal: cpu.steal
+    sf_temp.cpu.system: cpu.system
+    sf_temp.cpu.user: cpu.user
+    sf_temp.cpu.utilization: cpu.utilization
+    sf_temp.cpu.wait: cpu.wait
+    sf_temp.disk.summary_utilization: disk.summary_utilization
+    sf_temp.disk.utilization: disk.utilization
+    sf_temp.memory.total: memory.total
+    sf_temp.memory.utilization: memory.utilization
+    sf_temp.network.total: network.total
+    sf_temp.system.disk.io.total: system.disk.io.total
+    sf_temp.system.disk.operations.total: system.disk.operations.total
+    sf_temp.system.network.io.total: system.network.io.total
+    sf_temp.system.network.packets.total: system.network.packets.total
+    sf_temp.process.cpu.time: process.cpu_time_seconds
+
 # remove redundant metrics
 - action: drop_metrics
   metric_names:
-    system.filesystem.usage.copy: true
-    df_complex.used: true
-    df_complex.used_total: true
-    disk.ops: true
-    disk.summary_total: true
-    disk.total: true
-    system.cpu.usage: true
-    system.cpu.total: true
-    system.cpu.delta: true
-    system.paging.operations.page_in: true
-    system.paging.operations.page_out: true
-    system.memory.usage.copy: true
-    memory.used: true
+    sf_temp.df_complex.used: true
+    sf_temp.df_complex.used_total: true
+    sf_temp.disk.ops: true
+    sf_temp.disk.summary_total: true
+    sf_temp.disk.total: true
+    sf_temp.memory.used: true
+    sf_temp.system.cpu.delta: true
+    sf_temp.system.cpu.total: true
+    sf_temp.system.cpu.usage: true
+    sf_temp.system.filesystem.usage: true
+    sf_temp.system.memory.usage: true
+    sf_temp.system.paging.operations.page_in: true
+    sf_temp.system.paging.operations.page_out: true
 `
 )

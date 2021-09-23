@@ -18,7 +18,7 @@ import (
 	"strconv"
 
 	"go.opentelemetry.io/collector/model/pdata"
-	"go.opentelemetry.io/collector/translator/conventions"
+	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
 )
 
 /*
@@ -114,7 +114,7 @@ func (attrs *HTTPAttributes) MapAttribute(k string, v pdata.AttributeValue) bool
 		if val, err := getAttributeValueAsInt(v); err == nil {
 			attrs.HTTPStatusCode = val
 		}
-	case conventions.AttributeHTTPStatusText:
+	case "http.status_text":
 		attrs.HTTPStatusText = v.StringVal()
 	case conventions.AttributeHTTPFlavor:
 		attrs.HTTPFlavor = v.StringVal()
@@ -208,7 +208,7 @@ func (attrs *DatabaseAttributes) MapAttribute(k string, v pdata.AttributeValue) 
 		attrs.DBStatement = v.StringVal()
 	case conventions.AttributeDBOperation:
 		attrs.DBOperation = v.StringVal()
-	case conventions.AttributeDBMsSQLInstanceName:
+	case conventions.AttributeDBMSSQLInstanceName:
 		attrs.DBMSSQLInstanceName = v.StringVal()
 	case conventions.AttributeDBJDBCDriverClassname:
 		attrs.DBJDBCDriverClassName = v.StringVal()
@@ -216,7 +216,7 @@ func (attrs *DatabaseAttributes) MapAttribute(k string, v pdata.AttributeValue) 
 		attrs.DBCassandraKeyspace = v.StringVal()
 	case conventions.AttributeDBHBaseNamespace:
 		attrs.DBHBaseNamespace = v.StringVal()
-	case conventions.AttributeDBRedisDatabaseIndex:
+	case conventions.AttributeDBRedisDBIndex:
 		attrs.DBRedisDatabaseIndex = v.StringVal()
 	case conventions.AttributeDBMongoDBCollection:
 		attrs.DBMongoDBCollection = v.StringVal()
@@ -265,11 +265,11 @@ func (attrs *MessagingAttributes) MapAttribute(k string, v pdata.AttributeValue)
 		attrs.MessagingMessageID = v.StringVal()
 	case conventions.AttributeMessagingConversationID:
 		attrs.MessagingConversationID = v.StringVal()
-	case conventions.AttributeMessagingPayloadSize:
+	case conventions.AttributeMessagingMessagePayloadSizeBytes:
 		if val, err := getAttributeValueAsInt(v); err == nil {
 			attrs.MessagingMessagePayloadSize = val
 		}
-	case conventions.AttributeMessagingPayloadCompressedSize:
+	case conventions.AttributeMessagingMessagePayloadCompressedSizeBytes:
 		if val, err := getAttributeValueAsInt(v); err == nil {
 			attrs.MessagingMessagePayloadCompressedSize = val
 		}
