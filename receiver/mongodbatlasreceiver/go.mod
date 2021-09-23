@@ -7,9 +7,8 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/interval v0.34.0
 	go.mongodb.org/atlas v0.12.0
 	go.opentelemetry.io/collector v0.34.0
-	go.uber.org/zap v1.19.0
+	go.uber.org/zap v1.19.1
 	golang.org/x/sys v0.0.0-20210902050250-f475640dd07b // indirect
-	golang.org/x/tools v0.1.5 // indirect
 )
 
 require github.com/pkg/errors v0.9.1
