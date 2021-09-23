@@ -19,8 +19,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confignet"
-	"go.opentelemetry.io/collector/config/configparser"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest/observer"
@@ -213,7 +213,7 @@ func TestDeprecationReportBuckets(t *testing.T) {
 		t.Run(testInstance.name, func(t *testing.T) {
 			// default config for buckets
 			config := Config{Metrics: MetricsConfig{Buckets: false, HistConfig: HistogramConfig{Mode: histogramModeNoBuckets}}}
-			configMap := configparser.NewConfigMapFromStringMap(testInstance.stringMap)
+			configMap := config.NewMapFromStringMap(testInstance.stringMap)
 			err := config.Unmarshal(configMap)
 			require.NoError(t, err)
 			assert.Equal(t, config.Metrics.HistConfig.Mode, testInstance.expectedMode)
@@ -238,7 +238,7 @@ func TestNoBucketsAndHistogram(t *testing.T) {
 	}
 
 	config := Config{Metrics: MetricsConfig{Buckets: false, HistConfig: HistogramConfig{Mode: histogramModeNoBuckets}}}
-	configMap := configparser.NewConfigMapFromStringMap(stringMap)
+	configMap := config.NewMapFromStringMap(stringMap)
 	err := config.Unmarshal(configMap)
 
 	assert.Error(t, errBuckets, err)
