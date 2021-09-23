@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package k8sprocessor
+package k8sattributesprocessor
 
 import (
 	"go.uber.org/zap"
@@ -22,7 +22,7 @@ import (
 	"k8s.io/client-go/tools/cache"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sprocessor/kube"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor/kube"
 )
 
 // fakeClient is used as a replacement for WatchClient in test cases.

@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package k8sprocessor
+package k8sattributesprocessor
 
 import (
 	"path"
@@ -25,7 +25,7 @@ import (
 	"go.opentelemetry.io/collector/config/configtest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sprocessor/kube"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor/kube"
 )
 
 func TestLoadConfig(t *testing.T) {

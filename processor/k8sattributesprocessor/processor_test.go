@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package k8sprocessor
+package k8sattributesprocessor
 
 import (
 	"context"
@@ -33,7 +33,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sprocessor/kube"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor/kube"
 )
 
 func newTracesProcessor(cfg config.Processor, next consumer.Traces, options ...Option) (component.TracesProcessor, error) {

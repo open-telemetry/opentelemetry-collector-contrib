@@ -346,7 +346,7 @@ updates:
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
-    directory: "/processor/k8sprocessor"
+    directory: "/processor/k8sattributesprocessor"
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"

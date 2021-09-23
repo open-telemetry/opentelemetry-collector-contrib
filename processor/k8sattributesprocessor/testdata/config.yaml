@@ -2,8 +2,8 @@ receivers:
   nop:
 
 processors:
-  k8s_tagger:
-  k8s_tagger/2:
+  k8sattributes:
+  k8sattributes/2:
     passthrough: false
     auth_type: "kubeConfig"
     extract:
@@ -84,5 +84,5 @@ service:
   pipelines:
     traces:
       receivers: [nop]
-      processors: [k8s_tagger]
+      processors: [k8sattributes]
       exporters: [nop]
