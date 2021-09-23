@@ -1,4 +1,4 @@
-module github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sprocessor
+module github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor
 
 go 1.17
 
