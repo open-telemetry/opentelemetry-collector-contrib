@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 
 	"go.opentelemetry.io/collector/model/pdata"
-	tracetranslator "go.opentelemetry.io/collector/translator/trace"
 )
 
 // JSON representation of the LogRecord as described by https://developers.google.com/protocol-buffers/docs/proto3#json
@@ -28,7 +27,7 @@ func encodeJSON(lr pdata.LogRecord) (string, error) {
 		TraceID:    lr.TraceID().HexString(),
 		SpanID:     lr.SpanID().HexString(),
 		Severity:   lr.SeverityText(),
-		Attributes: tracetranslator.AttributeMapToMap(lr.Attributes())}
+		Attributes: lr.Attributes().AsRaw()}
 
 	jsonRecord, err := json.Marshal(logRecord)
 	if err != nil {
