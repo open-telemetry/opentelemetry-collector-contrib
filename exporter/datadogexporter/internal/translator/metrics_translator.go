@@ -212,10 +212,11 @@ func (t *Translator) getLegacyBuckets(
 	fullName := fmt.Sprintf("%s.bucket", name)
 	for idx, val := range p.BucketCounts() {
 		lowerBound, upperBound := getBounds(p, idx)
-		bucketTags := append(tags,
+		bucketTags := []string{
 			fmt.Sprintf("lower_bound:%s", formatFloat(lowerBound)),
 			fmt.Sprintf("upper_bound:%s", formatFloat(upperBound)),
-		)
+		}
+		bucketTags = append(bucketTags, tags...)
 
 		count := float64(val)
 		ts := uint64(p.Timestamp())
@@ -356,8 +357,9 @@ func (t *Translator) mapSummaryMetrics(
 					continue
 				}
 
-				quantileTags := append(tags, getQuantileTag(q.Quantile()))
-				consumer.ConsumeTimeSeries(ctx, fullName, Gauge, ts, q.Value(), quantileTags, host)
+				quantileTags := []string{getQuantileTag(q.Quantile())}
+				quantileTags = append(quantileTags, tags...)
+        consumer.ConsumeTimeSeries(ctx, fullName, Gauge, ts, q.Value(), quantileTags, host)
 			}
 		}
 	}
