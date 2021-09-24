@@ -6,6 +6,7 @@
 
 - Move `k8sprocessor` to `k8sattributesprocessor`.
 - Rename `k8s_tagger` configuration `k8sattributes`.
+- Rename `configparser.ConfigMap` to `config.Map`
 
 ## v0.36.0
 

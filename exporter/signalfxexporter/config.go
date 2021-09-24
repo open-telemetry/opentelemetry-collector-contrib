@@ -21,7 +21,6 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/config/configparser"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/correlation"
@@ -176,7 +175,7 @@ func (cfg *Config) getAPIURL() (*url.URL, error) {
 	return url.Parse(fmt.Sprintf("https://api.%s.signalfx.com", cfg.Realm))
 }
 
-func (cfg *Config) Unmarshal(componentParser *configparser.ConfigMap) (err error) {
+func (cfg *Config) Unmarshal(componentParser *config.Map) (err error) {
 	if componentParser == nil {
 		// Nothing to do if there is no config given.
 		return nil

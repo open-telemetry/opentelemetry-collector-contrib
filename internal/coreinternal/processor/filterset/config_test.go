@@ -20,14 +20,14 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/config/configparser"
+	"go.opentelemetry.io/collector/config"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterset/regexp"
 )
 
 func readTestdataConfigYamls(t *testing.T, filename string) map[string]*Config {
 	testFile := path.Join(".", "testdata", filename)
-	v, err := configparser.NewConfigMapFromFile(testFile)
+	v, err := config.NewMapFromFile(testFile)
 	require.NoError(t, err)
 
 	cfgs := map[string]*Config{}
