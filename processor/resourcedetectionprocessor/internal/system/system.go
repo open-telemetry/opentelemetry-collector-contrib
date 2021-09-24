@@ -98,21 +98,3 @@ func getFQDN(d *Detector) (string, error) {
 	}
 	return hostname, nil
 }
-
-// getHostname returns OS hostname
-func getHostname(d *Detector) (string, error) {
-	hostname, err := d.provider.Hostname()
-	if err != nil {
-		return "", fmt.Errorf("failed getting OS hostname: %w", err)
-	}
-	return hostname, nil
-}
-
-// getFQDN returns FQDN of the host
-func getFQDN(d *Detector) (string, error) {
-	hostname, err := d.provider.FQDN()
-	if err != nil {
-		return "", fmt.Errorf("failed getting FQDN: %w", err)
-	}
-	return hostname, nil
-}

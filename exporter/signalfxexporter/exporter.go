@@ -100,19 +100,18 @@ func newSignalFxExporter(
 			ingestURL: options.ingestURL,
 			headers:   headers,
 			client: &http.Client{
-				// TODO: What other settings of http.Client to expose via config?
-				//  Or what others change from default values?
 				Timeout: config.Timeout,
 				Transport: &http.Transport{
 					Proxy: http.ProxyFromEnvironment,
 					DialContext: (&net.Dialer{
-						Timeout:   5 * time.Second,
+						Timeout:   30 * time.Second,
 						KeepAlive: 30 * time.Second,
 					}).DialContext,
 					MaxIdleConns:        int(config.MaxConnections),
 					MaxIdleConnsPerHost: int(config.MaxConnections),
 					IdleConnTimeout:     30 * time.Second,
 					TLSHandshakeTimeout: 10 * time.Second,
+					ForceAttemptHTTP2:   true,
 				},
 			},
 			zippers: newGzipPool(),
@@ -176,19 +175,18 @@ func newEventExporter(config *Config, logger *zap.Logger) (*signalfxExporter, er
 			ingestURL: options.ingestURL,
 			headers:   headers,
 			client: &http.Client{
-				// TODO: What other settings of http.Client to expose via config?
-				//  Or what others change from default values?
 				Timeout: config.Timeout,
 				Transport: &http.Transport{
 					Proxy: http.ProxyFromEnvironment,
 					DialContext: (&net.Dialer{
-						Timeout:   5 * time.Second,
+						Timeout:   30 * time.Second,
 						KeepAlive: 30 * time.Second,
 					}).DialContext,
 					MaxIdleConns:        int(config.MaxConnections),
 					MaxIdleConnsPerHost: int(config.MaxConnections),
 					IdleConnTimeout:     30 * time.Second,
 					TLSHandshakeTimeout: 10 * time.Second,
+					ForceAttemptHTTP2:   true,
 				},
 			},
 			zippers: newGzipPool(),
