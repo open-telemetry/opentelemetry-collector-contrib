@@ -19,6 +19,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net"
 	"net/http"
 	"net/url"
 	"sync"
@@ -102,6 +103,17 @@ func newSignalFxExporter(
 				// TODO: What other settings of http.Client to expose via config?
 				//  Or what others change from default values?
 				Timeout: config.Timeout,
+				Transport: &http.Transport{
+					Proxy: http.ProxyFromEnvironment,
+					DialContext: (&net.Dialer{
+						Timeout:   5 * time.Second,
+						KeepAlive: 30 * time.Second,
+					}).DialContext,
+					MaxIdleConns:        int(config.MaxConnections),
+					MaxIdleConnsPerHost: int(config.MaxConnections),
+					IdleConnTimeout:     30 * time.Second,
+					TLSHandshakeTimeout: 10 * time.Second,
+				},
 			},
 			zippers: newGzipPool(),
 		},
@@ -167,6 +179,17 @@ func newEventExporter(config *Config, logger *zap.Logger) (*signalfxExporter, er
 				// TODO: What other settings of http.Client to expose via config?
 				//  Or what others change from default values?
 				Timeout: config.Timeout,
+				Transport: &http.Transport{
+					Proxy: http.ProxyFromEnvironment,
+					DialContext: (&net.Dialer{
+						Timeout:   5 * time.Second,
+						KeepAlive: 30 * time.Second,
+					}).DialContext,
+					MaxIdleConns:        int(config.MaxConnections),
+					MaxIdleConnsPerHost: int(config.MaxConnections),
+					IdleConnTimeout:     30 * time.Second,
+					TLSHandshakeTimeout: 10 * time.Second,
+				},
 			},
 			zippers: newGzipPool(),
 		},

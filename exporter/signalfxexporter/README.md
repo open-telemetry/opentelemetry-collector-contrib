@@ -81,6 +81,8 @@ The following configuration options can also be configured:
 that are allowed to be used as a dimension key in addition to alphanumeric 
 characters. Each nonalphanumeric dimension key character that isn't in this string 
 will be replaced with a `_`.
+- `max_connections` (default = 100): MaxConnections is used to set a limit to the maximum
+idle HTTP connection the exporter can keep open.
 
 In addition, this exporter offers queued retry which is enabled by default.
 Information about queued retry configuration parameters can be found
@@ -178,6 +180,7 @@ exporters:
       dot.test: test
     realm: us1
     timeout: 5s
+    max_connections: 80
 ```
 
 > :warning: When enabling the SignalFx receiver or exporter, configure both the `metrics` and `logs` pipelines.
