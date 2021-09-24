@@ -62,6 +62,7 @@ func TestLoadConfig(t *testing.T) {
 		ExporterSettings: config.NewExporterSettings(config.NewIDWithName(typeStr, "allsettings")),
 		AccessToken:      "testToken",
 		Realm:            "us1",
+		MaxConnections:   70,
 		Headers: map[string]string{
 			"added-entry": "added value",
 			"dot.test":    "test",
