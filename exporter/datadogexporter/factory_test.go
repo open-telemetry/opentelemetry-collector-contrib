@@ -443,6 +443,10 @@ func TestOnlyMetadata(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, expMetrics)
 
+	err = expTraces.Start(ctx, nil)
+	assert.NoError(t, err)
+	defer expTraces.Shutdown(ctx)
+
 	err = expTraces.ConsumeTraces(ctx, testutils.TestTraces.Clone())
 	require.NoError(t, err)
 
