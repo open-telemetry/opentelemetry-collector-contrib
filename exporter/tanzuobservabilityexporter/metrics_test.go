@@ -98,6 +98,24 @@ func TestGaugeConsumerErrorSending(t *testing.T) {
 	verifyGaugeConsumer(t, true)
 }
 
+func TestGaugeConsumerBadValue(t *testing.T) {
+	metric := newMetric("bad.metric", pdata.MetricDataTypeGauge)
+	dataPoints := metric.Gauge().DataPoints()
+	dataPoints.EnsureCapacity(1)
+	addDataPoint(
+		nil,
+		1633123456,
+		nil,
+		dataPoints,
+	)
+	sender := &mockGaugeSender{}
+	consumer := newGaugeConsumer(sender)
+	var errs []error
+	consumer.Consume(metric, &errs)
+	assert.Len(t, errs, 1)
+	assert.Empty(t, sender.metrics)
+}
+
 func verifyGaugeConsumer(t *testing.T, errorOnSend bool) {
 	metric := newMetric("test.metric", pdata.MetricDataTypeGauge)
 	dataPoints := metric.Gauge().DataPoints()
@@ -173,7 +191,9 @@ func addDataPoint(
 	tags map[string]interface{},
 	slice pdata.NumberDataPointSlice) {
 	dataPoint := slice.AppendEmpty()
-	setDataPointValue(value, dataPoint)
+	if value != nil {
+		setDataPointValue(value, dataPoint)
+	}
 	setDataPointTimestamp(ts, dataPoint)
 	setTags(tags, dataPoint)
 }
