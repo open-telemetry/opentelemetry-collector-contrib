@@ -23,7 +23,6 @@ import (
 
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confignet"
-	"go.opentelemetry.io/collector/config/configparser"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata/valid"
@@ -318,7 +317,7 @@ func (c *Config) Validate() error {
 	return nil
 }
 
-func (c *Config) Unmarshal(configMap *configparser.ConfigMap) error {
+func (c *Config) Unmarshal(configMap *config.Map) error {
 	err := configMap.UnmarshalExact(c)
 	if err != nil {
 		return err
