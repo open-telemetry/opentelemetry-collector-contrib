@@ -40,32 +40,55 @@ import (
 	"go.uber.org/zap/zaptest/observer"
 )
 
-var jmxJarReleases = map[string]string{
-	"1.0.0-alpha": "https://repo1.maven.org/maven2/io/opentelemetry/contrib/opentelemetry-java-contrib-jmx-metrics/1.0.0-alpha/opentelemetry-java-contrib-jmx-metrics-1.0.0-alpha.jar",
-	"1.4.0-alpha": "https://repo1.maven.org/maven2/io/opentelemetry/contrib/opentelemetry-jmx-metrics/1.4.0-alpha/opentelemetry-jmx-metrics-1.4.0-alpha.jar",
+type testInfo struct{ version, jarUrl, scriptName, expectedVersion, jarPath string }
+
+var tests = []testInfo{
+	{
+		version:         "1.0.0-alpha",
+		jarUrl:          "https://repo1.maven.org/maven2/io/opentelemetry/contrib/opentelemetry-java-contrib-jmx-metrics/1.0.0-alpha/opentelemetry-java-contrib-jmx-metrics-1.0.0-alpha.jar",
+		scriptName:      "script1_4.groovy",
+		expectedVersion: "1.0.0-alpha",
+	},
+	{
+		version:         "1.4.0-alpha",
+		jarUrl:          "https://repo1.maven.org/maven2/io/opentelemetry/contrib/opentelemetry-jmx-metrics/1.4.0-alpha/opentelemetry-jmx-metrics-1.4.0-alpha.jar",
+		scriptName:      "script1_4.groovy",
+		expectedVersion: "1.0.0-alpha",
+	},
+	{
+		version:         "1.6.0-alpha",
+		jarUrl:          "https://github.com/open-telemetry/opentelemetry-java-contrib/releases/download/v1.6.0/opentelemetry-jmx-metrics.jar",
+		scriptName:      "script1_6.groovy",
+		expectedVersion: "1.6.0",
+	},
 }
 
 type JMXIntegrationSuite struct {
 	suite.Suite
-	VersionToJar map[string]string
+	tests []*testInfo
 }
 
 func TestJMXIntegration(t *testing.T) {
-	suite.Run(t, new(JMXIntegrationSuite))
+	var ts []*testInfo
+	for _, test := range tests {
+		t := test
+		ts = append(ts, &t)
+	}
+	suite.Run(t, &JMXIntegrationSuite{tests: ts})
 }
 
 func (suite *JMXIntegrationSuite) SetupSuite() {
-	suite.VersionToJar = make(map[string]string)
-	for version, url := range jmxJarReleases {
-		jarPath, err := downloadJMXMetricGathererJAR(url)
+	for _, test := range suite.tests {
+		jarPath, err := downloadJMXMetricGathererJAR(test.jarUrl)
 		require.NoError(suite.T(), err)
-		suite.VersionToJar[version] = jarPath
+		require.NotEmpty(suite.T(), jarPath)
+		test.jarPath = jarPath
 	}
 }
 
 func (suite *JMXIntegrationSuite) TearDownSuite() {
-	for _, path := range suite.VersionToJar {
-		require.NoError(suite.T(), os.Remove(path))
+	for _, test := range suite.tests {
+		require.NoError(suite.T(), os.Remove(test.jarPath))
 	}
 }
 
@@ -134,11 +157,10 @@ func getLogsOnFailure(t *testing.T, logObserver *observer.ObservedLogs) {
 }
 
 func (suite *JMXIntegrationSuite) TestJMXReceiverHappyPath() {
-
-	for version, jar := range suite.VersionToJar {
+	for _, test := range suite.tests {
 		t := suite.T()
 		// Run one test per JMX receiver version we're integrating with.
-		t.Run(version, func(t *testing.T) {
+		t.Run(test.version, func(t *testing.T) {
 			cassandra := cassandraContainer(t)
 			defer cassandra.Terminate(context.Background())
 			hostname, err := cassandra.Host(context.Background())
@@ -154,8 +176,8 @@ func (suite *JMXIntegrationSuite) TestJMXReceiverHappyPath() {
 			cfg := &Config{
 				CollectionInterval: 100 * time.Millisecond,
 				Endpoint:           fmt.Sprintf("%v:7199", hostname),
-				JARPath:            jar,
-				GroovyScript:       path.Join(".", "testdata", "script.groovy"),
+				JARPath:            test.jarPath,
+				GroovyScript:       path.Join(".", "testdata", test.scriptName),
 				OTLPExporterConfig: otlpExporterConfig{
 					Endpoint: "127.0.0.1:0",
 					TimeoutSettings: exporterhelper.TimeoutSettings{
@@ -221,7 +243,7 @@ func (suite *JMXIntegrationSuite) TestJMXReceiverHappyPath() {
 
 				ilm := rm.InstrumentationLibraryMetrics().At(0)
 				require.Equal(t, "io.opentelemetry.contrib.jmxmetrics", ilm.InstrumentationLibrary().Name())
-				require.Equal(t, "1.0.0-alpha", ilm.InstrumentationLibrary().Version())
+				require.Equal(t, test.expectedVersion, ilm.InstrumentationLibrary().Version())
 
 				met := ilm.Metrics().At(0)
 
