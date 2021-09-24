@@ -17,7 +17,7 @@ details of which are currently pending confirmation in the OpenTelemetry specifi
     * host.name
     * os.type
 
-By default `host.name` is being set to FQND if possible, and a hostname provided by OS used as fallback.
+By default `host.name` is being set to FQDN if possible, and a hostname provided by OS used as fallback.
 This logic can be changed with `hostname_sources` configuration which is set to `["dns", "os"]` by default.
 
 Use the following config to avoid getting FQDN and apply hostname provided by OS only:
