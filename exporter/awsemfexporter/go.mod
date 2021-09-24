@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsemf
 go 1.17
 
 require (
-	github.com/aws/aws-sdk-go v1.40.46
+	github.com/aws/aws-sdk-go v1.40.47
 	github.com/census-instrumentation/opencensus-proto v0.3.0
 	github.com/golang/protobuf v1.5.2
 	github.com/google/uuid v1.3.0
@@ -12,8 +12,8 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry v0.36.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus v0.36.0
 	github.com/stretchr/testify v1.7.0
-	go.opentelemetry.io/collector v0.36.0
-	go.opentelemetry.io/collector/model v0.36.0
+	go.opentelemetry.io/collector v0.36.1-0.20210922072157-086d5f473ab0
+	go.opentelemetry.io/collector/model v0.36.1-0.20210922072157-086d5f473ab0
 	go.uber.org/zap v1.19.1
 	google.golang.org/protobuf v1.27.1
 )

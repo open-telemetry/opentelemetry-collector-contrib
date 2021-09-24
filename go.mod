@@ -99,7 +99,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zookeeperreceiver v0.36.0
 	github.com/prometheus/prometheus v1.8.2-0.20210621150501-ff58416a0b02
 	github.com/stretchr/testify v1.7.0
-	go.opentelemetry.io/collector v0.36.0
+	go.opentelemetry.io/collector v0.36.1-0.20210922072157-086d5f473ab0
 	golang.org/x/sys v0.0.0-20210908233432-aa78b53d3365
 )
 
@@ -123,7 +123,7 @@ require (
 	github.com/Azure/go-autorest/logger v0.2.1 // indirect
 	github.com/Azure/go-autorest/tracing v0.6.0 // indirect
 	github.com/BurntSushi/toml v0.4.1 // indirect
-	github.com/DataDog/agent-payload v4.81.0+incompatible // indirect
+	github.com/DataDog/agent-payload v4.82.0+incompatible // indirect
 	github.com/DataDog/datadog-agent/pkg/quantile v0.31.0 // indirect
 	github.com/DataDog/datadog-agent/pkg/trace/exportable v0.0.0-20201016145401-4646cf596b02 // indirect
 	github.com/DataDog/datadog-agent/pkg/util/log v0.0.0-20201009092105-58e18918b2db // indirect
@@ -142,7 +142,7 @@ require (
 	github.com/apache/thrift v0.15.0 // indirect
 	github.com/armon/go-metrics v0.3.3 // indirect
 	github.com/avast/retry-go v3.0.0+incompatible // indirect
-	github.com/aws/aws-sdk-go v1.40.46 // indirect
+	github.com/aws/aws-sdk-go v1.40.47 // indirect
 	github.com/beeker1121/goque v2.1.0+incompatible // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/bits-and-blooms/bitset v1.2.0 // indirect
@@ -286,7 +286,7 @@ require (
 	github.com/moby/term v0.0.0-20210619224110-3f7ff695adc6 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.1 // indirect
-	github.com/mongodb-forks/digest v1.0.2 // indirect
+	github.com/mongodb-forks/digest v1.0.3 // indirect
 	github.com/montanaflynn/stats v0.0.0-20171201202039-1bf9dbcd8cbe // indirect
 	github.com/mtrmac/gpgme v0.1.2 // indirect
 	github.com/mwitkow/go-conntrack v0.0.0-20190716064945-2f068394615f // indirect
@@ -390,9 +390,9 @@ require (
 	go.mongodb.org/atlas v0.12.0 // indirect
 	go.mozilla.org/pkcs7 v0.0.0-20200128120323-432b2356ecb1 // indirect
 	go.opencensus.io v0.23.0 // indirect
-	go.opentelemetry.io/collector/model v0.36.0 // indirect
+	go.opentelemetry.io/collector/model v0.36.1-0.20210922072157-086d5f473ab0 // indirect
 	go.opentelemetry.io/contrib v0.23.0 // indirect
-	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.23.0 // indirect
+	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.24.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.23.0 // indirect
 	go.opentelemetry.io/contrib/zpages v0.23.0 // indirect
 	go.opentelemetry.io/otel v1.0.0 // indirect

@@ -3,13 +3,13 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsxra
 go 1.17
 
 require (
-	github.com/aws/aws-sdk-go v1.40.46
+	github.com/aws/aws-sdk-go v1.40.47
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil v0.36.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray v0.36.0
 	github.com/stretchr/objx v0.2.0 // indirect
 	github.com/stretchr/testify v1.7.0
-	go.opentelemetry.io/collector v0.36.0
-	go.opentelemetry.io/collector/model v0.36.0
+	go.opentelemetry.io/collector v0.36.1-0.20210922072157-086d5f473ab0
+	go.opentelemetry.io/collector/model v0.36.1-0.20210922072157-086d5f473ab0
 	go.uber.org/zap v1.19.1
 
 )

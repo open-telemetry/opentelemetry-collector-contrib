@@ -483,8 +483,8 @@ func TestMapDeltaHistogramMetrics(t *testing.T) {
 	}
 
 	bucketsAttributeTags := []datadog.Metric{
-		metrics.NewCount("doubleHist.test.bucket", uint64(ts), 2, []string{"attribute_tag:attribute_value", "lower_bound:-inf", "upper_bound:0"}),
-		metrics.NewCount("doubleHist.test.bucket", uint64(ts), 18, []string{"attribute_tag:attribute_value", "lower_bound:0", "upper_bound:inf"}),
+		metrics.NewCount("doubleHist.test.bucket", uint64(ts), 2, []string{"lower_bound:-inf", "upper_bound:0", "attribute_tag:attribute_value"}),
+		metrics.NewCount("doubleHist.test.bucket", uint64(ts), 18, []string{"lower_bound:0", "upper_bound:inf", "attribute_tag:attribute_value"}),
 	}
 
 	tr.cfg.HistMode = HistogramModeNoBuckets
@@ -537,6 +537,28 @@ func TestMapCumulativeHistogramMetrics(t *testing.T) {
 		res,
 		expected,
 	)
+}
+
+func TestLegacyBucketsTags(t *testing.T) {
+	// Test that passing the same tags slice doesn't reuse the slice.
+	tr := newTranslator(t, zap.NewNop())
+
+	tags := make([]string, 0, 10)
+
+	pointOne := pdata.NewHistogramDataPoint()
+	pointOne.SetBucketCounts([]uint64{2, 18})
+	pointOne.SetExplicitBounds([]float64{0})
+	pointOne.SetTimestamp(seconds(0))
+	seriesOne := tr.getLegacyBuckets("test.histogram.one", pointOne, true, tags)
+
+	pointTwo := pdata.NewHistogramDataPoint()
+	pointTwo.SetBucketCounts([]uint64{2, 18})
+	pointTwo.SetExplicitBounds([]float64{1})
+	pointTwo.SetTimestamp(seconds(0))
+	seriesTwo := tr.getLegacyBuckets("test.histogram.two", pointTwo, true, tags)
+
+	assert.ElementsMatch(t, seriesOne[0].Tags, []string{"lower_bound:-inf", "upper_bound:0"})
+	assert.ElementsMatch(t, seriesTwo[0].Tags, []string{"lower_bound:-inf", "upper_bound:1.0"})
 }
 
 func TestFormatFloat(t *testing.T) {
@@ -633,10 +655,10 @@ func TestMapSummaryMetrics(t *testing.T) {
 		metrics.NewCount("summary.example.sum", uint64(ts), 10_000, []string{"attribute_tag:attribute_value"}),
 	}
 	quantilesAttr := []datadog.Metric{
-		metrics.NewGauge("summary.example.quantile", uint64(ts), 0, []string{"attribute_tag:attribute_value", "quantile:0"}),
-		metrics.NewGauge("summary.example.quantile", uint64(ts), 100, []string{"attribute_tag:attribute_value", "quantile:0.5"}),
-		metrics.NewGauge("summary.example.quantile", uint64(ts), 500, []string{"attribute_tag:attribute_value", "quantile:0.999"}),
-		metrics.NewGauge("summary.example.quantile", uint64(ts), 600, []string{"attribute_tag:attribute_value", "quantile:1.0"}),
+		metrics.NewGauge("summary.example.quantile", uint64(ts), 0, []string{"quantile:0", "attribute_tag:attribute_value"}),
+		metrics.NewGauge("summary.example.quantile", uint64(ts), 100, []string{"quantile:0.5", "attribute_tag:attribute_value"}),
+		metrics.NewGauge("summary.example.quantile", uint64(ts), 500, []string{"quantile:0.999", "attribute_tag:attribute_value"}),
+		metrics.NewGauge("summary.example.quantile", uint64(ts), 600, []string{"quantile:1.0", "attribute_tag:attribute_value"}),
 	}
 	tr = newTranslator([]string{"attribute_tag:attribute_value"}, false)
 	assert.ElementsMatch(t,
