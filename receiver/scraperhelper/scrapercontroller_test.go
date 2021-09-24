@@ -185,14 +185,13 @@ func TestScrapeController(t *testing.T) {
 
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
-			sr := new(tracetest.SpanRecorder)
-			tp := sdktrace.NewTracerProvider(sdktrace.WithSpanProcessor(sr))
-			otel.SetTracerProvider(tp)
-			defer otel.SetTracerProvider(trace.NewNoopTracerProvider())
 
-			done, err := obsreporttest.SetupRecordedMetricsTest()
+			set, done, err := obsreporttest.SetupRecordedMetricsTest()
 			require.NoError(t, err)
 			defer done()
+
+			otel.SetTracerProvider(set.ExporterCreateSettings.TracerProvider)
+			defer otel.SetTracerProvider(trace.NewNoopTracerProvider())
 
 			initializeChs := make([]chan bool, test.scrapers+test.resourceScrapers)
 			scrapeMetricsChs := make([]chan int, test.scrapers)
@@ -255,7 +254,7 @@ func TestScrapeController(t *testing.T) {
 					assert.GreaterOrEqual(t, sink.DataPointCount(), iterations)
 				}
 
-				spans := sr.Ended()
+				spans := set.SpanRecorder.Ended()
 				assertReceiverSpan(t, spans)
 				assertReceiverViews(t, sink)
 				assertScraperSpan(t, test.scrapeErr, spans)

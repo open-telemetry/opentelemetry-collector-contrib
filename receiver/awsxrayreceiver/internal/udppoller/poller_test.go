@@ -121,7 +121,7 @@ func TestCloseStopsPoller(t *testing.T) {
 }
 
 func TestSuccessfullyPollPacket(t *testing.T) {
-	doneFn, err := obsreporttest.SetupRecordedMetricsTest()
+	_, doneFn, err := obsreporttest.SetupRecordedMetricsTest()
 	assert.NoError(t, err, "SetupRecordedMetricsTest should succeed")
 	defer doneFn()
 
@@ -151,7 +151,7 @@ func TestSuccessfullyPollPacket(t *testing.T) {
 }
 
 func TestIncompletePacketNoSeparator(t *testing.T) {
-	doneFn, err := obsreporttest.SetupRecordedMetricsTest()
+	_, doneFn, err := obsreporttest.SetupRecordedMetricsTest()
 	assert.NoError(t, err, "SetupRecordedMetricsTest should succeed")
 	defer doneFn()
 
@@ -180,7 +180,7 @@ func TestIncompletePacketNoSeparator(t *testing.T) {
 }
 
 func TestIncompletePacketNoBody(t *testing.T) {
-	doneFn, err := obsreporttest.SetupRecordedMetricsTest()
+	_, doneFn, err := obsreporttest.SetupRecordedMetricsTest()
 	assert.NoError(t, err, "SetupRecordedMetricsTest should succeed")
 	defer doneFn()
 
@@ -204,7 +204,7 @@ func TestIncompletePacketNoBody(t *testing.T) {
 }
 
 func TestNonJsonHeader(t *testing.T) {
-	doneFn, err := obsreporttest.SetupRecordedMetricsTest()
+	_, doneFn, err := obsreporttest.SetupRecordedMetricsTest()
 	assert.NoError(t, err, "SetupRecordedMetricsTest should succeed")
 	defer doneFn()
 
@@ -233,7 +233,7 @@ func TestNonJsonHeader(t *testing.T) {
 }
 
 func TestJsonInvalidHeader(t *testing.T) {
-	doneFn, err := obsreporttest.SetupRecordedMetricsTest()
+	_, doneFn, err := obsreporttest.SetupRecordedMetricsTest()
 	assert.NoError(t, err, "SetupRecordedMetricsTest should succeed")
 	defer doneFn()
 
@@ -268,7 +268,7 @@ func TestJsonInvalidHeader(t *testing.T) {
 }
 
 func TestSocketReadIrrecoverableNetError(t *testing.T) {
-	doneFn, err := obsreporttest.SetupRecordedMetricsTest()
+	_, doneFn, err := obsreporttest.SetupRecordedMetricsTest()
 	assert.NoError(t, err, "SetupRecordedMetricsTest should succeed")
 	defer doneFn()
 
@@ -303,7 +303,7 @@ func TestSocketReadIrrecoverableNetError(t *testing.T) {
 }
 
 func TestSocketReadTemporaryNetError(t *testing.T) {
-	doneFn, err := obsreporttest.SetupRecordedMetricsTest()
+	_, doneFn, err := obsreporttest.SetupRecordedMetricsTest()
 	assert.NoError(t, err, "SetupRecordedMetricsTest should succeed")
 	defer doneFn()
 
@@ -339,7 +339,7 @@ func TestSocketReadTemporaryNetError(t *testing.T) {
 }
 
 func TestSocketGenericReadError(t *testing.T) {
-	doneFn, err := obsreporttest.SetupRecordedMetricsTest()
+	_, doneFn, err := obsreporttest.SetupRecordedMetricsTest()
 	assert.NoError(t, err, "SetupRecordedMetricsTest should succeed")
 	defer doneFn()
 

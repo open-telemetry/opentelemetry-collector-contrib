@@ -32,14 +32,13 @@ import (
 )
 
 func TestTracesExporter(t *testing.T) {
-	cleanup, err := obsreporttest.SetupRecordedMetricsTest()
+	set, cleanup, err := obsreporttest.SetupRecordedMetricsTest()
 	require.NoError(t, err)
 	defer cleanup()
 
 	factory := NewFactory()
 	recorder, cfg := newRecorder(t)
-	params := componenttest.NewNopExporterCreateSettings()
-	te, err := factory.CreateTracesExporter(context.Background(), params, cfg)
+	te, err := factory.CreateTracesExporter(context.Background(), set.ExporterCreateSettings, cfg)
 	assert.NoError(t, err)
 	assert.NotNil(t, te, "failed to create trace exporter")
 
@@ -60,14 +59,13 @@ func TestTracesExporter(t *testing.T) {
 }
 
 func TestMetricsExporter(t *testing.T) {
-	cleanup, err := obsreporttest.SetupRecordedMetricsTest()
+	set, cleanup, err := obsreporttest.SetupRecordedMetricsTest()
 	require.NoError(t, err)
 	defer cleanup()
 
 	factory := NewFactory()
 	recorder, cfg := newRecorder(t)
-	params := componenttest.NewNopExporterCreateSettings()
-	me, err := factory.CreateMetricsExporter(context.Background(), params, cfg)
+	me, err := factory.CreateMetricsExporter(context.Background(), set.ExporterCreateSettings, cfg)
 	assert.NoError(t, err)
 	assert.NotNil(t, me, "failed to create metrics exporter")
 
@@ -83,7 +81,7 @@ func TestMetricsExporter(t *testing.T) {
 }
 
 func TestMetricsExporterSendError(t *testing.T) {
-	cleanup, err := obsreporttest.SetupRecordedMetricsTest()
+	set, cleanup, err := obsreporttest.SetupRecordedMetricsTest()
 	require.NoError(t, err)
 	defer cleanup()
 
@@ -92,8 +90,7 @@ func TestMetricsExporterSendError(t *testing.T) {
 	eCfg := cfg.(*Config)
 	eCfg.APMServerURL = "http://testing.invalid"
 
-	params := componenttest.NewNopExporterCreateSettings()
-	me, err := factory.CreateMetricsExporter(context.Background(), params, cfg)
+	me, err := factory.CreateMetricsExporter(context.Background(), set.ExporterCreateSettings, cfg)
 	assert.NoError(t, err)
 	assert.NotNil(t, me, "failed to create metrics exporter")
 
