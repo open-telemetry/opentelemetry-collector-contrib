@@ -29,7 +29,7 @@ func TestBuildCounterMetric(t *testing.T) {
 	}
 	parsedMetric := statsDMetric{
 		description: metricDescription,
-		intvalue:    32,
+		asFloat:     32,
 		unit:        "meter",
 		labelKeys:   []string{"mykey"},
 		labelValues: []string{"myvalue"},
@@ -57,7 +57,7 @@ func TestBuildGaugeMetric(t *testing.T) {
 	}
 	parsedMetric := statsDMetric{
 		description: metricDescription,
-		floatvalue:  32.3,
+		asFloat:     32.3,
 		unit:        "meter",
 		labelKeys:   []string{"mykey", "mykey2"},
 		labelValues: []string{"myvalue", "myvalue2"},

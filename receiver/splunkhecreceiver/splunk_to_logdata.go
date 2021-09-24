@@ -29,7 +29,7 @@ const (
 )
 
 // splunkHecToLogData transforms splunk events into logs
-func splunkHecToLogData(logger *zap.Logger, events []*splunk.Event, resourceCustomizer func(pdata.Resource), config splunk.HECConfiguration) (pdata.Logs, error) {
+func splunkHecToLogData(logger *zap.Logger, events []*splunk.Event, resourceCustomizer func(pdata.Resource), config *Config) (pdata.Logs, error) {
 	ld := pdata.NewLogs()
 	rl := ld.ResourceLogs().AppendEmpty()
 	ill := rl.InstrumentationLibraryLogs().AppendEmpty()
@@ -51,18 +51,20 @@ func splunkHecToLogData(logger *zap.Logger, events []*splunk.Event, resourceCust
 		}
 
 		if event.Host != "" {
-			logRecord.Attributes().InsertString(config.GetHostKey(), event.Host)
+			logRecord.Attributes().InsertString(config.HecToOtelAttrs.Host, event.Host)
 		}
 		if event.Source != "" {
-			logRecord.Attributes().InsertString(config.GetSourceKey(), event.Source)
+			logRecord.Attributes().InsertString(config.HecToOtelAttrs.Source, event.Source)
 		}
 		if event.SourceType != "" {
-			logRecord.Attributes().InsertString(config.GetSourceTypeKey(), event.SourceType)
+			logRecord.Attributes().InsertString(config.HecToOtelAttrs.SourceType, event.SourceType)
 		}
 		if event.Index != "" {
-			logRecord.Attributes().InsertString(config.GetIndexKey(), event.Index)
+			logRecord.Attributes().InsertString(config.HecToOtelAttrs.Index, event.Index)
 		}
-		resourceCustomizer(rl.Resource())
+		if resourceCustomizer != nil {
+			resourceCustomizer(rl.Resource())
+		}
 		keys := make([]string, 0, len(event.Fields))
 		for k := range event.Fields {
 			keys = append(keys, k)

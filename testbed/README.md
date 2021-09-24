@@ -122,7 +122,7 @@ Here providing some examples of how to run and get the results of testing.
 
 ![collector-contrib tests result](CCRepo_result.png)
 
-2. Under [Collector/testbed/](https://github.com/open-telemetry/opentelemetry-collector/tree/main/testbed) repo, here taking correctness tests as an example, by running:
+2. Under [collector-contrib/testbed/](.) repo, here taking correctness tests as an example, by running:
 
 ```
   cd correctness
