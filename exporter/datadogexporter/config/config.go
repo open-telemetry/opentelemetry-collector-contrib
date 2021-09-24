@@ -322,7 +322,7 @@ func (c *Config) Validate() error {
 	return nil
 }
 
-func (c *Config) Unmarshal(configMap *configparser.ConfigMap) error {
+func (c *Config) Unmarshal(configMap *config.Map) error {
 	err := configMap.UnmarshalExact(c)
 	if err != nil {
 		return err
