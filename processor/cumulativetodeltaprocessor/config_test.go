@@ -49,14 +49,12 @@ func TestLoadingFullConfig(t *testing.T) {
 					"metric1",
 					"metric2",
 				},
-				MaxStale:      10 * time.Second,
-				MonotonicOnly: false,
+				MaxStale: 10 * time.Second,
 			},
 		},
 		{
 			expCfg: &Config{
 				ProcessorSettings: config.NewProcessorSettings(config.NewID(typeStr)),
-				MonotonicOnly:     true,
 			},
 		},
 	}

@@ -8,7 +8,6 @@ processors:
       - metric1
       - metric2
     max_stale: 10s
-    monotonic_only: false
 
 exporters:
   nop:

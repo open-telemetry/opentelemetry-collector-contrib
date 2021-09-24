@@ -29,7 +29,6 @@ type cumulativeToDeltaProcessor struct {
 	metrics         map[string]struct{}
 	logger          *zap.Logger
 	deltaCalculator tracking.MetricTracker
-	monotonicOnly   bool
 	cancelFunc      context.CancelFunc
 }
 
@@ -38,7 +37,6 @@ func newCumulativeToDeltaProcessor(config *Config, logger *zap.Logger) *cumulati
 	p := &cumulativeToDeltaProcessor{
 		logger:          logger,
 		deltaCalculator: tracking.NewMetricTracker(ctx, logger, config.MaxStale),
-		monotonicOnly:   config.MonotonicOnly,
 		cancelFunc:      cancel,
 	}
 	if len(config.Metrics) > 0 {
@@ -81,9 +79,12 @@ func (ctdp *cumulativeToDeltaProcessor) processMetrics(_ context.Context, md pda
 					if ms.AggregationTemporality() != pdata.AggregationTemporalityCumulative {
 						return false
 					}
-					if ctdp.monotonicOnly && !ms.IsMonotonic() {
+
+					// Ignore any metrics that aren't monotonic
+					if !ms.IsMonotonic() {
 						return false
 					}
+
 					baseIdentity.MetricIsMonotonic = ms.IsMonotonic()
 					ctdp.convertDataPoints(ms.DataPoints(), baseIdentity)
 					ms.SetAggregationTemporality(pdata.AggregationTemporalityDelta)

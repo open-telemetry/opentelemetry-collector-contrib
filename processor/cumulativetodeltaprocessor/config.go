@@ -29,9 +29,6 @@ type Config struct {
 
 	// MaxStale is the total time a state entry will live past the time it was last seen. Set to 0 to retain state indefinitely.
 	MaxStale time.Duration `mapstructure:"max_stale"`
-
-	// Set to false in order to convert non monotonic metrics
-	MonotonicOnly bool `mapstructure:"monotonic_only"`
 }
 
 var _ config.Processor = (*Config)(nil)
