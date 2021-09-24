@@ -79,6 +79,7 @@ func TestLoadConfig(t *testing.T) {
 }
 
 func TestLoadInvalidConfig(t *testing.T) {
+	factories, err := componenttest.NopFactories()
 	assert.NoError(t, err)
 
 	factory := NewFactory()
@@ -89,6 +90,8 @@ func TestLoadInvalidConfig(t *testing.T) {
 	assert.NotNil(t, cfg)
 }
 
+func TestGetConfigFromType(t *testing.T) {
+	tests := []struct {
 		name                string
 		detectorType        internal.DetectorType
 		inputDetectorConfig DetectorConfig
