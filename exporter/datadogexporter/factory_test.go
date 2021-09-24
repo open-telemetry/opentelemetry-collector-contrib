@@ -47,7 +47,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 		TimeoutSettings:  exporterhelper.DefaultTimeoutSettings(),
 		RetrySettings:    exporterhelper.DefaultRetrySettings(),
 		QueueSettings:    exporterhelper.DefaultQueueSettings(),
-		
+
 		API: ddconfig.APIConfig{
 			Key:  "$DD_API_KEY",
 			Site: "$DD_SITE",
@@ -418,9 +418,9 @@ func TestOnlyMetadata(t *testing.T) {
 		RetrySettings:    exporterhelper.DefaultRetrySettings(),
 		QueueSettings:    exporterhelper.DefaultQueueSettings(),
 
-		API:              ddconfig.APIConfig{Key: "notnull"},
-		Metrics:          ddconfig.MetricsConfig{TCPAddr: confignet.TCPAddr{Endpoint: server.URL}},
-		Traces:           ddconfig.TracesConfig{TCPAddr: confignet.TCPAddr{Endpoint: server.URL}},
+		API:     ddconfig.APIConfig{Key: "notnull"},
+		Metrics: ddconfig.MetricsConfig{TCPAddr: confignet.TCPAddr{Endpoint: server.URL}},
+		Traces:  ddconfig.TracesConfig{TCPAddr: confignet.TCPAddr{Endpoint: server.URL}},
 
 		SendMetadata:        true,
 		OnlyMetadata:        true,
