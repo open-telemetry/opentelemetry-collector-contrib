@@ -29,12 +29,12 @@ func TestTagsFromInstrumentationLibraryMetadata(t *testing.T) {
 		expectedTags []string
 	}{
 		{"test-il", "1.0.0", []string{fmt.Sprintf("%s:%s", instrumentationLibraryTag, "test-il"), fmt.Sprintf("%s:%s", instrumentationLibraryVersionTag, "1.0.0")}},
-		{"test-il", "", []string{fmt.Sprintf("%s:%s", instrumentationLibraryTag, "test-il"), fmt.Sprintf("%s:%s", instrumentationLibraryVersionTag, "")}},
-		{"", "1.0.0", []string{fmt.Sprintf("%s:%s", instrumentationLibraryTag, ""), fmt.Sprintf("%s:%s", instrumentationLibraryVersionTag, "1.0.0")}},
+		{"test-il", "", []string{fmt.Sprintf("%s:%s", instrumentationLibraryTag, "test-il"), fmt.Sprintf("%s:%s", instrumentationLibraryVersionTag, "n/a")}},
+		{"", "1.0.0", []string{fmt.Sprintf("%s:%s", instrumentationLibraryTag, "n/a"), fmt.Sprintf("%s:%s", instrumentationLibraryVersionTag, "1.0.0")}},
+		{"", "", []string{fmt.Sprintf("%s:%s", instrumentationLibraryTag, "n/a"), fmt.Sprintf("%s:%s", instrumentationLibraryVersionTag, "n/a")}},
 	}
 
 	for _, testInstance := range tests {
-		fmt.Println(testInstance)
 		il := pdata.NewInstrumentationLibrary()
 		il.SetName(testInstance.name)
 		il.SetVersion(testInstance.version)

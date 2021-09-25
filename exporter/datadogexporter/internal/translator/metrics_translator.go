@@ -32,6 +32,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/instrumentationlibrary"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metrics"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/sketches"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/utils"
 )
 
 const metricName string = "metric name"
@@ -65,11 +66,7 @@ func getTags(labels pdata.AttributeMap) []string {
 	tags := make([]string, 0, labels.Len())
 	labels.Range(func(key string, value pdata.AttributeValue) bool {
 		v := value.AsString()
-		if v == "" {
-			// Tags can't end with ":" so we replace empty values with "n/a"
-			v = "n/a"
-		}
-		tags = append(tags, fmt.Sprintf("%s:%s", key, v))
+		tags = append(tags, utils.FormatKeyValueTag(key, v))
 		return true
 	})
 	return tags

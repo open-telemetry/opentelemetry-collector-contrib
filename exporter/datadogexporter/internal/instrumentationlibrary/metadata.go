@@ -15,9 +15,9 @@
 package instrumentationlibrary
 
 import (
-	"fmt"
-
 	"go.opentelemetry.io/collector/model/pdata"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/utils"
 )
 
 const (
@@ -29,7 +29,7 @@ const (
 // the instrumentation library and converts them to Datadog tags.
 func TagsFromInstrumentationLibraryMetadata(il pdata.InstrumentationLibrary) []string {
 	return []string{
-		fmt.Sprintf("%s:%s", instrumentationLibraryTag, il.Name()),
-		fmt.Sprintf("%s:%s", instrumentationLibraryVersionTag, il.Version()),
+		utils.FormatKeyValueTag(instrumentationLibraryTag, il.Name()),
+		utils.FormatKeyValueTag(instrumentationLibraryVersionTag, il.Version()),
 	}
 }
