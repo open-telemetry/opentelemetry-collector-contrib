@@ -27,6 +27,7 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configtest"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.uber.org/zap"
 
 	ddconfig "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/config"
@@ -43,6 +44,9 @@ func TestCreateDefaultConfig(t *testing.T) {
 	// still has the unresolved environment variables.
 	assert.Equal(t, &ddconfig.Config{
 		ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
+		TimeoutSettings:  exporterhelper.DefaultTimeoutSettings(),
+		RetrySettings:    exporterhelper.DefaultRetrySettings(),
+		QueueSettings:    exporterhelper.DefaultQueueSettings(),
 
 		API: ddconfig.APIConfig{
 			Key:  "$DD_API_KEY",
@@ -104,6 +108,10 @@ func TestLoadConfig(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, &ddconfig.Config{
 		ExporterSettings: config.NewExporterSettings(config.NewIDWithName(typeStr, "api")),
+		TimeoutSettings:  exporterhelper.DefaultTimeoutSettings(),
+		RetrySettings:    exporterhelper.DefaultRetrySettings(),
+		QueueSettings:    exporterhelper.DefaultQueueSettings(),
+
 		TagsConfig: ddconfig.TagsConfig{
 			Hostname:   "customhostname",
 			Env:        "prod",
@@ -149,6 +157,10 @@ func TestLoadConfig(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, &ddconfig.Config{
 		ExporterSettings: config.NewExporterSettings(config.NewIDWithName(typeStr, "default")),
+		TimeoutSettings:  exporterhelper.DefaultTimeoutSettings(),
+		RetrySettings:    exporterhelper.DefaultRetrySettings(),
+		QueueSettings:    exporterhelper.DefaultQueueSettings(),
+
 		TagsConfig: ddconfig.TagsConfig{
 			Hostname:   "",
 			Env:        "none",
@@ -234,6 +246,9 @@ func TestLoadConfigEnvVariables(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, &ddconfig.Config{
 		ExporterSettings: config.NewExporterSettings(config.NewIDWithName(typeStr, "api2")),
+		TimeoutSettings:  exporterhelper.DefaultTimeoutSettings(),
+		RetrySettings:    exporterhelper.DefaultRetrySettings(),
+		QueueSettings:    exporterhelper.DefaultQueueSettings(),
 
 		TagsConfig: ddconfig.TagsConfig{
 			Hostname:   "customhostname",
@@ -283,6 +298,9 @@ func TestLoadConfigEnvVariables(t *testing.T) {
 	// no settings are given.
 	assert.Equal(t, &ddconfig.Config{
 		ExporterSettings: config.NewExporterSettings(config.NewIDWithName(typeStr, "default2")),
+		TimeoutSettings:  exporterhelper.DefaultTimeoutSettings(),
+		RetrySettings:    exporterhelper.DefaultRetrySettings(),
+		QueueSettings:    exporterhelper.DefaultQueueSettings(),
 
 		TagsConfig: ddconfig.TagsConfig{
 			Hostname:   "testhost",
@@ -396,9 +414,13 @@ func TestOnlyMetadata(t *testing.T) {
 	ctx := context.Background()
 	cfg := &ddconfig.Config{
 		ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
-		API:              ddconfig.APIConfig{Key: "notnull"},
-		Metrics:          ddconfig.MetricsConfig{TCPAddr: confignet.TCPAddr{Endpoint: server.URL}},
-		Traces:           ddconfig.TracesConfig{TCPAddr: confignet.TCPAddr{Endpoint: server.URL}},
+		TimeoutSettings:  exporterhelper.DefaultTimeoutSettings(),
+		RetrySettings:    exporterhelper.DefaultRetrySettings(),
+		QueueSettings:    exporterhelper.DefaultQueueSettings(),
+
+		API:     ddconfig.APIConfig{Key: "notnull"},
+		Metrics: ddconfig.MetricsConfig{TCPAddr: confignet.TCPAddr{Endpoint: server.URL}},
+		Traces:  ddconfig.TracesConfig{TCPAddr: confignet.TCPAddr{Endpoint: server.URL}},
 
 		SendMetadata:        true,
 		OnlyMetadata:        true,
@@ -420,6 +442,10 @@ func TestOnlyMetadata(t *testing.T) {
 	)
 	assert.NoError(t, err)
 	assert.NotNil(t, expMetrics)
+
+	err = expTraces.Start(ctx, nil)
+	assert.NoError(t, err)
+	defer expTraces.Shutdown(ctx)
 
 	err = expTraces.ConsumeTraces(ctx, testutils.TestTraces.Clone())
 	require.NoError(t, err)
