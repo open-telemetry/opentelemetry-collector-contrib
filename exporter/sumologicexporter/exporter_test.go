@@ -166,7 +166,7 @@ func TestAllFailed(t *testing.T) {
 	assert.EqualError(t, err, "error during sending data: 500 Internal Server Error")
 
 	var partial consumererror.Logs
-	require.True(t, consumererror.AsLogs(err, &partial))
+	require.True(t, errors.As(err, &partial))
 	assert.Equal(t, logs, partial.GetLogs())
 }
 
@@ -199,7 +199,7 @@ func TestPartiallyFailed(t *testing.T) {
 	assert.EqualError(t, err, "error during sending data: 500 Internal Server Error")
 
 	var partial consumererror.Logs
-	require.True(t, consumererror.AsLogs(err, &partial))
+	require.True(t, errors.As(err, &partial))
 	assert.Equal(t, expected, partial.GetLogs())
 }
 
@@ -340,7 +340,7 @@ gauge_metric_name{foo="bar",remote_name="156955",url="http://another_url"} 245 1
 	assert.EqualError(t, err, "error during sending data: 500 Internal Server Error")
 
 	var partial consumererror.Metrics
-	require.True(t, consumererror.AsMetrics(err, &partial))
+	require.True(t, errors.As(err, &partial))
 	assert.Equal(t, metrics, partial.GetMetrics())
 }
 
@@ -377,7 +377,7 @@ gauge_metric_name{foo="bar",remote_name="156955",url="http://another_url"} 245 1
 	assert.EqualError(t, err, "error during sending data: 500 Internal Server Error")
 
 	var partial consumererror.Metrics
-	require.True(t, consumererror.AsMetrics(err, &partial))
+	require.True(t, errors.As(err, &partial))
 	assert.Equal(t, expected, partial.GetMetrics())
 }
 
@@ -443,7 +443,7 @@ gauge_metric_name{foo="bar",key2="value2",remote_name="156955",url="http://anoth
 	assert.EqualError(t, err, "error during sending data: 500 Internal Server Error")
 
 	var partial consumererror.Metrics
-	require.True(t, consumererror.AsMetrics(err, &partial))
+	require.True(t, errors.As(err, &partial))
 	assert.Equal(t, expected, partial.GetMetrics())
 }
 
