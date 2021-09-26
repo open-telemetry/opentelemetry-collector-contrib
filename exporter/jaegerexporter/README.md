@@ -13,7 +13,7 @@ The following settings are required:
 using the gRPC protocol. The valid syntax is described
 [here](https://github.com/grpc/grpc/blob/master/doc/naming.md)
 
-By default, TLS is enabled:
+By default, TLS is enabled and must be configured under `tls`:
 
 - `insecure` (default = `false`): whether to enable client transport security for
   the exporter's connection.
@@ -31,11 +31,13 @@ Example:
 exporters:
   jaeger:
     endpoint: jaeger-all-in-one:14250
-    cert_file: file.cert
-    key_file: file.key
+    tls:
+      cert_file: file.cert
+      key_file: file.key
   jaeger/2:
     endpoint: jaeger-all-in-one:14250
-    insecure: true
+    tls:
+      insecure: true
 ```
 
 ## Advanced Configuration
