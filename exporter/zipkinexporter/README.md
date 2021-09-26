@@ -12,7 +12,7 @@ The following settings are required:
 - `endpoint` (no default): URL to which the exporter is going to send Zipkin trace data.
 - `format` (default = `JSON`): The format to sent events in. Can be set to `JSON` or `proto`.
 
-By default, TLS is enabled:
+By default, TLS is enabled and must be configured under `tls`:
 
 - `insecure` (default = `false`): whether to enable client transport security for
   the exporter's connection.
@@ -35,11 +35,13 @@ Example:
 exporters:
   zipkin:
     endpoint: "http://some.url:9411/api/v2/spans"
-    cert_file: file.cert
-    key_file: file.key
+    tls:
+      cert_file: file.cert
+      key_file: file.key
   zipkin/2:
     endpoint: "http://some.url:9411/api/v2/spans"
-    insecure: true
+    tls:
+      insecure: true
 ```
 
 ## Advanced Configuration
