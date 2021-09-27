@@ -72,13 +72,13 @@ func createMetricsExporter(
 		return nil, err
 	}
 
-	return &wrapMetricsExpoter{
+	return &wrapMetricsExporter{
 		MetricsExporter: resourcetotelemetry.WrapMetricsExporter(pcfg.ResourceToTelemetrySettings, exporter),
 		exporter:        prometheus,
 	}, nil
 }
 
-type wrapMetricsExpoter struct {
+type wrapMetricsExporter struct {
 	component.MetricsExporter
 	exporter *prometheusExporter
 }
