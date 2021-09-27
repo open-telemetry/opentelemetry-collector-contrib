@@ -56,7 +56,7 @@ func TestRequestSignature(t *testing.T) {
 
 	setting := confighttp.HTTPClientSettings{
 		Endpoint:        serverURL.String(),
-		TLSSetting:      configtls.TLSClientSetting{},
+		TLSSetting:      &configtls.TLSClientSetting{},
 		ReadBufferSize:  0,
 		WriteBufferSize: 0,
 		Timeout:         0,
@@ -102,7 +102,7 @@ func TestLeakingBody(t *testing.T) {
 
 	setting := confighttp.HTTPClientSettings{
 		Endpoint:        serverURL.String(),
-		TLSSetting:      configtls.TLSClientSetting{},
+		TLSSetting:      &configtls.TLSClientSetting{},
 		ReadBufferSize:  0,
 		WriteBufferSize: 0,
 		Timeout:         0,

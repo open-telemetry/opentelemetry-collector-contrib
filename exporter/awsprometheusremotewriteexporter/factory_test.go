@@ -60,7 +60,7 @@ func TestCreateMetricsExporter(t *testing.T) {
 	invalidConfig.HTTPClientSettings = confighttp.HTTPClientSettings{}
 
 	invalidTLSConfig := af.CreateDefaultConfig().(*Config)
-	invalidTLSConfig.HTTPClientSettings.TLSSetting = configtls.TLSClientSetting{
+	invalidTLSConfig.HTTPClientSettings.TLSSetting = &configtls.TLSClientSetting{
 		TLSSetting: configtls.TLSSetting{
 			CAFile:   "non-existent file",
 			CertFile: "",
