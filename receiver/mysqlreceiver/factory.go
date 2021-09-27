@@ -14,6 +14,8 @@
 
 package mysqlreceiver
 
+//go:generate mdatagen metadata.yaml
+
 import (
 	"context"
 	"time"
@@ -52,15 +54,14 @@ func createMetricsReceiver(
 	rConf config.Receiver,
 	consumer consumer.Metrics,
 ) (component.MetricsReceiver, error) {
-	return nil, nil
-	// cfg := rConf.(*Config)
+	cfg := rConf.(*Config)
 
-	// ns := newMySQLScraper(params.Logger, cfg)
-	// scraper := scraperhelper.NewResourceMetricsScraper(cfg.ID(), ns.scrape, scraperhelper.WithStart(ns.start),
-	// 	scraperhelper.WithShutdown(ns.shutdown))
+	ns := newMySQLScraper(params.Logger, cfg)
+	scraper := scraperhelper.NewResourceMetricsScraper(cfg.ID(), ns.scrape, scraperhelper.WithStart(ns.start),
+		scraperhelper.WithShutdown(ns.shutdown))
 
-	// return scraperhelper.NewScraperControllerReceiver(
-	// 	&cfg.ScraperControllerSettings, params.Logger, consumer,
-	// 	scraperhelper.AddScraper(scraper),
-	// )
+	return scraperhelper.NewScraperControllerReceiver(
+		&cfg.ScraperControllerSettings, params.Logger, consumer,
+		scraperhelper.AddScraper(scraper),
+	)
 }
