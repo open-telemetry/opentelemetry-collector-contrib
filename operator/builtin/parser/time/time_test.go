@@ -15,6 +15,7 @@
 package time
 
 import (
+	"context"
 	"math"
 	"testing"
 	"time"
@@ -32,6 +33,142 @@ import (
 func TestIsZero(t *testing.T) {
 	require.True(t, (&helper.TimeParser{}).IsZero())
 	require.False(t, (&helper.TimeParser{Layout: "strptime"}).IsZero())
+}
+
+func TestInit(t *testing.T) {
+	builder, ok := operator.DefaultRegistry.Lookup("time_parser")
+	require.True(t, ok, "expected time_parser to be registered")
+	require.Equal(t, "time_parser", builder().Type())
+}
+
+func TestBuild(t *testing.T) {
+	testCases := []struct {
+		name      string
+		input     func() (*TimeParserConfig, error)
+		expectErr bool
+	}{
+		{
+			"empty",
+			func() (*TimeParserConfig, error) {
+				return &TimeParserConfig{}, nil
+			},
+			true,
+		},
+		{
+			"basic",
+			func() (*TimeParserConfig, error) {
+				cfg := NewTimeParserConfig("test_id")
+				parseFrom, err := entry.NewField("app_time")
+				if err != nil {
+					return cfg, err
+				}
+				cfg.ParseFrom = &parseFrom
+				cfg.LayoutType = "gotime"
+				cfg.Layout = "Mon Jan 2 15:04:05 MST 2006"
+				return cfg, nil
+			},
+			false,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			cfg, err := tc.input()
+			require.NoError(t, err, "expected nil error when running test cases input func")
+			ops, err := cfg.Build(testutil.NewBuildContext(t))
+			if tc.expectErr {
+				require.Error(t, err, "expected error while building time_parser operator")
+				return
+			}
+			require.NoError(t, err, "did not expect error while building time_parser operator")
+			require.Equal(t, 1, len(ops), "expected Build to return one operator")
+		})
+	}
+}
+
+func TestProcess(t *testing.T) {
+	testCases := []struct {
+		name   string
+		config func() (*TimeParserConfig, error)
+		input  *entry.Entry
+		expect *entry.Entry
+	}{
+		{
+			"promote",
+			func() (*TimeParserConfig, error) {
+				cfg := NewTimeParserConfig("test_id")
+				parseFrom, err := entry.NewField("app_time")
+				if err != nil {
+					return nil, err
+				}
+				cfg.ParseFrom = &parseFrom
+				cfg.LayoutType = "gotime"
+				cfg.Layout = "Mon Jan 2 15:04:05 MST 2006"
+				return cfg, nil
+			},
+			func() *entry.Entry {
+				e := entry.New()
+				e.Body = map[string]interface{}{
+					"app_time": "Mon Jan 2 15:04:05 UTC 2006",
+				}
+				return e
+			}(),
+			&entry.Entry{
+				Timestamp: time.Date(2006, time.January, 2, 15, 4, 5, 0, time.UTC),
+				Body:      map[string]interface{}{},
+			},
+		},
+		{
+			"promote-and-preserve",
+			func() (*TimeParserConfig, error) {
+				cfg := NewTimeParserConfig("test_id")
+				parseFrom, err := entry.NewField("app_time")
+				if err != nil {
+					return nil, err
+				}
+				cfg.ParseFrom = &parseFrom
+				cfg.PreserveTo = &parseFrom
+				cfg.LayoutType = "gotime"
+				cfg.Layout = "Mon Jan 2 15:04:05 MST 2006"
+				return cfg, nil
+			},
+			func() *entry.Entry {
+				e := entry.New()
+				e.Body = map[string]interface{}{
+					"app_time": "Mon Jan 2 15:04:05 UTC 2006",
+				}
+				return e
+			}(),
+			&entry.Entry{
+				Timestamp: time.Date(2006, time.January, 2, 15, 4, 5, 0, time.UTC),
+				Body: map[string]interface{}{
+					"app_time": "Mon Jan 2 15:04:05 UTC 2006",
+				},
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			cfg, err := tc.config()
+			if err != nil {
+				require.NoError(t, err)
+				return
+			}
+			ops, err := cfg.Build(testutil.NewBuildContext(t))
+			if err != nil {
+				require.NoError(t, err)
+				return
+			}
+
+			op := ops[0]
+			require.True(t, op.CanOutput(), "expected test operator CanOutput to return true")
+
+			err = op.Process(context.Background(), tc.input)
+			require.NoError(t, err)
+			require.Equal(t, tc.expect, tc.input)
+		})
+	}
 }
 
 func TestTimeParser(t *testing.T) {
