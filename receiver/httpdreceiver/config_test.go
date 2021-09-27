@@ -193,7 +193,7 @@ func TestValidateEndpointFormat(t *testing.T) {
 		for _, host := range hosts {
 			for _, port := range ports {
 				for _, path := range paths {
-					endpoint := fmt.Sprintf("%s%s%s%s?%s", protocol, host, port, path, "auto")
+					endpoint := fmt.Sprintf("%s%s%s%s?auto", protocol, host, port, path)
 					endpoints = append(endpoints, endpoint)
 				}
 			}
