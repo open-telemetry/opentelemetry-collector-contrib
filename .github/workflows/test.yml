@@ -28,12 +28,6 @@ jobs:
     steps:
       - name: Checkout Contrib Repo @ SHA - ${{ github.sha }}
         uses: actions/checkout@v2
-      - name: Checkout Core Repo @ SHA - ${{ env.CORE_REPO_SHA }}
-        uses: actions/checkout@v2
-        with:
-          repository: open-telemetry/opentelemetry-python
-          ref: ${{ env.CORE_REPO_SHA }}
-          path: opentelemetry-python-core
       - name: Set up Python ${{ env[matrix.python-version] }}
         uses: actions/setup-python@v2
         with:
@@ -84,12 +78,6 @@ jobs:
     steps:
       - name: Checkout Contrib Repo @ SHA - ${{ github.sha }}
         uses: actions/checkout@v2
-      - name: Checkout Core Repo @ SHA ${{ env.CORE_REPO_SHA }}
-        uses: actions/checkout@v2
-        with:
-          repository: open-telemetry/opentelemetry-python
-          ref: ${{ env.CORE_REPO_SHA }}
-          path: opentelemetry-python-core
       - name: Set up Python 3.9
         uses: actions/setup-python@v2
         with:
@@ -109,6 +97,3 @@ jobs:
           key: v4-misc-tox-cache-${{ matrix.tox-environment }}-${{ hashFiles('tox.ini', 'dev-requirements.txt', 'gen-requirements.txt', 'docs-requirements.txt') }}
       - name: run tox
         run: tox -e ${{ matrix.tox-environment }}
-      - name: Ensure generated code is up to date
-        if: matrix.tox-environment == 'generate'
-        run: git diff --exit-code || (echo 'Generated code is out of date, please run "tox -e generate" and commit the changes in this PR.' && exit 1)

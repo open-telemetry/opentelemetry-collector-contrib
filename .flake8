@@ -19,6 +19,5 @@ exclude =
   exporter/opentelemetry-exporter-jaeger/build/*
   docs/examples/opentelemetry-example-app/src/opentelemetry_example_app/grpc/gen/
   docs/examples/opentelemetry-example-app/build/*
-  opentelemetry-python-core/
   opentelemetry-proto/build/*
   opentelemetry-proto/src/opentelemetry/proto/

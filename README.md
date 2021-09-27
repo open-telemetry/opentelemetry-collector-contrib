@@ -116,12 +116,8 @@ Maintainers ([@open-telemetry/python-maintainers](https://github.com/orgs/open-t
 1. Go to your Contrib repo directory. `cd ~/git/opentelemetry-python-contrib`.
 2. Create a virtual env in your Contrib repo directory. `python3 -m venv my_test_venv`.
 3. Activate your virtual env. `source my_test_venv/bin/activate`.
-4. Clone the [OpenTelemetry Python](https://github.com/open-telemetry/opentelemetry-python) Python Core repo to a folder named `opentelemetry-python-core`. `git clone git@github.com:open-telemetry/opentelemetry-python.git opentelemetry-python-core`.
-5. Change directory to the repo that was just cloned. `cd opentelemetry-python-core`.
-6. Move the head of this repo to the hash you want your tests to use. This is currently the SHA `47483865854c7adae7455f8441dab7f814f4ce2a` as seen in `.github/workflows/test.yml`. Use `git fetch && git checkout 47483865854c7adae7455f8441dab7f814f4ce2a`.
-7. Go back to the root directory. `cd ../`.
-8. Make sure you have `tox` installed. `pip install tox`.
-9. Run tests for a package. (e.g. `tox -e test-instrumentation-flask`.)
+4. Make sure you have `tox` installed. `pip install tox`.
+5. Run tests for a package. (e.g. `tox -e test-instrumentation-flask`.)
 
 ### Thanks to all the people who already contributed!
 

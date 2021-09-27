@@ -15,18 +15,17 @@
 # limitations under the License.
 
 import ast
+import filecmp
 import logging
 import os
 import subprocess
 import sys
+import tempfile
 
 import astor
 import pkg_resources
-from otel_packaging import (
-    get_instrumentation_packages,
-    root_path,
-    scripts_path,
-)
+import requests
+from otel_packaging import get_instrumentation_packages, scripts_path
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("instrumentation_list_generator")
@@ -50,16 +49,16 @@ libraries = {}
 default_instrumentations = []
 """
 
+tmpdir = tempfile.TemporaryDirectory()  # pylint: disable=R1732
+gen_path = os.path.join(tmpdir.name, "new.py",)
 
-gen_path = os.path.join(
-    root_path,
-    "opentelemetry-python-core",
-    "opentelemetry-instrumentation",
-    "src",
-    "opentelemetry",
-    "instrumentation",
-    "bootstrap_gen.py",
-)
+current_path = os.path.join(tmpdir.name, "current.py",)
+
+core_repo = os.getenv("CORE_REPO_SHA", "main")
+url = f"https://raw.githubusercontent.com/open-telemetry/opentelemetry-python/{core_repo}/opentelemetry-instrumentation/src/opentelemetry/instrumentation/bootstrap_gen.py"
+r = requests.get(url, allow_redirects=True)
+with open(current_path, "wb") as output:
+    output.write(r.content)
 
 
 def main():
@@ -99,7 +98,7 @@ def main():
             "scripts/eachdist.py",
             "format",
             "--path",
-            "opentelemetry-python-core/opentelemetry-instrumentation",
+            tmpdir.name,
         ],
         check=True,
     )
@@ -107,5 +106,15 @@ def main():
     logger.info("generated %s", gen_path)
 
 
+def compare():
+    if not filecmp.cmp(current_path, gen_path):
+        logger.info(
+            'Generated code is out of date, please run "tox -e generate" and commit bootstrap_gen.py to core repo.'
+        )
+        os.replace(gen_path, "bootstrap_gen.py")
+        sys.exit(1)
+
+
 if __name__ == "__main__":
     main()
+    compare()

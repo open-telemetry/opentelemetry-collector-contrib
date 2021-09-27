@@ -156,16 +156,16 @@ For a deeper discussion, see: https://github.com/open-telemetry/opentelemetry-sp
 ## Running Tests Locally
 
 1. Go to your Contrib repo directory. `git clone git@github.com:open-telemetry/opentelemetry-python-contrib.git && cd opentelemetry-python-contrib`.
-2. Clone the [OpenTelemetry Python](https://github.com/open-telemetry/opentelemetry-python) Python Core repo to a folder named `opentelemetry-python-core`. `git clone https://github.com/open-telemetry/opentelemetry-python.git opentelemetry-python-core`.
-3. Make sure you have `tox` installed. `pip install tox`.
-4. Run `tox` without any arguments to run tests for all the packages. Read more about [tox](https://tox.readthedocs.io/en/latest/).
+2. Make sure you have `tox` installed. `pip install tox`.
+3. Run `tox` without any arguments to run tests for all the packages. Read more about [tox](https://tox.readthedocs.io/en/latest/).
 
 ### Testing against a different Core repo branch/commit
 
-1. Change directory to the repo that was cloned above. `cd opentelemetry-python-core`.
-2. Move the head of this repo to the SHA hash you want your tests to use. The current SHA hash can be found in `.github/workflows/test.yml` file under the `opentelemetry-python-contrib` directory. For example, currently it is `1a12fa0d681e37c1fda9cb8d46212ff3bbf6b76a`. So use `git fetch && git checkout <current SHA hash>`.
-3. Go back to the root directory. `cd ../`.
-4. With `tox` installed, run tests for a package. (e.g. `tox -e test-instrumentation-flask`.)
+Some of the tox targets install packages from the [OpenTelemetry Python Core Repository](https://github.com/open-telemetry/opentelemetry-python) via pip. The version of the packages installed defaults to the main branch in that repository when tox is run locally. It is possible to install packages tagged with a specific git commit hash by setting an environment variable before running tox as per the following example:
+
+CORE_REPO_SHA=c49ad57bfe35cfc69bfa863d74058ca9bec55fc3 tox
+
+The continuation integration overrides that environment variable with as per the configuration [here](https://github.com/open-telemetry/opentelemetry-python-contrib/blob/main/.github/workflows/test.yml#L9).
 
 
 ## Style Guide
