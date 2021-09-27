@@ -193,9 +193,9 @@ func generateSumMetrics(tm testMetric) pdata.Metrics {
 		sum.SetIsMonotonic(true)
 
 		if tm.isDelta[i] {
-			sum.SetAggregationTemporality(pdata.AggregationTemporalityDelta)
+			sum.SetAggregationTemporality(pdata.MetricAggregationTemporalityDelta)
 		} else {
-			sum.SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+			sum.SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
 		}
 
 		for _, value := range tm.metricValues[i] {

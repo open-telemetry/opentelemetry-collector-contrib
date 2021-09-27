@@ -24,14 +24,14 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/ttlmap"
 )
 
-func serializeSum(name, prefix string, dims dimensions.NormalizedDimensionList, t pdata.AggregationTemporality, dp pdata.NumberDataPoint, prev *ttlmap.TTLMap) (string, error) {
+func serializeSum(name, prefix string, dims dimensions.NormalizedDimensionList, t pdata.MetricAggregationTemporality, dp pdata.NumberDataPoint, prev *ttlmap.TTLMap) (string, error) {
 	switch t {
-	case pdata.AggregationTemporalityCumulative:
+	case pdata.MetricAggregationTemporalityCumulative:
 		return serializeCumulativeCounter(name, prefix, dims, dp, prev)
 	// for now unspecified is treated as delta
-	case pdata.AggregationTemporalityUnspecified:
+	case pdata.MetricAggregationTemporalityUnspecified:
 		fallthrough
-	case pdata.AggregationTemporalityDelta:
+	case pdata.MetricAggregationTemporalityDelta:
 		return serializeDeltaCounter(name, prefix, dims, dp)
 	}
 

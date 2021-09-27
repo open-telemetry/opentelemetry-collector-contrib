@@ -228,7 +228,7 @@ func populateCumulative(dest pdata.Metric, name string, unit string, val int64, 
 	populateMetricMetadata(dest, name, unit, pdata.MetricDataTypeSum)
 	sum := dest.Sum()
 	sum.SetIsMonotonic(true)
-	sum.SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+	sum.SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
 	dp := sum.DataPoints().AppendEmpty()
 	dp.SetIntVal(val)
 	dp.SetTimestamp(ts)
@@ -239,7 +239,7 @@ func populateCumulativeMultiPoints(dest pdata.Metric, name string, unit string, 
 	populateMetricMetadata(dest, name, unit, pdata.MetricDataTypeSum)
 	sum := dest.Sum()
 	sum.SetIsMonotonic(true)
-	sum.SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+	sum.SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
 	dps := sum.DataPoints()
 	dps.EnsureCapacity(len(vals))
 	for i := range vals {
