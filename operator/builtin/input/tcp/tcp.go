@@ -283,8 +283,10 @@ func (t *TCPInput) goHandleMessages(ctx context.Context, conn net.Conn, cancel c
 func (t *TCPInput) Stop() error {
 	t.cancel()
 
-	if err := t.listener.Close(); err != nil {
-		return err
+	if t.listener != nil {
+		if err := t.listener.Close(); err != nil {
+			t.Errorf("failed to close TCP connection: %s", err)
+		}
 	}
 
 	t.wg.Wait()

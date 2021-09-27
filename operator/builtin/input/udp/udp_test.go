@@ -15,6 +15,7 @@
 package udp
 
 import (
+	"math/rand"
 	"net"
 	"strconv"
 	"testing"
@@ -50,7 +51,10 @@ func udpInputTest(input []byte, expected []string) func(t *testing.T) {
 
 		err = udpInput.Start(testutil.NewMockPersister("test"))
 		require.NoError(t, err)
-		defer udpInput.Stop()
+		defer func() {
+			err := udpInput.Stop()
+			require.NoError(t, err, "expected to stop udp input operator without error")
+		}()
 
 		conn, err := net.Dial("udp", udpInput.connection.LocalAddr().String())
 		require.NoError(t, err)
@@ -100,7 +104,10 @@ func udpInputAttributesTest(input []byte, expected []string) func(t *testing.T) 
 
 		err = udpInput.Start(testutil.NewMockPersister("test"))
 		require.NoError(t, err)
-		defer udpInput.Stop()
+		defer func() {
+			err := udpInput.Stop()
+			require.NoError(t, err, "expected to stop udp input operator without error")
+		}()
 
 		conn, err := net.Dial("udp", udpInput.connection.LocalAddr().String())
 		require.NoError(t, err)
@@ -157,6 +164,57 @@ func TestUDPInputAttributes(t *testing.T) {
 	t.Run("TrailingNewlines", udpInputAttributesTest([]byte("message1\n"), []string{"message1"}))
 	t.Run("TrailingCRNewlines", udpInputAttributesTest([]byte("message1\r\n"), []string{"message1"}))
 	t.Run("NewlineInMessage", udpInputAttributesTest([]byte("message1\nmessage2\n"), []string{"message1\nmessage2"}))
+}
+
+func TestFailToBind(t *testing.T) {
+	ip := "localhost"
+	port := 0
+	minPort := 30000
+	maxPort := 40000
+	for i := 1; 1 < 10; i++ {
+		port = minPort + rand.Intn(maxPort-minPort+1)
+		_, err := net.DialTimeout("tcp", net.JoinHostPort(ip, strconv.Itoa(port)), time.Second*2)
+		if err != nil {
+			// a failed connection indicates that the port is available for use
+			break
+		}
+	}
+	if port == 0 {
+		t.Errorf("failed to find a free port between %d and %d", minPort, maxPort)
+	}
+
+	var startUDP func(port int) (*UDPInput, error) = func(int) (*UDPInput, error) {
+		cfg := NewUDPInputConfig("test_input")
+		cfg.ListenAddress = net.JoinHostPort(ip, strconv.Itoa(port))
+
+		ops, err := cfg.Build(testutil.NewBuildContext(t))
+		require.NoError(t, err)
+		op := ops[0]
+
+		mockOutput := testutil.Operator{}
+		udpInput, ok := op.(*UDPInput)
+		require.True(t, ok)
+
+		udpInput.InputOperator.OutputOperators = []operator.Operator{&mockOutput}
+
+		entryChan := make(chan *entry.Entry, 1)
+		mockOutput.On("Process", mock.Anything, mock.Anything).Run(func(args mock.Arguments) {
+			entryChan <- args.Get(1).(*entry.Entry)
+		}).Return(nil)
+
+		err = udpInput.Start(testutil.NewMockPersister("test"))
+		return udpInput, err
+	}
+
+	first, err := startUDP(port)
+	require.NoError(t, err, "expected first udp operator to start")
+	defer func() {
+		err := first.Stop()
+		require.NoError(t, err, "expected to stop udp input operator without error")
+		require.NoError(t, first.Stop(), "expected stopping an already stopped operator to not return an error")
+	}()
+	_, err = startUDP(port)
+	require.Error(t, err, "expected second udp operator to fail to start")
 }
 
 func BenchmarkUdpInput(b *testing.B) {
