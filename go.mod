@@ -210,8 +210,8 @@ require (
 	github.com/imdario/mergo v0.3.12 // indirect
 	github.com/inconshreveable/mousetrap v1.0.0 // indirect
 	github.com/influxdata/influxdb-observability/common v0.2.7 // indirect
-	github.com/influxdata/influxdb-observability/influx2otel v0.2.7 // indirect
-	github.com/influxdata/influxdb-observability/otel2influx v0.2.7 // indirect
+	github.com/influxdata/influxdb-observability/influx2otel v0.0.0-20210927215436-943f6419116a // indirect
+	github.com/influxdata/influxdb-observability/otel2influx v0.0.0-20210927215436-943f6419116a // indirect
 	github.com/influxdata/line-protocol/v2 v2.0.0-20210520103755-6551a972d603 // indirect
 	github.com/jaegertracing/jaeger v1.26.0 // indirect
 	github.com/jcmturner/aescts/v2 v2.0.0 // indirect
