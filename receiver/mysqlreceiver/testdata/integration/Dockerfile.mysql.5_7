@@ -1,0 +1,13 @@
+FROM mysql:5.7
+
+RUN \
+    apt-get update && \
+    apt-get install -y libmariadb3
+
+COPY scripts/setup.sh /setup.sh
+RUN chmod +x /setup.sh
+
+ENV MYSQL_DATABASE=otel
+ENV MYSQL_USER=otel
+ENV MYSQL_PASSWORD=otel
+ENV MYSQL_ROOT_PASSWORD=otel
