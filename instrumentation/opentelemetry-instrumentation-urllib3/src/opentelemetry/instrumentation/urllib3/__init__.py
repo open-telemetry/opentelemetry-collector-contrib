@@ -81,6 +81,7 @@ from opentelemetry.propagate import inject
 from opentelemetry.semconv.trace import SpanAttributes
 from opentelemetry.trace import Span, SpanKind, get_tracer
 from opentelemetry.trace.status import Status
+from opentelemetry.util.http.httplib import set_ip_on_next_http_connection
 
 # A key to a context variable to avoid creating duplicate spans when instrumenting
 # both, Session.request and Session.send, since Session.request calls into Session.send
@@ -168,7 +169,7 @@ def _instrument(
 
         with tracer.start_as_current_span(
             span_name, kind=SpanKind.CLIENT, attributes=span_attributes
-        ) as span:
+        ) as span, set_ip_on_next_http_connection(span):
             if callable(request_hook):
                 request_hook(span, instance, headers, body)
             inject(headers)
