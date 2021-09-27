@@ -206,16 +206,16 @@ func TestDetectResource_Parallel(t *testing.T) {
 
 	p := NewResourceProvider(zap.NewNop(), time.Second, md1, md2, md3)
 
-	var detected pdata.Resource
 	// call p.Get multiple times
 	wg := &sync.WaitGroup{}
 	wg.Add(iterations)
 	for i := 0; i < iterations; i++ {
 		go func() {
 			defer wg.Done()
-			var err error
-			detected, _, err = p.Get(context.Background())
+			detected, _, err := p.Get(context.Background())
 			require.NoError(t, err)
+			detected.Attributes().Sort()
+			assert.Equal(t, expectedResource, detected)
 		}()
 	}
 
@@ -232,9 +232,6 @@ func TestDetectResource_Parallel(t *testing.T) {
 	md1.AssertNumberOfCalls(t, "Detect", 1)
 	md2.AssertNumberOfCalls(t, "Detect", 1)
 	md3.AssertNumberOfCalls(t, "Detect", 1)
-
-	detected.Attributes().Sort()
-	assert.Equal(t, expectedResource, detected)
 }
 
 func TestAttributesToMap(t *testing.T) {
