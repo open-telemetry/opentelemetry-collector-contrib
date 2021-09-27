@@ -51,7 +51,7 @@ func (ipp *inProcessCollector) PrepareConfig(configStr string) (configCleanup fu
 
 func (ipp *inProcessCollector) Start(args StartParams) error {
 	settings := service.CollectorSettings{
-		BuildInfo:         component.DefaultBuildInfo(),
+		BuildInfo:         component.NewDefaultBuildInfo(),
 		Factories:         ipp.factories,
 		ConfigMapProvider: parserprovider.NewInMemoryMapProvider(strings.NewReader(ipp.configStr)),
 	}
