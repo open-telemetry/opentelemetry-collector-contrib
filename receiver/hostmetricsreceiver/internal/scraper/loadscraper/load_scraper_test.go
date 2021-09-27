@@ -17,6 +17,7 @@ package loadscraper
 import (
 	"context"
 	"errors"
+	"runtime"
 	"testing"
 
 	"github.com/shirou/gopsutil/load"
@@ -31,21 +32,29 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/loadscraper/internal/metadata"
 )
 
+const (
+	testStandard = "Standard"
+	testAverage  = "PerCPUEnabled"
+)
+
 func TestScrape(t *testing.T) {
 	type testCase struct {
 		name        string
 		loadFunc    func() (*load.AvgStat, error)
 		expectedErr string
 		perCPU      bool
+		saveMetrics bool
 	}
 
 	testCases := []testCase{
 		{
-			name: "Standard",
+			name:        testStandard,
+			saveMetrics: true,
 		},
 		{
-			name:   "PerCPUEnabled",
-			perCPU: true,
+			name:        testAverage,
+			perCPU:      true,
+			saveMetrics: true,
 		},
 		{
 			name:        "Load Error",
@@ -53,6 +62,7 @@ func TestScrape(t *testing.T) {
 			expectedErr: "err1",
 		},
 	}
+	results := make(map[string]pdata.MetricSlice)
 
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
@@ -88,11 +98,34 @@ func TestScrape(t *testing.T) {
 			assertMetricHasSingleDatapoint(t, metrics.At(2), metadata.Metrics.SystemCPULoadAverage15m.New())
 
 			internal.AssertSameTimeStampForAllMetrics(t, metrics)
+
+			// save metrics for additional tests if flag is enabled
+			if test.saveMetrics {
+				results[test.name] = metrics
+			}
 		})
+	}
+
+	// Additional test for average per CPU
+	numCPU := runtime.NumCPU()
+	for i := 0; i < results[testStandard].Len(); i++ {
+		assertCompareAveragePerCPU(t, results[testAverage].At(i), results[testStandard].At(i), numCPU)
 	}
 }
 
 func assertMetricHasSingleDatapoint(t *testing.T, metric pdata.Metric, descriptor pdata.Metric) {
 	internal.AssertDescriptorEqual(t, descriptor, metric)
 	assert.Equal(t, 1, metric.Gauge().DataPoints().Len())
+}
+
+func assertCompareAveragePerCPU(t *testing.T, average pdata.Metric, standard pdata.Metric, numCPU int) {
+	valAverage := average.Gauge().DataPoints().At(0).DoubleVal()
+	valStandard := standard.Gauge().DataPoints().At(0).DoubleVal()
+	if numCPU == 1 {
+		// For hardware with only 1 cpu, results must be very close
+		assert.InDelta(t, valAverage, valStandard, 0.1)
+	} else {
+		// For hardward with multiple CPU, average per cpu is fatally less than standard
+		assert.Less(t, valAverage, valStandard)
+	}
 }
