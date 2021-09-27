@@ -16,22 +16,13 @@ package utils
 
 import (
 	"fmt"
-	"testing"
-
-	"github.com/stretchr/testify/assert"
 )
 
-func TestFormatKeyValueTag(t *testing.T) {
-	tests := []struct {
-		key         string
-		value       string
-		expectedTag string
-	}{
-		{"a.test.tag", "a.test.value", fmt.Sprintf("%s:%s", "a.test.tag", "a.test.value")},
-		{"a.test.tag", "", fmt.Sprintf("%s:%s", "a.test.tag", "n/a")},
+// FormatKeyValueTag takes a key-value pair, and creates a tag string out of it
+// Tags can't end with ":" so we replace empty values with "n/a"
+func FormatKeyValueTag(key, value string) string {
+	if value == "" {
+		value = "n/a"
 	}
-
-	for _, testInstance := range tests {
-		assert.Equal(t, testInstance.expectedTag, FormatKeyValueTag(testInstance.key, testInstance.value))
-	}
+	return fmt.Sprintf("%s:%s", key, value)
 }

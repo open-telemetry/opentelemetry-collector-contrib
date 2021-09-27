@@ -15,15 +15,22 @@
 package utils
 
 import (
-	"fmt"
+	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
-// FormatKeyValueTag takes a key-value pair, and creates a tag string out of it
-// Tags can't end with ":" so we replace empty values with "n/a"
-func FormatKeyValueTag(key, value string) string {
-	// Should this check for empty keys, and return an error in that case?
-	if value == "" {
-		value = "n/a"
+func TestFormatKeyValueTag(t *testing.T) {
+	tests := []struct {
+		key         string
+		value       string
+		expectedTag string
+	}{
+		{"a.test.tag", "a.test.value", "a.test.tag:a.test.value"},
+		{"a.test.tag", "", "a.test.tag:n/a"},
 	}
-	return fmt.Sprintf("%s:%s", key, value)
+
+	for _, testInstance := range tests {
+		assert.Equal(t, testInstance.expectedTag, FormatKeyValueTag(testInstance.key, testInstance.value))
+	}
 }
