@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//go:build !windows
 // +build !windows
 
 package podmanreceiver
@@ -22,7 +23,6 @@ import (
 	"net/url"
 	"time"
 
-	"github.com/containers/podman/v3/libpod/define"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/obsreport"
@@ -38,7 +38,7 @@ type receiver struct {
 	config        *Config
 	logger        *zap.Logger
 	nextConsumer  consumer.Metrics
-	clientFactory func(string) (client, error)
+	clientFactory clientFactory
 
 	client       client
 	runner       *interval.Runner
@@ -53,7 +53,7 @@ func newReceiver(
 	logger *zap.Logger,
 	config *Config,
 	nextConsumer consumer.Metrics,
-	clientFactory func(string) (client, error),
+	clientFactory clientFactory,
 ) (component.MetricsReceiver, error) {
 	err := config.Validate()
 	if err != nil {
@@ -96,9 +96,9 @@ func (r *receiver) Shutdown(ctx context.Context) error {
 }
 
 func (r *receiver) Setup() error {
-	client, err := r.clientFactory(r.config.Endpoint)
+	c, err := r.clientFactory(r.logger, r.config)
 	if err == nil {
-		r.client = client
+		r.client = c
 	}
 	return err
 }
@@ -127,21 +127,16 @@ func (r *receiver) Run() error {
 	return nil
 }
 
-func (r *receiver) consumeStats(ctx context.Context, stats []define.ContainerStats) (int, error) {
+func (r *receiver) consumeStats(ctx context.Context, stats []containerStats) (int, error) {
 	numPoints := 0
 	var lastErr error
 
-	for _, stats := range stats {
-		md, err := translateStatsToMetrics(&stats, time.Now())
-		if err != nil {
-			lastErr = fmt.Errorf("Failed to translate stats: %w", err)
-			continue
-		}
-
+	for i := range stats {
+		md := translateStatsToMetrics(&stats[i], time.Now())
 		numPoints += md.DataPointCount()
-		err = r.nextConsumer.ConsumeMetrics(ctx, md)
+		err := r.nextConsumer.ConsumeMetrics(ctx, md)
 		if err != nil {
-			lastErr = fmt.Errorf("Failed to cnsume stats: %w", err)
+			lastErr = fmt.Errorf("failed to consume stats: %w", err)
 			continue
 		}
 	}
