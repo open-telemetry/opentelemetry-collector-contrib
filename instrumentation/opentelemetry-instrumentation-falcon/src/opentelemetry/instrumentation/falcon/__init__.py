@@ -126,6 +126,13 @@ _ENVIRON_EXC = "opentelemetry-falcon.exc"
 
 _response_propagation_setter = FuncSetter(falcon.Response.append_header)
 
+if hasattr(falcon, "App"):
+    # Falcon 3
+    _instrument_app = "App"
+else:
+    # Falcon 2
+    _instrument_app = "API"
+
 
 class FalconInstrumentor(BaseInstrumentor):
     # pylint: disable=protected-access,attribute-defined-outside-init
@@ -138,14 +145,16 @@ class FalconInstrumentor(BaseInstrumentor):
         return _instruments
 
     def _instrument(self, **kwargs):
-        self._original_falcon_api = falcon.API
-        falcon.API = partial(_InstrumentedFalconAPI, **kwargs)
+        self._original_falcon_api = getattr(falcon, _instrument_app)
+        setattr(
+            falcon, _instrument_app, partial(_InstrumentedFalconAPI, **kwargs)
+        )
 
     def _uninstrument(self, **kwargs):
-        falcon.API = self._original_falcon_api
+        setattr(falcon, _instrument_app, self._original_falcon_api)
 
 
-class _InstrumentedFalconAPI(falcon.API):
+class _InstrumentedFalconAPI(getattr(falcon, _instrument_app)):
     def __init__(self, *args, **kwargs):
         # inject trace middleware
         middlewares = kwargs.pop("middleware", [])
@@ -168,6 +177,15 @@ class _InstrumentedFalconAPI(falcon.API):
 
         self._excluded_urls = get_excluded_urls("FALCON")
         super().__init__(*args, **kwargs)
+
+    def _handle_exception(
+        self, req, resp, ex, params
+    ):  # pylint: disable=C0103
+        # Falcon 3 does not execute middleware within the context of the exception
+        # so we capture the exception here and save it into the env dict
+        _, exc, _ = exc_info()
+        req.env[_ENVIRON_EXC] = exc
+        return super()._handle_exception(req, resp, ex, params)
 
     def __call__(self, env, start_response):
         # pylint: disable=E1101
@@ -193,7 +211,6 @@ class _InstrumentedFalconAPI(falcon.API):
         env[_ENVIRON_ACTIVATION_KEY] = activation
 
         def _start_response(status, response_headers, *args, **kwargs):
-            otel_wsgi.add_response_attributes(span, status, response_headers)
             response = start_response(
                 status, response_headers, *args, **kwargs
             )
@@ -264,22 +281,23 @@ class _TraceMiddleware:
         if resource is None:
             status = "404"
             reason = "NotFound"
-
-        exc_type, exc, _ = exc_info()
-        if exc_type and not req_succeeded:
-            if "HTTPNotFound" in exc_type.__name__:
-                status = "404"
-                reason = "NotFound"
+        else:
+            if _ENVIRON_EXC in req.env:
+                exc = req.env[_ENVIRON_EXC]
+                exc_type = type(exc)
             else:
-                status = "500"
-                reason = "{}: {}".format(exc_type.__name__, exc)
+                exc_type, exc = None, None
+            if exc_type and not req_succeeded:
+                if "HTTPNotFound" in exc_type.__name__:
+                    status = "404"
+                    reason = "NotFound"
+                else:
+                    status = "500"
+                    reason = "{}: {}".format(exc_type.__name__, exc)
 
         status = status.split(" ")[0]
         try:
             status_code = int(status)
-        except ValueError:
-            pass
-        finally:
             span.set_attribute(SpanAttributes.HTTP_STATUS_CODE, status_code)
             span.set_status(
                 Status(
@@ -287,6 +305,8 @@ class _TraceMiddleware:
                     description=reason,
                 )
             )
+        except ValueError:
+            pass
 
         propagator = get_global_response_propagator()
         if propagator:

@@ -28,6 +28,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `opentelemetry-instrumentation-urllib3` Updated `_RequestHookT` with two additional fields - the request body and the request headers
 ([#660](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/660))
 
+### Changed
+- Tests for Falcon 3 support
+  ([#644](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/644))
+
 ### Added
 
 - `opentelemetry-instrumentation-urllib3`, `opentelemetry-instrumentation-requests`

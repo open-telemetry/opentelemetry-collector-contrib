@@ -78,7 +78,9 @@ class TestFalconInstrumentation(TestFalconBase):
         self._test_method("HEAD")
 
     def _test_method(self, method):
-        self.client().simulate_request(method=method, path="/hello")
+        self.client().simulate_request(
+            method=method, path="/hello", remote_addr="127.0.0.1"
+        )
         spans = self.memory_exporter.get_finished_spans()
         self.assertEqual(len(spans), 1)
         span = spans[0]
@@ -86,6 +88,9 @@ class TestFalconInstrumentation(TestFalconBase):
             span.name, "HelloWorldResource.on_{0}".format(method.lower())
         )
         self.assertEqual(span.status.status_code, StatusCode.UNSET)
+        self.assertEqual(
+            span.status.description, None,
+        )
         self.assertSpanHasAttributes(
             span,
             {
@@ -105,12 +110,15 @@ class TestFalconInstrumentation(TestFalconBase):
         self.memory_exporter.clear()
 
     def test_404(self):
-        self.client().simulate_get("/does-not-exist")
+        self.client().simulate_get("/does-not-exist", remote_addr="127.0.0.1")
         spans = self.memory_exporter.get_finished_spans()
         self.assertEqual(len(spans), 1)
         span = spans[0]
         self.assertEqual(span.name, "HTTP GET")
         self.assertEqual(span.status.status_code, StatusCode.ERROR)
+        self.assertEqual(
+            span.status.description, "NotFound",
+        )
         self.assertSpanHasAttributes(
             span,
             {
@@ -129,7 +137,7 @@ class TestFalconInstrumentation(TestFalconBase):
 
     def test_500(self):
         try:
-            self.client().simulate_get("/error")
+            self.client().simulate_get("/error", remote_addr="127.0.0.1")
         except NameError:
             pass
         spans = self.memory_exporter.get_finished_spans()

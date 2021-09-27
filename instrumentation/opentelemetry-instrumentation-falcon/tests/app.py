@@ -34,7 +34,12 @@ class ErrorResource:
 
 
 def make_app():
-    app = falcon.API()
+    if hasattr(falcon, "App"):
+        # Falcon 3
+        app = falcon.App()
+    else:
+        # Falcon 2
+        app = falcon.API()
     app.add_route("/hello", HelloWorldResource())
     app.add_route("/ping", HelloWorldResource())
     app.add_route("/error", ErrorResource())
