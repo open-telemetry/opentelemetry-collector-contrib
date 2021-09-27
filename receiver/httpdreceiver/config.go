@@ -48,7 +48,7 @@ func (cfg *Config) Validate() error {
 
 	u, err := url.Parse(cfg.Endpoint)
 	if err != nil {
-		return fmt.Errorf("invalid endpoint '%s'", cfg.Endpoint)
+		return fmt.Errorf("invalid endpoint '%s': %w", cfg.Endpoint, err)
 	}
 
 	if u.Hostname() == "" {
