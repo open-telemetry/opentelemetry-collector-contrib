@@ -15,6 +15,7 @@
 package uri
 
 import (
+	"context"
 	"net/url"
 	"testing"
 
@@ -22,6 +23,7 @@ import (
 	"gopkg.in/yaml.v2"
 
 	"github.com/open-telemetry/opentelemetry-log-collection/entry"
+	"github.com/open-telemetry/opentelemetry-log-collection/operator"
 	"github.com/open-telemetry/opentelemetry-log-collection/operator/helper"
 	"github.com/open-telemetry/opentelemetry-log-collection/testutil"
 )
@@ -32,6 +34,12 @@ func newTestParser(t *testing.T) *URIParser {
 	require.NoError(t, err)
 	op := ops[0]
 	return op.(*URIParser)
+}
+
+func TestInit(t *testing.T) {
+	builder, ok := operator.DefaultRegistry.Lookup("uri_parser")
+	require.True(t, ok, "expected uri_parser to be registered")
+	require.Equal(t, "uri_parser", builder().Type())
 }
 
 func TestURIParserBuildFailure(t *testing.T) {
@@ -61,6 +69,149 @@ func TestRegexParserInvalidType(t *testing.T) {
 	_, err := parser.parse([]int{})
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "type '[]int' cannot be parsed as URI")
+}
+
+func TestProcess(t *testing.T) {
+	cases := []struct {
+		name   string
+		op     func() (operator.Operator, error)
+		input  *entry.Entry
+		expect *entry.Entry
+	}{
+		{
+			"default",
+			func() (operator.Operator, error) {
+				cfg := NewURIParserConfig("test_id")
+				ops, err := cfg.Build(testutil.NewBuildContext(t))
+				if err != nil {
+					return nil, err
+				}
+				return ops[0], nil
+			},
+			&entry.Entry{
+				Body: "https://google.com:443/path?user=dev",
+			},
+			&entry.Entry{
+				Body: map[string]interface{}{
+					"host": "google.com",
+					"port": "443",
+					"path": "/path",
+					"query": map[string]interface{}{
+						"user": []interface{}{
+							"dev",
+						},
+					},
+					"scheme": "https",
+				},
+			},
+		},
+		{
+			"parse-to",
+			func() (operator.Operator, error) {
+				cfg := NewURIParserConfig("test_id")
+				cfg.ParseFrom = entry.NewBodyField("url")
+				cfg.ParseTo = entry.NewBodyField("url2")
+				ops, err := cfg.Build(testutil.NewBuildContext(t))
+				if err != nil {
+					return nil, err
+				}
+				return ops[0], nil
+			},
+			&entry.Entry{
+				Body: map[string]interface{}{
+					"url": "https://google.com:443/path?user=dev",
+				},
+			},
+			&entry.Entry{
+				Body: map[string]interface{}{
+					"url2": map[string]interface{}{
+						"host": "google.com",
+						"port": "443",
+						"path": "/path",
+						"query": map[string]interface{}{
+							"user": []interface{}{
+								"dev",
+							},
+						},
+						"scheme": "https",
+					},
+				},
+			},
+		},
+		{
+			"parse-from",
+			func() (operator.Operator, error) {
+				cfg := NewURIParserConfig("test_id")
+				cfg.ParseFrom = entry.NewBodyField("url")
+				ops, err := cfg.Build(testutil.NewBuildContext(t))
+				if err != nil {
+					return nil, err
+				}
+				return ops[0], nil
+			},
+			&entry.Entry{
+				Body: map[string]interface{}{
+					"url": "https://google.com:443/path?user=dev",
+				},
+			},
+			&entry.Entry{
+				Body: map[string]interface{}{
+					"host": "google.com",
+					"port": "443",
+					"path": "/path",
+					"query": map[string]interface{}{
+						"user": []interface{}{
+							"dev",
+						},
+					},
+					"scheme": "https",
+				},
+			},
+		},
+		{
+			"parse-from-and-preserve",
+			func() (operator.Operator, error) {
+				cfg := NewURIParserConfig("test_id")
+				cfg.ParseFrom = entry.NewBodyField("url")
+				cfg.PreserveTo = &cfg.ParseFrom
+				ops, err := cfg.Build(testutil.NewBuildContext(t))
+				if err != nil {
+					return nil, err
+				}
+				return ops[0], nil
+			},
+			&entry.Entry{
+				Body: map[string]interface{}{
+					"url": "https://google.com:443/path?user=dev",
+				},
+			},
+			&entry.Entry{
+				Body: map[string]interface{}{
+					"host": "google.com",
+					"port": "443",
+					"path": "/path",
+					"query": map[string]interface{}{
+						"user": []interface{}{
+							"dev",
+						},
+					},
+					"scheme": "https",
+					"url":    "https://google.com:443/path?user=dev",
+				},
+			},
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			op, err := tc.op()
+			require.NoError(t, err, "did not expect operator function to return an error, this is a bug with the test case")
+
+			err = op.Process(context.Background(), tc.input)
+			require.NoError(t, err)
+			require.Equal(t, tc.expect, tc.input)
+		})
+	}
 }
 
 func TestURIParserParse(t *testing.T) {
@@ -211,6 +362,12 @@ func TestParseURI(t *testing.T) {
 				},
 			},
 			false,
+		},
+		{
+			"invalid-query",
+			"?q;go",
+			map[string]interface{}{},
+			true,
 		},
 		{
 			"scheme-path",
