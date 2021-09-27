@@ -16,6 +16,7 @@ package tcp
 
 import (
 	"crypto/tls"
+	"math/rand"
 	"net"
 	"os"
 	"strconv"
@@ -104,7 +105,10 @@ func tcpInputTest(input []byte, expected []string) func(t *testing.T) {
 
 		err = tcpInput.Start(testutil.NewMockPersister("test"))
 		require.NoError(t, err)
-		defer tcpInput.Stop()
+		defer func() {
+			err := tcpInput.Stop()
+			require.NoError(t, err, "expected to stop tcp input operator without error")
+		}()
 
 		conn, err := net.Dial("tcp", tcpInput.listener.Addr().String())
 		require.NoError(t, err)
@@ -152,7 +156,10 @@ func tcpInputAttributesTest(input []byte, expected []string) func(t *testing.T) 
 
 		err = tcpInput.Start(testutil.NewMockPersister("test"))
 		require.NoError(t, err)
-		defer tcpInput.Stop()
+		defer func() {
+			err := tcpInput.Stop()
+			require.NoError(t, err, "expected to stop tcp input operator without error")
+		}()
 
 		conn, err := net.Dial("tcp", tcpInput.listener.Addr().String())
 		require.NoError(t, err)
@@ -237,7 +244,10 @@ func tlsTCPInputTest(input []byte, expected []string) func(t *testing.T) {
 
 		err = tcpInput.Start(testutil.NewMockPersister("test"))
 		require.NoError(t, err)
-		defer tcpInput.Stop()
+		defer func() {
+			err := tcpInput.Stop()
+			require.NoError(t, err, "expected to stop tcp input operator without error")
+		}()
 
 		conn, err := tls.Dial("tcp", tcpInput.listener.Addr().String(), &tls.Config{InsecureSkipVerify: true})
 		require.NoError(t, err)
@@ -357,6 +367,51 @@ func TestTLSTcpInput(t *testing.T) {
 	t.Run("CarriageReturn", tlsTCPInputTest([]byte("message\r\n"), []string{"message"}))
 }
 
+func TestFailToBind(t *testing.T) {
+	ip := "localhost"
+	port := 0
+	minPort := 30000
+	maxPort := 40000
+	for i := 1; i < 10; i++ {
+		port = minPort + rand.Intn(maxPort-minPort+1)
+		_, err := net.DialTimeout("tcp", net.JoinHostPort(ip, strconv.Itoa(port)), time.Second*2)
+		if err != nil {
+			// a failed connection indicates that the port is available for use
+			break
+		}
+	}
+	if port == 0 {
+		t.Errorf("failed to find a free port between %d and %d", minPort, maxPort)
+	}
+
+	var startTCP func(port int) (*TCPInput, error) = func(int) (*TCPInput, error) {
+		cfg := NewTCPInputConfig("test_id")
+		cfg.ListenAddress = net.JoinHostPort(ip, strconv.Itoa(port))
+		ops, err := cfg.Build(testutil.NewBuildContext(t))
+		require.NoError(t, err)
+		op := ops[0]
+		mockOutput := testutil.Operator{}
+		tcpInput := op.(*TCPInput)
+		tcpInput.InputOperator.OutputOperators = []operator.Operator{&mockOutput}
+		entryChan := make(chan *entry.Entry, 1)
+		mockOutput.On("Process", mock.Anything, mock.Anything).Run(func(args mock.Arguments) {
+			entryChan <- args.Get(1).(*entry.Entry)
+		}).Return(nil)
+		err = tcpInput.Start(testutil.NewMockPersister("test"))
+		return tcpInput, err
+	}
+
+	first, err := startTCP(port)
+	require.NoError(t, err, "expected first tcp operator to start")
+	defer func() {
+		err := first.Stop()
+		require.NoError(t, err, "expected to stop tcp input operator without error")
+		require.NoError(t, first.Stop(), "expected stopping an already stopped operator to not return an error")
+	}()
+	_, err = startTCP(port)
+	require.Error(t, err, "expected second tcp operator to fail to start")
+}
+
 func BenchmarkTcpInput(b *testing.B) {
 	cfg := NewTCPInputConfig("test_id")
 	cfg.ListenAddress = ":0"
@@ -376,8 +431,13 @@ func BenchmarkTcpInput(b *testing.B) {
 	go func() {
 		conn, err := net.Dial("tcp", tcpInput.listener.Addr().String())
 		require.NoError(b, err)
-		defer tcpInput.Stop()
-		defer conn.Close()
+		defer func() {
+			err := tcpInput.Stop()
+			require.NoError(b, err, "expected to stop tcp input operator without error")
+
+			err = conn.Close()
+			require.NoError(b, err, "expected to close connection without error")
+		}()
 		message := []byte("message\n")
 		for {
 			select {
