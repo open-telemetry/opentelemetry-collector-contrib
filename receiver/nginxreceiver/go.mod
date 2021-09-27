@@ -9,8 +9,8 @@ require (
 	github.com/sirupsen/logrus v1.8.1 // indirect
 	github.com/stretchr/testify v1.7.0
 	github.com/testcontainers/testcontainers-go v0.11.1
-	go.opentelemetry.io/collector v0.36.1-0.20210923171211-10f543a9a43f
-	go.opentelemetry.io/collector/model v0.36.1-0.20210923171211-10f543a9a43f
+	go.opentelemetry.io/collector v0.36.1-0.20210927115055-45a848d8abe1
+	go.opentelemetry.io/collector/model v0.36.1-0.20210927115055-45a848d8abe1
 	go.uber.org/zap v1.19.1
 	golang.org/x/time v0.0.0-20210611083556-38a9dc6acbc6 // indirect
 
@@ -60,7 +60,7 @@ require (
 	golang.org/x/sys v0.0.0-20210615035016-665e8c7367d1 // indirect
 	golang.org/x/text v0.3.6 // indirect
 	google.golang.org/genproto v0.0.0-20210604141403-392c879c8b08 // indirect
-	google.golang.org/grpc v1.40.0 // indirect
+	google.golang.org/grpc v1.41.0 // indirect
 	google.golang.org/protobuf v1.27.1 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b // indirect

@@ -13,8 +13,8 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/kubelet v0.36.0
 	github.com/shirou/gopsutil v3.21.8+incompatible
 	github.com/stretchr/testify v1.7.0
-	go.opentelemetry.io/collector v0.36.1-0.20210923171211-10f543a9a43f
-	go.opentelemetry.io/collector/model v0.36.1-0.20210923171211-10f543a9a43f
+	go.opentelemetry.io/collector v0.36.1-0.20210927115055-45a848d8abe1
+	go.opentelemetry.io/collector/model v0.36.1-0.20210927115055-45a848d8abe1
 	go.uber.org/zap v1.19.1
 	k8s.io/api v0.22.2
 	k8s.io/apimachinery v0.22.2
@@ -78,7 +78,7 @@ require (
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/prometheus/client_model v0.2.0 // indirect
-	github.com/prometheus/common v0.30.0 // indirect
+	github.com/prometheus/common v0.31.0 // indirect
 	github.com/rs/cors v1.8.0 // indirect
 	github.com/seccomp/libseccomp-golang v0.9.1 // indirect
 	github.com/sirupsen/logrus v1.7.0 // indirect
@@ -106,7 +106,7 @@ require (
 	golang.org/x/time v0.0.0-20210723032227-1f47c861a9ac // indirect
 	google.golang.org/appengine v1.6.7 // indirect
 	google.golang.org/genproto v0.0.0-20210604141403-392c879c8b08 // indirect
-	google.golang.org/grpc v1.40.0 // indirect
+	google.golang.org/grpc v1.41.0 // indirect
 	google.golang.org/protobuf v1.27.1 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
