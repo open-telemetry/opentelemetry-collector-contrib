@@ -97,7 +97,7 @@ func buildView(tagKeys []tag.Key, m stats.Measure, a *view.Aggregation) *view.Vi
 
 type metricStatsKey struct {
 	MetricType        pdata.MetricDataType
-	MetricTemporality pdata.AggregationTemporality
+	MetricTemporality pdata.MetricAggregationTemporality
 }
 
 type spanStatsKey struct {

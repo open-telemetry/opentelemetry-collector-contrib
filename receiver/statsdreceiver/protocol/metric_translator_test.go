@@ -41,7 +41,7 @@ func TestBuildCounterMetric(t *testing.T) {
 	expectedMetric.SetName("testCounter")
 	expectedMetric.SetUnit("meter")
 	expectedMetric.SetDataType(pdata.MetricDataTypeSum)
-	expectedMetric.Sum().SetAggregationTemporality(pdata.AggregationTemporalityDelta)
+	expectedMetric.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityDelta)
 	expectedMetric.Sum().SetIsMonotonic(true)
 	dp := expectedMetric.Sum().DataPoints().AppendEmpty()
 	dp.SetIntVal(32)
