@@ -41,10 +41,10 @@ dmitri.shuralyov.com/gpu/mtl v0.0.0-20190408044501-666a987793e9/go.mod h1:H6x//7
 github.com/BurntSushi/toml v0.3.1/go.mod h1:xHWCNGjB5oqiDr8zfno3MHue2Ht5sIBksp03qcyfWMU=
 github.com/BurntSushi/xgb v0.0.0-20160522181843-27f122750802/go.mod h1:IVnqGOEym/WlBOVXweHU+Q+/VP0lqqI8lqeDx9IjBqo=
 github.com/DATA-DOG/go-sqlmock v1.3.3/go.mod h1:f/Ixk793poVmq4qj/V1dPUg2JEAKC73Q5eFN3EC/SaM=
-github.com/DataDog/agent-payload v4.82.0+incompatible h1:QhxyUkFSike/tDS7glFQ+5uWhRecTd6kqJ7bQfhbfAc=
-github.com/DataDog/agent-payload v4.82.0+incompatible/go.mod h1:/2RW4IC/2z54jtB6RLgq5UtVI1TsX0joDRjKbkLT+mk=
-github.com/DataDog/datadog-agent/pkg/quantile v0.31.0 h1:Y1gidc3lQnkmIffmYwbRfYr8uGG5/2S/hVjifdLzd6Q=
-github.com/DataDog/datadog-agent/pkg/quantile v0.31.0/go.mod h1:VAKllu7WNy8pirV8XIXUAeU57s0uRIn/5GPrPh+Y9BI=
+github.com/DataDog/agent-payload v4.85.0+incompatible h1:AjNteNxI3nIuGbvJu1VmxujE8lJHukdZgEp6v/wAA6Y=
+github.com/DataDog/agent-payload v4.85.0+incompatible/go.mod h1:/2RW4IC/2z54jtB6RLgq5UtVI1TsX0joDRjKbkLT+mk=
+github.com/DataDog/datadog-agent/pkg/quantile v0.31.1 h1:GZVFUINaZhitq3CORgHmoES8B0YNDlmgcxvmXCK4WvM=
+github.com/DataDog/datadog-agent/pkg/quantile v0.31.1/go.mod h1:VAKllu7WNy8pirV8XIXUAeU57s0uRIn/5GPrPh+Y9BI=
 github.com/DataDog/datadog-agent/pkg/trace/exportable v0.0.0-20201016145401-4646cf596b02 h1:N2BRKjJ/c+ipDwt5b+ijqEc2EsmK3zXq2lNeIPnSwMI=
 github.com/DataDog/datadog-agent/pkg/trace/exportable v0.0.0-20201016145401-4646cf596b02/go.mod h1:EalMiS87Guu6PkLdxz7gmWqi+dRs9sjYLTOyTrM/aVU=
 github.com/DataDog/datadog-agent/pkg/util/log v0.0.0-20201009091607-ce4e57cdf8f4/go.mod h1:cRy7lwapA3jcjnX74kU6NFkXaRGQyB0l/QZA0IwYGEQ=
@@ -73,8 +73,8 @@ github.com/antonmedv/expr v1.9.0/go.mod h1:5qsM3oLGDND7sDmQGDXHkYfkjYMUX14qsgqmH
 github.com/armon/circbuf v0.0.0-20150827004946-bbbad097214e/go.mod h1:3U/XgcO3hCbHZ8TKRvWD2dDTCfh9M9ya+I9JpbB7O8o=
 github.com/armon/go-metrics v0.0.0-20180917152333-f0300d1749da/go.mod h1:Q73ZrmVTwzkszR9V5SSuryQ31EELlFMUz1kKyl939pY=
 github.com/armon/go-radix v0.0.0-20180808171621-7fddfc383310/go.mod h1:ufUuZ+zHj4x4TnLV4JWEpy2hxWSpsRywHrMgIH9cCH8=
-github.com/aws/aws-sdk-go v1.40.47 h1:ZXayMFfPtODnSZRlMSmMYpiygac6PORNCPMjdGltcFg=
-github.com/aws/aws-sdk-go v1.40.47/go.mod h1:585smgzpB/KqRA+K3y/NL/oYRqQvpNJYvLm+LY1U59Q=
+github.com/aws/aws-sdk-go v1.40.50 h1:QP4NC9EZWBszbNo2UbG6bbObMtN35kCFb4h0r08q884=
+github.com/aws/aws-sdk-go v1.40.50/go.mod h1:585smgzpB/KqRA+K3y/NL/oYRqQvpNJYvLm+LY1U59Q=
 github.com/benbjohnson/clock v1.1.0 h1:Q92kusRqC1XV2MjkWETPvjJVqKetz1OzxZB7mHJLju8=
 github.com/benbjohnson/clock v1.1.0/go.mod h1:J11/hYXuz8f4ySSvYwY0FKfm+ezbsZBKZxNJlLklBHA=
 github.com/beorn7/perks v0.0.0-20180321164747-3a771d992973/go.mod h1:Dwedo/Wpr24TaqPxmxbtue+5NUziq4I4S80YR8gNf3Q=
