@@ -22,8 +22,8 @@ import (
 	"go.opencensus.io/stats"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/model/pdata"
+	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchpersignal"
@@ -80,13 +80,11 @@ func newGroupByTraceProcessor(logger *zap.Logger, st storage, nextConsumer consu
 }
 
 func (sp *groupByTraceProcessor) ConsumeTraces(_ context.Context, td pdata.Traces) error {
-	var errors []error
+	var errs error
 	for _, singleTrace := range batchpersignal.SplitTraces(td) {
-		if err := sp.eventMachine.consume(singleTrace); err != nil {
-			errors = append(errors, err)
-		}
+		errs = multierr.Append(errs, sp.eventMachine.consume(singleTrace))
 	}
-	return consumererror.Combine(errors)
+	return errs
 }
 
 func (sp *groupByTraceProcessor) Capabilities() consumer.Capabilities {

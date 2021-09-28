@@ -29,6 +29,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/model/pdata"
+	"go.uber.org/multierr"
 	"go.uber.org/zap"
 )
 
@@ -135,7 +136,7 @@ func (c *client) sendLogs(
 	}
 
 	if len(conversionErrs) > 0 {
-		return consumererror.Combine(conversionErrs)
+		return multierr.Combine(conversionErrs...)
 	}
 
 	return nil

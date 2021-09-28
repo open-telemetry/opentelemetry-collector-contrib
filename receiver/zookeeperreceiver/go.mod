@@ -41,7 +41,7 @@ require (
 	go.opentelemetry.io/otel/metric v0.23.0 // indirect
 	go.opentelemetry.io/otel/trace v1.0.0 // indirect
 	go.uber.org/atomic v1.9.0 // indirect
-	go.uber.org/multierr v1.6.0 // indirect
+	go.uber.org/multierr v1.7.0 // indirect
 	golang.org/x/net v0.0.0-20210614182718-04defd469f4e // indirect
 	golang.org/x/sys v0.0.0-20210615035016-665e8c7367d1 // indirect
 	golang.org/x/text v0.3.6 // indirect
