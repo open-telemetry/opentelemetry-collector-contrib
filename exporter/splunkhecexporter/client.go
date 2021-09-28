@@ -29,6 +29,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/model/pdata"
+	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
@@ -239,7 +240,7 @@ func (c *client) pushLogDataInBatches(ctx context.Context, ld pdata.Logs, send f
 		}
 	}
 
-	return consumererror.Combine(permanentErrors)
+	return multierr.Combine(permanentErrors...)
 }
 
 func (c *client) pushLogRecords(ctx context.Context, lds pdata.ResourceLogsSlice, state *bufferState, headers map[string]string, send func(context.Context, *bytes.Buffer, map[string]string) error) (permanentErrors []error, sendingError error) {

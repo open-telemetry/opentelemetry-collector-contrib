@@ -23,10 +23,10 @@ import (
 	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
+	"go.uber.org/multierr"
 	"go.uber.org/zap"
 )
 
@@ -141,14 +141,12 @@ func (sc *controller) Shutdown(ctx context.Context) error {
 		<-sc.terminated
 	}
 
-	var errs []error
+	var errs error
 	for _, scraper := range sc.scrapers {
-		if err := scraper.Shutdown(ctx); err != nil {
-			errs = append(errs, err)
-		}
+		errs = multierr.Append(errs, scraper.Shutdown(ctx))
 	}
 
-	return consumererror.Combine(errs)
+	return errs
 }
 
 // startScraping initiates a ticker that calls Scrape based on the configured

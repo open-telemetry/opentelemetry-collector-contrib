@@ -170,7 +170,7 @@ require (
 	go.opentelemetry.io/otel/sdk/export/metric v0.23.0 // indirect
 	go.opentelemetry.io/otel/sdk/metric v0.23.0 // indirect
 	go.opentelemetry.io/otel/trace v1.0.0 // indirect
-	go.uber.org/multierr v1.6.0 // indirect
+	go.uber.org/multierr v1.7.0 // indirect
 	golang.org/x/crypto v0.0.0-20210616213533-5ff15b29337e // indirect
 	golang.org/x/net v0.0.0-20210614182718-04defd469f4e // indirect
 	golang.org/x/oauth2 v0.0.0-20210514164344-f6687ab2804c // indirect
