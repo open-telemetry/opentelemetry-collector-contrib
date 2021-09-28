@@ -49,14 +49,9 @@ func createDefaultConfig() config.Extension {
 			TCPAddr: confignet.TCPAddr{
 				Endpoint: defaultEndpoint,
 			},
-			ProxyAddress: "",
 			TLSSetting: configtls.TLSClientSetting{
 				Insecure:   false,
-				ServerName: "",
 			},
-			Region:      "",
-			RoleARN:     "",
-			AWSEndpoint: "",
 		},
 	}
 }
