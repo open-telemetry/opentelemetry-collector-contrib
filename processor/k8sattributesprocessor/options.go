@@ -99,6 +99,12 @@ func WithExtractMetadata(fields ...string) Option {
 				p.rules.Cluster = true
 			case metadataNode, conventions.AttributeK8SNodeName:
 				p.rules.Node = true
+			case conventions.AttributeContainerID:
+				p.rules.ContainerID = true
+			case conventions.AttributeContainerImageName:
+				p.rules.ContainerImageName = true
+			case conventions.AttributeContainerImageTag:
+				p.rules.ContainerImageTag = true
 			default:
 				return fmt.Errorf("\"%s\" is not a supported metadata field", field)
 			}
