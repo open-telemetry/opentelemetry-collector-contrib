@@ -160,6 +160,18 @@ func TestFactory_CreateMetricsExporterFails(t *testing.T) {
 			errorMessage: "failed to process \"signalfx\" config: requires a non-empty \"realm\"," +
 				" or \"ingest_url\" and \"api_url\" should be explicitly set",
 		},
+		{
+			name: "negative_MaxConnections",
+			config: &Config{
+				ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
+				AccessToken:      "testToken",
+				Realm:            "lab",
+				IngestURL:        "http://localhost:123",
+				APIURL:           "https://api.us1.signalfx.com/",
+				MaxConnections:   -10,
+			},
+			errorMessage: "failed to process \"signalfx\" config: cannot have a negative \"max_connections\"",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

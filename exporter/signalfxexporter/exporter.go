@@ -19,7 +19,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"net"
 	"net/http"
 	"net/url"
 	"sync"
@@ -95,24 +94,18 @@ func newSignalFxExporter(
 		return nil, fmt.Errorf("failed to create metric converter: %v", err)
 	}
 
+	transport := http.DefaultTransport.(*http.Transport).Clone()
+	transport.MaxIdleConns = config.MaxConnections
+	transport.MaxIdleConnsPerHost = config.MaxConnections
+	transport.IdleConnTimeout = 30 * time.Second
+
 	dpClient := &sfxDPClient{
 		sfxClientBase: sfxClientBase{
 			ingestURL: options.ingestURL,
 			headers:   headers,
 			client: &http.Client{
-				Timeout: config.Timeout,
-				Transport: &http.Transport{
-					Proxy: http.ProxyFromEnvironment,
-					DialContext: (&net.Dialer{
-						Timeout:   30 * time.Second,
-						KeepAlive: 30 * time.Second,
-					}).DialContext,
-					MaxIdleConns:        config.MaxConnections,
-					MaxIdleConnsPerHost: config.MaxConnections,
-					IdleConnTimeout:     30 * time.Second,
-					TLSHandshakeTimeout: 10 * time.Second,
-					ForceAttemptHTTP2:   true,
-				},
+				Timeout:   config.Timeout,
+				Transport: transport,
 			},
 			zippers: newGzipPool(),
 		},
@@ -170,24 +163,18 @@ func newEventExporter(config *Config, logger *zap.Logger) (*signalfxExporter, er
 
 	headers := buildHeaders(config)
 
+	transport := http.DefaultTransport.(*http.Transport).Clone()
+	transport.MaxIdleConns = config.MaxConnections
+	transport.MaxIdleConnsPerHost = config.MaxConnections
+	transport.IdleConnTimeout = 30 * time.Second
+
 	eventClient := &sfxEventClient{
 		sfxClientBase: sfxClientBase{
 			ingestURL: options.ingestURL,
 			headers:   headers,
 			client: &http.Client{
-				Timeout: config.Timeout,
-				Transport: &http.Transport{
-					Proxy: http.ProxyFromEnvironment,
-					DialContext: (&net.Dialer{
-						Timeout:   30 * time.Second,
-						KeepAlive: 30 * time.Second,
-					}).DialContext,
-					MaxIdleConns:        config.MaxConnections,
-					MaxIdleConnsPerHost: config.MaxConnections,
-					IdleConnTimeout:     30 * time.Second,
-					TLSHandshakeTimeout: 10 * time.Second,
-					ForceAttemptHTTP2:   true,
-				},
+				Timeout:   config.Timeout,
+				Transport: transport,
 			},
 			zippers: newGzipPool(),
 		},

@@ -157,6 +157,10 @@ func (cfg *Config) validateConfig() error {
 		return errors.New(`cannot have a negative "timeout"`)
 	}
 
+	if cfg.MaxConnections < 0 {
+		return errors.New(`cannot have a negative "max_connections"`)
+	}
+
 	return nil
 }
 
