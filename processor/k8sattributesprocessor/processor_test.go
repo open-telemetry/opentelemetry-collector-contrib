@@ -680,7 +680,7 @@ func TestProcessorAddContainerAttributes(t *testing.T) {
 						Name: "k8s.pod.uid",
 					},
 				}
-				kp.kc.(*fakeClient).Pods[kube.PodIdentifier("ef10d10b-2da5-4030-812e-5f45c1531227")] = &kube.Pod{
+				kp.kc.(*fakeClient).Pods[kube.PodIdentifier("19f651bc-73e4-410f-b3e9-f0241679d3b8")] = &kube.Pod{
 					Containers: map[string]*kube.Container{
 						"app": {
 							ImageName: "test/app",
@@ -690,11 +690,11 @@ func TestProcessorAddContainerAttributes(t *testing.T) {
 				}
 			},
 			resourceGens: []generateResourceFunc{
-				withPodUID("ef10d10b-2da5-4030-812e-5f45c1531227"),
+				withPodUID("19f651bc-73e4-410f-b3e9-f0241679d3b8"),
 				withContainerName("app"),
 			},
 			wantAttrs: map[string]string{
-				conventions.AttributeK8SPodUID:          "ef10d10b-2da5-4030-812e-5f45c1531227",
+				conventions.AttributeK8SPodUID:          "19f651bc-73e4-410f-b3e9-f0241679d3b8",
 				conventions.AttributeK8SContainerName:   "app",
 				conventions.AttributeContainerImageName: "test/app",
 				conventions.AttributeContainerImageTag:  "1.0.1",
