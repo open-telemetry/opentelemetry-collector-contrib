@@ -72,7 +72,7 @@ func TestHttpdIntegration(t *testing.T) {
 var (
 	containerRequest2_4 = testcontainers.ContainerRequest{
 		FromDockerfile: testcontainers.FromDockerfile{
-			Context:    path.Join(".", "testdata"),
+			Context:    path.Join(".", "testdata", "integration"),
 			Dockerfile: "Dockerfile.httpd",
 		},
 		ExposedPorts: []string{"8080:80"},
