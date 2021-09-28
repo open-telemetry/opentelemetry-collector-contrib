@@ -4,11 +4,31 @@
 
 ## 🛑 Breaking changes 🛑
 
+- Move `k8sprocessor` to `k8sattributesprocessor`.
+- Rename `k8s_tagger` configuration `k8sattributes`.
+- filelog receiver: use empty value for `SeverityText` field instead of `"Undefined"` (#5423)
+- Rename `configparser.ConfigMap` to `config.Map`
+- Rename `pdata.AggregationTemporality*` to `pdata.MetricAggregationTemporality*`
+
+## v0.36.0
+
+## 🛑 Breaking changes 🛑
+
 - `filter` processor: The configs for `logs` filter processor have been changed to be consistent with the `metrics` filter processor. (#4895)
+- `splunk_hec` receiver: 
+  - `source_key`, `sourcetype_key`, `host_key` and `index_key` have now moved under `hec_metadata_to_otel_attrs` (#4726)
+  - `path` field on splunkhecreceiver configuration is removed: We removed the `path` attribute as any request going to the Splunk HEC receiver port should be accepted, and added the `raw_path` field to explicitly map the path accepting raw HEC data. (#4951)
+- feat(dynatrace): tags is deprecated in favor of default_dimensions (#5055)
 
 ## 💡 Enhancements 💡
 
 - `filter` processor: Add ability to `include` logs based on resource attributes in addition to excluding logs based on resource attributes for strict matching. (#4895)
+- `kubelet` API: Add ability to create an empty CertPool when the system run environment is windows
+- `JMX` receiver: Allow JMX receiver logging level to be configured (#4898)
+- `datadog` exporter: Export histograms as in OpenMetrics Datadog check (#5065)
+- `dockerstats` receiver: Set Schema URL (#5239)
+- Rename memorylimiter -> memorylimiterprocessor (#5262)
+- `awskinesis` exporter: Refactor AWS kinesis exporter to be synchronous  (#5248)
 
 ## v0.35.0
 

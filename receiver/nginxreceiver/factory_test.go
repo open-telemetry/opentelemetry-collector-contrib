@@ -21,7 +21,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config/configcheck"
+	"go.opentelemetry.io/collector/config/configtest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/scraperhelper"
@@ -35,7 +35,7 @@ func TestType(t *testing.T) {
 
 func TestValidConfig(t *testing.T) {
 	factory := NewFactory()
-	err := configcheck.ValidateConfig(factory.CreateDefaultConfig())
+	err := configtest.CheckConfigStruct(factory.CreateDefaultConfig())
 	require.NoError(t, err)
 }
 

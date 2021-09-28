@@ -39,6 +39,7 @@ type logNameTest struct {
 type logWithResource struct {
 	logNames           []string
 	resourceAttributes map[string]pdata.AttributeValue
+	recordAttributes   map[string]pdata.AttributeValue
 }
 
 var (
@@ -69,6 +70,83 @@ var (
 			logNames: []string{"log3", "log4"},
 			resourceAttributes: map[string]pdata.AttributeValue{
 				"attr1": pdata.NewAttributeValueString("attr1/val2"),
+			},
+		},
+	}
+
+	inLogForTwoResourceWithRecordAttributes = []logWithResource{
+		{
+			logNames: []string{"log1", "log2"},
+			resourceAttributes: map[string]pdata.AttributeValue{
+				"attr1": pdata.NewAttributeValueString("attr1/val1"),
+			},
+			recordAttributes: map[string]pdata.AttributeValue{
+				"rec": pdata.NewAttributeValueString("rec/val1"),
+			},
+		},
+		{
+			logNames: []string{"log3", "log4"},
+			resourceAttributes: map[string]pdata.AttributeValue{
+				"attr1": pdata.NewAttributeValueString("attr1/val2"),
+			},
+			recordAttributes: map[string]pdata.AttributeValue{
+				"rec": pdata.NewAttributeValueString("rec/val2"),
+			},
+		},
+	}
+	inLogForThreeResourceWithRecordAttributes = []logWithResource{
+		{
+			logNames: []string{"log1", "log2"},
+			resourceAttributes: map[string]pdata.AttributeValue{
+				"attr1": pdata.NewAttributeValueString("attr1/val1"),
+			},
+			recordAttributes: map[string]pdata.AttributeValue{
+				"rec": pdata.NewAttributeValueString("rec/val1"),
+			},
+		},
+		{
+			logNames: []string{"log3", "log4"},
+			resourceAttributes: map[string]pdata.AttributeValue{
+				"attr1": pdata.NewAttributeValueString("attr1/val2"),
+			},
+			recordAttributes: map[string]pdata.AttributeValue{
+				"rec": pdata.NewAttributeValueString("rec/val2"),
+			},
+		},
+		{
+			logNames: []string{"log5"},
+			resourceAttributes: map[string]pdata.AttributeValue{
+				"attr1": pdata.NewAttributeValueString("attr1/val5"),
+			},
+			recordAttributes: map[string]pdata.AttributeValue{
+				"rec": pdata.NewAttributeValueString("rec/val5"),
+			},
+		},
+	}
+
+	inLogForFourResource = []logWithResource{
+		{
+			logNames: []string{"log1"},
+			resourceAttributes: map[string]pdata.AttributeValue{
+				"attr": pdata.NewAttributeValueString("attr/val1"),
+			},
+		},
+		{
+			logNames: []string{"log2"},
+			resourceAttributes: map[string]pdata.AttributeValue{
+				"attr": pdata.NewAttributeValueString("attr/val2"),
+			},
+		},
+		{
+			logNames: []string{"log3"},
+			resourceAttributes: map[string]pdata.AttributeValue{
+				"attr": pdata.NewAttributeValueString("attr/val3"),
+			},
+		},
+		{
+			logNames: []string{"log4"},
+			resourceAttributes: map[string]pdata.AttributeValue{
+				"attr": pdata.NewAttributeValueString("attr/val4"),
 			},
 		},
 	}
@@ -141,6 +219,119 @@ var (
 				{"log3", "log4"},
 			},
 		},
+		{
+			name:   "matchAttributesWithRegexpInclude",
+			inc:    &LogMatchProperties{LogMatchType: Regexp, ResourceAttributes: []filterconfig.Attribute{{Key: "attr", Value: "attr/val2"}}},
+			inLogs: testResourceLogs(inLogForFourResource),
+			outLN: [][]string{
+				{"log2"},
+			},
+		},
+		{
+			name:   "matchAttributesWithRegexpInclude2",
+			inc:    &LogMatchProperties{LogMatchType: Regexp, ResourceAttributes: []filterconfig.Attribute{{Key: "attr", Value: "attr/val(2|3)"}}},
+			inLogs: testResourceLogs(inLogForFourResource),
+			outLN: [][]string{
+				{"log2"},
+				{"log3"},
+			},
+		},
+		{
+			name:   "matchAttributesWithRegexpInclude3",
+			inc:    &LogMatchProperties{LogMatchType: Regexp, ResourceAttributes: []filterconfig.Attribute{{Key: "attr", Value: "attr/val[234]"}}},
+			inLogs: testResourceLogs(inLogForFourResource),
+			outLN: [][]string{
+				{"log2"},
+				{"log3"},
+				{"log4"},
+			},
+		},
+		{
+			name:   "matchAttributesWithRegexpInclude4",
+			inc:    &LogMatchProperties{LogMatchType: Regexp, ResourceAttributes: []filterconfig.Attribute{{Key: "attr", Value: "attr/val.*"}}},
+			inLogs: testResourceLogs(inLogForFourResource),
+			outLN: [][]string{
+				{"log1"},
+				{"log2"},
+				{"log3"},
+				{"log4"},
+			},
+		},
+		{
+			name:   "matchAttributesWithRegexpExclude",
+			exc:    &LogMatchProperties{LogMatchType: Regexp, ResourceAttributes: []filterconfig.Attribute{{Key: "attr", Value: "attr/val[23]"}}},
+			inLogs: testResourceLogs(inLogForFourResource),
+			outLN: [][]string{
+				{"log1"},
+				{"log4"},
+			},
+		},
+		{
+			name: "matchRecordAttributeWithRegexp1",
+			inc: &LogMatchProperties{
+				LogMatchType: Regexp,
+				RecordAttributes: []filterconfig.Attribute{
+					{
+						Key:   "rec",
+						Value: "rec/val[1]",
+					},
+				},
+			},
+			inLogs: testResourceLogs(inLogForTwoResourceWithRecordAttributes),
+			outLN: [][]string{
+				{"log1", "log2"},
+			},
+		},
+		{
+			name: "matchRecordAttributeWithRegexp2",
+			inc: &LogMatchProperties{
+				LogMatchType: Regexp,
+				RecordAttributes: []filterconfig.Attribute{
+					{
+						Key:   "rec",
+						Value: "rec/val[^2]",
+					},
+				},
+			},
+			inLogs: testResourceLogs(inLogForTwoResourceWithRecordAttributes),
+			outLN: [][]string{
+				{"log1", "log2"},
+			},
+		},
+		{
+			name: "matchRecordAttributeWithRegexp2",
+			inc: &LogMatchProperties{
+				LogMatchType: Regexp,
+				RecordAttributes: []filterconfig.Attribute{
+					{
+						Key:   "rec",
+						Value: "rec/val[1|2]",
+					},
+				},
+			},
+			inLogs: testResourceLogs(inLogForTwoResourceWithRecordAttributes),
+			outLN: [][]string{
+				{"log1", "log2"},
+				{"log3", "log4"},
+			},
+		},
+		{
+			name: "matchRecordAttributeWithRegexp3",
+			inc: &LogMatchProperties{
+				LogMatchType: Regexp,
+				RecordAttributes: []filterconfig.Attribute{
+					{
+						Key:   "rec",
+						Value: "rec/val[1|5]",
+					},
+				},
+			},
+			inLogs: testResourceLogs(inLogForThreeResourceWithRecordAttributes),
+			outLN: [][]string{
+				{"log1", "log2"},
+				{"log5"},
+			},
+		},
 	}
 )
 
@@ -175,10 +366,12 @@ func TestFilterLogProcessor(t *testing.T) {
 			assert.Nil(t, cErr)
 			got := next.AllLogs()
 
-			require.Equal(t, 1, len(got))
-			require.Equal(t, len(test.outLN), got[0].ResourceLogs().Len())
+			require.Len(t, got, 1)
+			rLogs := got[0].ResourceLogs()
+			assert.Equal(t, len(test.outLN), rLogs.Len())
+
 			for i, wantOut := range test.outLN {
-				gotLogs := got[0].ResourceLogs().At(i).InstrumentationLibraryLogs().At(0).Logs()
+				gotLogs := rLogs.At(i).InstrumentationLibraryLogs().At(0).Logs()
 				assert.Equal(t, len(wantOut), gotLogs.Len())
 				for idx := range wantOut {
 					assert.Equal(t, wantOut[idx], gotLogs.At(idx).Name())
@@ -192,13 +385,20 @@ func TestFilterLogProcessor(t *testing.T) {
 func testResourceLogs(lwrs []logWithResource) pdata.Logs {
 	ld := pdata.NewLogs()
 
-	for _, lwr := range lwrs {
+	for i, lwr := range lwrs {
 		rl := ld.ResourceLogs().AppendEmpty()
+
+		// Add resource level attribtues
 		rl.Resource().Attributes().InitFromMap(lwr.resourceAttributes)
 		ls := rl.InstrumentationLibraryLogs().AppendEmpty().Logs()
 		for _, name := range lwr.logNames {
 			l := ls.AppendEmpty()
 			l.SetName(name)
+
+			// Add record level attribtues
+			for k := 0; k < ls.Len(); k++ {
+				ls.At(k).Attributes().InitFromMap(lwrs[i].recordAttributes)
+			}
 		}
 	}
 	return ld

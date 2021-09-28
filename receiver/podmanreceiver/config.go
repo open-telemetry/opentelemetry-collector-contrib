@@ -28,7 +28,10 @@ type Config struct {
 	scraperhelper.ScraperControllerSettings `mapstructure:",squash"`
 
 	// The URL of the podman server.  Default is "unix:///run/podman/podman.sock"
-	Endpoint string `mapstructure:"endpoint"`
+	Endpoint      string `mapstructure:"endpoint"`
+	APIVersion    string `mapstructure:"api_version"`
+	SSHKey        string `mapstructure:"ssh_key"`
+	SSHPassphrase string `mapstructure:"ssh_passphrase"`
 }
 
 func (config Config) Validate() error {

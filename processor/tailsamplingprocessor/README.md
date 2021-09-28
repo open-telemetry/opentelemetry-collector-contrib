@@ -96,4 +96,4 @@ The probabilistic sampling policy makes decision based upon the trace ID, so wai
 You are already incurring the cost of running the tail sampling processor, adding the probabilistic policy will be negligible.
 Additionally, using the policy within the tail sampling processor will ensure traces that are sampled by other policies will not be dropped.
 
-[probabilistic_sampling_processor]: https://github.com/open-telemetry/opentelemetry-collector/tree/main/processor/probabilisticsamplerprocessor
+[probabilistic_sampling_processor]: ../probabilisticsamplerprocessor

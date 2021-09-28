@@ -23,7 +23,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/config/configcheck"
 	"go.opentelemetry.io/collector/config/configtest"
 )
 
@@ -44,7 +43,7 @@ func TestLoadConfig(t *testing.T) {
 	assert.Equal(t, factory.CreateDefaultConfig(), exporter)
 
 	exporter = cfg.Exporters[config.NewIDWithName(typeStr, "2")].(*Config)
-	assert.NoError(t, configcheck.ValidateConfig(exporter))
+	assert.NoError(t, configtest.CheckConfigStruct(exporter))
 	assert.Equal(
 		t,
 		&Config{

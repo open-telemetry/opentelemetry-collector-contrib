@@ -127,7 +127,8 @@ processors:
 exporters:
   prometheusremotewrite:
     endpoint: %q
-    insecure: true
+    tls:
+      insecure: true
 
 service:
   pipelines:
@@ -151,8 +152,8 @@ service:
 	}
 
 	appSettings := service.CollectorSettings{
-		Factories:      factories,
-		ParserProvider: parserprovider.NewInMemory(strings.NewReader(config)),
+		Factories:         factories,
+		ConfigMapProvider: parserprovider.NewInMemoryMapProvider(strings.NewReader(config)),
 		BuildInfo: component.BuildInfo{
 			Command:     "otelcol",
 			Description: "OpenTelemetry Collector",
@@ -169,7 +170,8 @@ service:
 	require.Nil(t, err)
 
 	go func() {
-		if err := app.Run(); err != nil {
+		cmd := service.NewCommand(app)
+		if err = cmd.Execute(); err != nil {
 			t.Error(err)
 		}
 	}()

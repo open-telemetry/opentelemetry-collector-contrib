@@ -49,15 +49,17 @@ extension/httpforwarder/                             @open-telemetry/collector-c
 extension/observer/                                  @open-telemetry/collector-contrib-approvers @asuresh4 @jrcamp
 
 internal/aws/                                        @open-telemetry/collector-contrib-approvers @anuraaga @mxiamxia
+internal/docker/                                     @open-telemetry/collector-contrib-approvers @mstumpfx @rmfitzpatrick
+
 internal/k8sconfig/                                  @open-telemetry/collector-contrib-approvers @pmcollins @asuresh4
 internal/splunk/                                     @open-telemetry/collector-contrib-approvers @pmcollins @asuresh4
 internal/stanza/                                     @open-telemetry/collector-contrib-approvers @djaglowski
 
-pkg/batchpertrace/                                   @open-telemetry/collector-contrib-approvers @jpkrohling
+pkg/batchpersignal/                                  @open-telemetry/collector-contrib-approvers @jpkrohling
 
 processor/groupbyattrsprocessor/                     @open-telemetry/collector-contrib-approvers @pmm-sumo
 processor/groupbytraceprocessor/                     @open-telemetry/collector-contrib-approvers @jpkrohling
-processor/k8sprocessor/                              @open-telemetry/collector-contrib-approvers @owais @dmitryax @pmm-sumo
+processor/k8sattributesprocessor/                    @open-telemetry/collector-contrib-approvers @owais @dmitryax @pmm-sumo
 processor/metricstransformprocessor/                 @open-telemetry/collector-contrib-approvers @james-bebbington
 processor/resourcedetectionprocessor/                @open-telemetry/collector-contrib-approvers @jrcamp @pmm-sumo @anuraaga @dashpole
 processor/resourcedetectionprocessor/internal/azure  @open-telemetry/collector-contrib-approvers @mx-psi
@@ -69,6 +71,7 @@ receiver/awscontainerinsightreceiver/                @open-telemetry/collector-c
 receiver/awsecscontainermetricsreceiver/             @open-telemetry/collector-contrib-approvers @kbrockhoff @anuraaga
 receiver/awsxrayreceiver/                            @open-telemetry/collector-contrib-approvers @kbrockhoff @anuraaga
 receiver/carbonreceiver/                             @open-telemetry/collector-contrib-approvers @pjanotti
+receiver/cloudfoundryreceiver/                       @open-telemetry/collector-contrib-approvers @agoallikmaa @pellared
 receiver/collectdreceiver/                           @open-telemetry/collector-contrib-approvers @owais
 receiver/dockerstatsreceiver/                        @open-telemetry/collector-contrib-approvers @rmfitzpatrick
 receiver/dotnetdiagnosticsreceiver/                  @open-telemetry/collector-contrib-approvers @pmcollins @davmason

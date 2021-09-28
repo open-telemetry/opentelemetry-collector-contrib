@@ -63,6 +63,7 @@ type LogMatchType string
 // `pdata.Log`s.
 const (
 	Strict = LogMatchType(filterset.Strict)
+	Regexp = LogMatchType(filterset.Regexp)
 )
 
 // LogMatchProperties specifies the set of properties in a log to match against and the
@@ -72,8 +73,12 @@ type LogMatchProperties struct {
 	LogMatchType LogMatchType `mapstructure:"match_type"`
 
 	// ResourceAttributes defines a list of possible resource attributes to match logs against.
-	// A match occurs if any resource attribute matches at least one expression in this given list.
+	// A match occurs if any resource attribute matches all expressions in this given list.
 	ResourceAttributes []filterconfig.Attribute `mapstructure:"resource_attributes"`
+
+	// RecordAttributes defines a list of possible record attributes to match logs against.
+	// A match occurs if any record attribute matches at least one expression in this given list.
+	RecordAttributes []filterconfig.Attribute `mapstructure:"record_attributes"`
 }
 
 var _ config.Processor = (*Config)(nil)

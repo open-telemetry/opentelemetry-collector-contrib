@@ -58,7 +58,7 @@ func TestEnsureRecordedMetrics(t *testing.T) {
 	}
 	flush(traceSvcDoneFn)
 
-	obsreporttest.CheckReceiverTraces(t, config.NewID("opencensus"), "grpc", int64(n), 0)
+	require.NoError(t, obsreporttest.CheckReceiverTraces(config.NewID("opencensus"), "grpc", int64(n), 0))
 }
 
 func TestEnsureRecordedMetrics_zeroLengthSpansSender(t *testing.T) {
@@ -79,7 +79,7 @@ func TestEnsureRecordedMetrics_zeroLengthSpansSender(t *testing.T) {
 	}
 	flush(traceSvcDoneFn)
 
-	obsreporttest.CheckReceiverTraces(t, config.NewID("opencensus"), "grpc", 0, 0)
+	require.NoError(t, obsreporttest.CheckReceiverTraces(config.NewID("opencensus"), "grpc", 0, 0))
 }
 
 func TestExportSpanLinkingMaintainsParentLink(t *testing.T) {

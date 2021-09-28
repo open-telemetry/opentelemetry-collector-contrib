@@ -25,6 +25,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 
@@ -32,7 +33,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer"
@@ -167,8 +167,6 @@ func Test_splunkhecreceiver_NewMetricsReceiver(t *testing.T) {
 func Test_splunkhecReceiver_handleReq(t *testing.T) {
 	config := createDefaultConfig().(*Config)
 	config.Endpoint = "localhost:0" // Actually not creating the endpoint
-	config.Path = "/foo"
-	config.initialize()
 
 	currentTime := float64(time.Now().UnixNano()) / 1e6
 	splunkMsg := buildSplunkHecMsg(currentTime, 3)
@@ -184,14 +182,6 @@ func Test_splunkhecReceiver_handleReq(t *testing.T) {
 			assertResponse: func(t *testing.T, status int, body string) {
 				assert.Equal(t, http.StatusBadRequest, status)
 				assert.Equal(t, responseInvalidMethod, body)
-			},
-		},
-		{
-			name: "incorrect_path",
-			req:  httptest.NewRequest("POST", "http://localhost/bar", nil),
-			assertResponse: func(t *testing.T, status int, body string) {
-				assert.Equal(t, http.StatusNotFound, status)
-				assert.Equal(t, responseNotFound, body)
 			},
 		},
 		{
@@ -333,7 +323,6 @@ func Test_consumer_err(t *testing.T) {
 	splunkMsg := buildSplunkHecMsg(currentTime, 3)
 	config := createDefaultConfig().(*Config)
 	config.Endpoint = "localhost:0" // Actually not creating the endpoint
-	config.initialize()
 	rcv, err := newLogsReceiver(componenttest.NewNopTelemetrySettings(), *config, consumertest.NewErr(errors.New("bad consumer")))
 	assert.NoError(t, err)
 
@@ -361,7 +350,6 @@ func Test_consumer_err_metrics(t *testing.T) {
 	assert.True(t, splunkMsg.IsMetric())
 	config := createDefaultConfig().(*Config)
 	config.Endpoint = "localhost:0" // Actually not creating the endpoint\
-	config.initialize()
 	rcv, err := newMetricsReceiver(componenttest.NewNopTelemetrySettings(), *config, consumertest.NewErr(errors.New("bad consumer")))
 	assert.NoError(t, err)
 
@@ -393,7 +381,6 @@ func Test_splunkhecReceiver_TLS(t *testing.T) {
 			KeyFile:  "./testdata/server.key",
 		},
 	}
-	cfg.initialize()
 	sink := new(consumertest.LogsSink)
 	r, err := newLogsReceiver(componenttest.NewNopTelemetrySettings(), *cfg, sink)
 	require.NoError(t, err)
@@ -491,7 +478,6 @@ func Test_splunkhecReceiver_AccessTokenPassthrough(t *testing.T) {
 			config := createDefaultConfig().(*Config)
 			config.Endpoint = "localhost:0"
 			config.AccessTokenPassthrough = tt.passthrough
-			config.initialize()
 
 			sink := new(consumertest.LogsSink)
 			rcv, err := newLogsReceiver(componenttest.NewNopTelemetrySettings(), *config, sink)
@@ -561,7 +547,6 @@ func Test_Logs_splunkhecReceiver_IndexSourceTypePassthrough(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := createDefaultConfig().(*Config)
 			cfg.Endpoint = "localhost:0"
-			cfg.initialize()
 
 			receivedSplunkLogs := make(chan []byte)
 			endServer := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
@@ -573,15 +558,13 @@ func Test_Logs_splunkhecReceiver_IndexSourceTypePassthrough(t *testing.T) {
 			defer endServer.Close()
 
 			factory := splunkhecexporter.NewFactory()
-			exporterConfig := splunkhecexporter.Config{
-				ExporterSettings:   config.NewExporterSettings(config.NewID("splunkhec")),
-				Token:              "ignored",
-				SourceType:         "defaultsourcetype",
-				Index:              "defaultindex",
-				DisableCompression: true,
-				Endpoint:           endServer.URL,
-			}
-			exporter, err := factory.CreateLogsExporter(context.Background(), componenttest.NewNopExporterCreateSettings(), &exporterConfig)
+			exporterConfig := factory.CreateDefaultConfig().(*splunkhecexporter.Config)
+			exporterConfig.Token = "ignored"
+			exporterConfig.SourceType = "defaultsourcetype"
+			exporterConfig.Index = "defaultindex"
+			exporterConfig.DisableCompression = true
+			exporterConfig.Endpoint = endServer.URL
+			exporter, err := factory.CreateLogsExporter(context.Background(), componenttest.NewNopExporterCreateSettings(), exporterConfig)
 			exporter.Start(context.Background(), nil)
 			assert.NoError(t, err)
 			rcv, err := newLogsReceiver(componenttest.NewNopTelemetrySettings(), *cfg, exporter)
@@ -657,7 +640,6 @@ func Test_Metrics_splunkhecReceiver_IndexSourceTypePassthrough(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := createDefaultConfig().(*Config)
 			cfg.Endpoint = "localhost:0"
-			cfg.initialize()
 
 			receivedSplunkMetrics := make(chan []byte)
 			endServer := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
@@ -669,15 +651,14 @@ func Test_Metrics_splunkhecReceiver_IndexSourceTypePassthrough(t *testing.T) {
 			defer endServer.Close()
 
 			factory := splunkhecexporter.NewFactory()
-			exporterConfig := splunkhecexporter.Config{
-				ExporterSettings:   config.NewExporterSettings(config.NewID("splunkhec")),
-				Token:              "ignored",
-				SourceType:         "defaultsourcetype",
-				Index:              "defaultindex",
-				DisableCompression: true,
-				Endpoint:           endServer.URL,
-			}
-			exporter, err := factory.CreateMetricsExporter(context.Background(), componenttest.NewNopExporterCreateSettings(), &exporterConfig)
+			exporterConfig := factory.CreateDefaultConfig().(*splunkhecexporter.Config)
+			exporterConfig.Token = "ignored"
+			exporterConfig.SourceType = "defaultsourcetype"
+			exporterConfig.Index = "defaultindex"
+			exporterConfig.DisableCompression = true
+			exporterConfig.Endpoint = endServer.URL
+
+			exporter, err := factory.CreateMetricsExporter(context.Background(), componenttest.NewNopExporterCreateSettings(), exporterConfig)
 			exporter.Start(context.Background(), nil)
 			assert.NoError(t, err)
 			rcv, err := newMetricsReceiver(componenttest.NewNopTelemetrySettings(), *cfg, exporter)
@@ -787,4 +768,146 @@ func newAssertNoErrorHost(t *testing.T) component.Host {
 
 func (aneh *assertNoErrorHost) ReportFatalError(err error) {
 	assert.NoError(aneh, err)
+}
+
+func Test_splunkhecReceiver_handleRawReq(t *testing.T) {
+	config := createDefaultConfig().(*Config)
+	config.Endpoint = "localhost:0" // Actually not creating the endpoint
+	config.RawPath = "/foo"
+
+	currentTime := float64(time.Now().UnixNano()) / 1e6
+	splunkMsg := buildSplunkHecMsg(currentTime, 3)
+
+	tests := []struct {
+		name           string
+		req            *http.Request
+		assertResponse func(t *testing.T, status int, body string)
+	}{
+		{
+			name: "incorrect_method",
+			req:  httptest.NewRequest("PUT", "http://localhost/foo", nil),
+			assertResponse: func(t *testing.T, status int, body string) {
+				assert.Equal(t, http.StatusBadRequest, status)
+				assert.Equal(t, responseInvalidMethod, body)
+			},
+		},
+		{
+			name: "incorrect_content_type",
+			req: func() *http.Request {
+				req := httptest.NewRequest("POST", "http://localhost/foo", nil)
+				req.Header.Set("Content-Type", "application/not-json")
+				return req
+			}(),
+			assertResponse: func(t *testing.T, status int, body string) {
+				assert.Equal(t, http.StatusOK, status)
+			},
+		},
+		{
+			name: "incorrect_content_encoding",
+			req: func() *http.Request {
+				req := httptest.NewRequest("POST", "http://localhost/foo", nil)
+				req.Header.Set("Content-Encoding", "superzipper")
+				return req
+			}(),
+			assertResponse: func(t *testing.T, status int, body string) {
+				assert.Equal(t, http.StatusUnsupportedMediaType, status)
+				assert.Equal(t, responseInvalidEncoding, body)
+			},
+		},
+		{
+			name: "empty_body",
+			req: func() *http.Request {
+				req := httptest.NewRequest("POST", "http://localhost/foo", bytes.NewReader(nil))
+				return req
+			}(),
+			assertResponse: func(t *testing.T, status int, body string) {
+				assert.Equal(t, http.StatusOK, status)
+			},
+		},
+
+		{
+			name: "two_logs",
+			req: func() *http.Request {
+				req := httptest.NewRequest("POST", "http://localhost/foo", strings.NewReader("foo\nbar"))
+				return req
+			}(),
+			assertResponse: func(t *testing.T, status int, body string) {
+				assert.Equal(t, http.StatusAccepted, status)
+			},
+		},
+		{
+			name: "msg_accepted",
+			req: func() *http.Request {
+				msgBytes, err := json.Marshal(splunkMsg)
+				require.NoError(t, err)
+				req := httptest.NewRequest("POST", "http://localhost/foo", bytes.NewReader(msgBytes))
+				return req
+			}(),
+			assertResponse: func(t *testing.T, status int, body string) {
+				assert.Equal(t, http.StatusAccepted, status)
+			},
+		},
+		{
+			name: "msg_accepted_gzipped",
+			req: func() *http.Request {
+				msgBytes, err := json.Marshal(splunkMsg)
+				require.NoError(t, err)
+
+				var buf bytes.Buffer
+				gzipWriter := gzip.NewWriter(&buf)
+				_, err = gzipWriter.Write(msgBytes)
+				require.NoError(t, err)
+				require.NoError(t, gzipWriter.Close())
+
+				req := httptest.NewRequest("POST", "http://localhost/foo", &buf)
+				req.Header.Set("Content-Encoding", "gzip")
+				return req
+			}(),
+			assertResponse: func(t *testing.T, status int, body string) {
+				assert.Equal(t, http.StatusAccepted, status)
+			},
+		},
+		{
+			name: "bad_gzipped_msg",
+			req: func() *http.Request {
+				msgBytes, err := json.Marshal(splunkMsg)
+				require.NoError(t, err)
+
+				req := httptest.NewRequest("POST", "http://localhost/foo", bytes.NewReader(msgBytes))
+				req.Header.Set("Content-Encoding", "gzip")
+				return req
+			}(),
+			assertResponse: func(t *testing.T, status int, body string) {
+				assert.Equal(t, http.StatusBadRequest, status)
+				assert.Equal(t, responseErrGzipReader, body)
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			sink := new(consumertest.LogsSink)
+			rcv, err := newLogsReceiver(componenttest.NewNopTelemetrySettings(), *config, sink)
+			assert.NoError(t, err)
+
+			r := rcv.(*splunkReceiver)
+			assert.NoError(t, r.Start(context.Background(), componenttest.NewNopHost()))
+			defer r.Shutdown(context.Background())
+			w := httptest.NewRecorder()
+			r.handleRawReq(w, tt.req)
+
+			resp := w.Result()
+			respBytes, err := ioutil.ReadAll(resp.Body)
+			assert.NoError(t, err)
+
+			var bodyStr string
+			if len(respBytes) > 0 {
+				assert.NoError(t, json.Unmarshal(respBytes, &bodyStr))
+			} else {
+				bodyStr = ""
+			}
+
+			tt.assertResponse(t, resp.StatusCode, bodyStr)
+		})
+	}
 }

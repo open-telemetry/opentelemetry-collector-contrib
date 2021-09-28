@@ -11,7 +11,7 @@ receivers:
 
   # The following demonstrates how to specify TLS for the receiver.
   sapm/tls:
-    tls_settings:
+    tls:
       cert_file: /test.crt
       key_file: /test.key
 

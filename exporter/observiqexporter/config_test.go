@@ -34,7 +34,7 @@ func TestValidateConfig(t *testing.T) {
 		shouldError bool
 	}{
 		{
-			testName: "Valid config passes",
+			testName: "Valid config passes (with APIKey)",
 			input: Config{
 				APIKey:   "11111111-2222-3333-4444-555555555555",
 				Endpoint: defaultEndpoint,
@@ -42,10 +42,19 @@ func TestValidateConfig(t *testing.T) {
 			shouldError: false,
 		},
 		{
-			testName: "Empty APIKey fails",
+			testName: "Valid config passes (with SecretKey)",
 			input: Config{
-				APIKey:   "",
-				Endpoint: defaultEndpoint,
+				SecretKey: "11111111-2222-3333-4444-555555555555",
+				Endpoint:  defaultEndpoint,
+			},
+			shouldError: false,
+		},
+		{
+			testName: "Empty APIKey/SecretKey fails",
+			input: Config{
+				APIKey:    "",
+				SecretKey: "",
+				Endpoint:  defaultEndpoint,
 			},
 			shouldError: true,
 		},
@@ -70,6 +79,14 @@ func TestValidateConfig(t *testing.T) {
 			input: Config{
 				APIKey:   "11111111-2222-3333-4444-555555555555",
 				Endpoint: "ftp://app.com",
+			},
+			shouldError: true,
+		},
+		{
+			testName: "APIKey and SecretKey both specified fails",
+			input: Config{
+				APIKey:    "11111111-2222-3333-4444-555555555555",
+				SecretKey: "11111111-2222-3333-4444-555555555555",
 			},
 			shouldError: true,
 		},

@@ -246,13 +246,13 @@ func fromMetricDataTypeToMetricType(metric pdata.Metric) *sfxpb.MetricType {
 		if !metric.Sum().IsMonotonic() {
 			return &sfxMetricTypeGauge
 		}
-		if metric.Sum().AggregationTemporality() == pdata.AggregationTemporalityDelta {
+		if metric.Sum().AggregationTemporality() == pdata.MetricAggregationTemporalityDelta {
 			return &sfxMetricTypeCounter
 		}
 		return &sfxMetricTypeCumulativeCounter
 
 	case pdata.MetricDataTypeHistogram:
-		if metric.Histogram().AggregationTemporality() == pdata.AggregationTemporalityDelta {
+		if metric.Histogram().AggregationTemporality() == pdata.MetricAggregationTemporalityDelta {
 			return &sfxMetricTypeCounter
 		}
 		return &sfxMetricTypeCumulativeCounter

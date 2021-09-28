@@ -13,13 +13,7 @@ ALL_SRC_AND_DOC := $(shell find . \( -name "*.md" -o -name "*.go" -o -name "*.ya
 ALL_PKGS := $(shell go list $(sort $(dir $(ALL_SRC))) 2>/dev/null)
 
 # build tags required by any component should be defined as an independent variables and later added to GO_BUILD_TAGS below
-#
-# podmanreceiver uses podman Go bindings which is a bit coupled with core podman and as a result
-# requires the use of CGO and presence of some C libraries. The following build tags either turn off
-# these features or enforce using native Go alternatives. 
-# References: https://podman.io/getting-started/installation#build-tags and https://github.com/containers/podman/issues/6866
-GO_PODMAN_BUILD_TAGS=containers_image_openpgp,exclude_graphdriver_btrfs,exclude_graphdriver_devicemapper
-GO_BUILD_TAGS=$(GO_PODMAN_BUILD_TAGS)
+GO_BUILD_TAGS=""
 GOTEST_OPT?= -race -timeout 60s --tags=$(GO_BUILD_TAGS)
 GOTEST_INTEGRATION_OPT?= -race -timeout 60s
 GOTEST_OPT_WITH_COVERAGE = $(GOTEST_OPT) -coverprofile=coverage.txt -covermode=atomic

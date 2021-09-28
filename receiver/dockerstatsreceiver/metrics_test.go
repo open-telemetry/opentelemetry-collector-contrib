@@ -25,6 +25,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/model/pdata"
 	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/docker"
 )
 
 type MetricType int32
@@ -76,7 +78,7 @@ func metricsData(
 		case MetricTypeCumulative:
 			mdMetric.SetDataType(pdata.MetricDataTypeSum)
 			mdMetric.Sum().SetIsMonotonic(true)
-			mdMetric.Sum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+			mdMetric.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
 			dps = mdMetric.Sum().DataPoints()
 		case MetricTypeGauge, MetricTypeDoubleGauge:
 			mdMetric.SetDataType(pdata.MetricDataTypeGauge)
@@ -245,7 +247,7 @@ func statsJSON(t *testing.T) *dtypes.StatsJSON {
 	return &stats
 }
 
-func containerJSON(t *testing.T) *DockerContainer {
+func containerJSON(t *testing.T) docker.Container {
 	containerRaw, err := ioutil.ReadFile(path.Join(".", "testdata", "container.json"))
 	if err != nil {
 		t.Fatal(err)
@@ -256,9 +258,9 @@ func containerJSON(t *testing.T) *DockerContainer {
 	if err != nil {
 		t.Fatal(err)
 	}
-	return &DockerContainer{
+	return docker.Container{
 		ContainerJSON: &container,
-		EnvMap:        containerEnvToMap(container.Config.Env),
+		EnvMap:        docker.ContainerEnvToMap(container.Config.Env),
 	}
 }
 

@@ -34,11 +34,19 @@ These instructions are to get you up and running quickly with the GCP exporter i
           http:
     exporters:
       googlecloud:
+        # Google Cloud Monitoring returns an error if any of the points are invalid, but still accepts the valid points.
+        # Retrying successfully sent points is guaranteed to fail because the points were already written.
+        # This results in a loop of unnecessary retries.  For now, disable retry_on_failure.
+        retry_on_failure:
+          enabled: false
       logging:
         loglevel: debug
     processors:
       memory_limiter:
       batch:
+        # Google Cloud Monitoring limits batches to 200 metric points.
+        send_batch_max_size: 200
+        send_batch_size: 200
     service:
       pipelines:
         traces:
@@ -143,6 +151,11 @@ Example:
 ```yaml
 exporters:
   googlecloud:
+    # Google Cloud Monitoring returns an error if any of the points are invalid, but still accepts the valid points.
+    # Retrying successfully sent points is guaranteed to fail because the points were already written.
+    # This results in a loop of unnecessary retries.  For now, disable retry_on_failure.
+    retry_on_failure:
+      enabled: false
     project: my-project
     endpoint: test-endpoint
     user_agent: my-collector {{version}}
@@ -160,11 +173,6 @@ exporters:
           - source_key: source.label1
             target_key: target_label_1
 
-    retry_on_failure:
-      enabled: true
-      initial_interval: 5s
-      max_interval: 30s
-      max_elapsed_time: 120s
     sending_queue:
       enabled: true
       num_consumers: 2
@@ -190,9 +198,9 @@ will or will not proxy traffic as defined by these environment variables.
 ## Recommendations
 
 It is recommended to always run a [batch processor](https://github.com/open-telemetry/opentelemetry-collector/tree/main/processor/batchprocessor)
-and [memory limiter](https://github.com/open-telemetry/opentelemetry-collector/tree/main/processor/memorylimiter) for tracing pipelines to ensure
+and [memory limiter](https://github.com/open-telemetry/opentelemetry-collector/tree/main/processor/memorylimiterprocessor) for tracing pipelines to ensure
 optimal network usage and avoiding memory overruns.  You may also want to run an additional
-[sampler](https://github.com/open-telemetry/opentelemetry-collector/tree/main/processor/probabilisticsamplerprocessor), depending on your needs.
+[sampler](../../processor/probabilisticsamplerprocessor), depending on your needs.
 
 
 ## Deprecatations
@@ -202,6 +210,6 @@ and should be migrated:
 
 - `trace.bundle_delay_threshold` (optional): Use `batch` processor instead ([docs](https://github.com/open-telemetry/opentelemetry-collector/tree/main/processor/batchprocessor)).
 - `trace.bundle_count_threshold` (optional): Use `batch` processor instead ([docs](https://github.com/open-telemetry/opentelemetry-collector/tree/main/processor/batchprocessor)).
-- `trace.bundle_byte_threshold` (optional): Use `memorylimiter` processor instead ([docs](https://github.com/open-telemetry/opentelemetry-collector/tree/main/processor/memorylimiter))
-- `trace.bundle_byte_limit` (optional): Use `memorylimiter` processor instead ([docs](https://github.com/open-telemetry/opentelemetry-collector/tree/main/processor/memorylimiter))
-- `trace.buffer_max_bytes` (optional): Use `memorylimiter` processor instead ([docs](https://github.com/open-telemetry/opentelemetry-collector/tree/main/processor/memorylimiter))
+- `trace.bundle_byte_threshold` (optional): Use `memorylimiter` processor instead ([docs](https://github.com/open-telemetry/opentelemetry-collector/tree/main/processor/memorylimiterprocessor))
+- `trace.bundle_byte_limit` (optional): Use `memorylimiter` processor instead ([docs](https://github.com/open-telemetry/opentelemetry-collector/tree/main/processor/memorylimiterprocessor))
+- `trace.buffer_max_bytes` (optional): Use `memorylimiter` processor instead ([docs](https://github.com/open-telemetry/opentelemetry-collector/tree/main/processor/memorylimiterprocessor))

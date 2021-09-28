@@ -19,8 +19,11 @@ package components
 
 import (
 	"go.opentelemetry.io/collector/component"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbatlasreceiver"
 )
 
 func extraReceivers() []component.ReceiverFactory {
-	return []component.ReceiverFactory{}
+	mongoAtlasFactory := mongodbatlasreceiver.NewFactory()
+	return []component.ReceiverFactory{mongoAtlasFactory}
 }

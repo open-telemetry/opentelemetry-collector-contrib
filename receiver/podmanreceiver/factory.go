@@ -27,7 +27,8 @@ import (
 )
 
 const (
-	typeStr = "podman_stats"
+	typeStr           = "podman_stats"
+	defaultAPIVersion = "3.3.1"
 )
 
 func NewFactory() component.ReceiverFactory {
@@ -43,7 +44,8 @@ func createDefaultConfig() *Config {
 			ReceiverSettings:   config.NewReceiverSettings(config.NewID(typeStr)),
 			CollectionInterval: 10 * time.Second,
 		},
-		Endpoint: "unix:///run/podman/podman.sock",
+		Endpoint:   "unix:///run/podman/podman.sock",
+		APIVersion: defaultAPIVersion,
 	}
 }
 

@@ -48,6 +48,10 @@ func NewFactory() component.ExporterFactory {
 func createDefaultConfig() config.Exporter {
 	return &ddconfig.Config{
 		ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
+		TimeoutSettings:  exporterhelper.DefaultTimeoutSettings(),
+		RetrySettings:    exporterhelper.DefaultRetrySettings(),
+		QueueSettings:    exporterhelper.DefaultQueueSettings(),
+
 		API: ddconfig.APIConfig{
 			Key:  "$DD_API_KEY", // Must be set if using API
 			Site: "$DD_SITE",    // If not provided, set during config sanitization
@@ -70,6 +74,10 @@ func createDefaultConfig() config.Exporter {
 			Quantiles:     true,
 			ExporterConfig: ddconfig.MetricsExporterConfig{
 				ResourceAttributesAsTags: false,
+			},
+			HistConfig: ddconfig.HistogramConfig{
+				Mode:         "nobuckets",
+				SendCountSum: true,
 			},
 		},
 
@@ -96,14 +104,17 @@ func createMetricsExporter(
 	cfg := c.(*ddconfig.Config)
 
 	set.Logger.Info("sanitizing Datadog metrics exporter configuration")
-	if err := cfg.Sanitize(); err != nil {
+	if err := cfg.Sanitize(set.Logger); err != nil {
 		return nil, err
 	}
 
 	// TODO: Remove after two releases
-	if cfg.Metrics.Buckets {
+	if cfg.Metrics.HistConfig.Mode == "counters" {
 		set.Logger.Warn("Histogram bucket metrics now end with .bucket instead of .count_per_bucket")
 	}
+
+	// TODO: Remove after changing the default mode.
+	set.Logger.Warn("Default histograms configuration will change to mode 'distributions' and no .count and .sum metrics in a future release.")
 
 	ctx, cancel := context.WithCancel(ctx)
 	var pushMetricsFn consumerhelper.ConsumeMetricsFunc
@@ -129,8 +140,9 @@ func createMetricsExporter(
 		cfg,
 		set,
 		pushMetricsFn,
-		exporterhelper.WithQueue(exporterhelper.DefaultQueueSettings()),
-		exporterhelper.WithRetry(exporterhelper.DefaultRetrySettings()),
+		exporterhelper.WithTimeout(cfg.TimeoutSettings),
+		exporterhelper.WithRetry(cfg.RetrySettings),
+		exporterhelper.WithQueue(cfg.QueueSettings),
 		exporterhelper.WithShutdown(func(context.Context) error {
 			cancel()
 			return nil
@@ -153,7 +165,7 @@ func createTracesExporter(
 	cfg := c.(*ddconfig.Config)
 
 	set.Logger.Info("sanitizing Datadog metrics exporter configuration")
-	if err := cfg.Sanitize(); err != nil {
+	if err := cfg.Sanitize(set.Logger); err != nil {
 		return nil, err
 	}
 
@@ -181,6 +193,9 @@ func createTracesExporter(
 		cfg,
 		set,
 		pushTracesFn,
+		exporterhelper.WithTimeout(cfg.TimeoutSettings),
+		exporterhelper.WithRetry(cfg.RetrySettings),
+		exporterhelper.WithQueue(cfg.QueueSettings),
 		exporterhelper.WithShutdown(func(context.Context) error {
 			cancel()
 			return nil
