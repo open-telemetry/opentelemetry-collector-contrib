@@ -453,10 +453,7 @@ class TestTornadoInstrumentation(TornadoTest):
         )
         self.assertEqual(
             headers["traceresponse"],
-            "00-{0}-{1}-01".format(
-                trace.format_trace_id(server_span.get_span_context().trace_id),
-                trace.format_span_id(server_span.get_span_context().span_id),
-            ),
+            f"00-{trace.format_trace_id(server_span.get_span_context().trace_id)}-{trace.format_span_id(server_span.get_span_context().span_id)}-01",
         )
 
         self.memory_exporter.clear()

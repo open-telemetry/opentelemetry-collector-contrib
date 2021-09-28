@@ -507,7 +507,7 @@ class PymemcacheHashClientTestCase(TestBase):
         ip = TEST_HOST
 
         for vals in mock_socket_values:
-            url_string = "{}:{}".format(ip, current_port)
+            url_string = f"{ip}:{current_port}"
             clnt_pool = self.make_client_pool(
                 (ip, current_port), vals, **kwargs
             )

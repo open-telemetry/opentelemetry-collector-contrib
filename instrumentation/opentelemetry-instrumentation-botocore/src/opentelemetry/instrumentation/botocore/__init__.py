@@ -151,7 +151,7 @@ class BotocoreInstrumentor(BaseInstrumentor):
         result = None
 
         with self._tracer.start_as_current_span(
-            "{}".format(service_name), kind=SpanKind.CLIENT,
+            f"{service_name}", kind=SpanKind.CLIENT,
         ) as span:
             # inject trace context into payload headers for lambda Invoke
             if BotocoreInstrumentor._is_lambda_invoke(

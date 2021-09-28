@@ -86,6 +86,6 @@ def create_test_server(port):
         TestServer(), server
     )
 
-    server.add_insecure_port("localhost:{}".format(port))
+    server.add_insecure_port(f"localhost:{port}")
 
     return server

@@ -90,7 +90,7 @@ class TestOpenTelemetryServerInterceptor(TestBase):
             server.add_generic_rpc_handlers((UnaryUnaryRpcHandler(handler),))
 
             port = server.add_insecure_port("[::]:0")
-            channel = grpc.insecure_channel("localhost:{:d}".format(port))
+            channel = grpc.insecure_channel(f"localhost:{port:d}")
 
             rpc_call = "TestServicer/handler"
             try:
@@ -142,7 +142,7 @@ class TestOpenTelemetryServerInterceptor(TestBase):
             server.add_generic_rpc_handlers((UnaryUnaryRpcHandler(handler),))
 
             port = server.add_insecure_port("[::]:0")
-            channel = grpc.insecure_channel("localhost:{:d}".format(port))
+            channel = grpc.insecure_channel(f"localhost:{port:d}")
 
             rpc_call = "TestServicer/test"
             try:
@@ -168,7 +168,7 @@ class TestOpenTelemetryServerInterceptor(TestBase):
             )
             add_GRPCTestServerServicer_to_server(Servicer(), server)
             port = server.add_insecure_port("[::]:0")
-            channel = grpc.insecure_channel("localhost:{:d}".format(port))
+            channel = grpc.insecure_channel(f"localhost:{port:d}")
 
             rpc_call = "/GRPCTestServer/SimpleMethod"
             request = Request(client_id=1, request_data="test")
@@ -236,7 +236,7 @@ class TestOpenTelemetryServerInterceptor(TestBase):
             )
             add_GRPCTestServerServicer_to_server(TwoSpanServicer(), server)
             port = server.add_insecure_port("[::]:0")
-            channel = grpc.insecure_channel("localhost:{:d}".format(port))
+            channel = grpc.insecure_channel(f"localhost:{port:d}")
 
             # setup the RPC
             rpc_call = "/GRPCTestServer/SimpleMethod"
@@ -297,7 +297,7 @@ class TestOpenTelemetryServerInterceptor(TestBase):
             )
             add_GRPCTestServerServicer_to_server(Servicer(), server)
             port = server.add_insecure_port("[::]:0")
-            channel = grpc.insecure_channel("localhost:{:d}".format(port))
+            channel = grpc.insecure_channel(f"localhost:{port:d}")
 
             # setup the RPC
             rpc_call = "/GRPCTestServer/ServerStreamingMethod"
@@ -365,7 +365,7 @@ class TestOpenTelemetryServerInterceptor(TestBase):
             )
             add_GRPCTestServerServicer_to_server(TwoSpanServicer(), server)
             port = server.add_insecure_port("[::]:0")
-            channel = grpc.insecure_channel("localhost:{:d}".format(port))
+            channel = grpc.insecure_channel(f"localhost:{port:d}")
 
             # setup the RPC
             rpc_call = "/GRPCTestServer/ServerStreamingMethod"
@@ -433,7 +433,7 @@ class TestOpenTelemetryServerInterceptor(TestBase):
             server.add_generic_rpc_handlers((UnaryUnaryRpcHandler(handler),))
 
             port = server.add_insecure_port("[::]:0")
-            channel = grpc.insecure_channel("localhost:{:d}".format(port))
+            channel = grpc.insecure_channel(f"localhost:{port:d}")
 
             active_span_before_call = trace.get_current_span()
             try:
@@ -469,7 +469,7 @@ class TestOpenTelemetryServerInterceptor(TestBase):
             server.add_generic_rpc_handlers((UnaryUnaryRpcHandler(handler),))
 
             port = server.add_insecure_port("[::]:0")
-            channel = grpc.insecure_channel("localhost:{:d}".format(port))
+            channel = grpc.insecure_channel(f"localhost:{port:d}")
 
             try:
                 server.start()
@@ -533,7 +533,7 @@ class TestOpenTelemetryServerInterceptor(TestBase):
             server.add_generic_rpc_handlers((UnaryUnaryRpcHandler(handler),))
 
             port = server.add_insecure_port("[::]:0")
-            channel = grpc.insecure_channel("localhost:{:d}".format(port))
+            channel = grpc.insecure_channel(f"localhost:{port:d}")
 
             try:
                 server.start()
@@ -599,7 +599,7 @@ class TestOpenTelemetryServerInterceptor(TestBase):
             server.add_generic_rpc_handlers((UnaryUnaryRpcHandler(handler),))
 
             port = server.add_insecure_port("[::]:0")
-            channel = grpc.insecure_channel("localhost:{:d}".format(port))
+            channel = grpc.insecure_channel(f"localhost:{port:d}")
 
             rpc_call = "TestServicer/handler"
 
@@ -625,9 +625,7 @@ class TestOpenTelemetryServerInterceptor(TestBase):
         self.assertEqual(span.status.status_code, StatusCode.ERROR)
         self.assertEqual(
             span.status.description,
-            "{}:{}".format(
-                grpc.StatusCode.FAILED_PRECONDITION, failure_message
-            ),
+            f"{grpc.StatusCode.FAILED_PRECONDITION}:{failure_message}",
         )
 
         # Check attributes

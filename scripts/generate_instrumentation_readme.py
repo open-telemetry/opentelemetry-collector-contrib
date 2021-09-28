@@ -62,9 +62,7 @@ def main():
             instruments = (name,)
 
         table.append(
-            "| [{0}](./{0}) | {1} |".format(
-                instrumentation, ",".join(instruments)
-            )
+            f"| [{instrumentation}](./{instrumentation}) | {','.join(instruments)} |"
         )
 
     with open(

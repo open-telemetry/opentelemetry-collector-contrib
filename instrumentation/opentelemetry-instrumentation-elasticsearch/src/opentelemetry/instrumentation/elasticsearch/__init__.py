@@ -192,8 +192,7 @@ def _wrap_perform_request(
                 for member in _ATTRIBUTES_FROM_RESULT:
                     if member in rv:
                         span.set_attribute(
-                            "elasticsearch.{0}".format(member),
-                            str(rv[member]),
+                            f"elasticsearch.{member}", str(rv[member]),
                         )
 
             if callable(response_hook):

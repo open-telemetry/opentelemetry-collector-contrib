@@ -111,7 +111,7 @@ def implement_span_estimator(
         name = estimator.__class__.__name__
     logger.debug("Instrumenting: %s.%s", name, func.__name__)
     attributes = attributes or {}
-    name = "{cls}.{func}".format(cls=name, func=func.__name__)
+    name = f"{name}.{func.__name__}"
     return implement_span_function(func, name, attributes)
 
 

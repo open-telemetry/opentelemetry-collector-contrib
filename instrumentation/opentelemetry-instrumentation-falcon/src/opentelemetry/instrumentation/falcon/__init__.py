@@ -264,9 +264,7 @@ class _TraceMiddleware:
 
         resource_name = resource.__class__.__name__
         span.set_attribute("falcon.resource", resource_name)
-        span.update_name(
-            "{0}.on_{1}".format(resource_name, req.method.lower())
-        )
+        span.update_name(f"{resource_name}.on_{req.method.lower()}")
 
     def process_response(
         self, req, resp, resource, req_succeeded=None
@@ -294,6 +292,7 @@ class _TraceMiddleware:
                 else:
                     status = "500"
                     reason = "{}: {}".format(exc_type.__name__, exc)
+                    reason = f"{exc_type.__name__}: {exc}"
 
         status = status.split(" ")[0]
         try:

@@ -106,7 +106,7 @@ def set_attributes_from_context(span, context):
 
         # set attribute name if not set specially for a key
         if attribute_name is None:
-            attribute_name = "celery.{}".format(key)
+            attribute_name = f"celery.{key}"
 
         span.set_attribute(attribute_name, value)
 

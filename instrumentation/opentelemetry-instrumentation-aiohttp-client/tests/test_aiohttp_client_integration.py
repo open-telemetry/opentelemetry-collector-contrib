@@ -92,7 +92,7 @@ class TestAioHttpIntegration(TestBase):
         method: str = "GET",
         status_code: int = HTTPStatus.OK,
         request_handler: typing.Callable = None,
-        **kwargs
+        **kwargs,
     ) -> typing.Tuple[str, int]:
         """Helper to start an aiohttp test server and send an actual HTTP request to it."""
 
@@ -132,9 +132,7 @@ class TestAioHttpIntegration(TestBase):
                             (span_status, None),
                             {
                                 SpanAttributes.HTTP_METHOD: "GET",
-                                SpanAttributes.HTTP_URL: "http://{}:{}/test-path?query=param#foobar".format(
-                                    host, port
-                                ),
+                                SpanAttributes.HTTP_URL: f"http://{host}:{port}/test-path?query=param#foobar",
                                 SpanAttributes.HTTP_STATUS_CODE: int(
                                     status_code
                                 ),
@@ -167,7 +165,7 @@ class TestAioHttpIntegration(TestBase):
         expected = "PATCH - /some/path"
 
         def request_hook(span: Span, params: aiohttp.TraceRequestStartParams):
-            span.update_name("{} - {}".format(params.method, params.url.path))
+            span.update_name(f"{params.method} - {params.url.path}")
 
         def response_hook(
             span: Span,
@@ -198,7 +196,7 @@ class TestAioHttpIntegration(TestBase):
             )
             self.assertEqual(
                 span.attributes[SpanAttributes.HTTP_URL],
-                "http://{}:{}{}".format(host, port, path),
+                f"http://{host}:{port}{path}",
             )
             self.assertEqual(
                 span.attributes[SpanAttributes.HTTP_STATUS_CODE], HTTPStatus.OK
@@ -227,9 +225,7 @@ class TestAioHttpIntegration(TestBase):
                     (StatusCode.UNSET, None),
                     {
                         SpanAttributes.HTTP_METHOD: "GET",
-                        SpanAttributes.HTTP_URL: "http://{}:{}/some/path".format(
-                            host, port
-                        ),
+                        SpanAttributes.HTTP_URL: f"http://{host}:{port}/some/path",
                         SpanAttributes.HTTP_STATUS_CODE: int(HTTPStatus.OK),
                     },
                 )
@@ -290,9 +286,7 @@ class TestAioHttpIntegration(TestBase):
                     (StatusCode.ERROR, None),
                     {
                         SpanAttributes.HTTP_METHOD: "GET",
-                        SpanAttributes.HTTP_URL: "http://{}:{}/test_timeout".format(
-                            host, port
-                        ),
+                        SpanAttributes.HTTP_URL: f"http://{host}:{port}/test_timeout",
                     },
                 )
             ]
@@ -319,9 +313,7 @@ class TestAioHttpIntegration(TestBase):
                     (StatusCode.ERROR, None),
                     {
                         SpanAttributes.HTTP_METHOD: "GET",
-                        SpanAttributes.HTTP_URL: "http://{}:{}/test_too_many_redirects".format(
-                            host, port
-                        ),
+                        SpanAttributes.HTTP_URL: f"http://{host}:{port}/test_too_many_redirects",
                     },
                 )
             ]
@@ -399,7 +391,7 @@ class TestAioHttpClientInstrumentor(TestBase):
         span = self.assert_spans(1)
         self.assertEqual("GET", span.attributes[SpanAttributes.HTTP_METHOD])
         self.assertEqual(
-            "http://{}:{}/test-path".format(host, port),
+            f"http://{host}:{port}/test-path",
             span.attributes[SpanAttributes.HTTP_URL],
         )
         self.assertEqual(200, span.attributes[SpanAttributes.HTTP_STATUS_CODE])
@@ -502,13 +494,13 @@ class TestAioHttpClientInstrumentor(TestBase):
         )
         span = self.assert_spans(1)
         self.assertEqual(
-            "http://{}:{}/test-path".format(host, port),
+            f"http://{host}:{port}/test-path",
             span.attributes[SpanAttributes.HTTP_URL],
         )
 
     def test_hooks(self):
         def request_hook(span: Span, params: aiohttp.TraceRequestStartParams):
-            span.update_name("{} - {}".format(params.method, params.url.path))
+            span.update_name(f"{params.method} - {params.url.path}")
 
         def response_hook(
             span: Span,

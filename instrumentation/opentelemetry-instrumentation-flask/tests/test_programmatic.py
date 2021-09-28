@@ -165,10 +165,7 @@ class TestProgrammatic(InstrumentationTest, TestBase, WsgiTestBase):
         )
         self.assertEqual(
             headers["traceresponse"],
-            "00-{0}-{1}-01".format(
-                trace.format_trace_id(span.get_span_context().trace_id),
-                trace.format_span_id(span.get_span_context().span_id),
-            ),
+            f"00-{trace.format_trace_id(span.get_span_context().trace_id)}-{trace.format_span_id(span.get_span_context().span_id)}-01",
         )
 
         set_global_response_propagator(orig)

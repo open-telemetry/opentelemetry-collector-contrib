@@ -130,7 +130,7 @@ class _DjangoMiddleware(MiddlewareMixin):
             return match.view_name
 
         except Resolver404:
-            return "HTTP {}".format(request.method)
+            return f"HTTP {request.method}"
 
     def process_request(self, request):
         # request.META is a dictionary containing all available HTTP headers
@@ -213,7 +213,7 @@ class _DjangoMiddleware(MiddlewareMixin):
         if activation and span:
             add_response_attributes(
                 span,
-                "{} {}".format(response.status_code, response.reason_phrase),
+                f"{response.status_code} {response.reason_phrase}",
                 response,
             )
 

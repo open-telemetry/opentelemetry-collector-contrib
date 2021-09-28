@@ -171,7 +171,7 @@ def _instrument(
         method = request.get_method().upper()
         url = request.full_url
 
-        span_name = "HTTP {}".format(method).strip()
+        span_name = f"HTTP {method}".strip()
 
         url = remove_url_credentials(url)
 
@@ -215,9 +215,9 @@ def _instrument(
 
                 ver_ = str(getattr(result, "version", ""))
                 if ver_:
-                    labels[SpanAttributes.HTTP_FLAVOR] = "{}.{}".format(
-                        ver_[:1], ver_[:-1]
-                    )
+                    labels[
+                        SpanAttributes.HTTP_FLAVOR
+                    ] = f"{ver_[:1]}.{ver_[:-1]}"
 
             if callable(response_hook):
                 response_hook(span, request, result)

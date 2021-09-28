@@ -102,7 +102,7 @@ class DatadogSpanExporter(SpanExporter):
                 self._agent_writer = AgentWriter(uds_path=url_parsed.path)
             else:
                 raise ValueError(
-                    "Unknown scheme `%s` for agent URL" % url_parsed.scheme
+                    f"Unknown scheme `{url_parsed.scheme}` for agent URL"
                 )
         return self._agent_writer
 
@@ -225,7 +225,7 @@ def _get_span_name(span):
     )
     span_kind_name = span.kind.name if span.kind else None
     name = (
-        "{}.{}".format(instrumentation_name, span_kind_name)
+        f"{instrumentation_name}.{span_kind_name}"
         if instrumentation_name and span_kind_name
         else span.name
     )

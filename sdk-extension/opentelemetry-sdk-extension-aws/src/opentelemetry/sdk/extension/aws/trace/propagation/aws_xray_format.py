@@ -282,7 +282,7 @@ class AwsXRayFormat(TextMapPropagator):
         if not span_context.is_valid:
             return
 
-        otel_trace_id = "{:032x}".format(span_context.trace_id)
+        otel_trace_id = f"{span_context.trace_id:032x}"
         xray_trace_id = TRACE_ID_DELIMITER.join(
             [
                 TRACE_ID_VERSION,
@@ -291,7 +291,7 @@ class AwsXRayFormat(TextMapPropagator):
             ]
         )
 
-        parent_id = "{:016x}".format(span_context.span_id)
+        parent_id = f"{span_context.span_id:016x}"
 
         sampling_flag = (
             IS_SAMPLED

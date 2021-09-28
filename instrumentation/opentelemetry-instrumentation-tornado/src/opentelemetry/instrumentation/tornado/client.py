@@ -88,7 +88,7 @@ def _finish_tracing_callback(future, span, response_hook):
     if span.is_recording() and exc:
         if isinstance(exc, HTTPError):
             status_code = exc.code
-        description = "{}: {}".format(type(exc).__name__, exc)
+        description = f"{type(exc).__name__}: {exc}"
     else:
         status_code = future.result().code
 

@@ -84,9 +84,7 @@ class TestFalconInstrumentation(TestFalconBase):
         spans = self.memory_exporter.get_finished_spans()
         self.assertEqual(len(spans), 1)
         span = spans[0]
-        self.assertEqual(
-            span.name, "HelloWorldResource.on_{0}".format(method.lower())
-        )
+        self.assertEqual(span.name, f"HelloWorldResource.on_{method.lower()}")
         self.assertEqual(span.status.status_code, StatusCode.UNSET)
         self.assertEqual(
             span.status.description, None,
@@ -209,10 +207,7 @@ class TestFalconInstrumentation(TestFalconBase):
         )
         self.assertEqual(
             headers["traceresponse"],
-            "00-{0}-{1}-01".format(
-                format_trace_id(span.get_span_context().trace_id),
-                format_span_id(span.get_span_context().span_id),
-            ),
+            f"00-{format_trace_id(span.get_span_context().trace_id)}-{format_span_id(span.get_span_context().span_id)}-01",
         )
 
         set_global_response_propagator(orig)

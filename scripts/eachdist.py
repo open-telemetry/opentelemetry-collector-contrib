@@ -31,14 +31,12 @@ subprocess_run = subprocess.run
 
 def extraargs_help(calledcmd):
     return cleandoc(
-        """
-        Additional arguments to pass on to  {}.
+        f"""
+        Additional arguments to pass on to  {calledcmd}.
 
         This is collected from any trailing arguments passed to `%(prog)s`.
         Use an initial `--` to separate them from regular arguments.
-        """.format(
-            calledcmd
-        )
+        """
     )
 
 
@@ -403,7 +401,7 @@ def execute_args(args):
     rootpath = find_projectroot()
     targets = find_targets(args.mode, rootpath)
     if not targets:
-        sys.exit("Error: No targets selected (root: {})".format(rootpath))
+        sys.exit(f"Error: No targets selected (root: {rootpath})")
 
     def fmt_for_path(fmt, path):
         return fmt.format(
@@ -419,7 +417,7 @@ def execute_args(args):
         )
         if result is not None and result.returncode not in args.allowexitcode:
             print(
-                "'{}' failed with code {}".format(cmd, result.returncode),
+                f"'{cmd}' failed with code {result.returncode}",
                 file=sys.stderr,
             )
             sys.exit(result.returncode)
@@ -474,7 +472,7 @@ def install_args(args):
     if args.with_test_deps:
         extras.append("test")
     if extras:
-        allfmt += "[{}]".format(",".join(extras))
+        allfmt += f"[{','.join(extras)}]"
     # note the trailing single quote, to close the quote opened above.
     allfmt += "'"
 
@@ -548,9 +546,9 @@ def update_changelog(path, version, new_entry):
     try:
         with open(path, encoding="utf-8") as changelog:
             text = changelog.read()
-            if "## [{}]".format(version) in text:
+            if f"## [{version}]" in text:
                 raise AttributeError(
-                    "{} already contans version {}".format(path, version)
+                    f"{path} already contans version {version}"
                 )
         with open(path, encoding="utf-8") as changelog:
             for line in changelog:
@@ -562,11 +560,11 @@ def update_changelog(path, version, new_entry):
                     unreleased_changes = True
 
     except FileNotFoundError:
-        print("file missing: {}".format(path))
+        print(f"file missing: {path}")
         return
 
     if unreleased_changes:
-        print("updating: {}".format(path))
+        print(f"updating: {path}")
         text = re.sub(r"## \[Unreleased\].*", new_entry, text)
         with open(path, "w", encoding="utf-8") as changelog:
             changelog.write(text)
@@ -617,10 +615,7 @@ def update_version_files(targets, version, packages):
     print("updating version.py files")
     targets = filter_packages(targets, packages)
     update_files(
-        targets,
-        "version.py",
-        "__version__ .*",
-        '__version__ = "{}"'.format(version),
+        targets, "version.py", "__version__ .*", f'__version__ = "{version}"',
     )
 
 
@@ -638,7 +633,7 @@ def update_dependencies(targets, version, packages):
         update_files(
             targets,
             "setup.cfg",
-            r"({}.*)==(.*)".format(package_name),
+            fr"({package_name}.*)==(.*)",
             r"\1== " + version,
         )
 
@@ -648,14 +643,14 @@ def update_files(targets, filename, search, replace):
     for target in targets:
         curr_file = find(filename, target)
         if curr_file is None:
-            print("file missing: {}/{}".format(target, filename))
+            print(f"file missing: {target}/{filename}")
             continue
 
         with open(curr_file, encoding="utf-8") as _file:
             text = _file.read()
 
         if replace in text:
-            print("{} already contains {}".format(curr_file, replace))
+            print(f"{curr_file} already contains {replace}")
             continue
 
         with open(curr_file, "w", encoding="utf-8") as _file:
@@ -681,7 +676,7 @@ def release_args(args):
         packages = None
         if "packages" in mcfg:
             packages = mcfg["packages"].split()
-        print("update {} packages to {}".format(group, version))
+        print(f"update {group} packages to {version}")
         update_dependencies(targets, version, packages)
         update_version_files(targets, version, packages)
 

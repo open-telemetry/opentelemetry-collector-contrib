@@ -202,7 +202,7 @@ def _uninstrument_from(instr_root, restore_as_bound_func=False):
 
 def get_default_span_name(method):
     """Default implementation for name_callback, returns HTTP {method_name}."""
-    return "HTTP {}".format(method).strip()
+    return f"HTTP {method.strip()}"
 
 
 class RequestsInstrumentor(BaseInstrumentor):

@@ -169,7 +169,7 @@ class TestElasticsearchIntegration(TestBase):
         self.assertFalse(span.status.is_ok)
         self.assertEqual(span.status.status_code, code)
         self.assertEqual(
-            span.status.description, "{}: {}".format(type(exc).__name__, exc)
+            span.status.description, f"{type(exc).__name__}: {exc}"
         )
 
     def test_parent(self, request_mock):

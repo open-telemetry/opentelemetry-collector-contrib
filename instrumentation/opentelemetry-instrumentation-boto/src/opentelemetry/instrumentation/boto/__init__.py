@@ -123,7 +123,7 @@ class BotoInstrumentor(BaseInstrumentor):
         endpoint_name = getattr(instance, "host").split(".")[0]
 
         with self._tracer.start_as_current_span(
-            "{}.command".format(endpoint_name), kind=SpanKind.CONSUMER,
+            f"{endpoint_name}.command", kind=SpanKind.CONSUMER,
         ) as span:
             span.set_attribute("endpoint", endpoint_name)
             if args:

@@ -64,7 +64,7 @@ def _format_command_args(args):
 
         if length + len(cmd) > cmd_max_len:
             prefix = cmd[: cmd_max_len - length]
-            out.append("%s%s" % (prefix, value_too_long_mark))
+            out.append(f"{prefix}{value_too_long_mark}")
             break
 
         out.append(cmd)

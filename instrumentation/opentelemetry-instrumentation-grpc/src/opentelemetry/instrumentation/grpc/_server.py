@@ -122,8 +122,7 @@ class _OpenTelemetryServicerContext(grpc.ServicerContext):
         )
         self._active_span.set_status(
             Status(
-                status_code=StatusCode.ERROR,
-                description="{}:{}".format(code, details),
+                status_code=StatusCode.ERROR, description=f"{code}:{details}",
             )
         )
         return self._servicer_context.abort(code, details)
@@ -142,7 +141,7 @@ class _OpenTelemetryServicerContext(grpc.ServicerContext):
             self._active_span.set_status(
                 Status(
                     status_code=StatusCode.ERROR,
-                    description="{}:{}".format(code, details),
+                    description=f"{code}:{details}",
                 )
             )
         return self._servicer_context.set_code(code)
@@ -153,7 +152,7 @@ class _OpenTelemetryServicerContext(grpc.ServicerContext):
             self._active_span.set_status(
                 Status(
                     status_code=StatusCode.ERROR,
-                    description="{}:{}".format(self.code, details),
+                    description=f"{self.code}:{details}",
                 )
             )
         return self._servicer_context.set_details(details)

@@ -159,7 +159,7 @@ class TestUtils(unittest.TestCase):
                 utils.retrieve_span(fn_task, task_id), (None, None)
             )
         except Exception as ex:  # pylint: disable=broad-except
-            self.fail("Exception was raised: %s" % ex)
+            self.fail(f"Exception was raised: {ex}")
 
     def test_task_id_from_protocol_v1(self):
         # ensures a `task_id` is properly returned when Protocol v1 is used.

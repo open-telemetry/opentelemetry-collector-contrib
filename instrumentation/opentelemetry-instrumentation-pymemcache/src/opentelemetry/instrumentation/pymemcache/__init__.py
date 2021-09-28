@@ -114,7 +114,7 @@ def _wrap_cmd(tracer, cmd, wrapped, instance, args, kwargs):
                 else:
                     vals = _get_query_string(args[0])
 
-                query = "{}{}{}".format(cmd, " " if vals else "", vals)
+                query = f"{cmd}{' ' if vals else ''}{vals}"
                 span.set_attribute(SpanAttributes.DB_STATEMENT, query)
 
                 _set_connection_attributes(span, instance)
@@ -188,10 +188,10 @@ class PymemcacheInstrumentor(BaseInstrumentor):
         for cmd in COMMANDS:
             _wrap(
                 "pymemcache.client.base",
-                "Client.{}".format(cmd),
+                f"Client.{cmd}",
                 _wrap_cmd(tracer, cmd),
             )
 
     def _uninstrument(self, **kwargs):
         for command in COMMANDS:
-            unwrap(pymemcache.client.base.Client, "{}".format(command))
+            unwrap(pymemcache.client.base.Client, f"{command}")

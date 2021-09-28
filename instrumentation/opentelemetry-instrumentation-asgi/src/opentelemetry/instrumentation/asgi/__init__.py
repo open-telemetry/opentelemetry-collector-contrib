@@ -152,8 +152,9 @@ def get_default_span_details(scope: dict) -> Tuple[str, dict]:
     Returns:
         a tuple of the span name, and any attributes to attach to the span.
     """
-    span_name = scope.get("path", "").strip() or "HTTP {}".format(
-        scope.get("method", "").strip()
+    span_name = (
+        scope.get("path", "").strip()
+        or f"HTTP {scope.get('method', '').strip()}"
     )
 
     return span_name, {}

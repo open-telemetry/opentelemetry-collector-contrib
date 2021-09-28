@@ -161,7 +161,7 @@ def _instrument(
         headers = _prepare_headers(kwargs)
         body = _get_url_open_arg("body", args, kwargs)
 
-        span_name = "HTTP {}".format(method.strip())
+        span_name = f"HTTP {method.strip()}"
         span_attributes = {
             SpanAttributes.HTTP_METHOD: method,
             SpanAttributes.HTTP_URL: url,

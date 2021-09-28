@@ -175,7 +175,7 @@ def create_trace_config(
             return
 
         http_method = params.method.upper()
-        request_span_name = "HTTP {}".format(http_method)
+        request_span_name = f"HTTP {http_method}"
 
         trace_config_ctx.span = trace_config_ctx.tracer.start_span(
             request_span_name, kind=SpanKind.CLIENT,

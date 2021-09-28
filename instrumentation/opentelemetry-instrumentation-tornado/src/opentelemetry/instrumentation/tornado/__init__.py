@@ -249,7 +249,7 @@ def _get_attributes_from_request(request):
 def _get_operation_name(handler, request):
     full_class_name = type(handler).__name__
     class_name = full_class_name.rsplit(".")[-1]
-    return "{0}.{1}".format(class_name, request.method.lower())
+    return f"{class_name}.{request.method.lower()}"
 
 
 def _start_span(tracer, handler, start_time) -> _TraceContext:

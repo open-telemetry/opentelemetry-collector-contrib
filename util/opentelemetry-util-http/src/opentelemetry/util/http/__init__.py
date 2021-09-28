@@ -35,7 +35,7 @@ _root = r"OTEL_PYTHON_{}"
 
 def get_traced_request_attrs(instrumentation):
     traced_request_attrs = environ.get(
-        _root.format("{}_TRACED_REQUEST_ATTRS".format(instrumentation)), []
+        _root.format(f"{instrumentation}_TRACED_REQUEST_ATTRS"), []
     )
 
     if traced_request_attrs:
@@ -49,7 +49,7 @@ def get_traced_request_attrs(instrumentation):
 
 def get_excluded_urls(instrumentation):
     excluded_urls = environ.get(
-        _root.format("{}_EXCLUDED_URLS".format(instrumentation)), []
+        _root.format(f"{instrumentation}_EXCLUDED_URLS"), []
     )
 
     return parse_excluded_urls(excluded_urls)

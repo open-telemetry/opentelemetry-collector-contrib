@@ -47,13 +47,13 @@ LEVELS = {
 
 
 class LoggingInstrumentor(BaseInstrumentor):  # pylint: disable=empty-docstring
-    __doc__ = """An instrumentor for stdlib logging module.
+    __doc__ = f"""An instrumentor for stdlib logging module.
 
     This instrumentor injects tracing context into logging records and optionally sets the global logging format to the following:
 
     .. code-block::
 
-        {default_logging_format}
+        {DEFAULT_LOGGING_FORMAT}
 
     Args:
         tracer_provider: Tracer provider instance that can be used to fetch a tracer.
@@ -68,9 +68,7 @@ class LoggingInstrumentor(BaseInstrumentor):  # pylint: disable=empty-docstring
             logging.FATAL
 
     See `BaseInstrumentor`
-    """.format(
-        default_logging_format=DEFAULT_LOGGING_FORMAT
-    )
+    """
 
     _old_factory = None
 
