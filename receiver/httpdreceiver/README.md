@@ -1,4 +1,4 @@
-# Httpd Receiver
+# HTTPd Receiver
 
 This receiver fetches stats from a Httpd server using the `server-status?auto` endpoint.
 
@@ -12,7 +12,7 @@ This receiver supports Apache httpd version 2.4+
 
 ### mod_status module
 
-In order to receive server statistics, you must configure the servers `httpd.conf` file to [enable status support](https://httpd.apache.org/docs/2.4/mod/mod_status.html).
+In order to receive server statistics, you must configure the server's `httpd.conf` file to [enable status support](https://httpd.apache.org/docs/2.4/mod/mod_status.html).
 
 
 ### Configuration

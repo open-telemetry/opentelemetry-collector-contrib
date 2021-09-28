@@ -21,6 +21,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -50,11 +51,13 @@ Scoreboard: S_DD_L_GGG_____W__IIII_C________________W___________________________
 		}
 		rw.WriteHeader(404)
 	}))
-	sc := newHttpdScraper(zap.NewNop(), &Config{
+	cfg := &Config{
 		HTTPClientSettings: confighttp.HTTPClientSettings{
 			Endpoint: httpdMock.URL,
 		},
-	})
+	}
+	require.NoError(t, cfg.Validate())
+	sc := newHttpdScraper(zap.NewNop(), cfg)
 
 	err := sc.start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err)
@@ -66,14 +69,15 @@ Scoreboard: S_DD_L_GGG_____W__IIII_C________________W___________________________
 	require.NoError(t, err)
 	scrapedRMS.CopyTo(rms)
 
-	expectedFileBytes, err := ioutil.ReadFile("./testdata/scraper/expected.json")
+	expectedFile := filepath.Join("testdata", "scraper", "expected.json")
+	expectedFileBytes, err := ioutil.ReadFile(expectedFile)
 	require.NoError(t, err)
 	unmarshaller := otlp.NewJSONMetricsUnmarshaler()
 	expectedMetrics, err := unmarshaller.UnmarshalMetrics(expectedFileBytes)
 	require.NoError(t, err)
 
-	aMetricSlice := expectedMetrics.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics()
-	eMetricSlice := actualMetrics.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics()
+	eMetricSlice := expectedMetrics.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics()
+	aMetricSlice := actualMetrics.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics()
 
 	require.NoError(t, compareMetrics(eMetricSlice, aMetricSlice))
 }
@@ -201,6 +205,24 @@ func TestParseScoreboard(t *testing.T) {
 		require.EqualValues(t, int64(4), results["idle_cleanup"])
 	})
 
+	t.Run("test unknown", func(t *testing.T) {
+		scoreboard := `qwertyuiopasdfghjklzxcvbnm`
+		results := parseScoreboard(scoreboard)
+
+		require.EqualValues(t, int64(0), results["open"])
+		require.EqualValues(t, int64(0), results["waiting"])
+		require.EqualValues(t, int64(0), results["starting"])
+		require.EqualValues(t, int64(0), results["reading"])
+		require.EqualValues(t, int64(0), results["sending"])
+		require.EqualValues(t, int64(0), results["keepalive"])
+		require.EqualValues(t, int64(0), results["dnslookup"])
+		require.EqualValues(t, int64(0), results["closing"])
+		require.EqualValues(t, int64(0), results["logging"])
+		require.EqualValues(t, int64(0), results["finishing"])
+		require.EqualValues(t, int64(0), results["idle_cleanup"])
+		require.EqualValues(t, int64(26), results["unknown"])
+	})
+
 	t.Run("test empty defaults", func(t *testing.T) {
 		emptyString := ""
 		results := parseScoreboard(emptyString)
@@ -253,6 +275,6 @@ func TestScraperError(t *testing.T) {
 
 		_, err := sc.scrape(context.Background())
 		require.Error(t, err)
-		require.EqualValues(t, errors.New("failed to connect to http client"), err)
+		require.EqualValues(t, errors.New("failed to connect to Apache HTTPd client"), err)
 	})
 }

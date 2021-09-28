@@ -15,7 +15,6 @@
 package httpdreceiver
 
 import (
-	"errors"
 	"fmt"
 	"testing"
 
@@ -26,7 +25,7 @@ func TestValidate(t *testing.T) {
 	t.Run("error path", func(t *testing.T) {
 		cfg := NewFactory().CreateDefaultConfig().(*Config)
 		cfg.Endpoint = "http://endpoint with space"
-		require.Equal(t, errors.New("invalid endpoint 'http://endpoint with space'"), cfg.Validate())
+		require.Error(t, cfg.Validate())
 	})
 
 	t.Run("happy path", func(t *testing.T) {
@@ -194,7 +193,7 @@ func TestValidateEndpointFormat(t *testing.T) {
 		for _, host := range hosts {
 			for _, port := range ports {
 				for _, path := range paths {
-					endpoint := fmt.Sprintf("%s%s%s%s?%s", protocol, host, port, path, "auto")
+					endpoint := fmt.Sprintf("%s%s%s%s?auto", protocol, host, port, path)
 					endpoints = append(endpoints, endpoint)
 				}
 			}
