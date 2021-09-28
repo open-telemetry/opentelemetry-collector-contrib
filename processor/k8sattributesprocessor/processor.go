@@ -107,11 +107,6 @@ func (kp *kubernetesprocessor) processResource(ctx context.Context, resource pda
 		resource.Attributes().InsertString(podIdentifierKey, string(podIdentifierValue))
 	}
 
-	namespace := stringAttributeFromMap(resource.Attributes(), conventions.AttributeK8SNamespaceName)
-	if namespace != "" {
-		resource.Attributes().InsertString(conventions.AttributeK8SNamespaceName, namespace)
-	}
-
 	if kp.passthroughMode {
 		return
 	}
@@ -123,6 +118,7 @@ func (kp *kubernetesprocessor) processResource(ctx context.Context, resource pda
 		}
 	}
 
+	namespace := stringAttributeFromMap(resource.Attributes(), conventions.AttributeK8SNamespaceName)
 	if namespace != "" {
 		attrsToAdd := kp.getAttributesForPodsNamespace(namespace)
 		for key, val := range attrsToAdd {
