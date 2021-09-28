@@ -904,7 +904,7 @@ func TestStartStop(t *testing.T) {
 
 func assertResourceHasStringAttribute(t *testing.T, r pdata.Resource, k, v string) {
 	got, ok := r.Attributes().Get(k)
-	assert.True(t, ok, fmt.Sprintf("resource does not contain attribute %s", k))
+	require.True(t, ok, fmt.Sprintf("resource does not contain attribute %s", k))
 	assert.EqualValues(t, pdata.AttributeValueTypeString, got.Type(), "attribute %s is not of type string", k)
 	assert.EqualValues(t, v, got.StringVal(), "attribute %s is not equal to %s", k, v)
 }
