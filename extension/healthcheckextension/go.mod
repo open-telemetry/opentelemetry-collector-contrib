@@ -6,7 +6,7 @@ require (
 	github.com/jaegertracing/jaeger v1.26.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.36.0
 	github.com/stretchr/testify v1.7.0
-	go.opentelemetry.io/collector v0.36.1-0.20210927115055-45a848d8abe1
+	go.opentelemetry.io/collector v0.36.1-0.20210927193005-ebb0fbd6f23e
 	go.uber.org/zap v1.19.1
 
 )
@@ -22,7 +22,7 @@ require (
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/spf13/cast v1.4.1 // indirect
-	go.opentelemetry.io/collector/model v0.36.1-0.20210927115055-45a848d8abe1 // indirect
+	go.opentelemetry.io/collector/model v0.36.1-0.20210927193005-ebb0fbd6f23e // indirect
 	go.opentelemetry.io/otel v1.0.0 // indirect
 	go.opentelemetry.io/otel/metric v0.23.0 // indirect
 	go.opentelemetry.io/otel/trace v1.0.0 // indirect

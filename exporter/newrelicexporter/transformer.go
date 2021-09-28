@@ -312,7 +312,7 @@ func (t *transformer) Metric(m pdata.Metric) ([]telemetry.Metric, error) {
 				val = float64(point.IntVal())
 			}
 
-			if temporality != pdata.AggregationTemporalityDelta {
+			if temporality != pdata.MetricAggregationTemporalityDelta {
 				t.logger.Debug("Converting metric to gauge where AggregationTemporality != Delta",
 					zap.String("MetricName", m.Name()),
 					zap.Stringer("Temporality", temporality),
