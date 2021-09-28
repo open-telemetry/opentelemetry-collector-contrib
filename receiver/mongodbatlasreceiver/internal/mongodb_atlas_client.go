@@ -16,13 +16,13 @@ package internal
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/mongodb-forks/digest"
 	"github.com/pkg/errors"
 	"go.mongodb.org/atlas/mongodbatlas"
-	"go.opentelemetry.io/collector/model/pdata"
 	"go.uber.org/zap"
+
+	"go.opentelemetry.io/collector/model/pdata"
 )
 
 // MongoDBAtlasClient wraps the official MongoDB Atlas client to manage pagination
@@ -467,10 +467,4 @@ func (s *MongoDBAtlasClient) processDiskMeasurementsPage(
 		return nil, false, err
 	}
 	return measurements.Measurements, hasNext(measurements.Links), nil
-}
-
-func processMeasurements(_ pdata.Resource, measurements []*mongodbatlas.Measurements) (pdata.Metrics, error) {
-	// Stub- will be replaced with code for normalizing and processing metrics
-	fmt.Printf("Fake processing %d metrics\n", len(measurements))
-	return pdata.NewMetrics(), nil
 }
