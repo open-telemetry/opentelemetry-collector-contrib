@@ -52,7 +52,7 @@ func (je *jaegerGRPCDataSender) Start() error {
 	// Disable sending queue, we should push data from the caller goroutine.
 	cfg.QueueSettings.Enabled = false
 	cfg.Endpoint = je.GetEndpoint().String()
-	cfg.TLSSetting = configtls.TLSClientSetting{
+	cfg.TLSSetting = &configtls.TLSClientSetting{
 		Insecure: true,
 	}
 	params := componenttest.NewNopExporterCreateSettings()

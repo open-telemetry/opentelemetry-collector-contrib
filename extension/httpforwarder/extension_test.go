@@ -143,7 +143,7 @@ func TestExtension(t *testing.T) {
 			config: &Config{
 				Egress: confighttp.HTTPClientSettings{
 					Endpoint: "localhost:9090",
-					TLSSetting: configtls.TLSClientSetting{
+					TLSSetting: &configtls.TLSClientSetting{
 						TLSSetting: configtls.TLSSetting{
 							CAFile: "/non/existent",
 						},
