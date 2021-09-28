@@ -13,12 +13,12 @@ The following settings are required:
 using the gRPC protocol. The valid syntax is described
 [here](https://github.com/grpc/grpc/blob/master/doc/naming.md)
 
-By default, TLS is enabled and must be configured under `tls:`:
+By default, TLS is enabled and must be configured under `tls`:
 
 - `insecure` (default = `false`): whether to enable client transport security for
   the exporter's connection.
 
-As a result, the following parameters are also required under `tls:`:
+As a result, the following parameters are also required:
 
 - `cert_file` (no default): path to the TLS cert to use for TLS required connections. Should
   only be used if `insecure` is set to false.
