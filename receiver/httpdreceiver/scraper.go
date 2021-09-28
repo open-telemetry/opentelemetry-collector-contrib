@@ -17,10 +17,8 @@ package httpdreceiver
 import (
 	"context"
 	"errors"
-	"fmt"
 	"io/ioutil"
 	"net/http"
-	"net/url"
 	"strconv"
 	"strings"
 	"time"
@@ -74,12 +72,12 @@ func addToIntMetric(metric pdata.NumberDataPointSlice, labels pdata.AttributeMap
 
 func (r *httpdScraper) scrape(context.Context) (pdata.ResourceMetricsSlice, error) {
 	if r.httpClient == nil {
-		return pdata.ResourceMetricsSlice{}, errors.New("failed to connect to http client")
+		return pdata.ResourceMetricsSlice{}, errors.New("failed to connect to Apache HTTPd client")
 	}
 
 	stats, err := r.GetStats()
 	if err != nil {
-		r.logger.Error("Failed to fetch httpd stats", zap.Error(err))
+		r.logger.Error("failed to fetch HTTPd stats", zap.Error(err))
 		return pdata.ResourceMetricsSlice{}, err
 	}
 
@@ -95,16 +93,9 @@ func (r *httpdScraper) scrape(context.Context) (pdata.ResourceMetricsSlice, erro
 	traffic := initMetric(ilm.Metrics(), metadata.M.HttpdTraffic).Sum().DataPoints()
 	scoreboard := initMetric(ilm.Metrics(), metadata.M.HttpdScoreboard).Gauge().DataPoints()
 
-	u, err := url.Parse(r.cfg.Endpoint)
-	if err != nil {
-		r.logger.Error("Failed to find parse server name", zap.Error(err))
-		return pdata.ResourceMetricsSlice{}, err
-	}
-	serverName := u.Hostname()
-
 	for metricKey, metricValue := range parseStats(stats) {
 		labels := pdata.NewAttributeMap()
-		labels.Insert(metadata.L.ServerName, pdata.NewAttributeValueString(serverName))
+		labels.Insert(metadata.L.ServerName, pdata.NewAttributeValueString(r.cfg.serverName))
 
 		switch metricKey {
 		case "ServerUptimeSeconds":
@@ -148,8 +139,7 @@ func (r *httpdScraper) scrape(context.Context) (pdata.ResourceMetricsSlice, erro
 
 // GetStats collects metric stats by making a get request at an endpoint.
 func (r *httpdScraper) GetStats() (string, error) {
-	url := fmt.Sprintf("%s%s", r.cfg.Endpoint, "/server-status?auto")
-	resp, err := r.httpClient.Get(url)
+	resp, err := r.httpClient.Get(r.cfg.Endpoint)
 	if err != nil {
 		return "", err
 	}
@@ -197,9 +187,11 @@ func (r *httpdScraper) logInvalid(expectedType, key, value string) {
 	)
 }
 
+type scoreboardCountsByLabel map[string]int64
+
 // parseScoreboard quantifies the symbolic mapping of the scoreboard.
-func parseScoreboard(values string) map[string]int64 {
-	scoreboard := map[string]int64{
+func parseScoreboard(values string) scoreboardCountsByLabel {
+	scoreboard := scoreboardCountsByLabel{
 		"waiting":      0,
 		"starting":     0,
 		"reading":      0,
@@ -237,12 +229,14 @@ func parseScoreboard(values string) map[string]int64 {
 			scoreboard["idle_cleanup"]++
 		case ".":
 			scoreboard["open"]++
+		default:
+			scoreboard["unknown"]++
 		}
 	}
 	return scoreboard
 }
 
-// kbytesToBytes converts 1 Kilobyte to 1024 bytes.
+// kbytesToBytes converts 1 Kibibyte to 1024 bytes.
 func kbytesToBytes(i int64) int64 {
 	return 1024 * i
 }
