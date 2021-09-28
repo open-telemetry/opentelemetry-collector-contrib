@@ -166,7 +166,7 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 					m.SetName("cumulative_double_with_dims")
 					m.SetDataType(pdata.MetricDataTypeSum)
 					m.Sum().SetIsMonotonic(true)
-					m.Sum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+					m.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
 					initDoublePt(m.Sum().DataPoints().AppendEmpty())
 				}
 				{
@@ -174,7 +174,7 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 					m.SetName("cumulative_int_with_dims")
 					m.SetDataType(pdata.MetricDataTypeSum)
 					m.Sum().SetIsMonotonic(true)
-					m.Sum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+					m.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
 					initInt64Pt(m.Sum().DataPoints().AppendEmpty())
 				}
 				{
@@ -182,7 +182,7 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 					m.SetName("delta_double_with_dims")
 					m.SetDataType(pdata.MetricDataTypeSum)
 					m.Sum().SetIsMonotonic(true)
-					m.Sum().SetAggregationTemporality(pdata.AggregationTemporalityDelta)
+					m.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityDelta)
 					initDoublePt(m.Sum().DataPoints().AppendEmpty())
 				}
 				{
@@ -190,7 +190,7 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 					m.SetName("delta_int_with_dims")
 					m.SetDataType(pdata.MetricDataTypeSum)
 					m.Sum().SetIsMonotonic(true)
-					m.Sum().SetAggregationTemporality(pdata.AggregationTemporalityDelta)
+					m.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityDelta)
 					initInt64Pt(m.Sum().DataPoints().AppendEmpty())
 				}
 				{
@@ -579,7 +579,7 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 					m := ilm.Metrics().AppendEmpty()
 					m.SetName("double_delta_histo")
 					m.SetDataType(pdata.MetricDataTypeHistogram)
-					m.Histogram().SetAggregationTemporality(pdata.AggregationTemporalityDelta)
+					m.Histogram().SetAggregationTemporality(pdata.MetricAggregationTemporalityDelta)
 					initHistDP(m.Histogram().DataPoints().AppendEmpty())
 				}
 				return out
