@@ -23,8 +23,8 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/model/pdata"
+	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowsperfcountersreceiver/internal/pdh"
@@ -59,7 +59,7 @@ func newScraper(cfg *Config, logger *zap.Logger) (*scraper, error) {
 }
 
 func (s *scraper) start(context.Context, component.Host) error {
-	var errors []error
+	var errs error
 
 	for _, perfCounterCfg := range s.cfg.PerfCounters {
 		for _, instance := range perfCounterCfg.instances() {
@@ -68,7 +68,7 @@ func (s *scraper) start(context.Context, component.Host) error {
 
 				c, err := pdh.NewPerfCounter(counterPath, true)
 				if err != nil {
-					errors = append(errors, fmt.Errorf("counter %v: %w", counterPath, err))
+					errs = multierr.Append(errs, fmt.Errorf("counter %v: %w", counterPath, err))
 				} else {
 					s.counters = append(s.counters, c)
 				}
@@ -77,8 +77,8 @@ func (s *scraper) start(context.Context, component.Host) error {
 	}
 
 	// log a warning if some counters cannot be loaded, but do not crash the app
-	if len(errors) > 0 {
-		s.logger.Warn("some performance counters could not be initialized", zap.Error(consumererror.Combine(errors)))
+	if errs != nil {
+		s.logger.Warn("some performance counters could not be initialized", zap.Error(errs))
 	}
 
 	return nil
@@ -93,15 +93,13 @@ func counterPath(object, instance, counterName string) string {
 }
 
 func (s *scraper) shutdown(context.Context) error {
-	var errors []error
+	var errs error
 
 	for _, counter := range s.counters {
-		if err := counter.Close(); err != nil {
-			errors = append(errors, err)
-		}
+		errs = multierr.Append(errs, counter.Close())
 	}
 
-	return consumererror.Combine(errors)
+	return errs
 }
 
 func (s *scraper) scrape(context.Context) (pdata.MetricSlice, error) {
@@ -109,20 +107,20 @@ func (s *scraper) scrape(context.Context) (pdata.MetricSlice, error) {
 
 	now := pdata.NewTimestampFromTime(time.Now())
 
-	var errors []error
+	var errs error
 
 	metrics.EnsureCapacity(len(s.counters))
 	for _, counter := range s.counters {
 		counterValues, err := counter.ScrapeData()
 		if err != nil {
-			errors = append(errors, err)
+			errs = multierr.Append(errs, err)
 			continue
 		}
 
 		initializeDoubleGaugeMetric(metrics.AppendEmpty(), now, counter.Path(), counterValues)
 	}
 
-	return metrics, consumererror.Combine(errors)
+	return metrics, errs
 }
 
 func initializeDoubleGaugeMetric(metric pdata.Metric, now pdata.Timestamp, name string, counterValues []win_perf_counters.CounterValue) {
