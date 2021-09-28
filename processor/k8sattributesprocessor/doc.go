@@ -42,7 +42,8 @@
 //
 // Which metadata to collect is determined by `metadata` configuration that defines list of resource attributes
 // to be added. Items in the list called exactly the same as the resource attributes that will be added.
-// The following list of attributes is enabled by default if `metadata` configuration is not specified:
+// All the available attributes are enabled by default, you can reduce the list with `metadata` configuration.
+// The following attributes will be added if pod identified:
 //   - k8s.namespace.name
 //   - k8s.pod.name
 //   - k8s.pod.uid
@@ -53,9 +54,9 @@
 // Not all the attributes are guaranteed to be added. For example `k8s.cluster.name` usually is not provided by k8s API,
 // so likely it won't be set as an attribute.
 
-// The following attributes are not included by default, but can be enabled with `metadata` config option.
+// The following container level attributes require additional attributes to identify a particular container in a pod:
 //   1. Container spec attributes - will be set only if container identifying attribute `container.name` is set
-//      as a resource attributes (similar to all other attributes, pod has to be identified as well):
+//      as a resource attribute (similar to all other attributes, pod has to be identified as well):
 //     - container.image.name
 //     - container.image.tag
 //   2. Container status attributes - in addition to pod identifier and `container.name` attribute, these attributes

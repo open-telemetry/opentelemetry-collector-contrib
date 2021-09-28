@@ -78,6 +78,9 @@ func WithExtractMetadata(fields ...string) Option {
 				conventions.AttributeK8SDeploymentName,
 				conventions.AttributeK8SClusterName,
 				conventions.AttributeK8SNodeName,
+				conventions.AttributeContainerID,
+				conventions.AttributeContainerImageName,
+				conventions.AttributeContainerImageTag,
 			}
 		}
 		for _, field := range fields {
