@@ -67,7 +67,7 @@ func Test_loadConfig(t *testing.T) {
 			ExternalLabels: map[string]string{"key1": "value1", "key2": "value2"},
 			HTTPClientSettings: confighttp.HTTPClientSettings{
 				Endpoint: "localhost:8888",
-				TLSSetting: configtls.TLSClientSetting{
+				TLSSetting: &configtls.TLSClientSetting{
 					TLSSetting: configtls.TLSSetting{
 						CAFile: "/var/lib/mycert.pem", // This is subject to change, but currently I have no idea what else to put here lol
 					},
