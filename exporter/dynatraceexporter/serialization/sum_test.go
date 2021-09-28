@@ -30,7 +30,7 @@ func Test_serializeSum(t *testing.T) {
 		dp := pdata.NewNumberDataPoint()
 		dp.SetIntVal(5)
 
-		got, err := serializeSum("int_sum", "prefix", dimensions.NewNormalizedDimensionList(), pdata.AggregationTemporalityDelta, dp, ttlmap.New(1, 1))
+		got, err := serializeSum("int_sum", "prefix", dimensions.NewNormalizedDimensionList(), pdata.MetricAggregationTemporalityDelta, dp, ttlmap.New(1, 1))
 		assert.NoError(t, err)
 		assert.Equal(t, "prefix.int_sum count,delta=5", got)
 	})
@@ -42,7 +42,7 @@ func Test_serializeSum(t *testing.T) {
 
 		prev := ttlmap.New(1, 1)
 
-		got, err := serializeSum("double_sum", "prefix", dimensions.NewNormalizedDimensionList(dimensions.NewDimension("key", "value")), pdata.AggregationTemporalityDelta, dp, prev)
+		got, err := serializeSum("double_sum", "prefix", dimensions.NewNormalizedDimensionList(dimensions.NewDimension("key", "value")), pdata.MetricAggregationTemporalityDelta, dp, prev)
 		assert.NoError(t, err)
 		assert.Equal(t, "prefix.double_sum,key=value count,delta=5.5 1626438600000", got)
 	})
@@ -52,7 +52,7 @@ func Test_serializeSum(t *testing.T) {
 		dp.SetIntVal(5)
 		dp.SetTimestamp(pdata.Timestamp(time.Date(2021, 07, 16, 12, 30, 0, 0, time.UTC).UnixNano()))
 
-		got, err := serializeSum("int_sum", "prefix", dimensions.NewNormalizedDimensionList(dimensions.NewDimension("key", "value")), pdata.AggregationTemporalityDelta, dp, ttlmap.New(1, 1))
+		got, err := serializeSum("int_sum", "prefix", dimensions.NewNormalizedDimensionList(dimensions.NewDimension("key", "value")), pdata.MetricAggregationTemporalityDelta, dp, ttlmap.New(1, 1))
 		assert.NoError(t, err)
 		assert.Equal(t, "prefix.int_sum,key=value count,delta=5 1626438600000", got)
 	})
@@ -68,11 +68,11 @@ func Test_serializeSum(t *testing.T) {
 
 		prev := ttlmap.New(1, 1)
 
-		got, err := serializeSum("double_sum", "prefix", dimensions.NewNormalizedDimensionList(dimensions.NewDimension("key", "value")), pdata.AggregationTemporalityCumulative, dp, prev)
+		got, err := serializeSum("double_sum", "prefix", dimensions.NewNormalizedDimensionList(dimensions.NewDimension("key", "value")), pdata.MetricAggregationTemporalityCumulative, dp, prev)
 		assert.NoError(t, err)
 		assert.Equal(t, "", got)
 
-		got, err = serializeSum("double_sum", "prefix", dimensions.NewNormalizedDimensionList(dimensions.NewDimension("key", "value")), pdata.AggregationTemporalityCumulative, dp2, prev)
+		got, err = serializeSum("double_sum", "prefix", dimensions.NewNormalizedDimensionList(dimensions.NewDimension("key", "value")), pdata.MetricAggregationTemporalityCumulative, dp2, prev)
 		assert.NoError(t, err)
 		assert.Equal(t, "prefix.double_sum,key=value count,delta=1.5 1626438660000", got)
 	})
@@ -88,11 +88,11 @@ func Test_serializeSum(t *testing.T) {
 
 		prev := ttlmap.New(1, 1)
 
-		got, err := serializeSum("int_sum", "prefix", dimensions.NewNormalizedDimensionList(dimensions.NewDimension("key", "value")), pdata.AggregationTemporalityCumulative, dp, prev)
+		got, err := serializeSum("int_sum", "prefix", dimensions.NewNormalizedDimensionList(dimensions.NewDimension("key", "value")), pdata.MetricAggregationTemporalityCumulative, dp, prev)
 		assert.NoError(t, err)
 		assert.Equal(t, "", got)
 
-		got, err = serializeSum("int_sum", "prefix", dimensions.NewNormalizedDimensionList(dimensions.NewDimension("key", "value")), pdata.AggregationTemporalityCumulative, dp2, prev)
+		got, err = serializeSum("int_sum", "prefix", dimensions.NewNormalizedDimensionList(dimensions.NewDimension("key", "value")), pdata.MetricAggregationTemporalityCumulative, dp2, prev)
 		assert.NoError(t, err)
 		assert.Equal(t, "prefix.int_sum,key=value count,delta=5 1626438660000", got)
 	})
@@ -124,10 +124,10 @@ func Test_serializeSum(t *testing.T) {
 
 		prev := ttlmap.New(1, 1)
 
-		got, err := serializeSum("int_sum", "prefix", dimensions.NewNormalizedDimensionList(dimensions.NewDimension("key", "a")), pdata.AggregationTemporalityCumulative, dp, prev)
-		got2, err2 := serializeSum("int_sum", "prefix", dimensions.NewNormalizedDimensionList(dimensions.NewDimension("key", "b")), pdata.AggregationTemporalityCumulative, dp2, prev)
-		got3, err3 := serializeSum("int_sum", "prefix", dimensions.NewNormalizedDimensionList(dimensions.NewDimension("key", "a")), pdata.AggregationTemporalityCumulative, dp3, prev)
-		got4, err4 := serializeSum("int_sum", "prefix", dimensions.NewNormalizedDimensionList(dimensions.NewDimension("key", "b")), pdata.AggregationTemporalityCumulative, dp4, prev)
+		got, err := serializeSum("int_sum", "prefix", dimensions.NewNormalizedDimensionList(dimensions.NewDimension("key", "a")), pdata.MetricAggregationTemporalityCumulative, dp, prev)
+		got2, err2 := serializeSum("int_sum", "prefix", dimensions.NewNormalizedDimensionList(dimensions.NewDimension("key", "b")), pdata.MetricAggregationTemporalityCumulative, dp2, prev)
+		got3, err3 := serializeSum("int_sum", "prefix", dimensions.NewNormalizedDimensionList(dimensions.NewDimension("key", "a")), pdata.MetricAggregationTemporalityCumulative, dp3, prev)
+		got4, err4 := serializeSum("int_sum", "prefix", dimensions.NewNormalizedDimensionList(dimensions.NewDimension("key", "b")), pdata.MetricAggregationTemporalityCumulative, dp4, prev)
 
 		assert.NoError(t, err)
 		assert.NoError(t, err2)
@@ -150,13 +150,13 @@ func Test_serializeSum(t *testing.T) {
 
 		prev := ttlmap.New(1, 1)
 
-		got, err := serializeSum("int_sum", "prefix", dimensions.NewNormalizedDimensionList(dimensions.NewDimension("key", "value")), pdata.AggregationTemporalityCumulative, dp, prev)
+		got, err := serializeSum("int_sum", "prefix", dimensions.NewNormalizedDimensionList(dimensions.NewDimension("key", "value")), pdata.MetricAggregationTemporalityCumulative, dp, prev)
 		assert.NoError(t, err)
 		assert.Equal(t, "", got)
 
 		assert.Equal(t, dp, prev.Get("int_sum"))
 
-		got, err = serializeSum("int_sum", "prefix", dimensions.NewNormalizedDimensionList(dimensions.NewDimension("key", "value")), pdata.AggregationTemporalityCumulative, dp2, prev)
+		got, err = serializeSum("int_sum", "prefix", dimensions.NewNormalizedDimensionList(dimensions.NewDimension("key", "value")), pdata.MetricAggregationTemporalityCumulative, dp2, prev)
 		assert.NoError(t, err)
 		assert.Equal(t, "", got)
 

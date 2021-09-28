@@ -8,7 +8,7 @@ require (
 	github.com/google/addlicense v1.0.0
 	github.com/google/go-cmp v0.5.6 // indirect
 	github.com/jstemmer/go-junit-report v0.9.1
-	github.com/open-telemetry/opentelemetry-collector-contrib/cmd/mdatagen v0.0.0-00010101000000-000000000000
+	github.com/open-telemetry/opentelemetry-collector-contrib/cmd/mdatagen v0.36.0
 	github.com/pavius/impi v0.0.3
 	github.com/prometheus/common v0.29.0 // indirect
 	github.com/stretchr/objx v0.2.0 // indirect

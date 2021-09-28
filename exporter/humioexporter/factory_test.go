@@ -89,7 +89,7 @@ func TestCreateTracesExporter(t *testing.T) {
 				Tag:              TagNone,
 				HTTPClientSettings: confighttp.HTTPClientSettings{
 					Endpoint: "http://localhost:8080",
-					TLSSetting: configtls.TLSClientSetting{
+					TLSSetting: &configtls.TLSClientSetting{
 						TLSSetting: configtls.TLSSetting{
 							CertFile: "",
 							KeyFile:  "key.key",

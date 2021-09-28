@@ -64,7 +64,7 @@ func initIntMetric(m *redisMetric, value int64, t *timeBundle, dest pdata.Metric
 	} else if m.pdType == pdata.MetricDataTypeSum {
 		sum := dest.Sum()
 		sum.SetIsMonotonic(m.isMonotonic)
-		sum.SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+		sum.SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
 		pt = sum.DataPoints().AppendEmpty()
 		pt.SetStartTimestamp(pdata.NewTimestampFromTime(t.serverStart))
 	}
@@ -82,7 +82,7 @@ func initDoubleMetric(m *redisMetric, value float64, t *timeBundle, dest pdata.M
 	} else if m.pdType == pdata.MetricDataTypeSum {
 		sum := dest.Sum()
 		sum.SetIsMonotonic(m.isMonotonic)
-		sum.SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+		sum.SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
 		pt = sum.DataPoints().AppendEmpty()
 		pt.SetStartTimestamp(pdata.NewTimestampFromTime(t.serverStart))
 	}

@@ -96,7 +96,7 @@ func sum(ilm pdata.MetricSlice, metricName string, unit string, points []point, 
 	metric.SetDataType(pdata.MetricDataTypeSum)
 	sum := metric.Sum()
 	sum.SetIsMonotonic(true)
-	sum.SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+	sum.SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
 
 	dataPoints := sum.DataPoints()
 
