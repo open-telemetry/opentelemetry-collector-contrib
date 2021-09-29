@@ -25,6 +25,8 @@ import (
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configtest"
 	"go.opentelemetry.io/collector/config/configtls"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/proxy"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -45,17 +47,19 @@ func TestLoadConfig(t *testing.T) {
 	assert.Equal(t,
 		&Config{
 			ExtensionSettings: config.NewExtensionSettings(config.NewIDWithName(typeStr, "1")),
-			TCPAddr: confignet.TCPAddr{
-				Endpoint: "0.0.0.0:1234",
+			ProxyConfig: proxy.Config{
+				TCPAddr: confignet.TCPAddr{
+					Endpoint: "0.0.0.0:1234",
+				},
+				ProxyAddress: "https://proxy.proxy.com",
+				TLSSetting: configtls.TLSClientSetting{
+					Insecure:   true,
+					ServerName: "something",
+				},
+				Region:      "us-west-1",
+				RoleARN:     "arn:aws:iam::123456789012:role/awesome_role",
+				AWSEndpoint: "https://another.aws.endpoint.com",
 			},
-			ProxyAddress: "https://proxy.proxy.com",
-			TLSSetting: configtls.TLSClientSetting{
-				Insecure:   true,
-				ServerName: "something",
-			},
-			Region:      "us-west-1",
-			RoleARN:     "arn:aws:iam::123456789012:role/awesome_role",
-			AWSEndpoint: "https://another.aws.endpoint.com",
 		},
 		ext1)
 

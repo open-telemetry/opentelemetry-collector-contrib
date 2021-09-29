@@ -247,7 +247,7 @@ func (p *processorImp) collectLatencyMetrics(ilm pdata.InstrumentationLibraryMet
 		mLatency := ilm.Metrics().AppendEmpty()
 		mLatency.SetDataType(pdata.MetricDataTypeHistogram)
 		mLatency.SetName("latency")
-		mLatency.Histogram().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+		mLatency.Histogram().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
 
 		timestamp := pdata.NewTimestampFromTime(time.Now())
 
@@ -273,7 +273,7 @@ func (p *processorImp) collectCallMetrics(ilm pdata.InstrumentationLibraryMetric
 		mCalls.SetDataType(pdata.MetricDataTypeSum)
 		mCalls.SetName("calls_total")
 		mCalls.Sum().SetIsMonotonic(true)
-		mCalls.Sum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+		mCalls.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
 
 		dpCalls := mCalls.Sum().DataPoints().AppendEmpty()
 		dpCalls.SetStartTimestamp(pdata.NewTimestampFromTime(p.startTime))

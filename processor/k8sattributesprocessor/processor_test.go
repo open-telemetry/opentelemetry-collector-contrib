@@ -283,6 +283,18 @@ func withPodUID(uid string) generateResourceFunc {
 	}
 }
 
+func withContainerName(containerName string) generateResourceFunc {
+	return func(res pdata.Resource) {
+		res.Attributes().InsertString(conventions.AttributeK8SContainerName, containerName)
+	}
+}
+
+func withContainerRunID(containerRunID string) generateResourceFunc {
+	return func(res pdata.Resource) {
+		res.Attributes().InsertString(k8sContainerRunIDLabelName, containerRunID)
+	}
+}
+
 func TestIPDetectionFromContext(t *testing.T) {
 	m := newMultiTest(t, NewFactory().CreateDefaultConfig(), nil)
 
@@ -652,6 +664,146 @@ func TestProcessorAddLabels(t *testing.T) {
 	}
 }
 
+func TestProcessorAddContainerAttributes(t *testing.T) {
+	tests := []struct {
+		name         string
+		op           func(kp *kubernetesprocessor)
+		resourceGens []generateResourceFunc
+		wantAttrs    map[string]string
+	}{
+		{
+			name: "image-only",
+			op: func(kp *kubernetesprocessor) {
+				kp.podAssociations = []kube.Association{
+					{
+						From: "resource_attribute",
+						Name: "k8s.pod.uid",
+					},
+				}
+				kp.kc.(*fakeClient).Pods[kube.PodIdentifier("19f651bc-73e4-410f-b3e9-f0241679d3b8")] = &kube.Pod{
+					Containers: map[string]*kube.Container{
+						"app": {
+							ImageName: "test/app",
+							ImageTag:  "1.0.1",
+						},
+					},
+				}
+			},
+			resourceGens: []generateResourceFunc{
+				withPodUID("19f651bc-73e4-410f-b3e9-f0241679d3b8"),
+				withContainerName("app"),
+			},
+			wantAttrs: map[string]string{
+				conventions.AttributeK8SPodUID:          "19f651bc-73e4-410f-b3e9-f0241679d3b8",
+				conventions.AttributeK8SContainerName:   "app",
+				conventions.AttributeContainerImageName: "test/app",
+				conventions.AttributeContainerImageTag:  "1.0.1",
+			},
+		},
+		{
+			name: "container-id-only",
+			op: func(kp *kubernetesprocessor) {
+				kp.kc.(*fakeClient).Pods[kube.PodIdentifier("1.1.1.1")] = &kube.Pod{
+					Containers: map[string]*kube.Container{
+						"app": {
+							Statuses: map[int]kube.ContainerStatus{
+								0: {ContainerID: "fcd58c97330c1dc6615bd520031f6a703a7317cd92adc96013c4dd57daad0b5f"},
+								1: {ContainerID: "6a7f1a598b5dafec9c193f8f8d63f6e5839b8b0acd2fe780f94285e26c05580e"},
+							},
+						},
+					},
+				}
+			},
+			resourceGens: []generateResourceFunc{
+				withPassthroughIP("1.1.1.1"),
+				withContainerName("app"),
+				withContainerRunID("1"),
+			},
+			wantAttrs: map[string]string{
+				k8sIPLabelName:                        "1.1.1.1",
+				conventions.AttributeK8SContainerName: "app",
+				k8sContainerRunIDLabelName:            "1",
+				conventions.AttributeContainerID:      "6a7f1a598b5dafec9c193f8f8d63f6e5839b8b0acd2fe780f94285e26c05580e",
+			},
+		},
+		{
+			name: "container-name-mismatch",
+			op: func(kp *kubernetesprocessor) {
+				kp.kc.(*fakeClient).Pods[kube.PodIdentifier("1.1.1.1")] = &kube.Pod{
+					Containers: map[string]*kube.Container{
+						"app": {
+							ImageName: "test/app",
+							ImageTag:  "1.0.1",
+							Statuses: map[int]kube.ContainerStatus{
+								0: {ContainerID: "fcd58c97330c1dc6615bd520031f6a703a7317cd92adc96013c4dd57daad0b5f"},
+							},
+						},
+					},
+				}
+			},
+			resourceGens: []generateResourceFunc{
+				withPassthroughIP("1.1.1.1"),
+				withContainerName("new-app"),
+				withContainerRunID("0"),
+			},
+			wantAttrs: map[string]string{
+				k8sIPLabelName:                        "1.1.1.1",
+				conventions.AttributeK8SContainerName: "new-app",
+				k8sContainerRunIDLabelName:            "0",
+			},
+		},
+		{
+			name: "container-run-id-mismatch",
+			op: func(kp *kubernetesprocessor) {
+				kp.kc.(*fakeClient).Pods[kube.PodIdentifier("1.1.1.1")] = &kube.Pod{
+					Containers: map[string]*kube.Container{
+						"app": {
+							ImageName: "test/app",
+							Statuses: map[int]kube.ContainerStatus{
+								0: {ContainerID: "fcd58c97330c1dc6615bd520031f6a703a7317cd92adc96013c4dd57daad0b5f"},
+							},
+						},
+					},
+				}
+			},
+			resourceGens: []generateResourceFunc{
+				withPassthroughIP("1.1.1.1"),
+				withContainerName("app"),
+				withContainerRunID("1"),
+			},
+			wantAttrs: map[string]string{
+				k8sIPLabelName:                          "1.1.1.1",
+				conventions.AttributeK8SContainerName:   "app",
+				k8sContainerRunIDLabelName:              "1",
+				conventions.AttributeContainerImageName: "test/app",
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		m := newMultiTest(
+			t,
+			NewFactory().CreateDefaultConfig(),
+			nil,
+		)
+		m.kubernetesProcessorOperation(tt.op)
+		m.testConsume(context.Background(),
+			generateTraces(tt.resourceGens...),
+			generateMetrics(tt.resourceGens...),
+			generateLogs(tt.resourceGens...),
+			nil,
+		)
+
+		m.assertBatchesLen(1)
+		m.assertResource(0, func(r pdata.Resource) {
+			require.Equal(t, len(tt.wantAttrs), r.Attributes().Len())
+			for k, v := range tt.wantAttrs {
+				assertResourceHasStringAttribute(t, r, k, v)
+			}
+		})
+	}
+}
+
 func TestProcessorPicksUpPassthoughPodIp(t *testing.T) {
 	m := newMultiTest(
 		t,
@@ -904,7 +1056,52 @@ func TestStartStop(t *testing.T) {
 
 func assertResourceHasStringAttribute(t *testing.T, r pdata.Resource, k, v string) {
 	got, ok := r.Attributes().Get(k)
-	assert.True(t, ok, fmt.Sprintf("resource does not contain attribute %s", k))
+	require.True(t, ok, fmt.Sprintf("resource does not contain attribute %s", k))
 	assert.EqualValues(t, pdata.AttributeValueTypeString, got.Type(), "attribute %s is not of type string", k)
 	assert.EqualValues(t, v, got.StringVal(), "attribute %s is not equal to %s", k, v)
+}
+
+func Test_intFromAttribute(t *testing.T) {
+	tests := []struct {
+		name    string
+		attrVal pdata.AttributeValue
+		wantInt int
+		wantErr bool
+	}{
+		{
+			name:    "wrong-type",
+			attrVal: pdata.NewAttributeValueBool(true),
+			wantInt: 0,
+			wantErr: true,
+		},
+		{
+			name:    "wrong-string-number",
+			attrVal: pdata.NewAttributeValueString("NaN"),
+			wantInt: 0,
+			wantErr: true,
+		},
+		{
+			name:    "valid-string-number",
+			attrVal: pdata.NewAttributeValueString("3"),
+			wantInt: 3,
+			wantErr: false,
+		},
+		{
+			name:    "valid-int-number",
+			attrVal: pdata.NewAttributeValueInt(1),
+			wantInt: 1,
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := intFromAttribute(tt.attrVal)
+			assert.Equal(t, tt.wantInt, got)
+			if tt.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
 }

@@ -52,7 +52,7 @@ func TestLoadConfig(t *testing.T) {
 				"X-Custom-Header": "loki_rocks",
 			},
 			Endpoint: "https://loki:3100/loki/api/v1/push",
-			TLSSetting: configtls.TLSClientSetting{
+			TLSSetting: &configtls.TLSClientSetting{
 				TLSSetting: configtls.TLSSetting{
 					CAFile:   "/var/lib/mycert.pem",
 					CertFile: "certfile",

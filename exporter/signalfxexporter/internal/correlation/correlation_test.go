@@ -66,7 +66,7 @@ func TestTrackerStart(t *testing.T) {
 			config: &Config{
 				HTTPClientSettings: confighttp.HTTPClientSettings{
 					Endpoint: "localhost:9090",
-					TLSSetting: configtls.TLSClientSetting{
+					TLSSetting: &configtls.TLSClientSetting{
 						TLSSetting: configtls.TLSSetting{
 							CAFile: "/non/existent",
 						},
