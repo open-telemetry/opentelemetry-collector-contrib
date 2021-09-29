@@ -17,9 +17,8 @@ extensions:
   awsxrayproxy:
     endpoint: 0.0.0.0:2000
     proxy_address: ""
-    tls:
-      insecure: false
-      server_name_override: ""
+    insecure: false
+    server_name_override: ""
     region: ""
     role_arn: ""
     aws_endpoint: ""
