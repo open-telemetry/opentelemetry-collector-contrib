@@ -15,15 +15,25 @@
 package awsxrayproxy
 
 import (
-	"go.opentelemetry.io/collector/config"
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"go.opentelemetry.io/collector/config/confignet"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/proxy"
 )
 
-// Config defines the configuration for an AWS X-Ray proxy.
-type Config struct {
-	config.ExtensionSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
-
-	// ProxyServer defines configurations related to the local TCP proxy server.
-	ProxyConfig proxy.Config `mapstructure:",squash"`
+func TestInvalidEndpoint(t *testing.T) {
+	_, err := newXrayProxy(
+		&Config{
+			ProxyConfig: proxy.Config{
+				TCPAddr: confignet.TCPAddr{
+					Endpoint: "invalidEndpoint",
+				},
+			},
+		},
+		zap.NewNop(),
+	)
+	assert.Error(t, err)
 }
