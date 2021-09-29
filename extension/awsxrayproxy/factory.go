@@ -50,7 +50,7 @@ func createDefaultConfig() config.Extension {
 				Endpoint: defaultEndpoint,
 			},
 			TLSSetting: configtls.TLSClientSetting{
-				Insecure:   false,
+				Insecure: false,
 			},
 		},
 	}
