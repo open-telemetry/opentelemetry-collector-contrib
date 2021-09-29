@@ -50,10 +50,6 @@ func (cfg *Config) Validate() error {
 		return fmt.Errorf("missing port: '%s'", cfg.Endpoint)
 	}
 
-	if u.Path == "" {
-		return fmt.Errorf("missing path: '%s'", cfg.Endpoint)
-	}
-
 	if u.RawQuery != "auto" {
 		return fmt.Errorf("query must be 'auto': '%s'", cfg.Endpoint)
 	}

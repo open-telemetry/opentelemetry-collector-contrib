@@ -66,12 +66,6 @@ func TestValidate(t *testing.T) {
 			errText:     "missing port: 'http://localhost/server-status?auto'",
 		},
 		{
-			desc:        "missing_path",
-			endpoint:    "http://localhost:8080?auto",
-			errExpected: true,
-			errText:     "missing path: 'http://localhost:8080?auto'",
-		},
-		{
 			desc:        "missing_query",
 			endpoint:    "http://localhost:8080/server-status",
 			errExpected: true,
