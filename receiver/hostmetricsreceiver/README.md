@@ -86,9 +86,10 @@ network:
 
 ```yaml
 process:
-  <include|exclude>:
-    names: [ <process name>, ... ]
-    match_type: <strict|regexp>
+  disk:
+    <include|exclude>:
+      names: [ <process name>, ... ]
+      match_type: <strict|regexp>
 ```
 
 ## Advanced Configuration
