@@ -43,7 +43,7 @@ func TestLoadConfig(t *testing.T) {
 	assert.Equal(t, len(cfg.Receivers), 2)
 
 	defaultConfig := factory.CreateDefaultConfig().(*Config)
-	assert.Equal(t, cfg.Receivers[config.NewID(typeStr)], defaultConfig)
+	assert.Equal(t, cfg.Receivers[config.NewComponentID(typeStr)], defaultConfig)
 
 	customConfig := factory.CreateDefaultConfig().(*Config)
 	customConfig.SetIDName("customname")
@@ -56,7 +56,7 @@ func TestLoadConfig(t *testing.T) {
 		Timeout: 20 * time.Second,
 	}
 	customConfig.Subscription = "projects/my-project/subscriptions/otlp-subscription"
-	assert.Equal(t, cfg.Receivers[config.NewIDWithName(typeStr, "customname")], customConfig)
+	assert.Equal(t, cfg.Receivers[config.NewComponentIDWithName(typeStr, "customname")], customConfig)
 }
 
 func TestConfigValidation(t *testing.T) {

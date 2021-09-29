@@ -42,13 +42,13 @@ func TestLoadConfig(t *testing.T) {
 
 	assert.Equal(t, len(cfg.Receivers), 3)
 
-	r1 := cfg.Receivers[config.NewID(typeStr)]
+	r1 := cfg.Receivers[config.NewComponentID(typeStr)]
 	assert.Equal(t, r1, factory.CreateDefaultConfig())
 
-	r2 := cfg.Receivers[config.NewIDWithName(typeStr, "all_settings")].(*Config)
+	r2 := cfg.Receivers[config.NewComponentIDWithName(typeStr, "all_settings")].(*Config)
 	assert.Equal(t, r2,
 		&Config{
-			ReceiverSettings:           config.NewReceiverSettings(config.NewIDWithName(typeStr, "all_settings")),
+			ReceiverSettings:           config.NewReceiverSettings(config.NewComponentIDWithName(typeStr, "all_settings")),
 			Distribution:               distributionKubernetes,
 			CollectionInterval:         30 * time.Second,
 			NodeConditionTypesToReport: []string{"Ready", "MemoryPressure"},
@@ -58,10 +58,10 @@ func TestLoadConfig(t *testing.T) {
 			},
 		})
 
-	r3 := cfg.Receivers[config.NewIDWithName(typeStr, "partial_settings")].(*Config)
+	r3 := cfg.Receivers[config.NewComponentIDWithName(typeStr, "partial_settings")].(*Config)
 	assert.Equal(t, r3,
 		&Config{
-			ReceiverSettings:           config.NewReceiverSettings(config.NewIDWithName(typeStr, "partial_settings")),
+			ReceiverSettings:           config.NewReceiverSettings(config.NewComponentIDWithName(typeStr, "partial_settings")),
 			Distribution:               distributionOpenShift,
 			CollectionInterval:         30 * time.Second,
 			NodeConditionTypesToReport: []string{"Ready"},

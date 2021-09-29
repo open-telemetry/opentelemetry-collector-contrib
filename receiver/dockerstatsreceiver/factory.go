@@ -37,7 +37,7 @@ func NewFactory() component.ReceiverFactory {
 
 func createDefaultConfig() config.Receiver {
 	return &Config{
-		ReceiverSettings:   config.NewReceiverSettings(config.NewID(typeStr)),
+		ReceiverSettings:   config.NewReceiverSettings(config.NewComponentID(typeStr)),
 		Endpoint:           "unix:///var/run/docker.sock",
 		CollectionInterval: 10 * time.Second,
 		Timeout:            5 * time.Second,

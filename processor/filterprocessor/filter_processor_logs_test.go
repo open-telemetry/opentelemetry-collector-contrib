@@ -341,7 +341,7 @@ func TestFilterLogProcessor(t *testing.T) {
 			// next stores the results of the filter log processor
 			next := new(consumertest.LogsSink)
 			cfg := &Config{
-				ProcessorSettings: config.NewProcessorSettings(config.NewID(typeStr)),
+				ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
 				Logs: LogFilters{
 					Include: test.inc,
 					Exclude: test.exc,

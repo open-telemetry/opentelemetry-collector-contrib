@@ -55,7 +55,7 @@ func TestScrape_Errors(t *testing.T) {
 			name:              "multipleErrors",
 			virtualMemoryFunc: func() (*mem.VirtualMemoryStat, error) { return nil, errors.New("err1") },
 			swapMemoryFunc:    func() (*mem.SwapMemoryStat, error) { return nil, errors.New("err2") },
-			expectedError:     "[err1; err2]",
+			expectedError:     "err1; err2",
 			expectedErrCount:  pagingUsageMetricsLen + pagingMetricsLen,
 		},
 	}

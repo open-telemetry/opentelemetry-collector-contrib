@@ -34,7 +34,7 @@ func TestFactory(t *testing.T) {
 	require.Equal(t, typeStr, f.Type())
 
 	cfg := f.CreateDefaultConfig().(*Config)
-	require.Equal(t, config.NewID(typeStr), cfg.ID())
+	require.Equal(t, config.NewComponentID(typeStr), cfg.ID())
 
 	if runtime.GOOS != "windows" {
 		require.Equal(t, "/var/lib/otelcol/file_storage", cfg.Directory)

@@ -95,7 +95,7 @@ func (e *humioTracesExporter) pushTraceData(ctx context.Context, td pdata.Traces
 		// All traces failed conversion - no need to retry any more since this is not a
 		// transient failure. By raising a permanent error, the queued retry middleware
 		// will expose a metric for failed spans immediately
-		return consumererror.Permanent(conversionErr)
+		return consumererror.NewPermanent(conversionErr)
 	}
 
 	err := e.client.sendStructuredEvents(ctx, evts)

@@ -15,6 +15,7 @@
 package testbed
 
 import (
+	"context"
 	"fmt"
 	"strings"
 
@@ -60,13 +61,11 @@ func (ipp *inProcessCollector) Start(args StartParams) error {
 	if err != nil {
 		return err
 	}
-	cmd := service.NewCommand(ipp.svc)
-	cmd.SetArgs(args.CmdArgs)
 
 	ipp.appDone = make(chan struct{})
 	go func() {
 		defer close(ipp.appDone)
-		if appErr := cmd.Execute(); appErr != nil {
+		if appErr := ipp.svc.Run(context.Background()); appErr != nil {
 			err = appErr
 		}
 	}()

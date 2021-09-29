@@ -39,27 +39,27 @@ func TestLoadConfig(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, cfg)
 
-	p0 := cfg.Processors[config.NewIDWithName("span", "custom")]
+	p0 := cfg.Processors[config.NewComponentIDWithName("span", "custom")]
 	assert.Equal(t, p0, &Config{
-		ProcessorSettings: config.NewProcessorSettings(config.NewIDWithName("span", "custom")),
+		ProcessorSettings: config.NewProcessorSettings(config.NewComponentIDWithName("span", "custom")),
 		Rename: Name{
 			FromAttributes: []string{"db.svc", "operation", "id"},
 			Separator:      "::",
 		},
 	})
 
-	p1 := cfg.Processors[config.NewIDWithName("span", "no-separator")]
+	p1 := cfg.Processors[config.NewComponentIDWithName("span", "no-separator")]
 	assert.Equal(t, p1, &Config{
-		ProcessorSettings: config.NewProcessorSettings(config.NewIDWithName("span", "no-separator")),
+		ProcessorSettings: config.NewProcessorSettings(config.NewComponentIDWithName("span", "no-separator")),
 		Rename: Name{
 			FromAttributes: []string{"db.svc", "operation", "id"},
 			Separator:      "",
 		},
 	})
 
-	p2 := cfg.Processors[config.NewIDWithName("span", "to_attributes")]
+	p2 := cfg.Processors[config.NewComponentIDWithName("span", "to_attributes")]
 	assert.Equal(t, p2, &Config{
-		ProcessorSettings: config.NewProcessorSettings(config.NewIDWithName("span", "to_attributes")),
+		ProcessorSettings: config.NewProcessorSettings(config.NewComponentIDWithName("span", "to_attributes")),
 		Rename: Name{
 			ToAttributes: &ToAttributes{
 				Rules: []string{`^\/api\/v1\/document\/(?P<documentId>.*)\/update$`},
@@ -67,9 +67,9 @@ func TestLoadConfig(t *testing.T) {
 		},
 	})
 
-	p3 := cfg.Processors[config.NewIDWithName("span", "includeexclude")]
+	p3 := cfg.Processors[config.NewComponentIDWithName("span", "includeexclude")]
 	assert.Equal(t, p3, &Config{
-		ProcessorSettings: config.NewProcessorSettings(config.NewIDWithName("span", "includeexclude")),
+		ProcessorSettings: config.NewProcessorSettings(config.NewComponentIDWithName("span", "includeexclude")),
 		MatchConfig: filterconfig.MatchConfig{
 			Include: &filterconfig.MatchProperties{
 				Config:    *createMatchConfig(filterset.Regexp),
