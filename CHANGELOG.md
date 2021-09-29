@@ -10,6 +10,10 @@
 - Rename `configparser.ConfigMap` to `config.Map`
 - Rename `pdata.AggregationTemporality*` to `pdata.MetricAggregationTemporality*`
 
+## 💡 Enhancements 💡
+
+- `k8sattributes` processor: add container metadata enrichment (#5467)
+
 ## v0.36.0
 
 ## 🛑 Breaking changes 🛑
