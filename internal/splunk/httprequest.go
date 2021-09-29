@@ -23,6 +23,7 @@ import (
 
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"go.uber.org/multierr"
 )
 
 const HeaderRetryAfter = "Retry-After"
@@ -58,7 +59,7 @@ func HandleHTTPCode(resp *http.Response) error {
 		if err2 == nil {
 			err = consumererror.Permanent(fmt.Errorf("%w", fmt.Errorf("%q", dump)))
 		} else {
-			err = consumererror.Combine([]error{err, err2})
+			err = multierr.Append(err, err2)
 		}
 	}
 

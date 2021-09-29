@@ -16,35 +16,14 @@ package awsxrayproxy
 
 import (
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/config/confignet"
-	"go.opentelemetry.io/collector/config/configtls"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/proxy"
 )
 
 // Config defines the configuration for an AWS X-Ray proxy.
 type Config struct {
 	config.ExtensionSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
 
-	// endpoint is the TCP address and port on which this receiver listens for
-	// calls from OpenTelemetry clients and relays them to the AWS X-Ray backend to
-	// get sampling rules and report sampling statistics.
-	confignet.TCPAddr `mapstructure:",squash"`
-
-	// ProxyAddress defines the proxy address that the local TCP server
-	// forwards HTTP requests to AWS X-Ray backend through.
-	ProxyAddress string `mapstructure:"proxy_address"`
-
-	// TLSSetting struct exposes TLS client configuration when forwarding
-	// calls to the AWS X-Ray backend.
-	TLSSetting configtls.TLSClientSetting `mapstructure:"tls,omitempty"`
-
-	// Region is the AWS region the local TCP server forwards requests to.
-	Region string `mapstructure:"region"`
-
-	// RoleARN is the IAM role used by the local TCP server when
-	// communicating with the AWS X-Ray service.
-	RoleARN string `mapstructure:"role_arn"`
-
-	// AWSEndpoint is the X-Ray service endpoint which the local
-	// TCP server forwards requests to.
-	AWSEndpoint string `mapstructure:"aws_endpoint"`
+	// ProxyServer defines configurations related to the local TCP proxy server.
+	ProxyConfig proxy.Config `mapstructure:",squash"`
 }

@@ -16,15 +16,18 @@ package awsxrayproxy
 
 import (
 	"context"
+	"net/http"
+	"os"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configtest"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/proxy"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testutil"
 )
 
@@ -32,22 +35,44 @@ func TestFactory_CreateDefaultConfig(t *testing.T) {
 	cfg := createDefaultConfig()
 	assert.Equal(t, &Config{
 		ExtensionSettings: config.NewExtensionSettings(config.NewID(typeStr)),
-		TCPAddr: confignet.TCPAddr{
-			Endpoint: defaultEndpoint,
+		ProxyConfig: proxy.Config{
+			TCPAddr: confignet.TCPAddr{
+				Endpoint: defaultEndpoint,
+			},
 		},
 	}, cfg)
 
 	assert.NoError(t, configtest.CheckConfigStruct(cfg))
-	ext, err := createExtension(context.Background(), componenttest.NewNopExtensionCreateSettings(), cfg)
-	require.NoError(t, err)
-	require.NotNil(t, ext)
 }
 
 func TestFactory_CreateExtension(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	cfg.TCPAddr.Endpoint = testutil.GetAvailableLocalAddress(t)
+	address := testutil.GetAvailableLocalAddress(t)
+	cfg.ProxyConfig.TCPAddr.Endpoint = address
+	cfg.ProxyConfig.Region = "us-east-2"
 
-	ext, err := createExtension(context.Background(), componenttest.NewNopExtensionCreateSettings(), cfg)
-	require.NoError(t, err)
-	require.NotNil(t, ext)
+	// Simplest way to get SDK to use fake credentials
+	os.Setenv("AWS_ACCESS_KEY_ID", "fakeAccessKeyID")
+	os.Setenv("AWS_SECRET_ACCESS_KEY", "fakeSecretAccessKey")
+
+	ctx := context.Background()
+	ext, err := createExtension(ctx, componenttest.NewNopExtensionCreateSettings(), cfg)
+	assert.NoError(t, err)
+	assert.NotNil(t, ext)
+
+	err = ext.Start(ctx, componenttest.NewNopHost())
+	assert.NoError(t, err)
+
+	resp, err := http.Post(
+		"http://"+address+"/GetSamplingRules",
+		"application/json",
+		strings.NewReader(`{"NextToken": null}`))
+
+	assert.NoError(t, err)
+
+	// The request was proxied and has standard AWS headers.
+	assert.NotEmpty(t, resp.Header.Get("X-Amzn-Requestid"))
+
+	err = ext.Shutdown(ctx)
+	assert.NoError(t, err)
 }

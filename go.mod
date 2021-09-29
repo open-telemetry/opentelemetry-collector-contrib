@@ -121,8 +121,8 @@ require (
 	github.com/Azure/go-autorest/autorest/validation v0.3.1 // indirect
 	github.com/Azure/go-autorest/logger v0.2.1 // indirect
 	github.com/Azure/go-autorest/tracing v0.6.0 // indirect
-	github.com/DataDog/agent-payload v4.82.0+incompatible // indirect
-	github.com/DataDog/datadog-agent/pkg/quantile v0.31.0 // indirect
+	github.com/DataDog/agent-payload v4.85.0+incompatible // indirect
+	github.com/DataDog/datadog-agent/pkg/quantile v0.31.1 // indirect
 	github.com/DataDog/datadog-agent/pkg/trace/exportable v0.0.0-20201016145401-4646cf596b02 // indirect
 	github.com/DataDog/datadog-agent/pkg/util/log v0.0.0-20201009092105-58e18918b2db // indirect
 	github.com/DataDog/datadog-go v4.4.0+incompatible // indirect
@@ -137,7 +137,7 @@ require (
 	github.com/apache/thrift v0.15.0 // indirect
 	github.com/armon/go-metrics v0.3.3 // indirect
 	github.com/avast/retry-go v3.0.0+incompatible // indirect
-	github.com/aws/aws-sdk-go v1.40.47 // indirect
+	github.com/aws/aws-sdk-go v1.40.50 // indirect
 	github.com/beeker1121/goque v2.1.0+incompatible // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/bmatcuk/doublestar/v3 v3.0.0 // indirect
@@ -205,7 +205,7 @@ require (
 	github.com/hashicorp/hcl v1.0.0 // indirect
 	github.com/hashicorp/serf v0.9.5 // indirect
 	github.com/hetznercloud/hcloud-go v1.26.2 // indirect
-	github.com/honeycombio/libhoney-go v1.15.4 // indirect
+	github.com/honeycombio/libhoney-go v1.15.5 // indirect
 	github.com/iancoleman/strcase v0.2.0 // indirect
 	github.com/imdario/mergo v0.3.12 // indirect
 	github.com/inconshreveable/mousetrap v1.0.0 // indirect
@@ -324,13 +324,13 @@ require (
 	github.com/tklauser/go-sysconf v0.3.6 // indirect
 	github.com/tklauser/numcpus v0.2.2 // indirect
 	github.com/uber/jaeger-lib v2.4.1+incompatible // indirect
-	github.com/vmihailenco/msgpack/v5 v5.2.0 // indirect
+	github.com/vmihailenco/msgpack/v5 v5.3.4 // indirect
 	github.com/vmihailenco/tagparser/v2 v2.0.0 // indirect
 	github.com/wavefronthq/wavefront-sdk-go v0.9.9 // indirect
 	github.com/xdg-go/pbkdf2 v1.0.0 // indirect
 	github.com/xdg-go/scram v1.0.2 // indirect
 	github.com/xdg-go/stringprep v1.0.2 // indirect
-	go.elastic.co/apm v1.13.1 // indirect
+	go.elastic.co/apm v1.14.0 // indirect
 	go.elastic.co/fastjson v1.1.0 // indirect
 	go.etcd.io/bbolt v1.3.6 // indirect
 	go.mongodb.org/atlas v0.12.0 // indirect

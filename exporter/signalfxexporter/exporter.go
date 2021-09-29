@@ -94,14 +94,18 @@ func newSignalFxExporter(
 		return nil, fmt.Errorf("failed to create metric converter: %v", err)
 	}
 
+	transport := http.DefaultTransport.(*http.Transport).Clone()
+	transport.MaxIdleConns = config.MaxConnections
+	transport.MaxIdleConnsPerHost = config.MaxConnections
+	transport.IdleConnTimeout = 30 * time.Second
+
 	dpClient := &sfxDPClient{
 		sfxClientBase: sfxClientBase{
 			ingestURL: options.ingestURL,
 			headers:   headers,
 			client: &http.Client{
-				// TODO: What other settings of http.Client to expose via config?
-				//  Or what others change from default values?
-				Timeout: config.Timeout,
+				Timeout:   config.Timeout,
+				Transport: transport,
 			},
 			zippers: newGzipPool(),
 		},
@@ -159,14 +163,18 @@ func newEventExporter(config *Config, logger *zap.Logger) (*signalfxExporter, er
 
 	headers := buildHeaders(config)
 
+	transport := http.DefaultTransport.(*http.Transport).Clone()
+	transport.MaxIdleConns = config.MaxConnections
+	transport.MaxIdleConnsPerHost = config.MaxConnections
+	transport.IdleConnTimeout = 30 * time.Second
+
 	eventClient := &sfxEventClient{
 		sfxClientBase: sfxClientBase{
 			ingestURL: options.ingestURL,
 			headers:   headers,
 			client: &http.Client{
-				// TODO: What other settings of http.Client to expose via config?
-				//  Or what others change from default values?
-				Timeout: config.Timeout,
+				Timeout:   config.Timeout,
+				Transport: transport,
 			},
 			zippers: newGzipPool(),
 		},
