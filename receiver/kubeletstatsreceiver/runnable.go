@@ -28,7 +28,6 @@ import (
 
 	// todo replace with scraping lib when it's ready
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/interval"
-	internaldata "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver/internal/kubelet"
 )
 
@@ -98,7 +97,7 @@ func (r *runnable) Run() error {
 	mds := kubelet.MetricsData(r.logger, summary, metadata, typeStr, r.metricGroupsToCollect)
 	metrics := pdata.NewMetrics()
 	for i := range mds {
-		internaldata.OCToMetrics(mds[i].Node, mds[i].Resource, mds[i].Metrics).ResourceMetrics().MoveAndAppendTo(metrics.ResourceMetrics())
+		mds[i].ResourceMetrics().MoveAndAppendTo(metrics.ResourceMetrics())
 	}
 
 	ctx := r.obsrecv.StartMetricsOp(r.ctx)
