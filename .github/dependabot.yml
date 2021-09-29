@@ -430,6 +430,10 @@ updates:
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
+    directory: "/receiver/googlecloudspannerreceiver"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
     directory: "/receiver/hostmetricsreceiver"
     schedule:
       interval: "weekly"
