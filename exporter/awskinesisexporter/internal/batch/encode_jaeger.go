@@ -15,8 +15,8 @@
 package batch
 
 import (
-	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/model/pdata"
+	"go.uber.org/multierr"
 
 	jaegertranslator "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger"
 )
@@ -45,19 +45,17 @@ func (j jaeger) Traces(td pdata.Traces) (*Batch, error) {
 		WithMaxRecordSize(j.recordSize),
 		WithMaxRecordsPerBatch(j.batchSize),
 	)
-	var errs []error
+	var errs error
 	for _, trace := range traces {
 		for _, span := range trace.GetSpans() {
 			if span.Process == nil {
 				span.Process = trace.Process
 			}
-			if err := bt.AddProtobufV1(span, span.TraceID.String()); err != nil {
-				errs = append(errs, err)
-			}
+			errs = multierr.Append(errs, bt.AddProtobufV1(span, span.TraceID.String()))
 		}
 	}
 
-	return bt, consumererror.Combine(errs)
+	return bt, errs
 }
 
 func (jaeger) Metrics(_ pdata.Metrics) (*Batch, error) {

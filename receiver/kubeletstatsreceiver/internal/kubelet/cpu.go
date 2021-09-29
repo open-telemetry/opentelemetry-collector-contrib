@@ -15,30 +15,32 @@
 package kubelet
 
 import (
-	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
+	"go.opentelemetry.io/collector/model/pdata"
 	stats "k8s.io/kubelet/pkg/apis/stats/v1alpha1"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver/internal/metadata"
 )
 
-func cpuMetrics(prefix string, s *stats.CPUStats) []*metricspb.Metric {
+func addCPUMetrics(dest pdata.MetricSlice, prefix string, s *stats.CPUStats, startTime pdata.Timestamp, currentTime pdata.Timestamp) {
 	if s == nil {
-		return nil
+		return
 	}
-	return []*metricspb.Metric{
-		cpuUsageMetric(prefix, s),
-		cpuCumulativeUsageMetric(prefix, s),
-	}
+	addCPUUsageMetric(dest, prefix, s, currentTime)
+	addCPUTimeMetric(dest, prefix, s, startTime, currentTime)
 }
 
-func cpuUsageMetric(prefix string, s *stats.CPUStats) *metricspb.Metric {
-	nanoCores := s.UsageNanoCores
-	if nanoCores == nil {
-		return nil
+func addCPUUsageMetric(dest pdata.MetricSlice, prefix string, s *stats.CPUStats, currentTime pdata.Timestamp) {
+	if s.UsageNanoCores == nil {
+		return
 	}
-	value := float64(*nanoCores) / 1_000_000_000
-	return doubleGauge(prefix+"cpu.utilization", "1", &value)
+	value := float64(*s.UsageNanoCores) / 1_000_000_000
+	fillDoubleGauge(dest.AppendEmpty(), prefix, metadata.M.CPUUtilization, value, currentTime)
 }
 
-func cpuCumulativeUsageMetric(prefix string, s *stats.CPUStats) *metricspb.Metric {
+func addCPUTimeMetric(dest pdata.MetricSlice, prefix string, s *stats.CPUStats, startTime pdata.Timestamp, currentTime pdata.Timestamp) {
+	if s.UsageCoreNanoSeconds == nil {
+		return
+	}
 	value := float64(*s.UsageCoreNanoSeconds) / 1_000_000_000
-	return cumulativeDouble(prefix+"cpu.time", &value)
+	fillDoubleSum(dest.AppendEmpty(), prefix, metadata.M.CPUTime, value, startTime, currentTime)
 }

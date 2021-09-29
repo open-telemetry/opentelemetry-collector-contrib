@@ -20,8 +20,8 @@ import (
 
 	"github.com/honeycombio/libhoney-go"
 	"github.com/honeycombio/libhoney-go/transmission"
-	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/model/pdata"
+	"go.uber.org/multierr"
 	"go.uber.org/zap"
 )
 
@@ -102,7 +102,7 @@ func newHoneycombTracesExporter(cfg *Config, logger *zap.Logger) (*honeycombExpo
 // pushTraceData is the method called when trace data is available. It will be
 // responsible for sending a batch of events.
 func (e *honeycombExporter) pushTraceData(ctx context.Context, td pdata.Traces) error {
-	var errs []error
+	var errs error
 
 	// Run the error logger. This just listens for messages in the error
 	// response queue and writes them out using the logger.
@@ -164,14 +164,12 @@ func (e *honeycombExporter) pushTraceData(ctx context.Context, td pdata.Traces) 
 				ev.AddField("status.code", getStatusCode(span.Status()))
 				ev.AddField("status.message", getStatusMessage(span.Status()))
 
-				if err := ev.SendPresampled(); err != nil {
-					errs = append(errs, err)
-				}
+				errs = multierr.Append(errs, ev.SendPresampled())
 			}
 		}
 	}
 
-	return consumererror.Combine(errs)
+	return errs
 }
 
 func getSpanKind(kind pdata.SpanKind) string {

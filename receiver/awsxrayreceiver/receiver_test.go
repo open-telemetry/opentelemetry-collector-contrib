@@ -271,7 +271,7 @@ func (m *mockProxy) ListenAndServe() error {
 	return errors.New("returning from ListenAndServe() always errors out")
 }
 
-func (m *mockProxy) Close() error {
+func (m *mockProxy) Shutdown(ctx context.Context) error {
 	if m.closeErr != nil {
 		return m.closeErr
 	}

@@ -20,8 +20,8 @@ import (
 	"github.com/Shopify/sarama"
 	"github.com/gogo/protobuf/jsonpb"
 	jaegerproto "github.com/jaegertracing/jaeger/model"
-	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/model/pdata"
+	"go.uber.org/multierr"
 
 	jaegertranslator "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger"
 )
@@ -39,14 +39,14 @@ func (j jaegerMarshaler) Marshal(traces pdata.Traces, topic string) ([]*sarama.P
 	}
 	var messages []*sarama.ProducerMessage
 
-	var errs []error
+	var errs error
 	for _, batch := range batches {
 		for _, span := range batch.Spans {
 			span.Process = batch.Process
 			bts, err := j.marshaler.marshal(span)
 			// continue to process spans that can be serialized
 			if err != nil {
-				errs = append(errs, err)
+				errs = multierr.Append(errs, err)
 				continue
 			}
 			key := []byte(span.TraceID.String())
@@ -57,7 +57,7 @@ func (j jaegerMarshaler) Marshal(traces pdata.Traces, topic string) ([]*sarama.P
 			})
 		}
 	}
-	return messages, consumererror.Combine(errs)
+	return messages, errs
 }
 
 func (j jaegerMarshaler) Encoding() string {

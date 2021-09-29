@@ -19,7 +19,7 @@ import (
 	"strings"
 	"sync/atomic"
 
-	"go.opentelemetry.io/collector/consumer/consumererror"
+	"go.uber.org/multierr"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/translation"
 	metadata "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata"
@@ -106,7 +106,7 @@ func getPropertiesAndTags(kmu metadata.MetadataUpdate) (map[string]*string, map[
 }
 
 func (dc *DimensionClient) PushMetadata(metadata []*metadata.MetadataUpdate) error {
-	var errs []error
+	var errs error
 	for _, m := range metadata {
 		dimensionUpdate := getDimensionUpdateFromMetadata(*m, dc.metricsConverter)
 
@@ -115,10 +115,8 @@ func (dc *DimensionClient) PushMetadata(metadata []*metadata.MetadataUpdate) err
 			return fmt.Errorf("dimensionUpdate %v is missing Name or value, cannot send", dimensionUpdate)
 		}
 
-		if err := dc.acceptDimension(dimensionUpdate); err != nil {
-			errs = append(errs, err)
-		}
+		errs = multierr.Append(errs, dc.acceptDimension(dimensionUpdate))
 	}
 
-	return consumererror.Combine(errs)
+	return errs
 }

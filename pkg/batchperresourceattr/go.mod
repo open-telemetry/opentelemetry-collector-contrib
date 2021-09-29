@@ -6,7 +6,7 @@ require (
 	github.com/stretchr/testify v1.7.0
 	go.opentelemetry.io/collector v0.36.1-0.20210927193005-ebb0fbd6f23e
 	go.opentelemetry.io/collector/model v0.36.1-0.20210927193005-ebb0fbd6f23e
-
+	go.uber.org/multierr v1.7.0
 )
 
 require (
@@ -15,6 +15,7 @@ require (
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/rogpeppe/go-internal v1.6.1 // indirect
+	go.uber.org/atomic v1.9.0 // indirect
 	golang.org/x/net v0.0.0-20210614182718-04defd469f4e // indirect
 	golang.org/x/sys v0.0.0-20210615035016-665e8c7367d1 // indirect
 	golang.org/x/text v0.3.6 // indirect

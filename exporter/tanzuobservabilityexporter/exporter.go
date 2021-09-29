@@ -24,8 +24,8 @@ import (
 	"github.com/google/uuid"
 	"github.com/wavefronthq/wavefront-sdk-go/senders"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/model/pdata"
+	"go.uber.org/multierr"
 	"go.uber.org/zap"
 )
 
@@ -94,7 +94,7 @@ func newTracesExporter(l *zap.Logger, c config.Exporter) (*tracesExporter, error
 }
 
 func (e *tracesExporter) pushTraceData(ctx context.Context, td pdata.Traces) error {
-	var errs []error
+	var errs error
 
 	for i := 0; i < td.ResourceSpans().Len(); i++ {
 		rspans := td.ResourceSpans().At(i)
@@ -105,16 +105,16 @@ func (e *tracesExporter) pushTraceData(ctx context.Context, td pdata.Traces) err
 			for k := 0; k < ispans.Spans().Len(); k++ {
 				select {
 				case <-ctx.Done():
-					return consumererror.Combine(append(errs, errors.New("context canceled")))
+					return multierr.Append(errs, errors.New("context canceled"))
 				default:
 					transformedSpan, err := transform.Span(ispans.Spans().At(k))
 					if err != nil {
-						errs = append(errs, err)
+						errs = multierr.Append(errs, err)
 						continue
 					}
 
 					if err := e.recordSpan(transformedSpan); err != nil {
-						errs = append(errs, err)
+						errs = multierr.Append(errs, err)
 						continue
 					}
 				}
@@ -122,10 +122,8 @@ func (e *tracesExporter) pushTraceData(ctx context.Context, td pdata.Traces) err
 		}
 	}
 
-	if err := e.sender.Flush(); err != nil {
-		errs = append(errs, err)
-	}
-	return consumererror.Combine(errs)
+	errs = multierr.Append(errs, e.sender.Flush())
+	return errs
 }
 
 func (e *tracesExporter) recordSpan(span span) error {
