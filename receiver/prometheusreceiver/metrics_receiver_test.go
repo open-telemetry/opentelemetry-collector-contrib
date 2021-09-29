@@ -31,7 +31,7 @@ import (
 	agentmetricspb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/metrics/v1"
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
-	gokitlog "github.com/go-kit/kit/log"
+	gokitlog "github.com/go-kit/log"
 	promcfg "github.com/prometheus/prometheus/config"
 	"github.com/prometheus/prometheus/scrape"
 	"github.com/stretchr/testify/assert"
