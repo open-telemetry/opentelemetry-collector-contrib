@@ -34,6 +34,7 @@ import (
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/model/pdata"
+	"go.uber.org/multierr"
 )
 
 const maxBatchByteSize = 3000000
@@ -104,7 +105,7 @@ func (prwe *PRWExporter) PushMetrics(ctx context.Context, md pdata.Metrics) erro
 	default:
 		tsMap := map[string]*prompb.TimeSeries{}
 		dropped := 0
-		var errs []error
+		var errs error
 		resourceMetricsSlice := md.ResourceMetrics()
 		for i := 0; i < resourceMetricsSlice.Len(); i++ {
 			resourceMetrics := resourceMetricsSlice.At(i)
@@ -122,7 +123,7 @@ func (prwe *PRWExporter) PushMetrics(ctx context.Context, md pdata.Metrics) erro
 					// check for valid type and temporality combination and for matching data field and type
 					if ok := validateMetrics(metric); !ok {
 						dropped++
-						errs = append(errs, consumererror.Permanent(errors.New("invalid temporality and type combination")))
+						errs = multierr.Append(errs, consumererror.Permanent(errors.New("invalid temporality and type combination")))
 						continue
 					}
 
@@ -132,19 +133,19 @@ func (prwe *PRWExporter) PushMetrics(ctx context.Context, md pdata.Metrics) erro
 						dataPoints := metric.Gauge().DataPoints()
 						if err := prwe.addNumberDataPointSlice(dataPoints, tsMap, resource, metric); err != nil {
 							dropped++
-							errs = append(errs, err)
+							errs = multierr.Append(errs, err)
 						}
 					case pdata.MetricDataTypeSum:
 						dataPoints := metric.Sum().DataPoints()
 						if err := prwe.addNumberDataPointSlice(dataPoints, tsMap, resource, metric); err != nil {
 							dropped++
-							errs = append(errs, err)
+							errs = multierr.Append(errs, err)
 						}
 					case pdata.MetricDataTypeHistogram:
 						dataPoints := metric.Histogram().DataPoints()
 						if dataPoints.Len() == 0 {
 							dropped++
-							errs = append(errs, consumererror.Permanent(fmt.Errorf("empty data points. %s is dropped", metric.Name())))
+							errs = multierr.Append(errs, consumererror.Permanent(fmt.Errorf("empty data points. %s is dropped", metric.Name())))
 						}
 						for x := 0; x < dataPoints.Len(); x++ {
 							addSingleHistogramDataPoint(dataPoints.At(x), resource, metric, prwe.namespace, tsMap, prwe.externalLabels)
@@ -153,14 +154,14 @@ func (prwe *PRWExporter) PushMetrics(ctx context.Context, md pdata.Metrics) erro
 						dataPoints := metric.Summary().DataPoints()
 						if dataPoints.Len() == 0 {
 							dropped++
-							errs = append(errs, consumererror.Permanent(fmt.Errorf("empty data points. %s is dropped", metric.Name())))
+							errs = multierr.Append(errs, consumererror.Permanent(fmt.Errorf("empty data points. %s is dropped", metric.Name())))
 						}
 						for x := 0; x < dataPoints.Len(); x++ {
 							addSingleSummaryDataPoint(dataPoints.At(x), resource, metric, prwe.namespace, tsMap, prwe.externalLabels)
 						}
 					default:
 						dropped++
-						errs = append(errs, consumererror.Permanent(errors.New("unsupported metric type")))
+						errs = multierr.Append(errs, consumererror.Permanent(errors.New("unsupported metric type")))
 					}
 				}
 			}
@@ -168,11 +169,11 @@ func (prwe *PRWExporter) PushMetrics(ctx context.Context, md pdata.Metrics) erro
 
 		if exportErrors := prwe.export(ctx, tsMap); len(exportErrors) != 0 {
 			dropped = md.MetricCount()
-			errs = append(errs, exportErrors...)
+			errs = multierr.Append(errs, multierr.Combine(exportErrors...))
 		}
 
 		if dropped != 0 {
-			return consumererror.Combine(errs)
+			return errs
 		}
 
 		return nil

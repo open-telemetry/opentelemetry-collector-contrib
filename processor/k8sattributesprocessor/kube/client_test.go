@@ -747,6 +747,166 @@ func TestPodIgnorePatterns(t *testing.T) {
 	}
 }
 
+func Test_extractPodContainersAttributes(t *testing.T) {
+	pod := api_v1.Pod{
+		Spec: api_v1.PodSpec{
+			Containers: []api_v1.Container{
+				{
+					Name:  "container1",
+					Image: "test/image1:0.1.0",
+				},
+				{
+					Name:  "container2",
+					Image: "test/image2:0.2.0",
+				},
+			},
+			InitContainers: []api_v1.Container{
+				{
+					Name:  "init_container",
+					Image: "test/init-image:1.0.2",
+				},
+			},
+		},
+		Status: api_v1.PodStatus{
+			ContainerStatuses: []api_v1.ContainerStatus{
+				{
+					Name:         "container1",
+					ContainerID:  "docker://container1-id-123",
+					RestartCount: 0,
+				},
+				{
+					Name:         "container2",
+					ContainerID:  "docker://container2-id-456",
+					RestartCount: 2,
+				},
+			},
+			InitContainerStatuses: []api_v1.ContainerStatus{
+				{
+					Name:         "init_container",
+					ContainerID:  "containerd://init-container-id-123",
+					RestartCount: 0,
+				},
+			},
+		},
+	}
+	tests := []struct {
+		name  string
+		rules ExtractionRules
+		pod   api_v1.Pod
+		want  map[string]*Container
+	}{
+		{
+			name: "no-data",
+			rules: ExtractionRules{
+				ContainerImageName: true,
+				ContainerImageTag:  true,
+				ContainerID:        true,
+			},
+			pod:  api_v1.Pod{},
+			want: map[string]*Container{},
+		},
+		{
+			name:  "no-rules",
+			rules: ExtractionRules{},
+			pod:   pod,
+			want:  map[string]*Container{},
+		},
+		{
+			name: "image-name-only",
+			rules: ExtractionRules{
+				ContainerImageName: true,
+			},
+			pod: pod,
+			want: map[string]*Container{
+				"container1":     {ImageName: "test/image1"},
+				"container2":     {ImageName: "test/image2"},
+				"init_container": {ImageName: "test/init-image"},
+			},
+		},
+		{
+			name: "no-image-tag-available",
+			rules: ExtractionRules{
+				ContainerImageName: true,
+			},
+			pod: api_v1.Pod{
+				Spec: api_v1.PodSpec{
+					Containers: []api_v1.Container{
+						{
+							Name:  "test-container",
+							Image: "test/image",
+						},
+					},
+				},
+			},
+			want: map[string]*Container{
+				"test-container": {ImageName: "test/image"},
+			},
+		},
+		{
+			name: "container-id-only",
+			rules: ExtractionRules{
+				ContainerID: true,
+			},
+			pod: pod,
+			want: map[string]*Container{
+				"container1": {
+					Statuses: map[int]ContainerStatus{
+						0: {ContainerID: "container1-id-123"},
+					},
+				},
+				"container2": {
+					Statuses: map[int]ContainerStatus{
+						2: {ContainerID: "container2-id-456"},
+					},
+				},
+				"init_container": {
+					Statuses: map[int]ContainerStatus{
+						0: {ContainerID: "init-container-id-123"},
+					},
+				},
+			},
+		},
+		{
+			name: "all-container-attributes",
+			rules: ExtractionRules{
+				ContainerImageName: true,
+				ContainerImageTag:  true,
+				ContainerID:        true,
+			},
+			pod: pod,
+			want: map[string]*Container{
+				"container1": {
+					ImageName: "test/image1",
+					ImageTag:  "0.1.0",
+					Statuses: map[int]ContainerStatus{
+						0: {ContainerID: "container1-id-123"},
+					},
+				},
+				"container2": {
+					ImageName: "test/image2",
+					ImageTag:  "0.2.0",
+					Statuses: map[int]ContainerStatus{
+						2: {ContainerID: "container2-id-456"},
+					},
+				},
+				"init_container": {
+					ImageName: "test/init-image",
+					ImageTag:  "1.0.2",
+					Statuses: map[int]ContainerStatus{
+						0: {ContainerID: "init-container-id-123"},
+					},
+				},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			c := WatchClient{Rules: tt.rules}
+			assert.Equal(t, tt.want, c.extractPodContainersAttributes(&tt.pod))
+		})
+	}
+}
+
 func Test_extractField(t *testing.T) {
 	c := WatchClient{}
 	type args struct {

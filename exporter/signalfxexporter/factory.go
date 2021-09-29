@@ -63,6 +63,7 @@ func createDefaultConfig() config.Exporter {
 		DeltaTranslationTTL:           3600,
 		Correlation:                   correlation.DefaultConfig(),
 		NonAlphanumericDimensionChars: "_-.",
+		MaxConnections:                100,
 	}
 }
 

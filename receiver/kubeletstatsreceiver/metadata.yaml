@@ -1,0 +1,125 @@
+name: kubeletstatsreceiver
+
+labels:
+  interface:
+    description: Name of the network interface.
+
+  direction:
+    description: Direction of flow of bytes/opertations (receive or transmit).
+    enum: [receive, transmit]
+
+metrics:
+  cpu.utilization:
+    description: "CPU utilization"
+    unit: 1
+    data:
+      type: gauge
+    labels: []
+  cpu.time:
+    description: "CPU time"
+    unit: s
+    data:
+      type: sum
+      monotonic: true
+      aggregation: cumulative
+    labels: []
+  memory.available:
+    description: "Memory available"
+    unit: By
+    data:
+      type: gauge
+    labels: []
+  memory.usage:
+    description: "Memory usage"
+    unit: By
+    data:
+      type: gauge
+    labels: []
+  memory.rss:
+    description: "Memory rss"
+    unit: By
+    data:
+      type: gauge
+    labels: []
+  memory.working_set:
+    description: "Memory working_set"
+    unit: By
+    data:
+      type: gauge
+    labels: []
+  memory.page_faults:
+    description: "Memory page_faults"
+    unit: 1
+    data:
+      type: gauge
+    labels: []
+  memory.major_page_faults:
+    description: "Memory major_page_faults"
+    unit: 1
+    data:
+      type: gauge
+    labels: []
+  filesystem.available:
+    description: "Filesystem available"
+    unit: By
+    data:
+      type: gauge
+    labels: []
+  filesystem.capacity:
+    description: "Filesystem capacity"
+    unit: By
+    data:
+      type: gauge
+    labels: []
+  filesystem.usage:
+    description: "Filesystem usage"
+    unit: By
+    data:
+      type: gauge
+    labels: []
+  network.io:
+    description: "Network IO"
+    unit: By
+    data:
+      type: sum
+      monotonic: true
+      aggregation: cumulative
+    labels: ["interface", "direction"]
+  network.errors:
+    description: "Network errors"
+    unit: 1
+    data:
+      type: sum
+      monotonic: true
+      aggregation: cumulative
+    labels: ["interface", "direction"]
+  volume.available:
+    description: "The number of available bytes in the volume."
+    unit: By
+    data:
+      type: gauge
+    labels: []
+  volume.capacity:
+    description: "The total capacity in bytes of the volume."
+    unit: By
+    data:
+      type: gauge
+    labels: []
+  volume.inodes:
+    description: "The total inodes in the filesystem."
+    unit: 1
+    data:
+      type: gauge
+    labels: []
+  volume.inodes.free:
+    description: "The free inodes in the filesystem."
+    unit: 1
+    data:
+      type: gauge
+    labels: []
+  volume.inodes.used:
+    description: "The inodes used by the filesystem. This may not equal inodes - free because filesystem may share inodes with other filesystems."
+    unit: 1
+    data:
+      type: gauge
+    labels: []

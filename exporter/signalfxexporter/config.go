@@ -104,6 +104,9 @@ type Config struct {
 	// NonAlphanumericDimensionChars is a list of allowable characters, in addition to alphanumeric ones,
 	// to be used in a dimension key.
 	NonAlphanumericDimensionChars string `mapstructure:"nonalphanumeric_dimension_chars"`
+
+	// MaxConnections is used to set a limit to the maximum idle HTTP connection the exporter can keep open.
+	MaxConnections int `mapstructure:"max_connections"`
 }
 
 func (cfg *Config) getOptionsFromConfig() (*exporterOptions, error) {
@@ -152,6 +155,10 @@ func (cfg *Config) validateConfig() error {
 
 	if cfg.Timeout < 0 {
 		return errors.New(`cannot have a negative "timeout"`)
+	}
+
+	if cfg.MaxConnections < 0 {
+		return errors.New(`cannot have a negative "max_connections"`)
 	}
 
 	return nil

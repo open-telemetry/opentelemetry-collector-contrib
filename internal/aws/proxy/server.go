@@ -17,6 +17,7 @@ package proxy
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"fmt"
 	"io"
@@ -41,7 +42,7 @@ const (
 // Server represents HTTP server.
 type Server interface {
 	ListenAndServe() error
-	Close() error
+	Shutdown(ctx context.Context) error
 }
 
 // NewServer returns a local TCP server that proxies requests to AWS

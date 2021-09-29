@@ -30,9 +30,9 @@ func buildCounterMetric(parsedMetric statsDMetric, isMonotonicCounter bool, time
 	}
 	nm.SetDataType(pdata.MetricDataTypeSum)
 
-	nm.Sum().SetAggregationTemporality(pdata.AggregationTemporalityDelta)
+	nm.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityDelta)
 	if isMonotonicCounter {
-		nm.Sum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+		nm.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
 	}
 
 	nm.Sum().SetIsMonotonic(true)

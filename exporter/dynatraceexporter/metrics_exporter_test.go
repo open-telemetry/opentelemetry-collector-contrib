@@ -116,7 +116,7 @@ func Test_exporter_PushMetricsData(t *testing.T) {
 	doubleHistogramDataPoint.SetExplicitBounds([]float64{0, 2, 4, 8})
 	doubleHistogramDataPoint.SetBucketCounts([]uint64{0, 1, 0, 1, 0})
 	doubleHistogramDataPoint.SetTimestamp(testTimestamp)
-	doubleHistogram.SetAggregationTemporality(pdata.AggregationTemporalityDelta)
+	doubleHistogram.SetAggregationTemporality(pdata.MetricAggregationTemporalityDelta)
 
 	type fields struct {
 		logger *zap.Logger
@@ -472,7 +472,7 @@ func Test_exporter_start_InvalidHTTPClientSettings(t *testing.T) {
 	config := &config.Config{
 		HTTPClientSettings: confighttp.HTTPClientSettings{
 			Endpoint: "localhost:9090",
-			TLSSetting: configtls.TLSClientSetting{
+			TLSSetting: &configtls.TLSClientSetting{
 				TLSSetting: configtls.TLSSetting{
 					CAFile: "/non/existent",
 				},

@@ -23,8 +23,8 @@ import (
 	"go.opencensus.io/stats"
 	"go.opencensus.io/stats/view"
 	"go.opencensus.io/tag"
-	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/model/pdata"
+	"go.uber.org/multierr"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
 )
@@ -97,7 +97,7 @@ func buildView(tagKeys []tag.Key, m stats.Measure, a *view.Aggregation) *view.Vi
 
 type metricStatsKey struct {
 	MetricType        pdata.MetricDataType
-	MetricTemporality pdata.AggregationTemporality
+	MetricTemporality pdata.MetricAggregationTemporality
 }
 
 type spanStatsKey struct {
@@ -190,18 +190,14 @@ func (d exportMetadata) recordMetrics(ctx context.Context) error {
 		tag.Insert(tagDataType, d.dataType),
 	}
 
-	var errors []error
-	e := stats.RecordWithTags(ctx, tags,
+	var errs error
+	errs = multierr.Append(errs, stats.RecordWithTags(ctx, tags,
 		statRequestCount.M(1),
 		statInputDatapointCount.M(int64(d.dataInputCount)),
 		statOutputDatapointCount.M(int64(d.dataOutputCount)),
 		statExporterTime.M(d.exporterTime.Milliseconds()),
 		statExternalTime.M(d.externalDuration.Milliseconds()),
-	)
-
-	if e != nil {
-		errors = append(errors, e)
-	}
+	))
 
 	if len(d.metricMetadataCount) > 0 {
 		metricMetadataTagMutators := make([]tag.Mutator, len(tags)+2)
@@ -213,10 +209,7 @@ func (d exportMetadata) recordMetrics(ctx context.Context) error {
 			temporalityTag := tag.Insert(tagMetricTemporality, k.MetricTemporality.String())
 			metricMetadataTagMutators[len(metricMetadataTagMutators)-1] = temporalityTag
 
-			e := stats.RecordWithTags(ctx, metricMetadataTagMutators, statMetricMetadata.M(int64(v)))
-			if e != nil {
-				errors = append(errors, e)
-			}
+			errs = multierr.Append(errs, stats.RecordWithTags(ctx, metricMetadataTagMutators, statMetricMetadata.M(int64(v))))
 		}
 	}
 
@@ -230,10 +223,7 @@ func (d exportMetadata) recordMetrics(ctx context.Context) error {
 			hasSpanLinksTag := tag.Insert(tagHasSpanLinks, strconv.FormatBool(k.hasLinks))
 			spanMetadataTagMutators[len(spanMetadataTagMutators)-1] = hasSpanLinksTag
 
-			e := stats.RecordWithTags(ctx, spanMetadataTagMutators, statSpanMetadata.M(int64(v)))
-			if e != nil {
-				errors = append(errors, e)
-			}
+			errs = multierr.Append(errs, stats.RecordWithTags(ctx, spanMetadataTagMutators, statSpanMetadata.M(int64(v))))
 		}
 	}
 
@@ -247,14 +237,11 @@ func (d exportMetadata) recordMetrics(ctx context.Context) error {
 			typeTag := tag.Insert(tagAttributeValueType, k.attributeType.String())
 			attributeMetadataMutators[len(attributeMetadataMutators)-1] = typeTag
 
-			e := stats.RecordWithTags(ctx, attributeMetadataMutators, statAttributeMetadata.M(int64(v)))
-			if e != nil {
-				errors = append(errors, e)
-			}
+			errs = multierr.Append(errs, stats.RecordWithTags(ctx, attributeMetadataMutators, statAttributeMetadata.M(int64(v))))
 		}
 	}
 
-	return consumererror.Combine(errors)
+	return errs
 }
 
 func sanitizeAPIKeyForLogging(apiKey string) string {
