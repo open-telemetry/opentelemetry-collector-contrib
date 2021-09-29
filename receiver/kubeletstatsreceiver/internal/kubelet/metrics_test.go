@@ -77,7 +77,7 @@ func requireMetricOk(t *testing.T, m pdata.Metric) {
 	case pdata.MetricDataTypeSum:
 		sum := m.Sum()
 		require.True(t, sum.IsMonotonic())
-		require.Equal(t, pdata.AggregationTemporalityCumulative, sum.AggregationTemporality())
+		require.Equal(t, pdata.MetricAggregationTemporalityCumulative, sum.AggregationTemporality())
 		for i := 0; i < sum.DataPoints().Len(); i++ {
 			dp := sum.DataPoints().At(i)
 			// Start time is required for cumulative metrics. Make assertions
