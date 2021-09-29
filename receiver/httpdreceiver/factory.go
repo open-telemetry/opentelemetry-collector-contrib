@@ -45,7 +45,7 @@ func createDefaultConfig() config.Receiver {
 			CollectionInterval: 10 * time.Second,
 		},
 		HTTPClientSettings: confighttp.HTTPClientSettings{
-			Endpoint: "http://localhost:8080",
+			Endpoint: defaultEndpoint,
 			Timeout:  10 * time.Second,
 		},
 	}
@@ -58,14 +58,4 @@ func createMetricsReceiver(
 	consumer consumer.Metrics,
 ) (component.MetricsReceiver, error) {
 	return nil, nil
-
-	// cfg := rConf.(*Config)
-
-	// ns := newHttpdScraper(params.Logger, cfg)
-	// scraper := scraperhelper.NewResourceMetricsScraper(cfg.ID(), ns.scrape, scraperhelper.WithStart(ns.start))
-
-	// return scraperhelper.NewScraperControllerReceiver(
-	// 	&cfg.ScraperControllerSettings, params.Logger, consumer,
-	// 	scraperhelper.AddScraper(scraper),
-	// )
 }

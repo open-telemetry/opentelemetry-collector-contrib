@@ -39,7 +39,6 @@ func TestValidConfig(t *testing.T) {
 
 func TestCreateMetricsReceiver(t *testing.T) {
 	factory := NewFactory()
-	// metricsReceiver, err := factory.CreateMetricsReceiver(
 	_, err := factory.CreateMetricsReceiver(
 		context.Background(),
 		component.ReceiverCreateSettings{},
@@ -51,5 +50,4 @@ func TestCreateMetricsReceiver(t *testing.T) {
 		consumertest.NewNop(),
 	)
 	require.NoError(t, err)
-	// require.NotNil(t, metricsReceiver)
 }
