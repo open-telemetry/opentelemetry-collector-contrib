@@ -8,6 +8,7 @@
 - Rename `k8s_tagger` configuration `k8sattributes`.
 - filelog receiver: use empty value for `SeverityText` field instead of `"Undefined"` (#5423)
 - Rename `configparser.ConfigMap` to `config.Map`
+- Rename `pdata.AggregationTemporality*` to `pdata.MetricAggregationTemporality*`
 
 ## v0.36.0
 

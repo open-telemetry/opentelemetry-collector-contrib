@@ -17,7 +17,6 @@ package httpdreceiver
 import (
 	"fmt"
 	"net/url"
-	"strings"
 
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
@@ -38,40 +37,25 @@ var (
 )
 
 func (cfg *Config) Validate() error {
-	if cfg.Endpoint == "" {
-		cfg.Endpoint = defaultEndpoint
-		return nil
-	}
-
-	if missingProtocol(cfg.Endpoint) {
-		cfg.Endpoint = fmt.Sprintf("%s%s", defaultProtocol, cfg.Endpoint)
-	}
 
 	u, err := url.Parse(cfg.Endpoint)
 	if err != nil {
-		return fmt.Errorf("invalid endpoint '%s': %w", cfg.Endpoint, err)
+		return fmt.Errorf("invalid endpoint: '%s': %w", cfg.Endpoint, err)
 	}
 
 	if u.Hostname() == "" {
-		u.Host = fmt.Sprintf("%s:%s", defaultHost, defaultPort)
+		return fmt.Errorf("missing hostname: '%s'", cfg.Endpoint)
 	}
 
 	if u.Port() == "" {
-		u.Host = fmt.Sprintf("%s:%s", u.Host, defaultPort)
+		return fmt.Errorf("missing port: '%s'", cfg.Endpoint)
 	}
 
-	if u.Path == "" {
-		u.Path = defaultPath
+	if u.RawQuery != "auto" {
+		return fmt.Errorf("query must be 'auto': '%s'", cfg.Endpoint)
 	}
-
-	u.RawQuery = "auto"
 
 	cfg.Endpoint = u.String()
 	cfg.serverName = u.Hostname()
 	return nil
-}
-
-// missingProtocol returns true if any http protocol is found, case sensitive.
-func missingProtocol(rawURL string) bool {
-	return !strings.HasPrefix(strings.ToLower(rawURL), "http")
 }

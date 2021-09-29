@@ -45,7 +45,7 @@ func createDefaultConfig() config.Receiver {
 			CollectionInterval: 10 * time.Second,
 		},
 		HTTPClientSettings: confighttp.HTTPClientSettings{
-			Endpoint: "http://localhost:8080",
+			Endpoint: defaultEndpoint,
 			Timeout:  10 * time.Second,
 		},
 	}

@@ -15,198 +15,79 @@
 package httpdreceiver
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/require"
 )
 
 func TestValidate(t *testing.T) {
-	t.Run("error path", func(t *testing.T) {
-		cfg := NewFactory().CreateDefaultConfig().(*Config)
-		cfg.Endpoint = "http://endpoint with space"
-		require.Error(t, cfg.Validate())
-	})
-
-	t.Run("happy path", func(t *testing.T) {
-		testCases := []struct {
-			desc     string
-			rawURL   string
-			expected string
-		}{
-			{
-				desc:     "default path",
-				rawURL:   "",
-				expected: "http://localhost:8080/server-status?auto",
-			},
-			{
-				desc:     "only host(local)",
-				rawURL:   "localhost",
-				expected: "http://localhost:8080/server-status?auto",
-			},
-			{
-				desc:     "only host",
-				rawURL:   "127.0.0.1",
-				expected: "http://127.0.0.1:8080/server-status?auto",
-			},
-			{
-				desc:     "host(local) and port",
-				rawURL:   "localhost:8080",
-				expected: "http://localhost:8080/server-status?auto",
-			},
-			{
-				desc:     "host and port",
-				rawURL:   "127.0.0.1:8080",
-				expected: "http://127.0.0.1:8080/server-status?auto",
-			},
-			{
-				desc:     "full path",
-				rawURL:   "http://localhost:8080/server-status?auto",
-				expected: "http://localhost:8080/server-status?auto",
-			},
-			{
-				desc:     "full path",
-				rawURL:   "http://127.0.0.1:8080/server-status?auto",
-				expected: "http://127.0.0.1:8080/server-status?auto",
-			},
-			{
-				desc:     "unique host no port",
-				rawURL:   "myAlias.Site",
-				expected: "http://myAlias.Site:8080/server-status?auto",
-			},
-			{
-				desc:     "unique host with port",
-				rawURL:   "myAlias.Site:1234",
-				expected: "http://myAlias.Site:1234/server-status?auto",
-			},
-			{
-				desc:     "unique host with port with path",
-				rawURL:   "myAlias.Site:1234/server-status?auto",
-				expected: "http://myAlias.Site:1234/server-status?auto",
-			},
-			{
-				desc:     "only port",
-				rawURL:   ":8080",
-				expected: "http://localhost:8080/server-status?auto",
-			},
-			{
-				desc:     "limitation: double port",
-				rawURL:   "1234",
-				expected: "http://1234:8080/server-status?auto",
-			},
-			{
-				desc:     "limitation: invalid ip",
-				rawURL:   "500.0.0.0.1.1",
-				expected: "http://500.0.0.0.1.1:8080/server-status?auto",
-			},
-			{
-				desc:     "custom path",
-				rawURL:   "http://localhost:8080/custom?auto",
-				expected: "http://localhost:8080/custom?auto",
-			},
-		}
-		for _, tC := range testCases {
-			t.Run(tC.desc, func(t *testing.T) {
-				cfg := NewFactory().CreateDefaultConfig().(*Config)
-				cfg.Endpoint = tC.rawURL
-				require.NoError(t, cfg.Validate())
-				require.Equal(t, tC.expected, cfg.Endpoint)
-			})
-		}
-	})
-}
-
-func TestMissingProtocol(t *testing.T) {
 	testCases := []struct {
-		desc     string
-		proto    string
-		expected bool
+		desc        string
+		endpoint    string
+		errExpected bool
+		errText     string
 	}{
 		{
-			desc:     "http proto",
-			proto:    "http://localhost",
-			expected: false,
+			desc:        "default_endpoint",
+			endpoint:    "http://localhost:8080/server-status?auto",
+			errExpected: false,
 		},
 		{
-			desc:     "https proto",
-			proto:    "https://localhost",
-			expected: false,
+			desc:        "custom_host",
+			endpoint:    "http://123.123.123.123:8080/server-status?auto",
+			errExpected: false,
 		},
 		{
-			desc:     "HTTP caps",
-			proto:    "HTTP://localhost",
-			expected: false,
+			desc:        "custom_port",
+			endpoint:    "http://123.123.123.123:9090/server-status?auto",
+			errExpected: false,
 		},
 		{
-			desc:     "everything else",
-			proto:    "ht",
-			expected: true,
+			desc:        "custom_path",
+			endpoint:    "http://localhost:8080/my-status?auto",
+			errExpected: false,
 		},
 		{
-			desc:     "everything else",
-			proto:    "localhost",
-			expected: true,
+			desc:        "empty_path",
+			endpoint:    "",
+			errExpected: true,
+			errText:     "missing hostname: ''",
+		},
+		{
+			desc:        "missing_hostname",
+			endpoint:    "http://:8080/server-status?auto",
+			errExpected: true,
+			errText:     "missing hostname: 'http://:8080/server-status?auto'",
+		},
+		{
+			desc:        "missing_port",
+			endpoint:    "http://localhost/server-status?auto",
+			errExpected: true,
+			errText:     "missing port: 'http://localhost/server-status?auto'",
+		},
+		{
+			desc:        "missing_query",
+			endpoint:    "http://localhost:8080/server-status",
+			errExpected: true,
+			errText:     "query must be 'auto': 'http://localhost:8080/server-status'",
+		},
+		{
+			desc:        "invalid_query",
+			endpoint:    "http://localhost:8080/server-status?nonsense",
+			errExpected: true,
+			errText:     "query must be 'auto': 'http://localhost:8080/server-status?nonsense'",
 		},
 	}
-	for _, tC := range testCases {
-		t.Run(tC.desc, func(t *testing.T) {
-			require.Equal(t, tC.expected, missingProtocol(tC.proto))
-		})
-	}
-}
-
-func TestValidateEndpointFormat(t *testing.T) {
-	protocols := []string{"", "http://", "https://"}
-	hosts := []string{"", "127.0.0.1", "localhost", "customhost.com"}
-	ports := []string{"", ":8080", ":1234"}
-	paths := []string{"", "/server-status", "/custom"}
-	endpoints := []string{}
-	validEndpoints := map[string]bool{
-		"http://127.0.0.1:8080/server-status?auto":      true,
-		"http://127.0.0.1:1234/server-status?auto":      true,
-		"http://localhost:8080/server-status?auto":      true,
-		"http://localhost:1234/server-status?auto":      true,
-		"http://customhost.com:8080/server-status?auto": true,
-		"http://customhost.com:1234/server-status?auto": true,
-		"http://127.0.0.1:8080/custom?auto":             true,
-		"http://127.0.0.1:1234/custom?auto":             true,
-		"http://localhost:8080/custom?auto":             true,
-		"http://localhost:1234/custom?auto":             true,
-		"http://customhost.com:8080/custom?auto":        true,
-		"http://customhost.com:1234/custom?auto":        true,
-		// https
-		"https://127.0.0.1:8080/server-status?auto":      true,
-		"https://127.0.0.1:1234/server-status?auto":      true,
-		"https://localhost:8080/server-status?auto":      true,
-		"https://localhost:1234/server-status?auto":      true,
-		"https://customhost.com:8080/server-status?auto": true,
-		"https://customhost.com:1234/server-status?auto": true,
-		"https://127.0.0.1:8080/custom?auto":             true,
-		"https://127.0.0.1:1234/custom?auto":             true,
-		"https://localhost:8080/custom?auto":             true,
-		"https://localhost:1234/custom?auto":             true,
-		"https://customhost.com:8080/custom?auto":        true,
-		"https://customhost.com:1234/custom?auto":        true,
-	}
-
-	for _, protocol := range protocols {
-		for _, host := range hosts {
-			for _, port := range ports {
-				for _, path := range paths {
-					endpoint := fmt.Sprintf("%s%s%s%s?auto", protocol, host, port, path)
-					endpoints = append(endpoints, endpoint)
-				}
-			}
-		}
-	}
-
-	for _, endpoint := range endpoints {
-		t.Run(endpoint, func(t *testing.T) {
+	for _, tc := range testCases {
+		t.Run(tc.desc, func(t *testing.T) {
 			cfg := NewFactory().CreateDefaultConfig().(*Config)
-			cfg.Endpoint = endpoint
-			require.NoError(t, cfg.Validate())
-			_, ok := validEndpoints[cfg.Endpoint]
-			require.True(t, ok)
+			cfg.Endpoint = tc.endpoint
+			err := cfg.Validate()
+			if tc.errExpected {
+				require.EqualError(t, err, tc.errText)
+				return
+			}
+			require.NoError(t, err)
 		})
 	}
 }

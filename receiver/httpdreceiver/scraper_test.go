@@ -53,7 +53,7 @@ Scoreboard: S_DD_L_GGG_____W__IIII_C________________W___________________________
 	}))
 	cfg := &Config{
 		HTTPClientSettings: confighttp.HTTPClientSettings{
-			Endpoint: httpdMock.URL,
+			Endpoint: fmt.Sprintf("%s%s", httpdMock.URL, "/server-status?auto"),
 		},
 	}
 	require.NoError(t, cfg.Validate())

@@ -40,7 +40,29 @@
 //
 // If Pod association rules are not configured resources are associated with metadata only by connection's IP Address.
 //
-//
+// Which metadata to collect is determined by `metadata` configuration that defines list of resource attributes
+// to be added. Items in the list called exactly the same as the resource attributes that will be added.
+// All the available attributes are enabled by default, you can reduce the list with `metadata` configuration.
+// The following attributes will be added if pod identified:
+//   - k8s.namespace.name
+//   - k8s.pod.name
+//   - k8s.pod.uid
+//   - k8s.pod.start_time
+//   - k8s.deployment.name
+//   - k8s.cluster.name
+//   - k8s.node.name
+// Not all the attributes are guaranteed to be added. For example `k8s.cluster.name` usually is not provided by k8s API,
+// so likely it won't be set as an attribute.
+
+// The following container level attributes require additional attributes to identify a particular container in a pod:
+//   1. Container spec attributes - will be set only if container identifying attribute `container.name` is set
+//      as a resource attribute (similar to all other attributes, pod has to be identified as well):
+//     - container.image.name
+//     - container.image.tag
+//   2. Container status attributes - in addition to pod identifier and `container.name` attribute, these attributes
+//     require identifier of a particular container run set as `run_id` in resource attributes:
+//     - container.id
+
 //The k8sattributesprocessor can be used for automatic tagging of spans, metrics and logs with k8s labels and annotations from pods and namespaces.
 //The config for associating the data passing through the processor (spans, metrics and logs) with specific Pod/Namespace annotations/labels is configured via "annotations"  and "labels" keys.
 //This config represents a list of annotations/labels that are extracted from pods/namespaces and added to spans, metrics and logs.
