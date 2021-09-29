@@ -31,17 +31,17 @@ type Config struct {
 
 // Errors for missing required config parameters.
 const (
-	ErrNoUsername = "invalid config: missing username"
-	ErrNoPassword = "invalid config: missing password" // #nosec G101 - not hardcoded credentials
+	errNoUsername = "invalid config: missing username"
+	errNoPassword = "invalid config: missing password" // #nosec G101 - not hardcoded credentials
 )
 
 func (cfg *Config) Validate() error {
 	var errs []error
 	if cfg.Username == "" {
-		errs = append(errs, errors.New(ErrNoUsername))
+		errs = append(errs, errors.New(errNoUsername))
 	}
 	if cfg.Password == "" {
-		errs = append(errs, errors.New(ErrNoPassword))
+		errs = append(errs, errors.New(errNoPassword))
 	}
 	return multierr.Combine(errs...)
 }
