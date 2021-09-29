@@ -33,6 +33,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry"
 )
 
 const (
@@ -103,13 +104,16 @@ func newEmfExporter(
 		return nil, err
 	}
 
-	return exporterhelper.NewMetricsExporter(
+	exporter, err := exporterhelper.NewMetricsExporter(
 		config,
 		set,
 		exp.(*emfExporter).pushMetricsData,
-		exporterhelper.WithResourceToTelemetryConversion(config.(*Config).ResourceToTelemetrySettings),
 		exporterhelper.WithShutdown(exp.(*emfExporter).Shutdown),
 	)
+	if err != nil {
+		return nil, err
+	}
+	return resourcetotelemetry.WrapMetricsExporter(config.(*Config).ResourceToTelemetrySettings, exporter), nil
 }
 
 func (emf *emfExporter) pushMetricsData(_ context.Context, md pdata.Metrics) error {
@@ -134,7 +138,10 @@ func (emf *emfExporter) pushMetricsData(_ context.Context, md pdata.Metrics) err
 
 	for i := 0; i < rms.Len(); i++ {
 		rm := rms.At(i)
-		emf.metricTranslator.translateOTelToGroupedMetric(&rm, groupedMetrics, expConfig)
+		err := emf.metricTranslator.translateOTelToGroupedMetric(&rm, groupedMetrics, expConfig)
+		if err != nil {
+			return err
+		}
 	}
 
 	for _, groupedMetric := range groupedMetrics {

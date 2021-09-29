@@ -26,10 +26,9 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter/otlpexporter"
 	"go.opentelemetry.io/collector/model/pdata"
-	"go.uber.org/zap"
+	"go.uber.org/multierr"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchpersignal"
 )
@@ -41,8 +40,6 @@ var (
 )
 
 type traceExporterImp struct {
-	logger *zap.Logger
-
 	loadBalancer loadBalancer
 
 	stopped    bool
@@ -53,22 +50,16 @@ type traceExporterImp struct {
 func newTracesExporter(params component.ExporterCreateSettings, cfg config.Exporter) (*traceExporterImp, error) {
 	exporterFactory := otlpexporter.NewFactory()
 
-	tmplParams := component.ExporterCreateSettings{
-		Logger:    params.Logger,
-		BuildInfo: params.BuildInfo,
-	}
-
-	loadBalancer, err := newLoadBalancer(params, cfg, func(ctx context.Context, endpoint string) (component.Exporter, error) {
+	lb, err := newLoadBalancer(params, cfg, func(ctx context.Context, endpoint string) (component.Exporter, error) {
 		oCfg := buildExporterConfig(cfg.(*Config), endpoint)
-		return exporterFactory.CreateTracesExporter(ctx, tmplParams, &oCfg)
+		return exporterFactory.CreateTracesExporter(ctx, params, &oCfg)
 	})
 	if err != nil {
 		return nil, err
 	}
 
 	return &traceExporterImp{
-		logger:       params.Logger,
-		loadBalancer: loadBalancer,
+		loadBalancer: lb,
 	}, nil
 }
 
@@ -94,15 +85,13 @@ func (e *traceExporterImp) Shutdown(context.Context) error {
 }
 
 func (e *traceExporterImp) ConsumeTraces(ctx context.Context, td pdata.Traces) error {
-	var errors []error
+	var errs error
 	batches := batchpersignal.SplitTraces(td)
 	for _, batch := range batches {
-		if err := e.consumeTrace(ctx, batch); err != nil {
-			errors = append(errors, err)
-		}
+		errs = multierr.Append(errs, e.consumeTrace(ctx, batch))
 	}
 
-	return consumererror.Combine(errors)
+	return errs
 }
 
 func (e *traceExporterImp) consumeTrace(ctx context.Context, td pdata.Traces) error {

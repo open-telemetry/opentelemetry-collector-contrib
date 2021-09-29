@@ -30,7 +30,7 @@ func NewFactory() component.ExporterFactory {
 	return exporterhelper.NewFactory(
 		exporterType,
 		createDefaultConfig,
-		exporterhelper.WithTraces(createTraceExporter),
+		exporterhelper.WithTraces(createTracesExporter),
 	)
 }
 
@@ -40,13 +40,15 @@ func createDefaultConfig() config.Exporter {
 	}
 	return &Config{
 		ExporterSettings: config.NewExporterSettings(config.NewID(exporterType)),
+		QueueSettings:    exporterhelper.DefaultQueueSettings(),
+		RetrySettings:    exporterhelper.DefaultRetrySettings(),
 		Traces:           tracesCfg,
 	}
 }
 
-// createTraceExporter implements exporterhelper.CreateTracesExporter and creates
+// createTracesExporter implements exporterhelper.CreateTracesExporter and creates
 // an exporter for traces using this configuration
-func createTraceExporter(
+func createTracesExporter(
 	_ context.Context,
 	set component.ExporterCreateSettings,
 	cfg config.Exporter,
@@ -56,10 +58,14 @@ func createTraceExporter(
 		return nil, err
 	}
 
+	tobsCfg := cfg.(*Config)
+
 	return exporterhelper.NewTracesExporter(
 		cfg,
 		set,
 		exp.pushTraceData,
-		exporterhelper.WithShutdown(exp.Shutdown),
+		exporterhelper.WithQueue(tobsCfg.QueueSettings),
+		exporterhelper.WithRetry(tobsCfg.RetrySettings),
+		exporterhelper.WithShutdown(exp.shutdown),
 	)
 }

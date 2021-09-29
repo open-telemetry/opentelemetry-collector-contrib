@@ -119,7 +119,7 @@ func (z *zookeeperMetricsScraper) getResourceMetrics(conn net.Conn) (pdata.Resou
 }
 
 func (z *zookeeperMetricsScraper) appendMetrics(scanner *bufio.Scanner, rms pdata.ResourceMetricsSlice) {
-	now := pdata.TimestampFromTime(time.Now())
+	now := pdata.NewTimestampFromTime(time.Now())
 	rm := pdata.NewResourceMetrics()
 	ilm := rm.InstrumentationLibraryMetrics().AppendEmpty()
 	ilm.InstrumentationLibrary().SetName("otelcol/zookeeper")
@@ -162,14 +162,14 @@ func (z *zookeeperMetricsScraper) appendMetrics(scanner *bufio.Scanner, rms pdat
 			metric := ilm.Metrics().AppendEmpty()
 			initMetric(metric)
 			switch metric.DataType() {
-			case pdata.MetricDataTypeIntGauge:
-				dp := metric.IntGauge().DataPoints().AppendEmpty()
+			case pdata.MetricDataTypeGauge:
+				dp := metric.Gauge().DataPoints().AppendEmpty()
 				dp.SetTimestamp(now)
-				dp.SetValue(int64Val)
-			case pdata.MetricDataTypeIntSum:
-				dp := metric.IntSum().DataPoints().AppendEmpty()
+				dp.SetIntVal(int64Val)
+			case pdata.MetricDataTypeSum:
+				dp := metric.Sum().DataPoints().AppendEmpty()
 				dp.SetTimestamp(now)
-				dp.SetValue(int64Val)
+				dp.SetIntVal(int64Val)
 			}
 			keepRM = true
 		}

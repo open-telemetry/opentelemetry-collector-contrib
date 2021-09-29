@@ -22,7 +22,6 @@ import (
 	sls "github.com/aliyun/aliyun-log-go-sdk"
 	"github.com/gogo/protobuf/proto"
 	"go.opentelemetry.io/collector/model/pdata"
-	tracetranslator "go.opentelemetry.io/collector/translator/trace"
 	"go.uber.org/zap"
 )
 
@@ -162,42 +161,39 @@ func resourceToMetricLabels(labels *KeyValues, resource pdata.Resource) {
 	attrs.Range(func(k string, v pdata.AttributeValue) bool {
 		labels.keyValues = append(labels.keyValues, KeyValue{
 			Key:   k,
-			Value: tracetranslator.AttributeValueToString(v),
+			Value: v.AsString(),
 		})
 		return true
 	})
 }
 
-func intMetricsToLogs(name string, data pdata.IntDataPointSlice, defaultLabels KeyValues) (logs []*sls.Log) {
-	for i := 0; i < data.Len(); i++ {
-		dataPoint := data.At(i)
-		labelsMap := dataPoint.LabelsMap()
-		labels := defaultLabels.Clone()
-		labelsMap.Range(func(k string, v string) bool {
-			labels.Append(k, v)
-			return true
-		})
-		logs = append(logs, newMetricLogFromRaw(name,
-			labels,
-			int64(dataPoint.Timestamp()),
-			float64(dataPoint.Value())))
-	}
-	return logs
-}
-
 func numberMetricsToLogs(name string, data pdata.NumberDataPointSlice, defaultLabels KeyValues) (logs []*sls.Log) {
 	for i := 0; i < data.Len(); i++ {
 		dataPoint := data.At(i)
-		labelsMap := dataPoint.LabelsMap()
+		attributeMap := dataPoint.Attributes()
 		labels := defaultLabels.Clone()
-		labelsMap.Range(func(k string, v string) bool {
-			labels.Append(k, v)
+		attributeMap.Range(func(k string, v pdata.AttributeValue) bool {
+			labels.Append(k, v.AsString())
 			return true
 		})
-		logs = append(logs, newMetricLogFromRaw(name,
-			labels,
-			int64(dataPoint.Timestamp()),
-			dataPoint.Value()))
+		switch dataPoint.Type() {
+		case pdata.MetricValueTypeInt:
+			logs = append(logs,
+				newMetricLogFromRaw(name,
+					labels,
+					int64(dataPoint.Timestamp()),
+					float64(dataPoint.IntVal()),
+				),
+			)
+		case pdata.MetricValueTypeDouble:
+			logs = append(logs,
+				newMetricLogFromRaw(name,
+					labels,
+					int64(dataPoint.Timestamp()),
+					dataPoint.DoubleVal(),
+				),
+			)
+		}
 	}
 	return logs
 }
@@ -205,10 +201,10 @@ func numberMetricsToLogs(name string, data pdata.NumberDataPointSlice, defaultLa
 func doubleHistogramMetricsToLogs(name string, data pdata.HistogramDataPointSlice, defaultLabels KeyValues) (logs []*sls.Log) {
 	for i := 0; i < data.Len(); i++ {
 		dataPoint := data.At(i)
-		labelsMap := dataPoint.LabelsMap()
+		attributeMap := dataPoint.Attributes()
 		labels := defaultLabels.Clone()
-		labelsMap.Range(func(k string, v string) bool {
-			labels.Append(k, v)
+		attributeMap.Range(func(k string, v pdata.AttributeValue) bool {
+			labels.Append(k, v.AsString())
 			return true
 		})
 		logs = append(logs, newMetricLogFromRaw(name+"_sum",
@@ -253,10 +249,10 @@ func doubleHistogramMetricsToLogs(name string, data pdata.HistogramDataPointSlic
 func doubleSummaryMetricsToLogs(name string, data pdata.SummaryDataPointSlice, defaultLabels KeyValues) (logs []*sls.Log) {
 	for i := 0; i < data.Len(); i++ {
 		dataPoint := data.At(i)
-		labelsMap := dataPoint.LabelsMap()
+		attributeMap := dataPoint.Attributes()
 		labels := defaultLabels.Clone()
-		labelsMap.Range(func(k string, v string) bool {
-			labels.Append(k, v)
+		attributeMap.Range(func(k string, v pdata.AttributeValue) bool {
+			labels.Append(k, v.AsString())
 			return true
 		})
 		logs = append(logs, newMetricLogFromRaw(name+"_sum",
@@ -290,12 +286,8 @@ func metricDataToLogServiceData(md pdata.Metric, defaultLabels KeyValues) (logs 
 	switch md.DataType() {
 	case pdata.MetricDataTypeNone:
 		break
-	case pdata.MetricDataTypeIntGauge:
-		return intMetricsToLogs(md.Name(), md.IntGauge().DataPoints(), defaultLabels)
 	case pdata.MetricDataTypeGauge:
 		return numberMetricsToLogs(md.Name(), md.Gauge().DataPoints(), defaultLabels)
-	case pdata.MetricDataTypeIntSum:
-		return intMetricsToLogs(md.Name(), md.IntSum().DataPoints(), defaultLabels)
 	case pdata.MetricDataTypeSum:
 		return numberMetricsToLogs(md.Name(), md.Sum().DataPoints(), defaultLabels)
 	case pdata.MetricDataTypeHistogram:

@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//go:build tools
 // +build tools
 
 package tools
@@ -28,7 +29,8 @@ import (
 	_ "github.com/jstemmer/go-junit-report"
 	_ "github.com/pavius/impi/cmd/impi"
 	_ "github.com/tcnksm/ghr"
-	_ "go.opentelemetry.io/collector/cmd/checkdoc"
-	_ "go.opentelemetry.io/collector/cmd/issuegenerator"
-	_ "go.opentelemetry.io/collector/cmd/mdatagen"
+	_ "go.opentelemetry.io/build-tools/checkdoc"
+	_ "go.opentelemetry.io/build-tools/issuegenerator"
+	_ "go.opentelemetry.io/build-tools/multimod"
+	_ "golang.org/x/tools/cmd/goimports"
 )

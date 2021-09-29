@@ -24,8 +24,8 @@ import (
 	"github.com/google/uuid"
 	"github.com/wavefronthq/wavefront-sdk-go/senders"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/model/pdata"
+	"go.uber.org/multierr"
 	"go.uber.org/zap"
 )
 
@@ -94,27 +94,27 @@ func newTracesExporter(l *zap.Logger, c config.Exporter) (*tracesExporter, error
 }
 
 func (e *tracesExporter) pushTraceData(ctx context.Context, td pdata.Traces) error {
-	var errs []error
+	var errs error
 
 	for i := 0; i < td.ResourceSpans().Len(); i++ {
 		rspans := td.ResourceSpans().At(i)
 		resource := rspans.Resource()
 		for j := 0; j < rspans.InstrumentationLibrarySpans().Len(); j++ {
 			ispans := rspans.InstrumentationLibrarySpans().At(j)
-			transform := newTraceTransformer(resource, e.cfg)
+			transform := newTraceTransformer(resource)
 			for k := 0; k < ispans.Spans().Len(); k++ {
 				select {
 				case <-ctx.Done():
-					return consumererror.Combine(append(errs, errors.New("context canceled")))
+					return multierr.Append(errs, errors.New("context canceled"))
 				default:
 					transformedSpan, err := transform.Span(ispans.Spans().At(k))
 					if err != nil {
-						errs = append(errs, err)
+						errs = multierr.Append(errs, err)
 						continue
 					}
 
-					if err := e.RecordSpan(transformedSpan); err != nil {
-						errs = append(errs, err)
+					if err := e.recordSpan(transformedSpan); err != nil {
+						errs = multierr.Append(errs, err)
 						continue
 					}
 				}
@@ -122,21 +122,17 @@ func (e *tracesExporter) pushTraceData(ctx context.Context, td pdata.Traces) err
 		}
 	}
 
-	return consumererror.Combine(errs)
+	errs = multierr.Append(errs, e.sender.Flush())
+	return errs
 }
 
-func (e *tracesExporter) Shutdown(_ context.Context) error {
-	e.sender.Close()
-	return nil
-}
-
-func (e *tracesExporter) RecordSpan(span Span) error {
+func (e *tracesExporter) recordSpan(span span) error {
 	var parents []string
 	if span.ParentSpanID != uuid.Nil {
 		parents = []string{span.ParentSpanID.String()}
 	}
 
-	err := e.sender.SendSpan(
+	return e.sender.SendSpan(
 		span.Name,
 		span.StartMillis,
 		span.DurationMillis,
@@ -148,11 +144,11 @@ func (e *tracesExporter) RecordSpan(span Span) error {
 		mapToSpanTags(span.Tags),
 		span.SpanLogs,
 	)
+}
 
-	if err != nil {
-		return err
-	}
-	return e.sender.Flush()
+func (e *tracesExporter) shutdown(_ context.Context) error {
+	e.sender.Close()
+	return nil
 }
 
 func mapToSpanTags(tags map[string]string) []senders.SpanTag {

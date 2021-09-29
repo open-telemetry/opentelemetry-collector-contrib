@@ -25,7 +25,8 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtest"
-	"go.opentelemetry.io/collector/receiver/scraperhelper"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/scraperhelper"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -114,7 +115,7 @@ func TestLoadConfig_Error(t *testing.T) {
 			name:    "AllErrors",
 			cfgFile: "config-allerrors.yaml",
 			expectedErr: fmt.Sprintf(
-				"%s: [%s; %s; %s; %s]",
+				"%s: %s; %s; %s; %s",
 				errorPrefix,
 				negativeCollectionIntervalErr,
 				fmt.Sprintf(emptyInstanceErr, "object"),

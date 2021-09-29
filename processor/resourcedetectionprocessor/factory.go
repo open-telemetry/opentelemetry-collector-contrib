@@ -93,6 +93,8 @@ func createDefaultConfig() config.Processor {
 		Detectors:         []string{env.TypeStr},
 		Timeout:           5 * time.Second,
 		Override:          true,
+		// TODO: Once issue(https://github.com/open-telemetry/opentelemetry-collector/issues/4001) gets resolved,
+		// 		 Set the default value of 'hostname_source' here instead of 'system' detector
 	}
 }
 

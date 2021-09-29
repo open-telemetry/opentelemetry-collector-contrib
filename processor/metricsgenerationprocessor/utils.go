@@ -36,17 +36,15 @@ func getNameToMetricMap(rm pdata.ResourceMetrics) map[string]pdata.Metric {
 
 // getMetricValue returns the value of the first data point from the given metric.
 func getMetricValue(metric pdata.Metric) float64 {
-	if metric.DataType() == pdata.MetricDataTypeIntGauge {
-		dataPoints := metric.IntGauge().DataPoints()
-		if dataPoints.Len() > 0 {
-			return float64(dataPoints.At(0).Value())
-		}
-		return 0
-	}
 	if metric.DataType() == pdata.MetricDataTypeGauge {
 		dataPoints := metric.Gauge().DataPoints()
 		if dataPoints.Len() > 0 {
-			return dataPoints.At(0).Value()
+			switch dataPoints.At(0).Type() {
+			case pdata.MetricValueTypeDouble:
+				return dataPoints.At(0).DoubleVal()
+			case pdata.MetricValueTypeInt:
+				return float64(dataPoints.At(0).IntVal())
+			}
 		}
 		return 0
 	}
@@ -73,28 +71,21 @@ func generateMetrics(rm pdata.ResourceMetrics, operand2 float64, rule internalRu
 }
 
 func addDoubleGaugeDataPoints(from pdata.Metric, to pdata.Metric, operand2 float64, operation string, logger *zap.Logger) {
-	if from.DataType() == pdata.MetricDataTypeIntGauge {
-		dataPoints := from.IntGauge().DataPoints()
-		for i := 0; i < dataPoints.Len(); i++ {
-			fromDataPoint := dataPoints.At(i)
-			operand1 := float64(fromDataPoint.Value())
-			neweDoubleDataPoint := to.Gauge().DataPoints().AppendEmpty()
-			value := calculateValue(operand1, operand2, operation, logger, to.Name())
-			neweDoubleDataPoint.SetValue(value)
-			fromDataPoint.LabelsMap().CopyTo(neweDoubleDataPoint.LabelsMap())
-			neweDoubleDataPoint.SetStartTimestamp(fromDataPoint.StartTimestamp())
-			neweDoubleDataPoint.SetTimestamp(fromDataPoint.Timestamp())
+	dataPoints := from.Gauge().DataPoints()
+	for i := 0; i < dataPoints.Len(); i++ {
+		fromDataPoint := dataPoints.At(i)
+		var operand1 float64
+		switch fromDataPoint.Type() {
+		case pdata.MetricValueTypeDouble:
+			operand1 = fromDataPoint.DoubleVal()
+		case pdata.MetricValueTypeInt:
+			operand1 = float64(fromDataPoint.IntVal())
 		}
-	} else if from.DataType() == pdata.MetricDataTypeGauge {
-		dataPoints := from.Gauge().DataPoints()
-		for i := 0; i < dataPoints.Len(); i++ {
-			fromDataPoint := dataPoints.At(i)
-			operand1 := fromDataPoint.Value()
-			neweDoubleDataPoint := to.Gauge().DataPoints().AppendEmpty()
-			fromDataPoint.CopyTo(neweDoubleDataPoint)
-			value := calculateValue(operand1, operand2, operation, logger, to.Name())
-			neweDoubleDataPoint.SetValue(value)
-		}
+
+		neweDoubleDataPoint := to.Gauge().DataPoints().AppendEmpty()
+		fromDataPoint.CopyTo(neweDoubleDataPoint)
+		value := calculateValue(operand1, operand2, operation, logger, to.Name())
+		neweDoubleDataPoint.SetDoubleVal(value)
 	}
 }
 

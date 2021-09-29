@@ -16,11 +16,13 @@ package awsecscontainermetrics
 
 import (
 	"go.opentelemetry.io/collector/model/pdata"
+	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
 )
 
 func convertToOTLPMetrics(prefix string, m ECSMetrics, r pdata.Resource, timestamp pdata.Timestamp) pdata.Metrics {
 	md := pdata.NewMetrics()
 	rm := md.ResourceMetrics().AppendEmpty()
+	rm.SetSchemaUrl(conventions.SchemaURL)
 	r.CopyTo(rm.Resource())
 
 	ilms := rm.InstrumentationLibraryMetrics()
@@ -73,8 +75,8 @@ func convertStoppedContainerDataToOTMetrics(prefix string, containerResource pda
 func appendIntGauge(metricName string, unit string, value int64, ts pdata.Timestamp, ilm pdata.InstrumentationLibraryMetrics) {
 	metric := appendMetric(ilm, metricName, unit)
 
-	metric.SetDataType(pdata.MetricDataTypeIntGauge)
-	intGauge := metric.IntGauge()
+	metric.SetDataType(pdata.MetricDataTypeGauge)
+	intGauge := metric.Gauge()
 
 	appendIntDataPoint(intGauge.DataPoints(), value, ts)
 }
@@ -82,9 +84,9 @@ func appendIntGauge(metricName string, unit string, value int64, ts pdata.Timest
 func appendIntSum(metricName string, unit string, value int64, ts pdata.Timestamp, ilm pdata.InstrumentationLibraryMetrics) {
 	metric := appendMetric(ilm, metricName, unit)
 
-	metric.SetDataType(pdata.MetricDataTypeIntSum)
-	intSum := metric.IntSum()
-	intSum.SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+	metric.SetDataType(pdata.MetricDataTypeSum)
+	intSum := metric.Sum()
+	intSum.SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
 
 	appendIntDataPoint(intSum.DataPoints(), value, ts)
 }
@@ -94,13 +96,13 @@ func appendDoubleGauge(metricName string, unit string, value float64, ts pdata.T
 	metric.SetDataType(pdata.MetricDataTypeGauge)
 	doubleGauge := metric.Gauge()
 	dataPoint := doubleGauge.DataPoints().AppendEmpty()
-	dataPoint.SetValue(value)
+	dataPoint.SetDoubleVal(value)
 	dataPoint.SetTimestamp(ts)
 }
 
-func appendIntDataPoint(dataPoints pdata.IntDataPointSlice, value int64, ts pdata.Timestamp) {
+func appendIntDataPoint(dataPoints pdata.NumberDataPointSlice, value int64, ts pdata.Timestamp) {
 	dataPoint := dataPoints.AppendEmpty()
-	dataPoint.SetValue(value)
+	dataPoint.SetIntVal(value)
 	dataPoint.SetTimestamp(ts)
 }
 

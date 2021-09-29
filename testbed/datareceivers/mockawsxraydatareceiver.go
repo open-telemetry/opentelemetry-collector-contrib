@@ -23,12 +23,12 @@ import (
 	"os"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/testbed/testbed"
-	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/mockdatareceivers/mockawsxrayreceiver"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/testbed"
 )
 
 // MockAwsXrayDataReceiver implements AwsXray format receiver.
@@ -70,8 +70,7 @@ func (ar *MockAwsXrayDataReceiver) Start(tc consumer.Traces, _ consumer.Metrics,
 			KeyFile:  "../mockdatareceivers/mockawsxrayreceiver/server.key",
 		},
 	}
-	params := component.ReceiverCreateSettings{Logger: zap.L()}
-	ar.receiver, err = mockawsxrayreceiver.New(tc, params, &mockDatareceiverCFG)
+	ar.receiver, err = mockawsxrayreceiver.New(tc, componenttest.NewNopReceiverCreateSettings(), &mockDatareceiverCFG)
 
 	if err != nil {
 		return err

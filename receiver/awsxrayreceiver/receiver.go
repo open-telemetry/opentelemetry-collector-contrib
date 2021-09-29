@@ -25,8 +25,8 @@ import (
 	"go.opentelemetry.io/collector/obsreport"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/proxy"
 	awsxray "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsxrayreceiver/internal/proxy"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsxrayreceiver/internal/translator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsxrayreceiver/internal/udppoller"
 )
@@ -95,13 +95,13 @@ func (x *xrayReceiver) Start(ctx context.Context, host component.Host) error {
 	return nil
 }
 
-func (x *xrayReceiver) Shutdown(_ context.Context) error {
+func (x *xrayReceiver) Shutdown(ctx context.Context) error {
 	var err error
 	if pollerErr := x.poller.Close(); pollerErr != nil {
 		err = pollerErr
 	}
 
-	if proxyErr := x.server.Close(); proxyErr != nil {
+	if proxyErr := x.server.Shutdown(ctx); proxyErr != nil {
 		if err == nil {
 			err = proxyErr
 		} else {

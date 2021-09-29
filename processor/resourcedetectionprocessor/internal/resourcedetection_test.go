@@ -35,9 +35,9 @@ type MockDetector struct {
 	mock.Mock
 }
 
-func (p *MockDetector) Detect(ctx context.Context) (pdata.Resource, error) {
+func (p *MockDetector) Detect(ctx context.Context) (pdata.Resource, string, error) {
 	args := p.Called()
-	return args.Get(0).(pdata.Resource), args.Error(1)
+	return args.Get(0).(pdata.Resource), "", args.Error(1)
 }
 
 type mockDetectorConfig struct{}
@@ -99,7 +99,7 @@ func TestDetect(t *testing.T) {
 			p, err := f.CreateResourceProvider(componenttest.NewNopProcessorCreateSettings(), time.Second, &mockDetectorConfig{}, mockDetectorTypes...)
 			require.NoError(t, err)
 
-			got, err := p.Get(context.Background())
+			got, _, err := p.Get(context.Background())
 			require.NoError(t, err)
 
 			tt.expectedResource.Attributes().Sort()
@@ -135,8 +135,8 @@ func TestDetectResource_Error(t *testing.T) {
 	md2.On("Detect").Return(pdata.NewResource(), errors.New("err1"))
 
 	p := NewResourceProvider(zap.NewNop(), time.Second, md1, md2)
-	_, err := p.Get(context.Background())
-	require.EqualError(t, err, "err1")
+	_, _, err := p.Get(context.Background())
+	require.NoError(t, err)
 }
 
 func TestMergeResource(t *testing.T) {
@@ -181,10 +181,10 @@ func NewMockParallelDetector() *MockParallelDetector {
 	return &MockParallelDetector{ch: make(chan struct{})}
 }
 
-func (p *MockParallelDetector) Detect(ctx context.Context) (pdata.Resource, error) {
+func (p *MockParallelDetector) Detect(ctx context.Context) (pdata.Resource, string, error) {
 	<-p.ch
 	args := p.Called()
-	return args.Get(0).(pdata.Resource), args.Error(1)
+	return args.Get(0).(pdata.Resource), "", args.Error(1)
 }
 
 // TestDetectResource_Parallel validates that Detect is only called once, even if there
@@ -198,10 +198,13 @@ func TestDetectResource_Parallel(t *testing.T) {
 	md2 := NewMockParallelDetector()
 	md2.On("Detect").Return(NewResource(map[string]interface{}{"a": "11", "c": "3"}), nil)
 
+	md3 := NewMockParallelDetector()
+	md3.On("Detect").Return(pdata.NewResource(), errors.New("an error"))
+
 	expectedResource := NewResource(map[string]interface{}{"a": "1", "b": "2", "c": "3"})
 	expectedResource.Attributes().Sort()
 
-	p := NewResourceProvider(zap.NewNop(), time.Second, md1, md2)
+	p := NewResourceProvider(zap.NewNop(), time.Second, md1, md2, md3)
 
 	// call p.Get multiple times
 	wg := &sync.WaitGroup{}
@@ -209,8 +212,10 @@ func TestDetectResource_Parallel(t *testing.T) {
 	for i := 0; i < iterations; i++ {
 		go func() {
 			defer wg.Done()
-			_, err := p.Get(context.Background())
+			detected, _, err := p.Get(context.Background())
 			require.NoError(t, err)
+			detected.Attributes().Sort()
+			assert.Equal(t, expectedResource, detected)
 		}()
 	}
 
@@ -220,11 +225,13 @@ func TestDetectResource_Parallel(t *testing.T) {
 	// detector.Detect should only be called once, so we only need to notify each channel once
 	md1.ch <- struct{}{}
 	md2.ch <- struct{}{}
+	md3.ch <- struct{}{}
 
 	// then wait until all goroutines are finished, and ensure p.Detect was only called once
 	wg.Wait()
 	md1.AssertNumberOfCalls(t, "Detect", 1)
 	md2.AssertNumberOfCalls(t, "Detect", 1)
+	md3.AssertNumberOfCalls(t, "Detect", 1)
 }
 
 func TestAttributesToMap(t *testing.T) {

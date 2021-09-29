@@ -30,13 +30,13 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumererror"
-	"go.opentelemetry.io/collector/translator/internaldata"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest/observer"
+
+	internaldata "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus"
 )
 
 func init() {
@@ -582,8 +582,10 @@ func TestNewExporterWithMetricDeclarations(t *testing.T) {
 	expCfg.MetricDeclarations = mds
 
 	obs, logs := observer.New(zap.WarnLevel)
-	logger := zap.New(obs)
-	exp, err := newEmfPusher(expCfg, component.ExporterCreateSettings{Logger: logger})
+	params := componenttest.NewNopExporterCreateSettings()
+	params.Logger = zap.New(obs)
+
+	exp, err := newEmfPusher(expCfg, params)
 	assert.Nil(t, err)
 	assert.NotNil(t, exp)
 

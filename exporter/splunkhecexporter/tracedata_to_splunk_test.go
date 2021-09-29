@@ -34,6 +34,7 @@ func Test_traceDataToSplunk(t *testing.T) {
 		name                string
 		traceDataFn         func() pdata.Traces
 		wantSplunkEvents    []*splunk.Event
+		configFn            func() *Config
 		wantNumDroppedSpans int
 	}{
 		{
@@ -41,7 +42,7 @@ func Test_traceDataToSplunk(t *testing.T) {
 			traceDataFn: func() pdata.Traces {
 				traces := pdata.NewTraces()
 				rs := traces.ResourceSpans().AppendEmpty()
-				rs.Resource().Attributes().InsertString("service.name", "myservice")
+				rs.Resource().Attributes().InsertString("com.splunk.source", "myservice")
 				rs.Resource().Attributes().InsertString("host.name", "myhost")
 				rs.Resource().Attributes().InsertString("com.splunk.sourcetype", "mysourcetype")
 				rs.Resource().Attributes().InsertString("com.splunk.index", "myindex")
@@ -52,6 +53,9 @@ func Test_traceDataToSplunk(t *testing.T) {
 			wantSplunkEvents: []*splunk.Event{
 				commonSplunkEvent("myspan", ts),
 			},
+			configFn: func() *Config {
+				return createDefaultConfig().(*Config)
+			},
 			wantNumDroppedSpans: 0,
 		},
 		{
@@ -61,6 +65,9 @@ func Test_traceDataToSplunk(t *testing.T) {
 				traces.ResourceSpans().AppendEmpty()
 				return traces
 			},
+			configFn: func() *Config {
+				return createDefaultConfig().(*Config)
+			},
 			wantSplunkEvents:    []*splunk.Event{},
 			wantNumDroppedSpans: 0,
 		},
@@ -69,11 +76,40 @@ func Test_traceDataToSplunk(t *testing.T) {
 			traceDataFn: func() pdata.Traces {
 				traces := pdata.NewTraces()
 				rs := traces.ResourceSpans().AppendEmpty()
-				rs.Resource().Attributes().InsertString("service.name", "myservice")
+				rs.Resource().Attributes().InsertString("com.splunk.source", "myservice")
 				rs.Resource().Attributes().InsertString("host.name", "myhost")
 				rs.Resource().Attributes().InsertString("com.splunk.sourcetype", "mysourcetype")
 				rs.InstrumentationLibrarySpans().AppendEmpty()
 				return traces
+			},
+			configFn: func() *Config {
+				return createDefaultConfig().(*Config)
+			},
+			wantSplunkEvents:    []*splunk.Event{},
+			wantNumDroppedSpans: 0,
+		},
+		{
+			name: "custom_config",
+			traceDataFn: func() pdata.Traces {
+				traces := pdata.NewTraces()
+				rs := traces.ResourceSpans().AppendEmpty()
+				rs.Resource().Attributes().InsertString("mysource", "myservice")
+				rs.Resource().Attributes().InsertString("myhost", "myhost")
+				rs.Resource().Attributes().InsertString("mysourcetype", "mysourcetype")
+				rs.Resource().Attributes().InsertString("myindex", "mysourcetype")
+				rs.InstrumentationLibrarySpans().AppendEmpty()
+				return traces
+			},
+			configFn: func() *Config {
+				cfg := createDefaultConfig().(*Config)
+				cfg.HecToOtelAttrs = splunk.HecToOtelAttrs{
+					Source:     "mysource",
+					SourceType: "mysourcetype",
+					Host:       "myhost",
+					Index:      "myindex",
+				}
+
+				return cfg
 			},
 			wantSplunkEvents:    []*splunk.Event{},
 			wantNumDroppedSpans: 0,
@@ -83,7 +119,8 @@ func Test_traceDataToSplunk(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			traces := tt.traceDataFn()
 
-			gotEvents, gotNumDroppedSpans := traceDataToSplunk(logger, traces, &Config{})
+			cfg := tt.configFn()
+			gotEvents, gotNumDroppedSpans := traceDataToSplunk(logger, traces, cfg)
 			assert.Equal(t, tt.wantNumDroppedSpans, gotNumDroppedSpans)
 			require.Equal(t, len(tt.wantSplunkEvents), len(gotEvents))
 			for i, want := range tt.wantSplunkEvents {
@@ -162,7 +199,7 @@ func commonSplunkEvent(
 			},
 		},
 		Fields: map[string]interface{}{
-			"com.splunk.sourcetype": "mysourcetype", "com.splunk.index": "myindex", "host.name": "myhost", "service.name": "myservice",
+			"host.name": "myhost",
 		},
 	}
 }

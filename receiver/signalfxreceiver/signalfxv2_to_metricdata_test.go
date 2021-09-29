@@ -40,7 +40,7 @@ func Test_signalFxV2ToMetricsData(t *testing.T) {
 		}
 	}
 
-	buildDefaultMetricsData := func(typ pdata.MetricDataType, val interface{}) pdata.Metrics {
+	buildDefaultMetricsData := func(typ pdata.MetricDataType, value interface{}) pdata.Metrics {
 		out := pdata.NewMetrics()
 		rm := out.ResourceMetrics().AppendEmpty()
 		ilm := rm.InstrumentationLibraryMetrics().AppendEmpty()
@@ -49,42 +49,32 @@ func Test_signalFxV2ToMetricsData(t *testing.T) {
 		m.SetDataType(typ)
 		m.SetName("single")
 
-		var dps interface{}
+		var dps pdata.NumberDataPointSlice
 
 		switch typ {
-		case pdata.MetricDataTypeIntGauge:
-			dps = m.IntGauge().DataPoints()
-		case pdata.MetricDataTypeIntSum:
-			m.IntSum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
-			dps = m.IntSum().DataPoints()
 		case pdata.MetricDataTypeGauge:
 			dps = m.Gauge().DataPoints()
 		case pdata.MetricDataTypeSum:
-			m.Sum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+			m.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
 			dps = m.Sum().DataPoints()
 		}
 
-		var labels pdata.StringMap
-
-		switch typ {
-		case pdata.MetricDataTypeIntGauge, pdata.MetricDataTypeIntSum:
-			dp := dps.(pdata.IntDataPointSlice).AppendEmpty()
-			labels = dp.LabelsMap()
-			dp.SetTimestamp(pdata.TimestampFromTime(now.Truncate(time.Millisecond)))
-			dp.SetValue(int64(val.(int)))
-		case pdata.MetricDataTypeGauge, pdata.MetricDataTypeSum:
-			dp := dps.(pdata.NumberDataPointSlice).AppendEmpty()
-			labels = dp.LabelsMap()
-			dp.SetTimestamp(pdata.TimestampFromTime(now.Truncate(time.Millisecond)))
-			dp.SetValue(val.(float64))
-		}
-
-		labels.InitFromMap(map[string]string{
-			"k0": "v0",
-			"k1": "v1",
-			"k2": "v2",
+		dp := dps.AppendEmpty()
+		dp.Attributes().InitFromMap(map[string]pdata.AttributeValue{
+			"k0": pdata.NewAttributeValueString("v0"),
+			"k1": pdata.NewAttributeValueString("v1"),
+			"k2": pdata.NewAttributeValueString("v2"),
 		})
-		labels.Sort()
+		dp.Attributes().Sort()
+
+		dp.SetTimestamp(pdata.NewTimestampFromTime(now.Truncate(time.Millisecond)))
+
+		switch val := value.(type) {
+		case int:
+			dp.SetIntVal(int64(val))
+		case float64:
+			dp.SetDoubleVal(val)
+		}
 
 		return out
 	}
@@ -98,7 +88,7 @@ func Test_signalFxV2ToMetricsData(t *testing.T) {
 		{
 			name:            "int_gauge",
 			sfxDataPoints:   []*sfxpb.DataPoint{buildDefaulstSFxDataPt()},
-			wantMetricsData: buildDefaultMetricsData(pdata.MetricDataTypeIntGauge, 13),
+			wantMetricsData: buildDefaultMetricsData(pdata.MetricDataTypeGauge, 13),
 		},
 		{
 			name: "double_gauge",
@@ -120,9 +110,9 @@ func Test_signalFxV2ToMetricsData(t *testing.T) {
 				return []*sfxpb.DataPoint{pt}
 			}(),
 			wantMetricsData: func() pdata.Metrics {
-				m := buildDefaultMetricsData(pdata.MetricDataTypeIntSum, 13)
-				d := m.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(0).IntSum()
-				d.SetAggregationTemporality(pdata.AggregationTemporalityDelta)
+				m := buildDefaultMetricsData(pdata.MetricDataTypeSum, 13)
+				d := m.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(0).Sum()
+				d.SetAggregationTemporality(pdata.MetricAggregationTemporalityDelta)
 				d.SetIsMonotonic(true)
 				return m
 			}(),
@@ -140,7 +130,7 @@ func Test_signalFxV2ToMetricsData(t *testing.T) {
 			wantMetricsData: func() pdata.Metrics {
 				m := buildDefaultMetricsData(pdata.MetricDataTypeSum, 13.13)
 				d := m.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(0).Sum()
-				d.SetAggregationTemporality(pdata.AggregationTemporalityDelta)
+				d.SetAggregationTemporality(pdata.MetricAggregationTemporalityDelta)
 				d.SetIsMonotonic(true)
 				return m
 			}(),
@@ -153,8 +143,8 @@ func Test_signalFxV2ToMetricsData(t *testing.T) {
 				return []*sfxpb.DataPoint{pt}
 			}(),
 			wantMetricsData: func() pdata.Metrics {
-				md := buildDefaultMetricsData(pdata.MetricDataTypeIntGauge, 13)
-				md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(0).IntGauge().DataPoints().At(0).SetTimestamp(0)
+				md := buildDefaultMetricsData(pdata.MetricDataTypeGauge, 13)
+				md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(0).Gauge().DataPoints().At(0).SetTimestamp(0)
 				return md
 			}(),
 		},
@@ -166,8 +156,8 @@ func Test_signalFxV2ToMetricsData(t *testing.T) {
 				return []*sfxpb.DataPoint{pt}
 			}(),
 			wantMetricsData: func() pdata.Metrics {
-				md := buildDefaultMetricsData(pdata.MetricDataTypeIntGauge, 13)
-				md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(0).IntGauge().DataPoints().At(0).LabelsMap().Update("k0", "")
+				md := buildDefaultMetricsData(pdata.MetricDataTypeGauge, 13)
+				md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(0).Gauge().DataPoints().At(0).Attributes().UpdateString("k0", "")
 				return md
 			}(),
 		},
@@ -183,12 +173,12 @@ func Test_signalFxV2ToMetricsData(t *testing.T) {
 				pt.Dimensions = dimensions
 				return []*sfxpb.DataPoint{pt}
 			}(),
-			wantMetricsData: buildDefaultMetricsData(pdata.MetricDataTypeIntGauge, 13),
+			wantMetricsData: buildDefaultMetricsData(pdata.MetricDataTypeGauge, 13),
 		},
 		{
 			name:            "nil_datapoint_ignored",
 			sfxDataPoints:   []*sfxpb.DataPoint{nil, buildDefaulstSFxDataPt(), nil},
-			wantMetricsData: buildDefaultMetricsData(pdata.MetricDataTypeIntGauge, 13),
+			wantMetricsData: buildDefaultMetricsData(pdata.MetricDataTypeGauge, 13),
 		},
 		{
 			name: "drop_inconsistent_datapoints",
@@ -212,7 +202,7 @@ func Test_signalFxV2ToMetricsData(t *testing.T) {
 				return []*sfxpb.DataPoint{
 					pt0, buildDefaulstSFxDataPt(), pt1, pt2, pt3}
 			}(),
-			wantMetricsData:       buildDefaultMetricsData(pdata.MetricDataTypeIntGauge, 13),
+			wantMetricsData:       buildDefaultMetricsData(pdata.MetricDataTypeGauge, 13),
 			wantDroppedTimeseries: 4,
 		},
 	}

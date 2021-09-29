@@ -23,10 +23,10 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/model/pdata"
-	"go.opentelemetry.io/collector/receiver/scraperhelper"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkametricsreceiver/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/scraperhelper"
 )
 
 type brokerScraper struct {
@@ -62,7 +62,7 @@ func (s *brokerScraper) scrape(context.Context) (pdata.ResourceMetricsSlice, err
 	rms := pdata.NewResourceMetricsSlice()
 	ilm := rms.AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty()
 	ilm.InstrumentationLibrary().SetName(instrumentationLibName)
-	addGauge(ilm.Metrics(), metadata.M.KafkaBrokers.Name(), pdata.TimestampFromTime(time.Now()), pdata.NewStringMap(), int64(len(brokers)))
+	addIntGauge(ilm.Metrics(), metadata.M.KafkaBrokers.Name(), pdata.NewTimestampFromTime(time.Now()), pdata.NewAttributeMap(), int64(len(brokers)))
 
 	return rms, nil
 }

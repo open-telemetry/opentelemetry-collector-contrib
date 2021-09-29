@@ -50,7 +50,7 @@ func TestTracesExporter(t *testing.T) {
 
 	err = te.ConsumeTraces(context.Background(), traces)
 	assert.NoError(t, err)
-	obsreporttest.CheckExporterTraces(t, cfg.ID(), 1, 0)
+	assert.NoError(t, obsreporttest.CheckExporterTraces(cfg.ID(), 1, 0))
 
 	payloads := recorder.Payloads()
 	require.Len(t, payloads.Transactions, 1)
@@ -77,7 +77,7 @@ func TestMetricsExporter(t *testing.T) {
 	payloads := recorder.Payloads()
 	require.Len(t, payloads.Metrics, 2)
 	assert.Contains(t, payloads.Metrics[0].Samples, "foobar")
-	obsreporttest.CheckExporterMetrics(t, cfg.ID(), 2, 0)
+	assert.NoError(t, obsreporttest.CheckExporterMetrics(cfg.ID(), 2, 0))
 
 	assert.NoError(t, me.Shutdown(context.Background()))
 }
@@ -99,7 +99,7 @@ func TestMetricsExporterSendError(t *testing.T) {
 
 	err = me.ConsumeMetrics(context.Background(), sampleMetrics())
 	assert.Error(t, err)
-	obsreporttest.CheckExporterMetrics(t, cfg.ID(), 0, 2)
+	assert.NoError(t, obsreporttest.CheckExporterMetrics(cfg.ID(), 0, 2))
 
 	assert.NoError(t, me.Shutdown(context.Background()))
 }
@@ -112,7 +112,7 @@ func sampleMetrics() pdata.Metrics {
 		metric := resourceMetrics.AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty().Metrics().AppendEmpty()
 		metric.SetName("foobar")
 		metric.SetDataType(pdata.MetricDataTypeGauge)
-		metric.Gauge().DataPoints().AppendEmpty().SetValue(123)
+		metric.Gauge().DataPoints().AppendEmpty().SetDoubleVal(123)
 	}
 	return metrics
 }

@@ -23,6 +23,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opencensus.io/stats"
 	"go.opencensus.io/stats/view"
+	"go.opencensus.io/tag"
 	"go.opentelemetry.io/collector/model/pdata"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
@@ -42,6 +43,8 @@ func TestMetricViews(t *testing.T) {
 			assert.Equal(t, spanMetadataTagKeys, curView.TagKeys)
 		} else if curView.Name == "newrelicexporter_attribute_metadata_count" {
 			assert.Equal(t, attributeMetadataTagKeys, curView.TagKeys)
+		} else if strings.HasSuffix(curView.Name, "_notag") {
+			assert.Equal(t, []tag.Key{}, curView.TagKeys)
 		} else {
 			assert.Equal(t, tagKeys, curView.TagKeys)
 		}
@@ -142,10 +145,10 @@ func TestRecordMetricMetadata(t *testing.T) {
 		dataOutputCount:  20,
 		externalDuration: 50,
 		metricMetadataCount: map[metricStatsKey]int{
-			{MetricType: pdata.MetricDataTypeSummary}:                                                        1,
-			{MetricType: pdata.MetricDataTypeHistogram}:                                                      1,
-			{MetricType: pdata.MetricDataTypeSum, MetricTemporality: pdata.AggregationTemporalityDelta}:      2,
-			{MetricType: pdata.MetricDataTypeSum, MetricTemporality: pdata.AggregationTemporalityCumulative}: 3,
+			{MetricType: pdata.MetricDataTypeSummary}:                                                              1,
+			{MetricType: pdata.MetricDataTypeHistogram}:                                                            1,
+			{MetricType: pdata.MetricDataTypeSum, MetricTemporality: pdata.MetricAggregationTemporalityDelta}:      2,
+			{MetricType: pdata.MetricDataTypeSum, MetricTemporality: pdata.MetricAggregationTemporalityCumulative}: 3,
 		},
 	}
 
@@ -295,7 +298,7 @@ func TestRecordAttributeMetadata(t *testing.T) {
 			{attributeType: pdata.AttributeValueTypeMap, location: attributeLocationSpanEvent}:    1,
 			{attributeType: pdata.AttributeValueTypeDouble, location: attributeLocationLog}:       1,
 			{attributeType: pdata.AttributeValueTypeInt, location: attributeLocationResource}:     1,
-			{attributeType: pdata.AttributeValueTypeNull, location: attributeLocationSpan}:        1,
+			{attributeType: pdata.AttributeValueTypeEmpty, location: attributeLocationSpan}:       1,
 			{attributeType: pdata.AttributeValueTypeString, location: attributeLocationSpanEvent}: 1,
 		},
 	}

@@ -26,7 +26,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/model/pdata"
-	"go.opentelemetry.io/collector/translator/conventions"
+	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
 	"go.uber.org/zap"
 )
 
@@ -46,15 +46,15 @@ func TestSpansRequireTraceAndSpanIDs(t *testing.T) {
 func TestExportTraceDataMinimum(t *testing.T) {
 	// <operationName> source=<source> <spanTags> <start_milliseconds> <duration_milliseconds>
 	// getAllUsers source=localhost traceId=7b3bf470-9456-11e8-9eb6-529269fb1459 spanId=0313bafe-9457-11e8-9eb6-529269fb1459 parent=2f64e538-9457-11e8-9eb6-529269fb1459 application=Wavefront service=auth cluster=us-west-2 shard=secondary http.method=GET 1552949776000 343
-	span := createSpan(
+	minSpan := createSpan(
 		"root",
 		pdata.NewTraceID([16]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}),
 		pdata.NewSpanID([8]byte{9, 9, 9, 9, 9, 9, 9, 9}),
 		pdata.SpanID{},
 	)
-	traces := constructTraces([]pdata.Span{span})
+	traces := constructTraces([]pdata.Span{minSpan})
 
-	expected := []*Span{{
+	expected := []*span{{
 		Name:    "root",
 		TraceID: uuid.MustParse("01010101-0101-0101-0101-010101010101"),
 		SpanID:  uuid.MustParse("00000000-0000-0000-0909-090909090909"),
@@ -117,7 +117,7 @@ func TestExportTraceDataFullTrace(t *testing.T) {
 	resourceAttrs.InsertString(conventions.AttributeServiceName, "test-service")
 	resourceAttrs.CopyTo(traces.ResourceSpans().At(0).Resource().Attributes())
 
-	expected := []*Span{
+	expected := []*span{
 		{
 			Name:    "root",
 			SpanID:  uuid.MustParse("00000000000000000000000000000001"),
@@ -168,7 +168,7 @@ func TestExportTraceDataFullTrace(t *testing.T) {
 	validateTraces(t, expected, traces)
 }
 
-func validateTraces(t *testing.T, expected []*Span, traces pdata.Traces) {
+func validateTraces(t *testing.T, expected []*span, traces pdata.Traces) {
 	actual, err := consumeTraces(traces)
 	require.NoError(t, err)
 	require.Equal(t, len(expected), len(actual))
@@ -207,7 +207,7 @@ func TestExportTraceDataRespectsContext(t *testing.T) {
 		cfg,
 		componenttest.NewNopExporterCreateSettings(),
 		exp.pushTraceData,
-		exporterhelper.WithShutdown(exp.Shutdown),
+		exporterhelper.WithShutdown(exp.shutdown),
 	)
 	require.NoError(t, err)
 
@@ -243,7 +243,7 @@ func constructTraces(spans []pdata.Span) pdata.Traces {
 	return traces
 }
 
-func consumeTraces(ptrace pdata.Traces) ([]*Span, error) {
+func consumeTraces(ptrace pdata.Traces) ([]*span, error) {
 	ctx := context.Background()
 	sender := &mockSender{}
 
@@ -257,7 +257,7 @@ func consumeTraces(ptrace pdata.Traces) ([]*Span, error) {
 		cfg,
 		componenttest.NewNopExporterCreateSettings(),
 		exp.pushTraceData,
-		exporterhelper.WithShutdown(exp.Shutdown),
+		exporterhelper.WithShutdown(exp.shutdown),
 	)
 
 	if err != nil {
@@ -274,7 +274,7 @@ func consumeTraces(ptrace pdata.Traces) ([]*Span, error) {
 
 // implements the spanSender interface
 type mockSender struct {
-	spans []*Span
+	spans []*span
 }
 
 func (m *mockSender) SendSpan(
@@ -293,7 +293,7 @@ func (m *mockSender) SendSpan(
 	for _, pair := range spanTags {
 		tags[pair.Key] = pair.Value
 	}
-	span := &Span{
+	span := &span{
 		Name:           name,
 		TraceID:        uuid.MustParse(traceID),
 		SpanID:         uuid.MustParse(spanID),

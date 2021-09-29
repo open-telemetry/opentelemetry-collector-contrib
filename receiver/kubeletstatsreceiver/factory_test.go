@@ -12,7 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//go:build !windows
 // +build !windows
+
 // TODO review if tests should succeed on Windows
 
 package kubeletstatsreceiver
@@ -26,10 +28,10 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config/configcheck"
-	"go.opentelemetry.io/collector/config/configparser"
+	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/config/configtest"
 	"go.opentelemetry.io/collector/config/configtls"
-	"go.opentelemetry.io/collector/testbed/testbed"
+	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
@@ -45,7 +47,7 @@ func TestType(t *testing.T) {
 
 func TestValidConfig(t *testing.T) {
 	factory := NewFactory()
-	err := configcheck.ValidateConfig(factory.CreateDefaultConfig())
+	err := configtest.CheckConfigStruct(factory.CreateDefaultConfig())
 	require.NoError(t, err)
 }
 
@@ -67,7 +69,7 @@ func TestCreateMetricsReceiver(t *testing.T) {
 		context.Background(),
 		componenttest.NewNopReceiverCreateSettings(),
 		tlsConfig(),
-		&testbed.MockMetricConsumer{},
+		consumertest.NewNop(),
 	)
 	require.NoError(t, err)
 	require.NotNil(t, metricsReceiver)
@@ -82,7 +84,7 @@ func TestFactoryInvalidExtraMetadataLabels(t *testing.T) {
 		context.Background(),
 		componenttest.NewNopReceiverCreateSettings(),
 		&cfg,
-		&testbed.MockMetricConsumer{},
+		consumertest.NewNop(),
 	)
 	require.Error(t, err)
 	require.Equal(t, "label \"invalid-label\" is not supported", err.Error())
@@ -102,7 +104,7 @@ func TestFactoryBadAuthType(t *testing.T) {
 		context.Background(),
 		componenttest.NewNopReceiverCreateSettings(),
 		cfg,
-		&testbed.MockMetricConsumer{},
+		consumertest.NewNop(),
 	)
 	require.Error(t, err)
 }
@@ -136,7 +138,7 @@ func tlsConfig() *Config {
 
 func TestCustomUnmarshaller(t *testing.T) {
 	type args struct {
-		componentParser *configparser.Parser
+		componentParser *config.Map
 		intoCfg         *Config
 	}
 	tests := []struct {
@@ -154,14 +156,14 @@ func TestCustomUnmarshaller(t *testing.T) {
 		{
 			name: "Fail initial unmarshal",
 			args: args{
-				componentParser: configparser.NewParser(),
+				componentParser: config.NewMap(),
 			},
 			wantErr: true,
 		},
 		{
 			name: "metric_group unset",
 			args: args{
-				componentParser: configparser.NewParser(),
+				componentParser: config.NewMap(),
 				intoCfg:         &Config{},
 			},
 			result: &Config{
@@ -171,7 +173,7 @@ func TestCustomUnmarshaller(t *testing.T) {
 		{
 			name: "fail to unmarshall metric_groups",
 			args: args{
-				componentParser: configparser.NewParser(),
+				componentParser: config.NewMap(),
 				intoCfg:         &Config{},
 			},
 			mockUnmarshallFailure: true,
@@ -180,7 +182,7 @@ func TestCustomUnmarshaller(t *testing.T) {
 		{
 			name: "successfully override metric_group",
 			args: args{
-				componentParser: configparser.NewParser(),
+				componentParser: config.NewMap(),
 				intoCfg: &Config{
 					CollectionInterval: 10 * time.Second,
 				},

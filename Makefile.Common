@@ -12,10 +12,12 @@ ALL_SRC_AND_DOC := $(shell find . \( -name "*.md" -o -name "*.go" -o -name "*.ya
 # ALL_PKGS is used with 'go cover'
 ALL_PKGS := $(shell go list $(sort $(dir $(ALL_SRC))) 2>/dev/null)
 
-GOTEST_OPT?= -race -timeout 30s
+# build tags required by any component should be defined as an independent variables and later added to GO_BUILD_TAGS below
+GO_BUILD_TAGS=""
+GOTEST_OPT?= -race -timeout 300s --tags=$(GO_BUILD_TAGS)
 GOTEST_INTEGRATION_OPT?= -race -timeout 60s
 GOTEST_OPT_WITH_COVERAGE = $(GOTEST_OPT) -coverprofile=coverage.txt -covermode=atomic
-GOTEST_OPT_WITH_INTEGRATION=$(GOTEST_INTEGRATION_OPT) -v -tags=integration -run=Integration -coverprofile=integration-coverage.txt -covermode=atomic
+GOTEST_OPT_WITH_INTEGRATION=$(GOTEST_INTEGRATION_OPT) -v -tags=integration,$(GO_BUILD_TAGS) -run=Integration -coverprofile=integration-coverage.txt -covermode=atomic
 GOTEST=go test
 GOOS=$(shell go env GOOS)
 GOARCH=$(shell go env GOARCH)
@@ -58,11 +60,11 @@ do-integration-tests-with-cover:
 
 .PHONY: benchmark
 benchmark:
-	$(GOTEST) -bench=. -run=notests $(ALL_PKGS)
+	$(GOTEST) -bench=. -run=notests --tags=$(GO_BUILD_TAGS) $(ALL_PKGS)
 
 .PHONY: addlicense
 addlicense:
-	@ADDLICENCESEOUT=`$(ADDLICENCESE) -y "" -c 'OpenTelemetry Authors' $(ALL_SRC) 2>&1`; \
+	@ADDLICENCESEOUT=`$(ADDLICENCESE) -y "" -c 'The OpenTelemetry Authors' $(ALL_SRC) 2>&1`; \
 		if [ "$$ADDLICENCESEOUT" ]; then \
 			echo "$(ADDLICENCESE) FAILED => add License errors:\n"; \
 			echo "$$ADDLICENCESEOUT\n"; \

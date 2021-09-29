@@ -37,6 +37,10 @@ func NewFactory() component.ExporterFactory {
 func createDefaultConfig() config.Exporter {
 	return &Config{
 		ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
+		RetrySettings:    exporterhelper.DefaultRetrySettings(),
+		QueueSettings: QueueSettings{
+			QueueSize: exporterhelper.DefaultQueueSettings().QueueSize,
+		},
 	}
 }
 
@@ -51,10 +55,9 @@ func createLogsExporter(_ context.Context, set component.ExporterCreateSettings,
 		oCfg,
 		set,
 		exporter.PushLogs,
-		exporterhelper.WithQueue(exporterhelper.QueueSettings{
-			Enabled:      true,
-			NumConsumers: 1, // due to the sequence token, there can be only one request in flight
-		}),
+		exporterhelper.WithStart(exporter.Start),
+		exporterhelper.WithShutdown(exporter.Shutdown),
+		exporterhelper.WithQueue(oCfg.enforcedQueueSettings()),
 		exporterhelper.WithRetry(oCfg.RetrySettings),
 	)
 }

@@ -41,8 +41,8 @@ func TestMemoryMetric(t *testing.T) {
 	assert.Equal(t, metricName, m.Name())
 	assert.Equal(t, desc, m.Description())
 	assert.Equal(t, units, m.Unit())
-	assert.Equal(t, pdata.MetricDataTypeIntGauge, m.DataType())
-	assert.Equal(t, int64(ptVal), m.IntGauge().DataPoints().At(0).Value())
+	assert.Equal(t, pdata.MetricDataTypeGauge, m.DataType())
+	assert.Equal(t, int64(ptVal), m.Gauge().DataPoints().At(0).IntVal())
 }
 
 func TestUptimeInSeconds(t *testing.T) {
@@ -51,7 +51,7 @@ func TestUptimeInSeconds(t *testing.T) {
 	v := 104946
 
 	assert.Equal(t, units, pdm.Unit())
-	assert.Equal(t, int64(v), pdm.IntSum().DataPoints().At(0).Value())
+	assert.Equal(t, int64(v), pdm.Sum().DataPoints().At(0).IntVal())
 }
 
 func TestUsedCpuSys(t *testing.T) {
@@ -66,7 +66,7 @@ func TestUsedCpuSys(t *testing.T) {
 		m.DataType(),
 	)
 	assert.Equal(t, units, m.Unit())
-	assert.Equal(t, v, m.Sum().DataPoints().At(0).Value())
+	assert.Equal(t, v, m.Sum().DataPoints().At(0).DoubleVal())
 }
 
 func TestMissingMetricValue(t *testing.T) {
@@ -104,55 +104,56 @@ func TestKeyspaceMetrics(t *testing.T) {
 	assert.Equal(t, 6, ms.Len())
 
 	const lblKey = "db"
-	const lblVal = "0"
 	const name1 = "redis/db/keys"
+
+	lblVal := pdata.NewAttributeValueString("0")
 
 	pdm := ms.At(0)
 	assert.Equal(t, name1, pdm.Name())
-	dps := pdm.IntGauge().DataPoints()
+	dps := pdm.Gauge().DataPoints()
 	pt := dps.At(0)
-	v, ok := pt.LabelsMap().Get(lblKey)
+	v, ok := pt.Attributes().Get(lblKey)
 	assert.True(t, ok)
 	assert.Equal(t, lblVal, v)
-	assert.Equal(t, pdata.MetricDataTypeIntGauge, pdm.DataType())
-	assert.Equal(t, int64(1), pt.Value())
+	assert.Equal(t, pdata.MetricDataTypeGauge, pdm.DataType())
+	assert.Equal(t, int64(1), pt.IntVal())
 
 	const name2 = "redis/db/expires"
 
 	pdm = ms.At(1)
 	assert.Equal(t, name2, pdm.Name())
-	dps = pdm.IntGauge().DataPoints()
+	dps = pdm.Gauge().DataPoints()
 	pt = dps.At(0)
-	v, ok = pt.LabelsMap().Get(lblKey)
+	v, ok = pt.Attributes().Get(lblKey)
 	assert.True(t, ok)
 	assert.Equal(t, lblVal, v)
-	assert.Equal(t, pdata.MetricDataTypeIntGauge, pdm.DataType())
-	assert.Equal(t, int64(2), pt.Value())
+	assert.Equal(t, pdata.MetricDataTypeGauge, pdm.DataType())
+	assert.Equal(t, int64(2), pt.IntVal())
 
 	const name3 = "redis/db/avg_ttl"
 
 	pdm = ms.At(2)
 	assert.Equal(t, name3, pdm.Name())
-	dps = pdm.IntGauge().DataPoints()
+	dps = pdm.Gauge().DataPoints()
 	pt = dps.At(0)
-	v, ok = pt.LabelsMap().Get(lblKey)
+	v, ok = pt.Attributes().Get(lblKey)
 	assert.True(t, ok)
 	assert.Equal(t, lblVal, v)
-	assert.Equal(t, pdata.MetricDataTypeIntGauge, pdm.DataType())
-	assert.Equal(t, int64(3), pt.Value())
+	assert.Equal(t, pdata.MetricDataTypeGauge, pdm.DataType())
+	assert.Equal(t, int64(3), pt.IntVal())
 }
 
 func TestNewPDM(t *testing.T) {
-	serverStartTime := pdata.TimestampFromTime(time.Unix(900, 0))
+	serverStartTime := pdata.NewTimestampFromTime(time.Unix(900, 0))
 	tb := testTimeBundle()
 
 	pdm := pdata.NewMetric()
-	initIntMetric(&redisMetric{pdType: pdata.MetricDataTypeIntGauge}, 0, tb, pdm)
-	assert.Equal(t, pdata.Timestamp(0), pdm.IntGauge().DataPoints().At(0).StartTimestamp())
+	initIntMetric(&redisMetric{pdType: pdata.MetricDataTypeGauge}, 0, tb, pdm)
+	assert.Equal(t, pdata.Timestamp(0), pdm.Gauge().DataPoints().At(0).StartTimestamp())
 
 	pdm = pdata.NewMetric()
-	initIntMetric(&redisMetric{pdType: pdata.MetricDataTypeIntSum}, 0, tb, pdm)
-	assert.Equal(t, serverStartTime, pdm.IntSum().DataPoints().At(0).StartTimestamp())
+	initIntMetric(&redisMetric{pdType: pdata.MetricDataTypeSum}, 0, tb, pdm)
+	assert.Equal(t, serverStartTime, pdm.Sum().DataPoints().At(0).StartTimestamp())
 
 	pdm = pdata.NewMetric()
 	initDoubleMetric(&redisMetric{pdType: pdata.MetricDataTypeGauge}, 0, tb, pdm)

@@ -20,9 +20,9 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/model/pdata"
-	"go.opentelemetry.io/collector/translator/conventions"
+	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
+	"go.uber.org/multierr"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/gcp"
@@ -41,19 +41,17 @@ func NewDetector(component.ProcessorCreateSettings, internal.DetectorConfig) (in
 	return &Detector{metadata: &gcp.MetadataImpl{}}, nil
 }
 
-func (d *Detector) Detect(context.Context) (pdata.Resource, error) {
+func (d *Detector) Detect(context.Context) (resource pdata.Resource, schemaURL string, err error) {
 	res := pdata.NewResource()
 
 	if !d.metadata.OnGCE() {
-		return res, nil
+		return res, "", nil
 	}
 
 	attr := res.Attributes()
-
-	var errors []error
-	errors = append(errors, d.initializeCloudAttributes(attr)...)
-	errors = append(errors, d.initializeHostAttributes(attr)...)
-	return res, consumererror.Combine(errors)
+	cloudErr := multierr.Combine(d.initializeCloudAttributes(attr)...)
+	hostErr := multierr.Combine(d.initializeHostAttributes(attr)...)
+	return res, conventions.SchemaURL, multierr.Append(cloudErr, hostErr)
 }
 
 func (d *Detector) initializeCloudAttributes(attr pdata.AttributeMap) []error {
@@ -66,7 +64,7 @@ func (d *Detector) initializeCloudAttributes(attr pdata.AttributeMap) []error {
 	if err != nil {
 		errors = append(errors, err)
 	} else {
-		attr.InsertString(conventions.AttributeCloudAccount, projectID)
+		attr.InsertString(conventions.AttributeCloudAccountID, projectID)
 	}
 
 	zone, err := d.metadata.Zone()

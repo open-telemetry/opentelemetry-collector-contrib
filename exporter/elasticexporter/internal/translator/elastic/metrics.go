@@ -38,42 +38,23 @@ func EncodeMetrics(otlpMetrics pdata.MetricSlice, otlpLibrary pdata.Instrumentat
 
 		name := metric.Name()
 		switch metric.DataType() {
-		case pdata.MetricDataTypeIntGauge:
-			intGauge := metric.IntGauge()
-			dps := intGauge.DataPoints()
-			for i := 0; i < dps.Len(); i++ {
-				dp := dps.At(i)
-				metricsets.upsert(model.Metrics{
-					Timestamp: asTime(dp.Timestamp()),
-					Labels:    asStringMap(dp.LabelsMap()),
-					Samples: map[string]model.Metric{name: {
-						Value: float64(dp.Value()),
-					}},
-				})
-			}
 		case pdata.MetricDataTypeGauge:
 			doubleGauge := metric.Gauge()
 			dps := doubleGauge.DataPoints()
 			for i := 0; i < dps.Len(); i++ {
 				dp := dps.At(i)
+				var val float64
+				switch dp.Type() {
+				case pdata.MetricValueTypeDouble:
+					val = dp.DoubleVal()
+				case pdata.MetricValueTypeInt:
+					val = float64(dp.IntVal())
+				}
 				metricsets.upsert(model.Metrics{
 					Timestamp: asTime(dp.Timestamp()),
-					Labels:    asStringMap(dp.LabelsMap()),
+					Labels:    asStringMap(dp.Attributes()),
 					Samples: map[string]model.Metric{name: {
-						Value: dp.Value(),
-					}},
-				})
-			}
-		case pdata.MetricDataTypeIntSum:
-			intSum := metric.IntSum()
-			dps := intSum.DataPoints()
-			for i := 0; i < dps.Len(); i++ {
-				dp := dps.At(i)
-				metricsets.upsert(model.Metrics{
-					Timestamp: asTime(dp.Timestamp()),
-					Labels:    asStringMap(dp.LabelsMap()),
-					Samples: map[string]model.Metric{name: {
-						Value: float64(dp.Value()),
+						Value: val,
 					}},
 				})
 			}
@@ -82,11 +63,18 @@ func EncodeMetrics(otlpMetrics pdata.MetricSlice, otlpLibrary pdata.Instrumentat
 			dps := doubleSum.DataPoints()
 			for i := 0; i < dps.Len(); i++ {
 				dp := dps.At(i)
+				var val float64
+				switch dp.Type() {
+				case pdata.MetricValueTypeDouble:
+					val = dp.DoubleVal()
+				case pdata.MetricValueTypeInt:
+					val = float64(dp.IntVal())
+				}
 				metricsets.upsert(model.Metrics{
 					Timestamp: asTime(dp.Timestamp()),
-					Labels:    asStringMap(dp.LabelsMap()),
+					Labels:    asStringMap(dp.Attributes()),
 					Samples: map[string]model.Metric{name: {
-						Value: dp.Value(),
+						Value: val,
 					}},
 				})
 			}
@@ -113,13 +101,13 @@ func asTime(in pdata.Timestamp) model.Time {
 	return model.Time(time.Unix(0, int64(in)))
 }
 
-func asStringMap(in pdata.StringMap) model.StringMap {
+func asStringMap(in pdata.AttributeMap) model.StringMap {
 	var out model.StringMap
 	in.Sort()
-	in.Range(func(k string, v string) bool {
+	in.Range(func(k string, v pdata.AttributeValue) bool {
 		out = append(out, model.StringMapItem{
 			Key:   k,
-			Value: v,
+			Value: v.AsString(),
 		})
 		return true
 	})

@@ -19,10 +19,20 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/model/pdata"
+	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 )
+
+var defaultTestingHecConfig = &Config{
+	HecToOtelAttrs: splunk.HecToOtelAttrs{
+		Source:     splunk.DefaultSourceLabel,
+		SourceType: splunk.DefaultSourceTypeLabel,
+		Index:      splunk.DefaultIndexLabel,
+		Host:       conventions.AttributeHostName,
+	},
+}
 
 func Test_SplunkHecToLogData(t *testing.T) {
 
@@ -30,10 +40,11 @@ func Test_SplunkHecToLogData(t *testing.T) {
 	nanoseconds := 123000000
 
 	tests := []struct {
-		name    string
-		event   splunk.Event
-		output  pdata.ResourceLogsSlice
-		wantErr error
+		name      string
+		event     splunk.Event
+		output    pdata.ResourceLogsSlice
+		hecConfig *Config
+		wantErr   error
 	}{
 		{
 			name: "happy_path",
@@ -48,6 +59,7 @@ func Test_SplunkHecToLogData(t *testing.T) {
 					"foo": "bar",
 				},
 			},
+			hecConfig: defaultTestingHecConfig,
 			output: func() pdata.ResourceLogsSlice {
 				return createLogsSlice(nanoseconds)
 			}(),
@@ -66,6 +78,7 @@ func Test_SplunkHecToLogData(t *testing.T) {
 					"foo": "bar",
 				},
 			},
+			hecConfig: defaultTestingHecConfig,
 			output: func() pdata.ResourceLogsSlice {
 				logsSlice := createLogsSlice(nanoseconds)
 				logsSlice.At(0).InstrumentationLibraryLogs().At(0).Logs().At(0).Body().SetDoubleVal(12.3)
@@ -86,6 +99,7 @@ func Test_SplunkHecToLogData(t *testing.T) {
 					"foo": "bar",
 				},
 			},
+			hecConfig: defaultTestingHecConfig,
 			output: func() pdata.ResourceLogsSlice {
 				logsSlice := createLogsSlice(nanoseconds)
 				arrVal := pdata.NewAttributeValueArray()
@@ -110,6 +124,7 @@ func Test_SplunkHecToLogData(t *testing.T) {
 					"foo": "bar",
 				},
 			},
+			hecConfig: defaultTestingHecConfig,
 			output: func() pdata.ResourceLogsSlice {
 				logsSlice := createLogsSlice(nanoseconds)
 				foosArr := pdata.NewAttributeValueArray()
@@ -142,15 +157,54 @@ func Test_SplunkHecToLogData(t *testing.T) {
 					"foo": "bar",
 				},
 			},
+			hecConfig: defaultTestingHecConfig,
 			output: func() pdata.ResourceLogsSlice {
 				return createLogsSlice(0)
+			}(),
+			wantErr: nil,
+		},
+		{
+			name: "custom_config_mapping",
+			event: splunk.Event{
+				Time:       new(float64),
+				Host:       "localhost",
+				Source:     "mysource",
+				SourceType: "mysourcetype",
+				Index:      "myindex",
+				Event:      "value",
+				Fields: map[string]interface{}{
+					"foo": "bar",
+				},
+			},
+			hecConfig: &Config{
+				HecToOtelAttrs: splunk.HecToOtelAttrs{
+					Source:     "mysource",
+					SourceType: "mysourcetype",
+					Index:      "myindex",
+					Host:       "myhost",
+				},
+			},
+			output: func() pdata.ResourceLogsSlice {
+				lrs := pdata.NewResourceLogsSlice()
+				lr := lrs.AppendEmpty()
+				ill := lr.InstrumentationLibraryLogs().AppendEmpty()
+				logRecord := ill.Logs().AppendEmpty()
+				logRecord.SetName("mysourcetype")
+				logRecord.Body().SetStringVal("value")
+				logRecord.SetTimestamp(pdata.Timestamp(0))
+				logRecord.Attributes().InsertString("myhost", "localhost")
+				logRecord.Attributes().InsertString("mysource", "mysource")
+				logRecord.Attributes().InsertString("mysourcetype", "mysourcetype")
+				logRecord.Attributes().InsertString("myindex", "myindex")
+				logRecord.Attributes().InsertString("foo", "bar")
+				return lrs
 			}(),
 			wantErr: nil,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result, err := splunkHecToLogData(zap.NewNop(), []*splunk.Event{&tt.event}, func(resource pdata.Resource) {})
+			result, err := splunkHecToLogData(zap.NewNop(), []*splunk.Event{&tt.event}, func(resource pdata.Resource) {}, tt.hecConfig)
 			assert.Equal(t, tt.wantErr, err)
 			assert.Equal(t, tt.output.Len(), result.ResourceLogs().Len())
 			assert.Equal(t, tt.output.At(0), result.ResourceLogs().At(0))
@@ -167,7 +221,7 @@ func createLogsSlice(nanoseconds int) pdata.ResourceLogsSlice {
 	logRecord.Body().SetStringVal("value")
 	logRecord.SetTimestamp(pdata.Timestamp(nanoseconds))
 	logRecord.Attributes().InsertString("host.name", "localhost")
-	logRecord.Attributes().InsertString("service.name", "mysource")
+	logRecord.Attributes().InsertString("com.splunk.source", "mysource")
 	logRecord.Attributes().InsertString("com.splunk.sourcetype", "mysourcetype")
 	logRecord.Attributes().InsertString("com.splunk.index", "myindex")
 	logRecord.Attributes().InsertString("foo", "bar")
@@ -175,10 +229,10 @@ func createLogsSlice(nanoseconds int) pdata.ResourceLogsSlice {
 	return lrs
 }
 
-func Test_ConvertAttributeValueNull(t *testing.T) {
+func Test_ConvertAttributeValueEmpty(t *testing.T) {
 	value, err := convertInterfaceToAttributeValue(zap.NewNop(), nil)
 	assert.NoError(t, err)
-	assert.Equal(t, pdata.NewAttributeValueNull(), value)
+	assert.Equal(t, pdata.NewAttributeValueEmpty(), value)
 }
 
 func Test_ConvertAttributeValueString(t *testing.T) {
@@ -220,17 +274,17 @@ func Test_ConvertAttributeValueArray(t *testing.T) {
 func Test_ConvertAttributeValueInvalid(t *testing.T) {
 	value, err := convertInterfaceToAttributeValue(zap.NewNop(), splunk.Event{})
 	assert.Error(t, err)
-	assert.Equal(t, pdata.NewAttributeValueNull(), value)
+	assert.Equal(t, pdata.NewAttributeValueEmpty(), value)
 }
 
 func Test_ConvertAttributeValueInvalidInMap(t *testing.T) {
 	value, err := convertInterfaceToAttributeValue(zap.NewNop(), map[string]interface{}{"foo": splunk.Event{}})
 	assert.Error(t, err)
-	assert.Equal(t, pdata.NewAttributeValueNull(), value)
+	assert.Equal(t, pdata.NewAttributeValueEmpty(), value)
 }
 
 func Test_ConvertAttributeValueInvalidInArray(t *testing.T) {
 	value, err := convertInterfaceToAttributeValue(zap.NewNop(), []interface{}{splunk.Event{}})
 	assert.Error(t, err)
-	assert.Equal(t, pdata.NewAttributeValueNull(), value)
+	assert.Equal(t, pdata.NewAttributeValueEmpty(), value)
 }

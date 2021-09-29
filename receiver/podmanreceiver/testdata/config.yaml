@@ -1,0 +1,18 @@
+receivers:
+  podman_stats:
+  podman_stats/all:
+    endpoint: http://example.com/
+    collection_interval: 2s
+
+processors:
+  nop:
+
+exporters:
+  nop:
+
+service:
+  pipelines:
+    metrics:
+      receivers: [podman_stats, podman_stats/all]
+      processors: [nop]
+      exporters: [nop]

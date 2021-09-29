@@ -16,7 +16,7 @@ package collection
 
 import (
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
-	"go.opentelemetry.io/collector/translator/conventions"
+	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
 	appsv1 "k8s.io/api/apps/v1"
 
 	metadata "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata"
@@ -44,10 +44,10 @@ func getResourceForReplicaSet(rs *appsv1.ReplicaSet) *resourcepb.Resource {
 	return &resourcepb.Resource{
 		Type: k8sType,
 		Labels: map[string]string{
-			conventions.AttributeK8sReplicaSetUID: string(rs.UID),
-			conventions.AttributeK8sReplicaSet:    rs.Name,
-			conventions.AttributeK8sNamespace:     rs.Namespace,
-			conventions.AttributeK8sCluster:       rs.ClusterName,
+			conventions.AttributeK8SReplicaSetUID:  string(rs.UID),
+			conventions.AttributeK8SReplicaSetName: rs.Name,
+			conventions.AttributeK8SNamespaceName:  rs.Namespace,
+			conventions.AttributeK8SClusterName:    rs.ClusterName,
 		},
 	}
 }

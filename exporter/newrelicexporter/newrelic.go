@@ -25,8 +25,8 @@ import (
 
 	"github.com/newrelic/newrelic-telemetry-sdk-go/telemetry"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/model/pdata"
+	"go.uber.org/multierr"
 	"go.uber.org/zap"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
@@ -129,7 +129,7 @@ func (e exporter) pushTraceData(ctx context.Context, td pdata.Traces) (outputErr
 }
 
 func (e exporter) buildTraceBatch(details *exportMetadata, td pdata.Traces) ([]telemetry.Batch, error) {
-	var errs []error
+	var errs error
 
 	transform := newTransformer(e.logger, e.buildInfo, details)
 	batches := make([]telemetry.Batch, 0, calcSpanBatches(td))
@@ -142,7 +142,7 @@ func (e exporter) buildTraceBatch(details *exportMetadata, td pdata.Traces) ([]t
 			spanCommon, err := telemetry.NewSpanCommonBlock(telemetry.WithSpanAttributes(commonAttributes))
 			if err != nil {
 				e.logger.Error("Transform of span common attributes failed.", zap.Error(err))
-				errs = append(errs, err)
+				errs = multierr.Append(errs, err)
 				continue
 			}
 			spans := make([]telemetry.Span, 0, ispans.Spans().Len())
@@ -151,7 +151,7 @@ func (e exporter) buildTraceBatch(details *exportMetadata, td pdata.Traces) ([]t
 				nrSpan, err := transform.Span(span)
 				if err != nil {
 					e.logger.Debug("Transform of span failed.", zap.Error(err))
-					errs = append(errs, err)
+					errs = multierr.Append(errs, err)
 					continue
 				}
 
@@ -162,7 +162,7 @@ func (e exporter) buildTraceBatch(details *exportMetadata, td pdata.Traces) ([]t
 		}
 	}
 
-	return batches, consumererror.Combine(errs)
+	return batches, errs
 }
 
 func calcSpanBatches(td pdata.Traces) int {
@@ -182,7 +182,7 @@ func (e exporter) pushLogData(ctx context.Context, ld pdata.Logs) (outputErr err
 }
 
 func (e exporter) buildLogBatch(details *exportMetadata, ld pdata.Logs) ([]telemetry.Batch, error) {
-	var errs []error
+	var errs error
 
 	transform := newTransformer(e.logger, e.buildInfo, details)
 	batches := make([]telemetry.Batch, 0, calcLogBatches(ld))
@@ -195,7 +195,7 @@ func (e exporter) buildLogBatch(details *exportMetadata, ld pdata.Logs) ([]telem
 			logCommon, err := telemetry.NewLogCommonBlock(telemetry.WithLogAttributes(commonAttributes))
 			if err != nil {
 				e.logger.Error("Transform of log common attributes failed.", zap.Error(err))
-				errs = append(errs, err)
+				errs = multierr.Append(errs, err)
 				continue
 			}
 			logs := make([]telemetry.Log, 0, ilogs.Logs().Len())
@@ -204,7 +204,7 @@ func (e exporter) buildLogBatch(details *exportMetadata, ld pdata.Logs) ([]telem
 				nrLog, err := transform.Log(log)
 				if err != nil {
 					e.logger.Error("Transform of log failed.", zap.Error(err))
-					errs = append(errs, err)
+					errs = multierr.Append(errs, err)
 					continue
 				}
 
@@ -215,7 +215,7 @@ func (e exporter) buildLogBatch(details *exportMetadata, ld pdata.Logs) ([]telem
 		}
 	}
 
-	return batches, consumererror.Combine(errs)
+	return batches, errs
 }
 
 func calcLogBatches(ld pdata.Logs) int {
@@ -235,7 +235,7 @@ func (e exporter) pushMetricData(ctx context.Context, md pdata.Metrics) (outputE
 }
 
 func (e exporter) buildMetricBatch(details *exportMetadata, md pdata.Metrics) ([]telemetry.Batch, error) {
-	var errs []error
+	var errs error
 
 	transform := newTransformer(e.logger, e.buildInfo, details)
 	batches := make([]telemetry.Batch, 0, calcMetricBatches(md))
@@ -248,7 +248,7 @@ func (e exporter) buildMetricBatch(details *exportMetadata, md pdata.Metrics) ([
 			metricCommon, err := telemetry.NewMetricCommonBlock(telemetry.WithMetricAttributes(commonAttributes))
 			if err != nil {
 				e.logger.Error("Transform of metric common attributes failed.", zap.Error(err))
-				errs = append(errs, err)
+				errs = multierr.Append(errs, err)
 				continue
 			}
 			metricSlices := make([][]telemetry.Metric, 0, imetrics.Metrics().Len())
@@ -264,7 +264,7 @@ func (e exporter) buildMetricBatch(details *exportMetadata, md pdata.Metrics) ([
 						}
 					}
 					e.logger.Debug("Transform of metric failed.", zap.Error(err))
-					errs = append(errs, err)
+					errs = multierr.Append(errs, err)
 					continue
 				}
 				details.dataOutputCount += len(nrMetrics)
@@ -275,7 +275,7 @@ func (e exporter) buildMetricBatch(details *exportMetadata, md pdata.Metrics) ([
 		}
 	}
 
-	return batches, consumererror.Combine(errs)
+	return batches, errs
 }
 
 func calcMetricBatches(md pdata.Metrics) int {
@@ -324,7 +324,7 @@ func (e exporter) export(
 		options = append(options, option)
 	}
 
-	req, err := e.requestFactory.BuildRequest(batches, options...)
+	req, err := e.requestFactory.BuildRequest(ctx, batches, options...)
 	if err != nil {
 		e.logger.Error("Failed to build data map", zap.Error(err))
 		return err
@@ -340,11 +340,17 @@ func (e exporter) export(
 func (e exporter) doRequest(details *exportMetadata, req *http.Request) error {
 	startTime := time.Now()
 	defer func() { details.externalDuration = time.Since(startTime) }()
+
 	// Execute the http request and handle the response
 	response, err := http.DefaultClient.Do(req)
 	if err != nil {
-		e.logger.Error("Error making HTTP request.", zap.Error(err))
-		return &urlError{Err: err}
+		// If the context cancellation caused the error, we don't want to log that error.
+		// Only log an error when the context is still active
+		if ctxErr := req.Context().Err(); ctxErr == nil {
+			e.logger.Error("Error making HTTP request.", zap.Error(err))
+		}
+		err := &urlError{err: err}
+		return err.Wrap()
 	}
 	defer response.Body.Close()
 	io.Copy(ioutil.Discard, response.Body)
@@ -355,20 +361,21 @@ func (e exporter) doRequest(details *exportMetadata, req *http.Request) error {
 		// Log the error at an appropriate level based on the status code
 		if response.StatusCode >= 500 {
 			// The data has been lost, but it is due to a server side error
-			e.logger.Warn("Server HTTP error", zap.String("Status", response.Status))
+			e.logger.Warn("Server HTTP error", zap.String("Status", response.Status), zap.Stringer("Url", req.URL))
 		} else if response.StatusCode == http.StatusForbidden {
 			// The data has been lost, but it is due to an invalid api key
-			e.logger.Debug("HTTP Forbidden response", zap.String("Status", response.Status))
+			e.logger.Debug("HTTP Forbidden response", zap.String("Status", response.Status), zap.Stringer("Url", req.URL))
 		} else if response.StatusCode == http.StatusTooManyRequests {
 			// The data has been lost, but it is due to rate limiting
-			e.logger.Debug("HTTP Too Many Requests", zap.String("Status", response.Status))
+			e.logger.Debug("HTTP Too Many Requests", zap.String("Status", response.Status), zap.Stringer("Url", req.URL))
 		} else {
 			// The data has been lost due to an error in our payload
 			details.dataOutputCount = 0
-			e.logger.Error("Client HTTP error.", zap.String("Status", response.Status))
+			e.logger.Error("Client HTTP error.", zap.String("Status", response.Status), zap.Stringer("Url", req.URL))
 		}
 
-		return &httpError{Response: response}
+		err := newHTTPError(response)
+		return err.Wrap()
 	}
 	return nil
 }

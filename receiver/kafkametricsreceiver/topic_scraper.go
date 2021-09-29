@@ -25,10 +25,10 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
-	"go.opentelemetry.io/collector/receiver/scraperhelper"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkametricsreceiver/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/scraperhelper"
 )
 
 type topicScraper struct {
@@ -68,7 +68,7 @@ func (s *topicScraper) scrape(context.Context) (pdata.ResourceMetricsSlice, erro
 
 	var scrapeErrors = scrapererror.ScrapeErrors{}
 
-	now := pdata.TimestampFromTime(time.Now())
+	now := pdata.NewTimestampFromTime(time.Now())
 	rms := pdata.NewResourceMetricsSlice()
 	ilm := rms.AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty()
 	ilm.InstrumentationLibrary().SetName(instrumentationLibName)
@@ -81,34 +81,34 @@ func (s *topicScraper) scrape(context.Context) (pdata.ResourceMetricsSlice, erro
 			scrapeErrors.Add(err)
 			continue
 		}
-		labels := pdata.NewStringMap()
-		labels.Upsert(metadata.L.Topic, topic)
-		addGauge(ilm.Metrics(), metadata.M.KafkaTopicPartitions.Name(), now, labels, int64(len(partitions)))
+		labels := pdata.NewAttributeMap()
+		labels.UpsertString(metadata.L.Topic, topic)
+		addIntGauge(ilm.Metrics(), metadata.M.KafkaTopicPartitions.Name(), now, labels, int64(len(partitions)))
 		for _, partition := range partitions {
-			labels.Upsert(metadata.L.Partition, string(partition))
+			labels.UpsertInt(metadata.L.Partition, int64(partition))
 			currentOffset, err := s.client.GetOffset(topic, partition, sarama.OffsetNewest)
 			if err != nil {
 				scrapeErrors.AddPartial(1, err)
 			} else {
-				addGauge(ilm.Metrics(), metadata.M.KafkaPartitionCurrentOffset.Name(), now, labels, currentOffset)
+				addIntGauge(ilm.Metrics(), metadata.M.KafkaPartitionCurrentOffset.Name(), now, labels, currentOffset)
 			}
 			oldestOffset, err := s.client.GetOffset(topic, partition, sarama.OffsetOldest)
 			if err != nil {
 				scrapeErrors.AddPartial(1, err)
 			} else {
-				addGauge(ilm.Metrics(), metadata.M.KafkaPartitionOldestOffset.Name(), now, labels, oldestOffset)
+				addIntGauge(ilm.Metrics(), metadata.M.KafkaPartitionOldestOffset.Name(), now, labels, oldestOffset)
 			}
 			replicas, err := s.client.Replicas(topic, partition)
 			if err != nil {
 				scrapeErrors.AddPartial(1, err)
 			} else {
-				addGauge(ilm.Metrics(), metadata.M.KafkaPartitionReplicas.Name(), now, labels, int64(len(replicas)))
+				addIntGauge(ilm.Metrics(), metadata.M.KafkaPartitionReplicas.Name(), now, labels, int64(len(replicas)))
 			}
 			replicasInSync, err := s.client.InSyncReplicas(topic, partition)
 			if err != nil {
 				scrapeErrors.AddPartial(1, err)
 			} else {
-				addGauge(ilm.Metrics(), metadata.M.KafkaPartitionReplicasInSync.Name(), now, labels, int64(len(replicasInSync)))
+				addIntGauge(ilm.Metrics(), metadata.M.KafkaPartitionReplicasInSync.Name(), now, labels, int64(len(replicasInSync)))
 			}
 		}
 	}
@@ -134,12 +134,12 @@ func createTopicsScraper(_ context.Context, cfg Config, saramaConfig *sarama.Con
 	), nil
 }
 
-func addGauge(ms pdata.MetricSlice, name string, now pdata.Timestamp, labels pdata.StringMap, value int64) {
+func addIntGauge(ms pdata.MetricSlice, name string, now pdata.Timestamp, labels pdata.AttributeMap, value int64) {
 	m := ms.AppendEmpty()
 	m.SetName(name)
-	m.SetDataType(pdata.MetricDataTypeIntGauge)
-	dp := m.IntGauge().DataPoints().AppendEmpty()
+	m.SetDataType(pdata.MetricDataTypeGauge)
+	dp := m.Gauge().DataPoints().AppendEmpty()
 	dp.SetTimestamp(now)
-	dp.SetValue(value)
-	labels.CopyTo(dp.LabelsMap())
+	dp.SetIntVal(value)
+	labels.CopyTo(dp.Attributes())
 }

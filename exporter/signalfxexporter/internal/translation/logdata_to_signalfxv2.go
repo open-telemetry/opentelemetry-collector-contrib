@@ -58,7 +58,6 @@ func convertLogRecord(lr pdata.LogRecord, resourceAttrs pdata.AttributeMap, logg
 	if categoryVal.Type() == pdata.AttributeValueTypeInt {
 		asCat := sfxpb.EventCategory(categoryVal.IntVal())
 		event.Category = &asCat
-		attrs.Delete(splunk.SFxEventCategoryKey)
 	}
 
 	if mapVal, ok := attrs.Get(splunk.SFxEventPropertiesKey); ok && mapVal.Type() == pdata.AttributeValueTypeMap {
@@ -76,7 +75,6 @@ func convertLogRecord(lr pdata.LogRecord, resourceAttrs pdata.AttributeMap, logg
 			return true
 		})
 	}
-	attrs.Delete(splunk.SFxEventPropertiesKey)
 
 	// keep a record of Resource attributes to add as dimensions
 	// so as not to modify LogRecord attributes
@@ -90,6 +88,11 @@ func convertLogRecord(lr pdata.LogRecord, resourceAttrs pdata.AttributeMap, logg
 	})
 
 	addDimension := func(k string, v pdata.AttributeValue) bool {
+		// Skip internal attributes
+		if k == splunk.SFxEventCategoryKey || k == splunk.SFxEventPropertiesKey {
+			return true
+		}
+
 		if v.Type() != pdata.AttributeValueTypeString {
 			logger.Debug("Failed to convert log record or resource attribute value to SignalFx property value, key is not a string", zap.String("key", k))
 			return true

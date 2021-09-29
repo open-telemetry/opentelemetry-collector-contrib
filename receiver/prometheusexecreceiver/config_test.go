@@ -49,7 +49,7 @@ var (
 
 	wantReceiver4 = &Config{
 		ReceiverSettings: config.NewReceiverSettings(config.NewIDWithName(typeStr, "end_to_end_test/1")),
-		ScrapeInterval:   100 * time.Millisecond,
+		ScrapeInterval:   1 * time.Second,
 		Port:             9999,
 		SubprocessConfig: subprocessmanager.SubprocessConfig{
 			Command: "go run ./testdata/end_to_end_metrics_test/test_prometheus_exporter.go {{port}}",
@@ -68,7 +68,7 @@ var (
 
 	wantReceiver5 = &Config{
 		ReceiverSettings: config.NewReceiverSettings(config.NewIDWithName(typeStr, "end_to_end_test/2")),
-		ScrapeInterval:   100 * time.Millisecond,
+		ScrapeInterval:   1 * time.Second,
 		SubprocessConfig: subprocessmanager.SubprocessConfig{
 			Command: "go run ./testdata/end_to_end_metrics_test/test_prometheus_exporter.go {{port}}",
 			Env:     []subprocessmanager.EnvConfig{},

@@ -22,14 +22,14 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config/configcheck"
-	"go.opentelemetry.io/collector/testbed/testbed"
+	"go.opentelemetry.io/collector/config/configtest"
+	"go.opentelemetry.io/collector/consumer/consumertest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsecscontainermetricsreceiver/internal/awsecscontainermetrics"
 )
 
 func TestValidConfig(t *testing.T) {
-	err := configcheck.ValidateConfig(createDefaultConfig())
+	err := configtest.CheckConfigStruct(createDefaultConfig())
 	require.NoError(t, err)
 }
 
@@ -40,7 +40,7 @@ func TestCreateMetricsReceiver(t *testing.T) {
 		context.Background(),
 		componenttest.NewNopReceiverCreateSettings(),
 		createDefaultConfig(),
-		&testbed.MockMetricConsumer{},
+		consumertest.NewNop(),
 	)
 	require.Error(t, err, "No Env Variable Error")
 	require.Nil(t, metricsReceiver)
@@ -53,7 +53,7 @@ func TestCreateMetricsReceiverWithEnv(t *testing.T) {
 		context.Background(),
 		componenttest.NewNopReceiverCreateSettings(),
 		createDefaultConfig(),
-		&testbed.MockMetricConsumer{},
+		consumertest.NewNop(),
 	)
 	require.NoError(t, err)
 	require.NotNil(t, metricsReceiver)
@@ -66,7 +66,7 @@ func TestCreateMetricsReceiverWithBadUrl(t *testing.T) {
 		context.Background(),
 		componenttest.NewNopReceiverCreateSettings(),
 		createDefaultConfig(),
-		&testbed.MockMetricConsumer{},
+		consumertest.NewNop(),
 	)
 	require.Error(t, err)
 	require.Nil(t, metricsReceiver)

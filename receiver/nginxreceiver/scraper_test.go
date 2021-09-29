@@ -71,22 +71,20 @@ Reading: 6 Writing: 179 Waiting: 106
 	for i := 0; i < ms.Len(); i++ {
 		m := ms.At(i)
 
-		var dps pdata.IntDataPointSlice
-
 		switch m.DataType() {
-		case pdata.MetricDataTypeIntGauge:
-			dps = m.IntGauge().DataPoints()
+		case pdata.MetricDataTypeGauge:
+			dps := m.Gauge().DataPoints()
 			require.Equal(t, 4, dps.Len())
 			for j := 0; j < dps.Len(); j++ {
 				dp := dps.At(j)
-				state, _ := dp.LabelsMap().Get(metadata.L.State)
-				label := fmt.Sprintf("%s state:%s", m.Name(), state)
-				metricValues[label] = dp.Value()
+				state, _ := dp.Attributes().Get(metadata.L.State)
+				label := fmt.Sprintf("%s state:%s", m.Name(), state.StringVal())
+				metricValues[label] = dp.IntVal()
 			}
-		case pdata.MetricDataTypeIntSum:
-			dps = m.IntSum().DataPoints()
+		case pdata.MetricDataTypeSum:
+			dps := m.Sum().DataPoints()
 			require.Equal(t, 1, dps.Len())
-			metricValues[m.Name()] = dps.At(0).Value()
+			metricValues[m.Name()] = dps.At(0).IntVal()
 		}
 	}
 
@@ -139,7 +137,7 @@ func TestScraperFailedStart(t *testing.T) {
 	sc := newNginxScraper(zap.NewNop(), &Config{
 		HTTPClientSettings: confighttp.HTTPClientSettings{
 			Endpoint: "localhost:8080",
-			TLSSetting: configtls.TLSClientSetting{
+			TLSSetting: &configtls.TLSClientSetting{
 				TLSSetting: configtls.TLSSetting{
 					CAFile: "/non/existent",
 				},

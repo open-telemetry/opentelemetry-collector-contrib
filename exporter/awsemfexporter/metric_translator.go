@@ -41,9 +41,7 @@ const (
 
 var fieldPrometheusTypes = map[pdata.MetricDataType]string{
 	pdata.MetricDataTypeNone:      "",
-	pdata.MetricDataTypeIntGauge:  "gauge",
 	pdata.MetricDataTypeGauge:     "gauge",
-	pdata.MetricDataTypeIntSum:    "counter",
 	pdata.MetricDataTypeSum:       "counter",
 	pdata.MetricDataTypeHistogram: "histogram",
 	pdata.MetricDataTypeSummary:   "summary",
@@ -99,11 +97,11 @@ func newMetricTranslator(config Config) metricTranslator {
 }
 
 // translateOTelToGroupedMetric converts OT metrics to Grouped Metric format.
-func (mt metricTranslator) translateOTelToGroupedMetric(rm *pdata.ResourceMetrics, groupedMetrics map[interface{}]*groupedMetric, config *Config) {
+func (mt metricTranslator) translateOTelToGroupedMetric(rm *pdata.ResourceMetrics, groupedMetrics map[interface{}]*groupedMetric, config *Config) error {
 	timestamp := time.Now().UnixNano() / int64(time.Millisecond)
 	var instrumentationLibName string
 	cWNamespace := getNamespace(rm, config.Namespace)
-	logGroup, logStream := getLogInfo(rm, cWNamespace, config)
+	logGroup, logStream, patternReplaceSucceeded := getLogInfo(rm, cWNamespace, config)
 
 	ilms := rm.InstrumentationLibraryMetrics()
 	var metricReceiver string
@@ -132,9 +130,13 @@ func (mt metricTranslator) translateOTelToGroupedMetric(rm *pdata.ResourceMetric
 				receiver:                   metricReceiver,
 				metricDataType:             metric.DataType(),
 			}
-			addToGroupedMetric(&metric, groupedMetrics, metadata, config.logger, mt.metricDescriptor)
+			err := addToGroupedMetric(&metric, groupedMetrics, metadata, patternReplaceSucceeded, config.logger, mt.metricDescriptor, config)
+			if err != nil {
+				return err
+			}
 		}
 	}
+	return nil
 }
 
 // translateGroupedMetricToCWMetric converts Grouped Metric format to CloudWatch Metric format.

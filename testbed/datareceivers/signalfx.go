@@ -19,12 +19,12 @@ import (
 	"fmt"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/testbed/testbed"
-	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/signalfxreceiver"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/testbed"
 )
 
 // SFxMetricsDataReceiver implements SignalFx format receiver.
@@ -51,7 +51,7 @@ func (sr *SFxMetricsDataReceiver) Start(_ consumer.Traces, mc consumer.Metrics, 
 	}
 	var err error
 	f := signalfxreceiver.NewFactory()
-	sr.receiver, err = f.CreateMetricsReceiver(context.Background(), component.ReceiverCreateSettings{Logger: zap.L()}, &config, mc)
+	sr.receiver, err = f.CreateMetricsReceiver(context.Background(), componenttest.NewNopReceiverCreateSettings(), &config, mc)
 	if err != nil {
 		return err
 	}

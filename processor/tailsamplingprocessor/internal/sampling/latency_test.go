@@ -101,8 +101,8 @@ func newTraceWithSpans(spans []spanWithTimeAndDuration) *TraceData {
 		span := ils.Spans().AppendEmpty()
 		span.SetTraceID(pdata.NewTraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16}))
 		span.SetSpanID(pdata.NewSpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8}))
-		span.SetStartTimestamp(pdata.TimestampFromTime(s.StartTime))
-		span.SetEndTimestamp(pdata.TimestampFromTime(s.StartTime.Add(s.Duration)))
+		span.SetStartTimestamp(pdata.NewTimestampFromTime(s.StartTime))
+		span.SetEndTimestamp(pdata.NewTimestampFromTime(s.StartTime.Add(s.Duration)))
 	}
 
 	traceBatches = append(traceBatches, traces)

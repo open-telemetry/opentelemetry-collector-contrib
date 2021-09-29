@@ -196,11 +196,11 @@ func ConvertToOTLPMetrics(fields map[string]interface{}, tags map[string]string,
 		case int64:
 			intGauge(ilms.AppendEmpty(), key, unit, t, timestamp)
 		case uint:
-			doubleGauge(ilms.AppendEmpty(), key, unit, float64(t), timestamp)
+			intGauge(ilms.AppendEmpty(), key, unit, int64(t), timestamp)
 		case uint32:
-			doubleGauge(ilms.AppendEmpty(), key, unit, float64(t), timestamp)
+			intGauge(ilms.AppendEmpty(), key, unit, int64(t), timestamp)
 		case uint64:
-			doubleGauge(ilms.AppendEmpty(), key, unit, float64(t), timestamp)
+			intGauge(ilms.AppendEmpty(), key, unit, int64(t), timestamp)
 		case float32:
 			doubleGauge(ilms.AppendEmpty(), key, unit, float64(t), timestamp)
 		case float64:
@@ -217,12 +217,12 @@ func ConvertToOTLPMetrics(fields map[string]interface{}, tags map[string]string,
 func intGauge(ilm pdata.InstrumentationLibraryMetrics, metricName string, unit string, value int64, ts pdata.Timestamp) {
 	metric := initMetric(ilm, metricName, unit)
 
-	metric.SetDataType(pdata.MetricDataTypeIntGauge)
-	intGauge := metric.IntGauge()
+	metric.SetDataType(pdata.MetricDataTypeGauge)
+	intGauge := metric.Gauge()
 	dataPoints := intGauge.DataPoints()
 	dataPoint := dataPoints.AppendEmpty()
 
-	dataPoint.SetValue(value)
+	dataPoint.SetIntVal(value)
 	dataPoint.SetTimestamp(ts)
 }
 
@@ -234,7 +234,7 @@ func doubleGauge(ilm pdata.InstrumentationLibraryMetrics, metricName string, uni
 	dataPoints := doubleGauge.DataPoints()
 	dataPoint := dataPoints.AppendEmpty()
 
-	dataPoint.SetValue(value)
+	dataPoint.SetDoubleVal(value)
 	dataPoint.SetTimestamp(ts)
 }
 

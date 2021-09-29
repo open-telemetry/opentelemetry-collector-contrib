@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//go:build !linux
 // +build !linux
 
 package cadvisor
@@ -25,7 +26,7 @@ import (
 
 // cadvisor doesn't support windows, define the dummy functions
 
-type hostInfo interface {
+type HostInfo interface {
 	GetNumCores() int64
 	GetMemoryCapacity() int64
 	GetClusterName() string
@@ -49,8 +50,14 @@ func WithDecorator(d interface{}) Option {
 	}
 }
 
+func WithECSInfoCreator(f interface{}) Option {
+	return func(c *Cadvisor) {
+		// do nothing
+	}
+}
+
 // New is a dummy function to construct a dummy Cadvisor struct for windows
-func New(containerOrchestrator string, hostInfo hostInfo, logger *zap.Logger, options ...Option) (*Cadvisor, error) {
+func New(containerOrchestrator string, hostInfo HostInfo, logger *zap.Logger, options ...Option) (*Cadvisor, error) {
 	return &Cadvisor{}, nil
 }
 

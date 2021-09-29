@@ -29,6 +29,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/model/pdata"
+	"go.uber.org/multierr"
 	"go.uber.org/zap"
 )
 
@@ -81,10 +82,18 @@ func (c *client) sendLogs(
 		return err
 	}
 
-	request.Header.Set("x-cabin-api-key", c.config.APIKey)
+	if c.config.APIKey != "" {
+		request.Header.Set("x-cabin-api-key", c.config.APIKey)
+	} else {
+		// Secret key is configured instead of api key
+		request.Header.Set("x-cabin-secret-key", c.config.SecretKey)
+	}
 
 	request.Header.Set("Content-Type", "application/json")
 	request.Header.Set("Content-Encoding", "gzip")
+	request.Header.Set("x-cabin-agent-id", c.config.AgentID)
+	request.Header.Set("x-cabin-agent-name", c.config.AgentName)
+	request.Header.Set("x-cabin-agent-version", c.buildVersion)
 
 	res, err := c.client.Do(request)
 
@@ -127,7 +136,7 @@ func (c *client) sendLogs(
 	}
 
 	if len(conversionErrs) > 0 {
-		return consumererror.Combine(conversionErrs)
+		return multierr.Combine(conversionErrs...)
 	}
 
 	return nil

@@ -103,22 +103,6 @@ func (m *metricStruct) ByName(n string) MetricIntf {
 	return metricsByName[n]
 }
 
-func (m *metricStruct) FactoriesByName() map[string]func(pdata.Metric) {
-	return map[string]func(pdata.Metric){
-		Metrics.MemcachedBytes.Name():              Metrics.MemcachedBytes.Init,
-		Metrics.MemcachedCommandCount.Name():       Metrics.MemcachedCommandCount.Init,
-		Metrics.MemcachedCurrentConnections.Name(): Metrics.MemcachedCurrentConnections.Init,
-		Metrics.MemcachedCurrentItems.Name():       Metrics.MemcachedCurrentItems.Init,
-		Metrics.MemcachedEvictionCount.Name():      Metrics.MemcachedEvictionCount.Init,
-		Metrics.MemcachedNetwork.Name():            Metrics.MemcachedNetwork.Init,
-		Metrics.MemcachedOperationCount.Name():     Metrics.MemcachedOperationCount.Init,
-		Metrics.MemcachedOperationHitRatio.Name():  Metrics.MemcachedOperationHitRatio.Init,
-		Metrics.MemcachedRusage.Name():             Metrics.MemcachedRusage.Init,
-		Metrics.MemcachedThreads.Name():            Metrics.MemcachedThreads.Init,
-		Metrics.MemcachedTotalConnections.Name():   Metrics.MemcachedTotalConnections.Init,
-	}
-}
-
 // Metrics contains a set of methods for each metric that help with
 // manipulating those metrics.
 var Metrics = &metricStruct{
@@ -128,7 +112,7 @@ var Metrics = &metricStruct{
 			metric.SetName("memcached.bytes")
 			metric.SetDescription("Current number of bytes used by this server to store items")
 			metric.SetUnit("By")
-			metric.SetDataType(pdata.MetricDataTypeIntGauge)
+			metric.SetDataType(pdata.MetricDataTypeGauge)
 		},
 	},
 	&metricImpl{
@@ -148,38 +132,29 @@ var Metrics = &metricStruct{
 			metric.SetName("memcached.current_connections")
 			metric.SetDescription("The current number of open connections")
 			metric.SetUnit("connections")
-			metric.SetDataType(pdata.MetricDataTypeIntGauge)
+			metric.SetDataType(pdata.MetricDataTypeGauge)
 		},
 	},
 	&metricImpl{
 		"memcached.current_items",
 		func(metric pdata.Metric) {
-			metric.SetName("memcached.current_items")
-			metric.SetDescription("Number of items currently stored in the cache")
-			metric.SetUnit("1")
-			metric.SetDataType(pdata.MetricDataTypeGauge)
-		},
-	},
-	&metricImpl{
-		"memcached.eviction_count",
-		func(metric pdata.Metric) {
-			metric.SetName("memcached.eviction_count")
-			metric.SetDescription("Cache item evictions")
-			metric.SetUnit("1")
-			metric.SetDataType(pdata.MetricDataTypeIntSum)
-			metric.IntSum().SetIsMonotonic(true)
-			metric.IntSum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+			metric.SetName("memcached.get_hits")
+			metric.SetDescription("Number of keys that have been requested and found present")
+			metric.SetUnit("connections")
+			metric.SetDataType(pdata.MetricDataTypeSum)
+			metric.Sum().SetIsMonotonic(true)
+			metric.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
 		},
 	},
 	&metricImpl{
 		"memcached.network",
 		func(metric pdata.Metric) {
-			metric.SetName("memcached.network")
-			metric.SetDescription("Bytes transferred over the network.")
-			metric.SetUnit("by")
-			metric.SetDataType(pdata.MetricDataTypeIntSum)
-			metric.IntSum().SetIsMonotonic(true)
-			metric.IntSum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+			metric.SetName("memcached.get_misses")
+			metric.SetDescription("Number of items that have been requested and not found")
+			metric.SetUnit("connections")
+			metric.SetDataType(pdata.MetricDataTypeSum)
+			metric.Sum().SetIsMonotonic(true)
+			metric.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
 		},
 	},
 	&metricImpl{
@@ -226,9 +201,9 @@ var Metrics = &metricStruct{
 			metric.SetName("memcached.total_connections")
 			metric.SetDescription("Total number of connections opened since the server started running")
 			metric.SetUnit("connections")
-			metric.SetDataType(pdata.MetricDataTypeIntSum)
-			metric.IntSum().SetIsMonotonic(true)
-			metric.IntSum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+			metric.SetDataType(pdata.MetricDataTypeSum)
+			metric.Sum().SetIsMonotonic(true)
+			metric.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
 		},
 	},
 }

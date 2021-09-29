@@ -23,8 +23,8 @@ import (
 	"go.opencensus.io/stats"
 	"go.opencensus.io/stats/view"
 	"go.opencensus.io/tag"
-	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/model/pdata"
+	"go.uber.org/multierr"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
 )
@@ -47,9 +47,10 @@ var (
 	attributeMetadataTagKeys = []tag.Key{tagGrpcStatusCode, tagHTTPStatusCode, tagRequestUserAgent, tagAPIKey, tagDataType, tagAttributeLocation, tagAttributeValueType}
 
 	statRequestCount         = stats.Int64("newrelicexporter_request_count", "Number of requests processed", stats.UnitDimensionless)
+	statInputDatapointCount  = stats.Int64("newrelicexporter_input_datapoint_count", "Number of data points received by the exporter.", stats.UnitDimensionless)
 	statOutputDatapointCount = stats.Int64("newrelicexporter_output_datapoint_count", "Number of data points sent to the HTTP API", stats.UnitDimensionless)
-	statExporterTime         = stats.Float64("newrelicexporter_exporter_time", "Wall clock time (seconds) spent in the exporter", stats.UnitSeconds)
-	statExternalTime         = stats.Float64("newrelicexporter_external_time", "Wall clock time (seconds) spent sending data to the HTTP API", stats.UnitSeconds)
+	statExporterTime         = stats.Int64("newrelicexporter_exporter_time", "Wall clock time (milliseconds) spent in the exporter", stats.UnitMilliseconds)
+	statExternalTime         = stats.Int64("newrelicexporter_external_time", "Wall clock time (milliseconds) spent sending data to the HTTP API", stats.UnitMilliseconds)
 	statMetricMetadata       = stats.Int64("newrelicexporter_metric_metadata_count", "Number of metrics processed", stats.UnitDimensionless)
 	statSpanMetadata         = stats.Int64("newrelicexporter_span_metadata_count", "Number of spans processed", stats.UnitDimensionless)
 	statAttributeMetadata    = stats.Int64("newrelicexporter_attribute_metadata_count", "Number of attributes processed", stats.UnitDimensionless)
@@ -61,7 +62,21 @@ const EuKeyPrefix = "eu01xx"
 func MetricViews() []*view.View {
 	return []*view.View{
 		buildView(tagKeys, statRequestCount, view.Sum()),
+		{
+			Name:        "newrelicexporter_input_datapoint_count_notag",
+			Measure:     statInputDatapointCount,
+			Description: statInputDatapointCount.Description(),
+			TagKeys:     []tag.Key{},
+			Aggregation: view.Sum(),
+		},
 		buildView(tagKeys, statOutputDatapointCount, view.Sum()),
+		{
+			Name:        "newrelicexporter_output_datapoint_count_notag",
+			Measure:     statOutputDatapointCount,
+			Description: statOutputDatapointCount.Description(),
+			TagKeys:     []tag.Key{},
+			Aggregation: view.Sum(),
+		},
 		buildView(tagKeys, statExporterTime, view.Sum()),
 		buildView(tagKeys, statExternalTime, view.Sum()),
 		buildView(metricMetadataTagKeys, statMetricMetadata, view.Sum()),
@@ -82,7 +97,7 @@ func buildView(tagKeys []tag.Key, m stats.Measure, a *view.Aggregation) *view.Vi
 
 type metricStatsKey struct {
 	MetricType        pdata.MetricDataType
-	MetricTemporality pdata.AggregationTemporality
+	MetricTemporality pdata.MetricAggregationTemporality
 }
 
 type spanStatsKey struct {
@@ -175,17 +190,14 @@ func (d exportMetadata) recordMetrics(ctx context.Context) error {
 		tag.Insert(tagDataType, d.dataType),
 	}
 
-	var errors []error
-	e := stats.RecordWithTags(ctx, tags,
+	var errs error
+	errs = multierr.Append(errs, stats.RecordWithTags(ctx, tags,
 		statRequestCount.M(1),
+		statInputDatapointCount.M(int64(d.dataInputCount)),
 		statOutputDatapointCount.M(int64(d.dataOutputCount)),
-		statExporterTime.M(d.exporterTime.Seconds()),
-		statExternalTime.M(d.externalDuration.Seconds()),
-	)
-
-	if e != nil {
-		errors = append(errors, e)
-	}
+		statExporterTime.M(d.exporterTime.Milliseconds()),
+		statExternalTime.M(d.externalDuration.Milliseconds()),
+	))
 
 	if len(d.metricMetadataCount) > 0 {
 		metricMetadataTagMutators := make([]tag.Mutator, len(tags)+2)
@@ -197,10 +209,7 @@ func (d exportMetadata) recordMetrics(ctx context.Context) error {
 			temporalityTag := tag.Insert(tagMetricTemporality, k.MetricTemporality.String())
 			metricMetadataTagMutators[len(metricMetadataTagMutators)-1] = temporalityTag
 
-			e := stats.RecordWithTags(ctx, metricMetadataTagMutators, statMetricMetadata.M(int64(v)))
-			if e != nil {
-				errors = append(errors, e)
-			}
+			errs = multierr.Append(errs, stats.RecordWithTags(ctx, metricMetadataTagMutators, statMetricMetadata.M(int64(v))))
 		}
 	}
 
@@ -214,10 +223,7 @@ func (d exportMetadata) recordMetrics(ctx context.Context) error {
 			hasSpanLinksTag := tag.Insert(tagHasSpanLinks, strconv.FormatBool(k.hasLinks))
 			spanMetadataTagMutators[len(spanMetadataTagMutators)-1] = hasSpanLinksTag
 
-			e := stats.RecordWithTags(ctx, spanMetadataTagMutators, statSpanMetadata.M(int64(v)))
-			if e != nil {
-				errors = append(errors, e)
-			}
+			errs = multierr.Append(errs, stats.RecordWithTags(ctx, spanMetadataTagMutators, statSpanMetadata.M(int64(v))))
 		}
 	}
 
@@ -231,14 +237,11 @@ func (d exportMetadata) recordMetrics(ctx context.Context) error {
 			typeTag := tag.Insert(tagAttributeValueType, k.attributeType.String())
 			attributeMetadataMutators[len(attributeMetadataMutators)-1] = typeTag
 
-			e := stats.RecordWithTags(ctx, attributeMetadataMutators, statAttributeMetadata.M(int64(v)))
-			if e != nil {
-				errors = append(errors, e)
-			}
+			errs = multierr.Append(errs, stats.RecordWithTags(ctx, attributeMetadataMutators, statAttributeMetadata.M(int64(v))))
 		}
 	}
 
-	return consumererror.Combine(errors)
+	return errs
 }
 
 func sanitizeAPIKeyForLogging(apiKey string) string {

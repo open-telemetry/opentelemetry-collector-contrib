@@ -20,10 +20,10 @@ import (
 
 	"github.com/grobie/gomemcache/memcache"
 	"go.opentelemetry.io/collector/model/pdata"
-	"go.opentelemetry.io/collector/receiver/scraperhelper"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/memcachedreceiver/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/scraperhelper"
 )
 
 type memcachedScraper struct {
@@ -83,7 +83,7 @@ func (r *memcachedScraper) scrape(_ context.Context) (pdata.ResourceMetricsSlice
 
 	for _, stats := range stats {
 		for k, v := range stats.Stats {
-			labels := pdata.NewStringMap()
+			labels := pdata.NewAttributeMap()
 			switch k {
 			case "bytes":
 				addToIntMetric(bytes, labels, parseInt(v), now)

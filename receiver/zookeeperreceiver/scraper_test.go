@@ -27,11 +27,11 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/model/pdata"
-	"go.opentelemetry.io/collector/testutil"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest/observer"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zookeeperreceiver/internal/metadata"
 )
 
@@ -268,10 +268,10 @@ func TestZookeeperMetricsScraperScrape(t *testing.T) {
 func assertMetricValid(t *testing.T, metric pdata.Metric, descriptor pdata.Metric) {
 	assertDescriptorEqual(t, descriptor, metric)
 	switch metric.DataType() {
-	case pdata.MetricDataTypeIntGauge:
-		require.GreaterOrEqual(t, metric.IntGauge().DataPoints().Len(), 1)
-	case pdata.MetricDataTypeIntSum:
-		require.GreaterOrEqual(t, metric.IntSum().DataPoints().Len(), 1)
+	case pdata.MetricDataTypeGauge:
+		require.GreaterOrEqual(t, metric.Gauge().DataPoints().Len(), 1)
+	case pdata.MetricDataTypeSum:
+		require.GreaterOrEqual(t, metric.Sum().DataPoints().Len(), 1)
 	}
 }
 

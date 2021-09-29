@@ -35,19 +35,19 @@ metrics:
     description: Current number of bytes used by this server to store items
     unit: By
     data:
-      type: int gauge
+      type: gauge
     labels: []
   memcached.current_connections:
     description: The current number of open connections
     unit: connections
     data:
-      type: int gauge
+      type: gauge
     labels: []
   memcached.total_connections:
     description: Total number of connections opened since the server started running
     unit: connections
     data:
-      type: int sum
+      type: sum
       monotonic: true
       aggregation: cumulative
     labels: []
@@ -55,7 +55,7 @@ metrics:
     description: Commands executed
     unit: 1
     data:
-      type: int sum
+      type: sum
       monotonic: true
       aggregation: cumulative
     labels: [command]
@@ -69,7 +69,7 @@ metrics:
     description: Cache item evictions
     unit: 1
     data:
-      type: int sum
+      type: sum
       monotonic: true
       aggregation: cumulative
     labels: []

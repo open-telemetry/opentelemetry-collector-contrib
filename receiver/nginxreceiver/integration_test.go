@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//go:build integration
 // +build integration
 
 package nginxreceiver
@@ -29,10 +30,10 @@ import (
 	"github.com/testcontainers/testcontainers-go/wait"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
-	"go.opentelemetry.io/collector/receiver/scraperhelper"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/nginxreceiver/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/scraperhelper"
 )
 
 type NginxIntegrationSuite struct {
@@ -103,32 +104,35 @@ func (suite *NginxIntegrationSuite) TestNginxScraperHappyPath() {
 
 		switch m.Name() {
 		case metadata.M.NginxRequests.Name():
-			require.Equal(t, 1, m.IntSum().DataPoints().Len())
-			require.True(t, m.IntSum().IsMonotonic())
+			require.Equal(t, 1, m.Sum().DataPoints().Len())
+			require.True(t, m.Sum().IsMonotonic())
 		case metadata.M.NginxConnectionsAccepted.Name():
-			require.Equal(t, 1, m.IntSum().DataPoints().Len())
-			require.True(t, m.IntSum().IsMonotonic())
+			require.Equal(t, 1, m.Sum().DataPoints().Len())
+			require.True(t, m.Sum().IsMonotonic())
 		case metadata.M.NginxConnectionsHandled.Name():
-			require.Equal(t, 1, m.IntSum().DataPoints().Len())
-			require.True(t, m.IntSum().IsMonotonic())
+			require.Equal(t, 1, m.Sum().DataPoints().Len())
+			require.True(t, m.Sum().IsMonotonic())
 		case metadata.M.NginxConnectionsCurrent.Name():
-			dps := m.IntGauge().DataPoints()
+			dps := m.Gauge().DataPoints()
 			require.Equal(t, 4, dps.Len())
 			present := map[string]bool{}
 			for j := 0; j < dps.Len(); j++ {
 				dp := dps.At(j)
-				state, _ := dp.LabelsMap().Get("state")
-				switch state {
+				state, ok := dp.Attributes().Get("state")
+				if !ok {
+					continue
+				}
+				switch state.StringVal() {
 				case metadata.LabelState.Active:
-					present[state] = true
+					present[state.StringVal()] = true
 				case metadata.LabelState.Reading:
-					present[state] = true
+					present[state.StringVal()] = true
 				case metadata.LabelState.Writing:
-					present[state] = true
+					present[state.StringVal()] = true
 				case metadata.LabelState.Waiting:
-					present[state] = true
+					present[state.StringVal()] = true
 				default:
-					require.Nil(t, state, fmt.Sprintf("connections with state %s not expected", state))
+					t.Error(fmt.Sprintf("connections with state %s not expected", state.StringVal()))
 				}
 			}
 			// Ensure all 4 expected states were present

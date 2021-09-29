@@ -21,7 +21,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/model/pdata"
-	semconventions "go.opentelemetry.io/collector/translator/conventions"
+	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
 	"go.uber.org/zap"
 )
 
@@ -75,9 +75,9 @@ func BenchmarkWithPool(b *testing.B) {
 
 func constructWriterPoolSpan() pdata.Span {
 	attributes := make(map[string]interface{})
-	attributes[semconventions.AttributeHTTPMethod] = "GET"
-	attributes[semconventions.AttributeHTTPURL] = "https://api.example.com/users/junit"
-	attributes[semconventions.AttributeHTTPClientIP] = "192.168.15.32"
-	attributes[semconventions.AttributeHTTPStatusCode] = 200
+	attributes[conventions.AttributeHTTPMethod] = "GET"
+	attributes[conventions.AttributeHTTPURL] = "https://api.example.com/users/junit"
+	attributes[conventions.AttributeHTTPClientIP] = "192.168.15.32"
+	attributes[conventions.AttributeHTTPStatusCode] = 200
 	return constructHTTPServerSpan(attributes)
 }

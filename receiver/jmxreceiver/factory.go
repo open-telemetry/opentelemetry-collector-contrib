@@ -41,6 +41,7 @@ func createDefaultConfig() config.Receiver {
 	return &Config{
 		ReceiverSettings:   config.NewReceiverSettings(config.NewID(typeStr)),
 		JARPath:            "/opt/opentelemetry-java-contrib-jmx-metrics.jar",
+		Properties:         map[string]string{"org.slf4j.simpleLogger.defaultLogLevel": "info"},
 		CollectionInterval: 10 * time.Second,
 		OTLPExporterConfig: otlpExporterConfig{
 			Endpoint: otlpEndpoint,

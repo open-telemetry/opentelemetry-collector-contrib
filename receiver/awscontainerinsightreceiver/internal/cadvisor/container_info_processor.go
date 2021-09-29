@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//go:build linux
 // +build linux
 
 package cadvisor
@@ -88,7 +89,7 @@ func processContainers(cInfos []*cInfo.ContainerInfo, mInfo extractors.CPUMemInf
 	}
 
 	// This happens when our cgroup path based pod detection logic is not working.
-	if len(metrics) == beforePod {
+	if len(metrics) == beforePod && containerOrchestrator == ci.EKS {
 		logger.Warn("No pod metric collected", zap.Any("metrics count", beforePod))
 	}
 

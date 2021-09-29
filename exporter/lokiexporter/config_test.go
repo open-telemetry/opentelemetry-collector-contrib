@@ -28,7 +28,7 @@ import (
 	"go.opentelemetry.io/collector/config/configtest"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-	"go.opentelemetry.io/collector/translator/conventions"
+	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -52,7 +52,7 @@ func TestLoadConfig(t *testing.T) {
 				"X-Custom-Header": "loki_rocks",
 			},
 			Endpoint: "https://loki:3100/loki/api/v1/push",
-			TLSSetting: configtls.TLSClientSetting{
+			TLSSetting: &configtls.TLSClientSetting{
 				TLSSetting: configtls.TLSSetting{
 					CAFile:   "/var/lib/mycert.pem",
 					CertFile: "certfile",
@@ -78,9 +78,9 @@ func TestLoadConfig(t *testing.T) {
 		TenantID: "example",
 		Labels: LabelsConfig{
 			Attributes: map[string]string{
-				conventions.AttributeContainerName: "container_name",
-				conventions.AttributeK8sCluster:    "k8s_cluster_name",
-				"severity":                         "severity",
+				conventions.AttributeContainerName:  "container_name",
+				conventions.AttributeK8SClusterName: "k8s_cluster_name",
+				"severity":                          "severity",
 			},
 			ResourceAttributes: map[string]string{
 				"resource.name": "resource_name",

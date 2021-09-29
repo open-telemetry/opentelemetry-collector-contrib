@@ -16,6 +16,7 @@ package lokiexporter
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -32,7 +33,7 @@ import (
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/model/pdata"
-	"go.opentelemetry.io/collector/translator/conventions"
+	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/lokiexporter/internal/third_party/loki/logproto"
@@ -44,9 +45,9 @@ const (
 
 var (
 	testValidAttributesWithMapping = map[string]string{
-		conventions.AttributeContainerName: "container_name",
-		conventions.AttributeK8sCluster:    "k8s_cluster_name",
-		"severity":                         "severity",
+		conventions.AttributeContainerName:  "container_name",
+		conventions.AttributeK8SClusterName: "k8s_cluster_name",
+		"severity":                          "severity",
 	}
 	testValidResourceWithMapping = map[string]string{
 		"resource.name": "resource_name",
@@ -107,11 +108,11 @@ func TestExporter_pushLogData(t *testing.T) {
 
 	genericGenLogsFunc := func() pdata.Logs {
 		return createLogData(10,
-			pdata.NewAttributeMap().InitFromMap(map[string]pdata.AttributeValue{
-				conventions.AttributeContainerName: pdata.NewAttributeValueString("api"),
-				conventions.AttributeK8sCluster:    pdata.NewAttributeValueString("local"),
-				"resource.name":                    pdata.NewAttributeValueString("myresource"),
-				"severity":                         pdata.NewAttributeValueString("debug"),
+			pdata.NewAttributeMapFromMap(map[string]pdata.AttributeValue{
+				conventions.AttributeContainerName:  pdata.NewAttributeValueString("api"),
+				conventions.AttributeK8SClusterName: pdata.NewAttributeValueString("local"),
+				"resource.name":                     pdata.NewAttributeValueString("myresource"),
+				"severity":                          pdata.NewAttributeValueString("debug"),
 			}))
 	}
 
@@ -125,9 +126,9 @@ func TestExporter_pushLogData(t *testing.T) {
 		TenantID: "unit_tests",
 		Labels: LabelsConfig{
 			Attributes: map[string]string{
-				conventions.AttributeContainerName: "container_name",
-				conventions.AttributeK8sCluster:    "k8s_cluster_name",
-				"severity":                         "severity",
+				conventions.AttributeContainerName:  "container_name",
+				conventions.AttributeK8SClusterName: "k8s_cluster_name",
+				"severity":                          "severity",
 			},
 			ResourceAttributes: map[string]string{
 				"resource.name": "resource_name",
@@ -161,8 +162,8 @@ func TestExporter_pushLogData(t *testing.T) {
 			genLogsFunc:      genericGenLogsFunc,
 			errFunc: func(err error) {
 				var e consumererror.Logs
-				consumererror.AsLogs(err, &e)
-				require.Equal(t, 10, e.GetLogs().LogRecordCount())
+				require.True(t, errors.As(err, &e))
+				assert.Equal(t, 10, e.GetLogs().LogRecordCount())
 			},
 		},
 		{
@@ -174,8 +175,8 @@ func TestExporter_pushLogData(t *testing.T) {
 			genLogsFunc:      genericGenLogsFunc,
 			errFunc: func(err error) {
 				var e consumererror.Logs
-				consumererror.AsLogs(err, &e)
-				require.Equal(t, 10, e.GetLogs().LogRecordCount())
+				require.True(t, errors.As(err, &e))
+				assert.Equal(t, 10, e.GetLogs().LogRecordCount())
 			},
 		},
 		{
@@ -186,7 +187,7 @@ func TestExporter_pushLogData(t *testing.T) {
 			testServer:       true,
 			genLogsFunc: func() pdata.Logs {
 				return createLogData(10,
-					pdata.NewAttributeMap().InitFromMap(map[string]pdata.AttributeValue{
+					pdata.NewAttributeMapFromMap(map[string]pdata.AttributeValue{
 						"not.a.match": pdata.NewAttributeValueString("random"),
 					}))
 			},
@@ -205,15 +206,15 @@ func TestExporter_pushLogData(t *testing.T) {
 				outLogs := pdata.NewLogs()
 
 				matchingLogs := createLogData(10,
-					pdata.NewAttributeMap().InitFromMap(map[string]pdata.AttributeValue{
-						conventions.AttributeContainerName: pdata.NewAttributeValueString("api"),
-						conventions.AttributeK8sCluster:    pdata.NewAttributeValueString("local"),
-						"severity":                         pdata.NewAttributeValueString("debug"),
+					pdata.NewAttributeMapFromMap(map[string]pdata.AttributeValue{
+						conventions.AttributeContainerName:  pdata.NewAttributeValueString("api"),
+						conventions.AttributeK8SClusterName: pdata.NewAttributeValueString("local"),
+						"severity":                          pdata.NewAttributeValueString("debug"),
 					}))
 				matchingLogs.ResourceLogs().MoveAndAppendTo(outLogs.ResourceLogs())
 
 				nonMatchingLogs := createLogData(5,
-					pdata.NewAttributeMap().InitFromMap(map[string]pdata.AttributeValue{
+					pdata.NewAttributeMapFromMap(map[string]pdata.AttributeValue{
 						"not.a.match": pdata.NewAttributeValueString("random"),
 					}))
 				nonMatchingLogs.ResourceLogs().MoveAndAppendTo(outLogs.ResourceLogs())
@@ -262,9 +263,9 @@ func TestExporter_logDataToLoki(t *testing.T) {
 		},
 		Labels: LabelsConfig{
 			Attributes: map[string]string{
-				conventions.AttributeContainerName: "container_name",
-				conventions.AttributeK8sCluster:    "k8s_cluster_name",
-				"severity":                         "severity",
+				conventions.AttributeContainerName:  "container_name",
+				conventions.AttributeK8SClusterName: "k8s_cluster_name",
+				"severity":                          "severity",
 			},
 			ResourceAttributes: map[string]string{
 				"resource.name": "resource_name",
@@ -313,14 +314,14 @@ func TestExporter_logDataToLoki(t *testing.T) {
 		lr1 := ill.Logs().AppendEmpty()
 		lr1.Body().SetStringVal("log message 1")
 		lr1.Attributes().InsertString(conventions.AttributeContainerName, "mycontainer")
-		lr1.Attributes().InsertString(conventions.AttributeK8sCluster, "mycluster")
+		lr1.Attributes().InsertString(conventions.AttributeK8SClusterName, "mycluster")
 		lr1.Attributes().InsertString("severity", "info")
 		lr1.SetTimestamp(ts)
 
 		lr2 := ill.Logs().AppendEmpty()
 		lr2.Body().SetStringVal("log message 2")
 		lr2.Attributes().InsertString(conventions.AttributeContainerName, "mycontainer")
-		lr2.Attributes().InsertString(conventions.AttributeK8sCluster, "mycluster")
+		lr2.Attributes().InsertString(conventions.AttributeK8SClusterName, "mycluster")
 		lr2.Attributes().InsertString("severity", "info")
 		lr2.SetTimestamp(ts)
 
@@ -339,14 +340,14 @@ func TestExporter_logDataToLoki(t *testing.T) {
 		lr1 := ill.Logs().AppendEmpty()
 		lr1.Body().SetStringVal("log message 1")
 		lr1.Attributes().InsertString(conventions.AttributeContainerName, "mycontainer1")
-		lr1.Attributes().InsertString(conventions.AttributeK8sCluster, "mycluster1")
+		lr1.Attributes().InsertString(conventions.AttributeK8SClusterName, "mycluster1")
 		lr1.Attributes().InsertString("severity", "debug")
 		lr1.SetTimestamp(ts)
 
 		lr2 := ill.Logs().AppendEmpty()
 		lr2.Body().SetStringVal("log message 2")
 		lr2.Attributes().InsertString(conventions.AttributeContainerName, "mycontainer2")
-		lr2.Attributes().InsertString(conventions.AttributeK8sCluster, "mycluster2")
+		lr2.Attributes().InsertString(conventions.AttributeK8SClusterName, "mycluster2")
 		lr2.Attributes().InsertString("severity", "error")
 		lr2.SetTimestamp(ts)
 
@@ -403,9 +404,9 @@ func TestExporter_convertAttributesToLabels(t *testing.T) {
 		},
 		Labels: LabelsConfig{
 			Attributes: map[string]string{
-				conventions.AttributeContainerName: "container_name",
-				conventions.AttributeK8sCluster:    "k8s_cluster_name",
-				"severity":                         "severity",
+				conventions.AttributeContainerName:  "container_name",
+				conventions.AttributeK8SClusterName: "k8s_cluster_name",
+				"severity":                          "severity",
 			},
 			ResourceAttributes: map[string]string{
 				"resource.name": "resource_name",
@@ -421,7 +422,7 @@ func TestExporter_convertAttributesToLabels(t *testing.T) {
 	t.Run("with attributes that match", func(t *testing.T) {
 		am := pdata.NewAttributeMap()
 		am.InsertString(conventions.AttributeContainerName, "mycontainer")
-		am.InsertString(conventions.AttributeK8sCluster, "mycluster")
+		am.InsertString(conventions.AttributeK8SClusterName, "mycluster")
 		am.InsertString("severity", "debug")
 		ram := pdata.NewAttributeMap()
 		ram.InsertString("resource.name", "myresource")

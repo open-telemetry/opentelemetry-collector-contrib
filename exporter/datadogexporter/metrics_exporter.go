@@ -15,26 +15,43 @@
 package datadogexporter
 
 import (
+	"bytes"
 	"context"
+	"fmt"
+	"net/http"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/model/pdata"
+	"go.uber.org/zap"
 	"gopkg.in/zorkian/go-datadog-api.v2"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/config"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metrics"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/sketches"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/translator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/utils"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/ttlmap"
 )
 
 type metricsExporter struct {
-	params  component.ExporterCreateSettings
-	cfg     *config.Config
-	ctx     context.Context
-	client  *datadog.Client
-	prevPts *ttlmap.TTLMap
+	params component.ExporterCreateSettings
+	cfg    *config.Config
+	ctx    context.Context
+	client *datadog.Client
+	tr     *translator.Translator
+}
+
+// assert `hostProvider` implements HostnameProvider interface
+var _ translator.HostnameProvider = (*hostProvider)(nil)
+
+type hostProvider struct {
+	logger *zap.Logger
+	cfg    *config.Config
+}
+
+func (p *hostProvider) Hostname(context.Context) (string, error) {
+	return metadata.GetHost(p.logger, p.cfg), nil
 }
 
 func newMetricsExporter(ctx context.Context, params component.ExporterCreateSettings, cfg *config.Config) *metricsExporter {
@@ -48,10 +65,39 @@ func newMetricsExporter(ctx context.Context, params component.ExporterCreateSett
 	if cfg.Metrics.DeltaTTL > 1 {
 		sweepInterval = cfg.Metrics.DeltaTTL / 2
 	}
-	prevPts := ttlmap.New(sweepInterval, cfg.Metrics.DeltaTTL)
-	prevPts.Start()
+	prevPts := translator.NewTTLCache(sweepInterval, cfg.Metrics.DeltaTTL)
+	tr := translator.New(prevPts, params, cfg.Metrics, &hostProvider{params.Logger, cfg})
+	return &metricsExporter{params, cfg, ctx, client, tr}
+}
 
-	return &metricsExporter{params, cfg, ctx, client, prevPts}
+func (exp *metricsExporter) pushSketches(ctx context.Context, sl sketches.SketchSeriesList) error {
+	payload, err := sl.Marshal()
+	if err != nil {
+		return fmt.Errorf("failed to marshal sketches: %w", err)
+	}
+
+	req, err := http.NewRequestWithContext(ctx,
+		http.MethodPost,
+		exp.cfg.Metrics.TCPAddr.Endpoint+sketches.SketchSeriesEndpoint,
+		bytes.NewBuffer(payload),
+	)
+	if err != nil {
+		return fmt.Errorf("failed to build sketches HTTP request: %w", err)
+	}
+
+	utils.SetDDHeaders(req.Header, exp.params.BuildInfo, exp.cfg.API.Key)
+	utils.SetExtraHeaders(req.Header, utils.ProtobufHeaders)
+	resp, err := exp.client.HttpClient.Do(req)
+
+	if err != nil {
+		return fmt.Errorf("failed to do sketches HTTP request: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode >= 400 {
+		return fmt.Errorf("error when sending payload to %s: %s", sketches.SketchSeriesEndpoint, resp.Status)
+	}
+	return nil
 }
 
 func (exp *metricsExporter) PushMetricsData(ctx context.Context, md pdata.Metrics) error {
@@ -69,10 +115,20 @@ func (exp *metricsExporter) PushMetricsData(ctx context.Context, md pdata.Metric
 		})
 	}
 
-	fallbackHost := metadata.GetHost(exp.params.Logger, exp.cfg)
-	ms, _ := mapMetrics(exp.params.Logger, exp.cfg.Metrics, exp.prevPts, fallbackHost, md, exp.params.BuildInfo)
+	ms, sl := exp.tr.MapMetrics(md)
 	metrics.ProcessMetrics(ms, exp.cfg)
 
-	err := exp.client.PostMetrics(ms)
-	return err
+	if len(ms) > 0 {
+		if err := exp.client.PostMetrics(ms); err != nil {
+			return err
+		}
+	}
+
+	if len(sl) > 0 {
+		if err := exp.pushSketches(ctx, sl); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }

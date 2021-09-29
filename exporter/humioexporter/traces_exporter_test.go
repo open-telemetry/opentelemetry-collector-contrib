@@ -27,7 +27,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/model/pdata"
-	"go.opentelemetry.io/collector/translator/conventions"
+	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
 	"go.uber.org/zap"
 )
 
@@ -182,7 +182,7 @@ func TestPushTraceData_TransientOnPartialFailure(t *testing.T) {
 	assert.False(t, consumererror.IsPermanent(err))
 
 	tErr := consumererror.Traces{}
-	if ok := consumererror.AsTraces(err, &tErr); !ok {
+	if ok := errors.As(err, &tErr); !ok {
 		assert.Fail(t, "PushTraceData did not return a Traces error")
 	}
 	assert.Equal(t, 1, tErr.GetTraces().ResourceSpans().Len())
@@ -244,10 +244,10 @@ func TestSpanToHumioEvent(t *testing.T) {
 	span.SetSpanID(pdata.NewSpanID(createSpanID("20")))
 	span.SetName("span")
 	span.SetKind(pdata.SpanKindServer)
-	span.SetStartTimestamp(pdata.TimestampFromTime(
+	span.SetStartTimestamp(pdata.NewTimestampFromTime(
 		time.Date(2020, 1, 1, 12, 0, 0, 0, time.UTC),
 	))
-	span.SetEndTimestamp(pdata.TimestampFromTime(
+	span.SetEndTimestamp(pdata.NewTimestampFromTime(
 		time.Date(2020, 1, 1, 12, 0, 16, 0, time.UTC),
 	))
 	span.Status().SetCode(pdata.StatusCodeOk)

@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"time"
 
+	quotaclientset "github.com/openshift/client-go/quota/clientset/versioned"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
@@ -56,19 +57,24 @@ func (kr *kubernetesReceiver) Start(ctx context.Context, host component.Host) er
 
 	go func() {
 		kr.logger.Info("Starting shared informers and wait for initial cache sync.")
-		kr.resourceWatcher.startWatchingResources(ctx)
+		for _, informer := range kr.resourceWatcher.informerFactories {
+			if informer == nil {
+				continue
+			}
+			timedContextForInitialSync := kr.resourceWatcher.startWatchingResources(ctx, informer)
 
-		// Wait till either the initial cache sync times out or until the cancel method
-		// corresponding to this context is called.
-		<-kr.resourceWatcher.timedContextForInitialSync.Done()
+			// Wait till either the initial cache sync times out or until the cancel method
+			// corresponding to this context is called.
+			<-timedContextForInitialSync.Done()
 
-		// If the context times out, set initialSyncTimedOut and report a fatal error. Currently
-		// this timeout is 10 minutes, which appears to be long enough.
-		if kr.resourceWatcher.timedContextForInitialSync.Err() == context.DeadlineExceeded {
-			kr.resourceWatcher.initialSyncTimedOut.Store(true)
-			kr.logger.Error("Timed out waiting for initial cache sync.")
-			host.ReportFatalError(fmt.Errorf("failed to start receiver: %v", kr.config.ID()))
-			return
+			// If the context times out, set initialSyncTimedOut and report a fatal error. Currently
+			// this timeout is 10 minutes, which appears to be long enough.
+			if timedContextForInitialSync.Err() == context.DeadlineExceeded {
+				kr.resourceWatcher.initialSyncTimedOut.Store(true)
+				kr.logger.Error("Timed out waiting for initial cache sync.")
+				host.ReportFatalError(fmt.Errorf("failed to start receiver: %v", kr.config.ID()))
+				return
+			}
 		}
 
 		kr.logger.Info("Completed syncing shared informer caches.")
@@ -109,8 +115,8 @@ func (kr *kubernetesReceiver) dispatchMetrics(ctx context.Context) {
 // newReceiver creates the Kubernetes cluster receiver with the given configuration.
 func newReceiver(
 	logger *zap.Logger, config *Config, consumer consumer.Metrics,
-	client kubernetes.Interface) (component.MetricsReceiver, error) {
-	resourceWatcher := newResourceWatcher(logger, client, config.NodeConditionTypesToReport, defaultInitialSyncTimeout)
+	client kubernetes.Interface, osQuotaClient quotaclientset.Interface) (component.MetricsReceiver, error) {
+	resourceWatcher := newResourceWatcher(logger, client, osQuotaClient, config.NodeConditionTypesToReport, defaultInitialSyncTimeout)
 
 	return &kubernetesReceiver{
 		resourceWatcher: resourceWatcher,

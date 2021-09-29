@@ -27,7 +27,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/model/pdata"
-	"go.opentelemetry.io/collector/translator/conventions"
+	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest/observer"
@@ -201,9 +201,9 @@ func TestSyncMetadata(t *testing.T) {
 			hostStatErr: errors.New("failed"),
 			pushFail:    false,
 			metricsData: generateSampleMetricsData(map[string]string{
-				conventions.AttributeCloudProvider: conventions.AttributeCloudProviderGCP,
-				conventions.AttributeCloudAccount:  "1234",
-				conventions.AttributeHostID:        "i-abc",
+				conventions.AttributeCloudProvider:  conventions.AttributeCloudProviderGCP,
+				conventions.AttributeCloudAccountID: "1234",
+				conventions.AttributeHostID:         "i-abc",
 			}),
 			wantMetadataUpdate: []*metadata.MetadataUpdate{
 				{

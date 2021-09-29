@@ -48,7 +48,6 @@ type dataPoint struct {
 }
 
 // dataPoints is a wrapper interface for:
-// 	- pdata.intDataPointSlice
 // 	- pdata.NumberDataPointSlice
 // 	- pdata.histogramDataPointSlice
 //  - pdata.summaryDataPointSlice
@@ -83,13 +82,6 @@ func mergeLabels(m deltaMetricMetadata, labels map[string]string) map[string]str
 	return result
 }
 
-// intDataPointSlice is a wrapper for pdata.intDataPointSlice
-type intDataPointSlice struct {
-	instrumentationLibraryName string
-	deltaMetricMetadata
-	pdata.IntDataPointSlice
-}
-
 // numberDataPointSlice is a wrapper for pdata.NumberDataPointSlice
 type numberDataPointSlice struct {
 	instrumentationLibraryName string
@@ -115,44 +107,20 @@ type summaryMetricEntry struct {
 	count uint64
 }
 
-// At retrieves the IntDataPoint at the given index and performs rate/delta calculation if necessary.
-func (dps intDataPointSlice) At(i int) (dataPoint, bool) {
-	metric := dps.IntDataPointSlice.At(i)
-	timestampMs := unixNanoToMilliseconds(metric.Timestamp())
-	labels := createLabels(metric.LabelsMap(), dps.instrumentationLibraryName)
-
-	var metricVal float64
-	metricVal = float64(metric.Value())
-	retained := true
-	if dps.adjustToDelta {
-		var deltaVal interface{}
-		deltaVal, retained = deltaMetricCalculator.Calculate(dps.metricName, mergeLabels(dps.deltaMetricMetadata, labels),
-			metricVal, metric.Timestamp().AsTime())
-		if !retained {
-			return dataPoint{}, retained
-		}
-		// It should not happen in practice that the previous metric value is smaller than the current one.
-		// If it happens, we assume that the metric is reset for some reason.
-		if deltaVal.(float64) >= 0 {
-			metricVal = deltaVal.(float64)
-		}
-	}
-
-	return dataPoint{
-		value:       metricVal,
-		labels:      labels,
-		timestampMs: timestampMs,
-	}, retained
-}
-
 // At retrieves the NumberDataPoint at the given index and performs rate/delta calculation if necessary.
 func (dps numberDataPointSlice) At(i int) (dataPoint, bool) {
 	metric := dps.NumberDataPointSlice.At(i)
-	labels := createLabels(metric.LabelsMap(), dps.instrumentationLibraryName)
+	labels := createLabels(metric.Attributes(), dps.instrumentationLibraryName)
 	timestampMs := unixNanoToMilliseconds(metric.Timestamp())
 
 	var metricVal float64
-	metricVal = metric.Value()
+	switch metric.Type() {
+	case pdata.MetricValueTypeDouble:
+		metricVal = metric.DoubleVal()
+	case pdata.MetricValueTypeInt:
+		metricVal = float64(metric.IntVal())
+	}
+
 	retained := true
 	if dps.adjustToDelta {
 		var deltaVal interface{}
@@ -178,7 +146,7 @@ func (dps numberDataPointSlice) At(i int) (dataPoint, bool) {
 // At retrieves the HistogramDataPoint at the given index.
 func (dps histogramDataPointSlice) At(i int) (dataPoint, bool) {
 	metric := dps.HistogramDataPointSlice.At(i)
-	labels := createLabels(metric.LabelsMap(), dps.instrumentationLibraryName)
+	labels := createLabels(metric.Attributes(), dps.instrumentationLibraryName)
 	timestamp := unixNanoToMilliseconds(metric.Timestamp())
 
 	return dataPoint{
@@ -194,7 +162,7 @@ func (dps histogramDataPointSlice) At(i int) (dataPoint, bool) {
 // At retrieves the SummaryDataPoint at the given index.
 func (dps summaryDataPointSlice) At(i int) (dataPoint, bool) {
 	metric := dps.SummaryDataPointSlice.At(i)
-	labels := createLabels(metric.LabelsMap(), dps.instrumentationLibraryName)
+	labels := createLabels(metric.Attributes(), dps.instrumentationLibraryName)
 	timestampMs := unixNanoToMilliseconds(metric.Timestamp())
 
 	sum := metric.Sum()
@@ -228,12 +196,12 @@ func (dps summaryDataPointSlice) At(i int) (dataPoint, bool) {
 	}, retained
 }
 
-// createLabels converts OTel StringMap labels to a map
+// createLabels converts OTel AttributesMap attributes to a map
 // and optionally adds in the OTel instrumentation library name
-func createLabels(labelsMap pdata.StringMap, instrLibName string) map[string]string {
-	labels := make(map[string]string, labelsMap.Len()+1)
-	labelsMap.Range(func(k, v string) bool {
-		labels[k] = v
+func createLabels(attributes pdata.AttributeMap, instrLibName string) map[string]string {
+	labels := make(map[string]string, attributes.Len()+1)
+	attributes.Range(func(k string, v pdata.AttributeValue) bool {
+		labels[k] = v.AsString()
 		return true
 	})
 
@@ -261,13 +229,6 @@ func getDataPoints(pmd *pdata.Metric, metadata cWMetricMetadata, logger *zap.Log
 	}
 
 	switch pmd.DataType() {
-	case pdata.MetricDataTypeIntGauge:
-		metric := pmd.IntGauge()
-		dps = intDataPointSlice{
-			metadata.instrumentationLibraryName,
-			adjusterMetadata,
-			metric.DataPoints(),
-		}
 	case pdata.MetricDataTypeGauge:
 		metric := pmd.Gauge()
 		dps = numberDataPointSlice{
@@ -275,17 +236,9 @@ func getDataPoints(pmd *pdata.Metric, metadata cWMetricMetadata, logger *zap.Log
 			adjusterMetadata,
 			metric.DataPoints(),
 		}
-	case pdata.MetricDataTypeIntSum:
-		metric := pmd.IntSum()
-		adjusterMetadata.adjustToDelta = metric.AggregationTemporality() == pdata.AggregationTemporalityCumulative
-		dps = intDataPointSlice{
-			metadata.instrumentationLibraryName,
-			adjusterMetadata,
-			metric.DataPoints(),
-		}
 	case pdata.MetricDataTypeSum:
 		metric := pmd.Sum()
-		adjusterMetadata.adjustToDelta = metric.AggregationTemporality() == pdata.AggregationTemporalityCumulative
+		adjusterMetadata.adjustToDelta = metric.AggregationTemporality() == pdata.MetricAggregationTemporalityCumulative
 		dps = numberDataPointSlice{
 			metadata.instrumentationLibraryName,
 			adjusterMetadata,

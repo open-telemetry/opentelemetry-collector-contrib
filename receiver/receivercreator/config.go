@@ -19,7 +19,6 @@ import (
 
 	"github.com/spf13/cast"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/config/configparser"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer"
 )
@@ -74,7 +73,7 @@ func newReceiverTemplate(name string, cfg userConfigMap) (receiverTemplate, erro
 	}, nil
 }
 
-var _ config.CustomUnmarshable = (*Config)(nil)
+var _ config.Unmarshallable = (*Config)(nil)
 
 // Config defines configuration for receiver_creator.
 type Config struct {
@@ -87,7 +86,7 @@ type Config struct {
 	ResourceAttributes resourceAttributes `mapstructure:"resource_attributes"`
 }
 
-func (cfg *Config) Unmarshal(componentParser *configparser.Parser) error {
+func (cfg *Config) Unmarshal(componentParser *config.Map) error {
 	if componentParser == nil {
 		// Nothing to do if there is no config given.
 		return nil
@@ -102,8 +101,7 @@ func (cfg *Config) Unmarshal(componentParser *configparser.Parser) error {
 		return fmt.Errorf("unable to extract key %v: %v", receiversConfigKey, err)
 	}
 
-	receiversSettings := cast.ToStringMap(componentParser.Get(receiversConfigKey))
-	for subreceiverKey := range receiversSettings {
+	for subreceiverKey := range receiversCfg.ToStringMap() {
 		subreceiverSection, err := receiversCfg.Sub(subreceiverKey)
 		if err != nil {
 			return fmt.Errorf("unable to extract subreceiver key %v: %v", subreceiverKey, err)

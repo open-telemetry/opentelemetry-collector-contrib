@@ -68,7 +68,7 @@ func TestValidate(t *testing.T) {
 	const (
 		negativeAggregationIntervalErr = "aggregation_interval must be a positive duration"
 		noObjectNameErr                = "must specify object id for all TimerHistogramMappings"
-		statsdTypeNotSupportErr        = "statsd_type is not supported: %s"
+		statsdTypeNotSupportErr        = "statsd_type is not a supported mapping: %s"
 		observerTypeNotSupportErr      = "observer_type is not supported: %s"
 	)
 

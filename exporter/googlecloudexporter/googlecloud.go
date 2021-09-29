@@ -26,14 +26,14 @@ import (
 	agentmetricspb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/metrics/v1"
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/model/pdata"
-	"go.opentelemetry.io/collector/translator/conventions"
-	"go.opentelemetry.io/collector/translator/internaldata"
+	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	"google.golang.org/api/option"
 	"google.golang.org/grpc"
+
+	internaldata "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus"
 )
 
 // traceExporter is a wrapper struct of OT cloud trace exporter
@@ -103,7 +103,7 @@ func newGoogleCloudTracesExporter(cfg *Config, set component.ExporterCreateSetti
 	}
 	topts = append(topts, cloudtrace.WithTraceClientOptions(copts))
 
-	exp, err := cloudtrace.NewExporter(topts...)
+	exp, err := cloudtrace.New(topts...)
 	if err != nil {
 		return nil, fmt.Errorf("error creating GoogleCloud Trace exporter: %w", err)
 	}
@@ -235,7 +235,6 @@ func exportAdditionalLabels(mds []*agentmetricspb.ExportMetricsServiceRequest) [
 
 // pushTraces calls texporter.ExportSpan for each span in the given traces
 func (te *traceExporter) pushTraces(ctx context.Context, td pdata.Traces) error {
-	var errs []error
 	resourceSpans := td.ResourceSpans()
 	spans := make([]sdktrace.ReadOnlySpan, 0, td.SpanCount())
 	for i := 0; i < resourceSpans.Len(); i++ {
@@ -243,11 +242,7 @@ func (te *traceExporter) pushTraces(ctx context.Context, td pdata.Traces) error 
 		spans = append(spans, sd...)
 	}
 
-	err := te.texporter.ExportSpans(ctx, spans)
-	if err != nil {
-		errs = append(errs, err)
-	}
-	return consumererror.Combine(errs)
+	return te.texporter.ExportSpans(ctx, spans)
 }
 
 func numPoints(metrics []*metricspb.Metric) int {

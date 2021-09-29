@@ -82,15 +82,6 @@ func (m *metricStruct) ByName(n string) MetricIntf {
 	return metricsByName[n]
 }
 
-func (m *metricStruct) FactoriesByName() map[string]func(pdata.Metric) {
-	return map[string]func(pdata.Metric){
-		Metrics.NginxConnectionsAccepted.Name(): Metrics.NginxConnectionsAccepted.Init,
-		Metrics.NginxConnectionsCurrent.Name():  Metrics.NginxConnectionsCurrent.Init,
-		Metrics.NginxConnectionsHandled.Name():  Metrics.NginxConnectionsHandled.Init,
-		Metrics.NginxRequests.Name():            Metrics.NginxRequests.Init,
-	}
-}
-
 // Metrics contains a set of methods for each metric that help with
 // manipulating those metrics.
 var Metrics = &metricStruct{
@@ -100,9 +91,9 @@ var Metrics = &metricStruct{
 			metric.SetName("nginx.connections_accepted")
 			metric.SetDescription("The total number of accepted client connections")
 			metric.SetUnit("connections")
-			metric.SetDataType(pdata.MetricDataTypeIntSum)
-			metric.IntSum().SetIsMonotonic(true)
-			metric.IntSum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+			metric.SetDataType(pdata.MetricDataTypeSum)
+			metric.Sum().SetIsMonotonic(true)
+			metric.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
 		},
 	},
 	&metricImpl{
@@ -111,7 +102,7 @@ var Metrics = &metricStruct{
 			metric.SetName("nginx.connections_current")
 			metric.SetDescription("The current number of nginx connections by state")
 			metric.SetUnit("connections")
-			metric.SetDataType(pdata.MetricDataTypeIntGauge)
+			metric.SetDataType(pdata.MetricDataTypeGauge)
 		},
 	},
 	&metricImpl{
@@ -120,9 +111,9 @@ var Metrics = &metricStruct{
 			metric.SetName("nginx.connections_handled")
 			metric.SetDescription("The total number of handled connections. Generally, the parameter value is the same as nginx.connections_accepted unless some resource limits have been reached (for example, the worker_connections limit).")
 			metric.SetUnit("connections")
-			metric.SetDataType(pdata.MetricDataTypeIntSum)
-			metric.IntSum().SetIsMonotonic(true)
-			metric.IntSum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+			metric.SetDataType(pdata.MetricDataTypeSum)
+			metric.Sum().SetIsMonotonic(true)
+			metric.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
 		},
 	},
 	&metricImpl{
@@ -131,9 +122,9 @@ var Metrics = &metricStruct{
 			metric.SetName("nginx.requests")
 			metric.SetDescription("Total number of requests made to the server since it started")
 			metric.SetUnit("requests")
-			metric.SetDataType(pdata.MetricDataTypeIntSum)
-			metric.IntSum().SetIsMonotonic(true)
-			metric.IntSum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+			metric.SetDataType(pdata.MetricDataTypeSum)
+			metric.Sum().SetIsMonotonic(true)
+			metric.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
 		},
 	},
 }

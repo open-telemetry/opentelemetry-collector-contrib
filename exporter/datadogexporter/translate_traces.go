@@ -26,19 +26,20 @@ import (
 	"github.com/DataDog/datadog-agent/pkg/trace/exportable/traceutil"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/model/pdata"
-	"go.opentelemetry.io/collector/translator/conventions"
-	tracetranslator "go.opentelemetry.io/collector/translator/trace"
+	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
 	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace/ext"
 	"gopkg.in/zorkian/go-datadog-api.v2"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/config"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/attributes"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metrics"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/utils"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/tracetranslator"
 )
 
 const (
 	keySamplingPriority string = "_sampling_priority_v1"
+	keySamplingRate     string = "_sample_rate"
 	versionTag          string = "version"
 	oldILNameTag        string = "otel.instrumentation_library.name"
 	currentILNameTag    string = "otel.library.name"
@@ -56,14 +57,18 @@ const (
 	eventNameTag        string = "name"
 	eventAttrTag        string = "attributes"
 	eventTimeTag        string = "time"
-	// MaxMetaValLen value from
+	// maxMetaValLen value from
 	// https://github.com/DataDog/datadog-agent/blob/140a4ee164261ef2245340c50371ba989fbeb038/pkg/trace/traceutil/truncate.go#L23.
-	MaxMetaValLen int = 5000
+	maxMetaValLen int = 5000
 	// tagContainersTags specifies the name of the tag which holds key/value
 	// pairs representing information about the container (Docker, EC2, etc).
 	tagContainersTags = "_dd.tags.container"
 	tagDatadogEnv     = "env"
 )
+
+// AttributeExceptionEventName the name of the exception event.
+// TODO: Remove this when collector defines this semantic convention.
+const AttributeExceptionEventName = "exception"
 
 // converts Traces into an array of datadog trace payloads grouped by env
 func convertToDatadogTd(td pdata.Traces, fallbackHost string, cfg *config.Config, blk *denylister, buildInfo component.BuildInfo) ([]*pb.TracePayload, []datadog.Metric) {
@@ -77,13 +82,13 @@ func convertToDatadogTd(td pdata.Traces, fallbackHost string, cfg *config.Config
 
 	seenHosts := make(map[string]struct{})
 	var series []datadog.Metric
-	pushTime := pdata.TimestampFromTime(time.Now())
+	pushTime := pdata.NewTimestampFromTime(time.Now())
 
 	spanNameMap := cfg.Traces.SpanNameRemappings
 
 	for i := 0; i < resourceSpans.Len(); i++ {
 		rs := resourceSpans.At(i)
-		host, ok := metadata.HostnameFromAttributes(rs.Resource().Attributes())
+		host, ok := attributes.HostnameFromAttributes(rs.Resource().Attributes())
 		if !ok {
 			host = fallbackHost
 		}
@@ -322,7 +327,7 @@ func resourceToDatadogServiceNameAndAttributeMap(
 	}
 
 	attrs.Range(func(k string, v pdata.AttributeValue) bool {
-		datadogTags[k] = tracetranslator.AttributeValueToString(v)
+		datadogTags[k] = v.AsString()
 		return true
 	})
 
@@ -371,7 +376,15 @@ func aggregateSpanTags(span pdata.Span, datadogTags map[string]string) map[strin
 	}
 
 	span.Attributes().Range(func(k string, v pdata.AttributeValue) bool {
-		spanTags[utils.NormalizeTag(k)] = tracetranslator.AttributeValueToString(v)
+		switch k {
+		case keySamplingPriority:
+			spanTags[k] = v.AsString()
+		case keySamplingRate:
+			spanTags[k] = v.AsString()
+		default:
+			spanTags[utils.NormalizeTag(k)] = v.AsString()
+		}
+
 		return true
 	})
 
@@ -388,7 +401,7 @@ func buildDatadogContainerTags(spanTags map[string]string) string {
 	if val, ok := spanTags[conventions.AttributeContainerID]; ok {
 		b.WriteString(fmt.Sprintf("%s:%s,", "container_id", val))
 	}
-	if val, ok := spanTags[conventions.AttributeK8sPod]; ok {
+	if val, ok := spanTags[conventions.AttributeK8SPodName]; ok {
 		b.WriteString(fmt.Sprintf("%s:%s,", "pod_name", val))
 	}
 
@@ -437,8 +450,8 @@ func setMetric(s *pb.Span, key string, v float64) {
 }
 
 func setStringTag(s *pb.Span, key, v string) {
-	if len(v) > MaxMetaValLen {
-		v = utils.TruncateUTF8(v, MaxMetaValLen)
+	if len(v) > maxMetaValLen {
+		v = utils.TruncateUTF8(v, maxMetaValLen)
 	}
 
 	switch key {
@@ -453,6 +466,10 @@ func setStringTag(s *pb.Span, key, v string) {
 			setMetric(s, ext.EventSampleRate, 1)
 		} else {
 			setMetric(s, ext.EventSampleRate, 0)
+		}
+	case keySamplingRate:
+		if sampleRateFlt, err := strconv.ParseFloat(v, 64); err == nil {
+			setMetric(s, keySamplingRate, sampleRateFlt)
 		}
 	default:
 		s.Meta[key] = v
@@ -575,7 +592,7 @@ func getSpanErrorAndSetTags(s pdata.Span, tags map[string]string) int32 {
 				tags[ext.ErrorMsg] = status.Message()
 				// look for useful http metadata if it exists and add that as a fallback for the error message
 			} else if statusCode, ok := tags[conventions.AttributeHTTPStatusCode]; ok {
-				if statusText, ok := tags[conventions.AttributeHTTPStatusText]; ok {
+				if statusText, ok := tags["http.status_text"]; ok {
 					tags[ext.ErrorMsg] = fmt.Sprintf("%s %s", statusCode, statusText)
 				} else {
 					tags[ext.ErrorMsg] = statusCode
@@ -624,7 +641,7 @@ func extractErrorTagsFromEvents(s pdata.Span, tags map[string]string) {
 	evts := s.Events()
 	for i := evts.Len() - 1; i >= 0; i-- {
 		evt := evts.At(i)
-		if evt.Name() == conventions.AttributeExceptionEventName {
+		if evt.Name() == AttributeExceptionEventName {
 			attribs := evt.Attributes()
 			if errType, ok := attribs.Get(conventions.AttributeExceptionType); ok {
 				tags[ext.ErrorType] = errType.StringVal()
@@ -657,7 +674,7 @@ func eventsToString(evts pdata.SpanEventSlice) string {
 		event := map[string]interface{}{}
 		event[eventNameTag] = spanEvent.Name()
 		event[eventTimeTag] = spanEvent.Timestamp()
-		event[eventAttrTag] = tracetranslator.AttributeMapToMap(spanEvent.Attributes())
+		event[eventAttrTag] = spanEvent.Attributes().AsRaw()
 		eventArray = append(eventArray, event)
 	}
 	eventArrayBytes, _ := json.Marshal(&eventArray)

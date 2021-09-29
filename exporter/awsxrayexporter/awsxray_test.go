@@ -27,7 +27,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/model/pdata"
-	semconventions "go.opentelemetry.io/collector/translator/conventions"
+	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil"
 )
@@ -85,23 +85,23 @@ func constructSpanData() pdata.Traces {
 func constructResource() pdata.Resource {
 	resource := pdata.NewResource()
 	attrs := pdata.NewAttributeMap()
-	attrs.InsertString(semconventions.AttributeServiceName, "signup_aggregator")
-	attrs.InsertString(semconventions.AttributeContainerName, "signup_aggregator")
-	attrs.InsertString(semconventions.AttributeContainerImage, "otel/signupaggregator")
-	attrs.InsertString(semconventions.AttributeContainerTag, "v1")
-	attrs.InsertString(semconventions.AttributeCloudProvider, semconventions.AttributeCloudProviderAWS)
-	attrs.InsertString(semconventions.AttributeCloudAccount, "999999998")
-	attrs.InsertString(semconventions.AttributeCloudRegion, "us-west-2")
-	attrs.InsertString(semconventions.AttributeCloudAvailabilityZone, "us-west-1b")
+	attrs.InsertString(conventions.AttributeServiceName, "signup_aggregator")
+	attrs.InsertString(conventions.AttributeContainerName, "signup_aggregator")
+	attrs.InsertString(conventions.AttributeContainerImageName, "otel/signupaggregator")
+	attrs.InsertString(conventions.AttributeContainerImageTag, "v1")
+	attrs.InsertString(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAWS)
+	attrs.InsertString(conventions.AttributeCloudAccountID, "999999998")
+	attrs.InsertString(conventions.AttributeCloudRegion, "us-west-2")
+	attrs.InsertString(conventions.AttributeCloudAvailabilityZone, "us-west-1b")
 	attrs.CopyTo(resource.Attributes())
 	return resource
 }
 
 func constructHTTPClientSpan() pdata.Span {
 	attributes := make(map[string]interface{})
-	attributes[semconventions.AttributeHTTPMethod] = "GET"
-	attributes[semconventions.AttributeHTTPURL] = "https://api.example.com/users/junit"
-	attributes[semconventions.AttributeHTTPStatusCode] = 200
+	attributes[conventions.AttributeHTTPMethod] = "GET"
+	attributes[conventions.AttributeHTTPURL] = "https://api.example.com/users/junit"
+	attributes[conventions.AttributeHTTPStatusCode] = 200
 	endTime := time.Now().Round(time.Second)
 	startTime := endTime.Add(-90 * time.Second)
 	spanAttributes := constructSpanAttributes(attributes)
@@ -112,8 +112,8 @@ func constructHTTPClientSpan() pdata.Span {
 	span.SetParentSpanID(newSegmentID())
 	span.SetName("/users/junit")
 	span.SetKind(pdata.SpanKindClient)
-	span.SetStartTimestamp(pdata.TimestampFromTime(startTime))
-	span.SetEndTimestamp(pdata.TimestampFromTime(endTime))
+	span.SetStartTimestamp(pdata.NewTimestampFromTime(startTime))
+	span.SetEndTimestamp(pdata.NewTimestampFromTime(endTime))
 
 	status := pdata.NewSpanStatus()
 	status.SetCode(0)
@@ -126,10 +126,10 @@ func constructHTTPClientSpan() pdata.Span {
 
 func constructHTTPServerSpan() pdata.Span {
 	attributes := make(map[string]interface{})
-	attributes[semconventions.AttributeHTTPMethod] = "GET"
-	attributes[semconventions.AttributeHTTPURL] = "https://api.example.com/users/junit"
-	attributes[semconventions.AttributeHTTPClientIP] = "192.168.15.32"
-	attributes[semconventions.AttributeHTTPStatusCode] = 200
+	attributes[conventions.AttributeHTTPMethod] = "GET"
+	attributes[conventions.AttributeHTTPURL] = "https://api.example.com/users/junit"
+	attributes[conventions.AttributeHTTPClientIP] = "192.168.15.32"
+	attributes[conventions.AttributeHTTPStatusCode] = 200
 	endTime := time.Now().Round(time.Second)
 	startTime := endTime.Add(-90 * time.Second)
 	spanAttributes := constructSpanAttributes(attributes)
@@ -140,8 +140,8 @@ func constructHTTPServerSpan() pdata.Span {
 	span.SetParentSpanID(newSegmentID())
 	span.SetName("/users/junit")
 	span.SetKind(pdata.SpanKindServer)
-	span.SetStartTimestamp(pdata.TimestampFromTime(startTime))
-	span.SetEndTimestamp(pdata.TimestampFromTime(endTime))
+	span.SetStartTimestamp(pdata.NewTimestampFromTime(startTime))
+	span.SetEndTimestamp(pdata.NewTimestampFromTime(endTime))
 
 	status := pdata.NewSpanStatus()
 	status.SetCode(0)

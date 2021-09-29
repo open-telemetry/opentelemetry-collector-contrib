@@ -115,6 +115,12 @@ func convertToInt64(value interface{}) int64 {
 		return int64(t)
 	case int64:
 		return t
+	case uint:
+		return int64(t)
+	case uint32:
+		return int64(t)
+	case uint64:
+		return int64(t)
 	default:
 		valueType := fmt.Sprintf("%T", value)
 		log.Printf("Detected unexpected type: %v", valueType)
@@ -124,12 +130,6 @@ func convertToInt64(value interface{}) int64 {
 
 func convertToFloat64(value interface{}) float64 {
 	switch t := value.(type) {
-	case uint:
-		return float64(t)
-	case uint32:
-		return float64(t)
-	case uint64:
-		return float64(t)
 	case float32:
 		return float64(t)
 	case float64:
@@ -175,17 +175,16 @@ func checkMetricsAreExpected(t *testing.T, md pdata.Metrics, fields map[string]i
 			assert.Equal(t, expectedUnits[metricName], m.Unit(), "Wrong unit for metric: "+metricName)
 			switch m.DataType() {
 			//we only need to worry about gauge types for container insights metrics
-			case pdata.MetricDataTypeIntGauge:
-				dps := m.IntGauge().DataPoints()
-				assert.Equal(t, 1, dps.Len())
-				dp := dps.At(0)
-				assert.Equal(t, convertToInt64(fields[metricName]), dp.Value())
-				assert.Equal(t, pdata.Timestamp(timeUnixNano), dp.Timestamp())
 			case pdata.MetricDataTypeGauge:
 				dps := m.Gauge().DataPoints()
 				assert.Equal(t, 1, dps.Len())
 				dp := dps.At(0)
-				assert.Equal(t, convertToFloat64(fields[metricName]), dp.Value())
+				switch dp.Type() {
+				case pdata.MetricValueTypeDouble:
+					assert.Equal(t, convertToFloat64(fields[metricName]), dp.DoubleVal())
+				case pdata.MetricValueTypeInt:
+					assert.Equal(t, convertToInt64(fields[metricName]), dp.IntVal())
+				}
 				assert.Equal(t, pdata.Timestamp(timeUnixNano), dp.Timestamp())
 			}
 		}

@@ -19,6 +19,7 @@ import (
 	"time"
 
 	agentmetricspb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/metrics/v1"
+	quotav1 "github.com/openshift/api/quota/v1"
 	"go.opentelemetry.io/collector/model/pdata"
 	"go.uber.org/zap"
 	appsv1 "k8s.io/api/apps/v1"
@@ -34,7 +35,7 @@ import (
 )
 
 // TODO: Consider moving some of these constants to
-// https://go.opentelemetry.io/collector/blob/main/translator/conventions/opentelemetry.go.
+// https://go.opentelemetry.io/collector/blob/main/model/semconv/opentelemetry.go.
 
 // Resource label keys.
 const (
@@ -48,11 +49,13 @@ const (
 	k8sKeyReplicationControllerUID = "k8s.replicationcontroller.uid"
 	k8sKeyHPAUID                   = "k8s.hpa.uid"
 	k8sKeyResourceQuotaUID         = "k8s.resourcequota.uid"
+	k8sKeyClusterResourceQuotaUID  = "openshift.clusterquota.uid"
 
 	// Resource labels keys for Name.
 	k8sKeyReplicationControllerName = "k8s.replicationcontroller.name"
 	k8sKeyHPAName                   = "k8s.hpa.name"
 	k8sKeyResourceQuotaName         = "k8s.resourcequota.name"
+	k8sKeyClusterResourceQuotaName  = "openshift.clusterquota.name"
 
 	// Kubernetes resource kinds
 	k8sKindCronJob               = "CronJob"
@@ -145,6 +148,8 @@ func (dc *DataCollector) SyncMetrics(obj interface{}) {
 		rm = getMetricsForCronJob(o)
 	case *v2beta1.HorizontalPodAutoscaler:
 		rm = getMetricsForHPA(o)
+	case *quotav1.ClusterResourceQuota:
+		rm = getMetricsForClusterResourceQuota(o)
 	default:
 		return
 	}

@@ -115,7 +115,7 @@ func TestLoadAllSettings(t *testing.T) {
 			Timeout:         10 * time.Second,
 			ReadBufferSize:  4096,
 			WriteBufferSize: 4096,
-			TLSSetting: configtls.TLSClientSetting{
+			TLSSetting: &configtls.TLSClientSetting{
 				Insecure:           false,
 				InsecureSkipVerify: false,
 				ServerName:         "",

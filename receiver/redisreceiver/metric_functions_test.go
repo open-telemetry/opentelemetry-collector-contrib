@@ -29,9 +29,7 @@ func TestDefaultMetrics(t *testing.T) {
 		require.True(t, strings.HasPrefix(metric.name, "redis/"))
 		require.True(
 			t,
-			metric.pdType == pdata.MetricDataTypeIntSum ||
-				metric.pdType == pdata.MetricDataTypeIntGauge ||
-				metric.pdType == pdata.MetricDataTypeSum ||
+			metric.pdType == pdata.MetricDataTypeSum ||
 				metric.pdType == pdata.MetricDataTypeGauge,
 		)
 	}
