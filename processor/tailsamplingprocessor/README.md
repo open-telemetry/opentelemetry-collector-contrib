@@ -73,6 +73,11 @@ processors:
             name: test-policy-8,
             type: rate_limiting,
             rate_limiting: {spans_per_second: 35}
+          },
+          {
+            name: test-policy-8,
+            type: string_attribute,
+            string_attribute: {key: http.url, values: [\/health, \/metrics], enabled_regex_matching: true, invert_match: true}
          }
       ]
 ```
