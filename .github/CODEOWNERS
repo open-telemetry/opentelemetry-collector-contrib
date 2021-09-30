@@ -75,6 +75,7 @@ receiver/cloudfoundryreceiver/                       @open-telemetry/collector-c
 receiver/collectdreceiver/                           @open-telemetry/collector-contrib-approvers @owais
 receiver/dockerstatsreceiver/                        @open-telemetry/collector-contrib-approvers @rmfitzpatrick
 receiver/dotnetdiagnosticsreceiver/                  @open-telemetry/collector-contrib-approvers @pmcollins @davmason
+receiver/httpdreceiver/                              @open-telemetry/collector-contrib-approvers @djaglowski
 receiver/jmxreceiver/                                @open-telemetry/collector-contrib-approvers @rmfitzpatrick
 receiver/k8sclusterreceiver/                         @open-telemetry/collector-contrib-approvers @asuresh4
 receiver/kubeletstatsreceiver/                       @open-telemetry/collector-contrib-approvers @pmcollins @asuresh4
