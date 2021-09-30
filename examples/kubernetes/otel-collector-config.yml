@@ -47,7 +47,7 @@ receivers:
       - type: regex_parser
         id: extract_metadata_from_filepath
         regex: '^.*\/(?P<namespace>[^_]+)_(?P<pod_name>[^_]+)_(?P<uid>[a-f0-9\-]{36})\/(?P<container_name>[^\._]+)\/(?P<run_id>\d+)\.log$'
-        parse_from: $$attributes.file_path
+        parse_from: $$attributes["file.path"]
       # Move out attributes to Attributes
       - type: metadata
         attributes:
