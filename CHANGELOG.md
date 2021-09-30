@@ -14,6 +14,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   ([#670](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/670))
 - `opentelemetry-instrumentation-redis` added request_hook and response_hook callbacks passed as arguments to the instrument method.
   ([#669](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/669))
+- `opentelemetry-instrumentation-botocore` add `request_hook` and `response_hook` callbacks
+  ([679](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/679))
 - `opentelemetry-exporter-richconsole` Initial release
   ([#686](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/686))
 

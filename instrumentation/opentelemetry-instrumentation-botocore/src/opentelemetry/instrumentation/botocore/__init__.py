@@ -44,6 +44,38 @@ Usage
 
 API
 ---
+
+The `instrument` method accepts the following keyword args:
+
+tracer_provider (TracerProvider) - an optional tracer provider
+request_hook (Callable) - a function with extra user-defined logic to be performed before performing the request
+this function signature is:  def request_hook(span: Span, service_name: str, operation_name: str, api_params: dict) -> None
+response_hook (Callable) - a function with extra user-defined logic to be performed after performing the request
+this function signature is:  def request_hook(span: Span, service_name: str, operation_name: str, result: dict) -> None
+
+for example:
+
+.. code: python
+
+    from opentelemetry.instrumentation.botocore import BotocoreInstrumentor
+    import botocore
+
+    def request_hook(span, service_name, operation_name, api_params):
+        # request hook logic
+
+    def response_hook(span, service_name, operation_name, result):
+        # response hook logic
+
+    # Instrument Botocore with hooks
+    BotocoreInstrumentor().instrument(request_hook=request_hook, response_hooks=response_hook)
+
+    # This will create a span with Botocore-specific attributes, including custom attributes added from the hooks
+    session = botocore.session.get_session()
+    session.set_credentials(
+        access_key="access-key", secret_key="secret-key"
+    )
+    ec2 = self.session.create_client("ec2", region_name="us-west-2")
+    ec2.describe_instances()
 """
 
 import json
@@ -91,15 +123,22 @@ class BotocoreInstrumentor(BaseInstrumentor):
     See `BaseInstrumentor`
     """
 
+    def __init__(self):
+        super().__init__()
+        self.request_hook = None
+        self.response_hook = None
+
     def instrumentation_dependencies(self) -> Collection[str]:
         return _instruments
 
     def _instrument(self, **kwargs):
-
         # pylint: disable=attribute-defined-outside-init
         self._tracer = get_tracer(
             __name__, __version__, kwargs.get("tracer_provider")
         )
+
+        self.request_hook = kwargs.get("request_hook")
+        self.response_hook = kwargs.get("response_hook")
 
         wrap_function_wrapper(
             "botocore.client",
@@ -159,20 +198,18 @@ class BotocoreInstrumentor(BaseInstrumentor):
             ):
                 BotocoreInstrumentor._patch_lambda_invoke(api_params)
 
-            if span.is_recording():
-                span.set_attribute("aws.operation", operation_name)
-                span.set_attribute("aws.region", instance.meta.region_name)
-                span.set_attribute("aws.service", service_name)
-                if "QueueUrl" in api_params:
-                    span.set_attribute("aws.queue_url", api_params["QueueUrl"])
-                if "TableName" in api_params:
-                    span.set_attribute(
-                        "aws.table_name", api_params["TableName"]
-                    )
+            self._set_api_call_attributes(
+                span, instance, service_name, operation_name, api_params
+            )
 
             token = context_api.attach(
                 context_api.set_value(_SUPPRESS_HTTP_INSTRUMENTATION_KEY, True)
             )
+
+            if callable(self.request_hook):
+                self.request_hook(
+                    span, service_name, operation_name, api_params
+                )
 
             try:
                 result = original_func(*args, **kwargs)
@@ -184,38 +221,58 @@ class BotocoreInstrumentor(BaseInstrumentor):
             if error:
                 result = error.response
 
-            if span.is_recording():
-                if "ResponseMetadata" in result:
-                    metadata = result["ResponseMetadata"]
-                    req_id = None
-                    if "RequestId" in metadata:
-                        req_id = metadata["RequestId"]
-                    elif "HTTPHeaders" in metadata:
-                        headers = metadata["HTTPHeaders"]
-                        if "x-amzn-RequestId" in headers:
-                            req_id = headers["x-amzn-RequestId"]
-                        elif "x-amz-request-id" in headers:
-                            req_id = headers["x-amz-request-id"]
-                        elif "x-amz-id-2" in headers:
-                            req_id = headers["x-amz-id-2"]
+            if callable(self.response_hook):
+                self.response_hook(span, service_name, operation_name, result)
 
-                    if req_id:
-                        span.set_attribute(
-                            "aws.request_id", req_id,
-                        )
-
-                    if "RetryAttempts" in metadata:
-                        span.set_attribute(
-                            "retry_attempts", metadata["RetryAttempts"],
-                        )
-
-                    if "HTTPStatusCode" in metadata:
-                        span.set_attribute(
-                            SpanAttributes.HTTP_STATUS_CODE,
-                            metadata["HTTPStatusCode"],
-                        )
+            self._set_api_call_result_attributes(span, result)
 
             if error:
                 raise error
 
             return result
+
+    @staticmethod
+    def _set_api_call_attributes(
+        span, instance, service_name, operation_name, api_params
+    ):
+        if span.is_recording():
+            span.set_attribute("aws.operation", operation_name)
+            span.set_attribute("aws.region", instance.meta.region_name)
+            span.set_attribute("aws.service", service_name)
+            if "QueueUrl" in api_params:
+                span.set_attribute("aws.queue_url", api_params["QueueUrl"])
+            if "TableName" in api_params:
+                span.set_attribute("aws.table_name", api_params["TableName"])
+
+    @staticmethod
+    def _set_api_call_result_attributes(span, result):
+        if span.is_recording():
+            if "ResponseMetadata" in result:
+                metadata = result["ResponseMetadata"]
+                req_id = None
+                if "RequestId" in metadata:
+                    req_id = metadata["RequestId"]
+                elif "HTTPHeaders" in metadata:
+                    headers = metadata["HTTPHeaders"]
+                    if "x-amzn-RequestId" in headers:
+                        req_id = headers["x-amzn-RequestId"]
+                    elif "x-amz-request-id" in headers:
+                        req_id = headers["x-amz-request-id"]
+                    elif "x-amz-id-2" in headers:
+                        req_id = headers["x-amz-id-2"]
+
+                if req_id:
+                    span.set_attribute(
+                        "aws.request_id", req_id,
+                    )
+
+                if "RetryAttempts" in metadata:
+                    span.set_attribute(
+                        "retry_attempts", metadata["RetryAttempts"],
+                    )
+
+                if "HTTPStatusCode" in metadata:
+                    span.set_attribute(
+                        SpanAttributes.HTTP_STATUS_CODE,
+                        metadata["HTTPStatusCode"],
+                    )
