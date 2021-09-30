@@ -18,12 +18,10 @@ import (
 	"errors"
 
 	"go.opentelemetry.io/collector/consumer/consumererror"
-	"go.opentelemetry.io/collector/model/otlp"
 	"go.opentelemetry.io/collector/model/pdata"
 	"go.uber.org/multierr"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awskinesisexporter/internal/key"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin/zipkinv2"
 )
 
 type batchMarshaller struct {
@@ -36,41 +34,6 @@ type batchMarshaller struct {
 }
 
 var _ Encoder = (*batchMarshaller)(nil)
-
-func NewEncoder(named string, batchOptions ...Option) (Encoder, error) {
-	bm := &batchMarshaller{
-		batchOptions:      batchOptions,
-		partitioner:       key.Randomized,
-		logsMarshaller:    unsupported{},
-		tracesMarshaller:  unsupported{},
-		metricsMarshaller: unsupported{},
-	}
-	switch named {
-	case "zipkin-proto", "zipkin_proto", "zipkin/proto":
-		bm.tracesMarshaller = zipkinv2.NewProtobufTracesMarshaler()
-	case "zipkin-json", "zipkin_json", "zipkin/json":
-		bm.tracesMarshaller = zipkinv2.NewJSONTracesMarshaler()
-	case "otlp", "otlp-proto", "otlp_proto", "otlp/proto":
-		bm.logsMarshaller = otlp.NewProtobufLogsMarshaler()
-		bm.metricsMarshaller = otlp.NewProtobufMetricsMarshaler()
-		bm.tracesMarshaller = otlp.NewProtobufTracesMarshaler()
-	case "otlp-json", "otlp_json", "otlp/json":
-		bm.logsMarshaller = otlp.NewJSONLogsMarshaler()
-		bm.metricsMarshaller = otlp.NewJSONMetricsMarshaler()
-		bm.tracesMarshaller = otlp.NewJSONTracesMarshaler()
-	case "jaeger", "jaeger-proto", "jaeger/proto":
-		// Jaeger encoding is a special case
-		// since the internal libraries offer no means of pdata.TraceMarshaller.
-		// In order to preserve historical behavior, a custom type
-		// is used until it can be replaced.
-		return &jaegerEncoder{
-			batchOptions: batchOptions,
-		}, nil
-	default:
-		return nil, ErrUnknownExportEncoder
-	}
-	return bm, nil
-}
 
 func (bm *batchMarshaller) Logs(ld pdata.Logs) (*Batch, error) {
 	bt := New(bm.batchOptions...)
