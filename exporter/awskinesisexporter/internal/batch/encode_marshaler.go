@@ -75,25 +75,25 @@ func NewEncoder(named string, batchOptions ...Option) (Encoder, error) {
 func (bm *batchMarshaller) Logs(ld pdata.Logs) (*Batch, error) {
 	bt := New(bm.batchOptions...)
 
-	log := pdata.NewLogs()
-	log.ResourceLogs().AppendEmpty()
+	export := pdata.NewLogs()
+	export.ResourceLogs().AppendEmpty()
 
 	var errs error
 	for i := 0; i < ld.ResourceLogs().Len(); i++ {
 		line := ld.ResourceLogs().At(i)
-		line.CopyTo(log.ResourceLogs().At(0))
+		line.CopyTo(export.ResourceLogs().At(0))
 
-		data, err := bm.logsMarshaller.MarshalLogs(log)
+		data, err := bm.logsMarshaller.MarshalLogs(export)
 		if err != nil {
 			if errors.Is(err, ErrUnsupportedEncoding) {
 				return nil, err
 			}
-			errs = multierr.Append(errs, consumererror.NewLogs(err, log.Clone()))
+			errs = multierr.Append(errs, consumererror.NewLogs(err, export.Clone()))
 			continue
 		}
 
-		if err := bt.AddRecord(data, bm.partitioner(log)); err != nil {
-			errs = multierr.Append(errs, consumererror.NewLogs(err, log.Clone()))
+		if err := bt.AddRecord(data, bm.partitioner(export)); err != nil {
+			errs = multierr.Append(errs, consumererror.NewLogs(err, export.Clone()))
 		}
 	}
 
@@ -103,25 +103,25 @@ func (bm *batchMarshaller) Logs(ld pdata.Logs) (*Batch, error) {
 func (bm *batchMarshaller) Traces(td pdata.Traces) (*Batch, error) {
 	bt := New(bm.batchOptions...)
 
-	trace := pdata.NewTraces()
-	trace.ResourceSpans().AppendEmpty()
+	export := pdata.NewTraces()
+	export.ResourceSpans().AppendEmpty()
 
 	var errs error
 	for i := 0; i < td.ResourceSpans().Len(); i++ {
 		span := td.ResourceSpans().At(i)
-		span.CopyTo(trace.ResourceSpans().At(0))
+		span.CopyTo(export.ResourceSpans().At(0))
 
-		data, err := bm.tracesMarshaller.MarshalTraces(trace)
+		data, err := bm.tracesMarshaller.MarshalTraces(export)
 		if err != nil {
 			if errors.Is(err, ErrUnsupportedEncoding) {
 				return nil, err
 			}
-			errs = multierr.Append(errs, consumererror.NewTraces(err, trace.Clone()))
+			errs = multierr.Append(errs, consumererror.NewTraces(err, export.Clone()))
 			continue
 		}
 
 		if err := bt.AddRecord(data, bm.partitioner(span)); err != nil {
-			errs = multierr.Append(errs, consumererror.NewTraces(err, trace.Clone()))
+			errs = multierr.Append(errs, consumererror.NewTraces(err, export.Clone()))
 		}
 	}
 
@@ -131,25 +131,25 @@ func (bm *batchMarshaller) Traces(td pdata.Traces) (*Batch, error) {
 func (bm *batchMarshaller) Metrics(md pdata.Metrics) (*Batch, error) {
 	bt := New(bm.batchOptions...)
 
-	metric := pdata.NewMetrics()
-	metric.ResourceMetrics().AppendEmpty()
+	export := pdata.NewMetrics()
+	export.ResourceMetrics().AppendEmpty()
 
 	var errs error
 	for i := 0; i < md.ResourceMetrics().Len(); i++ {
 		datapoint := md.ResourceMetrics().At(i)
-		datapoint.CopyTo(metric.ResourceMetrics().At(0))
+		datapoint.CopyTo(export.ResourceMetrics().At(0))
 
-		data, err := bm.metricsMarshaller.MarshalMetrics(metric)
+		data, err := bm.metricsMarshaller.MarshalMetrics(export)
 		if err != nil {
 			if errors.Is(err, ErrUnsupportedEncoding) {
 				return nil, err
 			}
-			errs = multierr.Append(errs, consumererror.NewMetrics(err, metric.Clone()))
+			errs = multierr.Append(errs, consumererror.NewMetrics(err, export.Clone()))
 			continue
 		}
 
-		if err := bt.AddRecord(data, bm.partitioner(metric)); err != nil {
-			errs = multierr.Append(errs, consumererror.NewMetrics(err, metric.Clone()))
+		if err := bt.AddRecord(data, bm.partitioner(export)); err != nil {
+			errs = multierr.Append(errs, consumererror.NewMetrics(err, export.Clone()))
 		}
 	}
 
