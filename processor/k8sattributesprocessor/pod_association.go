@@ -38,25 +38,33 @@ func extractPodID(ctx context.Context, attrs pcommon.Map, associations []kube.As
 	connectionIP := getConnectionIP(ctx)
 	hostname := stringAttributeFromMap(attrs, conventions.AttributeHostName)
 	for _, asso := range associations {
-		// If association configured to take IP address from connection
-		switch {
-		case asso.From == "connection" && connectionIP != "":
-			return k8sIPLabelName, connectionIP
-		case asso.From == "resource_attribute":
-			// If association configured by resource_attribute
-			// In k8s environment, host.name label set to a pod IP address.
-			// If the value doesn't represent an IP address, we skip it.
-			if asso.Name == conventions.AttributeHostName {
-				if net.ParseIP(hostname) != nil {
-					return k8sIPLabelName, kube.PodIdentifier(hostname)
-				}
-			} else {
-				// Extract values based on configured resource_attribute.
-				attributeValue := stringAttributeFromMap(attrs, asso.Name)
-				if attributeValue != "" {
-					return asso.Name, kube.PodIdentifier(attributeValue)
+		ret := []string{}
+		for _, source := range asso.Sources {
+			// If association configured to take IP address from connection
+			switch {
+			case source.From == "connection" && connectionIP != "":
+				ret = append(ret, string(connectionIP))
+			case source.From == "resource_attribute":
+				// If association configured by resource_attribute
+				// In k8s environment, host.name label set to a pod IP address.
+				// If the value doesn't represent an IP address, we skip it.
+				if source.Name == conventions.AttributeHostName {
+					if net.ParseIP(hostname) != nil {
+						ret = append(ret, hostname)
+					}
+				} else {
+					// Extract values based on configured resource_attribute.
+					attributeValue := stringAttributeFromMap(attrs, source.Name)
+					if attributeValue != "" {
+						ret = append(ret, attributeValue)
+					}
 				}
 			}
+		}
+
+		// If all addociation sources has been resolved, return result
+		if len(ret) == len(asso.Sources) {
+			return asso.Name, kube.PodIdentifier(strings.Join(ret, asso.Delimiter))
 		}
 	}
 	return "", ""

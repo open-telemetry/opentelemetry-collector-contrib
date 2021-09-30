@@ -58,16 +58,21 @@ processors:
           op: not-equals
 
     pod_association:
-      - from: resource_attribute
-        name: ip
-      - from: resource_attribute
-        name: k8s.pod.ip
-      - from: resource_attribute
-        name: host.name
-      - from: connection
-        name: ip
-      - from: resource_attribute
-        name: k8s.pod.uid
+      - sources:
+        - from: resource_attribute
+          name: ip
+      - sources:
+        - from: resource_attribute
+          name: k8s.pod.ip
+      - sources:
+        - from: resource_attribute
+          name: host.name
+      - sources:
+        - from: connection
+          name: ip
+      - sources:
+        - from: resource_attribute
+          name: k8s.pod.uid
     
     exclude:
       pods:

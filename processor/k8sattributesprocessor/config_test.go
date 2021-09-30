@@ -84,24 +84,44 @@ func TestLoadConfig(t *testing.T) {
 			},
 			Association: []PodAssociationConfig{
 				{
-					From: "resource_attribute",
-					Name: "ip",
+					Sources: []PodAssociationSourceConfig{
+						{
+							From: "resource_attribute",
+							Name: "ip",
+						},
+					},
 				},
 				{
-					From: "resource_attribute",
-					Name: "k8s.pod.ip",
+					Sources: []PodAssociationSourceConfig{
+						{
+							From: "resource_attribute",
+							Name: "k8s.pod.ip",
+						},
+					},
 				},
 				{
-					From: "resource_attribute",
-					Name: "host.name",
+					Sources: []PodAssociationSourceConfig{
+						{
+							From: "resource_attribute",
+							Name: "host.name",
+						},
+					},
 				},
 				{
-					From: "connection",
-					Name: "ip",
+					Sources: []PodAssociationSourceConfig{
+						{
+							From: "connection",
+							Name: "ip",
+						},
+					},
 				},
 				{
-					From: "resource_attribute",
-					Name: "k8s.pod.uid",
+					Sources: []PodAssociationSourceConfig{
+						{
+							From: "resource_attribute",
+							Name: "k8s.pod.uid",
+						},
+					},
 				},
 			},
 			Exclude: ExcludeConfig{

@@ -223,8 +223,9 @@ type Associations struct {
 
 // Association represents one association rule
 type Association struct {
-	From string
-	Name string
+	Delimiter string
+	Name      string
+	Sources   []AssociationSource
 }
 
 // Excludes represent a list of Pods to ignore
@@ -235,4 +236,9 @@ type Excludes struct {
 // ExcludePods represent a Pod name to ignore
 type ExcludePods struct {
 	Name *regexp.Regexp
+}
+
+type AssociationSource struct {
+	From string
+	Name string
 }
