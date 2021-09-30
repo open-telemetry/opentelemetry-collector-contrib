@@ -62,7 +62,7 @@ func (ctdp *cumulativeToDeltaProcessor) processMetrics(_ context.Context, md pda
 			for k := 0; k < metricSlice.Len(); k++ {
 				metric := metricSlice.At(k)
 				if ctdp.metrics[metric.Name()] {
-					if metric.DataType() == pdata.MetricDataTypeSum && metric.Sum().AggregationTemporality() == pdata.AggregationTemporalityCumulative {
+					if metric.DataType() == pdata.MetricDataTypeSum && metric.Sum().AggregationTemporality() == pdata.MetricAggregationTemporalityCumulative {
 						dataPoints := metric.Sum().DataPoints()
 
 						for l := 0; l < dataPoints.Len(); l++ {
@@ -82,7 +82,7 @@ func (ctdp *cumulativeToDeltaProcessor) processMetrics(_ context.Context, md pda
 							fromDataPoint.SetDoubleVal(result.(delta).value)
 							fromDataPoint.SetStartTimestamp(pdata.NewTimestampFromTime(result.(delta).prevTimestamp))
 						}
-						metric.Sum().SetAggregationTemporality(pdata.AggregationTemporalityDelta)
+						metric.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityDelta)
 					}
 				}
 			}

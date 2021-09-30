@@ -91,5 +91,6 @@ receiver/wavefrontreceiver/                          @open-telemetry/collector-c
 receiver/windowsperfcountersreceiver/                @open-telemetry/collector-contrib-approvers @dashpole
 receiver/googlecloudpubsubexporter/                  @open-telemetry/collector-contrib-approvers @alexvanboxel
 receiver/influxdbreceiver/                           @open-telemetry/collector-contrib-approvers @jacobmarble @8none1
+receiver/googlecloudspannerreceiver/                 @open-telemetry/collector-contrib-approvers @ydrozhdzhal @asukhyy @khospodarysko
 
 tracegen/                                            @open-telemetry/collector-contrib-approvers @jpkrohling

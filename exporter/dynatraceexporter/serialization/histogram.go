@@ -22,8 +22,8 @@ import (
 	"go.opentelemetry.io/collector/model/pdata"
 )
 
-func serializeHistogram(name, prefix string, dims dimensions.NormalizedDimensionList, t pdata.AggregationTemporality, dp pdata.HistogramDataPoint) (string, error) {
-	if t == pdata.AggregationTemporalityCumulative {
+func serializeHistogram(name, prefix string, dims dimensions.NormalizedDimensionList, t pdata.MetricAggregationTemporality, dp pdata.HistogramDataPoint) (string, error) {
+	if t == pdata.MetricAggregationTemporalityCumulative {
 		// convert to delta histogram
 		// skip first point because there is nothing to calculate a delta from
 		// what if bucket bounds change
