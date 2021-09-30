@@ -33,7 +33,7 @@ func TestProcessorGetsCreatedWithValidConfiguration(t *testing.T) {
 	factory := NewFactory()
 	creationParams := componenttest.NewNopProcessorCreateSettings()
 	cfg := &Config{
-		ProcessorSettings: config.NewProcessorSettings(config.NewID(typeStr)),
+		ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
 		DefaultExporters:  []string{"otlp"},
 		FromAttribute:     "X-Tenant",
 		Table: []RoutingTableItem{
@@ -71,7 +71,7 @@ func TestProcessorFailsToBeCreatedWhenRouteHasNoExporters(t *testing.T) {
 	factory := NewFactory()
 	creationParams := componenttest.NewNopProcessorCreateSettings()
 	cfg := &Config{
-		ProcessorSettings: config.NewProcessorSettings(config.NewID(typeStr)),
+		ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
 		DefaultExporters:  []string{"otlp"},
 		FromAttribute:     "X-Tenant",
 		Table: []RoutingTableItem{
@@ -94,7 +94,7 @@ func TestProcessorFailsToBeCreatedWhenNoRoutesExist(t *testing.T) {
 	factory := NewFactory()
 	creationParams := componenttest.NewNopProcessorCreateSettings()
 	cfg := &Config{
-		ProcessorSettings: config.NewProcessorSettings(config.NewID(typeStr)),
+		ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
 		DefaultExporters:  []string{"otlp"},
 		FromAttribute:     "X-Tenant",
 		Table:             []RoutingTableItem{},
@@ -113,7 +113,7 @@ func TestProcessorFailsWithNoFromAttribute(t *testing.T) {
 	factory := NewFactory()
 	creationParams := componenttest.NewNopProcessorCreateSettings()
 	cfg := &Config{
-		ProcessorSettings: config.NewProcessorSettings(config.NewID(typeStr)),
+		ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
 		DefaultExporters:  []string{"otlp"},
 		Table: []RoutingTableItem{
 			{
@@ -136,7 +136,7 @@ func TestShouldNotFailWhenNextIsProcessor(t *testing.T) {
 	factory := NewFactory()
 	creationParams := componenttest.NewNopProcessorCreateSettings()
 	cfg := &Config{
-		ProcessorSettings: config.NewProcessorSettings(config.NewID(typeStr)),
+		ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
 		DefaultExporters:  []string{"otlp"},
 		FromAttribute:     "X-Tenant",
 		Table: []RoutingTableItem{
@@ -163,7 +163,7 @@ func TestShutdown(t *testing.T) {
 	factory := NewFactory()
 	creationParams := componenttest.NewNopProcessorCreateSettings()
 	cfg := &Config{
-		ProcessorSettings: config.NewProcessorSettings(config.NewID(typeStr)),
+		ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
 		DefaultExporters:  []string{"otlp"},
 		FromAttribute:     "X-Tenant",
 		Table: []RoutingTableItem{

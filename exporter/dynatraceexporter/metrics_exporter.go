@@ -183,7 +183,7 @@ func (e *exporter) sendBatch(ctx context.Context, lines []string) (int, error) {
 
 	req, err := http.NewRequestWithContext(ctx, "POST", e.cfg.Endpoint, bytes.NewBufferString(message))
 	if err != nil {
-		return 0, consumererror.Permanent(err)
+		return 0, consumererror.NewPermanent(err)
 	}
 
 	resp, err := e.client.Do(req)
@@ -194,7 +194,7 @@ func (e *exporter) sendBatch(ctx context.Context, lines []string) (int, error) {
 
 	if resp.StatusCode == http.StatusRequestEntityTooLarge {
 		// If a payload is too large, resending it will not help
-		return 0, consumererror.Permanent(fmt.Errorf("payload too large"))
+		return 0, consumererror.NewPermanent(fmt.Errorf("payload too large"))
 	}
 
 	if resp.StatusCode == http.StatusBadRequest {
@@ -233,12 +233,12 @@ func (e *exporter) sendBatch(ctx context.Context, lines []string) (int, error) {
 	if resp.StatusCode == http.StatusUnauthorized || resp.StatusCode == http.StatusForbidden {
 		// Unauthorized and Unauthenticated errors are permanent
 		e.isDisabled = true
-		return 0, consumererror.Permanent(fmt.Errorf(resp.Status))
+		return 0, consumererror.NewPermanent(fmt.Errorf(resp.Status))
 	}
 
 	if resp.StatusCode == http.StatusNotFound {
 		e.isDisabled = true
-		return 0, consumererror.Permanent(fmt.Errorf("dynatrace metrics ingest module is disabled"))
+		return 0, consumererror.NewPermanent(fmt.Errorf("dynatrace metrics ingest module is disabled"))
 	}
 
 	// No known errors

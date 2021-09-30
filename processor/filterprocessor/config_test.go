@@ -57,9 +57,9 @@ func TestLoadingConfigStrict(t *testing.T) {
 		expCfg   *Config
 	}{
 		{
-			filterID: config.NewIDWithName("filter", "empty"),
+			filterID: config.NewComponentIDWithName("filter", "empty"),
 			expCfg: &Config{
-				ProcessorSettings: config.NewProcessorSettings(config.NewIDWithName(typeStr, "empty")),
+				ProcessorSettings: config.NewProcessorSettings(config.NewComponentIDWithName(typeStr, "empty")),
 				Metrics: MetricFilters{
 					Include: &filtermetric.MatchProperties{
 						MatchType: filtermetric.Strict,
@@ -67,25 +67,25 @@ func TestLoadingConfigStrict(t *testing.T) {
 				},
 			},
 		}, {
-			filterID: config.NewIDWithName("filter", "include"),
+			filterID: config.NewComponentIDWithName("filter", "include"),
 			expCfg: &Config{
-				ProcessorSettings: config.NewProcessorSettings(config.NewIDWithName(typeStr, "include")),
+				ProcessorSettings: config.NewProcessorSettings(config.NewComponentIDWithName(typeStr, "include")),
 				Metrics: MetricFilters{
 					Include: testDataMetricProperties,
 				},
 			},
 		}, {
-			filterID: config.NewIDWithName("filter", "exclude"),
+			filterID: config.NewComponentIDWithName("filter", "exclude"),
 			expCfg: &Config{
-				ProcessorSettings: config.NewProcessorSettings(config.NewIDWithName(typeStr, "exclude")),
+				ProcessorSettings: config.NewProcessorSettings(config.NewComponentIDWithName(typeStr, "exclude")),
 				Metrics: MetricFilters{
 					Exclude: testDataMetricProperties,
 				},
 			},
 		}, {
-			filterID: config.NewIDWithName("filter", "includeexclude"),
+			filterID: config.NewComponentIDWithName("filter", "includeexclude"),
 			expCfg: &Config{
-				ProcessorSettings: config.NewProcessorSettings(config.NewIDWithName(typeStr, "includeexclude")),
+				ProcessorSettings: config.NewProcessorSettings(config.NewComponentIDWithName(typeStr, "includeexclude")),
 				Metrics: MetricFilters{
 					Include: testDataMetricProperties,
 					Exclude: &filtermetric.MatchProperties{
@@ -143,9 +143,9 @@ func TestLoadingConfigStrictLogs(t *testing.T) {
 		expCfg   *Config
 	}{
 		{
-			filterID: config.NewIDWithName("filter", "empty"),
+			filterID: config.NewComponentIDWithName("filter", "empty"),
 			expCfg: &Config{
-				ProcessorSettings: config.NewProcessorSettings(config.NewIDWithName(typeStr, "empty")),
+				ProcessorSettings: config.NewProcessorSettings(config.NewComponentIDWithName(typeStr, "empty")),
 				Logs: LogFilters{
 					Include: &LogMatchProperties{
 						LogMatchType: Strict,
@@ -153,25 +153,25 @@ func TestLoadingConfigStrictLogs(t *testing.T) {
 				},
 			},
 		}, {
-			filterID: config.NewIDWithName("filter", "include"),
+			filterID: config.NewComponentIDWithName("filter", "include"),
 			expCfg: &Config{
-				ProcessorSettings: config.NewProcessorSettings(config.NewIDWithName(typeStr, "include")),
+				ProcessorSettings: config.NewProcessorSettings(config.NewComponentIDWithName(typeStr, "include")),
 				Logs: LogFilters{
 					Include: testDataLogPropertiesInclude,
 				},
 			},
 		}, {
-			filterID: config.NewIDWithName("filter", "exclude"),
+			filterID: config.NewComponentIDWithName("filter", "exclude"),
 			expCfg: &Config{
-				ProcessorSettings: config.NewProcessorSettings(config.NewIDWithName(typeStr, "exclude")),
+				ProcessorSettings: config.NewProcessorSettings(config.NewComponentIDWithName(typeStr, "exclude")),
 				Logs: LogFilters{
 					Exclude: testDataLogPropertiesExclude,
 				},
 			},
 		}, {
-			filterID: config.NewIDWithName("filter", "includeexclude"),
+			filterID: config.NewComponentIDWithName("filter", "includeexclude"),
 			expCfg: &Config{
-				ProcessorSettings: config.NewProcessorSettings(config.NewIDWithName(typeStr, "includeexclude")),
+				ProcessorSettings: config.NewProcessorSettings(config.NewComponentIDWithName(typeStr, "includeexclude")),
 				Logs: LogFilters{
 					Include: testDataLogPropertiesInclude,
 					Exclude: testDataLogPropertiesExclude,
@@ -222,21 +222,21 @@ func TestLoadingConfigRegexp(t *testing.T) {
 	}{
 		{
 			expCfg: &Config{
-				ProcessorSettings: config.NewProcessorSettings(config.NewIDWithName(typeStr, "include")),
+				ProcessorSettings: config.NewProcessorSettings(config.NewComponentIDWithName(typeStr, "include")),
 				Metrics: MetricFilters{
 					Include: testDataMetricProperties,
 				},
 			},
 		}, {
 			expCfg: &Config{
-				ProcessorSettings: config.NewProcessorSettings(config.NewIDWithName(typeStr, "exclude")),
+				ProcessorSettings: config.NewProcessorSettings(config.NewComponentIDWithName(typeStr, "exclude")),
 				Metrics: MetricFilters{
 					Exclude: testDataMetricProperties,
 				},
 			},
 		}, {
 			expCfg: &Config{
-				ProcessorSettings: config.NewProcessorSettings(config.NewIDWithName(typeStr, "unlimitedcache")),
+				ProcessorSettings: config.NewProcessorSettings(config.NewComponentIDWithName(typeStr, "unlimitedcache")),
 				Metrics: MetricFilters{
 					Include: &filtermetric.MatchProperties{
 						MatchType: filtermetric.Regexp,
@@ -249,7 +249,7 @@ func TestLoadingConfigRegexp(t *testing.T) {
 			},
 		}, {
 			expCfg: &Config{
-				ProcessorSettings: config.NewProcessorSettings(config.NewIDWithName(typeStr, "limitedcache")),
+				ProcessorSettings: config.NewProcessorSettings(config.NewComponentIDWithName(typeStr, "limitedcache")),
 				Metrics: MetricFilters{
 					Exclude: &filtermetric.MatchProperties{
 						MatchType: filtermetric.Regexp,
@@ -286,7 +286,7 @@ func TestLoadingConfigExpr(t *testing.T) {
 	}{
 		{
 			expCfg: &Config{
-				ProcessorSettings: config.NewProcessorSettings(config.NewIDWithName(typeStr, "empty")),
+				ProcessorSettings: config.NewProcessorSettings(config.NewComponentIDWithName(typeStr, "empty")),
 				Metrics: MetricFilters{
 					Include: &filtermetric.MatchProperties{
 						MatchType: filtermetric.Expr,
@@ -296,7 +296,7 @@ func TestLoadingConfigExpr(t *testing.T) {
 		},
 		{
 			expCfg: &Config{
-				ProcessorSettings: config.NewProcessorSettings(config.NewIDWithName(typeStr, "include")),
+				ProcessorSettings: config.NewProcessorSettings(config.NewComponentIDWithName(typeStr, "include")),
 				Metrics: MetricFilters{
 					Include: &filtermetric.MatchProperties{
 						MatchType: filtermetric.Expr,
@@ -310,7 +310,7 @@ func TestLoadingConfigExpr(t *testing.T) {
 		},
 		{
 			expCfg: &Config{
-				ProcessorSettings: config.NewProcessorSettings(config.NewIDWithName(typeStr, "exclude")),
+				ProcessorSettings: config.NewProcessorSettings(config.NewComponentIDWithName(typeStr, "exclude")),
 				Metrics: MetricFilters{
 					Exclude: &filtermetric.MatchProperties{
 						MatchType: filtermetric.Expr,
@@ -324,7 +324,7 @@ func TestLoadingConfigExpr(t *testing.T) {
 		},
 		{
 			expCfg: &Config{
-				ProcessorSettings: config.NewProcessorSettings(config.NewIDWithName(typeStr, "includeexclude")),
+				ProcessorSettings: config.NewProcessorSettings(config.NewComponentIDWithName(typeStr, "includeexclude")),
 				Metrics: MetricFilters{
 					Include: &filtermetric.MatchProperties{
 						MatchType: filtermetric.Expr,

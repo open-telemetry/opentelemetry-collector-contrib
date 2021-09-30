@@ -26,11 +26,11 @@ import (
 )
 
 func TestReporterObservability(t *testing.T) {
-	doneFn, err := obsreporttest.SetupRecordedMetricsTest()
+	tt, err := obsreporttest.SetupRecordedMetricsTest()
 	require.NoError(t, err)
-	defer doneFn()
+	defer tt.Shutdown(context.Background())
 
-	receiverID := config.NewIDWithName(typeStr, "fake_receiver")
+	receiverID := config.NewComponentIDWithName(typeStr, "fake_receiver")
 	reporter := newReporter(receiverID, zap.NewNop())
 
 	ctx := reporter.OnDataReceived(context.Background())

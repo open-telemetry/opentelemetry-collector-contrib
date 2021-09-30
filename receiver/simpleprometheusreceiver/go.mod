@@ -8,7 +8,7 @@ require (
 	github.com/prometheus/common v0.31.1
 	github.com/prometheus/prometheus v1.8.2-0.20210621150501-ff58416a0b02
 	github.com/stretchr/testify v1.7.0
-	go.opentelemetry.io/collector v0.36.1-0.20210927193005-ebb0fbd6f23e
+	go.opentelemetry.io/collector v0.36.1-0.20210930151317-3ec4f1be6001
 	k8s.io/client-go v0.22.2
 )
 
@@ -68,6 +68,7 @@ require (
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/knadh/koanf v1.2.3 // indirect
 	github.com/linode/linodego v0.28.5 // indirect
+	github.com/magiconair/properties v1.8.5 // indirect
 	github.com/mattn/go-colorable v0.1.8 // indirect
 	github.com/mattn/go-isatty v0.0.14 // indirect
 	github.com/matttproud/golang_protobuf_extensions v1.0.1 // indirect
@@ -93,7 +94,7 @@ require (
 	github.com/spf13/cast v1.4.1 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	go.opencensus.io v0.23.0 // indirect
-	go.opentelemetry.io/collector/model v0.36.1-0.20210927193005-ebb0fbd6f23e // indirect
+	go.opentelemetry.io/collector/model v0.36.1-0.20210930151317-3ec4f1be6001 // indirect
 	go.opentelemetry.io/otel v1.0.0 // indirect
 	go.opentelemetry.io/otel/metric v0.23.0 // indirect
 	go.opentelemetry.io/otel/trace v1.0.0 // indirect

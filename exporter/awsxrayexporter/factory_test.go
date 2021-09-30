@@ -32,7 +32,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	assert.Equal(t, cfg, &Config{
-		ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
+		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
 		AWSSessionSettings: awsutil.AWSSessionSettings{
 			NumberOfWorkers:       8,
 			Endpoint:              "",
@@ -58,7 +58,7 @@ func TestCreateTracesExporter(t *testing.T) {
 	require.NoError(t, err)
 
 	ctx := context.Background()
-	exporter, err := factory.CreateTracesExporter(ctx, componenttest.NewNopExporterCreateSettings(), cfg.Exporters[config.NewIDWithName(typeStr, "customname")])
+	exporter, err := factory.CreateTracesExporter(ctx, componenttest.NewNopExporterCreateSettings(), cfg.Exporters[config.NewComponentIDWithName(typeStr, "customname")])
 	assert.Nil(t, err)
 	assert.NotNil(t, exporter)
 }
@@ -72,7 +72,7 @@ func TestCreateMetricsExporter(t *testing.T) {
 	require.NoError(t, err)
 
 	ctx := context.Background()
-	exporter, err := factory.CreateMetricsExporter(ctx, componenttest.NewNopExporterCreateSettings(), cfg.Exporters[config.NewIDWithName(typeStr, "customname")])
+	exporter, err := factory.CreateMetricsExporter(ctx, componenttest.NewNopExporterCreateSettings(), cfg.Exporters[config.NewComponentIDWithName(typeStr, "customname")])
 	assert.NotNil(t, err)
 	assert.Nil(t, exporter)
 }

@@ -39,9 +39,9 @@ func TestLoadConfig(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, 1, len(cfg.Receivers))
 
-	r := cfg.Receivers[config.NewID(typeStr)].(*Config)
+	r := cfg.Receivers[config.NewComponentID(typeStr)].(*Config)
 	assert.Equal(t, &Config{
-		ReceiverSettings: config.NewReceiverSettings(config.NewID(typeStr)),
+		ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
 		Topic:            "spans",
 		Encoding:         "otlp_proto",
 		Brokers:          []string{"foo:123", "bar:456"},

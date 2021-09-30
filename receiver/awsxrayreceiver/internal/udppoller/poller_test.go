@@ -121,11 +121,11 @@ func TestCloseStopsPoller(t *testing.T) {
 }
 
 func TestSuccessfullyPollPacket(t *testing.T) {
-	doneFn, err := obsreporttest.SetupRecordedMetricsTest()
+	tt, err := obsreporttest.SetupRecordedMetricsTest()
 	assert.NoError(t, err, "SetupRecordedMetricsTest should succeed")
-	defer doneFn()
+	defer tt.Shutdown(context.Background())
 
-	receiverID := config.NewID("TestSuccessfullyPollPacket")
+	receiverID := config.NewComponentID("TestSuccessfullyPollPacket")
 
 	addr, p, _ := createAndOptionallyStartPoller(t, receiverID, true)
 	defer p.Close()
@@ -151,11 +151,11 @@ func TestSuccessfullyPollPacket(t *testing.T) {
 }
 
 func TestIncompletePacketNoSeparator(t *testing.T) {
-	doneFn, err := obsreporttest.SetupRecordedMetricsTest()
+	tt, err := obsreporttest.SetupRecordedMetricsTest()
 	assert.NoError(t, err, "SetupRecordedMetricsTest should succeed")
-	defer doneFn()
+	defer tt.Shutdown(context.Background())
 
-	receiverID := config.NewID("TestIncompletePacketNoSeparator")
+	receiverID := config.NewComponentID("TestIncompletePacketNoSeparator")
 
 	addr, p, recordedLogs := createAndOptionallyStartPoller(t, receiverID, true)
 	defer p.Close()
@@ -180,11 +180,11 @@ func TestIncompletePacketNoSeparator(t *testing.T) {
 }
 
 func TestIncompletePacketNoBody(t *testing.T) {
-	doneFn, err := obsreporttest.SetupRecordedMetricsTest()
+	tt, err := obsreporttest.SetupRecordedMetricsTest()
 	assert.NoError(t, err, "SetupRecordedMetricsTest should succeed")
-	defer doneFn()
+	defer tt.Shutdown(context.Background())
 
-	receiverID := config.NewID("TestIncompletePacketNoBody")
+	receiverID := config.NewComponentID("TestIncompletePacketNoBody")
 
 	addr, p, recordedLogs := createAndOptionallyStartPoller(t, receiverID, true)
 	defer p.Close()
@@ -204,11 +204,11 @@ func TestIncompletePacketNoBody(t *testing.T) {
 }
 
 func TestNonJsonHeader(t *testing.T) {
-	doneFn, err := obsreporttest.SetupRecordedMetricsTest()
+	tt, err := obsreporttest.SetupRecordedMetricsTest()
 	assert.NoError(t, err, "SetupRecordedMetricsTest should succeed")
-	defer doneFn()
+	defer tt.Shutdown(context.Background())
 
-	receiverID := config.NewID("TestNonJsonHeader")
+	receiverID := config.NewComponentID("TestNonJsonHeader")
 
 	addr, p, recordedLogs := createAndOptionallyStartPoller(t, receiverID, true)
 	defer p.Close()
@@ -233,11 +233,11 @@ func TestNonJsonHeader(t *testing.T) {
 }
 
 func TestJsonInvalidHeader(t *testing.T) {
-	doneFn, err := obsreporttest.SetupRecordedMetricsTest()
+	tt, err := obsreporttest.SetupRecordedMetricsTest()
 	assert.NoError(t, err, "SetupRecordedMetricsTest should succeed")
-	defer doneFn()
+	defer tt.Shutdown(context.Background())
 
-	receiverID := config.NewID("TestJsonInvalidHeader")
+	receiverID := config.NewComponentID("TestJsonInvalidHeader")
 
 	addr, p, recordedLogs := createAndOptionallyStartPoller(t, receiverID, true)
 	defer p.Close()
@@ -268,11 +268,11 @@ func TestJsonInvalidHeader(t *testing.T) {
 }
 
 func TestSocketReadIrrecoverableNetError(t *testing.T) {
-	doneFn, err := obsreporttest.SetupRecordedMetricsTest()
+	tt, err := obsreporttest.SetupRecordedMetricsTest()
 	assert.NoError(t, err, "SetupRecordedMetricsTest should succeed")
-	defer doneFn()
+	defer tt.Shutdown(context.Background())
 
-	receiverID := config.NewID("TestSocketReadIrrecoverableNetError")
+	receiverID := config.NewComponentID("TestSocketReadIrrecoverableNetError")
 
 	_, p, recordedLogs := createAndOptionallyStartPoller(t, receiverID, false)
 	// close the actual socket because we are going to mock it out below
@@ -303,11 +303,11 @@ func TestSocketReadIrrecoverableNetError(t *testing.T) {
 }
 
 func TestSocketReadTemporaryNetError(t *testing.T) {
-	doneFn, err := obsreporttest.SetupRecordedMetricsTest()
+	tt, err := obsreporttest.SetupRecordedMetricsTest()
 	assert.NoError(t, err, "SetupRecordedMetricsTest should succeed")
-	defer doneFn()
+	defer tt.Shutdown(context.Background())
 
-	receiverID := config.NewID("TestSocketReadTemporaryNetError")
+	receiverID := config.NewComponentID("TestSocketReadTemporaryNetError")
 
 	_, p, recordedLogs := createAndOptionallyStartPoller(t, receiverID, false)
 	// close the actual socket because we are going to mock it out below
@@ -339,11 +339,11 @@ func TestSocketReadTemporaryNetError(t *testing.T) {
 }
 
 func TestSocketGenericReadError(t *testing.T) {
-	doneFn, err := obsreporttest.SetupRecordedMetricsTest()
+	tt, err := obsreporttest.SetupRecordedMetricsTest()
 	assert.NoError(t, err, "SetupRecordedMetricsTest should succeed")
-	defer doneFn()
+	defer tt.Shutdown(context.Background())
 
-	receiverID := config.NewID("TestSocketGenericReadError")
+	receiverID := config.NewComponentID("TestSocketGenericReadError")
 
 	_, p, recordedLogs := createAndOptionallyStartPoller(t, receiverID, false)
 	// close the actual socket because we are going to mock it out below
