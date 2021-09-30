@@ -11,7 +11,10 @@ require (
 	golang.org/x/sys v0.0.0-20210902050250-f475640dd07b // indirect
 )
 
-require github.com/pkg/errors v0.9.1
+require (
+	github.com/pkg/errors v0.9.1
+	go.opentelemetry.io/collector/model v0.36.1-0.20210930151317-3ec4f1be6001 // indirect
+)
 
 require (
 	github.com/fsnotify/fsnotify v1.4.9 // indirect
@@ -26,7 +29,6 @@ require (
 	github.com/pelletier/go-toml v1.9.3 // indirect
 	github.com/rogpeppe/go-internal v1.6.1 // indirect
 	github.com/spf13/cast v1.4.1 // indirect
-	go.opentelemetry.io/collector/model v0.36.1-0.20210930151317-3ec4f1be6001 // indirect
 	go.opentelemetry.io/otel v1.0.0 // indirect
 	go.opentelemetry.io/otel/metric v0.23.0 // indirect
 	go.opentelemetry.io/otel/trace v1.0.0 // indirect
