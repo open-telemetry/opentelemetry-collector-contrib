@@ -36,12 +36,12 @@ const (
 )
 
 func (cfg *Config) Validate() error {
-	var errs []error
+	var errs error
 	if cfg.Username == "" {
-		errs = append(errs, errors.New(errNoUsername))
+		errs = multierr.Append(errs, errors.New(errNoUsername))
 	}
 	if cfg.Password == "" {
-		errs = append(errs, errors.New(errNoPassword))
+		errs = multierr.Append(errs, errors.New(errNoPassword))
 	}
-	return multierr.Combine(errs...)
+	return errs
 }
