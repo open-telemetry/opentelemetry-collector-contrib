@@ -341,12 +341,6 @@ func (p *processorImp) buildDimensionKVs(serviceName string, span pdata.Span, op
 	for _, d := range optionalDims {
 		if v, ok := getDimensionValue(d, span.Attributes(), resourceAttrs); ok {
 			dims.Upsert(d.Name, v)
-		} else {
-			p.logger.Debug(fmt.Sprintf("%q metric dimension omitted; not found and no default configured", d.Name),
-				zap.String(serviceNameKey, serviceName),
-				zap.String(operationKey, span.Name()),
-				zap.String(spanKindKey, span.Kind().String()),
-				zap.String(statusCodeKey, span.Status().Code().String()))
 		}
 	}
 	return dims
@@ -390,12 +384,13 @@ func buildKey(serviceName string, span pdata.Span, optionalDims []Dimension, res
 //
 // The ok flag indicates if a dimension value was fetched in order to differentiate
 // an empty string value from a state where no value was found.
-func getDimensionValue(d Dimension, attr pdata.AttributeMap, resourceAttr pdata.AttributeMap) (v pdata.AttributeValue, ok bool) {
+func getDimensionValue(d Dimension, spanAttr pdata.AttributeMap, resourceAttr pdata.AttributeMap) (v pdata.AttributeValue, ok bool) {
 	// The more specific span attribute should take precedence.
-	for _, attrMap := range []pdata.AttributeMap{attr, resourceAttr} {
-		if attr, exists := attrMap.Get(d.Name); exists {
-			return attr, true
-		}
+	if attr, exists := spanAttr.Get(d.Name); exists {
+		return attr, true
+	}
+	if attr, exists := resourceAttr.Get(d.Name); exists {
+		return attr, true
 	}
 	// Set the default if configured, otherwise this metric will have no value set for the dimension.
 	if d.Default != nil {
