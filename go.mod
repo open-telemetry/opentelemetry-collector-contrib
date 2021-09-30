@@ -228,8 +228,8 @@ require (
 	github.com/knadh/koanf v1.2.3 // indirect
 	github.com/leoluk/perflib_exporter v0.1.0 // indirect
 	github.com/linode/linodego v0.28.5 // indirect
-	github.com/logzio/jaeger-logzio v1.0.3 // indirect
-	github.com/logzio/logzio-go v1.0.2 // indirect
+	github.com/logzio/jaeger-logzio v1.0.4 // indirect
+	github.com/logzio/logzio-go v1.0.3 // indirect
 	github.com/magiconair/properties v1.8.5 // indirect
 	github.com/mailru/easyjson v0.7.7 // indirect
 	github.com/mattn/go-colorable v0.1.8 // indirect
