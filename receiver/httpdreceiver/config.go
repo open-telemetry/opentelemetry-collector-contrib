@@ -46,10 +46,6 @@ func (cfg *Config) Validate() error {
 		return fmt.Errorf("missing hostname: '%s'", cfg.Endpoint)
 	}
 
-	if u.Port() == "" {
-		return fmt.Errorf("missing port: '%s'", cfg.Endpoint)
-	}
-
 	if u.RawQuery != "auto" {
 		return fmt.Errorf("query must be 'auto': '%s'", cfg.Endpoint)
 	}

@@ -60,12 +60,6 @@ func TestValidate(t *testing.T) {
 			errText:     "missing hostname: 'http://:8080/server-status?auto'",
 		},
 		{
-			desc:        "missing_port",
-			endpoint:    "http://localhost/server-status?auto",
-			errExpected: true,
-			errText:     "missing port: 'http://localhost/server-status?auto'",
-		},
-		{
 			desc:        "missing_query",
 			endpoint:    "http://localhost:8080/server-status",
 			errExpected: true,
