@@ -330,6 +330,48 @@ func (c *WatchClient) extractPodAttributes(pod *api_v1.Pod) map[string]string {
 	return tags
 }
 
+func (c *WatchClient) extractPodContainersAttributes(pod *api_v1.Pod) map[string]*Container {
+	containers := map[string]*Container{}
+
+	if c.Rules.ContainerImageName || c.Rules.ContainerImageTag {
+		for _, spec := range append(pod.Spec.Containers, pod.Spec.InitContainers...) {
+			container := &Container{}
+			imageParts := strings.Split(spec.Image, ":")
+			if c.Rules.ContainerImageName {
+				container.ImageName = imageParts[0]
+			}
+			if c.Rules.ContainerImageTag && len(imageParts) > 1 {
+				container.ImageTag = imageParts[1]
+			}
+			containers[spec.Name] = container
+		}
+	}
+
+	if c.Rules.ContainerID {
+		for _, apiStatus := range append(pod.Status.ContainerStatuses, pod.Status.InitContainerStatuses...) {
+			container, ok := containers[apiStatus.Name]
+			if !ok {
+				container = &Container{}
+				containers[apiStatus.Name] = container
+			}
+			if container.Statuses == nil {
+				container.Statuses = map[int]ContainerStatus{}
+			}
+
+			containerID := apiStatus.ContainerID
+
+			// Remove container runtime prefix
+			idParts := strings.Split(containerID, "://")
+			if len(idParts) == 2 {
+				containerID = idParts[1]
+			}
+
+			container.Statuses[int(apiStatus.RestartCount)] = ContainerStatus{containerID}
+		}
+	}
+	return containers
+}
+
 func (c *WatchClient) extractNamespaceAttributes(namespace *api_v1.Namespace) map[string]string {
 	tags := map[string]string{}
 
@@ -378,6 +420,9 @@ func (c *WatchClient) addOrUpdatePod(pod *api_v1.Pod) {
 		newPod.Ignore = true
 	} else {
 		newPod.Attributes = c.extractPodAttributes(pod)
+		if needContainerAttributes(c.Rules) {
+			newPod.Containers = c.extractPodContainersAttributes(pod)
+		}
 	}
 
 	c.m.Lock()
@@ -512,4 +557,8 @@ func (c *WatchClient) extractNamespaceLabelsAnnotations() bool {
 	}
 
 	return false
+}
+
+func needContainerAttributes(rules ExtractionRules) bool {
+	return rules.ContainerImageName || rules.ContainerImageTag || rules.ContainerID
 }

@@ -71,7 +71,24 @@ type Pod struct {
 	Ignore     bool
 	Namespace  string
 
+	// Containers is a map of container name to Container struct.
+	Containers map[string]*Container
+
 	DeletedAt time.Time
+}
+
+// Container stores resource attributes for a specific container defined by k8s pod spec.
+type Container struct {
+	ImageName string
+	ImageTag  string
+
+	// Statuses is a map of container run_id (restart count) attribute to ContainerStatus struct.
+	Statuses map[int]ContainerStatus
+}
+
+// ContainerStatus stores resource attributes for a particular container run defined by k8s pod status.
+type ContainerStatus struct {
+	ContainerID string
 }
 
 // Namespace represents a kubernetes namespace.
@@ -118,13 +135,16 @@ type FieldFilter struct {
 // ExtractionRules is used to specify the information that needs to be extracted
 // from pods and added to the spans as tags.
 type ExtractionRules struct {
-	Deployment bool
-	Namespace  bool
-	PodName    bool
-	PodUID     bool
-	Node       bool
-	Cluster    bool
-	StartTime  bool
+	Deployment         bool
+	Namespace          bool
+	PodName            bool
+	PodUID             bool
+	Node               bool
+	Cluster            bool
+	StartTime          bool
+	ContainerID        bool
+	ContainerImageName bool
+	ContainerImageTag  bool
 
 	Annotations []FieldExtractionRule
 	Labels      []FieldExtractionRule

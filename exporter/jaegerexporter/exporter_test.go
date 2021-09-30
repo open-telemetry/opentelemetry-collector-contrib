@@ -53,7 +53,7 @@ func TestNew(t *testing.T) {
 					Headers:     nil,
 					Endpoint:    "foo.bar",
 					Compression: "",
-					TLSSetting: configtls.TLSClientSetting{
+					TLSSetting: &configtls.TLSClientSetting{
 						Insecure: true,
 					},
 					Keepalive: nil,
@@ -92,7 +92,7 @@ func TestNew(t *testing.T) {
 					Headers:     nil,
 					Endpoint:    "foo.bar",
 					Compression: "",
-					TLSSetting: configtls.TLSClientSetting{
+					TLSSetting: &configtls.TLSClientSetting{
 						TLSSetting: configtls.TLSSetting{
 							CAFile: "testdata/test_cert.pem",
 						},
@@ -110,7 +110,7 @@ func TestNew(t *testing.T) {
 					Headers:     nil,
 					Endpoint:    "foo.bar",
 					Compression: "",
-					TLSSetting: configtls.TLSClientSetting{
+					TLSSetting: &configtls.TLSClientSetting{
 						TLSSetting: configtls.TLSSetting{
 							CAFile: "testdata/test_cert.pem",
 						},
@@ -133,7 +133,7 @@ func TestNew(t *testing.T) {
 					Headers:     nil,
 					Endpoint:    "foo.bar",
 					Compression: "",
-					TLSSetting: configtls.TLSClientSetting{
+					TLSSetting: &configtls.TLSClientSetting{
 						TLSSetting: configtls.TLSSetting{
 							CAFile: "testdata/test_cert_missing.pem",
 						},
@@ -212,7 +212,7 @@ func TestMutualTLS(t *testing.T) {
 	cfg.QueueSettings.Enabled = false
 	cfg.GRPCClientSettings = configgrpc.GRPCClientSettings{
 		Endpoint: serverAddr.String(),
-		TLSSetting: configtls.TLSClientSetting{
+		TLSSetting: &configtls.TLSClientSetting{
 			TLSSetting: configtls.TLSSetting{
 				CAFile:   caPath,
 				CertFile: clientCertPath,
@@ -264,7 +264,7 @@ func TestConnectionStateChange(t *testing.T) {
 			Headers:     nil,
 			Endpoint:    "foo.bar",
 			Compression: "",
-			TLSSetting: configtls.TLSClientSetting{
+			TLSSetting: &configtls.TLSClientSetting{
 				Insecure: true,
 			},
 			Keepalive: nil,
@@ -316,7 +316,7 @@ func TestConnectionReporterEndsOnStopped(t *testing.T) {
 			Headers:     nil,
 			Endpoint:    "foo.bar",
 			Compression: "",
-			TLSSetting: configtls.TLSClientSetting{
+			TLSSetting: &configtls.TLSClientSetting{
 				Insecure: true,
 			},
 			Keepalive: nil,

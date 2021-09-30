@@ -160,6 +160,18 @@ func TestFactory_CreateMetricsExporterFails(t *testing.T) {
 			errorMessage: "failed to process \"signalfx\" config: requires a non-empty \"realm\"," +
 				" or \"ingest_url\" and \"api_url\" should be explicitly set",
 		},
+		{
+			name: "negative_MaxConnections",
+			config: &Config{
+				ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
+				AccessToken:      "testToken",
+				Realm:            "lab",
+				IngestURL:        "http://localhost:123",
+				APIURL:           "https://api.us1.signalfx.com/",
+				MaxConnections:   -10,
+			},
+			errorMessage: "failed to process \"signalfx\" config: cannot have a negative \"max_connections\"",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -333,7 +345,7 @@ func testMetricsData() pdata.ResourceMetrics {
 	m2.SetDescription("Disk I/O.")
 	m2.SetDataType(pdata.MetricDataTypeSum)
 	m2.Sum().SetIsMonotonic(true)
-	m2.Sum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+	m2.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
 	dp21 := m2.Sum().DataPoints().AppendEmpty()
 	dp21.Attributes().InitFromMap(map[string]pdata.AttributeValue{
 		"host":      pdata.NewAttributeValueString("host0"),
@@ -373,7 +385,7 @@ func testMetricsData() pdata.ResourceMetrics {
 	m3.SetUnit("bytes")
 	m3.SetDataType(pdata.MetricDataTypeSum)
 	m3.Sum().SetIsMonotonic(true)
-	m3.Sum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+	m3.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
 	dp31 := m3.Sum().DataPoints().AppendEmpty()
 	dp31.Attributes().InitFromMap(map[string]pdata.AttributeValue{
 		"host":      pdata.NewAttributeValueString("host0"),
@@ -413,7 +425,7 @@ func testMetricsData() pdata.ResourceMetrics {
 	m4.SetUnit("bytes")
 	m4.SetDataType(pdata.MetricDataTypeSum)
 	m4.Sum().SetIsMonotonic(true)
-	m4.Sum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+	m4.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
 	dp41 := m4.Sum().DataPoints().AppendEmpty()
 	dp41.Attributes().InitFromMap(map[string]pdata.AttributeValue{
 		"device":    pdata.NewAttributeValueString("sda1"),

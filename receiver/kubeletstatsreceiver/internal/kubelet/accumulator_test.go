@@ -18,8 +18,6 @@ import (
 	"errors"
 	"testing"
 
-	agentmetricspb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/metrics/v1"
-	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
@@ -68,10 +66,9 @@ func TestMetadataErrorCases(t *testing.T) {
 			}, nil),
 			testScenario: func(acc metricDataAccumulator) {
 				now := metav1.Now()
-				podResource := &resourcepb.Resource{
-					Labels: map[string]string{
-						"k8s.pod.uid":        "pod-uid-123",
-						"k8s.container.name": "container1",
+				podStats := stats.PodStats{
+					PodRef: stats.PodReference{
+						UID: "pod-uid-123",
 					},
 				}
 				containerStats := stats.ContainerStats{
@@ -79,7 +76,7 @@ func TestMetadataErrorCases(t *testing.T) {
 					StartTime: now,
 				}
 
-				acc.containerStats(podResource, containerStats)
+				acc.containerStats(podStats, containerStats)
 			},
 			numMDs:  0,
 			numLogs: 1,
@@ -94,16 +91,16 @@ func TestMetadataErrorCases(t *testing.T) {
 			},
 			metadata: NewMetadata([]MetadataLabel{MetadataLabelVolumeType}, nil, nil),
 			testScenario: func(acc metricDataAccumulator) {
-				podResource := &resourcepb.Resource{
-					Labels: map[string]string{
-						"k8s.pod.uid": "pod-uid-123",
+				podStats := stats.PodStats{
+					PodRef: stats.PodReference{
+						UID: "pod-uid-123",
 					},
 				}
 				volumeStats := stats.VolumeStats{
 					Name: "volume-1",
 				}
 
-				acc.volumeStats(podResource, volumeStats)
+				acc.volumeStats(podStats, volumeStats)
 			},
 			numMDs:  0,
 			numLogs: 1,
@@ -136,16 +133,16 @@ func TestMetadataErrorCases(t *testing.T) {
 				},
 			}, nil),
 			testScenario: func(acc metricDataAccumulator) {
-				podResource := &resourcepb.Resource{
-					Labels: map[string]string{
-						"k8s.pod.uid": "pod-uid-123",
+				podStats := stats.PodStats{
+					PodRef: stats.PodReference{
+						UID: "pod-uid-123",
 					},
 				}
 				volumeStats := stats.VolumeStats{
 					Name: "volume-1",
 				}
 
-				acc.volumeStats(podResource, volumeStats)
+				acc.volumeStats(podStats, volumeStats)
 			},
 			numMDs:  0,
 			numLogs: 1,
@@ -184,16 +181,16 @@ func TestMetadataErrorCases(t *testing.T) {
 				return errors.New("")
 			},
 			testScenario: func(acc metricDataAccumulator) {
-				podResource := &resourcepb.Resource{
-					Labels: map[string]string{
-						"k8s.pod.uid": "pod-uid-123",
+				podStats := stats.PodStats{
+					PodRef: stats.PodReference{
+						UID: "pod-uid-123",
 					},
 				}
 				volumeStats := stats.VolumeStats{
 					Name: "volume-0",
 				}
 
-				acc.volumeStats(podResource, volumeStats)
+				acc.volumeStats(podStats, volumeStats)
 			},
 			numMDs:  0,
 			numLogs: 1,
@@ -208,10 +205,8 @@ func TestMetadataErrorCases(t *testing.T) {
 			observedLogger, logs := observer.New(zapcore.WarnLevel)
 			logger := zap.New(observedLogger)
 
-			var mds []*agentmetricspb.ExportMetricsServiceRequest
 			tt.metadata.DetailedPVCLabelsSetter = tt.detailedPVCLabelsSetterOverride
 			acc := metricDataAccumulator{
-				m:                     mds,
 				metadata:              tt.metadata,
 				logger:                logger,
 				metricGroupsToCollect: tt.metricGroupsToCollect,
@@ -219,7 +214,7 @@ func TestMetadataErrorCases(t *testing.T) {
 
 			tt.testScenario(acc)
 
-			assert.Equal(t, tt.numMDs, len(mds))
+			assert.Equal(t, tt.numMDs, len(acc.m))
 			require.Equal(t, tt.numLogs, logs.Len())
 			for i := 0; i < tt.numLogs; i++ {
 				assert.Equal(t, tt.logMessages[i], logs.All()[i].Message)
@@ -237,17 +232,16 @@ func TestNilHandling(t *testing.T) {
 			VolumeMetricGroup:    true,
 		},
 	}
-	resource := &resourcepb.Resource{}
 	assert.NotPanics(t, func() {
 		acc.nodeStats(stats.NodeStats{})
 	})
 	assert.NotPanics(t, func() {
-		acc.podStats(resource, stats.PodStats{})
+		acc.podStats(stats.PodStats{})
 	})
 	assert.NotPanics(t, func() {
-		acc.containerStats(resource, stats.ContainerStats{})
+		acc.containerStats(stats.PodStats{}, stats.ContainerStats{})
 	})
 	assert.NotPanics(t, func() {
-		acc.volumeStats(resource, stats.VolumeStats{})
+		acc.volumeStats(stats.PodStats{}, stats.VolumeStats{})
 	})
 }

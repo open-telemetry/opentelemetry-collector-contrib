@@ -17,7 +17,7 @@ package kubelet
 import (
 	"time"
 
-	agentmetricspb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/metrics/v1"
+	"go.opentelemetry.io/collector/model/pdata"
 	"go.uber.org/zap"
 	stats "k8s.io/kubelet/pkg/apis/stats/v1alpha1"
 )
@@ -25,30 +25,27 @@ import (
 func MetricsData(
 	logger *zap.Logger, summary *stats.Summary,
 	metadata Metadata, typeStr string,
-	metricGroupsToCollect map[MetricGroup]bool) []*agentmetricspb.ExportMetricsServiceRequest {
+	metricGroupsToCollect map[MetricGroup]bool) []pdata.Metrics {
 	acc := &metricDataAccumulator{
 		metadata:              metadata,
 		logger:                logger,
 		metricGroupsToCollect: metricGroupsToCollect,
 		time:                  time.Now(),
+		typeStr:               typeStr,
 	}
 
 	acc.nodeStats(summary.Node)
 	for _, podStats := range summary.Pods {
-		// propagate the pod resource down to the container
-		podResource := podResource(podStats)
-		acc.podStats(podResource, podStats)
+		acc.podStats(podStats)
 		for _, containerStats := range podStats.Containers {
-			acc.containerStats(podResource, containerStats)
+			// propagate the pod resource down to the container
+			acc.containerStats(podStats, containerStats)
 		}
 
 		for _, volumeStats := range podStats.VolumeStats {
-			acc.volumeStats(podResource, volumeStats)
+			// propagate the pod resource down to the container
+			acc.volumeStats(podStats, volumeStats)
 		}
-	}
-	for _, md := range acc.m {
-		// TODO this should prob go in core
-		md.Resource.Labels["receiver"] = typeStr
 	}
 	return acc.m
 }

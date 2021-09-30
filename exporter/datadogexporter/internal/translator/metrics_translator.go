@@ -72,7 +72,7 @@ func getTags(labels pdata.AttributeMap) []string {
 func isCumulativeMonotonic(md pdata.Metric) bool {
 	switch md.DataType() {
 	case pdata.MetricDataTypeSum:
-		return md.Sum().AggregationTemporality() == pdata.AggregationTemporalityCumulative &&
+		return md.Sum().AggregationTemporality() == pdata.MetricAggregationTemporalityCumulative &&
 			md.Sum().IsMonotonic()
 	}
 	return false
@@ -404,13 +404,13 @@ func (t *Translator) MapMetrics(ctx context.Context, md pdata.Metrics, consumer 
 					t.mapNumberMetrics(ctx, consumer, md.Name(), Gauge, md.Gauge().DataPoints(), attributeTags, host)
 				case pdata.MetricDataTypeSum:
 					switch md.Sum().AggregationTemporality() {
-					case pdata.AggregationTemporalityCumulative:
+					case pdata.MetricAggregationTemporalityCumulative:
 						if t.cfg.SendMonotonic && isCumulativeMonotonic(md) {
 							t.mapNumberMonotonicMetrics(ctx, consumer, md.Name(), md.Sum().DataPoints(), attributeTags, host)
 						} else {
 							t.mapNumberMetrics(ctx, consumer, md.Name(), Gauge, md.Sum().DataPoints(), attributeTags, host)
 						}
-					case pdata.AggregationTemporalityDelta:
+					case pdata.MetricAggregationTemporalityDelta:
 						t.mapNumberMetrics(ctx, consumer, md.Name(), Count, md.Sum().DataPoints(), attributeTags, host)
 					default: // pdata.AggregationTemporalityUnspecified or any other not supported type
 						t.logger.Debug("Unknown or unsupported aggregation temporality",
@@ -421,8 +421,8 @@ func (t *Translator) MapMetrics(ctx context.Context, md pdata.Metrics, consumer 
 					}
 				case pdata.MetricDataTypeHistogram:
 					switch md.Histogram().AggregationTemporality() {
-					case pdata.AggregationTemporalityCumulative, pdata.AggregationTemporalityDelta:
-						delta := md.Histogram().AggregationTemporality() == pdata.AggregationTemporalityDelta
+					case pdata.MetricAggregationTemporalityCumulative, pdata.MetricAggregationTemporalityDelta:
+						delta := md.Histogram().AggregationTemporality() == pdata.MetricAggregationTemporalityDelta
 						t.mapHistogramMetrics(ctx, consumer, md.Name(), md.Histogram().DataPoints(), delta, attributeTags, host)
 					default: // pdata.AggregationTemporalityUnspecified or any other not supported type
 						t.logger.Debug("Unknown or unsupported aggregation temporality",

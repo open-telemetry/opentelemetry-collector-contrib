@@ -145,10 +145,10 @@ func TestRecordMetricMetadata(t *testing.T) {
 		dataOutputCount:  20,
 		externalDuration: 50,
 		metricMetadataCount: map[metricStatsKey]int{
-			{MetricType: pdata.MetricDataTypeSummary}:                                                        1,
-			{MetricType: pdata.MetricDataTypeHistogram}:                                                      1,
-			{MetricType: pdata.MetricDataTypeSum, MetricTemporality: pdata.AggregationTemporalityDelta}:      2,
-			{MetricType: pdata.MetricDataTypeSum, MetricTemporality: pdata.AggregationTemporalityCumulative}: 3,
+			{MetricType: pdata.MetricDataTypeSummary}:                                                              1,
+			{MetricType: pdata.MetricDataTypeHistogram}:                                                            1,
+			{MetricType: pdata.MetricDataTypeSum, MetricTemporality: pdata.MetricAggregationTemporalityDelta}:      2,
+			{MetricType: pdata.MetricDataTypeSum, MetricTemporality: pdata.MetricAggregationTemporalityCumulative}: 3,
 		},
 	}
 

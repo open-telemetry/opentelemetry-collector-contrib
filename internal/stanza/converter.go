@@ -556,7 +556,7 @@ var sevMap = map[entry.Severity]pdata.SeverityNumber{
 }
 
 var sevTextMap = map[entry.Severity]string{
-	entry.Default: "Undefined",
+	entry.Default: "",
 	entry.Trace:   "Trace",
 	entry.Trace2:  "Trace2",
 	entry.Trace3:  "Trace3",

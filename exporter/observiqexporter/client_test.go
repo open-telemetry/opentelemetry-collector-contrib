@@ -79,7 +79,7 @@ func newTestClient(config *Config, httpClient *http.Client) *client {
 		client:       httpClient,
 		logger:       zap.NewNop(),
 		config:       config,
-		buildVersion: component.DefaultBuildInfo().Version,
+		buildVersion: component.NewDefaultBuildInfo().Version,
 	}
 }
 

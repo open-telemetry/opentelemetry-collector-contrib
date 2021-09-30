@@ -510,7 +510,7 @@ func TestSamplingStrategiesMutualTLS(t *testing.T) {
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.RemoteSampling = &RemoteSamplingConfig{
 		GRPCClientSettings: configgrpc.GRPCClientSettings{
-			TLSSetting: configtls.TLSClientSetting{
+			TLSSetting: &configtls.TLSClientSetting{
 				TLSSetting: configtls.TLSSetting{
 					CAFile:   caPath,
 					CertFile: clientCertPath,

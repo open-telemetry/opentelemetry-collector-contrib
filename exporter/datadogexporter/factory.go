@@ -48,6 +48,10 @@ func NewFactory() component.ExporterFactory {
 func createDefaultConfig() config.Exporter {
 	return &ddconfig.Config{
 		ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
+		TimeoutSettings:  exporterhelper.DefaultTimeoutSettings(),
+		RetrySettings:    exporterhelper.DefaultRetrySettings(),
+		QueueSettings:    exporterhelper.DefaultQueueSettings(),
+
 		API: ddconfig.APIConfig{
 			Key:  "$DD_API_KEY", // Must be set if using API
 			Site: "$DD_SITE",    // If not provided, set during config sanitization
@@ -136,8 +140,9 @@ func createMetricsExporter(
 		cfg,
 		set,
 		pushMetricsFn,
-		exporterhelper.WithQueue(exporterhelper.DefaultQueueSettings()),
-		exporterhelper.WithRetry(exporterhelper.DefaultRetrySettings()),
+		exporterhelper.WithTimeout(cfg.TimeoutSettings),
+		exporterhelper.WithRetry(cfg.RetrySettings),
+		exporterhelper.WithQueue(cfg.QueueSettings),
 		exporterhelper.WithShutdown(func(context.Context) error {
 			cancel()
 			return nil
@@ -188,6 +193,9 @@ func createTracesExporter(
 		cfg,
 		set,
 		pushTracesFn,
+		exporterhelper.WithTimeout(cfg.TimeoutSettings),
+		exporterhelper.WithRetry(cfg.RetrySettings),
+		exporterhelper.WithQueue(cfg.QueueSettings),
 		exporterhelper.WithShutdown(func(context.Context) error {
 			cancel()
 			return nil
