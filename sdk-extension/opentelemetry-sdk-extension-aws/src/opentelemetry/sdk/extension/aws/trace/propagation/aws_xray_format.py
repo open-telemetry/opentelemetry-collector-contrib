@@ -151,7 +151,7 @@ class AwsXRayFormat(TextMapPropagator):
 
         if not span_context.is_valid:
             _logger.debug(
-                "Invalid Span Extracted. Insertting INVALID span into provided context."
+                "Invalid Span Extracted. Inserting INVALID span into provided context."
             )
             return context
 
