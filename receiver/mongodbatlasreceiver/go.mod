@@ -6,7 +6,7 @@ require (
 	github.com/mongodb-forks/digest v1.0.3
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/interval v0.36.0
 	go.mongodb.org/atlas v0.12.0
-	go.opentelemetry.io/collector v0.36.1-0.20210927193005-ebb0fbd6f23e
+	go.opentelemetry.io/collector v0.36.1-0.20210930151317-3ec4f1be6001
 	go.uber.org/zap v1.19.1
 	golang.org/x/sys v0.0.0-20210902050250-f475640dd07b // indirect
 )
@@ -26,7 +26,7 @@ require (
 	github.com/pelletier/go-toml v1.9.3 // indirect
 	github.com/rogpeppe/go-internal v1.6.1 // indirect
 	github.com/spf13/cast v1.4.1 // indirect
-	go.opentelemetry.io/collector/model v0.36.1-0.20210927193005-ebb0fbd6f23e // indirect
+	go.opentelemetry.io/collector/model v0.36.1-0.20210930151317-3ec4f1be6001 // indirect
 	go.opentelemetry.io/otel v1.0.0 // indirect
 	go.opentelemetry.io/otel/metric v0.23.0 // indirect
 	go.opentelemetry.io/otel/trace v1.0.0 // indirect

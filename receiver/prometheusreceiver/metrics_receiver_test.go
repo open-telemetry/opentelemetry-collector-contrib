@@ -1406,7 +1406,7 @@ func testEndToEnd(t *testing.T, targets []*testData, useStartTimeMetric bool) {
 
 	cms := new(consumertest.MetricsSink)
 	rcvr := newPrometheusReceiver(logger, &Config{
-		ReceiverSettings:   config.NewReceiverSettings(config.NewID(typeStr)),
+		ReceiverSettings:   config.NewReceiverSettings(config.NewComponentID(typeStr)),
 		PrometheusConfig:   cfg,
 		UseStartTimeMetric: useStartTimeMetric}, cms)
 
@@ -1529,7 +1529,7 @@ func testEndToEndRegex(t *testing.T, targets []*testData, useStartTimeMetric boo
 
 	cms := new(consumertest.MetricsSink)
 	rcvr := newPrometheusReceiver(logger, &Config{
-		ReceiverSettings:     config.NewReceiverSettings(config.NewID(typeStr)),
+		ReceiverSettings:     config.NewReceiverSettings(config.NewComponentID(typeStr)),
 		PrometheusConfig:     cfg,
 		UseStartTimeMetric:   useStartTimeMetric,
 		StartTimeMetricRegex: startTimeMetricRegex}, cms)

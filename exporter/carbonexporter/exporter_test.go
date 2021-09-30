@@ -54,7 +54,7 @@ func TestNew(t *testing.T) {
 		{
 			name: "invalid_tcp_addr",
 			config: &Config{
-				ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
+				ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
 				Endpoint:         "http://localhost:2003",
 			},
 			wantErr: true,
@@ -62,7 +62,7 @@ func TestNew(t *testing.T) {
 		{
 			name: "invalid_timeout",
 			config: &Config{
-				ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
+				ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
 				Timeout:          -5 * time.Second,
 			},
 			wantErr: true,

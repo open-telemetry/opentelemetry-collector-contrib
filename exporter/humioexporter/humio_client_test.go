@@ -37,7 +37,7 @@ import (
 
 func makeClient(t *testing.T, host string, compression bool) exporterClient {
 	cfg := &Config{
-		ExporterSettings:   config.NewExporterSettings(config.NewID(typeStr)),
+		ExporterSettings:   config.NewExporterSettings(config.NewComponentID(typeStr)),
 		DisableCompression: !compression,
 		Tag:                TagNone,
 		HTTPClientSettings: confighttp.HTTPClientSettings{

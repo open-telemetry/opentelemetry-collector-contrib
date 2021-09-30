@@ -54,6 +54,6 @@ func createMetricsReceiver(
 func createDefaultConfig() config.Receiver {
 	return &Config{
 		Granularity:      defaultGranularity,
-		ReceiverSettings: config.NewReceiverSettings(config.NewID(typeStr)),
+		ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
 	}
 }

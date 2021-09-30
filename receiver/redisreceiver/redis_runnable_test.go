@@ -28,7 +28,7 @@ import (
 func TestRedisRunnable(t *testing.T) {
 	consumer := new(consumertest.MetricsSink)
 	logger, _ := zap.NewDevelopment()
-	runner := newRedisRunnable(context.Background(), config.NewID(typeStr), newFakeClient(), consumer, logger)
+	runner := newRedisRunnable(context.Background(), config.NewComponentID(typeStr), newFakeClient(), consumer, logger)
 	err := runner.Setup()
 	require.Nil(t, err)
 	err = runner.Run()
