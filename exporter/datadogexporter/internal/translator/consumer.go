@@ -20,6 +20,7 @@ import (
 	"github.com/DataDog/datadog-agent/pkg/quantile"
 )
 
+// MetricDataType is a timeseries-style metric type.
 type MetricDataType int
 
 const (
