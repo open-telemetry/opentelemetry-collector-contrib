@@ -51,7 +51,6 @@ func (cfg *Config) Validate() error {
 		return fmt.Errorf("query must be 'auto': '%s'", cfg.Endpoint)
 	}
 
-	cfg.Endpoint = u.String()
 	cfg.serverName = u.Hostname()
 	return nil
 }

@@ -58,7 +58,7 @@ func TestLoadConfig(t *testing.T) {
 
 	assert.Equal(t, len(cfg.Receivers), 1)
 
-	assert.Equal(t, testdataConfigYamlAsMap(), cfg.Receivers[config.NewID("filelog")])
+	assert.Equal(t, testdataConfigYamlAsMap(), cfg.Receivers[config.NewComponentID("filelog")])
 }
 
 func TestCreateWithInvalidInputConfig(t *testing.T) {
@@ -269,7 +269,7 @@ func expectNLogs(sink *consumertest.LogsSink, expected int) func() bool {
 func testdataConfigYamlAsMap() *FileLogConfig {
 	return &FileLogConfig{
 		BaseConfig: stanza.BaseConfig{
-			ReceiverSettings: config.NewReceiverSettings(config.NewID(typeStr)),
+			ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
 			Operators: stanza.OperatorConfigs{
 				map[string]interface{}{
 					"type":  "regex_parser",
@@ -300,7 +300,7 @@ func testdataConfigYamlAsMap() *FileLogConfig {
 func testdataRotateTestYamlAsMap(tempDir string) *FileLogConfig {
 	return &FileLogConfig{
 		BaseConfig: stanza.BaseConfig{
-			ReceiverSettings: config.NewReceiverSettings(config.NewID(typeStr)),
+			ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
 			Operators: stanza.OperatorConfigs{
 				map[string]interface{}{
 					"type":  "regex_parser",

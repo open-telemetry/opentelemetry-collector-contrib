@@ -90,7 +90,7 @@ func TestPushTraceData(t *testing.T) {
 			desc: "Forwards permanent errors",
 			client: &clientMock{
 				response: func() error {
-					return consumererror.Permanent(errors.New("Error"))
+					return consumererror.NewPermanent(errors.New("Error"))
 				},
 			},
 			wantErr:  true,

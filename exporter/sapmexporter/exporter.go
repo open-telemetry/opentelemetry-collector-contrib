@@ -111,7 +111,7 @@ func (se *sapmExporter) pushTraceData(ctx context.Context, td pdata.Traces) erro
 	accessToken := se.retrieveAccessToken(rss.At(0))
 	batches, err := jaeger.InternalTracesToJaegerProto(td)
 	if err != nil {
-		return consumererror.Permanent(err)
+		return consumererror.NewPermanent(err)
 	}
 
 	// Cannot remove the access token from the pdata, because exporters required to not modify incoming pdata,
@@ -121,7 +121,7 @@ func (se *sapmExporter) pushTraceData(ctx context.Context, td pdata.Traces) erro
 	err = se.client.ExportWithAccessToken(ctx, batches, accessToken)
 	if err != nil {
 		if sendErr, ok := err.(*sapmclient.ErrSend); ok && sendErr.Permanent {
-			return consumererror.Permanent(sendErr)
+			return consumererror.NewPermanent(sendErr)
 		}
 		return err
 	}

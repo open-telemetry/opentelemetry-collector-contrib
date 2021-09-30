@@ -36,7 +36,7 @@ import (
 
 func TestCreateTracesExporter(t *testing.T) {
 	cfg := &Config{
-		ExporterSettings:   config.NewExporterSettings(config.NewIDWithName(typeStr, "customname")),
+		ExporterSettings:   config.NewExporterSettings(config.NewComponentIDWithName(typeStr, "customname")),
 		Endpoint:           "test-endpoint",
 		AccessToken:        "abcd1234",
 		NumWorkers:         3,

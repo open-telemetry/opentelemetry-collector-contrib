@@ -34,7 +34,7 @@ import (
 func TestFactory_CreateDefaultConfig(t *testing.T) {
 	cfg := createDefaultConfig()
 	assert.Equal(t, &Config{
-		ExtensionSettings: config.NewExtensionSettings(config.NewID(typeStr)),
+		ExtensionSettings: config.NewExtensionSettings(config.NewComponentID(typeStr)),
 		ProxyConfig: proxy.Config{
 			TCPAddr: confignet.TCPAddr{
 				Endpoint: defaultEndpoint,

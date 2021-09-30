@@ -225,6 +225,37 @@ func Test_metricBuilder_counters(t *testing.T) {
 				},
 			},
 		},
+		// Some counters such as "python_gc_collections_total" have metadata key as "python_gc_collections" but still need
+		// to be converted using full metric name as "python_gc_collections_total" to match Prometheus functionality
+		{
+			name: "counter-with-metadata-without-total-suffix",
+			inputs: []*testScrapedPage{
+				{
+					pts: []*testDataPoint{
+						createDataPoint("counter_test_total", 100, "foo", "bar"),
+					},
+				},
+			},
+			wants: [][]*metricspb.Metric{
+				{
+					{
+						MetricDescriptor: &metricspb.MetricDescriptor{
+							Name:      "counter_test_total",
+							Type:      metricspb.MetricDescriptor_CUMULATIVE_DOUBLE,
+							LabelKeys: []*metricspb.LabelKey{{Key: "foo"}}},
+						Timeseries: []*metricspb.TimeSeries{
+							{
+								StartTimestamp: timestampFromMs(startTs),
+								LabelValues:    []*metricspb.LabelValue{{Value: "bar", HasValue: true}},
+								Points: []*metricspb.Point{
+									{Timestamp: timestampFromMs(startTs), Value: &metricspb.Point_DoubleValue{DoubleValue: 100.0}},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
 		{
 			name: "two-items",
 			inputs: []*testScrapedPage{
@@ -544,7 +575,7 @@ func Test_metricBuilder_untype(t *testing.T) {
 					{
 						MetricDescriptor: &metricspb.MetricDescriptor{
 							Name:      "something_not_exists",
-							Type:      metricspb.MetricDescriptor_UNSPECIFIED,
+							Type:      metricspb.MetricDescriptor_GAUGE_DOUBLE,
 							LabelKeys: []*metricspb.LabelKey{{Key: "foo"}}},
 						Timeseries: []*metricspb.TimeSeries{
 							{
@@ -558,7 +589,7 @@ func Test_metricBuilder_untype(t *testing.T) {
 					{
 						MetricDescriptor: &metricspb.MetricDescriptor{
 							Name:      "theother_not_exists",
-							Type:      metricspb.MetricDescriptor_UNSPECIFIED,
+							Type:      metricspb.MetricDescriptor_GAUGE_DOUBLE,
 							LabelKeys: []*metricspb.LabelKey{{Key: "bar"}, {Key: "foo"}}},
 						Timeseries: []*metricspb.TimeSeries{
 							{

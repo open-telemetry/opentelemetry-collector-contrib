@@ -43,18 +43,18 @@ func TestLoadConfig(t *testing.T) {
 	require.Nil(t, err)
 	require.NotNil(t, cfg)
 
-	p0 := cfg.Processors[config.NewID(typeStr)]
+	p0 := cfg.Processors[config.NewComponentID(typeStr)]
 	assert.Equal(t, p0,
 		&Config{
-			ProcessorSettings: config.NewProcessorSettings(config.NewID(typeStr)),
+			ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
 			APIConfig:         k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeServiceAccount},
 			Exclude:           ExcludeConfig{Pods: []ExcludePodConfig{{Name: "jaeger-agent"}, {Name: "jaeger-collector"}}},
 		})
 
-	p1 := cfg.Processors[config.NewIDWithName(typeStr, "2")]
+	p1 := cfg.Processors[config.NewComponentIDWithName(typeStr, "2")]
 	assert.Equal(t, p1,
 		&Config{
-			ProcessorSettings: config.NewProcessorSettings(config.NewIDWithName(typeStr, "2")),
+			ProcessorSettings: config.NewProcessorSettings(config.NewComponentIDWithName(typeStr, "2")),
 			APIConfig:         k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeKubeConfig},
 			Passthrough:       false,
 			Extract: ExtractConfig{

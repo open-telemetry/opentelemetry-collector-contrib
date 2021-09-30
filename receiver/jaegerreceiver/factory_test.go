@@ -76,7 +76,7 @@ func TestCreateReceiverGeneralConfig(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 
-	rCfg, ok := cfg.Receivers[config.NewIDWithName(typeStr, "customname")]
+	rCfg, ok := cfg.Receivers[config.NewComponentIDWithName(typeStr, "customname")]
 	require.True(t, ok)
 
 	set := componenttest.NewNopReceiverCreateSettings()

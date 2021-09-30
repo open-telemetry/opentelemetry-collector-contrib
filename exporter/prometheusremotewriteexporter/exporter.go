@@ -123,7 +123,7 @@ func (prwe *PRWExporter) PushMetrics(ctx context.Context, md pdata.Metrics) erro
 					// check for valid type and temporality combination and for matching data field and type
 					if ok := validateMetrics(metric); !ok {
 						dropped++
-						errs = multierr.Append(errs, consumererror.Permanent(errors.New("invalid temporality and type combination")))
+						errs = multierr.Append(errs, consumererror.NewPermanent(errors.New("invalid temporality and type combination")))
 						continue
 					}
 
@@ -145,7 +145,7 @@ func (prwe *PRWExporter) PushMetrics(ctx context.Context, md pdata.Metrics) erro
 						dataPoints := metric.Histogram().DataPoints()
 						if dataPoints.Len() == 0 {
 							dropped++
-							errs = multierr.Append(errs, consumererror.Permanent(fmt.Errorf("empty data points. %s is dropped", metric.Name())))
+							errs = multierr.Append(errs, consumererror.NewPermanent(fmt.Errorf("empty data points. %s is dropped", metric.Name())))
 						}
 						for x := 0; x < dataPoints.Len(); x++ {
 							addSingleHistogramDataPoint(dataPoints.At(x), resource, metric, prwe.namespace, tsMap, prwe.externalLabels)
@@ -154,14 +154,14 @@ func (prwe *PRWExporter) PushMetrics(ctx context.Context, md pdata.Metrics) erro
 						dataPoints := metric.Summary().DataPoints()
 						if dataPoints.Len() == 0 {
 							dropped++
-							errs = multierr.Append(errs, consumererror.Permanent(fmt.Errorf("empty data points. %s is dropped", metric.Name())))
+							errs = multierr.Append(errs, consumererror.NewPermanent(fmt.Errorf("empty data points. %s is dropped", metric.Name())))
 						}
 						for x := 0; x < dataPoints.Len(); x++ {
 							addSingleSummaryDataPoint(dataPoints.At(x), resource, metric, prwe.namespace, tsMap, prwe.externalLabels)
 						}
 					default:
 						dropped++
-						errs = multierr.Append(errs, consumererror.Permanent(errors.New("unsupported metric type")))
+						errs = multierr.Append(errs, consumererror.NewPermanent(errors.New("unsupported metric type")))
 					}
 				}
 			}
@@ -201,7 +201,7 @@ func validateAndSanitizeExternalLabels(externalLabels map[string]string) (map[st
 
 func (prwe *PRWExporter) addNumberDataPointSlice(dataPoints pdata.NumberDataPointSlice, tsMap map[string]*prompb.TimeSeries, resource pdata.Resource, metric pdata.Metric) error {
 	if dataPoints.Len() == 0 {
-		return consumererror.Permanent(fmt.Errorf("empty data points. %s is dropped", metric.Name()))
+		return consumererror.NewPermanent(fmt.Errorf("empty data points. %s is dropped", metric.Name()))
 	}
 	for x := 0; x < dataPoints.Len(); x++ {
 		addSingleNumberDataPoint(dataPoints.At(x), resource, metric, prwe.namespace, tsMap, prwe.externalLabels)
@@ -215,7 +215,7 @@ func (prwe *PRWExporter) export(ctx context.Context, tsMap map[string]*prompb.Ti
 	// Calls the helper function to convert and batch the TsMap to the desired format
 	requests, err := batchTimeSeries(tsMap, maxBatchByteSize)
 	if err != nil {
-		errs = append(errs, consumererror.Permanent(err))
+		errs = append(errs, consumererror.NewPermanent(err))
 		return errs
 	}
 
@@ -256,7 +256,7 @@ func (prwe *PRWExporter) execute(ctx context.Context, writeReq *prompb.WriteRequ
 	// Uses proto.Marshal to convert the WriteRequest into bytes array
 	data, err := proto.Marshal(writeReq)
 	if err != nil {
-		return consumererror.Permanent(err)
+		return consumererror.NewPermanent(err)
 	}
 	buf := make([]byte, len(data), cap(data))
 	compressedData := snappy.Encode(buf, data)
@@ -264,7 +264,7 @@ func (prwe *PRWExporter) execute(ctx context.Context, writeReq *prompb.WriteRequ
 	// Create the HTTP POST request to send to the endpoint
 	req, err := http.NewRequestWithContext(ctx, "POST", prwe.endpointURL.String(), bytes.NewReader(compressedData))
 	if err != nil {
-		return consumererror.Permanent(err)
+		return consumererror.NewPermanent(err)
 	}
 
 	// Add necessary headers specified by:
@@ -276,7 +276,7 @@ func (prwe *PRWExporter) execute(ctx context.Context, writeReq *prompb.WriteRequ
 
 	resp, err := prwe.client.Do(req)
 	if err != nil {
-		return consumererror.Permanent(err)
+		return consumererror.NewPermanent(err)
 	}
 	defer resp.Body.Close()
 
@@ -292,5 +292,5 @@ func (prwe *PRWExporter) execute(ctx context.Context, writeReq *prompb.WriteRequ
 	if resp.StatusCode >= 500 && resp.StatusCode < 600 {
 		return rerr
 	}
-	return consumererror.Permanent(rerr)
+	return consumererror.NewPermanent(rerr)
 }

@@ -190,7 +190,7 @@ func createConsumerScraper(_ context.Context, cfg Config, saramaConfig *sarama.C
 		saramaConfig: saramaConfig,
 	}
 	return scraperhelper.NewResourceMetricsScraper(
-		config.NewID(config.Type(s.Name())),
+		config.NewComponentID(config.Type(s.Name())),
 		s.scrape,
 		scraperhelper.WithShutdown(s.shutdown),
 		scraperhelper.WithStart(s.start),
