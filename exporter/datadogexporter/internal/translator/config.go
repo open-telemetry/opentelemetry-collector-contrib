@@ -80,7 +80,7 @@ func WithResourceAttributesAsTags() Option {
 type HistogramMode string
 
 const (
-	// HistogramModeOff disables bucket export.
+	// HistogramModeNoBuckets disables bucket export.
 	HistogramModeNoBuckets HistogramMode = "nobuckets"
 	// HistogramModeCounters exports buckets as Datadog counts.
 	HistogramModeCounters HistogramMode = "counters"
@@ -94,7 +94,7 @@ func WithHistogramMode(mode HistogramMode) Option {
 	return func(t *translatorConfig) error {
 
 		switch mode {
-		case HistogramModeNoBuckets, HistogramModeCounters:
+		case HistogramModeNoBuckets, HistogramModeCounters, HistogramModeDistributions:
 			t.HistMode = mode
 		default:
 			return fmt.Errorf("unknown histogram mode: %q", mode)
@@ -103,6 +103,7 @@ func WithHistogramMode(mode HistogramMode) Option {
 	}
 }
 
+// WithCountSumMetrics exports .count and .sum histogram metrics.
 func WithCountSumMetrics() Option {
 	return func(t *translatorConfig) error {
 		t.SendCountSum = true
