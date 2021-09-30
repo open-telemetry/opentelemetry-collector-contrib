@@ -5,7 +5,7 @@ go 1.17
 require (
 	github.com/hashicorp/go-hclog v0.16.2
 	github.com/jaegertracing/jaeger v1.26.0
-	github.com/logzio/jaeger-logzio v1.0.3
+	github.com/logzio/jaeger-logzio v1.0.4
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.36.0
 	github.com/stretchr/testify v1.7.0
 	go.opentelemetry.io/collector v0.36.1-0.20210927193005-ebb0fbd6f23e
@@ -29,7 +29,7 @@ require (
 	github.com/hashicorp/hcl v1.0.0 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/knadh/koanf v1.2.3 // indirect
-	github.com/logzio/logzio-go v1.0.2 // indirect
+	github.com/logzio/logzio-go v1.0.3 // indirect
 	github.com/magiconair/properties v1.8.5 // indirect
 	github.com/mailru/easyjson v0.7.7 // indirect
 	github.com/mattn/go-colorable v0.1.6 // indirect
