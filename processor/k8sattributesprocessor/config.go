@@ -193,13 +193,19 @@ type FieldFilterConfig struct {
 // PodAssociationConfig contain single rule how to associate Pod metadata
 // with logs, spans and metrics
 type PodAssociationConfig struct {
-	// From represents the source of the association.
-	// Allowed values are "connection" and "labels".
-	From string `mapstructure:"from"`
 
-	// Name represents extracted key name.
+	// Delimiter defines how the sources should be concatenated.
+	// Result of concatenation can be stored in attribute
+	// by using Name
+	Delimiter string `mapstructure:"from"`
+
+	// Name where result of association should be put
 	// e.g. ip, pod_uid, k8s.pod.ip
 	Name string `mapstructure:"name"`
+
+	// List of pod association sources which should be taken
+	// to identify pod
+	Sources []PodAssociationSourceConfig `mapstructure:"sources"`
 }
 
 // ExcludeConfig represent a list of Pods to exclude
@@ -209,5 +215,15 @@ type ExcludeConfig struct {
 
 // ExcludePodConfig represent a Pod name to ignore
 type ExcludePodConfig struct {
+	Name string `mapstructure:"name"`
+}
+
+type PodAssociationSourceConfig struct {
+	// From represents the source of the association.
+	// Allowed values are "connection" and "labels".
+	From string `mapstructure:"from"`
+
+	// Name represents extracted key name.
+	// e.g. ip, pod_uid, k8s.pod.ip
 	Name string `mapstructure:"name"`
 }

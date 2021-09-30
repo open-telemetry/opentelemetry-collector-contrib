@@ -524,16 +524,31 @@ func TestIPSourceWithPodAssociation(t *testing.T) {
 	m.kubernetesProcessorOperation(func(kp *kubernetesprocessor) {
 		kp.podAssociations = []kube.Association{
 			{
-				From: "resource_attribute",
 				Name: "k8s.pod.ip",
+				Sources: []kube.AssociationSource{
+					{
+						From: "resource_attribute",
+						Name: "k8s.pod.ip",
+					},
+				},
 			},
 			{
-				From: "resource_attribute",
-				Name: "ip",
+				Name: "k8s.pod.ip",
+				Sources: []kube.AssociationSource{
+					{
+						From: "resource_attribute",
+						Name: "ip",
+					},
+				},
 			},
 			{
-				From: "resource_attribute",
-				Name: "host.name",
+				Name: "k8s.pod.ip",
+				Sources: []kube.AssociationSource{
+					{
+						From: "resource_attribute",
+						Name: "host.name",
+					},
+				},
 			},
 		}
 	})
@@ -578,8 +593,12 @@ func TestPodUID(t *testing.T) {
 	m.kubernetesProcessorOperation(func(kp *kubernetesprocessor) {
 		kp.podAssociations = []kube.Association{
 			{
-				From: "resource_attribute",
-				Name: "k8s.pod.uid",
+				Sources: []kube.AssociationSource{
+					{
+						From: "resource_attribute",
+						Name: "k8s.pod.uid",
+					},
+				},
 			},
 		}
 		kp.kc.(*fakeClient).Pods["ef10d10b-2da5-4030-812e-5f45c1531227"] = &kube.Pod{
@@ -626,8 +645,13 @@ func TestProcessorAddLabels(t *testing.T) {
 	m.kubernetesProcessorOperation(func(kp *kubernetesprocessor) {
 		kp.podAssociations = []kube.Association{
 			{
-				From: "connection",
-				Name: "ip",
+				Name: "k8s.pod.ip",
+				Sources: []kube.AssociationSource{
+					{
+						From: "connection",
+						Name: "ip",
+					},
+				},
 			},
 		}
 	})
@@ -676,8 +700,13 @@ func TestProcessorAddContainerAttributes(t *testing.T) {
 			op: func(kp *kubernetesprocessor) {
 				kp.podAssociations = []kube.Association{
 					{
-						From: "resource_attribute",
 						Name: "k8s.pod.uid",
+						Sources: []kube.AssociationSource{
+							{
+								From: "resource_attribute",
+								Name: "k8s.pod.uid",
+							},
+						},
 					},
 				}
 				kp.kc.(*fakeClient).Pods[kube.PodIdentifier("19f651bc-73e4-410f-b3e9-f0241679d3b8")] = &kube.Pod{
@@ -814,8 +843,13 @@ func TestProcessorPicksUpPassthoughPodIp(t *testing.T) {
 	m.kubernetesProcessorOperation(func(kp *kubernetesprocessor) {
 		kp.podAssociations = []kube.Association{
 			{
-				From: "resource_attribute",
 				Name: "k8s.pod.ip",
+				Sources: []kube.AssociationSource{
+					{
+						From: "resource_attribute",
+						Name: "k8s.pod.ip",
+					},
+				},
 			},
 		}
 		kp.kc.(*fakeClient).Pods["2.2.2.2"] = &kube.Pod{
@@ -930,8 +964,13 @@ func TestMetricsProcessorHostnameWithPodAssociation(t *testing.T) {
 	kc := kp.kc.(*fakeClient)
 	kp.podAssociations = []kube.Association{
 		{
-			From: "resource_attribute",
-			Name: "host.name",
+			Name: "k8s.pod.ip",
+			Sources: []kube.AssociationSource{
+				{
+					From: "resource_attribute",
+					Name: "host.name",
+				},
+			},
 		},
 	}
 
