@@ -41,7 +41,7 @@ var _ Encoder = (*jaegerEncoder)(nil)
 func (je jaegerEncoder) Traces(td pdata.Traces) (*Batch, error) {
 	traces, err := jaeger.InternalTracesToJaegerProto(td)
 	if err != nil {
-		return nil, consumererror.Permanent(consumererror.NewTraces(err, td))
+		return nil, consumererror.NewTraces(err, td)
 	}
 
 	bt := New(je.batchOptions...)
