@@ -40,7 +40,6 @@ require (
 	github.com/opentracing/opentracing-go v1.1.0 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/rs/cors v1.8.0 // indirect
-	github.com/shirou/gopsutil v3.21.8+incompatible // indirect
 	github.com/signalfx/gohistogram v0.0.0-20160107210732-1ccfd2ff5083 // indirect
 	github.com/signalfx/golib/v3 v3.3.13 // indirect
 	github.com/signalfx/sapm-proto v0.4.0 // indirect
