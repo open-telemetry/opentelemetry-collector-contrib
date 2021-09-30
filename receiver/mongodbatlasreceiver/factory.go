@@ -16,8 +16,8 @@ package mongodbatlasreceiver
 
 import (
 	"context"
+	"fmt"
 
-	"github.com/pkg/errors"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
@@ -46,7 +46,7 @@ func createMetricsReceiver(
 	cfg := rConf.(*Config)
 	ms, err := newMongoDBAtlasReceiver(ctx, params.Logger, cfg, consumer)
 	if err != nil {
-		return nil, errors.Wrap(err, "Unable to create a MongoDB Atlas Receiver instance")
+		return nil, fmt.Errorf("unable to create a MongoDB Atlas Receiver instance: %w", err)
 	}
 	return ms, err
 }

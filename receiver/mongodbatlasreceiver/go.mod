@@ -11,8 +11,6 @@ require (
 	golang.org/x/sys v0.0.0-20210902050250-f475640dd07b // indirect
 )
 
-require github.com/pkg/errors v0.9.1
-
 require (
 	github.com/fsnotify/fsnotify v1.4.9 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
@@ -24,6 +22,7 @@ require (
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/openlyinc/pointy v1.1.2 // indirect
 	github.com/pelletier/go-toml v1.9.3 // indirect
+	github.com/pkg/errors v0.9.1 // indirect
 	github.com/rogpeppe/go-internal v1.6.1 // indirect
 	github.com/spf13/cast v1.4.1 // indirect
 	go.opentelemetry.io/collector/model v0.36.1-0.20210930151317-3ec4f1be6001 // indirect
@@ -40,7 +39,4 @@ require (
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 )
 
-replace (
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common => ../../internal/common
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/interval => ../../internal/interval
-)
+replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/interval => ../../internal/interval
