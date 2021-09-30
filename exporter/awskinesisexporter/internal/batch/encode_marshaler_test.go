@@ -46,7 +46,7 @@ func TestMarshalEncoder_Metrics(t *testing.T) {
 		},
 		{
 			scenario:      "valid jaeger encoder, does not implement metrics",
-			encoding:      "jaeger",
+			encoding:      "jaeger_proto",
 			batchSize:     10,
 			recordSize:    1000,
 			count:         10,
@@ -55,7 +55,7 @@ func TestMarshalEncoder_Metrics(t *testing.T) {
 		},
 		{
 			scenario:      "valid zipkin proto encoder, does not implement metrics",
-			encoding:      "zipkin-proto",
+			encoding:      "zipkin_proto",
 			batchSize:     10,
 			recordSize:    1000,
 			count:         10,
@@ -64,7 +64,7 @@ func TestMarshalEncoder_Metrics(t *testing.T) {
 		},
 		{
 			scenario:      "valid zipkin json encoder, does not implement metrics",
-			encoding:      "zipkin-json",
+			encoding:      "zipkin_json",
 			batchSize:     10,
 			recordSize:    1000,
 			count:         10,
@@ -73,7 +73,7 @@ func TestMarshalEncoder_Metrics(t *testing.T) {
 		},
 		{
 			scenario:       "valid otlp proto encoder that implements metrics",
-			encoding:       "otlp-proto",
+			encoding:       "otlp_proto",
 			batchSize:      10,
 			recordSize:     100000,
 			validEncoder:   true,
@@ -83,7 +83,7 @@ func TestMarshalEncoder_Metrics(t *testing.T) {
 		},
 		{
 			scenario:       "valid otlp json encoder that implements metrics",
-			encoding:       "otlp-json",
+			encoding:       "otlp_json",
 			batchSize:      10,
 			recordSize:     100000,
 			validEncoder:   true,
@@ -141,7 +141,7 @@ func TestMarshalEncoder_Traces(t *testing.T) {
 		},
 		{
 			scenario:       "valid jaeger encoder",
-			encoding:       "jaeger",
+			encoding:       "jaeger_proto",
 			batchSize:      10,
 			recordSize:     1000,
 			count:          10,
@@ -150,7 +150,7 @@ func TestMarshalEncoder_Traces(t *testing.T) {
 		},
 		{
 			scenario:       "valid zipkin proto encoder",
-			encoding:       "zipkin-proto",
+			encoding:       "zipkin_proto",
 			batchSize:      10,
 			recordSize:     1000,
 			count:          10,
@@ -159,7 +159,7 @@ func TestMarshalEncoder_Traces(t *testing.T) {
 		},
 		{
 			scenario:       "valid zipkin json encoder",
-			encoding:       "zipkin-json",
+			encoding:       "zipkin_json",
 			batchSize:      10,
 			recordSize:     1000,
 			count:          10,
@@ -168,7 +168,7 @@ func TestMarshalEncoder_Traces(t *testing.T) {
 		},
 		{
 			scenario:       "valid otlp proto encoder",
-			encoding:       "otlp-proto",
+			encoding:       "otlp_proto",
 			batchSize:      10,
 			recordSize:     100000,
 			validEncoder:   true,
@@ -177,7 +177,7 @@ func TestMarshalEncoder_Traces(t *testing.T) {
 		},
 		{
 			scenario:       "valid otlp json encoder",
-			encoding:       "otlp-json",
+			encoding:       "otlp_json",
 			batchSize:      10,
 			recordSize:     100000,
 			validEncoder:   true,
@@ -231,7 +231,7 @@ func TestMarshalEncoder_Logs(t *testing.T) {
 		},
 		{
 			scenario:      "valid jaeger encoder, does not implement logs",
-			encoding:      "jaeger",
+			encoding:      "jaeger_proto",
 			batchSize:     10,
 			recordSize:    1000,
 			count:         10,
@@ -240,7 +240,7 @@ func TestMarshalEncoder_Logs(t *testing.T) {
 		},
 		{
 			scenario:      "valid zipkin proto encoder, does not implement logs",
-			encoding:      "zipkin-proto",
+			encoding:      "zipkin_proto",
 			batchSize:     10,
 			recordSize:    1000,
 			count:         10,
@@ -249,7 +249,7 @@ func TestMarshalEncoder_Logs(t *testing.T) {
 		},
 		{
 			scenario:      "valid zipkin json encoder, does not implement logs",
-			encoding:      "zipkin-json",
+			encoding:      "zipkin_json",
 			batchSize:     10,
 			recordSize:    1000,
 			count:         10,
@@ -258,7 +258,7 @@ func TestMarshalEncoder_Logs(t *testing.T) {
 		},
 		{
 			scenario:       "valid otlp proto encoder that implements logs",
-			encoding:       "otlp-proto",
+			encoding:       "otlp_proto",
 			batchSize:      10,
 			recordSize:     100000,
 			validEncoder:   true,
@@ -268,7 +268,7 @@ func TestMarshalEncoder_Logs(t *testing.T) {
 		},
 		{
 			scenario:       "valid otlp json encoder that implements logs",
-			encoding:       "otlp-json",
+			encoding:       "otlp_json",
 			batchSize:      10,
 			recordSize:     100000,
 			validEncoder:   true,
