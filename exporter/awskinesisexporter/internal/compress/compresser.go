@@ -66,7 +66,7 @@ func NewCompressor(format string) (Compressor, error) {
 	case "noop", "none":
 		// Already the default case
 	default:
-		return nil, fmt.Errorf("uknown compression format: %s", format)
+		return nil, fmt.Errorf("unknown compression format: %s", format)
 	}
 
 	return c, nil
