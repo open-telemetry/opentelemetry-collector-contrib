@@ -405,6 +405,40 @@ func (c *WatchClient) addOrUpdatePod(pod *api_v1.Pod) {
 		}
 		c.Pods[PodIdentifier(pod.Status.PodIP)] = newPod
 	}
+
+	for _, assoc := range c.Associations {
+		ret := []string{}
+		for _, source := range assoc.Sources {
+			// If association configured to take IP address from connection
+			switch {
+			case source.From == "connection":
+				ret = append(ret, newPod.Address)
+			case source.From == "resource_attribute":
+				// If association configured by resource_attribute
+				// In k8s environment, host.name label set to a pod IP address.
+				// If the value doesn't represent an IP address, we skip it.
+				if source.Name == conventions.AttributeK8SNamespaceName {
+					ret = append(ret, newPod.Namespace)
+				} else if source.Name == conventions.AttributeK8SPodName {
+					ret = append(ret, newPod.Name)
+				} else if source.Name == conventions.AttributeK8SPodUID {
+					ret = append(ret, newPod.PodUID)
+				} else if source.Name == conventions.AttributeHostName {
+					ret = append(ret, newPod.Address)
+				} else {
+					ret = append(ret, newPod.Attributes[source.Name])
+				}
+			}
+		}
+
+		id := PodIdentifier(strings.Join(ret, assoc.Delimiter))
+		if p, ok := c.Pods[id]; ok {
+			if p.StartTime != nil && pod.Status.StartTime.Before(p.StartTime) {
+				return
+			}
+		}
+		c.Pods[id] = newPod
+	}
 }
 
 func (c *WatchClient) forgetPod(pod *api_v1.Pod) {
