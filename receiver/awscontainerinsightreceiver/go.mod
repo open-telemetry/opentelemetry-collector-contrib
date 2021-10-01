@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscon
 go 1.17
 
 require (
-	github.com/aws/aws-sdk-go v1.40.50
+	github.com/aws/aws-sdk-go v1.40.51
 	github.com/google/cadvisor v0.39.2
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil v0.36.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/containerinsight v0.36.0
@@ -13,8 +13,8 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/kubelet v0.36.0
 	github.com/shirou/gopsutil v3.21.8+incompatible
 	github.com/stretchr/testify v1.7.0
-	go.opentelemetry.io/collector v0.36.1-0.20210927193005-ebb0fbd6f23e
-	go.opentelemetry.io/collector/model v0.36.1-0.20210927193005-ebb0fbd6f23e
+	go.opentelemetry.io/collector v0.36.1-0.20210930151317-3ec4f1be6001
+	go.opentelemetry.io/collector/model v0.36.1-0.20210930151317-3ec4f1be6001
 	go.uber.org/zap v1.19.1
 	k8s.io/api v0.22.2
 	k8s.io/apimachinery v0.22.2
@@ -57,6 +57,7 @@ require (
 	github.com/json-iterator/go v1.1.11 // indirect
 	github.com/karrick/godirwalk v1.16.1 // indirect
 	github.com/knadh/koanf v1.2.3 // indirect
+	github.com/magiconair/properties v1.8.5 // indirect
 	github.com/matttproud/golang_protobuf_extensions v1.0.2-0.20181231171920-c182affec369 // indirect
 	github.com/mindprince/gonvml v0.0.0-20190828220739-9ebdce4bb989 // indirect
 	github.com/mistifyio/go-zfs v2.1.2-0.20190413222219-f784269be439+incompatible // indirect

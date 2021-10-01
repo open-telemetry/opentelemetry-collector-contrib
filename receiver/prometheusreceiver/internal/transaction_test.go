@@ -61,7 +61,7 @@ func Test_transaction(t *testing.T) {
 		}},
 	}
 
-	rID := config.NewID("prometheus")
+	rID := config.NewComponentID("prometheus")
 
 	t.Run("Commit Without Adding", func(t *testing.T) {
 		nomc := consumertest.NewNop()

@@ -770,7 +770,7 @@ func TestUnsupportedMetricTypes(t *testing.T) {
 		h.SetAggregationTemporality(pdata.MetricAggregationTemporalityDelta)
 
 		t.Run("DoubleHistogram", func(t *testing.T) {
-			testTransformMetricWithError(t, m, consumererror.Permanent(&errUnsupportedMetricType{}))
+			testTransformMetricWithError(t, m, consumererror.NewPermanent(&errUnsupportedMetricType{}))
 		})
 	}
 }

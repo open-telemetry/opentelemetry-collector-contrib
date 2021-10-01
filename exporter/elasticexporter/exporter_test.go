@@ -32,9 +32,9 @@ import (
 )
 
 func TestTracesExporter(t *testing.T) {
-	cleanup, err := obsreporttest.SetupRecordedMetricsTest()
+	tt, err := obsreporttest.SetupRecordedMetricsTest()
 	require.NoError(t, err)
-	defer cleanup()
+	defer tt.Shutdown(context.Background())
 
 	factory := NewFactory()
 	recorder, cfg := newRecorder(t)
@@ -60,9 +60,9 @@ func TestTracesExporter(t *testing.T) {
 }
 
 func TestMetricsExporter(t *testing.T) {
-	cleanup, err := obsreporttest.SetupRecordedMetricsTest()
+	tt, err := obsreporttest.SetupRecordedMetricsTest()
 	require.NoError(t, err)
-	defer cleanup()
+	defer tt.Shutdown(context.Background())
 
 	factory := NewFactory()
 	recorder, cfg := newRecorder(t)
@@ -83,9 +83,9 @@ func TestMetricsExporter(t *testing.T) {
 }
 
 func TestMetricsExporterSendError(t *testing.T) {
-	cleanup, err := obsreporttest.SetupRecordedMetricsTest()
+	tt, err := obsreporttest.SetupRecordedMetricsTest()
 	require.NoError(t, err)
-	defer cleanup()
+	defer tt.Shutdown(context.Background())
 
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()

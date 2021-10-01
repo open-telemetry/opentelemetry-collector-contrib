@@ -42,13 +42,13 @@ func TestLoadConfig(t *testing.T) {
 
 	assert.Equal(t, len(cfg.Receivers), 7)
 
-	r0 := cfg.Receivers[config.NewID(typeStr)]
+	r0 := cfg.Receivers[config.NewComponentID(typeStr)]
 	assert.Equal(t, r0, factory.CreateDefaultConfig())
 
-	r1 := cfg.Receivers[config.NewIDWithName(typeStr, "customname")].(*Config)
+	r1 := cfg.Receivers[config.NewComponentIDWithName(typeStr, "customname")].(*Config)
 	assert.Equal(t, r1,
 		&Config{
-			ReceiverSettings: config.NewReceiverSettings(config.NewIDWithName(typeStr, "customname")),
+			ReceiverSettings: config.NewReceiverSettings(config.NewComponentIDWithName(typeStr, "customname")),
 			GRPCServerSettings: configgrpc.GRPCServerSettings{
 				NetAddr: confignet.NetAddr{
 					Endpoint:  "0.0.0.0:9090",
@@ -58,10 +58,10 @@ func TestLoadConfig(t *testing.T) {
 			},
 		})
 
-	r2 := cfg.Receivers[config.NewIDWithName(typeStr, "keepalive")].(*Config)
+	r2 := cfg.Receivers[config.NewComponentIDWithName(typeStr, "keepalive")].(*Config)
 	assert.Equal(t, r2,
 		&Config{
-			ReceiverSettings: config.NewReceiverSettings(config.NewIDWithName(typeStr, "keepalive")),
+			ReceiverSettings: config.NewReceiverSettings(config.NewComponentIDWithName(typeStr, "keepalive")),
 			GRPCServerSettings: configgrpc.GRPCServerSettings{
 				NetAddr: confignet.NetAddr{
 					Endpoint:  "0.0.0.0:55678",
@@ -84,10 +84,10 @@ func TestLoadConfig(t *testing.T) {
 			},
 		})
 
-	r3 := cfg.Receivers[config.NewIDWithName(typeStr, "msg-size-conc-connect-max-idle")].(*Config)
+	r3 := cfg.Receivers[config.NewComponentIDWithName(typeStr, "msg-size-conc-connect-max-idle")].(*Config)
 	assert.Equal(t, r3,
 		&Config{
-			ReceiverSettings: config.NewReceiverSettings(config.NewIDWithName(typeStr, "msg-size-conc-connect-max-idle")),
+			ReceiverSettings: config.NewReceiverSettings(config.NewComponentIDWithName(typeStr, "msg-size-conc-connect-max-idle")),
 			GRPCServerSettings: configgrpc.GRPCServerSettings{
 				NetAddr: confignet.NetAddr{
 					Endpoint:  "0.0.0.0:55678",
@@ -107,10 +107,10 @@ func TestLoadConfig(t *testing.T) {
 
 	// TODO(ccaraman): Once the config loader checks for the files existence, this test may fail and require
 	// 	use of fake cert/key for test purposes.
-	r4 := cfg.Receivers[config.NewIDWithName(typeStr, "tlscredentials")].(*Config)
+	r4 := cfg.Receivers[config.NewComponentIDWithName(typeStr, "tlscredentials")].(*Config)
 	assert.Equal(t, r4,
 		&Config{
-			ReceiverSettings: config.NewReceiverSettings(config.NewIDWithName(typeStr, "tlscredentials")),
+			ReceiverSettings: config.NewReceiverSettings(config.NewComponentIDWithName(typeStr, "tlscredentials")),
 			GRPCServerSettings: configgrpc.GRPCServerSettings{
 				NetAddr: confignet.NetAddr{
 					Endpoint:  "0.0.0.0:55678",
@@ -126,10 +126,10 @@ func TestLoadConfig(t *testing.T) {
 			},
 		})
 
-	r5 := cfg.Receivers[config.NewIDWithName(typeStr, "cors")].(*Config)
+	r5 := cfg.Receivers[config.NewComponentIDWithName(typeStr, "cors")].(*Config)
 	assert.Equal(t, r5,
 		&Config{
-			ReceiverSettings: config.NewReceiverSettings(config.NewIDWithName(typeStr, "cors")),
+			ReceiverSettings: config.NewReceiverSettings(config.NewComponentIDWithName(typeStr, "cors")),
 			GRPCServerSettings: configgrpc.GRPCServerSettings{
 				NetAddr: confignet.NetAddr{
 					Endpoint:  "0.0.0.0:55678",
@@ -140,10 +140,10 @@ func TestLoadConfig(t *testing.T) {
 			CorsOrigins: []string{"https://*.test.com", "https://test.com"},
 		})
 
-	r6 := cfg.Receivers[config.NewIDWithName(typeStr, "uds")].(*Config)
+	r6 := cfg.Receivers[config.NewComponentIDWithName(typeStr, "uds")].(*Config)
 	assert.Equal(t, r6,
 		&Config{
-			ReceiverSettings: config.NewReceiverSettings(config.NewIDWithName(typeStr, "uds")),
+			ReceiverSettings: config.NewReceiverSettings(config.NewComponentIDWithName(typeStr, "uds")),
 			GRPCServerSettings: configgrpc.GRPCServerSettings{
 				NetAddr: confignet.NetAddr{
 					Endpoint:  "/tmp/opencensus.sock",

@@ -159,7 +159,6 @@ install-tools:
 	cd $(TOOLS_MOD_DIR) && go install github.com/tcnksm/ghr
 	cd $(TOOLS_MOD_DIR) && go install go.opentelemetry.io/build-tools/checkdoc
 	cd $(TOOLS_MOD_DIR) && go install go.opentelemetry.io/build-tools/issuegenerator
-	cd $(TOOLS_MOD_DIR) && go install github.com/open-telemetry/opentelemetry-collector-contrib/cmd/mdatagen
 	cd $(TOOLS_MOD_DIR) && go install golang.org/x/tools/cmd/goimports
 	cd $(TOOLS_MOD_DIR) && go install go.opentelemetry.io/build-tools/multimod
 
@@ -186,6 +185,7 @@ docker-otelcontribcol:
 
 .PHONY: generate
 generate:
+	cd cmd/mdatagen && go install .
 	$(MAKE) for-all CMD="go generate ./..."
 
 # Build the Collector executable.

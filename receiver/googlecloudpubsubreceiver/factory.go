@@ -46,7 +46,7 @@ func (factory *PubsubReceiverFactory) Type() config.Type {
 
 func (factory *PubsubReceiverFactory) CreateDefaultConfig() config.Receiver {
 	return &Config{
-		ReceiverSettings: config.NewReceiverSettings(config.NewID(typeStr)),
+		ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
 	}
 }
 

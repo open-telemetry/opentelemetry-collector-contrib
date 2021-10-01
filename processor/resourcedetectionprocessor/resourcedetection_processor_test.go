@@ -168,7 +168,7 @@ func TestResourceProcessor(t *testing.T) {
 			}
 
 			cfg := &Config{
-				ProcessorSettings: config.NewProcessorSettings(config.NewID(typeStr)),
+				ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
 				Override:          tt.override,
 				Detectors:         tt.detectorKeys,
 				Timeout:           time.Second,
