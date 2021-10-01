@@ -91,7 +91,7 @@ jobs:
         continue-on-error: true
         run: tar -cvf stabilitytest_results.tar testbed/stabilitytests/results
       - name: Upload Test Results
-        if: ${{ failure() || success() }}
+        if: ${{ success() }}
         continue-on-error: true
         uses: actions/upload-artifact@v2
         with:
