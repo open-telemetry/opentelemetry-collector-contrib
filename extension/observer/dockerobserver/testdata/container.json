@@ -187,7 +187,7 @@
         "OnBuild": null,
         "Labels": {
             "hello": "world",
-            "maintainer": "NGINX Docker Maintainers docker-maint@nginx.com",
+            "maintainer": "NGINX Docker Maintainers",
             "mstumpf": ""
         },
         "StopSignal": "SIGQUIT"

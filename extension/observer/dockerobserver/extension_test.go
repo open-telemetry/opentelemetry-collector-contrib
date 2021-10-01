@@ -18,7 +18,6 @@ import (
 	"encoding/json"
 	"io/ioutil"
 	"path"
-	"syscall"
 	"testing"
 
 	dtypes "github.com/docker/docker/api/types"
@@ -34,9 +33,7 @@ import (
 
 func containerJSON(t *testing.T) dtypes.ContainerJSON {
 	containerRaw, err := ioutil.ReadFile(path.Join(".", "testdata", "container.json"))
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 
 	var container dtypes.ContainerJSON
 	err = json.Unmarshal(containerRaw, &container)
@@ -48,31 +45,25 @@ func containerJSON(t *testing.T) dtypes.ContainerJSON {
 
 func TestPortTypeToProtocol(t *testing.T) {
 	tests := []struct {
-		name     string
-		portType uint32
-		want     observer.Transport
+		name string
+		want observer.Transport
 	}{
 		{
-			name:     "tcp",
-			portType: syscall.SOCK_STREAM,
-			want:     observer.ProtocolTCP,
+			name: "tcp",
+			want: observer.ProtocolTCP,
 		},
 		{
-			name:     "udp",
-			portType: syscall.SOCK_DGRAM,
-			want:     observer.ProtocolUDP,
+			name: "udp",
+			want: observer.ProtocolUDP,
 		},
 		{
-			name:     "unsupported",
-			portType: 999,
-			want:     observer.ProtocolUnknown,
+			name: "unsupported",
+			want: observer.ProtocolUnknown,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := portProtoToTransport(tt.name); got != tt.want {
-				t.Errorf("portTypeToProtocol() = %v, want %v", got, tt.want)
-			}
+			require.Equal(t, tt.want, portProtoToTransport(tt.name))
 		})
 	}
 }
@@ -83,7 +74,8 @@ func TestCollectEndpointsDefaultConfig(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, ext)
 
-	obvs := ext.(*dockerObserver)
+	obvs, ok := ext.(*dockerObserver)
+	require.True(t, ok)
 
 	c := containerJSON(t)
 	cEndpoints := obvs.endpointsForContainer(&c)
@@ -100,7 +92,7 @@ func TestCollectEndpointsDefaultConfig(t *testing.T) {
 				Transport:   observer.ProtocolTCP,
 				Labels: map[string]string{
 					"hello":      "world",
-					"maintainer": "NGINX Docker Maintainers docker-maint@nginx.com",
+					"maintainer": "NGINX Docker Maintainers",
 					"mstumpf":    "",
 				},
 				Port:          80,
@@ -147,7 +139,7 @@ func TestCollectEndpointsAllConfigSettings(t *testing.T) {
 				Transport:   observer.ProtocolTCP,
 				Labels: map[string]string{
 					"hello":      "world",
-					"maintainer": "NGINX Docker Maintainers docker-maint@nginx.com",
+					"maintainer": "NGINX Docker Maintainers",
 					"mstumpf":    "",
 				},
 				Port:          8080,
@@ -194,7 +186,7 @@ func TestCollectEndpointsUseHostnameIfPresent(t *testing.T) {
 				Transport:   observer.ProtocolTCP,
 				Labels: map[string]string{
 					"hello":      "world",
-					"maintainer": "NGINX Docker Maintainers docker-maint@nginx.com",
+					"maintainer": "NGINX Docker Maintainers",
 					"mstumpf":    "",
 				},
 				Port:          80,
@@ -241,7 +233,7 @@ func TestCollectEndpointsUseHostBindings(t *testing.T) {
 				Transport:   observer.ProtocolTCP,
 				Labels: map[string]string{
 					"hello":      "world",
-					"maintainer": "NGINX Docker Maintainers docker-maint@nginx.com",
+					"maintainer": "NGINX Docker Maintainers",
 					"mstumpf":    "",
 				},
 				Port:          8080,
@@ -288,7 +280,7 @@ func TestCollectEndpointsIgnoreNonHostBindings(t *testing.T) {
 				Transport:   observer.ProtocolTCP,
 				Labels: map[string]string{
 					"hello":      "world",
-					"maintainer": "NGINX Docker Maintainers docker-maint@nginx.com",
+					"maintainer": "NGINX Docker Maintainers",
 					"mstumpf":    "",
 				},
 				Port:          80,
