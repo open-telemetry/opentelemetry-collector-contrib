@@ -197,7 +197,7 @@ type PodAssociationConfig struct {
 	// Delimiter defines how the sources should be concatenated.
 	// Result of concatenation can be stored in attribute
 	// by using Name
-	Delimiter string `mapstructure:"from"`
+	Delimiter string `mapstructure:"delimiter"`
 
 	// Name where result of association should be put
 	// e.g. ip, pod_uid, k8s.pod.ip
