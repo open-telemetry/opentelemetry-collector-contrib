@@ -11,6 +11,13 @@ processors:
     expected_new_traces_per_sec: 10
     spans_per_second: 1000
     probabilistic_filtering_ratio: 0.1
+    drop_traces:
+      [
+        {
+          name: healthcheck-rule,
+          name_pattern: "health.*"
+        }
+      ]
     policies:
       [
           {

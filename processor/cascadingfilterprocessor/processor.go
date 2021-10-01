@@ -47,6 +47,16 @@ type Policy struct {
 	probabilisticFilter bool
 }
 
+// DropTraceEvaluator holds checking if trace should be dropped completely before further processing
+type DropTraceEvaluator struct {
+	// Name used to identify this policy instance.
+	Name string
+	// Evaluator that decides if a trace is sampled or not by this policy instance.
+	Evaluator sampling.DropTraceEvaluator
+	// ctx used to carry metric tags of each policy.
+	ctx context.Context
+}
+
 // traceKey is defined since sync.Map requires a comparable type, isolating it on its own
 // type to help track usage.
 type traceKey [16]byte
@@ -59,6 +69,7 @@ type cascadingFilterSpanProcessor struct {
 	start           sync.Once
 	maxNumTraces    uint64
 	policies        []*Policy
+	dropTraceEvals  []*DropTraceEvaluator
 	logger          *zap.Logger
 	idToTrace       sync.Map
 	policyTicker    tTicker
@@ -99,6 +110,24 @@ func newCascadingFilterSpanProcessor(logger *zap.Logger, nextConsumer consumer.T
 
 	ctx := context.Background()
 	var policies []*Policy
+	var dropTraceEvals []*DropTraceEvaluator
+
+	for _, dropCfg := range cfg.DropTracesCfgs {
+		dropCtx, err := tag.New(ctx, tag.Upsert(tagTraceDroppedRuleKey, dropCfg.Name))
+		if err != nil {
+			return nil, err
+		}
+		evaluator, err := sampling.NewDropTraceEvaluator(logger, dropCfg)
+		if err != nil {
+			return nil, err
+		}
+		dropEval := &DropTraceEvaluator{
+			Name:      dropCfg.Name,
+			Evaluator: evaluator,
+			ctx:       dropCtx,
+		}
+		dropTraceEvals = append(dropTraceEvals, dropEval)
+	}
 
 	// This must be always first as it must select traces independently of other policies
 	if cfg.ProbabilisticFilteringRatio != nil && *cfg.ProbabilisticFilteringRatio > 0.0 {
@@ -106,7 +135,7 @@ func newCascadingFilterSpanProcessor(logger *zap.Logger, nextConsumer consumer.T
 		if err != nil {
 			return nil, err
 		}
-		eval, err := getProbabilisticFilterEvaluator(logger, int64(float32(cfg.SpansPerSecond)**cfg.ProbabilisticFilteringRatio))
+		eval, err := buildProbabilisticFilterEvaluator(logger, int64(float32(cfg.SpansPerSecond)**cfg.ProbabilisticFilteringRatio))
 		if err != nil {
 			return nil, err
 		}
@@ -125,7 +154,7 @@ func newCascadingFilterSpanProcessor(logger *zap.Logger, nextConsumer consumer.T
 		if err != nil {
 			return nil, err
 		}
-		eval, err := getPolicyEvaluator(logger, policyCfg)
+		eval, err := buildPolicyEvaluator(logger, policyCfg)
 		if err != nil {
 			return nil, err
 		}
@@ -146,6 +175,7 @@ func newCascadingFilterSpanProcessor(logger *zap.Logger, nextConsumer consumer.T
 		logger:            logger,
 		decisionBatcher:   inBatcher,
 		policies:          policies,
+		dropTraceEvals:    dropTraceEvals,
 	}
 
 	cfsp.policyTicker = &policyTicker{onTick: cfsp.samplingPolicyOnTick}
@@ -154,11 +184,11 @@ func newCascadingFilterSpanProcessor(logger *zap.Logger, nextConsumer consumer.T
 	return cfsp, nil
 }
 
-func getPolicyEvaluator(logger *zap.Logger, cfg *config.PolicyCfg) (sampling.PolicyEvaluator, error) {
+func buildPolicyEvaluator(logger *zap.Logger, cfg *config.PolicyCfg) (sampling.PolicyEvaluator, error) {
 	return sampling.NewFilter(logger, cfg)
 }
 
-func getProbabilisticFilterEvaluator(logger *zap.Logger, maxSpanRate int64) (sampling.PolicyEvaluator, error) {
+func buildProbabilisticFilterEvaluator(logger *zap.Logger, maxSpanRate int64) (sampling.PolicyEvaluator, error) {
 	return sampling.NewProbabilisticFilter(logger, maxSpanRate)
 }
 
@@ -203,9 +233,17 @@ func (cfsp *cascadingFilterSpanProcessor) samplingPolicyOnTick() {
 		}
 		trace := d.(*sampling.TraceData)
 		trace.DecisionTime = time.Now()
-		totalSpans += trace.SpanCount
 
-		provisionalDecision, _ := cfsp.makeProvisionalDecision(id, trace)
+		var provisionalDecision sampling.Decision
+
+		// Dropped traces are not included in probabilistic filtering calculations
+		if cfsp.shouldBeDropped(id, trace) {
+			totalSpans += trace.SpanCount
+			provisionalDecision = sampling.Dropped
+		} else {
+			provisionalDecision, _ = cfsp.makeProvisionalDecision(id, trace)
+		}
+
 		if provisionalDecision == sampling.Sampled {
 			trace.FinalDecision = cfsp.updateRate(currSecond, trace.SpanCount)
 			if trace.FinalDecision == sampling.Sampled {
@@ -358,6 +396,16 @@ func updateFilteringTag(traces pdata.Traces) {
 			}
 		}
 	}
+}
+
+func (cfsp *cascadingFilterSpanProcessor) shouldBeDropped(id pdata.TraceID, trace *sampling.TraceData) bool {
+	for _, dropRule := range cfsp.dropTraceEvals {
+		if dropRule.Evaluator.ShouldDrop(id, trace) {
+			stats.Record(dropRule.ctx, statPolicyDecision.M(int64(1)))
+			return true
+		}
+	}
+	return false
 }
 
 func (cfsp *cascadingFilterSpanProcessor) makeProvisionalDecision(id pdata.TraceID, trace *sampling.TraceData) (sampling.Decision, *Policy) {

@@ -66,6 +66,19 @@ type StringAttributeCfg struct {
 	Values []string `mapstructure:"values"`
 }
 
+// DropTracesCfg holds the configurable settings which drop all traces matching the specified criteria (all of them)
+// before further processing
+type DropTracesCfg struct {
+	// Name given to the instance of dropped traces policy to make easy to identify it in metrics and logs.
+	Name string `mapstructure:"name"`
+	// NumericAttributeCfg (optional) configs numeric attribute filter evaluator
+	NumericAttributeCfg *NumericAttributeCfg `mapstructure:"numeric_attribute"`
+	// StringAttributeCfg (config) configs string attribute filter evaluator.
+	StringAttributeCfg *StringAttributeCfg `mapstructure:"string_attribute"`
+	// NamePattern (optional) describes a regular expression that must be met by any span operation name
+	NamePattern *string `mapstructure:"name_pattern"`
+}
+
 // Config holds the configuration for cascading-filter-based sampling.
 type Config struct {
 	*config.ProcessorSettings `mapstructure:"-"`
@@ -86,4 +99,7 @@ type Config struct {
 	// PolicyCfgs sets the cascading-filter-based sampling policy which makes a sampling decision
 	// for a given trace when requested.
 	PolicyCfgs []PolicyCfg `mapstructure:"policies"`
+	// DropTracesCfgs sets the criteria for which traces are evaluated before applying sampling rules. If
+	// trace matches them, it is no further processed
+	DropTracesCfgs []DropTracesCfg `mapstructure:"drop_traces"`
 }

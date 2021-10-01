@@ -43,6 +43,7 @@ func TestLoadConfig(t *testing.T) {
 	minSpansValue := 10
 	probFilteringRatio := float32(0.1)
 	namePatternValue := "foo.*"
+	healthCheckNamePatternValue := "health.*"
 
 	id := config.NewID("cascading_filter")
 	ps := config.NewProcessorSettings(id)
@@ -54,6 +55,12 @@ func TestLoadConfig(t *testing.T) {
 			ExpectedNewTracesPerSec:     10,
 			SpansPerSecond:              1000,
 			ProbabilisticFilteringRatio: &probFilteringRatio,
+			DropTracesCfgs: []cfconfig.DropTracesCfg{
+				{
+					Name:        "healthcheck-rule",
+					NamePattern: &healthCheckNamePatternValue,
+				},
+			},
 			PolicyCfgs: []cfconfig.PolicyCfg{
 				{
 					Name: "test-policy-1",

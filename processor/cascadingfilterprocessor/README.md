@@ -32,6 +32,20 @@ spans evaluated in a given second, with `1500` max total spans per second and `0
 would be selected by such rule. This would effect in having `sampling.probability=0.06` (`300/5000=0.6`). If such value is already
 set by head-based (or other) sampling, it's multiplied by the calculated value.
 
+## Drop trace configuration
+
+It is possible to specify conditions for traces which should be fully dropped, without including them in probabilistic
+filtering or additional policy evaluation. This typically happens e.g. when healthchecks are filtered-out.
+
+Each of the specified drop rules has several properties:
+- `name` (required): identifies the rule
+- `numeric_attribute: {key: <name>, min_value: <min_value>, max_value: <max_value>}`: selects span by matching numeric
+  attribute (either at resource of span level)
+- `string_attribute: {key: <name>, values: [<value1>, <value2>]}`: selects span by matching string attribute that is one
+  of the provided values (either at resource of span level)
+- `name_pattern: <regex>`: selects the span if its operation name matches the provided regular expression
+
+
 ## Policy configuration
 
 Each defined policy is evaluated with order as specified in config. There are several properties:

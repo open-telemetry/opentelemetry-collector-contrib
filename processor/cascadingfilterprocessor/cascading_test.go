@@ -30,6 +30,7 @@ import (
 )
 
 var testValue = 10 * time.Millisecond
+var healthCheckPattern = "health"
 var cfg = cfconfig.Config{
 	ProcessorSettings:       &config.ProcessorSettings{},
 	DecisionWait:            2 * time.Second,
@@ -47,6 +48,12 @@ var cfg = cfconfig.Config{
 		{
 			Name:           "everything else",
 			SpansPerSecond: -1,
+		},
+	},
+	DropTracesCfgs: []cfconfig.DropTracesCfg{
+		{
+			Name:        "health-check",
+			NamePattern: &healthCheckPattern,
 		},
 	},
 }
@@ -136,6 +143,16 @@ func TestProbabilisticFilter(t *testing.T) {
 
 	ratio = float32(0.0)
 	cfg.ProbabilisticFilteringRatio = &ratio
+}
+
+func TestDropTraces(t *testing.T) {
+	cascading := createCascadingEvaluator(t)
+
+	trace1 := createTrace(cascading, 8, 1000000)
+	trace2 := createTrace(cascading, 8, 1000000)
+	trace2.ReceivedBatches[0].ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().At(2).SetName("health-check")
+	require.False(t, cascading.shouldBeDropped(pdata.NewTraceID([16]byte{0}), trace1))
+	require.True(t, cascading.shouldBeDropped(pdata.NewTraceID([16]byte{0}), trace2))
 }
 
 //func TestSecondChanceReevaluation(t *testing.T) {

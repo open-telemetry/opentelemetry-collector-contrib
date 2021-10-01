@@ -74,3 +74,10 @@ type PolicyEvaluator interface {
 	// Evaluate looks at the trace data and returns a corresponding SamplingDecision.
 	Evaluate(traceID pdata.TraceID, trace *TraceData) Decision
 }
+
+// DropTraceEvaluator implements a cascading policy evaluator,
+// which checks if trace should be dropped completely before making any other operations
+type DropTraceEvaluator interface {
+	// ShouldDrop checks if trace should be dropped
+	ShouldDrop(traceID pdata.TraceID, trace *TraceData) bool
+}

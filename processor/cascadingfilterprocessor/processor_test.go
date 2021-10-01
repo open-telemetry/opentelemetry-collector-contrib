@@ -368,6 +368,53 @@ func TestSamplingPolicyDecisionNotSampled(t *testing.T) {
 	require.Equal(t, 2, mpe.LateArrivingSpanCount, "policy was not notified of the late span")
 }
 
+func TestSamplingPolicyDecisionDrop(t *testing.T) {
+	const maxSize = 100
+	const decisionWaitSeconds = 5
+	// For this test explicitly control the timer calls and batcher, and set a mock
+	// sampling policy evaluator.
+	msp := new(consumertest.TracesSink)
+	mpe := &mockPolicyEvaluator{}
+	mde := &mockDropEvaluator{}
+	mtt := &manualTTicker{}
+	tsp := &cascadingFilterSpanProcessor{
+		ctx:               context.Background(),
+		nextConsumer:      msp,
+		maxNumTraces:      maxSize,
+		logger:            zap.NewNop(),
+		decisionBatcher:   newSyncIDBatcher(decisionWaitSeconds),
+		policies:          []*Policy{{Name: "mock-policy", Evaluator: mpe, ctx: context.TODO()}},
+		dropTraceEvals:    []*DropTraceEvaluator{{Name: "mock-drop-eval", Evaluator: mde, ctx: context.TODO()}},
+		deleteChan:        make(chan traceKey, maxSize),
+		policyTicker:      mtt,
+		maxSpansPerSecond: 10000,
+	}
+
+	_, batches := generateIdsAndBatches(210)
+	currItem := 0
+	numSpansPerBatchWindow := 10
+	// First evaluations shouldn't have anything to evaluate, until decision wait time passed.
+	for evalNum := 0; evalNum < decisionWaitSeconds; evalNum++ {
+		for ; currItem < numSpansPerBatchWindow*(evalNum+1); currItem++ {
+			if err := tsp.ConsumeTraces(context.Background(), batches[currItem]); err != nil {
+				t.Errorf("Failed consuming traces: %v", err)
+			}
+			require.True(t, mtt.Started, "Time ticker was expected to have started")
+		}
+		tsp.samplingPolicyOnTick()
+		require.False(
+			t,
+			msp.SpanCount() != 0 || mpe.EvaluationCount != 0,
+			"policy for initial items was evaluated before decision wait period",
+		)
+	}
+
+	// Now the first batch that waited the decision period.
+	tsp.samplingPolicyOnTick()
+	require.EqualValues(t, 0, msp.SpanCount(), "exporter should have received zero spans since they were dropped")
+	require.EqualValues(t, 0, mpe.EvaluationCount, "policy should have been evaluated 0 times since it was dropped")
+}
+
 func TestMultipleBatchesAreCombinedIntoOne(t *testing.T) {
 	const maxSize = 100
 	const decisionWaitSeconds = 1
@@ -511,7 +558,10 @@ type mockPolicyEvaluator struct {
 	OnDroppedSpanCount    int
 }
 
+type mockDropEvaluator struct{}
+
 var _ sampling.PolicyEvaluator = (*mockPolicyEvaluator)(nil)
+var _ sampling.DropTraceEvaluator = (*mockDropEvaluator)(nil)
 
 func (m *mockPolicyEvaluator) OnLateArrivingSpans(sampling.Decision, []*pdata.Span) error {
 	m.LateArrivingSpanCount++
@@ -520,6 +570,10 @@ func (m *mockPolicyEvaluator) OnLateArrivingSpans(sampling.Decision, []*pdata.Sp
 func (m *mockPolicyEvaluator) Evaluate(_ pdata.TraceID, _ *sampling.TraceData) sampling.Decision {
 	m.EvaluationCount++
 	return m.NextDecision
+}
+
+func (d *mockDropEvaluator) ShouldDrop(_ pdata.TraceID, _ *sampling.TraceData) bool {
+	return true
 }
 
 type manualTTicker struct {
