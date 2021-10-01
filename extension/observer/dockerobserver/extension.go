@@ -60,16 +60,16 @@ func (d *dockerObserver) endpointsForContainer(c *dtypes.ContainerJSON) []observ
 			if endpoint == (observer.Endpoint{}) {
 				continue
 			}
-			containerEndpoints = append(containerEndpoints, endpoint)
+			cEndpoints = append(cEndpoints, endpoint)
 		}
 	}
 
-	for _, e := range containerEndpoints {
+	for _, e := range cEndpoints {
 		s, _ := json.MarshalIndent(e, "", "\t")
 		d.logger.Debug(fmt.Sprintf("Discovered Docker container endpoint:\n%v\n", string(s)))
 	}
 
-	return containerEndpoints
+	return cEndpoints
 }
 
 // endpointForPort creates an observer.Endpoint for a given port that is exposed in a Docker container.
@@ -95,7 +95,7 @@ func (d *dockerObserver) endpointForPort(portObj nat.Port, c *dtypes.ContainerJS
 		),
 	)
 
-	details := &observer.DockerContainer{
+	details := &observer.Container{
 		Name:        c.Name,
 		Image:       c.Config.Image,
 		Command:     strings.Join(c.Config.Cmd, " "),
