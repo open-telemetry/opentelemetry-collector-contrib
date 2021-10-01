@@ -32,49 +32,49 @@ var metricNameMapping = map[string]metricMappingData{
 	// MongoDB CPU usage. For hosts with more than one CPU core, these values can exceed 100%.
 
 	// sfx: process.cpu.user
-	"PROCESS_CPU_USER": {"process.cpu.utilization", map[string]pdata.AttributeValue{
+	"PROCESS_CPU_USER": {"process.cpu.usage", map[string]pdata.AttributeValue{
 		"state":       pdata.NewAttributeValueString("user"),
 		"aggregation": pdata.NewAttributeValueString("avg"),
 	}},
 
 	// sfx: skipped
-	"MAX_PROCESS_CPU_USER": {"process.cpu.utilization", map[string]pdata.AttributeValue{
+	"MAX_PROCESS_CPU_USER": {"process.cpu.usage", map[string]pdata.AttributeValue{
 		"state":       pdata.NewAttributeValueString("user"),
 		"aggregation": pdata.NewAttributeValueString("max"),
 	}},
 
 	// sfx:process.cpu.kernel
-	"PROCESS_CPU_KERNEL": {"process.cpu.utilization", map[string]pdata.AttributeValue{
+	"PROCESS_CPU_KERNEL": {"process.cpu.usage", map[string]pdata.AttributeValue{
 		"state":       pdata.NewAttributeValueString("kernel"),
 		"aggregation": pdata.NewAttributeValueString("avg"),
 	}},
 
 	// sfx: skipped
-	"MAX_PROCESS_CPU_KERNEL": {"process.cpu.utilization", map[string]pdata.AttributeValue{
+	"MAX_PROCESS_CPU_KERNEL": {"process.cpu.usage", map[string]pdata.AttributeValue{
 		"state":       pdata.NewAttributeValueString("kernel"),
 		"aggregation": pdata.NewAttributeValueString("max"),
 	}},
 
 	// sfx: skipped
-	"PROCESS_CPU_CHILDREN_USER": {"process.cpu.children.utilization", map[string]pdata.AttributeValue{
+	"PROCESS_CPU_CHILDREN_USER": {"process.cpu.children.usage", map[string]pdata.AttributeValue{
 		"state":       pdata.NewAttributeValueString("user"),
 		"aggregation": pdata.NewAttributeValueString("avg"),
 	}},
 
 	// sfx: skipped
-	"MAX_PROCESS_CPU_CHILDREN_USER": {"process.cpu.children.utilization", map[string]pdata.AttributeValue{
+	"MAX_PROCESS_CPU_CHILDREN_USER": {"process.cpu.children.usage", map[string]pdata.AttributeValue{
 		"state":       pdata.NewAttributeValueString("user"),
 		"aggregation": pdata.NewAttributeValueString("max"),
 	}},
 
 	// sfx: skipped
-	"PROCESS_CPU_CHILDREN_KERNEL": {"process.cpu.children.utilization", map[string]pdata.AttributeValue{
+	"PROCESS_CPU_CHILDREN_KERNEL": {"process.cpu.children.usage", map[string]pdata.AttributeValue{
 		"state":       pdata.NewAttributeValueString("kernel"),
 		"aggregation": pdata.NewAttributeValueString("avg"),
 	}},
 
 	// sfx: skipped
-	"MAX_PROCESS_CPU_CHILDREN_KERNEL": {"process.cpu.children.utilization", map[string]pdata.AttributeValue{
+	"MAX_PROCESS_CPU_CHILDREN_KERNEL": {"process.cpu.children.usage", map[string]pdata.AttributeValue{
 		"state":       pdata.NewAttributeValueString("kernel"),
 		"aggregation": pdata.NewAttributeValueString("max"),
 	}},
@@ -82,50 +82,50 @@ var metricNameMapping = map[string]metricMappingData{
 	// MongoDB CPU usage scaled to a range of 0% to 100%. Atlas computes this value by dividing by the number of CPU cores.
 
 	// sfx: process.normalized.cpu.children_user
-	"PROCESS_NORMALIZED_CPU_USER": {"process.cpu.normalized.utilization", map[string]pdata.AttributeValue{
+	"PROCESS_NORMALIZED_CPU_USER": {"process.cpu.normalized.usage", map[string]pdata.AttributeValue{
 		"state":       pdata.NewAttributeValueString("user"),
 		"aggregation": pdata.NewAttributeValueString("avg"),
 	}},
 
 	// sfx: skipped
-	"MAX_PROCESS_NORMALIZED_CPU_USER": {"process.cpu.normalized.utilization", map[string]pdata.AttributeValue{
+	"MAX_PROCESS_NORMALIZED_CPU_USER": {"process.cpu.normalized.usage", map[string]pdata.AttributeValue{
 		"state":       pdata.NewAttributeValueString("user"),
 		"aggregation": pdata.NewAttributeValueString("max"),
 	}},
 
 	// sfx: process.normalized.cpu.children_kernel
-	"PROCESS_NORMALIZED_CPU_KERNEL": {"process.cpu.normalized.utilization", map[string]pdata.AttributeValue{
+	"PROCESS_NORMALIZED_CPU_KERNEL": {"process.cpu.normalized.usage", map[string]pdata.AttributeValue{
 		"state":       pdata.NewAttributeValueString("kernel"),
 		"aggregation": pdata.NewAttributeValueString("avg"),
 	}},
 
 	// sfx: skipped
-	"MAX_PROCESS_NORMALIZED_CPU_KERNEL": {"process.cpu.normalized.utilization", map[string]pdata.AttributeValue{
+	"MAX_PROCESS_NORMALIZED_CPU_KERNEL": {"process.cpu.normalized.usage", map[string]pdata.AttributeValue{
 		"state":       pdata.NewAttributeValueString("kernel"),
 		"aggregation": pdata.NewAttributeValueString("max"),
 	}},
 
 	// sfx: process.normalized.cpu.user
-	"PROCESS_NORMALIZED_CPU_CHILDREN_USER": {"process.cpu.children.normalized.utilization", map[string]pdata.AttributeValue{
+	"PROCESS_NORMALIZED_CPU_CHILDREN_USER": {"process.cpu.children.normalized.usage", map[string]pdata.AttributeValue{
 		"state":       pdata.NewAttributeValueString("user"),
 		"aggregation": pdata.NewAttributeValueString("avg"),
 	}},
 
 	// Context: Process
 	// sfx: skipped
-	"MAX_PROCESS_NORMALIZED_CPU_CHILDREN_USER": {"process.cpu.children.normalized.utilization", map[string]pdata.AttributeValue{
+	"MAX_PROCESS_NORMALIZED_CPU_CHILDREN_USER": {"process.cpu.children.normalized.usage", map[string]pdata.AttributeValue{
 		"state":       pdata.NewAttributeValueString("user"),
 		"aggregation": pdata.NewAttributeValueString("max"),
 	}},
 
 	// sfx: process.normalized.cpu.kernel
-	"PROCESS_NORMALIZED_CPU_CHILDREN_KERNEL": {"process.cpu.children.normalized.utilization", map[string]pdata.AttributeValue{
+	"PROCESS_NORMALIZED_CPU_CHILDREN_KERNEL": {"process.cpu.children.normalized.usage", map[string]pdata.AttributeValue{
 		"state":       pdata.NewAttributeValueString("kernel"),
 		"aggregation": pdata.NewAttributeValueString("avg"),
 	}},
 
 	// sfx: skipped
-	"MAX_PROCESS_NORMALIZED_CPU_CHILDREN_KERNEL": {"process.cpu.children.normalized.utilization", map[string]pdata.AttributeValue{
+	"MAX_PROCESS_NORMALIZED_CPU_CHILDREN_KERNEL": {"process.cpu.children.normalized.usage", map[string]pdata.AttributeValue{
 		"state":       pdata.NewAttributeValueString("kernel"),
 		"aggregation": pdata.NewAttributeValueString("max"),
 	}},
@@ -255,7 +255,7 @@ var metricNameMapping = map[string]metricMappingData{
 		"status": pdata.NewAttributeValueString("in_write_lock"),
 	}},
 	// sfx: skipped
-	"JOURNALING_MB":                  {"process.journaling.written", map[string]pdata.AttributeValue{}},
+	"JOURNALING_MB": {"process.journaling.written", map[string]pdata.AttributeValue{}},
 	// sfx: skipped
 	"JOURNALING_WRITE_DATA_FILES_MB": {"process.journaling.data_files", map[string]pdata.AttributeValue{}},
 
@@ -323,54 +323,54 @@ var metricNameMapping = map[string]metricMappingData{
 
 	// Rate of database operations on a MongoDB process since the process last started found in the opcounters document that the serverStatus command collects.
 	// sfx: opcounter.command
-	"OPCOUNTER_CMD": {"process.db.ops", map[string]pdata.AttributeValue{
+	"OPCOUNTER_CMD": {"process.db.operations.rate", map[string]pdata.AttributeValue{
 		"operation": pdata.NewAttributeValueString("cmd"),
 		"role":      pdata.NewAttributeValueString("primary"),
 	}},
 	// sfx: opcounter.query
-	"OPCOUNTER_QUERY": {"process.db.ops", map[string]pdata.AttributeValue{
+	"OPCOUNTER_QUERY": {"process.db.operations.rate", map[string]pdata.AttributeValue{
 		"operation": pdata.NewAttributeValueString("query"),
 		"role":      pdata.NewAttributeValueString("primary"),
 	}},
 	// sfx: opcounter.update
-	"OPCOUNTER_UPDATE": {"process.db.ops", map[string]pdata.AttributeValue{
+	"OPCOUNTER_UPDATE": {"process.db.operations.rate", map[string]pdata.AttributeValue{
 		"operation": pdata.NewAttributeValueString("update"),
 		"role":      pdata.NewAttributeValueString("primary"),
 	}},
 	// sfx: opcounter.delete
-	"OPCOUNTER_DELETE": {"process.db.ops", map[string]pdata.AttributeValue{
+	"OPCOUNTER_DELETE": {"process.db.operations.rate", map[string]pdata.AttributeValue{
 		"operation": pdata.NewAttributeValueString("delete"),
 		"role":      pdata.NewAttributeValueString("primary"),
 	}},
 	// sfx: opcounter.getmore
-	"OPCOUNTER_GETMORE": {"process.db.ops", map[string]pdata.AttributeValue{
+	"OPCOUNTER_GETMORE": {"process.db.operations.rate", map[string]pdata.AttributeValue{
 		"operation": pdata.NewAttributeValueString("getmore"),
 		"role":      pdata.NewAttributeValueString("primary"),
 	}},
 	// sfx: opcounter.insert
-	"OPCOUNTER_INSERT": {"process.db.ops", map[string]pdata.AttributeValue{
+	"OPCOUNTER_INSERT": {"process.db.operations.rate", map[string]pdata.AttributeValue{
 		"operation": pdata.NewAttributeValueString("insert"),
 		"role":      pdata.NewAttributeValueString("primary"),
 	}},
 
 	// Rate of database operations on MongoDB secondaries found in the opcountersRepl document that the serverStatus command collects.
 	// sfx: opcounter.repl.command
-	"OPCOUNTER_REPL_CMD": {"process.db.ops", map[string]pdata.AttributeValue{
+	"OPCOUNTER_REPL_CMD": {"process.db.operations.rate", map[string]pdata.AttributeValue{
 		"operation": pdata.NewAttributeValueString("cmd"),
 		"role":      pdata.NewAttributeValueString("replica"),
 	}},
 	// sfx: opcounter.repl.update
-	"OPCOUNTER_REPL_UPDATE": {"process.db.ops", map[string]pdata.AttributeValue{
+	"OPCOUNTER_REPL_UPDATE": {"process.db.operations.rate", map[string]pdata.AttributeValue{
 		"operation": pdata.NewAttributeValueString("update"),
 		"role":      pdata.NewAttributeValueString("replica"),
 	}},
 	// sfx: opcounter.repl.delete
-	"OPCOUNTER_REPL_DELETE": {"process.db.ops", map[string]pdata.AttributeValue{
+	"OPCOUNTER_REPL_DELETE": {"process.db.operations.rate", map[string]pdata.AttributeValue{
 		"operation": pdata.NewAttributeValueString("delete"),
 		"role":      pdata.NewAttributeValueString("replica"),
 	}},
 	// sfx: opcounter.repl.insert
-	"OPCOUNTER_REPL_INSERT": {"process.db.ops", map[string]pdata.AttributeValue{
+	"OPCOUNTER_REPL_INSERT": {"process.db.operations.rate", map[string]pdata.AttributeValue{
 		"operation": pdata.NewAttributeValueString("insert"),
 		"role":      pdata.NewAttributeValueString("replica"),
 	}},
@@ -401,15 +401,15 @@ var metricNameMapping = map[string]metricMappingData{
 
 	// Average execution time in milliseconds per read, write, or command operation during a selected time period.
 	// sfx: skipped
-	"OP_EXECUTION_TIME_READS": {"process.db.op_execution_time", map[string]pdata.AttributeValue{
+	"OP_EXECUTION_TIME_READS": {"process.db.operations.time", map[string]pdata.AttributeValue{
 		"status": pdata.NewAttributeValueString("reads"),
 	}},
 	// sfx: skipped
-	"OP_EXECUTION_TIME_WRITES": {"process.db.op_execution_time", map[string]pdata.AttributeValue{
+	"OP_EXECUTION_TIME_WRITES": {"process.db.operations.time", map[string]pdata.AttributeValue{
 		"status": pdata.NewAttributeValueString("writes"),
 	}},
 	// sfx: skipped
-	"OP_EXECUTION_TIME_COMMANDS": {"process.db.op_execution_time", map[string]pdata.AttributeValue{
+	"OP_EXECUTION_TIME_COMMANDS": {"process.db.operations.time", map[string]pdata.AttributeValue{
 		"status": pdata.NewAttributeValueString("commands"),
 	}},
 
@@ -522,139 +522,139 @@ var metricNameMapping = map[string]metricMappingData{
 
 	// CPU usage of processes on the host scaled to a range of 0 to 100% by dividing by the number of CPU cores.
 	// sfx: system.normalized.cpu.user
-	"SYSTEM_NORMALIZED_CPU_USER": {"system.cpu.normalized.utilization", map[string]pdata.AttributeValue{
+	"SYSTEM_NORMALIZED_CPU_USER": {"system.cpu.normalized.usage", map[string]pdata.AttributeValue{
 		"status":      pdata.NewAttributeValueString("user"),
 		"aggregation": pdata.NewAttributeValueString("avg"),
 	}},
 	// sfx: skipped
-	"MAX_SYSTEM_NORMALIZED_CPU_USER": {"system.cpu.normalized.utilization", map[string]pdata.AttributeValue{
+	"MAX_SYSTEM_NORMALIZED_CPU_USER": {"system.cpu.normalized.usage", map[string]pdata.AttributeValue{
 		"status":      pdata.NewAttributeValueString("user"),
 		"aggregation": pdata.NewAttributeValueString("max"),
 	}},
 	// sfx: system.normalized.cpu.kernel
-	"SYSTEM_NORMALIZED_CPU_KERNEL": {"system.cpu.normalized.utilization", map[string]pdata.AttributeValue{
+	"SYSTEM_NORMALIZED_CPU_KERNEL": {"system.cpu.normalized.usage", map[string]pdata.AttributeValue{
 		"status":      pdata.NewAttributeValueString("kernel"),
 		"aggregation": pdata.NewAttributeValueString("avg"),
 	}},
 	// sfx: skipped
-	"MAX_SYSTEM_NORMALIZED_CPU_KERNEL": {"system.cpu.normalized.utilization", map[string]pdata.AttributeValue{
+	"MAX_SYSTEM_NORMALIZED_CPU_KERNEL": {"system.cpu.normalized.usage", map[string]pdata.AttributeValue{
 		"status":      pdata.NewAttributeValueString("kernel"),
 		"aggregation": pdata.NewAttributeValueString("max"),
 	}},
 	// sfx: system.normalized.cpu.nice
-	"SYSTEM_NORMALIZED_CPU_NICE": {"system.cpu.normalized.utilization", map[string]pdata.AttributeValue{
+	"SYSTEM_NORMALIZED_CPU_NICE": {"system.cpu.normalized.usage", map[string]pdata.AttributeValue{
 		"status":      pdata.NewAttributeValueString("nice"),
 		"aggregation": pdata.NewAttributeValueString("avg"),
 	}},
 	// sfx: system.normalized.cpu.iowait
-	"SYSTEM_NORMALIZED_CPU_IOWAIT": {"system.cpu.normalized.utilization", map[string]pdata.AttributeValue{
+	"SYSTEM_NORMALIZED_CPU_IOWAIT": {"system.cpu.normalized.usage", map[string]pdata.AttributeValue{
 		"status":      pdata.NewAttributeValueString("iowait"),
 		"aggregation": pdata.NewAttributeValueString("avg"),
 	}},
 	// sfx: skipped
-	"MAX_SYSTEM_NORMALIZED_CPU_IOWAIT": {"system.cpu.normalized.utilization", map[string]pdata.AttributeValue{
+	"MAX_SYSTEM_NORMALIZED_CPU_IOWAIT": {"system.cpu.normalized.usage", map[string]pdata.AttributeValue{
 		"status":      pdata.NewAttributeValueString("iowait"),
 		"aggregation": pdata.NewAttributeValueString("max"),
 	}},
 	// sfx: system.normalized.cpu.irq
-	"SYSTEM_NORMALIZED_CPU_IRQ": {"system.cpu.normalized.utilization", map[string]pdata.AttributeValue{
+	"SYSTEM_NORMALIZED_CPU_IRQ": {"system.cpu.normalized.usage", map[string]pdata.AttributeValue{
 		"status":      pdata.NewAttributeValueString("irq"),
 		"aggregation": pdata.NewAttributeValueString("avg"),
 	}},
 	// sfx: skipped
-	"MAX_SYSTEM_NORMALIZED_CPU_IRQ": {"system.cpu.normalized.utilization", map[string]pdata.AttributeValue{
+	"MAX_SYSTEM_NORMALIZED_CPU_IRQ": {"system.cpu.normalized.usage", map[string]pdata.AttributeValue{
 		"status":      pdata.NewAttributeValueString("irq"),
 		"aggregation": pdata.NewAttributeValueString("max"),
 	}},
 	// sfx: system.normalized.cpu.softirq
-	"SYSTEM_NORMALIZED_CPU_SOFTIRQ": {"system.cpu.normalized.utilization", map[string]pdata.AttributeValue{
+	"SYSTEM_NORMALIZED_CPU_SOFTIRQ": {"system.cpu.normalized.usage", map[string]pdata.AttributeValue{
 		"status":      pdata.NewAttributeValueString("softirq"),
 		"aggregation": pdata.NewAttributeValueString("avg"),
 	}},
 	// sfx: skipped
-	"MAX_SYSTEM_NORMALIZED_CPU_SOFTIRQ": {"system.cpu.normalized.utilization", map[string]pdata.AttributeValue{
+	"MAX_SYSTEM_NORMALIZED_CPU_SOFTIRQ": {"system.cpu.normalized.usage", map[string]pdata.AttributeValue{
 		"status":      pdata.NewAttributeValueString("softirq"),
 		"aggregation": pdata.NewAttributeValueString("max"),
 	}},
 	// sfx: system.normalized.cpu.guest
-	"SYSTEM_NORMALIZED_CPU_GUEST": {"system.cpu.normalized.utilization", map[string]pdata.AttributeValue{
+	"SYSTEM_NORMALIZED_CPU_GUEST": {"system.cpu.normalized.usage", map[string]pdata.AttributeValue{
 		"status":      pdata.NewAttributeValueString("guest"),
 		"aggregation": pdata.NewAttributeValueString("avg"),
 	}},
 	// sfx: skipped
-	"MAX_SYSTEM_NORMALIZED_CPU_GUEST": {"system.cpu.normalized.utilization", map[string]pdata.AttributeValue{
+	"MAX_SYSTEM_NORMALIZED_CPU_GUEST": {"system.cpu.normalized.usage", map[string]pdata.AttributeValue{
 		"status":      pdata.NewAttributeValueString("guest"),
 		"aggregation": pdata.NewAttributeValueString("max"),
 	}},
 	// sfx: system.normalized.cpu.steal
-	"SYSTEM_NORMALIZED_CPU_STEAL": {"system.cpu.normalized.utilization", map[string]pdata.AttributeValue{
+	"SYSTEM_NORMALIZED_CPU_STEAL": {"system.cpu.normalized.usage", map[string]pdata.AttributeValue{
 		"status":      pdata.NewAttributeValueString("steal"),
 		"aggregation": pdata.NewAttributeValueString("avg"),
 	}},
 	// sfx: skipped
-	"MAX_SYSTEM_NORMALIZED_CPU_STEAL": {"system.cpu.normalized.utilization", map[string]pdata.AttributeValue{
+	"MAX_SYSTEM_NORMALIZED_CPU_STEAL": {"system.cpu.normalized.usage", map[string]pdata.AttributeValue{
 		"status":      pdata.NewAttributeValueString("steal"),
 		"aggregation": pdata.NewAttributeValueString("max"),
 	}},
 
 	// Physical memory usage, in bytes, that the host uses.
 	// sfx: skipped
-	"SYSTEM_MEMORY_AVAILABLE": {"system.memory", map[string]pdata.AttributeValue{
+	"SYSTEM_MEMORY_AVAILABLE": {"system.memory.usage", map[string]pdata.AttributeValue{
 		"status":      pdata.NewAttributeValueString("available"),
 		"aggregation": pdata.NewAttributeValueString("avg"),
 	}},
 	// sfx: skipped
-	"MAX_SYSTEM_MEMORY_AVAILABLE": {"system.memory", map[string]pdata.AttributeValue{
+	"MAX_SYSTEM_MEMORY_AVAILABLE": {"system.memory.usage", map[string]pdata.AttributeValue{
 		"status":      pdata.NewAttributeValueString("available"),
 		"aggregation": pdata.NewAttributeValueString("max"),
 	}},
 	// sfx: skipped
-	"SYSTEM_MEMORY_BUFFERS": {"system.memory", map[string]pdata.AttributeValue{
+	"SYSTEM_MEMORY_BUFFERS": {"system.memory.usage", map[string]pdata.AttributeValue{
 		"status":      pdata.NewAttributeValueString("buffers"),
 		"aggregation": pdata.NewAttributeValueString("avg"),
 	}},
 	// sfx: skipped
-	"MAX_SYSTEM_MEMORY_BUFFERS": {"system.memory", map[string]pdata.AttributeValue{
+	"MAX_SYSTEM_MEMORY_BUFFERS": {"system.memory.usage", map[string]pdata.AttributeValue{
 		"status":      pdata.NewAttributeValueString("buffers"),
 		"aggregation": pdata.NewAttributeValueString("max"),
 	}},
 	// sfx: skipped
-	"SYSTEM_MEMORY_CACHED": {"system.memory", map[string]pdata.AttributeValue{
+	"SYSTEM_MEMORY_CACHED": {"system.memory.usage", map[string]pdata.AttributeValue{
 		"status":      pdata.NewAttributeValueString("cached"),
 		"aggregation": pdata.NewAttributeValueString("avg"),
 	}},
 	// sfx: skipped
-	"MAX_SYSTEM_MEMORY_CACHED": {"system.memory", map[string]pdata.AttributeValue{
+	"MAX_SYSTEM_MEMORY_CACHED": {"system.memory.usage", map[string]pdata.AttributeValue{
 		"status":      pdata.NewAttributeValueString("cached"),
 		"aggregation": pdata.NewAttributeValueString("max"),
 	}},
 	// sfx: skipped
-	"SYSTEM_MEMORY_FREE": {"system.memory", map[string]pdata.AttributeValue{
+	"SYSTEM_MEMORY_FREE": {"system.memory.usage", map[string]pdata.AttributeValue{
 		"status":      pdata.NewAttributeValueString("free"),
 		"aggregation": pdata.NewAttributeValueString("avg"),
 	}},
 	// sfx: skipped
-	"MAX_SYSTEM_MEMORY_FREE": {"system.memory", map[string]pdata.AttributeValue{
+	"MAX_SYSTEM_MEMORY_FREE": {"system.memory.usage", map[string]pdata.AttributeValue{
 		"status":      pdata.NewAttributeValueString("free"),
 		"aggregation": pdata.NewAttributeValueString("max"),
 	}},
 	// sfx: skipped
-	"SYSTEM_MEMORY_SHARED": {"system.memory", map[string]pdata.AttributeValue{
+	"SYSTEM_MEMORY_SHARED": {"system.memory.usage", map[string]pdata.AttributeValue{
 		"status":      pdata.NewAttributeValueString("shared"),
 		"aggregation": pdata.NewAttributeValueString("avg"),
 	}},
 	// sfx: skipped
-	"MAX_SYSTEM_MEMORY_SHARED": {"system.memory", map[string]pdata.AttributeValue{
+	"MAX_SYSTEM_MEMORY_SHARED": {"system.memory.usage", map[string]pdata.AttributeValue{
 		"status":      pdata.NewAttributeValueString("shared"),
 		"aggregation": pdata.NewAttributeValueString("max"),
 	}},
 	// sfx: skipped
-	"SYSTEM_MEMORY_USED": {"system.memory", map[string]pdata.AttributeValue{
+	"SYSTEM_MEMORY_USED": {"system.memory.usage", map[string]pdata.AttributeValue{
 		"status":      pdata.NewAttributeValueString("used"),
 		"aggregation": pdata.NewAttributeValueString("avg"),
 	}},
 	// sfx: skipped
-	"MAX_SYSTEM_MEMORY_USED": {"system.memory", map[string]pdata.AttributeValue{
+	"MAX_SYSTEM_MEMORY_USED": {"system.memory.usage", map[string]pdata.AttributeValue{
 		"status":      pdata.NewAttributeValueString("used"),
 		"aggregation": pdata.NewAttributeValueString("max"),
 	}},
@@ -741,7 +741,7 @@ var metricNameMapping = map[string]metricMappingData{
 
 	// Disk space, in bytes, that Atlas Search indexes use.
 	// sfx: skipped
-	"FTS_DISK_UTILIZATION": {"system.fts.disk.usage", map[string]pdata.AttributeValue{
+	"FTS_DISK_UTILIZATION": {"system.fts.disk.utilization", map[string]pdata.AttributeValue{
 		"status": pdata.NewAttributeValueString("used"),
 	}},
 
@@ -768,37 +768,37 @@ var metricNameMapping = map[string]metricMappingData{
 	// Measures throughput of I/O operations for the disk partition used for MongoDB.
 	// sfx: skipped
 	"DISK_PARTITION_IOPS_READ": {"disk.partition.iops", map[string]pdata.AttributeValue{
-		"direction": pdata.NewAttributeValueString("read"),
+		"direction":   pdata.NewAttributeValueString("read"),
 		"aggregation": pdata.NewAttributeValueString("avg"),
 	}},
 
 	// sfx: skipped
 	"MAX_DISK_PARTITION_IOPS_READ": {"disk.partition.iops", map[string]pdata.AttributeValue{
-		"direction": pdata.NewAttributeValueString("read"),
+		"direction":   pdata.NewAttributeValueString("read"),
 		"aggregation": pdata.NewAttributeValueString("max"),
 	}},
 
 	// sfx: skipped
 	"DISK_PARTITION_IOPS_WRITE": {"disk.partition.iops", map[string]pdata.AttributeValue{
-		"direction": pdata.NewAttributeValueString("write"),
+		"direction":   pdata.NewAttributeValueString("write"),
 		"aggregation": pdata.NewAttributeValueString("avg"),
 	}},
 
 	// sfx: skipped
 	"MAX_DISK_PARTITION_IOPS_WRITE": {"disk.partition.iops", map[string]pdata.AttributeValue{
-		"direction": pdata.NewAttributeValueString("write"),
+		"direction":   pdata.NewAttributeValueString("write"),
 		"aggregation": pdata.NewAttributeValueString("max"),
 	}},
 
 	// sfx: skipped
 	"DISK_PARTITION_IOPS_TOTAL": {"disk.partition.iops", map[string]pdata.AttributeValue{
-		"direction": pdata.NewAttributeValueString("total"),
+		"direction":   pdata.NewAttributeValueString("total"),
 		"aggregation": pdata.NewAttributeValueString("avg"),
 	}},
 
 	// sfx: skipped
 	"MAX_DISK_PARTITION_IOPS_TOTAL": {"disk.partition.iops", map[string]pdata.AttributeValue{
-		"direction": pdata.NewAttributeValueString("total"),
+		"direction":   pdata.NewAttributeValueString("total"),
 		"aggregation": pdata.NewAttributeValueString("max"),
 	}},
 
@@ -816,71 +816,71 @@ var metricNameMapping = map[string]metricMappingData{
 	// This includes requests from any process, not just MongoDB processes.
 	// sfx: skipped
 	"DISK_PARTITION_LATENCY_READ": {"disk.partition.latency", map[string]pdata.AttributeValue{
-		"direction": pdata.NewAttributeValueString("read"),
+		"direction":   pdata.NewAttributeValueString("read"),
 		"aggregation": pdata.NewAttributeValueString("avg"),
 	}},
 
 	// sfx: skipped
 	"MAX_DISK_PARTITION_LATENCY_READ": {"disk.partition.latency", map[string]pdata.AttributeValue{
-		"direction": pdata.NewAttributeValueString("read"),
+		"direction":   pdata.NewAttributeValueString("read"),
 		"aggregation": pdata.NewAttributeValueString("max"),
 	}},
 
 	// sfx: skipped
 	"DISK_PARTITION_LATENCY_WRITE": {"disk.partition.latency", map[string]pdata.AttributeValue{
-		"direction": pdata.NewAttributeValueString("write"),
+		"direction":   pdata.NewAttributeValueString("write"),
 		"aggregation": pdata.NewAttributeValueString("avg"),
 	}},
 
 	// sfx: skipped
 	"MAX_DISK_PARTITION_LATENCY_WRITE": {"disk.partition.latency", map[string]pdata.AttributeValue{
-		"direction": pdata.NewAttributeValueString("write"),
+		"direction":   pdata.NewAttributeValueString("write"),
 		"aggregation": pdata.NewAttributeValueString("max"),
 	}},
 
 	// Measures latency per operation type of the disk partition used by MongoDB.
 	// sfx: skipped
 	"DISK_PARTITION_SPACE_FREE": {"disk.partition.space", map[string]pdata.AttributeValue{
-		"status": pdata.NewAttributeValueString("free"),
+		"status":      pdata.NewAttributeValueString("free"),
 		"aggregation": pdata.NewAttributeValueString("avg"),
 	}},
 
 	// sfx: skipped
 	"MAX_DISK_PARTITION_SPACE_FREE": {"disk.partition.space", map[string]pdata.AttributeValue{
-		"status": pdata.NewAttributeValueString("free"),
+		"status":      pdata.NewAttributeValueString("free"),
 		"aggregation": pdata.NewAttributeValueString("max"),
 	}},
 
 	// sfx: skipped
 	"DISK_PARTITION_SPACE_USED": {"disk.partition.space", map[string]pdata.AttributeValue{
-		"status": pdata.NewAttributeValueString("used"),
+		"status":      pdata.NewAttributeValueString("used"),
 		"aggregation": pdata.NewAttributeValueString("avg"),
 	}},
 
 	// sfx: skipped
 	"MAX_DISK_PARTITION_SPACE_USED": {"disk.partition.space", map[string]pdata.AttributeValue{
-		"status": pdata.NewAttributeValueString("used"),
+		"status":      pdata.NewAttributeValueString("used"),
 		"aggregation": pdata.NewAttributeValueString("max"),
 	}},
 
 	// sfx: skipped
 	"DISK_PARTITION_SPACE_PERCENT_FREE": {"disk.partition.utilization", map[string]pdata.AttributeValue{
-		"status": pdata.NewAttributeValueString("free"),
+		"status":      pdata.NewAttributeValueString("free"),
 		"aggregation": pdata.NewAttributeValueString("avg"),
 	}},
 	// sfx: skipped
 	"MAX_DISK_PARTITION_SPACE_PERCENT_FREE": {"disk.partition.utilization", map[string]pdata.AttributeValue{
-		"status": pdata.NewAttributeValueString("free"),
+		"status":      pdata.NewAttributeValueString("free"),
 		"aggregation": pdata.NewAttributeValueString("max"),
 	}},
 	// sfx: skipped
 	"DISK_PARTITION_SPACE_PERCENT_USED": {"disk.partition.utilization", map[string]pdata.AttributeValue{
-		"status": pdata.NewAttributeValueString("used"),
+		"status":      pdata.NewAttributeValueString("used"),
 		"aggregation": pdata.NewAttributeValueString("avg"),
 	}},
 	// sfx: skipped
 	"MAX_DISK_PARTITION_SPACE_PERCENT_USED": {"disk.partition.utilization", map[string]pdata.AttributeValue{
-		"status": pdata.NewAttributeValueString("used"),
+		"status":      pdata.NewAttributeValueString("used"),
 		"aggregation": pdata.NewAttributeValueString("max"),
 	}},
 

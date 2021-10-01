@@ -55,138 +55,165 @@ func (m *metricImpl) Init(metric pdata.Metric) {
 }
 
 type metricStruct struct {
-	MongodbAtlasAsserts                          MetricIntf
-	MongodbAtlasBackgroundFlush                  MetricIntf
-	MongodbAtlasCacheIo                          MetricIntf
-	MongodbAtlasCacheSize                        MetricIntf
-	MongodbAtlasConnections                      MetricIntf
-	MongodbAtlasCPU                              MetricIntf
-	MongodbAtlasCPUChildren                      MetricIntf
-	MongodbAtlasCPUChildrenNormalized            MetricIntf
-	MongodbAtlasCPUNormalized                    MetricIntf
-	MongodbAtlasCursors                          MetricIntf
-	MongodbAtlasDbStorage                        MetricIntf
-	MongodbAtlasDocumentRate                     MetricIntf
-	MongodbAtlasFtsCPU                           MetricIntf
-	MongodbAtlasFtsCPUNormalized                 MetricIntf
-	MongodbAtlasFtsDisk                          MetricIntf
-	MongodbAtlasFtsMemory                        MetricIntf
-	MongodbAtlasGlobalLock                       MetricIntf
-	MongodbAtlasIndexBtreeMissRatio              MetricIntf
-	MongodbAtlasIndexCounters                    MetricIntf
-	MongodbAtlasJournalingCommits                MetricIntf
-	MongodbAtlasJournalingDataFiles              MetricIntf
-	MongodbAtlasJournalingWritten                MetricIntf
-	MongodbAtlasMemory                           MetricIntf
-	MongodbAtlasNetworkIo                        MetricIntf
-	MongodbAtlasNetworkRequests                  MetricIntf
-	MongodbAtlasOpExecutionTime                  MetricIntf
-	MongodbAtlasOperationsRate                   MetricIntf
-	MongodbAtlasOplogRate                        MetricIntf
-	MongodbAtlasOplogTime                        MetricIntf
-	MongodbAtlasOps                              MetricIntf
-	MongodbAtlasPageFaults                       MetricIntf
-	MongodbAtlasQueryExecutorScanned             MetricIntf
-	MongodbAtlasQueryTargetingScannedPerReturned MetricIntf
-	MongodbAtlasRestarts                         MetricIntf
-	MongodbAtlasSwap                             MetricIntf
-	MongodbAtlasSwapIo                           MetricIntf
-	MongodbAtlasSystemCPU                        MetricIntf
-	MongodbAtlasSystemMemory                     MetricIntf
-	MongodbAtlasSystemNetworkIo                  MetricIntf
-	MongodbAtlasSystemNormalizedCPU              MetricIntf
-	MongodbAtlasTickets                          MetricIntf
+	DbCounts                                  MetricIntf
+	DbSize                                    MetricIntf
+	DiskPartitionIops                         MetricIntf
+	DiskPartitionLatency                      MetricIntf
+	DiskPartitionSpace                        MetricIntf
+	DiskPartitionUtilization                  MetricIntf
+	ProcessAsserts                            MetricIntf
+	ProcessBackgroundFlush                    MetricIntf
+	ProcessCacheIo                            MetricIntf
+	ProcessCacheSize                          MetricIntf
+	ProcessConnections                        MetricIntf
+	ProcessCPUChildrenNormalizedUsage         MetricIntf
+	ProcessCPUChildrenUsage                   MetricIntf
+	ProcessCPUNormalizedUsage                 MetricIntf
+	ProcessCPUUsage                           MetricIntf
+	ProcessCursors                            MetricIntf
+	ProcessDbDocumentRate                     MetricIntf
+	ProcessDbOperationsRate                   MetricIntf
+	ProcessDbOperationsTime                   MetricIntf
+	ProcessDbQueryExecutorScanned             MetricIntf
+	ProcessDbQueryTargetingScannedPerReturned MetricIntf
+	ProcessDbStorage                          MetricIntf
+	ProcessFtsCPUNormalizedUsage              MetricIntf
+	ProcessFtsCPUUsage                        MetricIntf
+	ProcessFtsDiskUsage                       MetricIntf
+	ProcessFtsMemoryUsage                     MetricIntf
+	ProcessGlobalLock                         MetricIntf
+	ProcessIndexBtreeMissRatio                MetricIntf
+	ProcessIndexCounters                      MetricIntf
+	ProcessJournalingCommits                  MetricIntf
+	ProcessJournalingDataFiles                MetricIntf
+	ProcessJournalingWritten                  MetricIntf
+	ProcessMemoryUsage                        MetricIntf
+	ProcessNetworkIo                          MetricIntf
+	ProcessNetworkRequests                    MetricIntf
+	ProcessOplogRate                          MetricIntf
+	ProcessOplogTime                          MetricIntf
+	ProcessPageFaults                         MetricIntf
+	ProcessRestarts                           MetricIntf
+	ProcessTickets                            MetricIntf
+	SystemCPUNormalizedUsage                  MetricIntf
+	SystemCPUUsage                            MetricIntf
+	SystemFtsCPUNormalizedUsage               MetricIntf
+	SystemFtsCPUUsage                         MetricIntf
+	SystemFtsDiskUtilization                  MetricIntf
+	SystemFtsMemoryUsage                      MetricIntf
+	SystemMemoryUsage                         MetricIntf
+	SystemNetworkIo                           MetricIntf
+	SystemPagingIo                            MetricIntf
+	SystemPagingUsage                         MetricIntf
 }
 
 // Names returns a list of all the metric name strings.
 func (m *metricStruct) Names() []string {
 	return []string{
-		"mongodb.atlas.asserts",
-		"mongodb.atlas.background_flush",
-		"mongodb.atlas.cache.io",
-		"mongodb.atlas.cache.size",
-		"mongodb.atlas.connections",
-		"mongodb.atlas.cpu",
-		"mongodb.atlas.cpu.children",
-		"mongodb.atlas.cpu.children.normalized",
-		"mongodb.atlas.cpu.normalized",
-		"mongodb.atlas.cursors",
-		"mongodb.atlas.db.storage",
-		"mongodb.atlas.document.rate",
-		"mongodb.atlas.fts.cpu",
-		"mongodb.atlas.fts.cpu.normalized",
-		"mongodb.atlas.fts.disk",
-		"mongodb.atlas.fts.memory",
-		"mongodb.atlas.global_lock",
-		"mongodb.atlas.index.btree_miss_ratio",
-		"mongodb.atlas.index.counters",
-		"mongodb.atlas.journaling.commits",
-		"mongodb.atlas.journaling.data_files",
-		"mongodb.atlas.journaling.written",
-		"mongodb.atlas.memory",
-		"mongodb.atlas.network.io",
-		"mongodb.atlas.network.requests",
-		"mongodb.atlas.op_execution_time",
-		"mongodb.atlas.operations.rate",
-		"mongodb.atlas.oplog.rate",
-		"mongodb.atlas.oplog.time",
-		"mongodb.atlas.ops",
-		"mongodb.atlas.page_faults",
-		"mongodb.atlas.query_executor.scanned",
-		"mongodb.atlas.query_targeting.scanned_per_returned",
-		"mongodb.atlas.restarts",
-		"mongodb.atlas.swap",
-		"mongodb.atlas.swap.io",
-		"mongodb.atlas.system.cpu",
-		"mongodb.atlas.system.memory",
-		"mongodb.atlas.system.network.io",
-		"mongodb.atlas.system.normalized.cpu",
-		"mongodb.atlas.tickets",
+		"db.counts",
+		"db.size",
+		"disk.partition.iops",
+		"disk.partition.latency",
+		"disk.partition.space",
+		"disk.partition.utilization",
+		"process.asserts",
+		"process.background_flush",
+		"process.cache.io",
+		"process.cache.size",
+		"process.connections",
+		"process.cpu.children.normalized.usage",
+		"process.cpu.children.usage",
+		"process.cpu.normalized.usage",
+		"process.cpu.usage",
+		"process.cursors",
+		"process.db.document.rate",
+		"process.db.operations.rate",
+		"process.db.operations.time",
+		"process.db.query_executor.scanned",
+		"process.db.query_targeting.scanned_per_returned",
+		"process.db.storage",
+		"process.fts.cpu.normalized.usage",
+		"process.fts.cpu.usage",
+		"process.fts.disk.usage",
+		"process.fts.memory.usage",
+		"process.global_lock",
+		"process.index.btree_miss_ratio",
+		"process.index.counters",
+		"process.journaling.commits",
+		"process.journaling.data_files",
+		"process.journaling.written",
+		"process.memory.usage",
+		"process.network.io",
+		"process.network.requests",
+		"process.oplog.rate",
+		"process.oplog.time",
+		"process.page_faults",
+		"process.restarts",
+		"process.tickets",
+		"system.cpu.normalized.usage",
+		"system.cpu.usage",
+		"system.fts.cpu.normalized.usage",
+		"system.fts.cpu.usage",
+		"system.fts.disk.utilization",
+		"system.fts.memory.usage",
+		"system.memory.usage",
+		"system.network.io",
+		"system.paging.io",
+		"system.paging.usage",
 	}
 }
 
 var metricsByName = map[string]MetricIntf{
-	"mongodb.atlas.asserts":                              Metrics.MongodbAtlasAsserts,
-	"mongodb.atlas.background_flush":                     Metrics.MongodbAtlasBackgroundFlush,
-	"mongodb.atlas.cache.io":                             Metrics.MongodbAtlasCacheIo,
-	"mongodb.atlas.cache.size":                           Metrics.MongodbAtlasCacheSize,
-	"mongodb.atlas.connections":                          Metrics.MongodbAtlasConnections,
-	"mongodb.atlas.cpu":                                  Metrics.MongodbAtlasCPU,
-	"mongodb.atlas.cpu.children":                         Metrics.MongodbAtlasCPUChildren,
-	"mongodb.atlas.cpu.children.normalized":              Metrics.MongodbAtlasCPUChildrenNormalized,
-	"mongodb.atlas.cpu.normalized":                       Metrics.MongodbAtlasCPUNormalized,
-	"mongodb.atlas.cursors":                              Metrics.MongodbAtlasCursors,
-	"mongodb.atlas.db.storage":                           Metrics.MongodbAtlasDbStorage,
-	"mongodb.atlas.document.rate":                        Metrics.MongodbAtlasDocumentRate,
-	"mongodb.atlas.fts.cpu":                              Metrics.MongodbAtlasFtsCPU,
-	"mongodb.atlas.fts.cpu.normalized":                   Metrics.MongodbAtlasFtsCPUNormalized,
-	"mongodb.atlas.fts.disk":                             Metrics.MongodbAtlasFtsDisk,
-	"mongodb.atlas.fts.memory":                           Metrics.MongodbAtlasFtsMemory,
-	"mongodb.atlas.global_lock":                          Metrics.MongodbAtlasGlobalLock,
-	"mongodb.atlas.index.btree_miss_ratio":               Metrics.MongodbAtlasIndexBtreeMissRatio,
-	"mongodb.atlas.index.counters":                       Metrics.MongodbAtlasIndexCounters,
-	"mongodb.atlas.journaling.commits":                   Metrics.MongodbAtlasJournalingCommits,
-	"mongodb.atlas.journaling.data_files":                Metrics.MongodbAtlasJournalingDataFiles,
-	"mongodb.atlas.journaling.written":                   Metrics.MongodbAtlasJournalingWritten,
-	"mongodb.atlas.memory":                               Metrics.MongodbAtlasMemory,
-	"mongodb.atlas.network.io":                           Metrics.MongodbAtlasNetworkIo,
-	"mongodb.atlas.network.requests":                     Metrics.MongodbAtlasNetworkRequests,
-	"mongodb.atlas.op_execution_time":                    Metrics.MongodbAtlasOpExecutionTime,
-	"mongodb.atlas.operations.rate":                      Metrics.MongodbAtlasOperationsRate,
-	"mongodb.atlas.oplog.rate":                           Metrics.MongodbAtlasOplogRate,
-	"mongodb.atlas.oplog.time":                           Metrics.MongodbAtlasOplogTime,
-	"mongodb.atlas.ops":                                  Metrics.MongodbAtlasOps,
-	"mongodb.atlas.page_faults":                          Metrics.MongodbAtlasPageFaults,
-	"mongodb.atlas.query_executor.scanned":               Metrics.MongodbAtlasQueryExecutorScanned,
-	"mongodb.atlas.query_targeting.scanned_per_returned": Metrics.MongodbAtlasQueryTargetingScannedPerReturned,
-	"mongodb.atlas.restarts":                             Metrics.MongodbAtlasRestarts,
-	"mongodb.atlas.swap":                                 Metrics.MongodbAtlasSwap,
-	"mongodb.atlas.swap.io":                              Metrics.MongodbAtlasSwapIo,
-	"mongodb.atlas.system.cpu":                           Metrics.MongodbAtlasSystemCPU,
-	"mongodb.atlas.system.memory":                        Metrics.MongodbAtlasSystemMemory,
-	"mongodb.atlas.system.network.io":                    Metrics.MongodbAtlasSystemNetworkIo,
-	"mongodb.atlas.system.normalized.cpu":                Metrics.MongodbAtlasSystemNormalizedCPU,
-	"mongodb.atlas.tickets":                              Metrics.MongodbAtlasTickets,
+	"db.counts":                                       Metrics.DbCounts,
+	"db.size":                                         Metrics.DbSize,
+	"disk.partition.iops":                             Metrics.DiskPartitionIops,
+	"disk.partition.latency":                          Metrics.DiskPartitionLatency,
+	"disk.partition.space":                            Metrics.DiskPartitionSpace,
+	"disk.partition.utilization":                      Metrics.DiskPartitionUtilization,
+	"process.asserts":                                 Metrics.ProcessAsserts,
+	"process.background_flush":                        Metrics.ProcessBackgroundFlush,
+	"process.cache.io":                                Metrics.ProcessCacheIo,
+	"process.cache.size":                              Metrics.ProcessCacheSize,
+	"process.connections":                             Metrics.ProcessConnections,
+	"process.cpu.children.normalized.usage":           Metrics.ProcessCPUChildrenNormalizedUsage,
+	"process.cpu.children.usage":                      Metrics.ProcessCPUChildrenUsage,
+	"process.cpu.normalized.usage":                    Metrics.ProcessCPUNormalizedUsage,
+	"process.cpu.usage":                               Metrics.ProcessCPUUsage,
+	"process.cursors":                                 Metrics.ProcessCursors,
+	"process.db.document.rate":                        Metrics.ProcessDbDocumentRate,
+	"process.db.operations.rate":                      Metrics.ProcessDbOperationsRate,
+	"process.db.operations.time":                      Metrics.ProcessDbOperationsTime,
+	"process.db.query_executor.scanned":               Metrics.ProcessDbQueryExecutorScanned,
+	"process.db.query_targeting.scanned_per_returned": Metrics.ProcessDbQueryTargetingScannedPerReturned,
+	"process.db.storage":                              Metrics.ProcessDbStorage,
+	"process.fts.cpu.normalized.usage":                Metrics.ProcessFtsCPUNormalizedUsage,
+	"process.fts.cpu.usage":                           Metrics.ProcessFtsCPUUsage,
+	"process.fts.disk.usage":                          Metrics.ProcessFtsDiskUsage,
+	"process.fts.memory.usage":                        Metrics.ProcessFtsMemoryUsage,
+	"process.global_lock":                             Metrics.ProcessGlobalLock,
+	"process.index.btree_miss_ratio":                  Metrics.ProcessIndexBtreeMissRatio,
+	"process.index.counters":                          Metrics.ProcessIndexCounters,
+	"process.journaling.commits":                      Metrics.ProcessJournalingCommits,
+	"process.journaling.data_files":                   Metrics.ProcessJournalingDataFiles,
+	"process.journaling.written":                      Metrics.ProcessJournalingWritten,
+	"process.memory.usage":                            Metrics.ProcessMemoryUsage,
+	"process.network.io":                              Metrics.ProcessNetworkIo,
+	"process.network.requests":                        Metrics.ProcessNetworkRequests,
+	"process.oplog.rate":                              Metrics.ProcessOplogRate,
+	"process.oplog.time":                              Metrics.ProcessOplogTime,
+	"process.page_faults":                             Metrics.ProcessPageFaults,
+	"process.restarts":                                Metrics.ProcessRestarts,
+	"process.tickets":                                 Metrics.ProcessTickets,
+	"system.cpu.normalized.usage":                     Metrics.SystemCPUNormalizedUsage,
+	"system.cpu.usage":                                Metrics.SystemCPUUsage,
+	"system.fts.cpu.normalized.usage":                 Metrics.SystemFtsCPUNormalizedUsage,
+	"system.fts.cpu.usage":                            Metrics.SystemFtsCPUUsage,
+	"system.fts.disk.utilization":                     Metrics.SystemFtsDiskUtilization,
+	"system.fts.memory.usage":                         Metrics.SystemFtsMemoryUsage,
+	"system.memory.usage":                             Metrics.SystemMemoryUsage,
+	"system.network.io":                               Metrics.SystemNetworkIo,
+	"system.paging.io":                                Metrics.SystemPagingIo,
+	"system.paging.usage":                             Metrics.SystemPagingUsage,
 }
 
 func (m *metricStruct) ByName(n string) MetricIntf {
@@ -197,370 +224,451 @@ func (m *metricStruct) ByName(n string) MetricIntf {
 // manipulating those metrics.
 var Metrics = &metricStruct{
 	&metricImpl{
-		"mongodb.atlas.asserts",
+		"db.counts",
 		func(metric pdata.Metric) {
-			metric.SetName("mongodb.atlas.asserts")
+			metric.SetName("db.counts")
+			metric.SetDescription("Database feature size")
+			metric.SetUnit("1")
+			metric.SetDataType(pdata.MetricDataTypeGauge)
+		},
+	},
+	&metricImpl{
+		"db.size",
+		func(metric pdata.Metric) {
+			metric.SetName("db.size")
+			metric.SetDescription("Database feature size")
+			metric.SetUnit("1")
+			metric.SetDataType(pdata.MetricDataTypeGauge)
+		},
+	},
+	&metricImpl{
+		"disk.partition.iops",
+		func(metric pdata.Metric) {
+			metric.SetName("disk.partition.iops")
+			metric.SetDescription("Disk partition iops")
+			metric.SetUnit("1")
+			metric.SetDataType(pdata.MetricDataTypeGauge)
+		},
+	},
+	&metricImpl{
+		"disk.partition.latency",
+		func(metric pdata.Metric) {
+			metric.SetName("disk.partition.latency")
+			metric.SetDescription("Disk partition latency")
+			metric.SetUnit("1")
+			metric.SetDataType(pdata.MetricDataTypeGauge)
+		},
+	},
+	&metricImpl{
+		"disk.partition.space",
+		func(metric pdata.Metric) {
+			metric.SetName("disk.partition.space")
+			metric.SetDescription("Disk partition space")
+			metric.SetUnit("1")
+			metric.SetDataType(pdata.MetricDataTypeGauge)
+		},
+	},
+	&metricImpl{
+		"disk.partition.utilization",
+		func(metric pdata.Metric) {
+			metric.SetName("disk.partition.utilization")
+			metric.SetDescription("Disk partition utilization")
+			metric.SetUnit("1")
+			metric.SetDataType(pdata.MetricDataTypeGauge)
+		},
+	},
+	&metricImpl{
+		"process.asserts",
+		func(metric pdata.Metric) {
+			metric.SetName("process.asserts")
 			metric.SetDescription("Number of assertions")
 			metric.SetUnit("1")
 			metric.SetDataType(pdata.MetricDataTypeGauge)
 		},
 	},
 	&metricImpl{
-		"mongodb.atlas.background_flush",
+		"process.background_flush",
 		func(metric pdata.Metric) {
-			metric.SetName("mongodb.atlas.background_flush")
+			metric.SetName("process.background_flush")
 			metric.SetDescription("Amount of data flushed in the background")
 			metric.SetUnit("1")
 			metric.SetDataType(pdata.MetricDataTypeGauge)
 		},
 	},
 	&metricImpl{
-		"mongodb.atlas.cache.io",
+		"process.cache.io",
 		func(metric pdata.Metric) {
-			metric.SetName("mongodb.atlas.cache.io")
+			metric.SetName("process.cache.io")
 			metric.SetDescription("Cache throughput")
 			metric.SetUnit("1")
 			metric.SetDataType(pdata.MetricDataTypeGauge)
 		},
 	},
 	&metricImpl{
-		"mongodb.atlas.cache.size",
+		"process.cache.size",
 		func(metric pdata.Metric) {
-			metric.SetName("mongodb.atlas.cache.size")
+			metric.SetName("process.cache.size")
 			metric.SetDescription("Cache sizes")
 			metric.SetUnit("1")
 			metric.SetDataType(pdata.MetricDataTypeGauge)
 		},
 	},
 	&metricImpl{
-		"mongodb.atlas.connections",
+		"process.connections",
 		func(metric pdata.Metric) {
-			metric.SetName("mongodb.atlas.connections")
+			metric.SetName("process.connections")
 			metric.SetDescription("Number of current connections")
 			metric.SetUnit("1")
 			metric.SetDataType(pdata.MetricDataTypeGauge)
 		},
 	},
 	&metricImpl{
-		"mongodb.atlas.cpu",
+		"process.cpu.children.normalized.usage",
 		func(metric pdata.Metric) {
-			metric.SetName("mongodb.atlas.cpu")
-			metric.SetDescription("CPU Usage")
-			metric.SetUnit("1")
-			metric.SetDataType(pdata.MetricDataTypeGauge)
-		},
-	},
-	&metricImpl{
-		"mongodb.atlas.cpu.children",
-		func(metric pdata.Metric) {
-			metric.SetName("mongodb.atlas.cpu.children")
-			metric.SetDescription("CPU Usage for child processes")
-			metric.SetUnit("1")
-			metric.SetDataType(pdata.MetricDataTypeGauge)
-		},
-	},
-	&metricImpl{
-		"mongodb.atlas.cpu.children.normalized",
-		func(metric pdata.Metric) {
-			metric.SetName("mongodb.atlas.cpu.children.normalized")
+			metric.SetName("process.cpu.children.normalized.usage")
 			metric.SetDescription("CPU Usage for child processes, normalized to pct")
 			metric.SetUnit("1")
 			metric.SetDataType(pdata.MetricDataTypeGauge)
 		},
 	},
 	&metricImpl{
-		"mongodb.atlas.cpu.normalized",
+		"process.cpu.children.usage",
 		func(metric pdata.Metric) {
-			metric.SetName("mongodb.atlas.cpu.normalized")
+			metric.SetName("process.cpu.children.usage")
+			metric.SetDescription("CPU Usage for child processes")
+			metric.SetUnit("1")
+			metric.SetDataType(pdata.MetricDataTypeGauge)
+		},
+	},
+	&metricImpl{
+		"process.cpu.normalized.usage",
+		func(metric pdata.Metric) {
+			metric.SetName("process.cpu.normalized.usage")
 			metric.SetDescription("CPU Usage, normalized to pct")
 			metric.SetUnit("1")
 			metric.SetDataType(pdata.MetricDataTypeGauge)
 		},
 	},
 	&metricImpl{
-		"mongodb.atlas.cursors",
+		"process.cpu.usage",
 		func(metric pdata.Metric) {
-			metric.SetName("mongodb.atlas.cursors")
+			metric.SetName("process.cpu.usage")
+			metric.SetDescription("CPU Usage")
+			metric.SetUnit("1")
+			metric.SetDataType(pdata.MetricDataTypeGauge)
+		},
+	},
+	&metricImpl{
+		"process.cursors",
+		func(metric pdata.Metric) {
+			metric.SetName("process.cursors")
 			metric.SetDescription("Number of cursors")
 			metric.SetUnit("1")
 			metric.SetDataType(pdata.MetricDataTypeGauge)
 		},
 	},
 	&metricImpl{
-		"mongodb.atlas.db.storage",
+		"process.db.document.rate",
 		func(metric pdata.Metric) {
-			metric.SetName("mongodb.atlas.db.storage")
-			metric.SetDescription("FIXME")
-			metric.SetUnit("1")
-			metric.SetDataType(pdata.MetricDataTypeGauge)
-		},
-	},
-	&metricImpl{
-		"mongodb.atlas.document.rate",
-		func(metric pdata.Metric) {
-			metric.SetName("mongodb.atlas.document.rate")
+			metric.SetName("process.db.document.rate")
 			metric.SetDescription("Document access rates")
 			metric.SetUnit("1")
 			metric.SetDataType(pdata.MetricDataTypeGauge)
 		},
 	},
 	&metricImpl{
-		"mongodb.atlas.fts.cpu",
+		"process.db.operations.rate",
 		func(metric pdata.Metric) {
-			metric.SetName("mongodb.atlas.fts.cpu")
-			metric.SetDescription("Full text search CPU")
-			metric.SetUnit("1")
-			metric.SetDataType(pdata.MetricDataTypeGauge)
-		},
-	},
-	&metricImpl{
-		"mongodb.atlas.fts.cpu.normalized",
-		func(metric pdata.Metric) {
-			metric.SetName("mongodb.atlas.fts.cpu.normalized")
-			metric.SetDescription("Full text search CPU, normalized to pct")
-			metric.SetUnit("1")
-			metric.SetDataType(pdata.MetricDataTypeGauge)
-		},
-	},
-	&metricImpl{
-		"mongodb.atlas.fts.disk",
-		func(metric pdata.Metric) {
-			metric.SetName("mongodb.atlas.fts.disk")
-			metric.SetDescription("Full text search disk usage")
-			metric.SetUnit("1")
-			metric.SetDataType(pdata.MetricDataTypeGauge)
-		},
-	},
-	&metricImpl{
-		"mongodb.atlas.fts.memory",
-		func(metric pdata.Metric) {
-			metric.SetName("mongodb.atlas.fts.memory")
-			metric.SetDescription("Full text search memory usage")
-			metric.SetUnit("1")
-			metric.SetDataType(pdata.MetricDataTypeGauge)
-		},
-	},
-	&metricImpl{
-		"mongodb.atlas.global_lock",
-		func(metric pdata.Metric) {
-			metric.SetName("mongodb.atlas.global_lock")
-			metric.SetDescription("Number and status of locks")
-			metric.SetUnit("1")
-			metric.SetDataType(pdata.MetricDataTypeGauge)
-		},
-	},
-	&metricImpl{
-		"mongodb.atlas.index.btree_miss_ratio",
-		func(metric pdata.Metric) {
-			metric.SetName("mongodb.atlas.index.btree_miss_ratio")
-			metric.SetDescription("Index miss ratio")
-			metric.SetUnit("1")
-			metric.SetDataType(pdata.MetricDataTypeGauge)
-		},
-	},
-	&metricImpl{
-		"mongodb.atlas.index.counters",
-		func(metric pdata.Metric) {
-			metric.SetName("mongodb.atlas.index.counters")
-			metric.SetDescription("Indexes")
-			metric.SetUnit("1")
-			metric.SetDataType(pdata.MetricDataTypeGauge)
-		},
-	},
-	&metricImpl{
-		"mongodb.atlas.journaling.commits",
-		func(metric pdata.Metric) {
-			metric.SetName("mongodb.atlas.journaling.commits")
-			metric.SetDescription("Journaling commits")
-			metric.SetUnit("1")
-			metric.SetDataType(pdata.MetricDataTypeGauge)
-		},
-	},
-	&metricImpl{
-		"mongodb.atlas.journaling.data_files",
-		func(metric pdata.Metric) {
-			metric.SetName("mongodb.atlas.journaling.data_files")
-			metric.SetDescription("Data file sizes")
-			metric.SetUnit("1")
-			metric.SetDataType(pdata.MetricDataTypeGauge)
-		},
-	},
-	&metricImpl{
-		"mongodb.atlas.journaling.written",
-		func(metric pdata.Metric) {
-			metric.SetName("mongodb.atlas.journaling.written")
-			metric.SetDescription("Journals written")
-			metric.SetUnit("1")
-			metric.SetDataType(pdata.MetricDataTypeGauge)
-		},
-	},
-	&metricImpl{
-		"mongodb.atlas.memory",
-		func(metric pdata.Metric) {
-			metric.SetName("mongodb.atlas.memory")
-			metric.SetDescription("Memory Usage")
-			metric.SetUnit("1")
-			metric.SetDataType(pdata.MetricDataTypeGauge)
-		},
-	},
-	&metricImpl{
-		"mongodb.atlas.network.io",
-		func(metric pdata.Metric) {
-			metric.SetName("mongodb.atlas.network.io")
-			metric.SetDescription("Network IO")
-			metric.SetUnit("1")
-			metric.SetDataType(pdata.MetricDataTypeGauge)
-		},
-	},
-	&metricImpl{
-		"mongodb.atlas.network.requests",
-		func(metric pdata.Metric) {
-			metric.SetName("mongodb.atlas.network.requests")
-			metric.SetDescription("Network requests")
-			metric.SetUnit("1")
-			metric.SetDataType(pdata.MetricDataTypeGauge)
-		},
-	},
-	&metricImpl{
-		"mongodb.atlas.op_execution_time",
-		func(metric pdata.Metric) {
-			metric.SetName("mongodb.atlas.op_execution_time")
-			metric.SetDescription("Execution time by operation")
-			metric.SetUnit("1")
-			metric.SetDataType(pdata.MetricDataTypeGauge)
-		},
-	},
-	&metricImpl{
-		"mongodb.atlas.operations.rate",
-		func(metric pdata.Metric) {
-			metric.SetName("mongodb.atlas.operations.rate")
-			metric.SetDescription("Execution rate by operation")
-			metric.SetUnit("1")
-			metric.SetDataType(pdata.MetricDataTypeGauge)
-		},
-	},
-	&metricImpl{
-		"mongodb.atlas.oplog.rate",
-		func(metric pdata.Metric) {
-			metric.SetName("mongodb.atlas.oplog.rate")
-			metric.SetDescription("Oplog rate")
-			metric.SetUnit("1")
-			metric.SetDataType(pdata.MetricDataTypeGauge)
-		},
-	},
-	&metricImpl{
-		"mongodb.atlas.oplog.time",
-		func(metric pdata.Metric) {
-			metric.SetName("mongodb.atlas.oplog.time")
-			metric.SetDescription("Oplog time")
-			metric.SetUnit("1")
-			metric.SetDataType(pdata.MetricDataTypeGauge)
-		},
-	},
-	&metricImpl{
-		"mongodb.atlas.ops",
-		func(metric pdata.Metric) {
-			metric.SetName("mongodb.atlas.ops")
+			metric.SetName("process.db.operations.rate")
 			metric.SetDescription("FIXME")
 			metric.SetUnit("1")
 			metric.SetDataType(pdata.MetricDataTypeGauge)
 		},
 	},
 	&metricImpl{
-		"mongodb.atlas.page_faults",
+		"process.db.operations.time",
 		func(metric pdata.Metric) {
-			metric.SetName("mongodb.atlas.page_faults")
-			metric.SetDescription("Page faults")
+			metric.SetName("process.db.operations.time")
+			metric.SetDescription("FIXME")
 			metric.SetUnit("1")
 			metric.SetDataType(pdata.MetricDataTypeGauge)
 		},
 	},
 	&metricImpl{
-		"mongodb.atlas.query_executor.scanned",
+		"process.db.query_executor.scanned",
 		func(metric pdata.Metric) {
-			metric.SetName("mongodb.atlas.query_executor.scanned")
+			metric.SetName("process.db.query_executor.scanned")
 			metric.SetDescription("Scanned objects")
 			metric.SetUnit("1")
 			metric.SetDataType(pdata.MetricDataTypeGauge)
 		},
 	},
 	&metricImpl{
-		"mongodb.atlas.query_targeting.scanned_per_returned",
+		"process.db.query_targeting.scanned_per_returned",
 		func(metric pdata.Metric) {
-			metric.SetName("mongodb.atlas.query_targeting.scanned_per_returned")
+			metric.SetName("process.db.query_targeting.scanned_per_returned")
 			metric.SetDescription("Scanned objects per returned")
 			metric.SetUnit("1")
 			metric.SetDataType(pdata.MetricDataTypeGauge)
 		},
 	},
 	&metricImpl{
-		"mongodb.atlas.restarts",
+		"process.db.storage",
 		func(metric pdata.Metric) {
-			metric.SetName("mongodb.atlas.restarts")
+			metric.SetName("process.db.storage")
+			metric.SetDescription("FIXME")
+			metric.SetUnit("1")
+			metric.SetDataType(pdata.MetricDataTypeGauge)
+		},
+	},
+	&metricImpl{
+		"process.fts.cpu.normalized.usage",
+		func(metric pdata.Metric) {
+			metric.SetName("process.fts.cpu.normalized.usage")
+			metric.SetDescription("Full text search CPU, normalized to pct")
+			metric.SetUnit("1")
+			metric.SetDataType(pdata.MetricDataTypeGauge)
+		},
+	},
+	&metricImpl{
+		"process.fts.cpu.usage",
+		func(metric pdata.Metric) {
+			metric.SetName("process.fts.cpu.usage")
+			metric.SetDescription("Full text search CPU")
+			metric.SetUnit("1")
+			metric.SetDataType(pdata.MetricDataTypeGauge)
+		},
+	},
+	&metricImpl{
+		"process.fts.disk.usage",
+		func(metric pdata.Metric) {
+			metric.SetName("process.fts.disk.usage")
+			metric.SetDescription("Full text search disk usage")
+			metric.SetUnit("1")
+			metric.SetDataType(pdata.MetricDataTypeGauge)
+		},
+	},
+	&metricImpl{
+		"process.fts.memory.usage",
+		func(metric pdata.Metric) {
+			metric.SetName("process.fts.memory.usage")
+			metric.SetDescription("Full text search memory usage")
+			metric.SetUnit("1")
+			metric.SetDataType(pdata.MetricDataTypeGauge)
+		},
+	},
+	&metricImpl{
+		"process.global_lock",
+		func(metric pdata.Metric) {
+			metric.SetName("process.global_lock")
+			metric.SetDescription("Number and status of locks")
+			metric.SetUnit("1")
+			metric.SetDataType(pdata.MetricDataTypeGauge)
+		},
+	},
+	&metricImpl{
+		"process.index.btree_miss_ratio",
+		func(metric pdata.Metric) {
+			metric.SetName("process.index.btree_miss_ratio")
+			metric.SetDescription("Index miss ratio")
+			metric.SetUnit("1")
+			metric.SetDataType(pdata.MetricDataTypeGauge)
+		},
+	},
+	&metricImpl{
+		"process.index.counters",
+		func(metric pdata.Metric) {
+			metric.SetName("process.index.counters")
+			metric.SetDescription("Indexes")
+			metric.SetUnit("1")
+			metric.SetDataType(pdata.MetricDataTypeGauge)
+		},
+	},
+	&metricImpl{
+		"process.journaling.commits",
+		func(metric pdata.Metric) {
+			metric.SetName("process.journaling.commits")
+			metric.SetDescription("Journaling commits")
+			metric.SetUnit("1")
+			metric.SetDataType(pdata.MetricDataTypeGauge)
+		},
+	},
+	&metricImpl{
+		"process.journaling.data_files",
+		func(metric pdata.Metric) {
+			metric.SetName("process.journaling.data_files")
+			metric.SetDescription("Data file sizes")
+			metric.SetUnit("1")
+			metric.SetDataType(pdata.MetricDataTypeGauge)
+		},
+	},
+	&metricImpl{
+		"process.journaling.written",
+		func(metric pdata.Metric) {
+			metric.SetName("process.journaling.written")
+			metric.SetDescription("Journals written")
+			metric.SetUnit("1")
+			metric.SetDataType(pdata.MetricDataTypeGauge)
+		},
+	},
+	&metricImpl{
+		"process.memory.usage",
+		func(metric pdata.Metric) {
+			metric.SetName("process.memory.usage")
+			metric.SetDescription("Memory Usage")
+			metric.SetUnit("1")
+			metric.SetDataType(pdata.MetricDataTypeGauge)
+		},
+	},
+	&metricImpl{
+		"process.network.io",
+		func(metric pdata.Metric) {
+			metric.SetName("process.network.io")
+			metric.SetDescription("Network IO")
+			metric.SetUnit("1")
+			metric.SetDataType(pdata.MetricDataTypeGauge)
+		},
+	},
+	&metricImpl{
+		"process.network.requests",
+		func(metric pdata.Metric) {
+			metric.SetName("process.network.requests")
+			metric.SetDescription("Network requests")
+			metric.SetUnit("1")
+			metric.SetDataType(pdata.MetricDataTypeGauge)
+		},
+	},
+	&metricImpl{
+		"process.oplog.rate",
+		func(metric pdata.Metric) {
+			metric.SetName("process.oplog.rate")
+			metric.SetDescription("Execution rate by operation")
+			metric.SetUnit("1")
+			metric.SetDataType(pdata.MetricDataTypeGauge)
+		},
+	},
+	&metricImpl{
+		"process.oplog.time",
+		func(metric pdata.Metric) {
+			metric.SetName("process.oplog.time")
+			metric.SetDescription("Execution time by operation")
+			metric.SetUnit("1")
+			metric.SetDataType(pdata.MetricDataTypeGauge)
+		},
+	},
+	&metricImpl{
+		"process.page_faults",
+		func(metric pdata.Metric) {
+			metric.SetName("process.page_faults")
+			metric.SetDescription("Page faults")
+			metric.SetUnit("1")
+			metric.SetDataType(pdata.MetricDataTypeGauge)
+		},
+	},
+	&metricImpl{
+		"process.restarts",
+		func(metric pdata.Metric) {
+			metric.SetName("process.restarts")
 			metric.SetDescription("Restarts in last hour")
 			metric.SetUnit("1")
 			metric.SetDataType(pdata.MetricDataTypeGauge)
 		},
 	},
 	&metricImpl{
-		"mongodb.atlas.swap",
+		"process.tickets",
 		func(metric pdata.Metric) {
-			metric.SetName("mongodb.atlas.swap")
-			metric.SetDescription("Swap usage")
+			metric.SetName("process.tickets")
+			metric.SetDescription("Tickets")
 			metric.SetUnit("1")
 			metric.SetDataType(pdata.MetricDataTypeGauge)
 		},
 	},
 	&metricImpl{
-		"mongodb.atlas.swap.io",
+		"system.cpu.normalized.usage",
 		func(metric pdata.Metric) {
-			metric.SetName("mongodb.atlas.swap.io")
-			metric.SetDescription("Swap IO")
-			metric.SetUnit("1")
-			metric.SetDataType(pdata.MetricDataTypeGauge)
-		},
-	},
-	&metricImpl{
-		"mongodb.atlas.system.cpu",
-		func(metric pdata.Metric) {
-			metric.SetName("mongodb.atlas.system.cpu")
-			metric.SetDescription("System CPU Usage")
-			metric.SetUnit("1")
-			metric.SetDataType(pdata.MetricDataTypeGauge)
-		},
-	},
-	&metricImpl{
-		"mongodb.atlas.system.memory",
-		func(metric pdata.Metric) {
-			metric.SetName("mongodb.atlas.system.memory")
-			metric.SetDescription("System Memory Usage")
-			metric.SetUnit("1")
-			metric.SetDataType(pdata.MetricDataTypeGauge)
-		},
-	},
-	&metricImpl{
-		"mongodb.atlas.system.network.io",
-		func(metric pdata.Metric) {
-			metric.SetName("mongodb.atlas.system.network.io")
-			metric.SetDescription("System Network IO")
-			metric.SetUnit("1")
-			metric.SetDataType(pdata.MetricDataTypeGauge)
-		},
-	},
-	&metricImpl{
-		"mongodb.atlas.system.normalized.cpu",
-		func(metric pdata.Metric) {
-			metric.SetName("mongodb.atlas.system.normalized.cpu")
+			metric.SetName("system.cpu.normalized.usage")
 			metric.SetDescription("System CPU Normalized to pct")
 			metric.SetUnit("1")
 			metric.SetDataType(pdata.MetricDataTypeGauge)
 		},
 	},
 	&metricImpl{
-		"mongodb.atlas.tickets",
+		"system.cpu.usage",
 		func(metric pdata.Metric) {
-			metric.SetName("mongodb.atlas.tickets")
-			metric.SetDescription("Tickets")
+			metric.SetName("system.cpu.usage")
+			metric.SetDescription("System CPU Usage")
+			metric.SetUnit("1")
+			metric.SetDataType(pdata.MetricDataTypeGauge)
+		},
+	},
+	&metricImpl{
+		"system.fts.cpu.normalized.usage",
+		func(metric pdata.Metric) {
+			metric.SetName("system.fts.cpu.normalized.usage")
+			metric.SetDescription("Full text search disk usage")
+			metric.SetUnit("1")
+			metric.SetDataType(pdata.MetricDataTypeGauge)
+		},
+	},
+	&metricImpl{
+		"system.fts.cpu.usage",
+		func(metric pdata.Metric) {
+			metric.SetName("system.fts.cpu.usage")
+			metric.SetDescription("Full-text search")
+			metric.SetUnit("1")
+			metric.SetDataType(pdata.MetricDataTypeGauge)
+		},
+	},
+	&metricImpl{
+		"system.fts.disk.utilization",
+		func(metric pdata.Metric) {
+			metric.SetName("system.fts.disk.utilization")
+			metric.SetDescription("Full text search disk usage")
+			metric.SetUnit("1")
+			metric.SetDataType(pdata.MetricDataTypeGauge)
+		},
+	},
+	&metricImpl{
+		"system.fts.memory.usage",
+		func(metric pdata.Metric) {
+			metric.SetName("system.fts.memory.usage")
+			metric.SetDescription("Full-text search")
+			metric.SetUnit("1")
+			metric.SetDataType(pdata.MetricDataTypeGauge)
+		},
+	},
+	&metricImpl{
+		"system.memory.usage",
+		func(metric pdata.Metric) {
+			metric.SetName("system.memory.usage")
+			metric.SetDescription("System Memory Usage")
+			metric.SetUnit("1")
+			metric.SetDataType(pdata.MetricDataTypeGauge)
+		},
+	},
+	&metricImpl{
+		"system.network.io",
+		func(metric pdata.Metric) {
+			metric.SetName("system.network.io")
+			metric.SetDescription("System Network IO")
+			metric.SetUnit("1")
+			metric.SetDataType(pdata.MetricDataTypeGauge)
+		},
+	},
+	&metricImpl{
+		"system.paging.io",
+		func(metric pdata.Metric) {
+			metric.SetName("system.paging.io")
+			metric.SetDescription("Swap IO")
+			metric.SetUnit("1")
+			metric.SetDataType(pdata.MetricDataTypeGauge)
+		},
+	},
+	&metricImpl{
+		"system.paging.usage",
+		func(metric pdata.Metric) {
+			metric.SetName("system.paging.usage")
+			metric.SetDescription("Swap usage")
 			metric.SetUnit("1")
 			metric.SetDataType(pdata.MetricDataTypeGauge)
 		},
