@@ -12,13 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//go:build integration
-// +build integration
-
 package memcachedreceiver
 
 import (
 	"context"
+	"io/ioutil"
 	"testing"
 	"time"
 
@@ -26,10 +24,9 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/model/otlp"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testing/container"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/memcachedreceiver/internal/metadata"
 )
 
 func TestIntegration(t *testing.T) {
@@ -60,24 +57,15 @@ func TestIntegration(t *testing.T) {
 	metrics := ilms.At(0).Metrics()
 	require.Equal(t, 11, metrics.Len())
 
-	assertAllMetricNamesArePresent(t, metadata.Metrics.Names(), metrics)
+	expectedFileBytes, err := ioutil.ReadFile("./testdata/expected_metrics/test_scraper/exepected.json")
+	require.NoError(t, err)
 
+	unmarshaller := otlp.NewJSONMetricsUnmarshaler()
+	expectedMetrics, err := unmarshaller.UnmarshalMetrics(expectedFileBytes)
+	require.NoError(t, err)
+
+	eMetricSlice := expectedMetrics.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics()
+
+	compareMetrics(eMetricSlice, metrics, false)
 	assert.NoError(t, rcvr.Shutdown(context.Background()))
-}
-
-func assertAllMetricNamesArePresent(t *testing.T, names []string, metrics pdata.MetricSlice) {
-	seen := make(map[string]bool, len(names))
-	for i := range names {
-		seen[names[i]] = false
-	}
-
-	for i := 0; i < metrics.Len(); i++ {
-		seen[metrics.At(i).Name()] = true
-	}
-
-	for k, v := range seen {
-		if !v {
-			t.Fatalf("Did not find metric %q", k)
-		}
-	}
 }

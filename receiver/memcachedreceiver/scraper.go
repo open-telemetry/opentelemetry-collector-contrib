@@ -1,4 +1,4 @@
-// Copyright 2020, ObservIQ
+// Copyright 2020, OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -18,16 +18,14 @@ import (
 	"context"
 	"time"
 
-	"github.com/grobie/gomemcache/memcache"
 	"go.opentelemetry.io/collector/model/pdata"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/memcachedreceiver/internal/metadata"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/scraperhelper"
 )
 
 type memcachedScraper struct {
-	client *memcache.Client
+	client client
 	logger *zap.Logger
 	config *Config
 }
@@ -35,12 +33,11 @@ type memcachedScraper struct {
 func newMemcachedScraper(
 	logger *zap.Logger,
 	config *Config,
-) scraperhelper.Scraper {
-	ms := &memcachedScraper{
+) *memcachedScraper {
+	return &memcachedScraper{
 		logger: logger,
 		config: config,
 	}
-	return scraperhelper.NewResourceMetricsScraper(config.ID(), ms.scrape)
 }
 
 func (r *memcachedScraper) scrape(_ context.Context) (pdata.ResourceMetricsSlice, error) {
@@ -48,14 +45,13 @@ func (r *memcachedScraper) scrape(_ context.Context) (pdata.ResourceMetricsSlice
 	// constructor.
 
 	if r.client == nil {
-		var err error
-		r.client, err = memcache.New(r.config.Endpoint)
+		r.client = &memcachedClient{}
+		err := r.client.Init(r.config.Endpoint)
 		if err != nil {
 			r.client = nil
 			return pdata.ResourceMetricsSlice{}, err
 		}
-
-		r.client.Timeout = r.config.Timeout
+		r.client.SetTimeout(r.config.Timeout)
 	}
 
 	stats, err := r.client.Stats()
@@ -69,17 +65,17 @@ func (r *memcachedScraper) scrape(_ context.Context) (pdata.ResourceMetricsSlice
 	ilm.InstrumentationLibrary().SetName("otelcol/memcached")
 	now := pdata.NewTimestampFromTime(time.Now())
 
-	commandCount := initMetric(ilm.Metrics(), metadata.M.MemcachedCommandCount).Sum().DataPoints()     //int
-	rUsage := initMetric(ilm.Metrics(), metadata.M.MemcachedRusage).Gauge().DataPoints()               //double
-	network := initMetric(ilm.Metrics(), metadata.M.MemcachedNetwork).Sum().DataPoints()               //int
-	operationCount := initMetric(ilm.Metrics(), metadata.M.MemcachedOperationCount).Sum().DataPoints() //int
-	hitRatio := initMetric(ilm.Metrics(), metadata.M.MemcachedOperationHitRatio).Gauge().DataPoints()  //double
-	bytes := initMetric(ilm.Metrics(), metadata.M.MemcachedBytes).Gauge().DataPoints()                 //int
-	currConn := initMetric(ilm.Metrics(), metadata.M.MemcachedCurrentConnections).Gauge().DataPoints() //int
-	totalConn := initMetric(ilm.Metrics(), metadata.M.MemcachedTotalConnections).Sum().DataPoints()    //int
-	currItems := initMetric(ilm.Metrics(), metadata.M.MemcachedCurrentItems).Gauge().DataPoints()      //double
-	threads := initMetric(ilm.Metrics(), metadata.M.MemcachedThreads).Gauge().DataPoints()             //double
-	evictions := initMetric(ilm.Metrics(), metadata.M.MemcachedEvictionCount).Sum().DataPoints()       //int
+	commandCount := initMetric(ilm.Metrics(), metadata.M.MemcachedCommandCount).Sum().DataPoints()
+	rUsage := initMetric(ilm.Metrics(), metadata.M.MemcachedRusage).Gauge().DataPoints()
+	network := initMetric(ilm.Metrics(), metadata.M.MemcachedNetwork).Sum().DataPoints()
+	operationCount := initMetric(ilm.Metrics(), metadata.M.MemcachedOperationCount).Sum().DataPoints()
+	hitRatio := initMetric(ilm.Metrics(), metadata.M.MemcachedOperationHitRatio).Gauge().DataPoints()
+	bytes := initMetric(ilm.Metrics(), metadata.M.MemcachedBytes).Gauge().DataPoints()
+	currConn := initMetric(ilm.Metrics(), metadata.M.MemcachedCurrentConnections).Gauge().DataPoints()
+	totalConn := initMetric(ilm.Metrics(), metadata.M.MemcachedTotalConnections).Sum().DataPoints()
+	currItems := initMetric(ilm.Metrics(), metadata.M.MemcachedCurrentItems).Gauge().DataPoints()
+	threads := initMetric(ilm.Metrics(), metadata.M.MemcachedThreads).Gauge().DataPoints()
+	evictions := initMetric(ilm.Metrics(), metadata.M.MemcachedEvictionCount).Sum().DataPoints()
 
 	for _, stats := range stats {
 		for k, v := range stats.Stats {
@@ -87,35 +83,35 @@ func (r *memcachedScraper) scrape(_ context.Context) (pdata.ResourceMetricsSlice
 			switch k {
 			case "bytes":
 
-				addToIntMetric(bytes, attributes, parseInt(v), now)
+				addToMetric(bytes, attributes, parseInt(v), now)
 			case "curr_connections":
-				addToIntMetric(currConn, attributes, parseInt(v), now)
+				addToMetric(currConn, attributes, parseInt(v), now)
 			case "total_connections":
-				addToIntMetric(totalConn, attributes, parseInt(v), now)
+				addToMetric(totalConn, attributes, parseInt(v), now)
 			case "cmd_get":
 				attributes.Insert(metadata.L.Command, pdata.NewAttributeValueString("get"))
-				addToIntMetric(commandCount, attributes, parseInt(v), now)
+				addToMetric(commandCount, attributes, parseInt(v), now)
 			case "cmd_set":
 				attributes.Insert(metadata.L.Command, pdata.NewAttributeValueString("set"))
-				addToIntMetric(commandCount, attributes, parseInt(v), now)
+				addToMetric(commandCount, attributes, parseInt(v), now)
 			case "cmd_flush":
 				attributes.Insert(metadata.L.Command, pdata.NewAttributeValueString("flush"))
-				addToIntMetric(commandCount, attributes, parseInt(v), now)
+				addToMetric(commandCount, attributes, parseInt(v), now)
 			case "cmd_touch":
 				attributes.Insert(metadata.L.Command, pdata.NewAttributeValueString("touch"))
-				addToIntMetric(commandCount, attributes, parseInt(v), now)
+				addToMetric(commandCount, attributes, parseInt(v), now)
 			case "curr_items":
 				addToMetric(currItems, attributes, parseFloat(v), now)
 			case "threads":
 				addToMetric(threads, attributes, parseFloat(v), now)
 			case "evictions":
-				addToIntMetric(evictions, attributes, parseInt(v), now)
+				addToMetric(evictions, attributes, parseInt(v), now)
 			case "bytes_read":
 				attributes.Insert(metadata.L.Direction, pdata.NewAttributeValueString("received"))
-				addToIntMetric(network, attributes, parseInt(v), now)
+				addToMetric(network, attributes, parseInt(v), now)
 			case "bytes_written":
 				attributes.Insert(metadata.L.Direction, pdata.NewAttributeValueString("sent"))
-				addToIntMetric(network, attributes, parseInt(v), now)
+				addToMetric(network, attributes, parseInt(v), now)
 			case "get_hits":
 				attributes.Insert(metadata.L.Operation, pdata.NewAttributeValueString("get"))
 				statSlice := stats.Stats
@@ -127,11 +123,11 @@ func (r *memcachedScraper) scrape(_ context.Context) (pdata.ResourceMetricsSlice
 					addToMetric(hitRatio, attributes, 0, now)
 				}
 				attributes.Insert(metadata.L.Type, pdata.NewAttributeValueString("hit"))
-				addToIntMetric(operationCount, attributes, parseInt(v), now)
+				addToMetric(operationCount, attributes, parseInt(v), now)
 			case "get_misses":
 				attributes.Insert(metadata.L.Operation, pdata.NewAttributeValueString("get"))
 				attributes.Insert(metadata.L.Type, pdata.NewAttributeValueString("miss"))
-				addToIntMetric(operationCount, attributes, parseInt(v), now)
+				addToMetric(operationCount, attributes, parseInt(v), now)
 			case "incr_hits":
 				attributes.Insert(metadata.L.Operation, pdata.NewAttributeValueString("increment"))
 				statSlice := stats.Stats
@@ -143,11 +139,11 @@ func (r *memcachedScraper) scrape(_ context.Context) (pdata.ResourceMetricsSlice
 					addToMetric(hitRatio, attributes, 0, now)
 				}
 				attributes.Insert(metadata.L.Type, pdata.NewAttributeValueString("hit"))
-				addToIntMetric(operationCount, attributes, parseInt(v), now)
+				addToMetric(operationCount, attributes, parseInt(v), now)
 			case "incr_misses":
 				attributes.Insert(metadata.L.Operation, pdata.NewAttributeValueString("increment"))
 				attributes.Insert(metadata.L.Type, pdata.NewAttributeValueString("miss"))
-				addToIntMetric(operationCount, attributes, parseInt(v), now)
+				addToMetric(operationCount, attributes, parseInt(v), now)
 			case "decr_hits":
 				attributes.Insert(metadata.L.Operation, pdata.NewAttributeValueString("decrement"))
 				statSlice := stats.Stats
@@ -159,11 +155,11 @@ func (r *memcachedScraper) scrape(_ context.Context) (pdata.ResourceMetricsSlice
 					addToMetric(hitRatio, attributes, 0, now)
 				}
 				attributes.Insert(metadata.L.Type, pdata.NewAttributeValueString("hit"))
-				addToIntMetric(operationCount, attributes, parseInt(v), now)
+				addToMetric(operationCount, attributes, parseInt(v), now)
 			case "decr_misses":
 				attributes.Insert(metadata.L.Operation, pdata.NewAttributeValueString("decrement"))
 				attributes.Insert(metadata.L.Type, pdata.NewAttributeValueString("miss"))
-				addToIntMetric(operationCount, attributes, parseInt(v), now)
+				addToMetric(operationCount, attributes, parseInt(v), now)
 			case "rusage_system":
 				attributes.Insert(metadata.L.UsageType, pdata.NewAttributeValueString("system"))
 				addToMetric(rUsage, attributes, parseFloat(v), now)
@@ -183,22 +179,17 @@ func initMetric(ms pdata.MetricSlice, mi metadata.MetricIntf) pdata.Metric {
 	return m
 }
 
-// addToMetric adds and attributes a double gauge datapoint to a metricslice.
-func addToMetric(metric pdata.NumberDataPointSlice, attributes pdata.StringMap, value float64, ts pdata.Timestamp) {
+// addToMetric adds a datapoint to a NumberDataPointSlice
+func addToMetric(metric pdata.NumberDataPointSlice, attributes pdata.AttributeMap, value interface{}, ts pdata.Timestamp) {
 	dataPoint := metric.AppendEmpty()
 	dataPoint.SetTimestamp(ts)
-	dataPoint.SetValue(value)
-	if attributes.Len() > 0 {
-		attributes.CopyTo(dataPoint.attributesMap())
+	switch typedVal := value.(type) {
+	case int64:
+		dataPoint.SetIntVal(typedVal)
+	case float64:
+		dataPoint.SetDoubleVal(typedVal)
 	}
-}
-
-// addToIntMetric adds and attributes a int sum datapoint to metricslice.
-func addToIntMetric(metric pdata.IntDataPointSlice, attributes pdata.StringMap, value int64, ts pdata.Timestamp) {
-	dataPoint := metric.AppendEmpty()
-	dataPoint.SetTimestamp(ts)
-	dataPoint.SetValue(value)
 	if attributes.Len() > 0 {
-		attributes.CopyTo(dataPoint.attributesMap())
+		attributes.CopyTo(dataPoint.Attributes())
 	}
 }
