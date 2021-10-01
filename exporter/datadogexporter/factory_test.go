@@ -43,7 +43,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 	// Note: the default configuration created by CreateDefaultConfig
 	// still has the unresolved environment variables.
 	assert.Equal(t, &ddconfig.Config{
-		ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
+		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
 		TimeoutSettings:  exporterhelper.DefaultTimeoutSettings(),
 		RetrySettings:    exporterhelper.DefaultRetrySettings(),
 		QueueSettings:    exporterhelper.DefaultQueueSettings(),
@@ -102,12 +102,12 @@ func TestLoadConfig(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 
-	apiConfig := cfg.Exporters[config.NewIDWithName(typeStr, "api")].(*ddconfig.Config)
+	apiConfig := cfg.Exporters[config.NewComponentIDWithName(typeStr, "api")].(*ddconfig.Config)
 	err = apiConfig.Sanitize(zap.NewNop())
 
 	require.NoError(t, err)
 	assert.Equal(t, &ddconfig.Config{
-		ExporterSettings: config.NewExporterSettings(config.NewIDWithName(typeStr, "api")),
+		ExporterSettings: config.NewExporterSettings(config.NewComponentIDWithName(typeStr, "api")),
 		TimeoutSettings:  exporterhelper.DefaultTimeoutSettings(),
 		RetrySettings:    exporterhelper.DefaultRetrySettings(),
 		QueueSettings:    exporterhelper.DefaultQueueSettings(),
@@ -151,12 +151,12 @@ func TestLoadConfig(t *testing.T) {
 		UseResourceMetadata: true,
 	}, apiConfig)
 
-	defaultConfig := cfg.Exporters[config.NewIDWithName(typeStr, "default")].(*ddconfig.Config)
+	defaultConfig := cfg.Exporters[config.NewComponentIDWithName(typeStr, "default")].(*ddconfig.Config)
 	err = defaultConfig.Sanitize(zap.NewNop())
 
 	require.NoError(t, err)
 	assert.Equal(t, &ddconfig.Config{
-		ExporterSettings: config.NewExporterSettings(config.NewIDWithName(typeStr, "default")),
+		ExporterSettings: config.NewExporterSettings(config.NewComponentIDWithName(typeStr, "default")),
 		TimeoutSettings:  exporterhelper.DefaultTimeoutSettings(),
 		RetrySettings:    exporterhelper.DefaultRetrySettings(),
 		QueueSettings:    exporterhelper.DefaultQueueSettings(),
@@ -199,7 +199,7 @@ func TestLoadConfig(t *testing.T) {
 		UseResourceMetadata: true,
 	}, defaultConfig)
 
-	invalidConfig := cfg.Exporters[config.NewIDWithName(typeStr, "invalid")].(*ddconfig.Config)
+	invalidConfig := cfg.Exporters[config.NewComponentIDWithName(typeStr, "invalid")].(*ddconfig.Config)
 	err = invalidConfig.Sanitize(zap.NewNop())
 	require.Error(t, err)
 }
@@ -239,13 +239,13 @@ func TestLoadConfigEnvVariables(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 
-	apiConfig := cfg.Exporters[config.NewIDWithName(typeStr, "api2")].(*ddconfig.Config)
+	apiConfig := cfg.Exporters[config.NewComponentIDWithName(typeStr, "api2")].(*ddconfig.Config)
 	err = apiConfig.Sanitize(zap.NewNop())
 
 	// Check that settings with env variables get overridden when explicitly set in config
 	require.NoError(t, err)
 	assert.Equal(t, &ddconfig.Config{
-		ExporterSettings: config.NewExporterSettings(config.NewIDWithName(typeStr, "api2")),
+		ExporterSettings: config.NewExporterSettings(config.NewComponentIDWithName(typeStr, "api2")),
 		TimeoutSettings:  exporterhelper.DefaultTimeoutSettings(),
 		RetrySettings:    exporterhelper.DefaultRetrySettings(),
 		QueueSettings:    exporterhelper.DefaultQueueSettings(),
@@ -289,7 +289,7 @@ func TestLoadConfigEnvVariables(t *testing.T) {
 		UseResourceMetadata: true,
 	}, apiConfig)
 
-	defaultConfig := cfg.Exporters[config.NewIDWithName(typeStr, "default2")].(*ddconfig.Config)
+	defaultConfig := cfg.Exporters[config.NewComponentIDWithName(typeStr, "default2")].(*ddconfig.Config)
 	err = defaultConfig.Sanitize(zap.NewNop())
 
 	require.NoError(t, err)
@@ -297,7 +297,7 @@ func TestLoadConfigEnvVariables(t *testing.T) {
 	// Check that settings with env variables get taken into account when
 	// no settings are given.
 	assert.Equal(t, &ddconfig.Config{
-		ExporterSettings: config.NewExporterSettings(config.NewIDWithName(typeStr, "default2")),
+		ExporterSettings: config.NewExporterSettings(config.NewComponentIDWithName(typeStr, "default2")),
 		TimeoutSettings:  exporterhelper.DefaultTimeoutSettings(),
 		RetrySettings:    exporterhelper.DefaultRetrySettings(),
 		QueueSettings:    exporterhelper.DefaultQueueSettings(),
@@ -356,7 +356,7 @@ func TestCreateAPIMetricsExporter(t *testing.T) {
 	require.NotNil(t, cfg)
 
 	// Use the mock server for API key validation
-	c := (cfg.Exporters[config.NewIDWithName(typeStr, "api")]).(*ddconfig.Config)
+	c := (cfg.Exporters[config.NewComponentIDWithName(typeStr, "api")]).(*ddconfig.Config)
 	c.Metrics.TCPAddr.Endpoint = server.URL
 	c.SendMetadata = false
 
@@ -364,7 +364,7 @@ func TestCreateAPIMetricsExporter(t *testing.T) {
 	exp, err := factory.CreateMetricsExporter(
 		ctx,
 		componenttest.NewNopExporterCreateSettings(),
-		cfg.Exporters[config.NewIDWithName(typeStr, "api")],
+		cfg.Exporters[config.NewComponentIDWithName(typeStr, "api")],
 	)
 
 	assert.NoError(t, err)
@@ -386,7 +386,7 @@ func TestCreateAPITracesExporter(t *testing.T) {
 	require.NotNil(t, cfg)
 
 	// Use the mock server for API key validation
-	c := (cfg.Exporters[config.NewIDWithName(typeStr, "api")]).(*ddconfig.Config)
+	c := (cfg.Exporters[config.NewComponentIDWithName(typeStr, "api")]).(*ddconfig.Config)
 	c.Metrics.TCPAddr.Endpoint = server.URL
 	c.SendMetadata = false
 
@@ -394,7 +394,7 @@ func TestCreateAPITracesExporter(t *testing.T) {
 	exp, err := factory.CreateTracesExporter(
 		ctx,
 		componenttest.NewNopExporterCreateSettings(),
-		cfg.Exporters[config.NewIDWithName(typeStr, "api")],
+		cfg.Exporters[config.NewComponentIDWithName(typeStr, "api")],
 	)
 
 	assert.NoError(t, err)
@@ -413,7 +413,7 @@ func TestOnlyMetadata(t *testing.T) {
 
 	ctx := context.Background()
 	cfg := &ddconfig.Config{
-		ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
+		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
 		TimeoutSettings:  exporterhelper.DefaultTimeoutSettings(),
 		RetrySettings:    exporterhelper.DefaultRetrySettings(),
 		QueueSettings:    exporterhelper.DefaultQueueSettings(),

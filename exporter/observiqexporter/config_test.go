@@ -119,12 +119,12 @@ func TestLoadConfig(t *testing.T) {
 	// Loaded config should be equal to default config (with APIKey filled in)
 	defaultCfg := factory.CreateDefaultConfig()
 	defaultCfg.(*Config).APIKey = "11111111-2222-3333-4444-555555555555"
-	r0 := cfg.Exporters[config.NewID(typeStr)]
+	r0 := cfg.Exporters[config.NewComponentID(typeStr)]
 	require.Equal(t, r0, defaultCfg)
 
-	r1 := cfg.Exporters[config.NewIDWithName(typeStr, "customname")].(*Config)
+	r1 := cfg.Exporters[config.NewComponentIDWithName(typeStr, "customname")].(*Config)
 	require.Equal(t, r1, &Config{
-		ExporterSettings: config.NewExporterSettings(config.NewIDWithName(typeStr, "customname")),
+		ExporterSettings: config.NewExporterSettings(config.NewComponentIDWithName(typeStr, "customname")),
 		APIKey:           "11111111-2222-3333-4444-555555555555",
 		Endpoint:         "https://sometest.endpoint",
 		TimeoutSettings: exporterhelper.TimeoutSettings{

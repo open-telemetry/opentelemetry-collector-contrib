@@ -33,7 +33,7 @@ var (
 	// ErrPartitionKeyLength is used when the given key exceeds the allowed kinesis limit of 256 characters
 	ErrPartitionKeyLength = errors.New("partition key size is greater than 256 characters")
 	// ErrRecordLength is used when attempted record results in a byte array greater than 1MiB
-	ErrRecordLength = consumererror.Permanent(errors.New("record size is greater than 1 MiB"))
+	ErrRecordLength = consumererror.NewPermanent(errors.New("record size is greater than 1 MiB"))
 )
 
 type Batch struct {

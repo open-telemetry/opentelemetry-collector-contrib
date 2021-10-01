@@ -32,8 +32,8 @@ func TestValidate(t *testing.T) {
 			desc: "missing username and password",
 			cfg:  &Config{},
 			expected: multierr.Combine(
-				errors.New(ErrNoUsername),
-				errors.New(ErrNoPassword),
+				errors.New(errNoUsername),
+				errors.New(errNoPassword),
 			),
 		},
 		{
@@ -42,7 +42,7 @@ func TestValidate(t *testing.T) {
 				Username: "otel",
 			},
 			expected: multierr.Combine(
-				errors.New(ErrNoPassword),
+				errors.New(errNoPassword),
 			),
 		},
 		{
@@ -51,7 +51,7 @@ func TestValidate(t *testing.T) {
 				Password: "otel",
 			},
 			expected: multierr.Combine(
-				errors.New(ErrNoUsername),
+				errors.New(errNoUsername),
 			),
 		},
 		{
@@ -60,7 +60,7 @@ func TestValidate(t *testing.T) {
 				Username: "otel",
 				Password: "otel",
 			},
-			expected: multierr.Combine(),
+			expected: nil,
 		},
 	}
 	for _, tC := range testCases {

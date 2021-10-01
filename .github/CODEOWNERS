@@ -75,6 +75,7 @@ receiver/cloudfoundryreceiver/                       @open-telemetry/collector-c
 receiver/collectdreceiver/                           @open-telemetry/collector-contrib-approvers @owais
 receiver/dockerstatsreceiver/                        @open-telemetry/collector-contrib-approvers @rmfitzpatrick
 receiver/dotnetdiagnosticsreceiver/                  @open-telemetry/collector-contrib-approvers @pmcollins @davmason
+receiver/httpdreceiver/                              @open-telemetry/collector-contrib-approvers @djaglowski
 receiver/jmxreceiver/                                @open-telemetry/collector-contrib-approvers @rmfitzpatrick
 receiver/k8sclusterreceiver/                         @open-telemetry/collector-contrib-approvers @asuresh4
 receiver/kubeletstatsreceiver/                       @open-telemetry/collector-contrib-approvers @pmcollins @asuresh4
@@ -92,5 +93,6 @@ receiver/wavefrontreceiver/                          @open-telemetry/collector-c
 receiver/windowsperfcountersreceiver/                @open-telemetry/collector-contrib-approvers @dashpole
 receiver/googlecloudpubsubexporter/                  @open-telemetry/collector-contrib-approvers @alexvanboxel
 receiver/influxdbreceiver/                           @open-telemetry/collector-contrib-approvers @jacobmarble @8none1
+receiver/googlecloudspannerreceiver/                 @open-telemetry/collector-contrib-approvers @ydrozhdzhal @asukhyy @khospodarysko
 
 tracegen/                                            @open-telemetry/collector-contrib-approvers @jpkrohling

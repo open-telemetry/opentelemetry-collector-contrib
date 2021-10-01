@@ -72,4 +72,8 @@ service:
     metrics:
       receivers: [prometheus]
       exporters: [prometheusremotewrite]
+  
+  telemetry:
+    logs:
+      level: debug #activate debug mode
 ```

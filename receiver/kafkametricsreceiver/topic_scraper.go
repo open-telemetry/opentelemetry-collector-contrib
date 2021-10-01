@@ -127,7 +127,7 @@ func createTopicsScraper(_ context.Context, cfg Config, saramaConfig *sarama.Con
 		config:       cfg,
 	}
 	return scraperhelper.NewResourceMetricsScraper(
-		config.NewID(config.Type(s.Name())),
+		config.NewComponentID(config.Type(s.Name())),
 		s.scrape,
 		scraperhelper.WithShutdown(s.shutdown),
 		scraperhelper.WithStart(s.start),

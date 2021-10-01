@@ -3,14 +3,14 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsxra
 go 1.17
 
 require (
-	github.com/aws/aws-sdk-go v1.40.50
+	github.com/aws/aws-sdk-go v1.40.52
 	github.com/google/uuid v1.3.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/proxy v0.36.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray v0.36.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.36.0
 	github.com/stretchr/testify v1.7.0
-	go.opentelemetry.io/collector v0.36.1-0.20210927193005-ebb0fbd6f23e
-	go.opentelemetry.io/collector/model v0.36.1-0.20210927193005-ebb0fbd6f23e
+	go.opentelemetry.io/collector v0.36.1-0.20210930151317-3ec4f1be6001
+	go.opentelemetry.io/collector/model v0.36.1-0.20210930151317-3ec4f1be6001
 	go.uber.org/zap v1.19.1
 )
 
@@ -21,6 +21,7 @@ require (
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
 	github.com/knadh/koanf v1.2.3 // indirect
+	github.com/magiconair/properties v1.8.5 // indirect
 	github.com/mitchellh/copystructure v1.2.0 // indirect
 	github.com/mitchellh/mapstructure v1.4.2 // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
@@ -29,6 +30,7 @@ require (
 	go.opencensus.io v0.23.0 // indirect
 	go.opentelemetry.io/otel v1.0.0 // indirect
 	go.opentelemetry.io/otel/metric v0.23.0 // indirect
+	go.opentelemetry.io/otel/sdk v1.0.0 // indirect
 	go.opentelemetry.io/otel/trace v1.0.0 // indirect
 	go.uber.org/atomic v1.9.0 // indirect
 	go.uber.org/multierr v1.6.0 // indirect

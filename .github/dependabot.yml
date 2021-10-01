@@ -430,7 +430,15 @@ updates:
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
+    directory: "/receiver/googlecloudspannerreceiver"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
     directory: "/receiver/hostmetricsreceiver"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
+    directory: "/receiver/httpdreceiver"
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
@@ -467,6 +475,10 @@ updates:
       interval: "weekly"
   - package-ecosystem: "gomod"
     directory: "/receiver/mongodbatlasreceiver"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
+    directory: "/receiver/mysqlreceiver"
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"

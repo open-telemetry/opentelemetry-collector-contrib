@@ -7,7 +7,7 @@ require (
 	github.com/DataDog/datadog-agent/pkg/quantile v0.31.1
 	github.com/DataDog/datadog-agent/pkg/trace/exportable v0.0.0-20201016145401-4646cf596b02
 	github.com/Microsoft/go-winio v0.5.0 // indirect
-	github.com/aws/aws-sdk-go v1.40.50
+	github.com/aws/aws-sdk-go v1.40.52
 	github.com/cenkalti/backoff v2.2.1+incompatible // indirect
 	github.com/gogo/protobuf v1.3.2
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.36.0
@@ -16,8 +16,8 @@ require (
 	github.com/stretchr/testify v1.7.0
 	github.com/tinylib/msgp v1.1.5 // indirect
 	github.com/zorkian/go-datadog-api v2.29.0+incompatible // indirect
-	go.opentelemetry.io/collector v0.36.1-0.20210927193005-ebb0fbd6f23e
-	go.opentelemetry.io/collector/model v0.36.1-0.20210927193005-ebb0fbd6f23e
+	go.opentelemetry.io/collector v0.36.1-0.20210930151317-3ec4f1be6001
+	go.opentelemetry.io/collector/model v0.36.1-0.20210930151317-3ec4f1be6001
 	go.uber.org/zap v1.19.1
 	gopkg.in/DataDog/dd-trace-go.v1 v1.33.0
 	gopkg.in/zorkian/go-datadog-api.v2 v2.30.0
@@ -38,6 +38,7 @@ require (
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
 	github.com/knadh/koanf v1.2.3 // indirect
+	github.com/magiconair/properties v1.8.5 // indirect
 	github.com/mitchellh/copystructure v1.2.0 // indirect
 	github.com/mitchellh/mapstructure v1.4.2 // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect

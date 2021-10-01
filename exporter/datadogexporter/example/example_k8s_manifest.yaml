@@ -33,7 +33,8 @@ data:
     exporters:
       otlp:
         endpoint: "otel-collector.default:4317"
-        insecure: true
+        tls:
+          insecure: true
     processors:
       batch:
       memory_limiter:

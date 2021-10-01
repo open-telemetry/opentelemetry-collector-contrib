@@ -15,45 +15,54 @@
 package kubelet
 
 import (
-	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
+	"go.opentelemetry.io/collector/model/pdata"
 	stats "k8s.io/kubelet/pkg/apis/stats/v1alpha1"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver/internal/metadata"
 )
 
-func networkMetrics(prefix string, s *stats.NetworkStats) []*metricspb.Metric {
+func addNetworkMetrics(dest pdata.MetricSlice, prefix string, s *stats.NetworkStats, startTime pdata.Timestamp, currentTime pdata.Timestamp) {
 	if s == nil {
-		return nil
+		return
 	}
-	// todo s.RxErrors s.TxErrors?
-	return []*metricspb.Metric{
-		rxBytesMetric(prefix, s),
-		txBytesMetric(prefix, s),
-		rxErrorsMetric(prefix, s),
-		txErrorsMetric(prefix, s),
+	addNetworkIOMetric(dest, prefix, s, startTime, currentTime)
+	addNetworkErrorsMetric(dest, prefix, s, startTime, currentTime)
+}
+
+func addNetworkIOMetric(dest pdata.MetricSlice, prefix string, s *stats.NetworkStats, startTime pdata.Timestamp, currentTime pdata.Timestamp) {
+	if s.RxBytes == nil && s.TxBytes == nil {
+		return
 	}
+
+	m := dest.AppendEmpty()
+	metadata.M.NetworkIo.Init(m)
+	m.SetName(prefix + m.Name())
+
+	fillNetworkDataPoint(m.Sum().DataPoints(), s.Name, metadata.LabelDirection.Receive, s.RxBytes, startTime, currentTime)
+	fillNetworkDataPoint(m.Sum().DataPoints(), s.Name, metadata.LabelDirection.Transmit, s.TxBytes, startTime, currentTime)
 }
 
-const directionLabel = "direction"
+func addNetworkErrorsMetric(dest pdata.MetricSlice, prefix string, s *stats.NetworkStats, startTime pdata.Timestamp, currentTime pdata.Timestamp) {
+	if s.RxBytes == nil && s.TxBytes == nil {
+		return
+	}
 
-func rxBytesMetric(prefix string, s *stats.NetworkStats) *metricspb.Metric {
-	metric := cumulativeInt(prefix+"network.io", s.RxBytes)
-	applyLabels(metric, map[string]string{"interface": s.Name, directionLabel: "receive"})
-	return metric
+	m := dest.AppendEmpty()
+	metadata.M.NetworkErrors.Init(m)
+	m.SetName(prefix + m.Name())
+
+	fillNetworkDataPoint(m.Sum().DataPoints(), s.Name, metadata.LabelDirection.Receive, s.RxErrors, startTime, currentTime)
+	fillNetworkDataPoint(m.Sum().DataPoints(), s.Name, metadata.LabelDirection.Transmit, s.TxErrors, startTime, currentTime)
 }
 
-func txBytesMetric(prefix string, s *stats.NetworkStats) *metricspb.Metric {
-	metric := cumulativeInt(prefix+"network.io", s.TxBytes)
-	applyLabels(metric, map[string]string{"interface": s.Name, directionLabel: "transmit"})
-	return metric
-}
-
-func rxErrorsMetric(prefix string, s *stats.NetworkStats) *metricspb.Metric {
-	metric := cumulativeInt(prefix+"network.errors", s.RxErrors)
-	applyLabels(metric, map[string]string{"interface": s.Name, directionLabel: "receive"})
-	return metric
-}
-
-func txErrorsMetric(prefix string, s *stats.NetworkStats) *metricspb.Metric {
-	metric := cumulativeInt(prefix+"network.errors", s.TxErrors)
-	applyLabels(metric, map[string]string{"interface": s.Name, directionLabel: "transmit"})
-	return metric
+func fillNetworkDataPoint(dps pdata.NumberDataPointSlice, interfaceName string, direction string, value *uint64, startTime pdata.Timestamp, currentTime pdata.Timestamp) {
+	if value == nil {
+		return
+	}
+	dp := dps.AppendEmpty()
+	dp.Attributes().UpsertString(metadata.L.Interface, interfaceName)
+	dp.Attributes().UpsertString(metadata.L.Direction, direction)
+	dp.SetIntVal(int64(*value))
+	dp.SetStartTimestamp(startTime)
+	dp.SetTimestamp(currentTime)
 }

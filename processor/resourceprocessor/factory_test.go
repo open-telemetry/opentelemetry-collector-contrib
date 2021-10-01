@@ -37,7 +37,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 func TestCreateProcessor(t *testing.T) {
 	factory := NewFactory()
 	cfg := &Config{
-		ProcessorSettings: config.NewProcessorSettings(config.NewID(typeStr)),
+		ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
 		AttributesActions: []attraction.ActionKeyValue{
 			{Key: "cloud.availability_zone", Value: "zone-1", Action: attraction.UPSERT},
 		},
@@ -66,7 +66,7 @@ func TestInvalidEmptyActions(t *testing.T) {
 func TestInvalidAttributeActions(t *testing.T) {
 	factory := NewFactory()
 	cfg := &Config{
-		ProcessorSettings: config.NewProcessorSettings(config.NewID(typeStr)),
+		ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
 		AttributesActions: []attraction.ActionKeyValue{
 			{Key: "k", Value: "v", Action: "invalid-action"},
 		},

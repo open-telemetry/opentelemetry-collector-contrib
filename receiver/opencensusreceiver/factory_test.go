@@ -67,14 +67,14 @@ func TestCreateTracesReceiver(t *testing.T) {
 		{
 			name: "default",
 			cfg: &Config{
-				ReceiverSettings:   config.NewReceiverSettings(config.NewID(typeStr)),
+				ReceiverSettings:   config.NewReceiverSettings(config.NewComponentID(typeStr)),
 				GRPCServerSettings: defaultGRPCSettings,
 			},
 		},
 		{
 			name: "invalid_port",
 			cfg: &Config{
-				ReceiverSettings: config.NewReceiverSettings(config.NewID(typeStr)),
+				ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
 				GRPCServerSettings: configgrpc.GRPCServerSettings{
 					NetAddr: confignet.NetAddr{
 						Endpoint:  "localhost:112233",
@@ -87,7 +87,7 @@ func TestCreateTracesReceiver(t *testing.T) {
 		{
 			name: "max-msg-size-and-concurrent-connections",
 			cfg: &Config{
-				ReceiverSettings: config.NewReceiverSettings(config.NewID(typeStr)),
+				ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
 				GRPCServerSettings: configgrpc.GRPCServerSettings{
 					NetAddr:              defaultNetAddr,
 					MaxRecvMsgSizeMiB:    32,
@@ -130,14 +130,14 @@ func TestCreateMetricReceiver(t *testing.T) {
 		{
 			name: "default",
 			cfg: &Config{
-				ReceiverSettings:   config.NewReceiverSettings(config.NewID(typeStr)),
+				ReceiverSettings:   config.NewReceiverSettings(config.NewComponentID(typeStr)),
 				GRPCServerSettings: defaultGRPCSettings,
 			},
 		},
 		{
 			name: "invalid_address",
 			cfg: &Config{
-				ReceiverSettings: config.NewReceiverSettings(config.NewID(typeStr)),
+				ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
 				GRPCServerSettings: configgrpc.GRPCServerSettings{
 					NetAddr: confignet.NetAddr{
 						Endpoint:  "327.0.0.1:1122",
@@ -150,7 +150,7 @@ func TestCreateMetricReceiver(t *testing.T) {
 		{
 			name: "keepalive",
 			cfg: &Config{
-				ReceiverSettings: config.NewReceiverSettings(config.NewID(typeStr)),
+				ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
 				GRPCServerSettings: configgrpc.GRPCServerSettings{
 					NetAddr: defaultNetAddr,
 					Keepalive: &configgrpc.KeepaliveServerConfig{
