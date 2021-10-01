@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// +build windows
+
 package windows
 
 import (
@@ -104,7 +106,7 @@ func (e *EventXML) parseMessage() (string, map[string]interface{}) {
 func unmarshalEventXML(bytes []byte) (EventXML, error) {
 	var eventXML EventXML
 	if err := xml.Unmarshal(bytes, &eventXML); err != nil {
-		return EventXML{}, fmt.Errorf("failed to unmarshal xml bytes into event: %s", err)
+		return EventXML{}, fmt.Errorf("failed to unmarshal xml bytes into event: %w (%s)", err, string(bytes))
 	}
 	return eventXML, nil
 }

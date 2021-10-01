@@ -70,9 +70,9 @@ func (b *Bookmark) Render(buffer Buffer) (string, error) {
 	}
 
 	var bufferUsed, propertyCount uint32
-	err := evtRender(0, b.handle, EvtRenderBookmark, buffer.Size(), buffer.FirstByte(), &bufferUsed, &propertyCount)
+	err := evtRender(0, b.handle, EvtRenderBookmark, buffer.SizeBytes(), buffer.FirstByte(), &bufferUsed, &propertyCount)
 	if err == ErrorInsufficientBuffer {
-		buffer.UpdateSize(bufferUsed)
+		buffer.UpdateSizeBytes(bufferUsed)
 		return b.Render(buffer)
 	}
 
