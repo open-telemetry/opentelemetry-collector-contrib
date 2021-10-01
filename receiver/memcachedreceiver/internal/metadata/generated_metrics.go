@@ -121,9 +121,9 @@ var Metrics = &metricStruct{
 			metric.SetName("memcached.command_count")
 			metric.SetDescription("Commands executed")
 			metric.SetUnit("1")
-			metric.SetDataType(pdata.MetricDataTypeIntSum)
-			metric.IntSum().SetIsMonotonic(true)
-			metric.IntSum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+			metric.SetDataType(pdata.MetricDataTypeSum)
+			metric.Sum().SetIsMonotonic(true)
+			metric.Sum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
 		},
 	},
 	&metricImpl{
@@ -138,23 +138,32 @@ var Metrics = &metricStruct{
 	&metricImpl{
 		"memcached.current_items",
 		func(metric pdata.Metric) {
-			metric.SetName("memcached.get_hits")
-			metric.SetDescription("Number of keys that have been requested and found present")
-			metric.SetUnit("connections")
+			metric.SetName("memcached.current_items")
+			metric.SetDescription("Number of items currently stored in the cache")
+			metric.SetUnit("1")
+			metric.SetDataType(pdata.MetricDataTypeGauge)
+		},
+	},
+	&metricImpl{
+		"memcached.eviction_count",
+		func(metric pdata.Metric) {
+			metric.SetName("memcached.eviction_count")
+			metric.SetDescription("Cache item evictions")
+			metric.SetUnit("1")
 			metric.SetDataType(pdata.MetricDataTypeSum)
 			metric.Sum().SetIsMonotonic(true)
-			metric.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
+			metric.Sum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
 		},
 	},
 	&metricImpl{
 		"memcached.network",
 		func(metric pdata.Metric) {
-			metric.SetName("memcached.get_misses")
-			metric.SetDescription("Number of items that have been requested and not found")
-			metric.SetUnit("connections")
+			metric.SetName("memcached.network")
+			metric.SetDescription("Bytes transferred over the network.")
+			metric.SetUnit("by")
 			metric.SetDataType(pdata.MetricDataTypeSum)
 			metric.Sum().SetIsMonotonic(true)
-			metric.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
+			metric.Sum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
 		},
 	},
 	&metricImpl{
@@ -163,9 +172,9 @@ var Metrics = &metricStruct{
 			metric.SetName("memcached.operation_count")
 			metric.SetDescription("Memcached operation hit/miss counts.")
 			metric.SetUnit("1")
-			metric.SetDataType(pdata.MetricDataTypeIntSum)
-			metric.IntSum().SetIsMonotonic(true)
-			metric.IntSum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+			metric.SetDataType(pdata.MetricDataTypeSum)
+			metric.Sum().SetIsMonotonic(true)
+			metric.Sum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
 		},
 	},
 	&metricImpl{
@@ -203,7 +212,7 @@ var Metrics = &metricStruct{
 			metric.SetUnit("connections")
 			metric.SetDataType(pdata.MetricDataTypeSum)
 			metric.Sum().SetIsMonotonic(true)
-			metric.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
+			metric.Sum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
 		},
 	},
 }

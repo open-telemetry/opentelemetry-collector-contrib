@@ -77,7 +77,7 @@ metrics:
     description: Bytes transferred over the network.
     unit: by
     data:
-      type: int sum
+      type: sum
       monotonic: true
       aggregation: cumulative
     labels: [direction]
@@ -85,7 +85,7 @@ metrics:
     description: Memcached operation hit/miss counts. 
     unit: 1
     data:
-      type: int sum
+      type: sum
       monotonic: true
       aggregation: cumulative
     labels: [type,operation]
