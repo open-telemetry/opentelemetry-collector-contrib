@@ -2,7 +2,7 @@ receivers:
   cloudfoundry:
   cloudfoundry/one:
     rlp_gateway:
-      endpoint: "https://log-stream.sys.example.internal"
+      endpoint: "https://[invalid"
       shard_id: "otel-test"
       timeout: "20s"
       tls:

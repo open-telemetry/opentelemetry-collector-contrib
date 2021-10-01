@@ -17,6 +17,9 @@ package cloudfoundryreceiver
 import (
 	"context"
 
+	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configtls"
+
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
@@ -42,14 +45,26 @@ func NewFactory() component.ReceiverFactory {
 
 func createDefaultConfig() config.Receiver {
 	return &Config{
-		ReceiverSettings:        config.NewReceiverSettings(config.NewComponentID(typeStr)),
-		RLPGatewayURL:           defaultURL,
-		RLPGatewaySkipTLSVerify: false,
-		RLPGatewayShardID:       defaultRLPGatewayShardID,
-		UAAUsername:             defaultUAAUsername,
-		UAAPassword:             "",
-		UAAUrl:                  defaultURL,
-		UAASkipTLSVerify:        false,
+		ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
+		RLPGateway: RLPGatewayConfig{
+			HTTPClientSettings: confighttp.HTTPClientSettings{
+				Endpoint: defaultURL,
+				TLSSetting: configtls.TLSClientSetting{
+					InsecureSkipVerify: false,
+				},
+			},
+			ShardID: defaultRLPGatewayShardID,
+		},
+		UAA: UAAConfig{
+			HTTPClientSettings: confighttp.HTTPClientSettings{
+				Endpoint: defaultURL,
+				TLSSetting: configtls.TLSClientSetting{
+					InsecureSkipVerify: false,
+				},
+			},
+			Username: defaultUAAUsername,
+			Password: "",
+		},
 	}
 }
 
