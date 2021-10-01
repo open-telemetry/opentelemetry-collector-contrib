@@ -76,7 +76,7 @@ type Config struct {
 	MaxContentLengthLogs uint `mapstructure:"max_content_length_logs"`
 
 	// TLSSetting struct exposes TLS client configuration.
-	TLSSetting configtls.TLSClientSetting `mapstructure:"tls,omitempty"`
+	TLSSetting configtls.TLSClientSetting `mapstructure:",squash"`
 
 	// App name is used to track telemetry information for Splunk App's using HEC by App name. Defaults to "OpenTelemetry Collector Contrib".
 	SplunkAppName string `mapstructure:"splunk_app_name"`
