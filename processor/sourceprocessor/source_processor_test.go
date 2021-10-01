@@ -200,11 +200,11 @@ func TestTraceSourceFilteringOutByRegex(t *testing.T) {
 		{
 			name: "pod exclude regex",
 			cfg: func() *Config {
-				cfg := createConfig()
-				cfg.Exclude = map[string]string{
+				conf := createConfig()
+				conf.Exclude = map[string]string{
 					"pod": ".*",
 				}
-				return cfg
+				return conf
 			}(),
 			want: func() pdata.Traces {
 				want := newTraceDataWithSpans(mergedK8sLabelsWithMeta, k8sLabels)
@@ -216,11 +216,11 @@ func TestTraceSourceFilteringOutByRegex(t *testing.T) {
 		{
 			name: "container exclude regex",
 			cfg: func() *Config {
-				cfg := createConfig()
-				cfg.Exclude = map[string]string{
+				conf := createConfig()
+				conf.Exclude = map[string]string{
 					"container": ".*",
 				}
-				return cfg
+				return conf
 			}(),
 			want: func() pdata.Traces {
 				want := newTraceDataWithSpans(mergedK8sLabelsWithMeta, k8sLabels)
@@ -232,11 +232,11 @@ func TestTraceSourceFilteringOutByRegex(t *testing.T) {
 		{
 			name: "namespace exclude regex",
 			cfg: func() *Config {
-				cfg := createConfig()
-				cfg.Exclude = map[string]string{
+				conf := createConfig()
+				conf.Exclude = map[string]string{
 					"namespace": ".*",
 				}
-				return cfg
+				return conf
 			}(),
 			want: func() pdata.Traces {
 				want := newTraceDataWithSpans(mergedK8sLabelsWithMeta, k8sLabels)
