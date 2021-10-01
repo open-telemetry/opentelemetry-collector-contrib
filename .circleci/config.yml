@@ -190,10 +190,6 @@ workflows:
   build-publish:
     when: << pipeline.parameters.run-build-publish >>
     jobs:
-      - windows-test:
-          filters:
-            tags:
-              only: /.*/
       - setup:
           filters:
             tags:
@@ -234,7 +230,6 @@ workflows:
             - unit-tests
             - integration-tests
             - cross-compile
-            - windows-test
             - windows-msi
             - deb-package
             - rpm-package
@@ -244,7 +239,6 @@ workflows:
             - unit-tests
             - integration-tests
             - cross-compile
-            - windows-test
             - windows-msi
             - deb-package
             - rpm-package
@@ -257,7 +251,6 @@ workflows:
           requires:
             - lint
             - unit-tests
-            - windows-test
             - integration-tests
             - cross-compile
           filters:
@@ -340,25 +333,6 @@ jobs:
       - run:
           name: Upload unit test coverage
           command: bash <(curl -s https://codecov.io/bash) -F unit
-
-  windows-test:
-    executor:
-      name: win/default
-      shell: powershell.exe
-    environment:
-      GOPATH=~/go
-    steps:
-      - checkout
-      - restore_module_cache
-      - run:
-          name: Upgrade golang
-          command: |
-            choco upgrade golang --version=1.17
-            refreshenv
-      - run:
-          name: Unit tests
-          command: (Get-Childitem -Include go.mod -Recurse) | ForEach-Object { cd (Split-Path $_ -Parent); go test ./...; if ($LastExitCode -gt 0) { exit $LastExitCode } }
-      - save_module_cache
 
   windows-msi:
     executor:
