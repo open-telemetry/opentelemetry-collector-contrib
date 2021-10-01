@@ -62,10 +62,13 @@ func (s *receiver) poll(ctx context.Context, start string, end string, resolutio
 			for _, process := range s.client.Processes(ctx, project.ID) {
 				resource := pdata.NewResource()
 				resourceAttributes.CopyTo(resource.Attributes())
-				resource.Attributes().InsertString("hostname", process.Hostname)
-				resource.Attributes().InsertString("port", strconv.Itoa(process.Port))
+				resource.Attributes().InsertString("host.name", process.Hostname)
+				resource.Attributes().InsertString("process.port", strconv.Itoa(process.Port))
+				// This receiver will support both logs and metrics- if one pipeline
+				//  or the other is not configured, it will be nil.
+				pdata.NewMetrics()
 				if s.metricSink != nil {
-					metrics, errs :=
+					metrics, err :=
 						s.client.ProcessMetrics(
 							ctx,
 							resource,
@@ -76,19 +79,31 @@ func (s *receiver) poll(ctx context.Context, start string, end string, resolutio
 							end,
 							resolution,
 						)
-					for _, err := range errs {
+					if err != nil {
 						s.log.Debug(
 							"Encountered error when polling from MongoDB Atlas",
 							zap.Error(err),
 						)
+						return
 					}
 					s.metricSink.ConsumeMetrics(ctx, metrics)
 
-					for _, db := range s.client.ProcessDatabases(ctx, project.ID, process.Hostname, process.Port) {
+					processDatabases, err := s.client.ProcessDatabases(
+						ctx,
+						project.ID,
+						process.Hostname,
+						process.Port,
+					)
+					if err != nil {
+						s.log.Debug("Error retrieving process databases", zap.Error(err))
+					}
+
+					for _, db := range processDatabases {
 						dbResource := pdata.NewResource()
 						resource.CopyTo(dbResource)
-						resource.Attributes().InsertString("database_name", db.DatabaseName)
-						metrics, errs := s.client.ProcessDatabaseMetrics(
+						resource.Attributes().
+							InsertString("mongodb.atlas.database_name", db.DatabaseName)
+						metrics, err := s.client.ProcessDatabaseMetrics(
 							ctx,
 							resource,
 							project.ID,
@@ -99,11 +114,12 @@ func (s *receiver) poll(ctx context.Context, start string, end string, resolutio
 							end,
 							resolution,
 						)
-						for _, err := range errs {
+						if err != nil {
 							s.log.Debug(
 								"Encountered error when polling from MongoDB Atlas",
 								zap.Error(err),
 							)
+							return
 						}
 						s.metricSink.ConsumeMetrics(
 							ctx,
@@ -113,8 +129,9 @@ func (s *receiver) poll(ctx context.Context, start string, end string, resolutio
 					for _, disk := range s.client.ProcessDisks(ctx, project.ID, process.Hostname, process.Port) {
 						diskResource := pdata.NewResource()
 						resource.CopyTo(diskResource)
-						diskResource.Attributes().InsertString("partition_name", disk.PartitionName)
-						metrics, errs := s.client.ProcessDiskMetrics(
+						diskResource.Attributes().
+							InsertString("mongodb.atlas.partition", disk.PartitionName)
+						metrics, err := s.client.ProcessDiskMetrics(
 							ctx,
 							diskResource,
 							project.ID,
@@ -125,11 +142,11 @@ func (s *receiver) poll(ctx context.Context, start string, end string, resolutio
 							end,
 							resolution,
 						)
-						for _, err := range errs {
+						if err != nil {
 							s.log.Debug(
 								"Encountered error when polling from MongoDB Atlas",
-								zap.Error(err),
-							)
+								zap.Error(err))
+							return
 						}
 						s.metricSink.ConsumeMetrics(
 							ctx,
@@ -141,6 +158,5 @@ func (s *receiver) poll(ctx context.Context, start string, end string, resolutio
 				}
 			}
 		}
-		// }
 	}
 }

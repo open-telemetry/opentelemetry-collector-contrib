@@ -19,6 +19,7 @@ import (
 	"fmt"
 
 	"github.com/mongodb-forks/digest"
+	"github.com/pkg/errors"
 	"go.mongodb.org/atlas/mongodbatlas"
 	"go.opentelemetry.io/collector/model/pdata"
 	"go.uber.org/zap"
@@ -70,7 +71,7 @@ func hasNext(links []*mongodbatlas.Link) bool {
 }
 
 // Organizations returns a list of all organizations available with the supplied credentials
-func (s *MongoDBAtlasClient) Organizations(ctx context.Context) []*mongodbatlas.Organization {
+func (s *MongoDBAtlasClient) Organizations(ctx context.Context) ([]*mongodbatlas.Organization, error) {
 	allOrgs := make([]*mongodbatlas.Organization, 0)
 	page := 1
 
@@ -79,15 +80,15 @@ func (s *MongoDBAtlasClient) Organizations(ctx context.Context) []*mongodbatlas.
 		page++
 		if err != nil {
 			// TODO: Add error to a metric
-			s.log.Debug("Error retrieving organizations from MongoDB Atlas API", zap.Error(err))
-			break // Stop, returning what we have (probably empty slice)
+			// Stop, returning what we have (probably empty slice)
+			return allOrgs, errors.Wrap(err, "Error retrieving organizations from MongoDB Atlas API")
 		}
 		allOrgs = append(allOrgs, orgs...)
 		if !hasNext {
 			break
 		}
 	}
-	return allOrgs
+	return allOrgs, nil
 }
 
 func (s *MongoDBAtlasClient) getOrganizationsPage(
@@ -110,7 +111,7 @@ func (s *MongoDBAtlasClient) getOrganizationsPage(
 func (s *MongoDBAtlasClient) Projects(
 	ctx context.Context,
 	orgID string,
-) []*mongodbatlas.Project {
+) ([]*mongodbatlas.Project, error) {
 	allProjects := make([]*mongodbatlas.Project, 0)
 	page := 1
 
@@ -118,15 +119,14 @@ func (s *MongoDBAtlasClient) Projects(
 		projects, hasNext, err := s.getProjectsPage(ctx, orgID, page)
 		page++
 		if err != nil {
-			s.log.Debug("Error retrieving list of projects from MongoDB Atlas API", zap.Error(err))
-			break
+			return allProjects, errors.Wrap(err, "Error retrieving list of projects from MongoDB Atlas API")
 		}
 		allProjects = append(allProjects, projects...)
 		if !hasNext {
 			break
 		}
 	}
-	return allProjects
+	return allProjects, nil
 }
 
 func (s *MongoDBAtlasClient) getProjectsPage(
@@ -150,7 +150,7 @@ func (s *MongoDBAtlasClient) getProjectsPage(
 func (s *MongoDBAtlasClient) Processes(
 	ctx context.Context,
 	projectID string,
-) []*mongodbatlas.Process {
+) ([]*mongodbatlas.Process, error) {
 	// A paginated API, but the MongoDB client just returns the values from the first page
 
 	// Note: MongoDB Atlas also has the idea of a Cluster- we can retrieve a list of clusters from
@@ -169,10 +169,9 @@ func (s *MongoDBAtlasClient) Processes(
 	)
 	err = checkMongoDBClientErr(err, response)
 	if err != nil {
-		s.log.Debug("Error retrieving processes from MongoDB Atlas API", zap.Error(err))
-		return make([]*mongodbatlas.Process, 0)
+		return make([]*mongodbatlas.Process, 0), errors.Wrap(err, "Error retrieving processes from MongoDB Atlas API")
 	}
-	return processes
+	return processes, nil
 }
 
 func (s *MongoDBAtlasClient) getProcessDatabasesPage(
@@ -202,22 +201,21 @@ func (s *MongoDBAtlasClient) ProcessDatabases(
 	projectID string,
 	host string,
 	port int,
-) []*mongodbatlas.ProcessDatabase {
+) ([]*mongodbatlas.ProcessDatabase, error) {
 	allProcessDatabases := make([]*mongodbatlas.ProcessDatabase, 0)
 	pageNum := 1
 	for {
 		processes, hasMore, err := s.getProcessDatabasesPage(ctx, projectID, host, port, pageNum)
 		pageNum++
 		if err != nil {
-			s.log.Debug("Error while retrieving databases from MongoDB Atlas API", zap.Error(err))
-			break // Return the results we already have
+			return allProcessDatabases, err
 		}
 		allProcessDatabases = append(allProcessDatabases, processes...)
 		if !hasMore {
 			break
 		}
 	}
-	return allProcessDatabases
+	return allProcessDatabases, nil
 }
 
 // ProcessMetrics returns a set of metrics associated with the specified running process.
@@ -230,7 +228,7 @@ func (s *MongoDBAtlasClient) ProcessMetrics(
 	start string,
 	end string,
 	resolution string,
-) (pdata.Metrics, []error) {
+) (pdata.Metrics, error) {
 	allMeasurements := make([]*mongodbatlas.Measurements, 0)
 	pageNum := 1
 	for {
@@ -297,7 +295,7 @@ func (s *MongoDBAtlasClient) ProcessDatabaseMetrics(
 	start string,
 	end string,
 	resolution string,
-) (pdata.Metrics, []error) {
+) (pdata.Metrics, error) {
 	allMeasurements := make([]*mongodbatlas.Measurements, 0)
 	pageNum := 1
 	for {
@@ -412,7 +410,7 @@ func (s *MongoDBAtlasClient) ProcessDiskMetrics(
 	start string,
 	end string,
 	resolution string,
-) (pdata.Metrics, []error) {
+) (pdata.Metrics, error) {
 	allMeasurements := make([]*mongodbatlas.Measurements, 0)
 	pageNum := 1
 	for {
@@ -471,9 +469,8 @@ func (s *MongoDBAtlasClient) processDiskMeasurementsPage(
 	return measurements.Measurements, hasNext(measurements.Links), nil
 }
 
-func processMeasurements(_ pdata.Resource, measurements []*mongodbatlas.Measurements) (pdata.Metrics, []error) {
+func processMeasurements(_ pdata.Resource, measurements []*mongodbatlas.Measurements) (pdata.Metrics, error) {
 	// Stub- will be replaced with code for normalizing and processing metrics
 	fmt.Printf("Fake processing %d metrics\n", len(measurements))
-	errs := make([]error, 0)
-	return pdata.NewMetrics(), errs
+	return pdata.NewMetrics(), nil
 }
