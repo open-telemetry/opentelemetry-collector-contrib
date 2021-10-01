@@ -106,7 +106,8 @@ func (e *EventLogInput) Start(persister operator.Persister) error {
 	e.bookmark = NewBookmark()
 	offsetXML, err := e.getBookmarkOffset(ctx)
 	if err != nil {
-		return fmt.Errorf("failed to retrieve bookmark offset: %s", err)
+		e.Errorf("Failed to open bookmark, continuing without previous bookmark: %s", err)
+		e.persister.Delete(ctx, e.channel)
 	}
 
 	if offsetXML != "" {

@@ -36,6 +36,19 @@ func TestBufferReadBytes(t *testing.T) {
 	require.Equal(t, utf8, bytes)
 }
 
+func TestBufferReadWideBytes(t *testing.T) {
+	buffer := NewBuffer()
+	utf8 := []byte("test")
+	utf16, _ := unicode.UTF16(unicode.LittleEndian, unicode.UseBOM).NewEncoder().Bytes(utf8)
+	for i, b := range utf16 {
+		buffer.buffer[i] = b
+	}
+	offset := uint32(len(utf16) / 2)
+	bytes, err := buffer.ReadWideChars(offset)
+	require.NoError(t, err)
+	require.Equal(t, utf8, bytes)
+}
+
 func TestBufferReadString(t *testing.T) {
 	buffer := NewBuffer()
 	utf8 := []byte("test")
@@ -51,13 +64,24 @@ func TestBufferReadString(t *testing.T) {
 
 func TestBufferUpdateSize(t *testing.T) {
 	buffer := NewBuffer()
-	buffer.UpdateSize(1)
+	buffer.UpdateSizeBytes(1)
 	require.Equal(t, 1, len(buffer.buffer))
+}
+
+func TestBufferUpdateSizeWide(t *testing.T) {
+	buffer := NewBuffer()
+	buffer.UpdateSizeWide(1)
+	require.Equal(t, 2, len(buffer.buffer))
 }
 
 func TestBufferSize(t *testing.T) {
 	buffer := NewBuffer()
-	require.Equal(t, uint32(defaultBufferSize), buffer.Size())
+	require.Equal(t, uint32(defaultBufferSize), buffer.SizeBytes())
+}
+
+func TestBufferSizeWide(t *testing.T) {
+	buffer := NewBuffer()
+	require.Equal(t, uint32(defaultBufferSize/2), buffer.SizeWide())
 }
 
 func TestBufferFirstByte(t *testing.T) {
