@@ -63,9 +63,6 @@ commands:
       - run:
           name: Install tools
           command: make install-tools
-      - run:
-          name: Install testbed tools
-          command: make -C testbed install-tools
       - save_module_cache
 
   setup_go:
@@ -219,12 +216,6 @@ workflows:
           filters:
             tags:
               only: /.*/
-      - loadtest:
-          requires:
-            - cross-compile
-          filters:
-            tags:
-              only: /.*/
       - unit-tests:
           requires:
             - setup
@@ -243,7 +234,6 @@ workflows:
             - unit-tests
             - integration-tests
             - cross-compile
-            - loadtest
             - windows-test
             - windows-msi
             - deb-package
@@ -254,7 +244,6 @@ workflows:
             - unit-tests
             - integration-tests
             - cross-compile
-            - loadtest
             - windows-test
             - windows-msi
             - deb-package
@@ -268,7 +257,6 @@ workflows:
           requires:
             - lint
             - unit-tests
-            - loadtest
             - windows-test
             - integration-tests
             - cross-compile
@@ -352,22 +340,6 @@ jobs:
       - run:
           name: Upload unit test coverage
           command: bash <(curl -s https://codecov.io/bash) -F unit
-
-  loadtest:
-    executor: golang
-    resource_class: medium+
-    environment:
-      TEST_RESULTS: testbed/tests/results/junit/results.xml
-    steps:
-      - restore_workspace
-      - install_fluentbit
-      - run:
-          name: Loadtest
-          command: make e2e-test
-      - store_artifacts:
-          path: testbed/tests/results
-      - store_test_results:
-          path: testbed/tests/results/junit
 
   windows-test:
     executor:
