@@ -259,6 +259,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus v0.35.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin v0.35.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/attributesprocessor v0.35.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/processor/cascadingfilterprocessor v0.35.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/cumulativetodeltaprocessor v0.35.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatorateprocessor v0.35.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor v0.35.0 // indirect
@@ -271,8 +272,10 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor v0.35.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourceprocessor v0.35.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/routingprocessor v0.35.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/processor/sourceprocessor v0.35.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanmetricsprocessor v0.35.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanprocessor v0.35.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/processor/sumologicsyslogprocessor v0.35.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor v0.35.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsecscontainermetricsreceiver v0.35.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsxrayreceiver v0.35.0 // indirect
