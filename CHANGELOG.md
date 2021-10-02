@@ -4,11 +4,8 @@
 
 ## 🛑 Breaking changes 🛑
 
-<<<<<<< HEAD
 - Remove squash on configtls.TLSClientSetting for splunkhecexporter (#5541)
-=======
 - Remove squash on configtls.TLSClientSetting for AWS components (#5454)
->>>>>>> 9d6efde0d96e83e164b89d0777281925359a3e4c
 - Move `k8sprocessor` to `k8sattributesprocessor`.
 - Rename `k8s_tagger` configuration `k8sattributes`.
 - filelog receiver: use empty value for `SeverityText` field instead of `"Undefined"` (#5423)
