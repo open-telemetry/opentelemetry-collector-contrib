@@ -38,6 +38,7 @@ const (
 	spanKindKey        = "span.kind"   // OpenTelemetry non-standard constant.
 	statusCodeKey      = "status.code" // OpenTelemetry non-standard constant.
 	metricKeySeparator = string(byte(0))
+	traceIDKey         = "trace_id"
 )
 
 var (
@@ -48,6 +49,11 @@ var (
 		2, 4, 6, 8, 10, 50, 100, 200, 400, 800, 1000, 1400, 2000, 5000, 10_000, 15_000, maxDurationMs,
 	}
 )
+
+type exemplarData struct {
+	traceID pdata.TraceID
+	value   float64
+}
 
 type metricKey string
 
@@ -69,10 +75,11 @@ type processorImp struct {
 	callSum map[metricKey]int64
 
 	// Latency histogram.
-	latencyCount        map[metricKey]uint64
-	latencySum          map[metricKey]float64
-	latencyBucketCounts map[metricKey][]uint64
-	latencyBounds       []float64
+	latencyCount         map[metricKey]uint64
+	latencySum           map[metricKey]float64
+	latencyBucketCounts  map[metricKey][]uint64
+	latencyBounds        []float64
+	latencyExemplarsData map[metricKey][]exemplarData
 
 	// A cache of dimension key-value maps keyed by a unique identifier formed by a concatenation of its values:
 	// e.g. { "foo/barOK": { "serviceName": "foo", "operation": "/bar", "status_code": "OK" }}
@@ -106,6 +113,7 @@ func newProcessor(logger *zap.Logger, config config.Processor, nextConsumer cons
 		latencySum:            make(map[metricKey]float64),
 		latencyCount:          make(map[metricKey]uint64),
 		latencyBucketCounts:   make(map[metricKey][]uint64),
+		latencyExemplarsData:  make(map[metricKey][]exemplarData),
 		nextConsumer:          nextConsumer,
 		dimensions:            pConfig.Dimensions,
 		metricKeyToDimensions: make(map[metricKey]pdata.AttributeMap),
@@ -239,15 +247,19 @@ func (p *processorImp) collectLatencyMetrics(ilm pdata.InstrumentationLibraryMet
 		mLatency := ilm.Metrics().AppendEmpty()
 		mLatency.SetDataType(pdata.MetricDataTypeHistogram)
 		mLatency.SetName("latency")
-		mLatency.Histogram().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+		mLatency.Histogram().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
+
+		timestamp := pdata.NewTimestampFromTime(time.Now())
 
 		dpLatency := mLatency.Histogram().DataPoints().AppendEmpty()
 		dpLatency.SetStartTimestamp(pdata.NewTimestampFromTime(p.startTime))
-		dpLatency.SetTimestamp(pdata.NewTimestampFromTime(time.Now()))
+		dpLatency.SetTimestamp(timestamp)
 		dpLatency.SetExplicitBounds(p.latencyBounds)
 		dpLatency.SetBucketCounts(p.latencyBucketCounts[key])
 		dpLatency.SetCount(p.latencyCount[key])
 		dpLatency.SetSum(p.latencySum[key])
+
+		setLatencyExemplars(p.latencyExemplarsData[key], timestamp, dpLatency.Exemplars())
 
 		p.metricKeyToDimensions[key].CopyTo(dpLatency.Attributes())
 	}
@@ -261,7 +273,7 @@ func (p *processorImp) collectCallMetrics(ilm pdata.InstrumentationLibraryMetric
 		mCalls.SetDataType(pdata.MetricDataTypeSum)
 		mCalls.SetName("calls_total")
 		mCalls.Sum().SetIsMonotonic(true)
-		mCalls.Sum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+		mCalls.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
 
 		dpCalls := mCalls.Sum().DataPoints().AppendEmpty()
 		dpCalls.SetStartTimestamp(pdata.NewTimestampFromTime(p.startTime))
@@ -314,12 +326,24 @@ func (p *processorImp) aggregateMetricsForSpan(serviceName string, span pdata.Sp
 	p.cache(serviceName, span, key)
 	p.updateCallMetrics(key)
 	p.updateLatencyMetrics(key, latencyInMilliseconds, index)
+	p.updateLatencyExemplars(key, latencyInMilliseconds, index, span.TraceID())
 	p.lock.Unlock()
 }
 
 // updateCallMetrics increments the call count for the given metric key.
 func (p *processorImp) updateCallMetrics(key metricKey) {
 	p.callSum[key]++
+}
+
+// updateLatencyExemplars sets the histogram exemplars for the given metric key and bucket index.
+func (p *processorImp) updateLatencyExemplars(key metricKey, value float64, index int, traceID pdata.TraceID) {
+	if _, ok := p.latencyExemplarsData[key]; !ok {
+		p.latencyExemplarsData[key] = make([]exemplarData, len(p.latencyBounds))
+	}
+	p.latencyExemplarsData[key][index] = exemplarData{
+		traceID: traceID,
+		value:   value,
+	}
 }
 
 // updateLatencyMetrics increments the histogram counts for the given metric key and bucket index.
@@ -423,4 +447,27 @@ func sanitizeRune(r rune) rune {
 	}
 	// Everything else turns into an underscore
 	return '_'
+}
+
+// setLatencyExemplars sets the histogram exemplars.
+func setLatencyExemplars(exemplarsData []exemplarData, timestamp pdata.Timestamp, exemplars pdata.ExemplarSlice) {
+	es := pdata.NewExemplarSlice()
+	es.EnsureCapacity(len(exemplarsData))
+
+	for _, ed := range exemplarsData {
+		value := ed.value
+		traceID := ed.traceID
+
+		exemplar := es.AppendEmpty()
+
+		if traceID.IsEmpty() {
+			continue
+		}
+
+		exemplar.SetDoubleVal(value)
+		exemplar.SetTimestamp(timestamp)
+		exemplar.FilteredAttributes().Insert(traceIDKey, pdata.NewAttributeValueString(traceID.HexString()))
+	}
+
+	es.CopyTo(exemplars)
 }

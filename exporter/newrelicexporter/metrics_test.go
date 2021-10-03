@@ -145,10 +145,10 @@ func TestRecordMetricMetadata(t *testing.T) {
 		dataOutputCount:  20,
 		externalDuration: 50,
 		metricMetadataCount: map[metricStatsKey]int{
-			{MetricType: pdata.MetricDataTypeSummary}:                                                        1,
-			{MetricType: pdata.MetricDataTypeHistogram}:                                                      1,
-			{MetricType: pdata.MetricDataTypeSum, MetricTemporality: pdata.AggregationTemporalityDelta}:      2,
-			{MetricType: pdata.MetricDataTypeSum, MetricTemporality: pdata.AggregationTemporalityCumulative}: 3,
+			{MetricType: pdata.MetricDataTypeSummary}:                                                              1,
+			{MetricType: pdata.MetricDataTypeHistogram}:                                                            1,
+			{MetricType: pdata.MetricDataTypeSum, MetricTemporality: pdata.MetricAggregationTemporalityDelta}:      2,
+			{MetricType: pdata.MetricDataTypeSum, MetricTemporality: pdata.MetricAggregationTemporalityCumulative}: 3,
 		},
 	}
 
@@ -298,7 +298,7 @@ func TestRecordAttributeMetadata(t *testing.T) {
 			{attributeType: pdata.AttributeValueTypeMap, location: attributeLocationSpanEvent}:    1,
 			{attributeType: pdata.AttributeValueTypeDouble, location: attributeLocationLog}:       1,
 			{attributeType: pdata.AttributeValueTypeInt, location: attributeLocationResource}:     1,
-			{attributeType: pdata.AttributeValueTypeNull, location: attributeLocationSpan}:        1,
+			{attributeType: pdata.AttributeValueTypeEmpty, location: attributeLocationSpan}:       1,
 			{attributeType: pdata.AttributeValueTypeString, location: attributeLocationSpanEvent}: 1,
 		},
 	}

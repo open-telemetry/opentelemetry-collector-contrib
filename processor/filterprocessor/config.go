@@ -19,6 +19,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterconfig"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filtermetric"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterset"
 )
 
 // Config defines configuration for Resource processor.
@@ -45,9 +46,39 @@ type MetricFilters struct {
 
 // LogFilters filters by Log properties.
 type LogFilters struct {
+	// Include match properties describe logs that should be included in the Collector Service pipeline,
+	// all other logs should be dropped from further processing.
+	// If both Include and Exclude are specified, Include filtering occurs first.
+	Include *LogMatchProperties `mapstructure:"include"`
+	// Exclude match properties describe logs that should be excluded from the Collector Service pipeline,
+	// all other logs should be included.
+	// If both Include and Exclude are specified, Include filtering occurs first.
+	Exclude *LogMatchProperties `mapstructure:"exclude"`
+}
+
+// LogMatchType specifies the strategy for matching against `pdata.Log`s.
+type LogMatchType string
+
+// These are the MatchTypes that users can specify for filtering
+// `pdata.Log`s.
+const (
+	Strict = LogMatchType(filterset.Strict)
+	Regexp = LogMatchType(filterset.Regexp)
+)
+
+// LogMatchProperties specifies the set of properties in a log to match against and the
+// type of string pattern matching to use.
+type LogMatchProperties struct {
+	// LogMatchType specifies the type of matching desired
+	LogMatchType LogMatchType `mapstructure:"match_type"`
+
 	// ResourceAttributes defines a list of possible resource attributes to match logs against.
-	// A match occurs if any resource attribute matches at least one expression in this given list.
+	// A match occurs if any resource attribute matches all expressions in this given list.
 	ResourceAttributes []filterconfig.Attribute `mapstructure:"resource_attributes"`
+
+	// RecordAttributes defines a list of possible record attributes to match logs against.
+	// A match occurs if any record attribute matches at least one expression in this given list.
+	RecordAttributes []filterconfig.Attribute `mapstructure:"record_attributes"`
 }
 
 var _ config.Processor = (*Config)(nil)

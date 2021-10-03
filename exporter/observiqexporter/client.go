@@ -29,6 +29,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/model/pdata"
+	"go.uber.org/multierr"
 	"go.uber.org/zap"
 )
 
@@ -54,7 +55,7 @@ func (c *client) sendLogs(
 	defer c.wg.Done()
 
 	if c.isThrottled() {
-		return consumererror.Permanent(errors.New("observIQ still throttled due to a previous request"))
+		return consumererror.NewPermanent(errors.New("observIQ still throttled due to a previous request"))
 	}
 
 	// Conversion errors should be returned after sending what could be converted.
@@ -63,17 +64,17 @@ func (c *client) sendLogs(
 	jsonData, err := json.Marshal(data)
 
 	if err != nil {
-		return consumererror.Permanent(fmt.Errorf("failed to marshal log data to json, logs: %v", err))
+		return consumererror.NewPermanent(fmt.Errorf("failed to marshal log data to json, logs: %v", err))
 	}
 
 	var gzipped bytes.Buffer
 	gzipper := gzip.NewWriter(&gzipped)
 	if _, err = gzipper.Write(jsonData); err != nil {
-		return consumererror.Permanent(err)
+		return consumererror.NewPermanent(err)
 	}
 
 	if err = gzipper.Close(); err != nil {
-		return consumererror.Permanent(err)
+		return consumererror.NewPermanent(err)
 	}
 
 	request, err := http.NewRequestWithContext(ctx, "POST", c.config.Endpoint, &gzipped)
@@ -81,10 +82,18 @@ func (c *client) sendLogs(
 		return err
 	}
 
-	request.Header.Set("x-cabin-api-key", c.config.APIKey)
+	if c.config.APIKey != "" {
+		request.Header.Set("x-cabin-api-key", c.config.APIKey)
+	} else {
+		// Secret key is configured instead of api key
+		request.Header.Set("x-cabin-secret-key", c.config.SecretKey)
+	}
 
 	request.Header.Set("Content-Type", "application/json")
 	request.Header.Set("Content-Encoding", "gzip")
+	request.Header.Set("x-cabin-agent-id", c.config.AgentID)
+	request.Header.Set("x-cabin-agent-name", c.config.AgentName)
+	request.Header.Set("x-cabin-agent-version", c.buildVersion)
 
 	res, err := c.client.Do(request)
 
@@ -106,7 +115,7 @@ func (c *client) sendLogs(
 		if err == nil {
 			body = string(bytes)
 		}
-		return consumererror.Permanent(fmt.Errorf("request to observIQ returned a 400, skipping this chunk. body: %s", body))
+		return consumererror.NewPermanent(fmt.Errorf("request to observIQ returned a 400, skipping this chunk. body: %s", body))
 
 	case res.StatusCode >= 401 && res.StatusCode <= 405:
 		// 401: unauthorized
@@ -119,7 +128,7 @@ func (c *client) sendLogs(
 			body = string(bytes)
 		}
 		c.throttle()
-		return consumererror.Permanent(
+		return consumererror.NewPermanent(
 			fmt.Errorf("unable to send logs to observIQ (status code: %d), please check your account. Body: %s", res.StatusCode, body))
 
 	case res.StatusCode > 405:
@@ -127,7 +136,7 @@ func (c *client) sendLogs(
 	}
 
 	if len(conversionErrs) > 0 {
-		return consumererror.Combine(conversionErrs)
+		return multierr.Combine(conversionErrs...)
 	}
 
 	return nil

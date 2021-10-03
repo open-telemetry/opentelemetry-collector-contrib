@@ -93,7 +93,7 @@ func NewMetricsScraper(
 	ms := &metricsScraper{
 		baseScraper: baseScraper{
 			Component: componenthelper.New(set.componentOptions...),
-			id:        config.NewID(config.Type(name)),
+			id:        config.NewComponentID(config.Type(name)),
 		},
 		ScrapeMetrics: scrape,
 	}
@@ -102,7 +102,6 @@ func NewMetricsScraper(
 }
 
 func (ms metricsScraper) Scrape(ctx context.Context, receiverID config.ComponentID) (pdata.Metrics, error) {
-	ctx = obsreport.ScraperContext(ctx, receiverID, ms.ID())
 	scrp := obsreport.NewScraper(obsreport.ScraperSettings{ReceiverID: receiverID, Scraper: ms.ID()})
 	ctx = scrp.StartMetricsOp(ctx)
 	metrics, err := ms.ScrapeMetrics(ctx)
@@ -149,7 +148,6 @@ func NewResourceMetricsScraper(
 }
 
 func (rms resourceMetricsScraper) Scrape(ctx context.Context, receiverID config.ComponentID) (pdata.Metrics, error) {
-	ctx = obsreport.ScraperContext(ctx, receiverID, rms.ID())
 	scrp := obsreport.NewScraper(obsreport.ScraperSettings{ReceiverID: receiverID, Scraper: rms.ID()})
 	ctx = scrp.StartMetricsOp(ctx)
 	resourceMetrics, err := rms.ScrapeResourceMetrics(ctx)

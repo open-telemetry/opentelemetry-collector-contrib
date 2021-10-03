@@ -38,9 +38,9 @@ func TestLoadConfig(t *testing.T) {
 
 	assert.Equal(t, 2, len(cfg.Exporters))
 
-	cfgExp := cfg.Exporters[config.NewIDWithName(typeStr, "2")]
+	cfgExp := cfg.Exporters[config.NewComponentIDWithName(typeStr, "2")]
 	assert.Equal(t, &Config{
-		ExporterSettings: config.NewExporterSettings(config.NewIDWithName(typeStr, "2")),
+		ExporterSettings: config.NewExporterSettings(config.NewComponentIDWithName(typeStr, "2")),
 		TracesToken:      "logzioTESTtoken",
 		Region:           "eu",
 		CustomEndpoint:   "https://some-url.com:8888",
@@ -63,9 +63,9 @@ func TestDefaultLoadConfig(t *testing.T) {
 
 	assert.Equal(t, 2, len(cfg.Exporters))
 
-	cfgExp := cfg.Exporters[config.NewIDWithName(typeStr, "2")]
+	cfgExp := cfg.Exporters[config.NewComponentIDWithName(typeStr, "2")]
 	assert.Equal(t, &Config{
-		ExporterSettings: config.NewExporterSettings(config.NewIDWithName(typeStr, "2")),
+		ExporterSettings: config.NewExporterSettings(config.NewComponentIDWithName(typeStr, "2")),
 		TracesToken:      "logzioTESTtoken",
 		DrainInterval:    3,
 		QueueCapacity:    20 * 1024 * 1024,

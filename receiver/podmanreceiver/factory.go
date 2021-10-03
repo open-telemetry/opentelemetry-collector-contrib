@@ -27,24 +27,30 @@ import (
 )
 
 const (
-	typeStr = "podman_stats"
+	typeStr           = "podman_stats"
+	defaultAPIVersion = "3.3.1"
 )
 
 func NewFactory() component.ReceiverFactory {
 	return receiverhelper.NewFactory(
 		typeStr,
-		createDefaultConfig,
+		createDefaultReceiverConfig,
 		receiverhelper.WithMetrics(createMetricsReceiver))
 }
 
-func createDefaultConfig() config.Receiver {
+func createDefaultConfig() *Config {
 	return &Config{
 		ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
-			ReceiverSettings:   config.NewReceiverSettings(config.NewID(typeStr)),
+			ReceiverSettings:   config.NewReceiverSettings(config.NewComponentID(typeStr)),
 			CollectionInterval: 10 * time.Second,
 		},
-		Endpoint: "unix:///run/podman/podman.sock",
+		Endpoint:   "unix:///run/podman/podman.sock",
+		APIVersion: defaultAPIVersion,
 	}
+}
+
+func createDefaultReceiverConfig() config.Receiver {
+	return createDefaultConfig()
 }
 
 func createMetricsReceiver(
@@ -54,8 +60,7 @@ func createMetricsReceiver(
 	consumer consumer.Metrics,
 ) (component.MetricsReceiver, error) {
 	podmanConfig := config.(*Config)
-
-	dsr, err := NewReceiver(ctx, params.Logger, podmanConfig, consumer)
+	dsr, err := newReceiver(ctx, params.Logger, podmanConfig, consumer, nil)
 	if err != nil {
 		return nil, err
 	}

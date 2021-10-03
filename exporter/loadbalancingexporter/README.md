@@ -96,7 +96,8 @@ exporters:
     protocol:
       otlp:
         timeout: 1s
-        insecure: true
+        tls:
+          insecure: true
     resolver:
       static:
         hostnames:

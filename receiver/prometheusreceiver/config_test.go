@@ -42,11 +42,11 @@ func TestLoadConfig(t *testing.T) {
 
 	assert.Equal(t, len(cfg.Receivers), 2)
 
-	r0 := cfg.Receivers[config.NewID(typeStr)]
+	r0 := cfg.Receivers[config.NewComponentID(typeStr)]
 	assert.Equal(t, r0, factory.CreateDefaultConfig())
 
-	r1 := cfg.Receivers[config.NewIDWithName(typeStr, "customname")].(*Config)
-	assert.Equal(t, r1.ReceiverSettings, config.NewReceiverSettings(config.NewIDWithName(typeStr, "customname")))
+	r1 := cfg.Receivers[config.NewComponentIDWithName(typeStr, "customname")].(*Config)
+	assert.Equal(t, r1.ReceiverSettings, config.NewReceiverSettings(config.NewComponentIDWithName(typeStr, "customname")))
 	assert.Equal(t, r1.PrometheusConfig.ScrapeConfigs[0].JobName, "demo")
 	assert.Equal(t, time.Duration(r1.PrometheusConfig.ScrapeConfigs[0].ScrapeInterval), 5*time.Second)
 	assert.Equal(t, r1.UseStartTimeMetric, true)
@@ -67,9 +67,9 @@ func TestLoadConfigWithEnvVar(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 
-	r := cfg.Receivers[config.NewID(typeStr)].(*Config)
-	assert.Equal(t, r.ReceiverSettings, config.NewReceiverSettings(config.NewID(typeStr)))
-	assert.Equal(t, r.PrometheusConfig.ScrapeConfigs[0].JobName, jobname)
+	r := cfg.Receivers[config.NewComponentID(typeStr)].(*Config)
+	assert.Equal(t, r.ReceiverSettings, config.NewReceiverSettings(config.NewComponentID(typeStr)))
+	assert.Equal(t, jobname, r.PrometheusConfig.ScrapeConfigs[0].JobName)
 	os.Unsetenv(jobnamevar)
 }
 
@@ -88,17 +88,17 @@ func TestLoadConfigK8s(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 
-	r := cfg.Receivers[config.NewID(typeStr)].(*Config)
-	assert.Equal(t, r.ReceiverSettings, config.NewReceiverSettings(config.NewID(typeStr)))
+	r := cfg.Receivers[config.NewComponentID(typeStr)].(*Config)
+	assert.Equal(t, r.ReceiverSettings, config.NewReceiverSettings(config.NewComponentID(typeStr)))
 
 	scrapeConfig := r.PrometheusConfig.ScrapeConfigs[0]
 	kubeSDConfig := scrapeConfig.ServiceDiscoveryConfigs[0].(*kubernetes.SDConfig)
 	assert.Equal(t,
-		kubeSDConfig.Selectors[0].Field,
-		fmt.Sprintf("spec.nodeName=%s", node))
+		fmt.Sprintf("spec.nodeName=%s", node),
+		kubeSDConfig.Selectors[0].Field)
 	assert.Equal(t,
-		scrapeConfig.RelabelConfigs[1].Replacement,
-		"$1:$2")
+		"$1:$2",
+		scrapeConfig.RelabelConfigs[1].Replacement)
 }
 
 func TestLoadConfigFailsOnUnknownSection(t *testing.T) {
@@ -160,4 +160,148 @@ func TestRejectUnsupportedPrometheusFeatures(t *testing.T) {
 	gotErrMsg := strings.ReplaceAll(err.Error(), "\t", strings.Repeat(" ", 8))
 	require.Equal(t, wantErrMsg, gotErrMsg)
 
+}
+
+func TestNonExistentAuthCredentialsFile(t *testing.T) {
+	factories, err := componenttest.NopFactories()
+	assert.NoError(t, err)
+
+	factory := NewFactory()
+	factories.Receivers[typeStr] = factory
+	cfg, err := configtest.LoadConfig(path.Join(".", "testdata", "invalid-config-prometheus-non-existent-auth-credentials-file.yaml"), factories)
+	require.NoError(t, err)
+	require.NotNil(t, cfg)
+	err = cfg.Validate()
+	require.NotNil(t, err, "Expected a non-nil error")
+
+	wantErrMsg := `receiver "prometheus" has invalid configuration: error checking authorization credentials file "/nonexistentauthcredentialsfile" - stat /nonexistentauthcredentialsfile: no such file or directory`
+
+	gotErrMsg := err.Error()
+	require.Equal(t, wantErrMsg, gotErrMsg)
+}
+
+func TestTLSConfigNonExistentCertFile(t *testing.T) {
+	factories, err := componenttest.NopFactories()
+	assert.NoError(t, err)
+
+	factory := NewFactory()
+	factories.Receivers[typeStr] = factory
+	cfg, err := configtest.LoadConfig(path.Join(".", "testdata", "invalid-config-prometheus-non-existent-cert-file.yaml"), factories)
+	require.NoError(t, err)
+	require.NotNil(t, cfg)
+	err = cfg.Validate()
+	require.NotNil(t, err, "Expected a non-nil error")
+
+	wantErrMsg := `receiver "prometheus" has invalid configuration: error checking client cert file "/nonexistentcertfile" - stat /nonexistentcertfile: no such file or directory`
+
+	gotErrMsg := err.Error()
+	require.Equal(t, wantErrMsg, gotErrMsg)
+}
+
+func TestTLSConfigNonExistentKeyFile(t *testing.T) {
+	factories, err := componenttest.NopFactories()
+	assert.NoError(t, err)
+
+	factory := NewFactory()
+	factories.Receivers[typeStr] = factory
+	cfg, err := configtest.LoadConfig(path.Join(".", "testdata", "invalid-config-prometheus-non-existent-key-file.yaml"), factories)
+	require.NoError(t, err)
+	require.NotNil(t, cfg)
+	err = cfg.Validate()
+	require.NotNil(t, err, "Expected a non-nil error")
+
+	wantErrMsg := `receiver "prometheus" has invalid configuration: error checking client key file "/nonexistentkeyfile" - stat /nonexistentkeyfile: no such file or directory`
+
+	gotErrMsg := err.Error()
+	require.Equal(t, wantErrMsg, gotErrMsg)
+}
+
+func TestTLSConfigCertFileWithoutKeyFile(t *testing.T) {
+	factories, err := componenttest.NopFactories()
+	assert.NoError(t, err)
+
+	factory := NewFactory()
+	factories.Receivers[typeStr] = factory
+	cfg, err := configtest.LoadConfig(path.Join(".", "testdata", "invalid-config-prometheus-cert-file-without-key-file.yaml"), factories)
+	require.NoError(t, err)
+	require.NotNil(t, cfg)
+	err = cfg.Validate()
+	require.NotNil(t, err, "Expected a non-nil error")
+
+	wantErrMsg := `receiver "prometheus" has invalid configuration: client cert file "./testdata/dummy-tls-cert-file" specified without client key file`
+
+	gotErrMsg := err.Error()
+	require.Equal(t, wantErrMsg, gotErrMsg)
+}
+
+func TestTLSConfigKeyFileWithoutCertFile(t *testing.T) {
+	factories, err := componenttest.NopFactories()
+	assert.NoError(t, err)
+
+	factory := NewFactory()
+	factories.Receivers[typeStr] = factory
+	cfg, err := configtest.LoadConfig(path.Join(".", "testdata", "invalid-config-prometheus-key-file-without-cert-file.yaml"), factories)
+	require.NoError(t, err)
+	require.NotNil(t, cfg)
+	err = cfg.Validate()
+	require.NotNil(t, err, "Expected a non-nil error")
+
+	wantErrMsg := `receiver "prometheus" has invalid configuration: client key file "./testdata/dummy-tls-key-file" specified without client cert file`
+
+	gotErrMsg := err.Error()
+	require.Equal(t, wantErrMsg, gotErrMsg)
+}
+
+func TestKubernetesSDConfigWithoutKeyFile(t *testing.T) {
+	factories, err := componenttest.NopFactories()
+	assert.NoError(t, err)
+
+	factory := NewFactory()
+	factories.Receivers[typeStr] = factory
+	cfg, err := configtest.LoadConfig(path.Join(".", "testdata", "invalid-config-prometheus-kubernetes-sd-config.yaml"), factories)
+	require.NoError(t, err)
+	require.NotNil(t, cfg)
+	err = cfg.Validate()
+	require.NotNil(t, err, "Expected a non-nil error")
+
+	wantErrMsg := `receiver "prometheus" has invalid configuration: client cert file "./testdata/dummy-tls-cert-file" specified without client key file`
+
+	gotErrMsg := err.Error()
+	require.Equal(t, wantErrMsg, gotErrMsg)
+}
+
+func TestFileSDConfigJsonNilTargetGroup(t *testing.T) {
+	factories, err := componenttest.NopFactories()
+	assert.NoError(t, err)
+
+	factory := NewFactory()
+	factories.Receivers[typeStr] = factory
+	cfg, err := configtest.LoadConfig(path.Join(".", "testdata", "invalid-config-prometheus-file-sd-config-json.yaml"), factories)
+	require.NoError(t, err)
+	require.NotNil(t, cfg)
+	err = cfg.Validate()
+	require.NotNil(t, err, "Expected a non-nil error")
+
+	wantErrMsg := `receiver "prometheus" has invalid configuration: checking SD file "./testdata/sd-config-with-null-target-group.json": nil target group item found (index 1)`
+
+	gotErrMsg := err.Error()
+	require.Equal(t, wantErrMsg, gotErrMsg)
+}
+
+func TestFileSDConfigYamlNilTargetGroup(t *testing.T) {
+	factories, err := componenttest.NopFactories()
+	assert.NoError(t, err)
+
+	factory := NewFactory()
+	factories.Receivers[typeStr] = factory
+	cfg, err := configtest.LoadConfig(path.Join(".", "testdata", "invalid-config-prometheus-file-sd-config-yaml.yaml"), factories)
+	require.NoError(t, err)
+	require.NotNil(t, cfg)
+	err = cfg.Validate()
+	require.NotNil(t, err, "Expected a non-nil error")
+
+	wantErrMsg := `receiver "prometheus" has invalid configuration: checking SD file "./testdata/sd-config-with-null-target-group.yaml": nil target group item found (index 1)`
+
+	gotErrMsg := err.Error()
+	require.Equal(t, wantErrMsg, gotErrMsg)
 }

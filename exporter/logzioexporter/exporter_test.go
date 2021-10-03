@@ -96,7 +96,7 @@ func TestNullTokenConfig(tester *testing.T) {
 
 func TestEmptyNode(tester *testing.T) {
 	cfg := Config{
-		ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
+		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
 		TracesToken:      "test",
 		Region:           "eu",
 	}
@@ -162,7 +162,7 @@ func TestPushTraceData(tester *testing.T) {
 		rw.WriteHeader(http.StatusOK)
 	}))
 	cfg := Config{
-		ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
+		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
 		TracesToken:      "test",
 		Region:           "eu",
 		CustomEndpoint:   server.URL,
@@ -192,7 +192,7 @@ func TestPushTraceData(tester *testing.T) {
 
 func TestPushMetricsData(tester *testing.T) {
 	cfg := Config{
-		ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
+		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
 		MetricsToken:     "test",
 		Region:           "eu",
 		CustomEndpoint:   "url",

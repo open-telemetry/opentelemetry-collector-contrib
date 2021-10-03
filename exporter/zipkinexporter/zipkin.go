@@ -75,12 +75,12 @@ func (ze *zipkinExporter) start(_ context.Context, host component.Host) (err err
 func (ze *zipkinExporter) pushTraces(ctx context.Context, td pdata.Traces) error {
 	spans, err := translator.FromTraces(td)
 	if err != nil {
-		return consumererror.Permanent(fmt.Errorf("failed to push trace data via Zipkin exporter: %w", err))
+		return consumererror.NewPermanent(fmt.Errorf("failed to push trace data via Zipkin exporter: %w", err))
 	}
 
 	body, err := ze.serializer.Serialize(spans)
 	if err != nil {
-		return consumererror.Permanent(fmt.Errorf("failed to push trace data via Zipkin exporter: %w", err))
+		return consumererror.NewPermanent(fmt.Errorf("failed to push trace data via Zipkin exporter: %w", err))
 	}
 
 	req, err := http.NewRequestWithContext(ctx, "POST", ze.url, bytes.NewReader(body))

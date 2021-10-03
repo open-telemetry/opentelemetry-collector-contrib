@@ -16,7 +16,6 @@ package newrelicexporter
 
 import (
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/config/configparser"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
@@ -61,7 +60,7 @@ type Config struct {
 	LogsConfig EndpointConfig `mapstructure:"logs"`
 }
 
-func (c *Config) Unmarshal(componentSection *configparser.Parser) error {
+func (c *Config) Unmarshal(componentSection *config.Map) error {
 	if err := componentSection.UnmarshalExact(c); err != nil {
 		return err
 	}

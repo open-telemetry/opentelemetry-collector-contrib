@@ -18,7 +18,7 @@ The following settings are required:
   Logs that do not have at least one of these attributes will be dropped. 
   This is a safety net to help prevent accidentally adding dynamic labels that may significantly increase cardinality, 
   thus having a performance impact on your Loki instance. See the 
-  [Loki label best practices](https://grafana.com/docs/loki/latest/best-practices/current-best-practices/) page for 
+  [Loki label best practices](https://grafana.com/docs/loki/latest/best-practices/) page for 
   additional details on the types of labels you may want to associate with log streams.
 
 The following settings can be optionally configured:
@@ -26,14 +26,14 @@ The following settings can be optionally configured:
 - `tenant_id` (no default): The tenant ID used to identify the tenant the logs are associated to. This will set the 
   "X-Scope-OrgID" header used by Loki. If left unset, this header will not be added.
 
-
-- `insecure` (default = false): When set to true disables verifying the server's certificate chain and host name. The
+- `tls`:
+  - `insecure` (default = false): When set to true disables verifying the server's certificate chain and host name. The
   connection is still encrypted but server identity is not verified.
-- `ca_file` (no default) Path to the CA cert to verify the server being connected to. Should only be used if `insecure` 
+  - `ca_file` (no default) Path to the CA cert to verify the server being connected to. Should only be used if `insecure` 
   is set to false.
-- `cert_file` (no default) Path to the TLS cert to use for client connections when TLS client auth is required. 
+  - `cert_file` (no default) Path to the TLS cert to use for client connections when TLS client auth is required. 
   Should only be used if `insecure` is set to false.
-- `key_file` (no default) Path to the TLS key to use for TLS required connections. Should only be used if `insecure` is
+  - `key_file` (no default) Path to the TLS key to use for TLS required connections. Should only be used if `insecure` is
   set to false.
 
 

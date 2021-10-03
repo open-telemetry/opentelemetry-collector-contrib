@@ -128,12 +128,12 @@ func (p *ResourceProvider) detectResource(ctx context.Context) {
 	for _, detector := range p.detectors {
 		r, schemaURL, err := detector.Detect(ctx)
 		if err != nil {
-			p.detectedResource.err = err
-			return
+			p.logger.Warn("failed to detect resource", zap.Error(err))
+		} else {
+			mergedSchemaURL = MergeSchemaURL(mergedSchemaURL, schemaURL)
+			MergeResource(res, r, false)
 		}
 
-		mergedSchemaURL = MergeSchemaURL(mergedSchemaURL, schemaURL)
-		MergeResource(res, r, false)
 	}
 
 	p.logger.Info("detected resource information", zap.Any("resource", AttributesToMap(res.Attributes())))

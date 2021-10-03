@@ -38,7 +38,7 @@ func TestLoadConfig(t *testing.T) {
 
 	assert.Equal(t, len(cfg.Receivers), 1)
 
-	r0 := cfg.Receivers[config.NewID("fluentforward")]
+	r0 := cfg.Receivers[config.NewComponentID("fluentforward")]
 	assert.Equal(t, r0, factory.CreateDefaultConfig())
 
 }

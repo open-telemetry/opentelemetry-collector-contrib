@@ -42,11 +42,11 @@ func TestLoadConfig(t *testing.T) {
 
 	assert.Equal(t, 2, len(cfg.Exporters))
 
-	exporter := cfg.Exporters[config.NewIDWithName(typeStr, "allsettings")]
+	exporter := cfg.Exporters[config.NewComponentIDWithName(typeStr, "allsettings")]
 	actualCfg := exporter.(*Config)
 	expectedCfg := &Config{
 		Config: otlphttp.Config{
-			ExporterSettings: config.NewExporterSettings(config.NewIDWithName(typeStr, "allsettings")),
+			ExporterSettings: config.NewExporterSettings(config.NewComponentIDWithName(typeStr, "allsettings")),
 			RetrySettings: exporterhelper.RetrySettings{
 				Enabled:         true,
 				InitialInterval: 10 * time.Second,
@@ -147,7 +147,7 @@ func TestConfig_sanitize(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			factory := NewFactory()
 			cfg := factory.CreateDefaultConfig().(*Config)
-			cfg.ExporterSettings = config.NewExporterSettings(config.NewID(typeStr))
+			cfg.ExporterSettings = config.NewExporterSettings(config.NewComponentID(typeStr))
 			cfg.Endpoint = tt.fields.Endpoint
 			cfg.Source = tt.fields.Source
 			cfg.AuthConfig = AuthConfig{

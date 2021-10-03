@@ -277,7 +277,7 @@ func eventToOC(event pdata.SpanEvent) *octrace.Span_TimeEvent {
 
 	// Consider TimeEvent to be of MessageEvent type if all and only relevant attributes are set
 	ocMessageEventAttrs := []string{
-		conventions.AttributeMessageType,
+		"message.type",
 		conventions.AttributeMessagingMessageID,
 		conventions.AttributeMessagingMessagePayloadSizeBytes,
 		conventions.AttributeMessagingMessagePayloadCompressedSizeBytes,
@@ -294,7 +294,7 @@ func eventToOC(event pdata.SpanEvent) *octrace.Span_TimeEvent {
 			ocMessageEventAttrValues[attr] = akv
 		}
 		if ocMessageEventAttrFound {
-			ocMessageEventType := ocMessageEventAttrValues[conventions.AttributeMessageType]
+			ocMessageEventType := ocMessageEventAttrValues["message.type"]
 			ocMessageEventTypeVal := octrace.Span_TimeEvent_MessageEvent_Type_value[ocMessageEventType.StringVal()]
 			return &octrace.Span_TimeEvent{
 				Time: timestampAsTimestampPb(event.Timestamp()),

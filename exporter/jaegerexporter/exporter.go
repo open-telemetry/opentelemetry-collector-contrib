@@ -97,7 +97,7 @@ func (s *protoGRPCSender) pushTraces(
 
 	batches, err := jaegertranslator.InternalTracesToJaegerProto(td)
 	if err != nil {
-		return consumererror.Permanent(fmt.Errorf("failed to push trace data via Jaeger exporter: %w", err))
+		return consumererror.NewPermanent(fmt.Errorf("failed to push trace data via Jaeger exporter: %w", err))
 	}
 
 	if s.metadata.Len() > 0 {
@@ -130,7 +130,7 @@ func (s *protoGRPCSender) start(_ context.Context, host component.Host) error {
 	if s.clientSettings == nil {
 		return fmt.Errorf("client settings not found")
 	}
-	opts, err := s.clientSettings.ToDialOptions(host.GetExtensions())
+	opts, err := s.clientSettings.ToDialOptions(host)
 	if err != nil {
 		return err
 	}

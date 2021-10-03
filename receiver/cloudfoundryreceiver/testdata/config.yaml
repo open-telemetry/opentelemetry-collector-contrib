@@ -1,0 +1,24 @@
+receivers:
+  cloudfoundry:
+  cloudfoundry/one:
+    rlp_gateway_url: "https://log-stream.sys.example.internal"
+    rlp_gateway_skip_tls_verify: true
+    rlp_gateway_shard_id: "otel-test"
+    uaa_url: "https://uaa.sys.example.internal"
+    uaa_skip_tls_verify: true
+    uaa_username: "admin"
+    uaa_password: "test"
+    http_timeout: "20s"
+
+processors:
+  nop:
+
+exporters:
+  nop:
+
+service:
+  pipelines:
+    metrics:
+      receivers: [cloudfoundry, cloudfoundry/one]
+      processors: [nop]
+      exporters: [nop]

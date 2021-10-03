@@ -80,7 +80,7 @@ func TestMetric10kDPS(t *testing.T) {
 			datareceivers.NewSFxMetricsDataReceiver(testbed.GetAvailablePort(t)),
 			testbed.ResourceSpec{
 				ExpectedMaxCPU: 120,
-				ExpectedMaxRAM: 91,
+				ExpectedMaxRAM: 95,
 			},
 		},
 	}
@@ -141,7 +141,7 @@ func TestMetricsFromFile(t *testing.T) {
 	defer tc.Stop()
 
 	tc.StartBackend()
-	tc.StartAgent("--log-level=debug")
+	tc.StartAgent()
 
 	tc.StartLoad(options)
 

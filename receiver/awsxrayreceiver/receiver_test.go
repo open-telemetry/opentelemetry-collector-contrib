@@ -117,15 +117,15 @@ func TestSegmentsPassedToConsumer(t *testing.T) {
 	if runtime.GOOS == "darwin" {
 		t.Skip("skipping test on darwin")
 	}
-	doneFn, err := obsreporttest.SetupRecordedMetricsTest()
+	tt, err := obsreporttest.SetupRecordedMetricsTest()
 	assert.NoError(t, err, "SetupRecordedMetricsTest should succeed")
-	defer doneFn()
+	defer tt.Shutdown(context.Background())
 
 	env := stashEnv()
 	defer restoreEnv(env)
 	os.Setenv(defaultRegionEnvName, mockRegion)
 
-	receiverID := config.NewID("TestSegmentsPassedToConsumer")
+	receiverID := config.NewComponentID("TestSegmentsPassedToConsumer")
 
 	addr, rcvr, _ := createAndOptionallyStartReceiver(t, receiverID, nil, true)
 	defer rcvr.Shutdown(context.Background())
@@ -143,19 +143,19 @@ func TestSegmentsPassedToConsumer(t *testing.T) {
 		return len(got) == 1
 	}, 10*time.Second, 5*time.Millisecond, "consumer should eventually get the X-Ray span")
 
-	obsreporttest.CheckReceiverTraces(t, receiverID, udppoller.Transport, 18, 0)
+	assert.NoError(t, obsreporttest.CheckReceiverTraces(receiverID, udppoller.Transport, 18, 0))
 }
 
 func TestTranslatorErrorsOut(t *testing.T) {
-	doneFn, err := obsreporttest.SetupRecordedMetricsTest()
+	tt, err := obsreporttest.SetupRecordedMetricsTest()
 	assert.NoError(t, err, "SetupRecordedMetricsTest should succeed")
-	defer doneFn()
+	defer tt.Shutdown(context.Background())
 
 	env := stashEnv()
 	defer restoreEnv(env)
 	os.Setenv(defaultRegionEnvName, mockRegion)
 
-	receiverID := config.NewID("TestTranslatorErrorsOut")
+	receiverID := config.NewComponentID("TestTranslatorErrorsOut")
 
 	addr, rcvr, recordedLogs := createAndOptionallyStartReceiver(t, receiverID, nil, true)
 	defer rcvr.Shutdown(context.Background())
@@ -170,19 +170,19 @@ func TestTranslatorErrorsOut(t *testing.T) {
 			"X-Ray segment to OT traces conversion failed")
 	}, 10*time.Second, 5*time.Millisecond, "poller should log warning because consumer errored out")
 
-	obsreporttest.CheckReceiverTraces(t, receiverID, udppoller.Transport, 0, 1)
+	assert.NoError(t, obsreporttest.CheckReceiverTraces(receiverID, udppoller.Transport, 0, 1))
 }
 
 func TestSegmentsConsumerErrorsOut(t *testing.T) {
-	doneFn, err := obsreporttest.SetupRecordedMetricsTest()
+	tt, err := obsreporttest.SetupRecordedMetricsTest()
 	assert.NoError(t, err, "SetupRecordedMetricsTest should succeed")
-	defer doneFn()
+	defer tt.Shutdown(context.Background())
 
 	env := stashEnv()
 	defer restoreEnv(env)
 	os.Setenv(defaultRegionEnvName, mockRegion)
 
-	receiverID := config.NewID("TestSegmentsConsumerErrorsOut")
+	receiverID := config.NewComponentID("TestSegmentsConsumerErrorsOut")
 
 	addr, rcvr, recordedLogs := createAndOptionallyStartReceiver(t, receiverID,
 		consumertest.NewErr(errors.New("can't consume traces")), true)
@@ -200,7 +200,7 @@ func TestSegmentsConsumerErrorsOut(t *testing.T) {
 			"Trace consumer errored out")
 	}, 10*time.Second, 5*time.Millisecond, "poller should log warning because consumer errored out")
 
-	obsreporttest.CheckReceiverTraces(t, receiverID, udppoller.Transport, 0, 1)
+	assert.NoError(t, obsreporttest.CheckReceiverTraces(receiverID, udppoller.Transport, 0, 1))
 }
 
 func TestPollerCloseError(t *testing.T) {
@@ -208,7 +208,7 @@ func TestPollerCloseError(t *testing.T) {
 	defer restoreEnv(env)
 	os.Setenv(defaultRegionEnvName, mockRegion)
 
-	_, rcvr, _ := createAndOptionallyStartReceiver(t, config.NewID("TestPollerCloseError"), nil, false)
+	_, rcvr, _ := createAndOptionallyStartReceiver(t, config.NewComponentID("TestPollerCloseError"), nil, false)
 	mPoller := &mockPoller{closeErr: errors.New("mockPollerCloseErr")}
 	rcvr.(*xrayReceiver).poller = mPoller
 	rcvr.(*xrayReceiver).server = &mockProxy{}
@@ -221,7 +221,7 @@ func TestProxyCloseError(t *testing.T) {
 	defer restoreEnv(env)
 	os.Setenv(defaultRegionEnvName, mockRegion)
 
-	_, rcvr, _ := createAndOptionallyStartReceiver(t, config.NewID("TestPollerCloseError"), nil, false)
+	_, rcvr, _ := createAndOptionallyStartReceiver(t, config.NewComponentID("TestPollerCloseError"), nil, false)
 	mProxy := &mockProxy{closeErr: errors.New("mockProxyCloseErr")}
 	rcvr.(*xrayReceiver).poller = &mockPoller{}
 	rcvr.(*xrayReceiver).server = mProxy
@@ -234,7 +234,7 @@ func TestBothPollerAndProxyCloseError(t *testing.T) {
 	defer restoreEnv(env)
 	os.Setenv(defaultRegionEnvName, mockRegion)
 
-	_, rcvr, _ := createAndOptionallyStartReceiver(t, config.NewID("TestBothPollerAndProxyCloseError"), nil, false)
+	_, rcvr, _ := createAndOptionallyStartReceiver(t, config.NewComponentID("TestBothPollerAndProxyCloseError"), nil, false)
 	mPoller := &mockPoller{closeErr: errors.New("mockPollerCloseErr")}
 	mProxy := &mockProxy{closeErr: errors.New("mockProxyCloseErr")}
 	rcvr.(*xrayReceiver).poller = mPoller
@@ -271,7 +271,7 @@ func (m *mockProxy) ListenAndServe() error {
 	return errors.New("returning from ListenAndServe() always errors out")
 }
 
-func (m *mockProxy) Close() error {
+func (m *mockProxy) Shutdown(ctx context.Context) error {
 	if m.closeErr != nil {
 		return m.closeErr
 	}

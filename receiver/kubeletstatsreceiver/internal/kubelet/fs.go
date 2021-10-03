@@ -15,29 +15,18 @@
 package kubelet
 
 import (
-	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
+	"go.opentelemetry.io/collector/model/pdata"
 	stats "k8s.io/kubelet/pkg/apis/stats/v1alpha1"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver/internal/metadata"
 )
 
-func fsMetrics(prefix string, s *stats.FsStats) []*metricspb.Metric {
+func addFilesystemMetrics(dest pdata.MetricSlice, prefix string, s *stats.FsStats, currentTime pdata.Timestamp) {
 	if s == nil {
-		return nil
+		return
 	}
-	return []*metricspb.Metric{
-		fsAvailableMetric(prefix, s),
-		fsCapacityMetric(prefix, s),
-		fsUsedMetric(prefix, s),
-	}
-}
 
-func fsAvailableMetric(prefix string, s *stats.FsStats) *metricspb.Metric {
-	return intGauge(prefix+"filesystem.available", "By", s.AvailableBytes)
-}
-
-func fsCapacityMetric(prefix string, s *stats.FsStats) *metricspb.Metric {
-	return intGauge(prefix+"filesystem.capacity", "By", s.CapacityBytes)
-}
-
-func fsUsedMetric(prefix string, s *stats.FsStats) *metricspb.Metric {
-	return intGauge(prefix+"filesystem.usage", "By", s.UsedBytes)
+	addIntGauge(dest, prefix, metadata.M.FilesystemAvailable, s.AvailableBytes, currentTime)
+	addIntGauge(dest, prefix, metadata.M.FilesystemCapacity, s.CapacityBytes, currentTime)
+	addIntGauge(dest, prefix, metadata.M.FilesystemUsage, s.UsedBytes, currentTime)
 }

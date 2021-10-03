@@ -33,7 +33,8 @@ jobs:
             %LocalAppData%\go-build
           key: v1-go-pkg-mod-${{ runner.os }}-${{ hashFiles('**/go.mod', '**/go.sum') }}
       - name: Run Unit tests
-        run: go test ./...
+        # use default Go build tags from Makefile.common
+        run: go test --tags containers_image_openpgp,exclude_graphdriver_btrfs,exclude_graphdriver_devicemapper ./...
       - name: GitHub Issue Generator
         if: ${{ failure() && github.ref == 'ref/head/main' }}
         run: |

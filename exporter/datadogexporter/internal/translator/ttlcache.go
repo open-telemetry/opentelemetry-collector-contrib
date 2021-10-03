@@ -22,6 +22,10 @@ import (
 	gocache "github.com/patrickmn/go-cache"
 )
 
+const (
+	metricKeySeparator = string(byte(0))
+)
+
 type TTLCache struct {
 	cache *gocache.Cache
 }
@@ -38,13 +42,29 @@ func NewTTLCache(sweepInterval int64, deltaTTL int64) *TTLCache {
 	return &TTLCache{cache}
 }
 
+// Uses a logic similar to what is done in the span processor to build metric keys:
+// https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/b2327211df976e0a57ef0425493448988772a16b/processor/spanmetricsprocessor/processor.go#L353-L387
+// TODO: make this a public util function?
+func concatDimensionValue(metricKeyBuilder *strings.Builder, value string) {
+	metricKeyBuilder.WriteString(value)
+	metricKeyBuilder.WriteString(metricKeySeparator)
+}
+
 // metricDimensionsToMapKey maps name and tags to a string to use as an identifier
 // The tags order does not matter
 func (*TTLCache) metricDimensionsToMapKey(name string, tags []string) string {
-	const separator string = "}{" // These are invalid in tags
-	dimensions := append(tags, name)
+	var metricKeyBuilder strings.Builder
+
+	dimensions := make([]string, len(tags))
+	copy(dimensions, tags)
+
+	dimensions = append(dimensions, name)
 	sort.Strings(dimensions)
-	return strings.Join(dimensions, separator)
+
+	for _, dim := range dimensions {
+		concatDimensionValue(&metricKeyBuilder, dim)
+	}
+	return metricKeyBuilder.String()
 }
 
 // putAndGetDiff submits a new value for a given metric and returns the difference with the

@@ -23,12 +23,12 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/model/pdata"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest/observer"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/fake"
 
-	internaldata "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver/internal/kubelet"
 )
 
@@ -125,13 +125,19 @@ func TestRunnableWithMetadata(t *testing.T) {
 			require.NoError(t, err)
 			require.Equal(t, tt.dataLen, consumer.DataPointCount())
 
-			for _, metrics := range consumer.AllMetrics() {
-				_, resource, metrics := internaldata.ResourceMetricsToOC(metrics.ResourceMetrics().At(0))
-				for _, m := range metrics {
-					if strings.HasPrefix(m.MetricDescriptor.GetName(), tt.metricPrefix) {
-						_, ok := resource.Labels[tt.requiredLabel]
-						require.True(t, ok)
-						continue
+			for _, md := range consumer.AllMetrics() {
+				for i := 0; i < md.ResourceMetrics().Len(); i++ {
+					rm := md.ResourceMetrics().At(i)
+					for j := 0; j < rm.InstrumentationLibraryMetrics().Len(); j++ {
+						ilm := rm.InstrumentationLibraryMetrics().At(j)
+						for k := 0; k < ilm.Metrics().Len(); k++ {
+							m := ilm.Metrics().At(k)
+							if strings.HasPrefix(m.Name(), tt.metricPrefix) {
+								_, ok := rm.Resource().Attributes().Get(tt.requiredLabel)
+								require.True(t, ok)
+								continue
+							}
+						}
 					}
 				}
 			}
@@ -368,22 +374,23 @@ func TestRunnableWithPVCDetailedLabels(t *testing.T) {
 				for _, m := range consumer.AllMetrics() {
 					rms := m.ResourceMetrics()
 					for i := 0; i < rms.Len(); i++ {
-						_, resource, _ := internaldata.ResourceMetricsToOC(rms.At(i))
-						claimName, ok := resource.Labels["k8s.persistentvolumeclaim.name"]
+						resource := rms.At(i).Resource()
+						claimName, ok := resource.Attributes().Get("k8s.persistentvolumeclaim.name")
 						// claimName will be non empty only when PVCs are used, all test cases
 						// in this method are interested only in such cases.
 						if !ok {
 							continue
 						}
 
-						ev := test.expectedVolumes[claimName]
-						requireExpectedVolume(t, ev, resource.Labels)
+						ev := test.expectedVolumes[claimName.StringVal()]
+						requireExpectedVolume(t, ev, resource)
 
 						// Assert metrics from certain volume claims expected to be missed
 						// are not collected.
 						if test.volumeClaimsToMiss != nil {
 							for c := range test.volumeClaimsToMiss {
-								require.False(t, resource.Labels["k8s.persistentvolumeclaim.name"] == c)
+								val, ok := resource.Attributes().Get("k8s.persistentvolumeclaim.name")
+								require.True(t, !ok || val.StringVal() != c)
 							}
 						}
 					}
@@ -393,13 +400,21 @@ func TestRunnableWithPVCDetailedLabels(t *testing.T) {
 	}
 }
 
-func requireExpectedVolume(t *testing.T, ev expectedVolume, resourceLabels map[string]string) {
+func requireExpectedVolume(t *testing.T, ev expectedVolume, resource pdata.Resource) {
 	require.NotNil(t, ev)
-	require.Equal(t, ev.name, resourceLabels["k8s.volume.name"])
-	require.Equal(t, ev.typ, resourceLabels["k8s.volume.type"])
+
+	requireAttribute(t, resource.Attributes(), "k8s.volume.name", ev.name)
+	requireAttribute(t, resource.Attributes(), "k8s.volume.type", ev.typ)
 	for k, v := range ev.labels {
-		require.Equal(t, resourceLabels[k], v)
+		requireAttribute(t, resource.Attributes(), k, v)
 	}
+}
+
+func requireAttribute(t *testing.T, attr pdata.AttributeMap, key string, value string) {
+	val, ok := attr.Get(key)
+	require.True(t, ok)
+	require.Equal(t, value, val.StringVal())
+
 }
 
 func TestClientErrors(t *testing.T) {

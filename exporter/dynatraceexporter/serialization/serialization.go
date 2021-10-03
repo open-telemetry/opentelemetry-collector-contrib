@@ -15,100 +15,93 @@
 package serialization
 
 import (
-	dtMetric "github.com/dynatrace-oss/dynatrace-metric-utils-go/metric"
+	"fmt"
+
 	"github.com/dynatrace-oss/dynatrace-metric-utils-go/metric/dimensions"
 	"go.opentelemetry.io/collector/model/pdata"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/ttlmap"
 )
 
-func getDimsFromMetric(attributes pdata.AttributeMap) dimensions.NormalizedDimensionList {
-	dimsFromMetric := []dimensions.Dimension{}
-	attributes.Range(func(k string, v pdata.AttributeValue) bool {
-		dimsFromMetric = append(dimsFromMetric, dimensions.NewDimension(k, v.AsString()))
+func SerializeMetric(prefix string, metric pdata.Metric, defaultDimensions, staticDimensions dimensions.NormalizedDimensionList, prev *ttlmap.TTLMap) ([]string, error) {
+	var metricLines []string
+	switch metric.DataType() {
+	case pdata.MetricDataTypeNone:
+		return nil, fmt.Errorf("MetricDataTypeNone not supported")
+	case pdata.MetricDataTypeGauge:
+		for i := 0; i < metric.Gauge().DataPoints().Len(); i++ {
+			dp := metric.Gauge().DataPoints().At(i)
+
+			line, err := serializeGauge(
+				metric.Name(),
+				prefix,
+				makeCombinedDimensions(dp.Attributes(), defaultDimensions, staticDimensions),
+				dp,
+			)
+
+			if err != nil {
+				return nil, err
+			}
+
+			if line != "" {
+				metricLines = append(metricLines, line)
+			}
+		}
+	case pdata.MetricDataTypeSum:
+		for i := 0; i < metric.Sum().DataPoints().Len(); i++ {
+			dp := metric.Sum().DataPoints().At(i)
+
+			line, err := serializeSum(
+				metric.Name(),
+				prefix,
+				makeCombinedDimensions(dp.Attributes(), defaultDimensions, staticDimensions),
+				metric.Sum().AggregationTemporality(),
+				dp,
+				prev,
+			)
+
+			if err != nil {
+				return nil, err
+			}
+
+			if line != "" {
+				metricLines = append(metricLines, line)
+			}
+		}
+	case pdata.MetricDataTypeHistogram:
+		for i := 0; i < metric.Histogram().DataPoints().Len(); i++ {
+			dp := metric.Histogram().DataPoints().At(i)
+
+			line, err := serializeHistogram(
+				metric.Name(),
+				prefix,
+				makeCombinedDimensions(dp.Attributes(), defaultDimensions, staticDimensions),
+				metric.Histogram().AggregationTemporality(),
+				dp,
+			)
+
+			if err != nil {
+				return nil, err
+			}
+
+			if line != "" {
+				metricLines = append(metricLines, line)
+			}
+		}
+	}
+	return metricLines, nil
+}
+
+func makeCombinedDimensions(labels pdata.AttributeMap, defaultDimensions, staticDimensions dimensions.NormalizedDimensionList) dimensions.NormalizedDimensionList {
+	dimsFromLabels := []dimensions.Dimension{}
+
+	labels.Range(func(k string, v pdata.AttributeValue) bool {
+		dimsFromLabels = append(dimsFromLabels, dimensions.NewDimension(k, v.AsString()))
 		return true
 	})
-	return dimensions.NewNormalizedDimensionList(dimsFromMetric...)
-}
-
-// SerializeNumberDataPoints serializes a slice of number datapoints to a Dynatrace gauge.
-func SerializeNumberDataPoints(prefix, name string, data pdata.NumberDataPointSlice, defaultDimensions dimensions.NormalizedDimensionList) []string {
-	// {name} {value} {timestamp}
-	output := []string{}
-	for i := 0; i < data.Len(); i++ {
-		p := data.At(i)
-
-		var val dtMetric.MetricOption
-		switch p.Type() {
-		case pdata.MetricValueTypeDouble:
-			val = dtMetric.WithFloatGaugeValue(p.DoubleVal())
-		case pdata.MetricValueTypeInt:
-			val = dtMetric.WithIntGaugeValue(p.IntVal())
-		}
-
-		dimsFromMetric := getDimsFromMetric(p.Attributes())
-
-		m, err := dtMetric.NewMetric(
-			name,
-			dtMetric.WithPrefix(prefix),
-			dtMetric.WithDimensions(
-				dimensions.MergeLists(
-					defaultDimensions,
-					dimsFromMetric,
-				),
-			),
-			dtMetric.WithTimestamp(p.Timestamp().AsTime()),
-			val,
-		)
-
-		if err != nil {
-			continue
-		}
-
-		serialized, err := m.Serialize()
-
-		if err != nil {
-			continue
-		}
-
-		output = append(output, serialized)
-	}
-
-	return output
-}
-
-// SerializeHistogramMetrics serializes a slice of double histogram datapoints to a Dynatrace gauge.
-//
-// IMPORTANT: Min and max are required by Dynatrace but not provided by histogram so they are assumed to be the average.
-func SerializeHistogramMetrics(prefix, name string, data pdata.HistogramDataPointSlice, defaultDimensions dimensions.NormalizedDimensionList) []string {
-	// {name} gauge,min=9.75,max=9.75,sum=19.5,count=2 {timestamp_unix_ms}
-	output := []string{}
-	for i := 0; i < data.Len(); i++ {
-		p := data.At(i)
-		if p.Count() == 0 {
-			continue
-		}
-		avg := p.Sum() / float64(p.Count())
-
-		dimsFromMetric := getDimsFromMetric(p.Attributes())
-		m, err := dtMetric.NewMetric(
-			name,
-			dtMetric.WithPrefix(prefix),
-			dtMetric.WithDimensions(dimensions.MergeLists(defaultDimensions, dimsFromMetric)),
-			dtMetric.WithTimestamp(p.Timestamp().AsTime()),
-			dtMetric.WithFloatSummaryValue(avg, avg, p.Sum(), int64(p.Count())),
-		)
-
-		if err != nil {
-			continue
-		}
-
-		serialized, err := m.Serialize()
-
-		if err != nil {
-			continue
-		}
-
-		output = append(output, serialized)
-	}
-
-	return output
+	return dimensions.MergeLists(
+		defaultDimensions,
+		dimensions.NewNormalizedDimensionList(dimsFromLabels...),
+		staticDimensions,
+	)
 }

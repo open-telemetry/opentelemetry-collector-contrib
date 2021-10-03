@@ -108,7 +108,7 @@ func (b *influxHTTPWriterBatch) WritePoint(_ context.Context, measurement string
 
 	if err := b.encoder.Err(); err != nil {
 		defer b.encoder.ClearErr()
-		return consumererror.Permanent(fmt.Errorf("failed to encode point: %w", err))
+		return consumererror.NewPermanent(fmt.Errorf("failed to encode point: %w", err))
 	}
 
 	return nil
@@ -117,7 +117,7 @@ func (b *influxHTTPWriterBatch) WritePoint(_ context.Context, measurement string
 func (b *influxHTTPWriterBatch) flushAndClose(ctx context.Context) error {
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, b.w.writeURL, bytes.NewReader(b.encoder.Bytes()))
 	if err != nil {
-		return consumererror.Permanent(err)
+		return consumererror.NewPermanent(err)
 	}
 
 	if res, err := b.w.httpClient.Do(req); err != nil {
@@ -133,7 +133,7 @@ func (b *influxHTTPWriterBatch) flushAndClose(ctx context.Context) error {
 		case 5: // Retryable error
 			return fmt.Errorf("line protocol write returned %q %q", res.Status, string(body))
 		default: // Terminal error
-			return consumererror.Permanent(fmt.Errorf("line protocol write returned %q %q", res.Status, string(body)))
+			return consumererror.NewPermanent(fmt.Errorf("line protocol write returned %q %q", res.Status, string(body)))
 		}
 	}
 

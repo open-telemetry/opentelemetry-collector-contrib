@@ -65,7 +65,8 @@ func (jr *jaegerDataReceiver) GenConfigYAMLStr() string {
 	return fmt.Sprintf(`
   jaeger:
     endpoint: "localhost:%d"
-    insecure: true`, jr.Port)
+    tls:
+      insecure: true`, jr.Port)
 }
 
 func (jr *jaegerDataReceiver) ProtocolName() string {

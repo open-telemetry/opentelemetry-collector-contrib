@@ -20,7 +20,6 @@ import (
 
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confignet"
-	"go.opentelemetry.io/collector/config/configparser"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver/protocol"
 )
@@ -49,7 +48,7 @@ type Config struct {
 	Parser *protocol.Config `mapstructure:"parser"`
 }
 
-func (cfg *Config) Unmarshal(componentParser *configparser.Parser) error {
+func (cfg *Config) Unmarshal(componentParser *config.Map) error {
 	if componentParser == nil {
 		// The section is empty nothing to do, using the default config.
 		return nil
