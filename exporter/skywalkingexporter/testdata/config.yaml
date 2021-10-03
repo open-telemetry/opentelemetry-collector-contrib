@@ -10,7 +10,8 @@ exporters:
   skywalking/2:
     endpoint: "1.2.3.4:11800"
     compression: "on"
-    ca_file: /var/lib/mycert.pem
+    tls:
+      ca_file: /var/lib/mycert.pem
     timeout: 10s
     headers:
       "can you have a . here?": "F0000000-0000-0000-0000-000000000000"
