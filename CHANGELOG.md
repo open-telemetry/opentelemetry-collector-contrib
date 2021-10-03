@@ -13,7 +13,7 @@
 
 ## 💡 Enhancements 💡
 
-- `k8sattributes` processor: add container metadata enrichment (#5467)
+- `k8sattributes` processor: add container metadata enrichment (#5467, #5572)
 
 ## v0.36.0
 
