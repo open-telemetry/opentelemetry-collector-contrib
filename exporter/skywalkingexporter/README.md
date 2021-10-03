@@ -1,7 +1,6 @@
 # SkyWalking gRPC Exporter
 
-Exports data via gRPC using [skywalking-data-collect-protocol](https://github.com/apache/skywalking-data-collect-protocol)
-format. By default, this exporter requires TLS and offers queued retry capabilities.
+Exports data via gRPC using [skywalking-data-collect-protocol](https://github.com/apache/skywalking-data-collect-protocol) format. By default, this exporter requires TLS and offers queued retry capabilities.
 
 Supported pipeline types: logs
 
