@@ -133,7 +133,7 @@ func createMetricsExporter(
 			return nil
 		}
 	} else {
-		pushMetricsFn = newMetricsExporter(ctx, set, cfg).PushMetricsData
+		pushMetricsFn = newMetricsExporter(ctx, set, cfg).PushMetricsDataScrubbed
 	}
 
 	exporter, err := exporterhelper.NewMetricsExporter(
@@ -186,7 +186,7 @@ func createTracesExporter(
 			return nil
 		}
 	} else {
-		pushTracesFn = newTracesExporter(ctx, set, cfg).pushTraceData
+		pushTracesFn = newTracesExporter(ctx, set, cfg).pushTraceDataScrubbed
 	}
 
 	return exporterhelper.NewTracesExporter(

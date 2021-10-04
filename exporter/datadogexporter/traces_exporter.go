@@ -28,6 +28,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/config"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/scrub"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/utils"
 )
 
@@ -39,6 +40,7 @@ type traceExporter struct {
 	obfuscator     *obfuscate.Obfuscator
 	client         *datadog.Client
 	denylister     *denylister
+	scrubber       scrub.Scrubber
 }
 
 var (
@@ -79,6 +81,7 @@ func newTracesExporter(ctx context.Context, params component.ExporterCreateSetti
 		obfuscator:     obfuscator,
 		client:         client,
 		denylister:     denylister,
+		scrubber:       scrub.NewScrubber(),
 	}
 
 	return exporter
@@ -94,6 +97,10 @@ func newTracesExporter(ctx context.Context, params component.ExporterCreateSetti
 // func (exp *traceExporter) Start(_ context.Context, _ component.Host) error {
 // 	return nil
 // }
+
+func (exp *traceExporter) pushTraceDataScrubbed(ctx context.Context, td pdata.Traces) error {
+	return exp.scrubber.Scrub(exp.pushTraceData(ctx, td))
+}
 
 func (exp *traceExporter) pushTraceData(
 	ctx context.Context,
