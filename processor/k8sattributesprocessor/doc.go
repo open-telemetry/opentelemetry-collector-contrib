@@ -18,25 +18,38 @@
 // extracted metadata to the relevant spans, metrics and logs. The processor uses the kubernetes API to discover all pods
 // running in a cluster, keeps a record of their IP addresses, pod UIDs and interesting metadata.
 // The rules for associating the data passing through the processor (spans, metrics and logs) with specific Pod Metadata are configured via "pod_association" key.
-// It represents a list of rules that are executed in the specified order until the first one is able to do the match.
-// Each rule is specified as a pair of from (representing the rule type) and name (representing the extracted key name).
+// It represents a list of associations that are executed in the specified order until the first one is able to do the match.
+//
+// Each association is specified as a object containing three fields:
+//  - name - name of the association. Result of association is going to be saved as resource attribute with this name.
+//  - sources - sources of association. It represents list of rules. All rules are going to be executed and concatenated using delimiter.
+//              Metadata are going to be saved in the cache using created key
+//  - delimiter - string wchich is going to be used for sources concatenation
+//
+// Each sources rule is specified as a pair of from (representing the rule type) and name (representing the attribute name if from is set to resource_attribute).
 // Following rule types are available:
-//   from: "resource_attribute" - allows to specify the attribute name to lookup up in the list of attributes of the received Resource. The specified attribute, if it is present, identifies the Pod that is represented by the Resource.
-//     (the value can contain either IP address or Pod UID)
-//   from: "connection" - takes the IP attribute from connection context (if available) and automatically
-//     associates it with "k8s.pod.ip" attribute
+//   from: "connection" - takes the IP attribute from connection context (if available)
+//   from: "resource_attribute" - allows to specify the attribute name to lookup up in the list of attributes of the received Resource.
+//                                Semantic convention should be used for naming.
+//
 // Pod association configuration.
 // pod_association:
-//  - from: resource_attribute
-//    name: ip
-//  - from: resource_attribute
-//    name: k8s.pod.ip
-//  - from: resource_attribute
-//    name: host.name
-//  - from: connection
-//    name: ip
-//  - from: resource_attribute
-//    name: k8s.pod.uid
+//  - delimiter: ''
+//    sources:
+//     - from: resource_attribute
+//       name: k8s.pod.ip
+//  - delimiter: ''
+//    sources:
+//    - from: resource_attribute
+//      name: k8s.pod.ip
+//  # below association are going to be saved as `pod_name_namespace` with value of `<k8s.pod.name>.<k8s.namespace.name>` if executed
+//  - delimiter: '.'
+//    name: pod_name_namespace
+//    sources:
+//    - from: resource_attribute
+//      name: k8s.pod.name
+//    - from: resource_attribute
+//      name: k8s.namespace.name
 //
 // If Pod association rules are not configured resources are associated with metadata only by connection's IP Address.
 //
@@ -51,6 +64,9 @@
 //   - k8s.deployment.name
 //   - k8s.node.name
 // Not all the attributes are guaranteed to be added.
+//
+//
+// Only attribute names from `metadata` should be used for pod_association's `resource_attribute`
 //
 // The following container level attributes require additional attributes to identify a particular container in a pod:
 //   1. Container spec attributes - will be set only if container identifying attribute `k8s.container.name` is set
