@@ -16,7 +16,6 @@ package processesscraper
 
 import (
 	"context"
-	"sort"
 	"time"
 
 	"github.com/shirou/gopsutil/host"
@@ -112,15 +111,8 @@ func setProcessesCountMetric(metric pdata.Metric, startTime, now pdata.Timestamp
 	metadata.Metrics.SystemProcessesCount.Init(metric)
 	ddps := metric.Sum().DataPoints()
 
-	// sort so that we add datapoints in a deterministic ordering
-	sortedStatuses := make([]string, 0, len(countByStatus))
-	for status := range countByStatus {
-		sortedStatuses = append(sortedStatuses, status)
-	}
-	sort.Strings(sortedStatuses)
-
-	for _, status := range sortedStatuses {
-		setProcessesCountDataPoint(ddps.AppendEmpty(), startTime, now, status, countByStatus[status])
+	for status, count := range countByStatus {
+		setProcessesCountDataPoint(ddps.AppendEmpty(), startTime, now, status, count)
 	}
 }
 

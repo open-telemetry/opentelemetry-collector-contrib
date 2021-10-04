@@ -189,6 +189,20 @@ func (f fakeProcess) Status() (string, error) {
 	return string(f), nil
 }
 
+func extractProcessCounts(t *testing.T, points pdata.NumberDataPointSlice) map[string]int64 {
+	result := map[string]int64{}
+	for i := 0; i < points.Len(); i++ {
+		pt := points.At(i)
+		status, ok := pt.Attributes().Get(metadata.L.Status)
+		if !ok {
+			t.Errorf("datapoint at index %d doesn't contain a status", i)
+			return nil
+		}
+		result[status.StringVal()] = pt.IntVal()
+	}
+	return result
+}
+
 func validateFakeData(t *testing.T, metrics pdata.MetricSlice) {
 	assert := assert.New(t)
 	metricIndex := 0
@@ -198,26 +212,16 @@ func validateFakeData(t *testing.T, metrics pdata.MetricSlice) {
 		internal.AssertDescriptorEqual(t, metadata.Metrics.SystemProcessesCount.New(), countMetric)
 		assert.Equal(7, countMetric.Sum().DataPoints().Len())
 
-		internal.AssertSumMetricHasAttributeValue(t, countMetric, 0, metadata.Labels.Status, pdata.NewAttributeValueString(metadata.LabelStatus.Blocked))
-		assert.Equal(int64(3), countMetric.Sum().DataPoints().At(0).IntVal())
-
-		internal.AssertSumMetricHasAttributeValue(t, countMetric, 1, metadata.Labels.Status, pdata.NewAttributeValueString(metadata.LabelStatus.Paging))
-		assert.Equal(int64(1), countMetric.Sum().DataPoints().At(1).IntVal())
-
-		internal.AssertSumMetricHasAttributeValue(t, countMetric, 2, metadata.Labels.Status, pdata.NewAttributeValueString(metadata.LabelStatus.Running))
-		assert.Equal(int64(2), countMetric.Sum().DataPoints().At(2).IntVal())
-
-		internal.AssertSumMetricHasAttributeValue(t, countMetric, 3, metadata.Labels.Status, pdata.NewAttributeValueString(metadata.LabelStatus.Sleeping))
-		assert.Equal(int64(4), countMetric.Sum().DataPoints().At(3).IntVal())
-
-		internal.AssertSumMetricHasAttributeValue(t, countMetric, 4, metadata.Labels.Status, pdata.NewAttributeValueString(metadata.LabelStatus.Stopped))
-		assert.Equal(int64(5), countMetric.Sum().DataPoints().At(4).IntVal())
-
-		internal.AssertSumMetricHasAttributeValue(t, countMetric, 5, metadata.Labels.Status, pdata.NewAttributeValueString(metadata.LabelStatus.Unknown))
-		assert.Equal(int64(9), countMetric.Sum().DataPoints().At(5).IntVal())
-
-		internal.AssertSumMetricHasAttributeValue(t, countMetric, 6, metadata.Labels.Status, pdata.NewAttributeValueString(metadata.LabelStatus.Zombies))
-		assert.Equal(int64(6), countMetric.Sum().DataPoints().At(6).IntVal())
+		ls := metadata.LabelStatus
+		assert.Equal(map[string]int64{
+			ls.Blocked:  3,
+			ls.Paging:   1,
+			ls.Running:  2,
+			ls.Sleeping: 4,
+			ls.Stopped:  5,
+			ls.Unknown:  9,
+			ls.Zombies:  6,
+		}, extractProcessCounts(t, countMetric.Sum().DataPoints()))
 	}
 
 	if expectProcessesCreatedMetric {
