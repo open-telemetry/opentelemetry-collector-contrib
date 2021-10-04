@@ -36,7 +36,6 @@ func extractPodID(ctx context.Context, attrs pcommon.Map, associations []kube.As
 	}
 
 	connectionIP := getConnectionIP(ctx)
-	hostname := stringAttributeFromMap(attrs, conventions.AttributeHostName)
 	for _, asso := range associations {
 		ret := []string{}
 		for _, source := range asso.Sources {
@@ -45,19 +44,10 @@ func extractPodID(ctx context.Context, attrs pcommon.Map, associations []kube.As
 			case source.From == "connection" && connectionIP != "":
 				ret = append(ret, string(connectionIP))
 			case source.From == "resource_attribute":
-				// If association configured by resource_attribute
-				// In k8s environment, host.name label set to a pod IP address.
-				// If the value doesn't represent an IP address, we skip it.
-				if source.Name == conventions.AttributeHostName {
-					if net.ParseIP(hostname) != nil {
-						ret = append(ret, hostname)
-					}
-				} else {
-					// Extract values based on configured resource_attribute.
-					attributeValue := stringAttributeFromMap(attrs, source.Name)
-					if attributeValue != "" {
-						ret = append(ret, attributeValue)
-					}
+				// Extract values based on configured resource_attribute.
+				attributeValue := stringAttributeFromMap(attrs, source.Name)
+				if attributeValue != "" {
+					ret = append(ret, attributeValue)
 				}
 			}
 		}
