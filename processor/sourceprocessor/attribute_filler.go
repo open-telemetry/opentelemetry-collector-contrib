@@ -89,8 +89,9 @@ func (f *attributeFiller) fillResourceOrUseAnnotation(atts *pdata.AttributeMap, 
 		annotationFiller.dashReplacement = f.dashReplacement
 		annotationFiller.compiledFormat = f.prefix + annotationFiller.compiledFormat
 		annotationFiller.fillAttributes(atts)
+	} else {
+		f.fillAttributes(atts)
 	}
-	f.fillAttributes(atts)
 }
 
 func (f *attributeFiller) fillAttributes(atts *pdata.AttributeMap) {
