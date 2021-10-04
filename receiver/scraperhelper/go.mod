@@ -6,9 +6,9 @@ require (
 	github.com/stretchr/testify v1.7.0
 	go.opentelemetry.io/collector v0.36.1-0.20210930151317-3ec4f1be6001
 	go.opentelemetry.io/collector/model v0.36.1-0.20210930151317-3ec4f1be6001
-	go.opentelemetry.io/otel v1.0.0
+	go.opentelemetry.io/otel v1.0.1
 	go.opentelemetry.io/otel/sdk v1.0.0
-	go.opentelemetry.io/otel/trace v1.0.0
+	go.opentelemetry.io/otel/trace v1.0.1
 	go.uber.org/multierr v1.7.0
 	go.uber.org/zap v1.19.1
 )
