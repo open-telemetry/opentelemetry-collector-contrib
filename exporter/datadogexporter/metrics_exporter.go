@@ -56,19 +56,50 @@ func (p *hostProvider) Hostname(context.Context) (string, error) {
 	return metadata.GetHost(p.logger, p.cfg), nil
 }
 
-func newMetricsExporter(ctx context.Context, params component.ExporterCreateSettings, cfg *config.Config) *metricsExporter {
+// translatorFromConfig creates a new metrics translator from the exporter config.
+func translatorFromConfig(params component.ExporterCreateSettings, cfg *config.Config) (*translator.Translator, error) {
+	options := []translator.Option{
+		translator.WithDeltaTTL(cfg.Metrics.DeltaTTL),
+		translator.WithFallbackHostnameProvider(&hostProvider{params.Logger, cfg}),
+	}
+
+	if cfg.Metrics.HistConfig.SendCountSum {
+		options = append(options, translator.WithCountSumMetrics())
+	}
+
+	if cfg.Metrics.Quantiles {
+		options = append(options, translator.WithQuantiles())
+	}
+
+	if cfg.Metrics.ExporterConfig.ResourceAttributesAsTags {
+		options = append(options, translator.WithResourceAttributesAsTags())
+	}
+
+	options = append(options, translator.WithHistogramMode(translator.HistogramMode(cfg.Metrics.HistConfig.Mode)))
+
+	var numberMode translator.NumberMode
+	if cfg.Metrics.SendMonotonic {
+		numberMode = translator.NumberModeCumulativeToDelta
+	} else {
+		numberMode = translator.NumberModeRawValue
+	}
+	options = append(options, translator.WithNumberMode(numberMode))
+
+	return translator.New(params, options...)
+}
+
+func newMetricsExporter(ctx context.Context, params component.ExporterCreateSettings, cfg *config.Config) (*metricsExporter, error) {
 	client := utils.CreateClient(cfg.API.Key, cfg.Metrics.TCPAddr.Endpoint)
 	client.ExtraHeader["User-Agent"] = utils.UserAgent(params.BuildInfo)
 	client.HttpClient = utils.NewHTTPClient(10 * time.Second)
 
 	utils.ValidateAPIKey(params.Logger, client)
 
-	var sweepInterval int64 = 1
-	if cfg.Metrics.DeltaTTL > 1 {
-		sweepInterval = cfg.Metrics.DeltaTTL / 2
+	tr, err := translatorFromConfig(params, cfg)
+	if err != nil {
+		return nil, err
 	}
-	prevPts := translator.NewTTLCache(sweepInterval, cfg.Metrics.DeltaTTL)
-	tr := translator.New(prevPts, params, cfg.Metrics, &hostProvider{params.Logger, cfg})
+
 	return &metricsExporter{
 		params:   params,
 		cfg:      cfg,
@@ -76,7 +107,7 @@ func newMetricsExporter(ctx context.Context, params component.ExporterCreateSett
 		client:   client,
 		tr:       tr,
 		scrubber: scrub.NewScrubber(),
-	}
+	}, nil
 }
 
 func (exp *metricsExporter) pushSketches(ctx context.Context, sl sketches.SketchSeriesList) error {
@@ -128,10 +159,15 @@ func (exp *metricsExporter) PushMetricsData(ctx context.Context, md pdata.Metric
 		})
 	}
 
-	ms, sl := exp.tr.MapMetrics(md)
+	ms, sl, err := exp.tr.MapMetrics(ctx, md)
+	if err != nil {
+		return fmt.Errorf("failed to map metrics: %w", err)
+	}
+
 	metrics.ProcessMetrics(ms, exp.cfg)
 
 	if len(ms) > 0 {
+		exp.params.Logger.Info("exporting payload", zap.Any("metric", ms))
 		if err := exp.client.PostMetrics(ms); err != nil {
 			return err
 		}

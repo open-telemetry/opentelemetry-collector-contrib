@@ -133,7 +133,12 @@ func createMetricsExporter(
 			return nil
 		}
 	} else {
-		pushMetricsFn = newMetricsExporter(ctx, set, cfg).PushMetricsDataScrubbed
+		exp, err := newMetricsExporter(ctx, set, cfg)
+		if err != nil {
+			cancel()
+			return nil, err
+		}
+		pushMetricsFn = exp.PushMetricsDataScrubbed
 	}
 
 	exporter, err := exporterhelper.NewMetricsExporter(
