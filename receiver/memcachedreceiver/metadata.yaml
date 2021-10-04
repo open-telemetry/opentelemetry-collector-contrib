@@ -32,27 +32,27 @@ labels:
 
 metrics:
   memcached.bytes:
-    description: Current number of bytes used by this server to store items
+    description: Current number of bytes used by this server to store items.
     unit: By
     data:
       type: gauge
     labels: []
   memcached.current_connections:
-    description: The current number of open connections
+    description: The current number of open connections.
     unit: connections
     data:
       type: gauge
     labels: []
   memcached.total_connections:
-    description: Total number of connections opened since the server started running
+    description: Total number of connections opened since the server started running.
     unit: connections
     data:
       type: sum
       monotonic: true
       aggregation: cumulative
     labels: []
-  memcached.command_count:
-    description: Commands executed
+  memcached.commands:
+    description: Commands executed.
     unit: 1
     data:
       type: sum
@@ -60,13 +60,13 @@ metrics:
       aggregation: cumulative
     labels: [command]
   memcached.current_items:
-    description: Number of items currently stored in the cache
+    description: Number of items currently stored in the cache.
     unit: 1
     data:
       type: gauge
     labels: []
-  memcached.eviction_count:
-    description: Cache item evictions
+  memcached.evictions:
+    description: Cache item evictions.
     unit: 1
     data:
       type: sum
@@ -81,7 +81,7 @@ metrics:
       monotonic: true
       aggregation: cumulative
     labels: [direction]
-  memcached.operation_count:
+  memcached.operations:
     description: Memcached operation hit/miss counts. 
     unit: 1
     data:
@@ -102,7 +102,7 @@ metrics:
       type: gauge
     lables: [usage_type]
   memcached.threads:
-    description: Number of threads used by the memcached instance
+    description: Number of threads used by the memcached instance.
     unit: 1
     data:
       type: gauge

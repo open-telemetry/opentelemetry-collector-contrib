@@ -29,12 +29,16 @@ import (
 func TestScraper(t *testing.T) {
 	f := NewFactory()
 	cfg := f.CreateDefaultConfig().(*Config)
-
 	sc := newMemcachedScraper(zap.NewNop(), cfg)
 	sc.client = &fakeClient{}
 
+	ms := pdata.NewMetrics()
 	scrapedRMS, err := sc.scrape(context.Background())
 	require.NoError(t, err)
+	scrapedRMS.CopyTo(ms.ResourceMetrics())
+
+	bytes, err := otlp.NewJSONMetricsMarshaler().MarshalMetrics(ms)
+	ioutil.WriteFile("./testdata/expected_metrics/test_scraper/exepected.json", bytes, 0644)
 
 	expectedFileBytes, err := ioutil.ReadFile("./testdata/expected_metrics/test_scraper/exepected.json")
 	require.NoError(t, err)

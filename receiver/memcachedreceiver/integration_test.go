@@ -20,7 +20,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
@@ -67,5 +66,5 @@ func TestIntegration(t *testing.T) {
 	eMetricSlice := expectedMetrics.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics()
 
 	compareMetrics(eMetricSlice, metrics, false)
-	assert.NoError(t, rcvr.Shutdown(context.Background()))
+	require.NoError(t, rcvr.Shutdown(context.Background()))
 }

@@ -65,24 +65,23 @@ func (r *memcachedScraper) scrape(_ context.Context) (pdata.ResourceMetricsSlice
 	ilm.InstrumentationLibrary().SetName("otelcol/memcached")
 	now := pdata.NewTimestampFromTime(time.Now())
 
-	commandCount := initMetric(ilm.Metrics(), metadata.M.MemcachedCommandCount).Sum().DataPoints()
+	commandCount := initMetric(ilm.Metrics(), metadata.M.MemcachedCommands).Sum().DataPoints()
 	rUsage := initMetric(ilm.Metrics(), metadata.M.MemcachedRusage).Gauge().DataPoints()
 	network := initMetric(ilm.Metrics(), metadata.M.MemcachedNetwork).Sum().DataPoints()
-	operationCount := initMetric(ilm.Metrics(), metadata.M.MemcachedOperationCount).Sum().DataPoints()
+	operationCount := initMetric(ilm.Metrics(), metadata.M.MemcachedOperations).Sum().DataPoints()
 	hitRatio := initMetric(ilm.Metrics(), metadata.M.MemcachedOperationHitRatio).Gauge().DataPoints()
 	bytes := initMetric(ilm.Metrics(), metadata.M.MemcachedBytes).Gauge().DataPoints()
 	currConn := initMetric(ilm.Metrics(), metadata.M.MemcachedCurrentConnections).Gauge().DataPoints()
 	totalConn := initMetric(ilm.Metrics(), metadata.M.MemcachedTotalConnections).Sum().DataPoints()
 	currItems := initMetric(ilm.Metrics(), metadata.M.MemcachedCurrentItems).Gauge().DataPoints()
 	threads := initMetric(ilm.Metrics(), metadata.M.MemcachedThreads).Gauge().DataPoints()
-	evictions := initMetric(ilm.Metrics(), metadata.M.MemcachedEvictionCount).Sum().DataPoints()
+	evictions := initMetric(ilm.Metrics(), metadata.M.MemcachedEvictions).Sum().DataPoints()
 
 	for _, stats := range stats {
 		for k, v := range stats.Stats {
 			attributes := pdata.NewAttributeMap()
 			switch k {
 			case "bytes":
-
 				addToMetric(bytes, attributes, parseInt(v), now)
 			case "curr_connections":
 				addToMetric(currConn, attributes, parseInt(v), now)
