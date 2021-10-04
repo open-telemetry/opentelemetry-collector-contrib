@@ -50,12 +50,8 @@ jobs:
         id: splitstabilitytest
         run: ./.github/workflows/scripts/setup_stability_tests.sh
 
-  stability-tests:
-    # Stability tests disabled in the makefile. We disable them here to avoid
-    # consuming workers just to run a noop make target.
-    # uncomment the following line to enable stability tests.
-    # if: ${{ github.ref == 'ref/head/main' }}
-    # if: ${{ false }}
+  stability-test:
+    # Stability tests disabled in the makefile, this job is currently running a noop make target
     runs-on: ubuntu-latest
     needs: [setup-environment]
     strategy:
