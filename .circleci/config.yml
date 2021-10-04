@@ -328,8 +328,8 @@ jobs:
     steps:
       - restore_workspace
       - run:
-          name: Unit test coverage
-          command: make unit-tests-with-cover
+          name: Unit test
+          command: make test
       - run:
           name: Upload unit test coverage
           command: bash <(curl -s https://codecov.io/bash) -F unit
