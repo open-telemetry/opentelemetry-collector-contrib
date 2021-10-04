@@ -23,8 +23,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/model/pdata"
 	"go.uber.org/zap"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/config"
 )
 
 func TestHistogramSketches(t *testing.T) {
@@ -87,7 +85,7 @@ func TestHistogramSketches(t *testing.T) {
 	defaultEps := 1.0 / 128.0
 	tol := 1e-8
 	cfg := quantile.Default()
-	tr := newTranslator(zap.NewNop(), config.MetricsConfig{})
+	tr := newTranslator(t, zap.NewNop())
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
@@ -177,7 +175,7 @@ func TestInfiniteBounds(t *testing.T) {
 		},
 	}
 
-	tr := newTranslator(zap.NewNop(), config.MetricsConfig{})
+	tr := newTranslator(t, zap.NewNop())
 	for _, testInstance := range tests {
 		t.Run(testInstance.name, func(t *testing.T) {
 			p := testInstance.getHist()
