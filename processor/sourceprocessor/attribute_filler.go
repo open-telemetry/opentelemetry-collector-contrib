@@ -82,20 +82,20 @@ func createSourceCategoryFiller(cfg *Config, keys sourceKeys) attributeFiller {
 	return filler
 }
 
-func (f *attributeFiller) fillResourceOrUseAnnotation(atts *pdata.AttributeMap, annotationKey string, keys sourceKeys) bool {
+func (f *attributeFiller) fillResourceOrUseAnnotation(atts *pdata.AttributeMap, annotationKey string, keys sourceKeys) {
 	val, found := atts.Get(annotationKey)
 	if found {
 		annotationFiller := extractFormat(val.StringVal(), f.name, keys)
 		annotationFiller.dashReplacement = f.dashReplacement
 		annotationFiller.compiledFormat = f.prefix + annotationFiller.compiledFormat
-		return annotationFiller.fillAttributes(atts)
+		annotationFiller.fillAttributes(atts)
 	}
-	return f.fillAttributes(atts)
+	f.fillAttributes(atts)
 }
 
-func (f *attributeFiller) fillAttributes(atts *pdata.AttributeMap) bool {
+func (f *attributeFiller) fillAttributes(atts *pdata.AttributeMap) {
 	if len(f.compiledFormat) == 0 {
-		return false
+		return
 	}
 
 	labelValues := f.resourceLabelValues(atts)
@@ -105,9 +105,7 @@ func (f *attributeFiller) fillAttributes(atts *pdata.AttributeMap) bool {
 			str = strings.ReplaceAll(str, "-", f.dashReplacement)
 		}
 		atts.UpsertString(f.name, str)
-		return true
 	}
-	return false
 }
 
 func (f *attributeFiller) resourceLabelValues(atts *pdata.AttributeMap) []interface{} {
