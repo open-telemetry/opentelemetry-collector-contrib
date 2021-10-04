@@ -23,6 +23,8 @@ import (
 	"time"
 	"unicode"
 
+	"github.com/prometheus/prometheus/pkg/timestamp"
+
 	"github.com/prometheus/common/model"
 	"github.com/prometheus/prometheus/prompb"
 	"go.opentelemetry.io/collector/model/pdata"
@@ -81,6 +83,36 @@ func addSample(tsMap map[string]*prompb.TimeSeries, sample *prompb.Sample, label
 			Labels:  labels,
 			Samples: []prompb.Sample{*sample},
 		}
+		tsMap[sig] = newTs
+	}
+}
+
+// addSampleAndExemplar finds a TimeSeries in tsMap that corresponds to the label set labels, add exemplars and samples to the TimeSeries; it
+// creates a new TimeSeries in the map if not found. tsMap is unmodified if either of its parameters is nil.
+func addSampleAndExemplar(tsMap map[string]*prompb.TimeSeries, sample *prompb.Sample, exemplar *prompb.Exemplar, labels []prompb.Label, metric pdata.Metric) {
+	if sample == nil || labels == nil || tsMap == nil {
+		return
+	}
+
+	sig := timeSeriesSignature(metric, &labels)
+	ts, ok := tsMap[sig]
+
+	if ok {
+		ts.Samples = append(ts.Samples, *sample)
+
+		if exemplar != nil {
+			ts.Exemplars = append(ts.Exemplars, *exemplar)
+		}
+	} else {
+		newTs := &prompb.TimeSeries{
+			Labels:  labels,
+			Samples: []prompb.Sample{*sample},
+		}
+
+		if exemplar != nil {
+			newTs.Exemplars = []prompb.Exemplar{*exemplar}
+		}
+
 		tsMap[sig] = newTs
 	}
 }
@@ -318,7 +350,10 @@ func addSingleHistogramDataPoint(pt pdata.HistogramDataPoint, resource pdata.Res
 		}
 		boundStr := strconv.FormatFloat(bound, 'f', -1, 64)
 		labels := createAttributes(resource, pt.Attributes(), externalLabels, nameStr, baseName+bucketStr, leStr, boundStr)
-		addSample(tsMap, bucket, labels, metric)
+
+		promExemplar := getPromExemplar(pt, index)
+
+		addSampleAndExemplar(tsMap, bucket, promExemplar, labels, metric)
 	}
 	// add le=+Inf bucket
 	cumulativeCount += pt.BucketCounts()[len(pt.BucketCounts())-1]
@@ -327,7 +362,34 @@ func addSingleHistogramDataPoint(pt pdata.HistogramDataPoint, resource pdata.Res
 		Timestamp: time,
 	}
 	infLabels := createAttributes(resource, pt.Attributes(), externalLabels, nameStr, baseName+bucketStr, leStr, pInfStr)
-	addSample(tsMap, infBucket, infLabels, metric)
+
+	promExemplar := getPromExemplar(pt, len(pt.BucketCounts())-1)
+
+	addSampleAndExemplar(tsMap, infBucket, promExemplar, infLabels, metric)
+}
+
+func getPromExemplar(pt pdata.HistogramDataPoint, index int) *prompb.Exemplar {
+	if index < pt.Exemplars().Len() {
+		exemplar := pt.Exemplars().At(index)
+
+		promExemplar := &prompb.Exemplar{
+			Value:     exemplar.DoubleVal(),
+			Timestamp: timestamp.FromTime(exemplar.Timestamp().AsTime()),
+		}
+
+		labels := exemplar.FilteredAttributes().AsRaw()
+		for key, value := range labels {
+			promLabel := prompb.Label{
+				Name:  key,
+				Value: value.(string),
+			}
+
+			promExemplar.Labels = append(promExemplar.Labels, promLabel)
+		}
+
+		return promExemplar
+	}
+	return nil
 }
 
 // addSingleSummaryDataPoint converts pt to len(QuantileValues) + 2 samples.

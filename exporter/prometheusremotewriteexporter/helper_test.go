@@ -16,7 +16,9 @@ package prometheusremotewriteexporter
 
 import (
 	"testing"
+	"time"
 
+	"github.com/prometheus/prometheus/pkg/timestamp"
 	"github.com/prometheus/prometheus/prompb"
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/model/pdata"
@@ -484,5 +486,103 @@ func TestEnsureTimeseriesPointsAreSortedByTimestamp(t *testing.T) {
 				}
 			}
 		}
+	}
+}
+
+// Test_addSampleAndExemplar checks addSampleAndExemplar updates the map it receives correctly based on the sample, exemplars and Label
+// set it receives.
+// Test cases are two exemplars/samples belonging to the same TimeSeries and two exemplars/samples belong to different TimeSeries
+// case.
+func Test_addSampleAndExemplar(t *testing.T) {
+	type testCase struct {
+		metric   pdata.Metric
+		sample   prompb.Sample
+		exemplar prompb.Exemplar
+		labels   []prompb.Label
+	}
+
+	tests := []struct {
+		name     string
+		orig     map[string]*prompb.TimeSeries
+		testCase []testCase
+		want     map[string]*prompb.TimeSeries
+	}{
+		{
+			"two_histogram_points_same_ts_same_metric",
+			map[string]*prompb.TimeSeries{},
+			[]testCase{
+				{validMetrics1[validHistogram],
+					getSample(floatVal1, msTime1),
+					getExemplar(float64(intVal1), msTime1),
+					promLbs1,
+				},
+				{
+					validMetrics2[validHistogram],
+					getSample(floatVal2, msTime2),
+					getExemplar(float64(intVal2), msTime2),
+					promLbs1,
+				},
+			},
+			twoHistogramPointsSameTs,
+		},
+		{
+			"two_histogram_points_different_ts_same_metric",
+			map[string]*prompb.TimeSeries{},
+			[]testCase{
+				{validMetrics1[validHistogram],
+					getSample(float64(intVal1), msTime1),
+					getExemplar(float64(intVal1), msTime1),
+					promLbs1,
+				},
+				{validMetrics1[validHistogram],
+					getSample(float64(intVal1), msTime2),
+					getExemplar(float64(intVal1), msTime2),
+					promLbs2,
+				},
+			},
+			twoHistogramPointsDifferentTs,
+		},
+	}
+	// run tests
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			addSampleAndExemplar(tt.orig, &tt.testCase[0].sample, &tt.testCase[0].exemplar,
+				tt.testCase[0].labels, tt.testCase[0].metric)
+			addSampleAndExemplar(tt.orig, &tt.testCase[1].sample, &tt.testCase[1].exemplar,
+				tt.testCase[1].labels, tt.testCase[1].metric)
+			assert.Exactly(t, tt.want, tt.orig)
+		})
+	}
+}
+
+// Test_getPromExemplar checks if exemplar is not nul and return the prometheus exemplar.
+func Test_getPromExemplar(t *testing.T) {
+	tnow := time.Now()
+	tests := []struct {
+		name      string
+		histogram *pdata.HistogramDataPoint
+		expected  *prompb.Exemplar
+	}{
+		{
+			"with_exemplars",
+			getHistogramDataPointWithExemplars(tnow, floatVal1, traceIDKey, traceIDValue1),
+			&prompb.Exemplar{
+				Value:     floatVal1,
+				Timestamp: timestamp.FromTime(tnow),
+				Labels:    []prompb.Label{getLabel(traceIDKey, traceIDValue1)},
+			},
+		},
+		{
+			"without_exemplar",
+			getHistogramDataPoint(),
+			nil,
+		},
+	}
+	// run tests
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			requests := getPromExemplar(*tt.histogram, 0)
+			assert.Exactly(t, tt.expected, requests)
+		})
 	}
 }

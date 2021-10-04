@@ -30,22 +30,24 @@ var (
 	msTime2 = int64(time2 / uint64(int64(time.Millisecond)/int64(time.Nanosecond)))
 	msTime3 = int64(time3 / uint64(int64(time.Millisecond)/int64(time.Nanosecond)))
 
-	label11 = "test_label11"
-	value11 = "test_value11"
-	label12 = "test_label12"
-	value12 = "test_value12"
-	label21 = "test_label21"
-	value21 = "test_value21"
-	label22 = "test_label22"
-	value22 = "test_value22"
-	label31 = "test_label31"
-	value31 = "test_value31"
-	label32 = "test_label32"
-	value32 = "test_value32"
-	label41 = "__test_label41__"
-	value41 = "test_value41"
-	dirty1  = "%"
-	dirty2  = "?"
+	label11       = "test_label11"
+	value11       = "test_value11"
+	label12       = "test_label12"
+	value12       = "test_value12"
+	label21       = "test_label21"
+	value21       = "test_value21"
+	label22       = "test_label22"
+	value22       = "test_value22"
+	label31       = "test_label31"
+	value31       = "test_value31"
+	label32       = "test_label32"
+	value32       = "test_value32"
+	label41       = "__test_label41__"
+	value41       = "test_value41"
+	dirty1        = "%"
+	dirty2        = "?"
+	traceIDValue1 = "traceID-value1"
+	traceIDKey    = "trace_id"
 
 	intVal1   int64 = 1
 	intVal2   int64 = 2
@@ -77,6 +79,21 @@ var (
 			getSample(float64(intVal1), msTime1)),
 		"Gauge" + "-" + label21 + "-" + value21 + "-" + label22 + "-" + value22: getTimeSeries(getPromLabels(label21, value21, label22, value22),
 			getSample(float64(intVal1), msTime2)),
+	}
+	twoHistogramPointsSameTs = map[string]*prompb.TimeSeries{
+		"Histogram" + "-" + label11 + "-" + value11 + "-" + label12 + "-" + value12: getTimeSeriesWithSamplesAndExemplars(getPromLabels(label11, value11, label12, value12),
+			[]prompb.Sample{getSample(float64(intVal1), msTime1), getSample(float64(intVal2), msTime2)},
+			getExemplar(float64(intVal1), msTime1),
+			getExemplar(float64(intVal2), msTime2)),
+	}
+
+	twoHistogramPointsDifferentTs = map[string]*prompb.TimeSeries{
+		"Histogram" + "-" + label11 + "-" + value11 + "-" + label12 + "-" + value12: getTimeSeriesWithSamplesAndExemplars(getPromLabels(label11, value11, label12, value12),
+			[]prompb.Sample{getSample(float64(intVal1), msTime1)},
+			getExemplar(float64(intVal1), msTime1)),
+		"Histogram" + "-" + label21 + "-" + value21 + "-" + label22 + "-" + value22: getTimeSeriesWithSamplesAndExemplars(getPromLabels(label21, value21, label22, value22),
+			[]prompb.Sample{getSample(float64(intVal1), msTime2)},
+			getExemplar(float64(intVal1), msTime2)),
 	}
 	bounds  = []float64{0.1, 0.5, 0.99}
 	buckets = []uint64{1, 2, 3}
@@ -182,6 +199,39 @@ func getTimeSeries(labels []prompb.Label, samples ...prompb.Sample) *prompb.Time
 		Labels:  labels,
 		Samples: samples,
 	}
+}
+
+func getExemplar(v float64, t int64) prompb.Exemplar {
+	return prompb.Exemplar{
+		Value:     v,
+		Timestamp: t,
+		Labels:    []prompb.Label{getLabel(traceIDKey, traceIDValue1)},
+	}
+}
+
+func getTimeSeriesWithSamplesAndExemplars(labels []prompb.Label, samples []prompb.Sample, exemplars ...prompb.Exemplar) *prompb.TimeSeries {
+	return &prompb.TimeSeries{
+		Labels:    labels,
+		Samples:   samples,
+		Exemplars: exemplars,
+	}
+}
+
+func getHistogramDataPointWithExemplars(time time.Time, value float64, attributeKey string, attributeValue string) *pdata.HistogramDataPoint {
+	h := pdata.NewHistogramDataPoint()
+
+	e := h.Exemplars().AppendEmpty()
+	e.SetDoubleVal(value)
+	e.SetTimestamp(pdata.NewTimestampFromTime(time))
+	e.FilteredAttributes().Insert(attributeKey, pdata.NewAttributeValueString(attributeValue))
+
+	return &h
+}
+
+func getHistogramDataPoint() *pdata.HistogramDataPoint {
+	h := pdata.NewHistogramDataPoint()
+
+	return &h
 }
 
 func getQuantiles(bounds []float64, values []float64) pdata.ValueAtQuantileSlice {
