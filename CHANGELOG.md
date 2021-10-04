@@ -18,6 +18,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   ([679](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/679))
 - `opentelemetry-exporter-richconsole` Initial release
   ([#686](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/686))
+- `opentelemetry-instrumentation-tornado` now sets `http.client_ip` and `tornado.handler` attributes
+  ([#706](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/706))
 
 ### Changed
 - `opentelemetry-instrumentation-botocore` Unpatch botocore Endpoint.prepare_request on uninstrument

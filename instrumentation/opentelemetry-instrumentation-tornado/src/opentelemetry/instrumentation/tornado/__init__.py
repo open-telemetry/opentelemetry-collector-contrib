@@ -235,11 +235,17 @@ def _get_attributes_from_request(request):
         SpanAttributes.HTTP_TARGET: request.path,
     }
 
-    if request.host:
-        attrs[SpanAttributes.HTTP_HOST] = request.host
-
     if request.remote_ip:
-        attrs[SpanAttributes.NET_PEER_IP] = request.remote_ip
+        # NET_PEER_IP is the address of the network peer
+        # HTTP_CLIENT_IP is the address of the client, which might be different
+        # if Tornado is set to trust X-Forwarded-For headers (xheaders=True)
+        attrs[SpanAttributes.HTTP_CLIENT_IP] = request.remote_ip
+        if hasattr(request.connection, "context") and getattr(
+            request.connection.context, "_orig_remote_ip", None
+        ):
+            attrs[
+                SpanAttributes.NET_PEER_IP
+            ] = request.connection.context._orig_remote_ip
 
     return extract_attributes_from_object(
         request, _traced_request_attrs, attrs
@@ -250,6 +256,11 @@ def _get_operation_name(handler, request):
     full_class_name = type(handler).__name__
     class_name = full_class_name.rsplit(".")[-1]
     return f"{class_name}.{request.method.lower()}"
+
+
+def _get_full_handler_name(handler):
+    klass = type(handler)
+    return f"{klass.__module__}.{klass.__qualname__}"
 
 
 def _start_span(tracer, handler, start_time) -> _TraceContext:
@@ -264,6 +275,7 @@ def _start_span(tracer, handler, start_time) -> _TraceContext:
         attributes = _get_attributes_from_request(handler.request)
         for key, value in attributes.items():
             span.set_attribute(key, value)
+        span.set_attribute("tornado.handler", _get_full_handler_name(handler))
 
     activation = trace.use_span(span, end_on_exit=True)
     activation.__enter__()  # pylint: disable=E1101
