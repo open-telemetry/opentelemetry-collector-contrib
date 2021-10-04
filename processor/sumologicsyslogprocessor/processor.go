@@ -93,7 +93,7 @@ func (ssp *sumologicSyslogProcessor) ProcessLogs(ctx context.Context, ld pdata.L
 			logs := ill.Logs()
 			for k := 0; k < logs.Len(); k++ {
 				var (
-					value string = syslogSource
+					value = syslogSource
 					ok    bool
 				)
 
