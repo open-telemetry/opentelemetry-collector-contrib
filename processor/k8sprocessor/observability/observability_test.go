@@ -81,18 +81,43 @@ func TestMetrics(t *testing.T) {
 		},
 	}
 
-	e := newExporter()
-	metricReader := metricexport.NewReader()
+	var (
+		fail   = make(chan struct{})
+		chData = make(chan []*metricdata.Metric)
+	)
+
+	go func() {
+		reader := metricexport.NewReader()
+		e := newExporter()
+		ch := e.ReturnAfter(len(tests))
+
+		// Add a manual retry mechanism in case there's a hiccup reading the
+		// metrics from producers in ReadAndExport(): we can wait for the metrics
+		// to come instead of failing because they didn't come right away.
+		for i := 0; i < 10; i++ {
+			go reader.ReadAndExport(e)
+
+			select {
+			case <-time.After(500 * time.Millisecond):
+
+			case data := <-ch:
+				chData <- data
+				return
+			}
+		}
+
+		fail <- struct{}{}
+	}()
+
 	for _, tt := range tests {
 		tt.recordFunc()
 	}
-	go metricReader.ReadAndExport(e)
 
 	var data []*metricdata.Metric
 	select {
-	case <-time.After(time.Second * 10):
+	case <-fail:
 		t.Fatalf("timedout waiting for metrics to arrive")
-	case data = <-e.ReturnAfter(len(tests)):
+	case data = <-chData:
 	}
 
 	sort.Slice(tests, func(i, j int) bool {
@@ -103,7 +128,6 @@ func TestMetrics(t *testing.T) {
 		return data[i].Descriptor.Name < data[j].Descriptor.Name
 	})
 
-	// TODO: FIXME: this is one flaky test
 	for i, tt := range tests {
 		require.Len(t, data, len(tests))
 		d := data[i]
