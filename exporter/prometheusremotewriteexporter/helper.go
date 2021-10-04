@@ -23,9 +23,8 @@ import (
 	"time"
 	"unicode"
 
-	"github.com/prometheus/prometheus/pkg/timestamp"
-
 	"github.com/prometheus/common/model"
+	"github.com/prometheus/prometheus/pkg/timestamp"
 	"github.com/prometheus/prometheus/prompb"
 	"go.opentelemetry.io/collector/model/pdata"
 )
