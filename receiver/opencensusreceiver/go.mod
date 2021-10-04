@@ -13,13 +13,13 @@ require (
 	go.opentelemetry.io/collector v0.36.1-0.20210930151317-3ec4f1be6001
 	go.opentelemetry.io/collector/model v0.36.1-0.20210930151317-3ec4f1be6001
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.24.0
-	go.opentelemetry.io/otel v1.0.0
-	go.opentelemetry.io/otel/trace v1.0.0
+	go.opentelemetry.io/otel v1.0.1
+	go.opentelemetry.io/otel/trace v1.0.1
 	google.golang.org/grpc v1.41.0
 	google.golang.org/protobuf v1.27.1
 )
 
-require go.opentelemetry.io/otel/sdk v1.0.0
+require go.opentelemetry.io/otel/sdk v1.0.1
 
 require (
 	cloud.google.com/go v0.81.0 // indirect
