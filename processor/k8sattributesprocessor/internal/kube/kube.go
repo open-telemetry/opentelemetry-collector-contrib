@@ -140,6 +140,7 @@ type ExtractionRules struct {
 	Namespace          bool
 	PodName            bool
 	PodUID             bool
+	PodIP              bool
 	Node               bool
 	StartTime          bool
 	ContainerID        bool
