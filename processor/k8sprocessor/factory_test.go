@@ -18,9 +18,8 @@ import (
 	"context"
 	"testing"
 
-	"go.opentelemetry.io/collector/component/componenttest"
-
 	"github.com/stretchr/testify/assert"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configcheck"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 )
