@@ -139,6 +139,7 @@ type ExtractionRules struct {
 	Namespace          bool
 	PodName            bool
 	PodUID             bool
+	PodIP              bool
 	Node               bool
 	Cluster            bool
 	StartTime          bool
