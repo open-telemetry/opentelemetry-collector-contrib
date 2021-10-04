@@ -81,7 +81,7 @@ func (s *MongoDBAtlasClient) Organizations(ctx context.Context) ([]*mongodbatlas
 		if err != nil {
 			// TODO: Add error to a metric
 			// Stop, returning what we have (probably empty slice)
-			return allOrgs, errors.Wrap(err, "Error retrieving organizations from MongoDB Atlas API")
+			return allOrgs, errors.Wrap(err, "error retrieving organizations from MongoDB Atlas API")
 		}
 		allOrgs = append(allOrgs, orgs...)
 		if !hasNext {
@@ -119,7 +119,7 @@ func (s *MongoDBAtlasClient) Projects(
 		projects, hasNext, err := s.getProjectsPage(ctx, orgID, page)
 		page++
 		if err != nil {
-			return allProjects, errors.Wrap(err, "Error retrieving list of projects from MongoDB Atlas API")
+			return allProjects, errors.Wrap(err, "error retrieving list of projects from MongoDB Atlas API")
 		}
 		allProjects = append(allProjects, projects...)
 		if !hasNext {
@@ -141,7 +141,7 @@ func (s *MongoDBAtlasClient) getProjectsPage(
 	)
 	err = checkMongoDBClientErr(err, response)
 	if err != nil {
-		return nil, false, errors.Wrap(err, "Error retrieving project page")
+		return nil, false, errors.Wrap(err, "error retrieving project page")
 	}
 	return projects.Results, hasNext(projects.Links), nil
 }
@@ -169,7 +169,7 @@ func (s *MongoDBAtlasClient) Processes(
 	)
 	err = checkMongoDBClientErr(err, response)
 	if err != nil {
-		return make([]*mongodbatlas.Process, 0), errors.Wrap(err, "Error retrieving processes from MongoDB Atlas API")
+		return make([]*mongodbatlas.Process, 0), errors.Wrap(err, "error retrieving processes from MongoDB Atlas API")
 	}
 	return processes, nil
 }
