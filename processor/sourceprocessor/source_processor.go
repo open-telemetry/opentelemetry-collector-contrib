@@ -20,13 +20,12 @@ import (
 	"regexp"
 	"strings"
 
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/model/pdata"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/sourceprocessor/observability"
 )
 
-type sourceKeys struct {
+type sourceTraceKeys struct {
 	annotationPrefix   string
 	containerKey       string
 	namespaceKey       string
@@ -37,7 +36,7 @@ type sourceKeys struct {
 	sourceHostKey      string
 }
 
-func (stk sourceKeys) convertKey(key string) string {
+func (stk sourceTraceKeys) convertKey(key string) string {
 	switch key {
 	case "container":
 		return stk.containerKey
@@ -56,16 +55,17 @@ func (stk sourceKeys) convertKey(key string) string {
 	}
 }
 
-type sourceProcessor struct {
-	collector            string
-	source               string
-	sourceCategoryFiller attributeFiller
-	sourceNameFiller     attributeFiller
-	sourceHostFiller     attributeFiller
-
-	systemdFiltering bool
-	exclude          map[string]*regexp.Regexp
-	keys             sourceKeys
+type sourceTraceProcessor struct {
+	collector             string
+	source                string
+	sourceCategoryFiller  attributeFiller
+	sourceNameFiller      attributeFiller
+	sourceHostFiller      attributeFiller
+	excludeNamespaceRegex *regexp.Regexp
+	excludePodRegex       *regexp.Regexp
+	excludeContainerRegex *regexp.Regexp
+	excludeHostRegex      *regexp.Regexp
+	keys                  sourceTraceKeys
 }
 
 const (
@@ -97,8 +97,22 @@ func compileRegex(regex string) *regexp.Regexp {
 	return re
 }
 
-func newSourceProcessor(cfg *Config) *sourceProcessor {
-	keys := sourceKeys{
+func matchRegexMaybe(re *regexp.Regexp, atts pdata.AttributeMap, attributeName string) bool {
+	if re == nil {
+		return false
+	}
+
+	if attrValue, found := atts.Get(attributeName); found {
+		if attrValue.Type() == pdata.AttributeValueTypeString {
+			return re.MatchString(attrValue.StringVal())
+		}
+	}
+
+	return false
+}
+
+func newSourceTraceProcessor(cfg *Config) *sourceTraceProcessor {
+	keys := sourceTraceKeys{
 		annotationPrefix:   cfg.AnnotationPrefix,
 		containerKey:       cfg.ContainerKey,
 		namespaceKey:       cfg.NamespaceKey,
@@ -109,42 +123,31 @@ func newSourceProcessor(cfg *Config) *sourceProcessor {
 		sourceHostKey:      cfg.SourceHostKey,
 	}
 
-	var (
-		exclude          = make(map[string]*regexp.Regexp)
-		systemdFiltering bool
-	)
-	for field, regexStr := range cfg.Exclude {
-		if field == "_SYSTEMD_UNIT" {
-			systemdFiltering = true
-		}
-		if r := compileRegex(regexStr); r != nil {
-			exclude[field] = r
-		}
-	}
-
-	return &sourceProcessor{
-		collector:            cfg.Collector,
-		keys:                 keys,
-		source:               cfg.Source,
-		sourceHostFiller:     createSourceHostFiller(),
-		sourceCategoryFiller: createSourceCategoryFiller(cfg, keys),
-		sourceNameFiller:     createSourceNameFiller(cfg, keys),
-		exclude:              exclude,
-		systemdFiltering:     systemdFiltering,
+	return &sourceTraceProcessor{
+		collector:             cfg.Collector,
+		keys:                  keys,
+		source:                cfg.Source,
+		sourceHostFiller:      createSourceHostFiller(),
+		sourceCategoryFiller:  createSourceCategoryFiller(cfg, keys),
+		sourceNameFiller:      createSourceNameFiller(cfg, keys),
+		excludeNamespaceRegex: compileRegex(cfg.ExcludeNamespaceRegex),
+		excludeHostRegex:      compileRegex(cfg.ExcludeHostRegex),
+		excludeContainerRegex: compileRegex(cfg.ExcludeContainerRegex),
+		excludePodRegex:       compileRegex(cfg.ExcludePodRegex),
 	}
 }
 
-func (sp *sourceProcessor) fillOtherMeta(atts pdata.AttributeMap) {
-	if sp.collector != "" {
-		atts.UpsertString(collectorKey, sp.collector)
+func (stp *sourceTraceProcessor) fillOtherMeta(atts pdata.AttributeMap) {
+	if stp.collector != "" {
+		atts.UpsertString(collectorKey, stp.collector)
 	}
 }
 
-func (sp *sourceProcessor) isFilteredOut(atts pdata.AttributeMap) bool {
+func (stp *sourceTraceProcessor) isFilteredOut(atts pdata.AttributeMap) bool {
 	// TODO: This is quite inefficient when done for each package (ore even more so, span) separately.
 	// It should be moved to K8S Meta Processor and done once per new pod/changed pod
 
-	if value, found := atts.Get(sp.annotationAttribute(excludeAnnotation)); found {
+	if value, found := atts.Get(stp.annotationAttribute(excludeAnnotation)); found {
 		if value.Type() == pdata.AttributeValueTypeString && value.StringVal() == "true" {
 			return true
 		} else if value.Type() == pdata.AttributeValueTypeBool && value.BoolVal() {
@@ -152,7 +155,7 @@ func (sp *sourceProcessor) isFilteredOut(atts pdata.AttributeMap) bool {
 		}
 	}
 
-	if value, found := atts.Get(sp.annotationAttribute(includeAnnotation)); found {
+	if value, found := atts.Get(stp.annotationAttribute(includeAnnotation)); found {
 		if value.Type() == pdata.AttributeValueTypeString && value.StringVal() == "true" {
 			return false
 		} else if value.Type() == pdata.AttributeValueTypeBool && value.BoolVal() {
@@ -160,36 +163,35 @@ func (sp *sourceProcessor) isFilteredOut(atts pdata.AttributeMap) bool {
 		}
 	}
 
-	// Check fields by matching them against field exclusion regexes
-	for field, r := range sp.exclude {
-		v, ok := matchFieldByRegex(atts, field, r)
-		if ok {
-			// If we're filtering/processing systemd entries then set the hostname
-			// based on the _HOSTNAME attribute coming from systemd.
-			if sp.systemdFiltering && field == "_HOSTNAME" && v != "" {
-				atts.UpsertString("host", v)
-			}
-
-			return true
-		}
+	if matchRegexMaybe(stp.excludeNamespaceRegex, atts, stp.keys.namespaceKey) {
+		return true
+	}
+	if matchRegexMaybe(stp.excludePodRegex, atts, stp.keys.podKey) {
+		return true
+	}
+	if matchRegexMaybe(stp.excludeContainerRegex, atts, stp.keys.containerKey) {
+		return true
+	}
+	if matchRegexMaybe(stp.excludeHostRegex, atts, stp.keys.sourceHostKey) {
+		return true
 	}
 
 	return false
 }
 
-func (sp *sourceProcessor) annotationAttribute(annotationKey string) string {
-	return sp.keys.annotationPrefix + annotationKey
+func (stp *sourceTraceProcessor) annotationAttribute(annotationKey string) string {
+	return stp.keys.annotationPrefix + annotationKey
 }
 
 // ProcessTraces processes traces
-func (sp *sourceProcessor) ProcessTraces(ctx context.Context, td pdata.Traces) (pdata.Traces, error) {
+func (stp *sourceTraceProcessor) ProcessTraces(ctx context.Context, td pdata.Traces) (pdata.Traces, error) {
 	rss := td.ResourceSpans()
 
 	for i := 0; i < rss.Len(); i++ {
 		observability.RecordResourceSpansProcessed()
 
 		rs := rss.At(i)
-		res := sp.processResource(rs.Resource())
+		res := stp.processResource(rs.Resource())
 		atts := res.Attributes()
 
 		ilss := rs.InstrumentationLibrarySpans()
@@ -199,7 +201,7 @@ func (sp *sourceProcessor) ProcessTraces(ctx context.Context, td pdata.Traces) (
 			totalSpans += ils.Spans().Len()
 		}
 
-		if sp.isFilteredOut(atts) {
+		if stp.isFilteredOut(atts) {
 			rs.InstrumentationLibrarySpans().RemoveIf(func(pdata.InstrumentationLibrarySpans) bool { return true })
 			observability.RecordFilteredOutN(totalSpans)
 		} else {
@@ -210,77 +212,33 @@ func (sp *sourceProcessor) ProcessTraces(ctx context.Context, td pdata.Traces) (
 	return td, nil
 }
 
-// ProcessMetrics processes metrics
-func (sp *sourceProcessor) ProcessMetrics(ctx context.Context, md pdata.Metrics) (pdata.Metrics, error) {
-	rss := md.ResourceMetrics()
-
-	for i := 0; i < rss.Len(); i++ {
-		rs := rss.At(i)
-		res := sp.processResource(rs.Resource())
-		atts := res.Attributes()
-
-		if sp.isFilteredOut(atts) {
-			rs.InstrumentationLibraryMetrics().RemoveIf(func(pdata.InstrumentationLibraryMetrics) bool { return true })
-		}
-	}
-
-	return md, nil
-}
-
-// ProcessLogs processes logs
-func (sp *sourceProcessor) ProcessLogs(ctx context.Context, md pdata.Logs) (pdata.Logs, error) {
-	rss := md.ResourceLogs()
-
-	for i := 0; i < rss.Len(); i++ {
-		rs := rss.At(i)
-		res := sp.processResource(rs.Resource())
-		atts := res.Attributes()
-
-		if sp.isFilteredOut(atts) {
-			rs.InstrumentationLibraryLogs().RemoveIf(func(pdata.InstrumentationLibraryLogs) bool { return true })
-		}
-	}
-
-	return md, nil
-}
-
 // processResource performs multiple actions on resource:
 //   - enrich pod name, so it can be used in templates
 //   - fills source attributes based on config or annotations
 //   - set metadata (collector name)
-func (sp *sourceProcessor) processResource(res pdata.Resource) pdata.Resource {
+func (stp *sourceTraceProcessor) processResource(res pdata.Resource) pdata.Resource {
 	atts := res.Attributes()
 
-	sp.enrichPodName(&atts)
-	sp.fillOtherMeta(atts)
+	stp.enrichPodName(&atts)
+	stp.fillOtherMeta(atts)
 
-	sp.sourceHostFiller.fillResourceOrUseAnnotation(&atts,
-		sp.annotationAttribute(sourceHostSpecialAnnotation),
-		sp.keys,
+	stp.sourceHostFiller.fillResourceOrUseAnnotation(&atts,
+		stp.annotationAttribute(sourceHostSpecialAnnotation),
+		stp.keys,
 	)
-	sp.sourceCategoryFiller.fillResourceOrUseAnnotation(&atts,
-		sp.annotationAttribute(sourceCategorySpecialAnnotation),
-		sp.keys,
+	stp.sourceCategoryFiller.fillResourceOrUseAnnotation(&atts,
+		stp.annotationAttribute(sourceCategorySpecialAnnotation),
+		stp.keys,
 	)
-	sp.sourceNameFiller.fillResourceOrUseAnnotation(&atts,
-		sp.annotationAttribute(sourceNameSpecialAnnotation),
-		sp.keys,
+	stp.sourceNameFiller.fillResourceOrUseAnnotation(&atts,
+		stp.annotationAttribute(sourceNameSpecialAnnotation),
+		stp.keys,
 	)
 
 	return res
 }
 
-// Start is invoked during service startup.
-func (*sourceProcessor) Start(_context context.Context, _host component.Host) error {
-	return nil
-}
-
-// Shutdown is invoked during service shutdown.
-func (*sourceProcessor) Shutdown(_context context.Context) error {
-	return nil
-}
-
-// Convert the pod_template_hash to an alphanumeric string using the same logic Kubernetes
+// SafeEncodeString converts the pod_template_hash to an alphanumeric string using the same logic Kubernetes
 // uses at https://github.com/kubernetes/apimachinery/blob/18a5ff3097b4b189511742e39151a153ee16988b/pkg/util/rand/rand.go#L119
 func SafeEncodeString(s string) string {
 	r := make([]byte, len(s))
@@ -290,7 +248,7 @@ func SafeEncodeString(s string) string {
 	return string(r)
 }
 
-func (sp *sourceProcessor) enrichPodName(atts *pdata.AttributeMap) {
+func (stp *sourceTraceProcessor) enrichPodName(atts *pdata.AttributeMap) {
 	// This replicates sanitize_pod_name function
 	// Strip out dynamic bits from pod name.
 	// NOTE: Kubernetes deployments append a template hash.
@@ -302,7 +260,7 @@ func (sp *sourceProcessor) enrichPodName(atts *pdata.AttributeMap) {
 	if atts == nil {
 		return
 	}
-	pod, found := atts.Get(sp.keys.podKey)
+	pod, found := atts.Get(stp.keys.podKey)
 	if !found {
 		return
 	}
@@ -313,32 +271,14 @@ func (sp *sourceProcessor) enrichPodName(atts *pdata.AttributeMap) {
 		return
 	}
 
-	podTemplateHashAttr, found := atts.Get(sp.keys.podTemplateHashKey)
+	podTemplateHashAttr, found := atts.Get(stp.keys.podTemplateHashKey)
 
 	if found && len(podParts) > 2 {
 		podTemplateHash := podTemplateHashAttr.StringVal()
 		if podTemplateHash == podParts[len(podParts)-2] || SafeEncodeString(podTemplateHash) == podParts[len(podParts)-2] {
-			atts.UpsertString(sp.keys.podNameKey, strings.Join(podParts[:len(podParts)-2], "-"))
+			atts.UpsertString(stp.keys.podNameKey, strings.Join(podParts[:len(podParts)-2], "-"))
 			return
 		}
 	}
-	atts.UpsertString(sp.keys.podNameKey, strings.Join(podParts[:len(podParts)-1], "-"))
-}
-
-// matchFieldByRegex searches the provided attribute map for a particular field
-// and matches is with the provided regex.
-// It returns the string value of found elements and a boolean flag whether the
-// value matched the provided regex.
-func matchFieldByRegex(atts pdata.AttributeMap, field string, r *regexp.Regexp) (string, bool) {
-	att, ok := atts.Get(field)
-	if !ok {
-		return "", false
-	}
-
-	if att.Type() != pdata.AttributeValueTypeString {
-		return "", false
-	}
-
-	v := att.StringVal()
-	return v, r.MatchString(v)
+	atts.UpsertString(stp.keys.podNameKey, strings.Join(podParts[:len(podParts)-1], "-"))
 }

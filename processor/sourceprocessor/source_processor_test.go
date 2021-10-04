@@ -152,7 +152,7 @@ func TestTraceSourceProcessor(t *testing.T) {
 	want := newTraceData(mergedK8sLabelsWithMeta)
 	test := newTraceData(k8sLabels)
 
-	rtp := newSourceProcessor(cfg)
+	rtp := newSourceTraceProcessor(cfg)
 
 	td, err := rtp.ProcessTraces(context.Background(), test)
 	assert.NoError(t, err)
@@ -172,7 +172,7 @@ func TestTraceSourceProcessorNewTaxonomy(t *testing.T) {
 	config.PodTemplateHashKey = "k8s.pod.labels.pod-template-hash"
 	config.ContainerKey = "k8s.container.name"
 
-	rtp := newSourceProcessor(config)
+	rtp := newSourceTraceProcessor(config)
 
 	td, err := rtp.ProcessTraces(context.Background(), test)
 	assert.NoError(t, err)
@@ -184,7 +184,7 @@ func TestTraceSourceProcessorEmpty(t *testing.T) {
 	want := newTraceData(limitedLabelsWithMeta)
 	test := newTraceData(limitedLabels)
 
-	rtp := newSourceProcessor(cfg)
+	rtp := newSourceTraceProcessor(cfg)
 
 	td, err := rtp.ProcessTraces(context.Background(), test)
 	assert.NoError(t, err)
@@ -201,9 +201,7 @@ func TestTraceSourceFilteringOutByRegex(t *testing.T) {
 			name: "pod exclude regex",
 			cfg: func() *Config {
 				conf := createConfig()
-				conf.Exclude = map[string]string{
-					"pod": ".*",
-				}
+				conf.ExcludePodRegex = ".*"
 				return conf
 			}(),
 			want: func() pdata.Traces {
@@ -217,9 +215,7 @@ func TestTraceSourceFilteringOutByRegex(t *testing.T) {
 			name: "container exclude regex",
 			cfg: func() *Config {
 				conf := createConfig()
-				conf.Exclude = map[string]string{
-					"container": ".*",
-				}
+				conf.ExcludeContainerRegex = ".*"
 				return conf
 			}(),
 			want: func() pdata.Traces {
@@ -233,9 +229,7 @@ func TestTraceSourceFilteringOutByRegex(t *testing.T) {
 			name: "namespace exclude regex",
 			cfg: func() *Config {
 				conf := createConfig()
-				conf.Exclude = map[string]string{
-					"namespace": ".*",
-				}
+				conf.ExcludeNamespaceRegex = ".*"
 				return conf
 			}(),
 			want: func() pdata.Traces {
@@ -260,7 +254,7 @@ func TestTraceSourceFilteringOutByRegex(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			test := newTraceDataWithSpans(mergedK8sLabels, k8sLabels)
 
-			rtp := newSourceProcessor(tc.cfg)
+			rtp := newSourceTraceProcessor(tc.cfg)
 
 			td, err := rtp.ProcessTraces(context.Background(), test)
 			assert.NoError(t, err)
@@ -279,7 +273,7 @@ func TestTraceSourceFilteringOutByExclude(t *testing.T) {
 	want.ResourceSpans().At(0).InstrumentationLibrarySpans().
 		RemoveIf(func(pdata.InstrumentationLibrarySpans) bool { return true })
 
-	rtp := newSourceProcessor(cfg)
+	rtp := newSourceTraceProcessor(cfg)
 
 	td, err := rtp.ProcessTraces(context.Background(), test)
 	assert.NoError(t, err)
@@ -295,10 +289,8 @@ func TestTraceSourceIncludePrecedence(t *testing.T) {
 	want.ResourceSpans().At(0).Resource().Attributes().UpsertString("pod_annotation_sumologic.com/include", "true")
 
 	cfg1 := createConfig()
-	cfg1.Exclude = map[string]string{
-		"pod": ".*",
-	}
-	rtp := newSourceProcessor(cfg)
+	cfg1.ExcludePodRegex = ".*"
+	rtp := newSourceTraceProcessor(cfg)
 
 	td, err := rtp.ProcessTraces(context.Background(), test)
 	assert.NoError(t, err)
@@ -317,7 +309,7 @@ func TestTraceSourceProcessorAnnotations(t *testing.T) {
 	mergedK8sLabelsWithMeta["_sourceCategory"] = "prefix/sc:pod#1234"
 	want := newTraceData(mergedK8sLabelsWithMeta)
 
-	rtp := newSourceProcessor(cfg)
+	rtp := newSourceTraceProcessor(cfg)
 
 	td, err := rtp.ProcessTraces(context.Background(), test)
 	assert.NoError(t, err)

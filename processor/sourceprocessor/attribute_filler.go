@@ -52,7 +52,7 @@ func createSourceHostFiller() attributeFiller {
 	}
 }
 
-func extractFormat(format string, name string, keys sourceKeys) attributeFiller {
+func extractFormat(format string, name string, keys sourceTraceKeys) attributeFiller {
 	labels := make([]string, 0)
 	matches := formatRegex.FindAllStringSubmatch(format, -1)
 	for _, matchset := range matches {
@@ -69,12 +69,12 @@ func extractFormat(format string, name string, keys sourceKeys) attributeFiller 
 	}
 }
 
-func createSourceNameFiller(cfg *Config, keys sourceKeys) attributeFiller {
+func createSourceNameFiller(cfg *Config, keys sourceTraceKeys) attributeFiller {
 	filler := extractFormat(cfg.SourceName, sourceNameKey, keys)
 	return filler
 }
 
-func createSourceCategoryFiller(cfg *Config, keys sourceKeys) attributeFiller {
+func createSourceCategoryFiller(cfg *Config, keys sourceTraceKeys) attributeFiller {
 	filler := extractFormat(cfg.SourceCategory, sourceCategoryKey, keys)
 	filler.compiledFormat = cfg.SourceCategoryPrefix + filler.compiledFormat
 	filler.dashReplacement = cfg.SourceCategoryReplaceDash
@@ -82,21 +82,21 @@ func createSourceCategoryFiller(cfg *Config, keys sourceKeys) attributeFiller {
 	return filler
 }
 
-func (f *attributeFiller) fillResourceOrUseAnnotation(atts *pdata.AttributeMap, annotationKey string, keys sourceKeys) {
+func (f *attributeFiller) fillResourceOrUseAnnotation(atts *pdata.AttributeMap, annotationKey string, keys sourceTraceKeys) bool {
 	val, found := atts.Get(annotationKey)
 	if found {
 		annotationFiller := extractFormat(val.StringVal(), f.name, keys)
 		annotationFiller.dashReplacement = f.dashReplacement
 		annotationFiller.compiledFormat = f.prefix + annotationFiller.compiledFormat
-		annotationFiller.fillAttributes(atts)
+		return annotationFiller.fillAttributes(atts)
 	} else {
-		f.fillAttributes(atts)
+		return f.fillAttributes(atts)
 	}
 }
 
-func (f *attributeFiller) fillAttributes(atts *pdata.AttributeMap) {
+func (f *attributeFiller) fillAttributes(atts *pdata.AttributeMap) bool {
 	if len(f.compiledFormat) == 0 {
-		return
+		return false
 	}
 
 	labelValues := f.resourceLabelValues(atts)
@@ -106,7 +106,9 @@ func (f *attributeFiller) fillAttributes(atts *pdata.AttributeMap) {
 			str = strings.ReplaceAll(str, "-", f.dashReplacement)
 		}
 		atts.UpsertString(f.name, str)
+		return true
 	}
+	return false
 }
 
 func (f *attributeFiller) resourceLabelValues(atts *pdata.AttributeMap) []interface{} {

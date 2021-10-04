@@ -28,12 +28,10 @@ type Config struct {
 	SourceCategory            string `mapstructure:"source_category"`
 	SourceCategoryPrefix      string `mapstructure:"source_category_prefix"`
 	SourceCategoryReplaceDash string `mapstructure:"source_category_replace_dash"`
-
-	// Exclude is a mapping of field names to exclusion regexes for those
-	// particular fields.
-	// Whenever a value for a particular field matches a corresponding regex,
-	// the processed entry is dropped.
-	Exclude map[string]string `mapstructure:"exclude"`
+	ExcludeNamespaceRegex     string `mapstructure:"exclude_namespace_regex"`
+	ExcludePodRegex           string `mapstructure:"exclude_pod_regex"`
+	ExcludeContainerRegex     string `mapstructure:"exclude_container_regex"`
+	ExcludeHostRegex          string `mapstructure:"exclude_host_regex"`
 
 	AnnotationPrefix   string `mapstructure:"annotation_prefix"`
 	ContainerKey       string `mapstructure:"container_key"`
