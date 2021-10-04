@@ -60,6 +60,15 @@ func TestLoadConfig(t *testing.T) {
 					Name:        "healthcheck-rule",
 					NamePattern: &healthCheckNamePatternValue,
 				},
+				{
+					Name: "remove-all-traces-with-healthcheck-service",
+					NamePattern: nil,
+					NumericAttributeCfg: nil,
+					StringAttributeCfg: &cfconfig.StringAttributeCfg{
+						Key: "service.name",
+						Values: []string{"healthcheck"},
+					},
+				},
 			},
 			PolicyCfgs: []cfconfig.PolicyCfg{
 				{
