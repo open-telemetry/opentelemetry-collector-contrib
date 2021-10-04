@@ -14,6 +14,9 @@ require (
 )
 
 require (
+	github.com/gogo/protobuf v1.3.2
+	github.com/google/uuid v1.3.0
+	github.com/jaegertracing/jaeger v1.26.0
 	go.uber.org/multierr v1.7.0
 	google.golang.org/genproto v0.0.0-20210927142257-433400c27d05 // indirect
 )
