@@ -8,8 +8,8 @@ require (
 	github.com/logzio/jaeger-logzio v1.0.4
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.36.0
 	github.com/stretchr/testify v1.7.0
-	go.opentelemetry.io/collector v0.36.1-0.20210930151317-3ec4f1be6001
-	go.opentelemetry.io/collector/model v0.36.1-0.20210930151317-3ec4f1be6001
+	go.opentelemetry.io/collector v0.36.1-0.20211004155959-190f8fbb2b9a
+	go.opentelemetry.io/collector/model v0.36.1-0.20211004155959-190f8fbb2b9a
 	go.uber.org/zap v1.19.1
 )
 
@@ -28,7 +28,7 @@ require (
 	github.com/golang/snappy v0.0.4 // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
-	github.com/knadh/koanf v1.2.3 // indirect
+	github.com/knadh/koanf v1.2.4 // indirect
 	github.com/logzio/logzio-go v1.0.3 // indirect
 	github.com/magiconair/properties v1.8.5 // indirect
 	github.com/mailru/easyjson v0.7.7 // indirect
@@ -53,11 +53,11 @@ require (
 	github.com/syndtr/goleveldb v1.0.0 // indirect
 	github.com/uber/jaeger-lib v2.4.1+incompatible // indirect
 	go.opencensus.io v0.23.0 // indirect
-	go.opentelemetry.io/otel v1.0.0 // indirect
-	go.opentelemetry.io/otel/metric v0.23.0 // indirect
-	go.opentelemetry.io/otel/trace v1.0.0 // indirect
+	go.opentelemetry.io/otel v1.0.1 // indirect
+	go.opentelemetry.io/otel/metric v0.24.0 // indirect
+	go.opentelemetry.io/otel/trace v1.0.1 // indirect
 	go.uber.org/atomic v1.9.0 // indirect
-	go.uber.org/multierr v1.6.0 // indirect
+	go.uber.org/multierr v1.7.0 // indirect
 	golang.org/x/net v0.0.0-20210614182718-04defd469f4e // indirect
 	golang.org/x/sys v0.0.0-20210816074244-15123e1e1f71 // indirect
 	golang.org/x/text v0.3.6 // indirect
