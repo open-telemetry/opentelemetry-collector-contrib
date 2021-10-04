@@ -61,11 +61,11 @@ func TestLoadConfig(t *testing.T) {
 					NamePattern: &healthCheckNamePatternValue,
 				},
 				{
-					Name: "remove-all-traces-with-healthcheck-service",
-					NamePattern: nil,
+					Name:                "remove-all-traces-with-healthcheck-service",
+					NamePattern:         nil,
 					NumericAttributeCfg: nil,
 					StringAttributeCfg: &cfconfig.StringAttributeCfg{
-						Key: "service.name",
+						Key:    "service.name",
 						Values: []string{"healthcheck"},
 					},
 				},
