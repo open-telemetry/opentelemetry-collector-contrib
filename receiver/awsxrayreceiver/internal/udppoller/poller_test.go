@@ -121,8 +121,8 @@ func TestCloseStopsPoller(t *testing.T) {
 }
 
 func TestSuccessfullyPollPacket(t *testing.T) {
-	tt, err := obsreporttest.SetupRecordedMetricsTest()
-	assert.NoError(t, err, "SetupRecordedMetricsTest should succeed")
+	tt, err := obsreporttest.SetupTelemetry()
+	assert.NoError(t, err, "SetupTelemetry should succeed")
 	defer tt.Shutdown(context.Background())
 
 	receiverID := config.NewComponentID("TestSuccessfullyPollPacket")
@@ -151,8 +151,8 @@ func TestSuccessfullyPollPacket(t *testing.T) {
 }
 
 func TestIncompletePacketNoSeparator(t *testing.T) {
-	tt, err := obsreporttest.SetupRecordedMetricsTest()
-	assert.NoError(t, err, "SetupRecordedMetricsTest should succeed")
+	tt, err := obsreporttest.SetupTelemetry()
+	assert.NoError(t, err, "SetupTelemetry should succeed")
 	defer tt.Shutdown(context.Background())
 
 	receiverID := config.NewComponentID("TestIncompletePacketNoSeparator")
@@ -180,8 +180,8 @@ func TestIncompletePacketNoSeparator(t *testing.T) {
 }
 
 func TestIncompletePacketNoBody(t *testing.T) {
-	tt, err := obsreporttest.SetupRecordedMetricsTest()
-	assert.NoError(t, err, "SetupRecordedMetricsTest should succeed")
+	tt, err := obsreporttest.SetupTelemetry()
+	assert.NoError(t, err, "SetupTelemetry should succeed")
 	defer tt.Shutdown(context.Background())
 
 	receiverID := config.NewComponentID("TestIncompletePacketNoBody")
@@ -204,8 +204,8 @@ func TestIncompletePacketNoBody(t *testing.T) {
 }
 
 func TestNonJsonHeader(t *testing.T) {
-	tt, err := obsreporttest.SetupRecordedMetricsTest()
-	assert.NoError(t, err, "SetupRecordedMetricsTest should succeed")
+	tt, err := obsreporttest.SetupTelemetry()
+	assert.NoError(t, err, "SetupTelemetry should succeed")
 	defer tt.Shutdown(context.Background())
 
 	receiverID := config.NewComponentID("TestNonJsonHeader")
@@ -233,8 +233,8 @@ func TestNonJsonHeader(t *testing.T) {
 }
 
 func TestJsonInvalidHeader(t *testing.T) {
-	tt, err := obsreporttest.SetupRecordedMetricsTest()
-	assert.NoError(t, err, "SetupRecordedMetricsTest should succeed")
+	tt, err := obsreporttest.SetupTelemetry()
+	assert.NoError(t, err, "SetupTelemetry should succeed")
 	defer tt.Shutdown(context.Background())
 
 	receiverID := config.NewComponentID("TestJsonInvalidHeader")
@@ -268,8 +268,8 @@ func TestJsonInvalidHeader(t *testing.T) {
 }
 
 func TestSocketReadIrrecoverableNetError(t *testing.T) {
-	tt, err := obsreporttest.SetupRecordedMetricsTest()
-	assert.NoError(t, err, "SetupRecordedMetricsTest should succeed")
+	tt, err := obsreporttest.SetupTelemetry()
+	assert.NoError(t, err, "SetupTelemetry should succeed")
 	defer tt.Shutdown(context.Background())
 
 	receiverID := config.NewComponentID("TestSocketReadIrrecoverableNetError")
@@ -303,8 +303,8 @@ func TestSocketReadIrrecoverableNetError(t *testing.T) {
 }
 
 func TestSocketReadTemporaryNetError(t *testing.T) {
-	tt, err := obsreporttest.SetupRecordedMetricsTest()
-	assert.NoError(t, err, "SetupRecordedMetricsTest should succeed")
+	tt, err := obsreporttest.SetupTelemetry()
+	assert.NoError(t, err, "SetupTelemetry should succeed")
 	defer tt.Shutdown(context.Background())
 
 	receiverID := config.NewComponentID("TestSocketReadTemporaryNetError")
@@ -339,8 +339,8 @@ func TestSocketReadTemporaryNetError(t *testing.T) {
 }
 
 func TestSocketGenericReadError(t *testing.T) {
-	tt, err := obsreporttest.SetupRecordedMetricsTest()
-	assert.NoError(t, err, "SetupRecordedMetricsTest should succeed")
+	tt, err := obsreporttest.SetupTelemetry()
+	assert.NoError(t, err, "SetupTelemetry should succeed")
 	defer tt.Shutdown(context.Background())
 
 	receiverID := config.NewComponentID("TestSocketGenericReadError")
