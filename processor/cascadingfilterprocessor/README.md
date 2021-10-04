@@ -88,58 +88,57 @@ However, in total, this is `900` spans, which is more than the global limit of `
 will take care of that and randomly select only the spans up to the global limit. So eventually, it might
 for example send further only following traces: `A1, A2, B1, C2, C5` and filter out the others.
 
-## Example
+## Examples
+
+### Just filtering out healthchecks
 
 ```yaml
 processors:
   cascading_filter:
-    decision_wait: 10s
-    num_traces: 100
-    expected_new_traces_per_sec: 10
+    decision_wait: 30s
+    num_traces: 50000
+    expected_new_traces_per_sec: 1000
     spans_per_second: 1000
     probabilistic_filtering_ratio: 0.1
+    drop_traces:
+      - name: remove-all-traces-with-health-span
+        name_pattern: "health.*"
+      - name: remove-all-traces-with-healthcheck-service
+        string_attribute: {key: service.name, values: [healthcheck]}
     policies:
-      [
-        {
-          name: test-policy-1,
-        },
-        {
-          name: test-policy-2,
-          numeric_attribute: { key: key1, min_value: 50, max_value: 100 }
-        },
-        {
-          name: test-policy-3,
-          string_attribute: { key: key2, values: [ value1, value2 ] }
-        },
-        {
-          name: test-policy-4,
-          spans_per_second: 35,
-        },
-        {
-          name: test-policy-5,
-          spans_per_second: 123,
-          numeric_attribute: { key: key1, min_value: 50, max_value: 100 },
-          invert_match: true
-        },
-        {
-          name: test-policy-6,
-          spans_per_second: 50,
-          properties: { min_duration: 9s }
-        },
-        {
-          name: test-policy-7,
-          properties: {
-            name_pattern: "foo.*",
-            min_number_of_spans: 10,
-            min_duration: 9s
-          }
-        },
-        {
-          name: everything_else,
-          spans_per_second: -1
-        },
-      ]
-```
+      - name: everything_else
+        spans_per_second: -1
+ ```
+
+### Filtering out healthchecks and applying policies 
+
+```yaml
+processors:
+  cascading_filter:
+    decision_wait: 30s
+    num_traces: 50000
+    expected_new_traces_per_sec: 1000
+    spans_per_second: 1000
+    probabilistic_filtering_ratio: 0.1
+    drop_traces:
+      - name: healthcheck-rule
+        name_pattern: "health.*"
+    policies:
+      - name: test-policy-1
+        string_attribute: {key: important-key, values: [value1, value2]}
+        spans_per_second: 50
+      - name: test-policy-2
+        spans_per_second: 100
+        properties: {min_duration: 5s }
+      - name: test-policy-3
+        properties:
+          name_pattern: "foo.*"
+          min_number_of_spans: 10
+          min_duration: 3s
+        spans_per_second: 200        
+      - name: everything_else
+        spans_per_second: -1
+ ```
 
 Refer to [cascading_filter_config.yaml](./testdata/cascading_filter_config.yaml) for detailed
 examples on using the processor.

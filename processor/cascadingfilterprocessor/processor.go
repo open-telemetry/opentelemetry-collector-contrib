@@ -89,6 +89,8 @@ const (
 	AttributeSamplingRule         = "sampling.rule"
 
 	AttributeSamplingProbability = "sampling.probability"
+
+	defaultCatchAllPolicyName = "default-catch-all"
 )
 
 // newTraceProcessor returns a processor.TraceProcessor that will perform Cascading Filter according to the given
@@ -113,7 +115,7 @@ func newCascadingFilterSpanProcessor(logger *zap.Logger, nextConsumer consumer.T
 	var dropTraceEvals []*DropTraceEvaluator
 
 	for _, dropCfg := range cfg.DropTracesCfgs {
-		dropCtx, err := tag.New(ctx, tag.Upsert(tagTraceDroppedRuleKey, dropCfg.Name))
+		dropCtx, err := tag.New(ctx, tag.Upsert(tagPolicyKey, dropCfg.Name), tag.Upsert(tagPolicyDecisionKey, statusDropped))
 		if err != nil {
 			return nil, err
 		}
@@ -146,6 +148,20 @@ func newCascadingFilterSpanProcessor(logger *zap.Logger, nextConsumer consumer.T
 			probabilisticFilter: true,
 		}
 		policies = append(policies, policy)
+	}
+
+	if len(cfg.PolicyCfgs) == 0 {
+		logger.Warn("No catch-all policy found in cascading_filter, adding a default one",
+			zap.String("policy-name", defaultCatchAllPolicyName))
+		policyCfg := config.PolicyCfg{
+			Name:                defaultCatchAllPolicyName,
+			NumericAttributeCfg: nil,
+			StringAttributeCfg:  nil,
+			PropertiesCfg:       config.PropertiesCfg{},
+			SpansPerSecond:      -1,
+			InvertMatch:         false,
+		}
+		cfg.PolicyCfgs = append(cfg.PolicyCfgs, policyCfg)
 	}
 
 	for i := range cfg.PolicyCfgs {

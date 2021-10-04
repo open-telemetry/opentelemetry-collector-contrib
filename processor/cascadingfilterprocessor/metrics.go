@@ -29,10 +29,10 @@ var (
 	statusSecondChance         = "SecondChance"
 	statusSecondChanceSampled  = "SecondChanceSampled"
 	statusSecondChanceExceeded = "SecondChanceRateExceeded"
+	statusDropped              = "Dropped"
 
 	tagPolicyKey, _                  = tag.NewKey("policy")
 	tagCascadingFilterDecisionKey, _ = tag.NewKey("cascading_filter_decision")
-	tagTraceDroppedRuleKey, _        = tag.NewKey("trace_dropped_rule")
 	tagPolicyDecisionKey, _          = tag.NewKey("policy_decision")
 
 	statDecisionLatencyMicroSec  = stats.Int64("policy_decision_latency", "Latency (in microseconds) of a given filtering policy", "µs")

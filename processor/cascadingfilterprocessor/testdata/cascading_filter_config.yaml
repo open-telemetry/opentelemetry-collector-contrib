@@ -12,53 +12,32 @@ processors:
     spans_per_second: 1000
     probabilistic_filtering_ratio: 0.1
     drop_traces:
-      [
-        {
-          name: healthcheck-rule,
-          name_pattern: "health.*"
-        }
-      ]
+      - name: healthcheck-rule
+        name_pattern: "health.*"
+      - name: remove-all-traces-with-healthcheck-service
+        string_attribute: {key: service.name, values: [healthcheck]}
     policies:
-      [
-          {
-            name: test-policy-1,
-          },
-          {
-            name: test-policy-2,
-            numeric_attribute: {key: key1, min_value: 50, max_value: 100}
-          },
-          {
-            name: test-policy-3,
-            string_attribute: {key: key2, values: [value1, value2]}
-          },
-          {
-            name: test-policy-4,
-            spans_per_second: 35,
-          },
-          {
-            name: test-policy-5,
-            spans_per_second: 123,
-            numeric_attribute: {key: key1, min_value: 50, max_value: 100},
-            invert_match: true
-          },
-          {
-            name: test-policy-6,
-            spans_per_second: 50,
-            properties: {min_duration: 9s }
-          },
-          {
-            name: test-policy-7,
-            properties: {
-              name_pattern: "foo.*",
-              min_number_of_spans: 10,
-              min_duration: 9s
-            }
-         },
-        {
-          name: everything_else,
-          spans_per_second: -1
-        },
-      ]
+      - name: test-policy-1
+      - name: test-policy-2
+        numeric_attribute: {key: key1, min_value: 50, max_value: 100}
+      - name: test-policy-3
+        string_attribute: {key: key2, values: [value1, value2]}
+      - name: test-policy-4
+        spans_per_second: 35
+      - name: test-policy-5
+        spans_per_second: 123
+        numeric_attribute: {key: key1, min_value: 50, max_value: 100}
+        invert_match: true
+      - name: test-policy-6
+        spans_per_second: 50
+        properties: {min_duration: 9s }
+      - name: test-policy-7
+        properties:
+          name_pattern: "foo.*"
+          min_number_of_spans: 10
+          min_duration: 9s
+      - name: everything_else
+        spans_per_second: -1
 
 service:
   pipelines:
