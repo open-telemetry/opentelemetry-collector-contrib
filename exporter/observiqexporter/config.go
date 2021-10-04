@@ -32,7 +32,7 @@ type Config struct {
 	exporterhelper.QueueSettings   `mapstructure:"sending_queue"`
 	exporterhelper.RetrySettings   `mapstructure:"retry_on_failure"`
 	// TLS Settings for http client to use when sending logs to endpoint
-	TLSSetting configtls.TLSClientSetting `mapstructure:",squash"`
+	TLSSetting configtls.TLSClientSetting `mapstructure:"tls,omitempty"`
 	// API key for authenticating with ingestion endpoint (required if no SecretKey)
 	APIKey string `mapstructure:"api_key"`
 	// Secret key for authenticating with the ingestion endpoint (required if no APIKey)

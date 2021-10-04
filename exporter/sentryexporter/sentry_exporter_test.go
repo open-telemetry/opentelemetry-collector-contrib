@@ -216,10 +216,12 @@ func TestSpanEventToSentryEvent(t *testing.T) {
 		StartTime:   unixNanoToTime(123),
 	}
 	sentryEventBase.Contexts["trace"] = sentry.TraceContext{
-		TraceID: sampleSentrySpanForEvent.TraceID,
-		SpanID:  sampleSentrySpanForEvent.SpanID,
-		Op:      sampleSentrySpanForEvent.Op,
-		Status:  sampleSentrySpanForEvent.Status,
+		TraceID:      sampleSentrySpanForEvent.TraceID,
+		SpanID:       sampleSentrySpanForEvent.SpanID,
+		ParentSpanID: sampleSentrySpanForEvent.ParentSpanID,
+		Op:           sampleSentrySpanForEvent.Op,
+		Description:  sampleSentrySpanForEvent.Description,
+		Status:       sampleSentrySpanForEvent.Status,
 	}
 	errorType := "mySampleType"
 	errorMessage := "Kernel Panic"
@@ -271,6 +273,9 @@ func TestSpanEventToSentryEvent(t *testing.T) {
 		test := test
 		t.Run(test.testName, func(t *testing.T) {
 			sentryEvent, err := sentryEventFromError(test.errorMessage, test.errorType, test.sampleSentrySpan)
+			if sentryEvent != nil {
+				sentryEvent.EventID = test.expectedSentryEvent.EventID
+			}
 			assert.Equal(t, test.expectedError, err)
 			assert.Equal(t, test.expectedSentryEvent, sentryEvent)
 		})
@@ -284,7 +289,7 @@ func TestSpanToSentrySpan(t *testing.T) {
 
 		sentrySpan := convertToSentrySpan(testSpan, pdata.NewInstrumentationLibrary(), map[string]string{})
 		assert.NotNil(t, sentrySpan)
-		assert.True(t, isRootSpan(sentrySpan))
+		assert.True(t, spanIsTransaction(testSpan))
 	})
 
 	t.Run("with full span", func(t *testing.T) {
@@ -324,7 +329,7 @@ func TestSpanToSentrySpan(t *testing.T) {
 		actual := convertToSentrySpan(testSpan, library, resourceTags)
 
 		assert.NotNil(t, actual)
-		assert.False(t, isRootSpan(actual))
+		assert.False(t, spanIsTransaction(testSpan))
 
 		expected := &sentry.Span{
 			TraceID:      TraceIDFromHex("01020304050607080807060504030201"),

@@ -12,24 +12,23 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package mongodbatlasreceiver
+package mysqlreceiver
 
 import (
 	"context"
-	"fmt"
+	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
+	"go.opentelemetry.io/collector/receiver/scraperhelper"
 )
 
 const (
-	typeStr            = "mongodbatlas"
-	defaultGranularity = "PT1M" // 1-minute, as per https://docs.atlas.mongodb.com/reference/api/process-measurements/
+	typeStr = "mysql"
 )
 
-// NewFactory creates a factory for MongoDB Atlas receiver
 func NewFactory() component.ReceiverFactory {
 	return receiverhelper.NewFactory(
 		typeStr,
@@ -37,23 +36,21 @@ func NewFactory() component.ReceiverFactory {
 		receiverhelper.WithMetrics(createMetricsReceiver))
 }
 
+func createDefaultConfig() config.Receiver {
+	return &Config{
+		ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
+			ReceiverSettings:   config.NewReceiverSettings(config.NewID(typeStr)),
+			CollectionInterval: 10 * time.Second,
+		},
+		Endpoint: "localhost:3306",
+	}
+}
+
 func createMetricsReceiver(
-	ctx context.Context,
+	_ context.Context,
 	params component.ReceiverCreateSettings,
 	rConf config.Receiver,
 	consumer consumer.Metrics,
 ) (component.MetricsReceiver, error) {
-	cfg := rConf.(*Config)
-	ms, err := newMongoDBAtlasReceiver(ctx, params.Logger, cfg, consumer)
-	if err != nil {
-		return nil, fmt.Errorf("unable to create a MongoDB Atlas Receiver instance: %w", err)
-	}
-	return ms, err
-}
-
-func createDefaultConfig() config.Receiver {
-	return &Config{
-		Granularity:      defaultGranularity,
-		ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
-	}
+	return nil, nil // TODO build and return receiver in next PR
 }

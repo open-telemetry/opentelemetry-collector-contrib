@@ -50,9 +50,8 @@ type Config struct {
 
 	// IngestURL is the destination to where SignalFx metrics will be sent to, it is
 	// intended for tests and debugging. The value of Realm is ignored if the
-	// URL is specified. If a path is not included the exporter will
-	// automatically append the appropriate path, eg.: "v2/datapoint".
-	// If a path is specified it will act as a prefix.
+	// URL is specified. The exporter will automatically append the appropriate
+	// path: "/v2/datapoint" for metrics, and "/v2/event" for events.
 	IngestURL string `mapstructure:"ingest_url"`
 
 	// APIURL is the destination to where SignalFx metadata will be sent. This
