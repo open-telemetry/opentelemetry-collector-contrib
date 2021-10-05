@@ -25,7 +25,7 @@ require (
 	cloud.google.com/go v0.94.1 // indirect
 	cloud.google.com/go/monitoring v0.1.0 // indirect
 	cloud.google.com/go/trace v0.1.0 // indirect
-	github.com/aws/aws-sdk-go v1.40.55 // indirect
+	github.com/aws/aws-sdk-go v1.40.56 // indirect
 	github.com/cenkalti/backoff/v4 v4.1.1 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/fsnotify/fsnotify v1.4.9 // indirect
