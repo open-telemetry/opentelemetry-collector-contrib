@@ -14,6 +14,8 @@
 
 package httpdreceiver
 
+//go:generate mdatagen metadata.yaml
+
 import (
 	"context"
 	"time"
