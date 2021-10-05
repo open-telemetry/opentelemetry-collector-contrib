@@ -156,8 +156,9 @@ func validateRealData(t *testing.T, metrics pdata.MetricSlice) {
 }
 
 func validateStartTime(t *testing.T, metrics pdata.MetricSlice) {
-	internal.AssertSumMetricStartTimeEquals(t, metrics.At(0), startTime)
-	internal.AssertSumMetricStartTimeEquals(t, metrics.At(1), startTime)
+	for i := 0; i < metricsLength; i++ {
+		internal.AssertSumMetricStartTimeEquals(t, metrics.At(i), startTime)
+	}
 }
 
 var fakeData = load.MiscStat{
