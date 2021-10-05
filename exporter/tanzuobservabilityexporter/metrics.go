@@ -34,10 +34,12 @@ type metricsConsumer struct {
 // of returned consumer calls the Flush method on sender after consuming
 // all the metrics. Calling Close on the returned metricsConsumer calls Close
 // on sender. sender can be nil.
-func newMetricsConsumer(
-	consumers []metricConsumer, sender flushCloser) *metricsConsumer {
+func newMetricsConsumer(consumers []metricConsumer, sender flushCloser) *metricsConsumer {
 	consumerMap := make(map[pdata.MetricDataType]metricConsumer, len(consumers))
 	for _, consumer := range consumers {
+		if consumerMap[consumer.Type()] != nil {
+			panic("duplicate consumer type detected: " + consumer.Type().String())
+		}
 		consumerMap[consumer.Type()] = consumer
 	}
 	return &metricsConsumer{
@@ -140,17 +142,6 @@ func (g *gaugeConsumer) Consume(metric pdata.Metric, errs *[]error) {
 	}
 }
 
-func getValue(numberDataPoint pdata.NumberDataPoint) (float64, error) {
-	switch numberDataPoint.Type() {
-	case pdata.MetricValueTypeInt:
-		return float64(numberDataPoint.IntVal()), nil
-	case pdata.MetricValueTypeDouble:
-		return numberDataPoint.DoubleVal(), nil
-	default:
-		return 0.0, errors.New("unsupported metric value type")
-	}
-}
-
 func (g *gaugeConsumer) pushSingleNumberDataPoint(
 	metric pdata.Metric, numberDataPoint pdata.NumberDataPoint, errs *[]error) {
 	tags := attributesToTags(numberDataPoint.Attributes())
@@ -163,5 +154,16 @@ func (g *gaugeConsumer) pushSingleNumberDataPoint(
 	err = g.sender.SendMetric(metric.Name(), value, ts, "", tags)
 	if err != nil {
 		*errs = append(*errs, err)
+	}
+}
+
+func getValue(numberDataPoint pdata.NumberDataPoint) (float64, error) {
+	switch numberDataPoint.Type() {
+	case pdata.MetricValueTypeInt:
+		return float64(numberDataPoint.IntVal()), nil
+	case pdata.MetricValueTypeDouble:
+		return numberDataPoint.DoubleVal(), nil
+	default:
+		return 0.0, errors.New("unsupported metric value type")
 	}
 }

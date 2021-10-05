@@ -33,15 +33,15 @@ func TestMetricsConsumerNormal(t *testing.T) {
 	mockSumConsumer := &mockMetricConsumer{typ: pdata.MetricDataTypeSum}
 	sender := &mockFlushCloser{}
 	metrics := constructMetrics(gauge1, sum1, gauge2, sum2)
-	consumer := newMetricsConsumer(
-		[]metricConsumer{mockGaugeConsumer, mockSumConsumer}, sender)
+	consumer := newMetricsConsumer([]metricConsumer{mockGaugeConsumer, mockSumConsumer}, sender)
+
 	assert.NoError(t, consumer.Consume(context.Background(), metrics))
-	assert.ElementsMatch(
-		t, []string{"gauge1", "gauge2"}, mockGaugeConsumer.names)
-	assert.ElementsMatch(
-		t, []string{"sum1", "sum2"}, mockSumConsumer.names)
+
+	assert.ElementsMatch(t, []string{"gauge1", "gauge2"}, mockGaugeConsumer.names)
+	assert.ElementsMatch(t, []string{"sum1", "sum2"}, mockSumConsumer.names)
 	assert.Equal(t, 1, sender.numFlushCalls)
 	assert.Equal(t, 0, sender.numCloseCalls)
+
 	consumer.Close()
 	assert.Equal(t, 1, sender.numCloseCalls)
 }
@@ -49,31 +49,44 @@ func TestMetricsConsumerNormal(t *testing.T) {
 func TestMetricsConsumerNone(t *testing.T) {
 	consumer := newMetricsConsumer(nil, nil)
 	metrics := constructMetrics()
+
 	assert.NoError(t, consumer.Consume(context.Background(), metrics))
+
 	consumer.Close()
 }
 
-func TestMetricsConsumerErrorOnFlush(t *testing.T) {
+func TestNewMetricsConsumerPanicsWithDuplicateMetricType(t *testing.T) {
+	mockGaugeConsumer1 := &mockMetricConsumer{typ: pdata.MetricDataTypeGauge}
+	mockGaugeConsumer2 := &mockMetricConsumer{typ: pdata.MetricDataTypeGauge}
+
+	assert.Panics(t, func() {
+		newMetricsConsumer([]metricConsumer{mockGaugeConsumer1, mockGaugeConsumer2}, nil)
+	})
+}
+
+func TestMetricsConsumerPropagatesErrorsOnFlush(t *testing.T) {
 	sender := &mockFlushCloser{errorOnFlush: true}
 	metrics := constructMetrics()
 	consumer := newMetricsConsumer(nil, sender)
+
 	assert.Error(t, consumer.Consume(context.Background(), metrics))
 	assert.Equal(t, 1, sender.numFlushCalls)
 }
 
-func TestMetricsConsumerBadMetricType(t *testing.T) {
+func TestMetricsConsumerErrorsWithUnregisteredMetricType(t *testing.T) {
 	gauge1 := newMetric("gauge1", pdata.MetricDataTypeGauge)
 	metrics := constructMetrics(gauge1)
 	consumer := newMetricsConsumer(nil, nil)
+
 	assert.Error(t, consumer.Consume(context.Background(), metrics))
 }
 
 func TestMetricsConsumerErrorConsuming(t *testing.T) {
 	gauge1 := newMetric("gauge1", pdata.MetricDataTypeGauge)
-	mockGaugeConsumer := &mockMetricConsumer{
-		typ: pdata.MetricDataTypeGauge, errorOnConsume: true}
+	mockGaugeConsumer := &mockMetricConsumer{typ: pdata.MetricDataTypeGauge, errorOnConsume: true}
 	metrics := constructMetrics(gauge1)
 	consumer := newMetricsConsumer([]metricConsumer{mockGaugeConsumer}, nil)
+
 	assert.Error(t, consumer.Consume(context.Background(), metrics))
 	assert.Len(t, mockGaugeConsumer.names, 1)
 }
@@ -84,8 +97,10 @@ func TestMetricsConsumerRespectContext(t *testing.T) {
 	mockGaugeConsumer := &mockMetricConsumer{typ: pdata.MetricDataTypeGauge}
 	consumer := newMetricsConsumer([]metricConsumer{mockGaugeConsumer}, sender)
 	ctx, cancel := context.WithCancel(context.Background())
+
 	cancel()
 	assert.Error(t, consumer.Consume(ctx, constructMetrics(gauge1)))
+
 	assert.Zero(t, sender.numFlushCalls)
 	assert.Empty(t, mockGaugeConsumer.names)
 }
@@ -123,22 +138,16 @@ func verifyGaugeConsumer(t *testing.T, errorOnSend bool) {
 	addDataPoint(
 		7,
 		1631205001,
-		map[string]interface{}{
-			"env":    "prod",
-			"bucket": 73,
-		},
+		map[string]interface{}{"env": "prod", "bucket": 73},
 		dataPoints,
 	)
 	addDataPoint(
 		7.5,
 		1631205002,
-		map[string]interface{}{
-			"env":    "prod",
-			"bucket": 73,
-		},
+		map[string]interface{}{"env": "prod", "bucket": 73},
 		dataPoints,
 	)
-	expected := []singleMetric{
+	expected := []tobsMetric{
 		{
 			Name:  "test.metric",
 			Value: 7.0,
@@ -154,12 +163,13 @@ func verifyGaugeConsumer(t *testing.T, errorOnSend bool) {
 	}
 	sender := &mockGaugeSender{errorOnSend: errorOnSend}
 	consumer := newGaugeConsumer(sender)
+
 	assert.Equal(t, pdata.MetricDataTypeGauge, consumer.Type())
 	var errs []error
 	consumer.Consume(metric, &errs)
 	assert.ElementsMatch(t, expected, sender.metrics)
 	if errorOnSend {
-		assert.Len(t, errs, 2)
+		assert.Len(t, errs, len(expected))
 	} else {
 		assert.Empty(t, errs)
 	}
@@ -236,7 +246,7 @@ func setTags(tags map[string]interface{}, dataPoint pdata.NumberDataPoint) {
 	attributeMap.CopyTo(dataPoint.Attributes())
 }
 
-type singleMetric struct {
+type tobsMetric struct {
 	Name   string
 	Value  float64
 	Ts     int64
@@ -246,7 +256,7 @@ type singleMetric struct {
 
 type mockGaugeSender struct {
 	errorOnSend bool
-	metrics     []singleMetric
+	metrics     []tobsMetric
 }
 
 func (m *mockGaugeSender) SendMetric(
@@ -255,7 +265,7 @@ func (m *mockGaugeSender) SendMetric(
 	for k, v := range tags {
 		tagsCopy[k] = v
 	}
-	m.metrics = append(m.metrics, singleMetric{
+	m.metrics = append(m.metrics, tobsMetric{
 		Name:   name,
 		Value:  value,
 		Ts:     ts,
