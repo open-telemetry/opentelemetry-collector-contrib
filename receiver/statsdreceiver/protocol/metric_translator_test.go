@@ -103,7 +103,7 @@ func TestBuildSummaryMetric(t *testing.T) {
 	value := []float64{1, 1, 3, 6, 6, 6}
 	for int, v := range quantile {
 		eachQuantile := dp.QuantileValues().AppendEmpty()
-		eachQuantile.SetQuantile(v/100)
+		eachQuantile.SetQuantile(v / 100)
 		eachQuantileValue := value[int]
 		eachQuantile.SetValue(eachQuantileValue)
 	}
