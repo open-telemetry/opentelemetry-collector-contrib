@@ -24,10 +24,10 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/testbed/mockdatareceivers/mockawsxrayreceiver v0.36.0
 	github.com/prometheus/common v0.31.1
 	github.com/prometheus/prometheus v1.8.2-0.20210621150501-ff58416a0b02
-	github.com/shirou/gopsutil v3.21.8+incompatible
+	github.com/shirou/gopsutil v3.21.9+incompatible
 	github.com/stretchr/testify v1.7.0
-	go.opentelemetry.io/collector v0.36.1-0.20210930151317-3ec4f1be6001
-	go.opentelemetry.io/collector/model v0.36.1-0.20210930151317-3ec4f1be6001
+	go.opentelemetry.io/collector v0.36.1-0.20211004155959-190f8fbb2b9a
+	go.opentelemetry.io/collector/model v0.36.1-0.20211004155959-190f8fbb2b9a
 	go.uber.org/atomic v1.9.0
 	go.uber.org/zap v1.19.1
 	golang.org/x/text v0.3.7
@@ -104,7 +104,7 @@ require (
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/jpillora/backoff v1.0.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
-	github.com/knadh/koanf v1.2.3 // indirect
+	github.com/knadh/koanf v1.2.4 // indirect
 	github.com/linode/linodego v0.28.5 // indirect
 	github.com/magiconair/properties v1.8.5 // indirect
 	github.com/mailru/easyjson v0.7.7 // indirect
@@ -162,14 +162,14 @@ require (
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.24.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.24.0 // indirect
 	go.opentelemetry.io/contrib/zpages v0.24.0 // indirect
-	go.opentelemetry.io/otel v1.0.0 // indirect
-	go.opentelemetry.io/otel/exporters/prometheus v0.23.0 // indirect
-	go.opentelemetry.io/otel/internal/metric v0.23.0 // indirect
-	go.opentelemetry.io/otel/metric v0.23.0 // indirect
-	go.opentelemetry.io/otel/sdk v1.0.0 // indirect
-	go.opentelemetry.io/otel/sdk/export/metric v0.23.0 // indirect
-	go.opentelemetry.io/otel/sdk/metric v0.23.0 // indirect
-	go.opentelemetry.io/otel/trace v1.0.0 // indirect
+	go.opentelemetry.io/otel v1.0.1 // indirect
+	go.opentelemetry.io/otel/exporters/prometheus v0.24.0 // indirect
+	go.opentelemetry.io/otel/internal/metric v0.24.0 // indirect
+	go.opentelemetry.io/otel/metric v0.24.0 // indirect
+	go.opentelemetry.io/otel/sdk v1.0.1 // indirect
+	go.opentelemetry.io/otel/sdk/export/metric v0.24.0 // indirect
+	go.opentelemetry.io/otel/sdk/metric v0.24.0 // indirect
+	go.opentelemetry.io/otel/trace v1.0.1 // indirect
 	go.uber.org/multierr v1.7.0 // indirect
 	golang.org/x/crypto v0.0.0-20210915214749-c084706c2272 // indirect
 	golang.org/x/net v0.0.0-20210917221730-978cfadd31cf // indirect

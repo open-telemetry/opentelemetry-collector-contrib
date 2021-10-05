@@ -41,7 +41,7 @@ import (
 // test is to ensure exactness, but with the mentioned views registered, the
 // output will be quite noisy.
 func TestEnsureRecordedMetrics(t *testing.T) {
-	tt, err := obsreporttest.SetupRecordedMetricsTest()
+	tt, err := obsreporttest.SetupTelemetry()
 	require.NoError(t, err)
 	defer tt.Shutdown(context.Background())
 
@@ -63,7 +63,7 @@ func TestEnsureRecordedMetrics(t *testing.T) {
 }
 
 func TestEnsureRecordedMetrics_zeroLengthSpansSender(t *testing.T) {
-	tt, err := obsreporttest.SetupRecordedMetricsTest()
+	tt, err := obsreporttest.SetupTelemetry()
 	require.NoError(t, err)
 	defer tt.Shutdown(context.Background())
 

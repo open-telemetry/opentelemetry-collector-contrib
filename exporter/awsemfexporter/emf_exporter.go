@@ -76,7 +76,7 @@ func newEmfPusher(
 	}
 
 	// create CWLogs client with aws session config
-	svcStructuredLog := newCloudWatchLogsClient(logger, awsConfig, params.BuildInfo, session)
+	svcStructuredLog := newCloudWatchLogsClient(logger, awsConfig, params.BuildInfo, expConfig.LogGroupName, session)
 	collectorIdentifier, _ := uuid.NewRandom()
 
 	expConfig.Validate()

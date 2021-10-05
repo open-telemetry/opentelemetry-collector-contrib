@@ -117,8 +117,8 @@ func TestSegmentsPassedToConsumer(t *testing.T) {
 	if runtime.GOOS == "darwin" {
 		t.Skip("skipping test on darwin")
 	}
-	tt, err := obsreporttest.SetupRecordedMetricsTest()
-	assert.NoError(t, err, "SetupRecordedMetricsTest should succeed")
+	tt, err := obsreporttest.SetupTelemetry()
+	assert.NoError(t, err, "SetupTelemetry should succeed")
 	defer tt.Shutdown(context.Background())
 
 	env := stashEnv()
@@ -147,8 +147,8 @@ func TestSegmentsPassedToConsumer(t *testing.T) {
 }
 
 func TestTranslatorErrorsOut(t *testing.T) {
-	tt, err := obsreporttest.SetupRecordedMetricsTest()
-	assert.NoError(t, err, "SetupRecordedMetricsTest should succeed")
+	tt, err := obsreporttest.SetupTelemetry()
+	assert.NoError(t, err, "SetupTelemetry should succeed")
 	defer tt.Shutdown(context.Background())
 
 	env := stashEnv()
@@ -174,8 +174,8 @@ func TestTranslatorErrorsOut(t *testing.T) {
 }
 
 func TestSegmentsConsumerErrorsOut(t *testing.T) {
-	tt, err := obsreporttest.SetupRecordedMetricsTest()
-	assert.NoError(t, err, "SetupRecordedMetricsTest should succeed")
+	tt, err := obsreporttest.SetupTelemetry()
+	assert.NoError(t, err, "SetupTelemetry should succeed")
 	defer tt.Shutdown(context.Background())
 
 	env := stashEnv()

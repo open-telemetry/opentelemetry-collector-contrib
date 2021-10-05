@@ -455,7 +455,7 @@ func (dpv *datapointValidator) isValidMetricName(name string) bool {
 }
 
 func (dpv *datapointValidator) isValidDimension(dimension *sfxpb.Dimension) bool {
-	return dpv.isValidDimensionName(dimension.Key) && dpv.isValidDimensionValue(dimension.Value)
+	return dpv.isValidDimensionName(dimension.Key) && dpv.isValidDimensionValue(dimension.Value, dimension.Key)
 }
 
 func (dpv *datapointValidator) isValidDimensionName(name string) bool {
@@ -470,9 +470,10 @@ func (dpv *datapointValidator) isValidDimensionName(name string) bool {
 	return true
 }
 
-func (dpv *datapointValidator) isValidDimensionValue(value string) bool {
+func (dpv *datapointValidator) isValidDimensionValue(value, name string) bool {
 	if len(value) > maxDimensionValueLength {
 		dpv.logger.Warn("dropping dimension",
+			zap.String("dimension_name", name),
 			zap.String("reason", invalidDimensionValueReason),
 			zap.String("dimension_value", value),
 			zap.Int("dimension_value_length", len(value)),
