@@ -29,12 +29,14 @@ import (
 
 const metricName string = "metric name"
 
+// Translator is a metrics translator.
 type Translator struct {
 	prevPts *ttlCache
 	logger  *zap.Logger
 	cfg     translatorConfig
 }
 
+// New creates a new translator with given options.
 func New(logger *zap.Logger, options ...Option) (*Translator, error) {
 	cfg := translatorConfig{
 		HistMode:                 HistogramModeDistributions,

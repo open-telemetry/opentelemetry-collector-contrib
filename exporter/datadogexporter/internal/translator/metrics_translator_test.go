@@ -933,7 +933,8 @@ func TestMapMetrics(t *testing.T) {
 	ctx := context.Background()
 	consumer := &mockFullConsumer{}
 	tr := newTranslator(t, testLogger)
-	tr.MapMetrics(ctx, md, consumer)
+	err := tr.MapMetrics(ctx, md, consumer)
+	require.NoError(t, err)
 	assert.False(t, consumer.anySketch)
 
 	assert.ElementsMatch(t, consumer.metrics, []metric{
@@ -1057,8 +1058,9 @@ func TestNaNMetrics(t *testing.T) {
 	ctx := context.Background()
 	tr := newTranslator(t, testLogger)
 	consumer := &mockFullConsumer{}
-	tr.MapMetrics(ctx, md, consumer)
+	err := tr.MapMetrics(ctx, md, consumer)
 	assert.False(t, consumer.anySketch)
+	require.NoError(t, err)
 
 	assert.ElementsMatch(t, consumer.metrics, []metric{
 		testCount("nan.histogram.count", 20, 0),
