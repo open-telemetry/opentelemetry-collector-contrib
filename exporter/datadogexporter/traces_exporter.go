@@ -22,6 +22,7 @@ import (
 	"github.com/DataDog/datadog-agent/pkg/trace/exportable/obfuscate"
 	"github.com/DataDog/datadog-agent/pkg/trace/exportable/pb"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/consumer/consumerhelper"
 	"go.opentelemetry.io/collector/model/pdata"
 	"go.uber.org/zap"
 	"gopkg.in/zorkian/go-datadog-api.v2"
@@ -101,6 +102,9 @@ func newTracesExporter(ctx context.Context, params component.ExporterCreateSetti
 func (exp *traceExporter) pushTraceDataScrubbed(ctx context.Context, td pdata.Traces) error {
 	return exp.scrubber.Scrub(exp.pushTraceData(ctx, td))
 }
+
+// force pushTraceData to be a ConsumeTracesFunc, even if no error is returned.
+var _ consumerhelper.ConsumeTracesFunc = (*traceExporter)(nil).pushTraceData
 
 func (exp *traceExporter) pushTraceData(
 	ctx context.Context,
