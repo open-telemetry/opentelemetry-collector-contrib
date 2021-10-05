@@ -63,14 +63,15 @@ func TestScrubber(t *testing.T) {
 	scrubber := NewScrubber()
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			assert.Equal(t, test.expected, scrubber.Scrub(errors.New(test.original)).Error())
+			assert.EqualError(t, scrubber.Scrub(errors.New(test.original)), test.expected)
 		})
 	}
 }
 
 func TestPermanentErrorScrub(t *testing.T) {
-	err := consumererror.NewPermanent(errors.New("this is an error"))
+	err := consumererror.NewPermanent(errors.New("this is an error with an app key AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABBBB"))
 	scrubber := NewScrubber()
 	err = scrubber.Scrub(err)
 	assert.True(t, consumererror.IsPermanent(err))
+	assert.EqualError(t, err, "Permanent error: this is an error with an app key ***********************************ABBBB")
 }
