@@ -18,6 +18,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strconv"
 	"sync/atomic"
 
 	"github.com/wavefronthq/wavefront-sdk-go/senders"
@@ -27,14 +28,18 @@ import (
 )
 
 const (
-	missingValueMetricName = "~sdk.otel.collector.missing_values"
-	metricNameString       = "metric name"
-	metricTypeString       = "metric type"
+	missingValueMetricName             = "~sdk.otel.collector.missing_values"
+	metricNameString                   = "metric name"
+	metricTypeString                   = "metric type"
+	malformedHistogramMetricName       = "~sdk.otel.collector.malformed_histogram"
+	leInUseMetricName                  = "~sdk.otel.collector.le_tag_in_use"
+	noAggregationTemporalityMetricName = "~sdk.otel.collector.no_aggregation_temporality"
 )
 
 var (
-	typeIsGaugeTags = map[string]string{"type": "gauge"}
-	typeIsSumTags   = map[string]string{"type": "sum"}
+	typeIsGaugeTags     = map[string]string{"type": "gauge"}
+	typeIsSumTags       = map[string]string{"type": "sum"}
+	typeIsHistogramTags = map[string]string{"type": "histogram"}
 )
 
 // metricsConsumer instances consume OTEL metrics
@@ -344,4 +349,201 @@ func (s *sumConsumer) pushNumberDataPoint(
 	if err != nil {
 		*errs = append(*errs, err)
 	}
+}
+
+// histogramReporting takes care of logging and internal metrics for histograms
+type histogramReporting struct {
+	logger                   *zap.Logger
+	malformedHistograms      counter
+	leInUse                  counter
+	noAggregationTemporality counter
+}
+
+// newHistogramReporting returns a new histogramReporting instance.
+// logger is the logger to use.
+func newHistogramReporting(logger *zap.Logger) *histogramReporting {
+	return &histogramReporting{logger: logger}
+}
+
+// Malformed returns the number of malformed histogram data points.
+func (r *histogramReporting) Malformed() int64 {
+	return r.malformedHistograms.Get()
+}
+
+// LeTagInUse returns the number of histogram data points already using the 'le'
+// tag.
+func (r *histogramReporting) LeTagInUse() int64 {
+	return r.leInUse.Get()
+}
+
+// NoAggregationTemporality returns the number of histogram metrics that have no
+// aggregation temporality.
+func (r *histogramReporting) NoAggregationTemporality() int64 {
+	return r.noAggregationTemporality.Get()
+}
+
+// LogMalformed logs seeing one malformed data point.
+func (r *histogramReporting) LogMalformed(metric pdata.Metric) {
+	namef := zap.String(metricNameString, metric.Name())
+	r.logger.Debug("Malformed histogram", namef)
+	r.malformedHistograms.Inc()
+}
+
+// LogLeTagInUse logs seeing one data point using the 'le' tag
+func (r *histogramReporting) LogLeTagInUse(metric pdata.Metric) {
+	namef := zap.String(metricNameString, metric.Name())
+	r.logger.Debug("le tag already in use", namef)
+	r.leInUse.Inc()
+}
+
+// LogNoAggregationTemporality logs seeing a histogram metric with no aggregation temporality
+func (r *histogramReporting) LogNoAggregationTemporality(metric pdata.Metric) {
+	namef := zap.String(metricNameString, metric.Name())
+	r.logger.Debug("histogram metric missing aggregation temporality", namef)
+	r.noAggregationTemporality.Inc()
+}
+
+// Report sends the counts in this instancce to wavefront.
+// sender is what sends to wavefront. Any errors sending get added to errs.
+func (r *histogramReporting) Report(sender gaugeSender, errs *[]error) {
+	r.malformedHistograms.Report(malformedHistogramMetricName, nil, sender, errs)
+	r.leInUse.Report(leInUseMetricName, nil, sender, errs)
+	r.noAggregationTemporality.Report(
+		noAggregationTemporalityMetricName,
+		typeIsHistogramTags,
+		sender,
+		errs)
+}
+
+type histogramConsumer struct {
+	cumulative            histogramDataPointConsumer
+	delta                 histogramDataPointConsumer
+	sender                gaugeSender
+	reporting             *histogramReporting
+	reportInternalMetrics bool
+}
+
+// newHistogramConsumer returns a metricConsumer that consumes histograms.
+// cumulative and delta handle cumulative and delta histograms respectively.
+// sender sends internal metrics to wavefront. Caller can pass nil for
+// options to get the defaults.
+func newHistogramConsumer(
+	cumulative, delta histogramDataPointConsumer,
+	sender gaugeSender,
+	options *consumerOptions,
+) typedMetricConsumer {
+	var fixedOptions consumerOptions
+	if options != nil {
+		fixedOptions = *options
+	}
+	fixedOptions.replaceZeroFieldsWithDefaults()
+	return &histogramConsumer{
+		cumulative:            cumulative,
+		delta:                 delta,
+		sender:                sender,
+		reporting:             newHistogramReporting(fixedOptions.Logger),
+		reportInternalMetrics: fixedOptions.ReportInternalMetrics,
+	}
+}
+
+func (h *histogramConsumer) Type() pdata.MetricDataType {
+	return pdata.MetricDataTypeHistogram
+}
+
+func (h *histogramConsumer) Consume(metric pdata.Metric, errs *[]error) {
+	histogram := metric.Histogram()
+	aggregationTemporality := histogram.AggregationTemporality()
+	var consumer histogramDataPointConsumer
+	switch aggregationTemporality {
+	case pdata.MetricAggregationTemporalityDelta:
+		if h.delta == nil {
+			*errs = append(*errs, errors.New("delta histograms not supported"))
+			return
+		}
+		consumer = h.delta
+	case pdata.MetricAggregationTemporalityCumulative:
+		if h.cumulative == nil {
+			*errs = append(*errs, errors.New("cumulative histograms not supported"))
+			return
+		}
+		consumer = h.cumulative
+	default:
+		h.reporting.LogNoAggregationTemporality(metric)
+		return
+	}
+	histogramDataPoints := histogram.DataPoints()
+	for i := 0; i < histogramDataPoints.Len(); i++ {
+		consumer.Consume(metric, histogramDataPoints.At(i), errs, h.reporting)
+	}
+}
+
+func (h *histogramConsumer) PushInternalMetrics(errs *[]error) {
+	if h.reportInternalMetrics {
+		h.reporting.Report(h.sender, errs)
+	}
+}
+
+// histogramDataPointConsumer consumes one histogram data point. There is one
+// implementation for delta histograms and one for cumulative histograms.
+type histogramDataPointConsumer interface {
+
+	// Consume consumes the histogram data point.
+	// metric is the enclosing metric; histogram is the histogram data point;
+	// errors get appended to errs; reporting keeps track of special situations
+	Consume(
+		metric pdata.Metric,
+		histogram pdata.HistogramDataPoint,
+		errs *[]error,
+		reporting *histogramReporting,
+	)
+}
+
+type cumulativeHistogramDataPointConsumer struct {
+	sender gaugeSender
+}
+
+// newCumulativeHistogramDataPointConsumer returns a consumer for cumulative
+// histogram data points.
+func newCumulativeHistogramDataPointConsumer(sender gaugeSender) histogramDataPointConsumer {
+	return &cumulativeHistogramDataPointConsumer{sender: sender}
+}
+
+func (c *cumulativeHistogramDataPointConsumer) Consume(
+	metric pdata.Metric,
+	h pdata.HistogramDataPoint,
+	errs *[]error,
+	reporting *histogramReporting,
+) {
+	name := metric.Name()
+	tags := attributesToTags(h.Attributes())
+	ts := h.Timestamp().AsTime().Unix()
+	explicitBounds := h.ExplicitBounds()
+	bucketCounts := h.BucketCounts()
+	var abort bool
+	if len(bucketCounts) != len(explicitBounds)+1 {
+		reporting.LogMalformed(metric)
+		abort = true
+	}
+	if _, ok := tags["le"]; ok {
+		reporting.LogLeTagInUse(metric)
+		abort = true
+	}
+	if abort {
+		return
+	}
+	bucketCountLen := len(bucketCounts)
+	for i := 0; i < bucketCountLen; i++ {
+		tags["le"] = leTagValue(explicitBounds, i)
+		err := c.sender.SendMetric(name, float64(bucketCounts[i]), ts, "", tags)
+		if err != nil {
+			*errs = append(*errs, err)
+		}
+	}
+}
+
+func leTagValue(explicitBounds []float64, idx int) string {
+	if idx == len(explicitBounds) {
+		return "+Inf"
+	}
+	return strconv.FormatFloat(explicitBounds[idx], 'f', -1, 64)
 }
