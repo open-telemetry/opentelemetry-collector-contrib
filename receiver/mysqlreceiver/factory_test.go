@@ -48,7 +48,7 @@ func TestCreateMetricsReceiver(t *testing.T) {
 		component.ReceiverCreateSettings{},
 		&Config{
 			ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
-				ReceiverSettings:   config.NewReceiverSettings(config.NewID("mysql")),
+				ReceiverSettings:   config.NewReceiverSettings(config.NewComponentID("mysql")),
 				CollectionInterval: 10 * time.Second,
 			},
 			Username: "otel",

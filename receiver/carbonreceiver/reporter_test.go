@@ -26,7 +26,7 @@ import (
 )
 
 func TestReporterObservability(t *testing.T) {
-	tt, err := obsreporttest.SetupRecordedMetricsTest()
+	tt, err := obsreporttest.SetupTelemetry()
 	require.NoError(t, err)
 	defer tt.Shutdown(context.Background())
 
