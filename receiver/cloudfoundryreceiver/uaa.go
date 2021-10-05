@@ -18,9 +18,8 @@ import (
 	"fmt"
 	"time"
 
-	"go.opentelemetry.io/collector/config/confighttp"
-
 	"github.com/cloudfoundry-incubator/uaago"
+	"go.opentelemetry.io/collector/config/confighttp"
 	"go.uber.org/zap"
 )
 
