@@ -133,8 +133,9 @@ func validateRealData(t *testing.T, metrics pdata.MetricSlice) {
 		internal.AssertDescriptorEqual(t, metadata.Metrics.SystemProcessesCount.New(), countMetric)
 
 		assertContainsStatus := func(statusVal string) {
-			for i := 0; i < countMetric.Sum().DataPoints().Len(); i++ {
-				v, ok := countMetric.Sum().DataPoints().At(i).Attributes().Get(metadata.Labels.Status)
+			points := countMetric.Sum().DataPoints()
+			for i := 0; i < points.Len(); i++ {
+				v, ok := points.At(i).Attributes().Get(metadata.Labels.Status)
 				if ok && v.StringVal() == statusVal {
 					return
 				}
@@ -196,28 +197,26 @@ func validateFakeData(t *testing.T, metrics pdata.MetricSlice) {
 		countMetric := metrics.At(metricIndex)
 		metricIndex++
 		internal.AssertDescriptorEqual(t, metadata.Metrics.SystemProcessesCount.New(), countMetric)
-		assert.Equal(7, countMetric.Sum().DataPoints().Len())
 
-		internal.AssertSumMetricHasAttributeValue(t, countMetric, 0, metadata.Labels.Status, pdata.NewAttributeValueString(metadata.LabelStatus.Blocked))
-		assert.Equal(int64(3), countMetric.Sum().DataPoints().At(0).IntVal())
+		points := countMetric.Sum().DataPoints()
+		attrs := map[string]int64{}
+		for i := 0; i < points.Len(); i++ {
+			point := points.At(i)
+			val, ok := point.Attributes().Get(metadata.L.Status)
+			assert.Truef(ok, "Missing status attribute in data point %d", i)
+			attrs[val.StringVal()] = point.IntVal()
+		}
 
-		internal.AssertSumMetricHasAttributeValue(t, countMetric, 1, metadata.Labels.Status, pdata.NewAttributeValueString(metadata.LabelStatus.Paging))
-		assert.Equal(int64(1), countMetric.Sum().DataPoints().At(1).IntVal())
-
-		internal.AssertSumMetricHasAttributeValue(t, countMetric, 2, metadata.Labels.Status, pdata.NewAttributeValueString(metadata.LabelStatus.Running))
-		assert.Equal(int64(2), countMetric.Sum().DataPoints().At(2).IntVal())
-
-		internal.AssertSumMetricHasAttributeValue(t, countMetric, 3, metadata.Labels.Status, pdata.NewAttributeValueString(metadata.LabelStatus.Sleeping))
-		assert.Equal(int64(4), countMetric.Sum().DataPoints().At(3).IntVal())
-
-		internal.AssertSumMetricHasAttributeValue(t, countMetric, 4, metadata.Labels.Status, pdata.NewAttributeValueString(metadata.LabelStatus.Stopped))
-		assert.Equal(int64(5), countMetric.Sum().DataPoints().At(4).IntVal())
-
-		internal.AssertSumMetricHasAttributeValue(t, countMetric, 5, metadata.Labels.Status, pdata.NewAttributeValueString(metadata.LabelStatus.Unknown))
-		assert.Equal(int64(9), countMetric.Sum().DataPoints().At(5).IntVal())
-
-		internal.AssertSumMetricHasAttributeValue(t, countMetric, 6, metadata.Labels.Status, pdata.NewAttributeValueString(metadata.LabelStatus.Zombies))
-		assert.Equal(int64(6), countMetric.Sum().DataPoints().At(6).IntVal())
+		ls := metadata.LabelStatus
+		assert.Equal(attrs, map[string]int64{
+			ls.Blocked:  3,
+			ls.Paging:   1,
+			ls.Running:  2,
+			ls.Sleeping: 4,
+			ls.Stopped:  5,
+			ls.Unknown:  9,
+			ls.Zombies:  6,
+		})
 	}
 
 	if expectProcessesCreatedMetric {
