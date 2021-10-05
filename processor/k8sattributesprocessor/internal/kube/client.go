@@ -369,7 +369,7 @@ func (c *WatchClient) extractNamespaceAttributes(namespace *api_v1.Namespace) ma
 	return tags
 }
 
-func (c *WatchClient) addOrUpdatePod(pod *api_v1.Pod) {
+func (c *WatchClient) getPodFromAPI(pod *api_v1.Pod) *Pod {
 	newPod := &Pod{
 		Name:      pod.Name,
 		Namespace: pod.GetNamespace(),
@@ -387,39 +387,62 @@ func (c *WatchClient) addOrUpdatePod(pod *api_v1.Pod) {
 		}
 	}
 
-	c.m.Lock()
-	defer c.m.Unlock()
+	return newPod
+}
 
+func (c *WatchClient) getIdentifiersFromAssoc(newPod *Pod) []PodIdentifier {
+	ids := []PodIdentifier{}
 	for _, assoc := range c.Associations {
 		ret := []string{}
 		for _, source := range assoc.Sources {
 			// If association configured to take IP address from connection
 			switch {
 			case source.From == "connection":
-				ret = append(ret, newPod.Address)
-			case source.From == "resource_attribute":
-				// If association configured by resource_attribute
-				// In k8s environment, host.name label set to a pod IP address.
-				// If the value doesn't represent an IP address, we skip it.
-				if source.Name == conventions.AttributeK8SNamespaceName {
-					ret = append(ret, newPod.Namespace)
-				} else if source.Name == conventions.AttributeK8SPodName {
-					ret = append(ret, newPod.Name)
-				} else if source.Name == conventions.AttributeK8SPodUID {
-					ret = append(ret, newPod.PodUID)
-				} else if source.Name == conventions.AttributeHostName {
+				if newPod.Address != "" {
 					ret = append(ret, newPod.Address)
-				} else {
-					ret = append(ret, newPod.Attributes[source.Name])
+				}
+			case source.From == "resource_attribute":
+				attr := ""
+				switch source.Name {
+				case conventions.AttributeK8SNamespaceName:
+					attr = newPod.Namespace
+				case conventions.AttributeK8SPodName:
+					attr = newPod.Name
+				case conventions.AttributeK8SPodUID:
+					attr = newPod.PodUID
+				case conventions.AttributeHostName:
+					attr = newPod.Address
+				default:
+					if v, ok := newPod.Attributes[source.Name]; ok {
+						attr = v
+					}
+				}
+
+				if attr != "" {
+					ret = append(ret, attr)
 				}
 			}
 		}
 
+		if len(ret) == len(assoc.Sources) {
+			ids = append(ids, PodIdentifier(strings.Join(ret, assoc.Delimiter)))
+		}
+	}
+
+	return ids
+}
+
+func (c *WatchClient) addOrUpdatePod(pod *api_v1.Pod) {
+	newPod := c.getPodFromAPI(pod)
+
+	c.m.Lock()
+	defer c.m.Unlock()
+
+	for _, id := range c.getIdentifiersFromAssoc(newPod) {
 		// compare initial scheduled timestamp for existing pod and new pod with same identifier
 		// and only replace old pod if scheduled time of new pod is newer or equal.
 		// This should fix the case where scheduler has assigned the same attribtues (like IP address)
 		// to a new pod but update event for the old pod came in later.
-		id := PodIdentifier(strings.Join(ret, assoc.Delimiter))
 		if p, ok := c.Pods[id]; ok {
 			if p.StartTime != nil && !p.StartTime.Before(pod.Status.StartTime) {
 				return
@@ -430,20 +453,15 @@ func (c *WatchClient) addOrUpdatePod(pod *api_v1.Pod) {
 }
 
 func (c *WatchClient) forgetPod(pod *api_v1.Pod) {
-	c.m.RLock()
-	p, ok := c.GetPod(PodIdentifier(pod.Status.PodIP))
-	c.m.RUnlock()
+	newPod := c.getPodFromAPI(pod)
+	for _, id := range c.getIdentifiersFromAssoc(newPod) {
+		c.m.RLock()
+		p, ok := c.GetPod(id)
+		c.m.RUnlock()
 
-	if ok && p.Name == pod.Name {
-		c.appendDeleteQueue(PodIdentifier(pod.Status.PodIP), pod.Name)
-	}
-
-	c.m.RLock()
-	p, ok = c.GetPod(PodIdentifier(pod.UID))
-	c.m.RUnlock()
-
-	if ok && p.Name == pod.Name {
-		c.appendDeleteQueue(PodIdentifier(pod.UID), pod.Name)
+		if ok && p.Name == pod.Name {
+			c.appendDeleteQueue(id, pod.Name)
+		}
 	}
 }
 

@@ -1143,7 +1143,24 @@ func newTestClientWithRulesAndFilters(t *testing.T, e ExtractionRules, f Filters
 			{Name: regexp.MustCompile(`jaeger-collector`)},
 		},
 	}
-	c, err := New(logger, k8sconfig.APIConfig{}, e, f, []Association{}, exclude, newFakeAPIClientset, NewFakeInformer, NewFakeNamespaceInformer)
+	associations := []Association{
+		{
+			Sources: []AssociationSource{
+				{
+					From: "connection",
+				},
+			},
+		},
+		{
+			Sources: []AssociationSource{
+				{
+					From: "resource_attribute",
+					Name: "k8s.pod.uid",
+				},
+			},
+		},
+	}
+	c, err := New(logger, k8sconfig.APIConfig{}, e, f, associations, exclude, newFakeAPIClientset, NewFakeInformer, NewFakeNamespaceInformer)
 	require.NoError(t, err)
 	return c.(*WatchClient), logs
 }
