@@ -15,6 +15,8 @@ FROM scratch
 
 USER ${USER_UID}
 
+# journald_input operator reads logs from systemd journal and requires journalctl binary and journal files to be present to work.
+# This is required by the journaldreceiver.
 COPY --from=journal /lib/x86_64-linux-gnu/libc.so.6 /lib/x86_64-linux-gnu/libc.so.6
 COPY --from=journal /lib/systemd/libsystemd-shared-241.so /lib/systemd/libsystemd-shared-241.so
 COPY --from=journal /lib64/ld-linux-x86-64.so.2 /lib64/ld-linux-x86-64.so.2
