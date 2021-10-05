@@ -15,6 +15,7 @@
 package octrace
 
 import (
+	"context"
 	"testing"
 	"time"
 
@@ -27,7 +28,8 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/obsreport/obsreporttest"
 	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/oteltest"
+	sdktrace "go.opentelemetry.io/otel/sdk/trace"
+	"go.opentelemetry.io/otel/sdk/trace/tracetest"
 	"go.opentelemetry.io/otel/trace"
 )
 
@@ -39,9 +41,9 @@ import (
 // test is to ensure exactness, but with the mentioned views registered, the
 // output will be quite noisy.
 func TestEnsureRecordedMetrics(t *testing.T) {
-	doneFn, err := obsreporttest.SetupRecordedMetricsTest()
+	tt, err := obsreporttest.SetupTelemetry()
 	require.NoError(t, err)
-	defer doneFn()
+	defer tt.Shutdown(context.Background())
 
 	addr, doneReceiverFn := ocReceiverOnGRPCServer(t, consumertest.NewNop())
 	defer doneReceiverFn()
@@ -57,13 +59,13 @@ func TestEnsureRecordedMetrics(t *testing.T) {
 	}
 	flush(traceSvcDoneFn)
 
-	obsreporttest.CheckReceiverTraces(t, config.NewID("opencensus"), "grpc", int64(n), 0)
+	require.NoError(t, obsreporttest.CheckReceiverTraces(config.NewComponentID("opencensus"), "grpc", int64(n), 0))
 }
 
 func TestEnsureRecordedMetrics_zeroLengthSpansSender(t *testing.T) {
-	doneFn, err := obsreporttest.SetupRecordedMetricsTest()
+	tt, err := obsreporttest.SetupTelemetry()
 	require.NoError(t, err)
-	defer doneFn()
+	defer tt.Shutdown(context.Background())
 
 	port, doneFn := ocReceiverOnGRPCServer(t, consumertest.NewNop())
 	defer doneFn()
@@ -78,12 +80,12 @@ func TestEnsureRecordedMetrics_zeroLengthSpansSender(t *testing.T) {
 	}
 	flush(traceSvcDoneFn)
 
-	obsreporttest.CheckReceiverTraces(t, config.NewID("opencensus"), "grpc", 0, 0)
+	require.NoError(t, obsreporttest.CheckReceiverTraces(config.NewComponentID("opencensus"), "grpc", 0, 0))
 }
 
 func TestExportSpanLinkingMaintainsParentLink(t *testing.T) {
-	sr := new(oteltest.SpanRecorder)
-	tp := oteltest.NewTracerProvider(oteltest.WithSpanRecorder(sr))
+	sr := new(tracetest.SpanRecorder)
+	tp := sdktrace.NewTracerProvider(sdktrace.WithSpanProcessor(sr))
 	otel.SetTracerProvider(tp)
 	defer otel.SetTracerProvider(trace.NewNoopTracerProvider())
 
@@ -103,7 +105,7 @@ func TestExportSpanLinkingMaintainsParentLink(t *testing.T) {
 	flush(traceSvcDoneFn)
 
 	// Inspection time!
-	gotSpanData := sr.Completed()
+	gotSpanData := sr.Ended()
 	assert.Equal(t, n+1, len(gotSpanData))
 
 	receiverSpanData := gotSpanData[0]
@@ -113,7 +115,7 @@ func TestExportSpanLinkingMaintainsParentLink(t *testing.T) {
 	rpcSpanData := gotSpanData[len(gotSpanData)-1]
 
 	// Ensure that the link matches up exactly!
-	wantLink := trace.Link{SpanContext: rpcSpanData.SpanContext()}
+	wantLink := sdktrace.Link{SpanContext: rpcSpanData.SpanContext()}
 
 	assert.Equal(t, wantLink, receiverSpanData.Links()[0])
 	assert.Equal(t, "receiver/opencensus/TraceDataReceived", receiverSpanData.Name())
@@ -122,9 +124,9 @@ func TestExportSpanLinkingMaintainsParentLink(t *testing.T) {
 	// have a ParentID, so let's enforce all the conditions below:
 	// 1. That it doesn't have the RPC spanID as its ParentSpanID
 	// 2. That it actually has no ParentSpanID i.e. has a blank SpanID
-	assert.NotEqual(t, rpcSpanData.SpanContext().SpanID(), receiverSpanData.ParentSpanID(),
+	assert.NotEqual(t, rpcSpanData.SpanContext().SpanID(), receiverSpanData.Parent().SpanID(),
 		"ReceiverSpanData.ParentSpanID unfortunately was linked to the RPC span")
-	assert.False(t, receiverSpanData.ParentSpanID().IsValid())
+	assert.False(t, receiverSpanData.Parent().IsValid())
 }
 
 // TODO: Determine how to do this deterministic.

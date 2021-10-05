@@ -27,6 +27,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/config"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/testutils"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/translator"
 )
 
 func TestNewExporter(t *testing.T) {
@@ -41,12 +42,18 @@ func TestNewExporter(t *testing.T) {
 			TCPAddr: confignet.TCPAddr{
 				Endpoint: server.URL,
 			},
+			DeltaTTL: 3600,
+			HistConfig: config.HistogramConfig{
+				Mode:         string(translator.HistogramModeNoBuckets),
+				SendCountSum: true,
+			},
 		},
 	}
 	params := componenttest.NewNopExporterCreateSettings()
 
 	// The client should have been created correctly
-	exp := newMetricsExporter(context.Background(), params, cfg)
+	exp, err := newMetricsExporter(context.Background(), params, cfg)
+	require.NoError(t, err)
 	assert.NotNil(t, exp)
 	_ = exp.PushMetricsData(context.Background(), testutils.TestMetrics.Clone())
 	assert.Equal(t, len(server.MetadataChan), 0)
@@ -56,7 +63,7 @@ func TestNewExporter(t *testing.T) {
 	_ = exp.PushMetricsData(context.Background(), testutils.TestMetrics.Clone())
 	body := <-server.MetadataChan
 	var recvMetadata metadata.HostMetadata
-	err := json.Unmarshal(body, &recvMetadata)
+	err = json.Unmarshal(body, &recvMetadata)
 	require.NoError(t, err)
 	assert.Equal(t, recvMetadata.InternalHostname, "custom-hostname")
 }

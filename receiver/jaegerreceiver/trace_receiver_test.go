@@ -46,8 +46,8 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/model/pdata"
+	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
 	"go.opentelemetry.io/collector/obsreport"
-	conventions "go.opentelemetry.io/collector/translator/conventions/v1.5.0"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
@@ -56,7 +56,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger"
 )
 
-var jaegerReceiver = config.NewIDWithName("jaeger", "receiver_test")
+var jaegerReceiver = config.NewComponentIDWithName("jaeger", "receiver_test")
 
 func TestTraceSource(t *testing.T) {
 	set := componenttest.NewNopReceiverCreateSettings()
@@ -510,7 +510,7 @@ func TestSamplingStrategiesMutualTLS(t *testing.T) {
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.RemoteSampling = &RemoteSamplingConfig{
 		GRPCClientSettings: configgrpc.GRPCClientSettings{
-			TLSSetting: configtls.TLSClientSetting{
+			TLSSetting: &configtls.TLSClientSetting{
 				TLSSetting: configtls.TLSSetting{
 					CAFile:   caPath,
 					CertFile: clientCertPath,

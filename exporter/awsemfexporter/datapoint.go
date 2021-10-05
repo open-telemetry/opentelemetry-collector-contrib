@@ -201,7 +201,7 @@ func (dps summaryDataPointSlice) At(i int) (dataPoint, bool) {
 func createLabels(attributes pdata.AttributeMap, instrLibName string) map[string]string {
 	labels := make(map[string]string, attributes.Len()+1)
 	attributes.Range(func(k string, v pdata.AttributeValue) bool {
-		labels[k] = pdata.AttributeValueToString(v)
+		labels[k] = v.AsString()
 		return true
 	})
 
@@ -238,7 +238,7 @@ func getDataPoints(pmd *pdata.Metric, metadata cWMetricMetadata, logger *zap.Log
 		}
 	case pdata.MetricDataTypeSum:
 		metric := pmd.Sum()
-		adjusterMetadata.adjustToDelta = metric.AggregationTemporality() == pdata.AggregationTemporalityCumulative
+		adjusterMetadata.adjustToDelta = metric.AggregationTemporality() == pdata.MetricAggregationTemporalityCumulative
 		dps = numberDataPointSlice{
 			metadata.instrumentationLibraryName,
 			adjusterMetadata,

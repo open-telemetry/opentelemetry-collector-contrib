@@ -23,7 +23,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/model/pdata"
-	conventions "go.opentelemetry.io/collector/translator/conventions/v1.5.0"
+	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
 )
 
 func resourceAndLogRecordsToLogs(r pdata.Resource, lrs []pdata.LogRecord) pdata.Logs {
@@ -82,7 +82,6 @@ func TestLogdataToObservIQFormat(t *testing.T) {
 				Timestamp: stringTs,
 				Message:   "Message",
 				Severity:  "default",
-				Resource:  map[string]interface{}{},
 				Data: map[string]interface{}{
 					strings.ReplaceAll(conventions.AttributeServiceName, ".", "_"): "myapp",
 					strings.ReplaceAll(conventions.AttributeHostName, ".", "_"):    "myhost",
@@ -184,7 +183,6 @@ func TestLogdataToObservIQFormat(t *testing.T) {
 				Timestamp: stringTs,
 				Message:   "",
 				Severity:  "default",
-				Resource:  map[string]interface{}{},
 				Data:      nil,
 				Agent:     &observIQAgentInfo{Name: "agent", ID: "agentID", Version: "latest"},
 			},
@@ -208,7 +206,6 @@ func TestLogdataToObservIQFormat(t *testing.T) {
 			observIQLogEntry{
 				Timestamp: stringTs,
 				Severity:  "default",
-				Resource:  map[string]interface{}{},
 				Data:      nil,
 				Agent:     &observIQAgentInfo{Name: "agent", ID: "agentID", Version: "latest"},
 				Body: map[string]interface{}{
@@ -236,7 +233,6 @@ func TestLogdataToObservIQFormat(t *testing.T) {
 			observIQLogEntry{
 				Timestamp: stringTs,
 				Severity:  "default",
-				Resource:  map[string]interface{}{},
 				Data:      nil,
 				Agent:     &observIQAgentInfo{Name: "agent", ID: "agentID", Version: "latest"},
 				Body: []interface{}{
@@ -262,7 +258,6 @@ func TestLogdataToObservIQFormat(t *testing.T) {
 			observIQLogEntry{
 				Timestamp: stringTs,
 				Severity:  "default",
-				Resource:  map[string]interface{}{},
 				Data:      nil,
 				Agent:     &observIQAgentInfo{Name: "agent", ID: "agentID", Version: "latest"},
 				Body:      float64(1.0),
@@ -289,7 +284,6 @@ func TestLogdataToObservIQFormat(t *testing.T) {
 			observIQLogEntry{
 				Timestamp: stringTs,
 				Severity:  "default",
-				Resource:  map[string]interface{}{},
 				Data: map[string]interface{}{
 					"attrib": "logAttrib",
 				},
@@ -314,7 +308,6 @@ func TestLogdataToObservIQFormat(t *testing.T) {
 				Timestamp: stringTs,
 				Message:   "Message",
 				Severity:  "default",
-				Resource:  map[string]interface{}{},
 				Data:      nil,
 				Agent:     &observIQAgentInfo{Name: "agent", ID: "agentID", Version: "latest"},
 			},
@@ -329,7 +322,7 @@ func TestLogdataToObservIQFormat(t *testing.T) {
 				logs,
 				testCase.agentID,
 				testCase.agentName,
-				component.DefaultBuildInfo().Version)
+				component.NewDefaultBuildInfo().Version)
 
 			if testCase.expectErr {
 				require.NotEmpty(t, errs)

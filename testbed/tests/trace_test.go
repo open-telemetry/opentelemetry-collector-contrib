@@ -29,7 +29,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/model/pdata"
-	conventions "go.opentelemetry.io/collector/translator/conventions/v1.5.0"
+	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/idutils"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/datareceivers"
@@ -243,14 +243,14 @@ func TestTraceBallast1kSPSWithAttrs(t *testing.T) {
 		{
 			attrCount:      100,
 			attrSizeByte:   50,
-			expectedMaxCPU: 80,
+			expectedMaxCPU: 100,
 			expectedMaxRAM: 2200,
 			resultsSummary: performanceResultsSummary,
 		},
 		{
 			attrCount:      10,
 			attrSizeByte:   1000,
-			expectedMaxCPU: 80,
+			expectedMaxCPU: 100,
 			expectedMaxRAM: 2200,
 			resultsSummary: performanceResultsSummary,
 		},

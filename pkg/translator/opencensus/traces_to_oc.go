@@ -23,7 +23,7 @@ import (
 	octrace "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"go.opencensus.io/trace"
 	"go.opentelemetry.io/collector/model/pdata"
-	conventions "go.opentelemetry.io/collector/translator/conventions/v1.5.0"
+	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/occonventions"
@@ -145,11 +145,11 @@ func attributeValueToOC(attr pdata.AttributeValue) *octrace.AttributeValue {
 		}
 	case pdata.AttributeValueTypeMap:
 		a.Value = &octrace.AttributeValue_StringValue{
-			StringValue: stringToTruncatableString(pdata.AttributeValueToString(attr)),
+			StringValue: stringToTruncatableString(attr.AsString()),
 		}
 	case pdata.AttributeValueTypeArray:
 		a.Value = &octrace.AttributeValue_StringValue{
-			StringValue: stringToTruncatableString(pdata.AttributeValueToString(attr)),
+			StringValue: stringToTruncatableString(attr.AsString()),
 		}
 	default:
 		a.Value = &octrace.AttributeValue_StringValue{
@@ -277,7 +277,7 @@ func eventToOC(event pdata.SpanEvent) *octrace.Span_TimeEvent {
 
 	// Consider TimeEvent to be of MessageEvent type if all and only relevant attributes are set
 	ocMessageEventAttrs := []string{
-		conventions.AttributeMessageType,
+		"message.type",
 		conventions.AttributeMessagingMessageID,
 		conventions.AttributeMessagingMessagePayloadSizeBytes,
 		conventions.AttributeMessagingMessagePayloadCompressedSizeBytes,
@@ -294,7 +294,7 @@ func eventToOC(event pdata.SpanEvent) *octrace.Span_TimeEvent {
 			ocMessageEventAttrValues[attr] = akv
 		}
 		if ocMessageEventAttrFound {
-			ocMessageEventType := ocMessageEventAttrValues[conventions.AttributeMessageType]
+			ocMessageEventType := ocMessageEventAttrValues["message.type"]
 			ocMessageEventTypeVal := octrace.Span_TimeEvent_MessageEvent_Type_value[ocMessageEventType.StringVal()]
 			return &octrace.Span_TimeEvent{
 				Time: timestampAsTimestampPb(event.Timestamp()),

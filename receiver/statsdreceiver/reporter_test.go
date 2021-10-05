@@ -26,23 +26,23 @@ import (
 )
 
 func TestReporterObservability(t *testing.T) {
-	doneFn, err := obsreporttest.SetupRecordedMetricsTest()
+	tt, err := obsreporttest.SetupTelemetry()
 	require.NoError(t, err)
-	defer doneFn()
+	defer tt.Shutdown(context.Background())
 
-	receiverID := config.NewIDWithName(typeStr, "fake_receiver")
+	receiverID := config.NewComponentIDWithName(typeStr, "fake_receiver")
 	reporter := newReporter(receiverID, zap.NewNop())
 
 	ctx := reporter.OnDataReceived(context.Background())
 
 	reporter.OnMetricsProcessed(ctx, 17, nil)
 
-	obsreporttest.CheckReceiverMetrics(t, receiverID, "tcp", 17, 0)
+	require.NoError(t, obsreporttest.CheckReceiverMetrics(receiverID, "tcp", 17, 0))
 
 	// Below just exercise the error paths.
 	err = errors.New("fake error for tests")
 	reporter.OnTranslationError(ctx, err)
 	reporter.OnMetricsProcessed(ctx, 10, err)
 
-	obsreporttest.CheckReceiverMetrics(t, receiverID, "tcp", 17, 10)
+	require.NoError(t, obsreporttest.CheckReceiverMetrics(receiverID, "tcp", 17, 10))
 }

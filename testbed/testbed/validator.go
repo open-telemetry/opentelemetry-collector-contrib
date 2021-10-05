@@ -442,15 +442,15 @@ func (v *CorrectnessTestValidator) diffAttributeMap(spanName string,
 func (v *CorrectnessTestValidator) compareSimpleValues(spanName string, sentVal pdata.AttributeValue, recdVal pdata.AttributeValue,
 	fmtStr string, attrKey string) {
 	if !sentVal.Equal(recdVal) {
-		sentStr := pdata.AttributeValueToString(sentVal)
-		recdStr := pdata.AttributeValueToString(recdVal)
+		sentStr := sentVal.AsString()
+		recdStr := recdVal.AsString()
 		if !strings.EqualFold(sentStr, recdStr) {
 			af := &TraceAssertionFailure{
 				typeName:      "Span",
 				dataComboName: spanName,
 				fieldPath:     fmt.Sprintf(fmtStr, attrKey),
-				expectedValue: pdata.AttributeValueToString(sentVal),
-				actualValue:   pdata.AttributeValueToString(recdVal),
+				expectedValue: sentVal.AsString(),
+				actualValue:   recdVal.AsString(),
 			}
 			v.assertionFailures = append(v.assertionFailures, af)
 		}

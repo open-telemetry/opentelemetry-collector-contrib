@@ -34,7 +34,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/model/pdata"
-	conventions "go.opentelemetry.io/collector/translator/conventions/v1.5.0"
+	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
 )
 
 const (
@@ -96,7 +96,7 @@ func TestNullTokenConfig(tester *testing.T) {
 
 func TestEmptyNode(tester *testing.T) {
 	cfg := Config{
-		ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
+		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
 		TracesToken:      "test",
 		Region:           "eu",
 	}
@@ -162,7 +162,7 @@ func TestPushTraceData(tester *testing.T) {
 		rw.WriteHeader(http.StatusOK)
 	}))
 	cfg := Config{
-		ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
+		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
 		TracesToken:      "test",
 		Region:           "eu",
 		CustomEndpoint:   server.URL,
@@ -192,7 +192,7 @@ func TestPushTraceData(tester *testing.T) {
 
 func TestPushMetricsData(tester *testing.T) {
 	cfg := Config{
-		ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
+		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
 		MetricsToken:     "test",
 		Region:           "eu",
 		CustomEndpoint:   "url",

@@ -196,11 +196,11 @@ func ConvertToOTLPMetrics(fields map[string]interface{}, tags map[string]string,
 		case int64:
 			intGauge(ilms.AppendEmpty(), key, unit, t, timestamp)
 		case uint:
-			doubleGauge(ilms.AppendEmpty(), key, unit, float64(t), timestamp)
+			intGauge(ilms.AppendEmpty(), key, unit, int64(t), timestamp)
 		case uint32:
-			doubleGauge(ilms.AppendEmpty(), key, unit, float64(t), timestamp)
+			intGauge(ilms.AppendEmpty(), key, unit, int64(t), timestamp)
 		case uint64:
-			doubleGauge(ilms.AppendEmpty(), key, unit, float64(t), timestamp)
+			intGauge(ilms.AppendEmpty(), key, unit, int64(t), timestamp)
 		case float32:
 			doubleGauge(ilms.AppendEmpty(), key, unit, float64(t), timestamp)
 		case float64:

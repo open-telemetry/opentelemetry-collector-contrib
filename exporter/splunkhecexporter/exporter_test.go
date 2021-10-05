@@ -37,7 +37,7 @@ import (
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/model/pdata"
-	conventions "go.opentelemetry.io/collector/translator/conventions/v1.5.0"
+	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
@@ -47,7 +47,7 @@ import (
 )
 
 func TestNew(t *testing.T) {
-	buildInfo := component.DefaultBuildInfo()
+	buildInfo := component.NewDefaultBuildInfo()
 	got, err := createExporter(nil, zap.NewNop(), &buildInfo)
 	assert.EqualError(t, err, "nil config")
 	assert.Nil(t, got)
@@ -333,7 +333,7 @@ func TestConsumeLogsData(t *testing.T) {
 }
 
 func TestExporterStartAlwaysReturnsNil(t *testing.T) {
-	buildInfo := component.DefaultBuildInfo()
+	buildInfo := component.NewDefaultBuildInfo()
 	config := &Config{
 		Endpoint: "https://example.com:8088",
 		Token:    "abc",

@@ -48,8 +48,8 @@ import (
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/obsreport"
+	"go.uber.org/multierr"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 
@@ -91,7 +91,7 @@ type jReceiver struct {
 
 	goroutines sync.WaitGroup
 
-	logger *zap.Logger
+	settings component.TelemetrySettings
 
 	grpcObsrecv *obsreport.Receiver
 	httpObsrecv *obsreport.Receiver
@@ -126,7 +126,7 @@ func newJaegerReceiver(
 		config:       config,
 		nextConsumer: nextConsumer,
 		id:           id,
-		logger:       set.Logger,
+		settings:     set.TelemetrySettings,
 		grpcObsrecv:  obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverID: id, Transport: grpcTransport}),
 		httpObsrecv:  obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverID: id, Transport: collectorHTTPTransport}),
 	}
@@ -193,11 +193,11 @@ func (jr *jReceiver) Start(_ context.Context, host component.Host) error {
 }
 
 func (jr *jReceiver) Shutdown(ctx context.Context) error {
-	var errs []error
+	var errs error
 
 	if jr.agentServer != nil {
 		if aerr := jr.agentServer.Shutdown(ctx); aerr != nil {
-			errs = append(errs, aerr)
+			errs = multierr.Append(errs, aerr)
 		}
 	}
 	for _, processor := range jr.agentProcessors {
@@ -206,7 +206,7 @@ func (jr *jReceiver) Shutdown(ctx context.Context) error {
 
 	if jr.collectorServer != nil {
 		if cerr := jr.collectorServer.Shutdown(ctx); cerr != nil {
-			errs = append(errs, cerr)
+			errs = multierr.Append(errs, cerr)
 		}
 	}
 	if jr.grpc != nil {
@@ -214,7 +214,7 @@ func (jr *jReceiver) Shutdown(ctx context.Context) error {
 	}
 
 	jr.goroutines.Wait()
-	return consumererror.Combine(errs)
+	return errs
 }
 
 func consumeTraces(ctx context.Context, batch *jaeger.Batch, consumer consumer.Traces) (int, error) {
@@ -320,14 +320,14 @@ func (jr *jReceiver) startAgent(host component.Host) error {
 
 	// Start upstream grpc client before serving sampling endpoints over HTTP
 	if jr.config.RemoteSamplingClientSettings.Endpoint != "" {
-		grpcOpts, err := jr.config.RemoteSamplingClientSettings.ToDialOptions(host.GetExtensions())
+		grpcOpts, err := jr.config.RemoteSamplingClientSettings.ToDialOptions(host)
 		if err != nil {
-			jr.logger.Error("Error creating grpc dial options for remote sampling endpoint", zap.Error(err))
+			jr.settings.Logger.Error("Error creating grpc dial options for remote sampling endpoint", zap.Error(err))
 			return err
 		}
 		conn, err := grpc.Dial(jr.config.RemoteSamplingClientSettings.Endpoint, grpcOpts...)
 		if err != nil {
-			jr.logger.Error("Error creating grpc connection to jaeger remote sampling endpoint", zap.String("endpoint", jr.config.RemoteSamplingClientSettings.Endpoint))
+			jr.settings.Logger.Error("Error creating grpc connection to jaeger remote sampling endpoint", zap.String("endpoint", jr.config.RemoteSamplingClientSettings.Endpoint))
 			return err
 		}
 
@@ -335,7 +335,7 @@ func (jr *jReceiver) startAgent(host component.Host) error {
 	}
 
 	if jr.agentHTTPEnabled() {
-		jr.agentServer = httpserver.NewHTTPServer(jr.agentHTTPAddr(), jr, metrics.NullFactory, jr.logger)
+		jr.agentServer = httpserver.NewHTTPServer(jr.agentHTTPAddr(), jr, metrics.NullFactory, jr.settings.Logger)
 
 		jr.goroutines.Add(1)
 		go func() {
@@ -364,7 +364,7 @@ func (jr *jReceiver) buildProcessor(address string, cfg ServerConfigUDP, factory
 	if err != nil {
 		return nil, err
 	}
-	processor, err := processors.NewThriftProcessor(server, cfg.Workers, metrics.NullFactory, factory, handler, jr.logger)
+	processor, err := processors.NewThriftProcessor(server, cfg.Workers, metrics.NullFactory, factory, handler, jr.settings.Logger)
 	if err != nil {
 		return nil, err
 	}
@@ -445,7 +445,7 @@ func (jr *jReceiver) startCollector(host component.Host) error {
 
 		nr := mux.NewRouter()
 		nr.HandleFunc("/api/traces", jr.HandleThriftHTTPBatch).Methods(http.MethodPost)
-		jr.collectorServer = jr.config.CollectorHTTPSettings.ToServer(nr)
+		jr.collectorServer = jr.config.CollectorHTTPSettings.ToServer(nr, jr.settings)
 		jr.goroutines.Add(1)
 		go func() {
 			defer jr.goroutines.Done()
@@ -456,7 +456,7 @@ func (jr *jReceiver) startCollector(host component.Host) error {
 	}
 
 	if jr.collectorGRPCEnabled() {
-		opts, err := jr.config.CollectorGRPCServerSettings.ToServerOption(host.GetExtensions())
+		opts, err := jr.config.CollectorGRPCServerSettings.ToServerOption(host, jr.settings)
 		if err != nil {
 			return fmt.Errorf("failed to build the options for the Jaeger gRPC Collector: %v", err)
 		}
@@ -473,7 +473,7 @@ func (jr *jReceiver) startCollector(host component.Host) error {
 		// init and register sampling strategy store
 		ss, gerr := staticStrategyStore.NewStrategyStore(staticStrategyStore.Options{
 			StrategiesFile: jr.config.RemoteSamplingStrategyFile,
-		}, jr.logger)
+		}, jr.settings.Logger)
 		if gerr != nil {
 			return fmt.Errorf("failed to create collector strategy store: %v", gerr)
 		}

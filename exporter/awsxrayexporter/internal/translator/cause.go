@@ -23,7 +23,7 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws"
 	"go.opentelemetry.io/collector/model/pdata"
-	conventions "go.opentelemetry.io/collector/translator/conventions/v1.5.0"
+	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
 
 	awsxray "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray"
 )
@@ -94,7 +94,7 @@ func makeCause(span pdata.Span, attributes map[string]pdata.AttributeValue, reso
 		filtered = make(map[string]pdata.AttributeValue)
 		for key, value := range attributes {
 			switch key {
-			case conventions.AttributeHTTPStatusText:
+			case "http.status_text":
 				if message == "" {
 					message = value.StringVal()
 				}

@@ -29,7 +29,8 @@ type stringAttributeFilter struct {
 	logger *zap.Logger
 	// matcher defines the func to match the attribute values in strict string
 	// or in regular expression
-	matcher func(string) bool
+	matcher     func(string) bool
+	invertMatch bool
 }
 
 type regexStrSetting struct {
@@ -41,7 +42,7 @@ var _ PolicyEvaluator = (*stringAttributeFilter)(nil)
 
 // NewStringAttributeFilter creates a policy evaluator that samples all traces with
 // the given attribute in the given numeric range.
-func NewStringAttributeFilter(logger *zap.Logger, key string, values []string, regexMatchEnabled bool, evictSize int) PolicyEvaluator {
+func NewStringAttributeFilter(logger *zap.Logger, key string, values []string, regexMatchEnabled bool, evictSize int, invertMatch bool) PolicyEvaluator {
 	// initialize regex filter rules and LRU cache for matched results
 	if regexMatchEnabled {
 		if evictSize <= 0 {
@@ -72,6 +73,7 @@ func NewStringAttributeFilter(logger *zap.Logger, key string, values []string, r
 				regexStrSetting.matchedAttrs.Add(toMatch, false)
 				return false
 			},
+			invertMatch: invertMatch,
 		}
 	}
 
@@ -90,6 +92,7 @@ func NewStringAttributeFilter(logger *zap.Logger, key string, values []string, r
 			_, matched := valuesMap[toMatch]
 			return matched
 		},
+		invertMatch: invertMatch,
 	}
 }
 
@@ -110,6 +113,32 @@ func (saf *stringAttributeFilter) Evaluate(_ pdata.TraceID, trace *TraceData) (D
 	trace.Lock()
 	batches := trace.ReceivedBatches
 	trace.Unlock()
+
+	if saf.invertMatch {
+		// Invert Match returns true by default, except when key and value are matched
+		return invertHasResourceOrSpanWithCondition(
+			batches,
+			func(resource pdata.Resource) bool {
+				if v, ok := resource.Attributes().Get(saf.key); ok {
+					if ok := saf.matcher(v.StringVal()); ok {
+						return false
+					}
+				}
+				return true
+			},
+			func(span pdata.Span) bool {
+				if v, ok := span.Attributes().Get(saf.key); ok {
+					truncableStr := v.StringVal()
+					if len(truncableStr) > 0 {
+						if ok := saf.matcher(v.StringVal()); ok {
+							return false
+						}
+					}
+				}
+				return true
+			},
+		), nil
+	}
 
 	return hasResourceOrSpanWithCondition(
 		batches,

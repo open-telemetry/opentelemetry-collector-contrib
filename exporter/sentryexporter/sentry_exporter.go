@@ -16,7 +16,9 @@ package sentryexporter
 
 import (
 	"context"
+	"crypto/rand"
 	"crypto/tls"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"log"
@@ -28,7 +30,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/model/pdata"
-	conventions "go.opentelemetry.io/collector/translator/conventions/v1.5.0"
+	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
 )
 
 const (
@@ -85,7 +87,7 @@ func (s *SentryExporter) pushTraceData(_ context.Context, td pdata.Traces) error
 				//
 				// If the span is not a root span, we can either associate it with an existing
 				// transaction, or we can temporarily consider it an orphan span.
-				if isRootSpan(sentrySpan) {
+				if spanIsTransaction(otelSpan) {
 					transactionMap[sentrySpan.SpanID] = transactionFromSpan(sentrySpan)
 					idMap[sentrySpan.SpanID] = sentrySpan.SpanID
 				} else {
@@ -169,12 +171,15 @@ func sentryEventFromError(errorMessage, errorType string, span *sentry.Span) (*s
 		return nil, err
 	}
 	event := sentry.NewEvent()
+	event.EventID = generateEventID()
 
 	event.Contexts["trace"] = sentry.TraceContext{
-		TraceID: span.TraceID,
-		SpanID:  span.SpanID,
-		Op:      span.Op,
-		Status:  span.Status,
+		TraceID:      span.TraceID,
+		SpanID:       span.SpanID,
+		ParentSpanID: span.ParentSpanID,
+		Op:           span.Op,
+		Description:  span.Description,
+		Status:       span.Status,
 	}
 
 	event.Type = errorType
@@ -244,15 +249,18 @@ func convertToSentrySpan(span pdata.Span, library pdata.InstrumentationLibrary, 
 	tags["library_version"] = library.Version()
 
 	sentrySpan = &sentry.Span{
-		TraceID:      span.TraceID().Bytes(),
-		SpanID:       span.SpanID().Bytes(),
-		ParentSpanID: span.ParentSpanID().Bytes(),
-		Description:  description,
-		Op:           op,
-		Tags:         tags,
-		StartTime:    unixNanoToTime(span.StartTimestamp()),
-		EndTime:      unixNanoToTime(span.EndTimestamp()),
-		Status:       status,
+		TraceID:     span.TraceID().Bytes(),
+		SpanID:      span.SpanID().Bytes(),
+		Description: description,
+		Op:          op,
+		Tags:        tags,
+		StartTime:   unixNanoToTime(span.StartTimestamp()),
+		EndTime:     unixNanoToTime(span.EndTimestamp()),
+		Status:      status,
+	}
+
+	if parentSpanID := span.ParentSpanID(); !parentSpanID.IsEmpty() {
+		sentrySpan.ParentSpanID = parentSpanID.Bytes()
 	}
 
 	return sentrySpan
@@ -361,21 +369,25 @@ func statusFromSpanStatus(spanStatus pdata.SpanStatus) (status sentry.SpanStatus
 	return canonicalCodes[code], spanStatus.Message()
 }
 
-// isRootSpan determines if a span is a root span.
-// If parent span id is empty, then the span is a root span.
-func isRootSpan(s *sentry.Span) bool {
-	return s.ParentSpanID == sentry.SpanID{}
+// spanIsTransaction determines if a span should be sent to Sentry as a transaction.
+// If parent span id is empty or the span kind allows remote parent spans, then the span is a root span.
+func spanIsTransaction(s pdata.Span) bool {
+	kind := s.Kind()
+	return s.ParentSpanID() == pdata.SpanID{} || kind == pdata.SpanKindServer || kind == pdata.SpanKindConsumer
 }
 
 // transactionFromSpan converts a span to a transaction.
 func transactionFromSpan(span *sentry.Span) *sentry.Event {
 	transaction := sentry.NewEvent()
+	transaction.EventID = generateEventID()
 
 	transaction.Contexts["trace"] = sentry.TraceContext{
-		TraceID: span.TraceID,
-		SpanID:  span.SpanID,
-		Op:      span.Op,
-		Status:  span.Status,
+		TraceID:      span.TraceID,
+		SpanID:       span.SpanID,
+		ParentSpanID: span.ParentSpanID,
+		Op:           span.Op,
+		Description:  span.Description,
+		Status:       span.Status,
 	}
 
 	transaction.Type = "transaction"
@@ -389,6 +401,21 @@ func transactionFromSpan(span *sentry.Span) *sentry.Event {
 	transaction.Transaction = span.Description
 
 	return transaction
+}
+
+func uuid() string {
+	id := make([]byte, 16)
+	// Prefer rand.Read over rand.Reader, see https://go-review.googlesource.com/c/go/+/272326/.
+	_, _ = rand.Read(id)
+	id[6] &= 0x0F // clear version
+	id[6] |= 0x40 // set version to 4 (random uuid)
+	id[8] &= 0x3F // clear variant
+	id[8] |= 0x80 // set to IETF variant
+	return hex.EncodeToString(id)
+}
+
+func generateEventID() sentry.EventID {
+	return sentry.EventID(uuid())
 }
 
 // CreateSentryExporter returns a new Sentry Exporter.

@@ -48,7 +48,7 @@ type observIQLogEntry struct {
 	Severity  string                 `json:"severity,omitempty"`
 	EntryType string                 `json:"type,omitempty"`
 	Message   string                 `json:"message,omitempty"`
-	Resource  interface{}            `json:"resource,omitempty"`
+	Resource  map[string]interface{} `json:"resource,omitempty"`
 	Agent     *observIQAgentInfo     `json:"agent,omitempty"`
 	Data      map[string]interface{} `json:"data,omitempty"`
 	Body      interface{}            `json:"body,omitempty"`
@@ -79,7 +79,7 @@ func logdataToObservIQFormat(ld pdata.Logs, agentID string, agentName string, bu
 
 				if err != nil {
 					//Skip this log, keep record of error
-					errorsOut = append(errorsOut, consumererror.Permanent(err))
+					errorsOut = append(errorsOut, consumererror.NewPermanent(err))
 					continue
 				}
 
@@ -87,7 +87,7 @@ func logdataToObservIQFormat(ld pdata.Logs, agentID string, agentName string, bu
 				fnvHash.Reset()
 				_, err = fnvHash.Write(jsonOIQLogEntry)
 				if err != nil {
-					errorsOut = append(errorsOut, consumererror.Permanent(err))
+					errorsOut = append(errorsOut, consumererror.NewPermanent(err))
 					continue
 				}
 
@@ -111,7 +111,7 @@ func logdataToObservIQFormat(ld pdata.Logs, agentID string, agentName string, bu
 // Output timestamp format, an ISO8601 compliant timestamp with millisecond precision
 const timestampFieldOutputLayout = "2006-01-02T15:04:05.000Z07:00"
 
-func resourceAndInstrumentationLogToEntry(resMap interface{}, log pdata.LogRecord, agentID string, agentName string, buildVersion string) *observIQLogEntry {
+func resourceAndInstrumentationLogToEntry(resMap map[string]interface{}, log pdata.LogRecord, agentID string, agentName string, buildVersion string) *observIQLogEntry {
 	return &observIQLogEntry{
 		Timestamp: timestampFromRecord(log),
 		Severity:  severityFromRecord(log),
@@ -138,7 +138,7 @@ func messageFromRecord(log pdata.LogRecord) string {
 	return ""
 }
 
-// If Body is not a string, it is suitable to be used on the observIQ log entry as "body"
+// bodyFromRecord returns what the "body" field should be on the observiq entry from the given LogRecord.
 func bodyFromRecord(log pdata.LogRecord) interface{} {
 	if log.Body().Type() != pdata.AttributeValueTypeString {
 		return attributeValueToBaseType(log.Body())
@@ -158,21 +158,21 @@ var severityNumberToObservIQName = map[int32]string{
 	7:  "debug",
 	8:  "debug",
 	9:  "info",
-	10: "info",
-	11: "info",
-	12: "info",
-	13: "warn",
-	14: "warn",
-	15: "warn",
-	16: "warn",
+	10: "notice",
+	11: "notice",
+	12: "notice",
+	13: "warning",
+	14: "warning",
+	15: "warning",
+	16: "warning",
 	17: "error",
-	18: "error",
-	19: "error",
-	20: "error",
-	21: "fatal",
-	22: "fatal",
-	23: "fatal",
-	24: "fatal",
+	18: "critical",
+	19: "alert",
+	20: "alert",
+	21: "emergency",
+	22: "emergency",
+	23: "catastrophe",
+	24: "catastrophe",
 }
 
 /*
@@ -231,7 +231,7 @@ func attributeValueToBaseType(attrib pdata.AttributeValue) interface{} {
 			}
 		}
 		return slice
-	case pdata.AttributeValueTypeNull:
+	case pdata.AttributeValueTypeEmpty:
 		return nil
 	}
 	return nil

@@ -12,7 +12,7 @@ COMP_REL_PATH=internal/components/components.go
 MOD_NAME=github.com/open-telemetry/opentelemetry-collector-contrib
 
 # ALL_MODULES includes ./* dirs (excludes . dir and example with go code)
-ALL_MODULES := $(shell find . -type f -name "go.mod" -not -path './internal/core/*' -exec dirname {} \; | sort | egrep '^./' )
+ALL_MODULES := $(shell find . -type f -name "go.mod" -not -path './cmd/configschema/*' -exec dirname {} \; | sort | egrep '^./' )
 # Modules to run integration tests on.
 # XXX: Find a way to automatically populate this. Too slow to run across all modules when there are just a few.
 INTEGRATION_TEST_MODULES := \
@@ -56,7 +56,8 @@ stability-tests: otelcontribcol
 .PHONY: gotidy
 gotidy:
 	$(MAKE) for-all CMD="rm -fr go.sum"
-	$(MAKE) for-all CMD="go mod tidy"
+	$(MAKE) for-all CMD="go mod tidy -go=1.16"
+	$(MAKE) for-all CMD="go mod tidy -go=1.17"
 
 .PHONY: gomoddownload
 gomoddownload:
@@ -158,8 +159,8 @@ install-tools:
 	cd $(TOOLS_MOD_DIR) && go install github.com/tcnksm/ghr
 	cd $(TOOLS_MOD_DIR) && go install go.opentelemetry.io/build-tools/checkdoc
 	cd $(TOOLS_MOD_DIR) && go install go.opentelemetry.io/build-tools/issuegenerator
-	cd $(TOOLS_MOD_DIR) && go install github.com/open-telemetry/opentelemetry-collector-contrib/cmd/mdatagen
 	cd $(TOOLS_MOD_DIR) && go install golang.org/x/tools/cmd/goimports
+	cd $(TOOLS_MOD_DIR) && go install go.opentelemetry.io/build-tools/multimod
 
 .PHONY: run
 run:
@@ -184,19 +185,20 @@ docker-otelcontribcol:
 
 .PHONY: generate
 generate:
+	cd cmd/mdatagen && go install .
 	$(MAKE) for-all CMD="go generate ./..."
 
 # Build the Collector executable.
 .PHONY: otelcontribcol
 otelcontribcol:
 	GO111MODULE=on CGO_ENABLED=0 go build -trimpath -o ./bin/otelcontribcol_$(GOOS)_$(GOARCH)$(EXTENSION) \
-		$(BUILD_INFO) ./cmd/otelcontribcol
+		$(BUILD_INFO) -tags $(GO_BUILD_TAGS) ./cmd/otelcontribcol
 
 # Build the Collector executable, including unstable functionality.
 .PHONY: otelcontribcol-unstable
 otelcontribcol-unstable:
 	GO111MODULE=on CGO_ENABLED=0 go build -trimpath -o ./bin/otelcontribcol_unstable_$(GOOS)_$(GOARCH)$(EXTENSION) \
-		$(BUILD_INFO) -tags enable_unstable ./cmd/otelcontribcol
+		$(BUILD_INFO) -tags $(GO_BUILD_TAGS),enable_unstable ./cmd/otelcontribcol
 
 .PHONY: otelcontribcol-all-sys
 otelcontribcol-all-sys: otelcontribcol-darwin_amd64 otelcontribcol-darwin_arm64 otelcontribcol-linux_amd64 otelcontribcol-linux_arm64 otelcontribcol-windows_amd64

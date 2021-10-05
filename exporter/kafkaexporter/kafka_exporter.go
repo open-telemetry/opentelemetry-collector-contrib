@@ -35,13 +35,27 @@ type kafkaTracesProducer struct {
 	logger    *zap.Logger
 }
 
+type kafkaErrors struct {
+	count int
+	err   string
+}
+
+func (ke kafkaErrors) Error() string {
+	return fmt.Sprintf("Failed to deliver %d messages due to %s", ke.count, ke.err)
+}
+
 func (e *kafkaTracesProducer) tracesPusher(_ context.Context, td pdata.Traces) error {
 	messages, err := e.marshaler.Marshal(td, e.topic)
 	if err != nil {
-		return consumererror.Permanent(err)
+		return consumererror.NewPermanent(err)
 	}
 	err = e.producer.SendMessages(messages)
 	if err != nil {
+		if value, ok := err.(sarama.ProducerErrors); ok {
+			if len(value) > 0 {
+				return kafkaErrors{len(value), value[0].Err.Error()}
+			}
+		}
 		return err
 	}
 	return nil
@@ -62,10 +76,15 @@ type kafkaMetricsProducer struct {
 func (e *kafkaMetricsProducer) metricsDataPusher(_ context.Context, md pdata.Metrics) error {
 	messages, err := e.marshaler.Marshal(md, e.topic)
 	if err != nil {
-		return consumererror.Permanent(err)
+		return consumererror.NewPermanent(err)
 	}
 	err = e.producer.SendMessages(messages)
 	if err != nil {
+		if value, ok := err.(sarama.ProducerErrors); ok {
+			if len(value) > 0 {
+				return kafkaErrors{len(value), value[0].Err.Error()}
+			}
+		}
 		return err
 	}
 	return nil
@@ -86,10 +105,15 @@ type kafkaLogsProducer struct {
 func (e *kafkaLogsProducer) logsDataPusher(_ context.Context, ld pdata.Logs) error {
 	messages, err := e.marshaler.Marshal(ld, e.topic)
 	if err != nil {
-		return consumererror.Permanent(err)
+		return consumererror.NewPermanent(err)
 	}
 	err = e.producer.SendMessages(messages)
 	if err != nil {
+		if value, ok := err.(sarama.ProducerErrors); ok {
+			if len(value) > 0 {
+				return kafkaErrors{len(value), value[0].Err.Error()}
+			}
+		}
 		return err
 	}
 	return nil

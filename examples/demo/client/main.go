@@ -62,14 +62,14 @@ func initProvider() func() {
 	handleErr(err, "Failed to create the collector metric exporter")
 
 	pusher := controller.New(
-		processor.New(
+		processor.NewFactory(
 			simple.NewWithExactDistribution(),
 			metricExp,
 		),
 		controller.WithExporter(metricExp),
 		controller.WithCollectPeriod(2*time.Second),
 	)
-	global.SetMeterProvider(pusher.MeterProvider())
+	global.SetMeterProvider(pusher)
 
 	err = pusher.Start(ctx)
 	handleErr(err, "Failed to start metric pusher")
@@ -144,7 +144,7 @@ func main() {
 
 	// Recorder metric example
 	requestLatency := metric.Must(meter).
-		NewFloat64ValueRecorder(
+		NewFloat64Histogram(
 			"demo_client/request_latency",
 			metric.WithDescription("The latency of requests processed"),
 		)
@@ -157,7 +157,7 @@ func main() {
 		)
 
 	lineLengths := metric.Must(meter).
-		NewInt64ValueRecorder(
+		NewInt64Histogram(
 			"demo_client/line_lengths",
 			metric.WithDescription("The lengths of the various lines in"),
 		)

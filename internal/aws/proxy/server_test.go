@@ -12,12 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//go:build !windows
 // +build !windows
+
 // TODO review if tests should succeed on Windows
 
 package proxy
 
 import (
+	"context"
 	"errors"
 	"net"
 	"net/http"
@@ -55,7 +58,7 @@ func TestHappyCase(t *testing.T) {
 	assert.NoError(t, err, "NewServer should succeed")
 	go srv.ListenAndServe()
 	assert.NoError(t, err, "NewServer should succeed")
-	defer srv.Close()
+	defer srv.Shutdown(context.Background())
 
 	assert.Eventuallyf(t, func() bool {
 		_, err := net.DialTimeout("tcp", tcpAddr, time.Second)

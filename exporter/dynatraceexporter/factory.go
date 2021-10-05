@@ -43,7 +43,7 @@ func NewFactory() component.ExporterFactory {
 // createDefaultConfig creates the default exporter configuration
 func createDefaultConfig() config.Exporter {
 	return &dtconfig.Config{
-		ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
+		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
 		RetrySettings:    exporterhelper.DefaultRetrySettings(),
 		QueueSettings:    exporterhelper.DefaultQueueSettings(),
 		ResourceToTelemetrySettings: resourcetotelemetry.Settings{
@@ -53,7 +53,8 @@ func createDefaultConfig() config.Exporter {
 		APIToken:           "",
 		HTTPClientSettings: confighttp.HTTPClientSettings{Endpoint: ""},
 
-		Tags: []string{},
+		Tags:              []string{},
+		DefaultDimensions: make(map[string]string),
 	}
 }
 
@@ -66,7 +67,7 @@ func createMetricsExporter(
 
 	cfg := c.(*dtconfig.Config)
 
-	if err := cfg.Sanitize(); err != nil {
+	if err := cfg.ValidateAndConfigureHTTPClientSettings(); err != nil {
 		return nil, err
 	}
 

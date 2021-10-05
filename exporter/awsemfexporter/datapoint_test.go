@@ -518,7 +518,7 @@ func TestCreateLabels(t *testing.T) {
 		"b": "B",
 		"c": "C",
 	}
-	labelsMap := pdata.NewAttributeMap().InitFromMap(map[string]pdata.AttributeValue{
+	labelsMap := pdata.NewAttributeMapFromMap(map[string]pdata.AttributeValue{
 		"a": pdata.NewAttributeValueString("A"),
 		"b": pdata.NewAttributeValueString("B"),
 		"c": pdata.NewAttributeValueString("C"),
@@ -646,7 +646,7 @@ func TestGetDataPoints(t *testing.T) {
 
 		logger := zap.NewNop()
 
-		expectedAttributes := pdata.NewAttributeMap().InitFromMap(map[string]pdata.AttributeValue{"label1": pdata.NewAttributeValueString("value1")})
+		expectedAttributes := pdata.NewAttributeMapFromMap(map[string]pdata.AttributeValue{"label1": pdata.NewAttributeValueString("value1")})
 
 		t.Run(tc.testName, func(t *testing.T) {
 			setupDataPointCache()

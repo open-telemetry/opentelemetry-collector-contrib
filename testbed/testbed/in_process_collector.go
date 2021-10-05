@@ -15,6 +15,7 @@
 package testbed
 
 import (
+	"context"
 	"fmt"
 	"strings"
 
@@ -51,22 +52,20 @@ func (ipp *inProcessCollector) PrepareConfig(configStr string) (configCleanup fu
 
 func (ipp *inProcessCollector) Start(args StartParams) error {
 	settings := service.CollectorSettings{
-		BuildInfo:      component.DefaultBuildInfo(),
-		Factories:      ipp.factories,
-		ParserProvider: parserprovider.NewInMemory(strings.NewReader(ipp.configStr)),
+		BuildInfo:         component.NewDefaultBuildInfo(),
+		Factories:         ipp.factories,
+		ConfigMapProvider: parserprovider.NewInMemoryMapProvider(strings.NewReader(ipp.configStr)),
 	}
 	var err error
 	ipp.svc, err = service.New(settings)
 	if err != nil {
 		return err
 	}
-	ipp.svc.Command().SetArgs(args.CmdArgs)
 
 	ipp.appDone = make(chan struct{})
 	go func() {
 		defer close(ipp.appDone)
-		appErr := ipp.svc.Run()
-		if appErr != nil {
+		if appErr := ipp.svc.Run(context.Background()); appErr != nil {
 			err = appErr
 		}
 	}()

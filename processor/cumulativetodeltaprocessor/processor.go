@@ -16,6 +16,7 @@ package cumulativetodeltaprocessor
 
 import (
 	"context"
+	"math"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
@@ -61,7 +62,7 @@ func (ctdp *cumulativeToDeltaProcessor) processMetrics(_ context.Context, md pda
 			for k := 0; k < metricSlice.Len(); k++ {
 				metric := metricSlice.At(k)
 				if ctdp.metrics[metric.Name()] {
-					if metric.DataType() == pdata.MetricDataTypeSum && metric.Sum().AggregationTemporality() == pdata.AggregationTemporalityCumulative {
+					if metric.DataType() == pdata.MetricDataTypeSum && metric.Sum().AggregationTemporality() == pdata.MetricAggregationTemporalityCumulative {
 						dataPoints := metric.Sum().DataPoints()
 
 						for l := 0; l < dataPoints.Len(); l++ {
@@ -69,16 +70,19 @@ func (ctdp *cumulativeToDeltaProcessor) processMetrics(_ context.Context, md pda
 							labelMap := make(map[string]string)
 
 							fromDataPoint.Attributes().Range(func(k string, v pdata.AttributeValue) bool {
-								labelMap[k] = pdata.AttributeValueToString(v)
+								labelMap[k] = v.AsString()
 								return true
 							})
-
-							result, _ := ctdp.deltaCalculator.Calculate(metric.Name(), labelMap, fromDataPoint.DoubleVal(), fromDataPoint.Timestamp().AsTime())
+							datapointValue := fromDataPoint.DoubleVal()
+							if math.IsNaN(datapointValue) {
+								continue
+							}
+							result, _ := ctdp.deltaCalculator.Calculate(metric.Name(), labelMap, datapointValue, fromDataPoint.Timestamp().AsTime())
 
 							fromDataPoint.SetDoubleVal(result.(delta).value)
 							fromDataPoint.SetStartTimestamp(pdata.NewTimestampFromTime(result.(delta).prevTimestamp))
 						}
-						metric.Sum().SetAggregationTemporality(pdata.AggregationTemporalityDelta)
+						metric.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityDelta)
 					}
 				}
 			}

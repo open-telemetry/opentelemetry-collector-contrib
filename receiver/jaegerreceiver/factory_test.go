@@ -25,7 +25,6 @@ import (
 	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/config/configcheck"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/confignet"
@@ -43,7 +42,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	assert.NotNil(t, cfg, "failed to create default config")
-	assert.NoError(t, configcheck.ValidateConfig(cfg))
+	assert.NoError(t, configtest.CheckConfigStruct(cfg))
 }
 
 func TestCreateReceiver(t *testing.T) {
@@ -77,7 +76,7 @@ func TestCreateReceiverGeneralConfig(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 
-	rCfg, ok := cfg.Receivers[config.NewIDWithName(typeStr, "customname")]
+	rCfg, ok := cfg.Receivers[config.NewComponentIDWithName(typeStr, "customname")]
 	require.True(t, ok)
 
 	set := componenttest.NewNopReceiverCreateSettings()

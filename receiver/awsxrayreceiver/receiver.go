@@ -95,13 +95,13 @@ func (x *xrayReceiver) Start(ctx context.Context, host component.Host) error {
 	return nil
 }
 
-func (x *xrayReceiver) Shutdown(_ context.Context) error {
+func (x *xrayReceiver) Shutdown(ctx context.Context) error {
 	var err error
 	if pollerErr := x.poller.Close(); pollerErr != nil {
 		err = pollerErr
 	}
 
-	if proxyErr := x.server.Close(); proxyErr != nil {
+	if proxyErr := x.server.Shutdown(ctx); proxyErr != nil {
 		if err == nil {
 			err = proxyErr
 		} else {

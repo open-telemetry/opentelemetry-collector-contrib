@@ -12,14 +12,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//go:build enable_unstable
 // +build enable_unstable
 
 package components
 
 import (
 	"go.opentelemetry.io/collector/component"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbatlasreceiver"
 )
 
 func extraReceivers() []component.ReceiverFactory {
-	return []component.ReceiverFactory{}
+	mongoAtlasFactory := mongodbatlasreceiver.NewFactory()
+	return []component.ReceiverFactory{mongoAtlasFactory}
 }

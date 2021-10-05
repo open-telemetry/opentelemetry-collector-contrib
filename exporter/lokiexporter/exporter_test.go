@@ -16,6 +16,7 @@ package lokiexporter
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -32,7 +33,7 @@ import (
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/model/pdata"
-	conventions "go.opentelemetry.io/collector/translator/conventions/v1.5.0"
+	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/lokiexporter/internal/third_party/loki/logproto"
@@ -107,7 +108,7 @@ func TestExporter_pushLogData(t *testing.T) {
 
 	genericGenLogsFunc := func() pdata.Logs {
 		return createLogData(10,
-			pdata.NewAttributeMap().InitFromMap(map[string]pdata.AttributeValue{
+			pdata.NewAttributeMapFromMap(map[string]pdata.AttributeValue{
 				conventions.AttributeContainerName:  pdata.NewAttributeValueString("api"),
 				conventions.AttributeK8SClusterName: pdata.NewAttributeValueString("local"),
 				"resource.name":                     pdata.NewAttributeValueString("myresource"),
@@ -161,8 +162,8 @@ func TestExporter_pushLogData(t *testing.T) {
 			genLogsFunc:      genericGenLogsFunc,
 			errFunc: func(err error) {
 				var e consumererror.Logs
-				consumererror.AsLogs(err, &e)
-				require.Equal(t, 10, e.GetLogs().LogRecordCount())
+				require.True(t, errors.As(err, &e))
+				assert.Equal(t, 10, e.GetLogs().LogRecordCount())
 			},
 		},
 		{
@@ -174,8 +175,8 @@ func TestExporter_pushLogData(t *testing.T) {
 			genLogsFunc:      genericGenLogsFunc,
 			errFunc: func(err error) {
 				var e consumererror.Logs
-				consumererror.AsLogs(err, &e)
-				require.Equal(t, 10, e.GetLogs().LogRecordCount())
+				require.True(t, errors.As(err, &e))
+				assert.Equal(t, 10, e.GetLogs().LogRecordCount())
 			},
 		},
 		{
@@ -186,7 +187,7 @@ func TestExporter_pushLogData(t *testing.T) {
 			testServer:       true,
 			genLogsFunc: func() pdata.Logs {
 				return createLogData(10,
-					pdata.NewAttributeMap().InitFromMap(map[string]pdata.AttributeValue{
+					pdata.NewAttributeMapFromMap(map[string]pdata.AttributeValue{
 						"not.a.match": pdata.NewAttributeValueString("random"),
 					}))
 			},
@@ -205,7 +206,7 @@ func TestExporter_pushLogData(t *testing.T) {
 				outLogs := pdata.NewLogs()
 
 				matchingLogs := createLogData(10,
-					pdata.NewAttributeMap().InitFromMap(map[string]pdata.AttributeValue{
+					pdata.NewAttributeMapFromMap(map[string]pdata.AttributeValue{
 						conventions.AttributeContainerName:  pdata.NewAttributeValueString("api"),
 						conventions.AttributeK8SClusterName: pdata.NewAttributeValueString("local"),
 						"severity":                          pdata.NewAttributeValueString("debug"),
@@ -213,7 +214,7 @@ func TestExporter_pushLogData(t *testing.T) {
 				matchingLogs.ResourceLogs().MoveAndAppendTo(outLogs.ResourceLogs())
 
 				nonMatchingLogs := createLogData(5,
-					pdata.NewAttributeMap().InitFromMap(map[string]pdata.AttributeValue{
+					pdata.NewAttributeMapFromMap(map[string]pdata.AttributeValue{
 						"not.a.match": pdata.NewAttributeValueString("random"),
 					}))
 				nonMatchingLogs.ResourceLogs().MoveAndAppendTo(outLogs.ResourceLogs())

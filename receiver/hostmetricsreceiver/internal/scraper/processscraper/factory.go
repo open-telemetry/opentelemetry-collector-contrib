@@ -58,7 +58,7 @@ func (f *Factory) CreateResourceMetricsScraper(
 	}
 
 	ms := scraperhelper.NewResourceMetricsScraper(
-		config.NewID(TypeStr),
+		config.NewComponentID(TypeStr),
 		s.scrape,
 		scraperhelper.WithStart(s.start),
 	)

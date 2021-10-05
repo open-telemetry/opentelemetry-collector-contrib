@@ -29,6 +29,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/model/pdata"
+	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
@@ -73,12 +74,12 @@ func (c *client) pushMetricsData(
 
 	body, compressed, err := encodeBodyEvents(&c.zippers, splunkDataPoints, c.config.DisableCompression)
 	if err != nil {
-		return consumererror.Permanent(err)
+		return consumererror.NewPermanent(err)
 	}
 
 	req, err := http.NewRequestWithContext(ctx, "POST", c.url.String(), body)
 	if err != nil {
-		return consumererror.Permanent(err)
+		return consumererror.NewPermanent(err)
 	}
 
 	for k, v := range c.headers {
@@ -118,7 +119,7 @@ func (c *client) pushTraceData(
 func (c *client) sendSplunkEvents(ctx context.Context, splunkEvents []*splunk.Event) error {
 	body, compressed, err := encodeBodyEvents(&c.zippers, splunkEvents, c.config.DisableCompression)
 	if err != nil {
-		return consumererror.Permanent(err)
+		return consumererror.NewPermanent(err)
 	}
 	return c.postEvents(ctx, body, nil, compressed)
 }
@@ -239,7 +240,7 @@ func (c *client) pushLogDataInBatches(ctx context.Context, ld pdata.Logs, send f
 		}
 	}
 
-	return consumererror.Combine(permanentErrors)
+	return multierr.Combine(permanentErrors...)
 }
 
 func (c *client) pushLogRecords(ctx context.Context, lds pdata.ResourceLogsSlice, state *bufferState, headers map[string]string, send func(context.Context, *bytes.Buffer, map[string]string) error) (permanentErrors []error, sendingError error) {
@@ -256,7 +257,7 @@ func (c *client) pushLogRecords(ctx context.Context, lds pdata.ResourceLogsSlice
 		event := mapLogRecordToSplunkEvent(res.Resource(), logs.At(k), c.config, c.logger)
 		// JSON encoding event and writing to buffer.
 		if err := state.encoder.Encode(event); err != nil {
-			permanentErrors = append(permanentErrors, consumererror.Permanent(fmt.Errorf("dropped log event: %v, error: %v", event, err)))
+			permanentErrors = append(permanentErrors, consumererror.NewPermanent(fmt.Errorf("dropped log event: %v, error: %v", event, err)))
 			continue
 		}
 
@@ -274,7 +275,7 @@ func (c *client) pushLogRecords(ctx context.Context, lds pdata.ResourceLogsSlice
 			if over := state.buf.Len() - state.bufLen; over <= bufCap {
 				state.tmpBuf.Write(state.buf.Bytes()[state.bufLen:state.buf.Len()])
 			} else {
-				permanentErrors = append(permanentErrors, consumererror.Permanent(
+				permanentErrors = append(permanentErrors, consumererror.NewPermanent(
 					fmt.Errorf("dropped log event: %s, error: event size %d bytes larger than configured max content length %d bytes", string(state.buf.Bytes()[state.bufLen:state.buf.Len()]), over, bufCap)))
 			}
 		}
@@ -308,7 +309,7 @@ func (c *client) pushLogRecords(ctx context.Context, lds pdata.ResourceLogsSlice
 func (c *client) postEvents(ctx context.Context, events io.Reader, headers map[string]string, compressed bool) error {
 	req, err := http.NewRequestWithContext(ctx, "POST", c.url.String(), events)
 	if err != nil {
-		return consumererror.Permanent(err)
+		return consumererror.NewPermanent(err)
 	}
 
 	// Set the headers configured for the client

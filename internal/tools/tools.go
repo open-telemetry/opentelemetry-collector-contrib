@@ -31,7 +31,6 @@ import (
 	_ "github.com/tcnksm/ghr"
 	_ "go.opentelemetry.io/build-tools/checkdoc"
 	_ "go.opentelemetry.io/build-tools/issuegenerator"
+	_ "go.opentelemetry.io/build-tools/multimod"
 	_ "golang.org/x/tools/cmd/goimports"
-
-	_ "github.com/open-telemetry/opentelemetry-collector-contrib/cmd/mdatagen"
 )

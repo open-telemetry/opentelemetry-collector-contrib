@@ -21,7 +21,6 @@ import (
 
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confignet"
-	"go.opentelemetry.io/collector/config/configparser"
 	"gopkg.in/yaml.v2"
 	"k8s.io/client-go/kubernetes"
 
@@ -96,7 +95,7 @@ func getMapFromSlice(collect []kubelet.MetricGroup) (map[kubelet.MetricGroup]boo
 	return out, nil
 }
 
-func (cfg *Config) Unmarshal(componentParser *configparser.Parser) error {
+func (cfg *Config) Unmarshal(componentParser *config.Map) error {
 	if componentParser == nil {
 		// Nothing to do if there is no config given.
 		return nil

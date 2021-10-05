@@ -38,7 +38,7 @@ import (
 func initMeter() {
 	config := prometheus.Config{}
 	c := controller.New(
-		processor.New(
+		processor.NewFactory(
 			selector.NewWithHistogramDistribution(
 				histogram.WithExplicitBoundaries(config.DefaultHistogramBoundaries),
 			),
@@ -65,7 +65,7 @@ func main() {
 	defer logger.Sync()
 	logger.Info("Start Prometheus metrics app")
 	meter := global.Meter("federation/prom-counter")
-	valueRecorder := metric.Must(meter).NewInt64ValueRecorder("prom_counter")
+	valueRecorder := metric.Must(meter).NewInt64Histogram("prom_counter")
 	ctx := context.Background()
 	valueRecorder.Measurement(0)
 	commonLabels := []attribute.KeyValue{attribute.String("A", "1"), attribute.String("B", "2"), attribute.String("C", "3")}

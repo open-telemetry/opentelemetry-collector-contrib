@@ -31,7 +31,7 @@ import (
 	agentmetricspb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/metrics/v1"
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
-	gokitlog "github.com/go-kit/kit/log"
+	gokitlog "github.com/go-kit/log"
 	promcfg "github.com/prometheus/prometheus/config"
 	"github.com/prometheus/prometheus/scrape"
 	"github.com/stretchr/testify/assert"
@@ -1406,7 +1406,7 @@ func testEndToEnd(t *testing.T, targets []*testData, useStartTimeMetric bool) {
 
 	cms := new(consumertest.MetricsSink)
 	rcvr := newPrometheusReceiver(logger, &Config{
-		ReceiverSettings:   config.NewReceiverSettings(config.NewID(typeStr)),
+		ReceiverSettings:   config.NewReceiverSettings(config.NewComponentID(typeStr)),
 		PrometheusConfig:   cfg,
 		UseStartTimeMetric: useStartTimeMetric}, cms)
 
@@ -1511,7 +1511,6 @@ func TestStartTimeMetricRegex(t *testing.T) {
 			validateFunc: verifyStartTimeMetricPage,
 		},
 	}
-
 	// Splitting out targets, because the prior tests were oblivious
 	// about staleness metrics being emitted, and hence when trying
 	// to compare values across 2 different scrapes emits staleness
@@ -1530,7 +1529,7 @@ func testEndToEndRegex(t *testing.T, targets []*testData, useStartTimeMetric boo
 
 	cms := new(consumertest.MetricsSink)
 	rcvr := newPrometheusReceiver(logger, &Config{
-		ReceiverSettings:     config.NewReceiverSettings(config.NewID(typeStr)),
+		ReceiverSettings:     config.NewReceiverSettings(config.NewComponentID(typeStr)),
 		PrometheusConfig:     cfg,
 		UseStartTimeMetric:   useStartTimeMetric,
 		StartTimeMetricRegex: startTimeMetricRegex}, cms)

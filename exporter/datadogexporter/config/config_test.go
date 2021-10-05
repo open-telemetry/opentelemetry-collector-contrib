@@ -19,7 +19,11 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	colconfig "go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confignet"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
+	"go.uber.org/zap/zaptest/observer"
 )
 
 func TestHostTags(t *testing.T) {
@@ -94,7 +98,7 @@ func TestOverrideMetricsURL(t *testing.T) {
 		},
 	}
 
-	err := cfg.Sanitize()
+	err := cfg.Sanitize(zap.NewNop())
 	require.NoError(t, err)
 	assert.Equal(t, cfg.Metrics.Endpoint, DebugEndpoint)
 }
@@ -106,14 +110,14 @@ func TestDefaultSite(t *testing.T) {
 		API: APIConfig{Key: "notnull"},
 	}
 
-	err := cfg.Sanitize()
+	err := cfg.Sanitize(zap.NewNop())
 	require.NoError(t, err)
 	assert.Equal(t, cfg.API.Site, DefaultSite)
 }
 
 func TestAPIKeyUnset(t *testing.T) {
 	cfg := Config{}
-	err := cfg.Sanitize()
+	err := cfg.Sanitize(zap.NewNop())
 	assert.Equal(t, err, errUnsetAPIKey)
 }
 
@@ -123,14 +127,14 @@ func TestNoMetadata(t *testing.T) {
 		SendMetadata: false,
 	}
 
-	err := cfg.Sanitize()
+	err := cfg.Sanitize(zap.NewNop())
 	assert.Equal(t, err, errNoMetadata)
 }
 
 func TestInvalidHostname(t *testing.T) {
 	cfg := Config{TagsConfig: TagsConfig{Hostname: "invalid_host"}}
 
-	err := cfg.Sanitize()
+	err := cfg.Sanitize(zap.NewNop())
 	require.Error(t, err)
 }
 
@@ -163,4 +167,79 @@ func TestSpanNameRemappingsValidation(t *testing.T) {
 	err := invalidCfg.Validate()
 	require.NoError(t, noErr)
 	require.Error(t, err)
+}
+
+func TestDeprecationReportBuckets(t *testing.T) {
+
+	tests := []struct {
+		name             string
+		stringMap        map[string]interface{}
+		expectedMode     string
+		expectedWarnings int
+	}{
+		{
+			name: "report buckets false",
+			stringMap: map[string]interface{}{
+				"api": map[string]interface{}{"key": "aaa"},
+				"metrics": map[string]interface{}{
+					"report_buckets": false,
+				},
+			},
+			expectedMode:     histogramModeNoBuckets,
+			expectedWarnings: 1,
+		},
+		{
+			name: "report buckets true",
+			stringMap: map[string]interface{}{
+				"api": map[string]interface{}{"key": "aaa"},
+				"metrics": map[string]interface{}{
+					"report_buckets": true,
+				},
+			},
+			expectedMode:     histogramModeCounters,
+			expectedWarnings: 1,
+		},
+		{
+			name: "no report buckets",
+			stringMap: map[string]interface{}{
+				"api": map[string]interface{}{"key": "aaa"},
+			},
+			expectedMode:     histogramModeNoBuckets,
+			expectedWarnings: 0,
+		},
+	}
+
+	for _, testInstance := range tests {
+		t.Run(testInstance.name, func(t *testing.T) {
+			// default config for buckets
+			config := Config{Metrics: MetricsConfig{Buckets: false, HistConfig: HistogramConfig{Mode: histogramModeNoBuckets}}}
+			configMap := colconfig.NewMapFromStringMap(testInstance.stringMap)
+			err := config.Unmarshal(configMap)
+			require.NoError(t, err)
+			assert.Equal(t, config.Metrics.HistConfig.Mode, testInstance.expectedMode)
+
+			core, observed := observer.New(zapcore.WarnLevel)
+			testLogger := zap.New(core)
+			config.Sanitize(testLogger)
+			assert.Equal(t, len(observed.AllUntimed()), testInstance.expectedWarnings)
+		})
+	}
+}
+
+func TestNoBucketsAndHistogram(t *testing.T) {
+	stringMap := map[string]interface{}{
+		"api": map[string]interface{}{"key": "aaa"},
+		"metrics": map[string]interface{}{
+			"report_buckets": false,
+			"histograms": map[string]interface{}{
+				"mode": histogramModeCounters,
+			},
+		},
+	}
+
+	config := Config{Metrics: MetricsConfig{Buckets: false, HistConfig: HistogramConfig{Mode: histogramModeNoBuckets}}}
+	configMap := colconfig.NewMapFromStringMap(stringMap)
+	err := config.Unmarshal(configMap)
+
+	assert.Error(t, errBuckets, err)
 }

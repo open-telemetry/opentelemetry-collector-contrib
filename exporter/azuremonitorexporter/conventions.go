@@ -18,7 +18,7 @@ import (
 	"strconv"
 
 	"go.opentelemetry.io/collector/model/pdata"
-	conventions "go.opentelemetry.io/collector/translator/conventions/v1.5.0"
+	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
 )
 
 /*
@@ -114,7 +114,7 @@ func (attrs *HTTPAttributes) MapAttribute(k string, v pdata.AttributeValue) bool
 		if val, err := getAttributeValueAsInt(v); err == nil {
 			attrs.HTTPStatusCode = val
 		}
-	case conventions.AttributeHTTPStatusText:
+	case "http.status_text":
 		attrs.HTTPStatusText = v.StringVal()
 	case conventions.AttributeHTTPFlavor:
 		attrs.HTTPFlavor = v.StringVal()

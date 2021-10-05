@@ -127,7 +127,7 @@ func TestRegisterExportersForValidRoute(t *testing.T) {
 
 	otlpExpFactory := otlpexporter.NewFactory()
 	otlpConfig := &otlpexporter.Config{
-		ExporterSettings: config.NewExporterSettings(config.NewID("otlp")),
+		ExporterSettings: config.NewExporterSettings(config.NewComponentID("otlp")),
 		GRPCClientSettings: configgrpc.GRPCClientSettings{
 			Endpoint: "example.com:1234",
 		},
@@ -191,7 +191,7 @@ func TestErrorRequestedExporterNotFoundForDefaultRoute(t *testing.T) {
 
 	otlpExpFactory := otlpexporter.NewFactory()
 	otlpConfig := &otlpexporter.Config{
-		ExporterSettings: config.NewExporterSettings(config.NewID("otlp")),
+		ExporterSettings: config.NewExporterSettings(config.NewComponentID("otlp")),
 		GRPCClientSettings: configgrpc.GRPCClientSettings{
 			Endpoint: "example.com:1234",
 		},
@@ -235,7 +235,7 @@ func TestInvalidExporter(t *testing.T) {
 		GetExportersFunc: func() map[config.DataType]map[config.ComponentID]component.Exporter {
 			return map[config.DataType]map[config.ComponentID]component.Exporter{
 				config.TracesDataType: {
-					config.NewID("otlp"): &mockComponent{},
+					config.NewComponentID("otlp"): &mockComponent{},
 				},
 			}
 		},

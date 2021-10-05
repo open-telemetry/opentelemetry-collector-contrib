@@ -28,12 +28,12 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/model/pdata"
-	conventions "go.opentelemetry.io/collector/translator/conventions/v1.5.0"
+	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
+	"go.opentelemetry.io/collector/receiver/scrapererror"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterset"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/processscraper/internal/metadata"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/scrapererror"
 )
 
 func skipTestOnUnsupportedOS(t *testing.T) {
@@ -400,11 +400,11 @@ func TestScrapeMetrics_ProcessErrors(t *testing.T) {
 			timesError:      errors.New("err4"),
 			memoryInfoError: errors.New("err5"),
 			ioCountersError: errors.New("err6"),
-			expectedError: `[[error reading command for process "test" (pid 1): err2; ` +
-				`error reading username for process "test" (pid 1): err3]; ` +
+			expectedError: `error reading command for process "test" (pid 1): err2; ` +
+				`error reading username for process "test" (pid 1): err3; ` +
 				`error reading cpu times for process "test" (pid 1): err4; ` +
 				`error reading memory info for process "test" (pid 1): err5; ` +
-				`error reading disk usage for process "test" (pid 1): err6]`,
+				`error reading disk usage for process "test" (pid 1): err6`,
 		},
 	}
 

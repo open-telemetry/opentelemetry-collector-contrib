@@ -16,7 +16,7 @@ package awsecscontainermetrics
 
 import (
 	"go.opentelemetry.io/collector/model/pdata"
-	conventions "go.opentelemetry.io/collector/translator/conventions/v1.5.0"
+	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
 )
 
 func convertToOTLPMetrics(prefix string, m ECSMetrics, r pdata.Resource, timestamp pdata.Timestamp) pdata.Metrics {
@@ -86,7 +86,7 @@ func appendIntSum(metricName string, unit string, value int64, ts pdata.Timestam
 
 	metric.SetDataType(pdata.MetricDataTypeSum)
 	intSum := metric.Sum()
-	intSum.SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+	intSum.SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
 
 	appendIntDataPoint(intSum.DataPoints(), value, ts)
 }

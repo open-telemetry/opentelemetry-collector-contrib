@@ -19,7 +19,6 @@ import (
 
 	"github.com/spf13/cast"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/config/configparser"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer"
 )
@@ -61,7 +60,7 @@ type resourceAttributes map[observer.EndpointType]map[string]string
 // newReceiverTemplate creates a receiverTemplate instance from the full name of a subreceiver
 // and its arbitrary config map values.
 func newReceiverTemplate(name string, cfg userConfigMap) (receiverTemplate, error) {
-	id, err := config.NewIDFromString(name)
+	id, err := config.NewComponentIDFromString(name)
 	if err != nil {
 		return receiverTemplate{}, err
 	}
@@ -87,7 +86,7 @@ type Config struct {
 	ResourceAttributes resourceAttributes `mapstructure:"resource_attributes"`
 }
 
-func (cfg *Config) Unmarshal(componentParser *configparser.Parser) error {
+func (cfg *Config) Unmarshal(componentParser *config.Map) error {
 	if componentParser == nil {
 		// Nothing to do if there is no config given.
 		return nil

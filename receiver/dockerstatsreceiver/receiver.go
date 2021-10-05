@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"net/url"
 	"sync"
+	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
@@ -26,17 +27,23 @@ import (
 	"go.opentelemetry.io/collector/obsreport"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/docker"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/interval"
 )
 
 var _ component.MetricsReceiver = (*Receiver)(nil)
 var _ interval.Runnable = (*Receiver)(nil)
 
+const (
+	defaultDockerAPIVersion         = 1.22
+	minimalRequiredDockerAPIVersion = 1.22
+)
+
 type Receiver struct {
 	config            *Config
 	logger            *zap.Logger
 	nextConsumer      consumer.Metrics
-	client            *dockerClient
+	client            *docker.Client
 	runner            *interval.Runner
 	runnerCtx         context.Context
 	runnerCancel      context.CancelFunc
@@ -73,8 +80,12 @@ func NewReceiver(
 }
 
 func (r *Receiver) Start(ctx context.Context, host component.Host) error {
-	var err error
-	r.client, err = newDockerClient(r.config, r.logger)
+	dConfig, err := docker.NewConfig(r.config.Endpoint, r.config.Timeout, r.config.ExcludedImages, r.config.DockerAPIVersion)
+	if err != nil {
+		return err
+	}
+
+	r.client, err = docker.NewDockerClient(dConfig, r.logger)
 	if err != nil {
 		return err
 	}
@@ -126,10 +137,24 @@ func (r *Receiver) Run() error {
 	wg := &sync.WaitGroup{}
 	wg.Add(len(containers))
 	for _, container := range containers {
-		go func(dc DockerContainer) {
-			md, err := r.client.FetchContainerStatsAndConvertToMetrics(ctx, dc)
+		go func(c docker.Container) {
+			defer wg.Done()
+			statsJSON, err := r.client.FetchContainerStatsAsJSON(ctx, c)
+			if err != nil {
+				results <- result{pdata.NewMetrics(), err}
+				return
+			}
+
+			md, err := ContainerStatsToMetrics(pdata.NewTimestampFromTime(time.Now()), statsJSON, c, r.config)
+			if err != nil {
+				r.logger.Error(
+					"Could not convert docker containerStats for container id",
+					zap.String("id", c.ID),
+					zap.Error(err),
+				)
+			}
+
 			results <- result{md, err}
-			wg.Done()
 		}(container)
 	}
 

@@ -22,15 +22,16 @@ The following configuration options are required:
   - `api_url` (no default): Destination to which SignalFx [properties and
     tags](https://docs.signalfx.com/en/latest/metrics-metadata/metrics-metadata.html#metrics-metadata)
     are sent. If `realm` is set, this option is derived and will be
-    `https://api.{realm}.signalfx.com/`. If a value is explicitly set, the
+    `https://api.{realm}.signalfx.com`. If a value is explicitly set, the
     value of `realm` will not be used in determining `api_url`. The explicit
     value will be used instead.
   - `ingest_url` (no default): Destination where SignalFx metrics are sent. If
     `realm` is set, this option is derived and will be
-    `https://ingest.{realm}.signalfx.com/v2/datapoint`.  If a value is
+    `https://ingest.{realm}.signalfx.com`. If a value is
     explicitly set, the value of `realm` will not be used in determining
-    `ingest_url`. The explicit value will be used instead. If path is not
-    specified, `/v2/datapoint` is used.
+    `ingest_url`. The explicit value will be used instead. The exporter will 
+    automatically append the appropriate path: "/v2/datapoint" for metrics, 
+    and "/v2/event" for events.
 
 The following configuration options can also be configured:
 
@@ -45,7 +46,7 @@ The following configuration options can also be configured:
   excluded from sending to Signalfx backend. If `translation_rules` options
   are enabled, the exclusion will be applied on translated metrics.
   See [here](./testdata/config.yaml) for examples. Apart from the values explicitly
-  provided via this option, by default, [these](./translation/default_metrics.go) are
+  provided via this option, by default, [these](./internal/translation/default_metrics.go) are
   also appended to this list. Setting this option to `[]` will override all the default
   excludes.
 - `include_metrics`: List of filters to override exclusion of any metrics.
@@ -81,6 +82,7 @@ The following configuration options can also be configured:
 that are allowed to be used as a dimension key in addition to alphanumeric 
 characters. Each nonalphanumeric dimension key character that isn't in this string 
 will be replaced with a `_`.
+- `max_connections` (default = 100):  The maximum number of idle HTTP connection the exporter can keep open.
 
 In addition, this exporter offers queued retry which is enabled by default.
 Information about queued retry configuration parameters can be found
@@ -113,6 +115,21 @@ One of `realm` and `api_url` are required.
   - `retry_delay` (default = 30 seconds): How long to wait between retries.
   - `cleanup_interval` (default = 1 minute): How frequently to purge duplicate requests.
   - `sync_attributes` (default = `{"k8s.pod.uid": "k8s.pod.uid", "container.id": "container.id"}`) Map containing key of the attribute to read from spans to sync to dimensions specified as the value.
+
+## Default Metric Filters
+[List of metrics excluded by default](./internal/translation/default_metrics.go)
+
+Some OpenTelemetry receivers may send metrics that SignalFx considers to be categorized as custom metrics. In order to prevent unwanted overage usage due to custom metrics from these receivers, the SignalFx exporter has a [set of metrics excluded by default](./internal/translation/default_metrics.go). Some exclusion rules use regex to exclude multiple metric names. Some metrics are only excluded if specific resource labels (dimensions) are present. If `translation_rules` are configured and new metrics match a default exclusion, the new metric will still be excluded. Users may configure the SignalFx exporter's `include_metrics` config option to override the any of the default exclusions, as `include_metrics` will always take precedence over any exclusions. An example of `include_metrics` is shown below.
+
+```
+exporters:
+  signalfx:
+    include_metrics:
+      - metric_names: [cpu.interrupt, cpu.user, cpu.system]
+      - metric_name: system.cpu.time
+        dimensions:
+          state: [interrupt, user, system]
+```
 
 ## Translation Rules and Metric Transformations
 
@@ -178,6 +195,7 @@ exporters:
       dot.test: test
     realm: us1
     timeout: 5s
+    max_connections: 80
 ```
 
 > :warning: When enabling the SignalFx receiver or exporter, configure both the `metrics` and `logs` pipelines.

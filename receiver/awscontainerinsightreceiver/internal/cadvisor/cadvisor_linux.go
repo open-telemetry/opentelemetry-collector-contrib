@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//go:build linux
 // +build linux
 
 package cadvisor
@@ -74,7 +75,7 @@ type createCadvisorManager func(*memory.InMemoryCache, sysfs.SysFs, manager.Hous
 var defaultCreateManager = func(memoryCache *memory.InMemoryCache, sysfs sysfs.SysFs, houskeepingConfig manager.HouskeepingConfig,
 	includedMetricsSet cadvisormetrics.MetricSet, collectorHTTPClient *http.Client, rawContainerCgroupPathPrefixWhiteList []string,
 	perfEventsFile string) (cadvisorManager, error) {
-	return manager.New(memoryCache, sysfs, houskeepingConfig, includedMetricsSet, collectorHTTPClient, rawContainerCgroupPathPrefixWhiteList, perfEventsFile)
+	return manager.New(memoryCache, sysfs, houskeepingConfig, includedMetricsSet, collectorHTTPClient, rawContainerCgroupPathPrefixWhiteList, []string{}, perfEventsFile, 0)
 }
 
 // Option is a function that can be used to configure Cadvisor struct

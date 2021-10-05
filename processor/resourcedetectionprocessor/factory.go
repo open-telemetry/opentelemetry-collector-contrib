@@ -89,10 +89,12 @@ func (*factory) Type() config.Type {
 
 func createDefaultConfig() config.Processor {
 	return &Config{
-		ProcessorSettings: config.NewProcessorSettings(config.NewID(typeStr)),
+		ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
 		Detectors:         []string{env.TypeStr},
 		Timeout:           5 * time.Second,
 		Override:          true,
+		// TODO: Once issue(https://github.com/open-telemetry/opentelemetry-collector/issues/4001) gets resolved,
+		// 		 Set the default value of 'hostname_source' here instead of 'system' detector
 	}
 }
 

@@ -24,7 +24,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/model/pdata"
-	conventions "go.opentelemetry.io/collector/translator/conventions/v1.5.0"
+	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
 
 	awsxray "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray"
 )
@@ -103,7 +103,7 @@ func TestServerSpanWithInternalServerError(t *testing.T) {
 	attributes[conventions.AttributeHTTPURL] = "https://api.example.org/api/locations"
 	attributes[conventions.AttributeHTTPTarget] = "/api/locations"
 	attributes[conventions.AttributeHTTPStatusCode] = 500
-	attributes[conventions.AttributeHTTPStatusText] = "java.lang.NullPointerException"
+	attributes["http.status_text"] = "java.lang.NullPointerException"
 	attributes[conventions.AttributeHTTPUserAgent] = userAgent
 	attributes[conventions.AttributeEnduserID] = enduser
 	resource := constructDefaultResource()
@@ -130,7 +130,7 @@ func TestServerSpanWithThrottle(t *testing.T) {
 	attributes[conventions.AttributeHTTPURL] = "https://api.example.org/api/locations"
 	attributes[conventions.AttributeHTTPTarget] = "/api/locations"
 	attributes[conventions.AttributeHTTPStatusCode] = 429
-	attributes[conventions.AttributeHTTPStatusText] = "java.lang.NullPointerException"
+	attributes["http.status_text"] = "java.lang.NullPointerException"
 	attributes[conventions.AttributeHTTPUserAgent] = userAgent
 	attributes[conventions.AttributeEnduserID] = enduser
 	resource := constructDefaultResource()
@@ -830,7 +830,7 @@ func constructDefaultResource() pdata.Resource {
 
 func constructTimedEventsWithReceivedMessageEvent(tm pdata.Timestamp) pdata.SpanEventSlice {
 	eventAttr := pdata.NewAttributeMap()
-	eventAttr.InsertString(conventions.AttributeMessageType, "RECEIVED")
+	eventAttr.InsertString("message.type", "RECEIVED")
 	eventAttr.InsertInt(conventions.AttributeMessagingMessageID, 1)
 	eventAttr.InsertInt(conventions.AttributeMessagingMessagePayloadCompressedSizeBytes, 6478)
 	eventAttr.InsertInt(conventions.AttributeMessagingMessagePayloadSizeBytes, 12452)
@@ -847,7 +847,7 @@ func constructTimedEventsWithReceivedMessageEvent(tm pdata.Timestamp) pdata.Span
 
 func constructTimedEventsWithSentMessageEvent(tm pdata.Timestamp) pdata.SpanEventSlice {
 	eventAttr := pdata.NewAttributeMap()
-	eventAttr.InsertString(conventions.AttributeMessageType, "SENT")
+	eventAttr.InsertString("message.type", "SENT")
 	eventAttr.InsertInt(conventions.AttributeMessagingMessageID, 1)
 	eventAttr.InsertInt(conventions.AttributeMessagingMessagePayloadSizeBytes, 7480)
 

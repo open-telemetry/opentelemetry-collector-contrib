@@ -27,7 +27,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/model/pdata"
-	conventions "go.opentelemetry.io/collector/translator/conventions/v1.5.0"
+	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
 	"go.uber.org/zap"
 )
 
@@ -90,7 +90,7 @@ func TestPushTraceData(t *testing.T) {
 			desc: "Forwards permanent errors",
 			client: &clientMock{
 				response: func() error {
-					return consumererror.Permanent(errors.New("Error"))
+					return consumererror.NewPermanent(errors.New("Error"))
 				},
 			},
 			wantErr:  true,
@@ -182,7 +182,7 @@ func TestPushTraceData_TransientOnPartialFailure(t *testing.T) {
 	assert.False(t, consumererror.IsPermanent(err))
 
 	tErr := consumererror.Traces{}
-	if ok := consumererror.AsTraces(err, &tErr); !ok {
+	if ok := errors.As(err, &tErr); !ok {
 		assert.Fail(t, "PushTraceData did not return a Traces error")
 	}
 	assert.Equal(t, 1, tErr.GetTraces().ResourceSpans().Len())

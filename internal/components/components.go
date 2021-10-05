@@ -67,7 +67,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbyattrsprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbytraceprocessor"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sprocessor"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricsgenerationprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricstransformprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/probabilisticsamplerprocessor"
@@ -94,6 +94,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkareceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/opencensusreceiver"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/podmanreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusexecreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/receivercreator"
@@ -161,6 +162,7 @@ func Components() (component.Factories, error) {
 		k8sclusterreceiver.NewFactory(),
 		kubeletstatsreceiver.NewFactory(),
 		opencensusreceiver.NewFactory(),
+		podmanreceiver.NewFactory(),
 		prometheusexecreceiver.NewFactory(),
 		prometheusreceiver.NewFactory(),
 		receivercreator.NewFactory(),
@@ -237,7 +239,7 @@ func Components() (component.Factories, error) {
 		filterprocessor.NewFactory(),
 		groupbyattrsprocessor.NewFactory(),
 		groupbytraceprocessor.NewFactory(),
-		k8sprocessor.NewFactory(),
+		k8sattributesprocessor.NewFactory(),
 		metricstransformprocessor.NewFactory(),
 		metricsgenerationprocessor.NewFactory(),
 		probabilisticsamplerprocessor.NewFactory(),

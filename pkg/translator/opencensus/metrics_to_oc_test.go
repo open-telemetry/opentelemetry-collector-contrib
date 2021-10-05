@@ -24,7 +24,7 @@ import (
 	ocresource "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/model/pdata"
-	conventions "go.opentelemetry.io/collector/translator/conventions/v1.5.0"
+	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/occonventions"
@@ -199,7 +199,7 @@ func TestMetricsType(t *testing.T) {
 				m := pdata.NewMetric()
 				m.SetDataType(pdata.MetricDataTypeSum)
 				m.Sum().SetIsMonotonic(false)
-				m.Sum().SetAggregationTemporality(pdata.AggregationTemporalityDelta)
+				m.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityDelta)
 				m.Sum().DataPoints().AppendEmpty().SetIntVal(1)
 				return m
 			},
@@ -211,7 +211,7 @@ func TestMetricsType(t *testing.T) {
 				m := pdata.NewMetric()
 				m.SetDataType(pdata.MetricDataTypeSum)
 				m.Sum().SetIsMonotonic(false)
-				m.Sum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+				m.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
 				m.Sum().DataPoints().AppendEmpty().SetIntVal(1)
 				return m
 			},
@@ -223,7 +223,7 @@ func TestMetricsType(t *testing.T) {
 				m := pdata.NewMetric()
 				m.SetDataType(pdata.MetricDataTypeSum)
 				m.Sum().SetIsMonotonic(true)
-				m.Sum().SetAggregationTemporality(pdata.AggregationTemporalityDelta)
+				m.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityDelta)
 				m.Sum().DataPoints().AppendEmpty().SetIntVal(1)
 				return m
 			},
@@ -235,7 +235,7 @@ func TestMetricsType(t *testing.T) {
 				m := pdata.NewMetric()
 				m.SetDataType(pdata.MetricDataTypeSum)
 				m.Sum().SetIsMonotonic(true)
-				m.Sum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+				m.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
 				m.Sum().DataPoints().AppendEmpty().SetIntVal(1)
 				return m
 			},
@@ -247,7 +247,7 @@ func TestMetricsType(t *testing.T) {
 				m := pdata.NewMetric()
 				m.SetDataType(pdata.MetricDataTypeSum)
 				m.Sum().SetIsMonotonic(false)
-				m.Sum().SetAggregationTemporality(pdata.AggregationTemporalityDelta)
+				m.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityDelta)
 				m.Sum().DataPoints().AppendEmpty().SetDoubleVal(1)
 				return m
 			},
@@ -259,7 +259,7 @@ func TestMetricsType(t *testing.T) {
 				m := pdata.NewMetric()
 				m.SetDataType(pdata.MetricDataTypeSum)
 				m.Sum().SetIsMonotonic(false)
-				m.Sum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+				m.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
 				m.Sum().DataPoints().AppendEmpty().SetDoubleVal(1)
 				return m
 			},
@@ -271,7 +271,7 @@ func TestMetricsType(t *testing.T) {
 				m := pdata.NewMetric()
 				m.SetDataType(pdata.MetricDataTypeSum)
 				m.Sum().SetIsMonotonic(true)
-				m.Sum().SetAggregationTemporality(pdata.AggregationTemporalityDelta)
+				m.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityDelta)
 				m.Sum().DataPoints().AppendEmpty().SetDoubleVal(1)
 				return m
 			},
@@ -283,7 +283,7 @@ func TestMetricsType(t *testing.T) {
 				m := pdata.NewMetric()
 				m.SetDataType(pdata.MetricDataTypeSum)
 				m.Sum().SetIsMonotonic(true)
-				m.Sum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+				m.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
 				m.Sum().DataPoints().AppendEmpty().SetDoubleVal(1)
 				return m
 			},

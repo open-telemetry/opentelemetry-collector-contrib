@@ -24,10 +24,10 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/receiver/scrapererror"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkametricsreceiver/internal/metadata"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/scrapererror"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/scraperhelper"
 )
 
@@ -127,7 +127,7 @@ func createTopicsScraper(_ context.Context, cfg Config, saramaConfig *sarama.Con
 		config:       cfg,
 	}
 	return scraperhelper.NewResourceMetricsScraper(
-		config.NewID(config.Type(s.Name())),
+		config.NewComponentID(config.Type(s.Name())),
 		s.scrape,
 		scraperhelper.WithShutdown(s.shutdown),
 		scraperhelper.WithStart(s.start),

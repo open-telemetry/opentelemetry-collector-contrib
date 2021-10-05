@@ -37,14 +37,14 @@ import (
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/model/pdata"
-	conventions "go.opentelemetry.io/collector/translator/conventions/v1.5.0"
+	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
 	"google.golang.org/grpc"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger"
 )
 
-var jaegerAgent = config.NewIDWithName(typeStr, "agent_test")
+var jaegerAgent = config.NewComponentIDWithName(typeStr, "agent_test")
 
 func TestJaegerAgentUDP_ThriftCompact(t *testing.T) {
 	port := testutil.GetAvailablePort(t)
@@ -144,7 +144,7 @@ func TestJaegerHTTP(t *testing.T) {
 		AgentHTTPPort: int(port),
 		RemoteSamplingClientSettings: configgrpc.GRPCClientSettings{
 			Endpoint: addr.String(),
-			TLSSetting: configtls.TLSClientSetting{
+			TLSSetting: &configtls.TLSClientSetting{
 				Insecure: true,
 			},
 		},

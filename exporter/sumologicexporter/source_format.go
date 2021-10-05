@@ -17,8 +17,6 @@ package sumologicexporter
 import (
 	"fmt"
 	"regexp"
-
-	"go.opentelemetry.io/collector/model/pdata"
 )
 
 type sourceFormats struct {
@@ -78,7 +76,7 @@ func (s *sourceFormat) format(f fields) string {
 	for _, matchset := range s.matches {
 		v, ok := f.orig.Get(matchset)
 		if ok {
-			labels = append(labels, pdata.AttributeValueToString(v))
+			labels = append(labels, v.AsString())
 		} else {
 			labels = append(labels, "")
 		}

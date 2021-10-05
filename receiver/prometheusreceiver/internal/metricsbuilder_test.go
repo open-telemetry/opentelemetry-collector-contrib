@@ -99,7 +99,7 @@ func runBuilderTests(t *testing.T, tests []buildTestData) {
 			mc := newMockMetadataCache(testMetadata)
 			st := startTs
 			for i, page := range tt.inputs {
-				b := newMetricBuilder(mc, true, "", testLogger, dummyStalenessStore(), startTs)
+				b := newMetricBuilder(mc, true, "", testLogger, startTs)
 				b.startTime = defaultBuilderStartTime // set to a non-zero value
 				for _, pt := range page.pts {
 					// set ts for testing
@@ -123,7 +123,7 @@ func runBuilderStartTimeTests(t *testing.T, tests []buildTestData,
 			st := startTs
 			for _, page := range tt.inputs {
 				b := newMetricBuilder(mc, true, startTimeMetricRegex,
-					testLogger, dummyStalenessStore(), 0)
+					testLogger, 0)
 				b.startTime = defaultBuilderStartTime // set to a non-zero value
 				for _, pt := range page.pts {
 					// set ts for testing
@@ -210,6 +210,37 @@ func Test_metricBuilder_counters(t *testing.T) {
 					{
 						MetricDescriptor: &metricspb.MetricDescriptor{
 							Name:      "counter_test",
+							Type:      metricspb.MetricDescriptor_CUMULATIVE_DOUBLE,
+							LabelKeys: []*metricspb.LabelKey{{Key: "foo"}}},
+						Timeseries: []*metricspb.TimeSeries{
+							{
+								StartTimestamp: timestampFromMs(startTs),
+								LabelValues:    []*metricspb.LabelValue{{Value: "bar", HasValue: true}},
+								Points: []*metricspb.Point{
+									{Timestamp: timestampFromMs(startTs), Value: &metricspb.Point_DoubleValue{DoubleValue: 100.0}},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		// Some counters such as "python_gc_collections_total" have metadata key as "python_gc_collections" but still need
+		// to be converted using full metric name as "python_gc_collections_total" to match Prometheus functionality
+		{
+			name: "counter-with-metadata-without-total-suffix",
+			inputs: []*testScrapedPage{
+				{
+					pts: []*testDataPoint{
+						createDataPoint("counter_test_total", 100, "foo", "bar"),
+					},
+				},
+			},
+			wants: [][]*metricspb.Metric{
+				{
+					{
+						MetricDescriptor: &metricspb.MetricDescriptor{
+							Name:      "counter_test_total",
 							Type:      metricspb.MetricDescriptor_CUMULATIVE_DOUBLE,
 							LabelKeys: []*metricspb.LabelKey{{Key: "foo"}}},
 						Timeseries: []*metricspb.TimeSeries{
@@ -544,7 +575,7 @@ func Test_metricBuilder_untype(t *testing.T) {
 					{
 						MetricDescriptor: &metricspb.MetricDescriptor{
 							Name:      "something_not_exists",
-							Type:      metricspb.MetricDescriptor_UNSPECIFIED,
+							Type:      metricspb.MetricDescriptor_GAUGE_DOUBLE,
 							LabelKeys: []*metricspb.LabelKey{{Key: "foo"}}},
 						Timeseries: []*metricspb.TimeSeries{
 							{
@@ -558,7 +589,7 @@ func Test_metricBuilder_untype(t *testing.T) {
 					{
 						MetricDescriptor: &metricspb.MetricDescriptor{
 							Name:      "theother_not_exists",
-							Type:      metricspb.MetricDescriptor_UNSPECIFIED,
+							Type:      metricspb.MetricDescriptor_GAUGE_DOUBLE,
 							LabelKeys: []*metricspb.LabelKey{{Key: "bar"}, {Key: "foo"}}},
 						Timeseries: []*metricspb.TimeSeries{
 							{
@@ -1201,7 +1232,7 @@ func Test_metricBuilder_summary(t *testing.T) {
 func Test_metricBuilder_baddata(t *testing.T) {
 	t.Run("empty-metric-name", func(t *testing.T) {
 		mc := newMockMetadataCache(testMetadata)
-		b := newMetricBuilder(mc, true, "", testLogger, dummyStalenessStore(), 0)
+		b := newMetricBuilder(mc, true, "", testLogger, 0)
 		b.startTime = 1.0 // set to a non-zero value
 		if err := b.AddDataPoint(labels.FromStrings("a", "b"), startTs, 123); err != errMetricNameNotFound {
 			t.Error("expecting errMetricNameNotFound error, but get nil")
@@ -1215,7 +1246,7 @@ func Test_metricBuilder_baddata(t *testing.T) {
 
 	t.Run("histogram-datapoint-no-bucket-label", func(t *testing.T) {
 		mc := newMockMetadataCache(testMetadata)
-		b := newMetricBuilder(mc, true, "", testLogger, dummyStalenessStore(), 0)
+		b := newMetricBuilder(mc, true, "", testLogger, 0)
 		b.startTime = 1.0 // set to a non-zero value
 		if err := b.AddDataPoint(createLabels("hist_test", "k", "v"), startTs, 123); err != errEmptyBoundaryLabel {
 			t.Error("expecting errEmptyBoundaryLabel error, but get nil")
@@ -1224,7 +1255,7 @@ func Test_metricBuilder_baddata(t *testing.T) {
 
 	t.Run("summary-datapoint-no-quantile-label", func(t *testing.T) {
 		mc := newMockMetadataCache(testMetadata)
-		b := newMetricBuilder(mc, true, "", testLogger, dummyStalenessStore(), 0)
+		b := newMetricBuilder(mc, true, "", testLogger, 0)
 		b.startTime = 1.0 // set to a non-zero value
 		if err := b.AddDataPoint(createLabels("summary_test", "k", "v"), startTs, 123); err != errEmptyBoundaryLabel {
 			t.Error("expecting errEmptyBoundaryLabel error, but get nil")
@@ -1452,7 +1483,7 @@ func Test_heuristicalMetricAndKnownUnits(t *testing.T) {
 // Ensure that we reject duplicate label keys. See https://github.com/open-telemetry/wg-prometheus/issues/44.
 func TestMetricBuilderDuplicateLabelKeysAreRejected(t *testing.T) {
 	mc := newMockMetadataCache(testMetadata)
-	mb := newMetricBuilder(mc, true, "", testLogger, dummyStalenessStore(), 0)
+	mb := newMetricBuilder(mc, true, "", testLogger, 0)
 
 	dupLabels := labels.Labels{
 		{Name: "__name__", Value: "test"},
