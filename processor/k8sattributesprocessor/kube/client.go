@@ -407,7 +407,7 @@ func (c *WatchClient) extractField(v string, r FieldExtractionRule) string {
 	return ""
 }
 
-func (c *WatchClient) getPodFromApi(pod *api_v1.Pod) *Pod {
+func (c *WatchClient) getPodFromAPI(pod *api_v1.Pod) *Pod {
 	newPod := &Pod{
 		Name:      pod.Name,
 		Namespace: pod.GetNamespace(),
@@ -471,7 +471,7 @@ func (c *WatchClient) getIdentifiersFromAssoc(newPod *Pod) []PodIdentifier {
 }
 
 func (c *WatchClient) addOrUpdatePod(pod *api_v1.Pod) {
-	newPod := c.getPodFromApi(pod)
+	newPod := c.getPodFromAPI(pod)
 
 	c.m.Lock()
 	defer c.m.Unlock()
@@ -491,7 +491,7 @@ func (c *WatchClient) addOrUpdatePod(pod *api_v1.Pod) {
 }
 
 func (c *WatchClient) forgetPod(pod *api_v1.Pod) {
-	newPod := c.getPodFromApi(pod)
+	newPod := c.getPodFromAPI(pod)
 	for _, id := range c.getIdentifiersFromAssoc(newPod) {
 		c.m.RLock()
 		p, ok := c.GetPod(id)
