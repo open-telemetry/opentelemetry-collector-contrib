@@ -16,6 +16,7 @@ package internal
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/mongodb-forks/digest"
 	"github.com/pkg/errors"
