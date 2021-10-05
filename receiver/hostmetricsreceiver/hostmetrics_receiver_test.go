@@ -136,7 +136,7 @@ func TestGatherMetrics_EndToEnd(t *testing.T) {
 	cancelFn()
 
 	const tick = 50 * time.Millisecond
-	const waitFor = 5 * time.Second
+	const waitFor = 10 * time.Second
 	require.Eventuallyf(t, func() bool {
 		got := sink.AllMetrics()
 		if len(got) == 0 {
