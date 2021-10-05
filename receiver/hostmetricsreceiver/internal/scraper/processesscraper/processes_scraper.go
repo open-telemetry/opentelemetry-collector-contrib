@@ -93,7 +93,7 @@ func (s *scraper) scrape(_ context.Context) (pdata.MetricSlice, error) {
 
 	processMetadata, err := s.getProcessesMetadata()
 	if err != nil {
-		err = scrapererror.NewPartialScrapeError(err, metricsLength)
+		return pdata.MetricSlice{}, scrapererror.NewPartialScrapeError(err, metricsLength)
 	}
 
 	if enableProcessesCount && processMetadata.countByStatus != nil {
