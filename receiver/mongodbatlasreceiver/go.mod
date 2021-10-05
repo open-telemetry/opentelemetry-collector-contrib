@@ -4,6 +4,11 @@ go 1.17
 
 require (
 	github.com/mongodb-forks/digest v1.0.3
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/interval v0.36.0
+	github.com/pkg/errors v0.9.1
+	go.mongodb.org/atlas v0.12.0
+	go.opentelemetry.io/collector v0.36.1-0.20211004155959-190f8fbb2b9a
+	go.opentelemetry.io/collector/model v0.36.1-0.20211004155959-190f8fbb2b9a
 	go.mongodb.org/atlas v0.13.0
 	go.opentelemetry.io/collector v0.37.1-0.20211015233822-bd87fb628058
 	go.opentelemetry.io/collector/model v0.37.1-0.20211015233822-bd87fb628058
@@ -21,7 +26,6 @@ require (
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/openlyinc/pointy v1.1.2 // indirect
 	github.com/pelletier/go-toml v1.9.3 // indirect
-	github.com/pkg/errors v0.9.1 // indirect
 	github.com/rogpeppe/go-internal v1.6.1 // indirect
 	github.com/spf13/cast v1.4.1 // indirect
 	go.opencensus.io v0.23.0 // indirect
