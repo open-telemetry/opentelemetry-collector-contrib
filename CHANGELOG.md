@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.22.0] - 2020-10-05
+
+### Fixed
+- Issue in `file_input` where doublestar globbing could only be used at a single level ([PR268](https://github.com/open-telemetry/opentelemetry-log-collection/pull/268))
+- Bug in `tcp_input`, `udp_input`, and `syslog_input` which could cause a panic ([PR273](https://github.com/open-telemetry/opentelemetry-log-collection/pull/273))
+- Made `windows_event_log_input` compatibile with Windows Server 2022 ([PR283](https://github.com/open-telemetry/opentelemetry-log-collection/pull/283))
+
+### Changed
+- `file_input` will now emit bytes when `encoding = nop` ([PR262](https://github.com/open-telemetry/opentelemetry-log-collection/pull/262))
+
 ## [0.21.0] - 2020-09-09
 
 ### Added
