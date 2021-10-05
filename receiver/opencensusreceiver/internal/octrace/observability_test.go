@@ -15,6 +15,7 @@
 package octrace
 
 import (
+	"context"
 	"testing"
 	"time"
 
@@ -40,9 +41,9 @@ import (
 // test is to ensure exactness, but with the mentioned views registered, the
 // output will be quite noisy.
 func TestEnsureRecordedMetrics(t *testing.T) {
-	doneFn, err := obsreporttest.SetupRecordedMetricsTest()
+	tt, err := obsreporttest.SetupTelemetry()
 	require.NoError(t, err)
-	defer doneFn()
+	defer tt.Shutdown(context.Background())
 
 	addr, doneReceiverFn := ocReceiverOnGRPCServer(t, consumertest.NewNop())
 	defer doneReceiverFn()
@@ -58,13 +59,13 @@ func TestEnsureRecordedMetrics(t *testing.T) {
 	}
 	flush(traceSvcDoneFn)
 
-	require.NoError(t, obsreporttest.CheckReceiverTraces(config.NewID("opencensus"), "grpc", int64(n), 0))
+	require.NoError(t, obsreporttest.CheckReceiverTraces(config.NewComponentID("opencensus"), "grpc", int64(n), 0))
 }
 
 func TestEnsureRecordedMetrics_zeroLengthSpansSender(t *testing.T) {
-	doneFn, err := obsreporttest.SetupRecordedMetricsTest()
+	tt, err := obsreporttest.SetupTelemetry()
 	require.NoError(t, err)
-	defer doneFn()
+	defer tt.Shutdown(context.Background())
 
 	port, doneFn := ocReceiverOnGRPCServer(t, consumertest.NewNop())
 	defer doneFn()
@@ -79,7 +80,7 @@ func TestEnsureRecordedMetrics_zeroLengthSpansSender(t *testing.T) {
 	}
 	flush(traceSvcDoneFn)
 
-	require.NoError(t, obsreporttest.CheckReceiverTraces(config.NewID("opencensus"), "grpc", 0, 0))
+	require.NoError(t, obsreporttest.CheckReceiverTraces(config.NewComponentID("opencensus"), "grpc", 0, 0))
 }
 
 func TestExportSpanLinkingMaintainsParentLink(t *testing.T) {

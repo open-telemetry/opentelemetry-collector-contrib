@@ -24,33 +24,42 @@ import (
 	"go.opentelemetry.io/collector/model/pdata"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/config"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/attributes"
 )
 
 const metricName string = "metric name"
 
-const (
-	histogramModeNoBuckets     = "nobuckets"
-	histogramModeCounters      = "counters"
-	histogramModeDistributions = "distributions"
-)
-
-// HostnameProvider gets a hostname
-type HostnameProvider interface {
-	// Hostname gets the hostname from the machine.
-	Hostname(ctx context.Context) (string, error)
-}
-
 type Translator struct {
-	prevPts                  *TTLCache
-	logger                   *zap.Logger
-	cfg                      config.MetricsConfig
-	fallbackHostnameProvider HostnameProvider
+	prevPts *ttlCache
+	logger  *zap.Logger
+	cfg     translatorConfig
 }
 
-func New(cache *TTLCache, logger *zap.Logger, cfg config.MetricsConfig, fallbackHostProvider HostnameProvider) *Translator {
-	return &Translator{cache, logger, cfg, fallbackHostProvider}
+func New(logger *zap.Logger, options ...Option) (*Translator, error) {
+	cfg := translatorConfig{
+		HistMode:                 HistogramModeDistributions,
+		SendCountSum:             false,
+		Quantiles:                false,
+		SendMonotonic:            true,
+		ResourceAttributesAsTags: false,
+		sweepInterval:            1800,
+		deltaTTL:                 3600,
+		fallbackHostnameProvider: &noHostProvider{},
+	}
+
+	for _, opt := range options {
+		err := opt(&cfg)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	if cfg.HistMode == HistogramModeNoBuckets && !cfg.SendCountSum {
+		return nil, fmt.Errorf("no buckets mode and no send count sum are incompatible")
+	}
+
+	cache := newTTLCache(cfg.sweepInterval, cfg.deltaTTL)
+	return &Translator{cache, logger, cfg}, nil
 }
 
 // getTags maps an attributeMap into a slice of Datadog tags
@@ -256,7 +265,7 @@ func (t *Translator) mapHistogramMetrics(
 		tags := getTags(p.Attributes())
 		tags = append(tags, attrTags...)
 
-		if t.cfg.HistConfig.SendCountSum {
+		if t.cfg.SendCountSum {
 			count := float64(p.Count())
 			countName := fmt.Sprintf("%s.count", name)
 			if delta {
@@ -266,7 +275,7 @@ func (t *Translator) mapHistogramMetrics(
 			}
 		}
 
-		if t.cfg.HistConfig.SendCountSum {
+		if t.cfg.SendCountSum {
 			sum := p.Sum()
 			sumName := fmt.Sprintf("%s.sum", name)
 			if !t.isSkippable(sumName, p.Sum()) {
@@ -278,10 +287,10 @@ func (t *Translator) mapHistogramMetrics(
 			}
 		}
 
-		switch t.cfg.HistConfig.Mode {
-		case histogramModeCounters:
+		switch t.cfg.HistMode {
+		case HistogramModeCounters:
 			t.getLegacyBuckets(ctx, consumer, name, p, delta, tags, host)
-		case histogramModeDistributions:
+		case HistogramModeDistributions:
 			t.getSketchBuckets(ctx, consumer, name, ts, p, true, tags, host)
 		}
 	}
@@ -366,7 +375,7 @@ func (t *Translator) mapSummaryMetrics(
 }
 
 // MapMetrics maps OTLP metrics into the DataDog format
-func (t *Translator) MapMetrics(ctx context.Context, md pdata.Metrics, consumer Consumer) {
+func (t *Translator) MapMetrics(ctx context.Context, md pdata.Metrics, consumer Consumer) error {
 	rms := md.ResourceMetrics()
 	for i := 0; i < rms.Len(); i++ {
 		rm := rms.At(i)
@@ -375,16 +384,16 @@ func (t *Translator) MapMetrics(ctx context.Context, md pdata.Metrics, consumer 
 
 		// Only fetch attribute tags if they're not already converted into labels.
 		// Otherwise some tags would be present twice in a metric's tag list.
-		if !t.cfg.ExporterConfig.ResourceAttributesAsTags {
+		if !t.cfg.ResourceAttributesAsTags {
 			attributeTags = attributes.TagsFromAttributes(rm.Resource().Attributes())
 		}
 
 		host, ok := attributes.HostnameFromAttributes(rm.Resource().Attributes())
 		if !ok {
-			fallbackHost, err := t.fallbackHostnameProvider.Hostname(context.Background())
-			host = ""
-			if err == nil {
-				host = fallbackHost
+			var err error
+			host, err = t.cfg.fallbackHostnameProvider.Hostname(context.Background())
+			if err != nil {
+				return fmt.Errorf("failed to get fallback host: %w", err)
 			}
 		}
 
@@ -440,4 +449,5 @@ func (t *Translator) MapMetrics(ctx context.Context, md pdata.Metrics, consumer 
 			}
 		}
 	}
+	return nil
 }

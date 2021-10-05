@@ -108,7 +108,7 @@ func Test_statsdreceiver_EndToEnd(t *testing.T) {
 			name: "default_config with 9s interval",
 			configFn: func() *Config {
 				return &Config{
-					ReceiverSettings: config.NewReceiverSettings(config.NewID(typeStr)),
+					ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
 					NetAddr: confignet.NetAddr{
 						Endpoint:  defaultBindEndpoint,
 						Transport: defaultTransport,

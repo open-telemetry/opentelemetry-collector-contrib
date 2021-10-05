@@ -10,11 +10,11 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus v0.36.0
 	github.com/stretchr/testify v1.7.0
 	go.opencensus.io v0.23.0
-	go.opentelemetry.io/collector v0.36.1-0.20210927193005-ebb0fbd6f23e
-	go.opentelemetry.io/collector/model v0.36.1-0.20210927193005-ebb0fbd6f23e
-	go.opentelemetry.io/otel v1.0.0
-	go.opentelemetry.io/otel/sdk v1.0.0
-	go.opentelemetry.io/otel/trace v1.0.0
+	go.opentelemetry.io/collector v0.36.1-0.20211004155959-190f8fbb2b9a
+	go.opentelemetry.io/collector/model v0.36.1-0.20211004155959-190f8fbb2b9a
+	go.opentelemetry.io/otel v1.0.1
+	go.opentelemetry.io/otel/sdk v1.0.1
+	go.opentelemetry.io/otel/trace v1.0.1
 	google.golang.org/api v0.58.0
 	google.golang.org/genproto v0.0.0-20210917145530-b395a37504d4
 	google.golang.org/grpc v1.41.0
@@ -36,15 +36,16 @@ require (
 	github.com/googleapis/gax-go/v2 v2.1.1 // indirect
 	github.com/grpc-ecosystem/grpc-gateway v1.16.0 // indirect
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
-	github.com/knadh/koanf v1.2.3 // indirect
+	github.com/knadh/koanf v1.2.4 // indirect
+	github.com/magiconair/properties v1.8.5 // indirect
 	github.com/mitchellh/copystructure v1.2.0 // indirect
 	github.com/mitchellh/mapstructure v1.4.2 // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/spf13/cast v1.4.1 // indirect
-	go.opentelemetry.io/otel/metric v0.23.0 // indirect
+	go.opentelemetry.io/otel/metric v0.24.0 // indirect
 	go.uber.org/atomic v1.9.0 // indirect
-	go.uber.org/multierr v1.6.0 // indirect
+	go.uber.org/multierr v1.7.0 // indirect
 	go.uber.org/zap v1.19.1 // indirect
 	golang.org/x/net v0.0.0-20210716203947-853a461950ff // indirect
 	golang.org/x/oauth2 v0.0.0-20210819190943-2bc19b11175f // indirect

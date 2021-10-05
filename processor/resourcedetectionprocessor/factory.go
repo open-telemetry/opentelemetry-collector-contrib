@@ -89,7 +89,7 @@ func (*factory) Type() config.Type {
 
 func createDefaultConfig() config.Processor {
 	return &Config{
-		ProcessorSettings: config.NewProcessorSettings(config.NewID(typeStr)),
+		ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
 		Detectors:         []string{env.TypeStr},
 		Timeout:           5 * time.Second,
 		Override:          true,

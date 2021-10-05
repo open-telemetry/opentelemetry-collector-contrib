@@ -25,7 +25,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"go.etcd.io/bbolt"
-	"go.opentelemetry.io/collector/extension/storage"
+	"go.opentelemetry.io/collector/extension/experimental/storage"
 )
 
 func TestClientOperations(t *testing.T) {

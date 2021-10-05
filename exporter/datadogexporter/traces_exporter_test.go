@@ -61,7 +61,7 @@ func testTracesExporterHelper(td pdata.Traces, t *testing.T) []string {
 
 	defer server.Close()
 	cfg := config.Config{
-		ExporterSettings: otelconfig.NewExporterSettings(otelconfig.NewID(typeStr)),
+		ExporterSettings: otelconfig.NewExporterSettings(otelconfig.NewComponentID(typeStr)),
 		API: config.APIConfig{
 			Key: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
 		},

@@ -41,7 +41,7 @@ func NewFactory() component.ReceiverFactory {
 func createDefaultConfig() *Config {
 	return &Config{
 		ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
-			ReceiverSettings:   config.NewReceiverSettings(config.NewID(typeStr)),
+			ReceiverSettings:   config.NewReceiverSettings(config.NewComponentID(typeStr)),
 			CollectionInterval: 10 * time.Second,
 		},
 		Endpoint:   "unix:///run/podman/podman.sock",

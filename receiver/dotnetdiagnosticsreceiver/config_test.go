@@ -34,7 +34,7 @@ func TestLoadConfig(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, collectorCfg)
 
-	cfg := collectorCfg.Receivers[config.NewID(typeStr)].(*Config)
+	cfg := collectorCfg.Receivers[config.NewComponentID(typeStr)].(*Config)
 	require.NotNil(t, cfg)
 
 	assert.Equal(t, 1234, cfg.PID)

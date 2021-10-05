@@ -6,10 +6,10 @@ require (
 	github.com/leoluk/perflib_exporter v0.1.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.36.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/scraperhelper v0.36.0
-	github.com/shirou/gopsutil v3.21.8+incompatible
+	github.com/shirou/gopsutil v3.21.9+incompatible
 	github.com/stretchr/testify v1.7.0
-	go.opentelemetry.io/collector v0.36.1-0.20210927193005-ebb0fbd6f23e
-	go.opentelemetry.io/collector/model v0.36.1-0.20210927193005-ebb0fbd6f23e
+	go.opentelemetry.io/collector v0.36.1-0.20211004155959-190f8fbb2b9a
+	go.opentelemetry.io/collector/model v0.36.1-0.20211004155959-190f8fbb2b9a
 	go.uber.org/zap v1.19.1
 	golang.org/x/sys v0.0.0-20210615035016-665e8c7367d1
 
@@ -23,7 +23,8 @@ require (
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
-	github.com/knadh/koanf v1.2.3 // indirect
+	github.com/knadh/koanf v1.2.4 // indirect
+	github.com/magiconair/properties v1.8.5 // indirect
 	github.com/mitchellh/copystructure v1.2.0 // indirect
 	github.com/mitchellh/mapstructure v1.4.2 // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
@@ -33,9 +34,9 @@ require (
 	github.com/tklauser/go-sysconf v0.3.5 // indirect
 	github.com/tklauser/numcpus v0.2.2 // indirect
 	go.opencensus.io v0.23.0 // indirect
-	go.opentelemetry.io/otel v1.0.0 // indirect
-	go.opentelemetry.io/otel/metric v0.23.0 // indirect
-	go.opentelemetry.io/otel/trace v1.0.0 // indirect
+	go.opentelemetry.io/otel v1.0.1 // indirect
+	go.opentelemetry.io/otel/metric v0.24.0 // indirect
+	go.opentelemetry.io/otel/trace v1.0.1 // indirect
 	go.uber.org/atomic v1.9.0 // indirect
 	go.uber.org/multierr v1.7.0 // indirect
 	golang.org/x/net v0.0.0-20210614182718-04defd469f4e // indirect

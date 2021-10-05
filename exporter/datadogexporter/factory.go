@@ -47,7 +47,7 @@ func NewFactory() component.ExporterFactory {
 // createDefaultConfig creates the default exporter configuration
 func createDefaultConfig() config.Exporter {
 	return &ddconfig.Config{
-		ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
+		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
 		TimeoutSettings:  exporterhelper.DefaultTimeoutSettings(),
 		RetrySettings:    exporterhelper.DefaultRetrySettings(),
 		QueueSettings:    exporterhelper.DefaultQueueSettings(),
@@ -133,7 +133,12 @@ func createMetricsExporter(
 			return nil
 		}
 	} else {
-		pushMetricsFn = newMetricsExporter(ctx, set, cfg).PushMetricsData
+		exp, err := newMetricsExporter(ctx, set, cfg)
+		if err != nil {
+			cancel()
+			return nil, err
+		}
+		pushMetricsFn = exp.PushMetricsData
 	}
 
 	exporter, err := exporterhelper.NewMetricsExporter(

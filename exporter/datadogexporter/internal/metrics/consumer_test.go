@@ -19,19 +19,14 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/model/pdata"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/config"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/attributes"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/translator"
 )
-
-func newTestCache() *translator.TTLCache {
-	cache := translator.NewTTLCache(1800, 3600)
-	return cache
-}
 
 type testProvider string
 
@@ -39,8 +34,15 @@ func (t testProvider) Hostname(context.Context) (string, error) {
 	return string(t), nil
 }
 
-func newTranslator(logger *zap.Logger, cfg config.MetricsConfig) *translator.Translator {
-	return translator.New(newTestCache(), logger, cfg, testProvider("fallbackHostname"))
+func newTranslator(t *testing.T, logger *zap.Logger) *translator.Translator {
+	tr, err := translator.New(logger,
+		translator.WithCountSumMetrics(),
+		translator.WithHistogramMode(translator.HistogramModeNoBuckets),
+		translator.WithNumberMode(translator.NumberModeCumulativeToDelta),
+		translator.WithFallbackHostnameProvider(testProvider("fallbackHostname")),
+	)
+	require.NoError(t, err)
+	return tr
 }
 
 func TestRunningMetrics(t *testing.T) {
@@ -61,9 +63,8 @@ func TestRunningMetrics(t *testing.T) {
 
 	rms.AppendEmpty()
 
-	cfg := config.MetricsConfig{}
 	logger, _ := zap.NewProduction()
-	tr := newTranslator(logger, cfg)
+	tr := newTranslator(t, logger)
 
 	ctx := context.Background()
 	consumer := NewConsumer()

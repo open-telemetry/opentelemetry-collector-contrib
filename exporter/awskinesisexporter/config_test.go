@@ -39,11 +39,11 @@ func TestDefaultConfig(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 
-	e := cfg.Exporters[config.NewID(typeStr)]
+	e := cfg.Exporters[config.NewComponentID(typeStr)]
 
 	assert.Equal(t, e,
 		&Config{
-			ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
+			ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
 			QueueSettings:    exporterhelper.DefaultQueueSettings(),
 			RetrySettings:    exporterhelper.DefaultRetrySettings(),
 			TimeoutSettings:  exporterhelper.DefaultTimeoutSettings(),
@@ -67,11 +67,11 @@ func TestConfig(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 
-	e := cfg.Exporters[config.NewID(typeStr)]
+	e := cfg.Exporters[config.NewComponentID(typeStr)]
 
 	assert.Equal(t, e,
 		&Config{
-			ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
+			ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
 			RetrySettings: exporterhelper.RetrySettings{
 				Enabled:         false,
 				MaxInterval:     30 * time.Second,
