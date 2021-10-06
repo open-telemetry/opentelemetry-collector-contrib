@@ -291,7 +291,7 @@ func withContainerName(containerName string) generateResourceFunc {
 
 func withContainerRunID(containerRunID string) generateResourceFunc {
 	return func(res pdata.Resource) {
-		res.Attributes().InsertString(k8sContainerRunIDLabelName, containerRunID)
+		res.Attributes().InsertString(k8sContainerRestartCountAttrName, containerRunID)
 	}
 }
 
@@ -722,7 +722,7 @@ func TestProcessorAddContainerAttributes(t *testing.T) {
 			wantAttrs: map[string]string{
 				k8sIPLabelName:                        "1.1.1.1",
 				conventions.AttributeK8SContainerName: "app",
-				k8sContainerRunIDLabelName:            "1",
+				k8sContainerRestartCountAttrName:      "1",
 				conventions.AttributeContainerID:      "6a7f1a598b5dafec9c193f8f8d63f6e5839b8b0acd2fe780f94285e26c05580e",
 			},
 		},
@@ -749,7 +749,7 @@ func TestProcessorAddContainerAttributes(t *testing.T) {
 			wantAttrs: map[string]string{
 				k8sIPLabelName:                        "1.1.1.1",
 				conventions.AttributeK8SContainerName: "new-app",
-				k8sContainerRunIDLabelName:            "0",
+				k8sContainerRestartCountAttrName:      "0",
 			},
 		},
 		{
@@ -774,7 +774,7 @@ func TestProcessorAddContainerAttributes(t *testing.T) {
 			wantAttrs: map[string]string{
 				k8sIPLabelName:                          "1.1.1.1",
 				conventions.AttributeK8SContainerName:   "app",
-				k8sContainerRunIDLabelName:              "1",
+				k8sContainerRestartCountAttrName:        "1",
 				conventions.AttributeContainerImageName: "test/app",
 			},
 		},
