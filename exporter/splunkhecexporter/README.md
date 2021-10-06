@@ -40,7 +40,16 @@ In addition, this exporter offers queued retry which is enabled by default.
 Information about queued retry configuration parameters can be found
 [here](https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/exporterhelper/README.md).
 <br />
-If you are getting throttled due to high volume of events the collector might experience memory issues, in those cases it is recommended to change the queued retry [configuration](https://github.com/open-telemetry/opentelemetry-collector/tree/main/exporter/exporterhelper#configuration) to drop events more frequently, as a last resort you can disable the retry logic altogether:
+If you are getting throttled due to high volume of events the collector might experience memory issues, in those cases it is recommended to change the queued retry [configuration](https://github.com/open-telemetry/opentelemetry-collector/tree/main/exporter/exporterhelper#configuration) to drop events more frequently, for example you can reduce the maximum amount of time spent trying to send a batch from 120s (default) to 60s:
+```yaml
+exporters:
+  splunk_hec:
+    retry_on_failure:
+      max_elapsed_time: 60
+```
+If that does not resolve the memory issues you can try to reduce it further and adjust the other queued retry parameters accordingly.
+<br />
+As a last resort after you have tried to solve the memory issues by adjusting the queued retry configuration you can disable it altogether:
 
 ```yaml
 exporters:
