@@ -35,6 +35,8 @@ const (
 	totalCol = 2
 	usedCol  = 3
 	// priorityCol = 4
+
+	minimumColCount = usedCol + 1
 )
 
 func getPageFileStats() ([]*pageFileStats, error) {
@@ -59,8 +61,8 @@ func parseSwapsFile(r io.Reader) ([]*pageFileStats, error) {
 
 	// Check header headerFields are as expected
 	headerFields := strings.Fields(scanner.Text())
-	if len(headerFields) < usedCol {
-		return nil, fmt.Errorf("couldn't parse %q: too few fields in header", swapsFilePath)
+	if len(headerFields) < minimumColCount {
+		return nil, fmt.Errorf("couldn't parse %q: expected ≥%d fields in header but got %v", swapsFilePath, minimumColCount, headerFields)
 	}
 	if headerFields[nameCol] != "Filename" {
 		return nil, fmt.Errorf("couldn't parse %q: expected %q to be %q", swapsFilePath, headerFields[nameCol], "Filename")
@@ -75,8 +77,8 @@ func parseSwapsFile(r io.Reader) ([]*pageFileStats, error) {
 	var swapDevices []*pageFileStats
 	for scanner.Scan() {
 		fields := strings.Fields(scanner.Text())
-		if len(fields) < usedCol {
-			return nil, fmt.Errorf("couldn't parse %q: too few fields", swapsFilePath)
+		if len(fields) < minimumColCount {
+			return nil, fmt.Errorf("couldn't parse %q: expected ≥%d fields in row but got %v", swapsFilePath, minimumColCount, fields)
 		}
 
 		totalKiB, err := strconv.ParseUint(fields[totalCol], 10, 64)
