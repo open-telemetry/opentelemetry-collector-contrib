@@ -32,7 +32,7 @@ import (
 )
 
 func TestTracesExporter(t *testing.T) {
-	tt, err := obsreporttest.SetupRecordedMetricsTest()
+	tt, err := obsreporttest.SetupTelemetry()
 	require.NoError(t, err)
 	defer tt.Shutdown(context.Background())
 
@@ -60,7 +60,7 @@ func TestTracesExporter(t *testing.T) {
 }
 
 func TestMetricsExporter(t *testing.T) {
-	tt, err := obsreporttest.SetupRecordedMetricsTest()
+	tt, err := obsreporttest.SetupTelemetry()
 	require.NoError(t, err)
 	defer tt.Shutdown(context.Background())
 
@@ -83,7 +83,7 @@ func TestMetricsExporter(t *testing.T) {
 }
 
 func TestMetricsExporterSendError(t *testing.T) {
-	tt, err := obsreporttest.SetupRecordedMetricsTest()
+	tt, err := obsreporttest.SetupTelemetry()
 	require.NoError(t, err)
 	defer tt.Shutdown(context.Background())
 
