@@ -1,4 +1,8 @@
 components:
-
+  
+  instrumentation/opentelemetry-instrumentation-pika:
+    - oxeye-nikolay
+    - nikosokolik
+  
   sdk-extension/opentelemetry-sdk-extension-aws:
     - NathanielRN
