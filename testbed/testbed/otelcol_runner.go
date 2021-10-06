@@ -15,7 +15,7 @@
 package testbed
 
 import (
-	"github.com/shirou/gopsutil/process"
+	"github.com/shirou/gopsutil/v3/process"
 )
 
 type StartParams struct {
