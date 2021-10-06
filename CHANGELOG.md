@@ -53,6 +53,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `opentelemetry-instrumentation-asgi`, `opentelemetry-instrumentation-aiohttp-client`, `openetelemetry-instrumentation-fastapi`,        
   `opentelemetry-instrumentation-starlette`, `opentelemetry-instrumentation-urllib`, `opentelemetry-instrumentation-urllib3` Added `request_hook` and `response_hook` callbacks 
   ([#576](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/576))
+- `opentelemetry-instrumentation-pika` added RabbitMQ's pika module instrumentation.
+  ([#680](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/680))
   
 ### Changed
 

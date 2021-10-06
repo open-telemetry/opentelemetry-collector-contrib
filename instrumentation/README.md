@@ -19,6 +19,7 @@
 | [opentelemetry-instrumentation-jinja2](./opentelemetry-instrumentation-jinja2) | jinja2~=2.7 |
 | [opentelemetry-instrumentation-logging](./opentelemetry-instrumentation-logging) | logging |
 | [opentelemetry-instrumentation-mysql](./opentelemetry-instrumentation-mysql) | mysql-connector-python ~= 8.0 |
+| [opentelemetry-instrumentation-pika](./opentelemetry-instrumentation-pika) | pika >= 1.1.0 |
 | [opentelemetry-instrumentation-psycopg2](./opentelemetry-instrumentation-psycopg2) | psycopg2 >= 2.7.3.1 |
 | [opentelemetry-instrumentation-pymemcache](./opentelemetry-instrumentation-pymemcache) | pymemcache ~= 1.3 |
 | [opentelemetry-instrumentation-pymongo](./opentelemetry-instrumentation-pymongo) | pymongo ~= 3.1 |
