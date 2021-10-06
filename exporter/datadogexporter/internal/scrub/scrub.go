@@ -18,13 +18,13 @@ import (
 	"regexp"
 )
 
-// ErrorScrubber scrubs error from sensitive details
+// Scrubber scrubs error from sensitive details.
 type Scrubber interface {
 	// Scrub sensitive data from an error.
 	Scrub(error) error
 }
 
-// replacer structure to store regex matching and replacement functions
+// replacer structure to store regex matching and replacement functions.
 type replacer struct {
 	Regex *regexp.Regexp
 	Repl  string
@@ -56,20 +56,24 @@ type scrubber struct {
 func NewScrubber() Scrubber {
 	return &scrubber{
 		replacers: []replacer{
+			// API key as URL parameter (api_key=<API KEY> or apikey=<API KEY>).
+			// Any alphanumeric string gets censored, even if not 32 characters long.
 			{
-				// If hinted, mask the value regardless if it doesn't match 32-char hexadecimal string
 				Regex: regexp.MustCompile(`(api_?key=)\b[a-zA-Z0-9]+([a-zA-Z0-9]{5})\b`),
 				Repl:  `$1***************************$2`,
 			},
+			// Application key as URL parameter (api_key=<API KEY> or apikey=<API KEY>).
+			// Any alphanumeric string gets censored, even if not 40 characters long.
 			{
-				// If hinted, mask the value regardless if it doesn't match 40-char hexadecimal string
 				Regex: regexp.MustCompile(`(ap(?:p|plication)_?key=)\b[a-zA-Z0-9]+([a-zA-Z0-9]{5})\b`),
 				Repl:  `$1***********************************$2`,
 			},
+			// API key in any place (32 character long alphanumeric ASCII string).
 			{
 				Regex: regexp.MustCompile(`\b[a-fA-F0-9]{27}([a-fA-F0-9]{5})\b`),
 				Repl:  `***************************$1`,
 			},
+			// Application key in any place (40 character long alphanumeric ASCII string).
 			{
 				Regex: regexp.MustCompile(`\b[a-fA-F0-9]{35}([a-fA-F0-9]{5})\b`),
 				Repl:  `***********************************$1`,
