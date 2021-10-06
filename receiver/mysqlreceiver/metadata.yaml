@@ -63,7 +63,9 @@ metrics:
     description: Buffer pool page count
     unit: 1
     data:
-      type: gauge
+      type: sum
+      monotonic: false
+      aggregation: cumulative
     labels: [ buffer_pool_pages]
   mysql.buffer_pool_operations:
     description: Buffer pool operation count
@@ -77,7 +79,9 @@ metrics:
     description: Buffer pool size
     unit: 1
     data:
-      type: gauge
+      type: sum
+      monotonic: false
+      aggregation: cumulative
     labels: [ buffer_pool_size]
   mysql.commands:
     description: MySQL command count
@@ -163,6 +167,8 @@ metrics:
     description: Thread count
     unit: 1
     data:
-      type: gauge
+      type: sum
+      monotonic: false
+      aggregation: cumulative
     labels: [ threads]
     

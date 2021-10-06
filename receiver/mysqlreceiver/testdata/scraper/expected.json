@@ -9,7 +9,9 @@
           "metrics": [
             {
               "description": "Buffer pool page count",
-              "gauge": {
+              "sum": {
+                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                "isMonotonic": false,
                 "dataPoints": [
                   {
                     "asDouble": 228,
@@ -159,7 +161,9 @@
             },
             {
               "description": "Buffer pool size",
-              "gauge": {
+              "sum": {
+                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                "isMonotonic": false,
                 "dataPoints": [
                   {
                     "asDouble": 229,
@@ -778,7 +782,9 @@
             },
             {
               "description": "Thread count",
-              "gauge": {
+              "sum": {
+                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                "isMonotonic": false,
                 "dataPoints": [
                   {
                     "asDouble": 448,

@@ -132,7 +132,9 @@ var Metrics = &metricStruct{
 			metric.SetName("mysql.buffer_pool_pages")
 			metric.SetDescription("Buffer pool page count")
 			metric.SetUnit("1")
-			metric.SetDataType(pdata.MetricDataTypeGauge)
+			metric.SetDataType(pdata.MetricDataTypeSum)
+			metric.Sum().SetIsMonotonic(false)
+			metric.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
 		},
 	},
 	&metricImpl{
@@ -141,7 +143,9 @@ var Metrics = &metricStruct{
 			metric.SetName("mysql.buffer_pool_size")
 			metric.SetDescription("Buffer pool size")
 			metric.SetUnit("1")
-			metric.SetDataType(pdata.MetricDataTypeGauge)
+			metric.SetDataType(pdata.MetricDataTypeSum)
+			metric.Sum().SetIsMonotonic(false)
+			metric.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
 		},
 	},
 	&metricImpl{
@@ -260,7 +264,9 @@ var Metrics = &metricStruct{
 			metric.SetName("mysql.threads")
 			metric.SetDescription("Thread count")
 			metric.SetUnit("1")
-			metric.SetDataType(pdata.MetricDataTypeGauge)
+			metric.SetDataType(pdata.MetricDataTypeSum)
+			metric.Sum().SetIsMonotonic(false)
+			metric.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
 		},
 	},
 }

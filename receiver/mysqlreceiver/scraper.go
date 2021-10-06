@@ -111,9 +111,9 @@ func (m *mySQLScraper) scrape(context.Context) (pdata.ResourceMetricsSlice, erro
 	ilm.InstrumentationLibrary().SetName("otel/mysql")
 	now := pdata.NewTimestampFromTime(time.Now())
 
-	bufferPoolPages := initMetric(ilm.Metrics(), metadata.M.MysqlBufferPoolPages).Gauge().DataPoints()
+	bufferPoolPages := initMetric(ilm.Metrics(), metadata.M.MysqlBufferPoolPages).Sum().DataPoints()
 	bufferPoolOperations := initMetric(ilm.Metrics(), metadata.M.MysqlBufferPoolOperations).Sum().DataPoints()
-	bufferPoolSize := initMetric(ilm.Metrics(), metadata.M.MysqlBufferPoolSize).Gauge().DataPoints()
+	bufferPoolSize := initMetric(ilm.Metrics(), metadata.M.MysqlBufferPoolSize).Sum().DataPoints()
 	commands := initMetric(ilm.Metrics(), metadata.M.MysqlCommands).Sum().DataPoints()
 	handlers := initMetric(ilm.Metrics(), metadata.M.MysqlHandlers).Sum().DataPoints()
 	doubleWrites := initMetric(ilm.Metrics(), metadata.M.MysqlDoubleWrites).Sum().DataPoints()
@@ -124,7 +124,7 @@ func (m *mySQLScraper) scrape(context.Context) (pdata.ResourceMetricsSlice, erro
 	rowOperations := initMetric(ilm.Metrics(), metadata.M.MysqlRowOperations).Sum().DataPoints()
 	locks := initMetric(ilm.Metrics(), metadata.M.MysqlLocks).Sum().DataPoints()
 	sorts := initMetric(ilm.Metrics(), metadata.M.MysqlSorts).Sum().DataPoints()
-	threads := initMetric(ilm.Metrics(), metadata.M.MysqlThreads).Gauge().DataPoints()
+	threads := initMetric(ilm.Metrics(), metadata.M.MysqlThreads).Sum().DataPoints()
 
 	// collect innodb metrics.
 	innodbStats, err := m.client.getInnodbStats()
