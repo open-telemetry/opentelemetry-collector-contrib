@@ -39,6 +39,16 @@ The following configuration options can also be configured:
 In addition, this exporter offers queued retry which is enabled by default.
 Information about queued retry configuration parameters can be found
 [here](https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/exporterhelper/README.md).
+<br />
+If you are getting throttled due to high volume of events the collector might experience memory issues, in those cases it is recommended to disable retry:
+
+```yaml
+exporters:
+  splunk_hec:
+    retry_on_failure:
+      enabled: false
+```
+<br /><br />
 
 Example:
 
