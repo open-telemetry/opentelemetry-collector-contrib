@@ -16,7 +16,6 @@ package scrub
 
 import (
 	"regexp"
-	"strings"
 )
 
 // ErrorScrubber scrubs error from sensitive details
@@ -28,7 +27,6 @@ type Scrubber interface {
 // replacer structure to store regex matching and replacement functions
 type replacer struct {
 	Regex *regexp.Regexp
-	Hints []string // If any of these hints do not exist in the line, then we know the regex wont match either
 	Repl  string
 }
 
@@ -61,13 +59,11 @@ func NewScrubber() Scrubber {
 			{
 				// If hinted, mask the value regardless if it doesn't match 32-char hexadecimal string
 				Regex: regexp.MustCompile(`(api_?key=)\b[a-zA-Z0-9]+([a-zA-Z0-9]{5})\b`),
-				Hints: []string{"api_key", "apikey"},
 				Repl:  `$1***************************$2`,
 			},
 			{
 				// If hinted, mask the value regardless if it doesn't match 40-char hexadecimal string
 				Regex: regexp.MustCompile(`(ap(?:p|plication)_?key=)\b[a-zA-Z0-9]+([a-zA-Z0-9]{5})\b`),
-				Hints: []string{"app_key", "appkey", "application_key"},
 				Repl:  `$1***********************************$2`,
 			},
 			{
@@ -92,16 +88,7 @@ func (s *scrubber) Scrub(err error) error {
 // Scrub sensitive details from a string.
 func (s *scrubber) scrubStr(data string) string {
 	for _, repl := range s.replacers {
-		containsHint := false
-		for _, hint := range repl.Hints {
-			if strings.Contains(data, hint) {
-				containsHint = true
-				break
-			}
-		}
-		if len(repl.Hints) == 0 || containsHint {
-			data = repl.Regex.ReplaceAllString(data, repl.Repl)
-		}
+		data = repl.Regex.ReplaceAllString(data, repl.Repl)
 	}
 	return data
 }
