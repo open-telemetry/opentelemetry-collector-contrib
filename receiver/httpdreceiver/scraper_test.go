@@ -275,6 +275,6 @@ func TestScraperError(t *testing.T) {
 
 		_, err := sc.scrape(context.Background())
 		require.Error(t, err)
-		require.EqualValues(t, errors.New("failed to connect to Apache HTTPd client"), err)
+		require.EqualValues(t, errors.New("failed to connect to Apache HTTPd"), err)
 	})
 }
