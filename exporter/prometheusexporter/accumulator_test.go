@@ -42,7 +42,7 @@ func TestAccumulateDeltaAggregation(t *testing.T) {
 			fillMetric: func(ts time.Time, metric pdata.Metric) {
 				metric.SetName("test_metric")
 				metric.SetDataType(pdata.MetricDataTypeSum)
-				metric.Sum().SetAggregationTemporality(pdata.AggregationTemporalityDelta)
+				metric.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityDelta)
 				dp := metric.Sum().DataPoints().AppendEmpty()
 				dp.SetIntVal(42)
 				dp.Attributes().InsertString("label_1", "1")
@@ -55,7 +55,7 @@ func TestAccumulateDeltaAggregation(t *testing.T) {
 			fillMetric: func(ts time.Time, metric pdata.Metric) {
 				metric.SetName("test_metric")
 				metric.SetDataType(pdata.MetricDataTypeSum)
-				metric.Sum().SetAggregationTemporality(pdata.AggregationTemporalityDelta)
+				metric.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityDelta)
 				dp := metric.Sum().DataPoints().AppendEmpty()
 				dp.SetDoubleVal(42.42)
 				dp.Attributes().InsertString("label_1", "1")
@@ -68,7 +68,7 @@ func TestAccumulateDeltaAggregation(t *testing.T) {
 			fillMetric: func(ts time.Time, metric pdata.Metric) {
 				metric.SetName("test_metric")
 				metric.SetDataType(pdata.MetricDataTypeHistogram)
-				metric.Histogram().SetAggregationTemporality(pdata.AggregationTemporalityDelta)
+				metric.Histogram().SetAggregationTemporality(pdata.MetricAggregationTemporalityDelta)
 				metric.SetDescription("test description")
 				dp := metric.Histogram().DataPoints().AppendEmpty()
 				dp.SetBucketCounts([]uint64{5, 2})
@@ -142,7 +142,7 @@ func TestAccumulateMetrics(t *testing.T) {
 				metric.SetDataType(pdata.MetricDataTypeSum)
 				metric.SetDescription("test description")
 				metric.Sum().SetIsMonotonic(false)
-				metric.Sum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+				metric.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
 				dp := metric.Sum().DataPoints().AppendEmpty()
 				dp.SetIntVal(int64(v))
 				dp.Attributes().InsertString("label_1", "1")
@@ -158,7 +158,7 @@ func TestAccumulateMetrics(t *testing.T) {
 				metric.SetDataType(pdata.MetricDataTypeSum)
 				metric.SetDescription("test description")
 				metric.Sum().SetIsMonotonic(false)
-				metric.Sum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+				metric.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
 				dp := metric.Sum().DataPoints().AppendEmpty()
 				dp.SetDoubleVal(v)
 				dp.Attributes().InsertString("label_1", "1")
@@ -174,7 +174,7 @@ func TestAccumulateMetrics(t *testing.T) {
 				metric.SetDataType(pdata.MetricDataTypeSum)
 				metric.SetDescription("test description")
 				metric.Sum().SetIsMonotonic(true)
-				metric.Sum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+				metric.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
 				dp := metric.Sum().DataPoints().AppendEmpty()
 				dp.SetIntVal(int64(v))
 				dp.Attributes().InsertString("label_1", "1")
@@ -189,7 +189,7 @@ func TestAccumulateMetrics(t *testing.T) {
 				metric.SetName("test_metric")
 				metric.SetDataType(pdata.MetricDataTypeSum)
 				metric.Sum().SetIsMonotonic(true)
-				metric.Sum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+				metric.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
 				metric.SetDescription("test description")
 				dp := metric.Sum().DataPoints().AppendEmpty()
 				dp.SetDoubleVal(v)
@@ -204,7 +204,7 @@ func TestAccumulateMetrics(t *testing.T) {
 				metric := metrics.AppendEmpty()
 				metric.SetName("test_metric")
 				metric.SetDataType(pdata.MetricDataTypeHistogram)
-				metric.Histogram().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+				metric.Histogram().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
 				metric.SetDescription("test description")
 				dp := metric.Histogram().DataPoints().AppendEmpty()
 				dp.SetBucketCounts([]uint64{5, 2})
@@ -288,7 +288,7 @@ func getMetricProperties(metric pdata.Metric) (
 	attributes pdata.AttributeMap,
 	ts time.Time,
 	value float64,
-	temporality pdata.AggregationTemporality,
+	temporality pdata.MetricAggregationTemporality,
 	isMonotonic bool,
 ) {
 	switch metric.DataType() {
@@ -302,7 +302,7 @@ func getMetricProperties(metric pdata.Metric) (
 		case pdata.MetricValueTypeDouble:
 			value = dp.DoubleVal()
 		}
-		temporality = pdata.AggregationTemporalityUnspecified
+		temporality = pdata.MetricAggregationTemporalityUnspecified
 		isMonotonic = false
 	case pdata.MetricDataTypeSum:
 		attributes = metric.Sum().DataPoints().At(0).Attributes()

@@ -93,7 +93,7 @@ func (s *sfxDPClient) pushMetricsData(
 func (s *sfxDPClient) pushMetricsDataForToken(ctx context.Context, sfxDataPoints []*sfxpb.DataPoint, accessToken string) (int, error) {
 	body, compressed, err := s.encodeBody(sfxDataPoints)
 	if err != nil {
-		return len(sfxDataPoints), consumererror.Permanent(err)
+		return len(sfxDataPoints), consumererror.NewPermanent(err)
 	}
 
 	datapointURL := *s.ingestURL
@@ -102,7 +102,7 @@ func (s *sfxDPClient) pushMetricsDataForToken(ctx context.Context, sfxDataPoints
 	}
 	req, err := http.NewRequestWithContext(ctx, "POST", datapointURL.String(), body)
 	if err != nil {
-		return len(sfxDataPoints), consumererror.Permanent(err)
+		return len(sfxDataPoints), consumererror.NewPermanent(err)
 	}
 
 	for k, v := range s.headers {

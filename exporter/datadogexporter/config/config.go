@@ -23,7 +23,7 @@ import (
 
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confignet"
-	"go.opentelemetry.io/collector/config/configparser"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata/valid"
@@ -205,7 +205,10 @@ func (t *TagsConfig) GetHostTags() []string {
 
 // Config defines configuration for the Datadog exporter.
 type Config struct {
-	config.ExporterSettings `mapstructure:",squash"`
+	config.ExporterSettings        `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
+	exporterhelper.TimeoutSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
+	exporterhelper.QueueSettings   `mapstructure:"sending_queue"`
+	exporterhelper.RetrySettings   `mapstructure:"retry_on_failure"`
 
 	TagsConfig `mapstructure:",squash"`
 
@@ -322,7 +325,7 @@ func (c *Config) Validate() error {
 	return nil
 }
 
-func (c *Config) Unmarshal(configMap *configparser.ConfigMap) error {
+func (c *Config) Unmarshal(configMap *config.Map) error {
 	err := configMap.UnmarshalExact(c)
 	if err != nil {
 		return err

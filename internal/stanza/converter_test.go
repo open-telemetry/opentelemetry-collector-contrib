@@ -602,7 +602,7 @@ func TestConvertSeverity(t *testing.T) {
 		expectedNumber pdata.SeverityNumber
 		expectedText   string
 	}{
-		{entry.Default, pdata.SeverityNumberUNDEFINED, "Undefined"},
+		{entry.Default, pdata.SeverityNumberUNDEFINED, ""},
 		{entry.Trace, pdata.SeverityNumberTRACE, "Trace"},
 		{entry.Trace2, pdata.SeverityNumberTRACE2, "Trace2"},
 		{entry.Trace3, pdata.SeverityNumberTRACE3, "Trace3"},

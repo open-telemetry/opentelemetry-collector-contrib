@@ -44,7 +44,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger"
 )
 
-var jaegerAgent = config.NewIDWithName(typeStr, "agent_test")
+var jaegerAgent = config.NewComponentIDWithName(typeStr, "agent_test")
 
 func TestJaegerAgentUDP_ThriftCompact(t *testing.T) {
 	port := testutil.GetAvailablePort(t)
@@ -144,7 +144,7 @@ func TestJaegerHTTP(t *testing.T) {
 		AgentHTTPPort: int(port),
 		RemoteSamplingClientSettings: configgrpc.GRPCClientSettings{
 			Endpoint: addr.String(),
-			TLSSetting: configtls.TLSClientSetting{
+			TLSSetting: &configtls.TLSClientSetting{
 				Insecure: true,
 			},
 		},

@@ -238,7 +238,7 @@ func getDataPoints(pmd *pdata.Metric, metadata cWMetricMetadata, logger *zap.Log
 		}
 	case pdata.MetricDataTypeSum:
 		metric := pmd.Sum()
-		adjusterMetadata.adjustToDelta = metric.AggregationTemporality() == pdata.AggregationTemporalityCumulative
+		adjusterMetadata.adjustToDelta = metric.AggregationTemporality() == pdata.MetricAggregationTemporalityCumulative
 		dps = numberDataPointSlice{
 			metadata.instrumentationLibraryName,
 			adjusterMetadata,

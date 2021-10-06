@@ -233,7 +233,7 @@ func TestBuildExporterConfig(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 
-	c := cfg.Exporters[config.NewID(typeStr)]
+	c := cfg.Exporters[config.NewComponentID(typeStr)]
 	require.NotNil(t, c)
 
 	// test
@@ -462,7 +462,7 @@ func simpleTraceWithID(id pdata.TraceID) pdata.Traces {
 
 func simpleConfig() *Config {
 	return &Config{
-		ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
+		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
 		Resolver: ResolverSettings{
 			Static: &StaticResolver{Hostnames: []string{"endpoint-1"}},
 		},

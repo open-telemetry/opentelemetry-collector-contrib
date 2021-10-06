@@ -15,7 +15,10 @@
 package splunkhecexporter
 
 import (
+	"encoding/json"
 	"fmt"
+	"io/ioutil"
+	"math"
 	"testing"
 	"time"
 
@@ -90,6 +93,66 @@ func Test_metricDataToSplunk(t *testing.T) {
 				gauge.SetName("gauge_with_dims")
 				gauge.SetDataType(pdata.MetricDataTypeGauge)
 				return metrics
+			},
+			configFn: func() *Config {
+				return createDefaultConfig().(*Config)
+			},
+		},
+		{
+			name: "nan_gauge_value",
+			metricsDataFn: func() pdata.Metrics {
+				metrics := newMetricsWithResources()
+				ilm := metrics.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0)
+				gauge := ilm.Metrics().AppendEmpty()
+				gauge.SetName("gauge_with_dims")
+				gauge.SetDataType(pdata.MetricDataTypeGauge)
+				dp := gauge.Gauge().DataPoints().AppendEmpty()
+				dp.SetTimestamp(pdata.NewTimestampFromTime(tsUnix))
+				dp.SetDoubleVal(math.NaN())
+				return metrics
+			},
+			wantSplunkMetrics: []*splunk.Event{
+				commonSplunkMetric("gauge_with_dims", tsMSecs, []string{"k0", "k1", "metric_type"}, []interface{}{"v0", "v1", "Gauge"}, "NaN", "", "", "", "unknown"),
+			},
+			configFn: func() *Config {
+				return createDefaultConfig().(*Config)
+			},
+		},
+		{
+			name: "+Inf_gauge_value",
+			metricsDataFn: func() pdata.Metrics {
+				metrics := newMetricsWithResources()
+				ilm := metrics.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0)
+				gauge := ilm.Metrics().AppendEmpty()
+				gauge.SetName("gauge_with_dims")
+				gauge.SetDataType(pdata.MetricDataTypeGauge)
+				dp := gauge.Gauge().DataPoints().AppendEmpty()
+				dp.SetTimestamp(pdata.NewTimestampFromTime(tsUnix))
+				dp.SetDoubleVal(math.Inf(1))
+				return metrics
+			},
+			wantSplunkMetrics: []*splunk.Event{
+				commonSplunkMetric("gauge_with_dims", tsMSecs, []string{"k0", "k1", "metric_type"}, []interface{}{"v0", "v1", "Gauge"}, "+Inf", "", "", "", "unknown"),
+			},
+			configFn: func() *Config {
+				return createDefaultConfig().(*Config)
+			},
+		},
+		{
+			name: "-Inf_gauge_value",
+			metricsDataFn: func() pdata.Metrics {
+				metrics := newMetricsWithResources()
+				ilm := metrics.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0)
+				gauge := ilm.Metrics().AppendEmpty()
+				gauge.SetName("gauge_with_dims")
+				gauge.SetDataType(pdata.MetricDataTypeGauge)
+				dp := gauge.Gauge().DataPoints().AppendEmpty()
+				dp.SetTimestamp(pdata.NewTimestampFromTime(tsUnix))
+				dp.SetDoubleVal(math.Inf(-1))
+				return metrics
+			},
+			wantSplunkMetrics: []*splunk.Event{
+				commonSplunkMetric("gauge_with_dims", tsMSecs, []string{"k0", "k1", "metric_type"}, []interface{}{"v0", "v1", "Gauge"}, "-Inf", "", "", "", "unknown"),
 			},
 			configFn: func() *Config {
 				return createDefaultConfig().(*Config)
@@ -545,8 +608,12 @@ func Test_metricDataToSplunk(t *testing.T) {
 			cfg := tt.configFn()
 			gotMetrics, gotNumDroppedTimeSeries := metricDataToSplunk(logger, md, cfg)
 			assert.Equal(t, tt.wantNumDroppedTimeseries, gotNumDroppedTimeSeries)
+			encoder := json.NewEncoder(ioutil.Discard)
+
 			for i, want := range tt.wantSplunkMetrics {
 				assert.Equal(t, want, gotMetrics[i])
+				err := encoder.Encode(gotMetrics[i])
+				assert.NoError(t, err)
 			}
 		})
 	}

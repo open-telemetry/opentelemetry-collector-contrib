@@ -16,6 +16,8 @@ package k8sattributesprocessor
 
 import (
 	"context"
+	"fmt"
+	"strconv"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/model/pdata"
@@ -29,6 +31,10 @@ import (
 const (
 	k8sIPLabelName    string = "k8s.pod.ip"
 	clientIPLabelName string = "ip"
+
+	// TODO: update the label to semantic convention defined in this PR:
+	//       https://github.com/open-telemetry/opentelemetry-specification/pull/1945
+	k8sContainerRunIDLabelName string = "run_id"
 )
 
 type kubernetesprocessor struct {
@@ -107,22 +113,20 @@ func (kp *kubernetesprocessor) processResource(ctx context.Context, resource pda
 		resource.Attributes().InsertString(podIdentifierKey, string(podIdentifierValue))
 	}
 
-	namespace := stringAttributeFromMap(resource.Attributes(), conventions.AttributeK8SNamespaceName)
-	if namespace != "" {
-		resource.Attributes().InsertString(conventions.AttributeK8SNamespaceName, namespace)
-	}
-
 	if kp.passthroughMode {
 		return
 	}
 
 	if podIdentifierKey != "" {
-		attrsToAdd := kp.getAttributesForPod(podIdentifierValue)
-		for key, val := range attrsToAdd {
-			resource.Attributes().InsertString(key, val)
+		if pod, ok := kp.kc.GetPod(podIdentifierValue); ok {
+			for key, val := range pod.Attributes {
+				resource.Attributes().InsertString(key, val)
+			}
+			kp.addContainerAttributes(resource.Attributes(), pod)
 		}
 	}
 
+	namespace := stringAttributeFromMap(resource.Attributes(), conventions.AttributeK8SNamespaceName)
 	if namespace != "" {
 		attrsToAdd := kp.getAttributesForPodsNamespace(namespace)
 		for key, val := range attrsToAdd {
@@ -131,12 +135,35 @@ func (kp *kubernetesprocessor) processResource(ctx context.Context, resource pda
 	}
 }
 
-func (kp *kubernetesprocessor) getAttributesForPod(identifier kube.PodIdentifier) map[string]string {
-	pod, ok := kp.kc.GetPod(identifier)
-	if !ok {
-		return nil
+// addContainerAttributes looks if pod has any container identifiers and adds additional container attributes
+func (kp *kubernetesprocessor) addContainerAttributes(attrs pdata.AttributeMap, pod *kube.Pod) {
+	containerName := stringAttributeFromMap(attrs, conventions.AttributeK8SContainerName)
+	if containerName == "" {
+		return
 	}
-	return pod.Attributes
+	containerSpec, ok := pod.Containers[containerName]
+	if !ok {
+		return
+	}
+
+	if containerSpec.ImageName != "" {
+		attrs.InsertString(conventions.AttributeContainerImageName, containerSpec.ImageName)
+	}
+	if containerSpec.ImageTag != "" {
+		attrs.InsertString(conventions.AttributeContainerImageTag, containerSpec.ImageTag)
+	}
+
+	runIDAttr, ok := attrs.Get(k8sContainerRunIDLabelName)
+	if ok {
+		runID, err := intFromAttribute(runIDAttr)
+		if err == nil {
+			if containerStatus, ok := containerSpec.Statuses[runID]; ok && containerStatus.ContainerID != "" {
+				attrs.InsertString(conventions.AttributeContainerID, containerStatus.ContainerID)
+			}
+		} else {
+			kp.logger.Debug(err.Error())
+		}
+	}
 }
 
 func (kp *kubernetesprocessor) getAttributesForPodsNamespace(namespace string) map[string]string {
@@ -145,4 +172,20 @@ func (kp *kubernetesprocessor) getAttributesForPodsNamespace(namespace string) m
 		return nil
 	}
 	return ns.Attributes
+}
+
+// intFromAttribute extracts int value from an attribute stored as string or int
+func intFromAttribute(val pdata.AttributeValue) (int, error) {
+	switch val.Type() {
+	case pdata.AttributeValueTypeInt:
+		return int(val.IntVal()), nil
+	case pdata.AttributeValueTypeString:
+		i, err := strconv.Atoi(val.StringVal())
+		if err != nil {
+			return 0, err
+		}
+		return i, nil
+	default:
+		return 0, fmt.Errorf("wrong attribute type %v, expected int", val.Type())
+	}
 }

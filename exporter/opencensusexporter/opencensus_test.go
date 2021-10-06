@@ -49,7 +49,7 @@ func TestSendTraces(t *testing.T) {
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.GRPCClientSettings = configgrpc.GRPCClientSettings{
 		Endpoint: endpoint,
-		TLSSetting: configtls.TLSClientSetting{
+		TLSSetting: &configtls.TLSClientSetting{
 			Insecure: true,
 		},
 	}
@@ -90,7 +90,7 @@ func TestSendTraces_NoBackend(t *testing.T) {
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.GRPCClientSettings = configgrpc.GRPCClientSettings{
 		Endpoint: "localhost:56569",
-		TLSSetting: configtls.TLSClientSetting{
+		TLSSetting: &configtls.TLSClientSetting{
 			Insecure: true,
 		},
 	}
@@ -114,7 +114,7 @@ func TestSendTraces_AfterStop(t *testing.T) {
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.GRPCClientSettings = configgrpc.GRPCClientSettings{
 		Endpoint: "localhost:56569",
-		TLSSetting: configtls.TLSClientSetting{
+		TLSSetting: &configtls.TLSClientSetting{
 			Insecure: true,
 		},
 	}
@@ -147,7 +147,7 @@ func TestSendMetrics(t *testing.T) {
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.GRPCClientSettings = configgrpc.GRPCClientSettings{
 		Endpoint: endpoint,
-		TLSSetting: configtls.TLSClientSetting{
+		TLSSetting: &configtls.TLSClientSetting{
 			Insecure: true,
 		},
 	}
@@ -187,7 +187,7 @@ func TestSendMetrics_NoBackend(t *testing.T) {
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.GRPCClientSettings = configgrpc.GRPCClientSettings{
 		Endpoint: "localhost:56569",
-		TLSSetting: configtls.TLSClientSetting{
+		TLSSetting: &configtls.TLSClientSetting{
 			Insecure: true,
 		},
 	}
@@ -211,7 +211,7 @@ func TestSendMetrics_AfterStop(t *testing.T) {
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.GRPCClientSettings = configgrpc.GRPCClientSettings{
 		Endpoint: "localhost:56569",
-		TLSSetting: configtls.TLSClientSetting{
+		TLSSetting: &configtls.TLSClientSetting{
 			Insecure: true,
 		},
 	}

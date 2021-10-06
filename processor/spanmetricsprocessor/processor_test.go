@@ -343,7 +343,7 @@ func verifyConsumeMetricsInput(input pdata.Metrics, t *testing.T) bool {
 		assert.Equal(t, "calls_total", m.At(mi).Name())
 
 		data := m.At(mi).Sum()
-		assert.Equal(t, pdata.AggregationTemporalityCumulative, data.AggregationTemporality())
+		assert.Equal(t, pdata.MetricAggregationTemporalityCumulative, data.AggregationTemporality())
 		assert.True(t, data.IsMonotonic())
 
 		dps := data.DataPoints()
@@ -363,7 +363,7 @@ func verifyConsumeMetricsInput(input pdata.Metrics, t *testing.T) bool {
 		assert.Equal(t, "latency", m.At(mi).Name())
 
 		data := m.At(mi).Histogram()
-		assert.Equal(t, pdata.AggregationTemporalityCumulative, data.AggregationTemporality())
+		assert.Equal(t, pdata.MetricAggregationTemporalityCumulative, data.AggregationTemporality())
 
 		dps := data.DataPoints()
 		require.Equal(t, 1, dps.Len())
@@ -501,7 +501,7 @@ func initSpan(span span, s pdata.Span) {
 func newOTLPExporters(t *testing.T) (*otlpexporter.Config, component.MetricsExporter, component.TracesExporter) {
 	otlpExpFactory := otlpexporter.NewFactory()
 	otlpConfig := &otlpexporter.Config{
-		ExporterSettings: config.NewExporterSettings(config.NewID("otlp")),
+		ExporterSettings: config.NewExporterSettings(config.NewComponentID("otlp")),
 		GRPCClientSettings: configgrpc.GRPCClientSettings{
 			Endpoint: "example.com:1234",
 		},

@@ -110,7 +110,7 @@ func TestCreateInstanceViaFactory(t *testing.T) {
 
 func TestCreateMetricsExporter_CustomConfig(t *testing.T) {
 	config := &Config{
-		ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
+		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
 		AccessToken:      "testToken",
 		Realm:            "us1",
 		Headers: map[string]string{
@@ -134,7 +134,7 @@ func TestFactory_CreateMetricsExporterFails(t *testing.T) {
 		{
 			name: "negative_duration",
 			config: &Config{
-				ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
+				ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
 				AccessToken:      "testToken",
 				Realm:            "lab",
 				TimeoutSettings:  exporterhelper.TimeoutSettings{Timeout: -2 * time.Second},
@@ -144,7 +144,7 @@ func TestFactory_CreateMetricsExporterFails(t *testing.T) {
 		{
 			name: "empty_realm_and_urls",
 			config: &Config{
-				ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
+				ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
 				AccessToken:      "testToken",
 			},
 			errorMessage: "failed to process \"signalfx\" config: requires a non-empty \"realm\"," +
@@ -153,12 +153,24 @@ func TestFactory_CreateMetricsExporterFails(t *testing.T) {
 		{
 			name: "empty_realm_and_api_url",
 			config: &Config{
-				ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
+				ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
 				AccessToken:      "testToken",
 				IngestURL:        "http://localhost:123",
 			},
 			errorMessage: "failed to process \"signalfx\" config: requires a non-empty \"realm\"," +
 				" or \"ingest_url\" and \"api_url\" should be explicitly set",
+		},
+		{
+			name: "negative_MaxConnections",
+			config: &Config{
+				ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
+				AccessToken:      "testToken",
+				Realm:            "lab",
+				IngestURL:        "http://localhost:123",
+				APIURL:           "https://api.us1.signalfx.com/",
+				MaxConnections:   -10,
+			},
+			errorMessage: "failed to process \"signalfx\" config: cannot have a negative \"max_connections\"",
 		},
 	}
 	for _, tt := range tests {
@@ -250,7 +262,7 @@ func TestDefaultTranslationRules(t *testing.T) {
 
 func TestCreateMetricsExporterWithDefaultExcludeMetrics(t *testing.T) {
 	config := &Config{
-		ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
+		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
 		AccessToken:      "testToken",
 		Realm:            "us1",
 	}
@@ -265,7 +277,7 @@ func TestCreateMetricsExporterWithDefaultExcludeMetrics(t *testing.T) {
 
 func TestCreateMetricsExporterWithExcludeMetrics(t *testing.T) {
 	config := &Config{
-		ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
+		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
 		AccessToken:      "testToken",
 		Realm:            "us1",
 		ExcludeMetrics: []dpfilters.MetricFilter{
@@ -285,7 +297,7 @@ func TestCreateMetricsExporterWithExcludeMetrics(t *testing.T) {
 
 func TestCreateMetricsExporterWithEmptyExcludeMetrics(t *testing.T) {
 	config := &Config{
-		ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
+		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
 		AccessToken:      "testToken",
 		Realm:            "us1",
 		ExcludeMetrics:   []dpfilters.MetricFilter{},
@@ -333,7 +345,7 @@ func testMetricsData() pdata.ResourceMetrics {
 	m2.SetDescription("Disk I/O.")
 	m2.SetDataType(pdata.MetricDataTypeSum)
 	m2.Sum().SetIsMonotonic(true)
-	m2.Sum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+	m2.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
 	dp21 := m2.Sum().DataPoints().AppendEmpty()
 	dp21.Attributes().InitFromMap(map[string]pdata.AttributeValue{
 		"host":      pdata.NewAttributeValueString("host0"),
@@ -373,7 +385,7 @@ func testMetricsData() pdata.ResourceMetrics {
 	m3.SetUnit("bytes")
 	m3.SetDataType(pdata.MetricDataTypeSum)
 	m3.Sum().SetIsMonotonic(true)
-	m3.Sum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+	m3.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
 	dp31 := m3.Sum().DataPoints().AppendEmpty()
 	dp31.Attributes().InitFromMap(map[string]pdata.AttributeValue{
 		"host":      pdata.NewAttributeValueString("host0"),
@@ -413,7 +425,7 @@ func testMetricsData() pdata.ResourceMetrics {
 	m4.SetUnit("bytes")
 	m4.SetDataType(pdata.MetricDataTypeSum)
 	m4.Sum().SetIsMonotonic(true)
-	m4.Sum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+	m4.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
 	dp41 := m4.Sum().DataPoints().AppendEmpty()
 	dp41.Attributes().InitFromMap(map[string]pdata.AttributeValue{
 		"device":    pdata.NewAttributeValueString("sda1"),

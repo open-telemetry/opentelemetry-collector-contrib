@@ -42,11 +42,11 @@ func TestLoadConfig(t *testing.T) {
 
 	assert.Equal(t, len(cfg.Receivers), 2)
 
-	r0 := cfg.Receivers[config.NewID(typeStr)]
+	r0 := cfg.Receivers[config.NewComponentID(typeStr)]
 	assert.Equal(t, r0, factory.CreateDefaultConfig())
 
-	r1 := cfg.Receivers[config.NewIDWithName(typeStr, "customname")].(*Config)
-	assert.Equal(t, r1.ReceiverSettings, config.NewReceiverSettings(config.NewIDWithName(typeStr, "customname")))
+	r1 := cfg.Receivers[config.NewComponentIDWithName(typeStr, "customname")].(*Config)
+	assert.Equal(t, r1.ReceiverSettings, config.NewReceiverSettings(config.NewComponentIDWithName(typeStr, "customname")))
 	assert.Equal(t, r1.PrometheusConfig.ScrapeConfigs[0].JobName, "demo")
 	assert.Equal(t, time.Duration(r1.PrometheusConfig.ScrapeConfigs[0].ScrapeInterval), 5*time.Second)
 	assert.Equal(t, r1.UseStartTimeMetric, true)
@@ -67,9 +67,9 @@ func TestLoadConfigWithEnvVar(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 
-	r := cfg.Receivers[config.NewID(typeStr)].(*Config)
-	assert.Equal(t, r.ReceiverSettings, config.NewReceiverSettings(config.NewID(typeStr)))
-	assert.Equal(t, r.PrometheusConfig.ScrapeConfigs[0].JobName, jobname)
+	r := cfg.Receivers[config.NewComponentID(typeStr)].(*Config)
+	assert.Equal(t, r.ReceiverSettings, config.NewReceiverSettings(config.NewComponentID(typeStr)))
+	assert.Equal(t, jobname, r.PrometheusConfig.ScrapeConfigs[0].JobName)
 	os.Unsetenv(jobnamevar)
 }
 
@@ -88,17 +88,17 @@ func TestLoadConfigK8s(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 
-	r := cfg.Receivers[config.NewID(typeStr)].(*Config)
-	assert.Equal(t, r.ReceiverSettings, config.NewReceiverSettings(config.NewID(typeStr)))
+	r := cfg.Receivers[config.NewComponentID(typeStr)].(*Config)
+	assert.Equal(t, r.ReceiverSettings, config.NewReceiverSettings(config.NewComponentID(typeStr)))
 
 	scrapeConfig := r.PrometheusConfig.ScrapeConfigs[0]
 	kubeSDConfig := scrapeConfig.ServiceDiscoveryConfigs[0].(*kubernetes.SDConfig)
 	assert.Equal(t,
-		kubeSDConfig.Selectors[0].Field,
-		fmt.Sprintf("spec.nodeName=%s", node))
+		fmt.Sprintf("spec.nodeName=%s", node),
+		kubeSDConfig.Selectors[0].Field)
 	assert.Equal(t,
-		scrapeConfig.RelabelConfigs[1].Replacement,
-		"$1:$2")
+		"$1:$2",
+		scrapeConfig.RelabelConfigs[1].Replacement)
 }
 
 func TestLoadConfigFailsOnUnknownSection(t *testing.T) {

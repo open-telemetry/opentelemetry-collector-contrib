@@ -53,9 +53,9 @@ func validateMetrics(metric pdata.Metric) bool {
 	case pdata.MetricDataTypeGauge:
 		return metric.Gauge().DataPoints().Len() != 0
 	case pdata.MetricDataTypeSum:
-		return metric.Sum().DataPoints().Len() != 0 && metric.Sum().AggregationTemporality() == pdata.AggregationTemporalityCumulative
+		return metric.Sum().DataPoints().Len() != 0 && metric.Sum().AggregationTemporality() == pdata.MetricAggregationTemporalityCumulative
 	case pdata.MetricDataTypeHistogram:
-		return metric.Histogram().DataPoints().Len() != 0 && metric.Histogram().AggregationTemporality() == pdata.AggregationTemporalityCumulative
+		return metric.Histogram().DataPoints().Len() != 0 && metric.Histogram().AggregationTemporality() == pdata.MetricAggregationTemporalityCumulative
 	case pdata.MetricDataTypeSummary:
 		return metric.Summary().DataPoints().Len() != 0
 	}

@@ -24,6 +24,7 @@ import (
 	"strings"
 	"sync/atomic"
 	"testing"
+	"time"
 
 	"github.com/gogo/protobuf/proto"
 	"github.com/golang/snappy"
@@ -152,8 +153,8 @@ service:
 	}
 
 	appSettings := service.CollectorSettings{
-		Factories:      factories,
-		ParserProvider: parserprovider.NewInMemory(strings.NewReader(config)),
+		Factories:         factories,
+		ConfigMapProvider: parserprovider.NewInMemoryMapProvider(strings.NewReader(config)),
 		BuildInfo: component.BuildInfo{
 			Command:     "otelcol",
 			Description: "OpenTelemetry Collector",
@@ -166,12 +167,12 @@ service:
 			}),
 		},
 	}
+
 	app, err := service.New(appSettings)
 	require.Nil(t, err)
 
 	go func() {
-		cmd := service.NewCommand(app)
-		if err = cmd.Execute(); err != nil {
+		if err = app.Run(context.Background()); err != nil {
 			t.Error(err)
 		}
 	}()
@@ -190,6 +191,7 @@ service:
 	if false {
 		defer app.Shutdown()
 	}
+	time.Sleep(60 * time.Second)
 
 	// 5. Let's wait on 10 fetches.
 	var wReqL []*prompb.WriteRequest

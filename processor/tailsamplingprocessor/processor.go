@@ -128,7 +128,7 @@ func getPolicyEvaluator(logger *zap.Logger, cfg *PolicyCfg) (sampling.PolicyEval
 		return sampling.NewProbabilisticSampler(logger, pCfg.HashSalt, pCfg.SamplingPercentage), nil
 	case StringAttribute:
 		safCfg := cfg.StringAttributeCfg
-		return sampling.NewStringAttributeFilter(logger, safCfg.Key, safCfg.Values, safCfg.EnabledRegexMatching, safCfg.CacheMaxSize), nil
+		return sampling.NewStringAttributeFilter(logger, safCfg.Key, safCfg.Values, safCfg.EnabledRegexMatching, safCfg.CacheMaxSize, safCfg.InvertMatch), nil
 	case StatusCode:
 		scfCfg := cfg.StatusCodeCfg
 		return sampling.NewStatusCodeFilter(logger, scfCfg.StatusCodes)
@@ -200,7 +200,15 @@ func (tsp *tailSamplingSpanProcessor) samplingPolicyOnTick() {
 func (tsp *tailSamplingSpanProcessor) makeDecision(id pdata.TraceID, trace *sampling.TraceData, metrics *policyMetrics) (sampling.Decision, *policy) {
 	finalDecision := sampling.NotSampled
 	var matchingPolicy *policy
+	samplingDecision := map[sampling.Decision]bool{
+		sampling.Error:            false,
+		sampling.Sampled:          false,
+		sampling.NotSampled:       false,
+		sampling.InvertSampled:    false,
+		sampling.InvertNotSampled: false,
+	}
 
+	// Check all policies before making a final decision
 	for i, p := range tsp.policies {
 		policyEvaluateStartTime := time.Now()
 		decision, err := p.evaluator.Evaluate(id, trace)
@@ -209,36 +217,63 @@ func (tsp *tailSamplingSpanProcessor) makeDecision(id pdata.TraceID, trace *samp
 			statDecisionLatencyMicroSec.M(int64(time.Since(policyEvaluateStartTime)/time.Microsecond)))
 
 		if err != nil {
+			samplingDecision[sampling.Error] = true
 			trace.Decisions[i] = sampling.NotSampled
 			metrics.evaluateErrorCount++
 			tsp.logger.Debug("Sampling policy error", zap.Error(err))
 		} else {
-			trace.Decisions[i] = decision
-
 			switch decision {
 			case sampling.Sampled:
-				// any single policy that decides to sample will cause the decision to be sampled
-				// the nextConsumer will get the context from the first matching policy
-				finalDecision = sampling.Sampled
-				if matchingPolicy == nil {
-					matchingPolicy = p
-				}
-
-				_ = stats.RecordWithTags(
-					p.ctx,
-					[]tag.Mutator{tag.Insert(tagSampledKey, "true")},
-					statCountTracesSampled.M(int64(1)),
-				)
-				metrics.decisionSampled++
+				samplingDecision[sampling.Sampled] = true
+				trace.Decisions[i] = decision
 
 			case sampling.NotSampled:
-				_ = stats.RecordWithTags(
-					p.ctx,
-					[]tag.Mutator{tag.Insert(tagSampledKey, "false")},
-					statCountTracesSampled.M(int64(1)),
-				)
-				metrics.decisionNotSampled++
+				samplingDecision[sampling.NotSampled] = true
+				trace.Decisions[i] = decision
+
+			case sampling.InvertSampled:
+				samplingDecision[sampling.InvertSampled] = true
+				trace.Decisions[i] = sampling.Sampled
+
+			case sampling.InvertNotSampled:
+				samplingDecision[sampling.InvertNotSampled] = true
+				trace.Decisions[i] = sampling.NotSampled
 			}
+		}
+	}
+
+	// InvertNotSampled takes precedence over any other decision
+	if samplingDecision[sampling.InvertNotSampled] {
+		finalDecision = sampling.NotSampled
+	} else if samplingDecision[sampling.Sampled] {
+		finalDecision = sampling.Sampled
+	} else if samplingDecision[sampling.InvertSampled] && !samplingDecision[sampling.NotSampled] {
+		finalDecision = sampling.Sampled
+	}
+
+	for _, p := range tsp.policies {
+		switch finalDecision {
+		case sampling.Sampled:
+			// any single policy that decides to sample will cause the decision to be sampled
+			// the nextConsumer will get the context from the first matching policy
+			if matchingPolicy == nil {
+				matchingPolicy = p
+			}
+
+			_ = stats.RecordWithTags(
+				p.ctx,
+				[]tag.Mutator{tag.Insert(tagSampledKey, "true")},
+				statCountTracesSampled.M(int64(1)),
+			)
+			metrics.decisionSampled++
+
+		case sampling.NotSampled:
+			_ = stats.RecordWithTags(
+				p.ctx,
+				[]tag.Mutator{tag.Insert(tagSampledKey, "false")},
+				statCountTracesSampled.M(int64(1)),
+			)
+			metrics.decisionNotSampled++
 		}
 	}
 

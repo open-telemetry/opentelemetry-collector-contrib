@@ -47,7 +47,11 @@ func NewFactory() component.ExporterFactory {
 // createDefaultConfig creates the default exporter configuration
 func createDefaultConfig() config.Exporter {
 	return &ddconfig.Config{
-		ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
+		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
+		TimeoutSettings:  exporterhelper.DefaultTimeoutSettings(),
+		RetrySettings:    exporterhelper.DefaultRetrySettings(),
+		QueueSettings:    exporterhelper.DefaultQueueSettings(),
+
 		API: ddconfig.APIConfig{
 			Key:  "$DD_API_KEY", // Must be set if using API
 			Site: "$DD_SITE",    // If not provided, set during config sanitization
@@ -130,15 +134,21 @@ func createMetricsExporter(
 			return nil
 		}
 	} else {
-		pushMetricsFn = newMetricsExporter(ctx, set, cfg).PushMetricsData
+		exp, err := newMetricsExporter(ctx, set, cfg)
+		if err != nil {
+			cancel()
+			return nil, err
+		}
+		pushMetricsFn = exp.PushMetricsData
 	}
 
 	exporter, err := exporterhelper.NewMetricsExporter(
 		cfg,
 		set,
 		pushMetricsFn,
-		exporterhelper.WithQueue(exporterhelper.DefaultQueueSettings()),
-		exporterhelper.WithRetry(exporterhelper.DefaultRetrySettings()),
+		exporterhelper.WithTimeout(cfg.TimeoutSettings),
+		exporterhelper.WithRetry(cfg.RetrySettings),
+		exporterhelper.WithQueue(cfg.QueueSettings),
 		exporterhelper.WithShutdown(func(context.Context) error {
 			cancel()
 			return nil
@@ -189,6 +199,9 @@ func createTracesExporter(
 		cfg,
 		set,
 		pushTracesFn,
+		exporterhelper.WithTimeout(cfg.TimeoutSettings),
+		exporterhelper.WithRetry(cfg.RetrySettings),
+		exporterhelper.WithQueue(cfg.QueueSettings),
 		exporterhelper.WithShutdown(func(context.Context) error {
 			cancel()
 			return nil

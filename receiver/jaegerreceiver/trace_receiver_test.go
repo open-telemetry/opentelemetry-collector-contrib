@@ -56,7 +56,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger"
 )
 
-var jaegerReceiver = config.NewIDWithName("jaeger", "receiver_test")
+var jaegerReceiver = config.NewComponentIDWithName("jaeger", "receiver_test")
 
 func TestTraceSource(t *testing.T) {
 	set := componenttest.NewNopReceiverCreateSettings()
@@ -510,7 +510,7 @@ func TestSamplingStrategiesMutualTLS(t *testing.T) {
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.RemoteSampling = &RemoteSamplingConfig{
 		GRPCClientSettings: configgrpc.GRPCClientSettings{
-			TLSSetting: configtls.TLSClientSetting{
+			TLSSetting: &configtls.TLSClientSetting{
 				TLSSetting: configtls.TLSSetting{
 					CAFile:   caPath,
 					CertFile: clientCertPath,

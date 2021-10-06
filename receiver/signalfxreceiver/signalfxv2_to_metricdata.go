@@ -94,12 +94,12 @@ func fillInType(sfxDataPoint *sfxpb.DataPoint, m pdata.Metric) (err error) {
 
 	case sfxpb.MetricType_COUNTER:
 		m.SetDataType(pdata.MetricDataTypeSum)
-		m.Sum().SetAggregationTemporality(pdata.AggregationTemporalityDelta)
+		m.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityDelta)
 		m.Sum().SetIsMonotonic(true)
 
 	case sfxpb.MetricType_CUMULATIVE_COUNTER:
 		m.SetDataType(pdata.MetricDataTypeSum)
-		m.Sum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+		m.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
 		m.Sum().SetIsMonotonic(true)
 	default:
 		err = fmt.Errorf("unknown data-point type (%d)", sfxMetricType)

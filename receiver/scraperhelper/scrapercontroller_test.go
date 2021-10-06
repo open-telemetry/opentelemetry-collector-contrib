@@ -26,7 +26,6 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/obsreport/obsreporttest"
@@ -36,6 +35,7 @@ import (
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	"go.opentelemetry.io/otel/sdk/trace/tracetest"
 	"go.opentelemetry.io/otel/trace"
+	"go.uber.org/multierr"
 	"go.uber.org/zap"
 )
 
@@ -190,9 +190,9 @@ func TestScrapeController(t *testing.T) {
 			otel.SetTracerProvider(tp)
 			defer otel.SetTracerProvider(trace.NewNoopTracerProvider())
 
-			done, err := obsreporttest.SetupRecordedMetricsTest()
+			tt, err := obsreporttest.SetupTelemetry()
 			require.NoError(t, err)
-			defer done()
+			defer tt.Shutdown(context.Background())
 
 			initializeChs := make([]chan bool, test.scrapers+test.resourceScrapers)
 			scrapeMetricsChs := make([]chan int, test.scrapers)
@@ -309,7 +309,7 @@ func configureMetricOptions(test metricsTestCase, initializeChs []chan bool, scr
 
 		testScrapeResourceMetricsChs[i] = make(chan int)
 		tsrm := &testScrapeResourceMetrics{ch: testScrapeResourceMetricsChs[i], err: test.scrapeErr}
-		metricOptions = append(metricOptions, AddScraper(NewResourceMetricsScraper(config.NewID("scraper"), tsrm.scrape, scraperOptions...)))
+		metricOptions = append(metricOptions, AddScraper(NewResourceMetricsScraper(config.NewComponentID("scraper"), tsrm.scrape, scraperOptions...)))
 	}
 
 	return metricOptions
@@ -320,15 +320,15 @@ func getExpectedStartErr(test metricsTestCase) error {
 }
 
 func getExpectedShutdownErr(test metricsTestCase) error {
-	var errs []error
+	var errs error
 
 	if test.closeErr != nil {
 		for i := 0; i < test.scrapers; i++ {
-			errs = append(errs, test.closeErr)
+			errs = multierr.Append(errs, test.closeErr)
 		}
 	}
 
-	return consumererror.Combine(errs)
+	return errs
 }
 
 func assertChannelsCalled(t *testing.T, chs []chan bool, message string) {
@@ -361,7 +361,7 @@ func assertReceiverViews(t *testing.T, sink *consumertest.MetricsSink) {
 	for _, md := range sink.AllMetrics() {
 		dataPointCount += md.DataPointCount()
 	}
-	obsreporttest.CheckReceiverMetrics(t, config.NewID("receiver"), "", int64(dataPointCount), 0)
+	require.NoError(t, obsreporttest.CheckReceiverMetrics(config.NewComponentID("receiver"), "", int64(dataPointCount), 0))
 }
 
 func assertScraperSpan(t *testing.T, expectedErr error, spans []sdktrace.ReadOnlySpan) {
@@ -396,7 +396,7 @@ func assertScraperViews(t *testing.T, expectedErr error, sink *consumertest.Metr
 		}
 	}
 
-	obsreporttest.CheckScraperMetrics(t, config.NewID("receiver"), config.NewID("scraper"), expectedScraped, expectedErrored)
+	require.NoError(t, obsreporttest.CheckScraperMetrics(config.NewComponentID("receiver"), config.NewComponentID("scraper"), expectedScraped, expectedErrored))
 }
 
 func singleMetric() pdata.MetricSlice {
@@ -431,7 +431,7 @@ func TestSingleScrapePerTick(t *testing.T) {
 		zap.NewNop(),
 		new(consumertest.MetricsSink),
 		AddScraper(NewMetricsScraper("", tsm.scrape)),
-		AddScraper(NewResourceMetricsScraper(config.NewID("scraper"), tsrm.scrape)),
+		AddScraper(NewResourceMetricsScraper(config.NewComponentID("scraper"), tsrm.scrape)),
 		WithTickerChannel(tickerCh),
 	)
 	require.NoError(t, err)

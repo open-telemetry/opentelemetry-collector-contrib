@@ -139,7 +139,7 @@ func Test_signalfxeceiver_EndToEnd(t *testing.T) {
 		m := ilm.Metrics().AppendEmpty()
 		m.SetName("cumulative_double_with_dims")
 		m.SetDataType(pdata.MetricDataTypeSum)
-		m.Sum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+		m.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
 		m.Sum().SetIsMonotonic(true)
 		doublePt := m.Sum().DataPoints().AppendEmpty()
 		doublePt.SetTimestamp(ts)
@@ -149,7 +149,7 @@ func Test_signalfxeceiver_EndToEnd(t *testing.T) {
 		m := ilm.Metrics().AppendEmpty()
 		m.SetName("cumulative_int_with_dims")
 		m.SetDataType(pdata.MetricDataTypeSum)
-		m.Sum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+		m.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
 		m.Sum().SetIsMonotonic(true)
 		int64Pt := m.Sum().DataPoints().AppendEmpty()
 		int64Pt.SetTimestamp(ts)
@@ -157,8 +157,8 @@ func Test_signalfxeceiver_EndToEnd(t *testing.T) {
 	}
 
 	expCfg := &signalfxexporter.Config{
-		ExporterSettings: config.NewExporterSettings(config.NewID("signalfx")),
-		IngestURL:        "http://" + addr + "/v2/datapoint",
+		ExporterSettings: config.NewExporterSettings(config.NewComponentID("signalfx")),
+		IngestURL:        "http://" + addr,
 		APIURL:           "http://localhost",
 		AccessToken:      "access_token",
 	}
