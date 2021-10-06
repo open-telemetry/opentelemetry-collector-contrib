@@ -42,6 +42,8 @@ from opentelemetry.semconv.trace import SpanAttributes
 from opentelemetry.test.mock_textmap import MockTextMapPropagator
 from opentelemetry.test.test_base import TestBase
 
+_REQUEST_ID_REGEX_MATCH = r"[A-Z0-9]{52}"
+
 
 def get_as_zip_file(file_name, content):
     zip_output = io.BytesIO()
@@ -73,33 +75,58 @@ class TestBotocoreInstrumentor(TestBase):
         self.session.set_credentials(
             access_key="access-key", secret_key="secret-key"
         )
+        self.region = "us-west-2"
 
     def tearDown(self):
         super().tearDown()
         BotocoreInstrumentor().uninstrument()
 
+    def _make_client(self, service: str):
+        return self.session.create_client(service, region_name=self.region)
+
+    def _default_span_attributes(self, service: str, operation: str):
+        return {
+            SpanAttributes.RPC_SYSTEM: "aws-api",
+            SpanAttributes.RPC_SERVICE: service,
+            SpanAttributes.RPC_METHOD: operation,
+            "aws.region": self.region,
+            "retry_attempts": 0,
+            SpanAttributes.HTTP_STATUS_CODE: 200,
+        }
+
+    def assert_only_span(self):
+        spans = self.memory_exporter.get_finished_spans()
+        self.assertEqual(1, len(spans))
+        return spans[0]
+
+    def assert_span(
+        self, service: str, operation: str, request_id=None, attributes=None,
+    ):
+        span = self.assert_only_span()
+        expected = self._default_span_attributes(service, operation)
+        if attributes:
+            expected.update(attributes)
+
+        span_attributes_request_id = "aws.request_id"
+        if request_id is _REQUEST_ID_REGEX_MATCH:
+            actual_request_id = span.attributes[span_attributes_request_id]
+            self.assertRegex(actual_request_id, _REQUEST_ID_REGEX_MATCH)
+            expected[span_attributes_request_id] = actual_request_id
+        elif request_id is not None:
+            expected[span_attributes_request_id] = request_id
+
+        self.assertSpanHasAttributes(span, expected)
+        self.assertEqual("{}.{}".format(service, operation), span.name)
+        return span
+
     @mock_ec2
     def test_traced_client(self):
-        ec2 = self.session.create_client("ec2", region_name="us-west-2")
+        ec2 = self._make_client("ec2")
 
         ec2.describe_instances()
 
-        spans = self.memory_exporter.get_finished_spans()
-        assert spans
-        span = spans[0]
-        self.assertEqual(len(spans), 1)
-        self.assertEqual(
-            span.attributes,
-            {
-                "aws.operation": "DescribeInstances",
-                "aws.region": "us-west-2",
-                "aws.request_id": "fdcdcab1-ae5c-489e-9c33-4637c5dda355",
-                "aws.service": "ec2",
-                "retry_attempts": 0,
-                SpanAttributes.HTTP_STATUS_CODE: 200,
-            },
-        )
-        self.assertEqual(span.name, "ec2")
+        request_id = "fdcdcab1-ae5c-489e-9c33-4637c5dda355"
+        self.assert_span("EC2", "DescribeInstances", request_id=request_id)
 
     @mock_ec2
     def test_not_recording(self):
@@ -109,219 +136,105 @@ class TestBotocoreInstrumentor(TestBase):
         mock_tracer.start_span.return_value = mock_span
         with patch("opentelemetry.trace.get_tracer") as tracer:
             tracer.return_value = mock_tracer
-            ec2 = self.session.create_client("ec2", region_name="us-west-2")
+            ec2 = self._make_client("ec2")
             ec2.describe_instances()
             self.assertFalse(mock_span.is_recording())
             self.assertTrue(mock_span.is_recording.called)
             self.assertFalse(mock_span.set_attribute.called)
             self.assertFalse(mock_span.set_status.called)
 
-    @mock_ec2
-    def test_traced_client_analytics(self):
-        ec2 = self.session.create_client("ec2", region_name="us-west-2")
-        ec2.describe_instances()
+    @mock_s3
+    def test_exception(self):
+        s3 = self._make_client("s3")
+
+        with self.assertRaises(ParamValidationError):
+            s3.list_objects(bucket="mybucket")
 
         spans = self.memory_exporter.get_finished_spans()
-        assert spans
+        self.assertEqual(1, len(spans))
+        span = spans[0]
+
+        expected = self._default_span_attributes("S3", "ListObjects")
+        expected.pop(SpanAttributes.HTTP_STATUS_CODE)
+        expected.pop("retry_attempts")
+        self.assertEqual(expected, span.attributes)
+        self.assertIs(span.status.status_code, trace_api.StatusCode.ERROR)
+
+        self.assertEqual(1, len(span.events))
+        event = span.events[0]
+        self.assertIn(SpanAttributes.EXCEPTION_STACKTRACE, event.attributes)
+        self.assertIn(SpanAttributes.EXCEPTION_TYPE, event.attributes)
+        self.assertIn(SpanAttributes.EXCEPTION_MESSAGE, event.attributes)
 
     @mock_s3
     def test_s3_client(self):
-        s3 = self.session.create_client("s3", region_name="us-west-2")
+        s3 = self._make_client("s3")
 
         s3.list_buckets()
-        s3.list_buckets()
+        self.assert_span("S3", "ListBuckets")
 
-        spans = self.get_finished_spans()
-        assert spans
-        self.assertEqual(len(spans), 2)
-
-        buckets_span = spans.by_attr("aws.operation", "ListBuckets")
-        self.assertSpanHasAttributes(
-            buckets_span,
-            {
-                "aws.operation": "ListBuckets",
-                "aws.region": "us-west-2",
-                "aws.service": "s3",
-                "retry_attempts": 0,
-                SpanAttributes.HTTP_STATUS_CODE: 200,
-            },
-        )
-
-        # testing for span error
-        with self.assertRaises(ParamValidationError):
-            s3.list_objects(bucket="mybucket")
-        spans = self.get_finished_spans()
-        assert spans
-        objects_span = spans.by_attr("aws.operation", "ListObjects")
-        self.assertSpanHasAttributes(
-            objects_span,
-            {
-                "aws.operation": "ListObjects",
-                "aws.region": "us-west-2",
-                "aws.service": "s3",
-            },
-        )
-        self.assertIs(
-            objects_span.status.status_code, trace_api.StatusCode.ERROR,
-        )
-
-    # Comment test for issue 1088
     @mock_s3
     def test_s3_put(self):
-        params = dict(Key="foo", Bucket="mybucket", Body=b"bar")
-        s3 = self.session.create_client("s3", region_name="us-west-2")
+        s3 = self._make_client("s3")
+
         location = {"LocationConstraint": "us-west-2"}
         s3.create_bucket(Bucket="mybucket", CreateBucketConfiguration=location)
-        s3.put_object(**params)
+        self.assert_span("S3", "CreateBucket")
+        self.memory_exporter.clear()
+
+        s3.put_object(Key="foo", Bucket="mybucket", Body=b"bar")
+        self.assert_span("S3", "PutObject")
+        self.memory_exporter.clear()
+
         s3.get_object(Bucket="mybucket", Key="foo")
-
-        spans = self.get_finished_spans()
-        assert spans
-        self.assertEqual(len(spans), 3)
-
-        create_span = spans.by_attr("aws.operation", "CreateBucket")
-        self.assertSpanHasAttributes(
-            create_span,
-            {
-                "aws.operation": "CreateBucket",
-                "aws.region": "us-west-2",
-                "aws.service": "s3",
-                "retry_attempts": 0,
-                SpanAttributes.HTTP_STATUS_CODE: 200,
-            },
-        )
-
-        put_span = spans.by_attr("aws.operation", "PutObject")
-        self.assertSpanHasAttributes(
-            put_span,
-            {
-                "aws.operation": "PutObject",
-                "aws.region": "us-west-2",
-                "aws.service": "s3",
-                "retry_attempts": 0,
-                SpanAttributes.HTTP_STATUS_CODE: 200,
-            },
-        )
-        self.assertTrue("params.Body" not in put_span.attributes.keys())
-
-        get_span = spans.by_attr("aws.operation", "GetObject")
-
-        self.assertSpanHasAttributes(
-            get_span,
-            {
-                "aws.operation": "GetObject",
-                "aws.region": "us-west-2",
-                "aws.service": "s3",
-                "retry_attempts": 0,
-                SpanAttributes.HTTP_STATUS_CODE: 200,
-            },
-        )
+        self.assert_span("S3", "GetObject")
 
     @mock_sqs
     def test_sqs_client(self):
-        sqs = self.session.create_client("sqs", region_name="us-east-1")
+        sqs = self._make_client("sqs")
 
         sqs.list_queues()
 
-        spans = self.memory_exporter.get_finished_spans()
-        assert spans
-        span = spans[0]
-        self.assertEqual(len(spans), 1)
-        actual = span.attributes
-        self.assertRegex(actual["aws.request_id"], r"[A-Z0-9]{52}")
-        self.assertEqual(
-            actual,
-            {
-                "aws.operation": "ListQueues",
-                "aws.region": "us-east-1",
-                "aws.request_id": actual["aws.request_id"],
-                "aws.service": "sqs",
-                "retry_attempts": 0,
-                SpanAttributes.HTTP_STATUS_CODE: 200,
-            },
+        self.assert_span(
+            "SQS", "ListQueues", request_id=_REQUEST_ID_REGEX_MATCH
         )
 
     @mock_sqs
     def test_sqs_send_message(self):
-        sqs = self.session.create_client("sqs", region_name="us-east-1")
-
+        sqs = self._make_client("sqs")
         test_queue_name = "test_queue_name"
 
         response = sqs.create_queue(QueueName=test_queue_name)
+        self.assert_span(
+            "SQS", "CreateQueue", request_id=_REQUEST_ID_REGEX_MATCH
+        )
+        self.memory_exporter.clear()
 
-        sqs.send_message(
-            QueueUrl=response["QueueUrl"], MessageBody="Test SQS MESSAGE!"
-        )
+        queue_url = response["QueueUrl"]
+        sqs.send_message(QueueUrl=queue_url, MessageBody="Test SQS MESSAGE!")
 
-        spans = self.memory_exporter.get_finished_spans()
-        assert spans
-        self.assertEqual(len(spans), 2)
-        create_queue_attributes = spans[0].attributes
-        self.assertRegex(
-            create_queue_attributes["aws.request_id"], r"[A-Z0-9]{52}"
-        )
-        self.assertEqual(
-            create_queue_attributes,
-            {
-                "aws.operation": "CreateQueue",
-                "aws.region": "us-east-1",
-                "aws.request_id": create_queue_attributes["aws.request_id"],
-                "aws.service": "sqs",
-                "retry_attempts": 0,
-                SpanAttributes.HTTP_STATUS_CODE: 200,
-            },
-        )
-        send_msg_attributes = spans[1].attributes
-        self.assertRegex(
-            send_msg_attributes["aws.request_id"], r"[A-Z0-9]{52}"
-        )
-        self.assertEqual(
-            send_msg_attributes,
-            {
-                "aws.operation": "SendMessage",
-                "aws.queue_url": response["QueueUrl"],
-                "aws.region": "us-east-1",
-                "aws.request_id": send_msg_attributes["aws.request_id"],
-                "aws.service": "sqs",
-                "retry_attempts": 0,
-                SpanAttributes.HTTP_STATUS_CODE: 200,
-            },
+        self.assert_span(
+            "SQS",
+            "SendMessage",
+            request_id=_REQUEST_ID_REGEX_MATCH,
+            attributes={"aws.queue_url": queue_url},
         )
 
     @mock_kinesis
     def test_kinesis_client(self):
-        kinesis = self.session.create_client(
-            "kinesis", region_name="us-east-1"
-        )
+        kinesis = self._make_client("kinesis")
 
         kinesis.list_streams()
-
-        spans = self.memory_exporter.get_finished_spans()
-        assert spans
-        span = spans[0]
-        self.assertEqual(len(spans), 1)
-        self.assertEqual(
-            span.attributes,
-            {
-                "aws.operation": "ListStreams",
-                "aws.region": "us-east-1",
-                "aws.service": "kinesis",
-                "retry_attempts": 0,
-                SpanAttributes.HTTP_STATUS_CODE: 200,
-            },
-        )
+        self.assert_span("Kinesis", "ListStreams")
 
     @mock_kinesis
     def test_unpatch(self):
-        kinesis = self.session.create_client(
-            "kinesis", region_name="us-east-1"
-        )
+        kinesis = self._make_client("kinesis")
 
         BotocoreInstrumentor().uninstrument()
 
         kinesis.list_streams()
-        spans = self.memory_exporter.get_finished_spans()
-        assert not spans, spans
+        self.assertEqual(0, len(self.memory_exporter.get_finished_spans()))
 
     @mock_ec2
     def test_uninstrument_does_not_inject_headers(self):
@@ -333,7 +246,7 @@ class TestBotocoreInstrumentor(TestBase):
             def intercept_headers(**kwargs):
                 headers.update(kwargs["request"].headers)
 
-            ec2 = self.session.create_client("ec2", region_name="us-west-2")
+            ec2 = self._make_client("ec2")
 
             BotocoreInstrumentor().uninstrument()
 
@@ -350,41 +263,26 @@ class TestBotocoreInstrumentor(TestBase):
 
     @mock_sqs
     def test_double_patch(self):
-        sqs = self.session.create_client("sqs", region_name="us-east-1")
+        sqs = self._make_client("sqs")
 
         BotocoreInstrumentor().instrument()
         BotocoreInstrumentor().instrument()
 
         sqs.list_queues()
-
-        spans = self.memory_exporter.get_finished_spans()
-        assert spans
-        self.assertEqual(len(spans), 1)
+        self.assert_span(
+            "SQS", "ListQueues", request_id=_REQUEST_ID_REGEX_MATCH
+        )
 
     @mock_lambda
     def test_lambda_client(self):
-        lamb = self.session.create_client("lambda", region_name="us-east-1")
+        lamb = self._make_client("lambda")
 
         lamb.list_functions()
-
-        spans = self.memory_exporter.get_finished_spans()
-        assert spans
-        span = spans[0]
-        self.assertEqual(len(spans), 1)
-        self.assertEqual(
-            span.attributes,
-            {
-                "aws.operation": "ListFunctions",
-                "aws.region": "us-east-1",
-                "aws.service": "lambda",
-                "retry_attempts": 0,
-                SpanAttributes.HTTP_STATUS_CODE: 200,
-            },
-        )
+        self.assert_span("Lambda", "ListFunctions")
 
     @mock_iam
     def get_role_name(self):
-        iam = self.session.create_client("iam", "us-east-1")
+        iam = self._make_client("iam")
         return iam.create_role(
             RoleName="my-role",
             AssumeRolePolicyDocument="some policy",
@@ -402,12 +300,10 @@ class TestBotocoreInstrumentor(TestBase):
         try:
             set_global_textmap(MockTextMapPropagator())
 
-            lamb = self.session.create_client(
-                "lambda", region_name="us-east-1"
-            )
+            lamb = self._make_client("lambda")
             lamb.create_function(
                 FunctionName="testFunction",
-                Runtime="python2.7",
+                Runtime="python3.8",
                 Role=self.get_role_name(),
                 Handler="lambda_function.lambda_handler",
                 Code={
@@ -420,27 +316,31 @@ class TestBotocoreInstrumentor(TestBase):
                 MemorySize=128,
                 Publish=True,
             )
+            # 2 spans for create IAM + create lambda
+            self.assertEqual(2, len(self.memory_exporter.get_finished_spans()))
+            self.memory_exporter.clear()
+
             response = lamb.invoke(
                 Payload=json.dumps({}),
                 FunctionName="testFunction",
                 InvocationType="RequestResponse",
             )
 
-            spans = self.memory_exporter.get_finished_spans()
-            assert spans
-            self.assertEqual(len(spans), 3)
+            span = self.assert_span(
+                "Lambda", "Invoke", request_id=_REQUEST_ID_REGEX_MATCH
+            )
+            span_context = span.get_span_context()
 
+            # assert injected span
             results = response["Payload"].read().decode("utf-8")
             headers = json.loads(results)
 
-            self.assertIn(MockTextMapPropagator.TRACE_ID_KEY, headers)
             self.assertEqual(
-                str(spans[2].get_span_context().trace_id),
+                str(span_context.trace_id),
                 headers[MockTextMapPropagator.TRACE_ID_KEY],
             )
-            self.assertIn(MockTextMapPropagator.SPAN_ID_KEY, headers)
             self.assertEqual(
-                str(spans[2].get_span_context().span_id),
+                str(span_context.span_id),
                 headers[MockTextMapPropagator.SPAN_ID_KEY],
             )
         finally:
@@ -448,52 +348,27 @@ class TestBotocoreInstrumentor(TestBase):
 
     @mock_kms
     def test_kms_client(self):
-        kms = self.session.create_client("kms", region_name="us-east-1")
+        kms = self._make_client("kms")
 
         kms.list_keys(Limit=21)
 
-        spans = self.memory_exporter.get_finished_spans()
-        assert spans
-        span = spans[0]
-        self.assertEqual(len(spans), 1)
+        span = self.assert_only_span()
+        # check for exact attribute set to make sure not to leak any kms secrets
         self.assertEqual(
-            span.attributes,
-            {
-                "aws.operation": "ListKeys",
-                "aws.region": "us-east-1",
-                "aws.service": "kms",
-                "retry_attempts": 0,
-                SpanAttributes.HTTP_STATUS_CODE: 200,
-            },
+            self._default_span_attributes("KMS", "ListKeys"), span.attributes
         )
-
-        # checking for protection on kms against security leak
-        self.assertTrue("params" not in span.attributes.keys())
 
     @mock_sts
     def test_sts_client(self):
-        sts = self.session.create_client("sts", region_name="us-east-1")
+        sts = self._make_client("sts")
 
         sts.get_caller_identity()
 
-        spans = self.memory_exporter.get_finished_spans()
-        assert spans
-        span = spans[0]
-        self.assertEqual(len(spans), 1)
-        self.assertEqual(
-            span.attributes,
-            {
-                "aws.operation": "GetCallerIdentity",
-                "aws.region": "us-east-1",
-                "aws.request_id": "c6104cbe-af31-11e0-8154-cbc7ccf896c7",
-                "aws.service": "sts",
-                "retry_attempts": 0,
-                SpanAttributes.HTTP_STATUS_CODE: 200,
-            },
-        )
-
-        # checking for protection on sts against security leak
-        self.assertTrue("params" not in span.attributes.keys())
+        span = self.assert_only_span()
+        expected = self._default_span_attributes("STS", "GetCallerIdentity")
+        expected["aws.request_id"] = "c6104cbe-af31-11e0-8154-cbc7ccf896c7"
+        # check for exact attribute set to make sure not to leak any sts secrets
+        self.assertEqual(expected, span.attributes)
 
     @mock_ec2
     def test_propagator_injects_into_request(self):
@@ -507,26 +382,15 @@ class TestBotocoreInstrumentor(TestBase):
         try:
             set_global_textmap(MockTextMapPropagator())
 
-            ec2 = self.session.create_client("ec2", region_name="us-west-2")
+            ec2 = self._make_client("ec2")
             ec2.meta.events.register_first(
                 "before-send.ec2.DescribeInstances", check_headers
             )
             ec2.describe_instances()
 
-            spans = self.memory_exporter.get_finished_spans()
-            self.assertEqual(len(spans), 1)
-            span = spans[0]
-            describe_instances_attributes = spans[0].attributes
-            self.assertEqual(
-                describe_instances_attributes,
-                {
-                    "aws.operation": "DescribeInstances",
-                    "aws.region": "us-west-2",
-                    "aws.request_id": "fdcdcab1-ae5c-489e-9c33-4637c5dda355",
-                    "aws.service": "ec2",
-                    "retry_attempts": 0,
-                    SpanAttributes.HTTP_STATUS_CODE: 200,
-                },
+            request_id = "fdcdcab1-ae5c-489e-9c33-4637c5dda355"
+            span = self.assert_span(
+                "EC2", "DescribeInstances", request_id=request_id
             )
 
             self.assertIn(MockTextMapPropagator.TRACE_ID_KEY, headers)
@@ -545,20 +409,18 @@ class TestBotocoreInstrumentor(TestBase):
 
     @mock_xray
     def test_suppress_instrumentation_xray_client(self):
-        xray_client = self.session.create_client(
-            "xray", region_name="us-east-1"
-        )
+        xray_client = self._make_client("xray")
         token = attach(set_value(_SUPPRESS_INSTRUMENTATION_KEY, True))
-        xray_client.put_trace_segments(TraceSegmentDocuments=["str1"])
-        xray_client.put_trace_segments(TraceSegmentDocuments=["str2"])
-        detach(token)
-
-        spans = self.memory_exporter.get_finished_spans()
-        self.assertEqual(0, len(spans))
+        try:
+            xray_client.put_trace_segments(TraceSegmentDocuments=["str1"])
+            xray_client.put_trace_segments(TraceSegmentDocuments=["str2"])
+        finally:
+            detach(token)
+        self.assertEqual(0, len(self.get_finished_spans()))
 
     @mock_dynamodb2
     def test_dynamodb_client(self):
-        ddb = self.session.create_client("dynamodb", region_name="us-west-2")
+        ddb = self._make_client("dynamodb")
 
         test_table_name = "test_table_name"
 
@@ -573,64 +435,32 @@ class TestBotocoreInstrumentor(TestBase):
             },
             TableName=test_table_name,
         )
+        self.assert_span(
+            "DynamoDB",
+            "CreateTable",
+            request_id=_REQUEST_ID_REGEX_MATCH,
+            attributes={"aws.table_name": test_table_name},
+        )
+        self.memory_exporter.clear()
 
         ddb.put_item(TableName=test_table_name, Item={"id": {"S": "test_key"}})
+        self.assert_span(
+            "DynamoDB",
+            "PutItem",
+            request_id=_REQUEST_ID_REGEX_MATCH,
+            attributes={"aws.table_name": test_table_name},
+        )
+        self.memory_exporter.clear()
 
         ddb.get_item(TableName=test_table_name, Key={"id": {"S": "test_key"}})
-
-        spans = self.memory_exporter.get_finished_spans()
-        assert spans
-        self.assertEqual(len(spans), 3)
-        create_table_attributes = spans[0].attributes
-        self.assertRegex(
-            create_table_attributes["aws.request_id"], r"[A-Z0-9]{52}"
-        )
-        self.assertEqual(
-            create_table_attributes,
-            {
-                "aws.operation": "CreateTable",
-                "aws.region": "us-west-2",
-                "aws.service": "dynamodb",
-                "aws.request_id": create_table_attributes["aws.request_id"],
-                "aws.table_name": "test_table_name",
-                "retry_attempts": 0,
-                SpanAttributes.HTTP_STATUS_CODE: 200,
-            },
-        )
-        put_item_attributes = spans[1].attributes
-        self.assertRegex(
-            put_item_attributes["aws.request_id"], r"[A-Z0-9]{52}"
-        )
-        self.assertEqual(
-            put_item_attributes,
-            {
-                "aws.operation": "PutItem",
-                "aws.region": "us-west-2",
-                "aws.request_id": put_item_attributes["aws.request_id"],
-                "aws.service": "dynamodb",
-                "aws.table_name": "test_table_name",
-                "retry_attempts": 0,
-                SpanAttributes.HTTP_STATUS_CODE: 200,
-            },
-        )
-        get_item_attributes = spans[2].attributes
-        self.assertRegex(
-            get_item_attributes["aws.request_id"], r"[A-Z0-9]{52}"
-        )
-        self.assertEqual(
-            get_item_attributes,
-            {
-                "aws.operation": "GetItem",
-                "aws.region": "us-west-2",
-                "aws.request_id": get_item_attributes["aws.request_id"],
-                "aws.service": "dynamodb",
-                "aws.table_name": "test_table_name",
-                "retry_attempts": 0,
-                SpanAttributes.HTTP_STATUS_CODE: 200,
-            },
+        self.assert_span(
+            "DynamoDB",
+            "GetItem",
+            request_id=_REQUEST_ID_REGEX_MATCH,
+            attributes={"aws.table_name": test_table_name},
         )
 
-    @mock_dynamodb2
+    @mock_s3
     def test_request_hook(self):
         request_hook_service_attribute_name = "request_hook.service_name"
         request_hook_operation_attribute_name = "request_hook.operation_name"
@@ -642,60 +472,30 @@ class TestBotocoreInstrumentor(TestBase):
                 request_hook_operation_attribute_name: operation_name,
                 request_hook_api_params_attribute_name: json.dumps(api_params),
             }
-            if span and span.is_recording():
-                span.set_attributes(hook_attributes)
+
+            span.set_attributes(hook_attributes)
 
         BotocoreInstrumentor().uninstrument()
-        BotocoreInstrumentor().instrument(request_hook=request_hook,)
+        BotocoreInstrumentor().instrument(request_hook=request_hook)
 
-        self.session = botocore.session.get_session()
-        self.session.set_credentials(
-            access_key="access-key", secret_key="secret-key"
-        )
+        s3 = self._make_client("s3")
 
-        ddb = self.session.create_client("dynamodb", region_name="us-west-2")
-
-        test_table_name = "test_table_name"
-
-        ddb.create_table(
-            AttributeDefinitions=[
-                {"AttributeName": "id", "AttributeType": "S"},
-            ],
-            KeySchema=[{"AttributeName": "id", "KeyType": "HASH"}],
-            ProvisionedThroughput={
-                "ReadCapacityUnits": 5,
-                "WriteCapacityUnits": 5,
+        params = {
+            "Bucket": "mybucket",
+            "CreateBucketConfiguration": {"LocationConstraint": "us-west-2"},
+        }
+        s3.create_bucket(**params)
+        self.assert_span(
+            "S3",
+            "CreateBucket",
+            attributes={
+                request_hook_service_attribute_name: "s3",
+                request_hook_operation_attribute_name: "CreateBucket",
+                request_hook_api_params_attribute_name: json.dumps(params),
             },
-            TableName=test_table_name,
         )
 
-        item = {"id": {"S": "test_key"}}
-
-        ddb.put_item(TableName=test_table_name, Item=item)
-
-        spans = self.memory_exporter.get_finished_spans()
-        assert spans
-        self.assertEqual(len(spans), 2)
-        put_item_attributes = spans[1].attributes
-
-        expected_api_params = json.dumps(
-            {"TableName": test_table_name, "Item": item}
-        )
-
-        self.assertEqual(
-            "dynamodb",
-            put_item_attributes.get(request_hook_service_attribute_name),
-        )
-        self.assertEqual(
-            "PutItem",
-            put_item_attributes.get(request_hook_operation_attribute_name),
-        )
-        self.assertEqual(
-            expected_api_params,
-            put_item_attributes.get(request_hook_api_params_attribute_name),
-        )
-
-    @mock_dynamodb2
+    @mock_s3
     def test_response_hook(self):
         response_hook_service_attribute_name = "request_hook.service_name"
         response_hook_operation_attribute_name = "response_hook.operation_name"
@@ -705,55 +505,21 @@ class TestBotocoreInstrumentor(TestBase):
             hook_attributes = {
                 response_hook_service_attribute_name: service_name,
                 response_hook_operation_attribute_name: operation_name,
-                response_hook_result_attribute_name: list(result.keys()),
+                response_hook_result_attribute_name: len(result["Buckets"]),
             }
-            if span and span.is_recording():
-                span.set_attributes(hook_attributes)
+            span.set_attributes(hook_attributes)
 
         BotocoreInstrumentor().uninstrument()
-        BotocoreInstrumentor().instrument(response_hook=response_hook,)
+        BotocoreInstrumentor().instrument(response_hook=response_hook)
 
-        self.session = botocore.session.get_session()
-        self.session.set_credentials(
-            access_key="access-key", secret_key="secret-key"
-        )
-
-        ddb = self.session.create_client("dynamodb", region_name="us-west-2")
-
-        test_table_name = "test_table_name"
-
-        ddb.create_table(
-            AttributeDefinitions=[
-                {"AttributeName": "id", "AttributeType": "S"},
-            ],
-            KeySchema=[{"AttributeName": "id", "KeyType": "HASH"}],
-            ProvisionedThroughput={
-                "ReadCapacityUnits": 5,
-                "WriteCapacityUnits": 5,
+        s3 = self._make_client("s3")
+        s3.list_buckets()
+        self.assert_span(
+            "S3",
+            "ListBuckets",
+            attributes={
+                response_hook_service_attribute_name: "s3",
+                response_hook_operation_attribute_name: "ListBuckets",
+                response_hook_result_attribute_name: 0,
             },
-            TableName=test_table_name,
-        )
-
-        item = {"id": {"S": "test_key"}}
-
-        ddb.put_item(TableName=test_table_name, Item=item)
-
-        spans = self.memory_exporter.get_finished_spans()
-        assert spans
-        self.assertEqual(len(spans), 2)
-        put_item_attributes = spans[1].attributes
-
-        expected_result_keys = ("ResponseMetadata",)
-
-        self.assertEqual(
-            "dynamodb",
-            put_item_attributes.get(response_hook_service_attribute_name),
-        )
-        self.assertEqual(
-            "PutItem",
-            put_item_attributes.get(response_hook_operation_attribute_name),
-        )
-        self.assertEqual(
-            expected_result_keys,
-            put_item_attributes.get(response_hook_result_attribute_name),
         )
