@@ -87,11 +87,11 @@ func (r *httpdScraper) scrape(context.Context) (pdata.ResourceMetricsSlice, erro
 	now := pdata.NewTimestampFromTime(time.Now())
 
 	uptime := initMetric(ilm.Metrics(), metadata.M.HttpdUptime).Sum().DataPoints()
-	connections := initMetric(ilm.Metrics(), metadata.M.HttpdCurrentConnections).Gauge().DataPoints()
-	workers := initMetric(ilm.Metrics(), metadata.M.HttpdWorkers).Gauge().DataPoints()
+	connections := initMetric(ilm.Metrics(), metadata.M.HttpdCurrentConnections).Sum().DataPoints()
+	workers := initMetric(ilm.Metrics(), metadata.M.HttpdWorkers).Sum().DataPoints()
 	requests := initMetric(ilm.Metrics(), metadata.M.HttpdRequests).Sum().DataPoints()
 	traffic := initMetric(ilm.Metrics(), metadata.M.HttpdTraffic).Sum().DataPoints()
-	scoreboard := initMetric(ilm.Metrics(), metadata.M.HttpdScoreboard).Gauge().DataPoints()
+	scoreboard := initMetric(ilm.Metrics(), metadata.M.HttpdScoreboard).Sum().DataPoints()
 
 	for metricKey, metricValue := range parseStats(stats) {
 		labels := pdata.NewAttributeMap()

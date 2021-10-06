@@ -97,7 +97,9 @@ var Metrics = &metricStruct{
 			metric.SetName("httpd.current_connections")
 			metric.SetDescription("The number of active connections currently attached to the HTTP server")
 			metric.SetUnit("connections")
-			metric.SetDataType(pdata.MetricDataTypeGauge)
+			metric.SetDataType(pdata.MetricDataTypeSum)
+			metric.Sum().SetIsMonotonic(false)
+			metric.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
 		},
 	},
 	&metricImpl{
@@ -117,7 +119,9 @@ var Metrics = &metricStruct{
 			metric.SetName("httpd.scoreboard")
 			metric.SetDescription("Apache HTTP server scoreboard values")
 			metric.SetUnit("scoreboard")
-			metric.SetDataType(pdata.MetricDataTypeGauge)
+			metric.SetDataType(pdata.MetricDataTypeSum)
+			metric.Sum().SetIsMonotonic(false)
+			metric.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
 		},
 	},
 	&metricImpl{
@@ -148,7 +152,9 @@ var Metrics = &metricStruct{
 			metric.SetName("httpd.workers")
 			metric.SetDescription("The number of workers currently attached to the HTTP server")
 			metric.SetUnit("connections")
-			metric.SetDataType(pdata.MetricDataTypeGauge)
+			metric.SetDataType(pdata.MetricDataTypeSum)
+			metric.Sum().SetIsMonotonic(false)
+			metric.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
 		},
 	},
 }

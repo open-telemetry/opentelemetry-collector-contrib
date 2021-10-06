@@ -38,13 +38,17 @@ metrics:
     description: The number of active connections currently attached to the HTTP server
     unit: connections
     data:
-      type: gauge
+      type: sum
+      monotonic: false
+      aggregation: cumulative
     labels: [ server_name ]
   httpd.workers:
     description: The number of workers currently attached to the HTTP server
     unit: connections
     data:
-      type: gauge
+      type: sum
+      monotonic: false
+      aggregation: cumulative
     labels: [ server_name, workers_state]
   httpd.requests:
     description: The number of requests serviced by the HTTP server per second
@@ -66,5 +70,7 @@ metrics:
     description: Apache HTTP server scoreboard values
     unit: scoreboard
     data:
-      type: gauge
+      type: sum
+      monotonic: false
+      aggregation: cumulative
     labels: [server_name, scoreboard_state]
