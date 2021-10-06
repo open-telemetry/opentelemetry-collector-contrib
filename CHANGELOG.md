@@ -6,6 +6,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased](https://github.com/open-telemetry/opentelemetry-python/compare/v1.5.0-0.24b0...HEAD)
+- `opentelemetry-sdk-extension-aws` Release AWS Python SDK Extension as 1.0.0
+  ([#667](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/667))
+- `opentelemetry-instrumentation-sqlalchemy` Added `packaging` dependency
+  ([#713](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/713))
+
 
 ### Added
 - `opentelemetry-instrumentation-elasticsearch` Added `response_hook` and `request_hook` callbacks
