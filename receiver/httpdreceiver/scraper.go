@@ -72,7 +72,7 @@ func addToIntMetric(metric pdata.NumberDataPointSlice, labels pdata.AttributeMap
 
 func (r *httpdScraper) scrape(context.Context) (pdata.ResourceMetricsSlice, error) {
 	if r.httpClient == nil {
-		return pdata.ResourceMetricsSlice{}, errors.New("failed to connect to Apache HTTPd client")
+		return pdata.ResourceMetricsSlice{}, errors.New("failed to connect to Apache HTTPd")
 	}
 
 	stats, err := r.GetStats()
