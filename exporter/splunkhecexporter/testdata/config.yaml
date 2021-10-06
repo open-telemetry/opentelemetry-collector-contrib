@@ -14,10 +14,11 @@ exporters:
     source: "otel"
     sourcetype: "otel"
     index: "metrics"
-    insecure_skip_verify: false
-    ca_file: ""
-    cert_file: ""
-    key_file: ""
+    tls:
+      insecure_skip_verify: false
+      ca_file: ""
+      cert_file: ""
+      key_file: ""
     timeout: 10s
     sending_queue:
       enabled: true

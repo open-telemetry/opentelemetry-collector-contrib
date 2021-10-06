@@ -4,6 +4,7 @@
 
 ## 🛑 Breaking changes 🛑
 
+- Remove squash on configtls.TLSClientSetting for splunkhecexporter (#5541)
 - Remove squash on configtls.TLSClientSetting for elastic components (#5539)
 - Remove squash on configtls.TLSClientSetting for observiqexporter (#5540)
 - Remove squash on configtls.TLSClientSetting for AWS components (#5454)
