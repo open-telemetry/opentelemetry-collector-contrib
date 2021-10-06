@@ -12,4 +12,24 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package googlecloudspannerreceiver
+package metadata
+
+import "go.opentelemetry.io/collector/model/pdata"
+
+const (
+	labelName       = "LabelName"
+	labelColumnName = "LabelColumnName"
+
+	stringValue  = "stringValue"
+	int64Value   = int64(64)
+	float64Value = float64(64.64)
+	boolValue    = true
+
+	metricName       = "metricName"
+	metricColumnName = "metricColumnName"
+	metricDataType   = pdata.MetricDataTypeGauge
+	metricUnit       = "metricUnit"
+	metricNamePrefix = "metricNamePrefix-"
+
+	timestampColumnName = "INTERVAL_END"
+)

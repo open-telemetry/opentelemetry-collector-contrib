@@ -12,4 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package googlecloudspannerreceiver
+package metadata
+
+type ValueMetadata interface {
+	Name() string
+	ColumnName() string
+	ValueHolder() interface{}
+}
