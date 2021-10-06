@@ -2,6 +2,8 @@
 
 This exporter supports sending trace data to [Jaeger](https://www.jaegertracing.io) over Thrift HTTP.
 
+*WARNING:* The Jaeger exporter is the recommended approach for exporting traces from an OpenTelemetry collector to Jaeger. This Jaeger Thrift exporter should only be used to export traces to a Jaeger collector that is unable to expose the [gRPC API](https://www.jaegertracing.io/docs/1.27/apis/#protobuf-via-grpc-stable).
+
 Supported pipeline types: traces
 
 ## Configuration
