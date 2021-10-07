@@ -93,10 +93,9 @@ func (cfg *Config) Validate() error {
 
 	var grpcPort int
 	if cfg.GRPC != nil {
-		if port, err := extractPortFromEndpoint(cfg.GRPC.NetAddr.Endpoint); err != nil {
+		var err error
+		if grpcPort, err = extractPortFromEndpoint(cfg.GRPC.NetAddr.Endpoint); err != nil {
 			return fmt.Errorf("unable to extract port for the gRPC endpoint: %w", err)
-		} else {
-			grpcPort = port
 		}
 	}
 
