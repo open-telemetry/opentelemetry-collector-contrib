@@ -29,17 +29,19 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/config"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metrics"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/scrub"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/sketches"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/translator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/utils"
 )
 
 type metricsExporter struct {
-	params component.ExporterCreateSettings
-	cfg    *config.Config
-	ctx    context.Context
-	client *datadog.Client
-	tr     *translator.Translator
+	params   component.ExporterCreateSettings
+	cfg      *config.Config
+	ctx      context.Context
+	client   *datadog.Client
+	tr       *translator.Translator
+	scrubber scrub.Scrubber
 }
 
 // assert `hostProvider` implements HostnameProvider interface
@@ -98,7 +100,14 @@ func newMetricsExporter(ctx context.Context, params component.ExporterCreateSett
 		return nil, err
 	}
 
-	return &metricsExporter{params, cfg, ctx, client, tr}, nil
+	return &metricsExporter{
+		params:   params,
+		cfg:      cfg,
+		ctx:      ctx,
+		client:   client,
+		tr:       tr,
+		scrubber: scrub.NewScrubber(),
+	}, nil
 }
 
 func (exp *metricsExporter) pushSketches(ctx context.Context, sl sketches.SketchSeriesList) error {
@@ -129,6 +138,10 @@ func (exp *metricsExporter) pushSketches(ctx context.Context, sl sketches.Sketch
 		return fmt.Errorf("error when sending payload to %s: %s", sketches.SketchSeriesEndpoint, resp.Status)
 	}
 	return nil
+}
+
+func (exp *metricsExporter) PushMetricsDataScrubbed(ctx context.Context, md pdata.Metrics) error {
+	return exp.scrubber.Scrub(exp.PushMetricsData(ctx, md))
 }
 
 func (exp *metricsExporter) PushMetricsData(ctx context.Context, md pdata.Metrics) error {
