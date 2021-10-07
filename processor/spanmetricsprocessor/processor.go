@@ -357,7 +357,7 @@ func concatDimensionValue(metricKeyBuilder *strings.Builder, value string, prefi
 
 // buildKey builds the metric key from the service name and span metadata such as operation, kind, status_code and
 // will attempt to add any additional dimensions the user has configured that match the span's attributes
-// or resourceAttr. If the dimension exists in both, the span's attributes, being the most specific, takes precedence.
+// or resource attributes. If the dimension exists in both, the span's attributes, being the most specific, takes precedence.
 //
 // The metric key is a simple concatenation of dimension values, delimited by a null character.
 func buildKey(serviceName string, span pdata.Span, optionalDims []Dimension, resourceAttrs pdata.AttributeMap) metricKey {
