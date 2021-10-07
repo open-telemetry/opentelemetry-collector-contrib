@@ -117,7 +117,7 @@ var Metrics = &metricStruct{
 		"httpd.scoreboard",
 		func(metric pdata.Metric) {
 			metric.SetName("httpd.scoreboard")
-			metric.SetDescription("Apache HTTP server scoreboard values")
+			metric.SetDescription("The number of connections in each state")
 			metric.SetUnit("scoreboard")
 			metric.SetDataType(pdata.MetricDataTypeSum)
 			metric.Sum().SetIsMonotonic(false)
@@ -169,7 +169,7 @@ var Labels = struct {
 	ScoreboardState string
 	// ServerName (The name of the Apache HTTP server)
 	ServerName string
-	// WorkersState (The state workers)
+	// WorkersState (The state of workers)
 	WorkersState string
 }{
 	"state",
