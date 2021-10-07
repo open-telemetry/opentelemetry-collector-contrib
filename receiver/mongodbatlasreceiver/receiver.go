@@ -18,6 +18,9 @@ import (
 	"context"
 	"time"
 
+	"github.com/pkg/errors"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 	"go.uber.org/zap"
@@ -54,12 +57,26 @@ func (s *receiver) scrape(ctx context.Context) (pdata.Metrics, error) {
 	return pdata.Metrics{}, nil
 }
 
-func (s *receiver) poll(ctx context.Context, start string, end string, resolution string) { //nolint
-	for _, org := range s.client.Organizations(ctx) {
-		resourceAttributes.InsertString("org_name", org.Name)
-		for _, project := range s.client.Projects(ctx, org.ID) {
-			resourceAttributes.InsertString("project_name", project.Name)
-			for _, process := range s.client.Processes(ctx, project.ID) {
+func (s *receiver) poll(ctx context.Context, start string, end string, resolution string) error {
+	ctx := s.ctx
+	resourceAttributes := pdata.NewAttributeMap()
+	orgs, err := s.client.Organizations(ctx)
+	if err != nil {
+		return errors.Wrap(err, "error retrieving organizations")
+	}
+	for _, org := range orgs {
+		resourceAttributes.InsertString("mongodb.atlas.org_name", org.Name)
+		projects, err := s.client.Projects(ctx, org.ID)
+		if err != nil {
+			return errors.Wrap(err, "error retrieving projects")
+		}
+		for _, project := range projects {
+			resourceAttributes.InsertString("mongodb.atlas.project", project.Name)
+			processes, err := s.client.Processes(ctx, project.ID)
+			if err != nil {
+				return errors.Wrap(err, "error retrieving MongoDB Atlas processes")
+			}
+			for _, process := range processes {
 				resource := pdata.NewResource()
 				resourceAttributes.CopyTo(resource.Attributes())
 				resource.Attributes().InsertString("host.name", process.Hostname)
@@ -80,11 +97,7 @@ func (s *receiver) poll(ctx context.Context, start string, end string, resolutio
 							resolution,
 						)
 					if err != nil {
-						s.log.Debug(
-							"Encountered error when polling from MongoDB Atlas",
-							zap.Error(err),
-						)
-						return
+						return errors.Wrap(err, "error when polling process metrics from MongoDB Atlas")
 					}
 					s.metricSink.ConsumeMetrics(ctx, metrics)
 
@@ -95,7 +108,7 @@ func (s *receiver) poll(ctx context.Context, start string, end string, resolutio
 						process.Port,
 					)
 					if err != nil {
-						s.log.Debug("Error retrieving process databases", zap.Error(err))
+						return errors.Wrap(err, "error retrieving process databases")
 					}
 
 					for _, db := range processDatabases {
@@ -115,11 +128,7 @@ func (s *receiver) poll(ctx context.Context, start string, end string, resolutio
 							resolution,
 						)
 						if err != nil {
-							s.log.Debug(
-								"Encountered error when polling from MongoDB Atlas",
-								zap.Error(err),
-							)
-							return
+							return errors.Wrap(err, "error when polling database metrics from MongoDB Atlas")
 						}
 						s.metricSink.ConsumeMetrics(
 							ctx,
@@ -143,10 +152,7 @@ func (s *receiver) poll(ctx context.Context, start string, end string, resolutio
 							resolution,
 						)
 						if err != nil {
-							s.log.Debug(
-								"Encountered error when polling from MongoDB Atlas",
-								zap.Error(err))
-							return
+							return errors.Wrap(err, "error when polling from MongoDB Atlas")
 						}
 						s.metricSink.ConsumeMetrics(
 							ctx,
@@ -159,4 +165,5 @@ func (s *receiver) poll(ctx context.Context, start string, end string, resolutio
 			}
 		}
 	}
+	return nil
 }
