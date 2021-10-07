@@ -149,7 +149,7 @@
             },
             {
               "name": "httpd.scoreboard",
-              "description": "Apache HTTP server scoreboard values",
+              "description": "The number of connections in each state",
               "unit": "scoreboard",
               "sum": {
                 "dataPoints": [
