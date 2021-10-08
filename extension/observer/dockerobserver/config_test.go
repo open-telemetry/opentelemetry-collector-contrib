@@ -37,7 +37,7 @@ func TestLoadConfig(t *testing.T) {
 	require.Nil(t, err)
 	require.NotNil(t, cfg)
 
-	require.Len(t, cfg.Extensions, 2)
+	require.Len(t, cfg.Extensions, 6)
 
 	ext0 := cfg.Extensions[config.NewComponentID(typeStr)]
 	assert.Equal(t, factory.CreateDefaultConfig(), ext0)
