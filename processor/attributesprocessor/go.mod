@@ -10,6 +10,7 @@ require (
 )
 
 require (
+	github.com/antonmedv/expr v1.9.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/fsnotify/fsnotify v1.4.9 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect

@@ -72,14 +72,14 @@ func (a *logAttributesProcessor) processLogs(_ context.Context, ld pdata.Logs) (
 func (a *logAttributesProcessor) skipLog(lr pdata.LogRecord, resource pdata.Resource, library pdata.InstrumentationLibrary) bool {
 	if a.include != nil {
 		// A false returned in this case means the log should not be processed.
-		if include := a.include.MatchLogRecord(lr, resource, library); !include {
+		if include := a.include.MatchLog(lr, resource, library); !include {
 			return true
 		}
 	}
 
 	if a.exclude != nil {
 		// A true returned in this case means the log should not be processed.
-		if exclude := a.exclude.MatchLogRecord(lr, resource, library); exclude {
+		if exclude := a.exclude.MatchLog(lr, resource, library); exclude {
 			return true
 		}
 	}

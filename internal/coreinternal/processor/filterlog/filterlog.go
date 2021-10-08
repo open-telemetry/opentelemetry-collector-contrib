@@ -29,7 +29,8 @@ import (
 // TODO: Modify Matcher to invoke both the include and exclude properties so
 //  calling processors will always have the same logic.
 type Matcher interface {
-	MatchLogRecord(lr pdata.LogRecord, resource pdata.Resource, library pdata.InstrumentationLibrary) bool
+	MatchLog(lr pdata.LogRecord, resource pdata.Resource, library pdata.InstrumentationLibrary) bool
+	MatchLogRecord(lr pdata.LogRecord) bool
 }
 
 // propertiesMatcher allows matching a log record against various log record properties.
@@ -40,8 +41,8 @@ type propertiesMatcher struct {
 	nameFilters filterset.FilterSet
 }
 
-// NewMatcher creates a LogRecord Matcher that matches based on the given MatchProperties.
-func NewMatcher(mp *filterconfig.MatchProperties) (Matcher, error) {
+// NewClassicMatcher creates a LogRecord Matcher that matches based on the given MatchProperties.
+func NewClassicMatcher(mp *filterconfig.MatchProperties) (Matcher, error) {
 	if mp == nil {
 		return nil, nil
 	}
@@ -69,17 +70,35 @@ func NewMatcher(mp *filterconfig.MatchProperties) (Matcher, error) {
 	}, nil
 }
 
-// MatchLogRecord matches a log record to a set of properties.
+func NewMatcher(mp *LogMatchProperties) (Matcher, error) {
+	if mp.MatchType == Expr {
+		return newExprMatcher(mp.Expressions)
+	}
+
+	return NewClassicMatcher(mp.convertToFilterConfig())
+}
+
+// MatchLogRecord matches a log to a set of properties.
 // There are 3 sets of properties to match against.
 // The log record names are matched, if specified.
 // The attributes are then checked, if specified.
 // At least one of log record names or attributes must be specified. It is
 // supported to have more than one of these specified, and all specified must
 // evaluate to true for a match to occur.
-func (mp *propertiesMatcher) MatchLogRecord(lr pdata.LogRecord, resource pdata.Resource, library pdata.InstrumentationLibrary) bool {
+func (mp *propertiesMatcher) MatchLog(lr pdata.LogRecord, resource pdata.Resource, library pdata.InstrumentationLibrary) bool {
 	if mp.nameFilters != nil && !mp.nameFilters.Matches(lr.Name()) {
 		return false
 	}
 
 	return mp.PropertiesMatcher.Match(lr.Attributes(), resource, library)
+}
+
+// MatchLogRecord matches a log record to a set of properties.
+// Only the log record name is matched, if specified.
+func (mp *propertiesMatcher) MatchLogRecord(lr pdata.LogRecord) bool {
+	if mp.nameFilters != nil && !mp.nameFilters.Matches(lr.Name()) {
+		return false
+	}
+
+	return true
 }

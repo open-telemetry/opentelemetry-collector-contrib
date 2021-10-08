@@ -90,7 +90,7 @@ func TestLogRecord_validateMatchesConfiguration_InvalidConfig(t *testing.T) {
 	}
 	for _, tc := range testcases {
 		t.Run(tc.name, func(t *testing.T) {
-			output, err := NewMatcher(&tc.property)
+			output, err := NewClassicMatcher(&tc.property)
 			assert.Nil(t, output)
 			require.NotNil(t, err)
 			assert.Equal(t, tc.errorString, err.Error())
@@ -130,11 +130,11 @@ func TestLogRecord_Matching_False(t *testing.T) {
 	lr.SetName("logName")
 	for _, tc := range testcases {
 		t.Run(tc.name, func(t *testing.T) {
-			matcher, err := NewMatcher(tc.properties)
+			matcher, err := NewClassicMatcher(tc.properties)
 			assert.Nil(t, err)
 			assert.NotNil(t, matcher)
 
-			assert.False(t, matcher.MatchLogRecord(lr, pdata.Resource{}, pdata.InstrumentationLibrary{}))
+			assert.False(t, matcher.MatchLog(lr, pdata.Resource{}, pdata.InstrumentationLibrary{}))
 		})
 	}
 }
@@ -172,12 +172,12 @@ func TestLogRecord_Matching_True(t *testing.T) {
 
 	for _, tc := range testcases {
 		t.Run(tc.name, func(t *testing.T) {
-			mp, err := NewMatcher(tc.properties)
+			mp, err := NewClassicMatcher(tc.properties)
 			assert.Nil(t, err)
 			assert.NotNil(t, mp)
 
 			assert.NotNil(t, lr)
-			assert.True(t, mp.MatchLogRecord(lr, pdata.Resource{}, pdata.InstrumentationLibrary{}))
+			assert.True(t, mp.MatchLog(lr, pdata.Resource{}, pdata.InstrumentationLibrary{}))
 		})
 	}
 }
