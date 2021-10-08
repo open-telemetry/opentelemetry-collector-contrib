@@ -73,7 +73,8 @@ func createDefaultConfig() config.Exporter {
 			DeltaTTL:      3600,
 			Quantiles:     true,
 			ExporterConfig: ddconfig.MetricsExporterConfig{
-				ResourceAttributesAsTags: false,
+				ResourceAttributesAsTags:             false,
+				InstrumentationLibraryMetadataAsTags: false,
 			},
 			HistConfig: ddconfig.HistogramConfig{
 				Mode:         "nobuckets",
