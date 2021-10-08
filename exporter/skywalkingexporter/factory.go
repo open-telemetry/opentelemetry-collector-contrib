@@ -29,7 +29,7 @@ const (
 	typeStr = "skywalking"
 )
 
-// NewFactory creates a factory for OTLP exporter.
+// NewFactory creates a factory for Skywalking exporter.
 func NewFactory() component.ExporterFactory {
 	return exporterhelper.NewFactory(
 		typeStr,
@@ -48,6 +48,7 @@ func createDefaultConfig() config.Exporter {
 			// We almost read 0 bytes, so no need to tune ReadBufferSize.
 			WriteBufferSize: 512 * 1024,
 		},
+		NumStreams: 2,
 	}
 }
 
