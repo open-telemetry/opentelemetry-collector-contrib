@@ -52,7 +52,11 @@ from opentelemetry.propagate import inject
 from opentelemetry.semconv.trace import SpanAttributes
 from opentelemetry.trace import SpanKind, get_tracer
 from opentelemetry.trace.status import Status
-from opentelemetry.util.http import remove_url_credentials
+from opentelemetry.util.http import (
+    get_excluded_urls,
+    parse_excluded_urls,
+    remove_url_credentials,
+)
 from opentelemetry.util.http.httplib import set_ip_on_next_http_connection
 
 # A key to a context variable to avoid creating duplicate spans when instrumenting
@@ -61,10 +65,14 @@ _SUPPRESS_HTTP_INSTRUMENTATION_KEY = context.create_key(
     "suppress_http_instrumentation"
 )
 
+_excluded_urls_from_env = get_excluded_urls("REQUESTS")
+
 
 # pylint: disable=unused-argument
 # pylint: disable=R0915
-def _instrument(tracer, span_callback=None, name_callback=None):
+def _instrument(
+    tracer, span_callback=None, name_callback=None, excluded_urls=None
+):
     """Enables tracing of all requests calls that go through
     :code:`requests.session.Session.request` (this includes
     :code:`requests.get`, etc.)."""
@@ -81,6 +89,9 @@ def _instrument(tracer, span_callback=None, name_callback=None):
 
     @functools.wraps(wrapped_request)
     def instrumented_request(self, method, url, *args, **kwargs):
+        if excluded_urls and excluded_urls.url_disabled(url):
+            return wrapped_request(self, method, url, *args, **kwargs)
+
         def get_or_create_headers():
             headers = kwargs.get("headers")
             if headers is None:
@@ -98,6 +109,9 @@ def _instrument(tracer, span_callback=None, name_callback=None):
 
     @functools.wraps(wrapped_send)
     def instrumented_send(self, request, **kwargs):
+        if excluded_urls and excluded_urls.url_disabled(request.url):
+            return wrapped_send(self, request, **kwargs)
+
         def get_or_create_headers():
             request.headers = (
                 request.headers
@@ -223,13 +237,19 @@ class RequestsInstrumentor(BaseInstrumentor):
                 ``name_callback``: Callback which calculates a generic span name for an
                     outgoing HTTP request based on the method and url.
                     Optional: Defaults to get_default_span_name.
+                ``excluded_urls``: A string containing a comma-delimitted
+                    list of regexes used to exclude URLs from tracking
         """
         tracer_provider = kwargs.get("tracer_provider")
         tracer = get_tracer(__name__, __version__, tracer_provider)
+        excluded_urls = kwargs.get("excluded_urls")
         _instrument(
             tracer,
             span_callback=kwargs.get("span_callback"),
             name_callback=kwargs.get("name_callback"),
+            excluded_urls=_excluded_urls_from_env
+            if excluded_urls is None
+            else parse_excluded_urls(excluded_urls),
         )
 
     def _uninstrument(self, **kwargs):

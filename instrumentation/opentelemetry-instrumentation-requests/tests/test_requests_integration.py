@@ -30,6 +30,7 @@ from opentelemetry.semconv.trace import SpanAttributes
 from opentelemetry.test.mock_textmap import MockTextMapPropagator
 from opentelemetry.test.test_base import TestBase
 from opentelemetry.trace import StatusCode
+from opentelemetry.util.http import get_excluded_urls
 
 
 class TransportMock:
@@ -64,6 +65,21 @@ class RequestsIntegrationTestBase(abc.ABC):
     # pylint: disable=invalid-name
     def setUp(self):
         super().setUp()
+
+        self.env_patch = mock.patch.dict(
+            "os.environ",
+            {
+                "OTEL_PYTHON_REQUESTS_EXCLUDED_URLS": "http://localhost/env_excluded_arg/123,env_excluded_noarg"
+            },
+        )
+        self.env_patch.start()
+
+        self.exclude_patch = mock.patch(
+            "opentelemetry.instrumentation.requests._excluded_urls_from_env",
+            get_excluded_urls("REQUESTS"),
+        )
+        self.exclude_patch.start()
+
         RequestsInstrumentor().instrument()
         httpretty.enable()
         httpretty.register_uri(httpretty.GET, self.URL, body="Hello!")
@@ -71,6 +87,7 @@ class RequestsIntegrationTestBase(abc.ABC):
     # pylint: disable=invalid-name
     def tearDown(self):
         super().tearDown()
+        self.env_patch.stop()
         RequestsInstrumentor().uninstrument()
         httpretty.disable()
 
@@ -124,6 +141,32 @@ class RequestsIntegrationTestBase(abc.ABC):
         span = self.assert_span()
 
         self.assertEqual(span.name, "GET" + self.URL)
+
+    def test_excluded_urls_explicit(self):
+        url_404 = "http://httpbin.org/status/404"
+        httpretty.register_uri(
+            httpretty.GET, url_404, status=404,
+        )
+
+        RequestsInstrumentor().uninstrument()
+        RequestsInstrumentor().instrument(excluded_urls=".*/404")
+        self.perform_request(self.URL)
+        self.perform_request(url_404)
+
+        self.assert_span(num_spans=1)
+
+    def test_excluded_urls_from_env(self):
+        url = "http://localhost/env_excluded_arg/123"
+        httpretty.register_uri(
+            httpretty.GET, url, status=200,
+        )
+
+        RequestsInstrumentor().uninstrument()
+        RequestsInstrumentor().instrument()
+        self.perform_request(self.URL)
+        self.perform_request(url)
+
+        self.assert_span(num_spans=1)
 
     def test_name_callback_default(self):
         def name_callback(method, url):
