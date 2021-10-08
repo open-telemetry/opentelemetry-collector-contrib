@@ -13,12 +13,12 @@ using the gRPC protocol. The valid syntax is described
 [here](https://github.com/grpc/grpc/blob/master/doc/naming.md).
 If a scheme of `https` is used then client transport security is enabled and overrides the `insecure` setting.
 
-By default, TLS is enabled:
+By default, TLS is enabled and must be configured under `tls:`: 
 
 - `insecure` (default = `false`): whether to enable client transport security for
   the exporter's connection.
 
-As a result, the following parameters are also required:
+As a result, the following parameters are also required under `tls:`:
 
 - `cert_file` (no default): path to the TLS cert to use for TLS required connections. Should
   only be used if `insecure` is set to false.
@@ -30,8 +30,16 @@ Example:
 ```yaml
 exporters:
   skywalking:
+    endpoint: "2.3.4.5:11800"
+    tls:
+      insecure: true      
+  skywalking/2:
     endpoint: "1.2.3.4:11800"
-    insecure: true
+    compression: "on"
+    tls:
+      cert_file: file.cert
+      key_file: file.key
+    timeout: 10s
 ```
 
 ## Advanced Configuration

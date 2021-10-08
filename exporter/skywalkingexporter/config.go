@@ -27,6 +27,9 @@ type Config struct {
 	exporterhelper.QueueSettings   `mapstructure:"sending_queue"`
 	exporterhelper.RetrySettings   `mapstructure:"retry_on_failure"`
 	exporterhelper.TimeoutSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
+
+	// The number of grpc streams that send the gRPC requests.
+	NumStreams int `mapstructure:"num_streams"`
 }
 
 var _ config.Exporter = (*Config)(nil)
