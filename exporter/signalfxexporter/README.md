@@ -64,6 +64,8 @@ The following configuration options can also be configured:
         state: [interrupt, user, system]
   ```
 - `headers` (no default): Headers to pass in the payload.
+- `log_data_points` (default = `false`): If the log level is set to `debug` 
+  and this is true, all datapoints dispatched to Splunk Observability Cloud will be logged
 - `log_dimension_updates` (default = `false`): Whether or not to log dimension
   updates.
 - `timeout` (default = 5s): Amount of time to wait for a send operation to

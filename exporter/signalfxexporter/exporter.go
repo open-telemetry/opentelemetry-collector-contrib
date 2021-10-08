@@ -68,6 +68,7 @@ type exporterOptions struct {
 	apiURL           *url.URL
 	httpTimeout      time.Duration
 	token            string
+	logDataPoints    bool
 	logDimUpdate     bool
 	metricTranslator *translation.MetricTranslator
 }
@@ -109,6 +110,7 @@ func newSignalFxExporter(
 			},
 			zippers: newGzipPool(),
 		},
+		logDataPoints:          options.logDataPoints,
 		logger:                 logger,
 		accessTokenPassthrough: config.AccessTokenPassthrough,
 		converter:              converter,

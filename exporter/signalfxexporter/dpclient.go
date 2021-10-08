@@ -28,6 +28,7 @@ import (
 
 	sfxpb "github.com/signalfx/com_signalfx_metrics_protobuf/model"
 	"go.opentelemetry.io/collector/consumer/consumererror"
+	"go.opentelemetry.io/collector/model/otlp"
 	"go.opentelemetry.io/collector/model/pdata"
 	"go.uber.org/zap"
 
@@ -41,6 +42,8 @@ type sfxClientBase struct {
 	client    *http.Client
 	zippers   sync.Pool
 }
+
+var metricsMarshaler = otlp.NewJSONMetricsMarshaler()
 
 // avoid attempting to compress things that fit into a single ethernet frame
 func (s *sfxClientBase) getReader(b []byte) (io.Reader, bool, error) {
@@ -64,6 +67,7 @@ func (s *sfxClientBase) getReader(b []byte) (io.Reader, bool, error) {
 // sfxDPClient sends the data to the SignalFx backend.
 type sfxDPClient struct {
 	sfxClientBase
+	logDataPoints          bool
 	logger                 *zap.Logger
 	accessTokenPassthrough bool
 	converter              *translation.MetricsConverter
@@ -78,6 +82,15 @@ func (s *sfxDPClient) pushMetricsData(
 		return 0, nil
 	}
 
+	if s.logDataPoints {
+		buf, err := metricsMarshaler.MarshalMetrics(md)
+		if err != nil {
+			s.logger.Error("Failed to marshal metrics for logging", zap.Error(err))
+		} else {
+			s.logger.Debug("received metrics", zap.String("pdata", string(buf)))
+		}
+	}
+
 	// All metrics in the pdata.Metrics will have the same access token because of the BatchPerResourceMetrics.
 	metricToken := s.retrieveAccessToken(rms.At(0))
 
@@ -86,7 +99,11 @@ func (s *sfxDPClient) pushMetricsData(
 	for i := 0; i < rms.Len(); i++ {
 		sfxDataPoints = append(sfxDataPoints, s.converter.MetricDataToSignalFxV2(rms.At(i))...)
 	}
-
+	if s.logDataPoints {
+		for _, dp := range sfxDataPoints {
+			s.logger.Debug("Dispatching SFx datapoint", zap.String("dp", translation.DatapointToString(dp)))
+		}
+	}
 	return s.pushMetricsDataForToken(ctx, sfxDataPoints, metricToken)
 }
 

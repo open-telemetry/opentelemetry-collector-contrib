@@ -64,6 +64,9 @@ type Config struct {
 	// here.
 	Headers map[string]string `mapstructure:"headers"`
 
+	// Whether to log datapoints dispatched to Splunk Observability Cloud
+	LogDataPoints bool `mapstructure:"log_data_points"`
+
 	// Whether to log dimension updates being sent to SignalFx.
 	LogDimensionUpdates bool `mapstructure:"log_dimension_updates"`
 
@@ -137,6 +140,7 @@ func (cfg *Config) getOptionsFromConfig() (*exporterOptions, error) {
 		apiURL:           apiURL,
 		httpTimeout:      cfg.Timeout,
 		token:            cfg.AccessToken,
+		logDataPoints:    cfg.LogDataPoints,
 		logDimUpdate:     cfg.LogDimensionUpdates,
 		metricTranslator: metricTranslator,
 	}, nil
