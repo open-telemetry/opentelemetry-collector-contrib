@@ -3,7 +3,7 @@ module github.com/signalfx/forks/opentelemetry-collector-contrib/internal/docker
 go 1.17
 
 require (
-	github.com/containerd/containerd v1.5.5 // indirect
+	github.com/containerd/containerd v1.5.7 // indirect
 	github.com/docker/docker v20.10.8+incompatible
 	github.com/docker/go-connections v0.4.0 // indirect
 	github.com/gobwas/glob v0.2.3
