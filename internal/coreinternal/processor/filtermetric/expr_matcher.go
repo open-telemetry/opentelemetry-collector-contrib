@@ -21,13 +21,13 @@ import (
 )
 
 type exprMatcher struct {
-	matchers []*filterexpr.Matcher
+	matchers []*filterexpr.MetricMatcher
 }
 
 func newExprMatcher(expressions []string) (*exprMatcher, error) {
 	m := &exprMatcher{}
 	for _, expression := range expressions {
-		matcher, err := filterexpr.NewMatcher(expression)
+		matcher, err := filterexpr.NewMetricMatcher(expression)
 		if err != nil {
 			return nil, err
 		}
