@@ -407,6 +407,8 @@ func (tsp *tailSamplingSpanProcessor) Start(context.Context, component.Host) err
 
 // Shutdown is invoked during service shutdown.
 func (tsp *tailSamplingSpanProcessor) Shutdown(context.Context) error {
+	tsp.decisionBatcher.Stop()
+	tsp.policyTicker.stop()
 	return nil
 }
 
@@ -451,13 +453,20 @@ type tTicker interface {
 type policyTicker struct {
 	ticker     *time.Ticker
 	onTickFunc func()
+	stopCh     chan struct{}
 }
 
 func (pt *policyTicker) start(d time.Duration) {
 	pt.ticker = time.NewTicker(d)
+	pt.stopCh = make(chan struct{})
 	go func() {
-		for range pt.ticker.C {
-			pt.onTick()
+		for {
+			select {
+			case <-pt.ticker.C:
+				pt.onTick()
+			case <-pt.stopCh:
+				return
+			}
 		}
 	}()
 }
@@ -465,6 +474,7 @@ func (pt *policyTicker) onTick() {
 	pt.onTickFunc()
 }
 func (pt *policyTicker) stop() {
+	close(pt.stopCh)
 	pt.ticker.Stop()
 }
 

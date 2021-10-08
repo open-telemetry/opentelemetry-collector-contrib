@@ -48,6 +48,10 @@ func TestSequentialTraceArrival(t *testing.T) {
 	}
 	sp, _ := newTracesProcessor(zap.NewNop(), consumertest.NewNop(), cfg)
 	tsp := sp.(*tailSamplingSpanProcessor)
+	defer func() {
+		require.NoError(t, tsp.Shutdown(context.Background()))
+	}()
+
 	for _, batch := range batches {
 		tsp.ConsumeTraces(context.Background(), batch)
 	}
@@ -72,6 +76,10 @@ func TestConcurrentTraceArrival(t *testing.T) {
 	}
 	sp, _ := newTracesProcessor(zap.NewNop(), consumertest.NewNop(), cfg)
 	tsp := sp.(*tailSamplingSpanProcessor)
+	defer func() {
+		require.NoError(t, tsp.Shutdown(context.Background()))
+	}()
+
 	for _, batch := range batches {
 		// Add the same traceId twice.
 		wg.Add(2)
@@ -106,6 +114,10 @@ func TestSequentialTraceMapSize(t *testing.T) {
 	}
 	sp, _ := newTracesProcessor(zap.NewNop(), consumertest.NewNop(), cfg)
 	tsp := sp.(*tailSamplingSpanProcessor)
+	defer func() {
+		require.NoError(t, tsp.Shutdown(context.Background()))
+	}()
+
 	for _, batch := range batches {
 		tsp.ConsumeTraces(context.Background(), batch)
 	}
@@ -129,6 +141,10 @@ func TestConcurrentTraceMapSize(t *testing.T) {
 	}
 	sp, _ := newTracesProcessor(zap.NewNop(), consumertest.NewNop(), cfg)
 	tsp := sp.(*tailSamplingSpanProcessor)
+	defer func() {
+		require.NoError(t, tsp.Shutdown(context.Background()))
+	}()
+
 	for _, batch := range batches {
 		wg.Add(1)
 		go func(td pdata.Traces) {
@@ -167,6 +183,9 @@ func TestSamplingPolicyTypicalPath(t *testing.T) {
 		deleteChan:      make(chan pdata.TraceID, maxSize),
 		policyTicker:    mtt,
 	}
+	defer func() {
+		require.NoError(t, tsp.Shutdown(context.Background()))
+	}()
 
 	_, batches := generateIdsAndBatches(210)
 	currItem := 0
@@ -223,6 +242,9 @@ func TestSamplingPolicyInvertSampled(t *testing.T) {
 		deleteChan:      make(chan pdata.TraceID, maxSize),
 		policyTicker:    mtt,
 	}
+	defer func() {
+		require.NoError(t, tsp.Shutdown(context.Background()))
+	}()
 
 	_, batches := generateIdsAndBatches(210)
 	currItem := 0
@@ -286,6 +308,9 @@ func TestSamplingMultiplePolicies(t *testing.T) {
 		deleteChan:   make(chan pdata.TraceID, maxSize),
 		policyTicker: mtt,
 	}
+	defer func() {
+		require.NoError(t, tsp.Shutdown(context.Background()))
+	}()
 
 	_, batches := generateIdsAndBatches(210)
 	currItem := 0
@@ -345,6 +370,9 @@ func TestSamplingPolicyDecisionNotSampled(t *testing.T) {
 		deleteChan:      make(chan pdata.TraceID, maxSize),
 		policyTicker:    mtt,
 	}
+	defer func() {
+		require.NoError(t, tsp.Shutdown(context.Background()))
+	}()
 
 	_, batches := generateIdsAndBatches(210)
 	currItem := 0
@@ -404,6 +432,9 @@ func TestSamplingPolicyDecisionInvertNotSampled(t *testing.T) {
 		deleteChan:      make(chan pdata.TraceID, maxSize),
 		policyTicker:    mtt,
 	}
+	defer func() {
+		require.NoError(t, tsp.Shutdown(context.Background()))
+	}()
 
 	_, batches := generateIdsAndBatches(210)
 	currItem := 0
@@ -463,6 +494,9 @@ func TestMultipleBatchesAreCombinedIntoOne(t *testing.T) {
 		deleteChan:      make(chan pdata.TraceID, maxSize),
 		policyTicker:    mtt,
 	}
+	defer func() {
+		require.NoError(t, tsp.Shutdown(context.Background()))
+	}()
 
 	mpe.NextDecision = sampling.Sampled
 
