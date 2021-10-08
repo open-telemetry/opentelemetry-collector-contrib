@@ -75,6 +75,10 @@ func translatorFromConfig(params component.ExporterCreateSettings, cfg *config.C
 		options = append(options, translator.WithResourceAttributesAsTags())
 	}
 
+	if cfg.Metrics.ExporterConfig.InstrumentationLibraryMetadataAsTags {
+		options = append(options, translator.WithInstrumentationLibraryMetadataAsTags())
+	}
+
 	options = append(options, translator.WithHistogramMode(translator.HistogramMode(cfg.Metrics.HistConfig.Mode)))
 
 	var numberMode translator.NumberMode
