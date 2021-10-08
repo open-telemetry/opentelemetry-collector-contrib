@@ -100,6 +100,12 @@ func TestAttributeTypeConversion(t *testing.T) {
 
 	le := event.LogRecords().At(0)
 	le.Attributes().Sort()
+
+	nv := pdata.NewAttributeValueArray()
+	nv.ArrayVal().EnsureCapacity(2)
+	nv.ArrayVal().AppendEmpty().SetStringVal("first")
+	nv.ArrayVal().AppendEmpty().SetStringVal("second")
+
 	require.EqualValues(t, Logs(
 		Log{
 			Timestamp: 5000000000000,
@@ -119,7 +125,7 @@ func TestAttributeTypeConversion(t *testing.T) {
 				"k":          pdata.NewAttributeValueInt(-1),
 				"l":          pdata.NewAttributeValueString("(0+0i)"),
 				"m":          pdata.NewAttributeValueString("\001e\002"),
-				"n":          pdata.NewAttributeValueString(`["first","second"]`),
+				"n":          nv,
 				"o":          pdata.NewAttributeValueString("cde"),
 			},
 		},
@@ -212,4 +218,61 @@ func TestPackedForwardEventConversionWithErrors(t *testing.T) {
 		require.Contains(t, err.Error(), "gzip")
 		print(err.Error())
 	})
+}
+
+func TestBodyConversion(t *testing.T) {
+	var b []byte
+
+	b = msgp.AppendArrayHeader(b, 3)
+	b = msgp.AppendString(b, "my-tag")
+	b = msgp.AppendInt(b, 5000)
+	b = msgp.AppendMapHeader(b, 1)
+	b = msgp.AppendString(b, "log")
+	b = msgp.AppendMapHeader(b, 3)
+	b = msgp.AppendString(b, "a")
+	b = msgp.AppendString(b, "value")
+	b = msgp.AppendString(b, "b")
+	b = msgp.AppendArrayHeader(b, 2)
+	b = msgp.AppendString(b, "first")
+	b = msgp.AppendString(b, "second")
+	b = msgp.AppendString(b, "c")
+	b = msgp.AppendMapHeader(b, 1)
+	b = msgp.AppendString(b, "d")
+	b = msgp.AppendInt(b, 24)
+	b = msgp.AppendString(b, "o")
+	b, err := msgp.AppendIntf(b, []uint8{99, 100, 101})
+
+	require.NoError(t, err)
+
+	reader := msgp.NewReader(bytes.NewReader(b))
+
+	var event MessageEventLogRecord
+	err = event.DecodeMsg(reader)
+	require.Nil(t, err)
+
+	le := event.LogRecords().At(0)
+	le.Attributes().Sort()
+
+	body := pdata.NewAttributeValueMap()
+	body.MapVal().InsertString("a", "value")
+
+	bv := pdata.NewAttributeValueArray()
+	bv.ArrayVal().EnsureCapacity(2)
+	bv.ArrayVal().AppendEmpty().SetStringVal("first")
+	bv.ArrayVal().AppendEmpty().SetStringVal("second")
+	body.MapVal().Insert("b", bv)
+
+	cv := pdata.NewAttributeValueMap()
+	cv.MapVal().InsertInt("d", 24)
+	body.MapVal().Insert("c", cv)
+
+	require.EqualValues(t, Logs(
+		Log{
+			Timestamp: 5000000000000,
+			Body:      body,
+			Attributes: map[string]pdata.AttributeValue{
+				"fluent.tag": pdata.NewAttributeValueString("my-tag"),
+			},
+		},
+	).ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).Logs().At(0), le)
 }
