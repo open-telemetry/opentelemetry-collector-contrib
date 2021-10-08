@@ -69,7 +69,7 @@ func (d *dockerObserver) endpointsForContainer(c *dtypes.ContainerJSON) []observ
 
 	for _, e := range cEndpoints {
 		s, _ := json.MarshalIndent(e, "", "\t")
-		d.logger.Debug(fmt.Sprintf("Discovered Docker container endpoint:\n%v\n", string(s)))
+		d.logger.Debug("Discovered Docker container endpoint", zap.Any("endpoint", s))
 	}
 
 	return cEndpoints
@@ -81,7 +81,7 @@ func (d *dockerObserver) endpointsForContainer(c *dtypes.ContainerJSON) []observ
 // Uses the user provided config settings to override certain fields.
 func (d *dockerObserver) endpointForPort(portObj nat.Port, c *dtypes.ContainerJSON) *observer.Endpoint {
 	endpoint := observer.Endpoint{}
-	port := portObj.Int()
+	port := uint16(portObj.Int())
 	proto := portObj.Proto()
 
 	mappedPort, mappedIP := findHostMappedPort(c, portObj)
@@ -89,14 +89,13 @@ func (d *dockerObserver) endpointForPort(portObj nat.Port, c *dtypes.ContainerJS
 		return nil
 	}
 
-	// unique ID per host/container/port
-	// (docker_observer)container_ID-container_name-host_name:port
-	id := observer.EndpointID(
-		fmt.Sprintf(
-			"(%s)%s-%s-%s:%d",
-			typeStr, c.ID, c.Name, mappedIP, mappedPort,
-		),
-	)
+	// unique ID per containerID:port
+	var id observer.EndpointID
+	if mappedPort != 0 {
+		id = observer.EndpointID(fmt.Sprintf("%s:%d", c.ID, mappedPort))
+	} else {
+		id = observer.EndpointID(fmt.Sprintf("%s:%d", c.ID, port))
+	}
 
 	details := &observer.Container{
 		Name:        c.Name,
@@ -133,15 +132,15 @@ func (d *dockerObserver) endpointForPort(portObj nat.Port, c *dtypes.ContainerJS
 	if d.config.UseHostBindings && mappedPort != 0 && mappedIP != "" {
 		details.Host = mappedIP
 		target = mappedIP
-		details.Port = uint16(mappedPort)
-		details.AlternatePort = uint16(port)
+		details.Port = mappedPort
+		details.AlternatePort = port
 		if details.Host == "0.0.0.0" {
 			details.Host = "127.0.0.1"
 			target = "127.0.0.1"
 		}
 	} else {
-		details.Port = uint16(port)
-		details.AlternatePort = uint16(mappedPort)
+		details.Port = port
+		details.AlternatePort = mappedPort
 	}
 
 	endpoint = observer.Endpoint{
@@ -156,12 +155,12 @@ func (d *dockerObserver) endpointForPort(portObj nat.Port, c *dtypes.ContainerJS
 // FindHostMappedPort returns the port number of the docker port binding to the
 // underlying host, or 0 if none exists.  It also returns the mapped ip that the
 // port is bound to on the underlying host, or "" if none exists.
-func findHostMappedPort(c *dtypes.ContainerJSON, exposedPort nat.Port) (int, string) {
+func findHostMappedPort(c *dtypes.ContainerJSON, exposedPort nat.Port) (uint16, string) {
 	bindings := c.NetworkSettings.Ports[exposedPort]
 
 	for _, binding := range bindings {
 		if port, err := nat.ParsePort(binding.HostPort); err == nil {
-			return port, binding.HostIP
+			return uint16(port), binding.HostIP
 		}
 	}
 	return 0, ""

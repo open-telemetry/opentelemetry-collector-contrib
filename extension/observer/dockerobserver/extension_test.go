@@ -82,7 +82,7 @@ func TestCollectEndpointsDefaultConfig(t *testing.T) {
 
 	want := []observer.Endpoint{
 		{
-			ID:     "(docker_observer)babc5a6d7af2a48e7f52e1da26047024dcf98b737e754c9c3459bb84d1e4f80c-/agitated_wu-0.0.0.0:8080",
+			ID:     "babc5a6d7af2a48e7f52e1da26047024dcf98b737e754c9c3459bb84d1e4f80c:8080",
 			Target: "172.17.0.2",
 			Details: &observer.Container{
 				Name:        "/agitated_wu",
@@ -129,7 +129,7 @@ func TestCollectEndpointsAllConfigSettings(t *testing.T) {
 
 	want := []observer.Endpoint{
 		{
-			ID:     "(docker_observer)babc5a6d7af2a48e7f52e1da26047024dcf98b737e754c9c3459bb84d1e4f80c-/agitated_wu-0.0.0.0:8080",
+			ID:     "babc5a6d7af2a48e7f52e1da26047024dcf98b737e754c9c3459bb84d1e4f80c:8080",
 			Target: "127.0.0.1",
 			Details: &observer.Container{
 				Name:        "/agitated_wu",
@@ -176,7 +176,7 @@ func TestCollectEndpointsUseHostnameIfPresent(t *testing.T) {
 
 	want := []observer.Endpoint{
 		{
-			ID:     "(docker_observer)babc5a6d7af2a48e7f52e1da26047024dcf98b737e754c9c3459bb84d1e4f80c-/agitated_wu-0.0.0.0:8080",
+			ID:     "babc5a6d7af2a48e7f52e1da26047024dcf98b737e754c9c3459bb84d1e4f80c:8080",
 			Target: "babc5a6d7af2",
 			Details: &observer.Container{
 				Name:        "/agitated_wu",
@@ -223,7 +223,7 @@ func TestCollectEndpointsUseHostBindings(t *testing.T) {
 
 	want := []observer.Endpoint{
 		{
-			ID:     "(docker_observer)babc5a6d7af2a48e7f52e1da26047024dcf98b737e754c9c3459bb84d1e4f80c-/agitated_wu-0.0.0.0:8080",
+			ID:     "babc5a6d7af2a48e7f52e1da26047024dcf98b737e754c9c3459bb84d1e4f80c:8080",
 			Target: "127.0.0.1",
 			Details: &observer.Container{
 				Name:        "/agitated_wu",
@@ -270,7 +270,7 @@ func TestCollectEndpointsIgnoreNonHostBindings(t *testing.T) {
 
 	want := []observer.Endpoint{
 		{
-			ID:     "(docker_observer)babc5a6d7af2a48e7f52e1da26047024dcf98b737e754c9c3459bb84d1e4f80c-/agitated_wu-0.0.0.0:8080",
+			ID:     "babc5a6d7af2a48e7f52e1da26047024dcf98b737e754c9c3459bb84d1e4f80c:8080",
 			Target: "172.17.0.2",
 			Details: &observer.Container{
 				Name:        "/agitated_wu",
