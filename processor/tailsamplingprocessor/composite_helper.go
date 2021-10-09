@@ -64,7 +64,7 @@ func getSubPolicyEvaluator(logger *zap.Logger, cfg *SubPolicyCfg) (sampling.Poli
 		return sampling.NewNumericAttributeFilter(logger, nafCfg.Key, nafCfg.MinValue, nafCfg.MaxValue), nil
 	case StringAttribute:
 		safCfg := cfg.StringAttributeCfg
-		return sampling.NewStringAttributeFilter(logger, safCfg.Key, safCfg.Values, safCfg.EnabledRegexMatching, safCfg.CacheMaxSize), nil
+		return sampling.NewStringAttributeFilter(logger, safCfg.Key, safCfg.Values, safCfg.EnabledRegexMatching, safCfg.CacheMaxSize, safCfg.InvertMatch), nil
 	case RateLimiting:
 		rlfCfg := cfg.RateLimitingCfg
 		return sampling.NewRateLimiting(logger, rlfCfg.SpansPerSecond), nil
