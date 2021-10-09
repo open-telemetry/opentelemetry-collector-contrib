@@ -15,44 +15,21 @@
 package kubelet
 
 import (
-	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
+	"go.opentelemetry.io/collector/model/pdata"
 	stats "k8s.io/kubelet/pkg/apis/stats/v1alpha1"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver/internal/metadata"
 )
 
-func memMetrics(prefix string, s *stats.MemoryStats) []*metricspb.Metric {
+func addMemoryMetrics(dest pdata.MetricSlice, prefix string, s *stats.MemoryStats, currentTime pdata.Timestamp) {
 	if s == nil {
-		return nil
+		return
 	}
-	return []*metricspb.Metric{
-		memAvailableMetric(prefix, s),
-		memUsageMetric(prefix, s),
-		memRssMetric(prefix, s),
-		memWorkingSetMetric(prefix, s),
-		memPageFaultsMetric(prefix, s),
-		memMajorPageFaultsMetric(prefix, s),
-	}
-}
 
-func memAvailableMetric(prefix string, s *stats.MemoryStats) *metricspb.Metric {
-	return intGauge(prefix+"memory.available", "By", s.AvailableBytes)
-}
-
-func memUsageMetric(prefix string, s *stats.MemoryStats) *metricspb.Metric {
-	return intGauge(prefix+"memory.usage", "By", s.UsageBytes)
-}
-
-func memRssMetric(prefix string, s *stats.MemoryStats) *metricspb.Metric {
-	return intGauge(prefix+"memory.rss", "By", s.RSSBytes)
-}
-
-func memWorkingSetMetric(prefix string, s *stats.MemoryStats) *metricspb.Metric {
-	return intGauge(prefix+"memory.working_set", "By", s.WorkingSetBytes)
-}
-
-func memPageFaultsMetric(prefix string, s *stats.MemoryStats) *metricspb.Metric {
-	return intGauge(prefix+"memory.page_faults", "1", s.PageFaults)
-}
-
-func memMajorPageFaultsMetric(prefix string, s *stats.MemoryStats) *metricspb.Metric {
-	return intGauge(prefix+"memory.major_page_faults", "1", s.MajorPageFaults)
+	addIntGauge(dest, prefix, metadata.M.MemoryAvailable, s.AvailableBytes, currentTime)
+	addIntGauge(dest, prefix, metadata.M.MemoryUsage, s.UsageBytes, currentTime)
+	addIntGauge(dest, prefix, metadata.M.MemoryRss, s.RSSBytes, currentTime)
+	addIntGauge(dest, prefix, metadata.M.MemoryWorkingSet, s.WorkingSetBytes, currentTime)
+	addIntGauge(dest, prefix, metadata.M.MemoryPageFaults, s.PageFaults, currentTime)
+	addIntGauge(dest, prefix, metadata.M.MemoryMajorPageFaults, s.MajorPageFaults, currentTime)
 }

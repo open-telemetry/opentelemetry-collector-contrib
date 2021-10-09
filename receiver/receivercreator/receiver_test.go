@@ -29,7 +29,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/config/configcheck"
+	"go.opentelemetry.io/collector/config/configtest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.uber.org/zap"
 	zapObserver "go.uber.org/zap/zaptest/observer"
@@ -42,7 +42,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	assert.NotNil(t, cfg, "failed to create default config")
-	assert.NoError(t, configcheck.ValidateConfig(cfg))
+	assert.NoError(t, configtest.CheckConfigStruct(cfg))
 }
 
 type mockObserver struct {
@@ -67,9 +67,9 @@ var _ observer.Observable = (*mockObserver)(nil)
 func TestMockedEndToEnd(t *testing.T) {
 	host, cfg := exampleCreatorFactory(t)
 	host.extensions = map[config.ComponentID]component.Extension{
-		config.NewID("mock_observer"): &mockObserver{},
+		config.NewComponentID("mock_observer"): &mockObserver{},
 	}
-	dynCfg := cfg.Receivers[config.NewIDWithName(typeStr, "1")]
+	dynCfg := cfg.Receivers[config.NewComponentIDWithName(typeStr, "1")]
 	factory := NewFactory()
 	params := componenttest.NewNopReceiverCreateSettings()
 	mockConsumer := new(consumertest.MetricsSink)

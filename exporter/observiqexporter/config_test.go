@@ -34,7 +34,7 @@ func TestValidateConfig(t *testing.T) {
 		shouldError bool
 	}{
 		{
-			testName: "Valid config passes",
+			testName: "Valid config passes (with APIKey)",
 			input: Config{
 				APIKey:   "11111111-2222-3333-4444-555555555555",
 				Endpoint: defaultEndpoint,
@@ -42,10 +42,19 @@ func TestValidateConfig(t *testing.T) {
 			shouldError: false,
 		},
 		{
-			testName: "Empty APIKey fails",
+			testName: "Valid config passes (with SecretKey)",
 			input: Config{
-				APIKey:   "",
-				Endpoint: defaultEndpoint,
+				SecretKey: "11111111-2222-3333-4444-555555555555",
+				Endpoint:  defaultEndpoint,
+			},
+			shouldError: false,
+		},
+		{
+			testName: "Empty APIKey/SecretKey fails",
+			input: Config{
+				APIKey:    "",
+				SecretKey: "",
+				Endpoint:  defaultEndpoint,
 			},
 			shouldError: true,
 		},
@@ -70,6 +79,14 @@ func TestValidateConfig(t *testing.T) {
 			input: Config{
 				APIKey:   "11111111-2222-3333-4444-555555555555",
 				Endpoint: "ftp://app.com",
+			},
+			shouldError: true,
+		},
+		{
+			testName: "APIKey and SecretKey both specified fails",
+			input: Config{
+				APIKey:    "11111111-2222-3333-4444-555555555555",
+				SecretKey: "11111111-2222-3333-4444-555555555555",
 			},
 			shouldError: true,
 		},
@@ -102,12 +119,12 @@ func TestLoadConfig(t *testing.T) {
 	// Loaded config should be equal to default config (with APIKey filled in)
 	defaultCfg := factory.CreateDefaultConfig()
 	defaultCfg.(*Config).APIKey = "11111111-2222-3333-4444-555555555555"
-	r0 := cfg.Exporters[config.NewID(typeStr)]
+	r0 := cfg.Exporters[config.NewComponentID(typeStr)]
 	require.Equal(t, r0, defaultCfg)
 
-	r1 := cfg.Exporters[config.NewIDWithName(typeStr, "customname")].(*Config)
+	r1 := cfg.Exporters[config.NewComponentIDWithName(typeStr, "customname")].(*Config)
 	require.Equal(t, r1, &Config{
-		ExporterSettings: config.NewExporterSettings(config.NewIDWithName(typeStr, "customname")),
+		ExporterSettings: config.NewExporterSettings(config.NewComponentIDWithName(typeStr, "customname")),
 		APIKey:           "11111111-2222-3333-4444-555555555555",
 		Endpoint:         "https://sometest.endpoint",
 		TimeoutSettings: exporterhelper.TimeoutSettings{

@@ -38,7 +38,7 @@ func NewFactory() component.ExtensionFactory {
 
 func createDefaultConfig() config.Extension {
 	return &Config{
-		ExtensionSettings: config.NewExtensionSettings(config.NewID(typeStr)),
+		ExtensionSettings: config.NewExtensionSettings(config.NewComponentID(typeStr)),
 		Endpoint:          "unix:///var/run/docker.sock",
 		Timeout:           5 * time.Second,
 		CacheSyncInterval: 60 * time.Minute,

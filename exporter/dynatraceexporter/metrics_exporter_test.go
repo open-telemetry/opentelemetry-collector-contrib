@@ -113,7 +113,10 @@ func Test_exporter_PushMetricsData(t *testing.T) {
 	doubleHistogramDataPoint := doubleHistogramDataPoints.AppendEmpty()
 	doubleHistogramDataPoint.SetCount(2)
 	doubleHistogramDataPoint.SetSum(10.1)
+	doubleHistogramDataPoint.SetExplicitBounds([]float64{0, 2, 4, 8})
+	doubleHistogramDataPoint.SetBucketCounts([]uint64{0, 1, 0, 1, 0})
 	doubleHistogramDataPoint.SetTimestamp(testTimestamp)
+	doubleHistogram.SetAggregationTemporality(pdata.MetricAggregationTemporalityDelta)
 
 	type fields struct {
 		logger *zap.Logger
@@ -161,7 +164,7 @@ func Test_exporter_PushMetricsData(t *testing.T) {
 		}
 	})
 
-	if wantBody := "prefix.int_gauge gauge,10 1626438600000\nprefix.int_sum gauge,10 1626438600000\nprefix.double_gauge gauge,10.1 1626438600000\nprefix.double_sum gauge,10.1 1626438600000\nprefix.double_histogram gauge,min=5.05,max=5.05,sum=10.1,count=2 1626438600000"; sent != wantBody {
+	if wantBody := "prefix.int_gauge gauge,10 1626438600000\nprefix.int_sum count,delta=10 1626438600000\nprefix.double_gauge gauge,10.1 1626438600000\nprefix.double_sum count,delta=10.1 1626438600000\nprefix.double_histogram gauge,min=0,max=8,sum=10.1,count=2 1626438600000"; sent != wantBody {
 		t.Errorf("exporter.PushMetricsData():ResponseBody = %v, want %v", sent, wantBody)
 	}
 }
@@ -469,7 +472,7 @@ func Test_exporter_start_InvalidHTTPClientSettings(t *testing.T) {
 	config := &config.Config{
 		HTTPClientSettings: confighttp.HTTPClientSettings{
 			Endpoint: "localhost:9090",
-			TLSSetting: configtls.TLSClientSetting{
+			TLSSetting: &configtls.TLSClientSetting{
 				TLSSetting: configtls.TLSSetting{
 					CAFile: "/non/existent",
 				},

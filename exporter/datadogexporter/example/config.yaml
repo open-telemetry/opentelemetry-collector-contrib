@@ -65,12 +65,6 @@ exporters:
     ## Metric exporter specific configuration.
     #
     # metrics:
-      ## @param report_buckets - boolean - optional - default: false
-      ## Whether to report bucket counts for distribution metric types.
-      ## Enabling this will increase the number of custom metrics.
-      #
-      # report_buckets: false
-
       ## @param send_monotonic_counter - boolean - optional - default: true
       ## Whether to report monotonic metrics as counters or gauges (raw value).
       ## See https://docs.datadoghq.com/integrations/guide/prometheus-metrics/#counter
@@ -97,6 +91,27 @@ exporters:
       ## to metric tags.
       #
       # resource_attributes_as_tags: false
+
+      ## @param instrumentation_library_metadata_as_tags - string - optional - default: false
+      ## Set to true to add metadata about the instrumentation library that created a metric.
+      #
+      # instrumentation_library_metadata_as_tags: false
+
+      ## @param histograms - custom object - optional
+      ## Histograms specific configuration.
+        ## @param mode - string - optional - default: nobuckets
+        ## How to report histograms. Valid values are:
+        ## 
+        ## - `nobuckets` to not report bucket metrics,
+        ## - `counters` to report one metric per histogram bucket.
+        ## - `distributions` to report metrics as Datadog distributions (recommended).
+        #
+        # mode: nobuckets
+      
+        ## @param send_count_sum_metrics - boolean - optional - default: true
+        ## Whether to report sum and count as separate histogram metrics.
+        #
+        # send_count_sum_metrics: true
 
     ## @param traces - custom object - optional
     ## Trace exporter specific configuration.

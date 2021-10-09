@@ -79,44 +79,49 @@ processors:
             type: rate_limiting,
             rate_limiting: {spans_per_second: 35}
          },
-        {
-          name: composite-policy-1,
-          type: composite,
-          composite:
-            {
-              max_total_spans_per_second: 1000,
-              policy_order: [test-composite-policy-1, test-composite-policy-2, test-composite-policy-3],
-              composite_sub_policy:
-                [
-                  {
-                    name: test-composite-policy-1,
-                    type: numeric_attribute,
-                    numeric_attribute: {key: key1, min_value: 50, max_value: 100}
-                  },
-                  {
-                    name: test-composite-policy-2,
-                    type: string_attribute,
-                    string_attribute: {key: key2, values: [value1, value2]}
-                  },
-                  {
-                    name: test-composite-policy-3,
-                    type: always_sample
-                  }
-                ],
-              rate_allocation:
-                [
-                  {
-                    policy: test-composite-policy-1,
-                    percent: 50
-                  },
-                  {
-                    policy: test-composite-policy-2,
-                    percent: 25
-                  }
-                ]
-            }
-        },
-      ]
+         {
+            name: test-policy-9,
+            type: string_attribute,
+            string_attribute: {key: http.url, values: [\/health, \/metrics], enabled_regex_matching: true, invert_match: true}
+         },
+         {
+            name: composite-policy-1,
+            type: composite,
+            composite:
+              {
+                max_total_spans_per_second: 1000,
+                policy_order: [test-composite-policy-1, test-composite-policy-2, test-composite-policy-3],
+                composite_sub_policy:
+                  [
+                    {
+                      name: test-composite-policy-1,
+                      type: numeric_attribute,
+                      numeric_attribute: {key: key1, min_value: 50, max_value: 100}
+                    },
+                    {
+                      name: test-composite-policy-2,
+                      type: string_attribute,
+                      string_attribute: {key: key2, values: [value1, value2]}
+                    },
+                    {
+                      name: test-composite-policy-3,
+                      type: always_sample
+                    }
+                  ],
+                rate_allocation:
+                  [
+                    {
+                      policy: test-composite-policy-1,
+                      percent: 50
+                    },
+                    {
+                      policy: test-composite-policy-2,
+                      percent: 25
+                    }
+                  ]
+              }
+          },
+        ]
 ```
 
 Refer to [tail_sampling_config.yaml](./testdata/tail_sampling_config.yaml) for detailed
@@ -138,4 +143,4 @@ The probabilistic sampling policy makes decision based upon the trace ID, so wai
 You are already incurring the cost of running the tail sampling processor, adding the probabilistic policy will be negligible.
 Additionally, using the policy within the tail sampling processor will ensure traces that are sampled by other policies will not be dropped.
 
-[probabilistic_sampling_processor]: https://github.com/open-telemetry/opentelemetry-collector/tree/main/processor/probabilisticsamplerprocessor
+[probabilistic_sampling_processor]: ../probabilisticsamplerprocessor

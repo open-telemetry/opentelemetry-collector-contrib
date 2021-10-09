@@ -37,9 +37,9 @@ func TestLoadConfig(t *testing.T) {
 	require.Nil(t, err)
 	require.NotNil(t, cfg)
 
-	assert.Equal(t, cfg.Processors[config.NewID(typeStr)],
+	assert.Equal(t, cfg.Processors[config.NewComponentID(typeStr)],
 		&Config{
-			ProcessorSettings:       config.NewProcessorSettings(config.NewID(typeStr)),
+			ProcessorSettings:       config.NewProcessorSettings(config.NewComponentID(typeStr)),
 			DecisionWait:            10 * time.Second,
 			NumTraces:               100,
 			ExpectedNewTracesPerSec: 10,

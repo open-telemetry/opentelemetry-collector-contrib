@@ -172,7 +172,7 @@ func TestExcludedImageProducesNoMetricsIntegration(t *testing.T) {
 	assert.NoError(t, r.Shutdown(ctx))
 }
 
-func TestRemovedContainerRemovesRecordsIntegration(t *testing.T) {
+func TestRemovedContaineRemovesRecordsIntegration(t *testing.T) {
 	params, ctx, cancel := paramsAndContext(t)
 	defer cancel()
 	consumer := new(consumertest.MetricsSink)
@@ -192,10 +192,7 @@ func TestRemovedContainerRemovesRecordsIntegration(t *testing.T) {
 
 	desiredAmount := func(numDesired int) func() bool {
 		return func() bool {
-			// We need the lock to prevent data race warnings for test activity
-			r.client.containersLock.Lock()
-			defer r.client.containersLock.Unlock()
-			return len(r.client.containers) == numDesired
+			return len(r.client.Containers()) == numDesired
 		}
 	}
 
@@ -205,14 +202,10 @@ func TestRemovedContainerRemovesRecordsIntegration(t *testing.T) {
 	assert.Eventuallyf(t, desiredAmount(0), 5*time.Second, 1*time.Millisecond, "failed to clear container stores")
 
 	// Confirm missing container paths
-	md, err := r.client.FetchContainerStatsAndConvertToMetrics(ctx, containers[0])
-	assert.Zero(t, md.DataPointCount())
+	statsJSON, err := r.client.FetchContainerStatsAsJSON(ctx, containers[0])
+	assert.Nil(t, statsJSON)
 	require.Error(t, err)
 	assert.Equal(t, fmt.Sprintf("Error response from daemon: No such container: %s", containers[0].ID), err.Error())
-
-	ctr, ok := r.client.inspectedContainerIsOfInterest(ctx, containers[0].ID)
-	assert.False(t, ok)
-	assert.Nil(t, ctr)
 
 	assert.NoError(t, r.Shutdown(ctx))
 }

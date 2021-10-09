@@ -50,7 +50,7 @@ func (f *Factory) Type() config.Type {
 // CreateDefaultConfig creates the default configuration for the extension.
 func (f *Factory) CreateDefaultConfig() config.Extension {
 	return &Config{
-		ExtensionSettings: config.NewExtensionSettings(config.NewID(typeStr)),
+		ExtensionSettings: config.NewExtensionSettings(config.NewComponentID(typeStr)),
 		APIConfig:         k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeServiceAccount},
 	}
 }

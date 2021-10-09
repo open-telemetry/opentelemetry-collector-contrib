@@ -25,34 +25,13 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 )
 
-type testingHecConfiguration struct {
-	sourceKey     string
-	sourceTypeKey string
-	indexKey      string
-	hostKey       string
-}
-
-func (t *testingHecConfiguration) GetSourceKey() string {
-	return t.sourceKey
-}
-
-func (t *testingHecConfiguration) GetSourceTypeKey() string {
-	return t.sourceTypeKey
-}
-
-func (t *testingHecConfiguration) GetIndexKey() string {
-	return t.indexKey
-}
-
-func (t *testingHecConfiguration) GetHostKey() string {
-	return t.hostKey
-}
-
-var defaultTestingHecConfig = &testingHecConfiguration{
-	sourceKey:     splunk.DefaultSourceLabel,
-	sourceTypeKey: splunk.DefaultSourceTypeLabel,
-	indexKey:      splunk.DefaultIndexLabel,
-	hostKey:       conventions.AttributeHostName,
+var defaultTestingHecConfig = &Config{
+	HecToOtelAttrs: splunk.HecToOtelAttrs{
+		Source:     splunk.DefaultSourceLabel,
+		SourceType: splunk.DefaultSourceTypeLabel,
+		Index:      splunk.DefaultIndexLabel,
+		Host:       conventions.AttributeHostName,
+	},
 }
 
 func Test_SplunkHecToLogData(t *testing.T) {
@@ -64,7 +43,7 @@ func Test_SplunkHecToLogData(t *testing.T) {
 		name      string
 		event     splunk.Event
 		output    pdata.ResourceLogsSlice
-		hecConfig splunk.HECConfiguration
+		hecConfig *Config
 		wantErr   error
 	}{
 		{
@@ -197,11 +176,13 @@ func Test_SplunkHecToLogData(t *testing.T) {
 					"foo": "bar",
 				},
 			},
-			hecConfig: &testingHecConfiguration{
-				sourceKey:     "mysource",
-				sourceTypeKey: "mysourcetype",
-				indexKey:      "myindex",
-				hostKey:       "myhost",
+			hecConfig: &Config{
+				HecToOtelAttrs: splunk.HecToOtelAttrs{
+					Source:     "mysource",
+					SourceType: "mysourcetype",
+					Index:      "myindex",
+					Host:       "myhost",
+				},
 			},
 			output: func() pdata.ResourceLogsSlice {
 				lrs := pdata.NewResourceLogsSlice()

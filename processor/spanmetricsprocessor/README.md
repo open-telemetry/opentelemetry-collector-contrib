@@ -46,7 +46,14 @@ The following settings can be optionally configured:
 
 - `latency_histogram_buckets`: the list of durations defining the latency histogram buckets.
   - Default: `[2ms, 4ms, 6ms, 8ms, 10ms, 50ms, 100ms, 200ms, 400ms, 800ms, 1s, 1400ms, 2s, 5s, 10s, 15s]`
-- `dimensions`: the list of dimensions to add together with the default dimensions defined above. Each additional dimension is defined with a `name` which is looked up in the span's collection of attributes. If the `name`d attribute is missing in the span, the optional provided `default` is used. If no `default` is provided, this dimension will be **omitted** from the metric.
+- `dimensions`: the list of dimensions to add together with the default dimensions defined above.
+  
+  Each additional dimension is defined with a `name` which is looked up in the span's collection of attributes or
+  resource attributes (AKA process tags) such as `ip`, `host.name` or `region`.
+  
+  If the `name`d attribute is missing in the span, the optional provided `default` is used.
+  
+  If no `default` is provided, this dimension will be **omitted** from the metric.
 
 ## Examples
 
@@ -90,7 +97,8 @@ exporters:
 
   otlp/spanmetrics:
     endpoint: "localhost:55677"
-    insecure: true
+    tls:
+      insecure: true
 
   prometheus:
     endpoint: "0.0.0.0:8889"

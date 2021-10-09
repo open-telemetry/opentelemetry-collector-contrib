@@ -48,8 +48,8 @@ import (
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/obsreport"
+	"go.uber.org/multierr"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 
@@ -193,11 +193,11 @@ func (jr *jReceiver) Start(_ context.Context, host component.Host) error {
 }
 
 func (jr *jReceiver) Shutdown(ctx context.Context) error {
-	var errs []error
+	var errs error
 
 	if jr.agentServer != nil {
 		if aerr := jr.agentServer.Shutdown(ctx); aerr != nil {
-			errs = append(errs, aerr)
+			errs = multierr.Append(errs, aerr)
 		}
 	}
 	for _, processor := range jr.agentProcessors {
@@ -206,7 +206,7 @@ func (jr *jReceiver) Shutdown(ctx context.Context) error {
 
 	if jr.collectorServer != nil {
 		if cerr := jr.collectorServer.Shutdown(ctx); cerr != nil {
-			errs = append(errs, cerr)
+			errs = multierr.Append(errs, cerr)
 		}
 	}
 	if jr.grpc != nil {
@@ -214,7 +214,7 @@ func (jr *jReceiver) Shutdown(ctx context.Context) error {
 	}
 
 	jr.goroutines.Wait()
-	return consumererror.Combine(errs)
+	return errs
 }
 
 func consumeTraces(ctx context.Context, batch *jaeger.Batch, consumer consumer.Traces) (int, error) {

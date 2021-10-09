@@ -20,8 +20,8 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func newTestCache() *TTLCache {
-	cache := NewTTLCache(1800, 3600)
+func newTestCache() *ttlCache {
+	cache := newTTLCache(1800, 3600)
 	return cache
 }
 func TestPutAndGetDiff(t *testing.T) {
@@ -52,4 +52,24 @@ func TestMetricDimensionsToMapKey(t *testing.T) {
 	assert.NotEqual(t, noTags, someTags)
 	assert.NotEqual(t, someTags, diffTags)
 	assert.Equal(t, someTags, sameTags)
+}
+
+func TestMetricDimensionsToMapKeyNoTagsChange(t *testing.T) {
+	// The original metricDimensionsToMapKey had an issue where:
+	// - if the capacity of the tags array passed to it was higher than its length
+	// - and the metric name is earlier (in alphabetical order) than one of the tags
+	// then the original tag array would be modified (without a reallocation, since there is enough capacity),
+	// and would contain a tag labeled as the metric name, while the final tag (in alphabetical order)
+	// would get left out.
+	// This test checks that this doesn't happen anymore.
+
+	metricName := "a.metric.name"
+	c := newTestCache()
+
+	originalTags := make([]string, 2, 3)
+	originalTags[0] = "key1:val1"
+	originalTags[1] = "key2:val2"
+	c.metricDimensionsToMapKey(metricName, originalTags)
+	assert.Equal(t, []string{"key1:val1", "key2:val2"}, originalTags)
+
 }

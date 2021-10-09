@@ -48,8 +48,15 @@ func mapLogRecordToSplunkEvent(res pdata.Resource, lr pdata.LogRecord, config *C
 	sourcetype := config.SourceType
 	index := config.Index
 	fields := map[string]interface{}{}
+	sourceKey := config.HecToOtelAttrs.Source
+	sourceTypeKey := config.HecToOtelAttrs.SourceType
+	indexKey := config.HecToOtelAttrs.Index
+	hostKey := config.HecToOtelAttrs.Host
+	nameKey := config.HecFields.Name
+	severityTextKey := config.HecFields.SeverityText
+	severityNumberKey := config.HecFields.SeverityNumber
 	if lr.Name() != "" {
-		fields[splunk.NameLabel] = lr.Name()
+		fields[nameKey] = lr.Name()
 	}
 	if spanID := lr.SpanID().HexString(); spanID != "" {
 		fields[spanIDFieldKey] = spanID
@@ -58,23 +65,22 @@ func mapLogRecordToSplunkEvent(res pdata.Resource, lr pdata.LogRecord, config *C
 		fields[traceIDFieldKey] = traceID
 	}
 	if lr.SeverityText() != "" {
-		fields[splunk.SeverityTextLabel] = lr.SeverityText()
+		fields[severityTextKey] = lr.SeverityText()
 	}
 	if lr.SeverityNumber() != pdata.SeverityNumberUNDEFINED {
-		fields[splunk.SeverityNumberLabel] = lr.SeverityNumber()
+		fields[severityNumberKey] = lr.SeverityNumber()
 	}
 
 	res.Attributes().Range(func(k string, v pdata.AttributeValue) bool {
 		switch k {
-		case conventions.AttributeHostName:
+		case hostKey:
 			host = v.StringVal()
-			fields[k] = v.StringVal()
-		case splunk.DefaultSourceLabel:
+			fields[conventions.AttributeHostName] = v.StringVal()
+		case sourceKey:
 			source = v.StringVal()
-			fields[k] = v.StringVal()
-		case splunk.DefaultSourceTypeLabel:
+		case sourceTypeKey:
 			sourcetype = v.StringVal()
-		case splunk.DefaultIndexLabel:
+		case indexKey:
 			index = v.StringVal()
 		default:
 			fields[k] = convertAttributeValue(v, logger)
@@ -83,15 +89,14 @@ func mapLogRecordToSplunkEvent(res pdata.Resource, lr pdata.LogRecord, config *C
 	})
 	lr.Attributes().Range(func(k string, v pdata.AttributeValue) bool {
 		switch k {
-		case conventions.AttributeHostName:
+		case hostKey:
 			host = v.StringVal()
-			fields[k] = v.StringVal()
-		case splunk.DefaultSourceLabel:
+			fields[conventions.AttributeHostName] = v.StringVal()
+		case sourceKey:
 			source = v.StringVal()
-			fields[k] = v.StringVal()
-		case splunk.DefaultSourceTypeLabel:
+		case sourceTypeKey:
 			sourcetype = v.StringVal()
-		case splunk.DefaultIndexLabel:
+		case indexKey:
 			index = v.StringVal()
 		default:
 			fields[k] = convertAttributeValue(v, logger)

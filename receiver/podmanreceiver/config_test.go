@@ -38,7 +38,7 @@ func TestLoadConfig(t *testing.T) {
 	require.NotNil(t, cfg)
 	assert.Equal(t, 2, len(cfg.Receivers))
 
-	defaultConfig := cfg.Receivers[config.NewID(typeStr)]
+	defaultConfig := cfg.Receivers[config.NewComponentID(typeStr)]
 	assert.Equal(t, factory.CreateDefaultConfig(), defaultConfig)
 
 	dcfg := defaultConfig.(*Config)
@@ -46,7 +46,7 @@ func TestLoadConfig(t *testing.T) {
 	assert.Equal(t, "unix:///run/podman/podman.sock", dcfg.Endpoint)
 	assert.Equal(t, 10*time.Second, dcfg.CollectionInterval)
 
-	ascfg := cfg.Receivers[config.NewIDWithName(typeStr, "all")].(*Config)
+	ascfg := cfg.Receivers[config.NewComponentIDWithName(typeStr, "all")].(*Config)
 	assert.Equal(t, "podman_stats/all", ascfg.ID().String())
 	assert.Equal(t, "http://example.com/", ascfg.Endpoint)
 	assert.Equal(t, 2*time.Second, ascfg.CollectionInterval)

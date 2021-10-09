@@ -42,6 +42,7 @@ type Config struct {
 	// If true, the observer will configure receivers for matching container endpoints
 	// using the host bound ip and port.  This is useful if containers exist that are not
 	// accessible to an instance of the agent running outside of the docker network stack.
+	// If UseHostnameIfPresent and this config are both enabled, this setting will take precedence.
 	UseHostBindings bool `mapstructure:"use_host_bindings"`
 
 	// If true, the observer will ignore discovered container endpoints that are not bound

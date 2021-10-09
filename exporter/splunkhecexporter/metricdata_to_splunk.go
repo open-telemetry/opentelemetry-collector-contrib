@@ -38,12 +38,35 @@ const (
 	sumSuffix = "_sum"
 	// bucketSuffix is the bucket metric value suffix.
 	bucketSuffix = "_bucket"
+	// nanValue is the string representation of a NaN value in HEC events
+	nanValue = "NaN"
+	// plusInfValue is the string representation of a +Inf value in HEC events
+	plusInfValue = "+Inf"
+	// minusInfValue is the string representation of a -Inf value in HEC events
+	minusInfValue = "-Inf"
 )
+
+func sanitizeFloat(value float64) interface{} {
+	if math.IsNaN(value) {
+		return nanValue
+	}
+	if math.IsInf(value, 1) {
+		return plusInfValue
+	}
+	if math.IsInf(value, -1) {
+		return minusInfValue
+	}
+	return value
+}
 
 func metricDataToSplunk(logger *zap.Logger, data pdata.Metrics, config *Config) ([]*splunk.Event, int) {
 	numDroppedTimeSeries := 0
 	splunkMetrics := make([]*splunk.Event, 0, data.DataPointCount())
 	rms := data.ResourceMetrics()
+	sourceKey := config.HecToOtelAttrs.Source
+	sourceTypeKey := config.HecToOtelAttrs.SourceType
+	indexKey := config.HecToOtelAttrs.Index
+	hostKey := config.HecToOtelAttrs.Host
 	for i := 0; i < rms.Len(); i++ {
 		rm := rms.At(i)
 		host := unknownHostName
@@ -51,27 +74,21 @@ func metricDataToSplunk(logger *zap.Logger, data pdata.Metrics, config *Config) 
 		sourceType := config.SourceType
 		index := config.Index
 		commonFields := map[string]interface{}{}
-		resource := rm.Resource()
-		attributes := resource.Attributes()
-		if conventionHost, isSet := attributes.Get(conventions.AttributeHostName); isSet {
-			host = conventionHost.StringVal()
-		}
-		if sourceSet, isSet := attributes.Get(splunk.DefaultSourceLabel); isSet {
-			source = sourceSet.StringVal()
-		}
-		if sourcetypeSet, isSet := attributes.Get(splunk.DefaultSourceTypeLabel); isSet {
-			sourceType = sourcetypeSet.StringVal()
-		}
-		if indexSet, isSet := attributes.Get(splunk.DefaultIndexLabel); isSet {
-			index = indexSet.StringVal()
-		}
-		attributes.Range(func(k string, v pdata.AttributeValue) bool {
-			commonFields[k] = v.AsString()
-			return true
-		})
 
 		rm.Resource().Attributes().Range(func(k string, v pdata.AttributeValue) bool {
-			commonFields[k] = v.AsString()
+			switch k {
+			case hostKey:
+				host = v.StringVal()
+				commonFields[conventions.AttributeHostName] = host
+			case sourceKey:
+				source = v.StringVal()
+			case sourceTypeKey:
+				sourceType = v.StringVal()
+			case indexKey:
+				index = v.StringVal()
+			default:
+				commonFields[k] = v.AsString()
+			}
 			return true
 		})
 		ilms := rm.InstrumentationLibraryMetrics()
@@ -92,7 +109,7 @@ func metricDataToSplunk(logger *zap.Logger, data pdata.Metrics, config *Config) 
 						case pdata.MetricValueTypeInt:
 							fields[metricFieldName] = dataPt.IntVal()
 						case pdata.MetricValueTypeDouble:
-							fields[metricFieldName] = dataPt.DoubleVal()
+							fields[metricFieldName] = sanitizeFloat(dataPt.DoubleVal())
 						}
 						fields[splunkMetricTypeKey] = pdata.MetricDataTypeGauge.String()
 						sm := createEvent(dataPt.Timestamp(), host, source, sourceType, index, fields)
@@ -159,7 +176,7 @@ func metricDataToSplunk(logger *zap.Logger, data pdata.Metrics, config *Config) 
 						case pdata.MetricValueTypeInt:
 							fields[metricFieldName] = dataPt.IntVal()
 						case pdata.MetricValueTypeDouble:
-							fields[metricFieldName] = dataPt.DoubleVal()
+							fields[metricFieldName] = sanitizeFloat(dataPt.DoubleVal())
 						}
 						fields[splunkMetricTypeKey] = pdata.MetricDataTypeSum.String()
 						sm := createEvent(dataPt.Timestamp(), host, source, sourceType, index, fields)
@@ -193,7 +210,7 @@ func metricDataToSplunk(logger *zap.Logger, data pdata.Metrics, config *Config) 
 							populateAttributes(fields, dataPt.Attributes())
 							dp := dataPt.QuantileValues().At(bi)
 							fields["qt"] = float64ToDimValue(dp.Quantile())
-							fields[metricFieldName+"_"+strconv.FormatFloat(dp.Quantile(), 'f', -1, 64)] = dp.Value()
+							fields[metricFieldName+"_"+strconv.FormatFloat(dp.Quantile(), 'f', -1, 64)] = sanitizeFloat(dp.Value())
 							fields[splunkMetricTypeKey] = pdata.MetricDataTypeSummary.String()
 							sm := createEvent(dataPt.Timestamp(), host, source, sourceType, index, fields)
 							splunkMetrics = append(splunkMetrics, sm)

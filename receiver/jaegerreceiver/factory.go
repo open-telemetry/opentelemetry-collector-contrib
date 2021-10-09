@@ -59,7 +59,7 @@ func NewFactory() component.ReceiverFactory {
 // CreateDefaultConfig creates the default configuration for Jaeger receiver.
 func createDefaultConfig() config.Receiver {
 	return &Config{
-		ReceiverSettings: config.NewReceiverSettings(config.NewID(typeStr)),
+		ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
 		Protocols: Protocols{
 			GRPC: &configgrpc.GRPCServerSettings{
 				NetAddr: confignet.NetAddr{
@@ -92,6 +92,7 @@ func createTracesReceiver(
 
 	// Convert settings in the source config to configuration struct
 	// that Jaeger receiver understands.
+	// Error handling for the conversion is done in the Validate function from the Config object itself.
 
 	rCfg := cfg.(*Config)
 	remoteSamplingConfig := rCfg.RemoteSampling
@@ -100,39 +101,22 @@ func createTracesReceiver(
 	// Set ports
 	if rCfg.Protocols.GRPC != nil {
 		config.CollectorGRPCServerSettings = *rCfg.Protocols.GRPC
-		var err error
-		config.CollectorGRPCPort, err = extractPortFromEndpoint(rCfg.Protocols.GRPC.NetAddr.Endpoint)
-		if err != nil {
-			return nil, fmt.Errorf("unable to extract port for GRPC: %w", err)
-		}
+		config.CollectorGRPCPort, _ = extractPortFromEndpoint(rCfg.Protocols.GRPC.NetAddr.Endpoint)
 	}
 
 	if rCfg.Protocols.ThriftHTTP != nil {
-		var err error
-		config.CollectorHTTPPort, err = extractPortFromEndpoint(rCfg.Protocols.ThriftHTTP.Endpoint)
-		if err != nil {
-			return nil, fmt.Errorf("unable to extract port for ThriftHTTP: %w", err)
-		}
-
+		config.CollectorHTTPPort, _ = extractPortFromEndpoint(rCfg.Protocols.ThriftHTTP.Endpoint)
 		config.CollectorHTTPSettings = *rCfg.ThriftHTTP
 	}
 
 	if rCfg.Protocols.ThriftBinary != nil {
 		config.AgentBinaryThriftConfig = rCfg.ThriftBinary.ServerConfigUDP
-		var err error
-		config.AgentBinaryThriftPort, err = extractPortFromEndpoint(rCfg.Protocols.ThriftBinary.Endpoint)
-		if err != nil {
-			return nil, fmt.Errorf("unable to extract port for ThriftBinary: %w", err)
-		}
+		config.AgentBinaryThriftPort, _ = extractPortFromEndpoint(rCfg.Protocols.ThriftBinary.Endpoint)
 	}
 
 	if rCfg.Protocols.ThriftCompact != nil {
 		config.AgentCompactThriftConfig = rCfg.ThriftCompact.ServerConfigUDP
-		var err error
-		config.AgentCompactThriftPort, err = extractPortFromEndpoint(rCfg.Protocols.ThriftCompact.Endpoint)
-		if err != nil {
-			return nil, fmt.Errorf("unable to extract port for ThriftCompact: %w", err)
-		}
+		config.AgentCompactThriftPort, _ = extractPortFromEndpoint(rCfg.Protocols.ThriftCompact.Endpoint)
 	}
 
 	if remoteSamplingConfig != nil {
@@ -144,33 +128,13 @@ func createTracesReceiver(
 		if len(remoteSamplingConfig.HostEndpoint) == 0 {
 			config.AgentHTTPPort = defaultAgentRemoteSamplingHTTPPort
 		} else {
-			var err error
-			config.AgentHTTPPort, err = extractPortFromEndpoint(remoteSamplingConfig.HostEndpoint)
-			if err != nil {
-				return nil, err
-			}
+			config.AgentHTTPPort, _ = extractPortFromEndpoint(remoteSamplingConfig.HostEndpoint)
 		}
 
 		// strategies are served over grpc so if grpc is not enabled and strategies are present return an error
 		if len(remoteSamplingConfig.StrategyFile) != 0 {
-			if config.CollectorGRPCPort == 0 {
-				return nil, fmt.Errorf("strategy file requires the GRPC protocol to be enabled")
-			}
-
 			config.RemoteSamplingStrategyFile = remoteSamplingConfig.StrategyFile
 		}
-	}
-
-	if (rCfg.Protocols.GRPC == nil && rCfg.Protocols.ThriftHTTP == nil && rCfg.Protocols.ThriftBinary == nil && rCfg.Protocols.ThriftCompact == nil) ||
-		(config.CollectorGRPCPort == 0 && config.CollectorHTTPPort == 0 && config.CollectorThriftPort == 0 && config.AgentBinaryThriftPort == 0 && config.AgentCompactThriftPort == 0) {
-		err := fmt.Errorf("either GRPC(%v), ThriftHTTP(%v), ThriftCompact(%v), or ThriftBinary(%v) protocol endpoint with non-zero port must be enabled for %s receiver",
-			rCfg.Protocols.GRPC,
-			rCfg.Protocols.ThriftHTTP,
-			rCfg.Protocols.ThriftCompact,
-			rCfg.Protocols.ThriftBinary,
-			cfg.ID().String(),
-		)
-		return nil, err
 	}
 
 	// Create the receiver.

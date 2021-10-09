@@ -14,10 +14,11 @@ exporters:
     source: "otel"
     sourcetype: "otel"
     index: "metrics"
-    insecure_skip_verify: false
-    ca_file: ""
-    cert_file: ""
-    key_file: ""
+    tls:
+      insecure_skip_verify: false
+      ca_file: ""
+      cert_file: ""
+      key_file: ""
     timeout: 10s
     sending_queue:
       enabled: true
@@ -30,6 +31,15 @@ exporters:
       max_elapsed_time: 10m
     splunk_app_name: "OpenTelemetry-Collector Splunk Exporter"
     splunk_app_version: "v0.0.1"
+    hec_metadata_to_otel_attrs:
+      source: "mysource"
+      sourcetype: "mysourcetype"
+      index: "myindex"
+      host: "myhost"
+    otel_to_hec_fields:
+      severity_text: "myseverityfield"
+      severity_number: "myseveritynumfield"
+      name: "mynamefield"
 service:
   pipelines:
     metrics:

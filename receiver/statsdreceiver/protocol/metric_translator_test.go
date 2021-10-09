@@ -29,7 +29,7 @@ func TestBuildCounterMetric(t *testing.T) {
 	}
 	parsedMetric := statsDMetric{
 		description: metricDescription,
-		intvalue:    32,
+		asFloat:     32,
 		unit:        "meter",
 		labelKeys:   []string{"mykey"},
 		labelValues: []string{"myvalue"},
@@ -41,7 +41,7 @@ func TestBuildCounterMetric(t *testing.T) {
 	expectedMetric.SetName("testCounter")
 	expectedMetric.SetUnit("meter")
 	expectedMetric.SetDataType(pdata.MetricDataTypeSum)
-	expectedMetric.Sum().SetAggregationTemporality(pdata.AggregationTemporalityDelta)
+	expectedMetric.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityDelta)
 	expectedMetric.Sum().SetIsMonotonic(true)
 	dp := expectedMetric.Sum().DataPoints().AppendEmpty()
 	dp.SetIntVal(32)
@@ -57,7 +57,7 @@ func TestBuildGaugeMetric(t *testing.T) {
 	}
 	parsedMetric := statsDMetric{
 		description: metricDescription,
-		floatvalue:  32.3,
+		asFloat:     32.3,
 		unit:        "meter",
 		labelKeys:   []string{"mykey", "mykey2"},
 		labelValues: []string{"myvalue", "myvalue2"},
@@ -103,7 +103,7 @@ func TestBuildSummaryMetric(t *testing.T) {
 	value := []float64{1, 1, 3, 6, 6, 6}
 	for int, v := range quantile {
 		eachQuantile := dp.QuantileValues().AppendEmpty()
-		eachQuantile.SetQuantile(v)
+		eachQuantile.SetQuantile(v / 100)
 		eachQuantileValue := value[int]
 		eachQuantile.SetValue(eachQuantileValue)
 	}
