@@ -19,13 +19,16 @@ For the actions the following parameters are required:
 
 For logs:
 
-- `match_type`: `strict`|`regexp`
+- `match_type`: `strict`|`regexp`|`expr`
 - `resource_attributes`: ResourceAttributes defines a list of possible resource
   attributes to match logs against.
   A match occurs if any resource attribute matches all expressions in this given list.
 - `record_attributes`: RecordAttributes defines a list of possible record
   attributes to match logs against.
   A match occurs if any record attribute matches all expressions in this given list.
+- `expressions`: (only for a `match_type` of `expr`) list of expr expressions
+  (for more details see "Using an 'expr' match_type" below and
+  [expr documentation](../../internal/coreinternal/processor/filterexpr/README.md))
 
 For metrics:
 
@@ -33,7 +36,8 @@ For metrics:
 - `metric_names`: (only for a `match_type` of `strict` or `regexp`) list of strings
   or re2 regex patterns
 - `expressions`: (only for a `match_type` of `expr`) list of expr expressions
-  (see "Using an 'expr' match_type" below)
+  (for more details see "Using an 'expr' match_type" below and
+  [expr documentation](../../internal/coreinternal/processor/filterexpr/README.md))
 - `resource_attributes`: ResourceAttributes defines a list of possible resource
   attributes to match metrics against.
   A match occurs if any resource attribute matches all expressions in this given list.
@@ -87,23 +91,15 @@ examples on using the processor.
 
 ## Using an 'expr' match_type
 
-In addition to matching metric names with the 'strict' or 'regexp' match types, the filter processor
-supports matching entire `Metric`s using the [expr](https://github.com/antonmedv/expr) expression engine.
+In addition to matching with the 'strict' or 'regexp' match types, the filter processor
+supports matching entire `Metric`s and `Log`s using the [expr](https://github.com/antonmedv/expr) expression engine.
 
 The 'expr' filter evaluates the supplied boolean expressions _per datapoint_ on a metric, and returns a result
 for the entire metric. If any datapoint evaluates to true then the entire metric evaluates to true, otherwise
 false.
 
-Made available to the expression environment are the following:
-
-* `MetricName`
-    a variable containing the current Metric's name
-* `Label(name)`
-    a function that takes a label name string as an argument and returns a string: the value of a label with that
-    name if one exists, or ""
-* `HasLabel(name)`
-    a function that takes a label name string as an argument and returns a boolean: true if the datapoint has a label
-    with that name, false otherwise
+See [expr documentation for metrics](../../internal/coreinternal/processor/filterexpr/README.md#metrics)
+for available environment variables and functions.
 
 Example:
 
@@ -119,6 +115,11 @@ processors:
 
 The above config will filter out any Metric that both has the name "my.metric" and has at least one datapoint
 with a label of 'my_label="abc123"'.
+
+For logs 'expr` filter evaluates the supplied boolean expressions per LogRecord.
+
+See [expr documentation for logs](../../internal/coreinternal/processor/filterexpr/README.md#logs)
+for available environment variables and functions.
 
 ### Support for multiple expressions
 

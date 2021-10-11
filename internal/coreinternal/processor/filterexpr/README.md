@@ -12,14 +12,14 @@ For metrics the following variables as available:
 
 | Name       | [Type][type] | Description         |
 |------------|--------------|---------------------|
-| MetricName | string       | Name of the metric. |
+| MetricName | string       | Name of the Metric. |
 
 In addtion the following functions are available:
 
-| Name     | Signature               | Description                                              |
-|----------|-------------------------|----------------------------------------------------------|
-| HasLabel | func(key string) bool   | Returns true if metric has given label, otherwise false. |
-| Label    | func(key string) string | Returns value of given label name.                       |
+| Name     | Signature               | Description                                                  |
+|----------|-------------------------|--------------------------------------------------------------|
+| HasLabel | func(key string) bool   | Returns true if the Metric has given label, otherwise false. |
+| Label    | func(key string) string | Returns value of given label name if exists, otherwise `""`  |
 
 ## Logs
 
