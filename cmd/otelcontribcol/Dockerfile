@@ -5,12 +5,6 @@ ARG USER_UID=10001
 
 RUN mkdir -p /tmp
 
-
-FROM debian:10.8 as journal
-RUN apt update
-RUN apt install -y systemd
-
-
 FROM scratch
 
 USER ${USER_UID}
