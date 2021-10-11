@@ -19,11 +19,10 @@ package podmanreceiver
 
 import (
 	"context"
+	"errors"
 	"testing"
 	"time"
 
-	"github.com/containers/podman/v3/libpod/define"
-	"github.com/containers/podman/v3/pkg/domain/entities"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -83,11 +82,11 @@ func TestScraperLoop(t *testing.T) {
 	require.NoError(t, err)
 
 	go func() {
-		client <- entities.ContainerStatsReport{
-			Stats: []define.ContainerStats{{
+		client <- containerStatsReport{
+			Stats: []containerStats{{
 				ContainerID: "c1",
 			}},
-			Error: nil,
+			Error: "",
 		}
 	}()
 
@@ -99,15 +98,18 @@ func TestScraperLoop(t *testing.T) {
 	r.Shutdown(context.Background())
 }
 
-type mockClient chan entities.ContainerStatsReport
+type mockClient chan containerStatsReport
 
-func (c mockClient) factory(endpoint string) (client, error) {
+func (c mockClient) factory(logger *zap.Logger, cfg *Config) (client, error) {
 	return c, nil
 }
 
-func (c mockClient) stats() ([]define.ContainerStats, error) {
+func (c mockClient) stats() ([]containerStats, error) {
 	report := <-c
-	return report.Stats, report.Error
+	if report.Error != "" {
+		return nil, errors.New(report.Error)
+	}
+	return report.Stats, nil
 }
 
 type mockConsumer chan pdata.Metrics

@@ -50,10 +50,10 @@ func TestLoadConfig(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 
-	actual, ok := cfg.Exporters[config.NewID("tanzuobservability")]
+	actual, ok := cfg.Exporters[config.NewComponentID("tanzuobservability")]
 	require.True(t, ok)
 	expected := &Config{
-		ExporterSettings: config.NewExporterSettings(config.NewID("tanzuobservability")),
+		ExporterSettings: config.NewExporterSettings(config.NewComponentID("tanzuobservability")),
 		Traces: TracesConfig{
 			HTTPClientSettings: confighttp.HTTPClientSettings{Endpoint: "http://localhost:40001"},
 		},

@@ -15,10 +15,11 @@
 package testbed
 
 import (
+	"context"
 	"fmt"
 	"strings"
 
-	"github.com/shirou/gopsutil/process"
+	"github.com/shirou/gopsutil/v3/process"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/service"
 	"go.opentelemetry.io/collector/service/parserprovider"
@@ -51,22 +52,20 @@ func (ipp *inProcessCollector) PrepareConfig(configStr string) (configCleanup fu
 
 func (ipp *inProcessCollector) Start(args StartParams) error {
 	settings := service.CollectorSettings{
-		BuildInfo:      component.DefaultBuildInfo(),
-		Factories:      ipp.factories,
-		ParserProvider: parserprovider.NewInMemory(strings.NewReader(ipp.configStr)),
+		BuildInfo:         component.NewDefaultBuildInfo(),
+		Factories:         ipp.factories,
+		ConfigMapProvider: parserprovider.NewInMemoryMapProvider(strings.NewReader(ipp.configStr)),
 	}
 	var err error
 	ipp.svc, err = service.New(settings)
 	if err != nil {
 		return err
 	}
-	cmd := service.NewCommand(ipp.svc)
-	cmd.SetArgs(args.CmdArgs)
 
 	ipp.appDone = make(chan struct{})
 	go func() {
 		defer close(ipp.appDone)
-		if appErr := cmd.Execute(); appErr != nil {
+		if appErr := ipp.svc.Run(context.Background()); appErr != nil {
 			err = appErr
 		}
 	}()

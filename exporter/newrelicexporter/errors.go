@@ -55,7 +55,7 @@ func (e *urlError) Wrap() error {
 	var out error
 	out = e
 	if e.IsPermanent() {
-		out = consumererror.Permanent(out)
+		out = consumererror.NewPermanent(out)
 	}
 	return out
 }
@@ -142,7 +142,7 @@ func (e *httpError) ThrottleDelay() time.Duration {
 
 func (e *httpError) Wrap() error {
 	if e.IsPermanent() {
-		out := consumererror.Permanent(e.err)
+		out := consumererror.NewPermanent(e.err)
 		return &httpError{err: out, response: e.response}
 	} else if delay := e.ThrottleDelay(); delay > 0 {
 		// NOTE: a retry-after header means that the error is not

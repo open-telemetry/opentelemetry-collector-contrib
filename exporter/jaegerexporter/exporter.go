@@ -97,7 +97,7 @@ func (s *protoGRPCSender) pushTraces(
 
 	batches, err := jaegertranslator.InternalTracesToJaegerProto(td)
 	if err != nil {
-		return consumererror.Permanent(fmt.Errorf("failed to push trace data via Jaeger exporter: %w", err))
+		return consumererror.NewPermanent(fmt.Errorf("failed to push trace data via Jaeger exporter: %w", err))
 	}
 
 	if s.metadata.Len() > 0 {

@@ -2,9 +2,9 @@
 # Using this example should correctly identifies hostnames for individual k8s nodes. 
 # This is meant as an example only and may differ depending on deployment scenario and specifics of the environment the collector is used.
 ---
-# The k8s_tagger processor may require additional
+# The k8sattributes processor may require additional
 # RBAC Config. More on this here:
-# https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/12dbcfc3faf80ec532d832fc7e6650222be33ff9/processor/k8sprocessor/doc.go#L26-L28
+# https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/12dbcfc3faf80ec532d832fc7e6650222be33ff9/processor/k8sattributesprocessor/doc.go#L26-L28
 ---
 apiVersion: v1
 kind: ConfigMap
@@ -33,7 +33,8 @@ data:
     exporters:
       otlp:
         endpoint: "otel-collector.default:4317"
-        insecure: true
+        tls:
+          insecure: true
     processors:
       batch:
       memory_limiter:
@@ -46,16 +47,16 @@ data:
         check_interval: 5s      
 
       # The resource detector injects the pod IP
-      # to every metric so that the k8s_tagger can
+      # to every metric so that the k8sattributes can
       # fetch information afterwards.
       resourcedetection:
         detectors: [env]
         timeout: 5s
         override: false
-      # The k8s_tagger in the Agent is in passthrough mode
+      # The k8sattributes in the Agent is in passthrough mode
       # so that it only tags with the minimal info for the
-      # collector k8s_tagger to complete
-      k8s_tagger:
+      # collector k8sattributes to complete
+      k8sattributes:
         passthrough: true
     extensions:
       health_check: {}
@@ -64,13 +65,13 @@ data:
       pipelines:
         metrics:
           receivers: [otlp]
-          # resourcedetection must come before k8s_tagger
-          processors: [batch, resourcedetection, k8s_tagger]
+          # resourcedetection must come before k8sattributes
+          processors: [batch, resourcedetection, k8sattributes]
           exporters: [otlp]
         traces:
           receivers: [otlp, jaeger, zipkin]
-          # resourcedetection must come before k8s_tagger
-          processors: [memory_limiter, resourcedetection, k8s_tagger, batch]
+          # resourcedetection must come before k8sattributes
+          processors: [memory_limiter, resourcedetection, k8sattributes, batch]
           exporters: [otlp]
 ---
 apiVersion: apps/v1
@@ -116,7 +117,7 @@ spec:
         - containerPort: 4317 # Default OpenTelemetry gRPC receiver port.
         - containerPort: 55681 # Default OpenTelemetry HTTP receiver port.
         env:
-           # Get pod ip so that k8s_tagger can tag resources
+           # Get pod ip so that k8sattributes can tag resources
           - name: POD_IP
             valueFrom:
               fieldRef:
@@ -160,7 +161,7 @@ data:
     processors:
       batch:
         timeout: 10s
-      k8s_tagger:
+      k8sattributes:
     extensions:
       health_check: {}
       zpages: {}
@@ -169,15 +170,18 @@ data:
         api:
           key: <YOUR_API_KEY>
     service:
+      telemetry:
+        logs:
+          level: "DEBUG"
       extensions: [health_check, zpages]
       pipelines:
         metrics/2:
           receivers: [otlp]
-          processors: [batch, k8s_tagger]
+          processors: [batch, k8sattributes]
           exporters: [datadog]
         traces/2:
           receivers: [otlp]
-          processors: [batch, k8s_tagger]
+          processors: [batch, k8sattributes]
           exporters: [datadog]
 ---
 apiVersion: v1
@@ -223,7 +227,6 @@ spec:
       - command:
           - "/otelcontribcol"
           - "--config=/conf/otel-collectorcollector-config.yaml"
-          - "--log-level=debug"
         image: otel/opentelemetry-collector-contrib:latest
         name: otel-collector
         resources:

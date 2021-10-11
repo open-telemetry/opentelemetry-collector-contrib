@@ -20,9 +20,9 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/model/pdata"
 	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
+	"go.uber.org/multierr"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/gcp"
@@ -49,11 +49,9 @@ func (d *Detector) Detect(context.Context) (resource pdata.Resource, schemaURL s
 	}
 
 	attr := res.Attributes()
-
-	var errors []error
-	errors = append(errors, d.initializeCloudAttributes(attr)...)
-	errors = append(errors, d.initializeHostAttributes(attr)...)
-	return res, conventions.SchemaURL, consumererror.Combine(errors)
+	cloudErr := multierr.Combine(d.initializeCloudAttributes(attr)...)
+	hostErr := multierr.Combine(d.initializeHostAttributes(attr)...)
+	return res, conventions.SchemaURL, multierr.Append(cloudErr, hostErr)
 }
 
 func (d *Detector) initializeCloudAttributes(attr pdata.AttributeMap) []error {

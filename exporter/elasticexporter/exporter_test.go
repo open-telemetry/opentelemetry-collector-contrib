@@ -32,9 +32,9 @@ import (
 )
 
 func TestTracesExporter(t *testing.T) {
-	cleanup, err := obsreporttest.SetupRecordedMetricsTest()
+	tt, err := obsreporttest.SetupTelemetry()
 	require.NoError(t, err)
-	defer cleanup()
+	defer tt.Shutdown(context.Background())
 
 	factory := NewFactory()
 	recorder, cfg := newRecorder(t)
@@ -50,7 +50,7 @@ func TestTracesExporter(t *testing.T) {
 
 	err = te.ConsumeTraces(context.Background(), traces)
 	assert.NoError(t, err)
-	obsreporttest.CheckExporterTraces(t, cfg.ID(), 1, 0)
+	assert.NoError(t, obsreporttest.CheckExporterTraces(cfg.ID(), 1, 0))
 
 	payloads := recorder.Payloads()
 	require.Len(t, payloads.Transactions, 1)
@@ -60,9 +60,9 @@ func TestTracesExporter(t *testing.T) {
 }
 
 func TestMetricsExporter(t *testing.T) {
-	cleanup, err := obsreporttest.SetupRecordedMetricsTest()
+	tt, err := obsreporttest.SetupTelemetry()
 	require.NoError(t, err)
-	defer cleanup()
+	defer tt.Shutdown(context.Background())
 
 	factory := NewFactory()
 	recorder, cfg := newRecorder(t)
@@ -77,15 +77,15 @@ func TestMetricsExporter(t *testing.T) {
 	payloads := recorder.Payloads()
 	require.Len(t, payloads.Metrics, 2)
 	assert.Contains(t, payloads.Metrics[0].Samples, "foobar")
-	obsreporttest.CheckExporterMetrics(t, cfg.ID(), 2, 0)
+	assert.NoError(t, obsreporttest.CheckExporterMetrics(cfg.ID(), 2, 0))
 
 	assert.NoError(t, me.Shutdown(context.Background()))
 }
 
 func TestMetricsExporterSendError(t *testing.T) {
-	cleanup, err := obsreporttest.SetupRecordedMetricsTest()
+	tt, err := obsreporttest.SetupTelemetry()
 	require.NoError(t, err)
-	defer cleanup()
+	defer tt.Shutdown(context.Background())
 
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
@@ -99,7 +99,7 @@ func TestMetricsExporterSendError(t *testing.T) {
 
 	err = me.ConsumeMetrics(context.Background(), sampleMetrics())
 	assert.Error(t, err)
-	obsreporttest.CheckExporterMetrics(t, cfg.ID(), 0, 2)
+	assert.NoError(t, obsreporttest.CheckExporterMetrics(cfg.ID(), 0, 2))
 
 	assert.NoError(t, me.Shutdown(context.Background()))
 }

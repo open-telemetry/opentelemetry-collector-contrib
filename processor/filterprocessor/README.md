@@ -23,6 +23,9 @@ For logs:
 - `resource_attributes`: ResourceAttributes defines a list of possible resource
   attributes to match logs against.
   A match occurs if any resource attribute matches all expressions in this given list.
+- `record_attributes`: RecordAttributes defines a list of possible record
+  attributes to match logs against.
+  A match occurs if any record attribute matches all expressions in this given list.
 
 For metrics:
 
@@ -67,10 +70,16 @@ processors:
         resource_attributes:
           - Key: host.name
             Value: just_this_one_hostname
+    logs/regexp:
         match_type: regexp
         resource_attributes:
           - Key: host.name
             Value: prefix.*
+    logs/regexp_record:
+        match_type: regexp
+        record_attributes:
+          - Key: record_attr
+            Value: prefix_.*
 ```
 
 Refer to the config files in [testdata](./testdata) for detailed

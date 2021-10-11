@@ -360,7 +360,7 @@ func ocReceiverOnGRPCServer(t *testing.T, sr consumer.Traces) (net.Addr, func())
 		}
 	}
 
-	oci, err := New(config.NewID("opencensus"), sr)
+	oci, err := New(config.NewComponentID("opencensus"), sr)
 	require.NoError(t, err, "Failed to create the Receiver: %v", err)
 
 	// Now run it as a gRPC server

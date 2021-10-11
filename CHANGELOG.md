@@ -2,6 +2,22 @@
 
 ## Unreleased
 
+## 🛑 Breaking changes 🛑
+
+- Remove squash on configtls.TLSClientSetting for splunkhecexporter (#5541)
+- Remove squash on configtls.TLSClientSetting for elastic components (#5539)
+- Remove squash on configtls.TLSClientSetting for observiqexporter (#5540)
+- Remove squash on configtls.TLSClientSetting for AWS components (#5454)
+- Move `k8sprocessor` to `k8sattributesprocessor`.
+- Rename `k8s_tagger` configuration `k8sattributes`.
+- filelog receiver: use empty value for `SeverityText` field instead of `"Undefined"` (#5423)
+- Rename `configparser.ConfigMap` to `config.Map`
+- Rename `pdata.AggregationTemporality*` to `pdata.MetricAggregationTemporality*`
+
+## 💡 Enhancements 💡
+
+- `k8sattributes` processor: add container metadata enrichment (#5467, #5572)
+
 ## v0.36.0
 
 ## 🛑 Breaking changes 🛑

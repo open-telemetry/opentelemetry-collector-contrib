@@ -18,7 +18,7 @@ The following settings are required:
   Logs that do not have at least one of these attributes will be dropped. 
   This is a safety net to help prevent accidentally adding dynamic labels that may significantly increase cardinality, 
   thus having a performance impact on your Loki instance. See the 
-  [Loki label best practices](https://grafana.com/docs/loki/latest/best-practices/current-best-practices/) page for 
+  [Loki label best practices](https://grafana.com/docs/loki/latest/best-practices/) page for 
   additional details on the types of labels you may want to associate with log streams.
 
 The following settings can be optionally configured:

@@ -16,6 +16,7 @@ package awsemfexporter
 
 import (
 	"fmt"
+	"regexp"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
@@ -52,10 +53,10 @@ func newCloudWatchLogClient(svc cloudwatchlogsiface.CloudWatchLogsAPI, logger *z
 }
 
 // newCloudWatchLogsClient create cloudWatchLogClient
-func newCloudWatchLogsClient(logger *zap.Logger, awsConfig *aws.Config, buildInfo component.BuildInfo, sess *session.Session) *cloudWatchLogClient {
+func newCloudWatchLogsClient(logger *zap.Logger, awsConfig *aws.Config, buildInfo component.BuildInfo, logGroupName string, sess *session.Session) *cloudWatchLogClient {
 	client := cloudwatchlogs.New(sess, awsConfig)
 	client.Handlers.Build.PushBackNamed(handler.RequestStructuredLogHandler)
-	client.Handlers.Build.PushFrontNamed(newCollectorUserAgentHandler(buildInfo))
+	client.Handlers.Build.PushFrontNamed(newCollectorUserAgentHandler(buildInfo, logGroupName))
 	return newCloudWatchLogClient(client, logger)
 }
 
@@ -175,9 +176,19 @@ func (client *cloudWatchLogClient) CreateStream(logGroup, streamName *string) (t
 	return "", nil
 }
 
-func newCollectorUserAgentHandler(buildInfo component.BuildInfo) request.NamedHandler {
+func newCollectorUserAgentHandler(buildInfo component.BuildInfo, logGroupName string) request.NamedHandler {
+	fn := request.MakeAddToUserAgentHandler(collectorDistribution, buildInfo.Version)
+	if matchContainerInsightsPattern(logGroupName) {
+		fn = request.MakeAddToUserAgentHandler(collectorDistribution, buildInfo.Version, "ContainerInsights")
+	}
 	return request.NamedHandler{
 		Name: "otel.collector.UserAgentHandler",
-		Fn:   request.MakeAddToUserAgentHandler(collectorDistribution, buildInfo.Version),
+		Fn:   fn,
 	}
+}
+
+func matchContainerInsightsPattern(logGroupName string) bool {
+	regexP := "^/aws/.*containerinsights/.*/(performance|prometheus)$"
+	r, _ := regexp.Compile(regexP)
+	return r.MatchString(logGroupName)
 }

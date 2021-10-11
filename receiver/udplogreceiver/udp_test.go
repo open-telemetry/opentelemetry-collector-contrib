@@ -86,13 +86,13 @@ func TestLoadConfig(t *testing.T) {
 	require.NotNil(t, cfg)
 
 	assert.Equal(t, len(cfg.Receivers), 1)
-	assert.Equal(t, testdataConfigYamlAsMap(), cfg.Receivers[config.NewID("udplog")])
+	assert.Equal(t, testdataConfigYamlAsMap(), cfg.Receivers[config.NewComponentID("udplog")])
 }
 
 func testdataConfigYamlAsMap() *UDPLogConfig {
 	return &UDPLogConfig{
 		BaseConfig: stanza.BaseConfig{
-			ReceiverSettings: config.NewReceiverSettings(config.NewID("udplog")),
+			ReceiverSettings: config.NewReceiverSettings(config.NewComponentID("udplog")),
 			Operators:        stanza.OperatorConfigs{},
 		},
 		Input: stanza.InputConfig{
@@ -106,7 +106,7 @@ func TestDecodeInputConfigFailure(t *testing.T) {
 	factory := NewFactory()
 	badCfg := &UDPLogConfig{
 		BaseConfig: stanza.BaseConfig{
-			ReceiverSettings: config.NewReceiverSettings(config.NewID("udplog")),
+			ReceiverSettings: config.NewReceiverSettings(config.NewComponentID("udplog")),
 			Operators:        stanza.OperatorConfigs{},
 		},
 		Input: stanza.InputConfig{

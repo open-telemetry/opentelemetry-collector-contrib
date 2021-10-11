@@ -42,10 +42,10 @@ func TestLoadConfig(t *testing.T) {
 
 	assert.Equal(t, len(cfg.Receivers), 4)
 
-	r1 := cfg.Receivers[config.NewIDWithName(typeStr, "customname")].(*Config)
+	r1 := cfg.Receivers[config.NewComponentIDWithName(typeStr, "customname")].(*Config)
 	assert.Equal(t, r1,
 		&Config{
-			ReceiverSettings: config.NewReceiverSettings(config.NewIDWithName(typeStr, "customname")),
+			ReceiverSettings: config.NewReceiverSettings(config.NewComponentIDWithName(typeStr, "customname")),
 			Protocols: Protocols{
 				GRPC: &configgrpc.GRPCServerSettings{
 					NetAddr: confignet.NetAddr{
@@ -84,10 +84,10 @@ func TestLoadConfig(t *testing.T) {
 			},
 		})
 
-	rDefaults := cfg.Receivers[config.NewIDWithName(typeStr, "defaults")].(*Config)
+	rDefaults := cfg.Receivers[config.NewComponentIDWithName(typeStr, "defaults")].(*Config)
 	assert.Equal(t, rDefaults,
 		&Config{
-			ReceiverSettings: config.NewReceiverSettings(config.NewIDWithName(typeStr, "defaults")),
+			ReceiverSettings: config.NewReceiverSettings(config.NewComponentIDWithName(typeStr, "defaults")),
 			Protocols: Protocols{
 				GRPC: &configgrpc.GRPCServerSettings{
 					NetAddr: confignet.NetAddr{
@@ -109,10 +109,10 @@ func TestLoadConfig(t *testing.T) {
 			},
 		})
 
-	rMixed := cfg.Receivers[config.NewIDWithName(typeStr, "mixed")].(*Config)
+	rMixed := cfg.Receivers[config.NewComponentIDWithName(typeStr, "mixed")].(*Config)
 	assert.Equal(t, rMixed,
 		&Config{
-			ReceiverSettings: config.NewReceiverSettings(config.NewIDWithName(typeStr, "mixed")),
+			ReceiverSettings: config.NewReceiverSettings(config.NewComponentIDWithName(typeStr, "mixed")),
 			Protocols: Protocols{
 				GRPC: &configgrpc.GRPCServerSettings{
 					NetAddr: confignet.NetAddr{
@@ -127,11 +127,11 @@ func TestLoadConfig(t *testing.T) {
 			},
 		})
 
-	tlsConfig := cfg.Receivers[config.NewIDWithName(typeStr, "tls")].(*Config)
+	tlsConfig := cfg.Receivers[config.NewComponentIDWithName(typeStr, "tls")].(*Config)
 
 	assert.Equal(t, tlsConfig,
 		&Config{
-			ReceiverSettings: config.NewReceiverSettings(config.NewIDWithName(typeStr, "tls")),
+			ReceiverSettings: config.NewReceiverSettings(config.NewComponentIDWithName(typeStr, "tls")),
 			Protocols: Protocols{
 				GRPC: &configgrpc.GRPCServerSettings{
 					NetAddr: confignet.NetAddr{
@@ -169,4 +169,103 @@ func TestFailedLoadConfig(t *testing.T) {
 
 	_, err = configtest.LoadConfigAndValidate(path.Join(".", "testdata", "bad_empty_config.yaml"), factories)
 	assert.EqualError(t, err, "error reading receivers configuration for jaeger: empty config for Jaeger receiver")
+}
+
+func TestInvalidConfig(t *testing.T) {
+	testCases := []struct {
+		desc  string
+		apply func(*Config)
+		err   string
+	}{
+		{
+			desc: "thrift-http-no-port",
+			apply: func(cfg *Config) {
+				cfg.ThriftHTTP = &confighttp.HTTPServerSettings{
+					Endpoint: "localhost:",
+				}
+			},
+			err: "receiver creation with no port number for Thrift HTTP must fail",
+		},
+		{
+			desc: "thrift-udp-compact-no-port",
+			apply: func(cfg *Config) {
+				cfg.ThriftCompact = &ProtocolUDP{
+					Endpoint: "localhost:",
+				}
+			},
+			err: "receiver creation with no port number for Thrift UDP - Compact must fail",
+		},
+		{
+			desc: "thrift-udp-binary-no-port",
+			apply: func(cfg *Config) {
+				cfg.ThriftBinary = &ProtocolUDP{
+					Endpoint: "localhost:",
+				}
+			},
+			err: "receiver creation with no port number for Thrift UDP - Binary must fail",
+		},
+		{
+			desc: "remote-sampling-http-no-port",
+			apply: func(cfg *Config) {
+				cfg.RemoteSampling = &RemoteSamplingConfig{
+					HostEndpoint: "localhost:",
+				}
+			},
+			err: "receiver creation with no port number for the remote sampling HTTP endpoint must fail",
+		},
+		{
+			desc: "grpc-invalid-host",
+			apply: func(cfg *Config) {
+				cfg.GRPC = &configgrpc.GRPCServerSettings{
+					NetAddr: confignet.NetAddr{
+						Endpoint:  "1234",
+						Transport: "tcp",
+					},
+				}
+			},
+			err: "receiver creation with bad hostname must fail",
+		},
+		{
+			desc: "no-protocols",
+			apply: func(cfg *Config) {
+				cfg.Protocols = Protocols{}
+			},
+			err: "receiver creation with no protocols must fail",
+		},
+		{
+			desc: "port-outside-of-range",
+			apply: func(cfg *Config) {
+				cfg.ThriftBinary = &ProtocolUDP{
+					Endpoint: "localhost:65536",
+				}
+			},
+			err: "receiver creation with too large port number must fail",
+		},
+		{
+			desc: "port-outside-of-range",
+			apply: func(cfg *Config) {
+				cfg.Protocols = Protocols{}
+				cfg.ThriftCompact = &ProtocolUDP{
+					Endpoint: defaultThriftCompactBindEndpoint,
+				}
+				cfg.RemoteSampling = &RemoteSamplingConfig{
+					HostEndpoint: "localhost:5778",
+					StrategyFile: "strategies.json",
+				}
+			},
+			err: "receiver creation without gRPC and with remote sampling config",
+		},
+	}
+	for _, tC := range testCases {
+		t.Run(tC.desc, func(t *testing.T) {
+			factory := NewFactory()
+			cfg := factory.CreateDefaultConfig().(*Config)
+
+			tC.apply(cfg)
+
+			err := cfg.Validate()
+			assert.Error(t, err, tC.err)
+
+		})
+	}
 }

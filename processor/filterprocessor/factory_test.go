@@ -38,7 +38,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	assert.Equal(t, cfg, &Config{
-		ProcessorSettings: config.NewProcessorSettings(config.NewID(typeStr)),
+		ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
 	})
 	assert.NoError(t, configtest.CheckConfigStruct(cfg))
 }
@@ -62,6 +62,12 @@ func TestCreateProcessors(t *testing.T) {
 			succeed:    true,
 		}, {
 			configName: "config_logs_regexp.yaml",
+			succeed:    true,
+		}, {
+			configName: "config_logs_record_attributes_strict.yaml",
+			succeed:    true,
+		}, {
+			configName: "config_logs_record_attributes_regexp.yaml",
 			succeed:    true,
 		},
 	}

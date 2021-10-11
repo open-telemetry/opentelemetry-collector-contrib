@@ -56,7 +56,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus"
 )
 
-var ocReceiverID = config.NewIDWithName(typeStr, "receiver_test")
+var ocReceiverID = config.NewComponentIDWithName(typeStr, "receiver_test")
 
 func TestGrpcGateway_endToEnd(t *testing.T) {
 	addr := testutil.GetAvailableLocalAddress(t)
@@ -420,16 +420,16 @@ func TestOCReceiverTrace_HandleNextConsumerResponse(t *testing.T) {
 			msg *agenttracepb.ExportTraceServiceRequest) error
 	}{
 		{
-			receiverID: config.NewIDWithName(typeStr, "traces"),
+			receiverID: config.NewComponentIDWithName(typeStr, "traces"),
 			exportFn:   exportBidiFn,
 		},
 	}
 	for _, exporter := range exporters {
 		for _, tt := range tests {
 			t.Run(tt.name+"/"+exporter.receiverID.String(), func(t *testing.T) {
-				doneFn, err := obsreporttest.SetupRecordedMetricsTest()
+				testTel, err := obsreporttest.SetupTelemetry()
 				require.NoError(t, err)
-				defer doneFn()
+				defer testTel.Shutdown(context.Background())
 
 				sink := &errOrSinkConsumer{TracesSink: new(consumertest.TracesSink)}
 
@@ -463,7 +463,7 @@ func TestOCReceiverTrace_HandleNextConsumerResponse(t *testing.T) {
 				}
 
 				require.Equal(t, tt.expectedReceivedBatches, len(sink.AllTraces()))
-				obsreporttest.CheckReceiverTraces(t, exporter.receiverID, "grpc", int64(tt.expectedReceivedBatches), int64(tt.expectedIngestionBlockedRPCs))
+				require.NoError(t, obsreporttest.CheckReceiverTraces(exporter.receiverID, "grpc", int64(tt.expectedReceivedBatches), int64(tt.expectedIngestionBlockedRPCs)))
 			})
 		}
 	}
@@ -569,16 +569,16 @@ func TestOCReceiverMetrics_HandleNextConsumerResponse(t *testing.T) {
 			msg *agentmetricspb.ExportMetricsServiceRequest) error
 	}{
 		{
-			receiverID: config.NewIDWithName(typeStr, "metrics"),
+			receiverID: config.NewComponentIDWithName(typeStr, "metrics"),
 			exportFn:   exportBidiFn,
 		},
 	}
 	for _, exporter := range exporters {
 		for _, tt := range tests {
 			t.Run(tt.name+"/"+exporter.receiverID.String(), func(t *testing.T) {
-				doneFn, err := obsreporttest.SetupRecordedMetricsTest()
+				testTel, err := obsreporttest.SetupTelemetry()
 				require.NoError(t, err)
-				defer doneFn()
+				defer testTel.Shutdown(context.Background())
 
 				sink := &errOrSinkConsumer{MetricsSink: new(consumertest.MetricsSink)}
 
@@ -612,7 +612,7 @@ func TestOCReceiverMetrics_HandleNextConsumerResponse(t *testing.T) {
 				}
 
 				require.Equal(t, tt.expectedReceivedBatches, len(sink.AllMetrics()))
-				obsreporttest.CheckReceiverMetrics(t, exporter.receiverID, "grpc", int64(tt.expectedReceivedBatches), int64(tt.expectedIngestionBlockedRPCs))
+				require.NoError(t, obsreporttest.CheckReceiverMetrics(exporter.receiverID, "grpc", int64(tt.expectedReceivedBatches), int64(tt.expectedIngestionBlockedRPCs)))
 			})
 		}
 	}
@@ -620,7 +620,7 @@ func TestOCReceiverMetrics_HandleNextConsumerResponse(t *testing.T) {
 
 func TestInvalidTLSCredentials(t *testing.T) {
 	cfg := Config{
-		ReceiverSettings: config.NewReceiverSettings(config.NewID(typeStr)),
+		ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
 		GRPCServerSettings: configgrpc.GRPCServerSettings{
 			TLSSetting: &configtls.TLSServerSetting{
 				TLSSetting: configtls.TLSSetting{
@@ -633,7 +633,7 @@ func TestInvalidTLSCredentials(t *testing.T) {
 	assert.NotNil(t, opt)
 
 	addr := testutil.GetAvailableLocalAddress(t)
-	ocr, err := newOpenCensusReceiver(config.NewIDWithName(typeStr, "invalidtls"), "tcp", addr, nil, nil, componenttest.NewNopTelemetrySettings(), opt...)
+	ocr, err := newOpenCensusReceiver(config.NewComponentIDWithName(typeStr, "invalidtls"), "tcp", addr, nil, nil, componenttest.NewNopTelemetrySettings(), opt...)
 	assert.NoError(t, err)
 	assert.NotNil(t, ocr)
 

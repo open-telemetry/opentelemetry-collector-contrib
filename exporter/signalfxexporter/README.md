@@ -22,15 +22,16 @@ The following configuration options are required:
   - `api_url` (no default): Destination to which SignalFx [properties and
     tags](https://docs.signalfx.com/en/latest/metrics-metadata/metrics-metadata.html#metrics-metadata)
     are sent. If `realm` is set, this option is derived and will be
-    `https://api.{realm}.signalfx.com/`. If a value is explicitly set, the
+    `https://api.{realm}.signalfx.com`. If a value is explicitly set, the
     value of `realm` will not be used in determining `api_url`. The explicit
     value will be used instead.
   - `ingest_url` (no default): Destination where SignalFx metrics are sent. If
     `realm` is set, this option is derived and will be
-    `https://ingest.{realm}.signalfx.com/v2/datapoint`.  If a value is
+    `https://ingest.{realm}.signalfx.com`. If a value is
     explicitly set, the value of `realm` will not be used in determining
-    `ingest_url`. The explicit value will be used instead. If path is not
-    specified, `/v2/datapoint` is used.
+    `ingest_url`. The explicit value will be used instead. The exporter will 
+    automatically append the appropriate path: "/v2/datapoint" for metrics, 
+    and "/v2/event" for events.
 
 The following configuration options can also be configured:
 
@@ -81,6 +82,7 @@ The following configuration options can also be configured:
 that are allowed to be used as a dimension key in addition to alphanumeric 
 characters. Each nonalphanumeric dimension key character that isn't in this string 
 will be replaced with a `_`.
+- `max_connections` (default = 100):  The maximum number of idle HTTP connection the exporter can keep open.
 
 In addition, this exporter offers queued retry which is enabled by default.
 Information about queued retry configuration parameters can be found
@@ -193,6 +195,7 @@ exporters:
       dot.test: test
     realm: us1
     timeout: 5s
+    max_connections: 80
 ```
 
 > :warning: When enabling the SignalFx receiver or exporter, configure both the `metrics` and `logs` pipelines.

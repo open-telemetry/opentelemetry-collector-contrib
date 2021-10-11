@@ -42,9 +42,9 @@ func TestLoadConfig(t *testing.T) {
 	require.NotNil(t, cfg)
 
 	duration := 10 * time.Second
-	defaultCfg := cfg.Receivers[config.NewIDWithName(typeStr, "default")].(*Config)
+	defaultCfg := cfg.Receivers[config.NewComponentIDWithName(typeStr, "default")].(*Config)
 	require.Equal(t, &Config{
-		ReceiverSettings: config.NewReceiverSettings(config.NewIDWithName(typeStr, "default")),
+		ReceiverSettings: config.NewReceiverSettings(config.NewComponentIDWithName(typeStr, "default")),
 		ClientConfig: kube.ClientConfig{
 			APIConfig: k8sconfig.APIConfig{
 				AuthType: "tls",
@@ -58,9 +58,9 @@ func TestLoadConfig(t *testing.T) {
 		},
 	}, defaultCfg)
 
-	tlsCfg := cfg.Receivers[config.NewIDWithName(typeStr, "tls")].(*Config)
+	tlsCfg := cfg.Receivers[config.NewComponentIDWithName(typeStr, "tls")].(*Config)
 	require.Equal(t, &Config{
-		ReceiverSettings: config.NewReceiverSettings(config.NewIDWithName(typeStr, "tls")),
+		ReceiverSettings: config.NewReceiverSettings(config.NewComponentIDWithName(typeStr, "tls")),
 		TCPAddr: confignet.TCPAddr{
 			Endpoint: "1.2.3.4:5555",
 		},
@@ -83,9 +83,9 @@ func TestLoadConfig(t *testing.T) {
 		},
 	}, tlsCfg)
 
-	saCfg := cfg.Receivers[config.NewIDWithName(typeStr, "sa")].(*Config)
+	saCfg := cfg.Receivers[config.NewComponentIDWithName(typeStr, "sa")].(*Config)
 	require.Equal(t, &Config{
-		ReceiverSettings: config.NewReceiverSettings(config.NewIDWithName(typeStr, "sa")),
+		ReceiverSettings: config.NewReceiverSettings(config.NewComponentIDWithName(typeStr, "sa")),
 		ClientConfig: kube.ClientConfig{
 			APIConfig: k8sconfig.APIConfig{
 				AuthType: "serviceAccount",
@@ -100,9 +100,9 @@ func TestLoadConfig(t *testing.T) {
 		},
 	}, saCfg)
 
-	metadataCfg := cfg.Receivers[config.NewIDWithName(typeStr, "metadata")].(*Config)
+	metadataCfg := cfg.Receivers[config.NewComponentIDWithName(typeStr, "metadata")].(*Config)
 	require.Equal(t, &Config{
-		ReceiverSettings: config.NewReceiverSettings(config.NewIDWithName(typeStr, "metadata")),
+		ReceiverSettings: config.NewReceiverSettings(config.NewComponentIDWithName(typeStr, "metadata")),
 		ClientConfig: kube.ClientConfig{
 			APIConfig: k8sconfig.APIConfig{
 				AuthType: "serviceAccount",
@@ -120,9 +120,9 @@ func TestLoadConfig(t *testing.T) {
 		},
 	}, metadataCfg)
 
-	metricGroupsCfg := cfg.Receivers[config.NewIDWithName(typeStr, "metric_groups")].(*Config)
+	metricGroupsCfg := cfg.Receivers[config.NewComponentIDWithName(typeStr, "metric_groups")].(*Config)
 	require.Equal(t, &Config{
-		ReceiverSettings: config.NewReceiverSettings(config.NewIDWithName(typeStr, "metric_groups")),
+		ReceiverSettings: config.NewReceiverSettings(config.NewComponentIDWithName(typeStr, "metric_groups")),
 		ClientConfig: kube.ClientConfig{
 			APIConfig: k8sconfig.APIConfig{
 				AuthType: "serviceAccount",
@@ -136,9 +136,9 @@ func TestLoadConfig(t *testing.T) {
 		},
 	}, metricGroupsCfg)
 
-	metadataWithK8sAPICfg := cfg.Receivers[config.NewIDWithName(typeStr, "metadata_with_k8s_api")].(*Config)
+	metadataWithK8sAPICfg := cfg.Receivers[config.NewComponentIDWithName(typeStr, "metadata_with_k8s_api")].(*Config)
 	require.Equal(t, &Config{
-		ReceiverSettings: config.NewReceiverSettings(config.NewIDWithName(typeStr, "metadata_with_k8s_api")),
+		ReceiverSettings: config.NewReceiverSettings(config.NewComponentIDWithName(typeStr, "metadata_with_k8s_api")),
 		ClientConfig: kube.ClientConfig{
 			APIConfig: k8sconfig.APIConfig{
 				AuthType: "serviceAccount",
@@ -181,7 +181,7 @@ func TestGetReceiverOptions(t *testing.T) {
 				},
 			},
 			want: &receiverOptions{
-				id: config.NewID(typeStr),
+				id: config.NewComponentID(typeStr),
 				extraMetadataLabels: []kubelet.MetadataLabel{
 					kubelet.MetadataLabelContainerID,
 				},
@@ -224,7 +224,7 @@ func TestGetReceiverOptions(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := &Config{
-				ReceiverSettings:      config.NewReceiverSettings(config.NewID(typeStr)),
+				ReceiverSettings:      config.NewReceiverSettings(config.NewComponentID(typeStr)),
 				CollectionInterval:    10 * time.Second,
 				ExtraMetadataLabels:   tt.fields.extraMetadataLabels,
 				MetricGroupsToCollect: tt.fields.metricGroupsToCollect,

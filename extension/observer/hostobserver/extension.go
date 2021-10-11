@@ -20,8 +20,8 @@ import (
 	"runtime"
 	"syscall"
 
-	"github.com/shirou/gopsutil/net"
-	"github.com/shirou/gopsutil/process"
+	"github.com/shirou/gopsutil/v3/net"
+	"github.com/shirou/gopsutil/v3/process"
 	"go.opentelemetry.io/collector/component"
 	"go.uber.org/zap"
 
