@@ -22,12 +22,14 @@ import (
 	"github.com/DataDog/datadog-agent/pkg/trace/exportable/obfuscate"
 	"github.com/DataDog/datadog-agent/pkg/trace/exportable/pb"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/consumer/consumerhelper"
 	"go.opentelemetry.io/collector/model/pdata"
 	"go.uber.org/zap"
 	"gopkg.in/zorkian/go-datadog-api.v2"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/config"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/scrub"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/utils"
 )
 
@@ -39,6 +41,7 @@ type traceExporter struct {
 	obfuscator     *obfuscate.Obfuscator
 	client         *datadog.Client
 	denylister     *denylister
+	scrubber       scrub.Scrubber
 }
 
 var (
@@ -79,6 +82,7 @@ func newTracesExporter(ctx context.Context, params component.ExporterCreateSetti
 		obfuscator:     obfuscator,
 		client:         client,
 		denylister:     denylister,
+		scrubber:       scrub.NewScrubber(),
 	}
 
 	return exporter
@@ -94,6 +98,13 @@ func newTracesExporter(ctx context.Context, params component.ExporterCreateSetti
 // func (exp *traceExporter) Start(_ context.Context, _ component.Host) error {
 // 	return nil
 // }
+
+func (exp *traceExporter) pushTraceDataScrubbed(ctx context.Context, td pdata.Traces) error {
+	return exp.scrubber.Scrub(exp.pushTraceData(ctx, td))
+}
+
+// force pushTraceData to be a ConsumeTracesFunc, even if no error is returned.
+var _ consumerhelper.ConsumeTracesFunc = (*traceExporter)(nil).pushTraceData
 
 func (exp *traceExporter) pushTraceData(
 	ctx context.Context,
