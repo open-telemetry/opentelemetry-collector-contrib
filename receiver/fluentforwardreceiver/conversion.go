@@ -86,7 +86,6 @@ func parseInterfaceToMap(msi map[string]interface{}) pdata.AttributeValue {
 	rv := pdata.NewAttributeValueMap()
 	am := rv.MapVal()
 	am.EnsureCapacity(len(msi))
-
 	for k, value := range msi {
 		am.Insert(k, parseToAttributeValue(value))
 	}
