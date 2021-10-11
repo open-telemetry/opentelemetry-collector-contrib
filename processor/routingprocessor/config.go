@@ -32,7 +32,7 @@ type Config struct {
 	// - "resource" - the attribute must exist in resource attributes
 	// The default value is "context".
 	// Optional.
-	AttributeSource string `mapstructure:"attribute_source"`
+	AttributeSource AttributeSource `mapstructure:"attribute_source"`
 
 	// FromAttribute contains the attribute name to look up the route value. This attribute should be part of the context propagated
 	// down from the previous receivers and/or processors. If all the receivers and processors are propagating the entire context correctly,
@@ -46,6 +46,15 @@ type Config struct {
 	// Required.
 	Table []RoutingTableItem `mapstructure:"table"`
 }
+
+type AttributeSource string
+
+const (
+	contextAttributeSource  = AttributeSource("context")
+	resourceAttributeSource = AttributeSource("resource")
+
+	defaultAttributeSource = contextAttributeSource
+)
 
 // RoutingTableItem specifies how data should be routed to the different exporters
 type RoutingTableItem struct {

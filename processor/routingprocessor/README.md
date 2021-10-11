@@ -1,10 +1,12 @@
 # Routing processor
 
-Routes traces to specific exporters.
+Routes logs, metrics or traces to specific exporters.
 
 This processor will either read a header from the incoming HTTP request (gRPC or plain HTTP), or it will read a resource attribute, and direct the trace information to specific exporters based on the value read.
 
-This processor *does not* let traces to continue through the pipeline and will emit a warning in case other processor(s) are defined after this one. Similarly, exporters defined as part of the pipeline are not authoritative: if you add an exporter to the pipeline, make sure you add it to this processor *as well*, otherwise it won't be used at all. All exporters defined as part of this processor *must also* be defined as part of the pipeline's exporters.
+This processor *does not* let traces to continue through the pipeline and will emit a warning in case other processor(s) are defined after this one.
+Similarly, exporters defined as part of the pipeline are not authoritative: if you add an exporter to the pipeline, make sure you add it to this processor *as well*, otherwise it won't be used at all.
+All exporters defined as part of this processor *must also* be defined as part of the pipeline's exporters.
 
 Given that this processor depends on information provided by the client via HTTP headers or resource attributes, caution must be taken when processors that aggregate data like `batch` or `groupbytrace` are used as part of the pipeline.
 
@@ -39,6 +41,10 @@ exporters:
     endpoint: localhost:24250
 ```
 
-The full list of settings exposed for this processor are documented [here](./config.go) with detailed sample configuration [here](./testdata/config.yaml).
+The full list of settings exposed for this processor are documented [here](./config.go) with detailed sample configuration files:
+
+- for logs [here](./testdata/config_logs.yaml)
+- for metrics [here](./testdata/config_metrics.yaml)
+- for traces [here](./testdata/config_traces.yaml)
 
 [context_docs]: https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/context/context.md
