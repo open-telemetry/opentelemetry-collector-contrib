@@ -12,6 +12,26 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package batch_test
+package batch
 
-// Tests for jeager encoder are part of the encode_marshaler_test.go
+import "go.opentelemetry.io/collector/model/pdata"
+
+type unsupported struct{}
+
+var (
+	_ pdata.TracesMarshaler  = (*unsupported)(nil)
+	_ pdata.MetricsMarshaler = (*unsupported)(nil)
+	_ pdata.LogsMarshaler    = (*unsupported)(nil)
+)
+
+func (unsupported) MarshalTraces(_ pdata.Traces) ([]byte, error) {
+	return nil, ErrUnsupportedEncoding
+}
+
+func (unsupported) MarshalMetrics(_ pdata.Metrics) ([]byte, error) {
+	return nil, ErrUnsupportedEncoding
+}
+
+func (unsupported) MarshalLogs(_ pdata.Logs) ([]byte, error) {
+	return nil, ErrUnsupportedEncoding
+}
