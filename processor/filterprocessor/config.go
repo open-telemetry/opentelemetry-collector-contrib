@@ -20,6 +20,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterconfig"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filtermetric"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterset"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterset/regexp"
 )
 
 // Config defines configuration for Resource processor.
@@ -29,6 +30,8 @@ type Config struct {
 	Metrics MetricFilters `mapstructure:"metrics"`
 
 	Logs LogFilters `mapstructure:"logs"`
+
+	SpanEvents SpanEventFilters `mapstructure:"span_events"`
 }
 
 // MetricFilters filters by Metric properties.
@@ -56,6 +59,18 @@ type LogFilters struct {
 	Exclude *LogMatchProperties `mapstructure:"exclude"`
 }
 
+// SpanEventFilters filters by Span Event properties.
+type SpanEventFilters struct {
+	// Include match properties describe span events that should be included in the Collector Service pipeline,
+	// all other span events should be dropped from further processing.
+	// If both Include and Exclude are specified, Include filtering occurs first.
+	Include *SpanEventMatchProperties `mapstructure:"include"`
+	// Exclude match properties describe span events that should be excluded from the Collector Service pipeline,
+	// all other span events should be included.
+	// If both Include and Exclude are specified, Include filtering occurs first.
+	Exclude *SpanEventMatchProperties `mapstructure:"exclude"`
+}
+
 // LogMatchType specifies the strategy for matching against `pdata.Log`s.
 type LogMatchType string
 
@@ -79,6 +94,25 @@ type LogMatchProperties struct {
 	// RecordAttributes defines a list of possible record attributes to match logs against.
 	// A match occurs if any record attribute matches at least one expression in this given list.
 	RecordAttributes []filterconfig.Attribute `mapstructure:"record_attributes"`
+}
+
+// SpanEventMatchProperties specifies the set of properties in a span event to match against and the
+// type of string pattern matching to use.
+type SpanEventMatchProperties struct {
+	// TODO: Rename LogMatchType to MatchType
+	// SpanEventMatchType specifies the type of matching desired
+	SpanEventMatchType LogMatchType `mapstructure:"match_type"`
+
+	// RegexpConfig specifies options for the Regexp match type
+	RegexpConfig *regexp.Config `mapstructure:"regexp"`
+
+	// EventNames specifies the list of string patterns to match event names against.
+	// A match occurs if the event name matches at least one string pattern in this list.
+	EventNames []string `mapstructure:"event_names"`
+
+	// Attributes defines a list of possible span event attributes to match span events against.
+	// A match occurs if any span event attribute matches at least one expression in this given list.
+	EventAttributes []filterconfig.Attribute `mapstructure:"event_attributes"`
 }
 
 var _ config.Processor = (*Config)(nil)
