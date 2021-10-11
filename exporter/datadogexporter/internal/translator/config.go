@@ -18,11 +18,12 @@ import "fmt"
 
 type translatorConfig struct {
 	// metrics export behavior
-	HistMode                 HistogramMode
-	SendCountSum             bool
-	Quantiles                bool
-	SendMonotonic            bool
-	ResourceAttributesAsTags bool
+	HistMode                             HistogramMode
+	SendCountSum                         bool
+	Quantiles                            bool
+	SendMonotonic                        bool
+	ResourceAttributesAsTags             bool
+	InstrumentationLibraryMetadataAsTags bool
 
 	// cache configuration
 	sweepInterval int64
@@ -72,6 +73,14 @@ func WithQuantiles() Option {
 func WithResourceAttributesAsTags() Option {
 	return func(t *translatorConfig) error {
 		t.ResourceAttributesAsTags = true
+		return nil
+	}
+}
+
+// WithInstrumentationLibraryMetadataAsTags sets instrumentation library metadata as tags.
+func WithInstrumentationLibraryMetadataAsTags() Option {
+	return func(t *translatorConfig) error {
+		t.InstrumentationLibraryMetadataAsTags = true
 		return nil
 	}
 }

@@ -34,7 +34,7 @@ func TestScrape_Errors(t *testing.T) {
 	type testCase struct {
 		name              string
 		pageSize          uint64
-		getPageFileStats  func() ([]*pageFileData, error)
+		getPageFileStats  func() ([]*pageFileStats, error)
 		scrapeErr         error
 		getObjectErr      error
 		getValuesErr      error
@@ -45,21 +45,21 @@ func TestScrape_Errors(t *testing.T) {
 	}
 
 	testPageSize := uint64(4096)
-	testPageFileData := &pageFileData{usedPages: 100, totalPages: 300}
+	testPageFileData := &pageFileStats{usedBytes: 100, freeBytes: 200}
 
 	testCases := []testCase{
 		{
 			name:     "standard",
 			pageSize: testPageSize,
-			getPageFileStats: func() ([]*pageFileData, error) {
-				return []*pageFileData{testPageFileData}, nil
+			getPageFileStats: func() ([]*pageFileStats, error) {
+				return []*pageFileStats{testPageFileData}, nil
 			},
-			expectedUsedValue: int64(testPageFileData.usedPages * testPageSize),
-			expectedFreeValue: int64((testPageFileData.totalPages - testPageFileData.usedPages) * testPageSize),
+			expectedUsedValue: int64(testPageFileData.usedBytes),
+			expectedFreeValue: int64(testPageFileData.freeBytes),
 		},
 		{
 			name:             "pageFileError",
-			getPageFileStats: func() ([]*pageFileData, error) { return nil, errors.New("err1") },
+			getPageFileStats: func() ([]*pageFileStats, error) { return nil, errors.New("err1") },
 			expectedErr:      "err1",
 			expectedErrCount: pagingUsageMetricsLen,
 		},
@@ -83,7 +83,7 @@ func TestScrape_Errors(t *testing.T) {
 		},
 		{
 			name:             "multipleErrors",
-			getPageFileStats: func() ([]*pageFileData, error) { return nil, errors.New("err1") },
+			getPageFileStats: func() ([]*pageFileStats, error) { return nil, errors.New("err1") },
 			getObjectErr:     errors.New("err2"),
 			expectedErr:      "[err1; err2]",
 			expectedErrCount: pagingUsageMetricsLen + pagingMetricsLen,
@@ -96,12 +96,16 @@ func TestScrape_Errors(t *testing.T) {
 			if test.getPageFileStats != nil {
 				scraper.pageFileStats = test.getPageFileStats
 			}
+
+			pageSizeOnce.Do(func() {}) // Run this now so what we set pageSize to here is not overridden
 			if test.pageSize > 0 {
-				scraper.pageSize = test.pageSize
+				pageSize = test.pageSize
 			} else {
+				pageSize = getPageSize()
 				assert.Greater(t, pageSize, uint64(0))
 				assert.Zero(t, pageSize%4096) // page size on Windows should always be a multiple of 4KB
 			}
+
 			scraper.perfCounterScraper = perfcounters.NewMockPerfCounterScraperError(test.scrapeErr, test.getObjectErr, test.getValuesErr)
 
 			err := scraper.start(context.Background(), componenttest.NewNopHost())
@@ -119,6 +123,8 @@ func TestScrape_Errors(t *testing.T) {
 
 				return
 			}
+
+			assert.NoError(t, err)
 
 			pagingUsageMetric := metrics.At(0)
 			assert.Equal(t, test.expectedUsedValue, pagingUsageMetric.Sum().DataPoints().At(0).IntVal())

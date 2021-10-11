@@ -1,0 +1,76 @@
+name: httpdreceiver
+
+labels:
+  server_name:
+    description: The name of the Apache HTTP server
+  workers_state:
+    value: state
+    description: The state of workers
+    enum:
+      - busy
+      - idle
+  scoreboard_state:
+    value: state
+    description: The state of a connection
+    enum:
+      - open
+      - waiting
+      - starting
+      - reading
+      - sending
+      - keepalive
+      - dnslookup
+      - closing
+      - logging
+      - finishing
+      - idle_cleanup
+
+metrics:
+  httpd.uptime:
+    description: The amount of time that the server has been running in seconds
+    unit: s
+    data:
+      type: sum
+      monotonic: true
+      aggregation: cumulative
+    labels: [ server_name ]
+  httpd.current_connections:
+    description: The number of active connections currently attached to the HTTP server
+    unit: connections
+    data:
+      type: sum
+      monotonic: false
+      aggregation: cumulative
+    labels: [ server_name ]
+  httpd.workers:
+    description: The number of workers currently attached to the HTTP server
+    unit: connections
+    data:
+      type: sum
+      monotonic: false
+      aggregation: cumulative
+    labels: [ server_name, workers_state]
+  httpd.requests:
+    description: The number of requests serviced by the HTTP server per second
+    unit: 1
+    data:
+      type: sum
+      monotonic: true
+      aggregation: cumulative
+    labels: [ server_name ]
+  httpd.traffic:
+    description: Total HTTP server traffic
+    unit: By
+    data:
+      type: sum
+      monotonic: true
+      aggregation: cumulative
+    labels: [ server_name ]
+  httpd.scoreboard:
+    description: The number of connections in each state
+    unit: scoreboard
+    data:
+      type: sum
+      monotonic: false
+      aggregation: cumulative
+    labels: [server_name, scoreboard_state]

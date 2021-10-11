@@ -28,8 +28,10 @@ import (
 	"gopkg.in/zorkian/go-datadog-api.v2"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/attributes"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/instrumentationlibrary"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metrics"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/sketches"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/translator/utils"
 )
 
 const metricName string = "metric name"
@@ -43,14 +45,15 @@ type Translator struct {
 
 func New(params component.ExporterCreateSettings, options ...Option) (*Translator, error) {
 	cfg := translatorConfig{
-		HistMode:                 HistogramModeDistributions,
-		SendCountSum:             false,
-		Quantiles:                false,
-		SendMonotonic:            true,
-		ResourceAttributesAsTags: false,
-		sweepInterval:            1800,
-		deltaTTL:                 3600,
-		fallbackHostnameProvider: &noHostProvider{},
+		HistMode:                             HistogramModeDistributions,
+		SendCountSum:                         false,
+		Quantiles:                            false,
+		SendMonotonic:                        true,
+		ResourceAttributesAsTags:             false,
+		InstrumentationLibraryMetadataAsTags: false,
+		sweepInterval:                        1800,
+		deltaTTL:                             3600,
+		fallbackHostnameProvider:             &noHostProvider{},
 	}
 
 	for _, opt := range options {
@@ -73,11 +76,7 @@ func getTags(labels pdata.AttributeMap) []string {
 	tags := make([]string, 0, labels.Len())
 	labels.Range(func(key string, value pdata.AttributeValue) bool {
 		v := value.AsString()
-		if v == "" {
-			// Tags can't end with ":" so we replace empty values with "n/a"
-			v = "n/a"
-		}
-		tags = append(tags, fmt.Sprintf("%s:%s", key, v))
+		tags = append(tags, utils.FormatKeyValueTag(key, v))
 		return true
 	})
 	return tags
@@ -104,12 +103,12 @@ func (t *Translator) isSkippable(name string, v float64) bool {
 }
 
 // mapNumberMetrics maps double datapoints into Datadog metrics
-func (t *Translator) mapNumberMetrics(name string, dt metrics.MetricDataType, slice pdata.NumberDataPointSlice, attrTags []string) []datadog.Metric {
+func (t *Translator) mapNumberMetrics(name string, dt metrics.MetricDataType, slice pdata.NumberDataPointSlice, additionalTags []string) []datadog.Metric {
 	ms := make([]datadog.Metric, 0, slice.Len())
 	for i := 0; i < slice.Len(); i++ {
 		p := slice.At(i)
 		tags := getTags(p.Attributes())
-		tags = append(tags, attrTags...)
+		tags = append(tags, additionalTags...)
 		var val float64
 		switch p.Type() {
 		case pdata.MetricValueTypeDouble:
@@ -130,13 +129,13 @@ func (t *Translator) mapNumberMetrics(name string, dt metrics.MetricDataType, sl
 }
 
 // mapNumberMonotonicMetrics maps monotonic datapoints into Datadog metrics
-func (t *Translator) mapNumberMonotonicMetrics(name string, slice pdata.NumberDataPointSlice, attrTags []string) []datadog.Metric {
+func (t *Translator) mapNumberMonotonicMetrics(name string, slice pdata.NumberDataPointSlice, additionalTags []string) []datadog.Metric {
 	ms := make([]datadog.Metric, 0, slice.Len())
 	for i := 0; i < slice.Len(); i++ {
 		p := slice.At(i)
 		ts := uint64(p.Timestamp())
 		tags := getTags(p.Attributes())
-		tags = append(tags, attrTags...)
+		tags = append(tags, additionalTags...)
 
 		var val float64
 		switch p.Type() {
@@ -238,7 +237,7 @@ func (t *Translator) getLegacyBuckets(name string, p pdata.HistogramDataPoint, d
 // We follow a similar approach to our OpenMetrics check:
 // we report sum and count by default; buckets count can also
 // be reported (opt-in) tagged by lower bound.
-func (t *Translator) mapHistogramMetrics(name string, slice pdata.HistogramDataPointSlice, delta bool, attrTags []string) (ms []datadog.Metric, sl sketches.SketchSeriesList) {
+func (t *Translator) mapHistogramMetrics(name string, slice pdata.HistogramDataPointSlice, delta bool, additionalTags []string) (ms []datadog.Metric, sl sketches.SketchSeriesList) {
 	// Allocate assuming none are nil and no buckets
 	ms = make([]datadog.Metric, 0, 2*slice.Len())
 	if t.cfg.HistMode == HistogramModeDistributions {
@@ -248,7 +247,7 @@ func (t *Translator) mapHistogramMetrics(name string, slice pdata.HistogramDataP
 		p := slice.At(i)
 		ts := uint64(p.Timestamp())
 		tags := getTags(p.Attributes())
-		tags = append(tags, attrTags...)
+		tags = append(tags, additionalTags...)
 
 		if t.cfg.SendCountSum {
 			count := float64(p.Count())
@@ -310,14 +309,14 @@ func getQuantileTag(quantile float64) string {
 }
 
 // mapSummaryMetrics maps summary datapoints into Datadog metrics
-func (t *Translator) mapSummaryMetrics(name string, slice pdata.SummaryDataPointSlice, attrTags []string) []datadog.Metric {
+func (t *Translator) mapSummaryMetrics(name string, slice pdata.SummaryDataPointSlice, additionalTags []string) []datadog.Metric {
 	// Allocate assuming none are nil and no quantiles
 	ms := make([]datadog.Metric, 0, 2*slice.Len())
 	for i := 0; i < slice.Len(); i++ {
 		p := slice.At(i)
 		ts := uint64(p.Timestamp())
 		tags := getTags(p.Attributes())
-		tags = append(tags, attrTags...)
+		tags = append(tags, additionalTags...)
 
 		// count and sum are increasing; we treat them as cumulative monotonic sums.
 		{
@@ -386,23 +385,29 @@ func (t *Translator) MapMetrics(ctx context.Context, md pdata.Metrics) (series [
 		for j := 0; j < ilms.Len(); j++ {
 			ilm := ilms.At(j)
 			metricsArray := ilm.Metrics()
+
+			var additionalTags []string
+			if t.cfg.InstrumentationLibraryMetadataAsTags {
+				additionalTags = append(attributeTags, instrumentationlibrary.TagsFromInstrumentationLibraryMetadata(ilm.InstrumentationLibrary())...)
+			}
+
 			for k := 0; k < metricsArray.Len(); k++ {
 				md := metricsArray.At(k)
 				var datapoints []datadog.Metric
 				var sketchesPoints sketches.SketchSeriesList
 				switch md.DataType() {
 				case pdata.MetricDataTypeGauge:
-					datapoints = t.mapNumberMetrics(md.Name(), metrics.Gauge, md.Gauge().DataPoints(), attributeTags)
+					datapoints = t.mapNumberMetrics(md.Name(), metrics.Gauge, md.Gauge().DataPoints(), additionalTags)
 				case pdata.MetricDataTypeSum:
 					switch md.Sum().AggregationTemporality() {
 					case pdata.MetricAggregationTemporalityCumulative:
 						if t.cfg.SendMonotonic && isCumulativeMonotonic(md) {
-							datapoints = t.mapNumberMonotonicMetrics(md.Name(), md.Sum().DataPoints(), attributeTags)
+							datapoints = t.mapNumberMonotonicMetrics(md.Name(), md.Sum().DataPoints(), additionalTags)
 						} else {
-							datapoints = t.mapNumberMetrics(md.Name(), metrics.Gauge, md.Sum().DataPoints(), attributeTags)
+							datapoints = t.mapNumberMetrics(md.Name(), metrics.Gauge, md.Sum().DataPoints(), additionalTags)
 						}
 					case pdata.MetricAggregationTemporalityDelta:
-						datapoints = t.mapNumberMetrics(md.Name(), metrics.Count, md.Sum().DataPoints(), attributeTags)
+						datapoints = t.mapNumberMetrics(md.Name(), metrics.Count, md.Sum().DataPoints(), additionalTags)
 					default: // pdata.MetricAggregationTemporalityUnspecified or any other not supported type
 						t.logger.Debug("Unknown or unsupported aggregation temporality",
 							zap.String(metricName, md.Name()),
@@ -414,7 +419,7 @@ func (t *Translator) MapMetrics(ctx context.Context, md pdata.Metrics) (series [
 					switch md.Histogram().AggregationTemporality() {
 					case pdata.MetricAggregationTemporalityCumulative, pdata.MetricAggregationTemporalityDelta:
 						delta := md.Histogram().AggregationTemporality() == pdata.MetricAggregationTemporalityDelta
-						datapoints, sketchesPoints = t.mapHistogramMetrics(md.Name(), md.Histogram().DataPoints(), delta, attributeTags)
+						datapoints, sketchesPoints = t.mapHistogramMetrics(md.Name(), md.Histogram().DataPoints(), delta, additionalTags)
 					default: // pdata.MetricAggregationTemporalityUnspecified or any other not supported type
 						t.logger.Debug("Unknown or unsupported aggregation temporality",
 							zap.String("metric name", md.Name()),
@@ -423,7 +428,7 @@ func (t *Translator) MapMetrics(ctx context.Context, md pdata.Metrics) (series [
 						continue
 					}
 				case pdata.MetricDataTypeSummary:
-					datapoints = t.mapSummaryMetrics(md.Name(), md.Summary().DataPoints(), attributeTags)
+					datapoints = t.mapSummaryMetrics(md.Name(), md.Summary().DataPoints(), additionalTags)
 				default: // pdata.MetricDataTypeNone or any other not supported type
 					t.logger.Debug("Unknown or unsupported metric type", zap.String(metricName, md.Name()), zap.Any("data type", md.DataType()))
 					continue

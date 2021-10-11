@@ -92,6 +92,11 @@ exporters:
       #
       # resource_attributes_as_tags: false
 
+      ## @param instrumentation_library_metadata_as_tags - string - optional - default: false
+      ## Set to true to add metadata about the instrumentation library that created a metric.
+      #
+      # instrumentation_library_metadata_as_tags: false
+
       ## @param histograms - custom object - optional
       ## Histograms specific configuration.
         ## @param mode - string - optional - default: nobuckets

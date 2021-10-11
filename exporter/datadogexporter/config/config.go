@@ -126,6 +126,10 @@ type MetricsExporterConfig struct {
 	// ResourceAttributesAsTags, if set to true, will use the exporterhelper feature to transform all
 	// resource attributes into metric labels, which are then converted into tags
 	ResourceAttributesAsTags bool `mapstructure:"resource_attributes_as_tags"`
+
+	// InstrumentationLibraryMetadataAsTags, if set to true, adds the name and version of the
+	// instrumentation library that created a metric to the metric tags
+	InstrumentationLibraryMetadataAsTags bool `mapstructure:"instrumentation_library_metadata_as_tags"`
 }
 
 // TracesConfig defines the traces exporter specific configuration options

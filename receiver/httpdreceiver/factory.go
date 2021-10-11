@@ -14,6 +14,8 @@
 
 package httpdreceiver
 
+//go:generate mdatagen metadata.yaml
+
 import (
 	"context"
 	"time"
@@ -57,5 +59,13 @@ func createMetricsReceiver(
 	rConf config.Receiver,
 	consumer consumer.Metrics,
 ) (component.MetricsReceiver, error) {
-	return nil, nil
+	cfg := rConf.(*Config)
+
+	ns := newHttpdScraper(params.Logger, cfg)
+	scraper := scraperhelper.NewResourceMetricsScraper(cfg.ID(), ns.scrape, scraperhelper.WithStart(ns.start))
+
+	return scraperhelper.NewScraperControllerReceiver(
+		&cfg.ScraperControllerSettings, params.Logger, consumer,
+		scraperhelper.AddScraper(scraper),
+	)
 }
