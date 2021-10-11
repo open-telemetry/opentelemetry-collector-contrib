@@ -40,7 +40,7 @@ services:
         - "14268:14268"
         - "9411:9411"
   otmssql:
-    image: mcr.microsoft.com/mssql/server:2017-latest
+    image: mcr.microsoft.com/mssql/server:2017-CU23-ubuntu-16.04
     ports:
       - "1433:1433"
     environment:

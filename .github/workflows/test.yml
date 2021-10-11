@@ -24,7 +24,7 @@ jobs:
       matrix:
         python-version: [ py36, py37, py38, py39, pypy3 ]
         package: ["instrumentation", "exporter", "sdkextension", "propagator"]
-        os: [ ubuntu-latest ]
+        os: [ ubuntu-20.04 ]
     steps:
       - name: Checkout Contrib Repo @ SHA - ${{ github.sha }}
         uses: actions/checkout@v2
@@ -74,7 +74,7 @@ jobs:
       matrix:
         tox-environment: [ "docker-tests", "lint", "docs", "generate" ]
     name: ${{ matrix.tox-environment }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     steps:
       - name: Checkout Contrib Repo @ SHA - ${{ github.sha }}
         uses: actions/checkout@v2
@@ -84,6 +84,13 @@ jobs:
           python-version: 3.9
       - name: Install tox
         run: pip install -U tox
+      - name: Prep mssql driver
+        if: ${{ matrix.tox-environment == 'docker-tests' }}
+        run: | 
+          curl https://packages.microsoft.com/keys/microsoft.asc | sudo apt-key add -
+          sudo sh -c "echo 'deb [arch=amd64,armhf,arm64] https://packages.microsoft.com/ubuntu/20.04/prod focal main' >  /etc/apt/sources.list.d/mssql-release.list"
+          sudo apt-get update
+          sudo ACCEPT_EULA=Y apt-get install -y msodbcsql17
       - name: Install libsnappy-dev
         if: ${{ matrix.tox-environment == 'lint' }}
         run: sudo apt-get install -y libsnappy-dev
