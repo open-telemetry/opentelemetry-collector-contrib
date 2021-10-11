@@ -26,12 +26,14 @@ import (
 	"go.opentelemetry.io/collector/model/pdata"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterconfig"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterlog"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterset"
 )
 
 type logNameTest struct {
 	name   string
-	inc    *LogMatchProperties
-	exc    *LogMatchProperties
+	inc    *filterlog.LogMatchProperties
+	exc    *filterlog.LogMatchProperties
 	inLogs pdata.Logs
 	outLN  [][]string // output Log names per Resource
 }
@@ -154,13 +156,13 @@ var (
 	standardLogTests = []logNameTest{
 		{
 			name:   "emptyFilterInclude",
-			inc:    &LogMatchProperties{LogMatchType: Strict, ResourceAttributes: []filterconfig.Attribute{}},
+			inc:    &filterlog.LogMatchProperties{MatchType: filterlog.MatchType(filterset.Strict), ResourceAttributes: []filterconfig.Attribute{}},
 			inLogs: testResourceLogs([]logWithResource{{logNames: inLogNames}}),
 			outLN:  [][]string{inLogNames},
 		},
 		{
 			name:   "includeNilWithResourceAttributes",
-			inc:    &LogMatchProperties{LogMatchType: Strict, ResourceAttributes: []filterconfig.Attribute{}},
+			inc:    &filterlog.LogMatchProperties{MatchType: filterlog.MatchType(filterset.Strict), ResourceAttributes: []filterconfig.Attribute{}},
 			inLogs: testResourceLogs(inLogForResourceTest),
 			outLN: [][]string{
 				{"log1", "log2"},
@@ -168,7 +170,7 @@ var (
 		},
 		{
 			name:   "includeAllWithMissingResourceAttributes",
-			inc:    &LogMatchProperties{LogMatchType: Strict, ResourceAttributes: []filterconfig.Attribute{{Key: "attr1", Value: "attr1/val2"}}},
+			inc:    &filterlog.LogMatchProperties{MatchType: filterlog.MatchType(filterset.Strict), ResourceAttributes: []filterconfig.Attribute{{Key: "attr1", Value: "attr1/val2"}}},
 			inLogs: testResourceLogs(inLogForTwoResource),
 			outLN: [][]string{
 				{"log3", "log4"},
@@ -176,13 +178,13 @@ var (
 		},
 		{
 			name:   "emptyFilterExclude",
-			exc:    &LogMatchProperties{LogMatchType: Strict, ResourceAttributes: []filterconfig.Attribute{}},
+			exc:    &filterlog.LogMatchProperties{MatchType: filterlog.MatchType(filterset.Strict), ResourceAttributes: []filterconfig.Attribute{}},
 			inLogs: testResourceLogs([]logWithResource{{logNames: inLogNames}}),
 			outLN:  [][]string{inLogNames},
 		},
 		{
 			name:   "excludeNilWithResourceAttributes",
-			exc:    &LogMatchProperties{LogMatchType: Strict, ResourceAttributes: []filterconfig.Attribute{}},
+			exc:    &filterlog.LogMatchProperties{MatchType: filterlog.MatchType(filterset.Strict), ResourceAttributes: []filterconfig.Attribute{}},
 			inLogs: testResourceLogs(inLogForResourceTest),
 			outLN: [][]string{
 				{"log1", "log2"},
@@ -190,7 +192,7 @@ var (
 		},
 		{
 			name:   "excludeAllWithMissingResourceAttributes",
-			exc:    &LogMatchProperties{LogMatchType: Strict, ResourceAttributes: []filterconfig.Attribute{{Key: "attr1", Value: "attr1/val1"}}},
+			exc:    &filterlog.LogMatchProperties{MatchType: filterlog.MatchType(filterset.Strict), ResourceAttributes: []filterconfig.Attribute{{Key: "attr1", Value: "attr1/val1"}}},
 			inLogs: testResourceLogs(inLogForTwoResource),
 			outLN: [][]string{
 				{"log3", "log4"},
@@ -198,22 +200,22 @@ var (
 		},
 		{
 			name:   "emptyFilterIncludeAndExclude",
-			inc:    &LogMatchProperties{LogMatchType: Strict, ResourceAttributes: []filterconfig.Attribute{}},
-			exc:    &LogMatchProperties{LogMatchType: Strict, ResourceAttributes: []filterconfig.Attribute{}},
+			inc:    &filterlog.LogMatchProperties{MatchType: filterlog.MatchType(filterset.Strict), ResourceAttributes: []filterconfig.Attribute{}},
+			exc:    &filterlog.LogMatchProperties{MatchType: filterlog.MatchType(filterset.Strict), ResourceAttributes: []filterconfig.Attribute{}},
 			inLogs: testResourceLogs([]logWithResource{{logNames: inLogNames}}),
 			outLN:  [][]string{inLogNames},
 		},
 		{
 			name:   "nilWithResourceAttributesIncludeAndExclude",
-			inc:    &LogMatchProperties{LogMatchType: Strict, ResourceAttributes: []filterconfig.Attribute{}},
-			exc:    &LogMatchProperties{LogMatchType: Strict, ResourceAttributes: []filterconfig.Attribute{}},
+			inc:    &filterlog.LogMatchProperties{MatchType: filterlog.MatchType(filterset.Strict), ResourceAttributes: []filterconfig.Attribute{}},
+			exc:    &filterlog.LogMatchProperties{MatchType: filterlog.MatchType(filterset.Strict), ResourceAttributes: []filterconfig.Attribute{}},
 			inLogs: testResourceLogs([]logWithResource{{logNames: inLogNames}}),
 			outLN:  [][]string{inLogNames},
 		},
 		{
 			name:   "allWithMissingResourceAttributesIncludeAndExclude",
-			inc:    &LogMatchProperties{LogMatchType: Strict, ResourceAttributes: []filterconfig.Attribute{{Key: "attr1", Value: "attr1/val2"}}},
-			exc:    &LogMatchProperties{LogMatchType: Strict, ResourceAttributes: []filterconfig.Attribute{{Key: "attr1", Value: "attr1/val1"}}},
+			inc:    &filterlog.LogMatchProperties{MatchType: filterlog.MatchType(filterset.Strict), ResourceAttributes: []filterconfig.Attribute{{Key: "attr1", Value: "attr1/val2"}}},
+			exc:    &filterlog.LogMatchProperties{MatchType: filterlog.MatchType(filterset.Strict), ResourceAttributes: []filterconfig.Attribute{{Key: "attr1", Value: "attr1/val1"}}},
 			inLogs: testResourceLogs(inLogForTwoResource),
 			outLN: [][]string{
 				{"log3", "log4"},
@@ -221,7 +223,7 @@ var (
 		},
 		{
 			name:   "matchAttributesWithRegexpInclude",
-			inc:    &LogMatchProperties{LogMatchType: Regexp, ResourceAttributes: []filterconfig.Attribute{{Key: "attr", Value: "attr/val2"}}},
+			inc:    &filterlog.LogMatchProperties{MatchType: filterlog.MatchType(filterset.Regexp), ResourceAttributes: []filterconfig.Attribute{{Key: "attr", Value: "attr/val2"}}},
 			inLogs: testResourceLogs(inLogForFourResource),
 			outLN: [][]string{
 				{"log2"},
@@ -229,7 +231,7 @@ var (
 		},
 		{
 			name:   "matchAttributesWithRegexpInclude2",
-			inc:    &LogMatchProperties{LogMatchType: Regexp, ResourceAttributes: []filterconfig.Attribute{{Key: "attr", Value: "attr/val(2|3)"}}},
+			inc:    &filterlog.LogMatchProperties{MatchType: filterlog.MatchType(filterset.Regexp), ResourceAttributes: []filterconfig.Attribute{{Key: "attr", Value: "attr/val(2|3)"}}},
 			inLogs: testResourceLogs(inLogForFourResource),
 			outLN: [][]string{
 				{"log2"},
@@ -238,7 +240,7 @@ var (
 		},
 		{
 			name:   "matchAttributesWithRegexpInclude3",
-			inc:    &LogMatchProperties{LogMatchType: Regexp, ResourceAttributes: []filterconfig.Attribute{{Key: "attr", Value: "attr/val[234]"}}},
+			inc:    &filterlog.LogMatchProperties{MatchType: filterlog.MatchType(filterset.Regexp), ResourceAttributes: []filterconfig.Attribute{{Key: "attr", Value: "attr/val[234]"}}},
 			inLogs: testResourceLogs(inLogForFourResource),
 			outLN: [][]string{
 				{"log2"},
@@ -248,7 +250,7 @@ var (
 		},
 		{
 			name:   "matchAttributesWithRegexpInclude4",
-			inc:    &LogMatchProperties{LogMatchType: Regexp, ResourceAttributes: []filterconfig.Attribute{{Key: "attr", Value: "attr/val.*"}}},
+			inc:    &filterlog.LogMatchProperties{MatchType: filterlog.MatchType(filterset.Regexp), ResourceAttributes: []filterconfig.Attribute{{Key: "attr", Value: "attr/val.*"}}},
 			inLogs: testResourceLogs(inLogForFourResource),
 			outLN: [][]string{
 				{"log1"},
@@ -259,7 +261,7 @@ var (
 		},
 		{
 			name:   "matchAttributesWithRegexpExclude",
-			exc:    &LogMatchProperties{LogMatchType: Regexp, ResourceAttributes: []filterconfig.Attribute{{Key: "attr", Value: "attr/val[23]"}}},
+			exc:    &filterlog.LogMatchProperties{MatchType: filterlog.MatchType(filterset.Regexp), ResourceAttributes: []filterconfig.Attribute{{Key: "attr", Value: "attr/val[23]"}}},
 			inLogs: testResourceLogs(inLogForFourResource),
 			outLN: [][]string{
 				{"log1"},
@@ -268,8 +270,8 @@ var (
 		},
 		{
 			name: "matchRecordAttributeWithRegexp1",
-			inc: &LogMatchProperties{
-				LogMatchType: Regexp,
+			inc: &filterlog.LogMatchProperties{
+				MatchType: filterlog.MatchType(filterset.Regexp),
 				RecordAttributes: []filterconfig.Attribute{
 					{
 						Key:   "rec",
@@ -284,8 +286,8 @@ var (
 		},
 		{
 			name: "matchRecordAttributeWithRegexp2",
-			inc: &LogMatchProperties{
-				LogMatchType: Regexp,
+			inc: &filterlog.LogMatchProperties{
+				MatchType: filterlog.MatchType(filterset.Regexp),
 				RecordAttributes: []filterconfig.Attribute{
 					{
 						Key:   "rec",
@@ -300,8 +302,8 @@ var (
 		},
 		{
 			name: "matchRecordAttributeWithRegexp2",
-			inc: &LogMatchProperties{
-				LogMatchType: Regexp,
+			inc: &filterlog.LogMatchProperties{
+				MatchType: filterlog.MatchType(filterset.Regexp),
 				RecordAttributes: []filterconfig.Attribute{
 					{
 						Key:   "rec",
@@ -317,8 +319,8 @@ var (
 		},
 		{
 			name: "matchRecordAttributeWithRegexp3",
-			inc: &LogMatchProperties{
-				LogMatchType: Regexp,
+			inc: &filterlog.LogMatchProperties{
+				MatchType: filterlog.MatchType(filterset.Regexp),
 				RecordAttributes: []filterconfig.Attribute{
 					{
 						Key:   "rec",

@@ -25,7 +25,9 @@ import (
 	"go.opentelemetry.io/collector/config/configtest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterconfig"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterlog"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filtermetric"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterset"
 	fsregexp "github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterset/regexp"
 )
 
@@ -108,8 +110,8 @@ func TestLoadingConfigStrict(t *testing.T) {
 // TestLoadingConfigStrictLogs tests loading testdata/config_logs_strict.yaml
 func TestLoadingConfigStrictLogs(t *testing.T) {
 
-	testDataLogPropertiesInclude := &LogMatchProperties{
-		LogMatchType: Strict,
+	testDataLogPropertiesInclude := &filterlog.LogMatchProperties{
+		MatchType: filterlog.MatchType(filterset.Strict),
 		ResourceAttributes: []filterconfig.Attribute{
 			{
 				Key:   "should_include",
@@ -118,8 +120,8 @@ func TestLoadingConfigStrictLogs(t *testing.T) {
 		},
 	}
 
-	testDataLogPropertiesExclude := &LogMatchProperties{
-		LogMatchType: Strict,
+	testDataLogPropertiesExclude := &filterlog.LogMatchProperties{
+		MatchType: filterlog.MatchType(filterset.Strict),
 		ResourceAttributes: []filterconfig.Attribute{
 			{
 				Key:   "should_exclude",
@@ -147,8 +149,8 @@ func TestLoadingConfigStrictLogs(t *testing.T) {
 			expCfg: &Config{
 				ProcessorSettings: config.NewProcessorSettings(config.NewComponentIDWithName(typeStr, "empty")),
 				Logs: LogFilters{
-					Include: &LogMatchProperties{
-						LogMatchType: Strict,
+					Include: &filterlog.LogMatchProperties{
+						MatchType: filterlog.MatchType(filterset.Strict),
 					},
 				},
 			},
