@@ -17,9 +17,8 @@ package main
 import (
 	"log"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/components"
-
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/configwiz/configwiz"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/components"
 )
 
 func main() {

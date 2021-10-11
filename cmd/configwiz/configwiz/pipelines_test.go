@@ -438,7 +438,7 @@ func testNewBadReceiverFactory() component.ReceiverFactory {
 		return &struct {
 			config.ReceiverSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
 		}{
-			ReceiverSettings: config.NewReceiverSettings(config.NewID("bf")),
+			ReceiverSettings: config.NewReceiverSettings(config.NewComponentID("bf")),
 		}
 	})
 }
@@ -448,7 +448,7 @@ func testNewBadProcessorFactory() component.ProcessorFactory {
 		return &struct {
 			config.ProcessorSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
 		}{
-			ProcessorSettings: config.NewProcessorSettings(config.NewID("bf")),
+			ProcessorSettings: config.NewProcessorSettings(config.NewComponentID("bf")),
 		}
 	})
 }
@@ -458,7 +458,7 @@ func testNewBadExporterFactory() component.ExporterFactory {
 		return &struct {
 			config.ExporterSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
 		}{
-			ExporterSettings: config.NewExporterSettings(config.NewID("bf")),
+			ExporterSettings: config.NewExporterSettings(config.NewComponentID("bf")),
 		}
 	})
 }
@@ -470,7 +470,7 @@ func testNewBadExtensionFactory() component.ExtensionFactory {
 			return &struct {
 				config.ExtensionSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
 			}{
-				ExtensionSettings: config.NewExtensionSettings(config.NewID("bf")),
+				ExtensionSettings: config.NewExtensionSettings(config.NewComponentID("bf")),
 			}
 		},
 		func(ctx context.Context, params component.ExtensionCreateSettings, extension config.Extension) (component.Extension, error) {
