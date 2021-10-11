@@ -16,7 +16,6 @@ package filterprocessor
 
 import (
 	"context"
-	"fmt"
 	"testing"
 	"time"
 
@@ -46,93 +45,79 @@ type spanEventWithAttributes struct {
 var (
 	inSpanEventNames = "random"
 
-	// inSpanEventForResourceTest = []spanEventWithAttributes{
-	// 	{
-	// 		spanEventNames: []string{"log1", "log2"},
-	// 		eventAttributes: map[string]pdata.AttributeValue{
-	// 			"attr1": pdata.NewAttributeValueString("attr1/val1"),
-	// 			"attr2": pdata.NewAttributeValueString("attr2/val2"),
-	// 			"attr3": pdata.NewAttributeValueString("attr3/val3"),
-	// 		},
-	// 	},
-	// }
+	inSpanEventForResourceTest = []spanEventWithAttributes{
+		{
+			spanEventName: "event",
+			eventAttributes: map[string]pdata.AttributeValue{
+				"attr1": pdata.NewAttributeValueString("attr1/val1"),
+				"attr2": pdata.NewAttributeValueString("attr2/val2"),
+				"attr3": pdata.NewAttributeValueString("attr3/val3"),
+			},
+		},
+	}
 
-	// inSpanEventForTwoResource = []spanEventWithAttributes{
-	// 	{
-	// 		spanEventNames: []string{"log1", "log2"},
-	// 		eventAttributes: map[string]pdata.AttributeValue{
-	// 			"attr1": pdata.NewAttributeValueString("attr1/val1"),
-	// 		},
-	// 	},
-	// 	{
-	// 		spanEventNames: []string{"log3", "log4"},
-	// 		eventAttributes: map[string]pdata.AttributeValue{
-	// 			"attr1": pdata.NewAttributeValueString("attr1/val2"),
-	// 		},
-	// 	},
-	// }
+	inSpanEventForTwoAttributes = []spanEventWithAttributes{
+		{
+			spanEventName: "event1",
+			eventAttributes: map[string]pdata.AttributeValue{
+				"attr1": pdata.NewAttributeValueString("attr1/val1"),
+			},
+		},
+		{
+			spanEventName: "event2",
+			eventAttributes: map[string]pdata.AttributeValue{
+				"attr1": pdata.NewAttributeValueString("attr1/val2"),
+			},
+		},
+	}
 
-	// inSpanEventForTwoResourceWithRecordAttributes = []spanEventWithAttributes{
-	// 	{
-	// 		spanEventNames: []string{"log1", "log2"},
-	// 		eventAttributes: map[string]pdata.AttributeValue{
-	// 			"attr1": pdata.NewAttributeValueString("attr1/val1"),
-	// 		},
-	// 	},
-	// 	{
-	// 		spanEventNames: []string{"log3", "log4"},
-	// 		eventAttributes: map[string]pdata.AttributeValue{
-	// 			"attr1": pdata.NewAttributeValueString("attr1/val2"),
-	// 		},
-	// 	},
-	// }
-	// inSpanEventForThreeResourceWithRecordAttributes = []spanEventWithAttributes{
-	// 	{
-	// 		spanEventNames: []string{"log1", "log2"},
-	// 		eventAttributes: map[string]pdata.AttributeValue{
-	// 			"attr1": pdata.NewAttributeValueString("attr1/val1"),
-	// 		},
-	// 	},
-	// 	{
-	// 		spanEventNames: []string{"log3", "log4"},
-	// 		eventAttributes: map[string]pdata.AttributeValue{
-	// 			"attr1": pdata.NewAttributeValueString("attr1/val2"),
-	// 		},
-	// 	},
-	// 	{
-	// 		spanEventNames: []string{"log5"},
-	// 		eventAttributes: map[string]pdata.AttributeValue{
-	// 			"attr1": pdata.NewAttributeValueString("attr1/val5"),
-	// 		},
-	// 	},
-	// }
+	inSpanEventForThreeAttributes = []spanEventWithAttributes{
+		{
+			spanEventName: "event1",
+			eventAttributes: map[string]pdata.AttributeValue{
+				"attr1": pdata.NewAttributeValueString("attr1/val1"),
+			},
+		},
+		{
+			spanEventName: "event2",
+			eventAttributes: map[string]pdata.AttributeValue{
+				"attr1": pdata.NewAttributeValueString("attr1/val2"),
+			},
+		},
+		{
+			spanEventName: "event3",
+			eventAttributes: map[string]pdata.AttributeValue{
+				"attr1": pdata.NewAttributeValueString("attr1/val5"),
+			},
+		},
+	}
 
-	// inSpanEventForFourResource = []spanEventWithAttributes{
-	// 	{
-	// 		spanEventNames: []string{"log1"},
-	// 		eventAttributes: map[string]pdata.AttributeValue{
-	// 			"attr": pdata.NewAttributeValueString("attr/val1"),
-	// 		},
-	// 	},
-	// 	{
-	// 		spanEventNames: []string{"log2"},
-	// 		eventAttributes: map[string]pdata.AttributeValue{
-	// 			"attr": pdata.NewAttributeValueString("attr/val2"),
-	// 		},
-	// 	},
-	// 	{
-	// 		spanEventNames: []string{"log3"},
-	// 		eventAttributes: map[string]pdata.AttributeValue{
-	// 			"attr": pdata.NewAttributeValueString("attr/val3"),
-	// 		},
-	// 	},
-	// 	{
-	// 		spanEventNames: []string{"log4"},
-	// 		eventAttributes: map[string]pdata.AttributeValue{
-	// 			"attr": pdata.NewAttributeValueString("attr/val4"),
-	// 		},
-	// 	},
-	// }
+	inSpanEventForFourAttributes = []spanEventWithAttributes{
+		{
+			spanEventName: "event1",
+			eventAttributes: map[string]pdata.AttributeValue{
+				"attr": pdata.NewAttributeValueString("attr/val1"),
+			},
+		},
+		{
+			spanEventName: "event2",
+			eventAttributes: map[string]pdata.AttributeValue{
+				"attr": pdata.NewAttributeValueString("attr/val2"),
+			},
+		},
+		{
+			spanEventName: "event3",
+			eventAttributes: map[string]pdata.AttributeValue{
+				"attr": pdata.NewAttributeValueString("attr/val3"),
+			},
+		},
+		{
+			spanEventName: "event4",
+			eventAttributes: map[string]pdata.AttributeValue{
+				"attr": pdata.NewAttributeValueString("attr/val4"),
+			},
+		},
+	}
 
 	standardSpanEventTests = []spanEventNameTest{
 		{
@@ -141,22 +126,28 @@ var (
 			inTraces: testSpanEvents([]spanEventWithAttributes{{spanEventName: inSpanEventNames}}),
 			outSES:   []string{inSpanEventNames},
 		},
-		// {
-		// 	name:     "includeNilWithResourceAttributes",
-		// 	inc:      &SpanEventMatchProperties{SpanEventMatchType: Strict, EventAttributes: []filterconfig.Attribute{}},
-		// 	inTraces: testSpanEvents(inSpanEventForResourceTest),
-		// 	outSES: [][]string{
-		// 		{"log1", "log2"},
-		// 	},
-		// },
-		// {
-		// 	name:     "includeAllWithMissingResourceAttributes",
-		// 	inc:      &SpanEventMatchProperties{SpanEventMatchType: Strict, EventAttributes: []filterconfig.Attribute{{Key: "attr1", Value: "attr1/val2"}}},
-		// 	inTraces: testSpanEvents(inSpanEventForTwoResource),
-		// 	outSES: [][]string{
-		// 		{"log3", "log4"},
-		// 	},
-		// },
+		{
+			name:     "emptyFilterExclude",
+			exc:      &SpanEventMatchProperties{SpanEventMatchType: Strict, EventAttributes: []filterconfig.Attribute{}},
+			inTraces: testSpanEvents([]spanEventWithAttributes{{spanEventName: inSpanEventNames}}),
+			outSES:   []string{inSpanEventNames},
+		},
+		{
+			name:     "emptyFilterIncludeAndExclude",
+			inc:      &SpanEventMatchProperties{SpanEventMatchType: Strict, EventAttributes: []filterconfig.Attribute{}},
+			exc:      &SpanEventMatchProperties{SpanEventMatchType: Strict, EventAttributes: []filterconfig.Attribute{}},
+			inTraces: testSpanEvents([]spanEventWithAttributes{{spanEventName: inSpanEventNames}}),
+			outSES:   []string{inSpanEventNames},
+		},
+		{
+			name:     "includeAllWithMissingAttributes",
+			inc:      &SpanEventMatchProperties{SpanEventMatchType: Strict, EventAttributes: []filterconfig.Attribute{{Key: "attr1", Value: "attr1/val2"}}},
+			inTraces: testSpanEvents(inSpanEventForTwoAttributes),
+			outSES: []string{
+				"event1",
+				"event2",
+			},
+		},
 		// {
 		// 	name:     "emptyFilterExclude",
 		// 	exc:      &SpanEventMatchProperties{SpanEventMatchType: Strict, EventAttributes: []filterconfig.Attribute{}},
@@ -321,7 +312,7 @@ var (
 func TestFilterSpanEventProcessor(t *testing.T) {
 	for _, test := range standardSpanEventTests {
 		t.Run(test.name, func(t *testing.T) {
-			// next stores the results of the filter log processor
+			// next stores the results of the filter span event processor
 			next := new(consumertest.TracesSink)
 			cfg := &Config{
 				ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
@@ -354,22 +345,11 @@ func TestFilterSpanEventProcessor(t *testing.T) {
 			assert.Equal(t, 1, rTraces.Len())
 
 			ilSpans := rTraces.At(0).InstrumentationLibrarySpans().At(0).Spans()
-			fmt.Println("TRACES LENGTH: ")
-			fmt.Println(rTraces.Len())
-			fmt.Println("SPANS LENGHT: ")
-			fmt.Println(ilSpans.Len())
-			fmt.Println("EVENTS LENGHT: ")
-			fmt.Println(ilSpans.At(0).Events().Len())
 			gotEvents := ilSpans.At(0).Events()
 			assert.Equal(t, len(test.outSES), gotEvents.Len())
-			// for i, wantOut := range test.outSES {
-			// 	fmt.Println("EVENTS LENGHT: ")
-			// 	fmt.Println(gotEvents.Len())
-
-			// 	for idx := range wantOut {
-			// 		assert.Equal(t, wantOut[idx], gotEvents.At(idx).Name())
-			// 	}
-			// }
+			for i, spanEventName := range test.outSES {
+				assert.Equal(t, spanEventName, gotEvents.At(i).Name())
+			}
 			assert.NoError(t, flp.Shutdown(ctx))
 		})
 	}
@@ -381,6 +361,8 @@ func testSpanEvents(sewas []spanEventWithAttributes) pdata.Traces {
 	ilSpans := rSpans.InstrumentationLibrarySpans().AppendEmpty()
 	spans := ilSpans.Spans()
 	span := spans.AppendEmpty()
+	span.SetName("test")
+	span.Events().EnsureCapacity(len(sewas))
 
 	for _, sewa := range sewas {
 		es := span.Events()
@@ -388,9 +370,6 @@ func testSpanEvents(sewas []spanEventWithAttributes) pdata.Traces {
 		e.SetName(sewa.spanEventName)
 		e.SetTimestamp(pdata.NewTimestampFromTime(time.Now()))
 		e.Attributes().InitFromMap(sewa.eventAttributes)
-		fmt.Println("HHMMMMMMMMMMMMMMMMMMM")
-		fmt.Println(spans.At(1).Events().Len())
-
 	}
 
 	return td

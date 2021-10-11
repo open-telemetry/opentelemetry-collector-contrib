@@ -16,6 +16,7 @@ package filterprocessor
 
 import (
 	"context"
+	"fmt"
 
 	"go.opentelemetry.io/collector/model/pdata"
 	"go.uber.org/zap"
@@ -150,6 +151,7 @@ func (fsep *filterSpanEventProcessor) shouldSkipEvent(se pdata.SpanEvent) bool {
 	if fsep.includeAttributes != nil {
 		matches := fsep.includeAttributes.Match(se.Attributes())
 		if !matches {
+			fmt.Println("hmm1")
 			return true
 		}
 	}
@@ -162,6 +164,8 @@ func (fsep *filterSpanEventProcessor) shouldSkipEvent(se pdata.SpanEvent) bool {
 			)
 		}
 		if !matches {
+			fmt.Println("hmm2")
+
 			return true
 		}
 	}
@@ -169,6 +173,8 @@ func (fsep *filterSpanEventProcessor) shouldSkipEvent(se pdata.SpanEvent) bool {
 	if fsep.excludeAttributes != nil {
 		matches := fsep.excludeAttributes.Match(se.Attributes())
 		if matches {
+			fmt.Println("hmm3")
+
 			return true
 		}
 	}
@@ -181,6 +187,8 @@ func (fsep *filterSpanEventProcessor) shouldSkipEvent(se pdata.SpanEvent) bool {
 			)
 		}
 		if matches {
+			fmt.Println("hmm4")
+
 			return true
 		}
 	}
@@ -194,7 +202,7 @@ type spanEventNameMatcher struct {
 }
 
 func newSpanEventNameMatcher(config *SpanEventMatchProperties) (*spanEventNameMatcher, error) {
-	if config == nil {
+	if config == nil || len(config.EventNames) == 0 {
 		return nil, nil
 	}
 

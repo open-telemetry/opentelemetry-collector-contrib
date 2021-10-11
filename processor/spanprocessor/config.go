@@ -34,8 +34,7 @@ type Config struct {
 	// configured.
 	// Note: The field name is `Rename` to avoid collision with the Name() method
 	// from config.NamedEntity
-	Rename Name   `mapstructure:"name"`
-	Events Events `mapstructure:"name"`
+	Rename Name `mapstructure:"name"`
 }
 
 // Name specifies the attributes to use to re-name a span.
