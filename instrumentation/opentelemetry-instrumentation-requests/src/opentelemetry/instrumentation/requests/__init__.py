@@ -24,8 +24,8 @@ Usage
     import requests
     from opentelemetry.instrumentation.requests import RequestsInstrumentor
 
-    # You can optionally pass a custom TracerProvider to
-    RequestsInstrumentor.instrument()
+    # You can optionally pass a custom TracerProvider to instrument().
+    RequestsInstrumentor().instrument()
     response = requests.get(url="https://www.example.org/")
 
 API
