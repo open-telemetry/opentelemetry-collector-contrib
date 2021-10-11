@@ -23,9 +23,7 @@ class TestUtils(TestCase):
     @mock.patch("opentelemetry.context.get_value")
     @mock.patch("opentelemetry.instrumentation.pika.utils._generate_span_name")
     @mock.patch("opentelemetry.instrumentation.pika.utils._enrich_span")
-    @mock.patch("opentelemetry.propagate.extract")
     def test_get_span(
-        extract: mock.MagicMock,
         enrich_span: mock.MagicMock,
         generate_span_name: mock.MagicMock,
         get_value: mock.MagicMock,
@@ -35,21 +33,19 @@ class TestUtils(TestCase):
         properties = mock.MagicMock()
         task_name = "test.test"
         get_value.return_value = None
-        _ = utils._get_span(tracer, channel, properties, task_name)
-        extract.assert_called_once()
+        ctx = mock.MagicMock()
+        _ = utils._get_span(tracer, channel, properties, task_name, ctx)
         generate_span_name.assert_called_once()
         tracer.start_span.assert_called_once_with(
-            context=extract.return_value, name=generate_span_name.return_value
+            context=ctx, name=generate_span_name.return_value
         )
         enrich_span.assert_called_once()
 
     @mock.patch("opentelemetry.context.get_value")
     @mock.patch("opentelemetry.instrumentation.pika.utils._generate_span_name")
     @mock.patch("opentelemetry.instrumentation.pika.utils._enrich_span")
-    @mock.patch("opentelemetry.propagate.extract")
     def test_get_span_suppressed(
         self,
-        extract: mock.MagicMock,
         enrich_span: mock.MagicMock,
         generate_span_name: mock.MagicMock,
         get_value: mock.MagicMock,
@@ -59,10 +55,11 @@ class TestUtils(TestCase):
         properties = mock.MagicMock()
         task_name = "test.test"
         get_value.return_value = True
-        span = utils._get_span(tracer, channel, properties, task_name)
+        ctx = mock.MagicMock()
+        span = utils._get_span(tracer, channel, properties, task_name, ctx)
         self.assertEqual(span, None)
-        extract.assert_called_once()
         generate_span_name.assert_not_called()
+        enrich_span.assert_not_called()
 
     def test_generate_span_name_no_operation(self) -> None:
         task_name = "test.test"

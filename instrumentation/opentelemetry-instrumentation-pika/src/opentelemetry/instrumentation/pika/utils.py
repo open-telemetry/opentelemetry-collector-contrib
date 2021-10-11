@@ -41,15 +41,20 @@ def _decorate_callback(
     ) -> Any:
         if not properties:
             properties = BasicProperties()
+        if properties.headers is None:
+            properties.headers = {}
+        ctx = propagate.extract(properties.headers, getter=_pika_getter)
+        if not ctx:
+            ctx = context.get_current()
         span = _get_span(
             tracer,
             channel,
             properties,
             task_name=task_name,
+            ctx=ctx,
             operation=MessagingOperationValues.RECEIVE,
         )
         with trace.use_span(span, end_on_exit=True):
-            propagate.inject(properties.headers)
             retval = callback(channel, method, properties, body)
         return retval
 
@@ -70,11 +75,13 @@ def _decorate_basic_publish(
     ) -> Any:
         if not properties:
             properties = BasicProperties()
+        ctx = context.get_current()
         span = _get_span(
             tracer,
             channel,
             properties,
             task_name="(temporary)",
+            ctx=ctx,
             operation=None,
         )
         if not span:
@@ -97,11 +104,9 @@ def _get_span(
     channel: Channel,
     properties: BasicProperties,
     task_name: str,
+    ctx: context.Context,
     operation: Optional[MessagingOperationValues] = None,
 ) -> Optional[Span]:
-    if properties.headers is None:
-        properties.headers = {}
-    ctx = propagate.extract(properties.headers, getter=_pika_getter)
     if context.get_value("suppress_instrumentation") or context.get_value(
         _SUPPRESS_INSTRUMENTATION_KEY
     ):
