@@ -34,22 +34,87 @@ func TestLogRunExprError(t *testing.T) {
 	require.False(t, matched)
 }
 
-func TestLogStringBodyMatches(t *testing.T) {
-	matcher, err := NewLogMatcher(`Body matches 'my.log'`)
-	require.NoError(t, err)
-	l := pdata.NewLogRecord()
-	l.Body().SetStringVal("my.log")
-	matched, err := matcher.MatchLog(l)
-	assert.NoError(t, err)
-	assert.True(t, matched)
-}
+func TestExpression(t *testing.T) {
+	type testCase struct {
+		name         string
+		expression   string
+		expected     bool
+		body         pdata.AttributeValue
+		logName      string
+		severity     int32
+		severityText string
+	}
 
-func TestLogStringodyDoesntMatch(t *testing.T) {
-	matcher, err := NewLogMatcher(`Body matches 'my.logs'`)
-	require.NoError(t, err)
-	l := pdata.NewLogRecord()
-	l.Body().SetStringVal("my.log")
-	matched, err := matcher.MatchLog(l)
-	assert.NoError(t, err)
-	assert.False(t, matched)
+	testCases := []testCase{
+		{
+			name:       "match body",
+			expression: `Body matches 'my.log'`,
+			expected:   true,
+			body:       pdata.NewAttributeValueString("my.log"),
+		},
+		{
+			name:       "do not match body",
+			expression: `Body matches 'my.log'`,
+			expected:   false,
+			body:       pdata.NewAttributeValueString("mys.log"),
+		},
+		{
+			name:       "match name",
+			expression: `Name matches 'my l.g'`,
+			expected:   true,
+			body:       pdata.NewAttributeValueEmpty(),
+			logName:    "my log",
+		},
+		{
+			name:       "do not match name",
+			expression: `Name matches 'my l..g'`,
+			expected:   false,
+			body:       pdata.NewAttributeValueEmpty(),
+			logName:    "my log",
+		},
+		{
+			name:       "match severity",
+			expression: `SeverityNumber > 3`,
+			expected:   true,
+			body:       pdata.NewAttributeValueEmpty(),
+			severity:   5,
+		},
+		{
+			name:       "do not match severity",
+			expression: `SeverityNumber <= 3`,
+			expected:   false,
+			body:       pdata.NewAttributeValueEmpty(),
+			severity:   5,
+		},
+		{
+			name:         "match severity name",
+			expression:   `SeverityText matches 'foo'`,
+			expected:     true,
+			body:         pdata.NewAttributeValueEmpty(),
+			severityText: "foo bar",
+		},
+		{
+			name:         "match severity name",
+			expression:   `SeverityText matches 'foos'`,
+			expected:     false,
+			body:         pdata.NewAttributeValueEmpty(),
+			severityText: "foo bar",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			matcher, err := NewLogMatcher(tc.expression)
+			require.NoError(t, err)
+			l := pdata.NewLogRecord()
+			l.SetName(tc.logName)
+			tc.body.CopyTo(l.Body())
+			l.SetSeverityNumber(pdata.SeverityNumber(tc.severity))
+			l.SetSeverityText(tc.severityText)
+
+			matched, err := matcher.MatchLog(l)
+			assert.NoError(t, err)
+			assert.Equal(t, tc.expected, matched)
+		})
+	}
 }

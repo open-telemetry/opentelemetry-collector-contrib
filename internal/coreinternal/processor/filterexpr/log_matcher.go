@@ -25,6 +25,7 @@ type LogMatcher struct {
 	v       vm.VM
 }
 
+// logEnv is a structure of variables and functions for expr language
 type logEnv struct {
 	Body           string
 	Name           string
@@ -32,6 +33,7 @@ type logEnv struct {
 	SeverityText   string
 }
 
+// NewLogMatcher creates new log matcher
 func NewLogMatcher(expression string) (*LogMatcher, error) {
 	program, err := expr.Compile(expression)
 	if err != nil {
@@ -40,6 +42,7 @@ func NewLogMatcher(expression string) (*LogMatcher, error) {
 	return &LogMatcher{program: program, v: vm.VM{}}, nil
 }
 
+// MatchLog returns true if log matches the matcher
 func (m *LogMatcher) MatchLog(log pdata.LogRecord) (bool, error) {
 	matched, err := m.match(createLogEnv(log))
 	if err != nil {
@@ -53,6 +56,7 @@ func (m *LogMatcher) MatchLog(log pdata.LogRecord) (bool, error) {
 	return false, nil
 }
 
+// createLogEnv converts pdata.LogRecord to logEnv
 func createLogEnv(log pdata.LogRecord) logEnv {
 	return logEnv{
 		Name:           log.Name(),
