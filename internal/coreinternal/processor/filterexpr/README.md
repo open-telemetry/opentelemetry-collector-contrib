@@ -14,7 +14,7 @@ For metrics the following variables as available:
 |------------|--------------|---------------------|
 | MetricName | string       | Name of the Metric. |
 
-In addtion the following functions are available:
+In addition the following functions are available:
 
 | Name     | Signature               | Description                                                  |
 |----------|-------------------------|--------------------------------------------------------------|
