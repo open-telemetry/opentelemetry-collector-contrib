@@ -80,7 +80,7 @@ for example:
 
 import json
 import logging
-from typing import Any, Collection, Dict, Optional, Tuple
+from typing import Any, Callable, Collection, Dict, Optional, Tuple
 
 from botocore.client import BaseClient
 from botocore.endpoint import Endpoint
@@ -88,6 +88,7 @@ from botocore.exceptions import ClientError
 from wrapt import wrap_function_wrapper
 
 from opentelemetry import context as context_api
+from opentelemetry.instrumentation.botocore.extensions import _find_extension
 from opentelemetry.instrumentation.botocore.extensions.types import (
     _AwsSdkCallContext,
 )
@@ -190,6 +191,10 @@ class BotocoreInstrumentor(BaseInstrumentor):
         if call_context is None:
             return original_func(*args, **kwargs)
 
+        extension = _find_extension(call_context)
+        if not extension.should_trace_service_call():
+            return original_func(*args, **kwargs)
+
         attributes = {
             SpanAttributes.RPC_SYSTEM: "aws-api",
             SpanAttributes.RPC_SERVICE: call_context.service_id,
@@ -197,6 +202,8 @@ class BotocoreInstrumentor(BaseInstrumentor):
             # TODO: update when semantic conventions exist
             "aws.region": call_context.region,
         }
+
+        _safe_invoke(extension.extract_attributes, attributes)
 
         with self._tracer.start_as_current_span(
             call_context.span_name,
@@ -208,6 +215,7 @@ class BotocoreInstrumentor(BaseInstrumentor):
                 BotocoreInstrumentor._patch_lambda_invoke(call_context.params)
 
             _set_api_call_attributes(span, call_context)
+            _safe_invoke(extension.before_service_call, span)
             self._call_request_hook(span, call_context)
 
             token = context_api.attach(
@@ -220,11 +228,14 @@ class BotocoreInstrumentor(BaseInstrumentor):
             except ClientError as error:
                 result = getattr(error, "response", None)
                 _apply_response_attributes(span, result)
+                _safe_invoke(extension.on_error, span, error)
                 raise
             else:
                 _apply_response_attributes(span, result)
+                _safe_invoke(extension.on_success, span, result)
             finally:
                 context_api.detach(token)
+                _safe_invoke(extension.after_service_call)
 
                 self._call_response_hook(span, call_context, result)
 
@@ -254,8 +265,6 @@ def _set_api_call_attributes(span, call_context: _AwsSdkCallContext):
     if not span.is_recording():
         return
 
-    if "QueueUrl" in call_context.params:
-        span.set_attribute("aws.queue_url", call_context.params["QueueUrl"])
     if "TableName" in call_context.params:
         span.set_attribute("aws.table_name", call_context.params["TableName"])
 
@@ -309,3 +318,14 @@ def _determine_call_context(
         # extracting essential attributes ('service' and 'operation') failed.
         logger.error("Error when initializing call context", exc_info=ex)
         return None
+
+
+def _safe_invoke(function: Callable, *args):
+    function_name = "<unknown>"
+    try:
+        function_name = function.__name__
+        function(*args)
+    except Exception as ex:  # pylint:disable=broad-except
+        logger.error(
+            "Error when invoking function '%s'", function_name, exc_info=ex
+        )

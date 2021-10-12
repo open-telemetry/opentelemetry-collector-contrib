@@ -35,6 +35,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   ([#664](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/664))
 - `opentelemetry-instrumentation-botocore` Fix span injection for lambda invoke
   ([#663](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/663))
+- `opentelemetry-instrumentation-botocore` Introduce instrumentation extensions
+  ([#718](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/718))
 
 ### Changed
 
