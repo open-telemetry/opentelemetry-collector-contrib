@@ -20,6 +20,8 @@ from sqlalchemy import create_engine
 
 from opentelemetry import trace
 from opentelemetry.instrumentation.sqlalchemy import SQLAlchemyInstrumentor
+from opentelemetry.sdk.resources import Resource
+from opentelemetry.sdk.trace import TracerProvider, export
 from opentelemetry.test.test_base import TestBase
 
 
@@ -94,6 +96,37 @@ class TestSqlalchemyInstrumentation(TestBase):
         self.assertEqual(len(spans), 1)
         self.assertEqual(spans[0].name, "SELECT :memory:")
         self.assertEqual(spans[0].kind, trace.SpanKind.CLIENT)
+
+    def test_custom_tracer_provider(self):
+        provider = TracerProvider(
+            resource=Resource.create(
+                {
+                    "service.name": "test",
+                    "deployment.environment": "env",
+                    "service.version": "1234",
+                },
+            ),
+        )
+        provider.add_span_processor(
+            export.SimpleSpanProcessor(self.memory_exporter)
+        )
+
+        SQLAlchemyInstrumentor().instrument(tracer_provider=provider)
+        from sqlalchemy import create_engine  # pylint: disable-all
+
+        engine = create_engine("sqlite:///:memory:")
+        cnx = engine.connect()
+        cnx.execute("SELECT	1 + 1;").fetchall()
+        spans = self.memory_exporter.get_finished_spans()
+
+        self.assertEqual(len(spans), 1)
+        self.assertEqual(spans[0].resource.attributes["service.name"], "test")
+        self.assertEqual(
+            spans[0].resource.attributes["deployment.environment"], "env"
+        )
+        self.assertEqual(
+            spans[0].resource.attributes["service.version"], "1234"
+        )
 
     @pytest.mark.skipif(
         not sqlalchemy.__version__.startswith("1.4"),

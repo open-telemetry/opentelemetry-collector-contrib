@@ -42,24 +42,30 @@ def _get_tracer(engine, tracer_provider=None):
     )
 
 
-# pylint: disable=unused-argument
-def _wrap_create_async_engine(func, module, args, kwargs):
-    """Trace the SQLAlchemy engine, creating an `EngineTracer`
-    object that will listen to SQLAlchemy events.
-    """
-    engine = func(*args, **kwargs)
-    EngineTracer(_get_tracer(engine), engine.sync_engine)
-    return engine
+def _wrap_create_async_engine(tracer_provider=None):
+    # pylint: disable=unused-argument
+    def _wrap_create_async_engine_internal(func, module, args, kwargs):
+        """Trace the SQLAlchemy engine, creating an `EngineTracer`
+        object that will listen to SQLAlchemy events.
+        """
+        engine = func(*args, **kwargs)
+        EngineTracer(_get_tracer(engine, tracer_provider), engine.sync_engine)
+        return engine
+
+    return _wrap_create_async_engine_internal
 
 
-# pylint: disable=unused-argument
-def _wrap_create_engine(func, module, args, kwargs):
-    """Trace the SQLAlchemy engine, creating an `EngineTracer`
-    object that will listen to SQLAlchemy events.
-    """
-    engine = func(*args, **kwargs)
-    EngineTracer(_get_tracer(engine), engine)
-    return engine
+def _wrap_create_engine(tracer_provider=None):
+    # pylint: disable=unused-argument
+    def _wrap_create_engine_internal(func, module, args, kwargs):
+        """Trace the SQLAlchemy engine, creating an `EngineTracer`
+        object that will listen to SQLAlchemy events.
+        """
+        engine = func(*args, **kwargs)
+        EngineTracer(_get_tracer(engine, tracer_provider), engine)
+        return engine
+
+    return _wrap_create_engine_internal
 
 
 class EngineTracer:
