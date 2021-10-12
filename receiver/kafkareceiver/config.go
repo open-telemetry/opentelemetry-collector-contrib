@@ -64,7 +64,7 @@ type Config struct {
 
 	Authentication kafkaexporter.Authentication `mapstructure:"auth"`
 
-	// Controls the auto-commit funcionality
+	// Controls the auto-commit functionality
 	AutoCommit AutoCommit `mapstructure:"autocommit"`
 
 	// Controls the way the messages are marked as consumed
