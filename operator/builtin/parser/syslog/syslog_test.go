@@ -20,6 +20,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
 	"gopkg.in/yaml.v2"
 
 	"github.com/open-telemetry/opentelemetry-log-collection/entry"
@@ -100,4 +101,14 @@ parse_to: $.to`
 		require.NoError(t, err)
 		require.Equal(t, expect, &actual)
 	})
+}
+
+func TestSyslogParserInvalidLocation(t *testing.T) {
+	config := NewSyslogParserConfig("test")
+	config.Location = "not_a_location"
+	config.Protocol = RFC3164
+
+	_, err := config.Build(operator.NewBuildContext(zap.NewNop().Sugar()))
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "failed to load location "+config.Location)
 }

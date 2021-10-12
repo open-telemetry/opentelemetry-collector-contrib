@@ -736,3 +736,24 @@ func defaultTimeCfg() *TimeParser {
 	newCfg := NewTimeParser()
 	return &newCfg
 }
+
+func TestSetInvalidLocation(t *testing.T) {
+	tp := NewTimeParser()
+	tp.Location = "not_a_location"
+	err := tp.setLocation()
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "failed to load location "+"not_a_location")
+}
+
+func TestParseGoTimeBadLocation(t *testing.T) {
+	tp := NewTimeParser()
+	tp.Location = "America/New_York"
+
+	err := tp.setLocation()
+	require.NoError(t, err)
+
+	tp.Layout = time.RFC822
+	_, err = tp.parseGotime("02 Jan 06 15:04 BST")
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "failed to load location BST")
+}

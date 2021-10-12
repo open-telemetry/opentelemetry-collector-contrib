@@ -75,7 +75,7 @@ func (c SyslogParserConfig) Build(context operator.BuildContext) ([]operator.Ope
 
 	location, err := time.LoadLocation(c.Location)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to load location %s: %w", c.Location, err)
 	}
 
 	syslogParser := &SyslogParser{
