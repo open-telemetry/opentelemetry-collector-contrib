@@ -16,7 +16,7 @@
 | [opentelemetry-instrumentation-flask](./opentelemetry-instrumentation-flask) | flask >= 1.0, < 3.0 |
 | [opentelemetry-instrumentation-grpc](./opentelemetry-instrumentation-grpc) | grpcio ~= 1.27 |
 | [opentelemetry-instrumentation-httpx](./opentelemetry-instrumentation-httpx) | httpx >= 0.18.0, < 0.19.0 |
-| [opentelemetry-instrumentation-jinja2](./opentelemetry-instrumentation-jinja2) | jinja2~=2.7 |
+| [opentelemetry-instrumentation-jinja2](./opentelemetry-instrumentation-jinja2) | jinja2 >= 2.7, < 4.0 |
 | [opentelemetry-instrumentation-logging](./opentelemetry-instrumentation-logging) | logging |
 | [opentelemetry-instrumentation-mysql](./opentelemetry-instrumentation-mysql) | mysql-connector-python ~= 8.0 |
 | [opentelemetry-instrumentation-pika](./opentelemetry-instrumentation-pika) | pika >= 1.1.0 |

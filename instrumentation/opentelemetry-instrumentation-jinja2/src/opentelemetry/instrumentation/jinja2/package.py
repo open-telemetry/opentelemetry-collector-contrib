@@ -13,4 +13,4 @@
 # limitations under the License.
 
 
-_instruments = ("jinja2~=2.7",)
+_instruments = ("jinja2 >= 2.7, < 4.0",)
