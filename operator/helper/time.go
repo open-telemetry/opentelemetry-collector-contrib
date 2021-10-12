@@ -115,7 +115,7 @@ func (t *TimeParser) setLocation() error {
 		// If "location" is specified, it must be in the local timezone database
 		loc, err := time.LoadLocation(t.Location)
 		if err != nil {
-			return err
+			return fmt.Errorf("failed to load location %s: %w", t.Location, err)
 		}
 		t.location = loc
 		return nil
@@ -198,7 +198,7 @@ func (t *TimeParser) parseGotime(value interface{}) (time.Time, error) {
 	loc, locErr := time.LoadLocation(zone)
 	if locErr != nil {
 		// can't correct offset, just return what we have
-		return result, err
+		return result, fmt.Errorf("failed to load location %s: %w", zone, locErr)
 	}
 
 	// Reparse the timestamp, with the location
