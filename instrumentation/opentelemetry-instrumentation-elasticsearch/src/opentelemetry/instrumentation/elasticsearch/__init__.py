@@ -81,6 +81,7 @@ for example:
     es.get(index='my-index', doc_type='my-type', id=1)
 """
 
+import re
 from logging import getLogger
 from os import environ
 from typing import Collection
@@ -107,7 +108,7 @@ _ATTRIBUTES_FROM_RESULT = [
     "took",
 ]
 
-_DEFALT_OP_NAME = "request"
+_DEFAULT_OP_NAME = "request"
 
 
 class ElasticsearchInstrumentor(BaseInstrumentor):
@@ -146,6 +147,9 @@ class ElasticsearchInstrumentor(BaseInstrumentor):
         unwrap(elasticsearch.Transport, "perform_request")
 
 
+_regex_doc_url = re.compile(r"/_doc/([^/]+)")
+
+
 def _wrap_perform_request(
     tracer, span_name_prefix, request_hook=None, response_hook=None
 ):
@@ -161,7 +165,24 @@ def _wrap_perform_request(
                 len(args),
             )
 
-        op_name = span_name_prefix + (url or method or _DEFALT_OP_NAME)
+        op_name = span_name_prefix + (url or method or _DEFAULT_OP_NAME)
+        doc_id = None
+        if url:
+            # TODO: This regex-based solution avoids creating an unbounded number of span names, but should be replaced by instrumenting individual Elasticsearch methods instead of Transport.perform_request()
+            # A limitation of the regex is that only the '_doc' mapping type is supported. Mapping types are deprecated since Elasticsearch 7
+            # https://github.com/open-telemetry/opentelemetry-python-contrib/issues/708
+            match = _regex_doc_url.search(url)
+            if match is not None:
+                # Remove the full document ID from the URL
+                doc_span = match.span()
+                op_name = (
+                    span_name_prefix
+                    + url[: doc_span[0]]
+                    + "/_doc/:id"
+                    + url[doc_span[1] :]
+                )
+                # Put the document ID in attributes
+                doc_id = match.group(1)
         params = kwargs.get("params", {})
         body = kwargs.get("body", None)
 
@@ -184,6 +205,8 @@ def _wrap_perform_request(
                     attributes[SpanAttributes.DB_STATEMENT] = str(body)
                 if params:
                     attributes["elasticsearch.params"] = str(params)
+                if doc_id:
+                    attributes["elasticsearch.id"] = doc_id
                 for key, value in attributes.items():
                     span.set_attribute(key, value)
 
