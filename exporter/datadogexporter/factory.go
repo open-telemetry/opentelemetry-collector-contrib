@@ -73,7 +73,8 @@ func createDefaultConfig() config.Exporter {
 			DeltaTTL:      3600,
 			Quantiles:     true,
 			ExporterConfig: ddconfig.MetricsExporterConfig{
-				ResourceAttributesAsTags: false,
+				ResourceAttributesAsTags:             false,
+				InstrumentationLibraryMetadataAsTags: false,
 			},
 			HistConfig: ddconfig.HistogramConfig{
 				Mode:         "nobuckets",
@@ -138,7 +139,7 @@ func createMetricsExporter(
 			cancel()
 			return nil, err
 		}
-		pushMetricsFn = exp.PushMetricsData
+		pushMetricsFn = exp.PushMetricsDataScrubbed
 	}
 
 	exporter, err := exporterhelper.NewMetricsExporter(
@@ -191,7 +192,7 @@ func createTracesExporter(
 			return nil
 		}
 	} else {
-		pushTracesFn = newTracesExporter(ctx, set, cfg).pushTraceData
+		pushTracesFn = newTracesExporter(ctx, set, cfg).pushTraceDataScrubbed
 	}
 
 	return exporterhelper.NewTracesExporter(

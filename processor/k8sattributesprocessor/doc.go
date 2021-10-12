@@ -55,12 +55,12 @@
 // so likely it won't be set as an attribute.
 
 // The following container level attributes require additional attributes to identify a particular container in a pod:
-//   1. Container spec attributes - will be set only if container identifying attribute `container.name` is set
+//   1. Container spec attributes - will be set only if container identifying attribute `k8s.container.name` is set
 //      as a resource attribute (similar to all other attributes, pod has to be identified as well):
 //     - container.image.name
 //     - container.image.tag
-//   2. Container status attributes - in addition to pod identifier and `container.name` attribute, these attributes
-//     require identifier of a particular container run set as `run_id` in resource attributes:
+//   2. Container status attributes - in addition to pod identifier and `k8s.container.name` attribute, these attributes
+//     require identifier of a particular container run set as `k8s.container.restart_count` in resource attributes:
 //     - container.id
 
 //The k8sattributesprocessor can be used for automatic tagging of spans, metrics and logs with k8s labels and annotations from pods and namespaces.
