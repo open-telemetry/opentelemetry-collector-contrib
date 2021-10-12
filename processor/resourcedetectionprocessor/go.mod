@@ -5,10 +5,10 @@ go 1.17
 require (
 	cloud.google.com/go v0.97.0
 	github.com/Showmax/go-fqdn v1.0.0
-	github.com/aws/aws-sdk-go v1.40.56
+	github.com/aws/aws-sdk-go v1.41.1
 	github.com/census-instrumentation/opencensus-proto v0.3.0
 	github.com/containerd/containerd v1.5.7 // indirect
-	github.com/docker/docker v20.10.8+incompatible
+	github.com/docker/docker v20.10.9+incompatible
 	github.com/docker/go-connections v0.4.0 // indirect
 	github.com/moby/term v0.0.0-20210619224110-3f7ff695adc6 // indirect
 	github.com/morikuni/aec v1.0.0 // indirect

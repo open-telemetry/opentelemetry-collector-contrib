@@ -5,7 +5,7 @@ go 1.17
 require (
 	github.com/cenkalti/backoff/v4 v4.1.1
 	github.com/containerd/containerd v1.5.7 // indirect
-	github.com/docker/docker v20.10.8+incompatible
+	github.com/docker/docker v20.10.9+incompatible
 	github.com/docker/go-connections v0.4.0
 	github.com/google/go-cmp v0.5.6 // indirect
 	github.com/gorilla/mux v1.8.0 // indirect
