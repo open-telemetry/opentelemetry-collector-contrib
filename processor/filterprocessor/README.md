@@ -1,6 +1,6 @@
 # Filter Processor
 
-Supported pipeline types: logs, metrics
+Supported pipeline types: logs, metrics, traces(span events)
 
 The filter processor can be configured to include or exclude:
 
@@ -37,6 +37,15 @@ For metrics:
 - `resource_attributes`: ResourceAttributes defines a list of possible resource
   attributes to match metrics against.
   A match occurs if any resource attribute matches all expressions in this given list.
+
+For span events:
+
+- `match_type`: `strict`|`regexp`
+- `event_attributes`: EventAttributes defines a list of possible event
+  attributes to match span events against.
+  A match occurs if any span event attribute matches all expressions in this given list.
+- `event_names`: EventNames defines a list of possible event names to match span events against.
+  A match occurs if any span name is matched in the given list.
 
 This processor uses [re2 regex][re2_regex] for regex syntax.
 
@@ -78,6 +87,24 @@ processors:
     logs/regexp_record:
         match_type: regexp
         record_attributes:
+          - Key: record_attr
+            Value: prefix_.*
+  filter/3:
+    span_events:
+      include:
+        match_type: strict
+        event_attributes:
+          - Key: host.name
+            Value: just_this_one_hostname
+    span_events/regexp:
+        match_type: regexp
+        event_attributes:
+          - Key: host.name
+            Value: prefix.*
+        event_names: ["name1", "name2"]
+    span_events/regexp_record:
+        match_type: regexp
+        event_attributes:
           - Key: record_attr
             Value: prefix_.*
 ```
