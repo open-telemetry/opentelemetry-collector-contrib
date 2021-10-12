@@ -46,4 +46,4 @@ services:
     environment:
       ACCEPT_EULA: "Y"
       SA_PASSWORD: "yourStrong(!)Password"
-    command: /bin/sh -c "sleep 10s && /opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P yourStrong\(!\)Password -d master -Q 'CREATE DATABASE [opentelemetry-tests]' & /opt/mssql/bin/sqlservr"
+    command: /opt/mssql/bin/sqlservr

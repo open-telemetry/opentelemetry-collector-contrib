@@ -110,14 +110,27 @@ def check_redis_connection():
     connection.hgetall("*")
 
 
-@retryable
-def check_mssql_connection():
+def new_mssql_connection() -> pyodbc.Connection:
     connection = pyodbc.connect(
         f"DRIVER={{ODBC Driver 17 for SQL Server}};SERVER={MSSQL_HOST},"
-        f"{MSSQL_PORT};DATABASE={MSSQL_DB_NAME};UID={MSSQL_USER};"
-        f"PWD={MSSQL_PASSWORD}"
+        f"{MSSQL_PORT};DATABASE=master;UID={MSSQL_USER};"
+        f"PWD={MSSQL_PASSWORD}",
+        autocommit=True,
     )
-    connection.close()
+    return connection
+
+
+@retryable
+def check_mssql_connection():
+    conn = new_mssql_connection()
+    conn.close()
+
+
+def setup_mssql_db():
+    conn = new_mssql_connection()
+    cur = conn.cursor()
+    cur.execute(f"CREATE DATABASE [{MSSQL_DB_NAME}]")
+    conn.close()
 
 
 def check_docker_services_availability():
@@ -127,6 +140,7 @@ def check_docker_services_availability():
     check_postgres_connection()
     check_redis_connection()
     check_mssql_connection()
+    setup_mssql_db()
 
 
 check_docker_services_availability()
