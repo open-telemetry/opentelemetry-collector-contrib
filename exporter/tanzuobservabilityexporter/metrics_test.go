@@ -21,7 +21,10 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/model/pdata"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest/observer"
 )
 
 func TestMetricsConsumerNormal(t *testing.T) {
@@ -39,6 +42,8 @@ func TestMetricsConsumerNormal(t *testing.T) {
 
 	assert.ElementsMatch(t, []string{"gauge1", "gauge2"}, mockGaugeConsumer.names)
 	assert.ElementsMatch(t, []string{"sum1", "sum2"}, mockSumConsumer.names)
+	assert.Equal(t, 1, mockGaugeConsumer.consumeInternalCallCount)
+	assert.Equal(t, 1, mockSumConsumer.consumeInternalCallCount)
 	assert.Equal(t, 1, sender.numFlushCalls)
 	assert.Equal(t, 0, sender.numCloseCalls)
 
@@ -89,6 +94,19 @@ func TestMetricsConsumerErrorConsuming(t *testing.T) {
 
 	assert.Error(t, consumer.Consume(context.Background(), metrics))
 	assert.Len(t, mockGaugeConsumer.names, 1)
+	assert.Equal(t, 1, mockGaugeConsumer.consumeInternalCallCount)
+}
+
+func TestMetricsConsumerErrorConsumingInternal(t *testing.T) {
+	gauge1 := newMetric("gauge1", pdata.MetricDataTypeGauge)
+	mockGaugeConsumer := &mockMetricConsumer{
+		typ: pdata.MetricDataTypeGauge, errorOnConsumeInternal: true}
+	metrics := constructMetrics(gauge1)
+	consumer := newMetricsConsumer([]metricConsumer{mockGaugeConsumer}, nil)
+
+	assert.Error(t, consumer.Consume(context.Background(), metrics))
+	assert.Len(t, mockGaugeConsumer.names, 1)
+	assert.Equal(t, 1, mockGaugeConsumer.consumeInternalCallCount)
 }
 
 func TestMetricsConsumerRespectContext(t *testing.T) {
@@ -103,6 +121,7 @@ func TestMetricsConsumerRespectContext(t *testing.T) {
 
 	assert.Zero(t, sender.numFlushCalls)
 	assert.Empty(t, mockGaugeConsumer.names)
+	assert.Zero(t, mockGaugeConsumer.consumeInternalCallCount)
 }
 
 func TestGaugeConsumerNormal(t *testing.T) {
@@ -111,6 +130,28 @@ func TestGaugeConsumerNormal(t *testing.T) {
 
 func TestGaugeConsumerErrorSending(t *testing.T) {
 	verifyGaugeConsumer(t, true)
+}
+
+func TestGaugeConsumerBadValueNoLogging(t *testing.T) {
+	metric := newMetric("bad.metric", pdata.MetricDataTypeGauge)
+	dataPoints := metric.Gauge().DataPoints()
+	dataPoints.EnsureCapacity(1)
+	addDataPoint(
+		nil,
+		1633123456,
+		nil,
+		dataPoints,
+	)
+	sender := &mockGaugeSender{}
+	consumer := newGaugeConsumer(sender, nil)
+	var errs []error
+
+	consumer.Consume(metric, &errs)
+	consumer.Consume(metric, &errs)
+	consumer.ConsumeInternal(&errs)
+
+	assert.Len(t, errs, 0)
+	assert.Empty(t, sender.metrics)
 }
 
 func TestGaugeConsumerBadValue(t *testing.T) {
@@ -123,12 +164,27 @@ func TestGaugeConsumerBadValue(t *testing.T) {
 		nil,
 		dataPoints,
 	)
-	sender := &mockGaugeSender{}
-	consumer := newGaugeConsumer(sender)
+	sender := &mockGaugeSender{errorOnSend: true}
+	observedZapCore, observedLogs := observer.New(zap.DebugLevel)
+	consumer := newGaugeConsumer(sender, &consumerOptions{
+		Logger:                zap.New(observedZapCore),
+		ReportInternalMetrics: true,
+	})
 	var errs []error
+
 	consumer.Consume(metric, &errs)
+	consumer.Consume(metric, &errs)
+	consumer.ConsumeInternal(&errs)
+
 	assert.Len(t, errs, 1)
-	assert.Empty(t, sender.metrics)
+	require.Len(t, sender.metrics, 1)
+	assert.Equal(t, tobsMetric{
+		Name:  missingValueMetricName,
+		Value: 2.0,
+		Tags:  map[string]string{"type": "gauge"}},
+		sender.metrics[0])
+	allLogs := observedLogs.All()
+	assert.Len(t, allLogs, 2)
 }
 
 func verifyGaugeConsumer(t *testing.T, errorOnSend bool) {
@@ -162,11 +218,12 @@ func verifyGaugeConsumer(t *testing.T, errorOnSend bool) {
 		},
 	}
 	sender := &mockGaugeSender{errorOnSend: errorOnSend}
-	consumer := newGaugeConsumer(sender)
+	consumer := newGaugeConsumer(sender, nil)
 
 	assert.Equal(t, pdata.MetricDataTypeGauge, consumer.Type())
 	var errs []error
 	consumer.Consume(metric, &errs)
+	consumer.ConsumeInternal(&errs)
 	assert.ElementsMatch(t, expected, sender.metrics)
 	if errorOnSend {
 		assert.Len(t, errs, len(expected))
@@ -279,9 +336,11 @@ func (m *mockGaugeSender) SendMetric(
 }
 
 type mockMetricConsumer struct {
-	typ            pdata.MetricDataType
-	errorOnConsume bool
-	names          []string
+	typ                      pdata.MetricDataType
+	errorOnConsume           bool
+	errorOnConsumeInternal   bool
+	names                    []string
+	consumeInternalCallCount int
 }
 
 func (m *mockMetricConsumer) Type() pdata.MetricDataType {
@@ -291,6 +350,13 @@ func (m *mockMetricConsumer) Type() pdata.MetricDataType {
 func (m *mockMetricConsumer) Consume(metric pdata.Metric, errs *[]error) {
 	m.names = append(m.names, metric.Name())
 	if m.errorOnConsume {
+		*errs = append(*errs, errors.New("error in consume"))
+	}
+}
+
+func (m *mockMetricConsumer) ConsumeInternal(errs *[]error) {
+	m.consumeInternalCallCount++
+	if m.errorOnConsumeInternal {
 		*errs = append(*errs, errors.New("error in consume"))
 	}
 }
