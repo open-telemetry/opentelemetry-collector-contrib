@@ -47,8 +47,8 @@ func TestScrape(t *testing.T) {
 	expectedMetrics, err := unmarshaller.UnmarshalMetrics(expectedFileBytes)
 	require.NoError(t, err)
 
-	aMetricSlice := expectedMetrics.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics()
-	eMetricSlice := actualMetrics.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics()
+	eMetricSlice := expectedMetrics.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics()
+	aMetricSlice := actualMetrics.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics()
 
 	require.NoError(t, compareMetrics(eMetricSlice, aMetricSlice))
 }
@@ -85,20 +85,14 @@ func compareMetrics(expectedAll, actualAll pdata.MetricSlice) error {
 		var actualDataPoints pdata.NumberDataPointSlice
 		var expectedDataPoints pdata.NumberDataPointSlice
 
-		switch actual.DataType() {
-		case pdata.MetricDataTypeGauge:
-			actualDataPoints = actual.Gauge().DataPoints()
-			expectedDataPoints = expected.Gauge().DataPoints()
-		case pdata.MetricDataTypeSum:
-			if actual.Sum().AggregationTemporality() != expected.Sum().AggregationTemporality() {
-				return fmt.Errorf("metric AggregationTemporality does not match expected: %s, actual: %s", expected.Sum().AggregationTemporality(), actual.Sum().AggregationTemporality())
-			}
-			if actual.Sum().IsMonotonic() != expected.Sum().IsMonotonic() {
-				return fmt.Errorf("metric IsMonotonic does not match expected: %t, actual: %t", expected.Sum().IsMonotonic(), actual.Sum().IsMonotonic())
-			}
-			actualDataPoints = actual.Sum().DataPoints()
-			expectedDataPoints = expected.Sum().DataPoints()
+		if actual.Sum().AggregationTemporality() != expected.Sum().AggregationTemporality() {
+			return fmt.Errorf("metric AggregationTemporality does not match expected: %s, actual: %s", expected.Sum().AggregationTemporality(), actual.Sum().AggregationTemporality())
 		}
+		if actual.Sum().IsMonotonic() != expected.Sum().IsMonotonic() {
+			return fmt.Errorf("metric IsMonotonic does not match expected: %t, actual: %t", expected.Sum().IsMonotonic(), actual.Sum().IsMonotonic())
+		}
+		actualDataPoints = actual.Sum().DataPoints()
+		expectedDataPoints = expected.Sum().DataPoints()
 
 		if actualDataPoints.Len() != expectedDataPoints.Len() {
 			return fmt.Errorf("length of datapoints don't match")

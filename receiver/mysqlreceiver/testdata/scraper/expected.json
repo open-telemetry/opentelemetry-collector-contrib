@@ -8,7 +8,7 @@
           },
           "metrics": [
             {
-              "description": "Buffer pool page count",
+              "description": "The number of pages in the InnoDB buffer pool.",
               "sum": {
                 "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                 "isMonotonic": false,
@@ -79,7 +79,7 @@
               "unit": "1"
             },
             {
-              "description": "Buffer pool operation count",
+              "description": "The number of operations on the InnoDB buffer pool.",
               "name": "mysql.buffer_pool_operations",
               "sum": {
                 "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
@@ -160,7 +160,7 @@
               "unit": "1"
             },
             {
-              "description": "Buffer pool size",
+              "description": "The number of bytes in the InnoDB buffer pool.",
               "sum": {
                 "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                 "isMonotonic": false,
@@ -190,7 +190,7 @@
                     "labels": [
                       {
                         "key": "kind",
-                        "value": "size"
+                        "value": "total"
                       }
                     ],
                     "timeUnixNano": "0"
@@ -198,10 +198,10 @@
                 ]
               },
               "name": "mysql.buffer_pool_size",
-              "unit": "1"
+              "unit": "By"
             },
             {
-              "description": "MySQL command count",
+              "description": "The number of times each type of command has been executed.",
               "name": "mysql.commands",
               "sum": {
                 "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
@@ -272,7 +272,7 @@
               "unit": "1"
             },
             {
-              "description": "MySQL handler count",
+              "description": "The number of requests to various MySQL handlers.",
               "name": "mysql.handlers",
               "sum": {
                 "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
@@ -463,7 +463,7 @@
               "unit": "1"
             },
             {
-              "description": "InnoDB doublewrite buffer count",
+              "description": "The number of writes to the InnoDB doublewrite buffer.",
               "name": "mysql.double_writes",
               "sum": {
                 "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
@@ -494,7 +494,7 @@
               "unit": "1"
             },
             {
-              "description": "InndoDB log operation count",
+              "description": "The number of InndoDB log operations.",
               "name": "mysql.log_operations",
               "sum": {
                 "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
@@ -535,7 +535,7 @@
               "unit": "1"
             },
             {
-              "description": "InndoDB operation count",
+              "description": "The number of InndoDB operations.",
               "name": "mysql.operations",
               "sum": {
                 "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
@@ -576,7 +576,7 @@
               "unit": "1"
             },
             {
-              "description": "InndoDB page operation count",
+              "description": "The number of InndoDB page operations.",
               "name": "mysql.page_operations",
               "sum": {
                 "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
@@ -617,7 +617,7 @@
               "unit": "1"
             },
             {
-              "description": "InndoDB row lock count",
+              "description": "The number of InndoDB row locks.",
               "name": "mysql.row_locks",
               "sum": {
                 "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
@@ -648,7 +648,7 @@
               "unit": "1"
             },
             {
-              "description": "InndoDB row operation count",
+              "description": "The number of InndoDB row operations.",
               "name": "mysql.row_operations",
               "sum": {
                 "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
@@ -699,7 +699,7 @@
               "unit": "1"
             },
             {
-              "description": "MySQL lock count",
+              "description": "The number of MySQL locks.",
               "name": "mysql.locks",
               "sum": {
                 "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
@@ -730,7 +730,7 @@
               "unit": "1"
             },
             {
-              "description": "MySQL sort count",
+              "description": "The number of MySQL sorts.",
               "name": "mysql.sorts",
               "sum": {
                 "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
@@ -781,7 +781,7 @@
               "unit": "1"
             },
             {
-              "description": "Thread count",
+              "description": "The state of MySQL threads.",
               "sum": {
                 "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                 "isMonotonic": false,

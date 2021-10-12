@@ -128,19 +128,19 @@ func (m *mySQLScraper) scrape(context.Context) (pdata.ResourceMetricsSlice, erro
 
 	// collect innodb metrics.
 	innodbStats, err := m.client.getInnodbStats()
-	for k, v := range innodbStats {
-		labels := pdata.NewAttributeMap()
-		switch k {
-		case "buffer_pool_size":
-			if f, ok := m.parseFloat(k, v); ok {
-				labels.Insert(metadata.L.BufferPoolSize, pdata.NewAttributeValueString("size"))
-				addToDoubleMetric(bufferPoolSize, labels, f, now)
-			}
-		}
-	}
 	if err != nil {
 		m.logger.Error("Failed to fetch InnoDB stats", zap.Error(err))
-		return pdata.ResourceMetricsSlice{}, err
+	}
+
+	for k, v := range innodbStats {
+		if k != "buffer_pool_size" {
+			continue
+		}
+		labels := pdata.NewAttributeMap()
+		if f, ok := m.parseFloat(k, v); ok {
+			labels.Insert(metadata.L.BufferPoolSize, pdata.NewAttributeValueString("total"))
+			addToDoubleMetric(bufferPoolSize, labels, f, now)
+		}
 	}
 
 	// collect global status metrics.

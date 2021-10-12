@@ -80,6 +80,7 @@ func (r *redisRunnable) Run() error {
 	inf, err := r.redisSvc.info()
 	if err != nil {
 		r.obsrecv.EndMetricsOp(ctx, dataFormat, 0, err)
+		r.logger.Error(err)
 		return nil
 	}
 

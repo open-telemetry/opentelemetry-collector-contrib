@@ -119,7 +119,7 @@ var Metrics = &metricStruct{
 		"mysql.buffer_pool_operations",
 		func(metric pdata.Metric) {
 			metric.SetName("mysql.buffer_pool_operations")
-			metric.SetDescription("Buffer pool operation count")
+			metric.SetDescription("The number of operations on the InnoDB buffer pool.")
 			metric.SetUnit("1")
 			metric.SetDataType(pdata.MetricDataTypeSum)
 			metric.Sum().SetIsMonotonic(true)
@@ -130,7 +130,7 @@ var Metrics = &metricStruct{
 		"mysql.buffer_pool_pages",
 		func(metric pdata.Metric) {
 			metric.SetName("mysql.buffer_pool_pages")
-			metric.SetDescription("Buffer pool page count")
+			metric.SetDescription("The number of pages in the InnoDB buffer pool.")
 			metric.SetUnit("1")
 			metric.SetDataType(pdata.MetricDataTypeSum)
 			metric.Sum().SetIsMonotonic(false)
@@ -141,8 +141,8 @@ var Metrics = &metricStruct{
 		"mysql.buffer_pool_size",
 		func(metric pdata.Metric) {
 			metric.SetName("mysql.buffer_pool_size")
-			metric.SetDescription("Buffer pool size")
-			metric.SetUnit("1")
+			metric.SetDescription("The number of bytes in the InnoDB buffer pool.")
+			metric.SetUnit("By")
 			metric.SetDataType(pdata.MetricDataTypeSum)
 			metric.Sum().SetIsMonotonic(false)
 			metric.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
@@ -152,7 +152,7 @@ var Metrics = &metricStruct{
 		"mysql.commands",
 		func(metric pdata.Metric) {
 			metric.SetName("mysql.commands")
-			metric.SetDescription("MySQL command count")
+			metric.SetDescription("The number of times each type of command has been executed.")
 			metric.SetUnit("1")
 			metric.SetDataType(pdata.MetricDataTypeSum)
 			metric.Sum().SetIsMonotonic(true)
@@ -163,7 +163,7 @@ var Metrics = &metricStruct{
 		"mysql.double_writes",
 		func(metric pdata.Metric) {
 			metric.SetName("mysql.double_writes")
-			metric.SetDescription("InnoDB doublewrite buffer count")
+			metric.SetDescription("The number of writes to the InnoDB doublewrite buffer.")
 			metric.SetUnit("1")
 			metric.SetDataType(pdata.MetricDataTypeSum)
 			metric.Sum().SetIsMonotonic(true)
@@ -174,7 +174,7 @@ var Metrics = &metricStruct{
 		"mysql.handlers",
 		func(metric pdata.Metric) {
 			metric.SetName("mysql.handlers")
-			metric.SetDescription("MySQL handler count")
+			metric.SetDescription("The number of requests to various MySQL handlers.")
 			metric.SetUnit("1")
 			metric.SetDataType(pdata.MetricDataTypeSum)
 			metric.Sum().SetIsMonotonic(true)
@@ -185,7 +185,7 @@ var Metrics = &metricStruct{
 		"mysql.locks",
 		func(metric pdata.Metric) {
 			metric.SetName("mysql.locks")
-			metric.SetDescription("MySQL lock count")
+			metric.SetDescription("The number of MySQL locks.")
 			metric.SetUnit("1")
 			metric.SetDataType(pdata.MetricDataTypeSum)
 			metric.Sum().SetIsMonotonic(true)
@@ -196,7 +196,7 @@ var Metrics = &metricStruct{
 		"mysql.log_operations",
 		func(metric pdata.Metric) {
 			metric.SetName("mysql.log_operations")
-			metric.SetDescription("InndoDB log operation count")
+			metric.SetDescription("The number of InndoDB log operations.")
 			metric.SetUnit("1")
 			metric.SetDataType(pdata.MetricDataTypeSum)
 			metric.Sum().SetIsMonotonic(true)
@@ -207,7 +207,7 @@ var Metrics = &metricStruct{
 		"mysql.operations",
 		func(metric pdata.Metric) {
 			metric.SetName("mysql.operations")
-			metric.SetDescription("InndoDB operation count")
+			metric.SetDescription("The number of InndoDB operations.")
 			metric.SetUnit("1")
 			metric.SetDataType(pdata.MetricDataTypeSum)
 			metric.Sum().SetIsMonotonic(true)
@@ -218,7 +218,7 @@ var Metrics = &metricStruct{
 		"mysql.page_operations",
 		func(metric pdata.Metric) {
 			metric.SetName("mysql.page_operations")
-			metric.SetDescription("InndoDB page operation count")
+			metric.SetDescription("The number of InndoDB page operations.")
 			metric.SetUnit("1")
 			metric.SetDataType(pdata.MetricDataTypeSum)
 			metric.Sum().SetIsMonotonic(true)
@@ -229,7 +229,7 @@ var Metrics = &metricStruct{
 		"mysql.row_locks",
 		func(metric pdata.Metric) {
 			metric.SetName("mysql.row_locks")
-			metric.SetDescription("InndoDB row lock count")
+			metric.SetDescription("The number of InndoDB row locks.")
 			metric.SetUnit("1")
 			metric.SetDataType(pdata.MetricDataTypeSum)
 			metric.Sum().SetIsMonotonic(true)
@@ -240,7 +240,7 @@ var Metrics = &metricStruct{
 		"mysql.row_operations",
 		func(metric pdata.Metric) {
 			metric.SetName("mysql.row_operations")
-			metric.SetDescription("InndoDB row operation count")
+			metric.SetDescription("The number of InndoDB row operations.")
 			metric.SetUnit("1")
 			metric.SetDataType(pdata.MetricDataTypeSum)
 			metric.Sum().SetIsMonotonic(true)
@@ -251,7 +251,7 @@ var Metrics = &metricStruct{
 		"mysql.sorts",
 		func(metric pdata.Metric) {
 			metric.SetName("mysql.sorts")
-			metric.SetDescription("MySQL sort count")
+			metric.SetDescription("The number of MySQL sorts.")
 			metric.SetUnit("1")
 			metric.SetDataType(pdata.MetricDataTypeSum)
 			metric.Sum().SetIsMonotonic(true)
@@ -262,7 +262,7 @@ var Metrics = &metricStruct{
 		"mysql.threads",
 		func(metric pdata.Metric) {
 			metric.SetName("mysql.threads")
-			metric.SetDescription("Thread count")
+			metric.SetDescription("The state of MySQL threads.")
 			metric.SetUnit("1")
 			metric.SetDataType(pdata.MetricDataTypeSum)
 			metric.Sum().SetIsMonotonic(false)
@@ -277,33 +277,33 @@ var M = Metrics
 
 // Labels contains the possible metric labels that can be used.
 var Labels = struct {
-	// BufferPoolOperations (The buffer pool operations types)
+	// BufferPoolOperations (The buffer pool operations types.)
 	BufferPoolOperations string
-	// BufferPoolPages (The buffer pool pages types)
+	// BufferPoolPages (The buffer pool pages types.)
 	BufferPoolPages string
-	// BufferPoolSize (The buffer pool size types)
+	// BufferPoolSize (The buffer pool size types.)
 	BufferPoolSize string
-	// Command (The command types)
+	// Command (The command types.)
 	Command string
-	// DoubleWrites (The doublewrite types)
+	// DoubleWrites (The doublewrite types.)
 	DoubleWrites string
-	// Handler (The handler types)
+	// Handler (The handler types.)
 	Handler string
-	// Locks (The table locks type)
+	// Locks (The table locks type.)
 	Locks string
-	// LogOperations (The log operation types)
+	// LogOperations (The log operation types.)
 	LogOperations string
-	// Operations (The operation types)
+	// Operations (The operation types.)
 	Operations string
-	// PageOperations (The page operation types)
+	// PageOperations (The page operation types.)
 	PageOperations string
-	// RowLocks (The row lock type)
+	// RowLocks (The row lock type.)
 	RowLocks string
-	// RowOperations (The row operation type)
+	// RowOperations (The row operation type.)
 	RowOperations string
-	// Sorts (The sort count type)
+	// Sorts (The sort count type.)
 	Sorts string
-	// Threads (The thread count type)
+	// Threads (The thread count type.)
 	Threads string
 }{
 	"operation",
@@ -366,11 +366,11 @@ var LabelBufferPoolPages = struct {
 var LabelBufferPoolSize = struct {
 	Data  string
 	Dirty string
-	Size  string
+	Total string
 }{
 	"data",
 	"dirty",
-	"size",
+	"total",
 }
 
 // LabelCommand are the possible values that the label "command" can have.
