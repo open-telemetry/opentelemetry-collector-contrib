@@ -71,21 +71,21 @@ type SpanEventFilters struct {
 	Exclude *SpanEventMatchProperties `mapstructure:"exclude"`
 }
 
-// LogMatchType specifies the strategy for matching against `pdata.Log`s.
-type LogMatchType string
+// MatchType specifies the strategy for matching against `pdata.Log`s.
+type MatchType string
 
 // These are the MatchTypes that users can specify for filtering
 // `pdata.Log`s.
 const (
-	Strict = LogMatchType(filterset.Strict)
-	Regexp = LogMatchType(filterset.Regexp)
+	Strict = MatchType(filterset.Strict)
+	Regexp = MatchType(filterset.Regexp)
 )
 
 // LogMatchProperties specifies the set of properties in a log to match against and the
 // type of string pattern matching to use.
 type LogMatchProperties struct {
 	// LogMatchType specifies the type of matching desired
-	LogMatchType LogMatchType `mapstructure:"match_type"`
+	LogMatchType MatchType `mapstructure:"match_type"`
 
 	// ResourceAttributes defines a list of possible resource attributes to match logs against.
 	// A match occurs if any resource attribute matches all expressions in this given list.
@@ -99,9 +99,8 @@ type LogMatchProperties struct {
 // SpanEventMatchProperties specifies the set of properties in a span event to match against and the
 // type of string pattern matching to use.
 type SpanEventMatchProperties struct {
-	// TODO: Rename LogMatchType to MatchType
 	// SpanEventMatchType specifies the type of matching desired
-	SpanEventMatchType LogMatchType `mapstructure:"match_type"`
+	SpanEventMatchType MatchType `mapstructure:"match_type"`
 
 	// RegexpConfig specifies options for the Regexp match type
 	RegexpConfig *regexp.Config `mapstructure:"regexp"`

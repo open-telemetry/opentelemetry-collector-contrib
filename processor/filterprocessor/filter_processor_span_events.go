@@ -16,7 +16,6 @@ package filterprocessor
 
 import (
 	"context"
-	"fmt"
 
 	"go.opentelemetry.io/collector/model/pdata"
 	"go.uber.org/zap"
@@ -133,25 +132,21 @@ func (fsep *filterSpanEventProcessor) ProcessSpanEvents(ctx context.Context, tra
 }
 
 func (fsep *filterSpanEventProcessor) filterByEventAttributes(events pdata.SpanEventSlice) {
-	for i := 0; i < events.Len(); i++ {
-		event := events.At(i)
-
-		events.RemoveIf(func(se pdata.SpanEvent) bool {
-			return fsep.shouldSkipEvent(event)
-		})
-	}
+	events.RemoveIf(func(se pdata.SpanEvent) bool {
+		return fsep.shouldSkipEvent(se)
+	})
 }
 
 // shouldSkipEvent determines if a span event should be processed.
 // True is returned when a span event should be skipped.
 // False is returned when a span event should not be skipped.
 // The logic determining if a span event should be skipped is set in the
-// record attribute configuration.
+// attribute configuration.
 func (fsep *filterSpanEventProcessor) shouldSkipEvent(se pdata.SpanEvent) bool {
 	if fsep.includeAttributes != nil {
+
 		matches := fsep.includeAttributes.Match(se.Attributes())
 		if !matches {
-			fmt.Println("hmm1")
 			return true
 		}
 	}
@@ -164,8 +159,6 @@ func (fsep *filterSpanEventProcessor) shouldSkipEvent(se pdata.SpanEvent) bool {
 			)
 		}
 		if !matches {
-			fmt.Println("hmm2")
-
 			return true
 		}
 	}
@@ -173,22 +166,18 @@ func (fsep *filterSpanEventProcessor) shouldSkipEvent(se pdata.SpanEvent) bool {
 	if fsep.excludeAttributes != nil {
 		matches := fsep.excludeAttributes.Match(se.Attributes())
 		if matches {
-			fmt.Println("hmm3")
-
 			return true
 		}
 	}
 
-	if fsep.nameMatcherInclude != nil {
-		matches, err := fsep.nameMatcherInclude.MatchSpanEventName(se)
+	if fsep.nameMatcherExclude != nil {
+		matches, err := fsep.nameMatcherExclude.MatchSpanEventName(se)
 		if err != nil {
 			fsep.logger.Error(
 				"filterSpanEvent: Error matching exclude names", zap.Error(err),
 			)
 		}
 		if matches {
-			fmt.Println("hmm4")
-
 			return true
 		}
 	}

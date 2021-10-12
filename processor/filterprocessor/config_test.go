@@ -188,6 +188,234 @@ func TestLoadingConfigStrictLogs(t *testing.T) {
 	}
 }
 
+// TestLoadingConfigStrictSpanEvents tests loading testdata/config_span_events_strict.yaml
+func TestLoadingConfigStrictSpanEvents(t *testing.T) {
+
+	testDataSpanEventAttributesInclude := &SpanEventMatchProperties{
+		SpanEventMatchType: Strict,
+		EventAttributes: []filterconfig.Attribute{
+			{
+				Key:   "should_include",
+				Value: "true",
+			},
+		},
+	}
+
+	testDataSpanEventAttributesExclude := &SpanEventMatchProperties{
+		SpanEventMatchType: Strict,
+		EventAttributes: []filterconfig.Attribute{
+			{
+				Key:   "should_exclude",
+				Value: "true",
+			},
+		},
+	}
+
+	testDataSpanEventAttributesIncludeWithNames := &SpanEventMatchProperties{
+		SpanEventMatchType: Strict,
+		EventNames:         []string{"name1", "name2"},
+		EventAttributes: []filterconfig.Attribute{
+			{
+				Key:   "should_include",
+				Value: "true",
+			},
+		},
+	}
+
+	testDataSpanEventAttributesExcludeWithNames := &SpanEventMatchProperties{
+		SpanEventMatchType: Strict,
+		EventNames:         []string{"name3", "name4"},
+		EventAttributes: []filterconfig.Attribute{
+			{
+				Key:   "should_exclude",
+				Value: "true",
+			},
+		},
+	}
+
+	factories, err := componenttest.NopFactories()
+	assert.Nil(t, err)
+
+	factory := NewFactory()
+	factories.Processors[typeStr] = factory
+	cfg, err := configtest.LoadConfigAndValidate(path.Join(".", "testdata", "config_span_events_strict.yaml"), factories)
+
+	assert.Nil(t, err)
+	require.NotNil(t, cfg)
+
+	tests := []struct {
+		filterID config.ComponentID
+		expCfg   *Config
+	}{
+		{
+			filterID: config.NewComponentIDWithName("filter", "empty"),
+			expCfg: &Config{
+				ProcessorSettings: config.NewProcessorSettings(config.NewComponentIDWithName(typeStr, "empty")),
+				SpanEvents: SpanEventFilters{
+					Include: &SpanEventMatchProperties{
+						SpanEventMatchType: Strict,
+					},
+				},
+			},
+		}, {
+			filterID: config.NewComponentIDWithName("filter", "include"),
+			expCfg: &Config{
+				ProcessorSettings: config.NewProcessorSettings(config.NewComponentIDWithName(typeStr, "include")),
+				SpanEvents: SpanEventFilters{
+					Include: testDataSpanEventAttributesInclude,
+				},
+			},
+		}, {
+			filterID: config.NewComponentIDWithName("filter", "exclude"),
+			expCfg: &Config{
+				ProcessorSettings: config.NewProcessorSettings(config.NewComponentIDWithName(typeStr, "exclude")),
+				SpanEvents: SpanEventFilters{
+					Exclude: testDataSpanEventAttributesExclude,
+				},
+			},
+		}, {
+			filterID: config.NewComponentIDWithName("filter", "includeexclude"),
+			expCfg: &Config{
+				ProcessorSettings: config.NewProcessorSettings(config.NewComponentIDWithName(typeStr, "includeexclude")),
+				SpanEvents: SpanEventFilters{
+					Include: testDataSpanEventAttributesInclude,
+					Exclude: testDataSpanEventAttributesExclude,
+				},
+			},
+		}, {
+			filterID: config.NewComponentIDWithName("filter", "includeexcludewithnames"),
+			expCfg: &Config{
+				ProcessorSettings: config.NewProcessorSettings(config.NewComponentIDWithName(typeStr, "includeexcludewithnames")),
+				SpanEvents: SpanEventFilters{
+					Include: testDataSpanEventAttributesIncludeWithNames,
+					Exclude: testDataSpanEventAttributesExcludeWithNames,
+				},
+			},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.filterID.String(), func(t *testing.T) {
+			cfg := cfg.Processors[test.filterID]
+			assert.Equal(t, test.expCfg, cfg)
+		})
+	}
+}
+
+// TestLoadingConfigRegexpSpanEvents tests loading testdata/config_span_events_regexp.yaml
+func TestLoadingConfigRegexpSpanEvents(t *testing.T) {
+
+	testDataSpanEventAttributesInclude := &SpanEventMatchProperties{
+		SpanEventMatchType: Regexp,
+		EventAttributes: []filterconfig.Attribute{
+			{
+				Key:   "should_include",
+				Value: "(true|probably_true)",
+			},
+		},
+	}
+
+	testDataSpanEventAttributesExclude := &SpanEventMatchProperties{
+		SpanEventMatchType: Regexp,
+		EventAttributes: []filterconfig.Attribute{
+			{
+				Key:   "should_exclude",
+				Value: "(probably_false|false)",
+			},
+		},
+	}
+
+	testDataSpanEventAttributesIncludeWithNames := &SpanEventMatchProperties{
+		SpanEventMatchType: Regexp,
+		EventNames:         []string{"(true|probably_true)"},
+		EventAttributes: []filterconfig.Attribute{
+			{
+				Key:   "should_include",
+				Value: "(true|probably_true)",
+			},
+		},
+	}
+
+	testDataSpanEventAttributesExcludeWithNames := &SpanEventMatchProperties{
+		SpanEventMatchType: Regexp,
+		EventNames:         []string{"(probably_false|false)"},
+		EventAttributes: []filterconfig.Attribute{
+			{
+				Key:   "should_exclude",
+				Value: "(probably_false|false)",
+			},
+		},
+	}
+
+	factories, err := componenttest.NopFactories()
+	assert.Nil(t, err)
+
+	factory := NewFactory()
+	factories.Processors[typeStr] = factory
+	cfg, err := configtest.LoadConfigAndValidate(path.Join(".", "testdata", "config_span_events_regexp.yaml"), factories)
+
+	assert.Nil(t, err)
+	require.NotNil(t, cfg)
+
+	tests := []struct {
+		filterID config.ComponentID
+		expCfg   *Config
+	}{
+		{
+			filterID: config.NewComponentIDWithName("filter", "empty"),
+			expCfg: &Config{
+				ProcessorSettings: config.NewProcessorSettings(config.NewComponentIDWithName(typeStr, "empty")),
+				SpanEvents: SpanEventFilters{
+					Include: &SpanEventMatchProperties{
+						SpanEventMatchType: Regexp,
+					},
+				},
+			},
+		}, {
+			filterID: config.NewComponentIDWithName("filter", "include"),
+			expCfg: &Config{
+				ProcessorSettings: config.NewProcessorSettings(config.NewComponentIDWithName(typeStr, "include")),
+				SpanEvents: SpanEventFilters{
+					Include: testDataSpanEventAttributesInclude,
+				},
+			},
+		}, {
+			filterID: config.NewComponentIDWithName("filter", "exclude"),
+			expCfg: &Config{
+				ProcessorSettings: config.NewProcessorSettings(config.NewComponentIDWithName(typeStr, "exclude")),
+				SpanEvents: SpanEventFilters{
+					Exclude: testDataSpanEventAttributesExclude,
+				},
+			},
+		}, {
+			filterID: config.NewComponentIDWithName("filter", "includeexclude"),
+			expCfg: &Config{
+				ProcessorSettings: config.NewProcessorSettings(config.NewComponentIDWithName(typeStr, "includeexclude")),
+				SpanEvents: SpanEventFilters{
+					Include: testDataSpanEventAttributesInclude,
+					Exclude: testDataSpanEventAttributesExclude,
+				},
+			},
+		}, {
+			filterID: config.NewComponentIDWithName("filter", "includeexcludewithnames"),
+			expCfg: &Config{
+				ProcessorSettings: config.NewProcessorSettings(config.NewComponentIDWithName(typeStr, "includeexcludewithnames")),
+				SpanEvents: SpanEventFilters{
+					Include: testDataSpanEventAttributesIncludeWithNames,
+					Exclude: testDataSpanEventAttributesExcludeWithNames,
+				},
+			},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.filterID.String(), func(t *testing.T) {
+			cfg := cfg.Processors[test.filterID]
+			assert.Equal(t, test.expCfg, cfg)
+		})
+	}
+}
+
 // TestLoadingConfigRegexp tests loading testdata/config_regexp.yaml
 func TestLoadingConfigRegexp(t *testing.T) {
 	// list of filters used repeatedly on testdata/config.yaml

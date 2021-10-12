@@ -1,0 +1,66 @@
+receivers:
+    nop:
+
+processors:
+    filter/empty:
+        span_events:
+            include:
+                match_type: regexp
+    filter/include:
+        span_events:
+            # any span events NOT matching filters are excluded from remainder of pipeline
+            include:
+                match_type: regexp
+                event_attributes:
+                    - key: should_include
+                      value: "(true|probably_true)"
+    filter/exclude:
+        span_events:
+            # any span events matching filters are excluded from remainder of pipeline
+            exclude:
+                match_type: regexp
+                event_attributes:
+                    - key: should_exclude
+                      value: "(probably_false|false)"
+    filter/includeexclude:
+        span_events:
+            # if both include and exclude are specified, include filters are applied first
+            # the following configuration would only allow span events with resource attributes
+            # "should_include" to pass through
+            include:
+                match_type: regexp
+                event_attributes:
+                    - key: should_include
+                      value: "(true|probably_true)"
+            exclude:
+                match_type: regexp
+                event_attributes:
+                    - key: should_exclude
+                      value: "(probably_false|false)"
+    filter/includeexcludewithnames:
+        span_events:
+            # if both include and exclude are specified, include filters are applied first
+            # the following configuration would only allow span events with resource attributes
+            # "should_include" to pass through
+            include:
+                match_type: regexp
+                event_attributes:
+                    - key: should_include
+                      value: "(true|probably_true)"
+                event_names: ["(true|probably_true)"]
+            exclude:
+                match_type: regexp
+                event_attributes:
+                    - key: should_exclude
+                      value: "(probably_false|false)"
+                event_names: ["(probably_false|false)"]
+
+exporters:
+    nop:
+
+service:
+    pipelines:
+        traces:
+            receivers: [nop]
+            processors: [filter/empty, filter/include, filter/exclude, filter/includeexclude]
+            exporters: [nop]

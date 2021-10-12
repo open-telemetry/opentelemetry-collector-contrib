@@ -1,0 +1,70 @@
+receivers:
+    nop:
+
+processors:
+    filter/empty:
+        span_events:
+            include:
+                match_type: strict
+    filter/include:
+        span_events:
+            # any span events NOT matching filters are excluded from remainder of pipeline
+            include:
+                match_type: strict
+                event_attributes:
+                    - key: should_include
+                      value: "true"
+    filter/exclude:
+        span_events:
+            # any span events matching filters are excluded from remainder of pipeline
+            exclude:
+                match_type: strict
+                event_attributes:
+                    - key: should_exclude
+                      value: "true"
+    filter/includeexclude:
+        span_events:
+            # if both include and exclude are specified, include filters are applied first
+            # the following configuration would only allow span events with resource attributes
+            # "should_include" to pass through
+            include:
+                match_type: strict
+                event_attributes:
+                    - key: should_include
+                      value: "true"
+            exclude:
+                match_type: strict
+                event_attributes:
+                    - key: should_exclude
+                      value: "true"
+    filter/includeexcludewithnames:
+        span_events:
+            # if both include and exclude are specified, include filters are applied first
+            # the following configuration would only allow span events with resource attributes
+            # "should_include" to pass through
+            include:
+                match_type: strict
+                event_attributes:
+                    - key: should_include
+                      value: "true"
+                event_names: ["name1", "name2"]
+            exclude:
+                match_type: strict
+                event_attributes:
+                    - key: should_exclude
+                      value: "true"
+                event_names: ["name3", "name4"]
+
+exporters:
+    nop:
+
+service:
+    pipelines:
+        traces:
+            receivers: [nop]
+            processors: [filter/empty, filter/include, filter/exclude, filter/includeexclude]
+            exporters: [nop]
+        logs:
+            receivers: [nop]
+            processors: [filter/empty]
+            exporters: [nop]
