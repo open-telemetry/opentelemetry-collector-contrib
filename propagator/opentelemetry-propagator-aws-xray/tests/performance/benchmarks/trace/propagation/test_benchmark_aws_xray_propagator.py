@@ -14,9 +14,12 @@
 
 from requests.structures import CaseInsensitiveDict
 
-from opentelemetry.propagators.aws import TRACE_HEADER_KEY, AwsXRayFormat
+from opentelemetry.propagators.aws.aws_xray_propagator import (
+    TRACE_HEADER_KEY,
+    AwsXRayPropagator,
+)
 
-XRAY_PROPAGATOR = AwsXRayFormat()
+XRAY_PROPAGATOR = AwsXRayPropagator()
 
 
 def test_extract_single_header(benchmark):

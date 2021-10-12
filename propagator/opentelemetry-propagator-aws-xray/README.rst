@@ -41,9 +41,9 @@ Or by setting this propagator in your instrumented application:
 .. code-block:: python
 
     from opentelemetry.propagate import set_global_textmap
-    from opentelemetry.propagators.aws import AwsXRayFormat
+    from opentelemetry.propagators.aws import AwsXRayPropagator
 
-    set_global_textmap(AwsXRayFormat())
+    set_global_textmap(AwsXRayPropagator())
 
 
 References

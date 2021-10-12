@@ -14,6 +14,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   ([#720](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/720))
 - `opentelemetry-instrumentation-sqlalchemy` Respect provided tracer provider when instrumenting SQLAlchemy
   ([#728](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/728))
+- `opentelemetry-propagators-aws-xray` Rename `AwsXRayFormat` to `AwsXRayPropagator`
+  ([#729](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/729))
 
 
 ### Changed

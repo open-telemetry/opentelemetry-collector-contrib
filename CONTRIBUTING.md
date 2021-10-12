@@ -72,7 +72,7 @@ def test_simple_start_span(benchmark):
 Make sure the test file is under the `tests/performance/benchmarks/` folder of
 the package it is benchmarking and further has a path that corresponds to the
 file in the package it is testing. Make sure that the file name begins with
-`test_benchmark_`. (e.g. `sdk-extension/opentelemetry-sdk-extension-aws/tests/performance/benchmarks/trace/propagation/test_benchmark_aws_xray_format.py`)
+`test_benchmark_`. (e.g. `propagator/opentelemetry-propagator-aws-xray/tests/performance/benchmarks/trace/propagation/test_benchmark_aws_xray_propagator.py`)
 
 ## Pull Requests
 
