@@ -10,6 +10,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   ([#667](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/667))
 - `opentelemetry-instrumentation-sqlalchemy` Added `packaging` dependency
   ([#713](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/713))
+- `opentelemetry-sdk-extension-aws` Move AWS X-Ray Propagator into its own `opentelemetry-propagators-aws` package
+  ([#720](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/720))
 
 
 ### Added

@@ -5,8 +5,3 @@ OpenTelemetry Python - AWS SDK Extension
     :members:
     :undoc-members:
     :show-inheritance:
-
-.. automodule:: opentelemetry.sdk.extension.aws.trace.propagation.aws_xray_format
-    :members:
-    :undoc-members:
-    :show-inheritance:

@@ -40,6 +40,13 @@ instr_dirs = [
     if isdir(join(instr, f))
 ]
 
+prop = "../propagator"
+prop_dirs = [
+    os.path.abspath("/".join([prop, f, "src"]))
+    for f in listdir(prop)
+    if isdir(join(prop, f))
+]
+
 sdk_ext = "../sdk-extension"
 sdk_ext_dirs = [
     os.path.abspath("/".join(["../sdk-extension", f, "src"]))
@@ -47,7 +54,7 @@ sdk_ext_dirs = [
     if isdir(join(sdk_ext, f))
 ]
 
-sys.path[:0] = exp_dirs + instr_dirs + sdk_ext_dirs
+sys.path[:0] = exp_dirs + instr_dirs + sdk_ext_dirs + prop_dirs
 
 # -- Project information -----------------------------------------------------
 

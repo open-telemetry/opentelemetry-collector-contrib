@@ -12,26 +12,4 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from requests.structures import CaseInsensitiveDict
-
-from opentelemetry.sdk.extension.aws.trace.propagation.aws_xray_format import (
-    TRACE_HEADER_KEY,
-    AwsXRayFormat,
-)
-
-XRAY_PROPAGATOR = AwsXRayFormat()
-
-
-def test_extract_single_header(benchmark):
-    benchmark(
-        XRAY_PROPAGATOR.extract,
-        {
-            TRACE_HEADER_KEY: "bdb5b63237ed38aea578af665aa5aa60-00000000000000000c32d953d73ad225"
-        },
-    )
-
-
-def test_inject_empty_context(benchmark):
-    benchmark(
-        XRAY_PROPAGATOR.inject, {}, setter=CaseInsensitiveDict.__setitem__
-    )
+__version__ = "1.0.0"

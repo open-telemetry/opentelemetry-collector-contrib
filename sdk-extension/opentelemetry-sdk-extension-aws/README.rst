@@ -43,33 +43,6 @@ Next, use the provided `AwsXRayIdGenerator` to initialize the `TracerProvider`.
     )
 
 
-Usage (AWS X-Ray Propagator)
-----------------------------
-
-**NOTE**: Because the parent context extracted from the `X-Amzn-Trace-Id` header
-assumes the context is _not_ sampled by default, users should make sure to add
-`Sampled=1` to their `X-Amzn-Trace-Id` headers so that the child spans are
-sampled.
-
-Use the provided AWS X-Ray Propagator to inject the necessary context into
-traces sent to external systems.
-
-This can be done by either setting this environment variable:
-
-::
-
-    export OTEL_PROPAGATORS = xray
-
-
-Or by setting this propagator in your instrumented application:
-
-.. code-block:: python
-
-    from opentelemetry.propagate import set_global_textmap
-    from opentelemetry.sdk.extension.aws.trace.propagation.aws_xray_format import AwsXRayFormat
-
-    set_global_textmap(AwsXRayFormat())
-
 Usage (AWS Resource Detectors)
 ------------------------------
 

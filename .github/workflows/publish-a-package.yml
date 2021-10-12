@@ -3,7 +3,7 @@ name: Publish a Package from Tag
 on:
   push:
     tags:
-      - 'opentelemetry-*==1.*'
+      - 'opentelemetry-*==[1-9]*.*'
 
 jobs:
   publish-a-package:
