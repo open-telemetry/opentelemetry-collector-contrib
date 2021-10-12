@@ -172,7 +172,7 @@ func TestExcludedImageProducesNoMetricsIntegration(t *testing.T) {
 	assert.NoError(t, r.Shutdown(ctx))
 }
 
-func TestRemovedContaineRemovesRecordsIntegration(t *testing.T) {
+func TestRemovedContainerRemovesRecordsIntegration(t *testing.T) {
 	params, ctx, cancel := paramsAndContext(t)
 	defer cancel()
 	consumer := new(consumertest.MetricsSink)
