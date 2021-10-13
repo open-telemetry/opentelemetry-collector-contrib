@@ -276,11 +276,19 @@ func WithExtractPodAssociations(podAssociations ...PodAssociationConfig) Option 
 				Name:      association.Name,
 				Sources:   []kube.AssociationSource{},
 			}
-			for _, associationSource := range association.Sources {
+
+			if association.From != "" {
 				assoc.Sources = append(assoc.Sources, kube.AssociationSource{
-					From: associationSource.From,
-					Name: associationSource.Name,
+					From: association.From,
+					Name: association.Name,
 				})
+			} else {
+				for _, associationSource := range association.Sources {
+					assoc.Sources = append(assoc.Sources, kube.AssociationSource{
+						From: associationSource.From,
+						Name: associationSource.Name,
+					})
+				}
 			}
 			associations = append(associations, assoc)
 		}
