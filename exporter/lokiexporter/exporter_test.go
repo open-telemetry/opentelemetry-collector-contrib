@@ -478,7 +478,7 @@ func TestExporter_convertLogToLokiEntry(t *testing.T) {
 	lr.Body().SetStringVal("log message")
 	lr.SetTimestamp(ts)
 
-	entry := convertLogToLokiEntry(lr)
+	entry, _ := convertLogToLokiEntry(lr)
 
 	expEntry := &logproto.Entry{
 		Timestamp: time.Unix(0, int64(lr.Timestamp())),
@@ -575,4 +575,20 @@ func TestExporter_stopAlwaysReturnsNil(t *testing.T) {
 	exp := newExporter(config, zap.NewNop())
 	require.NotNil(t, exp)
 	require.NoError(t, exp.stop(context.Background()))
+}
+
+func TestExporter_convertLogtoJSONEntry(t *testing.T) {
+	ts := pdata.Timestamp(int64(1) * time.Millisecond.Nanoseconds())
+	lr := pdata.NewLogRecord()
+	lr.Body().SetStringVal("log message")
+	lr.SetTimestamp(ts)
+
+	entry, err := convertLogToJSONEntry(lr)
+	expEntry := &logproto.Entry{
+		Timestamp: time.Unix(0, int64(lr.Timestamp())),
+		Line:      `{"body":"log message"}`,
+	}
+	require.Nil(t, err)
+	require.NotNil(t, entry)
+	require.Equal(t, expEntry, entry)
 }

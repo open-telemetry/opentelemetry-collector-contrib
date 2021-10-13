@@ -13,6 +13,10 @@ exporters:
         container.name: "container_name"
         k8s.cluster.name: "k8s_cluster_name"
         severity: "severity"
+  loki/json:
+    endpoint: "https://loki:3100/loki/api/v1/push"
+    tenant_id: "example"
+    format: "json"
   loki/allsettings:
     endpoint: "https://loki:3100/loki/api/v1/push"
     tenant_id: "example"
@@ -48,4 +52,4 @@ service:
     logs:
       receivers: [ nop ]
       processors: [ nop ]
-      exporters: [ loki, loki/allsettings ]
+      exporters: [ loki, loki/allsettings, loki/json ]
