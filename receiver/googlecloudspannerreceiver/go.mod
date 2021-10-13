@@ -14,6 +14,11 @@ require (
 )
 
 require (
+	google.golang.org/genproto v0.0.0-20210917145530-b395a37504d4
+	google.golang.org/grpc v1.41.0
+)
+
+require (
 	cloud.google.com/go v0.94.1 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/fsnotify/fsnotify v1.4.9 // indirect
@@ -44,8 +49,6 @@ require (
 	golang.org/x/text v0.3.6 // indirect
 	golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
-	google.golang.org/genproto v0.0.0-20210917145530-b395a37504d4 // indirect
-	google.golang.org/grpc v1.41.0 // indirect
 	google.golang.org/protobuf v1.27.1 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 )

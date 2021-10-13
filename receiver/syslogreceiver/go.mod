@@ -4,7 +4,7 @@ go 1.17
 
 require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/stanza v0.36.0
-	github.com/open-telemetry/opentelemetry-log-collection v0.21.0
+	github.com/open-telemetry/opentelemetry-log-collection v0.22.0
 	github.com/stretchr/testify v1.7.0
 	go.opentelemetry.io/collector v0.36.1-0.20211004155959-190f8fbb2b9a
 	go.opentelemetry.io/collector/model v0.36.1-0.20211004155959-190f8fbb2b9a
@@ -30,7 +30,6 @@ require (
 	github.com/observiq/go-syslog/v3 v3.0.2 // indirect
 	github.com/pelletier/go-toml v1.9.3 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
-	github.com/rogpeppe/go-internal v1.6.1 // indirect
 	github.com/spf13/cast v1.4.1 // indirect
 	go.opentelemetry.io/otel v1.0.1 // indirect
 	go.opentelemetry.io/otel/metric v0.24.0 // indirect
