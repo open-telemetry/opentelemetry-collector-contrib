@@ -1,0 +1,173 @@
+name: mysqlreceiver
+
+labels:
+  buffer_pool_pages:
+    value: kind
+    description: The buffer pool pages types.
+    enum: [data, dirty, flushed, free, misc, total]
+  buffer_pool_operations:
+    value: operation
+    description: The buffer pool operations types.
+    enum: [read_ahead_rnd, read_ahead, read_ahead_evicted, read_requests, reads, wait_free, write_requests]
+  buffer_pool_size:
+    value: kind
+    description: The buffer pool size types.
+    enum: [data, dirty, total]
+  command:
+    value: command
+    description: The command types.
+    enum: [execute, close, fetch, prepare, reset, send_long_data]
+  handler:
+    value: kind
+    description: The handler types.
+    enum: [commit, delete, discover, external_lock, mrr_init, prepare, read_first, read_key, read_last, read_next, read_prev, read_rnd, read_rnd_next, rollback, savepoint, savepoint_rollback, update, write]
+  double_writes:
+    value: kind
+    description: The doublewrite types.
+    enum: [pages_written, writes]
+  log_operations:
+    value: operation
+    description: The log operation types.
+    enum: [waits, write_requests, writes]
+  operations:
+    value: operation
+    description: The operation types.
+    enum: [fsyncs, reads, writes]
+  page_operations:
+    value: operation
+    description: The page operation types.
+    enum: [created, read, written]
+  row_locks:
+    value: kind
+    description: The row lock type.
+    enum: [waits, time]
+  row_operations:
+    value: operation
+    description: The row operation type.
+    enum: [deleted, inserted, read, updated]
+  locks:
+    value: kind
+    description: The table locks type.
+    enum: [immediate, waited]
+  sorts:
+    value: kind
+    description: The sort count type.
+    enum: [merge_passes, range, rows, scan]
+  threads:
+    value: kind
+    description: The thread count type.
+    enum: [cached, connected, created, running]
+
+metrics:
+  mysql.buffer_pool_pages:
+    description: The number of pages in the InnoDB buffer pool.
+    unit: 1
+    data:
+      type: sum
+      monotonic: false
+      aggregation: cumulative
+    labels: [buffer_pool_pages]
+  mysql.buffer_pool_operations:
+    description: The number of operations on the InnoDB buffer pool.
+    unit: 1
+    data:
+      type: sum
+      monotonic: true
+      aggregation: cumulative
+    labels: [buffer_pool_operations]
+  mysql.buffer_pool_size:
+    description: The number of bytes in the InnoDB buffer pool.
+    unit: By
+    data:
+      type: sum
+      monotonic: false
+      aggregation: cumulative
+    labels: [buffer_pool_size]
+  mysql.commands:
+    description: The number of times each type of command has been executed.
+    unit: 1
+    data:
+      type: sum
+      monotonic: true
+      aggregation: cumulative
+    labels: [command]
+  mysql.handlers:
+    description: The number of requests to various MySQL handlers.
+    unit: 1
+    data:
+      type: sum
+      monotonic: true
+      aggregation: cumulative
+    labels: [handler]
+  mysql.double_writes:
+    description: The number of writes to the InnoDB doublewrite buffer.
+    unit: 1
+    data:
+      type: sum
+      monotonic: true
+      aggregation: cumulative
+    labels: [double_writes]
+  mysql.log_operations:
+    description: The number of InndoDB log operations.
+    unit: 1
+    data:
+      type: sum
+      monotonic: true
+      aggregation: cumulative
+    labels: [log_operations]
+  mysql.operations:
+    description: The number of InndoDB operations.
+    unit: 1
+    data:
+      type: sum
+      monotonic: true
+      aggregation: cumulative
+    labels: [operations]
+  mysql.page_operations:
+    description: The number of InndoDB page operations.
+    unit: 1
+    data:
+      type: sum
+      monotonic: true
+      aggregation: cumulative
+    labels: [page_operations]
+  mysql.row_locks:
+    description: The number of InndoDB row locks.
+    unit: 1
+    data:
+      type: sum
+      monotonic: true
+      aggregation: cumulative
+    labels: [row_locks]
+  mysql.row_operations:
+    description: The number of InndoDB row operations.
+    unit: 1
+    data:
+      type: sum
+      monotonic: true
+      aggregation: cumulative
+    labels: [row_operations]
+  mysql.locks:
+    description: The number of MySQL locks.
+    unit: 1
+    data:
+      type: sum
+      monotonic: true
+      aggregation: cumulative
+    labels: [locks]
+  mysql.sorts:
+    description: The number of MySQL sorts.
+    unit: 1
+    data:
+      type: sum
+      monotonic: true
+      aggregation: cumulative
+    labels: [sorts]
+  mysql.threads:
+    description: The state of MySQL threads.
+    unit: 1
+    data:
+      type: sum
+      monotonic: false
+      aggregation: cumulative
+    labels: [threads]
