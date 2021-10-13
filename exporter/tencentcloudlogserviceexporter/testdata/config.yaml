@@ -1,0 +1,26 @@
+receivers:
+  nop:
+
+processors:
+  nop:
+
+exporters:
+  tencentcloud_logservice:
+    endpoint: "cls.ap-beijing.tencentcloudapi.com"
+  tencentcloud_logservice/2:
+    endpoint: "cls.ap-beijing.tencentcloudapi.com"
+    # LogService's LogSet ID
+    logset: "demo-logset"
+    # LogService's Topic ID
+    topic: "demo-topic"
+    # TencentCloud secret id
+    secret_id: "demo-secret-id"
+    # TencentCloud secret key
+    secret_key: "demo-secret-key"
+
+service:
+  pipelines:
+    traces:
+      receivers: [nop]
+      processors: [nop]
+      exporters: [tencentcloud_logservice, tencentcloud_logservice/2]
