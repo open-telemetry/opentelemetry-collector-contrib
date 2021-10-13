@@ -1,4 +1,4 @@
-FROM alpine:latest as prep 
+FROM alpine:latest as prep
 RUN apk --update add ca-certificates
 
 ARG USER_UID=10001
