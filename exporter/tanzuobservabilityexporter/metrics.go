@@ -19,8 +19,8 @@ import (
 	"errors"
 	"fmt"
 
-	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/model/pdata"
+	"go.uber.org/multierr"
 )
 
 // metricsConsumer instances consume OTEL metrics
@@ -63,7 +63,7 @@ func (c *metricsConsumer) Consume(ctx context.Context, md pdata.Metrics) error {
 				m := ms.At(k)
 				select {
 				case <-ctx.Done():
-					return consumererror.Combine(append(errs, errors.New("context canceled")))
+					return multierr.Combine(append(errs, errors.New("context canceled"))...)
 				default:
 					c.pushSingleMetric(m, &errs)
 				}
@@ -75,7 +75,7 @@ func (c *metricsConsumer) Consume(ctx context.Context, md pdata.Metrics) error {
 			errs = append(errs, err)
 		}
 	}
-	return consumererror.Combine(errs)
+	return multierr.Combine(errs...)
 }
 
 // Close closes this metricsConsumer by calling Close on the sender passed
