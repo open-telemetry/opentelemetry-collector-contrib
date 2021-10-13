@@ -17,6 +17,7 @@ package cloudfoundryreceiver
 import (
 	"context"
 	"fmt"
+	"sync"
 	"time"
 
 	"code.cloudfoundry.org/go-loggregator"
@@ -43,6 +44,7 @@ type cloudFoundryReceiver struct {
 	config            Config
 	nextConsumer      consumer.Metrics
 	obsrecv           *obsreport.Receiver
+	goroutines        sync.WaitGroup
 	receiverStartTime time.Time
 }
 
@@ -68,7 +70,7 @@ func newCloudFoundryReceiver(
 func (cfr *cloudFoundryReceiver) Start(ctx context.Context, host component.Host) error {
 	tokenProvider, tokenErr := newUAATokenProvider(cfr.logger, cfr.config.UAA.HTTPClientSettings, cfr.config.UAA.Username, cfr.config.UAA.Password)
 	if tokenErr != nil {
-		return fmt.Errorf("failed to create cloud foundry UAA token provider: %v", tokenErr)
+		return fmt.Errorf("create cloud foundry UAA token provider: %v", tokenErr)
 	}
 
 	streamFactory, streamErr := newEnvelopeStreamFactory(
@@ -81,7 +83,13 @@ func (cfr *cloudFoundryReceiver) Start(ctx context.Context, host component.Host)
 		return fmt.Errorf("failed to create cloud foundry RLP envelope stream factory: %v", streamErr)
 	}
 
+	innerCtx, cancel := context.WithCancel(ctx)
+	cfr.cancel = cancel
+
+	cfr.goroutines.Add(1)
+
 	go func() {
+		defer cfr.goroutines.Done()
 		cfr.logger.Debug("cloud foundry receiver starting")
 
 		_, tokenErr = tokenProvider.ProvideToken()
@@ -89,9 +97,6 @@ func (cfr *cloudFoundryReceiver) Start(ctx context.Context, host component.Host)
 			host.ReportFatalError(fmt.Errorf("cloud foundry receiver failed to fetch initial token from UAA: %v", tokenErr))
 			return
 		}
-
-		innerCtx, cancel := context.WithCancel(ctx)
-		cfr.cancel = cancel
 
 		envelopeStream, err := streamFactory.CreateStream(innerCtx, cfr.config.RLPGateway.ShardID)
 		if err != nil {
@@ -119,12 +124,7 @@ func (cfr *cloudFoundryReceiver) streamMetrics(
 		contextErr := ctx.Err()
 
 		if contextErr != nil {
-			if contextErr != context.Canceled {
-				cfr.logger.Warn("cloudfoundry metrics streamer stopped with an error", zap.Error(contextErr))
-			} else {
-				cfr.logger.Debug("cloudfoundry metrics streamer stopped gracefully")
-			}
-
+			cfr.logger.Debug("cloudfoundry metrics streamer stopped gracefully")
 			return
 		}
 

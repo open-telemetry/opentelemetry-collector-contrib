@@ -16,11 +16,17 @@ package cloudfoundryreceiver
 
 import (
 	"fmt"
+	"sync"
 	"time"
 
 	"github.com/cloudfoundry-incubator/uaago"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.uber.org/zap"
+)
+
+const (
+	// time added to expiration time to reduce chance of using expired token due to network latency
+	expirationTimeBuffer = -5 * time.Second
 )
 
 type UAATokenProvider struct {
@@ -31,6 +37,7 @@ type UAATokenProvider struct {
 	tlsSkipVerify  bool
 	cachedToken    string
 	expirationTime *time.Time
+	mutex          *sync.Mutex
 }
 
 func newUAATokenProvider(logger *zap.Logger, config confighttp.HTTPClientSettings, username string, password string) (*UAATokenProvider, error) {
@@ -49,10 +56,14 @@ func newUAATokenProvider(logger *zap.Logger, config confighttp.HTTPClientSetting
 		tlsSkipVerify:  config.TLSSetting.InsecureSkipVerify,
 		cachedToken:    "",
 		expirationTime: nil,
+		mutex:          &sync.Mutex{},
 	}, nil
 }
 
 func (utp *UAATokenProvider) ProvideToken() (string, error) {
+	utp.mutex.Lock()
+	defer utp.mutex.Unlock()
+
 	now := time.Now()
 
 	if utp.expirationTime != nil {
@@ -68,11 +79,11 @@ func (utp *UAATokenProvider) ProvideToken() (string, error) {
 
 	token, expiresInSeconds, err := utp.client.GetAuthTokenWithExpiresIn(utp.username, utp.password, utp.tlsSkipVerify)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("get auth token from UAA: %v", err)
 	}
 
 	if expiresInSeconds > 0 {
-		expirationTime := now.Add(time.Duration(int64(expiresInSeconds) * time.Second.Nanoseconds()))
+		expirationTime := now.Add(time.Duration(int64(expiresInSeconds) * time.Second.Nanoseconds())).Add(expirationTimeBuffer)
 		utp.expirationTime = &expirationTime
 		utp.logger.Debug(fmt.Sprintf("received new cloud foundry UAA token which expires in %d seconds", expiresInSeconds))
 	} else {

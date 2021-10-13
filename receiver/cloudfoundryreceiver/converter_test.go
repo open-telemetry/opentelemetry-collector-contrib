@@ -15,6 +15,7 @@
 package cloudfoundryreceiver
 
 import (
+	"github.com/stretchr/testify/require"
 	"testing"
 	"time"
 
@@ -49,7 +50,8 @@ func TestConvertCountEnvelope(t *testing.T) {
 	metricSlice := pdata.NewMetricSlice()
 
 	convertEnvelopeToMetrics(&envelope, metricSlice, before)
-	assert.Equal(t, 1, metricSlice.Len())
+
+	require.Equal(t, 1, metricSlice.Len())
 
 	metric := metricSlice.At(0)
 	assert.Equal(t, "gorouter.bad_gateways", metric.Name())
@@ -121,7 +123,8 @@ func TestConvertGaugeEnvelope(t *testing.T) {
 	metricSlice := pdata.NewMetricSlice()
 
 	convertEnvelopeToMetrics(&envelope, metricSlice, before)
-	assert.Equal(t, 2, metricSlice.Len())
+
+	require.Equal(t, 2, metricSlice.Len())
 
 	metric := metricSlice.At(0)
 	assert.Equal(t, "rep.memory", metric.Name())
@@ -149,7 +152,7 @@ func assertAttributes(t *testing.T, labels pdata.AttributeMap, expected map[stri
 
 	for key, expectedValue := range expected {
 		value, present := labels.Get(key)
-		assert.True(t, present)
-		assert.Equal(t, expectedValue, value.StringVal())
+		assert.True(t, present, "Attribute %s presence", key)
+		assert.Equal(t, expectedValue, value.StringVal(), "Attribute %s value", key)
 	}
 }

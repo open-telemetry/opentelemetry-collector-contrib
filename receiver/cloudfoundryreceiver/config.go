@@ -55,6 +55,10 @@ func (c *Config) Validate() error {
 		return fmt.Errorf("UAA username not specified")
 	}
 
+	if c.UAA.Password == "" {
+		return fmt.Errorf("UAA password not specified")
+	}
+
 	return nil
 }
 

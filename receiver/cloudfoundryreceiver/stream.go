@@ -94,6 +94,7 @@ func (ap *authorizationProvider) Do(request *http.Request) (*http.Response, erro
 		request.Header.Set("Authorization", token)
 	} else {
 		ap.logger.Error("failed to fetch authentication token", zap.Error(err))
+		return nil, fmt.Errorf("failed to obtain authentication token for the request")
 	}
 
 	return ap.client.Do(request)
