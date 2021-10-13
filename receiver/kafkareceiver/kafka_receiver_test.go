@@ -83,7 +83,7 @@ func TestNewTracesReceiver_err_auth_type(t *testing.T) {
 func TestTracesReceiverStart(t *testing.T) {
 	c := kafkaTracesConsumer{
 		nextConsumer:  consumertest.NewNop(),
-		logger:        zap.NewNop(),
+		settings:      componenttest.NewNopReceiverCreateSettings(),
 		consumerGroup: &testConsumerGroup{},
 	}
 
@@ -94,7 +94,7 @@ func TestTracesReceiverStart(t *testing.T) {
 func TestTracesReceiverStartConsume(t *testing.T) {
 	c := kafkaTracesConsumer{
 		nextConsumer:  consumertest.NewNop(),
-		logger:        zap.NewNop(),
+		settings:      componenttest.NewNopReceiverCreateSettings(),
 		consumerGroup: &testConsumerGroup{},
 	}
 	ctx, cancelFunc := context.WithCancel(context.Background())
@@ -109,11 +109,13 @@ func TestTracesReceiverStartConsume(t *testing.T) {
 func TestTracesReceiver_error(t *testing.T) {
 	zcore, logObserver := observer.New(zapcore.ErrorLevel)
 	logger := zap.New(zcore)
+	settings := componenttest.NewNopReceiverCreateSettings()
+	settings.Logger = logger
 
 	expectedErr := errors.New("handler error")
 	c := kafkaTracesConsumer{
 		nextConsumer:  consumertest.NewNop(),
-		logger:        logger,
+		settings:      settings,
 		consumerGroup: &testConsumerGroup{err: expectedErr},
 	}
 
@@ -134,7 +136,7 @@ func TestTracesConsumerGroupHandler(t *testing.T) {
 		logger:       zap.NewNop(),
 		ready:        make(chan bool),
 		nextConsumer: consumertest.NewNop(),
-		obsrecv:      obsreport.NewReceiver(obsreport.ReceiverSettings{}),
+		obsrecv:      obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverCreateSettings: componenttest.NewNopReceiverCreateSettings()}),
 	}
 
 	testSession := testConsumerGroupSession{}
@@ -176,7 +178,7 @@ func TestTracesConsumerGroupHandler_error_unmarshal(t *testing.T) {
 		logger:       zap.NewNop(),
 		ready:        make(chan bool),
 		nextConsumer: consumertest.NewNop(),
-		obsrecv:      obsreport.NewReceiver(obsreport.ReceiverSettings{}),
+		obsrecv:      obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverCreateSettings: componenttest.NewNopReceiverCreateSettings()}),
 	}
 
 	wg := sync.WaitGroup{}
@@ -201,7 +203,7 @@ func TestTracesConsumerGroupHandler_error_nextConsumer(t *testing.T) {
 		logger:       zap.NewNop(),
 		ready:        make(chan bool),
 		nextConsumer: consumertest.NewErr(consumerError),
-		obsrecv:      obsreport.NewReceiver(obsreport.ReceiverSettings{}),
+		obsrecv:      obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverCreateSettings: componenttest.NewNopReceiverCreateSettings()}),
 	}
 
 	wg := sync.WaitGroup{}
@@ -268,7 +270,7 @@ func TestNewMetricsExporter_err_auth_type(t *testing.T) {
 func TestMetricsReceiverStart(t *testing.T) {
 	c := kafkaMetricsConsumer{
 		nextConsumer:  consumertest.NewNop(),
-		logger:        zap.NewNop(),
+		settings:      componenttest.NewNopReceiverCreateSettings(),
 		consumerGroup: &testConsumerGroup{},
 	}
 
@@ -279,7 +281,7 @@ func TestMetricsReceiverStart(t *testing.T) {
 func TestMetricsReceiverStartConsume(t *testing.T) {
 	c := kafkaMetricsConsumer{
 		nextConsumer:  consumertest.NewNop(),
-		logger:        zap.NewNop(),
+		settings:      componenttest.NewNopReceiverCreateSettings(),
 		consumerGroup: &testConsumerGroup{},
 	}
 	ctx, cancelFunc := context.WithCancel(context.Background())
@@ -294,11 +296,13 @@ func TestMetricsReceiverStartConsume(t *testing.T) {
 func TestMetricsReceiver_error(t *testing.T) {
 	zcore, logObserver := observer.New(zapcore.ErrorLevel)
 	logger := zap.New(zcore)
+	settings := componenttest.NewNopReceiverCreateSettings()
+	settings.Logger = logger
 
 	expectedErr := errors.New("handler error")
 	c := kafkaMetricsConsumer{
 		nextConsumer:  consumertest.NewNop(),
-		logger:        logger,
+		settings:      settings,
 		consumerGroup: &testConsumerGroup{err: expectedErr},
 	}
 
@@ -319,7 +323,7 @@ func TestMetricsConsumerGroupHandler(t *testing.T) {
 		logger:       zap.NewNop(),
 		ready:        make(chan bool),
 		nextConsumer: consumertest.NewNop(),
-		obsrecv:      obsreport.NewReceiver(obsreport.ReceiverSettings{}),
+		obsrecv:      obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverCreateSettings: componenttest.NewNopReceiverCreateSettings()}),
 	}
 
 	testSession := testConsumerGroupSession{}
@@ -361,7 +365,7 @@ func TestMetricsConsumerGroupHandler_error_unmarshal(t *testing.T) {
 		logger:       zap.NewNop(),
 		ready:        make(chan bool),
 		nextConsumer: consumertest.NewNop(),
-		obsrecv:      obsreport.NewReceiver(obsreport.ReceiverSettings{}),
+		obsrecv:      obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverCreateSettings: componenttest.NewNopReceiverCreateSettings()}),
 	}
 
 	wg := sync.WaitGroup{}
@@ -386,7 +390,7 @@ func TestMetricsConsumerGroupHandler_error_nextConsumer(t *testing.T) {
 		logger:       zap.NewNop(),
 		ready:        make(chan bool),
 		nextConsumer: consumertest.NewErr(consumerError),
-		obsrecv:      obsreport.NewReceiver(obsreport.ReceiverSettings{}),
+		obsrecv:      obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverCreateSettings: componenttest.NewNopReceiverCreateSettings()}),
 	}
 
 	wg := sync.WaitGroup{}
@@ -452,7 +456,7 @@ func TestNewLogsExporter_err_auth_type(t *testing.T) {
 func TestLogsReceiverStart(t *testing.T) {
 	c := kafkaLogsConsumer{
 		nextConsumer:  consumertest.NewNop(),
-		logger:        zap.NewNop(),
+		settings:      componenttest.NewNopReceiverCreateSettings(),
 		consumerGroup: &testConsumerGroup{},
 	}
 
@@ -463,7 +467,7 @@ func TestLogsReceiverStart(t *testing.T) {
 func TestLogsReceiverStartConsume(t *testing.T) {
 	c := kafkaLogsConsumer{
 		nextConsumer:  consumertest.NewNop(),
-		logger:        zap.NewNop(),
+		settings:      componenttest.NewNopReceiverCreateSettings(),
 		consumerGroup: &testConsumerGroup{},
 	}
 	ctx, cancelFunc := context.WithCancel(context.Background())
@@ -478,11 +482,13 @@ func TestLogsReceiverStartConsume(t *testing.T) {
 func TestLogsReceiver_error(t *testing.T) {
 	zcore, logObserver := observer.New(zapcore.ErrorLevel)
 	logger := zap.New(zcore)
+	settings := componenttest.NewNopReceiverCreateSettings()
+	settings.Logger = logger
 
 	expectedErr := errors.New("handler error")
 	c := kafkaLogsConsumer{
 		nextConsumer:  consumertest.NewNop(),
-		logger:        logger,
+		settings:      settings,
 		consumerGroup: &testConsumerGroup{err: expectedErr},
 	}
 
@@ -503,7 +509,7 @@ func TestLogsConsumerGroupHandler(t *testing.T) {
 		logger:       zap.NewNop(),
 		ready:        make(chan bool),
 		nextConsumer: consumertest.NewNop(),
-		obsrecv:      obsreport.NewReceiver(obsreport.ReceiverSettings{}),
+		obsrecv:      obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverCreateSettings: componenttest.NewNopReceiverCreateSettings()}),
 	}
 
 	testSession := testConsumerGroupSession{}
@@ -545,7 +551,7 @@ func TestLogsConsumerGroupHandler_error_unmarshal(t *testing.T) {
 		logger:       zap.NewNop(),
 		ready:        make(chan bool),
 		nextConsumer: consumertest.NewNop(),
-		obsrecv:      obsreport.NewReceiver(obsreport.ReceiverSettings{}),
+		obsrecv:      obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverCreateSettings: componenttest.NewNopReceiverCreateSettings()}),
 	}
 
 	wg := sync.WaitGroup{}
@@ -570,7 +576,7 @@ func TestLogsConsumerGroupHandler_error_nextConsumer(t *testing.T) {
 		logger:       zap.NewNop(),
 		ready:        make(chan bool),
 		nextConsumer: consumertest.NewErr(consumerError),
-		obsrecv:      obsreport.NewReceiver(obsreport.ReceiverSettings{}),
+		obsrecv:      obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverCreateSettings: componenttest.NewNopReceiverCreateSettings()}),
 	}
 
 	wg := sync.WaitGroup{}
