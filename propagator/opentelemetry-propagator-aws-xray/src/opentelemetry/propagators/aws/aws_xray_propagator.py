@@ -17,9 +17,9 @@ AWS X-Ray Propagator
 --------------------
 
 The **AWS X-Ray Propagator** provides a propagator that when used, adds a `trace
-header`_ to outgoing traces that is compatible with the AWS X-Ray backend service.
-This allows the trace context to be propagated when a trace spans multiple AWS
-services.
+header`_ to outgoing traces that is compatible with the AWS X-Ray backend
+service. This allows the trace context to be propagated when a trace spans
+multiple AWS services.
 
 The same propagator setup is used to extract a context sent by external systems
 so that child span have the correct parent context.
@@ -103,7 +103,8 @@ class AwsParseTraceHeaderError(Exception):
 class AwsXRayPropagator(TextMapPropagator):
     """Propagator for the AWS X-Ray Trace Header propagation protocol.
 
-    See: https://docs.aws.amazon.com/xray/latest/devguide/xray-concepts.html#xray-concepts-tracingheader
+    See:
+    https://docs.aws.amazon.com/xray/latest/devguide/xray-concepts.html#xray-concepts-tracingheader
     """
 
     # AWS
