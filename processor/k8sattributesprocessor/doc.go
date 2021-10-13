@@ -24,7 +24,7 @@
 //  - name - name of the association. Result of association is going to be saved as resource attribute with this name.
 //  - sources - sources of association. It represents list of rules. All rules are going to be executed and concatenated using delimiter.
 //              Metadata are going to be saved in the cache using created key
-//  - delimiter - string wchich is going to be used for sources concatenation
+//  - delimiter - string which is going to be used for sources concatenation
 //
 // Each sources rule is specified as a pair of from (representing the rule type) and name (representing the attribute name if from is set to resource_attribute).
 // Following rule types are available:
