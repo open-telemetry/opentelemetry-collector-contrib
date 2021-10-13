@@ -46,7 +46,7 @@ func (c *Config) Validate() error {
 		return err
 	}
 
-	err = validateURLOption("uaa.endpoint", c.RLPGateway.Endpoint)
+	err = validateURLOption("uaa.endpoint", c.UAA.Endpoint)
 	if err != nil {
 		return err
 	}
