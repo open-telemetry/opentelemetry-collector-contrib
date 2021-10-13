@@ -4,7 +4,7 @@ go 1.17
 
 require (
 	github.com/containerd/containerd v1.5.7 // indirect
-	github.com/docker/docker v20.10.8+incompatible
+	github.com/docker/docker v20.10.9+incompatible
 	github.com/docker/go-connections v0.4.0 // indirect
 	github.com/gobwas/glob v0.2.3
 	github.com/gorilla/mux v1.8.0 // indirect

@@ -47,6 +47,10 @@ func TestDefaultConfig(t *testing.T) {
 			QueueSettings:    exporterhelper.DefaultQueueSettings(),
 			RetrySettings:    exporterhelper.DefaultRetrySettings(),
 			TimeoutSettings:  exporterhelper.DefaultTimeoutSettings(),
+			Encoding: Encoding{
+				Name:        "otlp",
+				Compression: "none",
+			},
 			AWS: AWSConfig{
 				Region: "us-west-2",
 			},
@@ -80,6 +84,10 @@ func TestConfig(t *testing.T) {
 			},
 			TimeoutSettings: exporterhelper.DefaultTimeoutSettings(),
 			QueueSettings:   exporterhelper.DefaultQueueSettings(),
+			Encoding: Encoding{
+				Name:        "otlp-proto",
+				Compression: "none",
+			},
 			AWS: AWSConfig{
 				StreamName:      "test-stream",
 				KinesisEndpoint: "awskinesis.mars-1.aws.galactic",
