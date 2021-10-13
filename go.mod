@@ -75,6 +75,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/influxdbreceiver v0.36.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jaegerreceiver v0.36.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jmxreceiver v0.36.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/journaldreceiver v0.36.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver v0.36.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkametricsreceiver v0.36.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkareceiver v0.36.0
@@ -559,6 +560,8 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/influ
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jaegerreceiver => ./receiver/jaegerreceiver
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jmxreceiver => ./receiver/jmxreceiver
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/journaldreceiver => ./receiver/journaldreceiver
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zookeeperreceiver => ./receiver/zookeeperreceiver
 
