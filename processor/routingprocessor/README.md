@@ -6,8 +6,7 @@ This processor will either read a header from the incoming HTTP request (gRPC or
 
 This processor *does not* let traces to continue through the pipeline and will emit a warning in case other processor(s) are defined after this one. Similarly, exporters defined as part of the pipeline are not authoritative: if you add an exporter to the pipeline, make sure you add it to this processor *as well*, otherwise it won't be used at all. All exporters defined as part of this processor *must also* be defined as part of the pipeline's exporters.
 
-Given that this processor depends on information provided by the client via HTTP headers or resource attributes,
-caution must be taken when processors that aggregate data like `batch` or `groupbytrace` are used as part of the pipeline.
+Given that this processor depends on information provided by the client via HTTP headers or resource attributes, caution must be taken when processors that aggregate data like `batch` or `groupbytrace` are used as part of the pipeline.
 
 The following settings are required:
 
@@ -19,7 +18,7 @@ The following settings are required:
 The following settings can be optionally configured:
 
 - `attribute_source` defines where to look for the attribute in `from_attribute`. The allowed values are:
-  - `context` (the default) - to search the [context][context_docs],
+  - `context` (the default) - to search the [context][context_docs], which includes HTTP headers
   - `resource` - to search the resource attributes.
 - `default_exporters` contains the list of exporters to use when a more specific record can't be found in the routing table.
 
