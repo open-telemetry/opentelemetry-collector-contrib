@@ -256,6 +256,7 @@ func TestPodDelete(t *testing.T) {
 	c.handlePodDelete(&api_v1.Pod{})
 
 	// delete non-existent IP
+	c.deleteQueue = c.deleteQueue[:0]
 	pod := &api_v1.Pod{}
 	pod.Status.PodIP = "9.9.9.9"
 	c.handlePodDelete(pod)
@@ -265,6 +266,7 @@ func TestPodDelete(t *testing.T) {
 	assert.Equal(t, len(c.deleteQueue), 0)
 
 	// delete matching IP with wrong name/different pod
+	c.deleteQueue = c.deleteQueue[:0]
 	pod = &api_v1.Pod{}
 	pod.Status.PodIP = "1.1.1.1"
 	c.handlePodDelete(pod)
@@ -274,19 +276,21 @@ func TestPodDelete(t *testing.T) {
 	assert.Equal(t, len(c.deleteQueue), 0)
 
 	// delete matching IP and name
+	c.deleteQueue = c.deleteQueue[:0]
 	pod = &api_v1.Pod{}
 	pod.Name = "podB"
 	pod.Status.PodIP = "1.1.1.1"
 	tsBeforeDelete := time.Now()
 	c.handlePodDelete(pod)
 	assert.Equal(t, len(c.Pods), 3)
-	assert.Equal(t, len(c.deleteQueue), 1)
+	assert.Equal(t, len(c.deleteQueue), 2)
 	deleteRequest := c.deleteQueue[0]
 	assert.Equal(t, deleteRequest.id, PodIdentifier("1.1.1.1"))
 	assert.Equal(t, deleteRequest.podName, "podB")
 	assert.False(t, deleteRequest.ts.Before(tsBeforeDelete))
 	assert.False(t, deleteRequest.ts.After(time.Now()))
 
+	c.deleteQueue = c.deleteQueue[:0]
 	pod = &api_v1.Pod{}
 	pod.Name = "podC"
 	pod.Status.PodIP = "2.2.2.2"
@@ -294,13 +298,13 @@ func TestPodDelete(t *testing.T) {
 	tsBeforeDelete = time.Now()
 	c.handlePodDelete(pod)
 	assert.Equal(t, len(c.Pods), 3)
-	assert.Equal(t, len(c.deleteQueue), 3)
-	deleteRequest = c.deleteQueue[1]
+	assert.Equal(t, len(c.deleteQueue), 4)
+	deleteRequest = c.deleteQueue[0]
 	assert.Equal(t, deleteRequest.id, PodIdentifier("2.2.2.2"))
 	assert.Equal(t, deleteRequest.podName, "podC")
 	assert.False(t, deleteRequest.ts.Before(tsBeforeDelete))
 	assert.False(t, deleteRequest.ts.After(time.Now()))
-	deleteRequest = c.deleteQueue[2]
+	deleteRequest = c.deleteQueue[1]
 	assert.Equal(t, deleteRequest.id, PodIdentifier("aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"))
 	assert.Equal(t, deleteRequest.podName, "podC")
 	assert.False(t, deleteRequest.ts.Before(tsBeforeDelete))
@@ -337,7 +341,7 @@ func TestDeleteQueue(t *testing.T) {
 	pod.Status.PodIP = "1.1.1.1"
 	c.handlePodDelete(pod)
 	assert.Equal(t, len(c.Pods), 3)
-	assert.Equal(t, len(c.deleteQueue), 1)
+	assert.Equal(t, len(c.deleteQueue), 2)
 }
 
 func TestDeleteLoop(t *testing.T) {
@@ -352,7 +356,7 @@ func TestDeleteLoop(t *testing.T) {
 
 	c.handlePodDelete(pod)
 	assert.Equal(t, len(c.Pods), 1)
-	assert.Equal(t, len(c.deleteQueue), 1)
+	assert.Equal(t, len(c.deleteQueue), 2)
 
 	gracePeriod := time.Millisecond * 500
 	go c.deleteLoop(time.Millisecond, gracePeriod)
@@ -362,7 +366,7 @@ func TestDeleteLoop(t *testing.T) {
 		assert.Equal(t, len(c.Pods), 1)
 		c.m.Unlock()
 		c.deleteMut.Lock()
-		assert.Equal(t, len(c.deleteQueue), 1)
+		assert.Equal(t, len(c.deleteQueue), 2)
 		c.deleteMut.Unlock()
 
 		time.Sleep(gracePeriod + (time.Millisecond * 50))

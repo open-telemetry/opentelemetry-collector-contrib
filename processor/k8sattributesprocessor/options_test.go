@@ -735,6 +735,26 @@ func TestWithExtractPodAssociation(t *testing.T) {
 				},
 			},
 		},
+		{
+			"deprecated",
+			[]PodAssociationConfig{
+				{
+					From: "label",
+					Name: "ip",
+				},
+			},
+			[]kube.Association{
+				{
+					Name: "ip",
+					Sources: []kube.AssociationSource{
+						{
+							From: "label",
+							Name: "ip",
+						},
+					},
+				},
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

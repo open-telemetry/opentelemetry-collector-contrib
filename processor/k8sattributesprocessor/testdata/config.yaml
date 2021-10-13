@@ -70,9 +70,9 @@ processors:
       - sources:
         - from: connection
           name: ip
-      - sources:
-        - from: resource_attribute
-          name: k8s.pod.uid
+      # deprecated way
+      - from: resource_attribute
+        name: k8s.pod.uid
     
     exclude:
       pods:

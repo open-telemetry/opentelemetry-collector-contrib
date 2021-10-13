@@ -429,6 +429,15 @@ func (c *WatchClient) getIdentifiersFromAssoc(newPod *Pod) []PodIdentifier {
 		}
 	}
 
+	// Ensure backward compatibility
+	if newPod.PodUID != "" {
+		ids = append(ids, PodIdentifier(newPod.PodUID))
+	}
+
+	if newPod.Address != "" {
+		ids = append(ids, PodIdentifier(newPod.Address))
+	}
+
 	return ids
 }
 

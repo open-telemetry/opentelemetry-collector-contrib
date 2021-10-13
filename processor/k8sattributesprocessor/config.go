@@ -223,6 +223,12 @@ type PodAssociationConfig struct {
 	// by using Name
 	Delimiter string `mapstructure:"delimiter"`
 
+	// This is deprecated. Sources should be used to provide From and Name
+	// If this is set, From and Name are going to be used as Sources' ones
+	// From represents the source of the association.
+	// Allowed values are "connection" and "labels".
+	From string `mapstructure:"from"`
+
 	// Name where result of association should be put
 	// e.g. ip, pod_uid, k8s.pod.ip
 	Name string `mapstructure:"name"`

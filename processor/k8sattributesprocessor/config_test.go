@@ -115,13 +115,10 @@ func TestLoadConfig(t *testing.T) {
 						},
 					},
 				},
+				// Deprecated way
 				{
-					Sources: []PodAssociationSourceConfig{
-						{
-							From: "resource_attribute",
-							Name: "k8s.pod.uid",
-						},
-					},
+					From: "resource_attribute",
+					Name: "k8s.pod.uid",
 				},
 			},
 			Exclude: ExcludeConfig{
