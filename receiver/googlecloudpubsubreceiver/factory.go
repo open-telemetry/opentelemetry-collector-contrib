@@ -57,8 +57,12 @@ func (factory *PubsubReceiverFactory) ensureReceiver(params component.ReceiverCr
 	}
 	rconfig := config.(*Config)
 	receiver = &pubsubReceiver{
-		logger:    params.Logger,
-		obsrecv:   obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverID: config.ID(), Transport: reportTransport}),
+		logger: params.Logger,
+		obsrecv: obsreport.NewReceiver(obsreport.ReceiverSettings{
+			ReceiverID:             config.ID(),
+			Transport:              reportTransport,
+			ReceiverCreateSettings: params,
+		}),
 		userAgent: strings.ReplaceAll(rconfig.UserAgent, "{{version}}", params.BuildInfo.Version),
 		config:    rconfig,
 	}
