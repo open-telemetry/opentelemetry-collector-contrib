@@ -109,8 +109,8 @@ func TestClientIPDetection(t *testing.T) {
 				ch <- ctx
 			},
 		},
-		grpcObsrecv: obsreport.NewReceiver(obsreport.ReceiverSettings{}),
-		httpObsrecv: obsreport.NewReceiver(obsreport.ReceiverSettings{}),
+		grpcObsrecv: obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverCreateSettings: componenttest.NewNopReceiverCreateSettings()}),
+		httpObsrecv: obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverCreateSettings: componenttest.NewNopReceiverCreateSettings()}),
 	}
 	batch := &jaegerthrift.Batch{
 		Process: jaegerthrift.NewProcess(),
