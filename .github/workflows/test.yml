@@ -6,7 +6,7 @@ on:
     - 'release/*'
   pull_request:
 env:
-  CORE_REPO_SHA: fe47e98afbecfa7a10310e1e64ef1198f916ccbb
+  CORE_REPO_SHA: 025246b8eaa332aa089dff65f35bc868cabf5387
 
 jobs:
   build:
@@ -23,7 +23,7 @@ jobs:
       fail-fast: false  # ensures the entire test matrix is run, even if one permutation fails
       matrix:
         python-version: [ py36, py37, py38, py39, pypy3 ]
-        package: ["instrumentation", "exporter", "sdkextension", "propagator"]
+        package: ["instrumentation", "distro", "exporter", "sdkextension", "propagator"]
         os: [ ubuntu-20.04 ]
     steps:
       - name: Checkout Contrib Repo @ SHA - ${{ github.sha }}

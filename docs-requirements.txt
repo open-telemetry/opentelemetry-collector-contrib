@@ -6,9 +6,9 @@ sphinx-autodoc-typehints
 # doesn't work for pkg_resources.
 -e "git+https://github.com/open-telemetry/opentelemetry-python.git#egg=opentelemetry-api&subdirectory=opentelemetry-api"
 -e "git+https://github.com/open-telemetry/opentelemetry-python.git#egg=opentelemetry-semantic-conventions&subdirectory=opentelemetry-semantic-conventions"
--e "git+https://github.com/open-telemetry/opentelemetry-python.git#egg=opentelemetry-instrumentation&subdirectory=opentelemetry-instrumentation"
 -e "git+https://github.com/open-telemetry/opentelemetry-python.git#egg=opentelemetry-sdk&subdirectory=opentelemetry-sdk"
 -e "git+https://github.com/open-telemetry/opentelemetry-python-contrib.git#egg=opentelemetry-util-http&subdirectory=util/opentelemetry-util-http"
+./opentelemetry-instrumentation
 
 # Required by opentelemetry-instrumentation
 fastapi>=0.65.2
