@@ -68,7 +68,7 @@ func newCloudFoundryReceiver(
 }
 
 func (cfr *cloudFoundryReceiver) Start(ctx context.Context, host component.Host) error {
-	tokenProvider, tokenErr := newUAATokenProvider(cfr.logger, cfr.config.UAA.HTTPClientSettings, cfr.config.UAA.Username, cfr.config.UAA.Password)
+	tokenProvider, tokenErr := newUAATokenProvider(cfr.logger, cfr.config.UAA.LimitedHTTPClientSettings, cfr.config.UAA.Username, cfr.config.UAA.Password)
 	if tokenErr != nil {
 		return fmt.Errorf("create cloud foundry UAA token provider: %v", tokenErr)
 	}
@@ -111,8 +111,8 @@ func (cfr *cloudFoundryReceiver) Start(ctx context.Context, host component.Host)
 }
 
 func (cfr *cloudFoundryReceiver) Shutdown(_ context.Context) error {
-	cfr.goroutines.Wait()
 	cfr.cancel()
+	cfr.goroutines.Wait()
 	return nil
 }
 
@@ -131,7 +131,8 @@ func (cfr *cloudFoundryReceiver) streamMetrics(
 
 		envelopes := stream()
 		if envelopes == nil {
-			if ctx.Err() != context.Canceled {
+			// If context has not been cancelled, then nil means the shutdown was due to an error within stream
+			if ctx.Err() != nil {
 				host.ReportFatalError(fmt.Errorf("RLP gateway streamer shut down"))
 			}
 
@@ -143,8 +144,8 @@ func (cfr *cloudFoundryReceiver) streamMetrics(
 
 		for _, envelope := range envelopes {
 			if envelope != nil {
-				// There is concept of startTime in CF loggregator, and we do not know the uptime of the component from
-				// which the metric originates, so just provide receiver start time as metric start time
+				// There is no concept of startTime in CF loggregator, and we do not know the uptime of the component
+				// from which the metric originates, so just provide receiver start time as metric start time
 				convertEnvelopeToMetrics(envelope, libraryMetrics, cfr.receiverStartTime)
 			}
 		}
