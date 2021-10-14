@@ -3,14 +3,13 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/promet
 go 1.17
 
 require (
-	github.com/hashicorp/go-msgpack v0.5.5 // indirect
 	github.com/kballard/go-shellquote v0.0.0-20180428030007-95032a82bc51
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver v0.36.0
 	github.com/prometheus/common v0.31.1
 	github.com/prometheus/prometheus v1.8.2-0.20210621150501-ff58416a0b02
 	github.com/stretchr/testify v1.7.0
-	go.opentelemetry.io/collector v0.36.1-0.20211004155959-190f8fbb2b9a
-	go.opentelemetry.io/collector/model v0.36.1-0.20211004155959-190f8fbb2b9a
+	go.opentelemetry.io/collector v0.37.0
+	go.opentelemetry.io/collector/model v0.37.0
 	go.uber.org/zap v1.19.1
 )
 
@@ -60,6 +59,7 @@ require (
 	github.com/hashicorp/go-cleanhttp v0.5.2 // indirect
 	github.com/hashicorp/go-hclog v0.16.2 // indirect
 	github.com/hashicorp/go-immutable-radix v1.3.1 // indirect
+	github.com/hashicorp/go-msgpack v0.5.5 // indirect
 	github.com/hashicorp/go-rootcerts v1.0.2 // indirect
 	github.com/hashicorp/golang-lru v0.5.4 // indirect
 	github.com/hashicorp/serf v0.9.5 // indirect

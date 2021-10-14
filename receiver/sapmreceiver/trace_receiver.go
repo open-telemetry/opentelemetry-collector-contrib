@@ -201,6 +201,10 @@ func newReceiver(
 		config:          config,
 		nextConsumer:    nextConsumer,
 		defaultResponse: defaultResponseBytes,
-		obsrecv:         obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverID: config.ID(), Transport: transport}),
+		obsrecv: obsreport.NewReceiver(obsreport.ReceiverSettings{
+			ReceiverID:             config.ID(),
+			Transport:              transport,
+			ReceiverCreateSettings: params,
+		}),
 	}, nil
 }

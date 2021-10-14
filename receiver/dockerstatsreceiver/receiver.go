@@ -41,7 +41,7 @@ const (
 
 type Receiver struct {
 	config            *Config
-	logger            *zap.Logger
+	settings          component.ReceiverCreateSettings
 	nextConsumer      consumer.Metrics
 	client            *docker.Client
 	runner            *interval.Runner
@@ -54,7 +54,7 @@ type Receiver struct {
 
 func NewReceiver(
 	_ context.Context,
-	logger *zap.Logger,
+	set component.ReceiverCreateSettings,
 	config *Config,
 	nextConsumer consumer.Metrics,
 ) (component.MetricsReceiver, error) {
@@ -71,9 +71,13 @@ func NewReceiver(
 	receiver := Receiver{
 		config:       config,
 		nextConsumer: nextConsumer,
-		logger:       logger,
+		settings:     set,
 		transport:    parsed.Scheme,
-		obsrecv:      obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverID: config.ID(), Transport: parsed.Scheme}),
+		obsrecv: obsreport.NewReceiver(obsreport.ReceiverSettings{
+			ReceiverID:             config.ID(),
+			Transport:              parsed.Scheme,
+			ReceiverCreateSettings: set,
+		}),
 	}
 
 	return &receiver, nil
@@ -85,7 +89,7 @@ func (r *Receiver) Start(ctx context.Context, host component.Host) error {
 		return err
 	}
 
-	r.client, err = docker.NewDockerClient(dConfig, r.logger)
+	r.client, err = docker.NewDockerClient(dConfig, r.settings.Logger)
 	if err != nil {
 		return err
 	}
@@ -147,7 +151,7 @@ func (r *Receiver) Run() error {
 
 			md, err := ContainerStatsToMetrics(pdata.NewTimestampFromTime(time.Now()), statsJSON, c, r.config)
 			if err != nil {
-				r.logger.Error(
+				r.settings.Logger.Error(
 					"Could not convert docker containerStats for container id",
 					zap.String("id", c.ID),
 					zap.Error(err),

@@ -29,7 +29,6 @@ import (
 	"go.opentelemetry.io/collector/obsreport/obsreporttest"
 	"go.opentelemetry.io/otel"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
-	"go.opentelemetry.io/otel/sdk/trace/tracetest"
 	"go.opentelemetry.io/otel/trace"
 )
 
@@ -45,7 +44,7 @@ func TestEnsureRecordedMetrics(t *testing.T) {
 	require.NoError(t, err)
 	defer tt.Shutdown(context.Background())
 
-	addr, doneReceiverFn := ocReceiverOnGRPCServer(t, consumertest.NewNop())
+	addr, doneReceiverFn := ocReceiverOnGRPCServer(t, consumertest.NewNop(), tt.ToReceiverCreateSettings())
 	defer doneReceiverFn()
 
 	n := 20
@@ -67,7 +66,7 @@ func TestEnsureRecordedMetrics_zeroLengthSpansSender(t *testing.T) {
 	require.NoError(t, err)
 	defer tt.Shutdown(context.Background())
 
-	port, doneFn := ocReceiverOnGRPCServer(t, consumertest.NewNop())
+	port, doneFn := ocReceiverOnGRPCServer(t, consumertest.NewNop(), tt.ToReceiverCreateSettings())
 	defer doneFn()
 
 	n := 20
@@ -84,12 +83,14 @@ func TestEnsureRecordedMetrics_zeroLengthSpansSender(t *testing.T) {
 }
 
 func TestExportSpanLinkingMaintainsParentLink(t *testing.T) {
-	sr := new(tracetest.SpanRecorder)
-	tp := sdktrace.NewTracerProvider(sdktrace.WithSpanProcessor(sr))
-	otel.SetTracerProvider(tp)
+	tt, err := obsreporttest.SetupTelemetry()
+	require.NoError(t, err)
+	defer tt.Shutdown(context.Background())
+
+	otel.SetTracerProvider(tt.TracerProvider)
 	defer otel.SetTracerProvider(trace.NewNoopTracerProvider())
 
-	port, doneFn := ocReceiverOnGRPCServer(t, consumertest.NewNop())
+	port, doneFn := ocReceiverOnGRPCServer(t, consumertest.NewNop(), tt.ToReceiverCreateSettings())
 	defer doneFn()
 
 	traceSvcClient, traceSvcDoneFn, err := makeTraceServiceClient(port)
@@ -105,7 +106,7 @@ func TestExportSpanLinkingMaintainsParentLink(t *testing.T) {
 	flush(traceSvcDoneFn)
 
 	// Inspection time!
-	gotSpanData := sr.Ended()
+	gotSpanData := tt.SpanRecorder.Ended()
 	assert.Equal(t, n+1, len(gotSpanData))
 
 	receiverSpanData := gotSpanData[0]

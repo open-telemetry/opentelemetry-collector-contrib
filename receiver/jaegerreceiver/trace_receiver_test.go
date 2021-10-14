@@ -109,8 +109,8 @@ func TestClientIPDetection(t *testing.T) {
 				ch <- ctx
 			},
 		},
-		grpcObsrecv: obsreport.NewReceiver(obsreport.ReceiverSettings{}),
-		httpObsrecv: obsreport.NewReceiver(obsreport.ReceiverSettings{}),
+		grpcObsrecv: obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverCreateSettings: componenttest.NewNopReceiverCreateSettings()}),
+		httpObsrecv: obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverCreateSettings: componenttest.NewNopReceiverCreateSettings()}),
 	}
 	batch := &jaegerthrift.Batch{
 		Process: jaegerthrift.NewProcess(),
@@ -510,7 +510,7 @@ func TestSamplingStrategiesMutualTLS(t *testing.T) {
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.RemoteSampling = &RemoteSamplingConfig{
 		GRPCClientSettings: configgrpc.GRPCClientSettings{
-			TLSSetting: &configtls.TLSClientSetting{
+			TLSSetting: configtls.TLSClientSetting{
 				TLSSetting: configtls.TLSSetting{
 					CAFile:   caPath,
 					CertFile: clientCertPath,

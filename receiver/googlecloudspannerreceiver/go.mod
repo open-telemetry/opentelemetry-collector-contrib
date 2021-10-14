@@ -5,8 +5,8 @@ go 1.17
 require (
 	cloud.google.com/go/spanner v1.25.0
 	github.com/stretchr/testify v1.7.0
-	go.opentelemetry.io/collector v0.36.1-0.20211004155959-190f8fbb2b9a
-	go.opentelemetry.io/collector/model v0.36.1-0.20211004155959-190f8fbb2b9a
+	go.opentelemetry.io/collector v0.37.0
+	go.opentelemetry.io/collector/model v0.37.0
 	go.uber.org/zap v1.19.1
 	google.golang.org/api v0.58.0
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b
