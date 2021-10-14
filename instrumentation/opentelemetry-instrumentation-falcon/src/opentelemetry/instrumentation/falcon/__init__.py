@@ -291,7 +291,6 @@ class _TraceMiddleware:
                     reason = "NotFound"
                 else:
                     status = "500"
-                    reason = "{}: {}".format(exc_type.__name__, exc)
                     reason = f"{exc_type.__name__}: {exc}"
 
         status = status.split(" ")[0]

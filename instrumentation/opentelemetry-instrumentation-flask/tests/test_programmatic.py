@@ -153,19 +153,11 @@ class TestProgrammatic(InstrumentationTest, TestBase, WsgiTestBase):
 
         set_global_response_propagator(TraceResponsePropagator())
         response = self.client.get("/hello/123")
-        headers = response.headers
-
         span_list = self.memory_exporter.get_finished_spans()
         self.assertEqual(len(span_list), 1)
-        span = span_list[0]
 
-        self.assertIn("traceresponse", headers)
-        self.assertEqual(
-            headers["access-control-expose-headers"], "traceresponse",
-        )
-        self.assertEqual(
-            headers["traceresponse"],
-            f"00-{trace.format_trace_id(span.get_span_context().trace_id)}-{trace.format_span_id(span.get_span_context().span_id)}-01",
+        self.assertTraceResponseHeaderMatchesSpan(
+            response.headers, span_list[0],
         )
 
         set_global_response_propagator(orig)

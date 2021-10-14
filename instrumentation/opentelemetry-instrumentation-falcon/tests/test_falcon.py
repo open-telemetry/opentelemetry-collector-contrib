@@ -25,7 +25,8 @@ from opentelemetry.instrumentation.propagators import (
 from opentelemetry.sdk.resources import Resource
 from opentelemetry.semconv.trace import SpanAttributes
 from opentelemetry.test.test_base import TestBase
-from opentelemetry.trace import StatusCode, format_span_id, format_trace_id
+from opentelemetry.test.wsgitestutil import WsgiTestBase
+from opentelemetry.trace import StatusCode
 
 from .app import make_app
 
@@ -58,7 +59,7 @@ class TestFalconBase(TestBase):
         self.env_patch.stop()
 
 
-class TestFalconInstrumentation(TestFalconBase):
+class TestFalconInstrumentation(TestFalconBase, WsgiTestBase):
     def test_get(self):
         self._test_method("GET")
 
@@ -198,16 +199,8 @@ class TestFalconInstrumentation(TestFalconBase):
         set_global_response_propagator(TraceResponsePropagator())
 
         response = self.client().simulate_get(path="/hello?q=abc")
-        headers = response.headers
-        span = self.memory_exporter.get_finished_spans()[0]
-
-        self.assertIn("traceresponse", headers)
-        self.assertEqual(
-            headers["access-control-expose-headers"], "traceresponse",
-        )
-        self.assertEqual(
-            headers["traceresponse"],
-            f"00-{format_trace_id(span.get_span_context().trace_id)}-{format_span_id(span.get_span_context().span_id)}-01",
+        self.assertTraceResponseHeaderMatchesSpan(
+            response.headers, self.memory_exporter.get_finished_spans()[0]
         )
 
         set_global_response_propagator(orig)

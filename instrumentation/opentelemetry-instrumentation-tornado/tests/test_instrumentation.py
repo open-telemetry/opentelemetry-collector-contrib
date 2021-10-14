@@ -30,6 +30,7 @@ from opentelemetry.instrumentation.tornado import (
 )
 from opentelemetry.semconv.trace import SpanAttributes
 from opentelemetry.test.test_base import TestBase
+from opentelemetry.test.wsgitestutil import WsgiTestBase
 from opentelemetry.trace import SpanKind
 from opentelemetry.util.http import get_excluded_urls, get_traced_request_attrs
 
@@ -110,7 +111,7 @@ class TestTornadoInstrumentor(TornadoTest):
         unpatch_handler_class(AsyncHandler)
 
 
-class TestTornadoInstrumentation(TornadoTest):
+class TestTornadoInstrumentation(TornadoTest, WsgiTestBase):
     def test_http_calls(self):
         methods = ["GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"]
         for method in methods:
@@ -446,20 +447,10 @@ class TestTornadoInstrumentation(TornadoTest):
         set_global_response_propagator(TraceResponsePropagator())
 
         response = self.fetch("/")
-        headers = response.headers
 
         spans = self.sorted_spans(self.memory_exporter.get_finished_spans())
         self.assertEqual(len(spans), 3)
-        server_span = spans[1]
-
-        self.assertIn("traceresponse", headers)
-        self.assertEqual(
-            headers["access-control-expose-headers"], "traceresponse",
-        )
-        self.assertEqual(
-            headers["traceresponse"],
-            f"00-{trace.format_trace_id(server_span.get_span_context().trace_id)}-{trace.format_span_id(server_span.get_span_context().span_id)}-01",
-        )
+        self.assertTraceResponseHeaderMatchesSpan(response.headers, spans[1])
 
         self.memory_exporter.clear()
         set_global_response_propagator(orig)
