@@ -46,31 +46,6 @@ func TestCreateTracesExporter(t *testing.T) {
 		mustFailOnStart  bool
 	}{
 		{
-			name: "NoEndpoint",
-			config: Config{
-				ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
-				GRPCClientSettings: configgrpc.GRPCClientSettings{
-					Endpoint: "",
-				},
-				NumStreams: 3,
-			},
-			mustFailOnCreate: true,
-		},
-		{
-			name: "ZeroNumStreams",
-			config: Config{
-				ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
-				GRPCClientSettings: configgrpc.GRPCClientSettings{
-					Endpoint: endpoint,
-					TLSSetting: &configtls.TLSClientSetting{
-						Insecure: false,
-					},
-				},
-				NumStreams: 0,
-			},
-			mustFailOnCreate: true,
-		},
-		{
 			name: "UseSecure",
 			config: Config{
 				ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),

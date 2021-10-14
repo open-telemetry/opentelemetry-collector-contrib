@@ -45,13 +45,6 @@ type swExporter struct {
 }
 
 func newSwExporter(_ context.Context, cfg *Config) (*swExporter, error) {
-	if cfg.Endpoint == "" {
-		return nil, errors.New("Skywalking exporter cfg requires an Endpoint")
-	}
-
-	if cfg.NumStreams <= 0 {
-		return nil, errors.New("Skywalking exporter cfg requires at least one stream")
-	}
 
 	oce := &swExporter{
 		cfg:      cfg,
@@ -110,8 +103,7 @@ func (oce *swExporter) pushLogs(_ context.Context, td pdata.Logs) error {
 	// Get first available log Client.
 	tClient, ok := <-oce.logsClients
 	if !ok {
-		err := errors.New("failed to push logs, Skywalking exporter was already stopped")
-		return err
+		return errors.New("failed to push logs, Skywalking exporter was already stopped")
 	}
 
 	if tClient == nil {
