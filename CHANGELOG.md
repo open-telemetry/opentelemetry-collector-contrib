@@ -20,7 +20,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   ([#728](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/728))
 - `opentelemetry-propagators-aws-xray` Rename `AwsXRayFormat` to `AwsXRayPropagator`
   ([#729](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/729))
-
+- `opentelemetry-instrumentation-flask` Fix `RuntimeError: Working outside of request context`
+  ([#734](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/734))
 
 ### Changed
 - `opentelemetry-instrumentation-jinja2` Allow instrumentation of newer Jinja2 versions.

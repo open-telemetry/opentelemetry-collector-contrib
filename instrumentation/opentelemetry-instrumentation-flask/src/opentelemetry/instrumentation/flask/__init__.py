@@ -94,8 +94,9 @@ def _rewrapped_app(wsgi_app, response_hook=None, excluded_urls=None):
         wrapped_app_environ[_ENVIRON_STARTTIME_KEY] = _time_ns()
 
         def _start_response(status, response_headers, *args, **kwargs):
-            if excluded_urls is None or not excluded_urls.url_disabled(
-                flask.request.url
+            if flask.request and (
+                excluded_urls is None
+                or not excluded_urls.url_disabled(flask.request.url)
             ):
                 span = flask.request.environ.get(_ENVIRON_SPAN_KEY)
 
