@@ -19,6 +19,7 @@ import (
 	"fmt"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/consumer"
 
@@ -55,7 +56,7 @@ func (cr *CarbonDataReceiver) Start(_ consumer.Traces, mc consumer.Metrics, _ co
 		},
 	}
 	var err error
-	cr.receiver, err = carbonreceiver.New(component.ReceiverCreateSettings{}, config, mc)
+	cr.receiver, err = carbonreceiver.New(componenttest.NewNopReceiverCreateSettings(), config, mc)
 	if err != nil {
 		return err
 	}
