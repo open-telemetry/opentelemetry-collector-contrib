@@ -73,7 +73,7 @@ var (
 
 // splunkReceiver implements the component.MetricsReceiver for Splunk HEC metric protocol.
 type splunkReceiver struct {
-	settings        component.TelemetrySettings
+	settings        component.ReceiverCreateSettings
 	config          *Config
 	logsConsumer    consumer.Logs
 	metricsConsumer consumer.Metrics
@@ -86,7 +86,7 @@ var _ component.MetricsReceiver = (*splunkReceiver)(nil)
 
 // newMetricsReceiver creates the Splunk HEC receiver with the given configuration.
 func newMetricsReceiver(
-	settings component.TelemetrySettings,
+	settings component.ReceiverCreateSettings,
 	config Config,
 	nextConsumer consumer.Metrics,
 ) (component.MetricsReceiver, error) {
@@ -114,7 +114,11 @@ func newMetricsReceiver(
 			ReadHeaderTimeout: defaultServerTimeout,
 			WriteTimeout:      defaultServerTimeout,
 		},
-		obsrecv:        obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverID: config.ID(), Transport: transport}),
+		obsrecv: obsreport.NewReceiver(obsreport.ReceiverSettings{
+			ReceiverID:             config.ID(),
+			Transport:              transport,
+			ReceiverCreateSettings: settings,
+		}),
 		gzipReaderPool: &sync.Pool{New: func() interface{} { return new(gzip.Reader) }},
 	}
 
@@ -123,7 +127,7 @@ func newMetricsReceiver(
 
 // newLogsReceiver creates the Splunk HEC receiver with the given configuration.
 func newLogsReceiver(
-	settings component.TelemetrySettings,
+	settings component.ReceiverCreateSettings,
 	config Config,
 	nextConsumer consumer.Logs,
 ) (component.LogsReceiver, error) {
@@ -151,7 +155,11 @@ func newLogsReceiver(
 			WriteTimeout:      defaultServerTimeout,
 		},
 		gzipReaderPool: &sync.Pool{New: func() interface{} { return new(gzip.Reader) }},
-		obsrecv:        obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverID: config.ID(), Transport: transport}),
+		obsrecv: obsreport.NewReceiver(obsreport.ReceiverSettings{
+			ReceiverID:             config.ID(),
+			Transport:              transport,
+			ReceiverCreateSettings: settings,
+		}),
 	}
 
 	return r, nil
@@ -174,7 +182,7 @@ func (r *splunkReceiver) Start(_ context.Context, host component.Host) error {
 	}
 	mx.NewRoute().HandlerFunc(r.handleReq)
 
-	r.server = r.config.HTTPServerSettings.ToServer(mx, r.settings)
+	r.server = r.config.HTTPServerSettings.ToServer(mx, r.settings.TelemetrySettings)
 
 	// TODO: Evaluate what properties should be configurable, for now
 	//		set some hard-coded values.
