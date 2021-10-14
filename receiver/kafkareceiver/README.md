@@ -61,7 +61,7 @@ The following settings can be optionally configured:
 - `message_marking`:
   - `after`: (default =  false)  If true, the messages are marked after the pipeline execution
   - `on_error`: (default = false) If false, only the successfully processed messages are marked
-     **Note: this can block the entire partition in case a message precessing returns a permanent error**
+     **Note: this can block the entire partition in case a message processing returns a permanent error**
 
 Example:
 
