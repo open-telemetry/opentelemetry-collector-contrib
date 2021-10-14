@@ -20,7 +20,7 @@ import (
 	"fmt"
 	"net"
 	"strconv"
-        "strings"
+    "strings"
 	"time"
 
 	zipkinmodel "github.com/openzipkin/zipkin-go/model"
