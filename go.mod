@@ -36,6 +36,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sumologicexporter v0.36.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/tanzuobservabilityexporter v0.36.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/zipkinexporter v0.36.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/extension/awsxrayproxy v0.36.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/bearertokenauthextension v0.36.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/fluentbitextension v0.36.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckextension v0.36.0
@@ -472,6 +473,8 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/tanzu
 replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticexporter => ./exporter/elasticexporter
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/zipkinexporter => ./exporter/zipkinexporter
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/awsxrayproxy => ./extension/awsxrayproxy
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/bearertokenauthextension => ./extension/bearertokenauthextension
 
