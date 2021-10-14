@@ -101,8 +101,12 @@ processors:
         value: 2245
       - key: account_password
         action: delete
+      - pattern: ^k8s\..*
+        action: delete
       - key: account_email
         action: hash
+      - pattern: ^secret\..*
+        action: delete
 
 ```
 

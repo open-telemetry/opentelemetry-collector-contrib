@@ -22,6 +22,8 @@ processors:
       action: insert
     - key: redundant-attribute
       action: delete
+    - pattern: ^k8s\.pod\..*
+      action: delete
 ```
 
 Refer to [config.yaml](./testdata/config.yaml) for detailed
