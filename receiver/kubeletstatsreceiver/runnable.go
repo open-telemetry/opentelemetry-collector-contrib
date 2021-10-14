@@ -18,6 +18,7 @@ import (
 	"context"
 	"fmt"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/obsreport"
@@ -53,19 +54,23 @@ func newRunnable(
 	ctx context.Context,
 	consumer consumer.Metrics,
 	restClient kubelet.RestClient,
-	logger *zap.Logger,
+	set component.ReceiverCreateSettings,
 	rOptions *receiverOptions,
 ) *runnable {
 	return &runnable{
 		ctx:                   ctx,
 		consumer:              consumer,
 		restClient:            restClient,
-		logger:                logger,
+		logger:                set.Logger,
 		extraMetadataLabels:   rOptions.extraMetadataLabels,
 		metricGroupsToCollect: rOptions.metricGroupsToCollect,
 		k8sAPIClient:          rOptions.k8sAPIClient,
 		cachedVolumeLabels:    make(map[string]map[string]string),
-		obsrecv:               obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverID: rOptions.id, Transport: transport}),
+		obsrecv: obsreport.NewReceiver(obsreport.ReceiverSettings{
+			ReceiverID:             rOptions.id,
+			Transport:              transport,
+			ReceiverCreateSettings: set,
+		}),
 	}
 }
 

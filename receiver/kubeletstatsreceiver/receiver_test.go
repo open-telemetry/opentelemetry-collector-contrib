@@ -21,7 +21,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.uber.org/zap"
 )
 
 func TestMetricsReceiver(t *testing.T) {
@@ -31,7 +30,7 @@ func TestMetricsReceiver(t *testing.T) {
 	require.NoError(t, err)
 
 	metricsReceiver := newReceiver(
-		o, zap.NewNop(), &fakeRestClient{},
+		o, componenttest.NewNopReceiverCreateSettings(), &fakeRestClient{},
 		consumertest.NewNop(),
 	)
 	ctx := context.Background()

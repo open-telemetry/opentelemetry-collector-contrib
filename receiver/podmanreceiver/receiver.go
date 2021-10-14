@@ -50,7 +50,7 @@ type receiver struct {
 
 func newReceiver(
 	_ context.Context,
-	logger *zap.Logger,
+	set component.ReceiverCreateSettings,
 	config *Config,
 	nextConsumer consumer.Metrics,
 	clientFactory clientFactory,
@@ -73,8 +73,12 @@ func newReceiver(
 		config:        config,
 		nextConsumer:  nextConsumer,
 		clientFactory: clientFactory,
-		logger:        logger,
-		obsrecv:       obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverID: config.ID(), Transport: parsed.Scheme}),
+		logger:        set.Logger,
+		obsrecv: obsreport.NewReceiver(obsreport.ReceiverSettings{
+			ReceiverID:             config.ID(),
+			Transport:              parsed.Scheme,
+			ReceiverCreateSettings: set,
+		}),
 	}, nil
 }
 

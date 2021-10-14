@@ -76,7 +76,7 @@ func createMetricsReceiver(
 		return nil, err
 	}
 
-	return newReceiver(rOptions, params.Logger, rest, consumer), nil
+	return newReceiver(rOptions, params, rest, consumer), nil
 }
 
 func restClient(logger *zap.Logger, cfg *Config) (kubelet.RestClient, error) {

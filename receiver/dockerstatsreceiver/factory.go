@@ -53,7 +53,7 @@ func createMetricsReceiver(
 ) (component.MetricsReceiver, error) {
 	dockerConfig := config.(*Config)
 
-	dsr, err := NewReceiver(ctx, params.Logger, dockerConfig, consumer)
+	dsr, err := NewReceiver(ctx, params, dockerConfig, consumer)
 	if err != nil {
 		return nil, err
 	}

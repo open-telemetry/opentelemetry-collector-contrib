@@ -23,9 +23,9 @@ import (
 	"github.com/prometheus/prometheus/pkg/labels"
 	"github.com/prometheus/prometheus/scrape"
 	"github.com/prometheus/prometheus/storage"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
-	"go.uber.org/zap"
 )
 
 const (
@@ -50,14 +50,14 @@ type OcaStore struct {
 	receiverID           config.ComponentID
 	externalLabels       labels.Labels
 
-	logger *zap.Logger
+	settings component.ReceiverCreateSettings
 }
 
 // NewOcaStore returns an ocaStore instance, which can be acted as prometheus' scrape.Appendable
 func NewOcaStore(
 	ctx context.Context,
 	sink consumer.Metrics,
-	logger *zap.Logger,
+	set component.ReceiverCreateSettings,
 	jobsMap *JobsMap,
 	useStartTimeMetric bool,
 	startTimeMetricRegex string,
@@ -67,7 +67,7 @@ func NewOcaStore(
 		running:              runningStateInit,
 		ctx:                  ctx,
 		sink:                 sink,
-		logger:               logger,
+		settings:             set,
 		jobsMap:              jobsMap,
 		useStartTimeMetric:   useStartTimeMetric,
 		startTimeMetricRegex: startTimeMetricRegex,
@@ -96,7 +96,7 @@ func (o *OcaStore) Appender(context.Context) storage.Appender {
 			o.mc,
 			o.sink,
 			o.externalLabels,
-			o.logger,
+			o.settings,
 		)
 	} else if state == runningStateInit {
 		panic("ScrapeManager is not set")

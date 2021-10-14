@@ -30,7 +30,6 @@ import (
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testutil"
 	internaldata "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus"
@@ -151,7 +150,7 @@ func Test_carbonreceiver_New(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := New(zap.NewNop(), tt.args.config, tt.args.nextConsumer)
+			got, err := New(componenttest.NewNopReceiverCreateSettings(), tt.args.config, tt.args.nextConsumer)
 			assert.Equal(t, tt.wantErr, err)
 			if err == nil {
 				require.NotNil(t, got)
@@ -201,7 +200,7 @@ func Test_carbonreceiver_EndToEnd(t *testing.T) {
 			cfg := tt.configFn()
 			cfg.Endpoint = fmt.Sprintf("%s:%d", host, port)
 			sink := new(consumertest.MetricsSink)
-			rcv, err := New(zap.NewNop(), *cfg, sink)
+			rcv, err := New(componenttest.NewNopReceiverCreateSettings(), *cfg, sink)
 			require.NoError(t, err)
 			r := rcv.(*carbonReceiver)
 

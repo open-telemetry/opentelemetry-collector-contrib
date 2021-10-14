@@ -18,6 +18,7 @@ import (
 	"context"
 	"time"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/model/pdata"
@@ -39,7 +40,7 @@ type redisRunnable struct {
 	metricsConsumer consumer.Metrics
 	redisSvc        *redisSvc
 	redisMetrics    []*redisMetric
-	logger          *zap.Logger
+	settings        component.ReceiverCreateSettings
 	timeBundle      *timeBundle
 	obsrecv         *obsreport.Receiver
 }
@@ -49,15 +50,19 @@ func newRedisRunnable(
 	id config.ComponentID,
 	client client,
 	metricsConsumer consumer.Metrics,
-	logger *zap.Logger,
+	settings component.ReceiverCreateSettings,
 ) *redisRunnable {
 	return &redisRunnable{
 		id:              id,
 		ctx:             ctx,
 		redisSvc:        newRedisSvc(client),
 		metricsConsumer: metricsConsumer,
-		logger:          logger,
-		obsrecv:         obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverID: id, Transport: transport}),
+		settings:        settings,
+		obsrecv: obsreport.NewReceiver(obsreport.ReceiverSettings{
+			ReceiverID:             id,
+			Transport:              transport,
+			ReceiverCreateSettings: settings,
+		}),
 	}
 }
 
@@ -102,7 +107,7 @@ func (r *redisRunnable) Run() error {
 	fixedMS, warnings := inf.buildFixedMetrics(r.redisMetrics, r.timeBundle)
 	fixedMS.MoveAndAppendTo(ilm.Metrics())
 	if warnings != nil {
-		r.logger.Warn(
+		r.settings.Logger.Warn(
 			"errors parsing redis string",
 			zap.Errors("parsing errors", warnings),
 		)
@@ -110,7 +115,7 @@ func (r *redisRunnable) Run() error {
 
 	keyspaceMS, warnings := inf.buildKeyspaceMetrics(r.timeBundle)
 	if warnings != nil {
-		r.logger.Warn(
+		r.settings.Logger.Warn(
 			"errors parsing keyspace string",
 			zap.Errors("parsing errors", warnings),
 		)

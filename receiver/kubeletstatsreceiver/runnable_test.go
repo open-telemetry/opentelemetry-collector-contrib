@@ -22,6 +22,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/model/pdata"
 	"go.uber.org/zap"
@@ -64,7 +65,7 @@ func TestRunnable(t *testing.T) {
 		context.Background(),
 		consumer,
 		&fakeRestClient{},
-		zap.NewNop(),
+		componenttest.NewNopReceiverCreateSettings(),
 		options,
 	)
 	err := r.Setup()
@@ -116,7 +117,7 @@ func TestRunnableWithMetadata(t *testing.T) {
 				context.Background(),
 				consumer,
 				&fakeRestClient{},
-				zap.NewNop(),
+				componenttest.NewNopReceiverCreateSettings(),
 				options,
 			)
 			err := r.Setup()
@@ -200,7 +201,7 @@ func TestRunnableWithMetricGroups(t *testing.T) {
 				context.Background(),
 				consumer,
 				&fakeRestClient{},
-				zap.NewNop(),
+				componenttest.NewNopReceiverCreateSettings(),
 				&receiverOptions{
 					extraMetadataLabels:   []kubelet.MetadataLabel{kubelet.MetadataLabelContainerID},
 					metricGroupsToCollect: test.metricGroups,
@@ -352,7 +353,7 @@ func TestRunnableWithPVCDetailedLabels(t *testing.T) {
 				context.Background(),
 				consumer,
 				&fakeRestClient{},
-				zap.NewNop(),
+				componenttest.NewNopReceiverCreateSettings(),
 				&receiverOptions{
 					extraMetadataLabels: []kubelet.MetadataLabel{kubelet.MetadataLabelVolumeType},
 					metricGroupsToCollect: map[kubelet.MetricGroup]bool{
@@ -462,6 +463,9 @@ func TestClientErrors(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			core, observedLogs := observer.New(zap.ErrorLevel)
+			logger := zap.New(core)
+			settings := componenttest.NewNopReceiverCreateSettings()
+			settings.Logger = logger
 			options := &receiverOptions{
 				extraMetadataLabels:   test.extraMetadataLabels,
 				metricGroupsToCollect: test.metricGroupsToCollect,
@@ -473,7 +477,7 @@ func TestClientErrors(t *testing.T) {
 					statsSummaryFail: test.statsSummaryFail,
 					podsFail:         test.podsFail,
 				},
-				zap.New(core),
+				settings,
 				options,
 			)
 			err := r.Setup()
@@ -497,6 +501,9 @@ func TestConsumerErrors(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			core, observedLogs := observer.New(zap.ErrorLevel)
+			logger := zap.New(core)
+			settings := componenttest.NewNopReceiverCreateSettings()
+			settings.Logger = logger
 			options := &receiverOptions{
 				extraMetadataLabels:   nil,
 				metricGroupsToCollect: allMetricGroups,
@@ -505,7 +512,7 @@ func TestConsumerErrors(t *testing.T) {
 				context.Background(),
 				consumertest.NewErr(test.err),
 				&fakeRestClient{},
-				zap.New(core),
+				settings,
 				options,
 			)
 			err := r.Setup()

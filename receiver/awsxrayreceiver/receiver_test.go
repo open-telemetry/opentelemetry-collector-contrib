@@ -68,7 +68,7 @@ func TestConsumerCantBeNil(t *testing.T) {
 			},
 		},
 		nil,
-		zap.NewNop(),
+		componenttest.NewNopReceiverCreateSettings(),
 	)
 	assert.True(t, errors.Is(err, componenterror.ErrNilNextConsumer), "consumer is nil should be detected")
 }
@@ -91,7 +91,7 @@ func TestProxyCreationFailed(t *testing.T) {
 			},
 		},
 		sink,
-		zap.NewNop(),
+		componenttest.NewNopReceiverCreateSettings(),
 	)
 	assert.Error(t, err, "receiver creation should fail due to failure to create TCP proxy")
 }
@@ -106,7 +106,7 @@ func TestPollerCreationFailed(t *testing.T) {
 			},
 		},
 		sink,
-		zap.NewNop(),
+		componenttest.NewNopReceiverCreateSettings(),
 	)
 	assert.Error(t, err, "receiver creation should fail due to failure to create UCP poller")
 }
@@ -127,7 +127,7 @@ func TestSegmentsPassedToConsumer(t *testing.T) {
 
 	receiverID := config.NewComponentID("TestSegmentsPassedToConsumer")
 
-	addr, rcvr, _ := createAndOptionallyStartReceiver(t, receiverID, nil, true)
+	addr, rcvr, _ := createAndOptionallyStartReceiver(t, receiverID, nil, true, tt.ToReceiverCreateSettings())
 	defer rcvr.Shutdown(context.Background())
 
 	content, err := ioutil.ReadFile(path.Join("../../internal/aws/xray", "testdata", "ddbSample.txt"))
@@ -157,7 +157,7 @@ func TestTranslatorErrorsOut(t *testing.T) {
 
 	receiverID := config.NewComponentID("TestTranslatorErrorsOut")
 
-	addr, rcvr, recordedLogs := createAndOptionallyStartReceiver(t, receiverID, nil, true)
+	addr, rcvr, recordedLogs := createAndOptionallyStartReceiver(t, receiverID, nil, true, tt.ToReceiverCreateSettings())
 	defer rcvr.Shutdown(context.Background())
 
 	err = writePacket(t, addr, segmentHeader+"invalidSegment")
@@ -185,7 +185,7 @@ func TestSegmentsConsumerErrorsOut(t *testing.T) {
 	receiverID := config.NewComponentID("TestSegmentsConsumerErrorsOut")
 
 	addr, rcvr, recordedLogs := createAndOptionallyStartReceiver(t, receiverID,
-		consumertest.NewErr(errors.New("can't consume traces")), true)
+		consumertest.NewErr(errors.New("can't consume traces")), true, tt.ToReceiverCreateSettings())
 	defer rcvr.Shutdown(context.Background())
 
 	content, err := ioutil.ReadFile(path.Join("../../internal/aws/xray", "testdata", "serverSample.txt"))
@@ -204,42 +204,54 @@ func TestSegmentsConsumerErrorsOut(t *testing.T) {
 }
 
 func TestPollerCloseError(t *testing.T) {
+	tt, err := obsreporttest.SetupTelemetry()
+	assert.NoError(t, err, "SetupTelemetry should succeed")
+	defer tt.Shutdown(context.Background())
+
 	env := stashEnv()
 	defer restoreEnv(env)
 	os.Setenv(defaultRegionEnvName, mockRegion)
 
-	_, rcvr, _ := createAndOptionallyStartReceiver(t, config.NewComponentID("TestPollerCloseError"), nil, false)
+	_, rcvr, _ := createAndOptionallyStartReceiver(t, config.NewComponentID("TestPollerCloseError"), nil, false, tt.ToReceiverCreateSettings())
 	mPoller := &mockPoller{closeErr: errors.New("mockPollerCloseErr")}
 	rcvr.(*xrayReceiver).poller = mPoller
 	rcvr.(*xrayReceiver).server = &mockProxy{}
-	err := rcvr.Shutdown(context.Background())
+	err = rcvr.Shutdown(context.Background())
 	assert.EqualError(t, err, mPoller.closeErr.Error(), "expected error")
 }
 
 func TestProxyCloseError(t *testing.T) {
+	tt, err := obsreporttest.SetupTelemetry()
+	assert.NoError(t, err, "SetupTelemetry should succeed")
+	defer tt.Shutdown(context.Background())
+
 	env := stashEnv()
 	defer restoreEnv(env)
 	os.Setenv(defaultRegionEnvName, mockRegion)
 
-	_, rcvr, _ := createAndOptionallyStartReceiver(t, config.NewComponentID("TestPollerCloseError"), nil, false)
+	_, rcvr, _ := createAndOptionallyStartReceiver(t, config.NewComponentID("TestPollerCloseError"), nil, false, tt.ToReceiverCreateSettings())
 	mProxy := &mockProxy{closeErr: errors.New("mockProxyCloseErr")}
 	rcvr.(*xrayReceiver).poller = &mockPoller{}
 	rcvr.(*xrayReceiver).server = mProxy
-	err := rcvr.Shutdown(context.Background())
+	err = rcvr.Shutdown(context.Background())
 	assert.EqualError(t, err, mProxy.closeErr.Error(), "expected error")
 }
 
 func TestBothPollerAndProxyCloseError(t *testing.T) {
+	tt, err := obsreporttest.SetupTelemetry()
+	assert.NoError(t, err, "SetupTelemetry should succeed")
+	defer tt.Shutdown(context.Background())
+
 	env := stashEnv()
 	defer restoreEnv(env)
 	os.Setenv(defaultRegionEnvName, mockRegion)
 
-	_, rcvr, _ := createAndOptionallyStartReceiver(t, config.NewComponentID("TestBothPollerAndProxyCloseError"), nil, false)
+	_, rcvr, _ := createAndOptionallyStartReceiver(t, config.NewComponentID("TestBothPollerAndProxyCloseError"), nil, false, tt.ToReceiverCreateSettings())
 	mPoller := &mockPoller{closeErr: errors.New("mockPollerCloseErr")}
 	mProxy := &mockProxy{closeErr: errors.New("mockProxyCloseErr")}
 	rcvr.(*xrayReceiver).poller = mPoller
 	rcvr.(*xrayReceiver).server = mProxy
-	err := rcvr.Shutdown(context.Background())
+	err = rcvr.Shutdown(context.Background())
 	assert.EqualError(t, err,
 		fmt.Sprintf("failed to close proxy: %s: failed to close poller: %s",
 			mProxy.closeErr.Error(), mPoller.closeErr.Error()),
@@ -282,7 +294,8 @@ func createAndOptionallyStartReceiver(
 	t *testing.T,
 	receiverID config.ComponentID,
 	csu consumer.Traces,
-	start bool) (string, component.TracesReceiver, *observer.ObservedLogs) {
+	start bool,
+	set component.ReceiverCreateSettings) (string, component.TracesReceiver, *observer.ObservedLogs) {
 	addr, err := findAvailableUDPAddress()
 	assert.NoError(t, err, "there should be address available")
 	tcpAddr := testutil.GetAvailableLocalAddress(t)
@@ -295,6 +308,7 @@ func createAndOptionallyStartReceiver(
 	}
 
 	logger, recorded := logSetup()
+	set.Logger = logger
 	rcvr, err := newReceiver(
 		&Config{
 			ReceiverSettings: config.NewReceiverSettings(receiverID),
@@ -309,7 +323,7 @@ func createAndOptionallyStartReceiver(
 			},
 		},
 		sink,
-		logger,
+		set,
 	)
 	assert.NoError(t, err, "receiver should be created")
 

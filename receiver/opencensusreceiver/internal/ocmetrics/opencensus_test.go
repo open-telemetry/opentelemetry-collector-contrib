@@ -31,9 +31,11 @@ import (
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/obsreport/obsreporttest"
 	"google.golang.org/grpc"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -43,9 +45,13 @@ import (
 )
 
 func TestReceiver_endToEnd(t *testing.T) {
+	tt, err := obsreporttest.SetupTelemetry()
+	require.NoError(t, err)
+	defer tt.Shutdown(context.Background())
+
 	metricSink := new(consumertest.MetricsSink)
 
-	addr, doneFn := ocReceiverOnGRPCServer(t, metricSink)
+	addr, doneFn := ocReceiverOnGRPCServer(t, metricSink, tt.ToReceiverCreateSettings())
 	defer doneFn()
 
 	metricsClient, metricsClientDoneFn, err := makeMetricsServiceClient(addr)
@@ -70,9 +76,13 @@ func TestReceiver_endToEnd(t *testing.T) {
 // accept nodes from downstream sources, but if a node isn't specified in
 // an exportMetrics request, assume it is from the last received and non-nil node.
 func TestExportMultiplexing(t *testing.T) {
+	tt, err := obsreporttest.SetupTelemetry()
+	require.NoError(t, err)
+	defer tt.Shutdown(context.Background())
+
 	metricSink := new(consumertest.MetricsSink)
 
-	addr, doneFn := ocReceiverOnGRPCServer(t, metricSink)
+	addr, doneFn := ocReceiverOnGRPCServer(t, metricSink, tt.ToReceiverCreateSettings())
 	defer doneFn()
 
 	metricsClient, metricsClientDoneFn, err := makeMetricsServiceClient(addr)
@@ -183,9 +193,13 @@ func TestExportMultiplexing(t *testing.T) {
 // The first message without a Node MUST be rejected and teardown the connection.
 // See https://github.com/census-instrumentation/opencensus-service/issues/53
 func TestExportProtocolViolations_nodelessFirstMessage(t *testing.T) {
+	tt, err := obsreporttest.SetupTelemetry()
+	require.NoError(t, err)
+	defer tt.Shutdown(context.Background())
+
 	metricSink := new(consumertest.MetricsSink)
 
-	port, doneFn := ocReceiverOnGRPCServer(t, metricSink)
+	port, doneFn := ocReceiverOnGRPCServer(t, metricSink, tt.ToReceiverCreateSettings())
 	defer doneFn()
 
 	metricsClient, metricsClientDoneFn, err := makeMetricsServiceClient(port)
@@ -254,10 +268,13 @@ func TestExportProtocolViolations_nodelessFirstMessage(t *testing.T) {
 // See https://github.com/census-instrumentation/opencensus-service/issues/51
 func TestExportProtocolConformation_metricsInFirstMessage(t *testing.T) {
 	// This test used to be flaky on Windows. Skip if errors pop up again
+	tt, err := obsreporttest.SetupTelemetry()
+	require.NoError(t, err)
+	defer tt.Shutdown(context.Background())
 
 	metricSink := new(consumertest.MetricsSink)
 
-	addr, doneFn := ocReceiverOnGRPCServer(t, metricSink)
+	addr, doneFn := ocReceiverOnGRPCServer(t, metricSink, tt.ToReceiverCreateSettings())
 	defer doneFn()
 
 	metricsClient, metricsClientDoneFn, err := makeMetricsServiceClient(addr)
@@ -335,7 +352,7 @@ func nodeToKey(n *commonpb.Node) string {
 	return string(blob)
 }
 
-func ocReceiverOnGRPCServer(t *testing.T, sr consumer.Metrics) (net.Addr, func()) {
+func ocReceiverOnGRPCServer(t *testing.T, sr consumer.Metrics, set component.ReceiverCreateSettings) (net.Addr, func()) {
 	ln, err := net.Listen("tcp", "localhost:")
 	require.NoError(t, err, "Failed to find an available address to run the gRPC server: %v", err)
 
@@ -346,7 +363,7 @@ func ocReceiverOnGRPCServer(t *testing.T, sr consumer.Metrics) (net.Addr, func()
 		}
 	}
 
-	oci, err := New(config.NewComponentID("opencensus"), sr)
+	oci, err := New(config.NewComponentID("opencensus"), sr, set)
 	require.NoError(t, err, "Failed to create the Receiver: %v", err)
 
 	// Now run it as a gRPC server

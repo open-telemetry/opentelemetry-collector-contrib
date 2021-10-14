@@ -60,7 +60,7 @@ func createMetricsReceiver(
 	consumer consumer.Metrics,
 ) (component.MetricsReceiver, error) {
 	podmanConfig := config.(*Config)
-	dsr, err := newReceiver(ctx, params.Logger, podmanConfig, consumer, nil)
+	dsr, err := newReceiver(ctx, params, podmanConfig, consumer, nil)
 	if err != nil {
 		return nil, err
 	}

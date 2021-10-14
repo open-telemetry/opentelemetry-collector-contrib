@@ -65,7 +65,7 @@ func createMetricsReceiver(
 	scraper := newMemcachedScraper(params.Logger, cfg)
 
 	return scraperhelper.NewScraperControllerReceiver(
-		&cfg.ScraperControllerSettings, params.Logger, consumer,
+		&cfg.ScraperControllerSettings, params, consumer,
 		scraperhelper.AddScraper(scraper),
 	)
 }
