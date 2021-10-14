@@ -44,20 +44,12 @@ type swExporter struct {
 	metadata       metadata.MD
 }
 
-func newSwExporter(_ context.Context, cfg *Config) (*swExporter, error) {
-	if cfg.Endpoint == "" {
-		return nil, errors.New("Skywalking exporter cfg requires an Endpoint")
-	}
-
-	if cfg.NumStreams <= 0 {
-		return nil, errors.New("Skywalking exporter cfg requires at least one stream")
-	}
-
+func newSwExporter(_ context.Context, cfg *Config) *swExporter {
 	oce := &swExporter{
 		cfg:      cfg,
 		metadata: metadata.New(cfg.GRPCClientSettings.Headers),
 	}
-	return oce, nil
+	return oce
 }
 
 // start creates the gRPC client Connection
@@ -97,21 +89,17 @@ func (oce *swExporter) shutdown(context.Context) error {
 	return oce.grpcClientConn.Close()
 }
 
-func newExporter(ctx context.Context, cfg *Config) (*swExporter, error) {
-	oce, err := newSwExporter(ctx, cfg)
-	if err != nil {
-		return nil, err
-	}
+func newExporter(ctx context.Context, cfg *Config) *swExporter {
+	oce := newSwExporter(ctx, cfg)
 	oce.logsClients = make(chan *logsClientWithCancel, oce.cfg.NumStreams)
-	return oce, nil
+	return oce
 }
 
 func (oce *swExporter) pushLogs(_ context.Context, td pdata.Logs) error {
 	// Get first available log Client.
 	tClient, ok := <-oce.logsClients
 	if !ok {
-		err := errors.New("failed to push logs, Skywalking exporter was already stopped")
-		return err
+		return errors.New("failed to push logs, Skywalking exporter was already stopped")
 	}
 
 	if tClient == nil {

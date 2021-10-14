@@ -58,10 +58,7 @@ func createLogsExporter(
 	cfg config.Exporter,
 ) (component.LogsExporter, error) {
 	oCfg := cfg.(*Config)
-	oce, err := newExporter(ctx, oCfg)
-	if err != nil {
-		return nil, err
-	}
+	oce := newExporter(ctx, oCfg)
 	return exporterhelper.NewLogsExporter(
 		cfg,
 		set,

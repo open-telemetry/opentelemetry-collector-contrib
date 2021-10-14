@@ -15,6 +15,8 @@
 package skywalkingexporter
 
 import (
+	"errors"
+
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -36,5 +38,12 @@ var _ config.Exporter = (*Config)(nil)
 
 // Validate checks if the exporter configuration is valid
 func (cfg *Config) Validate() error {
+	if cfg.Endpoint == "" {
+		return errors.New("Skywalking exporter cfg requires an Endpoint")
+	}
+
+	if cfg.NumStreams <= 0 {
+		return errors.New("Skywalking exporter cfg requires at least one stream")
+	}
 	return nil
 }

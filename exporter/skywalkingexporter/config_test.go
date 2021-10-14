@@ -35,7 +35,7 @@ func TestLoadConfig(t *testing.T) {
 
 	factory := NewFactory()
 	factories.Exporters[typeStr] = factory
-	cfg, err := configtest.LoadConfigAndValidate(path.Join(".", "testdata", "config.yaml"), factories)
+	cfg, err := configtest.LoadConfig(path.Join(".", "testdata", "config.yaml"), factories)
 
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
@@ -85,4 +85,25 @@ func TestLoadConfig(t *testing.T) {
 			},
 			NumStreams: 233,
 		})
+}
+
+func TestValidate(t *testing.T) {
+	c1 := &Config{
+		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
+		GRPCClientSettings: configgrpc.GRPCClientSettings{
+			Endpoint: "",
+		},
+		NumStreams: 3,
+	}
+	err := c1.Validate()
+	assert.Error(t, err)
+	c2 := &Config{
+		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
+		GRPCClientSettings: configgrpc.GRPCClientSettings{
+			Endpoint: "",
+		},
+		NumStreams: 0,
+	}
+	err2 := c2.Validate()
+	assert.Error(t, err2)
 }

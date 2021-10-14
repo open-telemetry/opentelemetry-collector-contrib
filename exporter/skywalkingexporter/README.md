@@ -13,6 +13,8 @@ using the gRPC protocol. The valid syntax is described
 [here](https://github.com/grpc/grpc/blob/master/doc/naming.md).
 If a scheme of `https` is used then client transport security is enabled and overrides the `insecure` setting.
 
+- `num_streams` (default = `2`): the number of grpc streams that send the gRPC requests.
+
 By default, TLS is enabled and must be configured under `tls:`: 
 
 - `insecure` (default = `false`): whether to enable client transport security for
@@ -30,11 +32,12 @@ Example:
 ```yaml
 exporters:
   skywalking:
-    endpoint: "2.3.4.5:11800"
+    endpoint: "192.168.1.5:11800"
     tls:
-      insecure: true      
+      insecure: true  
+    num_streams: 5  
   skywalking/2:
-    endpoint: "1.2.3.4:11800"
+    endpoint: "10.18.7.4:11800"
     compression: "on"
     tls:
       cert_file: file.cert
