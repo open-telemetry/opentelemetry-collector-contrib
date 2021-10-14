@@ -51,5 +51,5 @@ func createMetricsReceiver(
 ) (component.MetricsReceiver, error) {
 	oCfg := cfg.(*Config)
 
-	return newRedisReceiver(params.Logger, oCfg, consumer), nil
+	return newRedisReceiver(params, oCfg, consumer), nil
 }
