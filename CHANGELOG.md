@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+## v0.37.0
+
+## 🚀 New components 🚀
+
+- [`journald` receiver](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/journaldreceiver) to parse Journald events from systemd journal using the [opentelemetry-log-collection](https://github.com/open-telemetry/opentelemetry-log-collection) library
+
 ## 🛑 Breaking changes 🛑
 
 - Remove squash on configtls.TLSClientSetting for splunkhecexporter (#5541)
@@ -13,10 +19,48 @@
 - filelog receiver: use empty value for `SeverityText` field instead of `"Undefined"` (#5423)
 - Rename `configparser.ConfigMap` to `config.Map`
 - Rename `pdata.AggregationTemporality*` to `pdata.MetricAggregationTemporality*`
+- Remove deprecated `batchpertrace` package/module (#5380)
 
 ## 💡 Enhancements 💡
 
 - `k8sattributes` processor: add container metadata enrichment (#5467, #5572)
+- `resourcedetection` processor: Add an option to force using hostname instead of FQDN (#5064)
+- `dockerstats` receiver: Move docker client into new shared `internal/docker` (#4702)
+- `spanmetrics` processor:
+  - Add exemplars to metrics (#5263)
+  - Support resource attributes in metrics dimensions (#4624)
+- `filter` processor:
+  - Add log filtering by `regexp` type filters (#5237)
+  - Add record level log filtering (#5418)
+- `dynatrace` exporter: Handle non-gauge data types (#5056)
+- `datadog` exporter:
+  - Add support for exporting histograms as sketches (#5082)
+  - Scrub sensitive information from errors (#5575)
+  - Add option to send instrumentation library metadata tags with metrics (#5431)
+- `podman` receiver: Add `api_version`, `ssh_key`, and `ssh_passphrase` config options (#5430)
+- `signalfx` exporter:
+  - Add `max_connections` config option (#5432)
+  - Add dimension name to log when value > 256 chars (#5258)
+  - Discourage setting of endpoint path (#4851)
+- `kubeletstats` receiver: Convert to pdata instead of using OpenCensus (#5458)
+- `tailsampling` processor: Add `invert_match` config option to `string_attribute` policy (#4393)
+- `awsemf` exporter: Add a feature flag in UserAgent for AWS backend to monitor the adoptions (#5178)
+- `splunkhec` exporter: Handle explicitly NaN and Inf values (#5581)
+- `hostmetrics` receiver:
+  - Collect more process states in processes scraper (#4856)
+  - Add device label to paging scraper (#4854)
+- `awskinesis` exporter: Extend to allow for dynamic export types (#5440)
+
+## 🧰 Bug fixes 🧰
+
+- `datadog` exporter:
+  - Fix tags on summary and bucket metrics (#5416)
+  - Fix cache key generation for cumulative metrics (#5417)
+- `resourcedetection` processor: Fix failure to start collector if at least one detector returns an error (#5242)
+- `prometheus` exporter: Do not record obsreport calls (#5438)
+- `prometheus` receiver: Metric type fixes to match Prometheus functionality (#4865)
+- `sentry` exporter: Fix sentry tracing (#4320)
+- `statsd` receiver: Set quantiles for metrics (#5647)
 
 ## v0.36.0
 
