@@ -628,6 +628,68 @@ func TestAttributes_HashValue(t *testing.T) {
 	}
 }
 
+func TestAttributes_RenderValue(t *testing.T) {
+	testCases := []testCase{
+		// Ensure `region` is set for spans with no attributes.
+		{
+			name:            "RenderNoAttributes",
+			inputAttributes: map[string]pdata.AttributeValue{},
+			expectedAttributes: map[string]pdata.AttributeValue{
+				"region": pdata.NewAttributeValueString("my region is:  ()"),
+			},
+		},
+		// Ensure `region` is inserted for spans with some attributes(the key doesn't exist).
+		{
+			name: "RenderAttributeNoExist",
+			inputAttributes: map[string]pdata.AttributeValue{
+				"mission": pdata.NewAttributeValueString("to mars"),
+			},
+			expectedAttributes: map[string]pdata.AttributeValue{
+				"mission": pdata.NewAttributeValueString("to mars"),
+				"region":  pdata.NewAttributeValueString("my region is:  ()"),
+			},
+		},
+		// Ensure `region` is updated for spans with the attribute key `region`.
+		{
+			name: "RenderAttributeExists",
+			inputAttributes: map[string]pdata.AttributeValue{
+				"mission": pdata.NewAttributeValueString("to mars"),
+				"region":  pdata.NewAttributeValueString("solar system"),
+			},
+			expectedAttributes: map[string]pdata.AttributeValue{
+				"mission": pdata.NewAttributeValueString("to mars"),
+				"region":  pdata.NewAttributeValueString("my region is: solar system ()"),
+			},
+		},
+		// Ensure `region` is updated for spans with the attribute key `region`.
+		{
+			name: "RenderAttributeFromOtherExists",
+			inputAttributes: map[string]pdata.AttributeValue{
+				"region_key": pdata.NewAttributeValueString("eu"),
+				"region":  pdata.NewAttributeValueString("europe"),
+			},
+			expectedAttributes: map[string]pdata.AttributeValue{
+				"region_key": pdata.NewAttributeValueString("eu"),
+				"region":  pdata.NewAttributeValueString("my region is: europe (eu)"),
+			},
+		},
+	}
+
+	cfg := &Settings{
+		Actions: []ActionKeyValue{
+			{Key: "region", Action: RENDER, Template: "my region is: <region> (<region_key>)"},
+		},
+	}
+
+	ap, err := NewAttrProc(cfg)
+	require.Nil(t, err)
+	require.NotNil(t, ap)
+
+	for _, tt := range testCases {
+		runIndividualTestCase(t, tt, ap)
+	}
+}
+
 func TestAttributes_FromAttributeNoChange(t *testing.T) {
 	tc := testCase{
 		name: "FromAttributeNoChange",
