@@ -157,7 +157,7 @@ func zSpanToInternal(zspan *zipkinmodel.SpanModel, tags map[string]string, dest 
 
 func populateSpanStatus(tags map[string]string, status pdata.SpanStatus) {
 	if value, ok := tags[conventions.OtelStatusCode]; ok {
-		status.SetCode(pdata.StatusCode(statusCodeValue[value]))
+		status.SetCode(pdata.StatusCode(statusCodeValue["STATUS_CODE_" + value]))
 		delete(tags, conventions.OtelStatusCode)
 		if value, ok := tags[conventions.OtelStatusDescription]; ok {
 			status.SetMessage(value)
