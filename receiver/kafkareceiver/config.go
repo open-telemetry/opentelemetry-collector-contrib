@@ -37,7 +37,7 @@ type MessageMarking struct {
 
 	// If false, only the successfully processed messages are marked, it has no impact if
 	// After is set to false.
-	// Note: this can block the entire partition in case a message precessing returns
+	// Note: this can block the entire partition in case a message processing returns
 	// a permanent error.
 	OnError bool `mapstructure:"on_error"`
 }
