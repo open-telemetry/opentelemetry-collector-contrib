@@ -75,11 +75,13 @@ processors:
           - Key: host.name
             Value: just_this_one_hostname
     logs/regexp:
+      exclude:
         match_type: regexp
         resource_attributes:
           - Key: host.name
             Value: prefix.*
     logs/regexp_record:
+      include:
         match_type: regexp
         record_attributes:
           - Key: record_attr
@@ -117,6 +119,18 @@ The above config will filter out any Metric that both has the name "my.metric" a
 with a label of 'my_label="abc123"'.
 
 For logs `expr` filter evaluates the supplied boolean expressions per LogRecord.
+
+Example:
+
+```yaml
+processors:
+  filter:
+    logs:
+      include:
+        match_type: expr
+        expressions:
+          - Body matches '\[INFO\]
+```
 
 See [expr documentation for logs](../../internal/coreinternal/processor/filterexpr/README.md#logs)
 for available environment variables and functions.
