@@ -14,4 +14,4 @@
 
 package cloudfoundryreceiver
 
-//todo integration test to be added in next PR
+// TODO: integration test to be added in next PR

@@ -15,6 +15,7 @@
 package cloudfoundryreceiver
 
 import (
+	"errors"
 	"fmt"
 	"net/url"
 
@@ -27,10 +28,19 @@ type RLPGatewayConfig struct {
 	ShardID                       string `mapstructure:"shard_id"`
 }
 
+type LimitedTLSClientSetting struct {
+	InsecureSkipVerify bool `mapstructure:"insecure_skip_verify"`
+}
+
+type LimitedHTTPClientSettings struct {
+	Endpoint   string                  `mapstructure:"endpoint"`
+	TLSSetting LimitedTLSClientSetting `mapstructure:"tls,omitempty"`
+}
+
 type UAAConfig struct {
-	confighttp.HTTPClientSettings `mapstructure:",squash"`
-	Username                      string `mapstructure:"username"`
-	Password                      string `mapstructure:"password"`
+	LimitedHTTPClientSettings `mapstructure:",squash"`
+	Username                  string `mapstructure:"username"`
+	Password                  string `mapstructure:"password"`
 }
 
 // Config defines configuration for Collectd receiver.
@@ -52,11 +62,11 @@ func (c *Config) Validate() error {
 	}
 
 	if c.UAA.Username == "" {
-		return fmt.Errorf("UAA username not specified")
+		return errors.New("UAA username not specified")
 	}
 
 	if c.UAA.Password == "" {
-		return fmt.Errorf("UAA password not specified")
+		return errors.New("UAA password not specified")
 	}
 
 	return nil

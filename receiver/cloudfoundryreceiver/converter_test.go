@@ -15,12 +15,12 @@
 package cloudfoundryreceiver
 
 import (
-	"github.com/stretchr/testify/require"
 	"testing"
 	"time"
 
 	"code.cloudfoundry.org/go-loggregator/rpc/loggregator_v2"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/model/pdata"
 )
 

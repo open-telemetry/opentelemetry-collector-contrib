@@ -20,7 +20,6 @@ import (
 	"time"
 
 	"github.com/cloudfoundry-incubator/uaago"
-	"go.opentelemetry.io/collector/config/confighttp"
 	"go.uber.org/zap"
 )
 
@@ -40,7 +39,7 @@ type UAATokenProvider struct {
 	mutex          *sync.Mutex
 }
 
-func newUAATokenProvider(logger *zap.Logger, config confighttp.HTTPClientSettings, username string, password string) (*UAATokenProvider, error) {
+func newUAATokenProvider(logger *zap.Logger, config LimitedHTTPClientSettings, username string, password string) (*UAATokenProvider, error) {
 	client, err := uaago.NewClient(config.Endpoint)
 	if err != nil {
 		return nil, err

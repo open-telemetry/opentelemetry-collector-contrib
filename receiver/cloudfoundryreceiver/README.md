@@ -37,7 +37,7 @@ The receiver takes the following configuration options:
 
 The `rlp_gateway` configuration section also inherits configuration options from the global from:
 
-- [HTTP Client Configuration](../../config/confighttp#client-configuration)
+- [HTTP Client Configuration](https://github.com/open-telemetry/opentelemetry-collector/tree/main/config/confighttp#client-configuration)
 
 Example:
 
