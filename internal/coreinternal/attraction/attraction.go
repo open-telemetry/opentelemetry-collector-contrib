@@ -16,12 +16,10 @@ package attraction
 
 import (
 	"fmt"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterhelper"
+	"go.opentelemetry.io/collector/model/pdata"
 	"regexp"
 	"strings"
-
-	"go.opentelemetry.io/collector/model/pdata"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterhelper"
 )
 
 // Settings specifies the processor settings.
@@ -56,6 +54,10 @@ type ActionKeyValue struct {
 	// the value. If the attribute doesn't exist, no action is performed.
 	FromAttribute string `mapstructure:"from_attribute"`
 
+	// Template is the template which is rendered for the action RENDER.
+	// the template can contain every attribute (including itself) included in square brackets
+	Template string `mapstructure:"template"`
+
 	// Action specifies the type of action to perform.
 	// The set of values are {INSERT, UPDATE, UPSERT, DELETE, HASH}.
 	// Both lower case and upper case are supported.
@@ -77,7 +79,8 @@ type ActionKeyValue struct {
 	// EXTRACT - Extracts values using a regular expression rule from the input
 	//           'key' to target keys specified in the 'rule'. If a target key
 	//           already exists, it will be overridden.
-	// This is a required field.
+	// RENDER  - renders the given template in Template. If a target key already
+	//           exists, it will be overridden.
 	Action Action `mapstructure:"action"`
 }
 
@@ -110,6 +113,10 @@ const (
 	// 'key' to target keys specified in the 'rule'. If a target key already
 	// exists, it will be overridden.
 	EXTRACT Action = "extract"
+
+	// RENDER renders the given template. If a target key already
+	// exists, it will be overridden.
+	RENDER Action = "render"
 )
 
 type attributeAction struct {
@@ -117,9 +124,11 @@ type attributeAction struct {
 	FromAttribute string
 	// Compiled regex if provided
 	Regex *regexp.Regexp
-	// Attribute names extracted from the regexp's subexpressions.
+	// Attribute names extracted from the regexp's subexpressions or the template.
 	AttrNames []string
 	// Number of non empty strings in above array
+	// Template is a valid template which will be rendered
+	Template string
 
 	// TODO https://go.opentelemetry.io/collector/issues/296
 	// Do benchmark testing between having action be of type string vs integer.
@@ -133,6 +142,8 @@ type attributeAction struct {
 type AttrProc struct {
 	actions []attributeAction
 }
+
+var templateAttrPattern = regexp.MustCompile(`(<(\w+)>)+`)
 
 // NewAttrProc validates that the input configuration has all of the required fields for the processor
 // and returns a AttrProc to be used to process attributes.
@@ -185,7 +196,6 @@ func NewAttrProc(settings *Settings) (*AttrProc, error) {
 			}
 			if a.RegexPattern == "" {
 				return nil, fmt.Errorf("error creating AttrProc due to missing required field \"pattern\" for action \"%s\" at the %d-th action", a.Action, i)
-
 			}
 			re, err := regexp.Compile(a.RegexPattern)
 			if err != nil {
@@ -203,6 +213,16 @@ func NewAttrProc(settings *Settings) (*AttrProc, error) {
 			}
 			action.Regex = re
 			action.AttrNames = attrNames
+		case RENDER:
+			if a.Template == "" {
+				return nil, fmt.Errorf("error creating AttrProc due to missing required field \"template\" for action \"%s\" at the %d-th action", a.Action, i)
+			}
+			attrNames := extractAttributeNamesFromTemplate(a.Template)
+			if len(attrNames) <= 1 {
+				return nil, fmt.Errorf("error creating AttrProc. Field \"template\" contains no placeholder at the %d-th actions", i)
+			}
+			action.AttrNames = attrNames
+			action.Template = a.Template
 		default:
 			return nil, fmt.Errorf("error creating AttrProc due to unsupported action %q at the %d-th actions", a.Action, i)
 		}
@@ -244,6 +264,8 @@ func (ap *AttrProc) Process(attrs pdata.AttributeMap) {
 			hashAttribute(action, attrs)
 		case EXTRACT:
 			extractAttributes(action, attrs)
+		case RENDER:
+			replaceAttributePlaceholder(action, attrs)
 		}
 	}
 }
@@ -283,4 +305,31 @@ func extractAttributes(action attributeAction, attrs pdata.AttributeMap) {
 	for i := 1; i < len(matches); i++ {
 		attrs.UpsertString(action.AttrNames[i], matches[i])
 	}
+}
+
+func extractAttributeNamesFromTemplate(tpl string) []string {
+	matches := templateAttrPattern.FindAllStringSubmatch(tpl, -1)
+	names := make([]string, 0, len(matches))
+	for _, match := range matches {
+		if len(match) != 3 {
+			continue
+		}
+		names = append(names, match[2])
+	}
+	return names
+}
+
+func replaceAttributePlaceholder(action attributeAction, attrs pdata.AttributeMap) {
+	newVal := action.Template
+	for _, attrName := range action.AttrNames {
+		var repVal string
+		val, found := attrs.Get(attrName)
+		if found && val.Type() == pdata.AttributeValueTypeString {
+			repVal = val.StringVal()
+		}
+		placeholder := fmt.Sprintf("<%s>", attrName)
+		newVal = strings.ReplaceAll(newVal, placeholder, repVal)
+	}
+	attrVal := pdata.NewAttributeValueString(newVal)
+	attrs.Upsert(action.Key, attrVal)
 }

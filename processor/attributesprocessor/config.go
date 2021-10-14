@@ -34,7 +34,7 @@ type Config struct {
 	filterconfig.MatchConfig `mapstructure:",squash"`
 
 	// Specifies the list of attributes to act on.
-	// The set of actions are {INSERT, UPDATE, UPSERT, DELETE, HASH, EXTRACT}.
+	// The set of actions are {INSERT, UPDATE, UPSERT, DELETE, HASH, EXTRACT, RENDER}.
 	// This is a required field.
 	attraction.Settings `mapstructure:",squash"`
 }
