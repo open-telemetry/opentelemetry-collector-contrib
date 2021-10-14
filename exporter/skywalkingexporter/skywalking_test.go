@@ -18,9 +18,9 @@ import (
 	"context"
 	"io"
 	"net"
+	"sync"
 	"testing"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -32,6 +32,8 @@ import (
 	"google.golang.org/grpc"
 	v3 "skywalking.apache.org/repo/goapi/collect/common/v3"
 	logpb "skywalking.apache.org/repo/goapi/collect/logging/v3"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
 )
 
 func TestSwExporter(t *testing.T) {
@@ -47,9 +49,7 @@ func TestSwExporter(t *testing.T) {
 		},
 	}
 
-	oce, err := newExporter(context.Background(), tt)
-	assert.NoError(t, err)
-
+	oce := newExporter(context.Background(), tt)
 	got, err := exporterhelper.NewLogsExporter(
 		tt,
 		componenttest.NewNopExporterCreateSettings(),
@@ -71,16 +71,20 @@ func TestSwExporter(t *testing.T) {
 	err = got.Start(context.Background(), componenttest.NewNopHost())
 
 	assert.NoError(t, err)
+
+	w1 := &sync.WaitGroup{}
 	var i int64
 	for i = 0; i < 200; i++ {
-		go func(i int64) {
+		w1.Add(1)
+		go func() {
+			defer w1.Done()
 			l := testdata.GenerateLogsOneLogRecordNoResource()
-			l.ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).Logs().At(0).Body().SetIntVal(i)
+			l.ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).Logs().At(0).Body().SetIntVal(0)
 			err = got.ConsumeLogs(context.Background(), l)
 			assert.NoError(t, err)
-		}(i)
+		}()
 	}
-
+	w1.Wait()
 	logs := make([]*logpb.LogData, 0)
 	for i := 0; i < 200; i++ {
 		logs = append(logs, <-handler.logChan)
@@ -90,14 +94,20 @@ func TestSwExporter(t *testing.T) {
 
 	//when grpc server stops
 	server.Stop()
+	w2 := &sync.WaitGroup{}
 	for i = 0; i < 200; i++ {
+		w2.Add(1)
 		go func(i int64) {
+			defer w2.Done()
 			l := testdata.GenerateLogsOneLogRecordNoResource()
 			l.ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).Logs().At(0).Body().SetIntVal(i)
-			err = got.ConsumeLogs(context.Background(), l)
-			assert.Error(t, err)
+			err := got.ConsumeLogs(context.Background(), l)
+			if err != nil {
+				return
+			}
 		}(i)
 	}
+	w2.Wait()
 	assert.Equal(t, 10, len(oce.logsClients))
 }
 
