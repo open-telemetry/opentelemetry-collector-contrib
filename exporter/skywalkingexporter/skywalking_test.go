@@ -80,8 +80,8 @@ func TestSwExporter(t *testing.T) {
 			defer w1.Done()
 			l := testdata.GenerateLogsOneLogRecordNoResource()
 			l.ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).Logs().At(0).Body().SetIntVal(0)
-			err = got.ConsumeLogs(context.Background(), l)
-			assert.NoError(t, err)
+			e := got.ConsumeLogs(context.Background(), l)
+			assert.NoError(t, e)
 		}()
 	}
 	w1.Wait()
@@ -97,15 +97,15 @@ func TestSwExporter(t *testing.T) {
 	w2 := &sync.WaitGroup{}
 	for i = 0; i < 200; i++ {
 		w2.Add(1)
-		go func(i int64) {
+		go func() {
 			defer w2.Done()
 			l := testdata.GenerateLogsOneLogRecordNoResource()
-			l.ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).Logs().At(0).Body().SetIntVal(i)
-			err := got.ConsumeLogs(context.Background(), l)
-			if err != nil {
+			l.ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).Logs().At(0).Body().SetIntVal(0)
+			e := got.ConsumeLogs(context.Background(), l)
+			if e != nil {
 				return
 			}
-		}(i)
+		}()
 	}
 	w2.Wait()
 	assert.Equal(t, 10, len(oce.logsClients))
