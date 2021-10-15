@@ -5,7 +5,6 @@ go 1.17
 require (
 	github.com/grobie/gomemcache v0.0.0-20180201122607-1f779c573665
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.37.1
-	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/scraperhelper v0.37.1
 	github.com/stretchr/testify v1.7.0
 	go.opentelemetry.io/collector v0.37.0
 	go.opentelemetry.io/collector/model v0.37.0
@@ -31,8 +30,10 @@ require (
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/opencontainers/image-spec v1.0.1 // indirect
+	github.com/pelletier/go-toml v1.9.3 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
+	github.com/rogpeppe/go-internal v1.6.1 // indirect
 	github.com/sirupsen/logrus v1.8.1 // indirect
 	github.com/spf13/cast v1.4.1 // indirect
 	go.opencensus.io v0.23.0 // indirect
@@ -52,5 +53,3 @@ require (
 )
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/common => ../../internal/common
-
-replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/scraperhelper => ../scraperhelper

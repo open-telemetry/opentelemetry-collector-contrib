@@ -19,7 +19,7 @@ import (
 
 	"go.uber.org/multierr"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/scraperhelper"
+	"go.opentelemetry.io/collector/receiver/scraperhelper"
 )
 
 // Config defines configuration for WindowsPerfCounters receiver.

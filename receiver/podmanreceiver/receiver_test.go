@@ -31,7 +31,7 @@ import (
 	"go.opentelemetry.io/collector/model/pdata"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/scraperhelper"
+	"go.opentelemetry.io/collector/receiver/scraperhelper"
 )
 
 func TestNewReceiver(t *testing.T) {

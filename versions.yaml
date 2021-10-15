@@ -99,7 +99,6 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/simpleprometheusreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/simpleprometheusreceiver/examples/federation/prom-counter
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/udplogreceiver
-      - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/scraperhelper
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/wavefrontreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/syslogreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/collectdreceiver

@@ -24,7 +24,7 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/scraperhelper"
+	"go.opentelemetry.io/collector/receiver/scraperhelper"
 )
 
 // createMetricsReceiver creates a metrics receiver based on provided config.
