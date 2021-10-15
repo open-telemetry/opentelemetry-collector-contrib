@@ -31,11 +31,14 @@ DISTDIR=dist
  (
    cd $DISTDIR
    for x in *.tar.gz ; do
-    if [[ $x =~ ^opentelemetry-.*-1\.[0-9]+.*\.tar\.gz$ ]]; then
-      echo "Skipping $x because it is >=1.0 and should be released using a tag."
-      continue
+    # NOTE: We filter beta vs 1.0 package at this point because we can read the
+    # version directly from the .tar.gz file.
+    if (echo "$x" | grep -Eq ^opentelemetry-.*-0\..*\.tar\.gz$); then
+      pip wheel --no-deps $x
+    else
+      echo "Skipping $x because it is not in pre-1.0 state and should be released using a tag."
+      rm $x
     fi
-     pip wheel --no-deps $x
    done
  )
 )
