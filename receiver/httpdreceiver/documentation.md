@@ -8,17 +8,19 @@ These are the metrics available for this scraper.
 
 | Name | Description | Unit | Type | Attributes |
 | ---- | ----------- | ---- | ---- | ---------- |
-| httpd.current_connections | The number of active connections currently attached to the HTTP server | connections | Sum | <ul> <li>server_name</li> </ul> |
-| httpd.requests | The number of requests serviced by the HTTP server per second | 1 | Sum | <ul> <li>server_name</li> </ul> |
-| httpd.scoreboard | The number of connections in each state | scoreboard | Sum | <ul> <li>server_name</li> <li>scoreboard_state</li> </ul> |
-| httpd.traffic | Total HTTP server traffic | By | Sum | <ul> <li>server_name</li> </ul> |
-| httpd.uptime | The amount of time that the server has been running in seconds | s | Sum | <ul> <li>server_name</li> </ul> |
-| httpd.workers | The number of workers currently attached to the HTTP server | connections | Sum | <ul> <li>server_name</li> <li>workers_state</li> </ul> |
+| httpd.current_connections | The number of active connections currently attached to the HTTP server. | connections | Sum | <ul> <li>server_name</li> </ul> |
+| httpd.requests | The number of requests serviced by the HTTP server per second. | 1 | Sum | <ul> <li>server_name</li> </ul> |
+| httpd.scoreboard | The number of connections in each state. The apache scoreboard is an encoded representation of the state of all the server's workers. This metric decodes the scoreboard and presents a count of workers in each state. Additional details can be found [here](https://support.cpanel.net/hc/en-us/articles/360052040234-Understanding-the-Apache-scoreboard).
+ | scoreboard | Sum | <ul>
+ <li>server_name</li> <li>scoreboard_state</li> </ul> |
+| httpd.traffic | Total HTTP server traffic. | By | Sum | <ul> <li>server_name</li> </ul> |
+| httpd.uptime | The amount of time that the server has been running in seconds. | s | Sum | <ul> <li>server_name</li> </ul> |
+| httpd.workers | The number of workers currently attached to the HTTP server. | connections | Sum | <ul> <li>server_name</li> <li>workers_state</li> </ul> |
 
 ## Attributes
 
 | Name | Description |
 | ---- | ----------- |
-| scoreboard_state | The state of a connection |
-| server_name | The name of the Apache HTTP server |
-| workers_state | The state of workers |
+| scoreboard_state | The state of a connection. |
+| server_name | The name of the Apache HTTP server. |
+| workers_state | The state of workers. |

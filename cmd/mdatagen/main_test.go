@@ -29,6 +29,7 @@ name: metricreceiver
 metrics:
   system.cpu.time:
     description: Total CPU seconds broken down by different states.
+    extended_description: Additional information on CPU Time can be found [here](https://en.wikipedia.org/wiki/CPU_time).
     unit: s
     data:
       type: sum
@@ -77,6 +78,7 @@ func Test_runContents(t *testing.T) {
 			} else {
 				require.NoError(t, err)
 				require.FileExists(t, path.Join(tmpdir, "internal/metadata/generated_metrics.go"))
+				require.FileExists(t, path.Join(tmpdir, "documentation.md"))
 			}
 		})
 	}
