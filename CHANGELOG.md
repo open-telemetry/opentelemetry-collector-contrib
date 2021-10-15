@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased](https://github.com/open-telemetry/opentelemetry-python/compare/v1.6.0-0.25b0...HEAD)
 
+### Changed
+- `opentelemetry-util-http` no longer contains an instrumentation entrypoint and will not be loaded
+automatically by the auto instrumentor.
+([#745](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/745))
+
 ## [1.6.0-0.25b0](https://github.com/open-telemetry/opentelemetry-python/releases/tag/v1.6.0-0.25b0) - 2021-10-13
 
 
