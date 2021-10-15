@@ -75,6 +75,10 @@ type LogMatchProperties struct {
 	// ResourceAttributes defines a list of possible resource attributes to match logs against.
 	// A match occurs if any resource attribute matches all expressions in this given list.
 	ResourceAttributes []filterconfig.Attribute `mapstructure:"resource_attributes"`
+
+	// RecordAttributes defines a list of possible record attributes to match logs against.
+	// A match occurs if any record attribute matches at least one expression in this given list.
+	RecordAttributes []filterconfig.Attribute `mapstructure:"record_attributes"`
 }
 
 var _ config.Processor = (*Config)(nil)

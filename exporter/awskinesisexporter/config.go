@@ -27,6 +27,11 @@ type AWSConfig struct {
 	Role            string `mapstructure:"role"`
 }
 
+type Encoding struct {
+	Name        string `mapstructure:"name"`
+	Compression string `mapstructure:"compression"`
+}
+
 // Config contains the main configuration options for the awskinesis exporter
 type Config struct {
 	config.ExporterSettings        `mapstructure:",squash"`
@@ -34,6 +39,7 @@ type Config struct {
 	exporterhelper.QueueSettings   `mapstructure:"sending_queue"`
 	exporterhelper.RetrySettings   `mapstructure:"retry_on_failure"`
 
+	Encoding           `mapstructure:"encoding"`
 	AWS                AWSConfig `mapstructure:"aws"`
 	MaxRecordsPerBatch int       `mapstructure:"max_records_per_batch"`
 	MaxRecordSize      int       `mapstructure:"max_record_size"`

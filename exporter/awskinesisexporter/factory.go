@@ -27,6 +27,9 @@ import (
 const (
 	// The value of "type" key in configuration.
 	typeStr = "awskinesis"
+
+	defaultEncoding    = "otlp"
+	defaultCompression = "none"
 )
 
 // NewFactory creates a factory for Kinesis exporter.
@@ -42,10 +45,14 @@ func NewFactory() component.ExporterFactory {
 
 func createDefaultConfig() config.Exporter {
 	return &Config{
-		ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
+		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
 		TimeoutSettings:  exporterhelper.DefaultTimeoutSettings(),
 		RetrySettings:    exporterhelper.DefaultRetrySettings(),
 		QueueSettings:    exporterhelper.DefaultQueueSettings(),
+		Encoding: Encoding{
+			Name:        defaultEncoding,
+			Compression: defaultCompression,
+		},
 		AWS: AWSConfig{
 			Region: "us-west-2",
 		},

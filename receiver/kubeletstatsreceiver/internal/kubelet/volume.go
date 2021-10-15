@@ -17,75 +17,19 @@ package kubelet
 import (
 	"strconv"
 
-	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
+	"go.opentelemetry.io/collector/model/pdata"
 	v1 "k8s.io/api/core/v1"
 	stats "k8s.io/kubelet/pkg/apis/stats/v1alpha1"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver/internal/metadata"
 )
 
-func volumeMetrics(metricPrefix string, volumeStats stats.VolumeStats) []*metricspb.Metric {
-	return []*metricspb.Metric{
-		volumeAvailableMetric(metricPrefix, volumeStats),
-		volumeCapacityMetric(metricPrefix, volumeStats),
-		volumeInodesMetric(metricPrefix, volumeStats),
-		volumeInodesFreeMetric(metricPrefix, volumeStats),
-		volumeInodesUsedMetric(metricPrefix, volumeStats),
-	}
-}
-
-func volumeAvailableMetric(prefix string, s stats.VolumeStats) *metricspb.Metric {
-	if s.AvailableBytes == nil {
-		return nil
-	}
-	return intGaugeWithDescription(
-		prefix+"available", "By",
-		"The number of available bytes in the volume.",
-		s.AvailableBytes,
-	)
-}
-
-func volumeCapacityMetric(prefix string, s stats.VolumeStats) *metricspb.Metric {
-	if s.CapacityBytes == nil {
-		return nil
-	}
-	return intGaugeWithDescription(
-		prefix+"capacity", "By",
-		"The total capacity in bytes of the volume.",
-		s.CapacityBytes,
-	)
-}
-
-func volumeInodesMetric(prefix string, s stats.VolumeStats) *metricspb.Metric {
-	if s.Inodes == nil {
-		return nil
-	}
-	return intGaugeWithDescription(
-		prefix+"inodes", "1",
-		"The total inodes in the filesystem.",
-		s.Inodes,
-	)
-}
-
-func volumeInodesFreeMetric(prefix string, s stats.VolumeStats) *metricspb.Metric {
-	if s.InodesFree == nil {
-		return nil
-	}
-	return intGaugeWithDescription(
-		prefix+"inodes.free", "1",
-		"The free inodes in the filesystem.",
-		s.InodesFree,
-	)
-}
-
-func volumeInodesUsedMetric(prefix string, s stats.VolumeStats) *metricspb.Metric {
-	if s.InodesUsed == nil {
-		return nil
-	}
-	return intGaugeWithDescription(
-		prefix+"inodes.used", "1",
-		"The inodes used by the filesystem. This may not equal inodes -"+
-			" free because filesystem may share inodes with other filesystems.",
-		s.InodesUsed,
-	)
+func addVolumeMetrics(dest pdata.MetricSlice, prefix string, s stats.VolumeStats, currentTime pdata.Timestamp) {
+	addIntGauge(dest, prefix, metadata.M.VolumeAvailable, s.AvailableBytes, currentTime)
+	addIntGauge(dest, prefix, metadata.M.VolumeCapacity, s.CapacityBytes, currentTime)
+	addIntGauge(dest, prefix, metadata.M.VolumeInodes, s.Inodes, currentTime)
+	addIntGauge(dest, prefix, metadata.M.VolumeInodesFree, s.InodesFree, currentTime)
+	addIntGauge(dest, prefix, metadata.M.VolumeInodesUsed, s.InodesUsed, currentTime)
 }
 
 func getLabelsFromVolume(volume v1.Volume, labels map[string]string) {

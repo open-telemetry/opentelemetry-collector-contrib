@@ -31,7 +31,7 @@ import (
 	agentmetricspb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/metrics/v1"
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
-	gokitlog "github.com/go-kit/kit/log"
+	gokitlog "github.com/go-kit/log"
 	promcfg "github.com/prometheus/prometheus/config"
 	"github.com/prometheus/prometheus/scrape"
 	"github.com/stretchr/testify/assert"
@@ -39,14 +39,11 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.uber.org/zap"
 	"google.golang.org/protobuf/types/known/timestamppb"
 	"gopkg.in/yaml.v2"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus"
 )
-
-var logger = zap.NewNop()
 
 type mockPrometheusResponse struct {
 	code int
@@ -1405,8 +1402,8 @@ func testEndToEnd(t *testing.T, targets []*testData, useStartTimeMetric bool) {
 	defer mp.Close()
 
 	cms := new(consumertest.MetricsSink)
-	rcvr := newPrometheusReceiver(logger, &Config{
-		ReceiverSettings:   config.NewReceiverSettings(config.NewID(typeStr)),
+	rcvr := newPrometheusReceiver(componenttest.NewNopReceiverCreateSettings(), &Config{
+		ReceiverSettings:   config.NewReceiverSettings(config.NewComponentID(typeStr)),
 		PrometheusConfig:   cfg,
 		UseStartTimeMetric: useStartTimeMetric}, cms)
 
@@ -1528,8 +1525,8 @@ func testEndToEndRegex(t *testing.T, targets []*testData, useStartTimeMetric boo
 	defer mp.Close()
 
 	cms := new(consumertest.MetricsSink)
-	rcvr := newPrometheusReceiver(logger, &Config{
-		ReceiverSettings:     config.NewReceiverSettings(config.NewID(typeStr)),
+	rcvr := newPrometheusReceiver(componenttest.NewNopReceiverCreateSettings(), &Config{
+		ReceiverSettings:     config.NewReceiverSettings(config.NewComponentID(typeStr)),
 		PrometheusConfig:     cfg,
 		UseStartTimeMetric:   useStartTimeMetric,
 		StartTimeMetricRegex: startTimeMetricRegex}, cms)

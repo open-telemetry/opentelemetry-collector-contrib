@@ -16,14 +16,14 @@ package internal
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/mongodb-forks/digest"
-	"github.com/pkg/errors"
 	"go.mongodb.org/atlas/mongodbatlas"
 	"go.uber.org/zap"
 )
 
-// This struct wraps the official MongoDB Atlas client to manage pagination
+// MongoDBAtlasClient wraps the official MongoDB Atlas client to manage pagination
 // and mapping to OpenTelmetry metric and log structures.
 type MongoDBAtlasClient struct {
 	log    *zap.Logger
@@ -38,7 +38,7 @@ func NewMongoDBAtlasClient(
 	t := digest.NewTransport(publicKey, privateKey)
 	tc, err := t.Client()
 	if err != nil {
-		return nil, errors.Wrap(err, "Could not create MongoDB Atlas transport HTTP client")
+		return nil, fmt.Errorf("could not create MongoDB Atlas transport HTTP client: %w", err)
 	}
 	client := mongodbatlas.NewClient(tc)
 	return &MongoDBAtlasClient{
@@ -67,7 +67,7 @@ func hasNext(links []*mongodbatlas.Link) bool {
 	return false
 }
 
-// Return a list of all organizations available with the supplied credentials
+// Organizations returns a list of all organizations available with the supplied credentials
 func (s *MongoDBAtlasClient) Organizations(ctx context.Context) []*mongodbatlas.Organization {
 	allOrgs := make([]*mongodbatlas.Organization, 0)
 	page := 1
@@ -99,7 +99,7 @@ func (s *MongoDBAtlasClient) getOrganizationsPage(
 	})
 	err = checkMongoDBClientErr(err, response)
 	if err != nil {
-		return nil, false, errors.Wrap(err, "Error in retrieving organizations")
+		return nil, false, fmt.Errorf("error in retrieving organizations: %w", err)
 	}
 	return orgs.Results, hasNext(orgs.Links), nil
 }

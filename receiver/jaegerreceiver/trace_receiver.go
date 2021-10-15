@@ -48,8 +48,8 @@ import (
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/obsreport"
+	"go.uber.org/multierr"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 
@@ -91,7 +91,7 @@ type jReceiver struct {
 
 	goroutines sync.WaitGroup
 
-	settings component.TelemetrySettings
+	settings component.ReceiverCreateSettings
 
 	grpcObsrecv *obsreport.Receiver
 	httpObsrecv *obsreport.Receiver
@@ -126,9 +126,17 @@ func newJaegerReceiver(
 		config:       config,
 		nextConsumer: nextConsumer,
 		id:           id,
-		settings:     set.TelemetrySettings,
-		grpcObsrecv:  obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverID: id, Transport: grpcTransport}),
-		httpObsrecv:  obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverID: id, Transport: collectorHTTPTransport}),
+		settings:     set,
+		grpcObsrecv: obsreport.NewReceiver(obsreport.ReceiverSettings{
+			ReceiverID:             id,
+			Transport:              grpcTransport,
+			ReceiverCreateSettings: set,
+		}),
+		httpObsrecv: obsreport.NewReceiver(obsreport.ReceiverSettings{
+			ReceiverID:             id,
+			Transport:              collectorHTTPTransport,
+			ReceiverCreateSettings: set,
+		}),
 	}
 }
 
@@ -193,11 +201,11 @@ func (jr *jReceiver) Start(_ context.Context, host component.Host) error {
 }
 
 func (jr *jReceiver) Shutdown(ctx context.Context) error {
-	var errs []error
+	var errs error
 
 	if jr.agentServer != nil {
 		if aerr := jr.agentServer.Shutdown(ctx); aerr != nil {
-			errs = append(errs, aerr)
+			errs = multierr.Append(errs, aerr)
 		}
 	}
 	for _, processor := range jr.agentProcessors {
@@ -206,7 +214,7 @@ func (jr *jReceiver) Shutdown(ctx context.Context) error {
 
 	if jr.collectorServer != nil {
 		if cerr := jr.collectorServer.Shutdown(ctx); cerr != nil {
-			errs = append(errs, cerr)
+			errs = multierr.Append(errs, cerr)
 		}
 	}
 	if jr.grpc != nil {
@@ -214,7 +222,7 @@ func (jr *jReceiver) Shutdown(ctx context.Context) error {
 	}
 
 	jr.goroutines.Wait()
-	return consumererror.Combine(errs)
+	return errs
 }
 
 func consumeTraces(ctx context.Context, batch *jaeger.Batch, consumer consumer.Traces) (int, error) {
@@ -289,7 +297,11 @@ func (jr *jReceiver) startAgent(host component.Host) error {
 	if jr.agentBinaryThriftEnabled() {
 		h := &agentHandler{
 			nextConsumer: jr.nextConsumer,
-			obsrecv:      obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverID: jr.id, Transport: agentTransportBinary}),
+			obsrecv: obsreport.NewReceiver(obsreport.ReceiverSettings{
+				ReceiverID:             jr.id,
+				Transport:              agentTransportBinary,
+				ReceiverCreateSettings: jr.settings,
+			}),
 		}
 		processor, err := jr.buildProcessor(jr.agentBinaryThriftAddr(), jr.config.AgentBinaryThriftConfig, apacheThrift.NewTBinaryProtocolFactoryConf(nil), h)
 		if err != nil {
@@ -301,7 +313,11 @@ func (jr *jReceiver) startAgent(host component.Host) error {
 	if jr.agentCompactThriftEnabled() {
 		h := &agentHandler{
 			nextConsumer: jr.nextConsumer,
-			obsrecv:      obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverID: jr.id, Transport: agentTransportCompact}),
+			obsrecv: obsreport.NewReceiver(obsreport.ReceiverSettings{
+				ReceiverID:             jr.id,
+				Transport:              agentTransportCompact,
+				ReceiverCreateSettings: jr.settings,
+			}),
 		}
 		processor, err := jr.buildProcessor(jr.agentCompactThriftAddr(), jr.config.AgentCompactThriftConfig, apacheThrift.NewTCompactProtocolFactoryConf(nil), h)
 		if err != nil {
@@ -445,7 +461,7 @@ func (jr *jReceiver) startCollector(host component.Host) error {
 
 		nr := mux.NewRouter()
 		nr.HandleFunc("/api/traces", jr.HandleThriftHTTPBatch).Methods(http.MethodPost)
-		jr.collectorServer = jr.config.CollectorHTTPSettings.ToServer(nr, jr.settings)
+		jr.collectorServer = jr.config.CollectorHTTPSettings.ToServer(nr, jr.settings.TelemetrySettings)
 		jr.goroutines.Add(1)
 		go func() {
 			defer jr.goroutines.Done()
@@ -456,7 +472,7 @@ func (jr *jReceiver) startCollector(host component.Host) error {
 	}
 
 	if jr.collectorGRPCEnabled() {
-		opts, err := jr.config.CollectorGRPCServerSettings.ToServerOption(host, jr.settings)
+		opts, err := jr.config.CollectorGRPCServerSettings.ToServerOption(host, jr.settings.TelemetrySettings)
 		if err != nil {
 			return fmt.Errorf("failed to build the options for the Jaeger gRPC Collector: %v", err)
 		}

@@ -52,8 +52,8 @@ func TestExternalLabels(t *testing.T) {
 	defer mp.Close()
 
 	cms := new(consumertest.MetricsSink)
-	receiver := newPrometheusReceiver(logger, &Config{
-		ReceiverSettings: config.NewReceiverSettings(config.NewID(typeStr)),
+	receiver := newPrometheusReceiver(componenttest.NewNopReceiverCreateSettings(), &Config{
+		ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
 		PrometheusConfig: cfg}, cms)
 
 	require.NoError(t, receiver.Start(ctx, componenttest.NewNopHost()), "Failed to invoke Start: %v", err)

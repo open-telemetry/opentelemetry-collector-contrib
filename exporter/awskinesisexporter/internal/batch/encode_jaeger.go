@@ -15,55 +15,54 @@
 package batch
 
 import (
+	"github.com/gogo/protobuf/proto"
+	"github.com/jaegertracing/jaeger/model"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/model/pdata"
+	"go.uber.org/multierr"
 
-	jaegertranslator "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awskinesisexporter/internal/key"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger"
 )
 
-type jaeger struct {
-	batchSize  int
-	recordSize int
-}
-
-var _ Encoder = (*jaeger)(nil)
-
-func NewJaeger(batchSize, recordSize int) Encoder {
-	return jaeger{
-		batchSize:  batchSize,
-		recordSize: recordSize,
+func partitionByTraceID(v interface{}) string {
+	if s, ok := v.(*model.Span); ok && s != nil {
+		return s.TraceID.String()
 	}
+	return key.Randomized(v)
 }
 
-func (j jaeger) Traces(td pdata.Traces) (*Batch, error) {
-	traces, err := jaegertranslator.InternalTracesToJaegerProto(td)
+type jaegerEncoder struct {
+	batchOptions []Option
+}
+
+var _ Encoder = (*jaegerEncoder)(nil)
+
+func (je jaegerEncoder) Traces(td pdata.Traces) (*Batch, error) {
+	traces, err := jaeger.InternalTracesToJaegerProto(td)
 	if err != nil {
-		return nil, err
+		return nil, consumererror.NewTraces(err, td)
 	}
 
-	bt := New(
-		WithMaxRecordSize(j.recordSize),
-		WithMaxRecordsPerBatch(j.batchSize),
-	)
-	var errs []error
+	bt := New(je.batchOptions...)
+
+	var errs error
 	for _, trace := range traces {
 		for _, span := range trace.GetSpans() {
 			if span.Process == nil {
-				span.Process = trace.Process
+				span.Process = trace.GetProcess()
 			}
-			if err := bt.AddProtobufV1(span, span.TraceID.String()); err != nil {
-				errs = append(errs, err)
+			data, err := proto.Marshal(span)
+			if err != nil {
+				errs = multierr.Append(errs, err)
+				continue
 			}
+			errs = multierr.Append(errs, bt.AddRecord(data, partitionByTraceID(span)))
 		}
 	}
 
-	return bt, consumererror.Combine(errs)
+	return bt, errs
 }
 
-func (jaeger) Metrics(_ pdata.Metrics) (*Batch, error) {
-	return nil, ErrUnsupportedEncodedType
-}
-
-func (jaeger) Logs(_ pdata.Logs) (*Batch, error) {
-	return nil, ErrUnsupportedEncodedType
-}
+func (jaegerEncoder) Logs(pdata.Logs) (*Batch, error)       { return nil, ErrUnsupportedEncoding }
+func (jaegerEncoder) Metrics(pdata.Metrics) (*Batch, error) { return nil, ErrUnsupportedEncoding }

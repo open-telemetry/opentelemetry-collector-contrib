@@ -50,9 +50,8 @@ type Config struct {
 
 	// IngestURL is the destination to where SignalFx metrics will be sent to, it is
 	// intended for tests and debugging. The value of Realm is ignored if the
-	// URL is specified. If a path is not included the exporter will
-	// automatically append the appropriate path, eg.: "v2/datapoint".
-	// If a path is specified it will act as a prefix.
+	// URL is specified. The exporter will automatically append the appropriate
+	// path: "/v2/datapoint" for metrics, and "/v2/event" for events.
 	IngestURL string `mapstructure:"ingest_url"`
 
 	// APIURL is the destination to where SignalFx metadata will be sent. This
@@ -104,6 +103,9 @@ type Config struct {
 	// NonAlphanumericDimensionChars is a list of allowable characters, in addition to alphanumeric ones,
 	// to be used in a dimension key.
 	NonAlphanumericDimensionChars string `mapstructure:"nonalphanumeric_dimension_chars"`
+
+	// MaxConnections is used to set a limit to the maximum idle HTTP connection the exporter can keep open.
+	MaxConnections int `mapstructure:"max_connections"`
 }
 
 func (cfg *Config) getOptionsFromConfig() (*exporterOptions, error) {
@@ -152,6 +154,10 @@ func (cfg *Config) validateConfig() error {
 
 	if cfg.Timeout < 0 {
 		return errors.New(`cannot have a negative "timeout"`)
+	}
+
+	if cfg.MaxConnections < 0 {
+		return errors.New(`cannot have a negative "max_connections"`)
 	}
 
 	return nil

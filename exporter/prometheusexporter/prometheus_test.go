@@ -41,7 +41,7 @@ func TestPrometheusExporter(t *testing.T) {
 	}{
 		{
 			config: &Config{
-				ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
+				ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
 				Namespace:        "test",
 				ConstLabels: map[string]string{
 					"foo0":  "bar0",
@@ -54,14 +54,14 @@ func TestPrometheusExporter(t *testing.T) {
 		},
 		{
 			config: &Config{
-				ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
+				ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
 				Endpoint:         ":88999",
 			},
 			wantStartErr: "listen tcp: address 88999: invalid port",
 		},
 		{
 			config: &Config{
-				ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
+				ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
 			},
 			wantErr: "expecting a non-blank address to run the Prometheus metrics handler",
 		},
@@ -99,7 +99,7 @@ func TestPrometheusExporter(t *testing.T) {
 
 func TestPrometheusExporter_endToEnd(t *testing.T) {
 	cfg := &Config{
-		ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
+		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
 		Namespace:        "test",
 		ConstLabels: map[string]string{
 			"foo1":  "bar1",
@@ -158,7 +158,7 @@ func TestPrometheusExporter_endToEnd(t *testing.T) {
 	}
 
 	// Expired metrics should be removed during first scrape
-	exp.(*wrapMetricsExpoter).exporter.collector.accumulator.(*lastValueAccumulator).metricExpiration = 1 * time.Millisecond
+	exp.(*wrapMetricsExporter).exporter.collector.accumulator.(*lastValueAccumulator).metricExpiration = 1 * time.Millisecond
 	time.Sleep(10 * time.Millisecond)
 
 	res, err := http.Get("http://localhost:7777/metrics")
@@ -174,7 +174,7 @@ func TestPrometheusExporter_endToEnd(t *testing.T) {
 
 func TestPrometheusExporter_endToEndWithTimestamps(t *testing.T) {
 	cfg := &Config{
-		ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
+		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
 		Namespace:        "test",
 		ConstLabels: map[string]string{
 			"foo2":  "bar2",
@@ -234,7 +234,7 @@ func TestPrometheusExporter_endToEndWithTimestamps(t *testing.T) {
 	}
 
 	// Expired metrics should be removed during first scrape
-	exp.(*wrapMetricsExpoter).exporter.collector.accumulator.(*lastValueAccumulator).metricExpiration = 1 * time.Millisecond
+	exp.(*wrapMetricsExporter).exporter.collector.accumulator.(*lastValueAccumulator).metricExpiration = 1 * time.Millisecond
 	time.Sleep(10 * time.Millisecond)
 
 	res, err := http.Get("http://localhost:7777/metrics")
@@ -250,7 +250,7 @@ func TestPrometheusExporter_endToEndWithTimestamps(t *testing.T) {
 
 func TestPrometheusExporter_endToEndWithResource(t *testing.T) {
 	cfg := &Config{
-		ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
+		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
 		Namespace:        "test",
 		ConstLabels: map[string]string{
 			"foo2":  "bar2",
@@ -318,7 +318,7 @@ func metricBuilder(delta int64, prefix string) pdata.Metrics {
 	m1.SetDataType(pdata.MetricDataTypeSum)
 	d1 := m1.Sum()
 	d1.SetIsMonotonic(true)
-	d1.SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+	d1.SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
 	dp1 := d1.DataPoints().AppendEmpty()
 	dp1.SetStartTimestamp(pdata.NewTimestampFromTime(time.Unix(1543160298+delta, 100000090)))
 	dp1.SetTimestamp(pdata.NewTimestampFromTime(time.Unix(1543160298+delta, 100000997)))
@@ -333,7 +333,7 @@ func metricBuilder(delta int64, prefix string) pdata.Metrics {
 	m2.SetDataType(pdata.MetricDataTypeSum)
 	d2 := m2.Sum()
 	d2.SetIsMonotonic(true)
-	d2.SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+	d2.SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
 	dp2 := d2.DataPoints().AppendEmpty()
 	dp2.SetStartTimestamp(pdata.NewTimestampFromTime(time.Unix(1543160298, 100000090)))
 	dp2.SetTimestamp(pdata.NewTimestampFromTime(time.Unix(1543160298, 100000997)))

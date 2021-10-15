@@ -52,7 +52,7 @@ func NewFactory() component.ReceiverFactory {
 
 func createDefaultConfig() config.Receiver {
 	return &Config{
-		ReceiverSettings: config.NewReceiverSettings(config.NewID(typeStr)),
+		ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
 		NetAddr: confignet.NetAddr{
 			Endpoint:  defaultBindEndpoint,
 			Transport: defaultTransport,
@@ -75,5 +75,5 @@ func createMetricsReceiver(
 	if err != nil {
 		return nil, err
 	}
-	return New(params.Logger, *c, consumer)
+	return New(params, *c, consumer)
 }

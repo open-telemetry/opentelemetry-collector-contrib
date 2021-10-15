@@ -38,7 +38,7 @@ func NewFactory() component.ReceiverFactory {
 
 func createDefaultConfig() config.Receiver {
 	return &Config{
-		ReceiverSettings:   config.NewReceiverSettings(config.NewID(typeStr)),
+		ReceiverSettings:   config.NewReceiverSettings(config.NewComponentID(typeStr)),
 		CollectionInterval: 10 * time.Second,
 	}
 }
@@ -51,5 +51,5 @@ func createMetricsReceiver(
 ) (component.MetricsReceiver, error) {
 	oCfg := cfg.(*Config)
 
-	return newRedisReceiver(params.Logger, oCfg, consumer), nil
+	return newRedisReceiver(params, oCfg, consumer), nil
 }

@@ -51,7 +51,7 @@ func NewSapmDataSender(port int) *SapmDataSender {
 func (je *SapmDataSender) Start() error {
 	factory := sapmexporter.NewFactory()
 	cfg := &sapmexporter.Config{
-		ExporterSettings:   config.NewExporterSettings(config.NewID(factory.Type())),
+		ExporterSettings:   config.NewExporterSettings(config.NewComponentID(factory.Type())),
 		Endpoint:           fmt.Sprintf("http://%s/v2/trace", je.GetEndpoint()),
 		DisableCompression: true,
 		AccessToken:        "MyToken",

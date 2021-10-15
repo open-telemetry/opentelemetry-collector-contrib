@@ -60,7 +60,7 @@ type resourceAttributes map[observer.EndpointType]map[string]string
 // newReceiverTemplate creates a receiverTemplate instance from the full name of a subreceiver
 // and its arbitrary config map values.
 func newReceiverTemplate(name string, cfg userConfigMap) (receiverTemplate, error) {
-	id, err := config.NewIDFromString(name)
+	id, err := config.NewComponentIDFromString(name)
 	if err != nil {
 		return receiverTemplate{}, err
 	}

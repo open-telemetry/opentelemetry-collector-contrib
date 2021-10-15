@@ -246,13 +246,13 @@ func fromMetricDataTypeToMetricType(metric pdata.Metric) *sfxpb.MetricType {
 		if !metric.Sum().IsMonotonic() {
 			return &sfxMetricTypeGauge
 		}
-		if metric.Sum().AggregationTemporality() == pdata.AggregationTemporalityDelta {
+		if metric.Sum().AggregationTemporality() == pdata.MetricAggregationTemporalityDelta {
 			return &sfxMetricTypeCounter
 		}
 		return &sfxMetricTypeCumulativeCounter
 
 	case pdata.MetricDataTypeHistogram:
-		if metric.Histogram().AggregationTemporality() == pdata.AggregationTemporalityDelta {
+		if metric.Histogram().AggregationTemporality() == pdata.MetricAggregationTemporalityDelta {
 			return &sfxMetricTypeCounter
 		}
 		return &sfxMetricTypeCumulativeCounter
@@ -455,7 +455,7 @@ func (dpv *datapointValidator) isValidMetricName(name string) bool {
 }
 
 func (dpv *datapointValidator) isValidDimension(dimension *sfxpb.Dimension) bool {
-	return dpv.isValidDimensionName(dimension.Key) && dpv.isValidDimensionValue(dimension.Value)
+	return dpv.isValidDimensionName(dimension.Key) && dpv.isValidDimensionValue(dimension.Value, dimension.Key)
 }
 
 func (dpv *datapointValidator) isValidDimensionName(name string) bool {
@@ -470,9 +470,10 @@ func (dpv *datapointValidator) isValidDimensionName(name string) bool {
 	return true
 }
 
-func (dpv *datapointValidator) isValidDimensionValue(value string) bool {
+func (dpv *datapointValidator) isValidDimensionValue(value, name string) bool {
 	if len(value) > maxDimensionValueLength {
 		dpv.logger.Warn("dropping dimension",
+			zap.String("dimension_name", name),
 			zap.String("reason", invalidDimensionValueReason),
 			zap.String("dimension_value", value),
 			zap.Int("dimension_value_length", len(value)),

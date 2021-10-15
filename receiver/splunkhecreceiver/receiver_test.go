@@ -93,7 +93,7 @@ func Test_splunkhecreceiver_NewLogsReceiver(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := newLogsReceiver(componenttest.NewNopTelemetrySettings(), tt.args.config, tt.args.logsConsumer)
+			got, err := newLogsReceiver(componenttest.NewNopReceiverCreateSettings(), tt.args.config, tt.args.logsConsumer)
 			assert.Equal(t, tt.wantErr, err)
 			if err == nil {
 				assert.NotNil(t, got)
@@ -153,7 +153,7 @@ func Test_splunkhecreceiver_NewMetricsReceiver(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := newMetricsReceiver(componenttest.NewNopTelemetrySettings(), tt.args.config, tt.args.metricsConsumer)
+			got, err := newMetricsReceiver(componenttest.NewNopReceiverCreateSettings(), tt.args.config, tt.args.metricsConsumer)
 			assert.Equal(t, tt.wantErr, err)
 			if err == nil {
 				assert.NotNil(t, got)
@@ -299,7 +299,7 @@ func Test_splunkhecReceiver_handleReq(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			sink := new(consumertest.LogsSink)
-			rcv, err := newLogsReceiver(componenttest.NewNopTelemetrySettings(), *config, sink)
+			rcv, err := newLogsReceiver(componenttest.NewNopReceiverCreateSettings(), *config, sink)
 			assert.NoError(t, err)
 
 			r := rcv.(*splunkReceiver)
@@ -323,7 +323,7 @@ func Test_consumer_err(t *testing.T) {
 	splunkMsg := buildSplunkHecMsg(currentTime, 3)
 	config := createDefaultConfig().(*Config)
 	config.Endpoint = "localhost:0" // Actually not creating the endpoint
-	rcv, err := newLogsReceiver(componenttest.NewNopTelemetrySettings(), *config, consumertest.NewErr(errors.New("bad consumer")))
+	rcv, err := newLogsReceiver(componenttest.NewNopReceiverCreateSettings(), *config, consumertest.NewErr(errors.New("bad consumer")))
 	assert.NoError(t, err)
 
 	r := rcv.(*splunkReceiver)
@@ -350,7 +350,7 @@ func Test_consumer_err_metrics(t *testing.T) {
 	assert.True(t, splunkMsg.IsMetric())
 	config := createDefaultConfig().(*Config)
 	config.Endpoint = "localhost:0" // Actually not creating the endpoint\
-	rcv, err := newMetricsReceiver(componenttest.NewNopTelemetrySettings(), *config, consumertest.NewErr(errors.New("bad consumer")))
+	rcv, err := newMetricsReceiver(componenttest.NewNopReceiverCreateSettings(), *config, consumertest.NewErr(errors.New("bad consumer")))
 	assert.NoError(t, err)
 
 	r := rcv.(*splunkReceiver)
@@ -382,7 +382,7 @@ func Test_splunkhecReceiver_TLS(t *testing.T) {
 		},
 	}
 	sink := new(consumertest.LogsSink)
-	r, err := newLogsReceiver(componenttest.NewNopTelemetrySettings(), *cfg, sink)
+	r, err := newLogsReceiver(componenttest.NewNopReceiverCreateSettings(), *cfg, sink)
 	require.NoError(t, err)
 	defer r.Shutdown(context.Background())
 
@@ -480,7 +480,7 @@ func Test_splunkhecReceiver_AccessTokenPassthrough(t *testing.T) {
 			config.AccessTokenPassthrough = tt.passthrough
 
 			sink := new(consumertest.LogsSink)
-			rcv, err := newLogsReceiver(componenttest.NewNopTelemetrySettings(), *config, sink)
+			rcv, err := newLogsReceiver(componenttest.NewNopReceiverCreateSettings(), *config, sink)
 			assert.NoError(t, err)
 
 			currentTime := float64(time.Now().UnixNano()) / 1e6
@@ -567,7 +567,7 @@ func Test_Logs_splunkhecReceiver_IndexSourceTypePassthrough(t *testing.T) {
 			exporter, err := factory.CreateLogsExporter(context.Background(), componenttest.NewNopExporterCreateSettings(), exporterConfig)
 			exporter.Start(context.Background(), nil)
 			assert.NoError(t, err)
-			rcv, err := newLogsReceiver(componenttest.NewNopTelemetrySettings(), *cfg, exporter)
+			rcv, err := newLogsReceiver(componenttest.NewNopReceiverCreateSettings(), *cfg, exporter)
 			assert.NoError(t, err)
 
 			currentTime := float64(time.Now().UnixNano()) / 1e6
@@ -661,7 +661,7 @@ func Test_Metrics_splunkhecReceiver_IndexSourceTypePassthrough(t *testing.T) {
 			exporter, err := factory.CreateMetricsExporter(context.Background(), componenttest.NewNopExporterCreateSettings(), exporterConfig)
 			exporter.Start(context.Background(), nil)
 			assert.NoError(t, err)
-			rcv, err := newMetricsReceiver(componenttest.NewNopTelemetrySettings(), *cfg, exporter)
+			rcv, err := newMetricsReceiver(componenttest.NewNopReceiverCreateSettings(), *cfg, exporter)
 			assert.NoError(t, err)
 
 			currentTime := float64(time.Now().UnixNano()) / 1e6
@@ -887,7 +887,7 @@ func Test_splunkhecReceiver_handleRawReq(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			sink := new(consumertest.LogsSink)
-			rcv, err := newLogsReceiver(componenttest.NewNopTelemetrySettings(), *config, sink)
+			rcv, err := newLogsReceiver(componenttest.NewNopReceiverCreateSettings(), *config, sink)
 			assert.NoError(t, err)
 
 			r := rcv.(*splunkReceiver)

@@ -23,10 +23,10 @@ import (
 	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
+	"go.uber.org/multierr"
 	"go.uber.org/zap"
 )
 
@@ -42,7 +42,7 @@ type ScraperControllerSettings struct {
 // settings with a collection interval of one minute.
 func DefaultScraperControllerSettings(cfgType config.Type) ScraperControllerSettings {
 	return ScraperControllerSettings{
-		ReceiverSettings:   config.NewReceiverSettings(config.NewID(cfgType)),
+		ReceiverSettings:   config.NewReceiverSettings(config.NewComponentID(cfgType)),
 		CollectionInterval: time.Minute,
 	}
 }
@@ -84,13 +84,14 @@ type controller struct {
 	done        chan struct{}
 	terminated  chan struct{}
 
-	obsrecv *obsreport.Receiver
+	obsrecv      *obsreport.Receiver
+	recvSettings component.ReceiverCreateSettings
 }
 
 // NewScraperControllerReceiver creates a Receiver with the configured options, that can control multiple scrapers.
 func NewScraperControllerReceiver(
 	cfg *ScraperControllerSettings,
-	logger *zap.Logger,
+	set component.ReceiverCreateSettings,
 	nextConsumer consumer.Metrics,
 	options ...ScraperControllerOption,
 ) (component.Receiver, error) {
@@ -104,12 +105,13 @@ func NewScraperControllerReceiver(
 
 	sc := &controller{
 		id:                 cfg.ID(),
-		logger:             logger,
+		logger:             set.Logger,
 		collectionInterval: cfg.CollectionInterval,
 		nextConsumer:       nextConsumer,
 		done:               make(chan struct{}),
 		terminated:         make(chan struct{}),
-		obsrecv:            obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverID: cfg.ID(), Transport: ""}),
+		obsrecv:            obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverID: cfg.ID(), Transport: "", ReceiverCreateSettings: set}),
+		recvSettings:       set,
 	}
 
 	for _, op := range options {
@@ -141,14 +143,12 @@ func (sc *controller) Shutdown(ctx context.Context) error {
 		<-sc.terminated
 	}
 
-	var errs []error
+	var errs error
 	for _, scraper := range sc.scrapers {
-		if err := scraper.Shutdown(ctx); err != nil {
-			errs = append(errs, err)
-		}
+		errs = multierr.Append(errs, scraper.Shutdown(ctx))
 	}
 
-	return consumererror.Combine(errs)
+	return errs
 }
 
 // startScraping initiates a ticker that calls Scrape based on the configured
@@ -181,7 +181,7 @@ func (sc *controller) scrapeMetricsAndReport(ctx context.Context) {
 	metrics := pdata.NewMetrics()
 
 	for _, scraper := range sc.scrapers {
-		md, err := scraper.Scrape(ctx, sc.id)
+		md, err := scraper.Scrape(ctx, sc.id, sc.recvSettings)
 		if err != nil {
 			sc.logger.Error("Error scraping metrics", zap.Error(err), zap.Stringer("scraper", scraper.ID()))
 

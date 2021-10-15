@@ -40,7 +40,7 @@ func NewFactory() component.ReceiverFactory {
 
 func createDefaultConfig() config.Receiver {
 	return &Config{
-		ReceiverSettings: config.NewReceiverSettings(config.NewID(typeStr)),
+		ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
 		GRPCServerSettings: configgrpc.GRPCServerSettings{
 			NetAddr: confignet.NetAddr{
 				Endpoint:  "0.0.0.0:55678",
@@ -62,7 +62,7 @@ func createTracesReceiver(
 	r := receivers.GetOrAdd(cfg, func() component.Component {
 		rCfg := cfg.(*Config)
 		var recv *ocReceiver
-		recv, err = newOpenCensusReceiver(rCfg.ID(), rCfg.NetAddr.Transport, rCfg.NetAddr.Endpoint, nil, nil, set.TelemetrySettings, rCfg.buildOptions()...)
+		recv, err = newOpenCensusReceiver(rCfg.ID(), rCfg.NetAddr.Transport, rCfg.NetAddr.Endpoint, nil, nil, set, rCfg.buildOptions()...)
 		return recv
 	})
 	if err != nil {
@@ -83,7 +83,7 @@ func createMetricsReceiver(
 	r := receivers.GetOrAdd(cfg, func() component.Component {
 		rCfg := cfg.(*Config)
 		var recv *ocReceiver
-		recv, err = newOpenCensusReceiver(rCfg.ID(), rCfg.NetAddr.Transport, rCfg.NetAddr.Endpoint, nil, nil, set.TelemetrySettings, rCfg.buildOptions()...)
+		recv, err = newOpenCensusReceiver(rCfg.ID(), rCfg.NetAddr.Transport, rCfg.NetAddr.Endpoint, nil, nil, set, rCfg.buildOptions()...)
 		return recv
 	})
 	if err != nil {

@@ -28,7 +28,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-log-collection/operator/helper"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/extension/storage"
+	"go.opentelemetry.io/collector/extension/experimental/storage"
 	"go.opentelemetry.io/collector/model/pdata"
 )
 
@@ -127,7 +127,7 @@ func (f TestReceiverType) Type() config.Type {
 func (f TestReceiverType) CreateDefaultConfig() config.Receiver {
 	return &TestConfig{
 		BaseConfig: BaseConfig{
-			ReceiverSettings: config.NewReceiverSettings(config.NewID(testType)),
+			ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(testType)),
 			Operators:        OperatorConfigs{},
 			Converter: ConverterConfig{
 				MaxFlushCount: 1,

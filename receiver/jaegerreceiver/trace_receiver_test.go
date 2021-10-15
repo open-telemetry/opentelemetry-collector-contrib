@@ -56,7 +56,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger"
 )
 
-var jaegerReceiver = config.NewIDWithName("jaeger", "receiver_test")
+var jaegerReceiver = config.NewComponentIDWithName("jaeger", "receiver_test")
 
 func TestTraceSource(t *testing.T) {
 	set := componenttest.NewNopReceiverCreateSettings()
@@ -109,8 +109,8 @@ func TestClientIPDetection(t *testing.T) {
 				ch <- ctx
 			},
 		},
-		grpcObsrecv: obsreport.NewReceiver(obsreport.ReceiverSettings{}),
-		httpObsrecv: obsreport.NewReceiver(obsreport.ReceiverSettings{}),
+		grpcObsrecv: obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverCreateSettings: componenttest.NewNopReceiverCreateSettings()}),
+		httpObsrecv: obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverCreateSettings: componenttest.NewNopReceiverCreateSettings()}),
 	}
 	batch := &jaegerthrift.Batch{
 		Process: jaegerthrift.NewProcess(),

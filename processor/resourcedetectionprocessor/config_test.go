@@ -40,20 +40,20 @@ func TestLoadConfig(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, cfg)
 
-	p1 := cfg.Processors[config.NewID(typeStr)]
+	p1 := cfg.Processors[config.NewComponentID(typeStr)]
 	assert.Equal(t, p1, factory.CreateDefaultConfig())
 
-	p2 := cfg.Processors[config.NewIDWithName(typeStr, "gce")]
+	p2 := cfg.Processors[config.NewComponentIDWithName(typeStr, "gce")]
 	assert.Equal(t, p2, &Config{
-		ProcessorSettings: config.NewProcessorSettings(config.NewIDWithName(typeStr, "gce")),
+		ProcessorSettings: config.NewProcessorSettings(config.NewComponentIDWithName(typeStr, "gce")),
 		Detectors:         []string{"env", "gce"},
 		Timeout:           2 * time.Second,
 		Override:          false,
 	})
 
-	p3 := cfg.Processors[config.NewIDWithName(typeStr, "ec2")]
+	p3 := cfg.Processors[config.NewComponentIDWithName(typeStr, "ec2")]
 	assert.Equal(t, p3, &Config{
-		ProcessorSettings: config.NewProcessorSettings(config.NewIDWithName(typeStr, "ec2")),
+		ProcessorSettings: config.NewProcessorSettings(config.NewComponentIDWithName(typeStr, "ec2")),
 		Detectors:         []string{"env", "ec2"},
 		DetectorConfig: DetectorConfig{
 			EC2Config: ec2.Config{
@@ -64,9 +64,9 @@ func TestLoadConfig(t *testing.T) {
 		Override: false,
 	})
 
-	p4 := cfg.Processors[config.NewIDWithName(typeStr, "system")]
+	p4 := cfg.Processors[config.NewComponentIDWithName(typeStr, "system")]
 	assert.Equal(t, p4, &Config{
-		ProcessorSettings: config.NewProcessorSettings(config.NewIDWithName(typeStr, "system")),
+		ProcessorSettings: config.NewProcessorSettings(config.NewComponentIDWithName(typeStr, "system")),
 		Detectors:         []string{"env", "system"},
 		DetectorConfig: DetectorConfig{
 			SystemConfig: system.Config{

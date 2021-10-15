@@ -27,6 +27,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
 	"go.uber.org/zap"
@@ -57,7 +58,9 @@ func factory() (component.ReceiverFactory, *Config) {
 func paramsAndContext(t *testing.T) (component.ReceiverCreateSettings, context.Context, context.CancelFunc) {
 	ctx, cancel := context.WithCancel(context.Background())
 	logger := zaptest.NewLogger(t, zaptest.WrapOptions(zap.AddCaller()))
-	return component.ReceiverCreateSettings{TelemetrySettings: component.TelemetrySettings{Logger: logger}}, ctx, cancel
+	settings := componenttest.NewNopReceiverCreateSettings()
+	settings.Logger = logger
+	return settings, ctx, cancel
 }
 
 func TestDefaultMetricsIntegration(t *testing.T) {

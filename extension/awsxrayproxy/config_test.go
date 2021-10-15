@@ -25,6 +25,8 @@ import (
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configtest"
 	"go.opentelemetry.io/collector/config/configtls"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/proxy"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -38,27 +40,29 @@ func TestLoadConfig(t *testing.T) {
 	require.Nil(t, err)
 	require.NotNil(t, cfg)
 
-	ext0 := cfg.Extensions[config.NewID(typeStr)]
+	ext0 := cfg.Extensions[config.NewComponentID(typeStr)]
 	assert.Equal(t, factory.CreateDefaultConfig(), ext0)
 
-	ext1 := cfg.Extensions[config.NewIDWithName(typeStr, "1")]
+	ext1 := cfg.Extensions[config.NewComponentIDWithName(typeStr, "1")]
 	assert.Equal(t,
 		&Config{
-			ExtensionSettings: config.NewExtensionSettings(config.NewIDWithName(typeStr, "1")),
-			TCPAddr: confignet.TCPAddr{
-				Endpoint: "0.0.0.0:1234",
+			ExtensionSettings: config.NewExtensionSettings(config.NewComponentIDWithName(typeStr, "1")),
+			ProxyConfig: proxy.Config{
+				TCPAddr: confignet.TCPAddr{
+					Endpoint: "0.0.0.0:1234",
+				},
+				ProxyAddress: "https://proxy.proxy.com",
+				TLSSetting: configtls.TLSClientSetting{
+					Insecure:   true,
+					ServerName: "something",
+				},
+				Region:      "us-west-1",
+				RoleARN:     "arn:aws:iam::123456789012:role/awesome_role",
+				AWSEndpoint: "https://another.aws.endpoint.com",
 			},
-			ProxyAddress: "https://proxy.proxy.com",
-			TLSSetting: configtls.TLSClientSetting{
-				Insecure:   true,
-				ServerName: "something",
-			},
-			Region:      "us-west-1",
-			RoleARN:     "arn:aws:iam::123456789012:role/awesome_role",
-			AWSEndpoint: "https://another.aws.endpoint.com",
 		},
 		ext1)
 
 	assert.Equal(t, 1, len(cfg.Service.Extensions))
-	assert.Equal(t, config.NewIDWithName(typeStr, "1"), cfg.Service.Extensions[0])
+	assert.Equal(t, config.NewComponentIDWithName(typeStr, "1"), cfg.Service.Extensions[0])
 }

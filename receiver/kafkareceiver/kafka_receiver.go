@@ -46,7 +46,7 @@ type kafkaTracesConsumer struct {
 	cancelConsumeLoop context.CancelFunc
 	unmarshaler       TracesUnmarshaler
 
-	logger *zap.Logger
+	settings component.ReceiverCreateSettings
 }
 
 // kafkaMetricsConsumer uses sarama to consume and handle messages from kafka.
@@ -58,7 +58,7 @@ type kafkaMetricsConsumer struct {
 	cancelConsumeLoop context.CancelFunc
 	unmarshaler       MetricsUnmarshaler
 
-	logger *zap.Logger
+	settings component.ReceiverCreateSettings
 }
 
 // kafkaLogsConsumer uses sarama to consume and handle messages from kafka.
@@ -70,7 +70,7 @@ type kafkaLogsConsumer struct {
 	cancelConsumeLoop context.CancelFunc
 	unmarshaler       LogsUnmarshaler
 
-	logger *zap.Logger
+	settings component.ReceiverCreateSettings
 }
 
 var _ component.Receiver = (*kafkaTracesConsumer)(nil)
@@ -108,7 +108,7 @@ func newTracesReceiver(config Config, set component.ReceiverCreateSettings, unma
 		topics:        []string{config.Topic},
 		nextConsumer:  nextConsumer,
 		unmarshaler:   unmarshaler,
-		logger:        set.Logger,
+		settings:      set,
 	}, nil
 }
 
@@ -117,11 +117,15 @@ func (c *kafkaTracesConsumer) Start(context.Context, component.Host) error {
 	c.cancelConsumeLoop = cancel
 	consumerGroup := &tracesConsumerGroupHandler{
 		id:           c.id,
-		logger:       c.logger,
+		logger:       c.settings.Logger,
 		unmarshaler:  c.unmarshaler,
 		nextConsumer: c.nextConsumer,
 		ready:        make(chan bool),
-		obsrecv:      obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverID: c.id, Transport: transport}),
+		obsrecv: obsreport.NewReceiver(obsreport.ReceiverSettings{
+			ReceiverID:             c.id,
+			Transport:              transport,
+			ReceiverCreateSettings: c.settings,
+		}),
 	}
 	go c.consumeLoop(ctx, consumerGroup) // nolint:errcheck
 	<-consumerGroup.ready
@@ -134,11 +138,11 @@ func (c *kafkaTracesConsumer) consumeLoop(ctx context.Context, handler sarama.Co
 		// server-side rebalance happens, the consumer session will need to be
 		// recreated to get the new claims
 		if err := c.consumerGroup.Consume(ctx, c.topics, handler); err != nil {
-			c.logger.Error("Error from consumer", zap.Error(err))
+			c.settings.Logger.Error("Error from consumer", zap.Error(err))
 		}
 		// check if context was cancelled, signaling that the consumer should stop
 		if ctx.Err() != nil {
-			c.logger.Info("Consumer stopped", zap.Error(ctx.Err()))
+			c.settings.Logger.Info("Consumer stopped", zap.Error(ctx.Err()))
 			return ctx.Err()
 		}
 	}
@@ -180,7 +184,7 @@ func newMetricsReceiver(config Config, set component.ReceiverCreateSettings, unm
 		topics:        []string{config.Topic},
 		nextConsumer:  nextConsumer,
 		unmarshaler:   unmarshaler,
-		logger:        set.Logger,
+		settings:      set,
 	}, nil
 }
 
@@ -189,11 +193,15 @@ func (c *kafkaMetricsConsumer) Start(context.Context, component.Host) error {
 	c.cancelConsumeLoop = cancel
 	metricsConsumerGroup := &metricsConsumerGroupHandler{
 		id:           c.id,
-		logger:       c.logger,
+		logger:       c.settings.Logger,
 		unmarshaler:  c.unmarshaler,
 		nextConsumer: c.nextConsumer,
 		ready:        make(chan bool),
-		obsrecv:      obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverID: c.id, Transport: transport}),
+		obsrecv: obsreport.NewReceiver(obsreport.ReceiverSettings{
+			ReceiverID:             c.id,
+			Transport:              transport,
+			ReceiverCreateSettings: c.settings,
+		}),
 	}
 	go c.consumeLoop(ctx, metricsConsumerGroup)
 	<-metricsConsumerGroup.ready
@@ -206,11 +214,11 @@ func (c *kafkaMetricsConsumer) consumeLoop(ctx context.Context, handler sarama.C
 		// server-side rebalance happens, the consumer session will need to be
 		// recreated to get the new claims
 		if err := c.consumerGroup.Consume(ctx, c.topics, handler); err != nil {
-			c.logger.Error("Error from consumer", zap.Error(err))
+			c.settings.Logger.Error("Error from consumer", zap.Error(err))
 		}
 		// check if context was cancelled, signaling that the consumer should stop
 		if ctx.Err() != nil {
-			c.logger.Info("Consumer stopped", zap.Error(ctx.Err()))
+			c.settings.Logger.Info("Consumer stopped", zap.Error(ctx.Err()))
 			return ctx.Err()
 		}
 	}
@@ -251,7 +259,7 @@ func newLogsReceiver(config Config, set component.ReceiverCreateSettings, unmars
 		topics:        []string{config.Topic},
 		nextConsumer:  nextConsumer,
 		unmarshaler:   unmarshaler,
-		logger:        set.Logger,
+		settings:      set,
 	}, nil
 }
 
@@ -260,11 +268,15 @@ func (c *kafkaLogsConsumer) Start(context.Context, component.Host) error {
 	c.cancelConsumeLoop = cancel
 	logsConsumerGroup := &logsConsumerGroupHandler{
 		id:           c.id,
-		logger:       c.logger,
+		logger:       c.settings.Logger,
 		unmarshaler:  c.unmarshaler,
 		nextConsumer: c.nextConsumer,
 		ready:        make(chan bool),
-		obsrecv:      obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverID: c.id, Transport: transport}),
+		obsrecv: obsreport.NewReceiver(obsreport.ReceiverSettings{
+			ReceiverID:             c.id,
+			Transport:              transport,
+			ReceiverCreateSettings: c.settings,
+		}),
 	}
 	go c.consumeLoop(ctx, logsConsumerGroup)
 	<-logsConsumerGroup.ready
@@ -277,11 +289,11 @@ func (c *kafkaLogsConsumer) consumeLoop(ctx context.Context, handler sarama.Cons
 		// server-side rebalance happens, the consumer session will need to be
 		// recreated to get the new claims
 		if err := c.consumerGroup.Consume(ctx, c.topics, handler); err != nil {
-			c.logger.Error("Error from consumer", zap.Error(err))
+			c.settings.Logger.Error("Error from consumer", zap.Error(err))
 		}
 		// check if context was cancelled, signaling that the consumer should stop
 		if ctx.Err() != nil {
-			c.logger.Info("Consumer stopped", zap.Error(ctx.Err()))
+			c.settings.Logger.Info("Consumer stopped", zap.Error(ctx.Err()))
 			return ctx.Err()
 		}
 	}

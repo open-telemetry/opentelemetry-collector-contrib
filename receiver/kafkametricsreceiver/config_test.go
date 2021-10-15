@@ -39,7 +39,7 @@ func TestLoadConfig(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, 1, len(cfg.Receivers))
 
-	r := cfg.Receivers[config.NewID(typeStr)].(*Config)
+	r := cfg.Receivers[config.NewComponentID(typeStr)].(*Config)
 	assert.Equal(t, &Config{
 		ScraperControllerSettings: scraperhelper.DefaultScraperControllerSettings(typeStr),
 		Brokers:                   []string{"10.10.10.10:9092"},

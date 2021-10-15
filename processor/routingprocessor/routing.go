@@ -131,7 +131,13 @@ func (e *processorImp) Shutdown(context.Context) error {
 }
 
 func (e *processorImp) ConsumeTraces(ctx context.Context, td pdata.Traces) error {
-	value := e.extractValueFromContext(ctx)
+	var value string
+	if e.config.AttributeSource == resourceAttributeSource {
+		value = e.extractValueFromResource(td)
+	} else {
+		value = e.extractValueFromContext(ctx)
+	}
+
 	if len(value) == 0 {
 		// the attribute's value hasn't been found, send data to the default exporter
 		return e.pushDataToExporters(ctx, td, e.defaultTracesExporters)
@@ -159,6 +165,20 @@ func (e *processorImp) pushDataToExporters(ctx context.Context, td pdata.Traces,
 	}
 
 	return nil
+}
+
+func (e *processorImp) extractValueFromResource(traces pdata.Traces) string {
+	if traces.ResourceSpans().Len() == 0 {
+		return ""
+	}
+
+	firstResourceAttributes := traces.ResourceSpans().At(0).Resource().Attributes()
+	routingAttribute, found := firstResourceAttributes.Get(e.config.FromAttribute)
+	if !found {
+		return ""
+	}
+
+	return routingAttribute.AsString()
 }
 
 func (e *processorImp) extractValueFromContext(ctx context.Context) string {

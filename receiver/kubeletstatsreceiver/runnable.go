@@ -18,6 +18,7 @@ import (
 	"context"
 	"fmt"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/obsreport"
@@ -28,7 +29,6 @@ import (
 
 	// todo replace with scraping lib when it's ready
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/interval"
-	internaldata "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver/internal/kubelet"
 )
 
@@ -54,19 +54,23 @@ func newRunnable(
 	ctx context.Context,
 	consumer consumer.Metrics,
 	restClient kubelet.RestClient,
-	logger *zap.Logger,
+	set component.ReceiverCreateSettings,
 	rOptions *receiverOptions,
 ) *runnable {
 	return &runnable{
 		ctx:                   ctx,
 		consumer:              consumer,
 		restClient:            restClient,
-		logger:                logger,
+		logger:                set.Logger,
 		extraMetadataLabels:   rOptions.extraMetadataLabels,
 		metricGroupsToCollect: rOptions.metricGroupsToCollect,
 		k8sAPIClient:          rOptions.k8sAPIClient,
 		cachedVolumeLabels:    make(map[string]map[string]string),
-		obsrecv:               obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverID: rOptions.id, Transport: transport}),
+		obsrecv: obsreport.NewReceiver(obsreport.ReceiverSettings{
+			ReceiverID:             rOptions.id,
+			Transport:              transport,
+			ReceiverCreateSettings: set,
+		}),
 	}
 }
 
@@ -98,7 +102,7 @@ func (r *runnable) Run() error {
 	mds := kubelet.MetricsData(r.logger, summary, metadata, typeStr, r.metricGroupsToCollect)
 	metrics := pdata.NewMetrics()
 	for i := range mds {
-		internaldata.OCToMetrics(mds[i].Node, mds[i].Resource, mds[i].Metrics).ResourceMetrics().MoveAndAppendTo(metrics.ResourceMetrics())
+		mds[i].ResourceMetrics().MoveAndAppendTo(metrics.ResourceMetrics())
 	}
 
 	ctx := r.obsrecv.StartMetricsOp(r.ctx)

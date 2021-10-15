@@ -40,13 +40,13 @@ func TestLoadConfig(t *testing.T) {
 
 	require.Len(t, cfg.Extensions, 2)
 
-	ext0 := cfg.Extensions[config.NewID(typeStr)]
+	ext0 := cfg.Extensions[config.NewComponentID(typeStr)]
 	assert.Equal(t, factory.CreateDefaultConfig(), ext0)
 
-	ext1 := cfg.Extensions[config.NewIDWithName(typeStr, "1")]
+	ext1 := cfg.Extensions[config.NewComponentIDWithName(typeStr, "1")]
 	assert.Equal(t,
 		&Config{
-			ExtensionSettings: config.NewExtensionSettings(config.NewIDWithName(typeStr, "1")),
+			ExtensionSettings: config.NewExtensionSettings(config.NewComponentIDWithName(typeStr, "1")),
 			Node:              "node-1",
 			APIConfig:         k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeKubeConfig},
 		},
@@ -55,7 +55,7 @@ func TestLoadConfig(t *testing.T) {
 
 func TestValidate(t *testing.T) {
 	cfg := &Config{
-		ExtensionSettings: config.NewExtensionSettings(config.NewIDWithName(typeStr, "1")),
+		ExtensionSettings: config.NewExtensionSettings(config.NewComponentIDWithName(typeStr, "1")),
 		Node:              "node-1",
 		APIConfig:         k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeKubeConfig},
 	}

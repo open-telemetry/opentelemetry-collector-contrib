@@ -96,7 +96,7 @@ func TestCumulativeToDeltaProcessor(t *testing.T) {
 			// next stores the results of the filter metric processor
 			next := new(consumertest.MetricsSink)
 			cfg := &Config{
-				ProcessorSettings: config.NewProcessorSettings(config.NewID(typeStr)),
+				ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
 				Metrics:           test.metrics,
 			}
 			factory := NewFactory()
@@ -180,9 +180,9 @@ func generateTestMetrics(tm testMetric) pdata.Metrics {
 		sum.SetIsMonotonic(true)
 
 		if tm.isCumulative[i] {
-			sum.SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+			sum.SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
 		} else {
-			sum.SetAggregationTemporality(pdata.AggregationTemporalityDelta)
+			sum.SetAggregationTemporality(pdata.MetricAggregationTemporalityDelta)
 		}
 
 		for _, value := range tm.metricValues[i] {

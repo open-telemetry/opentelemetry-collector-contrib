@@ -15,8 +15,8 @@
 package internal
 
 import (
-	gokitLog "github.com/go-kit/kit/log"
-	"github.com/go-kit/kit/log/level"
+	gokitLog "github.com/go-kit/log"
+	"github.com/go-kit/log/level"
 	"go.uber.org/zap"
 )
 

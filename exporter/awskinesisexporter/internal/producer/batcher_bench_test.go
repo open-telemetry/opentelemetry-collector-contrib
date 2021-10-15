@@ -18,7 +18,6 @@ import (
 	"context"
 	"testing"
 
-	"github.com/golang/protobuf/ptypes/empty"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap/zaptest"
@@ -36,7 +35,7 @@ func benchXEmptyMessages(b *testing.B, msgCount int) {
 
 	bt := batch.New()
 	for i := 0; i < msgCount; i++ {
-		assert.NoError(b, bt.AddProtobufV1(new(empty.Empty), "fixed-key"))
+		assert.NoError(b, bt.AddRecord([]byte("foobar"), "fixed-key"))
 	}
 
 	b.ReportAllocs()

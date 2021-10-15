@@ -29,6 +29,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awskinesisexporter/internal/batch"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awskinesisexporter/internal/compress"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awskinesisexporter/internal/producer"
 )
 
@@ -65,11 +66,30 @@ func createExporter(c config.Exporter, log *zap.Logger) (*Exporter, error) {
 	producer, err := producer.NewBatcher(kinesis.New(sess, cfgs...), conf.AWS.StreamName,
 		producer.WithLogger(log),
 	)
+	if err != nil {
+		return nil, err
+	}
+
+	compressor, err := compress.NewCompressor(conf.Encoding.Compression)
+	if err != nil {
+		return nil, err
+	}
+
+	encoder, err := batch.NewEncoder(
+		conf.Encoding.Name,
+		batch.WithMaxRecordSize(conf.MaxRecordSize),
+		batch.WithMaxRecordsPerBatch(conf.MaxRecordsPerBatch),
+		batch.WithCompression(compressor),
+	)
+
+	if err != nil {
+		return nil, err
+	}
 
 	return &Exporter{
 		producer: producer,
-		batcher:  batch.NewJaeger(conf.MaxRecordsPerBatch, conf.MaxRecordSize),
-	}, err
+		batcher:  encoder,
+	}, nil
 }
 
 // Start tells the exporter to start. The exporter may prepare for exporting

@@ -30,9 +30,9 @@ func buildCounterMetric(parsedMetric statsDMetric, isMonotonicCounter bool, time
 	}
 	nm.SetDataType(pdata.MetricDataTypeSum)
 
-	nm.Sum().SetAggregationTemporality(pdata.AggregationTemporalityDelta)
+	nm.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityDelta)
 	if isMonotonicCounter {
-		nm.Sum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+		nm.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
 	}
 
 	nm.Sum().SetIsMonotonic(true)
@@ -83,7 +83,7 @@ func buildSummaryMetric(summaryMetric summaryMetric) pdata.InstrumentationLibrar
 	quantile := []float64{0, 10, 50, 90, 95, 100}
 	for _, v := range quantile {
 		eachQuantile := dp.QuantileValues().AppendEmpty()
-		eachQuantile.SetQuantile(v)
+		eachQuantile.SetQuantile(v / 100)
 		eachQuantileValue, _ := stats.PercentileNearestRank(summaryMetric.summaryPoints, v)
 		eachQuantile.SetValue(eachQuantileValue)
 	}

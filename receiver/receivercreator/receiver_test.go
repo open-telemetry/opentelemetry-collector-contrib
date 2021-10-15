@@ -67,9 +67,9 @@ var _ observer.Observable = (*mockObserver)(nil)
 func TestMockedEndToEnd(t *testing.T) {
 	host, cfg := exampleCreatorFactory(t)
 	host.extensions = map[config.ComponentID]component.Extension{
-		config.NewID("mock_observer"): &mockObserver{},
+		config.NewComponentID("mock_observer"): &mockObserver{},
 	}
-	dynCfg := cfg.Receivers[config.NewIDWithName(typeStr, "1")]
+	dynCfg := cfg.Receivers[config.NewComponentIDWithName(typeStr, "1")]
 	factory := NewFactory()
 	params := componenttest.NewNopReceiverCreateSettings()
 	mockConsumer := new(consumertest.MetricsSink)

@@ -50,7 +50,7 @@ func NewFactory() component.ReceiverFactory {
 
 func createDefaultConfig() config.Receiver {
 	return &Config{
-		ReceiverSettings: config.NewReceiverSettings(config.NewID(typeStr)),
+		ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
 		ClientConfig: kube.ClientConfig{
 			APIConfig: k8sconfig.APIConfig{
 				AuthType: k8sconfig.AuthTypeTLS,
@@ -76,7 +76,7 @@ func createMetricsReceiver(
 		return nil, err
 	}
 
-	return newReceiver(rOptions, params.Logger, rest, consumer), nil
+	return newReceiver(rOptions, params, rest, consumer), nil
 }
 
 func restClient(logger *zap.Logger, cfg *Config) (kubelet.RestClient, error) {
