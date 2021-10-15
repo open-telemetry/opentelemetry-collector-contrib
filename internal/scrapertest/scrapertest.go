@@ -15,35 +15,35 @@
 package scrapertest
 
 import (
-	"context"
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"testing"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/scraperhelper"
-
-	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/model/otlp"
 	"go.opentelemetry.io/collector/model/pdata"
 )
 
-// ValidateScraper validates That a scraper extracts metrics correctly.
-// it runs the scrape function and the compares the scraped metrics against
-// a given json file that represents an expected pdata.Metrics object.
-func ValidateScraper(t *testing.T, actualScraper scraperhelper.ScrapeResourceMetrics, expectedFilePath string) {
-	scrapedRMS, err := actualScraper(context.Background())
-	require.NoError(t, err)
-
-	expectedFileBytes, err := ioutil.ReadFile(expectedFilePath)
-	require.NoError(t, err)
+func FileToMetrics(filePath string) (pdata.Metrics, error) {
+	expectedFileBytes, err := ioutil.ReadFile(filePath)
+	if err != nil {
+		return pdata.Metrics{}, err
+	}
 	unmarshaller := otlp.NewJSONMetricsUnmarshaler()
-	expectedMetrics, err := unmarshaller.UnmarshalMetrics(expectedFileBytes)
-	require.NoError(t, err)
+	return unmarshaller.UnmarshalMetrics(expectedFileBytes)
+}
 
-	eMetricSlice := expectedMetrics.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics()
-	aMetricSlice := scrapedRMS.At(0).InstrumentationLibraryMetrics().At(0).Metrics()
-
-	require.NoError(t, CompareMetrics(eMetricSlice, aMetricSlice))
+func MetricsToFile(filePath string, metrics pdata.Metrics) error {
+	bytes, err := otlp.NewJSONMetricsMarshaler().MarshalMetrics(metrics)
+	if err != nil {
+		return err
+	}
+	var jsonVal map[string]interface{}
+	json.Unmarshal(bytes, &jsonVal)
+	b, err := json.MarshalIndent(jsonVal, "", "   ")
+	if err != nil {
+		return err
+	}
+	return ioutil.WriteFile(filePath, b, 0600)
 }
 
 // CompareMetrics compares each part of two given metric slices and returns

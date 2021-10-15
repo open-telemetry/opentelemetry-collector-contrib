@@ -59,9 +59,18 @@ Scoreboard: S_DD_L_GGG_____W__IIII_C________________W___________________________
 	err := sc.start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err)
 	require.NotNil(t, sc.httpClient)
-	expectedFile := filepath.Join("testdata", "scraper", "expected.json")
 
-	scrapertest.ValidateScraper(t, sc.scrape, expectedFile)
+	scrapedRMS, err := sc.scrape(context.Background())
+	require.NoError(t, err)
+
+	expectedFile := filepath.Join("testdata", "scraper", "expected.json")
+	expectedMetrics, err := scrapertest.FileToMetrics(expectedFile)
+	require.NoError(t, err)
+
+	eMetricSlice := expectedMetrics.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics()
+	aMetricSlice := scrapedRMS.At(0).InstrumentationLibraryMetrics().At(0).Metrics()
+
+	require.NoError(t, scrapertest.CompareMetrics(eMetricSlice, aMetricSlice))
 }
 
 func TestScraperFailedStart(t *testing.T) {

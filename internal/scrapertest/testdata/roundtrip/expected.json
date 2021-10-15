@@ -1,0 +1,35 @@
+{
+   "resourceMetrics": [
+      {
+         "instrumentationLibraryMetrics": [
+            {
+               "instrumentationLibrary": {},
+               "metrics": [
+                  {
+                     "description": "test description",
+                     "gauge": {
+                        "dataPoints": [
+                           {
+                              "asDouble": 1,
+                              "attributes": [
+                                 {
+                                    "key": "testKey1",
+                                    "value": {
+                                       "stringValue": "teststringvalue1"
+                                    }
+                                 }
+                              ],
+                              "timeUnixNano": "11651379494838206464"
+                           }
+                        ]
+                     },
+                     "name": "test name",
+                     "unit": "test unit"
+                  }
+               ]
+            }
+         ],
+         "resource": {}
+      }
+   ]
+}

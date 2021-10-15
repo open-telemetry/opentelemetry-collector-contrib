@@ -1,1 +1,0 @@
-{"resourceMetrics":[{"resource":{},"instrumentationLibraryMetrics":[{"instrumentationLibrary":{},"metrics":[{"name":"test name","description":"test description","unit":"test unit","gauge":{"dataPoints":[{"attributes":[{"key":"testKey1","value":{"stringValue":"teststringvalue1"}}],"timeUnixNano":"11651379494838206464","asDouble":1}]}}]}]}]}

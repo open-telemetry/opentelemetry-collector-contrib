@@ -15,12 +15,14 @@
 package mysqlreceiver
 
 import (
+	"context"
 	"path/filepath"
 	"testing"
 
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest"
+	"github.com/stretchr/testify/require"
 )
 
 func TestScrape(t *testing.T) {
@@ -32,7 +34,15 @@ func TestScrape(t *testing.T) {
 	})
 	sc.client = &mysqlMock
 
-	expectedFile := filepath.Join("testdata", "scraper", "expected.json")
+	scrapedRMS, err := sc.scrape(context.Background())
+	require.NoError(t, err)
 
-	scrapertest.ValidateScraper(t, sc.scrape, expectedFile)
+	expectedFile := filepath.Join("testdata", "scraper", "expected.json")
+	expectedMetrics, err := scrapertest.FileToMetrics(expectedFile)
+	require.NoError(t, err)
+
+	eMetricSlice := expectedMetrics.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics()
+	aMetricSlice := scrapedRMS.At(0).InstrumentationLibraryMetrics().At(0).Metrics()
+
+	require.NoError(t, scrapertest.CompareMetrics(eMetricSlice, aMetricSlice))
 }

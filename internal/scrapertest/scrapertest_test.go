@@ -15,7 +15,6 @@
 package scrapertest
 
 import (
-	"context"
 	"fmt"
 	"io/ioutil"
 	"path/filepath"
@@ -24,7 +23,6 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"go.opentelemetry.io/collector/model/otlp"
 	"go.opentelemetry.io/collector/model/pdata"
 )
 
@@ -172,24 +170,45 @@ func TestCompareMetrics(t *testing.T) {
 	}
 }
 
-// TestScraperTest ensures that ValidateScraper validates correctly
-func TestValidateScraper(t *testing.T) {
-	scrape := func(c context.Context) (pdata.ResourceMetricsSlice, error) {
-		rms := pdata.NewResourceMetricsSlice()
-		baseMetrics := baseTestMetrics()
-		baseMetrics.CopyTo(rms.AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty().Metrics())
-		return rms, nil
-	}
+func TestRoundTrip(t *testing.T) {
+	metricslice := baseTestMetrics()
+	expectedMetrics := pdata.NewMetrics()
+	metricslice.CopyTo(expectedMetrics.ResourceMetrics().AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty().Metrics())
 
-	newMetrics := pdata.NewMetrics()
-	metricslice := newMetrics.ResourceMetrics()
-	rms, _ := scrape(context.Background())
-	rms.CopyTo(metricslice)
+	tempDir := filepath.Join(t.TempDir(), "metrics.json")
+	err := MetricsToFile(tempDir, expectedMetrics)
+	require.NoError(t, err)
 
-	expectedBytes, err := otlp.NewJSONMetricsMarshaler().MarshalMetrics(newMetrics)
+	actualMetrics, err := FileToMetrics(tempDir)
 	require.NoError(t, err)
-	expectedFilePath := filepath.Join("testdata", "scrapers", "expected.json")
-	err = ioutil.WriteFile(expectedFilePath, expectedBytes, 0600)
+	require.Equal(t, expectedMetrics, actualMetrics)
+}
+
+func TestMetricsToFile(t *testing.T) {
+	metricslice := baseTestMetrics()
+	metrics := pdata.NewMetrics()
+	metricslice.CopyTo(metrics.ResourceMetrics().AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty().Metrics())
+
+	tempDir := filepath.Join(t.TempDir(), "metrics.json")
+	MetricsToFile(tempDir, metrics)
+
+	actualBytes, err := ioutil.ReadFile(tempDir)
 	require.NoError(t, err)
-	ValidateScraper(t, scrape, expectedFilePath)
+
+	expectedFile := filepath.Join("testdata", "roundtrip", "expected.json")
+	expectedBytes, err := ioutil.ReadFile(expectedFile)
+	require.NoError(t, err)
+
+	require.Equal(t, expectedBytes, actualBytes)
+}
+
+func TestFileToMetrics(t *testing.T) {
+	metricslice := baseTestMetrics()
+	expectedMetrics := pdata.NewMetrics()
+	metricslice.CopyTo(expectedMetrics.ResourceMetrics().AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty().Metrics())
+
+	expectedFile := filepath.Join("testdata", "roundtrip", "expected.json")
+	actualMetrics, err := FileToMetrics(expectedFile)
+	require.NoError(t, err)
+	require.Equal(t, expectedMetrics, actualMetrics)
 }
