@@ -1,4 +1,4 @@
-module github.com/signalfx/forks/opentelemetry-collector-contrib/internal/docker
+module github.com/open-telemetry/opentelemetry-collector-contrib/internal/docker
 
 go 1.17
 
