@@ -284,3 +284,12 @@ CERT_DIRS := receiver/sapmreceiver/testdata \
 .PHONY: certs
 certs:
 	$(foreach dir, $(CERT_DIRS), $(call exec-command, @internal/buildscripts/gen-certs.sh -o $(dir)))
+
+.PHONY: multimod-verify
+multimod-verify: install-tools
+	@echo "Validating versions.yaml"
+	multimod verify
+
+.PHONY: multimod-prerelease
+multimod-prerelease: install-tools
+	multimod prerelease -v ./versions.yaml -m contrib-base
