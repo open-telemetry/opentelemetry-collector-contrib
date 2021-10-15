@@ -623,3 +623,5 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/stack
 
 // see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/4433
 exclude github.com/StackExchange/wmi v1.2.0
+
+retract v0.37.0 // Contains dependencies on v0.36.0 components, which should have been updated to v0.37.0.
