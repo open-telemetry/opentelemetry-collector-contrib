@@ -23,10 +23,9 @@ import (
 	"time"
 
 	"github.com/Shopify/sarama"
-	"go.uber.org/multierr"
-
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	sign "github.com/aws/aws-sdk-go/aws/signer/v4"
+	"go.uber.org/multierr"
 )
 
 const (
