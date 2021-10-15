@@ -131,6 +131,18 @@ exporters:
           state: [interrupt, user, system]
 ```
 
+The following `include_metrics` example would instruct the exporter to send only `cpu.interrupt` metrics with a `cpu` dimension value ("per core" datapoints), and both "per core" and aggregate `cpu.idle` metrics:
+
+```
+exporters:
+  signalfx:
+    include_metrics:
+      - metric_name: "cpu.idle"
+      - metric_name: "cpu.interrupt"
+        dimensions:
+          cpu: ["*"]
+```
+
 ## Translation Rules and Metric Transformations
 
 The `translation_rules` metrics configuration field accepts a list of metric-transforming actions to
@@ -180,6 +192,17 @@ The translation rules defined in [`translation/constants.go`](./internal/transla
 * vmpage_io.memory.out
 * vmpage_io.swap.in
 * vmpage_io.swap.out
+
+In addition to the aggregated metrics, the default translation rules make available the following "per core" custom hostmetrics.
+The CPU number is assigned to the dimension `cpu` 
+
+* cpu.interrupt
+* cpu.nice
+* cpu.softirq
+* cpu.steal
+* cpu.system
+* cpu.user
+* cpu.wait
 
 These metrics are intended to be reported directly to Splunk IM by the SignalFx exporter.  Any desired changes to their attributes or values should be made via additional translation rules or from their constituent host metrics.
 
