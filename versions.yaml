@@ -14,7 +14,7 @@
 
 module-sets:
   contrib-base:
-    version: v0.36.0
+    version: v0.37.1
     modules:
       - github.com/open-telemetry/opentelemetry-collector-contrib
       - github.com/open-telemetry/opentelemetry-collector-contrib/cmd/configschema
@@ -110,6 +110,12 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sapmreceiver
+      - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mysqlreceiver
+      - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/cloudfoundryreceiver
+      - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudspannerreceiver
+      - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/journaldreceiver
+      - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/httpdreceiver
+      - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbatlasreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/loadbalancingexporter
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/fileexporter
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/jaegerexporter
@@ -147,6 +153,7 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/honeycombexporter
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opencensusexporter
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/alibabacloudlogserviceexporter
+      - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/skywalkingexporter
       - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus
       - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger
       - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin
