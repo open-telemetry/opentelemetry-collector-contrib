@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+## v0.37.1
+
+## 🧰 Bug fixes 🧰
+
+- Fixes a problem with v0.37.0 which contained dependencies on v0.36.0 components. They should have been updated to v0.37.0.
+
 ## v0.37.0
 
 ## 🚀 New components 🚀

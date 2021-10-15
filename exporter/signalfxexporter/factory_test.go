@@ -272,7 +272,7 @@ func TestCreateMetricsExporterWithDefaultExcludeMetrics(t *testing.T) {
 	require.NotNil(t, te)
 
 	// Validate that default excludes are always loaded.
-	assert.Equal(t, 11, len(config.ExcludeMetrics))
+	assert.Equal(t, 12, len(config.ExcludeMetrics))
 }
 
 func TestCreateMetricsExporterWithExcludeMetrics(t *testing.T) {
@@ -292,7 +292,7 @@ func TestCreateMetricsExporterWithExcludeMetrics(t *testing.T) {
 	require.NotNil(t, te)
 
 	// Validate that default excludes are always loaded.
-	assert.Equal(t, 12, len(config.ExcludeMetrics))
+	assert.Equal(t, 13, len(config.ExcludeMetrics))
 }
 
 func TestCreateMetricsExporterWithEmptyExcludeMetrics(t *testing.T) {
@@ -630,11 +630,14 @@ func TestDefaultCPUTranslations(t *testing.T) {
 	cpuUtilPerCore := m["cpu.utilization_per_core"]
 	require.Equal(t, 8, len(cpuUtilPerCore))
 
-	cpuStateMetrics := []string{"cpu.idle", "cpu.interrupt", "cpu.num_processors", "cpu.system", "cpu.user"}
+	cpuNumProcessors := m["cpu.num_processors"]
+	require.Equal(t, 1, len(cpuNumProcessors))
+
+	cpuStateMetrics := []string{"cpu.idle", "cpu.interrupt", "cpu.system", "cpu.user"}
 	for _, metric := range cpuStateMetrics {
 		dps, ok := m[metric]
 		require.True(t, ok, fmt.Sprintf("%s metrics not found", metric))
-		require.Len(t, dps, 1)
+		require.Len(t, dps, 9)
 	}
 }
 

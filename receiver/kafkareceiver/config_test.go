@@ -63,5 +63,9 @@ func TestLoadConfig(t *testing.T) {
 				Backoff: time.Second * 5,
 			},
 		},
+		AutoCommit: AutoCommit{
+			Enable:   true,
+			Interval: 1 * time.Second,
+		},
 	}, r)
 }

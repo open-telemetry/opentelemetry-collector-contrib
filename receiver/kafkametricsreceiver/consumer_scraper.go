@@ -24,7 +24,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/model/pdata"
-	"go.opentelemetry.io/collector/receiver/scrapererror"
+	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkametricsreceiver/internal/metadata"
@@ -93,7 +93,7 @@ func (s *consumerScraper) scrape(context.Context) (pdata.ResourceMetricsSlice, e
 			matchedTopics[t] = d
 		}
 	}
-	scrapeErrors := scrapererror.ScrapeErrors{}
+	var scrapeError error
 	// partitionIds in matchedTopics
 	topicPartitions := map[string][]int32{}
 	// currentOffset for each partition in matchedTopics
@@ -102,17 +102,18 @@ func (s *consumerScraper) scrape(context.Context) (pdata.ResourceMetricsSlice, e
 		topicPartitionOffset[topic] = map[int32]int64{}
 		partitions, err := s.client.Partitions(topic)
 		if err != nil {
-			scrapeErrors.Add(err)
+			scrapeError = multierr.Append(scrapeError, err)
 			continue
 		}
 		for _, p := range partitions {
-			o, err := s.client.GetOffset(topic, p, sarama.OffsetNewest)
+			var offset int64
+			offset, err = s.client.GetOffset(topic, p, sarama.OffsetNewest)
 			if err != nil {
-				scrapeErrors.Add(err)
+				scrapeError = multierr.Append(scrapeError, err)
 				continue
 			}
 			topicPartitions[topic] = append(topicPartitions[topic], p)
-			topicPartitionOffset[topic][p] = o
+			topicPartitionOffset[topic][p] = offset
 		}
 	}
 	consumerGroups, listErr := s.clusterAdmin.DescribeConsumerGroups(matchedGrpIds)
@@ -130,7 +131,7 @@ func (s *consumerScraper) scrape(context.Context) (pdata.ResourceMetricsSlice, e
 		addIntGauge(ilm.Metrics(), metadata.M.KafkaConsumerGroupMembers.Name(), now, labels, int64(len(group.Members)))
 		groupOffsetFetchResponse, err := s.clusterAdmin.ListConsumerGroupOffsets(group.GroupId, topicPartitions)
 		if err != nil {
-			scrapeErrors.Add(err)
+			scrapeError = multierr.Append(scrapeError, err)
 			continue
 		}
 		for topic, partitions := range groupOffsetFetchResponse.Blocks {
@@ -170,7 +171,7 @@ func (s *consumerScraper) scrape(context.Context) (pdata.ResourceMetricsSlice, e
 		}
 	}
 
-	return rms, scrapeErrors.Combine()
+	return rms, scrapeError
 }
 
 func createConsumerScraper(_ context.Context, cfg Config, saramaConfig *sarama.Config, logger *zap.Logger) (scraperhelper.Scraper, error) {
