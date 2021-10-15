@@ -224,7 +224,7 @@ func BenchmarkConsumeMetrics(b *testing.B) {
 	dp.Attributes().Insert("tag", pdata.NewAttributeValueString("value"))
 
 	reset := func() {
-		m.Sum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+		m.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
 		dp.SetDoubleVal(100.0)
 	}
 

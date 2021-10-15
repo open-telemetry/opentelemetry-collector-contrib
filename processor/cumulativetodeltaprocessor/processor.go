@@ -76,7 +76,7 @@ func (ctdp *cumulativeToDeltaProcessor) processMetrics(_ context.Context, md pda
 				switch m.DataType() {
 				case pdata.MetricDataTypeSum:
 					ms := m.Sum()
-					if ms.AggregationTemporality() != pdata.AggregationTemporalityCumulative {
+					if ms.AggregationTemporality() != pdata.MetricAggregationTemporalityCumulative {
 						return false
 					}
 
@@ -87,7 +87,7 @@ func (ctdp *cumulativeToDeltaProcessor) processMetrics(_ context.Context, md pda
 
 					baseIdentity.MetricIsMonotonic = ms.IsMonotonic()
 					ctdp.convertDataPoints(ms.DataPoints(), baseIdentity)
-					ms.SetAggregationTemporality(pdata.AggregationTemporalityDelta)
+					ms.SetAggregationTemporality(pdata.MetricAggregationTemporalityDelta)
 					return ms.DataPoints().Len() == 0
 				default:
 					return false

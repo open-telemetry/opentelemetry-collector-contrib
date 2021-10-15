@@ -44,7 +44,7 @@ func TestLoadingFullConfig(t *testing.T) {
 	}{
 		{
 			expCfg: &Config{
-				ProcessorSettings: config.NewProcessorSettings(config.NewIDWithName(typeStr, "alt")),
+				ProcessorSettings: config.NewProcessorSettings(config.NewComponentIDWithName(typeStr, "alt")),
 				Metrics: []string{
 					"metric1",
 					"metric2",
@@ -54,7 +54,7 @@ func TestLoadingFullConfig(t *testing.T) {
 		},
 		{
 			expCfg: &Config{
-				ProcessorSettings: config.NewProcessorSettings(config.NewID(typeStr)),
+				ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
 			},
 		},
 	}
