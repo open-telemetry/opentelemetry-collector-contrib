@@ -248,7 +248,7 @@ func TestInvalidExporter(t *testing.T) {
 	assert.Error(t, err)
 }
 
-func TestValueFromExistingGRPCAttribute(t *testing.T) {
+func TestValueFromExistingContextAttribute(t *testing.T) {
 	// prepare
 	exp, err := newProcessor(zap.NewNop(), &Config{
 		DefaultExporters: []string{"otlp"},
@@ -268,6 +268,49 @@ func TestValueFromExistingGRPCAttribute(t *testing.T) {
 
 	// verify
 	assert.Equal(t, "acme", val)
+}
+
+func TestValueFromExistingResourceAttribute(t *testing.T) {
+	// prepare
+	wg := &sync.WaitGroup{}
+	wg.Add(1)
+
+	exp := &processorImp{
+		config: Config{
+			AttributeSource: resourceAttributeSource,
+			FromAttribute:   "k8s.namespace.name",
+		},
+		logger: zap.NewNop(),
+		defaultTracesExporters: []component.TracesExporter{
+			&mockExporter{
+				ConsumeTracesFunc: func(context.Context, pdata.Traces) error {
+					assert.Fail(t, "Should not route to default exporters.")
+					wg.Done()
+					return nil
+				},
+			},
+		},
+		traceExporters: map[string][]component.TracesExporter{
+			"namespace-1": {
+				&mockExporter{
+					ConsumeTracesFunc: func(context.Context, pdata.Traces) error {
+						wg.Done()
+						return nil
+					},
+				},
+			},
+		},
+	}
+	traces := pdata.NewTraces()
+	traces.ResourceSpans().AppendEmpty()
+	traces.ResourceSpans().At(0).Resource().Attributes().InsertString("k8s.namespace.name", "namespace-1")
+
+	// test
+	err := exp.ConsumeTraces(context.Background(), traces)
+
+	// verify
+	wg.Wait() // ensure that the exporter has been called
+	assert.NoError(t, err)
 }
 
 func TestMultipleValuesFromExistingGRPCAttribute(t *testing.T) {
