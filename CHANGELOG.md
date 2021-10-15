@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+## 💡 Enhancements 💡
+
+- `awsprometheusremotewrite` exporter: Improve error message when failing to sign request
+
 ## v0.37.1
 
 ## 🧰 Bug fixes 🧰
