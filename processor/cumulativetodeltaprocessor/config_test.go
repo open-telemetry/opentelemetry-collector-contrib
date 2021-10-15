@@ -49,7 +49,7 @@ func TestLoadingFullConfig(t *testing.T) {
 					"metric1",
 					"metric2",
 				},
-				MaxStale: 10 * time.Second,
+				MaxStaleness: 10 * time.Second,
 			},
 		},
 		{

@@ -36,7 +36,7 @@ func newCumulativeToDeltaProcessor(config *Config, logger *zap.Logger) *cumulati
 	ctx, cancel := context.WithCancel(context.Background())
 	p := &cumulativeToDeltaProcessor{
 		logger:          logger,
-		deltaCalculator: tracking.NewMetricTracker(ctx, logger, config.MaxStale),
+		deltaCalculator: tracking.NewMetricTracker(ctx, logger, config.MaxStaleness),
 		cancelFunc:      cancel,
 	}
 	if len(config.Metrics) > 0 {

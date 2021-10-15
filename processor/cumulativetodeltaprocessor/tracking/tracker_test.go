@@ -159,8 +159,8 @@ func Test_metricTracker_removeStale(t *testing.T) {
 	}
 
 	type fields struct {
-		MaxStale time.Duration
-		States   map[string]*State
+		MaxStaleness time.Duration
+		States       map[string]*State
 	}
 	tests := []struct {
 		name    string
@@ -170,7 +170,7 @@ func Test_metricTracker_removeStale(t *testing.T) {
 		{
 			name: "Removes stale entry, leaves fresh entry",
 			fields: fields{
-				MaxStale: 0, // This logic isn't tested here
+				MaxStaleness: 0, // This logic isn't tested here
 				States: map[string]*State{
 					"stale": {
 						PrevPoint: stalePoint,
@@ -190,8 +190,8 @@ func Test_metricTracker_removeStale(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			tr := &metricTracker{
-				logger:   zap.NewNop(),
-				maxStale: tt.fields.MaxStale,
+				logger:       zap.NewNop(),
+				maxStaleness: tt.fields.MaxStaleness,
 			}
 			for k, v := range tt.fields.States {
 				tr.states.Store(k, v)
@@ -221,8 +221,8 @@ func Test_metricTracker_sweeper(t *testing.T) {
 	}
 
 	tr := &metricTracker{
-		logger:   zap.NewNop(),
-		maxStale: 1 * time.Millisecond,
+		logger:       zap.NewNop(),
+		maxStaleness: 1 * time.Millisecond,
 	}
 
 	start := time.Now()
@@ -234,17 +234,17 @@ func Test_metricTracker_sweeper(t *testing.T) {
 
 	for i := 1; i <= 2; i++ {
 		staleBefore := <-sweepEvent
-		tickTime := time.Since(start) + tr.maxStale*time.Duration(i)
+		tickTime := time.Since(start) + tr.maxStaleness*time.Duration(i)
 		if closed {
 			t.Fatalf("Sweeper returned prematurely.")
 		}
 
-		if tickTime < tr.maxStale {
-			t.Errorf("Sweeper tick time is too fast. (%v, want %v)", tickTime, tr.maxStale)
+		if tickTime < tr.maxStaleness {
+			t.Errorf("Sweeper tick time is too fast. (%v, want %v)", tickTime, tr.maxStaleness)
 		}
 
 		staleTime := staleBefore.AsTime()
-		if time.Since(staleTime) < tr.maxStale {
+		if time.Since(staleTime) < tr.maxStaleness {
 			t.Errorf("Sweeper called with invalid staleBefore value = %v", staleTime)
 		}
 	}

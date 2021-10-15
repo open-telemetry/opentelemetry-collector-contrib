@@ -58,18 +58,18 @@ type MetricTracker interface {
 	Convert(MetricPoint) (DeltaValue, bool)
 }
 
-func NewMetricTracker(ctx context.Context, logger *zap.Logger, maxStale time.Duration) MetricTracker {
-	t := &metricTracker{logger: logger, maxStale: maxStale}
-	if maxStale > 0 {
+func NewMetricTracker(ctx context.Context, logger *zap.Logger, maxStaleness time.Duration) MetricTracker {
+	t := &metricTracker{logger: logger, maxStaleness: maxStaleness}
+	if maxStaleness > 0 {
 		go t.sweeper(ctx, t.removeStale)
 	}
 	return t
 }
 
 type metricTracker struct {
-	logger   *zap.Logger
-	maxStale time.Duration
-	states   sync.Map
+	logger       *zap.Logger
+	maxStaleness time.Duration
+	states       sync.Map
 }
 
 func (t *metricTracker) Convert(in MetricPoint) (out DeltaValue, valid bool) {
@@ -177,11 +177,11 @@ func (t *metricTracker) removeStale(staleBefore pdata.Timestamp) {
 }
 
 func (t *metricTracker) sweeper(ctx context.Context, remove func(pdata.Timestamp)) {
-	ticker := time.NewTicker(t.maxStale)
+	ticker := time.NewTicker(t.maxStaleness)
 	for {
 		select {
 		case currentTime := <-ticker.C:
-			staleBefore := pdata.NewTimestampFromTime(currentTime.Add(-t.maxStale))
+			staleBefore := pdata.NewTimestampFromTime(currentTime.Add(-t.maxStaleness))
 			remove(staleBefore)
 		case <-ctx.Done():
 			ticker.Stop()

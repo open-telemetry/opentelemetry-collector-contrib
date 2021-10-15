@@ -27,8 +27,8 @@ type Config struct {
 	// List of cumulative metrics to convert to delta. Default: converts all cumulative metrics to delta.
 	Metrics []string `mapstructure:"metrics"`
 
-	// MaxStale is the total time a state entry will live past the time it was last seen. Set to 0 to retain state indefinitely.
-	MaxStale time.Duration `mapstructure:"max_stale"`
+	// MaxStaleness is the total time a state entry will live past the time it was last seen. Set to 0 to retain state indefinitely.
+	MaxStaleness time.Duration `mapstructure:"max_stale"`
 }
 
 var _ config.Processor = (*Config)(nil)
