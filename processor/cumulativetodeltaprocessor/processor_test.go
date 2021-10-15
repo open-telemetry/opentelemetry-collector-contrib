@@ -56,7 +56,7 @@ var (
 			outMetrics: generateTestMetrics(testMetric{
 				metricNames:  []string{"metric_1", "metric_2"},
 				metricValues: [][]float64{{100}, {4}},
-				isCumulative: []bool{false, false},
+				isCumulative: []bool{true, true},
 			}),
 		},
 		{

@@ -65,6 +65,8 @@ func (ctdp *cumulativeToDeltaProcessor) processMetrics(_ context.Context, md pda
 					if _, ok := ctdp.metrics[m.Name()]; !ok {
 						return false
 					}
+				} else {
+					return false
 				}
 				baseIdentity := tracking.MetricIdentity{
 					Resource:               rm.Resource(),

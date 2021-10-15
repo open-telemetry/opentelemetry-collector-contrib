@@ -13,7 +13,7 @@ The default configuration is to convert all monotonic sum metrics from aggregati
 
 The following settings can be optionally configured:
 
-- `metrics`: The processor uses metric names to identify a set of cumulative sum metrics and converts them to cumulative delta. Defaults to converting all metric names.
+- `metrics`: The processor uses metric names to identify a set of cumulative metrics and converts them to delta.
 - `max_stale`: The total time a state entry will live past the time it was last seen. Set to 0 to retain state indefinitely. Default: 0
 
 #### Example

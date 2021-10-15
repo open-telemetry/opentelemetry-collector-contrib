@@ -24,7 +24,7 @@ import (
 type Config struct {
 	config.ProcessorSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
 
-	// List of cumulative metrics to convert to delta. Default: converts all cumulative metrics to delta.
+	// List of cumulative metrics to convert to delta.
 	Metrics []string `mapstructure:"metrics"`
 
 	// MaxStaleness is the total time a state entry will live past the time it was last seen. Set to 0 to retain state indefinitely.
