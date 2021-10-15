@@ -48,7 +48,7 @@ func MetricsToFile(filePath string, metrics pdata.Metrics) error {
 
 // CompareMetrics compares each part of two given metric slices and returns
 // an error if they don't match. The error describes what didn't match.
-func CompareMetrics(expectedAll, actualAll pdata.MetricSlice) error {
+func CompareMetricSlices(expectedAll, actualAll pdata.MetricSlice) error {
 	if actualAll.Len() != expectedAll.Len() {
 		return fmt.Errorf("metric slices not of same length")
 	}

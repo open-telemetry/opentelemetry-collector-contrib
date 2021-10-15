@@ -44,5 +44,5 @@ func TestScrape(t *testing.T) {
 	eMetricSlice := expectedMetrics.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics()
 	aMetricSlice := scrapedRMS.At(0).InstrumentationLibraryMetrics().At(0).Metrics()
 
-	require.NoError(t, scrapertest.CompareMetrics(eMetricSlice, aMetricSlice))
+	require.NoError(t, scrapertest.CompareMetricSlices(eMetricSlice, aMetricSlice))
 }

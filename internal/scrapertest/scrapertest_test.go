@@ -160,7 +160,7 @@ func TestCompareMetrics(t *testing.T) {
 
 	for _, tc := range tcs {
 		t.Run(tc.name, func(t *testing.T) {
-			err := CompareMetrics(tc.expected, tc.actual)
+			err := CompareMetricSlices(tc.expected, tc.actual)
 			if tc.expectedError != nil {
 				require.Equal(t, tc.expectedError, err)
 			} else {
