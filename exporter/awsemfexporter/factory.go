@@ -20,7 +20,6 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil"
 )
@@ -51,7 +50,7 @@ func createDefaultConfig() config.Exporter {
 		MetricDeclarations:              make([]*MetricDeclaration, 0),
 		MetricDescriptors:               make([]MetricDescriptor, 0),
 		OutputDestination:               "cloudwatch",
-		logger:                          zap.NewNop(),
+		logger:                          nil,
 	}
 }
 
