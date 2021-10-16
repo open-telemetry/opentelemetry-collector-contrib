@@ -4,9 +4,6 @@ receivers:
 processors:
   cumulativetodelta:
     metrics:
-      - metric1
-      - metric2
-    max_stale: 10s
 
 exporters:
   nop:

@@ -15,6 +15,7 @@
 package cumulativetodeltaprocessor
 
 import (
+	"fmt"
 	"path"
 	"testing"
 	"time"
@@ -44,17 +45,12 @@ func TestLoadingFullConfig(t *testing.T) {
 	}{
 		{
 			expCfg: &Config{
-				ProcessorSettings: config.NewProcessorSettings(config.NewComponentIDWithName(typeStr, "alt")),
+				ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
 				Metrics: []string{
 					"metric1",
 					"metric2",
 				},
 				MaxStaleness: 10 * time.Second,
-			},
-		},
-		{
-			expCfg: &Config{
-				ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
 			},
 		},
 	}
@@ -63,6 +59,41 @@ func TestLoadingFullConfig(t *testing.T) {
 		t.Run(test.expCfg.ID().String(), func(t *testing.T) {
 			cfg := cfg.Processors[test.expCfg.ID()]
 			assert.Equal(t, test.expCfg, cfg)
+		})
+	}
+}
+
+func TestValidateConfig(t *testing.T) {
+	tests := []struct {
+		configName   string
+		succeed      bool
+		errorMessage string
+	}{
+		{
+			configName: "config.yaml",
+			succeed:    true,
+		},
+		{
+			configName:   "config_missing_name.yaml",
+			succeed:      false,
+			errorMessage: "metric names are missing",
+		},
+	}
+
+	for _, test := range tests {
+		factories, err := componenttest.NopFactories()
+		assert.NoError(t, err)
+
+		factory := NewFactory()
+		factories.Processors[typeStr] = factory
+		t.Run(test.configName, func(t *testing.T) {
+			config, err := configtest.LoadConfigAndValidate(path.Join(".", "testdata", test.configName), factories)
+			if test.succeed {
+				assert.NotNil(t, config)
+				assert.NoError(t, err)
+			} else {
+				assert.EqualError(t, err, fmt.Sprintf("processor %q has invalid configuration: %s", typeStr, test.errorMessage))
+			}
 		})
 	}
 }

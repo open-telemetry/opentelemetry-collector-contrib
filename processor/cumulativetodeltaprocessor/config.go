@@ -15,6 +15,7 @@
 package cumulativetodeltaprocessor
 
 import (
+	"fmt"
 	"time"
 
 	"go.opentelemetry.io/collector/config"
@@ -33,7 +34,11 @@ type Config struct {
 
 var _ config.Processor = (*Config)(nil)
 
-// Validate checks if the processor configuration is valid
-func (cfg *Config) Validate() error {
+// Validate checks whether the input configuration has all of the required fields for the processor.
+// An error is returned if there are any invalid inputs.
+func (config *Config) Validate() error {
+	if len(config.Metrics) == 0 {
+		return fmt.Errorf("metric names are missing")
+	}
 	return nil
 }
