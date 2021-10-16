@@ -61,11 +61,7 @@ func (ctdp *cumulativeToDeltaProcessor) processMetrics(_ context.Context, md pda
 		ilms.RemoveIf(func(ilm pdata.InstrumentationLibraryMetrics) bool {
 			ms := ilm.Metrics()
 			ms.RemoveIf(func(m pdata.Metric) bool {
-				if ctdp.metrics != nil {
-					if _, ok := ctdp.metrics[m.Name()]; !ok {
-						return false
-					}
-				} else {
+				if _, ok := ctdp.metrics[m.Name()]; !ok {
 					return false
 				}
 				baseIdentity := tracking.MetricIdentity{
