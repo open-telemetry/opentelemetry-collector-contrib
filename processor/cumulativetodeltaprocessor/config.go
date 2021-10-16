@@ -29,7 +29,7 @@ type Config struct {
 	Metrics []string `mapstructure:"metrics"`
 
 	// MaxStaleness is the total time a state entry will live past the time it was last seen. Set to 0 to retain state indefinitely.
-	MaxStaleness time.Duration `mapstructure:"max_stale"`
+	MaxStaleness time.Duration `mapstructure:"max_staleness"`
 }
 
 var _ config.Processor = (*Config)(nil)
