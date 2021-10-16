@@ -16,10 +16,12 @@ package attraction
 
 import (
 	"fmt"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterhelper"
-	"go.opentelemetry.io/collector/model/pdata"
 	"regexp"
 	"strings"
+
+	"go.opentelemetry.io/collector/model/pdata"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterhelper"
 )
 
 // Settings specifies the processor settings.

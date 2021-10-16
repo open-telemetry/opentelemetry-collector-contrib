@@ -666,11 +666,11 @@ func TestAttributes_RenderValue(t *testing.T) {
 			name: "RenderAttributeFromOtherExists",
 			inputAttributes: map[string]pdata.AttributeValue{
 				"region_key": pdata.NewAttributeValueString("eu"),
-				"region":  pdata.NewAttributeValueString("europe"),
+				"region":     pdata.NewAttributeValueString("europe"),
 			},
 			expectedAttributes: map[string]pdata.AttributeValue{
 				"region_key": pdata.NewAttributeValueString("eu"),
-				"region":  pdata.NewAttributeValueString("my region is: europe (eu)"),
+				"region":     pdata.NewAttributeValueString("my region is: europe (eu)"),
 			},
 		},
 	}
