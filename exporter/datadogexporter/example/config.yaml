@@ -40,7 +40,7 @@ exporters:
 
     ## @param disable_hostname - boolean - optional - default: false
     ## Whether to omit hostname from exported telemetry data. This is
-    ## useful for
+    ## useful for avoiding the registration of a new host.
     #
     # disable_hostname: false
 
