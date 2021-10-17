@@ -102,7 +102,7 @@ func TestDisableHostnameExporter(t *testing.T) {
 				assert.Empty(t, *metric.Host)
 			}
 		}
-
+		rw.WriteHeader(http.StatusAccepted)
 	}))
 	defer server.Close()
 
