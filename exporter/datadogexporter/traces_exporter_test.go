@@ -214,6 +214,57 @@ func TestTraceAndStatsExporter(t *testing.T) {
 	assert.Equal(t, "application/x-protobuf", got[0])
 }
 
+func TestTracesDisableHostname(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+		if req.Header.Get("Content-Type") != "application/x-protobuf" {
+			return
+		}
+
+		b, err := ioutil.ReadAll(req.Body)
+		if err != nil {
+			http.Error(rw, err.Error(), http.StatusInternalServerError)
+			assert.NoError(t, err, "http server received malformed trace payload")
+			return
+		}
+		defer req.Body.Close()
+
+		var traceData pb.TracePayload
+		if err := proto.Unmarshal(b, &traceData); err != nil {
+			http.Error(rw, err.Error(), http.StatusInternalServerError)
+			assert.NoError(t, err, "http server received malformed trace payload")
+			return
+		}
+
+		assert.Empty(t, traceData.HostName)
+		rw.WriteHeader(http.StatusAccepted)
+	}))
+	defer server.Close()
+
+	cfg := config.Config{
+		ExporterSettings: otelconfig.NewExporterSettings(otelconfig.NewComponentID(typeStr)),
+		API: config.APIConfig{
+			Key: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+		},
+		DisableHostname: true,
+		TagsConfig: config.TagsConfig{
+			Hostname: "test-host",
+		},
+		Traces: config.TracesConfig{
+			TCPAddr: confignet.TCPAddr{
+				Endpoint: server.URL,
+			},
+		},
+	}
+
+	params := componenttest.NewNopExporterCreateSettings()
+	exporter, err := createTracesExporter(context.Background(), params, &cfg)
+	assert.NoError(t, err)
+	defer exporter.Shutdown(context.Background())
+
+	err = exporter.ConsumeTraces(context.Background(), testutils.TestTraces.Clone())
+	assert.NoError(t, err)
+}
+
 func simpleTraces() pdata.Traces {
 	return simpleTracesWithID(pdata.NewTraceID([16]byte{1, 2, 3, 4}))
 }

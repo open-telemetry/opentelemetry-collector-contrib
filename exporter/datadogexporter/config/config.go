@@ -221,6 +221,10 @@ type Config struct {
 	// Traces defines the Traces exporter specific configuration
 	Traces TracesConfig `mapstructure:"traces"`
 
+	// DisableHostname defines whether to omit the hostname
+	// from being exported alongside telemetry data.
+	DisableHostname bool `mapstructure:"disable_hostname"`
+
 	// SendMetadata defines whether to send host metadata
 	// This is undocumented and only used for unit testing.
 	//

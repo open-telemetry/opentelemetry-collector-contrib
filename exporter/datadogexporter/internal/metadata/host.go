@@ -31,6 +31,10 @@ import (
 // 3. EC2 instance metadata
 // 4. System
 func GetHost(logger *zap.Logger, cfg *config.Config) string {
+	if cfg.DisableHostname {
+		return ""
+	}
+
 	if cfg.Hostname != "" {
 		return cfg.Hostname
 	}

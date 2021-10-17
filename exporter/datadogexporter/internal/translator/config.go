@@ -24,6 +24,7 @@ type translatorConfig struct {
 	SendMonotonic                        bool
 	ResourceAttributesAsTags             bool
 	InstrumentationLibraryMetadataAsTags bool
+	DisableHostname                      bool
 
 	// cache configuration
 	sweepInterval int64
@@ -81,6 +82,14 @@ func WithResourceAttributesAsTags() Option {
 func WithInstrumentationLibraryMetadataAsTags() Option {
 	return func(t *translatorConfig) error {
 		t.InstrumentationLibraryMetadataAsTags = true
+		return nil
+	}
+}
+
+// WithDisableHostname omits the hostname from being exported.
+func WithDisableHostname() Option {
+	return func(t *translatorConfig) error {
+		t.DisableHostname = true
 		return nil
 	}
 }

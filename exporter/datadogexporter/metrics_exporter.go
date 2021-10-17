@@ -63,6 +63,10 @@ func translatorFromConfig(logger *zap.Logger, cfg *config.Config) (*translator.T
 		translator.WithFallbackHostnameProvider(&hostProvider{logger, cfg}),
 	}
 
+	if cfg.DisableHostname {
+		options = append(options, translator.WithDisableHostname())
+	}
+
 	if cfg.Metrics.HistConfig.SendCountSum {
 		options = append(options, translator.WithCountSumMetrics())
 	}

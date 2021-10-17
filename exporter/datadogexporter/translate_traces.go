@@ -88,9 +88,14 @@ func convertToDatadogTd(td pdata.Traces, fallbackHost string, cfg *config.Config
 
 	for i := 0; i < resourceSpans.Len(); i++ {
 		rs := resourceSpans.At(i)
-		host, ok := attributes.HostnameFromAttributes(rs.Resource().Attributes())
-		if !ok {
-			host = fallbackHost
+
+		var host string
+		if !cfg.DisableHostname {
+			var ok bool
+			host, ok = attributes.HostnameFromAttributes(rs.Resource().Attributes())
+			if !ok {
+				host = fallbackHost
+			}
 		}
 
 		seenHosts[host] = struct{}{}

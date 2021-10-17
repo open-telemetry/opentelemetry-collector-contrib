@@ -50,6 +50,7 @@ func New(logger *zap.Logger, options ...Option) (*Translator, error) {
 		sweepInterval:                        1800,
 		deltaTTL:                             3600,
 		fallbackHostnameProvider:             &noHostProvider{},
+		DisableHostname:                      false,
 	}
 
 	for _, opt := range options {
@@ -389,12 +390,16 @@ func (t *Translator) MapMetrics(ctx context.Context, md pdata.Metrics, consumer 
 			attributeTags = attributes.TagsFromAttributes(rm.Resource().Attributes())
 		}
 
-		host, ok := attributes.HostnameFromAttributes(rm.Resource().Attributes())
-		if !ok {
-			var err error
-			host, err = t.cfg.fallbackHostnameProvider.Hostname(context.Background())
-			if err != nil {
-				return fmt.Errorf("failed to get fallback host: %w", err)
+		var host string
+		if !t.cfg.DisableHostname {
+			var ok bool
+			host, ok = attributes.HostnameFromAttributes(rm.Resource().Attributes())
+			if !ok {
+				var err error
+				host, err = t.cfg.fallbackHostnameProvider.Hostname(context.Background())
+				if err != nil {
+					return fmt.Errorf("failed to get fallback host: %w", err)
+				}
 			}
 		}
 

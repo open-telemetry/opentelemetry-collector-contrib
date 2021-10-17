@@ -17,6 +17,9 @@ package datadogexporter
 import (
 	"context"
 	"encoding/json"
+	"io/ioutil"
+	"net/http"
+	"net/http/httptest"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -28,6 +31,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/testutils"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/translator"
+	"gopkg.in/zorkian/go-datadog-api.v2"
 )
 
 func TestNewExporter(t *testing.T) {
@@ -66,4 +70,67 @@ func TestNewExporter(t *testing.T) {
 	err = json.Unmarshal(body, &recvMetadata)
 	require.NoError(t, err)
 	assert.Equal(t, recvMetadata.InternalHostname, "custom-hostname")
+}
+
+func TestDisableHostnameExporter(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+		if req.URL.Path == "/api/v1/validate" {
+			rw.Header().Set("Content-Type", "application/json")
+			rw.Write([]byte(`{"Valid": true}`))
+			return
+		} else if req.URL.Path != "/api/v1/series" {
+			return
+		}
+
+		b, err := ioutil.ReadAll(req.Body)
+		if err != nil {
+			http.Error(rw, err.Error(), http.StatusInternalServerError)
+			assert.NoError(t, err, "http server received malformed series payload")
+		}
+		defer req.Body.Close()
+
+		var series struct {
+			Series []datadog.Metric `json:"series,omitempty"`
+		}
+		if err := json.Unmarshal(b, &series); err != nil {
+			http.Error(rw, err.Error(), http.StatusInternalServerError)
+			assert.NoError(t, err, "http server received malformed series payload")
+		}
+
+		for _, metric := range series.Series {
+			if metric.Host != nil {
+				assert.Empty(t, *metric.Host)
+			}
+		}
+
+	}))
+	defer server.Close()
+
+	cfg := config.Config{
+		API: config.APIConfig{
+			Key: "ddog_32_characters_long_api_key1",
+		},
+		DisableHostname: true,
+		TagsConfig: config.TagsConfig{
+			Hostname: "test-host",
+		},
+		Metrics: config.MetricsConfig{
+			TCPAddr: confignet.TCPAddr{
+				Endpoint: server.URL,
+			},
+			DeltaTTL: 3600,
+			HistConfig: config.HistogramConfig{
+				Mode:         string(translator.HistogramModeNoBuckets),
+				SendCountSum: true,
+			},
+		},
+	}
+
+	params := componenttest.NewNopExporterCreateSettings()
+	exporter, err := createMetricsExporter(context.Background(), params, &cfg)
+	assert.NoError(t, err)
+	defer exporter.Shutdown(context.Background())
+
+	err = exporter.ConsumeMetrics(context.Background(), testutils.TestMetrics.Clone())
+	assert.NoError(t, err)
 }

@@ -91,6 +91,7 @@ func createDefaultConfig() config.Exporter {
 		},
 
 		SendMetadata:        true,
+		DisableHostname:     false,
 		UseResourceMetadata: true,
 	}
 }
