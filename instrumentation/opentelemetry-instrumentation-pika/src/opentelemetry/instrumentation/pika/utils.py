@@ -10,7 +10,7 @@ from opentelemetry.semconv.trace import (
     MessagingOperationValues,
     SpanAttributes,
 )
-from opentelemetry.trace import Tracer
+from opentelemetry.trace import SpanKind, Tracer
 from opentelemetry.trace.span import Span
 
 
@@ -40,9 +40,7 @@ def _decorate_callback(
         body: bytes,
     ) -> Any:
         if not properties:
-            properties = BasicProperties()
-        if properties.headers is None:
-            properties.headers = {}
+            properties = BasicProperties(headers={})
         ctx = propagate.extract(properties.headers, getter=_pika_getter)
         if not ctx:
             ctx = context.get_current()
@@ -50,6 +48,7 @@ def _decorate_callback(
             tracer,
             channel,
             properties,
+            span_kind=SpanKind.CONSUMER,
             task_name=task_name,
             ctx=ctx,
             operation=MessagingOperationValues.RECEIVE,
@@ -74,12 +73,13 @@ def _decorate_basic_publish(
         mandatory: bool = False,
     ) -> Any:
         if not properties:
-            properties = BasicProperties()
+            properties = BasicProperties(headers={})
         ctx = context.get_current()
         span = _get_span(
             tracer,
             channel,
             properties,
+            span_kind=SpanKind.PRODUCER,
             task_name="(temporary)",
             ctx=ctx,
             operation=None,
@@ -104,6 +104,7 @@ def _get_span(
     channel: Channel,
     properties: BasicProperties,
     task_name: str,
+    span_kind: SpanKind,
     ctx: context.Context,
     operation: Optional[MessagingOperationValues] = None,
 ) -> Optional[Span]:
@@ -113,7 +114,9 @@ def _get_span(
         return None
     task_name = properties.type if properties.type else task_name
     span = tracer.start_span(
-        context=ctx, name=_generate_span_name(task_name, operation)
+        context=ctx,
+        name=_generate_span_name(task_name, operation),
+        kind=span_kind,
     )
     if span.is_recording():
         _enrich_span(span, channel, properties, task_name, operation)
