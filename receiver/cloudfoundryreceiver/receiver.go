@@ -16,6 +16,7 @@ package cloudfoundryreceiver
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"sync"
 	"time"
@@ -80,7 +81,7 @@ func (cfr *cloudFoundryReceiver) Start(ctx context.Context, host component.Host)
 		host,
 	)
 	if streamErr != nil {
-		return fmt.Errorf("failed to create cloud foundry RLP envelope stream factory: %v", streamErr)
+		return fmt.Errorf("creating cloud foundry RLP envelope stream factory: %v", streamErr)
 	}
 
 	innerCtx, cancel := context.WithCancel(ctx)
@@ -100,7 +101,7 @@ func (cfr *cloudFoundryReceiver) Start(ctx context.Context, host component.Host)
 
 		envelopeStream, err := streamFactory.CreateStream(innerCtx, cfr.config.RLPGateway.ShardID)
 		if err != nil {
-			host.ReportFatalError(fmt.Errorf("failed to create RLP gateway envelope stream: %v", err))
+			host.ReportFatalError(fmt.Errorf("creating RLP gateway envelope stream: %v", err))
 			return
 		}
 
@@ -133,7 +134,7 @@ func (cfr *cloudFoundryReceiver) streamMetrics(
 		if envelopes == nil {
 			// If context has not been cancelled, then nil means the shutdown was due to an error within stream
 			if ctx.Err() != nil {
-				host.ReportFatalError(fmt.Errorf("RLP gateway streamer shut down"))
+				host.ReportFatalError(errors.New("RLP gateway streamer shut down"))
 			}
 
 			return

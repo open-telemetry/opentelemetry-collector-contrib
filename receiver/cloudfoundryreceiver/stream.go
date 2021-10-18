@@ -40,7 +40,7 @@ func newEnvelopeStreamFactory(
 
 	httpClient, err := httpConfig.ToClient(host.GetExtensions())
 	if err != nil {
-		return nil, fmt.Errorf("failed to create HTTP client for Cloud Foundry RLP Gateway: %v", err)
+		return nil, fmt.Errorf("creating HTTP client for Cloud Foundry RLP Gateway: %v", err)
 	}
 
 	gatewayClient := loggregator.NewRLPGatewayClient(httpConfig.Endpoint,
@@ -93,8 +93,8 @@ func (ap *authorizationProvider) Do(request *http.Request) (*http.Response, erro
 	if err == nil {
 		request.Header.Set("Authorization", token)
 	} else {
-		ap.logger.Error("failed to fetch authentication token", zap.Error(err))
-		return nil, fmt.Errorf("failed to obtain authentication token for the request")
+		ap.logger.Error("fetching authentication token", zap.Error(err))
+		return nil, fmt.Errorf("obtaining authentication token for the request")
 	}
 
 	return ap.client.Do(request)
