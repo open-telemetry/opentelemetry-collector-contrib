@@ -491,8 +491,8 @@ func TestEnsureTimeseriesPointsAreSortedByTimestamp(t *testing.T) {
 
 // Test_addSampleAndExemplar checks addSampleAndExemplar updates the map it receives correctly based on the sample, exemplars and Label
 // set it receives.
-// Test cases are two exemplars/samples belonging to the same TimeSeries and two exemplars/samples belong to different TimeSeries
-// case.
+// Test cases are two exemplars/samples belonging to the same TimeSeries, two exemplars/samples belong to different TimeSeries
+// case, when nil exemplar with a non-nil sample and inversely.
 func Test_addSampleAndExemplar(t *testing.T) {
 	type testCase struct {
 		metric   pdata.Metric
