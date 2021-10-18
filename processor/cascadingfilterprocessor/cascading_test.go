@@ -30,6 +30,7 @@ import (
 )
 
 var testValue = 10 * time.Millisecond
+var probabilisticFilteringRate = int32(10)
 var healthCheckPattern = "health"
 var cfg = cfconfig.Config{
 	ProcessorSettings:       &config.ProcessorSettings{},
@@ -37,7 +38,7 @@ var cfg = cfconfig.Config{
 	NumTraces:               100,
 	ExpectedNewTracesPerSec: 100,
 	SpansPerSecond:          1000,
-	PolicyCfgs: []cfconfig.PolicyCfg{
+	PolicyCfgs: []cfconfig.TraceAcceptCfg{
 		{
 			Name:           "duration",
 			SpansPerSecond: 10,
@@ -50,7 +51,39 @@ var cfg = cfconfig.Config{
 			SpansPerSecond: -1,
 		},
 	},
-	DropTracesCfgs: []cfconfig.DropTracesCfg{
+	TraceRejectCfgs: []cfconfig.TraceRejectCfg{
+		{
+			Name:        "health-check",
+			NamePattern: &healthCheckPattern,
+		},
+	},
+}
+
+var cfgJustDropping = cfconfig.Config{
+	ProcessorSettings: &config.ProcessorSettings{},
+	DecisionWait:      2 * time.Second,
+	TraceRejectCfgs: []cfconfig.TraceRejectCfg{
+		{
+			Name:        "health-check",
+			NamePattern: &healthCheckPattern,
+		},
+	},
+}
+
+var cfgAutoRate = cfconfig.Config{
+	ProcessorSettings:          &config.ProcessorSettings{},
+	DecisionWait:               2 * time.Second,
+	ProbabilisticFilteringRate: &probabilisticFilteringRate,
+	PolicyCfgs: []cfconfig.TraceAcceptCfg{
+		{
+			Name:           "duration",
+			SpansPerSecond: 20,
+			PropertiesCfg: cfconfig.PropertiesCfg{
+				MinDuration: &testValue,
+			},
+		},
+	},
+	TraceRejectCfgs: []cfconfig.TraceRejectCfg{
 		{
 			Name:        "health-check",
 			NamePattern: &healthCheckPattern,
@@ -87,16 +120,20 @@ func createTrace(fsp *cascadingFilterSpanProcessor, numSpans int, durationMicros
 
 	return &sampling.TraceData{
 		Mutex:           sync.Mutex{},
-		Decisions:       make([]sampling.Decision, len(fsp.policies)),
+		Decisions:       make([]sampling.Decision, len(fsp.traceAcceptRules)),
 		ArrivalTime:     time.Time{},
 		DecisionTime:    time.Time{},
-		SpanCount:       int64(numSpans),
+		SpanCount:       int32(numSpans),
 		ReceivedBatches: traceBatches,
 	}
 }
 
 func createCascadingEvaluator(t *testing.T) *cascadingFilterSpanProcessor {
-	cascading, err := newCascadingFilterSpanProcessor(zap.NewNop(), nil, cfg)
+	return createCascadingEvaluatorWithConfig(t, cfg)
+}
+
+func createCascadingEvaluatorWithConfig(t *testing.T, conf cfconfig.Config) *cascadingFilterSpanProcessor {
+	cascading, err := newCascadingFilterSpanProcessor(zap.NewNop(), nil, conf)
 	assert.NoError(t, err)
 	return cascading
 }
@@ -153,6 +190,54 @@ func TestDropTraces(t *testing.T) {
 	trace2.ReceivedBatches[0].ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().At(2).SetName("health-check")
 	require.False(t, cascading.shouldBeDropped(pdata.NewTraceID([16]byte{0}), trace1))
 	require.True(t, cascading.shouldBeDropped(pdata.NewTraceID([16]byte{0}), trace2))
+}
+
+func TestDropTracesAndNotLimitOthers(t *testing.T) {
+	cascading := createCascadingEvaluatorWithConfig(t, cfgJustDropping)
+
+	trace1 := createTrace(cascading, 1000, 1000000)
+	trace2 := createTrace(cascading, 8, 1000000)
+	trace2.ReceivedBatches[0].ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().At(2).SetName("health-check")
+	trace3 := createTrace(cascading, 5000, 1000000)
+
+	decision, policy := cascading.makeProvisionalDecision(pdata.NewTraceID([16]byte{0}), trace1)
+	require.Nil(t, policy)
+	require.Equal(t, sampling.Sampled, decision)
+	require.False(t, cascading.shouldBeDropped(pdata.NewTraceID([16]byte{0}), trace1))
+
+	decision, policy = cascading.makeProvisionalDecision(pdata.NewTraceID([16]byte{1}), trace2)
+	require.Nil(t, policy)
+	require.Equal(t, sampling.Sampled, decision)
+	require.True(t, cascading.shouldBeDropped(pdata.NewTraceID([16]byte{1}), trace2))
+
+	decision, policy = cascading.makeProvisionalDecision(pdata.NewTraceID([16]byte{2}), trace3)
+	require.Nil(t, policy)
+	require.Equal(t, sampling.Sampled, decision)
+	require.False(t, cascading.shouldBeDropped(pdata.NewTraceID([16]byte{2}), trace3))
+}
+
+func TestDropTracesAndAutoRateOthers(t *testing.T) {
+	cascading := createCascadingEvaluatorWithConfig(t, cfgAutoRate)
+
+	trace1 := createTrace(cascading, 20, 1000000)
+	trace2 := createTrace(cascading, 8, 1000000)
+	trace2.ReceivedBatches[0].ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().At(2).SetName("health-check")
+	trace3 := createTrace(cascading, 20, 1000000)
+
+	decision, policy := cascading.makeProvisionalDecision(pdata.NewTraceID([16]byte{0}), trace1)
+	require.NotNil(t, policy)
+	require.Equal(t, sampling.Sampled, decision)
+	require.False(t, cascading.shouldBeDropped(pdata.NewTraceID([16]byte{0}), trace1))
+
+	decision, policy = cascading.makeProvisionalDecision(pdata.NewTraceID([16]byte{1}), trace2)
+	require.NotNil(t, policy)
+	require.Equal(t, sampling.Sampled, decision)
+	require.True(t, cascading.shouldBeDropped(pdata.NewTraceID([16]byte{1}), trace2))
+
+	decision, policy = cascading.makeProvisionalDecision(pdata.NewTraceID([16]byte{2}), trace3)
+	require.Nil(t, policy)
+	require.Equal(t, sampling.NotSampled, decision)
+	require.False(t, cascading.shouldBeDropped(pdata.NewTraceID([16]byte{2}), trace3))
 }
 
 //func TestSecondChanceReevaluation(t *testing.T) {

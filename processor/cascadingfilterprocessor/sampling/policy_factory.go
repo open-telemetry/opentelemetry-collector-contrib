@@ -38,13 +38,14 @@ type policyEvaluator struct {
 	numericAttr *numericAttributeFilter
 	stringAttr  *stringAttributeFilter
 
-	operationRe      *regexp.Regexp
-	minDuration      *time.Duration
-	minNumberOfSpans *int
+	operationRe       *regexp.Regexp
+	minDuration       *time.Duration
+	minNumberOfSpans  *int
+	minNumberOfErrors *int
 
 	currentSecond        int64
-	maxSpansPerSecond    int64
-	spansInCurrentSecond int64
+	maxSpansPerSecond    int32
+	spansInCurrentSecond int32
 
 	invertMatch bool
 
@@ -84,7 +85,7 @@ func createStringAttributeFilter(cfg *config.StringAttributeCfg) *stringAttribut
 }
 
 // NewProbabilisticFilter creates a policy evaluator intended for selecting samples probabilistically
-func NewProbabilisticFilter(logger *zap.Logger, maxSpanRate int64) (PolicyEvaluator, error) {
+func NewProbabilisticFilter(logger *zap.Logger, maxSpanRate int32) (PolicyEvaluator, error) {
 	return &policyEvaluator{
 		logger:               logger,
 		currentSecond:        0,
@@ -94,7 +95,7 @@ func NewProbabilisticFilter(logger *zap.Logger, maxSpanRate int64) (PolicyEvalua
 }
 
 // NewFilter creates a policy evaluator that samples all traces with the specified criteria
-func NewFilter(logger *zap.Logger, cfg *config.PolicyCfg) (PolicyEvaluator, error) {
+func NewFilter(logger *zap.Logger, cfg *config.TraceAcceptCfg) (PolicyEvaluator, error) {
 	numericAttrFilter := createNumericAttributeFilter(cfg.NumericAttributeCfg)
 	stringAttrFilter := createStringAttributeFilter(cfg.StringAttributeCfg)
 
@@ -122,6 +123,7 @@ func NewFilter(logger *zap.Logger, cfg *config.PolicyCfg) (PolicyEvaluator, erro
 		operationRe:          operationRe,
 		minDuration:          cfg.PropertiesCfg.MinDuration,
 		minNumberOfSpans:     cfg.PropertiesCfg.MinNumberOfSpans,
+		minNumberOfErrors:    cfg.PropertiesCfg.MinNumberOfErrors,
 		logger:               logger,
 		currentSecond:        0,
 		spansInCurrentSecond: 0,

@@ -30,7 +30,7 @@ func newStringAttributeFilter() *policyEvaluator {
 			key:    "example",
 			values: map[string]struct{}{"value": {}},
 		},
-		maxSpansPerSecond: math.MaxInt64,
+		maxSpansPerSecond: math.MaxInt32,
 	}
 }
 

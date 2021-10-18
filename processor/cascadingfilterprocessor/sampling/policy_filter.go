@@ -63,7 +63,9 @@ func (pe *policyEvaluator) evaluateRules(_ pdata.TraceID, trace *TraceData) Deci
 	matchingOperationFound := false
 	matchingStringAttrFound := false
 	matchingNumericAttrFound := false
+
 	spanCount := 0
+	errorCount := 0
 	minStartTime := int64(0)
 	maxEndTime := int64(0)
 
@@ -120,19 +122,23 @@ func (pe *policyEvaluator) evaluateRules(_ pdata.TraceID, trace *TraceData) Deci
 						}
 					}
 
+					if span.Status().Code() == pdata.StatusCodeError {
+						errorCount++
+					}
 				}
 			}
 		}
 	}
 
 	conditionMet := struct {
-		operationName, minDuration, minSpanCount, stringAttr, numericAttr bool
+		operationName, minDuration, minSpanCount, stringAttr, numericAttr, minErrorCount bool
 	}{
 		operationName: true,
 		minDuration:   true,
 		minSpanCount:  true,
 		stringAttr:    true,
 		numericAttr:   true,
+		minErrorCount: true,
 	}
 
 	if pe.operationRe != nil {
@@ -150,12 +156,16 @@ func (pe *policyEvaluator) evaluateRules(_ pdata.TraceID, trace *TraceData) Deci
 	if pe.stringAttr != nil {
 		conditionMet.stringAttr = matchingStringAttrFound
 	}
+	if pe.minNumberOfErrors != nil {
+		conditionMet.minErrorCount = errorCount >= *pe.minNumberOfErrors
+	}
 
 	if conditionMet.minSpanCount &&
 		conditionMet.minDuration &&
 		conditionMet.operationName &&
 		conditionMet.numericAttr &&
-		conditionMet.stringAttr {
+		conditionMet.stringAttr &&
+		conditionMet.minErrorCount {
 		if pe.invertMatch {
 			return NotSampled
 		}
@@ -188,7 +198,7 @@ func (pe *policyEvaluator) emitsSecondChance() bool {
 	return pe.maxSpansPerSecond < 0
 }
 
-func (pe *policyEvaluator) updateRate(currSecond int64, numSpans int64) Decision {
+func (pe *policyEvaluator) updateRate(currSecond int64, numSpans int32) Decision {
 	if pe.currentSecond != currSecond {
 		pe.currentSecond = currSecond
 		pe.spansInCurrentSecond = 0

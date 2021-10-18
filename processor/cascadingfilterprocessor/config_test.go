@@ -41,21 +41,63 @@ func TestLoadConfig(t *testing.T) {
 
 	minDurationValue := 9 * time.Second
 	minSpansValue := 10
+	minErrorsValue := 2
 	probFilteringRatio := float32(0.1)
+	probFilteringRate := int32(100)
 	namePatternValue := "foo.*"
 	healthCheckNamePatternValue := "health.*"
 
-	id := config.NewID("cascading_filter")
-	ps := config.NewProcessorSettings(id)
-	assert.Equal(t, cfg.Processors[id],
+	id1 := config.NewIDWithName("cascading_filter", "1")
+	ps1 := config.NewProcessorSettings(id1)
+	assert.Equal(t, cfg.Processors[id1],
 		&cfconfig.Config{
-			ProcessorSettings:           &ps,
+			DecisionWait:               30 * time.Second,
+			SpansPerSecond:             0,
+			NumTraces:                  50000,
+			ProcessorSettings:          &ps1,
+			ProbabilisticFilteringRate: &probFilteringRate,
+			TraceRejectCfgs: []cfconfig.TraceRejectCfg{
+				{
+					Name:        "healthcheck-rule",
+					NamePattern: &healthCheckNamePatternValue,
+				},
+			},
+			TraceAcceptCfgs: []cfconfig.TraceAcceptCfg{
+				{
+					Name:           "include-errors",
+					SpansPerSecond: 200,
+					PropertiesCfg: cfconfig.PropertiesCfg{
+						MinNumberOfErrors: &minErrorsValue,
+					},
+				},
+				{
+					Name:           "include-long-traces",
+					SpansPerSecond: 300,
+					PropertiesCfg: cfconfig.PropertiesCfg{
+						MinNumberOfSpans: &minSpansValue,
+					},
+				},
+				{
+					Name:           "include-high-latency",
+					SpansPerSecond: 400,
+					PropertiesCfg: cfconfig.PropertiesCfg{
+						MinDuration: &minDurationValue,
+					},
+				},
+			},
+		})
+
+	id2 := config.NewIDWithName("cascading_filter", "2")
+	ps2 := config.NewProcessorSettings(id2)
+	assert.Equal(t, cfg.Processors[id2],
+		&cfconfig.Config{
+			ProcessorSettings:           &ps2,
 			DecisionWait:                10 * time.Second,
 			NumTraces:                   100,
 			ExpectedNewTracesPerSec:     10,
 			SpansPerSecond:              1000,
 			ProbabilisticFilteringRatio: &probFilteringRatio,
-			DropTracesCfgs: []cfconfig.DropTracesCfg{
+			TraceRejectCfgs: []cfconfig.TraceRejectCfg{
 				{
 					Name:        "healthcheck-rule",
 					NamePattern: &healthCheckNamePatternValue,
@@ -70,7 +112,7 @@ func TestLoadConfig(t *testing.T) {
 					},
 				},
 			},
-			PolicyCfgs: []cfconfig.PolicyCfg{
+			TraceAcceptCfgs: []cfconfig.TraceAcceptCfg{
 				{
 					Name: "test-policy-1",
 				},
@@ -102,9 +144,10 @@ func TestLoadConfig(t *testing.T) {
 				{
 					Name: "test-policy-7",
 					PropertiesCfg: cfconfig.PropertiesCfg{
-						NamePattern:      &namePatternValue,
-						MinDuration:      &minDurationValue,
-						MinNumberOfSpans: &minSpansValue,
+						NamePattern:       &namePatternValue,
+						MinDuration:       &minDurationValue,
+						MinNumberOfSpans:  &minSpansValue,
+						MinNumberOfErrors: &minErrorsValue,
 					},
 				},
 				{

@@ -34,9 +34,9 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/cascadingfilterprocessor/sampling"
 )
 
-// Policy combines a sampling policy evaluator with the destinations to be
+// TraceAcceptEvaluator combines a sampling policy evaluator with the destinations to be
 // used for that policy.
-type Policy struct {
+type TraceAcceptEvaluator struct {
 	// Name used to identify this policy instance.
 	Name string
 	// Evaluator that decides if a trace is sampled or not by this policy instance.
@@ -47,8 +47,8 @@ type Policy struct {
 	probabilisticFilter bool
 }
 
-// DropTraceEvaluator holds checking if trace should be dropped completely before further processing
-type DropTraceEvaluator struct {
+// TraceRejectEvaluator holds checking if trace should be dropped completely before further processing
+type TraceRejectEvaluator struct {
 	// Name used to identify this policy instance.
 	Name string
 	// Evaluator that decides if a trace is sampled or not by this policy instance.
@@ -64,22 +64,22 @@ type traceKey [16]byte
 // cascadingFilterSpanProcessor handles the incoming trace data and uses the given sampling
 // policy to sample traces.
 type cascadingFilterSpanProcessor struct {
-	ctx             context.Context
-	nextConsumer    consumer.Traces
-	start           sync.Once
-	maxNumTraces    uint64
-	policies        []*Policy
-	dropTraceEvals  []*DropTraceEvaluator
-	logger          *zap.Logger
-	idToTrace       sync.Map
-	policyTicker    tTicker
-	decisionBatcher idbatcher.Batcher
-	deleteChan      chan traceKey
-	numTracesOnMap  uint64
+	ctx              context.Context
+	nextConsumer     consumer.Traces
+	start            sync.Once
+	maxNumTraces     uint64
+	traceAcceptRules []*TraceAcceptEvaluator
+	traceRejectRules []*TraceRejectEvaluator
+	logger           *zap.Logger
+	idToTrace        sync.Map
+	policyTicker     tTicker
+	decisionBatcher  idbatcher.Batcher
+	deleteChan       chan traceKey
+	numTracesOnMap   uint64
 
 	currentSecond        int64
-	maxSpansPerSecond    int64
-	spansInCurrentSecond int64
+	maxSpansPerSecond    int32
+	spansInCurrentSecond int32
 }
 
 const (
@@ -89,8 +89,6 @@ const (
 	AttributeSamplingRule         = "sampling.rule"
 
 	AttributeSamplingProbability = "sampling.probability"
-
-	defaultCatchAllPolicyName = "default-catch-all"
 )
 
 // newTraceProcessor returns a processor.TraceProcessor that will perform Cascading Filter according to the given
@@ -111,10 +109,12 @@ func newCascadingFilterSpanProcessor(logger *zap.Logger, nextConsumer consumer.T
 	}
 
 	ctx := context.Background()
-	var policies []*Policy
-	var dropTraceEvals []*DropTraceEvaluator
+	var policies []*TraceAcceptEvaluator
+	var dropTraceEvals []*TraceRejectEvaluator
 
-	for _, dropCfg := range cfg.DropTracesCfgs {
+	// Prepare Trace Reject config
+
+	for _, dropCfg := range cfg.TraceRejectCfgs {
 		dropCtx, err := tag.New(ctx, tag.Upsert(tagPolicyKey, dropCfg.Name), tag.Upsert(tagPolicyDecisionKey, statusDropped))
 		if err != nil {
 			return nil, err
@@ -123,48 +123,30 @@ func newCascadingFilterSpanProcessor(logger *zap.Logger, nextConsumer consumer.T
 		if err != nil {
 			return nil, err
 		}
-		dropEval := &DropTraceEvaluator{
+		dropEval := &TraceRejectEvaluator{
 			Name:      dropCfg.Name,
 			Evaluator: evaluator,
 			ctx:       dropCtx,
 		}
+		logger.Info("Adding trace reject rule", zap.String("name", dropCfg.Name))
 		dropTraceEvals = append(dropTraceEvals, dropEval)
 	}
 
-	// This must be always first as it must select traces independently of other policies
-	if cfg.ProbabilisticFilteringRatio != nil && *cfg.ProbabilisticFilteringRatio > 0.0 {
-		policyCtx, err := tag.New(ctx, tag.Upsert(tagPolicyKey, probabilisticFilterPolicyName))
-		if err != nil {
-			return nil, err
-		}
-		eval, err := buildProbabilisticFilterEvaluator(logger, int64(float32(cfg.SpansPerSecond)**cfg.ProbabilisticFilteringRatio))
-		if err != nil {
-			return nil, err
-		}
-		policy := &Policy{
-			Name:                probabilisticFilterPolicyName,
-			Evaluator:           eval,
-			ctx:                 policyCtx,
-			probabilisticFilter: true,
-		}
-		policies = append(policies, policy)
+	// Prepare Trace Accept config
+
+	var policyCfgs []config.TraceAcceptCfg
+	totalRate := int32(0)
+
+	if len(cfg.TraceAcceptCfgs) > 0 {
+		policyCfgs = append(policyCfgs, cfg.TraceAcceptCfgs...)
 	}
 
-	if len(cfg.PolicyCfgs) == 0 {
-		logger.Warn("No catch-all policy found in cascading_filter, adding a default one",
-			zap.String("policy-name", defaultCatchAllPolicyName))
-		policyCfg := config.PolicyCfg{
-			Name:                defaultCatchAllPolicyName,
-			NumericAttributeCfg: nil,
-			StringAttributeCfg:  nil,
-			PropertiesCfg:       config.PropertiesCfg{},
-			SpansPerSecond:      -1,
-			InvertMatch:         false,
-		}
-		cfg.PolicyCfgs = append(cfg.PolicyCfgs, policyCfg)
+	if len(cfg.PolicyCfgs) > 0 {
+		logger.Warn("'traceAcceptRules' is deprecated and will be removed in future versions, please use 'trace_accept_filters' instead")
+		policyCfgs = append(policyCfgs, cfg.PolicyCfgs...)
 	}
 
-	for i := range cfg.PolicyCfgs {
+	for i := range policyCfgs {
 		policyCfg := &cfg.PolicyCfgs[i]
 		policyCtx, err := tag.New(ctx, tag.Upsert(tagPolicyKey, policyCfg.Name))
 		if err != nil {
@@ -174,24 +156,80 @@ func newCascadingFilterSpanProcessor(logger *zap.Logger, nextConsumer consumer.T
 		if err != nil {
 			return nil, err
 		}
-		policy := &Policy{
+		policy := &TraceAcceptEvaluator{
 			Name:                policyCfg.Name,
 			Evaluator:           eval,
 			ctx:                 policyCtx,
 			probabilisticFilter: false,
 		}
+		if policyCfg.SpansPerSecond > 0 {
+			totalRate += policyCfg.SpansPerSecond
+		}
+		logger.Info("Adding trace accept rule",
+			zap.String("name", policyCfg.Name),
+			zap.Int32("spans_per_second", policyCfg.SpansPerSecond))
 		policies = append(policies, policy)
 	}
+
+	// Recalculate the total spans per second rate if needed
+	spansPerSecond := cfg.SpansPerSecond
+	if spansPerSecond == 0 {
+		spansPerSecond = totalRate
+		if cfg.ProbabilisticFilteringRate != nil && *cfg.ProbabilisticFilteringRate > 0 {
+			spansPerSecond += *cfg.ProbabilisticFilteringRate
+		}
+	}
+
+	if spansPerSecond != 0 {
+		logger.Info("Setting total spans per second limit", zap.Int32("spans_per_second", spansPerSecond))
+	} else {
+		logger.Info("Not setting total spans per second limit (only selected traces will be filtered out)")
+	}
+
+	// Setup probabilistic filtering - using either ratio or rate.
+	// This must be always evaluated first as it must select traces independently of other traceAcceptRules
+
+	probabilisticFilteringRate := int32(-1)
+
+	if cfg.ProbabilisticFilteringRatio != nil && *cfg.ProbabilisticFilteringRatio > 0.0 && spansPerSecond > 0 {
+		probabilisticFilteringRate = int32(float32(spansPerSecond) * *cfg.ProbabilisticFilteringRatio)
+	} else if cfg.ProbabilisticFilteringRate != nil && *cfg.ProbabilisticFilteringRate > 0 {
+		probabilisticFilteringRate = *cfg.ProbabilisticFilteringRate
+	}
+
+	if probabilisticFilteringRate > 0 {
+		logger.Info("Setting probabilistic filtering rate", zap.Int32("probabilistic_filtering_rate", probabilisticFilteringRate))
+
+		policyCtx, err := tag.New(ctx, tag.Upsert(tagPolicyKey, probabilisticFilterPolicyName))
+		if err != nil {
+			return nil, err
+		}
+		eval, err := buildProbabilisticFilterEvaluator(logger, probabilisticFilteringRate)
+		if err != nil {
+			return nil, err
+		}
+		policy := &TraceAcceptEvaluator{
+			Name:                probabilisticFilterPolicyName,
+			Evaluator:           eval,
+			ctx:                 policyCtx,
+			probabilisticFilter: true,
+		}
+		policies = append([]*TraceAcceptEvaluator{policy}, policies...)
+	} else {
+		logger.Info("Not setting probabilistic filtering rate")
+	}
+
+	// Build the span procesor
 
 	cfsp := &cascadingFilterSpanProcessor{
 		ctx:               ctx,
 		nextConsumer:      nextConsumer,
 		maxNumTraces:      cfg.NumTraces,
-		maxSpansPerSecond: cfg.SpansPerSecond,
+		maxSpansPerSecond: spansPerSecond,
 		logger:            logger,
 		decisionBatcher:   inBatcher,
-		policies:          policies,
-		dropTraceEvals:    dropTraceEvals,
+		traceAcceptRules:  policies,
+		traceRejectRules:  dropTraceEvals,
 	}
 
 	cfsp.policyTicker = &policyTicker{onTick: cfsp.samplingPolicyOnTick}
@@ -200,11 +238,11 @@ func newCascadingFilterSpanProcessor(logger *zap.Logger, nextConsumer consumer.T
 	return cfsp, nil
 }
 
-func buildPolicyEvaluator(logger *zap.Logger, cfg *config.PolicyCfg) (sampling.PolicyEvaluator, error) {
+func buildPolicyEvaluator(logger *zap.Logger, cfg *config.TraceAcceptCfg) (sampling.PolicyEvaluator, error) {
 	return sampling.NewFilter(logger, cfg)
 }
 
-func buildProbabilisticFilterEvaluator(logger *zap.Logger, maxSpanRate int64) (sampling.PolicyEvaluator, error) {
+func buildProbabilisticFilterEvaluator(logger *zap.Logger, maxSpanRate int32) (sampling.PolicyEvaluator, error) {
 	return sampling.NewProbabilisticFilter(logger, maxSpanRate)
 }
 
@@ -212,7 +250,11 @@ type policyMetrics struct {
 	idNotFoundOnMapCount, evaluateErrorCount, decisionSampled, decisionNotSampled int64
 }
 
-func (cfsp *cascadingFilterSpanProcessor) updateRate(currSecond int64, numSpans int64) sampling.Decision {
+func (cfsp *cascadingFilterSpanProcessor) updateRate(currSecond int64, numSpans int32) sampling.Decision {
+	if cfsp.maxSpansPerSecond <= 0 {
+		return sampling.Sampled
+	}
+
 	if cfsp.currentSecond != currSecond {
 		cfsp.currentSecond = currSecond
 		cfsp.spansInCurrentSecond = 0
@@ -254,7 +296,7 @@ func (cfsp *cascadingFilterSpanProcessor) samplingPolicyOnTick() {
 
 		// Dropped traces are not included in probabilistic filtering calculations
 		if cfsp.shouldBeDropped(id, trace) {
-			totalSpans += trace.SpanCount
+			totalSpans += int64(trace.SpanCount)
 			provisionalDecision = sampling.Dropped
 		} else {
 			provisionalDecision, _ = cfsp.makeProvisionalDecision(id, trace)
@@ -264,7 +306,7 @@ func (cfsp *cascadingFilterSpanProcessor) samplingPolicyOnTick() {
 			trace.FinalDecision = cfsp.updateRate(currSecond, trace.SpanCount)
 			if trace.FinalDecision == sampling.Sampled {
 				if trace.SelectedByProbabilisticFilter {
-					selectedByProbabilisticFilterSpans += trace.SpanCount
+					selectedByProbabilisticFilterSpans += int64(trace.SpanCount)
 				}
 				err := stats.RecordWithTags(
 					cfsp.ctx,
@@ -415,7 +457,7 @@ func updateFilteringTag(traces pdata.Traces) {
 }
 
 func (cfsp *cascadingFilterSpanProcessor) shouldBeDropped(id pdata.TraceID, trace *sampling.TraceData) bool {
-	for _, dropRule := range cfsp.dropTraceEvals {
+	for _, dropRule := range cfsp.traceRejectRules {
 		if dropRule.Evaluator.ShouldDrop(id, trace) {
 			stats.Record(dropRule.ctx, statPolicyDecision.M(int64(1)))
 			return true
@@ -424,11 +466,16 @@ func (cfsp *cascadingFilterSpanProcessor) shouldBeDropped(id pdata.TraceID, trac
 	return false
 }
 
-func (cfsp *cascadingFilterSpanProcessor) makeProvisionalDecision(id pdata.TraceID, trace *sampling.TraceData) (sampling.Decision, *Policy) {
-	provisionalDecision := sampling.Unspecified
-	var matchingPolicy *Policy
+func (cfsp *cascadingFilterSpanProcessor) makeProvisionalDecision(id pdata.TraceID, trace *sampling.TraceData) (sampling.Decision, *TraceAcceptEvaluator) {
+	// When no rules are defined, always sample
+	if len(cfsp.traceAcceptRules) == 0 {
+		return sampling.Sampled, nil
+	}
 
-	for i, policy := range cfsp.policies {
+	provisionalDecision := sampling.Unspecified
+	var matchingPolicy *TraceAcceptEvaluator
+
+	for i, policy := range cfsp.traceAcceptRules {
 		policyEvaluateStartTime := time.Now()
 		decision := policy.Evaluator.Evaluate(id, trace)
 		stats.Record(
@@ -489,7 +536,7 @@ func (cfsp *cascadingFilterSpanProcessor) makeProvisionalDecision(id pdata.Trace
 	return provisionalDecision, matchingPolicy
 }
 
-// ConsumeTraceData is required by the SpanProcessor interface.
+// ConsumeTraces is required by the SpanProcessor interface.
 func (cfsp *cascadingFilterSpanProcessor) ConsumeTraces(ctx context.Context, td pdata.Traces) error {
 	cfsp.start.Do(func() {
 		cfsp.logger.Info("First trace data arrived, starting cascading_filter timers")
@@ -498,7 +545,7 @@ func (cfsp *cascadingFilterSpanProcessor) ConsumeTraces(ctx context.Context, td 
 	resourceSpans := td.ResourceSpans()
 	for i := 0; i < resourceSpans.Len(); i++ {
 		resourceSpan := resourceSpans.At(i)
-		cfsp.processTraces(resourceSpan)
+		cfsp.processTraces(ctx, resourceSpan)
 	}
 	return nil
 }
@@ -521,14 +568,15 @@ func (cfsp *cascadingFilterSpanProcessor) groupSpansByTraceKey(resourceSpans pda
 	return idToSpans
 }
 
-func (cfsp *cascadingFilterSpanProcessor) processTraces(resourceSpans pdata.ResourceSpans) {
+func (cfsp *cascadingFilterSpanProcessor) processTraces(ctx context.Context, resourceSpans pdata.ResourceSpans) {
 	// Group spans per their traceId to minimize contention on idToTrace
 	idToSpans := cfsp.groupSpansByTraceKey(resourceSpans)
 	var newTraceIDs int64
 	for id, spans := range idToSpans {
-		lenSpans := int64(len(spans))
-		lenPolicies := len(cfsp.policies)
+		lenSpans := int32(len(spans))
+		lenPolicies := len(cfsp.traceAcceptRules)
 		initialDecisions := make([]sampling.Decision, lenPolicies)
+
 		for i := 0; i < lenPolicies; i++ {
 			initialDecisions[i] = sampling.Pending
 		}
@@ -542,7 +590,7 @@ func (cfsp *cascadingFilterSpanProcessor) processTraces(resourceSpans pdata.Reso
 		actualData := d.(*sampling.TraceData)
 		if loaded {
 			// PMM: why actualData is not updated with new trace?
-			atomic.AddInt64(&actualData.SpanCount, lenSpans)
+			atomic.AddInt32(&actualData.SpanCount, lenSpans)
 		} else {
 			newTraceIDs++
 			cfsp.decisionBatcher.AddToCurrentBatch(pdata.NewTraceID(id))
@@ -562,56 +610,35 @@ func (cfsp *cascadingFilterSpanProcessor) processTraces(resourceSpans pdata.Reso
 			}
 		}
 
-		for i, policy := range cfsp.policies {
-			var traceTd pdata.Traces
-			actualData.Lock()
-			actualDecision := actualData.Decisions[i]
-			// If decision is pending, we want to add the new spans still under the lock, so the decision doesn't happen
-			// in between the transition from pending.
-			if actualDecision == sampling.Pending {
-				// Add the spans to the trace, but only once for all policy, otherwise same spans will
-				// be duplicated in the final trace.
-				traceTd = prepareTraceBatch(resourceSpans, spans)
-				actualData.ReceivedBatches = append(actualData.ReceivedBatches, traceTd)
-				actualData.Unlock()
-				break
+		// Add the spans to the trace, but only once for all policy, otherwise same spans will
+		// be duplicated in the final trace.
+		actualData.Lock()
+		traceTd := prepareTraceBatch(resourceSpans, spans)
+		actualData.ReceivedBatches = append(actualData.ReceivedBatches, traceTd)
+		finalDecision := actualData.FinalDecision
+		actualData.Unlock()
+
+		// This section is run in case the decision was already applied earlier
+		switch finalDecision {
+		case sampling.Pending:
+			// All process for pending done above, keep the case so it doesn't go to default.
+		case sampling.SecondChance:
+			// It shouldn't normally get here, keep the case so it doesn't go to default, like above.
+		case sampling.Sampled:
+			// Forward the spans to the policy destinations
+			traceTd := prepareTraceBatch(resourceSpans, spans)
+			if err := cfsp.nextConsumer.ConsumeTraces(ctx, traceTd); err != nil {
+				cfsp.logger.Warn("Error sending late arrived spans to destination",
+					zap.Error(err))
 			}
-			actualData.Unlock()
-
-			// This section is run in case the decision was already applied earlier
-			switch actualDecision {
-			case sampling.Pending:
-				// All process for pending done above, keep the case so it doesn't go to default.
-			case sampling.SecondChance:
-				// It shouldn't normally get here, keep the case so it doesn't go to default, like above.
-			case sampling.Sampled:
-				// Forward the spans to the policy destinations
-				traceTd := prepareTraceBatch(resourceSpans, spans)
-				if err := cfsp.nextConsumer.ConsumeTraces(policy.ctx, traceTd); err != nil {
-					cfsp.logger.Warn("Error sending late arrived spans to destination",
-						zap.String("policy", policy.Name),
-						zap.Error(err))
-				}
-				fallthrough // so OnLateArrivingSpans is also called for decision Sampled.
-			case sampling.NotSampled:
-				err := policy.Evaluator.OnLateArrivingSpans(actualDecision, spans)
-				// TODO:
-				// Check this error
-				_ = err
-
-				stats.Record(cfsp.ctx, statLateSpanArrivalAfterDecision.M(int64(time.Since(actualData.DecisionTime)/time.Second)))
-
-			default:
-				cfsp.logger.Warn("Encountered unexpected sampling decision",
-					zap.String("policy", policy.Name),
-					zap.Int("decision", int(actualDecision)))
-			}
-
-			// At this point the late arrival has been passed to nextConsumer. Need to break out of the policy loop
-			// so that it isn't sent to nextConsumer more than once when multiple policies chose to sample
-			if actualDecision == sampling.Sampled {
-				break
-			}
+			stats.Record(cfsp.ctx, statLateSpanArrivalAfterDecision.M(int64(time.Since(actualData.DecisionTime)/time.Second)))
+		case sampling.NotSampled:
+			stats.Record(cfsp.ctx, statLateSpanArrivalAfterDecision.M(int64(time.Since(actualData.DecisionTime)/time.Second)))
+		case sampling.Dropped:
+			stats.Record(cfsp.ctx, statLateSpanArrivalAfterDecision.M(int64(time.Since(actualData.DecisionTime)/time.Second)))
+		default:
+			cfsp.logger.Warn("Encountered unexpected sampling decision",
+				zap.Int("decision", int(finalDecision)))
 		}
 	}
 

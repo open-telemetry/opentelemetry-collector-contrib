@@ -26,7 +26,7 @@ import (
 func newAlwaysSample() *policyEvaluator {
 	return &policyEvaluator{
 		logger:            zap.NewNop(),
-		maxSpansPerSecond: math.MaxInt64,
+		maxSpansPerSecond: math.MaxInt32,
 	}
 }
 

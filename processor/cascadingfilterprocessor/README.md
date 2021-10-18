@@ -11,17 +11,25 @@ cascading filtering rules with preset limits.
 ## Processor configuration
 
 The following configuration options should be configured as desired:
-- `policies` (no default): Policies used to make a sampling decision
-- `spans_per_second` (default = 1500): Maximum total number of emitted spans per second
-- `probabilistic_filtering_ratio` (default = 0.2): Ratio of spans that are always probabilistically filtered 
-(hence might be used for metrics calculation). The ratio is specified as portion of output spans (defined by
-`spans_per_second`) rather than input spans. So the default filtering rate of `0.2` and default max span rate of
-`1500` produces at most `300` probabilistically sampled spans per second.
+- `trace_reject_rules` (no default): policies used to explicitly drop matching traces
+- `trace_accept_rules` (no default): policies used to pass matching traces, within a specified limit
+- `spans_per_second` (no default): maximum total number of emitted spans per second. 
+When set, the total number of spans each second is never exceeded. This value can be also calculated
+automatically when `probabilistic_filtering_rate` and/or `trace_accept_rules` are set
+- `probabilistic_filtering_rate` (no default): number of spans that are always probabilistically filtered 
+(hence might be used for metrics calculation). 
+- `probabilistic_filtering_ratio` (no default): alternative way to specify the ratio of spans which  
+are always probabilistically filtered (hence might be used for metrics calculation). The ratio is
+specified as portion of output spans (defined by `spans_per_second`) rather than input spans. 
+So filtering rate of `0.2` and max span rate of `1500` produces at most `300` probabilistically sampled spans per second.
 
 The following configuration options can also be modified:
 - `decision_wait` (default = 30s): Wait time since the first span of a trace before making a filtering decision
 - `num_traces` (default = 50000): Number of traces kept in memory
 - `expected_new_traces_per_sec` (default = 0): Expected number of new traces (helps in allocating data structures)
+
+Whenever rate limiting is applied, only full traces are accepted (if trace won't fit within the limit, 
+it will never be filtered). For spans that are arriving late, previous decision are kept for some time.
 
 ## Updated span attributes
 
@@ -32,7 +40,7 @@ spans evaluated in a given second, with `1500` max total spans per second and `0
 would be selected by such rule. This would effect in having `sampling.probability=0.06` (`300/5000=0.6`). If such value is already
 set by head-based (or other) sampling, it's multiplied by the calculated value.
 
-## Drop trace configuration
+## Rejected trace configuration
 
 It is possible to specify conditions for traces which should be fully dropped, without including them in probabilistic
 filtering or additional policy evaluation. This typically happens e.g. when healthchecks are filtered-out.
@@ -46,7 +54,7 @@ Each of the specified drop rules has several properties:
 - `name_pattern: <regex>`: selects the span if its operation name matches the provided regular expression
 
 
-## Policy configuration
+## Accepted trace configuration
 
 Each defined policy is evaluated with order as specified in config. There are several properties:
 - `name` (required): identifies the policy
@@ -59,6 +67,8 @@ each of the trace spans. If at least one span matching all defined criteria is f
 attribute (either at resource of span level)
 - `string_attribute: {key: <name>, values: [<value1>, <value2>]}`: selects span by matching string attribute that is one
 of the provided values (either at resource of span level)
+- `properties: { min_number_of_errors: <number>}`: selects the trace if it has at least provided number of errors 
+(determined based on the span status field value)
 - `properties: { min_number_of_spans: <number>}`: selects the trace if it has at least provided number of spans
 - `properties: { min_duration: <duration>}`: selects the span if the duration is greater or equal the given value 
 (use `s` or `ms` as the suffix to indicate unit)
@@ -92,53 +102,87 @@ for example send further only following traces: `A1, A2, B1, C2, C5` and filter 
 
 ### Just filtering out healthchecks
 
+Following example will drop all traces that match either of the following criteria:
+* there is a span which name starts with "health"
+* there is a span coming from a service named "healthcheck"
+
 ```yaml
 processors:
   cascading_filter:
-    decision_wait: 30s
-    num_traces: 50000
-    expected_new_traces_per_sec: 1000
-    spans_per_second: 1000
-    probabilistic_filtering_ratio: 0.1
-    drop_traces:
+    trace_reject_filters:
       - name: remove-all-traces-with-health-span
         name_pattern: "health.*"
       - name: remove-all-traces-with-healthcheck-service
         string_attribute: {key: service.name, values: [healthcheck]}
-    policies:
-      - name: everything_else
-        spans_per_second: -1
  ```
 
-### Filtering out healthchecks and applying policies 
+### Filtering out healhtchecks and traffic shaping
+
+In the following example few more conditions were added:
+* probabilistic filtering was set; it will randomly select traces for a total of up to 100 spans/second
+* two traffic-shaping rules are applied:
+  * traces which have minimum duration of 3s are selected (for up to 500 spans/second)
+  * traces which have at least 3 error spans are selected (for up to 500 spans/second)
+
+Basing on those rules, at most 1100 spans/second will be outputted.
 
 ```yaml
-processors:
-  cascading_filter:
-    decision_wait: 30s
-    num_traces: 50000
-    expected_new_traces_per_sec: 1000
-    spans_per_second: 1000
-    probabilistic_filtering_ratio: 0.1
-    drop_traces:
-      - name: healthcheck-rule
-        name_pattern: "health.*"
-    policies:
-      - name: test-policy-1
-        string_attribute: {key: important-key, values: [value1, value2]}
-        spans_per_second: 50
-      - name: test-policy-2
-        spans_per_second: 100
-        properties: {min_duration: 5s }
-      - name: test-policy-3
-        properties:
-          name_pattern: "foo.*"
-          min_number_of_spans: 10
-          min_duration: 3s
-        spans_per_second: 200        
-      - name: everything_else
-        spans_per_second: -1
- ```
+cascadingfilter:
+  probabilistic_filtering_rate: 100
+  trace_reject_filters:
+    - name: remove-all-traces-with-health-span
+      name_pattern: "health.*"
+    - name: remove-all-traces-with-healthcheck-service
+      string_attribute: {key: service.name, values: [healthcheck]}
+  trace_accept_filters:
+    - name: tail-based-duration
+      properties:
+        min_duration: 3s
+        spans_per_second: 500 # <- adjust the output traffic level
+    - name: tail-based-errors
+      properties:
+        min_number_of_errors: 3
+        spans_per_second: 500 # <- adjust the output traffic level
+```
+
+### Advanced configuration 
+
+It is additionally possible to use adaptive sampling, which will split the
+total spans per second budget across all the rules evenly (for up to specified limit).
+Additionally, it can be set that if there's any budget left, it can be filled with random traces.
+
+```yaml
+cascadingfilter:
+  decision_wait: 30s
+  num_traces: 100000
+  expected_new_traces_per_sec: 2000
+  spans_per_second: 1800
+  probabilistic_filtering_rate: 100
+  trace_reject_filters:
+    - name: remove-all-traces-with-health-span
+      name_pattern: "health.*"
+    - name: remove-all-traces-with-healthcheck-service
+      string_attribute: {key: service.name, values: [healthcheck]}
+  trace_accept_filters:
+    - name: tail-based-duration
+      properties:
+        min_duration: 3s
+      spans_per_second: 500 # <- adjust the output traffic level
+    - name: tail-based-errors
+      properties:
+        min_number_of_errors: 3
+      spans_per_second: 500 # <- adjust the output traffic level
+    - name: traces-with-foo-span-and-high-latency
+      properties:
+        name_pattern: "foo.*"
+        min_duration: 10s
+      spans_per_second: 1000 # <- adjust the output traffic level
+    - name: traces-with-some-attribute
+      string_attribute: {key: important-key, values: [value1, value2]}
+      spans_per_second: 300 # <- adjust the output traffic level
+    - name: everything_else
+      spans_per_second: -1 # If there's anything left in the budget, it will randomly select remaining traces
+```
 
 Refer to [cascading_filter_config.yaml](./testdata/cascading_filter_config.yaml) for detailed
 examples on using the processor.

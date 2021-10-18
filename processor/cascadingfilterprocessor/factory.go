@@ -33,10 +33,6 @@ const (
 	typeStr = "cascading_filter"
 )
 
-var (
-	defaultProbabilisticFilteringRatio = float32(0.2)
-)
-
 func init() {
 	// TODO: this is hardcoding the metrics level
 	err := view.Register(CascadingFilterMetricViews(configtelemetry.LevelNormal)...)
@@ -58,20 +54,19 @@ func createDefaultConfig() config.Processor {
 	ps := config.NewProcessorSettings(id)
 
 	return &cfconfig.Config{
-		ProcessorSettings:           &ps,
-		DecisionWait:                30 * time.Second,
-		NumTraces:                   50000,
-		SpansPerSecond:              1500,
-		ProbabilisticFilteringRatio: &defaultProbabilisticFilteringRatio,
+		ProcessorSettings: &ps,
+		DecisionWait:      30 * time.Second,
+		NumTraces:         50000,
+		SpansPerSecond:    0,
 	}
 }
 
 func createTraceProcessor(
 	_ context.Context,
-	params component.ProcessorCreateSettings,
+	settings component.ProcessorCreateSettings,
 	cfg config.Processor,
 	nextConsumer consumer.Traces,
 ) (component.TracesProcessor, error) {
 	tCfg := cfg.(*cfconfig.Config)
-	return newTraceProcessor(params.Logger, nextConsumer, *tCfg)
+	return newTraceProcessor(settings.Logger, nextConsumer, *tCfg)
 }

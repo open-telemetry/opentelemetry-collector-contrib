@@ -22,7 +22,7 @@ import (
 	"go.uber.org/zap"
 )
 
-func newRateLimiterFilter(maxRate int64) *policyEvaluator {
+func newRateLimiterFilter(maxRate int32) *policyEvaluator {
 	return &policyEvaluator{
 		logger:            zap.NewNop(),
 		maxSpansPerSecond: maxRate,

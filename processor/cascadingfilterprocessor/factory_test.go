@@ -22,6 +22,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configcheck"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/cascadingfilterprocessor/config"
 )
@@ -38,13 +39,15 @@ func TestCreateProcessor(t *testing.T) {
 	cfg := factory.CreateDefaultConfig().(*config.Config)
 	// Manually set required fields
 	cfg.ExpectedNewTracesPerSec = 64
-	cfg.PolicyCfgs = []config.PolicyCfg{
+	cfg.PolicyCfgs = []config.TraceAcceptCfg{
 		{
 			Name: "test-policy",
 		},
 	}
 
-	params := component.ProcessorCreateSettings{}
+	params := component.ProcessorCreateSettings{
+		TelemetrySettings: component.TelemetrySettings{Logger: zap.NewNop()},
+	}
 	tp, err := factory.CreateTracesProcessor(context.Background(), params, cfg, consumertest.NewNop())
 	assert.NotNil(t, tp)
 	assert.NoError(t, err, "cannot create trace processor")

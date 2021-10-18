@@ -34,7 +34,7 @@ type dropTraceEvaluator struct {
 var _ DropTraceEvaluator = (*dropTraceEvaluator)(nil)
 
 // NewDropTraceEvaluator creates a drop trace evaluator that checks if trace should be dropped
-func NewDropTraceEvaluator(logger *zap.Logger, cfg config.DropTracesCfg) (DropTraceEvaluator, error) {
+func NewDropTraceEvaluator(logger *zap.Logger, cfg config.TraceRejectCfg) (DropTraceEvaluator, error) {
 	numericAttrFilter := createNumericAttributeFilter(cfg.NumericAttributeCfg)
 	stringAttrFilter := createStringAttributeFilter(cfg.StringAttributeCfg)
 

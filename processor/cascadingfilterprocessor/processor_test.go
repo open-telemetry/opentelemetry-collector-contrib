@@ -39,7 +39,7 @@ const (
 )
 
 //nolint:unused
-var testPolicy = []config.PolicyCfg{{
+var testPolicy = []config.TraceAcceptCfg{{
 	Name:           "test-policy",
 	SpansPerSecond: 1000,
 }}
@@ -63,7 +63,7 @@ func TestSequentialTraceArrival(t *testing.T) {
 		d, ok := tsp.idToTrace.Load(traceKey(traceIds[i].Bytes()))
 		require.True(t, ok, "Missing expected traceId")
 		v := d.(*sampling.TraceData)
-		require.Equal(t, int64(i+1), v.SpanCount, "Incorrect number of spans for entry %d", i)
+		require.Equal(t, int32(i+1), v.SpanCount, "Incorrect number of spans for entry %d", i)
 	}
 }
 
@@ -103,7 +103,7 @@ func TestConcurrentTraceArrival(t *testing.T) {
 		d, ok := tsp.idToTrace.Load(traceKey(traceIds[i].Bytes()))
 		require.True(t, ok, "Missing expected traceId")
 		v := d.(*sampling.TraceData)
-		require.Equal(t, int64(i+1)*2, v.SpanCount, "Incorrect number of spans for entry %d", i)
+		require.Equal(t, int32(i+1)*2, v.SpanCount, "Incorrect number of spans for entry %d", i)
 	}
 }
 
@@ -181,7 +181,7 @@ func TestSamplingPolicyTypicalPath(t *testing.T) {
 		maxNumTraces:      maxSize,
 		logger:            zap.NewNop(),
 		decisionBatcher:   newSyncIDBatcher(decisionWaitSeconds),
-		policies:          []*Policy{{Name: "mock-policy", Evaluator: mpe, ctx: context.TODO()}},
+		traceAcceptRules:  []*TraceAcceptEvaluator{{Name: "mock-policy", Evaluator: mpe, ctx: context.TODO()}},
 		deleteChan:        make(chan traceKey, maxSize),
 		policyTicker:      mtt,
 		maxSpansPerSecond: 10000,
@@ -243,7 +243,7 @@ func TestSamplingMultiplePolicies(t *testing.T) {
 		maxNumTraces:    maxSize,
 		logger:          zap.NewNop(),
 		decisionBatcher: newSyncIDBatcher(decisionWaitSeconds),
-		policies: []*Policy{
+		traceAcceptRules: []*TraceAcceptEvaluator{
 			{
 				Name: "policy-1", Evaluator: mpe1, ctx: context.TODO(),
 			},
@@ -275,7 +275,7 @@ func TestSamplingMultiplePolicies(t *testing.T) {
 		)
 	}
 
-	// Both policies will decide to sample
+	// Both traceAcceptRules will decide to sample
 	mpe1.NextDecision = sampling.Sampled
 	mpe2.NextDecision = sampling.Sampled
 	tsp.samplingPolicyOnTick()
@@ -315,7 +315,7 @@ func TestSamplingPolicyDecisionNotSampled(t *testing.T) {
 		maxNumTraces:      maxSize,
 		logger:            zap.NewNop(),
 		decisionBatcher:   newSyncIDBatcher(decisionWaitSeconds),
-		policies:          []*Policy{{Name: "mock-policy", Evaluator: mpe, ctx: context.TODO()}},
+		traceAcceptRules:  []*TraceAcceptEvaluator{{Name: "mock-policy", Evaluator: mpe, ctx: context.TODO()}},
 		deleteChan:        make(chan traceKey, maxSize),
 		policyTicker:      mtt,
 		maxSpansPerSecond: 10000,
@@ -383,8 +383,8 @@ func TestSamplingPolicyDecisionDrop(t *testing.T) {
 		maxNumTraces:      maxSize,
 		logger:            zap.NewNop(),
 		decisionBatcher:   newSyncIDBatcher(decisionWaitSeconds),
-		policies:          []*Policy{{Name: "mock-policy", Evaluator: mpe, ctx: context.TODO()}},
-		dropTraceEvals:    []*DropTraceEvaluator{{Name: "mock-drop-eval", Evaluator: mde, ctx: context.TODO()}},
+		traceAcceptRules:  []*TraceAcceptEvaluator{{Name: "mock-policy", Evaluator: mpe, ctx: context.TODO()}},
+		traceRejectRules:  []*TraceRejectEvaluator{{Name: "mock-drop-eval", Evaluator: mde, ctx: context.TODO()}},
 		deleteChan:        make(chan traceKey, maxSize),
 		policyTicker:      mtt,
 		maxSpansPerSecond: 10000,
@@ -415,6 +415,45 @@ func TestSamplingPolicyDecisionDrop(t *testing.T) {
 	require.EqualValues(t, 0, mpe.EvaluationCount, "policy should have been evaluated 0 times since it was dropped")
 }
 
+func TestSamplingPolicyDecisionNoLimitSet(t *testing.T) {
+	const maxSize = 100
+	const decisionWaitSeconds = 2
+	// For this test explicitly control the timer calls and batcher, and set a mock
+	// sampling policy evaluator.
+	msp := new(consumertest.TracesSink)
+	mtt := &manualTTicker{}
+	tsp := &cascadingFilterSpanProcessor{
+		ctx:               context.Background(),
+		nextConsumer:      msp,
+		maxNumTraces:      maxSize,
+		logger:            zap.NewNop(),
+		decisionBatcher:   newSyncIDBatcher(decisionWaitSeconds),
+		deleteChan:        make(chan traceKey, maxSize),
+		policyTicker:      mtt,
+		maxSpansPerSecond: 0,
+	}
+
+	_, batches := generateIdsAndBatches(210)
+	currItem := 0
+	numSpansPerBatchWindow := 10
+
+	// First evaluations shouldn't have anything to evaluate, until decision wait time passed.
+	for evalNum := 0; evalNum < decisionWaitSeconds; evalNum++ {
+		for ; currItem < numSpansPerBatchWindow*(evalNum+1); currItem++ {
+			if err := tsp.ConsumeTraces(context.Background(), batches[currItem]); err != nil {
+				t.Errorf("Failed consuming traces: %v", err)
+			}
+			require.True(t, mtt.Started, "Time ticker was expected to have started")
+		}
+		tsp.samplingPolicyOnTick()
+	}
+
+	// Now the first batch that waited the decision period.
+	tsp.samplingPolicyOnTick()
+	//require.EqualValues(t, 210, msp.SpanCount(), "exporter should have received all spans since no rate limiting was applied")
+	require.EqualValues(t, 10, msp.SpanCount())
+}
+
 func TestMultipleBatchesAreCombinedIntoOne(t *testing.T) {
 	const maxSize = 100
 	const decisionWaitSeconds = 1
@@ -429,7 +468,7 @@ func TestMultipleBatchesAreCombinedIntoOne(t *testing.T) {
 		maxNumTraces:      maxSize,
 		logger:            zap.NewNop(),
 		decisionBatcher:   newSyncIDBatcher(decisionWaitSeconds),
-		policies:          []*Policy{{Name: "mock-policy", Evaluator: mpe, ctx: context.TODO()}},
+		traceAcceptRules:  []*TraceAcceptEvaluator{{Name: "mock-policy", Evaluator: mpe, ctx: context.TODO()}},
 		deleteChan:        make(chan traceKey, maxSize),
 		policyTicker:      mtt,
 		maxSpansPerSecond: 10000,

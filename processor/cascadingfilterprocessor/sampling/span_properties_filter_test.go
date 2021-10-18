@@ -31,9 +31,10 @@ var (
 	operationNamePattern = "foo.*"
 	minDuration          = 500 * time.Microsecond
 	minNumberOfSpans     = 2
+	minNumberOfErrors    = 1
 )
 
-func newSpanPropertiesFilter(t *testing.T, operationNamePattern *string, minDuration *time.Duration, minNumberOfSpans *int) policyEvaluator {
+func newSpanPropertiesFilter(t *testing.T, operationNamePattern *string, minDuration *time.Duration, minNumberOfSpans *int, minNumberOfErrors *int) policyEvaluator {
 	var operationRe *regexp.Regexp
 	var err error
 	if operationNamePattern != nil {
@@ -45,7 +46,8 @@ func newSpanPropertiesFilter(t *testing.T, operationNamePattern *string, minDura
 		operationRe:       operationRe,
 		minNumberOfSpans:  minNumberOfSpans,
 		minDuration:       minDuration,
-		maxSpansPerSecond: math.MaxInt64,
+		maxSpansPerSecond: math.MaxInt32,
+		minNumberOfErrors: minNumberOfErrors,
 	}
 }
 
@@ -57,9 +59,10 @@ func evaluate(t *testing.T, evaluator policyEvaluator, traces *TraceData, expect
 }
 
 func TestPartialSpanPropertiesFilter(t *testing.T) {
-	opFilter := newSpanPropertiesFilter(t, &operationNamePattern, nil, nil)
-	durationFilter := newSpanPropertiesFilter(t, nil, &minDuration, nil)
-	spansFilter := newSpanPropertiesFilter(t, nil, nil, &minNumberOfSpans)
+	opFilter := newSpanPropertiesFilter(t, &operationNamePattern, nil, nil, nil)
+	durationFilter := newSpanPropertiesFilter(t, nil, &minDuration, nil, nil)
+	spansFilter := newSpanPropertiesFilter(t, nil, nil, &minNumberOfSpans, nil)
+	errorsFilter := newSpanPropertiesFilter(t, nil, nil, nil, &minNumberOfErrors)
 
 	cases := []struct {
 		Desc      string
@@ -74,13 +77,17 @@ func TestPartialSpanPropertiesFilter(t *testing.T) {
 			Evaluator: durationFilter,
 		},
 		{
-			Desc:      "spans filter",
+			Desc:      "number of spans filter",
 			Evaluator: spansFilter,
+		},
+		{
+			Desc:      "errors filter",
+			Evaluator: errorsFilter,
 		},
 	}
 
-	matchingTraces := newTraceAttrs("foobar", 1000*time.Microsecond, 100)
-	nonMatchingTraces := newTraceAttrs("bar", 100*time.Microsecond, 1)
+	matchingTraces := newTraceAttrs("foobar", 1000*time.Microsecond, 100, 100)
+	nonMatchingTraces := newTraceAttrs("bar", 100*time.Microsecond, 1, 0)
 
 	for _, c := range cases {
 		t.Run(c.Desc, func(t *testing.T) {
@@ -103,22 +110,27 @@ func TestSpanPropertiesFilter(t *testing.T) {
 	}{
 		{
 			Desc:     "fully matching",
-			Trace:    newTraceAttrs("foobar", 1000*time.Microsecond, 100),
+			Trace:    newTraceAttrs("foobar", 1000*time.Microsecond, 100, 100),
 			Decision: Sampled,
 		},
 		{
 			Desc:     "nonmatching operation name",
-			Trace:    newTraceAttrs("non_matching", 1000*time.Microsecond, 100),
+			Trace:    newTraceAttrs("non_matching", 1000*time.Microsecond, 100, 100),
 			Decision: NotSampled,
 		},
 		{
 			Desc:     "nonmatching duration",
-			Trace:    newTraceAttrs("foobar", 100*time.Microsecond, 100),
+			Trace:    newTraceAttrs("foobar", 100*time.Microsecond, 100, 100),
 			Decision: NotSampled,
 		},
 		{
 			Desc:     "nonmatching number of spans",
-			Trace:    newTraceAttrs("foobar", 1000*time.Microsecond, 1),
+			Trace:    newTraceAttrs("foobar", 1000*time.Microsecond, 1, 1),
+			Decision: NotSampled,
+		},
+		{
+			Desc:     "nonmatching number of errors",
+			Trace:    newTraceAttrs("foobar", 1000*time.Microsecond, 100, 0),
 			Decision: NotSampled,
 		},
 	}
@@ -126,7 +138,7 @@ func TestSpanPropertiesFilter(t *testing.T) {
 	for _, c := range cases {
 		t.Run(c.Desc, func(t *testing.T) {
 			// Regular match
-			filter := newSpanPropertiesFilter(t, &operationNamePattern, &minDuration, &minNumberOfSpans)
+			filter := newSpanPropertiesFilter(t, &operationNamePattern, &minDuration, &minNumberOfSpans, &minNumberOfErrors)
 			evaluate(t, filter, c.Trace, c.Decision)
 
 			// Invert match
@@ -140,7 +152,7 @@ func TestSpanPropertiesFilter(t *testing.T) {
 	}
 }
 
-func newTraceAttrs(operationName string, duration time.Duration, numberOfSpans int) *TraceData {
+func newTraceAttrs(operationName string, duration time.Duration, numberOfSpans int, numberOfErrors int) *TraceData {
 	endTs := time.Now().UnixNano()
 	startTs := endTs - duration.Nanoseconds()
 
@@ -158,6 +170,11 @@ func newTraceAttrs(operationName string, duration time.Duration, numberOfSpans i
 		span.SetName(operationName)
 		span.SetStartTimestamp(pdata.Timestamp(startTs))
 		span.SetEndTimestamp(pdata.Timestamp(endTs))
+	}
+
+	for i := 0; i < numberOfErrors && i < numberOfSpans; i++ {
+		span := spans.At(i)
+		span.Status().SetCode(pdata.StatusCodeError)
 	}
 
 	traceBatches = append(traceBatches, traces)
