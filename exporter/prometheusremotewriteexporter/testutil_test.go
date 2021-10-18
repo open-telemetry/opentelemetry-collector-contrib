@@ -94,12 +94,6 @@ var (
 			[]prompb.Sample{getSample(float64(intVal1), msTime2)},
 			getExemplar(float64(intVal1), msTime2)),
 	}
-	twoHistogramsPointsWithExemplarsAndEmptySample = map[string]*prompb.TimeSeries{
-		"Histogram" + "-" + label11 + "-" + value11 + "-" + label12 + "-" + value12: getTimeSeriesWithSamplesAndExemplars(getPromLabels(label11, value11, label12, value12),
-			nil,
-			getExemplar(float64(intVal1), msTime1),
-			getExemplar(float64(intVal2), msTime2)),
-	}
 	twoHistogramsPointsWithSamplesAndEmptyExemplar = map[string]*prompb.TimeSeries{
 		"Histogram" + "-" + label11 + "-" + value11 + "-" + label12 + "-" + value12: getTimeSeriesWithSamplesAndExemplars(getPromLabels(label11, value11, label12, value12),
 			[]prompb.Sample{getSample(float64(intVal1), msTime1), getSample(float64(intVal2), msTime2)}),
