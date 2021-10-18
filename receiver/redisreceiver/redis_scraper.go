@@ -19,79 +19,43 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/model/pdata"
-	"go.opentelemetry.io/collector/obsreport"
+	"go.opentelemetry.io/collector/receiver/scraperhelper"
 	"go.uber.org/zap"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/interval"
 )
-
-var _ interval.Runnable = (*redisRunnable)(nil)
-
-const transport = "http" // todo verify this
 
 // Runs intermittently, fetching info from Redis, creating metrics/datapoints,
 // and feeding them to a metricsConsumer.
-type redisRunnable struct {
-	id              config.ComponentID
-	ctx             context.Context
-	metricsConsumer consumer.Metrics
-	redisSvc        *redisSvc
-	redisMetrics    []*redisMetric
-	settings        component.ReceiverCreateSettings
-	timeBundle      *timeBundle
-	obsrecv         *obsreport.Receiver
+type redisScraper struct {
+	redisSvc     *redisSvc
+	redisMetrics []*redisMetric
+	settings     component.ReceiverCreateSettings
+	timeBundle   *timeBundle
 }
 
-func newRedisRunnable(
-	ctx context.Context,
-	id config.ComponentID,
-	client client,
-	metricsConsumer consumer.Metrics,
-	settings component.ReceiverCreateSettings,
-) *redisRunnable {
-	return &redisRunnable{
-		id:              id,
-		ctx:             ctx,
-		redisSvc:        newRedisSvc(client),
-		metricsConsumer: metricsConsumer,
-		settings:        settings,
-		obsrecv: obsreport.NewReceiver(obsreport.ReceiverSettings{
-			ReceiverID:             id,
-			Transport:              transport,
-			ReceiverCreateSettings: settings,
-		}),
+func newRedisScraper(client client, settings component.ReceiverCreateSettings) (scraperhelper.Scraper, error) {
+	rs := &redisScraper{
+		redisSvc:     newRedisSvc(client),
+		redisMetrics: getDefaultRedisMetrics(),
+		settings:     settings,
 	}
+	return scraperhelper.NewScraper(typeStr, rs.Scrape)
 }
 
-// Setup builds a data structure of all of the keys, types, converters and such to
-// later extract data from Redis.
-func (r *redisRunnable) Setup() error {
-	r.redisMetrics = getDefaultRedisMetrics()
-	return nil
-}
-
-// Run is called periodically, querying Redis and building Metrics to send to
+// Scrape is called periodically, querying Redis and building Metrics to send to
 // the next consumer. First builds 'fixed' metrics (non-keyspace metrics)
 // defined at startup time. Then builds 'keyspace' metrics if there are any
 // keyspace lines returned by Redis. There should be one keyspace line per
 // active Redis database, of which there can be 16.
-func (r *redisRunnable) Run() error {
-	const dataFormat = "redis"
-	ctx := r.obsrecv.StartMetricsOp(r.ctx)
-
+func (r *redisScraper) Scrape(context.Context) (pdata.Metrics, error) {
 	inf, err := r.redisSvc.info()
 	if err != nil {
-		r.obsrecv.EndMetricsOp(ctx, dataFormat, 0, err)
-		return nil
+		return pdata.Metrics{}, err
 	}
 
 	uptime, err := inf.getUptimeInSeconds()
 	if err != nil {
-		r.obsrecv.EndMetricsOp(ctx, dataFormat, 0, err)
-		return nil
+		return pdata.Metrics{}, err
 	}
 
 	if r.timeBundle == nil {
@@ -122,9 +86,5 @@ func (r *redisRunnable) Run() error {
 	}
 	keyspaceMS.MoveAndAppendTo(ilm.Metrics())
 
-	numPoints := pdm.DataPointCount()
-	err = r.metricsConsumer.ConsumeMetrics(r.ctx, pdm)
-	r.obsrecv.EndMetricsOp(ctx, dataFormat, numPoints, err)
-
-	return nil
+	return pdm, nil
 }
