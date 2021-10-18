@@ -30,12 +30,8 @@ type point struct {
 	attributes map[string]string
 }
 
-func translateStatsToMetrics(stats *containerStats, ts time.Time) pdata.Metrics {
+func translateStatsToMetrics(stats *containerStats, ts time.Time, rm pdata.ResourceMetrics) {
 	pbts := pdata.NewTimestampFromTime(ts)
-
-	md := pdata.NewMetrics()
-	rms := md.ResourceMetrics()
-	rm := rms.AppendEmpty()
 
 	resource := rm.Resource()
 	resource.Attributes().InsertString("container.name", stats.Name)
@@ -46,8 +42,6 @@ func translateStatsToMetrics(stats *containerStats, ts time.Time) pdata.Metrics 
 	appendCPUMetrics(ms, stats, pbts)
 	appendNetworkMetrics(ms, stats, pbts)
 	appendMemoryMetrics(ms, stats, pbts)
-
-	return md
 }
 
 func appendMemoryMetrics(ms pdata.MetricSlice, stats *containerStats, ts pdata.Timestamp) {
