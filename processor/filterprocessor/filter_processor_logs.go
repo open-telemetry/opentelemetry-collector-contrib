@@ -91,7 +91,7 @@ func createLogsMatcher(lp *filterlog.LogMatchProperties) (logMatcher filterlog.M
 		lp.ResourceAttributes,
 	)
 	if err != nil {
-		return nil, resourceMatcher, recordMatcher, fmt.Errorf("resource attributes: %v", err)
+		return nil, resourceMatcher, recordMatcher, fmt.Errorf("resource attributes: %w", err)
 	}
 
 	if lp.MatchType != filterlog.Expr {
