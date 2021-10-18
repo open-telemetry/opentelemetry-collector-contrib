@@ -473,7 +473,6 @@ func (cfsp *cascadingFilterSpanProcessor) makeProvisionalDecision(id pdata.Trace
 	}
 
 	provisionalDecision := sampling.Unspecified
-	var matchingPolicy *TraceAcceptEvaluator
 
 	for i, policy := range cfsp.traceAcceptRules {
 		policyEvaluateStartTime := time.Now()
@@ -489,9 +488,6 @@ func (cfsp *cascadingFilterSpanProcessor) makeProvisionalDecision(id pdata.Trace
 			// any single policy that decides to sample will cause the decision to be sampled
 			// the nextConsumer will get the context from the first matching policy
 			provisionalDecision = sampling.Sampled
-			if matchingPolicy == nil {
-				matchingPolicy = policy
-			}
 
 			if policy.probabilisticFilter {
 				trace.SelectedByProbabilisticFilter = true
@@ -507,7 +503,7 @@ func (cfsp *cascadingFilterSpanProcessor) makeProvisionalDecision(id pdata.Trace
 			}
 
 			// No need to continue
-			return provisionalDecision, matchingPolicy
+			return provisionalDecision, policy
 		case sampling.NotSampled:
 			if provisionalDecision == sampling.Unspecified {
 				provisionalDecision = sampling.NotSampled
@@ -536,7 +532,7 @@ func (cfsp *cascadingFilterSpanProcessor) makeProvisionalDecision(id pdata.Trace
 		}
 	}
 
-	return provisionalDecision, matchingPolicy
+	return provisionalDecision, nil
 }
 
 // ConsumeTraces is required by the SpanProcessor interface.
