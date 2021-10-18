@@ -75,7 +75,7 @@ func (z *zookeeperMetricsScraper) shutdown(_ context.Context) error {
 	return nil
 }
 
-func (z *zookeeperMetricsScraper) scrape(ctx context.Context) (pdata.ResourceMetricsSlice, error) {
+func (z *zookeeperMetricsScraper) scrape(ctx context.Context) (pdata.Metrics, error) {
 	var ctxWithTimeout context.Context
 	ctxWithTimeout, z.cancel = context.WithTimeout(ctx, z.config.Timeout)
 
@@ -85,7 +85,7 @@ func (z *zookeeperMetricsScraper) scrape(ctx context.Context) (pdata.ResourceMet
 			zap.String("endpoint", z.config.Endpoint),
 			zap.Error(err),
 		)
-		return pdata.NewResourceMetricsSlice(), err
+		return pdata.NewMetrics(), err
 	}
 	defer func() {
 		if closeErr := z.closeConnection(conn); closeErr != nil {
@@ -103,19 +103,19 @@ func (z *zookeeperMetricsScraper) scrape(ctx context.Context) (pdata.ResourceMet
 	return z.getResourceMetrics(conn)
 }
 
-func (z *zookeeperMetricsScraper) getResourceMetrics(conn net.Conn) (pdata.ResourceMetricsSlice, error) {
+func (z *zookeeperMetricsScraper) getResourceMetrics(conn net.Conn) (pdata.Metrics, error) {
 	scanner, err := z.sendCmd(conn, mntrCommand)
 	if err != nil {
 		z.logger.Error("failed to send command",
 			zap.Error(err),
 			zap.String("command", mntrCommand),
 		)
-		return pdata.NewResourceMetricsSlice(), err
+		return pdata.NewMetrics(), err
 	}
 
 	md := pdata.NewMetrics()
 	z.appendMetrics(scanner, md.ResourceMetrics())
-	return md.ResourceMetrics(), nil
+	return md, nil
 }
 
 func (z *zookeeperMetricsScraper) appendMetrics(scanner *bufio.Scanner, rms pdata.ResourceMetricsSlice) {

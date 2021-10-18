@@ -25,8 +25,7 @@ import (
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/scraperhelper"
+	"go.opentelemetry.io/collector/receiver/scraperhelper"
 )
 
 const (
@@ -62,7 +61,10 @@ func createMetricsReceiver(
 ) (component.MetricsReceiver, error) {
 	cfg := rConf.(*Config)
 
-	scraper := newMemcachedScraper(params.Logger, cfg)
+	scraper, err := newMemcachedScraper(params.Logger, cfg)
+	if err != nil {
+		return nil, err
+	}
 
 	return scraperhelper.NewScraperControllerReceiver(
 		&cfg.ScraperControllerSettings, params, consumer,

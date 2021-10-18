@@ -86,7 +86,7 @@ func TestScrape(t *testing.T) {
 			}
 			scraper.startTime = startTime
 
-			metrics, err := scraper.scrape(context.Background())
+			md, err := scraper.scrape(context.Background())
 
 			expectedMetricCount := 0
 			if expectProcessesCountMetric {
@@ -112,8 +112,9 @@ func TestScrape(t *testing.T) {
 				assert.NoErrorf(err, "Failed to scrape metrics: %v", err)
 			}
 
-			assert.Equal(expectedMetricCount, metrics.Len())
+			assert.Equal(expectedMetricCount, md.MetricCount())
 
+			metrics := md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics()
 			if test.validate != nil {
 				test.validate(t, metrics)
 			}
