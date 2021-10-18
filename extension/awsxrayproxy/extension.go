@@ -16,6 +16,7 @@ package awsxrayproxy
 
 import (
 	"context"
+	"net/http"
 
 	"go.opentelemetry.io/collector/component"
 	"go.uber.org/zap"
@@ -32,7 +33,13 @@ type xrayProxy struct {
 var _ component.Extension = (*xrayProxy)(nil)
 
 func (x xrayProxy) Start(ctx context.Context, host component.Host) error {
-	go x.server.ListenAndServe()
+	go func() {
+		if err := x.server.ListenAndServe(); err != nil {
+			if err != http.ErrServerClosed {
+				host.ReportFatalError(err)
+			}
+		}
+	}()
 	x.logger.Info("X-Ray proxy server started on " + x.config.ProxyConfig.Endpoint)
 	return nil
 }

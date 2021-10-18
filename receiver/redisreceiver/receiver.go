@@ -20,25 +20,24 @@ import (
 	"github.com/go-redis/redis/v7"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
-	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/interval"
 )
 
 type redisReceiver struct {
-	logger         *zap.Logger
+	settings       component.ReceiverCreateSettings
 	config         *Config
 	consumer       consumer.Metrics
 	intervalRunner *interval.Runner
 }
 
 func newRedisReceiver(
-	logger *zap.Logger,
+	settings component.ReceiverCreateSettings,
 	config *Config,
 	consumer consumer.Metrics,
 ) *redisReceiver {
 	return &redisReceiver{
-		logger:   logger,
+		settings: settings,
 		config:   config,
 		consumer: consumer,
 	}
@@ -50,7 +49,7 @@ func (r *redisReceiver) Start(ctx context.Context, host component.Host) error {
 		Addr:     r.config.Endpoint,
 		Password: r.config.Password,
 	})
-	redisRunnable := newRedisRunnable(ctx, r.config.ID(), c, r.consumer, r.logger)
+	redisRunnable := newRedisRunnable(ctx, r.config.ID(), c, r.consumer, r.settings)
 	r.intervalRunner = interval.NewRunner(r.config.CollectionInterval, redisRunnable)
 
 	go func() {

@@ -42,6 +42,11 @@ func (mn labelName) Render() (string, error) {
 type metric struct {
 	// Description of the metric.
 	Description string `validate:"required,notblank"`
+
+	// ExtendedDocumentation of the metric. If specified, this will
+	// be appended to the description used in generated documentation.
+	ExtendedDocumentation string `yaml:"extended_documentation"`
+
 	// Unit of the metric.
 	Unit string `yaml:"unit"`
 

@@ -41,9 +41,8 @@ func TestNewReceiver(t *testing.T) {
 			CollectionInterval: 1 * time.Second,
 		},
 	}
-	logger := zap.NewNop()
 	nextConsumer := consumertest.NewNop()
-	mr, err := newReceiver(context.Background(), logger, config, nextConsumer, nil)
+	mr, err := newReceiver(context.Background(), componenttest.NewNopReceiverCreateSettings(), config, nextConsumer, nil)
 
 	assert.NotNil(t, mr)
 	assert.Nil(t, err)
@@ -51,33 +50,28 @@ func TestNewReceiver(t *testing.T) {
 	receiver := mr.(*receiver)
 	assert.Equal(t, config, receiver.config)
 	assert.Same(t, nextConsumer, receiver.nextConsumer)
-	assert.Equal(t, logger, receiver.logger)
 }
 
 func TestNewReceiverErrors(t *testing.T) {
-	logger := zap.NewNop()
-
-	r, err := newReceiver(context.Background(), logger, &Config{}, consumertest.NewNop(), nil)
+	r, err := newReceiver(context.Background(), componenttest.NewNopReceiverCreateSettings(), &Config{}, consumertest.NewNop(), nil)
 	assert.Nil(t, r)
 	require.Error(t, err)
 	assert.Equal(t, "config.Endpoint must be specified", err.Error())
 
-	r, err = newReceiver(context.Background(), logger, &Config{Endpoint: "someEndpoint"}, consumertest.NewNop(), nil)
+	r, err = newReceiver(context.Background(), componenttest.NewNopReceiverCreateSettings(), &Config{Endpoint: "someEndpoint"}, consumertest.NewNop(), nil)
 	assert.Nil(t, r)
 	require.Error(t, err)
 	assert.Equal(t, "config.CollectionInterval must be specified", err.Error())
 }
 
 func TestScraperLoop(t *testing.T) {
-	logger := zap.NewNop()
-
 	cfg := createDefaultConfig()
 	cfg.CollectionInterval = 100 * time.Millisecond
 
 	client := make(mockClient)
 	consumer := make(mockConsumer)
 
-	r, err := newReceiver(context.Background(), logger, cfg, consumer, client.factory)
+	r, err := newReceiver(context.Background(), componenttest.NewNopReceiverCreateSettings(), cfg, consumer, client.factory)
 	assert.NotNil(t, r)
 	require.NoError(t, err)
 

@@ -95,7 +95,7 @@ var Metrics = &metricStruct{
 		"httpd.current_connections",
 		func(metric pdata.Metric) {
 			metric.SetName("httpd.current_connections")
-			metric.SetDescription("The number of active connections currently attached to the HTTP server")
+			metric.SetDescription("The number of active connections currently attached to the HTTP server.")
 			metric.SetUnit("connections")
 			metric.SetDataType(pdata.MetricDataTypeSum)
 			metric.Sum().SetIsMonotonic(false)
@@ -106,7 +106,7 @@ var Metrics = &metricStruct{
 		"httpd.requests",
 		func(metric pdata.Metric) {
 			metric.SetName("httpd.requests")
-			metric.SetDescription("The number of requests serviced by the HTTP server per second")
+			metric.SetDescription("The number of requests serviced by the HTTP server per second.")
 			metric.SetUnit("1")
 			metric.SetDataType(pdata.MetricDataTypeSum)
 			metric.Sum().SetIsMonotonic(true)
@@ -117,7 +117,7 @@ var Metrics = &metricStruct{
 		"httpd.scoreboard",
 		func(metric pdata.Metric) {
 			metric.SetName("httpd.scoreboard")
-			metric.SetDescription("The number of connections in each state")
+			metric.SetDescription("The number of connections in each state.")
 			metric.SetUnit("scoreboard")
 			metric.SetDataType(pdata.MetricDataTypeSum)
 			metric.Sum().SetIsMonotonic(false)
@@ -128,7 +128,7 @@ var Metrics = &metricStruct{
 		"httpd.traffic",
 		func(metric pdata.Metric) {
 			metric.SetName("httpd.traffic")
-			metric.SetDescription("Total HTTP server traffic")
+			metric.SetDescription("Total HTTP server traffic.")
 			metric.SetUnit("By")
 			metric.SetDataType(pdata.MetricDataTypeSum)
 			metric.Sum().SetIsMonotonic(true)
@@ -139,7 +139,7 @@ var Metrics = &metricStruct{
 		"httpd.uptime",
 		func(metric pdata.Metric) {
 			metric.SetName("httpd.uptime")
-			metric.SetDescription("The amount of time that the server has been running in seconds")
+			metric.SetDescription("The amount of time that the server has been running in seconds.")
 			metric.SetUnit("s")
 			metric.SetDataType(pdata.MetricDataTypeSum)
 			metric.Sum().SetIsMonotonic(true)
@@ -150,7 +150,7 @@ var Metrics = &metricStruct{
 		"httpd.workers",
 		func(metric pdata.Metric) {
 			metric.SetName("httpd.workers")
-			metric.SetDescription("The number of workers currently attached to the HTTP server")
+			metric.SetDescription("The number of workers currently attached to the HTTP server.")
 			metric.SetUnit("connections")
 			metric.SetDataType(pdata.MetricDataTypeSum)
 			metric.Sum().SetIsMonotonic(false)
@@ -165,11 +165,11 @@ var M = Metrics
 
 // Labels contains the possible metric labels that can be used.
 var Labels = struct {
-	// ScoreboardState (The state of a connection)
+	// ScoreboardState (The state of a connection.)
 	ScoreboardState string
-	// ServerName (The name of the Apache HTTP server)
+	// ServerName (The name of the Apache HTTP server.)
 	ServerName string
-	// WorkersState (The state of workers)
+	// WorkersState (The state of workers.)
 	WorkersState string
 }{
 	"state",
