@@ -1,4 +1,4 @@
-module github.com/open-telemetry/opentelemetry-collector-contrib/extension/awsxrayproxy
+module github.com/open-telemetry/opentelemetry-collector-contrib/extension/awsproxy
 
 go 1.17
 
