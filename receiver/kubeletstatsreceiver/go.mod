@@ -3,7 +3,6 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubele
 go 1.17
 
 require (
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/interval v0.37.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.37.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/kubelet v0.37.1
 	github.com/stretchr/testify v1.7.0
@@ -71,7 +70,6 @@ require (
 )
 
 replace (
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/interval => ../../internal/interval
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig => ../../internal/k8sconfig
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/kubelet => ../../internal/kubelet
 )

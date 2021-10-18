@@ -32,6 +32,7 @@ import (
 	"go.opentelemetry.io/collector/config/configtest"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/receiver/scraperhelper"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
@@ -123,6 +124,9 @@ func TestRestClientErr(t *testing.T) {
 
 func tlsConfig() *Config {
 	return &Config{
+		ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
+			CollectionInterval: 10 * time.Second,
+		},
 		ClientConfig: kube.ClientConfig{
 			APIConfig: k8sconfig.APIConfig{
 				AuthType: "tls",
@@ -184,7 +188,9 @@ func TestCustomUnmarshaller(t *testing.T) {
 			args: args{
 				componentParser: config.NewMap(),
 				intoCfg: &Config{
-					CollectionInterval: 10 * time.Second,
+					ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
+						CollectionInterval: 10 * time.Second,
+					},
 				},
 			},
 			configOverride: map[string]interface{}{
@@ -192,7 +198,9 @@ func TestCustomUnmarshaller(t *testing.T) {
 				"collection_interval": 20 * time.Second,
 			},
 			result: &Config{
-				CollectionInterval:    20 * time.Second,
+				ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
+					CollectionInterval: 20 * time.Second,
+				},
 				MetricGroupsToCollect: []kubelet.MetricGroup{kubelet.ContainerMetricGroup},
 			},
 		},
