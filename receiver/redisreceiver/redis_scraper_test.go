@@ -21,24 +21,19 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.uber.org/zap"
 )
 
 func TestRedisRunnable(t *testing.T) {
-	consumer := new(consumertest.MetricsSink)
 	logger, _ := zap.NewDevelopment()
 	settings := componenttest.NewNopReceiverCreateSettings()
 	settings.Logger = logger
-	runner := newRedisRunnable(context.Background(), config.NewComponentID(typeStr), newFakeClient(), consumer, settings)
-	err := runner.Setup()
-	require.Nil(t, err)
-	err = runner.Run()
-	require.Nil(t, err)
+	runner, err := newRedisScraper(newFakeClient(), settings)
+	require.NoError(t, err)
+	md, err := runner.Scrape(context.Background())
+	require.NoError(t, err)
 	// + 6 because there are two keyspace entries each of which has three metrics
-	assert.Equal(t, len(getDefaultRedisMetrics())+6, consumer.DataPointCount())
-	md := consumer.AllMetrics()[0]
+	assert.Equal(t, len(getDefaultRedisMetrics())+6, md.DataPointCount())
 	rm := md.ResourceMetrics().At(0)
 	ilm := rm.InstrumentationLibraryMetrics().At(0)
 	il := ilm.InstrumentationLibrary()
