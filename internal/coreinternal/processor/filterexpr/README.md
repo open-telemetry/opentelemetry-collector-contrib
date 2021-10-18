@@ -3,6 +3,11 @@
 Expressions give the config flexibility by allowing dynamic business logic rules to be included in static configs.
 Most notably, expressions can be used to filter logs and metrics based on content and properties of processed records.
 
+To ensure that everything is safe and secure:
+
+- only basic types (like `string` instead of more complex log body) are being exposed
+- expr has only access to a copy of object values
+
 For reference documentation of the expression language,
 see [here](https://github.com/antonmedv/expr/blob/master/docs/Language-Definition.md).
 
