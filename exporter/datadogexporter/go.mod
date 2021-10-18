@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datado
 go 1.17
 
 require (
-	github.com/DataDog/agent-payload v4.85.0+incompatible
+	github.com/DataDog/agent-payload v4.86.0+incompatible
 	github.com/DataDog/datadog-agent/pkg/quantile v0.31.1
 	github.com/DataDog/datadog-agent/pkg/trace/exportable v0.0.0-20201016145401-4646cf596b02
 	github.com/Microsoft/go-winio v0.5.0 // indirect

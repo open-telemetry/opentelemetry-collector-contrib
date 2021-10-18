@@ -41,8 +41,8 @@ dmitri.shuralyov.com/gpu/mtl v0.0.0-20190408044501-666a987793e9/go.mod h1:H6x//7
 github.com/BurntSushi/toml v0.3.1/go.mod h1:xHWCNGjB5oqiDr8zfno3MHue2Ht5sIBksp03qcyfWMU=
 github.com/BurntSushi/xgb v0.0.0-20160522181843-27f122750802/go.mod h1:IVnqGOEym/WlBOVXweHU+Q+/VP0lqqI8lqeDx9IjBqo=
 github.com/DATA-DOG/go-sqlmock v1.3.3/go.mod h1:f/Ixk793poVmq4qj/V1dPUg2JEAKC73Q5eFN3EC/SaM=
-github.com/DataDog/agent-payload v4.85.0+incompatible h1:AjNteNxI3nIuGbvJu1VmxujE8lJHukdZgEp6v/wAA6Y=
-github.com/DataDog/agent-payload v4.85.0+incompatible/go.mod h1:/2RW4IC/2z54jtB6RLgq5UtVI1TsX0joDRjKbkLT+mk=
+github.com/DataDog/agent-payload v4.86.0+incompatible h1:nFk+HCOFyoluOpNIlnMN3ypyxeom5tz5uxCjqxHuDYo=
+github.com/DataDog/agent-payload v4.86.0+incompatible/go.mod h1:/2RW4IC/2z54jtB6RLgq5UtVI1TsX0joDRjKbkLT+mk=
 github.com/DataDog/datadog-agent/pkg/quantile v0.31.1 h1:GZVFUINaZhitq3CORgHmoES8B0YNDlmgcxvmXCK4WvM=
 github.com/DataDog/datadog-agent/pkg/quantile v0.31.1/go.mod h1:VAKllu7WNy8pirV8XIXUAeU57s0uRIn/5GPrPh+Y9BI=
 github.com/DataDog/datadog-agent/pkg/trace/exportable v0.0.0-20201016145401-4646cf596b02 h1:N2BRKjJ/c+ipDwt5b+ijqEc2EsmK3zXq2lNeIPnSwMI=
