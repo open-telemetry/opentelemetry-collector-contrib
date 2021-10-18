@@ -52,11 +52,11 @@ Reading: 6 Writing: 179 Waiting: 106
 	})
 	err := sc.start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err)
-	rms, err := sc.scrape(context.Background())
+	md, err := sc.scrape(context.Background())
 	require.Nil(t, err)
 
-	require.Equal(t, 1, rms.Len())
-	rm := rms.At(0)
+	require.Equal(t, 1, md.ResourceMetrics().Len())
+	rm := md.ResourceMetrics().At(0)
 
 	ilms := rm.InstrumentationLibraryMetrics()
 	require.Equal(t, 1, ilms.Len())

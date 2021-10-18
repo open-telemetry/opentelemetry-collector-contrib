@@ -193,7 +193,7 @@ func TestScrape(t *testing.T) {
 				scraper.usage = test.usageFunc
 			}
 
-			metrics, err := scraper.Scrape(context.Background())
+			md, err := scraper.Scrape(context.Background())
 			if test.expectedErr != "" {
 				assert.Contains(t, err.Error(), test.expectedErr)
 
@@ -208,12 +208,13 @@ func TestScrape(t *testing.T) {
 			require.NoError(t, err, "Failed to scrape metrics: %v", err)
 
 			if !test.expectMetrics {
-				assert.Equal(t, 0, metrics.Len())
+				assert.Equal(t, 0, md.MetricCount())
 				return
 			}
 
-			assert.GreaterOrEqual(t, metrics.Len(), 1)
+			assert.GreaterOrEqual(t, md.MetricCount(), 1)
 
+			metrics := md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics()
 			assertFileSystemUsageMetricValid(
 				t,
 				metrics.At(0),

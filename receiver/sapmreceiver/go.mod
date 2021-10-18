@@ -11,8 +11,8 @@ require (
 	github.com/signalfx/sapm-proto v0.7.0
 	github.com/stretchr/testify v1.7.0
 	go.opencensus.io v0.23.0
-	go.opentelemetry.io/collector v0.37.0
-	go.opentelemetry.io/collector/model v0.37.0
+	go.opentelemetry.io/collector v0.37.1-0.20211015233822-bd87fb628058
+	go.opentelemetry.io/collector/model v0.37.1-0.20211015233822-bd87fb628058
 )
 
 require (

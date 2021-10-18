@@ -99,15 +99,15 @@ func addToIntMetric(metric pdata.NumberDataPointSlice, labels pdata.AttributeMap
 }
 
 // scrape scrapes the mysql db metric stats, transforms them and labels them into a metric slices.
-func (m *mySQLScraper) scrape(context.Context) (pdata.ResourceMetricsSlice, error) {
+func (m *mySQLScraper) scrape(context.Context) (pdata.Metrics, error) {
 
 	if m.client == nil {
-		return pdata.ResourceMetricsSlice{}, errors.New("failed to connect to http client")
+		return pdata.Metrics{}, errors.New("failed to connect to http client")
 	}
 
 	// metric initialization
-	rms := pdata.NewResourceMetricsSlice()
-	ilm := rms.AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty()
+	md := pdata.NewMetrics()
+	ilm := md.ResourceMetrics().AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty()
 	ilm.InstrumentationLibrary().SetName("otel/mysql")
 	now := pdata.NewTimestampFromTime(time.Now())
 
@@ -147,7 +147,7 @@ func (m *mySQLScraper) scrape(context.Context) (pdata.ResourceMetricsSlice, erro
 	globalStats, err := m.client.getGlobalStats()
 	if err != nil {
 		m.logger.Error("Failed to fetch global stats", zap.Error(err))
-		return pdata.ResourceMetricsSlice{}, err
+		return pdata.Metrics{}, err
 	}
 
 	for k, v := range globalStats {
@@ -513,7 +513,7 @@ func (m *mySQLScraper) scrape(context.Context) (pdata.ResourceMetricsSlice, erro
 			}
 		}
 	}
-	return rms, nil
+	return md, nil
 }
 
 // parseFloat converts string to float64.

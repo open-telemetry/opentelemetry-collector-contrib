@@ -8,8 +8,8 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib v0.37.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry v0.37.1
 	github.com/stretchr/testify v1.7.0
-	go.opentelemetry.io/collector v0.37.0
-	go.opentelemetry.io/collector/model v0.37.0
+	go.opentelemetry.io/collector v0.37.1-0.20211015233822-bd87fb628058
+	go.opentelemetry.io/collector/model v0.37.1-0.20211015233822-bd87fb628058
 	golang.org/x/mod v0.4.2
 )
 
@@ -261,7 +261,6 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/receivercreator v0.37.1 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/redisreceiver v0.37.1 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sapmreceiver v0.37.1 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/scraperhelper v0.37.1 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/signalfxreceiver v0.37.1 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/simpleprometheusreceiver v0.37.1 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/splunkhecreceiver v0.37.1 // indirect
@@ -564,8 +563,6 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/fluen
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkareceiver => ../../receiver/kafkareceiver
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver => ../../receiver/hostmetricsreceiver
-
-replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/scraperhelper => ../../receiver/scraperhelper
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/syslogreceiver => ../../receiver/syslogreceiver
 
