@@ -116,7 +116,7 @@ processors:
 The above config will filter out any Metric that both has the name "my.metric" and has at least one datapoint
 with a label of 'my_label="abc123"'.
 
-For logs 'expr` filter evaluates the supplied boolean expressions per LogRecord.
+For logs `expr` filter evaluates the supplied boolean expressions per LogRecord.
 
 See [expr documentation for logs](../../internal/coreinternal/processor/filterexpr/README.md#logs)
 for available environment variables and functions.
