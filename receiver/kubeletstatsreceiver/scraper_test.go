@@ -23,7 +23,6 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/model/pdata"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest/observer"
@@ -56,26 +55,23 @@ var allMetricGroups = map[kubelet.MetricGroup]bool{
 	kubelet.VolumeMetricGroup:    true,
 }
 
-func TestRunnable(t *testing.T) {
-	consumer := new(consumertest.MetricsSink)
-	options := &receiverOptions{
+func TestScraper(t *testing.T) {
+	options := &scraperOptions{
 		metricGroupsToCollect: allMetricGroups,
 	}
-	r := newRunnable(
-		context.Background(),
-		consumer,
+	r, err := newKubletScraper(
 		&fakeRestClient{},
 		componenttest.NewNopReceiverCreateSettings(),
 		options,
 	)
-	err := r.Setup()
 	require.NoError(t, err)
-	err = r.Run()
+
+	md, err := r.Scrape(context.Background())
 	require.NoError(t, err)
-	require.Equal(t, dataLen, consumer.DataPointCount())
+	require.Equal(t, dataLen, md.DataPointCount())
 }
 
-func TestRunnableWithMetadata(t *testing.T) {
+func TestScraperWithMetadata(t *testing.T) {
 	tests := []struct {
 		name           string
 		metadataLabels []kubelet.MetadataLabel
@@ -108,36 +104,31 @@ func TestRunnableWithMetadata(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			consumer := new(consumertest.MetricsSink)
-			options := &receiverOptions{
+			options := &scraperOptions{
 				extraMetadataLabels:   tt.metadataLabels,
 				metricGroupsToCollect: tt.metricGroups,
 			}
-			r := newRunnable(
-				context.Background(),
-				consumer,
+			r, err := newKubletScraper(
 				&fakeRestClient{},
 				componenttest.NewNopReceiverCreateSettings(),
 				options,
 			)
-			err := r.Setup()
 			require.NoError(t, err)
-			err = r.Run()
-			require.NoError(t, err)
-			require.Equal(t, tt.dataLen, consumer.DataPointCount())
 
-			for _, md := range consumer.AllMetrics() {
-				for i := 0; i < md.ResourceMetrics().Len(); i++ {
-					rm := md.ResourceMetrics().At(i)
-					for j := 0; j < rm.InstrumentationLibraryMetrics().Len(); j++ {
-						ilm := rm.InstrumentationLibraryMetrics().At(j)
-						for k := 0; k < ilm.Metrics().Len(); k++ {
-							m := ilm.Metrics().At(k)
-							if strings.HasPrefix(m.Name(), tt.metricPrefix) {
-								_, ok := rm.Resource().Attributes().Get(tt.requiredLabel)
-								require.True(t, ok)
-								continue
-							}
+			md, err := r.Scrape(context.Background())
+			require.NoError(t, err)
+			require.Equal(t, tt.dataLen, md.DataPointCount())
+
+			for i := 0; i < md.ResourceMetrics().Len(); i++ {
+				rm := md.ResourceMetrics().At(i)
+				for j := 0; j < rm.InstrumentationLibraryMetrics().Len(); j++ {
+					ilm := rm.InstrumentationLibraryMetrics().At(j)
+					for k := 0; k < ilm.Metrics().Len(); k++ {
+						m := ilm.Metrics().At(k)
+						if strings.HasPrefix(m.Name(), tt.metricPrefix) {
+							_, ok := rm.Resource().Attributes().Get(tt.requiredLabel)
+							require.True(t, ok)
+							continue
 						}
 					}
 				}
@@ -146,7 +137,7 @@ func TestRunnableWithMetadata(t *testing.T) {
 	}
 }
 
-func TestRunnableWithMetricGroups(t *testing.T) {
+func TestScraperWithMetricGroups(t *testing.T) {
 	tests := []struct {
 		name         string
 		metricGroups map[kubelet.MetricGroup]bool
@@ -196,25 +187,19 @@ func TestRunnableWithMetricGroups(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			consumer := new(consumertest.MetricsSink)
-			r := newRunnable(
-				context.Background(),
-				consumer,
+			r, err := newKubletScraper(
 				&fakeRestClient{},
 				componenttest.NewNopReceiverCreateSettings(),
-				&receiverOptions{
+				&scraperOptions{
 					extraMetadataLabels:   []kubelet.MetadataLabel{kubelet.MetadataLabelContainerID},
 					metricGroupsToCollect: test.metricGroups,
 				},
 			)
-
-			err := r.Setup()
 			require.NoError(t, err)
 
-			err = r.Run()
+			md, err := r.Scrape(context.Background())
 			require.NoError(t, err)
-
-			require.Equal(t, test.dataLen, consumer.DataPointCount())
+			require.Equal(t, test.dataLen, md.DataPointCount())
 		})
 	}
 }
@@ -225,7 +210,7 @@ type expectedVolume struct {
 	labels map[string]string
 }
 
-func TestRunnableWithPVCDetailedLabels(t *testing.T) {
+func TestScraperWithPVCDetailedLabels(t *testing.T) {
 	tests := []struct {
 		name               string
 		k8sAPIClient       kubernetes.Interface
@@ -348,13 +333,10 @@ func TestRunnableWithPVCDetailedLabels(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			consumer := new(consumertest.MetricsSink)
-			r := newRunnable(
-				context.Background(),
-				consumer,
+			r, err := newKubletScraper(
 				&fakeRestClient{},
 				componenttest.NewNopReceiverCreateSettings(),
-				&receiverOptions{
+				&scraperOptions{
 					extraMetadataLabels: []kubelet.MetadataLabel{kubelet.MetadataLabelVolumeType},
 					metricGroupsToCollect: map[kubelet.MetricGroup]bool{
 						kubelet.VolumeMetricGroup: true,
@@ -362,37 +344,33 @@ func TestRunnableWithPVCDetailedLabels(t *testing.T) {
 					k8sAPIClient: test.k8sAPIClient,
 				},
 			)
-
-			err := r.Setup()
 			require.NoError(t, err)
 
-			err = r.Run()
+			md, err := r.Scrape(context.Background())
 			require.NoError(t, err)
-			require.Equal(t, test.dataLen*volumeMetrics, consumer.DataPointCount())
+			require.Equal(t, test.dataLen*volumeMetrics, md.DataPointCount())
 
 			// If Kubernetes API is set, assert additional labels as well.
 			if test.k8sAPIClient != nil && len(test.expectedVolumes) > 0 {
-				for _, m := range consumer.AllMetrics() {
-					rms := m.ResourceMetrics()
-					for i := 0; i < rms.Len(); i++ {
-						resource := rms.At(i).Resource()
-						claimName, ok := resource.Attributes().Get("k8s.persistentvolumeclaim.name")
-						// claimName will be non empty only when PVCs are used, all test cases
-						// in this method are interested only in such cases.
-						if !ok {
-							continue
-						}
+				rms := md.ResourceMetrics()
+				for i := 0; i < rms.Len(); i++ {
+					resource := rms.At(i).Resource()
+					claimName, ok := resource.Attributes().Get("k8s.persistentvolumeclaim.name")
+					// claimName will be non empty only when PVCs are used, all test cases
+					// in this method are interested only in such cases.
+					if !ok {
+						continue
+					}
 
-						ev := test.expectedVolumes[claimName.StringVal()]
-						requireExpectedVolume(t, ev, resource)
+					ev := test.expectedVolumes[claimName.StringVal()]
+					requireExpectedVolume(t, ev, resource)
 
-						// Assert metrics from certain volume claims expected to be missed
-						// are not collected.
-						if test.volumeClaimsToMiss != nil {
-							for c := range test.volumeClaimsToMiss {
-								val, ok := resource.Attributes().Get("k8s.persistentvolumeclaim.name")
-								require.True(t, !ok || val.StringVal() != c)
-							}
+					// Assert metrics from certain volume claims expected to be missed
+					// are not collected.
+					if test.volumeClaimsToMiss != nil {
+						for c := range test.volumeClaimsToMiss {
+							val, ok := resource.Attributes().Get("k8s.persistentvolumeclaim.name")
+							require.True(t, !ok || val.StringVal() != c)
 						}
 					}
 				}
@@ -466,13 +444,11 @@ func TestClientErrors(t *testing.T) {
 			logger := zap.New(core)
 			settings := componenttest.NewNopReceiverCreateSettings()
 			settings.Logger = logger
-			options := &receiverOptions{
+			options := &scraperOptions{
 				extraMetadataLabels:   test.extraMetadataLabels,
 				metricGroupsToCollect: test.metricGroupsToCollect,
 			}
-			r := newRunnable(
-				context.Background(),
-				new(consumertest.MetricsSink),
+			r, err := newKubletScraper(
 				&fakeRestClient{
 					statsSummaryFail: test.statsSummaryFail,
 					podsFail:         test.podsFail,
@@ -480,45 +456,14 @@ func TestClientErrors(t *testing.T) {
 				settings,
 				options,
 			)
-			err := r.Setup()
 			require.NoError(t, err)
-			err = r.Run()
-			require.NoError(t, err)
-			require.Equal(t, test.numLogs, observedLogs.Len())
-		})
-	}
-}
 
-func TestConsumerErrors(t *testing.T) {
-	tests := []struct {
-		name    string
-		err     error
-		numLogs int
-	}{
-		{"no error", nil, 0},
-		{"consume error", errors.New("failed"), 1},
-	}
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			core, observedLogs := observer.New(zap.ErrorLevel)
-			logger := zap.New(core)
-			settings := componenttest.NewNopReceiverCreateSettings()
-			settings.Logger = logger
-			options := &receiverOptions{
-				extraMetadataLabels:   nil,
-				metricGroupsToCollect: allMetricGroups,
+			_, err = r.Scrape(context.Background())
+			if test.numLogs == 0 {
+				require.NoError(t, err)
+			} else {
+				require.Error(t, err)
 			}
-			r := newRunnable(
-				context.Background(),
-				consumertest.NewErr(test.err),
-				&fakeRestClient{},
-				settings,
-				options,
-			)
-			err := r.Setup()
-			require.NoError(t, err)
-			err = r.Run()
-			require.NoError(t, err)
 			require.Equal(t, test.numLogs, observedLogs.Len())
 		})
 	}
