@@ -171,6 +171,7 @@ func (sc *IAMSASLClient) getAuthPayload() ([]byte, error) {
 		return nil, err
 	}
 
+	// Creating a timestamp in the form of: yyyyMMdd'T'HHmmss'Z'
 	ts := timestamp.Format("20060102T150405Z")
 
 	return json.Marshal(&payload{
