@@ -496,8 +496,8 @@ func TestEnsureTimeseriesPointsAreSortedByTimestamp(t *testing.T) {
 func Test_addSampleAndExemplar(t *testing.T) {
 	type testCase struct {
 		metric   pdata.Metric
-		sample   prompb.Sample
-		exemplar prompb.Exemplar
+		sample   *prompb.Sample
+		exemplar *prompb.Exemplar
 		labels   []prompb.Label
 	}
 
@@ -511,15 +511,30 @@ func Test_addSampleAndExemplar(t *testing.T) {
 			"two_histogram_points_same_ts_same_metric",
 			map[string]*prompb.TimeSeries{},
 			[]testCase{
-				{validMetrics1[validHistogram],
-					getSample(floatVal1, msTime1),
-					getExemplar(float64(intVal1), msTime1),
+				{
+					validMetrics1[validHistogram],
+					&prompb.Sample{
+						Value:     floatVal1,
+						Timestamp: msTime1,
+					},
+					&prompb.Exemplar{
+						Value:     float64(intVal1),
+						Timestamp: msTime1,
+						Labels:    []prompb.Label{getLabel(traceIDKey, traceIDValue1)},
+					},
 					promLbs1,
 				},
 				{
 					validMetrics2[validHistogram],
-					getSample(floatVal2, msTime2),
-					getExemplar(float64(intVal2), msTime2),
+					&prompb.Sample{
+						Value:     floatVal2,
+						Timestamp: msTime2,
+					},
+					&prompb.Exemplar{
+						Value:     float64(intVal2),
+						Timestamp: msTime2,
+						Labels:    []prompb.Label{getLabel(traceIDKey, traceIDValue1)},
+					},
 					promLbs1,
 				},
 			},
@@ -529,33 +544,101 @@ func Test_addSampleAndExemplar(t *testing.T) {
 			"two_histogram_points_different_ts_same_metric",
 			map[string]*prompb.TimeSeries{},
 			[]testCase{
-				{validMetrics1[validHistogram],
-					getSample(float64(intVal1), msTime1),
-					getExemplar(float64(intVal1), msTime1),
+				{
+					validMetrics1[validHistogram],
+					&prompb.Sample{
+						Value:     floatVal1,
+						Timestamp: msTime1,
+					},
+					&prompb.Exemplar{
+						Value:     float64(intVal1),
+						Timestamp: msTime1,
+						Labels:    []prompb.Label{getLabel(traceIDKey, traceIDValue1)},
+					},
 					promLbs1,
 				},
-				{validMetrics1[validHistogram],
-					getSample(float64(intVal1), msTime2),
-					getExemplar(float64(intVal1), msTime2),
+				{
+					validMetrics1[validHistogram],
+					&prompb.Sample{
+						Value:     floatVal1,
+						Timestamp: msTime2,
+					},
+					&prompb.Exemplar{
+						Value:     float64(intVal1),
+						Timestamp: msTime2,
+						Labels:    []prompb.Label{getLabel(traceIDKey, traceIDValue1)},
+					},
 					promLbs2,
 				},
 			},
 			twoHistogramPointsDifferentTs,
 		},
+		{
+			"two_histograms_with_exemplars_but_without_sample",
+			map[string]*prompb.TimeSeries{},
+			[]testCase{
+				{
+					validMetrics1[validHistogram],
+					nil,
+					&prompb.Exemplar{
+						Value:     float64(intVal1),
+						Timestamp: msTime1,
+						Labels:    []prompb.Label{getLabel(traceIDKey, traceIDValue1)},
+					},
+					promLbs1,
+				},
+				{
+					validMetrics2[validHistogram],
+					nil,
+					&prompb.Exemplar{
+						Value:     float64(intVal2),
+						Timestamp: msTime2,
+						Labels:    []prompb.Label{getLabel(traceIDKey, traceIDValue1)},
+					},
+					promLbs1,
+				},
+			},
+			map[string]*prompb.TimeSeries{},
+		},
+		{
+			"two_histograms_with_samples_but_without_exemplar",
+			map[string]*prompb.TimeSeries{},
+			[]testCase{
+				{
+					validMetrics1[validHistogram],
+					&prompb.Sample{
+						Value:     float64(intVal1),
+						Timestamp: msTime1,
+					},
+					nil,
+					promLbs1,
+				},
+				{
+					validMetrics2[validHistogram],
+					&prompb.Sample{
+						Value:     float64(intVal2),
+						Timestamp: msTime2,
+					},
+					nil,
+					promLbs1,
+				},
+			},
+			twoHistogramsPointsWithSamplesAndEmptyExemplar,
+		},
 	}
 	// run tests
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			addSampleAndExemplar(tt.orig, &tt.testCase[0].sample, &tt.testCase[0].exemplar,
+			addSampleAndExemplar(tt.orig, tt.testCase[0].sample, tt.testCase[0].exemplar,
 				tt.testCase[0].labels, tt.testCase[0].metric)
-			addSampleAndExemplar(tt.orig, &tt.testCase[1].sample, &tt.testCase[1].exemplar,
+			addSampleAndExemplar(tt.orig, tt.testCase[1].sample, tt.testCase[1].exemplar,
 				tt.testCase[1].labels, tt.testCase[1].metric)
 			assert.Exactly(t, tt.want, tt.orig)
 		})
 	}
 }
 
-// Test_getPromExemplar checks if exemplar is not nul and return the prometheus exemplar.
+// Test_getPromExemplar checks if exemplar is not nil and return the prometheus exemplar.
 func Test_getPromExemplar(t *testing.T) {
 	tnow := time.Now()
 	tests := []struct {

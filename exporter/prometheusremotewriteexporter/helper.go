@@ -64,7 +64,8 @@ func validateMetrics(metric pdata.Metric) bool {
 }
 
 // addSample finds a TimeSeries in tsMap that corresponds to the label set labels, and add sample to the TimeSeries; it
-// creates a new TimeSeries in the map if not found. tsMap is unmodified if either of its parameters is nil.
+// creates a new TimeSeries in the map if not found.
+// tsMap will be unmodified if either labels or sample is nil, but can still be modified if the exemplar is nil.
 func addSample(tsMap map[string]*prompb.TimeSeries, sample *prompb.Sample, labels []prompb.Label,
 	metric pdata.Metric) {
 
@@ -362,6 +363,7 @@ func addSingleHistogramDataPoint(pt pdata.HistogramDataPoint, resource pdata.Res
 	}
 	infLabels := createAttributes(resource, pt.Attributes(), externalLabels, nameStr, baseName+bucketStr, leStr, pInfStr)
 
+	// need to use the +inf bucket
 	promExemplar := getPromExemplar(pt, len(pt.BucketCounts())-1)
 
 	addSampleAndExemplar(tsMap, infBucket, promExemplar, infLabels, metric)

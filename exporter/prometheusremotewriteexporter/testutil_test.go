@@ -86,7 +86,6 @@ var (
 			getExemplar(float64(intVal1), msTime1),
 			getExemplar(float64(intVal2), msTime2)),
 	}
-
 	twoHistogramPointsDifferentTs = map[string]*prompb.TimeSeries{
 		"Histogram" + "-" + label11 + "-" + value11 + "-" + label12 + "-" + value12: getTimeSeriesWithSamplesAndExemplars(getPromLabels(label11, value11, label12, value12),
 			[]prompb.Sample{getSample(float64(intVal1), msTime1)},
@@ -94,6 +93,16 @@ var (
 		"Histogram" + "-" + label21 + "-" + value21 + "-" + label22 + "-" + value22: getTimeSeriesWithSamplesAndExemplars(getPromLabels(label21, value21, label22, value22),
 			[]prompb.Sample{getSample(float64(intVal1), msTime2)},
 			getExemplar(float64(intVal1), msTime2)),
+	}
+	twoHistogramsPointsWithExemplarsAndEmptySample = map[string]*prompb.TimeSeries{
+		"Histogram" + "-" + label11 + "-" + value11 + "-" + label12 + "-" + value12: getTimeSeriesWithSamplesAndExemplars(getPromLabels(label11, value11, label12, value12),
+			nil,
+			getExemplar(float64(intVal1), msTime1),
+			getExemplar(float64(intVal2), msTime2)),
+	}
+	twoHistogramsPointsWithSamplesAndEmptyExemplar = map[string]*prompb.TimeSeries{
+		"Histogram" + "-" + label11 + "-" + value11 + "-" + label12 + "-" + value12: getTimeSeriesWithSamplesAndExemplars(getPromLabels(label11, value11, label12, value12),
+			[]prompb.Sample{getSample(float64(intVal1), msTime1), getSample(float64(intVal2), msTime2)}),
 	}
 	bounds  = []float64{0.1, 0.5, 0.99}
 	buckets = []uint64{1, 2, 3}
