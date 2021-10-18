@@ -84,7 +84,7 @@ func (cfr *cloudFoundryReceiver) Start(ctx context.Context, host component.Host)
 		return fmt.Errorf("creating cloud foundry RLP envelope stream factory: %v", streamErr)
 	}
 
-	innerCtx, cancel := context.WithCancel(ctx)
+	innerCtx, cancel := context.WithCancel(context.Background())
 	cfr.cancel = cancel
 
 	cfr.goroutines.Add(1)
@@ -130,6 +130,7 @@ func (cfr *cloudFoundryReceiver) streamMetrics(
 			return
 		}
 
+		// Blocks until non-empty result or context is cancelled (returns nil in that case)
 		envelopes := stream()
 		if envelopes == nil {
 			// If context has not been cancelled, then nil means the shutdown was due to an error within stream
