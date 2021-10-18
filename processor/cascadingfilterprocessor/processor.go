@@ -147,12 +147,12 @@ func newCascadingFilterSpanProcessor(logger *zap.Logger, nextConsumer consumer.T
 	}
 
 	for i := range policyCfgs {
-		policyCfg := &cfg.PolicyCfgs[i]
+		policyCfg := policyCfgs[i]
 		policyCtx, err := tag.New(ctx, tag.Upsert(tagPolicyKey, policyCfg.Name))
 		if err != nil {
 			return nil, err
 		}
-		eval, err := buildPolicyEvaluator(logger, policyCfg)
+		eval, err := buildPolicyEvaluator(logger, &policyCfg)
 		if err != nil {
 			return nil, err
 		}
@@ -505,6 +505,9 @@ func (cfsp *cascadingFilterSpanProcessor) makeProvisionalDecision(id pdata.Trace
 			if err != nil {
 				cfsp.logger.Error("Making provisional decision error", zap.Error(err))
 			}
+
+			// No need to continue
+			return provisionalDecision, matchingPolicy
 		case sampling.NotSampled:
 			if provisionalDecision == sampling.Unspecified {
 				provisionalDecision = sampling.NotSampled
@@ -620,6 +623,8 @@ func (cfsp *cascadingFilterSpanProcessor) processTraces(ctx context.Context, res
 
 		// This section is run in case the decision was already applied earlier
 		switch finalDecision {
+		case sampling.Unspecified:
+			// This has not been determined yet
 		case sampling.Pending:
 			// All process for pending done above, keep the case so it doesn't go to default.
 		case sampling.SecondChance:

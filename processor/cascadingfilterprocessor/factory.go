@@ -56,7 +56,7 @@ func createDefaultConfig() config.Processor {
 	return &cfconfig.Config{
 		ProcessorSettings: &ps,
 		DecisionWait:      30 * time.Second,
-		NumTraces:         50000,
+		NumTraces:         100000,
 		SpansPerSecond:    0,
 	}
 }

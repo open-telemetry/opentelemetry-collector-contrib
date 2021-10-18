@@ -225,7 +225,6 @@ func TestSamplingPolicyTypicalPath(t *testing.T) {
 	}
 	expectedNumWithLateSpan := numSpansPerBatchWindow + 1
 	require.Equal(t, expectedNumWithLateSpan, msp.SpanCount(), "late span was not accounted for")
-	require.Equal(t, 1, mpe.LateArrivingSpanCount, "policy was not notified of the late span")
 }
 
 func TestSamplingMultiplePolicies(t *testing.T) {
@@ -275,13 +274,13 @@ func TestSamplingMultiplePolicies(t *testing.T) {
 		)
 	}
 
-	// Both traceAcceptRules will decide to sample
+	// Single traceAcceptRules will decide to sample
 	mpe1.NextDecision = sampling.Sampled
-	mpe2.NextDecision = sampling.Sampled
+	mpe2.NextDecision = sampling.Unspecified
 	tsp.samplingPolicyOnTick()
 	require.False(
 		t,
-		msp.SpanCount() == 0 || mpe1.EvaluationCount == 0 || mpe2.EvaluationCount == 0,
+		msp.SpanCount() == 0 || mpe1.EvaluationCount == 0,
 		"policy should have been evaluated totalspans == %d and evaluationcount(1) == %d and evaluationcount(2) == %d",
 		msp.SpanCount(),
 		mpe1.EvaluationCount,
@@ -297,8 +296,6 @@ func TestSamplingMultiplePolicies(t *testing.T) {
 
 	expectedNumWithLateSpan := numSpansPerBatchWindow + 1
 	require.Equal(t, expectedNumWithLateSpan, msp.SpanCount(), "late span was not accounted for")
-	require.Equal(t, 1, mpe1.LateArrivingSpanCount, "1st policy was not notified of the late span")
-	require.Equal(t, 0, mpe2.LateArrivingSpanCount, "2nd policy should not have been notified of the late span")
 }
 
 func TestSamplingPolicyDecisionNotSampled(t *testing.T) {
@@ -352,7 +349,6 @@ func TestSamplingPolicyDecisionNotSampled(t *testing.T) {
 		t.Errorf("Failed consuming traces: %v", err)
 	}
 	require.Equal(t, 0, msp.SpanCount())
-	require.Equal(t, 1, mpe.LateArrivingSpanCount, "policy was not notified of the late span")
 
 	mpe.NextDecision = sampling.Unspecified
 	mpe.NextError = errors.New("mock policy error")
@@ -365,7 +361,6 @@ func TestSamplingPolicyDecisionNotSampled(t *testing.T) {
 		t.Errorf("Failed consuming traces: %v", err)
 	}
 	require.Equal(t, 0, msp.SpanCount())
-	require.Equal(t, 2, mpe.LateArrivingSpanCount, "policy was not notified of the late span")
 }
 
 func TestSamplingPolicyDecisionDrop(t *testing.T) {
@@ -590,11 +585,10 @@ func simpleTracesWithID(traceID pdata.TraceID) pdata.Traces {
 }
 
 type mockPolicyEvaluator struct {
-	NextDecision          sampling.Decision
-	NextError             error
-	EvaluationCount       int
-	LateArrivingSpanCount int
-	OnDroppedSpanCount    int
+	NextDecision       sampling.Decision
+	NextError          error
+	EvaluationCount    int
+	OnDroppedSpanCount int
 }
 
 type mockDropEvaluator struct{}
@@ -602,10 +596,6 @@ type mockDropEvaluator struct{}
 var _ sampling.PolicyEvaluator = (*mockPolicyEvaluator)(nil)
 var _ sampling.DropTraceEvaluator = (*mockDropEvaluator)(nil)
 
-func (m *mockPolicyEvaluator) OnLateArrivingSpans(sampling.Decision, []*pdata.Span) error {
-	m.LateArrivingSpanCount++
-	return m.NextError
-}
 func (m *mockPolicyEvaluator) Evaluate(_ pdata.TraceID, _ *sampling.TraceData) sampling.Decision {
 	m.EvaluationCount++
 	return m.NextDecision

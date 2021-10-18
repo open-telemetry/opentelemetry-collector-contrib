@@ -20,14 +20,6 @@ import (
 	"go.opentelemetry.io/collector/model/pdata"
 )
 
-// OnLateArrivingSpans notifies the evaluator that the given list of spans arrived
-// after the sampling decision was already taken for the trace.
-// This gives the evaluator a chance to log any message/metrics and/or update any
-// related internal state.
-func (pe *policyEvaluator) OnLateArrivingSpans(earlyDecision Decision, spans []*pdata.Span) error {
-	return nil
-}
-
 func tsToMicros(ts pdata.Timestamp) int64 {
 	return int64(ts / 1000)
 }

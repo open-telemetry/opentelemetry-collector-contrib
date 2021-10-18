@@ -97,7 +97,7 @@ type Config struct {
 	// ProbabilisticFilteringRate describes how many spans per second are exclusively allocated
 	// for probabilistically selected spans
 	ProbabilisticFilteringRate *int32 `mapstructure:"probabilistic_filtering_rate"`
-	// NumTraces is the number of traces kept on memory. Typically most of the data
+	// NumTraces is the number of traces kept on memory. Typically, most of the data
 	// of a trace is released after a sampling decision is taken.
 	NumTraces uint64 `mapstructure:"num_traces"`
 	// ExpectedNewTracesPerSec sets the expected number of new traces sending to the Cascading Filter processor

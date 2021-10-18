@@ -25,7 +25,7 @@ So filtering rate of `0.2` and max span rate of `1500` produces at most `300` pr
 
 The following configuration options can also be modified:
 - `decision_wait` (default = 30s): Wait time since the first span of a trace before making a filtering decision
-- `num_traces` (default = 50000): Number of traces kept in memory
+- `num_traces` (default = 100000): Max number of traces for which decisions are kept in memory
 - `expected_new_traces_per_sec` (default = 0): Expected number of new traces (helps in allocating data structures)
 
 Whenever rate limiting is applied, only full traces are accepted (if trace won't fit within the limit, 
@@ -154,7 +154,7 @@ Additionally, it can be set that if there's any budget left, it can be filled wi
 ```yaml
 cascadingfilter:
   decision_wait: 30s
-  num_traces: 100000
+  num_traces: 200000
   expected_new_traces_per_sec: 2000
   spans_per_second: 1800
   probabilistic_filtering_rate: 100

@@ -53,7 +53,7 @@ func TestLoadConfig(t *testing.T) {
 		&cfconfig.Config{
 			DecisionWait:               30 * time.Second,
 			SpansPerSecond:             0,
-			NumTraces:                  50000,
+			NumTraces:                  100000,
 			ProcessorSettings:          &ps1,
 			ProbabilisticFilteringRate: &probFilteringRate,
 			TraceRejectCfgs: []cfconfig.TraceRejectCfg{
