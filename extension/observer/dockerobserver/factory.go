@@ -42,6 +42,7 @@ func createDefaultConfig() config.Extension {
 		Endpoint:          "unix:///var/run/docker.sock",
 		Timeout:           5 * time.Second,
 		CacheSyncInterval: 60 * time.Minute,
+		DockerAPIVersion:  defaultDockerAPIVersion,
 	}
 }
 

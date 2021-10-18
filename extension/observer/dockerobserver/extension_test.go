@@ -83,7 +83,7 @@ func TestCollectEndpointsDefaultConfig(t *testing.T) {
 	want := []observer.Endpoint{
 		{
 			ID:     "babc5a6d7af2a48e7f52e1da26047024dcf98b737e754c9c3459bb84d1e4f80c:8080",
-			Target: "172.17.0.2",
+			Target: "172.17.0.2:80",
 			Details: &observer.Container{
 				Name:        "/agitated_wu",
 				Image:       "nginx",
@@ -130,7 +130,7 @@ func TestCollectEndpointsAllConfigSettings(t *testing.T) {
 	want := []observer.Endpoint{
 		{
 			ID:     "babc5a6d7af2a48e7f52e1da26047024dcf98b737e754c9c3459bb84d1e4f80c:8080",
-			Target: "127.0.0.1",
+			Target: "127.0.0.1:8080",
 			Details: &observer.Container{
 				Name:        "/agitated_wu",
 				Image:       "nginx",
@@ -177,7 +177,7 @@ func TestCollectEndpointsUseHostnameIfPresent(t *testing.T) {
 	want := []observer.Endpoint{
 		{
 			ID:     "babc5a6d7af2a48e7f52e1da26047024dcf98b737e754c9c3459bb84d1e4f80c:8080",
-			Target: "babc5a6d7af2",
+			Target: "babc5a6d7af2:80",
 			Details: &observer.Container{
 				Name:        "/agitated_wu",
 				Image:       "nginx",
@@ -224,7 +224,7 @@ func TestCollectEndpointsUseHostBindings(t *testing.T) {
 	want := []observer.Endpoint{
 		{
 			ID:     "babc5a6d7af2a48e7f52e1da26047024dcf98b737e754c9c3459bb84d1e4f80c:8080",
-			Target: "127.0.0.1",
+			Target: "127.0.0.1:8080",
 			Details: &observer.Container{
 				Name:        "/agitated_wu",
 				Image:       "nginx",
@@ -271,7 +271,7 @@ func TestCollectEndpointsIgnoreNonHostBindings(t *testing.T) {
 	want := []observer.Endpoint{
 		{
 			ID:     "babc5a6d7af2a48e7f52e1da26047024dcf98b737e754c9c3459bb84d1e4f80c:8080",
-			Target: "172.17.0.2",
+			Target: "172.17.0.2:80",
 			Details: &observer.Container{
 				Name:        "/agitated_wu",
 				Image:       "nginx",

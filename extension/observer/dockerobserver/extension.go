@@ -18,7 +18,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"reflect"
 	"strings"
+	"time"
 
 	dtypes "github.com/docker/docker/api/types"
 	"github.com/docker/go-connections/nat"
@@ -26,21 +28,176 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer"
+	docker "github.com/open-telemetry/opentelemetry-collector-contrib/internal/docker"
 )
 
 var _ (component.Extension) = (*dockerObserver)(nil)
+var _ observer.Observable = (*dockerObserver)(nil)
+
+const (
+	defaultDockerAPIVersion         = 1.22
+	minimalRequiredDockerAPIVersion = 1.22
+)
 
 type dockerObserver struct {
-	logger *zap.Logger
-	config *Config
+	logger            *zap.Logger
+	config            *Config
+	cancel            func()
+	existingEndpoints map[string][]observer.Endpoint
+	ctx               context.Context
+	dClient           *docker.Client
 }
 
+// Start will instantiate required components needed by the Docker observer
 func (d *dockerObserver) Start(ctx context.Context, host component.Host) error {
+	dCtx, cancel := context.WithCancel(context.Background())
+	d.cancel = cancel
+	d.ctx = dCtx
+	var err error
+
+	// Create new Docker client
+	dConfig, err := docker.NewConfig(d.config.Endpoint, d.config.Timeout, d.config.ExcludedImages, d.config.DockerAPIVersion)
+	if err != nil {
+		return err
+	}
+
+	d.dClient, err = docker.NewDockerClient(dConfig, d.logger)
+	if err != nil {
+		d.logger.Error("Could not create docker client", zap.Error(err))
+		return err
+	}
+
+	// Load initial set of containers
+	err = d.dClient.LoadContainerList(d.ctx)
+	if err != nil {
+		d.logger.Error("Could not load initial list of containers", zap.Error(err))
+		return err
+	}
+
+	d.existingEndpoints = make(map[string][]observer.Endpoint)
+
 	return nil
 }
 
 func (d *dockerObserver) Shutdown(ctx context.Context) error {
+	d.cancel()
 	return nil
+}
+
+// ListAndWatch provides initial state sync as well as change notification.
+// Emits initial list of endpoints loaded upon extension Start. It then goes into
+// a loop to sync the container cache periodically and change endpoints.
+// TODO: Watch docker events to notify listener of changed endpoints as
+// events stream
+func (d *dockerObserver) ListAndWatch(listener observer.Notify) {
+	d.emitContainerEndpoints(listener)
+
+	go func() {
+		ticker := time.NewTicker(d.config.CacheSyncInterval)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-d.ctx.Done():
+				return
+			case <-ticker.C:
+				err := d.syncContainerList(listener)
+				if err != nil {
+					d.logger.Error("Could not sync container cache", zap.Error(err))
+				}
+			}
+		}
+		// TODO: Implement event loop to watch container events to add/remove/update
+		//       endpoints as they occur.
+	}()
+}
+
+// emitContainerEndpoints notifies the listener of all changes
+// by loading all current containers the client has cached and
+// creating endpoints for each.
+func (d *dockerObserver) emitContainerEndpoints(listener observer.Notify) {
+	for _, c := range d.dClient.Containers() {
+		cEndpoints := d.endpointsForContainer(c.ContainerJSON)
+		d.updateEndpointsByContainerID(listener, c.ContainerJSON.ID, cEndpoints)
+	}
+}
+
+// syncContainerList refreshes the client's container cache and
+// uses the listener to notify endpoint changes.
+func (d *dockerObserver) syncContainerList(listener observer.Notify) error {
+	err := d.dClient.LoadContainerList(d.ctx)
+	if err != nil {
+		return err
+	}
+	d.emitContainerEndpoints(listener)
+	return nil
+}
+
+// updateEndpointsByID uses the listener to add / remove / update endpoints by container ID.
+// latestEndpoints is the list of latest endpoints for the given container ID.
+// If an endpoint is in the cache but NOT in latestEndpoints, the endpoint will be removed
+func (d *dockerObserver) updateEndpointsByContainerID(listener observer.Notify, cid string, latestEndpoints []observer.Endpoint) {
+	var removedEndpoints, addedEndpoints, updatedEndpoints []observer.Endpoint
+
+	if len(latestEndpoints) != 0 {
+		// Create map from ID to endpoint for lookup.
+		latestEndpointsMap := make(map[observer.EndpointID]bool, len(latestEndpoints))
+		for _, e := range latestEndpoints {
+			latestEndpointsMap[e.ID] = true
+		}
+		// map of EndpointID to endpoint to help with lookups
+		existingEndpointsMap := make(map[observer.EndpointID]observer.Endpoint)
+		if endpoints, ok := d.existingEndpoints[cid]; ok {
+			for _, e := range endpoints {
+				existingEndpointsMap[e.ID] = e
+			}
+		}
+
+		// If the endpoint is present in existingEndpoints but is not
+		// present in latestEndpoints, then it needs to be removed.
+		for id, e := range existingEndpointsMap {
+			if !latestEndpointsMap[id] {
+				removedEndpoints = append(removedEndpoints, e)
+			}
+		}
+
+		// if the endpoint s present in latestEndpoints, check if it exists
+		// already in existingEndpoints.
+		for _, e := range latestEndpoints {
+			// If it does not exist alreaedy, it is a new endpoint. Add it.
+			if existingEndpoint, ok := existingEndpointsMap[e.ID]; !ok {
+				addedEndpoints = append(addedEndpoints, e)
+			} else {
+				// if it already exists, see if it's equal.
+				// if it's not equal, update it
+				// if its equal, no-op.
+				if !reflect.DeepEqual(existingEndpoint, e) {
+					updatedEndpoints = append(updatedEndpoints, e)
+				}
+			}
+		}
+
+		// set the current known endpoints to the latest endpoints
+		d.existingEndpoints[cid] = latestEndpoints
+	} else {
+		// if latestEndpoints is nil, we are removing all endpoints for the container
+		removedEndpoints = append(removedEndpoints, d.existingEndpoints[cid]...)
+		delete(d.existingEndpoints, cid)
+	}
+
+	if len(removedEndpoints) > 0 {
+		d.logger.Info("removing endpoints")
+		listener.OnRemove(removedEndpoints)
+	}
+
+	if len(addedEndpoints) > 0 {
+		d.logger.Info("adding endpoints")
+		listener.OnAdd(addedEndpoints)
+	}
+
+	if len(updatedEndpoints) > 0 {
+		d.logger.Info("updating endpoints")
+		listener.OnChange(updatedEndpoints)
+	}
 }
 
 // endpointsForContainer generates a list of observer.Endpoint given a Docker ContainerJSON.
@@ -105,25 +262,21 @@ func (d *dockerObserver) endpointForPort(portObj nat.Port, c *dtypes.ContainerJS
 		Transport:   portProtoToTransport(proto),
 		Labels:      c.Config.Labels,
 	}
-	var target string
 
-	// Set our target and hostname based on config settings
+	// Set our hostname based on config settings
 	if d.config.UseHostnameIfPresent && c.Config.Hostname != "" {
-		target = c.Config.Hostname
 		details.Host = c.Config.Hostname
 	} else {
 		// Use the IP Address of the first network we iterate over.
 		// This can be made configurable if so desired.
 		for _, n := range c.NetworkSettings.Networks {
-			target = n.IPAddress
 			details.Host = n.IPAddress
 			break
 		}
 
 		// If we still haven't gotten a host at this point and we are using
 		// host bindings, just make it localhost.
-		if target == "" && d.config.UseHostBindings {
-			target = "127.0.0.1"
+		if details.Host == "" && d.config.UseHostBindings {
 			details.Host = "127.0.0.1"
 		}
 	}
@@ -131,12 +284,10 @@ func (d *dockerObserver) endpointForPort(portObj nat.Port, c *dtypes.ContainerJS
 	// If we are using HostBindings & port and IP are set, use those
 	if d.config.UseHostBindings && mappedPort != 0 && mappedIP != "" {
 		details.Host = mappedIP
-		target = mappedIP
 		details.Port = mappedPort
 		details.AlternatePort = port
 		if details.Host == "0.0.0.0" {
 			details.Host = "127.0.0.1"
-			target = "127.0.0.1"
 		}
 	} else {
 		details.Port = port
@@ -145,7 +296,7 @@ func (d *dockerObserver) endpointForPort(portObj nat.Port, c *dtypes.ContainerJS
 
 	endpoint = observer.Endpoint{
 		ID:      id,
-		Target:  target,
+		Target:  fmt.Sprintf("%s:%d", details.Host, details.Port),
 		Details: details,
 	}
 
