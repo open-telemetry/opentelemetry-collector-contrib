@@ -214,7 +214,6 @@ class BotocoreInstrumentor(BaseInstrumentor):
             if BotocoreInstrumentor._is_lambda_invoke(call_context):
                 BotocoreInstrumentor._patch_lambda_invoke(call_context.params)
 
-            _set_api_call_attributes(span, call_context)
             _safe_invoke(extension.before_service_call, span)
             self._call_request_hook(span, call_context)
 
@@ -259,14 +258,6 @@ class BotocoreInstrumentor(BaseInstrumentor):
         self.response_hook(
             span, call_context.service, call_context.operation, result
         )
-
-
-def _set_api_call_attributes(span, call_context: _AwsSdkCallContext):
-    if not span.is_recording():
-        return
-
-    if "TableName" in call_context.params:
-        span.set_attribute("aws.table_name", call_context.params["TableName"])
 
 
 def _apply_response_attributes(span: Span, result):
