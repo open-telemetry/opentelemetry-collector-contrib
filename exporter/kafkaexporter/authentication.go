@@ -47,10 +47,17 @@ type SASLConfig struct {
 	Password string `mapstructure:"password"`
 	// SASL Mechanism to be used, possible values are: (PLAIN, AWS_MSK_IAM, SCRAM-SHA-256 or SCRAM-SHA-512).
 	Mechanism string `mapstructure:"mechanism"`
-	// AWSRegion is required when using AWS_MSK_IAM and should be same as the region the MSK cluster is deployed in
-	AWSRegion string `mapstructure:"aws_region"`
-	// AWSMSKBroker is used to help populate the request being sent to the MSK cluster
-	AWSMSKBroker string `mapstructure:"aws_msk_broker_addr"`
+
+	AWSMSK AWSMSKConfig `mapstructure:"aws_msk"`
+}
+
+// AWSMSKConfig defines the additional SASL authentication
+// measures needed to use AWS_MSK_IAM mechanism
+type AWSMSKConfig struct {
+	// Region is the AWS region the MSK cluster is based in
+	Region string `mapstructure:"region"`
+	// BrokerAddr is the client is connecting to in order to perform the auth required
+	BrokerAddr string `mapstructure:"broker_addr"`
 }
 
 // KerberosConfig defines kereros configuration.
@@ -117,7 +124,7 @@ func configureSASL(config SASLConfig, saramaConfig *sarama.Config) error {
 		saramaConfig.Net.SASL.Mechanism = sarama.SASLTypePlaintext
 	case "AWS_MSK_IAM":
 		saramaConfig.Net.SASL.SCRAMClientGeneratorFunc = func() sarama.SCRAMClient {
-			return awsmsk.NewIAMSASLClient(config.AWSMSKBroker, config.AWSRegion, saramaConfig.ClientID)
+			return awsmsk.NewIAMSASLClient(config.AWSMSK.BrokerAddr, config.AWSMSK.Region, saramaConfig.ClientID)
 		}
 		saramaConfig.Net.SASL.Mechanism = awsmsk.Mechanism
 	default:

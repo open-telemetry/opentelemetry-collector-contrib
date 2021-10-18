@@ -17,9 +17,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"path"
 	"strings"
-	"sync/atomic"
 	"time"
 
 	"github.com/Shopify/sarama"
@@ -33,6 +31,7 @@ const (
 
 	service          = "kafka-cluster"
 	supportedVersion = "2020_10_22"
+	scopeFormat      = `%s/%s/%s/kafka-cluster/aws4_request`
 )
 
 const (
@@ -106,11 +105,15 @@ func (sc *IAMSASLClient) Begin(username, password, _ string) error {
 		sc.Region,
 		service,
 		nil,
-		credentials.NewStaticCredentials(
-			username,
-			password,
-			"",
-		),
+		credentials.NewChainCredentials([]credentials.Provider{
+			&credentials.EnvProvider{},
+			&credentials.StaticProvider{
+				Value: credentials.Value{
+					AccessKeyID:     username,
+					SecretAccessKey: password,
+				},
+			},
+		}),
 	)
 	sc.accessKey = username
 	sc.secretKey = password
@@ -121,37 +124,37 @@ func (sc *IAMSASLClient) Begin(username, password, _ string) error {
 func (sc *IAMSASLClient) Step(challenge string) (string, error) {
 	var resp string
 
-	switch atomic.LoadInt32(&sc.state) {
+	switch sc.state {
 	case initMessage:
 		if challenge != "" {
-			atomic.StoreInt32(&sc.state, failed)
+			sc.state = failed
 			return "", fmt.Errorf("challenge must be empty for initial request: %w", ErrBadChallenge)
 		}
 		payload, err := sc.getAuthPayload()
 		if err != nil {
-			atomic.StoreInt32(&sc.state, failed)
+			sc.state = failed
 			return "", err
 		}
 		resp = string(payload)
-		atomic.StoreInt32(&sc.state, serverResponse)
+		sc.state = serverResponse
 	case serverResponse:
 		if challenge == "" {
-			atomic.StoreInt32(&sc.state, failed)
+			sc.state = failed
 			return "", fmt.Errorf("challenge must not be empty for server resposne: %w", ErrBadChallenge)
 		}
 
 		var resp response
 		if err := json.NewDecoder(strings.NewReader(challenge)).Decode(&resp); err != nil {
-			atomic.StoreInt32(&sc.state, failed)
+			sc.state = failed
 			return "", fmt.Errorf("unable to process msk challenge response: %w", multierr.Combine(err, ErrFailedServerChallenge))
 		}
 
 		if resp.Version != supportedVersion {
-			atomic.StoreInt32(&sc.state, failed)
+			sc.state = failed
 			return "", fmt.Errorf("unknown version found in response: %w", ErrFailedServerChallenge)
 		}
 
-		atomic.StoreInt32(&sc.state, complete)
+		sc.state = complete
 	default:
 		return "", fmt.Errorf("invalid invocation: %w", ErrInvalidStateReached)
 	}
@@ -159,20 +162,20 @@ func (sc *IAMSASLClient) Step(challenge string) (string, error) {
 	return resp, nil
 }
 
-func (sc *IAMSASLClient) Done() bool { return atomic.LoadInt32(&sc.state) == complete }
+func (sc *IAMSASLClient) Done() bool { return sc.state == complete }
 
 func (sc *IAMSASLClient) getAuthPayload() ([]byte, error) {
-	timestamp := time.Now().UTC()
+	ts := time.Now().UTC()
 
 	headers := []byte("host:" + sc.MSKHostname)
 
-	sig, err := sc.signer.GetSignature(headers, nil, timestamp)
+	sig, err := sc.signer.GetSignature(headers, nil, ts)
 	if err != nil {
 		return nil, err
 	}
 
 	// Creating a timestamp in the form of: yyyyMMdd'T'HHmmss'Z'
-	ts := timestamp.Format("20060102T150405Z")
+	date := ts.Format("20060102T150405Z")
 
 	return json.Marshal(&payload{
 		Version:       supportedVersion,
@@ -180,8 +183,8 @@ func (sc *IAMSASLClient) getAuthPayload() ([]byte, error) {
 		UserAgent:     sc.UserAgent,
 		Action:        "kafka-cluster:Connect",
 		Algorithm:     "AWS4-HMAC-SHA256",
-		Credentials:   path.Join(sc.accessKey, ts[:8], sc.Region, "/kafka-cluster/aws4_request"),
-		Date:          ts,
+		Credentials:   fmt.Sprintf(scopeFormat, sc.accessKey, date[:8], sc.Region),
+		Date:          date,
 		SignedHeaders: "host",
 		Expires:       "300", // Seconds => 5 Minutes
 		Signature:     string(sig),
