@@ -11,7 +11,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-package msk
+package awsmsk
 
 import (
 	"encoding/json"
@@ -61,7 +61,20 @@ type IAMSASLClient struct {
 	secretKey string
 }
 
-type mskResponse struct {
+type payload struct {
+	Version       string `json:"version"`
+	BrokerHost    string `json:"host"`
+	UserAgent     string `json:"user-agent"`
+	Action        string `json:"action"`
+	Algorithm     string `json:"x-amz-algorithm"`
+	Credentials   string `json:"x-amz-credential"`
+	Date          string `json:"x-amz-date"`
+	Expires       string `json:"x-amz-expires"`
+	SignedHeaders string `json:"x-amz-signedheaders"`
+	Signature     string `json:"x-amz-signature"`
+}
+
+type response struct {
 	Version   string `json:"version"`
 	RequestID string `json:"request-id"`
 }
@@ -127,14 +140,12 @@ func (sc *IAMSASLClient) Step(challenge string) (string, error) {
 			return "", fmt.Errorf("challenge must not be empty for server resposne: %w", ErrBadChallenge)
 		}
 
-		decoder := json.NewDecoder(strings.NewReader(challenge))
-		decoder.DisallowUnknownFields()
-
-		var resp mskResponse
-		if err := decoder.Decode(&resp); err != nil {
+		var resp response
+		if err := json.NewDecoder(strings.NewReader(challenge)).Decode(&resp); err != nil {
 			atomic.StoreInt32(&sc.state, failed)
 			return "", fmt.Errorf("unable to process msk challenge response: %w", multierr.Combine(err, ErrFailedServerChallenge))
 		}
+
 		if resp.Version != supportedVersion {
 			atomic.StoreInt32(&sc.state, failed)
 			return "", fmt.Errorf("unknown version found in response: %w", ErrFailedServerChallenge)
@@ -160,18 +171,18 @@ func (sc *IAMSASLClient) getAuthPayload() ([]byte, error) {
 		return nil, err
 	}
 
-	auth := map[string]string{
-		"version":             supportedVersion,
-		"host":                sc.MSKHostname,
-		"user-agent":          sc.UserAgent,
-		"action":              "kafka-cluster:Connect",
-		"x-amz-algorithm":     "AWS4-HMAC-SHA256",
-		"x-amz-credential":    path.Join(sc.accessKey, timestamp.Format("20060102T150405Z")[:8], sc.Region, "/kafka-cluster/aws4_request"),
-		"x-amz-date":          timestamp.Format("20060102T150405Z"),
-		"x-amz-signedheaders": "host",
-		"x-amz-expires":       "300",
-		"x-amz-signature":     string(sig),
-	}
+	ts := timestamp.Format("20060102T150405Z")
 
-	return json.Marshal(auth)
+	return json.Marshal(&payload{
+		Version:       supportedVersion,
+		BrokerHost:    sc.MSKHostname,
+		UserAgent:     sc.UserAgent,
+		Action:        "kafka-cluster:Connect",
+		Algorithm:     "AWS4-HMAC-SHA256",
+		Credentials:   path.Join(sc.accessKey, ts[:8], sc.Region, "/kafka-cluster/aws4_request"),
+		Date:          ts,
+		SignedHeaders: "host",
+		Expires:       "300", // Seconds => 5 Minutes
+		Signature:     string(sig),
+	})
 }

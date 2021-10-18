@@ -20,9 +20,8 @@ import (
 	"fmt"
 
 	"github.com/Shopify/sarama"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter/internal/awsmsk"
 	"go.opentelemetry.io/collector/config/configtls"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter/internal/msk"
 )
 
 // Authentication defines authentication.
@@ -49,8 +48,8 @@ type SASLConfig struct {
 	Mechanism string `mapstructure:"mechanism"`
 	// AWSRegion is required when using AWS_MSK_IAM and should be same as the region the MSK cluster is deployed in
 	AWSRegion string `mapstructure:"aws_region"`
-	// MSKBroker is used to help populate the request being sent to the MSK cluster
-	MSKBroker string `mapstructure:"aws_msk_broker_addr"`
+	// AWSMSKBroker is used to help populate the request being sent to the MSK cluster
+	AWSMSKBroker string `mapstructure:"aws_msk_broker_addr"`
 }
 
 // KerberosConfig defines kereros configuration.
@@ -117,9 +116,9 @@ func configureSASL(config SASLConfig, saramaConfig *sarama.Config) error {
 		saramaConfig.Net.SASL.Mechanism = sarama.SASLTypePlaintext
 	case "AWS_MSK_IAM":
 		saramaConfig.Net.SASL.SCRAMClientGeneratorFunc = func() sarama.SCRAMClient {
-			return msk.NewIAMSASLClient("", config.AWSRegion, saramaConfig.ClientID)
+			return awsmsk.NewIAMSASLClient(config.AWSMSKBroker, config.AWSRegion, saramaConfig.ClientID)
 		}
-		saramaConfig.Net.SASL.Mechanism = msk.Mechanism
+		saramaConfig.Net.SASL.Mechanism = awsmsk.Mechanism
 	default:
 		return fmt.Errorf(`invalid SASL Mechanism %q: can be either "PLAIN", "AWS_MSK_IAM", "SCRAM-SHA-256" or "SCRAM-SHA-512"`, config.Mechanism)
 	}
