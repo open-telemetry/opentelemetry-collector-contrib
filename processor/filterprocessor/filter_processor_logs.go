@@ -100,7 +100,7 @@ func createLogsMatcher(lp *filterlog.LogMatchProperties) (logMatcher filterlog.M
 
 	logMatcher, err = filterlog.NewMatcher(lp)
 	if err != nil {
-		return logMatcher, resourceMatcher, recordMatcher, fmt.Errorf("expr matcher: %v", err)
+		return logMatcher, resourceMatcher, recordMatcher, fmt.Errorf("expr matcher: %w", err)
 	}
 
 	return logMatcher, resourceMatcher, recordMatcher, nil
