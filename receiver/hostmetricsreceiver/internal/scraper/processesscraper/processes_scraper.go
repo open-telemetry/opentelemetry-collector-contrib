@@ -85,15 +85,16 @@ func (s *scraper) start(context.Context, component.Host) error {
 	return nil
 }
 
-func (s *scraper) scrape(_ context.Context) (pdata.MetricSlice, error) {
+func (s *scraper) scrape(_ context.Context) (pdata.Metrics, error) {
 	now := pdata.NewTimestampFromTime(time.Now())
 
-	metrics := pdata.NewMetricSlice()
+	md := pdata.NewMetrics()
+	metrics := md.ResourceMetrics().AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty().Metrics()
 	metrics.EnsureCapacity(metricsLength)
 
 	processMetadata, err := s.getProcessesMetadata()
 	if err != nil {
-		return pdata.MetricSlice{}, scrapererror.NewPartialScrapeError(err, metricsLength)
+		return md, scrapererror.NewPartialScrapeError(err, metricsLength)
 	}
 
 	if enableProcessesCount && processMetadata.countByStatus != nil {
@@ -104,7 +105,7 @@ func (s *scraper) scrape(_ context.Context) (pdata.MetricSlice, error) {
 		setProcessesCreatedMetric(metrics.AppendEmpty(), s.startTime, now, *processMetadata.processesCreated)
 	}
 
-	return metrics, err
+	return md, err
 }
 
 func setProcessesCountMetric(metric pdata.Metric, startTime, now pdata.Timestamp, countByStatus map[string]int64) {

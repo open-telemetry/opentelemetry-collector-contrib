@@ -55,7 +55,7 @@ func TestScrape(t *testing.T) {
 				scraper.virtualMemory = test.virtualMemoryFunc
 			}
 
-			metrics, err := scraper.Scrape(context.Background())
+			md, err := scraper.Scrape(context.Background())
 			if test.expectedErr != "" {
 				assert.EqualError(t, err, test.expectedErr)
 
@@ -69,8 +69,9 @@ func TestScrape(t *testing.T) {
 			}
 			require.NoError(t, err, "Failed to scrape metrics: %v", err)
 
-			assert.Equal(t, 1, metrics.Len())
+			assert.Equal(t, 1, md.MetricCount())
 
+			metrics := md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics()
 			assertMemoryUsageMetricValid(t, metrics.At(0), metadata.Metrics.SystemMemoryUsage.New())
 
 			if runtime.GOOS == "linux" {
