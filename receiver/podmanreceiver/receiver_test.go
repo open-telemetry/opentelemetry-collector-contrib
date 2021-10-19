@@ -45,10 +45,6 @@ func TestNewReceiver(t *testing.T) {
 
 	assert.NotNil(t, mr)
 	assert.Nil(t, err)
-
-	receiver := mr.(*receiver)
-	assert.Equal(t, config, receiver.config)
-	assert.Same(t, nextConsumer, receiver.nextConsumer)
 }
 
 func TestNewReceiverErrors(t *testing.T) {

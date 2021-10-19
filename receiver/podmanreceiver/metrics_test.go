@@ -29,15 +29,14 @@ import (
 func TestTranslateStatsToMetrics(t *testing.T) {
 	ts := time.Now()
 	stats := genContainerStats()
-	metrics := translateStatsToMetrics(stats, ts)
-	assert.NotNil(t, metrics)
-
-	assertStatsEqualToMetrics(t, stats, metrics)
+	md := pdata.NewMetrics()
+	translateStatsToMetrics(stats, ts, md.ResourceMetrics().AppendEmpty())
+	assertStatsEqualToMetrics(t, stats, md)
 }
 
-func assertStatsEqualToMetrics(t *testing.T, podmanStats *containerStats, pdataMetrics pdata.Metrics) {
-	assert.Equal(t, pdataMetrics.ResourceMetrics().Len(), 1)
-	rsm := pdataMetrics.ResourceMetrics().At(0)
+func assertStatsEqualToMetrics(t *testing.T, podmanStats *containerStats, md pdata.Metrics) {
+	assert.Equal(t, md.ResourceMetrics().Len(), 1)
+	rsm := md.ResourceMetrics().At(0)
 
 	resourceAttrs := map[string]string{
 		"container.id":   "abcd1234",
