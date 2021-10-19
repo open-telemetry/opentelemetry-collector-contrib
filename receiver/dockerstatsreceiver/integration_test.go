@@ -169,7 +169,7 @@ func TestExcludedImageProducesNoMetricsIntegration(t *testing.T) {
 	assert.NoError(t, recv.Shutdown(ctx))
 }
 
-func TestRemovedContaineRemovesRecordsIntegration(t *testing.T) {
+func TestRemovedContainerRemovesRecordsIntegration(t *testing.T) {
 	_, config := factory()
 	config.ExcludedImages = append(config.ExcludedImages, "!*nginx*")
 
