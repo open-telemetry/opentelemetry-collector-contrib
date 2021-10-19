@@ -220,9 +220,9 @@ operations:
         new_value: sunreclaimable
 ```
 
-### Delete label value
+### Delete by label value
 ```yaml
-# delete the label value 'idle' of the label 'state'
+# deletes all data points with the label value 'idle' of the label 'state'
 include: system.cpu.usage
 action: update
 operation:
