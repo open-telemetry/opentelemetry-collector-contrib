@@ -3,6 +3,9 @@
 ## Created by
 John Dorman / Sony Interactive Enetertainment (john.dorman@sony.com)
 
+## Maintenance
+John Dorman @ SIE (https://github.com/boostchicken)
+
 ## Overview
 The Datadog APM Receiver accepts traces in the Datadog Trace Agent Format
 ## Configuration
