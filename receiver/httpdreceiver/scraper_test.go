@@ -63,11 +63,8 @@ Scoreboard: S_DD_L_GGG_____W__IIII_C________________W___________________________
 	require.NoError(t, err)
 	assert.NotNil(t, sc.httpClient)
 
-	actualMetrics := pdata.NewMetrics()
-	rms := actualMetrics.ResourceMetrics()
-	scrapedRMS, err := sc.scrape(context.Background())
+	actualMetrics, err := sc.scrape(context.Background())
 	require.NoError(t, err)
-	scrapedRMS.CopyTo(rms)
 
 	expectedFile := filepath.Join("testdata", "scraper", "expected.json")
 	expectedFileBytes, err := ioutil.ReadFile(expectedFile)
@@ -175,7 +172,7 @@ func TestScraperFailedStart(t *testing.T) {
 	sc := newHttpdScraper(zap.NewNop(), &Config{
 		HTTPClientSettings: confighttp.HTTPClientSettings{
 			Endpoint: "localhost:8080",
-			TLSSetting: &configtls.TLSClientSetting{
+			TLSSetting: configtls.TLSClientSetting{
 				TLSSetting: configtls.TLSSetting{
 					CAFile: "/non/existent",
 				},

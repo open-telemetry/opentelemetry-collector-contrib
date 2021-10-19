@@ -91,7 +91,7 @@ type jReceiver struct {
 
 	goroutines sync.WaitGroup
 
-	settings component.TelemetrySettings
+	settings component.ReceiverCreateSettings
 
 	grpcObsrecv *obsreport.Receiver
 	httpObsrecv *obsreport.Receiver
@@ -126,9 +126,17 @@ func newJaegerReceiver(
 		config:       config,
 		nextConsumer: nextConsumer,
 		id:           id,
-		settings:     set.TelemetrySettings,
-		grpcObsrecv:  obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverID: id, Transport: grpcTransport}),
-		httpObsrecv:  obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverID: id, Transport: collectorHTTPTransport}),
+		settings:     set,
+		grpcObsrecv: obsreport.NewReceiver(obsreport.ReceiverSettings{
+			ReceiverID:             id,
+			Transport:              grpcTransport,
+			ReceiverCreateSettings: set,
+		}),
+		httpObsrecv: obsreport.NewReceiver(obsreport.ReceiverSettings{
+			ReceiverID:             id,
+			Transport:              collectorHTTPTransport,
+			ReceiverCreateSettings: set,
+		}),
 	}
 }
 
@@ -289,7 +297,11 @@ func (jr *jReceiver) startAgent(host component.Host) error {
 	if jr.agentBinaryThriftEnabled() {
 		h := &agentHandler{
 			nextConsumer: jr.nextConsumer,
-			obsrecv:      obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverID: jr.id, Transport: agentTransportBinary}),
+			obsrecv: obsreport.NewReceiver(obsreport.ReceiverSettings{
+				ReceiverID:             jr.id,
+				Transport:              agentTransportBinary,
+				ReceiverCreateSettings: jr.settings,
+			}),
 		}
 		processor, err := jr.buildProcessor(jr.agentBinaryThriftAddr(), jr.config.AgentBinaryThriftConfig, apacheThrift.NewTBinaryProtocolFactoryConf(nil), h)
 		if err != nil {
@@ -301,7 +313,11 @@ func (jr *jReceiver) startAgent(host component.Host) error {
 	if jr.agentCompactThriftEnabled() {
 		h := &agentHandler{
 			nextConsumer: jr.nextConsumer,
-			obsrecv:      obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverID: jr.id, Transport: agentTransportCompact}),
+			obsrecv: obsreport.NewReceiver(obsreport.ReceiverSettings{
+				ReceiverID:             jr.id,
+				Transport:              agentTransportCompact,
+				ReceiverCreateSettings: jr.settings,
+			}),
 		}
 		processor, err := jr.buildProcessor(jr.agentCompactThriftAddr(), jr.config.AgentCompactThriftConfig, apacheThrift.NewTCompactProtocolFactoryConf(nil), h)
 		if err != nil {
@@ -445,7 +461,7 @@ func (jr *jReceiver) startCollector(host component.Host) error {
 
 		nr := mux.NewRouter()
 		nr.HandleFunc("/api/traces", jr.HandleThriftHTTPBatch).Methods(http.MethodPost)
-		jr.collectorServer = jr.config.CollectorHTTPSettings.ToServer(nr, jr.settings)
+		jr.collectorServer = jr.config.CollectorHTTPSettings.ToServer(nr, jr.settings.TelemetrySettings)
 		jr.goroutines.Add(1)
 		go func() {
 			defer jr.goroutines.Done()
@@ -456,7 +472,7 @@ func (jr *jReceiver) startCollector(host component.Host) error {
 	}
 
 	if jr.collectorGRPCEnabled() {
-		opts, err := jr.config.CollectorGRPCServerSettings.ToServerOption(host, jr.settings)
+		opts, err := jr.config.CollectorGRPCServerSettings.ToServerOption(host, jr.settings.TelemetrySettings)
 		if err != nil {
 			return fmt.Errorf("failed to build the options for the Jaeger gRPC Collector: %v", err)
 		}

@@ -30,10 +30,10 @@ import (
 	"github.com/testcontainers/testcontainers-go/wait"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/receiver/scraperhelper"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/nginxreceiver/internal/metadata"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/scraperhelper"
 )
 
 type NginxIntegrationSuite struct {
@@ -85,11 +85,11 @@ func (suite *NginxIntegrationSuite) TestNginxScraperHappyPath() {
 	sc := newNginxScraper(zap.NewNop(), cfg)
 	err = sc.start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err)
-	rms, err := sc.scrape(context.Background())
+	md, err := sc.scrape(context.Background())
 	require.Nil(t, err)
 
-	require.Equal(t, 1, rms.Len())
-	rm := rms.At(0)
+	require.Equal(t, 1, md.ResourceMetrics().Len())
+	rm := md.ResourceMetrics().At(0)
 
 	ilms := rm.InstrumentationLibraryMetrics()
 	require.Equal(t, 1, ilms.Len())

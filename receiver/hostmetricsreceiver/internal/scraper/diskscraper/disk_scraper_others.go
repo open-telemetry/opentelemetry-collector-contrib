@@ -82,13 +82,14 @@ func (s *scraper) start(context.Context, component.Host) error {
 	return nil
 }
 
-func (s *scraper) scrape(_ context.Context) (pdata.MetricSlice, error) {
-	metrics := pdata.NewMetricSlice()
+func (s *scraper) scrape(_ context.Context) (pdata.Metrics, error) {
+	md := pdata.NewMetrics()
+	metrics := md.ResourceMetrics().AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty().Metrics()
 
 	now := pdata.NewTimestampFromTime(time.Now())
 	ioCounters, err := s.ioCounters()
 	if err != nil {
-		return metrics, scrapererror.NewPartialScrapeError(err, metricsLen)
+		return md, scrapererror.NewPartialScrapeError(err, metricsLen)
 	}
 
 	// filter devices by name
@@ -104,7 +105,7 @@ func (s *scraper) scrape(_ context.Context) (pdata.MetricSlice, error) {
 		appendSystemSpecificMetrics(metrics, s.startTime, now, ioCounters)
 	}
 
-	return metrics, nil
+	return md, nil
 }
 
 func initializeDiskIOMetric(metric pdata.Metric, startTime, now pdata.Timestamp, ioCounters map[string]disk.IOCountersStat) {

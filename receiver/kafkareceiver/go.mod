@@ -6,16 +6,16 @@ require (
 	github.com/Shopify/sarama v1.30.0
 	github.com/apache/thrift v0.15.0
 	github.com/gogo/protobuf v1.3.2
-	github.com/jaegertracing/jaeger v1.26.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter v0.36.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.36.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.36.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin v0.36.0
+	github.com/jaegertracing/jaeger v1.27.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter v0.37.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.37.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.37.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin v0.37.1
 	github.com/openzipkin/zipkin-go v0.2.5
 	github.com/stretchr/testify v1.7.0
 	go.opencensus.io v0.23.0
-	go.opentelemetry.io/collector v0.36.1-0.20211004155959-190f8fbb2b9a
-	go.opentelemetry.io/collector/model v0.36.1-0.20211004155959-190f8fbb2b9a
+	go.opentelemetry.io/collector v0.37.1-0.20211015233822-bd87fb628058
+	go.opentelemetry.io/collector/model v0.37.1-0.20211015233822-bd87fb628058
 	go.uber.org/zap v1.19.1
 )
 
@@ -42,12 +42,14 @@ require (
 	github.com/mitchellh/copystructure v1.2.0 // indirect
 	github.com/mitchellh/mapstructure v1.4.2 // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus v0.36.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus v0.37.1 // indirect
 	github.com/opentracing/opentracing-go v1.2.0 // indirect
 	github.com/pierrec/lz4 v2.6.1+incompatible // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/rcrowley/go-metrics v0.0.0-20201227073835-cf1acfcdf475 // indirect
 	github.com/spf13/cast v1.4.1 // indirect
+	github.com/uber/jaeger-client-go v2.29.1+incompatible // indirect
+	github.com/uber/jaeger-lib v2.4.1+incompatible // indirect
 	github.com/xdg-go/pbkdf2 v1.0.0 // indirect
 	github.com/xdg-go/scram v1.0.2 // indirect
 	github.com/xdg-go/stringprep v1.0.2 // indirect
@@ -58,9 +60,9 @@ require (
 	go.uber.org/multierr v1.7.0 // indirect
 	golang.org/x/crypto v0.0.0-20210920023735-84f357641f63 // indirect
 	golang.org/x/net v0.0.0-20210917221730-978cfadd31cf // indirect
-	golang.org/x/sys v0.0.0-20210630005230-0f9fa26af87c // indirect
+	golang.org/x/sys v0.0.0-20210823070655-63515b42dcdf // indirect
 	golang.org/x/text v0.3.7 // indirect
-	google.golang.org/genproto v0.0.0-20210604141403-392c879c8b08 // indirect
+	google.golang.org/genproto v0.0.0-20210828152312-66f60bf46e71 // indirect
 	google.golang.org/grpc v1.41.0 // indirect
 	google.golang.org/protobuf v1.27.1 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect

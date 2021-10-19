@@ -24,6 +24,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtest"
+	"go.opentelemetry.io/collector/receiver/scraperhelper"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -77,4 +78,15 @@ func TestLoadConfig(t *testing.T) {
 	}, ascfg.EnvVarsToMetricLabels)
 
 	assert.True(t, ascfg.ProvidePerCoreCPUMetrics)
+}
+
+func TestValidateErrors(t *testing.T) {
+	cfg := &Config{}
+	assert.Equal(t, "endpoint must be specified", cfg.Validate().Error())
+
+	cfg = &Config{Endpoint: "someEndpoint"}
+	assert.Equal(t, "collection_interval must be a positive duration", cfg.Validate().Error())
+
+	cfg = &Config{ScraperControllerSettings: scraperhelper.ScraperControllerSettings{CollectionInterval: 1 * time.Second}, Endpoint: "someEndpoint", DockerAPIVersion: 1.21}
+	assert.Equal(t, "api_version must be at least 1.22", cfg.Validate().Error())
 }

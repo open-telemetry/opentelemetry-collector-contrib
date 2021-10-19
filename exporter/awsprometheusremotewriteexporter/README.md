@@ -66,8 +66,6 @@ exporters:
         role_arn: "arn:aws:iam::123456789012:role/aws-service-role/access"
     ca_file: "/var/lib/mycert.pem"
     write_buffer_size: 524288
-    headers:
-        X-Scope-OrgID: 234
     external_labels:
         key1: value1
         key2: value2

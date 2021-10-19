@@ -14,11 +14,16 @@
 
 package mongodbatlasreceiver
 
-import "go.opentelemetry.io/collector/config"
+import (
+	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/receiver/scraperhelper"
+)
+
+var _ config.Receiver = (*Config)(nil)
 
 type Config struct {
-	config.ReceiverSettings `mapstructure:",squash"`
-	PublicKey               string `mapstructure:"public_key"`
-	PrivateKey              string `mapstructure:"private_key"`
-	Granularity             string `mapstructure:"granularity"`
+	scraperhelper.ScraperControllerSettings `mapstructure:",squash"`
+	PublicKey                               string `mapstructure:"public_key"`
+	PrivateKey                              string `mapstructure:"private_key"`
+	Granularity                             string `mapstructure:"granularity"`
 }
