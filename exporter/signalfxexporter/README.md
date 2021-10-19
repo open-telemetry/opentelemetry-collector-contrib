@@ -36,12 +36,13 @@ The following configuration options are required:
 The following configuration options can also be configured:
 
 - `access_token_passthrough`: (default = `true`) Whether to use
-  `"com.splunk.signalfx.access_token"` metric resource label, if any, as the
-  SignalFx access token.  In either case this label will be dropped during
-  final translation.  Intended to be used in tandem with identical
-  configuration option for [SignalFx
+  `"com.splunk.signalfx.access_token"` metric resource attribute, if any, as the
+  SignalFx access token.  In either case this attribute will be dropped during
+  final translation, in this exporter only.  Intended to be used in tandem with
+  identical configuration option for [SignalFx
   receiver](../../receiver/signalfxreceiver/README.md) to preserve datapoint
-  origin.
+  origin for only this exporter, as others will reveal the organization access token
+  by not filtering the attribute.
 - `exclude_metrics`: List of metric filters that will determine metrics to be
   excluded from sending to Signalfx backend. If `translation_rules` options
   are enabled, the exclusion will be applied on translated metrics.
