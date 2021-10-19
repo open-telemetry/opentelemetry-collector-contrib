@@ -25,7 +25,7 @@ import (
 
 func TestCompositeHelper(t *testing.T) {
 	cfg := &Config{
-		ProcessorSettings:       config.NewProcessorSettings(config.NewID(typeStr)),
+		ProcessorSettings:       config.NewProcessorSettings(config.NewComponentID(typeStr)),
 		DecisionWait:            10 * time.Second,
 		NumTraces:               100,
 		ExpectedNewTracesPerSec: 10,
