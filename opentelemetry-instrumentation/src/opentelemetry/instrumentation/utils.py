@@ -17,6 +17,7 @@ from typing import Dict, Sequence
 from wrapt import ObjectProxy
 
 # pylint: disable=unused-import
+# pylint: disable=E0611
 from opentelemetry.context import _SUPPRESS_INSTRUMENTATION_KEY  # noqa: F401
 from opentelemetry.trace import StatusCode
 

@@ -46,11 +46,15 @@ class TestPika(TestCase):
         "opentelemetry.instrumentation.pika.PikaInstrumentor._instrument_channel_functions"
     )
     @mock.patch(
+        "opentelemetry.instrumentation.pika.PikaInstrumentor._decorate_basic_consume"
+    )
+    @mock.patch(
         "opentelemetry.instrumentation.pika.PikaInstrumentor._instrument_consumers"
     )
     def test_instrument(
         self,
         instrument_consumers: mock.MagicMock,
+        instrument_basic_consume: mock.MagicMock,
         instrument_channel_functions: mock.MagicMock,
     ):
         PikaInstrumentor.instrument_channel(channel=self.channel)
@@ -58,6 +62,7 @@ class TestPika(TestCase):
             self.channel, "_is_instrumented_by_opentelemetry"
         ), "channel is not marked as instrumented!"
         instrument_consumers.assert_called_once()
+        instrument_basic_consume.assert_called_once()
         instrument_channel_functions.assert_called_once()
 
     @mock.patch("opentelemetry.instrumentation.pika.utils._decorate_callback")

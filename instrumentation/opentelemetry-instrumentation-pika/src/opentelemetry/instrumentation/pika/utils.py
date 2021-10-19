@@ -41,6 +41,8 @@ def _decorate_callback(
     ) -> Any:
         if not properties:
             properties = BasicProperties(headers={})
+        if properties.headers is None:
+            properties.headers = {}
         ctx = propagate.extract(properties.headers, getter=_pika_getter)
         if not ctx:
             ctx = context.get_current()
@@ -74,6 +76,8 @@ def _decorate_basic_publish(
     ) -> Any:
         if not properties:
             properties = BasicProperties(headers={})
+        if properties.headers is None:
+            properties.headers = {}
         ctx = context.get_current()
         span = _get_span(
             tracer,

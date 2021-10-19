@@ -70,6 +70,7 @@ class PikaInstrumentor(BaseInstrumentor):  # type: ignore
             function = getattr(channel, function_name)
             if hasattr(function, "_original_function"):
                 channel.__setattr__(function_name, function._original_function)
+        unwrap(channel, "basic_consume")
 
     @staticmethod
     def instrument_channel(
@@ -90,6 +91,7 @@ class PikaInstrumentor(BaseInstrumentor):  # type: ignore
             PikaInstrumentor._instrument_consumers(
                 channel._impl._consumers, tracer
             )
+        PikaInstrumentor._decorate_basic_consume(channel, tracer)
         PikaInstrumentor._instrument_channel_functions(channel, tracer)
 
     @staticmethod
@@ -119,6 +121,33 @@ class PikaInstrumentor(BaseInstrumentor):  # type: ignore
             return channel
 
         wrapt.wrap_function_wrapper(BlockingConnection, "channel", wrapper)
+
+    @staticmethod
+    def _decorate_basic_consume(channel, tracer: Optional[Tracer]) -> None:
+        def wrapper(wrapped, instance, args, kwargs):
+            if not hasattr(channel, "_impl"):
+                _LOG.error(
+                    "Could not find implementation for provided channel!"
+                )
+                return wrapped(*args, **kwargs)
+            current_keys = set(channel._impl._consumers.keys())
+            return_value = wrapped(*args, **kwargs)
+            new_key_list = list(
+                set(channel._impl._consumers.keys()) - current_keys
+            )
+            if not new_key_list:
+                _LOG.error("Could not find added callback")
+                return return_value
+            new_key = new_key_list[0]
+            callback = channel._impl._consumers[new_key]
+            decorated_callback = utils._decorate_callback(
+                callback, tracer, new_key
+            )
+            setattr(decorated_callback, "_original_callback", callback)
+            channel._impl._consumers[new_key] = decorated_callback
+            return return_value
+
+        wrapt.wrap_function_wrapper(channel, "basic_consume", wrapper)
 
     def _instrument(self, **kwargs: Dict[str, Any]) -> None:
         tracer_provider: TracerProvider = kwargs.get("tracer_provider", None)

@@ -13,6 +13,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - `opentelemetry-sdk-extension-aws` & `opentelemetry-propagator-aws` Release AWS Python SDK Extension as 2.0.1 and AWS Propagator as 1.0.1
   ([#753](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/753))
+- `opentelemetry-instrumentation-pika` Add `_decorate_basic_consume` to ensure post instrumentation `basic_consume` calls are also instrumented.
+  ([#759](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/759))
 
 ### Fixed
 
