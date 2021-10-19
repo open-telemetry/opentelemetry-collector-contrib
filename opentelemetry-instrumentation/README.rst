@@ -56,15 +56,15 @@ this can be overriden when needed.
 The command supports the following configuration options as CLI arguments and environment vars:
 
 
-* ``--trace-exporter`` or ``OTEL_TRACES_EXPORTER``
+* ``--traces_exporter`` or ``OTEL_TRACES_EXPORTER``
 
 Used to specify which trace exporter to use. Can be set to one or more of the well-known exporter
 names (see below).
 
     - Defaults to `otlp`.
-    - Can be set to `none` to disable automatic tracer initialization. 
+    - Can be set to `none` to disable automatic tracer initialization.
 
-You can pass multiple values to configure multiple exporters e.g, ``zipkin,prometheus`` 
+You can pass multiple values to configure multiple exporters e.g, ``zipkin,prometheus``
 
 Well known trace exporter names:
 
@@ -95,24 +95,24 @@ e.g OTEL_PYTHON_DISABLED_INSTRUMENTATIONS = "requests,django"
 
 
 Examples
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^
 
 ::
 
-    opentelemetry-instrument --trace-exporter otlp flask run --port=3000
+    opentelemetry-instrument --traces_exporter otlp flask run --port=3000
 
-The above command will pass ``--trace-exporter otlp`` to the instrument command and ``--port=3000`` to ``flask run``.
+The above command will pass ``--traces_exporter otlp`` to the instrument command and ``--port=3000`` to ``flask run``.
 
 ::
 
-    opentelemetry-instrument --trace-exporter zipkin_json,otlp celery -A tasks worker --loglevel=info
+    opentelemetry-instrument --traces_exporter zipkin_json,otlp celery -A tasks worker --loglevel=info
 
 The above command will configure global trace provider, attach zipkin and otlp exporters to it and then
-start celery with the rest of the arguments. 
+start celery with the rest of the arguments.
 
 ::
 
-    opentelemetry-instrument --ids-generator random flask run --port=3000
+    opentelemetry-instrument --id_generator random flask run --port=3000
 
 The above command will configure the global trace provider to use the Random IDs Generator, and then
 pass ``--port=3000`` to ``flask run``.
