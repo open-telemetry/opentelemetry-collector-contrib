@@ -1,6 +1,6 @@
 extensions:
-  awsxrayproxy:
-  awsxrayproxy/1:
+  awsproxy:
+  awsproxy/1:
     endpoint: "0.0.0.0:1234"
     proxy_address: "https://proxy.proxy.com"
     tls:
@@ -11,7 +11,7 @@ extensions:
     aws_endpoint: "https://another.aws.endpoint.com"
 
 service:
-  extensions: [awsxrayproxy/1]
+  extensions: [awsproxy/1]
   pipelines:
     traces:
       receivers: [nop]
