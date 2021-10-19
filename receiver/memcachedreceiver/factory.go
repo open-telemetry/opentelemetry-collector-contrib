@@ -61,7 +61,8 @@ func createMetricsReceiver(
 ) (component.MetricsReceiver, error) {
 	cfg := rConf.(*Config)
 
-	scraper, err := newMemcachedScraper(params.Logger, cfg)
+	ms := newMemcachedScraper(params.Logger, cfg)
+	scraper, err := scraperhelper.NewScraper(typeStr, ms.scrape)
 	if err != nil {
 		return nil, err
 	}

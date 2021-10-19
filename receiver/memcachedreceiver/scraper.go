@@ -19,7 +19,6 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/model/pdata"
-	"go.opentelemetry.io/collector/receiver/scraperhelper"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/memcachedreceiver/internal/metadata"
@@ -34,12 +33,11 @@ type memcachedScraper struct {
 func newMemcachedScraper(
 	logger *zap.Logger,
 	config *Config,
-) (scraperhelper.Scraper, error) {
-	ms := &memcachedScraper{
+) memcachedScraper {
+	return memcachedScraper{
 		logger: logger,
 		config: config,
 	}
-	return scraperhelper.NewScraper(typeStr, ms.scrape)
 }
 
 func (r *memcachedScraper) scrape(_ context.Context) (pdata.Metrics, error) {

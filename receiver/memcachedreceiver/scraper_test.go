@@ -32,13 +32,8 @@ func TestScraper(t *testing.T) {
 	sc := newMemcachedScraper(zap.NewNop(), cfg)
 	sc.client = &fakeClient{}
 
-	ms := pdata.NewMetrics()
-	scrapedRMS, err := sc.scrape(context.Background())
+	scrapedMS, err := sc.scrape(context.Background())
 	require.NoError(t, err)
-	scrapedRMS.CopyTo(ms.ResourceMetrics())
-
-	bytes, err := otlp.NewJSONMetricsMarshaler().MarshalMetrics(ms)
-	ioutil.WriteFile("./testdata/expected_metrics/test_scraper/exepected.json", bytes, 0644)
 
 	expectedFileBytes, err := ioutil.ReadFile("./testdata/expected_metrics/test_scraper/exepected.json")
 	require.NoError(t, err)
@@ -48,7 +43,7 @@ func TestScraper(t *testing.T) {
 	require.NoError(t, err)
 
 	eMetricSlice := expectedMetrics.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics()
-	aMetricSlice := scrapedRMS.At(0).InstrumentationLibraryMetrics().At(0).Metrics()
+	aMetricSlice := scrapedMS.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics()
 
 	require.NoError(t, compareMetrics(eMetricSlice, aMetricSlice, true))
 }
