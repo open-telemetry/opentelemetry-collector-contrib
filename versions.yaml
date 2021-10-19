@@ -52,13 +52,6 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/routingprocessor
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourceprocessor
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanmetricsprocessor
-      - github.com/open-telemetry/opentelemetry-collector-contrib/internal/stanza
-      - github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal
-      - github.com/open-telemetry/opentelemetry-collector-contrib/internal/common
-      - github.com/open-telemetry/opentelemetry-collector-contrib/internal/docker
-      - github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk
-      - github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig
-      - github.com/open-telemetry/opentelemetry-collector-contrib/internal/kubelet
       - github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/metrics
       - github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/containerinsight
       - github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/proxy
@@ -67,6 +60,14 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray/testdata/sampleserver
       - github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray/testdata/sampleapp
       - github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray
+      - github.com/open-telemetry/opentelemetry-collector-contrib/internal/common
+      - github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal
+      - github.com/open-telemetry/opentelemetry-collector-contrib/internal/docker
+      - github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig
+      - github.com/open-telemetry/opentelemetry-collector-contrib/internal/kubelet
+      - github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent
+      - github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk
+      - github.com/open-telemetry/opentelemetry-collector-contrib/internal/stanza
       - github.com/open-telemetry/opentelemetry-collector-contrib/examples/demo/server
       - github.com/open-telemetry/opentelemetry-collector-contrib/examples/demo/client
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkareceiver
