@@ -52,7 +52,6 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/routingprocessor
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourceprocessor
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanmetricsprocessor
-      - github.com/open-telemetry/opentelemetry-collector-contrib/internal/interval
       - github.com/open-telemetry/opentelemetry-collector-contrib/internal/stanza
       - github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal
       - github.com/open-telemetry/opentelemetry-collector-contrib/internal/common
