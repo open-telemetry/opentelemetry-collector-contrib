@@ -23,6 +23,7 @@ import (
 	agentmetricspb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/metrics/v1"
 	ocmetrics "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
@@ -40,14 +41,19 @@ type Receiver struct {
 }
 
 // New creates a new ocmetrics.Receiver reference.
-func New(id config.ComponentID, nextConsumer consumer.Metrics) (*Receiver, error) {
+func New(id config.ComponentID, nextConsumer consumer.Metrics, set component.ReceiverCreateSettings) (*Receiver, error) {
 	if nextConsumer == nil {
 		return nil, componenterror.ErrNilNextConsumer
 	}
 	ocr := &Receiver{
 		id:           id,
 		nextConsumer: nextConsumer,
-		obsrecv:      obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverID: id, Transport: receiverTransport, LongLivedCtx: true}),
+		obsrecv: obsreport.NewReceiver(obsreport.ReceiverSettings{
+			ReceiverID:             id,
+			Transport:              receiverTransport,
+			LongLivedCtx:           true,
+			ReceiverCreateSettings: set,
+		}),
 	}
 	return ocr, nil
 }

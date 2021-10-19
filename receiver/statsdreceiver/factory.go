@@ -75,5 +75,5 @@ func createMetricsReceiver(
 	if err != nil {
 		return nil, err
 	}
-	return New(params.Logger, *c, consumer)
+	return New(params, *c, consumer)
 }

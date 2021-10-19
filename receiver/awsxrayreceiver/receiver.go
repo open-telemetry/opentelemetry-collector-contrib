@@ -43,35 +43,35 @@ type xrayReceiver struct {
 	instanceID config.ComponentID
 	poller     udppoller.Poller
 	server     proxy.Server
-	logger     *zap.Logger
+	settings   component.ReceiverCreateSettings
 	consumer   consumer.Traces
 	obsrecv    *obsreport.Receiver
 }
 
 func newReceiver(config *Config,
 	consumer consumer.Traces,
-	logger *zap.Logger) (component.TracesReceiver, error) {
+	set component.ReceiverCreateSettings) (component.TracesReceiver, error) {
 
 	if consumer == nil {
 		return nil, componenterror.ErrNilNextConsumer
 	}
 
-	logger.Info("Going to listen on endpoint for X-Ray segments",
+	set.Logger.Info("Going to listen on endpoint for X-Ray segments",
 		zap.String(udppoller.Transport, config.Endpoint))
 	poller, err := udppoller.New(&udppoller.Config{
 		ReceiverID:         config.ID(),
 		Transport:          config.Transport,
 		Endpoint:           config.Endpoint,
 		NumOfPollerToStart: maxPollerCount,
-	}, logger)
+	}, set)
 	if err != nil {
 		return nil, err
 	}
 
-	logger.Info("Listening on endpoint for X-Ray segments",
+	set.Logger.Info("Listening on endpoint for X-Ray segments",
 		zap.String(udppoller.Transport, config.Endpoint))
 
-	srv, err := proxy.NewServer(config.ProxyServer, logger)
+	srv, err := proxy.NewServer(config.ProxyServer, set.Logger)
 	if err != nil {
 		return nil, err
 	}
@@ -80,9 +80,13 @@ func newReceiver(config *Config,
 		instanceID: config.ID(),
 		poller:     poller,
 		server:     srv,
-		logger:     logger,
+		settings:   set,
 		consumer:   consumer,
-		obsrecv:    obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverID: config.ID(), Transport: udppoller.Transport}),
+		obsrecv: obsreport.NewReceiver(obsreport.ReceiverSettings{
+			ReceiverID:             config.ID(),
+			Transport:              udppoller.Transport,
+			ReceiverCreateSettings: set,
+		}),
 	}, nil
 }
 
@@ -91,7 +95,7 @@ func (x *xrayReceiver) Start(ctx context.Context, host component.Host) error {
 	x.poller.Start(ctx)
 	go x.start()
 	go x.server.ListenAndServe()
-	x.logger.Info("X-Ray TCP proxy server started")
+	x.settings.Logger.Info("X-Ray TCP proxy server started")
 	return nil
 }
 
@@ -118,14 +122,14 @@ func (x *xrayReceiver) start() {
 		ctx := x.obsrecv.StartTracesOp(seg.Ctx)
 		traces, totalSpanCount, err := translator.ToTraces(seg.Payload)
 		if err != nil {
-			x.logger.Warn("X-Ray segment to OT traces conversion failed", zap.Error(err))
+			x.settings.Logger.Warn("X-Ray segment to OT traces conversion failed", zap.Error(err))
 			x.obsrecv.EndTracesOp(ctx, awsxray.TypeStr, totalSpanCount, err)
 			continue
 		}
 
 		err = x.consumer.ConsumeTraces(ctx, *traces)
 		if err != nil {
-			x.logger.Warn("Trace consumer errored out", zap.Error(err))
+			x.settings.Logger.Warn("Trace consumer errored out", zap.Error(err))
 			x.obsrecv.EndTracesOp(ctx, awsxray.TypeStr, totalSpanCount, err)
 			continue
 		}

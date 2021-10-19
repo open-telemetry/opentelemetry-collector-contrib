@@ -114,11 +114,11 @@ func TestTopicScraper_scrapes(t *testing.T) {
 		logger:      zap.NewNop(),
 		topicFilter: match,
 	}
-	rm, err := scraper.scrape(context.Background())
+	md, err := scraper.scrape(context.Background())
 	assert.NoError(t, err)
-	require.Equal(t, 1, rm.Len())
-	require.Equal(t, 1, rm.At(0).InstrumentationLibraryMetrics().Len())
-	ms := rm.At(0).InstrumentationLibraryMetrics().At(0).Metrics()
+	require.Equal(t, 1, md.ResourceMetrics().Len())
+	require.Equal(t, 1, md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().Len())
+	ms := md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics()
 	for i := 0; i < ms.Len(); i++ {
 		m := ms.At(i)
 		dp := m.Gauge().DataPoints().At(0)

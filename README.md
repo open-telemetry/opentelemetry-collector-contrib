@@ -71,7 +71,7 @@ Approvers ([@open-telemetry/collector-contrib-approvers](https://github.com/orgs
 - [Anuraag Agrawal](https://github.com/anuraaga), AWS
 - [Daniel Jaglowski](https://github.com/djaglowski), observIQ
 - [Dmitrii Anoshin](https://github.com/dmitryax), Splunk
-- [Juraci Paixão Kröhling](https://github.com/jpkrohling), Red Hat
+- [Juraci Paixão Kröhling](https://github.com/jpkrohling), Grafana Labs
 - [Kevin Brockhoff](https://github.com/kbrockhoff), Daugherty Business Solutions
 - [Pablo Baeyens](https://github.com/mx-psi), DataDog
 - [Owais Lone](https://github.com/owais), Splunk

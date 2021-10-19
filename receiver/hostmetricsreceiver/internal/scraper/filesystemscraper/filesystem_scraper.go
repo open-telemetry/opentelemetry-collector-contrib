@@ -57,15 +57,16 @@ func newFileSystemScraper(_ context.Context, cfg *Config) (*scraper, error) {
 	return scraper, nil
 }
 
-func (s *scraper) Scrape(_ context.Context) (pdata.MetricSlice, error) {
-	metrics := pdata.NewMetricSlice()
+func (s *scraper) Scrape(_ context.Context) (pdata.Metrics, error) {
+	md := pdata.NewMetrics()
+	metrics := md.ResourceMetrics().AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty().Metrics()
 
 	now := pdata.NewTimestampFromTime(time.Now())
 
 	// omit logical (virtual) filesystems (not relevant for windows)
 	partitions, err := s.partitions( /*all=*/ false)
 	if err != nil {
-		return metrics, scrapererror.NewPartialScrapeError(err, metricsLen)
+		return md, scrapererror.NewPartialScrapeError(err, metricsLen)
 	}
 
 	var errors scrapererror.ScrapeErrors
@@ -94,7 +95,7 @@ func (s *scraper) Scrape(_ context.Context) (pdata.MetricSlice, error) {
 		err = scrapererror.NewPartialScrapeError(err, metricsLen)
 	}
 
-	return metrics, err
+	return md, err
 }
 
 func initializeFileSystemUsageMetric(metric pdata.Metric, now pdata.Timestamp, deviceUsages []*deviceUsage) {

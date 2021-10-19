@@ -23,8 +23,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/scraperhelper"
+	"go.opentelemetry.io/collector/receiver/scraperhelper"
 )
 
 // createMetricsReceiver creates a metrics receiver based on provided config.
@@ -40,17 +39,20 @@ func createMetricsReceiver(
 		return nil, err
 	}
 
+	scrp, err := scraperhelper.NewScraper(
+		cfg.ID().String(),
+		scraper.scrape,
+		scraperhelper.WithStart(scraper.start),
+		scraperhelper.WithShutdown(scraper.shutdown),
+	)
+	if err != nil {
+		return nil, err
+	}
+
 	return scraperhelper.NewScraperControllerReceiver(
 		&oCfg.ScraperControllerSettings,
-		params.Logger,
+		params,
 		consumer,
-		scraperhelper.AddScraper(
-			scraperhelper.NewMetricsScraper(
-				cfg.ID().String(),
-				scraper.scrape,
-				scraperhelper.WithStart(scraper.start),
-				scraperhelper.WithShutdown(scraper.shutdown),
-			),
-		),
+		scraperhelper.AddScraper(scrp),
 	)
 }
