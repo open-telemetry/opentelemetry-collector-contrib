@@ -18,74 +18,43 @@ import (
 	"context"
 	"time"
 
-	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/receiver/scraperhelper"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/interval"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbatlasreceiver/internal"
 )
 
 type receiver struct {
-	ctx        context.Context
-	log        *zap.Logger
-	cfg        *Config
-	metricSink consumer.Metrics
-	client     *internal.MongoDBAtlasClient
-	lastRun    *time.Time
-	runFreq    time.Duration
-	runner     *interval.Runner
+	log     *zap.Logger
+	cfg     *Config
+	client  *internal.MongoDBAtlasClient
+	lastRun time.Time
 }
 
-func newMongoDBAtlasReceiver(
-	ctx context.Context,
-	log *zap.Logger,
-	cfg *Config,
-	sink consumer.Metrics,
-) (*receiver, error) {
+func newMongoDBAtlasScraper(log *zap.Logger, cfg *Config) (scraperhelper.Scraper, error) {
 	client, err := internal.NewMongoDBAtlasClient(cfg.PublicKey, cfg.PrivateKey, log)
 	if err != nil {
 		return nil, err
 	}
-	return &receiver{ctx, log, cfg, sink, client, nil, time.Minute, nil}, nil
+	recv := &receiver{log: log, cfg: cfg, client: client}
+	return scraperhelper.NewScraper(typeStr, recv.scrape)
 }
 
-func (s *receiver) Setup() error {
-	return nil
-}
-
-func (s *receiver) Start(ctx context.Context, host component.Host) error {
-	s.runner = interval.NewRunner(s.runFreq, s)
-	go func() {
-		if err := s.runner.Start(); err != nil {
-			host.ReportFatalError(err)
-		}
-	}()
-	return nil
-}
-
-func (s *receiver) Run() error {
+func (s *receiver) scrape(ctx context.Context) (pdata.Metrics, error) {
 	var start time.Time
-	if s.lastRun != nil {
-		start = *s.lastRun
+	if s.lastRun.IsZero() {
+		start = s.lastRun
 	} else {
-		start = time.Now().Add(s.runFreq * -1)
+		start = time.Now().Add(s.cfg.CollectionInterval * -1)
 	}
 	now := time.Now()
-	s.poll(start.UTC().Format(time.RFC3339), now.UTC().Format(time.RFC3339), s.cfg.Granularity)
-	s.lastRun = &now
-	return nil
+	s.poll(ctx, start.UTC().Format(time.RFC3339), now.UTC().Format(time.RFC3339), s.cfg.Granularity)
+	s.lastRun = now
+	return pdata.Metrics{}, nil
 }
 
-func (s *receiver) Shutdown(ctx context.Context) error {
-	if s.runner != nil {
-		s.runner.Stop()
-	}
-	return nil
-}
-
-func (s *receiver) poll(start string, end string, resolution string) { //nolint
-	ctx := s.ctx
+func (s *receiver) poll(ctx context.Context, start string, end string, resolution string) { //nolint
 	for _, org := range s.client.Organizations(ctx) {
 		// Metrics collection starts here
 		s.log.Debug("fetch resources for MongoDB Organization", zap.String("org", org.Name))

@@ -22,10 +22,12 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/model/pdata"
+	"go.uber.org/zap"
 )
 
 type testMetric struct {
@@ -94,7 +96,7 @@ func TestCumulativeToDeltaProcessor(t *testing.T) {
 			// next stores the results of the filter metric processor
 			next := new(consumertest.MetricsSink)
 			cfg := &Config{
-				ProcessorSettings: config.NewProcessorSettings(config.NewID(typeStr)),
+				ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
 				Metrics:           test.metrics,
 			}
 			factory := NewFactory()
@@ -191,4 +193,48 @@ func generateTestMetrics(tm testMetric) pdata.Metrics {
 	}
 
 	return md
+}
+
+func BenchmarkConsumeMetrics(b *testing.B) {
+	c := consumertest.NewNop()
+	params := component.ProcessorCreateSettings{
+		TelemetrySettings: component.TelemetrySettings{
+			Logger: zap.NewNop(),
+		},
+		BuildInfo: component.BuildInfo{},
+	}
+	cfg := createDefaultConfig().(*Config)
+	cfg.Metrics = []string{""}
+	p, err := createMetricsProcessor(context.Background(), params, cfg, c)
+	if err != nil {
+		b.Fatal(err)
+	}
+
+	metrics := pdata.NewMetrics()
+	rms := metrics.ResourceMetrics().AppendEmpty()
+	r := rms.Resource()
+	r.Attributes().Insert("resource", pdata.NewAttributeValueBool(true))
+	ilms := rms.InstrumentationLibraryMetrics().AppendEmpty()
+	ilms.InstrumentationLibrary().SetName("test")
+	ilms.InstrumentationLibrary().SetVersion("0.1")
+	m := ilms.Metrics().AppendEmpty()
+	m.SetDataType(pdata.MetricDataTypeSum)
+	m.Sum().SetIsMonotonic(true)
+	dp := m.Sum().DataPoints().AppendEmpty()
+	dp.Attributes().Insert("tag", pdata.NewAttributeValueString("value"))
+
+	reset := func() {
+		m.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
+		dp.SetDoubleVal(100.0)
+	}
+
+	// Load initial value
+	reset()
+	p.ConsumeMetrics(context.Background(), metrics)
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		reset()
+		p.ConsumeMetrics(context.Background(), metrics)
+	}
 }

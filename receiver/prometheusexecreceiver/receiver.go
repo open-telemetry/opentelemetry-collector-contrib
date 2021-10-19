@@ -124,7 +124,7 @@ func getPromReceiverConfig(cfg *Config) *prometheusreceiver.Config {
 	}
 
 	return &prometheusreceiver.Config{
-		ReceiverSettings: config.NewReceiverSettings(config.NewIDWithName(typeStr, cfg.ID().Name())),
+		ReceiverSettings: config.NewReceiverSettings(config.NewComponentIDWithName(typeStr, cfg.ID().Name())),
 		PrometheusConfig: &promconfig.Config{
 			ScrapeConfigs: []*promconfig.ScrapeConfig{scrapeConfig},
 		},

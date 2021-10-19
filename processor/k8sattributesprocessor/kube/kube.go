@@ -82,7 +82,7 @@ type Container struct {
 	ImageName string
 	ImageTag  string
 
-	// Statuses is a map of container run_id (restart count) attribute to ContainerStatus struct.
+	// Statuses is a map of container k8s.container.restart_count attribute to ContainerStatus struct.
 	Statuses map[int]ContainerStatus
 }
 

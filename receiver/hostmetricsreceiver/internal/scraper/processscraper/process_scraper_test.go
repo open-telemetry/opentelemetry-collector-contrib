@@ -54,7 +54,7 @@ func TestScrape(t *testing.T) {
 	err = scraper.start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err, "Failed to initialize process scraper: %v", err)
 
-	resourceMetrics, err := scraper.scrape(context.Background())
+	md, err := scraper.scrape(context.Background())
 
 	// may receive some partial errors as a result of attempting to:
 	// a) read native system processes on Windows (e.g. Registry process)
@@ -63,19 +63,19 @@ func TestScrape(t *testing.T) {
 	// so validate that we have at some errors & some valid data
 	if err != nil {
 		require.True(t, scrapererror.IsPartialScrapeError(err))
-		noProcessesScraped := resourceMetrics.Len()
+		noProcessesScraped := md.ResourceMetrics().Len()
 		noProcessesErrored := err.(scrapererror.PartialScrapeError).Failed
 		require.Lessf(t, 0, noProcessesErrored, "Failed to scrape metrics - : error, but 0 failed process %v", err)
 		require.Lessf(t, 0, noProcessesScraped, "Failed to scrape metrics - : 0 successful scrapes %v", err)
 	}
 
-	require.Greater(t, resourceMetrics.Len(), 1)
-	assertProcessResourceAttributesExist(t, resourceMetrics)
-	assertCPUTimeMetricValid(t, resourceMetrics, expectedStartTime)
-	assertMemoryUsageMetricValid(t, metadata.Metrics.ProcessMemoryPhysicalUsage.New(), resourceMetrics)
-	assertMemoryUsageMetricValid(t, metadata.Metrics.ProcessMemoryVirtualUsage.New(), resourceMetrics)
-	assertDiskIOMetricValid(t, resourceMetrics, expectedStartTime)
-	assertSameTimeStampForAllMetricsWithinResource(t, resourceMetrics)
+	require.Greater(t, md.ResourceMetrics().Len(), 1)
+	assertProcessResourceAttributesExist(t, md.ResourceMetrics())
+	assertCPUTimeMetricValid(t, md.ResourceMetrics(), expectedStartTime)
+	assertMemoryUsageMetricValid(t, metadata.Metrics.ProcessMemoryPhysicalUsage.New(), md.ResourceMetrics())
+	assertMemoryUsageMetricValid(t, metadata.Metrics.ProcessMemoryVirtualUsage.New(), md.ResourceMetrics())
+	assertDiskIOMetricValid(t, md.ResourceMetrics(), expectedStartTime)
+	assertSameTimeStampForAllMetricsWithinResource(t, md.ResourceMetrics())
 }
 
 func assertProcessResourceAttributesExist(t *testing.T, resourceMetrics pdata.ResourceMetricsSlice) {
@@ -171,9 +171,9 @@ func TestScrapeMetrics_GetProcessesError(t *testing.T) {
 	err = scraper.start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err, "Failed to initialize process scraper: %v", err)
 
-	metrics, err := scraper.scrape(context.Background())
+	md, err := scraper.scrape(context.Background())
 	assert.EqualError(t, err, "err1")
-	assert.Equal(t, 0, metrics.Len())
+	assert.Equal(t, 0, md.ResourceMetrics().Len())
 	assert.False(t, scrapererror.IsPartialScrapeError(err))
 }
 
@@ -327,12 +327,12 @@ func TestScrapeMetrics_Filtered(t *testing.T) {
 				return &processHandlesMock{handles: handles}, nil
 			}
 
-			resourceMetrics, err := scraper.scrape(context.Background())
+			md, err := scraper.scrape(context.Background())
 			require.NoError(t, err)
 
-			assert.Equal(t, len(test.expectedNames), resourceMetrics.Len())
+			assert.Equal(t, len(test.expectedNames), md.ResourceMetrics().Len())
 			for i, expectedName := range test.expectedNames {
-				rm := resourceMetrics.At(i)
+				rm := md.ResourceMetrics().At(i)
 				name, _ := rm.Resource().Attributes().Get(conventions.AttributeProcessExecutableName)
 				assert.Equal(t, expectedName, name.StringVal())
 			}
@@ -400,11 +400,11 @@ func TestScrapeMetrics_ProcessErrors(t *testing.T) {
 			timesError:      errors.New("err4"),
 			memoryInfoError: errors.New("err5"),
 			ioCountersError: errors.New("err6"),
-			expectedError: `[[error reading command for process "test" (pid 1): err2; ` +
-				`error reading username for process "test" (pid 1): err3]; ` +
+			expectedError: `error reading command for process "test" (pid 1): err2; ` +
+				`error reading username for process "test" (pid 1): err3; ` +
 				`error reading cpu times for process "test" (pid 1): err4; ` +
 				`error reading memory info for process "test" (pid 1): err5; ` +
-				`error reading disk usage for process "test" (pid 1): err6]`,
+				`error reading disk usage for process "test" (pid 1): err6`,
 		},
 	}
 
@@ -438,10 +438,8 @@ func TestScrapeMetrics_ProcessErrors(t *testing.T) {
 				return &processHandlesMock{handles: []*processHandleMock{handleMock}}, nil
 			}
 
-			resourceMetrics, err := scraper.scrape(context.Background())
+			md, err := scraper.scrape(context.Background())
 
-			md := pdata.NewMetrics()
-			resourceMetrics.MoveAndAppendTo(md.ResourceMetrics())
 			expectedResourceMetricsLen, expectedMetricsLen := getExpectedLengthOfReturnedMetrics(test.nameError, test.exeError, test.timesError, test.memoryInfoError, test.ioCountersError)
 			assert.Equal(t, expectedResourceMetricsLen, md.ResourceMetrics().Len())
 			assert.Equal(t, expectedMetricsLen, md.MetricCount())

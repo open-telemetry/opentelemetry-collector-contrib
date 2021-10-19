@@ -26,6 +26,11 @@ import (
 const (
 	// The value of "type" key in configuration.
 	typeStr = "routing"
+
+	contextAttributeSource  = "context"
+	resourceAttributeSource = "resource"
+
+	defaultAttributeSource = contextAttributeSource
 )
 
 // NewFactory creates a factory for the routing processor.
@@ -39,7 +44,8 @@ func NewFactory() component.ProcessorFactory {
 
 func createDefaultConfig() config.Processor {
 	return &Config{
-		ProcessorSettings: config.NewProcessorSettings(config.NewID(typeStr)),
+		ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
+		AttributeSource:   defaultAttributeSource,
 	}
 }
 

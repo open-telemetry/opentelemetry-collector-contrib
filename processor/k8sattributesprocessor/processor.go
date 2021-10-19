@@ -32,9 +32,9 @@ const (
 	k8sIPLabelName    string = "k8s.pod.ip"
 	clientIPLabelName string = "ip"
 
-	// TODO: update the label to semantic convention defined in this PR:
+	// TODO: Use semantic convention defined in this PR:
 	//       https://github.com/open-telemetry/opentelemetry-specification/pull/1945
-	k8sContainerRunIDLabelName string = "run_id"
+	k8sContainerRestartCountAttrName string = "k8s.container.restart_count"
 )
 
 type kubernetesprocessor struct {
@@ -153,7 +153,7 @@ func (kp *kubernetesprocessor) addContainerAttributes(attrs pdata.AttributeMap, 
 		attrs.InsertString(conventions.AttributeContainerImageTag, containerSpec.ImageTag)
 	}
 
-	runIDAttr, ok := attrs.Get(k8sContainerRunIDLabelName)
+	runIDAttr, ok := attrs.Get(k8sContainerRestartCountAttrName)
 	if ok {
 		runID, err := intFromAttribute(runIDAttr)
 		if err == nil {

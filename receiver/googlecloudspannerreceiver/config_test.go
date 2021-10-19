@@ -1,10 +1,10 @@
-// Copyright The OpenTelemetry Authors
+// Copyright  The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//       http://www.apache.org/licenses/LICENSE-2.0
+//      http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -40,7 +40,7 @@ func TestLoadConfig(t *testing.T) {
 
 	assert.Equal(t, len(cfg.Receivers), 1)
 
-	receiver := cfg.Receivers[config.NewID(typeStr)].(*Config)
+	receiver := cfg.Receivers[config.NewComponentID(typeStr)].(*Config)
 
 	assert.Equal(t, 120*time.Second, receiver.CollectionInterval)
 	assert.Equal(t, 10, receiver.TopMetricsQueryMaxRows)
@@ -173,7 +173,7 @@ func TestValidateConfig(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			cfg := &Config{
 				ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
-					ReceiverSettings:   config.NewReceiverSettings(config.NewID(typeStr)),
+					ReceiverSettings:   config.NewReceiverSettings(config.NewComponentID(typeStr)),
 					CollectionInterval: testCase.collectionInterval,
 				},
 				TopMetricsQueryMaxRows: testCase.topMetricsQueryMaxRows,

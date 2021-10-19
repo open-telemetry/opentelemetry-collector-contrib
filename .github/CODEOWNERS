@@ -35,6 +35,7 @@ exporter/newrelicexporter/                           @open-telemetry/collector-c
 exporter/sapmexporter/                               @open-telemetry/collector-contrib-approvers @owais @dmitryax
 exporter/sentryexporter/                             @open-telemetry/collector-contrib-approvers @AbhiPrasad
 exporter/signalfxexporter/                           @open-telemetry/collector-contrib-approvers @pmcollins @asuresh4
+exporter/skywalkingexporter/                         @open-telemetry/collector-contrib-approvers @liqiangz
 exporter/splunkhecexporter/                          @open-telemetry/collector-contrib-approvers @atoulme
 exporter/stackdriverexporter/                        @open-telemetry/collector-contrib-approvers @aabmass @dashpole @jsuereth @punya @tbarker25
 exporter/googlecloudexporter/                        @open-telemetry/collector-contrib-approvers @aabmass @dashpole @jsuereth @punya @tbarker25
@@ -44,7 +45,7 @@ exporter/googlecloudpubsubexporter/                  @open-telemetry/collector-c
 exporter/tanzuobservabilityexporter/                 @open-telemetry/collector-contrib-approvers @oppegard @thepeterstone
 exporter/influxdbexporter/                           @open-telemetry/collector-contrib-approvers @jacobmarble @8none1
 
-extension/awsxrayproxy/                              @open-telemetry/collector-contrib-approvers @anuraaga @Aneurysm9 @mxiamxia
+extension/awsproxy/                                  @open-telemetry/collector-contrib-approvers @anuraaga @Aneurysm9 @mxiamxia
 extension/httpforwarder/                             @open-telemetry/collector-contrib-approvers @asuresh4
 extension/observer/                                  @open-telemetry/collector-contrib-approvers @asuresh4 @jrcamp
 
@@ -75,9 +76,11 @@ receiver/cloudfoundryreceiver/                       @open-telemetry/collector-c
 receiver/collectdreceiver/                           @open-telemetry/collector-contrib-approvers @owais
 receiver/dockerstatsreceiver/                        @open-telemetry/collector-contrib-approvers @rmfitzpatrick
 receiver/dotnetdiagnosticsreceiver/                  @open-telemetry/collector-contrib-approvers @pmcollins @davmason
+receiver/httpdreceiver/                              @open-telemetry/collector-contrib-approvers @djaglowski
 receiver/jmxreceiver/                                @open-telemetry/collector-contrib-approvers @rmfitzpatrick
 receiver/k8sclusterreceiver/                         @open-telemetry/collector-contrib-approvers @asuresh4
 receiver/kubeletstatsreceiver/                       @open-telemetry/collector-contrib-approvers @pmcollins @asuresh4
+receiver/mysqlreceiver/                              @open-telemetry/collector-contrib-approvers @djaglowski
 receiver/prometheusexecreceiver/                     @open-telemetry/collector-contrib-approvers @keitwb
 receiver/receivercreator/                            @open-telemetry/collector-contrib-approvers @jrcamp
 receiver/redisreceiver/                              @open-telemetry/collector-contrib-approvers @pmcollins @jrcamp

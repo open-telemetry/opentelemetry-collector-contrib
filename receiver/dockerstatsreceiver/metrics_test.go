@@ -212,9 +212,7 @@ func TestZeroValueStats(t *testing.T) {
 	config := &Config{}
 
 	now := pdata.NewTimestampFromTime(time.Now())
-	md, err := ContainerStatsToMetrics(now, stats, containers, config)
-	assert.Nil(t, err)
-	assert.NotNil(t, md)
+	md := ContainerStatsToMetrics(now, stats, containers, config)
 
 	metrics := []Metric{
 		{name: "container.cpu.usage.system", mtype: MetricTypeCumulative, unit: "ns", labelKeys: nil, values: []Value{{labelValues: nil, value: 0}}},
@@ -270,9 +268,7 @@ func TestStatsToDefaultMetrics(t *testing.T) {
 	config := &Config{}
 
 	now := pdata.NewTimestampFromTime(time.Now())
-	md, err := ContainerStatsToMetrics(now, stats, containers, config)
-	assert.Nil(t, err)
-	assert.NotNil(t, md)
+	md := ContainerStatsToMetrics(now, stats, containers, config)
 
 	assertMetricsDataEqual(t, now, defaultMetrics(), nil, md)
 }
@@ -285,9 +281,7 @@ func TestStatsToAllMetrics(t *testing.T) {
 	}
 
 	now := pdata.NewTimestampFromTime(time.Now())
-	md, err := ContainerStatsToMetrics(now, stats, containers, config)
-	assert.Nil(t, err)
-	assert.NotNil(t, md)
+	md := ContainerStatsToMetrics(now, stats, containers, config)
 
 	metrics := []Metric{
 		{name: "container.blockio.io_service_bytes_recursive.read", mtype: MetricTypeCumulative, unit: "By", labelKeys: []string{"device_major", "device_minor"}, values: []Value{{labelValues: []string{"202", "0"}, value: 56500224}}},
@@ -386,9 +380,7 @@ func TestEnvVarToMetricLabels(t *testing.T) {
 	}
 
 	now := pdata.NewTimestampFromTime(time.Now())
-	md, err := ContainerStatsToMetrics(now, stats, containers, config)
-	assert.Nil(t, err)
-	assert.NotNil(t, md)
+	md := ContainerStatsToMetrics(now, stats, containers, config)
 
 	expectedLabels := map[string]string{
 		"my.env.to.metric.label":       "my_env_var_value",
@@ -409,9 +401,7 @@ func TestContainerLabelToMetricLabels(t *testing.T) {
 	}
 
 	now := pdata.NewTimestampFromTime(time.Now())
-	md, err := ContainerStatsToMetrics(now, stats, containers, config)
-	assert.Nil(t, err)
-	assert.NotNil(t, md)
+	md := ContainerStatsToMetrics(now, stats, containers, config)
 
 	expectedLabels := map[string]string{
 		"my.docker.to.metric.label":       "my_specified_docker_label_value",

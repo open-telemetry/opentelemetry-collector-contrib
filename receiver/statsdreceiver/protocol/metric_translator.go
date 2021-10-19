@@ -21,7 +21,7 @@ import (
 	"go.opentelemetry.io/collector/model/pdata"
 )
 
-func buildCounterMetric(parsedMetric statsDMetric, isMonotonicCounter bool, timeNow time.Time) pdata.InstrumentationLibraryMetrics {
+func buildCounterMetric(parsedMetric statsDMetric, isMonotonicCounter bool, timeNow, lastIntervalTime time.Time) pdata.InstrumentationLibraryMetrics {
 	ilm := pdata.NewInstrumentationLibraryMetrics()
 	nm := ilm.Metrics().AppendEmpty()
 	nm.SetName(parsedMetric.description.name)
@@ -31,14 +31,11 @@ func buildCounterMetric(parsedMetric statsDMetric, isMonotonicCounter bool, time
 	nm.SetDataType(pdata.MetricDataTypeSum)
 
 	nm.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityDelta)
-	if isMonotonicCounter {
-		nm.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
-	}
-
-	nm.Sum().SetIsMonotonic(true)
+	nm.Sum().SetIsMonotonic(isMonotonicCounter)
 
 	dp := nm.Sum().DataPoints().AppendEmpty()
 	dp.SetIntVal(parsedMetric.counterValue())
+	dp.SetStartTimestamp(pdata.NewTimestampFromTime(lastIntervalTime))
 	dp.SetTimestamp(pdata.NewTimestampFromTime(timeNow))
 	for i, key := range parsedMetric.labelKeys {
 		dp.Attributes().InsertString(key, parsedMetric.labelValues[i])
@@ -83,7 +80,7 @@ func buildSummaryMetric(summaryMetric summaryMetric) pdata.InstrumentationLibrar
 	quantile := []float64{0, 10, 50, 90, 95, 100}
 	for _, v := range quantile {
 		eachQuantile := dp.QuantileValues().AppendEmpty()
-		eachQuantile.SetQuantile(v)
+		eachQuantile.SetQuantile(v / 100)
 		eachQuantileValue, _ := stats.PercentileNearestRank(summaryMetric.summaryPoints, v)
 		eachQuantile.SetValue(eachQuantileValue)
 	}

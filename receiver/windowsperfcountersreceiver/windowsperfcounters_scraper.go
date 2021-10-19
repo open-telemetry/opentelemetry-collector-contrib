@@ -102,9 +102,9 @@ func (s *scraper) shutdown(context.Context) error {
 	return errs
 }
 
-func (s *scraper) scrape(context.Context) (pdata.MetricSlice, error) {
-	metrics := pdata.NewMetricSlice()
-
+func (s *scraper) scrape(context.Context) (pdata.Metrics, error) {
+	md := pdata.NewMetrics()
+	metrics := md.ResourceMetrics().AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty().Metrics()
 	now := pdata.NewTimestampFromTime(time.Now())
 
 	var errs error
@@ -120,7 +120,7 @@ func (s *scraper) scrape(context.Context) (pdata.MetricSlice, error) {
 		initializeDoubleGaugeMetric(metrics.AppendEmpty(), now, counter.Path(), counterValues)
 	}
 
-	return metrics, errs
+	return md, errs
 }
 
 func initializeDoubleGaugeMetric(metric pdata.Metric, now pdata.Timestamp, name string, counterValues []win_perf_counters.CounterValue) {

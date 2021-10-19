@@ -79,7 +79,7 @@ var (
 // sfxReceiver implements the component.MetricsReceiver for SignalFx metric protocol.
 type sfxReceiver struct {
 	sync.Mutex
-	settings        component.TelemetrySettings
+	settings        component.ReceiverCreateSettings
 	config          *Config
 	metricsConsumer consumer.Metrics
 	logsConsumer    consumer.Logs
@@ -91,7 +91,7 @@ var _ component.MetricsReceiver = (*sfxReceiver)(nil)
 
 // New creates the SignalFx receiver with the given configuration.
 func newReceiver(
-	settings component.TelemetrySettings,
+	settings component.ReceiverCreateSettings,
 	config Config,
 ) *sfxReceiver {
 	transport := "http"
@@ -101,7 +101,11 @@ func newReceiver(
 	r := &sfxReceiver{
 		settings: settings,
 		config:   &config,
-		obsrecv:  obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverID: config.ID(), Transport: transport}),
+		obsrecv: obsreport.NewReceiver(obsreport.ReceiverSettings{
+			ReceiverID:             config.ID(),
+			Transport:              transport,
+			ReceiverCreateSettings: settings,
+		}),
 	}
 
 	return r
@@ -142,7 +146,7 @@ func (r *sfxReceiver) Start(_ context.Context, host component.Host) error {
 	mx.HandleFunc("/v2/datapoint", r.handleDatapointReq)
 	mx.HandleFunc("/v2/event", r.handleEventReq)
 
-	r.server = r.config.HTTPServerSettings.ToServer(mx, r.settings)
+	r.server = r.config.HTTPServerSettings.ToServer(mx, r.settings.TelemetrySettings)
 
 	// TODO: Evaluate what properties should be configurable, for now
 	//		set some hard-coded values.

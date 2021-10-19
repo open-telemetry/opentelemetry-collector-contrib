@@ -50,9 +50,8 @@ type Config struct {
 
 	// IngestURL is the destination to where SignalFx metrics will be sent to, it is
 	// intended for tests and debugging. The value of Realm is ignored if the
-	// URL is specified. If a path is not included the exporter will
-	// automatically append the appropriate path, eg.: "v2/datapoint".
-	// If a path is specified it will act as a prefix.
+	// URL is specified. The exporter will automatically append the appropriate
+	// path: "/v2/datapoint" for metrics, and "/v2/event" for events.
 	IngestURL string `mapstructure:"ingest_url"`
 
 	// APIURL is the destination to where SignalFx metadata will be sent. This
@@ -64,6 +63,9 @@ type Config struct {
 	// exporter, eg: "User-Agent" can be set to a custom value if specified
 	// here.
 	Headers map[string]string `mapstructure:"headers"`
+
+	// Whether to log datapoints dispatched to Splunk Observability Cloud
+	LogDataPoints bool `mapstructure:"log_data_points"`
 
 	// Whether to log dimension updates being sent to SignalFx.
 	LogDimensionUpdates bool `mapstructure:"log_dimension_updates"`
@@ -138,6 +140,7 @@ func (cfg *Config) getOptionsFromConfig() (*exporterOptions, error) {
 		apiURL:           apiURL,
 		httpTimeout:      cfg.Timeout,
 		token:            cfg.AccessToken,
+		logDataPoints:    cfg.LogDataPoints,
 		logDimUpdate:     cfg.LogDimensionUpdates,
 		metricTranslator: metricTranslator,
 	}, nil

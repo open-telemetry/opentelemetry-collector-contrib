@@ -57,7 +57,7 @@ func HandleHTTPCode(resp *http.Response) error {
 	case http.StatusBadRequest, http.StatusUnauthorized:
 		dump, err2 := httputil.DumpResponse(resp, true)
 		if err2 == nil {
-			err = consumererror.Permanent(fmt.Errorf("%w", fmt.Errorf("%q", dump)))
+			err = consumererror.NewPermanent(fmt.Errorf("%w", fmt.Errorf("%q", dump)))
 		} else {
 			err = multierr.Append(err, err2)
 		}

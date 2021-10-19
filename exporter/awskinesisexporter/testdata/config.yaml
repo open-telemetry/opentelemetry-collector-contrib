@@ -12,6 +12,8 @@ exporters:
         kinesis_endpoint: awskinesis.mars-1.aws.galactic
     retry_on_failure:
       enabled: false
+    encoding:
+      name: otlp-proto
 
 
 processors:

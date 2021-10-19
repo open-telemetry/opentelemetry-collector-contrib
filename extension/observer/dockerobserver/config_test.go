@@ -37,16 +37,16 @@ func TestLoadConfig(t *testing.T) {
 	require.Nil(t, err)
 	require.NotNil(t, cfg)
 
-	require.Len(t, cfg.Extensions, 2)
+	require.Len(t, cfg.Extensions, 6)
 
-	ext0 := cfg.Extensions[config.NewID(typeStr)]
+	ext0 := cfg.Extensions[config.NewComponentID(typeStr)]
 	assert.Equal(t, factory.CreateDefaultConfig(), ext0)
 
-	ext1 := cfg.Extensions[config.NewIDWithName(typeStr, "all_settings")]
+	ext1 := cfg.Extensions[config.NewComponentIDWithName(typeStr, "all_settings")]
 	assert.Equal(t,
 		&Config{
 			Endpoint:              "unix:///var/run/docker.sock",
-			ExtensionSettings:     config.NewExtensionSettings(config.NewIDWithName(typeStr, "all_settings")),
+			ExtensionSettings:     config.NewExtensionSettings(config.NewComponentIDWithName(typeStr, "all_settings")),
 			CacheSyncInterval:     5 * time.Minute,
 			Timeout:               20 * time.Second,
 			ExcludedImages:        []string{"excluded", "image"},

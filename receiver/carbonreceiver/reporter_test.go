@@ -22,16 +22,15 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/obsreport/obsreporttest"
-	"go.uber.org/zap"
 )
 
 func TestReporterObservability(t *testing.T) {
-	doneFn, err := obsreporttest.SetupRecordedMetricsTest()
+	tt, err := obsreporttest.SetupTelemetry()
 	require.NoError(t, err)
-	defer doneFn()
+	defer tt.Shutdown(context.Background())
 
-	receiverID := config.NewIDWithName(typeStr, "fake_receiver")
-	reporter := newReporter(receiverID, zap.NewNop())
+	receiverID := config.NewComponentIDWithName(typeStr, "fake_receiver")
+	reporter := newReporter(receiverID, tt.ToReceiverCreateSettings())
 
 	ctx := reporter.OnDataReceived(context.Background())
 

@@ -17,10 +17,10 @@ package kubeletstatsreceiver
 import (
 	"errors"
 	"fmt"
-	"time"
 
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confignet"
+	"go.opentelemetry.io/collector/receiver/scraperhelper"
 	"gopkg.in/yaml.v2"
 	"k8s.io/client-go/kubernetes"
 
@@ -32,10 +32,10 @@ import (
 var _ config.Receiver = (*Config)(nil)
 
 type Config struct {
-	config.ReceiverSettings `mapstructure:",squash"`
-	kube.ClientConfig       `mapstructure:",squash"`
-	confignet.TCPAddr       `mapstructure:",squash"`
-	CollectionInterval      time.Duration `mapstructure:"collection_interval"`
+	scraperhelper.ScraperControllerSettings `mapstructure:",squash"`
+
+	kube.ClientConfig `mapstructure:",squash"`
+	confignet.TCPAddr `mapstructure:",squash"`
 
 	// ExtraMetadataLabels contains list of extra metadata that should be taken from /pods endpoint
 	// and put as extra labels on metrics resource.
@@ -51,9 +51,21 @@ type Config struct {
 	K8sAPIConfig *k8sconfig.APIConfig `mapstructure:"k8s_api_config"`
 }
 
-// getReceiverOptions returns receiverOptions is the config is valid,
+func (cfg *Config) Validate() error {
+	if err := cfg.ReceiverSettings.Validate(); err != nil {
+		return err
+	}
+	if cfg.K8sAPIConfig != nil {
+		if err := cfg.K8sAPIConfig.Validate(); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// getReceiverOptions returns scraperOptions is the config is valid,
 // otherwise it will return an error.
-func (cfg *Config) getReceiverOptions() (*receiverOptions, error) {
+func (cfg *Config) getReceiverOptions() (*scraperOptions, error) {
 	err := kubelet.ValidateMetadataLabelsConfig(cfg.ExtraMetadataLabels)
 	if err != nil {
 		return nil, err
@@ -72,7 +84,7 @@ func (cfg *Config) getReceiverOptions() (*receiverOptions, error) {
 		}
 	}
 
-	return &receiverOptions{
+	return &scraperOptions{
 		id:                    cfg.ID(),
 		collectionInterval:    cfg.CollectionInterval,
 		extraMetadataLabels:   cfg.ExtraMetadataLabels,

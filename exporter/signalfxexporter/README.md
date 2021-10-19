@@ -22,25 +22,27 @@ The following configuration options are required:
   - `api_url` (no default): Destination to which SignalFx [properties and
     tags](https://docs.signalfx.com/en/latest/metrics-metadata/metrics-metadata.html#metrics-metadata)
     are sent. If `realm` is set, this option is derived and will be
-    `https://api.{realm}.signalfx.com/`. If a value is explicitly set, the
+    `https://api.{realm}.signalfx.com`. If a value is explicitly set, the
     value of `realm` will not be used in determining `api_url`. The explicit
     value will be used instead.
   - `ingest_url` (no default): Destination where SignalFx metrics are sent. If
     `realm` is set, this option is derived and will be
-    `https://ingest.{realm}.signalfx.com/v2/datapoint`.  If a value is
+    `https://ingest.{realm}.signalfx.com`. If a value is
     explicitly set, the value of `realm` will not be used in determining
-    `ingest_url`. The explicit value will be used instead. If path is not
-    specified, `/v2/datapoint` is used.
+    `ingest_url`. The explicit value will be used instead. The exporter will 
+    automatically append the appropriate path: "/v2/datapoint" for metrics, 
+    and "/v2/event" for events.
 
 The following configuration options can also be configured:
 
 - `access_token_passthrough`: (default = `true`) Whether to use
-  `"com.splunk.signalfx.access_token"` metric resource label, if any, as the
-  SignalFx access token.  In either case this label will be dropped during
-  final translation.  Intended to be used in tandem with identical
-  configuration option for [SignalFx
+  `"com.splunk.signalfx.access_token"` metric resource attribute, if any, as the
+  SignalFx access token.  In either case this attribute will be dropped during
+  final translation, in this exporter only.  Intended to be used in tandem with
+  identical configuration option for [SignalFx
   receiver](../../receiver/signalfxreceiver/README.md) to preserve datapoint
-  origin.
+  origin for only this exporter, as others will reveal the organization access token
+  by not filtering the attribute.
 - `exclude_metrics`: List of metric filters that will determine metrics to be
   excluded from sending to Signalfx backend. If `translation_rules` options
   are enabled, the exclusion will be applied on translated metrics.
@@ -63,6 +65,8 @@ The following configuration options can also be configured:
         state: [interrupt, user, system]
   ```
 - `headers` (no default): Headers to pass in the payload.
+- `log_data_points` (default = `false`): If the log level is set to `debug` 
+  and this is true, all datapoints dispatched to Splunk Observability Cloud will be logged
 - `log_dimension_updates` (default = `false`): Whether or not to log dimension
   updates.
 - `timeout` (default = 5s): Amount of time to wait for a send operation to
@@ -130,6 +134,18 @@ exporters:
           state: [interrupt, user, system]
 ```
 
+The following `include_metrics` example would instruct the exporter to send only `cpu.interrupt` metrics with a `cpu` dimension value ("per core" datapoints), and both "per core" and aggregate `cpu.idle` metrics:
+
+```
+exporters:
+  signalfx:
+    include_metrics:
+      - metric_name: "cpu.idle"
+      - metric_name: "cpu.interrupt"
+        dimensions:
+          cpu: ["*"]
+```
+
 ## Translation Rules and Metric Transformations
 
 The `translation_rules` metrics configuration field accepts a list of metric-transforming actions to
@@ -179,6 +195,17 @@ The translation rules defined in [`translation/constants.go`](./internal/transla
 * vmpage_io.memory.out
 * vmpage_io.swap.in
 * vmpage_io.swap.out
+
+In addition to the aggregated metrics, the default translation rules make available the following "per core" custom hostmetrics.
+The CPU number is assigned to the dimension `cpu` 
+
+* cpu.interrupt
+* cpu.nice
+* cpu.softirq
+* cpu.steal
+* cpu.system
+* cpu.user
+* cpu.wait
 
 These metrics are intended to be reported directly to Splunk IM by the SignalFx exporter.  Any desired changes to their attributes or values should be made via additional translation rules or from their constituent host metrics.
 

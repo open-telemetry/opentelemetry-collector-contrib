@@ -79,7 +79,7 @@ func logdataToObservIQFormat(ld pdata.Logs, agentID string, agentName string, bu
 
 				if err != nil {
 					//Skip this log, keep record of error
-					errorsOut = append(errorsOut, consumererror.Permanent(err))
+					errorsOut = append(errorsOut, consumererror.NewPermanent(err))
 					continue
 				}
 
@@ -87,7 +87,7 @@ func logdataToObservIQFormat(ld pdata.Logs, agentID string, agentName string, bu
 				fnvHash.Reset()
 				_, err = fnvHash.Write(jsonOIQLogEntry)
 				if err != nil {
-					errorsOut = append(errorsOut, consumererror.Permanent(err))
+					errorsOut = append(errorsOut, consumererror.NewPermanent(err))
 					continue
 				}
 

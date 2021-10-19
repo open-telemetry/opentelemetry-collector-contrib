@@ -115,7 +115,6 @@ ec2:
 
     * cloud.provider ("aws")
     * cloud.platform ("aws_eks")
-    * k8s.cluster.name (name of the EKS cluster)
     
 * Azure: Queries the [Azure Instance Metadata Service](https://aka.ms/azureimds) to retrieve the following resource attributes:
 

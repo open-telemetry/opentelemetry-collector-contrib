@@ -20,7 +20,7 @@ import (
 	"time"
 
 	"go.etcd.io/bbolt"
-	"go.opentelemetry.io/collector/extension/storage"
+	"go.opentelemetry.io/collector/extension/experimental/storage"
 )
 
 var defaultBucket = []byte(`default`)

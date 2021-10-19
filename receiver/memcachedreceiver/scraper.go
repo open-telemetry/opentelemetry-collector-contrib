@@ -19,6 +19,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/receiver/scraperhelper"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/memcachedreceiver/internal/metadata"
@@ -33,14 +34,15 @@ type memcachedScraper struct {
 func newMemcachedScraper(
 	logger *zap.Logger,
 	config *Config,
-) *memcachedScraper {
-	return &memcachedScraper{
+) (scraperhelper.Scraper, error) {
+	ms := &memcachedScraper{
 		logger: logger,
 		config: config,
 	}
+	return scraperhelper.NewScraper(typeStr, ms.scrape)
 }
 
-func (r *memcachedScraper) scrape(_ context.Context) (pdata.ResourceMetricsSlice, error) {
+func (r *memcachedScraper) scrape(_ context.Context) (pdata.Metrics, error) {
 	// Init client in scrape method in case there are transient errors in the
 	// constructor.
 
@@ -49,7 +51,7 @@ func (r *memcachedScraper) scrape(_ context.Context) (pdata.ResourceMetricsSlice
 		err := r.client.Init(r.config.Endpoint)
 		if err != nil {
 			r.client = nil
-			return pdata.ResourceMetricsSlice{}, err
+			return pdata.Metrics{}, err
 		}
 		r.client.SetTimeout(r.config.Timeout)
 	}
@@ -57,13 +59,13 @@ func (r *memcachedScraper) scrape(_ context.Context) (pdata.ResourceMetricsSlice
 	stats, err := r.client.Stats()
 	if err != nil {
 		r.logger.Error("Failed to fetch memcached stats", zap.Error(err))
-		return pdata.ResourceMetricsSlice{}, err
+		return pdata.Metrics{}, err
 	}
 
-	rms := pdata.NewResourceMetricsSlice()
-	ilm := rms.AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty()
-	ilm.InstrumentationLibrary().SetName("otelcol/memcached")
 	now := pdata.NewTimestampFromTime(time.Now())
+	md := pdata.NewMetrics()
+	ilm := md.ResourceMetrics().AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty()
+	ilm.InstrumentationLibrary().SetName("otelcol/memcached")
 
 	commandCount := initMetric(ilm.Metrics(), metadata.M.MemcachedCommands).Sum().DataPoints()
 	rUsage := initMetric(ilm.Metrics(), metadata.M.MemcachedRusage).Gauge().DataPoints()
@@ -169,7 +171,7 @@ func (r *memcachedScraper) scrape(_ context.Context) (pdata.ResourceMetricsSlice
 		}
 	}
 
-	return rms, nil
+	return md, nil
 }
 
 func initMetric(ms pdata.MetricSlice, mi metadata.MetricIntf) pdata.Metric {

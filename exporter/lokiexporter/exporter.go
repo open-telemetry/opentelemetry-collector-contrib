@@ -55,17 +55,17 @@ func (l *lokiExporter) pushLogData(ctx context.Context, ld pdata.Logs) error {
 
 	pushReq, _ := l.logDataToLoki(ld)
 	if len(pushReq.Streams) == 0 {
-		return consumererror.Permanent(fmt.Errorf("failed to transform logs into Loki log streams"))
+		return consumererror.NewPermanent(fmt.Errorf("failed to transform logs into Loki log streams"))
 	}
 
 	buf, err := encode(pushReq)
 	if err != nil {
-		return consumererror.Permanent(err)
+		return consumererror.NewPermanent(err)
 	}
 
 	req, err := http.NewRequestWithContext(ctx, "POST", l.config.HTTPClientSettings.Endpoint, bytes.NewReader(buf))
 	if err != nil {
-		return consumererror.Permanent(err)
+		return consumererror.NewPermanent(err)
 	}
 
 	for k, v := range l.config.HTTPClientSettings.Headers {

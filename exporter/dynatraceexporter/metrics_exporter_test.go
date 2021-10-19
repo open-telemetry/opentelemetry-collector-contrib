@@ -472,7 +472,7 @@ func Test_exporter_start_InvalidHTTPClientSettings(t *testing.T) {
 	config := &config.Config{
 		HTTPClientSettings: confighttp.HTTPClientSettings{
 			Endpoint: "localhost:9090",
-			TLSSetting: &configtls.TLSClientSetting{
+			TLSSetting: configtls.TLSClientSetting{
 				TLSSetting: configtls.TLSSetting{
 					CAFile: "/non/existent",
 				},
