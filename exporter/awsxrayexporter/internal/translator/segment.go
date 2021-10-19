@@ -119,13 +119,23 @@ func MakeSegment(span pdata.Span, resource pdata.Resource, indexedAttrs []string
 		name = peerService.StringVal()
 	}
 
+	if namespace == "" {
+		if rpcSystem, ok := attributes.Get(conventions.AttributeRPCSystem); ok {
+			if rpcSystem.StringVal() == "aws-api" {
+				namespace = conventions.AttributeCloudProviderAWS
+			}
+		}
+	}
+
 	if name == "" {
 		if awsService, ok := attributes.Get(awsxray.AWSServiceAttribute); ok {
 			// Generally spans are named something like "Method" or "Service.Method" but for AWS spans, X-Ray expects spans
 			// to be named "Service"
 			name = awsService.StringVal()
 
-			namespace = "aws"
+			if namespace == "" {
+				namespace = conventions.AttributeCloudProviderAWS
+			}
 		}
 	}
 
