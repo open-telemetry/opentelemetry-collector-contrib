@@ -13,6 +13,8 @@ require (
 
 )
 
+require go.uber.org/multierr v1.7.0
+
 require (
 	github.com/Azure/go-ansiterm v0.0.0-20210617225240-d185dfc1b5a1 // indirect
 	github.com/Microsoft/go-winio v0.4.17 // indirect
@@ -44,7 +46,6 @@ require (
 	go.opentelemetry.io/otel/metric v0.24.0 // indirect
 	go.opentelemetry.io/otel/trace v1.0.1 // indirect
 	go.uber.org/atomic v1.9.0 // indirect
-	go.uber.org/multierr v1.7.0 // indirect
 	golang.org/x/net v0.0.0-20210614182718-04defd469f4e // indirect
 	golang.org/x/sys v0.0.0-20210816074244-15123e1e1f71 // indirect
 	golang.org/x/text v0.3.6 // indirect
