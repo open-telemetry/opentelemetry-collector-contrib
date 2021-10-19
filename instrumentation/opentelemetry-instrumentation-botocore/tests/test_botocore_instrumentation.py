@@ -178,15 +178,17 @@ class TestBotocoreInstrumentor(TestBase):
 
         location = {"LocationConstraint": "us-west-2"}
         s3.create_bucket(Bucket="mybucket", CreateBucketConfiguration=location)
-        self.assert_span("S3", "CreateBucket")
+        self.assert_span(
+            "S3", "CreateBucket", request_id=_REQUEST_ID_REGEX_MATCH
+        )
         self.memory_exporter.clear()
 
         s3.put_object(Key="foo", Bucket="mybucket", Body=b"bar")
-        self.assert_span("S3", "PutObject")
+        self.assert_span("S3", "PutObject", request_id=_REQUEST_ID_REGEX_MATCH)
         self.memory_exporter.clear()
 
         s3.get_object(Bucket="mybucket", Key="foo")
-        self.assert_span("S3", "GetObject")
+        self.assert_span("S3", "GetObject", request_id=_REQUEST_ID_REGEX_MATCH)
 
     @mock_sqs
     def test_sqs_client(self):
