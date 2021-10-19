@@ -1,5 +1,8 @@
 # Datadog APM Receiver
 
+## Created by
+John Dorman / Sony Interactive Enetertainment (john.dorman@sony.com)
+
 ## Overview
 The Datadog APM Receiver accepts traces in the Datadog Trace Agent Format
 ## Configuration
