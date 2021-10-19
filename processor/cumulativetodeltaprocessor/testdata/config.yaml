@@ -6,6 +6,7 @@ processors:
     metrics:
       - metric1
       - metric2
+    max_staleness: 10s
 
 exporters:
   nop:
