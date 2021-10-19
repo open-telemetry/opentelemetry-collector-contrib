@@ -66,7 +66,7 @@ func TestNewGoogleCloudSpannerReceiver(t *testing.T) {
 	nextConsumer := consumertest.NewNop()
 	cfg := createDefaultConfig().(*Config)
 
-	receiver, err := newGoogleCloudSpannerReceiver(logger, cfg, nextConsumer)
+	receiver, err := newGoogleCloudSpannerReceiver(logger, cfg, nextConsumer, componenttest.NewNopReceiverCreateSettings())
 	receiverCasted := receiver.(*googleCloudSpannerReceiver)
 
 	require.NoError(t, err)
@@ -80,7 +80,7 @@ func TestNewGoogleCloudSpannerReceiver(t *testing.T) {
 func TestNewGoogleCloudSpannerReceiver_NilConsumer(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 
-	metricsReceiver, err := newGoogleCloudSpannerReceiver(zap.NewNop(), cfg, nil)
+	metricsReceiver, err := newGoogleCloudSpannerReceiver(zap.NewNop(), cfg, nil, componenttest.NewNopReceiverCreateSettings())
 
 	require.NotNil(t, err)
 	require.Nil(t, metricsReceiver)
@@ -122,7 +122,7 @@ func TestStart(t *testing.T) {
 
 			host := componenttest.NewNopHost()
 
-			receiver, err := newGoogleCloudSpannerReceiver(logger, cfg, nextConsumer)
+			receiver, err := newGoogleCloudSpannerReceiver(logger, cfg, nextConsumer, componenttest.NewNopReceiverCreateSettings())
 			receiverCasted := receiver.(*googleCloudSpannerReceiver)
 
 			require.NoError(t, err)
@@ -147,7 +147,7 @@ func TestStartInitializesDataCollectionWithCollectDataError(t *testing.T) {
 	cfg := createConfig(serviceAccountValidPath)
 	cfg.CollectionInterval = 10 * time.Millisecond
 	host := componenttest.NewNopHost()
-	receiver, err := newGoogleCloudSpannerReceiver(logger, cfg, nextConsumer)
+	receiver, err := newGoogleCloudSpannerReceiver(logger, cfg, nextConsumer, componenttest.NewNopReceiverCreateSettings())
 	receiverCasted := receiver.(*googleCloudSpannerReceiver)
 
 	require.NoError(t, err)
@@ -173,7 +173,7 @@ func TestStartWithContextDone(t *testing.T) {
 	ctx := context.Background()
 	host := componenttest.NewNopHost()
 
-	receiver, err := newGoogleCloudSpannerReceiver(logger, cfg, nextConsumer)
+	receiver, err := newGoogleCloudSpannerReceiver(logger, cfg, nextConsumer, componenttest.NewNopReceiverCreateSettings())
 	receiverCasted := receiver.(*googleCloudSpannerReceiver)
 
 	require.NoError(t, err)
@@ -202,7 +202,7 @@ func TestInitializeProjectReaders(t *testing.T) {
 			nextConsumer := consumertest.NewNop()
 			cfg := createConfig(testCase.serviceAccountPath)
 
-			receiver, err := newGoogleCloudSpannerReceiver(logger, cfg, nextConsumer)
+			receiver, err := newGoogleCloudSpannerReceiver(logger, cfg, nextConsumer, componenttest.NewNopReceiverCreateSettings())
 			receiverCasted := receiver.(*googleCloudSpannerReceiver)
 
 			require.NoError(t, err)
@@ -276,7 +276,7 @@ func TestCollectData(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			cfg := createDefaultConfig().(*Config)
 
-			receiver, err := newGoogleCloudSpannerReceiver(logger, cfg, testCase.nextConsumer)
+			receiver, err := newGoogleCloudSpannerReceiver(logger, cfg, testCase.nextConsumer, componenttest.NewNopReceiverCreateSettings())
 
 			require.NoError(t, err)
 			require.NotNil(t, receiver)
@@ -311,21 +311,4 @@ func TestGoogleCloudSpannerReceiver_Shutdown(t *testing.T) {
 	err := receiver.Shutdown(ctx)
 
 	require.NoError(t, err)
-}
-
-func TestMetricName(t *testing.T) {
-	md := pdata.NewMetrics()
-	rms := md.ResourceMetrics()
-	rm := rms.AppendEmpty()
-
-	ilms := rm.InstrumentationLibraryMetrics()
-	ilm := ilms.AppendEmpty()
-	metric := ilm.Metrics().AppendEmpty()
-	metric.SetName("testMetric1")
-	metric = ilm.Metrics().AppendEmpty()
-	metric.SetName("testMetric2")
-
-	metricName := metricName(md)
-
-	assert.Equal(t, "testMetric1,testMetric2", metricName)
 }

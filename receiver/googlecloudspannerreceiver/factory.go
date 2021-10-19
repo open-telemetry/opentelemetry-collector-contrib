@@ -60,5 +60,5 @@ func createMetricsReceiver(
 
 	rCfg := baseCfg.(*Config)
 	logger := params.Logger
-	return newGoogleCloudSpannerReceiver(logger, rCfg, consumer)
+	return newGoogleCloudSpannerReceiver(logger, rCfg, consumer, params)
 }

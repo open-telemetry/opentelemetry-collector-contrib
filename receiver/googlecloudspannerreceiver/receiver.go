@@ -24,6 +24,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/obsreport"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudspannerreceiver/internal/datasource"
@@ -44,12 +45,14 @@ type googleCloudSpannerReceiver struct {
 	cancel         context.CancelFunc
 	projectReaders []statsreader.CompositeReader
 	onCollectData  []func(error)
+	obsrecv        *obsreport.Receiver
 }
 
 func newGoogleCloudSpannerReceiver(
 	logger *zap.Logger,
 	config *Config,
-	nextConsumer consumer.Metrics) (component.MetricsReceiver, error) {
+	nextConsumer consumer.Metrics,
+	params component.ReceiverCreateSettings) (component.MetricsReceiver, error) {
 
 	if nextConsumer == nil {
 		return nil, componenterror.ErrNilNextConsumer
@@ -59,6 +62,11 @@ func newGoogleCloudSpannerReceiver(
 		logger:       logger,
 		nextConsumer: nextConsumer,
 		config:       config,
+		obsrecv: obsreport.NewReceiver(obsreport.ReceiverSettings{
+			ReceiverID:             config.ID(),
+			Transport:              "",
+			ReceiverCreateSettings: params,
+		}),
 	}
 	return r, nil
 }
@@ -162,9 +170,9 @@ func (r *googleCloudSpannerReceiver) collectData(ctx context.Context) error {
 
 	for _, metric := range allMetrics {
 		if err := r.nextConsumer.ConsumeMetrics(ctx, metric); err != nil {
-			// TODO Use obsreport instead to make the component observable and emit metrics on errors
-			//r.logger.Error("Failed to consume metric(s) because of an error",
-			//	zap.String("metric name", metricName(metric)), zap.Error(err))
+			obsReportCtx := r.obsrecv.StartMetricsOp(ctx)
+			r.notifyOnCollectData(err)
+			r.obsrecv.EndMetricsOp(obsReportCtx, "", metric.DataPointCount(), err)
 
 			return err
 		}
@@ -177,27 +185,4 @@ func (r *googleCloudSpannerReceiver) notifyOnCollectData(err error) {
 	for _, onCollectData := range r.onCollectData {
 		onCollectData(err)
 	}
-}
-
-func metricName(metric pdata.Metrics) string {
-	var mName string
-	resourceMetrics := metric.ResourceMetrics()
-
-	for i := 0; i < resourceMetrics.Len(); i++ {
-		ilm := resourceMetrics.At(i).InstrumentationLibraryMetrics()
-
-		for j := 0; j < ilm.Len(); j++ {
-			metrics := ilm.At(j).Metrics()
-
-			for k := 0; k < metrics.Len(); k++ {
-				mName += metrics.At(k).Name() + ","
-			}
-		}
-	}
-
-	if mName != "" {
-		mName = mName[:len(mName)-1]
-	}
-
-	return mName
 }

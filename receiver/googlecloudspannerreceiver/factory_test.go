@@ -51,6 +51,6 @@ func TestCreateMetricsReceiver(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, receiver, "failed to create metrics receiver")
 
-	_, err = factory.CreateTracesReceiver(context.Background(), componenttest.NewNopReceiverCreateSettings(), receiverConfig, nil)
+	_, err = factory.CreateMetricsReceiver(context.Background(), componenttest.NewNopReceiverCreateSettings(), receiverConfig, nil)
 	require.Error(t, err)
 }
