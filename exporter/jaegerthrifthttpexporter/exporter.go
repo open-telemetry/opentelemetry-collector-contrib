@@ -23,13 +23,16 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/jaegertracing/jaeger/model"
+	"github.com/jaegertracing/jaeger/thrift-gen/jaeger"
+	jaegerThriftConverter "github.com/jaegertracing/jaeger/model/converter/thrift/jaeger"
 	"github.com/apache/thrift/lib/go/thrift"
-	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/model/pdata"
-	"go.opentelemetry.io/collector/translator/internaldata"
+
+	jaegertranslator "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger"
 )
 
 // Default timeout for http request in seconds
@@ -44,26 +47,23 @@ const defaultHTTPTimeout = time.Second * 5
 // The timeout is used to set the timeout for the HTTP requests, if the
 // value is equal or smaller than zero the default of 5 seconds is used.
 func newTracesExporter(
-	config config.Exporter,
+	config *Config,
 	params component.ExporterCreateSettings,
-	httpAddress string,
-	headers map[string]string,
-	timeout time.Duration,
 ) (component.TracesExporter, error) {
 
 	clientTimeout := defaultHTTPTimeout
-	if timeout != 0 {
-		clientTimeout = timeout
+	if config.Timeout != 0 {
+		clientTimeout = config.Timeout
 	}
 	s := &jaegerThriftHTTPSender{
-		url:     httpAddress,
-		headers: headers,
+		url:     config.URL,
+		headers: config.Headers,
 		client:  &http.Client{Timeout: clientTimeout},
 	}
 
 	return exporterhelper.NewTracesExporter(
 		config,
-		params.Logger,
+		params,
 		s.pushTraceData)
 }
 
@@ -79,17 +79,13 @@ func (s *jaegerThriftHTTPSender) pushTraceData(
 	ctx context.Context,
 	td pdata.Traces,
 ) error {
-	rss := td.ResourceSpans()
-	for i := 0; i < rss.Len(); i++ {
-		var octd traceData
-		octd.Node, octd.Resource, octd.Spans = internaldata.ResourceSpansToOC(rss.At(i))
+    batches, err := jaegertranslator.InternalTracesToJaegerProto(td)
+    if err != nil {
+        return consumererror.NewPermanent(fmt.Errorf("failed to push trace data via Jaeger Thrift HTTP exporter: %w", err))
+    }
 
-		tBatch, err := oCProtoToJaegerThrift(octd)
-		if err != nil {
-			return consumererror.Permanent(err)
-		}
-
-		body, err := serializeThrift(ctx, tBatch)
+	for i := 0; i < len(batches); i++ {
+		body, err := serializeThrift(ctx, batches[i])
 		if err != nil {
 			return err
 		}
@@ -126,11 +122,54 @@ func (s *jaegerThriftHTTPSender) pushTraceData(
 	return nil
 }
 
-func serializeThrift(ctx context.Context, obj thrift.TStruct) (*bytes.Buffer, error) {
+func serializeThrift(ctx context.Context, batch *model.Batch) (*bytes.Buffer, error) {
+	thriftSpans := jaegerThriftConverter.FromDomain(batch.GetSpans())
+	thriftProcess := jaeger.Process{
+		ServiceName: batch.GetProcess().GetServiceName(),
+		Tags: convertTagsToThrift(batch.GetProcess().GetTags()),
+	}
+	thriftBatch := jaeger.Batch{
+		Spans: thriftSpans,
+		Process: &thriftProcess,
+	}
 	t := thrift.NewTMemoryBuffer()
 	p := thrift.NewTBinaryProtocolConf(t, nil)
-	if err := obj.Write(ctx, p); err != nil {
+	if err := thriftBatch.Write(ctx, p); err != nil {
 		return nil, err
 	}
 	return t.Buffer, nil
+}
+
+func convertTagsToThrift(tags []model.KeyValue) ([]*jaeger.Tag) {
+	thriftTags := make([]*jaeger.Tag, 0, len(tags))
+
+	for i := 0; i < len(tags); i++ {
+		tag := tags[i]
+		thriftTag := &jaeger.Tag{Key: tag.GetKey()}
+		switch tag.GetVType() {
+		case model.ValueType_STRING:
+			str := tag.GetVStr()
+			thriftTag.VStr = &str
+			thriftTag.VType = jaeger.TagType_STRING
+		case model.ValueType_INT64:
+			i := tag.GetVInt64()
+			thriftTag.VLong = &i
+			thriftTag.VType = jaeger.TagType_LONG
+		case model.ValueType_BOOL:
+			b := tag.GetVBool()
+			thriftTag.VBool = &b
+			thriftTag.VType = jaeger.TagType_BOOL
+		case model.ValueType_FLOAT64:
+			d := tag.GetVFloat64()
+			thriftTag.VDouble = &d
+			thriftTag.VType = jaeger.TagType_DOUBLE
+		default:
+			str := "<Unknown tag type for key \"" + tag.GetKey() + "\">"
+			thriftTag.VStr = &str
+			thriftTag.VType = jaeger.TagType_STRING
+		}
+		thriftTags = append(thriftTags, thriftTag)
+	}
+
+	return thriftTags
 }

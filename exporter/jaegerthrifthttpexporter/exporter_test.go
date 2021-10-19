@@ -21,44 +21,25 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/model/pdata"
-	"go.uber.org/zap"
 )
 
 const testHTTPAddress = "http://a.test.dom:123/at/some/path"
 
-type args struct {
-	config      config.Exporter
-	httpAddress string
-	headers     map[string]string
-	timeout     time.Duration
-}
-
 func TestNew(t *testing.T) {
-	ar := args{
-		config:      &config.ExporterSettings{},
-		httpAddress: testHTTPAddress,
-		headers:     map[string]string{"test": "test"},
-		timeout:     10 * time.Nanosecond,
+	config := Config{
+		ExporterSettings:      config.NewExporterSettings(config.NewComponentID(typeStr)),
+		URL: testHTTPAddress,
+		Headers:     map[string]string{"test": "test"},
+		Timeout:     10 * time.Nanosecond,
 	}
 
-	got, err := newTracesExporter(ar.config, component.ExporterCreateSettings{Logger: zap.NewNop()}, ar.httpAddress, ar.headers, ar.timeout)
+	got, err := newTracesExporter(&config, componenttest.NewNopExporterCreateSettings())
 	assert.NoError(t, err)
 	require.NotNil(t, got)
 
 	err = got.ConsumeTraces(context.Background(), pdata.NewTraces())
 	assert.NoError(t, err)
-}
-
-func TestNewFailsWithEmptyExporterName(t *testing.T) {
-	ar := args{
-		config:      nil,
-		httpAddress: testHTTPAddress,
-	}
-
-	got, err := newTracesExporter(ar.config, component.ExporterCreateSettings{Logger: zap.NewNop()}, ar.httpAddress, ar.headers, ar.timeout)
-	assert.EqualError(t, err, "nil config")
-	assert.Nil(t, got)
 }

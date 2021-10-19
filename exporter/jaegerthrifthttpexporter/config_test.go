@@ -22,11 +22,9 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtest"
-	"go.uber.org/zap"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -40,16 +38,16 @@ func TestLoadConfig(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 
-	e0 := cfg.Exporters[config.NewID(typeStr)]
+	e0 := cfg.Exporters[config.NewComponentID(typeStr)]
 
 	// URL doesn't have a default value so set it directly.
 	defaultCfg := factory.CreateDefaultConfig().(*Config)
 	defaultCfg.URL = "http://some.location:14268/api/traces"
 	assert.Equal(t, defaultCfg, e0)
 
-	e1 := cfg.Exporters[config.NewIDWithName(typeStr, "2")]
+	e1 := cfg.Exporters[config.NewComponentIDWithName(typeStr, "2")]
 	expectedCfg := Config{
-		ExporterSettings: config.NewExporterSettings(config.NewIDWithName(typeStr, "2")),
+		ExporterSettings: config.NewExporterSettings(config.NewComponentIDWithName(typeStr, "2")),
 		URL:              "http://some.other.location/api/traces",
 		Headers: map[string]string{
 			"added-entry": "added value",
@@ -59,7 +57,7 @@ func TestLoadConfig(t *testing.T) {
 	}
 	assert.Equal(t, &expectedCfg, e1)
 
-	te, err := factory.CreateTracesExporter(context.Background(), component.ExporterCreateSettings{Logger: zap.NewNop()}, e1)
+	te, err := factory.CreateTracesExporter(context.Background(), componenttest.NewNopExporterCreateSettings(), e1)
 	require.NoError(t, err)
 	require.NotNil(t, te)
 }

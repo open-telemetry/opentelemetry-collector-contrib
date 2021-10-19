@@ -20,16 +20,15 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/config/configcheck"
-	"go.uber.org/zap"
+	"go.opentelemetry.io/collector/config/configtest"
 )
 
 func TestCreateDefaultConfig(t *testing.T) {
 	cfg := createDefaultConfig()
 	assert.NotNil(t, cfg, "failed to create default config")
-	assert.NoError(t, configcheck.ValidateConfig(cfg))
+	assert.NoError(t, configtest.CheckConfigStruct(cfg))
 }
 
 func TestCreateInstanceViaFactory(t *testing.T) {
@@ -38,7 +37,7 @@ func TestCreateInstanceViaFactory(t *testing.T) {
 
 	// Default config doesn't have default URL so creating from it should
 	// fail.
-	params := component.ExporterCreateSettings{Logger: zap.NewNop()}
+	params := componenttest.NewNopExporterCreateSettings()
 	exp, err := createTracesExporter(context.Background(), params, cfg)
 	assert.Error(t, err)
 	assert.Nil(t, exp)
@@ -55,7 +54,7 @@ func TestCreateInstanceViaFactory(t *testing.T) {
 
 func TestFactory_CreateTracesExporter(t *testing.T) {
 	config := &Config{
-		ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
+		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
 		URL:              "http://some.other.location/api/traces",
 		Headers: map[string]string{
 			"added-entry": "added value",
@@ -64,7 +63,7 @@ func TestFactory_CreateTracesExporter(t *testing.T) {
 		Timeout: 2 * time.Second,
 	}
 
-	params := component.ExporterCreateSettings{Logger: zap.NewNop()}
+	params := componenttest.NewNopExporterCreateSettings()
 	te, err := createTracesExporter(context.Background(), params, config)
 	assert.NoError(t, err)
 	assert.NotNil(t, te)
@@ -79,14 +78,14 @@ func TestFactory_CreateTracesExporterFails(t *testing.T) {
 		{
 			name: "empty_url",
 			config: &Config{
-				ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
+				ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
 			},
 			errorMessage: "\"jaeger_thrift\" config requires a valid \"url\": parse \"\": empty url",
 		},
 		{
 			name: "invalid_url",
 			config: &Config{
-				ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
+				ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
 				URL:              ".localhost:123",
 			},
 			errorMessage: "\"jaeger_thrift\" config requires a valid \"url\": parse \".localhost:123\": invalid URI for request",
@@ -94,7 +93,7 @@ func TestFactory_CreateTracesExporterFails(t *testing.T) {
 		{
 			name: "negative_duration",
 			config: &Config{
-				ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
+				ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
 				URL:              "localhost:123",
 				Timeout:          -2 * time.Second,
 			},
@@ -103,7 +102,7 @@ func TestFactory_CreateTracesExporterFails(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			params := component.ExporterCreateSettings{Logger: zap.NewNop()}
+			params := componenttest.NewNopExporterCreateSettings()
 			te, err := createTracesExporter(context.Background(), params, tt.config)
 			assert.EqualError(t, err, tt.errorMessage)
 			assert.Nil(t, te)
