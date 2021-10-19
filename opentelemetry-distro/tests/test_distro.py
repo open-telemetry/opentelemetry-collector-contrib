@@ -34,5 +34,5 @@ class TestDistribution(TestCase):
         self.assertIsNone(os.environ.get(OTEL_TRACES_EXPORTER))
         distro.configure()
         self.assertEqual(
-            "otlp_proto_grpc_span", os.environ.get(OTEL_TRACES_EXPORTER)
+            "otlp_proto_grpc", os.environ.get(OTEL_TRACES_EXPORTER)
         )

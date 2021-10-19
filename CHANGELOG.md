@@ -6,15 +6,23 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased](https://github.com/open-telemetry/opentelemetry-python/compare/v1.6.1-0.25b1...HEAD)
+
+### Changed
+
 - `opentelemetry-sdk-extension-aws` & `opentelemetry-propagator-aws` Release AWS Python SDK Extension as 2.0.1 and AWS Propagator as 1.0.1
   ([#753](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/753))
+
+### Fixed
+
+- `opentelemetry-distro` uses the correct entrypoint name which was updated in the core release of 1.6.0 but the distro was not updated with it
+  ([#755](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/755))
 
 ## [1.6.1-0.25b1](https://github.com/open-telemetry/opentelemetry-python/releases/tag/v1.6.1-0.25b1) - 2021-10-18
 
 ### Changed
 - `opentelemetry-util-http` no longer contains an instrumentation entrypoint and will not be loaded
-automatically by the auto instrumentor.
-([#745](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/745))
+  automatically by the auto instrumentor.
+  ([#745](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/745))
 - `opentelemetry-instrumentation-pika` Bugfix use properties.headers. It will prevent the header injection from raising.
   ([#740](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/740))
 - `opentelemetry-instrumentation-botocore` Add extension for DynamoDB

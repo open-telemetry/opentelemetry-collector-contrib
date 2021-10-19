@@ -72,12 +72,12 @@ Well known trace exporter names:
     - jaeger_thrift
     - opencensus
     - otlp
-    - otlp_proto_grpc_span
-    - otlp_proto_http_span
+    - otlp_proto_grpc
+    - otlp_proto_http
     - zipkin_json
     - zipkin_proto
 
-``otlp`` is an alias for ``otlp_proto_grpc_span``.
+``otlp`` is an alias for ``otlp_proto_grpc``.
 
 * ``--id-generator`` or ``OTEL_PYTHON_ID_GENERATOR``
 
