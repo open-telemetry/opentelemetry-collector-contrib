@@ -22,6 +22,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"sync"
 	"time"
@@ -205,6 +206,10 @@ func buildClient(config *Config, logger *zap.Logger, buildInfo component.BuildIn
 			Transport: &http.Transport{
 				Proxy:           http.ProxyFromEnvironment,
 				TLSClientConfig: tlsCfg,
+				DialContext: (&net.Dialer{
+					Timeout: config.Timeout,
+				}).DialContext,
+				TLSHandshakeTimeout: config.TLSHandshakeTimeout,
 			},
 		},
 		logger:       logger,

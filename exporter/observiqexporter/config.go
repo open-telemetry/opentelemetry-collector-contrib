@@ -18,6 +18,7 @@ import (
 	"errors"
 	"net/url"
 	"os"
+	"time"
 
 	"github.com/google/uuid"
 	"go.opentelemetry.io/collector/config"
@@ -37,12 +38,18 @@ type Config struct {
 	APIKey string `mapstructure:"api_key"`
 	// Secret key for authenticating with the ingestion endpoint (required if no APIKey)
 	SecretKey string `mapstructure:"secret_key"`
-	// Endpoint URL; Defines the ingestion endpoint (optional)
+	// Endpoint URL; Defines the ingestion endpoint
 	Endpoint string `mapstructure:"endpoint"`
-	// ID that identifies this agent (optional)
+	// ID that identifies this agent
 	AgentID string `mapstructure:"agent_id"`
-	// Name that identifies this agent (optional)
+	// Name that identifies this agent
 	AgentName string `mapstructure:"agent_name"`
+	// DialerTimeout is the amount of time to wait before aborting establishing the tcp connection when making
+	// an http request
+	DialerTimeout time.Duration `mapstructure:"dialer_timeout"`
+	// DialerTimeout is the amount of time to wait before aborting establishing the connection when performing
+	// the tls handshake
+	TLSHandshakeTimeout time.Duration `mapstructure:"tls_handshake_timeout"`
 }
 
 func (c *Config) validateConfig() error {

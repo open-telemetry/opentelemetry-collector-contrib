@@ -128,10 +128,12 @@ func TestLoadConfig(t *testing.T) {
 		APIKey:           "11111111-2222-3333-4444-555555555555",
 		Endpoint:         "https://sometest.endpoint",
 		TimeoutSettings: exporterhelper.TimeoutSettings{
-			Timeout: 10 * time.Second,
+			Timeout: 100 * time.Second,
 		},
-		AgentID:   "08e097a6-8580-43f6-b4f5-9d3b4eb2d962",
-		AgentName: "otel-collector-1",
+		DialerTimeout:       30 * time.Second,
+		TLSHandshakeTimeout: 40 * time.Second,
+		AgentID:             "08e097a6-8580-43f6-b4f5-9d3b4eb2d962",
+		AgentName:           "otel-collector-1",
 		TLSSetting: configtls.TLSClientSetting{
 			TLSSetting: configtls.TLSSetting{
 				CAFile:   "",
