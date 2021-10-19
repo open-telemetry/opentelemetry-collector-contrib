@@ -97,3 +97,6 @@ jobs:
           key: v4-misc-tox-cache-${{ matrix.tox-environment }}-${{ hashFiles('tox.ini', 'dev-requirements.txt', 'gen-requirements.txt', 'docs-requirements.txt') }}
       - name: run tox
         run: tox -e ${{ matrix.tox-environment }}
+      - name: Ensure generated code is up to date
+        if: matrix.tox-environment == 'generate'
+        run: git diff --exit-code || (echo 'Generated code is out of date, please run "tox -e generate" and commit the changes in this PR.' && exit 1)
