@@ -265,6 +265,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/docker v0.37.1 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.37.1 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/kubelet v0.37.1 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.37.1 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk v0.37.1 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/stanza v0.37.1 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchperresourceattr v0.37.1 // indirect
@@ -392,6 +393,8 @@ require (
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/common => ./internal/common
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal => ./internal/coreinternal
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent => ./internal/sharedcomponent
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk => ./internal/splunk
 
