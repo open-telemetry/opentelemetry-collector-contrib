@@ -36,7 +36,7 @@ func ContainerStatsToMetrics(
 	containerStats *dtypes.StatsJSON,
 	container docker.Container,
 	config *Config,
-) (pdata.Metrics, error) {
+) pdata.Metrics {
 	md := pdata.NewMetrics()
 	rs := md.ResourceMetrics().AppendEmpty()
 	rs.SetSchemaUrl(conventions.SchemaURL)
@@ -53,7 +53,7 @@ func ContainerStatsToMetrics(
 	appendMemoryMetrics(ils.Metrics(), &containerStats.MemoryStats, now)
 	appendNetworkMetrics(ils.Metrics(), &containerStats.Networks, now)
 
-	return md, nil
+	return md
 }
 
 func updateConfiguredResourceAttributes(resourceAttr pdata.AttributeMap, container docker.Container, config *Config) {
