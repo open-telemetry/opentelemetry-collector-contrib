@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package awsxrayproxy
+package awsproxy
 
 import (
 	"context"
@@ -28,12 +28,12 @@ import (
 
 const (
 	// The value of extension "type" in configuration.
-	typeStr = "awsxrayproxy"
+	typeStr = "awsproxy"
 
 	defaultEndpoint = "0.0.0.0:2000"
 )
 
-// NewFactory creates a factory for awsxrayproxy extension.
+// NewFactory creates a factory for awsproxy extension.
 func NewFactory() component.ExtensionFactory {
 	return extensionhelper.NewFactory(
 		typeStr,
