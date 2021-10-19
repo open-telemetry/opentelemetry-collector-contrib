@@ -17,75 +17,60 @@ package kubeletstatsreceiver
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/model/pdata"
-	"go.opentelemetry.io/collector/obsreport"
+	"go.opentelemetry.io/collector/receiver/scraperhelper"
 	"go.uber.org/zap"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 
-	// todo replace with scraping lib when it's ready
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/interval"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver/internal/kubelet"
 )
 
-var _ interval.Runnable = (*runnable)(nil)
+type scraperOptions struct {
+	id                    config.ComponentID
+	collectionInterval    time.Duration
+	extraMetadataLabels   []kubelet.MetadataLabel
+	metricGroupsToCollect map[kubelet.MetricGroup]bool
+	k8sAPIClient          kubernetes.Interface
+}
 
-const transport = "http"
-
-type runnable struct {
-	ctx                   context.Context
+type kubletScraper struct {
 	statsProvider         *kubelet.StatsProvider
 	metadataProvider      *kubelet.MetadataProvider
-	consumer              consumer.Metrics
 	logger                *zap.Logger
-	restClient            kubelet.RestClient
 	extraMetadataLabels   []kubelet.MetadataLabel
 	metricGroupsToCollect map[kubelet.MetricGroup]bool
 	k8sAPIClient          kubernetes.Interface
 	cachedVolumeLabels    map[string]map[string]string
-	obsrecv               *obsreport.Receiver
 }
 
-func newRunnable(
-	ctx context.Context,
-	consumer consumer.Metrics,
+func newKubletScraper(
 	restClient kubelet.RestClient,
 	set component.ReceiverCreateSettings,
-	rOptions *receiverOptions,
-) *runnable {
-	return &runnable{
-		ctx:                   ctx,
-		consumer:              consumer,
-		restClient:            restClient,
+	rOptions *scraperOptions,
+) (scraperhelper.Scraper, error) {
+	ks := &kubletScraper{
+		statsProvider:         kubelet.NewStatsProvider(restClient),
+		metadataProvider:      kubelet.NewMetadataProvider(restClient),
 		logger:                set.Logger,
 		extraMetadataLabels:   rOptions.extraMetadataLabels,
 		metricGroupsToCollect: rOptions.metricGroupsToCollect,
 		k8sAPIClient:          rOptions.k8sAPIClient,
 		cachedVolumeLabels:    make(map[string]map[string]string),
-		obsrecv: obsreport.NewReceiver(obsreport.ReceiverSettings{
-			ReceiverID:             rOptions.id,
-			Transport:              transport,
-			ReceiverCreateSettings: set,
-		}),
 	}
+	return scraperhelper.NewScraper(typeStr, ks.scrape)
 }
 
-// Setup the kubelet connection at startup time.
-func (r *runnable) Setup() error {
-	r.statsProvider = kubelet.NewStatsProvider(r.restClient)
-	r.metadataProvider = kubelet.NewMetadataProvider(r.restClient)
-	return nil
-}
-
-func (r *runnable) Run() error {
+func (r *kubletScraper) scrape(context.Context) (pdata.Metrics, error) {
 	summary, err := r.statsProvider.StatsSummary()
 	if err != nil {
 		r.logger.Error("call to /stats/summary endpoint failed", zap.Error(err))
-		return nil
+		return pdata.Metrics{}, err
 	}
 
 	var podsMetadata *v1.PodList
@@ -94,29 +79,20 @@ func (r *runnable) Run() error {
 		podsMetadata, err = r.metadataProvider.Pods()
 		if err != nil {
 			r.logger.Error("call to /pods endpoint failed", zap.Error(err))
-			return nil
+			return pdata.Metrics{}, err
 		}
 	}
 
 	metadata := kubelet.NewMetadata(r.extraMetadataLabels, podsMetadata, r.detailedPVCLabelsSetter())
 	mds := kubelet.MetricsData(r.logger, summary, metadata, typeStr, r.metricGroupsToCollect)
-	metrics := pdata.NewMetrics()
+	md := pdata.NewMetrics()
 	for i := range mds {
-		mds[i].ResourceMetrics().MoveAndAppendTo(metrics.ResourceMetrics())
+		mds[i].ResourceMetrics().MoveAndAppendTo(md.ResourceMetrics())
 	}
-
-	ctx := r.obsrecv.StartMetricsOp(r.ctx)
-	numPoints := metrics.DataPointCount()
-	err = r.consumer.ConsumeMetrics(ctx, metrics)
-	if err != nil {
-		r.logger.Error("ConsumeMetricsData failed", zap.Error(err))
-	}
-	r.obsrecv.EndMetricsOp(ctx, typeStr, numPoints, err)
-
-	return nil
+	return md, nil
 }
 
-func (r *runnable) detailedPVCLabelsSetter() func(volCacheID, volumeClaim, namespace string, labels map[string]string) error {
+func (r *kubletScraper) detailedPVCLabelsSetter() func(volCacheID, volumeClaim, namespace string, labels map[string]string) error {
 	return func(volCacheID, volumeClaim, namespace string, labels map[string]string) error {
 		if r.k8sAPIClient == nil {
 			return nil

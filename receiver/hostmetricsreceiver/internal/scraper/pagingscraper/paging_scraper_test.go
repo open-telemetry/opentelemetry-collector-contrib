@@ -67,15 +67,16 @@ func TestScrape(t *testing.T) {
 			}
 			require.NoError(t, err, "Failed to initialize paging scraper: %v", err)
 
-			metrics, err := scraper.scrape(context.Background())
+			md, err := scraper.scrape(context.Background())
 			require.NoError(t, err)
+			metrics := md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics()
 
 			// expect 3 metrics (windows does not currently support the faults metric)
 			expectedMetrics := 3
 			if runtime.GOOS == "windows" {
 				expectedMetrics = 2
 			}
-			assert.Equal(t, expectedMetrics, metrics.Len())
+			assert.Equal(t, expectedMetrics, md.MetricCount())
 
 			assertPagingUsageMetricValid(t, metrics.At(0))
 			internal.AssertSameTimeStampForMetrics(t, metrics, 0, 1)

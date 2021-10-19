@@ -5,10 +5,9 @@ go 1.17
 require (
 	github.com/go-redis/redis/v7 v7.4.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.37.1
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/interval v0.37.1
 	github.com/stretchr/testify v1.7.0
-	go.opentelemetry.io/collector v0.37.0
-	go.opentelemetry.io/collector/model v0.37.0
+	go.opentelemetry.io/collector v0.37.1-0.20211015233822-bd87fb628058
+	go.opentelemetry.io/collector/model v0.37.1-0.20211015233822-bd87fb628058
 	go.uber.org/zap v1.19.1
 )
 
@@ -55,5 +54,4 @@ require (
 
 replace (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common => ../../internal/common
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/interval => ../../internal/interval
 )

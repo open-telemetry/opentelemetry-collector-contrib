@@ -3,12 +3,11 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubele
 go 1.17
 
 require (
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/interval v0.37.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.37.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/kubelet v0.37.1
 	github.com/stretchr/testify v1.7.0
-	go.opentelemetry.io/collector v0.37.0
-	go.opentelemetry.io/collector/model v0.37.0
+	go.opentelemetry.io/collector v0.37.1-0.20211015233822-bd87fb628058
+	go.opentelemetry.io/collector/model v0.37.1-0.20211015233822-bd87fb628058
 	go.uber.org/zap v1.19.1
 	gopkg.in/yaml.v2 v2.4.0
 	k8s.io/api v0.22.2
@@ -71,7 +70,6 @@ require (
 )
 
 replace (
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/interval => ../../internal/interval
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig => ../../internal/k8sconfig
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/kubelet => ../../internal/kubelet
 )

@@ -29,9 +29,8 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/receiver/scraperhelper"
 	"go.uber.org/zap"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/scraperhelper"
 )
 
 func TestNewReceiver(t *testing.T) {
@@ -46,10 +45,6 @@ func TestNewReceiver(t *testing.T) {
 
 	assert.NotNil(t, mr)
 	assert.Nil(t, err)
-
-	receiver := mr.(*receiver)
-	assert.Equal(t, config, receiver.config)
-	assert.Same(t, nextConsumer, receiver.nextConsumer)
 }
 
 func TestNewReceiverErrors(t *testing.T) {

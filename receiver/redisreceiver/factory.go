@@ -18,10 +18,12 @@ import (
 	"context"
 	"time"
 
+	"github.com/go-redis/redis/v7"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
+	"go.opentelemetry.io/collector/receiver/scraperhelper"
 )
 
 const (
@@ -37,19 +39,28 @@ func NewFactory() component.ReceiverFactory {
 }
 
 func createDefaultConfig() config.Receiver {
+	scs := scraperhelper.DefaultScraperControllerSettings(typeStr)
+	scs.CollectionInterval = 10 * time.Second
 	return &Config{
-		ReceiverSettings:   config.NewReceiverSettings(config.NewComponentID(typeStr)),
-		CollectionInterval: 10 * time.Second,
+		ScraperControllerSettings: scs,
 	}
 }
 
 func createMetricsReceiver(
 	ctx context.Context,
-	params component.ReceiverCreateSettings,
+	set component.ReceiverCreateSettings,
 	cfg config.Receiver,
 	consumer consumer.Metrics,
 ) (component.MetricsReceiver, error) {
 	oCfg := cfg.(*Config)
 
-	return newRedisReceiver(params, oCfg, consumer), nil
+	scrp, err := newRedisScraper(newRedisClient(&redis.Options{
+		Addr:     oCfg.Endpoint,
+		Password: oCfg.Password,
+	}), set)
+	if err != nil {
+		return nil, err
+	}
+
+	return scraperhelper.NewScraperControllerReceiver(&oCfg.ScraperControllerSettings, set, consumer, scraperhelper.AddScraper(scrp))
 }

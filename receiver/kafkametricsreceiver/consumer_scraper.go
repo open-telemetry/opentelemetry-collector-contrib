@@ -22,13 +22,12 @@ import (
 
 	"github.com/Shopify/sarama"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/receiver/scraperhelper"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkametricsreceiver/internal/metadata"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/scraperhelper"
 )
 
 type consumerScraper struct {
@@ -69,10 +68,10 @@ func (s *consumerScraper) shutdown(_ context.Context) error {
 	return nil
 }
 
-func (s *consumerScraper) scrape(context.Context) (pdata.ResourceMetricsSlice, error) {
+func (s *consumerScraper) scrape(context.Context) (pdata.Metrics, error) {
 	cgs, listErr := s.clusterAdmin.ListConsumerGroups()
 	if listErr != nil {
-		return pdata.ResourceMetricsSlice{}, listErr
+		return pdata.Metrics{}, listErr
 	}
 
 	var matchedGrpIds []string
@@ -84,7 +83,7 @@ func (s *consumerScraper) scrape(context.Context) (pdata.ResourceMetricsSlice, e
 
 	allTopics, listErr := s.clusterAdmin.ListTopics()
 	if listErr != nil {
-		return pdata.ResourceMetricsSlice{}, listErr
+		return pdata.Metrics{}, listErr
 	}
 
 	matchedTopics := map[string]sarama.TopicDetail{}
@@ -118,12 +117,12 @@ func (s *consumerScraper) scrape(context.Context) (pdata.ResourceMetricsSlice, e
 	}
 	consumerGroups, listErr := s.clusterAdmin.DescribeConsumerGroups(matchedGrpIds)
 	if listErr != nil {
-		return pdata.ResourceMetricsSlice{}, listErr
+		return pdata.Metrics{}, listErr
 	}
 
 	now := pdata.NewTimestampFromTime(time.Now())
-	rms := pdata.NewResourceMetricsSlice()
-	ilm := rms.AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty()
+	md := pdata.NewMetrics()
+	ilm := md.ResourceMetrics().AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty()
 	ilm.InstrumentationLibrary().SetName(instrumentationLibName)
 	for _, group := range consumerGroups {
 		labels := pdata.NewAttributeMap()
@@ -171,7 +170,7 @@ func (s *consumerScraper) scrape(context.Context) (pdata.ResourceMetricsSlice, e
 		}
 	}
 
-	return rms, scrapeError
+	return md, scrapeError
 }
 
 func createConsumerScraper(_ context.Context, cfg Config, saramaConfig *sarama.Config, logger *zap.Logger) (scraperhelper.Scraper, error) {
@@ -190,10 +189,10 @@ func createConsumerScraper(_ context.Context, cfg Config, saramaConfig *sarama.C
 		config:       cfg,
 		saramaConfig: saramaConfig,
 	}
-	return scraperhelper.NewResourceMetricsScraper(
-		config.NewComponentID(config.Type(s.Name())),
+	return scraperhelper.NewScraper(
+		s.Name(),
 		s.scrape,
 		scraperhelper.WithShutdown(s.shutdown),
 		scraperhelper.WithStart(s.start),
-	), nil
+	)
 }

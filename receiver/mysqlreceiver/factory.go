@@ -57,8 +57,12 @@ func createMetricsReceiver(
 	cfg := rConf.(*Config)
 
 	ns := newMySQLScraper(params.Logger, cfg)
-	scraper := scraperhelper.NewResourceMetricsScraper(cfg.ID(), ns.scrape, scraperhelper.WithStart(ns.start),
+	scraper, err := scraperhelper.NewScraper(typeStr, ns.scrape, scraperhelper.WithStart(ns.start),
 		scraperhelper.WithShutdown(ns.shutdown))
+
+	if err != nil {
+		return nil, err
+	}
 
 	return scraperhelper.NewScraperControllerReceiver(
 		&cfg.ScraperControllerSettings, params, consumer,

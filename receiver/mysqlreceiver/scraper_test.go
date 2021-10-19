@@ -35,11 +35,8 @@ func TestScrape(t *testing.T) {
 	})
 	sc.client = &mysqlMock
 
-	actualMetrics := pdata.NewMetrics()
-	rms := actualMetrics.ResourceMetrics()
-	scrapedRMS, err := sc.scrape(context.Background())
+	actualMetrics, err := sc.scrape(context.Background())
 	require.NoError(t, err)
-	scrapedRMS.CopyTo(rms)
 
 	expectedFileBytes, err := ioutil.ReadFile("./testdata/scraper/expected.json")
 	require.NoError(t, err)

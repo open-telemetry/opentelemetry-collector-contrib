@@ -70,19 +70,18 @@ func addToIntMetric(metric pdata.NumberDataPointSlice, labels pdata.AttributeMap
 	}
 }
 
-func (r *httpdScraper) scrape(context.Context) (pdata.ResourceMetricsSlice, error) {
+func (r *httpdScraper) scrape(context.Context) (pdata.Metrics, error) {
 	if r.httpClient == nil {
-		return pdata.ResourceMetricsSlice{}, errors.New("failed to connect to Apache HTTPd")
+		return pdata.Metrics{}, errors.New("failed to connect to Apache HTTPd")
 	}
 
 	stats, err := r.GetStats()
 	if err != nil {
 		r.logger.Error("failed to fetch HTTPd stats", zap.Error(err))
-		return pdata.ResourceMetricsSlice{}, err
+		return pdata.Metrics{}, err
 	}
-
-	rms := pdata.NewResourceMetricsSlice()
-	ilm := rms.AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty()
+	md := pdata.NewMetrics()
+	ilm := md.ResourceMetrics().AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty()
 	ilm.InstrumentationLibrary().SetName("otel/httpd")
 	now := pdata.NewTimestampFromTime(time.Now())
 
@@ -134,7 +133,7 @@ func (r *httpdScraper) scrape(context.Context) (pdata.ResourceMetricsSlice, erro
 		}
 	}
 
-	return rms, nil
+	return md, nil
 }
 
 // GetStats collects metric stats by making a get request at an endpoint.

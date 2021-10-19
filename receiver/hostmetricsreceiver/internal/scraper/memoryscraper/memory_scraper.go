@@ -40,18 +40,19 @@ func newMemoryScraper(_ context.Context, cfg *Config) *scraper {
 	return &scraper{config: cfg, virtualMemory: mem.VirtualMemory}
 }
 
-func (s *scraper) Scrape(_ context.Context) (pdata.MetricSlice, error) {
-	metrics := pdata.NewMetricSlice()
+func (s *scraper) Scrape(_ context.Context) (pdata.Metrics, error) {
+	md := pdata.NewMetrics()
+	metrics := md.ResourceMetrics().AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty().Metrics()
 
 	now := pdata.NewTimestampFromTime(time.Now())
 	memInfo, err := s.virtualMemory()
 	if err != nil {
-		return metrics, scrapererror.NewPartialScrapeError(err, metricsLen)
+		return md, scrapererror.NewPartialScrapeError(err, metricsLen)
 	}
 
 	metrics.EnsureCapacity(metricsLen)
 	initializeMemoryUsageMetric(metrics.AppendEmpty(), now, memInfo)
-	return metrics, nil
+	return md, nil
 }
 
 func initializeMemoryUsageMetric(metric pdata.Metric, now pdata.Timestamp, memInfo *mem.VirtualMemoryStat) {
