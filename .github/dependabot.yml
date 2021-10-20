@@ -170,7 +170,7 @@ updates:
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
-    directory: "/extension/awsxrayproxy"
+    directory: "/extension/awsproxy"
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"

@@ -41,6 +41,11 @@ const (
 	defaultMetadataRetryBackoff = time.Millisecond * 250
 	// default from sarama.NewConfig()
 	defaultMetadataFull = true
+
+	// default from sarama.NewConfig()
+	defaultAutoCommitEnable = true
+	// default from sarama.NewConfig()
+	defaultAutoCommitInterval = 1 * time.Second
 )
 
 // FactoryOption applies changes to kafkaExporterFactory.
@@ -106,6 +111,14 @@ func createDefaultConfig() config.Receiver {
 				Max:     defaultMetadataRetryMax,
 				Backoff: defaultMetadataRetryBackoff,
 			},
+		},
+		AutoCommit: AutoCommit{
+			Enable:   defaultAutoCommitEnable,
+			Interval: defaultAutoCommitInterval,
+		},
+		MessageMarking: MessageMarking{
+			After:   false,
+			OnError: false,
 		},
 	}
 }

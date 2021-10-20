@@ -79,7 +79,7 @@ func createMetricsReceiver(
 		params.Logger.Warn("splunk_hec receiver path is deprecated", zap.String("path", rCfg.Path))
 	}
 
-	return newMetricsReceiver(params.TelemetrySettings, *rCfg, consumer)
+	return newMetricsReceiver(params, *rCfg, consumer)
 }
 
 // createLogsReceiver creates a logs receiver based on provided config.
@@ -96,5 +96,5 @@ func createLogsReceiver(
 		params.Logger.Warn("splunk_hec receiver path is deprecated", zap.String("path", rCfg.Path))
 	}
 
-	return newLogsReceiver(params.TelemetrySettings, *rCfg, consumer)
+	return newLogsReceiver(params, *rCfg, consumer)
 }

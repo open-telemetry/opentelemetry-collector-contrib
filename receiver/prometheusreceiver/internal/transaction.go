@@ -27,6 +27,7 @@ import (
 	"github.com/prometheus/prometheus/pkg/exemplar"
 	"github.com/prometheus/prometheus/pkg/labels"
 	"github.com/prometheus/prometheus/storage"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/obsreport"
@@ -86,7 +87,7 @@ func newTransaction(
 	ms *metadataService,
 	sink consumer.Metrics,
 	externalLabels labels.Labels,
-	logger *zap.Logger) *transaction {
+	set component.ReceiverCreateSettings) *transaction {
 	return &transaction{
 		id:                   atomic.AddInt64(&idSeq, 1),
 		ctx:                  ctx,
@@ -97,9 +98,13 @@ func newTransaction(
 		startTimeMetricRegex: startTimeMetricRegex,
 		ms:                   ms,
 		externalLabels:       externalLabels,
-		logger:               logger,
-		obsrecv:              obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverID: receiverID, Transport: transport}),
-		startTimeMs:          -1,
+		logger:               set.Logger,
+		obsrecv: obsreport.NewReceiver(obsreport.ReceiverSettings{
+			ReceiverID:             receiverID,
+			Transport:              transport,
+			ReceiverCreateSettings: set,
+		}),
+		startTimeMs: -1,
 	}
 }
 

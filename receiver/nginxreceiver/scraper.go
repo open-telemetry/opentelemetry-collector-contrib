@@ -55,7 +55,7 @@ func (r *nginxScraper) start(_ context.Context, host component.Host) error {
 	return nil
 }
 
-func (r *nginxScraper) scrape(context.Context) (pdata.ResourceMetricsSlice, error) {
+func (r *nginxScraper) scrape(context.Context) (pdata.Metrics, error) {
 	// Init client in scrape method in case there are transient errors in the
 	// constructor.
 	if r.client == nil {
@@ -63,19 +63,19 @@ func (r *nginxScraper) scrape(context.Context) (pdata.ResourceMetricsSlice, erro
 		r.client, err = client.NewNginxClient(r.httpClient, r.cfg.HTTPClientSettings.Endpoint)
 		if err != nil {
 			r.client = nil
-			return pdata.ResourceMetricsSlice{}, err
+			return pdata.Metrics{}, err
 		}
 	}
 
 	stats, err := r.client.GetStubStats()
 	if err != nil {
 		r.logger.Error("Failed to fetch nginx stats", zap.Error(err))
-		return pdata.ResourceMetricsSlice{}, err
+		return pdata.Metrics{}, err
 	}
 
 	now := pdata.NewTimestampFromTime(time.Now())
-	metrics := pdata.NewResourceMetricsSlice()
-	ilm := metrics.AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty()
+	md := pdata.NewMetrics()
+	ilm := md.ResourceMetrics().AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty()
 	ilm.InstrumentationLibrary().SetName("otelcol/nginx")
 
 	addIntSum(ilm.Metrics(), metadata.M.NginxRequests.Init, now, stats.Requests)
@@ -90,7 +90,7 @@ func (r *nginxScraper) scrape(context.Context) (pdata.ResourceMetricsSlice, erro
 	addCurrentConnectionDataPoint(dps, metadata.LabelState.Writing, now, stats.Connections.Writing)
 	addCurrentConnectionDataPoint(dps, metadata.LabelState.Waiting, now, stats.Connections.Waiting)
 
-	return metrics, nil
+	return md, nil
 }
 
 func addIntSum(metrics pdata.MetricSlice, initFunc func(pdata.Metric), now pdata.Timestamp, value int64) {

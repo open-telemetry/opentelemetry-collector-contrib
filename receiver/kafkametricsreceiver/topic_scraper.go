@@ -22,13 +22,12 @@ import (
 
 	"github.com/Shopify/sarama"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
+	"go.opentelemetry.io/collector/receiver/scraperhelper"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkametricsreceiver/internal/metadata"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/scraperhelper"
 )
 
 type topicScraper struct {
@@ -59,18 +58,18 @@ func (s *topicScraper) shutdown(context.Context) error {
 	return nil
 }
 
-func (s *topicScraper) scrape(context.Context) (pdata.ResourceMetricsSlice, error) {
+func (s *topicScraper) scrape(context.Context) (pdata.Metrics, error) {
 	topics, err := s.client.Topics()
 	if err != nil {
 		s.logger.Error("Error fetching cluster topics ", zap.Error(err))
-		return pdata.ResourceMetricsSlice{}, err
+		return pdata.Metrics{}, err
 	}
 
 	var scrapeErrors = scrapererror.ScrapeErrors{}
 
 	now := pdata.NewTimestampFromTime(time.Now())
-	rms := pdata.NewResourceMetricsSlice()
-	ilm := rms.AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty()
+	md := pdata.NewMetrics()
+	ilm := md.ResourceMetrics().AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty()
 	ilm.InstrumentationLibrary().SetName(instrumentationLibName)
 	for _, topic := range topics {
 		if !s.topicFilter.MatchString(topic) {
@@ -112,7 +111,7 @@ func (s *topicScraper) scrape(context.Context) (pdata.ResourceMetricsSlice, erro
 			}
 		}
 	}
-	return rms, scrapeErrors.Combine()
+	return md, scrapeErrors.Combine()
 }
 
 func createTopicsScraper(_ context.Context, cfg Config, saramaConfig *sarama.Config, logger *zap.Logger) (scraperhelper.Scraper, error) {
@@ -126,12 +125,12 @@ func createTopicsScraper(_ context.Context, cfg Config, saramaConfig *sarama.Con
 		saramaConfig: saramaConfig,
 		config:       cfg,
 	}
-	return scraperhelper.NewResourceMetricsScraper(
-		config.NewComponentID(config.Type(s.Name())),
+	return scraperhelper.NewScraper(
+		s.Name(),
 		s.scrape,
 		scraperhelper.WithShutdown(s.shutdown),
 		scraperhelper.WithStart(s.start),
-	), nil
+	)
 }
 
 func addIntGauge(ms pdata.MetricSlice, name string, now pdata.Timestamp, labels pdata.AttributeMap, value int64) {

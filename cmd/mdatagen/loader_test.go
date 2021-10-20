@@ -38,6 +38,7 @@ labels:
 metrics:
   system.cpu.time:
     description: Total CPU seconds broken down by different states.
+    extended_documentation: Additional information on CPU Time can be found [here](https://en.wikipedia.org/wiki/CPU_time).
     unit: s
     data:
       type: sum
@@ -95,8 +96,9 @@ func Test_loadMetadata(t *testing.T) {
 						Value:       "state"}},
 				Metrics: map[metricName]metric{
 					"system.cpu.time": {
-						Description: "Total CPU seconds broken down by different states.",
-						Unit:        "s",
+						Description:           "Total CPU seconds broken down by different states.",
+						ExtendedDocumentation: "Additional information on CPU Time can be found [here](https://en.wikipedia.org/wiki/CPU_time).",
+						Unit:                  "s",
 						Data: &sum{
 							Aggregated: Aggregated{Aggregation: "cumulative"},
 							Mono:       Mono{Monotonic: true},
