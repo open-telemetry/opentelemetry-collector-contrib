@@ -123,22 +123,15 @@ func (cfr *cloudFoundryReceiver) streamMetrics(
 	host component.Host) {
 
 	for {
-		contextErr := ctx.Err()
-
-		if contextErr != nil {
-			cfr.logger.Debug("cloudfoundry metrics streamer stopped gracefully")
-			return
-		}
-
 		// Blocks until non-empty result or context is cancelled (returns nil in that case)
 		envelopes := stream()
 		if envelopes == nil {
 			// If context has not been cancelled, then nil means the shutdown was due to an error within stream
-			if ctx.Err() != nil {
-				host.ReportFatalError(errors.New("RLP gateway streamer shut down"))
+			if ctx.Err() == nil {
+				host.ReportFatalError(errors.New("RLP gateway streamer shut down due to an error"))
 			}
 
-			return
+			break
 		}
 
 		metrics := pdata.NewMetrics()
@@ -158,6 +151,8 @@ func (cfr *cloudFoundryReceiver) streamMetrics(
 			cfr.obsrecv.EndMetricsOp(obsCtx, dataFormat, metrics.DataPointCount(), err)
 		}
 	}
+
+	cfr.logger.Debug("cloudfoundry metrics streamer stopped")
 }
 
 func createLibraryMetricsSlice(metrics pdata.Metrics) pdata.MetricSlice {
