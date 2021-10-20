@@ -33,6 +33,7 @@ var (
 	errUnsetAPIKey = errors.New("api.key is not set")
 	errNoMetadata  = errors.New("only_metadata can't be enabled when send_metadata or use_resource_metadata is disabled")
 	errBuckets     = errors.New("can't use 'metrics::report_buckets' and 'metrics::histograms::mode' at the same time")
+	errNoHostname  = errors.New("can't set hostname when disable_hostname is enabled")
 )
 
 // TODO: Import these from translator when we eliminate cyclic dependency.
@@ -301,6 +302,10 @@ func (c *Config) Sanitize(logger *zap.Logger) error {
 }
 
 func (c *Config) Validate() error {
+	if c.DisableHostname && c.Hostname != "" {
+		return errNoHostname
+	}
+
 	if c.Traces.IgnoreResources != nil {
 		for _, entry := range c.Traces.IgnoreResources {
 			_, err := regexp.Compile(entry)

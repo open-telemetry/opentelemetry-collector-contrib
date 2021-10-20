@@ -171,7 +171,7 @@ func createTracesExporter(
 
 	cfg := c.(*ddconfig.Config)
 
-	set.Logger.Info("sanitizing Datadog metrics exporter configuration")
+	set.Logger.Info("sanitizing Datadog traces exporter configuration")
 	if err := cfg.Sanitize(set.Logger); err != nil {
 		return nil, err
 	}

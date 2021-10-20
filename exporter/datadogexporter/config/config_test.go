@@ -150,6 +150,16 @@ func TestCensorAPIKey(t *testing.T) {
 	)
 }
 
+func TestDisableHostnameValidation(t *testing.T) {
+	validCfg := Config{DisableHostname: true, TagsConfig: TagsConfig{Hostname: ""}}
+	invalidCfg := Config{DisableHostname: true, TagsConfig: TagsConfig{Hostname: "test"}}
+
+	noErr := validCfg.Validate()
+	err := invalidCfg.Validate()
+	require.NoError(t, noErr)
+	require.ErrorIs(t, err, errNoHostname)
+}
+
 func TestIgnoreResourcesValidation(t *testing.T) {
 	validCfg := Config{Traces: TracesConfig{IgnoreResources: []string{"[123]"}}}
 	invalidCfg := Config{Traces: TracesConfig{IgnoreResources: []string{"[123"}}}
