@@ -21,10 +21,13 @@ import (
 
 	"github.com/pkg/errors"
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 >>>>>>> 8bdb6c4d9 (poll should return an error, not log)
+=======
+>>>>>>> d09dc6781 (changes to work with scraperhelper)
 	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 	"go.uber.org/zap"
