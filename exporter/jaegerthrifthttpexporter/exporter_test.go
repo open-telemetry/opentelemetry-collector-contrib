@@ -30,10 +30,10 @@ const testHTTPAddress = "http://a.test.dom:123/at/some/path"
 
 func TestNew(t *testing.T) {
 	config := Config{
-		ExporterSettings:      config.NewExporterSettings(config.NewComponentID(typeStr)),
-		URL: testHTTPAddress,
-		Headers:     map[string]string{"test": "test"},
-		Timeout:     10 * time.Nanosecond,
+		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
+		URL:              testHTTPAddress,
+		Headers:          map[string]string{"test": "test"},
+		Timeout:          10 * time.Nanosecond,
 	}
 
 	got, err := newTracesExporter(&config, componenttest.NewNopExporterCreateSettings())

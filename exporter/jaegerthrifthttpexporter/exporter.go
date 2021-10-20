@@ -23,13 +23,13 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/jaegertracing/jaeger/model"
-	"github.com/jaegertracing/jaeger/thrift-gen/jaeger"
-	jaegerThriftConverter "github.com/jaegertracing/jaeger/model/converter/thrift/jaeger"
 	"github.com/apache/thrift/lib/go/thrift"
+	"github.com/jaegertracing/jaeger/model"
+	jaegerThriftConverter "github.com/jaegertracing/jaeger/model/converter/thrift/jaeger"
+	"github.com/jaegertracing/jaeger/thrift-gen/jaeger"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/model/pdata"
 
 	jaegertranslator "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger"
@@ -79,10 +79,10 @@ func (s *jaegerThriftHTTPSender) pushTraceData(
 	ctx context.Context,
 	td pdata.Traces,
 ) error {
-    batches, err := jaegertranslator.InternalTracesToJaegerProto(td)
-    if err != nil {
-        return consumererror.NewPermanent(fmt.Errorf("failed to push trace data via Jaeger Thrift HTTP exporter: %w", err))
-    }
+	batches, err := jaegertranslator.InternalTracesToJaegerProto(td)
+	if err != nil {
+		return consumererror.NewPermanent(fmt.Errorf("failed to push trace data via Jaeger Thrift HTTP exporter: %w", err))
+	}
 
 	for i := 0; i < len(batches); i++ {
 		body, err := serializeThrift(ctx, batches[i])
@@ -126,10 +126,10 @@ func serializeThrift(ctx context.Context, batch *model.Batch) (*bytes.Buffer, er
 	thriftSpans := jaegerThriftConverter.FromDomain(batch.GetSpans())
 	thriftProcess := jaeger.Process{
 		ServiceName: batch.GetProcess().GetServiceName(),
-		Tags: convertTagsToThrift(batch.GetProcess().GetTags()),
+		Tags:        convertTagsToThrift(batch.GetProcess().GetTags()),
 	}
 	thriftBatch := jaeger.Batch{
-		Spans: thriftSpans,
+		Spans:   thriftSpans,
 		Process: &thriftProcess,
 	}
 	t := thrift.NewTMemoryBuffer()
@@ -140,7 +140,7 @@ func serializeThrift(ctx context.Context, batch *model.Batch) (*bytes.Buffer, er
 	return t.Buffer, nil
 }
 
-func convertTagsToThrift(tags []model.KeyValue) ([]*jaeger.Tag) {
+func convertTagsToThrift(tags []model.KeyValue) []*jaeger.Tag {
 	thriftTags := make([]*jaeger.Tag, 0, len(tags))
 
 	for i := 0; i < len(tags); i++ {
