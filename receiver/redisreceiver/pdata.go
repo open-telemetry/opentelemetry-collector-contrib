@@ -29,7 +29,7 @@ func buildKeyspaceTriplet(k *keyspace, t *timeBundle) pdata.MetricSlice {
 
 func initKeyspaceKeysMetric(k *keyspace, t *timeBundle, dest pdata.Metric) {
 	m := &redisMetric{
-		name:   "redis.db.keys",
+		name:   "db.redis.keys",
 		labels: map[string]pdata.AttributeValue{"db": pdata.NewAttributeValueString(k.db)},
 		pdType: pdata.MetricDataTypeGauge,
 	}
@@ -38,7 +38,7 @@ func initKeyspaceKeysMetric(k *keyspace, t *timeBundle, dest pdata.Metric) {
 
 func initKeyspaceExpiresMetric(k *keyspace, t *timeBundle, dest pdata.Metric) {
 	m := &redisMetric{
-		name:   "redis.db.expires",
+		name:   "db.redis.expires",
 		labels: map[string]pdata.AttributeValue{"db": pdata.NewAttributeValueString(k.db)},
 		pdType: pdata.MetricDataTypeGauge,
 	}
@@ -47,7 +47,7 @@ func initKeyspaceExpiresMetric(k *keyspace, t *timeBundle, dest pdata.Metric) {
 
 func initKeyspaceTTLMetric(k *keyspace, t *timeBundle, dest pdata.Metric) {
 	m := &redisMetric{
-		name:   "redis.db.avg_ttl",
+		name:   "db.redis.avg_ttl",
 		units:  "ms",
 		labels: map[string]pdata.AttributeValue{"db": pdata.NewAttributeValueString(k.db)},
 		pdType: pdata.MetricDataTypeGauge,

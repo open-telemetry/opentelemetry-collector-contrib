@@ -104,7 +104,7 @@ func TestKeyspaceMetrics(t *testing.T) {
 	assert.Equal(t, 6, ms.Len())
 
 	const lblKey = "db"
-	const name1 = "redis.db.keys"
+	const name1 = "db.redis.keys"
 
 	lblVal := pdata.NewAttributeValueString("0")
 
@@ -118,7 +118,7 @@ func TestKeyspaceMetrics(t *testing.T) {
 	assert.Equal(t, pdata.MetricDataTypeGauge, pdm.DataType())
 	assert.Equal(t, int64(1), pt.IntVal())
 
-	const name2 = "redis.db.expires"
+	const name2 = "db.redis.expires"
 
 	pdm = ms.At(1)
 	assert.Equal(t, name2, pdm.Name())
@@ -130,7 +130,7 @@ func TestKeyspaceMetrics(t *testing.T) {
 	assert.Equal(t, pdata.MetricDataTypeGauge, pdm.DataType())
 	assert.Equal(t, int64(2), pt.IntVal())
 
-	const name3 = "redis.db.avg_ttl"
+	const name3 = "db.redis.avg_ttl"
 
 	pdm = ms.At(2)
 	assert.Equal(t, name3, pdm.Name())
