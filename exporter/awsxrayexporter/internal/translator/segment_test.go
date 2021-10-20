@@ -42,7 +42,38 @@ var (
 	testWriters = newWriterPool(2048)
 )
 
-func TestClientSpanWithAwsSdkClient(t *testing.T) {
+func TestClientSpanWithRpcAwsSdkClientAttributes(t *testing.T) {
+	spanName := "AmazonDynamoDB.getItem"
+	parentSpanID := newSegmentID()
+	user := "testingT"
+	attributes := make(map[string]interface{})
+	attributes[conventions.AttributeHTTPMethod] = "POST"
+	attributes[conventions.AttributeHTTPScheme] = "https"
+	attributes[conventions.AttributeHTTPHost] = "dynamodb.us-east-1.amazonaws.com"
+	attributes[conventions.AttributeHTTPTarget] = "/"
+	attributes[conventions.AttributeRPCService] = "DynamoDB"
+	attributes[conventions.AttributeRPCMethod] = "GetItem"
+	attributes[conventions.AttributeRPCSystem] = "aws-api"
+	attributes[awsxray.AWSRequestIDAttribute] = "18BO1FEPJSSAOGNJEDPTPCMIU7VV4KQNSO5AEMVJF66Q9ASUAAJG"
+	attributes[awsxray.AWSTableNameAttribute] = "otel-dev-Testing"
+	resource := constructDefaultResource()
+	span := constructClientSpan(parentSpanID, spanName, 0, "OK", attributes)
+
+	segment, _ := MakeSegment(span, resource, nil, false)
+	assert.Equal(t, "DynamoDB", *segment.Name)
+	assert.Equal(t, conventions.AttributeCloudProviderAWS, *segment.Namespace)
+	assert.Equal(t, "subsegment", *segment.Type)
+
+	jsonStr, err := MakeSegmentDocumentString(span, resource, nil, false)
+
+	assert.NotNil(t, jsonStr)
+	assert.Nil(t, err)
+	assert.True(t, strings.Contains(jsonStr, "DynamoDB"))
+	assert.False(t, strings.Contains(jsonStr, user))
+	assert.False(t, strings.Contains(jsonStr, "user"))
+}
+
+func TestClientSpanWithLegacyAwsSdkClientAttributes(t *testing.T) {
 	spanName := "AmazonDynamoDB.getItem"
 	parentSpanID := newSegmentID()
 	user := "testingT"
@@ -60,7 +91,7 @@ func TestClientSpanWithAwsSdkClient(t *testing.T) {
 
 	segment, _ := MakeSegment(span, resource, nil, false)
 	assert.Equal(t, "DynamoDB", *segment.Name)
-	assert.Equal(t, "aws", *segment.Namespace)
+	assert.Equal(t, conventions.AttributeCloudProviderAWS, *segment.Namespace)
 	assert.Equal(t, "subsegment", *segment.Type)
 
 	jsonStr, err := MakeSegmentDocumentString(span, resource, nil, false)
