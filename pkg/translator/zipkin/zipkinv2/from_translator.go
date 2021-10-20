@@ -159,7 +159,7 @@ func spanToZipkinSpan(
 	removeRedundentTags(redundantKeys, tags)
 
 	status := span.Status()
-	tags[conventions.OtelStatusCode] = strings.TrimPrefix(status.Code().String(), "STATUS_CODE_")
+	tags[conventions.OtelStatusCode] = strings.TrimPrefix(status.Code().String(), string(tracetranslator.OpenTracingSpanKindStatusCodePrefix))
 	if status.Message() != "" {
 		tags[conventions.OtelStatusDescription] = status.Message()
 		if int32(status.Code()) > 0 {

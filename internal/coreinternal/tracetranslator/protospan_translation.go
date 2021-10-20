@@ -43,12 +43,13 @@ const (
 type OpenTracingSpanKind string
 
 const (
-	OpenTracingSpanKindUnspecified OpenTracingSpanKind = ""
-	OpenTracingSpanKindClient      OpenTracingSpanKind = "client"
-	OpenTracingSpanKindServer      OpenTracingSpanKind = "server"
-	OpenTracingSpanKindConsumer    OpenTracingSpanKind = "consumer"
-	OpenTracingSpanKindProducer    OpenTracingSpanKind = "producer"
-	OpenTracingSpanKindInternal    OpenTracingSpanKind = "internal"
+	OpenTracingSpanKindUnspecified      OpenTracingSpanKind = ""
+	OpenTracingSpanKindClient           OpenTracingSpanKind = "client"
+	OpenTracingSpanKindServer           OpenTracingSpanKind = "server"
+	OpenTracingSpanKindConsumer         OpenTracingSpanKind = "consumer"
+	OpenTracingSpanKindProducer         OpenTracingSpanKind = "producer"
+	OpenTracingSpanKindInternal         OpenTracingSpanKind = "internal"
+	OpenTracingSpanKindStatusCodePrefix OpenTracingSpanKind = "STATUS_CODE_"
 )
 
 // StatusCodeFromHTTP takes an HTTP status code and return the appropriate OpenTelemetry status code
