@@ -18,7 +18,6 @@ import (
 	"context"
 	"time"
 
-	"github.com/go-redis/redis/v7"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
@@ -54,10 +53,7 @@ func createMetricsReceiver(
 ) (component.MetricsReceiver, error) {
 	oCfg := cfg.(*Config)
 
-	scrp, err := newRedisScraper(newRedisClient(&redis.Options{
-		Addr:     oCfg.Endpoint,
-		Password: oCfg.Password,
-	}), set)
+	scrp, err := newRedisScraper(*oCfg, set, nil)
 	if err != nil {
 		return nil, err
 	}

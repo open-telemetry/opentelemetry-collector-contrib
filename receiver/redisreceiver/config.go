@@ -15,6 +15,7 @@
 package redisreceiver
 
 import (
+	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 )
 
@@ -29,4 +30,8 @@ type Config struct {
 	// Optional password. Must match the password specified in the
 	// requirepass server configuration option.
 	Password string `mapstructure:"password"`
+
+	Network string `mapstructure:"network"`
+
+	TLS configtls.TLSClientSetting `mapstructure:"tls,omitempty"`
 }

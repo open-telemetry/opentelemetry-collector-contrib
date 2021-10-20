@@ -21,6 +21,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config/configtls"
 	"go.uber.org/zap"
 )
 
@@ -28,7 +29,7 @@ func TestRedisRunnable(t *testing.T) {
 	logger, _ := zap.NewDevelopment()
 	settings := componenttest.NewNopReceiverCreateSettings()
 	settings.Logger = logger
-	runner, err := newRedisScraper(newFakeClient(), settings)
+	runner, err := newRedisScraper(Config{}, settings, newFakeClient())
 	require.NoError(t, err)
 	md, err := runner.Scrape(context.Background())
 	require.NoError(t, err)
@@ -38,5 +39,17 @@ func TestRedisRunnable(t *testing.T) {
 	ilm := rm.InstrumentationLibraryMetrics().At(0)
 	il := ilm.InstrumentationLibrary()
 	assert.Equal(t, "otelcol/redis", il.Name())
+}
 
+func TestNewReceiver_invalid_auth_error(t *testing.T) {
+	c := createDefaultConfig().(*Config)
+	c.TLS = configtls.TLSClientSetting{
+		TLSSetting: configtls.TLSSetting{
+			CAFile: "/invalid",
+		},
+	}
+	r, err := createMetricsReceiver(context.Background(), componenttest.NewNopReceiverCreateSettings(), c, nil)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "failed to load TLS config")
+	assert.Nil(t, r)
 }
