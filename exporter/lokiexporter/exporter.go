@@ -40,7 +40,7 @@ type lokiExporter struct {
 	logger  *zap.Logger
 	client  *http.Client
 	wg      sync.WaitGroup
-	convert func(pdata.LogRecord) (*logproto.Entry, error)
+	convert func(pdata.LogRecord, pdata.Resource) (*logproto.Entry, error)
 }
 
 func newExporter(config *Config, logger *zap.Logger) *lokiExporter {
@@ -144,7 +144,7 @@ func (l *lokiExporter) logDataToLoki(ld pdata.Logs) (pr *logproto.PushRequest, n
 				labels := mergedLabels.String()
 				var entry *logproto.Entry
 				var err error
-				entry, err = l.convert(log)
+				entry, err = l.convert(log, resource)
 				if err != nil {
 					// Couldn't convert to JSON so dropping log.
 					numDroppedLogs++
@@ -210,15 +210,15 @@ func (l *lokiExporter) convertAttributesToLabels(attributes pdata.AttributeMap, 
 	return ls
 }
 
-func convertLogToLokiEntry(lr pdata.LogRecord) (*logproto.Entry, error) {
+func convertLogToLokiEntry(lr pdata.LogRecord, res pdata.Resource) (*logproto.Entry, error) {
 	return &logproto.Entry{
 		Timestamp: time.Unix(0, int64(lr.Timestamp())),
 		Line:      lr.Body().StringVal(),
 	}, nil
 }
 
-func convertLogToJSONEntry(lr pdata.LogRecord) (*logproto.Entry, error) {
-	line, err := encodeJSON(lr)
+func convertLogToJSONEntry(lr pdata.LogRecord, res pdata.Resource) (*logproto.Entry, error) {
+	line, err := encodeJSON(lr, res)
 	if err != nil {
 		return nil, err
 	}

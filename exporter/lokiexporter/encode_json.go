@@ -15,9 +15,10 @@ type lokiEntry struct {
 	SpanID     string                 `json:"spanid,omitempty"`
 	Severity   string                 `json:"severity,omitempty"`
 	Attributes map[string]interface{} `json:"attributes,omitempty"`
+	Resources  map[string]interface{} `json:"resources,omitempty"`
 }
 
-func encodeJSON(lr pdata.LogRecord) (string, error) {
+func encodeJSON(lr pdata.LogRecord, res pdata.Resource) (string, error) {
 	var logRecord lokiEntry
 	var jsonRecord []byte
 
@@ -27,7 +28,9 @@ func encodeJSON(lr pdata.LogRecord) (string, error) {
 		TraceID:    lr.TraceID().HexString(),
 		SpanID:     lr.SpanID().HexString(),
 		Severity:   lr.SeverityText(),
-		Attributes: lr.Attributes().AsRaw()}
+		Attributes: lr.Attributes().AsRaw(),
+		Resources:  res.Attributes().AsRaw(),
+	}
 
 	jsonRecord, err := json.Marshal(logRecord)
 	if err != nil {

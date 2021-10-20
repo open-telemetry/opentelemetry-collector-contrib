@@ -7,7 +7,7 @@ import (
 	"go.opentelemetry.io/collector/model/pdata"
 )
 
-func exampleLog() pdata.LogRecord {
+func exampleLog() (pdata.LogRecord, pdata.Resource) {
 
 	buffer := pdata.NewLogRecord()
 	buffer.Body().SetStringVal("Example log")
@@ -18,11 +18,14 @@ func exampleLog() pdata.LogRecord {
 	buffer.SetTraceID(pdata.NewTraceID([16]byte{1, 2, 3, 4}))
 	buffer.SetSpanID(pdata.NewSpanID([8]byte{5, 6, 7, 8}))
 
-	return buffer
+	resource := pdata.NewResource()
+	resource.Attributes().Insert("host.name", pdata.NewAttributeValueString("something"))
+
+	return buffer, resource
 }
 
 func exampleJSON() string {
-	jsonExample := `{"name":"name","body":"Example log","traceid":"01020304000000000000000000000000","spanid":"0506070800000000","severity":"error","attributes":{"attr1":"1","attr2":"2"}}`
+	jsonExample := `{"name":"name","body":"Example log","traceid":"01020304000000000000000000000000","spanid":"0506070800000000","severity":"error","attributes":{"attr1":"1","attr2":"2"},"resources":{"host.name":"something"}}`
 	return jsonExample
 }
 

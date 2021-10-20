@@ -105,9 +105,9 @@ func TestJsonLoadConfig(t *testing.T) {
 
 	assert.Equal(t, 3, len(cfg.Exporters))
 
-	actualCfg := cfg.Exporters[config.NewIDWithName(typeStr, "json")].(*Config)
+	actualCfg := cfg.Exporters[config.NewComponentIDWithName(typeStr, "json")].(*Config)
 	expectedCfg := Config{
-		ExporterSettings: config.NewExporterSettings(config.NewIDWithName(typeStr, "json")),
+		ExporterSettings: config.NewExporterSettings(config.NewComponentIDWithName(typeStr, "json")),
 		HTTPClientSettings: confighttp.HTTPClientSettings{
 			Headers:  map[string]string{},
 			Endpoint: "https://loki:3100/loki/api/v1/push",

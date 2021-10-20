@@ -477,8 +477,10 @@ func TestExporter_convertLogToLokiEntry(t *testing.T) {
 	lr := pdata.NewLogRecord()
 	lr.Body().SetStringVal("log message")
 	lr.SetTimestamp(ts)
+	res := pdata.NewResource()
+	res.Attributes().Insert("host.name", pdata.NewAttributeValueString("something"))
 
-	entry, _ := convertLogToLokiEntry(lr)
+	entry, _ := convertLogToLokiEntry(lr, res)
 
 	expEntry := &logproto.Entry{
 		Timestamp: time.Unix(0, int64(lr.Timestamp())),
@@ -582,11 +584,13 @@ func TestExporter_convertLogtoJSONEntry(t *testing.T) {
 	lr := pdata.NewLogRecord()
 	lr.Body().SetStringVal("log message")
 	lr.SetTimestamp(ts)
+	res := pdata.NewResource()
+	res.Attributes().Insert("host.name", pdata.NewAttributeValueString("something"))
 
-	entry, err := convertLogToJSONEntry(lr)
+	entry, err := convertLogToJSONEntry(lr, res)
 	expEntry := &logproto.Entry{
 		Timestamp: time.Unix(0, int64(lr.Timestamp())),
-		Line:      `{"body":"log message"}`,
+		Line:      `{"body":"log message","resources":{"host.name":"something"}}`,
 	}
 	require.Nil(t, err)
 	require.NotNil(t, entry)
