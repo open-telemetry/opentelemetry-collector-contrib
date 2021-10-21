@@ -16,11 +16,15 @@ package fluentforwardreceiver
 
 import (
 	"context"
+	"sync"
 
+	"go.opencensus.io/stats/view"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/fluentforwardreceiver/observ"
 )
 
 const (
@@ -28,8 +32,16 @@ const (
 	typeStr = "fluentforward"
 )
 
+var (
+	once sync.Once
+)
+
 // NewFactory return a new component.ReceiverFactory for fluentd forwarder.
 func NewFactory() component.ReceiverFactory {
+	once.Do(func() {
+		view.Register(observ.MetricViews()...)
+	})
+
 	return receiverhelper.NewFactory(
 		typeStr,
 		createDefaultConfig,
