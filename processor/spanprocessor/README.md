@@ -2,14 +2,15 @@
 
 Supported pipeline types: traces
 
-The span processor modifies the span name based on its attributes or extract span attributes from the span name. Please refer to
-[config.go](./config.go) for the config spec.
+The span processor modifies the span name based on its attributes or extract span attributes from the span name. It also allows
+to change span status. Please refer to [config.go](./config.go) for the config spec.
 
 It optionally supports the ability to [include/exclude spans](../README.md#includeexclude-spans).
 
 The following actions are supported:
 
 - `name`: Modify the name of attributes within a span
+- `status`: Modify the status of the span
 
 ### Name a span
 
@@ -95,6 +96,19 @@ span/to_attributes:
       rules:
         - ^\/api\/v1\/document\/(?P<documentId>.*)\/update$
 ```
+
+### Set status for span
+
+Example:
+
+```yaml
+# Set status allows to set specific status for a given span.
+span/set_status:
+  status:
+    code: 2
+    description: "some error description"
+```
+
 
 Refer to [config.yaml](./testdata/config.yaml) for detailed
 examples on using the processor.

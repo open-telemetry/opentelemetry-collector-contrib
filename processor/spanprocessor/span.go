@@ -97,6 +97,7 @@ func (sp *spanProcessor) processTraces(_ context.Context, td pdata.Traces) (pdat
 				}
 				sp.processFromAttributes(s)
 				sp.processToAttributes(s)
+				sp.processUpdateStatus(s)
 			}
 		}
 	}
@@ -218,5 +219,12 @@ func (sp *spanProcessor) processToAttributes(span pdata.Span) {
 			// Stop processing, break after first match is requested.
 			break
 		}
+	}
+}
+
+func (sp *spanProcessor) processUpdateStatus(span pdata.Span) {
+	if sp.config.SetStatus != nil {
+		span.Status().SetCode(pdata.StatusCode(sp.config.SetStatus.Code))
+		span.Status().SetMessage(sp.config.SetStatus.Description)
 	}
 }

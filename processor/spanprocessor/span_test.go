@@ -593,3 +593,12 @@ func TestSpanProcessor_skipSpan(t *testing.T) {
 		runIndividualTestCase(t, tc, tp)
 	}
 }
+
+func TestSpanProcessor_setStatusCode(t *testing.T) {
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig()
+	oCfg := cfg.(*Config)
+	oCfg.SetStatus.Code = 2
+	oCfg.SetStatus.Description = "someStatus"
+	// TODO: Work in progress
+}

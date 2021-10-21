@@ -84,6 +84,12 @@ processors:
         rules:
           - "(?P<operation_website>.*?)$"
 
+  # This example changes status of a span to error and sets description
+  span/setstatus:
+    status:
+      code: 2
+      description: "some error description"
+
 exporters:
   nop:
 

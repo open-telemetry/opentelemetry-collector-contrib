@@ -35,7 +35,7 @@ var processorCapabilities = consumer.Capabilities{MutatesData: true}
 // is not specified.
 // TODO https://github.com/open-telemetry/opentelemetry-collector/issues/215
 //	Move this to the error package that allows for span name and field to be specified.
-var errMissingRequiredField = errors.New("error creating \"span\" processor: either \"from_attributes\" or \"to_attributes\" must be specified in \"name:\"")
+var errMissingRequiredField = errors.New("error creating \"span\" processor: either \"from_attributes\" or \"to_attributes\" must be specified in \"name:\" or \"setStatus\" must be specified")
 
 // NewFactory returns a new factory for the Span processor.
 func NewFactory() component.ProcessorFactory {
@@ -62,7 +62,8 @@ func createTracesProcessor(
 	// processor to be valid. If not set and not enforced, the processor would do no work.
 	oCfg := cfg.(*Config)
 	if len(oCfg.Rename.FromAttributes) == 0 &&
-		(oCfg.Rename.ToAttributes == nil || len(oCfg.Rename.ToAttributes.Rules) == 0) {
+		(oCfg.Rename.ToAttributes == nil || len(oCfg.Rename.ToAttributes.Rules) == 0) &&
+		oCfg.SetStatus == nil {
 		return nil, errMissingRequiredField
 	}
 
