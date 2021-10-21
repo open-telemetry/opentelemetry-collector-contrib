@@ -34,7 +34,7 @@ import (
 	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace/ext"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/config"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/attributes"
+	"github.com/DataDog/datadog-agent/pkg/otlp/model/attributes"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/utils"
 )
 

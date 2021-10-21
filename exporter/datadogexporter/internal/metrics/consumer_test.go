@@ -24,8 +24,8 @@ import (
 	"go.opentelemetry.io/collector/model/pdata"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/attributes"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/translator"
+	"github.com/DataDog/datadog-agent/pkg/otlp/model/attributes"
+	"github.com/DataDog/datadog-agent/pkg/otlp/model/translator"
 )
 
 type testProvider string

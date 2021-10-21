@@ -4,7 +4,8 @@ go 1.17
 
 require (
 	github.com/DataDog/agent-payload v4.86.0+incompatible
-	github.com/DataDog/datadog-agent/pkg/quantile v0.31.1
+	github.com/DataDog/datadog-agent/pkg/otlp/model v0.0.0-20211015112737-f68e21f93dc2
+	github.com/DataDog/datadog-agent/pkg/quantile v0.32.0-rc.6
 	github.com/DataDog/datadog-agent/pkg/trace/exportable v0.0.0-20201016145401-4646cf596b02
 	github.com/Microsoft/go-winio v0.5.0 // indirect
 	github.com/aws/aws-sdk-go v1.41.5

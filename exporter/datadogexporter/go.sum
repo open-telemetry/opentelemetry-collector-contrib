@@ -43,8 +43,10 @@ github.com/BurntSushi/xgb v0.0.0-20160522181843-27f122750802/go.mod h1:IVnqGOEym
 github.com/DATA-DOG/go-sqlmock v1.3.3/go.mod h1:f/Ixk793poVmq4qj/V1dPUg2JEAKC73Q5eFN3EC/SaM=
 github.com/DataDog/agent-payload v4.86.0+incompatible h1:nFk+HCOFyoluOpNIlnMN3ypyxeom5tz5uxCjqxHuDYo=
 github.com/DataDog/agent-payload v4.86.0+incompatible/go.mod h1:/2RW4IC/2z54jtB6RLgq5UtVI1TsX0joDRjKbkLT+mk=
-github.com/DataDog/datadog-agent/pkg/quantile v0.31.1 h1:GZVFUINaZhitq3CORgHmoES8B0YNDlmgcxvmXCK4WvM=
-github.com/DataDog/datadog-agent/pkg/quantile v0.31.1/go.mod h1:VAKllu7WNy8pirV8XIXUAeU57s0uRIn/5GPrPh+Y9BI=
+github.com/DataDog/datadog-agent/pkg/otlp/model v0.0.0-20211015112737-f68e21f93dc2 h1:0cKiIFHKIRDbQcjL9wyN8A7/1y4bPMqUmMND+Unj7hA=
+github.com/DataDog/datadog-agent/pkg/otlp/model v0.0.0-20211015112737-f68e21f93dc2/go.mod h1:KwyFzpLbHo6gx+O4a2K3VBKKo8U5l7rur9DlJDqt5Ho=
+github.com/DataDog/datadog-agent/pkg/quantile v0.32.0-rc.6 h1:e8zdWHIGIh/q2nE11ZKa1BP5cZsasg9ZqEZSvonum00=
+github.com/DataDog/datadog-agent/pkg/quantile v0.32.0-rc.6/go.mod h1:AJEOJwqKBG7f1e3/jtxjb1tUdW4RG30PhllTgKg1fDc=
 github.com/DataDog/datadog-agent/pkg/trace/exportable v0.0.0-20201016145401-4646cf596b02 h1:N2BRKjJ/c+ipDwt5b+ijqEc2EsmK3zXq2lNeIPnSwMI=
 github.com/DataDog/datadog-agent/pkg/trace/exportable v0.0.0-20201016145401-4646cf596b02/go.mod h1:EalMiS87Guu6PkLdxz7gmWqi+dRs9sjYLTOyTrM/aVU=
 github.com/DataDog/datadog-agent/pkg/util/log v0.0.0-20201009091607-ce4e57cdf8f4/go.mod h1:cRy7lwapA3jcjnX74kU6NFkXaRGQyB0l/QZA0IwYGEQ=
