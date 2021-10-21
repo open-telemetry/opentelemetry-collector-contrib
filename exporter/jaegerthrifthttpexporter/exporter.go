@@ -61,7 +61,7 @@ type jaegerThriftHTTPSender struct {
 func (s *jaegerThriftHTTPSender) start(_ context.Context, host component.Host) (err error) {
 	s.client, err = s.config.HTTPClientSettings.ToClient(host.GetExtensions())
 
-	return err
+	return consumererror.NewPermanent(err)
 }
 
 func (s *jaegerThriftHTTPSender) pushTraceData(
@@ -76,19 +76,19 @@ func (s *jaegerThriftHTTPSender) pushTraceData(
 	for i := 0; i < len(batches); i++ {
 		body, err := serializeThrift(ctx, batches[i])
 		if err != nil {
-			return err
+			return consumererror.NewPermanent(err)
 		}
 
 		req, err := http.NewRequest("POST", s.config.HTTPClientSettings.Endpoint, body)
 		if err != nil {
-			return err
+			return consumererror.NewPermanent(err)
 		}
 
 		req.Header.Set("Content-Type", "application/x-thrift")
 
 		resp, err := s.client.Do(req)
 		if err != nil {
-			return err
+			return consumererror.NewPermanent(err)
 		}
 
 		io.Copy(ioutil.Discard, resp.Body)
@@ -99,7 +99,7 @@ func (s *jaegerThriftHTTPSender) pushTraceData(
 				"HTTP %d %q",
 				resp.StatusCode,
 				http.StatusText(resp.StatusCode))
-			return err
+			return consumererror.NewPermanent(err)
 		}
 	}
 
