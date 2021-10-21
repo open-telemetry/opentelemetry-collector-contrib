@@ -51,7 +51,7 @@ type cloudFoundryReceiver struct {
 
 // newCloudFoundryReceiver creates the Cloud Foundry receiver with the given parameters.
 func newCloudFoundryReceiver(
-	logger *zap.Logger,
+	settings component.ReceiverCreateSettings,
 	config Config,
 	nextConsumer consumer.Metrics) (component.MetricsReceiver, error) {
 
@@ -60,10 +60,14 @@ func newCloudFoundryReceiver(
 	}
 
 	return &cloudFoundryReceiver{
-		logger:            logger,
+		logger:            settings.Logger,
 		config:            config,
 		nextConsumer:      nextConsumer,
-		obsrecv:           obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverID: config.ID(), Transport: transport}),
+		obsrecv:           obsreport.NewReceiver(obsreport.ReceiverSettings{
+			ReceiverID: config.ID(),
+			Transport: transport,
+			ReceiverCreateSettings: settings,
+		}),
 		receiverStartTime: time.Now(),
 	}, nil
 }

@@ -75,5 +75,5 @@ func createMetricsReceiver(
 	nextConsumer consumer.Metrics,
 ) (component.MetricsReceiver, error) {
 	c := cfg.(*Config)
-	return newCloudFoundryReceiver(params.Logger, *c, nextConsumer)
+	return newCloudFoundryReceiver(params, *c, nextConsumer)
 }
