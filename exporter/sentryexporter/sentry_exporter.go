@@ -19,7 +19,6 @@ import (
 	"crypto/rand"
 	"crypto/tls"
 	"encoding/hex"
-	"errors"
 	"fmt"
 	"log"
 	"net/http"
@@ -143,33 +142,34 @@ func convertEventsToSentryExceptions(eventList *[]*sentry.Event, events pdata.Sp
 		if event.Name() != "exception" {
 			continue
 		}
-		var exceptionMessage, exceptionType string
-		event.Attributes().Range(func(k string, v pdata.AttributeValue) bool {
-			switch k {
-			case conventions.AttributeExceptionMessage:
-				exceptionMessage = v.StringVal()
-			case conventions.AttributeExceptionType:
-				exceptionType = v.StringVal()
-			}
-			return true
-		})
-		if exceptionMessage == "" && exceptionType == "" {
-			// `At least one of the following sets of attributes is required:
-			// - exception.type
-			// - exception.message`
+		sentryEvent := sentryEventFromException(event.Attributes(), sentrySpan)
+		if sentryEvent == nil {
 			continue
 		}
-		sentryEvent, _ := sentryEventFromError(exceptionMessage, exceptionType, sentrySpan)
 		*eventList = append(*eventList, sentryEvent)
 	}
 }
 
-// sentryEventFromError creates a sentry event from error event in a span
-func sentryEventFromError(errorMessage, errorType string, span *sentry.Span) (*sentry.Event, error) {
-	if errorMessage == "" && errorType == "" {
-		err := errors.New("error type and error message were both empty")
-		return nil, err
+// sentryEventFromException converts exception attributes of an error event in
+// a given span to a sentry exception event.
+func sentryEventFromException(attrs pdata.AttributeMap, span *sentry.Span) *sentry.Event {
+	var exceptionMessage, exceptionType string
+	attrs.Range(func(k string, v pdata.AttributeValue) bool {
+		switch k {
+		case conventions.AttributeExceptionMessage:
+			exceptionMessage = v.StringVal()
+		case conventions.AttributeExceptionType:
+			exceptionType = v.StringVal()
+		}
+		return true
+	})
+	if exceptionMessage == "" && exceptionType == "" {
+		// `At least one of the following sets of attributes is required:
+		// - exception.type
+		// - exception.message`
+		return nil
 	}
+
 	event := sentry.NewEvent()
 	event.EventID = generateEventID()
 
@@ -182,13 +182,14 @@ func sentryEventFromError(errorMessage, errorType string, span *sentry.Span) (*s
 		Status:       span.Status,
 	}
 
-	event.Type = errorType
-	event.Message = errorMessage
+	event.Type = exceptionType
+	event.Message = exceptionMessage
 	event.Level = "error"
 	event.Exception = []sentry.Exception{{
-		Value: errorMessage,
-		Type:  errorType,
+		Value: exceptionMessage,
+		Type:  exceptionType,
 	}}
+	event.Extra = attrs.AsRaw()
 
 	event.Sdk.Name = otelSentryExporterName
 	event.Sdk.Version = otelSentryExporterVersion
@@ -198,7 +199,7 @@ func sentryEventFromError(errorMessage, errorType string, span *sentry.Span) (*s
 	event.Timestamp = span.EndTime
 	event.Transaction = span.Description
 
-	return event, nil
+	return event
 }
 
 // classifyAsOrphanSpans iterates through a list of possible orphan spans and tries to associate them

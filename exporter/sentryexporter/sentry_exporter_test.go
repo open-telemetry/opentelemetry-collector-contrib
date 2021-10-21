@@ -17,7 +17,6 @@ package sentryexporter
 import (
 	"context"
 	"encoding/hex"
-	"errors"
 	"testing"
 
 	"github.com/getsentry/sentry-go"
@@ -173,11 +172,9 @@ func generateOrphanSpansFromSpans(spans ...*sentry.Span) []*sentry.Span {
 
 type SpanEventToSentryEventCases struct {
 	testName            string
-	errorMessage        string
-	errorType           string
+	attrs               pdata.AttributeMap
 	sampleSentrySpan    *sentry.Span
 	expectedSentryEvent *sentry.Event
-	expectedError       error
 }
 
 func TestSpanEventToSentryEvent(t *testing.T) {
@@ -225,11 +222,18 @@ func TestSpanEventToSentryEvent(t *testing.T) {
 	}
 	errorType := "mySampleType"
 	errorMessage := "Kernel Panic"
+	errorStacktrace := `Exception in thread "main" java.lang.RuntimeException: Test exception
+ at com.example.GenerateTrace.methodB(GenerateTrace.java:13)
+ at com.example.GenerateTrace.methodA(GenerateTrace.java:9)
+ at com.example.GenerateTrace.main(GenerateTrace.java:5)`
+
 	testCases := []SpanEventToSentryEventCases{
 		{
-			testName:         "Exception Event with both exception type and message",
-			errorMessage:     errorMessage,
-			errorType:        errorType,
+			testName: "Exception Event with both exception type and message",
+			attrs: pdata.NewAttributeMapFromMap(map[string]pdata.AttributeValue{
+				conventions.AttributeExceptionType:    pdata.NewAttributeValueString(errorType),
+				conventions.AttributeExceptionMessage: pdata.NewAttributeValueString(errorMessage),
+			}),
 			sampleSentrySpan: sampleSentrySpanForEvent,
 			expectedSentryEvent: func() *sentry.Event {
 				expectedSentryEventWithTypeAndMessage := sentryEventBase
@@ -239,14 +243,18 @@ func TestSpanEventToSentryEvent(t *testing.T) {
 					Value: errorMessage,
 					Type:  errorType,
 				}}
+				expectedSentryEventWithTypeAndMessage.Extra = pdata.NewAttributeMapFromMap(map[string]pdata.AttributeValue{
+					conventions.AttributeExceptionType:    pdata.NewAttributeValueString(errorType),
+					conventions.AttributeExceptionMessage: pdata.NewAttributeValueString(errorMessage),
+				}).AsRaw()
 				return &expectedSentryEventWithTypeAndMessage
 			}(),
-			expectedError: nil,
 		},
 		{
-			testName:         "Exception Event with only exception type",
-			errorMessage:     "",
-			errorType:        errorType,
+			testName: "Exception Event with only exception type",
+			attrs: pdata.NewAttributeMapFromMap(map[string]pdata.AttributeValue{
+				conventions.AttributeExceptionType: pdata.NewAttributeValueString(errorType),
+			}),
 			sampleSentrySpan: sampleSentrySpanForEvent,
 			expectedSentryEvent: func() *sentry.Event {
 				expectedSentryEventWithType := sentryEventBase
@@ -255,28 +263,48 @@ func TestSpanEventToSentryEvent(t *testing.T) {
 					Value: "",
 					Type:  errorType,
 				}}
+				expectedSentryEventWithType.Extra = pdata.NewAttributeMapFromMap(map[string]pdata.AttributeValue{
+					conventions.AttributeExceptionType: pdata.NewAttributeValueString(errorType),
+				}).AsRaw()
 				return &expectedSentryEventWithType
 			}(),
-			expectedError: nil,
+		},
+		{
+			testName: "Exception Event with exception message and stacktrace",
+			attrs: pdata.NewAttributeMapFromMap(map[string]pdata.AttributeValue{
+				conventions.AttributeExceptionMessage:    pdata.NewAttributeValueString(errorMessage),
+				conventions.AttributeExceptionStacktrace: pdata.NewAttributeValueString(errorStacktrace),
+			}),
+			sampleSentrySpan: sampleSentrySpanForEvent,
+			expectedSentryEvent: func() *sentry.Event {
+				expectedSentryEventWithMessageAndStacktrace := sentryEventBase
+				expectedSentryEventWithMessageAndStacktrace.Message = errorMessage
+				expectedSentryEventWithMessageAndStacktrace.Exception = []sentry.Exception{{
+					Value: errorMessage,
+					Type:  "",
+				}}
+				expectedSentryEventWithMessageAndStacktrace.Extra = pdata.NewAttributeMapFromMap(map[string]pdata.AttributeValue{
+					conventions.AttributeExceptionMessage:    pdata.NewAttributeValueString(errorMessage),
+					conventions.AttributeExceptionStacktrace: pdata.NewAttributeValueString(errorStacktrace),
+				}).AsRaw()
+				return &expectedSentryEventWithMessageAndStacktrace
+			}(),
 		},
 		{
 			testName:            "Exception Event with neither exception type nor exception message",
-			errorMessage:        "",
-			errorType:           "",
+			attrs:               pdata.NewAttributeMap(),
 			sampleSentrySpan:    sampleSentrySpanForEvent,
 			expectedSentryEvent: nil,
-			expectedError:       errors.New("error type and error message were both empty"),
 		},
 	}
 
 	for _, test := range testCases {
 		test := test
 		t.Run(test.testName, func(t *testing.T) {
-			sentryEvent, err := sentryEventFromError(test.errorMessage, test.errorType, test.sampleSentrySpan)
+			sentryEvent := sentryEventFromException(test.attrs, test.sampleSentrySpan)
 			if sentryEvent != nil {
 				sentryEvent.EventID = test.expectedSentryEvent.EventID
 			}
-			assert.Equal(t, test.expectedError, err)
 			assert.Equal(t, test.expectedSentryEvent, sentryEvent)
 		})
 	}
