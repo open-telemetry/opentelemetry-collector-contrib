@@ -5,9 +5,10 @@ Supported pipeline types: metrics
 ## Description
 
 The metrics transform processor can be used to rename metrics, and add, rename
-or delete label keys and values. It can also be used to perform aggregations on
-metrics across labels or label values. The complete list of supported operations
-that can be applied to one or more metrics is provided in the below table.
+or delete label keys and values. It can also be used to perform scaling and
+aggregations on metrics across labels or label values. The complete list of
+supported operations that can be applied to one or more metrics is provided in
+the below table.
 
 :information_source: This processor only supports renames/aggregations **within
 a batch of metrics**. It does not do any aggregation across batches, so it is
@@ -22,6 +23,7 @@ or clients).
 | Rename label values           | For label `state`, rename value `idle` to `-`                                                   |
 | Delete data points            | Delete all points where label `state` has value `idle`                                          |
 | Toggle data type              | Change from `int` data points to `double` data points                                           |
+| Scale value                   | Multiply values by 1000 to convert from seconds to milliseconds                                 |
 | Aggregate across label sets   | Retain only the label `state`, average all points with the same value for this label            |
 | Aggregate across label values | For label `state`, sum points where the value is `user` or `system` into `used = user + system` |
 
@@ -78,7 +80,7 @@ transforms:
     # operations contain a list of operations that will be performed on the resulting metric(s)
     operations:
         # action defines the type of operation that will be performed, see examples below for more details
-      - action: {add_label, update_label, delete_label_value, toggle_scalar_data_type, aggregate_labels, aggregate_label_values}
+      - action: {add_label, update_label, delete_label_value, toggle_scalar_data_type, experimental_scale_value, aggregate_labels, aggregate_label_values}
         # label specifies the label to operate on
         label: <label>
         # new_label specifies the updated name of the label; if action is add_label, new_label is required
@@ -93,6 +95,8 @@ transforms:
         label_set: [labels...]
         # aggregation_type defines how data points will be aggregated; if action is aggregate_labels or aggregate_label_values, aggregation_type is required
         aggregation_type: {sum, mean, min, max}
+        # experimental_scale specifies the scalar to apply to values
+        experimental_scale: <scalar>
         # value_actions contain a list of operations that will be performed on the selected label
         value_actions:
             # value specifies the value to operate on
@@ -147,11 +151,13 @@ new_name: system.cpu.usage_time
 
 ### Rename multiple metrics using Substitution
 ```yaml
-# rename all system.cpu metrics to system.processor.*
-include: ^system\.cpu\.(.*)$
+# rename all system.cpu metrics to system.processor.*.stat
+# instead of regular $ use double dollar $$. Because $ is treated as a special character.
+# wrap the group name/number with braces
+include: ^system\.cpu\.(.*)$$
 match_type: regexp
 action: update
-new_name: system.processor.$1
+new_name: system.processor.$${1}.stat
 ```
 
 ### Add a label
@@ -214,9 +220,9 @@ operations:
         new_value: sunreclaimable
 ```
 
-### Delete label value
+### Delete by label value
 ```yaml
-# delete the label value 'idle' of the label 'state'
+# deletes all data points with the label value 'idle' of the label 'state'
 include: system.cpu.usage
 action: update
 operation:
@@ -232,6 +238,16 @@ include: system.cpu.usage
 action: update
 operation:
   - action: toggle_scalar_data_type
+```
+
+### Scale value
+```yaml
+# experimental_scale CPU usage from seconds to milliseconds
+include: system.cpu.usage
+action: update
+operation:
+  - action: experimental_scale_value
+    experimental_scale: 1000
 ```
 
 ### Aggregate labels
@@ -280,13 +296,15 @@ operations:
 # 
 # ex: Consider pod and container metrics collected from Kubernetes. Both the metrics are recorded under under one ResourceMetric
 # applying this transformation will result in two separate ResourceMetric packets with corresponding resource labels in the resource headers
+#
+# instead of regular $ use double dollar $$. Because $ is treated as a special character.
 
 
-- include: ^k8s\.pod\.(.*)$
+- include: ^k8s\.pod\.(.*)$$
   match_type: regexp
   action: group
   group_resource_labels: {"resouce.type": "k8s.pod", "source": "kubelet"}
-- include: ^container\.(.*)$
+- include: ^container\.(.*)$$
   match_type: regexp
   action: group
   group_resource_labels: {"resouce.type": "container", "source": "kubelet"}

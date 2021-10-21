@@ -19,8 +19,8 @@ import (
 	"os"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/translator/conventions"
+	"go.opentelemetry.io/collector/model/pdata"
+	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
 )
@@ -39,22 +39,22 @@ var _ internal.Detector = (*Detector)(nil)
 type Detector struct{}
 
 // NewDetector returns a resource detector that will detect AWS EKS resources.
-func NewDetector(_ component.ProcessorCreateParams, _ internal.DetectorConfig) (internal.Detector, error) {
+func NewDetector(_ component.ProcessorCreateSettings, _ internal.DetectorConfig) (internal.Detector, error) {
 	return &Detector{}, nil
 }
 
 // Detect returns a Resource describing the Amazon EKS environment being run in.
-func (detector *Detector) Detect(ctx context.Context) (pdata.Resource, error) {
+func (detector *Detector) Detect(ctx context.Context) (resource pdata.Resource, schemaURL string, err error) {
 	res := pdata.NewResource()
 
 	// Check if running on k8s.
 	if os.Getenv(kubernetesServiceHostEnvVar) == "" {
-		return res, nil
+		return res, "", nil
 	}
 
 	attr := res.Attributes()
 	attr.InsertString(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAWS)
 	attr.InsertString(conventions.AttributeCloudPlatform, conventions.AttributeCloudPlatformAWSEKS)
 
-	return res, nil
+	return res, conventions.SchemaURL, nil
 }

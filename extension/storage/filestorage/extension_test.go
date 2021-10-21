@@ -23,10 +23,9 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
-	"go.uber.org/zap/zaptest"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage"
+	"go.opentelemetry.io/collector/extension/experimental/storage"
 )
 
 func TestExtensionIntegrity(t *testing.T) {
@@ -52,7 +51,7 @@ func TestExtensionIntegrity(t *testing.T) {
 	// Make a client for each component
 	clients := make(map[config.ComponentID]storage.Client)
 	for _, c := range components {
-		client, err := se.GetClient(ctx, c.kind, c.name)
+		client, err := se.GetClient(ctx, c.kind, c.name, "")
 		require.NoError(t, err)
 		clients[c.name] = client
 	}
@@ -102,40 +101,6 @@ func TestExtensionIntegrity(t *testing.T) {
 	wg.Wait()
 }
 
-func TestShutdownClosesClients(t *testing.T) {
-	ctx := context.Background()
-	se := newTestExtension(t)
-
-	myReceiverClient, err := se.GetClient(
-		ctx,
-		component.KindReceiver,
-		newTestEntity("my_receiver"),
-	)
-	require.NoError(t, err)
-	err = myReceiverClient.Set(ctx, "key", []byte("value"))
-	require.NoError(t, err)
-
-	myExporterClient, err := se.GetClient(
-		ctx,
-		component.KindReceiver,
-		newTestEntity("my_exporter"),
-	)
-	require.NoError(t, err)
-	err = myExporterClient.Set(ctx, "key", []byte("value"))
-	require.NoError(t, err)
-
-	// Shutdown should close clients
-	require.NoError(t, se.Shutdown(ctx))
-
-	err = myReceiverClient.Set(ctx, "key", []byte("value"))
-	require.Error(t, err)
-	require.Equal(t, err.Error(), "database not open")
-
-	err = myExporterClient.Set(ctx, "key", []byte("value"))
-	require.Error(t, err)
-	require.Equal(t, err.Error(), "database not open")
-}
-
 func TestClientHandlesSimpleCases(t *testing.T) {
 	ctx := context.Background()
 	se := newTestExtension(t)
@@ -144,6 +109,7 @@ func TestClientHandlesSimpleCases(t *testing.T) {
 		ctx,
 		component.KindReceiver,
 		newTestEntity("my_component"),
+		"",
 	)
 
 	myBytes := []byte("value")
@@ -182,11 +148,49 @@ func TestNewExtensionErrorsOnMissingDirectory(t *testing.T) {
 	cfg := f.CreateDefaultConfig().(*Config)
 	cfg.Directory = "/not/a/dir"
 
-	params := component.ExtensionCreateParams{Logger: zaptest.NewLogger(t)}
-
-	extension, err := f.CreateExtension(context.Background(), params, cfg)
+	extension, err := f.CreateExtension(context.Background(), componenttest.NewNopExtensionCreateSettings(), cfg)
 	require.Error(t, err)
 	require.Nil(t, extension)
+}
+
+func TestTwoClientsWithDifferentNames(t *testing.T) {
+	ctx := context.Background()
+	se := newTestExtension(t)
+
+	client1, err := se.GetClient(
+		ctx,
+		component.KindReceiver,
+		newTestEntity("my_component"),
+		"foo",
+	)
+	require.NoError(t, err)
+
+	client2, err := se.GetClient(
+		ctx,
+		component.KindReceiver,
+		newTestEntity("my_component"),
+		"bar",
+	)
+	require.NoError(t, err)
+
+	myBytes1 := []byte("value1")
+	myBytes2 := []byte("value2")
+
+	// Set the data
+	err = client1.Set(ctx, "key", myBytes1)
+	require.NoError(t, err)
+
+	err = client2.Set(ctx, "key", myBytes2)
+	require.NoError(t, err)
+
+	// Check it was associated accordingly
+	data, err := client1.Get(ctx, "key")
+	require.NoError(t, err)
+	require.Equal(t, myBytes1, data)
+
+	data, err = client2.Get(ctx, "key")
+	require.NoError(t, err)
+	require.Equal(t, myBytes2, data)
 }
 
 func TestGetClientErrorsOnDeletedDirectory(t *testing.T) {
@@ -199,9 +203,7 @@ func TestGetClientErrorsOnDeletedDirectory(t *testing.T) {
 	cfg := f.CreateDefaultConfig().(*Config)
 	cfg.Directory = tempDir
 
-	params := component.ExtensionCreateParams{Logger: zaptest.NewLogger(t)}
-
-	extension, err := f.CreateExtension(context.Background(), params, cfg)
+	extension, err := f.CreateExtension(context.Background(), componenttest.NewNopExtensionCreateSettings(), cfg)
 	require.NoError(t, err)
 
 	se, ok := extension.(storage.Extension)
@@ -215,6 +217,7 @@ func TestGetClientErrorsOnDeletedDirectory(t *testing.T) {
 		ctx,
 		component.KindReceiver,
 		newTestEntity("my_component"),
+		"",
 	)
 
 	require.Error(t, err)
@@ -229,9 +232,7 @@ func newTestExtension(t *testing.T) storage.Extension {
 	cfg := f.CreateDefaultConfig().(*Config)
 	cfg.Directory = tempDir
 
-	params := component.ExtensionCreateParams{Logger: zaptest.NewLogger(t)}
-
-	extension, err := f.CreateExtension(context.Background(), params, cfg)
+	extension, err := f.CreateExtension(context.Background(), componenttest.NewNopExtensionCreateSettings(), cfg)
 	require.NoError(t, err)
 
 	se, ok := extension.(storage.Extension)
@@ -241,5 +242,5 @@ func newTestExtension(t *testing.T) storage.Extension {
 }
 
 func newTestEntity(name string) config.ComponentID {
-	return config.NewIDWithName("nop", name)
+	return config.NewComponentIDWithName("nop", name)
 }

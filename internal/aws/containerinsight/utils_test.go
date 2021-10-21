@@ -21,7 +21,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/model/pdata"
 	"go.uber.org/zap"
 )
 
@@ -115,6 +115,12 @@ func convertToInt64(value interface{}) int64 {
 		return int64(t)
 	case int64:
 		return t
+	case uint:
+		return int64(t)
+	case uint32:
+		return int64(t)
+	case uint64:
+		return int64(t)
 	default:
 		valueType := fmt.Sprintf("%T", value)
 		log.Printf("Detected unexpected type: %v", valueType)
@@ -124,12 +130,6 @@ func convertToInt64(value interface{}) int64 {
 
 func convertToFloat64(value interface{}) float64 {
 	switch t := value.(type) {
-	case uint:
-		return float64(t)
-	case uint32:
-		return float64(t)
-	case uint64:
-		return float64(t)
 	case float32:
 		return float64(t)
 	case float64:
@@ -175,17 +175,16 @@ func checkMetricsAreExpected(t *testing.T, md pdata.Metrics, fields map[string]i
 			assert.Equal(t, expectedUnits[metricName], m.Unit(), "Wrong unit for metric: "+metricName)
 			switch m.DataType() {
 			//we only need to worry about gauge types for container insights metrics
-			case pdata.MetricDataTypeIntGauge:
-				dps := m.IntGauge().DataPoints()
+			case pdata.MetricDataTypeGauge:
+				dps := m.Gauge().DataPoints()
 				assert.Equal(t, 1, dps.Len())
 				dp := dps.At(0)
-				assert.Equal(t, convertToInt64(fields[metricName]), dp.Value())
-				assert.Equal(t, pdata.Timestamp(timeUnixNano), dp.Timestamp())
-			case pdata.MetricDataTypeDoubleGauge:
-				dps := m.DoubleGauge().DataPoints()
-				assert.Equal(t, 1, dps.Len())
-				dp := dps.At(0)
-				assert.Equal(t, convertToFloat64(fields[metricName]), dp.Value())
+				switch dp.Type() {
+				case pdata.MetricValueTypeDouble:
+					assert.Equal(t, convertToFloat64(fields[metricName]), dp.DoubleVal())
+				case pdata.MetricValueTypeInt:
+					assert.Equal(t, convertToInt64(fields[metricName]), dp.IntVal())
+				}
 				assert.Equal(t, pdata.Timestamp(timeUnixNano), dp.Timestamp())
 			}
 		}
@@ -292,10 +291,10 @@ func TestConvertToOTLPMetricsForContainerMetrics(t *testing.T) {
 	fields = map[string]interface{}{
 		"container_cpu_limit":                      int64(200),
 		"container_cpu_request":                    int64(200),
-		"container_cpu_usage_system":               float64(2.7662289817161336),
-		"container_cpu_usage_total":                float64(9.140206205783091),
-		"container_cpu_usage_user":                 float64(2.9638167661244292),
-		"container_cpu_utilization":                float64(0.22850515514457728),
+		"container_cpu_usage_system":               2.7662289817161336,
+		"container_cpu_usage_total":                9.140206205783091,
+		"container_cpu_usage_user":                 2.9638167661244292,
+		"container_cpu_utilization":                0.22850515514457728,
 		"container_memory_cache":                   int64(3244032),
 		"container_memory_failcnt":                 int64(0),
 		"container_memory_hierarchical_pgfault":    float64(0),
@@ -309,7 +308,7 @@ func TestConvertToOTLPMetricsForContainerMetrics(t *testing.T) {
 		"container_memory_rss":                     int64(38686720),
 		"container_memory_swap":                    int64(0),
 		"container_memory_usage":                   int64(44257280),
-		"container_memory_utilization":             float64(0.16909561488772057),
+		"container_memory_utilization":             0.16909561488772057,
 		"container_memory_working_set":             int64(28438528),
 	}
 	expectedUnits = map[string]string{
@@ -356,7 +355,7 @@ func TestConvertToOTLPMetricsForContainerMetrics(t *testing.T) {
 		"container_filesystem_available":   int64(0),
 		"container_filesystem_capacity":    int64(21462233088),
 		"container_filesystem_usage":       int64(36864),
-		"container_filesystem_utilization": float64(0.00017176218266221077),
+		"container_filesystem_utilization": 0.00017176218266221077,
 	}
 	expectedUnits = map[string]string{
 		"container_filesystem_available":   UnitBytes,
@@ -395,11 +394,11 @@ func TestConvertToOTLPMetricsForNodeMetrics(t *testing.T) {
 	fields = map[string]interface{}{
 		"node_cpu_limit":                      int64(4000),
 		"node_cpu_request":                    int64(610),
-		"node_cpu_reserved_capacity":          float64(15.25),
-		"node_cpu_usage_system":               float64(31.93421003691368),
-		"node_cpu_usage_total":                float64(120.37540542432477),
-		"node_cpu_usage_user":                 float64(57.347822212886875),
-		"node_cpu_utilization":                float64(3.0093851356081194),
+		"node_cpu_reserved_capacity":          15.25,
+		"node_cpu_usage_system":               31.93421003691368,
+		"node_cpu_usage_total":                120.37540542432477,
+		"node_cpu_usage_user":                 57.347822212886875,
+		"node_cpu_utilization":                3.0093851356081194,
 		"node_memory_cache":                   int64(3810631680),
 		"node_memory_failcnt":                 int64(0),
 		"node_memory_hierarchical_pgfault":    float64(0),
@@ -410,21 +409,21 @@ func TestConvertToOTLPMetricsForNodeMetrics(t *testing.T) {
 		"node_memory_pgfault":                 float64(0),
 		"node_memory_pgmajfault":              float64(0),
 		"node_memory_request":                 int64(492830720),
-		"node_memory_reserved_capacity":       float64(2.9303736689169724),
+		"node_memory_reserved_capacity":       2.9303736689169724,
 		"node_memory_rss":                     int64(410030080),
 		"node_memory_swap":                    uint32(0),
 		"node_memory_usage":                   int64(4220661760),
-		"node_memory_utilization":             float64(7.724233133242133),
+		"node_memory_utilization":             7.724233133242133,
 		"node_memory_working_set":             int64(1299062784),
-		"node_network_rx_bytes":               float64(13032.150482284136),
+		"node_network_rx_bytes":               13032.150482284136,
 		"node_network_rx_dropped":             float64(0),
 		"node_network_rx_errors":              float32(0),
-		"node_network_rx_packets":             float64(39.27406250089541),
-		"node_network_total_bytes":            float64(27124.366262458552),
-		"node_network_tx_bytes":               float64(14092.215780174418),
+		"node_network_rx_packets":             39.27406250089541,
+		"node_network_total_bytes":            27124.366262458552,
+		"node_network_tx_bytes":               14092.215780174418,
 		"node_network_tx_dropped":             uint64(0),
 		"node_network_tx_errors":              float64(0),
-		"node_network_tx_packets":             float64(37.802748111760124),
+		"node_network_tx_packets":             37.802748111760124,
 		"node_number_of_running_containers":   int32(7),
 		"node_number_of_running_pods":         int64(7),
 	}
@@ -488,16 +487,16 @@ func TestConvertToOTLPMetricsForNodeDiskIOMetrics(t *testing.T) {
 
 	//test container metrics
 	fields = map[string]interface{}{
-		"node_diskio_io_service_bytes_async": float64(6704.018980016907),
+		"node_diskio_io_service_bytes_async": 6704.018980016907,
 		"node_diskio_io_service_bytes_read":  float64(0),
-		"node_diskio_io_service_bytes_sync":  float64(284.2693560431197),
-		"node_diskio_io_service_bytes_total": float64(6988.288336060026),
-		"node_diskio_io_service_bytes_write": float64(6988.288336060026),
-		"node_diskio_io_serviced_async":      float64(1.326343566607438),
+		"node_diskio_io_service_bytes_sync":  284.2693560431197,
+		"node_diskio_io_service_bytes_total": 6988.288336060026,
+		"node_diskio_io_service_bytes_write": 6988.288336060026,
+		"node_diskio_io_serviced_async":      1.326343566607438,
 		"node_diskio_io_serviced_read":       float64(0),
-		"node_diskio_io_serviced_sync":       float64(0.04626779883514318),
-		"node_diskio_io_serviced_total":      float64(1.372611365442581),
-		"node_diskio_io_serviced_write":      float64(1.372611365442581),
+		"node_diskio_io_serviced_sync":       0.04626779883514318,
+		"node_diskio_io_serviced_total":      1.372611365442581,
+		"node_diskio_io_serviced_write":      1.372611365442581,
 	}
 	expectedUnits = map[string]string{
 		"node_diskio_io_service_bytes_async": UnitBytesPerSec,
@@ -542,7 +541,7 @@ func TestConvertToOTLPMetricsForNodeFSMetrics(t *testing.T) {
 		"node_filesystem_inodes":      int64(8450312),
 		"node_filesystem_inodes_free": int64(8345085),
 		"node_filesystem_usage":       int64(17190625280),
-		"node_filesystem_utilization": float64(80.09709525339025),
+		"node_filesystem_utilization": 80.09709525339025,
 	}
 	expectedUnits = map[string]string{
 		"node_filesystem_available":   UnitBytes,
@@ -579,15 +578,15 @@ func TestConvertToOTLPMetricsForNodeNetMetrics(t *testing.T) {
 
 	//test container metrics
 	fields = map[string]interface{}{
-		"node_interface_network_rx_bytes":    float64(294.8620421098953),
+		"node_interface_network_rx_bytes":    294.8620421098953,
 		"node_interface_network_rx_dropped":  float64(0),
 		"node_interface_network_rx_errors":   float64(0),
-		"node_interface_network_rx_packets":  float64(2.69744105680903),
-		"node_interface_network_total_bytes": float64(1169.5469730310588),
-		"node_interface_network_tx_bytes":    float64(874.6849309211634),
+		"node_interface_network_rx_packets":  2.69744105680903,
+		"node_interface_network_total_bytes": 1169.5469730310588,
+		"node_interface_network_tx_bytes":    874.6849309211634,
 		"node_interface_network_tx_dropped":  float64(0),
 		"node_interface_network_tx_errors":   float64(0),
-		"node_interface_network_tx_packets":  float64(2.713308357143201),
+		"node_interface_network_tx_packets":  2.713308357143201,
 	}
 	expectedUnits = map[string]string{
 		"node_interface_network_rx_bytes":    UnitBytesPerSec,
@@ -627,11 +626,11 @@ func TestConvertToOTLPMetricsForPodMetrics(t *testing.T) {
 		"pod_cpu_limit":                         int64(200),
 		"pod_cpu_request":                       int64(200),
 		"pod_cpu_reserved_capacity":             float64(5),
-		"pod_cpu_usage_system":                  float64(1.2750419580493375),
-		"pod_cpu_usage_total":                   float64(5.487638329191601),
-		"pod_cpu_usage_user":                    float64(1.8214885114990538),
-		"pod_cpu_utilization":                   float64(0.13719095822979002),
-		"pod_cpu_utilization_over_pod_limit":    float64(2.7438191645958003),
+		"pod_cpu_usage_system":                  1.2750419580493375,
+		"pod_cpu_usage_total":                   5.487638329191601,
+		"pod_cpu_usage_user":                    1.8214885114990538,
+		"pod_cpu_utilization":                   0.13719095822979002,
+		"pod_cpu_utilization_over_pod_limit":    2.7438191645958003,
 		"pod_memory_cache":                      int64(811008),
 		"pod_memory_failcnt":                    int64(0),
 		"pod_memory_hierarchical_pgfault":       float64(0),
@@ -642,23 +641,23 @@ func TestConvertToOTLPMetricsForPodMetrics(t *testing.T) {
 		"pod_memory_pgfault":                    float64(0),
 		"pod_memory_pgmajfault":                 float64(0),
 		"pod_memory_request":                    int64(209715200),
-		"pod_memory_reserved_capacity":          float64(1.2469675186880733),
+		"pod_memory_reserved_capacity":          1.2469675186880733,
 		"pod_memory_rss":                        int64(32845824),
 		"pod_memory_swap":                       int64(0),
 		"pod_memory_usage":                      int64(37543936),
-		"pod_memory_utilization":                float64(0.1477851348320162),
-		"pod_memory_utilization_over_pod_limit": float64(11.8515625),
+		"pod_memory_utilization":                0.1477851348320162,
+		"pod_memory_utilization_over_pod_limit": 11.8515625,
 		"pod_memory_working_set":                int64(24854528),
-		"pod_network_rx_bytes":                  float64(3364.5791007424054),
+		"pod_network_rx_bytes":                  3364.5791007424054,
 		"pod_network_rx_dropped":                float64(0),
 		"pod_network_rx_errors":                 float64(0),
-		"pod_network_rx_packets":                float64(2.3677681271483983),
-		"pod_network_total_bytes":               float64(3777.9099024135485),
-		"pod_network_tx_bytes":                  float64(413.3308016711429),
+		"pod_network_rx_packets":                2.3677681271483983,
+		"pod_network_total_bytes":               3777.9099024135485,
+		"pod_network_tx_bytes":                  413.3308016711429,
 		"pod_network_tx_dropped":                float64(0),
 		"pod_network_tx_errors":                 float64(0),
-		"pod_network_tx_packets":                float64(2.3677681271483983),
-		"pod_number_of_container_restarts":      int(0),
+		"pod_network_tx_packets":                2.3677681271483983,
+		"pod_number_of_container_restarts":      0,
 		"pod_number_of_containers":              uint(1),
 		"pod_number_of_running_containers":      uint(1),
 	}
@@ -726,15 +725,15 @@ func TestConvertToOTLPMetricsForPodNetMetrics(t *testing.T) {
 
 	//test container metrics
 	fields = map[string]interface{}{
-		"node_interface_network_rx_bytes":    float64(294.8620421098953),
+		"node_interface_network_rx_bytes":    294.8620421098953,
 		"node_interface_network_rx_dropped":  float64(0),
 		"node_interface_network_rx_errors":   float64(0),
-		"node_interface_network_rx_packets":  float64(2.69744105680903),
-		"node_interface_network_total_bytes": float64(1169.5469730310588),
-		"node_interface_network_tx_bytes":    float64(874.6849309211634),
+		"node_interface_network_rx_packets":  2.69744105680903,
+		"node_interface_network_total_bytes": 1169.5469730310588,
+		"node_interface_network_tx_bytes":    874.6849309211634,
 		"node_interface_network_tx_dropped":  float64(0),
 		"node_interface_network_tx_errors":   float64(0),
-		"node_interface_network_tx_packets":  float64(2.713308357143201),
+		"node_interface_network_tx_packets":  2.713308357143201,
 	}
 	expectedUnits = map[string]string{
 		"pod_interface_network_rx_bytes":    UnitBytesPerSec,

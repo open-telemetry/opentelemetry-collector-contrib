@@ -16,8 +16,10 @@ package k8sclusterreceiver
 
 import (
 	"context"
+	"fmt"
 	"time"
 
+	quotaclientset "github.com/openshift/client-go/quota/clientset/versioned"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
@@ -30,15 +32,21 @@ const (
 	// Value of "type" key in configuration.
 	typeStr = "k8s_cluster"
 
+	// supported distributions
+	distributionKubernetes = "kubernetes"
+	distributionOpenShift  = "openshift"
+
 	// Default config values.
 	defaultCollectionInterval = 10 * time.Second
+	defaultDistribution       = distributionKubernetes
 )
 
 var defaultNodeConditionsToReport = []string{"Ready"}
 
 func createDefaultConfig() config.Receiver {
 	return &Config{
-		ReceiverSettings:           config.NewReceiverSettings(config.NewID(typeStr)),
+		ReceiverSettings:           config.NewReceiverSettings(config.NewComponentID(typeStr)),
+		Distribution:               defaultDistribution,
 		CollectionInterval:         defaultCollectionInterval,
 		NodeConditionTypesToReport: defaultNodeConditionsToReport,
 		APIConfig: k8sconfig.APIConfig{
@@ -48,7 +56,7 @@ func createDefaultConfig() config.Receiver {
 }
 
 func createMetricsReceiver(
-	_ context.Context, params component.ReceiverCreateParams, cfg config.Receiver,
+	_ context.Context, params component.ReceiverCreateSettings, cfg config.Receiver,
 	consumer consumer.Metrics) (component.MetricsReceiver, error) {
 	rCfg := cfg.(*Config)
 
@@ -56,7 +64,21 @@ func createMetricsReceiver(
 	if err != nil {
 		return nil, err
 	}
-	return newReceiver(params.Logger, rCfg, consumer, k8sClient)
+
+	var osQuotaClient quotaclientset.Interface
+	switch rCfg.Distribution {
+	case distributionOpenShift:
+		osQuotaClient, err = rCfg.getOpenShiftQuotaClient()
+		if err != nil {
+			return nil, err
+		}
+	case distributionKubernetes:
+		// default case, nothing to initialize
+	default:
+		return nil, fmt.Errorf("\"%s\" is not a supported distribution. Must be one of: \"openshift\", \"kubernetes\"", rCfg.Distribution)
+	}
+
+	return newReceiver(params, rCfg, consumer, k8sClient, osQuotaClient)
 }
 
 // NewFactory creates a factory for k8s_cluster receiver.

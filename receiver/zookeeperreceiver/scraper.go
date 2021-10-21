@@ -24,8 +24,7 @@ import (
 	"strconv"
 	"time"
 
-	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/consumer/simple"
+	"go.opentelemetry.io/collector/model/pdata"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zookeeperreceiver/internal/metadata"
@@ -76,7 +75,7 @@ func (z *zookeeperMetricsScraper) shutdown(_ context.Context) error {
 	return nil
 }
 
-func (z *zookeeperMetricsScraper) scrape(ctx context.Context) (pdata.ResourceMetricsSlice, error) {
+func (z *zookeeperMetricsScraper) scrape(ctx context.Context) (pdata.Metrics, error) {
 	var ctxWithTimeout context.Context
 	ctxWithTimeout, z.cancel = context.WithTimeout(ctx, z.config.Timeout)
 
@@ -86,7 +85,7 @@ func (z *zookeeperMetricsScraper) scrape(ctx context.Context) (pdata.ResourceMet
 			zap.String("endpoint", z.config.Endpoint),
 			zap.Error(err),
 		)
-		return pdata.NewResourceMetricsSlice(), err
+		return pdata.NewMetrics(), err
 	}
 	defer func() {
 		if closeErr := z.closeConnection(conn); closeErr != nil {
@@ -104,45 +103,27 @@ func (z *zookeeperMetricsScraper) scrape(ctx context.Context) (pdata.ResourceMet
 	return z.getResourceMetrics(conn)
 }
 
-type stat struct {
-	metric pdata.Metric
-	val    int64
-}
-
-func (z *zookeeperMetricsScraper) getResourceMetrics(conn net.Conn) (pdata.ResourceMetricsSlice, error) {
+func (z *zookeeperMetricsScraper) getResourceMetrics(conn net.Conn) (pdata.Metrics, error) {
 	scanner, err := z.sendCmd(conn, mntrCommand)
 	if err != nil {
 		z.logger.Error("failed to send command",
 			zap.Error(err),
 			zap.String("command", mntrCommand),
 		)
-		return pdata.NewResourceMetricsSlice(), err
+		return pdata.NewMetrics(), err
 	}
 
-	stats, attributes := z.getMetricsAndAttributes(scanner)
-	metrics := simple.Metrics{
-		Metrics:                    pdata.NewMetrics(),
-		Timestamp:                  time.Now(),
-		InstrumentationLibraryName: "otelcol/zookeeper",
-		MetricFactoriesByName:      metadata.M.FactoriesByName(),
-		ResourceAttributes:         attributes,
-	}
-
-	for _, stat := range stats {
-		// Currently the receiver only deals with one metric type.
-		switch stat.metric.DataType() {
-		case pdata.MetricDataTypeIntGauge:
-			metrics.AddGaugeDataPoint(stat.metric.Name(), stat.val)
-		case pdata.MetricDataTypeIntSum:
-			metrics.AddSumDataPoint(stat.metric.Name(), stat.val)
-		}
-	}
-	return metrics.ResourceMetrics(), nil
+	md := pdata.NewMetrics()
+	z.appendMetrics(scanner, md.ResourceMetrics())
+	return md, nil
 }
 
-func (z *zookeeperMetricsScraper) getMetricsAndAttributes(scanner *bufio.Scanner) ([]stat, map[string]string) {
-	attributes := make(map[string]string, 2)
-	stats := make([]stat, 0, metricsLen)
+func (z *zookeeperMetricsScraper) appendMetrics(scanner *bufio.Scanner, rms pdata.ResourceMetricsSlice) {
+	now := pdata.NewTimestampFromTime(time.Now())
+	rm := pdata.NewResourceMetrics()
+	ilm := rm.InstrumentationLibraryMetrics().AppendEmpty()
+	ilm.InstrumentationLibrary().SetName("otelcol/zookeeper")
+	keepRM := false
 	for scanner.Scan() {
 		line := scanner.Text()
 		parts := zookeeperFormatRE.FindStringSubmatch(line)
@@ -158,14 +139,18 @@ func (z *zookeeperMetricsScraper) getMetricsAndAttributes(scanner *bufio.Scanner
 		metricValue := parts[2]
 		switch metricKey {
 		case zkVersionKey:
-			attributes[metadata.Labels.ZkVersion] = metricValue
+			rm.Resource().Attributes().UpsertString(metadata.Labels.ZkVersion, metricValue)
 			continue
 		case serverStateKey:
-			attributes[metadata.Labels.ServerState] = metricValue
+			rm.Resource().Attributes().UpsertString(metadata.Labels.ServerState, metricValue)
 			continue
 		default:
 			// Skip metric if there is no descriptor associated with it.
-			metricDescriptor := getOTLPMetricDescriptor(metricKey)
+			initMetric := getOTLPInitFunc(metricKey)
+			if initMetric == nil {
+				// Unexported metric, just move to the next line.
+				continue
+			}
 			int64Val, err := strconv.ParseInt(metricValue, 10, 64)
 			if err != nil {
 				z.logger.Debug(
@@ -174,11 +159,24 @@ func (z *zookeeperMetricsScraper) getMetricsAndAttributes(scanner *bufio.Scanner
 				)
 				continue
 			}
-			stats = append(stats, stat{metric: metricDescriptor, val: int64Val})
+			metric := ilm.Metrics().AppendEmpty()
+			initMetric(metric)
+			switch metric.DataType() {
+			case pdata.MetricDataTypeGauge:
+				dp := metric.Gauge().DataPoints().AppendEmpty()
+				dp.SetTimestamp(now)
+				dp.SetIntVal(int64Val)
+			case pdata.MetricDataTypeSum:
+				dp := metric.Sum().DataPoints().AppendEmpty()
+				dp.SetTimestamp(now)
+				dp.SetIntVal(int64Val)
+			}
+			keepRM = true
 		}
 	}
-
-	return stats, attributes
+	if keepRM {
+		rm.CopyTo(rms.AppendEmpty())
+	}
 }
 
 func closeConnection(conn net.Conn) error {

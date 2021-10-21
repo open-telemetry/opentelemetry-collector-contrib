@@ -23,10 +23,10 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtest"
-	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -34,24 +34,22 @@ func TestLoadConfig(t *testing.T) {
 	assert.Nil(t, err)
 
 	factory := NewFactory()
-	factories.Exporters[config.Type(typeStr)] = factory
-	cfg, err := configtest.LoadConfigFile(
-		t, path.Join(".", "testdata", "config.yaml"), factories,
-	)
+	factories.Exporters[typeStr] = factory
+	cfg, err := configtest.LoadConfigAndValidate(path.Join(".", "testdata", "config.yaml"), factories)
 
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 
 	assert.Equal(t, 3, len(cfg.Exporters))
 
-	r0 := cfg.Exporters[config.NewID(typeStr)]
+	r0 := cfg.Exporters[config.NewComponentID(typeStr)]
 	assert.Equal(t, factory.CreateDefaultConfig(), r0)
 
-	r1 := cfg.Exporters[config.NewIDWithName(typeStr, "1")].(*Config)
+	r1 := cfg.Exporters[config.NewComponentIDWithName(typeStr, "1")].(*Config)
 	assert.NoError(t, r1.Validate())
 	assert.Equal(t,
 		&Config{
-			ExporterSettings: config.NewExporterSettings(config.NewIDWithName(typeStr, "1")),
+			ExporterSettings: config.NewExporterSettings(config.NewComponentIDWithName(typeStr, "1")),
 			AWSSessionSettings: awsutil.AWSSessionSettings{
 				NumberOfWorkers:       8,
 				Endpoint:              "",
@@ -71,11 +69,11 @@ func TestLoadConfig(t *testing.T) {
 			MetricDescriptors:               []MetricDescriptor{},
 		}, r1)
 
-	r2 := cfg.Exporters[config.NewIDWithName(typeStr, "resource_attr_to_label")].(*Config)
+	r2 := cfg.Exporters[config.NewComponentIDWithName(typeStr, "resource_attr_to_label")].(*Config)
 	assert.NoError(t, r2.Validate())
 	assert.Equal(t, r2,
 		&Config{
-			ExporterSettings: config.NewExporterSettings(config.NewIDWithName(typeStr, "resource_attr_to_label")),
+			ExporterSettings: config.NewExporterSettings(config.NewComponentIDWithName(typeStr, "resource_attr_to_label")),
 			AWSSessionSettings: awsutil.AWSSessionSettings{
 				NumberOfWorkers:       8,
 				Endpoint:              "",
@@ -90,7 +88,7 @@ func TestLoadConfig(t *testing.T) {
 			LogStreamName:                   "",
 			DimensionRollupOption:           "ZeroAndSingleDimensionRollup",
 			OutputDestination:               "cloudwatch",
-			ResourceToTelemetrySettings:     exporterhelper.ResourceToTelemetrySettings{Enabled: true},
+			ResourceToTelemetrySettings:     resourcetotelemetry.Settings{Enabled: true},
 			ParseJSONEncodedAttributeValues: make([]string, 0),
 			MetricDeclarations:              []*MetricDeclaration{},
 			MetricDescriptors:               []MetricDescriptor{},
@@ -105,13 +103,13 @@ func TestConfigValidate(t *testing.T) {
 		{unit: "Megabytes", metricName: "memory_usage"},
 	}
 	cfg := &Config{
-		ExporterSettings: config.NewExporterSettings(config.NewIDWithName(typeStr, "1")),
+		ExporterSettings: config.NewExporterSettings(config.NewComponentIDWithName(typeStr, "1")),
 		AWSSessionSettings: awsutil.AWSSessionSettings{
 			RequestTimeoutSeconds: 30,
 			MaxRetries:            1,
 		},
 		DimensionRollupOption:       "ZeroAndSingleDimensionRollup",
-		ResourceToTelemetrySettings: exporterhelper.ResourceToTelemetrySettings{Enabled: true},
+		ResourceToTelemetrySettings: resourcetotelemetry.Settings{Enabled: true},
 		MetricDescriptors:           incorrectDescriptor,
 		logger:                      zap.NewNop(),
 	}

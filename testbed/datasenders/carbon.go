@@ -19,13 +19,13 @@ import (
 	"fmt"
 	"time"
 
-	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/testbed/testbed"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/carbonexporter"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/testbed"
 )
 
 // CarbonDataSender implements MetricDataSender for Carbon metrics protocol.
@@ -52,13 +52,14 @@ func NewCarbonDataSender(port int) *CarbonDataSender {
 func (cs *CarbonDataSender) Start() error {
 	factory := carbonexporter.NewFactory()
 	cfg := &carbonexporter.Config{
-		ExporterSettings: config.NewExporterSettings(config.NewID(factory.Type())),
+		ExporterSettings: config.NewExporterSettings(config.NewComponentID(factory.Type())),
 		Endpoint:         cs.GetEndpoint().String(),
 		Timeout:          5 * time.Second,
 	}
-	params := component.ExporterCreateParams{Logger: zap.L()}
-	exporter, err := factory.CreateMetricsExporter(context.Background(), params, cfg)
+	params := componenttest.NewNopExporterCreateSettings()
+	params.Logger = zap.L()
 
+	exporter, err := factory.CreateMetricsExporter(context.Background(), params, cfg)
 	if err != nil {
 		return err
 	}

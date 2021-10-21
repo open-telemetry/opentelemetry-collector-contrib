@@ -16,6 +16,7 @@ package tailsamplingprocessor
 
 import (
 	"context"
+	"encoding/binary"
 	"errors"
 	"sort"
 	"sync"
@@ -24,12 +25,11 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.opentelemetry.io/collector/consumer/pdata"
-	tracetranslator "go.opentelemetry.io/collector/translator/trace"
+	"go.opentelemetry.io/collector/model/pdata"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/idbatcher"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/sampling"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/idbatcher"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/sampling"
 )
 
 const (
@@ -163,7 +163,7 @@ func TestSamplingPolicyTypicalPath(t *testing.T) {
 		maxNumTraces:    maxSize,
 		logger:          zap.NewNop(),
 		decisionBatcher: newSyncIDBatcher(decisionWaitSeconds),
-		policies:        []*Policy{{Name: "mock-policy", Evaluator: mpe, ctx: context.TODO()}},
+		policies:        []*policy{{name: "mock-policy", evaluator: mpe, ctx: context.TODO()}},
 		deleteChan:      make(chan pdata.TraceID, maxSize),
 		policyTicker:    mtt,
 	}
@@ -180,7 +180,7 @@ func TestSamplingPolicyTypicalPath(t *testing.T) {
 		tsp.samplingPolicyOnTick()
 		require.False(
 			t,
-			msp.SpansCount() != 0 || mpe.EvaluationCount != 0,
+			msp.SpanCount() != 0 || mpe.EvaluationCount != 0,
 			"policy for initial items was evaluated before decision wait period",
 		)
 	}
@@ -190,19 +190,75 @@ func TestSamplingPolicyTypicalPath(t *testing.T) {
 	tsp.samplingPolicyOnTick()
 	require.False(
 		t,
-		msp.SpansCount() == 0 || mpe.EvaluationCount == 0,
+		msp.SpanCount() == 0 || mpe.EvaluationCount == 0,
 		"policy should have been evaluated totalspans == %d and evaluationcount == %d",
-		msp.SpansCount(),
+		msp.SpanCount(),
 		mpe.EvaluationCount,
 	)
 
-	require.Equal(t, numSpansPerBatchWindow, msp.SpansCount(), "not all spans of first window were accounted for")
+	require.Equal(t, numSpansPerBatchWindow, msp.SpanCount(), "not all spans of first window were accounted for")
 
 	// Late span of a sampled trace should be sent directly down the pipeline exporter
 	tsp.ConsumeTraces(context.Background(), batches[0])
 	expectedNumWithLateSpan := numSpansPerBatchWindow + 1
-	require.Equal(t, expectedNumWithLateSpan, msp.SpansCount(), "late span was not accounted for")
-	require.Equal(t, 1, mpe.LateArrivingSpansCount, "policy was not notified of the late span")
+	require.Equal(t, expectedNumWithLateSpan, msp.SpanCount(), "late span was not accounted for")
+	require.Equal(t, 1, mpe.LateArrivingSpanCount, "policy was not notified of the late span")
+}
+
+func TestSamplingPolicyInvertSampled(t *testing.T) {
+	const maxSize = 100
+	const decisionWaitSeconds = 5
+	// For this test explicitly control the timer calls and batcher, and set a mock
+	// sampling policy evaluator.
+	msp := new(consumertest.TracesSink)
+	mpe := &mockPolicyEvaluator{}
+	mtt := &manualTTicker{}
+	tsp := &tailSamplingSpanProcessor{
+		ctx:             context.Background(),
+		nextConsumer:    msp,
+		maxNumTraces:    maxSize,
+		logger:          zap.NewNop(),
+		decisionBatcher: newSyncIDBatcher(decisionWaitSeconds),
+		policies:        []*policy{{name: "mock-policy", evaluator: mpe, ctx: context.TODO()}},
+		deleteChan:      make(chan pdata.TraceID, maxSize),
+		policyTicker:    mtt,
+	}
+
+	_, batches := generateIdsAndBatches(210)
+	currItem := 0
+	numSpansPerBatchWindow := 10
+	// First evaluations shouldn't have anything to evaluate, until decision wait time passed.
+	for evalNum := 0; evalNum < decisionWaitSeconds; evalNum++ {
+		for ; currItem < numSpansPerBatchWindow*(evalNum+1); currItem++ {
+			tsp.ConsumeTraces(context.Background(), batches[currItem])
+			require.True(t, mtt.Started, "Time ticker was expected to have started")
+		}
+		tsp.samplingPolicyOnTick()
+		require.False(
+			t,
+			msp.SpanCount() != 0 || mpe.EvaluationCount != 0,
+			"policy for initial items was evaluated before decision wait period",
+		)
+	}
+
+	// Now the first batch that waited the decision period.
+	mpe.NextDecision = sampling.InvertSampled
+	tsp.samplingPolicyOnTick()
+	require.False(
+		t,
+		msp.SpanCount() == 0 || mpe.EvaluationCount == 0,
+		"policy should have been evaluated totalspans == %d and evaluationcount == %d",
+		msp.SpanCount(),
+		mpe.EvaluationCount,
+	)
+
+	require.Equal(t, numSpansPerBatchWindow, msp.SpanCount(), "not all spans of first window were accounted for")
+
+	// Late span of a sampled trace should be sent directly down the pipeline exporter
+	tsp.ConsumeTraces(context.Background(), batches[0])
+	expectedNumWithLateSpan := numSpansPerBatchWindow + 1
+	require.Equal(t, expectedNumWithLateSpan, msp.SpanCount(), "late span was not accounted for")
+	require.Equal(t, 1, mpe.LateArrivingSpanCount, "policy was not notified of the late span")
 }
 
 func TestSamplingMultiplePolicies(t *testing.T) {
@@ -220,12 +276,12 @@ func TestSamplingMultiplePolicies(t *testing.T) {
 		maxNumTraces:    maxSize,
 		logger:          zap.NewNop(),
 		decisionBatcher: newSyncIDBatcher(decisionWaitSeconds),
-		policies: []*Policy{
+		policies: []*policy{
 			{
-				Name: "policy-1", Evaluator: mpe1, ctx: context.TODO(),
+				name: "policy-1", evaluator: mpe1, ctx: context.TODO(),
 			},
 			{
-				Name: "policy-2", Evaluator: mpe2, ctx: context.TODO(),
+				name: "policy-2", evaluator: mpe2, ctx: context.TODO(),
 			}},
 		deleteChan:   make(chan pdata.TraceID, maxSize),
 		policyTicker: mtt,
@@ -243,7 +299,7 @@ func TestSamplingMultiplePolicies(t *testing.T) {
 		tsp.samplingPolicyOnTick()
 		require.False(
 			t,
-			msp.SpansCount() != 0 || mpe1.EvaluationCount != 0 || mpe2.EvaluationCount != 0,
+			msp.SpanCount() != 0 || mpe1.EvaluationCount != 0 || mpe2.EvaluationCount != 0,
 			"policy for initial items was evaluated before decision wait period",
 		)
 	}
@@ -254,21 +310,21 @@ func TestSamplingMultiplePolicies(t *testing.T) {
 	tsp.samplingPolicyOnTick()
 	require.False(
 		t,
-		msp.SpansCount() == 0 || mpe1.EvaluationCount == 0 || mpe2.EvaluationCount == 0,
+		msp.SpanCount() == 0 || mpe1.EvaluationCount == 0 || mpe2.EvaluationCount == 0,
 		"policy should have been evaluated totalspans == %d and evaluationcount(1) == %d and evaluationcount(2) == %d",
-		msp.SpansCount(),
+		msp.SpanCount(),
 		mpe1.EvaluationCount,
 		mpe2.EvaluationCount,
 	)
 
-	require.Equal(t, numSpansPerBatchWindow, msp.SpansCount(), "nextConsumer should've been called with exactly 1 batch of spans")
+	require.Equal(t, numSpansPerBatchWindow, msp.SpanCount(), "nextConsumer should've been called with exactly 1 batch of spans")
 
 	// Late span of a sampled trace should be sent directly down the pipeline exporter
 	tsp.ConsumeTraces(context.Background(), batches[0])
 	expectedNumWithLateSpan := numSpansPerBatchWindow + 1
-	require.Equal(t, expectedNumWithLateSpan, msp.SpansCount(), "late span was not accounted for")
-	require.Equal(t, 1, mpe1.LateArrivingSpansCount, "1st policy was not notified of the late span")
-	require.Equal(t, 0, mpe2.LateArrivingSpansCount, "2nd policy should not have been notified of the late span")
+	require.Equal(t, expectedNumWithLateSpan, msp.SpanCount(), "late span was not accounted for")
+	require.Equal(t, 1, mpe1.LateArrivingSpanCount, "1st policy was not notified of the late span")
+	require.Equal(t, 0, mpe2.LateArrivingSpanCount, "2nd policy should not have been notified of the late span")
 }
 
 func TestSamplingPolicyDecisionNotSampled(t *testing.T) {
@@ -285,7 +341,7 @@ func TestSamplingPolicyDecisionNotSampled(t *testing.T) {
 		maxNumTraces:    maxSize,
 		logger:          zap.NewNop(),
 		decisionBatcher: newSyncIDBatcher(decisionWaitSeconds),
-		policies:        []*Policy{{Name: "mock-policy", Evaluator: mpe, ctx: context.TODO()}},
+		policies:        []*policy{{name: "mock-policy", evaluator: mpe, ctx: context.TODO()}},
 		deleteChan:      make(chan pdata.TraceID, maxSize),
 		policyTicker:    mtt,
 	}
@@ -302,7 +358,7 @@ func TestSamplingPolicyDecisionNotSampled(t *testing.T) {
 		tsp.samplingPolicyOnTick()
 		require.False(
 			t,
-			msp.SpansCount() != 0 || mpe.EvaluationCount != 0,
+			msp.SpanCount() != 0 || mpe.EvaluationCount != 0,
 			"policy for initial items was evaluated before decision wait period",
 		)
 	}
@@ -310,24 +366,83 @@ func TestSamplingPolicyDecisionNotSampled(t *testing.T) {
 	// Now the first batch that waited the decision period.
 	mpe.NextDecision = sampling.NotSampled
 	tsp.samplingPolicyOnTick()
-	require.EqualValues(t, 0, msp.SpansCount(), "exporter should have received zero spans")
+	require.EqualValues(t, 0, msp.SpanCount(), "exporter should have received zero spans")
 	require.EqualValues(t, 4, mpe.EvaluationCount, "policy should have been evaluated 4 times")
 
 	// Late span of a non-sampled trace should be ignored
 	tsp.ConsumeTraces(context.Background(), batches[0])
-	require.Equal(t, 0, msp.SpansCount())
-	require.Equal(t, 1, mpe.LateArrivingSpansCount, "policy was not notified of the late span")
+	require.Equal(t, 0, msp.SpanCount())
+	require.Equal(t, 1, mpe.LateArrivingSpanCount, "policy was not notified of the late span")
 
 	mpe.NextDecision = sampling.Unspecified
 	mpe.NextError = errors.New("mock policy error")
 	tsp.samplingPolicyOnTick()
-	require.EqualValues(t, 0, msp.SpansCount(), "exporter should have received zero spans")
+	require.EqualValues(t, 0, msp.SpanCount(), "exporter should have received zero spans")
 	require.EqualValues(t, 6, mpe.EvaluationCount, "policy should have been evaluated 6 times")
 
 	// Late span of a non-sampled trace should be ignored
 	tsp.ConsumeTraces(context.Background(), batches[0])
-	require.Equal(t, 0, msp.SpansCount())
-	require.Equal(t, 2, mpe.LateArrivingSpansCount, "policy was not notified of the late span")
+	require.Equal(t, 0, msp.SpanCount())
+	require.Equal(t, 2, mpe.LateArrivingSpanCount, "policy was not notified of the late span")
+}
+
+func TestSamplingPolicyDecisionInvertNotSampled(t *testing.T) {
+	const maxSize = 100
+	const decisionWaitSeconds = 5
+	// For this test explicitly control the timer calls and batcher, and set a mock
+	// sampling policy evaluator.
+	msp := new(consumertest.TracesSink)
+	mpe := &mockPolicyEvaluator{}
+	mtt := &manualTTicker{}
+	tsp := &tailSamplingSpanProcessor{
+		ctx:             context.Background(),
+		nextConsumer:    msp,
+		maxNumTraces:    maxSize,
+		logger:          zap.NewNop(),
+		decisionBatcher: newSyncIDBatcher(decisionWaitSeconds),
+		policies:        []*policy{{name: "mock-policy", evaluator: mpe, ctx: context.TODO()}},
+		deleteChan:      make(chan pdata.TraceID, maxSize),
+		policyTicker:    mtt,
+	}
+
+	_, batches := generateIdsAndBatches(210)
+	currItem := 0
+	numSpansPerBatchWindow := 10
+	// First evaluations shouldn't have anything to evaluate, until decision wait time passed.
+	for evalNum := 0; evalNum < decisionWaitSeconds; evalNum++ {
+		for ; currItem < numSpansPerBatchWindow*(evalNum+1); currItem++ {
+			tsp.ConsumeTraces(context.Background(), batches[currItem])
+			require.True(t, mtt.Started, "Time ticker was expected to have started")
+		}
+		tsp.samplingPolicyOnTick()
+		require.False(
+			t,
+			msp.SpanCount() != 0 || mpe.EvaluationCount != 0,
+			"policy for initial items was evaluated before decision wait period",
+		)
+	}
+
+	// Now the first batch that waited the decision period.
+	mpe.NextDecision = sampling.InvertNotSampled
+	tsp.samplingPolicyOnTick()
+	require.EqualValues(t, 0, msp.SpanCount(), "exporter should have received zero spans")
+	require.EqualValues(t, 4, mpe.EvaluationCount, "policy should have been evaluated 4 times")
+
+	// Late span of a non-sampled trace should be ignored
+	tsp.ConsumeTraces(context.Background(), batches[0])
+	require.Equal(t, 0, msp.SpanCount())
+	require.Equal(t, 1, mpe.LateArrivingSpanCount, "policy was not notified of the late span")
+
+	mpe.NextDecision = sampling.Unspecified
+	mpe.NextError = errors.New("mock policy error")
+	tsp.samplingPolicyOnTick()
+	require.EqualValues(t, 0, msp.SpanCount(), "exporter should have received zero spans")
+	require.EqualValues(t, 6, mpe.EvaluationCount, "policy should have been evaluated 6 times")
+
+	// Late span of a non-sampled trace should be ignored
+	tsp.ConsumeTraces(context.Background(), batches[0])
+	require.Equal(t, 0, msp.SpanCount())
+	require.Equal(t, 2, mpe.LateArrivingSpanCount, "policy was not notified of the late span")
 }
 
 func TestMultipleBatchesAreCombinedIntoOne(t *testing.T) {
@@ -344,7 +459,7 @@ func TestMultipleBatchesAreCombinedIntoOne(t *testing.T) {
 		maxNumTraces:    maxSize,
 		logger:          zap.NewNop(),
 		decisionBatcher: newSyncIDBatcher(decisionWaitSeconds),
-		policies:        []*Policy{{Name: "mock-policy", Evaluator: mpe, ctx: context.TODO()}},
+		policies:        []*policy{{name: "mock-policy", evaluator: mpe, ctx: context.TODO()}},
 		deleteChan:      make(chan pdata.TraceID, maxSize),
 		policyTicker:    mtt,
 	}
@@ -363,16 +478,16 @@ func TestMultipleBatchesAreCombinedIntoOne(t *testing.T) {
 
 	expectedSpanIds := make(map[int][]pdata.SpanID)
 	expectedSpanIds[0] = []pdata.SpanID{
-		tracetranslator.UInt64ToSpanID(uint64(1)),
+		uInt64ToSpanID(uint64(1)),
 	}
 	expectedSpanIds[1] = []pdata.SpanID{
-		tracetranslator.UInt64ToSpanID(uint64(2)),
-		tracetranslator.UInt64ToSpanID(uint64(3)),
+		uInt64ToSpanID(uint64(2)),
+		uInt64ToSpanID(uint64(3)),
 	}
 	expectedSpanIds[2] = []pdata.SpanID{
-		tracetranslator.UInt64ToSpanID(uint64(4)),
-		tracetranslator.UInt64ToSpanID(uint64(5)),
-		tracetranslator.UInt64ToSpanID(uint64(6)),
+		uInt64ToSpanID(uint64(4)),
+		uInt64ToSpanID(uint64(5)),
+		uInt64ToSpanID(uint64(6)),
 	}
 
 	receivedTraces := msp.AllTraces()
@@ -386,8 +501,10 @@ func TestMultipleBatchesAreCombinedIntoOne(t *testing.T) {
 
 		// might have received out of order, sort for comparison
 		sort.Slice(got, func(i, j int) bool {
-			a := tracetranslator.SpanIDToUInt64(got[i])
-			b := tracetranslator.SpanIDToUInt64(got[j])
+			bytesA := got[i].Bytes()
+			a := binary.BigEndian.Uint64(bytesA[:])
+			bytesB := got[j].Bytes()
+			b := binary.BigEndian.Uint64(bytesB[:])
 			return a < b
 		})
 
@@ -429,7 +546,10 @@ func generateIdsAndBatches(numIds int) ([]pdata.TraceID, []pdata.Traces) {
 	spanID := 0
 	var tds []pdata.Traces
 	for i := 0; i < numIds; i++ {
-		traceIds[i] = tracetranslator.UInt64ToTraceID(1, uint64(i+1))
+		traceID := [16]byte{}
+		binary.BigEndian.PutUint64(traceID[:8], 1)
+		binary.BigEndian.PutUint64(traceID[8:], uint64(i+1))
+		traceIds[i] = pdata.NewTraceID(traceID)
 		// Send each span in a separate batch
 		for j := 0; j <= i; j++ {
 			td := simpleTraces()
@@ -437,7 +557,7 @@ func generateIdsAndBatches(numIds int) ([]pdata.TraceID, []pdata.Traces) {
 			span.SetTraceID(traceIds[i])
 
 			spanID++
-			span.SetSpanID(tracetranslator.UInt64ToSpanID(uint64(spanID)))
+			span.SetSpanID(uInt64ToSpanID(uint64(spanID)))
 			tds = append(tds, td)
 		}
 	}
@@ -445,17 +565,24 @@ func generateIdsAndBatches(numIds int) ([]pdata.TraceID, []pdata.Traces) {
 	return traceIds, tds
 }
 
+// uInt64ToSpanID converts the uint64 representation of a SpanID to pdata.SpanID.
+func uInt64ToSpanID(id uint64) pdata.SpanID {
+	spanID := [8]byte{}
+	binary.BigEndian.PutUint64(spanID[:], id)
+	return pdata.NewSpanID(spanID)
+}
+
 type mockPolicyEvaluator struct {
-	NextDecision           sampling.Decision
-	NextError              error
-	EvaluationCount        int
-	LateArrivingSpansCount int
+	NextDecision          sampling.Decision
+	NextError             error
+	EvaluationCount       int
+	LateArrivingSpanCount int
 }
 
 var _ sampling.PolicyEvaluator = (*mockPolicyEvaluator)(nil)
 
 func (m *mockPolicyEvaluator) OnLateArrivingSpans(sampling.Decision, []*pdata.Span) error {
-	m.LateArrivingSpansCount++
+	m.LateArrivingSpanCount++
 	return m.NextError
 }
 func (m *mockPolicyEvaluator) Evaluate(pdata.TraceID, *sampling.TraceData) (sampling.Decision, error) {
@@ -469,14 +596,14 @@ type manualTTicker struct {
 
 var _ tTicker = (*manualTTicker)(nil)
 
-func (t *manualTTicker) Start(time.Duration) {
+func (t *manualTTicker) start(time.Duration) {
 	t.Started = true
 }
 
-func (t *manualTTicker) OnTick() {
+func (t *manualTTicker) onTick() {
 }
 
-func (t *manualTTicker) Stop() {
+func (t *manualTTicker) stop() {
 }
 
 type syncIDBatcher struct {

@@ -124,6 +124,7 @@ func TestNewAWSSessionWithErr(t *testing.T) {
 	region := "fake_region"
 	env := stashEnv()
 	defer popEnv(env)
+	os.Setenv("AWS_EC2_METADATA_DISABLED", "true")
 	os.Setenv("AWS_STS_REGIONAL_ENDPOINTS", "fake")
 	conn := &Conn{}
 	se, err := conn.newAWSSession(logger, roleArn, region)

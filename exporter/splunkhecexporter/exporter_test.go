@@ -35,19 +35,19 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configtls"
-	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-	"go.opentelemetry.io/collector/testutil/metricstestutil"
-	"go.opentelemetry.io/collector/translator/conventions"
-	"go.opentelemetry.io/collector/translator/internaldata"
+	"go.opentelemetry.io/collector/model/pdata"
+	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/metricstestutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
+	internaldata "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus"
 )
 
 func TestNew(t *testing.T) {
-	buildInfo := component.DefaultBuildInfo()
+	buildInfo := component.NewDefaultBuildInfo()
 	got, err := createExporter(nil, zap.NewNop(), &buildInfo)
 	assert.EqualError(t, err, "nil config")
 	assert.Nil(t, got)
@@ -71,7 +71,6 @@ func TestNew(t *testing.T) {
 				CertFile: "file-not-found",
 				KeyFile:  "file-not-found",
 			},
-			Insecure:           false,
 			InsecureSkipVerify: false,
 		},
 	}
@@ -83,7 +82,9 @@ func TestNew(t *testing.T) {
 func TestConsumeMetricsData(t *testing.T) {
 	smallBatch := &agentmetricspb.ExportMetricsServiceRequest{
 		Node: &commonpb.Node{
-			ServiceInfo: &commonpb.ServiceInfo{Name: "test_splunk"},
+			Attributes: map[string]string{
+				"com.splunk.source": "test_splunk",
+			},
 		},
 		Resource: &resourcepb.Resource{Type: "test"},
 		Metrics: []*metricspb.Metric{
@@ -118,7 +119,7 @@ func TestConsumeMetricsData(t *testing.T) {
 				if r.Header.Get("Content-Encoding") == "gzip" {
 					t.Fatal("Small batch should not be compressed")
 				}
-				firstPayload := strings.Split(string(body), "\n\r\n\r")[0]
+				firstPayload := strings.Split(string(body), "\n")[0]
 				var metric splunk.Event
 				err = json.Unmarshal([]byte(firstPayload), &metric)
 				if err != nil {
@@ -219,14 +220,14 @@ func generateLargeLogsBatch() pdata.Logs {
 	logs := pdata.NewLogs()
 	rl := logs.ResourceLogs().AppendEmpty()
 	ill := rl.InstrumentationLibraryLogs().AppendEmpty()
-	ill.Logs().Resize(65000)
+	ill.Logs().EnsureCapacity(65000)
 	ts := pdata.Timestamp(123)
 	for i := 0; i < 65000; i++ {
-		logRecord := ill.Logs().At(i)
+		logRecord := ill.Logs().AppendEmpty()
 		logRecord.Body().SetStringVal("mylog")
-		logRecord.Attributes().InsertString(conventions.AttributeServiceName, "myapp")
-		logRecord.Attributes().InsertString(splunk.SourcetypeLabel, "myapp-type")
-		logRecord.Attributes().InsertString(splunk.IndexLabel, "myindex")
+		logRecord.Attributes().InsertString(splunk.DefaultSourceLabel, "myapp")
+		logRecord.Attributes().InsertString(splunk.DefaultSourceTypeLabel, "myapp-type")
+		logRecord.Attributes().InsertString(splunk.DefaultIndexLabel, "myindex")
 		logRecord.Attributes().InsertString(conventions.AttributeHostName, "myhost")
 		logRecord.Attributes().InsertString("custom", "custom")
 		logRecord.SetTimestamp(ts)
@@ -264,7 +265,7 @@ func TestConsumeLogsData(t *testing.T) {
 				if r.Header.Get("Content-Encoding") == "gzip" {
 					t.Fatal("Small batch should not be compressed")
 				}
-				firstPayload := strings.Split(string(body), "\n\r\n\r")[0]
+				firstPayload := strings.Split(string(body), "\n")[0]
 				var event splunk.Event
 				err = json.Unmarshal([]byte(firstPayload), &event)
 				if err != nil {
@@ -332,7 +333,7 @@ func TestConsumeLogsData(t *testing.T) {
 }
 
 func TestExporterStartAlwaysReturnsNil(t *testing.T) {
-	buildInfo := component.DefaultBuildInfo()
+	buildInfo := component.NewDefaultBuildInfo()
 	config := &Config{
 		Endpoint: "https://example.com:8088",
 		Token:    "abc",

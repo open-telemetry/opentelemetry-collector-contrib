@@ -23,9 +23,11 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumererror"
-	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/translator/conventions"
+	"go.opentelemetry.io/collector/model/pdata"
+	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
 	"go.uber.org/zap"
 )
 
@@ -88,7 +90,7 @@ func TestPushTraceData(t *testing.T) {
 			desc: "Forwards permanent errors",
 			client: &clientMock{
 				response: func() error {
-					return consumererror.Permanent(errors.New("Error"))
+					return consumererror.NewPermanent(errors.New("Error"))
 				},
 			},
 			wantErr:  true,
@@ -99,8 +101,17 @@ func TestPushTraceData(t *testing.T) {
 	// Act
 	for _, tC := range testCases {
 		t.Run(tC.desc, func(t *testing.T) {
-			exp := newTracesExporter(&Config{}, zap.NewNop(), tC.client)
-			err := exp.pushTraceData(context.Background(), pdata.NewTraces())
+			cg := func(cfg *Config, logger *zap.Logger, host component.Host) (exporterClient, error) {
+				return tC.client, nil
+			}
+
+			exp := newTracesExporterWithClientGetter(&Config{}, zap.NewNop(), cg)
+			err := exp.start(context.Background(), componenttest.NewNopHost())
+			if err != nil {
+				t.Errorf("unexpected error when starting component")
+			}
+
+			err = exp.pushTraceData(context.Background(), pdata.NewTraces())
 
 			// Assert
 			if (err != nil) != tC.wantErr {
@@ -122,10 +133,17 @@ func TestPushTraceData_PermanentOnCompleteFailure(t *testing.T) {
 	traces := pdata.NewTraces()
 	traces.ResourceSpans().AppendEmpty().InstrumentationLibrarySpans().AppendEmpty().Spans().AppendEmpty()
 
-	exp := newTracesExporter(&Config{}, zap.NewNop(), &clientMock{})
+	cg := func(cfg *Config, logger *zap.Logger, host component.Host) (exporterClient, error) {
+		return &clientMock{}, nil
+	}
+	exp := newTracesExporterWithClientGetter(&Config{}, zap.NewNop(), cg)
+	err := exp.start(context.Background(), componenttest.NewNopHost())
+	if err != nil {
+		t.Errorf("unexpected error when starting component")
+	}
 
 	// Act
-	err := exp.pushTraceData(context.Background(), traces)
+	err = exp.pushTraceData(context.Background(), traces)
 
 	// Assert
 	require.Error(t, err)
@@ -137,26 +155,34 @@ func TestPushTraceData_TransientOnPartialFailure(t *testing.T) {
 	// Arrange
 	// Prepare a valid span with a service name...
 	traces := pdata.NewTraces()
-	traces.ResourceSpans().Resize(2)
-	traces.ResourceSpans().At(0).Resource().Attributes().InsertString(conventions.AttributeServiceName, "service1")
-	traces.ResourceSpans().At(0).InstrumentationLibrarySpans().AppendEmpty().Spans().AppendEmpty()
+	traces.ResourceSpans().EnsureCapacity(2)
+	rspan := traces.ResourceSpans().AppendEmpty()
+	rspan.Resource().Attributes().InsertString(conventions.AttributeServiceName, "service1")
+	rspan.InstrumentationLibrarySpans().AppendEmpty().Spans().AppendEmpty()
 
 	// ...and one without (partial failure)
-	traces.ResourceSpans().At(1).InstrumentationLibrarySpans().AppendEmpty().Spans().AppendEmpty()
+	traces.ResourceSpans().AppendEmpty().InstrumentationLibrarySpans().AppendEmpty().Spans().AppendEmpty()
 
-	exp := newTracesExporter(&Config{}, zap.NewNop(), &clientMock{
-		func() error { return nil },
-	})
+	cg := func(cfg *Config, logger *zap.Logger, host component.Host) (exporterClient, error) {
+		return &clientMock{
+			func() error { return nil },
+		}, nil
+	}
+	exp := newTracesExporterWithClientGetter(&Config{}, zap.NewNop(), cg)
+	err := exp.start(context.Background(), componenttest.NewNopHost())
+	if err != nil {
+		t.Errorf("unexpected error when starting component")
+	}
 
 	// Act
-	err := exp.pushTraceData(context.Background(), traces)
+	err = exp.pushTraceData(context.Background(), traces)
 
 	// Assert
 	require.Error(t, err)
 	assert.False(t, consumererror.IsPermanent(err))
 
 	tErr := consumererror.Traces{}
-	if ok := consumererror.AsTraces(err, &tErr); !ok {
+	if ok := errors.As(err, &tErr); !ok {
 		assert.Fail(t, "PushTraceData did not return a Traces error")
 	}
 	assert.Equal(t, 1, tErr.GetTraces().ResourceSpans().Len())
@@ -183,9 +209,16 @@ func TestTracesToHumioEvents_OrganizedByTags(t *testing.T) {
 	res3.InstrumentationLibrarySpans().AppendEmpty().Spans().AppendEmpty().SetTraceID(pdata.NewTraceID(createTraceID("20000000000000000000000000000000")))
 
 	// Organize by trace id
-	exp := newTracesExporter(&Config{
+	cg := func(cfg *Config, logger *zap.Logger, host component.Host) (exporterClient, error) {
+		return &clientMock{}, nil
+	}
+	exp := newTracesExporterWithClientGetter(&Config{
 		Tag: TagTraceID,
-	}, zap.NewNop(), &clientMock{})
+	}, zap.NewNop(), cg)
+	err := exp.start(context.Background(), componenttest.NewNopHost())
+	if err != nil {
+		t.Errorf("unexpected error when starting component")
+	}
 
 	// Act
 	actual, err := exp.tracesToHumioEvents(traces)
@@ -210,11 +243,11 @@ func TestSpanToHumioEvent(t *testing.T) {
 	span.SetTraceID(pdata.NewTraceID(createTraceID("10")))
 	span.SetSpanID(pdata.NewSpanID(createSpanID("20")))
 	span.SetName("span")
-	span.SetKind(pdata.SpanKindSERVER)
-	span.SetStartTimestamp(pdata.TimestampFromTime(
+	span.SetKind(pdata.SpanKindServer)
+	span.SetStartTimestamp(pdata.NewTimestampFromTime(
 		time.Date(2020, 1, 1, 12, 0, 0, 0, time.UTC),
 	))
-	span.SetEndTimestamp(pdata.TimestampFromTime(
+	span.SetEndTimestamp(pdata.NewTimestampFromTime(
 		time.Date(2020, 1, 1, 12, 0, 16, 0, time.UTC),
 	))
 	span.Status().SetCode(pdata.StatusCodeOk)
@@ -251,11 +284,18 @@ func TestSpanToHumioEvent(t *testing.T) {
 		},
 	}
 
-	exp := newTracesExporter(&Config{
+	cg := func(cfg *Config, logger *zap.Logger, host component.Host) (exporterClient, error) {
+		return &clientMock{}, nil
+	}
+	exp := newTracesExporterWithClientGetter(&Config{
 		Traces: TracesConfig{
 			UnixTimestamps: true,
 		},
-	}, zap.NewNop(), &clientMock{})
+	}, zap.NewNop(), cg)
+	err := exp.start(context.Background(), componenttest.NewNopHost())
+	if err != nil {
+		t.Errorf("unexpected error when starting component")
+	}
 
 	// Act
 	actual := exp.spanToHumioEvent(span, inst, res)
@@ -270,11 +310,18 @@ func TestSpanToHumioEventNoInstrumentation(t *testing.T) {
 	inst := pdata.NewInstrumentationLibrary()
 	res := pdata.NewResource()
 
-	exp := newTracesExporter(&Config{
+	cg := func(cfg *Config, logger *zap.Logger, host component.Host) (exporterClient, error) {
+		return &clientMock{}, nil
+	}
+	exp := newTracesExporterWithClientGetter(&Config{
 		Traces: TracesConfig{
 			UnixTimestamps: true,
 		},
-	}, zap.NewNop(), &clientMock{})
+	}, zap.NewNop(), cg)
+	err := exp.start(context.Background(), componenttest.NewNopHost())
+	if err != nil {
+		t.Errorf("unexpected error when starting component")
+	}
 
 	// Act
 	actual := exp.spanToHumioEvent(span, inst, res)
@@ -463,7 +510,10 @@ func TestTagFromSpan(t *testing.T) {
 
 func TestShutdown(t *testing.T) {
 	// Arrange
-	exp := newTracesExporter(&Config{}, zap.NewNop(), &clientMock{})
+	cg := func(cfg *Config, logger *zap.Logger, host component.Host) (exporterClient, error) {
+		return &clientMock{}, nil
+	}
+	exp := newTracesExporterWithClientGetter(&Config{}, zap.NewNop(), cg)
 
 	// Act
 	err := exp.shutdown(context.Background())

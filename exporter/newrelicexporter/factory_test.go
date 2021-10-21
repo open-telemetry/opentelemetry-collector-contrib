@@ -21,26 +21,27 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configcheck"
-	"go.uber.org/zap"
+	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config/configtest"
 )
 
 func TestCreateDefaultConfig(t *testing.T) {
 	cfg := createDefaultConfig()
 	assert.NotNil(t, cfg, "failed to create default config")
-	require.NoError(t, configcheck.ValidateConfig(cfg))
+	require.NoError(t, configtest.CheckConfigStruct(cfg))
 
 	nrCfg, ok := cfg.(*Config)
 	require.True(t, ok, "invalid Config: %#v", cfg)
-	assert.Equal(t, nrCfg.CommonConfig.Timeout, time.Second*15)
+	assert.Equal(t, nrCfg.CommonConfig.TimeoutSettings.Timeout, time.Second*5)
 }
 
 func TestCreateExporterWithAPIKey(t *testing.T) {
 	cfg := createDefaultConfig()
 	nrConfig := cfg.(*Config)
-	nrConfig.CommonConfig.APIKey = "a1b2c3d4"
-	params := component.ExporterCreateParams{Logger: zap.NewNop()}
+	nrConfig.MetricsConfig.APIKey = "a1b2c3d4"
+	nrConfig.TracesConfig.APIKey = "a1b2c3d4"
+	nrConfig.LogsConfig.APIKey = "a1b2c3d4"
+	params := componenttest.NewNopExporterCreateSettings()
 
 	te, err := createTracesExporter(context.Background(), params, nrConfig)
 	assert.Nil(t, err)
@@ -58,8 +59,10 @@ func TestCreateExporterWithAPIKey(t *testing.T) {
 func TestCreateExporterWithAPIKeyHeader(t *testing.T) {
 	cfg := createDefaultConfig()
 	nrConfig := cfg.(*Config)
-	nrConfig.CommonConfig.APIKeyHeader = "api-key"
-	params := component.ExporterCreateParams{Logger: zap.NewNop()}
+	nrConfig.MetricsConfig.APIKeyHeader = "api-key"
+	nrConfig.TracesConfig.APIKeyHeader = "api-key"
+	nrConfig.LogsConfig.APIKeyHeader = "api-key"
+	params := componenttest.NewNopExporterCreateSettings()
 
 	te, err := createTracesExporter(context.Background(), params, nrConfig)
 	assert.Nil(t, err)
@@ -77,9 +80,13 @@ func TestCreateExporterWithAPIKeyHeader(t *testing.T) {
 func TestCreateExporterWithAPIKeyAndAPIKeyHeader(t *testing.T) {
 	cfg := createDefaultConfig()
 	nrConfig := cfg.(*Config)
-	nrConfig.CommonConfig.APIKey = "a1b2c3d4"
-	nrConfig.CommonConfig.APIKeyHeader = "api-key"
-	params := component.ExporterCreateParams{Logger: zap.NewNop()}
+	nrConfig.MetricsConfig.APIKey = "a1b2c3d4"
+	nrConfig.TracesConfig.APIKey = "a1b2c3d4"
+	nrConfig.LogsConfig.APIKey = "a1b2c3d4"
+	nrConfig.MetricsConfig.APIKeyHeader = "api-key"
+	nrConfig.TracesConfig.APIKeyHeader = "api-key"
+	nrConfig.LogsConfig.APIKeyHeader = "api-key"
+	params := componenttest.NewNopExporterCreateSettings()
 
 	te, err := createTracesExporter(context.Background(), params, nrConfig)
 	assert.Nil(t, err)
@@ -97,7 +104,7 @@ func TestCreateExporterWithAPIKeyAndAPIKeyHeader(t *testing.T) {
 func TestCreateExporterErrorWithoutAPIKeyOrAPIKeyHeader(t *testing.T) {
 	cfg := createDefaultConfig()
 	nrConfig := cfg.(*Config)
-	params := component.ExporterCreateParams{Logger: zap.NewNop()}
+	params := componenttest.NewNopExporterCreateSettings()
 
 	te, err := createTracesExporter(context.Background(), params, nrConfig)
 	assert.NotNil(t, err)
@@ -112,19 +119,19 @@ func TestCreateExporterErrorWithoutAPIKeyOrAPIKeyHeader(t *testing.T) {
 	assert.Nil(t, le)
 }
 func TestCreateTracesExporterError(t *testing.T) {
-	params := component.ExporterCreateParams{Logger: zap.NewNop()}
+	params := componenttest.NewNopExporterCreateSettings()
 	_, err := createTracesExporter(context.Background(), params, nil)
 	assert.Error(t, err)
 }
 
 func TestCreateMetricsExporterError(t *testing.T) {
-	params := component.ExporterCreateParams{Logger: zap.NewNop()}
+	params := componenttest.NewNopExporterCreateSettings()
 	_, err := createMetricsExporter(context.Background(), params, nil)
 	assert.Error(t, err)
 }
 
 func TestCreateLogsExporterError(t *testing.T) {
-	params := component.ExporterCreateParams{Logger: zap.NewNop()}
+	params := componenttest.NewNopExporterCreateSettings()
 	_, err := createLogsExporter(context.Background(), params, nil)
 	assert.Error(t, err)
 }

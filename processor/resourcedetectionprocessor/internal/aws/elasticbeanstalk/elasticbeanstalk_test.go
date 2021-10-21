@@ -23,9 +23,8 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.uber.org/zap"
+	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/model/pdata"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
 )
@@ -53,7 +52,7 @@ func (mfs *mockFileSystem) IsWindows() bool {
 }
 
 func Test_newDetector(t *testing.T) {
-	d, err := NewDetector(component.ProcessorCreateParams{Logger: zap.NewNop()}, nil)
+	d, err := NewDetector(componenttest.NewNopProcessorCreateSettings(), nil)
 
 	assert.Nil(t, err)
 	assert.NotNil(t, d)
@@ -63,7 +62,7 @@ func Test_windowsPath(t *testing.T) {
 	mfs := &mockFileSystem{windows: true, exists: true, contents: xrayConf}
 	d := Detector{fs: mfs}
 
-	r, err := d.Detect(context.TODO())
+	r, _, err := d.Detect(context.TODO())
 
 	assert.Nil(t, err)
 	assert.NotNil(t, r)
@@ -74,7 +73,7 @@ func Test_fileNotExists(t *testing.T) {
 	mfs := &mockFileSystem{exists: false}
 	d := Detector{fs: mfs}
 
-	r, err := d.Detect(context.TODO())
+	r, _, err := d.Detect(context.TODO())
 
 	assert.Nil(t, err)
 	assert.NotNil(t, r)
@@ -85,7 +84,7 @@ func Test_fileMalformed(t *testing.T) {
 	mfs := &mockFileSystem{exists: true, contents: "some overwritten value"}
 	d := Detector{fs: mfs}
 
-	r, err := d.Detect(context.TODO())
+	r, _, err := d.Detect(context.TODO())
 
 	assert.NotNil(t, err)
 	assert.NotNil(t, r)
@@ -104,7 +103,7 @@ func Test_AttributesDetectedSuccessfully(t *testing.T) {
 	attr.InsertString("service.instance.id", "23")
 	attr.InsertString("service.version", "env-version-1234")
 
-	r, err := d.Detect(context.TODO())
+	r, _, err := d.Detect(context.TODO())
 
 	assert.Nil(t, err)
 	assert.NotNil(t, r)

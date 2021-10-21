@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//go:build windows
 // +build windows
 
 package windowsperfcountersreceiver
@@ -28,7 +29,7 @@ import (
 // createMetricsReceiver creates a metrics receiver based on provided config.
 func createMetricsReceiver(
 	ctx context.Context,
-	params component.ReceiverCreateParams,
+	params component.ReceiverCreateSettings,
 	cfg config.Receiver,
 	consumer consumer.Metrics,
 ) (component.MetricsReceiver, error) {
@@ -38,17 +39,20 @@ func createMetricsReceiver(
 		return nil, err
 	}
 
+	scrp, err := scraperhelper.NewScraper(
+		cfg.ID().String(),
+		scraper.scrape,
+		scraperhelper.WithStart(scraper.start),
+		scraperhelper.WithShutdown(scraper.shutdown),
+	)
+	if err != nil {
+		return nil, err
+	}
+
 	return scraperhelper.NewScraperControllerReceiver(
 		&oCfg.ScraperControllerSettings,
-		params.Logger,
+		params,
 		consumer,
-		scraperhelper.AddMetricsScraper(
-			scraperhelper.NewMetricsScraper(
-				cfg.ID().String(),
-				scraper.scrape,
-				scraperhelper.WithStart(scraper.start),
-				scraperhelper.WithShutdown(scraper.shutdown),
-			),
-		),
+		scraperhelper.AddScraper(scrp),
 	)
 }

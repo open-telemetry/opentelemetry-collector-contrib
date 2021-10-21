@@ -31,7 +31,7 @@ type Config struct {
 	Source string `mapstructure:"source"`
 
 	// AuthConfig represents the F5 Cloud authentication configuration options.
-	AuthConfig AuthConfig `mapstructure:"auth"`
+	AuthConfig AuthConfig `mapstructure:"f5cloud_auth"`
 }
 
 func (c *Config) sanitize() error {
@@ -49,11 +49,11 @@ func (c *Config) sanitize() error {
 	}
 
 	if len(c.AuthConfig.CredentialFile) == 0 {
-		return fmt.Errorf("missing required \"auth.credential_file\" setting")
+		return fmt.Errorf("missing required \"f5cloud_auth.credential_file\" setting")
 	}
 
 	if _, err := os.Stat(c.AuthConfig.CredentialFile); os.IsNotExist(err) {
-		return fmt.Errorf("the provided \"auth.credential_file\" does not exist")
+		return fmt.Errorf("the provided \"f5cloud_auth.credential_file\" does not exist")
 	}
 
 	if len(c.AuthConfig.Audience) == 0 {

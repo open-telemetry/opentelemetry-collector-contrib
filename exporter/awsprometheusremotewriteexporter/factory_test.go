@@ -21,11 +21,11 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/config/configcheck"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configtest"
 	"go.opentelemetry.io/collector/config/configtls"
-	"go.uber.org/zap"
 )
 
 func TestType(t *testing.T) {
@@ -38,7 +38,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 	af := NewFactory()
 	cfg := af.CreateDefaultConfig()
 	assert.NotNil(t, cfg, "failed to create default config")
-	assert.NoError(t, configcheck.ValidateConfig(cfg))
+	assert.NoError(t, configtest.CheckConfigStruct(cfg))
 }
 
 //Tests whether or not a correct Metrics Exporter from the default Config parameters
@@ -71,35 +71,47 @@ func TestCreateMetricsExporter(t *testing.T) {
 	}
 
 	tests := []struct {
-		name        string
-		cfg         config.Exporter
-		params      component.ExporterCreateParams
-		returnError bool
+		name                string
+		cfg                 config.Exporter
+		params              component.ExporterCreateSettings
+		returnErrorOnCreate bool
+		returnErrorOnStart  bool
 	}{
-		{"success_case_with_auth",
-			validConfigWithAuth,
-			component.ExporterCreateParams{Logger: zap.NewNop()},
-			false,
+		{
+			name:                "success_case_with_auth",
+			cfg:                 validConfigWithAuth,
+			params:              componenttest.NewNopExporterCreateSettings(),
+			returnErrorOnCreate: false,
 		},
-		{"invalid_config_case",
-			invalidConfig,
-			component.ExporterCreateParams{Logger: zap.NewNop()},
-			true,
+		{
+			name:                "invalid_config_case",
+			cfg:                 invalidConfig,
+			params:              componenttest.NewNopExporterCreateSettings(),
+			returnErrorOnCreate: true,
 		},
-		{"invalid_tls_config_case",
-			invalidTLSConfig,
-			component.ExporterCreateParams{Logger: zap.NewNop()},
-			true,
+		{
+			name:               "invalid_tls_config_case",
+			cfg:                invalidTLSConfig,
+			params:             componenttest.NewNopExporterCreateSettings(),
+			returnErrorOnStart: true,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := af.CreateMetricsExporter(context.Background(), tt.params, tt.cfg)
-			if tt.returnError {
+			exp, err := af.CreateMetricsExporter(context.Background(), tt.params, tt.cfg)
+			if tt.returnErrorOnCreate {
 				assert.Error(t, err)
 				return
 			}
 			assert.NoError(t, err)
+			assert.NotNil(t, exp)
+			err = exp.Start(context.Background(), componenttest.NewNopHost())
+			if tt.returnErrorOnStart {
+				assert.Error(t, err)
+				return
+			}
+			assert.NoError(t, err)
+			assert.NoError(t, exp.Shutdown(context.Background()))
 		})
 	}
 }

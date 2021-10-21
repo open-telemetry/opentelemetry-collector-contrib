@@ -24,14 +24,11 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.uber.org/zap"
-	"go.uber.org/zap/zaptest"
+	"go.opentelemetry.io/collector/model/pdata"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/stanza"
 )
@@ -48,9 +45,8 @@ func testSyslog(t *testing.T, cfg *SysLogConfig) {
 	numLogs := 5
 
 	f := NewFactory()
-	params := component.ReceiverCreateParams{Logger: zaptest.NewLogger(t)}
 	sink := new(consumertest.LogsSink)
-	rcvr, err := f.CreateLogsReceiver(context.Background(), params, cfg, sink)
+	rcvr, err := f.CreateLogsReceiver(context.Background(), componenttest.NewNopReceiverCreateSettings(), cfg, sink)
 	require.NoError(t, err)
 	require.NoError(t, rcvr.Start(context.Background(), componenttest.NewNopHost()))
 
@@ -92,21 +88,19 @@ func TestLoadConfig(t *testing.T) {
 	assert.Nil(t, err)
 
 	factory := NewFactory()
-	factories.Receivers[config.Type(typeStr)] = factory
-	cfg, err := configtest.LoadConfigFile(
-		t, path.Join(".", "testdata", "config.yaml"), factories,
-	)
+	factories.Receivers[typeStr] = factory
+	cfg, err := configtest.LoadConfigAndValidate(path.Join(".", "testdata", "config.yaml"), factories)
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 
 	assert.Equal(t, len(cfg.Receivers), 1)
-	assert.Equal(t, testdataConfigYamlAsMap(), cfg.Receivers[config.NewID(typeStr)])
+	assert.Equal(t, testdataConfigYamlAsMap(), cfg.Receivers[config.NewComponentID(typeStr)])
 }
 
 func testdataConfigYamlAsMap() *SysLogConfig {
 	return &SysLogConfig{
 		BaseConfig: stanza.BaseConfig{
-			ReceiverSettings: config.NewReceiverSettings(config.NewID(typeStr)),
+			ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
 			Operators:        stanza.OperatorConfigs{},
 			Converter: stanza.ConverterConfig{
 				FlushInterval: 100 * time.Millisecond,
@@ -125,7 +119,7 @@ func testdataConfigYamlAsMap() *SysLogConfig {
 func testdataUDPConfig() *SysLogConfig {
 	return &SysLogConfig{
 		BaseConfig: stanza.BaseConfig{
-			ReceiverSettings: config.NewReceiverSettings(config.NewID(typeStr)),
+			ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
 			Operators:        stanza.OperatorConfigs{},
 			Converter: stanza.ConverterConfig{
 				FlushInterval: 100 * time.Millisecond,
@@ -142,14 +136,11 @@ func testdataUDPConfig() *SysLogConfig {
 }
 
 func TestDecodeInputConfigFailure(t *testing.T) {
-	params := component.ReceiverCreateParams{
-		Logger: zap.NewNop(),
-	}
 	sink := new(consumertest.LogsSink)
 	factory := NewFactory()
 	badCfg := &SysLogConfig{
 		BaseConfig: stanza.BaseConfig{
-			ReceiverSettings: config.NewReceiverSettings(config.NewID(typeStr)),
+			ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
 			Operators:        stanza.OperatorConfigs{},
 		},
 		Input: stanza.InputConfig{
@@ -159,13 +150,13 @@ func TestDecodeInputConfigFailure(t *testing.T) {
 			"protocol": "rfc5424",
 		},
 	}
-	receiver, err := factory.CreateLogsReceiver(context.Background(), params, badCfg, sink)
+	receiver, err := factory.CreateLogsReceiver(context.Background(), componenttest.NewNopReceiverCreateSettings(), badCfg, sink)
 	require.Error(t, err, "receiver creation should fail if input config isn't valid")
 	require.Nil(t, receiver, "receiver creation should fail if input config isn't valid")
 }
 
 func expectNLogs(sink *consumertest.LogsSink, expected int) func() bool {
 	return func() bool {
-		return sink.LogRecordsCount() == expected
+		return sink.LogRecordCount() == expected
 	}
 }

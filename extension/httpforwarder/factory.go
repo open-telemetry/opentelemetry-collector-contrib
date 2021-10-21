@@ -42,7 +42,7 @@ func NewFactory() component.ExtensionFactory {
 
 func createDefaultConfig() config.Extension {
 	return &Config{
-		ExtensionSettings: config.NewExtensionSettings(config.NewID(typeStr)),
+		ExtensionSettings: config.NewExtensionSettings(config.NewComponentID(typeStr)),
 		Ingress: confighttp.HTTPServerSettings{
 			Endpoint: defaultEndpoint,
 		},
@@ -54,8 +54,8 @@ func createDefaultConfig() config.Extension {
 
 func createExtension(
 	_ context.Context,
-	params component.ExtensionCreateParams,
+	params component.ExtensionCreateSettings,
 	cfg config.Extension,
 ) (component.Extension, error) {
-	return newHTTPForwarder(cfg.(*Config), params.Logger)
+	return newHTTPForwarder(cfg.(*Config), params.TelemetrySettings)
 }

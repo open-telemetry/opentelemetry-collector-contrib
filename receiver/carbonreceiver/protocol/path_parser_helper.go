@@ -57,6 +57,7 @@ type ParsedPath struct {
 
 type TargetMetricType string
 
+// Values for enum TargetMetricType.
 const (
 	DefaultMetricType    = TargetMetricType("")
 	GaugeMetricType      = TargetMetricType("gauge")
@@ -69,9 +70,9 @@ type PathParserHelper struct {
 	pathParser PathParser
 }
 
-var _ (Parser) = (*PathParserHelper)(nil)
+var _ Parser = (*PathParserHelper)(nil)
 
-// BuildParser creates a new Parser instance that receives plaintext
+// NewParser creates a new Parser instance that receives plaintext
 // Carbon data.
 func NewParser(pathParser PathParser) (Parser, error) {
 	if pathParser == nil {

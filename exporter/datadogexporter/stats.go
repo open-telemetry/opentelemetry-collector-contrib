@@ -27,13 +27,17 @@ const (
 )
 
 // ComputeAPMStats calculates the stats that should be submitted to APM about a given trace
-func computeAPMStats(tracePayload *pb.TracePayload, calculator *sublayerCalculator, pushTime int64) *stats.Payload {
+func computeAPMStats(tracePayload *pb.TracePayload, pushTime int64) *stats.Payload {
 	statsRawBuckets := make(map[int64]*stats.RawBucket)
+
+	// removing sublayer calc as part of work to port
+	// https://github.com/DataDog/datadog-agent/pull/7450/files
+	var emptySublayer []stats.SublayerValue
 
 	bucketTS := pushTime - statsBucketDuration
 	for _, trace := range tracePayload.Traces {
 		spans := getAnalyzedSpans(trace.Spans)
-		sublayers := calculator.computeSublayers(trace.Spans)
+
 		for _, span := range spans {
 
 			// TODO: While this is hardcoded to assume a single 10s buckets for now,
@@ -53,12 +57,20 @@ func computeAPMStats(tracePayload *pb.TracePayload, calculator *sublayerCalculat
 			// Use weight 1, as sampling in opentelemetry would occur upstream in a processor.
 			// Generally we want to ship 100% of traces to the backend where more accurate tail based sampling can be performed.
 			// TopLevel is always "true" since we only compute stats for top-level spans.
+
+			var spanWeight float64
+			if spanRate, ok := span.Metrics[keySamplingRate]; ok {
+				spanWeight = (1 / spanRate)
+			} else {
+				spanWeight = 1
+			}
+
 			weightedSpan := &stats.WeightedSpan{
 				Span:     span,
-				Weight:   1,
+				Weight:   spanWeight,
 				TopLevel: true,
 			}
-			statsRawBucket.HandleSpan(weightedSpan, tracePayload.Env, []string{versionAggregationTag}, sublayers)
+			statsRawBucket.HandleSpan(weightedSpan, tracePayload.Env, []string{versionAggregationTag}, emptySublayer)
 		}
 	}
 

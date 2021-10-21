@@ -124,6 +124,42 @@ func TestEndpointEnv(t *testing.T) {
 			},
 			wantErr: false,
 		},
+		{
+			name: "Container",
+			endpoint: Endpoint{
+				ID:     EndpointID("container_endpoint_id"),
+				Target: "127.0.0.1",
+				Details: &Container{
+					Name:          "otel-collector",
+					Image:         "otel-collector-image",
+					Port:          2379,
+					AlternatePort: 2380,
+					Command:       "./cmd --config config.yaml",
+					ContainerID:   "abcdefg123456",
+					Host:          "127.0.0.1",
+					Transport:     ProtocolTCP,
+					Labels: map[string]string{
+						"label_key": "label_val",
+					},
+				},
+			},
+			want: EndpointEnv{
+				"type":           "container",
+				"name":           "otel-collector",
+				"image":          "otel-collector-image",
+				"port":           uint16(2379),
+				"alternate_port": uint16(2380),
+				"command":        "./cmd --config config.yaml",
+				"container_id":   "abcdefg123456",
+				"host":           "127.0.0.1",
+				"transport":      ProtocolTCP,
+				"labels": map[string]string{
+					"label_key": "label_val",
+				},
+				"endpoint": "127.0.0.1",
+			},
+			wantErr: false,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

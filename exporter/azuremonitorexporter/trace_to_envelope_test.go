@@ -22,8 +22,8 @@ import (
 
 	"github.com/microsoft/ApplicationInsights-Go/appinsights/contracts"
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/translator/conventions"
+	"go.opentelemetry.io/collector/model/pdata"
+	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
 	"go.uber.org/zap"
 )
 
@@ -540,7 +540,7 @@ func TestUnknownInternalSpanToRemoteDependencyData(t *testing.T) {
 // Tests that spans with unspecified kind are treated similar to internal spans
 func TestUnspecifiedSpanToInProcRemoteDependencyData(t *testing.T) {
 	span := getDefaultInternalSpan()
-	span.SetKind(pdata.SpanKindUNSPECIFIED)
+	span.SetKind(pdata.SpanKindUnspecified)
 
 	envelope, _ := spanToEnvelope(defaultResource, defaultInstrumentationLibrary, span, zap.NewNop())
 	commonEnvelopeValidations(t, span, envelope, defaultRemoteDependencyDataEnvelopeName)
@@ -734,19 +734,19 @@ func assertAttributesCopiedToPropertiesOrMeasurements(
 
 	attributeMap.Range(func(k string, v pdata.AttributeValue) bool {
 		switch v.Type() {
-		case pdata.AttributeValueSTRING:
+		case pdata.AttributeValueTypeString:
 			p, exists := properties[k]
 			assert.True(t, exists)
 			assert.Equal(t, v.StringVal(), p)
-		case pdata.AttributeValueBOOL:
+		case pdata.AttributeValueTypeBool:
 			p, exists := properties[k]
 			assert.True(t, exists)
 			assert.Equal(t, strconv.FormatBool(v.BoolVal()), p)
-		case pdata.AttributeValueINT:
+		case pdata.AttributeValueTypeInt:
 			m, exists := measurements[k]
 			assert.True(t, exists)
 			assert.Equal(t, float64(v.IntVal()), m)
-		case pdata.AttributeValueDOUBLE:
+		case pdata.AttributeValueTypeDouble:
 			m, exists := measurements[k]
 			assert.True(t, exists)
 			assert.Equal(t, v.DoubleVal(), m)
@@ -773,27 +773,27 @@ func getSpan(spanName string, spanKind pdata.SpanKind, initialAttributes map[str
 
 // Returns a default server span
 func getServerSpan(spanName string, initialAttributes map[string]pdata.AttributeValue) pdata.Span {
-	return getSpan(spanName, pdata.SpanKindSERVER, initialAttributes)
+	return getSpan(spanName, pdata.SpanKindServer, initialAttributes)
 }
 
 // Returns a default client span
 func getClientSpan(spanName string, initialAttributes map[string]pdata.AttributeValue) pdata.Span {
-	return getSpan(spanName, pdata.SpanKindCLIENT, initialAttributes)
+	return getSpan(spanName, pdata.SpanKindClient, initialAttributes)
 }
 
 // Returns a default consumer span
 func getConsumerSpan(spanName string, initialAttributes map[string]pdata.AttributeValue) pdata.Span {
-	return getSpan(spanName, pdata.SpanKindCONSUMER, initialAttributes)
+	return getSpan(spanName, pdata.SpanKindConsumer, initialAttributes)
 }
 
 // Returns a default producer span
 func getProducerSpan(spanName string, initialAttributes map[string]pdata.AttributeValue) pdata.Span {
-	return getSpan(spanName, pdata.SpanKindPRODUCER, initialAttributes)
+	return getSpan(spanName, pdata.SpanKindProducer, initialAttributes)
 }
 
 // Returns a default internal span
 func getInternalSpan(spanName string, initialAttributes map[string]pdata.AttributeValue) pdata.Span {
-	return getSpan(spanName, pdata.SpanKindINTERNAL, initialAttributes)
+	return getSpan(spanName, pdata.SpanKindInternal, initialAttributes)
 }
 
 func getDefaultHTTPServerSpan() pdata.Span {
@@ -848,9 +848,9 @@ func getDefaultInternalSpan() pdata.Span {
 func getResource() pdata.Resource {
 	r := pdata.NewResource()
 	r.Attributes().InitFromMap(map[string]pdata.AttributeValue{
-		conventions.AttributeServiceName:      pdata.NewAttributeValueString(defaultServiceName),
-		conventions.AttributeServiceNamespace: pdata.NewAttributeValueString(defaultServiceNamespace),
-		conventions.AttributeServiceInstance:  pdata.NewAttributeValueString(defaultServiceInstance),
+		conventions.AttributeServiceName:       pdata.NewAttributeValueString(defaultServiceName),
+		conventions.AttributeServiceNamespace:  pdata.NewAttributeValueString(defaultServiceNamespace),
+		conventions.AttributeServiceInstanceID: pdata.NewAttributeValueString(defaultServiceInstance),
 	})
 
 	return r

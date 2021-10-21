@@ -24,16 +24,18 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer/consumererror"
-	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/model/pdata"
 )
 
 func LogRecordsToLogs(records []pdata.LogRecord) pdata.Logs {
 	logs := pdata.NewLogs()
 	logsSlice := logs.ResourceLogs().AppendEmpty().InstrumentationLibraryLogs().AppendEmpty().Logs()
 	for _, record := range records {
-		logsSlice.Append(record)
+		tgt := logsSlice.AppendEmpty()
+		record.CopyTo(tgt)
 	}
 
 	return logs
@@ -164,7 +166,7 @@ func TestAllFailed(t *testing.T) {
 	assert.EqualError(t, err, "error during sending data: 500 Internal Server Error")
 
 	var partial consumererror.Logs
-	require.True(t, consumererror.AsLogs(err, &partial))
+	require.True(t, errors.As(err, &partial))
 	assert.Equal(t, logs, partial.GetLogs())
 }
 
@@ -197,7 +199,7 @@ func TestPartiallyFailed(t *testing.T) {
 	assert.EqualError(t, err, "error during sending data: 500 Internal Server Error")
 
 	var partial consumererror.Logs
-	require.True(t, consumererror.AsLogs(err, &partial))
+	require.True(t, errors.As(err, &partial))
 	assert.Equal(t, expected, partial.GetLogs())
 }
 
@@ -216,7 +218,7 @@ func TestInvalidSourceFormats(t *testing.T) {
 }
 
 func TestInvalidHTTPCLient(t *testing.T) {
-	_, err := initExporter(&Config{
+	se, err := initExporter(&Config{
 		LogFormat:        "json",
 		MetricFormat:     "carbon2",
 		CompressEncoding: "gzip",
@@ -227,6 +229,10 @@ func TestInvalidHTTPCLient(t *testing.T) {
 			},
 		},
 	})
+	require.NoError(t, err)
+	require.NotNil(t, se)
+
+	err = se.start(context.Background(), componenttest.NewNopHost())
 	assert.EqualError(t, err, "failed to create HTTP Client: roundTripperException")
 }
 
@@ -274,11 +280,12 @@ func TestPushFailedBatch(t *testing.T) {
 	defer func() { test.srv.Close() }()
 
 	logs := LogRecordsToLogs(exampleLog())
-	logs.ResourceLogs().Resize(maxBufferSize + 1)
+	logs.ResourceLogs().EnsureCapacity(maxBufferSize + 1)
 	log := logs.ResourceLogs().At(0)
 
 	for i := 0; i < maxBufferSize; i++ {
-		logs.ResourceLogs().Append(log)
+		tgt := logs.ResourceLogs().AppendEmpty()
+		log.CopyTo(tgt)
 	}
 
 	err := test.exp.pushLogsData(context.Background(), logs)
@@ -333,7 +340,7 @@ gauge_metric_name{foo="bar",remote_name="156955",url="http://another_url"} 245 1
 	assert.EqualError(t, err, "error during sending data: 500 Internal Server Error")
 
 	var partial consumererror.Metrics
-	require.True(t, consumererror.AsMetrics(err, &partial))
+	require.True(t, errors.As(err, &partial))
 	assert.Equal(t, metrics, partial.GetMetrics())
 }
 
@@ -370,7 +377,7 @@ gauge_metric_name{foo="bar",remote_name="156955",url="http://another_url"} 245 1
 	assert.EqualError(t, err, "error during sending data: 500 Internal Server Error")
 
 	var partial consumererror.Metrics
-	require.True(t, consumererror.AsMetrics(err, &partial))
+	require.True(t, errors.As(err, &partial))
 	assert.Equal(t, expected, partial.GetMetrics())
 }
 
@@ -436,7 +443,7 @@ gauge_metric_name{foo="bar",key2="value2",remote_name="156955",url="http://anoth
 	assert.EqualError(t, err, "error during sending data: 500 Internal Server Error")
 
 	var partial consumererror.Metrics
-	require.True(t, consumererror.AsMetrics(err, &partial))
+	require.True(t, errors.As(err, &partial))
 	assert.Equal(t, expected, partial.GetMetrics())
 }
 
@@ -467,11 +474,12 @@ func TestPushMetricsFailedBatch(t *testing.T) {
 	test.exp.config.MaxRequestBodySize = 1024 * 1024 * 1024 * 1024
 
 	metrics := metricPairToMetrics([]metricPair{exampleIntMetric()})
-	metrics.ResourceMetrics().Resize(maxBufferSize + 1)
+	metrics.ResourceMetrics().EnsureCapacity(maxBufferSize + 1)
 	metric := metrics.ResourceMetrics().At(0)
 
 	for i := 0; i < maxBufferSize; i++ {
-		metrics.ResourceMetrics().Append(metric)
+		tgt := metrics.ResourceMetrics().AppendEmpty()
+		metric.CopyTo(tgt)
 	}
 
 	err := test.exp.pushMetricsData(context.Background(), metrics)

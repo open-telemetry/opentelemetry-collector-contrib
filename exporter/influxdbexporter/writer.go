@@ -27,6 +27,7 @@ import (
 
 	"github.com/influxdata/influxdb-observability/common"
 	lineprotocol "github.com/influxdata/line-protocol/v2/influxdata"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 )
 
@@ -38,7 +39,7 @@ type influxHTTPWriter struct {
 	logger common.Logger
 }
 
-func newInfluxHTTPWriter(logger common.Logger, config *Config) (*influxHTTPWriter, error) {
+func newInfluxHTTPWriter(logger common.Logger, config *Config, host component.Host) (*influxHTTPWriter, error) {
 	writeURL, err := url.Parse(config.HTTPClientSettings.Endpoint)
 	if err != nil {
 		return nil, err
@@ -59,7 +60,7 @@ func newInfluxHTTPWriter(logger common.Logger, config *Config) (*influxHTTPWrite
 		config.HTTPClientSettings.Headers["Authorization"] = "Token " + config.Token
 	}
 
-	httpClient, err := config.HTTPClientSettings.ToClient()
+	httpClient, err := config.HTTPClientSettings.ToClient(host.GetExtensions())
 	if err != nil {
 		return nil, err
 	}
@@ -107,7 +108,7 @@ func (b *influxHTTPWriterBatch) WritePoint(_ context.Context, measurement string
 
 	if err := b.encoder.Err(); err != nil {
 		defer b.encoder.ClearErr()
-		return consumererror.Permanent(fmt.Errorf("failed to encode point: %w", err))
+		return consumererror.NewPermanent(fmt.Errorf("failed to encode point: %w", err))
 	}
 
 	return nil
@@ -116,7 +117,7 @@ func (b *influxHTTPWriterBatch) WritePoint(_ context.Context, measurement string
 func (b *influxHTTPWriterBatch) flushAndClose(ctx context.Context) error {
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, b.w.writeURL, bytes.NewReader(b.encoder.Bytes()))
 	if err != nil {
-		return consumererror.Permanent(err)
+		return consumererror.NewPermanent(err)
 	}
 
 	if res, err := b.w.httpClient.Do(req); err != nil {
@@ -132,7 +133,7 @@ func (b *influxHTTPWriterBatch) flushAndClose(ctx context.Context) error {
 		case 5: // Retryable error
 			return fmt.Errorf("line protocol write returned %q %q", res.Status, string(body))
 		default: // Terminal error
-			return consumererror.Permanent(fmt.Errorf("line protocol write returned %q %q", res.Status, string(body)))
+			return consumererror.NewPermanent(fmt.Errorf("line protocol write returned %q %q", res.Status, string(body)))
 		}
 	}
 
@@ -171,7 +172,7 @@ func (b *influxHTTPWriterBatch) convertFields(m map[string]interface{}) (fields 
 		if k == "" {
 			b.logger.Debug("empty field key")
 		} else if lpv, ok := lineprotocol.NewValue(v); !ok {
-			b.logger.Debug("invalid field value %q for key %q", v, k)
+			b.logger.Debug("invalid field value", "key", k, "value", v)
 		} else {
 			fields[k] = lpv
 		}

@@ -20,6 +20,7 @@ import (
 	"net/http"
 	"os"
 
+	quotaclientset "github.com/openshift/client-go/quota/clientset/versioned"
 	k8s "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
@@ -130,6 +131,26 @@ func MakeClient(apiConf APIConfig) (k8s.Interface, error) {
 	}
 
 	client, err := k8s.NewForConfig(authConf)
+	if err != nil {
+		return nil, err
+	}
+
+	return client, nil
+}
+
+// MakeOpenShiftQuotaClient can take configuration if needed for other types of auth
+// and return an OpenShift quota API client
+func MakeOpenShiftQuotaClient(apiConf APIConfig) (quotaclientset.Interface, error) {
+	if err := apiConf.Validate(); err != nil {
+		return nil, err
+	}
+
+	authConf, err := createRestConfig(apiConf)
+	if err != nil {
+		return nil, err
+	}
+
+	client, err := quotaclientset.NewForConfig(authConf)
 	if err != nil {
 		return nil, err
 	}

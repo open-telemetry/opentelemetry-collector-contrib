@@ -29,10 +29,9 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/obsreport"
-	jaegertranslator "go.opentelemetry.io/collector/translator/trace/jaeger"
-	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger"
 )
 
 var gzipWriterPool = &sync.Pool{
@@ -43,9 +42,7 @@ var gzipWriterPool = &sync.Pool{
 
 // sapmReceiver receives spans in the Splunk SAPM format over HTTP
 type sapmReceiver struct {
-	// mu protects the fields of this type
-	mu     sync.Mutex
-	logger *zap.Logger
+	settings component.TelemetrySettings
 
 	config *Config
 	server *http.Server
@@ -56,24 +53,21 @@ type sapmReceiver struct {
 	// This defaultResponse is an optimization so we don't have to proto.Marshal the response
 	// for every request. At some point this may be removed when there is actual content to return.
 	defaultResponse []byte
+
+	obsrecv *obsreport.Receiver
 }
 
 // handleRequest parses an http request containing sapm and passes the trace data to the next consumer
-func (sr *sapmReceiver) handleRequest(ctx context.Context, req *http.Request) error {
+func (sr *sapmReceiver) handleRequest(req *http.Request) error {
 	sapm, err := sapmprotocol.ParseTraceV2Request(req)
 	// errors processing the request should return http.StatusBadRequest
 	if err != nil {
 		return err
 	}
 
-	transport := "http"
-	if sr.config.TLSSetting != nil {
-		transport = "https"
-	}
-	ctx = obsreport.ReceiverContext(ctx, sr.config.ID(), transport)
-	ctx = obsreport.StartTraceDataReceiveOp(ctx, sr.config.ID(), transport)
+	ctx := sr.obsrecv.StartTracesOp(req.Context())
 
-	td := jaegertranslator.ProtoBatchesToInternalTraces(sapm.Batches)
+	td := jaeger.ProtoBatchesToInternalTraces(sapm.Batches)
 
 	if sr.config.AccessTokenPassthrough {
 		if accessToken := req.Header.Get(splunk.SFxAccessTokenHeader); accessToken != "" {
@@ -92,17 +86,14 @@ func (sr *sapmReceiver) handleRequest(ctx context.Context, req *http.Request) er
 		err = fmt.Errorf("error passing trace data to next consumer: %v", err.Error())
 	}
 
-	obsreport.EndTraceDataReceiveOp(ctx, "protobuf", td.SpanCount(), err)
+	sr.obsrecv.EndTracesOp(ctx, "protobuf", td.SpanCount(), err)
 	return err
 }
 
-// HTTPHandlerFunction returns an http.HandlerFunc that handles SAPM requests
+// HTTPHandlerFunc returns an http.HandlerFunc that handles SAPM requests
 func (sr *sapmReceiver) HTTPHandlerFunc(rw http.ResponseWriter, req *http.Request) {
-	// create context with the receiver name from the request context
-	ctx := obsreport.ReceiverContext(req.Context(), sr.config.ID(), "http")
-
 	// handle the request payload
-	err := sr.handleRequest(ctx, req)
+	err := sr.handleRequest(req)
 	if err != nil {
 		// TODO account for this error (throttled logging or metrics)
 		rw.WriteHeader(http.StatusBadRequest)
@@ -159,9 +150,6 @@ func (sr *sapmReceiver) HTTPHandlerFunc(rw http.ResponseWriter, req *http.Reques
 
 // Start starts the sapmReceiver's server.
 func (sr *sapmReceiver) Start(_ context.Context, host component.Host) error {
-	sr.mu.Lock()
-	defer sr.mu.Unlock()
-
 	// set up the listener
 	ln, err := sr.config.HTTPServerSettings.ToListener()
 	if err != nil {
@@ -173,7 +161,7 @@ func (sr *sapmReceiver) Start(_ context.Context, host component.Host) error {
 	nr.HandleFunc(sapmprotocol.TraceEndpointV2, sr.HTTPHandlerFunc)
 
 	// create a server with the handler
-	sr.server = sr.config.HTTPServerSettings.ToServer(nr)
+	sr.server = sr.config.HTTPServerSettings.ToServer(nr, sr.settings)
 
 	// run the server on a routine
 	go func() {
@@ -186,19 +174,15 @@ func (sr *sapmReceiver) Start(_ context.Context, host component.Host) error {
 
 // Shutdown stops the the sapmReceiver's server.
 func (sr *sapmReceiver) Shutdown(context.Context) error {
-	sr.mu.Lock()
-	defer sr.mu.Unlock()
-
 	return sr.server.Close()
 }
 
 // this validates at compile time that sapmReceiver implements the component.TracesReceiver interface
 var _ component.TracesReceiver = (*sapmReceiver)(nil)
 
-// New creates a sapmReceiver that receives SAPM over http
-func New(
-	ctx context.Context,
-	params component.ReceiverCreateParams,
+// newReceiver creates a sapmReceiver that receives SAPM over http
+func newReceiver(
+	params component.ReceiverCreateSettings,
 	config *Config,
 	nextConsumer consumer.Traces,
 ) (component.TracesReceiver, error) {
@@ -208,10 +192,19 @@ func New(
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal default response body for %v receiver: %w", config.ID(), err)
 	}
+	transport := "http"
+	if config.TLSSetting != nil {
+		transport = "https"
+	}
 	return &sapmReceiver{
-		logger:          params.Logger,
+		settings:        params.TelemetrySettings,
 		config:          config,
 		nextConsumer:    nextConsumer,
 		defaultResponse: defaultResponseBytes,
+		obsrecv: obsreport.NewReceiver(obsreport.ReceiverSettings{
+			ReceiverID:             config.ID(),
+			Transport:              transport,
+			ReceiverCreateSettings: params,
+		}),
 	}, nil
 }

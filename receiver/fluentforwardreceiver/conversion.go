@@ -23,7 +23,7 @@ import (
 	"time"
 
 	"github.com/tinylib/msgp/msgp"
-	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/model/pdata"
 )
 
 const tagAttributeKey = "fluent.tag"
@@ -58,6 +58,7 @@ type Peeker interface {
 	Peek(n int) ([]byte, error)
 }
 
+// Values for enum EventMode.
 const (
 	UnknownMode EventMode = iota
 	MessageMode
@@ -130,7 +131,7 @@ func decodeTimestampToLogRecord(dc *msgp.Reader, lr pdata.LogRecord) error {
 		return msgp.WrapError(err, "Time")
 	}
 
-	lr.SetTimestamp(pdata.TimestampFromTime(ts))
+	lr.SetTimestamp(pdata.NewTimestampFromTime(ts))
 	return nil
 }
 
@@ -286,9 +287,9 @@ func (fe *ForwardEventLogRecords) DecodeMsg(dc *msgp.Reader) (err error) {
 		return
 	}
 
-	fe.LogSlice.Resize(int(entryLen))
+	fe.LogSlice.EnsureCapacity(int(entryLen))
 	for i := 0; i < int(entryLen); i++ {
-		lr := fe.LogSlice.At(i)
+		lr := fe.LogSlice.AppendEmpty()
 
 		err = parseEntryToLogRecord(dc, lr)
 		if err != nil {
@@ -421,6 +422,7 @@ func (pfe *PackedForwardEventLogRecords) parseEntries(entriesRaw []byte, isGzipp
 
 		lr.Attributes().InsertString(tagAttributeKey, tag)
 
-		pfe.LogSlice.Append(lr)
+		tgt := pfe.LogSlice.AppendEmpty()
+		lr.CopyTo(tgt)
 	}
 }

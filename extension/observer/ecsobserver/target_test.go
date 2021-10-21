@@ -22,13 +22,13 @@ import (
 
 func TestTargetToLabels(t *testing.T) {
 	t.Run("sanitize tags", func(t *testing.T) {
-		pt := PrometheusECSTarget{
+		pt := prometheusECSTarget{
 			TaskTags: map[string]string{
 				"a:b": "sanitized",
 				"ab":  "same",
 			},
 		}
-		m := TargetToLabels(pt)
+		m := pt.ToLabels()
 		assert.Equal(t, "sanitized", m["__meta_ecs_task_tags_a_b"])
 		assert.Equal(t, "same", m["__meta_ecs_task_tags_ab"])
 	})

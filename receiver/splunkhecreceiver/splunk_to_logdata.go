@@ -18,8 +18,7 @@ import (
 	"errors"
 	"sort"
 
-	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/translator/conventions"
+	"go.opentelemetry.io/collector/model/pdata"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
@@ -29,8 +28,8 @@ const (
 	cannotConvertValue = "cannot convert field value to attribute"
 )
 
-// SplunkHecToLogData transforms splunk events into logs
-func SplunkHecToLogData(logger *zap.Logger, events []*splunk.Event, resourceCustomizer func(pdata.Resource)) (pdata.Logs, error) {
+// splunkHecToLogData transforms splunk events into logs
+func splunkHecToLogData(logger *zap.Logger, events []*splunk.Event, resourceCustomizer func(pdata.Resource), config *Config) (pdata.Logs, error) {
 	ld := pdata.NewLogs()
 	rl := ld.ResourceLogs().AppendEmpty()
 	ill := rl.InstrumentationLibraryLogs().AppendEmpty()
@@ -52,18 +51,20 @@ func SplunkHecToLogData(logger *zap.Logger, events []*splunk.Event, resourceCust
 		}
 
 		if event.Host != "" {
-			logRecord.Attributes().InsertString(conventions.AttributeHostName, event.Host)
+			logRecord.Attributes().InsertString(config.HecToOtelAttrs.Host, event.Host)
 		}
 		if event.Source != "" {
-			logRecord.Attributes().InsertString(conventions.AttributeServiceName, event.Source)
+			logRecord.Attributes().InsertString(config.HecToOtelAttrs.Source, event.Source)
 		}
 		if event.SourceType != "" {
-			logRecord.Attributes().InsertString(splunk.SourcetypeLabel, event.SourceType)
+			logRecord.Attributes().InsertString(config.HecToOtelAttrs.SourceType, event.SourceType)
 		}
 		if event.Index != "" {
-			logRecord.Attributes().InsertString(splunk.IndexLabel, event.Index)
+			logRecord.Attributes().InsertString(config.HecToOtelAttrs.Index, event.Index)
 		}
-		resourceCustomizer(rl.Resource())
+		if resourceCustomizer != nil {
+			resourceCustomizer(rl.Resource())
+		}
 		keys := make([]string, 0, len(event.Fields))
 		for k := range event.Fields {
 			keys = append(keys, k)
@@ -84,7 +85,7 @@ func SplunkHecToLogData(logger *zap.Logger, events []*splunk.Event, resourceCust
 
 func convertInterfaceToAttributeValue(logger *zap.Logger, originalValue interface{}) (pdata.AttributeValue, error) {
 	if originalValue == nil {
-		return pdata.NewAttributeValueNull(), nil
+		return pdata.NewAttributeValueEmpty(), nil
 	} else if value, ok := originalValue.(string); ok {
 		return pdata.NewAttributeValueString(value), nil
 	} else if value, ok := originalValue.(int64); ok {
@@ -96,18 +97,18 @@ func convertInterfaceToAttributeValue(logger *zap.Logger, originalValue interfac
 	} else if value, ok := originalValue.(map[string]interface{}); ok {
 		mapValue, err := convertToAttributeMap(logger, value)
 		if err != nil {
-			return pdata.NewAttributeValueNull(), err
+			return pdata.NewAttributeValueEmpty(), err
 		}
 		return mapValue, nil
 	} else if value, ok := originalValue.([]interface{}); ok {
 		arrValue, err := convertToArrayVal(logger, value)
 		if err != nil {
-			return pdata.NewAttributeValueNull(), err
+			return pdata.NewAttributeValueEmpty(), err
 		}
 		return arrValue, nil
 	} else {
 		logger.Debug("Unsupported value conversion", zap.Any("value", originalValue))
-		return pdata.NewAttributeValueNull(), errors.New(cannotConvertValue)
+		return pdata.NewAttributeValueEmpty(), errors.New(cannotConvertValue)
 	}
 }
 
@@ -119,7 +120,8 @@ func convertToArrayVal(logger *zap.Logger, value []interface{}) (pdata.Attribute
 		if err != nil {
 			return attrVal, err
 		}
-		arr.Append(translatedElt)
+		tgt := arr.AppendEmpty()
+		translatedElt.CopyTo(tgt)
 	}
 	return attrVal, nil
 }

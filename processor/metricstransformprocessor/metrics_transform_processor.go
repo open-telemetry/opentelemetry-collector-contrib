@@ -25,20 +25,18 @@ import (
 	agentmetricspb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/metrics/v1"
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
-	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/processor/processorhelper"
-	"go.opentelemetry.io/collector/translator/internaldata"
+	"go.opentelemetry.io/collector/model/pdata"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/timestamppb"
+
+	internaldata "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus"
 )
 
 type metricsTransformProcessor struct {
 	transforms []internalTransform
 	logger     *zap.Logger
 }
-
-var _ processorhelper.MProcessor = (*metricsTransformProcessor)(nil)
 
 type internalTransform struct {
 	MetricIncludeFilter internalFilter
@@ -60,7 +58,6 @@ type internalOperation struct {
 type internalFilter interface {
 	getMatches(toMatch metricNameMapping) []*match
 	getSubexpNames() []string
-	labelMatched(metric *metricspb.Metric) bool
 }
 
 type match struct {
@@ -69,17 +66,29 @@ type match struct {
 	submatches []int
 }
 
+type StringMatcher interface {
+	MatchString(string) bool
+}
+
+type strictMatcher string
+
+func (s strictMatcher) MatchString(cmp string) bool {
+	return string(s) == cmp
+}
+
 type internalFilterStrict struct {
 	include     string
-	matchLabels map[string]string
+	matchLabels map[string]StringMatcher
 }
 
 func (f internalFilterStrict) getMatches(toMatch metricNameMapping) []*match {
+
 	if metrics, ok := toMatch[f.include]; ok {
-		matches := make([]*match, 0, 10)
+		matches := make([]*match, 0)
 		for _, metric := range metrics {
-			if f.labelMatched(metric) {
-				matches = append(matches, &match{metric: metric})
+			matchedMetric := labelMatched(f.matchLabels, metric)
+			if matchedMetric != nil {
+				matches = append(matches, &match{metric: matchedMetric})
 			}
 		}
 		return matches
@@ -92,46 +101,19 @@ func (f internalFilterStrict) getSubexpNames() []string {
 	return nil
 }
 
-func (f internalFilterStrict) labelMatched(metric *metricspb.Metric) bool {
-	if len(f.matchLabels) == 0 {
-		return true
-	}
-
-	for key, value := range f.matchLabels {
-		keyFound := false
-
-		for idx, label := range metric.MetricDescriptor.LabelKeys {
-			if label.Key != key {
-				continue
-			}
-
-			keyFound = true
-			if len(metric.Timeseries) > 0 && metric.Timeseries[0].LabelValues[idx].Value != value {
-				return false
-			}
-		}
-
-		// if a label-key is not found then return false only if the given label-value is non-empty. If a given label-value is empty
-		// and the key is not found then return true. In this approach we can make sure certain key is not present which is a valid use case.
-		if !keyFound && value != "" {
-			return false
-		}
-	}
-	return true
-}
-
 type internalFilterRegexp struct {
 	include     *regexp.Regexp
-	matchLabels map[string]*regexp.Regexp
+	matchLabels map[string]StringMatcher
 }
 
 func (f internalFilterRegexp) getMatches(toMatch metricNameMapping) []*match {
-	matches := make([]*match, 0, 10)
+	matches := make([]*match, 0)
 	for name, metrics := range toMatch {
 		if submatches := f.include.FindStringSubmatchIndex(name); submatches != nil {
 			for _, metric := range metrics {
-				if f.labelMatched(metric) {
-					matches = append(matches, &match{metric: metric, pattern: f.include, submatches: submatches})
+				matchedMetric := labelMatched(f.matchLabels, metric)
+				if matchedMetric != nil {
+					matches = append(matches, &match{metric: matchedMetric, pattern: f.include, submatches: submatches})
 				}
 			}
 		}
@@ -143,12 +125,19 @@ func (f internalFilterRegexp) getSubexpNames() []string {
 	return f.include.SubexpNames()
 }
 
-func (f internalFilterRegexp) labelMatched(metric *metricspb.Metric) bool {
-	if len(f.matchLabels) == 0 {
-		return true
+func labelMatched(matchLabels map[string]StringMatcher, metric *metricspb.Metric) *metricspb.Metric {
+	if len(matchLabels) == 0 {
+		return metric
 	}
 
-	for key, value := range f.matchLabels {
+	metricWithMatchedLabel := &metricspb.Metric{}
+	metricWithMatchedLabel.MetricDescriptor = proto.Clone(metric.MetricDescriptor).(*metricspb.MetricDescriptor)
+	metricWithMatchedLabel.Resource = proto.Clone(metric.Resource).(*resourcepb.Resource)
+
+	var timeSeriesWithMatchedLabel []*metricspb.TimeSeries
+	labelIndexValueMap := make(map[int]StringMatcher)
+
+	for key, value := range matchLabels {
 		keyFound := false
 
 		for idx, label := range metric.MetricDescriptor.LabelKeys {
@@ -157,18 +146,35 @@ func (f internalFilterRegexp) labelMatched(metric *metricspb.Metric) bool {
 			}
 
 			keyFound = true
-			if len(metric.Timeseries) > 0 && !value.MatchString(metric.Timeseries[0].LabelValues[idx].Value) {
-				return false
-			}
+			labelIndexValueMap[idx] = value
 		}
 
-		// if a label-key is not found then return false only if the given label-value is non-empty. If a given label-value is empty
-		// and the key is not found then return true. In this approach we can make sure certain key is not present which is a valid use case.
+		// if a label-key is not found then return nil only if the given label-value is non-empty. If a given label-value is empty
+		// and the key is not found then move forward. In this approach we can make sure certain key is not present which is a valid use case.
 		if !keyFound && !value.MatchString("") {
-			return false
+			return nil
 		}
 	}
-	return true
+
+	for _, timeseries := range metric.Timeseries {
+		allValuesMatched := true
+		for index, value := range labelIndexValueMap {
+			if !value.MatchString(timeseries.LabelValues[index].Value) {
+				allValuesMatched = false
+				break
+			}
+		}
+		if allValuesMatched {
+			timeSeriesWithMatchedLabel = append(timeSeriesWithMatchedLabel, timeseries)
+		}
+	}
+
+	if len(timeSeriesWithMatchedLabel) == 0 {
+		return nil
+	}
+
+	metricWithMatchedLabel.Timeseries = timeSeriesWithMatchedLabel
+	return metricWithMatchedLabel
 }
 
 type metricNameMapping map[string][]*metricspb.Metric
@@ -203,8 +209,8 @@ func newMetricsTransformProcessor(logger *zap.Logger, internalTransforms []inter
 	}
 }
 
-// ProcessMetrics implements the MProcessor interface.
-func (mtp *metricsTransformProcessor) ProcessMetrics(_ context.Context, md pdata.Metrics) (pdata.Metrics, error) {
+// processMetrics implements the ProcessMetricsFunc type.
+func (mtp *metricsTransformProcessor) processMetrics(_ context.Context, md pdata.Metrics) (pdata.Metrics, error) {
 	rms := md.ResourceMetrics()
 	groupedMds := make([]*agentmetricspb.ExportMetricsServiceRequest, 0)
 
@@ -430,6 +436,8 @@ func (mtp *metricsTransformProcessor) update(match *match, transform internalTra
 			mtp.aggregateLabelValuesOp(match.metric, op)
 		case ToggleScalarDataType:
 			mtp.ToggleScalarDataType(match.metric)
+		case ScaleValue:
+			mtp.scaleValueOp(match.metric, op)
 		case AddLabel:
 			mtp.addLabelOp(match.metric, op)
 		case DeleteLabelValue:

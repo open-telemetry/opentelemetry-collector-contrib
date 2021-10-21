@@ -18,7 +18,7 @@ import (
 	"context"
 
 	"go.opencensus.io/stats"
-	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/model/pdata"
 	"go.uber.org/zap"
 )
 
@@ -28,7 +28,7 @@ type groupByAttrsProcessor struct {
 }
 
 // ProcessTraces process traces and groups traces by attribute.
-func (gap *groupByAttrsProcessor) ProcessTraces(ctx context.Context, td pdata.Traces) (pdata.Traces, error) {
+func (gap *groupByAttrsProcessor) processTraces(ctx context.Context, td pdata.Traces) (pdata.Traces, error) {
 	rss := td.ResourceSpans()
 	extractedGroups := newSpansGroupedByAttrs()
 
@@ -54,7 +54,8 @@ func (gap *groupByAttrsProcessor) ProcessTraces(ctx context.Context, td pdata.Tr
 				// Lets combine the base resource attributes + the extracted (grouped) attributes
 				// and keep them in the grouping entry
 				groupedSpans := extractedGroups.attributeGroup(rs.Resource(), groupedAttrMap)
-				matchingInstrumentationLibrarySpans(groupedSpans, ils.InstrumentationLibrary()).Spans().Append(span)
+				sp := matchingInstrumentationLibrarySpans(groupedSpans, ils.InstrumentationLibrary()).Spans().AppendEmpty()
+				span.CopyTo(sp)
 			}
 		}
 	}
@@ -67,7 +68,7 @@ func (gap *groupByAttrsProcessor) ProcessTraces(ctx context.Context, td pdata.Tr
 	return groupedTraces, nil
 }
 
-func (gap *groupByAttrsProcessor) ProcessLogs(ctx context.Context, ld pdata.Logs) (pdata.Logs, error) {
+func (gap *groupByAttrsProcessor) processLogs(ctx context.Context, ld pdata.Logs) (pdata.Logs, error) {
 	rl := ld.ResourceLogs()
 	extractedGroups := newLogsGroupedByAttrs()
 
@@ -93,7 +94,8 @@ func (gap *groupByAttrsProcessor) ProcessLogs(ctx context.Context, ld pdata.Logs
 				// Lets combine the base resource attributes + the extracted (grouped) attributes
 				// and keep them in the grouping entry
 				groupedLogs := extractedGroups.attributeGroup(ls.Resource(), groupedAttrMap)
-				matchingInstrumentationLibraryLogs(groupedLogs, ill.InstrumentationLibrary()).Logs().Append(log)
+				lr := matchingInstrumentationLibraryLogs(groupedLogs, ill.InstrumentationLibrary()).Logs().AppendEmpty()
+				log.CopyTo(lr)
 			}
 		}
 

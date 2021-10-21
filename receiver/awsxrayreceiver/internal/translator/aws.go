@@ -17,8 +17,8 @@ package translator
 import (
 	"strconv"
 
-	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/translator/conventions"
+	"go.opentelemetry.io/collector/model/pdata"
+	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
 
 	awsxray "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray"
 )
@@ -33,7 +33,7 @@ func addAWSToResource(aws *awsxray.AWSData, attrs *pdata.AttributeMap) {
 	}
 
 	attrs.UpsertString(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAWS)
-	addString(aws.AccountID, conventions.AttributeCloudAccount, attrs)
+	addString(aws.AccountID, conventions.AttributeCloudAccountID, attrs)
 
 	// based on https://docs.aws.amazon.com/xray/latest/devguide/xray-api-segmentdocuments.html#api-segmentdocuments-aws
 	// it's possible to have all ec2, ecs and beanstalk fields at the same time.
@@ -53,15 +53,15 @@ func addAWSToResource(aws *awsxray.AWSData, attrs *pdata.AttributeMap) {
 	if bs := aws.Beanstalk; bs != nil {
 		addString(bs.Environment, conventions.AttributeServiceNamespace, attrs)
 		if bs.DeploymentID != nil {
-			attrs.UpsertString(conventions.AttributeServiceInstance, strconv.FormatInt(*bs.DeploymentID, 10))
+			attrs.UpsertString(conventions.AttributeServiceInstanceID, strconv.FormatInt(*bs.DeploymentID, 10))
 		}
 		addString(bs.VersionLabel, conventions.AttributeServiceVersion, attrs)
 	}
 
 	if eks := aws.EKS; eks != nil {
 		addString(eks.ContainerID, conventions.AttributeContainerID, attrs)
-		addString(eks.ClusterName, conventions.AttributeK8sCluster, attrs)
-		addString(eks.Pod, conventions.AttributeK8sPod, attrs)
+		addString(eks.ClusterName, conventions.AttributeK8SClusterName, attrs)
+		addString(eks.Pod, conventions.AttributeK8SPodName, attrs)
 
 	}
 }

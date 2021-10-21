@@ -40,14 +40,14 @@ func NewFactory() component.ExtensionFactory {
 
 func createDefaultConfig() config.Extension {
 	return &Config{
-		ExtensionSettings: config.NewExtensionSettings(config.NewID(typeStr)),
+		ExtensionSettings: config.NewExtensionSettings(config.NewComponentID(typeStr)),
 		RefreshInterval:   defaultCollectionInterval * time.Second,
 	}
 }
 
 func createExtension(
 	_ context.Context,
-	params component.ExtensionCreateParams,
+	params component.ExtensionCreateSettings,
 	cfg config.Extension,
 ) (component.Extension, error) {
 	config := cfg.(*Config)

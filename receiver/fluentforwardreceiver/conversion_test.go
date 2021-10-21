@@ -21,8 +21,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"github.com/tinylib/msgp/msgp"
-	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/testutil/logstest"
+	"go.opentelemetry.io/collector/model/pdata"
 )
 
 func TestMessageEventConversion(t *testing.T) {
@@ -36,8 +35,8 @@ func TestMessageEventConversion(t *testing.T) {
 	le := event.LogRecords().At(0)
 	le.Attributes().Sort()
 
-	expected := logstest.Logs(
-		logstest.Log{
+	expected := Logs(
+		Log{
 			Timestamp: 1593031012000000000,
 			Body:      pdata.NewAttributeValueString("..."),
 			Attributes: map[string]pdata.AttributeValue{
@@ -101,10 +100,10 @@ func TestAttributeTypeConversion(t *testing.T) {
 
 	le := event.LogRecords().At(0)
 	le.Attributes().Sort()
-	require.EqualValues(t, logstest.Logs(
-		logstest.Log{
+	require.EqualValues(t, Logs(
+		Log{
 			Timestamp: 5000000000000,
-			Body:      pdata.NewAttributeValueNull(),
+			Body:      pdata.NewAttributeValueEmpty(),
 			Attributes: map[string]pdata.AttributeValue{
 				"a":          pdata.NewAttributeValueDouble(5.0),
 				"b":          pdata.NewAttributeValueDouble(6.0),

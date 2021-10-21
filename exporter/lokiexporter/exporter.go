@@ -29,31 +29,24 @@ import (
 	"github.com/prometheus/common/model"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumererror"
-	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/model/pdata"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/lokiexporter/internal/third_party/loki/logproto"
 )
 
 type lokiExporter struct {
-	config             *Config
-	logger             *zap.Logger
-	client             *http.Client
-	attributesToLabels map[string]model.LabelName
-	wg                 sync.WaitGroup
+	config *Config
+	logger *zap.Logger
+	client *http.Client
+	wg     sync.WaitGroup
 }
 
-func newExporter(config *Config, logger *zap.Logger) (*lokiExporter, error) {
-	client, err := config.HTTPClientSettings.ToClient()
-	if err != nil {
-		return nil, err
-	}
-
+func newExporter(config *Config, logger *zap.Logger) *lokiExporter {
 	return &lokiExporter{
 		config: config,
 		logger: logger,
-		client: client,
-	}, nil
+	}
 }
 
 func (l *lokiExporter) pushLogData(ctx context.Context, ld pdata.Logs) error {
@@ -62,17 +55,17 @@ func (l *lokiExporter) pushLogData(ctx context.Context, ld pdata.Logs) error {
 
 	pushReq, _ := l.logDataToLoki(ld)
 	if len(pushReq.Streams) == 0 {
-		return consumererror.Permanent(fmt.Errorf("failed to transform logs into Loki log streams"))
+		return consumererror.NewPermanent(fmt.Errorf("failed to transform logs into Loki log streams"))
 	}
 
 	buf, err := encode(pushReq)
 	if err != nil {
-		return consumererror.Permanent(err)
+		return consumererror.NewPermanent(err)
 	}
 
 	req, err := http.NewRequestWithContext(ctx, "POST", l.config.HTTPClientSettings.Endpoint, bytes.NewReader(buf))
 	if err != nil {
-		return consumererror.Permanent(err)
+		return consumererror.NewPermanent(err)
 	}
 
 	for k, v := range l.config.HTTPClientSettings.Headers {
@@ -109,8 +102,14 @@ func encode(pb proto.Message) ([]byte, error) {
 	return buf, nil
 }
 
-func (l *lokiExporter) start(context.Context, component.Host) (err error) {
-	l.attributesToLabels = l.config.Labels.getAttributes()
+func (l *lokiExporter) start(_ context.Context, host component.Host) (err error) {
+	client, err := l.config.HTTPClientSettings.ToClient(host.GetExtensions())
+	if err != nil {
+		return err
+	}
+
+	l.client = client
+
 	return nil
 }
 
@@ -124,18 +123,18 @@ func (l *lokiExporter) logDataToLoki(ld pdata.Logs) (pr *logproto.PushRequest, n
 	rls := ld.ResourceLogs()
 	for i := 0; i < rls.Len(); i++ {
 		ills := rls.At(i).InstrumentationLibraryLogs()
+		resource := rls.At(i).Resource()
 		for j := 0; j < ills.Len(); j++ {
 			logs := ills.At(j).Logs()
 			for k := 0; k < logs.Len(); k++ {
 				log := logs.At(k)
-				attribLabels, ok := l.convertAttributesToLabels(log.Attributes())
-				if !ok {
+
+				mergedLabels, dropped := l.convertAttributesAndMerge(log.Attributes(), resource.Attributes())
+				if dropped {
 					numDroppedLogs++
 					continue
 				}
-
-				labels := attribLabels.String()
-
+				labels := mergedLabels.String()
 				entry := convertLogToLokiEntry(log)
 
 				if stream, ok := streams[labels]; ok {
@@ -164,13 +163,28 @@ func (l *lokiExporter) logDataToLoki(ld pdata.Logs) (pr *logproto.PushRequest, n
 	return pr, numDroppedLogs
 }
 
-func (l *lokiExporter) convertAttributesToLabels(attributes pdata.AttributeMap) (model.LabelSet, bool) {
+func (l *lokiExporter) convertAttributesAndMerge(logAttrs pdata.AttributeMap, resourceAttrs pdata.AttributeMap) (mergedAttributes model.LabelSet, dropped bool) {
+	logRecordAttributes := l.convertAttributesToLabels(logAttrs, l.config.Labels.Attributes)
+	resourceAttributes := l.convertAttributesToLabels(resourceAttrs, l.config.Labels.ResourceAttributes)
+
+	// This prometheus model.labelset Merge function overwrites	the logRecordAttributes with resourceAttributes
+	mergedAttributes = logRecordAttributes.Merge(resourceAttributes)
+
+	if len(mergedAttributes) == 0 {
+		return nil, true
+	}
+	return mergedAttributes, false
+}
+
+func (l *lokiExporter) convertAttributesToLabels(attributes pdata.AttributeMap, allowedAttributes map[string]string) model.LabelSet {
 	ls := model.LabelSet{}
 
-	for attr, attrLabelName := range l.attributesToLabels {
+	allowedLabels := l.config.Labels.getAttributes(allowedAttributes)
+
+	for attr, attrLabelName := range allowedLabels {
 		av, ok := attributes.Get(attr)
 		if ok {
-			if av.Type() != pdata.AttributeValueSTRING {
+			if av.Type() != pdata.AttributeValueTypeString {
 				l.logger.Debug("Failed to convert attribute value to Loki label value, value is not a string", zap.String("attribute", attr))
 				continue
 			}
@@ -178,11 +192,7 @@ func (l *lokiExporter) convertAttributesToLabels(attributes pdata.AttributeMap) 
 		}
 	}
 
-	if len(ls) == 0 {
-		return nil, false
-	}
-
-	return ls, true
+	return ls
 }
 
 func convertLogToLokiEntry(lr pdata.LogRecord) *logproto.Entry {

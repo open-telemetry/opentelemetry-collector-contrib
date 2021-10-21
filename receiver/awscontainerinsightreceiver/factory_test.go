@@ -20,9 +20,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/testbed/testbed"
-	"go.uber.org/zap"
+	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/consumer/consumertest"
 )
 
 func TestNewFactory(t *testing.T) {
@@ -33,9 +32,9 @@ func TestNewFactory(t *testing.T) {
 func TestCreateMetricsReceiver(t *testing.T) {
 	metricsReceiver, _ := createMetricsReceiver(
 		context.Background(),
-		component.ReceiverCreateParams{Logger: zap.NewNop()},
+		componenttest.NewNopReceiverCreateSettings(),
 		createDefaultConfig(),
-		&testbed.MockMetricConsumer{},
+		consumertest.NewNop(),
 	)
 
 	require.NotNil(t, metricsReceiver)

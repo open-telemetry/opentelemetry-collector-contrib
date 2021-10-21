@@ -44,7 +44,7 @@ func NewFactory() component.ReceiverFactory {
 // CreateDefaultConfig creates the default configuration for Jaeger receiver.
 func createDefaultConfig() config.Receiver {
 	return &Config{
-		ReceiverSettings: config.NewReceiverSettings(config.NewID(typeStr)),
+		ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
 		Endpoint:         defaultEndpoint,
 	}
 }
@@ -52,7 +52,7 @@ func createDefaultConfig() config.Receiver {
 // CreateTracesReceiver creates a trace receiver based on provided config.
 func createTracesReceiver(
 	ctx context.Context,
-	params component.ReceiverCreateParams,
+	params component.ReceiverCreateSettings,
 	cfg config.Receiver,
 	nextConsumer consumer.Traces,
 ) (component.TracesReceiver, error) {

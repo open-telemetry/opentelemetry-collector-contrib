@@ -27,7 +27,7 @@ import (
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsecscontainermetricsreceiver/awsecscontainermetrics"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsecscontainermetricsreceiver/internal/awsecscontainermetrics"
 )
 
 // Factory for awscontainermetrics
@@ -50,7 +50,7 @@ func NewFactory() component.ReceiverFactory {
 // createDefaultConfig returns a default config for the receiver.
 func createDefaultConfig() config.Receiver {
 	return &Config{
-		ReceiverSettings:   config.NewReceiverSettings(config.NewID(typeStr)),
+		ReceiverSettings:   config.NewReceiverSettings(config.NewComponentID(typeStr)),
 		CollectionInterval: defaultCollectionInterval,
 	}
 }
@@ -58,7 +58,7 @@ func createDefaultConfig() config.Receiver {
 // CreateMetricsReceiver creates an AWS ECS Container Metrics receiver.
 func createMetricsReceiver(
 	ctx context.Context,
-	params component.ReceiverCreateParams,
+	params component.ReceiverCreateSettings,
 	baseCfg config.Receiver,
 	consumer consumer.Metrics,
 ) (component.MetricsReceiver, error) {
@@ -74,7 +74,8 @@ func createMetricsReceiver(
 	rest := restClient(params.Logger, *endpoint)
 
 	rCfg := baseCfg.(*Config)
-	return New(params.Logger, rCfg, consumer, rest)
+	logger := params.Logger
+	return newAWSECSContainermetrics(logger, rCfg, consumer, rest)
 }
 
 func restClient(logger *zap.Logger, endpoint url.URL) awsecscontainermetrics.RestClient {

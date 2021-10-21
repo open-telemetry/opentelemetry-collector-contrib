@@ -34,18 +34,22 @@ func NewFactory() component.ExporterFactory {
 
 func createDefaultConfig() config.Exporter {
 	return &Config{
-		ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
+		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
 		Region:           "",
 		TracesToken:      "",
+		MetricsToken:     "",
+		DrainInterval:    3,
+		QueueMaxLength:   500000,
+		QueueCapacity:    20 * 1024 * 1024,
 	}
 }
 
-func createTracesExporter(_ context.Context, params component.ExporterCreateParams, cfg config.Exporter) (component.TracesExporter, error) {
+func createTracesExporter(_ context.Context, params component.ExporterCreateSettings, cfg config.Exporter) (component.TracesExporter, error) {
 	config := cfg.(*Config)
 	return newLogzioTracesExporter(config, params)
 }
 
-func createMetricsExporter(_ context.Context, params component.ExporterCreateParams, cfg config.Exporter) (component.MetricsExporter, error) {
+func createMetricsExporter(_ context.Context, params component.ExporterCreateSettings, cfg config.Exporter) (component.MetricsExporter, error) {
 	config := cfg.(*Config)
 	return newLogzioMetricsExporter(config, params)
 }

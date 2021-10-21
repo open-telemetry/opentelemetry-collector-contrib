@@ -22,13 +22,10 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/config/configcheck"
 	"go.opentelemetry.io/collector/config/configtest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.uber.org/zap"
 )
 
 func TestType(t *testing.T) {
@@ -41,9 +38,9 @@ func TestCreateDefaultConfig(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	assert.Equal(t, cfg, &Config{
-		ProcessorSettings: config.NewProcessorSettings(config.NewID(typeStr)),
+		ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
 	})
-	assert.NoError(t, configcheck.ValidateConfig(cfg))
+	assert.NoError(t, configtest.CheckConfigStruct(cfg))
 }
 
 func TestCreateProcessors(t *testing.T) {
@@ -64,12 +61,12 @@ func TestCreateProcessors(t *testing.T) {
 		{
 			configName:   "config_invalid_group.yaml",
 			succeed:      false,
-			errorMessage: fmt.Sprintf("missing required field %q while %q is %v", GroupResouceLabelsFieldName, ActionFieldName, Group),
+			errorMessage: fmt.Sprintf("missing required field %q while %q is %v", GroupResourceLabelsFieldName, ActionFieldName, Group),
 		},
 		{
 			configName:   "config_invalid_action.yaml",
 			succeed:      false,
-			errorMessage: fmt.Sprintf("%q must be in %q", ActionFieldName, Actions),
+			errorMessage: fmt.Sprintf("%q must be in %q", ActionFieldName, actions),
 		},
 		{
 			configName:   "config_invalid_include.yaml",
@@ -84,12 +81,17 @@ func TestCreateProcessors(t *testing.T) {
 		{
 			configName:   "config_invalid_matchtype.yaml",
 			succeed:      false,
-			errorMessage: fmt.Sprintf("%q must be in %q", MatchTypeFieldName, MatchTypes),
+			errorMessage: fmt.Sprintf("%q must be in %q", MatchTypeFieldName, matchTypes),
 		},
 		{
 			configName:   "config_invalid_label.yaml",
 			succeed:      false,
 			errorMessage: fmt.Sprintf("operation %v: missing required field %q while %q is %v", 1, LabelFieldName, ActionFieldName, UpdateLabel),
+		},
+		{
+			configName:   "config_invalid_scale.yaml",
+			succeed:      false,
+			errorMessage: fmt.Sprintf("operation %v: missing required field %q while %q is %v", 1, ScaleFieldName, ActionFieldName, ScaleValue),
 		},
 		{
 			configName:   "config_invalid_regexp.yaml",
@@ -99,22 +101,22 @@ func TestCreateProcessors(t *testing.T) {
 		{
 			configName:   "config_invalid_aggregationtype.yaml",
 			succeed:      false,
-			errorMessage: fmt.Sprintf("%q must be in %q", AggregationTypeFieldName, AggregationTypes),
+			errorMessage: fmt.Sprintf("%q must be in %q", AggregationTypeFieldName, aggregationTypes),
 		},
 		{
 			configName:   "config_invalid_operation_action.yaml",
 			succeed:      false,
-			errorMessage: fmt.Sprintf("operation %v: %q must be in %q", 1, ActionFieldName, OperationActions),
+			errorMessage: fmt.Sprintf("operation %v: %q must be in %q", 1, ActionFieldName, operationActions),
 		},
 		{
 			configName:   "config_invalid_operation_aggregationtype.yaml",
 			succeed:      false,
-			errorMessage: fmt.Sprintf("operation %v: %q must be in %q", 1, AggregationTypeFieldName, AggregationTypes),
+			errorMessage: fmt.Sprintf("operation %v: %q must be in %q", 1, AggregationTypeFieldName, aggregationTypes),
 		},
 		{
 			configName:   "config_invalid_submatchcase.yaml",
 			succeed:      false,
-			errorMessage: fmt.Sprintf("%q must be in %q", SubmatchCaseFieldName, SubmatchCases),
+			errorMessage: fmt.Sprintf("%q must be in %q", SubmatchCaseFieldName, submatchCases),
 		},
 	}
 
@@ -124,14 +126,14 @@ func TestCreateProcessors(t *testing.T) {
 
 		factory := NewFactory()
 		factories.Processors[typeStr] = factory
-		config, err := configtest.LoadConfigFile(t, path.Join(".", "testdata", test.configName), factories)
+		config, err := configtest.LoadConfigAndValidate(path.Join(".", "testdata", test.configName), factories)
 		assert.NoError(t, err)
 
 		for name, cfg := range config.Processors {
 			t.Run(fmt.Sprintf("%s/%s", test.configName, name), func(t *testing.T) {
 				tp, tErr := factory.CreateTracesProcessor(
 					context.Background(),
-					component.ProcessorCreateParams{Logger: zap.NewNop()},
+					componenttest.NewNopProcessorCreateSettings(),
 					cfg,
 					consumertest.NewNop())
 				// Not implemented error
@@ -140,7 +142,7 @@ func TestCreateProcessors(t *testing.T) {
 
 				mp, mErr := factory.CreateMetricsProcessor(
 					context.Background(),
-					component.ProcessorCreateParams{Logger: zap.NewNop()},
+					componenttest.NewNopProcessorCreateSettings(),
 					cfg,
 					consumertest.NewNop())
 				if test.succeed {
@@ -289,7 +291,8 @@ func TestCreateProcessorsFilledData(t *testing.T) {
 		},
 	}
 
-	internalTransforms := buildHelperConfig(oCfg, "v0.0.1")
+	internalTransforms, err := buildHelperConfig(oCfg, "v0.0.1")
+	assert.NoError(t, err)
 
 	for i, expTr := range expData {
 		mtpT := internalTransforms[i]

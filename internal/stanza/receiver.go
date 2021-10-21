@@ -23,14 +23,13 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/extension/experimental/storage"
+	"go.uber.org/multierr"
 	"go.uber.org/zap"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage"
 )
 
 type receiver struct {
-	id config.ComponentID
-	sync.Mutex
+	id     config.ComponentID
 	wg     sync.WaitGroup
 	cancel context.CancelFunc
 
@@ -47,8 +46,6 @@ var _ component.LogsReceiver = (*receiver)(nil)
 
 // Start tells the receiver to start
 func (r *receiver) Start(ctx context.Context, host component.Host) error {
-	r.Lock()
-	defer r.Unlock()
 	rctx, cancel := context.WithCancel(ctx)
 	r.cancel = cancel
 	r.logger.Info("Starting stanza receiver")
@@ -137,13 +134,12 @@ func (r *receiver) consumerLoop(ctx context.Context) {
 
 // Shutdown is invoked during service shutdown
 func (r *receiver) Shutdown(ctx context.Context) error {
-	r.Lock()
-	defer r.Unlock()
-
 	r.logger.Info("Stopping stanza receiver")
-	err := r.agent.Stop()
+	agentErr := r.agent.Stop()
 	r.converter.Stop()
 	r.cancel()
 	r.wg.Wait()
-	return err
+
+	clientErr := r.storageClient.Close(ctx)
+	return multierr.Combine(agentErr, clientErr)
 }

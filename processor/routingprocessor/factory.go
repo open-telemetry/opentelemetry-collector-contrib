@@ -26,6 +26,11 @@ import (
 const (
 	// The value of "type" key in configuration.
 	typeStr = "routing"
+
+	contextAttributeSource  = "context"
+	resourceAttributeSource = "resource"
+
+	defaultAttributeSource = contextAttributeSource
 )
 
 // NewFactory creates a factory for the routing processor.
@@ -39,11 +44,12 @@ func NewFactory() component.ProcessorFactory {
 
 func createDefaultConfig() config.Processor {
 	return &Config{
-		ProcessorSettings: config.NewProcessorSettings(config.NewID(typeStr)),
+		ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
+		AttributeSource:   defaultAttributeSource,
 	}
 }
 
-func createTracesProcessor(_ context.Context, params component.ProcessorCreateParams, cfg config.Processor, nextConsumer consumer.Traces) (component.TracesProcessor, error) {
+func createTracesProcessor(_ context.Context, params component.ProcessorCreateSettings, cfg config.Processor, nextConsumer consumer.Traces) (component.TracesProcessor, error) {
 	_, ok := nextConsumer.(component.Processor)
 	if ok {
 		params.Logger.Warn("another processor has been defined after the routing processor: it will NOT receive any data!")

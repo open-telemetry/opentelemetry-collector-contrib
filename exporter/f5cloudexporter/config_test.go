@@ -35,18 +35,18 @@ func TestLoadConfig(t *testing.T) {
 
 	factory := NewFactory()
 	factories.Exporters[typeStr] = factory
-	cfg, err := configtest.LoadConfigFile(t, path.Join(".", "testdata", "config.yaml"), factories)
+	cfg, err := configtest.LoadConfigAndValidate(path.Join(".", "testdata", "config.yaml"), factories)
 
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 
 	assert.Equal(t, 2, len(cfg.Exporters))
 
-	exporter := cfg.Exporters[config.NewIDWithName(typeStr, "allsettings")]
+	exporter := cfg.Exporters[config.NewComponentIDWithName(typeStr, "allsettings")]
 	actualCfg := exporter.(*Config)
 	expectedCfg := &Config{
 		Config: otlphttp.Config{
-			ExporterSettings: config.NewExporterSettings(config.NewIDWithName(typeStr, "allsettings")),
+			ExporterSettings: config.NewExporterSettings(config.NewComponentIDWithName(typeStr, "allsettings")),
 			RetrySettings: exporterhelper.RetrySettings{
 				Enabled:         true,
 				InitialInterval: 10 * time.Second,
@@ -119,7 +119,7 @@ func TestConfig_sanitize(t *testing.T) {
 				Source:         validSource,
 				CredentialFile: "",
 			},
-			errorMessage: "missing required \"auth.credential_file\" setting",
+			errorMessage: "missing required \"f5cloud_auth.credential_file\" setting",
 			shouldError:  true,
 		},
 		{
@@ -129,7 +129,7 @@ func TestConfig_sanitize(t *testing.T) {
 				Source:         validSource,
 				CredentialFile: "non-existent cred file",
 			},
-			errorMessage: "the provided \"auth.credential_file\" does not exist",
+			errorMessage: "the provided \"f5cloud_auth.credential_file\" does not exist",
 			shouldError:  true,
 		},
 		{
@@ -147,7 +147,7 @@ func TestConfig_sanitize(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			factory := NewFactory()
 			cfg := factory.CreateDefaultConfig().(*Config)
-			cfg.ExporterSettings = config.NewExporterSettings(config.NewID(typeStr))
+			cfg.ExporterSettings = config.NewExporterSettings(config.NewComponentID(typeStr))
 			cfg.Endpoint = tt.fields.Endpoint
 			cfg.Source = tt.fields.Source
 			cfg.AuthConfig = AuthConfig{

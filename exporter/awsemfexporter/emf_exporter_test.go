@@ -30,12 +30,13 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumererror"
-	"go.opentelemetry.io/collector/translator/internaldata"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest/observer"
+
+	internaldata "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus"
 )
 
 func init() {
@@ -47,7 +48,7 @@ type mockPusher struct {
 	mock.Mock
 }
 
-func (p *mockPusher) AddLogEntry(logEvent *LogEvent) error {
+func (p *mockPusher) addLogEntry(logEvent *logEvent) error {
 	args := p.Called(nil)
 	errorStr := args.String(0)
 	if errorStr != "" {
@@ -56,7 +57,7 @@ func (p *mockPusher) AddLogEntry(logEvent *LogEvent) error {
 	return nil
 }
 
-func (p *mockPusher) ForceFlush() error {
+func (p *mockPusher) forceFlush() error {
 	args := p.Called(nil)
 	errorStr := args.String(0)
 	if errorStr != "" {
@@ -72,7 +73,7 @@ func TestConsumeMetrics(t *testing.T) {
 	expCfg := factory.CreateDefaultConfig().(*Config)
 	expCfg.Region = "us-west-2"
 	expCfg.MaxRetries = 0
-	exp, err := New(expCfg, component.ExporterCreateParams{Logger: zap.NewNop()})
+	exp, err := newEmfPusher(expCfg, componenttest.NewNopExporterCreateSettings())
 	assert.Nil(t, err)
 	assert.NotNil(t, exp)
 
@@ -86,38 +87,40 @@ func TestConsumeMetrics(t *testing.T) {
 				"resource": "R1",
 			},
 		},
-		Metrics: []*metricspb.Metric{
-			{
-				MetricDescriptor: &metricspb.MetricDescriptor{
-					Name:        "spanCounter",
-					Description: "Counting all the spans",
-					Unit:        "Count",
-					Type:        metricspb.MetricDescriptor_CUMULATIVE_INT64,
-					LabelKeys: []*metricspb.LabelKey{
-						{Key: "spanName"},
-						{Key: "isItAnError"},
-					},
+		Metrics: []*metricspb.Metric{},
+	}
+	for i := 0; i < 2; i++ {
+		m := &metricspb.Metric{
+			MetricDescriptor: &metricspb.MetricDescriptor{
+				Name:        "spanCounter",
+				Description: "Counting all the spans",
+				Unit:        "Count",
+				Type:        metricspb.MetricDescriptor_CUMULATIVE_INT64,
+				LabelKeys: []*metricspb.LabelKey{
+					{Key: "spanName"},
+					{Key: "isItAnError"},
 				},
-				Timeseries: []*metricspb.TimeSeries{
-					{
-						LabelValues: []*metricspb.LabelValue{
-							{Value: "testSpan"},
-							{Value: "false"},
-						},
-						Points: []*metricspb.Point{
-							{
-								Timestamp: &timestamp.Timestamp{
-									Seconds: 0,
-								},
-								Value: &metricspb.Point_Int64Value{
-									Int64Value: 1,
-								},
+			},
+			Timeseries: []*metricspb.TimeSeries{
+				{
+					LabelValues: []*metricspb.LabelValue{
+						{Value: "testSpan"},
+						{Value: "false"},
+					},
+					Points: []*metricspb.Point{
+						{
+							Timestamp: &timestamp.Timestamp{
+								Seconds: int64(i),
+							},
+							Value: &metricspb.Point_Int64Value{
+								Int64Value: 1,
 							},
 						},
 					},
 				},
 			},
-		},
+		}
+		mdata.Metrics = append(mdata.Metrics, m)
 	}
 	md := internaldata.OCToMetrics(mdata.Node, mdata.Resource, mdata.Metrics)
 	require.Error(t, exp.ConsumeMetrics(ctx, md))
@@ -132,7 +135,7 @@ func TestConsumeMetricsWithOutputDestination(t *testing.T) {
 	expCfg.Region = "us-west-2"
 	expCfg.MaxRetries = 0
 	expCfg.OutputDestination = "stdout"
-	exp, err := New(expCfg, component.ExporterCreateParams{Logger: zap.NewNop()})
+	exp, err := newEmfPusher(expCfg, componenttest.NewNopExporterCreateSettings())
 	assert.Nil(t, err)
 	assert.NotNil(t, exp)
 
@@ -193,7 +196,7 @@ func TestConsumeMetricsWithLogGroupStreamConfig(t *testing.T) {
 	expCfg.MaxRetries = defaultRetryCount
 	expCfg.LogGroupName = "test-logGroupName"
 	expCfg.LogStreamName = "test-logStreamName"
-	exp, err := New(expCfg, component.ExporterCreateParams{Logger: zap.NewNop()})
+	exp, err := newEmfPusher(expCfg, componenttest.NewNopExporterCreateSettings())
 	assert.Nil(t, err)
 	assert.NotNil(t, exp)
 
@@ -207,48 +210,51 @@ func TestConsumeMetricsWithLogGroupStreamConfig(t *testing.T) {
 				"resource": "R1",
 			},
 		},
-		Metrics: []*metricspb.Metric{
-			{
-				MetricDescriptor: &metricspb.MetricDescriptor{
-					Name:        "spanCounter",
-					Description: "Counting all the spans",
-					Unit:        "Count",
-					Type:        metricspb.MetricDescriptor_CUMULATIVE_INT64,
-					LabelKeys: []*metricspb.LabelKey{
-						{Key: "spanName"},
-						{Key: "isItAnError"},
-					},
+		Metrics: []*metricspb.Metric{},
+	}
+	for i := 0; i < 2; i++ {
+		m := &metricspb.Metric{
+			MetricDescriptor: &metricspb.MetricDescriptor{
+				Name:        "spanCounter",
+				Description: "Counting all the spans",
+				Unit:        "Count",
+				Type:        metricspb.MetricDescriptor_CUMULATIVE_INT64,
+				LabelKeys: []*metricspb.LabelKey{
+					{Key: "spanName"},
+					{Key: "isItAnError"},
 				},
-				Timeseries: []*metricspb.TimeSeries{
-					{
-						LabelValues: []*metricspb.LabelValue{
-							{Value: "testSpan"},
-							{Value: "false"},
-						},
-						Points: []*metricspb.Point{
-							{
-								Timestamp: &timestamp.Timestamp{
-									Seconds: 0,
-								},
-								Value: &metricspb.Point_Int64Value{
-									Int64Value: 1,
-								},
+			},
+			Timeseries: []*metricspb.TimeSeries{
+				{
+					LabelValues: []*metricspb.LabelValue{
+						{Value: "testSpan"},
+						{Value: "false"},
+					},
+					Points: []*metricspb.Point{
+						{
+							Timestamp: &timestamp.Timestamp{
+								Seconds: int64(i),
+							},
+							Value: &metricspb.Point_Int64Value{
+								Int64Value: int64(i),
 							},
 						},
 					},
 				},
 			},
-		},
+		}
+		mdata.Metrics = append(mdata.Metrics, m)
 	}
+
 	md := internaldata.OCToMetrics(mdata.Node, mdata.Resource, mdata.Metrics)
 	require.NoError(t, exp.Start(ctx, nil))
 	require.Error(t, exp.ConsumeMetrics(ctx, md))
 	require.NoError(t, exp.Shutdown(ctx))
 	streamToPusherMap, ok := exp.(*emfExporter).groupStreamToPusherMap["test-logGroupName"]
 	assert.True(t, ok)
-	pusher, ok := streamToPusherMap["test-logStreamName"]
+	emfPusher, ok := streamToPusherMap["test-logStreamName"]
 	assert.True(t, ok)
-	assert.NotNil(t, pusher)
+	assert.NotNil(t, emfPusher)
 }
 
 func TestConsumeMetricsWithLogGroupStreamValidPlaceholder(t *testing.T) {
@@ -260,7 +266,7 @@ func TestConsumeMetricsWithLogGroupStreamValidPlaceholder(t *testing.T) {
 	expCfg.MaxRetries = defaultRetryCount
 	expCfg.LogGroupName = "/aws/ecs/containerinsights/{ClusterName}/performance"
 	expCfg.LogStreamName = "{TaskId}"
-	exp, err := New(expCfg, component.ExporterCreateParams{Logger: zap.NewNop()})
+	exp, err := newEmfPusher(expCfg, componenttest.NewNopExporterCreateSettings())
 	assert.Nil(t, err)
 	assert.NotNil(t, exp)
 
@@ -275,39 +281,40 @@ func TestConsumeMetricsWithLogGroupStreamValidPlaceholder(t *testing.T) {
 				"aws.ecs.task.id":      "test-task-id",
 			},
 		},
-		Metrics: []*metricspb.Metric{
-
-			{
-				MetricDescriptor: &metricspb.MetricDescriptor{
-					Name:        "spanCounter",
-					Description: "Counting all the spans",
-					Unit:        "Count",
-					Type:        metricspb.MetricDescriptor_CUMULATIVE_INT64,
-					LabelKeys: []*metricspb.LabelKey{
-						{Key: "spanName"},
-						{Key: "isItAnError"},
-					},
+		Metrics: []*metricspb.Metric{},
+	}
+	for i := 0; i < 2; i++ {
+		m := &metricspb.Metric{
+			MetricDescriptor: &metricspb.MetricDescriptor{
+				Name:        "spanCounter",
+				Description: "Counting all the spans",
+				Unit:        "Count",
+				Type:        metricspb.MetricDescriptor_CUMULATIVE_INT64,
+				LabelKeys: []*metricspb.LabelKey{
+					{Key: "spanName"},
+					{Key: "isItAnError"},
 				},
-				Timeseries: []*metricspb.TimeSeries{
-					{
-						LabelValues: []*metricspb.LabelValue{
-							{Value: "testSpan"},
-							{Value: "false"},
-						},
-						Points: []*metricspb.Point{
-							{
-								Timestamp: &timestamp.Timestamp{
-									Seconds: 0,
-								},
-								Value: &metricspb.Point_Int64Value{
-									Int64Value: 1,
-								},
+			},
+			Timeseries: []*metricspb.TimeSeries{
+				{
+					LabelValues: []*metricspb.LabelValue{
+						{Value: "testSpan"},
+						{Value: "false"},
+					},
+					Points: []*metricspb.Point{
+						{
+							Timestamp: &timestamp.Timestamp{
+								Seconds: int64(i),
+							},
+							Value: &metricspb.Point_Int64Value{
+								Int64Value: int64(i),
 							},
 						},
 					},
 				},
 			},
-		},
+		}
+		mdata.Metrics = append(mdata.Metrics, m)
 	}
 	md := internaldata.OCToMetrics(mdata.Node, mdata.Resource, mdata.Metrics)
 	require.NoError(t, exp.Start(ctx, nil))
@@ -315,9 +322,9 @@ func TestConsumeMetricsWithLogGroupStreamValidPlaceholder(t *testing.T) {
 	require.NoError(t, exp.Shutdown(ctx))
 	streamToPusherMap, ok := exp.(*emfExporter).groupStreamToPusherMap["/aws/ecs/containerinsights/test-cluster-name/performance"]
 	assert.True(t, ok)
-	pusher, ok := streamToPusherMap["test-task-id"]
+	emfPusher, ok := streamToPusherMap["test-task-id"]
 	assert.True(t, ok)
-	assert.NotNil(t, pusher)
+	assert.NotNil(t, emfPusher)
 }
 
 func TestConsumeMetricsWithOnlyLogStreamPlaceholder(t *testing.T) {
@@ -329,7 +336,7 @@ func TestConsumeMetricsWithOnlyLogStreamPlaceholder(t *testing.T) {
 	expCfg.MaxRetries = defaultRetryCount
 	expCfg.LogGroupName = "test-logGroupName"
 	expCfg.LogStreamName = "{TaskId}"
-	exp, err := New(expCfg, component.ExporterCreateParams{Logger: zap.NewNop()})
+	exp, err := newEmfPusher(expCfg, componenttest.NewNopExporterCreateSettings())
 	assert.Nil(t, err)
 	assert.NotNil(t, exp)
 
@@ -344,39 +351,40 @@ func TestConsumeMetricsWithOnlyLogStreamPlaceholder(t *testing.T) {
 				"aws.ecs.task.id":      "test-task-id",
 			},
 		},
-		Metrics: []*metricspb.Metric{
-
-			{
-				MetricDescriptor: &metricspb.MetricDescriptor{
-					Name:        "spanCounter",
-					Description: "Counting all the spans",
-					Unit:        "Count",
-					Type:        metricspb.MetricDescriptor_CUMULATIVE_INT64,
-					LabelKeys: []*metricspb.LabelKey{
-						{Key: "spanName"},
-						{Key: "isItAnError"},
-					},
+		Metrics: []*metricspb.Metric{},
+	}
+	for i := 0; i < 2; i++ {
+		m := &metricspb.Metric{
+			MetricDescriptor: &metricspb.MetricDescriptor{
+				Name:        "spanCounter",
+				Description: "Counting all the spans",
+				Unit:        "Count",
+				Type:        metricspb.MetricDescriptor_CUMULATIVE_INT64,
+				LabelKeys: []*metricspb.LabelKey{
+					{Key: "spanName"},
+					{Key: "isItAnError"},
 				},
-				Timeseries: []*metricspb.TimeSeries{
-					{
-						LabelValues: []*metricspb.LabelValue{
-							{Value: "testSpan"},
-							{Value: "false"},
-						},
-						Points: []*metricspb.Point{
-							{
-								Timestamp: &timestamp.Timestamp{
-									Seconds: 0,
-								},
-								Value: &metricspb.Point_Int64Value{
-									Int64Value: 1,
-								},
+			},
+			Timeseries: []*metricspb.TimeSeries{
+				{
+					LabelValues: []*metricspb.LabelValue{
+						{Value: "testSpan"},
+						{Value: "false"},
+					},
+					Points: []*metricspb.Point{
+						{
+							Timestamp: &timestamp.Timestamp{
+								Seconds: int64(i),
+							},
+							Value: &metricspb.Point_Int64Value{
+								Int64Value: int64(i),
 							},
 						},
 					},
 				},
 			},
-		},
+		}
+		mdata.Metrics = append(mdata.Metrics, m)
 	}
 	md := internaldata.OCToMetrics(mdata.Node, mdata.Resource, mdata.Metrics)
 	require.NoError(t, exp.Start(ctx, nil))
@@ -384,9 +392,9 @@ func TestConsumeMetricsWithOnlyLogStreamPlaceholder(t *testing.T) {
 	require.NoError(t, exp.Shutdown(ctx))
 	streamToPusherMap, ok := exp.(*emfExporter).groupStreamToPusherMap["test-logGroupName"]
 	assert.True(t, ok)
-	pusher, ok := streamToPusherMap["test-task-id"]
+	emfPusher, ok := streamToPusherMap["test-task-id"]
 	assert.True(t, ok)
-	assert.NotNil(t, pusher)
+	assert.NotNil(t, emfPusher)
 }
 
 func TestConsumeMetricsWithWrongPlaceholder(t *testing.T) {
@@ -398,7 +406,7 @@ func TestConsumeMetricsWithWrongPlaceholder(t *testing.T) {
 	expCfg.MaxRetries = defaultRetryCount
 	expCfg.LogGroupName = "test-logGroupName"
 	expCfg.LogStreamName = "{WrongKey}"
-	exp, err := New(expCfg, component.ExporterCreateParams{Logger: zap.NewNop()})
+	exp, err := newEmfPusher(expCfg, componenttest.NewNopExporterCreateSettings())
 	assert.Nil(t, err)
 	assert.NotNil(t, exp)
 
@@ -413,39 +421,40 @@ func TestConsumeMetricsWithWrongPlaceholder(t *testing.T) {
 				"aws.ecs.task.id":      "test-task-id",
 			},
 		},
-		Metrics: []*metricspb.Metric{
-
-			{
-				MetricDescriptor: &metricspb.MetricDescriptor{
-					Name:        "spanCounter",
-					Description: "Counting all the spans",
-					Unit:        "Count",
-					Type:        metricspb.MetricDescriptor_CUMULATIVE_INT64,
-					LabelKeys: []*metricspb.LabelKey{
-						{Key: "spanName"},
-						{Key: "isItAnError"},
-					},
+		Metrics: []*metricspb.Metric{},
+	}
+	for i := 0; i < 2; i++ {
+		m := &metricspb.Metric{
+			MetricDescriptor: &metricspb.MetricDescriptor{
+				Name:        "spanCounter",
+				Description: "Counting all the spans",
+				Unit:        "Count",
+				Type:        metricspb.MetricDescriptor_CUMULATIVE_INT64,
+				LabelKeys: []*metricspb.LabelKey{
+					{Key: "spanName"},
+					{Key: "isItAnError"},
 				},
-				Timeseries: []*metricspb.TimeSeries{
-					{
-						LabelValues: []*metricspb.LabelValue{
-							{Value: "testSpan"},
-							{Value: "false"},
-						},
-						Points: []*metricspb.Point{
-							{
-								Timestamp: &timestamp.Timestamp{
-									Seconds: 0,
-								},
-								Value: &metricspb.Point_Int64Value{
-									Int64Value: 1,
-								},
+			},
+			Timeseries: []*metricspb.TimeSeries{
+				{
+					LabelValues: []*metricspb.LabelValue{
+						{Value: "testSpan"},
+						{Value: "false"},
+					},
+					Points: []*metricspb.Point{
+						{
+							Timestamp: &timestamp.Timestamp{
+								Seconds: int64(i),
+							},
+							Value: &metricspb.Point_Int64Value{
+								Int64Value: int64(i),
 							},
 						},
 					},
 				},
 			},
-		},
+		}
+		mdata.Metrics = append(mdata.Metrics, m)
 	}
 	md := internaldata.OCToMetrics(mdata.Node, mdata.Resource, mdata.Metrics)
 	require.NoError(t, exp.Start(ctx, nil))
@@ -453,9 +462,9 @@ func TestConsumeMetricsWithWrongPlaceholder(t *testing.T) {
 	require.NoError(t, exp.Shutdown(ctx))
 	streamToPusherMap, ok := exp.(*emfExporter).groupStreamToPusherMap["test-logGroupName"]
 	assert.True(t, ok)
-	pusher, ok := streamToPusherMap["{WrongKey}"]
+	emfPusher, ok := streamToPusherMap["{WrongKey}"]
 	assert.True(t, ok)
-	assert.NotNil(t, pusher)
+	assert.NotNil(t, emfPusher)
 }
 
 func TestPushMetricsDataWithErr(t *testing.T) {
@@ -467,18 +476,18 @@ func TestPushMetricsDataWithErr(t *testing.T) {
 	expCfg.MaxRetries = 0
 	expCfg.LogGroupName = "test-logGroupName"
 	expCfg.LogStreamName = "test-logStreamName"
-	exp, err := New(expCfg, component.ExporterCreateParams{Logger: zap.NewNop()})
+	exp, err := newEmfPusher(expCfg, componenttest.NewNopExporterCreateSettings())
 	assert.Nil(t, err)
 	assert.NotNil(t, exp)
 
-	pusher := new(mockPusher)
-	pusher.On("AddLogEntry", nil).Return("some error").Once()
-	pusher.On("AddLogEntry", nil).Return("").Twice()
-	pusher.On("ForceFlush", nil).Return("some error").Once()
-	pusher.On("ForceFlush", nil).Return("").Once()
-	pusher.On("ForceFlush", nil).Return("some error").Once()
-	streamToPusherMap := map[string]Pusher{"test-logStreamName": pusher}
-	exp.(*emfExporter).groupStreamToPusherMap = map[string]map[string]Pusher{}
+	logPusher := new(mockPusher)
+	logPusher.On("addLogEntry", nil).Return("some error").Once()
+	logPusher.On("addLogEntry", nil).Return("").Twice()
+	logPusher.On("forceFlush", nil).Return("some error").Once()
+	logPusher.On("forceFlush", nil).Return("").Once()
+	logPusher.On("forceFlush", nil).Return("some error").Once()
+	streamToPusherMap := map[string]pusher{"test-logStreamName": logPusher}
+	exp.(*emfExporter).groupStreamToPusherMap = map[string]map[string]pusher{}
 	exp.(*emfExporter).groupStreamToPusherMap["test-logGroupName"] = streamToPusherMap
 
 	mdata := agentmetricspb.ExportMetricsServiceRequest{
@@ -539,7 +548,7 @@ func TestNewExporterWithoutConfig(t *testing.T) {
 	os.Setenv("AWS_STS_REGIONAL_ENDPOINTS", "fake")
 
 	assert.Nil(t, expCfg.logger)
-	exp, err := New(expCfg, component.ExporterCreateParams{Logger: zap.NewNop()})
+	exp, err := newEmfPusher(expCfg, componenttest.NewNopExporterCreateSettings())
 	assert.NotNil(t, err)
 	assert.Nil(t, exp)
 	assert.NotNil(t, expCfg.logger)
@@ -573,8 +582,10 @@ func TestNewExporterWithMetricDeclarations(t *testing.T) {
 	expCfg.MetricDeclarations = mds
 
 	obs, logs := observer.New(zap.WarnLevel)
-	logger := zap.New(obs)
-	exp, err := New(expCfg, component.ExporterCreateParams{Logger: logger})
+	params := componenttest.NewNopExporterCreateSettings()
+	params.Logger = zap.New(obs)
+
+	exp, err := newEmfPusher(expCfg, params)
 	assert.Nil(t, err)
 	assert.NotNil(t, exp)
 
@@ -601,7 +612,7 @@ func TestNewExporterWithMetricDeclarations(t *testing.T) {
 }
 
 func TestNewExporterWithoutSession(t *testing.T) {
-	exp, err := New(nil, component.ExporterCreateParams{Logger: zap.NewNop()})
+	exp, err := newEmfPusher(nil, componenttest.NewNopExporterCreateSettings())
 	assert.NotNil(t, err)
 	assert.Nil(t, exp)
 }
@@ -615,7 +626,7 @@ func TestWrapErrorIfBadRequest(t *testing.T) {
 	assert.False(t, consumererror.IsPermanent(err))
 }
 
-// This test verifies that if func New() returns an error then NewEmfExporter()
+// This test verifies that if func newEmfPusher() returns an error then newEmfExporter()
 // will do so.
 func TestNewEmfExporterWithoutConfig(t *testing.T) {
 	factory := NewFactory()
@@ -625,7 +636,7 @@ func TestNewEmfExporterWithoutConfig(t *testing.T) {
 	os.Setenv("AWS_STS_REGIONAL_ENDPOINTS", "fake")
 
 	assert.Nil(t, expCfg.logger)
-	exp, err := NewEmfExporter(expCfg, component.ExporterCreateParams{Logger: zap.NewNop()})
+	exp, err := newEmfExporter(expCfg, componenttest.NewNopExporterCreateSettings())
 	assert.NotNil(t, err)
 	assert.Nil(t, exp)
 	assert.NotNil(t, expCfg.logger)

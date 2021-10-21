@@ -19,8 +19,8 @@ import (
 	"os"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/translator/conventions"
+	"go.opentelemetry.io/collector/model/pdata"
+	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
@@ -45,17 +45,17 @@ type Detector struct {
 	metadata gcp.Metadata
 }
 
-func NewDetector(params component.ProcessorCreateParams, _ internal.DetectorConfig) (internal.Detector, error) {
+func NewDetector(params component.ProcessorCreateSettings, _ internal.DetectorConfig) (internal.Detector, error) {
 	return &Detector{log: params.Logger, metadata: &gcp.MetadataImpl{}}, nil
 }
 
 // Detect detects associated resources when running in GKE environment.
-func (gke *Detector) Detect(ctx context.Context) (pdata.Resource, error) {
+func (gke *Detector) Detect(ctx context.Context) (resource pdata.Resource, schemaURL string, err error) {
 	res := pdata.NewResource()
 
 	// Check if on GCP.
 	if !gke.metadata.OnGCE() {
-		return res, nil
+		return res, "", nil
 	}
 
 	attr := res.Attributes()
@@ -63,16 +63,16 @@ func (gke *Detector) Detect(ctx context.Context) (pdata.Resource, error) {
 
 	// Check if running on k8s.
 	if os.Getenv(kubernetesServiceHostEnvVar) == "" {
-		return res, nil
+		return res, "", nil
 	}
 
-	attr.InsertString(conventions.AttributeCloudPlatform, conventions.AttributeCloudPlatformGCPGKE)
+	attr.InsertString(conventions.AttributeCloudPlatform, conventions.AttributeCloudPlatformGCPKubernetesEngine)
 
 	if clusterName, err := gke.metadata.InstanceAttributeValue(clusterNameAttribute); err != nil {
 		gke.log.Warn("Unable to determine GKE cluster name", zap.Error(err))
 	} else if clusterName != "" {
-		attr.InsertString(conventions.AttributeK8sCluster, clusterName)
+		attr.InsertString(conventions.AttributeK8SClusterName, clusterName)
 	}
 
-	return res, nil
+	return res, conventions.SchemaURL, nil
 }

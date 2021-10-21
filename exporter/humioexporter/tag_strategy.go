@@ -18,14 +18,14 @@ package humioexporter
 type tag string
 
 const (
-	// None disables tagging of payloads to Humio
+	// TagNone disables tagging of payloads to Humio
 	TagNone tag = "none"
 
-	// TraceID tags payloads to Humio using the trace ID, or an empty string if
+	// TagTraceID tags payloads to Humio using the trace ID, or an empty string if
 	// the trace ID is missing
 	TagTraceID tag = "trace_id"
 
-	// ServiceName tags payloads to Humio using the service name, or an empty
+	// TagServiceName tags payloads to Humio using the service name, or an empty
 	// string if it is missing
 	TagServiceName tag = "service_name"
 )

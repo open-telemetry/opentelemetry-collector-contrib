@@ -26,9 +26,9 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/correlation"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/translation"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/translation/dpfilters"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/correlation"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/translation"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/translation/dpfilters"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchperresourceattr"
 )
@@ -53,7 +53,7 @@ func NewFactory() component.ExporterFactory {
 
 func createDefaultConfig() config.Exporter {
 	return &Config{
-		ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
+		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
 		TimeoutSettings:  exporterhelper.TimeoutSettings{Timeout: defaultHTTPTimeout},
 		RetrySettings:    exporterhelper.DefaultRetrySettings(),
 		QueueSettings:    exporterhelper.DefaultQueueSettings(),
@@ -63,12 +63,13 @@ func createDefaultConfig() config.Exporter {
 		DeltaTranslationTTL:           3600,
 		Correlation:                   correlation.DefaultConfig(),
 		NonAlphanumericDimensionChars: "_-.",
+		MaxConnections:                100,
 	}
 }
 
 func createTracesExporter(
 	_ context.Context,
-	params component.ExporterCreateParams,
+	set component.ExporterCreateSettings,
 	eCfg config.Exporter,
 ) (component.TracesExporter, error) {
 	cfg := eCfg.(*Config)
@@ -84,19 +85,20 @@ func createTracesExporter(
 	if cfg.AccessToken == "" {
 		return nil, errors.New("access_token is required")
 	}
-	params.Logger.Info("Correlation tracking enabled", zap.String("endpoint", corrCfg.Endpoint))
-	tracker := correlation.NewTracker(corrCfg, cfg.AccessToken, params)
+	set.Logger.Info("Correlation tracking enabled", zap.String("endpoint", corrCfg.Endpoint))
+	tracker := correlation.NewTracker(corrCfg, cfg.AccessToken, set)
 
 	return exporterhelper.NewTracesExporter(
 		cfg,
-		params.Logger,
+		set,
 		tracker.AddSpans,
+		exporterhelper.WithStart(tracker.Start),
 		exporterhelper.WithShutdown(tracker.Shutdown))
 }
 
 func createMetricsExporter(
 	_ context.Context,
-	params component.ExporterCreateParams,
+	set component.ExporterCreateSettings,
 	config config.Exporter,
 ) (component.MetricsExporter, error) {
 
@@ -107,14 +109,14 @@ func createMetricsExporter(
 		return nil, err
 	}
 
-	exp, err := newSignalFxExporter(expCfg, params.Logger)
+	exp, err := newSignalFxExporter(expCfg, set.Logger)
 	if err != nil {
 		return nil, err
 	}
 
 	me, err := exporterhelper.NewMetricsExporter(
 		expCfg,
-		params.Logger,
+		set,
 		exp.pushMetrics,
 		// explicitly disable since we rely on http.Client timeout logic.
 		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
@@ -143,7 +145,7 @@ func createMetricsExporter(
 func loadDefaultTranslationRules() ([]translation.Rule, error) {
 	cfg := Config{}
 
-	cp, err := config.NewParserFromBuffer(strings.NewReader(translation.DefaultTranslationRulesYaml))
+	cp, err := config.NewMapFromBuffer(strings.NewReader(translation.DefaultTranslationRulesYaml))
 	if err != nil {
 		return nil, err
 	}
@@ -170,7 +172,7 @@ func setDefaultExcludes(cfg *Config) error {
 func loadDefaultExcludes() ([]dpfilters.MetricFilter, error) {
 	cfg := Config{}
 
-	v, err := config.NewParserFromBuffer(strings.NewReader(translation.DefaultExcludeMetricsYaml))
+	v, err := config.NewMapFromBuffer(strings.NewReader(translation.DefaultExcludeMetricsYaml))
 	if err != nil {
 		return nil, err
 	}
@@ -184,19 +186,19 @@ func loadDefaultExcludes() ([]dpfilters.MetricFilter, error) {
 
 func createLogsExporter(
 	_ context.Context,
-	params component.ExporterCreateParams,
+	set component.ExporterCreateSettings,
 	cfg config.Exporter,
 ) (component.LogsExporter, error) {
 	expCfg := cfg.(*Config)
 
-	exp, err := newEventExporter(expCfg, params.Logger)
+	exp, err := newEventExporter(expCfg, set.Logger)
 	if err != nil {
 		return nil, err
 	}
 
 	le, err := exporterhelper.NewLogsExporter(
 		expCfg,
-		params.Logger,
+		set,
 		exp.pushLogs,
 		// explicitly disable since we rely on http.Client timeout logic.
 		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),

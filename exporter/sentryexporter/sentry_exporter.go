@@ -16,30 +16,34 @@ package sentryexporter
 
 import (
 	"context"
+	"crypto/rand"
+	"crypto/tls"
+	"encoding/hex"
+	"errors"
 	"fmt"
 	"log"
+	"net/http"
 	"strconv"
 	"strings"
 
 	"github.com/getsentry/sentry-go"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-	"go.opentelemetry.io/collector/translator/conventions"
+	"go.opentelemetry.io/collector/model/pdata"
+	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
 )
 
 const (
-	sentryStatusUnknown       = "unknown"
-	otelSentryExporterVersion = "0.0.1"
+	otelSentryExporterVersion = "0.0.2"
 	otelSentryExporterName    = "sentry.opentelemetry"
 )
 
 // canonicalCodes maps OpenTelemetry span codes to Sentry's span status.
 // See numeric codes in https://github.com/open-telemetry/opentelemetry-proto/blob/6cf77b2f544f6bc7fe1e4b4a8a52e5a42cb50ead/opentelemetry/proto/trace/v1/trace.proto#L303
-var canonicalCodes = [...]string{
-	"unknown",
-	"ok",
-	"unknown",
+var canonicalCodes = [...]sentry.SpanStatus{
+	sentry.SpanStatusUndefined,
+	sentry.SpanStatusOK,
+	sentry.SpanStatusUnknown,
 }
 
 // SentryExporter defines the Sentry Exporter.
@@ -50,6 +54,7 @@ type SentryExporter struct {
 // pushTraceData takes an incoming OpenTelemetry trace, converts them into Sentry spans and transactions
 // and sends them using Sentry's transport.
 func (s *SentryExporter) pushTraceData(_ context.Context, td pdata.Traces) error {
+	var exceptionEvents []*sentry.Event
 	resourceSpans := td.ResourceSpans()
 	if resourceSpans.Len() == 0 {
 		return nil
@@ -58,9 +63,9 @@ func (s *SentryExporter) pushTraceData(_ context.Context, td pdata.Traces) error
 	maybeOrphanSpans := make([]*sentry.Span, 0, td.SpanCount())
 
 	// Maps all child span ids to their root span.
-	idMap := make(map[string]string)
+	idMap := make(map[sentry.SpanID]sentry.SpanID)
 	// Maps root span id to a transaction.
-	transactionMap := make(map[string]*sentry.Event)
+	transactionMap := make(map[sentry.SpanID]*sentry.Event)
 
 	for i := 0; i < resourceSpans.Len(); i++ {
 		rs := resourceSpans.At(i)
@@ -73,14 +78,16 @@ func (s *SentryExporter) pushTraceData(_ context.Context, td pdata.Traces) error
 
 			spans := ils.Spans()
 			for k := 0; k < spans.Len(); k++ {
-				sentrySpan := convertToSentrySpan(spans.At(k), library, resourceTags)
+				otelSpan := spans.At(k)
+				sentrySpan := convertToSentrySpan(otelSpan, library, resourceTags)
+				convertEventsToSentryExceptions(&exceptionEvents, otelSpan.Events(), sentrySpan)
 
 				// If a span is a root span, we consider it the start of a Sentry transaction.
 				// We should then create a new transaction for that root span, and keep track of it.
 				//
 				// If the span is not a root span, we can either associate it with an existing
 				// transaction, or we can temporarily consider it an orphan span.
-				if isRootSpan(sentrySpan) {
+				if spanIsTransaction(otelSpan) {
 					transactionMap[sentrySpan.SpanID] = transactionFromSpan(sentrySpan)
 					idMap[sentrySpan.SpanID] = sentrySpan.SpanID
 				} else {
@@ -105,13 +112,15 @@ func (s *SentryExporter) pushTraceData(_ context.Context, td pdata.Traces) error
 
 	transactions := generateTransactions(transactionMap, orphanSpans)
 
-	s.transport.SendTransactions(transactions)
+	events := append(transactions, exceptionEvents...)
+
+	s.transport.SendEvents(events)
 
 	return nil
 }
 
 // generateTransactions creates a set of Sentry transactions from a transaction map and orphan spans.
-func generateTransactions(transactionMap map[string]*sentry.Event, orphanSpans []*sentry.Span) []*sentry.Event {
+func generateTransactions(transactionMap map[sentry.SpanID]*sentry.Event, orphanSpans []*sentry.Span) []*sentry.Event {
 	transactions := make([]*sentry.Event, 0, len(transactionMap)+len(orphanSpans))
 
 	for _, t := range transactionMap {
@@ -126,10 +135,76 @@ func generateTransactions(transactionMap map[string]*sentry.Event, orphanSpans [
 	return transactions
 }
 
+// convertEventsToSentryExceptions creates a set of sentry events from exception events present in spans.
+// These events are stored in a mutated eventList
+func convertEventsToSentryExceptions(eventList *[]*sentry.Event, events pdata.SpanEventSlice, sentrySpan *sentry.Span) {
+	for i := 0; i < events.Len(); i++ {
+		event := events.At(i)
+		if event.Name() != "exception" {
+			continue
+		}
+		var exceptionMessage, exceptionType string
+		event.Attributes().Range(func(k string, v pdata.AttributeValue) bool {
+			switch k {
+			case conventions.AttributeExceptionMessage:
+				exceptionMessage = v.StringVal()
+			case conventions.AttributeExceptionType:
+				exceptionType = v.StringVal()
+			}
+			return true
+		})
+		if exceptionMessage == "" && exceptionType == "" {
+			// `At least one of the following sets of attributes is required:
+			// - exception.type
+			// - exception.message`
+			continue
+		}
+		sentryEvent, _ := sentryEventFromError(exceptionMessage, exceptionType, sentrySpan)
+		*eventList = append(*eventList, sentryEvent)
+	}
+}
+
+// sentryEventFromError creates a sentry event from error event in a span
+func sentryEventFromError(errorMessage, errorType string, span *sentry.Span) (*sentry.Event, error) {
+	if errorMessage == "" && errorType == "" {
+		err := errors.New("error type and error message were both empty")
+		return nil, err
+	}
+	event := sentry.NewEvent()
+	event.EventID = generateEventID()
+
+	event.Contexts["trace"] = sentry.TraceContext{
+		TraceID:      span.TraceID,
+		SpanID:       span.SpanID,
+		ParentSpanID: span.ParentSpanID,
+		Op:           span.Op,
+		Description:  span.Description,
+		Status:       span.Status,
+	}
+
+	event.Type = errorType
+	event.Message = errorMessage
+	event.Level = "error"
+	event.Exception = []sentry.Exception{{
+		Value: errorMessage,
+		Type:  errorType,
+	}}
+
+	event.Sdk.Name = otelSentryExporterName
+	event.Sdk.Version = otelSentryExporterVersion
+
+	event.StartTime = span.StartTime
+	event.Tags = span.Tags
+	event.Timestamp = span.EndTime
+	event.Transaction = span.Description
+
+	return event, nil
+}
+
 // classifyAsOrphanSpans iterates through a list of possible orphan spans and tries to associate them
 // with a transaction. As the order of the spans is not guaranteed, we have to recursively call
 // classifyAsOrphanSpans to make sure that we did not leave any spans out of the transaction they belong to.
-func classifyAsOrphanSpans(orphanSpans []*sentry.Span, prevLength int, idMap map[string]string, transactionMap map[string]*sentry.Event) []*sentry.Span {
+func classifyAsOrphanSpans(orphanSpans []*sentry.Span, prevLength int, idMap map[sentry.SpanID]sentry.SpanID, transactionMap map[sentry.SpanID]*sentry.Event) []*sentry.Span {
 	if len(orphanSpans) == 0 || len(orphanSpans) == prevLength {
 		return orphanSpans
 	}
@@ -149,11 +224,6 @@ func classifyAsOrphanSpans(orphanSpans []*sentry.Span, prevLength int, idMap map
 }
 
 func convertToSentrySpan(span pdata.Span, library pdata.InstrumentationLibrary, resourceTags map[string]string) (sentrySpan *sentry.Span) {
-	parentSpanID := ""
-	if psID := span.ParentSpanID(); !psID.IsEmpty() {
-		parentSpanID = psID.HexString()
-	}
-
 	attributes := span.Attributes()
 	name := span.Name()
 	spanKind := span.Kind()
@@ -171,7 +241,7 @@ func convertToSentrySpan(span pdata.Span, library pdata.InstrumentationLibrary, 
 		tags["status_message"] = message
 	}
 
-	if spanKind != pdata.SpanKindUNSPECIFIED {
+	if spanKind != pdata.SpanKindUnspecified {
 		tags["span_kind"] = spanKind.String()
 	}
 
@@ -179,15 +249,18 @@ func convertToSentrySpan(span pdata.Span, library pdata.InstrumentationLibrary, 
 	tags["library_version"] = library.Version()
 
 	sentrySpan = &sentry.Span{
-		TraceID:        span.TraceID().HexString(),
-		SpanID:         span.SpanID().HexString(),
-		ParentSpanID:   parentSpanID,
-		Description:    description,
-		Op:             op,
-		Tags:           tags,
-		StartTimestamp: unixNanoToTime(span.StartTimestamp()),
-		EndTimestamp:   unixNanoToTime(span.EndTimestamp()),
-		Status:         status,
+		TraceID:     span.TraceID().Bytes(),
+		SpanID:      span.SpanID().Bytes(),
+		Description: description,
+		Op:          op,
+		Tags:        tags,
+		StartTime:   unixNanoToTime(span.StartTimestamp()),
+		EndTime:     unixNanoToTime(span.EndTimestamp()),
+		Status:      status,
+	}
+
+	if parentSpanID := span.ParentSpanID(); !parentSpanID.IsEmpty() {
+		sentrySpan.ParentSpanID = parentSpanID.Bytes()
 	}
 
 	return sentrySpan
@@ -212,9 +285,9 @@ func generateSpanDescriptors(name string, attrs pdata.AttributeMap, spanKind pda
 		opBuilder.WriteString("http")
 
 		switch spanKind {
-		case pdata.SpanKindCLIENT:
+		case pdata.SpanKindClient:
 			opBuilder.WriteString(".client")
-		case pdata.SpanKindSERVER:
+		case pdata.SpanKindServer:
 			opBuilder.WriteString(".server")
 		}
 
@@ -272,13 +345,13 @@ func generateTagsFromAttributes(attrs pdata.AttributeMap) map[string]string {
 
 	attrs.Range(func(key string, attr pdata.AttributeValue) bool {
 		switch attr.Type() {
-		case pdata.AttributeValueSTRING:
+		case pdata.AttributeValueTypeString:
 			tags[key] = attr.StringVal()
-		case pdata.AttributeValueBOOL:
+		case pdata.AttributeValueTypeBool:
 			tags[key] = strconv.FormatBool(attr.BoolVal())
-		case pdata.AttributeValueDOUBLE:
+		case pdata.AttributeValueTypeDouble:
 			tags[key] = strconv.FormatFloat(attr.DoubleVal(), 'g', -1, 64)
-		case pdata.AttributeValueINT:
+		case pdata.AttributeValueTypeInt:
 			tags[key] = strconv.FormatInt(attr.IntVal(), 10)
 		}
 		return true
@@ -287,30 +360,34 @@ func generateTagsFromAttributes(attrs pdata.AttributeMap) map[string]string {
 	return tags
 }
 
-func statusFromSpanStatus(spanStatus pdata.SpanStatus) (status string, message string) {
+func statusFromSpanStatus(spanStatus pdata.SpanStatus) (status sentry.SpanStatus, message string) {
 	code := spanStatus.Code()
 	if code < 0 || int(code) >= len(canonicalCodes) {
-		return sentryStatusUnknown, fmt.Sprintf("error code %d", code)
+		return sentry.SpanStatusUnknown, fmt.Sprintf("error code %d", code)
 	}
 
 	return canonicalCodes[code], spanStatus.Message()
 }
 
-// isRootSpan determines if a span is a root span.
-// If parent span id is empty, then the span is a root span.
-func isRootSpan(s *sentry.Span) bool {
-	return s.ParentSpanID == ""
+// spanIsTransaction determines if a span should be sent to Sentry as a transaction.
+// If parent span id is empty or the span kind allows remote parent spans, then the span is a root span.
+func spanIsTransaction(s pdata.Span) bool {
+	kind := s.Kind()
+	return s.ParentSpanID() == pdata.SpanID{} || kind == pdata.SpanKindServer || kind == pdata.SpanKindConsumer
 }
 
 // transactionFromSpan converts a span to a transaction.
 func transactionFromSpan(span *sentry.Span) *sentry.Event {
 	transaction := sentry.NewEvent()
+	transaction.EventID = generateEventID()
 
 	transaction.Contexts["trace"] = sentry.TraceContext{
-		TraceID: span.TraceID,
-		SpanID:  span.SpanID,
-		Op:      span.Op,
-		Status:  span.Status,
+		TraceID:      span.TraceID,
+		SpanID:       span.SpanID,
+		ParentSpanID: span.ParentSpanID,
+		Op:           span.Op,
+		Description:  span.Description,
+		Status:       span.Status,
 	}
 
 	transaction.Type = "transaction"
@@ -318,20 +395,42 @@ func transactionFromSpan(span *sentry.Span) *sentry.Event {
 	transaction.Sdk.Name = otelSentryExporterName
 	transaction.Sdk.Version = otelSentryExporterVersion
 
-	transaction.StartTimestamp = span.StartTimestamp
+	transaction.StartTime = span.StartTime
 	transaction.Tags = span.Tags
-	transaction.Timestamp = span.EndTimestamp
+	transaction.Timestamp = span.EndTime
 	transaction.Transaction = span.Description
 
 	return transaction
 }
 
+func uuid() string {
+	id := make([]byte, 16)
+	// Prefer rand.Read over rand.Reader, see https://go-review.googlesource.com/c/go/+/272326/.
+	_, _ = rand.Read(id)
+	id[6] &= 0x0F // clear version
+	id[6] |= 0x40 // set version to 4 (random uuid)
+	id[8] &= 0x3F // clear variant
+	id[8] |= 0x80 // set to IETF variant
+	return hex.EncodeToString(id)
+}
+
+func generateEventID() sentry.EventID {
+	return sentry.EventID(uuid())
+}
+
 // CreateSentryExporter returns a new Sentry Exporter.
-func CreateSentryExporter(config *Config, params component.ExporterCreateParams) (component.TracesExporter, error) {
+func CreateSentryExporter(config *Config, set component.ExporterCreateSettings) (component.TracesExporter, error) {
 	transport := newSentryTransport()
-	transport.Configure(sentry.ClientOptions{
+
+	clientOptions := sentry.ClientOptions{
 		Dsn: config.DSN,
-	})
+	}
+
+	if config.InsecureSkipVerify {
+		clientOptions.HTTPTransport = &http.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: true}}
+	}
+
+	transport.Configure(clientOptions)
 
 	s := &SentryExporter{
 		transport: transport,
@@ -339,7 +438,7 @@ func CreateSentryExporter(config *Config, params component.ExporterCreateParams)
 
 	return exporterhelper.NewTracesExporter(
 		config,
-		params.Logger,
+		set,
 		s.pushTraceData,
 		exporterhelper.WithShutdown(func(ctx context.Context) error {
 			allEventsFlushed := transport.Flush(ctx)

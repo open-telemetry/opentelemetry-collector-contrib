@@ -2,7 +2,7 @@
 
 ### Overview
 
-The JMX Receiver will work in conjunction with the [OpenTelemetry JMX Metric Gatherer](https://github.com/open-telemetry/opentelemetry-java-contrib/blob/main/contrib/jmx-metrics/README.md)
+The JMX Receiver will work in conjunction with the [OpenTelemetry JMX Metric Gatherer](https://github.com/open-telemetry/opentelemetry-java-contrib/blob/main/jmx-metrics/README.md)
 to report metrics from a target MBean server using a built-in or your custom `otel` helper-utilizing
 Groovy script.
 
@@ -12,7 +12,7 @@ Status: alpha
 
 This receiver will launch a child JRE process running the JMX Metric Gatherer configured with your specified JMX
 connection information and target Groovy script.  It then reports metrics to an implicitly created OTLP receiver.
-In order to use you will need to download the most [recent release](https://oss.sonatype.org/content/repositories/snapshots/io/opentelemetry/contrib/opentelemetry-java-contrib-jmx-metrics)
+In order to use you will need to download the most [recent release](https://repo1.maven.org/maven2/io/opentelemetry/contrib/opentelemetry-java-contrib-jmx-metrics/)
 of the JMX Metric Gatherer JAR and configure the receiver with its path.  It is assumed that the JRE is
 available on your system.
 
@@ -31,10 +31,14 @@ receivers:
     collection_interval: 10s
     # optional: the same as specifying OTLP receiver endpoint.
     otlp:
-      endpoint: mycollectorotlpreceiver:55680
+      endpoint: mycollectorotlpreceiver:4317
     username: my_jmx_username
     # determined by the environment variable value
     password: $MY_JMX_PASSWORD
+    # will be set as system properties for the underlying java command
+    properties:
+      otel.resource.attributes: my.attr=my.value,my.other.attr=my.other.value
+      some.system.property: some.system.property.value
 ```
 
 ### jar_path (default: `/opt/opentelemetry-java-contrib-jmx-metrics.jar`)
@@ -84,6 +88,11 @@ Corresponds to the `otel.jmx.username` property.
 The password to use for JMX authentication.
 
 Corresponds to the `otel.jmx.password` property.
+
+### properties
+
+A map of property names to values to be used as system properties set as command line options
+(e.g. `-Dproperty.name=property.value`).
 
 ### otlp.endpoint (default: `0.0.0.0:<random open port>`)
 

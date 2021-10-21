@@ -21,22 +21,21 @@ import (
 	"io/ioutil"
 	"net/http"
 	"strings"
-	"sync"
 	"time"
 
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/translator/internaldata"
 	"go.uber.org/zap"
+
+	internaldata "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus"
 )
 
 var _ component.MetricsReceiver = (*collectdReceiver)(nil)
 
 // collectdReceiver implements the component.MetricsReceiver for CollectD protocol.
 type collectdReceiver struct {
-	sync.Mutex
 	logger             *zap.Logger
 	addr               string
 	server             *http.Server
@@ -72,9 +71,6 @@ func newCollectdReceiver(
 
 // Start starts an HTTP server that can process CollectD JSON requests.
 func (cdr *collectdReceiver) Start(_ context.Context, host component.Host) error {
-	cdr.Lock()
-	defer cdr.Unlock()
-
 	go func() {
 		if err := cdr.server.ListenAndServe(); err != http.ErrServerClosed {
 			host.ReportFatalError(fmt.Errorf("error starting collectd receiver: %v", err))
@@ -85,9 +81,6 @@ func (cdr *collectdReceiver) Start(_ context.Context, host component.Host) error
 
 // Shutdown stops the CollectD receiver.
 func (cdr *collectdReceiver) Shutdown(context.Context) error {
-	cdr.Lock()
-	defer cdr.Unlock()
-
 	return cdr.server.Shutdown(context.Background())
 }
 

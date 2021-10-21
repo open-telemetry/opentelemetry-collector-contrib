@@ -31,11 +31,12 @@ import (
 	v4 "github.com/aws/aws-sdk-go/aws/signer/v4"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configtls"
 )
 
-var sdkInformation string = fmt.Sprintf("%s/%s (%s; %s; %s)", aws.SDKName, aws.SDKVersion, runtime.Version(), runtime.GOOS, runtime.GOARCH)
+var sdkInformation = fmt.Sprintf("%s/%s (%s; %s; %s)", aws.SDKName, aws.SDKVersion, runtime.Version(), runtime.GOOS, runtime.GOARCH)
 
 func TestRequestSignature(t *testing.T) {
 	// Some form of AWS credentials must be set up for tests to succeed
@@ -63,7 +64,7 @@ func TestRequestSignature(t *testing.T) {
 			return newSigningRoundTripperWithCredentials(authConfig, awsCreds, next, sdkInformation)
 		},
 	}
-	client, _ := setting.ToClient()
+	client, _ := setting.ToClient(componenttest.NewNopHost().GetExtensions())
 	req, err := http.NewRequest("POST", setting.Endpoint, strings.NewReader("a=1&b=2"))
 	assert.NoError(t, err)
 	_, err = client.Do(req)
@@ -109,7 +110,7 @@ func TestLeakingBody(t *testing.T) {
 			return newSigningRoundTripperWithCredentials(authConfig, awsCreds, next, sdkInformation)
 		},
 	}
-	client, _ := setting.ToClient()
+	client, _ := setting.ToClient(componenttest.NewNopHost().GetExtensions())
 	checker := &checkCloser{Reader: strings.NewReader("a=1&b=2")}
 	req, err := http.NewRequest("POST", setting.Endpoint, checker)
 	assert.NoError(t, err)

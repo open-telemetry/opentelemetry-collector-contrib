@@ -23,13 +23,13 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtest"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -38,12 +38,12 @@ func TestLoadConfig(t *testing.T) {
 
 	factory := NewFactory()
 	factories.Exporters[typeStr] = factory
-	cfg, err := configtest.LoadConfigFile(t, path.Join(".", "testdata", "config.yaml"), factories)
+	cfg, err := configtest.LoadConfigAndValidate(path.Join(".", "testdata", "config.yaml"), factories)
 
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 
-	e0 := cfg.Exporters[config.NewID(typeStr)]
+	e0 := cfg.Exporters[config.NewComponentID(typeStr)]
 
 	// Endpoint and Token do not have a default value so set them directly.
 	defaultCfg := factory.CreateDefaultConfig().(*Config)
@@ -51,9 +51,9 @@ func TestLoadConfig(t *testing.T) {
 	defaultCfg.Endpoint = "https://splunk:8088/services/collector"
 	assert.Equal(t, defaultCfg, e0)
 
-	e1 := cfg.Exporters[config.NewIDWithName(typeStr, "allsettings")]
+	e1 := cfg.Exporters[config.NewComponentIDWithName(typeStr, "allsettings")]
 	expectedCfg := Config{
-		ExporterSettings:     config.NewExporterSettings(config.NewIDWithName(typeStr, "allsettings")),
+		ExporterSettings:     config.NewExporterSettings(config.NewComponentIDWithName(typeStr, "allsettings")),
 		Token:                "00000000-0000-0000-0000-0000000000000",
 		Endpoint:             "https://splunk:8088/services/collector",
 		Source:               "otel",
@@ -83,13 +83,23 @@ func TestLoadConfig(t *testing.T) {
 				CertFile: "",
 				KeyFile:  "",
 			},
-			Insecure:           true,
 			InsecureSkipVerify: false,
+		},
+		HecToOtelAttrs: splunk.HecToOtelAttrs{
+			Source:     "mysource",
+			SourceType: "mysourcetype",
+			Index:      "myindex",
+			Host:       "myhost",
+		},
+		HecFields: OtelToHecFields{
+			SeverityText:   "myseverityfield",
+			SeverityNumber: "myseveritynumfield",
+			Name:           "mynamefield",
 		},
 	}
 	assert.Equal(t, &expectedCfg, e1)
 
-	params := component.ExporterCreateParams{Logger: zap.NewNop()}
+	params := componenttest.NewNopExporterCreateSettings()
 	te, err := factory.CreateMetricsExporter(context.Background(), params, e1)
 	require.NoError(t, err)
 	require.NotNil(t, te)

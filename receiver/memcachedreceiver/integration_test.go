@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//go:build integration
 // +build integration
 
 package memcachedreceiver
@@ -23,11 +24,9 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.uber.org/zap/zaptest"
+	"go.opentelemetry.io/collector/model/pdata"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testing/container"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/memcachedreceiver/internal/metadata"
@@ -42,9 +41,8 @@ func TestIntegration(t *testing.T) {
 	cfg.Endpoint = c.AddrForPort(11211)
 
 	consumer := new(consumertest.MetricsSink)
-	params := component.ReceiverCreateParams{Logger: zaptest.NewLogger(t)}
 
-	rcvr, err := f.CreateMetricsReceiver(context.Background(), params, cfg, consumer)
+	rcvr, err := f.CreateMetricsReceiver(context.Background(), componenttest.NewNopReceiverCreateSettings(), cfg, consumer)
 	require.NoError(t, err, "failed creating metrics receiver")
 	require.NoError(t, rcvr.Start(context.Background(), componenttest.NewNopHost()))
 

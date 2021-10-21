@@ -26,12 +26,14 @@ import (
 	"time"
 
 	"github.com/open-telemetry/opentelemetry-log-collection/entry"
-	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/model/pdata"
 	"go.uber.org/zap"
 )
 
 const (
+	// DefaultFlushInterval is the default flush interval.
 	DefaultFlushInterval = 100 * time.Millisecond
+	// DefaultMaxFlushCount is the default max flush count.
 	DefaultMaxFlushCount = 100
 )
 
@@ -194,7 +196,7 @@ func (c *Converter) Stop() {
 	})
 }
 
-// Channel returns the channel on which converted entries will be sent to.
+// OutChannel returns the channel on which converted entries will be sent to.
 func (c *Converter) OutChannel() <-chan pdata.Logs {
 	return c.pLogsChan
 }
@@ -267,14 +269,14 @@ func (c *Converter) batchLoop() {
 
 			pLogs, ok := c.data[wi.ResourceString]
 			if ok {
-				pLogs.ResourceLogs().
+				lr := pLogs.ResourceLogs().
 					At(0).InstrumentationLibraryLogs().
-					At(0).Logs().Append(wi.LogRecord)
+					At(0).Logs().AppendEmpty()
+				wi.LogRecord.CopyTo(lr)
 			} else {
 				pLogs = pdata.NewLogs()
 				logs := pLogs.ResourceLogs()
-				logs.Resize(1)
-				rls := logs.At(0)
+				rls := logs.AppendEmpty()
 
 				resource := rls.Resource()
 				resourceAtts := resource.Attributes()
@@ -284,8 +286,8 @@ func (c *Converter) batchLoop() {
 				}
 
 				ills := rls.InstrumentationLibraryLogs()
-				ills.Resize(1)
-				ills.At(0).Logs().Append(wi.LogRecord)
+				lr := ills.AppendEmpty().Logs().AppendEmpty()
+				wi.LogRecord.CopyTo(lr)
 			}
 
 			c.data[wi.ResourceString] = pLogs
@@ -344,7 +346,7 @@ func (c *Converter) flush(ctx context.Context, pLogs pdata.Logs) error {
 
 	// The converter has been stopped so bail the flush.
 	case <-c.stopChan:
-		return errors.New("Logs converter has been stopped")
+		return errors.New("logs converter has been stopped")
 	}
 
 	return nil
@@ -356,7 +358,7 @@ func (c *Converter) Batch(e *entry.Entry) error {
 	case c.workerChan <- e:
 		return nil
 	case <-c.stopChan:
-		return errors.New("Logs converter has been stopped")
+		return errors.New("logs converter has been stopped")
 	}
 }
 
@@ -391,11 +393,9 @@ func Convert(ent *entry.Entry) pdata.Logs {
 
 // convertInto converts entry.Entry into provided pdata.LogRecord.
 func convertInto(ent *entry.Entry, dest pdata.LogRecord) {
-	dest.SetTimestamp(pdata.TimestampFromTime(ent.Timestamp))
-
-	sevText, sevNum := convertSeverity(ent.Severity)
-	dest.SetSeverityText(sevText)
-	dest.SetSeverityNumber(sevNum)
+	dest.SetTimestamp(pdata.NewTimestampFromTime(ent.Timestamp))
+	dest.SetSeverityNumber(sevMap[ent.Severity])
+	dest.SetSeverityText(sevTextMap[ent.Severity])
 
 	if l := len(ent.Attributes); l > 0 {
 		attributes := dest.Attributes()
@@ -520,61 +520,65 @@ func toAttributeMap(obsMap map[string]interface{}) pdata.AttributeValue {
 func toAttributeArray(obsArr []interface{}) pdata.AttributeValue {
 	arrVal := pdata.NewAttributeValueArray()
 	arr := arrVal.ArrayVal()
-	arr.Resize(len(obsArr))
-	for i, v := range obsArr {
-		insertToAttributeVal(v, arr.At(i))
+	arr.EnsureCapacity(len(obsArr))
+	for _, v := range obsArr {
+		insertToAttributeVal(v, arr.AppendEmpty())
 	}
 	return arrVal
 }
 
-func convertSeverity(s entry.Severity) (string, pdata.SeverityNumber) {
-	switch {
+var sevMap = map[entry.Severity]pdata.SeverityNumber{
+	entry.Default: pdata.SeverityNumberUNDEFINED,
+	entry.Trace:   pdata.SeverityNumberTRACE,
+	entry.Trace2:  pdata.SeverityNumberTRACE2,
+	entry.Trace3:  pdata.SeverityNumberTRACE3,
+	entry.Trace4:  pdata.SeverityNumberTRACE4,
+	entry.Debug:   pdata.SeverityNumberDEBUG,
+	entry.Debug2:  pdata.SeverityNumberDEBUG2,
+	entry.Debug3:  pdata.SeverityNumberDEBUG3,
+	entry.Debug4:  pdata.SeverityNumberDEBUG4,
+	entry.Info:    pdata.SeverityNumberINFO,
+	entry.Info2:   pdata.SeverityNumberINFO2,
+	entry.Info3:   pdata.SeverityNumberINFO3,
+	entry.Info4:   pdata.SeverityNumberINFO4,
+	entry.Warn:    pdata.SeverityNumberWARN,
+	entry.Warn2:   pdata.SeverityNumberWARN2,
+	entry.Warn3:   pdata.SeverityNumberWARN3,
+	entry.Warn4:   pdata.SeverityNumberWARN4,
+	entry.Error:   pdata.SeverityNumberERROR,
+	entry.Error2:  pdata.SeverityNumberERROR2,
+	entry.Error3:  pdata.SeverityNumberERROR3,
+	entry.Error4:  pdata.SeverityNumberERROR4,
+	entry.Fatal:   pdata.SeverityNumberFATAL,
+	entry.Fatal2:  pdata.SeverityNumberFATAL2,
+	entry.Fatal3:  pdata.SeverityNumberFATAL3,
+	entry.Fatal4:  pdata.SeverityNumberFATAL4,
+}
 
-	// Handle standard severity levels
-	case s == entry.Catastrophe:
-		return "Fatal", pdata.SeverityNumberFATAL4
-	case s == entry.Emergency:
-		return "Error", pdata.SeverityNumberFATAL
-	case s == entry.Alert:
-		return "Error", pdata.SeverityNumberERROR3
-	case s == entry.Critical:
-		return "Error", pdata.SeverityNumberERROR2
-	case s == entry.Error:
-		return "Error", pdata.SeverityNumberERROR
-	case s == entry.Warning:
-		return "Info", pdata.SeverityNumberINFO4
-	case s == entry.Notice:
-		return "Info", pdata.SeverityNumberINFO3
-	case s == entry.Info:
-		return "Info", pdata.SeverityNumberINFO
-	case s == entry.Debug:
-		return "Debug", pdata.SeverityNumberDEBUG
-	case s == entry.Trace:
-		return "Trace", pdata.SeverityNumberTRACE2
-
-	// Handle custom severity levels
-	case s > entry.Emergency:
-		return "Fatal", pdata.SeverityNumberFATAL2
-	case s > entry.Alert:
-		return "Error", pdata.SeverityNumberERROR4
-	case s > entry.Critical:
-		return "Error", pdata.SeverityNumberERROR3
-	case s > entry.Error:
-		return "Error", pdata.SeverityNumberERROR2
-	case s > entry.Warning:
-		return "Info", pdata.SeverityNumberINFO4
-	case s > entry.Notice:
-		return "Info", pdata.SeverityNumberINFO3
-	case s > entry.Info:
-		return "Info", pdata.SeverityNumberINFO2
-	case s > entry.Debug:
-		return "Debug", pdata.SeverityNumberDEBUG2
-	case s > entry.Trace:
-		return "Trace", pdata.SeverityNumberTRACE3
-	case s > entry.Default:
-		return "Trace", pdata.SeverityNumberTRACE
-
-	default:
-		return "Undefined", pdata.SeverityNumberUNDEFINED
-	}
+var sevTextMap = map[entry.Severity]string{
+	entry.Default: "",
+	entry.Trace:   "Trace",
+	entry.Trace2:  "Trace2",
+	entry.Trace3:  "Trace3",
+	entry.Trace4:  "Trace4",
+	entry.Debug:   "Debug",
+	entry.Debug2:  "Debug2",
+	entry.Debug3:  "Debug3",
+	entry.Debug4:  "Debug4",
+	entry.Info:    "Info",
+	entry.Info2:   "Info2",
+	entry.Info3:   "Info3",
+	entry.Info4:   "Info4",
+	entry.Warn:    "Warn",
+	entry.Warn2:   "Warn2",
+	entry.Warn3:   "Warn3",
+	entry.Warn4:   "Warn4",
+	entry.Error:   "Error",
+	entry.Error2:  "Error2",
+	entry.Error3:  "Error3",
+	entry.Error4:  "Error4",
+	entry.Fatal:   "Fatal",
+	entry.Fatal2:  "Fatal2",
+	entry.Fatal3:  "Fatal3",
+	entry.Fatal4:  "Fatal4",
 }

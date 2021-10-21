@@ -16,6 +16,7 @@ package awsemfexporter
 
 import (
 	"fmt"
+	"regexp"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
@@ -34,14 +35,8 @@ var collectorDistribution = "opentelemetry-collector-contrib"
 const (
 	// this is the retry count, the total attempts will be at most retry count + 1.
 	defaultRetryCount          = 1
-	ErrCodeThrottlingException = "ThrottlingException"
+	errCodeThrottlingException = "ThrottlingException"
 )
-
-//The log client will perform the necessary operations for publishing log events use case.
-type LogClient interface {
-	PutLogEvents(input *cloudwatchlogs.PutLogEventsInput, retryCnt int) (*string, error)
-	CreateStream(logGroup, streamName *string) (token string, e error)
-}
 
 // Possible exceptions are combination of common errors (https://docs.aws.amazon.com/AmazonCloudWatchLogs/latest/APIReference/CommonErrors.html)
 // and API specific erros (e.g. https://docs.aws.amazon.com/AmazonCloudWatchLogs/latest/APIReference/API_PutLogEvents.html#API_PutLogEvents_Errors)
@@ -57,11 +52,11 @@ func newCloudWatchLogClient(svc cloudwatchlogsiface.CloudWatchLogsAPI, logger *z
 	return logClient
 }
 
-// NewCloudWatchLogsClient create cloudWatchLogClient
-func NewCloudWatchLogsClient(logger *zap.Logger, awsConfig *aws.Config, buildInfo component.BuildInfo, sess *session.Session) LogClient {
+// newCloudWatchLogsClient create cloudWatchLogClient
+func newCloudWatchLogsClient(logger *zap.Logger, awsConfig *aws.Config, buildInfo component.BuildInfo, logGroupName string, sess *session.Session) *cloudWatchLogClient {
 	client := cloudwatchlogs.New(sess, awsConfig)
 	client.Handlers.Build.PushBackNamed(handler.RequestStructuredLogHandler)
-	client.Handlers.Build.PushFrontNamed(newCollectorUserAgentHandler(buildInfo))
+	client.Handlers.Build.PushFrontNamed(newCollectorUserAgentHandler(buildInfo, logGroupName))
 	return newCloudWatchLogClient(client, logger)
 }
 
@@ -110,7 +105,7 @@ func (client *cloudWatchLogClient) PutLogEvents(input *cloudwatchlogs.PutLogEven
 			default:
 				// ThrottlingException is handled here because the type cloudwatch.ThrottlingException is not yet available in public SDK
 				// Drop request if ThrottlingException happens
-				if awsErr.Code() == ErrCodeThrottlingException {
+				if awsErr.Code() == errCodeThrottlingException {
 					client.logger.Warn("cwlog_client: Error occurs in PutLogEvents, will not retry the request", zap.Error(awsErr), zap.String("LogGroupName", *input.LogGroupName), zap.String("LogStreamName", *input.LogStreamName))
 					return token, err
 				}
@@ -181,9 +176,19 @@ func (client *cloudWatchLogClient) CreateStream(logGroup, streamName *string) (t
 	return "", nil
 }
 
-func newCollectorUserAgentHandler(buildInfo component.BuildInfo) request.NamedHandler {
+func newCollectorUserAgentHandler(buildInfo component.BuildInfo, logGroupName string) request.NamedHandler {
+	fn := request.MakeAddToUserAgentHandler(collectorDistribution, buildInfo.Version)
+	if matchContainerInsightsPattern(logGroupName) {
+		fn = request.MakeAddToUserAgentHandler(collectorDistribution, buildInfo.Version, "ContainerInsights")
+	}
 	return request.NamedHandler{
 		Name: "otel.collector.UserAgentHandler",
-		Fn:   request.MakeAddToUserAgentHandler(collectorDistribution, buildInfo.Version),
+		Fn:   fn,
 	}
+}
+
+func matchContainerInsightsPattern(logGroupName string) bool {
+	regexP := "^/aws/.*containerinsights/.*/(performance|prometheus)$"
+	r, _ := regexp.Compile(regexP)
+	return r.MatchString(logGroupName)
 }

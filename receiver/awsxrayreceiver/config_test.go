@@ -26,8 +26,8 @@ import (
 	"go.opentelemetry.io/collector/config/configtest"
 	"go.opentelemetry.io/collector/config/configtls"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/proxy"
 	awsxray "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsxrayreceiver/internal/proxy"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -36,9 +36,7 @@ func TestLoadConfig(t *testing.T) {
 
 	factory := NewFactory()
 	factories.Receivers[awsxray.TypeStr] = factory
-	cfg, err := configtest.LoadConfigFile(
-		t, path.Join(".", "testdata", "config.yaml"), factories,
-	)
+	cfg, err := configtest.LoadConfigAndValidate(path.Join(".", "testdata", "config.yaml"), factories)
 
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
@@ -47,14 +45,14 @@ func TestLoadConfig(t *testing.T) {
 
 	// ensure default configurations are generated when users provide
 	// nothing.
-	r0 := cfg.Receivers[config.NewID(awsxray.TypeStr)]
+	r0 := cfg.Receivers[config.NewComponentID(awsxray.TypeStr)]
 	assert.Equal(t, factory.CreateDefaultConfig(), r0)
 
 	// ensure the UDP endpoint can be properly overwritten
-	r1 := cfg.Receivers[config.NewIDWithName(awsxray.TypeStr, "udp_endpoint")].(*Config)
+	r1 := cfg.Receivers[config.NewComponentIDWithName(awsxray.TypeStr, "udp_endpoint")].(*Config)
 	assert.Equal(t,
 		&Config{
-			ReceiverSettings: config.NewReceiverSettings(config.NewIDWithName(awsxray.TypeStr, "udp_endpoint")),
+			ReceiverSettings: config.NewReceiverSettings(config.NewComponentIDWithName(awsxray.TypeStr, "udp_endpoint")),
 			NetAddr: confignet.NetAddr{
 				Endpoint:  "0.0.0.0:5678",
 				Transport: "udp",
@@ -76,10 +74,10 @@ func TestLoadConfig(t *testing.T) {
 		r1)
 
 	// ensure the fields under proxy_server are properly overwritten
-	r2 := cfg.Receivers[config.NewIDWithName(awsxray.TypeStr, "proxy_server")].(*Config)
+	r2 := cfg.Receivers[config.NewComponentIDWithName(awsxray.TypeStr, "proxy_server")].(*Config)
 	assert.Equal(t,
 		&Config{
-			ReceiverSettings: config.NewReceiverSettings(config.NewIDWithName(awsxray.TypeStr, "proxy_server")),
+			ReceiverSettings: config.NewReceiverSettings(config.NewComponentIDWithName(awsxray.TypeStr, "proxy_server")),
 			NetAddr: confignet.NetAddr{
 				Endpoint:  "0.0.0.0:2000",
 				Transport: "udp",

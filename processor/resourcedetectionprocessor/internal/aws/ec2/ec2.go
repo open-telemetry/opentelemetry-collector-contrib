@@ -24,13 +24,14 @@ import (
 	"github.com/aws/aws-sdk-go/service/ec2"
 	"github.com/aws/aws-sdk-go/service/ec2/ec2iface"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/translator/conventions"
+	"go.opentelemetry.io/collector/model/pdata"
+	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
 )
 
 const (
+	// TypeStr is type of detector.
 	TypeStr   = "ec2"
 	tagPrefix = "ec2.tag."
 )
@@ -42,7 +43,7 @@ type Detector struct {
 	tagKeyRegexes    []*regexp.Regexp
 }
 
-func NewDetector(_ component.ProcessorCreateParams, dcfg internal.DetectorConfig) (internal.Detector, error) {
+func NewDetector(_ component.ProcessorCreateSettings, dcfg internal.DetectorConfig) (internal.Detector, error) {
 	cfg := dcfg.(Config)
 	sess, err := session.NewSession()
 	if err != nil {
@@ -55,27 +56,27 @@ func NewDetector(_ component.ProcessorCreateParams, dcfg internal.DetectorConfig
 	return &Detector{metadataProvider: newMetadataClient(sess), tagKeyRegexes: tagKeyRegexes}, nil
 }
 
-func (d *Detector) Detect(ctx context.Context) (pdata.Resource, error) {
+func (d *Detector) Detect(ctx context.Context) (resource pdata.Resource, schemaURL string, err error) {
 	res := pdata.NewResource()
 	if !d.metadataProvider.available(ctx) {
-		return res, nil
+		return res, "", nil
 	}
 
 	meta, err := d.metadataProvider.get(ctx)
 	if err != nil {
-		return res, fmt.Errorf("failed getting identity document: %w", err)
+		return res, "", fmt.Errorf("failed getting identity document: %w", err)
 	}
 
 	hostname, err := d.metadataProvider.hostname(ctx)
 	if err != nil {
-		return res, fmt.Errorf("failed getting hostname: %w", err)
+		return res, "", fmt.Errorf("failed getting hostname: %w", err)
 	}
 
 	attr := res.Attributes()
 	attr.InsertString(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAWS)
 	attr.InsertString(conventions.AttributeCloudPlatform, conventions.AttributeCloudPlatformAWSEC2)
 	attr.InsertString(conventions.AttributeCloudRegion, meta.Region)
-	attr.InsertString(conventions.AttributeCloudAccount, meta.AccountID)
+	attr.InsertString(conventions.AttributeCloudAccountID, meta.AccountID)
 	attr.InsertString(conventions.AttributeCloudAvailabilityZone, meta.AvailabilityZone)
 	attr.InsertString(conventions.AttributeHostID, meta.InstanceID)
 	attr.InsertString(conventions.AttributeHostImageID, meta.ImageID)
@@ -85,14 +86,14 @@ func (d *Detector) Detect(ctx context.Context) (pdata.Resource, error) {
 	if len(d.tagKeyRegexes) != 0 {
 		tags, err := connectAndFetchEc2Tags(meta.Region, meta.InstanceID, d.tagKeyRegexes)
 		if err != nil {
-			return res, fmt.Errorf("failed fetching ec2 instance tags: %w", err)
+			return res, "", fmt.Errorf("failed fetching ec2 instance tags: %w", err)
 		}
 		for key, val := range tags {
 			attr.InsertString(tagPrefix+key, val)
 		}
 	}
 
-	return res, nil
+	return res, conventions.SchemaURL, nil
 }
 
 func connectAndFetchEc2Tags(region string, instanceID string, tagKeyRegexes []*regexp.Regexp) (map[string]string, error) {

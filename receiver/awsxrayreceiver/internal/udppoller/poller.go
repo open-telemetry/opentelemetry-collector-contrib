@@ -21,6 +21,7 @@ import (
 	"net"
 	"sync"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/obsreport"
 	"go.uber.org/zap"
@@ -84,10 +85,12 @@ type poller struct {
 
 	// all segments read by the poller will be sent to this channel
 	segChan chan RawSegment
+
+	obsrecv *obsreport.Receiver
 }
 
 // New creates a new UDP poller
-func New(cfg *Config, logger *zap.Logger) (Poller, error) {
+func New(cfg *Config, set component.ReceiverCreateSettings) (Poller, error) {
 	if cfg.Transport != Transport {
 		return nil, fmt.Errorf(
 			"X-Ray receiver only supports ingesting spans through UDP, provided: %s",
@@ -103,16 +106,22 @@ func New(cfg *Config, logger *zap.Logger) (Poller, error) {
 	if err != nil {
 		return nil, err
 	}
-	logger.Info("Listening on endpoint for X-Ray segments",
+	set.Logger.Info("Listening on endpoint for X-Ray segments",
 		zap.String(Transport, addr.String()))
 
 	return &poller{
 		receiverID:     cfg.ReceiverID,
 		udpSock:        sock,
-		logger:         logger,
+		logger:         set.Logger,
 		maxPollerCount: cfg.NumOfPollerToStart,
 		shutDown:       make(chan struct{}),
 		segChan:        make(chan RawSegment, segChanSize),
+		obsrecv: obsreport.NewReceiver(obsreport.ReceiverSettings{
+			ReceiverID:             cfg.ReceiverID,
+			Transport:              cfg.Transport,
+			LongLivedCtx:           true,
+			ReceiverCreateSettings: set,
+		}),
 	}, nil
 }
 
@@ -168,11 +177,7 @@ func (p *poller) poll() {
 		case <-p.shutDown:
 			return
 		default:
-			ctx := obsreport.StartTraceDataReceiveOp(
-				p.receiverLongLivedCtx,
-				p.receiverID,
-				Transport,
-				obsreport.WithLongLivedCtx())
+			ctx := p.obsrecv.StartTracesOp(p.receiverLongLivedCtx)
 
 			bufPointer := &buffer
 			rlen, err := p.read(bufPointer)
@@ -180,11 +185,11 @@ func (p *poller) poll() {
 				// TODO: We may want to attempt to shutdown/clean the broken socket and open a new one
 				// with the same address
 				p.logger.Error("Irrecoverable socket read error. Exiting poller", zap.Error(err))
-				obsreport.EndTraceDataReceiveOp(ctx, awsxray.TypeStr, 1, err)
+				p.obsrecv.EndTracesOp(ctx, awsxray.TypeStr, 1, err)
 				return
 			} else if errors.As(err, &errRecv) {
 				p.logger.Error("Recoverable socket read error", zap.Error(err))
-				obsreport.EndTraceDataReceiveOp(ctx, awsxray.TypeStr, 1, err)
+				p.obsrecv.EndTracesOp(ctx, awsxray.TypeStr, 1, err)
 				continue
 			}
 
@@ -196,7 +201,7 @@ func (p *poller) poll() {
 			if errors.As(err, &errRecv) {
 				p.logger.Error("Failed to split segment header and body",
 					zap.Error(err))
-				obsreport.EndTraceDataReceiveOp(ctx, awsxray.TypeStr, 1, err)
+				p.obsrecv.EndTracesOp(ctx, awsxray.TypeStr, 1, err)
 				continue
 			}
 
@@ -205,7 +210,7 @@ func (p *poller) poll() {
 					zap.String("header format", header.Format),
 					zap.Int("header version", header.Version),
 				)
-				obsreport.EndTraceDataReceiveOp(ctx, awsxray.TypeStr, 1,
+				p.obsrecv.EndTracesOp(ctx, awsxray.TypeStr, 1,
 					errors.New("dropped span due to missing body that contains segment"))
 				continue
 			}

@@ -16,16 +16,16 @@ package awsemfexporter
 
 import (
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry"
 )
 
 var (
-	// EMFSupportedUnits contains the unit collection supported by CloudWatch backend service.
+	// eMFSupportedUnits contains the unit collection supported by CloudWatch backend service.
 	// https://docs.aws.amazon.com/AmazonCloudWatch/latest/APIReference/API_MetricDatum.html
-	EMFSupportedUnits = newEMFSupportedUnits()
+	eMFSupportedUnits = newEMFSupportedUnits()
 )
 
 // Config defines configuration for AWS EMF exporter.
@@ -64,10 +64,15 @@ type Config struct {
 	// TODO: we can support directing output to a file (in the future) while customer specifies a file path here.
 	OutputDestination string `mapstructure:"output_destination"`
 
+	// EKSFargateContainerInsightsEnabled is an option to reformat certin metric labels so that they take the form of a high level object
+	// The end result will make the labels look like those coming out of ECS and be more easily injected into cloudwatch
+	// Note that at the moment in order to use this feature the value "kubernetes" must also be added to the ParseJSONEncodedAttributeValues array in order to be used
+	EKSFargateContainerInsightsEnabled bool `mapstructure:"eks_fargate_container_insights_enabled"`
+
 	// ResourceToTelemetrySettings is the option for converting resource attrihutes to telemetry attributes.
 	// "Enabled" - A boolean field to enable/disable this option. Default is `false`.
 	// If enabled, all the resource attributes will be converted to metric labels by default.
-	exporterhelper.ResourceToTelemetrySettings `mapstructure:"resource_to_telemetry_conversion"`
+	ResourceToTelemetrySettings resourcetotelemetry.Settings `mapstructure:"resource_to_telemetry_conversion"`
 
 	// logger is the Logger used for writing error/warning logs
 	logger *zap.Logger
@@ -87,7 +92,7 @@ type MetricDescriptor struct {
 func (config *Config) Validate() error {
 	validDeclarations := []*MetricDeclaration{}
 	for _, declaration := range config.MetricDeclarations {
-		err := declaration.Init(config.logger)
+		err := declaration.init(config.logger)
 		if err != nil {
 			config.logger.Warn("Dropped metric declaration.", zap.Error(err))
 		} else {
@@ -101,7 +106,7 @@ func (config *Config) Validate() error {
 		if descriptor.metricName == "" {
 			continue
 		}
-		if _, ok := EMFSupportedUnits[descriptor.unit]; ok {
+		if _, ok := eMFSupportedUnits[descriptor.unit]; ok {
 			validDescriptors = append(validDescriptors, descriptor)
 		} else {
 			config.logger.Warn("Dropped unsupported metric desctriptor.", zap.String("unit", descriptor.unit))

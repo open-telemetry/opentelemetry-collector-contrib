@@ -26,20 +26,19 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.elastic.co/apm/transport/transporttest"
-	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/obsreport/obsreporttest"
-	"go.uber.org/zap"
 )
 
 func TestTracesExporter(t *testing.T) {
-	cleanup, err := obsreporttest.SetupRecordedMetricsTest()
+	tt, err := obsreporttest.SetupTelemetry()
 	require.NoError(t, err)
-	defer cleanup()
+	defer tt.Shutdown(context.Background())
 
 	factory := NewFactory()
 	recorder, cfg := newRecorder(t)
-	params := component.ExporterCreateParams{Logger: zap.NewNop()}
+	params := componenttest.NewNopExporterCreateSettings()
 	te, err := factory.CreateTracesExporter(context.Background(), params, cfg)
 	assert.NoError(t, err)
 	assert.NotNil(t, te, "failed to create trace exporter")
@@ -51,7 +50,7 @@ func TestTracesExporter(t *testing.T) {
 
 	err = te.ConsumeTraces(context.Background(), traces)
 	assert.NoError(t, err)
-	obsreporttest.CheckExporterTraces(t, cfg.ID(), 1, 0)
+	assert.NoError(t, obsreporttest.CheckExporterTraces(cfg.ID(), 1, 0))
 
 	payloads := recorder.Payloads()
 	require.Len(t, payloads.Transactions, 1)
@@ -61,13 +60,13 @@ func TestTracesExporter(t *testing.T) {
 }
 
 func TestMetricsExporter(t *testing.T) {
-	cleanup, err := obsreporttest.SetupRecordedMetricsTest()
+	tt, err := obsreporttest.SetupTelemetry()
 	require.NoError(t, err)
-	defer cleanup()
+	defer tt.Shutdown(context.Background())
 
 	factory := NewFactory()
 	recorder, cfg := newRecorder(t)
-	params := component.ExporterCreateParams{Logger: zap.NewNop()}
+	params := componenttest.NewNopExporterCreateSettings()
 	me, err := factory.CreateMetricsExporter(context.Background(), params, cfg)
 	assert.NoError(t, err)
 	assert.NotNil(t, me, "failed to create metrics exporter")
@@ -78,29 +77,29 @@ func TestMetricsExporter(t *testing.T) {
 	payloads := recorder.Payloads()
 	require.Len(t, payloads.Metrics, 2)
 	assert.Contains(t, payloads.Metrics[0].Samples, "foobar")
-	obsreporttest.CheckExporterMetrics(t, cfg.ID(), 2, 0)
+	assert.NoError(t, obsreporttest.CheckExporterMetrics(cfg.ID(), 2, 0))
 
 	assert.NoError(t, me.Shutdown(context.Background()))
 }
 
 func TestMetricsExporterSendError(t *testing.T) {
-	cleanup, err := obsreporttest.SetupRecordedMetricsTest()
+	tt, err := obsreporttest.SetupTelemetry()
 	require.NoError(t, err)
-	defer cleanup()
+	defer tt.Shutdown(context.Background())
 
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	eCfg := cfg.(*Config)
 	eCfg.APMServerURL = "http://testing.invalid"
 
-	params := component.ExporterCreateParams{Logger: zap.NewNop()}
+	params := componenttest.NewNopExporterCreateSettings()
 	me, err := factory.CreateMetricsExporter(context.Background(), params, cfg)
 	assert.NoError(t, err)
 	assert.NotNil(t, me, "failed to create metrics exporter")
 
 	err = me.ConsumeMetrics(context.Background(), sampleMetrics())
 	assert.Error(t, err)
-	obsreporttest.CheckExporterMetrics(t, cfg.ID(), 0, 2)
+	assert.NoError(t, obsreporttest.CheckExporterMetrics(cfg.ID(), 0, 2))
 
 	assert.NoError(t, me.Shutdown(context.Background()))
 }
@@ -108,12 +107,12 @@ func TestMetricsExporterSendError(t *testing.T) {
 func sampleMetrics() pdata.Metrics {
 	metrics := pdata.NewMetrics()
 	resourceMetrics := metrics.ResourceMetrics()
-	resourceMetrics.Resize(2)
+	resourceMetrics.EnsureCapacity(2)
 	for i := 0; i < 2; i++ {
-		metric := resourceMetrics.At(i).InstrumentationLibraryMetrics().AppendEmpty().Metrics().AppendEmpty()
+		metric := resourceMetrics.AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty().Metrics().AppendEmpty()
 		metric.SetName("foobar")
-		metric.SetDataType(pdata.MetricDataTypeDoubleGauge)
-		metric.DoubleGauge().DataPoints().AppendEmpty().SetValue(123)
+		metric.SetDataType(pdata.MetricDataTypeGauge)
+		metric.Gauge().DataPoints().AppendEmpty().SetDoubleVal(123)
 	}
 	return metrics
 }

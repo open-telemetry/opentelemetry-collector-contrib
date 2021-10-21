@@ -38,16 +38,13 @@ func NewFactory() component.ReceiverFactory {
 // createDefaultConfig creates the default configuration for receiver.
 func createDefaultConfig() config.Receiver {
 	return &Config{
-		ReceiverSettings: config.NewReceiverSettings(config.NewID(typeStr)),
+		ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
 		HTTPServerSettings: confighttp.HTTPServerSettings{
 			Endpoint: "0.0.0.0:8086",
 		},
-		MetricsSchema: "telegraf-prometheus-v1",
 	}
 }
 
-func createMetricsReceiver(_ context.Context, params component.ReceiverCreateParams, cfg config.Receiver, nextConsumer consumer.Metrics) (component.MetricsReceiver, error) {
-	influxLogger := newZapInfluxLogger(params.Logger)
-
-	return newMetricsReceiver(cfg.(*Config), influxLogger, nextConsumer)
+func createMetricsReceiver(_ context.Context, params component.ReceiverCreateSettings, cfg config.Receiver, nextConsumer consumer.Metrics) (component.MetricsReceiver, error) {
+	return newMetricsReceiver(cfg.(*Config), params.TelemetrySettings, nextConsumer)
 }

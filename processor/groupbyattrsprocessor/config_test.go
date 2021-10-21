@@ -22,7 +22,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/config/configcheck"
 	"go.opentelemetry.io/collector/config/configtest"
 )
 
@@ -33,21 +32,18 @@ func TestLoadConfig(t *testing.T) {
 	factories.Processors[typeStr] = factory
 	require.NoError(t, err)
 
-	err = configcheck.ValidateConfig(factory.CreateDefaultConfig())
+	err = configtest.CheckConfigStruct(factory.CreateDefaultConfig())
 	require.NoError(t, err)
 
-	cfg, err := configtest.LoadConfigFile(
-		t,
-		path.Join(".", "testdata", "config.yaml"),
-		factories)
+	cfg, err := configtest.LoadConfigAndValidate(path.Join(".", "testdata", "config.yaml"), factories)
 
 	require.Nil(t, err)
 	require.NotNil(t, cfg)
 
-	conf := cfg.Processors[config.NewIDWithName(typeStr, "custom")]
+	conf := cfg.Processors[config.NewComponentIDWithName(typeStr, "custom")]
 	assert.Equal(t, conf,
 		&Config{
-			ProcessorSettings: config.NewProcessorSettings(config.NewIDWithName(typeStr, "custom")),
+			ProcessorSettings: config.NewProcessorSettings(config.NewComponentIDWithName(typeStr, "custom")),
 			GroupByKeys:       []string{"key1", "key2"},
 		})
 }

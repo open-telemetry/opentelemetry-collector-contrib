@@ -21,7 +21,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/model/pdata"
 	"go.uber.org/zap"
 )
 
@@ -56,6 +56,10 @@ func prepareResource(attrMap pdata.AttributeMap, selectedKeys []string) pdata.Re
 
 func filterAttributeMap(attrMap pdata.AttributeMap, selectedKeys []string) pdata.AttributeMap {
 	filteredAttrMap := pdata.NewAttributeMap()
+	if len(selectedKeys) == 0 {
+		return filteredAttrMap
+	}
+
 	filteredAttrMap.EnsureCapacity(10)
 	for _, key := range selectedKeys {
 		val, _ := attrMap.Get(key)
@@ -160,10 +164,10 @@ func TestComplexAttributeGrouping(t *testing.T) {
 			gap, err := createGroupByAttrsProcessor(zap.NewNop(), []string{"commonGroupedAttr"})
 			require.NoError(t, err)
 
-			processedLogs, err := gap.ProcessLogs(context.Background(), inputLogs)
+			processedLogs, err := gap.processLogs(context.Background(), inputLogs)
 			assert.NoError(t, err)
 
-			processedSpans, err := gap.ProcessTraces(context.Background(), inputTraces)
+			processedSpans, err := gap.processTraces(context.Background(), inputTraces)
 			assert.NoError(t, err)
 
 			rls := processedLogs.ResourceLogs()
@@ -245,10 +249,10 @@ func TestAttributeGrouping(t *testing.T) {
 			expectedResource := prepareResource(attrMap, tt.groupByKeys)
 			expectedAttributes := filterAttributeMap(attrMap, tt.nonGroupedKeys)
 
-			processedLogs, err := gap.ProcessLogs(context.Background(), logs)
+			processedLogs, err := gap.processLogs(context.Background(), logs)
 			assert.NoError(t, err)
 
-			processedSpans, err := gap.ProcessTraces(context.Background(), spans)
+			processedSpans, err := gap.processTraces(context.Background(), spans)
 			assert.NoError(t, err)
 
 			assert.Equal(t, 1, processedLogs.ResourceLogs().Len())

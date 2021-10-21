@@ -20,16 +20,16 @@ import (
 	"github.com/DataDog/datadog-agent/pkg/trace/exportable/pb"
 )
 
-// Denylister holds a list of regular expressions which will match resources
+// denylister holds a list of regular expressions which will match resources
 // on spans that should be dropped.
 // From: https://github.com/DataDog/datadog-agent/blob/a6872e436681ea2136cf8a67465e99fdb4450519/pkg/trace/filters/blacklister.go#L15-L19
-type Denylister struct {
+type denylister struct {
 	list []*regexp.Regexp
 }
 
-// Allows returns true if the Denylister permits this span.
+// allows returns true if the Denylister permits this span.
 // From: https://github.com/DataDog/datadog-agent/blob/a6872e436681ea2136cf8a67465e99fdb4450519/pkg/trace/filters/blacklister.go#L21-L29
-func (f *Denylister) Allows(span *pb.Span) bool {
+func (f *denylister) allows(span *pb.Span) bool {
 	for _, entry := range f.list {
 		if entry.MatchString(span.Resource) {
 			return false
@@ -38,11 +38,11 @@ func (f *Denylister) Allows(span *pb.Span) bool {
 	return true
 }
 
-// NewDenylister creates a new Denylister based on the given list of
+// newDenylister creates a new Denylister based on the given list of
 // regular expressions.
 // From: https://github.com/DataDog/datadog-agent/blob/a6872e436681ea2136cf8a67465e99fdb4450519/pkg/trace/filters/blacklister.go#L41-L45
-func NewDenylister(exprs []string) *Denylister {
-	return &Denylister{list: compileRules(exprs)}
+func newDenylister(exprs []string) *denylister {
+	return &denylister{list: compileRules(exprs)}
 }
 
 // compileRules compiles as many rules as possible from the list of expressions.

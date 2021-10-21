@@ -50,7 +50,7 @@ func (f *f5cloudFactory) Type() config.Type {
 
 func (f *f5cloudFactory) CreateMetricsExporter(
 	ctx context.Context,
-	params component.ExporterCreateParams,
+	params component.ExporterCreateSettings,
 	config config.Exporter) (component.MetricsExporter, error) {
 
 	cfg := config.(*Config)
@@ -66,7 +66,7 @@ func (f *f5cloudFactory) CreateMetricsExporter(
 
 func (f *f5cloudFactory) CreateTracesExporter(
 	ctx context.Context,
-	params component.ExporterCreateParams,
+	params component.ExporterCreateSettings,
 	config config.Exporter) (component.TracesExporter, error) {
 
 	cfg := config.(*Config)
@@ -82,7 +82,7 @@ func (f *f5cloudFactory) CreateTracesExporter(
 
 func (f *f5cloudFactory) CreateLogsExporter(
 	ctx context.Context,
-	params component.ExporterCreateParams,
+	params component.ExporterCreateSettings,
 	config config.Exporter) (component.LogsExporter, error) {
 
 	cfg := config.(*Config)
@@ -105,7 +105,7 @@ func (f *f5cloudFactory) CreateDefaultConfig() config.Exporter {
 		},
 	}
 
-	cfg.ExporterSettings = config.NewExporterSettings(config.NewID(typeStr))
+	cfg.ExporterSettings = config.NewExporterSettings(config.NewComponentID(typeStr))
 
 	cfg.Headers["User-Agent"] = "opentelemetry-collector-contrib {{version}}"
 

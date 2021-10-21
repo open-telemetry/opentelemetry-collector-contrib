@@ -17,7 +17,7 @@ package metrics
 import (
 	"time"
 
-	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/model/pdata"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dotnetdiagnosticsreceiver/dotnet"
 )
@@ -30,9 +30,9 @@ func rawMetricsToPdata(rawMetrics []dotnet.Metric, startTime, now time.Time) pda
 	ilms := rm.InstrumentationLibraryMetrics()
 	ilm := ilms.AppendEmpty()
 	ms := ilm.Metrics()
-	ms.Resize(len(rawMetrics))
+	ms.EnsureCapacity(len(rawMetrics))
 	for i := 0; i < len(rawMetrics); i++ {
-		rawMetricToPdata(rawMetrics[i], ms.At(i), startTime, now)
+		rawMetricToPdata(rawMetrics[i], ms.AppendEmpty(), startTime, now)
 	}
 	return pdm
 }
@@ -42,23 +42,23 @@ func rawMetricToPdata(dm dotnet.Metric, pdm pdata.Metric, startTime, now time.Ti
 	pdm.SetName(metricNamePrefix + dm.Name())
 	pdm.SetDescription(dm.DisplayName())
 	pdm.SetUnit(mapUnits(dm.DisplayUnits()))
-	nowPD := pdata.TimestampFromTime(now)
+	nowPD := pdata.NewTimestampFromTime(now)
 	switch dm.CounterType() {
 	case "Mean":
-		pdm.SetDataType(pdata.MetricDataTypeDoubleGauge)
-		dps := pdm.DoubleGauge().DataPoints()
+		pdm.SetDataType(pdata.MetricDataTypeGauge)
+		dps := pdm.Gauge().DataPoints()
 		dp := dps.AppendEmpty()
 		dp.SetTimestamp(nowPD)
-		dp.SetValue(dm.Mean())
+		dp.SetDoubleVal(dm.Mean())
 	case "Sum":
-		pdm.SetDataType(pdata.MetricDataTypeDoubleSum)
-		sum := pdm.DoubleSum()
-		sum.SetAggregationTemporality(pdata.AggregationTemporalityDelta)
+		pdm.SetDataType(pdata.MetricDataTypeSum)
+		sum := pdm.Sum()
+		sum.SetAggregationTemporality(pdata.MetricAggregationTemporalityDelta)
 		dps := sum.DataPoints()
 		dp := dps.AppendEmpty()
-		dp.SetStartTimestamp(pdata.TimestampFromTime(startTime))
+		dp.SetStartTimestamp(pdata.NewTimestampFromTime(startTime))
 		dp.SetTimestamp(nowPD)
-		dp.SetValue(dm.Increment())
+		dp.SetDoubleVal(dm.Increment())
 	}
 	return pdm
 }

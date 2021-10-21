@@ -28,10 +28,9 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/translator/internaldata"
-	"go.uber.org/zap"
+	"go.opentelemetry.io/collector/model/pdata"
 
+	internaldata "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/env"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/gcp/gce"
@@ -41,22 +40,21 @@ type MockDetector struct {
 	mock.Mock
 }
 
-func (p *MockDetector) Detect(ctx context.Context) (pdata.Resource, error) {
+func (p *MockDetector) Detect(ctx context.Context) (resource pdata.Resource, schemaURL string, err error) {
 	args := p.Called()
-	return args.Get(0).(pdata.Resource), args.Error(1)
+	return args.Get(0).(pdata.Resource), "", args.Error(1)
 }
 
 func TestResourceProcessor(t *testing.T) {
 	tests := []struct {
-		name               string
-		detectorKeys       []string
-		override           bool
-		sourceResource     pdata.Resource
-		detectedResource   pdata.Resource
-		detectedError      error
-		expectedResource   pdata.Resource
-		expectedNewError   string
-		expectedStartError string
+		name             string
+		detectorKeys     []string
+		override         bool
+		sourceResource   pdata.Resource
+		detectedResource pdata.Resource
+		detectedError    error
+		expectedResource pdata.Resource
+		expectedNewError string
 	}{
 		{
 			name:     "Resource is not overridden",
@@ -145,8 +143,7 @@ func TestResourceProcessor(t *testing.T) {
 				"original-label":          "original-value",
 				"cloud.availability_zone": "original-zone",
 			}),
-			detectedError:      errors.New("err1"),
-			expectedStartError: "err1",
+			detectedError: errors.New("err1"),
 		},
 		{
 			name:             "Invalid detector key",
@@ -162,7 +159,7 @@ func TestResourceProcessor(t *testing.T) {
 			md1 := &MockDetector{}
 			md1.On("Detect").Return(tt.detectedResource, tt.detectedError)
 			factory.resourceProviderFactory = internal.NewProviderFactory(
-				map[internal.DetectorType]internal.DetectorFactory{"mock": func(component.ProcessorCreateParams, internal.DetectorConfig) (internal.Detector, error) {
+				map[internal.DetectorType]internal.DetectorFactory{"mock": func(component.ProcessorCreateSettings, internal.DetectorConfig) (internal.Detector, error) {
 					return md1, nil
 				}})
 
@@ -171,15 +168,15 @@ func TestResourceProcessor(t *testing.T) {
 			}
 
 			cfg := &Config{
-				ProcessorSettings: config.NewProcessorSettings(config.NewID(typeStr)),
+				ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
 				Override:          tt.override,
 				Detectors:         tt.detectorKeys,
 				Timeout:           time.Second,
 			}
 
-			// Test trace consuner
+			// Test trace consumer
 			ttn := new(consumertest.TracesSink)
-			rtp, err := factory.createTracesProcessor(context.Background(), component.ProcessorCreateParams{Logger: zap.NewNop()}, cfg, ttn)
+			rtp, err := factory.createTracesProcessor(context.Background(), componenttest.NewNopProcessorCreateSettings(), cfg, ttn)
 
 			if tt.expectedNewError != "" {
 				assert.EqualError(t, err, tt.expectedNewError)
@@ -191,8 +188,8 @@ func TestResourceProcessor(t *testing.T) {
 
 			err = rtp.Start(context.Background(), componenttest.NewNopHost())
 
-			if tt.expectedStartError != "" {
-				assert.EqualError(t, err, tt.expectedStartError)
+			if tt.detectedError != nil {
+				require.NoError(t, err)
 				return
 			}
 
@@ -212,7 +209,7 @@ func TestResourceProcessor(t *testing.T) {
 
 			// Test metrics consumer
 			tmn := new(consumertest.MetricsSink)
-			rmp, err := factory.createMetricsProcessor(context.Background(), component.ProcessorCreateParams{Logger: zap.NewNop()}, cfg, tmn)
+			rmp, err := factory.createMetricsProcessor(context.Background(), componenttest.NewNopProcessorCreateSettings(), cfg, tmn)
 
 			if tt.expectedNewError != "" {
 				assert.EqualError(t, err, tt.expectedNewError)
@@ -224,8 +221,8 @@ func TestResourceProcessor(t *testing.T) {
 
 			err = rmp.Start(context.Background(), componenttest.NewNopHost())
 
-			if tt.expectedStartError != "" {
-				assert.EqualError(t, err, tt.expectedStartError)
+			if tt.detectedError != nil {
+				require.NoError(t, err)
 				return
 			}
 
@@ -243,7 +240,7 @@ func TestResourceProcessor(t *testing.T) {
 
 			// Test logs consumer
 			tln := new(consumertest.LogsSink)
-			rlp, err := factory.createLogsProcessor(context.Background(), component.ProcessorCreateParams{Logger: zap.NewNop()}, cfg, tln)
+			rlp, err := factory.createLogsProcessor(context.Background(), componenttest.NewNopProcessorCreateSettings(), cfg, tln)
 
 			if tt.expectedNewError != "" {
 				assert.EqualError(t, err, tt.expectedNewError)
@@ -255,8 +252,8 @@ func TestResourceProcessor(t *testing.T) {
 
 			err = rlp.Start(context.Background(), componenttest.NewNopHost())
 
-			if tt.expectedStartError != "" {
-				assert.EqualError(t, err, tt.expectedStartError)
+			if tt.detectedError != nil {
+				require.NoError(t, err)
 				return
 			}
 
@@ -294,7 +291,7 @@ func oCensusResource(res pdata.Resource) *resourcepb.Resource {
 func benchmarkConsumeTraces(b *testing.B, cfg *Config) {
 	factory := NewFactory()
 	sink := new(consumertest.TracesSink)
-	processor, _ := factory.CreateTracesProcessor(context.Background(), component.ProcessorCreateParams{Logger: zap.NewNop()}, cfg, sink)
+	processor, _ := factory.CreateTracesProcessor(context.Background(), componenttest.NewNopProcessorCreateSettings(), cfg, sink)
 
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
@@ -316,7 +313,7 @@ func BenchmarkConsumeTracesAll(b *testing.B) {
 func benchmarkConsumeMetrics(b *testing.B, cfg *Config) {
 	factory := NewFactory()
 	sink := new(consumertest.MetricsSink)
-	processor, _ := factory.CreateMetricsProcessor(context.Background(), component.ProcessorCreateParams{Logger: zap.NewNop()}, cfg, sink)
+	processor, _ := factory.CreateMetricsProcessor(context.Background(), componenttest.NewNopProcessorCreateSettings(), cfg, sink)
 
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
@@ -338,7 +335,7 @@ func BenchmarkConsumeMetricsAll(b *testing.B) {
 func benchmarkConsumeLogs(b *testing.B, cfg *Config) {
 	factory := NewFactory()
 	sink := new(consumertest.LogsSink)
-	processor, _ := factory.CreateLogsProcessor(context.Background(), component.ProcessorCreateParams{Logger: zap.NewNop()}, cfg, sink)
+	processor, _ := factory.CreateLogsProcessor(context.Background(), componenttest.NewNopProcessorCreateSettings(), cfg, sink)
 
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {

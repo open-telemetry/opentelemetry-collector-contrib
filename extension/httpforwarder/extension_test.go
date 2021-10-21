@@ -29,8 +29,9 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
-	"go.opentelemetry.io/collector/testutil"
-	"go.uber.org/zap"
+	"go.opentelemetry.io/collector/config/configtls"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testutil"
 )
 
 type clientRequestArgs struct {
@@ -52,6 +53,7 @@ func TestExtension(t *testing.T) {
 		requestErrorAtForwarder     bool
 		clientRequestArgs           clientRequestArgs
 		startUpError                bool
+		startUpErrorMessage         string
 	}{
 		{
 			name: "No additional headers",
@@ -137,6 +139,21 @@ func TestExtension(t *testing.T) {
 			},
 		},
 		{
+			name: "Invalid config - HTTP Client creation fails",
+			config: &Config{
+				Egress: confighttp.HTTPClientSettings{
+					Endpoint: "localhost:9090",
+					TLSSetting: configtls.TLSClientSetting{
+						TLSSetting: configtls.TLSSetting{
+							CAFile: "/non/existent",
+						},
+					},
+				},
+			},
+			startUpError:        true,
+			startUpErrorMessage: "failed to create HTTP Client: ",
+		},
+		{
 			name: "Error on Startup",
 			config: &Config{
 				Ingress: confighttp.HTTPServerSettings{
@@ -191,12 +208,17 @@ func TestExtension(t *testing.T) {
 				test.config.Egress.Endpoint = "http://" + testutil.GetAvailableLocalAddress(t)
 			}
 
-			hf, err := newHTTPForwarder(test.config, zap.NewNop())
+			hf, err := newHTTPForwarder(test.config, componenttest.NewNopTelemetrySettings())
 			require.NoError(t, err)
 
 			ctx := context.Background()
 			if test.startUpError {
-				require.Error(t, hf.Start(ctx, componenttest.NewNopHost()))
+				err = hf.Start(ctx, componenttest.NewNopHost())
+				if test.startUpErrorMessage != "" {
+					require.True(t, strings.Contains(err.Error(), test.startUpErrorMessage))
+				}
+				require.Error(t, err)
+
 				return
 			}
 			require.NoError(t, hf.Start(ctx, componenttest.NewNopHost()))

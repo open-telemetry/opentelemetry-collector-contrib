@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//go:build integration
 // +build integration
 
 package nginxreceiver
@@ -27,10 +28,12 @@ import (
 	"github.com/stretchr/testify/suite"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
-	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/nginxreceiver/internal/metadata"
 )
 
 type NginxIntegrationSuite struct {
@@ -80,11 +83,13 @@ func (suite *NginxIntegrationSuite) TestNginxScraperHappyPath() {
 	}
 
 	sc := newNginxScraper(zap.NewNop(), cfg)
-	rms, err := sc.scrape(context.Background())
+	err = sc.start(context.Background(), componenttest.NewNopHost())
+	require.NoError(t, err)
+	md, err := sc.scrape(context.Background())
 	require.Nil(t, err)
 
-	require.Equal(t, 1, rms.Len())
-	rm := rms.At(0)
+	require.Equal(t, 1, md.ResourceMetrics().Len())
+	rm := md.ResourceMetrics().At(0)
 
 	ilms := rm.InstrumentationLibraryMetrics()
 	require.Equal(t, 1, ilms.Len())
@@ -92,24 +97,49 @@ func (suite *NginxIntegrationSuite) TestNginxScraperHappyPath() {
 	ilm := ilms.At(0)
 	ms := ilm.Metrics()
 
-	require.Equal(t, 7, ms.Len())
-
-	metricValues := make(map[string]int64, 7)
+	require.Equal(t, 4, ms.Len())
 
 	for i := 0; i < ms.Len(); i++ {
 		m := ms.At(i)
 
-		var dps pdata.IntDataPointSlice
-
-		switch m.DataType() {
-		case pdata.MetricDataTypeIntGauge:
-			dps = m.IntGauge().DataPoints()
-		case pdata.MetricDataTypeIntSum:
-			dps = m.IntSum().DataPoints()
+		switch m.Name() {
+		case metadata.M.NginxRequests.Name():
+			require.Equal(t, 1, m.Sum().DataPoints().Len())
+			require.True(t, m.Sum().IsMonotonic())
+		case metadata.M.NginxConnectionsAccepted.Name():
+			require.Equal(t, 1, m.Sum().DataPoints().Len())
+			require.True(t, m.Sum().IsMonotonic())
+		case metadata.M.NginxConnectionsHandled.Name():
+			require.Equal(t, 1, m.Sum().DataPoints().Len())
+			require.True(t, m.Sum().IsMonotonic())
+		case metadata.M.NginxConnectionsCurrent.Name():
+			dps := m.Gauge().DataPoints()
+			require.Equal(t, 4, dps.Len())
+			present := map[string]bool{}
+			for j := 0; j < dps.Len(); j++ {
+				dp := dps.At(j)
+				state, ok := dp.Attributes().Get("state")
+				if !ok {
+					continue
+				}
+				switch state.StringVal() {
+				case metadata.LabelState.Active:
+					present[state.StringVal()] = true
+				case metadata.LabelState.Reading:
+					present[state.StringVal()] = true
+				case metadata.LabelState.Writing:
+					present[state.StringVal()] = true
+				case metadata.LabelState.Waiting:
+					present[state.StringVal()] = true
+				default:
+					t.Error(fmt.Sprintf("connections with state %s not expected", state.StringVal()))
+				}
+			}
+			// Ensure all 4 expected states were present
+			require.Equal(t, 4, len(present))
+		default:
+			require.Nil(t, m.Name(), fmt.Sprintf("metric %s not expected", m.Name()))
 		}
 
-		require.Equal(t, 1, dps.Len())
-
-		metricValues[m.Name()] = dps.At(0).Value()
 	}
 }

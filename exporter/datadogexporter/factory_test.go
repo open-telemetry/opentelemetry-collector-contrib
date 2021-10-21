@@ -23,17 +23,16 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/config/configcheck"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configtest"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.uber.org/zap"
 
 	ddconfig "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/config"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/metadata"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/testutils"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/testutils"
 )
 
 // Test that the factory creates the default configuration
@@ -44,7 +43,10 @@ func TestCreateDefaultConfig(t *testing.T) {
 	// Note: the default configuration created by CreateDefaultConfig
 	// still has the unresolved environment variables.
 	assert.Equal(t, &ddconfig.Config{
-		ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
+		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
+		TimeoutSettings:  exporterhelper.DefaultTimeoutSettings(),
+		RetrySettings:    exporterhelper.DefaultRetrySettings(),
+		QueueSettings:    exporterhelper.DefaultQueueSettings(),
 
 		API: ddconfig.APIConfig{
 			Key:  "$DD_API_KEY",
@@ -57,6 +59,11 @@ func TestCreateDefaultConfig(t *testing.T) {
 			},
 			DeltaTTL:      3600,
 			SendMonotonic: true,
+			Quantiles:     true,
+			HistConfig: ddconfig.HistogramConfig{
+				Mode:         "nobuckets",
+				SendCountSum: true,
+			},
 		},
 
 		Traces: ddconfig.TracesConfig{
@@ -80,7 +87,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 		UseResourceMetadata: true,
 	}, cfg, "failed to create default config")
 
-	assert.NoError(t, configcheck.ValidateConfig(cfg))
+	assert.NoError(t, configtest.CheckConfigStruct(cfg))
 }
 
 // TestLoadConfig tests that the configuration is loaded correctly
@@ -90,17 +97,21 @@ func TestLoadConfig(t *testing.T) {
 
 	factory := NewFactory()
 	factories.Exporters[typeStr] = factory
-	cfg, err := configtest.LoadConfigFile(t, path.Join(".", "testdata", "config.yaml"), factories)
+	cfg, err := configtest.LoadConfigAndValidate(path.Join(".", "testdata", "config.yaml"), factories)
 
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 
-	apiConfig := cfg.Exporters[config.NewIDWithName(typeStr, "api")].(*ddconfig.Config)
-	err = apiConfig.Sanitize()
+	apiConfig := cfg.Exporters[config.NewComponentIDWithName(typeStr, "api")].(*ddconfig.Config)
+	err = apiConfig.Sanitize(zap.NewNop())
 
 	require.NoError(t, err)
 	assert.Equal(t, &ddconfig.Config{
-		ExporterSettings: config.NewExporterSettings(config.NewIDWithName(typeStr, "api")),
+		ExporterSettings: config.NewExporterSettings(config.NewComponentIDWithName(typeStr, "api")),
+		TimeoutSettings:  exporterhelper.DefaultTimeoutSettings(),
+		RetrySettings:    exporterhelper.DefaultRetrySettings(),
+		QueueSettings:    exporterhelper.DefaultQueueSettings(),
+
 		TagsConfig: ddconfig.TagsConfig{
 			Hostname:   "customhostname",
 			Env:        "prod",
@@ -121,6 +132,11 @@ func TestLoadConfig(t *testing.T) {
 			},
 			DeltaTTL:      3600,
 			SendMonotonic: true,
+			Quantiles:     true,
+			HistConfig: ddconfig.HistogramConfig{
+				Mode:         "nobuckets",
+				SendCountSum: true,
+			},
 		},
 
 		Traces: ddconfig.TracesConfig{
@@ -135,12 +151,16 @@ func TestLoadConfig(t *testing.T) {
 		UseResourceMetadata: true,
 	}, apiConfig)
 
-	defaultConfig := cfg.Exporters[config.NewIDWithName(typeStr, "default")].(*ddconfig.Config)
-	err = defaultConfig.Sanitize()
+	defaultConfig := cfg.Exporters[config.NewComponentIDWithName(typeStr, "default")].(*ddconfig.Config)
+	err = defaultConfig.Sanitize(zap.NewNop())
 
 	require.NoError(t, err)
 	assert.Equal(t, &ddconfig.Config{
-		ExporterSettings: config.NewExporterSettings(config.NewIDWithName(typeStr, "default")),
+		ExporterSettings: config.NewExporterSettings(config.NewComponentIDWithName(typeStr, "default")),
+		TimeoutSettings:  exporterhelper.DefaultTimeoutSettings(),
+		RetrySettings:    exporterhelper.DefaultRetrySettings(),
+		QueueSettings:    exporterhelper.DefaultQueueSettings(),
+
 		TagsConfig: ddconfig.TagsConfig{
 			Hostname:   "",
 			Env:        "none",
@@ -160,6 +180,11 @@ func TestLoadConfig(t *testing.T) {
 			},
 			SendMonotonic: true,
 			DeltaTTL:      3600,
+			Quantiles:     true,
+			HistConfig: ddconfig.HistogramConfig{
+				Mode:         "nobuckets",
+				SendCountSum: true,
+			},
 		},
 
 		Traces: ddconfig.TracesConfig{
@@ -174,8 +199,8 @@ func TestLoadConfig(t *testing.T) {
 		UseResourceMetadata: true,
 	}, defaultConfig)
 
-	invalidConfig := cfg.Exporters[config.NewIDWithName(typeStr, "invalid")].(*ddconfig.Config)
-	err = invalidConfig.Sanitize()
+	invalidConfig := cfg.Exporters[config.NewComponentIDWithName(typeStr, "invalid")].(*ddconfig.Config)
+	err = invalidConfig.Sanitize(zap.NewNop())
 	require.Error(t, err)
 }
 
@@ -209,18 +234,21 @@ func TestLoadConfigEnvVariables(t *testing.T) {
 
 	factory := NewFactory()
 	factories.Exporters[typeStr] = factory
-	cfg, err := configtest.LoadConfigFile(t, path.Join(".", "testdata", "config.yaml"), factories)
+	cfg, err := configtest.LoadConfigAndValidate(path.Join(".", "testdata", "config.yaml"), factories)
 
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 
-	apiConfig := cfg.Exporters[config.NewIDWithName(typeStr, "api2")].(*ddconfig.Config)
-	err = apiConfig.Sanitize()
+	apiConfig := cfg.Exporters[config.NewComponentIDWithName(typeStr, "api2")].(*ddconfig.Config)
+	err = apiConfig.Sanitize(zap.NewNop())
 
 	// Check that settings with env variables get overridden when explicitly set in config
 	require.NoError(t, err)
 	assert.Equal(t, &ddconfig.Config{
-		ExporterSettings: config.NewExporterSettings(config.NewIDWithName(typeStr, "api2")),
+		ExporterSettings: config.NewExporterSettings(config.NewComponentIDWithName(typeStr, "api2")),
+		TimeoutSettings:  exporterhelper.DefaultTimeoutSettings(),
+		RetrySettings:    exporterhelper.DefaultRetrySettings(),
+		QueueSettings:    exporterhelper.DefaultQueueSettings(),
 
 		TagsConfig: ddconfig.TagsConfig{
 			Hostname:   "customhostname",
@@ -241,7 +269,12 @@ func TestLoadConfigEnvVariables(t *testing.T) {
 				Endpoint: "https://api.datadoghq.test",
 			},
 			SendMonotonic: true,
+			Quantiles:     false,
 			DeltaTTL:      3600,
+			HistConfig: ddconfig.HistogramConfig{
+				Mode:         "nobuckets",
+				SendCountSum: true,
+			},
 		},
 
 		Traces: ddconfig.TracesConfig{
@@ -256,15 +289,18 @@ func TestLoadConfigEnvVariables(t *testing.T) {
 		UseResourceMetadata: true,
 	}, apiConfig)
 
-	defaultConfig := cfg.Exporters[config.NewIDWithName(typeStr, "default2")].(*ddconfig.Config)
-	err = defaultConfig.Sanitize()
+	defaultConfig := cfg.Exporters[config.NewComponentIDWithName(typeStr, "default2")].(*ddconfig.Config)
+	err = defaultConfig.Sanitize(zap.NewNop())
 
 	require.NoError(t, err)
 
 	// Check that settings with env variables get taken into account when
 	// no settings are given.
 	assert.Equal(t, &ddconfig.Config{
-		ExporterSettings: config.NewExporterSettings(config.NewIDWithName(typeStr, "default2")),
+		ExporterSettings: config.NewExporterSettings(config.NewComponentIDWithName(typeStr, "default2")),
+		TimeoutSettings:  exporterhelper.DefaultTimeoutSettings(),
+		RetrySettings:    exporterhelper.DefaultRetrySettings(),
+		QueueSettings:    exporterhelper.DefaultQueueSettings(),
 
 		TagsConfig: ddconfig.TagsConfig{
 			Hostname:   "testhost",
@@ -285,6 +321,11 @@ func TestLoadConfigEnvVariables(t *testing.T) {
 			},
 			SendMonotonic: true,
 			DeltaTTL:      3600,
+			Quantiles:     true,
+			HistConfig: ddconfig.HistogramConfig{
+				Mode:         "nobuckets",
+				SendCountSum: true,
+			},
 		},
 
 		Traces: ddconfig.TracesConfig{
@@ -304,28 +345,26 @@ func TestCreateAPIMetricsExporter(t *testing.T) {
 	server := testutils.DatadogServerMock()
 	defer server.Close()
 
-	logger := zap.NewNop()
-
 	factories, err := componenttest.NopFactories()
 	require.NoError(t, err)
 
 	factory := NewFactory()
 	factories.Exporters[typeStr] = factory
-	cfg, err := configtest.LoadConfigFile(t, path.Join(".", "testdata", "config.yaml"), factories)
+	cfg, err := configtest.LoadConfigAndValidate(path.Join(".", "testdata", "config.yaml"), factories)
 
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 
 	// Use the mock server for API key validation
-	c := (cfg.Exporters[config.NewIDWithName(typeStr, "api")]).(*ddconfig.Config)
+	c := (cfg.Exporters[config.NewComponentIDWithName(typeStr, "api")]).(*ddconfig.Config)
 	c.Metrics.TCPAddr.Endpoint = server.URL
 	c.SendMetadata = false
 
 	ctx := context.Background()
 	exp, err := factory.CreateMetricsExporter(
 		ctx,
-		component.ExporterCreateParams{Logger: logger},
-		cfg.Exporters[config.NewIDWithName(typeStr, "api")],
+		componenttest.NewNopExporterCreateSettings(),
+		cfg.Exporters[config.NewComponentIDWithName(typeStr, "api")],
 	)
 
 	assert.NoError(t, err)
@@ -336,28 +375,26 @@ func TestCreateAPITracesExporter(t *testing.T) {
 	server := testutils.DatadogServerMock()
 	defer server.Close()
 
-	logger := zap.NewNop()
-
 	factories, err := componenttest.NopFactories()
 	require.NoError(t, err)
 
 	factory := NewFactory()
 	factories.Exporters[typeStr] = factory
-	cfg, err := configtest.LoadConfigFile(t, path.Join(".", "testdata", "config.yaml"), factories)
+	cfg, err := configtest.LoadConfigAndValidate(path.Join(".", "testdata", "config.yaml"), factories)
 
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 
 	// Use the mock server for API key validation
-	c := (cfg.Exporters[config.NewIDWithName(typeStr, "api")]).(*ddconfig.Config)
+	c := (cfg.Exporters[config.NewComponentIDWithName(typeStr, "api")]).(*ddconfig.Config)
 	c.Metrics.TCPAddr.Endpoint = server.URL
 	c.SendMetadata = false
 
 	ctx := context.Background()
 	exp, err := factory.CreateTracesExporter(
 		ctx,
-		component.ExporterCreateParams{Logger: logger},
-		cfg.Exporters[config.NewIDWithName(typeStr, "api")],
+		componenttest.NewNopExporterCreateSettings(),
+		cfg.Exporters[config.NewComponentIDWithName(typeStr, "api")],
 	)
 
 	assert.NoError(t, err)
@@ -367,7 +404,6 @@ func TestCreateAPITracesExporter(t *testing.T) {
 func TestOnlyMetadata(t *testing.T) {
 	server := testutils.DatadogServerMock()
 	defer server.Close()
-	logger := zap.NewNop()
 
 	factories, err := componenttest.NopFactories()
 	require.NoError(t, err)
@@ -377,10 +413,14 @@ func TestOnlyMetadata(t *testing.T) {
 
 	ctx := context.Background()
 	cfg := &ddconfig.Config{
-		ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
-		API:              ddconfig.APIConfig{Key: "notnull"},
-		Metrics:          ddconfig.MetricsConfig{TCPAddr: confignet.TCPAddr{Endpoint: server.URL}},
-		Traces:           ddconfig.TracesConfig{TCPAddr: confignet.TCPAddr{Endpoint: server.URL}},
+		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
+		TimeoutSettings:  exporterhelper.DefaultTimeoutSettings(),
+		RetrySettings:    exporterhelper.DefaultRetrySettings(),
+		QueueSettings:    exporterhelper.DefaultQueueSettings(),
+
+		API:     ddconfig.APIConfig{Key: "notnull"},
+		Metrics: ddconfig.MetricsConfig{TCPAddr: confignet.TCPAddr{Endpoint: server.URL}},
+		Traces:  ddconfig.TracesConfig{TCPAddr: confignet.TCPAddr{Endpoint: server.URL}},
 
 		SendMetadata:        true,
 		OnlyMetadata:        true,
@@ -389,7 +429,7 @@ func TestOnlyMetadata(t *testing.T) {
 
 	expTraces, err := factory.CreateTracesExporter(
 		ctx,
-		component.ExporterCreateParams{Logger: logger},
+		componenttest.NewNopExporterCreateSettings(),
 		cfg,
 	)
 	assert.NoError(t, err)
@@ -397,11 +437,15 @@ func TestOnlyMetadata(t *testing.T) {
 
 	expMetrics, err := factory.CreateMetricsExporter(
 		ctx,
-		component.ExporterCreateParams{Logger: logger},
+		componenttest.NewNopExporterCreateSettings(),
 		cfg,
 	)
 	assert.NoError(t, err)
 	assert.NotNil(t, expMetrics)
+
+	err = expTraces.Start(ctx, nil)
+	assert.NoError(t, err)
+	defer expTraces.Shutdown(ctx)
 
 	err = expTraces.ConsumeTraces(ctx, testutils.TestTraces.Clone())
 	require.NoError(t, err)

@@ -26,12 +26,10 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-	"go.opentelemetry.io/collector/testutil/metricstestutil"
-	"go.opentelemetry.io/collector/translator/internaldata"
-	"go.uber.org/zap"
+	"go.opentelemetry.io/collector/model/pdata"
 	"google.golang.org/api/option"
 	cloudmetricpb "google.golang.org/genproto/googleapis/api/metric"
 	cloudtracepb "google.golang.org/genproto/googleapis/devtools/cloudtrace/v2"
@@ -40,6 +38,9 @@ import (
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/protobuf/types/known/emptypb"
 	"google.golang.org/protobuf/types/known/timestamppb"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/metricstestutil"
+	internaldata "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus"
 )
 
 type testServer struct {
@@ -67,7 +68,7 @@ func TestGoogleCloudTraceExport(t *testing.T) {
 		{
 			name: "Standard",
 			cfg: &Config{
-				ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
+				ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
 				ProjectID:        "idk",
 				Endpoint:         "127.0.0.1:8080",
 				UseInsecure:      true,
@@ -76,7 +77,7 @@ func TestGoogleCloudTraceExport(t *testing.T) {
 		{
 			name: "Standard_WithoutSendingQueue",
 			cfg: &Config{
-				ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
+				ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
 				ProjectID:        "idk",
 				Endpoint:         "127.0.0.1:8080",
 				UseInsecure:      true,
@@ -99,8 +100,7 @@ func TestGoogleCloudTraceExport(t *testing.T) {
 
 			go srv.Serve(lis)
 
-			createParams := component.ExporterCreateParams{Logger: zap.NewNop(), BuildInfo: component.BuildInfo{Version: "v0.0.1"}}
-			sde, err := newGoogleCloudTracesExporter(test.cfg, createParams)
+			sde, err := newGoogleCloudTracesExporter(test.cfg, componenttest.NewNopExporterCreateSettings())
 			if test.expectedErr != "" {
 				assert.EqualError(t, err, test.expectedErr)
 				return
@@ -118,7 +118,7 @@ func TestGoogleCloudTraceExport(t *testing.T) {
 			ispans := rspans.InstrumentationLibrarySpans().AppendEmpty()
 			span := ispans.Spans().AppendEmpty()
 			span.SetName(spanName)
-			span.SetStartTimestamp(pdata.TimestampFromTime(testTime))
+			span.SetStartTimestamp(pdata.NewTimestampFromTime(testTime))
 			err = sde.ConsumeTraces(context.Background(), traces)
 			assert.NoError(t, err)
 
@@ -185,8 +185,13 @@ func TestGoogleCloudMetricExport(t *testing.T) {
 		option.WithTelemetryDisabled(),
 	}
 
+	creationParams := componenttest.NewNopExporterCreateSettings()
+	creationParams.BuildInfo = component.BuildInfo{
+		Version: "v0.0.1",
+	}
+
 	sde, err := newGoogleCloudMetricsExporter(&Config{
-		ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
+		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
 		ProjectID:        "idk",
 		Endpoint:         "127.0.0.1:8080",
 		UserAgent:        "MyAgent {{version}}",
@@ -194,14 +199,7 @@ func TestGoogleCloudMetricExport(t *testing.T) {
 		GetClientOptions: func() []option.ClientOption {
 			return clientOptions
 		},
-	},
-		component.ExporterCreateParams{
-			Logger: zap.NewNop(),
-			BuildInfo: component.BuildInfo{
-				Version: "v0.0.1",
-			},
-		},
-	)
+	}, creationParams)
 	require.NoError(t, err)
 	defer func() { require.NoError(t, sde.Shutdown(context.Background())) }()
 

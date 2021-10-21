@@ -17,11 +17,19 @@ package splunkhecexporter
 import (
 	"time"
 
-	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/translator/conventions"
+	"go.opentelemetry.io/collector/model/pdata"
+	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
+)
+
+const (
+	// Keys are taken from https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/logs/overview.md#trace-context-in-legacy-formats.
+	// spanIDFieldKey is the key used in log event for the span id (if any).
+	spanIDFieldKey = "span_id"
+	// traceIDFieldKey is the key used in the log event for the trace id (if any).
+	traceIDFieldKey = "trace_id"
 )
 
 // Composite index of a log record in pdata.Logs.
@@ -34,30 +42,45 @@ type logIndex struct {
 	record int
 }
 
-func (i *logIndex) zero() bool {
-	return i.resource == 0 && i.library == 0 && i.record == 0
-}
-
 func mapLogRecordToSplunkEvent(res pdata.Resource, lr pdata.LogRecord, config *Config, logger *zap.Logger) *splunk.Event {
 	host := unknownHostName
 	source := config.Source
 	sourcetype := config.SourceType
 	index := config.Index
 	fields := map[string]interface{}{}
+	sourceKey := config.HecToOtelAttrs.Source
+	sourceTypeKey := config.HecToOtelAttrs.SourceType
+	indexKey := config.HecToOtelAttrs.Index
+	hostKey := config.HecToOtelAttrs.Host
+	nameKey := config.HecFields.Name
+	severityTextKey := config.HecFields.SeverityText
+	severityNumberKey := config.HecFields.SeverityNumber
 	if lr.Name() != "" {
-		fields[splunk.NameLabel] = lr.Name()
+		fields[nameKey] = lr.Name()
 	}
+	if spanID := lr.SpanID().HexString(); spanID != "" {
+		fields[spanIDFieldKey] = spanID
+	}
+	if traceID := lr.TraceID().HexString(); traceID != "" {
+		fields[traceIDFieldKey] = traceID
+	}
+	if lr.SeverityText() != "" {
+		fields[severityTextKey] = lr.SeverityText()
+	}
+	if lr.SeverityNumber() != pdata.SeverityNumberUNDEFINED {
+		fields[severityNumberKey] = lr.SeverityNumber()
+	}
+
 	res.Attributes().Range(func(k string, v pdata.AttributeValue) bool {
 		switch k {
-		case conventions.AttributeHostName:
+		case hostKey:
 			host = v.StringVal()
-			fields[k] = v.StringVal()
-		case conventions.AttributeServiceName:
+			fields[conventions.AttributeHostName] = v.StringVal()
+		case sourceKey:
 			source = v.StringVal()
-			fields[k] = v.StringVal()
-		case splunk.SourcetypeLabel:
+		case sourceTypeKey:
 			sourcetype = v.StringVal()
-		case splunk.IndexLabel:
+		case indexKey:
 			index = v.StringVal()
 		default:
 			fields[k] = convertAttributeValue(v, logger)
@@ -66,15 +89,14 @@ func mapLogRecordToSplunkEvent(res pdata.Resource, lr pdata.LogRecord, config *C
 	})
 	lr.Attributes().Range(func(k string, v pdata.AttributeValue) bool {
 		switch k {
-		case conventions.AttributeHostName:
+		case hostKey:
 			host = v.StringVal()
-			fields[k] = v.StringVal()
-		case conventions.AttributeServiceName:
+			fields[conventions.AttributeHostName] = v.StringVal()
+		case sourceKey:
 			source = v.StringVal()
-			fields[k] = v.StringVal()
-		case splunk.SourcetypeLabel:
+		case sourceTypeKey:
 			sourcetype = v.StringVal()
-		case splunk.IndexLabel:
+		case indexKey:
 			index = v.StringVal()
 		default:
 			fields[k] = convertAttributeValue(v, logger)
@@ -96,29 +118,29 @@ func mapLogRecordToSplunkEvent(res pdata.Resource, lr pdata.LogRecord, config *C
 
 func convertAttributeValue(value pdata.AttributeValue, logger *zap.Logger) interface{} {
 	switch value.Type() {
-	case pdata.AttributeValueINT:
+	case pdata.AttributeValueTypeInt:
 		return value.IntVal()
-	case pdata.AttributeValueBOOL:
+	case pdata.AttributeValueTypeBool:
 		return value.BoolVal()
-	case pdata.AttributeValueDOUBLE:
+	case pdata.AttributeValueTypeDouble:
 		return value.DoubleVal()
-	case pdata.AttributeValueSTRING:
+	case pdata.AttributeValueTypeString:
 		return value.StringVal()
-	case pdata.AttributeValueMAP:
+	case pdata.AttributeValueTypeMap:
 		values := map[string]interface{}{}
 		value.MapVal().Range(func(k string, v pdata.AttributeValue) bool {
 			values[k] = convertAttributeValue(v, logger)
 			return true
 		})
 		return values
-	case pdata.AttributeValueARRAY:
+	case pdata.AttributeValueTypeArray:
 		arrayVal := value.ArrayVal()
 		values := make([]interface{}, arrayVal.Len())
 		for i := 0; i < arrayVal.Len(); i++ {
 			values[i] = convertAttributeValue(arrayVal.At(i), logger)
 		}
 		return values
-	case pdata.AttributeValueNULL:
+	case pdata.AttributeValueTypeEmpty:
 		return nil
 	default:
 		logger.Debug("Unhandled value type", zap.String("type", value.Type().String()))

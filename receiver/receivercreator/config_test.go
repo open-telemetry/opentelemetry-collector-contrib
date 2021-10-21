@@ -62,9 +62,7 @@ func exampleCreatorFactory(t *testing.T) (*mockHostFactories, *config.Config) {
 
 	factory := NewFactory()
 	factories.Receivers[typeStr] = factory
-	cfg, err := configtest.LoadConfigFile(
-		t, path.Join(".", "testdata", "config.yaml"), factories,
-	)
+	cfg, err := configtest.LoadConfigAndValidate(path.Join(".", "testdata", "config.yaml"), factories)
 
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
@@ -78,10 +76,10 @@ func TestLoadConfig(t *testing.T) {
 	_, cfg := exampleCreatorFactory(t)
 	factory := NewFactory()
 
-	r0 := cfg.Receivers[config.NewID("receiver_creator")]
+	r0 := cfg.Receivers[config.NewComponentID("receiver_creator")]
 	assert.Equal(t, r0, factory.CreateDefaultConfig())
 
-	r1 := cfg.Receivers[config.NewIDWithName("receiver_creator", "1")].(*Config)
+	r1 := cfg.Receivers[config.NewComponentIDWithName("receiver_creator", "1")].(*Config)
 
 	assert.NotNil(t, r1)
 	assert.Len(t, r1.receiverTemplates, 2)
@@ -111,13 +109,13 @@ type nopWithEndpointReceiver struct {
 
 func (*nopWithEndpointFactory) CreateDefaultConfig() config.Receiver {
 	return &nopWithEndpointConfig{
-		ReceiverSettings: config.NewReceiverSettings(config.NewID("nop")),
+		ReceiverSettings: config.NewReceiverSettings(config.NewComponentID("nop")),
 	}
 }
 
 func (*nopWithEndpointFactory) CreateMetricsReceiver(
 	ctx context.Context,
-	_ component.ReceiverCreateParams,
+	_ component.ReceiverCreateSettings,
 	_ config.Receiver,
 	nextConsumer consumer.Metrics) (component.MetricsReceiver, error) {
 	return &nopWithEndpointReceiver{

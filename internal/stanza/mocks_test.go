@@ -16,6 +16,7 @@ package stanza
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"sync"
 	"sync/atomic"
@@ -27,7 +28,8 @@ import (
 	"github.com/open-telemetry/opentelemetry-log-collection/operator/helper"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/extension/experimental/storage"
+	"go.opentelemetry.io/collector/model/pdata"
 )
 
 // This file implements some useful testing components
@@ -119,13 +121,13 @@ type TestConfig struct {
 type TestReceiverType struct{}
 
 func (f TestReceiverType) Type() config.Type {
-	return config.Type(testType)
+	return testType
 }
 
 func (f TestReceiverType) CreateDefaultConfig() config.Receiver {
 	return &TestConfig{
 		BaseConfig: BaseConfig{
-			ReceiverSettings: config.NewReceiverSettings(config.NewID(testType)),
+			ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(testType)),
 			Operators:        OperatorConfigs{},
 			Converter: ConverterConfig{
 				MaxFlushCount: 1,
@@ -189,5 +191,32 @@ func (p *mockClient) Delete(_ context.Context, key string) error {
 	p.cacheMux.Lock()
 	defer p.cacheMux.Unlock()
 	delete(p.cache, key)
+	return nil
+}
+
+func (p *mockClient) Batch(_ context.Context, ops ...storage.Operation) error {
+	p.cacheMux.Lock()
+	defer p.cacheMux.Unlock()
+
+	for _, op := range ops {
+		switch op.Type {
+		case storage.Get:
+			op.Value = p.cache[op.Key]
+		case storage.Set:
+			p.cache[op.Key] = op.Value
+		case storage.Delete:
+			delete(p.cache, op.Key)
+		default:
+			return errors.New("wrong operation type")
+		}
+	}
+
+	return nil
+}
+
+func (p *mockClient) Close(_ context.Context) error {
+	p.cacheMux.Lock()
+	defer p.cacheMux.Unlock()
+	p.cache = nil
 	return nil
 }

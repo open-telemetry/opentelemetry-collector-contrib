@@ -17,7 +17,8 @@ Supported pipeline types: logs
 | `start_at`             | `end`            | At startup, where to start reading logs from the file. Options are `beginning` or `end`                            |
 | `write_to`             | $body            | The body [field](https://github.com/open-telemetry/opentelemetry-log-collection/blob/main/docs/types/field.md) written to when creating a new log entry                                  |
 | `multiline`            |                  | A `multiline` configuration block. See below for more details                                                      |
-| `encoding`             | `nop`            | The encoding of the file being read. See the list of supported encodings below for available options               |
+| `force_flush_period`   | `500ms`          | Time since last read of data from file, after which currently buffered log should be send to pipeline. Takes [duration](https://github.com/open-telemetry/opentelemetry-log-collection/blob/main/docs/types/duration.md) as value. Zero means waiting for new data forever |
+| `encoding`             | `utf-8`          | The encoding of the file being read. See the list of supported encodings below for available options               |
 | `include_file_name`    | `true`           | Whether to add the file name as the label `file_name`                                                              |
 | `include_file_path`    | `false`          | Whether to add the file path as the label `file_path`                                                              |
 | `poll_interval`        | 200ms            | The duration between filesystem polls                                                                              |

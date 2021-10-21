@@ -70,7 +70,7 @@ linters-settings:
     disable:
       - fieldalignment
 
-  golint:
+  revive:
     # minimal confidence for issues, default is 0.8
     min-confidence: 0.8
   gofmt:
@@ -100,10 +100,10 @@ linters:
     - exportloopref
     - gofmt
     - goimports
-    - golint
     - gosec
     - govet
     - misspell
+    - revive
     - staticcheck
     - unconvert
     - unparam

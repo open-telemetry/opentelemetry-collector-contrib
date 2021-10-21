@@ -18,25 +18,27 @@ import (
 	"time"
 
 	"github.com/montanaflynn/stats"
-	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/model/pdata"
 )
 
-func buildCounterMetric(parsedMetric statsDMetric, timeNow time.Time) pdata.InstrumentationLibraryMetrics {
+func buildCounterMetric(parsedMetric statsDMetric, isMonotonicCounter bool, timeNow, lastIntervalTime time.Time) pdata.InstrumentationLibraryMetrics {
 	ilm := pdata.NewInstrumentationLibraryMetrics()
 	nm := ilm.Metrics().AppendEmpty()
 	nm.SetName(parsedMetric.description.name)
 	if parsedMetric.unit != "" {
 		nm.SetUnit(parsedMetric.unit)
 	}
-	nm.SetDataType(pdata.MetricDataTypeIntSum)
-	nm.IntSum().SetAggregationTemporality(pdata.AggregationTemporalityDelta)
-	nm.IntSum().SetIsMonotonic(true)
+	nm.SetDataType(pdata.MetricDataTypeSum)
 
-	dp := nm.IntSum().DataPoints().AppendEmpty()
-	dp.SetValue(parsedMetric.intvalue)
-	dp.SetTimestamp(pdata.TimestampFromTime(timeNow))
+	nm.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityDelta)
+	nm.Sum().SetIsMonotonic(isMonotonicCounter)
+
+	dp := nm.Sum().DataPoints().AppendEmpty()
+	dp.SetIntVal(parsedMetric.counterValue())
+	dp.SetStartTimestamp(pdata.NewTimestampFromTime(lastIntervalTime))
+	dp.SetTimestamp(pdata.NewTimestampFromTime(timeNow))
 	for i, key := range parsedMetric.labelKeys {
-		dp.LabelsMap().Insert(key, parsedMetric.labelValues[i])
+		dp.Attributes().InsertString(key, parsedMetric.labelValues[i])
 	}
 
 	return ilm
@@ -49,41 +51,71 @@ func buildGaugeMetric(parsedMetric statsDMetric, timeNow time.Time) pdata.Instru
 	if parsedMetric.unit != "" {
 		nm.SetUnit(parsedMetric.unit)
 	}
-	nm.SetDataType(pdata.MetricDataTypeDoubleGauge)
-	dp := nm.DoubleGauge().DataPoints().AppendEmpty()
-	dp.SetValue(parsedMetric.floatvalue)
-	dp.SetTimestamp(pdata.TimestampFromTime(timeNow))
+	nm.SetDataType(pdata.MetricDataTypeGauge)
+	dp := nm.Gauge().DataPoints().AppendEmpty()
+	dp.SetDoubleVal(parsedMetric.gaugeValue())
+	dp.SetTimestamp(pdata.NewTimestampFromTime(timeNow))
 	for i, key := range parsedMetric.labelKeys {
-		dp.LabelsMap().Insert(key, parsedMetric.labelValues[i])
+		dp.Attributes().InsertString(key, parsedMetric.labelValues[i])
 	}
 
 	return ilm
 }
 
 func buildSummaryMetric(summaryMetric summaryMetric) pdata.InstrumentationLibraryMetrics {
-	dp := pdata.NewSummaryDataPoint()
+	ilm := pdata.NewInstrumentationLibraryMetrics()
+	nm := ilm.Metrics().AppendEmpty()
+	nm.SetName(summaryMetric.name)
+	nm.SetDataType(pdata.MetricDataTypeSummary)
+
+	dp := nm.Summary().DataPoints().AppendEmpty()
 	dp.SetCount(uint64(len(summaryMetric.summaryPoints)))
 	sum, _ := stats.Sum(summaryMetric.summaryPoints)
 	dp.SetSum(sum)
-	dp.SetTimestamp(pdata.TimestampFromTime(summaryMetric.timeNow))
+	dp.SetTimestamp(pdata.NewTimestampFromTime(summaryMetric.timeNow))
+	for i, key := range summaryMetric.labelKeys {
+		dp.Attributes().InsertString(key, summaryMetric.labelValues[i])
+	}
 
 	quantile := []float64{0, 10, 50, 90, 95, 100}
 	for _, v := range quantile {
-		eachQuantile := pdata.NewValueAtQuantile()
-		eachQuantile.SetQuantile(v)
+		eachQuantile := dp.QuantileValues().AppendEmpty()
+		eachQuantile.SetQuantile(v / 100)
 		eachQuantileValue, _ := stats.PercentileNearestRank(summaryMetric.summaryPoints, v)
 		eachQuantile.SetValue(eachQuantileValue)
-		dp.QuantileValues().Append(eachQuantile)
 	}
-
-	nm := pdata.NewMetric()
-	nm.SetName(summaryMetric.name)
-	nm.SetDataType(pdata.MetricDataTypeSummary)
-	nm.Summary().DataPoints().Append(dp)
-
-	ilm := pdata.NewInstrumentationLibraryMetrics()
-	ilm.Metrics().Append(nm)
-
 	return ilm
 
+}
+
+func (s statsDMetric) counterValue() int64 {
+	x := s.asFloat
+	// Note statds counters are always represented as integers.
+	// There is no statsd specification that says what should or
+	// shouldn't be done here.  Rounding may occur for sample
+	// rates that are not integer reciprocals.  Recommendation:
+	// use integer reciprocal sampling rates.
+	if 0 < s.sampleRate && s.sampleRate < 1 {
+		x = x / s.sampleRate
+	}
+	return int64(x)
+}
+
+func (s statsDMetric) gaugeValue() float64 {
+	// sampleRate does not have effect for gauge points.
+	return s.asFloat
+}
+
+func (s statsDMetric) summaryValue() float64 {
+	// TODO: This method returns an incorrect result.  The
+	// sampleRate is meant to apply to the count of observations
+	// recorded by the histogram/timer, not to scale the value
+	// observed.  This should return gaugeValue(), and the
+	// consumer of this value should track the effective count of
+	// each item to compute percentiles. See #5252.
+	x := s.asFloat
+	if 0 < s.sampleRate && s.sampleRate < 1 {
+		x = x / s.sampleRate
+	}
+	return x
 }

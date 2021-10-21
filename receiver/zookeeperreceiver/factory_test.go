@@ -21,10 +21,10 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confignet"
-	"go.opentelemetry.io/collector/testbed/testbed"
+	"go.opentelemetry.io/collector/consumer/consumertest"
 )
 
 func TestFactory(t *testing.T) {
@@ -68,9 +68,9 @@ func TestFactory(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			r, err := f.CreateMetricsReceiver(
 				context.Background(),
-				component.ReceiverCreateParams{},
+				componenttest.NewNopReceiverCreateSettings(),
 				test.config,
-				&testbed.MockMetricConsumer{},
+				consumertest.NewNop(),
 			)
 
 			if test.wantErr {

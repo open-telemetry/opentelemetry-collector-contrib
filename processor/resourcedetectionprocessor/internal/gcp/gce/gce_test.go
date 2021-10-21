@@ -21,16 +21,15 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/translator/conventions"
-	"go.uber.org/zap"
+	"go.opentelemetry.io/collector/component/componenttest"
+	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/gcp"
 )
 
 func TestNewDetector(t *testing.T) {
-	d, err := NewDetector(component.ProcessorCreateParams{Logger: zap.NewNop()}, nil)
+	d, err := NewDetector(componenttest.NewNopProcessorCreateSettings(), nil)
 	assert.NotNil(t, d)
 	assert.NoError(t, err)
 }
@@ -46,14 +45,15 @@ func TestDetectTrue(t *testing.T) {
 	md.On("Get", "instance/machine-type").Return("machine-type", nil)
 
 	detector := &Detector{metadata: md}
-	res, err := detector.Detect(context.Background())
+	res, schemaURL, err := detector.Detect(context.Background())
 
 	require.NoError(t, err)
+	assert.Equal(t, conventions.SchemaURL, schemaURL)
 
 	expected := internal.NewResource(map[string]interface{}{
 		conventions.AttributeCloudProvider:         conventions.AttributeCloudProviderGCP,
 		conventions.AttributeCloudPlatform:         conventions.AttributeCloudPlatformGCPComputeEngine,
-		conventions.AttributeCloudAccount:          "1",
+		conventions.AttributeCloudAccountID:        "1",
 		conventions.AttributeCloudAvailabilityZone: "zone",
 
 		conventions.AttributeHostID:   "2",
@@ -71,7 +71,7 @@ func TestDetectFalse(t *testing.T) {
 	md.On("OnGCE").Return(false)
 
 	detector := &Detector{metadata: md}
-	res, err := detector.Detect(context.Background())
+	res, _, err := detector.Detect(context.Background())
 
 	require.NoError(t, err)
 	assert.True(t, internal.IsEmptyResource(res))
@@ -88,9 +88,9 @@ func TestDetectError(t *testing.T) {
 	md.On("Get", "instance/machine-type").Return("", errors.New("err6"))
 
 	detector := &Detector{metadata: md}
-	res, err := detector.Detect(context.Background())
+	res, _, err := detector.Detect(context.Background())
 
-	assert.EqualError(t, err, "[err1; err2; err3; err4; err6]")
+	assert.EqualError(t, err, "err1; err2; err3; err4; err6")
 
 	expected := internal.NewResource(map[string]interface{}{
 		conventions.AttributeCloudProvider: conventions.AttributeCloudProviderGCP,

@@ -18,11 +18,15 @@ import (
 	"strconv"
 	"strings"
 
-	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/translator/conventions"
+	"go.opentelemetry.io/collector/model/pdata"
+	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
 
 	awsxray "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray"
 )
+
+// ExceptionEventName the name of the exception event.
+// TODO: Remove this when collector defines this semantic convention.
+const ExceptionEventName = "exception"
 
 func addCause(seg *awsxray.Segment, span *pdata.Span) {
 	if seg.Cause == nil {
@@ -56,11 +60,11 @@ func addCause(seg *awsxray.Segment, span *pdata.Span) {
 		// not sure whether there are existing events, so
 		// append new empty events instead
 		exceptionEventStartIndex := evts.Len()
-		evts.Resize(exceptionEventStartIndex + len(seg.Cause.Exceptions))
+		evts.EnsureCapacity(exceptionEventStartIndex + len(seg.Cause.Exceptions))
 
-		for i, excp := range seg.Cause.Exceptions {
-			evt := evts.At(exceptionEventStartIndex + i)
-			evt.SetName(conventions.AttributeExceptionEventName)
+		for _, excp := range seg.Cause.Exceptions {
+			evt := evts.AppendEmpty()
+			evt.SetName(ExceptionEventName)
 			attrs := evt.Attributes()
 			attrs.Clear()
 			attrs.EnsureCapacity(8)

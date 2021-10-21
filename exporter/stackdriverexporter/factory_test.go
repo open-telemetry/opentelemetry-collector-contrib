@@ -20,9 +20,8 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configcheck"
-	"go.uber.org/zap"
+	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config/configtest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/googlecloudexporter"
 )
@@ -31,7 +30,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	assert.NotNil(t, cfg, "failed to create default config")
-	assert.NoError(t, configcheck.ValidateConfig(cfg))
+	assert.NoError(t, configtest.CheckConfigStruct(cfg))
 }
 
 func TestCreateExporter(t *testing.T) {
@@ -44,15 +43,11 @@ func TestCreateExporter(t *testing.T) {
 	eCfg := cfg.(*googlecloudexporter.Config)
 	eCfg.ProjectID = "test"
 
-	te, err := factory.CreateTracesExporter(ctx, component.ExporterCreateParams{
-		Logger: zap.NewNop(),
-	}, eCfg)
+	te, err := factory.CreateTracesExporter(ctx, componenttest.NewNopExporterCreateSettings(), eCfg)
 	assert.Nil(t, err)
 	assert.NotNil(t, te, "failed to create trace exporter")
 
-	me, err := factory.CreateMetricsExporter(ctx, component.ExporterCreateParams{
-		Logger: zap.NewNop(),
-	}, eCfg)
+	me, err := factory.CreateMetricsExporter(ctx, componenttest.NewNopExporterCreateSettings(), eCfg)
 	assert.Nil(t, err)
 	assert.NotNil(t, me, "failed to create metrics exporter")
 }

@@ -19,74 +19,53 @@ import (
 	"sort"
 	"strconv"
 	"strings"
-	"time"
 
-	agentmetricspb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/metrics/v1"
-	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
-	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	dtypes "github.com/docker/docker/api/types"
-	"github.com/golang/protobuf/ptypes/timestamp"
-	"go.opentelemetry.io/collector/translator/conventions"
-	"google.golang.org/protobuf/types/known/timestamppb"
+	"go.opentelemetry.io/collector/model/pdata"
+	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/docker"
 )
 
 const (
 	metricPrefix = "container."
 )
 
-// client.ContainerInspect() response container
-// stats and translated environment string map
-// for potential labels
-type DockerContainer struct {
-	*dtypes.ContainerJSON
-	EnvMap map[string]string
-}
-
 func ContainerStatsToMetrics(
+	now pdata.Timestamp,
 	containerStats *dtypes.StatsJSON,
-	container *DockerContainer,
+	container docker.Container,
 	config *Config,
-) (*agentmetricspb.ExportMetricsServiceRequest, error) {
-	now := timestamppb.New(time.Now())
+) pdata.Metrics {
+	md := pdata.NewMetrics()
+	rs := md.ResourceMetrics().AppendEmpty()
+	rs.SetSchemaUrl(conventions.SchemaURL)
+	resourceAttr := rs.Resource().Attributes()
+	resourceAttr.UpsertString(conventions.AttributeContainerID, container.ID)
+	resourceAttr.UpsertString(conventions.AttributeContainerImageName, container.Config.Image)
+	resourceAttr.UpsertString(conventions.AttributeContainerName, strings.TrimPrefix(container.Name, "/"))
+	resourceAttr.UpsertString("container.hostname", container.Config.Hostname)
+	updateConfiguredResourceAttributes(resourceAttr, container, config)
+	ils := rs.InstrumentationLibraryMetrics().AppendEmpty()
 
-	var metrics []*metricspb.Metric
-	metrics = append(metrics, blockioMetrics(&containerStats.BlkioStats, now)...)
-	metrics = append(metrics, cpuMetrics(&containerStats.CPUStats, &containerStats.PreCPUStats, now, config.ProvidePerCoreCPUMetrics)...)
-	metrics = append(metrics, memoryMetrics(&containerStats.MemoryStats, now)...)
-	metrics = append(metrics, networkMetrics(&containerStats.Networks, now)...)
+	appendBlockioMetrics(ils.Metrics(), &containerStats.BlkioStats, now)
+	appendCPUMetrics(ils.Metrics(), &containerStats.CPUStats, &containerStats.PreCPUStats, now, config.ProvidePerCoreCPUMetrics)
+	appendMemoryMetrics(ils.Metrics(), &containerStats.MemoryStats, now)
+	appendNetworkMetrics(ils.Metrics(), &containerStats.Networks, now)
 
-	if len(metrics) == 0 {
-		return nil, nil
-	}
-
-	md := &agentmetricspb.ExportMetricsServiceRequest{
-		Metrics: metrics,
-		Resource: &resourcepb.Resource{
-			Type: "container",
-			Labels: map[string]string{
-				"container.hostname":                container.Config.Hostname,
-				conventions.AttributeContainerID:    container.ID,
-				conventions.AttributeContainerImage: container.Config.Image,
-				conventions.AttributeContainerName:  strings.TrimPrefix(container.Name, "/"),
-			},
-		},
-	}
-
-	updateConfiguredResourceLabels(md, container, config)
-
-	return md, nil
+	return md
 }
 
-func updateConfiguredResourceLabels(md *agentmetricspb.ExportMetricsServiceRequest, container *DockerContainer, config *Config) {
+func updateConfiguredResourceAttributes(resourceAttr pdata.AttributeMap, container docker.Container, config *Config) {
 	for k, label := range config.EnvVarsToMetricLabels {
 		if v := container.EnvMap[k]; v != "" {
-			md.Resource.Labels[label] = v
+			resourceAttr.UpsertString(label, v)
 		}
 	}
 
 	for k, label := range config.ContainerLabelsToMetricLabels {
 		if v := container.Config.Labels[k]; v != "" {
-			md.Resource.Labels[label] = v
+			resourceAttr.UpsertString(label, v)
 		}
 	}
 }
@@ -98,12 +77,7 @@ type blkioStat struct {
 }
 
 // metrics for https://www.kernel.org/doc/Documentation/cgroup-v1/blkio-controller.txt
-func blockioMetrics(
-	blkioStats *dtypes.BlkioStats,
-	ts *timestamp.Timestamp,
-) []*metricspb.Metric {
-	var metrics []*metricspb.Metric
-
+func appendBlockioMetrics(dest pdata.MetricSlice, blkioStats *dtypes.BlkioStats, ts pdata.Timestamp) {
 	for _, blkiostat := range []blkioStat{
 		{"io_merged_recursive", "1", blkioStats.IoMergedRecursive},
 		{"io_queued_recursive", "1", blkioStats.IoQueuedRecursive},
@@ -122,42 +96,27 @@ func blockioMetrics(
 
 			statName := fmt.Sprintf("%s.%s", blkiostat.name, strings.ToLower(stat.Op))
 			metricName := fmt.Sprintf("blockio.%s", statName)
-			labelValues := [][]string{{strconv.FormatUint(stat.Major, 10), strconv.FormatUint(stat.Minor, 10)}}
-			metrics = append(metrics, Cumulative(metricName, []int64{int64(stat.Value)}, ts, blkiostat.unit, labelKeys, labelValues))
+			labelValues := []string{strconv.FormatUint(stat.Major, 10), strconv.FormatUint(stat.Minor, 10)}
+			populateCumulative(dest.AppendEmpty(), metricName, blkiostat.unit, int64(stat.Value), ts, labelKeys, labelValues)
 		}
 	}
-
-	return metrics
 }
 
-func cpuMetrics(
-	cpuStats *dtypes.CPUStats,
-	previousCPUStats *dtypes.CPUStats,
-	ts *timestamp.Timestamp,
-	providePerCoreMetrics bool,
-) []*metricspb.Metric {
-	var metrics []*metricspb.Metric
+func appendCPUMetrics(dest pdata.MetricSlice, cpuStats *dtypes.CPUStats, previousCPUStats *dtypes.CPUStats, ts pdata.Timestamp, providePerCoreMetrics bool) {
+	populateCumulative(dest.AppendEmpty(), "cpu.usage.system", "ns", int64(cpuStats.SystemUsage), ts, nil, nil)
+	populateCumulative(dest.AppendEmpty(), "cpu.usage.total", "ns", int64(cpuStats.CPUUsage.TotalUsage), ts, nil, nil)
 
-	metrics = append(metrics, []*metricspb.Metric{
-		Cumulative("cpu.usage.system", []int64{int64(cpuStats.SystemUsage)}, ts, "ns", nil, nil),
-		Cumulative("cpu.usage.total", []int64{int64(cpuStats.CPUUsage.TotalUsage)}, ts, "ns", nil, nil),
-	}...)
+	populateCumulative(dest.AppendEmpty(), "cpu.usage.kernelmode", "ns", int64(cpuStats.CPUUsage.UsageInKernelmode), ts, nil, nil)
+	populateCumulative(dest.AppendEmpty(), "cpu.usage.usermode", "ns", int64(cpuStats.CPUUsage.UsageInUsermode), ts, nil, nil)
 
-	metrics = append(metrics, []*metricspb.Metric{
-		Cumulative("cpu.usage.kernelmode", []int64{int64(cpuStats.CPUUsage.UsageInKernelmode)}, ts, "ns", nil, nil),
-		Cumulative("cpu.usage.usermode", []int64{int64(cpuStats.CPUUsage.UsageInUsermode)}, ts, "ns", nil, nil),
-	}...)
+	populateCumulative(dest.AppendEmpty(), "cpu.throttling_data.periods", "1", int64(cpuStats.ThrottlingData.Periods), ts, nil, nil)
+	populateCumulative(dest.AppendEmpty(), "cpu.throttling_data.throttled_periods", "1", int64(cpuStats.ThrottlingData.ThrottledPeriods), ts, nil, nil)
+	populateCumulative(dest.AppendEmpty(), "cpu.throttling_data.throttled_time", "ns", int64(cpuStats.ThrottlingData.ThrottledTime), ts, nil, nil)
 
-	metrics = append(metrics, []*metricspb.Metric{
-		Cumulative("cpu.throttling_data.periods", []int64{int64(cpuStats.ThrottlingData.Periods)}, ts, "1", nil, nil),
-		Cumulative("cpu.throttling_data.throttled_periods", []int64{int64(cpuStats.ThrottlingData.ThrottledPeriods)}, ts, "1", nil, nil),
-		Cumulative("cpu.throttling_data.throttled_time", []int64{int64(cpuStats.ThrottlingData.ThrottledTime)}, ts, "ns", nil, nil),
-	}...)
-
-	metrics = append(metrics, GaugeF("cpu.percent", []float64{calculateCPUPercent(previousCPUStats, cpuStats)}, ts, "1", nil, nil))
+	populateGaugeF(dest.AppendEmpty(), "cpu.percent", "1", calculateCPUPercent(previousCPUStats, cpuStats), ts, nil, nil)
 
 	if !providePerCoreMetrics {
-		return metrics
+		return
 	}
 
 	percpuValues := make([]int64, 0, len(cpuStats.CPUUsage.PercpuUsage))
@@ -167,8 +126,7 @@ func cpuMetrics(
 		percpuValues = append(percpuValues, int64(v))
 		percpuLabelValues = append(percpuLabelValues, []string{fmt.Sprintf("cpu%s", strconv.Itoa(coreNum))})
 	}
-	metrics = append(metrics, Cumulative("cpu.usage.percpu", percpuValues, ts, "ns", percpuLabelKeys, percpuLabelValues))
-	return metrics
+	populateCumulativeMultiPoints(dest.AppendEmpty(), "cpu.usage.percpu", "ns", percpuValues, ts, percpuLabelKeys, percpuLabelValues)
 }
 
 // From container.calculateCPUPercentUnix()
@@ -212,17 +170,10 @@ var memoryStatsThatAreCumulative = map[string]bool{
 	"total_pgpgout":    true,
 }
 
-func memoryMetrics(
-	memoryStats *dtypes.MemoryStats,
-	ts *timestamp.Timestamp,
-) []*metricspb.Metric {
-	var metrics []*metricspb.Metric
-
+func appendMemoryMetrics(dest pdata.MetricSlice, memoryStats *dtypes.MemoryStats, ts pdata.Timestamp) {
 	totalUsage := int64(memoryStats.Usage - memoryStats.Stats["total_cache"])
-	metrics = append(metrics, []*metricspb.Metric{
-		Gauge("memory.usage.limit", []int64{int64(memoryStats.Limit)}, ts, "By", nil, nil),
-		Gauge("memory.usage.total", []int64{totalUsage}, ts, "By", nil, nil),
-	}...)
+	populateGauge(dest.AppendEmpty(), "memory.usage.limit", int64(memoryStats.Limit), ts)
+	populateGauge(dest.AppendEmpty(), "memory.usage.total", totalUsage, ts)
 
 	var pctUsed float64
 	if float64(memoryStats.Limit) == 0 {
@@ -231,10 +182,8 @@ func memoryMetrics(
 		pctUsed = 100.0 * (float64(memoryStats.Usage) - float64(memoryStats.Stats["cache"])) / float64(memoryStats.Limit)
 	}
 
-	metrics = append(metrics, []*metricspb.Metric{
-		GaugeF("memory.percent", []float64{pctUsed}, ts, "1", nil, nil),
-		Gauge("memory.usage.max", []int64{int64(memoryStats.MaxUsage)}, ts, "By", nil, nil),
-	}...)
+	populateGaugeF(dest.AppendEmpty(), "memory.percent", "1", pctUsed, ts, nil, nil)
+	populateGauge(dest.AppendEmpty(), "memory.usage.max", int64(memoryStats.MaxUsage), ts)
 
 	// Sorted iteration for reproducibility, largely for testing
 	sortedNames := make([]string, 0, len(memoryStats.Stats))
@@ -247,139 +196,87 @@ func memoryMetrics(
 		v := memoryStats.Stats[statName]
 		metricName := fmt.Sprintf("memory.%s", statName)
 		if _, exists := memoryStatsThatAreCumulative[statName]; exists {
-			metrics = append(metrics, Cumulative(metricName, []int64{int64(v)}, ts, "1", nil, nil))
+			populateCumulative(dest.AppendEmpty(), metricName, "1", int64(v), ts, nil, nil)
 		} else {
-			metrics = append(metrics, Gauge(metricName, []int64{int64(v)}, ts, "By", nil, nil))
+			populateGauge(dest.AppendEmpty(), metricName, int64(v), ts)
 		}
 	}
-
-	return metrics
 }
 
-func networkMetrics(
-	networks *map[string]dtypes.NetworkStats,
-	ts *timestamp.Timestamp,
-) []*metricspb.Metric {
+func appendNetworkMetrics(dest pdata.MetricSlice, networks *map[string]dtypes.NetworkStats, ts pdata.Timestamp) {
 	if networks == nil || *networks == nil {
-		return nil
+		return
 	}
-
-	var metrics []*metricspb.Metric
 
 	labelKeys := []string{"interface"}
 	for nic, stats := range *networks {
-		labelValues := [][]string{{nic}}
+		labelValues := []string{nic}
 
-		metrics = append(metrics, []*metricspb.Metric{
-			Cumulative("network.io.usage.rx_bytes", []int64{int64(stats.RxBytes)}, ts, "By", labelKeys, labelValues),
-			Cumulative("network.io.usage.tx_bytes", []int64{int64(stats.TxBytes)}, ts, "By", labelKeys, labelValues),
-		}...)
+		populateCumulative(dest.AppendEmpty(), "network.io.usage.rx_bytes", "By", int64(stats.RxBytes), ts, labelKeys, labelValues)
+		populateCumulative(dest.AppendEmpty(), "network.io.usage.tx_bytes", "By", int64(stats.TxBytes), ts, labelKeys, labelValues)
 
-		metrics = append(metrics, []*metricspb.Metric{
-			Cumulative("network.io.usage.rx_dropped", []int64{int64(stats.RxDropped)}, ts, "1", labelKeys, labelValues),
-			Cumulative("network.io.usage.rx_errors", []int64{int64(stats.RxErrors)}, ts, "1", labelKeys, labelValues),
-			Cumulative("network.io.usage.rx_packets", []int64{int64(stats.RxPackets)}, ts, "1", labelKeys, labelValues),
-			Cumulative("network.io.usage.tx_dropped", []int64{int64(stats.TxDropped)}, ts, "1", labelKeys, labelValues),
-			Cumulative("network.io.usage.tx_errors", []int64{int64(stats.TxErrors)}, ts, "1", labelKeys, labelValues),
-			Cumulative("network.io.usage.tx_packets", []int64{int64(stats.TxPackets)}, ts, "1", labelKeys, labelValues),
-		}...)
+		populateCumulative(dest.AppendEmpty(), "network.io.usage.rx_dropped", "1", int64(stats.RxDropped), ts, labelKeys, labelValues)
+		populateCumulative(dest.AppendEmpty(), "network.io.usage.rx_errors", "1", int64(stats.RxErrors), ts, labelKeys, labelValues)
+		populateCumulative(dest.AppendEmpty(), "network.io.usage.rx_packets", "1", int64(stats.RxPackets), ts, labelKeys, labelValues)
+		populateCumulative(dest.AppendEmpty(), "network.io.usage.tx_dropped", "1", int64(stats.TxDropped), ts, labelKeys, labelValues)
+		populateCumulative(dest.AppendEmpty(), "network.io.usage.tx_errors", "1", int64(stats.TxErrors), ts, labelKeys, labelValues)
+		populateCumulative(dest.AppendEmpty(), "network.io.usage.tx_packets", "1", int64(stats.TxPackets), ts, labelKeys, labelValues)
 	}
-
-	return metrics
 }
 
-func Cumulative(name string, vals []int64, ts *timestamp.Timestamp, unit string, labelKeys []string, labelValues [][]string) *metricspb.Metric {
-	return metric(name, metricspb.MetricDescriptor_CUMULATIVE_INT64, ts, unit, labelKeys, labelValues, vals, nil)
+func populateCumulative(dest pdata.Metric, name string, unit string, val int64, ts pdata.Timestamp, labelKeys []string, labelValues []string) {
+	populateMetricMetadata(dest, name, unit, pdata.MetricDataTypeSum)
+	sum := dest.Sum()
+	sum.SetIsMonotonic(true)
+	sum.SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
+	dp := sum.DataPoints().AppendEmpty()
+	dp.SetIntVal(val)
+	dp.SetTimestamp(ts)
+	populateAttributes(dp.Attributes(), labelKeys, labelValues)
 }
 
-func Gauge(name string, vals []int64, ts *timestamp.Timestamp, unit string, labelKeys []string, labelValues [][]string) *metricspb.Metric {
-	return metric(name, metricspb.MetricDescriptor_GAUGE_INT64, ts, unit, labelKeys, labelValues, vals, nil)
+func populateCumulativeMultiPoints(dest pdata.Metric, name string, unit string, vals []int64, ts pdata.Timestamp, labelKeys []string, labelValues [][]string) {
+	populateMetricMetadata(dest, name, unit, pdata.MetricDataTypeSum)
+	sum := dest.Sum()
+	sum.SetIsMonotonic(true)
+	sum.SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
+	dps := sum.DataPoints()
+	dps.EnsureCapacity(len(vals))
+	for i := range vals {
+		dp := dps.AppendEmpty()
+		dp.SetIntVal(vals[i])
+		dp.SetTimestamp(ts)
+		populateAttributes(dp.Attributes(), labelKeys, labelValues[i])
+	}
 }
 
-func GaugeF(name string, vals []float64, ts *timestamp.Timestamp, unit string, labelKeys []string, labelValues [][]string) *metricspb.Metric {
-	return metric(name, metricspb.MetricDescriptor_GAUGE_DOUBLE, ts, unit, labelKeys, labelValues, nil, vals)
+func populateGauge(dest pdata.Metric, name string, val int64, ts pdata.Timestamp) {
+	// Unit, labelKeys, labelValues always constants, when that changes add them as argument to the func.
+	populateMetricMetadata(dest, name, "By", pdata.MetricDataTypeGauge)
+	sum := dest.Gauge()
+	dp := sum.DataPoints().AppendEmpty()
+	dp.SetIntVal(val)
+	dp.SetTimestamp(ts)
+	populateAttributes(dp.Attributes(), nil, nil)
 }
 
-func metric(
-	name string,
-	mdType metricspb.MetricDescriptor_Type,
-	ts *timestamp.Timestamp,
-	unit string,
-	labelKeys []string,
-	labelValues [][]string,
-	intVals []int64,
-	floatVals []float64,
-) *metricspb.Metric {
-	metric := &metricspb.Metric{}
-	pts := points(intVals, floatVals, ts)
-	lKeys, lValues := labelKeysAndValues(labelKeys, labelValues)
-
-	metric.MetricDescriptor = &metricspb.MetricDescriptor{
-		Name:      fmt.Sprintf("%s%s", metricPrefix, name),
-		Type:      mdType,
-		Unit:      unit,
-		LabelKeys: lKeys,
-	}
-
-	metric.Timeseries = make([]*metricspb.TimeSeries, len(pts))
-	for i, p := range pts {
-		series := &metricspb.TimeSeries{
-			Points: []*metricspb.Point{p},
-		}
-
-		if len(lValues) != 0 {
-			series.LabelValues = lValues[i]
-		}
-
-		metric.Timeseries[i] = series
-	}
-
-	return metric
+func populateGaugeF(dest pdata.Metric, name string, unit string, val float64, ts pdata.Timestamp, labelKeys []string, labelValues []string) {
+	populateMetricMetadata(dest, name, unit, pdata.MetricDataTypeGauge)
+	sum := dest.Gauge()
+	dp := sum.DataPoints().AppendEmpty()
+	dp.SetDoubleVal(val)
+	dp.SetTimestamp(ts)
+	populateAttributes(dp.Attributes(), labelKeys, labelValues)
 }
 
-func points(
-	intVals []int64,
-	floatVals []float64,
-	ts *timestamp.Timestamp,
-) []*metricspb.Point {
-	if intVals != nil {
-		points := make([]*metricspb.Point, len(intVals))
-		for i, v := range intVals {
-			point := &metricspb.Point{
-				Timestamp: ts,
-				Value:     &metricspb.Point_Int64Value{Int64Value: v},
-			}
-			points[i] = point
-		}
-		return points
-	}
-
-	if floatVals != nil {
-		points := make([]*metricspb.Point, len(floatVals))
-		for i, v := range floatVals {
-			point := &metricspb.Point{
-				Timestamp: ts,
-				Value:     &metricspb.Point_DoubleValue{DoubleValue: v},
-			}
-			points[i] = point
-		}
-		return points
-	}
-
-	return nil
+func populateMetricMetadata(dest pdata.Metric, name string, unit string, ty pdata.MetricDataType) {
+	dest.SetName(metricPrefix + name)
+	dest.SetUnit(unit)
+	dest.SetDataType(ty)
 }
 
-func labelKeysAndValues(keys []string, values [][]string) ([]*metricspb.LabelKey, [][]*metricspb.LabelValue) {
-	retKeys := make([]*metricspb.LabelKey, len(keys))
-	retValues := make([][]*metricspb.LabelValue, len(values))
-	for i, k := range keys {
-		retKeys[i] = &metricspb.LabelKey{Key: k}
+func populateAttributes(dest pdata.AttributeMap, labelKeys []string, labelValues []string) {
+	for i := range labelKeys {
+		dest.UpsertString(labelKeys[i], labelValues[i])
 	}
-	for i, vs := range values {
-		retValues[i] = make([]*metricspb.LabelValue, len(vs))
-		for j, v := range vs {
-			retValues[i][j] = &metricspb.LabelValue{Value: v, HasValue: true}
-		}
-	}
-	return retKeys, retValues
 }

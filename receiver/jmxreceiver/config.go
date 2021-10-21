@@ -59,6 +59,8 @@ type Config struct {
 	RemoteProfile string `mapstructure:"remote_profile"`
 	// The SASL/DIGEST-MD5 realm
 	Realm string `mapstructure:"realm"`
+	// Map of property names to values to pass as system properties when running JMX Metric Gatherer
+	Properties map[string]string `mapstructure:"properties"`
 }
 
 // We don't embed the existing OTLP Exporter config as most fields are unsupported
@@ -89,6 +91,16 @@ func (oec otlpExporterConfig) headersToString() string {
 	return headerString
 }
 
+func (c *Config) parseProperties() []string {
+	parsed := make([]string, 0, len(c.Properties))
+	for property, value := range c.Properties {
+		parsed = append(parsed, fmt.Sprintf("-D%s=%s", property, value))
+	}
+	// Sorted for testing and reproducibility
+	sort.Strings(parsed)
+	return parsed
+}
+
 func (c *Config) validate() error {
 	var missingFields []string
 	if c.Endpoint == "" {
@@ -112,5 +124,6 @@ func (c *Config) validate() error {
 	if c.OTLPExporterConfig.Timeout < 0 {
 		return fmt.Errorf("%v `otlp.timeout` must be positive: %vms", c.ID(), c.OTLPExporterConfig.Timeout.Milliseconds())
 	}
+
 	return nil
 }

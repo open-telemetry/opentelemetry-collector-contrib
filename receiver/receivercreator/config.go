@@ -60,7 +60,7 @@ type resourceAttributes map[observer.EndpointType]map[string]string
 // newReceiverTemplate creates a receiverTemplate instance from the full name of a subreceiver
 // and its arbitrary config map values.
 func newReceiverTemplate(name string, cfg userConfigMap) (receiverTemplate, error) {
-	id, err := config.NewIDFromString(name)
+	id, err := config.NewComponentIDFromString(name)
 	if err != nil {
 		return receiverTemplate{}, err
 	}
@@ -73,7 +73,7 @@ func newReceiverTemplate(name string, cfg userConfigMap) (receiverTemplate, erro
 	}, nil
 }
 
-var _ config.CustomUnmarshable = (*Config)(nil)
+var _ config.Unmarshallable = (*Config)(nil)
 
 // Config defines configuration for receiver_creator.
 type Config struct {
@@ -86,7 +86,7 @@ type Config struct {
 	ResourceAttributes resourceAttributes `mapstructure:"resource_attributes"`
 }
 
-func (cfg *Config) Unmarshal(componentParser *config.Parser) error {
+func (cfg *Config) Unmarshal(componentParser *config.Map) error {
 	if componentParser == nil {
 		// Nothing to do if there is no config given.
 		return nil
@@ -101,8 +101,7 @@ func (cfg *Config) Unmarshal(componentParser *config.Parser) error {
 		return fmt.Errorf("unable to extract key %v: %v", receiversConfigKey, err)
 	}
 
-	receiversSettings := cast.ToStringMap(componentParser.Get(receiversConfigKey))
-	for subreceiverKey := range receiversSettings {
+	for subreceiverKey := range receiversCfg.ToStringMap() {
 		subreceiverSection, err := receiversCfg.Sub(subreceiverKey)
 		if err != nil {
 			return fmt.Errorf("unable to extract subreceiver key %v: %v", subreceiverKey, err)

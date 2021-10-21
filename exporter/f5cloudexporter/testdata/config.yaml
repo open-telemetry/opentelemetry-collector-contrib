@@ -8,12 +8,12 @@ exporters:
   f5cloud:
     endpoint: "https://f5cloud"
     source: "dev"
-    auth:
+    f5cloud_auth:
       credential_file: "/etc/creds/key.json"
   f5cloud/allsettings:
     endpoint: "https://f5cloud"
     source: "dev"
-    auth:
+    f5cloud_auth:
       credential_file: "/etc/creds/key.json"
       audience: "exampleaudience"
     timeout: 10s

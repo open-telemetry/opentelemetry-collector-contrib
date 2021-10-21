@@ -28,7 +28,7 @@ services:
       - "8889:8889"   # Prometheus exporter metrics
       - "13133:13133" # health_check extension
       - "9411"   # Zipkin receiver
-      - "55680:55679" # zpages extension
+      - "55679:55679" # zpages extension
     depends_on:
       - jaeger
       - zipkin

@@ -15,7 +15,7 @@
 package zookeeperreceiver
 
 import (
-	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/model/pdata"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zookeeperreceiver/internal/metadata"
 )
@@ -44,47 +44,45 @@ const (
 
 	serverStateKey = "zk_server_state"
 	zkVersionKey   = "zk_version"
-
-	metricsLen = 17
 )
 
-func getOTLPMetricDescriptor(metric string) pdata.Metric {
+func getOTLPInitFunc(metric string) func(metric pdata.Metric) {
 	switch metric {
 	case followersMetricKey:
-		return metadata.Metrics.ZookeeperFollowers.New()
+		return metadata.Metrics.ZookeeperFollowers.Init
 	case syncedFollowersMetricKey:
-		return metadata.Metrics.ZookeeperSyncedFollowers.New()
+		return metadata.Metrics.ZookeeperSyncedFollowers.Init
 	case pendingSyncsMetricKey:
-		return metadata.Metrics.ZookeeperPendingSyncs.New()
+		return metadata.Metrics.ZookeeperPendingSyncs.Init
 	case avgLatencyMetricKey:
-		return metadata.Metrics.ZookeeperLatencyAvg.New()
+		return metadata.Metrics.ZookeeperLatencyAvg.Init
 	case maxLatencyMetricKey:
-		return metadata.Metrics.ZookeeperLatencyMax.New()
+		return metadata.Metrics.ZookeeperLatencyMax.Init
 	case minLatencyMetricKey:
-		return metadata.Metrics.ZookeeperLatencyMin.New()
+		return metadata.Metrics.ZookeeperLatencyMin.Init
 	case numAliveConnectionsMetricKey:
-		return metadata.Metrics.ZookeeperConnectionsAlive.New()
+		return metadata.Metrics.ZookeeperConnectionsAlive.Init
 	case outstandingRequestsMetricKey:
-		return metadata.Metrics.ZookeeperOutstandingRequests.New()
+		return metadata.Metrics.ZookeeperOutstandingRequests.Init
 	case zNodeCountMetricKey:
-		return metadata.Metrics.ZookeeperZnodes.New()
+		return metadata.Metrics.ZookeeperZnodes.Init
 	case watchCountMetricKey:
-		return metadata.Metrics.ZookeeperWatches.New()
+		return metadata.Metrics.ZookeeperWatches.Init
 	case ephemeralsCountMetricKey:
-		return metadata.Metrics.ZookeeperEphemeralNodes.New()
+		return metadata.Metrics.ZookeeperEphemeralNodes.Init
 	case approximateDataSizeMetricKey:
-		return metadata.Metrics.ZookeeperApproximateDateSize.New()
+		return metadata.Metrics.ZookeeperApproximateDateSize.Init
 	case openFileDescriptorCountMetricKey:
-		return metadata.Metrics.ZookeeperOpenFileDescriptors.New()
+		return metadata.Metrics.ZookeeperOpenFileDescriptors.Init
 	case maxFileDescriptorCountMetricKey:
-		return metadata.Metrics.ZookeeperMaxFileDescriptors.New()
+		return metadata.Metrics.ZookeeperMaxFileDescriptors.Init
 	case fSyncThresholdExceedCountMetricKey:
-		return metadata.Metrics.ZookeeperFsyncThresholdExceeds.New()
+		return metadata.Metrics.ZookeeperFsyncThresholdExceeds.Init
 	case packetsReceivedMetricKey:
-		return metadata.Metrics.ZookeeperPacketsReceived.New()
+		return metadata.Metrics.ZookeeperPacketsReceived.Init
 	case packetsSentMetricKey:
-		return metadata.Metrics.ZookeeperPacketsSent.New()
+		return metadata.Metrics.ZookeeperPacketsSent.Init
 	}
 
-	return pdata.NewMetric()
+	return nil
 }

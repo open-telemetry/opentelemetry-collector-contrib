@@ -21,11 +21,12 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/consumer/consumerhelper"
-	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"go.opentelemetry.io/collector/model/pdata"
 
 	ddconfig "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/config"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry"
 )
 
 const (
@@ -46,7 +47,11 @@ func NewFactory() component.ExporterFactory {
 // createDefaultConfig creates the default exporter configuration
 func createDefaultConfig() config.Exporter {
 	return &ddconfig.Config{
-		ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
+		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
+		TimeoutSettings:  exporterhelper.DefaultTimeoutSettings(),
+		RetrySettings:    exporterhelper.DefaultRetrySettings(),
+		QueueSettings:    exporterhelper.DefaultQueueSettings(),
+
 		API: ddconfig.APIConfig{
 			Key:  "$DD_API_KEY", // Must be set if using API
 			Site: "$DD_SITE",    // If not provided, set during config sanitization
@@ -66,8 +71,14 @@ func createDefaultConfig() config.Exporter {
 			},
 			SendMonotonic: true,
 			DeltaTTL:      3600,
+			Quantiles:     true,
 			ExporterConfig: ddconfig.MetricsExporterConfig{
-				ResourceAttributesAsTags: false,
+				ResourceAttributesAsTags:             false,
+				InstrumentationLibraryMetadataAsTags: false,
+			},
+			HistConfig: ddconfig.HistogramConfig{
+				Mode:         "nobuckets",
+				SendCountSum: true,
 			},
 		},
 
@@ -87,16 +98,24 @@ func createDefaultConfig() config.Exporter {
 // createMetricsExporter creates a metrics exporter based on this config.
 func createMetricsExporter(
 	ctx context.Context,
-	params component.ExporterCreateParams,
+	set component.ExporterCreateSettings,
 	c config.Exporter,
 ) (component.MetricsExporter, error) {
 
 	cfg := c.(*ddconfig.Config)
 
-	params.Logger.Info("sanitizing Datadog metrics exporter configuration")
-	if err := cfg.Sanitize(); err != nil {
+	set.Logger.Info("sanitizing Datadog metrics exporter configuration")
+	if err := cfg.Sanitize(set.Logger); err != nil {
 		return nil, err
 	}
+
+	// TODO: Remove after two releases
+	if cfg.Metrics.HistConfig.Mode == "counters" {
+		set.Logger.Warn("Histogram bucket metrics now end with .bucket instead of .count_per_bucket")
+	}
+
+	// TODO: Remove after changing the default mode.
+	set.Logger.Warn("Default histograms configuration will change to mode 'distributions' and no .count and .sum metrics in a future release.")
 
 	ctx, cancel := context.WithCancel(ctx)
 	var pushMetricsFn consumerhelper.ConsumeMetricsFunc
@@ -110,41 +129,49 @@ func createMetricsExporter(
 				if md.ResourceMetrics().Len() > 0 {
 					attrs = md.ResourceMetrics().At(0).Resource().Attributes()
 				}
-				go metadata.Pusher(ctx, params, cfg, attrs)
+				go metadata.Pusher(ctx, set, cfg, attrs)
 			})
 			return nil
 		}
 	} else {
-		pushMetricsFn = newMetricsExporter(ctx, params, cfg).PushMetricsData
+		exp, err := newMetricsExporter(ctx, set, cfg)
+		if err != nil {
+			cancel()
+			return nil, err
+		}
+		pushMetricsFn = exp.PushMetricsDataScrubbed
 	}
 
-	return exporterhelper.NewMetricsExporter(
+	exporter, err := exporterhelper.NewMetricsExporter(
 		cfg,
-		params.Logger,
+		set,
 		pushMetricsFn,
-		exporterhelper.WithQueue(exporterhelper.DefaultQueueSettings()),
-		exporterhelper.WithRetry(exporterhelper.DefaultRetrySettings()),
+		exporterhelper.WithTimeout(cfg.TimeoutSettings),
+		exporterhelper.WithRetry(cfg.RetrySettings),
+		exporterhelper.WithQueue(cfg.QueueSettings),
 		exporterhelper.WithShutdown(func(context.Context) error {
 			cancel()
 			return nil
 		}),
-		exporterhelper.WithResourceToTelemetryConversion(exporterhelper.ResourceToTelemetrySettings{
-			Enabled: cfg.Metrics.ExporterConfig.ResourceAttributesAsTags,
-		}),
 	)
+	if err != nil {
+		return nil, err
+	}
+	return resourcetotelemetry.WrapMetricsExporter(
+		resourcetotelemetry.Settings{Enabled: cfg.Metrics.ExporterConfig.ResourceAttributesAsTags}, exporter), nil
 }
 
 // createTracesExporter creates a trace exporter based on this config.
 func createTracesExporter(
 	ctx context.Context,
-	params component.ExporterCreateParams,
+	set component.ExporterCreateSettings,
 	c config.Exporter,
 ) (component.TracesExporter, error) {
 
 	cfg := c.(*ddconfig.Config)
 
-	params.Logger.Info("sanitizing Datadog metrics exporter configuration")
-	if err := cfg.Sanitize(); err != nil {
+	set.Logger.Info("sanitizing Datadog metrics exporter configuration")
+	if err := cfg.Sanitize(set.Logger); err != nil {
 		return nil, err
 	}
 
@@ -160,18 +187,21 @@ func createTracesExporter(
 				if td.ResourceSpans().Len() > 0 {
 					attrs = td.ResourceSpans().At(0).Resource().Attributes()
 				}
-				go metadata.Pusher(ctx, params, cfg, attrs)
+				go metadata.Pusher(ctx, set, cfg, attrs)
 			})
 			return nil
 		}
 	} else {
-		pushTracesFn = newTracesExporter(ctx, params, cfg).pushTraceData
+		pushTracesFn = newTracesExporter(ctx, set, cfg).pushTraceDataScrubbed
 	}
 
 	return exporterhelper.NewTracesExporter(
 		cfg,
-		params.Logger,
+		set,
 		pushTracesFn,
+		exporterhelper.WithTimeout(cfg.TimeoutSettings),
+		exporterhelper.WithRetry(cfg.RetrySettings),
+		exporterhelper.WithQueue(cfg.QueueSettings),
 		exporterhelper.WithShutdown(func(context.Context) error {
 			cancel()
 			return nil

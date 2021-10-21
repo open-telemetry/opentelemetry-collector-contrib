@@ -69,7 +69,7 @@ func TestF5CloudAuthRoundTripper_RoundTrip(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				assert.Equal(t, "Bearer test_access_token", r.Header.Get("Authorization"))
-				assert.Equal(t, "tests", r.Header.Get(SourceHeader))
+				assert.Equal(t, "tests", r.Header.Get(sourceHeader))
 			}))
 			defer server.Close()
 			rt, err := newF5CloudAuthRoundTripper(tt.token, source, tt.rt)

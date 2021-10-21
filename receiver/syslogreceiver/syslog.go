@@ -40,14 +40,14 @@ type ReceiverType struct{}
 
 // Type is the receiver type
 func (f ReceiverType) Type() config.Type {
-	return config.Type(typeStr)
+	return typeStr
 }
 
 // CreateDefaultConfig creates a config with type and version
 func (f ReceiverType) CreateDefaultConfig() config.Receiver {
 	return &SysLogConfig{
 		BaseConfig: stanza.BaseConfig{
-			ReceiverSettings: config.NewReceiverSettings(config.NewID(typeStr)),
+			ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
 			Operators:        stanza.OperatorConfigs{},
 		},
 		Input: stanza.InputConfig{},

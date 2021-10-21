@@ -19,14 +19,15 @@ import (
 	"os"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/translator/conventions"
+	"go.opentelemetry.io/collector/model/pdata"
+	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/azure"
 )
 
 const (
+	// TypeStr is type of detector.
 	TypeStr = "aks"
 
 	// Environment variable that is set when running on Kubernetes
@@ -38,27 +39,27 @@ type Detector struct {
 }
 
 // NewDetector creates a new AKS detector
-func NewDetector(component.ProcessorCreateParams, internal.DetectorConfig) (internal.Detector, error) {
+func NewDetector(component.ProcessorCreateSettings, internal.DetectorConfig) (internal.Detector, error) {
 	return &Detector{provider: azure.NewProvider()}, nil
 }
 
-func (d *Detector) Detect(ctx context.Context) (pdata.Resource, error) {
+func (d *Detector) Detect(ctx context.Context) (resource pdata.Resource, schemaURL string, err error) {
 	res := pdata.NewResource()
 
 	if !onK8s() {
-		return res, nil
+		return res, "", nil
 	}
 
 	// If we can't get a response from the metadata endpoint, we're not running in Azure
 	if !azureMetadataAvailable(ctx, d.provider) {
-		return res, nil
+		return res, "", nil
 	}
 
 	attrs := res.Attributes()
 	attrs.InsertString(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAzure)
 	attrs.InsertString(conventions.AttributeCloudPlatform, conventions.AttributeCloudPlatformAzureAKS)
 
-	return res, nil
+	return res, conventions.SchemaURL, nil
 }
 
 func onK8s() bool {

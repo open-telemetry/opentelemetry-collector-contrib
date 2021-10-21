@@ -15,6 +15,7 @@
 package ecsobserver
 
 import (
+	"fmt"
 	"os"
 	"time"
 
@@ -52,10 +53,36 @@ type Config struct {
 	DockerLabels []DockerLabelConfig `mapstructure:"docker_labels" yaml:"docker_labels"`
 }
 
+// Validate overrides the embedded noop validation so that load config can trigger
+// our own validation logic.
+func (c *Config) Validate() error {
+	if c.ClusterName == "" {
+		// TODO: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/3188
+		// would allow auto detect cluster name in extension
+		return fmt.Errorf("must specify ECS cluster name directly")
+	}
+	for _, s := range c.Services {
+		if err := s.validate(); err != nil {
+			return err
+		}
+	}
+	for _, t := range c.TaskDefinitions {
+		if err := t.validate(); err != nil {
+			return err
+		}
+	}
+	for _, d := range c.DockerLabels {
+		if err := d.validate(); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 // DefaultConfig only applies docker label
 func DefaultConfig() Config {
 	return Config{
-		ExtensionSettings: config.NewExtensionSettings(config.NewID(typeStr)),
+		ExtensionSettings: config.NewExtensionSettings(config.NewComponentID(typeStr)),
 		ClusterName:       "default",
 		ClusterRegion:     os.Getenv(awsRegionEnvKey),
 		ResultFile:        "/etc/ecs_sd_targets.yaml",
@@ -69,9 +96,9 @@ func DefaultConfig() Config {
 	}
 }
 
-// ExampleConfig returns an example instance that matches testdata/config_example.yaml.
+// exampleConfig returns an example instance that matches testdata/config_example.yaml.
 // It can be used to validate if the struct tags like mapstructure, yaml are working properly.
-func ExampleConfig() Config {
+func exampleConfig() Config {
 	return Config{
 		ClusterName:     "ecs-sd-test-1",
 		ClusterRegion:   "us-west-2",

@@ -21,7 +21,7 @@ services:
       - "1888:1888"   # pprof extension
       - "8888:8888"   # Prometheus metrics exposed by the collector
       - "13133:13133" # health_check extension
-      - "55680:55679" # zpages extension
+      - "55679:55679" # zpages extension
       - "24224:24224" # fluentforwarder
       - "24224:24224/udp" # fluentforwarder
     depends_on:

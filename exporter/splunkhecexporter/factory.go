@@ -22,6 +22,9 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 )
 
 const (
@@ -43,7 +46,7 @@ func NewFactory() component.ExporterFactory {
 
 func createDefaultConfig() config.Exporter {
 	return &Config{
-		ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
+		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
 		TimeoutSettings: exporterhelper.TimeoutSettings{
 			Timeout: defaultHTTPTimeout,
 		},
@@ -52,12 +55,23 @@ func createDefaultConfig() config.Exporter {
 		DisableCompression:   false,
 		MaxConnections:       defaultMaxIdleCons,
 		MaxContentLengthLogs: maxContentLengthLogsLimit,
+		HecToOtelAttrs: splunk.HecToOtelAttrs{
+			Source:     splunk.DefaultSourceLabel,
+			SourceType: splunk.DefaultSourceTypeLabel,
+			Index:      splunk.DefaultIndexLabel,
+			Host:       conventions.AttributeHostName,
+		},
+		HecFields: OtelToHecFields{
+			SeverityText:   splunk.DefaultSeverityTextLabel,
+			SeverityNumber: splunk.DefaultSeverityNumberLabel,
+			Name:           splunk.DefaultNameLabel,
+		},
 	}
 }
 
 func createTracesExporter(
 	_ context.Context,
-	params component.ExporterCreateParams,
+	set component.ExporterCreateSettings,
 	config config.Exporter,
 ) (component.TracesExporter, error) {
 	if config == nil {
@@ -65,14 +79,14 @@ func createTracesExporter(
 	}
 	expCfg := config.(*Config)
 
-	exp, err := createExporter(expCfg, params.Logger, &params.BuildInfo)
+	exp, err := createExporter(expCfg, set.Logger, &set.BuildInfo)
 	if err != nil {
 		return nil, err
 	}
 
 	return exporterhelper.NewTracesExporter(
 		expCfg,
-		params.Logger,
+		set,
 		exp.pushTraceData,
 		// explicitly disable since we rely on http.Client timeout logic.
 		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
@@ -84,7 +98,7 @@ func createTracesExporter(
 
 func createMetricsExporter(
 	_ context.Context,
-	params component.ExporterCreateParams,
+	set component.ExporterCreateSettings,
 	config config.Exporter,
 ) (component.MetricsExporter, error) {
 	if config == nil {
@@ -92,7 +106,7 @@ func createMetricsExporter(
 	}
 	expCfg := config.(*Config)
 
-	exp, err := createExporter(expCfg, params.Logger, &params.BuildInfo)
+	exp, err := createExporter(expCfg, set.Logger, &set.BuildInfo)
 
 	if err != nil {
 		return nil, err
@@ -100,7 +114,7 @@ func createMetricsExporter(
 
 	return exporterhelper.NewMetricsExporter(
 		expCfg,
-		params.Logger,
+		set,
 		exp.pushMetricsData,
 		// explicitly disable since we rely on http.Client timeout logic.
 		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
@@ -112,7 +126,7 @@ func createMetricsExporter(
 
 func createLogsExporter(
 	_ context.Context,
-	params component.ExporterCreateParams,
+	set component.ExporterCreateSettings,
 	config config.Exporter,
 ) (exporter component.LogsExporter, err error) {
 	if config == nil {
@@ -120,7 +134,7 @@ func createLogsExporter(
 	}
 	expCfg := config.(*Config)
 
-	exp, err := createExporter(expCfg, params.Logger, &params.BuildInfo)
+	exp, err := createExporter(expCfg, set.Logger, &set.BuildInfo)
 
 	if err != nil {
 		return nil, err
@@ -128,7 +142,7 @@ func createLogsExporter(
 
 	return exporterhelper.NewLogsExporter(
 		expCfg,
-		params.Logger,
+		set,
 		exp.pushLogData,
 		// explicitly disable since we rely on http.Client timeout logic.
 		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),

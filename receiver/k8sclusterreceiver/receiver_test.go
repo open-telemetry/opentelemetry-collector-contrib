@@ -19,41 +19,53 @@ import (
 	"testing"
 	"time"
 
+	quotaclientset "github.com/openshift/client-go/quota/clientset/versioned"
+	fakeQuota "github.com/openshift/client-go/quota/clientset/versioned/fake"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/obsreport"
+	"go.opentelemetry.io/collector/obsreport/obsreporttest"
 	"go.uber.org/atomic"
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/fake"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/testutils"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/testutils"
 )
 
 func TestReceiver(t *testing.T) {
+	tt, err := obsreporttest.SetupTelemetry()
+	require.NoError(t, err)
+	defer tt.Shutdown(context.Background())
+
 	client := fake.NewSimpleClientset()
+	osQuotaClient := fakeQuota.NewSimpleClientset()
 	sink := new(consumertest.MetricsSink)
 
-	r := setupReceiver(client, sink, 10*time.Second)
+	r := setupReceiver(client, osQuotaClient, sink, 10*time.Second, tt)
 
 	// Setup k8s resources.
 	numPods := 2
 	numNodes := 1
+	numQuotas := 2
+	numClusterQuotaMetrics := numQuotas * 4
 	createPods(t, client, numPods)
 	createNodes(t, client, numNodes)
+	createClusterQuota(t, osQuotaClient, 2)
 
 	ctx := context.Background()
 	require.NoError(t, r.Start(ctx, componenttest.NewNopHost()))
 
 	// Expects metric data from nodes and pods where each metric data
 	// struct corresponds to one resource.
-	expectedNumMetrics := numPods + numNodes
-	var initialMetricsCount int
+	expectedNumMetrics := numPods + numNodes + numClusterQuotaMetrics
+	var initialDataPointCount int
 	require.Eventually(t, func() bool {
-		initialMetricsCount = sink.MetricsCount()
-		return initialMetricsCount == expectedNumMetrics
+		initialDataPointCount = sink.DataPointCount()
+		return initialDataPointCount == expectedNumMetrics
 	}, 10*time.Second, 100*time.Millisecond,
 		"metrics not collected")
 
@@ -61,10 +73,10 @@ func TestReceiver(t *testing.T) {
 	deletePods(t, client, numPodsToDelete)
 
 	// Expects metric data from a node, since other resources were deleted.
-	expectedNumMetrics = (numPods - numPodsToDelete) + numNodes
+	expectedNumMetrics = (numPods - numPodsToDelete) + numNodes + numClusterQuotaMetrics
 	var metricsCountDelta int
 	require.Eventually(t, func() bool {
-		metricsCountDelta = sink.MetricsCount() - initialMetricsCount
+		metricsCountDelta = sink.DataPointCount() - initialDataPointCount
 		return metricsCountDelta == expectedNumMetrics
 	}, 10*time.Second, 100*time.Millisecond,
 		"updated metrics not collected")
@@ -73,10 +85,13 @@ func TestReceiver(t *testing.T) {
 }
 
 func TestReceiverTimesOutAfterStartup(t *testing.T) {
+	tt, err := obsreporttest.SetupTelemetry()
+	require.NoError(t, err)
+	defer tt.Shutdown(context.Background())
 	client := fake.NewSimpleClientset()
 
 	// Mock initial cache sync timing out, using a small timeout.
-	r := setupReceiver(client, consumertest.NewNop(), 1*time.Millisecond)
+	r := setupReceiver(client, nil, consumertest.NewNop(), 1*time.Millisecond, tt)
 
 	createPods(t, client, 1)
 
@@ -89,19 +104,28 @@ func TestReceiverTimesOutAfterStartup(t *testing.T) {
 }
 
 func TestReceiverWithManyResources(t *testing.T) {
+	tt, err := obsreporttest.SetupTelemetry()
+	require.NoError(t, err)
+	defer tt.Shutdown(context.Background())
+
 	client := fake.NewSimpleClientset()
+	osQuotaClient := fakeQuota.NewSimpleClientset()
 	sink := new(consumertest.MetricsSink)
 
-	r := setupReceiver(client, sink, 10*time.Second)
+	r := setupReceiver(client, osQuotaClient, sink, 10*time.Second, tt)
 
 	numPods := 1000
+	numQuotas := 2
+	numExpectedMetrics := numPods + numQuotas*4
 	createPods(t, client, numPods)
+	createClusterQuota(t, osQuotaClient, 2)
 
 	ctx := context.Background()
 	require.NoError(t, r.Start(ctx, componenttest.NewNopHost()))
 
 	require.Eventually(t, func() bool {
-		return sink.MetricsCount() == numPods
+		// 4 points from the cluster quota.
+		return sink.DataPointCount() == numExpectedMetrics
 	}, 10*time.Second, 100*time.Millisecond,
 		"metrics not collected")
 
@@ -116,11 +140,15 @@ var consumeMetadataInvocation = func() {
 }
 
 func TestReceiverWithMetadata(t *testing.T) {
+	tt, err := obsreporttest.SetupTelemetry()
+	require.NoError(t, err)
+	defer tt.Shutdown(context.Background())
+
 	client := fake.NewSimpleClientset()
 	next := &mockExporterWithK8sMetadata{MetricsSink: new(consumertest.MetricsSink)}
 	numCalls = atomic.NewInt32(0)
 
-	r := setupReceiver(client, next, 10*time.Second)
+	r := setupReceiver(client, nil, next, 10*time.Second, tt)
 	r.config.MetadataExporters = []string{"nop/withmetadata"}
 
 	// Setup k8s resources.
@@ -165,22 +193,35 @@ func getUpdatedPod(pod *corev1.Pod) interface{} {
 
 func setupReceiver(
 	client *fake.Clientset,
+	osQuotaClient quotaclientset.Interface,
 	consumer consumer.Metrics,
-	initialSyncTimeout time.Duration) *kubernetesReceiver {
+	initialSyncTimeout time.Duration,
+	tt obsreporttest.TestTelemetry) *kubernetesReceiver {
+
+	distribution := distributionKubernetes
+	if osQuotaClient != nil {
+		distribution = distributionOpenShift
+	}
 
 	logger := zap.NewNop()
 	config := &Config{
 		CollectionInterval:         1 * time.Second,
 		NodeConditionTypesToReport: []string{"Ready"},
+		Distribution:               distribution,
 	}
 
-	rw := newResourceWatcher(logger, client, config.NodeConditionTypesToReport, initialSyncTimeout)
+	rw := newResourceWatcher(logger, client, osQuotaClient, config.NodeConditionTypesToReport, initialSyncTimeout)
 	rw.dataCollector.SetupMetadataStore(&corev1.Service{}, &testutils.MockStore{})
 
 	return &kubernetesReceiver{
 		resourceWatcher: rw,
-		logger:          logger,
+		settings:        tt.ToReceiverCreateSettings(),
 		config:          config,
 		consumer:        consumer,
+		obsrecv: obsreport.NewReceiver(obsreport.ReceiverSettings{
+			ReceiverID:             config.ID(),
+			Transport:              "http",
+			ReceiverCreateSettings: tt.ToReceiverCreateSettings(),
+		}),
 	}
 }

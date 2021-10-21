@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//go:build windows
 // +build windows
 
 package windowsperfcountersreceiver
@@ -166,19 +167,19 @@ func Test_WindowsPerfCounterScraper(t *testing.T) {
 				}
 			}
 
-			metrics, err := scraper.scrape(context.Background())
+			md, err := scraper.scrape(context.Background())
 			if test.scrapeErr != nil {
 				assert.Equal(t, err, test.scrapeErr)
 			} else {
 				require.NoError(t, err)
 			}
-
+			metrics := md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics()
 			require.Equal(t, len(test.expectedMetrics), metrics.Len())
 			for i, e := range test.expectedMetrics {
 				metric := metrics.At(i)
 				assert.Equal(t, e.name, metric.Name())
 
-				ddp := metric.DoubleGauge().DataPoints()
+				ddp := metric.Gauge().DataPoints()
 
 				var allInstances bool
 				for _, v := range e.instanceLabelValues {
@@ -202,9 +203,9 @@ func Test_WindowsPerfCounterScraper(t *testing.T) {
 				if len(e.instanceLabelValues) > 0 {
 					instanceLabelValues := make([]string, 0, ddp.Len())
 					for i := 0; i < ddp.Len(); i++ {
-						instanceLabelValue, ok := ddp.At(i).LabelsMap().Get(instanceLabelName)
+						instanceLabelValue, ok := ddp.At(i).Attributes().Get(instanceLabelName)
 						require.Truef(t, ok, "data point was missing %q label", instanceLabelName)
-						instanceLabelValues = append(instanceLabelValues, instanceLabelValue)
+						instanceLabelValues = append(instanceLabelValues, instanceLabelValue.StringVal())
 					}
 
 					if !allInstances {

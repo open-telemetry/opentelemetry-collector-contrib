@@ -26,7 +26,8 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
-	prw "go.opentelemetry.io/collector/exporter/prometheusremotewriteexporter"
+
+	prw "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusremotewriteexporter"
 )
 
 const typeStr = "awsprometheusremotewrite" // The value of "type" key in configuration.
@@ -44,7 +45,7 @@ func (af *awsFactory) Type() config.Type {
 	return typeStr
 }
 
-func (af *awsFactory) CreateMetricsExporter(ctx context.Context, params component.ExporterCreateParams,
+func (af *awsFactory) CreateMetricsExporter(ctx context.Context, params component.ExporterCreateSettings,
 	cfg config.Exporter) (component.MetricsExporter, error) {
 	return af.ExporterFactory.CreateMetricsExporter(ctx, params, &cfg.(*Config).Config)
 }
@@ -59,7 +60,7 @@ func (af *awsFactory) CreateDefaultConfig() config.Exporter {
 		},
 	}
 
-	cfg.ExporterSettings = config.NewExporterSettings(config.NewID(typeStr))
+	cfg.ExporterSettings = config.NewExporterSettings(config.NewComponentID(typeStr))
 	cfg.HTTPClientSettings.CustomRoundTripper = func(next http.RoundTripper) (http.RoundTripper, error) {
 		extras := []string{runtime.Version(), runtime.GOOS, runtime.GOARCH}
 		if v := os.Getenv("AWS_EXECUTION_ENV"); v != "" {

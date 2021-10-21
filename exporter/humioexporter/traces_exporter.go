@@ -19,9 +19,10 @@ import (
 	"errors"
 	"sync"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumererror"
-	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/translator/conventions"
+	"go.opentelemetry.io/collector/model/pdata"
+	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
 	"go.uber.org/zap"
 )
 
@@ -53,13 +54,35 @@ type humioTracesExporter struct {
 	logger *zap.Logger
 	client exporterClient
 	wg     sync.WaitGroup
+
+	// Needed to enable current unit tests with the latest changes from core collector.
+	getClient clientGetter
 }
 
-func newTracesExporter(cfg *Config, logger *zap.Logger, client exporterClient) *humioTracesExporter {
+type clientGetter func(cfg *Config, logger *zap.Logger, host component.Host) (exporterClient, error)
+
+func newTracesExporter(cfg *Config, logger *zap.Logger) *humioTracesExporter {
+	gc := func(cfg *Config, logger *zap.Logger, host component.Host) (exporterClient, error) {
+		client, err := newHumioClient(cfg, logger, host)
+		if err != nil {
+			return nil, err
+		}
+
+		return client, nil
+	}
+
 	return &humioTracesExporter{
-		cfg:    cfg,
-		logger: logger,
-		client: client,
+		cfg:       cfg,
+		logger:    logger,
+		getClient: gc,
+	}
+}
+
+func newTracesExporterWithClientGetter(cfg *Config, logger *zap.Logger, cg clientGetter) *humioTracesExporter {
+	return &humioTracesExporter{
+		cfg:       cfg,
+		logger:    logger,
+		getClient: cg,
 	}
 }
 
@@ -72,7 +95,7 @@ func (e *humioTracesExporter) pushTraceData(ctx context.Context, td pdata.Traces
 		// All traces failed conversion - no need to retry any more since this is not a
 		// transient failure. By raising a permanent error, the queued retry middleware
 		// will expose a metric for failed spans immediately
-		return consumererror.Permanent(conversionErr)
+		return consumererror.NewPermanent(conversionErr)
 	}
 
 	err := e.client.sendStructuredEvents(ctx, evts)
@@ -125,7 +148,8 @@ func (e *humioTracesExporter) tracesToHumioEvents(td pdata.Traces) ([]*HumioStru
 	if len(droppedTraces) > 0 {
 		dropped := pdata.NewTraces()
 		for _, t := range droppedTraces {
-			dropped.ResourceSpans().Append(t)
+			tgt := dropped.ResourceSpans().AppendEmpty()
+			t.CopyTo(tgt)
 		}
 
 		return results, consumererror.NewTraces(
@@ -199,17 +223,17 @@ func toHumioAttributes(attrMaps ...pdata.AttributeMap) map[string]interface{} {
 
 func toHumioAttributeValue(rawVal pdata.AttributeValue) interface{} {
 	switch rawVal.Type() {
-	case pdata.AttributeValueSTRING:
+	case pdata.AttributeValueTypeString:
 		return rawVal.StringVal()
-	case pdata.AttributeValueINT:
+	case pdata.AttributeValueTypeInt:
 		return rawVal.IntVal()
-	case pdata.AttributeValueDOUBLE:
+	case pdata.AttributeValueTypeDouble:
 		return rawVal.DoubleVal()
-	case pdata.AttributeValueBOOL:
+	case pdata.AttributeValueTypeBool:
 		return rawVal.BoolVal()
-	case pdata.AttributeValueMAP:
+	case pdata.AttributeValueTypeMap:
 		return toHumioAttributes(rawVal.MapVal())
-	case pdata.AttributeValueARRAY:
+	case pdata.AttributeValueTypeArray:
 		arrVal := rawVal.ArrayVal()
 		arr := make([]interface{}, 0, arrVal.Len())
 		for i := 0; i < arrVal.Len(); i++ {
@@ -233,6 +257,18 @@ func tagFromSpan(evt *HumioStructuredEvent, strategy Tagger) string {
 	default: // TagNone
 		return ""
 	}
+}
+
+// start starts the exporter
+func (e *humioTracesExporter) start(_ context.Context, host component.Host) error {
+	client, err := e.getClient(e.cfg, e.logger, host)
+	if err != nil {
+		return err
+	}
+
+	e.client = client
+
+	return nil
 }
 
 func (e *humioTracesExporter) shutdown(context.Context) error {

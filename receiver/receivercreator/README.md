@@ -153,7 +153,10 @@ receivers:
           # Static receiver-specific config.
           password: secret
           # Dynamic configuration value.
-          service_name: `pod.labels["service_name"]`
+          collection_interval: `pod.annotations["collection_interval"]`
+      resource_attributes:
+          # Dynamic configuration value.
+          service.name: `pod.labels["service_name"]`
 
       redis/2:
         # Set a resource attribute based on endpoint value.
@@ -170,9 +173,8 @@ receivers:
       redis/on_host:
         # If this rule matches an instance of this receiver will be started.
         rule: type == "port" && port == 6379 && is_ipv6 == true
-        config:
-          service_name: redis_on_host
-
+        resource_attributes:
+          service.name: redis_on_host
 
 processors:
   exampleprocessor:

@@ -19,12 +19,10 @@ import (
 	"errors"
 	"fmt"
 	"strings"
-	"sync"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/consumer"
-	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver/protocol"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver/transport"
@@ -37,9 +35,8 @@ var (
 // carbonreceiver implements a component.MetricsReceiver for Carbon plaintext, aka "line", protocol.
 // see https://graphite.readthedocs.io/en/latest/feeding-carbon.html#the-plaintext-protocol.
 type carbonReceiver struct {
-	sync.Mutex
-	logger *zap.Logger
-	config *Config
+	settings component.ReceiverCreateSettings
+	config   *Config
 
 	server       transport.Server
 	reporter     transport.Reporter
@@ -51,7 +48,7 @@ var _ component.MetricsReceiver = (*carbonReceiver)(nil)
 
 // New creates the Carbon receiver with the given configuration.
 func New(
-	logger *zap.Logger,
+	set component.ReceiverCreateSettings,
 	config Config,
 	nextConsumer consumer.Metrics,
 ) (component.MetricsReceiver, error) {
@@ -85,11 +82,11 @@ func New(
 	}
 
 	r := carbonReceiver{
-		logger:       logger,
+		settings:     set,
 		config:       &config,
 		nextConsumer: nextConsumer,
 		server:       server,
-		reporter:     newReporter(config.ID(), logger),
+		reporter:     newReporter(config.ID(), set),
 		parser:       parser,
 	}
 
@@ -111,9 +108,6 @@ func buildTransportServer(config Config) (transport.Server, error) {
 // By convention the consumer of the received data is set when the receiver
 // instance is created.
 func (r *carbonReceiver) Start(_ context.Context, host component.Host) error {
-	r.Lock()
-	defer r.Unlock()
-
 	go func() {
 		if err := r.server.ListenAndServe(r.parser, r.nextConsumer, r.reporter); err != nil {
 			host.ReportFatalError(err)
@@ -125,8 +119,5 @@ func (r *carbonReceiver) Start(_ context.Context, host component.Host) error {
 // Shutdown tells the receiver that should stop reception,
 // giving it a chance to perform any necessary clean-up.
 func (r *carbonReceiver) Shutdown(context.Context) error {
-	r.Lock()
-	defer r.Unlock()
-
 	return r.server.Close()
 }

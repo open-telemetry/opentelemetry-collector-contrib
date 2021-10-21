@@ -53,13 +53,13 @@ func (f *factory) Type() config.Type {
 
 func (f *factory) CreateDefaultConfig() config.Exporter {
 	cfg := f.ExporterFactory.CreateDefaultConfig()
-	cfg.(*googlecloudexporter.Config).ExporterSettings = config.NewExporterSettings(config.NewID(typeVal))
+	cfg.(*googlecloudexporter.Config).ExporterSettings = config.NewExporterSettings(config.NewComponentID(typeVal))
 	return cfg
 }
 
 func (f *factory) CreateTracesExporter(
 	ctx context.Context,
-	params component.ExporterCreateParams,
+	params component.ExporterCreateSettings,
 	cfg config.Exporter,
 ) (component.TracesExporter, error) {
 	logDeprecation(params.Logger)
@@ -68,7 +68,7 @@ func (f *factory) CreateTracesExporter(
 
 func (f *factory) CreateMetricsExporter(
 	ctx context.Context,
-	params component.ExporterCreateParams,
+	params component.ExporterCreateSettings,
 	cfg config.Exporter,
 ) (component.MetricsExporter, error) {
 	logDeprecation(params.Logger)

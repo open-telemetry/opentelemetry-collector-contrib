@@ -17,55 +17,31 @@ package config
 import (
 	"testing"
 
-	"go.opentelemetry.io/collector/config"
+	"github.com/dynatrace-oss/dynatrace-metric-utils-go/metric/apiconstants"
+	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/config/confighttp"
 )
 
-func TestConfig_Sanitize(t *testing.T) {
-	type fields struct {
-		APIToken string
-		Endpoint string
-		Tags     []string
-		Prefix   string
-	}
-	tests := []struct {
-		name    string
-		fields  fields
-		wantErr bool
-	}{
-		{
-			name:    "Valid config",
-			fields:  fields{APIToken: "t", Endpoint: "http://example.com"},
-			wantErr: false,
-		},
-		{
-			name:    "Missing API Token",
-			fields:  fields{APIToken: "", Endpoint: "http://example.com"},
-			wantErr: true,
-		},
-		{
-			name:    "Missing Endpoint",
-			fields:  fields{APIToken: "t", Endpoint: ""},
-			wantErr: true,
-		},
-		{
-			name:    "Invalid Endpoint",
-			fields:  fields{APIToken: "t", Endpoint: "asdf"},
-			wantErr: true,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			c := &Config{
-				ExporterSettings:   config.NewExporterSettings(config.NewID("dynatrace")),
-				APIToken:           tt.fields.APIToken,
-				HTTPClientSettings: confighttp.HTTPClientSettings{Endpoint: tt.fields.Endpoint},
-				Tags:               tt.fields.Tags,
-				Prefix:             tt.fields.Prefix,
-			}
-			if err := c.Sanitize(); (err != nil) != tt.wantErr {
-				t.Errorf("Config.Sanitize() error = %v, wantErr %v", err, tt.wantErr)
-			}
-		})
-	}
+func TestConfig_ValidateAndConfigureHTTPClientSettings(t *testing.T) {
+	t.Run("Empty configuration", func(t *testing.T) {
+		c := &Config{}
+		err := c.ValidateAndConfigureHTTPClientSettings()
+		assert.NoError(t, err)
+
+		assert.Equal(t, apiconstants.GetDefaultOneAgentEndpoint(), c.Endpoint, "Should use default OneAgent endpoint")
+	})
+
+	t.Run("Valid configuration", func(t *testing.T) {
+		c := &Config{HTTPClientSettings: confighttp.HTTPClientSettings{Endpoint: "http://example.com/"}, APIToken: "token"}
+		err := c.ValidateAndConfigureHTTPClientSettings()
+		assert.NoError(t, err)
+
+		assert.Equal(t, "http://example.com/", c.Endpoint, "Should use provided endpoint")
+	})
+
+	t.Run("Invalid Endpoint", func(t *testing.T) {
+		c := &Config{HTTPClientSettings: confighttp.HTTPClientSettings{Endpoint: "example.com"}}
+		err := c.ValidateAndConfigureHTTPClientSettings()
+		assert.Error(t, err)
+	})
 }

@@ -21,15 +21,14 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.uber.org/zap"
+	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/model/pdata"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
 )
 
 func TestNewDetector(t *testing.T) {
-	d, err := NewDetector(component.ProcessorCreateParams{Logger: zap.NewNop()}, nil)
+	d, err := NewDetector(componenttest.NewNopProcessorCreateSettings(), nil)
 	assert.NotNil(t, d)
 	assert.NoError(t, err)
 }
@@ -38,7 +37,8 @@ func TestDetectTrue(t *testing.T) {
 	os.Setenv(envVar, "key=value")
 
 	detector := &Detector{}
-	res, err := detector.Detect(context.Background())
+	res, schemaURL, err := detector.Detect(context.Background())
+	assert.Equal(t, "", schemaURL)
 	require.NoError(t, err)
 	assert.Equal(t, internal.NewResource(map[string]interface{}{"key": "value"}), res)
 }
@@ -47,8 +47,9 @@ func TestDetectFalse(t *testing.T) {
 	os.Setenv(envVar, "")
 
 	detector := &Detector{}
-	res, err := detector.Detect(context.Background())
+	res, schemaURL, err := detector.Detect(context.Background())
 	require.NoError(t, err)
+	assert.Equal(t, "", schemaURL)
 	assert.True(t, internal.IsEmptyResource(res))
 }
 
@@ -57,8 +58,9 @@ func TestDetectDeprecatedEnv(t *testing.T) {
 	os.Setenv(deprecatedEnvVar, "key=value")
 
 	detector := &Detector{}
-	res, err := detector.Detect(context.Background())
+	res, schemaURL, err := detector.Detect(context.Background())
 	require.NoError(t, err)
+	assert.Equal(t, "", schemaURL)
 	assert.Equal(t, internal.NewResource(map[string]interface{}{"key": "value"}), res)
 }
 
@@ -66,8 +68,9 @@ func TestDetectError(t *testing.T) {
 	os.Setenv(envVar, "key=value,key")
 
 	detector := &Detector{}
-	res, err := detector.Detect(context.Background())
+	res, schemaURL, err := detector.Detect(context.Background())
 	assert.Error(t, err)
+	assert.Equal(t, "", schemaURL)
 	assert.True(t, internal.IsEmptyResource(res))
 }
 

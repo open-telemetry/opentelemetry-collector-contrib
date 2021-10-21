@@ -30,12 +30,11 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumererror"
-	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/translator/conventions"
-	"go.uber.org/zap"
+	"go.opentelemetry.io/collector/model/pdata"
+	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
+	"go.uber.org/zap/zaptest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 )
@@ -46,16 +45,29 @@ func (t testRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 	return t(req), nil
 }
 
-func newTestClient(respCode int, respBody string) *http.Client {
+func newTestClient(respCode int, respBody string) (*http.Client, *[]http.Header) {
+	return newTestClientWithPresetResponses([]int{respCode}, []string{respBody})
+}
+
+func newTestClientWithPresetResponses(codes []int, bodies []string) (*http.Client, *[]http.Header) {
+	index := 0
+	headers := make([]http.Header, 0)
+
 	return &http.Client{
 		Transport: testRoundTripper(func(req *http.Request) *http.Response {
+			code := codes[index%len(codes)]
+			body := bodies[index%len(bodies)]
+			index++
+
+			headers = append(headers, req.Header)
+
 			return &http.Response{
-				StatusCode: respCode,
-				Body:       ioutil.NopCloser(bytes.NewBufferString(respBody)),
+				StatusCode: code,
+				Body:       ioutil.NopCloser(bytes.NewBufferString(body)),
 				Header:     make(http.Header),
 			}
 		}),
-	}
+	}, &headers
 }
 
 func createMetricsData(numberOfDataPoints int) pdata.Metrics {
@@ -72,14 +84,14 @@ func createMetricsData(numberOfDataPoints int) pdata.Metrics {
 		ilm := rm.InstrumentationLibraryMetrics().AppendEmpty()
 		metric := ilm.Metrics().AppendEmpty()
 		metric.SetName("gauge_double_with_dims")
-		metric.SetDataType(pdata.MetricDataTypeDoubleGauge)
-		doublePt := metric.DoubleGauge().DataPoints().AppendEmpty()
-		doublePt.SetTimestamp(pdata.TimestampFromTime(tsUnix))
-		doublePt.SetValue(doubleVal)
-		doublePt.LabelsMap().Insert("k/n0", "vn0")
-		doublePt.LabelsMap().Insert("k/n1", "vn1")
-		doublePt.LabelsMap().Insert("k/r0", "vr0")
-		doublePt.LabelsMap().Insert("k/r1", "vr1")
+		metric.SetDataType(pdata.MetricDataTypeGauge)
+		doublePt := metric.Gauge().DataPoints().AppendEmpty()
+		doublePt.SetTimestamp(pdata.NewTimestampFromTime(tsUnix))
+		doublePt.SetDoubleVal(doubleVal)
+		doublePt.Attributes().InsertString("k/n0", "vn0")
+		doublePt.Attributes().InsertString("k/n1", "vn1")
+		doublePt.Attributes().InsertString("k/r0", "vr0")
+		doublePt.Attributes().InsertString("k/r1", "vr1")
 	}
 
 	return metrics
@@ -90,9 +102,9 @@ func createTraceData(numberOfTraces int) pdata.Traces {
 	rs := traces.ResourceSpans().AppendEmpty()
 	rs.Resource().Attributes().InsertString("resource", "R1")
 	ils := rs.InstrumentationLibrarySpans().AppendEmpty()
-	ils.Spans().Resize(numberOfTraces)
+	ils.Spans().EnsureCapacity(numberOfTraces)
 	for i := 0; i < numberOfTraces; i++ {
-		span := ils.Spans().At(i)
+		span := ils.Spans().AppendEmpty()
 		span.SetName("root")
 		span.SetStartTimestamp(pdata.Timestamp((i + 1) * 1e9))
 		span.SetEndTimestamp(pdata.Timestamp((i + 2) * 1e9))
@@ -110,22 +122,35 @@ func createTraceData(numberOfTraces int) pdata.Traces {
 }
 
 func createLogData(numResources int, numLibraries int, numRecords int) pdata.Logs {
+	return createLogDataWithCustomLibraries(numResources, make([]string, numLibraries), repeat(numRecords, numLibraries))
+}
+
+func repeat(what int, times int) []int {
+	var result = make([]int, times)
+	for i := range result {
+		result[i] = what
+	}
+	return result
+}
+
+func createLogDataWithCustomLibraries(numResources int, libraries []string, numRecords []int) pdata.Logs {
 	logs := pdata.NewLogs()
-	logs.ResourceLogs().Resize(numResources)
+	logs.ResourceLogs().EnsureCapacity(numResources)
 	for i := 0; i < numResources; i++ {
-		rl := logs.ResourceLogs().At(i)
-		rl.InstrumentationLibraryLogs().Resize(numLibraries)
-		for j := 0; j < numLibraries; j++ {
-			ill := rl.InstrumentationLibraryLogs().At(j)
-			ill.Logs().Resize(numRecords)
-			for k := 0; k < numRecords; k++ {
+		rl := logs.ResourceLogs().AppendEmpty()
+		rl.InstrumentationLibraryLogs().EnsureCapacity(len(libraries))
+		for j := 0; j < len(libraries); j++ {
+			ill := rl.InstrumentationLibraryLogs().AppendEmpty()
+			ill.InstrumentationLibrary().SetName(libraries[j])
+			ill.Logs().EnsureCapacity(numRecords[j])
+			for k := 0; k < numRecords[j]; k++ {
 				ts := pdata.Timestamp(int64(k) * time.Millisecond.Nanoseconds())
-				logRecord := ill.Logs().At(k)
+				logRecord := ill.Logs().AppendEmpty()
 				logRecord.SetName(fmt.Sprintf("%d_%d_%d", i, j, k))
 				logRecord.Body().SetStringVal("mylog")
-				logRecord.Attributes().InsertString(conventions.AttributeServiceName, "myapp")
-				logRecord.Attributes().InsertString(splunk.SourcetypeLabel, "myapp-type")
-				logRecord.Attributes().InsertString(splunk.IndexLabel, "myindex")
+				logRecord.Attributes().InsertString(splunk.DefaultSourceLabel, "myapp")
+				logRecord.Attributes().InsertString(splunk.DefaultSourceTypeLabel, "myapp-type")
+				logRecord.Attributes().InsertString(splunk.DefaultIndexLabel, "myindex")
 				logRecord.Attributes().InsertString(conventions.AttributeHostName, "myhost")
 				logRecord.Attributes().InsertString("custom", "custom")
 				logRecord.SetTimestamp(ts)
@@ -182,7 +207,7 @@ func runMetricsExport(disableCompression bool, numberOfDataPoints int, t *testin
 		panic(s.Serve(listener))
 	}()
 
-	params := component.ExporterCreateParams{Logger: zap.NewNop()}
+	params := componenttest.NewNopExporterCreateSettings()
 	exporter, err := factory.CreateMetricsExporter(context.Background(), params, cfg)
 	assert.NoError(t, err)
 	assert.NoError(t, exporter.Start(context.Background(), componenttest.NewNopHost()))
@@ -221,7 +246,7 @@ func runTraceExport(disableCompression bool, numberOfTraces int, t *testing.T) (
 		panic(s.Serve(listener))
 	}()
 
-	params := component.ExporterCreateParams{Logger: zap.NewNop()}
+	params := componenttest.NewNopExporterCreateSettings()
 	exporter, err := factory.CreateTracesExporter(context.Background(), params, cfg)
 	assert.NoError(t, err)
 	assert.NoError(t, exporter.Start(context.Background(), componenttest.NewNopHost()))
@@ -257,7 +282,7 @@ func runLogExport(cfg *Config, ld pdata.Logs, t *testing.T) ([][]byte, error) {
 		panic(s.Serve(listener))
 	}()
 
-	params := component.ExporterCreateParams{Logger: zap.NewNop()}
+	params := componenttest.NewNopExporterCreateSettings()
 	exporter, err := NewFactory().CreateLogsExporter(context.Background(), params, cfg)
 	assert.NoError(t, err)
 	assert.NoError(t, exporter.Start(context.Background(), componenttest.NewNopHost()))
@@ -284,11 +309,11 @@ func TestReceiveTraces(t *testing.T) {
 	actual, err := runTraceExport(true, 3, t)
 	assert.NoError(t, err)
 	expected := `{"time":1,"host":"unknown","event":{"trace_id":"01010101010101010101010101010101","span_id":"0000000000000001","parent_span_id":"0102030405060708","name":"root","end_time":2000000000,"kind":"SPAN_KIND_UNSPECIFIED","status":{"message":"ok","code":"STATUS_CODE_OK"},"start_time":1000000000},"fields":{"resource":"R1"}}`
-	expected += "\n\r\n\r\n"
+	expected += "\n"
 	expected += `{"time":2,"host":"unknown","event":{"trace_id":"01010101010101010101010101010101","span_id":"0000000000000001","parent_span_id":"","name":"root","end_time":3000000000,"kind":"SPAN_KIND_UNSPECIFIED","status":{"message":"","code":"STATUS_CODE_UNSET"},"start_time":2000000000},"fields":{"resource":"R1"}}`
-	expected += "\n\r\n\r\n"
+	expected += "\n"
 	expected += `{"time":3,"host":"unknown","event":{"trace_id":"01010101010101010101010101010101","span_id":"0000000000000001","parent_span_id":"0102030405060708","name":"root","end_time":4000000000,"kind":"SPAN_KIND_UNSPECIFIED","status":{"message":"ok","code":"STATUS_CODE_OK"},"start_time":3000000000},"fields":{"resource":"R1"}}`
-	expected += "\n\r\n\r\n"
+	expected += "\n"
 	assert.Equal(t, expected, actual)
 }
 
@@ -319,10 +344,10 @@ func TestReceiveLogs(t *testing.T) {
 			}(),
 			want: wantType{
 				batches: []string{
-					`{"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otlp.log.name":"0_0_0","service.name":"myapp"}}` + "\n\r\n\r\n" +
-						`{"time":0.001,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otlp.log.name":"0_0_1","service.name":"myapp"}}` + "\n\r\n\r\n" +
-						`{"time":0.002,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otlp.log.name":"0_0_2","service.name":"myapp"}}` + "\n\r\n\r\n" +
-						`{"time":0.003,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otlp.log.name":"0_0_3","service.name":"myapp"}}` + "\n\r\n\r\n",
+					`{"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otel.log.name":"0_0_0"}}` + "\n" +
+						`{"time":0.001,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otel.log.name":"0_0_1"}}` + "\n" +
+						`{"time":0.002,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otel.log.name":"0_0_2"}}` + "\n" +
+						`{"time":0.003,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otel.log.name":"0_0_3"}}` + "\n",
 				},
 				numBatches: 1,
 			},
@@ -337,10 +362,10 @@ func TestReceiveLogs(t *testing.T) {
 			}(),
 			want: wantType{
 				batches: []string{
-					`{"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otlp.log.name":"0_0_0","service.name":"myapp"}}` + "\n\r\n\r\n",
-					`{"time":0.001,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otlp.log.name":"0_0_1","service.name":"myapp"}}` + "\n\r\n\r\n",
-					`{"time":0.002,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otlp.log.name":"0_0_2","service.name":"myapp"}}` + "\n\r\n\r\n",
-					`{"time":0.003,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otlp.log.name":"0_0_3","service.name":"myapp"}}` + "\n\r\n\r\n",
+					`{"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otel.log.name":"0_0_0"}}` + "\n",
+					`{"time":0.001,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otel.log.name":"0_0_1"}}` + "\n",
+					`{"time":0.002,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otel.log.name":"0_0_2"}}` + "\n",
+					`{"time":0.003,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otel.log.name":"0_0_3"}}` + "\n",
 				},
 				numBatches: 4,
 			},
@@ -355,40 +380,40 @@ func TestReceiveLogs(t *testing.T) {
 			}(),
 			want: wantType{
 				batches: []string{
-					`{"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otlp.log.name":"0_0_0","service.name":"myapp"}}` + "\n\r\n\r\n" +
-						`{"time":0.001,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otlp.log.name":"0_0_1","service.name":"myapp"}}` + "\n\r\n\r\n",
-					`{"time":0.002,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otlp.log.name":"0_0_2","service.name":"myapp"}}` + "\n\r\n\r\n" +
-						`{"time":0.003,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otlp.log.name":"0_0_3","service.name":"myapp"}}` + "\n\r\n\r\n",
+					`{"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otel.log.name":"0_0_0"}}` + "\n" +
+						`{"time":0.001,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otel.log.name":"0_0_1"}}` + "\n",
+					`{"time":0.002,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otel.log.name":"0_0_2"}}` + "\n" +
+						`{"time":0.003,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otel.log.name":"0_0_3"}}` + "\n",
 				},
 				numBatches: 2,
 			},
 		},
 		{
-			name: "1 compressed batch of 1837 bytes, make sure the event size is more than minCompressionLen=1500 to trigger compression",
+			name: "1 compressed batch of 2037 bytes, make sure the event size is more than minCompressionLen=1500 to trigger compression",
 			logs: createLogData(1, 1, 10),
 			conf: func() *Config {
 				return NewFactory().CreateDefaultConfig().(*Config)
 			}(),
 			want: wantType{
 				batches: []string{
-					`{"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otlp.log.name":"0_0_0","service.name":"myapp"}}` + "\n\r\n\r\n" +
-						`{"time":0.001,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otlp.log.name":"0_0_1","service.name":"myapp"}}` + "\n\r\n\r\n" +
-						`{"time":0.002,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otlp.log.name":"0_0_2","service.name":"myapp"}}` + "\n\r\n\r\n" +
-						`{"time":0.003,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otlp.log.name":"0_0_3","service.name":"myapp"}}` + "\n\r\n\r\n" +
-						`{"time":0.004,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otlp.log.name":"0_0_4","service.name":"myapp"}}` + "\n\r\n\r\n" +
-						`{"time":0.005,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otlp.log.name":"0_0_5","service.name":"myapp"}}` + "\n\r\n\r\n" +
-						`{"time":0.006,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otlp.log.name":"0_0_6","service.name":"myapp"}}` + "\n\r\n\r\n" +
-						`{"time":0.007,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otlp.log.name":"0_0_7","service.name":"myapp"}}` + "\n\r\n\r\n" +
-						`{"time":0.008,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otlp.log.name":"0_0_8","service.name":"myapp"}}` + "\n\r\n\r\n" +
-						`{"time":0.009,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otlp.log.name":"0_0_9","service.name":"myapp"}}` + "\n\r\n\r\n",
+					`{"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otel.log.name":"0_0_0"}}` + "\n" +
+						`{"time":0.001,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otel.log.name":"0_0_1"}}` + "\n" +
+						`{"time":0.002,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otel.log.name":"0_0_2"}}` + "\n" +
+						`{"time":0.003,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otel.log.name":"0_0_3"}}` + "\n" +
+						`{"time":0.004,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otel.log.name":"0_0_4"}}` + "\n" +
+						`{"time":0.005,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otel.log.name":"0_0_5"}}` + "\n" +
+						`{"time":0.006,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otel.log.name":"0_0_6"}}` + "\n" +
+						`{"time":0.007,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otel.log.name":"0_0_7"}}` + "\n" +
+						`{"time":0.008,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otel.log.name":"0_0_8"}}` + "\n" +
+						`{"time":0.009,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otel.log.name":"0_0_9"}}` + "\n",
 				},
 				numBatches: 1,
 				compressed: true,
 			},
 		},
 		{
-			name: "2 compressed batches - 1916 bytes each, make sure the log size is more than minCompressionLen=1500 to trigger compression",
-			logs: createLogData(1, 1, 18), // comes to HEC events payload size - 1837 bytes
+			name: "2 compressed batches - 1832 bytes each, make sure the log size is more than minCompressionLen=1500 to trigger compression",
+			logs: createLogData(1, 1, 20),
 			conf: func() *Config {
 				cfg := NewFactory().CreateDefaultConfig().(*Config)
 				cfg.MaxContentLengthLogs = 1916
@@ -396,24 +421,26 @@ func TestReceiveLogs(t *testing.T) {
 			}(),
 			want: wantType{
 				batches: []string{
-					`{"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otlp.log.name":"0_0_0","service.name":"myapp"}}` + "\n\r\n\r\n" +
-						`{"time":0.001,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otlp.log.name":"0_0_1","service.name":"myapp"}}` + "\n\r\n\r\n" +
-						`{"time":0.002,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otlp.log.name":"0_0_2","service.name":"myapp"}}` + "\n\r\n\r\n" +
-						`{"time":0.003,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otlp.log.name":"0_0_3","service.name":"myapp"}}` + "\n\r\n\r\n" +
-						`{"time":0.004,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otlp.log.name":"0_0_4","service.name":"myapp"}}` + "\n\r\n\r\n" +
-						`{"time":0.005,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otlp.log.name":"0_0_5","service.name":"myapp"}}` + "\n\r\n\r\n" +
-						`{"time":0.006,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otlp.log.name":"0_0_6","service.name":"myapp"}}` + "\n\r\n\r\n" +
-						`{"time":0.007,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otlp.log.name":"0_0_7","service.name":"myapp"}}` + "\n\r\n\r\n" +
-						`{"time":0.008,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otlp.log.name":"0_0_8","service.name":"myapp"}}` + "\n\r\n\r\n",
-					`{"time":0.009,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otlp.log.name":"0_0_9","service.name":"myapp"}}` + "\n\r\n\r\n" +
-						`{"time":0.01,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otlp.log.name":"0_0_10","service.name":"myapp"}}` + "\n\r\n\r\n" +
-						`{"time":0.011,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otlp.log.name":"0_0_11","service.name":"myapp"}}` + "\n\r\n\r\n" +
-						`{"time":0.012,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otlp.log.name":"0_0_12","service.name":"myapp"}}` + "\n\r\n\r\n" +
-						`{"time":0.013,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otlp.log.name":"0_0_13","service.name":"myapp"}}` + "\n\r\n\r\n" +
-						`{"time":0.014,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otlp.log.name":"0_0_14","service.name":"myapp"}}` + "\n\r\n\r\n" +
-						`{"time":0.015,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otlp.log.name":"0_0_15","service.name":"myapp"}}` + "\n\r\n\r\n" +
-						`{"time":0.016,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otlp.log.name":"0_0_16","service.name":"myapp"}}` + "\n\r\n\r\n" +
-						`{"time":0.017,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otlp.log.name":"0_0_17","service.name":"myapp"}}` + "\n\r\n\r\n",
+					`{"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otel.log.name":"0_0_0"}}` + "\n" +
+						`{"time":0.001,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otel.log.name":"0_0_1"}}` + "\n" +
+						`{"time":0.002,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otel.log.name":"0_0_2"}}` + "\n" +
+						`{"time":0.003,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otel.log.name":"0_0_3"}}` + "\n" +
+						`{"time":0.004,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otel.log.name":"0_0_4"}}` + "\n" +
+						`{"time":0.005,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otel.log.name":"0_0_5"}}` + "\n" +
+						`{"time":0.006,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otel.log.name":"0_0_6"}}` + "\n" +
+						`{"time":0.007,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otel.log.name":"0_0_7"}}` + "\n" +
+						`{"time":0.008,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otel.log.name":"0_0_8"}}` + "\n" +
+						`{"time":0.009,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otel.log.name":"0_0_9"}}` + "\n",
+					`{"time":0.01,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otel.log.name":"0_0_10"}}` + "\n" +
+						`{"time":0.011,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otel.log.name":"0_0_11"}}` + "\n" +
+						`{"time":0.012,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otel.log.name":"0_0_12"}}` + "\n" +
+						`{"time":0.013,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otel.log.name":"0_0_13"}}` + "\n" +
+						`{"time":0.014,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otel.log.name":"0_0_14"}}` + "\n" +
+						`{"time":0.015,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otel.log.name":"0_0_15"}}` + "\n" +
+						`{"time":0.016,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otel.log.name":"0_0_16"}}` + "\n" +
+						`{"time":0.017,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otel.log.name":"0_0_17"}}` + "\n" +
+						`{"time":0.018,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otel.log.name":"0_0_18"}}` + "\n" +
+						`{"time":0.019,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otel.log.name":"0_0_19"}}` + "\n",
 				},
 				numBatches: 2,
 				compressed: true,
@@ -444,12 +471,12 @@ func TestReceiveLogs(t *testing.T) {
 func TestReceiveMetrics(t *testing.T) {
 	actual, err := runMetricsExport(true, 3, t)
 	assert.NoError(t, err)
-	expected := `{"host":"unknown","event":"metric","fields":{"k/n0":"vn0","k/n1":"vn1","k/r0":"vr0","k/r1":"vr1","k0":"v0","k1":"v1","metric_name:gauge_double_with_dims":1234.5678}}`
-	expected += "\n\r\n\r\n"
-	expected += `{"time":1.001,"host":"unknown","event":"metric","fields":{"k/n0":"vn0","k/n1":"vn1","k/r0":"vr0","k/r1":"vr1","k0":"v0","k1":"v1","metric_name:gauge_double_with_dims":1234.5678}}`
-	expected += "\n\r\n\r\n"
-	expected += `{"time":2.002,"host":"unknown","event":"metric","fields":{"k/n0":"vn0","k/n1":"vn1","k/r0":"vr0","k/r1":"vr1","k0":"v0","k1":"v1","metric_name:gauge_double_with_dims":1234.5678}}`
-	expected += "\n\r\n\r\n"
+	expected := `{"host":"unknown","event":"metric","fields":{"k/n0":"vn0","k/n1":"vn1","k/r0":"vr0","k/r1":"vr1","k0":"v0","k1":"v1","metric_name:gauge_double_with_dims":1234.5678,"metric_type":"Gauge"}}`
+	expected += "\n"
+	expected += `{"time":1.001,"host":"unknown","event":"metric","fields":{"k/n0":"vn0","k/n1":"vn1","k/r0":"vr0","k/r1":"vr1","k0":"v0","k1":"v1","metric_name:gauge_double_with_dims":1234.5678,"metric_type":"Gauge"}}`
+	expected += "\n"
+	expected += `{"time":2.002,"host":"unknown","event":"metric","fields":{"k/n0":"vn0","k/n1":"vn1","k/r0":"vr0","k/r1":"vr1","k0":"v0","k1":"v1","metric_name:gauge_double_with_dims":1234.5678,"metric_type":"Gauge"}}`
+	expected += "\n"
 	assert.Equal(t, expected, actual)
 }
 
@@ -490,7 +517,7 @@ func TestErrorReceived(t *testing.T) {
 	cfg.DisableCompression = true
 	cfg.Token = "1234-1234"
 
-	params := component.ExporterCreateParams{Logger: zap.NewNop()}
+	params := componenttest.NewNopExporterCreateSettings()
 	exporter, err := factory.CreateTracesExporter(context.Background(), params, cfg)
 	assert.NoError(t, err)
 	assert.NoError(t, exporter.Start(context.Background(), componenttest.NewNopHost()))
@@ -534,7 +561,7 @@ func TestInvalidURL(t *testing.T) {
 	cfg.RetrySettings.Enabled = false
 	cfg.Endpoint = "ftp://example.com:134"
 	cfg.Token = "1234-1234"
-	params := component.ExporterCreateParams{Logger: zap.NewNop()}
+	params := componenttest.NewNopExporterCreateSettings()
 	exporter, err := factory.CreateTracesExporter(context.Background(), params, cfg)
 	assert.NoError(t, err)
 	assert.NoError(t, exporter.Start(context.Background(), componenttest.NewNopHost()))
@@ -657,6 +684,7 @@ func Test_pushLogData_nil_Logs(t *testing.T) {
 			return gzip.NewWriter(nil)
 		}},
 		config: NewFactory().CreateDefaultConfig().(*Config),
+		logger: zaptest.NewLogger(t),
 	}
 
 	for _, test := range tests {
@@ -677,6 +705,7 @@ func Test_pushLogData_InvalidLog(t *testing.T) {
 			return gzip.NewWriter(nil)
 		}},
 		config: &Config{},
+		logger: zaptest.NewLogger(t),
 	}
 
 	logs := pdata.NewLogs()
@@ -696,6 +725,7 @@ func Test_pushLogData_PostError(t *testing.T) {
 			return gzip.NewWriter(nil)
 		}},
 		config: NewFactory().CreateDefaultConfig().(*Config),
+		logger: zaptest.NewLogger(t),
 	}
 
 	// 2000 log records -> ~371888 bytes when JSON encoded.
@@ -737,13 +767,14 @@ func Test_pushLogData_ShouldAddResponseTo400Error(t *testing.T) {
 			return gzip.NewWriter(nil)
 		}},
 		config: NewFactory().CreateDefaultConfig().(*Config),
+		logger: zaptest.NewLogger(t),
 	}
 	logs := createLogData(1, 1, 1)
 
 	responseBody := `some error occurred`
 
 	// An HTTP client that returns status code 400 and response body responseBody.
-	splunkClient.client = newTestClient(400, responseBody)
+	splunkClient.client, _ = newTestClient(400, responseBody)
 	// Sending logs using the client.
 	err := splunkClient.pushLogData(context.Background(), logs)
 	// TODO: Uncomment after consumererror.Logs implements method Unwrap.
@@ -753,7 +784,7 @@ func Test_pushLogData_ShouldAddResponseTo400Error(t *testing.T) {
 	assert.Contains(t, err.Error(), responseBody)
 
 	// An HTTP client that returns some other status code other than 400 and response body responseBody.
-	splunkClient.client = newTestClient(500, responseBody)
+	splunkClient.client, _ = newTestClient(500, responseBody)
 	// Sending logs using the client.
 	err = splunkClient.pushLogData(context.Background(), logs)
 	// TODO: Uncomment after consumererror.Logs implements method Unwrap.
@@ -763,12 +794,133 @@ func Test_pushLogData_ShouldAddResponseTo400Error(t *testing.T) {
 	assert.NotContains(t, err.Error(), responseBody)
 }
 
+func Test_pushLogData_ShouldReturnUnsentLogsOnly(t *testing.T) {
+	config := NewFactory().CreateDefaultConfig().(*Config)
+	c := client{
+		url: &url.URL{Scheme: "http", Host: "splunk"},
+		zippers: sync.Pool{New: func() interface{} {
+			return gzip.NewWriter(nil)
+		}},
+		config: config,
+		logger: zaptest.NewLogger(t),
+	}
+
+	// Just two records
+	logs := createLogData(2, 1, 1)
+
+	// Each record is about 200 bytes, so the 250-byte buffer will fit only one at a time
+	c.config.MaxContentLengthLogs, c.config.DisableCompression = 250, true
+
+	// The first record is to be sent successfully, the second one should not
+	c.client, _ = newTestClientWithPresetResponses([]int{200, 400}, []string{"OK", "NOK"})
+
+	err := c.pushLogData(context.Background(), logs)
+	require.Error(t, err)
+	assert.IsType(t, consumererror.Logs{}, err)
+
+	// Only the record that was not successfully sent should be returned
+	assert.Equal(t, 1, (err.(consumererror.Logs)).GetLogs().ResourceLogs().Len())
+	assert.Equal(t, logs.ResourceLogs().At(1), (err.(consumererror.Logs)).GetLogs().ResourceLogs().At(0))
+}
+
+func Test_pushLogData_ShouldAddHeadersForProfilingData(t *testing.T) {
+	c := client{
+		url: &url.URL{Scheme: "http", Host: "splunk"},
+		zippers: sync.Pool{New: func() interface{} {
+			return gzip.NewWriter(nil)
+		}},
+		config: NewFactory().CreateDefaultConfig().(*Config),
+		logger: zaptest.NewLogger(t),
+	}
+
+	logs := createLogDataWithCustomLibraries(1, []string{"otel.logs", "otel.profiling"}, []int{10, 20})
+	var headers *[]http.Header
+
+	c.client, headers = newTestClient(200, "OK")
+	// A 300-byte buffer only fits one record (around 200 bytes), so each record will be sent separately
+	c.config.MaxContentLengthLogs, c.config.DisableCompression = 300, true
+
+	err := c.pushLogData(context.Background(), logs)
+	require.NoError(t, err)
+	assert.Equal(t, 30, len(*headers))
+
+	profilingCount, nonProfilingCount := 0, 0
+	for i := range *headers {
+		if (*headers)[i].Get(libraryHeaderName) == profilingLibraryName {
+			profilingCount++
+		} else {
+			nonProfilingCount++
+		}
+	}
+
+	assert.Equal(t, 20, profilingCount)
+	assert.Equal(t, 10, nonProfilingCount)
+}
+
+func Benchmark_pushLogData_100_10_10_1024(b *testing.B) {
+	benchPushLogData(b, 100, 10, 10, 1024)
+}
+
+func Benchmark_pushLogData_10_100_100_1024(b *testing.B) {
+	benchPushLogData(b, 10, 100, 100, 1024)
+}
+
+func Benchmark_pushLogData_10_0_100_1024(b *testing.B) {
+	benchPushLogData(b, 10, 0, 100, 1024)
+}
+
+func Benchmark_pushLogData_10_100_0_1024(b *testing.B) {
+	benchPushLogData(b, 10, 100, 0, 1024)
+}
+
+func Benchmark_pushLogData_10_10_10_256(b *testing.B) {
+	benchPushLogData(b, 10, 10, 10, 256)
+}
+
+func Benchmark_pushLogData_10_10_10_1024(b *testing.B) {
+	benchPushLogData(b, 10, 10, 10, 1024)
+}
+
+func Benchmark_pushLogData_10_10_10_8K(b *testing.B) {
+	benchPushLogData(b, 10, 10, 10, 8*1024)
+}
+
+func Benchmark_pushLogData_10_10_10_1M(b *testing.B) {
+	benchPushLogData(b, 10, 10, 10, 1024*1024)
+}
+func Benchmark_pushLogData_10_1_1_1024(b *testing.B) {
+	benchPushLogData(b, 10, 1, 1, 1024)
+}
+
+func benchPushLogData(b *testing.B, numResources int, numProfiling int, numNonProfiling int, bufSize uint) {
+	c := client{
+		url: &url.URL{Scheme: "http", Host: "splunk"},
+		zippers: sync.Pool{New: func() interface{} {
+			return gzip.NewWriter(nil)
+		}},
+		config: NewFactory().CreateDefaultConfig().(*Config),
+		logger: zaptest.NewLogger(b),
+	}
+
+	c.client, _ = newTestClient(200, "OK")
+	c.config.MaxContentLengthLogs = bufSize
+	logs := createLogDataWithCustomLibraries(numResources, []string{"otel.logs", "otel.profiling"}, []int{numNonProfiling, numProfiling})
+
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		err := c.pushLogData(context.Background(), logs)
+		require.NoError(b, err)
+	}
+}
+
 func Test_pushLogData_Small_MaxContentLength(t *testing.T) {
 	c := client{
 		zippers: sync.Pool{New: func() interface{} {
 			return gzip.NewWriter(nil)
 		}},
 		config: NewFactory().CreateDefaultConfig().(*Config),
+		logger: zaptest.NewLogger(t),
 	}
 	c.config.MaxContentLengthLogs = 1
 
@@ -790,8 +942,8 @@ func TestSubLogs(t *testing.T) {
 	logs := createLogData(2, 2, 3)
 
 	// Logs subset from leftmost index (resource 0, library 0, record 0).
-	_0_0_0 := &logIndex{resource: 0, library: 0, record: 0}
-	got := subLogs(&logs, _0_0_0)
+	_0_0_0 := &logIndex{resource: 0, library: 0, record: 0} //revive:disable-line:var-naming
+	got := subLogs(&logs, _0_0_0, nil)
 
 	// Number of logs in subset should equal original logs.
 	assert.Equal(t, logs.LogRecordCount(), got.LogRecordCount())
@@ -802,8 +954,8 @@ func TestSubLogs(t *testing.T) {
 	assert.Equal(t, "1_1_2", got.ResourceLogs().At(1).InstrumentationLibraryLogs().At(1).Logs().At(2).Name())
 
 	// Logs subset from some mid index (resource 0, library 1, log 2).
-	_0_1_2 := &logIndex{resource: 0, library: 1, record: 2}
-	got = subLogs(&logs, _0_1_2)
+	_0_1_2 := &logIndex{resource: 0, library: 1, record: 2} //revive:disable-line:var-naming
+	got = subLogs(&logs, _0_1_2, nil)
 
 	assert.Equal(t, 7, got.LogRecordCount())
 
@@ -813,14 +965,33 @@ func TestSubLogs(t *testing.T) {
 	assert.Equal(t, "1_1_2", got.ResourceLogs().At(1).InstrumentationLibraryLogs().At(1).Logs().At(2).Name())
 
 	// Logs subset from rightmost index (resource 1, library 1, log 2).
-	_1_1_2 := &logIndex{resource: 1, library: 1, record: 2}
-	got = subLogs(&logs, _1_1_2)
+	_1_1_2 := &logIndex{resource: 1, library: 1, record: 2} //revive:disable-line:var-naming
+	got = subLogs(&logs, _1_1_2, nil)
 
 	// Number of logs in subset should be 1.
 	assert.Equal(t, 1, got.LogRecordCount())
 
 	// The name of the sole log record should be 1_1_2.
 	assert.Equal(t, "1_1_2", got.ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).Logs().At(0).Name())
+
+	// Now see how profiling and log data are merged
+	logs = createLogDataWithCustomLibraries(2, []string{"otel.logs", "otel.profiling"}, []int{10, 10})
+	slice := &logIndex{resource: 1, library: 0, record: 5}
+	profSlice := &logIndex{resource: 0, library: 1, record: 8}
+
+	got = subLogs(&logs, slice, profSlice)
+
+	assert.Equal(t, 5+2+10, got.LogRecordCount())
+	assert.Equal(t, "otel.logs", got.ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).InstrumentationLibrary().Name())
+	assert.Equal(t, "1_0_5", got.ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).Logs().At(0).Name())
+	assert.Equal(t, "1_0_9", got.ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).Logs().At(4).Name())
+
+	assert.Equal(t, "otel.profiling", got.ResourceLogs().At(1).InstrumentationLibraryLogs().At(0).InstrumentationLibrary().Name())
+	assert.Equal(t, "0_1_8", got.ResourceLogs().At(1).InstrumentationLibraryLogs().At(0).Logs().At(0).Name())
+	assert.Equal(t, "0_1_9", got.ResourceLogs().At(1).InstrumentationLibraryLogs().At(0).Logs().At(1).Name())
+	assert.Equal(t, "otel.profiling", got.ResourceLogs().At(2).InstrumentationLibraryLogs().At(0).InstrumentationLibrary().Name())
+	assert.Equal(t, "1_1_0", got.ResourceLogs().At(2).InstrumentationLibraryLogs().At(0).Logs().At(0).Name())
+	assert.Equal(t, "1_1_9", got.ResourceLogs().At(2).InstrumentationLibraryLogs().At(0).Logs().At(9).Name())
 }
 
 // validateCompressedEqual validates that GZipped `got` contains `expected` string

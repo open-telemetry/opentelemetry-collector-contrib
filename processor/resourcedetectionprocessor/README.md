@@ -3,7 +3,7 @@
 Supported pipeline types: metrics, traces, logs
 
 The resource detection processor can be used to detect resource information from the host,
-in a format that conforms to the [OpenTelemetry resource semantic conventions](https://github.com/open-telemetry/opentelemetry-main/specification/resource/semantic_conventions/README.md), and append or
+in a format that conforms to the [OpenTelemetry resource semantic conventions](https://github.com/open-telemetry/opentelemetry-specification/tree/main/specification/resource/semantic_conventions/), and append or
 override the resource value in telemetry data with this information.
 
 Currently supported detectors include:
@@ -16,6 +16,21 @@ details of which are currently pending confirmation in the OpenTelemetry specifi
 
     * host.name
     * os.type
+
+By default `host.name` is being set to FQDN if possible, and a hostname provided by OS used as fallback.
+This logic can be changed with `hostname_sources` configuration which is set to `["dns", "os"]` by default.
+
+Use the following config to avoid getting FQDN and apply hostname provided by OS only:
+
+    ```yaml
+    detectors: ["system"]
+    system:
+        hostname_sources: ["os"]
+    ```
+
+    * all valid options for hostname_sources:
+        * "dns"
+        * "os"
 
 Use the Docker detector (see below) if running the Collector as a Docker container.
 
@@ -100,7 +115,6 @@ ec2:
 
     * cloud.provider ("aws")
     * cloud.platform ("aws_eks")
-    * k8s.cluster.name (name of the EKS cluster)
     
 * Azure: Queries the [Azure Instance Metadata Service](https://aka.ms/azureimds) to retrieve the following resource attributes:
 

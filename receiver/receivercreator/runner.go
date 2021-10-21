@@ -21,7 +21,7 @@ import (
 	"github.com/spf13/cast"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/config/configloader"
+	"go.opentelemetry.io/collector/config/configunmarshaler"
 	"go.opentelemetry.io/collector/consumer"
 )
 
@@ -35,7 +35,7 @@ type runner interface {
 
 // receiverRunner handles starting/stopping of a concrete subreceiver instance.
 type receiverRunner struct {
-	params      component.ReceiverCreateParams
+	params      component.ReceiverCreateSettings
 	idNamespace config.ComponentID
 	host        component.Host
 }
@@ -84,19 +84,15 @@ func (run *receiverRunner) loadRuntimeReceiverConfig(
 	receiver receiverConfig,
 	discoveredConfig userConfigMap,
 ) (config.Receiver, error) {
-	mergedConfig := config.NewParser()
-
 	// Merge in the config values specified in the config file.
-	if err := mergedConfig.MergeStringMap(receiver.config); err != nil {
-		return nil, fmt.Errorf("failed to merge template config from config file: %v", err)
-	}
+	mergedConfig := config.NewMapFromStringMap(receiver.config)
 
 	// Merge in discoveredConfig containing values discovered at runtime.
-	if err := mergedConfig.MergeStringMap(discoveredConfig); err != nil {
+	if err := mergedConfig.Merge(config.NewMapFromStringMap(discoveredConfig)); err != nil {
 		return nil, fmt.Errorf("failed to merge template config from discovered runtime values: %v", err)
 	}
 
-	receiverConfig, err := configloader.LoadReceiver(mergedConfig, receiver.id, factory)
+	receiverConfig, err := configunmarshaler.LoadReceiver(mergedConfig, receiver.id, factory)
 	if err != nil {
 		return nil, fmt.Errorf("failed to load template config: %v", err)
 	}

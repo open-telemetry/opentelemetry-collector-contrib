@@ -25,19 +25,20 @@ import (
 	"github.com/prometheus/prometheus/discovery"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/receiver/prometheusreceiver"
 	"k8s.io/client-go/rest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver"
 )
 
 type prometheusReceiverWrapper struct {
-	params            component.ReceiverCreateParams
+	params            component.ReceiverCreateSettings
 	config            *Config
 	consumer          consumer.Metrics
 	prometheusRecever component.MetricsReceiver
 }
 
 // new returns a prometheusReceiverWrapper
-func new(params component.ReceiverCreateParams, cfg *Config, consumer consumer.Metrics) *prometheusReceiverWrapper {
+func new(params component.ReceiverCreateSettings, cfg *Config, consumer consumer.Metrics) *prometheusReceiverWrapper {
 	return &prometheusReceiverWrapper{params: params, config: cfg, consumer: consumer}
 }
 

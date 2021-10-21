@@ -24,6 +24,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtest"
+	"go.opentelemetry.io/collector/receiver/scraperhelper"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -32,15 +33,13 @@ func TestLoadConfig(t *testing.T) {
 
 	factory := NewFactory()
 	factories.Receivers[typeStr] = factory
-	cfg, err := configtest.LoadConfigFile(
-		t, path.Join(".", "testdata", "config.yaml"), factories,
-	)
+	cfg, err := configtest.LoadConfigAndValidate(path.Join(".", "testdata", "config.yaml"), factories)
 
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 	assert.Equal(t, 2, len(cfg.Receivers))
 
-	defaultConfig := cfg.Receivers[config.NewID(typeStr)]
+	defaultConfig := cfg.Receivers[config.NewComponentID(typeStr)]
 	assert.Equal(t, factory.CreateDefaultConfig(), defaultConfig)
 
 	dcfg := defaultConfig.(*Config)
@@ -48,6 +47,7 @@ func TestLoadConfig(t *testing.T) {
 	assert.Equal(t, "unix:///var/run/docker.sock", dcfg.Endpoint)
 	assert.Equal(t, 10*time.Second, dcfg.CollectionInterval)
 	assert.Equal(t, 5*time.Second, dcfg.Timeout)
+	assert.Equal(t, defaultDockerAPIVersion, dcfg.DockerAPIVersion)
 
 	assert.Nil(t, dcfg.ExcludedImages)
 	assert.Nil(t, dcfg.ContainerLabelsToMetricLabels)
@@ -55,11 +55,12 @@ func TestLoadConfig(t *testing.T) {
 
 	assert.False(t, dcfg.ProvidePerCoreCPUMetrics)
 
-	ascfg := cfg.Receivers[config.NewIDWithName(typeStr, "allsettings")].(*Config)
+	ascfg := cfg.Receivers[config.NewComponentIDWithName(typeStr, "allsettings")].(*Config)
 	assert.Equal(t, "docker_stats/allsettings", ascfg.ID().String())
 	assert.Equal(t, "http://example.com/", ascfg.Endpoint)
 	assert.Equal(t, 2*time.Second, ascfg.CollectionInterval)
 	assert.Equal(t, 20*time.Second, ascfg.Timeout)
+	assert.Equal(t, 1.24, ascfg.DockerAPIVersion)
 
 	assert.Equal(t, []string{
 		"undesired-container",
@@ -72,9 +73,20 @@ func TestLoadConfig(t *testing.T) {
 	}, ascfg.ContainerLabelsToMetricLabels)
 
 	assert.Equal(t, map[string]string{
-		"my_environment_variable":       "my-metric-label",
-		"my_other_environment_variable": "my-other-metric-label",
+		"MY_ENVIRONMENT_VARIABLE":       "my-metric-label",
+		"MY_OTHER_ENVIRONMENT_VARIABLE": "my-other-metric-label",
 	}, ascfg.EnvVarsToMetricLabels)
 
 	assert.True(t, ascfg.ProvidePerCoreCPUMetrics)
+}
+
+func TestValidateErrors(t *testing.T) {
+	cfg := &Config{}
+	assert.Equal(t, "endpoint must be specified", cfg.Validate().Error())
+
+	cfg = &Config{Endpoint: "someEndpoint"}
+	assert.Equal(t, "collection_interval must be a positive duration", cfg.Validate().Error())
+
+	cfg = &Config{ScraperControllerSettings: scraperhelper.ScraperControllerSettings{CollectionInterval: 1 * time.Second}, Endpoint: "someEndpoint", DockerAPIVersion: 1.21}
+	assert.Equal(t, "api_version must be at least 1.22", cfg.Validate().Error())
 }

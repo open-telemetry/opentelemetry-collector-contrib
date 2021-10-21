@@ -22,8 +22,8 @@ import (
 	"go.opencensus.io/stats"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/consumer/consumererror"
-	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/model/pdata"
+	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchpersignal"
@@ -80,13 +80,11 @@ func newGroupByTraceProcessor(logger *zap.Logger, st storage, nextConsumer consu
 }
 
 func (sp *groupByTraceProcessor) ConsumeTraces(_ context.Context, td pdata.Traces) error {
-	var errors []error
+	var errs error
 	for _, singleTrace := range batchpersignal.SplitTraces(td) {
-		if err := sp.eventMachine.consume(singleTrace); err != nil {
-			errors = append(errors, err)
-		}
+		errs = multierr.Append(errs, sp.eventMachine.consume(singleTrace))
 	}
-	return consumererror.Combine(errors)
+	return errs
 }
 
 func (sp *groupByTraceProcessor) Capabilities() consumer.Capabilities {
@@ -213,7 +211,8 @@ func (sp *groupByTraceProcessor) markAsReleased(traceID pdata.TraceID, fire func
 func (sp *groupByTraceProcessor) onTraceReleased(rss []pdata.ResourceSpans) error {
 	trace := pdata.NewTraces()
 	for _, rs := range rss {
-		trace.ResourceSpans().Append(rs)
+		trs := trace.ResourceSpans().AppendEmpty()
+		rs.CopyTo(trs)
 	}
 	stats.Record(context.Background(),
 		mReleasedSpans.M(int64(trace.SpanCount())),
@@ -245,58 +244,4 @@ func (sp *groupByTraceProcessor) onTraceRemoved(traceID pdata.TraceID) error {
 func (sp *groupByTraceProcessor) addSpans(traceID pdata.TraceID, trace pdata.Traces) error {
 	sp.logger.Debug("creating trace at the storage", zap.String("traceID", traceID.HexString()))
 	return sp.st.createOrAppend(traceID, trace)
-}
-
-type singleTraceBatch struct {
-	traceID pdata.TraceID
-	rs      pdata.ResourceSpans
-}
-
-func splitByTrace(rs pdata.ResourceSpans) []*singleTraceBatch {
-	// for each span in the resource spans, we group them into batches of rs/ils/traceID.
-	// if the same traceID exists in different ils, they land in different batches.
-	var result []*singleTraceBatch
-
-	for i := 0; i < rs.InstrumentationLibrarySpans().Len(); i++ {
-		// the batches for this ILS
-		batches := map[string]*singleTraceBatch{}
-
-		ils := rs.InstrumentationLibrarySpans().At(i)
-		for j := 0; j < ils.Spans().Len(); j++ {
-			span := ils.Spans().At(j)
-			if span.TraceID().IsEmpty() {
-				// this should have already been caught before our processor, but let's
-				// protect ourselves against bad clients
-				continue
-			}
-
-			sTraceID := span.TraceID().HexString()
-
-			// for the first traceID in the ILS, initialize the map entry
-			// and add the singleTraceBatch to the result list
-			if _, ok := batches[sTraceID]; !ok {
-				newRS := pdata.NewResourceSpans()
-				// currently, the ResourceSpans implementation has only a Resource and an ILS. We'll copy the Resource
-				// and set our own ILS
-				rs.Resource().CopyTo(newRS.Resource())
-
-				newILS := newRS.InstrumentationLibrarySpans().AppendEmpty()
-				// currently, the ILS implementation has only an InstrumentationLibrary and spans. We'll copy the library
-				// and set our own spans
-				ils.InstrumentationLibrary().CopyTo(newILS.InstrumentationLibrary())
-
-				batch := &singleTraceBatch{
-					traceID: span.TraceID(),
-					rs:      newRS,
-				}
-				batches[sTraceID] = batch
-				result = append(result, batch)
-			}
-
-			// there is only one instrumentation library per batch
-			batches[sTraceID].rs.InstrumentationLibrarySpans().At(0).Spans().Append(span)
-		}
-	}
-
-	return result
 }

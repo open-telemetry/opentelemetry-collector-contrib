@@ -30,9 +30,10 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/processor/processorhelper"
-	"go.opentelemetry.io/collector/translator/internaldata"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/testing/protocmp"
+
+	internaldata "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus"
 )
 
 type metricsGroupingTest struct {
@@ -173,8 +174,8 @@ func TestMetricsGrouping(t *testing.T) {
 			p := newMetricsTransformProcessor(zap.NewExample(), test.transforms)
 
 			mtp, err := processorhelper.NewMetricsProcessor(&Config{
-				ProcessorSettings: config.NewProcessorSettings(config.NewID(typeStr)),
-			}, next, p, processorhelper.WithCapabilities(consumerCapabilities))
+				ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
+			}, next, p.processMetrics, processorhelper.WithCapabilities(consumerCapabilities))
 
 			require.NoError(t, err)
 

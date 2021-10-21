@@ -26,12 +26,12 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/config/confignet"
-	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/testutil"
+	"go.opentelemetry.io/collector/model/pdata"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest/observer"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zookeeperreceiver/internal/metadata"
 )
 
@@ -234,22 +234,22 @@ func TestZookeeperMetricsScraperScrape(t *testing.T) {
 
 			if tt.wantErr {
 				require.Error(t, err)
-				require.Equal(t, pdata.NewResourceMetricsSlice(), got)
+				require.Equal(t, pdata.NewMetrics(), got)
 
 				require.NoError(t, z.shutdown(ctx))
 				return
 			}
 
-			require.Equal(t, tt.expectedNumResourceMetrics, got.Len())
+			require.Equal(t, tt.expectedNumResourceMetrics, got.ResourceMetrics().Len())
 			for i := 0; i < tt.expectedNumResourceMetrics; i++ {
-				resource := got.At(i).Resource()
+				resource := got.ResourceMetrics().At(i).Resource()
 				require.Equal(t, len(tt.expectedResourceAttributes), resource.Attributes().Len())
 				resource.Attributes().Range(func(k string, v pdata.AttributeValue) bool {
 					require.Equal(t, tt.expectedResourceAttributes[k], v.StringVal())
 					return true
 				})
 
-				ilms := got.At(0).InstrumentationLibraryMetrics()
+				ilms := got.ResourceMetrics().At(0).InstrumentationLibraryMetrics()
 				require.Equal(t, 1, ilms.Len())
 
 				metrics := ilms.At(0).Metrics()
@@ -268,10 +268,10 @@ func TestZookeeperMetricsScraperScrape(t *testing.T) {
 func assertMetricValid(t *testing.T, metric pdata.Metric, descriptor pdata.Metric) {
 	assertDescriptorEqual(t, descriptor, metric)
 	switch metric.DataType() {
-	case pdata.MetricDataTypeIntGauge:
-		require.GreaterOrEqual(t, metric.IntGauge().DataPoints().Len(), 1)
-	case pdata.MetricDataTypeIntSum:
-		require.GreaterOrEqual(t, metric.IntSum().DataPoints().Len(), 1)
+	case pdata.MetricDataTypeGauge:
+		require.GreaterOrEqual(t, metric.Gauge().DataPoints().Len(), 1)
+	case pdata.MetricDataTypeSum:
+		require.GreaterOrEqual(t, metric.Sum().DataPoints().Len(), 1)
 	}
 }
 

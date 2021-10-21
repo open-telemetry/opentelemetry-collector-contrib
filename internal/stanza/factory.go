@@ -45,7 +45,7 @@ func NewFactory(logReceiverType LogReceiverType) component.ReceiverFactory {
 func createLogsReceiver(logReceiverType LogReceiverType) receiverhelper.CreateLogsReceiver {
 	return func(
 		ctx context.Context,
-		params component.ReceiverCreateParams,
+		params component.ReceiverCreateSettings,
 		cfg config.Receiver,
 		nextConsumer consumer.Logs,
 	) (component.LogsReceiver, error) {

@@ -17,7 +17,7 @@
   <a href="https://circleci.com/gh/open-telemetry/opentelemetry-collector-contrib">
     <img alt="Build Status" src="https://img.shields.io/circleci/build/github/open-telemetry/opentelemetry-collector-contrib?style=for-the-badge">
   </a>
-  <a href="https://codecov.io/gh/open-telemetry/opentelemetry-collector-contrib/branch/master/">
+  <a href="https://codecov.io/gh/open-telemetry/opentelemetry-collector-contrib/branch/main/">
     <img alt="Codecov Status" src="https://img.shields.io/codecov/c/github/open-telemetry/opentelemetry-collector-contrib?style=for-the-badge">
   </a>
   <a href="https://github.com/open-telemetry/opentelemetry-collector-contrib/releases">
@@ -61,16 +61,17 @@ See [CONTRIBUTING.md](CONTRIBUTING.md).
 
 Triagers ([@open-telemetry/collector-contrib-triagers](https://github.com/orgs/open-telemetry/teams/collector-contrib-triagers))
 - [Alolita Sharma](https://github.com/alolita), AWS
+- [Punya Biswal](https://github.com/punya), Google
 - [Steve Flanders](https://github.com/flands), Splunk
 
 Approvers ([@open-telemetry/collector-contrib-approvers](https://github.com/orgs/open-telemetry/teams/collector-contrib-approvers)):
 
+- [Alex Boten](https://github.com/codeboten), Lightstep
 - [Anthony Mirabella](https://github.com/Aneurysm9), AWS
 - [Anuraag Agrawal](https://github.com/anuraaga), AWS
 - [Daniel Jaglowski](https://github.com/djaglowski), observIQ
 - [Dmitrii Anoshin](https://github.com/dmitryax), Splunk
-- [Jay Camp](https://github.com/jrcamp), Splunk
-- [Juraci Paixão Kröhling](https://github.com/jpkrohling), Red Hat
+- [Juraci Paixão Kröhling](https://github.com/jpkrohling), Grafana Labs
 - [Kevin Brockhoff](https://github.com/kbrockhoff), Daugherty Business Solutions
 - [Pablo Baeyens](https://github.com/mx-psi), DataDog
 - [Owais Lone](https://github.com/owais), Splunk

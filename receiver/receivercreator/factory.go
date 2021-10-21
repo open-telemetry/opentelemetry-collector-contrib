@@ -20,8 +20,8 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
+	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
-	"go.opentelemetry.io/collector/translator/conventions"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer"
 )
@@ -42,17 +42,17 @@ func NewFactory() component.ReceiverFactory {
 
 func createDefaultConfig() config.Receiver {
 	return &Config{
-		ReceiverSettings: config.NewReceiverSettings(config.NewID(typeStr)),
+		ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
 		ResourceAttributes: resourceAttributes{
 			observer.PodType: map[string]string{
-				conventions.AttributeK8sPod:       "`name`",
-				conventions.AttributeK8sPodUID:    "`uid`",
-				conventions.AttributeK8sNamespace: "`namespace`",
+				conventions.AttributeK8SPodName:       "`name`",
+				conventions.AttributeK8SPodUID:        "`uid`",
+				conventions.AttributeK8SNamespaceName: "`namespace`",
 			},
 			observer.PortType: map[string]string{
-				conventions.AttributeK8sPod:       "`pod.name`",
-				conventions.AttributeK8sPodUID:    "`pod.uid`",
-				conventions.AttributeK8sNamespace: "`pod.namespace`",
+				conventions.AttributeK8SPodName:       "`pod.name`",
+				conventions.AttributeK8SPodUID:        "`pod.uid`",
+				conventions.AttributeK8SNamespaceName: "`pod.namespace`",
 			},
 		},
 		receiverTemplates: map[string]receiverTemplate{},
@@ -61,7 +61,7 @@ func createDefaultConfig() config.Receiver {
 
 func createMetricsReceiver(
 	ctx context.Context,
-	params component.ReceiverCreateParams,
+	params component.ReceiverCreateSettings,
 	cfg config.Receiver,
 	consumer consumer.Metrics,
 ) (component.MetricsReceiver, error) {

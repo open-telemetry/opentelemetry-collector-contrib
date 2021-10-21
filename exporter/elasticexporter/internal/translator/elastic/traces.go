@@ -25,8 +25,8 @@ import (
 
 	"go.elastic.co/apm/model"
 	"go.elastic.co/fastjson"
-	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/translator/conventions"
+	"go.opentelemetry.io/collector/model/pdata"
+	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
 )
 
 // EncodeSpan encodes an OpenTelemetry span, and instrumentation library information,
@@ -52,7 +52,7 @@ func EncodeSpan(
 
 	name := truncate(otlpSpan.Name())
 	var transactionContext transactionContext
-	if root || otlpSpan.Kind() == pdata.SpanKindSERVER {
+	if root || otlpSpan.Kind() == pdata.SpanKindServer {
 		transaction := model.Transaction{
 			ID:        spanID,
 			TraceID:   traceID,
@@ -91,10 +91,7 @@ func EncodeSpan(
 		}
 		w.RawString("}\n")
 	}
-	if err := encodeSpanEvents(otlpSpan.Events(), otlpResource, traceID, spanID, w); err != nil {
-		return err
-	}
-	return nil
+	return encodeSpanEvents(otlpSpan.Events(), otlpResource, traceID, spanID, w)
 }
 
 func setTransactionProperties(

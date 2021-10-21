@@ -43,13 +43,13 @@ func NewFactory() component.ProcessorFactory {
 
 func createDefaultConfig() config.Processor {
 	return &Config{
-		ProcessorSettings: config.NewProcessorSettings(config.NewID(typeStr)),
+		ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
 	}
 }
 
 func createMetricsProcessor(
 	ctx context.Context,
-	params component.ProcessorCreateParams,
+	params component.ProcessorCreateSettings,
 	cfg config.Processor,
 	nextConsumer consumer.Metrics,
 ) (component.MetricsProcessor, error) {
@@ -58,12 +58,16 @@ func createMetricsProcessor(
 		return nil, err
 	}
 
-	metricsProcessor := newMetricsTransformProcessor(params.Logger, buildHelperConfig(oCfg, params.BuildInfo.Version))
+	hCfg, err := buildHelperConfig(oCfg, params.BuildInfo.Version)
+	if err != nil {
+		return nil, err
+	}
+	metricsProcessor := newMetricsTransformProcessor(params.Logger, hCfg)
 
 	return processorhelper.NewMetricsProcessor(
 		cfg,
 		nextConsumer,
-		metricsProcessor,
+		metricsProcessor.processMetrics,
 		processorhelper.WithCapabilities(consumerCapabilities))
 }
 
@@ -80,7 +84,7 @@ func validateConfiguration(config *Config) error {
 		}
 
 		if transform.MetricIncludeFilter.MatchType != "" && !transform.MetricIncludeFilter.MatchType.isValid() {
-			return fmt.Errorf("%q must be in %q", MatchTypeFieldName, MatchTypes)
+			return fmt.Errorf("%q must be in %q", MatchTypeFieldName, matchTypes)
 		}
 
 		if transform.MetricIncludeFilter.MatchType == RegexpMatchType {
@@ -91,7 +95,7 @@ func validateConfiguration(config *Config) error {
 		}
 
 		if !transform.Action.isValid() {
-			return fmt.Errorf("%q must be in %q", ActionFieldName, Actions)
+			return fmt.Errorf("%q must be in %q", ActionFieldName, actions)
 		}
 
 		if transform.Action == Insert && transform.NewName == "" {
@@ -99,20 +103,20 @@ func validateConfiguration(config *Config) error {
 		}
 
 		if transform.Action == Group && transform.GroupResourceLabels == nil {
-			return fmt.Errorf("missing required field %q while %q is %v", GroupResouceLabelsFieldName, ActionFieldName, Group)
+			return fmt.Errorf("missing required field %q while %q is %v", GroupResourceLabelsFieldName, ActionFieldName, Group)
 		}
 
 		if transform.AggregationType != "" && !transform.AggregationType.isValid() {
-			return fmt.Errorf("%q must be in %q", AggregationTypeFieldName, AggregationTypes)
+			return fmt.Errorf("%q must be in %q", AggregationTypeFieldName, aggregationTypes)
 		}
 
 		if transform.SubmatchCase != "" && !transform.SubmatchCase.isValid() {
-			return fmt.Errorf("%q must be in %q", SubmatchCaseFieldName, SubmatchCases)
+			return fmt.Errorf("%q must be in %q", SubmatchCaseFieldName, submatchCases)
 		}
 
 		for i, op := range transform.Operations {
 			if !op.Action.isValid() {
-				return fmt.Errorf("operation %v: %q must be in %q", i+1, ActionFieldName, OperationActions)
+				return fmt.Errorf("operation %v: %q must be in %q", i+1, ActionFieldName, operationActions)
 			}
 
 			if op.Action == UpdateLabel && op.Label == "" {
@@ -124,9 +128,12 @@ func validateConfiguration(config *Config) error {
 			if op.Action == AddLabel && op.NewValue == "" {
 				return fmt.Errorf("operation %v: missing required field %q while %q is %v", i+1, NewValueFieldName, ActionFieldName, AddLabel)
 			}
+			if op.Action == ScaleValue && op.Scale == 0 {
+				return fmt.Errorf("operation %v: missing required field %q while %q is %v", i+1, ScaleFieldName, ActionFieldName, ScaleValue)
+			}
 
 			if op.AggregationType != "" && !op.AggregationType.isValid() {
-				return fmt.Errorf("operation %v: %q must be in %q", i+1, AggregationTypeFieldName, AggregationTypes)
+				return fmt.Errorf("operation %v: %q must be in %q", i+1, AggregationTypeFieldName, aggregationTypes)
 			}
 		}
 	}
@@ -134,7 +141,7 @@ func validateConfiguration(config *Config) error {
 }
 
 // buildHelperConfig constructs the maps that will be useful for the operations
-func buildHelperConfig(config *Config, version string) []internalTransform {
+func buildHelperConfig(config *Config, version string) ([]internalTransform, error) {
 	helperDataTransforms := make([]internalTransform, len(config.Transforms))
 	for i, t := range config.Transforms {
 
@@ -147,8 +154,13 @@ func buildHelperConfig(config *Config, version string) []internalTransform {
 			t.MetricIncludeFilter.MatchType = StrictMatchType
 		}
 
+		filter, err := createFilter(t.MetricIncludeFilter)
+		if err != nil {
+			return nil, err
+		}
+
 		helperT := internalTransform{
-			MetricIncludeFilter: createFilter(t.MetricIncludeFilter),
+			MetricIncludeFilter: filter,
 			Action:              t.Action,
 			NewName:             t.NewName,
 			GroupResourceLabels: t.GroupResourceLabels,
@@ -174,18 +186,26 @@ func buildHelperConfig(config *Config, version string) []internalTransform {
 		}
 		helperDataTransforms[i] = helperT
 	}
-	return helperDataTransforms
+	return helperDataTransforms, nil
 }
 
-func createFilter(filterConfig FilterConfig) internalFilter {
+func createFilter(filterConfig FilterConfig) (internalFilter, error) {
 	switch filterConfig.MatchType {
 	case StrictMatchType:
-		return internalFilterStrict{include: filterConfig.Include, matchLabels: filterConfig.MatchLabels}
+		matchers, err := getMatcherMap(filterConfig.MatchLabels, func(str string) (StringMatcher, error) { return strictMatcher(str), nil })
+		if err != nil {
+			return nil, err
+		}
+		return internalFilterStrict{include: filterConfig.Include, matchLabels: matchers}, nil
 	case RegexpMatchType:
-		return internalFilterRegexp{include: regexp.MustCompile(filterConfig.Include), matchLabels: getFilterRegexpMap(filterConfig.MatchLabels)}
+		matchers, err := getMatcherMap(filterConfig.MatchLabels, func(str string) (StringMatcher, error) { return regexp.Compile(str) })
+		if err != nil {
+			return nil, err
+		}
+		return internalFilterRegexp{include: regexp.MustCompile(filterConfig.Include), matchLabels: matchers}, nil
 	}
 
-	return nil
+	return nil, fmt.Errorf("invalid match type: %v", filterConfig.MatchType)
 }
 
 // createLabelValueMapping creates the labelValue rename mappings based on the valueActions
@@ -208,11 +228,14 @@ func sliceToSet(slice []string) map[string]bool {
 	return set
 }
 
-func getFilterRegexpMap(strMap map[string]string) map[string]*regexp.Regexp {
-	regexpMap := make(map[string]*regexp.Regexp)
-
-	for k, value := range strMap {
-		regexpMap[k] = regexp.MustCompile(value)
+func getMatcherMap(strMap map[string]string, ctor func(string) (StringMatcher, error)) (map[string]StringMatcher, error) {
+	out := make(map[string]StringMatcher)
+	for k, v := range strMap {
+		matcher, err := ctor(v)
+		if err != nil {
+			return nil, err
+		}
+		out[k] = matcher
 	}
-	return regexpMap
+	return out, nil
 }

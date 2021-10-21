@@ -27,8 +27,8 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/exporter/otlpexporter"
+	"go.opentelemetry.io/collector/model/pdata"
 	"go.uber.org/zap"
 	"google.golang.org/grpc/metadata"
 )
@@ -126,14 +126,13 @@ func TestRegisterExportersForValidRoute(t *testing.T) {
 	require.NoError(t, err)
 
 	otlpExpFactory := otlpexporter.NewFactory()
-	creationParams := component.ExporterCreateParams{Logger: zap.NewNop()}
 	otlpConfig := &otlpexporter.Config{
-		ExporterSettings: config.NewExporterSettings(config.NewID("otlp")),
+		ExporterSettings: config.NewExporterSettings(config.NewComponentID("otlp")),
 		GRPCClientSettings: configgrpc.GRPCClientSettings{
 			Endpoint: "example.com:1234",
 		},
 	}
-	otlpExp, err := otlpExpFactory.CreateTracesExporter(context.Background(), creationParams, otlpConfig)
+	otlpExp, err := otlpExpFactory.CreateTracesExporter(context.Background(), componenttest.NewNopExporterCreateSettings(), otlpConfig)
 	require.NoError(t, err)
 	host := &mockHost{
 		Host: componenttest.NewNopHost(),
@@ -191,14 +190,13 @@ func TestErrorRequestedExporterNotFoundForDefaultRoute(t *testing.T) {
 	require.NoError(t, err)
 
 	otlpExpFactory := otlpexporter.NewFactory()
-	creationParams := component.ExporterCreateParams{Logger: zap.NewNop()}
 	otlpConfig := &otlpexporter.Config{
-		ExporterSettings: config.NewExporterSettings(config.NewID("otlp")),
+		ExporterSettings: config.NewExporterSettings(config.NewComponentID("otlp")),
 		GRPCClientSettings: configgrpc.GRPCClientSettings{
 			Endpoint: "example.com:1234",
 		},
 	}
-	otlpExp, err := otlpExpFactory.CreateTracesExporter(context.Background(), creationParams, otlpConfig)
+	otlpExp, err := otlpExpFactory.CreateTracesExporter(context.Background(), componenttest.NewNopExporterCreateSettings(), otlpConfig)
 	require.NoError(t, err)
 	host := &mockHost{
 		Host: componenttest.NewNopHost(),
@@ -237,7 +235,7 @@ func TestInvalidExporter(t *testing.T) {
 		GetExportersFunc: func() map[config.DataType]map[config.ComponentID]component.Exporter {
 			return map[config.DataType]map[config.ComponentID]component.Exporter{
 				config.TracesDataType: {
-					config.NewID("otlp"): &mockComponent{},
+					config.NewComponentID("otlp"): &mockComponent{},
 				},
 			}
 		},
@@ -250,7 +248,7 @@ func TestInvalidExporter(t *testing.T) {
 	assert.Error(t, err)
 }
 
-func TestValueFromExistingGRPCAttribute(t *testing.T) {
+func TestValueFromExistingContextAttribute(t *testing.T) {
 	// prepare
 	exp, err := newProcessor(zap.NewNop(), &Config{
 		DefaultExporters: []string{"otlp"},
@@ -270,6 +268,49 @@ func TestValueFromExistingGRPCAttribute(t *testing.T) {
 
 	// verify
 	assert.Equal(t, "acme", val)
+}
+
+func TestValueFromExistingResourceAttribute(t *testing.T) {
+	// prepare
+	wg := &sync.WaitGroup{}
+	wg.Add(1)
+
+	exp := &processorImp{
+		config: Config{
+			AttributeSource: resourceAttributeSource,
+			FromAttribute:   "k8s.namespace.name",
+		},
+		logger: zap.NewNop(),
+		defaultTracesExporters: []component.TracesExporter{
+			&mockExporter{
+				ConsumeTracesFunc: func(context.Context, pdata.Traces) error {
+					assert.Fail(t, "Should not route to default exporters.")
+					wg.Done()
+					return nil
+				},
+			},
+		},
+		traceExporters: map[string][]component.TracesExporter{
+			"namespace-1": {
+				&mockExporter{
+					ConsumeTracesFunc: func(context.Context, pdata.Traces) error {
+						wg.Done()
+						return nil
+					},
+				},
+			},
+		},
+	}
+	traces := pdata.NewTraces()
+	traces.ResourceSpans().AppendEmpty()
+	traces.ResourceSpans().At(0).Resource().Attributes().InsertString("k8s.namespace.name", "namespace-1")
+
+	// test
+	err := exp.ConsumeTraces(context.Background(), traces)
+
+	// verify
+	wg.Wait() // ensure that the exporter has been called
+	assert.NoError(t, err)
 }
 
 func TestMultipleValuesFromExistingGRPCAttribute(t *testing.T) {

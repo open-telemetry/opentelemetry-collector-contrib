@@ -26,7 +26,8 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/model/pdata"
 	"go.uber.org/zap"
 )
 
@@ -34,9 +35,9 @@ type MockDetector struct {
 	mock.Mock
 }
 
-func (p *MockDetector) Detect(ctx context.Context) (pdata.Resource, error) {
+func (p *MockDetector) Detect(ctx context.Context) (pdata.Resource, string, error) {
 	args := p.Called()
-	return args.Get(0).(pdata.Resource), args.Error(1)
+	return args.Get(0).(pdata.Resource), "", args.Error(1)
 }
 
 type mockDetectorConfig struct{}
@@ -88,17 +89,17 @@ func TestDetect(t *testing.T) {
 				md.On("Detect").Return(res, nil)
 
 				mockDetectorType := DetectorType(fmt.Sprintf("mockdetector%v", i))
-				mockDetectors[mockDetectorType] = func(component.ProcessorCreateParams, DetectorConfig) (Detector, error) {
+				mockDetectors[mockDetectorType] = func(component.ProcessorCreateSettings, DetectorConfig) (Detector, error) {
 					return md, nil
 				}
 				mockDetectorTypes = append(mockDetectorTypes, mockDetectorType)
 			}
 
 			f := NewProviderFactory(mockDetectors)
-			p, err := f.CreateResourceProvider(component.ProcessorCreateParams{Logger: zap.NewNop()}, time.Second, &mockDetectorConfig{}, mockDetectorTypes...)
+			p, err := f.CreateResourceProvider(componenttest.NewNopProcessorCreateSettings(), time.Second, &mockDetectorConfig{}, mockDetectorTypes...)
 			require.NoError(t, err)
 
-			got, err := p.Get(context.Background())
+			got, _, err := p.Get(context.Background())
 			require.NoError(t, err)
 
 			tt.expectedResource.Attributes().Sort()
@@ -111,18 +112,18 @@ func TestDetect(t *testing.T) {
 func TestDetectResource_InvalidDetectorType(t *testing.T) {
 	mockDetectorKey := DetectorType("mock")
 	p := NewProviderFactory(map[DetectorType]DetectorFactory{})
-	_, err := p.CreateResourceProvider(component.ProcessorCreateParams{Logger: zap.NewNop()}, time.Second, &mockDetectorConfig{}, mockDetectorKey)
+	_, err := p.CreateResourceProvider(componenttest.NewNopProcessorCreateSettings(), time.Second, &mockDetectorConfig{}, mockDetectorKey)
 	require.EqualError(t, err, fmt.Sprintf("invalid detector key: %v", mockDetectorKey))
 }
 
 func TestDetectResource_DetectoryFactoryError(t *testing.T) {
 	mockDetectorKey := DetectorType("mock")
 	p := NewProviderFactory(map[DetectorType]DetectorFactory{
-		mockDetectorKey: func(component.ProcessorCreateParams, DetectorConfig) (Detector, error) {
+		mockDetectorKey: func(component.ProcessorCreateSettings, DetectorConfig) (Detector, error) {
 			return nil, errors.New("creation failed")
 		},
 	})
-	_, err := p.CreateResourceProvider(component.ProcessorCreateParams{Logger: zap.NewNop()}, time.Second, &mockDetectorConfig{}, mockDetectorKey)
+	_, err := p.CreateResourceProvider(componenttest.NewNopProcessorCreateSettings(), time.Second, &mockDetectorConfig{}, mockDetectorKey)
 	require.EqualError(t, err, fmt.Sprintf("failed creating detector type %q: %v", mockDetectorKey, "creation failed"))
 }
 
@@ -134,8 +135,8 @@ func TestDetectResource_Error(t *testing.T) {
 	md2.On("Detect").Return(pdata.NewResource(), errors.New("err1"))
 
 	p := NewResourceProvider(zap.NewNop(), time.Second, md1, md2)
-	_, err := p.Get(context.Background())
-	require.EqualError(t, err, "err1")
+	_, _, err := p.Get(context.Background())
+	require.NoError(t, err)
 }
 
 func TestMergeResource(t *testing.T) {
@@ -180,10 +181,10 @@ func NewMockParallelDetector() *MockParallelDetector {
 	return &MockParallelDetector{ch: make(chan struct{})}
 }
 
-func (p *MockParallelDetector) Detect(ctx context.Context) (pdata.Resource, error) {
+func (p *MockParallelDetector) Detect(ctx context.Context) (pdata.Resource, string, error) {
 	<-p.ch
 	args := p.Called()
-	return args.Get(0).(pdata.Resource), args.Error(1)
+	return args.Get(0).(pdata.Resource), "", args.Error(1)
 }
 
 // TestDetectResource_Parallel validates that Detect is only called once, even if there
@@ -197,10 +198,13 @@ func TestDetectResource_Parallel(t *testing.T) {
 	md2 := NewMockParallelDetector()
 	md2.On("Detect").Return(NewResource(map[string]interface{}{"a": "11", "c": "3"}), nil)
 
+	md3 := NewMockParallelDetector()
+	md3.On("Detect").Return(pdata.NewResource(), errors.New("an error"))
+
 	expectedResource := NewResource(map[string]interface{}{"a": "1", "b": "2", "c": "3"})
 	expectedResource.Attributes().Sort()
 
-	p := NewResourceProvider(zap.NewNop(), time.Second, md1, md2)
+	p := NewResourceProvider(zap.NewNop(), time.Second, md1, md2, md3)
 
 	// call p.Get multiple times
 	wg := &sync.WaitGroup{}
@@ -208,8 +212,10 @@ func TestDetectResource_Parallel(t *testing.T) {
 	for i := 0; i < iterations; i++ {
 		go func() {
 			defer wg.Done()
-			_, err := p.Get(context.Background())
+			detected, _, err := p.Get(context.Background())
 			require.NoError(t, err)
+			detected.Attributes().Sort()
+			assert.Equal(t, expectedResource, detected)
 		}()
 	}
 
@@ -219,11 +225,13 @@ func TestDetectResource_Parallel(t *testing.T) {
 	// detector.Detect should only be called once, so we only need to notify each channel once
 	md1.ch <- struct{}{}
 	md2.ch <- struct{}{}
+	md3.ch <- struct{}{}
 
 	// then wait until all goroutines are finished, and ensure p.Detect was only called once
 	wg.Wait()
 	md1.AssertNumberOfCalls(t, "Detect", 1)
 	md2.AssertNumberOfCalls(t, "Detect", 1)
+	md3.AssertNumberOfCalls(t, "Detect", 1)
 }
 
 func TestAttributesToMap(t *testing.T) {
@@ -252,9 +260,9 @@ func TestAttributesToMap(t *testing.T) {
 
 	ava := pdata.NewAttributeValueArray()
 	arrayAttr := ava.ArrayVal()
-	arrayAttr.Resize(2)
-	arrayAttr.At(0).SetStringVal("inner")
-	arrayAttr.At(1).SetIntVal(42)
+	arrayAttr.EnsureCapacity(2)
+	arrayAttr.AppendEmpty().SetStringVal("inner")
+	arrayAttr.AppendEmpty().SetIntVal(42)
 	attr.Insert("array", ava)
 
 	assert.Equal(t, m, AttributesToMap(attr))

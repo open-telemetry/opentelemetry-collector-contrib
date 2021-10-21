@@ -56,7 +56,7 @@ func NewFactory() component.ProcessorFactory {
 // createDefaultConfig creates the default configuration for the processor.
 func createDefaultConfig() config.Processor {
 	return &Config{
-		ProcessorSettings: config.NewProcessorSettings(config.NewID(typeStr)),
+		ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
 		NumTraces:         defaultNumTraces,
 		NumWorkers:        defaultNumWorkers,
 		WaitDuration:      defaultWaitDuration,
@@ -70,7 +70,7 @@ func createDefaultConfig() config.Processor {
 // createTracesProcessor creates a trace processor based on this config.
 func createTracesProcessor(
 	_ context.Context,
-	params component.ProcessorCreateParams,
+	params component.ProcessorCreateSettings,
 	cfg config.Processor,
 	nextConsumer consumer.Traces) (component.TracesProcessor, error) {
 

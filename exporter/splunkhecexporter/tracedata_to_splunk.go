@@ -15,37 +15,36 @@
 package splunkhecexporter
 
 import (
-	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/translator/conventions"
-	tracetranslator "go.opentelemetry.io/collector/translator/trace"
+	"go.opentelemetry.io/collector/model/pdata"
+	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 )
 
-// HecEvent is a data structure holding a span event to export explicitly to Splunk HEC.
-type HecEvent struct {
+// hecEvent is a data structure holding a span event to export explicitly to Splunk HEC.
+type hecEvent struct {
 	Attributes map[string]interface{} `json:"attributes,omitempty"`
 	Name       string                 `json:"name"`
 	Timestamp  pdata.Timestamp        `json:"timestamp"`
 }
 
-// HecLink is a data structure holding a span link to export explicitly to Splunk HEC.
-type HecLink struct {
+// hecLink is a data structure holding a span link to export explicitly to Splunk HEC.
+type hecLink struct {
 	Attributes map[string]interface{} `json:"attributes,omitempty"`
 	TraceID    string                 `json:"trace_id"`
 	SpanID     string                 `json:"span_id"`
 	TraceState pdata.TraceState       `json:"trace_state"`
 }
 
-// HecSpanStatus is a data structure holding the status of a span to export explicitly to Splunk HEC.
-type HecSpanStatus struct {
+// hecSpanStatus is a data structure holding the status of a span to export explicitly to Splunk HEC.
+type hecSpanStatus struct {
 	Message string `json:"message"`
 	Code    string `json:"code"`
 }
 
-// HecSpan is a data structure used to export explicitly a span to Splunk HEC.
-type HecSpan struct {
+// hecSpan is a data structure used to export explicitly a span to Splunk HEC.
+type hecSpan struct {
 	TraceID    string                 `json:"trace_id"`
 	SpanID     string                 `json:"span_id"`
 	ParentSpan string                 `json:"parent_span_id"`
@@ -53,13 +52,18 @@ type HecSpan struct {
 	Attributes map[string]interface{} `json:"attributes,omitempty"`
 	EndTime    pdata.Timestamp        `json:"end_time"`
 	Kind       string                 `json:"kind"`
-	Status     HecSpanStatus          `json:"status,omitempty"`
+	Status     hecSpanStatus          `json:"status,omitempty"`
 	StartTime  pdata.Timestamp        `json:"start_time"`
-	Events     []HecEvent             `json:"events,omitempty"`
-	Links      []HecLink              `json:"links,omitempty"`
+	Events     []hecEvent             `json:"events,omitempty"`
+	Links      []hecLink              `json:"links,omitempty"`
 }
 
 func traceDataToSplunk(logger *zap.Logger, data pdata.Traces, config *Config) ([]*splunk.Event, int) {
+	sourceKey := config.HecToOtelAttrs.Source
+	sourceTypeKey := config.HecToOtelAttrs.SourceType
+	indexKey := config.HecToOtelAttrs.Index
+	hostKey := config.HecToOtelAttrs.Host
+
 	numDroppedSpans := 0
 	splunkEvents := make([]*splunk.Event, 0, data.SpanCount())
 	rss := data.ResourceSpans()
@@ -70,33 +74,20 @@ func traceDataToSplunk(logger *zap.Logger, data pdata.Traces, config *Config) ([
 		sourceType := config.SourceType
 		index := config.Index
 		commonFields := map[string]interface{}{}
-		resource := rs.Resource()
-		attributes := resource.Attributes()
-		if conventionHost, isSet := attributes.Get(conventions.AttributeHostName); isSet {
-			host = conventionHost.StringVal()
-		}
-		if sourceSet, isSet := attributes.Get(conventions.AttributeServiceName); isSet {
-			source = sourceSet.StringVal()
-		}
-		if sourcetypeSet, isSet := attributes.Get(splunk.SourcetypeLabel); isSet {
-			sourceType = sourcetypeSet.StringVal()
-		}
-		if indexSet, isSet := attributes.Get(splunk.IndexLabel); isSet {
-			index = indexSet.StringVal()
-		}
-		attributes.Range(func(k string, v pdata.AttributeValue) bool {
-			commonFields[k] = tracetranslator.AttributeValueToString(v, false)
-			return true
-		})
-
-		if sourceSet, isSet := rs.Resource().Attributes().Get(conventions.AttributeServiceName); isSet {
-			source = sourceSet.StringVal()
-		}
-		if sourcetypeSet, isSet := rs.Resource().Attributes().Get(splunk.SourcetypeLabel); isSet {
-			sourceType = sourcetypeSet.StringVal()
-		}
 		rs.Resource().Attributes().Range(func(k string, v pdata.AttributeValue) bool {
-			commonFields[k] = tracetranslator.AttributeValueToString(v, false)
+			switch k {
+			case hostKey:
+				host = v.StringVal()
+				commonFields[conventions.AttributeHostName] = host
+			case sourceKey:
+				source = v.StringVal()
+			case sourceTypeKey:
+				sourceType = v.StringVal()
+			case indexKey:
+				index = v.StringVal()
+			default:
+				commonFields[k] = v.AsString()
+			}
 			return true
 		})
 		ilss := rs.InstrumentationLibrarySpans()
@@ -122,14 +113,14 @@ func traceDataToSplunk(logger *zap.Logger, data pdata.Traces, config *Config) ([
 	return splunkEvents, numDroppedSpans
 }
 
-func toHecSpan(logger *zap.Logger, span pdata.Span) HecSpan {
+func toHecSpan(logger *zap.Logger, span pdata.Span) hecSpan {
 	attributes := map[string]interface{}{}
 	span.Attributes().Range(func(k string, v pdata.AttributeValue) bool {
 		attributes[k] = convertAttributeValue(v, logger)
 		return true
 	})
 
-	links := make([]HecLink, span.Links().Len())
+	links := make([]hecLink, span.Links().Len())
 	for i := 0; i < span.Links().Len(); i++ {
 		link := span.Links().At(i)
 		linkAttributes := map[string]interface{}{}
@@ -137,14 +128,14 @@ func toHecSpan(logger *zap.Logger, span pdata.Span) HecSpan {
 			linkAttributes[k] = convertAttributeValue(v, logger)
 			return true
 		})
-		links[i] = HecLink{
+		links[i] = hecLink{
 			Attributes: linkAttributes,
 			TraceID:    link.TraceID().HexString(),
 			SpanID:     link.SpanID().HexString(),
 			TraceState: link.TraceState(),
 		}
 	}
-	events := make([]HecEvent, span.Events().Len())
+	events := make([]hecEvent, span.Events().Len())
 	for i := 0; i < span.Events().Len(); i++ {
 		event := span.Events().At(i)
 		eventAttributes := map[string]interface{}{}
@@ -152,17 +143,17 @@ func toHecSpan(logger *zap.Logger, span pdata.Span) HecSpan {
 			eventAttributes[k] = convertAttributeValue(v, logger)
 			return true
 		})
-		events[i] = HecEvent{
+		events[i] = hecEvent{
 			Attributes: eventAttributes,
 			Name:       event.Name(),
 			Timestamp:  event.Timestamp(),
 		}
 	}
-	status := HecSpanStatus{
+	status := hecSpanStatus{
 		Message: span.Status().Message(),
 		Code:    span.Status().Code().String(),
 	}
-	return HecSpan{
+	return hecSpan{
 		TraceID:    span.TraceID().HexString(),
 		SpanID:     span.SpanID().HexString(),
 		ParentSpan: span.ParentSpanID().HexString(),

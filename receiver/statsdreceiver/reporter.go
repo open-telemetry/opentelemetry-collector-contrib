@@ -18,6 +18,7 @@ import (
 	"context"
 
 	"go.opencensus.io/trace"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/obsreport"
 	"go.uber.org/zap"
@@ -31,15 +32,21 @@ type reporter struct {
 	id            config.ComponentID
 	logger        *zap.Logger
 	sugaredLogger *zap.SugaredLogger // Used for generic debug logging
+	obsrecv       *obsreport.Receiver
 }
 
 var _ transport.Reporter = (*reporter)(nil)
 
-func newReporter(receiverID config.ComponentID, logger *zap.Logger) transport.Reporter {
+func newReporter(receiverID config.ComponentID, set component.ReceiverCreateSettings) transport.Reporter {
 	return &reporter{
 		id:            receiverID,
-		logger:        logger,
-		sugaredLogger: logger.Sugar(),
+		logger:        set.Logger,
+		sugaredLogger: set.Logger.Sugar(),
+		obsrecv: obsreport.NewReceiver(obsreport.ReceiverSettings{
+			ReceiverID:             receiverID,
+			Transport:              "tcp",
+			ReceiverCreateSettings: set,
+		}),
 	}
 }
 
@@ -48,8 +55,7 @@ func newReporter(receiverID config.ComponentID, logger *zap.Logger) transport.Re
 // reporter instance. The caller code should include a call to end the
 // returned span.
 func (r *reporter) OnDataReceived(ctx context.Context) context.Context {
-	ctx = obsreport.ReceiverContext(ctx, r.id, "tcp")
-	return obsreport.StartMetricsReceiveOp(ctx, r.id, "tcp")
+	return r.obsrecv.StartMetricsOp(ctx)
 }
 
 // OnTranslationError is used to report a translation error from original
@@ -93,7 +99,7 @@ func (r *reporter) OnMetricsProcessed(
 		})
 	}
 
-	obsreport.EndMetricsReceiveOp(ctx, "statsd", numReceivedMessages, err)
+	r.obsrecv.EndMetricsOp(ctx, "statsd", numReceivedMessages, err)
 }
 
 func (r *reporter) OnDebugf(template string, args ...interface{}) {

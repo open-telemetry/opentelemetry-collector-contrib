@@ -20,9 +20,8 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.uber.org/zap"
+	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/model/pdata"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
 )
@@ -59,7 +58,7 @@ func (md *mockMetaDataProvider) fetchContainerMetaData(string) (*Container, erro
 }
 
 func Test_ecsNewDetector(t *testing.T) {
-	d, err := NewDetector(component.ProcessorCreateParams{Logger: zap.NewNop()}, nil)
+	d, err := NewDetector(componenttest.NewNopProcessorCreateSettings(), nil)
 
 	assert.NotNil(t, d)
 	assert.Nil(t, err)
@@ -67,8 +66,8 @@ func Test_ecsNewDetector(t *testing.T) {
 
 func Test_detectorReturnsIfNoEnvVars(t *testing.T) {
 	os.Clearenv()
-	d, _ := NewDetector(component.ProcessorCreateParams{Logger: zap.NewNop()}, nil)
-	res, err := d.Detect(context.TODO())
+	d, _ := NewDetector(componenttest.NewNopProcessorCreateSettings(), nil)
+	res, _, err := d.Detect(context.TODO())
 
 	assert.Nil(t, err)
 	assert.Equal(t, 0, res.Attributes().Len())
@@ -131,12 +130,13 @@ func Test_ecsDetectV4(t *testing.T) {
 	for i, field := range attribFields {
 		ava := pdata.NewAttributeValueArray()
 		av := ava.ArrayVal()
-		av.Append(pdata.NewAttributeValueString(attribVals[i]))
+		avs := av.AppendEmpty()
+		pdata.NewAttributeValueString(attribVals[i]).CopyTo(avs)
 		attr.Insert(field, ava)
 	}
 
 	d := Detector{provider: &mockMetaDataProvider{isV4: true}}
-	got, err := d.Detect(context.TODO())
+	got, _, err := d.Detect(context.TODO())
 
 	assert.Nil(t, err)
 	assert.NotNil(t, got)
@@ -160,7 +160,7 @@ func Test_ecsDetectV3(t *testing.T) {
 	attr.InsertString("cloud.account.id", "123456789123")
 
 	d := Detector{provider: &mockMetaDataProvider{isV4: false}}
-	got, err := d.Detect(context.TODO())
+	got, _, err := d.Detect(context.TODO())
 
 	assert.Nil(t, err)
 	assert.NotNil(t, got)

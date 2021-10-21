@@ -23,9 +23,10 @@ import (
 	"github.com/jaegertracing/jaeger/model"
 	"github.com/logzio/jaeger-logzio/store"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-	"go.opentelemetry.io/collector/translator/trace/jaeger"
+	"go.opentelemetry.io/collector/model/pdata"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger"
 )
 
 const (
@@ -41,8 +42,8 @@ type logzioExporter struct {
 	InternalTracesToJaegerTraces func(td pdata.Traces) ([]*model.Batch, error)
 }
 
-func newLogzioExporter(config *Config, params component.ExporterCreateParams) (*logzioExporter, error) {
-	logger := Hclog2ZapLogger{
+func newLogzioExporter(config *Config, params component.ExporterCreateSettings) (*logzioExporter, error) {
+	logger := hclog2ZapLogger{
 		Zap:  params.Logger,
 		name: loggerName,
 	}
@@ -54,9 +55,13 @@ func newLogzioExporter(config *Config, params component.ExporterCreateParams) (*
 		Region:            config.Region,
 		AccountToken:      config.TracesToken,
 		CustomListenerURL: config.CustomEndpoint,
+		InMemoryQueue:     true,
+		Compress:          true,
+		InMemoryCapacity:  uint64(config.QueueCapacity),
+		LogCountLimit:     config.QueueMaxLength,
+		DrainInterval:     config.DrainInterval,
 	}
-
-	spanWriter, err := store.NewLogzioSpanWriter(writerConfig, logger)
+	spanWriter, err := store.NewLogzioSpanWriter(writerConfig, &logger)
 	if err != nil {
 		return nil, err
 	}
@@ -64,14 +69,14 @@ func newLogzioExporter(config *Config, params component.ExporterCreateParams) (*
 	return &logzioExporter{
 		writer:                       spanWriter,
 		accountToken:                 config.TracesToken,
-		logger:                       logger,
+		logger:                       &logger,
 		InternalTracesToJaegerTraces: jaeger.InternalTracesToJaegerProto,
 		WriteSpanFunc:                spanWriter.WriteSpan,
 	}, nil
 }
 
-func newLogzioTracesExporter(config *Config, params component.ExporterCreateParams) (component.TracesExporter, error) {
-	exporter, err := newLogzioExporter(config, params)
+func newLogzioTracesExporter(config *Config, set component.ExporterCreateSettings) (component.TracesExporter, error) {
+	exporter, err := newLogzioExporter(config, set)
 	if err != nil {
 		return nil, err
 	}
@@ -81,16 +86,16 @@ func newLogzioTracesExporter(config *Config, params component.ExporterCreatePara
 
 	return exporterhelper.NewTracesExporter(
 		config,
-		params.Logger,
+		set,
 		exporter.pushTraceData,
 		exporterhelper.WithShutdown(exporter.Shutdown))
 }
 
-func newLogzioMetricsExporter(config *Config, params component.ExporterCreateParams) (component.MetricsExporter, error) {
-	exporter, _ := newLogzioExporter(config, params)
+func newLogzioMetricsExporter(config *Config, set component.ExporterCreateSettings) (component.MetricsExporter, error) {
+	exporter, _ := newLogzioExporter(config, set)
 	return exporterhelper.NewMetricsExporter(
 		config,
-		params.Logger,
+		set,
 		exporter.pushMetricsData,
 		exporterhelper.WithShutdown(exporter.Shutdown))
 }

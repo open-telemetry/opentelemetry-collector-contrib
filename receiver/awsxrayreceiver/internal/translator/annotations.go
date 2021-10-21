@@ -15,7 +15,7 @@
 package translator
 
 import (
-	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/model/pdata"
 )
 
 func addAnnotations(annos map[string]interface{}, attrs *pdata.AttributeMap) {

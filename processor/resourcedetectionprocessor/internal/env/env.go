@@ -27,11 +27,12 @@ import (
 	"strings"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/model/pdata"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
 )
 
+// TypeStr is type of detector.
 const TypeStr = "env"
 
 // Environment variable used by "env" to decode a resource.
@@ -47,28 +48,28 @@ var _ internal.Detector = (*Detector)(nil)
 
 type Detector struct{}
 
-func NewDetector(component.ProcessorCreateParams, internal.DetectorConfig) (internal.Detector, error) {
+func NewDetector(component.ProcessorCreateSettings, internal.DetectorConfig) (internal.Detector, error) {
 	return &Detector{}, nil
 }
 
-func (d *Detector) Detect(context.Context) (pdata.Resource, error) {
+func (d *Detector) Detect(context.Context) (resource pdata.Resource, schemaURL string, err error) {
 	res := pdata.NewResource()
 
 	labels := strings.TrimSpace(os.Getenv(envVar))
 	if labels == "" {
 		labels = strings.TrimSpace(os.Getenv(deprecatedEnvVar))
 		if labels == "" {
-			return res, nil
+			return res, "", nil
 		}
 	}
 
-	err := initializeAttributeMap(res.Attributes(), labels)
+	err = initializeAttributeMap(res.Attributes(), labels)
 	if err != nil {
 		res.Attributes().Clear()
-		return res, err
+		return res, "", err
 	}
 
-	return res, nil
+	return res, "", nil
 }
 
 // labelRegex matches any key=value pair including a trailing comma or the end of the

@@ -17,20 +17,18 @@ package alibabacloudlogserviceexporter
 import (
 	"context"
 	"testing"
-	"time"
 
-	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/testutil/metricstestutil"
-	"go.opentelemetry.io/collector/translator/internaldata"
-	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
 )
 
 func TestNewMetricsExporter(t *testing.T) {
-	got, err := newMetricsExporter(zap.NewNop(), &Config{
-		ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
+	got, err := newMetricsExporter(componenttest.NewNopExporterCreateSettings(), &Config{
+		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
 		Endpoint:         "us-west-1.log.aliyuncs.com",
 		Project:          "demo-project",
 		Logstore:         "demo-logstore",
@@ -38,22 +36,13 @@ func TestNewMetricsExporter(t *testing.T) {
 	assert.NoError(t, err)
 	require.NotNil(t, got)
 
-	unixSecs := int64(1574092046)
-	unixNSecs := int64(11 * time.Millisecond)
-	tsUnix := time.Unix(unixSecs, unixNSecs)
-
-	doubleVal := 1234.5678
-	doublePt := metricstestutil.Double(tsUnix, doubleVal)
-
 	// This will put trace data to send buffer and return success.
-	err = got.ConsumeMetrics(context.Background(), internaldata.OCToMetrics(nil, nil, []*metricspb.Metric{
-		metricstestutil.Gauge("gauge_double_with_dims", nil, metricstestutil.Timeseries(tsUnix, nil, doublePt)),
-	}))
+	err = got.ConsumeMetrics(context.Background(), testdata.GenerateMetricsOneMetric())
 	assert.NoError(t, err)
 }
 
 func TestNewFailsWithEmptyMetricsExporterName(t *testing.T) {
-	got, err := newMetricsExporter(zap.NewNop(), &Config{})
+	got, err := newMetricsExporter(componenttest.NewNopExporterCreateSettings(), &Config{})
 	assert.Error(t, err)
 	require.Nil(t, got)
 }

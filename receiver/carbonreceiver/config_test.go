@@ -35,22 +35,20 @@ func TestLoadConfig(t *testing.T) {
 
 	factory := NewFactory()
 	factories.Receivers[typeStr] = factory
-	cfg, err := configtest.LoadConfigFile(
-		t, path.Join(".", "testdata", "config.yaml"), factories,
-	)
+	cfg, err := configtest.LoadConfigAndValidate(path.Join(".", "testdata", "config.yaml"), factories)
 
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 
 	assert.Equal(t, len(cfg.Receivers), 3)
 
-	r0 := cfg.Receivers[config.NewID(typeStr)]
+	r0 := cfg.Receivers[config.NewComponentID(typeStr)]
 	assert.Equal(t, factory.CreateDefaultConfig(), r0)
 
-	r1 := cfg.Receivers[config.NewIDWithName(typeStr, "receiver_settings")].(*Config)
+	r1 := cfg.Receivers[config.NewComponentIDWithName(typeStr, "receiver_settings")].(*Config)
 	assert.Equal(t,
 		&Config{
-			ReceiverSettings: config.NewReceiverSettings(config.NewIDWithName(typeStr, "receiver_settings")),
+			ReceiverSettings: config.NewReceiverSettings(config.NewComponentIDWithName(typeStr, "receiver_settings")),
 			NetAddr: confignet.NetAddr{
 				Endpoint:  "localhost:8080",
 				Transport: "udp",
@@ -63,10 +61,10 @@ func TestLoadConfig(t *testing.T) {
 		},
 		r1)
 
-	r2 := cfg.Receivers[config.NewIDWithName(typeStr, "regex")].(*Config)
+	r2 := cfg.Receivers[config.NewComponentIDWithName(typeStr, "regex")].(*Config)
 	assert.Equal(t,
 		&Config{
-			ReceiverSettings: config.NewReceiverSettings(config.NewIDWithName(typeStr, "regex")),
+			ReceiverSettings: config.NewReceiverSettings(config.NewComponentIDWithName(typeStr, "regex")),
 			NetAddr: confignet.NetAddr{
 				Endpoint:  "localhost:2003",
 				Transport: "tcp",

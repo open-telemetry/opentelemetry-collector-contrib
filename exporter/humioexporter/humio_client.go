@@ -26,6 +26,7 @@ import (
 	"sync"
 	"time"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.uber.org/zap"
 )
@@ -106,8 +107,8 @@ type humioClient struct {
 }
 
 // Constructs a new HTTP client for sending payloads to Humio
-func newHumioClient(cfg *Config, logger *zap.Logger) (exporterClient, error) {
-	client, err := cfg.HTTPClientSettings.ToClient()
+func newHumioClient(cfg *Config, logger *zap.Logger, host component.Host) (exporterClient, error) {
+	client, err := cfg.HTTPClientSettings.ToClient(host.GetExtensions())
 	if err != nil {
 		return nil, err
 	}
@@ -137,7 +138,7 @@ func (h *humioClient) sendStructuredEvents(ctx context.Context, evts []*HumioStr
 func (h *humioClient) sendEvents(ctx context.Context, evts interface{}, url string, token string) error {
 	body, err := h.encodeBody(evts)
 	if err != nil {
-		return consumererror.Permanent(err)
+		return consumererror.NewPermanent(err)
 	}
 
 	req, err := http.NewRequestWithContext(
@@ -147,7 +148,7 @@ func (h *humioClient) sendEvents(ctx context.Context, evts interface{}, url stri
 		body,
 	)
 	if err != nil {
-		return consumererror.Permanent(err)
+		return consumererror.NewPermanent(err)
 	}
 
 	for h, v := range h.cfg.Headers {
@@ -173,7 +174,7 @@ func (h *humioClient) sendEvents(ctx context.Context, evts interface{}, url stri
 		if res.StatusCode == http.StatusBadRequest ||
 			res.StatusCode == http.StatusUnauthorized ||
 			res.StatusCode == http.StatusForbidden {
-			return consumererror.Permanent(err)
+			return consumererror.NewPermanent(err)
 		}
 
 		return err

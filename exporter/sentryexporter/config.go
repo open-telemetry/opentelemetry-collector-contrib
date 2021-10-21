@@ -21,4 +21,6 @@ type Config struct {
 	config.ExporterSettings `mapstructure:",squash"`
 	// DSN to report transaction to Sentry. If the DSN is not set, no trace will be sent to Sentry.
 	DSN string `mapstructure:"dsn"`
+	// InsecureSkipVerify controls whether the client verifies the Sentry server certificate chain
+	InsecureSkipVerify bool `mapstructure:"insecure_skip_verify"`
 }

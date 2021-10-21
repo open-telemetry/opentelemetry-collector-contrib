@@ -19,8 +19,7 @@ import (
 	"time"
 
 	"github.com/grobie/gomemcache/memcache"
-	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/consumer/simple"
+	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 	"go.uber.org/zap"
 
@@ -37,15 +36,15 @@ type memcachedScraper struct {
 func newMemcachedScraper(
 	logger *zap.Logger,
 	config *Config,
-) scraperhelper.ResourceMetricsScraper {
+) (scraperhelper.Scraper, error) {
 	ms := &memcachedScraper{
 		logger: logger,
 		config: config,
 	}
-	return scraperhelper.NewResourceMetricsScraper(config.ID(), ms.scrape)
+	return scraperhelper.NewScraper(typeStr, ms.scrape)
 }
 
-func (r *memcachedScraper) scrape(_ context.Context) (pdata.ResourceMetricsSlice, error) {
+func (r *memcachedScraper) scrape(_ context.Context) (pdata.Metrics, error) {
 	// Init client in scrape method in case there are transient errors in the
 	// constructor.
 	if r.client == nil {
@@ -53,41 +52,55 @@ func (r *memcachedScraper) scrape(_ context.Context) (pdata.ResourceMetricsSlice
 		r.client, err = memcache.New(r.config.Endpoint)
 		if err != nil {
 			r.client = nil
-			return pdata.ResourceMetricsSlice{}, err
+			return pdata.Metrics{}, err
 		}
 
 		r.client.Timeout = r.config.Timeout
 	}
 
-	metrics := simple.Metrics{
-		Metrics:                    pdata.NewMetrics(),
-		Timestamp:                  time.Now(),
-		MetricFactoriesByName:      metadata.M.FactoriesByName(),
-		InstrumentationLibraryName: "otelcol/memcached",
-	}
-
 	stats, err := r.client.Stats()
 	if err != nil {
 		r.logger.Error("Failed to fetch memcached stats", zap.Error(err))
-		return pdata.ResourceMetricsSlice{}, err
+		return pdata.Metrics{}, err
 	}
+
+	now := pdata.NewTimestampFromTime(time.Now())
+	md := pdata.NewMetrics()
+	ilm := md.ResourceMetrics().AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty()
+	ilm.InstrumentationLibrary().SetName("otelcol/memcached")
 
 	for _, stats := range stats {
 		for k, v := range stats.Stats {
 			switch k {
 			case "bytes":
-				metrics.AddGaugeDataPoint(metadata.M.MemcachedBytes.Name(), parseInt(v))
+				addIntGauge(ilm.Metrics(), metadata.M.MemcachedBytes.Init, now, parseInt(v))
 			case "curr_connections":
-				metrics.AddGaugeDataPoint(metadata.M.MemcachedCurrentConnections.Name(), parseInt(v))
+				addIntGauge(ilm.Metrics(), metadata.M.MemcachedCurrentConnections.Init, now, parseInt(v))
 			case "total_connections":
-				metrics.AddSumDataPoint(metadata.M.MemcachedTotalConnections.Name(), parseInt(v))
+				addIntSum(ilm.Metrics(), metadata.M.MemcachedTotalConnections.Init, now, parseInt(v))
 			case "get_hits":
-				metrics.AddSumDataPoint(metadata.M.MemcachedGetHits.Name(), parseInt(v))
+				addIntSum(ilm.Metrics(), metadata.M.MemcachedGetHits.Init, now, parseInt(v))
 			case "get_misses":
-				metrics.AddSumDataPoint(metadata.M.MemcachedGetMisses.Name(), parseInt(v))
+				addIntSum(ilm.Metrics(), metadata.M.MemcachedGetMisses.Init, now, parseInt(v))
 			}
 		}
 	}
 
-	return metrics.Metrics.ResourceMetrics(), nil
+	return md, nil
+}
+
+func addIntGauge(metrics pdata.MetricSlice, initFunc func(pdata.Metric), now pdata.Timestamp, value int64) {
+	metric := metrics.AppendEmpty()
+	initFunc(metric)
+	dp := metric.Gauge().DataPoints().AppendEmpty()
+	dp.SetTimestamp(now)
+	dp.SetIntVal(value)
+}
+
+func addIntSum(metrics pdata.MetricSlice, initFunc func(pdata.Metric), now pdata.Timestamp, value int64) {
+	metric := metrics.AppendEmpty()
+	initFunc(metric)
+	dp := metric.Sum().DataPoints().AppendEmpty()
+	dp.SetTimestamp(now)
+	dp.SetIntVal(value)
 }

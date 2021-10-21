@@ -23,8 +23,8 @@ import (
 	"time"
 
 	"github.com/microsoft/ApplicationInsights-Go/appinsights/contracts"
-	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/translator/conventions"
+	"go.opentelemetry.io/collector/model/pdata"
+	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
 	"go.uber.org/zap"
 )
 
@@ -60,8 +60,8 @@ func spanToEnvelope(
 
 	// According to the SpanKind documentation, we can assume it to be INTERNAL
 	// when we get UNSPECIFIED.
-	if spanKind == pdata.SpanKindUNSPECIFIED {
-		spanKind = pdata.SpanKindINTERNAL
+	if spanKind == pdata.SpanKindUnspecified {
+		spanKind = pdata.SpanKindInternal
 	}
 
 	attributeMap := span.Attributes()
@@ -82,7 +82,7 @@ func spanToEnvelope(
 	var dataSanitizeFunc func() []string
 	var dataProperties map[string]string
 
-	if spanKind == pdata.SpanKindSERVER || spanKind == pdata.SpanKindCONSUMER {
+	if spanKind == pdata.SpanKindServer || spanKind == pdata.SpanKindConsumer {
 		requestData := spanToRequestData(span, incomingSpanType)
 		dataProperties = requestData.Properties
 		dataSanitizeFunc = requestData.Sanitize
@@ -90,11 +90,11 @@ func spanToEnvelope(
 		envelope.Tags[contracts.OperationName] = requestData.Name
 		data.BaseData = requestData
 		data.BaseType = requestData.BaseType()
-	} else if spanKind == pdata.SpanKindCLIENT || spanKind == pdata.SpanKindPRODUCER || spanKind == pdata.SpanKindINTERNAL {
+	} else if spanKind == pdata.SpanKindClient || spanKind == pdata.SpanKindProducer || spanKind == pdata.SpanKindInternal {
 		remoteDependencyData := spanToRemoteDependencyData(span, incomingSpanType)
 
 		// Regardless of the detected Span type, if the SpanKind is Internal we need to set data.Type to InProc
-		if spanKind == pdata.SpanKindINTERNAL {
+		if spanKind == pdata.SpanKindInternal {
 			remoteDependencyData.Type = "InProc"
 		}
 
@@ -142,7 +142,7 @@ func spanToEnvelope(
 		envelope.Tags[contracts.CloudRole] = cloudRole
 	}
 
-	if serviceInstance, exists := resourceAttributes.Get(conventions.AttributeServiceInstance); exists {
+	if serviceInstance, exists := resourceAttributes.Get(conventions.AttributeServiceInstanceID); exists {
 		envelope.Tags[contracts.CloudRoleInstance] = serviceInstance.StringVal()
 	}
 
@@ -646,16 +646,16 @@ func setAttributeValueAsPropertyOrMeasurement(
 	measurements map[string]float64) {
 
 	switch attributeValue.Type() {
-	case pdata.AttributeValueBOOL:
+	case pdata.AttributeValueTypeBool:
 		properties[key] = strconv.FormatBool(attributeValue.BoolVal())
 
-	case pdata.AttributeValueSTRING:
+	case pdata.AttributeValueTypeString:
 		properties[key] = attributeValue.StringVal()
 
-	case pdata.AttributeValueINT:
+	case pdata.AttributeValueTypeInt:
 		measurements[key] = float64(attributeValue.IntVal())
 
-	case pdata.AttributeValueDOUBLE:
+	case pdata.AttributeValueTypeDouble:
 		measurements[key] = attributeValue.DoubleVal()
 	}
 }

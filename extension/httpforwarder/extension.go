@@ -30,7 +30,7 @@ type httpForwarder struct {
 	forwardTo  *url.URL
 	httpClient *http.Client
 	server     *http.Server
-	logger     *zap.Logger
+	settings   component.TelemetrySettings
 	config     *Config
 }
 
@@ -42,10 +42,16 @@ func (h *httpForwarder) Start(_ context.Context, host component.Host) error {
 		return fmt.Errorf("failed to bind to address %s: %w", h.config.Ingress.Endpoint, err)
 	}
 
+	httpClient, err := h.config.Egress.ToClient(host.GetExtensions())
+	if err != nil {
+		return fmt.Errorf("failed to create HTTP Client: %w", err)
+	}
+	h.httpClient = httpClient
+
 	handler := http.NewServeMux()
 	handler.HandleFunc("/", h.forwardRequest)
 
-	h.server = h.config.Ingress.ToServer(handler)
+	h.server = h.config.Ingress.ToServer(handler, h.settings)
 	go func() {
 		if err := h.server.Serve(listener); err != http.ErrServerClosed {
 			host.ReportFatalError(err)
@@ -95,11 +101,11 @@ func (h *httpForwarder) forwardRequest(writer http.ResponseWriter, request *http
 	writer.WriteHeader(response.StatusCode)
 	written, err := io.Copy(writer, response.Body)
 	if err != nil {
-		h.logger.Warn("Error writing HTTP response message", zap.Error(err))
+		h.settings.Logger.Warn("Error writing HTTP response message", zap.Error(err))
 	}
 
 	if response.ContentLength != written {
-		h.logger.Warn("Response from target not fully copied, body might be corrupted")
+		h.settings.Logger.Warn("Response from target not fully copied, body might be corrupted")
 	}
 }
 
@@ -107,7 +113,7 @@ func addViaHeader(header http.Header, protocol string, host string) {
 	header.Add("Via", fmt.Sprintf("%s %s", protocol, host))
 }
 
-func newHTTPForwarder(config *Config, logger *zap.Logger) (component.Extension, error) {
+func newHTTPForwarder(config *Config, settings component.TelemetrySettings) (component.Extension, error) {
 	if config.Egress.Endpoint == "" {
 		return nil, errors.New("'egress.endpoint' config option cannot be empty")
 	}
@@ -117,16 +123,10 @@ func newHTTPForwarder(config *Config, logger *zap.Logger) (component.Extension, 
 		return nil, fmt.Errorf("enter a valid URL for 'egress.endpoint': %w", err)
 	}
 
-	httpClient, err := config.Egress.ToClient()
-	if err != nil {
-		return nil, fmt.Errorf("failed to create HTTP Client: %w", err)
-	}
-
 	h := &httpForwarder{
-		config:     config,
-		forwardTo:  url,
-		httpClient: httpClient,
-		logger:     logger,
+		config:    config,
+		forwardTo: url,
+		settings:  settings,
 	}
 
 	return h, nil

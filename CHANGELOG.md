@@ -2,6 +2,390 @@
 
 ## Unreleased
 
+## v0.37.1
+
+## 🧰 Bug fixes 🧰
+
+- Fixes a problem with v0.37.0 which contained dependencies on v0.36.0 components. They should have been updated to v0.37.0.
+
+## v0.37.0
+
+## 🚀 New components 🚀
+
+- [`journald` receiver](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/journaldreceiver) to parse Journald events from systemd journal using the [opentelemetry-log-collection](https://github.com/open-telemetry/opentelemetry-log-collection) library
+
+## 🛑 Breaking changes 🛑
+
+- Remove squash on configtls.TLSClientSetting for splunkhecexporter (#5541)
+- Remove squash on configtls.TLSClientSetting for elastic components (#5539)
+- Remove squash on configtls.TLSClientSetting for observiqexporter (#5540)
+- Remove squash on configtls.TLSClientSetting for AWS components (#5454)
+- Move `k8sprocessor` to `k8sattributesprocessor`.
+- Rename `k8s_tagger` configuration `k8sattributes`.
+- filelog receiver: use empty value for `SeverityText` field instead of `"Undefined"` (#5423)
+- Rename `configparser.ConfigMap` to `config.Map`
+- Rename `pdata.AggregationTemporality*` to `pdata.MetricAggregationTemporality*`
+- Remove deprecated `batchpertrace` package/module (#5380)
+
+## 💡 Enhancements 💡
+
+- `k8sattributes` processor: add container metadata enrichment (#5467, #5572)
+- `resourcedetection` processor: Add an option to force using hostname instead of FQDN (#5064)
+- `dockerstats` receiver: Move docker client into new shared `internal/docker` (#4702)
+- `spanmetrics` processor:
+  - Add exemplars to metrics (#5263)
+  - Support resource attributes in metrics dimensions (#4624)
+- `filter` processor:
+  - Add log filtering by `regexp` type filters (#5237)
+  - Add record level log filtering (#5418)
+- `dynatrace` exporter: Handle non-gauge data types (#5056)
+- `datadog` exporter:
+  - Add support for exporting histograms as sketches (#5082)
+  - Scrub sensitive information from errors (#5575)
+  - Add option to send instrumentation library metadata tags with metrics (#5431)
+- `podman` receiver: Add `api_version`, `ssh_key`, and `ssh_passphrase` config options (#5430)
+- `signalfx` exporter:
+  - Add `max_connections` config option (#5432)
+  - Add dimension name to log when value > 256 chars (#5258)
+  - Discourage setting of endpoint path (#4851)
+- `kubeletstats` receiver: Convert to pdata instead of using OpenCensus (#5458)
+- `tailsampling` processor: Add `invert_match` config option to `string_attribute` policy (#4393)
+- `awsemf` exporter: Add a feature flag in UserAgent for AWS backend to monitor the adoptions (#5178)
+- `splunkhec` exporter: Handle explicitly NaN and Inf values (#5581)
+- `hostmetrics` receiver:
+  - Collect more process states in processes scraper (#4856)
+  - Add device label to paging scraper (#4854)
+- `awskinesis` exporter: Extend to allow for dynamic export types (#5440)
+
+## 🧰 Bug fixes 🧰
+
+- `datadog` exporter:
+  - Fix tags on summary and bucket metrics (#5416)
+  - Fix cache key generation for cumulative metrics (#5417)
+- `resourcedetection` processor: Fix failure to start collector if at least one detector returns an error (#5242)
+- `prometheus` exporter: Do not record obsreport calls (#5438)
+- `prometheus` receiver: Metric type fixes to match Prometheus functionality (#4865)
+- `sentry` exporter: Fix sentry tracing (#4320)
+- `statsd` receiver: Set quantiles for metrics (#5647)
+
+## v0.36.0
+
+## 🛑 Breaking changes 🛑
+
+- `filter` processor: The configs for `logs` filter processor have been changed to be consistent with the `metrics` filter processor. (#4895)
+- `splunk_hec` receiver: 
+  - `source_key`, `sourcetype_key`, `host_key` and `index_key` have now moved under `hec_metadata_to_otel_attrs` (#4726)
+  - `path` field on splunkhecreceiver configuration is removed: We removed the `path` attribute as any request going to the Splunk HEC receiver port should be accepted, and added the `raw_path` field to explicitly map the path accepting raw HEC data. (#4951)
+- feat(dynatrace): tags is deprecated in favor of default_dimensions (#5055)
+
+## 💡 Enhancements 💡
+
+- `filter` processor: Add ability to `include` logs based on resource attributes in addition to excluding logs based on resource attributes for strict matching. (#4895)
+- `kubelet` API: Add ability to create an empty CertPool when the system run environment is windows
+- `JMX` receiver: Allow JMX receiver logging level to be configured (#4898)
+- `datadog` exporter: Export histograms as in OpenMetrics Datadog check (#5065)
+- `dockerstats` receiver: Set Schema URL (#5239)
+- Rename memorylimiter -> memorylimiterprocessor (#5262)
+- `awskinesis` exporter: Refactor AWS kinesis exporter to be synchronous  (#5248)
+
+## v0.35.0
+
+## 🛑 Breaking changes 🛑
+
+- Rename configparser.Parser to configparser.ConfigMap (#5070)
+- Rename TelemetryCreateSettings -> TelemetrySettings (#5169)
+
+## 💡 Enhancements 💡
+
+- chore: update influxdb exporter and receiver (#5058)
+- chore(dynatrace): use payload limit from api constants (#5077)
+- Add documentation for filelog's new force_flush_period parameter (#5066)
+- Reuse the gzip reader with a sync.Pool (#5145)
+- Add a trace observer when splunkhecreceiver is used for logs (#5063)
+- Remove usage of deprecated pdata.AttributeValueMapToMap (#5174)
+- Podman Stats Receiver: Receiver and Metrics implementation (#4577)
+
+## 🧰 Bug fixes 🧰
+
+- Use staleness markers generated by prometheus, rather than making our own (#5062)
+- `datadogexporter` exporter: skip NaN and infinite values (#5053)
+
+## v0.34.0
+
+## 🚀 New components 🚀
+
+- [`cumulativetodelta` processor](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/cumulativetodeltaprocessor) to convert cumulative sum metrics to cumulative delta
+
+- [`file` exporter](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/exporter/fileexporter) from core repository ([#3474](https://github.com/open-telemetry/opentelemetry-collector/issues/3474))
+- [`jaeger` exporter](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/exporter/jaegerexporter) from core repository ([#3474](https://github.com/open-telemetry/opentelemetry-collector/issues/3474))
+- [`kafka` exporter](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/exporter/kafkaexporter) from core repository ([#3474](https://github.com/open-telemetry/opentelemetry-collector/issues/3474))
+- [`opencensus` exporter](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/exporter/opencensusexporter) from core repository ([#3474](https://github.com/open-telemetry/opentelemetry-collector/issues/3474))
+- [`prometheus` exporter](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/exporter/prometheusexporter) from core repository ([#3474](https://github.com/open-telemetry/opentelemetry-collector/issues/3474))
+- [`prometheusremotewrite` exporter](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/exporter/prometheusremotewriteexporter) from core repository ([#3474](https://github.com/open-telemetry/opentelemetry-collector/issues/3474))
+- [`zipkin` exporter](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/exporter/zipkinexporter) from core repository ([#3474](https://github.com/open-telemetry/opentelemetry-collector/issues/3474))
+- [`attribute` processor](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/attributeprocessor) from core repository ([#3474](https://github.com/open-telemetry/opentelemetry-collector/issues/3474))
+- [`filter` processor](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/filterprocessor) from core repository ([#3474](https://github.com/open-telemetry/opentelemetry-collector/issues/3474))
+- [`probabilisticsampler` processor](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/probabilisticsamplerprocessor) from core repository ([#3474](https://github.com/open-telemetry/opentelemetry-collector/issues/3474))
+- [`resource` processor](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/resourceprocessor) from core repository ([#3474](https://github.com/open-telemetry/opentelemetry-collector/issues/3474))
+- [`span` processor](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/spanprocessor) from core repository ([#3474](https://github.com/open-telemetry/opentelemetry-collector/issues/3474))
+- [`hostmetrics` receiver](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/hostmetricsreceiver) from core repository ([#3474](https://github.com/open-telemetry/opentelemetry-collector/issues/3474))
+- [`jaeger` receiver](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/jaegerreceiver) from core repository ([#3474](https://github.com/open-telemetry/opentelemetry-collector/issues/3474))
+- [`kafka` receiver](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/kafkareceiver) from core repository ([#3474](https://github.com/open-telemetry/opentelemetry-collector/issues/3474))
+- [`opencensus` receiver](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/opencensusreceiver) from core repository ([#3474](https://github.com/open-telemetry/opentelemetry-collector/issues/3474))
+- [`prometheus` receiver](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/prometheusreceiver) from core repository ([#3474](https://github.com/open-telemetry/opentelemetry-collector/issues/3474))
+- [`zipkin` receiver](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/zipkinreceiver) from core repository ([#3474](https://github.com/open-telemetry/opentelemetry-collector/issues/3474))
+- [`bearertokenauth` extension](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/extension/bearertokenauthextension) from core repository ([#3474](https://github.com/open-telemetry/opentelemetry-collector/issues/3474))
+- [`healthcheck` extension](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/extension/healthcheckextension) from core repository ([#3474](https://github.com/open-telemetry/opentelemetry-collector/issues/3474))
+- [`oidcauth` extension](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/extension/oidcauthextension) from core repository ([#3474](https://github.com/open-telemetry/opentelemetry-collector/issues/3474))
+- [`pprof` extension](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/extension/pprofextension) from core repository ([#3474](https://github.com/open-telemetry/opentelemetry-collector/issues/3474))
+- [`testbed`](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/testbed) from core repository ([#3474](https://github.com/open-telemetry/opentelemetry-collector/issues/3474))
+
+## 💡 Enhancements 💡
+
+- `tailsampling` processor: Add new policy `probabilistic` (#3876)
+
+## v0.33.0
+
+# 🎉 OpenTelemetry Collector Contrib v0.33.0 (Beta) 🎉
+
+The OpenTelemetry Collector Contrib contains everything in the [opentelemetry-collector release](https://github.com/open-telemetry/opentelemetry-collector/releases/tag/v0.32.0) (be sure to check the release notes here as well!). Check out the [Getting Started Guide](https://opentelemetry.io/docs/collector/getting-started/) for deployment and configuration information.
+
+## 🚀 New components 🚀
+
+- [`cumulativetodelta` processor](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/cumulativetodeltaprocessor) to convert cumulative sum metrics to cumulative delta
+
+## 💡 Enhancements 💡
+
+- Collector contrib has now full support for metrics proto v0.9.0.
+
+## v0.32.0
+
+# 🎉 OpenTelemetry Collector Contrib v0.32.0 (Beta) 🎉
+
+This release is marked as "bad" since the metrics pipelines will produce bad data.
+
+- See https://github.com/open-telemetry/opentelemetry-collector/issues/3824
+
+The OpenTelemetry Collector Contrib contains everything in the [opentelemetry-collector release](https://github.com/open-telemetry/opentelemetry-collector/releases/tag/v0.32.0) (be sure to check the release notes here as well!). Check out the [Getting Started Guide](https://opentelemetry.io/docs/collector/getting-started/) for deployment and configuration information.
+
+## 🛑 Breaking changes 🛑
+
+- `splunk_hec` receiver/exporter: `com.splunk.source` field is mapped to `source` field in Splunk instead of `service.name` (#4596)
+- `redis` receiver: Move interval runner package to `internal/interval` (#4600)
+- `datadog` exporter: Export summary count and sum as monotonic counts (#4605)
+
+## 💡 Enhancements 💡
+
+- `logzio` exporter:
+  - New implementation of an in-memory queue to store traces, data compression with gzip, and queue configuration options (#4395)
+  - Make `Hclog2ZapLogger` struct and methods private for public go api review (#4431)
+- `newrelic` exporter (#4392):
+  - Marked unsupported metric as permanent error
+  - Force the interval to be valid even if 0
+- `awsxray` exporter: Add PHP stacktrace parsing support (#4454)
+- `file_storage` extension: Implementation of batch storage API (#4145)
+- `datadog` exporter:
+  - Skip sum metrics with no aggregation temporality (#4597)
+  - Export delta sums as counts (#4609)
+- `elasticsearch` exporter: Add dedot support (#4579)
+- `signalfx` exporter: Add process metric to translation rules (#4598)
+- `splunk_hec` exporter: Add profiling logs support (#4464)
+- `awsemf` exporter: Replace logGroup and logStream pattern with metric labels (#4466)
+
+## 🧰 Bug fixes 🧰
+
+- `awsxray` exporter: Fix the origin on ECS/EKS/EB on EC2 cases (#4391)
+- `splunk_hec` exporter: Prevent re-sending logs that were successfully sent (#4467)
+- `signalfx` exporter: Prefix temporary metric translations (#4394)
+
+## v0.31.0
+
+# 🎉 OpenTelemetry Collector Contrib v0.31.0 (Beta) 🎉
+
+The OpenTelemetry Collector Contrib contains everything in the [opentelemetry-collector release](https://github.com/open-telemetry/opentelemetry-collector/releases/tag/v0.31.0) (be sure to check the release notes here as well!). Check out the [Getting Started Guide](https://opentelemetry.io/docs/collector/getting-started/) for deployment and configuration information.
+
+## 🛑 Breaking changes 🛑
+
+- `influxdb` receiver: Removed `metrics_schema` config option (#4277)
+
+## 💡 Enhancements 💡
+
+- Update to OTLP 0.8.0:
+  - Remove use of `IntHistogram` (#4276)
+  - Update exporters/receivers for `NumberDataPoint`
+- Remove use of deprecated `pdata` slice `Resize()` (#4203, #4208, #4209)
+- `awsemf` exporter: Added the option to have a user who is sending metrics from EKS Fargate Container Insights to reformat them to look the same as insights from ECS so that they can be ingested by CloudWatch (#4130)
+- `k8scluster` receiver: Support OpenShift cluster quota metrics (#4342)
+- `newrelic` exporter (#4278):
+  - Requests are now retry-able via configuration option (defaults to retries enabled). Permanent errors are not retried.
+  - The exporter monitoring metrics now include an untagged summary metric for ease of use.
+  - Improved error logging to include URLs that fail to post messages to New Relic.
+- `datadog` exporter: Upscale trace stats when global sampling rate is set (#4213)
+
+## 🧰 Bug fixes 🧰
+
+- `statsd` receiver: Add option to set Counter to be monotonic (#4154)
+- Fix `internal/stanza` severity mappings (#4315)
+- `awsxray` exporter: Fix the wrong AWS env resource setting (#4384)
+- `newrelic` exporter (#4278):
+  - Configuration unmarshalling did not allow timeout value to be set to 0 in the endpoint specific section.
+  - Request cancellation was not propagated via context into the http request.
+  - The queued retry logger is set to a zap.Nop logger as intended.
+
+## v0.30.0
+
+# 🎉 OpenTelemetry Collector Contrib v0.30.0 (Beta) 🎉
+
+The OpenTelemetry Collector Contrib contains everything in the [opentelemetry-collector release](https://github.com/open-telemetry/opentelemetry-collector/releases/tag/v0.30.0) (be sure to check the release notes here as well!). Check out the [Getting Started Guide](https://opentelemetry.io/docs/collector/getting-started/) for deployment and configuration information.
+
+## 🚀 New components 🚀
+- `oauth2clientauth` extension: ported from core (#3848)
+- `metrics-generation` processor: is now enabled and available (#4047) 
+
+## 🛑 Breaking changes 🛑
+
+- Removed `jaegerthrifthttp` exporter (#4089) 
+
+## 💡 Enhancements 💡
+
+- `tailsampling` processor:
+  - Add new policy `status_code` (#3754)
+  - Add new tail sampling processor policy: status_code (#3754)
+- `awscontainerinsights` receiver:
+  - Integrate components and fix bugs for EKS Container Insights (#3846) 
+  - Add Cgroup to collect ECS instance metrics for container insights receiver #3875
+- `spanmetrics` processor: Support sub-millisecond latency buckets (#4091) 
+- `sentry` exporter: Add exception event capture in sentry (#3854)
+
+## v0.29.0
+
+# 🎉 OpenTelemetry Collector Contrib v0.29.0 (Beta) 🎉
+
+The OpenTelemetry Collector Contrib contains everything in the [opentelemetry-collector release](https://github.com/open-telemetry/opentelemetry-collector/releases/tag/v0.29.0) (be sure to check the release notes here as well!). Check out the [Getting Started Guide](https://opentelemetry.io/docs/collector/getting-started/) for deployment and configuration information.
+
+## 🛑 Breaking changes 🛑
+
+- `redis` receiver (#3808)
+  - removed configuration `service_name`. Use resource processor or `resource_attributes` setting if using `receivercreator`
+  - removed `type` label and set instrumentation library name to `otelcol/redis` as other receivers do
+
+## 💡 Enhancements 💡
+
+- `tailsampling` processor:
+  - Add new policy `latency` (#3750)
+  - Add new policy `status_code` (#3754)
+- `splunkhec` exporter: Include `trace_id` and `span_id` if set (#3850)
+- `newrelic` exporter: Update instrumentation naming in accordance with otel spec (#3733)
+- `sentry` exporter: Added support for insecure connection with Sentry (#3446)
+- `k8s` processor:
+  - Add namespace k8s tagger (#3384)
+  - Add ignored pod names as config parameter (#3520)
+- `awsemf` exporter: Add support for `TaskDefinitionFamily` placeholder on log stream name (#3755)
+- `loki` exporter: Add resource attributes as Loki label (#3418)
+
+## 🧰 Bug fixes 🧰
+
+- `datadog` exporter:
+  - Ensure top level spans are computed (#3786)
+  - Update `env` clobbering behavior (#3851)
+- `awsxray` exporter: Fixed filtered attribute translation (#3757)
+- `splunkhec` exporter: Include trace and span id if set in log record (#3850)
+
+## v0.28.0
+
+# 🎉 OpenTelemetry Collector Contrib v0.28.0 (Beta) 🎉
+
+The OpenTelemetry Collector Contrib contains everything in the [opentelemetry-collector release](https://github.com/open-telemetry/opentelemetry-collector/releases/tag/v0.28.0) (be sure to check the release notes here as well!). Check out the [Getting Started Guide](https://opentelemetry.io/docs/collector/getting-started/) for deployment and configuration information.
+
+## 🚀 New components 🚀
+
+- `humio` exporter to export data to Humio using JSON over the HTTP [Ingest API](https://docs.humio.com/reference/api/ingest/)
+- `udplog` receiver to receives logs from udp using the [opentelemetry-log-collection](https://github.com/open-telemetry/opentelemetry-log-collection) library
+- `tanzuobservability` exporter to send traces to [Tanzu Observability](https://tanzu.vmware.com/observability)
+
+## 🛑 Breaking changes 🛑
+
+- `f5cloud` exporter (#3509):
+  - Renamed the config 'auth' field to 'f5cloud_auth'. This will prevent a config field name collision when [Support for Custom Exporter Authenticators as Extensions](https://github.com/open-telemetry/opentelemetry-collector/pull/3128) is ready to be integrated.
+
+## 💡 Enhancements 💡
+
+- Enabled Dependabot for Github Actions (#3543)
+- Change obsreport helpers for receivers to use the new pattern created in Collector (#3439,#3443,#3449,#3504,#3521,#3548)
+- `datadog` exporter:
+  - Add logging for unknown or unsupported metric types (#3421)
+  - Add collector version tag to internal health metrics (#3394)
+  - Remove sublayer stats calc and mutex (#3531)
+  - Deduplicate hosts for which we send running metrics (#3539)
+  - Add support for summary datatype (#3660)
+  - Add datadog span operation name remapping config option (#3444)
+  - Update error formatting for error spans that are not exceptions (#3701)
+- `nginx` receiver: Update the nginx metrics to more closely align with the conventions (#3420)
+- `elasticsearch` exporter: Init JSON encoding support (#3101)
+- `jmx` receiver:
+  - Allow setting system properties (#3450)
+  - Update tested JMX Metric Gatherer release (#3695)
+- Refactor components for the Client Authentication Extensions (#3507)
+- Remove redundant conversion calls (#3688)
+- `storage` extension: Add a `Close` method to Client interface (#3506)
+- `splunkhec` exporter: Add `metric_type` as key which maps to the type of the metric (#3696)
+- `k8s` processor: Add semantic conventions to k8s-tagger for pod metadata (#3544)
+- `kubeletstats` receiver: Refactor kubelet client to internal folder (#3698)
+- `newrelic` exporter (#3690):
+  - Updates the log level from error to debug when New Relic rate limiting occurs
+  - Updates the sanitized api key that is reported via metrics
+- `filestorage` extension: Add ability to specify name (#3703)
+- `awsemf` exporter: Store the initial value for cumulative metrics (#3425)
+- `awskinesis` exporter: Refactor to allow for extended types of encoding (#3655)
+- `ecsobserver` extension:
+  - Add task definition, ec2, and service fetcher (#3503)
+  - Add exporter to convert task to target (#3333)
+
+## 🧰 Bug fixes 🧰
+
+- `awsemf` exporter: Remove delta adjustment from summaries by default (#3408)
+- `alibabacloudlogservice` exporter: Sanitize labels for metrics (#3454)
+- `statsd` receiver: Fix StatsD drop metrics tags when using summary as observer_type for timer/histogram (#3440)
+- `awsxray` exporter: Restore setting of Throttle for HTTP throttle response (#3685)
+- `awsxray` receiver: Fix quick start bug (#3653)
+- `metricstransform` processor: Check all data points for matching metric label values (#3435)
+
+## v0.27.0
+
+# 🎉 OpenTelemetry Collector Contrib v0.27.0 (Beta) 🎉
+
+The OpenTelemetry Collector Contrib contains everything in the [opentelemetry-collector release](https://github.com/open-telemetry/opentelemetry-collector/releases/tag/v0.27.0) (be sure to check the release notes here as well!). Check out the [Getting Started Guide](https://opentelemetry.io/docs/collector/getting-started/) for deployment and configuration information.
+
+## 🚀 New components 🚀
+
+- `tcplog` receiver to receive logs from tcp using the [opentelemetry-log-collection](https://github.com/open-telemetry/opentelemetry-log-collection) library
+- `influxdb` receiver to accept metrics data as [InfluxDB Line Protocol](https://docs.influxdata.com/influxdb/v2.0/reference/syntax/line-protocol/)
+
+## 💡 Enhancements 💡
+
+- `splunkhec` exporter:
+  - Include the response in returned 400 errors (#3338)
+  - Map summary metrics to Splunk HEC metrics (#3344)
+  - Add HEC telemetry (#3260)
+- `newrelic` exporter: Include dropped attributes and events counts (#3187)
+- `datadog` exporter:
+  - Add Fargate task ARN to container tags (#3326)
+  - Improve mappings for span kind dd span type (#3368)
+- `signalfx` exporter: Add info log for host metadata properties update (#3343)
+- `awsprometheusremotewrite` exporter: Add SDK and system information to User-Agent header (#3317)
+- `metricstransform` processor: Add filtering capabilities matching metric label values for applying changes (#3201)
+- `groupbytrace` processor: Added workers for queue processing (#2902)
+- `resourcedetection` processor: Add docker detector (#2775)
+- `tailsampling` processor: Support regex on span attribute filtering (#3335)
+
+## 🧰 Bug fixes 🧰
+
+- `datadog` exporter:
+  - Update Datadog attributes to tags mapping (#3292)
+  - Consistent `hostname` and default metrics behavior (#3286)
+- `signalfx` exporter: Handle character limits on metric names and dimensions (#3328)
+- `newrelic` exporter: Fix timestamp value for cumulative metrics (#3406)
+
 ## v0.26.0
 
 # 🎉 OpenTelemetry Collector Contrib v0.26.0 (Beta) 🎉

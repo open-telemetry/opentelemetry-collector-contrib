@@ -20,7 +20,7 @@ import (
 
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confignet"
-	"go.opentelemetry.io/collector/consumer/consumererror"
+	"go.uber.org/multierr"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver/protocol"
 )
@@ -31,17 +31,16 @@ type Config struct {
 	NetAddr                 confignet.NetAddr                `mapstructure:",squash"`
 	AggregationInterval     time.Duration                    `mapstructure:"aggregation_interval"`
 	EnableMetricType        bool                             `mapstructure:"enable_metric_type"`
+	IsMonotonicCounter      bool                             `mapstructure:"is_monotonic_counter"`
 	TimerHistogramMapping   []protocol.TimerHistogramMapping `mapstructure:"timer_histogram_mapping"`
 }
 
 func (c *Config) validate() error {
 
-	var errors []error
-	supportedStatsdType := []string{"timing", "timer", "histogram"}
-	supportedObserverType := []string{"gauge", "summary"}
+	var errs error
 
 	if c.AggregationInterval <= 0 {
-		errors = append(errors, fmt.Errorf("aggregation_interval must be a positive duration"))
+		errs = multierr.Append(errs, fmt.Errorf("aggregation_interval must be a positive duration"))
 	}
 
 	var TimerHistogramMappingMissingObjectName bool
@@ -52,8 +51,10 @@ func (c *Config) validate() error {
 			break
 		}
 
-		if !protocol.Contains(supportedStatsdType, eachMap.StatsdType) {
-			errors = append(errors, fmt.Errorf("statsd_type is not supported: %s", eachMap.StatsdType))
+		switch eachMap.StatsdType {
+		case protocol.TimingTypeName, protocol.TimingAltTypeName, protocol.HistogramTypeName:
+		default:
+			errs = multierr.Append(errs, fmt.Errorf("statsd_type is not a supported mapping: %s", eachMap.StatsdType))
 		}
 
 		if eachMap.ObserverType == "" {
@@ -61,14 +62,16 @@ func (c *Config) validate() error {
 			break
 		}
 
-		if !protocol.Contains(supportedObserverType, eachMap.ObserverType) {
-			errors = append(errors, fmt.Errorf("observer_type is not supported: %s", eachMap.ObserverType))
+		switch eachMap.ObserverType {
+		case protocol.GaugeObserver, protocol.SummaryObserver:
+		default:
+			errs = multierr.Append(errs, fmt.Errorf("observer_type is not supported: %s", eachMap.ObserverType))
 		}
 	}
 
 	if TimerHistogramMappingMissingObjectName {
-		errors = append(errors, fmt.Errorf("must specify object id for all TimerHistogramMappings"))
+		errs = multierr.Append(errs, fmt.Errorf("must specify object id for all TimerHistogramMappings"))
 	}
 
-	return consumererror.Combine(errors)
+	return errs
 }

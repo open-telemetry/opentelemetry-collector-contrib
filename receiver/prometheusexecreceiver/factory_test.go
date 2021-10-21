@@ -29,10 +29,9 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtest"
-	"go.opentelemetry.io/collector/receiver/prometheusreceiver"
-	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusexecreceiver/subprocessmanager"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver"
 )
 
 func TestCreateTraceAndMetricsReceiver(t *testing.T) {
@@ -47,34 +46,34 @@ func TestCreateTraceAndMetricsReceiver(t *testing.T) {
 	factory := NewFactory()
 	factories.Receivers[typeStr] = factory
 
-	cfg, err := configtest.LoadConfigFile(t, path.Join(".", "testdata", "config.yaml"), factories)
+	cfg, err := configtest.LoadConfigAndValidate(path.Join(".", "testdata", "config.yaml"), factories)
 
 	assert.NoError(t, err)
 	assert.NotNil(t, cfg)
 
-	receiver := cfg.Receivers[config.NewID(typeStr)]
+	receiver := cfg.Receivers[config.NewComponentID(typeStr)]
 
 	// Test CreateTracesReceiver
-	traceReceiver, err = factory.CreateTracesReceiver(context.Background(), component.ReceiverCreateParams{Logger: zap.NewNop()}, receiver, nil)
+	traceReceiver, err = factory.CreateTracesReceiver(context.Background(), componenttest.NewNopReceiverCreateSettings(), receiver, nil)
 
 	assert.Equal(t, nil, traceReceiver)
 	assert.ErrorIs(t, err, componenterror.ErrDataTypeIsNotSupported)
 
 	// Test CreateMetricsReceiver error because of lack of command
-	_, err = factory.CreateMetricsReceiver(context.Background(), component.ReceiverCreateParams{Logger: zap.NewNop()}, receiver, nil)
+	_, err = factory.CreateMetricsReceiver(context.Background(), componenttest.NewNopReceiverCreateSettings(), receiver, nil)
 	assert.NotNil(t, err)
 
 	// Test CreateMetricsReceiver
-	receiver = cfg.Receivers[config.NewIDWithName(typeStr, "test")]
-	metricReceiver, err = factory.CreateMetricsReceiver(context.Background(), component.ReceiverCreateParams{Logger: zap.NewNop()}, receiver, nil)
+	receiver = cfg.Receivers[config.NewComponentIDWithName(typeStr, "test")]
+	metricReceiver, err = factory.CreateMetricsReceiver(context.Background(), componenttest.NewNopReceiverCreateSettings(), receiver, nil)
 	assert.Equal(t, nil, err)
 
 	wantPer := &prometheusExecReceiver{
-		params:   component.ReceiverCreateParams{Logger: zap.NewNop()},
+		params:   componenttest.NewNopReceiverCreateSettings(),
 		config:   receiver.(*Config),
 		consumer: nil,
 		promReceiverConfig: &prometheusreceiver.Config{
-			ReceiverSettings: config.NewReceiverSettings(config.NewIDWithName(typeStr, "test")),
+			ReceiverSettings: config.NewReceiverSettings(config.NewComponentIDWithName(typeStr, "test")),
 			PrometheusConfig: &promconfig.Config{
 				ScrapeConfigs: []*promconfig.ScrapeConfig{
 					{

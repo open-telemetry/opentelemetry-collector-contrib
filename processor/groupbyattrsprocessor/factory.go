@@ -56,7 +56,7 @@ func NewFactory() component.ProcessorFactory {
 // createDefaultConfig creates the default configuration for the processor.
 func createDefaultConfig() config.Processor {
 	return &Config{
-		ProcessorSettings: config.NewProcessorSettings(config.NewID(typeStr)),
+		ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
 		GroupByKeys:       []string{},
 	}
 }
@@ -87,7 +87,7 @@ func createGroupByAttrsProcessor(logger *zap.Logger, attributes []string) (*grou
 // createTracesProcessor creates a trace processor based on this config.
 func createTracesProcessor(
 	_ context.Context,
-	params component.ProcessorCreateParams,
+	params component.ProcessorCreateSettings,
 	cfg config.Processor,
 	nextConsumer consumer.Traces) (component.TracesProcessor, error) {
 
@@ -100,14 +100,14 @@ func createTracesProcessor(
 	return processorhelper.NewTracesProcessor(
 		cfg,
 		nextConsumer,
-		gap,
+		gap.processTraces,
 		processorhelper.WithCapabilities(consumerCapabilities))
 }
 
 // createLogsProcessor creates a metrics processor based on this config.
 func createLogsProcessor(
 	_ context.Context,
-	params component.ProcessorCreateParams,
+	params component.ProcessorCreateSettings,
 	cfg config.Processor,
 	nextConsumer consumer.Logs) (component.LogsProcessor, error) {
 
@@ -120,6 +120,6 @@ func createLogsProcessor(
 	return processorhelper.NewLogsProcessor(
 		cfg,
 		nextConsumer,
-		gap,
+		gap.processLogs,
 		processorhelper.WithCapabilities(consumerCapabilities))
 }

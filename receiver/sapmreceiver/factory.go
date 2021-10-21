@@ -47,7 +47,7 @@ func NewFactory() component.ReceiverFactory {
 
 func createDefaultConfig() config.Receiver {
 	return &Config{
-		ReceiverSettings: config.NewReceiverSettings(config.NewID(typeStr)),
+		ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
 		HTTPServerSettings: confighttp.HTTPServerSettings{
 			Endpoint: defaultEndpoint,
 		},
@@ -83,8 +83,8 @@ func (rCfg *Config) validate() error {
 
 // CreateTracesReceiver creates a trace receiver based on provided config.
 func createTracesReceiver(
-	ctx context.Context,
-	params component.ReceiverCreateParams,
+	_ context.Context,
+	params component.ReceiverCreateSettings,
 	cfg config.Receiver,
 	nextConsumer consumer.Traces,
 ) (component.TracesReceiver, error) {
@@ -97,5 +97,5 @@ func createTracesReceiver(
 	}
 
 	// Create the receiver.
-	return New(ctx, params, rCfg, nextConsumer)
+	return newReceiver(params, rCfg, nextConsumer)
 }

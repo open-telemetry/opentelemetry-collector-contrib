@@ -25,8 +25,9 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/testbed/testbed"
+	"go.opentelemetry.io/collector/model/pdata"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/testbed"
 )
 
 // TODO: Extract common bits from FileLogWriter and NewFluentBitFileLogWriter
@@ -88,7 +89,7 @@ func (f *FileLogWriter) convertLogToTextLine(lr pdata.LogRecord) []byte {
 	sb.WriteString(lr.SeverityText())
 	sb.WriteString(" ")
 
-	if lr.Body().Type() == pdata.AttributeValueSTRING {
+	if lr.Body().Type() == pdata.AttributeValueTypeString {
 		sb.WriteString(lr.Body().StringVal())
 	}
 
@@ -97,13 +98,13 @@ func (f *FileLogWriter) convertLogToTextLine(lr pdata.LogRecord) []byte {
 		sb.WriteString(k)
 		sb.WriteString("=")
 		switch v.Type() {
-		case pdata.AttributeValueSTRING:
+		case pdata.AttributeValueTypeString:
 			sb.WriteString(v.StringVal())
-		case pdata.AttributeValueINT:
+		case pdata.AttributeValueTypeInt:
 			sb.WriteString(strconv.FormatInt(v.IntVal(), 10))
-		case pdata.AttributeValueDOUBLE:
+		case pdata.AttributeValueTypeDouble:
 			sb.WriteString(strconv.FormatFloat(v.DoubleVal(), 'f', -1, 64))
-		case pdata.AttributeValueBOOL:
+		case pdata.AttributeValueTypeBool:
 			sb.WriteString(strconv.FormatBool(v.BoolVal()))
 		default:
 			panic("missing case")

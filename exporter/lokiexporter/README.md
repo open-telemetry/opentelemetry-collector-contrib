@@ -10,11 +10,15 @@ The following settings are required:
 
 - `endpoint` (no default): The target URL to send Loki log streams to (e.g.: http://loki:3100/loki/api/v1/push).
   
-- `labels.attributes` (no default): Map of attributes names to valid Loki label names (must match "^[a-zA-Z_][a-zA-Z0-9_]*$") 
-  allowed to be added as labels to Loki log streams. Logs that do not have at least one of these attributes will be dropped. 
+- `labels.{attributes/resource}` (no default): Either a map of attributes or resource names to valid Loki label names 
+  (must match "^[a-zA-Z_][a-zA-Z0-9_]*$") allowed to be added as labels to Loki log streams. 
+  Attributes are log record attributes that describe the log message itself. Resource attributes are attributes that 
+  belong to the infrastructure that create the log (container_name, cluster_name, etc.). At least one attribute from
+  attribute or resource is required 
+  Logs that do not have at least one of these attributes will be dropped. 
   This is a safety net to help prevent accidentally adding dynamic labels that may significantly increase cardinality, 
   thus having a performance impact on your Loki instance. See the 
-  [Loki label best practices](https://grafana.com/docs/loki/latest/best-practices/current-best-practices/) page for 
+  [Loki label best practices](https://grafana.com/docs/loki/latest/best-practices/) page for 
   additional details on the types of labels you may want to associate with log streams.
 
 The following settings can be optionally configured:
@@ -22,14 +26,14 @@ The following settings can be optionally configured:
 - `tenant_id` (no default): The tenant ID used to identify the tenant the logs are associated to. This will set the 
   "X-Scope-OrgID" header used by Loki. If left unset, this header will not be added.
 
-
-- `insecure` (default = false): When set to true disables verifying the server's certificate chain and host name. The
+- `tls`:
+  - `insecure` (default = false): When set to true disables verifying the server's certificate chain and host name. The
   connection is still encrypted but server identity is not verified.
-- `ca_file` (no default) Path to the CA cert to verify the server being connected to. Should only be used if `insecure` 
+  - `ca_file` (no default) Path to the CA cert to verify the server being connected to. Should only be used if `insecure` 
   is set to false.
-- `cert_file` (no default) Path to the TLS cert to use for client connections when TLS client auth is required. 
+  - `cert_file` (no default) Path to the TLS cert to use for client connections when TLS client auth is required. 
   Should only be used if `insecure` is set to false.
-- `key_file` (no default) Path to the TLS key to use for TLS required connections. Should only be used if `insecure` is
+  - `key_file` (no default) Path to the TLS key to use for TLS required connections. Should only be used if `insecure` is
   set to false.
 
 
@@ -47,13 +51,16 @@ loki:
   endpoint: http://loki:3100/loki/api/v1/push
   tenant_id: "example"
   labels:
-    attributes:
+    resource:
       # Allowing 'container.name' attribute and transform it to 'container_name', which is a valid Loki label name.
       container.name: "container_name"
       # Allowing 'k8s.cluster.name' attribute and transform it to 'k8s_cluster_name', which is a valid Loki label name.
       k8s.cluster.name: "k8s_cluster_name"
+    attributes:
       # Allowing 'severity' attribute and not providing a mapping, since the attribute name is a valid Loki label name.
       severity: ""
+      http.status_code: "http_status_code" 
+      
   headers:
     "X-Custom-Header": "loki_rocks"
 ```

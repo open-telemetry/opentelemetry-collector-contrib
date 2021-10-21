@@ -37,7 +37,7 @@ func NewFactory() component.ExporterFactory {
 
 func createDefaultConfig() config.Exporter {
 	return &Config{
-		ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
+		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
 		HTTPClientSettings: confighttp.HTTPClientSettings{
 			Endpoint: "",
 			Timeout:  30 * time.Second,
@@ -49,26 +49,24 @@ func createDefaultConfig() config.Exporter {
 		QueueSettings: exporterhelper.DefaultQueueSettings(),
 		TenantID:      "",
 		Labels: LabelsConfig{
-			Attributes: map[string]string{},
+			Attributes:         map[string]string{},
+			ResourceAttributes: map[string]string{},
 		},
 	}
 }
 
-func createLogsExporter(_ context.Context, params component.ExporterCreateParams, config config.Exporter) (component.LogsExporter, error) {
+func createLogsExporter(_ context.Context, set component.ExporterCreateSettings, config config.Exporter) (component.LogsExporter, error) {
 	expCfg := config.(*Config)
 
 	if err := expCfg.validate(); err != nil {
 		return nil, err
 	}
 
-	exp, err := newExporter(expCfg, params.Logger)
-	if err != nil {
-		return nil, err
-	}
+	exp := newExporter(expCfg, set.Logger)
 
 	return exporterhelper.NewLogsExporter(
 		expCfg,
-		params.Logger,
+		set,
 		exp.pushLogData,
 		// explicitly disable since we rely on http.Client timeout logic.
 		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),

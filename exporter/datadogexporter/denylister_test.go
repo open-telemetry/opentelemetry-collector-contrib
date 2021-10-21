@@ -68,16 +68,16 @@ func TestDenylister(t *testing.T) {
 	for _, test := range tests {
 		span := testSpan()
 		span.Resource = test.resource
-		filter := NewDenylister(test.filter)
+		filter := newDenylister(test.filter)
 
-		assert.Equal(t, test.expectation, filter.Allows(span))
+		assert.Equal(t, test.expectation, filter.allows(span))
 	}
 }
 
 func TestCompileRules(t *testing.T) {
-	filter := NewDenylister([]string{"\n{6}"})
+	filter := newDenylister([]string{"\n{6}"})
 	for i := 0; i < 100; i++ {
 		span := testSpan()
-		assert.True(t, filter.Allows(span))
+		assert.True(t, filter.allows(span))
 	}
 }

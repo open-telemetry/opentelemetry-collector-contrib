@@ -16,19 +16,19 @@ package dockerstatsreceiver
 
 import (
 	"errors"
+	"fmt"
 	"time"
 
 	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/receiver/scraperhelper"
 )
 
 var _ config.Receiver = (*Config)(nil)
 
 type Config struct {
-	config.ReceiverSettings `mapstructure:",squash"`
+	scraperhelper.ScraperControllerSettings `mapstructure:",squash"`
 	// The URL of the docker server.  Default is "unix:///var/run/docker.sock"
 	Endpoint string `mapstructure:"endpoint"`
-	// The time between each collection event.  Default is 10s.
-	CollectionInterval time.Duration `mapstructure:"collection_interval"`
 
 	// The maximum amount of time to wait for docker API responses.  Default is 5s
 	Timeout time.Duration `mapstructure:"timeout"`
@@ -53,14 +53,20 @@ type Config struct {
 
 	// Whether to report all CPU metrics.  Default is false
 	ProvidePerCoreCPUMetrics bool `mapstructure:"provide_per_core_cpu_metrics"`
+
+	// Docker client API version. Default is 1.22
+	DockerAPIVersion float64 `mapstructure:"api_version"`
 }
 
 func (config Config) Validate() error {
 	if config.Endpoint == "" {
-		return errors.New("config.Endpoint must be specified")
+		return errors.New("endpoint must be specified")
 	}
 	if config.CollectionInterval == 0 {
-		return errors.New("config.CollectionInterval must be specified")
+		return errors.New("collection_interval must be a positive duration")
+	}
+	if config.DockerAPIVersion < minimalRequiredDockerAPIVersion {
+		return fmt.Errorf("api_version must be at least %v", minimalRequiredDockerAPIVersion)
 	}
 	return nil
 }

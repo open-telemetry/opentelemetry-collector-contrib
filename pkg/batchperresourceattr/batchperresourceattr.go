@@ -18,8 +18,8 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/consumer/consumererror"
-	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/model/pdata"
+	"go.uber.org/multierr"
 )
 
 type batchTraces struct {
@@ -62,16 +62,15 @@ func (bt *batchTraces) ConsumeTraces(ctx context.Context, td pdata.Traces) error
 		}
 
 		// Append ResourceSpan to pdata.Traces for this attribute value.
-		tracesForAttr.ResourceSpans().Append(rs)
+		tgt := tracesForAttr.ResourceSpans().AppendEmpty()
+		rs.CopyTo(tgt)
 	}
 
-	var errs []error
+	var errs error
 	for _, td := range tracesByAttr {
-		if err := bt.next.ConsumeTraces(ctx, td); err != nil {
-			errs = append(errs, err)
-		}
+		errs = multierr.Append(errs, bt.next.ConsumeTraces(ctx, td))
 	}
-	return consumererror.Combine(errs)
+	return errs
 }
 
 type batchMetrics struct {
@@ -114,16 +113,15 @@ func (bt *batchMetrics) ConsumeMetrics(ctx context.Context, td pdata.Metrics) er
 		}
 
 		// Append ResourceSpan to pdata.Metrics for this attribute value.
-		metricsForAttr.ResourceMetrics().Append(rm)
+		tgt := metricsForAttr.ResourceMetrics().AppendEmpty()
+		rm.CopyTo(tgt)
 	}
 
-	var errs []error
+	var errs error
 	for _, td := range metricsByAttr {
-		if err := bt.next.ConsumeMetrics(ctx, td); err != nil {
-			errs = append(errs, err)
-		}
+		errs = multierr.Append(errs, bt.next.ConsumeMetrics(ctx, td))
 	}
-	return consumererror.Combine(errs)
+	return errs
 }
 
 type batchLogs struct {
@@ -166,14 +164,13 @@ func (bt *batchLogs) ConsumeLogs(ctx context.Context, td pdata.Logs) error {
 		}
 
 		// Append ResourceSpan to pdata.Logs for this attribute value.
-		logsForAttr.ResourceLogs().Append(rl)
+		tgt := logsForAttr.ResourceLogs().AppendEmpty()
+		rl.CopyTo(tgt)
 	}
 
-	var errs []error
+	var errs error
 	for _, td := range logsByAttr {
-		if err := bt.next.ConsumeLogs(ctx, td); err != nil {
-			errs = append(errs, err)
-		}
+		errs = multierr.Append(errs, bt.next.ConsumeLogs(ctx, td))
 	}
-	return consumererror.Combine(errs)
+	return errs
 }

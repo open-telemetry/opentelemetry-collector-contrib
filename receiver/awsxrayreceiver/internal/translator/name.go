@@ -17,7 +17,7 @@ package translator
 import (
 	"fmt"
 
-	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/model/pdata"
 
 	awsxray "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray"
 )
@@ -37,12 +37,12 @@ func addNameAndNamespace(seg *awsxray.Segment, span *pdata.Span) error {
 
 		// The `ClientIP` is not nil, it implies that this segment is generated
 		// by a server serving an incoming request
-		span.SetKind(pdata.SpanKindSERVER)
+		span.SetKind(pdata.SpanKindServer)
 	}
 
 	if seg.Namespace == nil {
-		if span.Kind() == pdata.SpanKindUNSPECIFIED {
-			span.SetKind(pdata.SpanKindINTERNAL)
+		if span.Kind() == pdata.SpanKindUnspecified {
+			span.SetKind(pdata.SpanKindInternal)
 		}
 		return nil
 	}
@@ -52,7 +52,7 @@ func addNameAndNamespace(seg *awsxray.Segment, span *pdata.Span) error {
 	attrs := span.Attributes()
 	// https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/c615d2db351929b99e46f7b427f39c12afe15b54/exporter/awsxrayexporter/translator/segment.go#L163
 	// https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/trace/api.md#spankind
-	span.SetKind(pdata.SpanKindCLIENT)
+	span.SetKind(pdata.SpanKindClient)
 	switch *seg.Namespace {
 	case validAWSNamespace:
 		// https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/c615d2db351929b99e46f7b427f39c12afe15b54/exporter/awsxrayexporter/translator/segment.go#L116

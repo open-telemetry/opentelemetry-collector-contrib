@@ -18,8 +18,7 @@ import (
 	"fmt"
 	"strings"
 
-	"go.opentelemetry.io/collector/consumer/pdata"
-	tracetranslator "go.opentelemetry.io/collector/translator/trace"
+	"go.opentelemetry.io/collector/model/pdata"
 )
 
 // carbon2TagString returns all attributes as space spearated key=value pairs.
@@ -45,7 +44,7 @@ func carbon2TagString(record metricPair) string {
 		returnValue = append(returnValue, fmt.Sprintf(
 			"%s=%s",
 			sanitizeCarbonString(k),
-			sanitizeCarbonString(tracetranslator.AttributeValueToString(v, false)),
+			sanitizeCarbonString(v.AsString()),
 		))
 		return true
 	})
@@ -64,24 +63,24 @@ func sanitizeCarbonString(text string) string {
 	return strings.NewReplacer(" ", "_", "=", ":", "\n", "_").Replace(text)
 }
 
-// carbon2IntRecord converts IntDataPoint to carbon2 metric string
+// carbon2NumberRecord converts NumberDataPoint to carbon2 metric string
 // with additional information from metricPair.
-func carbon2IntRecord(record metricPair, dataPoint pdata.IntDataPoint) string {
-	return fmt.Sprintf("%s  %d %d",
-		carbon2TagString(record),
-		dataPoint.Value(),
-		dataPoint.Timestamp()/1e9,
-	)
-}
-
-// carbon2DoubleRecord converts DoubleDataPoint to carbon2 metric string
-// with additional information from metricPair.
-func carbon2DoubleRecord(record metricPair, dataPoint pdata.DoubleDataPoint) string {
-	return fmt.Sprintf("%s  %g %d",
-		carbon2TagString(record),
-		dataPoint.Value(),
-		dataPoint.Timestamp()/1e9,
-	)
+func carbon2NumberRecord(record metricPair, dataPoint pdata.NumberDataPoint) string {
+	switch dataPoint.Type() {
+	case pdata.MetricValueTypeDouble:
+		return fmt.Sprintf("%s  %g %d",
+			carbon2TagString(record),
+			dataPoint.DoubleVal(),
+			dataPoint.Timestamp()/1e9,
+		)
+	case pdata.MetricValueTypeInt:
+		return fmt.Sprintf("%s  %d %d",
+			carbon2TagString(record),
+			dataPoint.IntVal(),
+			dataPoint.Timestamp()/1e9,
+		)
+	}
+	return ""
 }
 
 // carbon2metric2String converts metric to Carbon2 formatted string.
@@ -89,33 +88,20 @@ func carbon2Metric2String(record metricPair) string {
 	var nextLines []string
 
 	switch record.metric.DataType() {
-	case pdata.MetricDataTypeIntGauge:
-		dps := record.metric.IntGauge().DataPoints()
+	case pdata.MetricDataTypeGauge:
+		dps := record.metric.Gauge().DataPoints()
 		nextLines = make([]string, 0, dps.Len())
 		for i := 0; i < dps.Len(); i++ {
-			nextLines = append(nextLines, carbon2IntRecord(record, dps.At(i)))
+			nextLines = append(nextLines, carbon2NumberRecord(record, dps.At(i)))
 		}
-	case pdata.MetricDataTypeIntSum:
-		dps := record.metric.IntSum().DataPoints()
+	case pdata.MetricDataTypeSum:
+		dps := record.metric.Sum().DataPoints()
 		nextLines = make([]string, 0, dps.Len())
 		for i := 0; i < dps.Len(); i++ {
-			nextLines = append(nextLines, carbon2IntRecord(record, dps.At(i)))
-		}
-	case pdata.MetricDataTypeDoubleGauge:
-		dps := record.metric.DoubleGauge().DataPoints()
-		nextLines = make([]string, 0, dps.Len())
-		for i := 0; i < dps.Len(); i++ {
-			nextLines = append(nextLines, carbon2DoubleRecord(record, dps.At(i)))
-		}
-	case pdata.MetricDataTypeDoubleSum:
-		dps := record.metric.DoubleSum().DataPoints()
-		nextLines = make([]string, 0, dps.Len())
-		for i := 0; i < dps.Len(); i++ {
-			nextLines = append(nextLines, carbon2DoubleRecord(record, dps.At(i)))
+			nextLines = append(nextLines, carbon2NumberRecord(record, dps.At(i)))
 		}
 	// Skip complex metrics
 	case pdata.MetricDataTypeHistogram:
-	case pdata.MetricDataTypeIntHistogram:
 	case pdata.MetricDataTypeSummary:
 	}
 

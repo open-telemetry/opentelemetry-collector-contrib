@@ -15,35 +15,23 @@
 package redisreceiver
 
 import (
-	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/model/pdata"
 )
-
-func newResourceMetrics(ms pdata.MetricSlice, serviceName string) pdata.ResourceMetrics {
-	rm := pdata.NewResourceMetrics()
-	r := rm.Resource()
-	rattrs := r.Attributes()
-	rattrs.Insert("type", pdata.NewAttributeValueString(typeStr))
-	rattrs.Insert("service.name", pdata.NewAttributeValueString(serviceName))
-	ilm := pdata.NewInstrumentationLibraryMetrics()
-	rm.InstrumentationLibraryMetrics().Append(ilm)
-	ms.CopyTo(ilm.Metrics())
-	return rm
-}
 
 func buildKeyspaceTriplet(k *keyspace, t *timeBundle) pdata.MetricSlice {
 	ms := pdata.NewMetricSlice()
-	ms.Resize(3)
-	initKeyspaceKeysMetric(k, t, ms.At(0))
-	initKeyspaceExpiresMetric(k, t, ms.At(1))
-	initKeyspaceTTLMetric(k, t, ms.At(2))
+	ms.EnsureCapacity(3)
+	initKeyspaceKeysMetric(k, t, ms.AppendEmpty())
+	initKeyspaceExpiresMetric(k, t, ms.AppendEmpty())
+	initKeyspaceTTLMetric(k, t, ms.AppendEmpty())
 	return ms
 }
 
 func initKeyspaceKeysMetric(k *keyspace, t *timeBundle, dest pdata.Metric) {
 	m := &redisMetric{
 		name:   "redis/db/keys",
-		labels: map[string]string{"db": k.db},
-		pdType: pdata.MetricDataTypeIntGauge,
+		labels: map[string]pdata.AttributeValue{"db": pdata.NewAttributeValueString(k.db)},
+		pdType: pdata.MetricDataTypeGauge,
 	}
 	initIntMetric(m, int64(k.keys), t, dest)
 }
@@ -51,8 +39,8 @@ func initKeyspaceKeysMetric(k *keyspace, t *timeBundle, dest pdata.Metric) {
 func initKeyspaceExpiresMetric(k *keyspace, t *timeBundle, dest pdata.Metric) {
 	m := &redisMetric{
 		name:   "redis/db/expires",
-		labels: map[string]string{"db": k.db},
-		pdType: pdata.MetricDataTypeIntGauge,
+		labels: map[string]pdata.AttributeValue{"db": pdata.NewAttributeValueString(k.db)},
+		pdType: pdata.MetricDataTypeGauge,
 	}
 	initIntMetric(m, int64(k.expires), t, dest)
 }
@@ -61,8 +49,8 @@ func initKeyspaceTTLMetric(k *keyspace, t *timeBundle, dest pdata.Metric) {
 	m := &redisMetric{
 		name:   "redis/db/avg_ttl",
 		units:  "ms",
-		labels: map[string]string{"db": k.db},
-		pdType: pdata.MetricDataTypeIntGauge,
+		labels: map[string]pdata.AttributeValue{"db": pdata.NewAttributeValueString(k.db)},
+		pdType: pdata.MetricDataTypeGauge,
 	}
 	initIntMetric(m, int64(k.avgTTL), t, dest)
 }
@@ -70,37 +58,37 @@ func initKeyspaceTTLMetric(k *keyspace, t *timeBundle, dest pdata.Metric) {
 func initIntMetric(m *redisMetric, value int64, t *timeBundle, dest pdata.Metric) {
 	redisMetricToPDM(m, dest)
 
-	var pt pdata.IntDataPoint
-	if m.pdType == pdata.MetricDataTypeIntGauge {
-		pt = dest.IntGauge().DataPoints().AppendEmpty()
-	} else if m.pdType == pdata.MetricDataTypeIntSum {
-		sum := dest.IntSum()
+	var pt pdata.NumberDataPoint
+	if m.pdType == pdata.MetricDataTypeGauge {
+		pt = dest.Gauge().DataPoints().AppendEmpty()
+	} else if m.pdType == pdata.MetricDataTypeSum {
+		sum := dest.Sum()
 		sum.SetIsMonotonic(m.isMonotonic)
-		sum.SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+		sum.SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
 		pt = sum.DataPoints().AppendEmpty()
-		pt.SetStartTimestamp(pdata.TimestampFromTime(t.serverStart))
+		pt.SetStartTimestamp(pdata.NewTimestampFromTime(t.serverStart))
 	}
-	pt.SetValue(value)
-	pt.SetTimestamp(pdata.TimestampFromTime(t.current))
-	pt.LabelsMap().InitFromMap(m.labels)
+	pt.SetIntVal(value)
+	pt.SetTimestamp(pdata.NewTimestampFromTime(t.current))
+	pt.Attributes().InitFromMap(m.labels)
 }
 
 func initDoubleMetric(m *redisMetric, value float64, t *timeBundle, dest pdata.Metric) {
 	redisMetricToPDM(m, dest)
 
-	var pt pdata.DoubleDataPoint
-	if m.pdType == pdata.MetricDataTypeDoubleGauge {
-		pt = dest.DoubleGauge().DataPoints().AppendEmpty()
-	} else if m.pdType == pdata.MetricDataTypeDoubleSum {
-		sum := dest.DoubleSum()
+	var pt pdata.NumberDataPoint
+	if m.pdType == pdata.MetricDataTypeGauge {
+		pt = dest.Gauge().DataPoints().AppendEmpty()
+	} else if m.pdType == pdata.MetricDataTypeSum {
+		sum := dest.Sum()
 		sum.SetIsMonotonic(m.isMonotonic)
-		sum.SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+		sum.SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
 		pt = sum.DataPoints().AppendEmpty()
-		pt.SetStartTimestamp(pdata.TimestampFromTime(t.serverStart))
+		pt.SetStartTimestamp(pdata.NewTimestampFromTime(t.serverStart))
 	}
-	pt.SetValue(value)
-	pt.SetTimestamp(pdata.TimestampFromTime(t.current))
-	pt.LabelsMap().InitFromMap(m.labels)
+	pt.SetDoubleVal(value)
+	pt.SetTimestamp(pdata.NewTimestampFromTime(t.current))
+	pt.Attributes().InitFromMap(m.labels)
 }
 
 func redisMetricToPDM(m *redisMetric, dest pdata.Metric) {

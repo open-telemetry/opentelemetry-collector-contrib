@@ -23,13 +23,13 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
-	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-	"go.opentelemetry.io/collector/translator/trace/jaeger"
+	"go.opentelemetry.io/collector/model/pdata"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchperresourceattr"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger"
 )
 
 // TODO: Find a place for this to be shared.
@@ -50,7 +50,7 @@ func (se *sapmExporter) Shutdown(context.Context) error {
 	return nil
 }
 
-func newSAPMExporter(cfg *Config, params component.ExporterCreateParams) (sapmExporter, error) {
+func newSAPMExporter(cfg *Config, params component.ExporterCreateSettings) (sapmExporter, error) {
 	err := cfg.validate()
 	if err != nil {
 		return sapmExporter{}, err
@@ -68,15 +68,15 @@ func newSAPMExporter(cfg *Config, params component.ExporterCreateParams) (sapmEx
 	}, err
 }
 
-func newSAPMTracesExporter(cfg *Config, params component.ExporterCreateParams) (component.TracesExporter, error) {
-	se, err := newSAPMExporter(cfg, params)
+func newSAPMTracesExporter(cfg *Config, set component.ExporterCreateSettings) (component.TracesExporter, error) {
+	se, err := newSAPMExporter(cfg, set)
 	if err != nil {
 		return nil, err
 	}
 
 	te, err := exporterhelper.NewTracesExporter(
 		cfg,
-		params.Logger,
+		set,
 		se.pushTraceData,
 		exporterhelper.WithShutdown(se.Shutdown),
 		exporterhelper.WithQueue(cfg.QueueSettings),
@@ -111,7 +111,7 @@ func (se *sapmExporter) pushTraceData(ctx context.Context, td pdata.Traces) erro
 	accessToken := se.retrieveAccessToken(rss.At(0))
 	batches, err := jaeger.InternalTracesToJaegerProto(td)
 	if err != nil {
-		return consumererror.Permanent(err)
+		return consumererror.NewPermanent(err)
 	}
 
 	// Cannot remove the access token from the pdata, because exporters required to not modify incoming pdata,
@@ -121,7 +121,7 @@ func (se *sapmExporter) pushTraceData(ctx context.Context, td pdata.Traces) erro
 	err = se.client.ExportWithAccessToken(ctx, batches, accessToken)
 	if err != nil {
 		if sendErr, ok := err.(*sapmclient.ErrSend); ok && sendErr.Permanent {
-			return consumererror.Permanent(sendErr)
+			return consumererror.NewPermanent(sendErr)
 		}
 		return err
 	}

@@ -26,10 +26,9 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/consumer/consumererror"
-	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/exporter/otlpexporter"
-	"go.uber.org/zap"
+	"go.opentelemetry.io/collector/model/pdata"
+	"go.uber.org/multierr"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchpersignal"
 )
@@ -37,8 +36,6 @@ import (
 var _ component.LogsExporter = (*logExporterImp)(nil)
 
 type logExporterImp struct {
-	logger *zap.Logger
-
 	loadBalancer loadBalancer
 
 	stopped    bool
@@ -46,25 +43,19 @@ type logExporterImp struct {
 }
 
 // Create new logs exporter
-func newLogsExporter(params component.ExporterCreateParams, cfg config.Exporter) (*logExporterImp, error) {
+func newLogsExporter(params component.ExporterCreateSettings, cfg config.Exporter) (*logExporterImp, error) {
 	exporterFactory := otlpexporter.NewFactory()
 
-	tmplParams := component.ExporterCreateParams{
-		Logger:    params.Logger,
-		BuildInfo: params.BuildInfo,
-	}
-
-	loadBalancer, err := newLoadBalancer(params, cfg, func(ctx context.Context, endpoint string) (component.Exporter, error) {
+	lb, err := newLoadBalancer(params, cfg, func(ctx context.Context, endpoint string) (component.Exporter, error) {
 		oCfg := buildExporterConfig(cfg.(*Config), endpoint)
-		return exporterFactory.CreateLogsExporter(ctx, tmplParams, &oCfg)
+		return exporterFactory.CreateLogsExporter(ctx, params, &oCfg)
 	})
 	if err != nil {
 		return nil, err
 	}
 
 	return &logExporterImp{
-		logger:       params.Logger,
-		loadBalancer: loadBalancer,
+		loadBalancer: lb,
 	}, nil
 }
 
@@ -73,11 +64,7 @@ func (e *logExporterImp) Capabilities() consumer.Capabilities {
 }
 
 func (e *logExporterImp) Start(ctx context.Context, host component.Host) error {
-	if err := e.loadBalancer.Start(ctx, host); err != nil {
-		return err
-	}
-
-	return nil
+	return e.loadBalancer.Start(ctx, host)
 }
 
 func (e *logExporterImp) Shutdown(context.Context) error {
@@ -87,15 +74,13 @@ func (e *logExporterImp) Shutdown(context.Context) error {
 }
 
 func (e *logExporterImp) ConsumeLogs(ctx context.Context, ld pdata.Logs) error {
-	var errors []error
+	var errs error
 	batches := batchpersignal.SplitLogs(ld)
 	for _, batch := range batches {
-		if err := e.consumeLog(ctx, batch); err != nil {
-			errors = append(errors, err)
-		}
+		errs = multierr.Append(errs, e.consumeLog(ctx, batch))
 	}
 
-	return consumererror.Combine(errors)
+	return errs
 }
 
 func (e *logExporterImp) consumeLog(ctx context.Context, ld pdata.Logs) error {

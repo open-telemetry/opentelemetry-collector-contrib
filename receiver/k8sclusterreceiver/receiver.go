@@ -19,11 +19,11 @@ import (
 	"fmt"
 	"time"
 
+	quotaclientset "github.com/openshift/client-go/quota/clientset/versioned"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/obsreport"
-	"go.uber.org/zap"
 	"k8s.io/client-go/kubernetes"
 )
 
@@ -39,14 +39,14 @@ type kubernetesReceiver struct {
 	resourceWatcher *resourceWatcher
 
 	config   *Config
-	logger   *zap.Logger
+	settings component.ReceiverCreateSettings
 	consumer consumer.Metrics
 	cancel   context.CancelFunc
+	obsrecv  *obsreport.Receiver
 }
 
 func (kr *kubernetesReceiver) Start(ctx context.Context, host component.Host) error {
-	var c context.Context
-	c, kr.cancel = context.WithCancel(obsreport.ReceiverContext(ctx, kr.config.ID(), transport))
+	ctx, kr.cancel = context.WithCancel(ctx)
 
 	exporters := host.GetExporters()
 	if err := kr.resourceWatcher.setupMetadataExporters(
@@ -55,23 +55,28 @@ func (kr *kubernetesReceiver) Start(ctx context.Context, host component.Host) er
 	}
 
 	go func() {
-		kr.logger.Info("Starting shared informers and wait for initial cache sync.")
-		kr.resourceWatcher.startWatchingResources(c)
+		kr.settings.Logger.Info("Starting shared informers and wait for initial cache sync.")
+		for _, informer := range kr.resourceWatcher.informerFactories {
+			if informer == nil {
+				continue
+			}
+			timedContextForInitialSync := kr.resourceWatcher.startWatchingResources(ctx, informer)
 
-		// Wait till either the initial cache sync times out or until the cancel method
-		// corresponding to this context is called.
-		<-kr.resourceWatcher.timedContextForInitialSync.Done()
+			// Wait till either the initial cache sync times out or until the cancel method
+			// corresponding to this context is called.
+			<-timedContextForInitialSync.Done()
 
-		// If the context times out, set initialSyncTimedOut and report a fatal error. Currently
-		// this timeout is 10 minutes, which appears to be long enough.
-		if kr.resourceWatcher.timedContextForInitialSync.Err() == context.DeadlineExceeded {
-			kr.resourceWatcher.initialSyncTimedOut.Store(true)
-			kr.logger.Error("Timed out waiting for initial cache sync.")
-			host.ReportFatalError(fmt.Errorf("failed to start receiver: %v", kr.config.ID()))
-			return
+			// If the context times out, set initialSyncTimedOut and report a fatal error. Currently
+			// this timeout is 10 minutes, which appears to be long enough.
+			if timedContextForInitialSync.Err() == context.DeadlineExceeded {
+				kr.resourceWatcher.initialSyncTimedOut.Store(true)
+				kr.settings.Logger.Error("Timed out waiting for initial cache sync.")
+				host.ReportFatalError(fmt.Errorf("failed to start receiver: %v", kr.config.ID()))
+				return
+			}
 		}
 
-		kr.logger.Info("Completed syncing shared informer caches.")
+		kr.settings.Logger.Info("Completed syncing shared informer caches.")
 		kr.resourceWatcher.initialSyncDone.Store(true)
 
 		ticker := time.NewTicker(kr.config.CollectionInterval)
@@ -80,8 +85,8 @@ func (kr *kubernetesReceiver) Start(ctx context.Context, host component.Host) er
 		for {
 			select {
 			case <-ticker.C:
-				kr.dispatchMetrics(c)
-			case <-c.Done():
+				kr.dispatchMetrics(ctx)
+			case <-ctx.Done():
 				return
 			}
 		}
@@ -99,24 +104,28 @@ func (kr *kubernetesReceiver) dispatchMetrics(ctx context.Context) {
 	now := time.Now()
 	mds := kr.resourceWatcher.dataCollector.CollectMetricData(now)
 
-	c := obsreport.StartMetricsReceiveOp(ctx, kr.config.ID(), transport)
+	c := kr.obsrecv.StartMetricsOp(ctx)
 
-	_, numPoints := mds.MetricAndDataPointCount()
-
+	numPoints := mds.DataPointCount()
 	err := kr.consumer.ConsumeMetrics(c, mds)
-	obsreport.EndMetricsReceiveOp(c, typeStr, numPoints, err)
+	kr.obsrecv.EndMetricsOp(c, typeStr, numPoints, err)
 }
 
 // newReceiver creates the Kubernetes cluster receiver with the given configuration.
 func newReceiver(
-	logger *zap.Logger, config *Config, consumer consumer.Metrics,
-	client kubernetes.Interface) (component.MetricsReceiver, error) {
-	resourceWatcher := newResourceWatcher(logger, client, config.NodeConditionTypesToReport, defaultInitialSyncTimeout)
+	set component.ReceiverCreateSettings, config *Config, consumer consumer.Metrics,
+	client kubernetes.Interface, osQuotaClient quotaclientset.Interface) (component.MetricsReceiver, error) {
+	resourceWatcher := newResourceWatcher(set.Logger, client, osQuotaClient, config.NodeConditionTypesToReport, defaultInitialSyncTimeout)
 
 	return &kubernetesReceiver{
 		resourceWatcher: resourceWatcher,
-		logger:          logger,
+		settings:        set,
 		config:          config,
 		consumer:        consumer,
+		obsrecv: obsreport.NewReceiver(obsreport.ReceiverSettings{
+			ReceiverID:             config.ID(),
+			Transport:              transport,
+			ReceiverCreateSettings: set,
+		}),
 	}, nil
 }

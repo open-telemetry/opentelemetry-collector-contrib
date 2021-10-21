@@ -23,13 +23,23 @@ import (
 
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confignet"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/metadata/valid"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata/valid"
 )
 
 var (
 	errUnsetAPIKey = errors.New("api.key is not set")
 	errNoMetadata  = errors.New("only_metadata can't be enabled when send_metadata or use_resource_metadata is disabled")
+	errBuckets     = errors.New("can't use 'metrics::report_buckets' and 'metrics::histograms::mode' at the same time")
+)
+
+// TODO: Import these from translator when we eliminate cyclic dependency.
+const (
+	histogramModeNoBuckets     = "nobuckets"
+	histogramModeCounters      = "counters"
+	histogramModeDistributions = "distributions"
 )
 
 const (
@@ -60,8 +70,13 @@ func (api *APIConfig) GetCensoredKey() string {
 
 // MetricsConfig defines the metrics exporter specific configuration options
 type MetricsConfig struct {
-	// Buckets states whether to report buckets from distribution metrics
+	// Buckets states whether to report buckets from histogram metrics.
+	// Deprecated: use `metrics::histograms::mode`.
 	Buckets bool `mapstructure:"report_buckets"`
+
+	// Quantiles states whether to report quantiles from summary metrics.
+	// By default, the minimum, maximum and average are reported.
+	Quantiles bool `mapstructure:"report_quantiles"`
 
 	// SendMonotonic states whether to report cumulative monotonic metrics as counters
 	// or gauges
@@ -77,6 +92,32 @@ type MetricsConfig struct {
 	confignet.TCPAddr `mapstructure:",squash"`
 
 	ExporterConfig MetricsExporterConfig `mapstructure:",squash"`
+
+	// HistConfig defines the export of OTLP Histograms.
+	HistConfig HistogramConfig `mapstructure:"histograms"`
+}
+
+// HistogramConfig customizes export of OTLP Histograms.
+type HistogramConfig struct {
+	// Mode for exporting histograms. Valid values are 'counters' or 'nobuckets'.
+	//  - 'counters' sends histograms as Datadog counts, one metric per bucket.
+	//  - 'nobuckets' sends no bucket histogram metrics. .sum and .count metrics will still be sent
+	//    if `send_count_sum_metrics` is enabled.
+	//  - 'distributions' sends histograms as Datadog distributions (recommended).
+	//
+	// The current default is 'nobuckets'.
+	Mode string `mapstructure:"mode"`
+
+	// SendCountSum states if the export should send .sum and .count metrics for histograms.
+	// The current default is true.
+	SendCountSum bool `mapstructure:"send_count_sum_metrics"`
+}
+
+func (c *HistogramConfig) validate() error {
+	if c.Mode == histogramModeNoBuckets && !c.SendCountSum {
+		return fmt.Errorf("'nobuckets' mode and `send_count_sum_metrics` set to false will send no histogram metrics")
+	}
+	return nil
 }
 
 // MetricsExporterConfig provides options for a user to customize the behavior of the
@@ -85,6 +126,10 @@ type MetricsExporterConfig struct {
 	// ResourceAttributesAsTags, if set to true, will use the exporterhelper feature to transform all
 	// resource attributes into metric labels, which are then converted into tags
 	ResourceAttributesAsTags bool `mapstructure:"resource_attributes_as_tags"`
+
+	// InstrumentationLibraryMetadataAsTags, if set to true, adds the name and version of the
+	// instrumentation library that created a metric to the metric tags
+	InstrumentationLibraryMetadataAsTags bool `mapstructure:"instrumentation_library_metadata_as_tags"`
 }
 
 // TracesConfig defines the traces exporter specific configuration options
@@ -104,6 +149,13 @@ type TracesConfig struct {
 	// all entries must be surrounded by double quotes and separated by commas.
 	// ignore_resources: ["(GET|POST) /healthcheck"]
 	IgnoreResources []string `mapstructure:"ignore_resources"`
+
+	// SpanNameRemappings is the map of datadog span names and preferred name to map to. This can be used to
+	// automatically map Datadog Span Operation Names to an updated value. All entries should be key/value pairs.
+	// span_name_remappings:
+	//   io.opentelemetry.javaagent.spring.client: spring.client
+	//   instrumentation::express.server: express
+	SpanNameRemappings map[string]string `mapstructure:"span_name_remappings"`
 }
 
 // TagsConfig defines the tag-related configuration
@@ -153,7 +205,10 @@ func (t *TagsConfig) GetHostTags() []string {
 
 // Config defines configuration for the Datadog exporter.
 type Config struct {
-	config.ExporterSettings `mapstructure:",squash"`
+	config.ExporterSettings        `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
+	exporterhelper.TimeoutSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
+	exporterhelper.QueueSettings   `mapstructure:"sending_queue"`
+	exporterhelper.RetrySettings   `mapstructure:"retry_on_failure"`
 
 	TagsConfig `mapstructure:",squash"`
 
@@ -191,6 +246,9 @@ type Config struct {
 
 	// onceMetadata ensures only one exporter (metrics/traces) sends host metadata
 	onceMetadata sync.Once
+
+	// warnings stores non-fatal configuration errors.
+	warnings []error
 }
 
 func (c *Config) OnceMetadata() *sync.Once {
@@ -198,7 +256,7 @@ func (c *Config) OnceMetadata() *sync.Once {
 }
 
 // Sanitize tries to sanitize a given configuration
-func (c *Config) Sanitize() error {
+func (c *Config) Sanitize(logger *zap.Logger) error {
 	if c.TagsConfig.Env == "" {
 		c.TagsConfig.Env = "none"
 	}
@@ -231,6 +289,10 @@ func (c *Config) Sanitize() error {
 		c.Traces.TCPAddr.Endpoint = fmt.Sprintf("https://trace.agent.%s", c.API.Site)
 	}
 
+	for _, err := range c.warnings {
+		logger.Warn("deprecation warning", zap.Error(err))
+	}
+
 	return nil
 }
 
@@ -243,5 +305,53 @@ func (c *Config) Validate() error {
 			}
 		}
 	}
+
+	if c.Traces.SpanNameRemappings != nil {
+		for key, value := range c.Traces.SpanNameRemappings {
+			if value == "" {
+				return fmt.Errorf("'%s' is not valid value for span name remapping", value)
+			}
+			if key == "" {
+				return fmt.Errorf("'%s' is not valid key for span name remapping", key)
+			}
+		}
+	}
+
+	err := c.Metrics.HistConfig.validate()
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (c *Config) Unmarshal(configMap *config.Map) error {
+	err := configMap.UnmarshalExact(c)
+	if err != nil {
+		return err
+	}
+
+	if configMap.IsSet("metrics::report_buckets") && configMap.IsSet("metrics::histograms::mode") {
+		return errBuckets
+	}
+
+	// Deprecation of `report_buckets`: add warning and set `HistConfig.Mode` instead.
+	if configMap.IsSet("metrics::report_buckets") {
+		if c.Metrics.Buckets {
+			c.warnings = append(c.warnings, fmt.Errorf("'metrics::report_buckets' is deprecated. Set 'metrics::histograms::mode' to 'counters' instead"))
+			c.Metrics.HistConfig.Mode = histogramModeCounters
+		} else {
+			c.warnings = append(c.warnings, fmt.Errorf("'metrics::report_buckets' is deprecated. Set 'metrics::histograms::mode' to 'nobuckets' instead"))
+			c.Metrics.HistConfig.Mode = histogramModeNoBuckets
+		}
+	}
+
+	switch c.Metrics.HistConfig.Mode {
+	case histogramModeCounters, histogramModeNoBuckets, histogramModeDistributions:
+		// Do nothing
+	default:
+		return fmt.Errorf("invalid `mode` %s", c.Metrics.HistConfig.Mode)
+	}
+
 	return nil
 }

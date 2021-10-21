@@ -23,16 +23,14 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/extension/experimental/storage"
 	"go.uber.org/zap"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage"
 )
 
 type localFileStorage struct {
 	directory string
 	timeout   time.Duration
 	logger    *zap.Logger
-	clients   []*fileStorageClient
 }
 
 // Ensure this storage extension implements the appropriate interface
@@ -48,7 +46,6 @@ func newLocalFileStorage(logger *zap.Logger, config *Config) (component.Extensio
 		directory: filepath.Clean(config.Directory),
 		timeout:   config.Timeout,
 		logger:    logger,
-		clients:   []*fileStorageClient{},
 	}, nil
 }
 
@@ -59,26 +56,22 @@ func (lfs *localFileStorage) Start(context.Context, component.Host) error {
 
 // Shutdown will close any open databases
 func (lfs *localFileStorage) Shutdown(context.Context) error {
-	for _, client := range lfs.clients {
-		client.close()
-	}
 	// TODO clean up data files that did not have a client
 	// and are older than a threshold (possibly configurable)
 	return nil
 }
 
 // GetClient returns a storage client for an individual component
-func (lfs *localFileStorage) GetClient(ctx context.Context, kind component.Kind, ent config.ComponentID) (storage.Client, error) {
-	rawName := fmt.Sprintf("%s_%s_%s", kindString(kind), ent.Type(), ent.Name())
+func (lfs *localFileStorage) GetClient(ctx context.Context, kind component.Kind, ent config.ComponentID, name string) (storage.Client, error) {
+	var rawName string
+	if name == "" {
+		rawName = fmt.Sprintf("%s_%s_%s", kindString(kind), ent.Type(), ent.Name())
+	} else {
+		rawName = fmt.Sprintf("%s_%s_%s_%s", kindString(kind), ent.Type(), ent.Name(), name)
+	}
 	// TODO sanitize rawName
 	absoluteName := filepath.Join(lfs.directory, rawName)
-
-	client, err := newClient(absoluteName, lfs.timeout)
-	if err != nil {
-		return nil, fmt.Errorf("create client: %v", err)
-	}
-	lfs.clients = append(lfs.clients, client)
-	return client, nil
+	return newClient(absoluteName, lfs.timeout)
 }
 
 func kindString(k component.Kind) string {

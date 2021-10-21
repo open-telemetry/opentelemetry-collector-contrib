@@ -80,9 +80,9 @@ func TestFloat64DeltaCalculator(t *testing.T) {
 	testCases := []float64{0.1, 0.1, 0.5, 1.3, 1.9, 2.5, 5, 24.2, 103}
 	for i, f := range testCases {
 		r, ok := c.Calculate(MetricMetadata, nil, f, initTime)
-		assert.True(t, ok)
+		assert.Equal(t, i > 0, ok)
 		if i == 0 {
-			assert.Equal(t, f, r)
+			assert.Equal(t, float64(0), r)
 		} else {
 			assert.InDelta(t, f-testCases[i-1], r, f/10)
 		}
@@ -97,12 +97,9 @@ func TestFloat64DeltaCalculatorWithDecreasingValues(t *testing.T) {
 	testCases := []float64{108, 106, 56.2, 28.8, 10, 10, 3, -1, -100}
 	for i, f := range testCases {
 		r, ok := c.Calculate(MetricMetadata, nil, f, initTime)
-		if i == 0 {
-			assert.True(t, ok)
-			assert.Equal(t, f, r)
-		} else {
-			assert.True(t, ok)
-			assert.Equal(t, float64(0), r)
+		assert.Equal(t, i > 0, ok)
+		if ok {
+			assert.Equal(t, testCases[i]-testCases[i-1], r)
 		}
 	}
 }

@@ -25,13 +25,12 @@ import (
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.opentelemetry.io/collector/testutil"
-	"go.opentelemetry.io/collector/translator/internaldata"
-	"go.uber.org/zap"
 	"google.golang.org/protobuf/types/known/timestamppb"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testutil"
+	internaldata "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus"
 )
 
 func Test_wavefrontreceiver_EndToEnd(t *testing.T) {
@@ -42,7 +41,7 @@ func Test_wavefrontreceiver_EndToEnd(t *testing.T) {
 	addr := testutil.GetAvailableLocalAddress(t)
 	rCfg.Endpoint = addr
 	sink := new(consumertest.MetricsSink)
-	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
+	params := componenttest.NewNopReceiverCreateSettings()
 	rcvr, err := createMetricsReceiver(context.Background(), params, rCfg, sink)
 	require.NoError(t, err)
 
@@ -137,7 +136,7 @@ func Test_wavefrontreceiver_EndToEnd(t *testing.T) {
 
 		require.NoError(t, conn.Close())
 		assert.Eventually(t, func() bool {
-			return sink.MetricsCount() == numMetrics
+			return sink.DataPointCount() == numMetrics
 		}, 10*time.Second, 5*time.Millisecond)
 
 		metrics := sink.AllMetrics()

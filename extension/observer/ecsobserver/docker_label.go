@@ -39,40 +39,57 @@ type DockerLabelConfig struct {
 	MetricsPathLabel string `mapstructure:"metrics_path_label" yaml:"metrics_path_label"`
 }
 
-func (d *DockerLabelConfig) Init() error {
+func (d *DockerLabelConfig) validate() error {
+	_, err := d.newMatcher(matcherOptions{})
+	return err
+}
+
+func (d *DockerLabelConfig) newMatcher(options matcherOptions) (targetMatcher, error) {
 	// It's possible to support it in the future, but for now just fail at config,
 	// so user don't need to wonder which port is used in the exported target.
 	if len(d.MetricsPorts) != 0 {
-		return fmt.Errorf("metrics_ports is not supported in docker_labels, got %v", d.MetricsPorts)
+		return nil, fmt.Errorf("metrics_ports is not supported in docker_labels, got %v", d.MetricsPorts)
 	}
 	if d.PortLabel == "" {
-		return fmt.Errorf("port_label is empty")
+		return nil, fmt.Errorf("port_label is empty")
 	}
-	return nil
-}
-
-func (d *DockerLabelConfig) NewMatcher(options MatcherOptions) (Matcher, error) {
+	expSetting, err := d.newExportSetting()
+	if err != nil {
+		return nil, err
+	}
 	return &dockerLabelMatcher{
-		logger: options.Logger,
-		cfg:    *d,
+		logger:        options.Logger,
+		cfg:           *d,
+		exportSetting: expSetting,
 	}, nil
 }
 
-// dockerLabelMatcher implements Matcher interface.
-// It checks PortLabel from config and only matches if the label value is a valid number.
-type dockerLabelMatcher struct {
-	logger *zap.Logger
-	cfg    DockerLabelConfig
+func dockerLabelConfigToMatchers(cfgs []DockerLabelConfig) []matcherConfig {
+	var matchers []matcherConfig
+	for _, cfg := range cfgs {
+		// NOTE: &cfg points to the temp var, whose value would end up be the last one in the slice.
+		copied := cfg
+		matchers = append(matchers, &copied)
+	}
+	return matchers
 }
 
-func (d *dockerLabelMatcher) Type() MatcherType {
-	return MatcherTypeDockerLabel
+// dockerLabelMatcher implements targetMatcher interface.
+// It checks PortLabel from config and only matches if the label value is a valid number.
+type dockerLabelMatcher struct {
+	logger        *zap.Logger
+	cfg           DockerLabelConfig
+	exportSetting *commonExportSetting
+}
+
+func (d *dockerLabelMatcher) matcherType() matcherType {
+	return matcherTypeDockerLabel
 }
 
 // MatchTargets first checks the port label to find the expected port value.
 // Then it checks if that port is specified in container definition.
 // It only returns match target when both conditions are met.
-func (d *dockerLabelMatcher) MatchTargets(t *Task, c *ecs.ContainerDefinition) ([]MatchedTarget, error) {
+func (d *dockerLabelMatcher) matchTargets(t *taskAnnotated, c *ecs.ContainerDefinition) ([]matchedTarget, error) {
 	portLabel := d.cfg.PortLabel
 
 	// Only check port label
@@ -102,7 +119,7 @@ func (d *dockerLabelMatcher) MatchTargets(t *Task, c *ecs.ContainerDefinition) (
 	}
 
 	// Export only one target based on docker port label.
-	target := MatchedTarget{
+	target := matchedTarget{
 		Port: port,
 	}
 	if v, ok := c.DockerLabels[d.cfg.MetricsPathLabel]; ok {
@@ -115,5 +132,5 @@ func (d *dockerLabelMatcher) MatchTargets(t *Task, c *ecs.ContainerDefinition) (
 	if d.cfg.JobName != "" {
 		target.Job = d.cfg.JobName
 	}
-	return []MatchedTarget{target}, nil
+	return []matchedTarget{target}, nil
 }

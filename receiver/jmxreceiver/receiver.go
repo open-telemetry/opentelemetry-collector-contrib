@@ -28,7 +28,7 @@ import (
 	"go.opentelemetry.io/collector/receiver/otlpreceiver"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jmxreceiver/subprocess"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jmxreceiver/internal/subprocess"
 )
 
 var _ component.MetricsReceiver = (*jmxMetricReceiver)(nil)
@@ -37,13 +37,13 @@ type jmxMetricReceiver struct {
 	logger       *zap.Logger
 	config       *Config
 	subprocess   *subprocess.Subprocess
-	params       component.ReceiverCreateParams
+	params       component.ReceiverCreateSettings
 	otlpReceiver component.MetricsReceiver
 	nextConsumer consumer.Metrics
 }
 
 func newJMXMetricReceiver(
-	params component.ReceiverCreateParams,
+	params component.ReceiverCreateSettings,
 	config *Config,
 	nextConsumer consumer.Metrics,
 ) *jmxMetricReceiver {
@@ -56,7 +56,7 @@ func newJMXMetricReceiver(
 }
 
 func (jmx *jmxMetricReceiver) Start(ctx context.Context, host component.Host) (err error) {
-	jmx.logger.Debug("Starting JMX Receiver")
+	jmx.logger.Debug("starting JMX Receiver")
 
 	jmx.otlpReceiver, err = jmx.buildOTLPReceiver()
 	if err != nil {
@@ -67,9 +67,10 @@ func (jmx *jmxMetricReceiver) Start(ctx context.Context, host component.Host) (e
 	if err != nil {
 		return err
 	}
+
 	subprocessConfig := subprocess.Config{
 		ExecutablePath: "java",
-		Args:           []string{"-Dorg.slf4j.simpleLogger.defaultLogLevel=debug", "-jar", jmx.config.JARPath, "-config", "-"},
+		Args:           append(jmx.config.parseProperties(), "-jar", jmx.config.JARPath, "-config", "-"),
 		StdInContents:  javaConfig,
 	}
 

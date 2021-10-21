@@ -20,6 +20,7 @@ import (
 	"time"
 
 	"go.etcd.io/bbolt"
+	"go.opentelemetry.io/collector/extension/experimental/storage"
 )
 
 var defaultBucket = []byte(`default`)
@@ -50,50 +51,59 @@ func newClient(filePath string, timeout time.Duration) (*fileStorageClient, erro
 }
 
 // Get will retrieve data from storage that corresponds to the specified key
-func (c *fileStorageClient) Get(_ context.Context, key string) ([]byte, error) {
-	var result []byte
-	get := func(tx *bbolt.Tx) error {
-		bucket := tx.Bucket(defaultBucket)
-		if bucket == nil {
-			return errors.New("storage not initialized")
-		}
-		result = bucket.Get([]byte(key))
-		return nil // no error
-	}
-
-	if err := c.db.Update(get); err != nil {
+func (c *fileStorageClient) Get(ctx context.Context, key string) ([]byte, error) {
+	op := storage.GetOperation(key)
+	err := c.Batch(ctx, op)
+	if err != nil {
 		return nil, err
 	}
-	return result, nil
+
+	return op.Value, nil
 }
 
 // Set will store data. The data can be retrieved using the same key
-func (c *fileStorageClient) Set(_ context.Context, key string, value []byte) error {
-	set := func(tx *bbolt.Tx) error {
-		bucket := tx.Bucket(defaultBucket)
-		if bucket == nil {
-			return errors.New("storage not initialized")
-		}
-		return bucket.Put([]byte(key), value)
-	}
-
-	return c.db.Update(set)
+func (c *fileStorageClient) Set(ctx context.Context, key string, value []byte) error {
+	return c.Batch(ctx, storage.SetOperation(key, value))
 }
 
 // Delete will delete data associated with the specified key
-func (c *fileStorageClient) Delete(_ context.Context, key string) error {
-	delete := func(tx *bbolt.Tx) error {
+func (c *fileStorageClient) Delete(ctx context.Context, key string) error {
+	return c.Batch(ctx, storage.DeleteOperation(key))
+}
+
+// Batch executes the specified operations in order. Get operation results are updated in place
+func (c *fileStorageClient) Batch(_ context.Context, ops ...storage.Operation) error {
+	batch := func(tx *bbolt.Tx) error {
 		bucket := tx.Bucket(defaultBucket)
 		if bucket == nil {
 			return errors.New("storage not initialized")
 		}
-		return bucket.Delete([]byte(key))
+
+		var err error
+		for _, op := range ops {
+			switch op.Type {
+			case storage.Get:
+				op.Value = bucket.Get([]byte(op.Key))
+			case storage.Set:
+				err = bucket.Put([]byte(op.Key), op.Value)
+			case storage.Delete:
+				err = bucket.Delete([]byte(op.Key))
+			default:
+				return errors.New("wrong operation type")
+			}
+
+			if err != nil {
+				return err
+			}
+		}
+
+		return nil
 	}
 
-	return c.db.Update(delete)
+	return c.db.Update(batch)
 }
 
 // Close will close the database
-func (c *fileStorageClient) close() error {
+func (c *fileStorageClient) Close(_ context.Context) error {
 	return c.db.Close()
 }

@@ -27,7 +27,8 @@ import (
 	"go.opentelemetry.io/collector/config/configtest"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-	prw "go.opentelemetry.io/collector/exporter/prometheusremotewriteexporter"
+
+	prw "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusremotewriteexporter"
 )
 
 // TestLoadConfig checks whether yaml configuration can be loaded correctly.
@@ -37,13 +38,13 @@ func TestLoadConfig(t *testing.T) {
 
 	factory := NewFactory()
 	factories.Exporters[typeStr] = factory
-	cfg, err := configtest.LoadConfigFile(t, path.Join(".", "testdata", "config.yaml"), factories)
+	cfg, err := configtest.LoadConfigAndValidate(path.Join(".", "testdata", "config.yaml"), factories)
 
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 
 	// From the default configurations -- checks if a correct exporter is instantiated
-	e0 := cfg.Exporters[config.NewID(typeStr)]
+	e0 := cfg.Exporters[config.NewComponentID(typeStr)]
 	cfgDefault := factory.CreateDefaultConfig()
 	// testing function equality is not supported in Go hence these will be ignored for this test
 	cfgDefault.(*Config).HTTPClientSettings.CustomRoundTripper = nil
@@ -51,16 +52,20 @@ func TestLoadConfig(t *testing.T) {
 	assert.Equal(t, e0, cfgDefault)
 
 	// checks if the correct Config struct can be instantiated from testdata/config.yaml
-	e1 := cfg.Exporters[config.NewIDWithName(typeStr, "2")]
+	e1 := cfg.Exporters[config.NewComponentIDWithName(typeStr, "2")]
 	cfgComplete := &Config{
 		Config: prw.Config{
-			ExporterSettings: config.NewExporterSettings(config.NewIDWithName(typeStr, "2")),
+			ExporterSettings: config.NewExporterSettings(config.NewComponentIDWithName(typeStr, "2")),
 			TimeoutSettings:  exporterhelper.DefaultTimeoutSettings(),
 			RetrySettings: exporterhelper.RetrySettings{
 				Enabled:         true,
 				InitialInterval: 10 * time.Second,
 				MaxInterval:     1 * time.Minute,
 				MaxElapsedTime:  10 * time.Minute,
+			},
+			RemoteWriteQueue: prw.RemoteWriteQueue{
+				QueueSize:    10000,
+				NumConsumers: 5,
 			},
 			Namespace:      "test-space",
 			ExternalLabels: map[string]string{"key1": "value1", "key2": "value2"},
@@ -76,8 +81,8 @@ func TestLoadConfig(t *testing.T) {
 				WriteBufferSize: 512 * 1024,
 				Timeout:         5 * time.Second,
 				Headers: map[string]string{
-					"prometheus-remote-write-version": "0.1.0",
-					"x-scope-orgid":                   "234"},
+					"Prometheus-Remote-Write-Version": "0.1.0",
+					"X-Scope-OrgID":                   "234"},
 			},
 		},
 		AuthConfig: AuthConfig{
@@ -89,5 +94,5 @@ func TestLoadConfig(t *testing.T) {
 	// testing function equality is not supported in Go hence these will be ignored for this test
 	cfgComplete.HTTPClientSettings.CustomRoundTripper = nil
 	e1.(*Config).HTTPClientSettings.CustomRoundTripper = nil
-	assert.Equal(t, e1, cfgComplete)
+	assert.Equal(t, cfgComplete, e1)
 }

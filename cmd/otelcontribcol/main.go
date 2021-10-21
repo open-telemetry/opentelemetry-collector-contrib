@@ -24,11 +24,12 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/service"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/components"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/version"
 )
 
 func main() {
-	factories, err := components()
+	factories, err := components.Components()
 	if err != nil {
 		log.Fatalf("failed to build components: %v", err)
 	}
@@ -39,20 +40,15 @@ func main() {
 		Version:     version.Version,
 	}
 
-	if err := run(service.Parameters{BuildInfo: info, Factories: factories}); err != nil {
+	if err = run(service.CollectorSettings{BuildInfo: info, Factories: factories}); err != nil {
 		log.Fatal(err)
 	}
 }
 
-func runInteractive(params service.Parameters) error {
-	app, err := service.New(params)
-	if err != nil {
-		return fmt.Errorf("failed to construct the application: %w", err)
-	}
-
-	err = app.Run()
-	if err != nil {
-		return fmt.Errorf("application run finished with error: %w", err)
+func runInteractive(params service.CollectorSettings) error {
+	cmd := service.NewCommand(params)
+	if err := cmd.Execute(); err != nil {
+		return fmt.Errorf("collector server run finished with error: %w", err)
 	}
 
 	return nil

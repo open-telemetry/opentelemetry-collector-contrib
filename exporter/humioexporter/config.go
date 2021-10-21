@@ -17,6 +17,7 @@ package humioexporter
 import (
 	"errors"
 	"fmt"
+	"net/http"
 	"net/url"
 	"path"
 
@@ -91,16 +92,21 @@ func (c *Config) Validate() error {
 		return fmt.Errorf("unable to create URL for unstructured ingest API, endpoint %s is invalid", c.Endpoint)
 	}
 
+	headers := http.Header{}
+	for k, v := range c.Headers {
+		headers.Set(k, v)
+	}
+
 	// We require these headers, which should not be overwritten by the user
-	if contentType, ok := c.Headers["content-type"]; ok && contentType != "application/json" {
+	if contentType := headers.Get("content-type"); contentType != "" && contentType != "application/json" {
 		return errors.New("the Content-Type must be application/json, which is also the default for this header")
 	}
 
-	if _, ok := c.Headers["authorization"]; ok {
+	if authorization := headers.Get("authorization"); authorization != "" {
 		return errors.New("the Authorization header must not be overwritten, since it is automatically generated from the ingest token")
 	}
 
-	if enc, ok := c.Headers["content-encoding"]; ok && (c.DisableCompression || enc != "gzip") {
+	if enc := headers.Get("content-encoding"); enc != "" && (c.DisableCompression || enc != "gzip") {
 		return errors.New("the Content-Encoding header must be gzip when using compression, and empty when compression is disabled")
 	}
 

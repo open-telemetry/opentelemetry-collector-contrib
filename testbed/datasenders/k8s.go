@@ -25,8 +25,9 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/testbed/testbed"
+	"go.opentelemetry.io/collector/model/pdata"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/testbed"
 )
 
 // FileLogK8sWriter represents abstract container k8s writer
@@ -114,7 +115,7 @@ func (f *FileLogK8sWriter) convertLogToTextLine(lr pdata.LogRecord) []byte {
 	sb.WriteString(lr.SeverityText())
 	sb.WriteString(" ")
 
-	if lr.Body().Type() == pdata.AttributeValueSTRING {
+	if lr.Body().Type() == pdata.AttributeValueTypeString {
 		sb.WriteString(lr.Body().StringVal())
 	}
 
@@ -123,13 +124,13 @@ func (f *FileLogK8sWriter) convertLogToTextLine(lr pdata.LogRecord) []byte {
 		sb.WriteString(k)
 		sb.WriteString("=")
 		switch v.Type() {
-		case pdata.AttributeValueSTRING:
+		case pdata.AttributeValueTypeString:
 			sb.WriteString(v.StringVal())
-		case pdata.AttributeValueINT:
+		case pdata.AttributeValueTypeInt:
 			sb.WriteString(strconv.FormatInt(v.IntVal(), 10))
-		case pdata.AttributeValueDOUBLE:
+		case pdata.AttributeValueTypeDouble:
 			sb.WriteString(strconv.FormatFloat(v.DoubleVal(), 'f', -1, 64))
-		case pdata.AttributeValueBOOL:
+		case pdata.AttributeValueTypeBool:
 			sb.WriteString(strconv.FormatBool(v.BoolVal()))
 		default:
 			panic("missing case")
@@ -206,7 +207,7 @@ func NewKubernetesContainerWriter() *FileLogK8sWriter {
       # Extract metadata from file path
       - type: regex_parser
         id: extract_metadata_from_filepath
-        regex: '^.*\/(?P<namespace>[^_]+)_(?P<pod_name>[^_]+)_(?P<uid>[a-f0-9\-]{36})\/(?P<container_name>[^\._]+)\/(?P<run_id>\d+)\.log$'
+        regex: '^.*\/(?P<namespace>[^_]+)_(?P<pod_name>[^_]+)_(?P<uid>[a-f0-9\-]{36})\/(?P<container_name>[^\._]+)\/(?P<restart_count>\d+)\.log$'
         parse_from: $$attributes.file_path
       # Move out attributes to Attributes
       - type: metadata
@@ -215,7 +216,7 @@ func NewKubernetesContainerWriter() *FileLogK8sWriter {
           k8s.container.name: 'EXPR($.container_name)'
           k8s.namespace.name: 'EXPR($.namespace)'
           k8s.pod.name: 'EXPR($.pod_name)'
-          run_id: 'EXPR($.run_id)'
+          k8s.container.restart_count: 'EXPR($.restart_count)'
           k8s.pod.uid: 'EXPR($.uid)'
       # Clean up log body
       - type: restructure
@@ -248,7 +249,7 @@ func NewKubernetesCRIContainerdWriter() *FileLogK8sWriter {
       # Extract metadata from file path
       - type: regex_parser
         id: extract_metadata_from_filepath
-        regex: '^.*\/(?P<namespace>[^_]+)_(?P<pod_name>[^_]+)_(?P<uid>[a-f0-9\-]{36})\/(?P<container_name>[^\._]+)\/(?P<run_id>\d+)\.log$'
+        regex: '^.*\/(?P<namespace>[^_]+)_(?P<pod_name>[^_]+)_(?P<uid>[a-f0-9\-]{36})\/(?P<container_name>[^\._]+)\/(?P<restart_count>\d+)\.log$'
         parse_from: $$attributes.file_path
       # Move out attributes to Attributes
       - type: metadata
@@ -257,7 +258,7 @@ func NewKubernetesCRIContainerdWriter() *FileLogK8sWriter {
           k8s.container.name: 'EXPR($.container_name)'
           k8s.namespace.name: 'EXPR($.namespace)'
           k8s.pod.name: 'EXPR($.pod_name)'
-          run_id: 'EXPR($.run_id)'
+          k8s.container.restart_count: 'EXPR($.restart_count)'
           k8s.pod.uid: 'EXPR($.uid)'
       # Clean up log body
       - type: restructure
@@ -290,7 +291,7 @@ func NewKubernetesCRIContainerdNoAttributesOpsWriter() *FileLogK8sWriter {
       # Extract metadata from file path
       - type: regex_parser
         id: extract_metadata_from_filepath
-        regex: '^.*\/(?P<namespace>[^_]+)_(?P<pod_name>[^_]+)_(?P<uid>[a-f0-9\-]{36})\/(?P<container_name>[^\._]+)\/(?P<run_id>\d+)\.log$'
+        regex: '^.*\/(?P<namespace>[^_]+)_(?P<pod_name>[^_]+)_(?P<uid>[a-f0-9\-]{36})\/(?P<container_name>[^\._]+)\/(?P<restart_count>\d+)\.log$'
         parse_from: $$attributes.file_path
   `)
 }

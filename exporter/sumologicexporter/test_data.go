@@ -15,17 +15,17 @@
 package sumologicexporter
 
 import (
-	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/model/pdata"
 )
 
 func exampleIntMetric() metricPair {
 	metric := pdata.NewMetric()
 	metric.SetName("test.metric.data")
 	metric.SetUnit("bytes")
-	metric.SetDataType(pdata.MetricDataTypeIntSum)
-	dp := metric.IntSum().DataPoints().AppendEmpty()
+	metric.SetDataType(pdata.MetricDataTypeSum)
+	dp := metric.Sum().DataPoints().AppendEmpty()
 	dp.SetTimestamp(1605534165 * 1e9)
-	dp.SetValue(14500)
+	dp.SetIntVal(14500)
 
 	attributes := pdata.NewAttributeMap()
 	attributes.InsertString("test", "test_value")
@@ -43,21 +43,21 @@ func exampleIntGaugeMetric() metricPair {
 		metric:     pdata.NewMetric(),
 	}
 
-	metric.metric.SetDataType(pdata.MetricDataTypeIntGauge)
+	metric.metric.SetDataType(pdata.MetricDataTypeGauge)
 	metric.metric.SetName("gauge_metric_name")
 
 	metric.attributes.InsertString("foo", "bar")
 
-	dp := metric.metric.IntGauge().DataPoints().AppendEmpty()
-	dp.LabelsMap().Insert("remote_name", "156920")
-	dp.LabelsMap().Insert("url", "http://example_url")
-	dp.SetValue(124)
+	dp := metric.metric.Gauge().DataPoints().AppendEmpty()
+	dp.Attributes().InsertString("remote_name", "156920")
+	dp.Attributes().InsertString("url", "http://example_url")
+	dp.SetIntVal(124)
 	dp.SetTimestamp(1608124661.166 * 1e9)
 
-	dp = metric.metric.IntGauge().DataPoints().AppendEmpty()
-	dp.LabelsMap().Insert("remote_name", "156955")
-	dp.LabelsMap().Insert("url", "http://another_url")
-	dp.SetValue(245)
+	dp = metric.metric.Gauge().DataPoints().AppendEmpty()
+	dp.Attributes().InsertString("remote_name", "156955")
+	dp.Attributes().InsertString("url", "http://another_url")
+	dp.SetIntVal(245)
 	dp.SetTimestamp(1608124662.166 * 1e9)
 
 	return metric
@@ -69,21 +69,21 @@ func exampleDoubleGaugeMetric() metricPair {
 		metric:     pdata.NewMetric(),
 	}
 
-	metric.metric.SetDataType(pdata.MetricDataTypeDoubleGauge)
+	metric.metric.SetDataType(pdata.MetricDataTypeGauge)
 	metric.metric.SetName("gauge_metric_name_double_test")
 
 	metric.attributes.InsertString("foo", "bar")
 
-	dp := metric.metric.DoubleGauge().DataPoints().AppendEmpty()
-	dp.LabelsMap().Insert("local_name", "156720")
-	dp.LabelsMap().Insert("endpoint", "http://example_url")
-	dp.SetValue(33.4)
+	dp := metric.metric.Gauge().DataPoints().AppendEmpty()
+	dp.Attributes().InsertString("local_name", "156720")
+	dp.Attributes().InsertString("endpoint", "http://example_url")
+	dp.SetDoubleVal(33.4)
 	dp.SetTimestamp(1608124661.169 * 1e9)
 
-	dp = metric.metric.DoubleGauge().DataPoints().AppendEmpty()
-	dp.LabelsMap().Insert("local_name", "156155")
-	dp.LabelsMap().Insert("endpoint", "http://another_url")
-	dp.SetValue(56.8)
+	dp = metric.metric.Gauge().DataPoints().AppendEmpty()
+	dp.Attributes().InsertString("local_name", "156155")
+	dp.Attributes().InsertString("endpoint", "http://another_url")
+	dp.SetDoubleVal(56.8)
 	dp.SetTimestamp(1608124662.186 * 1e9)
 
 	return metric
@@ -95,21 +95,21 @@ func exampleIntSumMetric() metricPair {
 		metric:     pdata.NewMetric(),
 	}
 
-	metric.metric.SetDataType(pdata.MetricDataTypeIntSum)
+	metric.metric.SetDataType(pdata.MetricDataTypeSum)
 	metric.metric.SetName("sum_metric_int_test")
 
 	metric.attributes.InsertString("foo", "bar")
 
-	dp := metric.metric.IntSum().DataPoints().AppendEmpty()
-	dp.LabelsMap().Insert("name", "156720")
-	dp.LabelsMap().Insert("address", "http://example_url")
-	dp.SetValue(45)
+	dp := metric.metric.Sum().DataPoints().AppendEmpty()
+	dp.Attributes().InsertString("name", "156720")
+	dp.Attributes().InsertString("address", "http://example_url")
+	dp.SetIntVal(45)
 	dp.SetTimestamp(1608124444.169 * 1e9)
 
-	dp = metric.metric.IntSum().DataPoints().AppendEmpty()
-	dp.LabelsMap().Insert("name", "156155")
-	dp.LabelsMap().Insert("address", "http://another_url")
-	dp.SetValue(1238)
+	dp = metric.metric.Sum().DataPoints().AppendEmpty()
+	dp.Attributes().InsertString("name", "156155")
+	dp.Attributes().InsertString("address", "http://another_url")
+	dp.SetIntVal(1238)
 	dp.SetTimestamp(1608124699.186 * 1e9)
 
 	return metric
@@ -121,21 +121,21 @@ func exampleDoubleSumMetric() metricPair {
 		metric:     pdata.NewMetric(),
 	}
 
-	metric.metric.SetDataType(pdata.MetricDataTypeDoubleSum)
+	metric.metric.SetDataType(pdata.MetricDataTypeSum)
 	metric.metric.SetName("sum_metric_double_test")
 
 	metric.attributes.InsertString("foo", "bar")
 
-	dp := metric.metric.DoubleSum().DataPoints().AppendEmpty()
-	dp.LabelsMap().Insert("pod_name", "lorem")
-	dp.LabelsMap().Insert("namespace", "default")
-	dp.SetValue(45.6)
+	dp := metric.metric.Sum().DataPoints().AppendEmpty()
+	dp.Attributes().InsertString("pod_name", "lorem")
+	dp.Attributes().InsertString("namespace", "default")
+	dp.SetDoubleVal(45.6)
 	dp.SetTimestamp(1618124444.169 * 1e9)
 
-	dp = metric.metric.DoubleSum().DataPoints().AppendEmpty()
-	dp.LabelsMap().Insert("pod_name", "opsum")
-	dp.LabelsMap().Insert("namespace", "kube-config")
-	dp.SetValue(1238.1)
+	dp = metric.metric.Sum().DataPoints().AppendEmpty()
+	dp.Attributes().InsertString("pod_name", "opsum")
+	dp.Attributes().InsertString("namespace", "kube-config")
+	dp.SetDoubleVal(1238.1)
 	dp.SetTimestamp(1608424699.186 * 1e9)
 
 	return metric
@@ -153,8 +153,8 @@ func exampleSummaryMetric() metricPair {
 	metric.attributes.InsertString("foo", "bar")
 
 	dp := metric.metric.Summary().DataPoints().AppendEmpty()
-	dp.LabelsMap().Insert("pod_name", "dolor")
-	dp.LabelsMap().Insert("namespace", "sumologic")
+	dp.Attributes().InsertString("pod_name", "dolor")
+	dp.Attributes().InsertString("namespace", "sumologic")
 	dp.SetSum(45.6)
 	dp.SetCount(3)
 	dp.SetTimestamp(1618124444.169 * 1e9)
@@ -168,43 +168,11 @@ func exampleSummaryMetric() metricPair {
 	quantile.SetValue(4)
 
 	dp = metric.metric.Summary().DataPoints().AppendEmpty()
-	dp.LabelsMap().Insert("pod_name", "sit")
-	dp.LabelsMap().Insert("namespace", "main")
+	dp.Attributes().InsertString("pod_name", "sit")
+	dp.Attributes().InsertString("namespace", "main")
 	dp.SetSum(1238.1)
 	dp.SetCount(7)
 	dp.SetTimestamp(1608424699.186 * 1e9)
-
-	return metric
-}
-
-func exampleIntHistogramMetric() metricPair {
-	metric := metricPair{
-		attributes: pdata.NewAttributeMap(),
-		metric:     pdata.NewMetric(),
-	}
-
-	metric.metric.SetDataType(pdata.MetricDataTypeIntHistogram)
-	metric.metric.SetName("histogram_metric_int_test")
-
-	metric.attributes.InsertString("foo", "bar")
-
-	dp := metric.metric.IntHistogram().DataPoints().AppendEmpty()
-	dp.LabelsMap().Insert("pod_name", "dolor")
-	dp.LabelsMap().Insert("namespace", "sumologic")
-	dp.SetBucketCounts([]uint64{0, 12, 7, 5, 8, 13})
-	dp.SetExplicitBounds([]float64{0.1, 0.2, 0.5, 0.8, 1})
-	dp.SetTimestamp(1618124444.169 * 1e9)
-	dp.SetSum(45)
-	dp.SetCount(3)
-
-	dp = metric.metric.IntHistogram().DataPoints().AppendEmpty()
-	dp.LabelsMap().Insert("pod_name", "sit")
-	dp.LabelsMap().Insert("namespace", "main")
-	dp.SetBucketCounts([]uint64{0, 10, 1, 1, 4, 6})
-	dp.SetExplicitBounds([]float64{0.1, 0.2, 0.5, 0.8, 1})
-	dp.SetTimestamp(1608424699.186 * 1e9)
-	dp.SetSum(54)
-	dp.SetCount(5)
 
 	return metric
 }
@@ -221,8 +189,8 @@ func exampleHistogramMetric() metricPair {
 	metric.attributes.InsertString("bar", "foo")
 
 	dp := metric.metric.Histogram().DataPoints().AppendEmpty()
-	dp.LabelsMap().Insert("container", "dolor")
-	dp.LabelsMap().Insert("branch", "sumologic")
+	dp.Attributes().InsertString("container", "dolor")
+	dp.Attributes().InsertString("branch", "sumologic")
 	dp.SetBucketCounts([]uint64{0, 12, 7, 5, 8, 13})
 	dp.SetExplicitBounds([]float64{0.1, 0.2, 0.5, 0.8, 1})
 	dp.SetTimestamp(1618124444.169 * 1e9)
@@ -230,8 +198,8 @@ func exampleHistogramMetric() metricPair {
 	dp.SetCount(7)
 
 	dp = metric.metric.Histogram().DataPoints().AppendEmpty()
-	dp.LabelsMap().Insert("container", "sit")
-	dp.LabelsMap().Insert("branch", "main")
+	dp.Attributes().InsertString("container", "sit")
+	dp.Attributes().InsertString("branch", "main")
 	dp.SetBucketCounts([]uint64{0, 10, 1, 1, 4, 6})
 	dp.SetExplicitBounds([]float64{0.1, 0.2, 0.5, 0.8, 1})
 	dp.SetTimestamp(1608424699.186 * 1e9)
@@ -243,9 +211,9 @@ func exampleHistogramMetric() metricPair {
 
 func metricPairToMetrics(mp []metricPair) pdata.Metrics {
 	metrics := pdata.NewMetrics()
-	metrics.ResourceMetrics().Resize(len(mp))
+	metrics.ResourceMetrics().EnsureCapacity(len(mp))
 	for num, record := range mp {
-		record.attributes.CopyTo(metrics.ResourceMetrics().At(num).Resource().Attributes())
+		record.attributes.CopyTo(metrics.ResourceMetrics().AppendEmpty().Resource().Attributes())
 		// TODO: Change metricPair to have an init metric func.
 		record.metric.CopyTo(metrics.ResourceMetrics().At(num).InstrumentationLibraryMetrics().AppendEmpty().Metrics().AppendEmpty())
 	}

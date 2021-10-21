@@ -21,9 +21,8 @@ import (
 
 	sls "github.com/aliyun/aliyun-log-go-sdk"
 	"github.com/gogo/protobuf/proto"
-	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/translator/conventions"
-	tracetranslator "go.opentelemetry.io/collector/translator/trace"
+	"go.opentelemetry.io/collector/model/pdata"
+	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
 )
 
 const (
@@ -72,7 +71,7 @@ func resourceToLogContents(resource pdata.Resource) []*sls.LogContent {
 	if hostName, ok := attrs.Get(conventions.AttributeHostName); ok {
 		logContents[0] = &sls.LogContent{
 			Key:   proto.String(slsLogHost),
-			Value: proto.String(tracetranslator.AttributeValueToString(hostName, false)),
+			Value: proto.String(hostName.AsString()),
 		}
 	} else {
 		logContents[0] = &sls.LogContent{
@@ -84,7 +83,7 @@ func resourceToLogContents(resource pdata.Resource) []*sls.LogContent {
 	if serviceName, ok := attrs.Get(conventions.AttributeServiceName); ok {
 		logContents[1] = &sls.LogContent{
 			Key:   proto.String(slsLogService),
-			Value: proto.String(tracetranslator.AttributeValueToString(serviceName, false)),
+			Value: proto.String(serviceName.AsString()),
 		}
 	} else {
 		logContents[1] = &sls.LogContent{
@@ -98,7 +97,7 @@ func resourceToLogContents(resource pdata.Resource) []*sls.LogContent {
 		if k == conventions.AttributeServiceName || k == conventions.AttributeHostName {
 			return true
 		}
-		fields[k] = tracetranslator.AttributeValueToString(v, false)
+		fields[k] = v.AsString()
 		return true
 	})
 	attributeBuffer, _ := json.Marshal(fields)
@@ -126,7 +125,7 @@ func instrumentationLibraryToLogContents(instrumentationLibrary pdata.Instrument
 func mapLogRecordToLogService(lr pdata.LogRecord,
 	resourceContents,
 	instrumentationLibraryContents []*sls.LogContent) *sls.Log {
-	if lr.Body().Type() == pdata.AttributeValueNULL {
+	if lr.Body().Type() == pdata.AttributeValueTypeEmpty {
 		return nil
 	}
 	var slsLog sls.Log
@@ -161,7 +160,7 @@ func mapLogRecordToLogService(lr pdata.LogRecord,
 
 	fields := map[string]interface{}{}
 	lr.Attributes().Range(func(k string, v pdata.AttributeValue) bool {
-		fields[k] = tracetranslator.AttributeValueToString(v, false)
+		fields[k] = v.AsString()
 		return true
 	})
 	attributeBuffer, _ := json.Marshal(fields)
@@ -172,7 +171,7 @@ func mapLogRecordToLogService(lr pdata.LogRecord,
 
 	contentsBuffer = append(contentsBuffer, sls.LogContent{
 		Key:   proto.String(slsLogContent),
-		Value: proto.String(tracetranslator.AttributeValueToString(lr.Body(), false)),
+		Value: proto.String(lr.Body().AsString()),
 	})
 
 	contentsBuffer = append(contentsBuffer, sls.LogContent{

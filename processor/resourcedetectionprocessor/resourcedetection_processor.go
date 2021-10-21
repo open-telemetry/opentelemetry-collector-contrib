@@ -18,49 +18,56 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/model/pdata"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
 )
 
 type resourceDetectionProcessor struct {
-	provider *internal.ResourceProvider
-	resource pdata.Resource
-	override bool
+	provider  *internal.ResourceProvider
+	resource  pdata.Resource
+	schemaURL string
+	override  bool
 }
 
 // Start is invoked during service startup.
 func (rdp *resourceDetectionProcessor) Start(ctx context.Context, _ component.Host) error {
 	var err error
-	rdp.resource, err = rdp.provider.Get(ctx)
+	rdp.resource, rdp.schemaURL, err = rdp.provider.Get(ctx)
 	return err
 }
 
-// ProcessTraces implements the TracesProcessor interface
-func (rdp *resourceDetectionProcessor) ProcessTraces(_ context.Context, td pdata.Traces) (pdata.Traces, error) {
+// processTraces implements the ProcessTracesFunc type.
+func (rdp *resourceDetectionProcessor) processTraces(_ context.Context, td pdata.Traces) (pdata.Traces, error) {
 	rs := td.ResourceSpans()
 	for i := 0; i < rs.Len(); i++ {
-		res := rs.At(i).Resource()
+		rss := rs.At(i)
+		rss.SetSchemaUrl(internal.MergeSchemaURL(rss.SchemaUrl(), rdp.schemaURL))
+		res := rss.Resource()
 		internal.MergeResource(res, rdp.resource, rdp.override)
 	}
 	return td, nil
 }
 
-// ProcessMetrics implements the MetricsProcessor interface
-func (rdp *resourceDetectionProcessor) ProcessMetrics(_ context.Context, md pdata.Metrics) (pdata.Metrics, error) {
+// processMetrics implements the ProcessMetricsFunc type.
+func (rdp *resourceDetectionProcessor) processMetrics(_ context.Context, md pdata.Metrics) (pdata.Metrics, error) {
 	rm := md.ResourceMetrics()
 	for i := 0; i < rm.Len(); i++ {
-		res := rm.At(i).Resource()
+		rss := rm.At(i)
+		rss.SetSchemaUrl(internal.MergeSchemaURL(rss.SchemaUrl(), rdp.schemaURL))
+		res := rss.Resource()
 		internal.MergeResource(res, rdp.resource, rdp.override)
 	}
 	return md, nil
 }
 
-// ProcessLogs implements the LogsProcessor interface
-func (rdp *resourceDetectionProcessor) ProcessLogs(_ context.Context, ld pdata.Logs) (pdata.Logs, error) {
-	rls := ld.ResourceLogs()
-	for i := 0; i < rls.Len(); i++ {
-		res := rls.At(i).Resource()
+// processLogs implements the ProcessLogsFunc type.
+func (rdp *resourceDetectionProcessor) processLogs(_ context.Context, ld pdata.Logs) (pdata.Logs, error) {
+	rl := ld.ResourceLogs()
+	for i := 0; i < rl.Len(); i++ {
+		rss := rl.At(i)
+		rss.SetSchemaUrl(internal.MergeSchemaURL(rss.SchemaUrl(), rdp.schemaURL))
+		res := rss.Resource()
 		internal.MergeResource(res, rdp.resource, rdp.override)
 	}
 	return ld, nil

@@ -33,9 +33,9 @@ func TestLoadingFullConfig(t *testing.T) {
 	}{
 		{
 			configFile: "config_full.yaml",
-			filterName: config.NewID(typeStr),
+			filterName: config.NewComponentID(typeStr),
 			expCfg: &Config{
-				ProcessorSettings: config.NewProcessorSettings(config.NewID(typeStr)),
+				ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
 				Transforms: []Transform{
 					{
 						MetricIncludeFilter: FilterConfig{
@@ -50,9 +50,9 @@ func TestLoadingFullConfig(t *testing.T) {
 		},
 		{
 			configFile: "config_full.yaml",
-			filterName: config.NewIDWithName(typeStr, "multiple"),
+			filterName: config.NewComponentIDWithName(typeStr, "multiple"),
 			expCfg: &Config{
-				ProcessorSettings: config.NewProcessorSettings(config.NewIDWithName(typeStr, "multiple")),
+				ProcessorSettings: config.NewProcessorSettings(config.NewComponentIDWithName(typeStr, "multiple")),
 				Transforms: []Transform{
 					{
 						MetricIncludeFilter: FilterConfig{
@@ -156,9 +156,9 @@ func TestLoadingFullConfig(t *testing.T) {
 		},
 		{
 			configFile: "config_deprecated.yaml",
-			filterName: config.NewID(typeStr),
+			filterName: config.NewComponentID(typeStr),
 			expCfg: &Config{
-				ProcessorSettings: config.NewProcessorSettings(config.NewID(typeStr)),
+				ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
 				Transforms: []Transform{
 					{
 						MetricName: "old_name",
@@ -178,7 +178,7 @@ func TestLoadingFullConfig(t *testing.T) {
 
 			factory := NewFactory()
 			factories.Processors[typeStr] = factory
-			cfg, err := configtest.LoadConfigFile(t, path.Join(".", "testdata", test.configFile), factories)
+			cfg, err := configtest.LoadConfigAndValidate(path.Join(".", "testdata", test.configFile), factories)
 			assert.NoError(t, err)
 			require.NotNil(t, cfg)
 			assert.Equal(t, test.expCfg, cfg.Processors[test.filterName])

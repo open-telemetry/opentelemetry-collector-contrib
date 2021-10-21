@@ -18,21 +18,21 @@ import (
 	"fmt"
 	"strings"
 
-	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/translator/conventions"
+	"go.opentelemetry.io/collector/model/pdata"
+	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
 )
 
 // HostIDKey represents a host identifier.
 type HostIDKey string
 
 const (
-	// AWS
+	// HostIDKeyAWS AWS HostIDKey.
 	HostIDKeyAWS HostIDKey = "AWSUniqueId"
-	// GCP
+	// HostIDKeyGCP GCP HostIDKey.
 	HostIDKeyGCP HostIDKey = "gcp_id"
-	// Azure
+	// HostIDKeyAzure Azure HostIDKey.
 	HostIDKeyAzure HostIDKey = "azure_resource_id"
-	// Host
+	// HostIDKeyHost Host HostIDKey.
 	HostIDKeyHost HostIDKey = conventions.AttributeHostName
 )
 
@@ -56,7 +56,7 @@ func ResourceToHostID(res pdata.Resource) (HostID, bool) {
 		return HostID{}, false
 	}
 
-	if attr, ok := attrs.Get(conventions.AttributeCloudAccount); ok {
+	if attr, ok := attrs.Get(conventions.AttributeCloudAccountID); ok {
 		cloudAccount = attr.StringVal()
 	}
 

@@ -18,9 +18,8 @@ import (
 	"math"
 	"strconv"
 
-	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/translator/conventions"
-	tracetranslator "go.opentelemetry.io/collector/translator/trace"
+	"go.opentelemetry.io/collector/model/pdata"
+	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
@@ -29,6 +28,8 @@ import (
 const (
 	// unknownHostName is the default host name when no hostname label is passed.
 	unknownHostName = "unknown"
+	// splunkMetricTypeKey is the key which maps to the type of the metric.
+	splunkMetricTypeKey = "metric_type"
 	// splunkMetricValue is the splunk metric value prefix.
 	splunkMetricValue = "metric_name"
 	// countSuffix is the count metric value suffix.
@@ -37,13 +38,35 @@ const (
 	sumSuffix = "_sum"
 	// bucketSuffix is the bucket metric value suffix.
 	bucketSuffix = "_bucket"
+	// nanValue is the string representation of a NaN value in HEC events
+	nanValue = "NaN"
+	// plusInfValue is the string representation of a +Inf value in HEC events
+	plusInfValue = "+Inf"
+	// minusInfValue is the string representation of a -Inf value in HEC events
+	minusInfValue = "-Inf"
 )
+
+func sanitizeFloat(value float64) interface{} {
+	if math.IsNaN(value) {
+		return nanValue
+	}
+	if math.IsInf(value, 1) {
+		return plusInfValue
+	}
+	if math.IsInf(value, -1) {
+		return minusInfValue
+	}
+	return value
+}
 
 func metricDataToSplunk(logger *zap.Logger, data pdata.Metrics, config *Config) ([]*splunk.Event, int) {
 	numDroppedTimeSeries := 0
-	_, dpCount := data.MetricAndDataPointCount()
-	splunkMetrics := make([]*splunk.Event, 0, dpCount)
+	splunkMetrics := make([]*splunk.Event, 0, data.DataPointCount())
 	rms := data.ResourceMetrics()
+	sourceKey := config.HecToOtelAttrs.Source
+	sourceTypeKey := config.HecToOtelAttrs.SourceType
+	indexKey := config.HecToOtelAttrs.Index
+	hostKey := config.HecToOtelAttrs.Host
 	for i := 0; i < rms.Len(); i++ {
 		rm := rms.At(i)
 		host := unknownHostName
@@ -51,27 +74,21 @@ func metricDataToSplunk(logger *zap.Logger, data pdata.Metrics, config *Config) 
 		sourceType := config.SourceType
 		index := config.Index
 		commonFields := map[string]interface{}{}
-		resource := rm.Resource()
-		attributes := resource.Attributes()
-		if conventionHost, isSet := attributes.Get(conventions.AttributeHostName); isSet {
-			host = conventionHost.StringVal()
-		}
-		if sourceSet, isSet := attributes.Get(conventions.AttributeServiceName); isSet {
-			source = sourceSet.StringVal()
-		}
-		if sourcetypeSet, isSet := attributes.Get(splunk.SourcetypeLabel); isSet {
-			sourceType = sourcetypeSet.StringVal()
-		}
-		if indexSet, isSet := attributes.Get(splunk.IndexLabel); isSet {
-			index = indexSet.StringVal()
-		}
-		attributes.Range(func(k string, v pdata.AttributeValue) bool {
-			commonFields[k] = tracetranslator.AttributeValueToString(v, false)
-			return true
-		})
 
 		rm.Resource().Attributes().Range(func(k string, v pdata.AttributeValue) bool {
-			commonFields[k] = tracetranslator.AttributeValueToString(v, false)
+			switch k {
+			case hostKey:
+				host = v.StringVal()
+				commonFields[conventions.AttributeHostName] = host
+			case sourceKey:
+				source = v.StringVal()
+			case sourceTypeKey:
+				sourceType = v.StringVal()
+			case indexKey:
+				index = v.StringVal()
+			default:
+				commonFields[k] = v.AsString()
+			}
 			return true
 		})
 		ilms := rm.InstrumentationLibraryMetrics()
@@ -82,24 +99,19 @@ func metricDataToSplunk(logger *zap.Logger, data pdata.Metrics, config *Config) 
 				tm := metrics.At(tmi)
 				metricFieldName := splunkMetricValue + ":" + tm.Name()
 				switch tm.DataType() {
-				case pdata.MetricDataTypeIntGauge:
-					pts := tm.IntGauge().DataPoints()
+				case pdata.MetricDataTypeGauge:
+					pts := tm.Gauge().DataPoints()
 					for gi := 0; gi < pts.Len(); gi++ {
 						dataPt := pts.At(gi)
 						fields := cloneMap(commonFields)
-						populateLabels(fields, dataPt.LabelsMap())
-						fields[metricFieldName] = dataPt.Value()
-
-						sm := createEvent(dataPt.Timestamp(), host, source, sourceType, index, fields)
-						splunkMetrics = append(splunkMetrics, sm)
-					}
-				case pdata.MetricDataTypeDoubleGauge:
-					pts := tm.DoubleGauge().DataPoints()
-					for gi := 0; gi < pts.Len(); gi++ {
-						dataPt := pts.At(gi)
-						fields := cloneMap(commonFields)
-						populateLabels(fields, dataPt.LabelsMap())
-						fields[metricFieldName] = dataPt.Value()
+						populateAttributes(fields, dataPt.Attributes())
+						switch dataPt.Type() {
+						case pdata.MetricValueTypeInt:
+							fields[metricFieldName] = dataPt.IntVal()
+						case pdata.MetricValueTypeDouble:
+							fields[metricFieldName] = sanitizeFloat(dataPt.DoubleVal())
+						}
+						fields[splunkMetricTypeKey] = pdata.MetricDataTypeGauge.String()
 						sm := createEvent(dataPt.Timestamp(), host, source, sourceType, index, fields)
 						splunkMetrics = append(splunkMetrics, sm)
 					}
@@ -112,15 +124,17 @@ func metricDataToSplunk(logger *zap.Logger, data pdata.Metrics, config *Config) 
 						// first, add one event for sum, and one for count
 						{
 							fields := cloneMap(commonFields)
-							populateLabels(fields, dataPt.LabelsMap())
+							populateAttributes(fields, dataPt.Attributes())
 							fields[metricFieldName+sumSuffix] = dataPt.Sum()
+							fields[splunkMetricTypeKey] = pdata.MetricDataTypeHistogram.String()
 							sm := createEvent(dataPt.Timestamp(), host, source, sourceType, index, fields)
 							splunkMetrics = append(splunkMetrics, sm)
 						}
 						{
 							fields := cloneMap(commonFields)
-							populateLabels(fields, dataPt.LabelsMap())
+							populateAttributes(fields, dataPt.Attributes())
 							fields[metricFieldName+countSuffix] = dataPt.Count()
+							fields[splunkMetricTypeKey] = pdata.MetricDataTypeHistogram.String()
 							sm := createEvent(dataPt.Timestamp(), host, source, sourceType, index, fields)
 							splunkMetrics = append(splunkMetrics, sm)
 						}
@@ -133,89 +147,38 @@ func metricDataToSplunk(logger *zap.Logger, data pdata.Metrics, config *Config) 
 						// now create buckets for each bound.
 						for bi := 0; bi < len(bounds); bi++ {
 							fields := cloneMap(commonFields)
-							populateLabels(fields, dataPt.LabelsMap())
+							populateAttributes(fields, dataPt.Attributes())
 							fields["le"] = float64ToDimValue(bounds[bi])
 							value += counts[bi]
 							fields[metricFieldName+bucketSuffix] = value
+							fields[splunkMetricTypeKey] = pdata.MetricDataTypeHistogram.String()
 							sm := createEvent(dataPt.Timestamp(), host, source, sourceType, index, fields)
 							splunkMetrics = append(splunkMetrics, sm)
 						}
 						// add an upper bound for +Inf
 						{
 							fields := cloneMap(commonFields)
-							populateLabels(fields, dataPt.LabelsMap())
+							populateAttributes(fields, dataPt.Attributes())
 							fields["le"] = float64ToDimValue(math.Inf(1))
 							fields[metricFieldName+bucketSuffix] = value + counts[len(counts)-1]
+							fields[splunkMetricTypeKey] = pdata.MetricDataTypeHistogram.String()
 							sm := createEvent(dataPt.Timestamp(), host, source, sourceType, index, fields)
 							splunkMetrics = append(splunkMetrics, sm)
 						}
 					}
-				case pdata.MetricDataTypeIntHistogram:
-					pts := tm.IntHistogram().DataPoints()
-					for gi := 0; gi < pts.Len(); gi++ {
-						dataPt := pts.At(gi)
-						bounds := dataPt.ExplicitBounds()
-						counts := dataPt.BucketCounts()
-						// first, add one event for sum, and one for count
-						{
-							fields := cloneMap(commonFields)
-							populateLabels(fields, dataPt.LabelsMap())
-							fields[metricFieldName+sumSuffix] = dataPt.Sum()
-							sm := createEvent(dataPt.Timestamp(), host, source, sourceType, index, fields)
-							splunkMetrics = append(splunkMetrics, sm)
-						}
-						{
-							fields := cloneMap(commonFields)
-							populateLabels(fields, dataPt.LabelsMap())
-							fields[metricFieldName+countSuffix] = dataPt.Count()
-							sm := createEvent(dataPt.Timestamp(), host, source, sourceType, index, fields)
-							splunkMetrics = append(splunkMetrics, sm)
-						}
-						// Spec says counts is optional but if present it must have one more
-						// element than the bounds array.
-						if len(counts) == 0 || len(counts) != len(bounds)+1 {
-							continue
-						}
-						value := uint64(0)
-						// now create buckets for each bound.
-						for bi := 0; bi < len(bounds); bi++ {
-							fields := cloneMap(commonFields)
-							populateLabels(fields, dataPt.LabelsMap())
-							fields["le"] = float64ToDimValue(bounds[bi])
-							value += counts[bi]
-							fields[metricFieldName+bucketSuffix] = value
-							sm := createEvent(dataPt.Timestamp(), host, source, sourceType, index, fields)
-							splunkMetrics = append(splunkMetrics, sm)
-						}
-						// add an upper bound for +Inf
-						{
-							fields := cloneMap(commonFields)
-							populateLabels(fields, dataPt.LabelsMap())
-							fields["le"] = float64ToDimValue(math.Inf(1))
-							fields[metricFieldName+bucketSuffix] = value + counts[len(counts)-1]
-							sm := createEvent(dataPt.Timestamp(), host, source, sourceType, index, fields)
-							splunkMetrics = append(splunkMetrics, sm)
-						}
-					}
-				case pdata.MetricDataTypeDoubleSum:
-					pts := tm.DoubleSum().DataPoints()
+				case pdata.MetricDataTypeSum:
+					pts := tm.Sum().DataPoints()
 					for gi := 0; gi < pts.Len(); gi++ {
 						dataPt := pts.At(gi)
 						fields := cloneMap(commonFields)
-						populateLabels(fields, dataPt.LabelsMap())
-						fields[metricFieldName] = dataPt.Value()
-
-						sm := createEvent(dataPt.Timestamp(), host, source, sourceType, index, fields)
-						splunkMetrics = append(splunkMetrics, sm)
-					}
-				case pdata.MetricDataTypeIntSum:
-					pts := tm.IntSum().DataPoints()
-					for gi := 0; gi < pts.Len(); gi++ {
-						dataPt := pts.At(gi)
-						fields := cloneMap(commonFields)
-						populateLabels(fields, dataPt.LabelsMap())
-						fields[metricFieldName] = dataPt.Value()
-
+						populateAttributes(fields, dataPt.Attributes())
+						switch dataPt.Type() {
+						case pdata.MetricValueTypeInt:
+							fields[metricFieldName] = dataPt.IntVal()
+						case pdata.MetricValueTypeDouble:
+							fields[metricFieldName] = sanitizeFloat(dataPt.DoubleVal())
+						}
+						fields[splunkMetricTypeKey] = pdata.MetricDataTypeSum.String()
 						sm := createEvent(dataPt.Timestamp(), host, source, sourceType, index, fields)
 						splunkMetrics = append(splunkMetrics, sm)
 					}
@@ -226,15 +189,17 @@ func metricDataToSplunk(logger *zap.Logger, data pdata.Metrics, config *Config) 
 						// first, add one event for sum, and one for count
 						{
 							fields := cloneMap(commonFields)
-							populateLabels(fields, dataPt.LabelsMap())
+							populateAttributes(fields, dataPt.Attributes())
 							fields[metricFieldName+sumSuffix] = dataPt.Sum()
+							fields[splunkMetricTypeKey] = pdata.MetricDataTypeSummary.String()
 							sm := createEvent(dataPt.Timestamp(), host, source, sourceType, index, fields)
 							splunkMetrics = append(splunkMetrics, sm)
 						}
 						{
 							fields := cloneMap(commonFields)
-							populateLabels(fields, dataPt.LabelsMap())
+							populateAttributes(fields, dataPt.Attributes())
 							fields[metricFieldName+countSuffix] = dataPt.Count()
+							fields[splunkMetricTypeKey] = pdata.MetricDataTypeSummary.String()
 							sm := createEvent(dataPt.Timestamp(), host, source, sourceType, index, fields)
 							splunkMetrics = append(splunkMetrics, sm)
 						}
@@ -242,10 +207,11 @@ func metricDataToSplunk(logger *zap.Logger, data pdata.Metrics, config *Config) 
 						// now create values for each quantile.
 						for bi := 0; bi < dataPt.QuantileValues().Len(); bi++ {
 							fields := cloneMap(commonFields)
-							populateLabels(fields, dataPt.LabelsMap())
+							populateAttributes(fields, dataPt.Attributes())
 							dp := dataPt.QuantileValues().At(bi)
 							fields["qt"] = float64ToDimValue(dp.Quantile())
-							fields[metricFieldName+"_"+strconv.FormatFloat(dp.Quantile(), 'f', -1, 64)] = dp.Value()
+							fields[metricFieldName+"_"+strconv.FormatFloat(dp.Quantile(), 'f', -1, 64)] = sanitizeFloat(dp.Value())
+							fields[splunkMetricTypeKey] = pdata.MetricDataTypeSummary.String()
 							sm := createEvent(dataPt.Timestamp(), host, source, sourceType, index, fields)
 							splunkMetrics = append(splunkMetrics, sm)
 						}
@@ -278,9 +244,9 @@ func createEvent(timestamp pdata.Timestamp, host string, source string, sourceTy
 
 }
 
-func populateLabels(fields map[string]interface{}, labelsMap pdata.StringMap) {
-	labelsMap.Range(func(k string, v string) bool {
-		fields[k] = v
+func populateAttributes(fields map[string]interface{}, attributeMap pdata.AttributeMap) {
+	attributeMap.Range(func(k string, v pdata.AttributeValue) bool {
+		fields[k] = v.AsString()
 		return true
 	})
 }

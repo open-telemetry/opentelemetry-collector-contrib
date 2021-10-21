@@ -21,8 +21,7 @@ import (
 
 	sls "github.com/aliyun/aliyun-log-go-sdk"
 	"github.com/gogo/protobuf/proto"
-	"go.opentelemetry.io/collector/consumer/pdata"
-	tracetranslator "go.opentelemetry.io/collector/translator/trace"
+	"go.opentelemetry.io/collector/model/pdata"
 	"go.uber.org/zap"
 )
 
@@ -51,9 +50,13 @@ func (kv *KeyValues) Swap(i, j int) {
 	kv.keyValues[i], kv.keyValues[j] = kv.keyValues[j], kv.keyValues[i]
 }
 func (kv *KeyValues) Less(i, j int) bool { return kv.keyValues[i].Key < kv.keyValues[j].Key }
-func (kv *KeyValues) Sort()              { sort.Sort(kv) }
+
+func (kv *KeyValues) Sort() {
+	sort.Sort(kv)
+}
 
 func (kv *KeyValues) Replace(key, value string) {
+	key = sanitize(key)
 	findIndex := sort.Search(len(kv.keyValues), func(index int) bool {
 		return kv.keyValues[index].Key >= key
 	})
@@ -62,16 +65,8 @@ func (kv *KeyValues) Replace(key, value string) {
 	}
 }
 
-func (kv *KeyValues) AppendMap(mapVal map[string]string) {
-	for key, value := range mapVal {
-		kv.keyValues = append(kv.keyValues, KeyValue{
-			Key:   key,
-			Value: value,
-		})
-	}
-}
-
 func (kv *KeyValues) Append(key, value string) {
+	key = sanitize(key)
 	kv.keyValues = append(kv.keyValues, KeyValue{
 		key,
 		value,
@@ -166,90 +161,39 @@ func resourceToMetricLabels(labels *KeyValues, resource pdata.Resource) {
 	attrs.Range(func(k string, v pdata.AttributeValue) bool {
 		labels.keyValues = append(labels.keyValues, KeyValue{
 			Key:   k,
-			Value: tracetranslator.AttributeValueToString(v, false),
+			Value: v.AsString(),
 		})
 		return true
 	})
 }
 
-func intMetricsToLogs(name string, data pdata.IntDataPointSlice, defaultLabels KeyValues) (logs []*sls.Log) {
+func numberMetricsToLogs(name string, data pdata.NumberDataPointSlice, defaultLabels KeyValues) (logs []*sls.Log) {
 	for i := 0; i < data.Len(); i++ {
 		dataPoint := data.At(i)
-		labelsMap := dataPoint.LabelsMap()
+		attributeMap := dataPoint.Attributes()
 		labels := defaultLabels.Clone()
-		labelsMap.Range(func(k string, v string) bool {
-			labels.Append(k, v)
+		attributeMap.Range(func(k string, v pdata.AttributeValue) bool {
+			labels.Append(k, v.AsString())
 			return true
 		})
-		logs = append(logs, newMetricLogFromRaw(name,
-			labels,
-			int64(dataPoint.Timestamp()),
-			float64(dataPoint.Value())))
-	}
-	return logs
-}
-
-func doubleMetricsToLogs(name string, data pdata.DoubleDataPointSlice, defaultLabels KeyValues) (logs []*sls.Log) {
-	for i := 0; i < data.Len(); i++ {
-		dataPoint := data.At(i)
-		labelsMap := dataPoint.LabelsMap()
-		labels := defaultLabels.Clone()
-		labelsMap.Range(func(k string, v string) bool {
-			labels.Append(k, v)
-			return true
-		})
-		logs = append(logs, newMetricLogFromRaw(name,
-			labels,
-			int64(dataPoint.Timestamp()),
-			dataPoint.Value()))
-	}
-	return logs
-}
-
-func intHistogramMetricsToLogs(name string, data pdata.IntHistogramDataPointSlice, defaultLabels KeyValues) (logs []*sls.Log) {
-	for i := 0; i < data.Len(); i++ {
-		dataPoint := data.At(i)
-		labelsMap := dataPoint.LabelsMap()
-		labels := defaultLabels.Clone()
-		labelsMap.Range(func(k string, v string) bool {
-			labels.Append(k, v)
-			return true
-		})
-		logs = append(logs, newMetricLogFromRaw(name+"_sum",
-			labels,
-			int64(dataPoint.Timestamp()),
-			float64(dataPoint.Sum())))
-		logs = append(logs, newMetricLogFromRaw(name+"_count",
-			labels,
-			int64(dataPoint.Timestamp()),
-			float64(dataPoint.Count())))
-
-		bounds := dataPoint.ExplicitBounds()
-		boundsStr := make([]string, len(bounds)+1)
-		for i := 0; i < len(bounds); i++ {
-			boundsStr[i] = strconv.FormatFloat(bounds[i], 'g', -1, 64)
-		}
-		boundsStr[len(boundsStr)-1] = infinityBoundValue
-
-		bucketCount := min(len(boundsStr), len(dataPoint.BucketCounts()))
-
-		bucketLabels := labels.Clone()
-		bucketLabels.Append(bucketLabelKey, "")
-		bucketLabels.Sort()
-		for i := 0; i < bucketCount; i++ {
-			bucket := dataPoint.BucketCounts()[i]
-			bucketLabels.Replace(bucketLabelKey, boundsStr[i])
-
-			logs = append(
-				logs,
-				newMetricLogFromRaw(
-					name+"_bucket",
-					bucketLabels,
+		switch dataPoint.Type() {
+		case pdata.MetricValueTypeInt:
+			logs = append(logs,
+				newMetricLogFromRaw(name,
+					labels,
 					int64(dataPoint.Timestamp()),
-					float64(bucket),
-				))
+					float64(dataPoint.IntVal()),
+				),
+			)
+		case pdata.MetricValueTypeDouble:
+			logs = append(logs,
+				newMetricLogFromRaw(name,
+					labels,
+					int64(dataPoint.Timestamp()),
+					dataPoint.DoubleVal(),
+				),
+			)
 		}
-
 	}
 	return logs
 }
@@ -257,10 +201,10 @@ func intHistogramMetricsToLogs(name string, data pdata.IntHistogramDataPointSlic
 func doubleHistogramMetricsToLogs(name string, data pdata.HistogramDataPointSlice, defaultLabels KeyValues) (logs []*sls.Log) {
 	for i := 0; i < data.Len(); i++ {
 		dataPoint := data.At(i)
-		labelsMap := dataPoint.LabelsMap()
+		attributeMap := dataPoint.Attributes()
 		labels := defaultLabels.Clone()
-		labelsMap.Range(func(k string, v string) bool {
-			labels.Append(k, v)
+		attributeMap.Range(func(k string, v pdata.AttributeValue) bool {
+			labels.Append(k, v.AsString())
 			return true
 		})
 		logs = append(logs, newMetricLogFromRaw(name+"_sum",
@@ -305,10 +249,10 @@ func doubleHistogramMetricsToLogs(name string, data pdata.HistogramDataPointSlic
 func doubleSummaryMetricsToLogs(name string, data pdata.SummaryDataPointSlice, defaultLabels KeyValues) (logs []*sls.Log) {
 	for i := 0; i < data.Len(); i++ {
 		dataPoint := data.At(i)
-		labelsMap := dataPoint.LabelsMap()
+		attributeMap := dataPoint.Attributes()
 		labels := defaultLabels.Clone()
-		labelsMap.Range(func(k string, v string) bool {
-			labels.Append(k, v)
+		attributeMap.Range(func(k string, v pdata.AttributeValue) bool {
+			labels.Append(k, v.AsString())
 			return true
 		})
 		logs = append(logs, newMetricLogFromRaw(name+"_sum",
@@ -342,16 +286,10 @@ func metricDataToLogServiceData(md pdata.Metric, defaultLabels KeyValues) (logs 
 	switch md.DataType() {
 	case pdata.MetricDataTypeNone:
 		break
-	case pdata.MetricDataTypeIntGauge:
-		return intMetricsToLogs(md.Name(), md.IntGauge().DataPoints(), defaultLabels)
-	case pdata.MetricDataTypeDoubleGauge:
-		return doubleMetricsToLogs(md.Name(), md.DoubleGauge().DataPoints(), defaultLabels)
-	case pdata.MetricDataTypeIntSum:
-		return intMetricsToLogs(md.Name(), md.IntSum().DataPoints(), defaultLabels)
-	case pdata.MetricDataTypeDoubleSum:
-		return doubleMetricsToLogs(md.Name(), md.DoubleSum().DataPoints(), defaultLabels)
-	case pdata.MetricDataTypeIntHistogram:
-		return intHistogramMetricsToLogs(md.Name(), md.IntHistogram().DataPoints(), defaultLabels)
+	case pdata.MetricDataTypeGauge:
+		return numberMetricsToLogs(md.Name(), md.Gauge().DataPoints(), defaultLabels)
+	case pdata.MetricDataTypeSum:
+		return numberMetricsToLogs(md.Name(), md.Sum().DataPoints(), defaultLabels)
 	case pdata.MetricDataTypeHistogram:
 		return doubleHistogramMetricsToLogs(md.Name(), md.Histogram().DataPoints(), defaultLabels)
 	case pdata.MetricDataTypeSummary:

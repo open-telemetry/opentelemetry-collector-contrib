@@ -45,7 +45,7 @@ func NewFactory() component.ReceiverFactory {
 // createDefaultConfig returns a default config
 func createDefaultConfig() config.Receiver {
 	return &Config{
-		ReceiverSettings: config.NewReceiverSettings(config.NewID(typeStr)),
+		ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
 		ScrapeInterval:   defaultCollectionInterval,
 		SubprocessConfig: subprocessmanager.SubprocessConfig{
 			Env: []subprocessmanager.EnvConfig{},
@@ -56,7 +56,7 @@ func createDefaultConfig() config.Receiver {
 // createMetricsReceiver creates a metrics receiver based on provided Config.
 func createMetricsReceiver(
 	ctx context.Context,
-	params component.ReceiverCreateParams,
+	params component.ReceiverCreateSettings,
 	cfg config.Receiver,
 	nextConsumer consumer.Metrics,
 ) (component.MetricsReceiver, error) {

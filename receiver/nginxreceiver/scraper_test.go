@@ -17,14 +17,19 @@ package nginxreceiver
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
-	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/config/configtls"
+	"go.opentelemetry.io/collector/model/pdata"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/nginxreceiver/internal/metadata"
 )
 
 func TestScraper(t *testing.T) {
@@ -45,11 +50,13 @@ Reading: 6 Writing: 179 Waiting: 106
 			Endpoint: nginxMock.URL + "/status",
 		},
 	})
-	rms, err := sc.scrape(context.Background())
+	err := sc.start(context.Background(), componenttest.NewNopHost())
+	require.NoError(t, err)
+	md, err := sc.scrape(context.Background())
 	require.Nil(t, err)
 
-	require.Equal(t, 1, rms.Len())
-	rm := rms.At(0)
+	require.Equal(t, 1, md.ResourceMetrics().Len())
+	rm := md.ResourceMetrics().At(0)
 
 	ilms := rm.InstrumentationLibraryMetrics()
 	require.Equal(t, 1, ilms.Len())
@@ -57,35 +64,38 @@ Reading: 6 Writing: 179 Waiting: 106
 	ilm := ilms.At(0)
 	ms := ilm.Metrics()
 
-	require.Equal(t, 7, ms.Len())
+	require.Equal(t, 4, ms.Len())
 
 	metricValues := make(map[string]int64, 7)
 
 	for i := 0; i < ms.Len(); i++ {
 		m := ms.At(i)
 
-		var dps pdata.IntDataPointSlice
-
 		switch m.DataType() {
-		case pdata.MetricDataTypeIntGauge:
-			dps = m.IntGauge().DataPoints()
-		case pdata.MetricDataTypeIntSum:
-			dps = m.IntSum().DataPoints()
+		case pdata.MetricDataTypeGauge:
+			dps := m.Gauge().DataPoints()
+			require.Equal(t, 4, dps.Len())
+			for j := 0; j < dps.Len(); j++ {
+				dp := dps.At(j)
+				state, _ := dp.Attributes().Get(metadata.L.State)
+				label := fmt.Sprintf("%s state:%s", m.Name(), state.StringVal())
+				metricValues[label] = dp.IntVal()
+			}
+		case pdata.MetricDataTypeSum:
+			dps := m.Sum().DataPoints()
+			require.Equal(t, 1, dps.Len())
+			metricValues[m.Name()] = dps.At(0).IntVal()
 		}
-
-		require.Equal(t, 1, dps.Len())
-
-		metricValues[m.Name()] = dps.At(0).Value()
 	}
 
 	require.Equal(t, map[string]int64{
-		"nginx.connections_accepted": 16630948,
-		"nginx.connections_handled":  16630948,
-		"nginx.requests":             31070465,
-		"nginx.connections_active":   291,
-		"nginx.connections_reading":  6,
-		"nginx.connections_writing":  179,
-		"nginx.connections_waiting":  106,
+		"nginx.connections_accepted":              16630948,
+		"nginx.connections_handled":               16630948,
+		"nginx.requests":                          31070465,
+		"nginx.connections_current state:active":  291,
+		"nginx.connections_current state:reading": 6,
+		"nginx.connections_current state:writing": 179,
+		"nginx.connections_current state:waiting": 106,
 	}, metricValues)
 }
 
@@ -104,8 +114,9 @@ func TestScraperError(t *testing.T) {
 				Endpoint: nginxMock.URL + "/badpath",
 			},
 		})
-
-		_, err := sc.scrape(context.Background())
+		err := sc.start(context.Background(), componenttest.NewNopHost())
+		require.NoError(t, err)
+		_, err = sc.scrape(context.Background())
 		require.Equal(t, errors.New("expected 200 response, got 404"), err)
 	})
 
@@ -115,7 +126,24 @@ func TestScraperError(t *testing.T) {
 				Endpoint: nginxMock.URL + "/status",
 			},
 		})
-		_, err := sc.scrape(context.Background())
+		err := sc.start(context.Background(), componenttest.NewNopHost())
+		require.NoError(t, err)
+		_, err = sc.scrape(context.Background())
 		require.Equal(t, errors.New("failed to parse response body \"Bad status page\": invalid input \"Bad status page\""), err)
 	})
+}
+
+func TestScraperFailedStart(t *testing.T) {
+	sc := newNginxScraper(zap.NewNop(), &Config{
+		HTTPClientSettings: confighttp.HTTPClientSettings{
+			Endpoint: "localhost:8080",
+			TLSSetting: configtls.TLSClientSetting{
+				TLSSetting: configtls.TLSSetting{
+					CAFile: "/non/existent",
+				},
+			},
+		},
+	})
+	err := sc.start(context.Background(), componenttest.NewNopHost())
+	require.Error(t, err)
 }

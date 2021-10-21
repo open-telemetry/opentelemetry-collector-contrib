@@ -22,30 +22,32 @@ The following configuration options are required:
   - `api_url` (no default): Destination to which SignalFx [properties and
     tags](https://docs.signalfx.com/en/latest/metrics-metadata/metrics-metadata.html#metrics-metadata)
     are sent. If `realm` is set, this option is derived and will be
-    `https://api.{realm}.signalfx.com/`. If a value is explicitly set, the
+    `https://api.{realm}.signalfx.com`. If a value is explicitly set, the
     value of `realm` will not be used in determining `api_url`. The explicit
     value will be used instead.
   - `ingest_url` (no default): Destination where SignalFx metrics are sent. If
     `realm` is set, this option is derived and will be
-    `https://ingest.{realm}.signalfx.com/v2/datapoint`.  If a value is
+    `https://ingest.{realm}.signalfx.com`. If a value is
     explicitly set, the value of `realm` will not be used in determining
-    `ingest_url`. The explicit value will be used instead. If path is not
-    specified, `/v2/datapoint` is used.
+    `ingest_url`. The explicit value will be used instead. The exporter will 
+    automatically append the appropriate path: "/v2/datapoint" for metrics, 
+    and "/v2/event" for events.
 
 The following configuration options can also be configured:
 
 - `access_token_passthrough`: (default = `true`) Whether to use
-  `"com.splunk.signalfx.access_token"` metric resource label, if any, as the
-  SignalFx access token.  In either case this label will be dropped during
-  final translation.  Intended to be used in tandem with identical
-  configuration option for [SignalFx
+  `"com.splunk.signalfx.access_token"` metric resource attribute, if any, as the
+  SignalFx access token.  In either case this attribute will be dropped during
+  final translation, in this exporter only.  Intended to be used in tandem with
+  identical configuration option for [SignalFx
   receiver](../../receiver/signalfxreceiver/README.md) to preserve datapoint
-  origin.
+  origin for only this exporter, as others will reveal the organization access token
+  by not filtering the attribute.
 - `exclude_metrics`: List of metric filters that will determine metrics to be
   excluded from sending to Signalfx backend. If `translation_rules` options
   are enabled, the exclusion will be applied on translated metrics.
   See [here](./testdata/config.yaml) for examples. Apart from the values explicitly
-  provided via this option, by default, [these](./translation/default_metrics.go) are
+  provided via this option, by default, [these](./internal/translation/default_metrics.go) are
   also appended to this list. Setting this option to `[]` will override all the default
   excludes.
 - `include_metrics`: List of filters to override exclusion of any metrics.
@@ -63,6 +65,8 @@ The following configuration options can also be configured:
         state: [interrupt, user, system]
   ```
 - `headers` (no default): Headers to pass in the payload.
+- `log_data_points` (default = `false`): If the log level is set to `debug` 
+  and this is true, all datapoints dispatched to Splunk Observability Cloud will be logged
 - `log_dimension_updates` (default = `false`): Whether or not to log dimension
   updates.
 - `timeout` (default = 5s): Amount of time to wait for a send operation to
@@ -81,6 +85,7 @@ The following configuration options can also be configured:
 that are allowed to be used as a dimension key in addition to alphanumeric 
 characters. Each nonalphanumeric dimension key character that isn't in this string 
 will be replaced with a `_`.
+- `max_connections` (default = 100):  The maximum number of idle HTTP connection the exporter can keep open.
 
 In addition, this exporter offers queued retry which is enabled by default.
 Information about queued retry configuration parameters can be found
@@ -114,7 +119,97 @@ One of `realm` and `api_url` are required.
   - `cleanup_interval` (default = 1 minute): How frequently to purge duplicate requests.
   - `sync_attributes` (default = `{"k8s.pod.uid": "k8s.pod.uid", "container.id": "container.id"}`) Map containing key of the attribute to read from spans to sync to dimensions specified as the value.
 
-## Example
+## Default Metric Filters
+[List of metrics excluded by default](./internal/translation/default_metrics.go)
+
+Some OpenTelemetry receivers may send metrics that SignalFx considers to be categorized as custom metrics. In order to prevent unwanted overage usage due to custom metrics from these receivers, the SignalFx exporter has a [set of metrics excluded by default](./internal/translation/default_metrics.go). Some exclusion rules use regex to exclude multiple metric names. Some metrics are only excluded if specific resource labels (dimensions) are present. If `translation_rules` are configured and new metrics match a default exclusion, the new metric will still be excluded. Users may configure the SignalFx exporter's `include_metrics` config option to override the any of the default exclusions, as `include_metrics` will always take precedence over any exclusions. An example of `include_metrics` is shown below.
+
+```
+exporters:
+  signalfx:
+    include_metrics:
+      - metric_names: [cpu.interrupt, cpu.user, cpu.system]
+      - metric_name: system.cpu.time
+        dimensions:
+          state: [interrupt, user, system]
+```
+
+The following `include_metrics` example would instruct the exporter to send only `cpu.interrupt` metrics with a `cpu` dimension value ("per core" datapoints), and both "per core" and aggregate `cpu.idle` metrics:
+
+```
+exporters:
+  signalfx:
+    include_metrics:
+      - metric_name: "cpu.idle"
+      - metric_name: "cpu.interrupt"
+        dimensions:
+          cpu: ["*"]
+```
+
+## Translation Rules and Metric Transformations
+
+The `translation_rules` metrics configuration field accepts a list of metric-transforming actions to
+help ensure compatibility with custom charts and dashboards when using the OpenTelemetry Collector. It also provides the ability to produce custom metrics by copying, calculating new, or aggregating other metric values without requiring an additional processor.
+The rule language is expressed in yaml mappings and is [documented here](./internal/translation/translator.go).  Translation rules currently allow the following actions:
+
+* `aggregate_metric` - Aggregates a metric through removal of specified dimensions
+* `calculate_new_metric` - Creates a new metric via operating on two consistuent ones
+* `convert_values` - Convert float values to int for specified metric names
+* `copy_metrics` - Creates a new metric as a copy of another
+* `delta_metric` - Creates a new delta metric for a specified non-delta one
+* `divide_int` - Scales a metric's integer value by a given factor
+* `drop_dimensions` - Drops dimensions for specified metrics, or globally
+* `drop_metrics` - Drops all metrics with a given name
+* `multiply_float` - Scales a metric's integer value by a given float factor
+* `multiply_int` - Scales a metric's integer value by a given int factor
+* `rename_dimension_keys` - Renames dimensions for specified metrics, or globally
+* `rename_metrics` - Replaces a given metric name with specified one
+* `split_metric` - Splits a given metric into multiple new ones for a specified dimension
+
+The translation rules defined in [`translation/constants.go`](./internal/translation/constants.go) are used by default for this value.  The default rules will create the following aggregated metrics from the [`hostmetrics` receiver](https://github.com/open-telemetry/opentelemetry-collector/blob/main/receiver/hostmetricsreceiver/README.md):
+
+* cpu.idle
+* cpu.interrupt
+* cpu.nice
+* cpu.num_processors
+* cpu.softirq
+* cpu.steal
+* cpu.system
+* cpu.user
+* cpu.utilization
+* cpu.utilization_per_core
+* cpu.wait
+* disk.summary_utilization
+* disk.utilization
+* disk_ops.pending
+* disk_ops.total
+* memory.total
+* memory.utilization
+* network.total
+* process.cpu_time_seconds
+* system.disk.io.total
+* system.disk.operations.total
+* system.network.io.total
+* system.network.packets.total
+* vmpage_io.memory.in
+* vmpage_io.memory.out
+* vmpage_io.swap.in
+* vmpage_io.swap.out
+
+In addition to the aggregated metrics, the default translation rules make available the following "per core" custom hostmetrics.
+The CPU number is assigned to the dimension `cpu` 
+
+* cpu.interrupt
+* cpu.nice
+* cpu.softirq
+* cpu.steal
+* cpu.system
+* cpu.user
+* cpu.wait
+
+These metrics are intended to be reported directly to Splunk IM by the SignalFx exporter.  Any desired changes to their attributes or values should be made via additional translation rules or from their constituent host metrics.
+
+## Example Config
 
 ```yaml
 exporters:
@@ -126,6 +221,7 @@ exporters:
       dot.test: test
     realm: us1
     timeout: 5s
+    max_connections: 80
 ```
 
 > :warning: When enabling the SignalFx receiver or exporter, configure both the `metrics` and `logs` pipelines.

@@ -22,8 +22,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/translator/conventions"
+	"go.opentelemetry.io/collector/component/componenttest"
+	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
@@ -49,9 +49,30 @@ func (m *mockMetadata) OSType() (string, error) {
 }
 
 func TestNewDetector(t *testing.T) {
-	d, err := NewDetector(component.ProcessorCreateParams{Logger: zap.NewNop()}, nil)
-	require.NoError(t, err)
-	assert.NotNil(t, d)
+	tests := []struct {
+		name string
+		cfg  Config
+	}{
+		{
+			name: "Success Case Valid Config 'HostnameSources' set to 'os'",
+			cfg: Config{
+				HostnameSources: []string{"os"},
+			},
+		},
+		{
+			name: "Success Case Valid Config 'HostnameSources' set to 'dns'",
+			cfg: Config{
+				HostnameSources: []string{"dns"},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			detector, err := NewDetector(componenttest.NewNopProcessorCreateSettings(), tt.cfg)
+			assert.NotNil(t, detector)
+			assert.NoError(t, err)
+		})
+	}
 }
 
 func TestDetectFQDNAvailable(t *testing.T) {
@@ -59,9 +80,10 @@ func TestDetectFQDNAvailable(t *testing.T) {
 	md.On("FQDN").Return("fqdn", nil)
 	md.On("OSType").Return("DARWIN", nil)
 
-	detector := &Detector{provider: md, logger: zap.NewNop()}
-	res, err := detector.Detect(context.Background())
+	detector := &Detector{provider: md, logger: zap.NewNop(), hostnameSources: []string{"dns"}}
+	res, schemaURL, err := detector.Detect(context.Background())
 	require.NoError(t, err)
+	assert.Equal(t, conventions.SchemaURL, schemaURL)
 	md.AssertExpectations(t)
 	res.Attributes().Sort()
 
@@ -81,9 +103,31 @@ func TestFallbackHostname(t *testing.T) {
 	mdHostname.On("FQDN").Return("", errors.New("err"))
 	mdHostname.On("OSType").Return("DARWIN", nil)
 
-	detector := &Detector{provider: mdHostname, logger: zap.NewNop()}
-	res, err := detector.Detect(context.Background())
+	detector := &Detector{provider: mdHostname, logger: zap.NewNop(), hostnameSources: []string{"dns", "os"}}
+	res, schemaURL, err := detector.Detect(context.Background())
 	require.NoError(t, err)
+	assert.Equal(t, conventions.SchemaURL, schemaURL)
+	mdHostname.AssertExpectations(t)
+	res.Attributes().Sort()
+
+	expected := internal.NewResource(map[string]interface{}{
+		conventions.AttributeHostName: "hostname",
+		conventions.AttributeOSType:   "DARWIN",
+	})
+	expected.Attributes().Sort()
+
+	assert.Equal(t, expected, res)
+}
+
+func TestUseHostname(t *testing.T) {
+	mdHostname := &mockMetadata{}
+	mdHostname.On("Hostname").Return("hostname", nil)
+	mdHostname.On("OSType").Return("DARWIN", nil)
+
+	detector := &Detector{provider: mdHostname, logger: zap.NewNop(), hostnameSources: []string{"os"}}
+	res, schemaURL, err := detector.Detect(context.Background())
+	require.NoError(t, err)
+	assert.Equal(t, conventions.SchemaURL, schemaURL)
 	mdHostname.AssertExpectations(t)
 	res.Attributes().Sort()
 
@@ -97,15 +141,27 @@ func TestFallbackHostname(t *testing.T) {
 }
 
 func TestDetectError(t *testing.T) {
-	// FQDN and hostname fail
+	// FQDN and hostname fail with 'hostnameSources' set to 'dns'
 	mdFQDN := &mockMetadata{}
 	mdFQDN.On("OSType").Return("WINDOWS", nil)
 	mdFQDN.On("FQDN").Return("", errors.New("err"))
 	mdFQDN.On("Hostname").Return("", errors.New("err"))
 
-	detector := &Detector{provider: mdFQDN, logger: zap.NewNop()}
-	res, err := detector.Detect(context.Background())
+	detector := &Detector{provider: mdFQDN, logger: zap.NewNop(), hostnameSources: []string{"dns"}}
+	res, schemaURL, err := detector.Detect(context.Background())
 	assert.Error(t, err)
+	assert.Equal(t, "", schemaURL)
+	assert.True(t, internal.IsEmptyResource(res))
+
+	// hostname fail with 'hostnameSources' set to 'os'
+	mdHostname := &mockMetadata{}
+	mdHostname.On("OSType").Return("WINDOWS", nil)
+	mdHostname.On("Hostname").Return("", errors.New("err"))
+
+	detector = &Detector{provider: mdHostname, logger: zap.NewNop(), hostnameSources: []string{"os"}}
+	res, schemaURL, err = detector.Detect(context.Background())
+	assert.Error(t, err)
+	assert.Equal(t, "", schemaURL)
 	assert.True(t, internal.IsEmptyResource(res))
 
 	// OS type fails
@@ -113,8 +169,9 @@ func TestDetectError(t *testing.T) {
 	mdOSType.On("FQDN").Return("fqdn", nil)
 	mdOSType.On("OSType").Return("", errors.New("err"))
 
-	detector = &Detector{provider: mdOSType, logger: zap.NewNop()}
-	res, err = detector.Detect(context.Background())
+	detector = &Detector{provider: mdOSType, logger: zap.NewNop(), hostnameSources: []string{"dns"}}
+	res, schemaURL, err = detector.Detect(context.Background())
 	assert.Error(t, err)
+	assert.Equal(t, "", schemaURL)
 	assert.True(t, internal.IsEmptyResource(res))
 }

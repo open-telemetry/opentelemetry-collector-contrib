@@ -5,20 +5,32 @@ processors:
   nop:
 
 exporters:
-  dynatrace/valid:
+  dynatrace/defaults:
+  dynatrace/bad_endpoint:
+    endpoint: not a url
+  dynatrace/missing_token:
+    endpoint: https://example.com
+  dynatrace/valid_tags:
     tags:
-      - example=tag
+      - tag_example=tag_value
+
+    prefix: myprefix
+
+    endpoint: http://example.com/api/v2/metrics/ingest
+    api_token: token
+  dynatrace/valid:
+    default_dimensions:
+      dimension_example: dimension_value
 
     prefix: myprefix
 
     endpoint: http://example.com/api/v2/metrics/ingest
     api_token: token
 
-  dynatrace/invalid:
 
 service:
   pipelines:
     metrics:
       receivers: [nop]
       processors: [nop]
-      exporters: [dynatrace/valid, dynatrace/invalid]
+      exporters: [dynatrace/defaults, dynatrace/bad_endpoint, dynatrace/valid]

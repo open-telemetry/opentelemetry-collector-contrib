@@ -30,14 +30,11 @@ import (
 	"github.com/open-telemetry/opentelemetry-log-collection/entry"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/config/configcheck"
 	"go.opentelemetry.io/collector/config/configtest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.uber.org/zap/zaptest"
+	"go.opentelemetry.io/collector/model/pdata"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/stanza"
 )
@@ -46,7 +43,7 @@ func TestDefaultConfig(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	require.NotNil(t, cfg, "failed to create default config")
-	require.NoError(t, configcheck.ValidateConfig(cfg))
+	require.NoError(t, configtest.CheckConfigStruct(cfg))
 }
 
 func TestLoadConfig(t *testing.T) {
@@ -55,15 +52,13 @@ func TestLoadConfig(t *testing.T) {
 
 	factory := NewFactory()
 	factories.Receivers[typeStr] = factory
-	cfg, err := configtest.LoadConfigFile(
-		t, path.Join(".", "testdata", "config.yaml"), factories,
-	)
+	cfg, err := configtest.LoadConfigAndValidate(path.Join(".", "testdata", "config.yaml"), factories)
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 
 	assert.Equal(t, len(cfg.Receivers), 1)
 
-	assert.Equal(t, testdataConfigYamlAsMap(), cfg.Receivers[config.NewID("filelog")])
+	assert.Equal(t, testdataConfigYamlAsMap(), cfg.Receivers[config.NewComponentID("filelog")])
 }
 
 func TestCreateWithInvalidInputConfig(t *testing.T) {
@@ -74,9 +69,7 @@ func TestCreateWithInvalidInputConfig(t *testing.T) {
 
 	_, err := NewFactory().CreateLogsReceiver(
 		context.Background(),
-		component.ReceiverCreateParams{
-			Logger: zaptest.NewLogger(t),
-		},
+		componenttest.NewNopReceiverCreateSettings(),
 		cfg,
 		new(consumertest.LogsSink),
 	)
@@ -90,7 +83,6 @@ func TestReadStaticFile(t *testing.T) {
 
 	f := NewFactory()
 	sink := new(consumertest.LogsSink)
-	params := component.ReceiverCreateParams{Logger: zaptest.NewLogger(t)}
 
 	cfg := testdataConfigYamlAsMap()
 	cfg.Converter.MaxFlushCount = 10
@@ -104,7 +96,7 @@ func TestReadStaticFile(t *testing.T) {
 	wg.Add(1)
 	go consumeNLogsFromConverter(converter.OutChannel(), 3, &wg)
 
-	rcvr, err := f.CreateLogsReceiver(context.Background(), params, cfg, sink)
+	rcvr, err := f.CreateLogsReceiver(context.Background(), componenttest.NewNopReceiverCreateSettings(), cfg, sink)
 	require.NoError(t, err, "failed to create receiver")
 	require.NoError(t, rcvr.Start(context.Background(), componenttest.NewNopHost()))
 
@@ -130,7 +122,7 @@ func TestReadStaticFile(t *testing.T) {
 
 	require.Eventually(t, expectNLogs(sink, 3), 2*time.Second, 5*time.Millisecond,
 		"expected %d but got %d logs",
-		3, sink.LogRecordsCount(),
+		3, sink.LogRecordCount(),
 	)
 	// TODO: Figure out a nice way to assert each logs entry content.
 	// require.Equal(t, expectedLogs, sink.AllLogs())
@@ -180,7 +172,6 @@ func (rt *rotationTest) Run(t *testing.T) {
 
 	f := NewFactory()
 	sink := new(consumertest.LogsSink)
-	params := component.ReceiverCreateParams{Logger: zaptest.NewLogger(t)}
 
 	cfg := testdataRotateTestYamlAsMap(tempDir)
 	cfg.Converter.MaxFlushCount = 1
@@ -201,7 +192,7 @@ func (rt *rotationTest) Run(t *testing.T) {
 	wg.Add(1)
 	go consumeNLogsFromConverter(converter.OutChannel(), numLogs, &wg)
 
-	rcvr, err := f.CreateLogsReceiver(context.Background(), params, cfg, sink)
+	rcvr, err := f.CreateLogsReceiver(context.Background(), componenttest.NewNopReceiverCreateSettings(), cfg, sink)
 	require.NoError(t, err, "failed to create receiver")
 	require.NoError(t, rcvr.Start(context.Background(), componenttest.NewNopHost()))
 
@@ -222,7 +213,7 @@ func (rt *rotationTest) Run(t *testing.T) {
 	wg.Wait()
 	require.Eventually(t, expectNLogs(sink, numLogs), 2*time.Second, 10*time.Millisecond,
 		"expected %d but got %d logs",
-		numLogs, sink.LogRecordsCount(),
+		numLogs, sink.LogRecordCount(),
 	)
 	// TODO: Figure out a nice way to assert each logs entry content.
 	// require.Equal(t, expectedLogs, sink.AllLogs())
@@ -272,21 +263,21 @@ func newTempDir(t *testing.T) string {
 }
 
 func expectNLogs(sink *consumertest.LogsSink, expected int) func() bool {
-	return func() bool { return sink.LogRecordsCount() == expected }
+	return func() bool { return sink.LogRecordCount() == expected }
 }
 
 func testdataConfigYamlAsMap() *FileLogConfig {
 	return &FileLogConfig{
 		BaseConfig: stanza.BaseConfig{
-			ReceiverSettings: config.NewReceiverSettings(config.NewID(typeStr)),
+			ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
 			Operators: stanza.OperatorConfigs{
 				map[string]interface{}{
 					"type":  "regex_parser",
 					"regex": "^(?P<time>\\d{4}-\\d{2}-\\d{2}) (?P<sev>[A-Z]*) (?P<msg>.*)$",
-					"severity": map[interface{}]interface{}{
+					"severity": map[string]interface{}{
 						"parse_from": "sev",
 					},
-					"timestamp": map[interface{}]interface{}{
+					"timestamp": map[string]interface{}{
 						"layout":     "%Y-%m-%d",
 						"parse_from": "time",
 					},
@@ -309,7 +300,7 @@ func testdataConfigYamlAsMap() *FileLogConfig {
 func testdataRotateTestYamlAsMap(tempDir string) *FileLogConfig {
 	return &FileLogConfig{
 		BaseConfig: stanza.BaseConfig{
-			ReceiverSettings: config.NewReceiverSettings(config.NewID(typeStr)),
+			ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
 			Operators: stanza.OperatorConfigs{
 				map[string]interface{}{
 					"type":  "regex_parser",

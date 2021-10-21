@@ -39,14 +39,14 @@ func NewFactory() component.ExporterFactory {
 
 func createDefaultConfig() config.Exporter {
 	return &Config{
-		ExporterSettings:   config.NewExporterSettings(config.NewID(typeStr)),
+		ExporterSettings:   config.NewExporterSettings(config.NewComponentID(typeStr)),
 		AWSSessionSettings: awsutil.CreateDefaultSessionConfig(),
 	}
 }
 
 func createTracesExporter(
 	_ context.Context,
-	params component.ExporterCreateParams,
+	params component.ExporterCreateSettings,
 	cfg config.Exporter,
 ) (component.TracesExporter, error) {
 	eCfg := cfg.(*Config)

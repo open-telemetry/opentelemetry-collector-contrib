@@ -5,19 +5,14 @@ CMD?=
 OTEL_VERSION=main
 
 BUILD_INFO_IMPORT_PATH=github.com/open-telemetry/opentelemetry-collector-contrib/internal/version
-GIT_SHA=$(shell git rev-parse --short HEAD)
-BUILD_X1=-X $(BUILD_INFO_IMPORT_PATH).GitHash=$(GIT_SHA)
-VERSION ?= $(shell git describe --match "v[0-9]*" HEAD)
-BUILD_X2=-X $(BUILD_INFO_IMPORT_PATH).Version=$(VERSION)
-BUILD_X3=-X go.opentelemetry.io/collector/internal/version.BuildType=$(BUILD_TYPE)
-BUILD_INFO=-ldflags "${BUILD_X1} ${BUILD_X2} ${BUILD_X3}"
+VERSION=$(shell git describe --always --match "v[0-9]*" HEAD)
+BUILD_INFO=-ldflags "-X $(BUILD_INFO_IMPORT_PATH).Version=$(VERSION)"
 
-COMP_REL_PATH=cmd/otelcontribcol/components.go
+COMP_REL_PATH=internal/components/components.go
 MOD_NAME=github.com/open-telemetry/opentelemetry-collector-contrib
 
 # ALL_MODULES includes ./* dirs (excludes . dir and example with go code)
-ALL_MODULES := $(shell find . -type f -name "go.mod" -exec dirname {} \; | sort | egrep  '^./' )
-
+ALL_MODULES := $(shell find . -type f -name "go.mod" -not -path './cmd/configschema/*' -exec dirname {} \; | sort | egrep '^./' )
 # Modules to run integration tests on.
 # XXX: Find a way to automatically populate this. Too slow to run across all modules when there are just a few.
 INTEGRATION_TEST_MODULES := \
@@ -40,18 +35,17 @@ all: common gotest otelcontribcol otelcontribcol-unstable
 .PHONY: e2e-test
 e2e-test: otelcontribcol otelcontribcol-unstable
 	$(MAKE) -C testbed run-tests
-	$(MAKE) -C testbed run-tests TESTS_DIR=tests_unstable_exe
 
 .PHONY: unit-tests-with-cover
 unit-tests-with-cover:
 	@echo Verifying that all packages have test files to count in coverage
 	@internal/buildscripts/check-test-files.sh $(subst github.com/open-telemetry/opentelemetry-collector-contrib/,./,$(ALL_PKGS))
-	@$(MAKE) for-all CMD="make do-unit-tests-with-cover"
+	@$(MAKE) for-all-target TARGET="do-unit-tests-with-cover"
 
 .PHONY: integration-tests-with-cover
 integration-tests-with-cover:
 	@echo $(INTEGRATION_TEST_MODULES)
-	@$(MAKE) for-all CMD="make do-integration-tests-with-cover" ALL_MODULES="$(INTEGRATION_TEST_MODULES)"
+	@$(MAKE) for-all-target TARGET="do-integration-tests-with-cover" ALL_MODULES="$(INTEGRATION_TEST_MODULES)"
 
 # Long-running e2e tests
 .PHONY: stability-tests
@@ -62,19 +56,24 @@ stability-tests: otelcontribcol
 .PHONY: gotidy
 gotidy:
 	$(MAKE) for-all CMD="rm -fr go.sum"
-	$(MAKE) for-all CMD="go mod tidy"
+	$(MAKE) for-all CMD="go mod tidy -go=1.16"
+	$(MAKE) for-all CMD="go mod tidy -go=1.17"
+
+.PHONY: gomoddownload
+gomoddownload:
+	@$(MAKE) for-all CMD="go mod download"
 
 .PHONY: gotest
 gotest:
-	$(MAKE) for-all CMD="make test"
+	$(MAKE) for-all-target TARGET="test"
 
 .PHONY: gofmt
 gofmt:
-	$(MAKE) for-all CMD="make fmt"
+	$(MAKE) for-all-target TARGET="fmt"
 
 .PHONY: golint
 golint:
-	$(MAKE) for-all CMD="make lint"
+	$(MAKE) for-all-target TARGET="lint"
 
 .PHONY: for-all
 for-all:
@@ -124,6 +123,11 @@ gendependabot:
 	@echo "version: 2" >> ${DEPENDABOT_PATH}
 	@echo "updates:" >> ${DEPENDABOT_PATH}
 	@echo "Add entry for \"/\""
+	@echo "  - package-ecosystem: \"github-actions\"" >> ${DEPENDABOT_PATH}
+	@echo "    directory: \"/\"" >> ${DEPENDABOT_PATH}
+	@echo "    schedule:" >> ${DEPENDABOT_PATH}
+	@echo "      interval: \"weekly\"" >> ${DEPENDABOT_PATH}
+	@echo "Add entry for \"/\""
 	@echo "  - package-ecosystem: \"gomod\"" >> ${DEPENDABOT_PATH}
 	@echo "    directory: \"/\"" >> ${DEPENDABOT_PATH}
 	@echo "    schedule:" >> ${DEPENDABOT_PATH}
@@ -153,9 +157,10 @@ install-tools:
 	cd $(TOOLS_MOD_DIR) && go install github.com/jstemmer/go-junit-report
 	cd $(TOOLS_MOD_DIR) && go install github.com/pavius/impi/cmd/impi
 	cd $(TOOLS_MOD_DIR) && go install github.com/tcnksm/ghr
-	cd $(TOOLS_MOD_DIR) && go install go.opentelemetry.io/collector/cmd/checkdoc
-	cd $(TOOLS_MOD_DIR) && go install go.opentelemetry.io/collector/cmd/issuegenerator
-	cd $(TOOLS_MOD_DIR) && go install go.opentelemetry.io/collector/cmd/mdatagen
+	cd $(TOOLS_MOD_DIR) && go install go.opentelemetry.io/build-tools/checkdoc
+	cd $(TOOLS_MOD_DIR) && go install go.opentelemetry.io/build-tools/issuegenerator
+	cd $(TOOLS_MOD_DIR) && go install golang.org/x/tools/cmd/goimports
+	cd $(TOOLS_MOD_DIR) && go install go.opentelemetry.io/build-tools/multimod
 
 .PHONY: run
 run:
@@ -180,26 +185,31 @@ docker-otelcontribcol:
 
 .PHONY: generate
 generate:
+	cd cmd/mdatagen && go install .
 	$(MAKE) for-all CMD="go generate ./..."
 
 # Build the Collector executable.
 .PHONY: otelcontribcol
 otelcontribcol:
 	GO111MODULE=on CGO_ENABLED=0 go build -trimpath -o ./bin/otelcontribcol_$(GOOS)_$(GOARCH)$(EXTENSION) \
-		$(BUILD_INFO) ./cmd/otelcontribcol
+		$(BUILD_INFO) -tags $(GO_BUILD_TAGS) ./cmd/otelcontribcol
 
 # Build the Collector executable, including unstable functionality.
 .PHONY: otelcontribcol-unstable
 otelcontribcol-unstable:
 	GO111MODULE=on CGO_ENABLED=0 go build -trimpath -o ./bin/otelcontribcol_unstable_$(GOOS)_$(GOARCH)$(EXTENSION) \
-		$(BUILD_INFO) -tags enable_unstable ./cmd/otelcontribcol
+		$(BUILD_INFO) -tags $(GO_BUILD_TAGS),enable_unstable ./cmd/otelcontribcol
 
 .PHONY: otelcontribcol-all-sys
-otelcontribcol-all-sys: otelcontribcol-darwin_amd64 otelcontribcol-linux_amd64 otelcontribcol-linux_arm64 otelcontribcol-windows_amd64
+otelcontribcol-all-sys: otelcontribcol-darwin_amd64 otelcontribcol-darwin_arm64 otelcontribcol-linux_amd64 otelcontribcol-linux_arm64 otelcontribcol-windows_amd64
 
 .PHONY: otelcontribcol-darwin_amd64
 otelcontribcol-darwin_amd64:
 	GOOS=darwin  GOARCH=amd64 $(MAKE) otelcontribcol
+
+.PHONY: otelcontribcol-darwin_arm64
+otelcontribcol-darwin_arm64:
+	GOOS=darwin  GOARCH=arm64 $(MAKE) otelcontribcol
 
 .PHONY: otelcontribcol-linux_amd64
 otelcontribcol-linux_amd64:
@@ -221,9 +231,6 @@ update-dep:
 
 .PHONY: update-otel
 update-otel:
-	cd $(TOOLS_MOD_DIR) && go get go.opentelemetry.io/collector/cmd/checkdoc@$(OTEL_VERSION)
-	cd $(TOOLS_MOD_DIR) && go get go.opentelemetry.io/collector/cmd/issuegenerator@$(OTEL_VERSION)
-	cd $(TOOLS_MOD_DIR) && go get go.opentelemetry.io/collector/cmd/mdatagen@$(OTEL_VERSION)
 	$(MAKE) update-dep MODULE=go.opentelemetry.io/collector VERSION=$(OTEL_VERSION)
 
 .PHONY: otel-from-tree
@@ -277,3 +284,12 @@ CERT_DIRS := receiver/sapmreceiver/testdata \
 .PHONY: certs
 certs:
 	$(foreach dir, $(CERT_DIRS), $(call exec-command, @internal/buildscripts/gen-certs.sh -o $(dir)))
+
+.PHONY: multimod-verify
+multimod-verify: install-tools
+	@echo "Validating versions.yaml"
+	multimod verify
+
+.PHONY: multimod-prerelease
+multimod-prerelease: install-tools
+	multimod prerelease -v ./versions.yaml -m contrib-base

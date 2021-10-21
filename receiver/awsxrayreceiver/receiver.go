@@ -25,8 +25,8 @@ import (
 	"go.opentelemetry.io/collector/obsreport"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/proxy"
 	awsxray "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsxrayreceiver/internal/proxy"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsxrayreceiver/internal/translator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsxrayreceiver/internal/udppoller"
 )
@@ -40,38 +40,38 @@ const (
 // xrayReceiver implements the component.TracesReceiver interface for converting
 // AWS X-Ray segment document into the OT internal trace format.
 type xrayReceiver struct {
-	instanceID   config.ComponentID
-	poller       udppoller.Poller
-	server       proxy.Server
-	logger       *zap.Logger
-	consumer     consumer.Traces
-	longLivedCtx context.Context
+	instanceID config.ComponentID
+	poller     udppoller.Poller
+	server     proxy.Server
+	settings   component.ReceiverCreateSettings
+	consumer   consumer.Traces
+	obsrecv    *obsreport.Receiver
 }
 
 func newReceiver(config *Config,
 	consumer consumer.Traces,
-	logger *zap.Logger) (component.TracesReceiver, error) {
+	set component.ReceiverCreateSettings) (component.TracesReceiver, error) {
 
 	if consumer == nil {
 		return nil, componenterror.ErrNilNextConsumer
 	}
 
-	logger.Info("Going to listen on endpoint for X-Ray segments",
+	set.Logger.Info("Going to listen on endpoint for X-Ray segments",
 		zap.String(udppoller.Transport, config.Endpoint))
 	poller, err := udppoller.New(&udppoller.Config{
 		ReceiverID:         config.ID(),
 		Transport:          config.Transport,
 		Endpoint:           config.Endpoint,
 		NumOfPollerToStart: maxPollerCount,
-	}, logger)
+	}, set)
 	if err != nil {
 		return nil, err
 	}
 
-	logger.Info("Listening on endpoint for X-Ray segments",
+	set.Logger.Info("Listening on endpoint for X-Ray segments",
 		zap.String(udppoller.Transport, config.Endpoint))
 
-	srv, err := proxy.NewServer(config.ProxyServer, logger)
+	srv, err := proxy.NewServer(config.ProxyServer, set.Logger)
 	if err != nil {
 		return nil, err
 	}
@@ -80,28 +80,32 @@ func newReceiver(config *Config,
 		instanceID: config.ID(),
 		poller:     poller,
 		server:     srv,
-		logger:     logger,
+		settings:   set,
 		consumer:   consumer,
+		obsrecv: obsreport.NewReceiver(obsreport.ReceiverSettings{
+			ReceiverID:             config.ID(),
+			Transport:              udppoller.Transport,
+			ReceiverCreateSettings: set,
+		}),
 	}, nil
 }
 
 func (x *xrayReceiver) Start(ctx context.Context, host component.Host) error {
 	// TODO: Might want to pass `host` into read() below to report a fatal error
-	x.longLivedCtx = obsreport.ReceiverContext(ctx, x.instanceID, udppoller.Transport)
-	x.poller.Start(x.longLivedCtx)
+	x.poller.Start(ctx)
 	go x.start()
 	go x.server.ListenAndServe()
-	x.logger.Info("X-Ray TCP proxy server started")
+	x.settings.Logger.Info("X-Ray TCP proxy server started")
 	return nil
 }
 
-func (x *xrayReceiver) Shutdown(_ context.Context) error {
+func (x *xrayReceiver) Shutdown(ctx context.Context) error {
 	var err error
 	if pollerErr := x.poller.Close(); pollerErr != nil {
 		err = pollerErr
 	}
 
-	if proxyErr := x.server.Close(); proxyErr != nil {
+	if proxyErr := x.server.Shutdown(ctx); proxyErr != nil {
 		if err == nil {
 			err = proxyErr
 		} else {
@@ -115,19 +119,20 @@ func (x *xrayReceiver) Shutdown(_ context.Context) error {
 func (x *xrayReceiver) start() {
 	incomingSegments := x.poller.SegmentsChan()
 	for seg := range incomingSegments {
-		traces, totalSpansCount, err := translator.ToTraces(seg.Payload)
+		ctx := x.obsrecv.StartTracesOp(seg.Ctx)
+		traces, totalSpanCount, err := translator.ToTraces(seg.Payload)
 		if err != nil {
-			x.logger.Warn("X-Ray segment to OT traces conversion failed", zap.Error(err))
-			obsreport.EndTraceDataReceiveOp(seg.Ctx, awsxray.TypeStr, totalSpansCount, err)
+			x.settings.Logger.Warn("X-Ray segment to OT traces conversion failed", zap.Error(err))
+			x.obsrecv.EndTracesOp(ctx, awsxray.TypeStr, totalSpanCount, err)
 			continue
 		}
 
-		err = x.consumer.ConsumeTraces(seg.Ctx, *traces)
+		err = x.consumer.ConsumeTraces(ctx, *traces)
 		if err != nil {
-			x.logger.Warn("Trace consumer errored out", zap.Error(err))
-			obsreport.EndTraceDataReceiveOp(seg.Ctx, awsxray.TypeStr, totalSpansCount, err)
+			x.settings.Logger.Warn("Trace consumer errored out", zap.Error(err))
+			x.obsrecv.EndTracesOp(ctx, awsxray.TypeStr, totalSpanCount, err)
 			continue
 		}
-		obsreport.EndTraceDataReceiveOp(seg.Ctx, awsxray.TypeStr, totalSpansCount, nil)
+		x.obsrecv.EndTracesOp(ctx, awsxray.TypeStr, totalSpanCount, nil)
 	}
 }

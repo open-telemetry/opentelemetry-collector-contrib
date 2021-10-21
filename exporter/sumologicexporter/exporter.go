@@ -22,8 +22,9 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumererror"
-	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"go.opentelemetry.io/collector/model/pdata"
+	"go.uber.org/multierr"
 )
 
 type sumologicexporter struct {
@@ -83,15 +84,9 @@ func initExporter(cfg *Config) (*sumologicexporter, error) {
 		return nil, err
 	}
 
-	httpClient, err := cfg.HTTPClientSettings.ToClient()
-	if err != nil {
-		return nil, fmt.Errorf("failed to create HTTP Client: %w", err)
-	}
-
 	se := &sumologicexporter{
 		config:              cfg,
 		sources:             sfs,
-		client:              httpClient,
 		filter:              f,
 		prometheusFormatter: pf,
 		graphiteFormatter:   gf,
@@ -102,7 +97,7 @@ func initExporter(cfg *Config) (*sumologicexporter, error) {
 
 func newLogsExporter(
 	cfg *Config,
-	params component.ExporterCreateParams,
+	set component.ExporterCreateSettings,
 ) (component.LogsExporter, error) {
 	se, err := initExporter(cfg)
 	if err != nil {
@@ -111,19 +106,20 @@ func newLogsExporter(
 
 	return exporterhelper.NewLogsExporter(
 		cfg,
-		params.Logger,
+		set,
 		se.pushLogsData,
 		// Disable exporterhelper Timeout, since we are using a custom mechanism
 		// within exporter itself
 		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
 		exporterhelper.WithRetry(cfg.RetrySettings),
 		exporterhelper.WithQueue(cfg.QueueSettings),
+		exporterhelper.WithStart(se.start),
 	)
 }
 
 func newMetricsExporter(
 	cfg *Config,
-	params component.ExporterCreateParams,
+	set component.ExporterCreateSettings,
 ) (component.MetricsExporter, error) {
 	se, err := initExporter(cfg)
 	if err != nil {
@@ -132,14 +128,27 @@ func newMetricsExporter(
 
 	return exporterhelper.NewMetricsExporter(
 		cfg,
-		params.Logger,
+		set,
 		se.pushMetricsData,
 		// Disable exporterhelper Timeout, since we are using a custom mechanism
 		// within exporter itself
 		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
 		exporterhelper.WithRetry(cfg.RetrySettings),
 		exporterhelper.WithQueue(cfg.QueueSettings),
+		exporterhelper.WithStart(se.start),
 	)
+}
+
+// start starts the exporter
+func (se *sumologicexporter) start(_ context.Context, host component.Host) (err error) {
+	client, err := se.config.HTTPClientSettings.ToClient(host.GetExtensions())
+	if err != nil {
+		return fmt.Errorf("failed to create HTTP Client: %w", err)
+	}
+
+	se.client = client
+
+	return nil
 }
 
 // pushLogsData groups data with common metadata and sends them as separate batched requests.
@@ -149,7 +158,7 @@ func (se *sumologicexporter) pushLogsData(ctx context.Context, ld pdata.Logs) er
 	var (
 		currentMetadata  fields = newFields(pdata.NewAttributeMap())
 		previousMetadata fields = newFields(pdata.NewAttributeMap())
-		errs             []error
+		errs             error
 		droppedRecords   []pdata.LogRecord
 		err              error
 	)
@@ -197,7 +206,7 @@ func (se *sumologicexporter) pushLogsData(ctx context.Context, ld pdata.Logs) er
 					var dropped []pdata.LogRecord
 					dropped, err = sdr.sendLogs(ctx, previousMetadata)
 					if err != nil {
-						errs = append(errs, err)
+						errs = multierr.Append(errs, err)
 						droppedRecords = append(droppedRecords, dropped...)
 					}
 					sdr.cleanLogsBuffer()
@@ -211,7 +220,7 @@ func (se *sumologicexporter) pushLogsData(ctx context.Context, ld pdata.Logs) er
 				dropped, err = sdr.batchLog(ctx, log, previousMetadata)
 				if err != nil {
 					droppedRecords = append(droppedRecords, dropped...)
-					errs = append(errs, err)
+					errs = multierr.Append(errs, err)
 				}
 			}
 		}
@@ -221,7 +230,7 @@ func (se *sumologicexporter) pushLogsData(ctx context.Context, ld pdata.Logs) er
 	dropped, err := sdr.sendLogs(ctx, previousMetadata)
 	if err != nil {
 		droppedRecords = append(droppedRecords, dropped...)
-		errs = append(errs, err)
+		errs = multierr.Append(errs, err)
 	}
 
 	if len(droppedRecords) > 0 {
@@ -232,10 +241,11 @@ func (se *sumologicexporter) pushLogsData(ctx context.Context, ld pdata.Logs) er
 		logs := ills.AppendEmpty().Logs()
 
 		for _, log := range droppedRecords {
-			logs.Append(log)
+			tgt := logs.AppendEmpty()
+			log.CopyTo(tgt)
 		}
 
-		return consumererror.NewLogs(consumererror.Combine(errs), droppedLogs)
+		return consumererror.NewLogs(errs, droppedLogs)
 	}
 
 	return nil
@@ -248,7 +258,7 @@ func (se *sumologicexporter) pushMetricsData(ctx context.Context, md pdata.Metri
 	var (
 		currentMetadata  fields = newFields(pdata.NewAttributeMap())
 		previousMetadata fields = newFields(pdata.NewAttributeMap())
-		errs             []error
+		errs             error
 		droppedRecords   []metricPair
 		attributes       pdata.AttributeMap
 	)
@@ -295,7 +305,7 @@ func (se *sumologicexporter) pushMetricsData(ctx context.Context, md pdata.Metri
 					var dropped []metricPair
 					dropped, err = sdr.sendMetrics(ctx, previousMetadata)
 					if err != nil {
-						errs = append(errs, err)
+						errs = multierr.Append(errs, err)
 						droppedRecords = append(droppedRecords, dropped...)
 					}
 					sdr.cleanMetricBuffer()
@@ -308,7 +318,7 @@ func (se *sumologicexporter) pushMetricsData(ctx context.Context, md pdata.Metri
 				dropped, err = sdr.batchMetric(ctx, mp, currentMetadata)
 				if err != nil {
 					droppedRecords = append(droppedRecords, dropped...)
-					errs = append(errs, err)
+					errs = multierr.Append(errs, err)
 				}
 			}
 		}
@@ -318,23 +328,23 @@ func (se *sumologicexporter) pushMetricsData(ctx context.Context, md pdata.Metri
 	dropped, err := sdr.sendMetrics(ctx, previousMetadata)
 	if err != nil {
 		droppedRecords = append(droppedRecords, dropped...)
-		errs = append(errs, err)
+		errs = multierr.Append(errs, err)
 	}
 
 	if len(droppedRecords) > 0 {
 		// Move all dropped records to Metrics
 		droppedMetrics := pdata.NewMetrics()
 		rms := droppedMetrics.ResourceMetrics()
-		rms.Resize(len(droppedRecords))
-		for num, record := range droppedRecords {
-			rm := droppedMetrics.ResourceMetrics().At(num)
+		rms.EnsureCapacity(len(droppedRecords))
+		for _, record := range droppedRecords {
+			rm := droppedMetrics.ResourceMetrics().AppendEmpty()
 			record.attributes.CopyTo(rm.Resource().Attributes())
 
 			ilms := rm.InstrumentationLibraryMetrics()
-			ilms.AppendEmpty().Metrics().Append(record.metric)
+			record.metric.CopyTo(ilms.AppendEmpty().Metrics().AppendEmpty())
 		}
 
-		return consumererror.NewMetrics(consumererror.Combine(errs), droppedMetrics)
+		return consumererror.NewMetrics(errs, droppedMetrics)
 	}
 
 	return nil
