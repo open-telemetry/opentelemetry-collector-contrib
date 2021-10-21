@@ -115,7 +115,7 @@ func loadSuccessfulConfig(t *testing.T) *Config {
 			HTTPClientSettings: confighttp.HTTPClientSettings{
 				Endpoint: "https://log-stream.sys.example.internal",
 				Timeout:  time.Second * 20,
-				TLSSetting: &configtls.TLSClientSetting{
+				TLSSetting: configtls.TLSClientSetting{
 					InsecureSkipVerify: true,
 				},
 			},
