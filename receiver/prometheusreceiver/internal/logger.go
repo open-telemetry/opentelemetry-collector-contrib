@@ -23,6 +23,7 @@ import (
 const (
 	levelKey = "level"
 	msgKey   = "msg"
+	errKey   = "err"
 )
 
 // NewZapToGokitLogAdapter create an adapter for zap.Logger to gokitLog.Logger
@@ -57,39 +58,39 @@ func (w *zapToGokitLogAdapter) Log(keyvals ...interface{}) error {
 	return nil
 }
 
-func extractLogData(keyvals []interface{}) *logData {
-	lvl := level.InfoValue() // default
-	msg := ""
+func extractLogData(keyvals []interface{}) logData {
+	ld := logData{
+		level: level.InfoValue(), // default
+	}
 
-	other := make([]interface{}, 0, len(keyvals))
 	for i := 0; i < len(keyvals); i += 2 {
 		key := keyvals[i]
 		val := keyvals[i+1]
 
 		if l, ok := matchLogLevel(key, val); ok {
-			lvl = l
+			ld.level = l
 			continue
 		}
 
 		if m, ok := matchLogMessage(key, val); ok {
-			msg = m
+			ld.msg = m
 			continue
 		}
 
-		other = append(other, key, val)
+		if err, ok := matchError(key, val); ok {
+			ld.otherFields = append(ld.otherFields, zap.Error(err))
+			continue
+		}
+
+		ld.otherFields = append(ld.otherFields, key, val)
 	}
 
-	return &logData{
-		level:       lvl,
-		msg:         msg,
-		otherFields: other,
-	}
+	return ld
 }
 
 // check if a given key-value pair represents go-kit log message and return it
 func matchLogMessage(key interface{}, val interface{}) (string, bool) {
-	strKey, ok := key.(string)
-	if !ok || strKey != msgKey {
+	if strKey, ok := key.(string); !ok || strKey != msgKey {
 		return "", false
 	}
 
@@ -97,7 +98,6 @@ func matchLogMessage(key interface{}, val interface{}) (string, bool) {
 	if !ok {
 		return "", false
 	}
-
 	return msg, true
 }
 
@@ -112,9 +112,26 @@ func matchLogLevel(key interface{}, val interface{}) (level.Value, bool) {
 	if !ok {
 		return nil, false
 	}
-
 	return levelVal, true
 }
+
+//revive:disable:error-return
+
+// check if a given key-value pair represents go-kit log level and return it
+func matchError(key interface{}, val interface{}) (error, bool) {
+	strKey, ok := key.(string)
+	if !ok || strKey != errKey {
+		return nil, false
+	}
+
+	err, ok := val.(error)
+	if !ok {
+		return nil, false
+	}
+	return err, true
+}
+
+//revive:enable:error-return
 
 // find a matching zap logging function to be used for a given level
 func levelToFunc(logger *zap.SugaredLogger, lvl level.Value) func(string, ...interface{}) {
@@ -130,7 +147,7 @@ func levelToFunc(logger *zap.SugaredLogger, lvl level.Value) func(string, ...int
 	}
 
 	// default
-	return logger.Infof
+	return logger.Infow
 }
 
 var _ gokitLog.Logger = (*zapToGokitLogAdapter)(nil)
