@@ -322,6 +322,8 @@ func (c *Config) Validate() error {
 }
 
 func (c *Config) Unmarshal(configMap *config.Map) error {
+	// metrics::report_buckets is obsolete, return an error to
+	// tell the user to use metrics::histograms::mode instead.
 	if configMap.IsSet("metrics::report_buckets") {
 		return errBuckets
 	}
