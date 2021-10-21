@@ -1015,12 +1015,6 @@ func testCount(name string, val float64, seconds uint64) metric {
 	return m
 }
 
-func testSketch(name string, summary summary.Summary, seconds uint64) sketch {
-	s := newSketch(name, seconds, summary, []string{})
-	s.host = testHostname
-	return s
-}
-
 func TestMapMetrics(t *testing.T) {
 	md := createTestMetrics()
 
