@@ -60,12 +60,12 @@ func newCloudFoundryReceiver(
 	}
 
 	return &cloudFoundryReceiver{
-		logger:            settings.Logger,
-		config:            config,
-		nextConsumer:      nextConsumer,
-		obsrecv:           obsreport.NewReceiver(obsreport.ReceiverSettings{
-			ReceiverID: config.ID(),
-			Transport: transport,
+		logger:       settings.Logger,
+		config:       config,
+		nextConsumer: nextConsumer,
+		obsrecv: obsreport.NewReceiver(obsreport.ReceiverSettings{
+			ReceiverID:             config.ID(),
+			Transport:              transport,
 			ReceiverCreateSettings: settings,
 		}),
 		receiverStartTime: time.Now(),
