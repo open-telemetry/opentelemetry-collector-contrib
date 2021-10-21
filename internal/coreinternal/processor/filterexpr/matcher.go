@@ -27,9 +27,17 @@ type Matcher struct {
 
 type env struct {
 	MetricName string
-	// TODO: replace this with GetLabel func(key string) (string,bool)
-	HasLabel func(key string) bool
-	Label    func(key string) string
+	attributes pdata.AttributeMap
+}
+
+func (e *env) HasLabel(key string) bool {
+	_, ok := e.attributes.Get(key)
+	return ok
+}
+
+func (e *env) Label(key string) string {
+	v, _ := e.attributes.Get(key)
+	return v.StringVal()
 }
 
 func NewMatcher(expression string) (*Matcher, error) {
@@ -100,21 +108,14 @@ func (m *Matcher) matchEnv(metricName string, attributes pdata.AttributeMap) (bo
 	return m.match(createEnv(metricName, attributes))
 }
 
-func createEnv(metricName string, attributes pdata.AttributeMap) env {
-	return env{
+func createEnv(metricName string, attributes pdata.AttributeMap) *env {
+	return &env{
 		MetricName: metricName,
-		HasLabel: func(key string) bool {
-			_, ok := attributes.Get(key)
-			return ok
-		},
-		Label: func(key string) string {
-			v, _ := attributes.Get(key)
-			return v.StringVal()
-		},
+		attributes: attributes,
 	}
 }
 
-func (m *Matcher) match(env env) (bool, error) {
+func (m *Matcher) match(env *env) (bool, error) {
 	result, err := m.v.Run(m.program, env)
 	if err != nil {
 		return false, err
