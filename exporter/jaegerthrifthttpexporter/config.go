@@ -15,24 +15,19 @@
 package jaegerthrifthttpexporter
 
 import (
-	"time"
-
 	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/config/confighttp"
 )
 
 // Config defines configuration for Jaeger Thrift over HTTP exporter.
 type Config struct {
-	config.ExporterSettings `mapstructure:",squash"`
+	config.ExporterSettings       `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
+	confighttp.HTTPClientSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
+}
 
-	// URL is the URL to send the Jaeger trace data to (e.g.:
-	// http://some.url:14268/api/traces).
-	URL string `mapstructure:"url"`
+var _ config.Exporter = (*Config)(nil)
 
-	// Timeout is the maximum timeout for HTTP request sending trace data. The
-	// default value is 5 seconds.
-	Timeout time.Duration `mapstructure:"timeout"`
-
-	// Headers are a set of headers to be added to the HTTP request sending
-	// trace data.
-	Headers map[string]string `mapstructure:"headers"`
+// Validate checks if the exporter configuration is valid
+func (cfg *Config) Validate() error {
+	return nil
 }

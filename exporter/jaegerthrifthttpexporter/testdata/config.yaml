@@ -6,9 +6,9 @@ processors:
 
 exporters:
   jaeger_thrift:
-    url: "http://some.location:14268/api/traces"
+    endpoint: "http://jaeger.example:14268/api/traces"
   jaeger_thrift/2:
-    url: "http://some.other.location/api/traces"
+    endpoint: "http://jaeger.example.com/api/traces"
     timeout: 2s
     headers:
       added-entry: "added value"

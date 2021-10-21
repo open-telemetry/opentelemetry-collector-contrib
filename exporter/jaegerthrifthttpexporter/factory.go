@@ -21,6 +21,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
@@ -40,7 +41,9 @@ func NewFactory() component.ExporterFactory {
 func createDefaultConfig() config.Exporter {
 	return &Config{
 		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
-		Timeout:          defaultHTTPTimeout,
+		HTTPClientSettings: confighttp.HTTPClientSettings{
+			Timeout: exporterhelper.DefaultTimeoutSettings().Timeout,
+		},
 	}
 }
 
@@ -51,14 +54,14 @@ func createTracesExporter(
 ) (component.TracesExporter, error) {
 
 	expCfg := config.(*Config)
-	_, err := url.ParseRequestURI(expCfg.URL)
+	_, err := url.ParseRequestURI(expCfg.HTTPClientSettings.Endpoint)
 	if err != nil {
 		// TODO: Improve error message, see #215
 		err = fmt.Errorf("%q config requires a valid \"url\": %v", expCfg.ID().String(), err)
 		return nil, err
 	}
 
-	if expCfg.Timeout <= 0 {
+	if expCfg.HTTPClientSettings.Timeout <= 0 {
 		err := fmt.Errorf("%q config requires a positive value for \"timeout\"", expCfg.ID().String())
 		return nil, err
 	}

@@ -21,7 +21,6 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
-	"time"
 
 	"github.com/apache/thrift/lib/go/thrift"
 	"github.com/jaegertracing/jaeger/model"
@@ -35,44 +34,34 @@ import (
 	jaegertranslator "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger"
 )
 
-// Default timeout for http request in seconds
-const defaultHTTPTimeout = time.Second * 5
-
-// newTracesExporter returns a new Jaeger Thrift over HTTP exporter.
-// The exporterName is the name to be used in the observability of the exporter.
-// The httpAddress should be the URL of the collector to handle POST requests,
-// typically something like: http://hostname:14268/api/traces.
-// The headers parameter is used to add entries to the POST message set to the
-// collector.
-// The timeout is used to set the timeout for the HTTP requests, if the
-// value is equal or smaller than zero the default of 5 seconds is used.
 func newTracesExporter(
 	config *Config,
 	params component.ExporterCreateSettings,
 ) (component.TracesExporter, error) {
-
-	clientTimeout := defaultHTTPTimeout
-	if config.Timeout != 0 {
-		clientTimeout = config.Timeout
-	}
 	s := &jaegerThriftHTTPSender{
-		url:     config.URL,
-		headers: config.Headers,
-		client:  &http.Client{Timeout: clientTimeout},
+		config: config,
 	}
 
 	return exporterhelper.NewTracesExporter(
 		config,
 		params,
-		s.pushTraceData)
+		s.pushTraceData,
+		exporterhelper.WithStart(s.start),
+	)
 }
 
 // jaegerThriftHTTPSender forwards spans encoded in the jaeger thrift
 // format to a http server.
 type jaegerThriftHTTPSender struct {
-	url     string
-	headers map[string]string
-	client  *http.Client
+	config *Config
+	client *http.Client
+}
+
+// start starts the exporter
+func (s *jaegerThriftHTTPSender) start(_ context.Context, host component.Host) (err error) {
+	s.client, err = s.config.HTTPClientSettings.ToClient(host.GetExtensions())
+
+	return err
 }
 
 func (s *jaegerThriftHTTPSender) pushTraceData(
@@ -90,17 +79,12 @@ func (s *jaegerThriftHTTPSender) pushTraceData(
 			return err
 		}
 
-		req, err := http.NewRequest("POST", s.url, body)
+		req, err := http.NewRequest("POST", s.config.HTTPClientSettings.Endpoint, body)
 		if err != nil {
 			return err
 		}
 
 		req.Header.Set("Content-Type", "application/x-thrift")
-		if s.headers != nil {
-			for k, v := range s.headers {
-				req.Header.Set(k, v)
-			}
-		}
 
 		resp, err := s.client.Do(req)
 		if err != nil {

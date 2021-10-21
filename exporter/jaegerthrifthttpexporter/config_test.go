@@ -24,6 +24,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configtest"
 )
 
@@ -42,18 +43,20 @@ func TestLoadConfig(t *testing.T) {
 
 	// URL doesn't have a default value so set it directly.
 	defaultCfg := factory.CreateDefaultConfig().(*Config)
-	defaultCfg.URL = "http://some.location:14268/api/traces"
+	defaultCfg.Endpoint = "http://jaeger.example:14268/api/traces"
 	assert.Equal(t, defaultCfg, e0)
 
 	e1 := cfg.Exporters[config.NewComponentIDWithName(typeStr, "2")]
 	expectedCfg := Config{
 		ExporterSettings: config.NewExporterSettings(config.NewComponentIDWithName(typeStr, "2")),
-		URL:              "http://some.other.location/api/traces",
-		Headers: map[string]string{
-			"added-entry": "added value",
-			"dot.test":    "test",
+		HTTPClientSettings: confighttp.HTTPClientSettings{
+			Endpoint: "http://jaeger.example.com/api/traces",
+			Headers: map[string]string{
+				"added-entry": "added value",
+				"dot.test":    "test",
+			},
+			Timeout: 2 * time.Second,
 		},
-		Timeout: 2 * time.Second,
 	}
 	assert.Equal(t, &expectedCfg, e1)
 

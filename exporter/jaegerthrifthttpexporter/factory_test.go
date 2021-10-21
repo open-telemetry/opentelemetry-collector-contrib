@@ -22,6 +22,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configtest"
 )
 
@@ -44,7 +45,7 @@ func TestCreateInstanceViaFactory(t *testing.T) {
 
 	// Endpoint doesn't have a default value so set it directly.
 	expCfg := cfg.(*Config)
-	expCfg.URL = "http://some.target.org:12345/api/traces"
+	expCfg.HTTPClientSettings.Endpoint = "http://jaeger.example.com:12345/api/traces"
 	exp, err = createTracesExporter(context.Background(), params, cfg)
 	assert.NoError(t, err)
 	assert.NotNil(t, exp)
@@ -55,12 +56,14 @@ func TestCreateInstanceViaFactory(t *testing.T) {
 func TestFactory_CreateTracesExporter(t *testing.T) {
 	config := &Config{
 		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
-		URL:              "http://some.other.location/api/traces",
-		Headers: map[string]string{
-			"added-entry": "added value",
-			"dot.test":    "test",
+		HTTPClientSettings: confighttp.HTTPClientSettings{
+			Endpoint: "http://jaeger.example.com/api/traces",
+			Headers: map[string]string{
+				"added-entry": "added value",
+				"dot.test":    "test",
+			},
+			Timeout: 2 * time.Second,
 		},
-		Timeout: 2 * time.Second,
 	}
 
 	params := componenttest.NewNopExporterCreateSettings()
@@ -86,16 +89,20 @@ func TestFactory_CreateTracesExporterFails(t *testing.T) {
 			name: "invalid_url",
 			config: &Config{
 				ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
-				URL:              ".localhost:123",
+				HTTPClientSettings: confighttp.HTTPClientSettings{
+					Endpoint: ".example:123",
+				},
 			},
-			errorMessage: "\"jaeger_thrift\" config requires a valid \"url\": parse \".localhost:123\": invalid URI for request",
+			errorMessage: "\"jaeger_thrift\" config requires a valid \"url\": parse \".example:123\": invalid URI for request",
 		},
 		{
 			name: "negative_duration",
 			config: &Config{
 				ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
-				URL:              "localhost:123",
-				Timeout:          -2 * time.Second,
+				HTTPClientSettings: confighttp.HTTPClientSettings{
+					Endpoint: "example.com:123",
+					Timeout:  -2 * time.Second,
+				},
 			},
 			errorMessage: "\"jaeger_thrift\" config requires a positive value for \"timeout\"",
 		},
