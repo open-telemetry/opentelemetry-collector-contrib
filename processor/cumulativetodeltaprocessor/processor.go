@@ -64,13 +64,6 @@ func (ctdp *cumulativeToDeltaProcessor) processMetrics(_ context.Context, md pda
 				if _, ok := ctdp.metrics[m.Name()]; !ok {
 					return false
 				}
-				baseIdentity := tracking.MetricIdentity{
-					Resource:               rm.Resource(),
-					InstrumentationLibrary: ilm.InstrumentationLibrary(),
-					MetricDataType:         m.DataType(),
-					MetricName:             m.Name(),
-					MetricUnit:             m.Unit(),
-				}
 				switch m.DataType() {
 				case pdata.MetricDataTypeSum:
 					ms := m.Sum()
@@ -83,7 +76,14 @@ func (ctdp *cumulativeToDeltaProcessor) processMetrics(_ context.Context, md pda
 						return false
 					}
 
-					baseIdentity.MetricIsMonotonic = ms.IsMonotonic()
+					baseIdentity := tracking.MetricIdentity{
+						Resource:               rm.Resource(),
+						InstrumentationLibrary: ilm.InstrumentationLibrary(),
+						MetricDataType:         m.DataType(),
+						MetricName:             m.Name(),
+						MetricUnit:             m.Unit(),
+						MetricIsMonotonic:      ms.IsMonotonic(),
+					}
 					ctdp.convertDataPoints(ms.DataPoints(), baseIdentity)
 					ms.SetAggregationTemporality(pdata.MetricAggregationTemporalityDelta)
 					return ms.DataPoints().Len() == 0
