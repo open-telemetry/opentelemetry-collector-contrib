@@ -17,12 +17,12 @@ package metrics
 import (
 	"context"
 
+	"github.com/DataDog/datadog-agent/pkg/otlp/model/translator"
 	"github.com/DataDog/datadog-agent/pkg/quantile"
 	"go.opentelemetry.io/collector/component"
 	"gopkg.in/zorkian/go-datadog-api.v2"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/sketches"
-	"github.com/DataDog/datadog-agent/pkg/otlp/model/translator"
 )
 
 var _ translator.Consumer = (*Consumer)(nil)
