@@ -15,6 +15,7 @@
 package scrapertest
 
 import (
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"path/filepath"
@@ -22,6 +23,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
+	"go.uber.org/multierr"
 
 	"go.opentelemetry.io/collector/model/pdata"
 )
@@ -76,8 +78,11 @@ func TestCompareMetrics(t *testing.T) {
 				m.SetName("wrong name")
 				return metrics
 			}(),
-			expected:      baseTestMetrics(),
-			expectedError: fmt.Errorf("metric name does not match expected: test name, actual: wrong name"),
+			expected: baseTestMetrics(),
+			expectedError: multierr.Combine(
+				errors.New("unexpected metric wrong name"),
+				errors.New("missing expected metric test name"),
+			),
 		},
 		{
 			name: "Wrong Description",
@@ -138,9 +143,11 @@ func TestCompareMetrics(t *testing.T) {
 				attributes.CopyTo(dp.Attributes())
 				return metrics
 			}(),
-			expected:      baseTestMetrics(),
-			expectedError: fmt.Errorf("missing datapoints for: metric name: test name"),
-		},
+			expected: baseTestMetrics(),
+			expectedError: multierr.Combine(
+				errors.New("metric test name missing expected data point: Labels: map[testKey1:teststringvalue1]"),
+				errors.New("metric test name has extra data point: Labels: map[wrong key:teststringvalue1]"),
+			)},
 		{
 			name: "Wrong attribute value",
 			actual: func() pdata.MetricSlice {
@@ -153,8 +160,11 @@ func TestCompareMetrics(t *testing.T) {
 				attributes.CopyTo(dp.Attributes())
 				return metrics
 			}(),
-			expected:      baseTestMetrics(),
-			expectedError: fmt.Errorf("missing datapoints for: metric name: test name"),
+			expected: baseTestMetrics(),
+			expectedError: multierr.Combine(
+				errors.New("metric test name missing expected data point: Labels: map[testKey1:teststringvalue1]"),
+				errors.New("metric test name has extra data point: Labels: map[testKey1:wrong value]"),
+			),
 		},
 	}
 
@@ -176,10 +186,10 @@ func TestRoundTrip(t *testing.T) {
 	metricslice.CopyTo(expectedMetrics.ResourceMetrics().AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty().Metrics())
 
 	tempDir := filepath.Join(t.TempDir(), "metrics.json")
-	err := MetricsToFile(tempDir, expectedMetrics)
+	err := WriteExpected(tempDir, expectedMetrics)
 	require.NoError(t, err)
 
-	actualMetrics, err := FileToMetrics(tempDir)
+	actualMetrics, err := ReadExpected(tempDir)
 	require.NoError(t, err)
 	require.Equal(t, expectedMetrics, actualMetrics)
 }
@@ -190,7 +200,7 @@ func TestMetricsToFile(t *testing.T) {
 	metricslice.CopyTo(metrics.ResourceMetrics().AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty().Metrics())
 
 	tempDir := filepath.Join(t.TempDir(), "metrics.json")
-	MetricsToFile(tempDir, metrics)
+	WriteExpected(tempDir, metrics)
 
 	actualBytes, err := ioutil.ReadFile(tempDir)
 	require.NoError(t, err)
@@ -208,7 +218,7 @@ func TestFileToMetrics(t *testing.T) {
 	metricslice.CopyTo(expectedMetrics.ResourceMetrics().AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty().Metrics())
 
 	expectedFile := filepath.Join("testdata", "roundtrip", "expected.json")
-	actualMetrics, err := FileToMetrics(expectedFile)
+	actualMetrics, err := ReadExpected(expectedFile)
 	require.NoError(t, err)
 	require.Equal(t, expectedMetrics, actualMetrics)
 }

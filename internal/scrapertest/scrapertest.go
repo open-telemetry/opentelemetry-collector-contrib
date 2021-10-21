@@ -15,126 +15,137 @@
 package scrapertest
 
 import (
-	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"reflect"
 
-	"go.opentelemetry.io/collector/model/otlp"
 	"go.opentelemetry.io/collector/model/pdata"
+	"go.uber.org/multierr"
 )
-
-func FileToMetrics(filePath string) (pdata.Metrics, error) {
-	expectedFileBytes, err := ioutil.ReadFile(filePath)
-	if err != nil {
-		return pdata.Metrics{}, err
-	}
-	unmarshaller := otlp.NewJSONMetricsUnmarshaler()
-	return unmarshaller.UnmarshalMetrics(expectedFileBytes)
-}
-
-func MetricsToFile(filePath string, metrics pdata.Metrics) error {
-	bytes, err := otlp.NewJSONMetricsMarshaler().MarshalMetrics(metrics)
-	if err != nil {
-		return err
-	}
-	var jsonVal map[string]interface{}
-	json.Unmarshal(bytes, &jsonVal)
-	b, err := json.MarshalIndent(jsonVal, "", "   ")
-	if err != nil {
-		return err
-	}
-	return ioutil.WriteFile(filePath, b, 0600)
-}
 
 // CompareMetrics compares each part of two given metric slices and returns
 // an error if they don't match. The error describes what didn't match.
-func CompareMetricSlices(expectedAll, actualAll pdata.MetricSlice) error {
-	if actualAll.Len() != expectedAll.Len() {
+func CompareMetricSlices(expected, actual pdata.MetricSlice) error {
+	if actual.Len() != expected.Len() {
 		return fmt.Errorf("metric slices not of same length")
 	}
 
-	lessFunc := func(a, b pdata.Metric) bool {
-		return a.Name() < b.Name()
+	actualByName := make(map[string]pdata.Metric, actual.Len())
+	for i := 0; i < actual.Len(); i++ {
+		a := actual.At(i)
+		actualByName[a.Name()] = a
 	}
 
-	actualMetrics := actualAll.Sort(lessFunc)
-	expectedMetrics := expectedAll.Sort(lessFunc)
+	expectedByName := make(map[string]pdata.Metric, expected.Len())
+	for i := 0; i < expected.Len(); i++ {
+		e := expected.At(i)
+		expectedByName[e.Name()] = e
+	}
 
-	for i := 0; i < actualMetrics.Len(); i++ {
-		actual := actualMetrics.At(i)
-		expected := expectedMetrics.At(i)
+	var errs error
+	matchedMetrics := make(map[pdata.Metric]pdata.Metric, expected.Len())
+	for name, am := range actualByName {
+		em, ok := expectedByName[name]
+		if !ok {
+			errs = multierr.Append(errs, fmt.Errorf("unexpected metric %s", name))
+		} else {
+			matchedMetrics[am] = em
+		}
+	}
+	for name := range expectedByName {
+		if _, ok := actualByName[name]; !ok {
+			errs = multierr.Append(errs, fmt.Errorf("missing expected metric %s", name))
+		}
+	}
 
-		if actual.Name() != expected.Name() {
-			return fmt.Errorf("metric name does not match expected: %s, actual: %s", expected.Name(), actual.Name())
+	if errs != nil {
+		return errs
+	}
+
+	for am, em := range matchedMetrics {
+		if am.Name() != em.Name() {
+			return fmt.Errorf("metric name does not match expected: %s, actual: %s", em.Name(), am.Name())
 		}
-		if actual.DataType() != expected.DataType() {
-			return fmt.Errorf("metric datatype does not match expected: %s, actual: %s", expected.DataType(), actual.DataType())
+		if am.DataType() != em.DataType() {
+			return fmt.Errorf("metric datatype does not match expected: %s, actual: %s", em.DataType(), am.DataType())
 		}
-		if actual.Description() != expected.Description() {
-			return fmt.Errorf("metric description does not match expected: %s, actual: %s", expected.Description(), actual.Description())
+		if am.Description() != em.Description() {
+			return fmt.Errorf("metric description does not match expected: %s, actual: %s", em.Description(), am.Description())
 		}
-		if actual.Unit() != expected.Unit() {
-			return fmt.Errorf("metric Unit does not match expected: %s, actual: %s", expected.Unit(), actual.Unit())
+		if am.Unit() != em.Unit() {
+			return fmt.Errorf("metric Unit does not match expected: %s, actual: %s", em.Unit(), am.Unit())
 		}
 
 		var actualDataPoints pdata.NumberDataPointSlice
 		var expectedDataPoints pdata.NumberDataPointSlice
 
-		switch actual.DataType() {
+		switch am.DataType() {
 		case pdata.MetricDataTypeGauge:
-			actualDataPoints = actual.Gauge().DataPoints()
-			expectedDataPoints = expected.Gauge().DataPoints()
+			actualDataPoints = am.Gauge().DataPoints()
+			expectedDataPoints = em.Gauge().DataPoints()
 		case pdata.MetricDataTypeSum:
-			if actual.Sum().AggregationTemporality() != expected.Sum().AggregationTemporality() {
-				return fmt.Errorf("metric AggregationTemporality does not match expected: %s, actual: %s", expected.Sum().AggregationTemporality(), actual.Sum().AggregationTemporality())
+			if am.Sum().AggregationTemporality() != em.Sum().AggregationTemporality() {
+				return fmt.Errorf("metric AggregationTemporality does not match expected: %s, actual: %s", em.Sum().AggregationTemporality(), am.Sum().AggregationTemporality())
 			}
-			if actual.Sum().IsMonotonic() != expected.Sum().IsMonotonic() {
-				return fmt.Errorf("metric IsMonotonic does not match expected: %t, actual: %t", expected.Sum().IsMonotonic(), actual.Sum().IsMonotonic())
+			if am.Sum().IsMonotonic() != em.Sum().IsMonotonic() {
+				return fmt.Errorf("metric IsMonotonic does not match expected: %t, actual: %t", em.Sum().IsMonotonic(), am.Sum().IsMonotonic())
 			}
-			actualDataPoints = actual.Sum().DataPoints()
-			expectedDataPoints = expected.Sum().DataPoints()
+			actualDataPoints = am.Sum().DataPoints()
+			expectedDataPoints = em.Sum().DataPoints()
 		}
 
 		if actualDataPoints.Len() != expectedDataPoints.Len() {
-			return fmt.Errorf("length of datapoints don't match, metric name: %s", actual.Name())
+			return fmt.Errorf("length of datapoints don't match, metric name: %s", am.Name())
 		}
 
-		dataPointMatches := 0
+		var errs error
 		for j := 0; j < expectedDataPoints.Len(); j++ {
 			edp := expectedDataPoints.At(j)
+			var foundMatch bool
 			for k := 0; k < actualDataPoints.Len(); k++ {
 				adp := actualDataPoints.At(k)
-				adpAttributes := adp.Attributes()
-				labelMatches := true
-
-				if edp.Attributes().Len() != adpAttributes.Len() {
+				if reflect.DeepEqual(adp.Attributes().Sort().AsRaw(), edp.Attributes().Sort().AsRaw()) {
+					foundMatch = true
 					break
 				}
-				edp.Attributes().Range(func(k string, v pdata.AttributeValue) bool {
-					if attributeVal, ok := adpAttributes.Get(k); ok && attributeVal.StringVal() == v.StringVal() {
-						return true
-					}
-					labelMatches = false
-					return false
-				})
-				if !labelMatches {
-					continue
-				}
-				if edp.Type() != adp.Type() {
-					return fmt.Errorf("metric datapoint types don't match: expected type: %v, actual type: %v", edp.Type(), adp.Type())
-				}
-				if edp.IntVal() != adp.IntVal() {
-					return fmt.Errorf("metric datapoint IntVal doesn't match expected: %d, actual: %d", edp.IntVal(), adp.IntVal())
-				}
-				if edp.DoubleVal() != adp.DoubleVal() {
-					return fmt.Errorf("metric datapoint DoubleVal doesn't match expected: %f, actual: %f", edp.DoubleVal(), adp.DoubleVal())
-				}
-				dataPointMatches++
-				break
+			}
+
+			if !foundMatch {
+				errs = multierr.Append(errs, fmt.Errorf("metric %s missing expected data point: Labels: %v", am.Name(), edp.Attributes().AsRaw()))
 			}
 		}
-		if dataPointMatches != expectedDataPoints.Len() {
-			return fmt.Errorf("missing datapoints for: metric name: %s", actual.Name())
+
+		matchingDPS := make(map[pdata.NumberDataPoint]pdata.NumberDataPoint, actualDataPoints.Len())
+		for j := 0; j < actualDataPoints.Len(); j++ {
+			adp := actualDataPoints.At(j)
+			var foundMatch bool
+			for k := 0; k < expectedDataPoints.Len(); k++ {
+				edp := expectedDataPoints.At(k)
+				if reflect.DeepEqual(edp.Attributes().Sort(), adp.Attributes().Sort()) {
+					foundMatch = true
+					matchingDPS[adp] = edp
+					break
+				}
+			}
+
+			if !foundMatch {
+				errs = multierr.Append(errs, fmt.Errorf("metric %s has extra data point: Labels: %v", am.Name(), adp.Attributes().AsRaw()))
+			}
+		}
+
+		if errs != nil {
+			return errs
+		}
+
+		for adp, edp := range matchingDPS {
+			if edp.Type() != adp.Type() {
+				return fmt.Errorf("metric datapoint types don't match: expected type: %v, actual type: %v", edp.Type(), adp.Type())
+			}
+			if edp.IntVal() != adp.IntVal() {
+				return fmt.Errorf("metric datapoint IntVal doesn't match expected: %d, actual: %d", edp.IntVal(), adp.IntVal())
+			}
+			if edp.DoubleVal() != adp.DoubleVal() {
+				return fmt.Errorf("metric datapoint DoubleVal doesn't match expected: %f, actual: %f", edp.DoubleVal(), adp.DoubleVal())
+			}
 		}
 	}
 	return nil
