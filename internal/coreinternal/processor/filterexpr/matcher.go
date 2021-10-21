@@ -27,7 +27,13 @@ type Matcher struct {
 
 type env struct {
 	MetricName string
-	// TODO: replace this with GetLabel func(key string) (string,bool)
+
+	// TODO: replace this with GetAttribute func(key string) (string,bool)
+	HasAttribute func(key string) bool
+	Attribute    func(key string) string
+
+	// HasLabel and Label are aliases for HasAttribute and Attribute, kept for
+	// backwards compatibility. These are deprecated and will be removed in the future.
 	HasLabel func(key string) bool
 	Label    func(key string) string
 }
@@ -101,17 +107,21 @@ func (m *Matcher) matchEnv(metricName string, attributes pdata.AttributeMap) (bo
 }
 
 func createEnv(metricName string, attributes pdata.AttributeMap) env {
-	return env{
+	e := env{
 		MetricName: metricName,
-		HasLabel: func(key string) bool {
+		HasAttribute: func(key string) bool {
 			_, ok := attributes.Get(key)
 			return ok
 		},
-		Label: func(key string) string {
+		Attribute: func(key string) string {
 			v, _ := attributes.Get(key)
 			return v.StringVal()
 		},
 	}
+	// HasLabel and Label are aliases for HasAttribute and Attribute.
+	e.HasLabel = e.HasAttribute
+	e.Label = e.Attribute
+	return e
 }
 
 func (m *Matcher) match(env env) (bool, error) {

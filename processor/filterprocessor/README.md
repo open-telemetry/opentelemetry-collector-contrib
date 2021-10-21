@@ -98,12 +98,16 @@ Made available to the expression environment are the following:
 
 * `MetricName`
     a variable containing the current Metric's name
+* `Attribute(name)`
+  a function that takes an attribute name string as an argument and returns a string: the value of an attribute with that
+  name if one exists, or ""
+* `HasAttribute(name)`
+  a function that takes an attribute name string as an argument and returns a boolean: true if the datapoint has an attribute
+  with that name, false otherwise
 * `Label(name)`
-    a function that takes a label name string as an argument and returns a string: the value of a label with that
-    name if one exists, or ""
+  Alias for `Attribute(name)`. Deprecated.
 * `HasLabel(name)`
-    a function that takes a label name string as an argument and returns a boolean: true if the datapoint has a label
-    with that name, false otherwise
+  Alias for `HasLabel(name)`. Deprecated.
 
 Example:
 
@@ -114,11 +118,11 @@ processors:
       exclude:
         match_type: expr
         expressions:
-        - MetricName == "my.metric" && Label("my_label") == "abc123"
+        - MetricName == "my.metric" && Attribute("my_attr") == "abc123"
 ```
 
 The above config will filter out any Metric that both has the name "my.metric" and has at least one datapoint
-with a label of 'my_label="abc123"'.
+with an attribute of 'my_attr="abc123"'.
 
 ### Support for multiple expressions
 

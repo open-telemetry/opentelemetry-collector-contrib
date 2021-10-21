@@ -142,8 +142,18 @@ func TestMatchGaugeDataPointByMetricAndHasLabel(t *testing.T) {
 	assert.True(t, testMatchGauge(t, "my.metric", expression, map[string]pdata.AttributeValue{"foo": pdata.NewAttributeValueString("")}))
 }
 
+func TestMatchGaugeDataPointByMetricAndHasAttribute(t *testing.T) {
+	expression := `MetricName == 'my.metric' && HasAttribute("foo")`
+	assert.True(t, testMatchGauge(t, "my.metric", expression, map[string]pdata.AttributeValue{"foo": pdata.NewAttributeValueString("")}))
+}
+
 func TestMatchGaugeDataPointByMetricAndLabelValue(t *testing.T) {
 	expression := `MetricName == 'my.metric' && Label("foo") == "bar"`
+	assert.False(t, testMatchGauge(t, "my.metric", expression, map[string]pdata.AttributeValue{"foo": pdata.NewAttributeValueString("")}))
+}
+
+func TestMatchGaugeDataPointByMetricAndAttributeValue(t *testing.T) {
+	expression := `MetricName == 'my.metric' && Attribute("foo") == "bar"`
 	assert.False(t, testMatchGauge(t, "my.metric", expression, map[string]pdata.AttributeValue{"foo": pdata.NewAttributeValueString("")}))
 }
 
