@@ -10,7 +10,7 @@ Supported pipeline types: traces
 
 The following settings are required:
 
-- `url` (no default): target to which the exporter is going to send Jaeger trace data,
+- `endpoint` (no default): target to which the exporter is going to send Jaeger trace data,
 using the Thrift HTTP protocol.
 
 The following settings can be optionally configured:
@@ -23,7 +23,7 @@ Example:
 ```yaml
 exporters:
   jaeger_thrift:
-    url: "http://some.other.location/api/traces"
+    endpoint: "http://jaeger.example.com/api/traces"
     timeout: 2s
     headers:
       added-entry: "added value"
