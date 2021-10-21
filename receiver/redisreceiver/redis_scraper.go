@@ -39,15 +39,9 @@ func newRedisScraper(cfg Config, settings component.ReceiverCreateSettings, pass
 		Addr:     cfg.Endpoint,
 		Password: cfg.Password,
 	}
-	if cfg.Network != "" {
-		opts.Network = cfg.Network
-	} else {
-		opts.Network = "tcp"
-	}
 
-	if tlsSetting, err := cfg.TLS.LoadTLSConfig(); err == nil && tlsSetting != nil {
-		opts.TLSConfig = tlsSetting
-	} else if err != nil {
+	var err error
+	if opts.TLSConfig, err = cfg.TLS.LoadTLSConfig(); err != nil {
 		return nil, err
 	}
 

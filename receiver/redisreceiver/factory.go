@@ -41,6 +41,7 @@ func createDefaultConfig() config.Receiver {
 	scs := scraperhelper.DefaultScraperControllerSettings(typeStr)
 	scs.CollectionInterval = 10 * time.Second
 	return &Config{
+		Network:                   "tcp",
 		ScraperControllerSettings: scs,
 	}
 }

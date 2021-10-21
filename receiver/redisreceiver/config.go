@@ -15,6 +15,7 @@
 package redisreceiver
 
 import (
+	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 )
@@ -23,7 +24,7 @@ type Config struct {
 	scraperhelper.ScraperControllerSettings `mapstructure:",squash"`
 	// TODO: Use one of the configs from core.
 	// The target endpoint.
-	Endpoint string `mapstructure:"endpoint"`
+	confignet.NetAddr `mapstructure:",squash"`
 
 	// TODO allow users to add additional resource key value pairs?
 
