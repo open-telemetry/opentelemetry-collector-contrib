@@ -56,12 +56,20 @@ func paramsAndContext(t *testing.T) (component.ExtensionCreateSettings, context.
 
 func TestObserverEmitsEndpointsIntegration(t *testing.T) {
 	c := container.New(t)
-	c.StartImage("docker.io/library/nginx:1.17", container.WithPortReady(80))
+	image := "docker.io/library/nginx:1.17"
+	cntr := c.StartImage(image, container.WithPortReady(80))
 
 	mn := &mockNotifier{endpointsMap: map[observer.EndpointID]observer.Endpoint{}}
 	obvs := startObserver(t, mn)
 	time.Sleep(2 * time.Second) // wait for endpoints to sync
-	require.NotEmpty(t, mn.getEndpointsMap())
+	endpoints := mn.getEndpointsMap()
+	require.NotEmpty(t, endpoints)
+	require.Equal(t, 1, len(endpoints))
+	for _, e := range endpoints {
+		require.Equal(t, uint16(80), e.Details.Env()["port"])
+		require.Equal(t, string(cntr.ID), e.Details.Env()["container_id"])
+		require.Equal(t, image, e.Details.Env()["image"])
+	}
 	stopObserver(t, obvs)
 }
 

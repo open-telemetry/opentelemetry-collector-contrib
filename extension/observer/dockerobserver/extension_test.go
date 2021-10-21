@@ -102,7 +102,7 @@ func TestCollectEndpointsDefaultConfig(t *testing.T) {
 		},
 	}
 
-	require.Equal(t, cEndpoints, want)
+	require.Equal(t, want, cEndpoints)
 }
 
 func TestCollectEndpointsAllConfigSettings(t *testing.T) {
@@ -149,7 +149,7 @@ func TestCollectEndpointsAllConfigSettings(t *testing.T) {
 		},
 	}
 
-	require.Equal(t, cEndpoints, want)
+	require.Equal(t, want, cEndpoints)
 }
 
 func TestCollectEndpointsUseHostnameIfPresent(t *testing.T) {
@@ -196,7 +196,7 @@ func TestCollectEndpointsUseHostnameIfPresent(t *testing.T) {
 		},
 	}
 
-	require.Equal(t, cEndpoints, want)
+	require.Equal(t, want, cEndpoints)
 }
 
 func TestCollectEndpointsUseHostBindings(t *testing.T) {
@@ -243,7 +243,7 @@ func TestCollectEndpointsUseHostBindings(t *testing.T) {
 		},
 	}
 
-	require.Equal(t, cEndpoints, want)
+	require.Equal(t, want, cEndpoints)
 }
 
 func TestCollectEndpointsIgnoreNonHostBindings(t *testing.T) {
@@ -290,5 +290,5 @@ func TestCollectEndpointsIgnoreNonHostBindings(t *testing.T) {
 		},
 	}
 
-	require.Equal(t, cEndpoints, want)
+	require.Equal(t, want, cEndpoints)
 }
