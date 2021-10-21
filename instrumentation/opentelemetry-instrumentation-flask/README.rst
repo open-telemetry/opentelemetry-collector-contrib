@@ -37,6 +37,26 @@ You can also pass the comma delimited regexes to the ``instrument_app`` method d
 
     FlaskInstrumentor().instrument_app(app, excluded_urls="client/.*/info,healthcheck")
 
+Request/Response hooks
+**********************
+
+Utilize request/reponse hooks to execute custom logic to be performed before/after performing a request. Environ is an instance of WSGIEnvironment (flask.request.environ).
+Response_headers is a list of key-value (tuples) representing the response headers returned from the response.
+
+.. code-block:: python
+
+    def request_hook(span: Span, environ: WSGIEnvironment):
+        if span and span.is_recording():
+            span.set_attribute("custom_user_attribute_from_request_hook", "some-value")
+
+    def response_hook(span: Span, status: str, response_headers: List):
+        if span and span.is_recording():
+            span.set_attribute("custom_user_attribute_from_response_hook", "some-value")
+
+    FlaskInstrumentation().instrument(request_hook=request_hook, response_hook=response_hook)
+
+Flask Request object reference: https://flask.palletsprojects.com/en/2.0.x/api/#flask.Request
+
 References
 ----------
 

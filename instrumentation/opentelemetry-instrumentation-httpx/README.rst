@@ -69,17 +69,17 @@ If you need to uninstrument clients, there are two options available.
 
 .. code-block:: python
 
-     import httpx
-     from opentelemetry.instrumentation.httpx import HTTPXClientInstrumentor
+    import httpx
+    from opentelemetry.instrumentation.httpx import HTTPXClientInstrumentor
 
-     HTTPXClientInstrumentor().instrument()
-     client = httpx.Client()
+    HTTPXClientInstrumentor().instrument()
+    client = httpx.Client()
 
-     # Uninstrument a specific client
-     HTTPXClientInstrumentor.uninstrument_client(client)
-     
-     # Uninstrument all clients
-     HTTPXClientInstrumentor().uninstrument()
+    # Uninstrument a specific client
+    HTTPXClientInstrumentor.uninstrument_client(client)
+
+    # Uninstrument all clients
+    HTTPXClientInstrumentor().uninstrument()
 
 
 Using transports directly

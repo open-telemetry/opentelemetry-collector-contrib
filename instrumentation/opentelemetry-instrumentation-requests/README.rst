@@ -19,11 +19,17 @@ Installation
 Configuration
 -------------
 
-.. code-block:: python
+Exclude lists
+*************
+To exclude certain URLs from being tracked, set the environment variable ``OTEL_PYTHON_REQUESTS_EXCLUDED_URLS`` with comma delimited regexes representing which URLs to exclude.
 
-     from opentelemetry.instrumentation.requests import RequestsInstrumentor
-     RequestsInstrumentor().instrument()
+For example,
 
+::
+
+    export OTEL_PYTHON_REQUESTS_EXCLUDED_URLS="client/.*/info,healthcheck"
+
+will exclude requests such as ``https://site/client/123/info`` and ``https://site/xyz/healthcheck``.
 
 References
 ----------

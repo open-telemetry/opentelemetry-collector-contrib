@@ -6,6 +6,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased](https://github.com/open-telemetry/opentelemetry-python/compare/v1.6.2-0.25b2...HEAD)
+
 ### Fixed
 
 - `opentelemetry-instrumentation-asgi` now explicitly depends on asgiref as it uses the package instead of instrumenting it.
@@ -19,6 +20,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   ([#753](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/753))
 - `opentelemetry-instrumentation-pika` Add `_decorate_basic_consume` to ensure post instrumentation `basic_consume` calls are also instrumented.
   ([#759](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/759))
+- Consolidate instrumentation documentation in docstrings
+  ([#754](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/754))
 
 ### Fixed
 

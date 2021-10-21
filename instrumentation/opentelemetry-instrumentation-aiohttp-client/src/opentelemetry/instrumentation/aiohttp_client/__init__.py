@@ -58,6 +58,29 @@ Instrumenting all client sessions:
         async with session.get(url) as response:
             await response.text()
 
+Configuration
+-------------
+
+Request/Response hooks
+**********************
+
+Utilize request/reponse hooks to execute custom logic to be performed before/after performing a request.
+
+.. code-block:: python
+
+   def request_hook(span: Span, params: aiohttp.TraceRequestStartParams):
+      if span and span.is_recording():
+            span.set_attribute("custom_user_attribute_from_request_hook", "some-value")
+
+   def response_hook(span: Span, params: typing.Union[
+                aiohttp.TraceRequestEndParams,
+                aiohttp.TraceRequestExceptionParams,
+            ]):
+        if span and span.is_recording():
+            span.set_attribute("custom_user_attribute_from_response_hook", "some-value")
+
+   AioHttpClientInstrumentor().instrument(request_hook=request_hook, response_hook=response_hook)
+
 API
 ---
 """

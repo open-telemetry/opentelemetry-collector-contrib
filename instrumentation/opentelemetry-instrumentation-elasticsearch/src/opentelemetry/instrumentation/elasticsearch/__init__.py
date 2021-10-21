@@ -33,9 +33,6 @@ Usage
     es.index(index='my-index', doc_type='my-type', id=1, body={'my': 'data', 'timestamp': datetime.now()})
     es.get(index='my-index', doc_type='my-type', id=1)
 
-API
----
-
 Elasticsearch instrumentation prefixes operation names with the string "Elasticsearch". This
 can be changed to a different string by either setting the `OTEL_PYTHON_ELASTICSEARCH_NAME_PREFIX`
 environment variable or by passing the prefix as an argument to the instrumentor. For example,
@@ -79,6 +76,9 @@ for example:
     es = elasticsearch.Elasticsearch()
     es.index(index='my-index', doc_type='my-type', id=1, body={'my': 'data', 'timestamp': datetime.now()})
     es.get(index='my-index', doc_type='my-type', id=1)
+
+API
+---
 """
 
 import re

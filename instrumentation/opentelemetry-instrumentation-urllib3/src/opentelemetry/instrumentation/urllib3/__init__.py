@@ -34,8 +34,11 @@ Usage
     http = urllib3.PoolManager()
     response = http.request("GET", "https://www.example.org/")
 
-Hooks
-*******
+Configuration
+-------------
+
+Request/Response hooks
+**********************
 
 The urllib3 instrumentation supports extending tracing behavior with the help of
 request and response hooks. These are functions that are called back by the instrumentation

@@ -74,6 +74,21 @@ For example:
     # use your config as normal.
     config.add_route('index', '/')
 
+Configuration
+-------------
+
+Exclude lists
+*************
+To exclude certain URLs from being tracked, set the environment variable ``OTEL_PYTHON_PYRAMID_EXCLUDED_URLS`` with comma delimited regexes representing which URLs to exclude.
+
+For example,
+
+::
+
+    export OTEL_PYTHON_PYRAMID_EXCLUDED_URLS="client/.*/info,healthcheck"
+
+will exclude requests such as ``https://site/client/123/info`` and ``https://site/xyz/healthcheck``.
+
 API
 ---
 """

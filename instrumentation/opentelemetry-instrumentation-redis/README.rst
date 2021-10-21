@@ -15,7 +15,6 @@ Installation
 
     pip install opentelemetry-instrumentation-redis
 
-
 References
 ----------
 

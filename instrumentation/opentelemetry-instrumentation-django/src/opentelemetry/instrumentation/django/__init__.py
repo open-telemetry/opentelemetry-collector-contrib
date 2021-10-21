@@ -71,6 +71,12 @@ and right before the span is finished while processing a response. The hooks can
         pass
 
     DjangoInstrumentation().instrument(request_hook=request_hook, response_hook=response_hook)
+
+Django Request object: https://docs.djangoproject.com/en/3.1/ref/request-response/#httprequest-objects
+Django Response object: https://docs.djangoproject.com/en/3.1/ref/request-response/#httpresponse-objects
+
+API
+---
 """
 
 from logging import getLogger

@@ -16,6 +16,32 @@ Installation
 
      pip install opentelemetry-instrumentation-urllib3
 
+Configuration
+-------------
+
+Request/Response hooks
+**********************
+
+The urllib3 instrumentation supports extending tracing behavior with the help of
+request and response hooks. These are functions that are called back by the instrumentation
+right after a Span is created for a request and right before the span is finished processing a response respectively.
+The hooks can be configured as follows:
+
+.. code:: python
+
+    # `request` is an instance of urllib3.connectionpool.HTTPConnectionPool
+    def request_hook(span, request):
+        pass
+
+    # `request` is an instance of urllib3.connectionpool.HTTPConnectionPool
+    # `response` is an instance of urllib3.response.HTTPResponse
+    def response_hook(span, request, response):
+        pass
+
+    URLLib3Instrumentor.instrument(
+        request_hook=request_hook, response_hook=response_hook)
+    )
+
 References
 ----------
 

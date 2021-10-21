@@ -32,8 +32,11 @@ Usage
     req = request.Request('https://postman-echo.com/post', method="POST")
     r = request.urlopen(req)
 
-Hooks
-*******
+Configuration
+-------------
+
+Request/Response hooks
+**********************
 
 The urllib instrumentation supports extending tracing behavior with the help of
 request and response hooks. These are functions that are called back by the instrumentation

@@ -17,7 +17,6 @@ Installation
 
     pip install opentelemetry-instrumentation-wsgi
 
-
 References
 ----------
 
