@@ -15,8 +15,9 @@
 package k8seventsreceiver
 
 import (
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 	"go.opentelemetry.io/collector/config"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 )
 
 // Config defines configuration for kubernetes events receiver.
