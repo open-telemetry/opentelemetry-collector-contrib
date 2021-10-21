@@ -23,6 +23,7 @@ import (
 	agenttracepb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/trace/v1"
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	"go.opentelemetry.io/collector/client"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
@@ -46,7 +47,7 @@ type Receiver struct {
 }
 
 // New creates a new opencensus.Receiver reference.
-func New(id config.ComponentID, nextConsumer consumer.Traces) (*Receiver, error) {
+func New(id config.ComponentID, nextConsumer consumer.Traces, set component.ReceiverCreateSettings) (*Receiver, error) {
 	if nextConsumer == nil {
 		return nil, componenterror.ErrNilNextConsumer
 	}
@@ -54,7 +55,12 @@ func New(id config.ComponentID, nextConsumer consumer.Traces) (*Receiver, error)
 	return &Receiver{
 		nextConsumer: nextConsumer,
 		id:           id,
-		obsrecv:      obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverID: id, Transport: receiverTransport, LongLivedCtx: true}),
+		obsrecv: obsreport.NewReceiver(obsreport.ReceiverSettings{
+			ReceiverID:             id,
+			Transport:              receiverTransport,
+			LongLivedCtx:           true,
+			ReceiverCreateSettings: set,
+		}),
 	}, nil
 }
 

@@ -5,6 +5,7 @@ processors:
   routing:
     default_exporters:
     - otlp
+    attribute_source: context
     from_attribute: X-Tenant
     table:
     - value: acme

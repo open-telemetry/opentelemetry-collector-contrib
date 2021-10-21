@@ -24,6 +24,7 @@ import (
 
 func TestBuildCounterMetric(t *testing.T) {
 	timeNow := time.Now()
+	lastUpdateInterval := timeNow.Add(-1 * time.Minute)
 	metricDescription := statsDMetricdescription{
 		name: "testCounter",
 	}
@@ -35,16 +36,17 @@ func TestBuildCounterMetric(t *testing.T) {
 		labelValues: []string{"myvalue"},
 	}
 	isMonotonicCounter := false
-	metric := buildCounterMetric(parsedMetric, isMonotonicCounter, timeNow)
+	metric := buildCounterMetric(parsedMetric, isMonotonicCounter, timeNow, lastUpdateInterval)
 	expectedMetrics := pdata.NewInstrumentationLibraryMetrics()
 	expectedMetric := expectedMetrics.Metrics().AppendEmpty()
 	expectedMetric.SetName("testCounter")
 	expectedMetric.SetUnit("meter")
 	expectedMetric.SetDataType(pdata.MetricDataTypeSum)
 	expectedMetric.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityDelta)
-	expectedMetric.Sum().SetIsMonotonic(true)
+	expectedMetric.Sum().SetIsMonotonic(isMonotonicCounter)
 	dp := expectedMetric.Sum().DataPoints().AppendEmpty()
 	dp.SetIntVal(32)
+	dp.SetStartTimestamp(pdata.NewTimestampFromTime(lastUpdateInterval))
 	dp.SetTimestamp(pdata.NewTimestampFromTime(timeNow))
 	dp.Attributes().InsertString("mykey", "myvalue")
 	assert.Equal(t, metric, expectedMetrics)

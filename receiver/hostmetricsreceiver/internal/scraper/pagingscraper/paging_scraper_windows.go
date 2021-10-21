@@ -68,8 +68,9 @@ func (s *scraper) start(context.Context, component.Host) error {
 	return s.perfCounterScraper.Initialize(memory)
 }
 
-func (s *scraper) scrape(context.Context) (pdata.MetricSlice, error) {
-	metrics := pdata.NewMetricSlice()
+func (s *scraper) scrape(context.Context) (pdata.Metrics, error) {
+	md := pdata.NewMetrics()
+	metrics := md.ResourceMetrics().AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty().Metrics()
 
 	var errors scrapererror.ScrapeErrors
 
@@ -83,7 +84,7 @@ func (s *scraper) scrape(context.Context) (pdata.MetricSlice, error) {
 		errors.AddPartial(pagingMetricsLen, err)
 	}
 
-	return metrics, errors.Combine()
+	return md, errors.Combine()
 }
 
 func (s *scraper) scrapeAndAppendPagingUsageMetric(metrics pdata.MetricSlice) error {

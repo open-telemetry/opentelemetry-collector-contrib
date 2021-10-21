@@ -26,6 +26,8 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/obsreport/obsreporttest"
@@ -44,7 +46,7 @@ func TestNonUDPTransport(t *testing.T) {
 			Transport:          "tcp",
 			NumOfPollerToStart: 2,
 		},
-		zap.NewNop(),
+		componenttest.NewNopReceiverCreateSettings(),
 	)
 	assert.EqualError(t, err,
 		"X-Ray receiver only supports ingesting spans through UDP, provided: tcp")
@@ -57,7 +59,7 @@ func TestInvalidEndpoint(t *testing.T) {
 			Transport:          "udp",
 			NumOfPollerToStart: 2,
 		},
-		zap.NewNop(),
+		componenttest.NewNopReceiverCreateSettings(),
 	)
 	assert.EqualError(t, err, "address invalidAddr: missing port in address")
 }
@@ -77,7 +79,7 @@ func TestUDPPortUnavailable(t *testing.T) {
 			Endpoint:           address,
 			NumOfPollerToStart: 2,
 		},
-		zap.NewNop(),
+		componenttest.NewNopReceiverCreateSettings(),
 	)
 
 	assert.Error(t, err, "should have failed to create a new receiver")
@@ -96,7 +98,7 @@ func TestCloseStopsPoller(t *testing.T) {
 			Endpoint:           addr,
 			NumOfPollerToStart: 2,
 		},
-		zap.NewNop(),
+		componenttest.NewNopReceiverCreateSettings(),
 	)
 	assert.NoError(t, err, "poller should be created")
 
@@ -127,7 +129,7 @@ func TestSuccessfullyPollPacket(t *testing.T) {
 
 	receiverID := config.NewComponentID("TestSuccessfullyPollPacket")
 
-	addr, p, _ := createAndOptionallyStartPoller(t, receiverID, true)
+	addr, p, _ := createAndOptionallyStartPoller(t, receiverID, true, tt.ToReceiverCreateSettings())
 	defer p.Close()
 
 	randString, _ := uuid.NewRandom()
@@ -138,7 +140,11 @@ func TestSuccessfullyPollPacket(t *testing.T) {
 	assert.Eventuallyf(t, func() bool {
 		select {
 		case seg, open := <-p.(*poller).segChan:
-			obsrecv := obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverID: receiverID, Transport: Transport})
+			obsrecv := obsreport.NewReceiver(obsreport.ReceiverSettings{
+				ReceiverID:             receiverID,
+				Transport:              Transport,
+				ReceiverCreateSettings: tt.ToReceiverCreateSettings(),
+			})
 			ctx := obsrecv.StartMetricsOp(seg.Ctx)
 			obsrecv.EndTracesOp(ctx, awsxray.TypeStr, 1, nil)
 			return open && randString.String() == string(seg.Payload)
@@ -157,7 +163,7 @@ func TestIncompletePacketNoSeparator(t *testing.T) {
 
 	receiverID := config.NewComponentID("TestIncompletePacketNoSeparator")
 
-	addr, p, recordedLogs := createAndOptionallyStartPoller(t, receiverID, true)
+	addr, p, recordedLogs := createAndOptionallyStartPoller(t, receiverID, true, tt.ToReceiverCreateSettings())
 	defer p.Close()
 
 	rawData := []byte(`{"format": "json", "version": 1}`) // no separator
@@ -186,7 +192,7 @@ func TestIncompletePacketNoBody(t *testing.T) {
 
 	receiverID := config.NewComponentID("TestIncompletePacketNoBody")
 
-	addr, p, recordedLogs := createAndOptionallyStartPoller(t, receiverID, true)
+	addr, p, recordedLogs := createAndOptionallyStartPoller(t, receiverID, true, tt.ToReceiverCreateSettings())
 	defer p.Close()
 
 	rawData := []byte(`{"format": "json", "version": 1}` + "\n") // no body
@@ -210,7 +216,7 @@ func TestNonJsonHeader(t *testing.T) {
 
 	receiverID := config.NewComponentID("TestNonJsonHeader")
 
-	addr, p, recordedLogs := createAndOptionallyStartPoller(t, receiverID, true)
+	addr, p, recordedLogs := createAndOptionallyStartPoller(t, receiverID, true, tt.ToReceiverCreateSettings())
 	defer p.Close()
 
 	// the header (i.e. the portion before \n) is invalid
@@ -239,7 +245,7 @@ func TestJsonInvalidHeader(t *testing.T) {
 
 	receiverID := config.NewComponentID("TestJsonInvalidHeader")
 
-	addr, p, recordedLogs := createAndOptionallyStartPoller(t, receiverID, true)
+	addr, p, recordedLogs := createAndOptionallyStartPoller(t, receiverID, true, tt.ToReceiverCreateSettings())
 	defer p.Close()
 
 	randString, _ := uuid.NewRandom()
@@ -274,7 +280,7 @@ func TestSocketReadIrrecoverableNetError(t *testing.T) {
 
 	receiverID := config.NewComponentID("TestSocketReadIrrecoverableNetError")
 
-	_, p, recordedLogs := createAndOptionallyStartPoller(t, receiverID, false)
+	_, p, recordedLogs := createAndOptionallyStartPoller(t, receiverID, false, tt.ToReceiverCreateSettings())
 	// close the actual socket because we are going to mock it out below
 	p.(*poller).udpSock.Close()
 
@@ -309,7 +315,7 @@ func TestSocketReadTemporaryNetError(t *testing.T) {
 
 	receiverID := config.NewComponentID("TestSocketReadTemporaryNetError")
 
-	_, p, recordedLogs := createAndOptionallyStartPoller(t, receiverID, false)
+	_, p, recordedLogs := createAndOptionallyStartPoller(t, receiverID, false, tt.ToReceiverCreateSettings())
 	// close the actual socket because we are going to mock it out below
 	p.(*poller).udpSock.Close()
 
@@ -345,7 +351,7 @@ func TestSocketGenericReadError(t *testing.T) {
 
 	receiverID := config.NewComponentID("TestSocketGenericReadError")
 
-	_, p, recordedLogs := createAndOptionallyStartPoller(t, receiverID, false)
+	_, p, recordedLogs := createAndOptionallyStartPoller(t, receiverID, false, tt.ToReceiverCreateSettings())
 	// close the actual socket because we are going to mock it out below
 	p.(*poller).udpSock.Close()
 
@@ -422,17 +428,19 @@ func (m *mockSocketConn) Close() error { return nil }
 func createAndOptionallyStartPoller(
 	t *testing.T,
 	receiverID config.ComponentID,
-	start bool) (string, Poller, *observer.ObservedLogs) {
+	start bool,
+	set component.ReceiverCreateSettings) (string, Poller, *observer.ObservedLogs) {
 	addr, err := findAvailableAddress()
 	assert.NoError(t, err, "there should be address available")
 
 	logger, recorded := logSetup()
+	set.Logger = logger
 	poller, err := New(&Config{
 		ReceiverID:         receiverID,
 		Transport:          Transport,
 		Endpoint:           addr,
 		NumOfPollerToStart: 2,
-	}, logger)
+	}, set)
 	assert.NoError(t, err, "receiver should be created")
 
 	if start {

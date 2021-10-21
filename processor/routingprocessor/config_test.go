@@ -49,6 +49,7 @@ func TestLoadConfig(t *testing.T) {
 		&Config{
 			ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
 			DefaultExporters:  []string{"otlp"},
+			AttributeSource:   "context",
 			FromAttribute:     "X-Tenant",
 			Table: []RoutingTableItem{
 				{

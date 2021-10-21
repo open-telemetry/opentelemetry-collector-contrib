@@ -15,6 +15,7 @@
 package translator
 
 import (
+	"context"
 	"fmt"
 	"math"
 	"testing"
@@ -24,6 +25,24 @@ import (
 	"go.opentelemetry.io/collector/model/pdata"
 	"go.uber.org/zap"
 )
+
+var _ SketchConsumer = (*sketchConsumer)(nil)
+
+type sketchConsumer struct {
+	sk *quantile.Sketch
+}
+
+// ConsumeSketch implements the translator.Consumer interface.
+func (c *sketchConsumer) ConsumeSketch(
+	_ context.Context,
+	_ string,
+	_ uint64,
+	sketch *quantile.Sketch,
+	_ []string,
+	_ string,
+) {
+	c.sk = sketch
+}
 
 func TestHistogramSketches(t *testing.T) {
 	N := 1_000
@@ -85,12 +104,15 @@ func TestHistogramSketches(t *testing.T) {
 	defaultEps := 1.0 / 128.0
 	tol := 1e-8
 	cfg := quantile.Default()
+	ctx := context.Background()
 	tr := newTranslator(t, zap.NewNop())
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			p := fromCDF(test.cdf)
-			sk := tr.getSketchBuckets("test", 0, p, true, []string{}).Points[0].Sketch
+			consumer := &sketchConsumer{}
+			tr.getSketchBuckets(ctx, consumer, "test", 0, p, true, []string{}, "")
+			sk := consumer.sk
 
 			// Check the minimum is 0.0
 			assert.Equal(t, 0.0, sk.Quantile(cfg, 0))
@@ -175,11 +197,14 @@ func TestInfiniteBounds(t *testing.T) {
 		},
 	}
 
+	ctx := context.Background()
 	tr := newTranslator(t, zap.NewNop())
 	for _, testInstance := range tests {
 		t.Run(testInstance.name, func(t *testing.T) {
 			p := testInstance.getHist()
-			sk := tr.getSketchBuckets("test", 0, p, true, []string{}).Points[0].Sketch
+			consumer := &sketchConsumer{}
+			tr.getSketchBuckets(ctx, consumer, "test", 0, p, true, []string{}, "")
+			sk := consumer.sk
 			assert.InDelta(t, sk.Basic.Sum, p.Sum(), 1)
 			assert.Equal(t, uint64(sk.Basic.Cnt), p.Count())
 		})

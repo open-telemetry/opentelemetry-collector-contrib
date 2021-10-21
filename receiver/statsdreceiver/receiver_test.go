@@ -31,7 +31,6 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/model/pdata"
-	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver/transport"
@@ -73,7 +72,7 @@ func Test_statsdreceiver_New(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := New(zap.NewNop(), tt.args.config, tt.args.nextConsumer)
+			_, err := New(componenttest.NewNopReceiverCreateSettings(), tt.args.config, tt.args.nextConsumer)
 			assert.Equal(t, tt.wantErr, err)
 		})
 	}
@@ -83,7 +82,7 @@ func TestStatsdReceiver_Flush(t *testing.T) {
 	ctx := context.Background()
 	cfg := createDefaultConfig().(*Config)
 	nextConsumer := consumertest.NewNop()
-	rcv, err := New(zap.NewNop(), *cfg, nextConsumer)
+	rcv, err := New(componenttest.NewNopReceiverCreateSettings(), *cfg, nextConsumer)
 	assert.NoError(t, err)
 	r := rcv.(*statsdReceiver)
 	var metrics = pdata.NewMetrics()
@@ -128,7 +127,7 @@ func Test_statsdreceiver_EndToEnd(t *testing.T) {
 			cfg := tt.configFn()
 			cfg.NetAddr.Endpoint = addr
 			sink := new(consumertest.MetricsSink)
-			rcv, err := New(zap.NewNop(), *cfg, sink)
+			rcv, err := New(componenttest.NewNopReceiverCreateSettings(), *cfg, sink)
 			require.NoError(t, err)
 			r := rcv.(*statsdReceiver)
 

@@ -77,7 +77,7 @@ func TestScraperFailedStart(t *testing.T) {
 	sc := newHttpdScraper(zap.NewNop(), &Config{
 		HTTPClientSettings: confighttp.HTTPClientSettings{
 			Endpoint: "localhost:8080",
-			TLSSetting: &configtls.TLSClientSetting{
+			TLSSetting: configtls.TLSClientSetting{
 				TLSSetting: configtls.TLSSetting{
 					CAFile: "/non/existent",
 				},

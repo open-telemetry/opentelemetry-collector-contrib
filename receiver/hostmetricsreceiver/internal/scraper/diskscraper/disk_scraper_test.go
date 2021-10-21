@@ -95,14 +95,15 @@ func TestScrape(t *testing.T) {
 			}
 			require.NoError(t, err, "Failed to initialize disk scraper: %v", err)
 
-			metrics, err := scraper.scrape(context.Background())
+			md, err := scraper.scrape(context.Background())
 			require.NoError(t, err, "Failed to scrape metrics: %v", err)
 
 			if !test.expectMetrics {
-				assert.Equal(t, 0, metrics.Len())
+				assert.Equal(t, 0, md.MetricCount())
 				return
 			}
 
+			metrics := md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics()
 			assert.Equal(t, metricsLen, metrics.Len())
 
 			assertInt64DiskMetricValid(t, metrics.At(0), metadata.Metrics.SystemDiskIo.New(), test.expectedStartTime)

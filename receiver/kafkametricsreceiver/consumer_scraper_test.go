@@ -60,9 +60,9 @@ func TestConsumerScraper_createConsumerScraper(t *testing.T) {
 	sc := sarama.NewConfig()
 	newSaramaClient = mockNewSaramaClient
 	newClusterAdmin = mockNewClusterAdmin
-	ms, err := createConsumerScraper(context.Background(), Config{}, sc, zap.NewNop())
+	cs, err := createConsumerScraper(context.Background(), Config{}, sc, zap.NewNop())
 	assert.NoError(t, err)
-	assert.NotNil(t, ms)
+	assert.NotNil(t, cs)
 }
 
 func TestConsumerScraper_startScraper_handles_client_error(t *testing.T) {
@@ -70,10 +70,10 @@ func TestConsumerScraper_startScraper_handles_client_error(t *testing.T) {
 		return nil, fmt.Errorf("new client failed")
 	}
 	sc := sarama.NewConfig()
-	ms, err := createConsumerScraper(context.Background(), Config{}, sc, zap.NewNop())
-	assert.NotNil(t, ms)
-	assert.Nil(t, err)
-	err = ms.Start(context.Background(), nil)
+	cs, err := createConsumerScraper(context.Background(), Config{}, sc, zap.NewNop())
+	assert.NoError(t, err)
+	assert.NotNil(t, cs)
+	err = cs.Start(context.Background(), nil)
 	assert.Error(t, err)
 }
 
@@ -88,10 +88,10 @@ func TestConsumerScraper_startScraper_handles_clusterAdmin_error(t *testing.T) {
 		return nil, fmt.Errorf("new cluster admin failed")
 	}
 	sc := sarama.NewConfig()
-	ms, err := createConsumerScraper(context.Background(), Config{}, sc, zap.NewNop())
-	assert.Nil(t, err)
-	assert.NotNil(t, ms)
-	err = ms.Start(context.Background(), nil)
+	cs, err := createConsumerScraper(context.Background(), Config{}, sc, zap.NewNop())
+	assert.NoError(t, err)
+	assert.NotNil(t, cs)
+	err = cs.Start(context.Background(), nil)
 	assert.Error(t, err)
 }
 
@@ -99,10 +99,10 @@ func TestConsumerScraperStart(t *testing.T) {
 	newSaramaClient = mockNewSaramaClient
 	newClusterAdmin = mockNewClusterAdmin
 	sc := sarama.NewConfig()
-	ms, err := createConsumerScraper(context.Background(), Config{}, sc, zap.NewNop())
-	assert.Nil(t, err)
-	assert.NotNil(t, ms)
-	err = ms.Start(context.Background(), nil)
+	cs, err := createConsumerScraper(context.Background(), Config{}, sc, zap.NewNop())
+	assert.NoError(t, err)
+	assert.NotNil(t, cs)
+	err = cs.Start(context.Background(), nil)
 	assert.NoError(t, err)
 }
 
@@ -110,22 +110,22 @@ func TestConsumerScraper_createScraper_handles_invalid_topic_match(t *testing.T)
 	newSaramaClient = mockNewSaramaClient
 	newClusterAdmin = mockNewClusterAdmin
 	sc := sarama.NewConfig()
-	ms, err := createConsumerScraper(context.Background(), Config{
+	cs, err := createConsumerScraper(context.Background(), Config{
 		TopicMatch: "[",
 	}, sc, zap.NewNop())
 	assert.Error(t, err)
-	assert.Nil(t, ms)
+	assert.Nil(t, cs)
 }
 
 func TestConsumerScraper_createScraper_handles_invalid_group_match(t *testing.T) {
 	newSaramaClient = mockNewSaramaClient
 	newClusterAdmin = mockNewClusterAdmin
 	sc := sarama.NewConfig()
-	ms, err := createConsumerScraper(context.Background(), Config{
+	cs, err := createConsumerScraper(context.Background(), Config{
 		GroupMatch: "[",
 	}, sc, zap.NewNop())
 	assert.Error(t, err)
-	assert.Nil(t, ms)
+	assert.Nil(t, cs)
 }
 
 func TestConsumerScraper_scrape(t *testing.T) {
@@ -137,9 +137,9 @@ func TestConsumerScraper_scrape(t *testing.T) {
 		topicFilter:  filter,
 		groupFilter:  filter,
 	}
-	ms, err := cs.scrape(context.Background())
+	md, err := cs.scrape(context.Background())
 	assert.NoError(t, err)
-	assert.NotNil(t, ms)
+	assert.NotNil(t, md)
 }
 
 func TestConsumerScraper_scrape_handlesListTopicError(t *testing.T) {
@@ -201,8 +201,7 @@ func TestConsumerScraper_scrape_handlesOffsetPartialError(t *testing.T) {
 		topicFilter:  filter,
 		clusterAdmin: clusterAdmin,
 	}
-	s, err := cs.scrape(context.Background())
-	assert.NotNil(t, s)
+	_, err := cs.scrape(context.Background())
 	assert.Error(t, err)
 }
 
@@ -219,7 +218,6 @@ func TestConsumerScraper_scrape_handlesPartitionPartialError(t *testing.T) {
 		topicFilter:  filter,
 		clusterAdmin: clusterAdmin,
 	}
-	s, err := cs.scrape(context.Background())
-	assert.NotNil(t, s)
+	_, err := cs.scrape(context.Background())
 	assert.Error(t, err)
 }

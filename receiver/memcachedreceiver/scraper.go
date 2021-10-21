@@ -20,10 +20,10 @@ import (
 
 	"github.com/grobie/gomemcache/memcache"
 	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/receiver/scraperhelper"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/memcachedreceiver/internal/metadata"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/scraperhelper"
 )
 
 type memcachedScraper struct {
@@ -36,15 +36,15 @@ type memcachedScraper struct {
 func newMemcachedScraper(
 	logger *zap.Logger,
 	config *Config,
-) scraperhelper.Scraper {
+) (scraperhelper.Scraper, error) {
 	ms := &memcachedScraper{
 		logger: logger,
 		config: config,
 	}
-	return scraperhelper.NewResourceMetricsScraper(config.ID(), ms.scrape)
+	return scraperhelper.NewScraper(typeStr, ms.scrape)
 }
 
-func (r *memcachedScraper) scrape(_ context.Context) (pdata.ResourceMetricsSlice, error) {
+func (r *memcachedScraper) scrape(_ context.Context) (pdata.Metrics, error) {
 	// Init client in scrape method in case there are transient errors in the
 	// constructor.
 	if r.client == nil {
@@ -52,7 +52,7 @@ func (r *memcachedScraper) scrape(_ context.Context) (pdata.ResourceMetricsSlice
 		r.client, err = memcache.New(r.config.Endpoint)
 		if err != nil {
 			r.client = nil
-			return pdata.ResourceMetricsSlice{}, err
+			return pdata.Metrics{}, err
 		}
 
 		r.client.Timeout = r.config.Timeout
@@ -61,12 +61,12 @@ func (r *memcachedScraper) scrape(_ context.Context) (pdata.ResourceMetricsSlice
 	stats, err := r.client.Stats()
 	if err != nil {
 		r.logger.Error("Failed to fetch memcached stats", zap.Error(err))
-		return pdata.ResourceMetricsSlice{}, err
+		return pdata.Metrics{}, err
 	}
 
 	now := pdata.NewTimestampFromTime(time.Now())
-	metrics := pdata.NewResourceMetricsSlice()
-	ilm := metrics.AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty()
+	md := pdata.NewMetrics()
+	ilm := md.ResourceMetrics().AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty()
 	ilm.InstrumentationLibrary().SetName("otelcol/memcached")
 
 	for _, stats := range stats {
@@ -86,7 +86,7 @@ func (r *memcachedScraper) scrape(_ context.Context) (pdata.ResourceMetricsSlice
 		}
 	}
 
-	return metrics, nil
+	return md, nil
 }
 
 func addIntGauge(metrics pdata.MetricSlice, initFunc func(pdata.Metric), now pdata.Timestamp, value int64) {

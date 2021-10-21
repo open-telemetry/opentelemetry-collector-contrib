@@ -10,7 +10,7 @@
           "metrics": [
             {
               "name": "httpd.uptime",
-              "description": "The amount of time that the server has been running in seconds",
+              "description": "The amount of time that the server has been running in seconds.",
               "unit": "s",
               "sum": {
                 "dataPoints": [
@@ -33,7 +33,7 @@
             },
             {
               "name": "httpd.current_connections",
-              "description": "The number of active connections currently attached to the HTTP server",
+              "description": "The number of active connections currently attached to the HTTP server.",
               "unit": "connections",
               "sum": {
                 "dataPoints": [
@@ -56,7 +56,7 @@
             },
             {
               "name": "httpd.workers",
-              "description": "The number of workers currently attached to the HTTP server",
+              "description": "The number of workers currently attached to the HTTP server.",
               "unit": "connections",
               "sum": {
                 "dataPoints": [
@@ -103,7 +103,7 @@
             },
             {
               "name": "httpd.requests",
-              "description": "The number of requests serviced by the HTTP server per second",
+              "description": "The number of requests serviced by the HTTP server per second.",
               "unit": "1",
               "sum": {
                 "dataPoints": [
@@ -126,7 +126,7 @@
             },
             {
               "name": "httpd.traffic",
-              "description": "Total HTTP server traffic",
+              "description": "Total HTTP server traffic.",
               "unit": "By",
               "sum": {
                 "dataPoints": [
@@ -149,7 +149,7 @@
             },
             {
               "name": "httpd.scoreboard",
-              "description": "The number of connections in each state",
+              "description": "The number of connections in each state.",
               "unit": "scoreboard",
               "sum": {
                 "dataPoints": [

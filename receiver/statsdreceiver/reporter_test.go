@@ -22,7 +22,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/obsreport/obsreporttest"
-	"go.uber.org/zap"
 )
 
 func TestReporterObservability(t *testing.T) {
@@ -31,7 +30,7 @@ func TestReporterObservability(t *testing.T) {
 	defer tt.Shutdown(context.Background())
 
 	receiverID := config.NewComponentIDWithName(typeStr, "fake_receiver")
-	reporter := newReporter(receiverID, zap.NewNop())
+	reporter := newReporter(receiverID, tt.ToReceiverCreateSettings())
 
 	ctx := reporter.OnDataReceived(context.Background())
 
