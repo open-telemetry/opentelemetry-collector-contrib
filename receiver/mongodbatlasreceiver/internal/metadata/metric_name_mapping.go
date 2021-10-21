@@ -320,6 +320,12 @@ var metricNameMapping = map[string]metricMappingData{
 	"DB_DATA_SIZE_TOTAL": {"process.db.storage", map[string]pdata.AttributeValue{
 		"status": pdata.NewAttributeValueString("data_size_total"),
 	}},
+	"DB_INDEX_SIZE_TOTAL": {"process.db.storage", map[string]pdata.AttributeValue{
+		"status": pdata.NewAttributeValueString("index_size_total"),
+	}},
+	"DB_DATA_SIZE_TOTAL_WO_SYSTEM": {"process.db.storage", map[string]pdata.AttributeValue{
+		"status": pdata.NewAttributeValueString("data_size_total_wo_system"),
+	}},
 
 	// Rate of database operations on a MongoDB process since the process last started found in the opcounters document that the serverStatus command collects.
 	// sfx: opcounter.command
@@ -469,6 +475,10 @@ var metricNameMapping = map[string]metricMappingData{
 		"status":      pdata.NewAttributeValueString("nice"),
 		"aggregation": pdata.NewAttributeValueString("avg"),
 	}},
+	"MAX_SYSTEM_CPU_NICE": {"system.cpu.usage", map[string]pdata.AttributeValue{
+		"status":      pdata.NewAttributeValueString("nice"),
+		"aggregation": pdata.NewAttributeValueString("max"),
+	}},
 	// sfx: system.cpu.iowait
 	"SYSTEM_CPU_IOWAIT": {"system.cpu.usage", map[string]pdata.AttributeValue{
 		"status":      pdata.NewAttributeValueString("iowait"),
@@ -529,6 +539,10 @@ var metricNameMapping = map[string]metricMappingData{
 	// sfx: skipped
 	"MAX_SYSTEM_NORMALIZED_CPU_USER": {"system.cpu.normalized.usage", map[string]pdata.AttributeValue{
 		"status":      pdata.NewAttributeValueString("user"),
+		"aggregation": pdata.NewAttributeValueString("max"),
+	}},
+	"MAX_SYSTEM_NORMALIZED_CPU_NICE": {"system.cpu.normalized.usage", map[string]pdata.AttributeValue{
+		"status":      pdata.NewAttributeValueString("nice"),
 		"aggregation": pdata.NewAttributeValueString("max"),
 	}},
 	// sfx: system.normalized.cpu.kernel
@@ -727,12 +741,15 @@ var metricNameMapping = map[string]metricMappingData{
 
 	// Memory usage, in bytes, that Atlas Search processes use.
 	// sfx: skipped
-	"FTS_MEMORY_RESIDENT": {"system.fts.memory.usage", map[string]pdata.AttributeValue{
+	"FTS_PROCESS_RESIDENT_MEMORY": {"system.fts.memory.usage", map[string]pdata.AttributeValue{
 		"state": pdata.NewAttributeValueString("resident"),
 	}},
 	// sfx: skipped
-	"FTS_MEMORY_VIRTUAL": {"system.fts.memory.usage", map[string]pdata.AttributeValue{
+	"FTS_PROCESS_VIRTUAL_MEMORY": {"system.fts.memory.usage", map[string]pdata.AttributeValue{
 		"state": pdata.NewAttributeValueString("virtual"),
+	}},
+	"FTS_PROCESS_SHARED_MEMORY": {"system.fts.memory.usage", map[string]pdata.AttributeValue{
+		"state": pdata.NewAttributeValueString("shared"),
 	}},
 	// sfx: skipped
 	"FTS_MEMORY_MAPPED": {"system.fts.memory.usage", map[string]pdata.AttributeValue{
@@ -741,7 +758,7 @@ var metricNameMapping = map[string]metricMappingData{
 
 	// Disk space, in bytes, that Atlas Search indexes use.
 	// sfx: skipped
-	"FTS_DISK_UTILIZATION": {"system.fts.disk.utilization", map[string]pdata.AttributeValue{
+	"FTS_DISK_USAGE": {"system.fts.disk.utilization", map[string]pdata.AttributeValue{
 		"status": pdata.NewAttributeValueString("used"),
 	}},
 
@@ -755,11 +772,11 @@ var metricNameMapping = map[string]metricMappingData{
 		"status": pdata.NewAttributeValueString("kernel"),
 	}},
 	// sfx: skipped
-	"FTS_PROCESS_NORMAILIZED_CPU_USER": {"system.fts.cpu.normalized.usage", map[string]pdata.AttributeValue{
+	"FTS_PROCESS_NORMALIZED_CPU_USER": {"system.fts.cpu.normalized.usage", map[string]pdata.AttributeValue{
 		"status": pdata.NewAttributeValueString("user"),
 	}},
 	// sfx: skipped
-	"FTS_PROCESS_NORMAILIZED_CPU_KERNEL": {"system.fts.cpu.normalized.usage", map[string]pdata.AttributeValue{
+	"FTS_PROCESS_NORMALIZED_CPU_KERNEL": {"system.fts.cpu.normalized.usage", map[string]pdata.AttributeValue{
 		"status": pdata.NewAttributeValueString("kernel"),
 	}},
 
@@ -910,15 +927,15 @@ var metricNameMapping = map[string]metricMappingData{
 		"type": pdata.NewAttributeValueString("object"),
 	}},
 	// sfx: skipped
-	"DATABASE_AVERAGE_STORAGE_SIZE": {"db.size", map[string]pdata.AttributeValue{
+	"DATABASE_STORAGE_SIZE": {"db.size", map[string]pdata.AttributeValue{
 		"type": pdata.NewAttributeValueString("storage"),
 	}},
 	// sfx: skipped
-	"DATABASE_AVERAGE_INDEX_SIZE": {"db.size", map[string]pdata.AttributeValue{
+	"DATABASE_INDEX_SIZE": {"db.size", map[string]pdata.AttributeValue{
 		"type": pdata.NewAttributeValueString("index"),
 	}},
 	// sfx: skipped
-	"DATABASE_AVERAGE_DATA_SIZE": {"db.size", map[string]pdata.AttributeValue{
+	"DATABASE_DATA_SIZE": {"db.size", map[string]pdata.AttributeValue{
 		"type": pdata.NewAttributeValueString("data"),
 	}},
 }
@@ -971,10 +988,16 @@ func MeasurementsToMetric(meas *mongodbatlas.Measurements, buildUnrecognized boo
 	switch m.DataType() {
 	case pdata.MetricDataTypeGauge:
 		datapoints := m.Gauge().DataPoints()
-		addDataPoints(datapoints, meas, attrs)
+		err := addDataPoints(datapoints, meas, attrs)
+		if err != nil {
+			return nil, err
+		}
 	case pdata.MetricDataTypeSum:
 		datapoints := m.Sum().DataPoints()
-		addDataPoints(datapoints, meas, attrs)
+		err := addDataPoints(datapoints, meas, attrs)
+		if err != nil {
+			return nil, err
+		}
 	default:
 		return nil, fmt.Errorf("unrecognized data type for metric '%s'", meas.Name)
 	}
@@ -982,14 +1005,13 @@ func MeasurementsToMetric(meas *mongodbatlas.Measurements, buildUnrecognized boo
 	return &m, nil
 }
 
-func addDataPoints(datapoints pdata.NumberDataPointSlice, meas *mongodbatlas.Measurements, attrs map[string]pdata.AttributeValue) {
+func addDataPoints(datapoints pdata.NumberDataPointSlice, meas *mongodbatlas.Measurements, attrs map[string]pdata.AttributeValue) error {
 	for _, point := range meas.DataPoints {
 		if point.Value != nil {
 			dp := datapoints.AppendEmpty()
 			curTime, err := time.Parse(time.RFC3339, point.Timestamp)
-			// FIXME: handle this error
 			if err != nil {
-				break
+				return err
 			}
 			for k, v := range attrs {
 				dp.Attributes().Upsert(k, v)
@@ -998,4 +1020,5 @@ func addDataPoints(datapoints pdata.NumberDataPointSlice, meas *mongodbatlas.Mea
 			dp.SetDoubleVal(float64(*point.Value))
 		}
 	}
+	return nil
 }

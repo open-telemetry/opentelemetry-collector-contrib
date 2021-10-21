@@ -21,9 +21,8 @@ import (
 	"github.com/mongodb-forks/digest"
 	"github.com/pkg/errors"
 	"go.mongodb.org/atlas/mongodbatlas"
-	"go.uber.org/zap"
-
 	"go.opentelemetry.io/collector/model/pdata"
+	"go.uber.org/zap"
 )
 
 // MongoDBAtlasClient wraps the official MongoDB Atlas client to manage pagination

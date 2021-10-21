@@ -17,10 +17,10 @@ package internal
 import (
 	"errors"
 
+	"github.com/hashicorp/go-multierror"
 	"go.mongodb.org/atlas/mongodbatlas"
 	"go.opentelemetry.io/collector/model/pdata"
 
-	"github.com/hashicorp/go-multierror"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbatlasreceiver/internal/metadata"
 )
 
@@ -44,5 +44,8 @@ func processMeasurements(
 			}
 		}
 	}
-	return metricSlice, multierror.Append(errors.New("errors occurred while processing measurements"), allErrors...)
+	if len(allErrors) > 0 {
+		return metricSlice, multierror.Append(errors.New("errors occurred while processing measurements"), allErrors...)
+	}
+	return metricSlice, nil
 }
