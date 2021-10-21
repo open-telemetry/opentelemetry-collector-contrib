@@ -15,18 +15,17 @@
 package datadogreceiver
 
 import (
+	"encoding/binary"
 	"encoding/json"
 	"fmt"
-	"github.com/DataDog/datadog-agent/pkg/trace/exportable/pb"
-	"github.com/tinylib/msgp/msgp"
-	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/translator/conventions"
-	tracetranslator "go.opentelemetry.io/collector/translator/trace"
-
 	"mime"
 	"net/http"
-	"strconv"
 	"strings"
+
+	"github.com/DataDog/datadog-agent/pkg/trace/exportable/pb"
+	"github.com/tinylib/msgp/msgp"
+	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/model/semconv/v1.6.1"
 )
 
 func ToTraces(traces pb.Traces, req *http.Request) pdata.Traces {
@@ -35,38 +34,36 @@ func ToTraces(traces pb.Traces, req *http.Request) pdata.Traces {
 	resAttributes := resSpans.Resource().Attributes()
 	ils := resSpans.InstrumentationLibrarySpans().AppendEmpty()
 
-	resAttributes.InsertString(conventions.AttributeServiceName, traces[0][0].Service)
+	resAttributes.InsertString(semconv.AttributeServiceName, traces[0][0].Service)
 	for _, trace := range traces {
 		for _, span := range trace {
 			newSpan := ils.Spans().AppendEmpty() // TODO: Might be more efficient to resize spans and then populate it
-			newSpan.SetTraceID(tracetranslator.UInt64ToTraceID(0, span.TraceID))
-			newSpan.SetSpanID(tracetranslator.UInt64ToSpanID(span.SpanID))
+
+			newSpan.SetTraceID(UInt64ToTraceID(0, span.TraceID))
+			newSpan.SetSpanID(UInt64ToSpanID(span.SpanID))
 			newSpan.SetStartTimestamp(pdata.Timestamp(span.Start))
 			newSpan.SetEndTimestamp(pdata.Timestamp(span.Start + span.Duration))
-			newSpan.SetParentSpanID(tracetranslator.UInt64ToSpanID(span.ParentID))
+			newSpan.SetParentSpanID(UInt64ToSpanID(span.ParentID))
 			newSpan.SetName(span.Name)
-			newSpan.Attributes().InsertString(conventions.AttributeServiceName, span.Service)
+			newSpan.Attributes().InsertString(semconv.AttributeServiceName, span.Service)
+			newSpan.Status().SetCode(pdata.StatusCodeOk)
 
-			if val, ok := span.GetMeta()[conventions.AttributeHTTPStatusCode]; ok {
-				code, _ := strconv.Atoi(val)
-				newSpan.Status().SetCode(tracetranslator.StatusCodeFromHTTP(code))
-			}
 			for k, v := range span.GetMeta() {
 				newSpan.Attributes().InsertString(k, v)
 			}
 			if span.Error > 0 {
 				_, errorExists := newSpan.Attributes().Get("error")
 				if errorExists == false {
-					newSpan.Attributes().InsertInt("error", int64(span.Error))
+					newSpan.Status().SetCode(pdata.StatusCodeError)
 				}
 			}
 			switch span.Type {
 			case "web":
-				newSpan.SetKind(pdata.SpanKindSERVER)
+				newSpan.SetKind(pdata.SpanKindServer)
 			case "client":
-				newSpan.SetKind(pdata.SpanKindCLIENT)
+				newSpan.SetKind(pdata.SpanKindClient)
 			default:
-				newSpan.SetKind(pdata.SpanKindUNSPECIFIED)
+				newSpan.SetKind(pdata.SpanKindUnspecified)
 			}
 
 		}
@@ -113,4 +110,17 @@ func getMediaType(req *http.Request) string {
 		return "application/json"
 	}
 	return mt
+}
+
+func UInt64ToTraceID(high, low uint64) pdata.TraceID {
+	traceID := [16]byte{}
+	binary.BigEndian.PutUint64(traceID[:8], high)
+	binary.BigEndian.PutUint64(traceID[8:], low)
+	return pdata.NewTraceID(traceID)
+}
+
+func UInt64ToSpanID(id uint64) pdata.SpanID {
+	spanID := [8]byte{}
+	binary.BigEndian.PutUint64(spanID[:], id)
+	return pdata.NewSpanID(spanID)
 }

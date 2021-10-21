@@ -39,7 +39,7 @@ func NewFactory() component.ReceiverFactory {
 
 func createDefaultConfig() config.Receiver {
 	return &Config{
-		ReceiverSettings: config.NewReceiverSettings(config.NewID(typeStr)),
+		ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
 		HTTPServerSettings: confighttp.HTTPServerSettings{
 			Endpoint: "0.0.0.0:8126",
 		},
@@ -49,7 +49,7 @@ func createDefaultConfig() config.Receiver {
 
 func createTracesReceiver(
 	_ context.Context,
-	params component.ReceiverCreateParams,
+	params component.ReceiverCreateSettings,
 	cfg config.Receiver,
 	nextConsumer consumer.Traces,
 ) (component.TracesReceiver, error) {

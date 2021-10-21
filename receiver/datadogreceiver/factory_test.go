@@ -16,20 +16,18 @@ package datadogreceiver
 
 import (
 	"context"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.uber.org/zap"
 )
 
 func TestCreateReceiver(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
-	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
-	tReceiver, err := factory.CreateTracesReceiver(context.Background(), params, cfg, consumertest.NewNop())
+	tReceiver, err := factory.CreateTracesReceiver(context.Background(), componenttest.NewNopReceiverCreateSettings(), cfg, consumertest.NewNop())
 	assert.NoError(t, err)
 	assert.NotNil(t, tReceiver, "receiver creation failed")
 }

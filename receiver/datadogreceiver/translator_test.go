@@ -77,8 +77,10 @@ func BenchmarkTranslator(b *testing.B) {
 	b.ResetTimer()
 	b.ReportAllocs()
 	b.SetBytes(int64(len(payload)))
+	b.StartTimer()
 	req := &http.Request{RequestURI: "/v0.5/traces"}
 	for i := 0; i < b.N; i++ {
 		ToTraces(traces, req)
 	}
+	b.StopTimer()
 }

@@ -19,22 +19,20 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.uber.org/zap"
 )
 
 func TestDatadogReceiver_Lifecycle(t *testing.T) {
 
 	ddr, err := newDataDogReceiver(&Config{
-		ReceiverSettings: config.NewReceiverSettings(config.NewID("datadog")),
+		ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
 		HTTPServerSettings: confighttp.HTTPServerSettings{
 			Endpoint: "0.0.0.0:8126",
 		},
-	}, consumertest.NewNop(), component.ReceiverCreateParams{Logger: zap.NewNop()})
+	}, consumertest.NewNop(), componenttest.NewNopReceiverCreateSettings())
 
 	assert.NoError(t, err, "Receiver should be created")
 
@@ -43,5 +41,4 @@ func TestDatadogReceiver_Lifecycle(t *testing.T) {
 
 	err = ddr.Shutdown(context.Background())
 	assert.NoError(t, err, "Server should stop")
-
 }
