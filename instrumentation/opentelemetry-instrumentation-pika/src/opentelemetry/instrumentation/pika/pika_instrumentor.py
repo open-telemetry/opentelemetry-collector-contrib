@@ -12,11 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 from logging import getLogger
-from typing import Any, Callable, Collection, Dict, Optional
+from typing import Any, Collection, Dict, Optional
 
 import wrapt
 from pika.adapters import BlockingConnection
-from pika.channel import Channel
+from pika.adapters.blocking_connection import BlockingChannel
 
 from opentelemetry import trace
 from opentelemetry.instrumentation.instrumentor import BaseInstrumentor
@@ -35,18 +35,25 @@ _FUNCTIONS_TO_UNINSTRUMENT = ["basic_publish"]
 class PikaInstrumentor(BaseInstrumentor):  # type: ignore
     # pylint: disable=attribute-defined-outside-init
     @staticmethod
-    def _instrument_consumers(
-        consumers_dict: Dict[str, Callable[..., Any]], tracer: Tracer
+    def _instrument_blocking_channel_consumers(
+        channel: BlockingChannel, tracer: Tracer
     ) -> Any:
-        for key, callback in consumers_dict.items():
+        for consumer_tag, consumer_info in channel._consumer_infos.items():
             decorated_callback = utils._decorate_callback(
-                callback, tracer, key
+                consumer_info.on_message_callback, tracer, consumer_tag
             )
-            setattr(decorated_callback, "_original_callback", callback)
-            consumers_dict[key] = decorated_callback
+
+            setattr(
+                decorated_callback,
+                "_original_callback",
+                consumer_info.on_message_callback,
+            )
+            consumer_info.on_message_callback = decorated_callback
 
     @staticmethod
-    def _instrument_basic_publish(channel: Channel, tracer: Tracer) -> None:
+    def _instrument_basic_publish(
+        channel: BlockingChannel, tracer: Tracer
+    ) -> None:
         original_function = getattr(channel, "basic_publish")
         decorated_function = utils._decorate_basic_publish(
             original_function, channel, tracer
@@ -57,13 +64,13 @@ class PikaInstrumentor(BaseInstrumentor):  # type: ignore
 
     @staticmethod
     def _instrument_channel_functions(
-        channel: Channel, tracer: Tracer
+        channel: BlockingChannel, tracer: Tracer
     ) -> None:
         if hasattr(channel, "basic_publish"):
             PikaInstrumentor._instrument_basic_publish(channel, tracer)
 
     @staticmethod
-    def _uninstrument_channel_functions(channel: Channel) -> None:
+    def _uninstrument_channel_functions(channel: BlockingChannel) -> None:
         for function_name in _FUNCTIONS_TO_UNINSTRUMENT:
             if not hasattr(channel, function_name):
                 continue
@@ -73,8 +80,10 @@ class PikaInstrumentor(BaseInstrumentor):  # type: ignore
         unwrap(channel, "basic_consume")
 
     @staticmethod
+    # Make sure that the spans are created inside hash them set as parent and not as brothers
     def instrument_channel(
-        channel: Channel, tracer_provider: Optional[TracerProvider] = None,
+        channel: BlockingChannel,
+        tracer_provider: Optional[TracerProvider] = None,
     ) -> None:
         if not hasattr(channel, "_is_instrumented_by_opentelemetry"):
             channel._is_instrumented_by_opentelemetry = False
@@ -84,18 +93,14 @@ class PikaInstrumentor(BaseInstrumentor):  # type: ignore
             )
             return
         tracer = trace.get_tracer(__name__, __version__, tracer_provider)
-        if not hasattr(channel, "_impl"):
-            _LOG.error("Could not find implementation for provided channel!")
-            return
-        if channel._impl._consumers:
-            PikaInstrumentor._instrument_consumers(
-                channel._impl._consumers, tracer
-            )
+        PikaInstrumentor._instrument_blocking_channel_consumers(
+            channel, tracer
+        )
         PikaInstrumentor._decorate_basic_consume(channel, tracer)
         PikaInstrumentor._instrument_channel_functions(channel, tracer)
 
     @staticmethod
-    def uninstrument_channel(channel: Channel) -> None:
+    def uninstrument_channel(channel: BlockingChannel) -> None:
         if (
             not hasattr(channel, "_is_instrumented_by_opentelemetry")
             or not channel._is_instrumented_by_opentelemetry
@@ -104,12 +109,12 @@ class PikaInstrumentor(BaseInstrumentor):  # type: ignore
                 "Attempting to uninstrument Pika channel while already uninstrumented!"
             )
             return
-        if not hasattr(channel, "_impl"):
-            _LOG.error("Could not find implementation for provided channel!")
-            return
-        for key, callback in channel._impl._consumers.items():
-            if hasattr(callback, "_original_callback"):
-                channel._impl._consumers[key] = callback._original_callback
+
+        for consumers_tag, client_info in channel._consumer_infos.items():
+            if hasattr(client_info.on_message_callback, "_original_callback"):
+                channel._consumer_infos[
+                    consumers_tag
+                ] = client_info.on_message_callback._original_callback
         PikaInstrumentor._uninstrument_channel_functions(channel)
 
     def _decorate_channel_function(
@@ -123,28 +128,15 @@ class PikaInstrumentor(BaseInstrumentor):  # type: ignore
         wrapt.wrap_function_wrapper(BlockingConnection, "channel", wrapper)
 
     @staticmethod
-    def _decorate_basic_consume(channel, tracer: Optional[Tracer]) -> None:
+    def _decorate_basic_consume(
+        channel: BlockingChannel, tracer: Optional[Tracer]
+    ) -> None:
         def wrapper(wrapped, instance, args, kwargs):
-            if not hasattr(channel, "_impl"):
-                _LOG.error(
-                    "Could not find implementation for provided channel!"
-                )
-                return wrapped(*args, **kwargs)
-            current_keys = set(channel._impl._consumers.keys())
             return_value = wrapped(*args, **kwargs)
-            new_key_list = list(
-                set(channel._impl._consumers.keys()) - current_keys
+
+            PikaInstrumentor._instrument_blocking_channel_consumers(
+                channel, tracer
             )
-            if not new_key_list:
-                _LOG.error("Could not find added callback")
-                return return_value
-            new_key = new_key_list[0]
-            callback = channel._impl._consumers[new_key]
-            decorated_callback = utils._decorate_callback(
-                callback, tracer, new_key
-            )
-            setattr(decorated_callback, "_original_callback", callback)
-            channel._impl._consumers[new_key] = decorated_callback
             return return_value
 
         wrapt.wrap_function_wrapper(channel, "basic_consume", wrapper)

@@ -46,17 +46,23 @@ def _decorate_callback(
         ctx = propagate.extract(properties.headers, getter=_pika_getter)
         if not ctx:
             ctx = context.get_current()
+        token = context.attach(ctx)
         span = _get_span(
             tracer,
             channel,
             properties,
+            destination=method.exchange
+            if method.exchange
+            else method.routing_key,
             span_kind=SpanKind.CONSUMER,
             task_name=task_name,
-            ctx=ctx,
             operation=MessagingOperationValues.RECEIVE,
         )
-        with trace.use_span(span, end_on_exit=True):
-            retval = callback(channel, method, properties, body)
+        try:
+            with trace.use_span(span, end_on_exit=True):
+                retval = callback(channel, method, properties, body)
+        finally:
+            context.detach(token)
         return retval
 
     return decorated_callback
@@ -78,14 +84,13 @@ def _decorate_basic_publish(
             properties = BasicProperties(headers={})
         if properties.headers is None:
             properties.headers = {}
-        ctx = context.get_current()
         span = _get_span(
             tracer,
             channel,
             properties,
+            destination=exchange if exchange else routing_key,
             span_kind=SpanKind.PRODUCER,
             task_name="(temporary)",
-            ctx=ctx,
             operation=None,
         )
         if not span:
@@ -108,8 +113,8 @@ def _get_span(
     channel: Channel,
     properties: BasicProperties,
     task_name: str,
+    destination: str,
     span_kind: SpanKind,
-    ctx: context.Context,
     operation: Optional[MessagingOperationValues] = None,
 ) -> Optional[Span]:
     if context.get_value("suppress_instrumentation") or context.get_value(
@@ -118,9 +123,7 @@ def _get_span(
         return None
     task_name = properties.type if properties.type else task_name
     span = tracer.start_span(
-        context=ctx,
-        name=_generate_span_name(task_name, operation),
-        kind=span_kind,
+        name=_generate_span_name(destination, operation), kind=span_kind,
     )
     if span.is_recording():
         _enrich_span(span, channel, properties, task_name, operation)

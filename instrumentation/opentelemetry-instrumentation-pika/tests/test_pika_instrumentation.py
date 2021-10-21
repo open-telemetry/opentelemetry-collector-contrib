@@ -13,7 +13,7 @@
 # limitations under the License.
 from unittest import TestCase, mock
 
-from pika.adapters import BaseConnection, BlockingConnection
+from pika.adapters import BlockingConnection
 from pika.channel import Channel
 from wrapt import BoundFunctionWrapper
 
@@ -24,9 +24,10 @@ from opentelemetry.trace import Tracer
 class TestPika(TestCase):
     def setUp(self) -> None:
         self.channel = mock.MagicMock(spec=Channel)
-        self.channel._impl = mock.MagicMock(spec=BaseConnection)
+        consumer_info = mock.MagicMock()
+        consumer_info.on_message_callback = mock.MagicMock()
+        self.channel._consumer_infos = {"consumer-tag": consumer_info}
         self.mock_callback = mock.MagicMock()
-        self.channel._impl._consumers = {"mock_key": self.mock_callback}
 
     def test_instrument_api(self) -> None:
         instrumentation = PikaInstrumentor()
@@ -49,11 +50,11 @@ class TestPika(TestCase):
         "opentelemetry.instrumentation.pika.PikaInstrumentor._decorate_basic_consume"
     )
     @mock.patch(
-        "opentelemetry.instrumentation.pika.PikaInstrumentor._instrument_consumers"
+        "opentelemetry.instrumentation.pika.PikaInstrumentor._instrument_blocking_channel_consumers"
     )
     def test_instrument(
         self,
-        instrument_consumers: mock.MagicMock,
+        instrument_blocking_channel_consumers: mock.MagicMock,
         instrument_basic_consume: mock.MagicMock,
         instrument_channel_functions: mock.MagicMock,
     ):
@@ -61,7 +62,7 @@ class TestPika(TestCase):
         assert hasattr(
             self.channel, "_is_instrumented_by_opentelemetry"
         ), "channel is not marked as instrumented!"
-        instrument_consumers.assert_called_once()
+        instrument_blocking_channel_consumers.assert_called_once()
         instrument_basic_consume.assert_called_once()
         instrument_channel_functions.assert_called_once()
 
@@ -71,18 +72,18 @@ class TestPika(TestCase):
     ) -> None:
         tracer = mock.MagicMock(spec=Tracer)
         expected_decoration_calls = [
-            mock.call(value, tracer, key)
-            for key, value in self.channel._impl._consumers.items()
+            mock.call(value.on_message_callback, tracer, key)
+            for key, value in self.channel._consumer_infos.items()
         ]
-        PikaInstrumentor._instrument_consumers(
-            self.channel._impl._consumers, tracer
+        PikaInstrumentor._instrument_blocking_channel_consumers(
+            self.channel, tracer
         )
         decorate_callback.assert_has_calls(
             calls=expected_decoration_calls, any_order=True
         )
         assert all(
             hasattr(callback, "_original_callback")
-            for callback in self.channel._impl._consumers.values()
+            for callback in self.channel._consumer_infos.values()
         )
 
     @mock.patch(
