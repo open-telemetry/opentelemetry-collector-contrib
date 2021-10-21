@@ -57,16 +57,11 @@ Golang's `ParseDuration` function (example: `1h30m`). Valid time units are
 must match the password specified in the `requirepass` server configuration
 option.
 - `network` (default = `TCP`) Defines the network to use for connecting to the server. Valid Values are `TCP` or `Unix`
-- `tls`
-    - `ca_file`: path to the CA cert. For a client this verifies the server certificate. Should only be used
-      if `insecure` is set to true.
-    - `cert_file`: path to the TLS cert to use for TLS required connections. Should only be used if `insecure` is
-      set to true.
-    - `key_file`: path to the TLS key to use for TLS required connections. Should only be used if `insecure` is set
-      to true.
-    - `insecure` (default = false): Disable verifying the server's certificate chain and host
-      name (`InsecureSkipVerify` in the tls config)
-    - `server_name_override`: ServerName indicates the name of the server requested by the client in order to
+- `tls`:
+  - `insecure` (default = false): whether to disable client transport security for the exporter's connection.
+  - `ca_file`: path to the CA cert. For a client this verifies the server certificate. Should only be used if `insecure` is set to false.
+  - `cert_file`: path to the TLS cert to use for TLS required connections. Should only be used if `insecure` is set to false.
+  - `key_file`: path to the TLS key to use for TLS required connections. Should only be used if `insecure` is set to false.
 
 Example:
 
