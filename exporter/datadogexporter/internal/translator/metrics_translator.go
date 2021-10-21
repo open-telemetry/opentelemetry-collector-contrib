@@ -166,6 +166,7 @@ func getBounds(p pdata.HistogramDataPoint, idx int) (lowerBound float64, upperBo
 	// See https://github.com/open-telemetry/opentelemetry-proto/blob/v0.10.0/opentelemetry/proto/metrics/v1/metrics.proto#L427-L439
 	lowerBound = math.Inf(-1)
 	upperBound = math.Inf(1)
+
 	if idx > 0 {
 		lowerBound = p.ExplicitBounds()[idx-1]
 	}
@@ -188,6 +189,17 @@ func (t *Translator) getSketchBuckets(
 	as := &quantile.Agent{}
 	for j := range p.BucketCounts() {
 		lowerBound, upperBound := getBounds(p, j)
+
+		// Compute temporary bucketTags to have unique keys in the t.prevPts cache for each bucket
+		// The bucketTags are computed from the bounds before the InsertInterpolate fix is done,
+		// otherwise in the case where p.ExplicitBounds() has a size of 1 (eg. [0]), the two buckets
+		// would have the same bucketTags (lower_bound:0 and upper_bound:0), resulting in a buggy behavior.
+		bucketTags := []string{
+			fmt.Sprintf("lower_bound:%s", formatFloat(lowerBound)),
+			fmt.Sprintf("upper_bound:%s", formatFloat(upperBound)),
+		}
+		bucketTags = append(bucketTags, tags...)
+
 		// InsertInterpolate doesn't work with an infinite bound; insert in to the bucket that contains the non-infinite bound
 		// https://github.com/DataDog/datadog-agent/blob/7.31.0/pkg/aggregator/check_sampler.go#L107-L111
 		if math.IsInf(upperBound, 1) {
@@ -199,7 +211,7 @@ func (t *Translator) getSketchBuckets(
 		count := p.BucketCounts()[j]
 		if delta {
 			as.InsertInterpolate(lowerBound, upperBound, uint(count))
-		} else if dx, ok := t.prevPts.putAndGetDiff(name, tags, ts, float64(count)); ok {
+		} else if dx, ok := t.prevPts.putAndGetDiff(name, bucketTags, ts, float64(count)); ok {
 			as.InsertInterpolate(lowerBound, upperBound, uint(dx))
 		}
 
@@ -292,7 +304,7 @@ func (t *Translator) mapHistogramMetrics(
 		case HistogramModeCounters:
 			t.getLegacyBuckets(ctx, consumer, name, p, delta, tags, host)
 		case HistogramModeDistributions:
-			t.getSketchBuckets(ctx, consumer, name, ts, p, true, tags, host)
+			t.getSketchBuckets(ctx, consumer, name, ts, p, delta, tags, host)
 		}
 	}
 }
