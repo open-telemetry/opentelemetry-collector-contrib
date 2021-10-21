@@ -115,8 +115,12 @@ func TestCompareMetrics(t *testing.T) {
 				dp.SetDoubleVal(2)
 				return metrics
 			}(),
-			expected:      baseTestMetrics(),
-			expectedError: fmt.Errorf("metric datapoint DoubleVal doesn't match expected: 1.000000, actual: 2.000000"),
+			expected: baseTestMetrics(),
+			expectedError: multierr.Combine(
+				errors.New("datapoints for metric: `test name`, do not match expected"),
+				errors.New("datapoint with label(s): map[testKey1:teststringvalue1], does not match expected"),
+				errors.New("metric datapoint DoubleVal doesn't match expected: 1.000000, actual: 2.000000"),
+			),
 		},
 		{
 			name: "Wrong datatype",
@@ -128,8 +132,12 @@ func TestCompareMetrics(t *testing.T) {
 				dp.SetIntVal(2)
 				return metrics
 			}(),
-			expected:      baseTestMetrics(),
-			expectedError: fmt.Errorf("metric datapoint types don't match: expected type: 2, actual type: 1"),
+			expected: baseTestMetrics(),
+			expectedError: multierr.Combine(
+				errors.New("datapoints for metric: `test name`, do not match expected"),
+				errors.New("datapoint with label(s): map[testKey1:teststringvalue1], does not match expected"),
+				errors.New("metric datapoint types don't match: expected type: 2, actual type: 1"),
+			),
 		},
 		{
 			name: "Wrong attribute key",
@@ -145,9 +153,11 @@ func TestCompareMetrics(t *testing.T) {
 			}(),
 			expected: baseTestMetrics(),
 			expectedError: multierr.Combine(
-				errors.New("metric test name missing expected data point: Labels: map[testKey1:teststringvalue1]"),
-				errors.New("metric test name has extra data point: Labels: map[wrong key:teststringvalue1]"),
-			)},
+				errors.New("datapoints for metric: `test name`, do not match expected"),
+				errors.New("metric missing expected data point: Labels: map[testKey1:teststringvalue1]"),
+				errors.New("metric has extra data point: Labels: map[wrong key:teststringvalue1]"),
+			),
+		},
 		{
 			name: "Wrong attribute value",
 			actual: func() pdata.MetricSlice {
@@ -162,8 +172,9 @@ func TestCompareMetrics(t *testing.T) {
 			}(),
 			expected: baseTestMetrics(),
 			expectedError: multierr.Combine(
-				errors.New("metric test name missing expected data point: Labels: map[testKey1:teststringvalue1]"),
-				errors.New("metric test name has extra data point: Labels: map[testKey1:wrong value]"),
+				errors.New("datapoints for metric: `test name`, do not match expected"),
+				errors.New("metric missing expected data point: Labels: map[testKey1:teststringvalue1]"),
+				errors.New("metric has extra data point: Labels: map[testKey1:wrong value]"),
 			),
 		},
 	}
