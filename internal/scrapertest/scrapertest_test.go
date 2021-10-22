@@ -21,27 +21,96 @@ import (
 	"testing"
 	"time"
 
-	"go.opentelemetry.io/collector/model/pdata"
-
 	"github.com/stretchr/testify/require"
+
+	"go.opentelemetry.io/collector/model/pdata"
 	"go.uber.org/multierr"
 )
 
 func baseTestMetrics() pdata.MetricSlice {
 	slice := pdata.NewMetricSlice()
+
+	// set Gauge with two double dps
 	metric := slice.AppendEmpty()
-	metric.SetDataType(pdata.MetricDataTypeGauge)
-	metric.SetDescription("test description")
-	metric.SetName("test name")
-	metric.SetUnit("test unit")
+	initGauge(metric, "test gauge multi", "multi gauge", "1")
 	dps := metric.Gauge().DataPoints()
+
 	dp := dps.AppendEmpty()
-	dp.SetDoubleVal(1)
-	dp.SetTimestamp(pdata.NewTimestampFromTime(time.Time{}))
 	attributes := pdata.NewAttributeMap()
 	attributes.Insert("testKey1", pdata.NewAttributeValueString("teststringvalue1"))
-	attributes.CopyTo(dp.Attributes())
+	attributes.Insert("testKey2", pdata.NewAttributeValueString("testvalue1"))
+	setDPDoubleVals(dp, 2, attributes, time.Time{})
+
+	dp = dps.AppendEmpty()
+	attributes = pdata.NewAttributeMap()
+	attributes.Insert("testKey1", pdata.NewAttributeValueString("teststringvalue2"))
+	attributes.Insert("testKey2", pdata.NewAttributeValueString("testvalue2"))
+	setDPDoubleVals(dp, 2, attributes, time.Time{})
+
+	// set Gauge with one int dp
+	metric = slice.AppendEmpty()
+	initGauge(metric, "test gauge single", "single gauge", "by")
+	dps = metric.Gauge().DataPoints()
+
+	dp = dps.AppendEmpty()
+	attributes = pdata.NewAttributeMap()
+	attributes.Insert("testKey2", pdata.NewAttributeValueString("teststringvalue2"))
+	setDPIntVals(dp, 2, attributes, time.Time{})
+
+	// set Delta Sum with two int dps
+	metric = slice.AppendEmpty()
+	initSum(metric, "test delta sum multi", "multi sum", "s", pdata.MetricAggregationTemporalityDelta, false)
+	dps = metric.Sum().DataPoints()
+
+	dp = dps.AppendEmpty()
+	attributes = pdata.NewAttributeMap()
+	attributes.Insert("testKey2", pdata.NewAttributeValueString("teststringvalue2"))
+	setDPIntVals(dp, 2, attributes, time.Now())
+
+	dp = dps.AppendEmpty()
+	attributes = pdata.NewAttributeMap()
+	attributes.Insert("testKey2", pdata.NewAttributeValueString("teststringvalue2"))
+	setDPIntVals(dp, 2, attributes, time.Now())
+
+	// set Cumulatative Sum with one double dp
+	metric = slice.AppendEmpty()
+	initSum(metric, "test cumulative sum single", "single sum", "1/s", pdata.MetricAggregationTemporalityCumulative, true)
+	dps = metric.Sum().DataPoints()
+
+	dp = dps.AppendEmpty()
+	attributes = pdata.NewAttributeMap()
+	attributes.Insert("testKey2", pdata.NewAttributeValueString("teststringvalue2"))
+	setDPDoubleVals(dp, 2, attributes, time.Time{})
+
 	return slice
+}
+
+func setDPDoubleVals(dp pdata.NumberDataPoint, value float64, attributes pdata.AttributeMap, timeStamp time.Time) {
+	dp.SetDoubleVal(value)
+	dp.SetTimestamp(pdata.NewTimestampFromTime(timeStamp))
+	attributes.CopyTo(dp.Attributes())
+}
+
+func setDPIntVals(dp pdata.NumberDataPoint, value int64, attributes pdata.AttributeMap, timeStamp time.Time) {
+	dp.SetIntVal(value)
+	dp.SetTimestamp(pdata.NewTimestampFromTime(timeStamp))
+	attributes.CopyTo(dp.Attributes())
+}
+
+func initGauge(metric pdata.Metric, name, desc, unit string) {
+	metric.SetDataType(pdata.MetricDataTypeGauge)
+	metric.SetDescription(desc)
+	metric.SetName(name)
+	metric.SetUnit(unit)
+}
+
+func initSum(metric pdata.Metric, name, desc, unit string, aggr pdata.MetricAggregationTemporality, isMonotonic bool) {
+	metric.SetDataType(pdata.MetricDataTypeSum)
+	metric.Sum().SetIsMonotonic(isMonotonic)
+	metric.Sum().SetAggregationTemporality(aggr)
+	metric.SetDescription(desc)
+	metric.SetName(name)
+	metric.SetUnit(unit)
 }
 
 // TestCompareMetrics tests the ability of comparing one metric slice to another
@@ -80,7 +149,7 @@ func TestCompareMetrics(t *testing.T) {
 			expected: baseTestMetrics(),
 			expectedError: multierr.Combine(
 				errors.New("unexpected metric wrong name"),
-				errors.New("missing expected metric test name"),
+				errors.New("missing expected metric test gauge multi"),
 			),
 		},
 		{
@@ -92,7 +161,7 @@ func TestCompareMetrics(t *testing.T) {
 				return metrics
 			}(),
 			expected:      baseTestMetrics(),
-			expectedError: fmt.Errorf("metric description does not match expected: test description, actual: wrong description"),
+			expectedError: fmt.Errorf("metric description does not match expected: multi gauge, actual: wrong description"),
 		},
 		{
 			name: "Wrong Unit",
@@ -103,7 +172,7 @@ func TestCompareMetrics(t *testing.T) {
 				return metrics
 			}(),
 			expected:      baseTestMetrics(),
-			expectedError: fmt.Errorf("metric Unit does not match expected: test unit, actual: Wrong Unit"),
+			expectedError: fmt.Errorf("metric Unit does not match expected: 1, actual: Wrong Unit"),
 		},
 		{
 			name: "Wrong doubleVal",
@@ -111,14 +180,14 @@ func TestCompareMetrics(t *testing.T) {
 				metrics := baseTestMetrics()
 				m := metrics.At(0)
 				dp := m.Gauge().DataPoints().At(0)
-				dp.SetDoubleVal(2)
+				dp.SetDoubleVal(123)
 				return metrics
 			}(),
 			expected: baseTestMetrics(),
 			expectedError: multierr.Combine(
-				errors.New("datapoints for metric: `test name`, do not match expected"),
-				errors.New("datapoint with label(s): map[testKey1:teststringvalue1], does not match expected"),
-				errors.New("metric datapoint DoubleVal doesn't match expected: 1.000000, actual: 2.000000"),
+				errors.New("datapoints for metric: `test gauge multi`, do not match expected"),
+				errors.New("datapoint with label(s): map[testKey1:teststringvalue1 testKey2:testvalue1], does not match expected"),
+				errors.New("metric datapoint DoubleVal doesn't match expected: 2.000000, actual: 123.000000"),
 			),
 		},
 		{
@@ -133,8 +202,8 @@ func TestCompareMetrics(t *testing.T) {
 			}(),
 			expected: baseTestMetrics(),
 			expectedError: multierr.Combine(
-				errors.New("datapoints for metric: `test name`, do not match expected"),
-				errors.New("datapoint with label(s): map[testKey1:teststringvalue1], does not match expected"),
+				errors.New("datapoints for metric: `test gauge multi`, do not match expected"),
+				errors.New("datapoint with label(s): map[testKey1:teststringvalue1 testKey2:testvalue1], does not match expected"),
 				errors.New("metric datapoint types don't match: expected type: 2, actual type: 1"),
 			),
 		},
@@ -152,8 +221,8 @@ func TestCompareMetrics(t *testing.T) {
 			}(),
 			expected: baseTestMetrics(),
 			expectedError: multierr.Combine(
-				errors.New("datapoints for metric: `test name`, do not match expected"),
-				errors.New("metric missing expected data point: Labels: map[testKey1:teststringvalue1]"),
+				errors.New("datapoints for metric: `test gauge multi`, do not match expected"),
+				errors.New("metric missing expected data point: Labels: map[testKey1:teststringvalue1 testKey2:testvalue1]"),
 				errors.New("metric has extra data point: Labels: map[wrong key:teststringvalue1]"),
 			),
 		},
@@ -171,9 +240,74 @@ func TestCompareMetrics(t *testing.T) {
 			}(),
 			expected: baseTestMetrics(),
 			expectedError: multierr.Combine(
-				errors.New("datapoints for metric: `test name`, do not match expected"),
-				errors.New("metric missing expected data point: Labels: map[testKey1:teststringvalue1]"),
+				errors.New("datapoints for metric: `test gauge multi`, do not match expected"),
+				errors.New("metric missing expected data point: Labels: map[testKey1:teststringvalue1 testKey2:testvalue1]"),
 				errors.New("metric has extra data point: Labels: map[testKey1:wrong value]"),
+			),
+		},
+		{
+			name: "Wrong aggregation value",
+			actual: func() pdata.MetricSlice {
+				metrics := baseTestMetrics()
+				m := metrics.At(2)
+				m.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
+				return metrics
+			}(),
+			expected: baseTestMetrics(),
+			expectedError: multierr.Combine(
+				errors.New("metric AggregationTemporality does not match expected: AGGREGATION_TEMPORALITY_DELTA, actual: AGGREGATION_TEMPORALITY_CUMULATIVE"),
+			),
+		},
+		{
+			name: "Wrong monotonic value",
+			actual: func() pdata.MetricSlice {
+				metrics := baseTestMetrics()
+				m := metrics.At(2)
+				m.Sum().SetIsMonotonic(true)
+				return metrics
+			}(),
+			expected: baseTestMetrics(),
+			expectedError: multierr.Combine(
+				errors.New("metric IsMonotonic does not match expected: false, actual: true"),
+			),
+		},
+		{
+			name: "Wrong timestamp value",
+			actual: func() pdata.MetricSlice {
+				metrics := baseTestMetrics()
+				m := metrics.At(3)
+				m.Sum().DataPoints().At(0).SetTimestamp(pdata.NewTimestampFromTime(time.Date(1998, 06, 28, 1, 1, 1, 1, &time.Location{})))
+				return metrics
+			}(),
+			expected: baseTestMetrics(),
+			// Timestamps aren't checked so no error is expected.
+		},
+		{
+			name: "missing metric",
+			actual: func() pdata.MetricSlice {
+				metrics := baseTestMetrics()
+				third := metrics.At(2)
+				metrics.RemoveIf(func(m pdata.Metric) bool {
+					return m.Name() == third.Name()
+				})
+				return metrics
+			}(),
+			expected: baseTestMetrics(),
+			expectedError: multierr.Combine(
+				errors.New("metric slices not of same length"),
+			),
+		},
+		{
+			name: "bonus metric",
+			actual: func() pdata.MetricSlice {
+				metrics := baseTestMetrics()
+				m := metrics.AppendEmpty()
+				m.SetName("bonus")
+				return metrics
+			}(),
+			expected: baseTestMetrics(),
+			expectedError: multierr.Combine(
+				errors.New("metric slices not of same length"),
 			),
 		},
 	}
