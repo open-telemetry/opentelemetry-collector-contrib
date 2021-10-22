@@ -125,8 +125,13 @@ func TestConvertGaugeEnvelope(t *testing.T) {
 	convertEnvelopeToMetrics(&envelope, metricSlice, before)
 
 	require.Equal(t, 2, metricSlice.Len())
+	memoryMetricPosition := 0
 
-	metric := metricSlice.At(0)
+	if metricSlice.At(1).Name() == "rep.memory" {
+		memoryMetricPosition = 1
+	}
+
+	metric := metricSlice.At(memoryMetricPosition)
 	assert.Equal(t, "rep.memory", metric.Name())
 	assert.Equal(t, pdata.MetricDataTypeGauge, metric.DataType())
 	assert.Equal(t, 1, metric.Gauge().DataPoints().Len())
@@ -136,7 +141,7 @@ func TestConvertGaugeEnvelope(t *testing.T) {
 	assert.Equal(t, 17046641.0, dataPoint.DoubleVal())
 	assertAttributes(t, dataPoint.Attributes(), expectedLabels)
 
-	metric = metricSlice.At(1)
+	metric = metricSlice.At(1 - memoryMetricPosition)
 	assert.Equal(t, "rep.disk", metric.Name())
 	assert.Equal(t, pdata.MetricDataTypeGauge, metric.DataType())
 	assert.Equal(t, 1, metric.Gauge().DataPoints().Len())
