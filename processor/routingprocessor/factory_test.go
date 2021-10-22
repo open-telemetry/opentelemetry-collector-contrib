@@ -44,12 +44,26 @@ func TestProcessorGetsCreatedWithValidConfiguration(t *testing.T) {
 		},
 	}
 
-	// test
-	exp, err := factory.CreateTracesProcessor(context.Background(), creationParams, cfg, consumertest.NewNop())
+	t.Run("traces", func(t *testing.T) {
+		exp, err := factory.CreateTracesProcessor(context.Background(), creationParams, cfg, consumertest.NewNop())
+		// verify
+		assert.NoError(t, err)
+		assert.NotNil(t, exp)
+	})
 
-	// verify
-	assert.Nil(t, err)
-	assert.NotNil(t, exp)
+	t.Run("metrics", func(t *testing.T) {
+		exp, err := factory.CreateMetricsProcessor(context.Background(), creationParams, cfg, consumertest.NewNop())
+		// verify
+		assert.NoError(t, err)
+		assert.NotNil(t, exp)
+	})
+
+	t.Run("logs", func(t *testing.T) {
+		exp, err := factory.CreateLogsProcessor(context.Background(), creationParams, cfg, consumertest.NewNop())
+		// verify
+		assert.NoError(t, err)
+		assert.NotNil(t, exp)
+	})
 }
 
 func TestFailOnEmptyConfiguration(t *testing.T) {
@@ -58,12 +72,26 @@ func TestFailOnEmptyConfiguration(t *testing.T) {
 	creationParams := componenttest.NewNopProcessorCreateSettings()
 	cfg := factory.CreateDefaultConfig()
 
-	// test
-	exp, err := factory.CreateTracesProcessor(context.Background(), creationParams, cfg, consumertest.NewNop())
+	t.Run("traces", func(t *testing.T) {
+		exp, err := factory.CreateTracesProcessor(context.Background(), creationParams, cfg, consumertest.NewNop())
+		// verify
+		assert.ErrorIs(t, err, errNoTableItems)
+		assert.Nil(t, exp)
+	})
 
-	// verify
-	assert.Error(t, err)
-	assert.Nil(t, exp)
+	t.Run("metrics", func(t *testing.T) {
+		exp, err := factory.CreateMetricsProcessor(context.Background(), creationParams, cfg, consumertest.NewNop())
+		// verify
+		assert.ErrorIs(t, err, errNoTableItems)
+		assert.Nil(t, exp)
+	})
+
+	t.Run("logs", func(t *testing.T) {
+		exp, err := factory.CreateLogsProcessor(context.Background(), creationParams, cfg, consumertest.NewNop())
+		// verify
+		assert.ErrorIs(t, err, errNoTableItems)
+		assert.Nil(t, exp)
+	})
 }
 
 func TestProcessorFailsToBeCreatedWhenRouteHasNoExporters(t *testing.T) {
@@ -81,12 +109,26 @@ func TestProcessorFailsToBeCreatedWhenRouteHasNoExporters(t *testing.T) {
 		},
 	}
 
-	// test
-	exp, err := factory.CreateTracesProcessor(context.Background(), creationParams, cfg, consumertest.NewNop())
+	t.Run("traces", func(t *testing.T) {
+		exp, err := factory.CreateTracesProcessor(context.Background(), creationParams, cfg, consumertest.NewNop())
+		// verify
+		assert.True(t, errors.Is(err, errNoExporters))
+		assert.Nil(t, exp)
+	})
 
-	// verify
-	assert.True(t, errors.Is(err, errNoExporters))
-	assert.Nil(t, exp)
+	t.Run("metrics", func(t *testing.T) {
+		exp, err := factory.CreateMetricsProcessor(context.Background(), creationParams, cfg, consumertest.NewNop())
+		// verify
+		assert.True(t, errors.Is(err, errNoExporters))
+		assert.Nil(t, exp)
+	})
+
+	t.Run("logs", func(t *testing.T) {
+		exp, err := factory.CreateLogsProcessor(context.Background(), creationParams, cfg, consumertest.NewNop())
+		// verify
+		assert.True(t, errors.Is(err, errNoExporters))
+		assert.Nil(t, exp)
+	})
 }
 
 func TestProcessorFailsToBeCreatedWhenNoRoutesExist(t *testing.T) {
@@ -100,12 +142,26 @@ func TestProcessorFailsToBeCreatedWhenNoRoutesExist(t *testing.T) {
 		Table:             []RoutingTableItem{},
 	}
 
-	// test
-	exp, err := factory.CreateTracesProcessor(context.Background(), creationParams, cfg, consumertest.NewNop())
+	t.Run("traces", func(t *testing.T) {
+		exp, err := factory.CreateTracesProcessor(context.Background(), creationParams, cfg, consumertest.NewNop())
+		// verify
+		assert.True(t, errors.Is(err, errNoTableItems))
+		assert.Nil(t, exp)
+	})
 
-	// verify
-	assert.True(t, errors.Is(err, errNoTableItems))
-	assert.Nil(t, exp)
+	t.Run("metrics", func(t *testing.T) {
+		exp, err := factory.CreateMetricsProcessor(context.Background(), creationParams, cfg, consumertest.NewNop())
+		// verify
+		assert.True(t, errors.Is(err, errNoTableItems))
+		assert.Nil(t, exp)
+	})
+
+	t.Run("logs", func(t *testing.T) {
+		exp, err := factory.CreateLogsProcessor(context.Background(), creationParams, cfg, consumertest.NewNop())
+		// verify
+		assert.True(t, errors.Is(err, errNoTableItems))
+		assert.Nil(t, exp)
+	})
 }
 
 func TestProcessorFailsWithNoFromAttribute(t *testing.T) {
@@ -123,12 +179,26 @@ func TestProcessorFailsWithNoFromAttribute(t *testing.T) {
 		},
 	}
 
-	// test
-	exp, err := factory.CreateTracesProcessor(context.Background(), creationParams, cfg, consumertest.NewNop())
+	t.Run("traces", func(t *testing.T) {
+		exp, err := factory.CreateTracesProcessor(context.Background(), creationParams, cfg, consumertest.NewNop())
+		// verify
+		assert.ErrorIs(t, err, errNoMissingFromAttribute)
+		assert.Nil(t, exp)
+	})
 
-	// verify
-	assert.True(t, errors.Is(err, errNoMissingFromAttribute))
-	assert.Nil(t, exp)
+	t.Run("metrics", func(t *testing.T) {
+		exp, err := factory.CreateMetricsProcessor(context.Background(), creationParams, cfg, consumertest.NewNop())
+		// verify
+		assert.ErrorIs(t, err, errNoMissingFromAttribute)
+		assert.Nil(t, exp)
+	})
+
+	t.Run("logs", func(t *testing.T) {
+		exp, err := factory.CreateMetricsProcessor(context.Background(), creationParams, cfg, consumertest.NewNop())
+		// verify
+		assert.ErrorIs(t, err, errNoMissingFromAttribute)
+		assert.Nil(t, exp)
+	})
 }
 
 func TestShouldNotFailWhenNextIsProcessor(t *testing.T) {

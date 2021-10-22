@@ -86,9 +86,8 @@ func (r *router) routeMetricsForResource(_ context.Context, tm pdata.Metrics) []
 	resMetricsSlice := tm.ResourceMetrics()
 	for i := 0; i < resMetricsSlice.Len(); i++ {
 		resMetrics := resMetricsSlice.At(i)
-		resource := resMetrics.Resource()
 
-		attrValue := r.extractor.extractAttrFromResource(resource)
+		attrValue := r.extractor.extractAttrFromResource(resMetrics.Resource())
 		exp := r.defaultMetricsExporters
 		// If we have an exporter list defined for that attribute value then use it.
 		if e, ok := r.metricsExporters[attrValue]; ok {
@@ -173,9 +172,8 @@ func (r *router) routeTracesForResource(_ context.Context, tr pdata.Traces) []ro
 	resSpansSlice := tr.ResourceSpans()
 	for i := 0; i < resSpansSlice.Len(); i++ {
 		resSpans := resSpansSlice.At(i)
-		resource := resSpans.Resource()
 
-		attrValue := r.extractor.extractAttrFromResource(resource)
+		attrValue := r.extractor.extractAttrFromResource(resSpans.Resource())
 		exp := r.defaultTracesExporters
 		// If we have an exporter list defined for that attribute value then use it.
 		if e, ok := r.tracesExporters[attrValue]; ok {
@@ -260,9 +258,8 @@ func (r *router) routeLogsForResource(_ context.Context, tl pdata.Logs) []routed
 	resLogsSlice := tl.ResourceLogs()
 	for i := 0; i < resLogsSlice.Len(); i++ {
 		resLogs := resLogsSlice.At(i)
-		resource := resLogs.Resource()
 
-		attrValue := r.extractor.extractAttrFromResource(resource)
+		attrValue := r.extractor.extractAttrFromResource(resLogs.Resource())
 		exp := r.defaultLogsExporters
 		// If we have an exporter list defined for that attribute value then use it.
 		if e, ok := r.logsExporters[attrValue]; ok {
