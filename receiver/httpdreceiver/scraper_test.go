@@ -64,7 +64,7 @@ Scoreboard: S_DD_L_GGG_____W__IIII_C________________W___________________________
 	require.NoError(t, err)
 
 	expectedFile := filepath.Join("testdata", "scraper", "expected.json")
-	expectedMetrics, err := scrapertest.FileToMetrics(expectedFile)
+	expectedMetrics, err := scrapertest.ReadExpected(expectedFile)
 	require.NoError(t, err)
 
 	eMetricSlice := expectedMetrics.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics()

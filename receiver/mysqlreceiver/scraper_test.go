@@ -39,7 +39,7 @@ func TestScrape(t *testing.T) {
 	require.NoError(t, err)
 
 	expectedFile := filepath.Join("testdata", "scraper", "expected.json")
-	expectedMetrics, err := scrapertest.FileToMetrics(expectedFile)
+	expectedMetrics, err := scrapertest.ReadExpected(expectedFile)
 	require.NoError(t, err)
 
 	eMetricSlice := expectedMetrics.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics()

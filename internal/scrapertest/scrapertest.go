@@ -22,7 +22,7 @@ import (
 	"go.uber.org/multierr"
 )
 
-// CompareMetrics compares each part of two given metric slices and returns
+// CompareMetrics compares each part of two given MetricSlices and returns
 // an error if they don't match. The error describes what didn't match.
 func CompareMetricSlices(expected, actual pdata.MetricSlice) error {
 	if actual.Len() != expected.Len() {
@@ -42,13 +42,11 @@ func CompareMetricSlices(expected, actual pdata.MetricSlice) error {
 	}
 
 	var errs error
-	matchedMetrics := make(map[pdata.Metric]pdata.Metric, expected.Len())
-	for name, am := range actualByName {
-		em, ok := expectedByName[name]
+	// The names do not need to be captured here again because we captured them above
+	for name, _ := range actualByName {
+		_, ok := expectedByName[name]
 		if !ok {
 			errs = multierr.Append(errs, fmt.Errorf("unexpected metric %s", name))
-		} else {
-			matchedMetrics[am] = em
 		}
 	}
 	for name := range expectedByName {
@@ -61,48 +59,51 @@ func CompareMetricSlices(expected, actual pdata.MetricSlice) error {
 		return errs
 	}
 
-	for am, em := range matchedMetrics {
-		if am.Name() != em.Name() {
-			return fmt.Errorf("metric name does not match expected: %s, actual: %s", em.Name(), am.Name())
+	for name, actualMetric := range actualByName {
+		expectedMetric, ok := expectedByName[name]
+		if !ok {
+			return fmt.Errorf("metric name does not match expected: %s, actual: %s", expectedMetric.Name(), actualMetric.Name())
 		}
-		if am.DataType() != em.DataType() {
-			return fmt.Errorf("metric datatype does not match expected: %s, actual: %s", em.DataType(), am.DataType())
+		if actualMetric.DataType() != expectedMetric.DataType() {
+			return fmt.Errorf("metric datatype does not match expected: %s, actual: %s", expectedMetric.DataType(), actualMetric.DataType())
 		}
-		if am.Description() != em.Description() {
-			return fmt.Errorf("metric description does not match expected: %s, actual: %s", em.Description(), am.Description())
+		if actualMetric.Description() != expectedMetric.Description() {
+			return fmt.Errorf("metric description does not match expected: %s, actual: %s", expectedMetric.Description(), actualMetric.Description())
 		}
-		if am.Unit() != em.Unit() {
-			return fmt.Errorf("metric Unit does not match expected: %s, actual: %s", em.Unit(), am.Unit())
+		if actualMetric.Unit() != expectedMetric.Unit() {
+			return fmt.Errorf("metric Unit does not match expected: %s, actual: %s", expectedMetric.Unit(), actualMetric.Unit())
 		}
 
 		var actualDataPoints pdata.NumberDataPointSlice
 		var expectedDataPoints pdata.NumberDataPointSlice
 
-		switch am.DataType() {
+		switch actualMetric.DataType() {
 		case pdata.MetricDataTypeGauge:
-			actualDataPoints = am.Gauge().DataPoints()
-			expectedDataPoints = em.Gauge().DataPoints()
+			actualDataPoints = actualMetric.Gauge().DataPoints()
+			expectedDataPoints = expectedMetric.Gauge().DataPoints()
 		case pdata.MetricDataTypeSum:
-			if am.Sum().AggregationTemporality() != em.Sum().AggregationTemporality() {
-				return fmt.Errorf("metric AggregationTemporality does not match expected: %s, actual: %s", em.Sum().AggregationTemporality(), am.Sum().AggregationTemporality())
+			if actualMetric.Sum().AggregationTemporality() != expectedMetric.Sum().AggregationTemporality() {
+				return fmt.Errorf("metric AggregationTemporality does not match expected: %s, actual: %s", expectedMetric.Sum().AggregationTemporality(), actualMetric.Sum().AggregationTemporality())
 			}
-			if am.Sum().IsMonotonic() != em.Sum().IsMonotonic() {
-				return fmt.Errorf("metric IsMonotonic does not match expected: %t, actual: %t", em.Sum().IsMonotonic(), am.Sum().IsMonotonic())
+			if actualMetric.Sum().IsMonotonic() != expectedMetric.Sum().IsMonotonic() {
+				return fmt.Errorf("metric IsMonotonic does not match expected: %t, actual: %t", expectedMetric.Sum().IsMonotonic(), actualMetric.Sum().IsMonotonic())
 			}
-			actualDataPoints = am.Sum().DataPoints()
-			expectedDataPoints = em.Sum().DataPoints()
+			actualDataPoints = actualMetric.Sum().DataPoints()
+			expectedDataPoints = expectedMetric.Sum().DataPoints()
 		}
 
 		if err := CompareNumberDataPointSlices(actualDataPoints, expectedDataPoints); err != nil {
-			return multierr.Combine(fmt.Errorf("datapoints for metric: `%s`, do not match expected", am.Name()), err)
+			return multierr.Combine(fmt.Errorf("datapoints for metric: `%s`, do not match expected", actualMetric.Name()), err)
 		}
 	}
 	return nil
 }
 
+// CompareNumberDataPointSlices compares each part of two given NumberDataPointSlices and returns
+// an error if they don't match. The error describes what didn't match.
 func CompareNumberDataPointSlices(actual, expected pdata.NumberDataPointSlice) error {
 	if actual.Len() != expected.Len() {
-		return fmt.Errorf("length of datapoints don't match, metric name")
+		return fmt.Errorf("length of datapoints don't match")
 	}
 
 	var errs error
@@ -152,6 +153,8 @@ func CompareNumberDataPointSlices(actual, expected pdata.NumberDataPointSlice) e
 	return nil
 }
 
+// CompareNumberDataPoints compares each part of two given NumberDataPoints and returns
+// an error if they don't match. The error describes what didn't match.
 func CompareNumberDataPoints(actual, expected pdata.NumberDataPoint) error {
 	if expected.Type() != actual.Type() {
 		return fmt.Errorf("metric datapoint types don't match: expected type: %v, actual type: %v", expected.Type(), actual.Type())
