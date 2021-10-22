@@ -38,6 +38,7 @@ func newRedisScraper(cfg Config, settings component.ReceiverCreateSettings, pass
 	opts := &redis.Options{
 		Addr:     cfg.Endpoint,
 		Password: cfg.Password,
+		Network:  cfg.Transport,
 	}
 
 	var err error
