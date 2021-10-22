@@ -20,6 +20,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
@@ -41,7 +42,9 @@ func createDefaultConfig() config.Receiver {
 	scs := scraperhelper.DefaultScraperControllerSettings(typeStr)
 	scs.CollectionInterval = 10 * time.Second
 	return &Config{
-		Network:                   "tcp",
+		NetAddr: confignet.NetAddr{
+			Transport: "tcp",
+		},
 		ScraperControllerSettings: scs,
 	}
 }

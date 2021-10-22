@@ -32,7 +32,5 @@ type Config struct {
 	// requirepass server configuration option.
 	Password string `mapstructure:"password"`
 
-	Network string `mapstructure:"network"`
-
 	TLS configtls.TLSClientSetting `mapstructure:"tls,omitempty"`
 }

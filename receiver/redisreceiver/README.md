@@ -56,7 +56,7 @@ Golang's `ParseDuration` function (example: `1h30m`). Valid time units are
 - `password` (no default): The password used to access the Redis instance;
 must match the password specified in the `requirepass` server configuration
 option.
-- `network` (default = `TCP`) Defines the network to use for connecting to the server. Valid Values are `TCP` or `Unix`
+- `transport` (default = `TCP`) Defines the network to use for connecting to the server. Valid Values are `TCP` or `Unix`
 - `tls`:
   - `insecure` (default = false): whether to disable client transport security for the exporter's connection.
   - `ca_file`: path to the CA cert. For a client this verifies the server certificate. Should only be used if `insecure` is set to false.
