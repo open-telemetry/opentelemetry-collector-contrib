@@ -110,6 +110,7 @@ func (cfr *cloudFoundryReceiver) Start(ctx context.Context, host component.Host)
 		}
 
 		cfr.streamMetrics(innerCtx, envelopeStream, host)
+		cfr.logger.Debug("cloudfoundry metrics streamer stopped")
 	}()
 
 	return nil
@@ -155,8 +156,6 @@ func (cfr *cloudFoundryReceiver) streamMetrics(
 			cfr.obsrecv.EndMetricsOp(obsCtx, dataFormat, metrics.DataPointCount(), err)
 		}
 	}
-
-	cfr.logger.Debug("cloudfoundry metrics streamer stopped")
 }
 
 func createLibraryMetricsSlice(metrics pdata.Metrics) pdata.MetricSlice {
