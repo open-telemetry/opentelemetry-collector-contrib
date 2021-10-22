@@ -61,8 +61,8 @@ func TestCreateDefaultConfig(t *testing.T) {
 			SendMonotonic: true,
 			Quantiles:     true,
 			HistConfig: ddconfig.HistogramConfig{
-				Mode:         "nobuckets",
-				SendCountSum: true,
+				Mode:         "distributions",
+				SendCountSum: false,
 			},
 		},
 
@@ -134,8 +134,8 @@ func TestLoadConfig(t *testing.T) {
 			SendMonotonic: true,
 			Quantiles:     true,
 			HistConfig: ddconfig.HistogramConfig{
-				Mode:         "nobuckets",
-				SendCountSum: true,
+				Mode:         "distributions",
+				SendCountSum: false,
 			},
 		},
 
@@ -182,8 +182,8 @@ func TestLoadConfig(t *testing.T) {
 			DeltaTTL:      3600,
 			Quantiles:     true,
 			HistConfig: ddconfig.HistogramConfig{
-				Mode:         "nobuckets",
-				SendCountSum: true,
+				Mode:         "distributions",
+				SendCountSum: false,
 			},
 		},
 
@@ -272,8 +272,8 @@ func TestLoadConfigEnvVariables(t *testing.T) {
 			Quantiles:     false,
 			DeltaTTL:      3600,
 			HistConfig: ddconfig.HistogramConfig{
-				Mode:         "nobuckets",
-				SendCountSum: true,
+				Mode:         "distributions",
+				SendCountSum: false,
 			},
 		},
 
@@ -323,8 +323,8 @@ func TestLoadConfigEnvVariables(t *testing.T) {
 			DeltaTTL:      3600,
 			Quantiles:     true,
 			HistConfig: ddconfig.HistogramConfig{
-				Mode:         "nobuckets",
-				SendCountSum: true,
+				Mode:         "distributions",
+				SendCountSum: false,
 			},
 		},
 

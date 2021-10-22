@@ -95,17 +95,17 @@ type MetricsConfig struct {
 
 // HistogramConfig customizes export of OTLP Histograms.
 type HistogramConfig struct {
-	// Mode for exporting histograms. Valid values are 'counters' or 'nobuckets'.
+	// Mode for exporting histograms. Valid values are 'distributions', 'counters' or 'nobuckets'.
+	//  - 'distributions' sends histograms as Datadog distributions (recommended).
 	//  - 'counters' sends histograms as Datadog counts, one metric per bucket.
 	//  - 'nobuckets' sends no bucket histogram metrics. .sum and .count metrics will still be sent
 	//    if `send_count_sum_metrics` is enabled.
-	//  - 'distributions' sends histograms as Datadog distributions (recommended).
 	//
-	// The current default is 'nobuckets'.
+	// The current default is 'distributions'.
 	Mode string `mapstructure:"mode"`
 
 	// SendCountSum states if the export should send .sum and .count metrics for histograms.
-	// The current default is true.
+	// The current default is false.
 	SendCountSum bool `mapstructure:"send_count_sum_metrics"`
 }
 
