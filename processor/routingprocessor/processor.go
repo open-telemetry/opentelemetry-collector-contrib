@@ -17,7 +17,6 @@ package routingprocessor
 import (
 	"context"
 	"errors"
-	"fmt"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
@@ -51,30 +50,8 @@ func newProcessor(logger *zap.Logger, cfg config.Processor) (*processorImp, erro
 	logger.Info("building processor")
 
 	oCfg := cfg.(*Config)
-
-	// validate that every route has a value for the routing attribute and has
-	// at least one exporter
-	for _, item := range oCfg.Table {
-		if len(item.Value) == 0 {
-			return nil, fmt.Errorf("invalid (empty) route : %w", errEmptyRoute)
-		}
-
-		if len(item.Exporters) == 0 {
-			return nil, fmt.Errorf("invalid route %s: %w", item.Value, errNoExporters)
-		}
-	}
-
-	// validate that there's at least one item in the table
-	if len(oCfg.Table) == 0 {
-		return nil, fmt.Errorf("invalid routing table: %w", errNoTableItems)
-	}
-
-	// we also need a "FromAttribute" value
-	if len(oCfg.FromAttribute) == 0 {
-		return nil, fmt.Errorf(
-			"invalid attribute to read the route's value from: %w",
-			errNoMissingFromAttribute,
-		)
+	if err := oCfg.Validate(); err != nil {
+		return nil, err
 	}
 
 	return &processorImp{

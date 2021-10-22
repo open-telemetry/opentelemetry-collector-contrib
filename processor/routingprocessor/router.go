@@ -76,7 +76,7 @@ func (r *router) routeMetricsForResource(_ context.Context, tm pdata.Metrics) []
 	// routingEntry is used to group pdata.ResourceMetrics that are routed to
 	// the same set of exporters.
 	// This way we're not ending up with all the metrics split up which would cause
-	// higher CPU usage due to
+	// higher CPU usage.
 	type routingEntry struct {
 		exporters  []component.MetricsExporter
 		resMetrics pdata.ResourceMetricsSlice
@@ -108,8 +108,8 @@ func (r *router) routeMetricsForResource(_ context.Context, tm pdata.Metrics) []
 		}
 	}
 
-	// Now that we have all the ResourceMEtrics grouped, let's create pdata.Metrics
-	// for each group and add it to the returned routingMetrics slice.
+	// Now that we have all the ResourceMetrics grouped, let's create pdata.Metrics
+	// for each group and add it to the returned routedMetrics slice.
 	ret := make([]routedMetrics, 0, len(routingMap))
 	for _, rEntry := range routingMap {
 		metrics := pdata.NewMetrics()
@@ -163,7 +163,7 @@ func (r *router) routeTracesForResource(_ context.Context, tr pdata.Traces) []ro
 	// routingEntry is used to group pdata.ResourceSpans that are routed to
 	// the same set of exporters.
 	// This way we're not ending up with all the logs split up which would cause
-	// higher CPU usage due to
+	// higher CPU usage.
 	type routingEntry struct {
 		exporters []component.TracesExporter
 		resSpans  pdata.ResourceSpansSlice
@@ -195,8 +195,8 @@ func (r *router) routeTracesForResource(_ context.Context, tr pdata.Traces) []ro
 		}
 	}
 
-	// Now that we have all the ResourceMEtrics grouped, let's create pdata.Metrics
-	// for each group and add it to the returned routingMetrics slice.
+	// Now that we have all the ResourceSpans grouped, let's create pdata.Traces
+	// for each group and add it to the returned routedTraces slice.
 	ret := make([]routedTraces, 0, len(routingMap))
 	for _, rEntry := range routingMap {
 		traces := pdata.NewTraces()
@@ -250,7 +250,7 @@ func (r *router) routeLogsForResource(_ context.Context, tl pdata.Logs) []routed
 	// routingEntry is used to group pdata.ResourceLogs that are routed to
 	// the same set of exporters.
 	// This way we're not ending up with all the logs split up which would cause
-	// higher CPU usage due to
+	// higher CPU usage.
 	type routingEntry struct {
 		exporters []component.LogsExporter
 		resLogs   pdata.ResourceLogsSlice
@@ -282,8 +282,8 @@ func (r *router) routeLogsForResource(_ context.Context, tl pdata.Logs) []routed
 		}
 	}
 
-	// Now that we have all the ResourceMEtrics grouped, let's create pdata.Metrics
-	// for each group and add it to the returned routingMetrics slice.
+	// Now that we have all the ResourceLogs grouped, let's create pdata.Logs
+	// for each group and add it to the returned routedLogs slice.
 	ret := make([]routedLogs, 0, len(routingMap))
 	for _, rEntry := range routingMap {
 		logs := pdata.NewLogs()

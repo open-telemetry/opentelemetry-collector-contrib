@@ -43,8 +43,8 @@ exporters:
 
 The full list of settings exposed for this processor are documented [here](./config.go) with detailed sample configuration files:
 
-- for logs [here](./testdata/config_logs.yaml)
-- for metrics [here](./testdata/config_metrics.yaml)
-- for traces [here](./testdata/config_traces.yaml)
+- [logs](./testdata/config_logs.yaml)
+- [metrics](./testdata/config_metrics.yaml)
+- [traces](./testdata/config_traces.yaml)
 
 [context_docs]: https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/context/context.md
