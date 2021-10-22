@@ -33,6 +33,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/fileexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/jaegerexporter"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/jaegerthrifthttpexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opencensusexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusexporter"
@@ -67,6 +68,14 @@ func TestDefaultExporters(t *testing.T) {
 			exporter: "jaeger",
 			getConfigFn: func() config.Exporter {
 				cfg := expFactories["jaeger"].CreateDefaultConfig().(*jaegerexporter.Config)
+				cfg.Endpoint = endpoint
+				return cfg
+			},
+		},
+		{
+			exporter: "jaeger_thrift",
+			getConfigFn: func() config.Exporter {
+				cfg := expFactories["jaeger_thrift"].CreateDefaultConfig().(*jaegerthrifthttpexporter.Config)
 				cfg.Endpoint = endpoint
 				return cfg
 			},
@@ -134,7 +143,7 @@ func TestDefaultExporters(t *testing.T) {
 		},
 	}
 
-	assert.Equal(t, len(tests)+26 /* not tested */, len(expFactories))
+	assert.Equal(t, len(tests)+27 /* not tested */, len(expFactories))
 	for _, tt := range tests {
 		t.Run(string(tt.exporter), func(t *testing.T) {
 			factory, ok := expFactories[tt.exporter]
