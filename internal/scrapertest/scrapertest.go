@@ -42,8 +42,7 @@ func CompareMetricSlices(expected, actual pdata.MetricSlice) error {
 	}
 
 	var errs error
-	// The names do not need to be captured here again because we captured them above
-	for name, _ := range actualByName {
+	for name := range actualByName {
 		_, ok := expectedByName[name]
 		if !ok {
 			errs = multierr.Append(errs, fmt.Errorf("unexpected metric %s", name))
@@ -64,14 +63,14 @@ func CompareMetricSlices(expected, actual pdata.MetricSlice) error {
 		if !ok {
 			return fmt.Errorf("metric name does not match expected: %s, actual: %s", expectedMetric.Name(), actualMetric.Name())
 		}
-		if actualMetric.DataType() != expectedMetric.DataType() {
-			return fmt.Errorf("metric datatype does not match expected: %s, actual: %s", expectedMetric.DataType(), actualMetric.DataType())
-		}
 		if actualMetric.Description() != expectedMetric.Description() {
 			return fmt.Errorf("metric description does not match expected: %s, actual: %s", expectedMetric.Description(), actualMetric.Description())
 		}
 		if actualMetric.Unit() != expectedMetric.Unit() {
 			return fmt.Errorf("metric Unit does not match expected: %s, actual: %s", expectedMetric.Unit(), actualMetric.Unit())
+		}
+		if actualMetric.DataType() != expectedMetric.DataType() {
+			return fmt.Errorf("metric datatype does not match expected: %s, actual: %s", expectedMetric.DataType(), actualMetric.DataType())
 		}
 
 		var actualDataPoints pdata.NumberDataPointSlice
