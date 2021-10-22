@@ -36,14 +36,14 @@ with detailed sample configurations [here](./testdata/config.yaml).
 ## Example
 
 Here is an example deployment of the collector that sets up this receiver along with
-the [SignalFx Exporter](../../exporter/signalfxexporter/README.md).
+the [OTLP Exporter](https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/otlpexporter/README.md).
 
 Follow the below sections to setup various Kubernetes resources required for the deployment.
 
 ### Configuration
 
-Create a ConfigMap with the config for `otelcontribcol`. Replace `SIGNALFX_TOKEN` and `SIGNALFX_REALM`
-with valid values.
+Create a ConfigMap with the config for `otelcontribcol`. Replace `OTLP_ENDPOINT`
+with valid value.
 
 ```bash
 cat <<EOF | kubectl apply -f -
@@ -59,15 +59,16 @@ data:
       k8s_events:
         namespaces: [default, my_namespace]
     exporters:
-      signalfx:
-        access_token: <SIGNALFX_TOKEN>
-        realm: <SIGNALFX_REALM>
+      otlp:
+        endpoint: <OTLP_ENDPOINT>
+        tls:
+          insecure: true
 
     service:
       pipelines:
         metrics:
           receivers: [k8s_events]
-          exporters: [signalfx]
+          exporters: [otlp]
 EOF
 ```
 

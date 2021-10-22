@@ -30,5 +30,11 @@ type Config struct {
 }
 
 func (cfg *Config) Validate() error {
-	return cfg.APIConfig.Validate()
+	if err := cfg.ReceiverSettings.Validate(); err != nil {
+		return err
+	}
+	if err := cfg.APIConfig.Validate(); err != nil {
+		return err
+	}
+	return nil
 }
