@@ -128,6 +128,14 @@ type metric struct {
 	host      string
 }
 
+type sketch struct {
+	name      string
+	basic     summary.Summary
+	timestamp uint64
+	tags      []string
+	host      string
+}
+
 var _ TimeSeriesConsumer = (*mockTimeSeriesConsumer)(nil)
 
 type mockTimeSeriesConsumer struct {
@@ -496,14 +504,6 @@ func TestMapDoubleMonotonicOutOfOrder(t *testing.T) {
 			newCount(metricName, uint64(seconds(3)), 1, []string{}),
 		},
 	)
-}
-
-type sketch struct {
-	name      string
-	basic     summary.Summary
-	timestamp uint64
-	tags      []string
-	host      string
 }
 
 type mockFullConsumer struct {

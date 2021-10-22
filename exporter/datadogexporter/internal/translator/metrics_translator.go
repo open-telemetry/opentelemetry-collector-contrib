@@ -166,7 +166,6 @@ func getBounds(p pdata.HistogramDataPoint, idx int) (lowerBound float64, upperBo
 	// See https://github.com/open-telemetry/opentelemetry-proto/blob/v0.10.0/opentelemetry/proto/metrics/v1/metrics.proto#L427-L439
 	lowerBound = math.Inf(-1)
 	upperBound = math.Inf(1)
-
 	if idx > 0 {
 		lowerBound = p.ExplicitBounds()[idx-1]
 	}
