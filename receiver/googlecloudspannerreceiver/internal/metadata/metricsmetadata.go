@@ -19,7 +19,6 @@ import (
 	"time"
 
 	"cloud.google.com/go/spanner"
-	"go.opentelemetry.io/collector/model/pdata"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudspannerreceiver/internal/datasource"
 )
@@ -130,7 +129,7 @@ func toMetricValue(metricValueMetadata MetricValueMetadata, row *spanner.Row) (M
 	return value, nil
 }
 
-func (metadata *MetricsMetadata) RowToMetrics(databaseID *datasource.DatabaseID, row *spanner.Row) ([]pdata.Metrics, error) {
+func (metadata *MetricsMetadata) RowToMetricsDataPoints(databaseID *datasource.DatabaseID, row *spanner.Row) ([]*MetricsDataPoint, error) {
 	timestamp, err := metadata.timestamp(row)
 	if err != nil {
 		return nil, fmt.Errorf("error occurred during extracting timestamp %w", err)
@@ -148,71 +147,26 @@ func (metadata *MetricsMetadata) RowToMetrics(databaseID *datasource.DatabaseID,
 		return nil, fmt.Errorf("error occurred during extracting metric values row: %w", err)
 	}
 
-	return metadata.toMetrics(databaseID, timestamp, labelValues, metricValues), nil
+	return metadata.toMetricsDataPoints(databaseID, timestamp, labelValues, metricValues), nil
 }
 
-func (metadata *MetricsMetadata) toMetrics(databaseID *datasource.DatabaseID, timestamp time.Time,
-	labelValues []LabelValue, metricValues []MetricValue) []pdata.Metrics {
+func (metadata *MetricsMetadata) toMetricsDataPoints(databaseID *datasource.DatabaseID, timestamp time.Time,
+	labelValues []LabelValue, metricValues []MetricValue) []*MetricsDataPoint {
 
-	var metrics []pdata.Metrics
+	var dataPoints []*MetricsDataPoint
 
 	for _, metricValue := range metricValues {
-		md := pdata.NewMetrics()
-		rms := md.ResourceMetrics()
-		rm := rms.AppendEmpty()
-
-		ilms := rm.InstrumentationLibraryMetrics()
-		ilm := ilms.AppendEmpty()
-		metric := ilm.Metrics().AppendEmpty()
-		metric.SetName(metadata.MetricNamePrefix + metricValue.Name())
-		metric.SetUnit(metricValue.Unit())
-		metric.SetDataType(metricValue.DataType().MetricDataType())
-
-		var dataPoints pdata.NumberDataPointSlice
-
-		switch metricValue.DataType().MetricDataType() {
-		case pdata.MetricDataTypeGauge:
-			dataPoints = metric.Gauge().DataPoints()
-		case pdata.MetricDataTypeSum:
-			metric.Sum().SetAggregationTemporality(metricValue.DataType().AggregationTemporality())
-			metric.Sum().SetIsMonotonic(metricValue.DataType().IsMonotonic())
-			dataPoints = metric.Sum().DataPoints()
+		dataPoint := &MetricsDataPoint{
+			metricName:  metadata.MetricNamePrefix + metricValue.Name(),
+			timestamp:   timestamp,
+			databaseID:  databaseID,
+			labelValues: labelValues,
+			metricValue: metricValue,
 		}
-
-		dataPoint := dataPoints.AppendEmpty()
-
-		switch valueCasted := metricValue.(type) {
-		case float64MetricValue:
-			dataPoint.SetDoubleVal(valueCasted.value)
-		case int64MetricValue:
-			dataPoint.SetIntVal(valueCasted.value)
-		}
-
-		dataPoint.SetTimestamp(pdata.NewTimestampFromTime(timestamp))
-
-		for _, labelValue := range labelValues {
-			switch valueCasted := labelValue.(type) {
-			case stringLabelValue:
-				dataPoint.Attributes().InsertString(valueCasted.name, valueCasted.value)
-			case boolLabelValue:
-				dataPoint.Attributes().InsertBool(valueCasted.name, valueCasted.value)
-			case int64LabelValue:
-				dataPoint.Attributes().InsertInt(valueCasted.name, valueCasted.value)
-			case stringSliceLabelValue:
-				dataPoint.Attributes().InsertString(valueCasted.name, valueCasted.value)
-			case byteSliceLabelValue:
-				dataPoint.Attributes().InsertString(valueCasted.name, valueCasted.value)
-			}
-		}
-
-		dataPoint.Attributes().InsertString(projectIDLabelName, databaseID.ProjectID())
-		dataPoint.Attributes().InsertString(instanceIDLabelName, databaseID.InstanceID())
-		dataPoint.Attributes().InsertString(databaseLabelName, databaseID.DatabaseName())
-
-		metrics = append(metrics, md)
+		dataPoints = append(dataPoints, dataPoint)
 	}
 
-	return metrics
+	return dataPoints
 }
 
 func (metadata *MetricsMetadata) MetadataType() MetricsMetadataType {

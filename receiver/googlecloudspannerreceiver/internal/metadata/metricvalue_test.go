@@ -18,6 +18,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"go.opentelemetry.io/collector/model/pdata"
 )
 
 func TestInt64MetricValueMetadata(t *testing.T) {
@@ -81,6 +82,12 @@ func TestInt64MetricValue(t *testing.T) {
 
 	assert.Equal(t, metadata, metricValue.Int64MetricValueMetadata)
 	assert.Equal(t, int64Value, metricValue.Value())
+
+	dataPoint := pdata.NewNumberDataPoint()
+
+	metricValue.SetValueTo(dataPoint)
+
+	assert.Equal(t, int64Value, dataPoint.IntVal())
 }
 
 func TestFloat64MetricValue(t *testing.T) {
@@ -102,6 +109,12 @@ func TestFloat64MetricValue(t *testing.T) {
 
 	assert.Equal(t, metadata, metricValue.Float64MetricValueMetadata)
 	assert.Equal(t, float64Value, metricValue.Value())
+
+	dataPoint := pdata.NewNumberDataPoint()
+
+	metricValue.SetValueTo(dataPoint)
+
+	assert.Equal(t, float64Value, dataPoint.DoubleVal())
 }
 
 func TestNewQueryMetricValueMetadata(t *testing.T) {
