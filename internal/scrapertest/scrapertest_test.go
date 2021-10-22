@@ -21,10 +21,10 @@ import (
 	"testing"
 	"time"
 
+	"go.opentelemetry.io/collector/model/pdata"
+
 	"github.com/stretchr/testify/require"
 	"go.uber.org/multierr"
-
-	"go.opentelemetry.io/collector/model/pdata"
 )
 
 func baseTestMetrics() pdata.MetricSlice {

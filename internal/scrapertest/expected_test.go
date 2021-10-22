@@ -19,9 +19,9 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/stretchr/testify/require"
-
 	"go.opentelemetry.io/collector/model/pdata"
+
+	"github.com/stretchr/testify/require"
 )
 
 func TestMetricsToFile(t *testing.T) {
