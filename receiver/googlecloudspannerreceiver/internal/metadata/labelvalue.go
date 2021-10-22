@@ -17,6 +17,8 @@ package metadata
 import (
 	"sort"
 	"strings"
+
+	"go.opentelemetry.io/collector/model/pdata"
 )
 
 type LabelValueMetadata interface {
@@ -26,6 +28,7 @@ type LabelValueMetadata interface {
 type LabelValue interface {
 	LabelValueMetadata
 	Value() interface{}
+	SetValueTo(attributes pdata.AttributeMap)
 }
 
 type queryLabelValueMetadata struct {
@@ -133,6 +136,10 @@ func (value stringLabelValue) Value() interface{} {
 	return value.value
 }
 
+func (value stringLabelValue) SetValueTo(attributes pdata.AttributeMap) {
+	attributes.InsertString(value.name, value.value)
+}
+
 func newStringLabelValue(metadata StringLabelValueMetadata, valueHolder interface{}) stringLabelValue {
 	return stringLabelValue{
 		StringLabelValueMetadata: metadata,
@@ -148,6 +155,10 @@ func (metadata Int64LabelValueMetadata) ValueHolder() interface{} {
 
 func (value int64LabelValue) Value() interface{} {
 	return value.value
+}
+
+func (value int64LabelValue) SetValueTo(attributes pdata.AttributeMap) {
+	attributes.InsertInt(value.name, value.value)
 }
 
 func newInt64LabelValue(metadata Int64LabelValueMetadata, valueHolder interface{}) int64LabelValue {
@@ -167,6 +178,10 @@ func (value boolLabelValue) Value() interface{} {
 	return value.value
 }
 
+func (value boolLabelValue) SetValueTo(attributes pdata.AttributeMap) {
+	attributes.InsertBool(value.name, value.value)
+}
+
 func newBoolLabelValue(metadata BoolLabelValueMetadata, valueHolder interface{}) boolLabelValue {
 	return boolLabelValue{
 		BoolLabelValueMetadata: metadata,
@@ -182,6 +197,10 @@ func (metadata StringSliceLabelValueMetadata) ValueHolder() interface{} {
 
 func (value stringSliceLabelValue) Value() interface{} {
 	return value.value
+}
+
+func (value stringSliceLabelValue) SetValueTo(attributes pdata.AttributeMap) {
+	attributes.InsertString(value.name, value.value)
 }
 
 func newStringSliceLabelValue(metadata StringSliceLabelValueMetadata, valueHolder interface{}) stringSliceLabelValue {
@@ -205,6 +224,10 @@ func (metadata ByteSliceLabelValueMetadata) ValueHolder() interface{} {
 
 func (value byteSliceLabelValue) Value() interface{} {
 	return value.value
+}
+
+func (value byteSliceLabelValue) SetValueTo(attributes pdata.AttributeMap) {
+	attributes.InsertString(value.name, value.value)
 }
 
 func newByteSliceLabelValue(metadata ByteSliceLabelValueMetadata, valueHolder interface{}) byteSliceLabelValue {
