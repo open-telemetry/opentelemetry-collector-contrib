@@ -16,7 +16,6 @@ package spanprocessor
 
 import (
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/otel/codes"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterconfig"
 )
@@ -86,8 +85,9 @@ type ToAttributes struct {
 }
 
 type Status struct {
-	// Code is one of three values
-	Code codes.Code `mapstructure:"code"`
+	// Code is one of two values "Ok" or "Err". Please check:
+	// https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/trace/api.md#set-status
+	Code string `mapstructure:"code"`
 
 	// Optional description
 	Description string `mapstructure:"description"`

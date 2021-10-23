@@ -102,10 +102,12 @@ span/to_attributes:
 Example:
 
 ```yaml
-# Set status allows to set specific status for a given span.
+# Set status allows to set specific status for a given span. Possible values are
+# Ok and Error as per 
+# https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/trace/api.md#set-status
 span/set_status:
   status:
-    code: 2
+    code: Error
     description: "some error description"
 ```
 
