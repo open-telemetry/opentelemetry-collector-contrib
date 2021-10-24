@@ -113,7 +113,7 @@ class SQLAlchemyTestMixin(TestBase):
 
     def _check_span(self, span, name):
         if self.SQL_DB:
-            name = "{0} {1}".format(name, self.SQL_DB)
+            name = f"{name} {self.SQL_DB}"
         self.assertEqual(span.name, name)
         self.assertEqual(
             span.attributes.get(SpanAttributes.DB_NAME), self.SQL_DB

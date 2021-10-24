@@ -316,8 +316,7 @@ class OpenTelemetryMiddleware:
 def _end_span_after_iterating(iterable, span, tracer, token):
     try:
         with trace.use_span(span):
-            for yielded in iterable:
-                yield yielded
+            yield from iterable
     finally:
         close = getattr(iterable, "close", None)
         if close:

@@ -83,7 +83,7 @@ def main():
     source = astor.to_source(tree)
 
     with open(
-        os.path.join(scripts_path, "license_header.txt"), "r", encoding="utf-8"
+        os.path.join(scripts_path, "license_header.txt"), encoding="utf-8"
     ) as header_file:
         header = header_file.read()
         source = _template.format(header=header, source=source)

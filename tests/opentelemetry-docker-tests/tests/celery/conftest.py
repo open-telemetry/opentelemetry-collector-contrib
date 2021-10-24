@@ -26,9 +26,9 @@ from opentelemetry.sdk.trace.export.in_memory_span_exporter import (
 
 REDIS_HOST = os.getenv("REDIS_HOST", "localhost")
 REDIS_PORT = int(os.getenv("REDIS_PORT ", "6379"))
-REDIS_URL = "redis://{host}:{port}".format(host=REDIS_HOST, port=REDIS_PORT)
-BROKER_URL = "{redis}/{db}".format(redis=REDIS_URL, db=0)
-BACKEND_URL = "{redis}/{db}".format(redis=REDIS_URL, db=1)
+REDIS_URL = f"redis://{REDIS_HOST}:{REDIS_PORT}"
+BROKER_URL = f"{REDIS_URL}/0"
+BACKEND_URL = f"{REDIS_URL}/1"
 
 
 @pytest.fixture(scope="session")

@@ -334,7 +334,7 @@ class TestMiddlewareAsgi(SimpleTestCase, TestBase):
         )
         self.assertEqual(
             response.headers["traceresponse"],
-            "00-{0}-{1}-01".format(
+            "00-{}-{}-01".format(
                 format_trace_id(span.get_span_context().trace_id),
                 format_span_id(span.get_span_context().span_id),
             ),

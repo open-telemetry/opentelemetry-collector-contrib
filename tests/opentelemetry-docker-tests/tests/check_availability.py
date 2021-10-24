@@ -64,7 +64,7 @@ def retryable(func):
                     ex,
                 )
             time.sleep(RETRY_INTERVAL)
-        raise Exception("waiting for {} failed".format(func.__name__))
+        raise Exception(f"waiting for {func.__name__} failed")
 
     return wrapper
 

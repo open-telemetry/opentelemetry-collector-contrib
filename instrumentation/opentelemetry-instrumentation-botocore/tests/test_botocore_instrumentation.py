@@ -115,7 +115,7 @@ class TestBotocoreInstrumentor(TestBase):
             expected[span_attributes_request_id] = request_id
 
         self.assertSpanHasAttributes(span, expected)
-        self.assertEqual("{}.{}".format(service, operation), span.name)
+        self.assertEqual(f"{service}.{operation}", span.name)
         return span
 
     @mock_ec2

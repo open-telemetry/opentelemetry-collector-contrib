@@ -235,11 +235,11 @@ def add_span_arg_tags(span, aws_service, args, args_names, args_traced):
     # Do not trace `Key Management Service` or `Secure Token Service` API calls
     # over concerns of security leaks.
     if aws_service not in {"kms", "sts"}:
-        tags = dict(
-            (name, value)
+        tags = {
+            name: value
             for (name, value) in zip(args_names, args)
             if name in args_traced
-        )
+        }
         tags = flatten_dict(tags)
 
         for param_key, value in tags.items():

@@ -51,16 +51,16 @@ def test_instrumentation_info(celery_app, memory_exporter):
     assert run_span.parent.span_id == async_span.context.span_id
     assert run_span.context.trace_id == async_span.context.trace_id
 
-    assert async_span.instrumentation_info.name == "apply_async/{0}".format(
+    assert async_span.instrumentation_info.name == "apply_async/{}".format(
         opentelemetry.instrumentation.celery.__name__
     )
-    assert async_span.instrumentation_info.version == "apply_async/{0}".format(
+    assert async_span.instrumentation_info.version == "apply_async/{}".format(
         opentelemetry.instrumentation.celery.__version__
     )
-    assert run_span.instrumentation_info.name == "run/{0}".format(
+    assert run_span.instrumentation_info.name == "run/{}".format(
         opentelemetry.instrumentation.celery.__name__
     )
-    assert run_span.instrumentation_info.version == "run/{0}".format(
+    assert run_span.instrumentation_info.version == "run/{}".format(
         opentelemetry.instrumentation.celery.__version__
     )
 
@@ -489,9 +489,7 @@ def test_apply_async_previous_style_tasks(
 
         @classmethod
         def apply_async(cls, args=None, kwargs=None, **kwargs_):
-            return super(CelerySuperClass, cls).apply_async(
-                args=args, kwargs=kwargs, **kwargs_
-            )
+            return super().apply_async(args=args, kwargs=kwargs, **kwargs_)
 
         def run(self, *args, **kwargs):
             if "stop" in kwargs:

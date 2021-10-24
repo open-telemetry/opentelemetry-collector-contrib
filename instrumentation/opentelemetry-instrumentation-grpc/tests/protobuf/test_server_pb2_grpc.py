@@ -3,7 +3,7 @@ import grpc
 from tests.protobuf import test_server_pb2 as test__server__pb2
 
 
-class GRPCTestServerStub(object):
+class GRPCTestServerStub:
     """Missing associated documentation comment in .proto file"""
 
     def __init__(self, channel):
@@ -34,7 +34,7 @@ class GRPCTestServerStub(object):
         )
 
 
-class GRPCTestServerServicer(object):
+class GRPCTestServerServicer:
     """Missing associated documentation comment in .proto file"""
 
     def SimpleMethod(self, request, context):
@@ -92,7 +92,7 @@ def add_GRPCTestServerServicer_to_server(servicer, server):
 
 
 # This class is part of an EXPERIMENTAL API.
-class GRPCTestServer(object):
+class GRPCTestServer:
     """Missing associated documentation comment in .proto file"""
 
     @staticmethod

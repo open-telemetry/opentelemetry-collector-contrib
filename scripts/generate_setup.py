@@ -37,7 +37,6 @@ def main():
     root_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     with open(
         os.path.join(root_path, _template_dir, _template_name),
-        "r",
         encoding="utf-8",
     ) as template:
         setuppy_tmpl = Template(template.read())

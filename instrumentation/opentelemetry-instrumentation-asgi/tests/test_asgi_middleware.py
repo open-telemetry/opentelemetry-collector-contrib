@@ -410,7 +410,7 @@ class TestAsgiAttributes(unittest.TestCase):
     def test_request_attributes(self):
         self.scope["query_string"] = b"foo=bar"
         headers = []
-        headers.append(("host".encode("utf8"), "test".encode("utf8")))
+        headers.append((b"host", b"test"))
         self.scope["headers"] = headers
 
         attrs = otel_asgi.collect_request_attributes(self.scope)
