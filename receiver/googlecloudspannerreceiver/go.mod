@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/google
 go 1.17
 
 require (
-	cloud.google.com/go/spanner v1.26.0
+	cloud.google.com/go/spanner v1.27.0
 	github.com/stretchr/testify v1.7.0
 	go.opentelemetry.io/collector v0.37.1-0.20211015233822-bd87fb628058
 	go.opentelemetry.io/collector/model v0.37.1-0.20211015233822-bd87fb628058
@@ -14,7 +14,7 @@ require (
 )
 
 require (
-	google.golang.org/genproto v0.0.0-20210924002016-3dee208752a0
+	google.golang.org/genproto v0.0.0-20211019152133-63b7e35f4404
 	google.golang.org/grpc v1.41.0
 )
 
