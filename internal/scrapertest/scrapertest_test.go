@@ -37,23 +37,23 @@ func baseTestMetrics() pdata.MetricSlice {
 	attributes := pdata.NewAttributeMap()
 	attributes.Insert("testKey1", pdata.NewAttributeValueString("teststringvalue1"))
 	attributes.Insert("testKey2", pdata.NewAttributeValueString("testvalue1"))
-	setDPDoubleVals(dp, 2, attributes, time.Time{})
+	setDPDoubleVal(dp, 2, attributes, time.Time{})
 
 	dp = dps.AppendEmpty()
 	attributes = pdata.NewAttributeMap()
 	attributes.Insert("testKey1", pdata.NewAttributeValueString("teststringvalue2"))
 	attributes.Insert("testKey2", pdata.NewAttributeValueString("testvalue2"))
-	setDPDoubleVals(dp, 2, attributes, time.Time{})
+	setDPDoubleVal(dp, 2, attributes, time.Time{})
 
 	// set Gauge with one int dp
 	metric = slice.AppendEmpty()
-	initGauge(metric, "test gauge single", "single gauge", "by")
+	initGauge(metric, "test gauge single", "single gauge", "By")
 	dps = metric.Gauge().DataPoints()
 
 	dp = dps.AppendEmpty()
 	attributes = pdata.NewAttributeMap()
 	attributes.Insert("testKey2", pdata.NewAttributeValueString("teststringvalue2"))
-	setDPIntVals(dp, 2, attributes, time.Time{})
+	setDPIntVal(dp, 2, attributes, time.Time{})
 
 	// set Delta Sum with two int dps
 	metric = slice.AppendEmpty()
@@ -63,12 +63,12 @@ func baseTestMetrics() pdata.MetricSlice {
 	dp = dps.AppendEmpty()
 	attributes = pdata.NewAttributeMap()
 	attributes.Insert("testKey2", pdata.NewAttributeValueString("teststringvalue2"))
-	setDPIntVals(dp, 2, attributes, time.Time{})
+	setDPIntVal(dp, 2, attributes, time.Time{})
 
 	dp = dps.AppendEmpty()
 	attributes = pdata.NewAttributeMap()
 	attributes.Insert("testKey2", pdata.NewAttributeValueString("teststringvalue2"))
-	setDPIntVals(dp, 2, attributes, time.Time{})
+	setDPIntVal(dp, 2, attributes, time.Time{})
 
 	// set Cumulative Sum with one double dp
 	metric = slice.AppendEmpty()
@@ -77,19 +77,17 @@ func baseTestMetrics() pdata.MetricSlice {
 
 	dp = dps.AppendEmpty()
 	attributes = pdata.NewAttributeMap()
-	attributes.Insert("testKey2", pdata.NewAttributeValueString("teststringvalue2"))
-	setDPDoubleVals(dp, 2, attributes, time.Time{})
-
+	setDPDoubleVal(dp, 2, attributes, time.Date(1997, 07, 27, 1, 1, 1, 1, &time.Location{}))
 	return slice
 }
 
-func setDPDoubleVals(dp pdata.NumberDataPoint, value float64, attributes pdata.AttributeMap, timeStamp time.Time) {
+func setDPDoubleVal(dp pdata.NumberDataPoint, value float64, attributes pdata.AttributeMap, timeStamp time.Time) {
 	dp.SetDoubleVal(value)
 	dp.SetTimestamp(pdata.NewTimestampFromTime(timeStamp))
 	attributes.CopyTo(dp.Attributes())
 }
 
-func setDPIntVals(dp pdata.NumberDataPoint, value int64, attributes pdata.AttributeMap, timeStamp time.Time) {
+func setDPIntVal(dp pdata.NumberDataPoint, value int64, attributes pdata.AttributeMap, timeStamp time.Time) {
 	dp.SetIntVal(value)
 	dp.SetTimestamp(pdata.NewTimestampFromTime(timeStamp))
 	attributes.CopyTo(dp.Attributes())
@@ -281,7 +279,18 @@ func TestCompareMetrics(t *testing.T) {
 			// Timestamps aren't checked so no error is expected.
 		},
 		{
-			name: "missing metric",
+			name: "Empty timestamp value",
+			actual: func() pdata.MetricSlice {
+				metrics := baseTestMetrics()
+				m := metrics.At(3)
+				m.Sum().DataPoints().At(0).SetTimestamp(pdata.NewTimestampFromTime(time.Time{}))
+				return metrics
+			}(),
+			expected: baseTestMetrics(),
+			// Timestamps aren't checked so no error is expected.
+		},
+		{
+			name: "Missing metric",
 			actual: func() pdata.MetricSlice {
 				metrics := baseTestMetrics()
 				third := metrics.At(2)
@@ -296,7 +305,7 @@ func TestCompareMetrics(t *testing.T) {
 			),
 		},
 		{
-			name: "bonus metric",
+			name: "Bonus metric",
 			actual: func() pdata.MetricSlice {
 				metrics := baseTestMetrics()
 				m := metrics.AppendEmpty()
@@ -306,6 +315,23 @@ func TestCompareMetrics(t *testing.T) {
 			expected: baseTestMetrics(),
 			expectedError: multierr.Combine(
 				errors.New("metric slices not of same length"),
+			),
+		},
+		{
+			name: "No attribute",
+			actual: func() pdata.MetricSlice {
+				metrics := baseTestMetrics()
+				attributes := pdata.NewAttributeMap()
+				attributes.Insert("testKey2", pdata.NewAttributeValueString("teststringvalue2"))
+				dp := metrics.At(3).Sum().DataPoints().At(0)
+				attributes.CopyTo(dp.Attributes())
+				return metrics
+			}(),
+			expected: baseTestMetrics(),
+			expectedError: multierr.Combine(
+				errors.New("datapoints for metric: `test cumulative sum single`, do not match expected"),
+				errors.New("metric missing expected data point: Labels: map[]"),
+				errors.New("metric has extra data point: Labels: map[testKey2:teststringvalue2]"),
 			),
 		},
 	}

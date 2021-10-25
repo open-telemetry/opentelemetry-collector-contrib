@@ -69,7 +69,7 @@
                         ]
                      },
                      "name": "test gauge single",
-                     "unit": "by"
+                     "unit": "By"
                   },
                   {
                      "description": "multi sum",
@@ -113,15 +113,7 @@
                         "dataPoints": [
                            {
                               "asDouble": 2,
-                              "attributes": [
-                                 {
-                                    "key": "testKey2",
-                                    "value": {
-                                       "stringValue": "teststringvalue2"
-                                    }
-                                 }
-                              ],
-                              "timeUnixNano": "11651379494838206464"
+                              "timeUnixNano": "869965261000000001"
                            }
                         ],
                         "isMonotonic": true
