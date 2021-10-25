@@ -71,7 +71,7 @@ func baseTestMetrics() pdata.MetricSlice {
 	attributes.Insert("testKey2", pdata.NewAttributeValueString("teststringvalue2"))
 	setDPIntVals(dp, 2, attributes, time.Now())
 
-	// set Cumulatative Sum with one double dp
+	// set Cumulative Sum with one double dp
 	metric = slice.AppendEmpty()
 	initSum(metric, "test cumulative sum single", "single sum", "1/s", pdata.MetricAggregationTemporalityCumulative, true)
 	dps = metric.Sum().DataPoints()
