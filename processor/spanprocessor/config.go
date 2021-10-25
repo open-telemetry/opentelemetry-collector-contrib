@@ -85,7 +85,7 @@ type ToAttributes struct {
 }
 
 type Status struct {
-	// Code is one of two values "Ok" or "Err". Please check:
+	// Code is one of three values "Ok" or "Err" or "Unset". Please check:
 	// https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/trace/api.md#set-status
 	Code string `mapstructure:"code"`
 

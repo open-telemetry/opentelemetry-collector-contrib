@@ -229,6 +229,8 @@ func (sp *spanProcessor) processUpdateStatus(span pdata.Span) {
 			span.Status().SetCode(pdata.StatusCodeOk)
 		} else if cfg.Code == "Err" {
 			span.Status().SetCode(pdata.StatusCodeError)
+		} else if cfg.Code == "Unset" {
+			span.Status().SetCode(pdata.StatusCodeUnset)
 		}
 		if len(cfg.Description) > 0 {
 			span.Status().SetMessage(cfg.Description)

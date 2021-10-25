@@ -594,11 +594,83 @@ func TestSpanProcessor_skipSpan(t *testing.T) {
 	}
 }
 
+func generateTraceDatSetStatus(code pdata.StatusCode, description string, attrs map[string]pdata.AttributeValue) pdata.Traces {
+	td := pdata.NewTraces()
+	rs := td.ResourceSpans().AppendEmpty()
+	span := rs.InstrumentationLibrarySpans().AppendEmpty().Spans().AppendEmpty()
+	span.Status().SetCode(code)
+	span.Status().SetMessage(description)
+	span.Attributes().InitFromMap(attrs).Sort()
+	return td
+}
+
 func TestSpanProcessor_setStatusCode(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	oCfg := cfg.(*Config)
-	oCfg.SetStatus.Code = 2
-	oCfg.SetStatus.Description = "someStatus"
-	// TODO: Work in progress
+	oCfg.SetStatus = &Status{
+		Code:        "Err",
+		Description: "Set custom error message",
+	}
+	tp, err := factory.CreateTracesProcessor(context.Background(), componenttest.NewNopProcessorCreateSettings(), oCfg, consumertest.NewNop())
+	require.Nil(t, err)
+	require.NotNil(t, tp)
+
+	td := generateTraceDatSetStatus(pdata.StatusCodeUnset, "foobar", nil)
+	td.InternalRep()
+
+	assert.NoError(t, tp.ConsumeTraces(context.Background(), td))
+
+	assert.EqualValues(t, generateTraceDatSetStatus(pdata.StatusCodeError, "Set custom error message", nil), td)
+}
+
+func TestSpanProcessor_setStatusCodeConditionally(t *testing.T) {
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig()
+	oCfg := cfg.(*Config)
+	oCfg.SetStatus = &Status{
+		Code:        "Err",
+		Description: "custom error message",
+	}
+	// This test numer two include rule for applying rule only for status code 400
+	oCfg.Include = &filterconfig.MatchProperties{
+		Attributes: []filterconfig.Attribute{
+			{Key: "http.status_code", Value: 400},
+		},
+	}
+	tp, err := factory.CreateTracesProcessor(context.Background(), componenttest.NewNopProcessorCreateSettings(), oCfg, consumertest.NewNop())
+	require.Nil(t, err)
+	require.NotNil(t, tp)
+
+	testCases := []struct {
+		inputAttributes         map[string]pdata.AttributeValue
+		inputStatusCode         pdata.StatusCode
+		outputStatusCode        pdata.StatusCode
+		outputStatusDescription string
+	}{
+		{
+			// without attribiutes - should not apply rule and leave status code as it is
+			inputStatusCode:  pdata.StatusCodeOk,
+			outputStatusCode: pdata.StatusCodeOk,
+		},
+		{
+			inputAttributes: map[string]pdata.AttributeValue{
+				"http.status_code": pdata.NewAttributeValueInt(400),
+			},
+			inputStatusCode:         pdata.StatusCodeOk,
+			outputStatusCode:        pdata.StatusCodeError,
+			outputStatusDescription: "custom error message",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run("set-status-test", func(t *testing.T) {
+			td := generateTraceDatSetStatus(tc.inputStatusCode, "", tc.inputAttributes)
+			td.InternalRep()
+
+			assert.NoError(t, tp.ConsumeTraces(context.Background(), td))
+
+			assert.EqualValues(t, generateTraceDatSetStatus(tc.outputStatusCode, tc.outputStatusDescription, tc.inputAttributes), td)
+		})
+	}
 }
