@@ -184,7 +184,7 @@ class _DjangoMiddleware(MiddlewareMixin):
             carrier_getter = wsgi_getter
             collect_request_attributes = wsgi_collect_request_attributes
 
-        token = attach(extract(request_meta, getter=carrier_getter))
+        token = attach(extract(carrier, getter=carrier_getter))
 
         span = self._tracer.start_span(
             self._get_span_name(request),

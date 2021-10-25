@@ -15,6 +15,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   ([#766](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/766))
 - `opentelemetry-instrumentation-falcon` Dropped broken support for Python 3.4.
   ([#774](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/774))
+- `opentelemetry-instrumentation-django` Fixed carrier usage on ASGI requests.
+  ([#767](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/767))
 
 ## [1.6.2-0.25b2](https://github.com/open-telemetry/opentelemetry-python/releases/tag/v1.6.2-0.25b2) - 2021-10-19
 

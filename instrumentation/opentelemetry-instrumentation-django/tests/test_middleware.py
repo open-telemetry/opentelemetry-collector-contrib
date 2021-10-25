@@ -31,10 +31,16 @@ from opentelemetry.instrumentation.propagators import (
 )
 from opentelemetry.sdk import resources
 from opentelemetry.sdk.trace import Span
+from opentelemetry.sdk.trace.id_generator import RandomIdGenerator
 from opentelemetry.semconv.trace import SpanAttributes
 from opentelemetry.test.test_base import TestBase
 from opentelemetry.test.wsgitestutil import WsgiTestBase
-from opentelemetry.trace import SpanKind, StatusCode
+from opentelemetry.trace import (
+    SpanKind,
+    StatusCode,
+    format_span_id,
+    format_trace_id,
+)
 from opentelemetry.util.http import get_excluded_urls, get_traced_request_attrs
 
 # pylint: disable=import-error
@@ -330,6 +336,29 @@ class TestMiddleware(TestBase, WsgiTestBase):
         self.assertIsInstance(response_hook_args[1], HttpRequest)
         self.assertIsInstance(response_hook_args[2], HttpResponse)
         self.assertEqual(response_hook_args[2], response)
+
+    async def test_trace_parent(self):
+        id_generator = RandomIdGenerator()
+        trace_id = format_trace_id(id_generator.generate_trace_id())
+        span_id = format_span_id(id_generator.generate_span_id())
+        traceparent_value = f"00-{trace_id}-{span_id}-01"
+
+        Client().get(
+            "/span_name/1234/", traceparent=traceparent_value,
+        )
+        span = self.memory_exporter.get_finished_spans()[0]
+
+        self.assertEqual(
+            trace_id, format_trace_id(span.get_span_context().trace_id),
+        )
+        self.assertIsNotNone(span.parent)
+        self.assertEqual(
+            trace_id, format_trace_id(span.parent.trace_id),
+        )
+        self.assertEqual(
+            span_id, format_span_id(span.parent.span_id),
+        )
+        self.memory_exporter.clear()
 
     def test_trace_response_headers(self):
         response = Client().get("/span_name/1234/")
