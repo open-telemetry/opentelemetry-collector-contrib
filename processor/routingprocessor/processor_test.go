@@ -279,19 +279,6 @@ func TestTraces_RoutingWorks_Context(t *testing.T) {
 		assert.Equal(t, 1, lExp.getTraceCount(),
 			"trace should be routed to non default exporter",
 		)
-
-		assert.NoError(t, exp.ConsumeTraces(
-			metadata.NewIncomingContext(context.Background(), metadata.New(map[string]string{
-				"X-Tenant": "acme",
-			})),
-			tr,
-		))
-		assert.Equal(t, 0, defaultExp.getTraceCount(),
-			"trace should not be routed to default exporter",
-		)
-		assert.Equal(t, 2, lExp.getTraceCount(),
-			"trace should be routed to non default exporter",
-		)
 	})
 
 	t.Run("default route is taken when no matching route can be found", func(t *testing.T) {
@@ -304,7 +291,7 @@ func TestTraces_RoutingWorks_Context(t *testing.T) {
 		assert.Equal(t, 1, defaultExp.getTraceCount(),
 			"trace should be routed to default exporter",
 		)
-		assert.Equal(t, 2, lExp.getTraceCount(),
+		assert.Equal(t, 1, lExp.getTraceCount(),
 			"trace should not be routed to non default exporter",
 		)
 	})
@@ -352,14 +339,6 @@ func TestTraces_RoutingWorks_ResourceAttribute(t *testing.T) {
 		assert.Equal(t, 1, mExp.getTraceCount(),
 			"trace should be routed to non default exporter",
 		)
-
-		assert.NoError(t, exp.ConsumeTraces(context.Background(), tr))
-		assert.Equal(t, 0, defaultExp.getTraceCount(),
-			"trace should not be routed to default exporter",
-		)
-		assert.Equal(t, 2, mExp.getTraceCount(),
-			"trace should be routed to non default exporter",
-		)
 	})
 
 	t.Run("default route is taken when no matching route can be found", func(t *testing.T) {
@@ -371,7 +350,7 @@ func TestTraces_RoutingWorks_ResourceAttribute(t *testing.T) {
 		assert.Equal(t, 1, defaultExp.getTraceCount(),
 			"trace should be routed to default exporter",
 		)
-		assert.Equal(t, 2, mExp.getTraceCount(),
+		assert.Equal(t, 1, mExp.getTraceCount(),
 			"trace should not be routed to non default exporter",
 		)
 	})
@@ -508,19 +487,6 @@ func TestMetrics_RoutingWorks_Context(t *testing.T) {
 		assert.Equal(t, 1, mExp.getMetricCount(),
 			"metric should be routed to non default exporter",
 		)
-
-		assert.NoError(t, exp.ConsumeMetrics(
-			metadata.NewIncomingContext(context.Background(), metadata.New(map[string]string{
-				"X-Tenant": "acme",
-			})),
-			m,
-		))
-		assert.Equal(t, 0, defaultExp.getMetricCount(),
-			"metric should not be routed to default exporter",
-		)
-		assert.Equal(t, 2, mExp.getMetricCount(),
-			"metric should be routed to non default exporter",
-		)
 	})
 
 	t.Run("default route is taken when no matching route can be found", func(t *testing.T) {
@@ -533,7 +499,7 @@ func TestMetrics_RoutingWorks_Context(t *testing.T) {
 		assert.Equal(t, 1, defaultExp.getMetricCount(),
 			"metric should be routed to default exporter",
 		)
-		assert.Equal(t, 2, mExp.getMetricCount(),
+		assert.Equal(t, 1, mExp.getMetricCount(),
 			"metric should not be routed to non default exporter",
 		)
 	})
@@ -581,14 +547,6 @@ func TestMetrics_RoutingWorks_ResourceAttribute(t *testing.T) {
 		assert.Equal(t, 1, mExp.getMetricCount(),
 			"metric should be routed to non default exporter",
 		)
-
-		assert.NoError(t, exp.ConsumeMetrics(context.Background(), m))
-		assert.Equal(t, 0, defaultExp.getMetricCount(),
-			"metric should not be routed to default exporter",
-		)
-		assert.Equal(t, 2, mExp.getMetricCount(),
-			"metric should be routed to non default exporter",
-		)
 	})
 
 	t.Run("default route is taken when no matching route can be found", func(t *testing.T) {
@@ -600,7 +558,7 @@ func TestMetrics_RoutingWorks_ResourceAttribute(t *testing.T) {
 		assert.Equal(t, 1, defaultExp.getMetricCount(),
 			"metric should be routed to default exporter",
 		)
-		assert.Equal(t, 2, mExp.getMetricCount(),
+		assert.Equal(t, 1, mExp.getMetricCount(),
 			"metric should not be routed to non default exporter",
 		)
 	})
@@ -653,19 +611,6 @@ func TestLogs_RoutingWorks_Context(t *testing.T) {
 		assert.Equal(t, 1, lExp.getLogCount(),
 			"log should be routed to non default exporter",
 		)
-
-		assert.NoError(t, exp.ConsumeLogs(
-			metadata.NewIncomingContext(context.Background(), metadata.New(map[string]string{
-				"X-Tenant": "acme",
-			})),
-			l,
-		))
-		assert.Equal(t, 0, defaultExp.getLogCount(),
-			"log should not be routed to default exporter",
-		)
-		assert.Equal(t, 2, lExp.getLogCount(),
-			"log should be routed to non default exporter",
-		)
 	})
 
 	t.Run("default route is taken when no matching route can be found", func(t *testing.T) {
@@ -678,7 +623,7 @@ func TestLogs_RoutingWorks_Context(t *testing.T) {
 		assert.Equal(t, 1, defaultExp.getLogCount(),
 			"log should be routed to default exporter",
 		)
-		assert.Equal(t, 2, lExp.getLogCount(),
+		assert.Equal(t, 1, lExp.getLogCount(),
 			"log should not be routed to non default exporter",
 		)
 	})
@@ -726,14 +671,6 @@ func TestLogs_RoutingWorks_ResourceAttribute(t *testing.T) {
 		assert.Equal(t, 1, lExp.getLogCount(),
 			"log should be routed to non default exporter",
 		)
-
-		assert.NoError(t, exp.ConsumeLogs(context.Background(), l))
-		assert.Equal(t, 0, defaultExp.getLogCount(),
-			"log should not be routed to default exporter",
-		)
-		assert.Equal(t, 2, lExp.getLogCount(),
-			"log should be routed to non default exporter",
-		)
 	})
 
 	t.Run("default route is taken when no matching route can be found", func(t *testing.T) {
@@ -745,7 +682,7 @@ func TestLogs_RoutingWorks_ResourceAttribute(t *testing.T) {
 		assert.Equal(t, 1, defaultExp.getLogCount(),
 			"log should be routed to default exporter",
 		)
-		assert.Equal(t, 2, lExp.getLogCount(),
+		assert.Equal(t, 1, lExp.getLogCount(),
 			"log should not be routed to non default exporter",
 		)
 	})

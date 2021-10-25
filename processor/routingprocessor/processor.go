@@ -50,9 +50,6 @@ func newProcessor(logger *zap.Logger, cfg config.Processor) (*processorImp, erro
 	logger.Info("building processor")
 
 	oCfg := cfg.(*Config)
-	if err := oCfg.Validate(); err != nil {
-		return nil, err
-	}
 
 	return &processorImp{
 		logger: logger,
