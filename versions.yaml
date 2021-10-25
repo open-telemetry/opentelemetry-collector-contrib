@@ -68,6 +68,7 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent
       - github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk
       - github.com/open-telemetry/opentelemetry-collector-contrib/internal/stanza
+      - github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest
       - github.com/open-telemetry/opentelemetry-collector-contrib/examples/demo/server
       - github.com/open-telemetry/opentelemetry-collector-contrib/examples/demo/client
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkareceiver

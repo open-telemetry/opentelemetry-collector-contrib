@@ -412,6 +412,8 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/a
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/stanza => ./internal/stanza
 
+replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest => ./internal/scrapertest
+
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/docker => ./internal/docker
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/alibabacloudlogserviceexporter => ./exporter/alibabacloudlogserviceexporter
