@@ -80,8 +80,8 @@ func TestCollectEndpointsDefaultConfig(t *testing.T) {
 	c := containerJSON(t)
 	cEndpoints := obvs.endpointsForContainer(&c)
 
-	want := []observer.Endpoint{
-		{
+	want := map[observer.EndpointID]observer.Endpoint{
+		"babc5a6d7af2a48e7f52e1da26047024dcf98b737e754c9c3459bb84d1e4f80c:8080": {
 			ID:     "babc5a6d7af2a48e7f52e1da26047024dcf98b737e754c9c3459bb84d1e4f80c:8080",
 			Target: "172.17.0.2:80",
 			Details: &observer.Container{
@@ -127,8 +127,8 @@ func TestCollectEndpointsAllConfigSettings(t *testing.T) {
 	c := containerJSON(t)
 	cEndpoints := obvs.endpointsForContainer(&c)
 
-	want := []observer.Endpoint{
-		{
+	want := map[observer.EndpointID]observer.Endpoint{
+		"babc5a6d7af2a48e7f52e1da26047024dcf98b737e754c9c3459bb84d1e4f80c:8080": {
 			ID:     "babc5a6d7af2a48e7f52e1da26047024dcf98b737e754c9c3459bb84d1e4f80c:8080",
 			Target: "127.0.0.1:8080",
 			Details: &observer.Container{
@@ -174,8 +174,8 @@ func TestCollectEndpointsUseHostnameIfPresent(t *testing.T) {
 	c := containerJSON(t)
 	cEndpoints := obvs.endpointsForContainer(&c)
 
-	want := []observer.Endpoint{
-		{
+	want := map[observer.EndpointID]observer.Endpoint{
+		"babc5a6d7af2a48e7f52e1da26047024dcf98b737e754c9c3459bb84d1e4f80c:8080": {
 			ID:     "babc5a6d7af2a48e7f52e1da26047024dcf98b737e754c9c3459bb84d1e4f80c:8080",
 			Target: "babc5a6d7af2:80",
 			Details: &observer.Container{
@@ -221,8 +221,8 @@ func TestCollectEndpointsUseHostBindings(t *testing.T) {
 	c := containerJSON(t)
 	cEndpoints := obvs.endpointsForContainer(&c)
 
-	want := []observer.Endpoint{
-		{
+	want := map[observer.EndpointID]observer.Endpoint{
+		"babc5a6d7af2a48e7f52e1da26047024dcf98b737e754c9c3459bb84d1e4f80c:8080": {
 			ID:     "babc5a6d7af2a48e7f52e1da26047024dcf98b737e754c9c3459bb84d1e4f80c:8080",
 			Target: "127.0.0.1:8080",
 			Details: &observer.Container{
@@ -268,8 +268,8 @@ func TestCollectEndpointsIgnoreNonHostBindings(t *testing.T) {
 	c := containerJSON(t)
 	cEndpoints := obvs.endpointsForContainer(&c)
 
-	want := []observer.Endpoint{
-		{
+	want := map[observer.EndpointID]observer.Endpoint{
+		"babc5a6d7af2a48e7f52e1da26047024dcf98b737e754c9c3459bb84d1e4f80c:8080": {
 			ID:     "babc5a6d7af2a48e7f52e1da26047024dcf98b737e754c9c3459bb84d1e4f80c:8080",
 			Target: "172.17.0.2:80",
 			Details: &observer.Container{

@@ -63,15 +63,13 @@ func (d *dockerObserver) Start(ctx context.Context, host component.Host) error {
 
 	d.dClient, err = docker.NewDockerClient(dConfig, d.logger)
 	if err != nil {
-		d.logger.Error("Could not create docker client", zap.Error(err))
-		return err
+		return fmt.Errorf("could not create docker client: %w", err)
 	}
 
 	// Load initial set of containers
 	err = d.dClient.LoadContainerList(d.ctx)
 	if err != nil {
-		d.logger.Error("Could not load initial list of containers", zap.Error(err))
-		return err
+		return fmt.Errorf("could not load initial list of containers: %w", err)
 	}
 
 	d.existingEndpoints = make(map[string][]observer.Endpoint)
@@ -116,8 +114,8 @@ func (d *dockerObserver) ListAndWatch(listener observer.Notify) {
 // creating endpoints for each.
 func (d *dockerObserver) emitContainerEndpoints(listener observer.Notify) {
 	for _, c := range d.dClient.Containers() {
-		cEndpoints := d.endpointsForContainer(c.ContainerJSON)
-		d.updateEndpointsByContainerID(listener, c.ContainerJSON.ID, cEndpoints)
+		endpointsMap := d.endpointsForContainer(c.ContainerJSON)
+		d.updateEndpointsByContainerID(listener, c.ContainerJSON.ID, endpointsMap)
 	}
 }
 
@@ -133,17 +131,12 @@ func (d *dockerObserver) syncContainerList(listener observer.Notify) error {
 }
 
 // updateEndpointsByID uses the listener to add / remove / update endpoints by container ID.
-// latestEndpoints is the list of latest endpoints for the given container ID.
+// latestEndpointsMap is a map of latest endpoints for the given container ID.
 // If an endpoint is in the cache but NOT in latestEndpoints, the endpoint will be removed
-func (d *dockerObserver) updateEndpointsByContainerID(listener observer.Notify, cid string, latestEndpoints []observer.Endpoint) {
+func (d *dockerObserver) updateEndpointsByContainerID(listener observer.Notify, cid string, latestEndpointsMap map[observer.EndpointID]observer.Endpoint) {
 	var removedEndpoints, addedEndpoints, updatedEndpoints []observer.Endpoint
 
-	if len(latestEndpoints) != 0 {
-		// Create map from ID to endpoint for lookup.
-		latestEndpointsMap := make(map[observer.EndpointID]bool, len(latestEndpoints))
-		for _, e := range latestEndpoints {
-			latestEndpointsMap[e.ID] = true
-		}
+	if latestEndpointsMap != nil || len(latestEndpointsMap) != 0 {
 		// map of EndpointID to endpoint to help with lookups
 		existingEndpointsMap := make(map[observer.EndpointID]observer.Endpoint)
 		if endpoints, ok := d.existingEndpoints[cid]; ok {
@@ -153,17 +146,17 @@ func (d *dockerObserver) updateEndpointsByContainerID(listener observer.Notify, 
 		}
 
 		// If the endpoint is present in existingEndpoints but is not
-		// present in latestEndpoints, then it needs to be removed.
+		// present in latestEndpointsMap, then it needs to be removed.
 		for id, e := range existingEndpointsMap {
-			if !latestEndpointsMap[id] {
+			if _, ok := latestEndpointsMap[id]; !ok {
 				removedEndpoints = append(removedEndpoints, e)
 			}
 		}
 
-		// if the endpoint s present in latestEndpoints, check if it exists
+		// if the endpoint is present in latestEndpointsMap, check if it exists
 		// already in existingEndpoints.
-		for _, e := range latestEndpoints {
-			// If it does not exist alreaedy, it is a new endpoint. Add it.
+		for _, e := range latestEndpointsMap {
+			// If it does not exist already, it is a new endpoint. Add it.
 			if existingEndpoint, ok := existingEndpointsMap[e.ID]; !ok {
 				addedEndpoints = append(addedEndpoints, e)
 			} else {
@@ -176,37 +169,38 @@ func (d *dockerObserver) updateEndpointsByContainerID(listener observer.Notify, 
 			}
 		}
 
+		// reset endpoints for this container
+		d.existingEndpoints[cid] = nil
 		// set the current known endpoints to the latest endpoints
-		d.existingEndpoints[cid] = latestEndpoints
+		for _, e := range latestEndpointsMap {
+			d.existingEndpoints[cid] = append(d.existingEndpoints[cid], e)
+		}
 	} else {
-		// if latestEndpoints is nil, we are removing all endpoints for the container
+		// if latestEndpointsMap is nil, we are removing all endpoints for the container
 		removedEndpoints = append(removedEndpoints, d.existingEndpoints[cid]...)
 		delete(d.existingEndpoints, cid)
 	}
 
 	if len(removedEndpoints) > 0 {
-		d.logger.Info("removing endpoints")
 		listener.OnRemove(removedEndpoints)
 	}
 
 	if len(addedEndpoints) > 0 {
-		d.logger.Info("adding endpoints")
 		listener.OnAdd(addedEndpoints)
 	}
 
 	if len(updatedEndpoints) > 0 {
-		d.logger.Info("updating endpoints")
 		listener.OnChange(updatedEndpoints)
 	}
 }
 
 // endpointsForContainer generates a list of observer.Endpoint given a Docker ContainerJSON.
 // This function will only generate endpoints if a container is in the Running state and not Paused.
-func (d *dockerObserver) endpointsForContainer(c *dtypes.ContainerJSON) []observer.Endpoint {
-	cEndpoints := make([]observer.Endpoint, 0)
+func (d *dockerObserver) endpointsForContainer(c *dtypes.ContainerJSON) map[observer.EndpointID]observer.Endpoint {
+	endpointsMap := make(map[observer.EndpointID]observer.Endpoint)
 
 	if !c.State.Running || c.State.Running && c.State.Paused {
-		return cEndpoints
+		return endpointsMap
 	}
 
 	knownPorts := map[nat.Port]bool{}
@@ -221,15 +215,19 @@ func (d *dockerObserver) endpointsForContainer(c *dtypes.ContainerJSON) []observ
 		if endpoint == nil {
 			continue
 		}
-		cEndpoints = append(cEndpoints, *endpoint)
+		endpointsMap[endpoint.ID] = *endpoint
 	}
 
-	for _, e := range cEndpoints {
+	if len(endpointsMap) == 0 {
+		return nil
+	}
+
+	for _, e := range endpointsMap {
 		s, _ := json.MarshalIndent(e, "", "\t")
 		d.logger.Debug("Discovered Docker container endpoint", zap.Any("endpoint", s))
 	}
 
-	return cEndpoints
+	return endpointsMap
 }
 
 // endpointForPort creates an observer.Endpoint for a given port that is exposed in a Docker container.
