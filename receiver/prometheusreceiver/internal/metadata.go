@@ -55,15 +55,11 @@ func (s *metadataService) Get(job, instance string) (MetadataCache, error) {
 		return nil, errAlreadyStopped
 	}
 
-	targetGroup, ok := s.sm.TargetsAll()[job]
-	if !ok {
-		return nil, errors.New("unable to find a target group with job=" + job)
-	}
-
-	// from the same targetGroup, instance is not going to be duplicated
-	for _, target := range targetGroup {
-		if target.Labels().Get(model.InstanceLabel) == instance {
-			return &mCache{target}, nil
+	for _, targets := range s.sm.TargetsAll() {
+		for _, target := range targets {
+			if target.Labels().Get(model.JobLabel) == job && target.Labels().Get(model.InstanceLabel) == instance {
+				return &mCache{target}, nil
+			}
 		}
 	}
 

@@ -50,6 +50,10 @@ func Test_transaction(t *testing.T) {
 	// processedLabels contain label values after processing (e.g. relabeling)
 	processedLabels := labels.New(
 		labels.Label{
+			Name:  model.JobLabel,
+			Value: "test",
+		},
+		labels.Label{
 			Name:  model.InstanceLabel,
 			Value: "localhost:8080",
 		},
