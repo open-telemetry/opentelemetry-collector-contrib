@@ -16,7 +16,9 @@ package bearertokenauthextension
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"net/http"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configauth"
@@ -47,7 +49,10 @@ type BearerTokenAuth struct {
 	logger      *zap.Logger
 }
 
-var _ configauth.GRPCClientAuthenticator = (*BearerTokenAuth)(nil)
+var (
+	_                             configauth.ClientAuthenticator = (*BearerTokenAuth)(nil)
+	errNotHTTPClientAuthenticator                                = errors.New("requested authenticator is not a HTTP client authenticator")
+)
 
 func newBearerTokenAuth(cfg *Config, logger *zap.Logger) *BearerTokenAuth {
 	return &BearerTokenAuth{
@@ -71,4 +76,9 @@ func (b *BearerTokenAuth) PerRPCCredentials() (credentials.PerRPCCredentials, er
 	return &PerRPCAuth{
 		metadata: map[string]string{"authorization": fmt.Sprintf("Bearer %s", b.tokenString)},
 	}, nil
+}
+
+// RoundTripper is not implemented by BearerTokenAuth
+func (b *BearerTokenAuth) RoundTripper(base http.RoundTripper) (http.RoundTripper, error) {
+	return nil, errNotHTTPClientAuthenticator
 }
