@@ -66,7 +66,7 @@ data:
 
     service:
       pipelines:
-        metrics:
+        logs:
           receivers: [k8s_events]
           exporters: [otlp]
 EOF
