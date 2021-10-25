@@ -47,7 +47,7 @@ type Config struct {
 	// DialerTimeout is the amount of time to wait before aborting establishing the tcp connection when making
 	// an http request
 	DialerTimeout time.Duration `mapstructure:"dialer_timeout"`
-	// DialerTimeout is the amount of time to wait before aborting establishing the connection when performing
+	// TLSHandshakeTimeout is the amount of time to wait before aborting establishing the connection when performing
 	// the tls handshake
 	TLSHandshakeTimeout time.Duration `mapstructure:"tls_handshake_timeout"`
 }
