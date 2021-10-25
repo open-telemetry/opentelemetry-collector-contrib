@@ -594,7 +594,7 @@ func TestSpanProcessor_skipSpan(t *testing.T) {
 	}
 }
 
-func generateTraceDatSetStatus(code pdata.StatusCode, description string, attrs map[string]pdata.AttributeValue) pdata.Traces {
+func generateTraceDataSetStatus(code pdata.StatusCode, description string, attrs map[string]pdata.AttributeValue) pdata.Traces {
 	td := pdata.NewTraces()
 	rs := td.ResourceSpans().AppendEmpty()
 	span := rs.InstrumentationLibrarySpans().AppendEmpty().Spans().AppendEmpty()
@@ -609,19 +609,19 @@ func TestSpanProcessor_setStatusCode(t *testing.T) {
 	cfg := factory.CreateDefaultConfig()
 	oCfg := cfg.(*Config)
 	oCfg.SetStatus = &Status{
-		Code:        "Err",
+		Code:        "Error",
 		Description: "Set custom error message",
 	}
 	tp, err := factory.CreateTracesProcessor(context.Background(), componenttest.NewNopProcessorCreateSettings(), oCfg, consumertest.NewNop())
 	require.Nil(t, err)
 	require.NotNil(t, tp)
 
-	td := generateTraceDatSetStatus(pdata.StatusCodeUnset, "foobar", nil)
+	td := generateTraceDataSetStatus(pdata.StatusCodeUnset, "foobar", nil)
 	td.InternalRep()
 
 	assert.NoError(t, tp.ConsumeTraces(context.Background(), td))
 
-	assert.EqualValues(t, generateTraceDatSetStatus(pdata.StatusCodeError, "Set custom error message", nil), td)
+	assert.EqualValues(t, generateTraceDataSetStatus(pdata.StatusCodeError, "Set custom error message", nil), td)
 }
 
 func TestSpanProcessor_setStatusCodeConditionally(t *testing.T) {
@@ -629,7 +629,7 @@ func TestSpanProcessor_setStatusCodeConditionally(t *testing.T) {
 	cfg := factory.CreateDefaultConfig()
 	oCfg := cfg.(*Config)
 	oCfg.SetStatus = &Status{
-		Code:        "Err",
+		Code:        "Error",
 		Description: "custom error message",
 	}
 	// This test numer two include rule for applying rule only for status code 400
@@ -665,12 +665,12 @@ func TestSpanProcessor_setStatusCodeConditionally(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run("set-status-test", func(t *testing.T) {
-			td := generateTraceDatSetStatus(tc.inputStatusCode, "", tc.inputAttributes)
+			td := generateTraceDataSetStatus(tc.inputStatusCode, "", tc.inputAttributes)
 			td.InternalRep()
 
 			assert.NoError(t, tp.ConsumeTraces(context.Background(), td))
 
-			assert.EqualValues(t, generateTraceDatSetStatus(tc.outputStatusCode, tc.outputStatusDescription, tc.inputAttributes), td)
+			assert.EqualValues(t, generateTraceDataSetStatus(tc.outputStatusCode, tc.outputStatusDescription, tc.inputAttributes), td)
 		})
 	}
 }

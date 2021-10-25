@@ -99,6 +99,13 @@ span/to_attributes:
 
 ### Set status for span
 
+The following setting is required:
+
+- `code`: Represents span status. One of the following values "Unset", "Error", "Ok".
+
+The following setting is allowed only for code "Error":
+- `description`
+
 Example:
 
 ```yaml

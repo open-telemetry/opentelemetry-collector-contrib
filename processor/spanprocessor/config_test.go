@@ -93,7 +93,7 @@ func TestLoadConfig(t *testing.T) {
 	assert.Equal(t, p4, &Config{
 		ProcessorSettings: config.NewProcessorSettings(config.NewComponentIDWithName("span", "set_status_err")),
 		SetStatus: &Status{
-			Code:        "Err",
+			Code:        "Error",
 			Description: "some additional error description",
 		},
 	})

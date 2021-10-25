@@ -225,11 +225,11 @@ func (sp *spanProcessor) processToAttributes(span pdata.Span) {
 func (sp *spanProcessor) processUpdateStatus(span pdata.Span) {
 	cfg := sp.config.SetStatus
 	if cfg != nil {
-		if cfg.Code == "Ok" {
+		if cfg.Code == statusCodeOk {
 			span.Status().SetCode(pdata.StatusCodeOk)
-		} else if cfg.Code == "Err" {
+		} else if cfg.Code == statusCodeError {
 			span.Status().SetCode(pdata.StatusCodeError)
-		} else if cfg.Code == "Unset" {
+		} else if cfg.Code == statusCodeUnset {
 			span.Status().SetCode(pdata.StatusCodeUnset)
 		}
 		if len(cfg.Description) > 0 {

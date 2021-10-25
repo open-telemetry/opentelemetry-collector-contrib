@@ -88,7 +88,7 @@ processors:
   # Possible values for code are: "Ok" and "Err" with an additional descrption.
   span/set_status_err:
     status:
-      code: "Err"
+      code: "Error"
       description: "some additional error description"
 
   # However you may want to set status conditionally. Example below sets
