@@ -92,7 +92,7 @@ func TestLoadConfig(t *testing.T) {
 	require.Equal(t, &expectedCfg, actualCfg)
 }
 
-func TestJsonLoadConfig(t *testing.T) {
+func TestJSONLoadConfig(t *testing.T) {
 	factories, err := componenttest.NopFactories()
 	assert.Nil(t, err)
 
@@ -121,13 +121,13 @@ func TestJsonLoadConfig(t *testing.T) {
 			},
 			ReadBufferSize:  0,
 			WriteBufferSize: 524288,
-			Timeout:         30000000000,
+			Timeout:         time.Second * 10,
 		},
 		RetrySettings: exporterhelper.RetrySettings{
 			Enabled:         true,
-			InitialInterval: 5000000000,
-			MaxInterval:     30000000000,
-			MaxElapsedTime:  300000000000,
+			InitialInterval: 10 * time.Second,
+			MaxInterval:     1 * time.Minute,
+			MaxElapsedTime:  10 * time.Minute,
 		},
 		QueueSettings: exporterhelper.QueueSettings{
 			Enabled:      true,

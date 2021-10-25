@@ -51,7 +51,7 @@ func newExporter(config *Config, logger *zap.Logger) *lokiExporter {
 	if config.Format == "json" {
 		lokiexporter.convert = convertLogToJSONEntry
 	} else {
-		lokiexporter.convert = convertLogToLokiEntry
+		lokiexporter.convert = convertLogBodyToEntry
 	}
 	return lokiexporter
 }
@@ -148,7 +148,7 @@ func (l *lokiExporter) logDataToLoki(ld pdata.Logs) (pr *logproto.PushRequest, n
 				if err != nil {
 					// Couldn't convert to JSON so dropping log.
 					numDroppedLogs++
-					l.logger.Error("Failed to convert to JSON - Dropping Log", zap.Error(err))
+					l.logger.Error("failed to convert, dropping log", zap.String("format", l.config.Format), zap.Error(err))
 					continue
 				}
 
@@ -210,7 +210,7 @@ func (l *lokiExporter) convertAttributesToLabels(attributes pdata.AttributeMap, 
 	return ls
 }
 
-func convertLogToLokiEntry(lr pdata.LogRecord, res pdata.Resource) (*logproto.Entry, error) {
+func convertLogBodyToEntry(lr pdata.LogRecord, res pdata.Resource) (*logproto.Entry, error) {
 	return &logproto.Entry{
 		Timestamp: time.Unix(0, int64(lr.Timestamp())),
 		Line:      lr.Body().StringVal(),

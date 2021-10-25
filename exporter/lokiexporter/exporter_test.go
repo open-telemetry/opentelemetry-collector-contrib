@@ -472,7 +472,7 @@ func TestExporter_convertAttributesToLabels(t *testing.T) {
 	})
 }
 
-func TestExporter_convertLogToLokiEntry(t *testing.T) {
+func TestExporter_convertLogBodyToEntry(t *testing.T) {
 	ts := pdata.Timestamp(int64(1) * time.Millisecond.Nanoseconds())
 	lr := pdata.NewLogRecord()
 	lr.Body().SetStringVal("log message")
@@ -480,7 +480,7 @@ func TestExporter_convertLogToLokiEntry(t *testing.T) {
 	res := pdata.NewResource()
 	res.Attributes().Insert("host.name", pdata.NewAttributeValueString("something"))
 
-	entry, _ := convertLogToLokiEntry(lr, res)
+	entry, _ := convertLogBodyToEntry(lr, res)
 
 	expEntry := &logproto.Entry{
 		Timestamp: time.Unix(0, int64(lr.Timestamp())),
