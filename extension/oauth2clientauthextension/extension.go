@@ -36,9 +36,7 @@ type ClientCredentialsAuthenticator struct {
 }
 
 // ClientCredentialsAuthenticator implements ClientAuthenticator
- var (
-	_ configauth.ClientAuthenticator = (*ClientCredentialsAuthenticator)(nil)
- )
+var _ configauth.ClientAuthenticator = (*ClientCredentialsAuthenticator)(nil)
 
 func newClientCredentialsExtension(cfg *Config, logger *zap.Logger) (*ClientCredentialsAuthenticator, error) {
 	if cfg.ClientID == "" {
