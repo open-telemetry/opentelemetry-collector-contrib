@@ -248,7 +248,7 @@ func TestMetricsMetadata_ToMetricValues_Error(t *testing.T) {
 	require.Error(t, err)
 }
 
-func TestMetricsMetadata_RowToMetrics(t *testing.T) {
+func TestMetricsMetadata_RowToMetricsDataPoints(t *testing.T) {
 	metricDataType := metricValueDataType{dataType: metricDataType}
 	timestamp := time.Now().UTC()
 	labelValueMetadata := StringLabelValueMetadata{
@@ -280,13 +280,13 @@ func TestMetricsMetadata_RowToMetrics(t *testing.T) {
 	for name, testCase := range testCases {
 		t.Run(name, func(t *testing.T) {
 			row, _ := spanner.NewRow(testCase.rowColumnNames, testCase.rowColumnValues)
-			metrics, err := metadata.RowToMetrics(databaseID, row)
+			dataPoints, err := metadata.RowToMetricsDataPoints(databaseID, row)
 
 			if testCase.expectError {
 				require.Error(t, err)
 			} else {
 				require.NoError(t, err)
-				assert.Equal(t, 1, len(metrics))
+				assert.Equal(t, 1, len(dataPoints))
 			}
 		})
 	}
@@ -307,5 +307,25 @@ func TestMetricsMetadata_MetadataType(t *testing.T) {
 
 			assert.Equal(t, testCase.expectedMetadataType, metricsMetadata.MetadataType())
 		})
+	}
+}
+
+func TestMetricsMetadata_ToMetricsDataPoints(t *testing.T) {
+	timestamp := time.Now().UTC()
+	labelValues := allPossibleLabelValues()
+	metricValues := allPossibleMetricValues(metricDataType)
+	databaseID := databaseID()
+	metadata := MetricsMetadata{MetricNamePrefix: metricNamePrefix}
+
+	dataPoints := metadata.toMetricsDataPoints(databaseID, timestamp, labelValues, metricValues)
+
+	assert.Equal(t, len(metricValues), len(dataPoints))
+
+	for i, dataPoint := range dataPoints {
+		assert.Equal(t, metadata.MetricNamePrefix+metricValues[i].Name(), dataPoint.metricName)
+		assert.Equal(t, timestamp, dataPoint.timestamp)
+		assert.Equal(t, databaseID, dataPoint.databaseID)
+		assert.Equal(t, labelValues, dataPoint.labelValues)
+		assert.Equal(t, metricValues[i], dataPoint.metricValue)
 	}
 }

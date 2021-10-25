@@ -20,7 +20,6 @@ import (
 	"time"
 
 	"cloud.google.com/go/spanner"
-	"go.opentelemetry.io/collector/model/pdata"
 	"go.uber.org/zap"
 	"google.golang.org/api/iterator"
 
@@ -56,7 +55,7 @@ func (reader *currentStatsReader) Name() string {
 		reader.database.DatabaseID().InstanceID(), reader.database.DatabaseID().DatabaseName())
 }
 
-func (reader *currentStatsReader) Read(ctx context.Context) ([]pdata.Metrics, error) {
+func (reader *currentStatsReader) Read(ctx context.Context) ([]*metadata.MetricsDataPoint, error) {
 	reader.logger.Debug("Executing read method", zap.String("reader", reader.Name()))
 
 	stmt := reader.newPullStatement()
@@ -73,26 +72,26 @@ func (reader *currentStatsReader) newPullStatement() spanner.Statement {
 	return reader.statement(args)
 }
 
-func (reader *currentStatsReader) pull(ctx context.Context, stmt spanner.Statement) ([]pdata.Metrics, error) {
+func (reader *currentStatsReader) pull(ctx context.Context, stmt spanner.Statement) ([]*metadata.MetricsDataPoint, error) {
 	rowsIterator := reader.database.Client().Single().WithTimestampBound(spanner.ExactStaleness(15*time.Second)).Query(ctx, stmt)
 	defer rowsIterator.Stop()
 
-	var collectedMetrics []pdata.Metrics
+	var collectedDataPoints []*metadata.MetricsDataPoint
 
 	for {
 		row, err := rowsIterator.Next()
 		if err != nil {
 			if err == iterator.Done {
-				return collectedMetrics, nil
+				return collectedDataPoints, nil
 			}
 			return nil, fmt.Errorf("query %q failed with error: %w", stmt.SQL, err)
 		}
 
-		rowMetrics, err := reader.metricsMetadata.RowToMetrics(reader.database.DatabaseID(), row)
+		rowMetricsDataPoints, err := reader.metricsMetadata.RowToMetricsDataPoints(reader.database.DatabaseID(), row)
 		if err != nil {
 			return nil, fmt.Errorf("query %q failed with error: %w", stmt.SQL, err)
 		}
 
-		collectedMetrics = append(collectedMetrics, rowMetrics...)
+		collectedDataPoints = append(collectedDataPoints, rowMetricsDataPoints...)
 	}
 }

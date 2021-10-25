@@ -308,6 +308,18 @@ func (cp *childProcessCollector) WatchResourceConsumption() error {
 	ticker := time.NewTicker(cp.resourceSpec.ResourceCheckPeriod)
 	defer ticker.Stop()
 
+	//on first start must be under the cpu and ram max usage add a max minute delay
+	for start := time.Now(); time.Since(start) < time.Minute; {
+		cp.fetchRAMUsage()
+		cp.fetchCPUUsage()
+		if err := cp.checkAllowedResourceUsage(); err != nil {
+			log.Printf("Allowed usage of resources is too high before test starts wait for one second : %v", err)
+			time.Sleep(time.Second)
+		} else {
+			break
+		}
+	}
+
 	for {
 		select {
 		case <-ticker.C:
