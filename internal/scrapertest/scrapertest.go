@@ -22,7 +22,7 @@ import (
 	"go.uber.org/multierr"
 )
 
-// CompareMetrics compares each part of two given MetricSlices and returns
+// CompareMetricSlices compares each part of two given MetricSlices and returns
 // an error if they don't match. The error describes what didn't match.
 func CompareMetricSlices(expected, actual pdata.MetricSlice) error {
 	if actual.Len() != expected.Len() {
