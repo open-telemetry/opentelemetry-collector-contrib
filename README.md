@@ -66,7 +66,6 @@ Triagers ([@open-telemetry/collector-contrib-triagers](https://github.com/orgs/o
 
 Approvers ([@open-telemetry/collector-contrib-approvers](https://github.com/orgs/open-telemetry/teams/collector-contrib-approvers)):
 
-- [Alex Boten](https://github.com/codeboten), Lightstep
 - [Anthony Mirabella](https://github.com/Aneurysm9), AWS
 - [Anuraag Agrawal](https://github.com/anuraaga), AWS
 - [Daniel Jaglowski](https://github.com/djaglowski), observIQ
@@ -78,6 +77,7 @@ Approvers ([@open-telemetry/collector-contrib-approvers](https://github.com/orgs
 
 Maintainers ([@open-telemetry/collector-contrib-maintainer](https://github.com/orgs/open-telemetry/teams/collector-contrib-maintainer)):
 
+- [Alex Boten](https://github.com/codeboten), Lightstep
 - [Bogdan Drutu](https://github.com/BogdanDrutu), Splunk
 - [Tigran Najaryan](https://github.com/tigrannajaryan), Splunk
 

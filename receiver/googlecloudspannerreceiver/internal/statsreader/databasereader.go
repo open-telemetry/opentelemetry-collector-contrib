@@ -18,7 +18,6 @@ import (
 	"context"
 	"fmt"
 
-	"go.opentelemetry.io/collector/model/pdata"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudspannerreceiver/internal/datasource"
@@ -78,20 +77,21 @@ func (databaseReader *DatabaseReader) Shutdown() {
 	databaseReader.database.Client().Close()
 }
 
-func (databaseReader *DatabaseReader) Read(ctx context.Context) []pdata.Metrics {
+func (databaseReader *DatabaseReader) Read(ctx context.Context) ([]*metadata.MetricsDataPoint, error) {
 	databaseReader.logger.Debug("Executing read method for database",
 		zap.String("database", databaseReader.database.DatabaseID().ID()))
 
-	var result []pdata.Metrics
+	var result []*metadata.MetricsDataPoint
 
 	for _, reader := range databaseReader.readers {
-		if metrics, err := reader.Read(ctx); err != nil {
-			databaseReader.logger.Error("Cannot read data for metrics databaseReader because of error",
-				zap.String("reader", reader.Name()), zap.Error(err))
-		} else {
-			result = append(result, metrics...)
+		dataPoints, err := reader.Read(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("cannot read data for data points databaseReader %q because of an error: %w",
+				reader.Name(), err)
 		}
+
+		result = append(result, dataPoints...)
 	}
 
-	return result
+	return result, nil
 }
