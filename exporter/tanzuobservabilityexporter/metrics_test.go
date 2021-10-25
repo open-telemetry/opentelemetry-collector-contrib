@@ -164,6 +164,7 @@ func TestGaugeConsumerBadValue(t *testing.T) {
 		nil,
 		dataPoints,
 	)
+	// Sending to tanzu observability should fail
 	sender := &mockGaugeSender{errorOnSend: true}
 	observedZapCore, observedLogs := observer.New(zap.DebugLevel)
 	consumer := newGaugeConsumer(sender, &consumerOptions{
@@ -171,20 +172,27 @@ func TestGaugeConsumerBadValue(t *testing.T) {
 		ReportInternalMetrics: true,
 	})
 	var errs []error
-
-	consumer.Consume(metric, &errs)
-	consumer.Consume(metric, &errs)
+	expectedMissingValueCount := 2
+	for i := 0; i < expectedMissingValueCount; i++ {
+		// This call to Consume does not emit any metrics to tanzuobservability
+		// because the metric is missing its value.
+		consumer.Consume(metric, &errs)
+	}
+	// This call adds one error to errs because it emits a metric to
+	// tanzu observability and emitting there is set up to fail.
 	consumer.ConsumeInternal(&errs)
 
+	// One error from emitting the internal metric
 	assert.Len(t, errs, 1)
+	// Only the internal metric was sent
 	require.Len(t, sender.metrics, 1)
 	assert.Equal(t, tobsMetric{
 		Name:  missingValueMetricName,
-		Value: 2.0,
+		Value: float64(expectedMissingValueCount),
 		Tags:  map[string]string{"type": "gauge"}},
 		sender.metrics[0])
 	allLogs := observedLogs.All()
-	assert.Len(t, allLogs, 2)
+	assert.Len(t, allLogs, expectedMissingValueCount)
 }
 
 func verifyGaugeConsumer(t *testing.T, errorOnSend bool) {

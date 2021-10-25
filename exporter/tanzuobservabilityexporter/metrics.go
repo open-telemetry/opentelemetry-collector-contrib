@@ -26,7 +26,6 @@ import (
 )
 
 const (
-	// TODO: Is this the name we should use?
 	missingValueMetricName = "~sdk.otel.collector.missing_values"
 )
 
