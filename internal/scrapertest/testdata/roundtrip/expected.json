@@ -6,16 +6,40 @@
                "instrumentationLibrary": {},
                "metrics": [
                   {
-                     "description": "test description",
+                     "description": "multi gauge",
                      "gauge": {
                         "dataPoints": [
                            {
-                              "asDouble": 1,
+                              "asDouble": 2,
                               "attributes": [
                                  {
                                     "key": "testKey1",
                                     "value": {
                                        "stringValue": "teststringvalue1"
+                                    }
+                                 },
+                                 {
+                                    "key": "testKey2",
+                                    "value": {
+                                       "stringValue": "testvalue1"
+                                    }
+                                 }
+                              ],
+                              "timeUnixNano": "11651379494838206464"
+                           },
+                           {
+                              "asDouble": 2,
+                              "attributes": [
+                                 {
+                                    "key": "testKey1",
+                                    "value": {
+                                       "stringValue": "teststringvalue2"
+                                    }
+                                 },
+                                 {
+                                    "key": "testKey2",
+                                    "value": {
+                                       "stringValue": "testvalue2"
                                     }
                                  }
                               ],
@@ -23,8 +47,86 @@
                            }
                         ]
                      },
-                     "name": "test name",
-                     "unit": "test unit"
+                     "name": "test gauge multi",
+                     "unit": "1"
+                  },
+                  {
+                     "description": "single gauge",
+                     "gauge": {
+                        "dataPoints": [
+                           {
+                              "asInt": "2",
+                              "attributes": [
+                                 {
+                                    "key": "testKey2",
+                                    "value": {
+                                       "stringValue": "teststringvalue2"
+                                    }
+                                 }
+                              ],
+                              "timeUnixNano": "11651379494838206464"
+                           }
+                        ]
+                     },
+                     "name": "test gauge single",
+                     "unit": "by"
+                  },
+                  {
+                     "description": "multi sum",
+                     "name": "test delta sum multi",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_DELTA",
+                        "dataPoints": [
+                           {
+                              "asInt": "2",
+                              "attributes": [
+                                 {
+                                    "key": "testKey2",
+                                    "value": {
+                                       "stringValue": "teststringvalue2"
+                                    }
+                                 }
+                              ],
+                              "timeUnixNano": "11651379494838206464"
+                           },
+                           {
+                              "asInt": "2",
+                              "attributes": [
+                                 {
+                                    "key": "testKey2",
+                                    "value": {
+                                       "stringValue": "teststringvalue2"
+                                    }
+                                 }
+                              ],
+                              "timeUnixNano": "11651379494838206464"
+                           }
+                        ]
+                     },
+                     "unit": "s"
+                  },
+                  {
+                     "description": "single sum",
+                     "name": "test cumulative sum single",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asDouble": 2,
+                              "attributes": [
+                                 {
+                                    "key": "testKey2",
+                                    "value": {
+                                       "stringValue": "teststringvalue2"
+                                    }
+                                 }
+                              ],
+                              "timeUnixNano": "11651379494838206464"
+                           }
+                        ],
+                        "isMonotonic": true
+                     },
+                     "unit": "1/s"
                   }
                ]
             }

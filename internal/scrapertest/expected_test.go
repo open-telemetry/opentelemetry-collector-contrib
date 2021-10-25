@@ -23,7 +23,7 @@ import (
 	"go.opentelemetry.io/collector/model/pdata"
 )
 
-func TestMetricsToFile(t *testing.T) {
+func TestWriteExpected(t *testing.T) {
 	metricslice := baseTestMetrics()
 	metrics := pdata.NewMetrics()
 	metricslice.CopyTo(metrics.ResourceMetrics().AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty().Metrics())
@@ -41,13 +41,27 @@ func TestMetricsToFile(t *testing.T) {
 	require.Equal(t, expectedBytes, actualBytes)
 }
 
-func TestFileToMetrics(t *testing.T) {
+func TestReadExpected(t *testing.T) {
 	metricslice := baseTestMetrics()
 	expectedMetrics := pdata.NewMetrics()
 	metricslice.CopyTo(expectedMetrics.ResourceMetrics().AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty().Metrics())
 
 	expectedFile := filepath.Join("testdata", "roundtrip", "expected.json")
 	actualMetrics, err := ReadExpected(expectedFile)
+	require.NoError(t, err)
+	require.Equal(t, expectedMetrics, actualMetrics)
+}
+
+func TestRoundTrip(t *testing.T) {
+	metricslice := baseTestMetrics()
+	expectedMetrics := pdata.NewMetrics()
+	metricslice.CopyTo(expectedMetrics.ResourceMetrics().AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty().Metrics())
+
+	tempDir := filepath.Join(t.TempDir(), "metrics.json")
+	err := WriteExpected(tempDir, expectedMetrics)
+	require.NoError(t, err)
+
+	actualMetrics, err := ReadExpected(tempDir)
 	require.NoError(t, err)
 	require.Equal(t, expectedMetrics, actualMetrics)
 }

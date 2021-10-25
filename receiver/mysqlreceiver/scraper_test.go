@@ -19,11 +19,10 @@ import (
 	"path/filepath"
 	"testing"
 
-	"go.uber.org/zap"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest"
 
 	"github.com/stretchr/testify/require"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest"
+	"go.uber.org/zap"
 )
 
 func TestScrape(t *testing.T) {

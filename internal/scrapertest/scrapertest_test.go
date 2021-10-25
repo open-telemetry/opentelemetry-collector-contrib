@@ -17,7 +17,6 @@ package scrapertest
 import (
 	"errors"
 	"fmt"
-	"path/filepath"
 	"testing"
 	"time"
 
@@ -64,12 +63,12 @@ func baseTestMetrics() pdata.MetricSlice {
 	dp = dps.AppendEmpty()
 	attributes = pdata.NewAttributeMap()
 	attributes.Insert("testKey2", pdata.NewAttributeValueString("teststringvalue2"))
-	setDPIntVals(dp, 2, attributes, time.Now())
+	setDPIntVals(dp, 2, attributes, time.Time{})
 
 	dp = dps.AppendEmpty()
 	attributes = pdata.NewAttributeMap()
 	attributes.Insert("testKey2", pdata.NewAttributeValueString("teststringvalue2"))
-	setDPIntVals(dp, 2, attributes, time.Now())
+	setDPIntVals(dp, 2, attributes, time.Time{})
 
 	// set Cumulative Sum with one double dp
 	metric = slice.AppendEmpty()
@@ -321,18 +320,4 @@ func TestCompareMetrics(t *testing.T) {
 			}
 		})
 	}
-}
-
-func TestRoundTrip(t *testing.T) {
-	metricslice := baseTestMetrics()
-	expectedMetrics := pdata.NewMetrics()
-	metricslice.CopyTo(expectedMetrics.ResourceMetrics().AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty().Metrics())
-
-	tempDir := filepath.Join(t.TempDir(), "metrics.json")
-	err := WriteExpected(tempDir, expectedMetrics)
-	require.NoError(t, err)
-
-	actualMetrics, err := ReadExpected(tempDir)
-	require.NoError(t, err)
-	require.Equal(t, expectedMetrics, actualMetrics)
 }
