@@ -105,7 +105,7 @@ Example:
 # Set status allows to set specific status for a given span. Possible values are
 # Ok, Error and Unset as per
 # https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/trace/api.md#set-status
-# additionaly description allows to set human-readable message
+# The description field allows to set a human-readable message for errors.
 span/set_status:
   status:
     code: Error

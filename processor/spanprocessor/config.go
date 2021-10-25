@@ -89,7 +89,7 @@ type Status struct {
 	// https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/trace/api.md#set-status
 	Code string `mapstructure:"code"`
 
-	// Optional description
+	// Description is an optional field documenting Error statuses.
 	Description string `mapstructure:"description"`
 }
 
