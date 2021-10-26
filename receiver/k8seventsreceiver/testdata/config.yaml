@@ -12,6 +12,6 @@ exporters:
 service:
   pipelines:
     logs:
-     receivers:  [k8s_events]
-     processors: [nop]
-     exporters:  [nop]
+      receivers: [k8s_events]
+      processors: [nop]
+      exporters: [nop]
