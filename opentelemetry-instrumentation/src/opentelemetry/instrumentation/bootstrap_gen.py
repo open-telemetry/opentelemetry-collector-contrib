@@ -134,6 +134,7 @@ libraries = {
     },
 }
 default_instrumentations = [
+    "opentelemetry-instrumentation-aws-lambda==0.25b2",
     "opentelemetry-instrumentation-dbapi==0.25b2",
     "opentelemetry-instrumentation-logging==0.25b2",
     "opentelemetry-instrumentation-sqlite3==0.25b2",
