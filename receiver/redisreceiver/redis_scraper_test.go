@@ -29,13 +29,15 @@ func TestRedisRunnable(t *testing.T) {
 	logger, _ := zap.NewDevelopment()
 	settings := componenttest.NewNopReceiverCreateSettings()
 	settings.Logger = logger
-	runner, err := newRedisScraperWithClient(newFakeClient(), settings)
+	runner, err := newRedisScraperWithClient(newFakeClient(), settings, "TestEndpoint")
 	require.NoError(t, err)
 	md, err := runner.Scrape(context.Background())
 	require.NoError(t, err)
 	// + 6 because there are two keyspace entries each of which has three metrics
 	assert.Equal(t, len(getDefaultRedisMetrics())+6, md.DataPointCount())
 	rm := md.ResourceMetrics().At(0)
+	value, _ := rm.Resource().Attributes().Get("redis.instance")
+	assert.Equal(t, "TestEndpoint", value.AsString())
 	ilm := rm.InstrumentationLibraryMetrics().At(0)
 	il := ilm.InstrumentationLibrary()
 	assert.Equal(t, "otelcol/redis", il.Name())

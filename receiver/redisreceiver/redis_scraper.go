@@ -28,10 +28,11 @@ import (
 // Runs intermittently, fetching info from Redis, creating metrics/datapoints,
 // and feeding them to a metricsConsumer.
 type redisScraper struct {
-	redisSvc     *redisSvc
-	redisMetrics []*redisMetric
-	settings     component.ReceiverCreateSettings
-	timeBundle   *timeBundle
+	redisSvc      *redisSvc
+	redisMetrics  []*redisMetric
+	settings      component.ReceiverCreateSettings
+	timeBundle    *timeBundle
+	redisInstance string
 }
 
 func newRedisScraper(cfg Config, settings component.ReceiverCreateSettings) (scraperhelper.Scraper, error) {
@@ -45,14 +46,19 @@ func newRedisScraper(cfg Config, settings component.ReceiverCreateSettings) (scr
 	if opts.TLSConfig, err = cfg.TLS.LoadTLSConfig(); err != nil {
 		return nil, err
 	}
-	return newRedisScraperWithClient(newRedisClient(opts), settings)
+	// Providing default value
+	if cfg.RedisInstance == "" {
+		cfg.RedisInstance = cfg.Endpoint
+	}
+	return newRedisScraperWithClient(newRedisClient(opts), settings, cfg.RedisInstance)
 }
 
-func newRedisScraperWithClient(client client, settings component.ReceiverCreateSettings) (scraperhelper.Scraper, error) {
+func newRedisScraperWithClient(client client, settings component.ReceiverCreateSettings, redisInstance string) (scraperhelper.Scraper, error) {
 	rs := &redisScraper{
-		redisSvc:     newRedisSvc(client),
-		redisMetrics: getDefaultRedisMetrics(),
-		settings:     settings,
+		redisSvc:      newRedisSvc(client),
+		redisMetrics:  getDefaultRedisMetrics(),
+		settings:      settings,
+		redisInstance: redisInstance,
 	}
 	return scraperhelper.NewScraper(typeStr, rs.Scrape)
 }
@@ -81,6 +87,7 @@ func (r *redisScraper) Scrape(context.Context) (pdata.Metrics, error) {
 
 	pdm := pdata.NewMetrics()
 	rm := pdm.ResourceMetrics().AppendEmpty()
+	rm.Resource().Attributes().InsertString("redis.instance", r.redisInstance)
 	ilm := rm.InstrumentationLibraryMetrics().AppendEmpty()
 	ilm.InstrumentationLibrary().SetName("otelcol/" + typeStr)
 	fixedMS, warnings := inf.buildFixedMetrics(r.redisMetrics, r.timeBundle)

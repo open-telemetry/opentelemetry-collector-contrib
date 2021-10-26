@@ -62,6 +62,7 @@ option.
   - `ca_file`: path to the CA cert. For a client this verifies the server certificate. Should only be used if `insecure` is set to false.
   - `cert_file`: path to the TLS cert to use for TLS required connections. Should only be used if `insecure` is set to false.
   - `key_file`: path to the TLS key to use for TLS required connections. Should only be used if `insecure` is set to false.
+- `redis_instance` (default = endpoint): Name of the Redis instance to be set as the `redis.instance` resource attribute.
 
 Example:
 
@@ -71,6 +72,7 @@ receivers:
     endpoint: "localhost:6379"
     collection_interval: 10s
     password: $REDIS_PASSWORD
+    redis_instance: "redis"
 ```
 
 > :information_source: As with all Open Telemetry configuration values, a
