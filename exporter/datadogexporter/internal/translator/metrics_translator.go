@@ -216,7 +216,10 @@ func (t *Translator) getSketchBuckets(
 
 	}
 
-	consumer.ConsumeSketch(ctx, name, ts, as.Finish(), tags, host)
+	sketch := as.Finish()
+	if sketch != nil {
+		consumer.ConsumeSketch(ctx, name, ts, sketch, tags, host)
+	}
 }
 
 func (t *Translator) getLegacyBuckets(
