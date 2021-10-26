@@ -49,10 +49,8 @@ type BearerTokenAuth struct {
 	logger      *zap.Logger
 }
 
-var (
-	_                             configauth.ClientAuthenticator = (*BearerTokenAuth)(nil)
-	errNotHTTPClientAuthenticator                                = errors.New("requested authenticator is not a HTTP client authenticator")
-)
+var _ configauth.ClientAuthenticator = (*BearerTokenAuth)(nil)
+var errNotHTTPClientAuthenticator = errors.New("requested authenticator is not a HTTP client authenticator")
 
 func newBearerTokenAuth(cfg *Config, logger *zap.Logger) *BearerTokenAuth {
 	return &BearerTokenAuth{
