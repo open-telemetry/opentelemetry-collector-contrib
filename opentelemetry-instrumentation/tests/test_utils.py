@@ -43,3 +43,41 @@ class TestUtils(TestBase):
             with self.subTest(status_code=status_code):
                 actual = http_status_to_status_code(int(status_code))
                 self.assertEqual(actual, expected, status_code)
+
+    def test_http_status_to_status_code_redirect(self):
+        for status_code, expected in (
+            (HTTPStatus.MULTIPLE_CHOICES, StatusCode.ERROR),
+            (HTTPStatus.MOVED_PERMANENTLY, StatusCode.ERROR),
+            (HTTPStatus.TEMPORARY_REDIRECT, StatusCode.ERROR),
+            (HTTPStatus.PERMANENT_REDIRECT, StatusCode.ERROR),
+        ):
+            with self.subTest(status_code=status_code):
+                actual = http_status_to_status_code(
+                    int(status_code), allow_redirect=False
+                )
+                self.assertEqual(actual, expected, status_code)
+
+    def test_http_status_to_status_code_server(self):
+        for status_code, expected in (
+            (HTTPStatus.OK, StatusCode.UNSET),
+            (HTTPStatus.ACCEPTED, StatusCode.UNSET),
+            (HTTPStatus.IM_USED, StatusCode.UNSET),
+            (HTTPStatus.MULTIPLE_CHOICES, StatusCode.UNSET),
+            (HTTPStatus.BAD_REQUEST, StatusCode.UNSET),
+            (HTTPStatus.UNAUTHORIZED, StatusCode.UNSET),
+            (HTTPStatus.FORBIDDEN, StatusCode.UNSET),
+            (HTTPStatus.NOT_FOUND, StatusCode.UNSET),
+            (HTTPStatus.UNPROCESSABLE_ENTITY, StatusCode.UNSET,),
+            (HTTPStatus.TOO_MANY_REQUESTS, StatusCode.UNSET,),
+            (HTTPStatus.NOT_IMPLEMENTED, StatusCode.ERROR),
+            (HTTPStatus.SERVICE_UNAVAILABLE, StatusCode.ERROR),
+            (HTTPStatus.GATEWAY_TIMEOUT, StatusCode.ERROR,),
+            (HTTPStatus.HTTP_VERSION_NOT_SUPPORTED, StatusCode.ERROR,),
+            (600, StatusCode.ERROR),
+            (99, StatusCode.ERROR),
+        ):
+            with self.subTest(status_code=status_code):
+                actual = http_status_to_status_code(
+                    int(status_code), server_span=True
+                )
+                self.assertEqual(actual, expected, status_code)

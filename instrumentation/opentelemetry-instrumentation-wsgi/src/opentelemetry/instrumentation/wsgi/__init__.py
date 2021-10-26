@@ -226,7 +226,9 @@ def add_response_attributes(
         )
     else:
         span.set_attribute(SpanAttributes.HTTP_STATUS_CODE, status_code)
-        span.set_status(Status(http_status_to_status_code(status_code)))
+        span.set_status(
+            Status(http_status_to_status_code(status_code, server_span=True))
+        )
 
 
 def get_default_span_name(environ):

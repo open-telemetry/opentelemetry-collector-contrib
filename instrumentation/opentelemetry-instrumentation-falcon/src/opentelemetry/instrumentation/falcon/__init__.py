@@ -299,7 +299,9 @@ class _TraceMiddleware:
             span.set_attribute(SpanAttributes.HTTP_STATUS_CODE, status_code)
             span.set_status(
                 Status(
-                    status_code=http_status_to_status_code(status_code),
+                    status_code=http_status_to_status_code(
+                        status_code, server_span=True
+                    ),
                     description=reason,
                 )
             )

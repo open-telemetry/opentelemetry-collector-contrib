@@ -19,6 +19,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   ([#774](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/774))
 - `opentelemetry-instrumentation-django` Fixed carrier usage on ASGI requests.
   ([#767](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/767))
+- Don't set Span Status on 4xx http status code for SpanKind.SERVER spans
+  ([#776](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/776))
 
 ## [1.6.2-0.25b2](https://github.com/open-telemetry/opentelemetry-python/releases/tag/v1.6.2-0.25b2) - 2021-10-19
 
