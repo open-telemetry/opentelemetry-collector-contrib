@@ -472,7 +472,7 @@ func unmarshalJSON(dst []byte, src []byte) error {
 
 // TODO: Find a way to avoid this duplicate code. Consider to expose this in model/pdata.
 var statusCodeValue = map[string]int32{
-	"STATUS_CODE_UNSET": 0,
-	"STATUS_CODE_OK":    1,
-	"STATUS_CODE_ERROR": 2,
+	"UNSET": 0,
+	"OK":    1,
+	"ERROR": 2,
 }

@@ -169,7 +169,7 @@ func zipkinOneSpan() *zipkinmodel.SpanModel {
 		},
 		Tags: map[string]string{
 			"resource-attr":                   "resource-attr-val-1",
-			conventions.OtelStatusCode:        "STATUS_CODE_ERROR",
+			conventions.OtelStatusCode:        "ERROR",
 			conventions.OtelStatusDescription: "status-cancelled",
 		},
 		Name:      "operationA",

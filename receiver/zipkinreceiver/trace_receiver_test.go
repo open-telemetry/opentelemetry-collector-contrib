@@ -373,6 +373,27 @@ func TestConvertSpansToTraceSpans_JSONWithoutSerivceName(t *testing.T) {
 	require.Equal(t, 1, reqs.SpanCount(), "Incorrect non-nil spans count")
 }
 
+func TestConvertSpansToTraceSpans_JSONWithOTelErrorStatus(t *testing.T) {
+	blob, err := ioutil.ReadFile("./testdata/sample3.json")
+	require.NoError(t, err, "Failed to read sample JSON file: %v", err)
+	zi := newTestZipkinReceiver()
+	reqs, err := zi.v2ToTraceSpans(blob, nil)
+	require.NoError(t, err, "Failed to parse convert Zipkin spans in JSON to Trace spans: %v", err)
+
+	require.Equal(t, 1, reqs.ResourceSpans().Len(), "Expecting only one request since all spans share same node/localEndpoint: %v", reqs.ResourceSpans().Len())
+
+	// Expecting 1 non-nil spans
+	require.Equal(t, 1, reqs.SpanCount(), "Incorrect non-nil spans count")
+
+	gs := reqs.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().At(0)
+	assert.Equal(t, pdata.StatusCodeError, gs.Status().Code(), "Expecting to convert the span status code")
+	assert.Equal(t, "Something failed", gs.Status().Message(), "Expecting to convert the span status description")
+	_, ok := gs.Attributes().Get("otel.status_code")
+	assert.False(t, ok, "Expecting to filter the span status code attribute")
+	_, ok = gs.Attributes().Get("otel.status_description")
+	assert.False(t, ok, "Expecting to filter the span status description attribute")
+}
+
 func TestReceiverConvertsStringsToTypes(t *testing.T) {
 	body, err := ioutil.ReadFile(zipkinV2Single)
 	require.NoError(t, err, "Failed to read sample JSON file: %v", err)
