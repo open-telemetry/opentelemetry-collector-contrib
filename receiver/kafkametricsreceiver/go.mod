@@ -17,6 +17,7 @@ require go.uber.org/multierr v1.7.0
 require (
 	github.com/Microsoft/go-winio v0.4.17 // indirect
 	github.com/apache/thrift v0.15.0 // indirect
+	github.com/aws/aws-sdk-go v1.41.2 // indirect
 	github.com/cenkalti/backoff/v4 v4.1.1 // indirect
 	github.com/containerd/containerd v1.5.7 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
@@ -38,6 +39,7 @@ require (
 	github.com/jcmturner/gofork v1.0.0 // indirect
 	github.com/jcmturner/gokrb5/v8 v8.4.2 // indirect
 	github.com/jcmturner/rpc/v2 v2.0.3 // indirect
+	github.com/jmespath/go-jmespath v0.4.0 // indirect
 	github.com/klauspost/compress v1.13.6 // indirect
 	github.com/knadh/koanf v1.2.4 // indirect
 	github.com/magiconair/properties v1.8.5 // indirect
