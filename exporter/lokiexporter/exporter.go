@@ -17,6 +17,7 @@ package lokiexporter
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -30,6 +31,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/model/pdata"
+	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/lokiexporter/internal/third_party/loki/logproto"
@@ -126,6 +128,8 @@ func (l *lokiExporter) stop(context.Context) (err error) {
 }
 
 func (l *lokiExporter) logDataToLoki(ld pdata.Logs) (pr *logproto.PushRequest, numDroppedLogs int) {
+	var errs error
+
 	streams := make(map[string]*logproto.Stream)
 	rls := ld.ResourceLogs()
 	for i := 0; i < rls.Len(); i++ {
@@ -146,9 +150,18 @@ func (l *lokiExporter) logDataToLoki(ld pdata.Logs) (pr *logproto.PushRequest, n
 				var err error
 				entry, err = l.convert(log, resource)
 				if err != nil {
-					// Couldn't convert to JSON so dropping log.
+					// Couldn't convert so dropping log.
 					numDroppedLogs++
-					l.logger.Error("failed to convert, dropping log", zap.String("format", l.config.Format), zap.Error(err))
+					errs = multierr.Append(
+						errs,
+						errors.New(
+							fmt.Sprint(
+								"failed to convert, dropping log",
+								zap.String("format", l.config.Format),
+								zap.Error(err),
+							),
+						),
+					)
 					continue
 				}
 
@@ -164,6 +177,8 @@ func (l *lokiExporter) logDataToLoki(ld pdata.Logs) (pr *logproto.PushRequest, n
 			}
 		}
 	}
+
+	l.logger.Error("some logs has been dropped", zap.Error(errs))
 
 	pr = &logproto.PushRequest{
 		Streams: make([]logproto.Stream, len(streams)),
