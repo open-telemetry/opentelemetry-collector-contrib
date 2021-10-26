@@ -99,10 +99,10 @@ func (e *exporter) PushMetricsData(ctx context.Context, md pdata.Metrics) error 
 	}
 
 	lines := e.serializeMetrics(md)
-	l := e.logger.Check(zapcore.DebugLevel, "Serialization complete")
-	if l != nil {
-		l.Write(zap.Int("DataPoints", md.DataPointCount()))
-		l.Write(zap.Int("Lines", len(lines)))
+	logEntry := e.logger.Check(zapcore.DebugLevel, "Serialization complete")
+	if logEntry != nil {
+		logEntry.Write(zap.Int("DataPoints", md.DataPointCount()))
+		logEntry.Write(zap.Int("Lines", len(lines)))
 	}
 
 	// If request is empty string, there are no serializable metrics in the batch.
