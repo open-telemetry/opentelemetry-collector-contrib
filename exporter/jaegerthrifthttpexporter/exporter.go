@@ -61,7 +61,11 @@ type jaegerThriftHTTPSender struct {
 func (s *jaegerThriftHTTPSender) start(_ context.Context, host component.Host) (err error) {
 	s.client, err = s.config.HTTPClientSettings.ToClient(host.GetExtensions())
 
-	return consumererror.NewPermanent(err)
+	if err != nil {
+		return consumererror.NewPermanent(err)
+	}
+
+	return nil
 }
 
 func (s *jaegerThriftHTTPSender) pushTraceData(
