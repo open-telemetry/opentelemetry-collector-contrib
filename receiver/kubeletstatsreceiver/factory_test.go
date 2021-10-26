@@ -194,7 +194,7 @@ func TestCustomUnmarshaller(t *testing.T) {
 				},
 			},
 			configOverride: map[string]interface{}{
-				"metric_groups":       []kubelet.MetricGroup{kubelet.ContainerMetricGroup},
+				"metric_groups":       []string{string(kubelet.ContainerMetricGroup)},
 				"collection_interval": 20 * time.Second,
 			},
 			result: &Config{
@@ -209,7 +209,7 @@ func TestCustomUnmarshaller(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			if tt.mockUnmarshallFailure {
 				// some arbitrary failure.
-				tt.args.componentParser.Set(metricGroupsConfig, map[string]string{})
+				tt.args.componentParser.Set(metricGroupsConfig, map[string]string{"foo": "bar"})
 			}
 
 			// Mock some config overrides.
