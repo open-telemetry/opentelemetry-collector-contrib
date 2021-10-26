@@ -52,6 +52,10 @@ func TestBearerAuthenticator(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, credential)
 
+	c, err := bauth.RoundTripper(nil)
+	assert.ErrorIs(t, err, errNotHTTPClientAuthenticator)
+	assert.Nil(t, c)
+
 	md, err := credential.GetRequestMetadata(context.Background())
 	expectedMd := map[string]string{
 		"authorization": fmt.Sprintf("Bearer %s", cfg.BearerToken),
