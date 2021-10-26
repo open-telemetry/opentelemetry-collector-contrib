@@ -18,6 +18,7 @@ from pika.channel import Channel
 from wrapt import BoundFunctionWrapper
 
 from opentelemetry.instrumentation.pika import PikaInstrumentor
+from opentelemetry.instrumentation.pika.utils import dummy_callback
 from opentelemetry.trace import Tracer
 
 
@@ -72,7 +73,7 @@ class TestPika(TestCase):
     ) -> None:
         tracer = mock.MagicMock(spec=Tracer)
         expected_decoration_calls = [
-            mock.call(value.on_message_callback, tracer, key)
+            mock.call(value.on_message_callback, tracer, key, dummy_callback)
             for key, value in self.channel._consumer_infos.items()
         ]
         PikaInstrumentor._instrument_blocking_channel_consumers(
@@ -96,7 +97,7 @@ class TestPika(TestCase):
         original_function = self.channel.basic_publish
         PikaInstrumentor._instrument_basic_publish(self.channel, tracer)
         decorate_basic_publish.assert_called_once_with(
-            original_function, self.channel, tracer
+            original_function, self.channel, tracer, dummy_callback
         )
         self.assertEqual(
             self.channel.basic_publish, decorate_basic_publish.return_value

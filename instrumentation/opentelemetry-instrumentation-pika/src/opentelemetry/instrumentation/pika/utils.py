@@ -1,3 +1,4 @@
+from logging import getLogger
 from typing import Any, Callable, List, Optional
 
 from pika.channel import Channel
@@ -13,6 +14,8 @@ from opentelemetry.semconv.trace import (
 from opentelemetry.trace import SpanKind, Tracer
 from opentelemetry.trace.span import Span
 
+_LOG = getLogger(__name__)
+
 
 class _PikaGetter(Getter):  # type: ignore
     def get(self, carrier: CarrierT, key: str) -> Optional[List[str]]:
@@ -27,11 +30,18 @@ class _PikaGetter(Getter):  # type: ignore
 
 _pika_getter = _PikaGetter()
 
+HookT = Callable[[Span, bytes, BasicProperties], None]
+
+
+def dummy_callback(span: Span, body: bytes, properties: BasicProperties):
+    ...
+
 
 def _decorate_callback(
     callback: Callable[[Channel, Basic.Deliver, BasicProperties, bytes], Any],
     tracer: Tracer,
     task_name: str,
+    consume_hook: HookT = dummy_callback,
 ):
     def decorated_callback(
         channel: Channel,
@@ -60,6 +70,10 @@ def _decorate_callback(
         )
         try:
             with trace.use_span(span, end_on_exit=True):
+                try:
+                    consume_hook(span, body, properties)
+                except Exception as hook_exception:  # pylint: disable=W0703
+                    _LOG.exception(hook_exception)
                 retval = callback(channel, method, properties, body)
         finally:
             context.detach(token)
@@ -72,6 +86,7 @@ def _decorate_basic_publish(
     original_function: Callable[[str, str, bytes, BasicProperties, bool], Any],
     channel: Channel,
     tracer: Tracer,
+    publish_hook: HookT = dummy_callback,
 ):
     def decorated_function(
         exchange: str,
@@ -100,6 +115,10 @@ def _decorate_basic_publish(
         with trace.use_span(span, end_on_exit=True):
             if span.is_recording():
                 propagate.inject(properties.headers)
+                try:
+                    publish_hook(span, body, properties)
+                except Exception as hook_exception:  # pylint: disable=W0703
+                    _LOG.exception(hook_exception)
             retval = original_function(
                 exchange, routing_key, body, properties, mandatory
             )
