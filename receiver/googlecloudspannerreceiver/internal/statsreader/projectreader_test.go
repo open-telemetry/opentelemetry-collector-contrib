@@ -16,25 +16,39 @@ package statsreader
 
 import (
 	"context"
+	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/model/pdata"
+	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudspannerreceiver/internal/metadata"
 )
 
 type mockCompositeReader struct {
+	throwErrorOnRead bool
 }
 
-func (tcr mockCompositeReader) Name() string {
+func newMockCompositeReader(throwErrorOnRead bool) mockCompositeReader {
+	return mockCompositeReader{
+		throwErrorOnRead: throwErrorOnRead,
+	}
+}
+
+func (mcr mockCompositeReader) Name() string {
 	return "mockCompositeReader"
 }
 
-func (tcr mockCompositeReader) Read(_ context.Context) []pdata.Metrics {
-	return []pdata.Metrics{pdata.NewMetrics()}
+func (mcr mockCompositeReader) Read(context.Context) ([]*metadata.MetricsDataPoint, error) {
+	if mcr.throwErrorOnRead {
+		return nil, errors.New("error")
+	}
+
+	return []*metadata.MetricsDataPoint{{}}, nil
 }
 
-func (tcr mockCompositeReader) Shutdown() {
+func (mcr mockCompositeReader) Shutdown() {
 	// Do nothing
 }
 
@@ -66,18 +80,35 @@ func TestProjectReader_Shutdown(t *testing.T) {
 func TestProjectReader_Read(t *testing.T) {
 	ctx := context.Background()
 	logger := zap.NewNop()
-
-	databaseReaders := []CompositeReader{mockCompositeReader{}}
-
-	reader := ProjectReader{
-		databaseReaders: databaseReaders,
-		logger:          logger,
+	testCases := map[string]struct {
+		compositeReader         CompositeReader
+		expectedDataPointsCount int
+		expectError             bool
+	}{
+		"Happy path":     {newMockCompositeReader(false), 1, false},
+		"Error occurred": {newMockCompositeReader(true), 0, true},
 	}
-	defer reader.Shutdown()
 
-	metrics := reader.Read(ctx)
+	for name, testCase := range testCases {
+		t.Run(name, func(t *testing.T) {
+			databaseReaders := []CompositeReader{testCase.compositeReader}
 
-	assert.Equal(t, 1, len(metrics))
+			reader := ProjectReader{
+				databaseReaders: databaseReaders,
+				logger:          logger,
+			}
+			defer reader.Shutdown()
+
+			dataPoints, err := reader.Read(ctx)
+			if testCase.expectError {
+				require.Error(t, err)
+			} else {
+				require.NoError(t, err)
+			}
+
+			assert.Equal(t, testCase.expectedDataPointsCount, len(dataPoints))
+		})
+	}
 }
 
 func TestProjectReader_Name(t *testing.T) {
