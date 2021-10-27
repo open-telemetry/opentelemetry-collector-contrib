@@ -60,6 +60,9 @@ func TestDefaultReceivers(t *testing.T) {
 			receiver: "otlp",
 		},
 		{
+			receiver: "awscontainerinsightreceiver",
+		},
+		{
 			receiver: "prometheus",
 			getConfigFn: func() config.Receiver {
 				cfg := rcvrFactories["prometheus"].CreateDefaultConfig().(*prometheusreceiver.Config)
