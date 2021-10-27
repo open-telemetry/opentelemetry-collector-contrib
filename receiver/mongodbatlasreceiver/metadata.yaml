@@ -1,253 +1,252 @@
 name: mongoatlasreceiver
 
 metrics:
-  process.asserts:
+  mongodbatlas.process.asserts:
     description: Number of assertions
     unit: 1
     data:
       type: gauge
-  process.background_flush:
+  mongodbatlas.process.background_flush:
     description: Amount of data flushed in the background
     unit: 1
     data:
       type: gauge
-  process.cache.io:
+  mongodbatlas.process.cache.io:
     description: Cache throughput
     unit: 1
     data:
       type: gauge
-  process.cache.size:
+  mongodbatlas.process.cache.size:
     description: Cache sizes
     unit: 1
     data:
       type: gauge
-  process.connections:
+  mongodbatlas.process.connections:
     description: Number of current connections
     unit: 1
     data:
       type: gauge
-  process.cpu.usage:
+  mongodbatlas.process.cpu.usage:
     description: CPU Usage
     unit: 1
     data:
       type: gauge
-  process.cpu.children.usage:
+  mongodbatlas.process.cpu.children.usage:
     description: CPU Usage for child processes
     unit: 1
     data:
       type: gauge
-  process.cpu.children.normalized.usage:
+  mongodbatlas.process.cpu.children.normalized.usage:
     description: CPU Usage for child processes, normalized to pct
     unit: 1
     data:
       type: gauge
-  process.cpu.normalized.usage:
+  mongodbatlas.process.cpu.normalized.usage:
     description: CPU Usage, normalized to pct
     unit: 1
     data:
       type: gauge
-  process.cursors:
+  mongodbatlas.process.cursors:
     description: Number of cursors
     unit: 1
     data:
       type: gauge
-  process.db.storage:
+  mongodbatlas.process.db.storage:
     description: FIXME
     unit: 1
     data:
       type: gauge
-  process.db.document.rate:
-    # TODO: I'm not sure this one is right
+  mongodbatlas.process.db.document.rate:
     description: Document access rates
     unit: 1
     data:
       type: gauge
-  process.fts.cpu.usage:
+  mongodbatlas.process.fts.cpu.usage:
     description: Full text search CPU
     unit: 1
     data:
       type: gauge
-  process.fts.cpu.normalized.usage:
+  mongodbatlas.process.fts.cpu.normalized.usage:
     description: Full text search CPU, normalized to pct
     unit: 1
     data:
       type: gauge
-  process.fts.disk.usage:
+  mongodbatlas.process.fts.disk.usage:
     description: Full text search disk usage
     unit: 1
     data:
       type: gauge
-  process.fts.memory.usage:
+  mongodbatlas.process.fts.memory.usage:
     description: Full text search memory usage
     unit: 1
     data:
       type: gauge
-  process.global_lock:
+  mongodbatlas.process.global_lock:
     description: Number and status of locks
     unit: 1
     data:
       type: gauge
-  process.index.btree_miss_ratio:
+  mongodbatlas.process.index.btree_miss_ratio:
     description: Index miss ratio
     unit: 1
     data:
       type: gauge
-  process.index.counters:
+  mongodbatlas.process.index.counters:
     description: Indexes
     unit: 1
     data:
       type: gauge
-  process.journaling.commits:
+  mongodbatlas.process.journaling.commits:
     description: Journaling commits
     unit: 1
     data:
       type: gauge
-  process.journaling.data_files:
+  mongodbatlas.process.journaling.data_files:
     description: Data file sizes
     unit: 1
     data:
       type: gauge
-  process.journaling.written:
+  mongodbatlas.process.journaling.written:
     description: Journals written
     unit: 1
     data:
       type: gauge
-  process.memory.usage:
+  mongodbatlas.process.memory.usage:
     description: Memory Usage
     unit: 1
     data:
       type: gauge
-  process.network.io:
+  mongodbatlas.process.network.io:
     description: Network IO
     unit: 1
     data:
       type: gauge
-  process.network.requests:
+  mongodbatlas.process.network.requests:
     description: Network requests
     unit: 1
     data:
       type: gauge
-  process.oplog.time:
+  mongodbatlas.process.oplog.time:
     description: Execution time by operation
     unit: 1
     data:
       type: gauge
-  process.oplog.rate:
+  mongodbatlas.process.oplog.rate:
     description: Execution rate by operation
     unit: 1
     data:
       type: gauge
-  process.db.operations.rate:
+  mongodbatlas.process.db.operations.rate:
     description: FIXME
     unit: 1
     data:
       type: gauge
-  process.db.operations.time:
+  mongodbatlas.process.db.operations.time:
     description: FIXME
     unit: 1
     data:
       type: gauge
-  process.page_faults:
+  mongodbatlas.process.page_faults:
     description: Page faults
     unit: 1
     data:
       type: gauge
-  process.db.query_executor.scanned:
+  mongodbatlas.process.db.query_executor.scanned:
     description: Scanned objects
     unit: 1
     data:
       type: gauge
-  process.db.query_targeting.scanned_per_returned:
+  mongodbatlas.process.db.query_targeting.scanned_per_returned:
     description: Scanned objects per returned
     unit: 1
     data:
       type: gauge
-  process.restarts:
+  mongodbatlas.process.restarts:
     description: Restarts in last hour
     unit: 1
     data:
       type: gauge
-  system.paging.usage:
+  mongodbatlas.system.paging.usage:
     description: Swap usage
     unit: 1
     data:
       type: gauge
-  system.paging.io:
+  mongodbatlas.system.paging.io:
     description: Swap IO
     unit: 1
     data:
       type: gauge
-  system.cpu.usage:
+  mongodbatlas.system.cpu.usage:
     description: System CPU Usage
     unit: 1
     data:
       type: gauge
-  system.memory.usage:
+  mongodbatlas.system.memory.usage:
     description: System Memory Usage
     unit: 1
     data:
       type: gauge
-  system.network.io:
+  mongodbatlas.system.network.io:
     description: System Network IO
     unit: 1
     data:
       type: gauge
-  system.cpu.normalized.usage:
+  mongodbatlas.system.cpu.normalized.usage:
     description: System CPU Normalized to pct
     unit: 1
     data:
       type: gauge
-  process.tickets:
+  mongodbatlas.process.tickets:
     description: Tickets
     unit: 1
     data:
       type: gauge
-  disk.partition.iops:
+  mongodbatlas.disk.partition.iops:
     description: Disk partition iops
     unit: 1
     data:
       type: gauge
-  disk.partition.utilization:
+  mongodbatlas.disk.partition.utilization:
     description: Disk partition utilization
     unit: 1
     data:
       type: gauge
-  disk.partition.latency:
+  mongodbatlas.disk.partition.latency:
     description: Disk partition latency
     unit: 1
     data:
       type: gauge
-  disk.partition.space:
+  mongodbatlas.disk.partition.space:
     description: Disk partition space
     unit: 1
     data:
       type: gauge
-  db.size:
+  mongodbatlas.db.size:
     description: Database feature size
     unit: 1
     data:
       type: gauge
-  db.counts:
+  mongodbatlas.db.counts:
     description: Database feature size
     unit: 1
     data:
       type: gauge
-  system.fts.memory.usage:
+  mongodbatlas.system.fts.memory.usage:
     description: Full-text search
     unit: 1
     data:
       type: gauge
-  system.fts.disk.utilization:
+  mongodbatlas.system.fts.disk.utilization:
     description: Full text search disk usage
     unit: 1
     data:
       type: gauge
-  system.fts.cpu.usage:
+  mongodbatlas.system.fts.cpu.usage:
     description: Full-text search
     unit: 1
     data:
       type: gauge
-  system.fts.cpu.normalized.usage:
+  mongodbatlas.system.fts.cpu.normalized.usage:
     description: Full text search disk usage
     unit: 1
     data:

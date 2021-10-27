@@ -55,165 +55,165 @@ func (m *metricImpl) Init(metric pdata.Metric) {
 }
 
 type metricStruct struct {
-	DbCounts                                  MetricIntf
-	DbSize                                    MetricIntf
-	DiskPartitionIops                         MetricIntf
-	DiskPartitionLatency                      MetricIntf
-	DiskPartitionSpace                        MetricIntf
-	DiskPartitionUtilization                  MetricIntf
-	ProcessAsserts                            MetricIntf
-	ProcessBackgroundFlush                    MetricIntf
-	ProcessCacheIo                            MetricIntf
-	ProcessCacheSize                          MetricIntf
-	ProcessConnections                        MetricIntf
-	ProcessCPUChildrenNormalizedUsage         MetricIntf
-	ProcessCPUChildrenUsage                   MetricIntf
-	ProcessCPUNormalizedUsage                 MetricIntf
-	ProcessCPUUsage                           MetricIntf
-	ProcessCursors                            MetricIntf
-	ProcessDbDocumentRate                     MetricIntf
-	ProcessDbOperationsRate                   MetricIntf
-	ProcessDbOperationsTime                   MetricIntf
-	ProcessDbQueryExecutorScanned             MetricIntf
-	ProcessDbQueryTargetingScannedPerReturned MetricIntf
-	ProcessDbStorage                          MetricIntf
-	ProcessFtsCPUNormalizedUsage              MetricIntf
-	ProcessFtsCPUUsage                        MetricIntf
-	ProcessFtsDiskUsage                       MetricIntf
-	ProcessFtsMemoryUsage                     MetricIntf
-	ProcessGlobalLock                         MetricIntf
-	ProcessIndexBtreeMissRatio                MetricIntf
-	ProcessIndexCounters                      MetricIntf
-	ProcessJournalingCommits                  MetricIntf
-	ProcessJournalingDataFiles                MetricIntf
-	ProcessJournalingWritten                  MetricIntf
-	ProcessMemoryUsage                        MetricIntf
-	ProcessNetworkIo                          MetricIntf
-	ProcessNetworkRequests                    MetricIntf
-	ProcessOplogRate                          MetricIntf
-	ProcessOplogTime                          MetricIntf
-	ProcessPageFaults                         MetricIntf
-	ProcessRestarts                           MetricIntf
-	ProcessTickets                            MetricIntf
-	SystemCPUNormalizedUsage                  MetricIntf
-	SystemCPUUsage                            MetricIntf
-	SystemFtsCPUNormalizedUsage               MetricIntf
-	SystemFtsCPUUsage                         MetricIntf
-	SystemFtsDiskUtilization                  MetricIntf
-	SystemFtsMemoryUsage                      MetricIntf
-	SystemMemoryUsage                         MetricIntf
-	SystemNetworkIo                           MetricIntf
-	SystemPagingIo                            MetricIntf
-	SystemPagingUsage                         MetricIntf
+	MongodbatlasDbCounts                                  MetricIntf
+	MongodbatlasDbSize                                    MetricIntf
+	MongodbatlasDiskPartitionIops                         MetricIntf
+	MongodbatlasDiskPartitionLatency                      MetricIntf
+	MongodbatlasDiskPartitionSpace                        MetricIntf
+	MongodbatlasDiskPartitionUtilization                  MetricIntf
+	MongodbatlasProcessAsserts                            MetricIntf
+	MongodbatlasProcessBackgroundFlush                    MetricIntf
+	MongodbatlasProcessCacheIo                            MetricIntf
+	MongodbatlasProcessCacheSize                          MetricIntf
+	MongodbatlasProcessConnections                        MetricIntf
+	MongodbatlasProcessCPUChildrenNormalizedUsage         MetricIntf
+	MongodbatlasProcessCPUChildrenUsage                   MetricIntf
+	MongodbatlasProcessCPUNormalizedUsage                 MetricIntf
+	MongodbatlasProcessCPUUsage                           MetricIntf
+	MongodbatlasProcessCursors                            MetricIntf
+	MongodbatlasProcessDbDocumentRate                     MetricIntf
+	MongodbatlasProcessDbOperationsRate                   MetricIntf
+	MongodbatlasProcessDbOperationsTime                   MetricIntf
+	MongodbatlasProcessDbQueryExecutorScanned             MetricIntf
+	MongodbatlasProcessDbQueryTargetingScannedPerReturned MetricIntf
+	MongodbatlasProcessDbStorage                          MetricIntf
+	MongodbatlasProcessFtsCPUNormalizedUsage              MetricIntf
+	MongodbatlasProcessFtsCPUUsage                        MetricIntf
+	MongodbatlasProcessFtsDiskUsage                       MetricIntf
+	MongodbatlasProcessFtsMemoryUsage                     MetricIntf
+	MongodbatlasProcessGlobalLock                         MetricIntf
+	MongodbatlasProcessIndexBtreeMissRatio                MetricIntf
+	MongodbatlasProcessIndexCounters                      MetricIntf
+	MongodbatlasProcessJournalingCommits                  MetricIntf
+	MongodbatlasProcessJournalingDataFiles                MetricIntf
+	MongodbatlasProcessJournalingWritten                  MetricIntf
+	MongodbatlasProcessMemoryUsage                        MetricIntf
+	MongodbatlasProcessNetworkIo                          MetricIntf
+	MongodbatlasProcessNetworkRequests                    MetricIntf
+	MongodbatlasProcessOplogRate                          MetricIntf
+	MongodbatlasProcessOplogTime                          MetricIntf
+	MongodbatlasProcessPageFaults                         MetricIntf
+	MongodbatlasProcessRestarts                           MetricIntf
+	MongodbatlasProcessTickets                            MetricIntf
+	MongodbatlasSystemCPUNormalizedUsage                  MetricIntf
+	MongodbatlasSystemCPUUsage                            MetricIntf
+	MongodbatlasSystemFtsCPUNormalizedUsage               MetricIntf
+	MongodbatlasSystemFtsCPUUsage                         MetricIntf
+	MongodbatlasSystemFtsDiskUtilization                  MetricIntf
+	MongodbatlasSystemFtsMemoryUsage                      MetricIntf
+	MongodbatlasSystemMemoryUsage                         MetricIntf
+	MongodbatlasSystemNetworkIo                           MetricIntf
+	MongodbatlasSystemPagingIo                            MetricIntf
+	MongodbatlasSystemPagingUsage                         MetricIntf
 }
 
 // Names returns a list of all the metric name strings.
 func (m *metricStruct) Names() []string {
 	return []string{
-		"db.counts",
-		"db.size",
-		"disk.partition.iops",
-		"disk.partition.latency",
-		"disk.partition.space",
-		"disk.partition.utilization",
-		"process.asserts",
-		"process.background_flush",
-		"process.cache.io",
-		"process.cache.size",
-		"process.connections",
-		"process.cpu.children.normalized.usage",
-		"process.cpu.children.usage",
-		"process.cpu.normalized.usage",
-		"process.cpu.usage",
-		"process.cursors",
-		"process.db.document.rate",
-		"process.db.operations.rate",
-		"process.db.operations.time",
-		"process.db.query_executor.scanned",
-		"process.db.query_targeting.scanned_per_returned",
-		"process.db.storage",
-		"process.fts.cpu.normalized.usage",
-		"process.fts.cpu.usage",
-		"process.fts.disk.usage",
-		"process.fts.memory.usage",
-		"process.global_lock",
-		"process.index.btree_miss_ratio",
-		"process.index.counters",
-		"process.journaling.commits",
-		"process.journaling.data_files",
-		"process.journaling.written",
-		"process.memory.usage",
-		"process.network.io",
-		"process.network.requests",
-		"process.oplog.rate",
-		"process.oplog.time",
-		"process.page_faults",
-		"process.restarts",
-		"process.tickets",
-		"system.cpu.normalized.usage",
-		"system.cpu.usage",
-		"system.fts.cpu.normalized.usage",
-		"system.fts.cpu.usage",
-		"system.fts.disk.utilization",
-		"system.fts.memory.usage",
-		"system.memory.usage",
-		"system.network.io",
-		"system.paging.io",
-		"system.paging.usage",
+		"mongodbatlas.db.counts",
+		"mongodbatlas.db.size",
+		"mongodbatlas.disk.partition.iops",
+		"mongodbatlas.disk.partition.latency",
+		"mongodbatlas.disk.partition.space",
+		"mongodbatlas.disk.partition.utilization",
+		"mongodbatlas.process.asserts",
+		"mongodbatlas.process.background_flush",
+		"mongodbatlas.process.cache.io",
+		"mongodbatlas.process.cache.size",
+		"mongodbatlas.process.connections",
+		"mongodbatlas.process.cpu.children.normalized.usage",
+		"mongodbatlas.process.cpu.children.usage",
+		"mongodbatlas.process.cpu.normalized.usage",
+		"mongodbatlas.process.cpu.usage",
+		"mongodbatlas.process.cursors",
+		"mongodbatlas.process.db.document.rate",
+		"mongodbatlas.process.db.operations.rate",
+		"mongodbatlas.process.db.operations.time",
+		"mongodbatlas.process.db.query_executor.scanned",
+		"mongodbatlas.process.db.query_targeting.scanned_per_returned",
+		"mongodbatlas.process.db.storage",
+		"mongodbatlas.process.fts.cpu.normalized.usage",
+		"mongodbatlas.process.fts.cpu.usage",
+		"mongodbatlas.process.fts.disk.usage",
+		"mongodbatlas.process.fts.memory.usage",
+		"mongodbatlas.process.global_lock",
+		"mongodbatlas.process.index.btree_miss_ratio",
+		"mongodbatlas.process.index.counters",
+		"mongodbatlas.process.journaling.commits",
+		"mongodbatlas.process.journaling.data_files",
+		"mongodbatlas.process.journaling.written",
+		"mongodbatlas.process.memory.usage",
+		"mongodbatlas.process.network.io",
+		"mongodbatlas.process.network.requests",
+		"mongodbatlas.process.oplog.rate",
+		"mongodbatlas.process.oplog.time",
+		"mongodbatlas.process.page_faults",
+		"mongodbatlas.process.restarts",
+		"mongodbatlas.process.tickets",
+		"mongodbatlas.system.cpu.normalized.usage",
+		"mongodbatlas.system.cpu.usage",
+		"mongodbatlas.system.fts.cpu.normalized.usage",
+		"mongodbatlas.system.fts.cpu.usage",
+		"mongodbatlas.system.fts.disk.utilization",
+		"mongodbatlas.system.fts.memory.usage",
+		"mongodbatlas.system.memory.usage",
+		"mongodbatlas.system.network.io",
+		"mongodbatlas.system.paging.io",
+		"mongodbatlas.system.paging.usage",
 	}
 }
 
 var metricsByName = map[string]MetricIntf{
-	"db.counts":                                       Metrics.DbCounts,
-	"db.size":                                         Metrics.DbSize,
-	"disk.partition.iops":                             Metrics.DiskPartitionIops,
-	"disk.partition.latency":                          Metrics.DiskPartitionLatency,
-	"disk.partition.space":                            Metrics.DiskPartitionSpace,
-	"disk.partition.utilization":                      Metrics.DiskPartitionUtilization,
-	"process.asserts":                                 Metrics.ProcessAsserts,
-	"process.background_flush":                        Metrics.ProcessBackgroundFlush,
-	"process.cache.io":                                Metrics.ProcessCacheIo,
-	"process.cache.size":                              Metrics.ProcessCacheSize,
-	"process.connections":                             Metrics.ProcessConnections,
-	"process.cpu.children.normalized.usage":           Metrics.ProcessCPUChildrenNormalizedUsage,
-	"process.cpu.children.usage":                      Metrics.ProcessCPUChildrenUsage,
-	"process.cpu.normalized.usage":                    Metrics.ProcessCPUNormalizedUsage,
-	"process.cpu.usage":                               Metrics.ProcessCPUUsage,
-	"process.cursors":                                 Metrics.ProcessCursors,
-	"process.db.document.rate":                        Metrics.ProcessDbDocumentRate,
-	"process.db.operations.rate":                      Metrics.ProcessDbOperationsRate,
-	"process.db.operations.time":                      Metrics.ProcessDbOperationsTime,
-	"process.db.query_executor.scanned":               Metrics.ProcessDbQueryExecutorScanned,
-	"process.db.query_targeting.scanned_per_returned": Metrics.ProcessDbQueryTargetingScannedPerReturned,
-	"process.db.storage":                              Metrics.ProcessDbStorage,
-	"process.fts.cpu.normalized.usage":                Metrics.ProcessFtsCPUNormalizedUsage,
-	"process.fts.cpu.usage":                           Metrics.ProcessFtsCPUUsage,
-	"process.fts.disk.usage":                          Metrics.ProcessFtsDiskUsage,
-	"process.fts.memory.usage":                        Metrics.ProcessFtsMemoryUsage,
-	"process.global_lock":                             Metrics.ProcessGlobalLock,
-	"process.index.btree_miss_ratio":                  Metrics.ProcessIndexBtreeMissRatio,
-	"process.index.counters":                          Metrics.ProcessIndexCounters,
-	"process.journaling.commits":                      Metrics.ProcessJournalingCommits,
-	"process.journaling.data_files":                   Metrics.ProcessJournalingDataFiles,
-	"process.journaling.written":                      Metrics.ProcessJournalingWritten,
-	"process.memory.usage":                            Metrics.ProcessMemoryUsage,
-	"process.network.io":                              Metrics.ProcessNetworkIo,
-	"process.network.requests":                        Metrics.ProcessNetworkRequests,
-	"process.oplog.rate":                              Metrics.ProcessOplogRate,
-	"process.oplog.time":                              Metrics.ProcessOplogTime,
-	"process.page_faults":                             Metrics.ProcessPageFaults,
-	"process.restarts":                                Metrics.ProcessRestarts,
-	"process.tickets":                                 Metrics.ProcessTickets,
-	"system.cpu.normalized.usage":                     Metrics.SystemCPUNormalizedUsage,
-	"system.cpu.usage":                                Metrics.SystemCPUUsage,
-	"system.fts.cpu.normalized.usage":                 Metrics.SystemFtsCPUNormalizedUsage,
-	"system.fts.cpu.usage":                            Metrics.SystemFtsCPUUsage,
-	"system.fts.disk.utilization":                     Metrics.SystemFtsDiskUtilization,
-	"system.fts.memory.usage":                         Metrics.SystemFtsMemoryUsage,
-	"system.memory.usage":                             Metrics.SystemMemoryUsage,
-	"system.network.io":                               Metrics.SystemNetworkIo,
-	"system.paging.io":                                Metrics.SystemPagingIo,
-	"system.paging.usage":                             Metrics.SystemPagingUsage,
+	"mongodbatlas.db.counts":                                       Metrics.MongodbatlasDbCounts,
+	"mongodbatlas.db.size":                                         Metrics.MongodbatlasDbSize,
+	"mongodbatlas.disk.partition.iops":                             Metrics.MongodbatlasDiskPartitionIops,
+	"mongodbatlas.disk.partition.latency":                          Metrics.MongodbatlasDiskPartitionLatency,
+	"mongodbatlas.disk.partition.space":                            Metrics.MongodbatlasDiskPartitionSpace,
+	"mongodbatlas.disk.partition.utilization":                      Metrics.MongodbatlasDiskPartitionUtilization,
+	"mongodbatlas.process.asserts":                                 Metrics.MongodbatlasProcessAsserts,
+	"mongodbatlas.process.background_flush":                        Metrics.MongodbatlasProcessBackgroundFlush,
+	"mongodbatlas.process.cache.io":                                Metrics.MongodbatlasProcessCacheIo,
+	"mongodbatlas.process.cache.size":                              Metrics.MongodbatlasProcessCacheSize,
+	"mongodbatlas.process.connections":                             Metrics.MongodbatlasProcessConnections,
+	"mongodbatlas.process.cpu.children.normalized.usage":           Metrics.MongodbatlasProcessCPUChildrenNormalizedUsage,
+	"mongodbatlas.process.cpu.children.usage":                      Metrics.MongodbatlasProcessCPUChildrenUsage,
+	"mongodbatlas.process.cpu.normalized.usage":                    Metrics.MongodbatlasProcessCPUNormalizedUsage,
+	"mongodbatlas.process.cpu.usage":                               Metrics.MongodbatlasProcessCPUUsage,
+	"mongodbatlas.process.cursors":                                 Metrics.MongodbatlasProcessCursors,
+	"mongodbatlas.process.db.document.rate":                        Metrics.MongodbatlasProcessDbDocumentRate,
+	"mongodbatlas.process.db.operations.rate":                      Metrics.MongodbatlasProcessDbOperationsRate,
+	"mongodbatlas.process.db.operations.time":                      Metrics.MongodbatlasProcessDbOperationsTime,
+	"mongodbatlas.process.db.query_executor.scanned":               Metrics.MongodbatlasProcessDbQueryExecutorScanned,
+	"mongodbatlas.process.db.query_targeting.scanned_per_returned": Metrics.MongodbatlasProcessDbQueryTargetingScannedPerReturned,
+	"mongodbatlas.process.db.storage":                              Metrics.MongodbatlasProcessDbStorage,
+	"mongodbatlas.process.fts.cpu.normalized.usage":                Metrics.MongodbatlasProcessFtsCPUNormalizedUsage,
+	"mongodbatlas.process.fts.cpu.usage":                           Metrics.MongodbatlasProcessFtsCPUUsage,
+	"mongodbatlas.process.fts.disk.usage":                          Metrics.MongodbatlasProcessFtsDiskUsage,
+	"mongodbatlas.process.fts.memory.usage":                        Metrics.MongodbatlasProcessFtsMemoryUsage,
+	"mongodbatlas.process.global_lock":                             Metrics.MongodbatlasProcessGlobalLock,
+	"mongodbatlas.process.index.btree_miss_ratio":                  Metrics.MongodbatlasProcessIndexBtreeMissRatio,
+	"mongodbatlas.process.index.counters":                          Metrics.MongodbatlasProcessIndexCounters,
+	"mongodbatlas.process.journaling.commits":                      Metrics.MongodbatlasProcessJournalingCommits,
+	"mongodbatlas.process.journaling.data_files":                   Metrics.MongodbatlasProcessJournalingDataFiles,
+	"mongodbatlas.process.journaling.written":                      Metrics.MongodbatlasProcessJournalingWritten,
+	"mongodbatlas.process.memory.usage":                            Metrics.MongodbatlasProcessMemoryUsage,
+	"mongodbatlas.process.network.io":                              Metrics.MongodbatlasProcessNetworkIo,
+	"mongodbatlas.process.network.requests":                        Metrics.MongodbatlasProcessNetworkRequests,
+	"mongodbatlas.process.oplog.rate":                              Metrics.MongodbatlasProcessOplogRate,
+	"mongodbatlas.process.oplog.time":                              Metrics.MongodbatlasProcessOplogTime,
+	"mongodbatlas.process.page_faults":                             Metrics.MongodbatlasProcessPageFaults,
+	"mongodbatlas.process.restarts":                                Metrics.MongodbatlasProcessRestarts,
+	"mongodbatlas.process.tickets":                                 Metrics.MongodbatlasProcessTickets,
+	"mongodbatlas.system.cpu.normalized.usage":                     Metrics.MongodbatlasSystemCPUNormalizedUsage,
+	"mongodbatlas.system.cpu.usage":                                Metrics.MongodbatlasSystemCPUUsage,
+	"mongodbatlas.system.fts.cpu.normalized.usage":                 Metrics.MongodbatlasSystemFtsCPUNormalizedUsage,
+	"mongodbatlas.system.fts.cpu.usage":                            Metrics.MongodbatlasSystemFtsCPUUsage,
+	"mongodbatlas.system.fts.disk.utilization":                     Metrics.MongodbatlasSystemFtsDiskUtilization,
+	"mongodbatlas.system.fts.memory.usage":                         Metrics.MongodbatlasSystemFtsMemoryUsage,
+	"mongodbatlas.system.memory.usage":                             Metrics.MongodbatlasSystemMemoryUsage,
+	"mongodbatlas.system.network.io":                               Metrics.MongodbatlasSystemNetworkIo,
+	"mongodbatlas.system.paging.io":                                Metrics.MongodbatlasSystemPagingIo,
+	"mongodbatlas.system.paging.usage":                             Metrics.MongodbatlasSystemPagingUsage,
 }
 
 func (m *metricStruct) ByName(n string) MetricIntf {
@@ -224,450 +224,450 @@ func (m *metricStruct) ByName(n string) MetricIntf {
 // manipulating those metrics.
 var Metrics = &metricStruct{
 	&metricImpl{
-		"db.counts",
+		"mongodbatlas.db.counts",
 		func(metric pdata.Metric) {
-			metric.SetName("db.counts")
+			metric.SetName("mongodbatlas.db.counts")
 			metric.SetDescription("Database feature size")
 			metric.SetUnit("1")
 			metric.SetDataType(pdata.MetricDataTypeGauge)
 		},
 	},
 	&metricImpl{
-		"db.size",
+		"mongodbatlas.db.size",
 		func(metric pdata.Metric) {
-			metric.SetName("db.size")
+			metric.SetName("mongodbatlas.db.size")
 			metric.SetDescription("Database feature size")
 			metric.SetUnit("1")
 			metric.SetDataType(pdata.MetricDataTypeGauge)
 		},
 	},
 	&metricImpl{
-		"disk.partition.iops",
+		"mongodbatlas.disk.partition.iops",
 		func(metric pdata.Metric) {
-			metric.SetName("disk.partition.iops")
+			metric.SetName("mongodbatlas.disk.partition.iops")
 			metric.SetDescription("Disk partition iops")
 			metric.SetUnit("1")
 			metric.SetDataType(pdata.MetricDataTypeGauge)
 		},
 	},
 	&metricImpl{
-		"disk.partition.latency",
+		"mongodbatlas.disk.partition.latency",
 		func(metric pdata.Metric) {
-			metric.SetName("disk.partition.latency")
+			metric.SetName("mongodbatlas.disk.partition.latency")
 			metric.SetDescription("Disk partition latency")
 			metric.SetUnit("1")
 			metric.SetDataType(pdata.MetricDataTypeGauge)
 		},
 	},
 	&metricImpl{
-		"disk.partition.space",
+		"mongodbatlas.disk.partition.space",
 		func(metric pdata.Metric) {
-			metric.SetName("disk.partition.space")
+			metric.SetName("mongodbatlas.disk.partition.space")
 			metric.SetDescription("Disk partition space")
 			metric.SetUnit("1")
 			metric.SetDataType(pdata.MetricDataTypeGauge)
 		},
 	},
 	&metricImpl{
-		"disk.partition.utilization",
+		"mongodbatlas.disk.partition.utilization",
 		func(metric pdata.Metric) {
-			metric.SetName("disk.partition.utilization")
+			metric.SetName("mongodbatlas.disk.partition.utilization")
 			metric.SetDescription("Disk partition utilization")
 			metric.SetUnit("1")
 			metric.SetDataType(pdata.MetricDataTypeGauge)
 		},
 	},
 	&metricImpl{
-		"process.asserts",
+		"mongodbatlas.process.asserts",
 		func(metric pdata.Metric) {
-			metric.SetName("process.asserts")
+			metric.SetName("mongodbatlas.process.asserts")
 			metric.SetDescription("Number of assertions")
 			metric.SetUnit("1")
 			metric.SetDataType(pdata.MetricDataTypeGauge)
 		},
 	},
 	&metricImpl{
-		"process.background_flush",
+		"mongodbatlas.process.background_flush",
 		func(metric pdata.Metric) {
-			metric.SetName("process.background_flush")
+			metric.SetName("mongodbatlas.process.background_flush")
 			metric.SetDescription("Amount of data flushed in the background")
 			metric.SetUnit("1")
 			metric.SetDataType(pdata.MetricDataTypeGauge)
 		},
 	},
 	&metricImpl{
-		"process.cache.io",
+		"mongodbatlas.process.cache.io",
 		func(metric pdata.Metric) {
-			metric.SetName("process.cache.io")
+			metric.SetName("mongodbatlas.process.cache.io")
 			metric.SetDescription("Cache throughput")
 			metric.SetUnit("1")
 			metric.SetDataType(pdata.MetricDataTypeGauge)
 		},
 	},
 	&metricImpl{
-		"process.cache.size",
+		"mongodbatlas.process.cache.size",
 		func(metric pdata.Metric) {
-			metric.SetName("process.cache.size")
+			metric.SetName("mongodbatlas.process.cache.size")
 			metric.SetDescription("Cache sizes")
 			metric.SetUnit("1")
 			metric.SetDataType(pdata.MetricDataTypeGauge)
 		},
 	},
 	&metricImpl{
-		"process.connections",
+		"mongodbatlas.process.connections",
 		func(metric pdata.Metric) {
-			metric.SetName("process.connections")
+			metric.SetName("mongodbatlas.process.connections")
 			metric.SetDescription("Number of current connections")
 			metric.SetUnit("1")
 			metric.SetDataType(pdata.MetricDataTypeGauge)
 		},
 	},
 	&metricImpl{
-		"process.cpu.children.normalized.usage",
+		"mongodbatlas.process.cpu.children.normalized.usage",
 		func(metric pdata.Metric) {
-			metric.SetName("process.cpu.children.normalized.usage")
+			metric.SetName("mongodbatlas.process.cpu.children.normalized.usage")
 			metric.SetDescription("CPU Usage for child processes, normalized to pct")
 			metric.SetUnit("1")
 			metric.SetDataType(pdata.MetricDataTypeGauge)
 		},
 	},
 	&metricImpl{
-		"process.cpu.children.usage",
+		"mongodbatlas.process.cpu.children.usage",
 		func(metric pdata.Metric) {
-			metric.SetName("process.cpu.children.usage")
+			metric.SetName("mongodbatlas.process.cpu.children.usage")
 			metric.SetDescription("CPU Usage for child processes")
 			metric.SetUnit("1")
 			metric.SetDataType(pdata.MetricDataTypeGauge)
 		},
 	},
 	&metricImpl{
-		"process.cpu.normalized.usage",
+		"mongodbatlas.process.cpu.normalized.usage",
 		func(metric pdata.Metric) {
-			metric.SetName("process.cpu.normalized.usage")
+			metric.SetName("mongodbatlas.process.cpu.normalized.usage")
 			metric.SetDescription("CPU Usage, normalized to pct")
 			metric.SetUnit("1")
 			metric.SetDataType(pdata.MetricDataTypeGauge)
 		},
 	},
 	&metricImpl{
-		"process.cpu.usage",
+		"mongodbatlas.process.cpu.usage",
 		func(metric pdata.Metric) {
-			metric.SetName("process.cpu.usage")
+			metric.SetName("mongodbatlas.process.cpu.usage")
 			metric.SetDescription("CPU Usage")
 			metric.SetUnit("1")
 			metric.SetDataType(pdata.MetricDataTypeGauge)
 		},
 	},
 	&metricImpl{
-		"process.cursors",
+		"mongodbatlas.process.cursors",
 		func(metric pdata.Metric) {
-			metric.SetName("process.cursors")
+			metric.SetName("mongodbatlas.process.cursors")
 			metric.SetDescription("Number of cursors")
 			metric.SetUnit("1")
 			metric.SetDataType(pdata.MetricDataTypeGauge)
 		},
 	},
 	&metricImpl{
-		"process.db.document.rate",
+		"mongodbatlas.process.db.document.rate",
 		func(metric pdata.Metric) {
-			metric.SetName("process.db.document.rate")
+			metric.SetName("mongodbatlas.process.db.document.rate")
 			metric.SetDescription("Document access rates")
 			metric.SetUnit("1")
 			metric.SetDataType(pdata.MetricDataTypeGauge)
 		},
 	},
 	&metricImpl{
-		"process.db.operations.rate",
+		"mongodbatlas.process.db.operations.rate",
 		func(metric pdata.Metric) {
-			metric.SetName("process.db.operations.rate")
+			metric.SetName("mongodbatlas.process.db.operations.rate")
 			metric.SetDescription("FIXME")
 			metric.SetUnit("1")
 			metric.SetDataType(pdata.MetricDataTypeGauge)
 		},
 	},
 	&metricImpl{
-		"process.db.operations.time",
+		"mongodbatlas.process.db.operations.time",
 		func(metric pdata.Metric) {
-			metric.SetName("process.db.operations.time")
+			metric.SetName("mongodbatlas.process.db.operations.time")
 			metric.SetDescription("FIXME")
 			metric.SetUnit("1")
 			metric.SetDataType(pdata.MetricDataTypeGauge)
 		},
 	},
 	&metricImpl{
-		"process.db.query_executor.scanned",
+		"mongodbatlas.process.db.query_executor.scanned",
 		func(metric pdata.Metric) {
-			metric.SetName("process.db.query_executor.scanned")
+			metric.SetName("mongodbatlas.process.db.query_executor.scanned")
 			metric.SetDescription("Scanned objects")
 			metric.SetUnit("1")
 			metric.SetDataType(pdata.MetricDataTypeGauge)
 		},
 	},
 	&metricImpl{
-		"process.db.query_targeting.scanned_per_returned",
+		"mongodbatlas.process.db.query_targeting.scanned_per_returned",
 		func(metric pdata.Metric) {
-			metric.SetName("process.db.query_targeting.scanned_per_returned")
+			metric.SetName("mongodbatlas.process.db.query_targeting.scanned_per_returned")
 			metric.SetDescription("Scanned objects per returned")
 			metric.SetUnit("1")
 			metric.SetDataType(pdata.MetricDataTypeGauge)
 		},
 	},
 	&metricImpl{
-		"process.db.storage",
+		"mongodbatlas.process.db.storage",
 		func(metric pdata.Metric) {
-			metric.SetName("process.db.storage")
+			metric.SetName("mongodbatlas.process.db.storage")
 			metric.SetDescription("FIXME")
 			metric.SetUnit("1")
 			metric.SetDataType(pdata.MetricDataTypeGauge)
 		},
 	},
 	&metricImpl{
-		"process.fts.cpu.normalized.usage",
+		"mongodbatlas.process.fts.cpu.normalized.usage",
 		func(metric pdata.Metric) {
-			metric.SetName("process.fts.cpu.normalized.usage")
+			metric.SetName("mongodbatlas.process.fts.cpu.normalized.usage")
 			metric.SetDescription("Full text search CPU, normalized to pct")
 			metric.SetUnit("1")
 			metric.SetDataType(pdata.MetricDataTypeGauge)
 		},
 	},
 	&metricImpl{
-		"process.fts.cpu.usage",
+		"mongodbatlas.process.fts.cpu.usage",
 		func(metric pdata.Metric) {
-			metric.SetName("process.fts.cpu.usage")
+			metric.SetName("mongodbatlas.process.fts.cpu.usage")
 			metric.SetDescription("Full text search CPU")
 			metric.SetUnit("1")
 			metric.SetDataType(pdata.MetricDataTypeGauge)
 		},
 	},
 	&metricImpl{
-		"process.fts.disk.usage",
+		"mongodbatlas.process.fts.disk.usage",
 		func(metric pdata.Metric) {
-			metric.SetName("process.fts.disk.usage")
+			metric.SetName("mongodbatlas.process.fts.disk.usage")
 			metric.SetDescription("Full text search disk usage")
 			metric.SetUnit("1")
 			metric.SetDataType(pdata.MetricDataTypeGauge)
 		},
 	},
 	&metricImpl{
-		"process.fts.memory.usage",
+		"mongodbatlas.process.fts.memory.usage",
 		func(metric pdata.Metric) {
-			metric.SetName("process.fts.memory.usage")
+			metric.SetName("mongodbatlas.process.fts.memory.usage")
 			metric.SetDescription("Full text search memory usage")
 			metric.SetUnit("1")
 			metric.SetDataType(pdata.MetricDataTypeGauge)
 		},
 	},
 	&metricImpl{
-		"process.global_lock",
+		"mongodbatlas.process.global_lock",
 		func(metric pdata.Metric) {
-			metric.SetName("process.global_lock")
+			metric.SetName("mongodbatlas.process.global_lock")
 			metric.SetDescription("Number and status of locks")
 			metric.SetUnit("1")
 			metric.SetDataType(pdata.MetricDataTypeGauge)
 		},
 	},
 	&metricImpl{
-		"process.index.btree_miss_ratio",
+		"mongodbatlas.process.index.btree_miss_ratio",
 		func(metric pdata.Metric) {
-			metric.SetName("process.index.btree_miss_ratio")
+			metric.SetName("mongodbatlas.process.index.btree_miss_ratio")
 			metric.SetDescription("Index miss ratio")
 			metric.SetUnit("1")
 			metric.SetDataType(pdata.MetricDataTypeGauge)
 		},
 	},
 	&metricImpl{
-		"process.index.counters",
+		"mongodbatlas.process.index.counters",
 		func(metric pdata.Metric) {
-			metric.SetName("process.index.counters")
+			metric.SetName("mongodbatlas.process.index.counters")
 			metric.SetDescription("Indexes")
 			metric.SetUnit("1")
 			metric.SetDataType(pdata.MetricDataTypeGauge)
 		},
 	},
 	&metricImpl{
-		"process.journaling.commits",
+		"mongodbatlas.process.journaling.commits",
 		func(metric pdata.Metric) {
-			metric.SetName("process.journaling.commits")
+			metric.SetName("mongodbatlas.process.journaling.commits")
 			metric.SetDescription("Journaling commits")
 			metric.SetUnit("1")
 			metric.SetDataType(pdata.MetricDataTypeGauge)
 		},
 	},
 	&metricImpl{
-		"process.journaling.data_files",
+		"mongodbatlas.process.journaling.data_files",
 		func(metric pdata.Metric) {
-			metric.SetName("process.journaling.data_files")
+			metric.SetName("mongodbatlas.process.journaling.data_files")
 			metric.SetDescription("Data file sizes")
 			metric.SetUnit("1")
 			metric.SetDataType(pdata.MetricDataTypeGauge)
 		},
 	},
 	&metricImpl{
-		"process.journaling.written",
+		"mongodbatlas.process.journaling.written",
 		func(metric pdata.Metric) {
-			metric.SetName("process.journaling.written")
+			metric.SetName("mongodbatlas.process.journaling.written")
 			metric.SetDescription("Journals written")
 			metric.SetUnit("1")
 			metric.SetDataType(pdata.MetricDataTypeGauge)
 		},
 	},
 	&metricImpl{
-		"process.memory.usage",
+		"mongodbatlas.process.memory.usage",
 		func(metric pdata.Metric) {
-			metric.SetName("process.memory.usage")
+			metric.SetName("mongodbatlas.process.memory.usage")
 			metric.SetDescription("Memory Usage")
 			metric.SetUnit("1")
 			metric.SetDataType(pdata.MetricDataTypeGauge)
 		},
 	},
 	&metricImpl{
-		"process.network.io",
+		"mongodbatlas.process.network.io",
 		func(metric pdata.Metric) {
-			metric.SetName("process.network.io")
+			metric.SetName("mongodbatlas.process.network.io")
 			metric.SetDescription("Network IO")
 			metric.SetUnit("1")
 			metric.SetDataType(pdata.MetricDataTypeGauge)
 		},
 	},
 	&metricImpl{
-		"process.network.requests",
+		"mongodbatlas.process.network.requests",
 		func(metric pdata.Metric) {
-			metric.SetName("process.network.requests")
+			metric.SetName("mongodbatlas.process.network.requests")
 			metric.SetDescription("Network requests")
 			metric.SetUnit("1")
 			metric.SetDataType(pdata.MetricDataTypeGauge)
 		},
 	},
 	&metricImpl{
-		"process.oplog.rate",
+		"mongodbatlas.process.oplog.rate",
 		func(metric pdata.Metric) {
-			metric.SetName("process.oplog.rate")
+			metric.SetName("mongodbatlas.process.oplog.rate")
 			metric.SetDescription("Execution rate by operation")
 			metric.SetUnit("1")
 			metric.SetDataType(pdata.MetricDataTypeGauge)
 		},
 	},
 	&metricImpl{
-		"process.oplog.time",
+		"mongodbatlas.process.oplog.time",
 		func(metric pdata.Metric) {
-			metric.SetName("process.oplog.time")
+			metric.SetName("mongodbatlas.process.oplog.time")
 			metric.SetDescription("Execution time by operation")
 			metric.SetUnit("1")
 			metric.SetDataType(pdata.MetricDataTypeGauge)
 		},
 	},
 	&metricImpl{
-		"process.page_faults",
+		"mongodbatlas.process.page_faults",
 		func(metric pdata.Metric) {
-			metric.SetName("process.page_faults")
+			metric.SetName("mongodbatlas.process.page_faults")
 			metric.SetDescription("Page faults")
 			metric.SetUnit("1")
 			metric.SetDataType(pdata.MetricDataTypeGauge)
 		},
 	},
 	&metricImpl{
-		"process.restarts",
+		"mongodbatlas.process.restarts",
 		func(metric pdata.Metric) {
-			metric.SetName("process.restarts")
+			metric.SetName("mongodbatlas.process.restarts")
 			metric.SetDescription("Restarts in last hour")
 			metric.SetUnit("1")
 			metric.SetDataType(pdata.MetricDataTypeGauge)
 		},
 	},
 	&metricImpl{
-		"process.tickets",
+		"mongodbatlas.process.tickets",
 		func(metric pdata.Metric) {
-			metric.SetName("process.tickets")
+			metric.SetName("mongodbatlas.process.tickets")
 			metric.SetDescription("Tickets")
 			metric.SetUnit("1")
 			metric.SetDataType(pdata.MetricDataTypeGauge)
 		},
 	},
 	&metricImpl{
-		"system.cpu.normalized.usage",
+		"mongodbatlas.system.cpu.normalized.usage",
 		func(metric pdata.Metric) {
-			metric.SetName("system.cpu.normalized.usage")
+			metric.SetName("mongodbatlas.system.cpu.normalized.usage")
 			metric.SetDescription("System CPU Normalized to pct")
 			metric.SetUnit("1")
 			metric.SetDataType(pdata.MetricDataTypeGauge)
 		},
 	},
 	&metricImpl{
-		"system.cpu.usage",
+		"mongodbatlas.system.cpu.usage",
 		func(metric pdata.Metric) {
-			metric.SetName("system.cpu.usage")
+			metric.SetName("mongodbatlas.system.cpu.usage")
 			metric.SetDescription("System CPU Usage")
 			metric.SetUnit("1")
 			metric.SetDataType(pdata.MetricDataTypeGauge)
 		},
 	},
 	&metricImpl{
-		"system.fts.cpu.normalized.usage",
+		"mongodbatlas.system.fts.cpu.normalized.usage",
 		func(metric pdata.Metric) {
-			metric.SetName("system.fts.cpu.normalized.usage")
+			metric.SetName("mongodbatlas.system.fts.cpu.normalized.usage")
 			metric.SetDescription("Full text search disk usage")
 			metric.SetUnit("1")
 			metric.SetDataType(pdata.MetricDataTypeGauge)
 		},
 	},
 	&metricImpl{
-		"system.fts.cpu.usage",
+		"mongodbatlas.system.fts.cpu.usage",
 		func(metric pdata.Metric) {
-			metric.SetName("system.fts.cpu.usage")
+			metric.SetName("mongodbatlas.system.fts.cpu.usage")
 			metric.SetDescription("Full-text search")
 			metric.SetUnit("1")
 			metric.SetDataType(pdata.MetricDataTypeGauge)
 		},
 	},
 	&metricImpl{
-		"system.fts.disk.utilization",
+		"mongodbatlas.system.fts.disk.utilization",
 		func(metric pdata.Metric) {
-			metric.SetName("system.fts.disk.utilization")
+			metric.SetName("mongodbatlas.system.fts.disk.utilization")
 			metric.SetDescription("Full text search disk usage")
 			metric.SetUnit("1")
 			metric.SetDataType(pdata.MetricDataTypeGauge)
 		},
 	},
 	&metricImpl{
-		"system.fts.memory.usage",
+		"mongodbatlas.system.fts.memory.usage",
 		func(metric pdata.Metric) {
-			metric.SetName("system.fts.memory.usage")
+			metric.SetName("mongodbatlas.system.fts.memory.usage")
 			metric.SetDescription("Full-text search")
 			metric.SetUnit("1")
 			metric.SetDataType(pdata.MetricDataTypeGauge)
 		},
 	},
 	&metricImpl{
-		"system.memory.usage",
+		"mongodbatlas.system.memory.usage",
 		func(metric pdata.Metric) {
-			metric.SetName("system.memory.usage")
+			metric.SetName("mongodbatlas.system.memory.usage")
 			metric.SetDescription("System Memory Usage")
 			metric.SetUnit("1")
 			metric.SetDataType(pdata.MetricDataTypeGauge)
 		},
 	},
 	&metricImpl{
-		"system.network.io",
+		"mongodbatlas.system.network.io",
 		func(metric pdata.Metric) {
-			metric.SetName("system.network.io")
+			metric.SetName("mongodbatlas.system.network.io")
 			metric.SetDescription("System Network IO")
 			metric.SetUnit("1")
 			metric.SetDataType(pdata.MetricDataTypeGauge)
 		},
 	},
 	&metricImpl{
-		"system.paging.io",
+		"mongodbatlas.system.paging.io",
 		func(metric pdata.Metric) {
-			metric.SetName("system.paging.io")
+			metric.SetName("mongodbatlas.system.paging.io")
 			metric.SetDescription("Swap IO")
 			metric.SetUnit("1")
 			metric.SetDataType(pdata.MetricDataTypeGauge)
 		},
 	},
 	&metricImpl{
-		"system.paging.usage",
+		"mongodbatlas.system.paging.usage",
 		func(metric pdata.Metric) {
-			metric.SetName("system.paging.usage")
+			metric.SetName("mongodbatlas.system.paging.usage")
 			metric.SetDescription("Swap usage")
 			metric.SetUnit("1")
 			metric.SetDataType(pdata.MetricDataTypeGauge)
