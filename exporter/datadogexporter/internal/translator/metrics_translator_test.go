@@ -512,9 +512,6 @@ type mockFullConsumer struct {
 }
 
 func (c *mockFullConsumer) ConsumeSketch(_ context.Context, name string, ts uint64, sk *quantile.Sketch, tags []string, host string) {
-	if sk == nil {
-		return
-	}
 	c.sketches = append(c.sketches,
 		sketch{
 			name:      name,
