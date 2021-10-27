@@ -22,10 +22,10 @@ import (
 )
 
 func TestTimestampsGenerator_PullTimestamps(t *testing.T) {
-	now := time.Now().UTC()
+	now := time.Date(2021, 9, 17, 16, 25, 30, 0, time.UTC)
 	nowAtStartOfMinute := shiftToStartOfMinute(now)
 	backfillIntervalAgo := nowAtStartOfMinute.Add(-1 * backfillIntervalDuration)
-	backfillIntervalAgoWthSomeSeconds := backfillIntervalAgo.Add(-15 * time.Second)
+	backfillIntervalAgoWithSomeSeconds := backfillIntervalAgo.Add(-15 * time.Second)
 	lastPullTimestampInFuture := nowAtStartOfMinute.Add(backfillIntervalDuration)
 
 	testCases := map[string]struct {
@@ -36,8 +36,8 @@ func TestTimestampsGenerator_PullTimestamps(t *testing.T) {
 		"Zero last pull timestamp without backfill":                                                       {time.Time{}, false, 1},
 		"Zero last pull timestamp with backfill":                                                          {time.Time{}, true, int(backfillIntervalDuration.Minutes())},
 		"Last pull timestamp now at start of minute backfill does not matter":                             {nowAtStartOfMinute, false, 1},
-		"Last pull timestamp back fill interval ago of minute backfill does not matter":                   {backfillIntervalAgo, false, int(backfillIntervalDuration.Minutes())},
-		"Last pull timestamp back fill interval ago with some seconds of minute backfill does not matter": {backfillIntervalAgoWthSomeSeconds, false, int(backfillIntervalDuration.Minutes()) + 1},
+		"Last pull timestamp back fill interval ago of minute backfill does not matter":                   {backfillIntervalAgo, false, int(backfillIntervalDuration.Minutes()) - 1},
+		"Last pull timestamp back fill interval ago with some seconds of minute backfill does not matter": {backfillIntervalAgoWithSomeSeconds, false, int(backfillIntervalDuration.Minutes())},
 		"Last pull timestamp greater than now without backfill":                                           {lastPullTimestampInFuture, false, 1},
 		"Last pull timestamp greater than now with backfill":                                              {lastPullTimestampInFuture, true, 1},
 	}

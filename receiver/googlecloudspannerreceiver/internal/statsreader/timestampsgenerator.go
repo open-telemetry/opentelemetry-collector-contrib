@@ -25,7 +25,8 @@ type timestampsGenerator struct {
 // In case lastPullTimestamp is greater than now argument slice will contain only one value - now shifted to the start of minute(upper bound).
 func (g *timestampsGenerator) pullTimestamps(lastPullTimestamp time.Time, now time.Time) []time.Time {
 	var timestamps []time.Time
-	upperBound := shiftToStartOfMinute(now)
+	// Introducing 1-minute delay by intent because we are reading stale data
+	upperBound := shiftToStartOfMinute(now).Add(-1 * time.Minute)
 
 	if lastPullTimestamp.IsZero() {
 		if g.backfillEnabled {

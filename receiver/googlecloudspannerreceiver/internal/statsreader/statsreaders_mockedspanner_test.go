@@ -166,13 +166,13 @@ func TestStatsReaders_Read(t *testing.T) {
 	_, err = databaseClient.Apply(ctx, []*spanner.Mutation{
 		spanner.Insert("STATS",
 			[]string{"INTERVAL_END", "METRIC_LABEL", "METRIC_VALUE"},
-			[]interface{}{timestamp, "Qwerty", 10}),
+			[]interface{}{timestamp.Add(-1 * time.Minute), "Qwerty", 10}),
 		spanner.Insert("STATS",
 			[]string{"INTERVAL_END", "METRIC_LABEL", "METRIC_VALUE"},
-			[]interface{}{timestamp.Add(-1 * time.Minute), "Test", 20}),
+			[]interface{}{timestamp.Add(-2 * time.Minute), "Test", 20}),
 		spanner.Insert("STATS",
 			[]string{"INTERVAL_END", "METRIC_LABEL", "METRIC_VALUE"},
-			[]interface{}{timestamp.Add(-1 * time.Minute), "Spanner", 30}),
+			[]interface{}{timestamp.Add(-2 * time.Minute), "Spanner", 30}),
 	})
 
 	require.NoError(t, err)

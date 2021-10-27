@@ -27,6 +27,10 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudspannerreceiver/internal/metadata"
 )
 
+const (
+	DataStalenessPeriod = 15 * time.Second
+)
+
 type currentStatsReader struct {
 	logger                 *zap.Logger
 	database               *datasource.Database
@@ -73,7 +77,7 @@ func (reader *currentStatsReader) newPullStatement() spanner.Statement {
 }
 
 func (reader *currentStatsReader) pull(ctx context.Context, stmt spanner.Statement) ([]*metadata.MetricsDataPoint, error) {
-	rowsIterator := reader.database.Client().Single().WithTimestampBound(spanner.ExactStaleness(15*time.Second)).Query(ctx, stmt)
+	rowsIterator := reader.database.Client().Single().WithTimestampBound(spanner.ExactStaleness(DataStalenessPeriod)).Query(ctx, stmt)
 	defer rowsIterator.Stop()
 
 	var collectedDataPoints []*metadata.MetricsDataPoint
