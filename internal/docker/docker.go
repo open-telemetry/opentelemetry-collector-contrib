@@ -24,6 +24,7 @@ import (
 	"time"
 
 	dtypes "github.com/docker/docker/api/types"
+	devents "github.com/docker/docker/api/types/events"
 	dfilters "github.com/docker/docker/api/types/filters"
 	docker "github.com/docker/docker/client"
 	"go.uber.org/zap"
@@ -201,6 +202,13 @@ func (dc *Client) toStatsJSON(
 	return &statsJSON, nil
 }
 
+// Events exposes the underlying Docker clients Events channel.
+// Caller should close the events channel by cancelling the context.
+// If an error occurs, processing stops and caller must reinvoke this method.
+func (dc *Client) Events(ctx context.Context, options dtypes.EventsOptions) (<-chan devents.Message, <-chan error) {
+	return dc.client.Events(ctx, options)
+}
+
 func (dc *Client) ContainerEventLoop(ctx context.Context) {
 	filters := dfilters.NewArgs([]dfilters.KeyValuePair{
 		{Key: "type", Value: "container"},
@@ -220,7 +228,7 @@ EVENT_LOOP:
 			Filters: filters,
 			Since:   lastTime.Format(time.RFC3339Nano),
 		}
-		eventCh, errCh := dc.client.Events(ctx, options)
+		eventCh, errCh := dc.Events(ctx, options)
 
 		for {
 			select {
