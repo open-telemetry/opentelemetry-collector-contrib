@@ -35,7 +35,7 @@ import (
 
 func TestTraces_RegisterExportersForValidRoute(t *testing.T) {
 	// prepare
-	exp, err := newProcessor(zap.NewNop(), &Config{
+	exp := newProcessor(zap.NewNop(), &Config{
 		DefaultExporters: []string{"otlp"},
 		FromAttribute:    "X-Tenant",
 		Table: []RoutingTableItem{
@@ -45,7 +45,6 @@ func TestTraces_RegisterExportersForValidRoute(t *testing.T) {
 			},
 		},
 	})
-	require.NoError(t, err)
 
 	otlpExpFactory := otlpexporter.NewFactory()
 	otlpConfig := &otlpexporter.Config{
@@ -77,7 +76,7 @@ func TestTraces_RegisterExportersForValidRoute(t *testing.T) {
 
 func TestTraces_ErrorRequestedExporterNotFoundForRoute(t *testing.T) {
 	//  prepare
-	exp, err := newProcessor(zap.NewNop(), &Config{
+	exp := newProcessor(zap.NewNop(), &Config{
 		FromAttribute: "X-Tenant",
 		Table: []RoutingTableItem{
 			{
@@ -86,13 +85,12 @@ func TestTraces_ErrorRequestedExporterNotFoundForRoute(t *testing.T) {
 			},
 		},
 	})
-	require.NoError(t, err)
 	host := &mockHost{
 		Host: componenttest.NewNopHost(),
 	}
 
 	// test
-	err = exp.Start(context.Background(), host)
+	err := exp.Start(context.Background(), host)
 
 	// verify
 	assert.Truef(t, errors.Is(err, errNoExportersAfterRegistration), "got: %v", err)
@@ -100,7 +98,7 @@ func TestTraces_ErrorRequestedExporterNotFoundForRoute(t *testing.T) {
 
 func TestTraces_ErrorRequestedExporterNotFoundForDefaultRoute(t *testing.T) {
 	//  prepare
-	exp, err := newProcessor(zap.NewNop(), &Config{
+	exp := newProcessor(zap.NewNop(), &Config{
 		DefaultExporters: []string{"non-existing"},
 		FromAttribute:    "X-Tenant",
 		Table: []RoutingTableItem{
@@ -110,7 +108,6 @@ func TestTraces_ErrorRequestedExporterNotFoundForDefaultRoute(t *testing.T) {
 			},
 		},
 	})
-	require.NoError(t, err)
 
 	otlpExpFactory := otlpexporter.NewFactory()
 	otlpConfig := &otlpexporter.Config{
@@ -141,7 +138,7 @@ func TestTraces_ErrorRequestedExporterNotFoundForDefaultRoute(t *testing.T) {
 
 func TestTraces_InvalidExporter(t *testing.T) {
 	//  prepare
-	exp, err := newProcessor(zap.NewNop(), &Config{
+	exp := newProcessor(zap.NewNop(), &Config{
 		DefaultExporters: []string{"otlp"},
 		FromAttribute:    "X-Tenant",
 		Table: []RoutingTableItem{
@@ -151,7 +148,6 @@ func TestTraces_InvalidExporter(t *testing.T) {
 			},
 		},
 	})
-	require.NoError(t, err)
 
 	host := &mockHost{
 		Host: componenttest.NewNopHost(),
@@ -165,7 +161,7 @@ func TestTraces_InvalidExporter(t *testing.T) {
 	}
 
 	// test
-	err = exp.Start(context.Background(), host)
+	err := exp.Start(context.Background(), host)
 
 	// verify
 	assert.Error(t, err)
@@ -187,7 +183,7 @@ func TestTraces_AreCorrectlySplitPerResourceAttributeRouting(t *testing.T) {
 		},
 	}
 
-	exp, err := newProcessor(zap.NewNop(), &Config{
+	exp := newProcessor(zap.NewNop(), &Config{
 		FromAttribute:    "X-Tenant",
 		AttributeSource:  resourceAttributeSource,
 		DefaultExporters: []string{"otlp"},
@@ -198,7 +194,6 @@ func TestTraces_AreCorrectlySplitPerResourceAttributeRouting(t *testing.T) {
 			},
 		},
 	})
-	require.NoError(t, err)
 
 	tr := pdata.NewTraces()
 
@@ -248,7 +243,7 @@ func TestTraces_RoutingWorks_Context(t *testing.T) {
 		},
 	}
 
-	exp, err := newProcessor(zap.NewNop(), &Config{
+	exp := newProcessor(zap.NewNop(), &Config{
 		FromAttribute:    "X-Tenant",
 		AttributeSource:  contextAttributeSource,
 		DefaultExporters: []string{"otlp"},
@@ -259,7 +254,6 @@ func TestTraces_RoutingWorks_Context(t *testing.T) {
 			},
 		},
 	})
-	require.NoError(t, err)
 	require.NoError(t, exp.Start(context.Background(), host))
 
 	tr := pdata.NewTraces()
@@ -313,7 +307,7 @@ func TestTraces_RoutingWorks_ResourceAttribute(t *testing.T) {
 		},
 	}
 
-	exp, err := newProcessor(zap.NewNop(), &Config{
+	exp := newProcessor(zap.NewNop(), &Config{
 		FromAttribute:    "X-Tenant",
 		AttributeSource:  resourceAttributeSource,
 		DefaultExporters: []string{"otlp"},
@@ -324,7 +318,6 @@ func TestTraces_RoutingWorks_ResourceAttribute(t *testing.T) {
 			},
 		},
 	})
-	require.NoError(t, err)
 	require.NoError(t, exp.Start(context.Background(), host))
 
 	t.Run("non default route is properly used", func(t *testing.T) {
@@ -367,8 +360,7 @@ func TestProcessorCapabilities(t *testing.T) {
 	}
 
 	// test
-	p, err := newProcessor(zap.NewNop(), config)
-	require.NoError(t, err)
+	p := newProcessor(zap.NewNop(), config)
 	require.NotNil(t, p)
 
 	// verify
@@ -391,7 +383,7 @@ func TestMetrics_AreCorrectlySplitPerResourceAttributeRouting(t *testing.T) {
 		},
 	}
 
-	exp, err := newProcessor(zap.NewNop(), &Config{
+	exp := newProcessor(zap.NewNop(), &Config{
 		FromAttribute:    "X-Tenant",
 		AttributeSource:  resourceAttributeSource,
 		DefaultExporters: []string{"otlp"},
@@ -402,7 +394,6 @@ func TestMetrics_AreCorrectlySplitPerResourceAttributeRouting(t *testing.T) {
 			},
 		},
 	})
-	require.NoError(t, err)
 
 	m := pdata.NewMetrics()
 
@@ -455,7 +446,7 @@ func TestMetrics_RoutingWorks_Context(t *testing.T) {
 		},
 	}
 
-	exp, err := newProcessor(zap.NewNop(), &Config{
+	exp := newProcessor(zap.NewNop(), &Config{
 		FromAttribute:    "X-Tenant",
 		AttributeSource:  contextAttributeSource,
 		DefaultExporters: []string{"otlp"},
@@ -466,7 +457,6 @@ func TestMetrics_RoutingWorks_Context(t *testing.T) {
 			},
 		},
 	})
-	require.NoError(t, err)
 	require.NoError(t, exp.Start(context.Background(), host))
 
 	m := pdata.NewMetrics()
@@ -521,7 +511,7 @@ func TestMetrics_RoutingWorks_ResourceAttribute(t *testing.T) {
 		},
 	}
 
-	exp, err := newProcessor(zap.NewNop(), &Config{
+	exp := newProcessor(zap.NewNop(), &Config{
 		FromAttribute:    "X-Tenant",
 		AttributeSource:  resourceAttributeSource,
 		DefaultExporters: []string{"otlp"},
@@ -532,7 +522,6 @@ func TestMetrics_RoutingWorks_ResourceAttribute(t *testing.T) {
 			},
 		},
 	})
-	require.NoError(t, err)
 	require.NoError(t, exp.Start(context.Background(), host))
 
 	t.Run("non default route is properly used", func(t *testing.T) {
@@ -580,7 +569,7 @@ func TestLogs_RoutingWorks_Context(t *testing.T) {
 		},
 	}
 
-	exp, err := newProcessor(zap.NewNop(), &Config{
+	exp := newProcessor(zap.NewNop(), &Config{
 		FromAttribute:    "X-Tenant",
 		AttributeSource:  contextAttributeSource,
 		DefaultExporters: []string{"otlp"},
@@ -591,7 +580,6 @@ func TestLogs_RoutingWorks_Context(t *testing.T) {
 			},
 		},
 	})
-	require.NoError(t, err)
 	require.NoError(t, exp.Start(context.Background(), host))
 
 	l := pdata.NewLogs()
@@ -645,7 +633,7 @@ func TestLogs_RoutingWorks_ResourceAttribute(t *testing.T) {
 		},
 	}
 
-	exp, err := newProcessor(zap.NewNop(), &Config{
+	exp := newProcessor(zap.NewNop(), &Config{
 		FromAttribute:    "X-Tenant",
 		AttributeSource:  resourceAttributeSource,
 		DefaultExporters: []string{"otlp"},
@@ -656,7 +644,6 @@ func TestLogs_RoutingWorks_ResourceAttribute(t *testing.T) {
 			},
 		},
 	})
-	require.NoError(t, err)
 	require.NoError(t, exp.Start(context.Background(), host))
 
 	t.Run("non default route is properly used", func(t *testing.T) {
@@ -704,7 +691,7 @@ func TestLogs_AreCorrectlySplitPerResourceAttributeRouting(t *testing.T) {
 		},
 	}
 
-	exp, err := newProcessor(zap.NewNop(), &Config{
+	exp := newProcessor(zap.NewNop(), &Config{
 		FromAttribute:    "X-Tenant",
 		AttributeSource:  resourceAttributeSource,
 		DefaultExporters: []string{"otlp"},
@@ -715,7 +702,6 @@ func TestLogs_AreCorrectlySplitPerResourceAttributeRouting(t *testing.T) {
 			},
 		},
 	})
-	require.NoError(t, err)
 
 	l := pdata.NewLogs()
 

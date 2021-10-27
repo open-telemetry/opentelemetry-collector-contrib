@@ -46,7 +46,7 @@ type processorImp struct {
 }
 
 // newProcessor creates new processor
-func newProcessor(logger *zap.Logger, cfg config.Processor) (*processorImp, error) {
+func newProcessor(logger *zap.Logger, cfg config.Processor) *processorImp {
 	logger.Info("building processor")
 
 	oCfg := cfg.(*Config)
@@ -54,7 +54,7 @@ func newProcessor(logger *zap.Logger, cfg config.Processor) (*processorImp, erro
 	return &processorImp{
 		logger: logger,
 		router: newRouter(*oCfg, logger),
-	}, nil
+	}
 }
 
 func (e *processorImp) Start(_ context.Context, host component.Host) error {

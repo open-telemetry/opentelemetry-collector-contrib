@@ -16,7 +16,6 @@ package routingprocessor
 
 import (
 	"context"
-	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -67,37 +66,12 @@ func TestProcessorGetsCreatedWithValidConfiguration(t *testing.T) {
 }
 
 func TestFailOnEmptyConfiguration(t *testing.T) {
-	// prepare
-	factory := NewFactory()
-	creationParams := componenttest.NewNopProcessorCreateSettings()
-	cfg := factory.CreateDefaultConfig()
-
-	t.Run("traces", func(t *testing.T) {
-		exp, err := factory.CreateTracesProcessor(context.Background(), creationParams, cfg, consumertest.NewNop())
-		// verify
-		assert.ErrorIs(t, err, errNoTableItems)
-		assert.Nil(t, exp)
-	})
-
-	t.Run("metrics", func(t *testing.T) {
-		exp, err := factory.CreateMetricsProcessor(context.Background(), creationParams, cfg, consumertest.NewNop())
-		// verify
-		assert.ErrorIs(t, err, errNoTableItems)
-		assert.Nil(t, exp)
-	})
-
-	t.Run("logs", func(t *testing.T) {
-		exp, err := factory.CreateLogsProcessor(context.Background(), creationParams, cfg, consumertest.NewNop())
-		// verify
-		assert.ErrorIs(t, err, errNoTableItems)
-		assert.Nil(t, exp)
-	})
+	cfg := NewFactory().CreateDefaultConfig()
+	assert.ErrorIs(t, cfg.Validate(), errNoTableItems)
 }
 
 func TestProcessorFailsToBeCreatedWhenRouteHasNoExporters(t *testing.T) {
 	// prepare
-	factory := NewFactory()
-	creationParams := componenttest.NewNopProcessorCreateSettings()
 	cfg := &Config{
 		ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
 		DefaultExporters:  []string{"otlp"},
@@ -108,66 +82,20 @@ func TestProcessorFailsToBeCreatedWhenRouteHasNoExporters(t *testing.T) {
 			},
 		},
 	}
-
-	t.Run("traces", func(t *testing.T) {
-		exp, err := factory.CreateTracesProcessor(context.Background(), creationParams, cfg, consumertest.NewNop())
-		// verify
-		assert.True(t, errors.Is(err, errNoExporters))
-		assert.Nil(t, exp)
-	})
-
-	t.Run("metrics", func(t *testing.T) {
-		exp, err := factory.CreateMetricsProcessor(context.Background(), creationParams, cfg, consumertest.NewNop())
-		// verify
-		assert.True(t, errors.Is(err, errNoExporters))
-		assert.Nil(t, exp)
-	})
-
-	t.Run("logs", func(t *testing.T) {
-		exp, err := factory.CreateLogsProcessor(context.Background(), creationParams, cfg, consumertest.NewNop())
-		// verify
-		assert.True(t, errors.Is(err, errNoExporters))
-		assert.Nil(t, exp)
-	})
+	assert.ErrorIs(t, cfg.Validate(), errNoExporters)
 }
 
 func TestProcessorFailsToBeCreatedWhenNoRoutesExist(t *testing.T) {
-	// prepare
-	factory := NewFactory()
-	creationParams := componenttest.NewNopProcessorCreateSettings()
 	cfg := &Config{
 		ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
 		DefaultExporters:  []string{"otlp"},
 		FromAttribute:     "X-Tenant",
 		Table:             []RoutingTableItem{},
 	}
-
-	t.Run("traces", func(t *testing.T) {
-		exp, err := factory.CreateTracesProcessor(context.Background(), creationParams, cfg, consumertest.NewNop())
-		// verify
-		assert.True(t, errors.Is(err, errNoTableItems))
-		assert.Nil(t, exp)
-	})
-
-	t.Run("metrics", func(t *testing.T) {
-		exp, err := factory.CreateMetricsProcessor(context.Background(), creationParams, cfg, consumertest.NewNop())
-		// verify
-		assert.True(t, errors.Is(err, errNoTableItems))
-		assert.Nil(t, exp)
-	})
-
-	t.Run("logs", func(t *testing.T) {
-		exp, err := factory.CreateLogsProcessor(context.Background(), creationParams, cfg, consumertest.NewNop())
-		// verify
-		assert.True(t, errors.Is(err, errNoTableItems))
-		assert.Nil(t, exp)
-	})
+	assert.ErrorIs(t, cfg.Validate(), errNoTableItems)
 }
 
 func TestProcessorFailsWithNoFromAttribute(t *testing.T) {
-	// prepare
-	factory := NewFactory()
-	creationParams := componenttest.NewNopProcessorCreateSettings()
 	cfg := &Config{
 		ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
 		DefaultExporters:  []string{"otlp"},
@@ -178,27 +106,7 @@ func TestProcessorFailsWithNoFromAttribute(t *testing.T) {
 			},
 		},
 	}
-
-	t.Run("traces", func(t *testing.T) {
-		exp, err := factory.CreateTracesProcessor(context.Background(), creationParams, cfg, consumertest.NewNop())
-		// verify
-		assert.ErrorIs(t, err, errNoMissingFromAttribute)
-		assert.Nil(t, exp)
-	})
-
-	t.Run("metrics", func(t *testing.T) {
-		exp, err := factory.CreateMetricsProcessor(context.Background(), creationParams, cfg, consumertest.NewNop())
-		// verify
-		assert.ErrorIs(t, err, errNoMissingFromAttribute)
-		assert.Nil(t, exp)
-	})
-
-	t.Run("logs", func(t *testing.T) {
-		exp, err := factory.CreateMetricsProcessor(context.Background(), creationParams, cfg, consumertest.NewNop())
-		// verify
-		assert.ErrorIs(t, err, errNoMissingFromAttribute)
-		assert.Nil(t, exp)
-	})
+	assert.ErrorIs(t, cfg.Validate(), errNoMissingFromAttribute)
 }
 
 func TestShouldNotFailWhenNextIsProcessor(t *testing.T) {
