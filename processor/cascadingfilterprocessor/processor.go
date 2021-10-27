@@ -16,6 +16,7 @@ package cascadingfilterprocessor
 
 import (
 	"context"
+	"math"
 	"runtime"
 	"sync"
 	"sync/atomic"
@@ -296,9 +297,9 @@ func (cfsp *cascadingFilterSpanProcessor) samplingPolicyOnTick() {
 
 		// Dropped traces are not included in probabilistic filtering calculations
 		if cfsp.shouldBeDropped(id, trace) {
-			totalSpans += int64(trace.SpanCount)
 			provisionalDecision = sampling.Dropped
 		} else {
+			totalSpans += int64(trace.SpanCount)
 			provisionalDecision, _ = cfsp.makeProvisionalDecision(id, trace)
 		}
 
@@ -430,7 +431,7 @@ func updateProbabilisticRateTag(traces pdata.Traces, probabilisticSpans int64, a
 			for k := 0; k < spans.Len(); k++ {
 				attrs := spans.At(k).Attributes()
 				av, found := attrs.Get(AttributeSamplingProbability)
-				if found && av.Type() == pdata.AttributeValueTypeDouble {
+				if found && av.Type() == pdata.AttributeValueTypeDouble && !math.IsNaN(av.DoubleVal()) && av.DoubleVal() > 0.0 {
 					av.SetDoubleVal(av.DoubleVal() * ratio)
 				} else {
 					attrs.UpsertDouble(AttributeSamplingProbability, ratio)
