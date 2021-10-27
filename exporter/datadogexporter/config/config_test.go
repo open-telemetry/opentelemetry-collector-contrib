@@ -206,7 +206,7 @@ func TestErrorReportBuckets(t *testing.T) {
 	for _, testInstance := range tests {
 		t.Run(testInstance.name, func(t *testing.T) {
 			// default config for buckets
-			config := Config{Metrics: MetricsConfig{HistConfig: HistogramConfig{Mode: histogramModeNoBuckets}}}
+			config := Config{Metrics: MetricsConfig{HistConfig: HistogramConfig{Mode: histogramModeDistributions}}}
 			configMap := colconfig.NewMapFromStringMap(testInstance.stringMap)
 			err := config.Unmarshal(configMap)
 

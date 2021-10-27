@@ -99,14 +99,14 @@ exporters:
 
       ## @param histograms - custom object - optional
       ## Histograms specific configuration.
-        ## @param mode - string - optional - default: nobuckets
+        ## @param mode - string - optional - default: distributions
         ## How to report histograms. Valid values are:
         ## 
+        ## - `distributions` to report metrics as Datadog distributions (recommended).
         ## - `nobuckets` to not report bucket metrics,
         ## - `counters` to report one metric per histogram bucket.
-        ## - `distributions` to report metrics as Datadog distributions (recommended).
         #
-        # mode: nobuckets
+        # mode: distributions
       
         ## @param send_count_sum_metrics - boolean - optional - default: true
         ## Whether to report sum and count as separate histogram metrics.

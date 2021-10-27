@@ -77,8 +77,8 @@ func createDefaultConfig() config.Exporter {
 				InstrumentationLibraryMetadataAsTags: false,
 			},
 			HistConfig: ddconfig.HistogramConfig{
-				Mode:         "nobuckets",
-				SendCountSum: true,
+				Mode:         "distributions",
+				SendCountSum: false,
 			},
 		},
 
@@ -115,7 +115,7 @@ func createMetricsExporter(
 	}
 
 	// TODO: Remove after changing the default mode.
-	set.Logger.Warn("Default histograms configuration will change to mode 'distributions' and no .count and .sum metrics in a future release.")
+	set.Logger.Info("Histograms configuration now defaults to 'distributions' mode and no .count and .sum metrics.")
 
 	ctx, cancel := context.WithCancel(ctx)
 	var pushMetricsFn consumerhelper.ConsumeMetricsFunc
