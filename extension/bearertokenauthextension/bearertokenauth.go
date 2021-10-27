@@ -16,7 +16,6 @@ package bearertokenauthextension
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"net/http"
 
@@ -50,7 +49,6 @@ type BearerTokenAuth struct {
 }
 
 var _ configauth.ClientAuthenticator = (*BearerTokenAuth)(nil)
-var errNotHTTPClientAuthenticator = errors.New("requested authenticator is not a HTTP client authenticator")
 
 func newBearerTokenAuth(cfg *Config, logger *zap.Logger) *BearerTokenAuth {
 	return &BearerTokenAuth{
@@ -72,11 +70,33 @@ func (b *BearerTokenAuth) Shutdown(ctx context.Context) error {
 // PerRPCCredentials returns PerRPCAuth an implementation of credentials.PerRPCCredentials that
 func (b *BearerTokenAuth) PerRPCCredentials() (credentials.PerRPCCredentials, error) {
 	return &PerRPCAuth{
-		metadata: map[string]string{"authorization": fmt.Sprintf("Bearer %s", b.tokenString)},
+		metadata: map[string]string{"authorization": b.bearerToken()},
 	}, nil
+}
+
+func (b *BearerTokenAuth) bearerToken() string {
+	return fmt.Sprintf("Bearer %s", b.tokenString)
 }
 
 // RoundTripper is not implemented by BearerTokenAuth
 func (b *BearerTokenAuth) RoundTripper(base http.RoundTripper) (http.RoundTripper, error) {
-	return nil, errNotHTTPClientAuthenticator
+	return &BearerAuthRoundTripper{
+		transport:   base,
+		bearerToken: b.bearerToken(),
+	}, nil
+}
+
+// BearerAuthRoundTripper intercepts and adds Bearer token Authorization headers to each http request.
+type BearerAuthRoundTripper struct {
+	transport   http.RoundTripper
+	bearerToken string
+}
+
+// RoundTrip modifies the original request and adds Bearer token Authorization headers.
+func (interceptor *BearerAuthRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
+	if req.Header == nil {
+		req.Header = map[string][]string{}
+	}
+	req.Header.Set("Authorization", interceptor.bearerToken)
+	return interceptor.transport.RoundTrip(req)
 }

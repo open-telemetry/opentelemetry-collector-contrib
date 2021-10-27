@@ -17,6 +17,7 @@ package bearertokenauthextension
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -39,6 +40,35 @@ func TestPerRPCAuth(t *testing.T) {
 	assert.True(t, ok)
 }
 
+type mockRoundTripper struct{}
+
+func (m *mockRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
+	resp := &http.Response{StatusCode: http.StatusOK, Header: map[string][]string{}}
+	for k, v := range req.Header {
+		resp.Header.Set(k, v[0])
+	}
+	return resp, nil
+}
+
+func TestBearerAuthenticatorHttp(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.BearerToken = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+
+	bauth := newBearerTokenAuth(cfg, nil)
+	assert.NotNil(t, bauth)
+
+	base := &mockRoundTripper{}
+	c, err := bauth.RoundTripper(base)
+	assert.NoError(t, err)
+	assert.NotNil(t, c)
+
+	request := &http.Request{Method: "Get"}
+	resp, err := c.RoundTrip(request)
+	assert.NoError(t, err)
+	authHeaderValue := resp.Header.Get("Authorization")
+	assert.Equal(t, authHeaderValue, fmt.Sprintf("Bearer %s", cfg.BearerToken))
+}
+
 func TestBearerAuthenticator(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.BearerToken = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
@@ -52,17 +82,25 @@ func TestBearerAuthenticator(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, credential)
 
-	c, err := bauth.RoundTripper(nil)
-	assert.ErrorIs(t, err, errNotHTTPClientAuthenticator)
-	assert.Nil(t, c)
-
 	md, err := credential.GetRequestMetadata(context.Background())
 	expectedMd := map[string]string{
 		"authorization": fmt.Sprintf("Bearer %s", cfg.BearerToken),
 	}
 	assert.Equal(t, md, expectedMd)
 	assert.NoError(t, err)
-
 	assert.True(t, credential.RequireTransportSecurity())
+
+	roundTripper, _ := bauth.RoundTripper(&mockRoundTripper{})
+	orgHeaders := map[string][]string{
+		"foo": {"bar"},
+	}
+	expectedHeaders := map[string][]string{
+		"foo":           {"bar"},
+		"Authorization": {bauth.bearerToken()},
+	}
+
+	resp, err := roundTripper.RoundTrip(&http.Request{Header: orgHeaders})
+	assert.NoError(t, err)
+	assert.Equal(t, resp.Header, expectedHeaders)
 	assert.Nil(t, bauth.Shutdown(context.Background()))
 }
