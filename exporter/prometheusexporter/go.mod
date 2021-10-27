@@ -10,8 +10,8 @@ require (
 	github.com/prometheus/client_model v0.2.0
 	github.com/prometheus/prometheus v1.8.2-0.20210621150501-ff58416a0b02
 	github.com/stretchr/testify v1.7.0
-	go.opentelemetry.io/collector v0.37.1-0.20211015233822-bd87fb628058
-	go.opentelemetry.io/collector/model v0.37.1-0.20211015233822-bd87fb628058
+	go.opentelemetry.io/collector v0.37.1-0.20211026180946-46c8e2290e45
+	go.opentelemetry.io/collector/model v0.37.1-0.20211026180946-46c8e2290e45
 	go.uber.org/zap v1.19.1
 	gopkg.in/yaml.v2 v2.4.0
 )
@@ -71,7 +71,7 @@ require (
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
 	github.com/jpillora/backoff v1.0.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
-	github.com/knadh/koanf v1.2.4 // indirect
+	github.com/knadh/koanf v1.3.0 // indirect
 	github.com/linode/linodego v0.28.5 // indirect
 	github.com/magiconair/properties v1.8.5 // indirect
 	github.com/mattn/go-colorable v0.1.8 // indirect
@@ -90,7 +90,7 @@ require (
 	github.com/opencontainers/image-spec v1.0.1 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
-	github.com/prometheus/common v0.31.1 // indirect
+	github.com/prometheus/common v0.32.1 // indirect
 	github.com/prometheus/procfs v0.7.3 // indirect
 	github.com/scaleway/scaleway-sdk-go v1.0.0-beta.7.0.20210223165440-c65ae3540d44 // indirect
 	github.com/sirupsen/logrus v1.8.1 // indirect

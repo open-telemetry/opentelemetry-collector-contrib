@@ -7,8 +7,8 @@ require (
 	github.com/nginxinc/nginx-prometheus-exporter v0.8.1-0.20201110005315-f5a5f8086c19
 	github.com/stretchr/testify v1.7.0
 	github.com/testcontainers/testcontainers-go v0.11.1
-	go.opentelemetry.io/collector v0.37.1-0.20211015233822-bd87fb628058
-	go.opentelemetry.io/collector/model v0.37.1-0.20211015233822-bd87fb628058
+	go.opentelemetry.io/collector v0.37.1-0.20211026180946-46c8e2290e45
+	go.opentelemetry.io/collector/model v0.37.1-0.20211026180946-46c8e2290e45
 	go.uber.org/zap v1.19.1
 	golang.org/x/time v0.0.0-20210611083556-38a9dc6acbc6 // indirect
 
@@ -32,7 +32,7 @@ require (
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/google/uuid v1.3.0 // indirect
-	github.com/knadh/koanf v1.2.4 // indirect
+	github.com/knadh/koanf v1.3.0 // indirect
 	github.com/magiconair/properties v1.8.5 // indirect
 	github.com/mitchellh/copystructure v1.2.0 // indirect
 	github.com/mitchellh/mapstructure v1.4.2 // indirect

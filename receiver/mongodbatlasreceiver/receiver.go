@@ -16,8 +16,10 @@ package mongodbatlasreceiver
 
 import (
 	"context"
+	"strconv"
 	"time"
 
+	"github.com/pkg/errors"
 	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 	"go.uber.org/zap"
@@ -49,14 +51,110 @@ func (s *receiver) scrape(ctx context.Context) (pdata.Metrics, error) {
 		start = time.Now().Add(s.cfg.CollectionInterval * -1)
 	}
 	now := time.Now()
-	s.poll(ctx, start.UTC().Format(time.RFC3339), now.UTC().Format(time.RFC3339), s.cfg.Granularity)
+	metrics, err := s.poll(ctx, start.UTC().Format(time.RFC3339), now.UTC().Format(time.RFC3339), s.cfg.Granularity)
+	if err != nil {
+		return pdata.Metrics{}, err
+	}
 	s.lastRun = now
-	return pdata.Metrics{}, nil
+	return metrics, nil
 }
 
-func (s *receiver) poll(ctx context.Context, start string, end string, resolution string) { //nolint
-	for _, org := range s.client.Organizations(ctx) {
-		// Metrics collection starts here
-		s.log.Debug("fetch resources for MongoDB Organization", zap.String("org", org.Name))
+func (s *receiver) poll(ctx context.Context, start string, end string, resolution string) (pdata.Metrics, error) {
+	resourceAttributes := pdata.NewAttributeMap()
+	allMetrics := pdata.NewMetrics()
+	orgs, err := s.client.Organizations(ctx)
+	if err != nil {
+		return pdata.Metrics{}, errors.Wrap(err, "error retrieving organizations")
 	}
+	for _, org := range orgs {
+		resourceAttributes.InsertString("mongodb.atlas.org_name", org.Name)
+		projects, err := s.client.Projects(ctx, org.ID)
+		if err != nil {
+			return pdata.Metrics{}, errors.Wrap(err, "error retrieving projects")
+		}
+		for _, project := range projects {
+			resourceAttributes.InsertString("mongodb.atlas.project", project.Name)
+			processes, err := s.client.Processes(ctx, project.ID)
+			if err != nil {
+				return pdata.Metrics{}, errors.Wrap(err, "error retrieving MongoDB Atlas processes")
+			}
+			for _, process := range processes {
+				resource := pdata.NewResource()
+				resourceAttributes.CopyTo(resource.Attributes())
+				resource.Attributes().InsertString("host.name", process.Hostname)
+				resource.Attributes().InsertString("process.port", strconv.Itoa(process.Port))
+				// This receiver will support both logs and metrics- if one pipeline
+				//  or the other is not configured, it will be nil.
+				metrics, err :=
+					s.client.ProcessMetrics(
+						ctx,
+						resource,
+						project.ID,
+						process.Hostname,
+						process.Port,
+						start,
+						end,
+						resolution,
+					)
+				if err != nil {
+					return pdata.Metrics{}, errors.Wrap(err, "error when polling process metrics from MongoDB Atlas")
+				}
+				metrics.ResourceMetrics().MoveAndAppendTo(allMetrics.ResourceMetrics())
+
+				processDatabases, err := s.client.ProcessDatabases(
+					ctx,
+					project.ID,
+					process.Hostname,
+					process.Port,
+				)
+				if err != nil {
+					return pdata.Metrics{}, errors.Wrap(err, "error retrieving process databases")
+				}
+
+				for _, db := range processDatabases {
+					dbResource := pdata.NewResource()
+					resource.CopyTo(dbResource)
+					resource.Attributes().
+						InsertString("mongodb.atlas.database_name", db.DatabaseName)
+					metrics, err := s.client.ProcessDatabaseMetrics(
+						ctx,
+						resource,
+						project.ID,
+						process.Hostname,
+						process.Port,
+						db.DatabaseName,
+						start,
+						end,
+						resolution,
+					)
+					if err != nil {
+						return pdata.Metrics{}, errors.Wrap(err, "error when polling database metrics from MongoDB Atlas")
+					}
+					metrics.ResourceMetrics().MoveAndAppendTo(allMetrics.ResourceMetrics())
+				}
+				for _, disk := range s.client.ProcessDisks(ctx, project.ID, process.Hostname, process.Port) {
+					diskResource := pdata.NewResource()
+					resource.CopyTo(diskResource)
+					diskResource.Attributes().
+						InsertString("mongodb.atlas.partition", disk.PartitionName)
+					metrics, err := s.client.ProcessDiskMetrics(
+						ctx,
+						diskResource,
+						project.ID,
+						process.Hostname,
+						process.Port,
+						disk.PartitionName,
+						start,
+						end,
+						resolution,
+					)
+					if err != nil {
+						return pdata.Metrics{}, errors.Wrap(err, "error when polling from MongoDB Atlas")
+					}
+					metrics.ResourceMetrics().MoveAndAppendTo(allMetrics.ResourceMetrics())
+				}
+			}
+		}
+	}
+	return allMetrics, nil
 }
