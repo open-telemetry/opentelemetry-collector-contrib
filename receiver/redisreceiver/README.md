@@ -26,7 +26,7 @@ The Redis receiver turns this data into a gauge...
 func usedCPUSys() *redisMetric {
 	return &redisMetric{
 		key:    "used_cpu_sys",
-		name:   "redis/cpu/time",
+		name:   "redis.cpu.time",
 		units:  "s",
 		mdType: metricspb.MetricDescriptor_GAUGE_DOUBLE,
 		labels: map[string]string{"state": "sys"},
@@ -34,7 +34,7 @@ func usedCPUSys() *redisMetric {
 }
 ```
 
-with a metric name of `redis/cpu/time` and a units value of `s` (seconds).
+with a metric name of `redis.cpu.time` and a units value of `s` (seconds).
 
 ## Configuration
 

@@ -17,7 +17,6 @@ package fluentforwardreceiver
 import (
 	"bytes"
 	"compress/gzip"
-	"encoding/json"
 	"fmt"
 	"io"
 	"time"
@@ -81,31 +80,55 @@ func (em EventMode) String() string {
 	}
 }
 
-func insertToAttributeMap(key string, val interface{}, dest *pdata.AttributeMap) {
+// parseInterfaceToMap takes map of interface objects and returns
+// AttributeValueMap
+func parseInterfaceToMap(msi map[string]interface{}) pdata.AttributeValue {
+	rv := pdata.NewAttributeValueMap()
+	am := rv.MapVal()
+	am.EnsureCapacity(len(msi))
+	for k, value := range msi {
+		am.Insert(k, parseToAttributeValue(value))
+	}
+	return rv
+}
+
+// parseInterfaceToArray takes array of interface objects and returns
+// AttributeValueArray
+func parseInterfaceToArray(ai []interface{}) pdata.AttributeValue {
+	iv := pdata.NewAttributeValueArray()
+	av := iv.ArrayVal()
+	av.EnsureCapacity(len(ai))
+	for _, value := range ai {
+		parseToAttributeValue(value).CopyTo(av.AppendEmpty())
+	}
+	return iv
+}
+
+// parseToAttributeValue converts interface object to AttributeValue
+func parseToAttributeValue(val interface{}) pdata.AttributeValue {
 	// See https://github.com/tinylib/msgp/wiki/Type-Mapping-Rules
 	switch r := val.(type) {
 	case bool:
-		dest.InsertBool(key, r)
+		return pdata.NewAttributeValueBool(r)
 	case string:
-		dest.InsertString(key, r)
+		return pdata.NewAttributeValueString(r)
 	case uint64:
-		dest.InsertInt(key, int64(r))
+		return pdata.NewAttributeValueInt(int64(r))
 	case int64:
-		dest.InsertInt(key, r)
+		return pdata.NewAttributeValueInt(r)
+	// Sometimes strings come in as bytes array
 	case []byte:
-		dest.InsertString(key, string(r))
-	case map[string]interface{}, []interface{}:
-		encoded, err := json.Marshal(r)
-		if err != nil {
-			dest.InsertString(key, err.Error())
-		}
-		dest.InsertString(key, string(encoded))
+		return pdata.NewAttributeValueString(string(r))
+	case map[string]interface{}:
+		return parseInterfaceToMap(r)
+	case []interface{}:
+		return parseInterfaceToArray(r)
 	case float32:
-		dest.InsertDouble(key, float64(r))
+		return pdata.NewAttributeValueDouble(float64(r))
 	case float64:
-		dest.InsertDouble(key, r)
+		return pdata.NewAttributeValueDouble(r)
 	default:
-		dest.InsertString(key, fmt.Sprintf("%v", r))
+		return pdata.NewAttributeValueString(fmt.Sprintf("%v", val))
 	}
 }
 
@@ -160,19 +183,13 @@ func parseRecordToLogRecord(dc *msgp.Reader, lr pdata.LogRecord) error {
 			return msgp.WrapError(err, "Record", key)
 		}
 
+		av := parseToAttributeValue(val)
+
 		// fluentd uses message, fluentbit log.
 		if key == "message" || key == "log" {
-			switch v := val.(type) {
-			case string:
-				lr.Body().SetStringVal(v)
-			case []uint8:
-				// Sometimes strings come in as uint8's.
-				lr.Body().SetStringVal(string(v))
-			default:
-				return fmt.Errorf("cannot convert message type %T to string", val)
-			}
+			av.CopyTo(lr.Body())
 		} else {
-			insertToAttributeMap(key, val, &attrs)
+			attrs.Insert(key, av)
 		}
 	}
 

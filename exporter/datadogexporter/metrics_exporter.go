@@ -173,7 +173,6 @@ func (exp *metricsExporter) PushMetricsData(ctx context.Context, md pdata.Metric
 	metrics.ProcessMetrics(ms, exp.cfg)
 
 	if len(ms) > 0 {
-		exp.params.Logger.Info("exporting payload", zap.Any("metric", ms))
 		if err := exp.client.PostMetrics(ms); err != nil {
 			return err
 		}

@@ -53,12 +53,20 @@ func createDefaultConfig() config.Receiver {
 
 func createMetricsReceiver(
 	_ context.Context,
-	params component.ReceiverCreateSettings,
+	settings component.ReceiverCreateSettings,
 	baseCfg config.Receiver,
 	consumer consumer.Metrics,
 ) (component.MetricsReceiver, error) {
 
 	rCfg := baseCfg.(*Config)
-	logger := params.Logger
-	return newGoogleCloudSpannerReceiver(logger, rCfg, consumer)
+	r := newGoogleCloudSpannerReceiver(settings.Logger, rCfg)
+
+	scraper, err := scraperhelper.NewScraper(typeStr, r.Scrape, scraperhelper.WithStart(r.Start),
+		scraperhelper.WithShutdown(r.Shutdown))
+	if err != nil {
+		return nil, err
+	}
+
+	return scraperhelper.NewScraperControllerReceiver(&rCfg.ScraperControllerSettings, settings, consumer,
+		scraperhelper.AddScraper(scraper))
 }
