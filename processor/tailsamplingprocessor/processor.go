@@ -50,12 +50,12 @@ type policy struct {
 type tailSamplingSpanProcessor struct {
 	ctx             context.Context
 	nextConsumer    consumer.Traces
-	start           sync.Once
 	maxNumTraces    uint64
 	policies        []*policy
 	logger          *zap.Logger
 	idToTrace       sync.Map
 	policyTicker    tTicker
+	tickerFrequency time.Duration
 	decisionBatcher idbatcher.Batcher
 	deleteChan      chan pdata.TraceID
 	numTracesOnMap  uint64
@@ -105,6 +105,7 @@ func newTracesProcessor(logger *zap.Logger, nextConsumer consumer.Traces, cfg Co
 		logger:          logger,
 		decisionBatcher: inBatcher,
 		policies:        policies,
+		tickerFrequency: time.Second,
 	}
 
 	tsp.policyTicker = &policyTicker{onTickFunc: tsp.samplingPolicyOnTick}
@@ -285,10 +286,6 @@ func (tsp *tailSamplingSpanProcessor) makeDecision(id pdata.TraceID, trace *samp
 
 // ConsumeTraceData is required by the SpanProcessor interface.
 func (tsp *tailSamplingSpanProcessor) ConsumeTraces(ctx context.Context, td pdata.Traces) error {
-	tsp.start.Do(func() {
-		tsp.logger.Info("First trace data arrived, starting tail_sampling timers")
-		tsp.policyTicker.start(1 * time.Second)
-	})
 	resourceSpans := td.ResourceSpans()
 	for i := 0; i < resourceSpans.Len(); i++ {
 		tsp.processTraces(resourceSpans.At(i))
@@ -402,6 +399,7 @@ func (tsp *tailSamplingSpanProcessor) Capabilities() consumer.Capabilities {
 
 // Start is invoked during service startup.
 func (tsp *tailSamplingSpanProcessor) Start(context.Context, component.Host) error {
+	tsp.policyTicker.start(tsp.tickerFrequency)
 	return nil
 }
 

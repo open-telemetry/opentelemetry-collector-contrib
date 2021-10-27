@@ -24,6 +24,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/model/pdata"
 	"go.uber.org/zap"
@@ -48,6 +49,8 @@ func TestSequentialTraceArrival(t *testing.T) {
 	}
 	sp, _ := newTracesProcessor(zap.NewNop(), consumertest.NewNop(), cfg)
 	tsp := sp.(*tailSamplingSpanProcessor)
+	tsp.tickerFrequency = 100 * time.Millisecond
+	tsp.Start(context.Background(), componenttest.NewNopHost())
 	defer func() {
 		require.NoError(t, tsp.Shutdown(context.Background()))
 	}()
@@ -76,6 +79,8 @@ func TestConcurrentTraceArrival(t *testing.T) {
 	}
 	sp, _ := newTracesProcessor(zap.NewNop(), consumertest.NewNop(), cfg)
 	tsp := sp.(*tailSamplingSpanProcessor)
+	tsp.tickerFrequency = 100 * time.Millisecond
+	tsp.Start(context.Background(), componenttest.NewNopHost())
 	defer func() {
 		require.NoError(t, tsp.Shutdown(context.Background()))
 	}()
@@ -114,6 +119,8 @@ func TestSequentialTraceMapSize(t *testing.T) {
 	}
 	sp, _ := newTracesProcessor(zap.NewNop(), consumertest.NewNop(), cfg)
 	tsp := sp.(*tailSamplingSpanProcessor)
+	tsp.tickerFrequency = 100 * time.Millisecond
+	tsp.Start(context.Background(), componenttest.NewNopHost())
 	defer func() {
 		require.NoError(t, tsp.Shutdown(context.Background()))
 	}()
@@ -141,6 +148,8 @@ func TestConcurrentTraceMapSize(t *testing.T) {
 	}
 	sp, _ := newTracesProcessor(zap.NewNop(), consumertest.NewNop(), cfg)
 	tsp := sp.(*tailSamplingSpanProcessor)
+	tsp.tickerFrequency = 100 * time.Millisecond
+	tsp.Start(context.Background(), componenttest.NewNopHost())
 	defer func() {
 		require.NoError(t, tsp.Shutdown(context.Background()))
 	}()
@@ -182,7 +191,9 @@ func TestSamplingPolicyTypicalPath(t *testing.T) {
 		policies:        []*policy{{name: "mock-policy", evaluator: mpe, ctx: context.TODO()}},
 		deleteChan:      make(chan pdata.TraceID, maxSize),
 		policyTicker:    mtt,
+		tickerFrequency: 100 * time.Millisecond,
 	}
+	tsp.Start(context.Background(), componenttest.NewNopHost())
 	defer func() {
 		require.NoError(t, tsp.Shutdown(context.Background()))
 	}()
@@ -241,7 +252,9 @@ func TestSamplingPolicyInvertSampled(t *testing.T) {
 		policies:        []*policy{{name: "mock-policy", evaluator: mpe, ctx: context.TODO()}},
 		deleteChan:      make(chan pdata.TraceID, maxSize),
 		policyTicker:    mtt,
+		tickerFrequency: 100 * time.Millisecond,
 	}
+	tsp.Start(context.Background(), componenttest.NewNopHost())
 	defer func() {
 		require.NoError(t, tsp.Shutdown(context.Background()))
 	}()
@@ -305,9 +318,11 @@ func TestSamplingMultiplePolicies(t *testing.T) {
 			{
 				name: "policy-2", evaluator: mpe2, ctx: context.TODO(),
 			}},
-		deleteChan:   make(chan pdata.TraceID, maxSize),
-		policyTicker: mtt,
+		deleteChan:      make(chan pdata.TraceID, maxSize),
+		policyTicker:    mtt,
+		tickerFrequency: 100 * time.Millisecond,
 	}
+	tsp.Start(context.Background(), componenttest.NewNopHost())
 	defer func() {
 		require.NoError(t, tsp.Shutdown(context.Background()))
 	}()
@@ -369,7 +384,9 @@ func TestSamplingPolicyDecisionNotSampled(t *testing.T) {
 		policies:        []*policy{{name: "mock-policy", evaluator: mpe, ctx: context.TODO()}},
 		deleteChan:      make(chan pdata.TraceID, maxSize),
 		policyTicker:    mtt,
+		tickerFrequency: 100 * time.Millisecond,
 	}
+	tsp.Start(context.Background(), componenttest.NewNopHost())
 	defer func() {
 		require.NoError(t, tsp.Shutdown(context.Background()))
 	}()
@@ -431,7 +448,9 @@ func TestSamplingPolicyDecisionInvertNotSampled(t *testing.T) {
 		policies:        []*policy{{name: "mock-policy", evaluator: mpe, ctx: context.TODO()}},
 		deleteChan:      make(chan pdata.TraceID, maxSize),
 		policyTicker:    mtt,
+		tickerFrequency: 100 * time.Millisecond,
 	}
+	tsp.Start(context.Background(), componenttest.NewNopHost())
 	defer func() {
 		require.NoError(t, tsp.Shutdown(context.Background()))
 	}()
@@ -493,7 +512,9 @@ func TestMultipleBatchesAreCombinedIntoOne(t *testing.T) {
 		policies:        []*policy{{name: "mock-policy", evaluator: mpe, ctx: context.TODO()}},
 		deleteChan:      make(chan pdata.TraceID, maxSize),
 		policyTicker:    mtt,
+		tickerFrequency: 100 * time.Millisecond,
 	}
+	tsp.Start(context.Background(), componenttest.NewNopHost())
 	defer func() {
 		require.NoError(t, tsp.Shutdown(context.Background()))
 	}()
