@@ -75,7 +75,7 @@ func TestDefaultReceivers(t *testing.T) {
 			receiver: "zipkin",
 		},
 		{
-			receiver: "awscontainerinsightreceiver",
+			receiver:     "awscontainerinsightreceiver",
 			skipLifecyle: true,
 		},
 	}
