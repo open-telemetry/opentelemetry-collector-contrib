@@ -76,7 +76,7 @@ func TestDefaultExporters(t *testing.T) {
 			exporter: "jaeger_thrift",
 			getConfigFn: func() config.Exporter {
 				cfg := expFactories["jaeger_thrift"].CreateDefaultConfig().(*jaegerthrifthttpexporter.Config)
-				cfg.Endpoint = endpoint
+				cfg.Endpoint = "http://" + endpoint
 				return cfg
 			},
 		},
@@ -143,7 +143,7 @@ func TestDefaultExporters(t *testing.T) {
 		},
 	}
 
-	assert.Equal(t, len(tests)+27 /* not tested */, len(expFactories))
+	assert.Equal(t, len(tests)+26 /* not tested */, len(expFactories))
 	for _, tt := range tests {
 		t.Run(string(tt.exporter), func(t *testing.T) {
 			factory, ok := expFactories[tt.exporter]

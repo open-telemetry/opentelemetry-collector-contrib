@@ -83,7 +83,7 @@ func TestFactory_CreateTracesExporterFails(t *testing.T) {
 			config: &Config{
 				ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
 			},
-			errorMessage: "\"jaeger_thrift\" config requires a valid \"url\": parse \"\": empty url",
+			errorMessage: "\"jaeger_thrift\" config requires a valid \"endpoint\": parse \"\": empty url",
 		},
 		{
 			name: "invalid_url",
@@ -93,7 +93,7 @@ func TestFactory_CreateTracesExporterFails(t *testing.T) {
 					Endpoint: ".example:123",
 				},
 			},
-			errorMessage: "\"jaeger_thrift\" config requires a valid \"url\": parse \".example:123\": invalid URI for request",
+			errorMessage: "\"jaeger_thrift\" config requires a valid \"endpoint\": parse \".example:123\": invalid URI for request",
 		},
 		{
 			name: "negative_duration",
