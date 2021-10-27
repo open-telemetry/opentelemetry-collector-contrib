@@ -29,7 +29,7 @@ func TestRedisRunnable(t *testing.T) {
 	logger, _ := zap.NewDevelopment()
 	settings := componenttest.NewNopReceiverCreateSettings()
 	settings.Logger = logger
-	runner, err := newRedisScraper(Config{}, settings, newFakeClient())
+	runner, err := newRedisScraperWithClient(newFakeClient(), settings)
 	require.NoError(t, err)
 	md, err := runner.Scrape(context.Background())
 	require.NoError(t, err)

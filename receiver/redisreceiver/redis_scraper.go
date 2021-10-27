@@ -34,7 +34,7 @@ type redisScraper struct {
 	timeBundle   *timeBundle
 }
 
-func newRedisScraper(cfg Config, settings component.ReceiverCreateSettings, passedClient client) (scraperhelper.Scraper, error) {
+func newRedisScraper(cfg Config, settings component.ReceiverCreateSettings) (scraperhelper.Scraper, error) {
 	opts := &redis.Options{
 		Addr:     cfg.Endpoint,
 		Password: cfg.Password,
@@ -45,16 +45,12 @@ func newRedisScraper(cfg Config, settings component.ReceiverCreateSettings, pass
 	if opts.TLSConfig, err = cfg.TLS.LoadTLSConfig(); err != nil {
 		return nil, err
 	}
+	return newRedisScraperWithClient(newRedisClient(opts), settings)
+}
 
-	var clnt client
-	if passedClient == nil {
-		clnt = newRedisClient(opts)
-	} else {
-		clnt = passedClient
-	}
-
+func newRedisScraperWithClient(client client, settings component.ReceiverCreateSettings) (scraperhelper.Scraper, error) {
 	rs := &redisScraper{
-		redisSvc:     newRedisSvc(clnt),
+		redisSvc:     newRedisSvc(client),
 		redisMetrics: getDefaultRedisMetrics(),
 		settings:     settings,
 	}

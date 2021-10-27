@@ -61,7 +61,7 @@ func createMetricsReceiver(
 ) (component.MetricsReceiver, error) {
 	oCfg := cfg.(*Config)
 
-	scrp, err := newRedisScraper(*oCfg, set, nil)
+	scrp, err := newRedisScraper(*oCfg, set)
 	if err != nil {
 		return nil, err
 	}
