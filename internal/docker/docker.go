@@ -203,7 +203,7 @@ func (dc *Client) toStatsJSON(
 }
 
 // Events exposes the underlying Docker clients Events channel.
-// Caller should close the events channel by cancelling the context.
+// Caller should close the events channel by canceling the context.
 // If an error occurs, processing stops and caller must reinvoke this method.
 func (dc *Client) Events(ctx context.Context, options dtypes.EventsOptions) (<-chan devents.Message, <-chan error) {
 	return dc.client.Events(ctx, options)
