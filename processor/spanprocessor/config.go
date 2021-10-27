@@ -36,8 +36,7 @@ type Config struct {
 	// from config.NamedEntity
 	Rename Name `mapstructure:"name"`
 
-	// SetStatus specifies status which should be set for this span. Please check:
-	// https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/trace/api.md#set-status
+	// SetStatus specifies status which should be set for this span.
 	SetStatus *Status `mapstructure:"status"`
 }
 
@@ -85,7 +84,7 @@ type ToAttributes struct {
 }
 
 type Status struct {
-	// Code is one of three values "Ok" or "Err" or "Unset". Please check:
+	// Code is one of three values "Ok" or "Error" or "Unset". Please check:
 	// https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/trace/api.md#set-status
 	Code string `mapstructure:"code"`
 

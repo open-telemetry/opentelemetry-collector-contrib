@@ -85,7 +85,8 @@ processors:
           - "(?P<operation_website>.*?)$"
 
   # This example changes status of a span to error and sets description.
-  # Possible values for code are: "Ok", "Error" or "Unset" with an additional descrption.
+  # Possible values for code are: "Ok", "Error" or "Unset".
+  # Description is an optional field used for documenting Error statuses.
   span/set_status_err:
     status:
       code: "Error"
