@@ -3,9 +3,9 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/influx
 go 1.17
 
 require (
-	github.com/influxdata/influxdb-observability/common v0.2.7
-	github.com/influxdata/influxdb-observability/influx2otel v0.0.0-20210927215436-943f6419116a
-	github.com/influxdata/line-protocol/v2 v2.0.0-20210520103755-6551a972d603
+	github.com/influxdata/influxdb-observability/common v0.2.8
+	github.com/influxdata/influxdb-observability/influx2otel v0.2.8
+	github.com/influxdata/line-protocol/v2 v2.2.0
 	go.opentelemetry.io/collector v0.37.1-0.20211026180946-46c8e2290e45
 	go.uber.org/zap v1.19.1
 
