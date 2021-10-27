@@ -92,7 +92,7 @@ func parseInterfaceToMap(msi map[string]interface{}) pdata.AttributeValue {
 	return rv
 }
 
-// parseInterfaceToMap takes array of interface objects and returns
+// parseInterfaceToArray takes array of interface objects and returns
 // AttributeValueArray
 func parseInterfaceToArray(ai []interface{}) pdata.AttributeValue {
 	iv := pdata.NewAttributeValueArray()
