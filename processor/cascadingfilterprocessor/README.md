@@ -138,11 +138,11 @@ cascadingfilter:
     - name: tail-based-duration
       properties:
         min_duration: 3s
-        spans_per_second: 500 # <- adjust the output traffic level
+      spans_per_second: 500 # <- adjust the output traffic level
     - name: tail-based-errors
       properties:
         min_number_of_errors: 3
-        spans_per_second: 500 # <- adjust the output traffic level
+      spans_per_second: 500 # <- adjust the output traffic level
 ```
 
 ### Advanced configuration 
