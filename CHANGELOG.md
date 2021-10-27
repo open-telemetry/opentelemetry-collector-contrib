@@ -2,6 +2,41 @@
 
 ## Unreleased
 
+## v0.38.0
+
+## 🛑 Breaking changes 🛑
+
+- `datadogexporter` Make distributions the default histogram export option (#5885)
+- `redisreceiver` Update Redis receiver's metric names (#5837)
+- Remove `scraperhelper` from contrib, use the core version (#5826)
+
+## 🚀 New components 🚀
+
+- `googlecloudspannerreceiver` Added implementation of Google Cloud Spanner receiver. (#5727)
+
+## 🧰 Bug fixes 🧰
+
+- `statsdreceiver`: fix start timestamp / temporality for counters (#5714)
+- Fix security issue related to github.com/tidwall/gjson (#5936)
+
+## 💡 Enhancements 💡
+
+- Extend `kafkareceiver` configuration capabilities (#5677)
+- Convert `mongodbatlas` receiver to use scraperhelper (#5827)
+- Convert `dockerstats` receiver to use scraperhelper (#5825)
+- Convert `podman` receiver to use scraperhelper (#5822)
+- Convert `redisreceiver` to use scraperhelper (#5796)
+- Convert `kubeletstats` receiver to use scraperhelper (#5821)
+- `datadogexporter` Use a `Consumer` interface for decoupling from zorkian's package (#5315)
+- `mdatagen` - Add support for extended metric descriptions (#5688)
+- `signalfxexporter` Log datapoints option (#5689)
+- `cumulativetodeltaprocessor`: Update cumulative to delta (#5772)
+- Update configuration default values in log receivers docs (#5840)
+- `fluentforwardreceiver`: support more complex fluent-bit objects (#5676)
+- `datadogexporter` Remove spammy logging (#5856)
+- `datadogexporter` Remove obsolete report_buckets config (#5858)
+- Improve performance of metric expression matcher (#5864)
+
 ## v0.37.1
 
 ## 🧰 Bug fixes 🧰
