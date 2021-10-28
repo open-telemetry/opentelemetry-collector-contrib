@@ -25,6 +25,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   ([#767](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/767))
 - Don't set Span Status on 4xx http status code for SpanKind.SERVER spans
   ([#776](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/776))
+- `opentelemetry-instrumentation-django` Fixed instrumentation and tests for all Django major versions.
+  ([#780](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/780))
 
 ## [1.6.2-0.25b2](https://github.com/open-telemetry/opentelemetry-python/releases/tag/v1.6.2-0.25b2) - 2021-10-19
 
@@ -41,7 +43,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - `opentelemetry-distro` uses the correct entrypoint name which was updated in the core release of 1.6.0 but the distro was not updated with it
   ([#755](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/755))
-  
+
 ### Added
 - `opentelemetry-instrumentation-pika` Add `publish_hook` and `consume_hook` callbacks passed as arguments to the instrument method
   ([#763](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/763))

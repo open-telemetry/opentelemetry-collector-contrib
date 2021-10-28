@@ -19,7 +19,6 @@ from django import VERSION, conf
 from django.http import HttpRequest, HttpResponse
 from django.test.client import Client
 from django.test.utils import setup_test_environment, teardown_test_environment
-from django.urls import re_path
 
 from opentelemetry.instrumentation.django import (
     DjangoInstrumentor,
@@ -54,7 +53,14 @@ from .views import (
     traced_template,
 )
 
+DJANGO_2_0 = VERSION >= (2, 0)
 DJANGO_2_2 = VERSION >= (2, 2)
+DJANGO_3_0 = VERSION >= (3, 0)
+
+if DJANGO_2_0:
+    from django.urls import re_path
+else:
+    from django.conf.urls import url as re_path
 
 urlpatterns = [
     re_path(r"^traced/", traced),
@@ -122,7 +128,7 @@ class TestMiddleware(TestBase, WsgiTestBase):
             span.name,
             "^route/(?P<year>[0-9]{4})/template/$"
             if DJANGO_2_2
-            else "tests.views.traced",
+            else "tests.views.traced_template",
         )
         self.assertEqual(span.kind, SpanKind.SERVER)
         self.assertEqual(span.status.status_code, StatusCode.UNSET)
@@ -131,10 +137,11 @@ class TestMiddleware(TestBase, WsgiTestBase):
             span.attributes[SpanAttributes.HTTP_URL],
             "http://testserver/route/2020/template/",
         )
-        self.assertEqual(
-            span.attributes[SpanAttributes.HTTP_ROUTE],
-            "^route/(?P<year>[0-9]{4})/template/$",
-        )
+        if DJANGO_2_2:
+            self.assertEqual(
+                span.attributes[SpanAttributes.HTTP_ROUTE],
+                "^route/(?P<year>[0-9]{4})/template/$",
+            )
         self.assertEqual(span.attributes[SpanAttributes.HTTP_SCHEME], "http")
         self.assertEqual(span.attributes[SpanAttributes.HTTP_STATUS_CODE], 200)
 
@@ -156,9 +163,10 @@ class TestMiddleware(TestBase, WsgiTestBase):
             span.attributes[SpanAttributes.HTTP_URL],
             "http://testserver/traced/",
         )
-        self.assertEqual(
-            span.attributes[SpanAttributes.HTTP_ROUTE], "^traced/"
-        )
+        if DJANGO_2_2:
+            self.assertEqual(
+                span.attributes[SpanAttributes.HTTP_ROUTE], "^traced/"
+            )
         self.assertEqual(span.attributes[SpanAttributes.HTTP_SCHEME], "http")
         self.assertEqual(span.attributes[SpanAttributes.HTTP_STATUS_CODE], 200)
 
@@ -193,9 +201,10 @@ class TestMiddleware(TestBase, WsgiTestBase):
             span.attributes[SpanAttributes.HTTP_URL],
             "http://testserver/traced/",
         )
-        self.assertEqual(
-            span.attributes[SpanAttributes.HTTP_ROUTE], "^traced/"
-        )
+        if DJANGO_2_2:
+            self.assertEqual(
+                span.attributes[SpanAttributes.HTTP_ROUTE], "^traced/"
+            )
         self.assertEqual(span.attributes[SpanAttributes.HTTP_SCHEME], "http")
         self.assertEqual(span.attributes[SpanAttributes.HTTP_STATUS_CODE], 200)
 
@@ -218,7 +227,10 @@ class TestMiddleware(TestBase, WsgiTestBase):
             span.attributes[SpanAttributes.HTTP_URL],
             "http://testserver/error/",
         )
-        self.assertEqual(span.attributes[SpanAttributes.HTTP_ROUTE], "^error/")
+        if DJANGO_2_2:
+            self.assertEqual(
+                span.attributes[SpanAttributes.HTTP_ROUTE], "^error/"
+            )
         self.assertEqual(span.attributes[SpanAttributes.HTTP_SCHEME], "http")
         self.assertEqual(span.attributes[SpanAttributes.HTTP_STATUS_CODE], 500)
 
@@ -363,14 +375,14 @@ class TestMiddleware(TestBase, WsgiTestBase):
     def test_trace_response_headers(self):
         response = Client().get("/span_name/1234/")
 
-        self.assertNotIn("Server-Timing", response.headers)
+        self.assertFalse(response.has_header("Server-Timing"))
         self.memory_exporter.clear()
 
         set_global_response_propagator(TraceResponsePropagator())
 
         response = Client().get("/span_name/1234/")
         self.assertTraceResponseHeaderMatchesSpan(
-            response.headers, self.memory_exporter.get_finished_spans()[0]
+            response, self.memory_exporter.get_finished_spans()[0],
         )
         self.memory_exporter.clear()
 
