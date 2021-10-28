@@ -26,7 +26,7 @@ import (
 	"time"
 
 	"github.com/influxdata/influxdb-observability/common"
-	lineprotocol "github.com/influxdata/line-protocol/v2/influxdata"
+	"github.com/influxdata/line-protocol/v2/lineprotocol"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 )
