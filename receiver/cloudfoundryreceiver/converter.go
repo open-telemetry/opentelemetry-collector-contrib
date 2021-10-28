@@ -21,6 +21,10 @@ import (
 	"go.opentelemetry.io/collector/model/pdata"
 )
 
+const (
+	attributeNamePrefix = "org.cloudfoundry."
+)
+
 func convertEnvelopeToMetrics(envelope *loggregator_v2.Envelope, metricSlice pdata.MetricSlice, startTime time.Time) {
 	namePrefix := envelope.Tags["origin"] + "."
 
@@ -51,14 +55,14 @@ func convertEnvelopeToMetrics(envelope *loggregator_v2.Envelope, metricSlice pda
 
 func copyEnvelopeAttributes(attributes pdata.AttributeMap, envelope *loggregator_v2.Envelope) {
 	for key, value := range envelope.Tags {
-		attributes.InsertString(key, value)
+		attributes.InsertString(attributeNamePrefix + key, value)
 	}
 
 	if envelope.SourceId != "" {
-		attributes.InsertString("source_id", envelope.SourceId)
+		attributes.InsertString(attributeNamePrefix + "source_id", envelope.SourceId)
 	}
 
 	if envelope.InstanceId != "" {
-		attributes.InsertString("instance_id", envelope.InstanceId)
+		attributes.InsertString(attributeNamePrefix + "instance_id", envelope.InstanceId)
 	}
 }

@@ -28,10 +28,13 @@ type RLPGatewayConfig struct {
 	ShardID                       string `mapstructure:"shard_id"`
 }
 
+// LimitedTLSClientSetting is a subset of TLSClientSetting, see LimitedHTTPClientSettings for more details
 type LimitedTLSClientSetting struct {
 	InsecureSkipVerify bool `mapstructure:"insecure_skip_verify"`
 }
 
+// LimitedHTTPClientSettings is a subset of HTTPClientSettings, implemented as a separate type due to the library this
+// configuration is used with not taking a preconfigured http.Client as input, but only taking these specific options
 type LimitedHTTPClientSettings struct {
 	Endpoint   string                  `mapstructure:"endpoint"`
 	TLSSetting LimitedTLSClientSetting `mapstructure:"tls,omitempty"`

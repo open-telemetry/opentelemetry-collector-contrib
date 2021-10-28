@@ -30,7 +30,6 @@ import (
 const (
 	typeStr                  = "cloudfoundry"
 	defaultUAAUsername       = "admin"
-	defaultUAAPassword       = "default"
 	defaultRLPGatewayShardID = "opentelemetry"
 	defaultURL               = "https://localhost"
 )
@@ -63,7 +62,6 @@ func createDefaultConfig() config.Receiver {
 				},
 			},
 			Username: defaultUAAUsername,
-			Password: defaultUAAPassword,
 		},
 	}
 }
