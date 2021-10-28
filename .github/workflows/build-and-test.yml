@@ -25,18 +25,13 @@ jobs:
       - name: Cache Go
         id: module-cache
         uses: actions/cache@v2
-        env:
-          cache-name: cache-go-modules
         with:
           path: |
             /home/runner/go/pkg/mod
-            /home/runner/.cache/go-build
           key: v1-go-pkg-mod-${{ runner.os }}-${{ hashFiles('**/go.mod', '**/go.sum') }}
       - name: Cache Tools
         id: tool-cache
         uses: actions/cache@v2
-        env:
-          cache-name: cache-tool-binaries
         with:
           path: /home/runner/go/bin
           key: v1-tools-${{ runner.os }}-${{ hashFiles('./internal/tools/go.mod') }}
@@ -64,21 +59,21 @@ jobs:
       - name: Cache Go
         id: module-cache
         uses: actions/cache@v2
-        env:
-          cache-name: cache-go-modules
         with:
           path: |
             /home/runner/go/pkg/mod
-            /home/runner/.cache/go-build
           key: v1-go-pkg-mod-${{ runner.os }}-${{ hashFiles('**/go.mod', '**/go.sum') }}
       - name: Cache Tools
         id: tool-cache
         uses: actions/cache@v2
-        env:
-          cache-name: cache-tool-binaries
         with:
           path: /home/runner/go/bin
           key: v1-tools-${{ runner.os }}-${{ hashFiles('./internal/tools/go.mod') }}
+      - name: Cache Build
+        uses: actions/cache@v2
+        with:
+          path: /home/runner/.cache/go-build
+          key: go-build-lint-${{ runner.os }}-${{ hashFiles('**/go.mod', '**/go.sum') }}
       - name: Lint
         run: make -j2 golint
       - name: Checks 
@@ -106,21 +101,21 @@ jobs:
       - name: Cache Go
         id: module-cache
         uses: actions/cache@v2
-        env:
-          cache-name: cache-go-modules
         with:
           path: |
             /home/runner/go/pkg/mod
-            /home/runner/.cache/go-build
           key: v1-go-pkg-mod-${{ runner.os }}-${{ hashFiles('**/go.mod', '**/go.sum') }}
       - name: Cache Tools
         id: tool-cache
         uses: actions/cache@v2
-        env:
-          cache-name: cache-tool-binaries
         with:
           path: /home/runner/go/bin
           key: v1-tools-${{ runner.os }}-${{ hashFiles('./internal/tools/go.mod') }}
+      - name: Cache Build
+        uses: actions/cache@v2
+        with:
+          path: /home/runner/.cache/go-build
+          key: go-build-unittest-${{ runner.os }}-${{ hashFiles('**/go.mod', '**/go.sum') }}
       - name: Run Unit Tests
         run: make gotest
   integration-tests:
@@ -140,18 +135,13 @@ jobs:
       - name: Cache Go
         id: module-cache
         uses: actions/cache@v2
-        env:
-          cache-name: cache-go-modules
         with:
           path: |
             /home/runner/go/pkg/mod
-            /home/runner/.cache/go-build
           key: v1-go-pkg-mod-${{ runner.os }}-${{ hashFiles('**/go.mod', '**/go.sum') }}
       - name: Cache Tools
         id: tool-cache
         uses: actions/cache@v2
-        env:
-          cache-name: cache-tool-binaries
         with:
           path: /home/runner/go/bin
           key: v1-tools-${{ runner.os }}-${{ hashFiles('./internal/tools/go.mod') }}
@@ -175,18 +165,13 @@ jobs:
       - name: Cache Go
         id: module-cache
         uses: actions/cache@v2
-        env:
-          cache-name: cache-go-modules
         with:
           path: |
             /home/runner/go/pkg/mod
-            /home/runner/.cache/go-build
           key: v1-go-pkg-mod-${{ runner.os }}-${{ hashFiles('**/go.mod', '**/go.sum') }}
       - name: Cache Tools
         id: tool-cache
         uses: actions/cache@v2
-        env:
-          cache-name: cache-tool-binaries
         with:
           path: /home/runner/go/bin
           key: v1-tools-${{ runner.os }}-${{ hashFiles('./internal/tools/go.mod') }}
@@ -209,18 +194,13 @@ jobs:
       - name: Cache Go
         id: module-cache
         uses: actions/cache@v2
-        env:
-          cache-name: cache-go-modules
         with:
           path: |
             /home/runner/go/pkg/mod
-            /home/runner/.cache/go-build
           key: v1-go-pkg-mod-${{ runner.os }}-${{ hashFiles('**/go.mod', '**/go.sum') }}
       - name: Cache Tools
         id: tool-cache
         uses: actions/cache@v2
-        env:
-          cache-name: cache-tool-binaries
         with:
           path: /home/runner/go/bin
           key: v1-tools-${{ runner.os }}-${{ hashFiles('./internal/tools/go.mod') }}
@@ -260,12 +240,9 @@ jobs:
       - name: Cache Go
         id: module-cache
         uses: actions/cache@v2
-        env:
-          cache-name: cache-go-modules
         with:
           path: |
             /home/runner/go/pkg/mod
-            /home/runner/.cache/go-build
           key: v1-go-pkg-mod-${{ runner.os }}-${{ hashFiles('**/go.mod', '**/go.sum') }}
       - name: Build Collector ${{ matrix.binary }}
         run: make otelcontribcol-${{ matrix.binary }}
@@ -334,8 +311,6 @@ jobs:
       - name: Cache Wix
         id: wix-cache
         uses: actions/cache@v2
-        env:
-          cache-name: cache-wix
         with:
           path: |
             "C:\Program Files (x86)\WiX Toolset v3.11"
@@ -398,8 +373,6 @@ jobs:
       - name: Cache Tools
         id: tool-cache
         uses: actions/cache@v2
-        env:
-          cache-name: cache-tool-binaries
         with:
           path: /home/runner/go/bin
           key: v1-tools-${{ runner.os }}-${{ hashFiles('./internal/tools/go.mod') }}
@@ -456,8 +429,6 @@ jobs:
       - name: Cache Tools
         id: tool-cache
         uses: actions/cache@v2
-        env:
-          cache-name: cache-tool-binaries
         with:
           path: /home/runner/go/bin
           key: v1-tools-${{ runner.os }}-${{ hashFiles('./internal/tools/go.mod') }}
