@@ -74,6 +74,11 @@ func TestDefaultReceivers(t *testing.T) {
 		{
 			receiver: "zipkin",
 		},
+		{
+			receiver: "awscontainerinsightreceiver",
+			// TODO: skipped since it will only function in a container environment with procfs in expected location.
+			skipLifecyle: true,
+		},
 	}
 
 	assert.Equal(t, len(tests)+30 /* not tested */, len(rcvrFactories))
