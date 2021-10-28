@@ -18,9 +18,10 @@ import (
 	"context"
 	"time"
 
-	"github.com/go-redis/redis/v7"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/config/confignet"
+	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
@@ -42,6 +43,12 @@ func createDefaultConfig() config.Receiver {
 	scs := scraperhelper.DefaultScraperControllerSettings(typeStr)
 	scs.CollectionInterval = 10 * time.Second
 	return &Config{
+		NetAddr: confignet.NetAddr{
+			Transport: "tcp",
+		},
+		TLS: configtls.TLSClientSetting{
+			Insecure: true,
+		},
 		ScraperControllerSettings: scs,
 	}
 }
@@ -54,10 +61,7 @@ func createMetricsReceiver(
 ) (component.MetricsReceiver, error) {
 	oCfg := cfg.(*Config)
 
-	scrp, err := newRedisScraper(newRedisClient(&redis.Options{
-		Addr:     oCfg.Endpoint,
-		Password: oCfg.Password,
-	}), set)
+	scrp, err := newRedisScraper(*oCfg, set)
 	if err != nil {
 		return nil, err
 	}
