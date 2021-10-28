@@ -91,16 +91,16 @@ func TestBearerAuthenticator(t *testing.T) {
 	assert.True(t, credential.RequireTransportSecurity())
 
 	roundTripper, _ := bauth.RoundTripper(&mockRoundTripper{})
-	orgHeaders := map[string][]string{
-		"foo": {"bar"},
+	orgHeaders := http.Header{
+		"Foo": {"bar"},
 	}
-	expectedHeaders := map[string][]string{
-		"foo":           {"bar"},
+	expectedHeaders := http.Header{
+		"Foo":           {"bar"},
 		"Authorization": {bauth.bearerToken()},
 	}
 
 	resp, err := roundTripper.RoundTrip(&http.Request{Header: orgHeaders})
 	assert.NoError(t, err)
-	assert.Equal(t, resp.Header, expectedHeaders)
+	assert.Equal(t, expectedHeaders, resp.Header)
 	assert.Nil(t, bauth.Shutdown(context.Background()))
 }

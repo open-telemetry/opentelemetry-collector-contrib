@@ -81,22 +81,23 @@ func (b *BearerTokenAuth) bearerToken() string {
 // RoundTripper is not implemented by BearerTokenAuth
 func (b *BearerTokenAuth) RoundTripper(base http.RoundTripper) (http.RoundTripper, error) {
 	return &BearerAuthRoundTripper{
-		transport:   base,
-		bearerToken: b.bearerToken(),
+		baseTransport: base,
+		bearerToken:   b.bearerToken(),
 	}, nil
 }
 
 // BearerAuthRoundTripper intercepts and adds Bearer token Authorization headers to each http request.
 type BearerAuthRoundTripper struct {
-	transport   http.RoundTripper
-	bearerToken string
+	baseTransport http.RoundTripper
+	bearerToken   string
 }
 
 // RoundTrip modifies the original request and adds Bearer token Authorization headers.
 func (interceptor *BearerAuthRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
-	if req.Header == nil {
-		req.Header = map[string][]string{}
+	req2 := req.Clone(req.Context())
+	if req2.Header == nil {
+		req2.Header = make(http.Header)
 	}
-	req.Header.Set("Authorization", interceptor.bearerToken)
-	return interceptor.transport.RoundTrip(req)
+	req2.Header.Set("Authorization", interceptor.bearerToken)
+	return interceptor.baseTransport.RoundTrip(req2)
 }
