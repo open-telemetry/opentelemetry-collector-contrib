@@ -35,7 +35,7 @@ exporters:
     endpoint: "192.168.1.5:11800"
     tls:
       insecure: true  
-    num_streams: 4  
+    num_streams: 5  
   skywalking/2:
     endpoint: "10.18.7.4:11800"
     compression: "on"

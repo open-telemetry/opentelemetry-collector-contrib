@@ -1,3 +1,17 @@
+// Copyright The OpenTelemetry Authors
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//       http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package skywalkingexporter
 
 import (
@@ -10,7 +24,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
@@ -21,11 +34,14 @@ import (
 	"google.golang.org/grpc"
 	v3 "skywalking.apache.org/repo/goapi/collect/common/v3"
 	logpb "skywalking.apache.org/repo/goapi/collect/logging/v3"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
 )
 
-var consumerNum int32 = 0
-
-var sumNum = 1000000
+var (
+	consumerNum int32
+	sumNum      = 10000
+)
 
 func TestSkywalking(t *testing.T) {
 
@@ -109,7 +125,6 @@ func test(nGoroutine int, nStream int, t *testing.T) {
 	server.Stop()
 	err := exporter.shutdown(context.Background())
 	assert.NoError(t, err)
-	time.Sleep(time.Second * 1)
 }
 
 func doInit(numStream int, t *testing.T) (*swExporter, *grpc.Server, *mockLogHandler2) {
@@ -148,7 +163,7 @@ func doInit(numStream int, t *testing.T) (*swExporter, *grpc.Server, *mockLogHan
 	}
 
 	err = got.Start(context.Background(), componenttest.NewNopHost())
-
+	assert.NoError(t, err)
 	return oce, server, m
 }
 
