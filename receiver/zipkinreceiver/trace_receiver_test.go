@@ -390,7 +390,7 @@ func TestConvertSpansToTraceSpans_JSONWithOTelErrorStatus(t *testing.T) {
 	assert.Equal(t, "Something failed", gs.Status().Message(), "Expecting to convert the span status description")
 	_, ok := gs.Attributes().Get("otel.status_code")
 	assert.False(t, ok, "Expecting to filter the span status code attribute")
-	_, ok = gs.Attributes().Get("otel.status_description")
+	_, ok = gs.Attributes().Get("error")
 	assert.False(t, ok, "Expecting to filter the span status description attribute")
 }
 
