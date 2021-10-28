@@ -66,6 +66,8 @@ type StringAttributeCfg struct {
 	Key string `mapstructure:"key"`
 	// Values is the set of attribute values that if any is equal to the actual attribute value to be considered a match.
 	Values []string `mapstructure:"values"`
+	// UseRegex (default=false) treats the values provided as regular expressions when matching the values
+	UseRegex bool `mapstructure:"use_regex"`
 }
 
 // TraceRejectCfg holds the configurable settings which drop all traces matching the specified criteria (all of them)

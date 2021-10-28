@@ -107,8 +107,9 @@ func TestLoadConfig(t *testing.T) {
 					NamePattern:         nil,
 					NumericAttributeCfg: nil,
 					StringAttributeCfg: &cfconfig.StringAttributeCfg{
-						Key:    "service.name",
-						Values: []string{"healthcheck"},
+						Key:      "service.name",
+						Values:   []string{"healthcheck.*"},
+						UseRegex: true,
 					},
 				},
 			},
@@ -122,7 +123,7 @@ func TestLoadConfig(t *testing.T) {
 				},
 				{
 					Name:               "test-policy-3",
-					StringAttributeCfg: &cfconfig.StringAttributeCfg{Key: "key2", Values: []string{"value1", "value2"}},
+					StringAttributeCfg: &cfconfig.StringAttributeCfg{Key: "key2", Values: []string{"value1", "value2"}, UseRegex: false},
 				},
 				{
 					Name:           "test-policy-4",

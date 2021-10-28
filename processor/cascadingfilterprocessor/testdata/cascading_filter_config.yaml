@@ -33,7 +33,7 @@ processors:
       - name: healthcheck-rule
         name_pattern: "health.*"
       - name: remove-all-traces-with-healthcheck-service
-        string_attribute: {key: service.name, values: [healthcheck]}
+        string_attribute: {key: service.name, values: [healthcheck.*], use_regex: true}
     trace_accept_filters:
       - name: test-policy-1
       - name: test-policy-2
