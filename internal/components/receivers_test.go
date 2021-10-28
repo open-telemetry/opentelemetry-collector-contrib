@@ -76,7 +76,7 @@ func TestDefaultReceivers(t *testing.T) {
 		},
 		{
 			receiver: "awscontainerinsightreceiver",
-			// TODO: skipped since it will only function in a container environment with procfs in expected location,
+			// TODO: skipped since it will only function in a container environment with procfs in expected location.
 			skipLifecyle: true,
 		},
 	}
