@@ -258,11 +258,7 @@ func Test_exporter_send_BadRequest(t *testing.T) {
 		},
 		client: ts.Client(),
 	}
-	invalid, err := e.send(context.Background(), []string{""})
-	if invalid != 10 {
-		t.Errorf("Expected 10 lines to be reported invalid")
-		return
-	}
+	err := e.send(context.Background(), []string{""})
 	if consumererror.IsPermanent(err) {
 		t.Errorf("Expected error to not be permanent %v", err)
 		return
@@ -287,7 +283,7 @@ func Test_exporter_send_Unauthorized(t *testing.T) {
 		},
 		client: ts.Client(),
 	}
-	_, err := e.send(context.Background(), []string{""})
+	err := e.send(context.Background(), []string{""})
 	if !consumererror.IsPermanent(err) {
 		t.Errorf("Expected error to be permanent %v", err)
 		return
@@ -312,7 +308,7 @@ func Test_exporter_send_TooLarge(t *testing.T) {
 		},
 		client: ts.Client(),
 	}
-	_, err := e.send(context.Background(), []string{""})
+	err := e.send(context.Background(), []string{""})
 	if !consumererror.IsPermanent(err) {
 		t.Errorf("Expected error to be permanent %v", err)
 		return
@@ -340,7 +336,7 @@ func Test_exporter_send_NotFound(t *testing.T) {
 		},
 		client: ts.Client(),
 	}
-	_, err := e.send(context.Background(), []string{""})
+	err := e.send(context.Background(), []string{""})
 	if !consumererror.IsPermanent(err) {
 		t.Errorf("Expected error to be permanent %v", err)
 		return
@@ -379,13 +375,9 @@ func Test_exporter_send_chunking(t *testing.T) {
 		batch[i] = fmt.Sprintf("%d", i)
 	}
 
-	invalid, err := e.send(context.Background(), batch)
+	err := e.send(context.Background(), batch)
 	if sentChunks != 2 {
 		t.Errorf("Expected batch to be sent in 2 chunks")
-	}
-	if invalid != 2 {
-		t.Errorf("Expected 2 lines to be reported invalid")
-		return
 	}
 	if consumererror.IsPermanent(err) {
 		t.Errorf("Expected error to not be permanent %v", err)

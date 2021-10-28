@@ -15,6 +15,8 @@
 package serialization
 
 import (
+	"fmt"
+
 	dtMetric "github.com/dynatrace-oss/dynatrace-metric-utils-go/metric"
 	"github.com/dynatrace-oss/dynatrace-metric-utils-go/metric/dimensions"
 	"go.opentelemetry.io/collector/model/pdata"
@@ -23,12 +25,15 @@ import (
 func serializeGauge(name, prefix string, dims dimensions.NormalizedDimensionList, dp pdata.NumberDataPoint) (string, error) {
 	var metricOption dtMetric.MetricOption
 
-	if dp.Type() == pdata.MetricValueTypeInt {
+	switch dp.Type() {
+	case pdata.MetricValueTypeNone:
+		return "", fmt.Errorf("unsupported value type none")
+	case pdata.MetricValueTypeInt:
 		metricOption = dtMetric.WithIntGaugeValue(dp.IntVal())
-	} else if dp.Type() == pdata.MetricValueTypeDouble {
+	case pdata.MetricValueTypeDouble:
 		metricOption = dtMetric.WithFloatGaugeValue(dp.DoubleVal())
-	} else {
-		return "", nil
+	default:
+		return "", fmt.Errorf("unknown data type")
 	}
 
 	dm, err := dtMetric.NewMetric(
