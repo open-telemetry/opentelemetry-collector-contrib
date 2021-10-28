@@ -29,7 +29,7 @@
       "http.path": "/api",
       "clnt/finagle.version": "6.45.0",
       "otel.status_code": "ERROR",
-      "otel.status_description": "Something failed"
+      "error": "Something failed"
     }
   }
 ]
