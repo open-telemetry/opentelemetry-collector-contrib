@@ -43,7 +43,7 @@ func TestSwExporter(t *testing.T) {
 		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
 		GRPCClientSettings: configgrpc.GRPCClientSettings{
 			Endpoint: addr.String(),
-			TLSSetting: &configtls.TLSClientSetting{
+			TLSSetting: configtls.TLSClientSetting{
 				Insecure: true,
 			},
 		},

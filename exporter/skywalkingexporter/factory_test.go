@@ -51,7 +51,7 @@ func TestCreateTracesExporter(t *testing.T) {
 				ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
 				GRPCClientSettings: configgrpc.GRPCClientSettings{
 					Endpoint: endpoint,
-					TLSSetting: &configtls.TLSClientSetting{
+					TLSSetting: configtls.TLSClientSetting{
 						Insecure: false,
 					},
 				},
@@ -117,10 +117,11 @@ func TestCreateTracesExporter(t *testing.T) {
 				ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
 				GRPCClientSettings: configgrpc.GRPCClientSettings{
 					Endpoint: endpoint,
-					TLSSetting: &configtls.TLSClientSetting{
+					TLSSetting: configtls.TLSClientSetting{
 						TLSSetting: configtls.TLSSetting{
 							CAFile: "testdata/test_cert.pem",
 						},
+						Insecure: false,
 					},
 				},
 				NumStreams: 3,
@@ -132,7 +133,7 @@ func TestCreateTracesExporter(t *testing.T) {
 				ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
 				GRPCClientSettings: configgrpc.GRPCClientSettings{
 					Endpoint: endpoint,
-					TLSSetting: &configtls.TLSClientSetting{
+					TLSSetting: configtls.TLSClientSetting{
 						TLSSetting: configtls.TLSSetting{
 							CAFile: "nosuchfile",
 						},
