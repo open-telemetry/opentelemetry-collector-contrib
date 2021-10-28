@@ -57,10 +57,10 @@ func (p *hostProvider) Hostname(context.Context) (string, error) {
 }
 
 // translatorFromConfig creates a new metrics translator from the exporter config.
-func translatorFromConfig(params component.ExporterCreateSettings, cfg *config.Config) (*translator.Translator, error) {
+func translatorFromConfig(logger *zap.Logger, cfg *config.Config) (*translator.Translator, error) {
 	options := []translator.Option{
 		translator.WithDeltaTTL(cfg.Metrics.DeltaTTL),
-		translator.WithFallbackHostnameProvider(&hostProvider{params.Logger, cfg}),
+		translator.WithFallbackHostnameProvider(&hostProvider{logger, cfg}),
 	}
 
 	if cfg.Metrics.HistConfig.SendCountSum {
@@ -75,6 +75,10 @@ func translatorFromConfig(params component.ExporterCreateSettings, cfg *config.C
 		options = append(options, translator.WithResourceAttributesAsTags())
 	}
 
+	if cfg.Metrics.ExporterConfig.InstrumentationLibraryMetadataAsTags {
+		options = append(options, translator.WithInstrumentationLibraryMetadataAsTags())
+	}
+
 	options = append(options, translator.WithHistogramMode(translator.HistogramMode(cfg.Metrics.HistConfig.Mode)))
 
 	var numberMode translator.NumberMode
@@ -85,7 +89,7 @@ func translatorFromConfig(params component.ExporterCreateSettings, cfg *config.C
 	}
 	options = append(options, translator.WithNumberMode(numberMode))
 
-	return translator.New(params, options...)
+	return translator.New(logger, options...)
 }
 
 func newMetricsExporter(ctx context.Context, params component.ExporterCreateSettings, cfg *config.Config) (*metricsExporter, error) {
@@ -95,7 +99,7 @@ func newMetricsExporter(ctx context.Context, params component.ExporterCreateSett
 
 	utils.ValidateAPIKey(params.Logger, client)
 
-	tr, err := translatorFromConfig(params, cfg)
+	tr, err := translatorFromConfig(params.Logger, cfg)
 	if err != nil {
 		return nil, err
 	}
@@ -159,15 +163,16 @@ func (exp *metricsExporter) PushMetricsData(ctx context.Context, md pdata.Metric
 		})
 	}
 
-	ms, sl, err := exp.tr.MapMetrics(ctx, md)
+	consumer := metrics.NewConsumer()
+	pushTime := uint64(time.Now().UTC().UnixNano())
+	err := exp.tr.MapMetrics(ctx, md, consumer)
 	if err != nil {
 		return fmt.Errorf("failed to map metrics: %w", err)
 	}
-
+	ms, sl := consumer.All(pushTime, exp.params.BuildInfo)
 	metrics.ProcessMetrics(ms, exp.cfg)
 
 	if len(ms) > 0 {
-		exp.params.Logger.Info("exporting payload", zap.Any("metric", ms))
 		if err := exp.client.PostMetrics(ms); err != nil {
 			return err
 		}

@@ -80,9 +80,9 @@ func (s *scraper) start(context.Context, component.Host) error {
 	return nil
 }
 
-func (s *scraper) scrape(_ context.Context) (pdata.MetricSlice, error) {
-	metrics := pdata.NewMetricSlice()
-
+func (s *scraper) scrape(_ context.Context) (pdata.Metrics, error) {
+	md := pdata.NewMetrics()
+	metrics := md.ResourceMetrics().AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty().Metrics()
 	var errors scrapererror.ScrapeErrors
 
 	err := s.scrapeAndAppendNetworkCounterMetrics(metrics, s.startTime)
@@ -95,7 +95,7 @@ func (s *scraper) scrape(_ context.Context) (pdata.MetricSlice, error) {
 		errors.AddPartial(connectionsMetricsLen, err)
 	}
 
-	return metrics, errors.Combine()
+	return md, errors.Combine()
 }
 
 func (s *scraper) scrapeAndAppendNetworkCounterMetrics(metrics pdata.MetricSlice, startTime pdata.Timestamp) error {

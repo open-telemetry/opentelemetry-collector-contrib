@@ -26,6 +26,14 @@ type Config struct {
 	// Optional.
 	DefaultExporters []string `mapstructure:"default_exporters"`
 
+	// AttributeSource defines where the attribute defined in `from_attribute` is searched for.
+	// The allowed values are:
+	// - "context" - the attribute must exist in the incoming context
+	// - "resource" - the attribute must exist in resource attributes
+	// The default value is "context".
+	// Optional.
+	AttributeSource string `mapstructure:"attribute_source"`
+
 	// FromAttribute contains the attribute name to look up the route value. This attribute should be part of the context propagated
 	// down from the previous receivers and/or processors. If all the receivers and processors are propagating the entire context correctly,
 	// this could be the HTTP/gRPC header from the original request/RPC. Typically, aggregation processors (batch, groupbytrace)

@@ -29,9 +29,11 @@ import (
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/obsreport/obsreporttest"
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"google.golang.org/grpc"
 	"google.golang.org/protobuf/proto"
@@ -41,9 +43,13 @@ import (
 )
 
 func TestReceiver_endToEnd(t *testing.T) {
+	tt, err := obsreporttest.SetupTelemetry()
+	require.NoError(t, err)
+	defer tt.Shutdown(context.Background())
+
 	spanSink := new(consumertest.TracesSink)
 
-	addr, doneFn := ocReceiverOnGRPCServer(t, spanSink)
+	addr, doneFn := ocReceiverOnGRPCServer(t, spanSink, tt.ToReceiverCreateSettings())
 	defer doneFn()
 
 	traceClient, traceClientDoneFn, err := makeTraceServiceClient(addr)
@@ -68,9 +74,13 @@ func TestReceiver_endToEnd(t *testing.T) {
 // accept nodes from downstream sources, but if a node isn't specified in
 // an exportTrace request, assume it is from the last received and non-nil node.
 func TestExportMultiplexing(t *testing.T) {
+	tt, err := obsreporttest.SetupTelemetry()
+	require.NoError(t, err)
+	defer tt.Shutdown(context.Background())
+
 	spanSink := new(consumertest.TracesSink)
 
-	addr, doneFn := ocReceiverOnGRPCServer(t, spanSink)
+	addr, doneFn := ocReceiverOnGRPCServer(t, spanSink, tt.ToReceiverCreateSettings())
 	defer doneFn()
 
 	traceClient, traceClientDoneFn, err := makeTraceServiceClient(addr)
@@ -198,9 +208,13 @@ func TestExportMultiplexing(t *testing.T) {
 // The first message without a Node MUST be rejected and teardown the connection.
 // See https://github.com/census-instrumentation/opencensus-service/issues/53
 func TestExportProtocolViolations_nodelessFirstMessage(t *testing.T) {
+	tt, err := obsreporttest.SetupTelemetry()
+	require.NoError(t, err)
+	defer tt.Shutdown(context.Background())
+
 	spanSink := new(consumertest.TracesSink)
 
-	port, doneFn := ocReceiverOnGRPCServer(t, spanSink)
+	port, doneFn := ocReceiverOnGRPCServer(t, spanSink, tt.ToReceiverCreateSettings())
 	defer doneFn()
 
 	traceClient, traceClientDoneFn, err := makeTraceServiceClient(port)
@@ -266,9 +280,13 @@ func TestExportProtocolViolations_nodelessFirstMessage(t *testing.T) {
 // spans should be received and NEVER discarded.
 // See https://github.com/census-instrumentation/opencensus-service/issues/51
 func TestExportProtocolConformation_spansInFirstMessage(t *testing.T) {
+	tt, err := obsreporttest.SetupTelemetry()
+	require.NoError(t, err)
+	defer tt.Shutdown(context.Background())
+
 	spanSink := new(consumertest.TracesSink)
 
-	port, doneFn := ocReceiverOnGRPCServer(t, spanSink)
+	port, doneFn := ocReceiverOnGRPCServer(t, spanSink, tt.ToReceiverCreateSettings())
 	defer doneFn()
 
 	traceClient, traceClientDoneFn, err := makeTraceServiceClient(port)
@@ -349,7 +367,7 @@ func nodeToKey(n *commonpb.Node) string {
 	return string(blob)
 }
 
-func ocReceiverOnGRPCServer(t *testing.T, sr consumer.Traces) (net.Addr, func()) {
+func ocReceiverOnGRPCServer(t *testing.T, sr consumer.Traces, set component.ReceiverCreateSettings) (net.Addr, func()) {
 	ln, err := net.Listen("tcp", "localhost:0")
 	require.NoError(t, err, "Failed to find an available address to run the gRPC server: %v", err)
 
@@ -360,7 +378,7 @@ func ocReceiverOnGRPCServer(t *testing.T, sr consumer.Traces) (net.Addr, func())
 		}
 	}
 
-	oci, err := New(config.NewComponentID("opencensus"), sr)
+	oci, err := New(config.NewComponentID("opencensus"), sr, set)
 	require.NoError(t, err, "Failed to create the Receiver: %v", err)
 
 	// Now run it as a gRPC server

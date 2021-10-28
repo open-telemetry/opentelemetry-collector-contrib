@@ -17,7 +17,6 @@ package batch_test
 import (
 	"testing"
 
-	"github.com/golang/protobuf/ptypes/empty"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awskinesisexporter/internal/batch"
@@ -28,14 +27,22 @@ func TestBatchingMessages(t *testing.T) {
 
 	b := batch.New()
 	for i := 0; i < 948; i++ {
-		assert.NoError(t, b.AddProtobufV1(new(empty.Empty), "fixed-string"), "Must not error when adding elements into the batch")
+		assert.NoError(t, b.AddRecord([]byte("foobar"), "fixed-string"), "Must not error when adding elements into the batch")
 	}
 
-	assert.Len(t, b.Chunk(), 2, "Must have split the batch into two chunks")
-	assert.Len(t, b.Chunk(), 2, "Must not modify the stored data within the batch")
+	chunk := b.Chunk()
+	for _, records := range chunk {
+		for _, record := range records {
+			assert.Equal(t, []byte("foobar"), record.Data, "Must have the expected record value")
+			assert.Equal(t, "fixed-string", *record.PartitionKey, "Must have the expected partition key")
+		}
+	}
 
-	assert.Error(t, b.AddProtobufV1(nil, "fixed-string"), "Must error when invalid record provided")
-	assert.Error(t, b.AddProtobufV1(new(empty.Empty), ""), "Must error when invalid partition key provided")
+	assert.Len(t, chunk, 2, "Must have split the batch into two chunks")
+	assert.Len(t, chunk, 2, "Must not modify the stored data within the batch")
+
+	assert.Error(t, b.AddRecord(nil, "fixed-string"), "Must error when invalid record provided")
+	assert.Error(t, b.AddRecord([]byte("some data that is very important"), ""), "Must error when invalid partition key provided")
 }
 
 func TestCustomBatchSizeConstraints(t *testing.T) {
@@ -46,7 +53,7 @@ func TestCustomBatchSizeConstraints(t *testing.T) {
 	)
 	const records = 203
 	for i := 0; i < records; i++ {
-		assert.NoError(t, b.AddProtobufV1(new(empty.Empty), "fixed-string"), "Must not error when adding elements into the batch")
+		assert.NoError(t, b.AddRecord([]byte("foobar"), "fixed-string"), "Must not error when adding elements into the batch")
 	}
 	assert.Len(t, b.Chunk(), records, "Must have one batch per record added")
 }
@@ -54,7 +61,7 @@ func TestCustomBatchSizeConstraints(t *testing.T) {
 func BenchmarkChunkingRecords(b *testing.B) {
 	bt := batch.New()
 	for i := 0; i < 948; i++ {
-		assert.NoError(b, bt.AddProtobufV1(new(empty.Empty), "fixed-string"), "Must not error when adding elements into the batch")
+		assert.NoError(b, bt.AddRecord([]byte("foobar"), "fixed-string"), "Must not error when adding elements into the batch")
 	}
 	b.ReportAllocs()
 	b.ResetTimer()

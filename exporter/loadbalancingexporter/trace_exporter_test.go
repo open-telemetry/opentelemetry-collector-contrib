@@ -327,6 +327,11 @@ func TestRollingUpdatesWhenConsumeTraces(t *testing.T) {
 	res, err := newDNSResolver(zap.NewNop(), "service-1", "")
 	require.NoError(t, err)
 
+	var lastResolved []string
+	res.onChange(func(s []string) {
+		lastResolved = s
+	})
+
 	resolverCh := make(chan struct{}, 1)
 	counter := 0
 	resolve := [][]net.IPAddr{
@@ -437,7 +442,7 @@ func TestRollingUpdatesWhenConsumeTraces(t *testing.T) {
 	<-consumeCh
 
 	// verify
-	require.Equal(t, []string{"127.0.0.2"}, res.endpoints)
+	require.Equal(t, []string{"127.0.0.2"}, lastResolved)
 	require.Greater(t, atomic.LoadInt64(&counter1), int64(0))
 	require.Greater(t, atomic.LoadInt64(&counter2), int64(0))
 }

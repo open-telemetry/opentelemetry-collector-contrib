@@ -170,7 +170,7 @@ updates:
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
-    directory: "/extension/awsxrayproxy"
+    directory: "/extension/awsproxy"
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
@@ -455,6 +455,10 @@ updates:
       interval: "weekly"
   - package-ecosystem: "gomod"
     directory: "/receiver/k8sclusterreceiver"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
+    directory: "/receiver/k8seventsreceiver"
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"

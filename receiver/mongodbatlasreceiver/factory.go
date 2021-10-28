@@ -22,6 +22,7 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
+	"go.opentelemetry.io/collector/receiver/scraperhelper"
 )
 
 const (
@@ -38,22 +39,23 @@ func NewFactory() component.ReceiverFactory {
 }
 
 func createMetricsReceiver(
-	ctx context.Context,
+	_ context.Context,
 	params component.ReceiverCreateSettings,
 	rConf config.Receiver,
 	consumer consumer.Metrics,
 ) (component.MetricsReceiver, error) {
 	cfg := rConf.(*Config)
-	ms, err := newMongoDBAtlasReceiver(ctx, params.Logger, cfg, consumer)
+	ms, err := newMongoDBAtlasScraper(params.Logger, cfg)
 	if err != nil {
 		return nil, fmt.Errorf("unable to create a MongoDB Atlas Receiver instance: %w", err)
 	}
-	return ms, err
+
+	return scraperhelper.NewScraperControllerReceiver(&cfg.ScraperControllerSettings, params, consumer, scraperhelper.AddScraper(ms))
 }
 
 func createDefaultConfig() config.Receiver {
 	return &Config{
-		Granularity:      defaultGranularity,
-		ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
+		ScraperControllerSettings: scraperhelper.DefaultScraperControllerSettings(typeStr),
+		Granularity:               defaultGranularity,
 	}
 }

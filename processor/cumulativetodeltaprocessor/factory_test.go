@@ -49,7 +49,7 @@ func TestCreateProcessors(t *testing.T) {
 		errorMessage string
 	}{
 		{
-			configName: "config_full.yaml",
+			configName: "config.yaml",
 			succeed:    true,
 		},
 	}

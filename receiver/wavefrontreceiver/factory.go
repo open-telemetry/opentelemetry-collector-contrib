@@ -82,5 +82,5 @@ func createMetricsReceiver(
 			},
 		},
 	}
-	return carbonreceiver.New(params.Logger, carbonCfg, consumer)
+	return carbonreceiver.New(params, carbonCfg, consumer)
 }

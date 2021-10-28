@@ -24,7 +24,7 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/sharedcomponent"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent"
 )
 
 const typeStr = "opencensus"
@@ -62,7 +62,7 @@ func createTracesReceiver(
 	r := receivers.GetOrAdd(cfg, func() component.Component {
 		rCfg := cfg.(*Config)
 		var recv *ocReceiver
-		recv, err = newOpenCensusReceiver(rCfg.ID(), rCfg.NetAddr.Transport, rCfg.NetAddr.Endpoint, nil, nil, set.TelemetrySettings, rCfg.buildOptions()...)
+		recv, err = newOpenCensusReceiver(rCfg.ID(), rCfg.NetAddr.Transport, rCfg.NetAddr.Endpoint, nil, nil, set, rCfg.buildOptions()...)
 		return recv
 	})
 	if err != nil {
@@ -83,7 +83,7 @@ func createMetricsReceiver(
 	r := receivers.GetOrAdd(cfg, func() component.Component {
 		rCfg := cfg.(*Config)
 		var recv *ocReceiver
-		recv, err = newOpenCensusReceiver(rCfg.ID(), rCfg.NetAddr.Transport, rCfg.NetAddr.Endpoint, nil, nil, set.TelemetrySettings, rCfg.buildOptions()...)
+		recv, err = newOpenCensusReceiver(rCfg.ID(), rCfg.NetAddr.Transport, rCfg.NetAddr.Endpoint, nil, nil, set, rCfg.buildOptions()...)
 		return recv
 	})
 	if err != nil {
