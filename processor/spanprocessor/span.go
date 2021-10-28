@@ -227,13 +227,13 @@ func (sp *spanProcessor) processUpdateStatus(span pdata.Span) {
 	if cfg != nil {
 		if cfg.Code == statusCodeOk {
 			span.Status().SetCode(pdata.StatusCodeOk)
+			span.Status().SetMessage("")
 		} else if cfg.Code == statusCodeError {
 			span.Status().SetCode(pdata.StatusCodeError)
+			span.Status().SetMessage(cfg.Description)
 		} else if cfg.Code == statusCodeUnset {
 			span.Status().SetCode(pdata.StatusCodeUnset)
-		}
-		if len(cfg.Description) > 0 {
-			span.Status().SetMessage(cfg.Description)
+			span.Status().SetMessage("")
 		}
 	}
 }
