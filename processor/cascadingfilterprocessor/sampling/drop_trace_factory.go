@@ -36,10 +36,12 @@ var _ DropTraceEvaluator = (*dropTraceEvaluator)(nil)
 // NewDropTraceEvaluator creates a drop trace evaluator that checks if trace should be dropped
 func NewDropTraceEvaluator(logger *zap.Logger, cfg config.TraceRejectCfg) (DropTraceEvaluator, error) {
 	numericAttrFilter := createNumericAttributeFilter(cfg.NumericAttributeCfg)
-	stringAttrFilter := createStringAttributeFilter(cfg.StringAttributeCfg)
+	stringAttrFilter, err := createStringAttributeFilter(cfg.StringAttributeCfg)
+	if err != nil {
+		return nil, err
+	}
 
 	var operationRe *regexp.Regexp
-	var err error
 
 	if cfg.NamePattern != nil {
 		operationRe, err = regexp.Compile(*cfg.NamePattern)

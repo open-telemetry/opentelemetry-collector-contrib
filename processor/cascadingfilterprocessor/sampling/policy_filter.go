@@ -37,9 +37,19 @@ func checkIfNumericAttrFound(attrs pdata.AttributeMap, filter *numericAttributeF
 func checkIfStringAttrFound(attrs pdata.AttributeMap, filter *stringAttributeFilter) bool {
 	if v, ok := attrs.Get(filter.key); ok {
 		truncableStr := v.StringVal()
-		if len(truncableStr) > 0 {
-			if _, ok := filter.values[truncableStr]; ok {
-				return true
+		if filter.patterns != nil {
+			// Pattern matching
+			for _, re := range filter.patterns {
+				if re.MatchString(truncableStr) {
+					return true
+				}
+			}
+		} else {
+			// Exact matching
+			if len(truncableStr) > 0 {
+				if _, ok := filter.values[truncableStr]; ok {
+					return true
+				}
 			}
 		}
 	}

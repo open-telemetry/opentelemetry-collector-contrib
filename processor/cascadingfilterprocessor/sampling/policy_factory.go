@@ -30,8 +30,9 @@ type numericAttributeFilter struct {
 }
 
 type stringAttributeFilter struct {
-	key    string
-	values map[string]struct{}
+	key      string
+	values   map[string]struct{}
+	patterns []*regexp.Regexp
 }
 
 type policyEvaluator struct {
@@ -66,22 +67,32 @@ func createNumericAttributeFilter(cfg *config.NumericAttributeCfg) *numericAttri
 	}
 }
 
-func createStringAttributeFilter(cfg *config.StringAttributeCfg) *stringAttributeFilter {
+func createStringAttributeFilter(cfg *config.StringAttributeCfg) (*stringAttributeFilter, error) {
 	if cfg == nil {
-		return nil
+		return nil, nil
 	}
 
 	valuesMap := make(map[string]struct{})
+	var patterns []*regexp.Regexp
 	for _, value := range cfg.Values {
-		if value != "" {
-			valuesMap[value] = struct{}{}
+		if cfg.UseRegex {
+			re, err := regexp.Compile(value)
+			if err != nil {
+				return nil, err
+			}
+			patterns = append(patterns, re)
+		} else {
+			if value != "" {
+				valuesMap[value] = struct{}{}
+			}
 		}
 	}
 
 	return &stringAttributeFilter{
-		key:    cfg.Key,
-		values: valuesMap,
-	}
+		key:      cfg.Key,
+		values:   valuesMap,
+		patterns: patterns,
+	}, nil
 }
 
 // NewProbabilisticFilter creates a policy evaluator intended for selecting samples probabilistically
@@ -97,10 +108,12 @@ func NewProbabilisticFilter(logger *zap.Logger, maxSpanRate int32) (PolicyEvalua
 // NewFilter creates a policy evaluator that samples all traces with the specified criteria
 func NewFilter(logger *zap.Logger, cfg *config.TraceAcceptCfg) (PolicyEvaluator, error) {
 	numericAttrFilter := createNumericAttributeFilter(cfg.NumericAttributeCfg)
-	stringAttrFilter := createStringAttributeFilter(cfg.StringAttributeCfg)
+	stringAttrFilter, err := createStringAttributeFilter(cfg.StringAttributeCfg)
+	if err != nil {
+		return nil, err
+	}
 
 	var operationRe *regexp.Regexp
-	var err error
 
 	if cfg.PropertiesCfg.NamePattern != nil {
 		operationRe, err = regexp.Compile(*cfg.PropertiesCfg.NamePattern)

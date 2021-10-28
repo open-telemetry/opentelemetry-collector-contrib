@@ -50,7 +50,8 @@ Each of the specified drop rules has several properties:
 - `numeric_attribute: {key: <name>, min_value: <min_value>, max_value: <max_value>}`: selects span by matching numeric
   attribute (either at resource of span level)
 - `string_attribute: {key: <name>, values: [<value1>, <value2>]}`: selects span by matching string attribute that is one
-  of the provided values (either at resource of span level)
+  of the provided values (either at resource of span level); when `use_regex` (`false` by default) is set to `true`
+  the provided collection of values is evaluated as regular expressions
 - `name_pattern: <regex>`: selects the span if its operation name matches the provided regular expression
 
 
@@ -65,8 +66,9 @@ Additionally, each of the policy might have any of the following filtering crite
 each of the trace spans. If at least one span matching all defined criteria is found, the trace is selected:
 - `numeric_attribute: {key: <name>, min_value: <min_value>, max_value: <max_value>}`: selects span by matching numeric
 attribute (either at resource of span level)
-- `string_attribute: {key: <name>, values: [<value1>, <value2>]}`: selects span by matching string attribute that is one
-of the provided values (either at resource of span level)
+- `string_attribute: {key: <name>, values: [<value1>, <value2>], use_regex: <use_regex>}`: selects span by matching string attribute that is one
+of the provided values (either at resource of span level); when `use_regex` (`false` by default) is set to `true`
+the provided collection of values is evaluated as regular expressions
 - `properties: { min_number_of_errors: <number>}`: selects the trace if it has at least provided number of errors 
 (determined based on the span status field value)
 - `properties: { min_number_of_spans: <number>}`: selects the trace if it has at least provided number of spans
@@ -113,7 +115,7 @@ processors:
       - name: remove-all-traces-with-health-span
         name_pattern: "health.*"
       - name: remove-all-traces-with-healthcheck-service
-        string_attribute: {key: service.name, values: [healthcheck]}
+        string_attribute: {key: service.name, values: ["healthcheck/.*"], use_regex: true}
  ```
 
 ### Filtering out healhtchecks and traffic shaping
@@ -162,7 +164,8 @@ cascadingfilter:
     - name: remove-all-traces-with-health-span
       name_pattern: "health.*"
     - name: remove-all-traces-with-healthcheck-service
-      string_attribute: {key: service.name, values: [healthcheck]}
+      string_attribute: {key: service.name, values: [healthcheck.*]}
+      use_regex: true
   trace_accept_filters:
     - name: tail-based-duration
       properties:
