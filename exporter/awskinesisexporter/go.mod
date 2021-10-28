@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awskin
 go 1.17
 
 require (
-	github.com/aws/aws-sdk-go v1.41.11
+	github.com/aws/aws-sdk-go v1.41.12
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.37.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin v0.37.1
 	github.com/stretchr/testify v1.7.0
@@ -24,7 +24,6 @@ require (
 	github.com/cenkalti/backoff/v4 v4.1.1 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/fsnotify/fsnotify v1.5.1 // indirect
-	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
 	github.com/knadh/koanf v1.3.0 // indirect
 	github.com/magiconair/properties v1.8.5 // indirect
@@ -33,7 +32,7 @@ require (
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.37.1 // indirect
 	github.com/opentracing/opentracing-go v1.2.0 // indirect
-	github.com/openzipkin/zipkin-go v0.2.5 // indirect
+	github.com/openzipkin/zipkin-go v0.3.0 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/spf13/cast v1.4.1 // indirect
 	github.com/uber/jaeger-client-go v2.29.1+incompatible // indirect
