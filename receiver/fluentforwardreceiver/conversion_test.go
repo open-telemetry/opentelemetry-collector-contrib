@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/tinylib/msgp/msgp"
 	"go.opentelemetry.io/collector/model/pdata"
@@ -266,7 +267,10 @@ func TestBodyConversion(t *testing.T) {
 	cv.MapVal().InsertInt("d", 24)
 	body.MapVal().Insert("c", cv)
 
-	require.EqualValues(t, Logs(
+	// Sort the map, sometimes may get in a different order.
+	require.Equal(t, pdata.AttributeValueTypeMap, le.Body().Type())
+	le.Body().MapVal().Sort()
+	assert.EqualValues(t, Logs(
 		Log{
 			Timestamp: 5000000000000,
 			Body:      body,
