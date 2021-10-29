@@ -48,6 +48,8 @@ exporter/influxdbexporter/                           @open-telemetry/collector-c
 extension/awsproxy/                                  @open-telemetry/collector-contrib-approvers @anuraaga @Aneurysm9 @mxiamxia
 extension/httpforwarder/                             @open-telemetry/collector-contrib-approvers @asuresh4
 extension/observer/                                  @open-telemetry/collector-contrib-approvers @asuresh4 @jrcamp
+extension/bearertokenauthextension/                  @open-telemetry/collector-contrib-approvers @pavankrish123
+extension/oauth2clientauthextension/                 @open-telemetry/collector-contrib-approvers @pavankrish123
 
 internal/aws/                                        @open-telemetry/collector-contrib-approvers @anuraaga @mxiamxia
 internal/docker/                                     @open-telemetry/collector-contrib-approvers @mstumpfx @rmfitzpatrick
