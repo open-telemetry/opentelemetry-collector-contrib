@@ -24,74 +24,191 @@ import (
 // Type is the component type name.
 const Type config.Type = "cpu"
 
-// MetricIntf is an interface to generically interact with generated metric.
-type MetricIntf interface {
-	Name() string
-	New() pdata.Metric
-	Init(metric pdata.Metric)
+// DataPoint represents a data structure for pdata.DataPoint creation
+type DataPoint struct {
+	StartTimestamp pdata.Timestamp
+	Timestamp      pdata.Timestamp
+	AttributeCpu   string
+	AttributeState string
+	// We probably can have number type (int64 vs float64) defined in metadata, and keep only one field for Number value
+	IntVal    *int64
+	DoubleVal *float64
+	// To be generated for SummaryDataPoint and ExponentialHistogramDataPoint data types
+	// ValueCount int64
+	// ValueSum float64
+	// ...
+	Exemplars pdata.ExemplarSlice
+	Flags     pdata.MetricDataPointFlags
 }
 
-// Intentionally not exposing this so that it is opaque and can change freely.
-type metricImpl struct {
-	name     string
-	initFunc func(pdata.Metric)
+// MetricTemplate represents a template for pdata.Metric creation based on metadata and user configuration
+type MetricTemplate interface {
+	EnsureDataPointsCapacity(int)
+	AddDatapoint(DataPoint)
+	AppendToMetricSlice(pdata.MetricSlice)
+}
+
+type metricTemplate struct {
+	mb             metricBuilder
+	metric         pdata.Metric
+	startTimestamp pdata.Timestamp
+	timestamp      pdata.Timestamp
+}
+
+func (mt metricTemplate) EnsureDataPointsCapacity(cap int) {
+	if !mt.mb.Enabled() {
+		return
+	}
+	mt.metric.Sum().DataPoints().EnsureCapacity(cap)
+	// For other types:
+	// mt.metric.Gauge().DataPoints().EnsureCapacity(cap)
+	// mt.metric.Histogram().DataPoints().EnsureCapacity(cap)
+	// mt.metric.Summary().DataPoints().EnsureCapacity(cap)
+}
+
+// AddDatapoint
+func (mt metricTemplate) AddDatapoint(data DataPoint) {
+	if !mt.mb.Enabled() {
+		return
+	}
+
+	dp := mt.metric.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(data.StartTimestamp)
+	dp.SetTimestamp(data.Timestamp)
+	if data.AttributeCpu != "" {
+		dp.Attributes().UpsertString(L.Cpu, data.AttributeCpu)
+	}
+	if data.AttributeState != "" {
+		dp.Attributes().UpsertString(L.State, data.AttributeState)
+	}
+	if data.IntVal != nil {
+		dp.SetIntVal(*data.IntVal)
+	}
+	if data.DoubleVal != nil {
+		dp.SetDoubleVal(*data.DoubleVal)
+	}
+	data.Exemplars.CopyTo(dp.Exemplars())
+	dp.SetFlags(data.Flags)
+}
+
+func (mt metricTemplate) AppendToMetricSlice(metrics pdata.MetricSlice) {
+	if !mt.mb.Enabled() {
+		return
+	}
+	mt.metric.CopyTo(metrics.AppendEmpty())
+}
+
+var _ MetricTemplate = (*metricTemplate)(nil)
+
+// MetricBuilder is an interface to generate metric.
+type MetricBuilder interface {
+	Name() string
+	Enabled() bool
+	Description() string
+	Unit() string
+	DataType() pdata.MetricDataType
+	IsMonotonic() bool
+	Temporality() pdata.MetricAggregationTemporality
+	InitMetricTemplate() MetricTemplate
+}
+
+type metricBuilder struct {
+	name        string
+	enabled     bool
+	description string
+	unit        string
+	dataType    pdata.MetricDataType
+	isMonotonic bool
+	temporality pdata.MetricAggregationTemporality
+
+	config MetricConfig
 }
 
 // Name returns the metric name.
-func (m *metricImpl) Name() string {
-	return m.name
+func (mb metricBuilder) Name() string {
+	return mb.name
 }
 
-// New creates a metric object preinitialized.
-func (m *metricImpl) New() pdata.Metric {
-	metric := pdata.NewMetric()
-	m.Init(metric)
-	return metric
+// Enabled identifies whether the metrics should be collected or not
+func (mb metricBuilder) Enabled() bool {
+	if mb.config.Enabled != nil {
+		return *mb.config.Enabled
+	}
+	return mb.enabled
 }
 
-// Init initializes the provided metric object.
-func (m *metricImpl) Init(metric pdata.Metric) {
-	m.initFunc(metric)
+// Description identifies whether the metrics should be collected or not
+func (mb metricBuilder) Description() string {
+	return mb.description
 }
 
-type metricStruct struct {
-	SystemCPUTime MetricIntf
+// Unit
+func (mb metricBuilder) Unit() string {
+	return mb.unit
 }
 
-// Names returns a list of all the metric name strings.
-func (m *metricStruct) Names() []string {
-	return []string{
-		"system.cpu.time",
+// DataType
+func (mb metricBuilder) DataType() pdata.MetricDataType {
+	return mb.dataType
+}
+
+// IsMonotonic
+func (mb metricBuilder) IsMonotonic() bool {
+	return mb.isMonotonic
+}
+
+// Temporality
+func (mb metricBuilder) Temporality() pdata.MetricAggregationTemporality {
+	return mb.temporality
+}
+
+// InitMetricTemplate generates a metric template
+func (mb metricBuilder) InitMetricTemplate() MetricTemplate {
+	mt := metricTemplate{mb: mb}
+	if mb.Enabled() {
+		metric := pdata.NewMetric()
+		metric.SetName(mb.Name())
+		metric.SetDescription(mb.Description())
+		metric.SetUnit(mb.Unit())
+		metric.SetDataType(mb.DataType())
+		if mb.dataType == pdata.MetricDataTypeSum {
+			metric.Sum().SetIsMonotonic(mb.isMonotonic)
+			metric.Sum().SetAggregationTemporality(mb.temporality)
+		}
+		mt.metric = metric
+	}
+
+	return mt
+}
+
+var _ MetricBuilder = (*metricBuilder)(nil)
+
+type MetricsBuilder struct {
+	SystemCPUTime MetricBuilder
+}
+
+// ByName returns a map of all the metric builders by metric name.
+func (mb *MetricsBuilder) ByName() map[string]MetricBuilder {
+	return map[string]MetricBuilder{
+		"system.cpu.time": mb.SystemCPUTime,
 	}
 }
 
-var metricsByName = map[string]MetricIntf{
-	"system.cpu.time": Metrics.SystemCPUTime,
-}
-
-func (m *metricStruct) ByName(n string) MetricIntf {
-	return metricsByName[n]
-}
-
-// Metrics contains a set of methods for each metric that help with
-// manipulating those metrics.
-var Metrics = &metricStruct{
-	&metricImpl{
-		"system.cpu.time",
-		func(metric pdata.Metric) {
-			metric.SetName("system.cpu.time")
-			metric.SetDescription("Total CPU seconds broken down by different states.")
-			metric.SetUnit("s")
-			metric.SetDataType(pdata.MetricDataTypeSum)
-			metric.Sum().SetIsMonotonic(true)
-			metric.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
+// NewMetricsBuilder returns helpers for building metrics based on defined metadata
+func NewMetricsBuilder(mc MetricsConfig) MetricsBuilder {
+	return MetricsBuilder{
+		metricBuilder{
+			name:        "system.cpu.time",
+			enabled:     true,
+			description: "Total CPU seconds broken down by different states.",
+			unit:        "s",
+			dataType:    pdata.MetricDataTypeSum,
+			isMonotonic: true,
+			temporality: pdata.MetricAggregationTemporalityCumulative,
+			config:      mc.SystemCPUTime,
 		},
-	},
+	}
 }
-
-// M contains a set of methods for each metric that help with
-// manipulating those metrics. M is an alias for Metrics
-var M = Metrics
 
 // Labels contains the possible metric labels that can be used.
 var Labels = struct {

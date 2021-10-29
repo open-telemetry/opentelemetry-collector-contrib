@@ -16,6 +16,7 @@ package cpuscraper
 
 import (
 	"context"
+	"google.golang.org/api/drive/v3"
 	"time"
 
 	"github.com/shirou/gopsutil/cpu"
@@ -33,6 +34,7 @@ const metricsLen = 1
 type scraper struct {
 	config    *Config
 	startTime pdata.Timestamp
+	mb        metadata.MetricsBuilder
 
 	// for mocking
 	bootTime func() (uint64, error)
@@ -41,7 +43,12 @@ type scraper struct {
 
 // newCPUScraper creates a set of CPU related metrics
 func newCPUScraper(_ context.Context, cfg *Config) *scraper {
-	return &scraper{config: cfg, bootTime: host.BootTime, times: cpu.Times}
+	return &scraper{
+		config:   cfg,
+		bootTime: host.BootTime,
+		times:    cpu.Times,
+		mb:       metadata.NewMetricsBuilder(cfg.Metrics),
+	}
 }
 
 func (s *scraper) start(context.Context, component.Host) error {
@@ -50,7 +57,7 @@ func (s *scraper) start(context.Context, component.Host) error {
 		return err
 	}
 
-	s.startTime = pdata.Timestamp(bootTime * 1e9)
+	s.mb.SetStartTime(pdata.Timestamp(bootTime * 1e9))
 	return nil
 }
 
@@ -58,37 +65,33 @@ func (s *scraper) scrape(_ context.Context) (pdata.Metrics, error) {
 	md := pdata.NewMetrics()
 	metrics := md.ResourceMetrics().AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty().Metrics()
 
-	now := pdata.NewTimestampFromTime(time.Now())
 	cpuTimes, err := s.times( /*percpu=*/ true)
 	if err != nil {
 		return md, scrapererror.NewPartialScrapeError(err, metricsLen)
 	}
 
-	initializeCPUTimeMetric(metrics.AppendEmpty(), s.startTime, now, cpuTimes)
-	return md, nil
-}
+	mt := s.mb.SystemCPUTime.InitMetricTemplate()
 
-func initializeCPUTimeMetric(metric pdata.Metric, startTime, now pdata.Timestamp, cpuTimes []cpu.TimesStat) {
-	metadata.Metrics.SystemCPUTime.Init(metric)
+	mt.EnsureDataPointsCapacity(len(cpuTimes) + cpuStatesLen)
 
-	ddps := metric.Sum().DataPoints()
-	ddps.EnsureCapacity(len(cpuTimes) * cpuStatesLen)
 	for _, cpuTime := range cpuTimes {
-		appendCPUTimeStateDataPoints(ddps, startTime, now, cpuTime)
+		appendCPUTimeStateDataPoints(mt, cpuTime)
 	}
+	mt.AppendToMetricsSlice(metrics)
+	return md, nil
 }
 
 const gopsCPUTotal string = "cpu-total"
 
-func initializeCPUTimeDataPoint(dataPoint pdata.NumberDataPoint, startTime, now pdata.Timestamp, cpuLabel string, stateLabel string, value float64) {
-	attributes := dataPoint.Attributes()
-	// ignore cpu attribute if reporting "total" cpu usage
-	if cpuLabel != gopsCPUTotal {
-		attributes.InsertString(metadata.Labels.Cpu, cpuLabel)
+func initializeCPUTimeDataPoint(mt metadata.MetricTemplate, startTime, now pdata.Timestamp, cpuLabel string, stateLabel string, value float64) {
+	if cpuLabel == gopsCPUTotal {
+		cpuLabel = ""
 	}
-	attributes.InsertString(metadata.Labels.State, stateLabel)
-
-	dataPoint.SetStartTimestamp(startTime)
-	dataPoint.SetTimestamp(now)
-	dataPoint.SetDoubleVal(value)
+	mt.AddDatapoint(metadata.DataPoint{
+		StartTimestamp: startTime,
+		Timestamp:      now,
+		DoubleVal:      &value,
+		AttributeCpu:   cpuLabel,
+		AttributeState: stateLabel,
+	})
 }
