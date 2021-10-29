@@ -36,11 +36,16 @@ exporters:
     auth:
       authenticator: bearertokenauth
 
+  otlphttp/withauth:
+    endpoint: http://localhost:9000
+    auth:
+      authenticator: bearertokenauth
+
 service:
   extensions: [bearertokenauth]
   pipelines:
     metrics:
       receivers: [hostmetrics]
       processors: []
-      exporters: [otlp/withauth]
+      exporters: [otlp/withauth, otlphttp/withauth]
 ```
