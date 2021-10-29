@@ -17,6 +17,7 @@ package k8sattributesprocessor
 import (
 	"context"
 	"fmt"
+	"net"
 	"testing"
 	"time"
 
@@ -298,7 +299,11 @@ func withContainerRunID(containerRunID string) generateResourceFunc {
 func TestIPDetectionFromContext(t *testing.T) {
 	m := newMultiTest(t, NewFactory().CreateDefaultConfig(), nil)
 
-	ctx := client.NewContext(context.Background(), &client.Client{IP: "1.1.1.1"})
+	ctx := client.NewContext(context.Background(), &client.Info{
+		Addr: &net.IPAddr{
+			IP: net.IPv4(1, 1, 1, 1),
+		},
+	})
 	m.testConsume(
 		ctx,
 		generateTraces(),
@@ -338,7 +343,11 @@ func TestProcessorNoAttrs(t *testing.T) {
 		WithExtractMetadata(conventions.AttributeK8SPodName),
 	)
 
-	ctx := client.NewContext(context.Background(), &client.Client{IP: "1.1.1.1"})
+	ctx := client.NewContext(context.Background(), &client.Info{
+		Addr: &net.IPAddr{
+			IP: net.IPv4(1, 1, 1, 1),
+		},
+	})
 
 	// pod doesn't have attrs to add
 	m.kubernetesProcessorOperation(func(kp *kubernetesprocessor) {
@@ -425,7 +434,8 @@ func TestIPSourceWithoutPodAssociation(t *testing.T) {
 	)
 
 	type testCase struct {
-		name, resourceIP, resourceK8SIP, contextIP, out string
+		name, resourceIP, resourceK8SIP, out string
+		contextIP                            net.IP
 	}
 
 	testCases := []testCase{
@@ -433,28 +443,29 @@ func TestIPSourceWithoutPodAssociation(t *testing.T) {
 			name:          "k8sIP",
 			resourceIP:    "1.1.1.1",
 			resourceK8SIP: "2.2.2.2",
-			contextIP:     "3.3.3.3",
+			contextIP:     net.IPv4(3, 3, 3, 3),
 			out:           "2.2.2.2",
 		},
 		{
 			name:       "clientIP",
 			resourceIP: "1.1.1.1",
-			contextIP:  "3.3.3.3",
+			contextIP:  net.IPv4(3, 3, 3, 3),
 			out:        "1.1.1.1",
 		},
 		{
 			name:      "contextIP",
-			contextIP: "3.3.3.3",
+			contextIP: net.IPv4(3, 3, 3, 3),
 			out:       "3.3.3.3",
 		},
 	}
 
 	for i, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			ctx := context.Background()
-			if tc.contextIP != "" {
-				ctx = client.NewContext(context.Background(), &client.Client{IP: tc.contextIP})
-			}
+			ctx := client.NewContext(context.Background(), &client.Info{
+				Addr: &net.IPAddr{
+					IP: tc.contextIP,
+				},
+			})
 
 			traces := generateTraces()
 			metrics := generateMetrics()
@@ -492,13 +503,12 @@ func TestIPSourceWithPodAssociation(t *testing.T) {
 	)
 
 	type testCase struct {
-		name, contextIP, labelName, labelValue, outLabel, outValue string
+		name, labelName, labelValue, outLabel, outValue string
 	}
 
 	testCases := []testCase{
 		{
 			name:       "k8sIP",
-			contextIP:  "",
 			labelName:  "k8s.pod.ip",
 			labelValue: "1.1.1.1",
 			outLabel:   "k8s.pod.ip",
@@ -506,7 +516,6 @@ func TestIPSourceWithPodAssociation(t *testing.T) {
 		},
 		{
 			name:       "client IP",
-			contextIP:  "",
 			labelName:  "ip",
 			labelValue: "2.2.2.2",
 			outLabel:   "ip",
@@ -514,7 +523,6 @@ func TestIPSourceWithPodAssociation(t *testing.T) {
 		},
 		{
 			name:       "Hostname",
-			contextIP:  "",
 			labelName:  "host.name",
 			labelValue: "1.1.1.1",
 			outLabel:   "k8s.pod.ip",
@@ -541,9 +549,6 @@ func TestIPSourceWithPodAssociation(t *testing.T) {
 	for i, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			ctx := context.Background()
-			if tc.contextIP != "" {
-				ctx = client.NewContext(context.Background(), &client.Client{IP: tc.contextIP})
-			}
 
 			traces := generateTraces()
 			metrics := generateMetrics()
@@ -614,12 +619,12 @@ func TestProcessorAddLabels(t *testing.T) {
 	)
 
 	tests := map[string]map[string]string{
-		"1": {
+		"1.1.1.1": {
 			"pod":         "test-2323",
 			"ns":          "default",
 			"another tag": "value",
 		},
-		"2": {
+		"2.2.2.2": {
 			"pod": "test-12",
 		},
 	}
@@ -640,7 +645,11 @@ func TestProcessorAddLabels(t *testing.T) {
 
 	var i int
 	for ip, attrs := range tests {
-		ctx := client.NewContext(context.Background(), &client.Client{IP: ip})
+		ctx := client.NewContext(context.Background(), &client.Info{
+			Addr: &net.IPAddr{
+				IP: net.ParseIP(ip),
+			},
+		})
 		m.testConsume(
 			ctx,
 			generateTraces(),

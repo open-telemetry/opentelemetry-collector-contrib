@@ -87,8 +87,8 @@ func extractPodIDNoAssociations(ctx context.Context, attrs pdata.AttributeMap) (
 }
 
 func getConnectionIP(ctx context.Context) kube.PodIdentifier {
-	if c, ok := client.FromContext(ctx); ok {
-		return kube.PodIdentifier(c.IP)
+	if c := client.FromContext(ctx); c.Addr != nil {
+		return kube.PodIdentifier(c.Addr.String())
 	}
 	return ""
 }
