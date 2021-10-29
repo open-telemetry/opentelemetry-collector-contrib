@@ -26,6 +26,7 @@ import (
 type dropTraceEvaluator struct {
 	numericAttr *numericAttributeFilter
 	stringAttr  *stringAttributeFilter
+	attrs       []attributeFilter
 	operationRe *regexp.Regexp
 
 	logger *zap.Logger
@@ -37,6 +38,10 @@ var _ DropTraceEvaluator = (*dropTraceEvaluator)(nil)
 func NewDropTraceEvaluator(logger *zap.Logger, cfg config.TraceRejectCfg) (DropTraceEvaluator, error) {
 	numericAttrFilter := createNumericAttributeFilter(cfg.NumericAttributeCfg)
 	stringAttrFilter, err := createStringAttributeFilter(cfg.StringAttributeCfg)
+	if err != nil {
+		return nil, err
+	}
+	attrsFilter, err := createAttributesFilter(cfg.AttributeCfg)
 	if err != nil {
 		return nil, err
 	}
@@ -53,6 +58,7 @@ func NewDropTraceEvaluator(logger *zap.Logger, cfg config.TraceRejectCfg) (DropT
 	return &dropTraceEvaluator{
 		stringAttr:  stringAttrFilter,
 		numericAttr: numericAttrFilter,
+		attrs:       attrsFilter,
 		operationRe: operationRe,
 		logger:      logger,
 	}, nil
@@ -67,19 +73,19 @@ func (dte *dropTraceEvaluator) ShouldDrop(_ pdata.TraceID, trace *TraceData) boo
 	matchingOperationFound := false
 	matchingStringAttrFound := false
 	matchingNumericAttrFound := false
+	matchingAttrsFound := false
 
 	for _, batch := range batches {
 		rs := batch.ResourceSpans()
 
 		for i := 0; i < rs.Len(); i++ {
-			if dte.stringAttr != nil || dte.numericAttr != nil {
-				res := rs.At(i).Resource()
-				if !matchingStringAttrFound && dte.stringAttr != nil {
-					matchingStringAttrFound = checkIfStringAttrFound(res.Attributes(), dte.stringAttr)
-				}
-				if !matchingNumericAttrFound && dte.numericAttr != nil {
-					matchingNumericAttrFound = checkIfNumericAttrFound(res.Attributes(), dte.numericAttr)
-				}
+			res := rs.At(i).Resource()
+
+			if !matchingStringAttrFound && dte.stringAttr != nil {
+				matchingStringAttrFound = checkIfStringAttrFound(res.Attributes(), dte.stringAttr)
+			}
+			if !matchingNumericAttrFound && dte.numericAttr != nil {
+				matchingNumericAttrFound = checkIfNumericAttrFound(res.Attributes(), dte.numericAttr)
 			}
 
 			ils := rs.At(i).InstrumentationLibrarySpans()
@@ -88,13 +94,14 @@ func (dte *dropTraceEvaluator) ShouldDrop(_ pdata.TraceID, trace *TraceData) boo
 				for k := 0; k < spans.Len(); k++ {
 					span := spans.At(k)
 
-					if dte.stringAttr != nil || dte.numericAttr != nil {
-						if !matchingStringAttrFound && dte.stringAttr != nil {
-							matchingStringAttrFound = checkIfStringAttrFound(span.Attributes(), dte.stringAttr)
-						}
-						if !matchingNumericAttrFound && dte.numericAttr != nil {
-							matchingNumericAttrFound = checkIfNumericAttrFound(span.Attributes(), dte.numericAttr)
-						}
+					if !matchingAttrsFound && len(dte.attrs) > 0 {
+						matchingAttrsFound = checkIfAttrsMatched(res.Attributes(), span.Attributes(), dte.attrs)
+					}
+					if !matchingStringAttrFound && dte.stringAttr != nil {
+						matchingStringAttrFound = checkIfStringAttrFound(span.Attributes(), dte.stringAttr)
+					}
+					if !matchingNumericAttrFound && dte.numericAttr != nil {
+						matchingNumericAttrFound = checkIfNumericAttrFound(span.Attributes(), dte.numericAttr)
 					}
 
 					if dte.operationRe != nil && !matchingOperationFound {
@@ -108,11 +115,12 @@ func (dte *dropTraceEvaluator) ShouldDrop(_ pdata.TraceID, trace *TraceData) boo
 	}
 
 	conditionMet := struct {
-		operationName, stringAttr, numericAttr bool
+		operationName, stringAttr, numericAttr, attrs bool
 	}{
 		operationName: true,
 		stringAttr:    true,
 		numericAttr:   true,
+		attrs:         true,
 	}
 
 	if dte.operationRe != nil {
@@ -124,6 +132,9 @@ func (dte *dropTraceEvaluator) ShouldDrop(_ pdata.TraceID, trace *TraceData) boo
 	if dte.stringAttr != nil {
 		conditionMet.stringAttr = matchingStringAttrFound
 	}
+	if len(dte.attrs) > 0 {
+		conditionMet.attrs = matchingAttrsFound
+	}
 
-	return conditionMet.operationName && conditionMet.numericAttr && conditionMet.stringAttr
+	return conditionMet.operationName && conditionMet.numericAttr && conditionMet.stringAttr && conditionMet.attrs
 }

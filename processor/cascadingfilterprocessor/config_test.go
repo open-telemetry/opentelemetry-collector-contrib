@@ -84,6 +84,18 @@ func TestLoadConfig(t *testing.T) {
 						MinDuration: &minDurationValue,
 					},
 				},
+				{
+					Name:           "include-some-attrs",
+					SpansPerSecond: 500,
+					AttributeCfg: []cfconfig.AttributeCfg{
+						{
+							Key:      "foo",
+							Values:   []string{"abc"},
+							UseRegex: false,
+							Ranges:   nil,
+						},
+					},
+				},
 			},
 		})
 

@@ -24,6 +24,72 @@ func tsToMicros(ts pdata.Timestamp) int64 {
 	return int64(ts / 1000)
 }
 
+func checkIfAttrsMatched(resAttrs pdata.AttributeMap, spanAttrs pdata.AttributeMap, filters []attributeFilter) bool {
+	for _, filter := range filters {
+		var resAttrMatched bool
+		spanAttrMatched, spanAttrFound := checkAttributeFilterMatchedAndFound(spanAttrs, filter)
+		if !spanAttrFound {
+			resAttrMatched, _ = checkAttributeFilterMatchedAndFound(resAttrs, filter)
+		}
+
+		if !resAttrMatched && !spanAttrMatched {
+			return false
+		}
+	}
+	return true
+}
+
+func checkAttributeFilterMatchedAndFound(attrs pdata.AttributeMap, filter attributeFilter) (bool, bool) {
+	if v, ok := attrs.Get(filter.key); ok {
+		// String patterns vs values is exclusive
+		if len(filter.patterns) > 0 {
+			// Pattern matching
+			truncableStr := v.StringVal()
+			for _, re := range filter.patterns {
+				if re.MatchString(truncableStr) {
+					return true, true
+				}
+			}
+		} else if len(filter.values) > 0 {
+			// Exact matching
+			truncableStr := v.StringVal()
+			if len(truncableStr) > 0 {
+				if _, ok := filter.values[truncableStr]; ok {
+					return true, true
+				}
+			}
+		}
+
+		if len(filter.ranges) > 0 {
+			if v.Type() == pdata.AttributeValueTypeDouble {
+				value := v.DoubleVal()
+				for _, r := range filter.ranges {
+					if value >= float64(r.minValue) && value <= float64(r.maxValue) {
+						return true, true
+					}
+				}
+			} else if v.Type() == pdata.AttributeValueTypeInt {
+				value := v.IntVal()
+				for _, r := range filter.ranges {
+					if value >= r.minValue && value <= r.maxValue {
+						return true, true
+					}
+				}
+			}
+		}
+
+		// This is special condition which just checks if any filters were defined or not; For latter, pass if key found
+		if len(filter.ranges) == 0 && len(filter.values) == 0 && len(filter.patterns) == 0 {
+			return true, true
+		}
+
+		return false, true
+	}
+
+	// Not found and not matched
+	return false, false
+}
+
 func checkIfNumericAttrFound(attrs pdata.AttributeMap, filter *numericAttributeFilter) bool {
 	if v, ok := attrs.Get(filter.key); ok {
 		value := v.IntVal()
@@ -65,6 +131,7 @@ func (pe *policyEvaluator) evaluateRules(_ pdata.TraceID, trace *TraceData) Deci
 	matchingOperationFound := false
 	matchingStringAttrFound := false
 	matchingNumericAttrFound := false
+	matchingAttrsFound := false
 
 	spanCount := 0
 	errorCount := 0
@@ -75,14 +142,14 @@ func (pe *policyEvaluator) evaluateRules(_ pdata.TraceID, trace *TraceData) Deci
 		rs := batch.ResourceSpans()
 
 		for i := 0; i < rs.Len(); i++ {
-			if pe.stringAttr != nil || pe.numericAttr != nil {
-				res := rs.At(i).Resource()
-				if !matchingStringAttrFound && pe.stringAttr != nil {
-					matchingStringAttrFound = checkIfStringAttrFound(res.Attributes(), pe.stringAttr)
-				}
-				if !matchingNumericAttrFound && pe.numericAttr != nil {
-					matchingNumericAttrFound = checkIfNumericAttrFound(res.Attributes(), pe.numericAttr)
-				}
+			res := rs.At(i).Resource()
+
+			if !matchingStringAttrFound && pe.stringAttr != nil {
+				matchingStringAttrFound = checkIfStringAttrFound(res.Attributes(), pe.stringAttr)
+			}
+
+			if !matchingNumericAttrFound && pe.numericAttr != nil {
+				matchingNumericAttrFound = checkIfNumericAttrFound(res.Attributes(), pe.numericAttr)
 			}
 
 			ils := rs.At(i).InstrumentationLibrarySpans()
@@ -92,13 +159,16 @@ func (pe *policyEvaluator) evaluateRules(_ pdata.TraceID, trace *TraceData) Deci
 				for k := 0; k < spans.Len(); k++ {
 					span := spans.At(k)
 
-					if pe.stringAttr != nil || pe.numericAttr != nil {
-						if !matchingStringAttrFound && pe.stringAttr != nil {
-							matchingStringAttrFound = checkIfStringAttrFound(span.Attributes(), pe.stringAttr)
-						}
-						if !matchingNumericAttrFound && pe.numericAttr != nil {
-							matchingNumericAttrFound = checkIfNumericAttrFound(span.Attributes(), pe.numericAttr)
-						}
+					if !matchingAttrsFound && len(pe.attrs) > 0 {
+						matchingAttrsFound = checkIfAttrsMatched(res.Attributes(), span.Attributes(), pe.attrs)
+					}
+
+					if !matchingStringAttrFound && pe.stringAttr != nil {
+						matchingStringAttrFound = checkIfStringAttrFound(span.Attributes(), pe.stringAttr)
+					}
+
+					if !matchingNumericAttrFound && pe.numericAttr != nil {
+						matchingNumericAttrFound = checkIfNumericAttrFound(span.Attributes(), pe.numericAttr)
 					}
 
 					if pe.operationRe != nil && !matchingOperationFound {
@@ -133,13 +203,14 @@ func (pe *policyEvaluator) evaluateRules(_ pdata.TraceID, trace *TraceData) Deci
 	}
 
 	conditionMet := struct {
-		operationName, minDuration, minSpanCount, stringAttr, numericAttr, minErrorCount bool
+		operationName, minDuration, minSpanCount, stringAttr, numericAttr, attrs, minErrorCount bool
 	}{
 		operationName: true,
 		minDuration:   true,
 		minSpanCount:  true,
 		stringAttr:    true,
 		numericAttr:   true,
+		attrs:         true,
 		minErrorCount: true,
 	}
 
@@ -158,6 +229,9 @@ func (pe *policyEvaluator) evaluateRules(_ pdata.TraceID, trace *TraceData) Deci
 	if pe.stringAttr != nil {
 		conditionMet.stringAttr = matchingStringAttrFound
 	}
+	if len(pe.attrs) > 0 {
+		conditionMet.attrs = matchingAttrsFound
+	}
 	if pe.minNumberOfErrors != nil {
 		conditionMet.minErrorCount = errorCount >= *pe.minNumberOfErrors
 	}
@@ -167,6 +241,7 @@ func (pe *policyEvaluator) evaluateRules(_ pdata.TraceID, trace *TraceData) Deci
 		conditionMet.operationName &&
 		conditionMet.numericAttr &&
 		conditionMet.stringAttr &&
+		conditionMet.attrs &&
 		conditionMet.minErrorCount {
 		if pe.invertMatch {
 			return NotSampled

@@ -28,6 +28,8 @@ type TraceAcceptCfg struct {
 	NumericAttributeCfg *NumericAttributeCfg `mapstructure:"numeric_attribute"`
 	// Configs for string attribute filter sampling policy evaluator.
 	StringAttributeCfg *StringAttributeCfg `mapstructure:"string_attribute"`
+	// AttributesCfg keeps generic string/numeric attributes for multiple keys
+	AttributeCfg []AttributeCfg `mapstructure:"attributes"`
 	// Configs for properties sampling policy evaluator.
 	PropertiesCfg PropertiesCfg `mapstructure:"properties"`
 	// SpansPerSecond specifies the rule budget that should never be exceeded for it
@@ -70,6 +72,24 @@ type StringAttributeCfg struct {
 	UseRegex bool `mapstructure:"use_regex"`
 }
 
+// AttributeRange defines min/max range for single entry
+type AttributeRange struct {
+	MinValue int64 `mapstructure:"min"`
+	MaxValue int64 `mapstructure:"max"`
+}
+
+// AttributeCfg holds a universal config specification for a given key
+type AttributeCfg struct {
+	// Tag that the filter is going to be matching against.
+	Key string `mapstructure:"key"`
+	// Values is the set of attribute values that if any is equal to the actual attribute value to be considered a match.
+	Values []string `mapstructure:"values"`
+	// UseRegex (default=false) treats the values provided as regular expressions when matching the string values
+	UseRegex bool `mapstructure:"use_regex"`
+	// Ranges keep numeric attribute ranges
+	Ranges []AttributeRange `mapstructure:"ranges"`
+}
+
 // TraceRejectCfg holds the configurable settings which drop all traces matching the specified criteria (all of them)
 // before further processing
 type TraceRejectCfg struct {
@@ -79,6 +99,8 @@ type TraceRejectCfg struct {
 	NumericAttributeCfg *NumericAttributeCfg `mapstructure:"numeric_attribute"`
 	// StringAttributeCfg (config) configs string attribute filter evaluator.
 	StringAttributeCfg *StringAttributeCfg `mapstructure:"string_attribute"`
+	// AttributesCfg keeps generic string/numeric attributes for multiple keys
+	AttributeCfg []AttributeCfg `mapstructure:"attributes"`
 	// NamePattern (optional) describes a regular expression that must be met by any span operation name
 	NamePattern *string `mapstructure:"name_pattern"`
 }

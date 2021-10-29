@@ -35,9 +35,22 @@ type stringAttributeFilter struct {
 	patterns []*regexp.Regexp
 }
 
+type attributeRange struct {
+	minValue int64
+	maxValue int64
+}
+
+type attributeFilter struct {
+	key      string
+	values   map[string]struct{}
+	patterns []*regexp.Regexp
+	ranges   []attributeRange
+}
+
 type policyEvaluator struct {
 	numericAttr *numericAttributeFilter
 	stringAttr  *stringAttributeFilter
+	attrs       []attributeFilter
 
 	operationRe       *regexp.Regexp
 	minDuration       *time.Duration
@@ -95,6 +108,55 @@ func createStringAttributeFilter(cfg *config.StringAttributeCfg) (*stringAttribu
 	}, nil
 }
 
+func createAttributeFilter(cfg config.AttributeCfg) (*attributeFilter, error) {
+	valuesMap := make(map[string]struct{})
+	var patterns []*regexp.Regexp
+	for _, value := range cfg.Values {
+		if cfg.UseRegex {
+			re, err := regexp.Compile(value)
+			if err != nil {
+				return nil, err
+			}
+			patterns = append(patterns, re)
+		} else {
+			if value != "" {
+				valuesMap[value] = struct{}{}
+			}
+		}
+	}
+	var ranges []attributeRange
+	for _, r := range cfg.Ranges {
+		ranges = append(ranges, attributeRange{
+			minValue: r.MinValue,
+			maxValue: r.MaxValue,
+		})
+	}
+
+	return &attributeFilter{
+		key:      cfg.Key,
+		values:   valuesMap,
+		patterns: patterns,
+		ranges:   ranges,
+	}, nil
+}
+
+func createAttributesFilter(cfg []config.AttributeCfg) ([]attributeFilter, error) {
+	if cfg == nil {
+		return nil, nil
+	}
+
+	var filters []attributeFilter
+	for _, attrCfg := range cfg {
+		filter, err := createAttributeFilter(attrCfg)
+		if err != nil {
+			return nil, err
+		}
+		filters = append(filters, *filter)
+	}
+
+	return filters, nil
+}
+
 // NewProbabilisticFilter creates a policy evaluator intended for selecting samples probabilistically
 func NewProbabilisticFilter(logger *zap.Logger, maxSpanRate int32) (PolicyEvaluator, error) {
 	return &policyEvaluator{
@@ -109,6 +171,10 @@ func NewProbabilisticFilter(logger *zap.Logger, maxSpanRate int32) (PolicyEvalua
 func NewFilter(logger *zap.Logger, cfg *config.TraceAcceptCfg) (PolicyEvaluator, error) {
 	numericAttrFilter := createNumericAttributeFilter(cfg.NumericAttributeCfg)
 	stringAttrFilter, err := createStringAttributeFilter(cfg.StringAttributeCfg)
+	if err != nil {
+		return nil, err
+	}
+	attrsFilter, err := createAttributesFilter(cfg.AttributeCfg)
 	if err != nil {
 		return nil, err
 	}
@@ -133,6 +199,7 @@ func NewFilter(logger *zap.Logger, cfg *config.TraceAcceptCfg) (PolicyEvaluator,
 	return &policyEvaluator{
 		stringAttr:           stringAttrFilter,
 		numericAttr:          numericAttrFilter,
+		attrs:                attrsFilter,
 		operationRe:          operationRe,
 		minDuration:          cfg.PropertiesCfg.MinDuration,
 		minNumberOfSpans:     cfg.PropertiesCfg.MinNumberOfSpans,

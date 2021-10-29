@@ -23,6 +23,12 @@ processors:
         spans_per_second: 400
         properties:
           min_duration: 9s
+      - name: include-some-attrs
+        spans_per_second: 500
+        attributes:
+          - key: foo
+            values:
+              - abc
   cascading_filter/2:
     decision_wait: 10s
     num_traces: 100

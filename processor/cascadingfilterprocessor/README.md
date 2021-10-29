@@ -47,12 +47,15 @@ filtering or additional policy evaluation. This typically happens e.g. when heal
 
 Each of the specified drop rules has several properties:
 - `name` (required): identifies the rule
-- `numeric_attribute: {key: <name>, min_value: <min_value>, max_value: <max_value>}`: selects span by matching numeric
-  attribute (either at resource of span level)
-- `string_attribute: {key: <name>, values: [<value1>, <value2>]}`: selects span by matching string attribute that is one
-  of the provided values (either at resource of span level); when `use_regex` (`false` by default) is set to `true`
-  the provided collection of values is evaluated as regular expressions
 - `name_pattern: <regex>`: selects the span if its operation name matches the provided regular expression
+- `attributes: <list of attributes>`: list of attribute-level filters (both span level and resource level is being evaluated).  
+  When several elements are specified, conditions for each of them must be met. Each entry might contain a number of fields:
+  - `key: <name>`: name of the attribute key
+  - `values: [<value1>, value2>]` (default=`empty`): list of string values, when present at least
+    one of them must be matched
+  - `use_regex: <use_regex>` (default=`false`): indication whether values provided should be treated as regular expressions
+  - `ranges: [{min_value: <min_value>, max_value: <max_value>}]` (default=`empty`): list of numeric ranges; when present at least
+    one must be matched
 
 
 ## Accepted trace configuration
@@ -64,17 +67,25 @@ it selects the traces only if the global limit is not exceeded by other policies
 
 Additionally, each of the policy might have any of the following filtering criteria defined. They are evaluated for 
 each of the trace spans. If at least one span matching all defined criteria is found, the trace is selected:
-- `numeric_attribute: {key: <name>, min_value: <min_value>, max_value: <max_value>}`: selects span by matching numeric
-attribute (either at resource of span level)
-- `string_attribute: {key: <name>, values: [<value1>, <value2>], use_regex: <use_regex>}`: selects span by matching string attribute that is one
-of the provided values (either at resource of span level); when `use_regex` (`false` by default) is set to `true`
-the provided collection of values is evaluated as regular expressions
+- `attributes: <list of attributes>`: list of attribute-level filters (both span level and resource level is being evaluated).  
+When several elements are specified, conditions for each of them must be met. Each entry might contain a number of fields:
+  - `key: <name>`: name of the attribute key
+  - `values: [<value1>, value2>]` (default=`empty`): list of string values, when present at least 
+  one of them must be matched
+  - `use_regex: <use_regex>` (default=`false`): indication whether values provided should be treated as regular expressions
+  - `ranges: [{min_value: <min_value>, max_value: <max_value>}]` (default=`empty`): list of numeric ranges; when present at least
+  one must be matched
 - `properties: { min_number_of_errors: <number>}`: selects the trace if it has at least provided number of errors 
 (determined based on the span status field value)
 - `properties: { min_number_of_spans: <number>}`: selects the trace if it has at least provided number of spans
 - `properties: { min_duration: <duration>}`: selects the span if the duration is greater or equal the given value 
 (use `s` or `ms` as the suffix to indicate unit)
 - `properties: { name_pattern: <regex>`}: selects the span if its operation name matches the provided regular expression
+- _(deprecated)_ `numeric_attribute: {key: <name>, min_value: <min_value>, max_value: <max_value>}`: selects span by matching numeric
+  attribute (either at resource of span level)
+- _(deprecated)_ `string_attribute: {key: <name>, values: [<value1>, <value2>], use_regex: <use_regex>}`: selects span by matching string attribute that is one
+  of the provided values (either at resource of span level); when `use_regex` (`false` by default) is set to `true`
+  the provided collection of values is evaluated as regular expressions
 
 To invert the decision (which is still a subject to rate limiting), additional property can be configured:
 - `invert_match: <invert>` (default=`false`): when set to `true`, the opposite decision is selected for the trace. E.g.
@@ -115,7 +126,11 @@ processors:
       - name: remove-all-traces-with-health-span
         name_pattern: "health.*"
       - name: remove-all-traces-with-healthcheck-service
-        string_attribute: {key: service.name, values: ["healthcheck/.*"], use_regex: true}
+        attributes: 
+        - key: service.name
+          values: 
+           - "healthcheck/.*"
+          use_regex: true
  ```
 
 ### Filtering out healhtchecks and traffic shaping
@@ -135,7 +150,11 @@ cascadingfilter:
     - name: remove-all-traces-with-health-span
       name_pattern: "health.*"
     - name: remove-all-traces-with-healthcheck-service
-      string_attribute: {key: service.name, values: [healthcheck]}
+      attributes:
+      - key: service.name
+        values:
+          - "healthcheck/.*"
+        use_regex: true
   trace_accept_filters:
     - name: tail-based-duration
       properties:
@@ -164,8 +183,11 @@ cascadingfilter:
     - name: remove-all-traces-with-health-span
       name_pattern: "health.*"
     - name: remove-all-traces-with-healthcheck-service
-      string_attribute: {key: service.name, values: [healthcheck.*]}
-      use_regex: true
+      attributes:
+        - key: service.name
+          values:
+            - "healthcheck/.*"
+          use_regex: true
   trace_accept_filters:
     - name: tail-based-duration
       properties:
@@ -180,8 +202,16 @@ cascadingfilter:
         name_pattern: "foo.*"
         min_duration: 10s
       spans_per_second: 1000 # <- adjust the output traffic level
-    - name: traces-with-some-attribute
-      string_attribute: {key: important-key, values: [value1, value2]}
+    - name: some-service-traces-with-some-attribute
+      attributes:
+        - key: service.name
+          values:
+            - some-service
+        - key: important-key
+          values:
+            - value1
+            - value2
+          use_regex: true
       spans_per_second: 300 # <- adjust the output traffic level
     - name: everything_else
       spans_per_second: -1 # If there's anything left in the budget, it will randomly select remaining traces
