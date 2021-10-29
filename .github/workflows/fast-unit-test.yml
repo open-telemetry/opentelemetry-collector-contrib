@@ -1,0 +1,44 @@
+name: fast-unit-test
+on:
+  push:
+    branches: [ main ]
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+*'
+  pull_request:
+
+jobs:
+  fast-unittest:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+      - name: Setup Go
+        uses: actions/setup-go@v2.1.4
+        with:
+          go-version: 1.17
+      - name: Setup Go Environment
+        run: |
+          echo "GOPATH=$(go env GOPATH)" >> $GITHUB_ENV
+          echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
+      - name: Cache Go
+        id: module-cache
+        uses: actions/cache@v2
+        with:
+          path: |
+            /home/runner/go/pkg/mod
+          key: v1-go-pkg-mod-${{ runner.os }}-${{ hashFiles('**/go.mod', '**/go.sum') }}
+      - name: Cache Tools
+        id: tool-cache
+        uses: actions/cache@v2
+        with:
+          path: /home/runner/go/bin
+          key: v1-tools-${{ runner.os }}-${{ hashFiles('./internal/tools/go.mod') }}
+      - name: Cache Build
+        uses: actions/cache@v2
+        with:
+          path: /home/runner/.cache/go-build
+          key: go-build-fastunittest-${{ runner.os }}-${{ hashFiles('**/go.mod', '**/go.sum') }}
+      - name: Run Fast Unit Tests
+        run: go test ./... -v
