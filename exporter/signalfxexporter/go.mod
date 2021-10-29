@@ -5,10 +5,10 @@ go 1.17
 require (
 	github.com/gobwas/glob v0.2.3
 	github.com/gogo/protobuf v1.3.2
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.37.1
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk v0.37.1
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchperresourceattr v0.37.1
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata v0.37.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.38.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk v0.38.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchperresourceattr v0.38.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata v0.38.0
 	github.com/shirou/gopsutil/v3 v3.21.9
 	github.com/signalfx/com_signalfx_metrics_protobuf v0.0.2
 	github.com/signalfx/signalfx-agent/pkg/apm v0.0.0-20201202163743-65b4fa925fc8
