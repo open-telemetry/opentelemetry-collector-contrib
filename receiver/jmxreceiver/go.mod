@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jmxrec
 go 1.17
 
 require (
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.37.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.38.0
 	github.com/shirou/gopsutil/v3 v3.21.9
 	github.com/stretchr/testify v1.7.0
 	github.com/testcontainers/testcontainers-go v0.11.1

@@ -3,8 +3,8 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/extension/obser
 go 1.17
 
 require (
-	github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer v0.37.1
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.37.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer v0.38.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.38.0
 	github.com/stretchr/testify v1.7.0
 	go.opentelemetry.io/collector v0.38.0
 	go.uber.org/zap v1.19.1

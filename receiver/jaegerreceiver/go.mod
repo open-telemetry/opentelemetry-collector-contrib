@@ -6,8 +6,8 @@ require (
 	github.com/apache/thrift v0.15.0
 	github.com/gorilla/mux v1.8.0
 	github.com/jaegertracing/jaeger v1.27.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.37.1
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.37.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.38.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.38.0
 	github.com/stretchr/testify v1.7.0
 	github.com/uber/jaeger-lib v2.4.1+incompatible
 	go.opentelemetry.io/collector v0.38.0

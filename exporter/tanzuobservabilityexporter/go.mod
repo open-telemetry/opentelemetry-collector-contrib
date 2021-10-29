@@ -4,7 +4,7 @@ go 1.17
 
 require (
 	github.com/google/uuid v1.3.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.37.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.38.0
 	github.com/stretchr/testify v1.7.0
 	github.com/wavefronthq/wavefront-sdk-go v0.9.9
 	go.opentelemetry.io/collector v0.38.0

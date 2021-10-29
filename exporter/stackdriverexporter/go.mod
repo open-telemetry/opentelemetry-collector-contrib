@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/stackd
 go 1.17
 
 require (
-	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/googlecloudexporter v0.37.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/googlecloudexporter v0.38.0
 	github.com/stretchr/testify v1.7.0
 	go.opentelemetry.io/collector v0.38.0
 	go.uber.org/zap v1.19.1
@@ -32,8 +32,8 @@ require (
 	github.com/mitchellh/copystructure v1.2.0 // indirect
 	github.com/mitchellh/mapstructure v1.4.2 // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.37.1 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus v0.37.1 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.38.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus v0.38.0 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/spf13/cast v1.4.1 // indirect
 	go.opencensus.io v0.23.0 // indirect
