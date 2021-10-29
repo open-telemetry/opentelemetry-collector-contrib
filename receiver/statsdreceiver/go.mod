@@ -4,11 +4,11 @@ go 1.17
 
 require (
 	github.com/montanaflynn/stats v0.0.0-20171201202039-1bf9dbcd8cbe
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.37.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.38.0
 	github.com/stretchr/testify v1.7.0
 	go.opencensus.io v0.23.0
-	go.opentelemetry.io/collector v0.37.1-0.20211026180946-46c8e2290e45
-	go.opentelemetry.io/collector/model v0.37.1-0.20211026180946-46c8e2290e45
+	go.opentelemetry.io/collector v0.38.0
+	go.opentelemetry.io/collector/model v0.38.0
 	go.opentelemetry.io/otel v1.0.1
 	go.uber.org/multierr v1.7.0
 	go.uber.org/zap v1.19.1

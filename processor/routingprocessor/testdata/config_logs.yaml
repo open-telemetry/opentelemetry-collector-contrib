@@ -4,33 +4,30 @@ receivers:
 processors:
   routing:
     default_exporters:
-    - otlp
+    - logging/default
     attribute_source: context
-    from_attribute: X-Tenant
+    from_attribute: X-Custom-Logs-Header
     table:
     - value: acme
-      exporters: 
-      - jaeger/acme
-      - otlp/acme
+      exporters:
+      - logging/acme
     - value: globex
       exporters:
-      - otlp/globex
+      - logging/globex
 
 exporters:
-  otlp:
-  otlp/acme:
-  otlp/globex:
-  jaeger/acme:
-    endpoint: localhost:14250
+  logging/acme:
+  logging/default:
+  logging/globex:
 
 service:
   pipelines:
-    traces:
+    logs:
       receivers:
       - nop
       processors:
       - routing
       exporters:
-      - jaeger/acme
-      - otlp/acme
-      - otlp/globex
+      - logging/acme
+      - logging/default
+      - logging/globex

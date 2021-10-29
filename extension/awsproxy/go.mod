@@ -3,15 +3,15 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/extension/awspr
 go 1.17
 
 require (
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/proxy v0.37.1
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.37.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/proxy v0.38.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.38.0
 	github.com/stretchr/testify v1.7.0
-	go.opentelemetry.io/collector v0.37.1-0.20211026180946-46c8e2290e45
+	go.opentelemetry.io/collector v0.38.0
 	go.uber.org/zap v1.19.1
 )
 
 require (
-	github.com/aws/aws-sdk-go v1.41.11 // indirect
+	github.com/aws/aws-sdk-go v1.41.12 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/fsnotify/fsnotify v1.4.9 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
@@ -23,7 +23,7 @@ require (
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/spf13/cast v1.4.1 // indirect
-	go.opentelemetry.io/collector/model v0.37.1-0.20211026180946-46c8e2290e45 // indirect
+	go.opentelemetry.io/collector/model v0.38.0 // indirect
 	go.opentelemetry.io/otel v1.0.1 // indirect
 	go.opentelemetry.io/otel/metric v0.24.0 // indirect
 	go.opentelemetry.io/otel/trace v1.0.1 // indirect

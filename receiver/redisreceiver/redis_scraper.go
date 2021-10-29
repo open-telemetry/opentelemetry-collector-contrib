@@ -18,6 +18,7 @@ import (
 	"context"
 	"time"
 
+	"github.com/go-redis/redis/v7"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
@@ -33,7 +34,21 @@ type redisScraper struct {
 	timeBundle   *timeBundle
 }
 
-func newRedisScraper(client client, settings component.ReceiverCreateSettings) (scraperhelper.Scraper, error) {
+func newRedisScraper(cfg Config, settings component.ReceiverCreateSettings) (scraperhelper.Scraper, error) {
+	opts := &redis.Options{
+		Addr:     cfg.Endpoint,
+		Password: cfg.Password,
+		Network:  cfg.Transport,
+	}
+
+	var err error
+	if opts.TLSConfig, err = cfg.TLS.LoadTLSConfig(); err != nil {
+		return nil, err
+	}
+	return newRedisScraperWithClient(newRedisClient(opts), settings)
+}
+
+func newRedisScraperWithClient(client client, settings component.ReceiverCreateSettings) (scraperhelper.Scraper, error) {
 	rs := &redisScraper{
 		redisSvc:     newRedisSvc(client),
 		redisMetrics: getDefaultRedisMetrics(),
