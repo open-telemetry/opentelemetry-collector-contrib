@@ -132,7 +132,7 @@ func TestGaugeConsumerErrorSending(t *testing.T) {
 	verifyGaugeConsumer(t, true)
 }
 
-func TestGaugeConsumerBadValueNoLogging(t *testing.T) {
+func TestGaugeConsumerMissingValueNoLogging(t *testing.T) {
 	metric := newMetric("bad.metric", pdata.MetricDataTypeGauge)
 	dataPoints := metric.Gauge().DataPoints()
 	dataPoints.EnsureCapacity(1)
@@ -154,7 +154,7 @@ func TestGaugeConsumerBadValueNoLogging(t *testing.T) {
 	assert.Empty(t, sender.metrics)
 }
 
-func TestGaugeConsumerBadValue(t *testing.T) {
+func TestGaugeConsumerMissingValue(t *testing.T) {
 	metric := newMetric("bad.metric", pdata.MetricDataTypeGauge)
 	dataPoints := metric.Gauge().DataPoints()
 	dataPoints.EnsureCapacity(1)
@@ -270,7 +270,7 @@ func addDataPoint(
 		setDataPointValue(value, dataPoint)
 	}
 	setDataPointTimestamp(ts, dataPoint)
-	setTags(tags, dataPoint)
+	setTags(tags, dataPoint.Attributes())
 }
 
 func setDataPointTimestamp(ts int64, dataPoint pdata.NumberDataPoint) {
@@ -291,7 +291,7 @@ func setDataPointValue(value interface{}, dataPoint pdata.NumberDataPoint) {
 	}
 }
 
-func setTags(tags map[string]interface{}, dataPoint pdata.NumberDataPoint) {
+func setTags(tags map[string]interface{}, attributes pdata.AttributeMap) {
 	valueMap := make(map[string]pdata.AttributeValue, len(tags))
 	for key, value := range tags {
 		switch v := value.(type) {
@@ -308,7 +308,7 @@ func setTags(tags map[string]interface{}, dataPoint pdata.NumberDataPoint) {
 		}
 	}
 	attributeMap := pdata.NewAttributeMapFromMap(valueMap)
-	attributeMap.CopyTo(dataPoint.Attributes())
+	attributeMap.CopyTo(attributes)
 }
 
 type tobsMetric struct {
@@ -326,16 +326,12 @@ type mockGaugeSender struct {
 
 func (m *mockGaugeSender) SendMetric(
 	name string, value float64, ts int64, source string, tags map[string]string) error {
-	tagsCopy := make(map[string]string, len(tags))
-	for k, v := range tags {
-		tagsCopy[k] = v
-	}
 	m.metrics = append(m.metrics, tobsMetric{
 		Name:   name,
 		Value:  value,
 		Ts:     ts,
 		Source: source,
-		Tags:   tagsCopy,
+		Tags:   copyTags(tags),
 	})
 	if m.errorOnSend {
 		return errors.New("error sending")
@@ -385,4 +381,15 @@ func (m *mockFlushCloser) Flush() error {
 
 func (m *mockFlushCloser) Close() {
 	m.numCloseCalls++
+}
+
+func copyTags(tags map[string]string) map[string]string {
+	if tags == nil {
+		return nil
+	}
+	tagsCopy := make(map[string]string, len(tags))
+	for k, v := range tags {
+		tagsCopy[k] = v
+	}
+	return tagsCopy
 }

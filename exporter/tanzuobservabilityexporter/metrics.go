@@ -27,10 +27,12 @@ import (
 
 const (
 	missingValueMetricName = "~sdk.otel.collector.missing_values"
+	metricNameString       = "metric name"
+	metricTypeString       = "metric type"
 )
 
 var (
-	missingValueMetricGaugeTags = map[string]string{"type": "gauge"}
+	typeIsGaugeTags = map[string]string{"type": "gauge"}
 )
 
 // metricsConsumer instances consume OTEL metrics
@@ -138,6 +140,59 @@ type flushCloser interface {
 	Close()
 }
 
+// counter represents an internal counter metric. The zero value is ready to use
+type counter struct {
+	lock  sync.Mutex
+	count int64
+}
+
+// Report reports this counter to tobs. name is the name of the metric to be
+// reported. tags is the tags for the metric. sender is what sends the metric
+// to tobs. Any errors get added to errs.
+func (c *counter) Report(
+	name string, tags map[string]string, sender gaugeSender, errs *[]error) {
+	err := sender.SendMetric(name, float64(c.Get()), 0, "", tags)
+	if err != nil {
+		*errs = append(*errs, err)
+	}
+}
+
+// Inc increments this counter by one.
+func (c *counter) Inc() {
+	c.lock.Lock()
+	defer c.lock.Unlock()
+	c.count++
+}
+
+// Get gets the value of this counter.
+func (c *counter) Get() int64 {
+	c.lock.Lock()
+	defer c.lock.Unlock()
+	return c.count
+}
+
+// logMissingValue keeps track of metrics with missing values. metric is the
+// metric with the missing value. logger is the logger. count counts
+// metrics with missing values.
+func logMissingValue(metric pdata.Metric, logger *zap.Logger, count *counter) {
+	namef := zap.String(metricNameString, metric.Name())
+	typef := zap.String(metricTypeString, metric.DataType().String())
+	logger.Debug("Metric missing value", namef, typef)
+	count.Inc()
+}
+
+// getValue gets the floating point value out of a NumberDataPoint
+func getValue(numberDataPoint pdata.NumberDataPoint) (float64, error) {
+	switch numberDataPoint.Type() {
+	case pdata.MetricValueTypeInt:
+		return float64(numberDataPoint.IntVal()), nil
+	case pdata.MetricValueTypeDouble:
+		return numberDataPoint.DoubleVal(), nil
+	default:
+		return 0.0, errors.New("unsupported metric value type")
+	}
+}
+
 // gaugeSender sends gauge metrics to tanzu observability
 type gaugeSender interface {
 	SendMetric(name string, value float64, ts int64, source string, tags map[string]string) error
@@ -167,9 +222,8 @@ func (c *consumerOptions) fixDefaults() consumerOptions {
 type gaugeConsumer struct {
 	sender                gaugeSender
 	logger                *zap.Logger
+	missingValues         counter
 	reportInternalMetrics bool
-	lock                  sync.Mutex
-	missingValueCount     int64
 }
 
 // newGaugeConsumer returns a metricConsumer that consumes gauge metrics
@@ -197,37 +251,8 @@ func (g *gaugeConsumer) Consume(metric pdata.Metric, errs *[]error) {
 
 func (g *gaugeConsumer) ConsumeInternal(errs *[]error) {
 	if g.reportInternalMetrics {
-		err := g.sender.SendMetric(
-			missingValueMetricName,
-			float64(g.getMissingValueCount()),
-			0,
-			"",
-			missingValueMetricGaugeTags)
-		if err != nil {
-			*errs = append(*errs, err)
-		}
+		g.missingValues.Report(missingValueMetricName, typeIsGaugeTags, g.sender, errs)
 	}
-}
-
-func (g *gaugeConsumer) logMissingValue(metric pdata.Metric) {
-	namef := zap.String("metric name", metric.Name())
-	typef := zap.String("metric type", metric.DataType().String())
-	g.logger.Debug("Metric missing value", namef, typef)
-	if g.reportInternalMetrics {
-		g.incrementMissingValueCount()
-	}
-}
-
-func (g *gaugeConsumer) incrementMissingValueCount() {
-	g.lock.Lock()
-	defer g.lock.Unlock()
-	g.missingValueCount++
-}
-
-func (g *gaugeConsumer) getMissingValueCount() int64 {
-	g.lock.Lock()
-	defer g.lock.Unlock()
-	return g.missingValueCount
 }
 
 func (g *gaugeConsumer) pushSingleNumberDataPoint(
@@ -236,22 +261,11 @@ func (g *gaugeConsumer) pushSingleNumberDataPoint(
 	ts := numberDataPoint.Timestamp().AsTime().Unix()
 	value, err := getValue(numberDataPoint)
 	if err != nil {
-		g.logMissingValue(metric)
+		logMissingValue(metric, g.logger, &g.missingValues)
 		return
 	}
 	err = g.sender.SendMetric(metric.Name(), value, ts, "", tags)
 	if err != nil {
 		*errs = append(*errs, err)
-	}
-}
-
-func getValue(numberDataPoint pdata.NumberDataPoint) (float64, error) {
-	switch numberDataPoint.Type() {
-	case pdata.MetricValueTypeInt:
-		return float64(numberDataPoint.IntVal()), nil
-	case pdata.MetricValueTypeDouble:
-		return numberDataPoint.DoubleVal(), nil
-	default:
-		return 0.0, errors.New("unsupported metric value type")
 	}
 }
