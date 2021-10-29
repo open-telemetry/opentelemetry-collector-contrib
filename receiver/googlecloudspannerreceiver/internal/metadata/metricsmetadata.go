@@ -23,12 +23,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudspannerreceiver/internal/datasource"
 )
 
-const (
-	projectIDLabelName  = "project_id"
-	instanceIDLabelName = "instance_id"
-	databaseLabelName   = "database"
-)
-
 type MetricsMetadataType int32
 
 const (
@@ -41,6 +35,7 @@ type MetricsMetadata struct {
 	Query               string
 	MetricNamePrefix    string
 	TimestampColumnName string
+	HighCardinality     bool
 	// In addition to common metric labels
 	QueryLabelValuesMetadata  []LabelValueMetadata
 	QueryMetricValuesMetadata []MetricValueMetadata
