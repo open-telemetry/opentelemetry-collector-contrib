@@ -19,6 +19,8 @@ package podmanreceiver
 
 import (
 	"context"
+	"fmt"
+	"go.opentelemetry.io/collector/obsreport"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
@@ -33,15 +35,20 @@ type receiver struct {
 	set           component.ReceiverCreateSettings
 	clientFactory clientFactory
 	client        client
+
+	metricsComponent component.MetricsReceiver
+	obsrecv *obsreport.Receiver
+	logsConsumer	consumer.Logs
+	metricsConsumer	consumer.Metrics
 }
 
-func newReceiver(
+func newMetricsReceiver(
 	_ context.Context,
 	set component.ReceiverCreateSettings,
 	config *Config,
 	nextConsumer consumer.Metrics,
 	clientFactory clientFactory,
-) (component.MetricsReceiver, error) {
+) (*receiver, error) {
 	err := config.Validate()
 	if err != nil {
 		return nil, err
@@ -54,6 +61,7 @@ func newReceiver(
 	recv := &receiver{
 		config:        config,
 		clientFactory: clientFactory,
+		metricsConsumer: nextConsumer,
 		set:           set,
 	}
 
@@ -61,7 +69,64 @@ func newReceiver(
 	if err != nil {
 		return nil, err
 	}
-	return scraperhelper.NewScraperControllerReceiver(&recv.config.ScraperControllerSettings, set, nextConsumer, scraperhelper.AddScraper(scrp))
+	recv.metricsComponent, err = scraperhelper.NewScraperControllerReceiver(&recv.config.ScraperControllerSettings, set, nextConsumer, scraperhelper.AddScraper(scrp))
+	return recv, err
+}
+
+func newLogsReceiver (
+	_ context.Context,
+	set component.ReceiverCreateSettings,
+	config *Config,
+	clientFactory clientFactory,
+) (*receiver, error) {
+	err := config.Validate()
+	if err != nil {
+		return nil, err
+	}
+
+	if clientFactory == nil {
+		clientFactory = newPodmanClient
+	}
+	recv := &receiver{
+		config:        config,
+		clientFactory: clientFactory,
+		set:           set,
+	}
+	return recv, nil
+}
+
+func (r *receiver) RegisterLogsConsumer(lc consumer.Logs) {
+	r.logsConsumer = lc
+}
+
+
+func (r *receiver) Start(ctx context.Context, host component.Host) error {
+	if r.logsConsumer != nil {
+		fmt.Println("Logs started")
+		go func() {
+			r.handleEvents()
+		}()
+	}
+	if r.metricsConsumer != nil {
+		fmt.Println("Metrics Started")
+		go func() {
+			err := r.metricsComponent.Start(ctx, host)
+			if err != nil {
+				return
+			}
+		}()
+	}
+	return nil
+}
+
+func (r *receiver) Shutdown(ctx context.Context) error {
+	if r.metricsConsumer != nil {
+		err := r.metricsComponent.Shutdown(ctx)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func (r *receiver) start(context.Context, component.Host) error {
@@ -86,4 +151,25 @@ func (r *receiver) scrape(context.Context) (pdata.Metrics, error) {
 		translateStatsToMetrics(&stats[i], time.Now(), md.ResourceMetrics().AppendEmpty())
 	}
 	return md, nil
+}
+
+func (r *receiver)handleEvents() error {
+	var err error
+	c, err := r.clientFactory(r.set.Logger, r.config)
+	if err == nil {
+		r.client = c
+	}
+	if err != nil {
+		r.set.Logger.Error("error fetching/processing events", zap.Error(err))
+	}
+
+	events, _ := r.client.events()
+	if err != nil {
+		r.set.Logger.Error("error fetching stats", zap.Error(err))
+	}
+	for event := range events {
+		fmt.Println(event.Message)
+		// Convert events to pdata.logs
+	}
+	return nil
 }

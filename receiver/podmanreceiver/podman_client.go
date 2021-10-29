@@ -22,12 +22,15 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"net/url"
 	"time"
 
 	"go.uber.org/zap"
+	dockerEvents "github.com/docker/docker/api/types/events"
 )
 
 type containerStats struct {
@@ -56,11 +59,20 @@ type containerStatsReport struct {
 	Error string
 	Stats []containerStats
 }
+type Type = string
+type Actor struct {
+	ID         string
+	Attributes map[string]string
+}
+type Event struct {
+	dockerEvents.Message
+}
 
 type clientFactory func(logger *zap.Logger, cfg *Config) (client, error)
 
 type client interface {
 	stats() ([]containerStats, error)
+	events() (chan Event, error)
 }
 
 type podmanClient struct {
@@ -120,6 +132,33 @@ func (c *podmanClient) stats() ([]containerStats, error) {
 		return nil, errors.New(report.Error)
 	}
 	return report.Stats, nil
+}
+func (c *podmanClient) events() (chan Event, error) {
+	ch := make(chan Event)
+	params := url.Values{}
+	params.Add("stream", "true")
+	params.Add("since", "0m")
+
+	response, err := c.request(context.Background(), "/events", params)
+	if err != nil {
+		return nil, err
+	}
+
+	go func() {
+		dec := json.NewDecoder(response.Body)
+		for {
+			var event Event
+			if err := dec.Decode(&event); err != nil {
+				if err == io.EOF {
+					break
+				}
+				log.Fatalf("error decoding event: %w", err)
+			}
+			ch <- event
+		}
+		response.Body.Close()
+	}()
+	return ch, nil
 }
 
 func (c *podmanClient) ping() error {

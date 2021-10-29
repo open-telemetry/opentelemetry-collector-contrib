@@ -34,7 +34,8 @@ func NewFactory() component.ReceiverFactory {
 	return receiverhelper.NewFactory(
 		typeStr,
 		createDefaultReceiverConfig,
-		receiverhelper.WithMetrics(createMetricsReceiver))
+		receiverhelper.WithMetrics(createMetricsReceiver),
+		receiverhelper.WithLogs(createLogsReceiver))
 }
 
 func createDefaultConfig() *Config {
@@ -59,10 +60,28 @@ func createMetricsReceiver(
 	consumer consumer.Metrics,
 ) (component.MetricsReceiver, error) {
 	podmanConfig := config.(*Config)
-	dsr, err := newReceiver(ctx, params, podmanConfig, consumer, nil)
-	if err != nil {
-		return nil, err
+	r := receivers[podmanConfig]
+	if r == nil {
+		r, _ = newMetricsReceiver(ctx, params, podmanConfig, consumer, nil)
+		receivers[podmanConfig] = r
 	}
-
-	return dsr, nil
+	return r, nil
 }
+
+func createLogsReceiver(
+	ctx context.Context,
+	params component.ReceiverCreateSettings,
+	config config.Receiver,
+	consumer consumer.Logs,
+) (component.LogsReceiver, error) {
+	podmanConfig := config.(*Config)
+	r := receivers[podmanConfig]
+	if r == nil {
+		r, _ = newLogsReceiver(ctx, params, podmanConfig, nil)
+		receivers[podmanConfig] = r
+	}
+	r.RegisterLogsConsumer(consumer)
+	return r, nil
+}
+
+var receivers = map[*Config]*receiver{}
