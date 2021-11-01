@@ -16,6 +16,7 @@ package prometheusreceiver
 
 import (
 	"context"
+	promcfg "github.com/prometheus/prometheus/config"
 	"testing"
 
 	agentmetricspb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/metrics/v1"
@@ -35,7 +36,6 @@ const targetExternalLabels = `
 go_threads 19`
 
 func TestExternalLabels(t *testing.T) {
-	ctx := context.Background()
 	targets := []*testData{
 		{
 			name: "target1",
@@ -48,37 +48,10 @@ func TestExternalLabels(t *testing.T) {
 
 	mp, cfg, err := setupMockPrometheus(targets...)
 	cfg.GlobalConfig.ExternalLabels = labels.FromStrings("key", "value")
-	require.Nilf(t, err, "Failed to create Promtheus config: %v", err)
+	require.Nilf(t, err, "Failed to create Prometheus config: %v", err)
 	defer mp.Close()
 
-	cms := new(consumertest.MetricsSink)
-	receiver := newPrometheusReceiver(componenttest.NewNopReceiverCreateSettings(), &Config{
-		ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
-		PrometheusConfig: cfg}, cms)
-
-	require.NoError(t, receiver.Start(ctx, componenttest.NewNopHost()), "Failed to invoke Start: %v", err)
-	t.Cleanup(func() { require.NoError(t, receiver.Shutdown(ctx)) })
-
-	mp.wg.Wait()
-	metrics := cms.AllMetrics()
-
-	results := make(map[string][]*agentmetricspb.ExportMetricsServiceRequest)
-	for _, md := range metrics {
-		rms := md.ResourceMetrics()
-		for i := 0; i < rms.Len(); i++ {
-			ocmd := &agentmetricspb.ExportMetricsServiceRequest{}
-			ocmd.Node, ocmd.Resource, ocmd.Metrics = opencensus.ResourceMetricsToOC(rms.At(i))
-			result, ok := results[ocmd.Node.ServiceInfo.Name]
-			if !ok {
-				result = make([]*agentmetricspb.ExportMetricsServiceRequest, 0)
-			}
-			results[ocmd.Node.ServiceInfo.Name] = append(result, ocmd)
-		}
-
-	}
-	for _, target := range targets {
-		target.validateFunc(t, target, results[target.name])
-	}
+	testHelper(t, targets, mp, cfg)
 }
 
 func verifyExternalLabels(t *testing.T, td *testData, mds []*agentmetricspb.ExportMetricsServiceRequest) {
@@ -106,4 +79,46 @@ func verifyExternalLabels(t *testing.T, td *testData, mds []*agentmetricspb.Expo
 				},
 			}),
 	})
+}
+
+// starts prometheus receiver with custom config, retrieves metrics from MetricsSink
+func testHelper(t *testing.T, targets []*testData, mp *mockPrometheus, cfg *promcfg.Config) {
+	ctx := context.Background()
+
+	cms := new(consumertest.MetricsSink)
+	receiver := newPrometheusReceiver(componenttest.NewNopReceiverCreateSettings(), &Config{
+		ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
+		PrometheusConfig: cfg}, cms)
+
+	require.NoError(t, receiver.Start(ctx, componenttest.NewNopHost()))
+
+	// verify state after shutdown is called
+	t.Cleanup(func() { require.NoError(t, receiver.Shutdown(ctx)) })
+
+	// wait for all provided data to be scraped
+	mp.wg.Wait()
+	metrics := cms.AllMetrics()
+
+	// split and store results by target name
+	results := make(map[string][]*agentmetricspb.ExportMetricsServiceRequest)
+	for _, md := range metrics {
+		rms := md.ResourceMetrics()
+		for i := 0; i < rms.Len(); i++ {
+			ocmd := &agentmetricspb.ExportMetricsServiceRequest{}
+			ocmd.Node, ocmd.Resource, ocmd.Metrics = opencensus.ResourceMetricsToOC(rms.At(i))
+			result, ok := results[ocmd.Node.ServiceInfo.Name]
+			if !ok {
+				result = make([]*agentmetricspb.ExportMetricsServiceRequest, 0)
+			}
+			results[ocmd.Node.ServiceInfo.Name] = append(result, ocmd)
+		}
+
+	}
+
+	// loop to validate outputs for each targets
+	for _, target := range targets {
+		t.Run(target.name, func(t *testing.T) {
+			target.validateFunc(t, target, results[target.name])
+		})
+	}
 }
