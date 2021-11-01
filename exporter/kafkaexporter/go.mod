@@ -4,7 +4,7 @@ go 1.17
 
 require (
 	github.com/Shopify/sarama v1.30.0
-	github.com/aws/aws-sdk-go v1.41.12
+	github.com/aws/aws-sdk-go v1.41.14
 	github.com/gogo/protobuf v1.3.2
 	github.com/jaegertracing/jaeger v1.27.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.38.0
