@@ -1,11 +1,17 @@
 extensions:
   health_check:
-  health_check/1:
-    endpoint: "localhost:13"
+  health_check/missingendpoint:
+    endpoint: ""
     check_collector_pipeline:
       enabled: false
       interval: "5m"
       exporter_failure_threshold: 5
+  health_check/invalidthreshold:
+    endpoint: "localhost:13"
+    check_collector_pipeline:
+      enabled: false
+      interval: "5m"
+      exporter_failure_threshold: -1
 
 service:
   extensions: [health_check/1]
