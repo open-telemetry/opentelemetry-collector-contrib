@@ -33,6 +33,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/fileexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/jaegerexporter"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/jaegerthrifthttpexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opencensusexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusexporter"
@@ -68,6 +69,14 @@ func TestDefaultExporters(t *testing.T) {
 			getConfigFn: func() config.Exporter {
 				cfg := expFactories["jaeger"].CreateDefaultConfig().(*jaegerexporter.Config)
 				cfg.Endpoint = endpoint
+				return cfg
+			},
+		},
+		{
+			exporter: "jaeger_thrift",
+			getConfigFn: func() config.Exporter {
+				cfg := expFactories["jaeger_thrift"].CreateDefaultConfig().(*jaegerthrifthttpexporter.Config)
+				cfg.Endpoint = "http://" + endpoint
 				return cfg
 			},
 		},
