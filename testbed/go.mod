@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/testbed
 go 1.17
 
 require (
-	github.com/fluent/fluent-logger-golang v1.6.2
+	github.com/fluent/fluent-logger-golang v1.7.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/carbonexporter v0.38.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/jaegerexporter v0.38.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opencensusexporter v0.38.0
