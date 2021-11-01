@@ -130,10 +130,9 @@ func TestLoadConfig(t *testing.T) {
 		TimeoutSettings: exporterhelper.TimeoutSettings{
 			Timeout: 100 * time.Second,
 		},
-		DialerTimeout:       30 * time.Second,
-		TLSHandshakeTimeout: 40 * time.Second,
-		AgentID:             "08e097a6-8580-43f6-b4f5-9d3b4eb2d962",
-		AgentName:           "otel-collector-1",
+		DialerTimeout: 30 * time.Second,
+		AgentID:       "08e097a6-8580-43f6-b4f5-9d3b4eb2d962",
+		AgentName:     "otel-collector-1",
 		TLSSetting: configtls.TLSClientSetting{
 			TLSSetting: configtls.TLSSetting{
 				CAFile:   "",

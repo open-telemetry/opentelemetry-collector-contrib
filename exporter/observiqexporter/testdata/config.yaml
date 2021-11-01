@@ -14,7 +14,6 @@ exporters:
     agent_id: "08e097a6-8580-43f6-b4f5-9d3b4eb2d962"
     agent_name: "otel-collector-1"
     dialer_timeout: 30s
-    tls_handshake_timeout: 40s
     tls:
       ca_file: ""
       cert_file: ""

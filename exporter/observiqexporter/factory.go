@@ -25,11 +25,10 @@ import (
 )
 
 const (
-	typeStr                    = "observiq"
-	defaultHTTPTimeout         = 20 * time.Second
-	defaultEndpoint            = "https://nozzle.app.observiq.com/v1/add"
-	defaultTLSHandshakeTimeout = 10 * time.Second
-	defaultDialerTimeout       = 10 * time.Second
+	typeStr              = "observiq"
+	defaultHTTPTimeout   = 20 * time.Second
+	defaultEndpoint      = "https://nozzle.app.observiq.com/v1/add"
+	defaultDialerTimeout = 10 * time.Second
 )
 
 // NewFactory creates a factory for observIQ exporter
@@ -48,12 +47,11 @@ func createDefaultConfig() config.Exporter {
 		TimeoutSettings: exporterhelper.TimeoutSettings{
 			Timeout: defaultHTTPTimeout,
 		},
-		RetrySettings:       exporterhelper.DefaultRetrySettings(),
-		QueueSettings:       exporterhelper.DefaultQueueSettings(),
-		AgentID:             defaultAgentID(),
-		AgentName:           defaultAgentName(),
-		DialerTimeout:       defaultDialerTimeout,
-		TLSHandshakeTimeout: defaultTLSHandshakeTimeout,
+		RetrySettings: exporterhelper.DefaultRetrySettings(),
+		QueueSettings: exporterhelper.DefaultQueueSettings(),
+		AgentID:       defaultAgentID(),
+		AgentName:     defaultAgentName(),
+		DialerTimeout: defaultDialerTimeout,
 	}
 }
 

@@ -18,7 +18,6 @@ The following configuration options can also be configured:
 - `agent_name` (default: os.Hostname): Name for identifying the collector deployment. This is the friendly name of the deployment. Defaults to the hostname; If the hostname cannot be determined, `otel collector` will be used as a fallback.
 - `timeout` (default: `20s`): Http timeout when sending data.
 - `dialer_timeout` (default: `10s`): TCP Dialer timeout when sending data.
-- `tls_handshake_timeout` (default: `10s`): TLS handshake timeout when sending data.
 - `tls`:
   - `insecure_skip_verify` (default: `false`): Whether to skip checking the certificate of the endpoint when sending data over HTTPS.
   - `ca_file` (no default) Path to the CA cert to verify the server being connected to.
