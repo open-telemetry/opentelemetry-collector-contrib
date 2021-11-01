@@ -20,6 +20,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/humioexporter v0.38.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/influxdbexporter v0.38.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/jaegerexporter v0.38.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/jaegerthrifthttpexporter v0.38.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter v0.38.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/loadbalancingexporter v0.38.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/logzioexporter v0.38.0
@@ -473,6 +474,8 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/humio
 replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/influxdbexporter => ./exporter/influxdbexporter
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/jaegerexporter => ./exporter/jaegerexporter
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/jaegerthrifthttpexporter => ./exporter/jaegerthrifthttpexporter
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter => ./exporter/kafkaexporter
 
