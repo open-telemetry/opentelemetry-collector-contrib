@@ -49,7 +49,6 @@ func TestExternalLabels(t *testing.T) {
 	mp, cfg, err := setupMockPrometheus(targets...)
 	cfg.GlobalConfig.ExternalLabels = labels.FromStrings("key", "value")
 	require.Nilf(t, err, "Failed to create Prometheus config: %v", err)
-	defer mp.Close()
 
 	testHelper(t, targets, mp, cfg)
 }
@@ -158,6 +157,7 @@ func TestLabelLimitConfig(t *testing.T) {
 // starts prometheus receiver with custom config, retrieves metrics from MetricsSink
 func testHelper(t *testing.T, targets []*testData, mp *mockPrometheus, cfg *promcfg.Config) {
 	ctx := context.Background()
+	defer mp.Close()
 
 	cms := new(consumertest.MetricsSink)
 	receiver := newPrometheusReceiver(componenttest.NewNopReceiverCreateSettings(), &Config{
