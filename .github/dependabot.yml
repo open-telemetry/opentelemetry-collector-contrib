@@ -154,6 +154,10 @@ updates:
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
+    directory: "/exporter/skywalkingexporter"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
     directory: "/exporter/splunkhecexporter"
     schedule:
       interval: "weekly"
@@ -167,6 +171,10 @@ updates:
       interval: "weekly"
   - package-ecosystem: "gomod"
     directory: "/exporter/tanzuobservabilityexporter"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
+    directory: "/exporter/tencentcloudlogserviceexporter"
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
@@ -455,6 +463,10 @@ updates:
       interval: "weekly"
   - package-ecosystem: "gomod"
     directory: "/receiver/jmxreceiver"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
+    directory: "/receiver/journaldreceiver"
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"

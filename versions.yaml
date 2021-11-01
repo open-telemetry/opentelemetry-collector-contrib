@@ -117,6 +117,7 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/journaldreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/httpdreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbatlasreceiver
+      - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/tencentcloudlogserviceexporter
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/loadbalancingexporter
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/fileexporter
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/jaegerexporter
@@ -165,3 +166,4 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry
 excluded-modules:
   - github.com/open-telemetry/opentelemetry-collector-contrib/internal/tools
+  
