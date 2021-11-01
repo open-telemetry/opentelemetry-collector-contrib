@@ -20,12 +20,12 @@ package podmanreceiver
 import (
 	"context"
 	"fmt"
-	"go.opentelemetry.io/collector/obsreport"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 	"go.uber.org/zap"
 )
@@ -37,16 +37,15 @@ type receiver struct {
 	client        client
 
 	metricsComponent component.MetricsReceiver
-	obsrecv *obsreport.Receiver
-	logsConsumer	consumer.Logs
-	metricsConsumer	consumer.Metrics
+	obsrecv          *obsreport.Receiver
+	logsConsumer     consumer.Logs
+	metricsConsumer  consumer.Metrics
 }
 
-func newMetricsReceiver(
+func newReceiver(
 	_ context.Context,
 	set component.ReceiverCreateSettings,
 	config *Config,
-	nextConsumer consumer.Metrics,
 	clientFactory clientFactory,
 ) (*receiver, error) {
 	err := config.Validate()
@@ -61,38 +60,20 @@ func newMetricsReceiver(
 	recv := &receiver{
 		config:        config,
 		clientFactory: clientFactory,
-		metricsConsumer: nextConsumer,
 		set:           set,
 	}
 
-	scrp, err := scraperhelper.NewScraper(typeStr, recv.scrape, scraperhelper.WithStart(recv.start))
-	if err != nil {
-		return nil, err
-	}
-	recv.metricsComponent, err = scraperhelper.NewScraperControllerReceiver(&recv.config.ScraperControllerSettings, set, nextConsumer, scraperhelper.AddScraper(scrp))
 	return recv, err
 }
 
-func newLogsReceiver (
-	_ context.Context,
-	set component.ReceiverCreateSettings,
-	config *Config,
-	clientFactory clientFactory,
-) (*receiver, error) {
-	err := config.Validate()
+func (r *receiver) RegisterMetricsConsumer(mc consumer.Metrics, set component.ReceiverCreateSettings) error {
+	r.metricsConsumer = mc
+	scrp, err := scraperhelper.NewScraper(typeStr, r.scrape, scraperhelper.WithStart(r.start))
 	if err != nil {
-		return nil, err
+		return err
 	}
-
-	if clientFactory == nil {
-		clientFactory = newPodmanClient
-	}
-	recv := &receiver{
-		config:        config,
-		clientFactory: clientFactory,
-		set:           set,
-	}
-	return recv, nil
+	r.metricsComponent, err = scraperhelper.NewScraperControllerReceiver(&r.config.ScraperControllerSettings, set, mc, scraperhelper.AddScraper(scrp))
+	return nil
 }
 
 func (r *receiver) RegisterLogsConsumer(lc consumer.Logs) {

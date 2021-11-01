@@ -41,19 +41,20 @@ func TestNewReceiver(t *testing.T) {
 		},
 	}
 	nextConsumer := consumertest.NewNop()
-	mr, err := newReceiver(context.Background(), componenttest.NewNopReceiverCreateSettings(), config, nextConsumer, nil)
+	mr, err := newReceiver(context.Background(), componenttest.NewNopReceiverCreateSettings(), config, nil)
+	mr.RegisterMetricsConsumer(nextConsumer, componenttest.NewNopReceiverCreateSettings())
 
 	assert.NotNil(t, mr)
 	assert.Nil(t, err)
 }
 
 func TestNewReceiverErrors(t *testing.T) {
-	r, err := newReceiver(context.Background(), componenttest.NewNopReceiverCreateSettings(), &Config{}, consumertest.NewNop(), nil)
+	r, err := newReceiver(context.Background(), componenttest.NewNopReceiverCreateSettings(), &Config{}, nil)
 	assert.Nil(t, r)
 	require.Error(t, err)
 	assert.Equal(t, "config.Endpoint must be specified", err.Error())
 
-	r, err = newReceiver(context.Background(), componenttest.NewNopReceiverCreateSettings(), &Config{Endpoint: "someEndpoint"}, consumertest.NewNop(), nil)
+	r, err = newReceiver(context.Background(), componenttest.NewNopReceiverCreateSettings(), &Config{Endpoint: "someEndpoint"}, nil)
 	assert.Nil(t, r)
 	require.Error(t, err)
 	assert.Equal(t, "config.CollectionInterval must be specified", err.Error())
@@ -66,7 +67,8 @@ func TestScraperLoop(t *testing.T) {
 	client := make(mockClient)
 	consumer := make(mockConsumer)
 
-	r, err := newReceiver(context.Background(), componenttest.NewNopReceiverCreateSettings(), cfg, consumer, client.factory)
+	r, err := newReceiver(context.Background(), componenttest.NewNopReceiverCreateSettings(), cfg, client.factory)
+	r.RegisterMetricsConsumer(consumer, componenttest.NewNopReceiverCreateSettings())
 	assert.NotNil(t, r)
 	require.NoError(t, err)
 
@@ -99,6 +101,11 @@ func (c mockClient) stats() ([]containerStats, error) {
 		return nil, errors.New(report.Error)
 	}
 	return report.Stats, nil
+}
+
+func (c mockClient) events() (chan Event, error) {
+	ch := make(chan Event)
+	return ch, nil
 }
 
 type mockConsumer chan pdata.Metrics

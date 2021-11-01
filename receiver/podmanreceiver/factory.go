@@ -62,9 +62,10 @@ func createMetricsReceiver(
 	podmanConfig := config.(*Config)
 	r := receivers[podmanConfig]
 	if r == nil {
-		r, _ = newMetricsReceiver(ctx, params, podmanConfig, consumer, nil)
+		r, _ = newReceiver(ctx, params, podmanConfig, nil)
 		receivers[podmanConfig] = r
 	}
+	r.RegisterMetricsConsumer(consumer, params)
 	return r, nil
 }
 
@@ -77,7 +78,7 @@ func createLogsReceiver(
 	podmanConfig := config.(*Config)
 	r := receivers[podmanConfig]
 	if r == nil {
-		r, _ = newLogsReceiver(ctx, params, podmanConfig, nil)
+		r, _ = newReceiver(ctx, params, podmanConfig, nil)
 		receivers[podmanConfig] = r
 	}
 	r.RegisterLogsConsumer(consumer)

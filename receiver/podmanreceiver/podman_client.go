@@ -66,6 +66,7 @@ type Actor struct {
 }
 type Event struct {
 	dockerEvents.Message
+	Error string
 }
 
 type clientFactory func(logger *zap.Logger, cfg *Config) (client, error)
