@@ -12,6 +12,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   ([#742](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/742))
 - `opentelemetry-instrumentation` Add `setuptools` to `install_requires`
   ([#781](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/781))
+- `opentelemetry-instrumentation-aws-lambda` Add instrumentation for AWS Lambda Service - Implementation (Part 2/2)
+  ([#777](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/777))
 
 ### Fixed
 
