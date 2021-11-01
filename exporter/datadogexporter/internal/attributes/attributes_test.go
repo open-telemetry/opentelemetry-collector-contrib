@@ -16,6 +16,7 @@ package attributes
 
 import (
 	"fmt"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -51,4 +52,54 @@ func TestTagsFromAttributesEmpty(t *testing.T) {
 	attrs := pdata.NewAttributeMap()
 
 	assert.Equal(t, []string{}, TagsFromAttributes(attrs))
+}
+
+func TestContainerTagsFromAttributes(t *testing.T) {
+	attributeMap := map[string]string{
+		conventions.AttributeContainerName:         "sample_app",
+		conventions.AttributeContainerImageTag:     "sample_app_image_tag",
+		conventions.AttributeK8SContainerName:      "kube_sample_app",
+		conventions.AttributeK8SReplicaSetName:     "sample_replica_set",
+		conventions.AttributeK8SDaemonSetName:      "sample_daemonset_name",
+		conventions.AttributeK8SPodName:            "sample_pod_name",
+		conventions.AttributeCloudProvider:         "sample_cloud_provider",
+		conventions.AttributeCloudRegion:           "sample_region",
+		conventions.AttributeCloudAvailabilityZone: "sample_zone",
+		conventions.AttributeAWSECSTaskFamily:      "sample_task_family",
+		conventions.AttributeAWSECSClusterARN:      "sample_ecs_cluster_name",
+		conventions.AttributeAWSECSContainerARN:    "sample_ecs_container_name",
+		"custom_tag":                               "example_custom_tag",
+		"":                                         "empty_string_key",
+		"empty_string_val":                         "",
+	}
+
+	containerMap := make(map[string]string)
+	containerTags := ContainerTagsFromAttributes(attributeMap)
+
+	for _, v := range strings.Split(containerTags, ",") {
+		tag := strings.Split(v, ":")
+		containerMap[tag[0]] = tag[1]
+	}
+
+	assert.Equal(t, map[string]string{
+		"container_name":      "sample_app",
+		"image_tag":           "sample_app_image_tag",
+		"kube_container_name": "kube_sample_app",
+		"kube_replica_set":    "sample_replica_set",
+		"kube_daemon_set":     "sample_daemonset_name",
+		"pod_name":            "sample_pod_name",
+		"cloud_provider":      "sample_cloud_provider",
+		"region":              "sample_region",
+		"zone":                "sample_zone",
+		"task_family":         "sample_task_family",
+		"ecs_cluster_name":    "sample_ecs_cluster_name",
+		"ecs_container_name":  "sample_ecs_container_name",
+	}, containerMap)
+}
+
+func TestContainerTagsFromAttributesEmpty(t *testing.T) {
+	var empty string
+	attributeMap := map[string]string{}
+
+	assert.Equal(t, empty, ContainerTagsFromAttributes(attributeMap))
 }

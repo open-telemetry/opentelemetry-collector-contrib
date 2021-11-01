@@ -16,6 +16,7 @@ package attributes
 
 import (
 	"fmt"
+	"strings"
 
 	"go.opentelemetry.io/collector/model/pdata"
 	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
@@ -52,6 +53,39 @@ var (
 		conventions.AttributeK8SDaemonSetName:   "kube_daemon_set",
 		conventions.AttributeK8SJobName:         "kube_job",
 		conventions.AttributeK8SCronJobName:     "kube_cronjob",
+	}
+
+	containersMapping = map[string]string{
+		// Containers
+		conventions.AttributeContainerID:        "container_id",
+		conventions.AttributeContainerName:      "container_name",
+		conventions.AttributeContainerImageName: "image_name",
+		conventions.AttributeContainerImageTag:  "image_tag",
+
+		//Kubernetes
+		conventions.AttributeK8SContainerName:   "kube_container_name",
+		conventions.AttributeK8SClusterName:     "kube_cluster_name",
+		conventions.AttributeK8SDeploymentName:  "kube_deployment",
+		conventions.AttributeK8SReplicaSetName:  "kube_replica_set",
+		conventions.AttributeK8SStatefulSetName: "kube_stateful_set",
+		conventions.AttributeK8SDaemonSetName:   "kube_daemon_set",
+		conventions.AttributeK8SJobName:         "kube_job",
+		conventions.AttributeK8SCronJobName:     "kube_cronjob",
+		conventions.AttributeK8SNamespaceName:   "kube_namespace",
+		conventions.AttributeK8SPodName:         "pod_name",
+
+		// Cloud conventions
+		// https://www.datadoghq.com/blog/tagging-best-practices/
+		conventions.AttributeCloudProvider:         "cloud_provider",
+		conventions.AttributeCloudRegion:           "region",
+		conventions.AttributeCloudAvailabilityZone: "zone",
+
+		// ECS Conventions
+		conventions.AttributeAWSECSTaskFamily:   "task_family",
+		conventions.AttributeAWSECSTaskARN:      "task_arn",
+		conventions.AttributeAWSECSClusterARN:   "ecs_cluster_name",
+		conventions.AttributeAWSECSTaskRevision: "task_version",
+		conventions.AttributeAWSECSContainerARN: "ecs_container_name",
 	}
 
 	// Kubernetes mappings defines the mapping between Kubernetes conventions (both general and Datadog specific)
@@ -119,4 +153,18 @@ func TagsFromAttributes(attrs pdata.AttributeMap) []string {
 	tags = append(tags, systemAttributes.extractTags()...)
 
 	return tags
+}
+
+// ContainerTagsFromAttributes converts a selected list of attribute keys into
+// their equivalent Datadog container keys to be added to __dd.tags.container
+func ContainerTagsFromAttributes(spanTags map[string]string) string {
+	var b strings.Builder
+
+	for k, v := range containersMapping {
+		if val, ok := spanTags[k]; ok {
+			b.WriteString(fmt.Sprintf("%s:%s,", v, val))
+		}
+	}
+
+	return strings.TrimSuffix(b.String(), ",")
 }
