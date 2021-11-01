@@ -81,6 +81,80 @@ func verifyExternalLabels(t *testing.T, td *testData, mds []*agentmetricspb.Expo
 	})
 }
 
+const targetLabelLimit1 = `
+# HELP test_gauge0 This is my gauge
+# TYPE test_gauge0 gauge
+test_gauge0{label1="value1",label2="value2"} 10
+`
+
+func verifyLabelLimitTarget1(t *testing.T, td *testData, result []*agentmetricspb.ExportMetricsServiceRequest) {
+	//each sample in the scraped metrics is within the configured label_limit, scrape should be successful
+	assertUp(t, 1, result[0])
+
+	want := &agentmetricspb.ExportMetricsServiceRequest{
+		Node:     td.node,
+		Resource: td.resource,
+	}
+	doCompare("scrape-labelLimit", t, want, result[0], []testExpectation{
+		assertMetricPresent("test_gauge0",
+			[]descriptorComparator{
+				compareMetricType(metricspb.MetricDescriptor_GAUGE_DOUBLE),
+				compareMetricLabelKeys([]string{"label1", "label2"}),
+			},
+			[]seriesExpectation{
+				{
+					series: []seriesComparator{
+						compareSeriesLabelValues([]string{"value1", "value2"}),
+					},
+					points: []pointComparator{
+						comparePointTimestamp(result[0].Metrics[0].Timeseries[0].Points[0].Timestamp),
+						compareDoubleVal(10),
+					},
+				},
+			}),
+	})
+}
+
+const targetLabelLimit2 = `
+# HELP test_gauge0 This is my gauge
+# TYPE test_gauge0 gauge
+test_gauge0{label1="value1",label2="value2",label3="value3"} 10
+`
+
+func verifyLabelLimitTarget2(t *testing.T, _ *testData, result []*agentmetricspb.ExportMetricsServiceRequest) {
+	//The number of labels in targetLabelLimit2 exceeds the configured label_limit, scrape should be unsuccessful
+	assertUp(t, 0, result[0])
+}
+
+func TestLabelLimitConfig(t *testing.T) {
+	targets := []*testData{
+		{
+			name: "target1",
+			pages: []mockPrometheusResponse{
+				{code: 200, data: targetLabelLimit1},
+			},
+			validateFunc: verifyLabelLimitTarget1,
+		},
+		{
+			name: "target2",
+			pages: []mockPrometheusResponse{
+				{code: 200, data: targetLabelLimit2},
+			},
+			validateFunc: verifyLabelLimitTarget2,
+		},
+	}
+
+	mp, cfg, err := setupMockPrometheus(targets...)
+	require.Nilf(t, err, "Failed to create Prometheus config: %v", err)
+
+	// set label limit in scrape_config
+	for _, scrapeCfg := range cfg.ScrapeConfigs {
+		scrapeCfg.LabelLimit = 5
+	}
+
+	testHelper(t, targets, mp, cfg)
+}
+
 // starts prometheus receiver with custom config, retrieves metrics from MetricsSink
 func testHelper(t *testing.T, targets []*testData, mp *mockPrometheus, cfg *promcfg.Config) {
 	ctx := context.Background()
