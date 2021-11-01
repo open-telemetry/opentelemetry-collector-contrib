@@ -6,6 +6,7 @@ require (
 	github.com/jaegertracing/jaeger v1.27.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.38.0
 	github.com/stretchr/testify v1.7.0
+	go.opencensus.io v0.23.0
 	go.opentelemetry.io/collector v0.38.0
 	go.uber.org/zap v1.19.1
 
