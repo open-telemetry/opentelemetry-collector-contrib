@@ -35,7 +35,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/processor/batchprocessor"
 	"go.opentelemetry.io/collector/service"
-	"go.opentelemetry.io/collector/service/parserprovider"
+	"go.opentelemetry.io/collector/config/configmapprovider"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 
@@ -154,7 +154,7 @@ service:
 
 	appSettings := service.CollectorSettings{
 		Factories:         factories,
-		ConfigMapProvider: parserprovider.NewInMemoryMapProvider(strings.NewReader(config)),
+		ConfigMapProvider: configmapprovider.NewInMemoryMapProvider(strings.NewReader(config)),
 		BuildInfo: component.BuildInfo{
 			Command:     "otelcol",
 			Description: "OpenTelemetry Collector",
