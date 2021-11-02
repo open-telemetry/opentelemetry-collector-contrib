@@ -68,7 +68,7 @@ func TestDefaultMetricsIntegration(t *testing.T) {
 	params, ctx, cancel := paramsAndContext(t)
 	defer cancel()
 	d := container.New(t)
-	d.StartImage("docker.io/library/nginx:1.17", container.WithPortReady(80))
+	d.StartImage("ghcr.io/codeboten/nginx:1.17", container.WithPortReady(80))
 
 	consumer := new(consumertest.MetricsSink)
 	f, config := factory()
@@ -88,7 +88,7 @@ func TestDefaultMetricsIntegration(t *testing.T) {
 
 func TestAllMetricsIntegration(t *testing.T) {
 	d := container.New(t)
-	d.StartImage("docker.io/library/nginx:1.17", container.WithPortReady(80))
+	d.StartImage("ghcr.io/codeboten/nginx:1.17", container.WithPortReady(80))
 
 	consumer := new(consumertest.MetricsSink)
 	f, config := factory()
@@ -123,7 +123,7 @@ func TestMonitoringAddedContainerIntegration(t *testing.T) {
 	}))
 
 	d := container.New(t)
-	d.StartImage("docker.io/library/nginx:1.17", container.WithPortReady(80))
+	d.StartImage("ghcr.io/codeboten/nginx:1.17", container.WithPortReady(80))
 
 	assert.Eventuallyf(t, func() bool {
 		return len(consumer.AllMetrics()) > 0
@@ -136,7 +136,7 @@ func TestExcludedImageProducesNoMetricsIntegration(t *testing.T) {
 	params, ctx, cancel := paramsAndContext(t)
 	defer cancel()
 	d := container.New(t)
-	d.StartImage("docker.io/library/redis:6.0.3", container.WithPortReady(6379))
+	d.StartImage("ghcr.io/codeboten/redis:6.0.3", container.WithPortReady(6379))
 
 	f, config := factory()
 	config.ExcludedImages = append(config.ExcludedImages, "*redis*")
@@ -182,7 +182,7 @@ func TestRemovedContainerRemovesRecordsIntegration(t *testing.T) {
 	go client.ContainerEventLoop(context.Background())
 
 	d := container.New(t)
-	nginx := d.StartImage("docker.io/library/nginx:1.17", container.WithPortReady(80))
+	nginx := d.StartImage("ghcr.io/codeboten/nginx:1.17", container.WithPortReady(80))
 	t.Log(nginx.ID)
 	desiredAmount := func(numDesired int) func() bool {
 		return func() bool {
