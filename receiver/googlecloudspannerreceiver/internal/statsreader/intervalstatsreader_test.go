@@ -72,17 +72,20 @@ func TestNewIntervalStatsReader(t *testing.T) {
 }
 
 func TestIntervalStatsReader_NewPullStatement(t *testing.T) {
+	databaseID := datasource.NewDatabaseID(projectID, instanceID, databaseName)
 	timestamp := time.Now().UTC()
+	logger := zap.NewNop()
+	config := ReaderConfig{
+		TopMetricsQueryMaxRows: topMetricsQueryMaxRows,
+		BackfillEnabled:        false,
+	}
+	ctx := context.Background()
+	client, _ := spanner.NewClient(ctx, "")
+	database := datasource.NewDatabaseFromClient(client, databaseID)
 	metricsMetadata := &metadata.MetricsMetadata{
 		Query: query,
 	}
-	reader := intervalStatsReader{
-		currentStatsReader: currentStatsReader{
-			metricsMetadata:        metricsMetadata,
-			topMetricsQueryMaxRows: topMetricsQueryMaxRows,
-			statement:              intervalStatsStatement,
-		},
-	}
+	reader := newIntervalStatsReader(logger, database, metricsMetadata, config)
 
 	assert.NotZero(t, reader.newPullStatement(timestamp))
 }
