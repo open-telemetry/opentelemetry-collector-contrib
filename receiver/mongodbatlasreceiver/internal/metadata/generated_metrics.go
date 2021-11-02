@@ -77,10 +77,7 @@ type metricStruct struct {
 	MongodbatlasProcessDbQueryExecutorScanned             MetricIntf
 	MongodbatlasProcessDbQueryTargetingScannedPerReturned MetricIntf
 	MongodbatlasProcessDbStorage                          MetricIntf
-	MongodbatlasProcessFtsCPUNormalizedUsage              MetricIntf
 	MongodbatlasProcessFtsCPUUsage                        MetricIntf
-	MongodbatlasProcessFtsDiskUsage                       MetricIntf
-	MongodbatlasProcessFtsMemoryUsage                     MetricIntf
 	MongodbatlasProcessGlobalLock                         MetricIntf
 	MongodbatlasProcessIndexBtreeMissRatio                MetricIntf
 	MongodbatlasProcessIndexCounters                      MetricIntf
@@ -99,7 +96,7 @@ type metricStruct struct {
 	MongodbatlasSystemCPUUsage                            MetricIntf
 	MongodbatlasSystemFtsCPUNormalizedUsage               MetricIntf
 	MongodbatlasSystemFtsCPUUsage                         MetricIntf
-	MongodbatlasSystemFtsDiskUtilization                  MetricIntf
+	MongodbatlasSystemFtsDiskUsed                         MetricIntf
 	MongodbatlasSystemFtsMemoryUsage                      MetricIntf
 	MongodbatlasSystemMemoryUsage                         MetricIntf
 	MongodbatlasSystemNetworkIo                           MetricIntf
@@ -132,10 +129,7 @@ func (m *metricStruct) Names() []string {
 		"mongodbatlas.process.db.query_executor.scanned",
 		"mongodbatlas.process.db.query_targeting.scanned_per_returned",
 		"mongodbatlas.process.db.storage",
-		"mongodbatlas.process.fts.cpu.normalized.usage",
 		"mongodbatlas.process.fts.cpu.usage",
-		"mongodbatlas.process.fts.disk.usage",
-		"mongodbatlas.process.fts.memory.usage",
 		"mongodbatlas.process.global_lock",
 		"mongodbatlas.process.index.btree_miss_ratio",
 		"mongodbatlas.process.index.counters",
@@ -154,7 +148,7 @@ func (m *metricStruct) Names() []string {
 		"mongodbatlas.system.cpu.usage",
 		"mongodbatlas.system.fts.cpu.normalized.usage",
 		"mongodbatlas.system.fts.cpu.usage",
-		"mongodbatlas.system.fts.disk.utilization",
+		"mongodbatlas.system.fts.disk.used",
 		"mongodbatlas.system.fts.memory.usage",
 		"mongodbatlas.system.memory.usage",
 		"mongodbatlas.system.network.io",
@@ -186,10 +180,7 @@ var metricsByName = map[string]MetricIntf{
 	"mongodbatlas.process.db.query_executor.scanned":               Metrics.MongodbatlasProcessDbQueryExecutorScanned,
 	"mongodbatlas.process.db.query_targeting.scanned_per_returned": Metrics.MongodbatlasProcessDbQueryTargetingScannedPerReturned,
 	"mongodbatlas.process.db.storage":                              Metrics.MongodbatlasProcessDbStorage,
-	"mongodbatlas.process.fts.cpu.normalized.usage":                Metrics.MongodbatlasProcessFtsCPUNormalizedUsage,
 	"mongodbatlas.process.fts.cpu.usage":                           Metrics.MongodbatlasProcessFtsCPUUsage,
-	"mongodbatlas.process.fts.disk.usage":                          Metrics.MongodbatlasProcessFtsDiskUsage,
-	"mongodbatlas.process.fts.memory.usage":                        Metrics.MongodbatlasProcessFtsMemoryUsage,
 	"mongodbatlas.process.global_lock":                             Metrics.MongodbatlasProcessGlobalLock,
 	"mongodbatlas.process.index.btree_miss_ratio":                  Metrics.MongodbatlasProcessIndexBtreeMissRatio,
 	"mongodbatlas.process.index.counters":                          Metrics.MongodbatlasProcessIndexCounters,
@@ -208,7 +199,7 @@ var metricsByName = map[string]MetricIntf{
 	"mongodbatlas.system.cpu.usage":                                Metrics.MongodbatlasSystemCPUUsage,
 	"mongodbatlas.system.fts.cpu.normalized.usage":                 Metrics.MongodbatlasSystemFtsCPUNormalizedUsage,
 	"mongodbatlas.system.fts.cpu.usage":                            Metrics.MongodbatlasSystemFtsCPUUsage,
-	"mongodbatlas.system.fts.disk.utilization":                     Metrics.MongodbatlasSystemFtsDiskUtilization,
+	"mongodbatlas.system.fts.disk.used":                            Metrics.MongodbatlasSystemFtsDiskUsed,
 	"mongodbatlas.system.fts.memory.usage":                         Metrics.MongodbatlasSystemFtsMemoryUsage,
 	"mongodbatlas.system.memory.usage":                             Metrics.MongodbatlasSystemMemoryUsage,
 	"mongodbatlas.system.network.io":                               Metrics.MongodbatlasSystemNetworkIo,
@@ -228,7 +219,7 @@ var Metrics = &metricStruct{
 		func(metric pdata.Metric) {
 			metric.SetName("mongodbatlas.db.counts")
 			metric.SetDescription("Database feature size")
-			metric.SetUnit("1")
+			metric.SetUnit("{objects}")
 			metric.SetDataType(pdata.MetricDataTypeGauge)
 		},
 	},
@@ -237,7 +228,7 @@ var Metrics = &metricStruct{
 		func(metric pdata.Metric) {
 			metric.SetName("mongodbatlas.db.size")
 			metric.SetDescription("Database feature size")
-			metric.SetUnit("1")
+			metric.SetUnit("By")
 			metric.SetDataType(pdata.MetricDataTypeGauge)
 		},
 	},
@@ -246,7 +237,7 @@ var Metrics = &metricStruct{
 		func(metric pdata.Metric) {
 			metric.SetName("mongodbatlas.disk.partition.iops")
 			metric.SetDescription("Disk partition iops")
-			metric.SetUnit("1")
+			metric.SetUnit("{ops}/s")
 			metric.SetDataType(pdata.MetricDataTypeGauge)
 		},
 	},
@@ -255,7 +246,7 @@ var Metrics = &metricStruct{
 		func(metric pdata.Metric) {
 			metric.SetName("mongodbatlas.disk.partition.latency")
 			metric.SetDescription("Disk partition latency")
-			metric.SetUnit("1")
+			metric.SetUnit("ms")
 			metric.SetDataType(pdata.MetricDataTypeGauge)
 		},
 	},
@@ -264,7 +255,7 @@ var Metrics = &metricStruct{
 		func(metric pdata.Metric) {
 			metric.SetName("mongodbatlas.disk.partition.space")
 			metric.SetDescription("Disk partition space")
-			metric.SetUnit("1")
+			metric.SetUnit("By")
 			metric.SetDataType(pdata.MetricDataTypeGauge)
 		},
 	},
@@ -272,7 +263,7 @@ var Metrics = &metricStruct{
 		"mongodbatlas.disk.partition.utilization",
 		func(metric pdata.Metric) {
 			metric.SetName("mongodbatlas.disk.partition.utilization")
-			metric.SetDescription("Disk partition utilization")
+			metric.SetDescription("Disk partition utilization (%)")
 			metric.SetUnit("1")
 			metric.SetDataType(pdata.MetricDataTypeGauge)
 		},
@@ -282,7 +273,7 @@ var Metrics = &metricStruct{
 		func(metric pdata.Metric) {
 			metric.SetName("mongodbatlas.process.asserts")
 			metric.SetDescription("Number of assertions")
-			metric.SetUnit("1")
+			metric.SetUnit("{assertions}/s")
 			metric.SetDataType(pdata.MetricDataTypeGauge)
 		},
 	},
@@ -299,8 +290,8 @@ var Metrics = &metricStruct{
 		"mongodbatlas.process.cache.io",
 		func(metric pdata.Metric) {
 			metric.SetName("mongodbatlas.process.cache.io")
-			metric.SetDescription("Cache throughput")
-			metric.SetUnit("1")
+			metric.SetDescription("Cache throughput (per second)")
+			metric.SetUnit("By")
 			metric.SetDataType(pdata.MetricDataTypeGauge)
 		},
 	},
@@ -309,7 +300,7 @@ var Metrics = &metricStruct{
 		func(metric pdata.Metric) {
 			metric.SetName("mongodbatlas.process.cache.size")
 			metric.SetDescription("Cache sizes")
-			metric.SetUnit("1")
+			metric.SetUnit("By")
 			metric.SetDataType(pdata.MetricDataTypeGauge)
 		},
 	},
@@ -318,7 +309,7 @@ var Metrics = &metricStruct{
 		func(metric pdata.Metric) {
 			metric.SetName("mongodbatlas.process.connections")
 			metric.SetDescription("Number of current connections")
-			metric.SetUnit("1")
+			metric.SetUnit("{connections}")
 			metric.SetDataType(pdata.MetricDataTypeGauge)
 		},
 	},
@@ -335,7 +326,7 @@ var Metrics = &metricStruct{
 		"mongodbatlas.process.cpu.children.usage",
 		func(metric pdata.Metric) {
 			metric.SetName("mongodbatlas.process.cpu.children.usage")
-			metric.SetDescription("CPU Usage for child processes")
+			metric.SetDescription("CPU Usage for child processes (%)")
 			metric.SetUnit("1")
 			metric.SetDataType(pdata.MetricDataTypeGauge)
 		},
@@ -353,7 +344,7 @@ var Metrics = &metricStruct{
 		"mongodbatlas.process.cpu.usage",
 		func(metric pdata.Metric) {
 			metric.SetName("mongodbatlas.process.cpu.usage")
-			metric.SetDescription("CPU Usage")
+			metric.SetDescription("CPU Usage (%)")
 			metric.SetUnit("1")
 			metric.SetDataType(pdata.MetricDataTypeGauge)
 		},
@@ -363,7 +354,7 @@ var Metrics = &metricStruct{
 		func(metric pdata.Metric) {
 			metric.SetName("mongodbatlas.process.cursors")
 			metric.SetDescription("Number of cursors")
-			metric.SetUnit("1")
+			metric.SetUnit("{cursors}")
 			metric.SetDataType(pdata.MetricDataTypeGauge)
 		},
 	},
@@ -372,7 +363,7 @@ var Metrics = &metricStruct{
 		func(metric pdata.Metric) {
 			metric.SetName("mongodbatlas.process.db.document.rate")
 			metric.SetDescription("Document access rates")
-			metric.SetUnit("1")
+			metric.SetUnit("{documents}/s")
 			metric.SetDataType(pdata.MetricDataTypeGauge)
 		},
 	},
@@ -380,8 +371,8 @@ var Metrics = &metricStruct{
 		"mongodbatlas.process.db.operations.rate",
 		func(metric pdata.Metric) {
 			metric.SetName("mongodbatlas.process.db.operations.rate")
-			metric.SetDescription("FIXME")
-			metric.SetUnit("1")
+			metric.SetDescription("DB Operation Rates")
+			metric.SetUnit("{operations}/s")
 			metric.SetDataType(pdata.MetricDataTypeGauge)
 		},
 	},
@@ -389,9 +380,11 @@ var Metrics = &metricStruct{
 		"mongodbatlas.process.db.operations.time",
 		func(metric pdata.Metric) {
 			metric.SetName("mongodbatlas.process.db.operations.time")
-			metric.SetDescription("FIXME")
-			metric.SetUnit("1")
-			metric.SetDataType(pdata.MetricDataTypeGauge)
+			metric.SetDescription("DB Operation Times")
+			metric.SetUnit("ms")
+			metric.SetDataType(pdata.MetricDataTypeSum)
+			metric.Sum().SetIsMonotonic(true)
+			metric.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
 		},
 	},
 	&metricImpl{
@@ -399,7 +392,7 @@ var Metrics = &metricStruct{
 		func(metric pdata.Metric) {
 			metric.SetName("mongodbatlas.process.db.query_executor.scanned")
 			metric.SetDescription("Scanned objects")
-			metric.SetUnit("1")
+			metric.SetUnit("{objects}/s")
 			metric.SetDataType(pdata.MetricDataTypeGauge)
 		},
 	},
@@ -408,7 +401,7 @@ var Metrics = &metricStruct{
 		func(metric pdata.Metric) {
 			metric.SetName("mongodbatlas.process.db.query_targeting.scanned_per_returned")
 			metric.SetDescription("Scanned objects per returned")
-			metric.SetUnit("1")
+			metric.SetUnit("{scanned}/{returned}")
 			metric.SetDataType(pdata.MetricDataTypeGauge)
 		},
 	},
@@ -416,17 +409,8 @@ var Metrics = &metricStruct{
 		"mongodbatlas.process.db.storage",
 		func(metric pdata.Metric) {
 			metric.SetName("mongodbatlas.process.db.storage")
-			metric.SetDescription("FIXME")
-			metric.SetUnit("1")
-			metric.SetDataType(pdata.MetricDataTypeGauge)
-		},
-	},
-	&metricImpl{
-		"mongodbatlas.process.fts.cpu.normalized.usage",
-		func(metric pdata.Metric) {
-			metric.SetName("mongodbatlas.process.fts.cpu.normalized.usage")
-			metric.SetDescription("Full text search CPU, normalized to pct")
-			metric.SetUnit("1")
+			metric.SetDescription("Storage used by the database")
+			metric.SetUnit("By")
 			metric.SetDataType(pdata.MetricDataTypeGauge)
 		},
 	},
@@ -434,25 +418,7 @@ var Metrics = &metricStruct{
 		"mongodbatlas.process.fts.cpu.usage",
 		func(metric pdata.Metric) {
 			metric.SetName("mongodbatlas.process.fts.cpu.usage")
-			metric.SetDescription("Full text search CPU")
-			metric.SetUnit("1")
-			metric.SetDataType(pdata.MetricDataTypeGauge)
-		},
-	},
-	&metricImpl{
-		"mongodbatlas.process.fts.disk.usage",
-		func(metric pdata.Metric) {
-			metric.SetName("mongodbatlas.process.fts.disk.usage")
-			metric.SetDescription("Full text search disk usage")
-			metric.SetUnit("1")
-			metric.SetDataType(pdata.MetricDataTypeGauge)
-		},
-	},
-	&metricImpl{
-		"mongodbatlas.process.fts.memory.usage",
-		func(metric pdata.Metric) {
-			metric.SetName("mongodbatlas.process.fts.memory.usage")
-			metric.SetDescription("Full text search memory usage")
+			metric.SetDescription("Full text search CPU (%)")
 			metric.SetUnit("1")
 			metric.SetDataType(pdata.MetricDataTypeGauge)
 		},
@@ -462,7 +428,7 @@ var Metrics = &metricStruct{
 		func(metric pdata.Metric) {
 			metric.SetName("mongodbatlas.process.global_lock")
 			metric.SetDescription("Number and status of locks")
-			metric.SetUnit("1")
+			metric.SetUnit("{locks}")
 			metric.SetDataType(pdata.MetricDataTypeGauge)
 		},
 	},
@@ -470,7 +436,7 @@ var Metrics = &metricStruct{
 		"mongodbatlas.process.index.btree_miss_ratio",
 		func(metric pdata.Metric) {
 			metric.SetName("mongodbatlas.process.index.btree_miss_ratio")
-			metric.SetDescription("Index miss ratio")
+			metric.SetDescription("Index miss ratio (%)")
 			metric.SetUnit("1")
 			metric.SetDataType(pdata.MetricDataTypeGauge)
 		},
@@ -480,7 +446,7 @@ var Metrics = &metricStruct{
 		func(metric pdata.Metric) {
 			metric.SetName("mongodbatlas.process.index.counters")
 			metric.SetDescription("Indexes")
-			metric.SetUnit("1")
+			metric.SetUnit("{indexes}")
 			metric.SetDataType(pdata.MetricDataTypeGauge)
 		},
 	},
@@ -489,7 +455,7 @@ var Metrics = &metricStruct{
 		func(metric pdata.Metric) {
 			metric.SetName("mongodbatlas.process.journaling.commits")
 			metric.SetDescription("Journaling commits")
-			metric.SetUnit("1")
+			metric.SetUnit("{commits}")
 			metric.SetDataType(pdata.MetricDataTypeGauge)
 		},
 	},
@@ -498,7 +464,7 @@ var Metrics = &metricStruct{
 		func(metric pdata.Metric) {
 			metric.SetName("mongodbatlas.process.journaling.data_files")
 			metric.SetDescription("Data file sizes")
-			metric.SetUnit("1")
+			metric.SetUnit("MiBy")
 			metric.SetDataType(pdata.MetricDataTypeGauge)
 		},
 	},
@@ -507,7 +473,7 @@ var Metrics = &metricStruct{
 		func(metric pdata.Metric) {
 			metric.SetName("mongodbatlas.process.journaling.written")
 			metric.SetDescription("Journals written")
-			metric.SetUnit("1")
+			metric.SetUnit("MiBy")
 			metric.SetDataType(pdata.MetricDataTypeGauge)
 		},
 	},
@@ -516,7 +482,7 @@ var Metrics = &metricStruct{
 		func(metric pdata.Metric) {
 			metric.SetName("mongodbatlas.process.memory.usage")
 			metric.SetDescription("Memory Usage")
-			metric.SetUnit("1")
+			metric.SetUnit("By")
 			metric.SetDataType(pdata.MetricDataTypeGauge)
 		},
 	},
@@ -525,7 +491,7 @@ var Metrics = &metricStruct{
 		func(metric pdata.Metric) {
 			metric.SetName("mongodbatlas.process.network.io")
 			metric.SetDescription("Network IO")
-			metric.SetUnit("1")
+			metric.SetUnit("By/s")
 			metric.SetDataType(pdata.MetricDataTypeGauge)
 		},
 	},
@@ -534,8 +500,10 @@ var Metrics = &metricStruct{
 		func(metric pdata.Metric) {
 			metric.SetName("mongodbatlas.process.network.requests")
 			metric.SetDescription("Network requests")
-			metric.SetUnit("1")
-			metric.SetDataType(pdata.MetricDataTypeGauge)
+			metric.SetUnit("{requests}")
+			metric.SetDataType(pdata.MetricDataTypeSum)
+			metric.Sum().SetIsMonotonic(true)
+			metric.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
 		},
 	},
 	&metricImpl{
@@ -543,7 +511,7 @@ var Metrics = &metricStruct{
 		func(metric pdata.Metric) {
 			metric.SetName("mongodbatlas.process.oplog.rate")
 			metric.SetDescription("Execution rate by operation")
-			metric.SetUnit("1")
+			metric.SetUnit("GiBy/h")
 			metric.SetDataType(pdata.MetricDataTypeGauge)
 		},
 	},
@@ -552,7 +520,7 @@ var Metrics = &metricStruct{
 		func(metric pdata.Metric) {
 			metric.SetName("mongodbatlas.process.oplog.time")
 			metric.SetDescription("Execution time by operation")
-			metric.SetUnit("1")
+			metric.SetUnit("s")
 			metric.SetDataType(pdata.MetricDataTypeGauge)
 		},
 	},
@@ -561,7 +529,7 @@ var Metrics = &metricStruct{
 		func(metric pdata.Metric) {
 			metric.SetName("mongodbatlas.process.page_faults")
 			metric.SetDescription("Page faults")
-			metric.SetUnit("1")
+			metric.SetUnit("{faults}/s")
 			metric.SetDataType(pdata.MetricDataTypeGauge)
 		},
 	},
@@ -570,7 +538,7 @@ var Metrics = &metricStruct{
 		func(metric pdata.Metric) {
 			metric.SetName("mongodbatlas.process.restarts")
 			metric.SetDescription("Restarts in last hour")
-			metric.SetUnit("1")
+			metric.SetUnit("{restarts}/h")
 			metric.SetDataType(pdata.MetricDataTypeGauge)
 		},
 	},
@@ -579,7 +547,7 @@ var Metrics = &metricStruct{
 		func(metric pdata.Metric) {
 			metric.SetName("mongodbatlas.process.tickets")
 			metric.SetDescription("Tickets")
-			metric.SetUnit("1")
+			metric.SetUnit("{tickets}")
 			metric.SetDataType(pdata.MetricDataTypeGauge)
 		},
 	},
@@ -596,7 +564,7 @@ var Metrics = &metricStruct{
 		"mongodbatlas.system.cpu.usage",
 		func(metric pdata.Metric) {
 			metric.SetName("mongodbatlas.system.cpu.usage")
-			metric.SetDescription("System CPU Usage")
+			metric.SetDescription("System CPU Usage (%)")
 			metric.SetUnit("1")
 			metric.SetDataType(pdata.MetricDataTypeGauge)
 		},
@@ -605,7 +573,7 @@ var Metrics = &metricStruct{
 		"mongodbatlas.system.fts.cpu.normalized.usage",
 		func(metric pdata.Metric) {
 			metric.SetName("mongodbatlas.system.fts.cpu.normalized.usage")
-			metric.SetDescription("Full text search disk usage")
+			metric.SetDescription("Full text search disk usage (%)")
 			metric.SetUnit("1")
 			metric.SetDataType(pdata.MetricDataTypeGauge)
 		},
@@ -614,17 +582,17 @@ var Metrics = &metricStruct{
 		"mongodbatlas.system.fts.cpu.usage",
 		func(metric pdata.Metric) {
 			metric.SetName("mongodbatlas.system.fts.cpu.usage")
-			metric.SetDescription("Full-text search")
+			metric.SetDescription("Full-text search (%)")
 			metric.SetUnit("1")
 			metric.SetDataType(pdata.MetricDataTypeGauge)
 		},
 	},
 	&metricImpl{
-		"mongodbatlas.system.fts.disk.utilization",
+		"mongodbatlas.system.fts.disk.used",
 		func(metric pdata.Metric) {
-			metric.SetName("mongodbatlas.system.fts.disk.utilization")
+			metric.SetName("mongodbatlas.system.fts.disk.used")
 			metric.SetDescription("Full text search disk usage")
-			metric.SetUnit("1")
+			metric.SetUnit("By")
 			metric.SetDataType(pdata.MetricDataTypeGauge)
 		},
 	},
@@ -633,8 +601,10 @@ var Metrics = &metricStruct{
 		func(metric pdata.Metric) {
 			metric.SetName("mongodbatlas.system.fts.memory.usage")
 			metric.SetDescription("Full-text search")
-			metric.SetUnit("1")
-			metric.SetDataType(pdata.MetricDataTypeGauge)
+			metric.SetUnit("MiBy")
+			metric.SetDataType(pdata.MetricDataTypeSum)
+			metric.Sum().SetIsMonotonic(true)
+			metric.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
 		},
 	},
 	&metricImpl{
@@ -642,7 +612,7 @@ var Metrics = &metricStruct{
 		func(metric pdata.Metric) {
 			metric.SetName("mongodbatlas.system.memory.usage")
 			metric.SetDescription("System Memory Usage")
-			metric.SetUnit("1")
+			metric.SetUnit("KiBy")
 			metric.SetDataType(pdata.MetricDataTypeGauge)
 		},
 	},
@@ -651,7 +621,7 @@ var Metrics = &metricStruct{
 		func(metric pdata.Metric) {
 			metric.SetName("mongodbatlas.system.network.io")
 			metric.SetDescription("System Network IO")
-			metric.SetUnit("1")
+			metric.SetUnit("By/s")
 			metric.SetDataType(pdata.MetricDataTypeGauge)
 		},
 	},
@@ -660,7 +630,7 @@ var Metrics = &metricStruct{
 		func(metric pdata.Metric) {
 			metric.SetName("mongodbatlas.system.paging.io")
 			metric.SetDescription("Swap IO")
-			metric.SetUnit("1")
+			metric.SetUnit("{pages}/s")
 			metric.SetDataType(pdata.MetricDataTypeGauge)
 		},
 	},
@@ -669,7 +639,7 @@ var Metrics = &metricStruct{
 		func(metric pdata.Metric) {
 			metric.SetName("mongodbatlas.system.paging.usage")
 			metric.SetDescription("Swap usage")
-			metric.SetUnit("1")
+			metric.SetUnit("KiBy")
 			metric.SetDataType(pdata.MetricDataTypeGauge)
 		},
 	},
@@ -681,8 +651,331 @@ var M = Metrics
 
 // Labels contains the possible metric labels that can be used.
 var Labels = struct {
-}{}
+	// Aggregation (Method used by MongoDB to pre-aggregate metrics)
+	Aggregation string
+	// AssertType (MongoDB assertion type)
+	AssertType string
+	// BtreeCounterType (Database index effectiveness)
+	BtreeCounterType string
+	// CacheDirection (Whether read into or written from)
+	CacheDirection string
+	// CacheStatus (Cache status)
+	CacheStatus string
+	// ClusterRole (Whether process is acting as replica or primary)
+	ClusterRole string
+	// CPUState (CPU state)
+	CPUState string
+	// CursorState (Whether cursor is open or timed out)
+	CursorState string
+	// Direction (Network traffic direction)
+	Direction string
+	// DiskDirection (Measurement type for disk operation)
+	DiskDirection string
+	// DiskStatus (Disk measurement type)
+	DiskStatus string
+	// DocumentStatus (Status of documents in the database)
+	DocumentStatus string
+	// ExecutionType (Type of command)
+	ExecutionType string
+	// GlobalLockState (Which queue is locked)
+	GlobalLockState string
+	// MemoryIssueType (Type of memory issue encountered)
+	MemoryIssueType string
+	// MemoryState (Memory usage type)
+	MemoryState string
+	// ObjectType (MongoDB object type)
+	ObjectType string
+	// Operation (Type of database operation)
+	Operation string
+	// OplogType (Oplog type)
+	OplogType string
+	// ScannedType (Objects or indexes scanned during query)
+	ScannedType string
+	// StorageStatus (Views on database size)
+	StorageStatus string
+	// TicketType (Type of ticket available)
+	TicketType string
+}{
+	"aggregation",
+	"assert_type",
+	"btree_counter_type",
+	"cache_direction",
+	"cache_status",
+	"cluster_role",
+	"cpu_state",
+	"cursor_state",
+	"direction",
+	"disk_direction",
+	"disk_status",
+	"document_status",
+	"execution_type",
+	"global_lock_state",
+	"memory_issue_type",
+	"memory_state",
+	"object_type",
+	"operation",
+	"oplog_type",
+	"scanned_type",
+	"storage_status",
+	"ticket_type",
+}
 
 // L contains the possible metric labels that can be used. L is an alias for
 // Labels.
 var L = Labels
+
+// LabelAggregation are the possible values that the label "aggregation" can have.
+var LabelAggregation = struct {
+	Max string
+	Avg string
+}{
+	"max",
+	"avg",
+}
+
+// LabelAssertType are the possible values that the label "assert_type" can have.
+var LabelAssertType = struct {
+	Regular string
+	Warning string
+	Msg     string
+	User    string
+}{
+	"regular",
+	"warning",
+	"msg",
+	"user",
+}
+
+// LabelBtreeCounterType are the possible values that the label "btree_counter_type" can have.
+var LabelBtreeCounterType = struct {
+	Accesses string
+	Hits     string
+	Misses   string
+}{
+	"accesses",
+	"hits",
+	"misses",
+}
+
+// LabelCacheDirection are the possible values that the label "cache_direction" can have.
+var LabelCacheDirection = struct {
+	ReadInto    string
+	WrittenFrom string
+}{
+	"read_into",
+	"written_from",
+}
+
+// LabelCacheStatus are the possible values that the label "cache_status" can have.
+var LabelCacheStatus = struct {
+	Dirty string
+	Used  string
+}{
+	"dirty",
+	"used",
+}
+
+// LabelClusterRole are the possible values that the label "cluster_role" can have.
+var LabelClusterRole = struct {
+	Primary string
+	Replica string
+}{
+	"primary",
+	"replica",
+}
+
+// LabelCPUState are the possible values that the label "cpu_state" can have.
+var LabelCPUState = struct {
+	Kernel  string
+	User    string
+	Nice    string
+	Iowait  string
+	Irq     string
+	Softirq string
+	Guest   string
+	Steal   string
+}{
+	"kernel",
+	"user",
+	"nice",
+	"iowait",
+	"irq",
+	"softirq",
+	"guest",
+	"steal",
+}
+
+// LabelCursorState are the possible values that the label "cursor_state" can have.
+var LabelCursorState = struct {
+	TimedOut string
+	Open     string
+}{
+	"timed_out",
+	"open",
+}
+
+// LabelDirection are the possible values that the label "direction" can have.
+var LabelDirection = struct {
+	Receive  string
+	Transmit string
+}{
+	"receive",
+	"transmit",
+}
+
+// LabelDiskDirection are the possible values that the label "disk_direction" can have.
+var LabelDiskDirection = struct {
+	Read  string
+	Write string
+	Total string
+}{
+	"read",
+	"write",
+	"total",
+}
+
+// LabelDiskStatus are the possible values that the label "disk_status" can have.
+var LabelDiskStatus = struct {
+	Free string
+	Used string
+}{
+	"free",
+	"used",
+}
+
+// LabelDocumentStatus are the possible values that the label "document_status" can have.
+var LabelDocumentStatus = struct {
+	Returned string
+	Inserted string
+	Updated  string
+	Deleted  string
+}{
+	"returned",
+	"inserted",
+	"updated",
+	"deleted",
+}
+
+// LabelExecutionType are the possible values that the label "execution_type" can have.
+var LabelExecutionType = struct {
+	Reads    string
+	Writes   string
+	Commands string
+}{
+	"reads",
+	"writes",
+	"commands",
+}
+
+// LabelGlobalLockState are the possible values that the label "global_lock_state" can have.
+var LabelGlobalLockState = struct {
+	CurrentQueueTotal   string
+	CurrentQueueReaders string
+	CurrentQueueWriters string
+}{
+	"current_queue_total",
+	"current_queue_readers",
+	"current_queue_writers",
+}
+
+// LabelMemoryIssueType are the possible values that the label "memory_issue_type" can have.
+var LabelMemoryIssueType = struct {
+	ExtraInfo                 string
+	GlobalAccessesNotInMemory string
+	ExceptionsThrown          string
+}{
+	"extra_info",
+	"global_accesses_not_in_memory",
+	"exceptions_thrown",
+}
+
+// LabelMemoryState are the possible values that the label "memory_state" can have.
+var LabelMemoryState = struct {
+	Resident string
+	Virtual  string
+	Mapped   string
+	Computed string
+}{
+	"resident",
+	"virtual",
+	"mapped",
+	"computed",
+}
+
+// LabelObjectType are the possible values that the label "object_type" can have.
+var LabelObjectType = struct {
+	Collection string
+	Index      string
+	Extent     string
+	Object     string
+	View       string
+	Storage    string
+	Data       string
+}{
+	"collection",
+	"index",
+	"extent",
+	"object",
+	"view",
+	"storage",
+	"data",
+}
+
+// LabelOperation are the possible values that the label "operation" can have.
+var LabelOperation = struct {
+	Cmd     string
+	Query   string
+	Update  string
+	Delete  string
+	Getmore string
+	Insert  string
+}{
+	"cmd",
+	"query",
+	"update",
+	"delete",
+	"getmore",
+	"insert",
+}
+
+// LabelOplogType are the possible values that the label "oplog_type" can have.
+var LabelOplogType = struct {
+	SlaveLagMasterTime string
+	MasterTime         string
+	MasterLagTimeDiff  string
+}{
+	"slave_lag_master_time",
+	"master_time",
+	"master_lag_time_diff",
+}
+
+// LabelScannedType are the possible values that the label "scanned_type" can have.
+var LabelScannedType = struct {
+	IndexItems string
+	Objects    string
+}{
+	"index_items",
+	"objects",
+}
+
+// LabelStorageStatus are the possible values that the label "storage_status" can have.
+var LabelStorageStatus = struct {
+	Total            string
+	DataSize         string
+	IndexSize        string
+	DataSizeWoSystem string
+}{
+	"total",
+	"data_size",
+	"index_size",
+	"data_size_wo_system",
+}
+
+// LabelTicketType are the possible values that the label "ticket_type" can have.
+var LabelTicketType = struct {
+	AvailableReads  string
+	AvailableWrites string
+}{
+	"available_reads",
+	"available_writes",
+}
