@@ -33,9 +33,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configmapprovider"
 	"go.opentelemetry.io/collector/processor/batchprocessor"
 	"go.opentelemetry.io/collector/service"
-	"go.opentelemetry.io/collector/config/configmapprovider"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 

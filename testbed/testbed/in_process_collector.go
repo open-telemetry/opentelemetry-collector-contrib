@@ -21,8 +21,8 @@ import (
 
 	"github.com/shirou/gopsutil/v3/process"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/service"
 	"go.opentelemetry.io/collector/config/configmapprovider"
+	"go.opentelemetry.io/collector/service"
 )
 
 // inProcessCollector implements the OtelcolRunner interfaces running a single otelcol as a go routine within the
