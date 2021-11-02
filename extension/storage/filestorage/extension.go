@@ -17,8 +17,6 @@ package filestorage // import "github.com/open-telemetry/opentelemetry-collector
 import (
 	"context"
 	"fmt"
-	"io/fs"
-	"os"
 	"path/filepath"
 	"time"
 
@@ -38,23 +36,6 @@ type localFileStorage struct {
 var _ storage.Extension = (*localFileStorage)(nil)
 
 func newLocalFileStorage(logger *zap.Logger, config *Config) (component.Extension, error) {
-	info, err := os.Stat(config.Directory)
-	if err != nil {
-		if os.IsNotExist(err) {
-			return nil, fmt.Errorf("directory must exist: %v", err)
-		}
-		if fsErr, ok := err.(*fs.PathError); ok {
-			return nil, fmt.Errorf(
-				"problem accessing configured directory: %s, err: %v",
-				config.Directory, fsErr,
-			)
-		}
-
-	}
-	if !info.IsDir() {
-		return nil, fmt.Errorf("%s is not a directory: %v", config.Directory, err)
-	}
-
 	return &localFileStorage{
 		directory: filepath.Clean(config.Directory),
 		timeout:   config.Timeout,
