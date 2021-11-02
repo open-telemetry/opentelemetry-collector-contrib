@@ -109,7 +109,10 @@ require (
 	golang.org/x/sys v0.0.0-20211025201205-69cdffdb9359
 )
 
-require github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbatlasreceiver v0.38.0
+require (
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/memcachedreceiver v0.0.0-00010101000000-000000000000
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbatlasreceiver v0.38.0
+)
 
 require (
 	cloud.google.com/go v0.97.0 // indirect
