@@ -50,7 +50,7 @@ func TestExternalLabels(t *testing.T) {
 	cfg.GlobalConfig.ExternalLabels = labels.FromStrings("key", "value")
 	require.Nilf(t, err, "Failed to create Prometheus config: %v", err)
 
-	testHelper(t, targets, mp, cfg)
+	testMetricsReceiver(t, targets, mp, cfg)
 }
 
 func verifyExternalLabels(t *testing.T, td *testData, mds []*agentmetricspb.ExportMetricsServiceRequest) {
@@ -151,11 +151,11 @@ func TestLabelLimitConfig(t *testing.T) {
 		scrapeCfg.LabelLimit = 5
 	}
 
-	testHelper(t, targets, mp, cfg)
+	testMetricsReceiver(t, targets, mp, cfg)
 }
 
 // starts prometheus receiver with custom config, retrieves metrics from MetricsSink
-func testHelper(t *testing.T, targets []*testData, mp *mockPrometheus, cfg *promcfg.Config) {
+func testMetricsReceiver(t *testing.T, targets []*testData, mp *mockPrometheus, cfg *promcfg.Config) {
 	ctx := context.Background()
 	defer mp.Close()
 
