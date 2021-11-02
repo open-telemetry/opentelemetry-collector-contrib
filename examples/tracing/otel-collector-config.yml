@@ -6,7 +6,7 @@ receivers:
 
 exporters:
   jaeger_thrift:
-    url: "http://jaeger:14268/api/traces"
+    endpoint: "http://jaeger:14268/api/traces"
   logging:
   zipkin:
     endpoint: "http://zipkin:9411/api/v2/spans"
