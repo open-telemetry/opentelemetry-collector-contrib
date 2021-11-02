@@ -35,6 +35,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/humioexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/influxdbexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/jaegerexporter"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/jaegerthrifthttpexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/loadbalancingexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/logzioexporter"
@@ -50,6 +51,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/stackdriverexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sumologicexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/tanzuobservabilityexporter"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/tencentcloudlogserviceexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/zipkinexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/awsproxy"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/bearertokenauthextension"
@@ -78,6 +80,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanmetricsprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsecscontainermetricsreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsxrayreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver"
@@ -150,6 +153,7 @@ func Components() (component.Factories, error) {
 	}
 
 	receivers := []component.ReceiverFactory{
+		awscontainerinsightreceiver.NewFactory(),
 		awsecscontainermetricsreceiver.NewFactory(),
 		awsxrayreceiver.NewFactory(),
 		carbonreceiver.NewFactory(),
@@ -217,6 +221,7 @@ func Components() (component.Factories, error) {
 		humioexporter.NewFactory(),
 		influxdbexporter.NewFactory(),
 		jaegerexporter.NewFactory(),
+		jaegerthrifthttpexporter.NewFactory(),
 		kafkaexporter.NewFactory(),
 		loadbalancingexporter.NewFactory(),
 		logzioexporter.NewFactory(),
@@ -232,6 +237,7 @@ func Components() (component.Factories, error) {
 		stackdriverexporter.NewFactory(),
 		sumologicexporter.NewFactory(),
 		tanzuobservabilityexporter.NewFactory(),
+		tencentcloudlogserviceexporter.NewFactory(),
 		zipkinexporter.NewFactory(),
 	}
 	for _, exp := range factories.Exporters {

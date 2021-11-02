@@ -7,14 +7,14 @@ require (
 	github.com/go-kit/log v0.2.0
 	github.com/gogo/protobuf v1.3.2
 	github.com/golang/snappy v0.0.4
-	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusremotewriteexporter v0.37.1
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.37.1
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus v0.37.1
-	github.com/prometheus/common v0.31.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusremotewriteexporter v0.38.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.38.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus v0.38.0
+	github.com/prometheus/common v0.32.1
 	github.com/prometheus/prometheus v1.8.2-0.20210621150501-ff58416a0b02
 	github.com/stretchr/testify v1.7.0
-	go.opentelemetry.io/collector v0.37.1-0.20211015233822-bd87fb628058
-	go.opentelemetry.io/collector/model v0.37.1-0.20211015233822-bd87fb628058
+	go.opentelemetry.io/collector v0.38.0
+	go.opentelemetry.io/collector/model v0.38.0
 	go.uber.org/zap v1.19.1
 	google.golang.org/protobuf v1.27.1
 	gopkg.in/yaml.v2 v2.4.0
@@ -79,7 +79,7 @@ require (
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
 	github.com/jpillora/backoff v1.0.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
-	github.com/knadh/koanf v1.2.4 // indirect
+	github.com/knadh/koanf v1.3.0 // indirect
 	github.com/linode/linodego v0.28.5 // indirect
 	github.com/magiconair/properties v1.8.5 // indirect
 	github.com/mattn/go-colorable v0.1.8 // indirect
@@ -93,7 +93,7 @@ require (
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/mwitkow/go-conntrack v0.0.0-20190716064945-2f068394615f // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry v0.37.1 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry v0.38.0 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/opencontainers/image-spec v1.0.1 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
@@ -109,11 +109,11 @@ require (
 	github.com/spf13/cast v1.4.1 // indirect
 	github.com/spf13/cobra v1.2.1 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
-	github.com/tidwall/gjson v1.8.1 // indirect
-	github.com/tidwall/match v1.0.3 // indirect
-	github.com/tidwall/pretty v1.1.0 // indirect
-	github.com/tidwall/tinylru v1.0.2 // indirect
-	github.com/tidwall/wal v0.1.5 // indirect
+	github.com/tidwall/gjson v1.10.2 // indirect
+	github.com/tidwall/match v1.1.1 // indirect
+	github.com/tidwall/pretty v1.2.0 // indirect
+	github.com/tidwall/tinylru v1.1.0 // indirect
+	github.com/tidwall/wal v0.1.6 // indirect
 	github.com/tklauser/go-sysconf v0.3.9 // indirect
 	github.com/tklauser/numcpus v0.3.0 // indirect
 	go.opencensus.io v0.23.0 // indirect

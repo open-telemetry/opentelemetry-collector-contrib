@@ -23,7 +23,8 @@ INTEGRATION_TEST_MODULES := \
 	receiver/kafkametricsreceiver \
 	receiver/nginxreceiver \
 	receiver/memcachedreceiver \
-	internal/common
+	internal/common \
+	extension/observer/dockerobserver
 
 .DEFAULT_GOAL := all
 

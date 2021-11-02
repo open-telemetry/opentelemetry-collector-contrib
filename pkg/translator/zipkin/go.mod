@@ -6,11 +6,11 @@ require (
 	github.com/census-instrumentation/opencensus-proto v0.3.0
 	github.com/google/go-cmp v0.5.6
 	github.com/jaegertracing/jaeger v1.27.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.37.1
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus v0.37.1
-	github.com/openzipkin/zipkin-go v0.2.5
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.38.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus v0.38.0
+	github.com/openzipkin/zipkin-go v0.3.0
 	github.com/stretchr/testify v1.7.0
-	go.opentelemetry.io/collector/model v0.37.1-0.20211015233822-bd87fb628058
+	go.opentelemetry.io/collector/model v0.38.0
 	google.golang.org/protobuf v1.27.1
 
 )
@@ -29,12 +29,7 @@ require (
 	go.uber.org/atomic v1.9.0 // indirect
 	go.uber.org/multierr v1.7.0 // indirect
 	go.uber.org/zap v1.19.1 // indirect
-	golang.org/x/net v0.0.0-20210917221730-978cfadd31cf // indirect
-	golang.org/x/sys v0.0.0-20210823070655-63515b42dcdf // indirect
-	golang.org/x/text v0.3.7 // indirect
 	golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1 // indirect
-	google.golang.org/genproto v0.0.0-20210828152312-66f60bf46e71 // indirect
-	google.golang.org/grpc v1.41.0 // indirect
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b // indirect
 )
 

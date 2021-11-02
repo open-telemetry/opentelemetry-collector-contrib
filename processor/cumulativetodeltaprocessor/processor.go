@@ -18,17 +18,16 @@ import (
 	"context"
 	"math"
 
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/model/pdata"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/cumulativetodeltaprocessor/tracking"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/cumulativetodeltaprocessor/internal/tracking"
 )
 
 type cumulativeToDeltaProcessor struct {
 	metrics         map[string]struct{}
 	logger          *zap.Logger
-	deltaCalculator tracking.MetricTracker
+	deltaCalculator *tracking.MetricTracker
 	cancelFunc      context.CancelFunc
 }
 
@@ -48,11 +47,6 @@ func newCumulativeToDeltaProcessor(config *Config, logger *zap.Logger) *cumulati
 	return p
 }
 
-// Start is invoked during service startup.
-func (ctdp *cumulativeToDeltaProcessor) Start(context.Context, component.Host) error {
-	return nil
-}
-
 // processMetrics implements the ProcessMetricsFunc type.
 func (ctdp *cumulativeToDeltaProcessor) processMetrics(_ context.Context, md pdata.Metrics) (pdata.Metrics, error) {
 	resourceMetricsSlice := md.ResourceMetrics()
@@ -63,13 +57,6 @@ func (ctdp *cumulativeToDeltaProcessor) processMetrics(_ context.Context, md pda
 			ms.RemoveIf(func(m pdata.Metric) bool {
 				if _, ok := ctdp.metrics[m.Name()]; !ok {
 					return false
-				}
-				baseIdentity := tracking.MetricIdentity{
-					Resource:               rm.Resource(),
-					InstrumentationLibrary: ilm.InstrumentationLibrary(),
-					MetricDataType:         m.DataType(),
-					MetricName:             m.Name(),
-					MetricUnit:             m.Unit(),
 				}
 				switch m.DataType() {
 				case pdata.MetricDataTypeSum:
@@ -83,7 +70,14 @@ func (ctdp *cumulativeToDeltaProcessor) processMetrics(_ context.Context, md pda
 						return false
 					}
 
-					baseIdentity.MetricIsMonotonic = ms.IsMonotonic()
+					baseIdentity := tracking.MetricIdentity{
+						Resource:               rm.Resource(),
+						InstrumentationLibrary: ilm.InstrumentationLibrary(),
+						MetricDataType:         m.DataType(),
+						MetricName:             m.Name(),
+						MetricUnit:             m.Unit(),
+						MetricIsMonotonic:      ms.IsMonotonic(),
+					}
 					ctdp.convertDataPoints(ms.DataPoints(), baseIdentity)
 					ms.SetAggregationTemporality(pdata.MetricAggregationTemporalityDelta)
 					return ms.DataPoints().Len() == 0
@@ -98,8 +92,7 @@ func (ctdp *cumulativeToDeltaProcessor) processMetrics(_ context.Context, md pda
 	return md, nil
 }
 
-// Shutdown is invoked during service shutdown.
-func (ctdp *cumulativeToDeltaProcessor) Shutdown(context.Context) error {
+func (ctdp *cumulativeToDeltaProcessor) shutdown(context.Context) error {
 	ctdp.cancelFunc()
 	return nil
 }

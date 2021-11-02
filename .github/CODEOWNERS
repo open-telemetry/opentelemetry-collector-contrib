@@ -27,6 +27,7 @@ exporter/elasticsearchexporter/                      @open-telemetry/collector-c
 exporter/f5cloudexporter/                            @open-telemetry/collector-contrib-approvers @gramidt
 exporter/honeycombexporter/                          @open-telemetry/collector-contrib-approvers @paulosman @lizthegrey @MikeGoldsmith
 exporter/humioexporter/                              @open-telemetry/collector-contrib-approvers @xitric
+exporter/jaegerthrifthttpexporter/                   @open-telemetry/collector-contrib-approvers @jpkrohling @pavolloffay
 exporter/awskinesisexporter/                         @open-telemetry/collector-contrib-approvers @owais @anuraaga
 exporter/loadbalancingexporter/                      @open-telemetry/collector-contrib-approvers @jpkrohling
 exporter/logzioexporter/                             @open-telemetry/collector-contrib-approvers @jkowall @Doron-Bargo @yotamloe
@@ -43,11 +44,14 @@ exporter/sumologicexporter/                          @open-telemetry/collector-c
 exporter/uptraceexporter/                            @open-telemetry/collector-contrib-approvers @vmihailenco
 exporter/googlecloudpubsubexporter/                  @open-telemetry/collector-contrib-approvers @alexvanboxel
 exporter/tanzuobservabilityexporter/                 @open-telemetry/collector-contrib-approvers @oppegard @thepeterstone
+exporter/tencentcloudlogserviceexporter/             @open-telemetry/collector-contrib-approvers @wgliang @yiyang5055
 exporter/influxdbexporter/                           @open-telemetry/collector-contrib-approvers @jacobmarble @8none1
 
 extension/awsproxy/                                  @open-telemetry/collector-contrib-approvers @anuraaga @Aneurysm9 @mxiamxia
 extension/httpforwarder/                             @open-telemetry/collector-contrib-approvers @asuresh4
 extension/observer/                                  @open-telemetry/collector-contrib-approvers @asuresh4 @jrcamp
+extension/bearertokenauthextension/                  @open-telemetry/collector-contrib-approvers @jpkrohling @pavankrish123
+extension/oauth2clientauthextension/                 @open-telemetry/collector-contrib-approvers @pavankrish123
 
 internal/aws/                                        @open-telemetry/collector-contrib-approvers @anuraaga @mxiamxia
 internal/docker/                                     @open-telemetry/collector-contrib-approvers @mstumpfx @rmfitzpatrick
@@ -79,6 +83,7 @@ receiver/dotnetdiagnosticsreceiver/                  @open-telemetry/collector-c
 receiver/httpdreceiver/                              @open-telemetry/collector-contrib-approvers @djaglowski
 receiver/jmxreceiver/                                @open-telemetry/collector-contrib-approvers @rmfitzpatrick
 receiver/k8sclusterreceiver/                         @open-telemetry/collector-contrib-approvers @asuresh4
+receiver/k8seventsreceiver/                          @open-telemetry/collector-contrib-approvers @dmitryax
 receiver/kubeletstatsreceiver/                       @open-telemetry/collector-contrib-approvers @pmcollins @asuresh4
 receiver/mysqlreceiver/                              @open-telemetry/collector-contrib-approvers @djaglowski
 receiver/prometheusexecreceiver/                     @open-telemetry/collector-contrib-approvers @keitwb

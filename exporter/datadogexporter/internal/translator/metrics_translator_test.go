@@ -21,6 +21,7 @@ import (
 	"time"
 
 	"github.com/DataDog/datadog-agent/pkg/quantile"
+	"github.com/DataDog/datadog-agent/pkg/quantile/summary"
 	gocache "github.com/patrickmn/go-cache"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -109,8 +110,7 @@ func newTranslator(t *testing.T, logger *zap.Logger) *Translator {
 	tr, err := New(
 		logger,
 		WithFallbackHostnameProvider(testProvider("fallbackHostname")),
-		WithCountSumMetrics(),
-		WithHistogramMode(HistogramModeNoBuckets),
+		WithHistogramMode(HistogramModeDistributions),
 		WithNumberMode(NumberModeCumulativeToDelta),
 	)
 
@@ -123,6 +123,14 @@ type metric struct {
 	typ       MetricDataType
 	timestamp uint64
 	value     float64
+	tags      []string
+	host      string
+}
+
+type sketch struct {
+	name      string
+	basic     summary.Summary
+	timestamp uint64
 	tags      []string
 	host      string
 }
@@ -160,6 +168,10 @@ func newGauge(name string, ts uint64, val float64, tags []string) metric {
 
 func newCount(name string, ts uint64, val float64, tags []string) metric {
 	return metric{name: name, typ: Count, timestamp: ts, value: val, tags: tags}
+}
+
+func newSketch(name string, ts uint64, s summary.Summary, tags []string) sketch {
+	return sketch{name: name, basic: s, timestamp: ts, tags: tags}
 }
 
 func TestMapIntMetrics(t *testing.T) {
@@ -495,11 +507,19 @@ func TestMapDoubleMonotonicOutOfOrder(t *testing.T) {
 
 type mockFullConsumer struct {
 	mockTimeSeriesConsumer
-	anySketch bool
+	sketches []sketch
 }
 
-func (c *mockFullConsumer) ConsumeSketch(_ context.Context, _ string, _ uint64, _ *quantile.Sketch, _ []string, _ string) {
-	c.anySketch = true
+func (c *mockFullConsumer) ConsumeSketch(_ context.Context, name string, ts uint64, sk *quantile.Sketch, tags []string, host string) {
+	c.sketches = append(c.sketches,
+		sketch{
+			name:      name,
+			basic:     sk.Basic,
+			timestamp: ts,
+			tags:      tags,
+			host:      host,
+		},
+	)
 }
 
 func TestMapDeltaHistogramMetrics(t *testing.T) {
@@ -512,54 +532,155 @@ func TestMapDeltaHistogramMetrics(t *testing.T) {
 	point.SetExplicitBounds([]float64{0})
 	point.SetTimestamp(ts)
 
-	noBuckets := []metric{
+	counts := []metric{
 		newCount("doubleHist.test.count", uint64(ts), 20, []string{}),
 		newCount("doubleHist.test.sum", uint64(ts), math.Pi, []string{}),
 	}
 
-	buckets := []metric{
-		newCount("doubleHist.test.bucket", uint64(ts), 2, []string{"lower_bound:-inf", "upper_bound:0"}),
-		newCount("doubleHist.test.bucket", uint64(ts), 18, []string{"lower_bound:0", "upper_bound:inf"}),
-	}
-
-	ctx := context.Background()
-	tr := newTranslator(t, zap.NewNop())
-	delta := true
-
-	tr.cfg.HistMode = HistogramModeNoBuckets
-	consumer := &mockFullConsumer{}
-	tr.mapHistogramMetrics(ctx, consumer, "doubleHist.test", slice, delta, []string{}, "")
-	assert.ElementsMatch(t, noBuckets, consumer.metrics)
-	assert.False(t, consumer.anySketch)
-
-	tr.cfg.HistMode = HistogramModeCounters
-	consumer = &mockFullConsumer{}
-	tr.mapHistogramMetrics(ctx, consumer, "doubleHist.test", slice, delta, []string{}, "")
-	assert.ElementsMatch(t, append(noBuckets, buckets...), consumer.metrics)
-	assert.False(t, consumer.anySketch)
-
-	// With attribute tags
-	noBucketsAttributeTags := []metric{
+	countsAttributeTags := []metric{
 		newCount("doubleHist.test.count", uint64(ts), 20, []string{"attribute_tag:attribute_value"}),
 		newCount("doubleHist.test.sum", uint64(ts), math.Pi, []string{"attribute_tag:attribute_value"}),
 	}
 
-	bucketsAttributeTags := []metric{
+	bucketsCounts := []metric{
+		newCount("doubleHist.test.bucket", uint64(ts), 2, []string{"lower_bound:-inf", "upper_bound:0"}),
+		newCount("doubleHist.test.bucket", uint64(ts), 18, []string{"lower_bound:0", "upper_bound:inf"}),
+	}
+
+	bucketsCountsAttributeTags := []metric{
 		newCount("doubleHist.test.bucket", uint64(ts), 2, []string{"lower_bound:-inf", "upper_bound:0", "attribute_tag:attribute_value"}),
 		newCount("doubleHist.test.bucket", uint64(ts), 18, []string{"lower_bound:0", "upper_bound:inf", "attribute_tag:attribute_value"}),
 	}
 
-	tr.cfg.HistMode = HistogramModeNoBuckets
-	consumer = &mockFullConsumer{}
-	tr.mapHistogramMetrics(ctx, consumer, "doubleHist.test", slice, delta, []string{"attribute_tag:attribute_value"}, "")
-	assert.ElementsMatch(t, noBucketsAttributeTags, consumer.metrics)
-	assert.False(t, consumer.anySketch)
+	sketches := []sketch{
+		newSketch("doubleHist.test", uint64(ts), summary.Summary{
+			Min: 0,
+			Max: 0,
+			Sum: 0,
+			Avg: 0,
+			Cnt: 20,
+		},
+			[]string{},
+		),
+	}
 
-	tr.cfg.HistMode = HistogramModeCounters
-	consumer = &mockFullConsumer{}
-	tr.mapHistogramMetrics(ctx, consumer, "doubleHist.test", slice, delta, []string{"attribute_tag:attribute_value"}, "")
-	assert.ElementsMatch(t, append(noBucketsAttributeTags, bucketsAttributeTags...), consumer.metrics)
-	assert.False(t, consumer.anySketch)
+	sketchesAttributeTags := []sketch{
+		newSketch("doubleHist.test", uint64(ts), summary.Summary{
+			Min: 0,
+			Max: 0,
+			Sum: 0,
+			Avg: 0,
+			Cnt: 20,
+		},
+			[]string{"attribute_tag:attribute_value"},
+		),
+	}
+
+	ctx := context.Background()
+	delta := true
+
+	tests := []struct {
+		name             string
+		histogramMode    HistogramMode
+		sendCountSum     bool
+		tags             []string
+		expectedMetrics  []metric
+		expectedSketches []sketch
+	}{
+		{
+			name:             "No buckets: send count & sum metrics, no attribute tags",
+			histogramMode:    HistogramModeNoBuckets,
+			sendCountSum:     true,
+			tags:             []string{},
+			expectedMetrics:  counts,
+			expectedSketches: []sketch{},
+		},
+		{
+			name:             "No buckets: send count & sum metrics, attribute tags",
+			histogramMode:    HistogramModeNoBuckets,
+			sendCountSum:     true,
+			tags:             []string{"attribute_tag:attribute_value"},
+			expectedMetrics:  countsAttributeTags,
+			expectedSketches: []sketch{},
+		},
+		{
+			name:             "Counters: do not send count & sum metrics, no tags",
+			histogramMode:    HistogramModeCounters,
+			sendCountSum:     false,
+			tags:             []string{},
+			expectedMetrics:  bucketsCounts,
+			expectedSketches: []sketch{},
+		},
+		{
+			name:             "Counters: do not send count & sum metrics, attribute tags",
+			histogramMode:    HistogramModeCounters,
+			sendCountSum:     false,
+			tags:             []string{"attribute_tag:attribute_value"},
+			expectedMetrics:  bucketsCountsAttributeTags,
+			expectedSketches: []sketch{},
+		},
+		{
+			name:             "Counters: send count & sum metrics, no tags",
+			histogramMode:    HistogramModeCounters,
+			sendCountSum:     true,
+			tags:             []string{},
+			expectedMetrics:  append(counts, bucketsCounts...),
+			expectedSketches: []sketch{},
+		},
+		{
+			name:             "Counters: send count & sum metrics, attribute tags",
+			histogramMode:    HistogramModeCounters,
+			sendCountSum:     true,
+			tags:             []string{"attribute_tag:attribute_value"},
+			expectedMetrics:  append(countsAttributeTags, bucketsCountsAttributeTags...),
+			expectedSketches: []sketch{},
+		},
+		{
+			name:             "Distributions: do not send count & sum metrics, no tags",
+			histogramMode:    HistogramModeDistributions,
+			sendCountSum:     false,
+			tags:             []string{},
+			expectedMetrics:  []metric{},
+			expectedSketches: sketches,
+		},
+		{
+			name:             "Distributions: do not send count & sum metrics, attribute tags",
+			histogramMode:    HistogramModeDistributions,
+			sendCountSum:     false,
+			tags:             []string{"attribute_tag:attribute_value"},
+			expectedMetrics:  []metric{},
+			expectedSketches: sketchesAttributeTags,
+		},
+		{
+			name:             "Distributions: send count & sum metrics, no tags",
+			histogramMode:    HistogramModeDistributions,
+			sendCountSum:     true,
+			tags:             []string{},
+			expectedMetrics:  counts,
+			expectedSketches: sketches,
+		},
+		{
+			name:             "Distributions: send count & sum metrics, attribute tags",
+			histogramMode:    HistogramModeDistributions,
+			sendCountSum:     true,
+			tags:             []string{"attribute_tag:attribute_value"},
+			expectedMetrics:  countsAttributeTags,
+			expectedSketches: sketchesAttributeTags,
+		},
+	}
+
+	for _, testInstance := range tests {
+		t.Run(testInstance.name, func(t *testing.T) {
+			tr := newTranslator(t, zap.NewNop())
+			tr.cfg.HistMode = testInstance.histogramMode
+			tr.cfg.SendCountSum = testInstance.sendCountSum
+			consumer := &mockFullConsumer{}
+
+			tr.mapHistogramMetrics(ctx, consumer, "doubleHist.test", slice, delta, testInstance.tags, "")
+			assert.ElementsMatch(t, consumer.metrics, testInstance.expectedMetrics)
+			assert.ElementsMatch(t, consumer.sketches, testInstance.expectedSketches)
+		})
+	}
 }
 
 func TestMapCumulativeHistogramMetrics(t *testing.T) {
@@ -574,29 +695,91 @@ func TestMapCumulativeHistogramMetrics(t *testing.T) {
 	point = slice.AppendEmpty()
 	point.SetCount(20 + 30)
 	point.SetSum(math.Pi + 20)
-	point.SetBucketCounts([]uint64{2 + 11, 18 + 2})
+	point.SetBucketCounts([]uint64{2 + 11, 18 + 19})
 	point.SetExplicitBounds([]float64{0})
 	point.SetTimestamp(seconds(2))
 
-	expected := []metric{
+	counts := []metric{
 		newCount("doubleHist.test.count", uint64(seconds(2)), 30, []string{}),
 		newCount("doubleHist.test.sum", uint64(seconds(2)), 20, []string{}),
+	}
+
+	bucketsCounts := []metric{
 		newCount("doubleHist.test.bucket", uint64(seconds(2)), 11, []string{"lower_bound:-inf", "upper_bound:0"}),
-		newCount("doubleHist.test.bucket", uint64(seconds(2)), 2, []string{"lower_bound:0", "upper_bound:inf"}),
+		newCount("doubleHist.test.bucket", uint64(seconds(2)), 19, []string{"lower_bound:0", "upper_bound:inf"}),
+	}
+
+	sketches := []sketch{
+		newSketch("doubleHist.test", uint64(seconds(2)), summary.Summary{
+			Min: 0,
+			Max: 0,
+			Sum: 0,
+			Avg: 0,
+			Cnt: 30,
+		},
+			[]string{},
+		),
 	}
 
 	ctx := context.Background()
-	tr := newTranslator(t, zap.NewNop())
 	delta := false
 
-	tr.cfg.HistMode = HistogramModeCounters
-	consumer := &mockFullConsumer{}
-	tr.mapHistogramMetrics(ctx, consumer, "doubleHist.test", slice, delta, []string{}, "")
-	assert.False(t, consumer.anySketch)
-	assert.ElementsMatch(t,
-		consumer.metrics,
-		expected,
-	)
+	tests := []struct {
+		name             string
+		histogramMode    HistogramMode
+		sendCountSum     bool
+		expectedMetrics  []metric
+		expectedSketches []sketch
+	}{
+		{
+			name:             "No buckets: send count & sum metrics",
+			histogramMode:    HistogramModeNoBuckets,
+			sendCountSum:     true,
+			expectedMetrics:  counts,
+			expectedSketches: []sketch{},
+		},
+		{
+			name:             "Counters: do not send count & sum metrics",
+			histogramMode:    HistogramModeCounters,
+			sendCountSum:     false,
+			expectedMetrics:  bucketsCounts,
+			expectedSketches: []sketch{},
+		},
+		{
+			name:             "Counters: send count & sum metrics",
+			histogramMode:    HistogramModeCounters,
+			sendCountSum:     true,
+			expectedMetrics:  append(counts, bucketsCounts...),
+			expectedSketches: []sketch{},
+		},
+		{
+			name:             "Distributions: do not send count & sum metrics",
+			histogramMode:    HistogramModeDistributions,
+			sendCountSum:     false,
+			expectedMetrics:  []metric{},
+			expectedSketches: sketches,
+		},
+		{
+			name:             "Distributions: send count & sum metrics",
+			histogramMode:    HistogramModeDistributions,
+			sendCountSum:     true,
+			expectedMetrics:  counts,
+			expectedSketches: sketches,
+		},
+	}
+
+	for _, testInstance := range tests {
+		t.Run(testInstance.name, func(t *testing.T) {
+			tr := newTranslator(t, zap.NewNop())
+			tr.cfg.HistMode = testInstance.histogramMode
+			tr.cfg.SendCountSum = testInstance.sendCountSum
+			consumer := &mockFullConsumer{}
+
+			tr.mapHistogramMetrics(ctx, consumer, "doubleHist.test", slice, delta, []string{}, "")
+			assert.ElementsMatch(t, consumer.metrics, testInstance.expectedMetrics)
+			assert.ElementsMatch(t, consumer.sketches, testInstance.expectedSketches)
+		})
+	}
 }
 
 func TestLegacyBucketsTags(t *testing.T) {
@@ -913,16 +1096,22 @@ func createTestMetrics() pdata.Metrics {
 	return md
 }
 
-func testGauge(name string, val float64) metric {
+func newGaugeWithHostname(name string, val float64) metric {
 	m := newGauge(name, 0, val, []string{})
 	m.host = testHostname
 	return m
 }
 
-func testCount(name string, val float64, seconds uint64) metric {
+func newCountWithHostname(name string, val float64, seconds uint64) metric {
 	m := newCount(name, seconds*1e9, val, []string{})
 	m.host = testHostname
 	return m
+}
+
+func newSketchWithHostname(name string, summary summary.Summary, seconds uint64) sketch {
+	s := newSketch(name, seconds, summary, []string{})
+	s.host = testHostname
+	return s
 }
 
 func TestMapMetrics(t *testing.T) {
@@ -935,23 +1124,30 @@ func TestMapMetrics(t *testing.T) {
 	tr := newTranslator(t, testLogger)
 	err := tr.MapMetrics(ctx, md, consumer)
 	require.NoError(t, err)
-	assert.False(t, consumer.anySketch)
 
 	assert.ElementsMatch(t, consumer.metrics, []metric{
-		testGauge("int.gauge", 1),
-		testGauge("double.gauge", math.Pi),
-		testCount("int.delta.sum", 2, 0),
-		testCount("double.delta.sum", math.E, 0),
-		testCount("int.delta.monotonic.sum", 2, 0),
-		testCount("double.delta.monotonic.sum", math.E, 0),
-		testCount("double.histogram.sum", math.Phi, 0),
-		testCount("double.histogram.count", 20, 0),
-		testCount("summary.sum", 10_000, 2),
-		testCount("summary.count", 100, 2),
-		testGauge("int.cumulative.sum", 4),
-		testGauge("double.cumulative.sum", 4),
-		testCount("int.cumulative.monotonic.sum", 3, 2),
-		testCount("double.cumulative.monotonic.sum", math.Pi, 2),
+		newGaugeWithHostname("int.gauge", 1),
+		newGaugeWithHostname("double.gauge", math.Pi),
+		newCountWithHostname("int.delta.sum", 2, 0),
+		newCountWithHostname("double.delta.sum", math.E, 0),
+		newCountWithHostname("int.delta.monotonic.sum", 2, 0),
+		newCountWithHostname("double.delta.monotonic.sum", math.E, 0),
+		newCountWithHostname("summary.sum", 10_000, 2),
+		newCountWithHostname("summary.count", 100, 2),
+		newGaugeWithHostname("int.cumulative.sum", 4),
+		newGaugeWithHostname("double.cumulative.sum", 4),
+		newCountWithHostname("int.cumulative.monotonic.sum", 3, 2),
+		newCountWithHostname("double.cumulative.monotonic.sum", math.Pi, 2),
+	})
+
+	assert.ElementsMatch(t, consumer.sketches, []sketch{
+		newSketchWithHostname("double.histogram", summary.Summary{
+			Min: 0,
+			Max: 0,
+			Sum: 0,
+			Avg: 0,
+			Cnt: 20,
+		}, 0),
 	})
 
 	// One metric type was unknown or unsupported
@@ -1010,6 +1206,7 @@ func createNaNMetrics() pdata.Metrics {
 	dpDoubleHist.SetCount(20)
 	dpDoubleHist.SetSum(math.NaN())
 	dpDoubleHist.SetBucketCounts([]uint64{2, 18})
+	dpDoubleHist.SetExplicitBounds([]float64{0})
 	dpDoubleHist.SetTimestamp(seconds(0))
 
 	// Double Sum (cumulative)
@@ -1059,14 +1256,22 @@ func TestNaNMetrics(t *testing.T) {
 	tr := newTranslator(t, testLogger)
 	consumer := &mockFullConsumer{}
 	err := tr.MapMetrics(ctx, md, consumer)
-	assert.False(t, consumer.anySketch)
 	require.NoError(t, err)
 
 	assert.ElementsMatch(t, consumer.metrics, []metric{
-		testCount("nan.histogram.count", 20, 0),
-		testCount("nan.summary.count", 100, 2),
+		newCountWithHostname("nan.summary.count", 100, 2),
+	})
+
+	assert.ElementsMatch(t, consumer.sketches, []sketch{
+		newSketchWithHostname("nan.histogram", summary.Summary{
+			Min: 0,
+			Max: 0,
+			Sum: 0,
+			Avg: 0,
+			Cnt: 20,
+		}, 0),
 	})
 
 	// One metric type was unknown or unsupported
-	assert.Equal(t, observed.FilterMessage("Unsupported metric value").Len(), 7)
+	assert.Equal(t, observed.FilterMessage("Unsupported metric value").Len(), 6)
 }
