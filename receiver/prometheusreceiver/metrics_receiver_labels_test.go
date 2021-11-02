@@ -16,11 +16,11 @@ package prometheusreceiver
 
 import (
 	"context"
-	promcfg "github.com/prometheus/prometheus/config"
 	"testing"
 
 	agentmetricspb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/metrics/v1"
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
+	promcfg "github.com/prometheus/prometheus/config"
 	"github.com/prometheus/prometheus/pkg/labels"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -186,7 +186,6 @@ func testHelper(t *testing.T, targets []*testData, mp *mockPrometheus, cfg *prom
 			}
 			results[ocmd.Node.ServiceInfo.Name] = append(result, ocmd)
 		}
-
 	}
 
 	// loop to validate outputs for each targets
