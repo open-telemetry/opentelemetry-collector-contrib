@@ -35,7 +35,7 @@ type Config struct {
 
 	// TCPAddr represents a tcp endpoint address that is to publish the health
 	// check status.
-	// The default endpoint is "0.0.0.0:1313
+	// The default endpoint is "0.0.0.0:13133".
 	TCPAddr confignet.TCPAddr `mapstructure:",squash"`
 
 	// Path represents the path the health check service will
