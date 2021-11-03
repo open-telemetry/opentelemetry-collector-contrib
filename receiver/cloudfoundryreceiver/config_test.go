@@ -126,7 +126,7 @@ func loadSuccessfulConfig(t *testing.T) *Config {
 		UAA: UAAConfig{
 			LimitedHTTPClientSettings: LimitedHTTPClientSettings{
 				Endpoint: "https://uaa.sys.example.internal",
-				TLSSetting: &LimitedTLSClientSetting{
+				TLSSetting: LimitedTLSClientSetting{
 					InsecureSkipVerify: true,
 				},
 			},
