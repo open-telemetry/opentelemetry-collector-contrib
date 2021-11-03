@@ -43,7 +43,9 @@ func TestLoadConfig(t *testing.T) {
 	require.Len(t, cfg.Receivers, 2)
 
 	r0 := cfg.Receivers[config.NewComponentID(typeStr)]
-	assert.Equal(t, factory.CreateDefaultConfig(), r0)
+	defaultConfig := factory.CreateDefaultConfig().(*Config)
+	defaultConfig.UAA.Password = "test"
+	assert.Equal(t, defaultConfig, r0)
 
 	r1 := cfg.Receivers[config.NewComponentIDWithName(typeStr, "one")].(*Config)
 	assert.Equal(t,

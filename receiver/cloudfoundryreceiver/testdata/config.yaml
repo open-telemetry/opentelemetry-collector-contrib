@@ -1,5 +1,7 @@
 receivers:
   cloudfoundry:
+    uaa:
+      password: "test"
   cloudfoundry/one:
     rlp_gateway:
       endpoint: "https://log-stream.sys.example.internal"

@@ -64,12 +64,12 @@ func TestConvertCountEnvelope(t *testing.T) {
 	assert.Equal(t, 10.0, dataPoint.DoubleVal())
 
 	assertAttributes(t, dataPoint.Attributes(), map[string]string{
-		"source_id":  "uaa",
-		"origin":     "gorouter",
-		"deployment": "cf",
-		"job":        "router",
-		"index":      "bc276108-8282-48a5-bae7-c009c4392246",
-		"ip":         "10.244.0.34",
+		"org.cloudfoundry.source_id":  "uaa",
+		"org.cloudfoundry.origin":     "gorouter",
+		"org.cloudfoundry.deployment": "cf",
+		"org.cloudfoundry.job":        "router",
+		"org.cloudfoundry.index":      "bc276108-8282-48a5-bae7-c009c4392246",
+		"org.cloudfoundry.ip":         "10.244.0.34",
 	})
 }
 
@@ -107,17 +107,17 @@ func TestConvertGaugeEnvelope(t *testing.T) {
 		},
 	}
 
-	expectedLabels := map[string]string{
-		"source_id":           "5db33854-09a4-4519-ba71-af33a878df6f",
-		"instance_id":         "0",
-		"origin":              "rep",
-		"deployment":          "cf",
-		"process_type":        "web",
-		"process_id":          "5db33854-09a4-4519-ba71-af33a878df6f",
-		"process_instance_id": "78d4e6d9-ef14-4116-6dc8-9bd7",
-		"job":                 "compute",
-		"index":               "7505d2c9-beab-4aaa-afe3-41322ebcd13d",
-		"ip":                  "10.0.4.8",
+	expectedAttributes := map[string]string{
+		"org.cloudfoundry.source_id":           "5db33854-09a4-4519-ba71-af33a878df6f",
+		"org.cloudfoundry.instance_id":         "0",
+		"org.cloudfoundry.origin":              "rep",
+		"org.cloudfoundry.deployment":          "cf",
+		"org.cloudfoundry.process_type":        "web",
+		"org.cloudfoundry.process_id":          "5db33854-09a4-4519-ba71-af33a878df6f",
+		"org.cloudfoundry.process_instance_id": "78d4e6d9-ef14-4116-6dc8-9bd7",
+		"org.cloudfoundry.job":                 "compute",
+		"org.cloudfoundry.index":               "7505d2c9-beab-4aaa-afe3-41322ebcd13d",
+		"org.cloudfoundry.ip":                  "10.0.4.8",
 	}
 
 	metricSlice := pdata.NewMetricSlice()
@@ -139,7 +139,7 @@ func TestConvertGaugeEnvelope(t *testing.T) {
 	assert.Equal(t, pdata.NewTimestampFromTime(now), dataPoint.Timestamp())
 	assert.Equal(t, pdata.NewTimestampFromTime(before), dataPoint.StartTimestamp())
 	assert.Equal(t, 17046641.0, dataPoint.DoubleVal())
-	assertAttributes(t, dataPoint.Attributes(), expectedLabels)
+	assertAttributes(t, dataPoint.Attributes(), expectedAttributes)
 
 	metric = metricSlice.At(1 - memoryMetricPosition)
 	assert.Equal(t, "rep.disk", metric.Name())
@@ -149,14 +149,14 @@ func TestConvertGaugeEnvelope(t *testing.T) {
 	assert.Equal(t, pdata.NewTimestampFromTime(now), dataPoint.Timestamp())
 	assert.Equal(t, pdata.NewTimestampFromTime(before), dataPoint.StartTimestamp())
 	assert.Equal(t, 10231808.0, dataPoint.DoubleVal())
-	assertAttributes(t, dataPoint.Attributes(), expectedLabels)
+	assertAttributes(t, dataPoint.Attributes(), expectedAttributes)
 }
 
-func assertAttributes(t *testing.T, labels pdata.AttributeMap, expected map[string]string) {
-	assert.Equal(t, len(expected), labels.Len())
+func assertAttributes(t *testing.T, attributes pdata.AttributeMap, expected map[string]string) {
+	assert.Equal(t, len(expected), attributes.Len())
 
 	for key, expectedValue := range expected {
-		value, present := labels.Get(key)
+		value, present := attributes.Get(key)
 		assert.True(t, present, "Attribute %s presence", key)
 		assert.Equal(t, expectedValue, value.StringVal(), "Attribute %s value", key)
 	}
