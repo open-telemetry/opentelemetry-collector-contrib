@@ -11,23 +11,23 @@ This means that the number of streams that can be sent by OpenTelemetry collecto
 
 ## Calculation
 For simplicity purpose and for explaining of calculation, which is currently done in implementation, lets assume that we have 1 project, 1 instance and 1 database.
-Such calculations are done when collector starts. If cardinality total limit is different(for calculations below we assume it is 200000) - numbers will be different.
+Such calculations are done when the collector starts. If the cardinality total limit is different(for calculations below we assume it is 200,000) the numbers will be different.
 
-According to the metrics metadata configuration(at the moment of writing this document) we have:
+According to the metrics [metadata configuration](internal/metadataconfig/metadata.yaml)(at the moment of writing this document) we have:
 - 30 low cardinality metrics(amount of total N + active queries summary metrics);
 - 26 high cardinality metrics(amount of top N metrics).
 
-For low cardinality metrics allowed amount of time series is **projects x instances x databases** and in our case is **1 x 1 x 1 = 1**.
+For low cardinality metrics, the allowed amount of time series is **projects x instances x databases x low cardinality metrics** and in our case is **1 x 1 x 1 x 30 = 30** (1 per each metric).
 
-Then, remaining quota of allowed time series in 24 hours is **200000 - 30 = 199970**.
+Thus, the remaining quota of allowed time series in 24 hours is **200,000 - 30 = 199.970**.
 
-In 24 hours we can have max **24 x 60 = 1440** time series values.
-
-So, for high cardinality metrics we have **199970 / 26 = 7691** allowed time series per metric.
+For high cardinality metrics we have **199970 / 26 = 7691** allowed time series per metric.
 
 This means each metric converted from these columns should not have a cardinality of 7691 per day.
 
-Taking into account 1440 minutes we'll obtain **7691 / 1440 = 5** new time series per minute.
+We have one time series per minute, meaning that we can have up to 1,440 (24 hours x 60 minutes per hour = 1440) values per day.
+
+Taking into account 1440 time series we'll obtain **7691 / 1440 = 5** new time series per minute.
 
 
 ## Labels
@@ -48,7 +48,7 @@ This needs to be made configurable based on the number of databases, number of m
 With **7691** time series limit and each metric is sent once per minute, there are **60 minute x 24 hours  = 1440** time series data will be sent to Cloud Monitoring.
 
 To allow new queries (new Top queries which are not seen in the last 24 hours) to be sent to Cloud Monitoring, each minute should have an opportunity to send new queries.
-Assuming uniform distribution of new queries being created in Top N tables, the algorithm should handle **round_down(7691/1440) = 5** new queries per minute.
+Assuming a uniform distribution of new queries being created in Top N tables, the algorithm should handle **floor(7691/1440) = 5** new queries per minute.
 These 5 new queries should be the Top 5 queries which were not exported in the last 24 hours.
 
 While the existing time series (queries which have been exported in the last 24 hours) should be good to export, exporting more than 100(**top_metrics_query_max_rows** receiver config parameter) queries per minute may be an overkill.
