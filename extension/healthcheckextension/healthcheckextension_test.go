@@ -94,21 +94,21 @@ func TestHealthCheckExtensionUsageWithCustomizedPathWithoutCheckCollectorPipelin
 	url := "http://" + config.TCPAddr.Endpoint + config.Path
 	resp0, err := client.Get(url)
 	require.NoError(t, err)
-	defer resp0.Body.Close()
+	require.NoError(t, resp0.Body.Close(), "Must be able to close the response")
 
 	require.Equal(t, http.StatusServiceUnavailable, resp0.StatusCode)
 
 	require.NoError(t, hcExt.Ready())
 	resp1, err := client.Get(url)
 	require.NoError(t, err)
-	defer resp1.Body.Close()
 	require.Equal(t, http.StatusOK, resp1.StatusCode)
+	require.NoError(t, resp1.Body.Close(), "Must be able to close the response")
 
 	require.NoError(t, hcExt.NotReady())
 	resp2, err := client.Get(url)
 	require.NoError(t, err)
-	defer resp2.Body.Close()
 	require.Equal(t, http.StatusServiceUnavailable, resp2.StatusCode)
+	require.NoError(t, resp2.Body.Close(), "Must be able to close the response")
 }
 
 func TestHealthCheckExtensionUsageWithCheckCollectorPipeline(t *testing.T) {
@@ -218,27 +218,28 @@ func TestHealthCheckExtensionUsageWithCustomPathWithCheckCollectorPipeline(t *te
 	url := "http://" + config.TCPAddr.Endpoint + config.Path
 	resp0, err := client.Get(url)
 	require.NoError(t, err)
-	defer resp0.Body.Close()
+	require.NoError(t, resp0.Body.Close(), "Must be able to close the response")
 
 	hcExt.exporter.exporterFailureQueue = append(hcExt.exporter.exporterFailureQueue, vd1)
 	require.NoError(t, hcExt.Ready())
 	resp1, err := client.Get(url)
 	require.NoError(t, err)
-	defer resp1.Body.Close()
 	require.Equal(t, http.StatusOK, resp1.StatusCode)
+	require.NoError(t, resp1.Body.Close(), "Must be able to close the response")
+
 
 	require.NoError(t, hcExt.NotReady())
 	resp2, err := client.Get(url)
 	require.NoError(t, err)
-	defer resp2.Body.Close()
 	require.Equal(t, http.StatusInternalServerError, resp2.StatusCode)
+	require.NoError(t, resp2.Body.Close(), "Must be able to close the response")
 
 	hcExt.exporter.exporterFailureQueue = append(hcExt.exporter.exporterFailureQueue, vd2)
 	require.NoError(t, hcExt.Ready())
 	resp3, err := client.Get(url)
 	require.NoError(t, err)
-	defer resp3.Body.Close()
 	require.Equal(t, http.StatusInternalServerError, resp3.StatusCode)
+	require.NoError(t, resp3.Body.Close(), "Must be able to close the response")
 }
 
 func TestHealthCheckExtensionPortAlreadyInUse(t *testing.T) {

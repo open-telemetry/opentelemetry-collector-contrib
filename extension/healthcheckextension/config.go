@@ -38,8 +38,7 @@ type Config struct {
 	// The default endpoint is "0.0.0.0:13133".
 	TCPAddr confignet.TCPAddr `mapstructure:",squash"`
 
-	// Path represents the path the health check service will
-	// serve.
+	// Path represents the path the health check service will serve.
 	// The default path is "/".
 	Path string `mapstructure:"path"`
 
