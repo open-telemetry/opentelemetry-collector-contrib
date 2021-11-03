@@ -6,10 +6,12 @@ on:
       - 'v[0-9]+.[0-9]+.[0-9]+*'
     paths-ignore:
       - '.github/**'
+      - '!.github/workflows/build-and-test-windows.yml'
       - '**.md'
   pull_request:
     paths-ignore:
       - '.github/**'
+      - '!.github/workflows/build-and-test-windows.yml'
       - '**.md'
 env:
   TEST_RESULTS: testbed/tests/results/junit/results.xml

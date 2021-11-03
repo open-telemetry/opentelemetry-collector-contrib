@@ -5,6 +5,7 @@ on:
     branches: [ main ]
     paths-ignore:
       - '.github/**'
+      - '!.github/workflows/codeql-analysis.yml'
       - '**.md'
 
 jobs:
