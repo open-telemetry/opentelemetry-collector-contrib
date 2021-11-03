@@ -143,7 +143,7 @@ func TestDefaultExporters(t *testing.T) {
 		},
 	}
 
-	assert.Equal(t, len(tests)+27 /* not tested */, len(expFactories))
+	assert.Equal(t, len(tests)+28 /* not tested */, len(expFactories))
 	for _, tt := range tests {
 		t.Run(string(tt.exporter), func(t *testing.T) {
 			factory, ok := expFactories[tt.exporter]
