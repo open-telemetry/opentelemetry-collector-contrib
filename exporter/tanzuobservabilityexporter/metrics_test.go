@@ -32,18 +32,18 @@ func TestMetricsConsumerNormal(t *testing.T) {
 	sum1 := newMetric("sum1", pdata.MetricDataTypeSum)
 	gauge2 := newMetric("gauge2", pdata.MetricDataTypeGauge)
 	sum2 := newMetric("sum2", pdata.MetricDataTypeSum)
-	mockGaugeConsumer := &mockMetricConsumer{typ: pdata.MetricDataTypeGauge}
-	mockSumConsumer := &mockMetricConsumer{typ: pdata.MetricDataTypeSum}
+	mockGaugeConsumer := &mockTypedMetricConsumer{typ: pdata.MetricDataTypeGauge}
+	mockSumConsumer := &mockTypedMetricConsumer{typ: pdata.MetricDataTypeSum}
 	sender := &mockFlushCloser{}
 	metrics := constructMetrics(gauge1, sum1, gauge2, sum2)
-	consumer := newMetricsConsumer([]metricConsumer{mockGaugeConsumer, mockSumConsumer}, sender)
+	consumer := newMetricsConsumer([]typedMetricConsumer{mockGaugeConsumer, mockSumConsumer}, sender)
 
 	assert.NoError(t, consumer.Consume(context.Background(), metrics))
 
 	assert.ElementsMatch(t, []string{"gauge1", "gauge2"}, mockGaugeConsumer.names)
 	assert.ElementsMatch(t, []string{"sum1", "sum2"}, mockSumConsumer.names)
-	assert.Equal(t, 1, mockGaugeConsumer.consumeInternalCallCount)
-	assert.Equal(t, 1, mockSumConsumer.consumeInternalCallCount)
+	assert.Equal(t, 1, mockGaugeConsumer.pushInternalMetricsCallCount)
+	assert.Equal(t, 1, mockSumConsumer.pushInternalMetricsCallCount)
 	assert.Equal(t, 1, sender.numFlushCalls)
 	assert.Equal(t, 0, sender.numCloseCalls)
 
@@ -61,11 +61,11 @@ func TestMetricsConsumerNone(t *testing.T) {
 }
 
 func TestNewMetricsConsumerPanicsWithDuplicateMetricType(t *testing.T) {
-	mockGaugeConsumer1 := &mockMetricConsumer{typ: pdata.MetricDataTypeGauge}
-	mockGaugeConsumer2 := &mockMetricConsumer{typ: pdata.MetricDataTypeGauge}
+	mockGaugeConsumer1 := &mockTypedMetricConsumer{typ: pdata.MetricDataTypeGauge}
+	mockGaugeConsumer2 := &mockTypedMetricConsumer{typ: pdata.MetricDataTypeGauge}
 
 	assert.Panics(t, func() {
-		newMetricsConsumer([]metricConsumer{mockGaugeConsumer1, mockGaugeConsumer2}, nil)
+		newMetricsConsumer([]typedMetricConsumer{mockGaugeConsumer1, mockGaugeConsumer2}, nil)
 	})
 }
 
@@ -88,32 +88,32 @@ func TestMetricsConsumerErrorsWithUnregisteredMetricType(t *testing.T) {
 
 func TestMetricsConsumerErrorConsuming(t *testing.T) {
 	gauge1 := newMetric("gauge1", pdata.MetricDataTypeGauge)
-	mockGaugeConsumer := &mockMetricConsumer{typ: pdata.MetricDataTypeGauge, errorOnConsume: true}
+	mockGaugeConsumer := &mockTypedMetricConsumer{typ: pdata.MetricDataTypeGauge, errorOnConsume: true}
 	metrics := constructMetrics(gauge1)
-	consumer := newMetricsConsumer([]metricConsumer{mockGaugeConsumer}, nil)
+	consumer := newMetricsConsumer([]typedMetricConsumer{mockGaugeConsumer}, nil)
 
 	assert.Error(t, consumer.Consume(context.Background(), metrics))
 	assert.Len(t, mockGaugeConsumer.names, 1)
-	assert.Equal(t, 1, mockGaugeConsumer.consumeInternalCallCount)
+	assert.Equal(t, 1, mockGaugeConsumer.pushInternalMetricsCallCount)
 }
 
 func TestMetricsConsumerErrorConsumingInternal(t *testing.T) {
 	gauge1 := newMetric("gauge1", pdata.MetricDataTypeGauge)
-	mockGaugeConsumer := &mockMetricConsumer{
-		typ: pdata.MetricDataTypeGauge, errorOnConsumeInternal: true}
+	mockGaugeConsumer := &mockTypedMetricConsumer{
+		typ: pdata.MetricDataTypeGauge, errorOnPushInternalMetrics: true}
 	metrics := constructMetrics(gauge1)
-	consumer := newMetricsConsumer([]metricConsumer{mockGaugeConsumer}, nil)
+	consumer := newMetricsConsumer([]typedMetricConsumer{mockGaugeConsumer}, nil)
 
 	assert.Error(t, consumer.Consume(context.Background(), metrics))
 	assert.Len(t, mockGaugeConsumer.names, 1)
-	assert.Equal(t, 1, mockGaugeConsumer.consumeInternalCallCount)
+	assert.Equal(t, 1, mockGaugeConsumer.pushInternalMetricsCallCount)
 }
 
 func TestMetricsConsumerRespectContext(t *testing.T) {
 	sender := &mockFlushCloser{}
 	gauge1 := newMetric("gauge1", pdata.MetricDataTypeGauge)
-	mockGaugeConsumer := &mockMetricConsumer{typ: pdata.MetricDataTypeGauge}
-	consumer := newMetricsConsumer([]metricConsumer{mockGaugeConsumer}, sender)
+	mockGaugeConsumer := &mockTypedMetricConsumer{typ: pdata.MetricDataTypeGauge}
+	consumer := newMetricsConsumer([]typedMetricConsumer{mockGaugeConsumer}, sender)
 	ctx, cancel := context.WithCancel(context.Background())
 
 	cancel()
@@ -121,7 +121,7 @@ func TestMetricsConsumerRespectContext(t *testing.T) {
 
 	assert.Zero(t, sender.numFlushCalls)
 	assert.Empty(t, mockGaugeConsumer.names)
-	assert.Zero(t, mockGaugeConsumer.consumeInternalCallCount)
+	assert.Zero(t, mockGaugeConsumer.pushInternalMetricsCallCount)
 }
 
 func TestGaugeConsumerNormal(t *testing.T) {
@@ -148,9 +148,9 @@ func TestGaugeConsumerMissingValueNoLogging(t *testing.T) {
 
 	consumer.Consume(metric, &errs)
 	consumer.Consume(metric, &errs)
-	consumer.ConsumeInternal(&errs)
+	consumer.PushInternalMetrics(&errs)
 
-	assert.Len(t, errs, 0)
+	assert.Empty(t, errs)
 	assert.Empty(t, sender.metrics)
 }
 
@@ -178,9 +178,11 @@ func TestGaugeConsumerMissingValue(t *testing.T) {
 		// because the metric is missing its value.
 		consumer.Consume(metric, &errs)
 	}
+	assert.Empty(t, errs)
+
 	// This call adds one error to errs because it emits a metric to
 	// tanzu observability and emitting there is set up to fail.
-	consumer.ConsumeInternal(&errs)
+	consumer.PushInternalMetrics(&errs)
 
 	// One error from emitting the internal metric
 	assert.Len(t, errs, 1)
@@ -231,7 +233,7 @@ func verifyGaugeConsumer(t *testing.T, errorOnSend bool) {
 	assert.Equal(t, pdata.MetricDataTypeGauge, consumer.Type())
 	var errs []error
 	consumer.Consume(metric, &errs)
-	consumer.ConsumeInternal(&errs)
+	consumer.PushInternalMetrics(&errs)
 	assert.ElementsMatch(t, expected, sender.metrics)
 	if errorOnSend {
 		assert.Len(t, errs, len(expected))
@@ -339,28 +341,28 @@ func (m *mockGaugeSender) SendMetric(
 	return nil
 }
 
-type mockMetricConsumer struct {
-	typ                      pdata.MetricDataType
-	errorOnConsume           bool
-	errorOnConsumeInternal   bool
-	names                    []string
-	consumeInternalCallCount int
+type mockTypedMetricConsumer struct {
+	typ                          pdata.MetricDataType
+	errorOnConsume               bool
+	errorOnPushInternalMetrics   bool
+	names                        []string
+	pushInternalMetricsCallCount int
 }
 
-func (m *mockMetricConsumer) Type() pdata.MetricDataType {
+func (m *mockTypedMetricConsumer) Type() pdata.MetricDataType {
 	return m.typ
 }
 
-func (m *mockMetricConsumer) Consume(metric pdata.Metric, errs *[]error) {
+func (m *mockTypedMetricConsumer) Consume(metric pdata.Metric, errs *[]error) {
 	m.names = append(m.names, metric.Name())
 	if m.errorOnConsume {
 		*errs = append(*errs, errors.New("error in consume"))
 	}
 }
 
-func (m *mockMetricConsumer) ConsumeInternal(errs *[]error) {
-	m.consumeInternalCallCount++
-	if m.errorOnConsumeInternal {
+func (m *mockTypedMetricConsumer) PushInternalMetrics(errs *[]error) {
+	m.pushInternalMetricsCallCount++
+	if m.errorOnPushInternalMetrics {
 		*errs = append(*errs, errors.New("error in consume"))
 	}
 }

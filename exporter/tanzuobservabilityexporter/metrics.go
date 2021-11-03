@@ -37,7 +37,7 @@ var (
 
 // metricsConsumer instances consume OTEL metrics
 type metricsConsumer struct {
-	consumerMap map[pdata.MetricDataType]metricConsumer
+	consumerMap map[pdata.MetricDataType]typedMetricConsumer
 	sender      flushCloser
 }
 
@@ -46,8 +46,8 @@ type metricsConsumer struct {
 // of returned consumer calls the Flush method on sender after consuming
 // all the metrics. Calling Close on the returned metricsConsumer calls Close
 // on sender. sender can be nil.
-func newMetricsConsumer(consumers []metricConsumer, sender flushCloser) *metricsConsumer {
-	consumerMap := make(map[pdata.MetricDataType]metricConsumer, len(consumers))
+func newMetricsConsumer(consumers []typedMetricConsumer, sender flushCloser) *metricsConsumer {
+	consumerMap := make(map[pdata.MetricDataType]typedMetricConsumer, len(consumers))
 	for _, consumer := range consumers {
 		if consumerMap[consumer.Type()] != nil {
 			panic("duplicate consumer type detected: " + consumer.Type().String())
@@ -61,7 +61,7 @@ func newMetricsConsumer(consumers []metricConsumer, sender flushCloser) *metrics
 }
 
 // Consume consumes OTEL metrics. For each metric in md, it delegates to the
-// metricConsumer that consumes that type of metric. Once Consume consumes
+// typedMetricConsumer that consumes that type of metric. Once Consume consumes
 // all the metrics, it calls Flush() on the sender passed to
 // newMetricsConsumer.
 func (c *metricsConsumer) Consume(ctx context.Context, md pdata.Metrics) error {
@@ -101,7 +101,7 @@ func (c *metricsConsumer) Close() {
 
 func (c *metricsConsumer) pushInternalMetrics(errs *[]error) {
 	for _, consumer := range c.consumerMap {
-		consumer.ConsumeInternal(errs)
+		consumer.PushInternalMetrics(errs)
 	}
 }
 
@@ -117,8 +117,8 @@ func (c *metricsConsumer) pushSingleMetric(m pdata.Metric, errs *[]error) {
 	}
 }
 
-// metricConsumer consumes one specific type of OTEL metric
-type metricConsumer interface {
+// typedMetricConsumer consumes one specific type of OTEL metric
+type typedMetricConsumer interface {
 
 	// Type returns the type of metric this consumer consumes. For example
 	// Gauge, Sum, or Histogram
@@ -127,11 +127,11 @@ type metricConsumer interface {
 	// Consume consumes the metric and appends any errors encountered to errs
 	Consume(m pdata.Metric, errs *[]error)
 
-	// ConsumeInternal consumes internal metrics for this consumer and appends any errors
-	// encountered to errs. The Consume method of metricsConsumer calls ConsumeInternal on
-	// each registered metricConsumer after it has consumed all the metrics but before it
-	// calls Flush on the sender.
-	ConsumeInternal(errs *[]error)
+	// PushInternalMetrics sends internal metrics for this consumer to tanzu observability
+	// and appends any errors encountered to errs. The Consume method of metricsConsumer calls
+	// PushInternalMetrics on each registered typedMetricConsumer after it has consumed all the
+	// metrics but before it calls Flush on the sender.
+	PushInternalMetrics(errs *[]error)
 }
 
 // flushCloser is the interface for the Flush and Close method
@@ -146,9 +146,9 @@ type counter struct {
 	count int64
 }
 
-// Report reports this counter to tobs. name is the name of the metric to be
-// reported. tags is the tags for the metric. sender is what sends the metric
-// to tobs. Any errors get added to errs.
+// Report reports this counter to tanzu observability. name is the name of
+// the metric to be reported. tags is the tags for the metric. sender is what
+// sends the metric to tanzu observability. Any errors get added to errs.
 func (c *counter) Report(
 	name string, tags map[string]string, sender gaugeSender, errs *[]error) {
 	err := sender.SendMetric(name, float64(c.Get()), 0, "", tags)
@@ -208,15 +208,10 @@ type consumerOptions struct {
 	ReportInternalMetrics bool
 }
 
-func (c *consumerOptions) fixDefaults() consumerOptions {
-	var result consumerOptions
-	if c != nil {
-		result = *c
+func (c *consumerOptions) replaceZeroFieldsWithDefaults() {
+	if c.Logger == nil {
+		c.Logger = zap.NewNop()
 	}
-	if result.Logger == nil {
-		result.Logger = zap.NewNop()
-	}
-	return result
 }
 
 type gaugeConsumer struct {
@@ -226,10 +221,14 @@ type gaugeConsumer struct {
 	reportInternalMetrics bool
 }
 
-// newGaugeConsumer returns a metricConsumer that consumes gauge metrics
+// newGaugeConsumer returns a typedMetricConsumer that consumes gauge metrics
 // by sending them to tanzu observability. Caller can pass nil for options to get the defaults.
-func newGaugeConsumer(sender gaugeSender, options *consumerOptions) metricConsumer {
-	fixedOptions := options.fixDefaults()
+func newGaugeConsumer(sender gaugeSender, options *consumerOptions) typedMetricConsumer {
+	var fixedOptions consumerOptions
+	if options != nil {
+		fixedOptions = *options
+	}
+	fixedOptions.replaceZeroFieldsWithDefaults()
 	return &gaugeConsumer{
 		sender:                sender,
 		logger:                fixedOptions.Logger,
@@ -249,7 +248,7 @@ func (g *gaugeConsumer) Consume(metric pdata.Metric, errs *[]error) {
 	}
 }
 
-func (g *gaugeConsumer) ConsumeInternal(errs *[]error) {
+func (g *gaugeConsumer) PushInternalMetrics(errs *[]error) {
 	if g.reportInternalMetrics {
 		g.missingValues.Report(missingValueMetricName, typeIsGaugeTags, g.sender, errs)
 	}
