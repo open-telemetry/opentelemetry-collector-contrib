@@ -16,12 +16,10 @@ package memcachedreceiver
 
 import (
 	"context"
-	"io/ioutil"
 	"testing"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/model/otlp"
 	"go.uber.org/zap"
 )
 
@@ -31,18 +29,14 @@ func TestScraper(t *testing.T) {
 	sc := newMemcachedScraper(zap.NewNop(), cfg)
 	sc.client = &fakeClient{}
 
-	scrapedMS, err := sc.scrape(context.Background())
+	ms, err := sc.scrape(context.Background())
 	require.NoError(t, err)
 
-	expectedFileBytes, err := ioutil.ReadFile("./testdata/expected_metrics/test_scraper/exepected.json")
-	require.NoError(t, err)
-
-	unmarshaller := otlp.NewJSONMetricsUnmarshaler()
-	expectedMetrics, err := unmarshaller.UnmarshalMetrics(expectedFileBytes)
+	expectedMetrics, err := scrapertest.ReadExpected("./testdata/expected_metrics/test_scraper/exepected.json")
 	require.NoError(t, err)
 
 	eMetricSlice := expectedMetrics.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics()
-	aMetricSlice := scrapedMS.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics()
+	aMetricSlice := ms.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics()
 
 	require.NoError(t, scrapertest.CompareMetricSlices(eMetricSlice, aMetricSlice))
 }

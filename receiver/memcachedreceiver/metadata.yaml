@@ -63,7 +63,9 @@ metrics:
     description: Number of items currently stored in the cache.
     unit: 1
     data:
-      type: gauge
+      type: sum
+      monotonic: false
+      aggregation: cumulative
     labels: []
   memcached.evictions:
     description: Cache item evictions.
@@ -99,7 +101,9 @@ metrics:
     description: Accumulated user and system time. 
     unit: 1
     data:
-      type: gauge
+      type: sum
+      monotonic: true
+      aggregation: cumulative
     lables: [usage_type]
   memcached.threads:
     description: Number of threads used by the memcached instance.
@@ -107,7 +111,3 @@ metrics:
     data:
       type: gauge
     lables: []
-
-
-
-

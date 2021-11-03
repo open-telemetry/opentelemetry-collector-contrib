@@ -141,7 +141,9 @@ var Metrics = &metricStruct{
 			metric.SetName("memcached.current_items")
 			metric.SetDescription("Number of items currently stored in the cache.")
 			metric.SetUnit("1")
-			metric.SetDataType(pdata.MetricDataTypeGauge)
+			metric.SetDataType(pdata.MetricDataTypeSum)
+			metric.Sum().SetIsMonotonic(false)
+			metric.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
 		},
 	},
 	&metricImpl{
@@ -192,7 +194,9 @@ var Metrics = &metricStruct{
 			metric.SetName("memcached.rusage")
 			metric.SetDescription("Accumulated user and system time.")
 			metric.SetUnit("1")
-			metric.SetDataType(pdata.MetricDataTypeGauge)
+			metric.SetDataType(pdata.MetricDataTypeSum)
+			metric.Sum().SetIsMonotonic(true)
+			metric.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
 		},
 	},
 	&metricImpl{
