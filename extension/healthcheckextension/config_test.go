@@ -72,6 +72,10 @@ func TestLoadConfigError(t *testing.T) {
 			"invalidthreshold",
 			errInvalidExporterFailureThresholdProvided,
 		},
+		{
+			"invalidpath",
+			errInvalidPath,
+		},
 	}
 	for _, tt := range tests {
 		factory := NewFactory()

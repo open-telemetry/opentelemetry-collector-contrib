@@ -16,6 +16,7 @@ package healthcheckextension
 
 import (
 	"errors"
+	"strings"
 	"time"
 
 	"go.opentelemetry.io/collector/config"
@@ -50,6 +51,7 @@ var _ config.Extension = (*Config)(nil)
 var (
 	errNoEndpointProvided                      = errors.New("bad config: endpoint must be specified")
 	errInvalidExporterFailureThresholdProvided = errors.New("bad config: exporter_failure_threshold expects a positive number")
+	errInvalidPath = errors.New("bad config: path must start with /")
 )
 
 // Validate checks if the extension configuration is valid
@@ -63,6 +65,9 @@ func (cfg *Config) Validate() error {
 	}
 	if cfg.CheckCollectorPipeline.ExporterFailureThreshold <= 0 {
 		return errInvalidExporterFailureThresholdProvided
+	}
+	if !strings.HasPrefix(cfg.Path, "/") {
+		return errInvalidPath
 	}
 	return nil
 }
