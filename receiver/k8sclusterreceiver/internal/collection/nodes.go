@@ -34,14 +34,21 @@ const (
 	nodeCreationTime = "node.creation_timestamp"
 )
 
-func getMetricsForNode(node *corev1.Node, nodeConditionTypesToReport []string) []*resourceMetrics {
-	metrics := make([]*metricspb.Metric, len(nodeConditionTypesToReport))
+var allocatableDesciption = map[string]string{
+	"cpu":               "How many CPU cores remaining that the node can allocate to pods",
+	"memory":            "How many bytes of RAM memory remaining that the node can allocate to pods",
+	"ephemeral-storage": "How many bytes of ephemeral storage remaining that the node can allocate to pods",
+	"storage":           "How many bytes of storage remaining that the node can allocate to pods",
+}
 
-	for i, nodeConditionTypeValue := range nodeConditionTypesToReport {
+func getMetricsForNode(node *corev1.Node, nodeConditionTypesToReport, allocatableTypesToReport []string) []*resourceMetrics {
+	var metrics []*metricspb.Metric
+	//Condition
+	for _, nodeConditionTypeValue := range nodeConditionTypesToReport {
 		nodeConditionMetric := getNodeConditionMetric(nodeConditionTypeValue)
 		v1NodeConditionTypeValue := corev1.NodeConditionType(nodeConditionTypeValue)
 
-		metrics[i] = &metricspb.Metric{
+		metrics = append(metrics, &metricspb.Metric{
 			MetricDescriptor: &metricspb.MetricDescriptor{
 				Name: nodeConditionMetric,
 				Description: fmt.Sprintf("Whether this node is %s (1), "+
@@ -51,6 +58,25 @@ func getMetricsForNode(node *corev1.Node, nodeConditionTypesToReport []string) [
 			Timeseries: []*metricspb.TimeSeries{
 				utils.GetInt64TimeSeries(nodeConditionValue(node, v1NodeConditionTypeValue)),
 			},
+		})
+	}
+	//Allocatable
+	for _, nodeAllocatableTypeValue := range allocatableTypesToReport {
+		nodeAllocatableMetric := getNodeAllocatableMetric(nodeAllocatableTypeValue)
+		v1NodeAllocatableTypeValue := corev1.ResourceName(nodeAllocatableTypeValue)
+		metricValue, ok := nodeAllocatableValue(node, v1NodeAllocatableTypeValue)
+
+		if ok {
+			metrics = append(metrics, &metricspb.Metric{
+				MetricDescriptor: &metricspb.MetricDescriptor{
+					Name:        nodeAllocatableMetric,
+					Description: allocatableDesciption[v1NodeAllocatableTypeValue.String()],
+					Type:        metricspb.MetricDescriptor_GAUGE_INT64,
+				},
+				Timeseries: []*metricspb.TimeSeries{
+					utils.GetInt64TimeSeries(metricValue),
+				},
+			})
 		}
 	}
 
@@ -64,6 +90,10 @@ func getMetricsForNode(node *corev1.Node, nodeConditionTypesToReport []string) [
 
 func getNodeConditionMetric(nodeConditionTypeValue string) string {
 	return fmt.Sprintf("k8s.node.condition_%s", strcase.ToSnake(nodeConditionTypeValue))
+}
+
+func getNodeAllocatableMetric(nodeAllocatableTypeValue string) string {
+	return fmt.Sprintf("k8s.node.allocatable_%s", strcase.ToSnake(nodeAllocatableTypeValue))
 }
 
 func getResourceForNode(node *corev1.Node) *resourcepb.Resource {
@@ -81,6 +111,15 @@ var nodeConditionValues = map[corev1.ConditionStatus]int64{
 	corev1.ConditionTrue:    1,
 	corev1.ConditionFalse:   0,
 	corev1.ConditionUnknown: -1,
+}
+
+func nodeAllocatableValue(node *corev1.Node, allocatType corev1.ResourceName) (int64, bool) {
+	value, ok := node.Status.Allocatable[allocatType]
+	if !ok {
+		return 0, false
+	}
+	val, _ := value.AsInt64()
+	return val, true
 }
 
 func nodeConditionValue(node *corev1.Node, condType corev1.NodeConditionType) int64 {

@@ -52,6 +52,7 @@ func TestLoadConfig(t *testing.T) {
 			Distribution:               distributionKubernetes,
 			CollectionInterval:         30 * time.Second,
 			NodeConditionTypesToReport: []string{"Ready", "MemoryPressure"},
+			AllocatableTypesToReport:   []string{"cpu", "memory"},
 			MetadataExporters:          []string{"nop"},
 			APIConfig: k8sconfig.APIConfig{
 				AuthType: k8sconfig.AuthTypeServiceAccount,

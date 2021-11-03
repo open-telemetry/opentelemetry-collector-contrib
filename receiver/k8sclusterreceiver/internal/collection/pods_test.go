@@ -40,7 +40,7 @@ func TestPodAndContainerMetrics(t *testing.T) {
 		podSpecWithContainer("container-name"),
 		podStatusWithContainer("container-name", containerIDWithPreifx("container-id")),
 	)
-	dc := NewDataCollector(zap.NewNop(), []string{})
+	dc := NewDataCollector(zap.NewNop(), []string{}, []string{})
 
 	dc.SyncMetrics(pod)
 	actualResourceMetrics := dc.metricsStore.metricsCache

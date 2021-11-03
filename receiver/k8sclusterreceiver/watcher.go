@@ -64,13 +64,13 @@ type metadataConsumer func(metadata []*metadata.MetadataUpdate) error
 // newResourceWatcher creates a Kubernetes resource watcher.
 func newResourceWatcher(
 	logger *zap.Logger, client kubernetes.Interface, osQuotaClient quotaclientset.Interface,
-	nodeConditionTypesToReport []string, initialSyncTimeout time.Duration) *resourceWatcher {
+	nodeConditionTypesToReport, allocatableTypesToReport []string, initialSyncTimeout time.Duration) *resourceWatcher {
 	rw := &resourceWatcher{
 		client:              client,
 		osQuotaClient:       osQuotaClient,
 		informerFactories:   []sharedInformer{},
 		logger:              logger,
-		dataCollector:       collection.NewDataCollector(logger, nodeConditionTypesToReport),
+		dataCollector:       collection.NewDataCollector(logger, nodeConditionTypesToReport, allocatableTypesToReport),
 		initialSyncDone:     atomic.NewBool(false),
 		initialSyncTimedOut: atomic.NewBool(false),
 		initialTimeout:      initialSyncTimeout,

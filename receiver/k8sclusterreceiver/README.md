@@ -33,6 +33,12 @@ array.
 by the cluster. Currently supported versions are `kubernetes` and `openshift`. Setting
 the value to `openshift` enables OpenShift specific metrics in addition to standard
 kubernetes ones.
+- `allocatable_types_to_report` (no default): An array of allocatable resource types this receiver should report.
+The following allocatable resource types are available.
+  - cpu
+  - memory
+  - ephemeral-storage
+  - storage
 
 Example:
 
@@ -40,6 +46,7 @@ Example:
   k8s_cluster:
     auth_type: kubeConfig
     node_conditions_to_report: [Ready, MemoryPressure]
+    allocatable_types_to_report: [cpu, memory]
 ```
 
 The full list of settings exposed for this receiver are documented [here](./config.go)

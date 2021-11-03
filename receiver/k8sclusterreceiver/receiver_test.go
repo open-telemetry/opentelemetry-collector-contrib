@@ -207,10 +207,11 @@ func setupReceiver(
 	config := &Config{
 		CollectionInterval:         1 * time.Second,
 		NodeConditionTypesToReport: []string{"Ready"},
+		AllocatableTypesToReport:   []string{"cpu", "memory"},
 		Distribution:               distribution,
 	}
 
-	rw := newResourceWatcher(logger, client, osQuotaClient, config.NodeConditionTypesToReport, initialSyncTimeout)
+	rw := newResourceWatcher(logger, client, osQuotaClient, config.NodeConditionTypesToReport, config.AllocatableTypesToReport, initialSyncTimeout)
 	rw.dataCollector.SetupMetadataStore(&corev1.Service{}, &testutils.MockStore{})
 
 	return &kubernetesReceiver{

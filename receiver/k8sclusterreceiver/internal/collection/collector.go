@@ -72,21 +72,23 @@ const (
 // an interface to interact with refactored code from SignalFx Agent which is
 // confined to the collection package.
 type DataCollector struct {
-	logger                 *zap.Logger
-	metricsStore           *metricsStore
-	metadataStore          *metadataStore
-	nodeConditionsToReport []string
+	logger                   *zap.Logger
+	metricsStore             *metricsStore
+	metadataStore            *metadataStore
+	nodeConditionsToReport   []string
+	allocatableTypesToReport []string
 }
 
 // NewDataCollector returns a DataCollector.
-func NewDataCollector(logger *zap.Logger, nodeConditionsToReport []string) *DataCollector {
+func NewDataCollector(logger *zap.Logger, nodeConditionsToReport, allocatableTypesToReport []string) *DataCollector {
 	return &DataCollector{
 		logger: logger,
 		metricsStore: &metricsStore{
 			metricsCache: map[types.UID][]*agentmetricspb.ExportMetricsServiceRequest{},
 		},
-		metadataStore:          &metadataStore{},
-		nodeConditionsToReport: nodeConditionsToReport,
+		metadataStore:            &metadataStore{},
+		nodeConditionsToReport:   nodeConditionsToReport,
+		allocatableTypesToReport: allocatableTypesToReport,
 	}
 }
 
@@ -127,7 +129,7 @@ func (dc *DataCollector) SyncMetrics(obj interface{}) {
 	case *corev1.Pod:
 		rm = getMetricsForPod(o)
 	case *corev1.Node:
-		rm = getMetricsForNode(o, dc.nodeConditionsToReport)
+		rm = getMetricsForNode(o, dc.nodeConditionsToReport, dc.allocatableTypesToReport)
 	case *corev1.Namespace:
 		rm = getMetricsForNamespace(o)
 	case *corev1.ReplicationController:
