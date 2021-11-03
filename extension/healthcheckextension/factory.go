@@ -47,7 +47,7 @@ func createDefaultConfig() config.Extension {
 			Endpoint: defaultEndpoint,
 		},
 		CheckCollectorPipeline: defaultCheckCollectorPipelineSettings(),
-		Path: "/",
+		Path:                   "/",
 	}
 }
 

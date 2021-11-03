@@ -36,7 +36,7 @@ func TestFactory_CreateDefaultConfig(t *testing.T) {
 			Endpoint: defaultEndpoint,
 		},
 		CheckCollectorPipeline: defaultCheckCollectorPipelineSettings(),
-		Path: "/",
+		Path:                   "/",
 	}, cfg)
 
 	assert.NoError(t, configtest.CheckConfigStruct(cfg))

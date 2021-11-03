@@ -51,7 +51,7 @@ var _ config.Extension = (*Config)(nil)
 var (
 	errNoEndpointProvided                      = errors.New("bad config: endpoint must be specified")
 	errInvalidExporterFailureThresholdProvided = errors.New("bad config: exporter_failure_threshold expects a positive number")
-	errInvalidPath = errors.New("bad config: path must start with /")
+	errInvalidPath                             = errors.New("bad config: path must start with /")
 )
 
 // Validate checks if the extension configuration is valid
