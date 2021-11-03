@@ -5,8 +5,8 @@ go 1.17
 require (
 	github.com/google/uuid v1.3.0
 	github.com/stretchr/testify v1.7.0
-	go.opentelemetry.io/collector v0.38.0
-	go.opentelemetry.io/collector/model v0.38.0
+	go.opentelemetry.io/collector v0.38.1-0.20211103011348-c24dfeb047a8
+	go.opentelemetry.io/collector/model v0.38.1-0.20211103011348-c24dfeb047a8
 	go.uber.org/multierr v1.7.0
 	go.uber.org/zap v1.19.1
 )
@@ -27,9 +27,9 @@ require (
 	github.com/rogpeppe/go-internal v1.6.1 // indirect
 	github.com/spf13/cast v1.4.1 // indirect
 	go.opencensus.io v0.23.0 // indirect
-	go.opentelemetry.io/otel v1.0.1 // indirect
+	go.opentelemetry.io/otel v1.1.0 // indirect
 	go.opentelemetry.io/otel/metric v0.24.0 // indirect
-	go.opentelemetry.io/otel/trace v1.0.1 // indirect
+	go.opentelemetry.io/otel/trace v1.1.0 // indirect
 	go.uber.org/atomic v1.9.0 // indirect
 	golang.org/x/sys v0.0.0-20210816074244-15123e1e1f71 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect

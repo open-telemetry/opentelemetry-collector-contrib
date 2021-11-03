@@ -44,8 +44,9 @@ jobs:
         with:
           repository: prometheus/compliance
           path: compliance
+          ref: bc7dd4cb6e88e60b702023c199140281c4dce906
       - name: Copy binary to compliance directory
-        run: mkdir compliance/remote_write/bin && cp ./bin/otelcontribcol_linux_amd64 compliance/remote_write/bin/otelcol_linux_amd64
+        run: mkdir compliance/remote_write_sender/bin && cp ./bin/otelcontribcol_linux_amd64 compliance/remote_write_sender/bin/otelcol_linux_amd64
       - name: Run compliance tests
         run: go test --tags=compliance -run "TestRemoteWrite/otel/.+" -v ./
-        working-directory: compliance/remote_write
+        working-directory: compliance/remote_write_sender

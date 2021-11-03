@@ -32,6 +32,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sapmexporter v0.38.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sentryexporter v0.38.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter v0.38.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/skywalkingexporter v0.38.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/splunkhecexporter v0.38.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/stackdriverexporter v0.38.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sumologicexporter v0.38.0
@@ -105,7 +106,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zookeeperreceiver v0.38.0
 	github.com/prometheus/prometheus v1.8.2-0.20210621150501-ff58416a0b02
 	github.com/stretchr/testify v1.7.0
-	go.opentelemetry.io/collector v0.38.0
+	go.opentelemetry.io/collector v0.38.1-0.20211103011348-c24dfeb047a8
 	golang.org/x/sys v0.0.0-20211025201205-69cdffdb9359
 )
 
@@ -370,10 +371,10 @@ require (
 	go.etcd.io/bbolt v1.3.6 // indirect
 	go.mongodb.org/atlas v0.13.0 // indirect
 	go.opencensus.io v0.23.0 // indirect
-	go.opentelemetry.io/collector/model v0.38.0 // indirect
+	go.opentelemetry.io/collector/model v0.38.1-0.20211103011348-c24dfeb047a8 // indirect
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.26.0 // indirect
-	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.25.0 // indirect
-	go.opentelemetry.io/contrib/zpages v0.25.0 // indirect
+	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.26.0 // indirect
+	go.opentelemetry.io/contrib/zpages v0.26.0 // indirect
 	go.opentelemetry.io/otel v1.1.0 // indirect
 	go.opentelemetry.io/otel/exporters/prometheus v0.24.0 // indirect
 	go.opentelemetry.io/otel/internal/metric v0.24.0 // indirect
@@ -419,6 +420,7 @@ require (
 	k8s.io/utils v0.0.0-20210819203725-bdf08cb9a70a // indirect
 	sigs.k8s.io/structured-merge-diff/v4 v4.1.2 // indirect
 	sigs.k8s.io/yaml v1.2.0 // indirect
+	skywalking.apache.org/repo/goapi v0.0.0-20210820070710-e10b78bbf481 // indirect
 )
 
 // Replace references to modules that are in this repository with their relateive paths
@@ -507,6 +509,8 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sapme
 replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sentryexporter => ./exporter/sentryexporter
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter => ./exporter/signalfxexporter
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/skywalkingexporter => ./exporter/skywalkingexporter
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/splunkhecexporter => ./exporter/splunkhecexporter
 

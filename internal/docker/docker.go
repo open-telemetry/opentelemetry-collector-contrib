@@ -24,6 +24,7 @@ import (
 	"time"
 
 	dtypes "github.com/docker/docker/api/types"
+	devents "github.com/docker/docker/api/types/events"
 	dfilters "github.com/docker/docker/api/types/filters"
 	docker "github.com/docker/docker/client"
 	"go.uber.org/zap"
@@ -115,9 +116,7 @@ func (dc *Client) LoadContainerList(ctx context.Context) error {
 		wg.Add(1)
 		go func(container dtypes.Container) {
 			if !dc.shouldBeExcluded(container.Image) {
-				if cnt, ok := dc.inspectedContainerIsOfInterest(ctx, container.ID); ok {
-					dc.persistContainer(cnt)
-				}
+				dc.InspectAndPersistContainer(ctx, container.ID)
 			} else {
 				dc.logger.Debug(
 					"Not monitoring container per ExcludedImages",
@@ -167,7 +166,7 @@ func (dc *Client) FetchContainerStats(
 				"Daemon reported container doesn't exist. Will no longer monitor.",
 				zap.String("id", container.ID),
 			)
-			dc.removeContainer(container.ID)
+			dc.RemoveContainer(container.ID)
 		} else {
 			dc.logger.Warn(
 				"Could not fetch docker containerStats for container",
@@ -203,6 +202,13 @@ func (dc *Client) toStatsJSON(
 	return &statsJSON, nil
 }
 
+// Events exposes the underlying Docker clients Events channel.
+// Caller should close the events channel by canceling the context.
+// If an error occurs, processing stops and caller must reinvoke this method.
+func (dc *Client) Events(ctx context.Context, options dtypes.EventsOptions) (<-chan devents.Message, <-chan error) {
+	return dc.client.Events(ctx, options)
+}
+
 func (dc *Client) ContainerEventLoop(ctx context.Context) {
 	filters := dfilters.NewArgs([]dfilters.KeyValuePair{
 		{Key: "type", Value: "container"},
@@ -222,7 +228,7 @@ EVENT_LOOP:
 			Filters: filters,
 			Since:   lastTime.Format(time.RFC3339Nano),
 		}
-		eventCh, errCh := dc.client.Events(ctx, options)
+		eventCh, errCh := dc.Events(ctx, options)
 
 		for {
 			select {
@@ -232,7 +238,7 @@ EVENT_LOOP:
 				switch event.Action {
 				case "destroy":
 					dc.logger.Debug("Docker container was destroyed:", zap.String("id", event.ID))
-					dc.removeContainer(event.ID)
+					dc.RemoveContainer(event.ID)
 				default:
 					dc.logger.Debug(
 						"Docker container update:",
@@ -240,9 +246,7 @@ EVENT_LOOP:
 						zap.String("action", event.Action),
 					)
 
-					if container, ok := dc.inspectedContainerIsOfInterest(ctx, event.ID); ok {
-						dc.persistContainer(container)
-					}
+					dc.InspectAndPersistContainer(ctx, event.ID)
 				}
 
 				if event.TimeNano > lastTime.UnixNano() {
@@ -267,6 +271,17 @@ EVENT_LOOP:
 			}
 		}
 	}
+}
+
+// InspectAndPersistContainer queries inspect api and returns *ContainerJSON and true when container should be queried for stats,
+// nil and false otherwise. Persists the container in the cache if container is
+// running and not excluded.
+func (dc *Client) InspectAndPersistContainer(ctx context.Context, cid string) (*dtypes.ContainerJSON, bool) {
+	if container, ok := dc.inspectedContainerIsOfInterest(ctx, cid); ok {
+		dc.persistContainer(container)
+		return container, ok
+	}
+	return nil, false
 }
 
 // Queries inspect api and returns *ContainerJSON and true when container should be queried for stats,
@@ -295,7 +310,7 @@ func (dc *Client) persistContainer(containerJSON *dtypes.ContainerJSON) {
 	cid := containerJSON.ID
 	if !containerJSON.State.Running || containerJSON.State.Paused {
 		dc.logger.Debug("Docker container not running.  Will not persist.", zap.String("id", cid))
-		dc.removeContainer(cid)
+		dc.RemoveContainer(cid)
 		return
 	}
 
@@ -308,7 +323,7 @@ func (dc *Client) persistContainer(containerJSON *dtypes.ContainerJSON) {
 	}
 }
 
-func (dc *Client) removeContainer(cid string) {
+func (dc *Client) RemoveContainer(cid string) {
 	dc.containersLock.Lock()
 	defer dc.containersLock.Unlock()
 	delete(dc.containers, cid)

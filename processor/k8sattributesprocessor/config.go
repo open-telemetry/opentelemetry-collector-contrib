@@ -117,7 +117,10 @@ type ExtractConfig struct {
 type FieldExtractConfig struct {
 	TagName string `mapstructure:"tag_name"`
 	Key     string `mapstructure:"key"`
-	Regex   string `mapstructure:"regex"`
+	// KeyRegex is a regular expression used to extract a Key that matches the regex.
+	// Out of Key or KeyRegex only one option is expected to be configured at a time.
+	KeyRegex string `mapstructure:"key_regex"`
+	Regex    string `mapstructure:"regex"`
 	// From represents the source of the labels/annotations.
 	// Allowed values are "pod" and "namespace". The default is pod.
 	From string `mapstructure:"from"`

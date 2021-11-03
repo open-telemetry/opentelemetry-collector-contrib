@@ -156,7 +156,7 @@ func TestConvertToDatadogTdNoResourceSpans(t *testing.T) {
 	outputTraces, runningMetrics := convertToDatadogTd(traces, "test-host", &config.Config{}, denylister, buildInfo)
 
 	assert.Equal(t, 0, len(outputTraces))
-	assert.Equal(t, 0, len(runningMetrics))
+	assert.Equal(t, 1, len(runningMetrics))
 }
 
 func TestRunningTraces(t *testing.T) {
