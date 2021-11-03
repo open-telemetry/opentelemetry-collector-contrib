@@ -34,8 +34,13 @@ type Config struct {
 
 	// TCPAddr represents a tcp endpoint address that is to publish the health
 	// check status.
-	// The default endpoint is "0.0.0.0:13133".
+	// The default endpoint is "0.0.0.0:1313
 	TCPAddr confignet.TCPAddr `mapstructure:",squash"`
+
+	// Path represents the path the health check service will
+	// serve.
+	// The default path is "/".
+	Path string `mapstructure:"path"`
 
 	// CheckCollectorPipeline contains the list of settings of collector pipeline health check
 	CheckCollectorPipeline checkCollectorPipelineSettings `mapstructure:"check_collector_pipeline"`

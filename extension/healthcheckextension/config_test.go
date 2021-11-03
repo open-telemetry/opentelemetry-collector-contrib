@@ -48,6 +48,7 @@ func TestLoadConfig(t *testing.T) {
 				Endpoint: "localhost:13",
 			},
 			CheckCollectorPipeline: defaultCheckCollectorPipelineSettings(),
+			Path: "/",
 		},
 		ext1)
 

@@ -39,6 +39,7 @@ func TestHealthCheckExtensionUsageWithoutCheckCollectorPipeline(t *testing.T) {
 			Endpoint: testutil.GetAvailableLocalAddress(t),
 		},
 		CheckCollectorPipeline: defaultCheckCollectorPipelineSettings(),
+		Path: "/",
 	}
 
 	hcExt := newServer(config, zap.NewNop())
@@ -81,6 +82,7 @@ func TestHealthCheckExtensionUsageWithCheckCollectorPipeline(t *testing.T) {
 			Interval:                 "5m",
 			ExporterFailureThreshold: 1,
 		},
+		Path: "/",
 	}
 
 	hcExt := newServer(config, zap.NewNop())
@@ -164,6 +166,7 @@ func TestHealthCheckMultipleStarts(t *testing.T) {
 			Endpoint: testutil.GetAvailableLocalAddress(t),
 		},
 		CheckCollectorPipeline: defaultCheckCollectorPipelineSettings(),
+		Path: "/",
 	}
 
 	hcExt := newServer(config, zap.NewNop())
@@ -182,6 +185,7 @@ func TestHealthCheckMultipleShutdowns(t *testing.T) {
 			Endpoint: testutil.GetAvailableLocalAddress(t),
 		},
 		CheckCollectorPipeline: defaultCheckCollectorPipelineSettings(),
+		Path: "/",
 	}
 
 	hcExt := newServer(config, zap.NewNop())
