@@ -159,8 +159,8 @@ func TagsFromAttributes(attrs pdata.AttributeMap) []string {
 	return tags
 }
 
-// ContainerTagFromAttributes converts a selected list of attribute keys into
-// their equivalent Datadog container keys to be added to __dd.tags.container
+// ContainerTagFromAttributes extracts the value of _dd.tags.container from the given
+// set of attributes.
 func ContainerTagFromAttributes(attr map[string]string) string {
     var str strings.Builder
     for _, key := range containerTagsAttributes {
