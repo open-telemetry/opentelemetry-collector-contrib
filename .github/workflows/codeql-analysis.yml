@@ -3,6 +3,9 @@ name: "CodeQL Analysis"
 on:
   push:
     branches: [ main ]
+    paths-ignore:
+      - '.github/**'
+      - '**.md'
 
 jobs:
   CodeQL-Build:
