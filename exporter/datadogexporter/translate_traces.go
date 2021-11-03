@@ -80,6 +80,7 @@ func convertToDatadogTd(td pdata.Traces, fallbackHost string, cfg *config.Config
 	var traces []*pb.TracePayload
 
 	seenHosts := make(map[string]struct{})
+	seenHosts[fallbackHost] = struct{}{}
 	var series []datadog.Metric
 	pushTime := pdata.NewTimestampFromTime(time.Now())
 
