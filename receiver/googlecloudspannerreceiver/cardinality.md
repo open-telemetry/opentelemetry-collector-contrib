@@ -60,6 +60,11 @@ This can be done no more than 5 times every time.
 This means that after the first minute, collector can send 5 queries, second minute collector can send 10 queries(5 new and 5 existing queries sent in the first minute which is also seen in top 100 for second minute), third minute collector can send 15 queries(5 new and 10 existing queries sent in the first two minute which is also seen in top 100 for third minute).
 In a normal state after 20 minutes, the collector will be sending about 100 of queries per minute if the top 95 queries are already in the cache and 5 new queries(if it is in top 100 queries) are added to the cache in that interval.
 
+Since LRU cache is in memory of collector instance - you'll have separate cache and limits per instance-metric.
+Ability to use external caching for this is currently out of scope.
+In case of multiple collector instances used you need to remember that handling overall total cardinality limit for all metrics will be user responsibility and needs to be properly defined in receiver configuration.
+Also, there is ability to turn on/off cardinality handling using receiver configuration(it is turned off by default).
+
 ## Limitation
 While this algorithm is pessimistic, it provides the guarantee that new 5 queries in top 100 queries will be seen all the time during normal operation without losing information.
 If there are 6 new queries which are seen in a minute, the top 5 new queries will be sent and the 6th one will not be sent in that minute.
