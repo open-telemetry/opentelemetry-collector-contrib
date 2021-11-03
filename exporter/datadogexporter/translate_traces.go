@@ -388,7 +388,7 @@ func aggregateSpanTags(span pdata.Span, datadogTags map[string]string) map[strin
 	})
 
 	// we don't want to normalize these tags since `_dd` is a special case
-	spanTags[tagContainersTags] = attributes.ContainerTagsFromAttributes(spanTags)
+	spanTags[tagContainersTags] = attributes.ContainerTagFromAttributes(spanTags)
 	return spanTags
 }
 
