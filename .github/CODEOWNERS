@@ -20,7 +20,7 @@ exporter/awsprometheusremotewriteexporter/           @open-telemetry/collector-c
 exporter/awsxrayexporter/                            @open-telemetry/collector-contrib-approvers @kbrockhoff @anuraaga
 exporter/azuremonitorexporter/                       @open-telemetry/collector-contrib-approvers @pcwiese
 exporter/carbonexporter/                             @open-telemetry/collector-contrib-approvers @pjanotti
-exporter/datadogexporter/                            @open-telemetry/collector-contrib-approvers @KSerrania @mx-psi
+exporter/datadogexporter/                            @open-telemetry/collector-contrib-approvers @KSerrania @mx-psi @gbbr @knusbaum
 exporter/dynatraceexporter/                          @open-telemetry/collector-contrib-approvers @dyladan @arminru
 exporter/elasticexporter/                            @open-telemetry/collector-contrib-approvers @axw @simitt @jalvz
 exporter/elasticsearchexporter/                      @open-telemetry/collector-contrib-approvers @urso @faec @blakerouse
