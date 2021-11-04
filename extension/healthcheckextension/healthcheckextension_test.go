@@ -227,7 +227,6 @@ func TestHealthCheckExtensionUsageWithCustomPathWithCheckCollectorPipeline(t *te
 	require.Equal(t, http.StatusOK, resp1.StatusCode)
 	require.NoError(t, resp1.Body.Close(), "Must be able to close the response")
 
-
 	require.NoError(t, hcExt.NotReady())
 	resp2, err := client.Get(url)
 	require.NoError(t, err)
