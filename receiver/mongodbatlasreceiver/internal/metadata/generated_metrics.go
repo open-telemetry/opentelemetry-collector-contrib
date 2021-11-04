@@ -57,19 +57,29 @@ func (m *metricImpl) Init(metric pdata.Metric) {
 type metricStruct struct {
 	MongodbatlasDbCounts                                  MetricIntf
 	MongodbatlasDbSize                                    MetricIntf
-	MongodbatlasDiskPartitionIops                         MetricIntf
-	MongodbatlasDiskPartitionLatency                      MetricIntf
-	MongodbatlasDiskPartitionSpace                        MetricIntf
-	MongodbatlasDiskPartitionUtilization                  MetricIntf
+	MongodbatlasDiskPartitionIopsAverage                  MetricIntf
+	MongodbatlasDiskPartitionIopsMax                      MetricIntf
+	MongodbatlasDiskPartitionLatencyAverage               MetricIntf
+	MongodbatlasDiskPartitionLatencyMax                   MetricIntf
+	MongodbatlasDiskPartitionSpaceAverage                 MetricIntf
+	MongodbatlasDiskPartitionSpaceMax                     MetricIntf
+	MongodbatlasDiskPartitionUsageAverage                 MetricIntf
+	MongodbatlasDiskPartitionUsageMax                     MetricIntf
+	MongodbatlasDiskPartitionUtilizationAverage           MetricIntf
+	MongodbatlasDiskPartitionUtilizationMax               MetricIntf
 	MongodbatlasProcessAsserts                            MetricIntf
 	MongodbatlasProcessBackgroundFlush                    MetricIntf
 	MongodbatlasProcessCacheIo                            MetricIntf
 	MongodbatlasProcessCacheSize                          MetricIntf
 	MongodbatlasProcessConnections                        MetricIntf
-	MongodbatlasProcessCPUChildrenNormalizedUsage         MetricIntf
-	MongodbatlasProcessCPUChildrenUsage                   MetricIntf
-	MongodbatlasProcessCPUNormalizedUsage                 MetricIntf
-	MongodbatlasProcessCPUUsage                           MetricIntf
+	MongodbatlasProcessCPUChildrenNormalizedUsageAverage  MetricIntf
+	MongodbatlasProcessCPUChildrenNormalizedUsageMax      MetricIntf
+	MongodbatlasProcessCPUChildrenUsageAverage            MetricIntf
+	MongodbatlasProcessCPUChildrenUsageMax                MetricIntf
+	MongodbatlasProcessCPUNormalizedUsageAverage          MetricIntf
+	MongodbatlasProcessCPUNormalizedUsageMax              MetricIntf
+	MongodbatlasProcessCPUUsageAverage                    MetricIntf
+	MongodbatlasProcessCPUUsageMax                        MetricIntf
 	MongodbatlasProcessCursors                            MetricIntf
 	MongodbatlasProcessDbDocumentRate                     MetricIntf
 	MongodbatlasProcessDbOperationsRate                   MetricIntf
@@ -92,16 +102,22 @@ type metricStruct struct {
 	MongodbatlasProcessPageFaults                         MetricIntf
 	MongodbatlasProcessRestarts                           MetricIntf
 	MongodbatlasProcessTickets                            MetricIntf
-	MongodbatlasSystemCPUNormalizedUsage                  MetricIntf
-	MongodbatlasSystemCPUUsage                            MetricIntf
+	MongodbatlasSystemCPUNormalizedUsageAverage           MetricIntf
+	MongodbatlasSystemCPUNormalizedUsageMax               MetricIntf
+	MongodbatlasSystemCPUUsageAverage                     MetricIntf
+	MongodbatlasSystemCPUUsageMax                         MetricIntf
 	MongodbatlasSystemFtsCPUNormalizedUsage               MetricIntf
 	MongodbatlasSystemFtsCPUUsage                         MetricIntf
 	MongodbatlasSystemFtsDiskUsed                         MetricIntf
 	MongodbatlasSystemFtsMemoryUsage                      MetricIntf
-	MongodbatlasSystemMemoryUsage                         MetricIntf
-	MongodbatlasSystemNetworkIo                           MetricIntf
-	MongodbatlasSystemPagingIo                            MetricIntf
-	MongodbatlasSystemPagingUsage                         MetricIntf
+	MongodbatlasSystemMemoryUsageAverage                  MetricIntf
+	MongodbatlasSystemMemoryUsageMax                      MetricIntf
+	MongodbatlasSystemNetworkIoAverage                    MetricIntf
+	MongodbatlasSystemNetworkIoMax                        MetricIntf
+	MongodbatlasSystemPagingIoAverage                     MetricIntf
+	MongodbatlasSystemPagingIoMax                         MetricIntf
+	MongodbatlasSystemPagingUsageAverage                  MetricIntf
+	MongodbatlasSystemPagingUsageMax                      MetricIntf
 }
 
 // Names returns a list of all the metric name strings.
@@ -109,19 +125,29 @@ func (m *metricStruct) Names() []string {
 	return []string{
 		"mongodbatlas.db.counts",
 		"mongodbatlas.db.size",
-		"mongodbatlas.disk.partition.iops",
-		"mongodbatlas.disk.partition.latency",
-		"mongodbatlas.disk.partition.space",
-		"mongodbatlas.disk.partition.utilization",
+		"mongodbatlas.disk.partition.iops.average",
+		"mongodbatlas.disk.partition.iops.max",
+		"mongodbatlas.disk.partition.latency.average",
+		"mongodbatlas.disk.partition.latency.max",
+		"mongodbatlas.disk.partition.space.average",
+		"mongodbatlas.disk.partition.space.max",
+		"mongodbatlas.disk.partition.usage.average",
+		"mongodbatlas.disk.partition.usage.max",
+		"mongodbatlas.disk.partition.utilization.average",
+		"mongodbatlas.disk.partition.utilization.max",
 		"mongodbatlas.process.asserts",
 		"mongodbatlas.process.background_flush",
 		"mongodbatlas.process.cache.io",
 		"mongodbatlas.process.cache.size",
 		"mongodbatlas.process.connections",
-		"mongodbatlas.process.cpu.children.normalized.usage",
-		"mongodbatlas.process.cpu.children.usage",
-		"mongodbatlas.process.cpu.normalized.usage",
-		"mongodbatlas.process.cpu.usage",
+		"mongodbatlas.process.cpu.children.normalized.usage.average",
+		"mongodbatlas.process.cpu.children.normalized.usage.max",
+		"mongodbatlas.process.cpu.children.usage.average",
+		"mongodbatlas.process.cpu.children.usage.max",
+		"mongodbatlas.process.cpu.normalized.usage.average",
+		"mongodbatlas.process.cpu.normalized.usage.max",
+		"mongodbatlas.process.cpu.usage.average",
+		"mongodbatlas.process.cpu.usage.max",
 		"mongodbatlas.process.cursors",
 		"mongodbatlas.process.db.document.rate",
 		"mongodbatlas.process.db.operations.rate",
@@ -144,35 +170,51 @@ func (m *metricStruct) Names() []string {
 		"mongodbatlas.process.page_faults",
 		"mongodbatlas.process.restarts",
 		"mongodbatlas.process.tickets",
-		"mongodbatlas.system.cpu.normalized.usage",
-		"mongodbatlas.system.cpu.usage",
+		"mongodbatlas.system.cpu.normalized.usage.average",
+		"mongodbatlas.system.cpu.normalized.usage.max",
+		"mongodbatlas.system.cpu.usage.average",
+		"mongodbatlas.system.cpu.usage.max",
 		"mongodbatlas.system.fts.cpu.normalized.usage",
 		"mongodbatlas.system.fts.cpu.usage",
 		"mongodbatlas.system.fts.disk.used",
 		"mongodbatlas.system.fts.memory.usage",
-		"mongodbatlas.system.memory.usage",
-		"mongodbatlas.system.network.io",
-		"mongodbatlas.system.paging.io",
-		"mongodbatlas.system.paging.usage",
+		"mongodbatlas.system.memory.usage.average",
+		"mongodbatlas.system.memory.usage.max",
+		"mongodbatlas.system.network.io.average",
+		"mongodbatlas.system.network.io.max",
+		"mongodbatlas.system.paging.io.average",
+		"mongodbatlas.system.paging.io.max",
+		"mongodbatlas.system.paging.usage.average",
+		"mongodbatlas.system.paging.usage.max",
 	}
 }
 
 var metricsByName = map[string]MetricIntf{
 	"mongodbatlas.db.counts":                                       Metrics.MongodbatlasDbCounts,
 	"mongodbatlas.db.size":                                         Metrics.MongodbatlasDbSize,
-	"mongodbatlas.disk.partition.iops":                             Metrics.MongodbatlasDiskPartitionIops,
-	"mongodbatlas.disk.partition.latency":                          Metrics.MongodbatlasDiskPartitionLatency,
-	"mongodbatlas.disk.partition.space":                            Metrics.MongodbatlasDiskPartitionSpace,
-	"mongodbatlas.disk.partition.utilization":                      Metrics.MongodbatlasDiskPartitionUtilization,
+	"mongodbatlas.disk.partition.iops.average":                     Metrics.MongodbatlasDiskPartitionIopsAverage,
+	"mongodbatlas.disk.partition.iops.max":                         Metrics.MongodbatlasDiskPartitionIopsMax,
+	"mongodbatlas.disk.partition.latency.average":                  Metrics.MongodbatlasDiskPartitionLatencyAverage,
+	"mongodbatlas.disk.partition.latency.max":                      Metrics.MongodbatlasDiskPartitionLatencyMax,
+	"mongodbatlas.disk.partition.space.average":                    Metrics.MongodbatlasDiskPartitionSpaceAverage,
+	"mongodbatlas.disk.partition.space.max":                        Metrics.MongodbatlasDiskPartitionSpaceMax,
+	"mongodbatlas.disk.partition.usage.average":                    Metrics.MongodbatlasDiskPartitionUsageAverage,
+	"mongodbatlas.disk.partition.usage.max":                        Metrics.MongodbatlasDiskPartitionUsageMax,
+	"mongodbatlas.disk.partition.utilization.average":              Metrics.MongodbatlasDiskPartitionUtilizationAverage,
+	"mongodbatlas.disk.partition.utilization.max":                  Metrics.MongodbatlasDiskPartitionUtilizationMax,
 	"mongodbatlas.process.asserts":                                 Metrics.MongodbatlasProcessAsserts,
 	"mongodbatlas.process.background_flush":                        Metrics.MongodbatlasProcessBackgroundFlush,
 	"mongodbatlas.process.cache.io":                                Metrics.MongodbatlasProcessCacheIo,
 	"mongodbatlas.process.cache.size":                              Metrics.MongodbatlasProcessCacheSize,
 	"mongodbatlas.process.connections":                             Metrics.MongodbatlasProcessConnections,
-	"mongodbatlas.process.cpu.children.normalized.usage":           Metrics.MongodbatlasProcessCPUChildrenNormalizedUsage,
-	"mongodbatlas.process.cpu.children.usage":                      Metrics.MongodbatlasProcessCPUChildrenUsage,
-	"mongodbatlas.process.cpu.normalized.usage":                    Metrics.MongodbatlasProcessCPUNormalizedUsage,
-	"mongodbatlas.process.cpu.usage":                               Metrics.MongodbatlasProcessCPUUsage,
+	"mongodbatlas.process.cpu.children.normalized.usage.average":   Metrics.MongodbatlasProcessCPUChildrenNormalizedUsageAverage,
+	"mongodbatlas.process.cpu.children.normalized.usage.max":       Metrics.MongodbatlasProcessCPUChildrenNormalizedUsageMax,
+	"mongodbatlas.process.cpu.children.usage.average":              Metrics.MongodbatlasProcessCPUChildrenUsageAverage,
+	"mongodbatlas.process.cpu.children.usage.max":                  Metrics.MongodbatlasProcessCPUChildrenUsageMax,
+	"mongodbatlas.process.cpu.normalized.usage.average":            Metrics.MongodbatlasProcessCPUNormalizedUsageAverage,
+	"mongodbatlas.process.cpu.normalized.usage.max":                Metrics.MongodbatlasProcessCPUNormalizedUsageMax,
+	"mongodbatlas.process.cpu.usage.average":                       Metrics.MongodbatlasProcessCPUUsageAverage,
+	"mongodbatlas.process.cpu.usage.max":                           Metrics.MongodbatlasProcessCPUUsageMax,
 	"mongodbatlas.process.cursors":                                 Metrics.MongodbatlasProcessCursors,
 	"mongodbatlas.process.db.document.rate":                        Metrics.MongodbatlasProcessDbDocumentRate,
 	"mongodbatlas.process.db.operations.rate":                      Metrics.MongodbatlasProcessDbOperationsRate,
@@ -195,16 +237,22 @@ var metricsByName = map[string]MetricIntf{
 	"mongodbatlas.process.page_faults":                             Metrics.MongodbatlasProcessPageFaults,
 	"mongodbatlas.process.restarts":                                Metrics.MongodbatlasProcessRestarts,
 	"mongodbatlas.process.tickets":                                 Metrics.MongodbatlasProcessTickets,
-	"mongodbatlas.system.cpu.normalized.usage":                     Metrics.MongodbatlasSystemCPUNormalizedUsage,
-	"mongodbatlas.system.cpu.usage":                                Metrics.MongodbatlasSystemCPUUsage,
+	"mongodbatlas.system.cpu.normalized.usage.average":             Metrics.MongodbatlasSystemCPUNormalizedUsageAverage,
+	"mongodbatlas.system.cpu.normalized.usage.max":                 Metrics.MongodbatlasSystemCPUNormalizedUsageMax,
+	"mongodbatlas.system.cpu.usage.average":                        Metrics.MongodbatlasSystemCPUUsageAverage,
+	"mongodbatlas.system.cpu.usage.max":                            Metrics.MongodbatlasSystemCPUUsageMax,
 	"mongodbatlas.system.fts.cpu.normalized.usage":                 Metrics.MongodbatlasSystemFtsCPUNormalizedUsage,
 	"mongodbatlas.system.fts.cpu.usage":                            Metrics.MongodbatlasSystemFtsCPUUsage,
 	"mongodbatlas.system.fts.disk.used":                            Metrics.MongodbatlasSystemFtsDiskUsed,
 	"mongodbatlas.system.fts.memory.usage":                         Metrics.MongodbatlasSystemFtsMemoryUsage,
-	"mongodbatlas.system.memory.usage":                             Metrics.MongodbatlasSystemMemoryUsage,
-	"mongodbatlas.system.network.io":                               Metrics.MongodbatlasSystemNetworkIo,
-	"mongodbatlas.system.paging.io":                                Metrics.MongodbatlasSystemPagingIo,
-	"mongodbatlas.system.paging.usage":                             Metrics.MongodbatlasSystemPagingUsage,
+	"mongodbatlas.system.memory.usage.average":                     Metrics.MongodbatlasSystemMemoryUsageAverage,
+	"mongodbatlas.system.memory.usage.max":                         Metrics.MongodbatlasSystemMemoryUsageMax,
+	"mongodbatlas.system.network.io.average":                       Metrics.MongodbatlasSystemNetworkIoAverage,
+	"mongodbatlas.system.network.io.max":                           Metrics.MongodbatlasSystemNetworkIoMax,
+	"mongodbatlas.system.paging.io.average":                        Metrics.MongodbatlasSystemPagingIoAverage,
+	"mongodbatlas.system.paging.io.max":                            Metrics.MongodbatlasSystemPagingIoMax,
+	"mongodbatlas.system.paging.usage.average":                     Metrics.MongodbatlasSystemPagingUsageAverage,
+	"mongodbatlas.system.paging.usage.max":                         Metrics.MongodbatlasSystemPagingUsageMax,
 }
 
 func (m *metricStruct) ByName(n string) MetricIntf {
@@ -233,36 +281,90 @@ var Metrics = &metricStruct{
 		},
 	},
 	&metricImpl{
-		"mongodbatlas.disk.partition.iops",
+		"mongodbatlas.disk.partition.iops.average",
 		func(metric pdata.Metric) {
-			metric.SetName("mongodbatlas.disk.partition.iops")
+			metric.SetName("mongodbatlas.disk.partition.iops.average")
 			metric.SetDescription("Disk partition iops")
 			metric.SetUnit("{ops}/s")
 			metric.SetDataType(pdata.MetricDataTypeGauge)
 		},
 	},
 	&metricImpl{
-		"mongodbatlas.disk.partition.latency",
+		"mongodbatlas.disk.partition.iops.max",
 		func(metric pdata.Metric) {
-			metric.SetName("mongodbatlas.disk.partition.latency")
+			metric.SetName("mongodbatlas.disk.partition.iops.max")
+			metric.SetDescription("Disk partition iops")
+			metric.SetUnit("{ops}/s")
+			metric.SetDataType(pdata.MetricDataTypeGauge)
+		},
+	},
+	&metricImpl{
+		"mongodbatlas.disk.partition.latency.average",
+		func(metric pdata.Metric) {
+			metric.SetName("mongodbatlas.disk.partition.latency.average")
 			metric.SetDescription("Disk partition latency")
 			metric.SetUnit("ms")
 			metric.SetDataType(pdata.MetricDataTypeGauge)
 		},
 	},
 	&metricImpl{
-		"mongodbatlas.disk.partition.space",
+		"mongodbatlas.disk.partition.latency.max",
 		func(metric pdata.Metric) {
-			metric.SetName("mongodbatlas.disk.partition.space")
+			metric.SetName("mongodbatlas.disk.partition.latency.max")
+			metric.SetDescription("Disk partition latency")
+			metric.SetUnit("ms")
+			metric.SetDataType(pdata.MetricDataTypeGauge)
+		},
+	},
+	&metricImpl{
+		"mongodbatlas.disk.partition.space.average",
+		func(metric pdata.Metric) {
+			metric.SetName("mongodbatlas.disk.partition.space.average")
 			metric.SetDescription("Disk partition space")
 			metric.SetUnit("By")
 			metric.SetDataType(pdata.MetricDataTypeGauge)
 		},
 	},
 	&metricImpl{
-		"mongodbatlas.disk.partition.utilization",
+		"mongodbatlas.disk.partition.space.max",
 		func(metric pdata.Metric) {
-			metric.SetName("mongodbatlas.disk.partition.utilization")
+			metric.SetName("mongodbatlas.disk.partition.space.max")
+			metric.SetDescription("Disk partition space")
+			metric.SetUnit("By")
+			metric.SetDataType(pdata.MetricDataTypeGauge)
+		},
+	},
+	&metricImpl{
+		"mongodbatlas.disk.partition.usage.average",
+		func(metric pdata.Metric) {
+			metric.SetName("mongodbatlas.disk.partition.usage.average")
+			metric.SetDescription("Disk partition usage (%)")
+			metric.SetUnit("1")
+			metric.SetDataType(pdata.MetricDataTypeGauge)
+		},
+	},
+	&metricImpl{
+		"mongodbatlas.disk.partition.usage.max",
+		func(metric pdata.Metric) {
+			metric.SetName("mongodbatlas.disk.partition.usage.max")
+			metric.SetDescription("Disk partition usage (%)")
+			metric.SetUnit("1")
+			metric.SetDataType(pdata.MetricDataTypeGauge)
+		},
+	},
+	&metricImpl{
+		"mongodbatlas.disk.partition.utilization.average",
+		func(metric pdata.Metric) {
+			metric.SetName("mongodbatlas.disk.partition.utilization.average")
+			metric.SetDescription("Disk partition utilization (%)")
+			metric.SetUnit("1")
+			metric.SetDataType(pdata.MetricDataTypeGauge)
+		},
+	},
+	&metricImpl{
+		"mongodbatlas.disk.partition.utilization.max",
+		func(metric pdata.Metric) {
+			metric.SetName("mongodbatlas.disk.partition.utilization.max")
 			metric.SetDescription("Disk partition utilization (%)")
 			metric.SetUnit("1")
 			metric.SetDataType(pdata.MetricDataTypeGauge)
@@ -314,36 +416,72 @@ var Metrics = &metricStruct{
 		},
 	},
 	&metricImpl{
-		"mongodbatlas.process.cpu.children.normalized.usage",
+		"mongodbatlas.process.cpu.children.normalized.usage.average",
 		func(metric pdata.Metric) {
-			metric.SetName("mongodbatlas.process.cpu.children.normalized.usage")
+			metric.SetName("mongodbatlas.process.cpu.children.normalized.usage.average")
 			metric.SetDescription("CPU Usage for child processes, normalized to pct")
 			metric.SetUnit("1")
 			metric.SetDataType(pdata.MetricDataTypeGauge)
 		},
 	},
 	&metricImpl{
-		"mongodbatlas.process.cpu.children.usage",
+		"mongodbatlas.process.cpu.children.normalized.usage.max",
 		func(metric pdata.Metric) {
-			metric.SetName("mongodbatlas.process.cpu.children.usage")
+			metric.SetName("mongodbatlas.process.cpu.children.normalized.usage.max")
+			metric.SetDescription("CPU Usage for child processes, normalized to pct")
+			metric.SetUnit("1")
+			metric.SetDataType(pdata.MetricDataTypeGauge)
+		},
+	},
+	&metricImpl{
+		"mongodbatlas.process.cpu.children.usage.average",
+		func(metric pdata.Metric) {
+			metric.SetName("mongodbatlas.process.cpu.children.usage.average")
 			metric.SetDescription("CPU Usage for child processes (%)")
 			metric.SetUnit("1")
 			metric.SetDataType(pdata.MetricDataTypeGauge)
 		},
 	},
 	&metricImpl{
-		"mongodbatlas.process.cpu.normalized.usage",
+		"mongodbatlas.process.cpu.children.usage.max",
 		func(metric pdata.Metric) {
-			metric.SetName("mongodbatlas.process.cpu.normalized.usage")
+			metric.SetName("mongodbatlas.process.cpu.children.usage.max")
+			metric.SetDescription("CPU Usage for child processes (%)")
+			metric.SetUnit("1")
+			metric.SetDataType(pdata.MetricDataTypeGauge)
+		},
+	},
+	&metricImpl{
+		"mongodbatlas.process.cpu.normalized.usage.average",
+		func(metric pdata.Metric) {
+			metric.SetName("mongodbatlas.process.cpu.normalized.usage.average")
 			metric.SetDescription("CPU Usage, normalized to pct")
 			metric.SetUnit("1")
 			metric.SetDataType(pdata.MetricDataTypeGauge)
 		},
 	},
 	&metricImpl{
-		"mongodbatlas.process.cpu.usage",
+		"mongodbatlas.process.cpu.normalized.usage.max",
 		func(metric pdata.Metric) {
-			metric.SetName("mongodbatlas.process.cpu.usage")
+			metric.SetName("mongodbatlas.process.cpu.normalized.usage.max")
+			metric.SetDescription("CPU Usage, normalized to pct")
+			metric.SetUnit("1")
+			metric.SetDataType(pdata.MetricDataTypeGauge)
+		},
+	},
+	&metricImpl{
+		"mongodbatlas.process.cpu.usage.average",
+		func(metric pdata.Metric) {
+			metric.SetName("mongodbatlas.process.cpu.usage.average")
+			metric.SetDescription("CPU Usage (%)")
+			metric.SetUnit("1")
+			metric.SetDataType(pdata.MetricDataTypeGauge)
+		},
+	},
+	&metricImpl{
+		"mongodbatlas.process.cpu.usage.max",
+		func(metric pdata.Metric) {
+			metric.SetName("mongodbatlas.process.cpu.usage.max")
 			metric.SetDescription("CPU Usage (%)")
 			metric.SetUnit("1")
 			metric.SetDataType(pdata.MetricDataTypeGauge)
@@ -552,18 +690,36 @@ var Metrics = &metricStruct{
 		},
 	},
 	&metricImpl{
-		"mongodbatlas.system.cpu.normalized.usage",
+		"mongodbatlas.system.cpu.normalized.usage.average",
 		func(metric pdata.Metric) {
-			metric.SetName("mongodbatlas.system.cpu.normalized.usage")
+			metric.SetName("mongodbatlas.system.cpu.normalized.usage.average")
 			metric.SetDescription("System CPU Normalized to pct")
 			metric.SetUnit("1")
 			metric.SetDataType(pdata.MetricDataTypeGauge)
 		},
 	},
 	&metricImpl{
-		"mongodbatlas.system.cpu.usage",
+		"mongodbatlas.system.cpu.normalized.usage.max",
 		func(metric pdata.Metric) {
-			metric.SetName("mongodbatlas.system.cpu.usage")
+			metric.SetName("mongodbatlas.system.cpu.normalized.usage.max")
+			metric.SetDescription("System CPU Normalized to pct")
+			metric.SetUnit("1")
+			metric.SetDataType(pdata.MetricDataTypeGauge)
+		},
+	},
+	&metricImpl{
+		"mongodbatlas.system.cpu.usage.average",
+		func(metric pdata.Metric) {
+			metric.SetName("mongodbatlas.system.cpu.usage.average")
+			metric.SetDescription("System CPU Usage (%)")
+			metric.SetUnit("1")
+			metric.SetDataType(pdata.MetricDataTypeGauge)
+		},
+	},
+	&metricImpl{
+		"mongodbatlas.system.cpu.usage.max",
+		func(metric pdata.Metric) {
+			metric.SetName("mongodbatlas.system.cpu.usage.max")
 			metric.SetDescription("System CPU Usage (%)")
 			metric.SetUnit("1")
 			metric.SetDataType(pdata.MetricDataTypeGauge)
@@ -608,36 +764,72 @@ var Metrics = &metricStruct{
 		},
 	},
 	&metricImpl{
-		"mongodbatlas.system.memory.usage",
+		"mongodbatlas.system.memory.usage.average",
 		func(metric pdata.Metric) {
-			metric.SetName("mongodbatlas.system.memory.usage")
+			metric.SetName("mongodbatlas.system.memory.usage.average")
 			metric.SetDescription("System Memory Usage")
 			metric.SetUnit("KiBy")
 			metric.SetDataType(pdata.MetricDataTypeGauge)
 		},
 	},
 	&metricImpl{
-		"mongodbatlas.system.network.io",
+		"mongodbatlas.system.memory.usage.max",
 		func(metric pdata.Metric) {
-			metric.SetName("mongodbatlas.system.network.io")
+			metric.SetName("mongodbatlas.system.memory.usage.max")
+			metric.SetDescription("System Memory Usage")
+			metric.SetUnit("KiBy")
+			metric.SetDataType(pdata.MetricDataTypeGauge)
+		},
+	},
+	&metricImpl{
+		"mongodbatlas.system.network.io.average",
+		func(metric pdata.Metric) {
+			metric.SetName("mongodbatlas.system.network.io.average")
 			metric.SetDescription("System Network IO")
 			metric.SetUnit("By/s")
 			metric.SetDataType(pdata.MetricDataTypeGauge)
 		},
 	},
 	&metricImpl{
-		"mongodbatlas.system.paging.io",
+		"mongodbatlas.system.network.io.max",
 		func(metric pdata.Metric) {
-			metric.SetName("mongodbatlas.system.paging.io")
+			metric.SetName("mongodbatlas.system.network.io.max")
+			metric.SetDescription("System Network IO")
+			metric.SetUnit("By/s")
+			metric.SetDataType(pdata.MetricDataTypeGauge)
+		},
+	},
+	&metricImpl{
+		"mongodbatlas.system.paging.io.average",
+		func(metric pdata.Metric) {
+			metric.SetName("mongodbatlas.system.paging.io.average")
 			metric.SetDescription("Swap IO")
 			metric.SetUnit("{pages}/s")
 			metric.SetDataType(pdata.MetricDataTypeGauge)
 		},
 	},
 	&metricImpl{
-		"mongodbatlas.system.paging.usage",
+		"mongodbatlas.system.paging.io.max",
 		func(metric pdata.Metric) {
-			metric.SetName("mongodbatlas.system.paging.usage")
+			metric.SetName("mongodbatlas.system.paging.io.max")
+			metric.SetDescription("Swap IO")
+			metric.SetUnit("{pages}/s")
+			metric.SetDataType(pdata.MetricDataTypeGauge)
+		},
+	},
+	&metricImpl{
+		"mongodbatlas.system.paging.usage.average",
+		func(metric pdata.Metric) {
+			metric.SetName("mongodbatlas.system.paging.usage.average")
+			metric.SetDescription("Swap usage")
+			metric.SetUnit("KiBy")
+			metric.SetDataType(pdata.MetricDataTypeGauge)
+		},
+	},
+	&metricImpl{
+		"mongodbatlas.system.paging.usage.max",
+		func(metric pdata.Metric) {
+			metric.SetName("mongodbatlas.system.paging.usage.max")
 			metric.SetDescription("Swap usage")
 			metric.SetUnit("KiBy")
 			metric.SetDataType(pdata.MetricDataTypeGauge)
@@ -651,8 +843,6 @@ var M = Metrics
 
 // Labels contains the possible metric labels that can be used.
 var Labels = struct {
-	// Aggregation (Method used by MongoDB to pre-aggregate metrics)
-	Aggregation string
 	// AssertType (MongoDB assertion type)
 	AssertType string
 	// BtreeCounterType (Database index effectiveness)
@@ -696,7 +886,6 @@ var Labels = struct {
 	// TicketType (Type of ticket available)
 	TicketType string
 }{
-	"aggregation",
 	"assert_type",
 	"btree_counter_type",
 	"cache_direction",
@@ -723,15 +912,6 @@ var Labels = struct {
 // L contains the possible metric labels that can be used. L is an alias for
 // Labels.
 var L = Labels
-
-// LabelAggregation are the possible values that the label "aggregation" can have.
-var LabelAggregation = struct {
-	Max string
-	Avg string
-}{
-	"max",
-	"avg",
-}
 
 // LabelAssertType are the possible values that the label "assert_type" can have.
 var LabelAssertType = struct {

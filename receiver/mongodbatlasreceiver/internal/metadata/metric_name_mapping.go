@@ -30,87 +30,71 @@ type metricMappingData struct {
 var metricNameMapping = map[string]metricMappingData{
 	// MongoDB CPU usage. For hosts with more than one CPU core, these values can exceed 100%.
 
-	"PROCESS_CPU_USER": {"mongodbatlas.process.cpu.usage", map[string]pdata.AttributeValue{
-		"cpu_state":   pdata.NewAttributeValueString("user"),
-		"aggregation": pdata.NewAttributeValueString("avg"),
+	"PROCESS_CPU_USER": {"mongodbatlas.process.cpu.usage.average", map[string]pdata.AttributeValue{
+		"cpu_state": pdata.NewAttributeValueString("user"),
 	}},
 
-	"MAX_PROCESS_CPU_USER": {"mongodbatlas.process.cpu.usage", map[string]pdata.AttributeValue{
-		"cpu_state":   pdata.NewAttributeValueString("user"),
-		"aggregation": pdata.NewAttributeValueString("max"),
+	"MAX_PROCESS_CPU_USER": {"mongodbatlas.process.cpu.usage.max", map[string]pdata.AttributeValue{
+		"cpu_state": pdata.NewAttributeValueString("user"),
 	}},
 
-	"PROCESS_CPU_KERNEL": {"mongodbatlas.process.cpu.usage", map[string]pdata.AttributeValue{
-		"cpu_state":   pdata.NewAttributeValueString("kernel"),
-		"aggregation": pdata.NewAttributeValueString("avg"),
+	"PROCESS_CPU_KERNEL": {"mongodbatlas.process.cpu.usage.average", map[string]pdata.AttributeValue{
+		"cpu_state": pdata.NewAttributeValueString("kernel"),
 	}},
 
-	"MAX_PROCESS_CPU_KERNEL": {"mongodbatlas.process.cpu.usage", map[string]pdata.AttributeValue{
-		"cpu_state":   pdata.NewAttributeValueString("kernel"),
-		"aggregation": pdata.NewAttributeValueString("max"),
+	"MAX_PROCESS_CPU_KERNEL": {"mongodbatlas.process.cpu.usage.max", map[string]pdata.AttributeValue{
+		"cpu_state": pdata.NewAttributeValueString("kernel"),
 	}},
 
-	"PROCESS_CPU_CHILDREN_USER": {"mongodbatlas.process.cpu.children.usage", map[string]pdata.AttributeValue{
-		"cpu_state":   pdata.NewAttributeValueString("user"),
-		"aggregation": pdata.NewAttributeValueString("avg"),
+	"PROCESS_CPU_CHILDREN_USER": {"mongodbatlas.process.cpu.children.usage.average", map[string]pdata.AttributeValue{
+		"cpu_state": pdata.NewAttributeValueString("user"),
 	}},
 
-	"MAX_PROCESS_CPU_CHILDREN_USER": {"mongodbatlas.process.cpu.children.usage", map[string]pdata.AttributeValue{
-		"cpu_state":   pdata.NewAttributeValueString("user"),
-		"aggregation": pdata.NewAttributeValueString("max"),
+	"MAX_PROCESS_CPU_CHILDREN_USER": {"mongodbatlas.process.cpu.children.usage.max", map[string]pdata.AttributeValue{
+		"cpu_state": pdata.NewAttributeValueString("user"),
 	}},
 
-	"PROCESS_CPU_CHILDREN_KERNEL": {"mongodbatlas.process.cpu.children.usage", map[string]pdata.AttributeValue{
-		"cpu_state":   pdata.NewAttributeValueString("kernel"),
-		"aggregation": pdata.NewAttributeValueString("avg"),
+	"PROCESS_CPU_CHILDREN_KERNEL": {"mongodbatlas.process.cpu.children.usage.average", map[string]pdata.AttributeValue{
+		"cpu_state": pdata.NewAttributeValueString("kernel"),
 	}},
 
-	"MAX_PROCESS_CPU_CHILDREN_KERNEL": {"mongodbatlas.process.cpu.children.usage", map[string]pdata.AttributeValue{
-		"cpu_state":   pdata.NewAttributeValueString("kernel"),
-		"aggregation": pdata.NewAttributeValueString("max"),
+	"MAX_PROCESS_CPU_CHILDREN_KERNEL": {"mongodbatlas.process.cpu.children.usage.max", map[string]pdata.AttributeValue{
+		"cpu_state": pdata.NewAttributeValueString("kernel"),
 	}},
 
 	// MongoDB CPU usage scaled to a range of 0% to 100%. Atlas computes this value by dividing by the number of CPU cores.
 
-	"PROCESS_NORMALIZED_CPU_USER": {"mongodbatlas.process.cpu.normalized.usage", map[string]pdata.AttributeValue{
-		"cpu_state":   pdata.NewAttributeValueString("user"),
-		"aggregation": pdata.NewAttributeValueString("avg"),
+	"PROCESS_NORMALIZED_CPU_USER": {"mongodbatlas.process.cpu.normalized.usage.average", map[string]pdata.AttributeValue{
+		"cpu_state": pdata.NewAttributeValueString("user"),
 	}},
 
-	"MAX_PROCESS_NORMALIZED_CPU_USER": {"mongodbatlas.process.cpu.normalized.usage", map[string]pdata.AttributeValue{
-		"cpu_state":   pdata.NewAttributeValueString("user"),
-		"aggregation": pdata.NewAttributeValueString("max"),
+	"MAX_PROCESS_NORMALIZED_CPU_USER": {"mongodbatlas.process.cpu.normalized.usage.max", map[string]pdata.AttributeValue{
+		"cpu_state": pdata.NewAttributeValueString("user"),
 	}},
 
-	"PROCESS_NORMALIZED_CPU_KERNEL": {"mongodbatlas.process.cpu.normalized.usage", map[string]pdata.AttributeValue{
-		"cpu_state":   pdata.NewAttributeValueString("kernel"),
-		"aggregation": pdata.NewAttributeValueString("avg"),
+	"PROCESS_NORMALIZED_CPU_KERNEL": {"mongodbatlas.process.cpu.normalized.usage.average", map[string]pdata.AttributeValue{
+		"cpu_state": pdata.NewAttributeValueString("kernel"),
 	}},
 
-	"MAX_PROCESS_NORMALIZED_CPU_KERNEL": {"mongodbatlas.process.cpu.normalized.usage", map[string]pdata.AttributeValue{
-		"cpu_state":   pdata.NewAttributeValueString("kernel"),
-		"aggregation": pdata.NewAttributeValueString("max"),
+	"MAX_PROCESS_NORMALIZED_CPU_KERNEL": {"mongodbatlas.process.cpu.normalized.usage.max", map[string]pdata.AttributeValue{
+		"cpu_state": pdata.NewAttributeValueString("kernel"),
 	}},
 
-	"PROCESS_NORMALIZED_CPU_CHILDREN_USER": {"mongodbatlas.process.cpu.children.normalized.usage", map[string]pdata.AttributeValue{
-		"cpu_state":   pdata.NewAttributeValueString("user"),
-		"aggregation": pdata.NewAttributeValueString("avg"),
+	"PROCESS_NORMALIZED_CPU_CHILDREN_USER": {"mongodbatlas.process.cpu.children.normalized.usage.average", map[string]pdata.AttributeValue{
+		"cpu_state": pdata.NewAttributeValueString("user"),
 	}},
 
 	// Context: Process
-	"MAX_PROCESS_NORMALIZED_CPU_CHILDREN_USER": {"mongodbatlas.process.cpu.children.normalized.usage", map[string]pdata.AttributeValue{
-		"cpu_state":   pdata.NewAttributeValueString("user"),
-		"aggregation": pdata.NewAttributeValueString("max"),
+	"MAX_PROCESS_NORMALIZED_CPU_CHILDREN_USER": {"mongodbatlas.process.cpu.children.normalized.usage.max", map[string]pdata.AttributeValue{
+		"cpu_state": pdata.NewAttributeValueString("user"),
 	}},
 
-	"PROCESS_NORMALIZED_CPU_CHILDREN_KERNEL": {"mongodbatlas.process.cpu.children.normalized.usage", map[string]pdata.AttributeValue{
-		"cpu_state":   pdata.NewAttributeValueString("kernel"),
-		"aggregation": pdata.NewAttributeValueString("avg"),
+	"PROCESS_NORMALIZED_CPU_CHILDREN_KERNEL": {"mongodbatlas.process.cpu.children.normalized.usage.average", map[string]pdata.AttributeValue{
+		"cpu_state": pdata.NewAttributeValueString("kernel"),
 	}},
 
-	"MAX_PROCESS_NORMALIZED_CPU_CHILDREN_KERNEL": {"mongodbatlas.process.cpu.children.normalized.usage", map[string]pdata.AttributeValue{
-		"cpu_state":   pdata.NewAttributeValueString("kernel"),
-		"aggregation": pdata.NewAttributeValueString("max"),
+	"MAX_PROCESS_NORMALIZED_CPU_CHILDREN_KERNEL": {"mongodbatlas.process.cpu.children.normalized.usage.max", map[string]pdata.AttributeValue{
+		"cpu_state": pdata.NewAttributeValueString("kernel"),
 	}},
 
 	// Rate of asserts for a MongoDB process found in the asserts document that the serverStatus command generates.
@@ -364,238 +348,182 @@ var metricNameMapping = map[string]metricMappingData{
 	}},
 
 	// CPU usage of processes on the host. For hosts with more than one CPU core, this value can exceed 100%.
-	"SYSTEM_CPU_USER": {"mongodbatlas.system.cpu.usage", map[string]pdata.AttributeValue{
-		"cpu_state":   pdata.NewAttributeValueString("user"),
-		"aggregation": pdata.NewAttributeValueString("avg"),
+	"SYSTEM_CPU_USER": {"mongodbatlas.system.cpu.usage.average", map[string]pdata.AttributeValue{
+		"cpu_state": pdata.NewAttributeValueString("user"),
 	}},
-	"MAX_SYSTEM_CPU_USER": {"mongodbatlas.system.cpu.usage", map[string]pdata.AttributeValue{
-		"cpu_state":   pdata.NewAttributeValueString("user"),
-		"aggregation": pdata.NewAttributeValueString("max"),
+	"MAX_SYSTEM_CPU_USER": {"mongodbatlas.system.cpu.usage.max", map[string]pdata.AttributeValue{
+		"cpu_state": pdata.NewAttributeValueString("user"),
 	}},
-	"SYSTEM_CPU_KERNEL": {"mongodbatlas.system.cpu.usage", map[string]pdata.AttributeValue{
-		"cpu_state":   pdata.NewAttributeValueString("kernel"),
-		"aggregation": pdata.NewAttributeValueString("avg"),
+	"SYSTEM_CPU_KERNEL": {"mongodbatlas.system.cpu.usage.average", map[string]pdata.AttributeValue{
+		"cpu_state": pdata.NewAttributeValueString("kernel"),
 	}},
-	"MAX_SYSTEM_CPU_KERNEL": {"mongodbatlas.system.cpu.usage", map[string]pdata.AttributeValue{
-		"cpu_state":   pdata.NewAttributeValueString("kernel"),
-		"aggregation": pdata.NewAttributeValueString("max"),
+	"MAX_SYSTEM_CPU_KERNEL": {"mongodbatlas.system.cpu.usage.max", map[string]pdata.AttributeValue{
+		"cpu_state": pdata.NewAttributeValueString("kernel"),
 	}},
-	"SYSTEM_CPU_NICE": {"mongodbatlas.system.cpu.usage", map[string]pdata.AttributeValue{
-		"cpu_state":   pdata.NewAttributeValueString("nice"),
-		"aggregation": pdata.NewAttributeValueString("avg"),
+	"SYSTEM_CPU_NICE": {"mongodbatlas.system.cpu.usage.average", map[string]pdata.AttributeValue{
+		"cpu_state": pdata.NewAttributeValueString("nice"),
 	}},
-	"MAX_SYSTEM_CPU_NICE": {"mongodbatlas.system.cpu.usage", map[string]pdata.AttributeValue{
-		"cpu_state":   pdata.NewAttributeValueString("nice"),
-		"aggregation": pdata.NewAttributeValueString("max"),
+	"MAX_SYSTEM_CPU_NICE": {"mongodbatlas.system.cpu.usage.max", map[string]pdata.AttributeValue{
+		"cpu_state": pdata.NewAttributeValueString("nice"),
 	}},
-	"SYSTEM_CPU_IOWAIT": {"mongodbatlas.system.cpu.usage", map[string]pdata.AttributeValue{
-		"cpu_state":   pdata.NewAttributeValueString("iowait"),
-		"aggregation": pdata.NewAttributeValueString("avg"),
+	"SYSTEM_CPU_IOWAIT": {"mongodbatlas.system.cpu.usage.average", map[string]pdata.AttributeValue{
+		"cpu_state": pdata.NewAttributeValueString("iowait"),
 	}},
-	"MAX_SYSTEM_CPU_IOWAIT": {"mongodbatlas.system.cpu.usage", map[string]pdata.AttributeValue{
-		"cpu_state":   pdata.NewAttributeValueString("iowait"),
-		"aggregation": pdata.NewAttributeValueString("max"),
+	"MAX_SYSTEM_CPU_IOWAIT": {"mongodbatlas.system.cpu.usage.max", map[string]pdata.AttributeValue{
+		"cpu_state": pdata.NewAttributeValueString("iowait"),
 	}},
-	"SYSTEM_CPU_IRQ": {"mongodbatlas.system.cpu.usage", map[string]pdata.AttributeValue{
-		"cpu_state":   pdata.NewAttributeValueString("irq"),
-		"aggregation": pdata.NewAttributeValueString("avg"),
+	"SYSTEM_CPU_IRQ": {"mongodbatlas.system.cpu.usage.average", map[string]pdata.AttributeValue{
+		"cpu_state": pdata.NewAttributeValueString("irq"),
 	}},
-	"MAX_SYSTEM_CPU_IRQ": {"mongodbatlas.system.cpu.usage", map[string]pdata.AttributeValue{
-		"cpu_state":   pdata.NewAttributeValueString("irq"),
-		"aggregation": pdata.NewAttributeValueString("max"),
+	"MAX_SYSTEM_CPU_IRQ": {"mongodbatlas.system.cpu.usage.max", map[string]pdata.AttributeValue{
+		"cpu_state": pdata.NewAttributeValueString("irq"),
 	}},
-	"SYSTEM_CPU_SOFTIRQ": {"mongodbatlas.system.cpu.usage", map[string]pdata.AttributeValue{
-		"cpu_state":   pdata.NewAttributeValueString("softirq"),
-		"aggregation": pdata.NewAttributeValueString("avg"),
+	"SYSTEM_CPU_SOFTIRQ": {"mongodbatlas.system.cpu.usage.average", map[string]pdata.AttributeValue{
+		"cpu_state": pdata.NewAttributeValueString("softirq"),
 	}},
-	"MAX_SYSTEM_CPU_SOFTIRQ": {"mongodbatlas.system.cpu.usage", map[string]pdata.AttributeValue{
-		"cpu_state":   pdata.NewAttributeValueString("softirq"),
-		"aggregation": pdata.NewAttributeValueString("max"),
+	"MAX_SYSTEM_CPU_SOFTIRQ": {"mongodbatlas.system.cpu.usage.max", map[string]pdata.AttributeValue{
+		"cpu_state": pdata.NewAttributeValueString("softirq"),
 	}},
-	"SYSTEM_CPU_GUEST": {"mongodbatlas.system.cpu.usage", map[string]pdata.AttributeValue{
-		"cpu_state":   pdata.NewAttributeValueString("guest"),
-		"aggregation": pdata.NewAttributeValueString("avg"),
+	"SYSTEM_CPU_GUEST": {"mongodbatlas.system.cpu.usage.average", map[string]pdata.AttributeValue{
+		"cpu_state": pdata.NewAttributeValueString("guest"),
 	}},
-	"MAX_SYSTEM_CPU_GUEST": {"mongodbatlas.system.cpu.usage", map[string]pdata.AttributeValue{
-		"cpu_state":   pdata.NewAttributeValueString("guest"),
-		"aggregation": pdata.NewAttributeValueString("max"),
+	"MAX_SYSTEM_CPU_GUEST": {"mongodbatlas.system.cpu.usage.max", map[string]pdata.AttributeValue{
+		"cpu_state": pdata.NewAttributeValueString("guest"),
 	}},
-	"SYSTEM_CPU_STEAL": {"mongodbatlas.system.cpu.usage", map[string]pdata.AttributeValue{
-		"cpu_state":   pdata.NewAttributeValueString("steal"),
-		"aggregation": pdata.NewAttributeValueString("avg"),
+	"SYSTEM_CPU_STEAL": {"mongodbatlas.system.cpu.usage.average", map[string]pdata.AttributeValue{
+		"cpu_state": pdata.NewAttributeValueString("steal"),
 	}},
-	"MAX_SYSTEM_CPU_STEAL": {"mongodbatlas.system.cpu.usage", map[string]pdata.AttributeValue{
-		"cpu_state":   pdata.NewAttributeValueString("steal"),
-		"aggregation": pdata.NewAttributeValueString("max"),
+	"MAX_SYSTEM_CPU_STEAL": {"mongodbatlas.system.cpu.usage.max", map[string]pdata.AttributeValue{
+		"cpu_state": pdata.NewAttributeValueString("steal"),
 	}},
 
 	// CPU usage of processes on the host scaled to a range of 0 to 100% by dividing by the number of CPU cores.
-	"SYSTEM_NORMALIZED_CPU_USER": {"mongodbatlas.system.cpu.normalized.usage", map[string]pdata.AttributeValue{
-		"cpu_state":   pdata.NewAttributeValueString("user"),
-		"aggregation": pdata.NewAttributeValueString("avg"),
+	"SYSTEM_NORMALIZED_CPU_USER": {"mongodbatlas.system.cpu.normalized.usage.average", map[string]pdata.AttributeValue{
+		"cpu_state": pdata.NewAttributeValueString("user"),
 	}},
-	"MAX_SYSTEM_NORMALIZED_CPU_USER": {"mongodbatlas.system.cpu.normalized.usage", map[string]pdata.AttributeValue{
-		"cpu_state":   pdata.NewAttributeValueString("user"),
-		"aggregation": pdata.NewAttributeValueString("max"),
+	"MAX_SYSTEM_NORMALIZED_CPU_USER": {"mongodbatlas.system.cpu.normalized.usage.max", map[string]pdata.AttributeValue{
+		"cpu_state": pdata.NewAttributeValueString("user"),
 	}},
-	"MAX_SYSTEM_NORMALIZED_CPU_NICE": {"mongodbatlas.system.cpu.normalized.usage", map[string]pdata.AttributeValue{
-		"cpu_state":   pdata.NewAttributeValueString("nice"),
-		"aggregation": pdata.NewAttributeValueString("max"),
+	"MAX_SYSTEM_NORMALIZED_CPU_NICE": {"mongodbatlas.system.cpu.normalized.usage.max", map[string]pdata.AttributeValue{
+		"cpu_state": pdata.NewAttributeValueString("nice"),
 	}},
-	"SYSTEM_NORMALIZED_CPU_KERNEL": {"mongodbatlas.system.cpu.normalized.usage", map[string]pdata.AttributeValue{
-		"cpu_state":   pdata.NewAttributeValueString("kernel"),
-		"aggregation": pdata.NewAttributeValueString("avg"),
+	"SYSTEM_NORMALIZED_CPU_KERNEL": {"mongodbatlas.system.cpu.normalized.usage.average", map[string]pdata.AttributeValue{
+		"cpu_state": pdata.NewAttributeValueString("kernel"),
 	}},
-	"MAX_SYSTEM_NORMALIZED_CPU_KERNEL": {"mongodbatlas.system.cpu.normalized.usage", map[string]pdata.AttributeValue{
-		"cpu_state":   pdata.NewAttributeValueString("kernel"),
-		"aggregation": pdata.NewAttributeValueString("max"),
+	"MAX_SYSTEM_NORMALIZED_CPU_KERNEL": {"mongodbatlas.system.cpu.normalized.usage.max", map[string]pdata.AttributeValue{
+		"cpu_state": pdata.NewAttributeValueString("kernel"),
 	}},
-	"SYSTEM_NORMALIZED_CPU_NICE": {"mongodbatlas.system.cpu.normalized.usage", map[string]pdata.AttributeValue{
-		"cpu_state":   pdata.NewAttributeValueString("nice"),
-		"aggregation": pdata.NewAttributeValueString("avg"),
+	"SYSTEM_NORMALIZED_CPU_NICE": {"mongodbatlas.system.cpu.normalized.usage.average", map[string]pdata.AttributeValue{
+		"cpu_state": pdata.NewAttributeValueString("nice"),
 	}},
-	"SYSTEM_NORMALIZED_CPU_IOWAIT": {"mongodbatlas.system.cpu.normalized.usage", map[string]pdata.AttributeValue{
-		"cpu_state":   pdata.NewAttributeValueString("iowait"),
-		"aggregation": pdata.NewAttributeValueString("avg"),
+	"SYSTEM_NORMALIZED_CPU_IOWAIT": {"mongodbatlas.system.cpu.normalized.usage.average", map[string]pdata.AttributeValue{
+		"cpu_state": pdata.NewAttributeValueString("iowait"),
 	}},
-	"MAX_SYSTEM_NORMALIZED_CPU_IOWAIT": {"mongodbatlas.system.cpu.normalized.usage", map[string]pdata.AttributeValue{
-		"cpu_state":   pdata.NewAttributeValueString("iowait"),
-		"aggregation": pdata.NewAttributeValueString("max"),
+	"MAX_SYSTEM_NORMALIZED_CPU_IOWAIT": {"mongodbatlas.system.cpu.normalized.usage.max", map[string]pdata.AttributeValue{
+		"cpu_state": pdata.NewAttributeValueString("iowait"),
 	}},
-	"SYSTEM_NORMALIZED_CPU_IRQ": {"mongodbatlas.system.cpu.normalized.usage", map[string]pdata.AttributeValue{
-		"cpu_state":   pdata.NewAttributeValueString("irq"),
-		"aggregation": pdata.NewAttributeValueString("avg"),
+	"SYSTEM_NORMALIZED_CPU_IRQ": {"mongodbatlas.system.cpu.normalized.usage.average", map[string]pdata.AttributeValue{
+		"cpu_state": pdata.NewAttributeValueString("irq"),
 	}},
-	"MAX_SYSTEM_NORMALIZED_CPU_IRQ": {"mongodbatlas.system.cpu.normalized.usage", map[string]pdata.AttributeValue{
-		"cpu_state":   pdata.NewAttributeValueString("irq"),
-		"aggregation": pdata.NewAttributeValueString("max"),
+	"MAX_SYSTEM_NORMALIZED_CPU_IRQ": {"mongodbatlas.system.cpu.normalized.usage.max", map[string]pdata.AttributeValue{
+		"cpu_state": pdata.NewAttributeValueString("irq"),
 	}},
-	"SYSTEM_NORMALIZED_CPU_SOFTIRQ": {"mongodbatlas.system.cpu.normalized.usage", map[string]pdata.AttributeValue{
-		"cpu_state":   pdata.NewAttributeValueString("softirq"),
-		"aggregation": pdata.NewAttributeValueString("avg"),
+	"SYSTEM_NORMALIZED_CPU_SOFTIRQ": {"mongodbatlas.system.cpu.normalized.usage.average", map[string]pdata.AttributeValue{
+		"cpu_state": pdata.NewAttributeValueString("softirq"),
 	}},
-	"MAX_SYSTEM_NORMALIZED_CPU_SOFTIRQ": {"mongodbatlas.system.cpu.normalized.usage", map[string]pdata.AttributeValue{
-		"cpu_state":   pdata.NewAttributeValueString("softirq"),
-		"aggregation": pdata.NewAttributeValueString("max"),
+	"MAX_SYSTEM_NORMALIZED_CPU_SOFTIRQ": {"mongodbatlas.system.cpu.normalized.usage.max", map[string]pdata.AttributeValue{
+		"cpu_state": pdata.NewAttributeValueString("softirq"),
 	}},
-	"SYSTEM_NORMALIZED_CPU_GUEST": {"mongodbatlas.system.cpu.normalized.usage", map[string]pdata.AttributeValue{
-		"cpu_state":   pdata.NewAttributeValueString("guest"),
-		"aggregation": pdata.NewAttributeValueString("avg"),
+	"SYSTEM_NORMALIZED_CPU_GUEST": {"mongodbatlas.system.cpu.normalized.usage.average", map[string]pdata.AttributeValue{
+		"cpu_state": pdata.NewAttributeValueString("guest"),
 	}},
-	"MAX_SYSTEM_NORMALIZED_CPU_GUEST": {"mongodbatlas.system.cpu.normalized.usage", map[string]pdata.AttributeValue{
-		"cpu_state":   pdata.NewAttributeValueString("guest"),
-		"aggregation": pdata.NewAttributeValueString("max"),
+	"MAX_SYSTEM_NORMALIZED_CPU_GUEST": {"mongodbatlas.system.cpu.normalized.usage.max", map[string]pdata.AttributeValue{
+		"cpu_state": pdata.NewAttributeValueString("guest"),
 	}},
-	"SYSTEM_NORMALIZED_CPU_STEAL": {"mongodbatlas.system.cpu.normalized.usage", map[string]pdata.AttributeValue{
-		"cpu_state":   pdata.NewAttributeValueString("steal"),
-		"aggregation": pdata.NewAttributeValueString("avg"),
+	"SYSTEM_NORMALIZED_CPU_STEAL": {"mongodbatlas.system.cpu.normalized.usage.average", map[string]pdata.AttributeValue{
+		"cpu_state": pdata.NewAttributeValueString("steal"),
 	}},
-	"MAX_SYSTEM_NORMALIZED_CPU_STEAL": {"mongodbatlas.system.cpu.normalized.usage", map[string]pdata.AttributeValue{
-		"cpu_state":   pdata.NewAttributeValueString("steal"),
-		"aggregation": pdata.NewAttributeValueString("max"),
+	"MAX_SYSTEM_NORMALIZED_CPU_STEAL": {"mongodbatlas.system.cpu.normalized.usage.max", map[string]pdata.AttributeValue{
+		"cpu_state": pdata.NewAttributeValueString("steal"),
 	}},
 	// Physical memory usage, in bytes, that the host uses.
-	"SYSTEM_MEMORY_AVAILABLE": {"mongodbatlas.system.memory.usage", map[string]pdata.AttributeValue{
+	"SYSTEM_MEMORY_AVAILABLE": {"mongodbatlas.system.memory.usage.average", map[string]pdata.AttributeValue{
 		"memory_status": pdata.NewAttributeValueString("available"),
-		"aggregation":   pdata.NewAttributeValueString("avg"),
 	}},
-	"MAX_SYSTEM_MEMORY_AVAILABLE": {"mongodbatlas.system.memory.usage", map[string]pdata.AttributeValue{
+	"MAX_SYSTEM_MEMORY_AVAILABLE": {"mongodbatlas.system.memory.usage.max", map[string]pdata.AttributeValue{
 		"memory_status": pdata.NewAttributeValueString("available"),
-		"aggregation":   pdata.NewAttributeValueString("max"),
 	}},
-	"SYSTEM_MEMORY_BUFFERS": {"mongodbatlas.system.memory.usage", map[string]pdata.AttributeValue{
+	"SYSTEM_MEMORY_BUFFERS": {"mongodbatlas.system.memory.usage.average", map[string]pdata.AttributeValue{
 		"memory_status": pdata.NewAttributeValueString("buffers"),
-		"aggregation":   pdata.NewAttributeValueString("avg"),
 	}},
-	"MAX_SYSTEM_MEMORY_BUFFERS": {"mongodbatlas.system.memory.usage", map[string]pdata.AttributeValue{
+	"MAX_SYSTEM_MEMORY_BUFFERS": {"mongodbatlas.system.memory.usage.max", map[string]pdata.AttributeValue{
 		"memory_status": pdata.NewAttributeValueString("buffers"),
-		"aggregation":   pdata.NewAttributeValueString("max"),
 	}},
-	"SYSTEM_MEMORY_CACHED": {"mongodbatlas.system.memory.usage", map[string]pdata.AttributeValue{
+	"SYSTEM_MEMORY_CACHED": {"mongodbatlas.system.memory.usage.average", map[string]pdata.AttributeValue{
 		"memory_status": pdata.NewAttributeValueString("cached"),
-		"aggregation":   pdata.NewAttributeValueString("avg"),
 	}},
-	"MAX_SYSTEM_MEMORY_CACHED": {"mongodbatlas.system.memory.usage", map[string]pdata.AttributeValue{
+	"MAX_SYSTEM_MEMORY_CACHED": {"mongodbatlas.system.memory.usage.max", map[string]pdata.AttributeValue{
 		"memory_status": pdata.NewAttributeValueString("cached"),
-		"aggregation":   pdata.NewAttributeValueString("max"),
 	}},
-	"SYSTEM_MEMORY_FREE": {"mongodbatlas.system.memory.usage", map[string]pdata.AttributeValue{
+	"SYSTEM_MEMORY_FREE": {"mongodbatlas.system.memory.usage.average", map[string]pdata.AttributeValue{
 		"memory_status": pdata.NewAttributeValueString("free"),
-		"aggregation":   pdata.NewAttributeValueString("avg"),
 	}},
-	"MAX_SYSTEM_MEMORY_FREE": {"mongodbatlas.system.memory.usage", map[string]pdata.AttributeValue{
+	"MAX_SYSTEM_MEMORY_FREE": {"mongodbatlas.system.memory.usage.average", map[string]pdata.AttributeValue{
 		"memory_status": pdata.NewAttributeValueString("free"),
-		"aggregation":   pdata.NewAttributeValueString("max"),
 	}},
-	"SYSTEM_MEMORY_SHARED": {"mongodbatlas.system.memory.usage", map[string]pdata.AttributeValue{
+	"SYSTEM_MEMORY_SHARED": {"mongodbatlas.system.memory.usage.average", map[string]pdata.AttributeValue{
 		"memory_status": pdata.NewAttributeValueString("shared"),
-		"aggregation":   pdata.NewAttributeValueString("avg"),
 	}},
-	"MAX_SYSTEM_MEMORY_SHARED": {"mongodbatlas.system.memory.usage", map[string]pdata.AttributeValue{
+	"MAX_SYSTEM_MEMORY_SHARED": {"mongodbatlas.system.memory.usage.max", map[string]pdata.AttributeValue{
 		"memory_status": pdata.NewAttributeValueString("shared"),
-		"aggregation":   pdata.NewAttributeValueString("max"),
 	}},
-	"SYSTEM_MEMORY_USED": {"mongodbatlas.system.memory.usage", map[string]pdata.AttributeValue{
+	"SYSTEM_MEMORY_USED": {"mongodbatlas.system.memory.usage.average", map[string]pdata.AttributeValue{
 		"memory_status": pdata.NewAttributeValueString("used"),
-		"aggregation":   pdata.NewAttributeValueString("avg"),
 	}},
-	"MAX_SYSTEM_MEMORY_USED": {"mongodbatlas.system.memory.usage", map[string]pdata.AttributeValue{
+	"MAX_SYSTEM_MEMORY_USED": {"mongodbatlas.system.memory.usage.max", map[string]pdata.AttributeValue{
 		"memory_status": pdata.NewAttributeValueString("used"),
-		"aggregation":   pdata.NewAttributeValueString("max"),
 	}},
 
 	// Average rate of physical bytes per second that the eth0 network interface received and transmitted.
-	"SYSTEM_NETWORK_IN": {"mongodbatlas.system.network.io", map[string]pdata.AttributeValue{
-		"direction":   pdata.NewAttributeValueString("receive"),
-		"aggregation": pdata.NewAttributeValueString("avg"),
+	"SYSTEM_NETWORK_IN": {"mongodbatlas.system.network.io.average", map[string]pdata.AttributeValue{
+		"direction": pdata.NewAttributeValueString("receive"),
 	}},
-	"MAX_SYSTEM_NETWORK_IN": {"mongodbatlas.system.network.io", map[string]pdata.AttributeValue{
-		"direction":   pdata.NewAttributeValueString("receive"),
-		"aggregation": pdata.NewAttributeValueString("max"),
+	"MAX_SYSTEM_NETWORK_IN": {"mongodbatlas.system.network.io.max", map[string]pdata.AttributeValue{
+		"direction": pdata.NewAttributeValueString("receive"),
 	}},
-	"SYSTEM_NETWORK_OUT": {"mongodbatlas.system.network.io", map[string]pdata.AttributeValue{
-		"direction":   pdata.NewAttributeValueString("transmit"),
-		"aggregation": pdata.NewAttributeValueString("avg"),
+	"SYSTEM_NETWORK_OUT": {"mongodbatlas.system.network.io.average", map[string]pdata.AttributeValue{
+		"direction": pdata.NewAttributeValueString("transmit"),
 	}},
-	"MAX_SYSTEM_NETWORK_OUT": {"mongodbatlas.system.network.io", map[string]pdata.AttributeValue{
-		"direction":   pdata.NewAttributeValueString("transmit"),
-		"aggregation": pdata.NewAttributeValueString("max"),
+	"MAX_SYSTEM_NETWORK_OUT": {"mongodbatlas.system.network.io.max", map[string]pdata.AttributeValue{
+		"direction": pdata.NewAttributeValueString("transmit"),
 	}},
 
 	// Total amount of memory that swap uses.
-	"SWAP_USAGE_USED": {"mongodbatlas.system.paging.usage", map[string]pdata.AttributeValue{
+	"SWAP_USAGE_USED": {"mongodbatlas.system.paging.usage.average", map[string]pdata.AttributeValue{
 		"memory_state": pdata.NewAttributeValueString("used"),
-		"aggregation":  pdata.NewAttributeValueString("avg"),
 	}},
-	"MAX_SWAP_USAGE_USED": {"mongodbatlas.system.paging.usage", map[string]pdata.AttributeValue{
+	"MAX_SWAP_USAGE_USED": {"mongodbatlas.system.paging.usage.max", map[string]pdata.AttributeValue{
 		"memory_state": pdata.NewAttributeValueString("used"),
-		"aggregation":  pdata.NewAttributeValueString("max"),
 	}},
-	"SWAP_USAGE_FREE": {"mongodbatlas.system.paging.usage", map[string]pdata.AttributeValue{
+	"SWAP_USAGE_FREE": {"mongodbatlas.system.paging.usage.average", map[string]pdata.AttributeValue{
 		"memory_state": pdata.NewAttributeValueString("free"),
-		"aggregation":  pdata.NewAttributeValueString("avg"),
 	}},
-	"MAX_SWAP_USAGE_FREE": {"mongodbatlas.system.paging.usage", map[string]pdata.AttributeValue{
+	"MAX_SWAP_USAGE_FREE": {"mongodbatlas.system.paging.usage.max", map[string]pdata.AttributeValue{
 		"memory_state": pdata.NewAttributeValueString("free"),
-		"aggregation":  pdata.NewAttributeValueString("max"),
 	}},
 
 	// Total amount of memory written and read from swap.
-	"SWAP_IO_IN": {"mongodbatlas.system.paging.io", map[string]pdata.AttributeValue{
-		"direction":   pdata.NewAttributeValueString("in"),
-		"aggregation": pdata.NewAttributeValueString("avg"),
+	"SWAP_IO_IN": {"mongodbatlas.system.paging.io.average", map[string]pdata.AttributeValue{
+		"direction": pdata.NewAttributeValueString("in"),
 	}},
-	"MAX_SWAP_IO_IN": {"mongodbatlas.system.paging.io", map[string]pdata.AttributeValue{
-		"direction":   pdata.NewAttributeValueString("in"),
-		"aggregation": pdata.NewAttributeValueString("max"),
+	"MAX_SWAP_IO_IN": {"mongodbatlas.system.paging.io.max", map[string]pdata.AttributeValue{
+		"direction": pdata.NewAttributeValueString("in"),
 	}},
-	"SWAP_IO_OUT": {"mongodbatlas.system.paging.io", map[string]pdata.AttributeValue{
-		"direction":   pdata.NewAttributeValueString("out"),
-		"aggregation": pdata.NewAttributeValueString("avg"),
+	"SWAP_IO_OUT": {"mongodbatlas.system.paging.io.average", map[string]pdata.AttributeValue{
+		"direction": pdata.NewAttributeValueString("out"),
 	}},
-	"MAX_SWAP_IO_OUT": {"mongodbatlas.system.paging.io", map[string]pdata.AttributeValue{
-		"direction":   pdata.NewAttributeValueString("out"),
-		"aggregation": pdata.NewAttributeValueString("max"),
+	"MAX_SWAP_IO_OUT": {"mongodbatlas.system.paging.io.max", map[string]pdata.AttributeValue{
+		"direction": pdata.NewAttributeValueString("out"),
 	}},
 
 	// Memory usage, in bytes, that Atlas Search processes use.
@@ -632,102 +560,80 @@ var metricNameMapping = map[string]metricMappingData{
 	// Process Disk Measurements (https://docs.atlas.mongodb.com/reference/api/process-disks-measurements/)
 
 	// Measures throughput of I/O operations for the disk partition used for MongoDB.
-	"DISK_PARTITION_IOPS_READ": {"mongodbatlas.disk.partition.iops", map[string]pdata.AttributeValue{
+	"DISK_PARTITION_IOPS_READ": {"mongodbatlas.disk.partition.iops.average", map[string]pdata.AttributeValue{
 		"disk_direction": pdata.NewAttributeValueString("read"),
-		"aggregation":    pdata.NewAttributeValueString("avg"),
 	}},
 
-	"MAX_DISK_PARTITION_IOPS_READ": {"mongodbatlas.disk.partition.iops", map[string]pdata.AttributeValue{
+	"MAX_DISK_PARTITION_IOPS_READ": {"mongodbatlas.disk.partition.iops.average", map[string]pdata.AttributeValue{
 		"disk_direction": pdata.NewAttributeValueString("read"),
-		"aggregation":    pdata.NewAttributeValueString("max"),
 	}},
 
-	"DISK_PARTITION_IOPS_WRITE": {"mongodbatlas.disk.partition.iops", map[string]pdata.AttributeValue{
+	"DISK_PARTITION_IOPS_WRITE": {"mongodbatlas.disk.partition.iops.average", map[string]pdata.AttributeValue{
 		"disk_direction": pdata.NewAttributeValueString("write"),
-		"aggregation":    pdata.NewAttributeValueString("avg"),
 	}},
 
-	"MAX_DISK_PARTITION_IOPS_WRITE": {"mongodbatlas.disk.partition.iops", map[string]pdata.AttributeValue{
+	"MAX_DISK_PARTITION_IOPS_WRITE": {"mongodbatlas.disk.partition.iops.max", map[string]pdata.AttributeValue{
 		"disk_direction": pdata.NewAttributeValueString("write"),
-		"aggregation":    pdata.NewAttributeValueString("max"),
 	}},
 
-	"DISK_PARTITION_IOPS_TOTAL": {"mongodbatlas.disk.partition.iops", map[string]pdata.AttributeValue{
+	"DISK_PARTITION_IOPS_TOTAL": {"mongodbatlas.disk.partition.iops.average", map[string]pdata.AttributeValue{
 		"disk_direction": pdata.NewAttributeValueString("total"),
-		"aggregation":    pdata.NewAttributeValueString("avg"),
 	}},
 
-	"MAX_DISK_PARTITION_IOPS_TOTAL": {"mongodbatlas.disk.partition.iops", map[string]pdata.AttributeValue{
+	"MAX_DISK_PARTITION_IOPS_TOTAL": {"mongodbatlas.disk.partition.iops.max", map[string]pdata.AttributeValue{
 		"disk_direction": pdata.NewAttributeValueString("total"),
-		"aggregation":    pdata.NewAttributeValueString("max"),
 	}},
 
-	"DISK_PARTITION_UTILIZATION": {"mongodbatlas.disk.partition.utilization", map[string]pdata.AttributeValue{
-		"aggregation": pdata.NewAttributeValueString("avg"),
-	}},
+	"DISK_PARTITION_UTILIZATION": {"mongodbatlas.disk.partition.utilization.average", map[string]pdata.AttributeValue{}},
 
-	"MAX_DISK_PARTITION_UTILIZATION": {"mongodbatlas.disk.partition.utilization", map[string]pdata.AttributeValue{
-		"aggregation": pdata.NewAttributeValueString("max"),
-	}},
+	"MAX_DISK_PARTITION_UTILIZATION": {"mongodbatlas.disk.partition.utilization.max", map[string]pdata.AttributeValue{}},
 
 	// The percentage of time during which requests are being issued to and serviced by the partition.
 	// This includes requests from any process, not just MongoDB processes.
-	"DISK_PARTITION_LATENCY_READ": {"mongodbatlas.disk.partition.latency", map[string]pdata.AttributeValue{
+	"DISK_PARTITION_LATENCY_READ": {"mongodbatlas.disk.partition.latency.average", map[string]pdata.AttributeValue{
 		"disk_direction": pdata.NewAttributeValueString("read"),
-		"aggregation":    pdata.NewAttributeValueString("avg"),
 	}},
 
-	"MAX_DISK_PARTITION_LATENCY_READ": {"mongodbatlas.disk.partition.latency", map[string]pdata.AttributeValue{
+	"MAX_DISK_PARTITION_LATENCY_READ": {"mongodbatlas.disk.partition.latency.max", map[string]pdata.AttributeValue{
 		"disk_direction": pdata.NewAttributeValueString("read"),
-		"aggregation":    pdata.NewAttributeValueString("max"),
 	}},
 
-	"DISK_PARTITION_LATENCY_WRITE": {"mongodbatlas.disk.partition.latency", map[string]pdata.AttributeValue{
+	"DISK_PARTITION_LATENCY_WRITE": {"mongodbatlas.disk.partition.latency.average", map[string]pdata.AttributeValue{
 		"disk_direction": pdata.NewAttributeValueString("write"),
-		"aggregation":    pdata.NewAttributeValueString("avg"),
 	}},
 
-	"MAX_DISK_PARTITION_LATENCY_WRITE": {"mongodbatlas.disk.partition.latency", map[string]pdata.AttributeValue{
+	"MAX_DISK_PARTITION_LATENCY_WRITE": {"mongodbatlas.disk.partition.latency.max", map[string]pdata.AttributeValue{
 		"disk_direction": pdata.NewAttributeValueString("write"),
-		"aggregation":    pdata.NewAttributeValueString("max"),
 	}},
 
 	// Measures latency per operation type of the disk partition used by MongoDB.
-	"DISK_PARTITION_SPACE_FREE": {"mongodbatlas.disk.partition.space", map[string]pdata.AttributeValue{
+	"DISK_PARTITION_SPACE_FREE": {"mongodbatlas.disk.partition.space.average", map[string]pdata.AttributeValue{
 		"memory_state": pdata.NewAttributeValueString("free"),
-		"aggregation":  pdata.NewAttributeValueString("avg"),
 	}},
 
-	"MAX_DISK_PARTITION_SPACE_FREE": {"mongodbatlas.disk.partition.space", map[string]pdata.AttributeValue{
+	"MAX_DISK_PARTITION_SPACE_FREE": {"mongodbatlas.disk.partition.space.max", map[string]pdata.AttributeValue{
 		"memory_state": pdata.NewAttributeValueString("free"),
-		"aggregation":  pdata.NewAttributeValueString("max"),
 	}},
 
-	"DISK_PARTITION_SPACE_USED": {"mongodbatlas.disk.partition.space", map[string]pdata.AttributeValue{
+	"DISK_PARTITION_SPACE_USED": {"mongodbatlas.disk.partition.space.average", map[string]pdata.AttributeValue{
 		"memory_state": pdata.NewAttributeValueString("used"),
-		"aggregation":  pdata.NewAttributeValueString("avg"),
 	}},
 
-	"MAX_DISK_PARTITION_SPACE_USED": {"mongodbatlas.disk.partition.space", map[string]pdata.AttributeValue{
+	"MAX_DISK_PARTITION_SPACE_USED": {"mongodbatlas.disk.partition.space.max", map[string]pdata.AttributeValue{
 		"memory_state": pdata.NewAttributeValueString("used"),
-		"aggregation":  pdata.NewAttributeValueString("max"),
 	}},
 
-	"DISK_PARTITION_SPACE_PERCENT_FREE": {"mongodbatlas.disk.partition.utilization", map[string]pdata.AttributeValue{
-		"memory_state": pdata.NewAttributeValueString("free"),
-		"aggregation":  pdata.NewAttributeValueString("avg"),
+	"DISK_PARTITION_SPACE_PERCENT_FREE": {"mongodbatlas.disk.partition.utilization.average", map[string]pdata.AttributeValue{
+		"disk_status": pdata.NewAttributeValueString("free"),
 	}},
-	"MAX_DISK_PARTITION_SPACE_PERCENT_FREE": {"mongodbatlas.disk.partition.utilization", map[string]pdata.AttributeValue{
-		"memory_state": pdata.NewAttributeValueString("free"),
-		"aggregation":  pdata.NewAttributeValueString("max"),
+	"MAX_DISK_PARTITION_SPACE_PERCENT_FREE": {"mongodbatlas.disk.partition.utilization.max", map[string]pdata.AttributeValue{
+		"disk_status": pdata.NewAttributeValueString("free"),
 	}},
-	"DISK_PARTITION_SPACE_PERCENT_USED": {"mongodbatlas.disk.partition.utilization", map[string]pdata.AttributeValue{
-		"memory_state": pdata.NewAttributeValueString("used"),
-		"aggregation":  pdata.NewAttributeValueString("avg"),
+	"DISK_PARTITION_SPACE_PERCENT_USED": {"mongodbatlas.disk.partition.utilization.average", map[string]pdata.AttributeValue{
+		"disk_status": pdata.NewAttributeValueString("used"),
 	}},
-	"MAX_DISK_PARTITION_SPACE_PERCENT_USED": {"mongodbatlas.disk.partition.utilization", map[string]pdata.AttributeValue{
-		"memory_state": pdata.NewAttributeValueString("used"),
-		"aggregation":  pdata.NewAttributeValueString("max"),
+	"MAX_DISK_PARTITION_SPACE_PERCENT_USED": {"mongodbatlas.disk.partition.utilization.max", map[string]pdata.AttributeValue{
+		"disk_status": pdata.NewAttributeValueString("used"),
 	}},
 
 	// Process Database Measurements (https://docs.atlas.mongodb.com/reference/api/process-disks-measurements/)

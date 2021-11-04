@@ -12,11 +12,6 @@ labels:
       - softirq
       - guest
       - steal
-  aggregation:
-    description: Method used by MongoDB to pre-aggregate metrics
-    enum:
-      - max
-      - avg
   assert_type:
     description: MongoDB assertion type
     enum:
@@ -144,7 +139,7 @@ labels:
 metrics:
   mongodbatlas.process.asserts:
     description: Number of assertions
-    extended_documentation: Aggregates MongoDB Metrics ASSERT_REGULAR, ASSERT_USER, ASSERT_MSG, ASSERT_WARNING
+    extended_documentation: Aggregate of MongoDB Metrics ASSERT_REGULAR, ASSERT_USER, ASSERT_MSG, ASSERT_WARNING
     unit: "{assertions}/s"
     labels: [assert_type]
     data:
@@ -157,14 +152,14 @@ metrics:
       type: gauge
   mongodbatlas.process.cache.io:
     description: Cache throughput (per second)
-    extended_documentation: Aggregates MongoDB Metrics CACHE_BYTES_READ_INTO, CACHE_BYTES_WRITTEN_FROM
+    extended_documentation: Aggregate of MongoDB Metrics CACHE_BYTES_READ_INTO, CACHE_BYTES_WRITTEN_FROM
     unit: By
     labels: [cache_direction]
     data:
       type: gauge
   mongodbatlas.process.cache.size:
     description: Cache sizes
-    extended_documentation: Aggregates MongoDB Metrics CACHE_USED_BYTES, CACHE_DIRTY_BYTES
+    extended_documentation: Aggregate of MongoDB Metrics CACHE_USED_BYTES, CACHE_DIRTY_BYTES
     unit: By
     labels: [cache_status]
     data:
@@ -175,65 +170,93 @@ metrics:
     unit: "{connections}"
     data:
       type: gauge
-  mongodbatlas.process.cpu.usage:
+  mongodbatlas.process.cpu.usage.max:
     description: CPU Usage (%)
-    extended_documentation: Aggregates MongoDB Metrics PROCESS_CPU_KERNEL, PROCESS_CPU_USER, MAX_PROCESS_CPU_KERNEL, MAX_PROCESS_CPU_USER
+    extended_documentation: Aggregate of MongoDB Metrics MAX_PROCESS_CPU_KERNEL, MAX_PROCESS_CPU_USER
     unit: 1
-    labels: [cpu_state, aggregation]
+    labels: [cpu_state]
     data:
       type: gauge
-  mongodbatlas.process.cpu.children.usage:
+  mongodbatlas.process.cpu.usage.average:
+    description: CPU Usage (%)
+    extended_documentation: Aggregate of MongoDB Metrics PROCESS_CPU_KERNEL, PROCESS_CPU_USER
+    unit: 1
+    labels: [cpu_state]
+    data:
+      type: gauge
+  mongodbatlas.process.cpu.children.usage.max:
     description: CPU Usage for child processes (%)
-    extended_documentation: Aggregates MongoDB Metrics MAX_PROCESS_CPU_CHILDREN_USER, MAX_PROCESS_CPU_CHILDREN_KERNEL, PROCESS_CPU_CHILDREN_KERNEL, PROCESS_CPU_CHILDREN_USER
+    extended_documentation: Aggregate of MongoDB Metrics MAX_PROCESS_CPU_CHILDREN_USER, MAX_PROCESS_CPU_CHILDREN_KERNEL
     unit: 1
-    labels: [cpu_state, aggregation]
+    labels: [cpu_state]
     data:
       type: gauge
-  mongodbatlas.process.cpu.children.normalized.usage:
+  mongodbatlas.process.cpu.children.usage.average:
+    description: CPU Usage for child processes (%)
+    extended_documentation: Aggregate of MongoDB Metrics PROCESS_CPU_CHILDREN_KERNEL, PROCESS_CPU_CHILDREN_USER
+    unit: 1
+    labels: [cpu_state]
+    data:
+      type: gauge
+  mongodbatlas.process.cpu.children.normalized.usage.max:
     description: CPU Usage for child processes, normalized to pct
-    extended_documentation: Aggregates MongoDB Metrics PROCESS_NORMALIZED_CPU_CHILDREN_KERNEL, PROCESS_NORMALIZED_CPU_CHILDREN_USER, MAX_PROCESS_NORMALIZED_CPU_CHILDREN_KERNEL, MAX_PROCESS_NORMALIZED_CPU_CHILDREN_USER
+    extended_documentation: Aggregate of MongoDB Metrics MAX_PROCESS_NORMALIZED_CPU_CHILDREN_KERNEL, MAX_PROCESS_NORMALIZED_CPU_CHILDREN_USER
     unit: 1
-    labels: [cpu_state, aggregation]
+    labels: [cpu_state]
     data:
       type: gauge
-  mongodbatlas.process.cpu.normalized.usage:
-    description: CPU Usage, normalized to pct
-    extended_documentation: Aggregates MongoDB Metrics PROCESS_NORMALIZED_CPU_KERNEL, MAX_PROCESS_NORMALIZED_CPU_USER, PROCESS_NORMALIZED_CPU_USER, MAX_PROCESS_NORMALIZED_CPU_KERNEL
+  mongodbatlas.process.cpu.children.normalized.usage.average:
+    description: CPU Usage for child processes, normalized to pct
+    extended_documentation: Aggregate of MongoDB Metrics PROCESS_NORMALIZED_CPU_CHILDREN_KERNEL, PROCESS_NORMALIZED_CPU_CHILDREN_USER
     unit: 1
-    labels: [cpu_state, aggregation]
+    labels: [cpu_state]
+    data:
+      type: gauge
+  mongodbatlas.process.cpu.normalized.usage.max:
+    description: CPU Usage, normalized to pct
+    extended_documentation: Aggregate of MongoDB Metrics MAX_PROCESS_NORMALIZED_CPU_USER, MAX_PROCESS_NORMALIZED_CPU_KERNEL
+    unit: 1
+    labels: [cpu_state]
+    data:
+      type: gauge
+  mongodbatlas.process.cpu.normalized.usage.average:
+    description: CPU Usage, normalized to pct
+    extended_documentation: Aggregate of MongoDB Metrics PROCESS_NORMALIZED_CPU_KERNEL, PROCESS_NORMALIZED_CPU_USER
+    unit: 1
+    labels: [cpu_state]
     data:
       type: gauge
   mongodbatlas.process.cursors:
     description: Number of cursors
-    extended_documentation: Aggregates MongoDB Metrics CURSORS_TOTAL_OPEN, CURSORS_TOTAL_TIMED_OUT
+    extended_documentation: Aggregate of MongoDB Metrics CURSORS_TOTAL_OPEN, CURSORS_TOTAL_TIMED_OUT
     unit: "{cursors}"
     labels: [cursor_state]
     data:
       type: gauge
   mongodbatlas.process.db.storage:
     description: Storage used by the database
-    extended_documentation: Aggregates MongoDB Metrics DB_INDEX_SIZE_TOTAL, DB_DATA_SIZE_TOTAL_WO_SYSTEM, DB_STORAGE_TOTAL, DB_DATA_SIZE_TOTAL
+    extended_documentation: Aggregate of MongoDB Metrics DB_INDEX_SIZE_TOTAL, DB_DATA_SIZE_TOTAL_WO_SYSTEM, DB_STORAGE_TOTAL, DB_DATA_SIZE_TOTAL
     unit: By
     labels: [storage_status]
     data:
       type: gauge
   mongodbatlas.process.db.document.rate:
     description: Document access rates
-    extended_documentation: Aggregates MongoDB Metrics DOCUMENT_METRICS_UPDATED, DOCUMENT_METRICS_DELETED, DOCUMENT_METRICS_RETURNED, DOCUMENT_METRICS_INSERTED
+    extended_documentation: Aggregate of MongoDB Metrics DOCUMENT_METRICS_UPDATED, DOCUMENT_METRICS_DELETED, DOCUMENT_METRICS_RETURNED, DOCUMENT_METRICS_INSERTED
     unit: "{documents}/s"
     labels: [document_status]
     data:
       type: gauge
   mongodbatlas.process.fts.cpu.usage:
     description: Full text search CPU (%)
-    extended_documentation: Aggregates MongoDB Metrics FTS_PROCESS_CPU_USER, FTS_PROCESS_CPU_KERNEL
+    extended_documentation: Aggregate of MongoDB Metrics FTS_PROCESS_CPU_USER, FTS_PROCESS_CPU_KERNEL
     unit: 1
     labels: [cpu_state]
     data:
       type: gauge
   mongodbatlas.process.global_lock:
     description: Number and status of locks
-    extended_documentation: Aggregates MongoDB Metrics GLOBAL_LOCK_CURRENT_QUEUE_WRITERS, GLOBAL_LOCK_CURRENT_QUEUE_READERS, GLOBAL_LOCK_CURRENT_QUEUE_TOTAL
+    extended_documentation: Aggregate of MongoDB Metrics GLOBAL_LOCK_CURRENT_QUEUE_WRITERS, GLOBAL_LOCK_CURRENT_QUEUE_READERS, GLOBAL_LOCK_CURRENT_QUEUE_TOTAL
     unit: "{locks}"
     labels: [global_lock_state]
     data:
@@ -246,7 +269,7 @@ metrics:
       type: gauge
   mongodbatlas.process.index.counters:
     description: Indexes
-    extended_documentation: Aggregates MongoDB Metrics INDEX_COUNTERS_BTREE_MISSES, INDEX_COUNTERS_BTREE_ACCESSES, INDEX_COUNTERS_BTREE_HITS
+    extended_documentation: Aggregate of MongoDB Metrics INDEX_COUNTERS_BTREE_MISSES, INDEX_COUNTERS_BTREE_ACCESSES, INDEX_COUNTERS_BTREE_HITS
     unit: "{indexes}"
     labels: [btree_counter_type]
     data:
@@ -271,14 +294,14 @@ metrics:
       type: gauge
   mongodbatlas.process.memory.usage:
     description: Memory Usage
-    extended_documentation: Aggregates MongoDB Metrics MEMORY_MAPPED, MEMORY_VIRTUAL, COMPUTED_MEMORY, MEMORY_RESIDENT
+    extended_documentation: Aggregate of MongoDB Metrics MEMORY_MAPPED, MEMORY_VIRTUAL, COMPUTED_MEMORY, MEMORY_RESIDENT
     unit: By
     labels: [memory_state]
     data:
       type: gauge
   mongodbatlas.process.network.io:
     description: Network IO
-    extended_documentation: Aggregates MongoDB Metrics NETWORK_BYTES_OUT, NETWORK_BYTES_IN
+    extended_documentation: Aggregate of MongoDB Metrics NETWORK_BYTES_OUT, NETWORK_BYTES_IN
     unit: By/s
     labels: [direction]
     data:
@@ -293,7 +316,7 @@ metrics:
       aggregation: cumulative
   mongodbatlas.process.oplog.time:
     description: Execution time by operation
-    extended_documentation: Aggregates MongoDB Metrics OPLOG_MASTER_TIME, OPLOG_SLAVE_LAG_MASTER_TIME, OPLOG_MASTER_LAG_TIME_DIFF
+    extended_documentation: Aggregate of MongoDB Metrics OPLOG_MASTER_TIME, OPLOG_SLAVE_LAG_MASTER_TIME, OPLOG_MASTER_LAG_TIME_DIFF
     unit: s
     labels: [oplog_type]
     data:
@@ -308,14 +331,14 @@ metrics:
       type: gauge
   mongodbatlas.process.db.operations.rate:
     description: DB Operation Rates
-    extended_documentation: Aggregates MongoDB Metrics OPCOUNTER_GETMORE, OPERATIONS_SCAN_AND_ORDER, OPCOUNTER_UPDATE, OPCOUNTER_REPL_UPDATE, OPCOUNTER_CMD, OPCOUNTER_DELETE, OPCOUNTER_REPL_DELETE, OPCOUNTER_REPL_CMD, OPCOUNTER_QUERY, OPCOUNTER_REPL_INSERT, OPCOUNTER_INSERT
+    extended_documentation: Aggregate of MongoDB Metrics OPCOUNTER_GETMORE, OPERATIONS_SCAN_AND_ORDER, OPCOUNTER_UPDATE, OPCOUNTER_REPL_UPDATE, OPCOUNTER_CMD, OPCOUNTER_DELETE, OPCOUNTER_REPL_DELETE, OPCOUNTER_REPL_CMD, OPCOUNTER_QUERY, OPCOUNTER_REPL_INSERT, OPCOUNTER_INSERT
     unit: "{operations}/s"
     labels: [operation, cluster_role]
     data:
       type: gauge
   mongodbatlas.process.db.operations.time:
     description: DB Operation Times
-    extended_documentation: Aggregates MongoDB Metrics OP_EXECUTION_TIME_WRITES, OP_EXECUTION_TIME_COMMANDS, OP_EXECUTION_TIME_READS
+    extended_documentation: Aggregate of MongoDB Metrics OP_EXECUTION_TIME_WRITES, OP_EXECUTION_TIME_COMMANDS, OP_EXECUTION_TIME_READS
     unit: ms
     labels: [execution_type]
     data:
@@ -324,125 +347,207 @@ metrics:
       aggregation: cumulative
   mongodbatlas.process.page_faults:
     description: Page faults
-    extended_documentation: Aggregates MongoDB Metrics GLOBAL_PAGE_FAULT_EXCEPTIONS_THROWN, EXTRA_INFO_PAGE_FAULTS, GLOBAL_ACCESSES_NOT_IN_MEMORY
+    extended_documentation: Aggregate of MongoDB Metrics GLOBAL_PAGE_FAULT_EXCEPTIONS_THROWN, EXTRA_INFO_PAGE_FAULTS, GLOBAL_ACCESSES_NOT_IN_MEMORY
     unit: "{faults}/s"
     labels: [memory_issue_type]
     data:
       type: gauge
   mongodbatlas.process.db.query_executor.scanned:
     description: Scanned objects
-    extended_documentation: Aggregates MongoDB Metrics QUERY_EXECUTOR_SCANNED_OBJECTS, QUERY_EXECUTOR_SCANNED
+    extended_documentation: Aggregate of MongoDB Metrics QUERY_EXECUTOR_SCANNED_OBJECTS, QUERY_EXECUTOR_SCANNED
     labels: [scanned_type]
     unit: "{objects}/s"
     data:
       type: gauge
   mongodbatlas.process.db.query_targeting.scanned_per_returned:
     description: Scanned objects per returned
-    extended_documentation: Aggregates MongoDB Metrics QUERY_TARGETING_SCANNED_OBJECTS_PER_RETURNED, QUERY_TARGETING_SCANNED_PER_RETURNED
+    extended_documentation: Aggregate of MongoDB Metrics QUERY_TARGETING_SCANNED_OBJECTS_PER_RETURNED, QUERY_TARGETING_SCANNED_PER_RETURNED
     unit: "{scanned}/{returned}"
     labels: [scanned_type]
     data:
       type: gauge
   mongodbatlas.process.restarts:
     description: Restarts in last hour
-    extended_documentation: Aggregates MongoDB Metrics RESTARTS_IN_LAST_HOUR
+    extended_documentation: Aggregate of MongoDB Metrics RESTARTS_IN_LAST_HOUR
     unit: "{restarts}/h"
     data:
       type: gauge
-  mongodbatlas.system.paging.usage:
+  mongodbatlas.system.paging.usage.max:
     description: Swap usage
-    extended_documentation: Aggregates MongoDB Metrics MAX_SWAP_USAGE_FREE, MAX_SWAP_USAGE_USED, SWAP_USAGE_FREE, SWAP_USAGE_USED
+    extended_documentation: Aggregate of MongoDB Metrics MAX_SWAP_USAGE_FREE, MAX_SWAP_USAGE_USED
     unit: KiBy
-    labels: [direction, aggregation]
+    labels: [direction]
     data:
       type: gauge
-  mongodbatlas.system.paging.io:
+  mongodbatlas.system.paging.usage.average:
+    description: Swap usage
+    extended_documentation: Aggregate of MongoDB Metrics SWAP_USAGE_FREE, SWAP_USAGE_USED
+    unit: KiBy
+    labels: [direction]
+    data:
+      type: gauge
+  mongodbatlas.system.paging.io.max:
     description: Swap IO
-    extended_documentation: Aggregates MongoDB Metrics MAX_SWAP_IO_IN, SWAP_IO_IN, SWAP_IO_OUT, MAX_SWAP_IO_OUT
+    extended_documentation: Aggregate of MongoDB Metrics MAX_SWAP_IO_IN, MAX_SWAP_IO_OUT
     unit: "{pages}/s"
-    labels: [direction, aggregation]
+    labels: [direction]
     data:
       type: gauge
-  mongodbatlas.system.cpu.usage:
+  mongodbatlas.system.paging.io.average:
+    description: Swap IO
+    extended_documentation: Aggregate of MongoDB Metrics SWAP_IO_IN, SWAP_IO_OUT
+    unit: "{pages}/s"
+    labels: [direction]
+    data:
+      type: gauge
+  mongodbatlas.system.cpu.usage.max:
     description: System CPU Usage (%)
-    extended_documentation: Aggregates MongoDB Metrics SYSTEM_CPU_USER, MAX_SYSTEM_CPU_SOFTIRQ, MAX_SYSTEM_CPU_IRQ, MAX_SYSTEM_CPU_GUEST, MAX_SYSTEM_CPU_IOWAIT, SYSTEM_CPU_GUEST, SYSTEM_CPU_SOFTIRQ, MAX_SYSTEM_CPU_NICE, SYSTEM_CPU_IRQ, SYSTEM_CPU_KERNEL, SYSTEM_CPU_IOWAIT, SYSTEM_CPU_NICE, SYSTEM_CPU_STEAL, MAX_SYSTEM_CPU_KERNEL, MAX_SYSTEM_CPU_USER, MAX_SYSTEM_CPU_STEAL
-    labels: [cpu_state, aggregation]
+    extended_documentation: Aggregate of MongoDB Metrics MAX_SYSTEM_CPU_SOFTIRQ, MAX_SYSTEM_CPU_IRQ, MAX_SYSTEM_CPU_GUEST, MAX_SYSTEM_CPU_IOWAIT, MAX_SYSTEM_CPU_NICE, MAX_SYSTEM_CPU_KERNEL, MAX_SYSTEM_CPU_USER, MAX_SYSTEM_CPU_STEAL
+    labels: [cpu_state]
     unit: 1
     data:
       type: gauge
-  mongodbatlas.system.memory.usage:
+  mongodbatlas.system.cpu.usage.average:
+    description: System CPU Usage (%)
+    extended_documentation: Aggregate of MongoDB Metrics SYSTEM_CPU_USER, SYSTEM_CPU_GUEST, SYSTEM_CPU_SOFTIRQ, SYSTEM_CPU_IRQ, SYSTEM_CPU_KERNEL, SYSTEM_CPU_IOWAIT, SYSTEM_CPU_NICE, SYSTEM_CPU_STEAL
+    labels: [cpu_state]
+    unit: 1
+    data:
+      type: gauge
+  mongodbatlas.system.memory.usage.max:
     description: System Memory Usage
-    extended_documentation: Aggregates MongoDB Metrics SYSTEM_MEMORY_AVAILABLE, MAX_SYSTEM_MEMORY_CACHED, MAX_SYSTEM_MEMORY_AVAILABLE, MAX_SYSTEM_MEMORY_USED, SYSTEM_MEMORY_BUFFERS, MAX_SYSTEM_MEMORY_BUFFERS, MAX_SYSTEM_MEMORY_FREE, SYSTEM_MEMORY_USED, SYSTEM_MEMORY_CACHED, SYSTEM_MEMORY_SHARED, MAX_SYSTEM_MEMORY_SHARED, SYSTEM_MEMORY_FREE
+    extended_documentation: Aggregate of MongoDB Metrics MAX_SYSTEM_MEMORY_CACHED, MAX_SYSTEM_MEMORY_AVAILABLE, MAX_SYSTEM_MEMORY_USED, MAX_SYSTEM_MEMORY_BUFFERS, MAX_SYSTEM_MEMORY_FREE, MAX_SYSTEM_MEMORY_SHARED
     unit: KiBy
-    labels: [memory_state, aggregation]
+    labels: [memory_state]
     data:
       type: gauge
-  mongodbatlas.system.network.io:
+  mongodbatlas.system.memory.usage.average:
+    description: System Memory Usage
+    extended_documentation: Aggregate of MongoDB Metrics SYSTEM_MEMORY_AVAILABLE, SYSTEM_MEMORY_BUFFERS, SYSTEM_MEMORY_USED, SYSTEM_MEMORY_CACHED, SYSTEM_MEMORY_SHARED, SYSTEM_MEMORY_FREE
+    unit: KiBy
+    labels: [memory_state]
+    data:
+      type: gauge
+  mongodbatlas.system.network.io.max:
     description: System Network IO
-    extended_documentation: Aggregates MongoDB Metrics SYSTEM_NETWORK_IN, SYSTEM_NETWORK_OUT, MAX_SYSTEM_NETWORK_OUT, MAX_SYSTEM_NETWORK_IN
+    extended_documentation: Aggregate of MongoDB Metrics MAX_SYSTEM_NETWORK_OUT, MAX_SYSTEM_NETWORK_IN
     unit: By/s
-    labels: [direction, aggregation]
+    labels: [direction]
     data:
       type: gauge
-  mongodbatlas.system.cpu.normalized.usage:
+  mongodbatlas.system.network.io.average:
+    description: System Network IO
+    extended_documentation: Aggregate of MongoDB Metrics SYSTEM_NETWORK_IN, SYSTEM_NETWORK_OUT
+    unit: By/s
+    labels: [direction]
+    data:
+      type: gauge
+  mongodbatlas.system.cpu.normalized.usage.max:
     description: System CPU Normalized to pct
-    extended_documentation: Aggregates MongoDB Metrics MAX_SYSTEM_NORMALIZED_CPU_USER, MAX_SYSTEM_NORMALIZED_CPU_NICE, SYSTEM_NORMALIZED_CPU_IOWAIT, SYSTEM_NORMALIZED_CPU_GUEST, SYSTEM_NORMALIZED_CPU_IRQ, MAX_SYSTEM_NORMALIZED_CPU_IOWAIT, SYSTEM_NORMALIZED_CPU_KERNEL, SYSTEM_NORMALIZED_CPU_STEAL, MAX_SYSTEM_NORMALIZED_CPU_SOFTIRQ, MAX_SYSTEM_NORMALIZED_CPU_STEAL, SYSTEM_NORMALIZED_CPU_SOFTIRQ, MAX_SYSTEM_NORMALIZED_CPU_KERNEL, MAX_SYSTEM_NORMALIZED_CPU_GUEST, SYSTEM_NORMALIZED_CPU_NICE, SYSTEM_NORMALIZED_CPU_USER, MAX_SYSTEM_NORMALIZED_CPU_IRQ
-    labels: [cpu_state, aggregation]
+    extended_documentation: Aggregate of MongoDB Metrics MAX_SYSTEM_NORMALIZED_CPU_USER, MAX_SYSTEM_NORMALIZED_CPU_NICE, MAX_SYSTEM_NORMALIZED_CPU_IOWAIT, MAX_SYSTEM_NORMALIZED_CPU_SOFTIRQ, MAX_SYSTEM_NORMALIZED_CPU_STEAL, MAX_SYSTEM_NORMALIZED_CPU_KERNEL, MAX_SYSTEM_NORMALIZED_CPU_GUEST, MAX_SYSTEM_NORMALIZED_CPU_IRQ
+    labels: [cpu_state]
+    unit: 1
+    data:
+      type: gauge
+  mongodbatlas.system.cpu.normalized.usage.average:
+    description: System CPU Normalized to pct
+    extended_documentation: Aggregate of MongoDB Metrics SYSTEM_NORMALIZED_CPU_IOWAIT, SYSTEM_NORMALIZED_CPU_GUEST, SYSTEM_NORMALIZED_CPU_IRQ, SYSTEM_NORMALIZED_CPU_KERNEL, SYSTEM_NORMALIZED_CPU_STEAL, SYSTEM_NORMALIZED_CPU_SOFTIRQ, SYSTEM_NORMALIZED_CPU_NICE, SYSTEM_NORMALIZED_CPU_USER
+    labels: [cpu_state]
     unit: 1
     data:
       type: gauge
   mongodbatlas.process.tickets:
     description: Tickets
-    extended_documentation: Aggregates MongoDB Metrics TICKETS_AVAILABLE_WRITE, TICKETS_AVAILABLE_READS
+    extended_documentation: Aggregate of MongoDB Metrics TICKETS_AVAILABLE_WRITE, TICKETS_AVAILABLE_READS
     unit: "{tickets}"
     labels: [ticket_type]
     data:
       type: gauge
-  mongodbatlas.disk.partition.iops:
+  mongodbatlas.disk.partition.iops.max:
     description: Disk partition iops
-    extended_documentation: Aggregates MongoDB Metrics DISK_PARTITION_IOPS_READ, MAX_DISK_PARTITION_IOPS_WRITE, MAX_DISK_PARTITION_IOPS_TOTAL, DISK_PARTITION_IOPS_WRITE, DISK_PARTITION_IOPS_TOTAL, MAX_DISK_PARTITION_IOPS_READ
+    extended_documentation: Aggregate of MongoDB Metrics MAX_DISK_PARTITION_IOPS_WRITE, MAX_DISK_PARTITION_IOPS_TOTAL, MAX_DISK_PARTITION_IOPS_READ
     unit: "{ops}/s"
-    labels: [disk_direction, aggregation]
+    labels: [disk_direction]
     data:
       type: gauge
-  mongodbatlas.disk.partition.utilization:
-    description: Disk partition utilization (%)
-    extended_documentation: Aggregates MongoDB Metrics MAX_DISK_PARTITION_SPACE_PERCENT_USED, DISK_PARTITION_SPACE_PERCENT_FREE, MAX_DISK_PARTITION_SPACE_PERCENT_FREE, DISK_PARTITION_SPACE_PERCENT_USED, DISK_PARTITION_UTILIZATION, MAX_DISK_PARTITION_UTILIZATION
+  mongodbatlas.disk.partition.iops.average:
+    description: Disk partition iops
+    extended_documentation: Aggregate of MongoDB Metrics DISK_PARTITION_IOPS_READ, DISK_PARTITION_IOPS_WRITE, DISK_PARTITION_IOPS_TOTAL
+    unit: "{ops}/s"
+    labels: [disk_direction]
+    data:
+      type: gauge
+  mongodbatlas.disk.partition.usage.max:
+    description: Disk partition usage (%)
+    extended_documentation: Aggregate of MongoDB Metrics MAX_DISK_PARTITION_SPACE_PERCENT_USED, MAX_DISK_PARTITION_SPACE_PERCENT_FREE
     unit: 1
-    labels: [aggregation]
+    labels: [disk_status]
     data:
       type: gauge
-  mongodbatlas.disk.partition.latency:
+  mongodbatlas.disk.partition.usage.average:
+    description: Disk partition usage (%)
+    extended_documentation: Aggregate of MongoDB Metrics DISK_PARTITION_SPACE_PERCENT_FREE, DISK_PARTITION_SPACE_PERCENT_USED
+    unit: 1
+    labels: [disk_status]
+    data:
+      type: gauge
+  mongodbatlas.disk.partition.utilization.max:
+    description: Disk partition utilization (%)
+    extended_documentation: MongoDB Metrics MAX_DISK_PARTITION_UTILIZATION
+    unit: 1
+    data:
+      type: gauge
+  mongodbatlas.disk.partition.utilization.average:
+    description: Disk partition utilization (%)
+    extended_documentation: MongoDB Metrics DISK_PARTITION_UTILIZATION
+    unit: 1
+    data:
+      type: gauge
+  mongodbatlas.disk.partition.latency.max:
     description: Disk partition latency
-    extended_documentation: Aggregates MongoDB Metrics DISK_PARTITION_LATENCY_WRITE, DISK_PARTITION_LATENCY_READ, MAX_DISK_PARTITION_LATENCY_WRITE, MAX_DISK_PARTITION_LATENCY_READ
+    extended_documentation: Aggregate of MongoDB Metrics MAX_DISK_PARTITION_LATENCY_WRITE, MAX_DISK_PARTITION_LATENCY_READ
     unit: ms
-    labels: [disk_direction, aggregation]
+    labels: [disk_direction]
     data:
       type: gauge
-  mongodbatlas.disk.partition.space:
+  mongodbatlas.disk.partition.latency.average:
+    description: Disk partition latency
+    extended_documentation: Aggregate of MongoDB Metrics DISK_PARTITION_LATENCY_WRITE, DISK_PARTITION_LATENCY_READ
+    unit: ms
+    labels: [disk_direction]
+    data:
+      type: gauge
+  mongodbatlas.disk.partition.space.max:
     description: Disk partition space
-    extended_documentation: Aggregates MongoDB Metrics DISK_PARTITION_SPACE_FREE, MAX_DISK_PARTITION_SPACE_USED, DISK_PARTITION_SPACE_USED, MAX_DISK_PARTITION_SPACE_FREE
+    extended_documentation: Aggregate of MongoDB Metrics DISK_PARTITION_SPACE_FREE, DISK_PARTITION_SPACE_USED
     unit: By
-    lables: [memory_state, aggregation]
+    lables: [memory_state]
+    data:
+      type: gauge
+  mongodbatlas.disk.partition.space.average:
+    description: Disk partition space
+    extended_documentation: Aggregate of MongoDB Metrics DISK_PARTITION_SPACE_FREE, DISK_PARTITION_SPACE_USED
+    unit: By
+    lables: [memory_state]
     data:
       type: gauge
   mongodbatlas.db.size:
     description: Database feature size
-    extended_documentation: Aggregates MongoDB Metrics DATABASE_DATA_SIZE, DATABASE_STORAGE_SIZE, DATABASE_INDEX_SIZE, DATABASE_AVERAGE_OBJECT_SIZE
+    extended_documentation: Aggregate of MongoDB Metrics DATABASE_DATA_SIZE, DATABASE_STORAGE_SIZE, DATABASE_INDEX_SIZE, DATABASE_AVERAGE_OBJECT_SIZE
     unit: By
     labels: [object_type]
     data:
       type: gauge
   mongodbatlas.db.counts:
     description: Database feature size
-    extended_documentation: Aggregates MongoDB Metrics DATABASE_EXTENT_COUNT, DATABASE_VIEW_COUNT, DATABASE_COLLECTION_COUNT, DATABASE_OBJECT_COUNT, DATABASE_INDEX_COUNT
+    extended_documentation: Aggregate of MongoDB Metrics DATABASE_EXTENT_COUNT, DATABASE_VIEW_COUNT, DATABASE_COLLECTION_COUNT, DATABASE_OBJECT_COUNT, DATABASE_INDEX_COUNT
     unit: "{objects}"
     labels: [object_type]
     data:
       type: gauge
   mongodbatlas.system.fts.memory.usage:
     description: Full-text search
-    extended_documentation: Aggregates MongoDB Metrics FTS_MEMORY_MAPPED, FTS_PROCESS_SHARED_MEMORY, FTS_PROCESS_RESIDENT_MEMORY, FTS_PROCESS_VIRTUAL_MEMORY
+    extended_documentation: Aggregate of MongoDB Metrics FTS_MEMORY_MAPPED, FTS_PROCESS_SHARED_MEMORY, FTS_PROCESS_RESIDENT_MEMORY, FTS_PROCESS_VIRTUAL_MEMORY
     unit: MiBy
     labels: [memory_state]
     data:
@@ -463,7 +568,7 @@ metrics:
       type: gauge
   mongodbatlas.system.fts.cpu.normalized.usage:
     description: Full text search disk usage (%)
-    extended_documentation: Aggregates MongoDB Metrics FTS_PROCESS_NORMALIZED_CPU_USER, FTS_PROCESS_NORMALIZED_CPU_KERNEL
+    extended_documentation: Aggregate of MongoDB Metrics FTS_PROCESS_NORMALIZED_CPU_USER, FTS_PROCESS_NORMALIZED_CPU_KERNEL
     unit: 1
     labels: [cpu_state]
     data:
