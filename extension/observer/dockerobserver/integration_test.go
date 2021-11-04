@@ -58,18 +58,68 @@ func TestObserverEmitsEndpointsIntegration(t *testing.T) {
 	c := container.New(t)
 	image := "docker.io/library/nginx:1.17"
 	cntr := c.StartImage(image, container.WithPortReady(80))
+	config := NewFactory().CreateDefaultConfig().(*Config)
+	config.CacheSyncInterval = 1 * time.Second
+	config.UseHostBindings = true
+	config.UseHostnameIfPresent = true
+	mn := &mockNotifier{endpointsMap: map[observer.EndpointID]observer.Endpoint{}}
+	obvs := startObserverWithConfig(t, mn, config)
+	time.Sleep(2 * time.Second) // wait for endpoints to sync
+	endpoints := mn.getEndpointsMap()
+	require.Equal(t, 1, len(endpoints))
+	for _, e := range endpoints {
+		require.Equal(t, uint16(80), e.Details.Env()["alternate_port"])
+		require.Equal(t, string(cntr.ID), e.Details.Env()["container_id"])
+		require.Equal(t, image, e.Details.Env()["image"])
+	}
+	stopObserver(t, obvs)
+}
 
+func TestObserverUpdatesEndpointsIntegration(t *testing.T) {
+	c := container.New(t)
+	image := "docker.io/library/nginx:1.17"
+	cntr := c.StartImage(image, container.WithPortReady(80))
 	mn := &mockNotifier{endpointsMap: map[observer.EndpointID]observer.Endpoint{}}
 	obvs := startObserver(t, mn)
 	time.Sleep(2 * time.Second) // wait for endpoints to sync
 	endpoints := mn.getEndpointsMap()
-	require.NotEmpty(t, endpoints)
-	require.Equal(t, 1, len(endpoints))
+	require.Equal(t, len(endpoints), 1)
 	for _, e := range endpoints {
 		require.Equal(t, uint16(80), e.Details.Env()["port"])
 		require.Equal(t, string(cntr.ID), e.Details.Env()["container_id"])
 		require.Equal(t, image, e.Details.Env()["image"])
 	}
+
+	c.RenameContainer(cntr, "nginx-updated")
+
+	time.Sleep(5 * time.Second) // wait for endpoints to sync
+	endpoints = mn.getEndpointsMap()
+	for _, e := range endpoints {
+		require.Equal(t, "nginx-updated", e.Details.Env()["name"])
+		require.Equal(t, uint16(80), e.Details.Env()["port"])
+		require.Equal(t, string(cntr.ID), e.Details.Env()["container_id"])
+		require.Equal(t, image, e.Details.Env()["image"])
+	}
+	stopObserver(t, obvs)
+}
+
+func TestObserverRemovesEndpointsIntegration(t *testing.T) {
+	d := container.New(t)
+	image := "docker.io/library/nginx:1.17"
+	tmpCntr := d.StartImage(image, container.WithPortReady(80))
+	mn := &mockNotifier{endpointsMap: map[observer.EndpointID]observer.Endpoint{}}
+	obvs := startObserver(t, mn)
+	time.Sleep(2 * time.Second) // wait for endpoints to sync
+	endpoints := mn.getEndpointsMap()
+	require.Equal(t, len(endpoints), 1)
+	for _, e := range endpoints {
+		require.Equal(t, uint16(80), e.Details.Env()["port"])
+		require.Equal(t, string(tmpCntr.ID), e.Details.Env()["container_id"])
+		require.Equal(t, image, e.Details.Env()["image"])
+	}
+	d.RemoveContainer(tmpCntr)
+	time.Sleep(5 * time.Second) // wait for endpoints to sync
+	require.Empty(t, mn.getEndpointsMap())
 	stopObserver(t, obvs)
 }
 
@@ -89,6 +139,7 @@ func TestObserverExcludesImagesIntegration(t *testing.T) {
 
 func startObserver(t *testing.T, listener observer.Notify) *dockerObserver {
 	config := NewFactory().CreateDefaultConfig().(*Config)
+	config.Validate()
 	return startObserverWithConfig(t, listener, config)
 }
 

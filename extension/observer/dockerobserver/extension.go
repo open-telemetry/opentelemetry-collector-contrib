@@ -23,6 +23,7 @@ import (
 	"time"
 
 	dtypes "github.com/docker/docker/api/types"
+	dfilters "github.com/docker/docker/api/types/filters"
 	"github.com/docker/go-connections/nat"
 	"go.opentelemetry.io/collector/component"
 	"go.uber.org/zap"
@@ -91,21 +92,71 @@ func (d *dockerObserver) ListAndWatch(listener observer.Notify) {
 	d.emitContainerEndpoints(listener)
 
 	go func() {
+		// build filter list for container events
+		filters := dfilters.NewArgs([]dfilters.KeyValuePair{
+			{Key: "type", Value: "container"},
+			{Key: "event", Value: "destroy"},
+			{Key: "event", Value: "die"},
+			{Key: "event", Value: "rename"},
+			{Key: "event", Value: "pause"},
+			{Key: "event", Value: "stop"},
+			{Key: "event", Value: "start"},
+			{Key: "event", Value: "unpause"},
+			{Key: "event", Value: "update"},
+		}...)
+
+		lastTime := time.Now()
 		ticker := time.NewTicker(d.config.CacheSyncInterval)
 		defer ticker.Stop()
+
+	EVENT_LOOP:
 		for {
-			select {
-			case <-d.ctx.Done():
-				return
-			case <-ticker.C:
-				err := d.syncContainerList(listener)
-				if err != nil {
-					d.logger.Error("Could not sync container cache", zap.Error(err))
+			opts := dtypes.EventsOptions{
+				Filters: filters,
+				Since:   lastTime.Format(time.RFC3339Nano),
+			}
+
+			eventsCh, errCh := d.dClient.Events(d.ctx, opts)
+
+			for {
+				select {
+				case <-d.ctx.Done():
+					return
+				case <-ticker.C:
+					err := d.syncContainerList(listener)
+					if err != nil {
+						d.logger.Error("Could not sync container cache", zap.Error(err))
+					}
+				case event := <-eventsCh:
+					switch event.Action {
+					case "destroy":
+						d.updateEndpointsByContainerID(listener, event.ID, nil)
+						d.dClient.RemoveContainer(event.ID)
+					default:
+						if c, ok := d.dClient.InspectAndPersistContainer(d.ctx, event.ID); ok {
+							endpointsMap := d.endpointsForContainer(c)
+							d.updateEndpointsByContainerID(listener, c.ID, endpointsMap)
+						}
+					}
+					if event.TimeNano > lastTime.UnixNano() {
+						lastTime = time.Unix(0, event.TimeNano)
+					}
+
+				case err := <-errCh:
+					// if there's an error from docker events we need to
+					// reinvoke the Events function to begin streaming again.
+					if d.ctx.Err() == nil {
+						d.logger.Error("Error watching docker container events", zap.Error(err))
+						select {
+						case <-time.After(3 * time.Second):
+							continue EVENT_LOOP
+						case <-d.ctx.Done():
+							return
+						}
+					}
 				}
 			}
 		}
-		// TODO: Implement event loop to watch container events to add/remove/update
-		//       endpoints as they occur.
 	}()
 }
 
@@ -253,7 +304,7 @@ func (d *dockerObserver) endpointForPort(portObj nat.Port, c *dtypes.ContainerJS
 	}
 
 	details := &observer.Container{
-		Name:        c.Name,
+		Name:        strings.TrimPrefix(c.Name, "/"),
 		Image:       c.Config.Image,
 		Command:     strings.Join(c.Config.Cmd, " "),
 		ContainerID: c.ID,
