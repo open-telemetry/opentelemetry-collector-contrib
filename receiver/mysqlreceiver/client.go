@@ -22,36 +22,35 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 )
 
-type client interface {
+type Client interface {
+	Connect() error
 	getGlobalStats() (map[string]string, error)
 	getInnodbStats() (map[string]string, error)
 	Close() error
 }
 
 type mySQLClient struct {
-	client *sql.DB
+	connStr string
+	client  *sql.DB
 }
 
-var _ client = (*mySQLClient)(nil)
+var _ Client = (*mySQLClient)(nil)
 
-type mySQLConfig struct {
-	username string
-	password string
-	database string
-	endpoint string
-}
-
-func newMySQLClient(conf mySQLConfig) (*mySQLClient, error) {
-	connStr := fmt.Sprintf("%s:%s@tcp(%s)/%s", conf.username, conf.password, conf.endpoint, conf.database)
-
-	db, err := sql.Open("mysql", connStr)
-	if err != nil {
-		return nil, err
-	}
+func newMySQLClient(conf *Config) Client {
+	connStr := fmt.Sprintf("%s:%s@%s(%s)/%s", conf.Username, conf.Password, conf.Transport, conf.Endpoint, conf.Database)
 
 	return &mySQLClient{
-		client: db,
-	}, nil
+		connStr: connStr,
+	}
+}
+
+func (c *mySQLClient) Connect() error {
+	clientDB, err := sql.Open("mysql", c.connStr)
+	if err != nil {
+		return fmt.Errorf("unable to connect to database: %w", err)
+	}
+	c.client = clientDB
+	return nil
 }
 
 // getGlobalStats queries the db for global status metrics.
@@ -85,5 +84,8 @@ func Query(c mySQLClient, query string) (map[string]string, error) {
 }
 
 func (c *mySQLClient) Close() error {
-	return c.client.Close()
+	if c.client != nil {
+		return c.client.Close()
+	}
+	return nil
 }

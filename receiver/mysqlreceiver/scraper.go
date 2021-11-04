@@ -29,7 +29,7 @@ import (
 )
 
 type mySQLScraper struct {
-	client   client
+	client   Client
 	stopOnce sync.Once
 
 	logger *zap.Logger
@@ -48,12 +48,9 @@ func newMySQLScraper(
 
 // start starts the scraper by initializing the db client connection.
 func (m *mySQLScraper) start(_ context.Context, host component.Host) error {
-	client, err := newMySQLClient(mySQLConfig{
-		username: m.config.Username,
-		password: m.config.Password,
-		database: m.config.Database,
-		endpoint: m.config.Endpoint,
-	})
+	client := newMySQLClient(m.config)
+
+	err := client.Connect()
 	if err != nil {
 		return err
 	}
