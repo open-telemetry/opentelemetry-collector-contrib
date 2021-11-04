@@ -180,13 +180,13 @@ func (t *Translator) getSketchBuckets(
 	ctx context.Context,
 	consumer SketchConsumer,
 	name string,
-	startTs,
-	ts uint64,
 	p pdata.HistogramDataPoint,
 	delta bool,
 	tags []string,
 	host string,
 ) {
+	startTs := uint64(p.StartTimestamp())
+	ts := uint64(p.Timestamp())
 	as := &quantile.Agent{}
 	for j := range p.BucketCounts() {
 		lowerBound, upperBound := getBounds(p, j)
@@ -233,6 +233,8 @@ func (t *Translator) getLegacyBuckets(
 	tags []string,
 	host string,
 ) {
+	startTs := uint64(p.StartTimestamp())
+	ts := uint64(p.Timestamp())
 	// We have a single metric, 'bucket', which is tagged with the bucket bounds. See:
 	// https://github.com/DataDog/integrations-core/blob/7.30.1/datadog_checks_base/datadog_checks/base/checks/openmetrics/v2/transformers/histogram.py
 	fullName := fmt.Sprintf("%s.bucket", name)
@@ -245,8 +247,6 @@ func (t *Translator) getLegacyBuckets(
 		bucketTags = append(bucketTags, tags...)
 
 		count := float64(val)
-		startTs := uint64(p.StartTimestamp())
-		ts := uint64(p.Timestamp())
 		if delta {
 			consumer.ConsumeTimeSeries(ctx, fullName, Count, ts, count, bucketTags, host)
 		} else if dx, ok := t.prevPts.Diff(fullName, bucketTags, startTs, ts, count); ok {
@@ -310,7 +310,7 @@ func (t *Translator) mapHistogramMetrics(
 		case HistogramModeCounters:
 			t.getLegacyBuckets(ctx, consumer, name, p, delta, tags, host)
 		case HistogramModeDistributions:
-			t.getSketchBuckets(ctx, consumer, name, startTs, ts, p, delta, tags, host)
+			t.getSketchBuckets(ctx, consumer, name, p, delta, tags, host)
 		}
 	}
 }
