@@ -28,7 +28,7 @@ exporter/f5cloudexporter/                            @open-telemetry/collector-c
 exporter/honeycombexporter/                          @open-telemetry/collector-contrib-approvers @paulosman @lizthegrey @MikeGoldsmith
 exporter/humioexporter/                              @open-telemetry/collector-contrib-approvers @xitric
 exporter/jaegerthrifthttpexporter/                   @open-telemetry/collector-contrib-approvers @jpkrohling @pavolloffay
-exporter/awskinesisexporter/                         @open-telemetry/collector-contrib-approvers @owais @anuraaga
+exporter/awskinesisexporter/                         @open-telemetry/collector-contrib-approvers @anuraaga
 exporter/loadbalancingexporter/                      @open-telemetry/collector-contrib-approvers @jpkrohling
 exporter/logzioexporter/                             @open-telemetry/collector-contrib-approvers @jkowall @Doron-Bargo @yotamloe
 exporter/lokiexporter/                               @open-telemetry/collector-contrib-approvers @gramidt
