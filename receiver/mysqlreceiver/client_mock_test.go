@@ -19,9 +19,7 @@ import (
 	"os"
 	"path"
 	"strings"
-	"testing"
 
-	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/stretchr/testify/mock"
 )
 
@@ -47,17 +45,8 @@ func readFile(fname string) (map[string]string, error) {
 	return stats, nil
 }
 
-func TestClientConnection(t *testing.T) {
-	db, mock, err := sqlmock.New()
-	mc := mock.NewMockClient()
-	client := fakeClient{
-		connStr: "",
-	}
-}
-
 func (fc *fakeClient) Connect() error {
-	args := fc.Called()
-	return args.Error(0)
+	return nil
 }
 
 func (c *fakeClient) getGlobalStats() (map[string]string, error) {
