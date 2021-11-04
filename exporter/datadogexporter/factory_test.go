@@ -44,7 +44,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 	// still has the unresolved environment variables.
 	assert.Equal(t, &ddconfig.Config{
 		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
-		TimeoutSettings:  exporterhelper.DefaultTimeoutSettings(),
+		TimeoutSettings:  defaulttimeoutSettings(),
 		RetrySettings:    exporterhelper.DefaultRetrySettings(),
 		QueueSettings:    exporterhelper.DefaultQueueSettings(),
 
@@ -108,7 +108,7 @@ func TestLoadConfig(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, &ddconfig.Config{
 		ExporterSettings: config.NewExporterSettings(config.NewComponentIDWithName(typeStr, "api")),
-		TimeoutSettings:  exporterhelper.DefaultTimeoutSettings(),
+		TimeoutSettings:  defaulttimeoutSettings(),
 		RetrySettings:    exporterhelper.DefaultRetrySettings(),
 		QueueSettings:    exporterhelper.DefaultQueueSettings(),
 
@@ -157,7 +157,7 @@ func TestLoadConfig(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, &ddconfig.Config{
 		ExporterSettings: config.NewExporterSettings(config.NewComponentIDWithName(typeStr, "default")),
-		TimeoutSettings:  exporterhelper.DefaultTimeoutSettings(),
+		TimeoutSettings:  defaulttimeoutSettings(),
 		RetrySettings:    exporterhelper.DefaultRetrySettings(),
 		QueueSettings:    exporterhelper.DefaultQueueSettings(),
 
@@ -246,7 +246,7 @@ func TestLoadConfigEnvVariables(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, &ddconfig.Config{
 		ExporterSettings: config.NewExporterSettings(config.NewComponentIDWithName(typeStr, "api2")),
-		TimeoutSettings:  exporterhelper.DefaultTimeoutSettings(),
+		TimeoutSettings:  defaulttimeoutSettings(),
 		RetrySettings:    exporterhelper.DefaultRetrySettings(),
 		QueueSettings:    exporterhelper.DefaultQueueSettings(),
 
@@ -298,7 +298,7 @@ func TestLoadConfigEnvVariables(t *testing.T) {
 	// no settings are given.
 	assert.Equal(t, &ddconfig.Config{
 		ExporterSettings: config.NewExporterSettings(config.NewComponentIDWithName(typeStr, "default2")),
-		TimeoutSettings:  exporterhelper.DefaultTimeoutSettings(),
+		TimeoutSettings:  defaulttimeoutSettings(),
 		RetrySettings:    exporterhelper.DefaultRetrySettings(),
 		QueueSettings:    exporterhelper.DefaultQueueSettings(),
 
@@ -414,7 +414,7 @@ func TestOnlyMetadata(t *testing.T) {
 	ctx := context.Background()
 	cfg := &ddconfig.Config{
 		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
-		TimeoutSettings:  exporterhelper.DefaultTimeoutSettings(),
+		TimeoutSettings:  defaulttimeoutSettings(),
 		RetrySettings:    exporterhelper.DefaultRetrySettings(),
 		QueueSettings:    exporterhelper.DefaultQueueSettings(),
 
