@@ -45,7 +45,7 @@ func readFile(fname string) (map[string]string, error) {
 	return stats, nil
 }
 
-func (fc *fakeClient) Connect() error {
+func (c *fakeClient) Connect() error {
 	return nil
 }
 
