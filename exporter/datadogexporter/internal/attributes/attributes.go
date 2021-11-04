@@ -162,18 +162,18 @@ func TagsFromAttributes(attrs pdata.AttributeMap) []string {
 // ContainerTagFromAttributes extracts the value of _dd.tags.container from the given
 // set of attributes.
 func ContainerTagFromAttributes(attr map[string]string) string {
-    var str strings.Builder
-    for _, key := range containerTagsAttributes {
-        val, ok := attr[key]
-        if !ok {
-            continue
-        }
-        if str.Len() > 0 {
-            str.WriteByte(',')
-        }
-        str.WriteString(conventionsMapping[key])
-        str.WriteByte(':')
-        str.WriteString(val)
-    }
-    return str.String()
+	var str strings.Builder
+	for _, key := range containerTagsAttributes {
+		val, ok := attr[key]
+		if !ok {
+			continue
+		}
+		if str.Len() > 0 {
+			str.WriteByte(',')
+		}
+		str.WriteString(conventionsMapping[key])
+		str.WriteByte(':')
+		str.WriteString(val)
+	}
+	return str.String()
 }
