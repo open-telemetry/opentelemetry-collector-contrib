@@ -106,7 +106,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zookeeperreceiver v0.38.0
 	github.com/prometheus/prometheus v1.8.2-0.20210621150501-ff58416a0b02
 	github.com/stretchr/testify v1.7.0
-	go.opentelemetry.io/collector v0.38.1-0.20211103011348-c24dfeb047a8
+	go.opentelemetry.io/collector v0.38.1-0.20211103215828-cffbecb2ac9e
 	golang.org/x/sys v0.0.0-20211025201205-69cdffdb9359
 )
 
@@ -232,9 +232,9 @@ require (
 	github.com/iancoleman/strcase v0.2.0 // indirect
 	github.com/imdario/mergo v0.3.12 // indirect
 	github.com/inconshreveable/mousetrap v1.0.0 // indirect
-	github.com/influxdata/influxdb-observability/common v0.2.8 // indirect
-	github.com/influxdata/influxdb-observability/influx2otel v0.2.8 // indirect
-	github.com/influxdata/influxdb-observability/otel2influx v0.2.8 // indirect
+	github.com/influxdata/influxdb-observability/common v0.2.9 // indirect
+	github.com/influxdata/influxdb-observability/influx2otel v0.2.9 // indirect
+	github.com/influxdata/influxdb-observability/otel2influx v0.2.9 // indirect
 	github.com/influxdata/line-protocol/v2 v2.2.0 // indirect
 	github.com/jaegertracing/jaeger v1.27.0 // indirect
 	github.com/jcmturner/aescts/v2 v2.0.0 // indirect
@@ -371,7 +371,7 @@ require (
 	go.etcd.io/bbolt v1.3.6 // indirect
 	go.mongodb.org/atlas v0.13.0 // indirect
 	go.opencensus.io v0.23.0 // indirect
-	go.opentelemetry.io/collector/model v0.38.1-0.20211103011348-c24dfeb047a8 // indirect
+	go.opentelemetry.io/collector/model v0.38.1-0.20211103215828-cffbecb2ac9e // indirect
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.26.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.26.0 // indirect
 	go.opentelemetry.io/contrib/zpages v0.26.0 // indirect
