@@ -108,10 +108,10 @@ exporters:
         #
         # mode: distributions
       
-        ## @param send_count_sum_metrics - boolean - optional - default: true
+        ## @param send_count_sum_metrics - boolean - optional - default: false
         ## Whether to report sum and count as separate histogram metrics.
         #
-        # send_count_sum_metrics: true
+        # send_count_sum_metrics: false
 
     ## @param traces - custom object - optional
     ## Trace exporter specific configuration.
