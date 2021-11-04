@@ -33,7 +33,7 @@ func getComplexAttributeValueMap() pdata.AttributeValue {
 	mapValReal.InsertInt("code", 200)
 	mapValReal.InsertNull("null")
 	arrayVal := pdata.NewAttributeValueArray()
-	arrayVal.ArrayVal().AppendEmpty().SetStringVal("array")
+	arrayVal.SliceVal().AppendEmpty().SetStringVal("array")
 	mapValReal.Insert("array", arrayVal)
 
 	subMapVal := pdata.NewAttributeValueMap()
@@ -82,7 +82,7 @@ func createLogData(numberOfLogs int) pdata.Logs {
 			logRecord.Body().SetStringVal("log contents")
 		case 6:
 			arrayVal := pdata.NewAttributeValueArray()
-			arrayVal.ArrayVal().AppendEmpty().SetStringVal("array")
+			arrayVal.SliceVal().AppendEmpty().SetStringVal("array")
 			logRecord.Attributes().Insert("array-value", arrayVal)
 			logRecord.Body().SetStringVal("log contents")
 		default:
