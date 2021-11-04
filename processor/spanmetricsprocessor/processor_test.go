@@ -730,13 +730,29 @@ func TestProcessorUpdateLatencyExemplars(t *testing.T) {
 	next := new(consumertest.TracesSink)
 	p, err := newProcessor(zap.NewNop(), cfg, next)
 	value := float64(42)
-	index := 12
 
 	// ----- call -------------------------------------------------------------
-	p.updateLatencyExemplars(key, value, index, traceID)
+	p.updateLatencyExemplars(key, value, traceID)
 
 	// ----- verify -----------------------------------------------------------
 	assert.NoError(t, err)
 	assert.NotEmpty(t, p.latencyExemplarsData[key])
-	assert.Equal(t, p.latencyExemplarsData[key][index], exemplarData{traceID: traceID, value: value})
+	assert.Equal(t, p.latencyExemplarsData[key][0], exemplarData{traceID: traceID, value: value})
+}
+
+func TestProcessorResetExemplarData(t *testing.T) {
+	// ----- conditions -------------------------------------------------------
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+
+	key := metricKey("metricKey")
+	next := new(consumertest.TracesSink)
+	p, err := newProcessor(zap.NewNop(), cfg, next)
+
+	// ----- call -------------------------------------------------------------
+	p.resetExemplarData()
+
+	// ----- verify -----------------------------------------------------------
+	assert.NoError(t, err)
+	assert.Empty(t, p.latencyExemplarsData[key])
 }
