@@ -331,7 +331,7 @@ func Test_mapLogRecordToSplunkEvent(t *testing.T) {
 			logRecordFn: func() pdata.LogRecord {
 				logRecord := pdata.NewLogRecord()
 				attVal := pdata.NewAttributeValueArray()
-				attArray := attVal.ArrayVal()
+				attArray := attVal.SliceVal()
 				attArray.AppendEmpty().SetStringVal("foo")
 				attVal.CopyTo(logRecord.Body())
 				logRecord.Attributes().InsertString(splunk.DefaultSourceLabel, "myapp")

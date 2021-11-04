@@ -112,7 +112,7 @@ func (d *Detector) Detect(context.Context) (resource pdata.Resource, schemaURL s
 	}
 
 	for i, attribVal := range getValidLogData(tmdeResp.Containers, selfMetaData, account) {
-		if attribVal.ArrayVal().Len() > 0 {
+		if attribVal.SliceVal().Len() > 0 {
 			attr.Insert(logAttributes[i], attribVal)
 		}
 	}
@@ -167,10 +167,10 @@ func getValidLogData(containers []Container, self *Container, account string) [4
 			self.DockerID != container.DockerID &&
 			logData != (LogData{}) {
 
-			logGroupNames.ArrayVal().AppendEmpty().SetStringVal(logData.LogGroup)
-			logGroupArns.ArrayVal().AppendEmpty().SetStringVal(constructLogGroupArn(logData.Region, account, logData.LogGroup))
-			logStreamNames.ArrayVal().AppendEmpty().SetStringVal(logData.Stream)
-			logStreamArns.ArrayVal().AppendEmpty().SetStringVal(constructLogStreamArn(logData.Region, account, logData.LogGroup, logData.Stream))
+			logGroupNames.SliceVal().AppendEmpty().SetStringVal(logData.LogGroup)
+			logGroupArns.SliceVal().AppendEmpty().SetStringVal(constructLogGroupArn(logData.Region, account, logData.LogGroup))
+			logStreamNames.SliceVal().AppendEmpty().SetStringVal(logData.Stream)
+			logStreamArns.SliceVal().AppendEmpty().SetStringVal(constructLogStreamArn(logData.Region, account, logData.LogGroup, logData.Stream))
 		}
 	}
 

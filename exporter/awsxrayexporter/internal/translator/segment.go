@@ -425,7 +425,7 @@ func metadataValue(value pdata.AttributeValue) interface{} {
 		})
 		return converted
 	case pdata.AttributeValueTypeArray:
-		arrVal := value.ArrayVal()
+		arrVal := value.SliceVal()
 		converted := make([]interface{}, arrVal.Len())
 		for i := 0; i < arrVal.Len(); i++ {
 			converted[i] = metadataValue(arrVal.At(i))

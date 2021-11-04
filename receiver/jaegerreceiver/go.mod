@@ -10,8 +10,8 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.38.0
 	github.com/stretchr/testify v1.7.0
 	github.com/uber/jaeger-lib v2.4.1+incompatible
-	go.opentelemetry.io/collector v0.38.1-0.20211103011348-c24dfeb047a8
-	go.opentelemetry.io/collector/model v0.38.1-0.20211103011348-c24dfeb047a8
+	go.opentelemetry.io/collector v0.38.1-0.20211103215828-cffbecb2ac9e
+	go.opentelemetry.io/collector/model v0.38.1-0.20211103215828-cffbecb2ac9e
 	go.uber.org/multierr v1.7.0
 	go.uber.org/zap v1.19.1
 	google.golang.org/grpc v1.41.0

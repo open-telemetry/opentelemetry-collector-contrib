@@ -177,7 +177,7 @@ func TestAttrValue(t *testing.T) {
 			name: "array",
 			builder: func() pdata.AttributeValue {
 				arrAttr := pdata.NewAttributeValueArray()
-				arr := arrAttr.ArrayVal()
+				arr := arrAttr.SliceVal()
 				for _, av := range []pdata.AttributeValue{
 					pdata.NewAttributeValueDouble(1.2),
 					pdata.NewAttributeValueDouble(1.6),

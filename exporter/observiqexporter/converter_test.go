@@ -107,9 +107,9 @@ func TestLogdataToObservIQFormat(t *testing.T) {
 				logRecord.Attributes().Insert("map", mapVal)
 
 				arrVal := pdata.NewAttributeValueArray()
-				arrVal.ArrayVal().EnsureCapacity(2)
-				arrVal.ArrayVal().AppendEmpty().SetIntVal(1)
-				arrVal.ArrayVal().AppendEmpty().SetIntVal(2)
+				arrVal.SliceVal().EnsureCapacity(2)
+				arrVal.SliceVal().AppendEmpty().SetIntVal(1)
+				arrVal.SliceVal().AppendEmpty().SetIntVal(2)
 				logRecord.Attributes().Insert("array", arrVal)
 
 				logRecord.SetTimestamp(nanoTs)
@@ -129,9 +129,9 @@ func TestLogdataToObservIQFormat(t *testing.T) {
 				res.Attributes().Insert("map", mapVal)
 
 				arrVal := pdata.NewAttributeValueArray()
-				arrVal.ArrayVal().EnsureCapacity(2)
-				arrVal.ArrayVal().AppendEmpty().SetIntVal(1)
-				arrVal.ArrayVal().AppendEmpty().SetDoubleVal(2.0)
+				arrVal.SliceVal().EnsureCapacity(2)
+				arrVal.SliceVal().AppendEmpty().SetIntVal(1)
+				arrVal.SliceVal().AppendEmpty().SetDoubleVal(2.0)
 				res.Attributes().Insert("array", arrVal)
 
 				return res
@@ -220,9 +220,9 @@ func TestLogdataToObservIQFormat(t *testing.T) {
 				logRecord := pdata.NewLogRecord()
 
 				pdata.NewAttributeValueArray().CopyTo(logRecord.Body())
-				logRecord.Body().ArrayVal().EnsureCapacity(2)
-				logRecord.Body().ArrayVal().AppendEmpty().SetStringVal("string")
-				logRecord.Body().ArrayVal().AppendEmpty().SetDoubleVal(1.0)
+				logRecord.Body().SliceVal().EnsureCapacity(2)
+				logRecord.Body().SliceVal().AppendEmpty().SetStringVal("string")
+				logRecord.Body().SliceVal().AppendEmpty().SetDoubleVal(1.0)
 
 				logRecord.SetTimestamp(nanoTs)
 				return logRecord
