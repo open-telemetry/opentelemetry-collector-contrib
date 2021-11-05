@@ -31,10 +31,11 @@ import (
 func ToTraces(traces pb.Traces, req *http.Request) pdata.Traces {
 	dest := pdata.NewTraces()
 	resSpans := dest.ResourceSpans().AppendEmpty()
-	resAttributes := resSpans.Resource().Attributes()
 	ils := resSpans.InstrumentationLibrarySpans().AppendEmpty()
 
-	resAttributes.InsertString(semconv.AttributeServiceName, traces[0][0].Service)
+	ils.InstrumentationLibrary().SetName("Datadog")
+	ils.InstrumentationLibrary().SetVersion(req.Header.Get("Datadog-Meta-Tracer-Version"))
+
 	for _, trace := range traces {
 		for _, span := range trace {
 			newSpan := ils.Spans().AppendEmpty() // TODO: Might be more efficient to resize spans and then populate it

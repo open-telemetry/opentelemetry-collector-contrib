@@ -35,7 +35,6 @@ type datadogReceiver struct {
 	server       *http.Server
 	obs          *obsreport.Receiver
 
-	mu        sync.Mutex
 	startOnce sync.Once
 	stopOnce  sync.Once
 }
@@ -53,7 +52,7 @@ func newDataDogReceiver(config *Config, nextConsumer consumer.Traces, params com
 			ReadTimeout: config.ReadTimeout,
 			Addr:        config.HTTPServerSettings.Endpoint,
 		},
-		obs: obsreport.NewReceiver(obsreport.ReceiverSettings{LongLivedCtx: true, ReceiverID: config.ID(), Transport: "http", ReceiverCreateSettings: params}),
+		obs: obsreport.NewReceiver(obsreport.ReceiverSettings{LongLivedCtx: false, ReceiverID: config.ID(), Transport: "http", ReceiverCreateSettings: params}),
 	}, nil
 }
 
@@ -79,19 +78,19 @@ func (ddr *datadogReceiver) Shutdown(ctx context.Context) (err error) {
 }
 
 func (ddr *datadogReceiver) handleTraces(w http.ResponseWriter, req *http.Request) {
-	obsCtx := ddr.obs.StartTracesOp(context.TODO())
+	obsCtx := ddr.obs.StartTracesOp(req.Context())
 	var ddTraces pb.Traces
 
 	err := decodeRequest(req, &ddTraces)
 	if err != nil {
 		http.Error(w, "Unable to unmarshal reqs", http.StatusInternalServerError)
-		ddr.obs.EndTracesOp(obsCtx, "http", 0, err)
+		ddr.obs.EndTracesOp(obsCtx, "datadog", 0, err)
 		return
 	}
 
 	otelTraces := ToTraces(ddTraces, req)
 	spanCount := otelTraces.SpanCount()
-	err = ddr.nextConsumer.ConsumeTraces(context.Background(), otelTraces)
+	err = ddr.nextConsumer.ConsumeTraces(obsCtx, otelTraces)
 	if err != nil {
 		http.Error(w, "Trace consumer errored out", http.StatusInternalServerError)
 	} else {
