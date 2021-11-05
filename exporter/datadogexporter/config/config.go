@@ -32,7 +32,7 @@ import (
 var (
 	errUnsetAPIKey = errors.New("api.key is not set")
 	errNoMetadata  = errors.New("only_metadata can't be enabled when send_metadata or use_resource_metadata is disabled")
-	errBuckets     = errors.New("can't use 'metrics::report_buckets' and 'metrics::histograms::mode' at the same time")
+	errBuckets     = errors.New("'metrics::report_buckets' is obsolete. Use 'metrics::histograms::mode' instead")
 )
 
 // TODO: Import these from translator when we eliminate cyclic dependency.
@@ -70,10 +70,6 @@ func (api *APIConfig) GetCensoredKey() string {
 
 // MetricsConfig defines the metrics exporter specific configuration options
 type MetricsConfig struct {
-	// Buckets states whether to report buckets from histogram metrics.
-	// Deprecated: use `metrics::histograms::mode`.
-	Buckets bool `mapstructure:"report_buckets"`
-
 	// Quantiles states whether to report quantiles from summary metrics.
 	// By default, the minimum, maximum and average are reported.
 	Quantiles bool `mapstructure:"report_quantiles"`
@@ -99,17 +95,17 @@ type MetricsConfig struct {
 
 // HistogramConfig customizes export of OTLP Histograms.
 type HistogramConfig struct {
-	// Mode for exporting histograms. Valid values are 'counters' or 'nobuckets'.
+	// Mode for exporting histograms. Valid values are 'distributions', 'counters' or 'nobuckets'.
+	//  - 'distributions' sends histograms as Datadog distributions (recommended).
 	//  - 'counters' sends histograms as Datadog counts, one metric per bucket.
 	//  - 'nobuckets' sends no bucket histogram metrics. .sum and .count metrics will still be sent
 	//    if `send_count_sum_metrics` is enabled.
-	//  - 'distributions' sends histograms as Datadog distributions (recommended).
 	//
-	// The current default is 'nobuckets'.
+	// The current default is 'distributions'.
 	Mode string `mapstructure:"mode"`
 
 	// SendCountSum states if the export should send .sum and .count metrics for histograms.
-	// The current default is true.
+	// The current default is false.
 	SendCountSum bool `mapstructure:"send_count_sum_metrics"`
 }
 
@@ -326,24 +322,15 @@ func (c *Config) Validate() error {
 }
 
 func (c *Config) Unmarshal(configMap *config.Map) error {
-	err := configMap.UnmarshalExact(c)
-	if err != nil {
-		return err
-	}
-
-	if configMap.IsSet("metrics::report_buckets") && configMap.IsSet("metrics::histograms::mode") {
+	// metrics::report_buckets is obsolete, return an error to
+	// tell the user to use metrics::histograms::mode instead.
+	if configMap.IsSet("metrics::report_buckets") {
 		return errBuckets
 	}
 
-	// Deprecation of `report_buckets`: add warning and set `HistConfig.Mode` instead.
-	if configMap.IsSet("metrics::report_buckets") {
-		if c.Metrics.Buckets {
-			c.warnings = append(c.warnings, fmt.Errorf("'metrics::report_buckets' is deprecated. Set 'metrics::histograms::mode' to 'counters' instead"))
-			c.Metrics.HistConfig.Mode = histogramModeCounters
-		} else {
-			c.warnings = append(c.warnings, fmt.Errorf("'metrics::report_buckets' is deprecated. Set 'metrics::histograms::mode' to 'nobuckets' instead"))
-			c.Metrics.HistConfig.Mode = histogramModeNoBuckets
-		}
+	err := configMap.UnmarshalExact(c)
+	if err != nil {
+		return err
 	}
 
 	switch c.Metrics.HistConfig.Mode {

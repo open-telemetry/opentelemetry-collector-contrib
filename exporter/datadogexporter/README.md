@@ -32,6 +32,7 @@ The hostname, environment, service and version can be set in the configuration f
 The exporter will try to retrieve a hostname following the OpenTelemetry semantic conventions if there is one available.
 
 See the sample configuration files under the `example` folder for other available options, as well as an example K8s Manifest.
+This exporter also supports the `exporterhelper` queuing, retry and timeout settings documented [here](https://github.com/open-telemetry/opentelemetry-collector/tree/main/exporter/exporterhelper#configuration).
 
 ## Trace exporter
 ### **Important Pipeline Setup Details** 
@@ -97,5 +98,5 @@ There are a number of optional settings for configuring how to send your metrics
 | `send_monotonic_counter` | Cumulative monotonic metrics are sent as deltas between successive measurements. Disable this flag to send get the raw, monotonically increasing value. | `true` |
 | `delta_ttl` | Maximum number of seconds values from cumulative monotonic metrics are kept in memory. | 3600 |
 | `report_quantiles` | Whether to report quantile values for summary type metrics. | `true` |
-| `histograms::mode` | Mode for histograms. Valid values are `nobuckets` (no bucket metrics), `counters` (one metric per bucket) and `distributions` (send as Datadog distributions, recommended). | `nobuckets` |
-| `histograms::send_count_sum_metrics` | Whether to report sum and count for histograms as separate metrics. | `true` |
+| `histograms::mode` | Mode for histograms. Valid values are `nobuckets` (no bucket metrics), `counters` (one metric per bucket) and `distributions` (send as Datadog distributions, recommended). | `distributions` |
+| `histograms::send_count_sum_metrics` | Whether to report sum and count for histograms as separate metrics. | `false` |

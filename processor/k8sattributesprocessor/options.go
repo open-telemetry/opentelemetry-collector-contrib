@@ -155,7 +155,8 @@ func extractFieldRules(fieldType string, fields ...FieldExtractConfig) ([]kube.F
 			return rules, fmt.Errorf("%s is not a valid choice for From. Must be one of: pod, namespace", a.From)
 		}
 
-		if name == "" {
+		if name == "" && a.Key != "" {
+			// name for KeyRegex case is set at extraction time/runtime, skipped here
 			if a.From == kube.MetadataFromPod {
 				name = fmt.Sprintf("k8s.pod.%s.%s", fieldType, a.Key)
 			} else if a.From == kube.MetadataFromNamespace {
@@ -176,8 +177,17 @@ func extractFieldRules(fieldType string, fields ...FieldExtractConfig) ([]kube.F
 			}
 		}
 
+		var keyRegex *regexp.Regexp
+		if a.KeyRegex != "" {
+			var err error
+			keyRegex, err = regexp.Compile(a.KeyRegex)
+			if err != nil {
+				return rules, err
+			}
+		}
+
 		rules = append(rules, kube.FieldExtractionRule{
-			Name: name, Key: a.Key, Regex: r, From: a.From,
+			Name: name, Key: a.Key, KeyRegex: keyRegex, Regex: r, From: a.From,
 		})
 	}
 	return rules, nil

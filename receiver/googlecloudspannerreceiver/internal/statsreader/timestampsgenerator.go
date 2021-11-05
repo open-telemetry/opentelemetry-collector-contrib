@@ -62,3 +62,7 @@ func pullTimestampsWithDifference(lowerBound time.Time, upperBound time.Time, di
 func shiftToStartOfMinute(now time.Time) time.Time {
 	return time.Date(now.Year(), now.Month(), now.Day(), now.Hour(), now.Minute(), 0, 0, now.Location())
 }
+
+func (g *timestampsGenerator) isBackfillExecution(lastPullTimestamp time.Time) bool {
+	return lastPullTimestamp.IsZero() && g.backfillEnabled
+}

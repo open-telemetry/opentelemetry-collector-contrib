@@ -35,17 +35,9 @@ var identityBufferPool = sync.Pool{
 }
 
 type State struct {
+	sync.Mutex
 	Identity  MetricIdentity
 	PrevPoint ValuePoint
-	mu        sync.Mutex
-}
-
-func (s *State) Lock() {
-	s.mu.Lock()
-}
-
-func (s *State) Unlock() {
-	s.mu.Unlock()
 }
 
 type DeltaValue struct {
@@ -54,25 +46,21 @@ type DeltaValue struct {
 	IntValue       int64
 }
 
-type MetricTracker interface {
-	Convert(MetricPoint) (DeltaValue, bool)
-}
-
-func NewMetricTracker(ctx context.Context, logger *zap.Logger, maxStaleness time.Duration) MetricTracker {
-	t := &metricTracker{logger: logger, maxStaleness: maxStaleness}
+func NewMetricTracker(ctx context.Context, logger *zap.Logger, maxStaleness time.Duration) *MetricTracker {
+	t := &MetricTracker{logger: logger, maxStaleness: maxStaleness}
 	if maxStaleness > 0 {
 		go t.sweeper(ctx, t.removeStale)
 	}
 	return t
 }
 
-type metricTracker struct {
+type MetricTracker struct {
 	logger       *zap.Logger
 	maxStaleness time.Duration
 	states       sync.Map
 }
 
-func (t *metricTracker) Convert(in MetricPoint) (out DeltaValue, valid bool) {
+func (t *MetricTracker) Convert(in MetricPoint) (out DeltaValue, valid bool) {
 	metricID := in.Identity
 	metricPoint := in.Value
 	if !metricID.IsSupportedMetricType() {
@@ -148,7 +136,7 @@ func (t *metricTracker) Convert(in MetricPoint) (out DeltaValue, valid bool) {
 	return
 }
 
-func (t *metricTracker) removeStale(staleBefore pdata.Timestamp) {
+func (t *MetricTracker) removeStale(staleBefore pdata.Timestamp) {
 	t.states.Range(func(key, value interface{}) bool {
 		s := value.(*State)
 
@@ -176,7 +164,7 @@ func (t *metricTracker) removeStale(staleBefore pdata.Timestamp) {
 	})
 }
 
-func (t *metricTracker) sweeper(ctx context.Context, remove func(pdata.Timestamp)) {
+func (t *MetricTracker) sweeper(ctx context.Context, remove func(pdata.Timestamp)) {
 	ticker := time.NewTicker(t.maxStaleness)
 	for {
 		select {

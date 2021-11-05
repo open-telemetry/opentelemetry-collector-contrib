@@ -37,6 +37,26 @@ import (
 
 // Test that the factory creates the default configuration
 func TestCreateDefaultConfig(t *testing.T) {
+	assert.NoError(t, os.Setenv("DD_API_KEY", "API_KEY"))
+	assert.NoError(t, os.Setenv("DD_SITE", "SITE"))
+	assert.NoError(t, os.Setenv("DD_URL", "URL"))
+	assert.NoError(t, os.Setenv("DD_APM_URL", "APM_URL"))
+	assert.NoError(t, os.Setenv("DD_HOST", "HOST"))
+	assert.NoError(t, os.Setenv("DD_ENV", "ENV"))
+	assert.NoError(t, os.Setenv("DD_SERVICE", "SERVICE"))
+	assert.NoError(t, os.Setenv("DD_VERSION", "VERSION"))
+	assert.NoError(t, os.Setenv("DD_TAGS", "TAGS"))
+	defer func() {
+		assert.NoError(t, os.Unsetenv("DD_API_KEY"))
+		assert.NoError(t, os.Unsetenv("DD_SITE"))
+		assert.NoError(t, os.Unsetenv("DD_URL"))
+		assert.NoError(t, os.Unsetenv("DD_APM_URL"))
+		assert.NoError(t, os.Unsetenv("DD_HOST"))
+		assert.NoError(t, os.Unsetenv("DD_ENV"))
+		assert.NoError(t, os.Unsetenv("DD_SERVICE"))
+		assert.NoError(t, os.Unsetenv("DD_VERSION"))
+		assert.NoError(t, os.Unsetenv("DD_TAGS"))
+	}()
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
@@ -49,37 +69,37 @@ func TestCreateDefaultConfig(t *testing.T) {
 		QueueSettings:    exporterhelper.DefaultQueueSettings(),
 
 		API: ddconfig.APIConfig{
-			Key:  "$DD_API_KEY",
-			Site: "$DD_SITE",
+			Key:  "API_KEY",
+			Site: "SITE",
 		},
 
 		Metrics: ddconfig.MetricsConfig{
 			TCPAddr: confignet.TCPAddr{
-				Endpoint: "$DD_URL",
+				Endpoint: "URL",
 			},
 			DeltaTTL:      3600,
 			SendMonotonic: true,
 			Quantiles:     true,
 			HistConfig: ddconfig.HistogramConfig{
-				Mode:         "nobuckets",
-				SendCountSum: true,
+				Mode:         "distributions",
+				SendCountSum: false,
 			},
 		},
 
 		Traces: ddconfig.TracesConfig{
 			SampleRate: 1,
 			TCPAddr: confignet.TCPAddr{
-				Endpoint: "$DD_APM_URL",
+				Endpoint: "APM_URL",
 			},
 			IgnoreResources: []string{},
 		},
 
 		TagsConfig: ddconfig.TagsConfig{
-			Hostname:   "$DD_HOST",
-			Env:        "$DD_ENV",
-			Service:    "$DD_SERVICE",
-			Version:    "$DD_VERSION",
-			EnvVarTags: "$DD_TAGS",
+			Hostname:   "HOST",
+			Env:        "ENV",
+			Service:    "SERVICE",
+			Version:    "VERSION",
+			EnvVarTags: "TAGS",
 		},
 
 		SendMetadata:        true,
@@ -134,8 +154,8 @@ func TestLoadConfig(t *testing.T) {
 			SendMonotonic: true,
 			Quantiles:     true,
 			HistConfig: ddconfig.HistogramConfig{
-				Mode:         "nobuckets",
-				SendCountSum: true,
+				Mode:         "distributions",
+				SendCountSum: false,
 			},
 		},
 
@@ -182,8 +202,8 @@ func TestLoadConfig(t *testing.T) {
 			DeltaTTL:      3600,
 			Quantiles:     true,
 			HistConfig: ddconfig.HistogramConfig{
-				Mode:         "nobuckets",
-				SendCountSum: true,
+				Mode:         "distributions",
+				SendCountSum: false,
 			},
 		},
 
@@ -272,8 +292,8 @@ func TestLoadConfigEnvVariables(t *testing.T) {
 			Quantiles:     false,
 			DeltaTTL:      3600,
 			HistConfig: ddconfig.HistogramConfig{
-				Mode:         "nobuckets",
-				SendCountSum: true,
+				Mode:         "distributions",
+				SendCountSum: false,
 			},
 		},
 
@@ -323,8 +343,8 @@ func TestLoadConfigEnvVariables(t *testing.T) {
 			DeltaTTL:      3600,
 			Quantiles:     true,
 			HistConfig: ddconfig.HistogramConfig{
-				Mode:         "nobuckets",
-				SendCountSum: true,
+				Mode:         "distributions",
+				SendCountSum: false,
 			},
 		},
 

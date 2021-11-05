@@ -21,8 +21,8 @@ import (
 
 	"github.com/shirou/gopsutil/v3/process"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configmapprovider"
 	"go.opentelemetry.io/collector/service"
-	"go.opentelemetry.io/collector/service/parserprovider"
 )
 
 // inProcessCollector implements the OtelcolRunner interfaces running a single otelcol as a go routine within the
@@ -54,7 +54,7 @@ func (ipp *inProcessCollector) Start(args StartParams) error {
 	settings := service.CollectorSettings{
 		BuildInfo:         component.NewDefaultBuildInfo(),
 		Factories:         ipp.factories,
-		ConfigMapProvider: parserprovider.NewInMemoryMapProvider(strings.NewReader(ipp.configStr)),
+		ConfigMapProvider: configmapprovider.NewInMemoryMapProvider(strings.NewReader(ipp.configStr)),
 	}
 	var err error
 	ipp.svc, err = service.New(settings)

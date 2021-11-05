@@ -21,7 +21,7 @@ import (
 
 	"cloud.google.com/go/spanner"
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/model/pdata"
+	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudspannerreceiver/internal/datasource"
@@ -36,12 +36,12 @@ func (tr testReader) Name() string {
 	return "testReader"
 }
 
-func (tr testReader) Read(_ context.Context) ([]pdata.Metrics, error) {
+func (tr testReader) Read(_ context.Context) ([]*metadata.MetricsDataPoint, error) {
 	if tr.throwError {
 		return nil, errors.New("error")
 	}
 
-	return []pdata.Metrics{{}}, nil
+	return []*metadata.MetricsDataPoint{{}}, nil
 }
 
 func TestNewDatabaseReader(t *testing.T) {
@@ -159,11 +159,12 @@ func TestDatabaseReader_Read(t *testing.T) {
 	}
 
 	testCases := map[string]struct {
-		readers              []Reader
-		expectedMetricsCount int
+		readers                 []Reader
+		expectedDataPointsCount int
+		expectError             bool
 	}{
-		"Read with no error": {[]Reader{testReaderThrowNoError}, 1},
-		"Read with error":    {[]Reader{testReaderThrowError}, 0},
+		"Read with no error": {[]Reader{testReaderThrowNoError}, 1, false},
+		"Read with error":    {[]Reader{testReaderThrowError}, 0, true},
 	}
 
 	for name, testCase := range testCases {
@@ -175,9 +176,14 @@ func TestDatabaseReader_Read(t *testing.T) {
 			}
 			defer executeShutdown(reader)
 
-			metrics := reader.Read(ctx)
+			dataPoints, err := reader.Read(ctx)
+			if testCase.expectError {
+				require.Error(t, err)
+			} else {
+				require.NoError(t, err)
+			}
 
-			assert.Equal(t, testCase.expectedMetricsCount, len(metrics))
+			assert.Equal(t, testCase.expectedDataPointsCount, len(dataPoints))
 		})
 	}
 }

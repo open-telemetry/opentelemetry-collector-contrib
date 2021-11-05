@@ -26,7 +26,7 @@ The Redis receiver turns this data into a gauge...
 func usedCPUSys() *redisMetric {
 	return &redisMetric{
 		key:    "used_cpu_sys",
-		name:   "redis/cpu/time",
+		name:   "redis.cpu.time",
 		units:  "s",
 		mdType: metricspb.MetricDescriptor_GAUGE_DOUBLE,
 		labels: map[string]string{"state": "sys"},
@@ -34,7 +34,7 @@ func usedCPUSys() *redisMetric {
 }
 ```
 
-with a metric name of `redis/cpu/time` and a units value of `s` (seconds).
+with a metric name of `redis.cpu.time` and a units value of `s` (seconds).
 
 ## Configuration
 
@@ -56,6 +56,12 @@ Golang's `ParseDuration` function (example: `1h30m`). Valid time units are
 - `password` (no default): The password used to access the Redis instance;
 must match the password specified in the `requirepass` server configuration
 option.
+- `transport` (default = `tcp`) Defines the network to use for connecting to the server. Valid Values are `tcp` or `Unix`
+- `tls`:
+  - `insecure` (default = true): whether to disable client transport security for the exporter's connection.
+  - `ca_file`: path to the CA cert. For a client this verifies the server certificate. Should only be used if `insecure` is set to false.
+  - `cert_file`: path to the TLS cert to use for TLS required connections. Should only be used if `insecure` is set to false.
+  - `key_file`: path to the TLS key to use for TLS required connections. Should only be used if `insecure` is set to false.
 
 Example:
 

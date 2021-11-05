@@ -134,7 +134,7 @@ func convertAttributeValue(value pdata.AttributeValue, logger *zap.Logger) inter
 		})
 		return values
 	case pdata.AttributeValueTypeArray:
-		arrayVal := value.ArrayVal()
+		arrayVal := value.SliceVal()
 		values := make([]interface{}, arrayVal.Len())
 		for i := 0; i < arrayVal.Len(); i++ {
 			values[i] = convertAttributeValue(arrayVal.At(i), logger)

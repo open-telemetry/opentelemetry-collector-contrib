@@ -19,65 +19,85 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/model/pdata"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudspannerreceiver/internal/datasource"
 )
 
-func TestMetricsMetadata_ToMetrics(t *testing.T) {
-	testCases := map[string]struct {
-		metricsDataType pdata.MetricDataType
-	}{
-		"Gauge": {pdata.MetricDataTypeGauge},
-		"Sum":   {pdata.MetricDataTypeSum},
-	}
+const (
+	// Value was generated using the same library. Intent is to detect that something changed in library implementation
+	// in case we received different value here. For more details inspect tests where this value is used.
+	expectedHashValue = "b519d020edc95bf"
+)
 
-	for name, testCase := range testCases {
-		t.Run(name, func(t *testing.T) {
-			testMetricsMetadataToMetrics(t, testCase.metricsDataType)
-		})
+func TestMetricsDataPoint_GroupingKey(t *testing.T) {
+	dataPoint := metricsDataPointForTests()
+
+	groupingKey := dataPoint.GroupingKey()
+
+	assert.NotNil(t, groupingKey)
+	assert.Equal(t, dataPoint.metricName, groupingKey.MetricName)
+	assert.Equal(t, dataPoint.metricValue.Unit(), groupingKey.MetricUnit)
+	assert.Equal(t, dataPoint.metricValue.DataType(), groupingKey.MetricDataType)
+}
+
+func TestMetricsDataPoint_ToItem(t *testing.T) {
+	dataPoint := metricsDataPointForTests()
+
+	item, err := dataPoint.ToItem()
+	require.NoError(t, err)
+
+	assert.Equal(t, expectedHashValue, item.SeriesKey)
+	assert.Equal(t, dataPoint.timestamp, item.Timestamp)
+}
+
+func TestMetricsDataPoint_ToDataForHashing(t *testing.T) {
+	dataPoint := metricsDataPointForTests()
+
+	actual := dataPoint.toDataForHashing()
+
+	assert.Equal(t, metricName, actual.MetricName)
+
+	assertLabel(t, actual.Labels[0], projectIDLabelName, dataPoint.databaseID.ProjectID())
+	assertLabel(t, actual.Labels[1], instanceIDLabelName, dataPoint.databaseID.InstanceID())
+	assertLabel(t, actual.Labels[2], databaseLabelName, dataPoint.databaseID.DatabaseName())
+
+	labelsIndex := 3
+	for _, labelValue := range dataPoint.labelValues {
+		assertLabel(t, actual.Labels[labelsIndex], labelValue.Name(), labelValue.Value())
+		labelsIndex++
 	}
 }
 
-func testMetricsMetadataToMetrics(t *testing.T, metricDataType pdata.MetricDataType) {
+func TestMetricsDataPoint_Hash(t *testing.T) {
+	dataPoint := metricsDataPointForTests()
+
+	hashValue, err := dataPoint.hash()
+	require.NoError(t, err)
+
+	assert.Equal(t, expectedHashValue, hashValue)
+}
+
+func TestMetricsDataPoint_CopyTo(t *testing.T) {
 	timestamp := time.Now().UTC()
 	labelValues := allPossibleLabelValues()
 	metricValues := allPossibleMetricValues(metricDataType)
 	databaseID := databaseID()
-	metadata := MetricsMetadata{MetricNamePrefix: metricNamePrefix}
 
-	metrics := metadata.toMetrics(databaseID, timestamp, labelValues, metricValues)
-
-	assert.Equal(t, len(metricValues), len(metrics))
-
-	for i, metric := range metrics {
-		assert.Equal(t, 1, metric.DataPointCount())
-		assert.Equal(t, 1, metric.MetricCount())
-		assert.Equal(t, 1, metric.ResourceMetrics().Len())
-		assert.Equal(t, 1, metric.ResourceMetrics().At(0).InstrumentationLibraryMetrics().Len())
-		assert.Equal(t, 1, metric.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().Len())
-
-		ilMetric := metric.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(0)
-
-		assert.Equal(t, metadata.MetricNamePrefix+metricValues[i].Name(), ilMetric.Name())
-		assert.Equal(t, metricValues[i].Unit(), ilMetric.Unit())
-		assert.Equal(t, metricValues[i].DataType().MetricDataType(), ilMetric.DataType())
-
-		var dataPoint pdata.NumberDataPoint
-
-		if metricDataType == pdata.MetricDataTypeGauge {
-			assert.NotNil(t, ilMetric.Gauge())
-			assert.Equal(t, 1, ilMetric.Gauge().DataPoints().Len())
-			dataPoint = ilMetric.Gauge().DataPoints().At(0)
-		} else {
-			assert.NotNil(t, ilMetric.Sum())
-			assert.Equal(t, pdata.MetricAggregationTemporalityDelta, ilMetric.Sum().AggregationTemporality())
-			assert.True(t, ilMetric.Sum().IsMonotonic())
-			assert.Equal(t, 1, ilMetric.Sum().DataPoints().Len())
-			dataPoint = ilMetric.Sum().DataPoints().At(0)
+	for _, metricValue := range metricValues {
+		dataPoint := pdata.NewNumberDataPoint()
+		metricsDataPoint := &MetricsDataPoint{
+			metricName:  metricName,
+			timestamp:   timestamp,
+			databaseID:  databaseID,
+			labelValues: labelValues,
+			metricValue: metricValue,
 		}
 
-		assertMetricValue(t, metricValues[i], dataPoint)
+		metricsDataPoint.CopyTo(dataPoint)
+
+		assertMetricValue(t, metricValue, dataPoint)
 
 		assert.Equal(t, pdata.NewTimestampFromTime(timestamp), dataPoint.Timestamp())
 		// Adding +3 here because we'll always have 3 labels added for each metric: project_id, instance_id, database
@@ -192,5 +212,24 @@ func assertMetricValue(t *testing.T, metricValue MetricValue, dataPoint pdata.Nu
 		assert.Equal(t, metricValue.Value(), dataPoint.IntVal())
 	case float64MetricValue:
 		assert.Equal(t, metricValue.Value(), dataPoint.DoubleVal())
+	}
+}
+
+func assertLabel(t *testing.T, lbl label, expectedName string, expectedValue interface{}) {
+	assert.Equal(t, expectedName, lbl.Name)
+	assert.Equal(t, expectedValue, lbl.Value)
+}
+
+func metricsDataPointForTests() *MetricsDataPoint {
+	timestamp := time.Now().UTC()
+	labelValues := allPossibleLabelValues()
+	databaseID := databaseID()
+
+	return &MetricsDataPoint{
+		metricName:  metricName,
+		timestamp:   timestamp,
+		databaseID:  databaseID,
+		labelValues: labelValues,
+		metricValue: allPossibleMetricValues(metricDataType)[0],
 	}
 }

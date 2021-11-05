@@ -30,7 +30,7 @@ func TestCompileExprError(t *testing.T) {
 func TestRunExprError(t *testing.T) {
 	matcher, err := NewMatcher("foo")
 	require.NoError(t, err)
-	matched, _ := matcher.match(env{})
+	matched, _ := matcher.match(&env{})
 	require.False(t, matched)
 }
 

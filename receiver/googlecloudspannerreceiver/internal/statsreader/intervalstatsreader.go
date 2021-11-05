@@ -18,8 +18,6 @@ import (
 	"context"
 	"time"
 
-	"cloud.google.com/go/spanner"
-	"go.opentelemetry.io/collector/model/pdata"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudspannerreceiver/internal/datasource"
@@ -64,36 +62,46 @@ func newIntervalStatsReader(
 	}
 }
 
-func (reader *intervalStatsReader) Read(ctx context.Context) ([]pdata.Metrics, error) {
+func (reader *intervalStatsReader) Read(ctx context.Context) ([]*metadata.MetricsDataPoint, error) {
 	reader.logger.Debug("Executing read method", zap.String("reader", reader.Name()))
 
 	// Generating pull timestamps
 	pullTimestamps := reader.timestampsGenerator.pullTimestamps(reader.lastPullTimestamp, time.Now().UTC())
 
-	var collectedMetrics []pdata.Metrics
+	var collectedDataPoints []*metadata.MetricsDataPoint
 
 	// Pulling metrics for each generated pull timestamp
-	for _, pullTimestamp := range pullTimestamps {
+	timestampsAmount := len(pullTimestamps)
+	for i, pullTimestamp := range pullTimestamps {
 		stmt := reader.newPullStatement(pullTimestamp)
-		metrics, err := reader.pull(ctx, stmt)
+		// Latest timestamp for backfilling must be read from actual data(not stale)
+		if i == (timestampsAmount-1) && reader.isBackfillExecution() {
+			stmt.stalenessRead = false
+		}
+		dataPoints, err := reader.pull(ctx, stmt)
 		if err != nil {
 			return nil, err
 		}
 
-		collectedMetrics = append(collectedMetrics, metrics...)
+		collectedDataPoints = append(collectedDataPoints, dataPoints...)
 	}
 
-	reader.lastPullTimestamp = pullTimestamps[len(pullTimestamps)-1]
+	reader.lastPullTimestamp = pullTimestamps[timestampsAmount-1]
 
-	return collectedMetrics, nil
+	return collectedDataPoints, nil
 }
 
-func (reader *intervalStatsReader) newPullStatement(pullTimestamp time.Time) spanner.Statement {
+func (reader *intervalStatsReader) newPullStatement(pullTimestamp time.Time) statsStatement {
 	args := statementArgs{
 		query:                  reader.metricsMetadata.Query,
 		topMetricsQueryMaxRows: reader.topMetricsQueryMaxRows,
 		pullTimestamp:          pullTimestamp,
+		stalenessRead:          reader.isBackfillExecution(),
 	}
 
 	return reader.statement(args)
+}
+
+func (reader *intervalStatsReader) isBackfillExecution() bool {
+	return reader.timestampsGenerator.isBackfillExecution(reader.lastPullTimestamp)
 }

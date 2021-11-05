@@ -160,7 +160,7 @@ func exampleMultitypeLogs() []pdata.LogRecord {
 	buffer[1] = pdata.NewLogRecord()
 
 	attVal = pdata.NewAttributeValueArray()
-	attArr := attVal.ArrayVal()
+	attArr := attVal.SliceVal()
 	strVal := pdata.NewAttributeValueEmpty()
 	strVal.SetStringVal("lv2")
 	intVal := pdata.NewAttributeValueEmpty()

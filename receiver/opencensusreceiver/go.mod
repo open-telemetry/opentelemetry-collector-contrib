@@ -5,22 +5,22 @@ go 1.17
 require (
 	github.com/census-instrumentation/opencensus-proto v0.3.0
 	github.com/grpc-ecosystem/grpc-gateway v1.16.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.37.1
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.37.1
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus v0.37.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.38.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.38.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus v0.38.0
 	github.com/rs/cors v1.8.0
 	github.com/soheilhy/cmux v0.1.5
 	github.com/stretchr/testify v1.7.0
-	go.opentelemetry.io/collector v0.37.1-0.20211015233822-bd87fb628058
-	go.opentelemetry.io/collector/model v0.37.1-0.20211015233822-bd87fb628058
-	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.25.0
-	go.opentelemetry.io/otel v1.0.1
-	go.opentelemetry.io/otel/trace v1.0.1
+	go.opentelemetry.io/collector v0.38.1-0.20211103215828-cffbecb2ac9e
+	go.opentelemetry.io/collector/model v0.38.1-0.20211103215828-cffbecb2ac9e
+	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.26.0
+	go.opentelemetry.io/otel v1.1.0
+	go.opentelemetry.io/otel/trace v1.1.0
 	google.golang.org/grpc v1.41.0
 	google.golang.org/protobuf v1.27.1
 )
 
-require go.opentelemetry.io/otel/sdk v1.0.1
+require go.opentelemetry.io/otel/sdk v1.1.0
 
 require (
 	cloud.google.com/go v0.81.0 // indirect
@@ -29,7 +29,7 @@ require (
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
-	github.com/knadh/koanf v1.2.4 // indirect
+	github.com/knadh/koanf v1.3.0 // indirect
 	github.com/magiconair/properties v1.8.5 // indirect
 	github.com/mitchellh/copystructure v1.2.0 // indirect
 	github.com/mitchellh/mapstructure v1.4.2 // indirect
