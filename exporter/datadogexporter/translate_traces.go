@@ -18,24 +18,21 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"net/url"
 	"strconv"
 	"strings"
 	"time"
 
 	"github.com/DataDog/datadog-agent/pkg/trace/exportable/pb"
 	"github.com/DataDog/datadog-agent/pkg/trace/exportable/traceutil"
-	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/model/pdata"
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
-	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace/ext"
-	"gopkg.in/zorkian/go-datadog-api.v2"
-
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/config"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/attributes"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metrics"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/utils"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/tracetranslator"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/model/pdata"
+	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
+	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace/ext"
 )
 
 const (
@@ -512,9 +509,7 @@ func getDatadogSpanName(s pdata.Span, datadogTags map[string]string) string {
 	// largely a port of logic here
 	// https://github.com/open-telemetry/opentelemetry-python/blob/b2559409b2bf82e693f3e68ed890dd7fd1fa8eae/exporter/opentelemetry-exporter-datadog/src/opentelemetry/exporter/datadog/exporter.py#L213
 	// Get span name by using instrumentation library name and span kind while backing off to span.kind
-	if s.Name() != "" {
-		return s.Name()
-	}
+
 	// The spec has changed over time and, depending on the original exporter, IL Name could represented a few different ways
 	// so we try to account for all permutations
 	if ilnOtlp, okOtlp := datadogTags[conventions.InstrumentationLibraryName]; okOtlp {
@@ -542,11 +537,6 @@ func getDatadogResourceName(s pdata.Span, datadogTags map[string]string) string 
 	if method, methodOk := datadogTags[conventions.AttributeHTTPMethod]; methodOk {
 		if route, routeOk := datadogTags[conventions.AttributeHTTPRoute]; routeOk {
 			return fmt.Sprintf("%s %s", method, route)
-		}
-
-		if urlTag, urlOk := datadogTags[conventions.AttributeHTTPURL]; urlOk {
-			parsed, _ := url.Parse(urlTag)
-			return fmt.Sprintf("%s %s", method, parsed.Path)
 		}
 
 		if grpcRoute, grpcRouteOk := datadogTags[grpcPath]; grpcRouteOk {
