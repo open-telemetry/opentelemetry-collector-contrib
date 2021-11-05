@@ -4,7 +4,7 @@
 
 ## 💡 Enhancements 💡
 
-- `datadogexporter` increase default timeout to 30 seconds (#6131)
+- `datadogexporter` increase default timeout to 15 seconds (#6131)
 ## v0.38.0
 
 ## 🛑 Breaking changes 🛑
