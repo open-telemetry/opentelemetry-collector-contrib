@@ -1364,18 +1364,19 @@ var startTimeMetricPageStartTimestamp = &timestamppb.Timestamp{Seconds: 400, Nan
 const numStartTimeMetricPageTimeseries = 11
 
 func verifyStartTimeMetricPage(t *testing.T, _ *testData, mds []*agentmetricspb.ExportMetricsServiceRequest) {
+	if len(mds) < 1 {
+		t.Fatal("At least one metric request should be present")
+	}
 	numTimeseries := 0
-	for _, cmd := range mds {
-		for _, metric := range cmd.Metrics {
-			timestamp := startTimeMetricPageStartTimestamp
-			switch metric.GetMetricDescriptor().GetType() {
-			case metricspb.MetricDescriptor_GAUGE_DOUBLE, metricspb.MetricDescriptor_GAUGE_DISTRIBUTION:
-				timestamp = nil
-			}
-			for _, ts := range metric.GetTimeseries() {
-				assert.Equal(t, timestamp.AsTime(), ts.GetStartTimestamp().AsTime(), ts.String())
-				numTimeseries++
-			}
+	for _, metric := range mds[0].Metrics {
+		timestamp := startTimeMetricPageStartTimestamp
+		switch metric.GetMetricDescriptor().GetType() {
+		case metricspb.MetricDescriptor_GAUGE_DOUBLE, metricspb.MetricDescriptor_GAUGE_DISTRIBUTION:
+			timestamp = nil
+		}
+		for _, ts := range metric.GetTimeseries() {
+			assert.Equal(t, timestamp.AsTime(), ts.GetStartTimestamp().AsTime(), ts.String())
+			numTimeseries++
 		}
 	}
 	assert.Equal(t, numStartTimeMetricPageTimeseries, numTimeseries)
@@ -1521,7 +1522,7 @@ func TestStartTimeMetricRegex(t *testing.T) {
 func testEndToEndRegex(t *testing.T, targets []*testData, useStartTimeMetric bool, startTimeMetricRegex string) {
 	// 1. setup mock server
 	mp, cfg, err := setupMockPrometheus(targets...)
-	require.Nilf(t, err, "Failed to create Promtheus config: %v", err)
+	require.Nilf(t, err, "Failed to create Prometheus config: %v", err)
 	defer mp.Close()
 
 	cms := new(consumertest.MetricsSink)
