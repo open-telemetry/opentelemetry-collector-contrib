@@ -67,8 +67,8 @@ func TestMonotonicDiffKnownStart(t *testing.T) {
 	assert.True(t, ok, "expected diff: same startTs, old >= new")
 	assert.Equal(t, 2.0, dx, "expected diff 2.0 with (0,2,2) value")
 
-	startTs = uint64(4) // simulate reset
-	_, ok = prevPts.MonotonicDiff("test", []string{}, startTs, 4, 8)
+	startTs = uint64(4) // simulate reset with startTs = ts
+	_, ok = prevPts.MonotonicDiff("test", []string{}, startTs, startTs, 8)
 	assert.False(t, ok, "expected no diff: reset with unknown start")
 	dx, ok = prevPts.MonotonicDiff("test", []string{}, startTs, 5, 9)
 	assert.True(t, ok, "expected diff: same startTs, old >= new")
@@ -96,8 +96,8 @@ func TestDiffKnownStart(t *testing.T) {
 	assert.True(t, ok, "expected diff: same startTs, not monotonic")
 	assert.Equal(t, 2.0, dx, "expected diff 2.0 with (0,2,2) value")
 
-	startTs = uint64(4) // simulate reset
-	_, ok = prevPts.Diff("test", []string{}, startTs, 4, 8)
+	startTs = uint64(4) // simulate reset with startTs = ts
+	_, ok = prevPts.Diff("test", []string{}, startTs, startTs, 8)
 	assert.False(t, ok, "expected no diff: reset with unknown start")
 	dx, ok = prevPts.Diff("test", []string{}, startTs, 5, 9)
 	assert.True(t, ok, "expected diff: same startTs, not monotonic")
