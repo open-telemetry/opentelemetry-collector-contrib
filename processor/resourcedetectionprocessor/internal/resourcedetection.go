@@ -162,7 +162,7 @@ func UnwrapAttribute(v pdata.AttributeValue) interface{} {
 	case pdata.AttributeValueTypeString:
 		return v.StringVal()
 	case pdata.AttributeValueTypeArray:
-		return getSerializableArray(v.ArrayVal())
+		return getSerializableArray(v.SliceVal())
 	case pdata.AttributeValueTypeMap:
 		return AttributesToMap(v.MapVal())
 	default:
@@ -170,7 +170,7 @@ func UnwrapAttribute(v pdata.AttributeValue) interface{} {
 	}
 }
 
-func getSerializableArray(inArr pdata.AnyValueArray) []interface{} {
+func getSerializableArray(inArr pdata.AttributeValueSlice) []interface{} {
 	var outArr []interface{}
 	for i := 0; i < inArr.Len(); i++ {
 		outArr = append(outArr, UnwrapAttribute(inArr.At(i)))

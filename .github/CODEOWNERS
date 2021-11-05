@@ -20,7 +20,7 @@ exporter/awsprometheusremotewriteexporter/           @open-telemetry/collector-c
 exporter/awsxrayexporter/                            @open-telemetry/collector-contrib-approvers @kbrockhoff @anuraaga
 exporter/azuremonitorexporter/                       @open-telemetry/collector-contrib-approvers @pcwiese
 exporter/carbonexporter/                             @open-telemetry/collector-contrib-approvers @pjanotti
-exporter/datadogexporter/                            @open-telemetry/collector-contrib-approvers @KSerrania @mx-psi
+exporter/datadogexporter/                            @open-telemetry/collector-contrib-approvers @KSerrania @mx-psi @gbbr @knusbaum
 exporter/dynatraceexporter/                          @open-telemetry/collector-contrib-approvers @dyladan @arminru
 exporter/elasticexporter/                            @open-telemetry/collector-contrib-approvers @axw @simitt @jalvz
 exporter/elasticsearchexporter/                      @open-telemetry/collector-contrib-approvers @urso @faec @blakerouse
@@ -28,7 +28,7 @@ exporter/f5cloudexporter/                            @open-telemetry/collector-c
 exporter/honeycombexporter/                          @open-telemetry/collector-contrib-approvers @paulosman @lizthegrey @MikeGoldsmith
 exporter/humioexporter/                              @open-telemetry/collector-contrib-approvers @xitric
 exporter/jaegerthrifthttpexporter/                   @open-telemetry/collector-contrib-approvers @jpkrohling @pavolloffay
-exporter/awskinesisexporter/                         @open-telemetry/collector-contrib-approvers @owais @anuraaga
+exporter/awskinesisexporter/                         @open-telemetry/collector-contrib-approvers @anuraaga
 exporter/loadbalancingexporter/                      @open-telemetry/collector-contrib-approvers @jpkrohling
 exporter/logzioexporter/                             @open-telemetry/collector-contrib-approvers @jkowall @Doron-Bargo @yotamloe
 exporter/lokiexporter/                               @open-telemetry/collector-contrib-approvers @gramidt

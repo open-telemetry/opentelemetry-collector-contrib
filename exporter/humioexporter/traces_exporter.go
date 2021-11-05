@@ -234,7 +234,7 @@ func toHumioAttributeValue(rawVal pdata.AttributeValue) interface{} {
 	case pdata.AttributeValueTypeMap:
 		return toHumioAttributes(rawVal.MapVal())
 	case pdata.AttributeValueTypeArray:
-		arrVal := rawVal.ArrayVal()
+		arrVal := rawVal.SliceVal()
 		arr := make([]interface{}, 0, arrVal.Len())
 		for i := 0; i < arrVal.Len(); i++ {
 			arr = append(arr, toHumioAttributeValue(arrVal.At(i)))

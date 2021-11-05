@@ -5,6 +5,7 @@ metadata:
   - name: "current stats"
     query: "query"
     metric_name_prefix: "metric_name_prefix"
+    high_cardinality: false
     labels:
       - name: "label_name"
         column_name: "LABEL_NAME"
@@ -23,6 +24,7 @@ metadata:
     query: "query"
     metric_name_prefix: "metric_name_prefix"
     timestamp_column_name: "timestamp_column_name"
+    high_cardinality: true
     labels:
       - name: "label_name"
         column_name: "LABEL_NAME"
