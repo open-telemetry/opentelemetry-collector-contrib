@@ -20,6 +20,8 @@ import (
 	"testing"
 	"time"
 
+	"go.uber.org/zap/zaptest"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
@@ -131,7 +133,7 @@ func TestProcessorShutdown(t *testing.T) {
 
 	// Test
 	next := new(consumertest.TracesSink)
-	p, err := newProcessor(zap.NewNop(), cfg, next)
+	p, err := newProcessor(zaptest.NewLogger(t), cfg, next)
 	assert.NoError(t, err)
 	err = p.Shutdown(context.Background())
 
@@ -152,7 +154,7 @@ func TestConfigureLatencyBounds(t *testing.T) {
 
 	// Test
 	next := new(consumertest.TracesSink)
-	p, err := newProcessor(zap.NewNop(), cfg, next)
+	p, err := newProcessor(zaptest.NewLogger(t), cfg, next)
 
 	// Verify
 	assert.NoError(t, err)
@@ -167,7 +169,7 @@ func TestProcessorCapabilities(t *testing.T) {
 
 	// Test
 	next := new(consumertest.TracesSink)
-	p, err := newProcessor(zap.NewNop(), cfg, next)
+	p, err := newProcessor(zaptest.NewLogger(t), cfg, next)
 	assert.NoError(t, err)
 	caps := p.Capabilities()
 
@@ -619,7 +621,7 @@ func TestProcessorDuplicateDimensions(t *testing.T) {
 
 	// Test
 	next := new(consumertest.TracesSink)
-	p, err := newProcessor(zap.NewNop(), cfg, next)
+	p, err := newProcessor(zaptest.NewLogger(t), cfg, next)
 	assert.Error(t, err)
 	assert.Nil(t, p)
 }
@@ -728,7 +730,7 @@ func TestProcessorUpdateLatencyExemplars(t *testing.T) {
 	traceID := traces.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().At(0).TraceID()
 	key := metricKey("metricKey")
 	next := new(consumertest.TracesSink)
-	p, err := newProcessor(zap.NewNop(), cfg, next)
+	p, err := newProcessor(zaptest.NewLogger(t), cfg, next)
 	value := float64(42)
 
 	// ----- call -------------------------------------------------------------
@@ -747,7 +749,7 @@ func TestProcessorResetExemplarData(t *testing.T) {
 
 	key := metricKey("metricKey")
 	next := new(consumertest.TracesSink)
-	p, err := newProcessor(zap.NewNop(), cfg, next)
+	p, err := newProcessor(zaptest.NewLogger(t), cfg, next)
 
 	// ----- call -------------------------------------------------------------
 	p.resetExemplarData()
