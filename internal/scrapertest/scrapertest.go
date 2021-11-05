@@ -24,7 +24,7 @@ import (
 
 // CompareMetricSlices compares each part of two given MetricSlices and returns
 // an error if they don't match. The error describes what didn't match.
-func CompareMetricSlices(expected, actual pdata.MetricSlice) error {
+func CompareMetricSlices(expected, actual pdata.MetricSlice, checkValues bool) error {
 	if actual.Len() != expected.Len() {
 		return fmt.Errorf("metric slices not of same length")
 	}
@@ -91,7 +91,7 @@ func CompareMetricSlices(expected, actual pdata.MetricSlice) error {
 			expectedDataPoints = expectedMetric.Sum().DataPoints()
 		}
 
-		if err := CompareNumberDataPointSlices(actualDataPoints, expectedDataPoints); err != nil {
+		if err := CompareNumberDataPointSlices(actualDataPoints, expectedDataPoints, checkValues); err != nil {
 			return multierr.Combine(fmt.Errorf("datapoints for metric: `%s`, do not match expected", actualMetric.Name()), err)
 		}
 	}
@@ -100,7 +100,7 @@ func CompareMetricSlices(expected, actual pdata.MetricSlice) error {
 
 // CompareNumberDataPointSlices compares each part of two given NumberDataPointSlices and returns
 // an error if they don't match. The error describes what didn't match.
-func CompareNumberDataPointSlices(actual, expected pdata.NumberDataPointSlice) error {
+func CompareNumberDataPointSlices(actual, expected pdata.NumberDataPointSlice, checkValues bool) error {
 	if actual.Len() != expected.Len() {
 		return fmt.Errorf("length of datapoints don't match")
 	}
@@ -145,7 +145,7 @@ func CompareNumberDataPointSlices(actual, expected pdata.NumberDataPointSlice) e
 	}
 
 	for adp, edp := range matchingDPS {
-		if err := CompareNumberDataPoints(adp, edp); err != nil {
+		if err := CompareNumberDataPoints(adp, edp, checkValues); err != nil {
 			return multierr.Combine(fmt.Errorf("datapoint with label(s): %v, does not match expected", adp.Attributes().AsRaw()), err)
 		}
 	}
@@ -154,15 +154,17 @@ func CompareNumberDataPointSlices(actual, expected pdata.NumberDataPointSlice) e
 
 // CompareNumberDataPoints compares each part of two given NumberDataPoints and returns
 // an error if they don't match. The error describes what didn't match.
-func CompareNumberDataPoints(actual, expected pdata.NumberDataPoint) error {
+func CompareNumberDataPoints(actual, expected pdata.NumberDataPoint, checkValues bool) error {
 	if expected.Type() != actual.Type() {
 		return fmt.Errorf("metric datapoint types don't match: expected type: %v, actual type: %v", expected.Type(), actual.Type())
 	}
-	if expected.IntVal() != actual.IntVal() {
-		return fmt.Errorf("metric datapoint IntVal doesn't match expected: %d, actual: %d", expected.IntVal(), actual.IntVal())
-	}
-	if expected.DoubleVal() != actual.DoubleVal() {
-		return fmt.Errorf("metric datapoint DoubleVal doesn't match expected: %f, actual: %f", expected.DoubleVal(), actual.DoubleVal())
+	if checkValues {
+		if expected.IntVal() != actual.IntVal() {
+			return fmt.Errorf("metric datapoint IntVal doesn't match expected: %d, actual: %d", expected.IntVal(), actual.IntVal())
+		}
+		if expected.DoubleVal() != actual.DoubleVal() {
+			return fmt.Errorf("metric datapoint DoubleVal doesn't match expected: %f, actual: %f", expected.DoubleVal(), actual.DoubleVal())
+		}
 	}
 	return nil
 }
