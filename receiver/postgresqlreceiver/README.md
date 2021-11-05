@@ -37,8 +37,13 @@ receivers:
     port: 5432
     username: otel
     password: $POSTGRESQL_PASSWORD
-    database: otel
+    databases:
+      - otel
     collection_interval: 10s
+    ssl_mode: verify-ca
+    ssl_root_cert: /home/otel/authorities.crt
+    ssl_cert: /home/otel/mypostgrescert.crt
+    ssl_key: /home/otel/mypostgreskey.key
 ```
 
 The full list of settings exposed for this receiver are documented [here](./config.go) with detailed sample configurations [here](./testdata/config.yaml).
