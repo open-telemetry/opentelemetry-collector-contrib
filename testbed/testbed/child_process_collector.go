@@ -172,7 +172,11 @@ func (cp *childProcessCollector) Start(params StartParams) error {
 	exePath := expandExeFileName(cp.AgentExePath)
 	exePath, err := filepath.Abs(exePath)
 	if err != nil {
-		return err
+		panic(err)
+	}
+
+	if _, err = os.Stat(exePath); err != nil {
+		panic(err)
 	}
 
 	log.Printf("Starting %s (%s)", cp.name, exePath)
