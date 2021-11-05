@@ -64,25 +64,25 @@ type MetricStat struct {
 	stats    map[string]string
 }
 
-func (p *postgreSQLClient) getCommitsAndRollbacks(databases []string) ([]MetricStat, error) {
+func (c *postgreSQLClient) getCommitsAndRollbacks(databases []string) ([]MetricStat, error) {
 	query := filterQueryByDatabases("SELECT datname, xact_commit, xact_rollback FROM pg_stat_database", databases, false)
 
-	return p.collectStatsFromQuery(query, []string{"xact_commit", "xact_rollback"}, true, false)
+	return c.collectStatsFromQuery(query, []string{"xact_commit", "xact_rollback"}, true, false)
 }
 
-func (p *postgreSQLClient) getBackends(databases []string) ([]MetricStat, error) {
+func (c *postgreSQLClient) getBackends(databases []string) ([]MetricStat, error) {
 	query := filterQueryByDatabases("SELECT datname, count(*) as count from pg_stat_activity", databases, true)
 
-	return p.collectStatsFromQuery(query, []string{"count"}, true, false)
+	return c.collectStatsFromQuery(query, []string{"count"}, true, false)
 }
 
-func (p *postgreSQLClient) getDatabaseSize(databases []string) ([]MetricStat, error) {
+func (c *postgreSQLClient) getDatabaseSize(databases []string) ([]MetricStat, error) {
 	query := filterQueryByDatabases("SELECT datname, pg_database_size(datname) FROM pg_catalog.pg_database WHERE datistemplate = false", databases, false)
 
-	return p.collectStatsFromQuery(query, []string{"db_size"}, true, false)
+	return c.collectStatsFromQuery(query, []string{"db_size"}, true, false)
 }
 
-func (p *postgreSQLClient) getDatabaseTableMetrics() ([]MetricStat, error) {
+func (c *postgreSQLClient) getDatabaseTableMetrics() ([]MetricStat, error) {
 	query := `SELECT schemaname || '.' || relname AS table,
 	n_live_tup AS live,
 	n_dead_tup AS dead,
@@ -92,10 +92,10 @@ func (p *postgreSQLClient) getDatabaseTableMetrics() ([]MetricStat, error) {
 	n_tup_hot_upd AS hot_upd
 	FROM pg_stat_user_tables;`
 
-	return p.collectStatsFromQuery(query, []string{"live", "dead", "ins", "upd", "del", "hot_upd"}, false, true)
+	return c.collectStatsFromQuery(query, []string{"live", "dead", "ins", "upd", "del", "hot_upd"}, false, true)
 }
 
-func (p *postgreSQLClient) getBlocksReadByTable() ([]MetricStat, error) {
+func (c *postgreSQLClient) getBlocksReadByTable() ([]MetricStat, error) {
 	query := `SELECT schemaname || '.' || relname AS table, 
 	coalesce(heap_blks_read, 0) AS heap_read, 
 	coalesce(heap_blks_hit, 0) AS heap_hit, 
@@ -107,11 +107,11 @@ func (p *postgreSQLClient) getBlocksReadByTable() ([]MetricStat, error) {
 	coalesce(tidx_blks_hit, 0) AS tidx_hit 
 	FROM pg_statio_user_tables;`
 
-	return p.collectStatsFromQuery(query, []string{"heap_read", "heap_hit", "idx_read", "idx_hit", "toast_read", "toast_hit", "tidx_read", "tidx_hit"}, false, true)
+	return c.collectStatsFromQuery(query, []string{"heap_read", "heap_hit", "idx_read", "idx_hit", "toast_read", "toast_hit", "tidx_read", "tidx_hit"}, false, true)
 }
 
-func (p *postgreSQLClient) collectStatsFromQuery(query string, orderedFields []string, includeDatabase bool, includeTable bool) ([]MetricStat, error) {
-	rows, err := p.client.Query(query)
+func (c *postgreSQLClient) collectStatsFromQuery(query string, orderedFields []string, includeDatabase bool, includeTable bool) ([]MetricStat, error) {
+	rows, err := c.client.Query(query)
 	if err != nil {
 		return nil, err
 	}
@@ -148,7 +148,7 @@ func (p *postgreSQLClient) collectStatsFromQuery(query string, orderedFields []s
 			return ""
 		}
 
-		database := p.database
+		database := c.database
 		if includeDatabase {
 			database, rowFields = convertInterfaceToString(rowFields[0]), rowFields[1:]
 		}
@@ -168,10 +168,10 @@ func (p *postgreSQLClient) collectStatsFromQuery(query string, orderedFields []s
 	return metricStats, nil
 }
 
-func (p *postgreSQLClient) listDatabases() ([]string, error) {
+func (c *postgreSQLClient) listDatabases() ([]string, error) {
 	query := `SELECT datname FROM pg_database
 	WHERE datistemplate = false;`
-	rows, err := p.client.Query(query)
+	rows, err := c.client.Query(query)
 	if err != nil {
 		return nil, err
 	}

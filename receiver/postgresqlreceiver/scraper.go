@@ -5,7 +5,6 @@ import (
 	"strconv"
 	"time"
 
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/model/pdata"
 	"go.uber.org/zap"
 
@@ -27,11 +26,6 @@ func newPostgreSQLScraper(
 	}
 }
 
-// start starts the scraper
-func (p *postgreSQLScraper) start(_ context.Context, host component.Host) error {
-	return nil
-}
-
 var initializeClient = func(p *postgreSQLScraper, database string) (client, error) {
 	return newPostgreSQLClient(postgreSQLConfig{
 		username:  p.config.Username,
@@ -41,10 +35,6 @@ var initializeClient = func(p *postgreSQLScraper, database string) (client, erro
 		port:      p.config.Port,
 		sslConfig: p.config.SSLConfig,
 	})
-}
-
-func (p *postgreSQLScraper) shutdown(context.Context) error {
-	return nil
 }
 
 // initMetric initializes a metric with a metadata attribute.
@@ -83,14 +73,14 @@ func (p *postgreSQLScraper) scrape(context.Context) (pdata.Metrics, error) {
 	databaseAgnosticMetricsCollected := false
 	databases := p.config.Databases
 	if len(databases) == 0 {
-		client, err := initializeClient(p, "")
+		listClient, err := initializeClient(p, "")
 		if err != nil {
 			p.logger.Error("Failed to initialize connection to postgres", zap.Error(err))
 			return md, err
 		}
-		defer client.Close()
+		defer listClient.Close()
 
-		dbList, err := client.listDatabases()
+		dbList, err := listClient.listDatabases()
 		if err != nil {
 			p.logger.Error("Failed to request list of databases from postgres", zap.Error(err))
 			return md, err
@@ -99,7 +89,7 @@ func (p *postgreSQLScraper) scrape(context.Context) (pdata.Metrics, error) {
 		databases = dbList
 		p.databaseAgnosticMetricCollection(
 			now,
-			client,
+			listClient,
 			databases,
 			commits,
 			rollbacks,
@@ -110,19 +100,19 @@ func (p *postgreSQLScraper) scrape(context.Context) (pdata.Metrics, error) {
 	}
 
 	for _, database := range databases {
-		client, err := initializeClient(p, database)
+		dbClient, err := initializeClient(p, database)
 		if err != nil {
 			// TODO - do string interpolation better
 			p.logger.Error("Failed to initialize connection to postgres", zap.String("database", database), zap.Error(err))
 			continue
 		}
 
-		defer client.Close()
+		defer dbClient.Close()
 
 		if !databaseAgnosticMetricsCollected {
 			p.databaseAgnosticMetricCollection(
 				now,
-				client,
+				dbClient,
 				databases,
 				commits,
 				rollbacks,
@@ -134,7 +124,7 @@ func (p *postgreSQLScraper) scrape(context.Context) (pdata.Metrics, error) {
 
 		p.databaseSpecificMetricCollection(
 			now,
-			client,
+			dbClient,
 			blocksRead,
 			databaseRows,
 			operations,
