@@ -347,3 +347,48 @@ func TestCompareMetrics(t *testing.T) {
 		})
 	}
 }
+
+func TestCompareMetricsWithoutComparingValues(t *testing.T) {
+	tcs := []struct {
+		name          string
+		expected      pdata.MetricSlice
+		actual        pdata.MetricSlice
+		expectedError error
+	}{
+		{
+			name: "Wrong doubleVal",
+			actual: func() pdata.MetricSlice {
+				metrics := baseTestMetrics()
+				m := metrics.At(0)
+				dp := m.Gauge().DataPoints().At(0)
+				dp.SetDoubleVal(123)
+				return metrics
+			}(),
+			expected:      baseTestMetrics(),
+			expectedError: nil,
+		},
+		{
+			name: "Wrong intVal",
+			actual: func() pdata.MetricSlice {
+				metrics := baseTestMetrics()
+				m := metrics.At(2)
+				dp := m.Sum().DataPoints().At(0)
+				dp.SetIntVal(123)
+				return metrics
+			}(),
+			expected:      baseTestMetrics(),
+			expectedError: nil,
+		},
+	}
+
+	for _, tc := range tcs {
+		t.Run(tc.name, func(t *testing.T) {
+			err := CompareMetricSlices(tc.expected, tc.actual, false)
+			if tc.expectedError != nil {
+				require.Equal(t, tc.expectedError, err)
+			} else {
+				require.NoError(t, err)
+			}
+		})
+	}
+}
