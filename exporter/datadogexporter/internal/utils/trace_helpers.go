@@ -199,9 +199,6 @@ func TruncateUTF8(s string, limit int) string {
 // Specifically used for env tag currently
 // port from: https://github.com/DataDog/datadog-agent/blob/c87e93a75b1fc97f0691faf78ae8eb2c280d6f55/pkg/trace/traceutil/normalize.go#L89
 func NormalizeTag(v string) string {
-	if strings.Contains(v, "_dd") {
-		return v
-	}
 	// the algorithm works by creating a set of cuts marking start and end offsets in v
 	// that have to be replaced with underscore (_)
 	if len(v) == 0 {

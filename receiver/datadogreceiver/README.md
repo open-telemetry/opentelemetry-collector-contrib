@@ -1,13 +1,12 @@
 # Datadog APM Receiver
 
-## Created by
-John Dorman / Sony Interactive Enetertainment (john.dorman@sony.com)
-
-## Maintenance
-John Dorman @ SIE (https://github.com/boostchicken)
-
 ## Overview
 The Datadog APM Receiver accepts traces in the Datadog Trace Agent Format
+
+###Supported Datadog APIs
+- v0.3 (msgpack and json)
+- v0.4 (msgpack and json)
+- v0.5 (msgpack custom format)
 ## Configuration
 
 Example:
@@ -23,3 +22,8 @@ receivers:
 The address and port on which this receiver listens for traces on
 
 Default: `0.0.0.0:8126`
+
+### read_timeout (Optional)
+The read timeout of the HTTP Server
+
+Default: 60s
