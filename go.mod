@@ -72,7 +72,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsxrayreceiver v0.38.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver v0.38.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/collectdreceiver v0.38.0
-    github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadogreceiver v0.38.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadogreceiver v0.38.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dockerstatsreceiver v0.38.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dotnetdiagnosticsreceiver v0.38.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filelogreceiver v0.38.0
