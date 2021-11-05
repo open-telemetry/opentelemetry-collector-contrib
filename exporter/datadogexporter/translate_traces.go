@@ -533,7 +533,6 @@ func getDatadogResourceName(s pdata.Span, datadogTags map[string]string) string 
 	// Get span resource name by checking for existence http.method + http.route 'GET /api'
 	// Also check grpc path as fallback for http requests
 	// backing off to just http.method, and then span.name if unrelated to http
-
 	if method, methodOk := datadogTags[conventions.AttributeHTTPMethod]; methodOk {
 		if route, routeOk := datadogTags[conventions.AttributeHTTPRoute]; routeOk {
 			return fmt.Sprintf("%s %s", method, route)
