@@ -22,7 +22,7 @@ import (
 	"cloud.google.com/go/spanner"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudspannerreceiver/internal/datasource"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudspannerreceiver/internal/metadata"
@@ -52,7 +52,7 @@ func TestNewDatabaseReader(t *testing.T) {
 		TopMetricsQueryMaxRows: topMetricsQueryMaxRows,
 		BackfillEnabled:        false,
 	}
-	logger := zap.NewNop()
+	logger := zaptest.NewLogger(t)
 	var parsedMetadata []*metadata.MetricsMetadata
 
 	reader, err := NewDatabaseReader(ctx, parsedMetadata, databaseID, serviceAccountPath, readerConfig, logger)
@@ -74,7 +74,7 @@ func TestNewDatabaseReaderWithError(t *testing.T) {
 		TopMetricsQueryMaxRows: topMetricsQueryMaxRows,
 		BackfillEnabled:        false,
 	}
-	logger := zap.NewNop()
+	logger := zaptest.NewLogger(t)
 	var parsedMetadata []*metadata.MetricsMetadata
 
 	reader, err := NewDatabaseReader(ctx, parsedMetadata, databaseID, serviceAccountPath, readerConfig, logger)
@@ -86,7 +86,7 @@ func TestNewDatabaseReaderWithError(t *testing.T) {
 
 func TestInitializeReaders(t *testing.T) {
 	databaseID := datasource.NewDatabaseID(projectID, instanceID, databaseName)
-	logger := zap.NewNop()
+	logger := zaptest.NewLogger(t)
 	var client *spanner.Client
 	database := datasource.NewDatabaseFromClient(client, databaseID)
 	currentStatsMetadata := createMetricsMetadata(query)
@@ -117,7 +117,7 @@ func TestDatabaseReader_Name(t *testing.T) {
 	ctx := context.Background()
 	client, _ := spanner.NewClient(ctx, databaseName)
 	database := datasource.NewDatabaseFromClient(client, databaseID)
-	logger := zap.NewNop()
+	logger := zaptest.NewLogger(t)
 
 	reader := &DatabaseReader{
 		logger:   logger,
@@ -133,7 +133,7 @@ func TestDatabaseReader_Shutdown(t *testing.T) {
 	ctx := context.Background()
 	client, _ := spanner.NewClient(ctx, databaseName)
 	database := datasource.NewDatabaseFromClient(client, databaseID)
-	logger := zap.NewNop()
+	logger := zaptest.NewLogger(t)
 
 	reader := &DatabaseReader{
 		logger:   logger,
@@ -148,7 +148,7 @@ func TestDatabaseReader_Read(t *testing.T) {
 	ctx := context.Background()
 	client, _ := spanner.NewClient(ctx, databaseName)
 	database := datasource.NewDatabaseFromClient(client, databaseID)
-	logger := zap.NewNop()
+	logger := zaptest.NewLogger(t)
 
 	testReaderThrowNoError := testReader{
 		throwError: false,
