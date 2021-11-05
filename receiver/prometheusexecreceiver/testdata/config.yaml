@@ -10,13 +10,16 @@ receivers:
     exec: go run ./testdata/end_to_end_metrics_test/test_prometheus_exporter.go {{port}}
     scrape_interval: 1s
     port: 9999
-    env: 
+    env:
       - name: "DATA_SOURCE_NAME"
         value: user:password@(hostname:port)/dbname
       - name: SECONDARY_PORT
         value: "1234"
   prometheus_exec/end_to_end_test/2:
     exec: go run ./testdata/end_to_end_metrics_test/test_prometheus_exporter.go {{port}}
+    scrape_interval: 1s
+  prometheus_exec/end_to_end_test/windows:
+    exec: "\"go\" run \".\\testdata\\end_to_end_metrics_test\\test_prometheus_exporter windows.go\" {{port}}"
     scrape_interval: 1s
 
 processors:
@@ -28,6 +31,6 @@ exporters:
 service:
   pipelines:
     metrics:
-      receivers: [prometheus_exec, prometheus_exec/test, prometheus_exec/end_to_end_test/1, prometheus_exec/end_to_end_test/2]
+      receivers: [prometheus_exec, prometheus_exec/test, prometheus_exec/end_to_end_test/1, prometheus_exec/end_to_end_test/2, prometheus_exec/end_to_end_test/windows]
       processors: [nop]
       exporters: [nop]
