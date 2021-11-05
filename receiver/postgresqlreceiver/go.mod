@@ -3,9 +3,13 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/postgr
 go 1.17
 
 require (
+	github.com/lib/pq v1.10.3
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest v0.0.0-20211105183434-e066c9cdd3eb
 	github.com/stretchr/testify v1.7.0
 	go.opentelemetry.io/collector v0.38.1-0.20211103215828-cffbecb2ac9e
+	go.opentelemetry.io/collector/model v0.38.1-0.20211103215828-cffbecb2ac9e
 	go.uber.org/multierr v1.7.0
+	go.uber.org/zap v1.19.1
 )
 
 require (
@@ -22,13 +26,11 @@ require (
 	github.com/rogpeppe/go-internal v1.6.1 // indirect
 	github.com/spf13/cast v1.4.1 // indirect
 	go.opencensus.io v0.23.0 // indirect
-	go.opentelemetry.io/collector/model v0.38.1-0.20211103215828-cffbecb2ac9e // indirect
 	go.opentelemetry.io/otel v1.1.0 // indirect
 	go.opentelemetry.io/otel/metric v0.24.0 // indirect
 	go.opentelemetry.io/otel/trace v1.1.0 // indirect
 	go.uber.org/atomic v1.9.0 // indirect
-	go.uber.org/zap v1.19.1 // indirect
-	golang.org/x/sys v0.0.0-20210816074244-15123e1e1f71 // indirect
+	golang.org/x/sys v0.0.0-20210908233432-aa78b53d3365 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b // indirect
 )
