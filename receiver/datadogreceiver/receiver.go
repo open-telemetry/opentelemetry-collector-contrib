@@ -71,8 +71,7 @@ func (ddr *datadogReceiver) Start(ctx context.Context, host component.Host) erro
 	return nil
 }
 
-func (ddr *datadogReceiver) Shutdown(ctx context.Context) error {
-	var err error
+func (ddr *datadogReceiver) Shutdown(ctx context.Context) (err error) {
 	ddr.stopOnce.Do(func() {
 		err = ddr.server.Shutdown(ctx)
 	})
