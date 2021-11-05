@@ -127,6 +127,7 @@ func TestMetadata_MetricsMetadata(t *testing.T) {
 				Query:               "query",
 				MetricNamePrefix:    "metricNamePrefix",
 				TimestampColumnName: "timestampColumnName",
+				HighCardinality:     true,
 				Labels:              []Label{label},
 				Metrics:             []Metric{metric},
 			}
@@ -144,6 +145,7 @@ func TestMetadata_MetricsMetadata(t *testing.T) {
 				assert.Equal(t, md.Query, metricsMetadata.Query)
 				assert.Equal(t, md.MetricNamePrefix, metricsMetadata.MetricNamePrefix)
 				assert.Equal(t, md.TimestampColumnName, metricsMetadata.TimestampColumnName)
+				assert.Equal(t, md.HighCardinality, metricsMetadata.HighCardinality)
 				assert.Equal(t, 1, len(metricsMetadata.QueryLabelValuesMetadata))
 				assert.Equal(t, 1, len(metricsMetadata.QueryMetricValuesMetadata))
 			}
