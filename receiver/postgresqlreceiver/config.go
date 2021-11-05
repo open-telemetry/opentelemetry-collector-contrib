@@ -42,7 +42,7 @@ func (c *SSLConfig) Validate() []error {
 	return errs
 }
 
-// Leveraged to configure SSL in the connection string
+// ConnString provides SSL configuration to be used in the connection string
 func (c *SSLConfig) ConnString() string {
 	conn := fmt.Sprintf("sslmode='%s'", c.SSLMode)
 	if c.SSLMode == "disable" {
@@ -67,7 +67,7 @@ func (c *SSLConfig) ConnString() string {
 // Errors for missing required config parameters.
 const (
 	ErrNoUsername = "invalid config: missing username"
-	ErrNoPassword = "invalid config: missing password"
+	ErrNoPassword = "invalid config: missing password" // #nosec G101 - not hardcoded credentials
 )
 
 func (cfg *Config) Validate() error {
