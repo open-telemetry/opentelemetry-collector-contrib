@@ -27,12 +27,23 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudspannerreceiver/internal/metadata"
 )
 
+const (
+	dataStalenessSeconds = 15
+	dataStalenessPeriod  = dataStalenessSeconds * time.Second
+
+	// Data reads for backfilling are always performed from stale replica nodes and not from the master.
+	// For current/fresh data reads main node is used. But in case collector started for example at mm:30+ it is safe
+	// to read data from stale replica nodes(at this time replica node will contain required data), since we are
+	// requesting data for mm:00. Also stale reads are faster than reads from main node.
+	dataStalenessSafeThresholdSeconds = 2 * dataStalenessSeconds
+)
+
 type currentStatsReader struct {
 	logger                 *zap.Logger
 	database               *datasource.Database
 	metricsMetadata        *metadata.MetricsMetadata
 	topMetricsQueryMaxRows int
-	statement              func(args statementArgs) spanner.Statement
+	statement              func(args statementArgs) statsStatement
 }
 
 func newCurrentStatsReader(
@@ -63,7 +74,7 @@ func (reader *currentStatsReader) Read(ctx context.Context) ([]*metadata.Metrics
 	return reader.pull(ctx, stmt)
 }
 
-func (reader *currentStatsReader) newPullStatement() spanner.Statement {
+func (reader *currentStatsReader) newPullStatement() statsStatement {
 	args := statementArgs{
 		query:                  reader.metricsMetadata.Query,
 		topMetricsQueryMaxRows: reader.topMetricsQueryMaxRows,
@@ -72,8 +83,12 @@ func (reader *currentStatsReader) newPullStatement() spanner.Statement {
 	return reader.statement(args)
 }
 
-func (reader *currentStatsReader) pull(ctx context.Context, stmt spanner.Statement) ([]*metadata.MetricsDataPoint, error) {
-	rowsIterator := reader.database.Client().Single().WithTimestampBound(spanner.ExactStaleness(15*time.Second)).Query(ctx, stmt)
+func (reader *currentStatsReader) pull(ctx context.Context, stmt statsStatement) ([]*metadata.MetricsDataPoint, error) {
+	transaction := reader.database.Client().Single()
+	if stmt.stalenessRead || isSafeToUseStaleRead(time.Now().UTC()) {
+		transaction = transaction.WithTimestampBound(spanner.ExactStaleness(dataStalenessPeriod))
+	}
+	rowsIterator := transaction.Query(ctx, stmt.statement)
 	defer rowsIterator.Stop()
 
 	var collectedDataPoints []*metadata.MetricsDataPoint
@@ -84,14 +99,18 @@ func (reader *currentStatsReader) pull(ctx context.Context, stmt spanner.Stateme
 			if err == iterator.Done {
 				return collectedDataPoints, nil
 			}
-			return nil, fmt.Errorf("query %q failed with error: %w", stmt.SQL, err)
+			return nil, fmt.Errorf("query %q failed with error: %w", stmt.statement.SQL, err)
 		}
 
 		rowMetricsDataPoints, err := reader.metricsMetadata.RowToMetricsDataPoints(reader.database.DatabaseID(), row)
 		if err != nil {
-			return nil, fmt.Errorf("query %q failed with error: %w", stmt.SQL, err)
+			return nil, fmt.Errorf("query %q failed with error: %w", stmt.statement.SQL, err)
 		}
 
 		collectedDataPoints = append(collectedDataPoints, rowMetricsDataPoints...)
 	}
+}
+
+func isSafeToUseStaleRead(readTimestamp time.Time) bool {
+	return (readTimestamp.Second() - dataStalenessSafeThresholdSeconds) >= 0
 }

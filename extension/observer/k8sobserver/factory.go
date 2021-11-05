@@ -19,10 +19,9 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/extension/extensionhelper"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/fields"
-	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
@@ -33,22 +32,16 @@ const (
 	typeStr config.Type = "k8s_observer"
 )
 
-// Factory is the factory for the extension.
-type Factory struct {
-	// createK8sClientset being a field in the struct provides an easy way
-	// to mock k8s config in tests.
-	createK8sClientset func(config k8sconfig.APIConfig) (kubernetes.Interface, error)
-}
-
-var _ component.Factory = (*Factory)(nil)
-
-// Type gets the type of the config created by this factory.
-func (f *Factory) Type() config.Type {
-	return typeStr
+// NewFactory should be called to create a factory with default values.
+func NewFactory() component.ExtensionFactory {
+	return extensionhelper.NewFactory(
+		typeStr,
+		createDefaultConfig,
+		createExtension)
 }
 
 // CreateDefaultConfig creates the default configuration for the extension.
-func (f *Factory) CreateDefaultConfig() config.Extension {
+func createDefaultConfig() config.Extension {
 	return &Config{
 		ExtensionSettings: config.NewExtensionSettings(config.NewComponentID(typeStr)),
 		APIConfig:         k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeServiceAccount},
@@ -56,35 +49,21 @@ func (f *Factory) CreateDefaultConfig() config.Extension {
 }
 
 // CreateExtension creates the extension based on this config.
-func (f *Factory) CreateExtension(
+func createExtension(
 	ctx context.Context,
 	params component.ExtensionCreateSettings,
 	cfg config.Extension,
 ) (component.Extension, error) {
-	config := cfg.(*Config)
+	oCfg := cfg.(*Config)
 
-	clientset, err := f.createK8sClientset(config.APIConfig)
+	clientset, err := k8sconfig.MakeClient(oCfg.APIConfig)
 	if err != nil {
 		return nil, err
 	}
 
 	listWatch := cache.NewListWatchFromClient(
 		clientset.CoreV1().RESTClient(), "pods", v1.NamespaceAll,
-		fields.OneTermEqualSelector("spec.nodeName", config.Node))
+		fields.OneTermEqualSelector("spec.nodeName", oCfg.Node))
 
-	return newObserver(params.Logger, config, listWatch)
-}
-
-// NewFactory should be called to create a factory with default values.
-func NewFactory() component.ExtensionFactory {
-	return &Factory{createK8sClientset: func(config k8sconfig.APIConfig) (kubernetes.Interface, error) {
-		return k8sconfig.MakeClient(config)
-	}}
-}
-
-// NewFactoryWithConfig creates a k8s observer factory with the given k8s API config.
-func NewFactoryWithConfig(config *rest.Config) *Factory {
-	return &Factory{createK8sClientset: func(k8sconfig.APIConfig) (kubernetes.Interface, error) {
-		return kubernetes.NewForConfig(config)
-	}}
+	return newObserver(params.Logger, oCfg, listWatch)
 }
