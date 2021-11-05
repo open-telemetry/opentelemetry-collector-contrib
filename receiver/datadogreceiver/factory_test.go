@@ -16,10 +16,10 @@ package datadogreceiver
 
 import (
 	"context"
-	"go.opentelemetry.io/collector/component/componenttest"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 )
 
