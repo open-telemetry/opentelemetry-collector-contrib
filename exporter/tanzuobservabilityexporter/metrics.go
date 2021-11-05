@@ -18,7 +18,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"sync"
+	"sync/atomic"
 
 	"go.opentelemetry.io/collector/model/pdata"
 	"go.uber.org/multierr"
@@ -142,7 +142,6 @@ type flushCloser interface {
 
 // counter represents an internal counter metric. The zero value is ready to use
 type counter struct {
-	lock  sync.Mutex
 	count int64
 }
 
@@ -159,16 +158,12 @@ func (c *counter) Report(
 
 // Inc increments this counter by one.
 func (c *counter) Inc() {
-	c.lock.Lock()
-	defer c.lock.Unlock()
-	c.count++
+	atomic.AddInt64(&c.count, 1)
 }
 
 // Get gets the value of this counter.
 func (c *counter) Get() int64 {
-	c.lock.Lock()
-	defer c.lock.Unlock()
-	return c.count
+	return atomic.LoadInt64(&c.count)
 }
 
 // logMissingValue keeps track of metrics with missing values. metric is the
