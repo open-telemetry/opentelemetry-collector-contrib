@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+## 🧰 Bug fixes 🧰
+
+- `datadogexporter` improve cumulative metrics reset detection using `StartTimestamp` (#6120)
+
 ## v0.38.0
 
 ## 🛑 Breaking changes 🛑
