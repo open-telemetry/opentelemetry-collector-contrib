@@ -16,7 +16,7 @@ package datadogexporter
 
 import (
 	"context"
-  "os"
+	"os"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
