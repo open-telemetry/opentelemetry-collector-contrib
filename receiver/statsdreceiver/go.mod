@@ -31,6 +31,7 @@ require (
 	go.opentelemetry.io/otel/trace v1.1.0 // indirect
 	go.uber.org/atomic v1.9.0 // indirect
 	golang.org/x/sys v0.0.0-20210816074244-15123e1e1f71 // indirect
+	gonum.org/v1/gonum v0.9.3 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b // indirect
 )

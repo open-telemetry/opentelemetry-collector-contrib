@@ -82,14 +82,16 @@ func TestBuildSummaryMetric(t *testing.T) {
 	timeNow := time.Now()
 
 	oneSummaryMetric := summaryMetric{
-		name:          "testSummary",
-		summaryPoints: []float64{1, 2, 4, 6, 5, 3},
-		labelKeys:     []string{"mykey", "mykey2"},
-		labelValues:   []string{"myvalue", "myvalue2"},
-		timeNow:       timeNow,
+		name:        "testSummary",
+		points:      []float64{1, 2, 4, 6, 5, 3},
+		weights:     []float64{1, 1, 1, 1, 1, 1},
+		labelKeys:   []string{"mykey", "mykey2"},
+		labelValues: []string{"myvalue", "myvalue2"},
 	}
 
-	metric := buildSummaryMetric(oneSummaryMetric)
+	metric := pdata.NewInstrumentationLibraryMetrics()
+	buildSummaryMetric(oneSummaryMetric, timeNow.Add(-time.Minute), timeNow, metric)
+
 	expectedMetric := pdata.NewInstrumentationLibraryMetrics()
 	m := expectedMetric.Metrics().AppendEmpty()
 	m.SetName("testSummary")
@@ -97,6 +99,7 @@ func TestBuildSummaryMetric(t *testing.T) {
 	dp := m.Summary().DataPoints().AppendEmpty()
 	dp.SetSum(21)
 	dp.SetCount(6)
+	dp.SetStartTimestamp(pdata.NewTimestampFromTime(timeNow.Add(-time.Minute)))
 	dp.SetTimestamp(pdata.NewTimestampFromTime(timeNow))
 	for i, key := range oneSummaryMetric.labelKeys {
 		dp.Attributes().InsertString(key, oneSummaryMetric.labelValues[i])
@@ -110,6 +113,5 @@ func TestBuildSummaryMetric(t *testing.T) {
 		eachQuantile.SetValue(eachQuantileValue)
 	}
 
-	assert.Equal(t, metric, expectedMetric)
-
+	assert.Equal(t, expectedMetric, metric)
 }

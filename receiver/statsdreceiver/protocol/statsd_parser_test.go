@@ -828,31 +828,23 @@ func TestStatsDParser_AggregateTimerWithSummary(t *testing.T) {
 				"statsdTestMetric2:10|ms|#mykey:myvalue",
 				"statsdTestMetric1:20|ms|@0.1|#mykey:myvalue",
 			},
+			// @@@ TODO
 			expectedSummaries: map[statsDMetricdescription]summaryMetric{
 				testDescription("statsdTestMetric1", "ms",
 					[]string{"mykey"}, []string{"myvalue"}): {
-					name: "statsdTestMetric1",
-					// Note: the "200" below is an incorrect
-					// result.  When statsd sampling is
-					// applied to histogram/timer events,
-					// unlike the counter, the sample rate
-					// is meant to apply to the count of
-					// observations, not to scale the value.
-					// There should really be ten 200 values
-					// in `summaryPoints` below.  See: issue
-					// #5252.
-					summaryPoints: []float64{1, 1, 10, 20, 200},
-					labelKeys:     []string{"mykey"},
-					labelValues:   []string{"myvalue"},
-					timeNow:       timeNowFunc(),
+					name:        "statsdTestMetric1",
+					points:      []float64{1, 1, 10, 20, 20},
+					weights:     []float64{1, 1, 1, 1, 10},
+					labelKeys:   []string{"mykey"},
+					labelValues: []string{"myvalue"},
 				},
 				testDescription("statsdTestMetric2", "ms",
 					[]string{"mykey"}, []string{"myvalue"}): {
-					name:          "statsdTestMetric2",
-					summaryPoints: []float64{2, 5, 10},
-					labelKeys:     []string{"mykey"},
-					labelValues:   []string{"myvalue"},
-					timeNow:       timeNowFunc(),
+					name:        "statsdTestMetric2",
+					points:      []float64{2, 5, 10},
+					weights:     []float64{1, 1, 1},
+					labelKeys:   []string{"mykey"},
+					labelValues: []string{"myvalue"},
 				},
 			},
 		},
@@ -870,19 +862,19 @@ func TestStatsDParser_AggregateTimerWithSummary(t *testing.T) {
 			expectedSummaries: map[statsDMetricdescription]summaryMetric{
 				testDescription("statsdTestMetric1", "h",
 					[]string{"mykey"}, []string{"myvalue"}): {
-					name:          "statsdTestMetric1",
-					summaryPoints: []float64{1, 1, 10, 20},
-					labelKeys:     []string{"mykey"},
-					labelValues:   []string{"myvalue"},
-					timeNow:       timeNowFunc(),
+					name:        "statsdTestMetric1",
+					points:      []float64{1, 1, 10, 20},
+					weights:     []float64{1, 1, 1, 1},
+					labelKeys:   []string{"mykey"},
+					labelValues: []string{"myvalue"},
 				},
 				testDescription("statsdTestMetric2", "h",
 					[]string{"mykey"}, []string{"myvalue"}): {
-					name:          "statsdTestMetric2",
-					summaryPoints: []float64{2, 5, 10},
-					labelKeys:     []string{"mykey"},
-					labelValues:   []string{"myvalue"},
-					timeNow:       timeNowFunc(),
+					name:        "statsdTestMetric2",
+					points:      []float64{2, 5, 10},
+					weights:     []float64{1, 1, 1},
+					labelKeys:   []string{"mykey"},
+					labelValues: []string{"myvalue"},
 				},
 			},
 		},
@@ -934,11 +926,11 @@ func TestStatsDParser_GetMetricsWithMetricType(t *testing.T) {
 	p.summaries = map[statsDMetricdescription]summaryMetric{
 		testDescription("statsdTestMetric1", "h",
 			[]string{"mykey"}, []string{"myvalue"}): {
-			name:          "statsdTestMetric1",
-			summaryPoints: []float64{1, 1, 10, 20},
-			labelKeys:     []string{"mykey"},
-			labelValues:   []string{"myvalue"},
-			timeNow:       timeNowFunc(),
+			name:        "statsdTestMetric1",
+			points:      []float64{1, 1, 10, 20},
+			weights:     []float64{1, 1, 1, 1},
+			labelKeys:   []string{"mykey"},
+			labelValues: []string{"myvalue"},
 		}}
 	metrics := p.GetMetrics()
 	assert.Equal(t, 5, metrics.ResourceMetrics().At(0).InstrumentationLibraryMetrics().Len())
