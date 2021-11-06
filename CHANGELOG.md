@@ -14,6 +14,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   ([#781](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/781))
 - `opentelemetry-instrumentation-aws-lambda` Add instrumentation for AWS Lambda Service - Implementation (Part 2/2)
   ([#777](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/777))
+- `opentelemetry-instrumentation-pymysql` Add support for PyMySQL 1.x series
+  ([#792](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/792))
 
 ### Fixed
 

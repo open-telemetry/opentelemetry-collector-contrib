@@ -97,7 +97,7 @@ libraries = {
         "instrumentation": "opentelemetry-instrumentation-pymongo==0.25b2",
     },
     "PyMySQL": {
-        "library": "PyMySQL ~= 0.10.1",
+        "library": "PyMySQL < 2",
         "instrumentation": "opentelemetry-instrumentation-pymysql==0.25b2",
     },
     "pyramid": {

@@ -13,4 +13,4 @@
 # limitations under the License.
 
 
-_instruments = ("PyMySQL ~= 0.10.1",)
+_instruments = ("PyMySQL < 2",)
