@@ -163,6 +163,7 @@ func (p *StatsDParser) GetMetrics() pdata.Metrics {
 			summaryMetric,
 			p.lastIntervalTime,
 			timeNowFunc(),
+			statsDDefaultPercentiles,
 			rm.InstrumentationLibraryMetrics().AppendEmpty(),
 		)
 	}
@@ -236,7 +237,7 @@ func (p *StatsDParser) Aggregate(line string) error {
 				p.summaries[parsedMetric.description] = summaryMetric{
 					name:        parsedMetric.description.name,
 					points:      append(existing.points, raw.value),
-					weights:     append(existing.weights, raw.value),
+					weights:     append(existing.weights, raw.count),
 					labelKeys:   parsedMetric.labelKeys,
 					labelValues: parsedMetric.labelValues,
 				}

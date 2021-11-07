@@ -826,15 +826,14 @@ func TestStatsDParser_AggregateTimerWithSummary(t *testing.T) {
 				"statsdTestMetric1:20|ms|#mykey:myvalue",
 				"statsdTestMetric2:5|ms|#mykey:myvalue",
 				"statsdTestMetric2:10|ms|#mykey:myvalue",
-				"statsdTestMetric1:20|ms|@0.1|#mykey:myvalue",
+				"statsdTestMetric1:20|ms|#mykey:myvalue",
 			},
-			// @@@ TODO
 			expectedSummaries: map[statsDMetricdescription]summaryMetric{
 				testDescription("statsdTestMetric1", "ms",
 					[]string{"mykey"}, []string{"myvalue"}): {
 					name:        "statsdTestMetric1",
 					points:      []float64{1, 1, 10, 20, 20},
-					weights:     []float64{1, 1, 1, 1, 10},
+					weights:     []float64{1, 1, 1, 1, 1},
 					labelKeys:   []string{"mykey"},
 					labelValues: []string{"myvalue"},
 				},
@@ -878,6 +877,25 @@ func TestStatsDParser_AggregateTimerWithSummary(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "histogram_sampled",
+			input: []string{
+				"statsdTestMetric1:300|h|@0.1|#mykey:myvalue",
+				"statsdTestMetric1:100|h|@0.05|#mykey:myvalue",
+				"statsdTestMetric1:300|h|@0.1|#mykey:myvalue",
+				"statsdTestMetric1:200|h|@0.01|#mykey:myvalue",
+			},
+			expectedSummaries: map[statsDMetricdescription]summaryMetric{
+				testDescription("statsdTestMetric1", "h",
+					[]string{"mykey"}, []string{"myvalue"}): {
+					name:        "statsdTestMetric1",
+					points:      []float64{300, 100, 300, 200},
+					weights:     []float64{10, 20, 10, 100},
+					labelKeys:   []string{"mykey"},
+					labelValues: []string{"myvalue"},
+				},
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -890,7 +908,7 @@ func TestStatsDParser_AggregateTimerWithSummary(t *testing.T) {
 			if tt.err != nil {
 				assert.Equal(t, tt.err, err)
 			} else {
-				assert.Equal(t, tt.expectedSummaries, p.summaries)
+				assert.EqualValues(t, tt.expectedSummaries, p.summaries)
 			}
 		})
 	}

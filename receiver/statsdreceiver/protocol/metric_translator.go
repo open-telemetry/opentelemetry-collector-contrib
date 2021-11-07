@@ -22,6 +22,10 @@ import (
 	"gonum.org/v1/gonum/stat"
 )
 
+var (
+	statsDDefaultPercentiles = []float64{0, 10, 50, 90, 95, 100}
+)
+
 func buildCounterMetric(parsedMetric statsDMetric, isMonotonicCounter bool, timeNow, lastIntervalTime time.Time) pdata.InstrumentationLibraryMetrics {
 	ilm := pdata.NewInstrumentationLibraryMetrics()
 	nm := ilm.Metrics().AppendEmpty()
@@ -63,7 +67,7 @@ func buildGaugeMetric(parsedMetric statsDMetric, timeNow time.Time) pdata.Instru
 	return ilm
 }
 
-func buildSummaryMetric(summary summaryMetric, startTime, timeNow time.Time, ilm pdata.InstrumentationLibraryMetrics) {
+func buildSummaryMetric(summary summaryMetric, startTime, timeNow time.Time, percentiles []float64, ilm pdata.InstrumentationLibraryMetrics) {
 	nm := ilm.Metrics().AppendEmpty()
 	nm.SetName(summary.name)
 	nm.SetDataType(pdata.MetricDataTypeSummary)
@@ -73,8 +77,9 @@ func buildSummaryMetric(summary summaryMetric, startTime, timeNow time.Time, ilm
 	count := float64(0)
 	sum := float64(0)
 	for i := range summary.points {
-		count += summary.weights[i]
-		sum += summary.points[i] * summary.weights[i]
+		c := summary.weights[i]
+		count += c
+		sum += summary.points[i] * c
 	}
 
 	// Note: count is rounded here, see note in counterValue().
@@ -87,22 +92,12 @@ func buildSummaryMetric(summary summaryMetric, startTime, timeNow time.Time, ilm
 		dp.Attributes().InsertString(key, summary.labelValues[i])
 	}
 
-	numPoints := len(summary.points)
+	sort.Sort(dualSorter{summary.points, summary.weights})
 
-	var weights []float64
-	if uint64(count) == uint64(numPoints) {
-		// No sampling took place => no temporary array needed.
-		sort.Float64s(summary.points)
-	} else {
-		sort.Sort(dualSorter{summary.points, summary.weights})
-		weights = summary.weights
-	}
-
-	quantile := []float64{0, 10, 50, 90, 95, 100}
-	for _, v := range quantile {
+	for _, pct := range percentiles {
 		eachQuantile := dp.QuantileValues().AppendEmpty()
-		eachQuantile.SetQuantile(v / 100)
-		eachQuantile.SetValue(stat.Quantile(v/100, stat.Empirical, summary.points, weights))
+		eachQuantile.SetQuantile(pct / 100)
+		eachQuantile.SetValue(stat.Quantile(pct/100, stat.Empirical, summary.points, summary.weights))
 	}
 }
 
