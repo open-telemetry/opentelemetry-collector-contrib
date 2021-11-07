@@ -10,7 +10,7 @@ Supported pipeline types: `metrics`
 
 This receiver supports PostgreSQL versions 9.6+
 
-Monitoring user must be granted SELECT ON pg_stat_database
+The monitoring user must be granted `SELECT` on `pg_stat_database`.
 
 ## Configuration
 
