@@ -49,8 +49,6 @@ const (
 	initialDelay = 1 * time.Second
 	// default path to scrape metrics at endpoint
 	defaultMetricsPath = "/metrics"
-	//// default timeout for a scrape
-	defaultScrapeTimeout = 10 * time.Second
 )
 
 type prometheusExecReceiver struct {
