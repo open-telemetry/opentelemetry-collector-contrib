@@ -356,7 +356,7 @@ func TestCompareMetricsWithoutComparingValues(t *testing.T) {
 		expectedError error
 	}{
 		{
-			name: "Wrong doubleVal",
+			name: "Ignore mismatched doubleVal",
 			actual: func() pdata.MetricSlice {
 				metrics := baseTestMetrics()
 				m := metrics.At(0)
@@ -368,7 +368,7 @@ func TestCompareMetricsWithoutComparingValues(t *testing.T) {
 			expectedError: nil,
 		},
 		{
-			name: "Wrong intVal",
+			name: "Ignore mismatched intVal",
 			actual: func() pdata.MetricSlice {
 				metrics := baseTestMetrics()
 				m := metrics.At(2)

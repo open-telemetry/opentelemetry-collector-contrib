@@ -158,13 +158,14 @@ func CompareNumberDataPoints(actual, expected pdata.NumberDataPoint, checkValues
 	if expected.Type() != actual.Type() {
 		return fmt.Errorf("metric datapoint types don't match: expected type: %v, actual type: %v", expected.Type(), actual.Type())
 	}
-	if checkValues {
-		if expected.IntVal() != actual.IntVal() {
-			return fmt.Errorf("metric datapoint IntVal doesn't match expected: %d, actual: %d", expected.IntVal(), actual.IntVal())
-		}
-		if expected.DoubleVal() != actual.DoubleVal() {
-			return fmt.Errorf("metric datapoint DoubleVal doesn't match expected: %f, actual: %f", expected.DoubleVal(), actual.DoubleVal())
-		}
+	if !checkValues {
+		return nil
+	}
+	if expected.IntVal() != actual.IntVal() {
+		return fmt.Errorf("metric datapoint IntVal doesn't match expected: %d, actual: %d", expected.IntVal(), actual.IntVal())
+	}
+	if expected.DoubleVal() != actual.DoubleVal() {
+		return fmt.Errorf("metric datapoint DoubleVal doesn't match expected: %f, actual: %f", expected.DoubleVal(), actual.DoubleVal())
 	}
 	return nil
 }
