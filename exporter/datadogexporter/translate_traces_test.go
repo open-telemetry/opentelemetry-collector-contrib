@@ -269,6 +269,9 @@ func TestBasicTracesTranslation(t *testing.T) {
 	assert.Equal(t, decodeAPMSpanID(mockSpanID), datadogPayload.Traces[0].Spans[0].SpanID)
 	assert.Equal(t, decodeAPMSpanID(mockParentSpanID), datadogPayload.Traces[0].Spans[0].ParentID)
 
+	// ensure original TraceID is preserved
+	assert.Equal(t, pdata.NewTraceID(mockTraceID).HexString(), datadogPayload.Traces[0].Spans[0].Meta["otlp.trace_id"])
+
 	// ensure that span.resource defaults to otlp span.name
 	assert.Equal(t, "End-To-End Here", datadogPayload.Traces[0].Spans[0].Resource)
 
@@ -279,7 +282,7 @@ func TestBasicTracesTranslation(t *testing.T) {
 	assert.Equal(t, "web", datadogPayload.Traces[0].Spans[0].Type)
 
 	// ensure that span.meta and span.metrics pick up attributes, instrumentation ibrary and resource attribs
-	assert.Equal(t, 10, len(datadogPayload.Traces[0].Spans[0].Meta))
+	assert.Equal(t, 11, len(datadogPayload.Traces[0].Spans[0].Meta))
 	assert.Equal(t, 1, len(datadogPayload.Traces[0].Spans[0].Metrics))
 
 	// ensure that span error is based on otlp span status
