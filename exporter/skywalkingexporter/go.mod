@@ -11,7 +11,7 @@ require (
 require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.38.0
 	github.com/rogpeppe/go-internal v1.8.0 // indirect
-	google.golang.org/grpc v1.41.0
+	google.golang.org/grpc v1.42.0
 	skywalking.apache.org/repo/goapi v0.0.0-20210820070710-e10b78bbf481
 )
 
