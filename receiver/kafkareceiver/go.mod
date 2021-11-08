@@ -6,7 +6,7 @@ require (
 	github.com/Shopify/sarama v1.30.0
 	github.com/apache/thrift v0.15.0
 	github.com/gogo/protobuf v1.3.2
-	github.com/jaegertracing/jaeger v1.27.0
+	github.com/jaegertracing/jaeger v1.28.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter v0.38.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.38.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.38.0
@@ -20,7 +20,7 @@ require (
 )
 
 require (
-	github.com/aws/aws-sdk-go v1.41.14 // indirect
+	github.com/aws/aws-sdk-go v1.41.19 // indirect
 	github.com/cenkalti/backoff/v4 v4.1.1 // indirect
 	github.com/census-instrumentation/opencensus-proto v0.3.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
