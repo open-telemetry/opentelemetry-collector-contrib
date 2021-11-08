@@ -22,7 +22,6 @@ import (
 	"github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common"
 	tchttp "github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common/http"
 	"github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common/profile"
-	"github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common/regions"
 	"go.uber.org/zap"
 	pb "google.golang.org/protobuf/proto"
 
@@ -45,8 +44,8 @@ type logServiceClientImpl struct {
 
 // newLogServiceClient Create Log Service client
 func newLogServiceClient(config *Config, logger *zap.Logger) (logServiceClient, error) {
-	if config == nil || config.TCPAddr.Endpoint == "" || config.LogSet == "" || config.Topic == "" {
-		return nil, errors.New("missing logservice params: TCPAddr, LogSet, Topic")
+	if config == nil || config.Region == "" || config.LogSet == "" || config.Topic == "" {
+		return nil, errors.New("missing logservice params: Region, LogSet, Topic")
 	}
 
 	var credential *common.Credential
@@ -59,7 +58,7 @@ func newLogServiceClient(config *Config, logger *zap.Logger) (logServiceClient, 
 	}
 
 	c := &logServiceClientImpl{
-		clientInstance: common.NewCommonClient(credential, regions.Beijing, profile.NewClientProfile()),
+		clientInstance: common.NewCommonClient(credential, config.Region, profile.NewClientProfile()),
 		logset:         config.LogSet,
 		topic:          config.Topic,
 		logger:         logger,
