@@ -25,9 +25,6 @@ import (
 const (
 	// The value of extension "type" in configuration.
 	typeStr = "asapclient"
-
-	// Default time to live for asap token (in seconds)
-	defaultTtl = 60
 )
 
 // NewFactory creates a factory for asapclientauthextension.
@@ -49,6 +46,5 @@ func createExtension(_ context.Context, settings component.ExtensionCreateSettin
 func createDefaultConfig() config.Extension {
 	return &Config{
 		ExtensionSettings: config.NewExtensionSettings(config.NewComponentID(typeStr)),
-		Ttl:               defaultTtl,
 	}
 }

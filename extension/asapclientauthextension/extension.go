@@ -33,12 +33,12 @@ type AsapClientAuthenticator struct {
 }
 
 func (a AsapClientAuthenticator) RoundTripper(base http.RoundTripper) (http.RoundTripper, error) {
-	// needs provisioner and private key
 	return asap.NewTransportDecorator(a.provisioner, a.privateKey)(base), nil
 }
 
 func (a AsapClientAuthenticator) PerRPCCredentials() (credentials.PerRPCCredentials, error) {
-	panic("implement me")
+	// todo? Or leave
+	return nil, nil
 }
 
 func (a AsapClientAuthenticator) Start(_ context.Context, _ component.Host) error {
@@ -51,7 +51,7 @@ func (a AsapClientAuthenticator) Shutdown(_ context.Context) error {
 
 var _ configauth.ClientAuthenticator = (*AsapClientAuthenticator)(nil)
 
-func createAsapClientAuthenticator(settings component.ExtensionCreateSettings, cfg *Config) (AsapClientAuthenticator, error) {
+func createAsapClientAuthenticator(_ component.ExtensionCreateSettings, cfg *Config) (AsapClientAuthenticator, error) {
 	var a AsapClientAuthenticator
 	pk, err := asap.NewPrivateKey([]byte(cfg.PrivateKey))
 	if err != nil {

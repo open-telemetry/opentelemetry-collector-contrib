@@ -14,7 +14,18 @@
 
 package asapclientauthextension
 
-import "go.opentelemetry.io/collector/config"
+import (
+	"errors"
+	"go.opentelemetry.io/collector/config"
+)
+
+var (
+	errNoKeyIDProvided      = errors.New("no key id provided in asapclient configuration")
+	errNoTtlProvided        = errors.New("no ttl provided in asapclient configuration")
+	errNoIssuerProvided     = errors.New("no issuer provided in asapclient configuration")
+	errNoAudienceProvided   = errors.New("no audience provided in asapclient configuration")
+	errNoPrivateKeyProvided = errors.New("no private key provided in asapclient configuration")
+)
 
 type Config struct {
 	config.ExtensionSettings `mapstructure:",squash"`
@@ -28,11 +39,23 @@ type Config struct {
 	Audience []string `mapstructure:"audience"`
 
 	PrivateKey string `mapstructure:"private_key"`
-
-	SigningMethod string `mapstrucutre:"signing_method"`
 }
 
 func (c *Config) Validate() error {
-	// todo
+	if c.KeyId == "" {
+		return errNoKeyIDProvided
+	}
+	if c.Ttl == 0 {
+		return errNoTtlProvided
+	}
+	if c.Audience == nil || len(c.Audience) == 0 {
+		return errNoAudienceProvided
+	}
+	if c.Issuer == "" {
+		return errNoIssuerProvided
+	}
+	if c.PrivateKey == "" {
+		return errNoPrivateKeyProvided
+	}
 	return nil
 }
