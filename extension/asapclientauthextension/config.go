@@ -19,7 +19,6 @@ import "go.opentelemetry.io/collector/config"
 type Config struct {
 	config.ExtensionSettings `mapstructure:",squash"`
 
-
 	KeyId string `mapstructure:"key_id"`
 
 	Ttl int `mapstructure:"ttl_seconds"`

@@ -15,20 +15,21 @@
 package asapclientauthextension
 
 import (
-	asap "bitbucket.org/atlassian/go-asap"
 	"context"
+	"net/http"
+	"time"
+
+	asap "bitbucket.org/atlassian/go-asap"
 	"github.com/SermoDigital/jose/crypto"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configauth"
 	"google.golang.org/grpc/credentials"
-	"net/http"
-	"time"
 )
 
 // AsapClientAuthenticator implements ClientAuthenticator
 type AsapClientAuthenticator struct {
 	provisioner asap.Provisioner
-	privateKey interface{}
+	privateKey  interface{}
 }
 
 func (a AsapClientAuthenticator) RoundTripper(base http.RoundTripper) (http.RoundTripper, error) {

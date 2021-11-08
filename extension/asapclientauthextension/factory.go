@@ -16,6 +16,7 @@ package asapclientauthextension
 
 import (
 	"context"
+
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/extension/extensionhelper"
@@ -28,7 +29,6 @@ const (
 	// Default time to live for asap token (in seconds)
 	defaultTtl = 60
 )
-
 
 // NewFactory creates a factory for asapclientauthextension.
 func NewFactory() component.ExtensionFactory {
@@ -49,6 +49,6 @@ func createExtension(_ context.Context, settings component.ExtensionCreateSettin
 func createDefaultConfig() config.Extension {
 	return &Config{
 		ExtensionSettings: config.NewExtensionSettings(config.NewComponentID(typeStr)),
-		Ttl: defaultTtl,
+		Ttl:               defaultTtl,
 	}
 }
