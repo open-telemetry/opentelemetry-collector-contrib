@@ -228,10 +228,15 @@ func sliceToSet(slice []string) map[string]bool {
 	return set
 }
 
-func getMatcherMap(strMap map[string]string, ctor func(string) (StringMatcher, error)) (map[string]StringMatcher, error) {
+func getMatcherMap(strMap map[string]*string, ctor func(string) (StringMatcher, error)) (map[string]StringMatcher, error) {
 	out := make(map[string]StringMatcher)
 	for k, v := range strMap {
-		matcher, err := ctor(v)
+		if v == nil {
+			out[k] = nil
+			continue
+		}
+
+		matcher, err := ctor(*v)
 		if err != nil {
 			return nil, err
 		}

@@ -107,6 +107,14 @@ type Transform struct {
 	Operations []Operation `mapstructure:"operations"`
 }
 
+// FilterConfig defines a filter applied to the name and attributes of metric points.
+// For example,
+//
+// 	    match_type: regex
+// 	    include: foo                  # metric name must be 'foo'
+// 	    experimental_match_labels:
+// 	      key_a: pref.*               # attribute 'key_a' must start with 'pref'
+// 	      key_b: null                 # attribute 'key_b' must not be present
 type FilterConfig struct {
 	// Include specifies the metric(s) to operate on.
 	Include string `mapstructure:"include"`
@@ -116,7 +124,7 @@ type FilterConfig struct {
 
 	// MatchLabels specifies the label set against which the metric filter will work.
 	// This field is optional.
-	MatchLabels map[string]string `mapstructure:"experimental_match_labels"`
+	MatchLabels map[string]*string `mapstructure:"experimental_match_labels"`
 }
 
 // Operation defines the specific operation performed on the selected metrics.

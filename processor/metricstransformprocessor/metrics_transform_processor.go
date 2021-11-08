@@ -125,6 +125,15 @@ func (f internalFilterRegexp) getSubexpNames() []string {
 	return f.include.SubexpNames()
 }
 
+func findKey(keys []*metricspb.LabelKey, key string) (int, bool) {
+	for idx, label := range keys {
+		if label.Key == key {
+			return idx, true
+		}
+	}
+	return -1, false
+}
+
 func labelMatched(matchLabels map[string]StringMatcher, metric *metricspb.Metric) *metricspb.Metric {
 	if len(matchLabels) == 0 {
 		return metric
@@ -138,21 +147,13 @@ func labelMatched(matchLabels map[string]StringMatcher, metric *metricspb.Metric
 	labelIndexValueMap := make(map[int]StringMatcher)
 
 	for key, value := range matchLabels {
-		keyFound := false
-
-		for idx, label := range metric.MetricDescriptor.LabelKeys {
-			if label.Key != key {
-				continue
-			}
-
-			keyFound = true
-			labelIndexValueMap[idx] = value
-		}
-
-		// if a label-key is not found then return nil only if the given label-value is non-empty. If a given label-value is empty
-		// and the key is not found then move forward. In this approach we can make sure certain key is not present which is a valid use case.
-		if !keyFound && !value.MatchString("") {
+		idx, keyFound := findKey(metric.MetricDescriptor.LabelKeys, key)
+		if value == nil && keyFound {
 			return nil
+		} else if value != nil && !keyFound {
+			return nil
+		} else if keyFound {
+			labelIndexValueMap[idx] = value
 		}
 	}
 

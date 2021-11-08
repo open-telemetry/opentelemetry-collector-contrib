@@ -25,6 +25,8 @@ import (
 	"go.opentelemetry.io/collector/config/configtest"
 )
 
+func ptr(s string) *string { return &s }
+
 func TestLoadingFullConfig(t *testing.T) {
 	tests := []struct {
 		configFile string
@@ -73,8 +75,9 @@ func TestLoadingFullConfig(t *testing.T) {
 						MetricIncludeFilter: FilterConfig{
 							Include:   "new_name",
 							MatchType: "strict",
-							MatchLabels: map[string]string{
-								"my_label": "my_value",
+							MatchLabels: map[string]*string{
+								"my_label":    ptr("my_value"),
+								"other_label": nil,
 							},
 						},
 						Action:  "insert",
@@ -84,8 +87,9 @@ func TestLoadingFullConfig(t *testing.T) {
 						MetricIncludeFilter: FilterConfig{
 							Include:   "new_name",
 							MatchType: "regexp",
-							MatchLabels: map[string]string{
-								"my_label": ".*label",
+							MatchLabels: map[string]*string{
+								"my_label":    ptr(".*label"),
+								"other_label": nil,
 							},
 						},
 						Action:  "insert",
