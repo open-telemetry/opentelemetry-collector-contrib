@@ -26,7 +26,7 @@ from opentelemetry.instrumentation.bootstrap_gen import (
     libraries,
 )
 
-logger = logging.getLogger(__file__)
+logger = logging.getLogger(__name__)
 
 
 def _syscall(func):

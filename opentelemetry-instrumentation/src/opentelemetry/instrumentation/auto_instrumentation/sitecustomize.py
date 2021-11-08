@@ -28,7 +28,7 @@ from opentelemetry.instrumentation.environment_variables import (
     OTEL_PYTHON_DISABLED_INSTRUMENTATIONS,
 )
 
-logger = getLogger(__file__)
+logger = getLogger(__name__)
 
 
 def _load_distros() -> BaseDistro:

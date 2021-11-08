@@ -23,7 +23,7 @@ from shutil import which
 
 from pkg_resources import iter_entry_points
 
-_logger = getLogger(__file__)
+_logger = getLogger(__name__)
 
 
 def run() -> None:

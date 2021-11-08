@@ -9,7 +9,7 @@ from pkg_resources import (
     get_distribution,
 )
 
-logger = getLogger(__file__)
+logger = getLogger(__name__)
 
 
 class DependencyConflict:
