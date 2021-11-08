@@ -1364,9 +1364,7 @@ var startTimeMetricPageStartTimestamp = &timestamppb.Timestamp{Seconds: 400, Nan
 const numStartTimeMetricPageTimeseries = 11
 
 func verifyStartTimeMetricPage(t *testing.T, _ *testData, mds []*agentmetricspb.ExportMetricsServiceRequest) {
-	if len(mds) < 1 {
-		t.Fatal("At least one metric request should be present")
-	}
+	require.Greater(t, len(mds), 0, "At least one metric request should be present")
 	numTimeseries := 0
 	for _, metric := range mds[0].Metrics {
 		timestamp := startTimeMetricPageStartTimestamp
