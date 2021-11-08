@@ -72,6 +72,7 @@ processor/routingprocessor/                          @open-telemetry/collector-c
 processor/spanmetricsprocessor/                      @open-telemetry/collector-contrib-approvers @albertteoh
 processor/tailsamplingprocessor/                     @open-telemetry/collector-contrib-approvers @jpkrohling
 
+receiver/apachereceiver/                             @open-telemetry/collector-contrib-approvers @djaglowski
 receiver/awscontainerinsightreceiver/                @open-telemetry/collector-contrib-approvers @Aneurysm9 @pxaws
 receiver/awsecscontainermetricsreceiver/             @open-telemetry/collector-contrib-approvers @kbrockhoff @anuraaga
 receiver/awsxrayreceiver/                            @open-telemetry/collector-contrib-approvers @kbrockhoff @anuraaga
@@ -80,7 +81,7 @@ receiver/cloudfoundryreceiver/                       @open-telemetry/collector-c
 receiver/collectdreceiver/                           @open-telemetry/collector-contrib-approvers @owais
 receiver/dockerstatsreceiver/                        @open-telemetry/collector-contrib-approvers @rmfitzpatrick
 receiver/dotnetdiagnosticsreceiver/                  @open-telemetry/collector-contrib-approvers @pmcollins @davmason
-receiver/httpdreceiver/                              @open-telemetry/collector-contrib-approvers @djaglowski
+receiver/apachereceiver/                              @open-telemetry/collector-contrib-approvers @djaglowski
 receiver/jmxreceiver/                                @open-telemetry/collector-contrib-approvers @rmfitzpatrick
 receiver/k8sclusterreceiver/                         @open-telemetry/collector-contrib-approvers @asuresh4
 receiver/k8seventsreceiver/                          @open-telemetry/collector-contrib-approvers @dmitryax

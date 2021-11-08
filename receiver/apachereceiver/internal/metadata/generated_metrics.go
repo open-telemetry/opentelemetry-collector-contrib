@@ -22,7 +22,7 @@ import (
 )
 
 // Type is the component type name.
-const Type config.Type = "httpdreceiver"
+const Type config.Type = "apachereceiver"
 
 // MetricIntf is an interface to generically interact with generated metric.
 type MetricIntf interface {
@@ -55,33 +55,33 @@ func (m *metricImpl) Init(metric pdata.Metric) {
 }
 
 type metricStruct struct {
-	HttpdCurrentConnections MetricIntf
-	HttpdRequests           MetricIntf
-	HttpdScoreboard         MetricIntf
-	HttpdTraffic            MetricIntf
-	HttpdUptime             MetricIntf
-	HttpdWorkers            MetricIntf
+	ApacheCurrentConnections MetricIntf
+	ApacheRequests           MetricIntf
+	ApacheScoreboard         MetricIntf
+	ApacheTraffic            MetricIntf
+	ApacheUptime             MetricIntf
+	ApacheWorkers            MetricIntf
 }
 
 // Names returns a list of all the metric name strings.
 func (m *metricStruct) Names() []string {
 	return []string{
-		"httpd.current_connections",
-		"httpd.requests",
-		"httpd.scoreboard",
-		"httpd.traffic",
-		"httpd.uptime",
-		"httpd.workers",
+		"apache.current_connections",
+		"apache.requests",
+		"apache.scoreboard",
+		"apache.traffic",
+		"apache.uptime",
+		"apache.workers",
 	}
 }
 
 var metricsByName = map[string]MetricIntf{
-	"httpd.current_connections": Metrics.HttpdCurrentConnections,
-	"httpd.requests":            Metrics.HttpdRequests,
-	"httpd.scoreboard":          Metrics.HttpdScoreboard,
-	"httpd.traffic":             Metrics.HttpdTraffic,
-	"httpd.uptime":              Metrics.HttpdUptime,
-	"httpd.workers":             Metrics.HttpdWorkers,
+	"apache.current_connections": Metrics.ApacheCurrentConnections,
+	"apache.requests":            Metrics.ApacheRequests,
+	"apache.scoreboard":          Metrics.ApacheScoreboard,
+	"apache.traffic":             Metrics.ApacheTraffic,
+	"apache.uptime":              Metrics.ApacheUptime,
+	"apache.workers":             Metrics.ApacheWorkers,
 }
 
 func (m *metricStruct) ByName(n string) MetricIntf {
@@ -92,9 +92,9 @@ func (m *metricStruct) ByName(n string) MetricIntf {
 // manipulating those metrics.
 var Metrics = &metricStruct{
 	&metricImpl{
-		"httpd.current_connections",
+		"apache.current_connections",
 		func(metric pdata.Metric) {
-			metric.SetName("httpd.current_connections")
+			metric.SetName("apache.current_connections")
 			metric.SetDescription("The number of active connections currently attached to the HTTP server.")
 			metric.SetUnit("connections")
 			metric.SetDataType(pdata.MetricDataTypeSum)
@@ -103,9 +103,9 @@ var Metrics = &metricStruct{
 		},
 	},
 	&metricImpl{
-		"httpd.requests",
+		"apache.requests",
 		func(metric pdata.Metric) {
-			metric.SetName("httpd.requests")
+			metric.SetName("apache.requests")
 			metric.SetDescription("The number of requests serviced by the HTTP server per second.")
 			metric.SetUnit("1")
 			metric.SetDataType(pdata.MetricDataTypeSum)
@@ -114,9 +114,9 @@ var Metrics = &metricStruct{
 		},
 	},
 	&metricImpl{
-		"httpd.scoreboard",
+		"apache.scoreboard",
 		func(metric pdata.Metric) {
-			metric.SetName("httpd.scoreboard")
+			metric.SetName("apache.scoreboard")
 			metric.SetDescription("The number of connections in each state.")
 			metric.SetUnit("scoreboard")
 			metric.SetDataType(pdata.MetricDataTypeSum)
@@ -125,9 +125,9 @@ var Metrics = &metricStruct{
 		},
 	},
 	&metricImpl{
-		"httpd.traffic",
+		"apache.traffic",
 		func(metric pdata.Metric) {
-			metric.SetName("httpd.traffic")
+			metric.SetName("apache.traffic")
 			metric.SetDescription("Total HTTP server traffic.")
 			metric.SetUnit("By")
 			metric.SetDataType(pdata.MetricDataTypeSum)
@@ -136,9 +136,9 @@ var Metrics = &metricStruct{
 		},
 	},
 	&metricImpl{
-		"httpd.uptime",
+		"apache.uptime",
 		func(metric pdata.Metric) {
-			metric.SetName("httpd.uptime")
+			metric.SetName("apache.uptime")
 			metric.SetDescription("The amount of time that the server has been running in seconds.")
 			metric.SetUnit("s")
 			metric.SetDataType(pdata.MetricDataTypeSum)
@@ -147,9 +147,9 @@ var Metrics = &metricStruct{
 		},
 	},
 	&metricImpl{
-		"httpd.workers",
+		"apache.workers",
 		func(metric pdata.Metric) {
-			metric.SetName("httpd.workers")
+			metric.SetName("apache.workers")
 			metric.SetDescription("The number of workers currently attached to the HTTP server.")
 			metric.SetUnit("connections")
 			metric.SetDataType(pdata.MetricDataTypeSum)

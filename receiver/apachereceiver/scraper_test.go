@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package httpdreceiver
+package apachereceiver
 
 import (
 	"context"
@@ -33,7 +33,7 @@ import (
 )
 
 func TestScraper(t *testing.T) {
-	httpdMock := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+	apacheMock := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 		if req.URL.String() == "/server-status?auto" {
 			rw.WriteHeader(200)
 			_, err := rw.Write([]byte(`ServerUptimeSeconds: 410
@@ -51,11 +51,11 @@ Scoreboard: S_DD_L_GGG_____W__IIII_C________________W___________________________
 	}))
 	cfg := &Config{
 		HTTPClientSettings: confighttp.HTTPClientSettings{
-			Endpoint: fmt.Sprintf("%s%s", httpdMock.URL, "/server-status?auto"),
+			Endpoint: fmt.Sprintf("%s%s", apacheMock.URL, "/server-status?auto"),
 		},
 	}
 	require.NoError(t, cfg.Validate())
-	sc := newHttpdScraper(zap.NewNop(), cfg)
+	sc := newApacheScraper(zap.NewNop(), cfg)
 	err := sc.start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err)
 	require.NotNil(t, sc.httpClient)
@@ -74,7 +74,7 @@ Scoreboard: S_DD_L_GGG_____W__IIII_C________________W___________________________
 }
 
 func TestScraperFailedStart(t *testing.T) {
-	sc := newHttpdScraper(zap.NewNop(), &Config{
+	sc := newApacheScraper(zap.NewNop(), &Config{
 		HTTPClientSettings: confighttp.HTTPClientSettings{
 			Endpoint: "localhost:8080",
 			TLSSetting: configtls.TLSClientSetting{
@@ -172,7 +172,7 @@ ConnsTotal: 110
 
 func TestScraperError(t *testing.T) {
 	t.Run("no client", func(t *testing.T) {
-		sc := newHttpdScraper(zap.NewNop(), &Config{})
+		sc := newApacheScraper(zap.NewNop(), &Config{})
 		sc.httpClient = nil
 
 		_, err := sc.scrape(context.Background())
