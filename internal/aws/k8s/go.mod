@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/k8
 go 1.17
 
 require (
-	github.com/aws/aws-sdk-go v1.41.14
+	github.com/aws/aws-sdk-go v1.41.19
 	github.com/stretchr/testify v1.7.0
 	go.uber.org/zap v1.19.1
 	k8s.io/api v0.22.3

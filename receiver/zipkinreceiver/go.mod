@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zipkin
 go 1.17
 
 require (
-	github.com/jaegertracing/jaeger v1.27.0
+	github.com/jaegertracing/jaeger v1.28.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.38.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin v0.38.0
 	github.com/openzipkin/zipkin-go v0.3.0
