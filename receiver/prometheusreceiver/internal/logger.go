@@ -117,7 +117,7 @@ func matchLogLevel(key interface{}, val interface{}) (level.Value, bool) {
 
 //revive:disable:error-return
 
-// check if a given key-value pair represents go-kit log level and return it
+// check if a given key-value pair represents an error and return it
 func matchError(key interface{}, val interface{}) (error, bool) {
 	strKey, ok := key.(string)
 	if !ok || strKey != errKey {
