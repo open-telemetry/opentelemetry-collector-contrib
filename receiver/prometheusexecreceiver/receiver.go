@@ -49,7 +49,7 @@ const (
 	initialDelay = 1 * time.Second
 	// default path to scrape metrics at endpoint
 	defaultMetricsPath = "/metrics"
-	// default timeout for a scrape
+	//// default timeout for a scrape
 	defaultScrapeTimeout = 10 * time.Second
 )
 
@@ -100,7 +100,7 @@ func getPromReceiverConfig(cfg *Config) *prometheusreceiver.Config {
 	scrapeConfig := &promconfig.ScrapeConfig{}
 
 	scrapeConfig.ScrapeInterval = model.Duration(cfg.ScrapeInterval)
-	scrapeConfig.ScrapeTimeout = model.Duration(defaultScrapeTimeout)
+	scrapeConfig.ScrapeTimeout = model.Duration(cfg.ScrapeTimeout)
 	scrapeConfig.Scheme = "http"
 	scrapeConfig.MetricsPath = defaultMetricsPath
 	jobName := cfg.ID().Name()
