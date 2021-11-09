@@ -138,7 +138,7 @@ labels:
 
 metrics:
   mongodbatlas.process.asserts:
-    description: Number of assertions
+    description: Number of assertions per second
     extended_documentation: Aggregate of MongoDB Metrics ASSERT_REGULAR, ASSERT_USER, ASSERT_MSG, ASSERT_WARNING
     unit: "{assertions}/s"
     labels: [assert_type]
@@ -163,13 +163,17 @@ metrics:
     unit: By
     labels: [cache_status]
     data:
-      type: gauge
+      type: sum
+      monotonic: false
+      aggregation: cumulative
   mongodbatlas.process.connections:
     description: Number of current connections
     extended_documentation: MongoDB Metric CONNECTIONS
     unit: "{connections}"
     data:
-      type: gauge
+      type: sum
+      monotonic: false
+      aggregation: cumulative 
   mongodbatlas.process.cpu.usage.max:
     description: CPU Usage (%)
     extended_documentation: Aggregate of MongoDB Metrics MAX_PROCESS_CPU_KERNEL, MAX_PROCESS_CPU_USER

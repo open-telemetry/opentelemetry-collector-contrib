@@ -32,15 +32,15 @@ These are the metrics available for this scraper.
  </ul> |
 | mongodbatlas.disk.partition.utilization.max | Disk partition utilization (%) MongoDB Metrics MAX_DISK_PARTITION_UTILIZATION | 1 | Gauge | <ul>
  </ul> |
-| mongodbatlas.process.asserts | Number of assertions Aggregate of MongoDB Metrics ASSERT_REGULAR, ASSERT_USER, ASSERT_MSG, ASSERT_WARNING | {assertions}/s | Gauge | <ul>
+| mongodbatlas.process.asserts | Number of assertions per second Aggregate of MongoDB Metrics ASSERT_REGULAR, ASSERT_USER, ASSERT_MSG, ASSERT_WARNING | {assertions}/s | Gauge | <ul>
  <li>assert_type</li> </ul> |
 | mongodbatlas.process.background_flush | Amount of data flushed in the background MongoDB Metric BACKGROUND_FLUSH_AVG | 1 | Gauge | <ul>
  </ul> |
 | mongodbatlas.process.cache.io | Cache throughput (per second) Aggregate of MongoDB Metrics CACHE_BYTES_READ_INTO, CACHE_BYTES_WRITTEN_FROM | By | Gauge | <ul>
  <li>cache_direction</li> </ul> |
-| mongodbatlas.process.cache.size | Cache sizes Aggregate of MongoDB Metrics CACHE_USED_BYTES, CACHE_DIRTY_BYTES | By | Gauge | <ul>
+| mongodbatlas.process.cache.size | Cache sizes Aggregate of MongoDB Metrics CACHE_USED_BYTES, CACHE_DIRTY_BYTES | By | Sum | <ul>
  <li>cache_status</li> </ul> |
-| mongodbatlas.process.connections | Number of current connections MongoDB Metric CONNECTIONS | {connections} | Gauge | <ul>
+| mongodbatlas.process.connections | Number of current connections MongoDB Metric CONNECTIONS | {connections} | Sum | <ul>
  </ul> |
 | mongodbatlas.process.cpu.children.normalized.usage.average | CPU Usage for child processes, normalized to pct Aggregate of MongoDB Metrics PROCESS_NORMALIZED_CPU_CHILDREN_KERNEL, PROCESS_NORMALIZED_CPU_CHILDREN_USER | 1 | Gauge | <ul>
  <li>cpu_state</li> </ul> |

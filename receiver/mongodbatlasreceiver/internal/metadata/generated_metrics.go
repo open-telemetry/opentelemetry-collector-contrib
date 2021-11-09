@@ -374,7 +374,7 @@ var Metrics = &metricStruct{
 		"mongodbatlas.process.asserts",
 		func(metric pdata.Metric) {
 			metric.SetName("mongodbatlas.process.asserts")
-			metric.SetDescription("Number of assertions")
+			metric.SetDescription("Number of assertions per second")
 			metric.SetUnit("{assertions}/s")
 			metric.SetDataType(pdata.MetricDataTypeGauge)
 		},
@@ -403,7 +403,9 @@ var Metrics = &metricStruct{
 			metric.SetName("mongodbatlas.process.cache.size")
 			metric.SetDescription("Cache sizes")
 			metric.SetUnit("By")
-			metric.SetDataType(pdata.MetricDataTypeGauge)
+			metric.SetDataType(pdata.MetricDataTypeSum)
+			metric.Sum().SetIsMonotonic(false)
+			metric.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
 		},
 	},
 	&metricImpl{
@@ -412,7 +414,9 @@ var Metrics = &metricStruct{
 			metric.SetName("mongodbatlas.process.connections")
 			metric.SetDescription("Number of current connections")
 			metric.SetUnit("{connections}")
-			metric.SetDataType(pdata.MetricDataTypeGauge)
+			metric.SetDataType(pdata.MetricDataTypeSum)
+			metric.Sum().SetIsMonotonic(false)
+			metric.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
 		},
 	},
 	&metricImpl{
