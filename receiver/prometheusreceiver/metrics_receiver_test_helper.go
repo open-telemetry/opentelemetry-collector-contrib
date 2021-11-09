@@ -26,11 +26,10 @@ import (
 	"sync/atomic"
 	"testing"
 
-	"go.opentelemetry.io/collector/model/pdata"
-
 	gokitlog "github.com/go-kit/log"
 	promcfg "github.com/prometheus/prometheus/config"
 	"github.com/stretchr/testify/assert"
+	"go.opentelemetry.io/collector/model/pdata"
 	"gopkg.in/yaml.v2"
 )
 

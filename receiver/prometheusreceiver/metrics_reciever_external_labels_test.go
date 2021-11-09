@@ -18,14 +18,13 @@ import (
 	"context"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/model/pdata"
-
 	"github.com/prometheus/prometheus/pkg/labels"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/model/pdata"
 )
 
 const targetExternalLabels = `
