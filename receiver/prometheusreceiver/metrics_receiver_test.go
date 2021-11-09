@@ -91,15 +91,12 @@ rpc_duration_seconds_count 1001
 
 func verifyTarget1(t *testing.T, td *testData, resourceMetrics []*pdata.ResourceMetrics) {
 	verifyNumScrapeResults(t, td, resourceMetrics)
-	if len(resourceMetrics) < 1 {
-		t.Fatal("At least one metric request should be present")
-	}
+	require.Greater(t, len(resourceMetrics), 0, "At least one resource metric should be present")
 	m1 := resourceMetrics[0]
 
 	// m1 has 4 metrics + 5 internal scraper metrics
-	if l := metricsCount(m1); l != 9 {
-		t.Errorf("want 9, but got %v\n", l)
-	}
+	assert.Equal(t, 9, metricsCount(m1))
+
 	wantAttributes := td.attributes
 
 	metrics1 := m1.InstrumentationLibraryMetrics().At(0).Metrics()
@@ -162,9 +159,8 @@ func verifyTarget1(t *testing.T, td *testData, resourceMetrics []*pdata.Resource
 
 	m2 := resourceMetrics[1]
 	// m2 has 4 metrics + 5 internal scraper metrics
-	if l := metricsCount(m2); l != 9 {
-		t.Errorf("want 9, but got %v\n", l)
-	}
+	assert.Equal(t, 9, metricsCount(m2))
+
 	metricsScrape2 := m2.InstrumentationLibraryMetrics().At(0).Metrics()
 	ts2 := metricsScrape2.At(0).Gauge().DataPoints().At(0).Timestamp()
 	e2 := []testExpectation{
@@ -290,14 +286,11 @@ http_requests_total{method="post",code="500"} 5
 
 func verifyTarget2(t *testing.T, td *testData, resourceMetrics []*pdata.ResourceMetrics) {
 	verifyNumScrapeResults(t, td, resourceMetrics)
-	if len(resourceMetrics) < 1 {
-		t.Fatal("At least one metric request should be present")
-	}
+	require.Greater(t, len(resourceMetrics), 0, "At least one resource metric should be present")
 	m1 := resourceMetrics[0]
-	// m1 has 4 metrics + 5 internal scraper metrics
-	if l := metricsCount(m1); l != 7 {
-		t.Errorf("want 9, but got %v\n", l)
-	}
+	// m1 has 2 metrics + 5 internal scraper metrics
+	assert.Equal(t, 7, metricsCount(m1))
+
 	wantAttributes := td.attributes
 
 	metrics1 := m1.InstrumentationLibraryMetrics().At(0).Metrics()
@@ -337,10 +330,9 @@ func verifyTarget2(t *testing.T, td *testData, resourceMetrics []*pdata.Resource
 	doCompare("scrape1", t, wantAttributes, m1, e1)
 
 	m2 := resourceMetrics[1]
-	// m2 has 4 metrics + 5 internal scraper metrics
-	if l := metricsCount(m2); l != 7 {
-		t.Errorf("want 9, but got %v\n", l)
-	}
+	// m2 has 2 metrics + 5 internal scraper metrics
+	assert.Equal(t, 7, metricsCount(m2))
+
 	metricsScrape2 := m2.InstrumentationLibraryMetrics().At(0).Metrics()
 	ts2 := metricsScrape2.At(0).Gauge().DataPoints().At(0).Timestamp()
 	e2 := []testExpectation{
@@ -386,10 +378,9 @@ func verifyTarget2(t *testing.T, td *testData, resourceMetrics []*pdata.Resource
 	doCompare("scrape2", t, wantAttributes, m2, e2)
 
 	m3 := resourceMetrics[2]
-	// m2 has 4 metrics + 5 internal scraper metrics
-	if l := metricsCount(m2); l != 7 {
-		t.Errorf("want 9, but got %v\n", l)
-	}
+	// m3 has 2 metrics + 5 internal scraper metrics
+	assert.Equal(t, 7, metricsCount(m3))
+
 	metricsScrape3 := m3.InstrumentationLibraryMetrics().At(0).Metrics()
 	ts3 := metricsScrape3.At(0).Gauge().DataPoints().At(0).Timestamp()
 	e3 := []testExpectation{
@@ -435,10 +426,9 @@ func verifyTarget2(t *testing.T, td *testData, resourceMetrics []*pdata.Resource
 	doCompare("scrape3", t, wantAttributes, m3, e3)
 
 	m4 := resourceMetrics[3]
-	// m2 has 4 metrics + 5 internal scraper metrics
-	if l := metricsCount(m2); l != 7 {
-		t.Errorf("want 9, but got %v\n", l)
-	}
+	// m4 has 2 metrics + 5 internal scraper metrics
+	assert.Equal(t, 7, metricsCount(m4))
+
 	metricsScrape4 := m4.InstrumentationLibraryMetrics().At(0).Metrics()
 	ts4 := metricsScrape4.At(0).Gauge().DataPoints().At(0).Timestamp()
 	e4 := []testExpectation{
@@ -484,10 +474,9 @@ func verifyTarget2(t *testing.T, td *testData, resourceMetrics []*pdata.Resource
 	doCompare("scrape4", t, wantAttributes, m4, e4)
 
 	m5 := resourceMetrics[4]
-	// m2 has 4 metrics + 5 internal scraper metrics
-	if l := metricsCount(m2); l != 7 {
-		t.Errorf("want 9, but got %v\n", l)
-	}
+	// m5 has 2 metrics + 5 internal scraper metrics
+	assert.Equal(t, 7, metricsCount(m5))
+
 	metricsScrape5 := m5.InstrumentationLibraryMetrics().At(0).Metrics()
 	ts5 := metricsScrape5.At(0).Gauge().DataPoints().At(0).Timestamp()
 	e5 := []testExpectation{
@@ -607,14 +596,11 @@ rpc_duration_seconds_count{foo="no_quantile"} 55
 
 func verifyTarget3(t *testing.T, td *testData, resourceMetrics []*pdata.ResourceMetrics) {
 	verifyNumScrapeResults(t, td, resourceMetrics)
-	if len(resourceMetrics) < 1 {
-		t.Fatal("At least one metric request should be present")
-	}
+	require.Greater(t, len(resourceMetrics), 0, "At least one resource metric should be present")
 	m1 := resourceMetrics[0]
-	// m1 has 4 metrics + 5 internal scraper metrics
-	if l := metricsCount(m1); l != 8 {
-		t.Errorf("want 9, but got %v\n", l)
-	}
+	// m1 has 3 metrics + 5 internal scraper metrics
+	assert.Equal(t, 8, metricsCount(m1))
+
 	wantAttributes := td.attributes
 
 	metrics1 := m1.InstrumentationLibraryMetrics().At(0).Metrics()
@@ -666,10 +652,9 @@ func verifyTarget3(t *testing.T, td *testData, resourceMetrics []*pdata.Resource
 	doCompare("scrape1", t, wantAttributes, m1, e1)
 
 	m2 := resourceMetrics[1]
-	// m2 has 4 metrics + 5 internal scraper metrics
-	if l := metricsCount(m2); l != 8 {
-		t.Errorf("want 9, but got %v\n", l)
-	}
+	// m2 has 3 metrics + 5 internal scraper metrics
+	assert.Equal(t, 8, metricsCount(m2))
+
 	metricsScrape2 := m2.InstrumentationLibraryMetrics().At(0).Metrics()
 	ts2 := metricsScrape2.At(0).Gauge().DataPoints().At(0).Timestamp()
 	e2 := []testExpectation{

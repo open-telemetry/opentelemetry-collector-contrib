@@ -160,9 +160,7 @@ func verifyNumScrapeResults(t *testing.T, td *testData, resourceMetrics []*pdata
 			want++
 		}
 	}
-	if l := len(resourceMetrics); l != want {
-		t.Fatalf("want %d, but got %d\n", want, l)
-	}
+	assert.Equal(t, want, len(resourceMetrics))
 }
 
 func getMetrics(rm *pdata.ResourceMetrics) []*pdata.Metric {
@@ -233,10 +231,9 @@ func countScrapeMetricsRM(got *pdata.ResourceMetrics) int {
 	for j := 0; j < ilms.Len(); j++ {
 		ilm := ilms.At(j)
 		for i := 0; i < ilm.Metrics().Len(); i++ {
-			switch ilm.Metrics().At(i).Name() {
-			case "up", "scrape_duration_seconds", "scrape_samples_scraped", "scrape_samples_post_metric_relabeling", "scrape_series_added":
+			m := ilm.Metrics().At(i)
+			if isDefaultMetrics(&m) {
 				n++
-			default:
 			}
 		}
 	}
@@ -246,13 +243,20 @@ func countScrapeMetricsRM(got *pdata.ResourceMetrics) int {
 func countScrapeMetrics(metrics []*pdata.Metric) int {
 	n := 0
 	for _, m := range metrics {
-		switch m.Name() {
-		case "up", "scrape_duration_seconds", "scrape_samples_scraped", "scrape_samples_post_metric_relabeling", "scrape_series_added":
+		if isDefaultMetrics(m) {
 			n++
-		default:
 		}
 	}
 	return n
+}
+
+func isDefaultMetrics(m *pdata.Metric) bool {
+	switch m.Name() {
+	case "up", "scrape_duration_seconds", "scrape_samples_scraped", "scrape_samples_post_metric_relabeling", "scrape_series_added":
+		return true
+	default:
+	}
+	return false
 }
 
 type metricTypeComparator func(*testing.T, *pdata.Metric) bool
