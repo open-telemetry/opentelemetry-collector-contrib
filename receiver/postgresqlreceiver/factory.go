@@ -22,6 +22,8 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/config/confignet"
+	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
@@ -44,10 +46,13 @@ func createDefaultConfig() config.Receiver {
 			ReceiverSettings:   config.NewReceiverSettings(config.NewComponentID(typeStr)),
 			CollectionInterval: 10 * time.Second,
 		},
-		Host: "localhost",
-		Port: 5432,
-		SSLConfig: SSLConfig{
-			SSLMode: "require",
+		NetAddr: confignet.NetAddr{
+			Endpoint:  "localhost:5432",
+			Transport: "tcp",
+		},
+		TLSClientSetting: configtls.TLSClientSetting{
+			Insecure:           false,
+			InsecureSkipVerify: true,
 		},
 	}
 }

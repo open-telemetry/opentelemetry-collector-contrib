@@ -17,82 +17,61 @@ package postgresqlreceiver
 import (
 	"errors"
 	"fmt"
+	"net"
 
+	"go.opentelemetry.io/collector/config/confignet"
+	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 	"go.uber.org/multierr"
 )
 
-type Config struct {
-	scraperhelper.ScraperControllerSettings `mapstructure:",squash"`
-	Username                                string   `mapstructure:"username"`
-	Password                                string   `mapstructure:"password"`
-	Databases                               []string `mapstructure:"databases"`
-	Host                                    string   `mapstructure:"host"`
-	Port                                    int      `mapstructure:"port"`
-	SSLConfig                               `mapstructure:",squash"`
-}
-
-type SSLConfig struct {
-	SSLMode     string `mapstructure:"ssl_mode"`
-	SSLRootCert string `mapstructure:"ssl_root_cert"`
-	SSLCert     string `mapstructure:"ssl_cert"`
-	SSLKey      string `mapstructure:"ssl_key"`
-}
-
-func (c *SSLConfig) Validate() []error {
-	var errs []error
-	validValues := map[string]struct{}{
-		"require":     {},
-		"verify-ca":   {},
-		"verify-full": {},
-		"disable":     {},
-	}
-
-	if _, ok := validValues[c.SSLMode]; !ok {
-		errs = append(errs,
-			fmt.Errorf("SSL Mode '%s' not supported, valid values are 'require', 'verify-ca', 'verify-full', 'disable'. The default is 'require'", c.SSLMode))
-	}
-
-	return errs
-}
-
-// ConnString provides SSL configuration to be used in the connection string
-func (c *SSLConfig) ConnString() string {
-	conn := fmt.Sprintf("sslmode='%s'", c.SSLMode)
-	if c.SSLMode == "disable" {
-		return conn
-	}
-
-	if c.SSLRootCert != "" {
-		conn += fmt.Sprintf(" sslrootcert='%s'", c.SSLRootCert)
-	}
-
-	if c.SSLCert != "" {
-		conn += fmt.Sprintf(" sslcert='%s'", c.SSLCert)
-	}
-
-	if c.SSLKey != "" {
-		conn += fmt.Sprintf(" sslkey='%s'", c.SSLKey)
-	}
-
-	return conn
-}
-
 // Errors for missing required config parameters.
 const (
-	ErrNoUsername = "invalid config: missing username"
-	ErrNoPassword = "invalid config: missing password" // #nosec G101 - not hardcoded credentials
+	ErrNoUsername          = "invalid config: missing username"
+	ErrNoPassword          = "invalid config: missing password" // #nosec G101 - not hardcoded credentials
+	ErrNotSupported        = "invalid config: field '%s' not supported"
+	ErrTransportsSupported = "invalid config: 'transport' must be 'tcp' or 'unix'"
+	ErrHostPort            = "invalid config: 'endpoint' must be in the form <host>:<port> no matter what 'transport' is configured"
 )
 
+type Config struct {
+	scraperhelper.ScraperControllerSettings `mapstructure:",squash"`
+	Username                                string                   `mapstructure:"username"`
+	Password                                string                   `mapstructure:"password"`
+	Databases                               []string                 `mapstructure:"databases"`
+	confignet.NetAddr                       `mapstructure:",squash"` // provides Endpoint and Transport
+	configtls.TLSClientSetting              `mapstructure:",squash"` // provides Endpoint and Transport
+}
+
 func (cfg *Config) Validate() error {
-	var errs []error
+	var err error
 	if cfg.Username == "" {
-		errs = append(errs, errors.New(ErrNoUsername))
+		err = multierr.Append(err, errors.New(ErrNoUsername))
 	}
 	if cfg.Password == "" {
-		errs = append(errs, errors.New(ErrNoPassword))
+		err = multierr.Append(err, errors.New(ErrNoPassword))
 	}
 
-	errs = append(errs, cfg.SSLConfig.Validate()...)
-	return multierr.Combine(errs...)
+	// The lib/pq module does not support overriding ServerName or specifying supported TLS versions
+	if cfg.ServerName != "" {
+		err = multierr.Append(err, fmt.Errorf(ErrNotSupported, "ServerName"))
+	}
+	if cfg.MaxVersion != "" {
+		err = multierr.Append(err, fmt.Errorf(ErrNotSupported, "MaxVersion"))
+	}
+	if cfg.MinVersion != "" {
+		err = multierr.Append(err, fmt.Errorf(ErrNotSupported, "MinVersion"))
+	}
+
+	switch cfg.Transport {
+	case "tcp", "unix":
+		_, _, endpointErr := net.SplitHostPort(cfg.Endpoint)
+		if endpointErr != nil {
+			err = multierr.Append(err, errors.New(ErrHostPort))
+		}
+	default:
+		err = multierr.Append(err, errors.New(ErrTransportsSupported))
+	}
+
+	return err
 }

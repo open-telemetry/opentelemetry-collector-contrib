@@ -16,9 +16,12 @@ package postgresqlreceiver
 
 import (
 	"errors"
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/config/confignet"
+	"go.opentelemetry.io/collector/config/configtls"
 	"go.uber.org/multierr"
 )
 
@@ -30,22 +33,20 @@ func TestValidate(t *testing.T) {
 	}{
 		{
 			desc: "missing username and password",
-			cfg: &Config{
-				SSLConfig: SSLConfig{
-					SSLMode: "require",
-				},
-			},
+			cfg:  &Config{},
 			expected: multierr.Combine(
 				errors.New(ErrNoUsername),
 				errors.New(ErrNoPassword),
+				errors.New(ErrTransportsSupported),
 			),
 		},
 		{
 			desc: "missing password",
 			cfg: &Config{
 				Username: "otel",
-				SSLConfig: SSLConfig{
-					SSLMode: "require",
+				NetAddr: confignet.NetAddr{
+					Endpoint:  "localhost:5432",
+					Transport: "tcp",
 				},
 			},
 			expected: multierr.Combine(
@@ -56,8 +57,9 @@ func TestValidate(t *testing.T) {
 			desc: "missing username",
 			cfg: &Config{
 				Password: "otel",
-				SSLConfig: SSLConfig{
-					SSLMode: "require",
+				NetAddr: confignet.NetAddr{
+					Endpoint:  "localhost:5432",
+					Transport: "tcp",
 				},
 			},
 			expected: multierr.Combine(
@@ -65,16 +67,54 @@ func TestValidate(t *testing.T) {
 			),
 		},
 		{
-			desc: "bad SSL mode",
+			desc: "bad endpoint",
 			cfg: &Config{
 				Username: "otel",
 				Password: "otel",
-				SSLConfig: SSLConfig{
-					SSLMode: "assume",
+				NetAddr: confignet.NetAddr{
+					Endpoint:  "open-telemetry",
+					Transport: "tcp",
 				},
 			},
 			expected: multierr.Combine(
-				errors.New("SSL Mode 'assume' not supported, valid values are 'require', 'verify-ca', 'verify-full', 'disable'. The default is 'require'"),
+				errors.New(ErrHostPort),
+			),
+		},
+		{
+			desc: "bad transport",
+			cfg: &Config{
+				Username: "otel",
+				Password: "otel",
+				NetAddr: confignet.NetAddr{
+					Endpoint:  "localhost:5432",
+					Transport: "teacup",
+				},
+			},
+			expected: multierr.Combine(
+				errors.New(ErrTransportsSupported),
+			),
+		},
+		{
+			desc: "unsupported SSL params",
+			cfg: &Config{
+				Username: "otel",
+				Password: "otel",
+				NetAddr: confignet.NetAddr{
+					Endpoint:  "localhost:5432",
+					Transport: "unix",
+				},
+				TLSClientSetting: configtls.TLSClientSetting{
+					ServerName: "notlocalhost",
+					TLSSetting: configtls.TLSSetting{
+						MinVersion: "1.0",
+						MaxVersion: "1.7",
+					},
+				},
+			},
+			expected: multierr.Combine(
+				fmt.Errorf(ErrNotSupported, "ServerName"),
+				fmt.Errorf(ErrNotSupported, "MaxVersion"),
+				fmt.Errorf(ErrNotSupported, "MinVersion"),
 			),
 		},
 		{
@@ -82,8 +122,9 @@ func TestValidate(t *testing.T) {
 			cfg: &Config{
 				Username: "otel",
 				Password: "otel",
-				SSLConfig: SSLConfig{
-					SSLMode: "require",
+				NetAddr: confignet.NetAddr{
+					Endpoint:  "localhost:5432",
+					Transport: "tcp",
 				},
 			},
 			expected: nil,
