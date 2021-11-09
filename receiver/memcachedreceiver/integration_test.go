@@ -29,6 +29,7 @@ import (
 	"go.opentelemetry.io/collector/model/otlp"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testing/container"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest"
 )
 
 func TestIntegration(t *testing.T) {
@@ -56,8 +57,8 @@ func TestIntegration(t *testing.T) {
 	ilms := md.ResourceMetrics().At(0).InstrumentationLibraryMetrics()
 	require.Equal(t, 1, ilms.Len())
 
-	metrics := ilms.At(0).Metrics()
-	require.Equal(t, 11, metrics.Len())
+	aMetricSlice := ilms.At(0).Metrics()
+	require.Equal(t, 11, aMetricSlice.Len())
 
 	expectedFileBytes, err := ioutil.ReadFile("./testdata/expected_metrics/test_scraper/exepected.json")
 	require.NoError(t, err)
@@ -68,6 +69,6 @@ func TestIntegration(t *testing.T) {
 
 	eMetricSlice := expectedMetrics.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics()
 
-	compareMetrics(eMetricSlice, metrics, false)
+	require.NoError(t, scrapertest.CompareMetricSlices(eMetricSlice, aMetricSlice, true))
 	require.NoError(t, rcvr.Shutdown(context.Background()))
 }
