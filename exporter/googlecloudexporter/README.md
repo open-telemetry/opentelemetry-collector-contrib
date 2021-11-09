@@ -161,7 +161,6 @@ exporters:
     user_agent: my-collector {{version}}
     use_insecure: true
     timeout: 12s
-    number_of_workers: 3
 
     resource_mappings:
       - source_type: source.resource1

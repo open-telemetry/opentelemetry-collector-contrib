@@ -21,7 +21,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudspannerreceiver/internal/metadata"
 )
@@ -53,7 +53,7 @@ func (mcr mockCompositeReader) Shutdown() {
 }
 
 func TestNewProjectReader(t *testing.T) {
-	logger := zap.NewNop()
+	logger := zaptest.NewLogger(t)
 	var databaseReaders []CompositeReader
 
 	reader := NewProjectReader(databaseReaders, logger)
@@ -65,7 +65,7 @@ func TestNewProjectReader(t *testing.T) {
 }
 
 func TestProjectReader_Shutdown(t *testing.T) {
-	logger := zap.NewNop()
+	logger := zaptest.NewLogger(t)
 
 	databaseReaders := []CompositeReader{mockCompositeReader{}}
 
@@ -79,7 +79,7 @@ func TestProjectReader_Shutdown(t *testing.T) {
 
 func TestProjectReader_Read(t *testing.T) {
 	ctx := context.Background()
-	logger := zap.NewNop()
+	logger := zaptest.NewLogger(t)
 	testCases := map[string]struct {
 		compositeReader         CompositeReader
 		expectedDataPointsCount int
@@ -112,7 +112,7 @@ func TestProjectReader_Read(t *testing.T) {
 }
 
 func TestProjectReader_Name(t *testing.T) {
-	logger := zap.NewNop()
+	logger := zaptest.NewLogger(t)
 
 	databaseReader := mockCompositeReader{}
 	databaseReaders := []CompositeReader{databaseReader}

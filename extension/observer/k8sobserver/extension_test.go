@@ -29,7 +29,7 @@ import (
 
 func TestNewExtension(t *testing.T) {
 	listWatch := framework.NewFakeControllerSource()
-	factory := &Factory{}
+	factory := NewFactory()
 	ext, err := newObserver(zap.NewNop(), factory.CreateDefaultConfig().(*Config), listWatch)
 	require.NoError(t, err)
 	require.NotNil(t, ext)
@@ -37,7 +37,7 @@ func TestNewExtension(t *testing.T) {
 
 func TestExtensionObserve(t *testing.T) {
 	listWatch := framework.NewFakeControllerSource()
-	factory := &Factory{}
+	factory := NewFactory()
 	ext, err := newObserver(zap.NewNop(), factory.CreateDefaultConfig().(*Config), listWatch)
 	require.NoError(t, err)
 	require.NotNil(t, ext)
