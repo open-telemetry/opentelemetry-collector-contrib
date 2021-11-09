@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+## 🛑 Breaking changes 🛑
+
+- `httpdreceiver` renamed to `apachereceiver` to match industry standards (#6207)
+
 ## 🧰 Bug fixes 🧰
 
 - `datadogexporter` improve cumulative metrics reset detection using `StartTimestamp` (#6120)
