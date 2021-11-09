@@ -78,6 +78,8 @@ func newExporter(cfg *Config) *exporter {
 	}
 	e.createPromCounters()
 
+	log.Println(`newExporter`, metricsNamespace)
+
 	return e
 }
 
@@ -94,6 +96,8 @@ func (e *exporter) Start(_ context.Context, _ component.Host) error {
 					// EnableOpenMetrics: true,
 				},
 			)}
+
+		log.Println(`Start`, metricsNamespace, `HTTP server`)
 
 		err := server.ListenAndServe()
 		if err != nil {
@@ -115,6 +119,8 @@ func (e *exporter) Shutdown(_ context.Context) error {
 	prometheus.Unregister(e.spanCounter)
 	prometheus.Unregister(e.spanBatchSize)
 
+	log.Println(`Stop`, metricsNamespace, `HTTP server`)
+
 	return nil
 }
 
@@ -131,6 +137,8 @@ func (e *exporter) ConsumeTraces(_ context.Context, td pdata.Traces) error {
 
 	e.spanCounter.Add(float64(td.SpanCount()))
 	e.spanBatchSize.Add(float64(len(raw)))
+
+	log.Println(`ConsumeTraces`, metricsNamespace, td.SpanCount(), len(raw))
 
 	return nil
 }

@@ -17,6 +17,7 @@ package prometheustracemetricsexporter
 import (
 	"context"
 	"errors"
+	"log"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
@@ -29,6 +30,7 @@ const (
 
 // NewFactory creates a new Prometheus Trace Metrics exporter.
 func NewFactory() component.ExporterFactory {
+	log.Println(`NewFactory`, typeStr)
 	return exporterhelper.NewFactory(
 		typeStr,
 		createDefaultConfig,
