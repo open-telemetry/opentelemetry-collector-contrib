@@ -367,21 +367,6 @@ func compareAttributes(attributes map[string]string) numberPointComparator {
 	}
 }
 
-func compareHistogramAttributes(attributes map[string]string) histogramPointComparator {
-	return func(t *testing.T, histogramDataPoint *pdata.HistogramDataPoint) bool {
-		if !assert.Equal(t, len(attributes), histogramDataPoint.Attributes().Len()) {
-			return false
-		}
-		for k, v := range attributes {
-			value, ok := histogramDataPoint.Attributes().Get(k)
-			if !ok || !assert.Equal(t, v, value.AsString()) {
-				return false
-			}
-		}
-		return true
-	}
-}
-
 func compareSummaryAttributes(attributes map[string]string) summaryPointComparator {
 	return func(t *testing.T, summaryDataPoint *pdata.SummaryDataPoint) bool {
 		if !assert.Equal(t, len(attributes), summaryDataPoint.Attributes().Len()) {
