@@ -21,14 +21,15 @@ import (
 )
 
 var _ component.Extension = (*ecsTaskObserver)(nil)
-var _ observer.Observable = (*ecsTaskObserver)(nil)
+var _ observer.EndpointsLister = (*ecsTaskObserver)(nil)
 
 type ecsTaskObserver struct {
 	component.Extension
-	config    *Config
-	telemetry component.TelemetrySettings
+	config           *Config
+	endpointsWatcher *observer.EndpointsWatcher
+	telemetry        component.TelemetrySettings
 }
 
-func (e *ecsTaskObserver) ListAndWatch(notify observer.Notify) {}
-
+// ListEndpoints is invoked by an observer.EndpointsWatcher helper to report task container endpoints.
+// It's required to implement observer.EndpointsLister
 func (e *ecsTaskObserver) ListEndpoints() []observer.Endpoint { return nil }

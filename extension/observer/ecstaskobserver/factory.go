@@ -47,9 +47,10 @@ func createExtension(
 ) (component.Extension, error) {
 	obsCfg := cfg.(*Config)
 	e := &ecsTaskObserver{
-		Extension: componenthelper.New(),
-		config:    obsCfg,
-		telemetry: params.TelemetrySettings,
+		Extension:        componenthelper.New(),
+		config:           obsCfg,
+		endpointsWatcher: nil,
+		telemetry:        params.TelemetrySettings,
 	}
 
 	return e, nil

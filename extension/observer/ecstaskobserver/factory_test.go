@@ -24,14 +24,12 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer"
 )
 
-func TestFactoryCreatedExtensionIsObservable(t *testing.T) {
+func TestFactoryCreatedExtensionIsEndpointsLister(t *testing.T) {
 	etoFactory := NewFactory()
 	eto, err := etoFactory.CreateExtension(
 		context.Background(), componenttest.NewNopExtensionCreateSettings(), etoFactory.CreateDefaultConfig(),
 	)
 	require.NoError(t, err)
 	require.NotNil(t, eto)
-	asObservable, ok := eto.(observer.Observable)
-	require.True(t, ok)
-	require.NotNil(t, asObservable)
+	require.Implements(t, (*observer.EndpointsLister)(nil), eto)
 }
