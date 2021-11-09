@@ -29,6 +29,9 @@ class TestPymongo(TestBase):
     def setUp(self):
         super().setUp()
         self.tracer = self.tracer_provider.get_tracer(__name__)
+        self.start_callback = mock.MagicMock()
+        self.success_callback = mock.MagicMock()
+        self.failed_callback = mock.MagicMock()
 
     def test_pymongo_instrumentor(self):
         mock_register = mock.Mock()
@@ -44,7 +47,9 @@ class TestPymongo(TestBase):
         command_attrs = {
             "command_name": "find",
         }
-        command_tracer = CommandTracer(self.tracer)
+        command_tracer = CommandTracer(
+            self.tracer, request_hook=self.start_callback
+        )
         mock_event = MockEvent(
             command_attrs, ("test.com", "1234"), "test_request_id"
         )
@@ -66,10 +71,15 @@ class TestPymongo(TestBase):
             span.attributes[SpanAttributes.NET_PEER_NAME], "test.com"
         )
         self.assertEqual(span.attributes[SpanAttributes.NET_PEER_PORT], "1234")
+        self.start_callback.assert_called_once_with(span, mock_event)
 
     def test_succeeded(self):
         mock_event = MockEvent({})
-        command_tracer = CommandTracer(self.tracer)
+        command_tracer = CommandTracer(
+            self.tracer,
+            request_hook=self.start_callback,
+            response_hook=self.success_callback,
+        )
         command_tracer.started(event=mock_event)
         command_tracer.succeeded(event=mock_event)
         spans_list = self.memory_exporter.get_finished_spans()
@@ -77,6 +87,8 @@ class TestPymongo(TestBase):
         span = spans_list[0]
         self.assertIs(span.status.status_code, trace_api.StatusCode.UNSET)
         self.assertIsNotNone(span.end_time)
+        self.start_callback.assert_called_once()
+        self.success_callback.assert_called_once()
 
     def test_not_recording(self):
         mock_tracer = mock.Mock()
@@ -119,7 +131,11 @@ class TestPymongo(TestBase):
 
     def test_failed(self):
         mock_event = MockEvent({})
-        command_tracer = CommandTracer(self.tracer)
+        command_tracer = CommandTracer(
+            self.tracer,
+            request_hook=self.start_callback,
+            failed_hook=self.failed_callback,
+        )
         command_tracer.started(event=mock_event)
         command_tracer.failed(event=mock_event)
 
@@ -132,6 +148,8 @@ class TestPymongo(TestBase):
         )
         self.assertEqual(span.status.description, "failure")
         self.assertIsNotNone(span.end_time)
+        self.start_callback.assert_called_once()
+        self.failed_callback.assert_called_once()
 
     def test_multiple_commands(self):
         first_mock_event = MockEvent({}, ("firstUrl", "123"), "first")

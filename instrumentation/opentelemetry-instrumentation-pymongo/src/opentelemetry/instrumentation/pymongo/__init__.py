@@ -26,7 +26,6 @@ Usage
     from pymongo import MongoClient
     from opentelemetry.instrumentation.pymongo import PymongoInstrumentor
 
-
     PymongoInstrumentor().instrument()
     client = MongoClient()
     db = client["MongoDB_Database"]
@@ -35,9 +34,47 @@ Usage
 
 API
 ---
-"""
+The `instrument` method accepts the following keyword args:
 
-from typing import Collection
+tracer_provider (TracerProvider) - an optional tracer provider
+request_hook (Callable) -
+a function with extra user-defined logic to be performed before querying mongodb
+this function signature is:  def request_hook(span: Span, event: CommandStartedEvent) -> None
+response_hook (Callable) -
+a function with extra user-defined logic to be performed after the query returns with a successful response
+this function signature is:  def response_hook(span: Span, event: CommandSucceededEvent) -> None
+failed_hook (Callable) -
+a function with extra user-defined logic to be performed after the query returns with a failed response
+this function signature is:  def failed_hook(span: Span, event: CommandFailedEvent) -> None
+
+for example:
+
+.. code: python
+
+    from opentelemetry.instrumentation.pymongo import PymongoInstrumentor
+    from pymongo import MongoClient
+
+    def request_hook(span, event):
+        # request hook logic
+
+    def response_hook(span, event):
+        # response hook logic
+
+    def failed_hook(span, event):
+        # failed hook logic
+
+    # Instrument pymongo with hooks
+    PymongoInstrumentor().instrument(request_hook=request_hook, response_hooks=response_hook, failed_hook=failed_hook)
+
+    # This will create a span with pymongo specific attributes, including custom attributes added from the hooks
+    client = MongoClient()
+    db = client["MongoDB_Database"]
+    collection = db["MongoDB_Collection"]
+    collection.find_one()
+
+"""
+from logging import getLogger
+from typing import Callable, Collection
 
 from pymongo import monitoring
 
@@ -48,14 +85,34 @@ from opentelemetry.instrumentation.pymongo.version import __version__
 from opentelemetry.instrumentation.utils import _SUPPRESS_INSTRUMENTATION_KEY
 from opentelemetry.semconv.trace import DbSystemValues, SpanAttributes
 from opentelemetry.trace import SpanKind, get_tracer
+from opentelemetry.trace.span import Span
 from opentelemetry.trace.status import Status, StatusCode
+
+_LOG = getLogger(__name__)
+
+RequestHookT = Callable[[Span, monitoring.CommandStartedEvent], None]
+ResponseHookT = Callable[[Span, monitoring.CommandSucceededEvent], None]
+FailedHookT = Callable[[Span, monitoring.CommandFailedEvent], None]
+
+
+def dummy_callback(span, event):
+    ...
 
 
 class CommandTracer(monitoring.CommandListener):
-    def __init__(self, tracer):
+    def __init__(
+        self,
+        tracer,
+        request_hook: RequestHookT = dummy_callback,
+        response_hook: ResponseHookT = dummy_callback,
+        failed_hook: FailedHookT = dummy_callback,
+    ):
         self._tracer = tracer
         self._span_dict = {}
         self.is_enabled = True
+        self.start_hook = request_hook
+        self.success_hook = response_hook
+        self.failed_hook = failed_hook
 
     def started(self, event: monitoring.CommandStartedEvent):
         """ Method to handle a pymongo CommandStartedEvent """
@@ -85,6 +142,10 @@ class CommandTracer(monitoring.CommandListener):
                     span.set_attribute(
                         SpanAttributes.NET_PEER_PORT, event.connection_id[1]
                     )
+            try:
+                self.start_hook(span, event)
+            except Exception as hook_exception:  # noqa pylint: disable=broad-except
+                _LOG.exception(hook_exception)
 
             # Add Span to dictionary
             self._span_dict[_get_span_dict_key(event)] = span
@@ -103,6 +164,11 @@ class CommandTracer(monitoring.CommandListener):
         span = self._pop_span(event)
         if span is None:
             return
+        if span.is_recording():
+            try:
+                self.success_hook(span, event)
+            except Exception as hook_exception:  # noqa pylint: disable=broad-except
+                _LOG.exception(hook_exception)
         span.end()
 
     def failed(self, event: monitoring.CommandFailedEvent):
@@ -116,6 +182,10 @@ class CommandTracer(monitoring.CommandListener):
             return
         if span.is_recording():
             span.set_status(Status(StatusCode.ERROR, event.failure))
+            try:
+                self.failed_hook(span, event)
+            except Exception as hook_exception:  # noqa pylint: disable=broad-except
+                _LOG.exception(hook_exception)
         span.end()
 
     def _pop_span(self, event):
@@ -150,12 +220,20 @@ class PymongoInstrumentor(BaseInstrumentor):
         """
 
         tracer_provider = kwargs.get("tracer_provider")
+        request_hook = kwargs.get("request_hook", dummy_callback)
+        response_hook = kwargs.get("response_hook", dummy_callback)
+        failed_hook = kwargs.get("failed_hook", dummy_callback)
 
         # Create and register a CommandTracer only the first time
         if self._commandtracer_instance is None:
             tracer = get_tracer(__name__, __version__, tracer_provider)
 
-            self._commandtracer_instance = CommandTracer(tracer)
+            self._commandtracer_instance = CommandTracer(
+                tracer,
+                request_hook=request_hook,
+                response_hook=response_hook,
+                failed_hook=failed_hook,
+            )
             monitoring.register(self._commandtracer_instance)
 
         # If already created, just enable it
