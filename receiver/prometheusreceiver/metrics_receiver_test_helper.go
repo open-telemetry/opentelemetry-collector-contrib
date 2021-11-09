@@ -16,7 +16,6 @@ package prometheusreceiver
 
 import (
 	"fmt"
-	"go.opentelemetry.io/collector/model/pdata"
 	"log"
 	"net"
 	"net/http"
@@ -26,6 +25,8 @@ import (
 	"sync"
 	"sync/atomic"
 	"testing"
+
+	"go.opentelemetry.io/collector/model/pdata"
 
 	gokitlog "github.com/go-kit/log"
 	promcfg "github.com/prometheus/prometheus/config"

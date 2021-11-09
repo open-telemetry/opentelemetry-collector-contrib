@@ -16,9 +16,10 @@ package prometheusreceiver
 
 import (
 	"context"
+	"testing"
+
 	"github.com/prometheus/prometheus/scrape"
 	"go.opentelemetry.io/collector/model/pdata"
-	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
