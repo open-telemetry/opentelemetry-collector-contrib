@@ -25,13 +25,13 @@ func (c *fakeClient) Stats() (map[net.Addr]memcache.Stats, error) {
 		return nil, err
 	}
 	stats := make(map[net.Addr]memcache.Stats)
-	statsJson := make(map[string]memcache.Stats)
-	err = json.Unmarshal(bytes, &statsJson)
+	statsJSON := make(map[string]memcache.Stats)
+	err = json.Unmarshal(bytes, &statsJSON)
 	if err != nil {
 		return nil, err
 	}
 
-	for addr, s := range statsJson {
+	for addr, s := range statsJSON {
 		tcpaddr, err := net.ResolveTCPAddr("tcp", addr)
 		if err != nil {
 			return nil, err
