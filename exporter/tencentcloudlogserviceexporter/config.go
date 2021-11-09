@@ -15,6 +15,8 @@
 package tencentcloudlogserviceexporter
 
 import (
+	"errors"
+
 	"go.opentelemetry.io/collector/config"
 )
 
@@ -33,4 +35,14 @@ type Config struct {
 	SecretID string `mapstructure:"secret_id"`
 	// TencentCloud access key secret
 	SecretKey string `mapstructure:"secret_key"`
+}
+
+var _ config.Exporter = (*Config)(nil)
+
+// Validate checks if the exporter configuration is valid
+func (cfg *Config) Validate() error {
+	if cfg == nil || cfg.Region == "" || cfg.LogSet == "" || cfg.Topic == "" {
+		return errors.New("missing tencentcloudlogservice params: Region, LogSet, Topic")
+	}
+	return nil
 }
