@@ -58,8 +58,8 @@ func createAsapClientAuthenticator(_ component.ExtensionCreateSettings, cfg *Con
 		return a, err
 	}
 	a = AsapClientAuthenticator{
-		provisioner: asap.NewProvisioner(
-			cfg.KeyId, time.Duration(cfg.Ttl)*time.Second, cfg.Issuer, cfg.Audience, crypto.SigningMethodRS256),
+		provisioner: asap.NewCachingProvisioner(asap.NewProvisioner(
+			cfg.KeyId, time.Duration(cfg.Ttl)*time.Second, cfg.Issuer, cfg.Audience, crypto.SigningMethodRS256)),
 		privateKey: pk,
 	}
 	return a, nil

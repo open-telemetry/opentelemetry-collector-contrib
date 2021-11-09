@@ -16,12 +16,13 @@ package asapclientauthextension
 
 import (
 	"errors"
+
 	"go.opentelemetry.io/collector/config"
 )
 
 var (
 	errNoKeyIDProvided      = errors.New("no key id provided in asapclient configuration")
-	errNoTtlProvided        = errors.New("no ttl provided in asapclient configuration")
+	errNoTtlProvided        = errors.New("no valid ttl was provided in asapclient configuration")
 	errNoIssuerProvided     = errors.New("no issuer provided in asapclient configuration")
 	errNoAudienceProvided   = errors.New("no audience provided in asapclient configuration")
 	errNoPrivateKeyProvided = errors.New("no private key provided in asapclient configuration")
@@ -45,7 +46,7 @@ func (c *Config) Validate() error {
 	if c.KeyId == "" {
 		return errNoKeyIDProvided
 	}
-	if c.Ttl == 0 {
+	if c.Ttl <= 0 {
 		return errNoTtlProvided
 	}
 	if c.Audience == nil || len(c.Audience) == 0 {
