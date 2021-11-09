@@ -34,7 +34,7 @@ func TestLoadConfig(t *testing.T) {
 	factories.Exporters[typeStr] = factory
 	cfg, err := configtest.LoadConfigAndValidate(path.Join(".", "testdata", "config.yaml"), factories)
 
-	require.NoError(t, err)
+	require.Error(t, err)
 	require.NotNil(t, cfg)
 
 	e0 := cfg.Exporters[config.NewComponentID(typeStr)]
@@ -59,8 +59,8 @@ func TestLoadConfig(t *testing.T) {
 	params := componenttest.NewNopExporterCreateSettings()
 
 	le, err := factory.CreateLogsExporter(context.Background(), params, e0)
-	require.Error(t, err)
-	require.Nil(t, le)
+	require.NoError(t, err)
+	require.NotNil(t, le)
 
 	le, err = factory.CreateLogsExporter(context.Background(), params, e1)
 	require.NoError(t, err)

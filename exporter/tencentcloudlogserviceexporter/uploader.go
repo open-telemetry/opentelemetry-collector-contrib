@@ -15,9 +15,6 @@
 package tencentcloudlogserviceexporter
 
 import (
-	"errors"
-	"os"
-
 	"github.com/pierrec/lz4"
 	"github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common"
 	tchttp "github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common/http"
@@ -43,19 +40,8 @@ type logServiceClientImpl struct {
 }
 
 // newLogServiceClient Create Log Service client
-func newLogServiceClient(config *Config, logger *zap.Logger) (logServiceClient, error) {
-	if config == nil || config.Region == "" || config.LogSet == "" || config.Topic == "" {
-		return nil, errors.New("missing logservice params: Region, LogSet, Topic")
-	}
-
-	var credential *common.Credential
-	if config.SecretID == "" || config.SecretKey == "" {
-		credential = common.NewCredential(
-			os.Getenv("TENCENTCLOUD_SECRET_ID"),
-			os.Getenv("TENCENTCLOUD_SECRET_KEY"))
-	} else {
-		credential = common.NewCredential(config.SecretID, config.SecretKey)
-	}
+func newLogServiceClient(config *Config, logger *zap.Logger) logServiceClient {
+	credential := common.NewCredential(config.SecretID, config.SecretKey)
 
 	c := &logServiceClientImpl{
 		clientInstance: common.NewCommonClient(credential, config.Region, profile.NewClientProfile()),
@@ -65,7 +51,7 @@ func newLogServiceClient(config *Config, logger *zap.Logger) (logServiceClient, 
 	}
 
 	logger.Info("Create LogService client success", zap.String("logset", config.LogSet), zap.String("topic", config.Topic))
-	return c, nil
+	return c
 }
 
 // sendLogs send message to LogService
