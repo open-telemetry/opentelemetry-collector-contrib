@@ -18,9 +18,10 @@ import (
 	"context"
 	"testing"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest"
 )
 
 func TestScraper(t *testing.T) {
