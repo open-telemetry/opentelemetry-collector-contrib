@@ -35,7 +35,7 @@ func TestScrape(t *testing.T) {
 			Endpoint: "localhost:3306",
 		},
 	})
-	sc.client = &mysqlMock
+	sc.sqlclient = &mysqlMock
 
 	scrapedRMS, err := sc.scrape(context.Background())
 	require.NoError(t, err)
