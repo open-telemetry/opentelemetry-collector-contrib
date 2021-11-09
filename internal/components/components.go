@@ -43,6 +43,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opencensusexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusremotewriteexporter"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheustracemetricsexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sapmexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sentryexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter"
@@ -225,6 +226,7 @@ func Components() (component.Factories, error) {
 		opencensusexporter.NewFactory(),
 		prometheusexporter.NewFactory(),
 		prometheusremotewriteexporter.NewFactory(),
+		prometheustracemetricsexporter.NewFactory(),
 		sapmexporter.NewFactory(),
 		sentryexporter.NewFactory(),
 		signalfxexporter.NewFactory(),
