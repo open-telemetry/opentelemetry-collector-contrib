@@ -22,7 +22,7 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 )
 
-type Client interface {
+type client interface {
 	Connect() error
 	getGlobalStats() (map[string]string, error)
 	getInnodbStats() (map[string]string, error)
@@ -34,9 +34,9 @@ type mySQLClient struct {
 	client  *sql.DB
 }
 
-var _ Client = (*mySQLClient)(nil)
+var _ client = (*mySQLClient)(nil)
 
-func newMySQLClient(conf *Config) Client {
+func newMySQLClient(conf *Config) client {
 	connStr := fmt.Sprintf("%s:%s@%s(%s)/%s", conf.Username, conf.Password, conf.Transport, conf.Endpoint, conf.Database)
 
 	return &mySQLClient{

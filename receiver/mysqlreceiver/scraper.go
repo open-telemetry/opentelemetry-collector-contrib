@@ -29,7 +29,7 @@ import (
 )
 
 type mySQLScraper struct {
-	client   Client
+	client   client
 	stopOnce sync.Once
 
 	logger *zap.Logger

@@ -23,7 +23,7 @@ import (
 	"github.com/stretchr/testify/mock"
 )
 
-var _ Client = (*fakeClient)(nil)
+var _ client = (*fakeClient)(nil)
 
 type fakeClient struct {
 	mock.Mock
