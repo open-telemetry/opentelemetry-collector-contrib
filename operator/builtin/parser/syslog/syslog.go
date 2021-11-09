@@ -224,7 +224,7 @@ var severityMapping = [...]entry.Severity{
 	2: entry.Error2,
 	3: entry.Error,
 	4: entry.Warn,
-	5: entry.Info3,
+	5: entry.Info2,
 	6: entry.Info,
 	7: entry.Debug,
 }
