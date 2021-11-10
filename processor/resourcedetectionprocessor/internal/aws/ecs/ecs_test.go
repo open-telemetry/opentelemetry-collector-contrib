@@ -103,7 +103,7 @@ func Test_ecsFiltersInvalidContainers(t *testing.T) {
 	ld := getValidLogData(containers, &c4, "123")
 
 	for _, attrib := range ld {
-		assert.Equal(t, 0, attrib.ArrayVal().Len())
+		assert.Equal(t, 0, attrib.SliceVal().Len())
 	}
 }
 
@@ -129,7 +129,7 @@ func Test_ecsDetectV4(t *testing.T) {
 
 	for i, field := range attribFields {
 		ava := pdata.NewAttributeValueArray()
-		av := ava.ArrayVal()
+		av := ava.SliceVal()
 		avs := av.AppendEmpty()
 		pdata.NewAttributeValueString(attribVals[i]).CopyTo(avs)
 		attr.Insert(field, ava)

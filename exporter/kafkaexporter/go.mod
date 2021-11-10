@@ -4,15 +4,15 @@ go 1.17
 
 require (
 	github.com/Shopify/sarama v1.30.0
-	github.com/aws/aws-sdk-go v1.41.14
+	github.com/aws/aws-sdk-go v1.41.19
 	github.com/gogo/protobuf v1.3.2
-	github.com/jaegertracing/jaeger v1.27.0
+	github.com/jaegertracing/jaeger v1.28.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.38.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.38.0
 	github.com/stretchr/testify v1.7.0
 	github.com/xdg-go/scram v1.0.2
-	go.opentelemetry.io/collector v0.38.1-0.20211103011348-c24dfeb047a8
-	go.opentelemetry.io/collector/model v0.38.1-0.20211103011348-c24dfeb047a8
+	go.opentelemetry.io/collector v0.38.1-0.20211103215828-cffbecb2ac9e
+	go.opentelemetry.io/collector/model v0.38.1-0.20211103215828-cffbecb2ac9e
 	go.uber.org/multierr v1.7.0
 	go.uber.org/zap v1.19.1
 )

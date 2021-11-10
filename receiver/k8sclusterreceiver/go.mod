@@ -12,8 +12,8 @@ require (
 	github.com/openshift/api v0.0.0-20210521075222-e273a339932a
 	github.com/openshift/client-go v0.0.0-20210521082421-73d9475a9142
 	github.com/stretchr/testify v1.7.0
-	go.opentelemetry.io/collector v0.38.1-0.20211103011348-c24dfeb047a8
-	go.opentelemetry.io/collector/model v0.38.1-0.20211103011348-c24dfeb047a8
+	go.opentelemetry.io/collector v0.38.1-0.20211103215828-cffbecb2ac9e
+	go.opentelemetry.io/collector/model v0.38.1-0.20211103215828-cffbecb2ac9e
 	go.uber.org/atomic v1.9.0
 	go.uber.org/zap v1.19.1
 	google.golang.org/protobuf v1.27.1

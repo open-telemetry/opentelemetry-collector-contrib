@@ -5,10 +5,10 @@ go 1.17
 require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/jaegerexporter v0.38.0
 	github.com/stretchr/testify v1.7.0
-	go.opentelemetry.io/collector v0.38.1-0.20211103011348-c24dfeb047a8
-	go.opentelemetry.io/collector/model v0.38.1-0.20211103011348-c24dfeb047a8
+	go.opentelemetry.io/collector v0.38.1-0.20211103215828-cffbecb2ac9e
+	go.opentelemetry.io/collector/model v0.38.1-0.20211103215828-cffbecb2ac9e
 	go.uber.org/zap v1.19.1
-	google.golang.org/grpc v1.41.0
+	google.golang.org/grpc v1.42.0
 )
 
 require go.uber.org/multierr v1.7.0
@@ -22,7 +22,7 @@ require (
 	github.com/gogo/googleapis v1.4.1 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
-	github.com/jaegertracing/jaeger v1.27.0 // indirect
+	github.com/jaegertracing/jaeger v1.28.0 // indirect
 	github.com/knadh/koanf v1.3.0 // indirect
 	github.com/magiconair/properties v1.8.5 // indirect
 	github.com/mitchellh/copystructure v1.2.0 // indirect

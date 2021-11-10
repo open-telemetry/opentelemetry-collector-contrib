@@ -96,7 +96,7 @@ func parseInterfaceToMap(msi map[string]interface{}) pdata.AttributeValue {
 // AttributeValueArray
 func parseInterfaceToArray(ai []interface{}) pdata.AttributeValue {
 	iv := pdata.NewAttributeValueArray()
-	av := iv.ArrayVal()
+	av := iv.SliceVal()
 	av.EnsureCapacity(len(ai))
 	for _, value := range ai {
 		parseToAttributeValue(value).CopyTo(av.AppendEmpty())

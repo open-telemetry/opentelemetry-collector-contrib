@@ -24,7 +24,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudspannerreceiver/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudspannerreceiver/internal/statsreader"
@@ -51,7 +51,7 @@ func (r mockErrorCompositeReader) Shutdown() {
 }
 
 func TestNewGoogleCloudSpannerReceiver(t *testing.T) {
-	logger := zap.NewNop()
+	logger := zaptest.NewLogger(t)
 	cfg := createDefaultConfig().(*Config)
 	receiver := newGoogleCloudSpannerReceiver(logger, cfg)
 
@@ -92,7 +92,7 @@ func TestStart(t *testing.T) {
 
 	for name, testCase := range testCases {
 		t.Run(name, func(t *testing.T) {
-			logger := zap.NewNop()
+			logger := zaptest.NewLogger(t)
 			cfg := createConfig(testCase.serviceAccountPath)
 			host := componenttest.NewNopHost()
 
@@ -126,7 +126,7 @@ func TestInitializeProjectReaders(t *testing.T) {
 
 	for name, testCase := range testCases {
 		t.Run(name, func(t *testing.T) {
-			logger := zap.NewNop()
+			logger := zaptest.NewLogger(t)
 			cfg := createConfig(testCase.serviceAccountPath)
 
 			receiver := newGoogleCloudSpannerReceiver(logger, cfg)
@@ -167,7 +167,7 @@ func TestNewProjectReader(t *testing.T) {
 
 	for name, testCase := range testCases {
 		t.Run(name, func(t *testing.T) {
-			logger := zap.NewNop()
+			logger := zaptest.NewLogger(t)
 			cfg := createConfig(testCase.serviceAccountPath)
 			var parsedMetadata []*metadata.MetricsMetadata
 
@@ -186,7 +186,7 @@ func TestNewProjectReader(t *testing.T) {
 }
 
 func TestCollectData(t *testing.T) {
-	logger := zap.NewNop()
+	logger := zaptest.NewLogger(t)
 
 	testCases := map[string]struct {
 		nextConsumer  consumer.Metrics
@@ -220,7 +220,7 @@ func TestCollectData(t *testing.T) {
 }
 
 func TestGoogleCloudSpannerReceiver_Shutdown(t *testing.T) {
-	logger := zap.NewNop()
+	logger := zaptest.NewLogger(t)
 	projectReader := statsreader.NewProjectReader([]statsreader.CompositeReader{}, logger)
 
 	receiver := &googleCloudSpannerReceiver{

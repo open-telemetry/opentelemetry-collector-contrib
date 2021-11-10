@@ -46,6 +46,12 @@ jobs:
       - name: Install Tools
         if: steps.tool-cache.outputs.cache-hit != 'true'
         run: make install-tools
+      - run: make otelcontribcol
+      - name: Upload Collector Binaries
+        uses: actions/upload-artifact@v2
+        with:
+          name: collector-binaries
+          path: ./bin/*
       - name: Split Loadtest Jobs
         id: splitloadtest
         run: ./.github/workflows/scripts/setup_e2e_tests.sh
@@ -101,7 +107,12 @@ jobs:
             /home/runner/.cache/go-build
           key: v1-go-pkg-mod-${{ runner.os }}-${{ hashFiles('**/go.mod', '**/go.sum') }}
       - run: mkdir -p results && touch results/TESTRESULTS.md
-      - run: make otelcontribcol
+      - name: Download Collector Binaries
+        uses: actions/download-artifact@v2
+        with:
+          name: collector-binaries
+          path: bin/
+      - run: chmod +x bin/*
       - name: Loadtest
         run: make -C testbed run-tests 
         env:

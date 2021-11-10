@@ -4,12 +4,12 @@ go 1.17
 
 require (
 	github.com/hashicorp/go-hclog v0.16.2
-	github.com/jaegertracing/jaeger v1.27.0
+	github.com/jaegertracing/jaeger v1.28.0
 	github.com/logzio/jaeger-logzio v1.0.4
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.38.0
 	github.com/stretchr/testify v1.7.0
-	go.opentelemetry.io/collector v0.38.1-0.20211103011348-c24dfeb047a8
-	go.opentelemetry.io/collector/model v0.38.1-0.20211103011348-c24dfeb047a8
+	go.opentelemetry.io/collector v0.38.1-0.20211103215828-cffbecb2ac9e
+	go.opentelemetry.io/collector/model v0.38.1-0.20211103215828-cffbecb2ac9e
 	go.uber.org/zap v1.19.1
 )
 
@@ -20,7 +20,7 @@ require (
 	github.com/beeker1121/goque v2.1.0+incompatible // indirect
 	github.com/cenkalti/backoff/v4 v4.1.1 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
-	github.com/fatih/color v1.9.0 // indirect
+	github.com/fatih/color v1.12.0 // indirect
 	github.com/fsnotify/fsnotify v1.5.1 // indirect
 	github.com/go-ole/go-ole v1.2.5 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
@@ -31,7 +31,7 @@ require (
 	github.com/logzio/logzio-go v1.0.3 // indirect
 	github.com/magiconair/properties v1.8.5 // indirect
 	github.com/mailru/easyjson v0.7.7 // indirect
-	github.com/mattn/go-colorable v0.1.6 // indirect
+	github.com/mattn/go-colorable v0.1.8 // indirect
 	github.com/mattn/go-isatty v0.0.12 // indirect
 	github.com/mitchellh/copystructure v1.2.0 // indirect
 	github.com/mitchellh/mapstructure v1.4.2 // indirect

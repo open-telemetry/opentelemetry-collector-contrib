@@ -16,6 +16,8 @@ package datadogexporter
 
 import (
 	"context"
+	"os"
+	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
@@ -44,30 +46,36 @@ func NewFactory() component.ExporterFactory {
 	)
 }
 
+func defaulttimeoutSettings() exporterhelper.TimeoutSettings {
+	return exporterhelper.TimeoutSettings{
+		Timeout: 15 * time.Second,
+	}
+}
+
 // createDefaultConfig creates the default exporter configuration
 func createDefaultConfig() config.Exporter {
 	return &ddconfig.Config{
 		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
-		TimeoutSettings:  exporterhelper.DefaultTimeoutSettings(),
+		TimeoutSettings:  defaulttimeoutSettings(),
 		RetrySettings:    exporterhelper.DefaultRetrySettings(),
 		QueueSettings:    exporterhelper.DefaultQueueSettings(),
 
 		API: ddconfig.APIConfig{
-			Key:  "$DD_API_KEY", // Must be set if using API
-			Site: "$DD_SITE",    // If not provided, set during config sanitization
+			Key:  os.Getenv("DD_API_KEY"), // Must be set if using API
+			Site: os.Getenv("DD_SITE"),    // If not provided, set during config sanitization
 		},
 
 		TagsConfig: ddconfig.TagsConfig{
-			Hostname:   "$DD_HOST",
-			Env:        "$DD_ENV",
-			Service:    "$DD_SERVICE",
-			Version:    "$DD_VERSION",
-			EnvVarTags: "$DD_TAGS", // Only taken into account if Tags is not set
+			Hostname:   os.Getenv("DD_HOST"),
+			Env:        os.Getenv("DD_ENV"),
+			Service:    os.Getenv("DD_SERVICE"),
+			Version:    os.Getenv("DD_VERSION"),
+			EnvVarTags: os.Getenv("DD_TAGS"), // Only taken into account if Tags is not set
 		},
 
 		Metrics: ddconfig.MetricsConfig{
 			TCPAddr: confignet.TCPAddr{
-				Endpoint: "$DD_URL", // If not provided, set during config sanitization
+				Endpoint: os.Getenv("DD_URL"), // If not provided, set during config sanitization
 			},
 			SendMonotonic: true,
 			DeltaTTL:      3600,
@@ -85,7 +93,7 @@ func createDefaultConfig() config.Exporter {
 		Traces: ddconfig.TracesConfig{
 			SampleRate: 1,
 			TCPAddr: confignet.TCPAddr{
-				Endpoint: "$DD_APM_URL", // If not provided, set during config sanitization
+				Endpoint: os.Getenv("DD_APM_URL"), // If not provided, set during config sanitization
 			},
 			IgnoreResources: []string{},
 		},
