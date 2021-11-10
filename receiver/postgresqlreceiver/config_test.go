@@ -20,34 +20,27 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/config/confignet"
-	"go.opentelemetry.io/collector/config/configtls"
 	"go.uber.org/multierr"
 )
 
 func TestValidate(t *testing.T) {
 	testCases := []struct {
-		desc     string
-		cfg      *Config
-		expected error
+		desc                  string
+		defaultConfigModifier func(cfg *Config)
+		expected              error
 	}{
 		{
-			desc: "missing username and password",
-			cfg:  &Config{},
+			desc:                  "missing username and password",
+			defaultConfigModifier: func(cfg *Config) {},
 			expected: multierr.Combine(
 				errors.New(ErrNoUsername),
 				errors.New(ErrNoPassword),
-				errors.New(ErrTransportsSupported),
 			),
 		},
 		{
 			desc: "missing password",
-			cfg: &Config{
-				Username: "otel",
-				NetAddr: confignet.NetAddr{
-					Endpoint:  "localhost:5432",
-					Transport: "tcp",
-				},
+			defaultConfigModifier: func(cfg *Config) {
+				cfg.Username = "otel"
 			},
 			expected: multierr.Combine(
 				errors.New(ErrNoPassword),
@@ -55,12 +48,8 @@ func TestValidate(t *testing.T) {
 		},
 		{
 			desc: "missing username",
-			cfg: &Config{
-				Password: "otel",
-				NetAddr: confignet.NetAddr{
-					Endpoint:  "localhost:5432",
-					Transport: "tcp",
-				},
+			defaultConfigModifier: func(cfg *Config) {
+				cfg.Password = "otel"
 			},
 			expected: multierr.Combine(
 				errors.New(ErrNoUsername),
@@ -68,13 +57,10 @@ func TestValidate(t *testing.T) {
 		},
 		{
 			desc: "bad endpoint",
-			cfg: &Config{
-				Username: "otel",
-				Password: "otel",
-				NetAddr: confignet.NetAddr{
-					Endpoint:  "open-telemetry",
-					Transport: "tcp",
-				},
+			defaultConfigModifier: func(cfg *Config) {
+				cfg.Username = "otel"
+				cfg.Password = "otel"
+				cfg.Endpoint = "open-telemetry"
 			},
 			expected: multierr.Combine(
 				errors.New(ErrHostPort),
@@ -82,13 +68,10 @@ func TestValidate(t *testing.T) {
 		},
 		{
 			desc: "bad transport",
-			cfg: &Config{
-				Username: "otel",
-				Password: "otel",
-				NetAddr: confignet.NetAddr{
-					Endpoint:  "localhost:5432",
-					Transport: "teacup",
-				},
+			defaultConfigModifier: func(cfg *Config) {
+				cfg.Username = "otel"
+				cfg.Password = "otel"
+				cfg.Transport = "teacup"
 			},
 			expected: multierr.Combine(
 				errors.New(ErrTransportsSupported),
@@ -96,20 +79,12 @@ func TestValidate(t *testing.T) {
 		},
 		{
 			desc: "unsupported SSL params",
-			cfg: &Config{
-				Username: "otel",
-				Password: "otel",
-				NetAddr: confignet.NetAddr{
-					Endpoint:  "localhost:5432",
-					Transport: "unix",
-				},
-				TLSClientSetting: configtls.TLSClientSetting{
-					ServerName: "notlocalhost",
-					TLSSetting: configtls.TLSSetting{
-						MinVersion: "1.0",
-						MaxVersion: "1.7",
-					},
-				},
+			defaultConfigModifier: func(cfg *Config) {
+				cfg.Username = "otel"
+				cfg.Password = "otel"
+				cfg.ServerName = "notlocalhost"
+				cfg.MinVersion = "1.0"
+				cfg.MaxVersion = "1.0"
 			},
 			expected: multierr.Combine(
 				fmt.Errorf(ErrNotSupported, "ServerName"),
@@ -119,20 +94,19 @@ func TestValidate(t *testing.T) {
 		},
 		{
 			desc: "no error",
-			cfg: &Config{
-				Username: "otel",
-				Password: "otel",
-				NetAddr: confignet.NetAddr{
-					Endpoint:  "localhost:5432",
-					Transport: "tcp",
-				},
+			defaultConfigModifier: func(cfg *Config) {
+				cfg.Username = "otel"
+				cfg.Password = "otel"
 			},
 			expected: nil,
 		},
 	}
 	for _, tC := range testCases {
 		t.Run(tC.desc, func(t *testing.T) {
-			actual := tC.cfg.Validate()
+			factory := NewFactory()
+			cfg := factory.CreateDefaultConfig().(*Config)
+			tC.defaultConfigModifier(cfg)
+			actual := cfg.Validate()
 			require.Equal(t, tC.expected, actual)
 		})
 	}
