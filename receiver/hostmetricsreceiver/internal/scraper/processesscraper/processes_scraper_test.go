@@ -136,15 +136,15 @@ func validateRealData(t *testing.T, metrics pdata.MetricSlice) {
 		assertContainsStatus := func(statusVal string) {
 			points := countMetric.Sum().DataPoints()
 			for i := 0; i < points.Len(); i++ {
-				v, ok := points.At(i).Attributes().Get(metadata.Labels.Status)
+				v, ok := points.At(i).Attributes().Get(metadata.Attributes.Status)
 				if ok && v.StringVal() == statusVal {
 					return
 				}
 			}
 			assert.Failf("missing-metric", "metric is missing %q status label", statusVal)
 		}
-		assertContainsStatus(metadata.LabelStatus.Running)
-		assertContainsStatus(metadata.LabelStatus.Blocked)
+		assertContainsStatus(metadata.AttributeStatus.Running)
+		assertContainsStatus(metadata.AttributeStatus.Blocked)
 	}
 
 	if expectProcessesCreatedMetric {
@@ -203,12 +203,12 @@ func validateFakeData(t *testing.T, metrics pdata.MetricSlice) {
 		attrs := map[string]int64{}
 		for i := 0; i < points.Len(); i++ {
 			point := points.At(i)
-			val, ok := point.Attributes().Get(metadata.L.Status)
+			val, ok := point.Attributes().Get(metadata.A.Status)
 			assert.Truef(ok, "Missing status attribute in data point %d", i)
 			attrs[val.StringVal()] = point.IntVal()
 		}
 
-		ls := metadata.LabelStatus
+		ls := metadata.AttributeStatus
 		assert.Equal(attrs, map[string]int64{
 			ls.Blocked:  3,
 			ls.Paging:   1,
