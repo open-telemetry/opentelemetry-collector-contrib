@@ -28,11 +28,12 @@ exporter/f5cloudexporter/                            @open-telemetry/collector-c
 exporter/honeycombexporter/                          @open-telemetry/collector-contrib-approvers @paulosman @lizthegrey @MikeGoldsmith
 exporter/humioexporter/                              @open-telemetry/collector-contrib-approvers @xitric
 exporter/jaegerthrifthttpexporter/                   @open-telemetry/collector-contrib-approvers @jpkrohling @pavolloffay
-exporter/awskinesisexporter/                         @open-telemetry/collector-contrib-approvers @anuraaga
+exporter/awskinesisexporter/                         @open-telemetry/collector-contrib-approvers @anuraaga @MovieStoreGuy
 exporter/loadbalancingexporter/                      @open-telemetry/collector-contrib-approvers @jpkrohling
 exporter/logzioexporter/                             @open-telemetry/collector-contrib-approvers @jkowall @Doron-Bargo @yotamloe
 exporter/lokiexporter/                               @open-telemetry/collector-contrib-approvers @gramidt
 exporter/newrelicexporter/                           @open-telemetry/collector-contrib-approvers @alanwest @a-feld @jack-berg @nrcventura
+exporter/observiqexporter/                           @open-telemetry/collector-contrib-approvers @binaryfissiongames
 exporter/sapmexporter/                               @open-telemetry/collector-contrib-approvers @owais @dmitryax
 exporter/sentryexporter/                             @open-telemetry/collector-contrib-approvers @AbhiPrasad
 exporter/signalfxexporter/                           @open-telemetry/collector-contrib-approvers @pmcollins @asuresh4

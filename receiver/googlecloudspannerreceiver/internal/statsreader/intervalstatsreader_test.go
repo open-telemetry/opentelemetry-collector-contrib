@@ -21,7 +21,7 @@ import (
 
 	"cloud.google.com/go/spanner"
 	"github.com/stretchr/testify/assert"
-	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudspannerreceiver/internal/datasource"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudspannerreceiver/internal/metadata"
@@ -55,7 +55,7 @@ func TestNewIntervalStatsReader(t *testing.T) {
 	metricsMetadata := &metadata.MetricsMetadata{
 		Name: name,
 	}
-	logger := zap.NewNop()
+	logger := zaptest.NewLogger(t)
 	config := ReaderConfig{
 		TopMetricsQueryMaxRows: topMetricsQueryMaxRows,
 		BackfillEnabled:        true,
@@ -74,7 +74,7 @@ func TestNewIntervalStatsReader(t *testing.T) {
 func TestIntervalStatsReader_NewPullStatement(t *testing.T) {
 	databaseID := datasource.NewDatabaseID(projectID, instanceID, databaseName)
 	timestamp := time.Now().UTC()
-	logger := zap.NewNop()
+	logger := zaptest.NewLogger(t)
 	config := ReaderConfig{
 		TopMetricsQueryMaxRows: topMetricsQueryMaxRows,
 		BackfillEnabled:        false,

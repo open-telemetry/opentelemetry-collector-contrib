@@ -23,7 +23,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/model/pdata"
 	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
 )
@@ -53,11 +52,9 @@ func createSimpleLogData(numberOfLogs int) pdata.Logs {
 func TestNewLogsExporter(t *testing.T) {
 	got, err := newLogsExporter(componenttest.NewNopExporterCreateSettings(), &Config{
 		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
-		TCPAddr: confignet.TCPAddr{
-			Endpoint: "cls.ap-beijing.tencentcloudapi.com",
-		},
-		LogSet: "demo-logset",
-		Topic:  "demo-topic",
+		Region:           "ap-beijing",
+		LogSet:           "demo-logset",
+		Topic:            "demo-topic",
 	})
 	assert.NoError(t, err)
 	require.NotNil(t, got)
@@ -69,6 +66,6 @@ func TestNewLogsExporter(t *testing.T) {
 
 func TestNewFailsWithEmptyLogsExporterName(t *testing.T) {
 	got, err := newLogsExporter(componenttest.NewNopExporterCreateSettings(), &Config{})
-	assert.Error(t, err)
-	require.Nil(t, got)
+	assert.NoError(t, err)
+	require.NotNil(t, got)
 }

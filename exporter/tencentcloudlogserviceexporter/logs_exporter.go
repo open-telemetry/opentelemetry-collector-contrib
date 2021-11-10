@@ -26,15 +26,11 @@ import (
 
 // newLogsExporter return a new LogService logs exporter.
 func newLogsExporter(set component.ExporterCreateSettings, cfg config.Exporter) (component.LogsExporter, error) {
-
 	l := &logServiceLogsSender{
 		logger: set.Logger,
 	}
 
-	var err error
-	if l.client, err = newLogServiceClient(cfg.(*Config), set.Logger); err != nil {
-		return nil, err
-	}
+	l.client = newLogServiceClient(cfg.(*Config), set.Logger)
 
 	return exporterhelper.NewLogsExporter(
 		cfg,
