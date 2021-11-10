@@ -18,6 +18,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   ([#793](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/793))
 - `opentelemetry-instrumentation-pymysql` Add support for PyMySQL 1.x series
   ([#792](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/792))
+- Add support for generic OTEL_PYTHON_EXCLUDED_URLS variable
+  ([#790](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/790))
 
 ### Fixed
 

@@ -15,13 +15,14 @@
 from os import environ
 from re import compile as re_compile
 from re import search
+from typing import Iterable
 from urllib.parse import urlparse, urlunparse
 
 
 class ExcludeList:
     """Class to exclude certain paths (given as a list of regexes) from tracing requests"""
 
-    def __init__(self, excluded_urls):
+    def __init__(self, excluded_urls: Iterable[str]):
         self._excluded_urls = excluded_urls
         if self._excluded_urls:
             self._regex = re_compile("|".join(excluded_urls))
@@ -47,24 +48,29 @@ def get_traced_request_attrs(instrumentation):
     return traced_request_attrs
 
 
-def get_excluded_urls(instrumentation):
+def get_excluded_urls(instrumentation: str) -> ExcludeList:
+    # Get instrumentation-specific excluded URLs. If not set, retrieve them
+    # from generic variable.
     excluded_urls = environ.get(
-        _root.format(f"{instrumentation}_EXCLUDED_URLS"), []
+        _root.format(f"{instrumentation}_EXCLUDED_URLS"),
+        environ.get(_root.format("EXCLUDED_URLS"), ""),
     )
 
     return parse_excluded_urls(excluded_urls)
 
 
-def parse_excluded_urls(excluded_urls):
+def parse_excluded_urls(excluded_urls: str) -> ExcludeList:
     """
     Small helper to put an arbitrary url list inside of ExcludeList
     """
     if excluded_urls:
-        excluded_urls = [
+        excluded_url_list = [
             excluded_url.strip() for excluded_url in excluded_urls.split(",")
         ]
+    else:
+        excluded_url_list = []
 
-    return ExcludeList(excluded_urls)
+    return ExcludeList(excluded_url_list)
 
 
 def remove_url_credentials(url: str) -> str:
