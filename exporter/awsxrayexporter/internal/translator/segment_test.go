@@ -62,6 +62,7 @@ func TestClientSpanWithRpcAwsSdkClientAttributes(t *testing.T) {
 	segment, _ := MakeSegment(span, resource, nil, false)
 	assert.Equal(t, "DynamoDB", *segment.Name)
 	assert.Equal(t, conventions.AttributeCloudProviderAWS, *segment.Namespace)
+	assert.Equal(t, "GetItem", *segment.AWS.Operation)
 	assert.Equal(t, "subsegment", *segment.Type)
 
 	jsonStr, err := MakeSegmentDocumentString(span, resource, nil, false)
@@ -69,6 +70,7 @@ func TestClientSpanWithRpcAwsSdkClientAttributes(t *testing.T) {
 	assert.NotNil(t, jsonStr)
 	assert.Nil(t, err)
 	assert.True(t, strings.Contains(jsonStr, "DynamoDB"))
+	assert.True(t, strings.Contains(jsonStr, "GetItem"))
 	assert.False(t, strings.Contains(jsonStr, user))
 	assert.False(t, strings.Contains(jsonStr, "user"))
 }
@@ -83,6 +85,7 @@ func TestClientSpanWithLegacyAwsSdkClientAttributes(t *testing.T) {
 	attributes[conventions.AttributeHTTPHost] = "dynamodb.us-east-1.amazonaws.com"
 	attributes[conventions.AttributeHTTPTarget] = "/"
 	attributes[awsxray.AWSServiceAttribute] = "DynamoDB"
+	attributes[conventions.AttributeRPCMethod] = "FalseAWSOperationAttribute"
 	attributes[awsxray.AWSOperationAttribute] = "GetItem"
 	attributes[awsxray.AWSRequestIDAttribute] = "18BO1FEPJSSAOGNJEDPTPCMIU7VV4KQNSO5AEMVJF66Q9ASUAAJG"
 	attributes[awsxray.AWSTableNameAttribute] = "otel-dev-Testing"
@@ -92,6 +95,7 @@ func TestClientSpanWithLegacyAwsSdkClientAttributes(t *testing.T) {
 	segment, _ := MakeSegment(span, resource, nil, false)
 	assert.Equal(t, "DynamoDB", *segment.Name)
 	assert.Equal(t, conventions.AttributeCloudProviderAWS, *segment.Namespace)
+	assert.Equal(t, "GetItem", *segment.AWS.Operation)
 	assert.Equal(t, "subsegment", *segment.Type)
 
 	jsonStr, err := MakeSegmentDocumentString(span, resource, nil, false)
@@ -99,6 +103,7 @@ func TestClientSpanWithLegacyAwsSdkClientAttributes(t *testing.T) {
 	assert.NotNil(t, jsonStr)
 	assert.Nil(t, err)
 	assert.True(t, strings.Contains(jsonStr, "DynamoDB"))
+	assert.True(t, strings.Contains(jsonStr, "GetItem"))
 	assert.False(t, strings.Contains(jsonStr, user))
 	assert.False(t, strings.Contains(jsonStr, "user"))
 }
