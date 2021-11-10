@@ -939,7 +939,7 @@ func TestStartTimeMetricRegex(t *testing.T) {
 func testEndToEndRegex(t *testing.T, targets []*testData, useStartTimeMetric bool, startTimeMetricRegex string) {
 	// 1. setup mock server
 	mp, cfg, err := setupMockPrometheus(targets...)
-	require.Nilf(t, err, "Failed to create Promtheus config: %v", err)
+	require.Nilf(t, err, "Failed to create Prometheus config: %v", err)
 	defer mp.Close()
 
 	cms := new(consumertest.MetricsSink)
