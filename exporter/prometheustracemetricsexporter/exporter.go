@@ -16,9 +16,10 @@ package prometheustracemetricsexporter
 
 import (
 	"context"
-	"log"
 	"net/http"
-	"sync"
+	"sync/atomic"
+
+	"go.uber.org/zap"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -30,6 +31,9 @@ import (
 
 type (
 	exporter struct {
+		logger      *zap.Logger
+		loggerSugar *zap.SugaredLogger
+
 		cfg *Config
 
 		spanCounter   prometheus.Counter
@@ -40,9 +44,9 @@ type (
 		serverStopper serverStopper
 	}
 
-	serverStopper struct {
-		lock sync.Mutex
-		cb   func() error
+	serverStopperCallback func() error
+	serverStopper         struct {
+		cb atomic.Value
 	}
 )
 
@@ -54,28 +58,27 @@ var (
 	_ component.TracesExporter = &exporter{}
 )
 
-func (ss *serverStopper) Set(cb func() error) {
-	ss.lock.Lock()
-	defer ss.lock.Unlock()
-
-	ss.cb = cb
+func (ss *serverStopper) Set(cb serverStopperCallback) {
+	ss.cb.Store(cb)
 }
 
 func (ss *serverStopper) Stop() error {
-	ss.lock.Lock()
-	defer ss.lock.Unlock()
-
-	if ss.cb == nil {
+	cb := ss.cb.Load()
+	if cb == nil {
 		return nil
 	}
-	return ss.cb()
+
+	return cb.(serverStopperCallback)()
 }
 
-func newExporter(cfg *Config) *exporter {
+func newExporter(logger *zap.Logger, cfg *Config) *exporter {
 	e := &exporter{
-		cfg:       cfg,
-		marshaler: otlp.NewProtobufTracesMarshaler(),
+		logger:      logger,
+		loggerSugar: logger.Sugar(),
+		cfg:         cfg,
+		marshaler:   otlp.NewProtobufTracesMarshaler(),
 	}
+
 	e.createPromCounters()
 
 	return e
@@ -95,9 +98,14 @@ func (e *exporter) Start(_ context.Context, _ component.Host) error {
 				},
 			)}
 
+		e.logger.Info("Starting HTTP server",
+			zap.String("endpoint", e.cfg.ScrapeListenAddr),
+			zap.String("handle", e.cfg.ScrapePath),
+		)
+
 		err := server.ListenAndServe()
 		if err != nil {
-			log.Printf("HTTP server (%s) listen failed: %s", metricsNamespace, err)
+			e.loggerSugar.Errorf("Could not start HTTP server: %s", err)
 		} else {
 			e.serverStopper.Set(server.Close)
 		}
@@ -109,7 +117,7 @@ func (e *exporter) Start(_ context.Context, _ component.Host) error {
 func (e *exporter) Shutdown(_ context.Context) error {
 	err := e.serverStopper.Stop()
 	if err != nil {
-		log.Printf("Could not stop HTTP server (%s) properly: %s", metricsNamespace, err)
+		e.loggerSugar.Warnf("Could not stop HTTP server properly: %s", err)
 	}
 
 	prometheus.Unregister(e.spanCounter)
@@ -125,7 +133,7 @@ func (e *exporter) Capabilities() consumer.Capabilities {
 func (e *exporter) ConsumeTraces(_ context.Context, td pdata.Traces) error {
 	raw, err := e.marshaler.MarshalTraces(td)
 	if err != nil {
-		log.Printf("Could not marshal traces: %s", err)
+		e.loggerSugar.Warnf("Could not marshal traces: %s", err)
 		return nil
 	}
 

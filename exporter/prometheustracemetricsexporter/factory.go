@@ -41,5 +41,5 @@ func createTraceExporter(_ context.Context, set component.ExporterCreateSettings
 		return nil, errors.New("invalid configuration")
 	}
 
-	return newExporter(ptmCfg), nil
+	return newExporter(set.Logger, ptmCfg), nil
 }
