@@ -1,6 +1,10 @@
 receivers:
   postgresql:
     endpoint: localhost:5432
+    username: otel
+    password: $POSTGRESQL_PASSWORD
+  postgresql/all:
+    endpoint: localhost:5432
     transport: tcp
     username: otel
     password: $POSTGRESQL_PASSWORD
