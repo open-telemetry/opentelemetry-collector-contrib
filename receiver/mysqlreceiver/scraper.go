@@ -138,7 +138,7 @@ func (m *mySQLScraper) scrape(context.Context) (pdata.Metrics, error) {
 		}
 		labels := pdata.NewAttributeMap()
 		if f, ok := m.parseFloat(k, v); ok {
-			labels.Insert(metadata.L.BufferPoolSize, pdata.NewAttributeValueString("total"))
+			labels.Insert(metadata.A.BufferPoolSize, pdata.NewAttributeValueString("total"))
 			addToDoubleMetric(bufferPoolSize, labels, f, now)
 		}
 	}
@@ -157,358 +157,358 @@ func (m *mySQLScraper) scrape(context.Context) (pdata.Metrics, error) {
 		// buffer_pool_pages
 		case "Innodb_buffer_pool_pages_data":
 			if f, ok := m.parseFloat(k, v); ok {
-				labels.Insert(metadata.L.BufferPoolPages, pdata.NewAttributeValueString("data"))
+				labels.Insert(metadata.A.BufferPoolPages, pdata.NewAttributeValueString("data"))
 				addToDoubleMetric(bufferPoolPages, labels, f, now)
 			}
 		case "Innodb_buffer_pool_pages_dirty":
 			if f, ok := m.parseFloat(k, v); ok {
-				labels.Insert(metadata.L.BufferPoolPages, pdata.NewAttributeValueString("dirty"))
+				labels.Insert(metadata.A.BufferPoolPages, pdata.NewAttributeValueString("dirty"))
 				addToDoubleMetric(bufferPoolPages, labels, f, now)
 			}
 		case "Innodb_buffer_pool_pages_flushed":
 			if f, ok := m.parseFloat(k, v); ok {
-				labels.Insert(metadata.L.BufferPoolPages, pdata.NewAttributeValueString("flushed"))
+				labels.Insert(metadata.A.BufferPoolPages, pdata.NewAttributeValueString("flushed"))
 				addToDoubleMetric(bufferPoolPages, labels, f, now)
 			}
 		case "Innodb_buffer_pool_pages_free":
 			if f, ok := m.parseFloat(k, v); ok {
-				labels.Insert(metadata.L.BufferPoolPages, pdata.NewAttributeValueString("free"))
+				labels.Insert(metadata.A.BufferPoolPages, pdata.NewAttributeValueString("free"))
 				addToDoubleMetric(bufferPoolPages, labels, f, now)
 			}
 		case "Innodb_buffer_pool_pages_misc":
 			if f, ok := m.parseFloat(k, v); ok {
-				labels.Insert(metadata.L.BufferPoolPages, pdata.NewAttributeValueString("misc"))
+				labels.Insert(metadata.A.BufferPoolPages, pdata.NewAttributeValueString("misc"))
 				addToDoubleMetric(bufferPoolPages, labels, f, now)
 			}
 		case "Innodb_buffer_pool_pages_total":
 			if f, ok := m.parseFloat(k, v); ok {
-				labels.Insert(metadata.L.BufferPoolPages, pdata.NewAttributeValueString("total"))
+				labels.Insert(metadata.A.BufferPoolPages, pdata.NewAttributeValueString("total"))
 				addToDoubleMetric(bufferPoolPages, labels, f, now)
 			}
 
 		// buffer_pool_operations
 		case "Innodb_buffer_pool_read_ahead_rnd":
 			if i, ok := m.parseInt(k, v); ok {
-				labels.Insert(metadata.L.BufferPoolOperations, pdata.NewAttributeValueString("read_ahead_rnd"))
+				labels.Insert(metadata.A.BufferPoolOperations, pdata.NewAttributeValueString("read_ahead_rnd"))
 				addToIntMetric(bufferPoolOperations, labels, i, now)
 			}
 		case "Innodb_buffer_pool_read_ahead":
 			if i, ok := m.parseInt(k, v); ok {
-				labels.Insert(metadata.L.BufferPoolOperations, pdata.NewAttributeValueString("read_ahead"))
+				labels.Insert(metadata.A.BufferPoolOperations, pdata.NewAttributeValueString("read_ahead"))
 				addToIntMetric(bufferPoolOperations, labels, i, now)
 			}
 		case "Innodb_buffer_pool_read_ahead_evicted":
 			if i, ok := m.parseInt(k, v); ok {
-				labels.Insert(metadata.L.BufferPoolOperations, pdata.NewAttributeValueString("read_ahead_evicted"))
+				labels.Insert(metadata.A.BufferPoolOperations, pdata.NewAttributeValueString("read_ahead_evicted"))
 				addToIntMetric(bufferPoolOperations, labels, i, now)
 			}
 		case "Innodb_buffer_pool_read_requests":
 			if i, ok := m.parseInt(k, v); ok {
-				labels.Insert(metadata.L.BufferPoolOperations, pdata.NewAttributeValueString("read_requests"))
+				labels.Insert(metadata.A.BufferPoolOperations, pdata.NewAttributeValueString("read_requests"))
 				addToIntMetric(bufferPoolOperations, labels, i, now)
 			}
 		case "Innodb_buffer_pool_reads":
 			if i, ok := m.parseInt(k, v); ok {
-				labels.Insert(metadata.L.BufferPoolOperations, pdata.NewAttributeValueString("reads"))
+				labels.Insert(metadata.A.BufferPoolOperations, pdata.NewAttributeValueString("reads"))
 				addToIntMetric(bufferPoolOperations, labels, i, now)
 			}
 		case "Innodb_buffer_pool_wait_free":
 			if i, ok := m.parseInt(k, v); ok {
-				labels.Insert(metadata.L.BufferPoolOperations, pdata.NewAttributeValueString("wait_free"))
+				labels.Insert(metadata.A.BufferPoolOperations, pdata.NewAttributeValueString("wait_free"))
 				addToIntMetric(bufferPoolOperations, labels, i, now)
 			}
 		case "Innodb_buffer_pool_write_requests":
 			if i, ok := m.parseInt(k, v); ok {
-				labels.Insert(metadata.L.BufferPoolOperations, pdata.NewAttributeValueString("write_requests"))
+				labels.Insert(metadata.A.BufferPoolOperations, pdata.NewAttributeValueString("write_requests"))
 				addToIntMetric(bufferPoolOperations, labels, i, now)
 			}
 
 		// buffer_pool_size
 		case "Innodb_buffer_pool_bytes_data":
 			if f, ok := m.parseFloat(k, v); ok {
-				labels.Insert(metadata.L.BufferPoolSize, pdata.NewAttributeValueString("data"))
+				labels.Insert(metadata.A.BufferPoolSize, pdata.NewAttributeValueString("data"))
 				addToDoubleMetric(bufferPoolSize, labels, f, now)
 			}
 		case "Innodb_buffer_pool_bytes_dirty":
 			if f, ok := m.parseFloat(k, v); ok {
-				labels.Insert(metadata.L.BufferPoolSize, pdata.NewAttributeValueString("dirty"))
+				labels.Insert(metadata.A.BufferPoolSize, pdata.NewAttributeValueString("dirty"))
 				addToDoubleMetric(bufferPoolSize, labels, f, now)
 			}
 
 		// commands
 		case "Com_stmt_execute":
 			if i, ok := m.parseInt(k, v); ok {
-				labels.Insert(metadata.L.Command, pdata.NewAttributeValueString("execute"))
+				labels.Insert(metadata.A.Command, pdata.NewAttributeValueString("execute"))
 				addToIntMetric(commands, labels, i, now)
 			}
 		case "Com_stmt_close":
 			if i, ok := m.parseInt(k, v); ok {
-				labels.Insert(metadata.L.Command, pdata.NewAttributeValueString("close"))
+				labels.Insert(metadata.A.Command, pdata.NewAttributeValueString("close"))
 				addToIntMetric(commands, labels, i, now)
 			}
 		case "Com_stmt_fetch":
 			if i, ok := m.parseInt(k, v); ok {
-				labels.Insert(metadata.L.Command, pdata.NewAttributeValueString("fetch"))
+				labels.Insert(metadata.A.Command, pdata.NewAttributeValueString("fetch"))
 				addToIntMetric(commands, labels, i, now)
 			}
 		case "Com_stmt_prepare":
 			if i, ok := m.parseInt(k, v); ok {
-				labels.Insert(metadata.L.Command, pdata.NewAttributeValueString("prepare"))
+				labels.Insert(metadata.A.Command, pdata.NewAttributeValueString("prepare"))
 				addToIntMetric(commands, labels, i, now)
 			}
 		case "Com_stmt_reset":
 			if i, ok := m.parseInt(k, v); ok {
-				labels.Insert(metadata.L.Command, pdata.NewAttributeValueString("reset"))
+				labels.Insert(metadata.A.Command, pdata.NewAttributeValueString("reset"))
 				addToIntMetric(commands, labels, i, now)
 			}
 		case "Com_stmt_send_long_data":
 			if i, ok := m.parseInt(k, v); ok {
-				labels.Insert(metadata.L.Command, pdata.NewAttributeValueString("send_long_data"))
+				labels.Insert(metadata.A.Command, pdata.NewAttributeValueString("send_long_data"))
 				addToIntMetric(commands, labels, i, now)
 			}
 
 		// handlers
 		case "Handler_commit":
 			if i, ok := m.parseInt(k, v); ok {
-				labels.Insert(metadata.L.Handler, pdata.NewAttributeValueString("commit"))
+				labels.Insert(metadata.A.Handler, pdata.NewAttributeValueString("commit"))
 				addToIntMetric(handlers, labels, i, now)
 			}
 		case "Handler_delete":
 			if i, ok := m.parseInt(k, v); ok {
-				labels.Insert(metadata.L.Handler, pdata.NewAttributeValueString("delete"))
+				labels.Insert(metadata.A.Handler, pdata.NewAttributeValueString("delete"))
 				addToIntMetric(handlers, labels, i, now)
 			}
 		case "Handler_discover":
 			if i, ok := m.parseInt(k, v); ok {
-				labels.Insert(metadata.L.Handler, pdata.NewAttributeValueString("discover"))
+				labels.Insert(metadata.A.Handler, pdata.NewAttributeValueString("discover"))
 				addToIntMetric(handlers, labels, i, now)
 			}
 		case "Handler_external_lock":
 			if i, ok := m.parseInt(k, v); ok {
-				labels.Insert(metadata.L.Handler, pdata.NewAttributeValueString("lock"))
+				labels.Insert(metadata.A.Handler, pdata.NewAttributeValueString("lock"))
 				addToIntMetric(handlers, labels, i, now)
 			}
 		case "Handler_mrr_init":
 			if i, ok := m.parseInt(k, v); ok {
-				labels.Insert(metadata.L.Handler, pdata.NewAttributeValueString("mrr_init"))
+				labels.Insert(metadata.A.Handler, pdata.NewAttributeValueString("mrr_init"))
 				addToIntMetric(handlers, labels, i, now)
 			}
 		case "Handler_prepare":
 			if i, ok := m.parseInt(k, v); ok {
-				labels.Insert(metadata.L.Handler, pdata.NewAttributeValueString("prepare"))
+				labels.Insert(metadata.A.Handler, pdata.NewAttributeValueString("prepare"))
 				addToIntMetric(handlers, labels, i, now)
 			}
 		case "Handler_read_first":
 			if i, ok := m.parseInt(k, v); ok {
-				labels.Insert(metadata.L.Handler, pdata.NewAttributeValueString("read_first"))
+				labels.Insert(metadata.A.Handler, pdata.NewAttributeValueString("read_first"))
 				addToIntMetric(handlers, labels, i, now)
 			}
 		case "Handler_read_key":
 			if i, ok := m.parseInt(k, v); ok {
-				labels.Insert(metadata.L.Handler, pdata.NewAttributeValueString("read_key"))
+				labels.Insert(metadata.A.Handler, pdata.NewAttributeValueString("read_key"))
 				addToIntMetric(handlers, labels, i, now)
 			}
 		case "Handler_read_last":
 			if i, ok := m.parseInt(k, v); ok {
-				labels.Insert(metadata.L.Handler, pdata.NewAttributeValueString("read_last"))
+				labels.Insert(metadata.A.Handler, pdata.NewAttributeValueString("read_last"))
 				addToIntMetric(handlers, labels, i, now)
 			}
 		case "Handler_read_next":
 			if i, ok := m.parseInt(k, v); ok {
-				labels.Insert(metadata.L.Handler, pdata.NewAttributeValueString("read_next"))
+				labels.Insert(metadata.A.Handler, pdata.NewAttributeValueString("read_next"))
 				addToIntMetric(handlers, labels, i, now)
 			}
 		case "Handler_read_prev":
 			if i, ok := m.parseInt(k, v); ok {
-				labels.Insert(metadata.L.Handler, pdata.NewAttributeValueString("read_prev"))
+				labels.Insert(metadata.A.Handler, pdata.NewAttributeValueString("read_prev"))
 				addToIntMetric(handlers, labels, i, now)
 			}
 		case "Handler_read_rnd":
 			if i, ok := m.parseInt(k, v); ok {
-				labels.Insert(metadata.L.Handler, pdata.NewAttributeValueString("read_rnd"))
+				labels.Insert(metadata.A.Handler, pdata.NewAttributeValueString("read_rnd"))
 				addToIntMetric(handlers, labels, i, now)
 			}
 		case "Handler_read_rnd_next":
 			if i, ok := m.parseInt(k, v); ok {
-				labels.Insert(metadata.L.Handler, pdata.NewAttributeValueString("read_rnd_next"))
+				labels.Insert(metadata.A.Handler, pdata.NewAttributeValueString("read_rnd_next"))
 				addToIntMetric(handlers, labels, i, now)
 			}
 		case "Handler_rollback":
 			if i, ok := m.parseInt(k, v); ok {
-				labels.Insert(metadata.L.Handler, pdata.NewAttributeValueString("rollback"))
+				labels.Insert(metadata.A.Handler, pdata.NewAttributeValueString("rollback"))
 				addToIntMetric(handlers, labels, i, now)
 			}
 		case "Handler_savepoint":
 			if i, ok := m.parseInt(k, v); ok {
-				labels.Insert(metadata.L.Handler, pdata.NewAttributeValueString("savepoint"))
+				labels.Insert(metadata.A.Handler, pdata.NewAttributeValueString("savepoint"))
 				addToIntMetric(handlers, labels, i, now)
 			}
 		case "Handler_savepoint_rollback":
 			if i, ok := m.parseInt(k, v); ok {
-				labels.Insert(metadata.L.Handler, pdata.NewAttributeValueString("savepoint_rollback"))
+				labels.Insert(metadata.A.Handler, pdata.NewAttributeValueString("savepoint_rollback"))
 				addToIntMetric(handlers, labels, i, now)
 			}
 		case "Handler_update":
 			if i, ok := m.parseInt(k, v); ok {
-				labels.Insert(metadata.L.Handler, pdata.NewAttributeValueString("update"))
+				labels.Insert(metadata.A.Handler, pdata.NewAttributeValueString("update"))
 				addToIntMetric(handlers, labels, i, now)
 			}
 		case "Handler_write":
 			if i, ok := m.parseInt(k, v); ok {
-				labels.Insert(metadata.L.Handler, pdata.NewAttributeValueString("write"))
+				labels.Insert(metadata.A.Handler, pdata.NewAttributeValueString("write"))
 				addToIntMetric(handlers, labels, i, now)
 			}
 
 		// double_writes
 		case "Innodb_dblwr_pages_written":
 			if i, ok := m.parseInt(k, v); ok {
-				labels.Insert(metadata.L.DoubleWrites, pdata.NewAttributeValueString("written"))
+				labels.Insert(metadata.A.DoubleWrites, pdata.NewAttributeValueString("written"))
 				addToIntMetric(doubleWrites, labels, i, now)
 			}
 		case "Innodb_dblwr_writes":
 			if i, ok := m.parseInt(k, v); ok {
-				labels.Insert(metadata.L.DoubleWrites, pdata.NewAttributeValueString("writes"))
+				labels.Insert(metadata.A.DoubleWrites, pdata.NewAttributeValueString("writes"))
 				addToIntMetric(doubleWrites, labels, i, now)
 			}
 
 		// log_operations
 		case "Innodb_log_waits":
 			if i, ok := m.parseInt(k, v); ok {
-				labels.Insert(metadata.L.LogOperations, pdata.NewAttributeValueString("waits"))
+				labels.Insert(metadata.A.LogOperations, pdata.NewAttributeValueString("waits"))
 				addToIntMetric(logOperations, labels, i, now)
 			}
 		case "Innodb_log_write_requests":
 			if i, ok := m.parseInt(k, v); ok {
-				labels.Insert(metadata.L.LogOperations, pdata.NewAttributeValueString("requests"))
+				labels.Insert(metadata.A.LogOperations, pdata.NewAttributeValueString("requests"))
 				addToIntMetric(logOperations, labels, i, now)
 			}
 		case "Innodb_log_writes":
 			if i, ok := m.parseInt(k, v); ok {
-				labels.Insert(metadata.L.LogOperations, pdata.NewAttributeValueString("writes"))
+				labels.Insert(metadata.A.LogOperations, pdata.NewAttributeValueString("writes"))
 				addToIntMetric(logOperations, labels, i, now)
 			}
 
 		// operations
 		case "Innodb_data_fsyncs":
 			if i, ok := m.parseInt(k, v); ok {
-				labels.Insert(metadata.L.Operations, pdata.NewAttributeValueString("fsyncs"))
+				labels.Insert(metadata.A.Operations, pdata.NewAttributeValueString("fsyncs"))
 				addToIntMetric(operations, labels, i, now)
 			}
 		case "Innodb_data_reads":
 			if i, ok := m.parseInt(k, v); ok {
-				labels.Insert(metadata.L.Operations, pdata.NewAttributeValueString("reads"))
+				labels.Insert(metadata.A.Operations, pdata.NewAttributeValueString("reads"))
 				addToIntMetric(operations, labels, i, now)
 			}
 		case "Innodb_data_writes":
 			if i, ok := m.parseInt(k, v); ok {
-				labels.Insert(metadata.L.Operations, pdata.NewAttributeValueString("writes"))
+				labels.Insert(metadata.A.Operations, pdata.NewAttributeValueString("writes"))
 				addToIntMetric(operations, labels, i, now)
 			}
 
 		// page_operations
 		case "Innodb_pages_created":
 			if i, ok := m.parseInt(k, v); ok {
-				labels.Insert(metadata.L.PageOperations, pdata.NewAttributeValueString("created"))
+				labels.Insert(metadata.A.PageOperations, pdata.NewAttributeValueString("created"))
 				addToIntMetric(pageOperations, labels, i, now)
 			}
 		case "Innodb_pages_read":
 			if i, ok := m.parseInt(k, v); ok {
-				labels.Insert(metadata.L.PageOperations, pdata.NewAttributeValueString("read"))
+				labels.Insert(metadata.A.PageOperations, pdata.NewAttributeValueString("read"))
 				addToIntMetric(pageOperations, labels, i, now)
 			}
 		case "Innodb_pages_written":
 			if i, ok := m.parseInt(k, v); ok {
-				labels.Insert(metadata.L.PageOperations, pdata.NewAttributeValueString("written"))
+				labels.Insert(metadata.A.PageOperations, pdata.NewAttributeValueString("written"))
 				addToIntMetric(pageOperations, labels, i, now)
 			}
 
 		// row_locks
 		case "Innodb_row_lock_waits":
 			if i, ok := m.parseInt(k, v); ok {
-				labels.Insert(metadata.L.RowLocks, pdata.NewAttributeValueString("waits"))
+				labels.Insert(metadata.A.RowLocks, pdata.NewAttributeValueString("waits"))
 				addToIntMetric(rowLocks, labels, i, now)
 			}
 		case "Innodb_row_lock_time":
 			if i, ok := m.parseInt(k, v); ok {
-				labels.Insert(metadata.L.RowLocks, pdata.NewAttributeValueString("time"))
+				labels.Insert(metadata.A.RowLocks, pdata.NewAttributeValueString("time"))
 				addToIntMetric(rowLocks, labels, i, now)
 			}
 
 		// row_operations
 		case "Innodb_rows_deleted":
 			if i, ok := m.parseInt(k, v); ok {
-				labels.Insert(metadata.L.RowOperations, pdata.NewAttributeValueString("deleted"))
+				labels.Insert(metadata.A.RowOperations, pdata.NewAttributeValueString("deleted"))
 				addToIntMetric(rowOperations, labels, i, now)
 			}
 		case "Innodb_rows_inserted":
 			if i, ok := m.parseInt(k, v); ok {
-				labels.Insert(metadata.L.RowOperations, pdata.NewAttributeValueString("inserted"))
+				labels.Insert(metadata.A.RowOperations, pdata.NewAttributeValueString("inserted"))
 				addToIntMetric(rowOperations, labels, i, now)
 			}
 		case "Innodb_rows_read":
 			if i, ok := m.parseInt(k, v); ok {
-				labels.Insert(metadata.L.RowOperations, pdata.NewAttributeValueString("read"))
+				labels.Insert(metadata.A.RowOperations, pdata.NewAttributeValueString("read"))
 				addToIntMetric(rowOperations, labels, i, now)
 			}
 		case "Innodb_rows_updated":
 			if i, ok := m.parseInt(k, v); ok {
-				labels.Insert(metadata.L.RowOperations, pdata.NewAttributeValueString("updated"))
+				labels.Insert(metadata.A.RowOperations, pdata.NewAttributeValueString("updated"))
 				addToIntMetric(rowOperations, labels, i, now)
 			}
 
 		// locks
 		case "Table_locks_immediate":
 			if i, ok := m.parseInt(k, v); ok {
-				labels.Insert(metadata.L.Locks, pdata.NewAttributeValueString("immediate"))
+				labels.Insert(metadata.A.Locks, pdata.NewAttributeValueString("immediate"))
 				addToIntMetric(locks, labels, i, now)
 			}
 		case "Table_locks_waited":
 			if i, ok := m.parseInt(k, v); ok {
-				labels.Insert(metadata.L.Locks, pdata.NewAttributeValueString("waited"))
+				labels.Insert(metadata.A.Locks, pdata.NewAttributeValueString("waited"))
 				addToIntMetric(locks, labels, i, now)
 			}
 
 		// sorts
 		case "Sort_merge_passes":
 			if i, ok := m.parseInt(k, v); ok {
-				labels.Insert(metadata.L.Sorts, pdata.NewAttributeValueString("merge_passes"))
+				labels.Insert(metadata.A.Sorts, pdata.NewAttributeValueString("merge_passes"))
 				addToIntMetric(sorts, labels, i, now)
 			}
 		case "Sort_range":
 			if i, ok := m.parseInt(k, v); ok {
-				labels.Insert(metadata.L.Sorts, pdata.NewAttributeValueString("range"))
+				labels.Insert(metadata.A.Sorts, pdata.NewAttributeValueString("range"))
 				addToIntMetric(sorts, labels, i, now)
 			}
 		case "Sort_rows":
 			if i, ok := m.parseInt(k, v); ok {
-				labels.Insert(metadata.L.Sorts, pdata.NewAttributeValueString("rows"))
+				labels.Insert(metadata.A.Sorts, pdata.NewAttributeValueString("rows"))
 				addToIntMetric(sorts, labels, i, now)
 			}
 		case "Sort_scan":
 			if i, ok := m.parseInt(k, v); ok {
-				labels.Insert(metadata.L.Sorts, pdata.NewAttributeValueString("scan"))
+				labels.Insert(metadata.A.Sorts, pdata.NewAttributeValueString("scan"))
 				addToIntMetric(sorts, labels, i, now)
 			}
 
 		// threads
 		case "Threads_cached":
 			if f, ok := m.parseFloat(k, v); ok {
-				labels.Insert(metadata.L.Threads, pdata.NewAttributeValueString("cached"))
+				labels.Insert(metadata.A.Threads, pdata.NewAttributeValueString("cached"))
 				addToDoubleMetric(threads, labels, f, now)
 			}
 		case "Threads_connected":
 			if f, ok := m.parseFloat(k, v); ok {
-				labels.Insert(metadata.L.Threads, pdata.NewAttributeValueString("connected"))
+				labels.Insert(metadata.A.Threads, pdata.NewAttributeValueString("connected"))
 				addToDoubleMetric(threads, labels, f, now)
 			}
 		case "Threads_created":
 			if f, ok := m.parseFloat(k, v); ok {
-				labels.Insert(metadata.L.Threads, pdata.NewAttributeValueString("created"))
+				labels.Insert(metadata.A.Threads, pdata.NewAttributeValueString("created"))
 				addToDoubleMetric(threads, labels, f, now)
 			}
 		case "Threads_running":
 			if f, ok := m.parseFloat(k, v); ok {
-				labels.Insert(metadata.L.Threads, pdata.NewAttributeValueString("running"))
+				labels.Insert(metadata.A.Threads, pdata.NewAttributeValueString("running"))
 				addToDoubleMetric(threads, labels, f, now)
 			}
 		}

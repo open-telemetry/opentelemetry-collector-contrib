@@ -1,6 +1,6 @@
 name: process
 
-labels:
+attributes:
   direction:
     description: Direction of flow of bytes (read or write).
     enum: [read, write]
@@ -17,7 +17,7 @@ metrics:
       type: sum
       aggregation: cumulative
       monotonic: true
-    labels: [state]
+    attributes: [state]
 
   process.memory.physical_usage:
     description: The amount of physical memory in use.
@@ -42,4 +42,4 @@ metrics:
       type: sum
       aggregation: cumulative
       monotonic: true
-    labels: [direction]
+    attributes: [direction]
