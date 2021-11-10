@@ -115,7 +115,7 @@ class CommandTracer(monitoring.CommandListener):
         self.failed_hook = failed_hook
 
     def started(self, event: monitoring.CommandStartedEvent):
-        """ Method to handle a pymongo CommandStartedEvent """
+        """Method to handle a pymongo CommandStartedEvent"""
         if not self.is_enabled or context.get_value(
             _SUPPRESS_INSTRUMENTATION_KEY
         ):
@@ -156,7 +156,7 @@ class CommandTracer(monitoring.CommandListener):
                 self._pop_span(event)
 
     def succeeded(self, event: monitoring.CommandSucceededEvent):
-        """ Method to handle a pymongo CommandSucceededEvent """
+        """Method to handle a pymongo CommandSucceededEvent"""
         if not self.is_enabled or context.get_value(
             _SUPPRESS_INSTRUMENTATION_KEY
         ):
@@ -172,7 +172,7 @@ class CommandTracer(monitoring.CommandListener):
         span.end()
 
     def failed(self, event: monitoring.CommandFailedEvent):
-        """ Method to handle a pymongo CommandFailedEvent """
+        """Method to handle a pymongo CommandFailedEvent"""
         if not self.is_enabled or context.get_value(
             _SUPPRESS_INSTRUMENTATION_KEY
         ):

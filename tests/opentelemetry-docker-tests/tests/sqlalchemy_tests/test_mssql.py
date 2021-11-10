@@ -84,7 +84,8 @@ class MssqlConnectorTestCase(SQLAlchemyTestMixin):
         self.assertTrue(span.end_time - span.start_time > 0)
         # check the error
         self.assertIs(
-            span.status.status_code, trace.StatusCode.ERROR,
+            span.status.status_code,
+            trace.StatusCode.ERROR,
         )
         self.assertIn("a_wrong_table", span.status.description)
 

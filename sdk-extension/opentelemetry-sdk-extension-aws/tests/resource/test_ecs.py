@@ -33,7 +33,9 @@ MockEcsResourceAttributes = {
 
 class AwsEcsResourceDetectorTest(unittest.TestCase):
     @patch.dict(
-        "os.environ", {"ECS_CONTAINER_METADATA_URI": "mock-uri"}, clear=True,
+        "os.environ",
+        {"ECS_CONTAINER_METADATA_URI": "mock-uri"},
+        clear=True,
     )
     @patch(
         "socket.gethostname",

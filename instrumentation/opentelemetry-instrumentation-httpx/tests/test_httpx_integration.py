@@ -58,7 +58,8 @@ def _async_call(coro: typing.Coroutine) -> asyncio.Task:
 
 def _response_hook(span, request: "RequestInfo", response: "ResponseInfo"):
     span.set_attribute(
-        HTTP_RESPONSE_BODY, response[2].read(),
+        HTTP_RESPONSE_BODY,
+        response[2].read(),
     )
 
 
@@ -66,7 +67,8 @@ async def _async_response_hook(
     span: "Span", request: "RequestInfo", response: "ResponseInfo"
 ):
     span.set_attribute(
-        HTTP_RESPONSE_BODY, await response[2].aread(),
+        HTTP_RESPONSE_BODY,
+        await response[2].aread(),
     )
 
 
@@ -175,7 +177,8 @@ class BaseTestCases:
                 span.attributes.get(SpanAttributes.HTTP_STATUS_CODE), 404
             )
             self.assertIs(
-                span.status.status_code, trace.StatusCode.ERROR,
+                span.status.status_code,
+                trace.StatusCode.ERROR,
             )
 
         def test_suppress_instrumentation(self):
@@ -553,7 +556,8 @@ class TestSyncIntegration(BaseTestCases.BaseManualTest):
         return telemetry_transport
 
     def create_client(
-        self, transport: typing.Optional[SyncOpenTelemetryTransport] = None,
+        self,
+        transport: typing.Optional[SyncOpenTelemetryTransport] = None,
     ):
         return httpx.Client(transport=transport)
 
@@ -595,7 +599,8 @@ class TestAsyncIntegration(BaseTestCases.BaseManualTest):
         return telemetry_transport
 
     def create_client(
-        self, transport: typing.Optional[AsyncOpenTelemetryTransport] = None,
+        self,
+        transport: typing.Optional[AsyncOpenTelemetryTransport] = None,
     ):
         return httpx.AsyncClient(transport=transport)
 
@@ -619,7 +624,8 @@ class TestAsyncIntegration(BaseTestCases.BaseManualTest):
 
 class TestSyncInstrumentationIntegration(BaseTestCases.BaseInstrumentorTest):
     def create_client(
-        self, transport: typing.Optional[SyncOpenTelemetryTransport] = None,
+        self,
+        transport: typing.Optional[SyncOpenTelemetryTransport] = None,
     ):
         return httpx.Client()
 
@@ -641,7 +647,8 @@ class TestAsyncInstrumentationIntegration(BaseTestCases.BaseInstrumentorTest):
     no_update_request_hook = staticmethod(_async_no_update_request_hook)
 
     def create_client(
-        self, transport: typing.Optional[AsyncOpenTelemetryTransport] = None,
+        self,
+        transport: typing.Optional[AsyncOpenTelemetryTransport] = None,
     ):
         return httpx.AsyncClient()
 

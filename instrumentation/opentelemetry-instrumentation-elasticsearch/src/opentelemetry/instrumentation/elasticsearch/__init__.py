@@ -119,7 +119,8 @@ class ElasticsearchInstrumentor(BaseInstrumentor):
     def __init__(self, span_name_prefix=None):
         if not span_name_prefix:
             span_name_prefix = environ.get(
-                "OTEL_PYTHON_ELASTICSEARCH_NAME_PREFIX", "Elasticsearch",
+                "OTEL_PYTHON_ELASTICSEARCH_NAME_PREFIX",
+                "Elasticsearch",
             )
         self._span_name_prefix = span_name_prefix.strip()
         super().__init__()
@@ -187,7 +188,8 @@ def _wrap_perform_request(
         body = kwargs.get("body", None)
 
         with tracer.start_as_current_span(
-            op_name, kind=SpanKind.CLIENT,
+            op_name,
+            kind=SpanKind.CLIENT,
         ) as span:
 
             if callable(request_hook):
@@ -215,7 +217,8 @@ def _wrap_perform_request(
                 for member in _ATTRIBUTES_FROM_RESULT:
                     if member in rv:
                         span.set_attribute(
-                            f"elasticsearch.{member}", str(rv[member]),
+                            f"elasticsearch.{member}",
+                            str(rv[member]),
                         )
 
             if callable(response_hook):

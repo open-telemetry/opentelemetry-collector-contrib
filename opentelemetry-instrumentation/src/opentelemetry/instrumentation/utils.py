@@ -36,7 +36,9 @@ def extract_attributes_from_object(
 
 
 def http_status_to_status_code(
-    status: int, allow_redirect: bool = True, server_span: bool = False,
+    status: int,
+    allow_redirect: bool = True,
+    server_span: bool = False,
 ) -> StatusCode:
     """Converts an HTTP status code to an OpenTelemetry canonical status code
 

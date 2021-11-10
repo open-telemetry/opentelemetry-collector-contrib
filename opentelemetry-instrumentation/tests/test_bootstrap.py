@@ -23,7 +23,10 @@ from opentelemetry.instrumentation.bootstrap_gen import libraries
 
 
 def sample_packages(packages, rate):
-    return sample(list(packages), int(len(packages) * rate),)
+    return sample(
+        list(packages),
+        int(len(packages) * rate),
+    )
 
 
 class TestBootstrap(TestCase):
@@ -74,13 +77,15 @@ class TestBootstrap(TestCase):
         with patch("sys.stdout", new=StringIO()) as fake_out:
             bootstrap.run()
             self.assertEqual(
-                fake_out.getvalue(), "\n".join(self.installed_libraries),
+                fake_out.getvalue(),
+                "\n".join(self.installed_libraries),
             )
 
     @patch("sys.argv", ["bootstrap", "-a", "install"])
     def test_run_cmd_install(self):
         bootstrap.run()
         self.mock_pip_install.assert_has_calls(
-            [call(i) for i in self.installed_libraries], any_order=True,
+            [call(i) for i in self.installed_libraries],
+            any_order=True,
         )
         self.assertEqual(self.mock_pip_check.call_count, 1)

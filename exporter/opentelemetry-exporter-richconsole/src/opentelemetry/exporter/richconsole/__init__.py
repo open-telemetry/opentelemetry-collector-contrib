@@ -132,7 +132,8 @@ class RichConsoleSpanExporter(SpanExporter):
     """
 
     def __init__(
-        self, service_name: Optional[str] = None,
+        self,
+        service_name: Optional[str] = None,
     ):
         self.service_name = service_name
         self.console = Console()

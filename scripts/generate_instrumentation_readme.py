@@ -53,7 +53,11 @@ def main():
         name = src_pkgs[0]
 
         pkg_info = {}
-        version_filename = os.path.join(src_dir, name, "package.py",)
+        version_filename = os.path.join(
+            src_dir,
+            name,
+            "package.py",
+        )
         with open(version_filename, encoding="utf-8") as fh:
             exec(fh.read(), pkg_info)
 

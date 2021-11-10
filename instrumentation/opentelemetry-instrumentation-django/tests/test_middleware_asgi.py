@@ -330,19 +330,23 @@ class TestMiddlewareAsgi(SimpleTestCase, TestBase):
         traceparent_value = f"00-{trace_id}-{span_id}-01"
 
         await self.async_client.get(
-            "/span_name/1234/", traceparent=traceparent_value,
+            "/span_name/1234/",
+            traceparent=traceparent_value,
         )
         span = self.memory_exporter.get_finished_spans()[0]
 
         self.assertEqual(
-            trace_id, format_trace_id(span.get_span_context().trace_id),
+            trace_id,
+            format_trace_id(span.get_span_context().trace_id),
         )
         self.assertIsNotNone(span.parent)
         self.assertEqual(
-            trace_id, format_trace_id(span.parent.trace_id),
+            trace_id,
+            format_trace_id(span.parent.trace_id),
         )
         self.assertEqual(
-            span_id, format_span_id(span.parent.span_id),
+            span_id,
+            format_span_id(span.parent.span_id),
         )
         self.memory_exporter.clear()
 
@@ -359,7 +363,8 @@ class TestMiddlewareAsgi(SimpleTestCase, TestBase):
 
         self.assertTrue(response.has_header("traceresponse"))
         self.assertEqual(
-            response["Access-Control-Expose-Headers"], "traceresponse",
+            response["Access-Control-Expose-Headers"],
+            "traceresponse",
         )
         self.assertEqual(
             response["traceresponse"],

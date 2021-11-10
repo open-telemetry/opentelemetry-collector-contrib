@@ -116,7 +116,10 @@ class TestAioHttpIntegration(TestBase):
             (HTTPStatus.OK, StatusCode.UNSET),
             (HTTPStatus.TEMPORARY_REDIRECT, StatusCode.UNSET),
             (HTTPStatus.SERVICE_UNAVAILABLE, StatusCode.ERROR),
-            (HTTPStatus.GATEWAY_TIMEOUT, StatusCode.ERROR,),
+            (
+                HTTPStatus.GATEWAY_TIMEOUT,
+                StatusCode.ERROR,
+            ),
         ):
             with self.subTest(status_code=status_code):
                 host, port = self._http_request(
@@ -178,7 +181,8 @@ class TestAioHttpIntegration(TestBase):
 
         host, port = self._http_request(
             trace_config=aiohttp_client.create_trace_config(
-                request_hook=request_hook, response_hook=response_hook,
+                request_hook=request_hook,
+                response_hook=response_hook,
             ),
             method=method,
             url=path,

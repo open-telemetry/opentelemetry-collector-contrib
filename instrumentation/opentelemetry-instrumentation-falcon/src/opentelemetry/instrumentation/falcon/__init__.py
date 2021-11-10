@@ -222,7 +222,9 @@ class _InstrumentedFalconAPI(getattr(falcon, _instrument_app)):
             return super().__call__(env, _start_response)
         except Exception as exc:
             activation.__exit__(
-                type(exc), exc, getattr(exc, "__traceback__", None),
+                type(exc),
+                exc,
+                getattr(exc, "__traceback__", None),
             )
             context.detach(token)
             raise

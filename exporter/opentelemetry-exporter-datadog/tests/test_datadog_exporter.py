@@ -78,7 +78,8 @@ class TestDatadogSpanExporter(unittest.TestCase):
         """Test the constructor passing all the options."""
         agent_url = "http://localhost:8126"
         exporter = datadog.DatadogSpanExporter(
-            agent_url=agent_url, service="explicit",
+            agent_url=agent_url,
+            service="explicit",
         )
 
         self.assertEqual(exporter.agent_url, agent_url)
@@ -472,7 +473,8 @@ class TestDatadogSpanExporter(unittest.TestCase):
         tracer_provider.shutdown()
 
     @mark.skipif(
-        sys.platform == "win32", reason="unreliable test on windows",
+        sys.platform == "win32",
+        reason="unreliable test on windows",
     )
     def test_span_processor_scheduled_delay(self):
         """Test that spans are exported each schedule_delay_millis"""

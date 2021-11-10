@@ -23,7 +23,7 @@ from opentelemetry.semconv.trace import (
 
 
 def _extract_conn_attributes(conn_kwargs):
-    """ Transform redis conn info into dict """
+    """Transform redis conn info into dict"""
     attributes = {
         SpanAttributes.DB_SYSTEM: DbSystemValues.REDIS.value,
     }

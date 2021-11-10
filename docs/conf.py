@@ -129,12 +129,22 @@ def getlistcfg(strval):
 if "class_references" in mcfg:
     class_references = getlistcfg(mcfg["class_references"])
     for class_reference in class_references:
-        nitpick_ignore.append(("py:class", class_reference,))
+        nitpick_ignore.append(
+            (
+                "py:class",
+                class_reference,
+            )
+        )
 
 if "anys" in mcfg:
     anys = getlistcfg(mcfg["anys"])
     for _any in anys:
-        nitpick_ignore.append(("any", _any,))
+        nitpick_ignore.append(
+            (
+                "any",
+                _any,
+            )
+        )
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ["_templates"]

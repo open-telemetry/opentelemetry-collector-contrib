@@ -74,7 +74,7 @@ class SQLite3Instrumentor(BaseInstrumentor):
         )
 
     def _uninstrument(self, **kwargs):
-        """"Disable SQLite3 instrumentation"""
+        """ "Disable SQLite3 instrumentation"""
         dbapi.unwrap_connect(sqlite3, "connect")
 
     @staticmethod

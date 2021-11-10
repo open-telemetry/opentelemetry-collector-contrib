@@ -89,7 +89,7 @@ class Psycopg2Instrumentor(BaseInstrumentor):
         )
 
     def _uninstrument(self, **kwargs):
-        """"Disable Psycopg2 instrumentation"""
+        """ "Disable Psycopg2 instrumentation"""
         dbapi.unwrap_connect(psycopg2, "connect")
 
     # TODO(owais): check if core dbapi can do this for all dbapi implementations e.g, pymysql and mysql

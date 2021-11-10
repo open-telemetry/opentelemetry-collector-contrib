@@ -61,7 +61,8 @@ def run() -> None:
                 argument = sub(r"OTEL_(PYTHON_)?", "", attribute).lower()
 
                 parser.add_argument(
-                    f"--{argument}", required=False,
+                    f"--{argument}",
+                    required=False,
                 )
                 argument_otel_environment_variable[argument] = attribute
 

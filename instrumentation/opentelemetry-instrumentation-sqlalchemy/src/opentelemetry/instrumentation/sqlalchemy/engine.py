@@ -132,7 +132,10 @@ def _handle_error(context):
 
     if span.is_recording():
         span.set_status(
-            Status(StatusCode.ERROR, str(context.original_exception),)
+            Status(
+                StatusCode.ERROR,
+                str(context.original_exception),
+            )
         )
     span.end()
 

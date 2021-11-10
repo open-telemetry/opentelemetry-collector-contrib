@@ -81,7 +81,13 @@ def build_test_span_context(
     trace_flags=DEFAULT_TRACE_OPTIONS,
     trace_state=DEFAULT_TRACE_STATE,
 ):
-    return SpanContext(trace_id, span_id, is_remote, trace_flags, trace_state,)
+    return SpanContext(
+        trace_id,
+        span_id,
+        is_remote,
+        trace_flags,
+        trace_state,
+    )
 
 
 class AwsXRayPropagatorTest(unittest.TestCase):
@@ -93,7 +99,8 @@ class AwsXRayPropagatorTest(unittest.TestCase):
         carrier = CaseInsensitiveDict()
 
         AwsXRayPropagatorTest.XRAY_PROPAGATOR.inject(
-            carrier, build_test_current_context(),
+            carrier,
+            build_test_current_context(),
         )
 
         injected_items = set(carrier.items())
@@ -154,7 +161,8 @@ class AwsXRayPropagatorTest(unittest.TestCase):
         carrier = CaseInsensitiveDict()
 
         AwsXRayPropagatorTest.XRAY_PROPAGATOR.inject(
-            carrier, build_test_current_context(),
+            carrier,
+            build_test_current_context(),
         )
 
         injected_keys = set(carrier.keys())

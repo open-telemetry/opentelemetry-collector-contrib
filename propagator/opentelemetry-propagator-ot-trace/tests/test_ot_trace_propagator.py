@@ -60,7 +60,10 @@ class TestOTTracePropagator(TestCase):
 
     def test_inject_short_trace_id_short_span_id(self):
         carrier = self.carrier_inject(
-            int("1", 16), int("2", 16), True, TraceFlags.SAMPLED,
+            int("1", 16),
+            int("2", 16),
+            True,
+            TraceFlags.SAMPLED,
         )
 
         self.assertEqual(carrier[OT_TRACE_ID_HEADER], "1")

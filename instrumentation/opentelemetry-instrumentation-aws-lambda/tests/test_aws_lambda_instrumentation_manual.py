@@ -93,7 +93,8 @@ class TestAwsLambdaInstrumentor(TestBase):
     def setUp(self):
         super().setUp()
         self.common_env_patch = mock.patch.dict(
-            "os.environ", {_HANDLER: "mocks.lambda_function.handler"},
+            "os.environ",
+            {_HANDLER: "mocks.lambda_function.handler"},
         )
         self.common_env_patch.start()
 

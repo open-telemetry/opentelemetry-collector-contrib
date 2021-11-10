@@ -1,7 +1,7 @@
 pylint<2.10
 flake8~=3.7
 isort~=5.6
-black>=19.3b0,==19.*
+black>=21.10b0
 httpretty~=1.0
 mypy==0.790
 sphinx

@@ -518,26 +518,36 @@ class SklearnInstrumentor(BaseInstrumentor):
         delegator = get_delegator(estimator, method_name)
         if self._check_instrumented(estimator, method_name):
             logger.debug(
-                "Uninstrumenting: %s.%s", qualname, method_name,
+                "Uninstrumenting: %s.%s",
+                qualname,
+                method_name,
             )
             _, orig_method = getattr(estimator, orig_method_name)
             setattr(
-                estimator, method_name, orig_method,
+                estimator,
+                method_name,
+                orig_method,
             )
             delattr(estimator, orig_method_name)
         elif delegator is not None:
             if not hasattr(delegator, "_otel_original_fn"):
                 logger.debug(
-                    "Already uninstrumented: %s.%s", qualname, method_name,
+                    "Already uninstrumented: %s.%s",
+                    qualname,
+                    method_name,
                 )
                 return
             setattr(
-                delegator, "fn", getattr(delegator, "_otel_original_fn"),
+                delegator,
+                "fn",
+                getattr(delegator, "_otel_original_fn"),
             )
             delattr(delegator, "_otel_original_fn")
         else:
             logger.debug(
-                "Already uninstrumented: %s.%s", qualname, method_name,
+                "Already uninstrumented: %s.%s",
+                qualname,
+                method_name,
             )
 
     def _uninstrument_instance_method(
@@ -561,16 +571,22 @@ class SklearnInstrumentor(BaseInstrumentor):
             qualname = estimator.__class__.__qualname__
         if self._check_instrumented(estimator, method_name):
             logger.debug(
-                "Uninstrumenting: %s.%s", qualname, method_name,
+                "Uninstrumenting: %s.%s",
+                qualname,
+                method_name,
             )
             _, orig_method = getattr(estimator, orig_method_name)
             setattr(
-                estimator, method_name, orig_method,
+                estimator,
+                method_name,
+                orig_method,
             )
             delattr(estimator, orig_method_name)
         else:
             logger.debug(
-                "Already uninstrumented: %s.%s", qualname, method_name,
+                "Already uninstrumented: %s.%s",
+                qualname,
+                method_name,
             )
 
     def _instrument_class_method(

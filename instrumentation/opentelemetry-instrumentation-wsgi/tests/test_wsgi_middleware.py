@@ -209,7 +209,8 @@ class TestWsgiApplication(WsgiTestBase):
         span_list = self.memory_exporter.get_finished_spans()
         self.assertEqual(len(span_list), 1)
         self.assertEqual(
-            span_list[0].status.status_code, StatusCode.ERROR,
+            span_list[0].status.status_code,
+            StatusCode.ERROR,
         )
 
     def test_default_span_name_missing_request_method(self):

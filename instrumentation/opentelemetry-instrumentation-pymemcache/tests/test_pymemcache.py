@@ -37,7 +37,7 @@ TEST_PORT = 117711
 class PymemcacheClientTestCase(
     TestBase
 ):  # pylint: disable=too-many-public-methods
-    """ Tests for a patched pymemcache.client.base.Client. """
+    """Tests for a patched pymemcache.client.base.Client."""
 
     def setUp(self):
         super().setUp()
@@ -470,7 +470,7 @@ class PymemcacheClientTestCase(
 
 
 class PymemcacheHashClientTestCase(TestBase):
-    """ Tests for a patched pymemcache.client.hash.HashClient. """
+    """Tests for a patched pymemcache.client.hash.HashClient."""
 
     def setUp(self):
         super().setUp()

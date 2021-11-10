@@ -64,14 +64,16 @@ class Servicer(GRPCTestServerServicer):
     # pylint:disable=C0103
     def SimpleMethod(self, request, context):
         return Response(
-            server_id=request.client_id, response_data=request.request_data,
+            server_id=request.client_id,
+            response_data=request.request_data,
         )
 
     # pylint:disable=C0103
     def ServerStreamingMethod(self, request, context):
         for data in ("one", "two", "three"):
             yield Response(
-                server_id=request.client_id, response_data=data,
+                server_id=request.client_id,
+                response_data=data,
             )
 
 
@@ -84,7 +86,8 @@ class TestOpenTelemetryServerInterceptor(TestBase):
         grpc_server_instrumentor.instrument()
         with futures.ThreadPoolExecutor(max_workers=1) as executor:
             server = grpc.server(
-                executor, options=(("grpc.so_reuseport", 0),),
+                executor,
+                options=(("grpc.so_reuseport", 0),),
             )
 
             server.add_generic_rpc_handlers((UnaryUnaryRpcHandler(handler),))
@@ -136,7 +139,8 @@ class TestOpenTelemetryServerInterceptor(TestBase):
         grpc_server_instrumentor.uninstrument()
         with futures.ThreadPoolExecutor(max_workers=1) as executor:
             server = grpc.server(
-                executor, options=(("grpc.so_reuseport", 0),),
+                executor,
+                options=(("grpc.so_reuseport", 0),),
             )
 
             server.add_generic_rpc_handlers((UnaryUnaryRpcHandler(handler),))
@@ -351,7 +355,8 @@ class TestOpenTelemetryServerInterceptor(TestBase):
 
                 for data in ("one", "two", "three"):
                     yield Response(
-                        server_id=request.client_id, response_data=data,
+                        server_id=request.client_id,
+                        response_data=data,
                     )
 
         # Intercept gRPC calls...

@@ -326,7 +326,9 @@ class FlaskInstrumentor(BaseInstrumentor):
             tracer = trace.get_tracer(__name__, __version__, tracer_provider)
 
             _before_request = _wrapped_before_request(
-                request_hook, tracer, excluded_urls=excluded_urls,
+                request_hook,
+                tracer,
+                excluded_urls=excluded_urls,
             )
             app._before_request = _before_request
             app.before_request(_before_request)

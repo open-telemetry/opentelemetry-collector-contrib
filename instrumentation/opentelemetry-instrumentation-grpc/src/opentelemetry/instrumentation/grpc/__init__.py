@@ -206,7 +206,9 @@ class GrpcInstrumentorClient(BaseInstrumentor):
     def _instrument(self, **kwargs):
         for ctype in self._which_channel(kwargs):
             _wrap(
-                "grpc", ctype, self.wrapper_fn,
+                "grpc",
+                ctype,
+                self.wrapper_fn,
             )
 
     def _uninstrument(self, **kwargs):
@@ -217,7 +219,8 @@ class GrpcInstrumentorClient(BaseInstrumentor):
         channel = original_func(*args, **kwargs)
         tracer_provider = kwargs.get("tracer_provider")
         return intercept_channel(
-            channel, client_interceptor(tracer_provider=tracer_provider),
+            channel,
+            client_interceptor(tracer_provider=tracer_provider),
         )
 
 

@@ -93,7 +93,9 @@ def _before_traversal(event):
         span_name = otel_wsgi.get_default_span_name(request_environ)
 
     span = tracer.start_span(
-        span_name, kind=trace.SpanKind.SERVER, start_time=start_time,
+        span_name,
+        kind=trace.SpanKind.SERVER,
+        start_time=start_time,
     )
 
     if span.is_recording():

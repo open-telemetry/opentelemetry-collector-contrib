@@ -287,7 +287,9 @@ class TestURLLib3Instrumentor(TestBase):
             span.set_attribute("request_hook_body", body)
 
         URLLib3Instrumentor().uninstrument()
-        URLLib3Instrumentor().instrument(request_hook=request_hook,)
+        URLLib3Instrumentor().instrument(
+            request_hook=request_hook,
+        )
 
         headers = {"header1": "value1", "header2": "value2"}
         body = "param1=1&param2=2"

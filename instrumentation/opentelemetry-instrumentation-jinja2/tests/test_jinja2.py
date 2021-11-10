@@ -86,13 +86,15 @@ class TestJinja2Instrumentor(TestBase):
         self.assertEqual(template.name, "jinja2.compile")
         self.assertIs(template.kind, trace_api.SpanKind.INTERNAL)
         self.assertEqual(
-            template.attributes, {"jinja2.template_name": "<memory>"},
+            template.attributes,
+            {"jinja2.template_name": "<memory>"},
         )
 
         self.assertEqual(render.name, "jinja2.render")
         self.assertIs(render.kind, trace_api.SpanKind.INTERNAL)
         self.assertEqual(
-            render.attributes, {"jinja2.template_name": "<memory>"},
+            render.attributes,
+            {"jinja2.template_name": "<memory>"},
         )
 
     def test_generate_inline_template_with_root(self):
@@ -127,13 +129,15 @@ class TestJinja2Instrumentor(TestBase):
         self.assertEqual(template.name, "jinja2.compile")
         self.assertIs(template.kind, trace_api.SpanKind.INTERNAL)
         self.assertEqual(
-            template.attributes, {"jinja2.template_name": "<memory>"},
+            template.attributes,
+            {"jinja2.template_name": "<memory>"},
         )
 
         self.assertEqual(generate.name, "jinja2.render")
         self.assertIs(generate.kind, trace_api.SpanKind.INTERNAL)
         self.assertEqual(
-            generate.attributes, {"jinja2.template_name": "<memory>"},
+            generate.attributes,
+            {"jinja2.template_name": "<memory>"},
         )
 
     def test_file_template_with_root(self):
@@ -179,7 +183,8 @@ class TestJinja2Instrumentor(TestBase):
         self.assertEqual(render.name, "jinja2.render")
 
         self.assertEqual(
-            compile2.attributes, {"jinja2.template_name": "template.html"},
+            compile2.attributes,
+            {"jinja2.template_name": "template.html"},
         )
         self.assertEqual(
             load2.attributes,
@@ -191,7 +196,8 @@ class TestJinja2Instrumentor(TestBase):
             },
         )
         self.assertEqual(
-            compile1.attributes, {"jinja2.template_name": "base.html"},
+            compile1.attributes,
+            {"jinja2.template_name": "base.html"},
         )
         self.assertEqual(
             load1.attributes,
@@ -201,7 +207,8 @@ class TestJinja2Instrumentor(TestBase):
             },
         )
         self.assertEqual(
-            render.attributes, {"jinja2.template_name": "template.html"},
+            render.attributes,
+            {"jinja2.template_name": "template.html"},
         )
 
     def test_uninstrumented(self):

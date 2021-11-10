@@ -118,5 +118,7 @@ class TraceResponsePropagator(ResponsePropagator):
             f"00-{format_trace_id(span_context.trace_id)}-{format_span_id(span_context.span_id)}-{span_context.trace_flags:02x}",
         )
         setter.set(
-            carrier, _HTTP_HEADER_ACCESS_CONTROL_EXPOSE_HEADERS, header_name,
+            carrier,
+            _HTTP_HEADER_ACCESS_CONTROL_EXPOSE_HEADERS,
+            header_name,
         )

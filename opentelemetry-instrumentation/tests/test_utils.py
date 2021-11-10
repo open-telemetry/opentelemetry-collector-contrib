@@ -31,12 +31,24 @@ class TestUtils(TestBase):
             (HTTPStatus.UNAUTHORIZED, StatusCode.ERROR),
             (HTTPStatus.FORBIDDEN, StatusCode.ERROR),
             (HTTPStatus.NOT_FOUND, StatusCode.ERROR),
-            (HTTPStatus.UNPROCESSABLE_ENTITY, StatusCode.ERROR,),
-            (HTTPStatus.TOO_MANY_REQUESTS, StatusCode.ERROR,),
+            (
+                HTTPStatus.UNPROCESSABLE_ENTITY,
+                StatusCode.ERROR,
+            ),
+            (
+                HTTPStatus.TOO_MANY_REQUESTS,
+                StatusCode.ERROR,
+            ),
             (HTTPStatus.NOT_IMPLEMENTED, StatusCode.ERROR),
             (HTTPStatus.SERVICE_UNAVAILABLE, StatusCode.ERROR),
-            (HTTPStatus.GATEWAY_TIMEOUT, StatusCode.ERROR,),
-            (HTTPStatus.HTTP_VERSION_NOT_SUPPORTED, StatusCode.ERROR,),
+            (
+                HTTPStatus.GATEWAY_TIMEOUT,
+                StatusCode.ERROR,
+            ),
+            (
+                HTTPStatus.HTTP_VERSION_NOT_SUPPORTED,
+                StatusCode.ERROR,
+            ),
             (600, StatusCode.ERROR),
             (99, StatusCode.ERROR),
         ):
@@ -67,12 +79,24 @@ class TestUtils(TestBase):
             (HTTPStatus.UNAUTHORIZED, StatusCode.UNSET),
             (HTTPStatus.FORBIDDEN, StatusCode.UNSET),
             (HTTPStatus.NOT_FOUND, StatusCode.UNSET),
-            (HTTPStatus.UNPROCESSABLE_ENTITY, StatusCode.UNSET,),
-            (HTTPStatus.TOO_MANY_REQUESTS, StatusCode.UNSET,),
+            (
+                HTTPStatus.UNPROCESSABLE_ENTITY,
+                StatusCode.UNSET,
+            ),
+            (
+                HTTPStatus.TOO_MANY_REQUESTS,
+                StatusCode.UNSET,
+            ),
             (HTTPStatus.NOT_IMPLEMENTED, StatusCode.ERROR),
             (HTTPStatus.SERVICE_UNAVAILABLE, StatusCode.ERROR),
-            (HTTPStatus.GATEWAY_TIMEOUT, StatusCode.ERROR,),
-            (HTTPStatus.HTTP_VERSION_NOT_SUPPORTED, StatusCode.ERROR,),
+            (
+                HTTPStatus.GATEWAY_TIMEOUT,
+                StatusCode.ERROR,
+            ),
+            (
+                HTTPStatus.HTTP_VERSION_NOT_SUPPORTED,
+                StatusCode.ERROR,
+            ),
             (600, StatusCode.ERROR),
             (99, StatusCode.ERROR),
         ):

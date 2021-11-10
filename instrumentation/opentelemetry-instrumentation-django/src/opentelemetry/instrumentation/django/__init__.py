@@ -131,7 +131,9 @@ class DjangoInstrumentor(BaseInstrumentor):
 
         tracer_provider = kwargs.get("tracer_provider")
         tracer = get_tracer(
-            __name__, __version__, tracer_provider=tracer_provider,
+            __name__,
+            __version__,
+            tracer_provider=tracer_provider,
         )
 
         _DjangoMiddleware._tracer = tracer

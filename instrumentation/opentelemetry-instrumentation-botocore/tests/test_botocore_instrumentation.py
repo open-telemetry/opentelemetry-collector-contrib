@@ -99,7 +99,11 @@ class TestBotocoreInstrumentor(TestBase):
         return spans[0]
 
     def assert_span(
-        self, service: str, operation: str, request_id=None, attributes=None,
+        self,
+        service: str,
+        operation: str,
+        request_id=None,
+        attributes=None,
     ):
         span = self.assert_only_span()
         expected = self._default_span_attributes(service, operation)

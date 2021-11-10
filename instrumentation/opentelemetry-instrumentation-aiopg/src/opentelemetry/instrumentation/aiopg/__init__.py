@@ -91,7 +91,7 @@ class AiopgInstrumentor(BaseInstrumentor):
 
     # pylint:disable=no-self-use
     def _uninstrument(self, **kwargs):
-        """"Disable aiopg instrumentation"""
+        """ "Disable aiopg instrumentation"""
         wrappers.unwrap_connect()
         wrappers.unwrap_create_pool()
 

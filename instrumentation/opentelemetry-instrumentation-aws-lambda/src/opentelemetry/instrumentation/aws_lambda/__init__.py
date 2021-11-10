@@ -130,15 +130,15 @@ def _determine_parent_context(
 ) -> Context:
     """Determine the parent context for the current Lambda invocation.
 
-        See more:
-        https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/trace/semantic_conventions/instrumentation/aws-lambda.md#determining-the-parent-of-a-span
+    See more:
+    https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/trace/semantic_conventions/instrumentation/aws-lambda.md#determining-the-parent-of-a-span
 
-        Args:
-            lambda_event: user-defined, so it could be anything, but this
-                method counts it being a map with a 'headers' key
-        Returns:
-            A Context with configuration found in the carrier.
-        """
+    Args:
+        lambda_event: user-defined, so it could be anything, but this
+            method counts it being a map with a 'headers' key
+    Returns:
+        A Context with configuration found in the carrier.
+    """
     parent_context = None
 
     xray_env_var = os.environ.get(_X_AMZN_TRACE_ID)
@@ -194,7 +194,9 @@ def _instrument(
         tracer = get_tracer(__name__, __version__, tracer_provider)
 
         with tracer.start_as_current_span(
-            name=orig_handler_name, context=parent_context, kind=span_kind,
+            name=orig_handler_name,
+            context=parent_context,
+            kind=span_kind,
         ) as span:
             if span.is_recording():
                 lambda_context = args[1]

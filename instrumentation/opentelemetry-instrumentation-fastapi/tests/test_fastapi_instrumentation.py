@@ -254,7 +254,8 @@ class TestAutoInstrumentation(TestFastAPIManualInstrumentation):
         to_exclude = "/user/123,/foobar"
         self._instrumentor.uninstrument()  # Disable previous instrumentation (setUp)
         self._instrumentor.instrument(
-            tracer_provider=tracer_provider, excluded_urls=to_exclude,
+            tracer_provider=tracer_provider,
+            excluded_urls=to_exclude,
         )
         return self._create_fastapi_app()
 

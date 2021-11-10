@@ -121,7 +121,9 @@ def instrument_connect(module, name="connect"):
     """Instrument additional connect() methods, e.g. for derived classes."""
 
     wrapt.wrap_function_wrapper(
-        module, name, _instrumented_connect,
+        module,
+        name,
+        _instrumented_connect,
     )
 
 
@@ -136,7 +138,9 @@ def _instrument():
         return result
 
     wrapt.wrap_function_wrapper(
-        http.client.HTTPConnection, "send", instrumented_send,
+        http.client.HTTPConnection,
+        "send",
+        instrumented_send,
     )
 
     instrument_connect(http.client.HTTPConnection)
