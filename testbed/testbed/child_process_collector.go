@@ -172,11 +172,11 @@ func (cp *childProcessCollector) Start(params StartParams) error {
 	exePath := expandExeFileName(cp.AgentExePath)
 	exePath, err := filepath.Abs(exePath)
 	if err != nil {
-		panic(err)
+		panic(fmt.Sprintf("Failed to resolve the absolute path of expected otel binary. %s", err))
 	}
 
 	if _, err = os.Stat(exePath); err != nil {
-		panic(err)
+		panic(fmt.Sprintf("The expected otel binary %s is not yet created. %s", exePath, err))
 	}
 
 	log.Printf("Starting %s (%s)", cp.name, exePath)
