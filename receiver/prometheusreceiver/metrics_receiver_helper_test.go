@@ -299,25 +299,26 @@ func assertMetricPresent(name string, metricTypeExpectations metricTypeComparato
 				return false
 			}
 			for i, de := range dataPointExpectations {
-
 				for _, npc := range de.numberPointComparator {
 					switch m.DataType() {
 					case pdata.MetricDataTypeGauge:
+						require.Equal(t, m.Gauge().DataPoints().Len(), len(dataPointExpectations), "Expected number of data-points in Gauge metric does not match to testdata")
 						dataPoint := m.Gauge().DataPoints().At(i)
 						if !npc(t, &dataPoint) {
 							return false
 						}
 					case pdata.MetricDataTypeSum:
+						require.Equal(t, m.Sum().DataPoints().Len(), len(dataPointExpectations), "Expected number of data-points in Sum metric does not match to testdata")
 						dataPoint := m.Sum().DataPoints().At(i)
 						if !npc(t, &dataPoint) {
 							return false
 						}
 					}
 				}
-
 				switch m.DataType() {
 				case pdata.MetricDataTypeHistogram:
 					for _, hpc := range de.histogramPointComparator {
+						require.Equal(t, m.Histogram().DataPoints().Len(), len(dataPointExpectations), "Expected number of data-points in Histogram metric does not match to testdata")
 						dataPoint := m.Histogram().DataPoints().At(i)
 						if !hpc(t, &dataPoint) {
 							return false
@@ -325,6 +326,7 @@ func assertMetricPresent(name string, metricTypeExpectations metricTypeComparato
 					}
 				case pdata.MetricDataTypeSummary:
 					for _, spc := range de.summaryPointComparator {
+						require.Equal(t, m.Summary().DataPoints().Len(), len(dataPointExpectations), "Expected number of data-points in Summary metric does not match to testdata")
 						dataPoint := m.Summary().DataPoints().At(i)
 						if !spc(t, &dataPoint) {
 							return false
