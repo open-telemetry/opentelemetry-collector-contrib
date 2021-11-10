@@ -19,15 +19,11 @@ import (
 	"os"
 	"path"
 	"strings"
-
-	"github.com/stretchr/testify/mock"
 )
 
 var _ client = (*fakeClient)(nil)
 
-type fakeClient struct {
-	mock.Mock
-}
+type fakeClient struct{}
 
 func readFile(fname string) (map[string]string, error) {
 	var stats = map[string]string{}
