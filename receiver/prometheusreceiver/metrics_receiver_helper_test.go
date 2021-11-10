@@ -343,7 +343,7 @@ func assertMetricAbsent(name string) testExpectation {
 	return func(t *testing.T, rm *pdata.ResourceMetrics) bool {
 		allMetrics := getMetrics(rm)
 		for _, m := range allMetrics {
-			if !assert.NotEqual(t, name, m.Name(), "Metric %s is present, but was expected absent\n", name) {
+			if !assert.NotEqual(t, name, m.Name(), "Metric is present, but was expected absent") {
 				return false
 			}
 		}
@@ -353,18 +353,18 @@ func assertMetricAbsent(name string) testExpectation {
 
 func compareMetricType(typ pdata.MetricDataType) metricTypeComparator {
 	return func(t *testing.T, metric *pdata.Metric) bool {
-		return assert.Equal(t, typ, metric.DataType(), "Metric type does not match. Want %s, but got %s\n", typ, metric.DataType())
+		return assert.Equal(t, typ, metric.DataType(), "Metric type does not match")
 	}
 }
 
 func compareAttributes(attributes map[string]string) numberPointComparator {
 	return func(t *testing.T, numberDataPoint *pdata.NumberDataPoint) bool {
-		if !assert.Equal(t, len(attributes), numberDataPoint.Attributes().Len(), "Attributes length do not match. Want %d, but got %d\n", len(attributes), numberDataPoint.Attributes().Len()) {
+		if !assert.Equal(t, len(attributes), numberDataPoint.Attributes().Len(), "Attributes length do not match") {
 			return false
 		}
 		for k, v := range attributes {
 			value, ok := numberDataPoint.Attributes().Get(k)
-			if !ok || !assert.Equal(t, v, value.AsString(), "Attributes do not match. Want %s, but got %s\n", v, value.AsString()) {
+			if !ok || !assert.Equal(t, v, value.AsString(), "Attributes do not match") {
 				return false
 			}
 		}
@@ -374,12 +374,12 @@ func compareAttributes(attributes map[string]string) numberPointComparator {
 
 func compareSummaryAttributes(attributes map[string]string) summaryPointComparator {
 	return func(t *testing.T, summaryDataPoint *pdata.SummaryDataPoint) bool {
-		if !assert.Equal(t, len(attributes), summaryDataPoint.Attributes().Len(), "Attributes length do not match. Want %d, but got %d\n", len(attributes), summaryDataPoint.Attributes().Len()) {
+		if !assert.Equal(t, len(attributes), summaryDataPoint.Attributes().Len(), "Summary attributes length do not match") {
 			return false
 		}
 		for k, v := range attributes {
 			value, ok := summaryDataPoint.Attributes().Get(k)
-			if !ok || !assert.Equal(t, v, value.AsString(), "Attributes do not match. Want %s, but got %s\n", v, value.AsString()) {
+			if !ok || !assert.Equal(t, v, value.AsString(), "Summary attributes do not match") {
 				return false
 			}
 		}
@@ -389,52 +389,52 @@ func compareSummaryAttributes(attributes map[string]string) summaryPointComparat
 
 func compareStartTimestamp(startTimeStamp pdata.Timestamp) numberPointComparator {
 	return func(t *testing.T, numberDataPoint *pdata.NumberDataPoint) bool {
-		return assert.Equal(t, startTimeStamp, numberDataPoint.StartTimestamp(), "Start-Timestamp does not match. Want %s, but got %s\n", startTimeStamp.String(), numberDataPoint.StartTimestamp().String())
+		return assert.Equal(t, startTimeStamp.String(), numberDataPoint.StartTimestamp().String(), "Start-Timestamp does not match")
 	}
 }
 
 func compareTimestamp(timeStamp pdata.Timestamp) numberPointComparator {
 	return func(t *testing.T, numberDataPoint *pdata.NumberDataPoint) bool {
-		return assert.Equal(t, timeStamp, numberDataPoint.Timestamp(), "Timestamp does not match. Want %s, but got %s\n", timeStamp.String(), numberDataPoint.Timestamp().String())
+		return assert.Equal(t, timeStamp.String(), numberDataPoint.Timestamp().String(), "Timestamp does not match")
 	}
 }
 
 func compareHistogramTimestamp(timeStamp pdata.Timestamp) histogramPointComparator {
 	return func(t *testing.T, histogramDataPoint *pdata.HistogramDataPoint) bool {
-		return assert.Equal(t, timeStamp, histogramDataPoint.Timestamp(), "Histogram Timestamp does not match. Want %s, but got %s\n", timeStamp.String(), histogramDataPoint.Timestamp().String())
+		return assert.Equal(t, timeStamp.String(), histogramDataPoint.Timestamp().String(), "Histogram Timestamp does not match")
 	}
 }
 
 func compareHistogramStartTimestamp(timeStamp pdata.Timestamp) histogramPointComparator {
 	return func(t *testing.T, histogramDataPoint *pdata.HistogramDataPoint) bool {
-		return assert.Equal(t, timeStamp, histogramDataPoint.StartTimestamp(), "Histogram Start-Timestamp does not match. Want %s, but got %s\n", timeStamp.String(), histogramDataPoint.StartTimestamp().String())
+		return assert.Equal(t, timeStamp.String(), histogramDataPoint.StartTimestamp().String(), "Histogram Start-Timestamp does not match")
 	}
 }
 
 func compareSummaryTimestamp(timeStamp pdata.Timestamp) summaryPointComparator {
 	return func(t *testing.T, summaryDataPoint *pdata.SummaryDataPoint) bool {
-		return assert.Equal(t, timeStamp, summaryDataPoint.Timestamp(), "Summary Timestamp does not match. Want %s, but got %s\n", timeStamp.String(), summaryDataPoint.Timestamp().String())
+		return assert.Equal(t, timeStamp.String(), summaryDataPoint.Timestamp().String(), "Summary Timestamp does not match")
 	}
 }
 
 func compareSummaryStartTimestamp(timeStamp pdata.Timestamp) summaryPointComparator {
 	return func(t *testing.T, summaryDataPoint *pdata.SummaryDataPoint) bool {
-		return assert.Equal(t, timeStamp, summaryDataPoint.StartTimestamp(), "Summary Start Timestamp does not match. Want %s, but got %s\n", timeStamp.String(), summaryDataPoint.StartTimestamp().String())
+		return assert.Equal(t, timeStamp.String(), summaryDataPoint.StartTimestamp().String(), "Summary Start-Timestamp does not match")
 	}
 }
 
 func compareDoubleValue(doubleVal float64) numberPointComparator {
 	return func(t *testing.T, numberDataPoint *pdata.NumberDataPoint) bool {
-		return assert.Equal(t, doubleVal, numberDataPoint.DoubleVal(), "Metric double value does not match. Want %f, but got %f\n", doubleVal, numberDataPoint.DoubleVal())
+		return assert.Equal(t, doubleVal, numberDataPoint.DoubleVal(), "Metric double value does not match")
 	}
 }
 
 func compareHistogram(count uint64, sum float64, buckets []uint64) histogramPointComparator {
 	return func(t *testing.T, histogramDataPoint *pdata.HistogramDataPoint) bool {
-		ret := assert.Equal(t, count, histogramDataPoint.Count(), "Histogram count value does not match. Want %d, but got %d\n", count, histogramDataPoint.Count())
-		ret = ret && assert.Equal(t, sum, histogramDataPoint.Sum(), "Histogram sum value does not match. Want %f, but got %f\n", sum, histogramDataPoint.Sum())
+		ret := assert.Equal(t, count, histogramDataPoint.Count(), "Histogram count value does not match")
+		ret = ret && assert.Equal(t, sum, histogramDataPoint.Sum(), "Histogram sum value does not match")
 		if ret {
-			ret = ret && assert.Equal(t, buckets, histogramDataPoint.BucketCounts(), "Histogram bucket count values do not match. Want %d, but got %d\n", buckets, histogramDataPoint.BucketCounts())
+			ret = ret && assert.Equal(t, buckets, histogramDataPoint.BucketCounts(), "Histogram bucket count values do not match")
 		}
 		return ret
 	}
@@ -442,14 +442,14 @@ func compareHistogram(count uint64, sum float64, buckets []uint64) histogramPoin
 
 func compareSummary(count uint64, sum float64, quantiles [][]float64) summaryPointComparator {
 	return func(t *testing.T, summaryDataPoint *pdata.SummaryDataPoint) bool {
-		ret := assert.Equal(t, count, summaryDataPoint.Count(), "Summary count value does not match. Want %d, but got %d\n", count, summaryDataPoint.Count())
-		ret = ret && assert.Equal(t, sum, summaryDataPoint.Sum(), "Summary sum value does not match. Want %f, but got %f\n", sum, summaryDataPoint.Sum())
+		ret := assert.Equal(t, count, summaryDataPoint.Count(), "Summary count value does not match")
+		ret = ret && assert.Equal(t, sum, summaryDataPoint.Sum(), "Summary sum value does not match")
 
 		if ret {
 			assert.Equal(t, len(quantiles), summaryDataPoint.QuantileValues().Len())
 			for i := 0; i < summaryDataPoint.QuantileValues().Len(); i++ {
-				assert.Equal(t, quantiles[i][0], summaryDataPoint.QuantileValues().At(i).Quantile(), "Summary quantile do not match. Want %f, but got %f\n", quantiles[i][0], summaryDataPoint.QuantileValues().At(i).Quantile())
-				assert.Equal(t, quantiles[i][1], summaryDataPoint.QuantileValues().At(i).Value(), "Summary quantile values do not match. Want %f, but got %f\n", quantiles[i][1], summaryDataPoint.QuantileValues().At(i).Value())
+				assert.Equal(t, quantiles[i][0], summaryDataPoint.QuantileValues().At(i).Quantile(), "Summary quantile do not match")
+				assert.Equal(t, quantiles[i][1], summaryDataPoint.QuantileValues().At(i).Value(), "Summary quantile values do not match")
 			}
 		}
 		return ret
