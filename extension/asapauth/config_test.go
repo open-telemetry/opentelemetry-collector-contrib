@@ -25,7 +25,6 @@ import (
 	"go.opentelemetry.io/collector/config/configtest"
 )
 
-
 // Test keys. Not for use anywhere but these tests.
 const (
 	PrivateKey = "data:application/pkcs8;kid=test;base64,MIIBUwIBADANBgkqhkiG9w0BAQEFAASCAT0wggE5AgEAAkEA0ZPr5JeyVDoB8RyZqQsx6qUD+9gMFg1/0hgdAvmytWBMXQJYdwkK2dFJwwZcWJVhJGcOJBDfB/8tcbdJd34KZQIDAQABAkBZD20tJTHJDSWKGsdJyNIbjqhUu4jXTkFFPK4Hd6jz3gV3fFvGnaolsD5Bt50dTXAiSCpFNSb9M9GY6XUAAdlBAiEA6MccfdZRfVapxKtAZbjXuAgMvnPtTvkVmwvhWLT5Wy0CIQDmfE8Et/pou0Jl6eM0eniT8/8oRzBWgy9ejDGfj86PGQIgWePqIL4OofRBgu0O5TlINI0HPtTNo12U9lbUIslgMdECICXT2RQpLcvqj+cyD7wZLZj6vrHZnTFVrnyR/cL2UyxhAiBswe/MCcD7T7J4QkNrCG+ceQGypc7LsxlIxQuKh5GWYA=="
@@ -57,8 +56,9 @@ func TestLoadConfig(t *testing.T) {
 }
 
 func TestLoadBadConfig(t *testing.T) {
+	t.Parallel()
 	factories, err := componenttest.NopFactories()
-require.NoError(t,err)
+	require.NoError(t, err)
 
 	tests := []struct {
 		configName  string
@@ -84,7 +84,8 @@ require.NoError(t,err)
 	for _, tt := range tests {
 		factory := NewFactory()
 		factories.Extensions[typeStr] = factory
-		cfg, _ := configtest.LoadConfig(path.Join(".", "testdata", "config_bad.yaml"), factories)
+		cfg, err := configtest.LoadConfig(path.Join(".", "testdata", "config_bad.yaml"), factories)
+		assert.NoError(t, err)
 		extension := cfg.Extensions[config.NewComponentIDWithName(typeStr, tt.configName)]
 		verr := extension.Validate()
 		require.ErrorIs(t, verr, tt.expectedErr)
