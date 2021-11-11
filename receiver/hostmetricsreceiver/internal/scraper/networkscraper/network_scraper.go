@@ -128,8 +128,8 @@ func initializeNetworkPacketsMetric(metric pdata.Metric, metricIntf metadata.Met
 	idps := metric.Sum().DataPoints()
 	idps.EnsureCapacity(2 * len(ioCountersSlice))
 	for _, ioCounters := range ioCountersSlice {
-		initializeNetworkDataPoint(idps.AppendEmpty(), startTime, now, ioCounters.Name, metadata.LabelDirection.Transmit, int64(ioCounters.PacketsSent))
-		initializeNetworkDataPoint(idps.AppendEmpty(), startTime, now, ioCounters.Name, metadata.LabelDirection.Receive, int64(ioCounters.PacketsRecv))
+		initializeNetworkDataPoint(idps.AppendEmpty(), startTime, now, ioCounters.Name, metadata.AttributeDirection.Transmit, int64(ioCounters.PacketsSent))
+		initializeNetworkDataPoint(idps.AppendEmpty(), startTime, now, ioCounters.Name, metadata.AttributeDirection.Receive, int64(ioCounters.PacketsRecv))
 	}
 }
 
@@ -139,8 +139,8 @@ func initializeNetworkDroppedPacketsMetric(metric pdata.Metric, metricIntf metad
 	idps := metric.Sum().DataPoints()
 	idps.EnsureCapacity(2 * len(ioCountersSlice))
 	for _, ioCounters := range ioCountersSlice {
-		initializeNetworkDataPoint(idps.AppendEmpty(), startTime, now, ioCounters.Name, metadata.LabelDirection.Transmit, int64(ioCounters.Dropout))
-		initializeNetworkDataPoint(idps.AppendEmpty(), startTime, now, ioCounters.Name, metadata.LabelDirection.Receive, int64(ioCounters.Dropin))
+		initializeNetworkDataPoint(idps.AppendEmpty(), startTime, now, ioCounters.Name, metadata.AttributeDirection.Transmit, int64(ioCounters.Dropout))
+		initializeNetworkDataPoint(idps.AppendEmpty(), startTime, now, ioCounters.Name, metadata.AttributeDirection.Receive, int64(ioCounters.Dropin))
 	}
 }
 
@@ -150,8 +150,8 @@ func initializeNetworkErrorsMetric(metric pdata.Metric, metricIntf metadata.Metr
 	idps := metric.Sum().DataPoints()
 	idps.EnsureCapacity(2 * len(ioCountersSlice))
 	for _, ioCounters := range ioCountersSlice {
-		initializeNetworkDataPoint(idps.AppendEmpty(), startTime, now, ioCounters.Name, metadata.LabelDirection.Transmit, int64(ioCounters.Errout))
-		initializeNetworkDataPoint(idps.AppendEmpty(), startTime, now, ioCounters.Name, metadata.LabelDirection.Receive, int64(ioCounters.Errin))
+		initializeNetworkDataPoint(idps.AppendEmpty(), startTime, now, ioCounters.Name, metadata.AttributeDirection.Transmit, int64(ioCounters.Errout))
+		initializeNetworkDataPoint(idps.AppendEmpty(), startTime, now, ioCounters.Name, metadata.AttributeDirection.Receive, int64(ioCounters.Errin))
 	}
 }
 
@@ -161,15 +161,15 @@ func initializeNetworkIOMetric(metric pdata.Metric, metricIntf metadata.MetricIn
 	idps := metric.Sum().DataPoints()
 	idps.EnsureCapacity(2 * len(ioCountersSlice))
 	for _, ioCounters := range ioCountersSlice {
-		initializeNetworkDataPoint(idps.AppendEmpty(), startTime, now, ioCounters.Name, metadata.LabelDirection.Transmit, int64(ioCounters.BytesSent))
-		initializeNetworkDataPoint(idps.AppendEmpty(), startTime, now, ioCounters.Name, metadata.LabelDirection.Receive, int64(ioCounters.BytesRecv))
+		initializeNetworkDataPoint(idps.AppendEmpty(), startTime, now, ioCounters.Name, metadata.AttributeDirection.Transmit, int64(ioCounters.BytesSent))
+		initializeNetworkDataPoint(idps.AppendEmpty(), startTime, now, ioCounters.Name, metadata.AttributeDirection.Receive, int64(ioCounters.BytesRecv))
 	}
 }
 
 func initializeNetworkDataPoint(dataPoint pdata.NumberDataPoint, startTime, now pdata.Timestamp, deviceLabel, directionLabel string, value int64) {
 	attributes := dataPoint.Attributes()
-	attributes.InsertString(metadata.Labels.Device, deviceLabel)
-	attributes.InsertString(metadata.Labels.Direction, directionLabel)
+	attributes.InsertString(metadata.Attributes.Device, deviceLabel)
+	attributes.InsertString(metadata.Attributes.Direction, directionLabel)
 	dataPoint.SetStartTimestamp(startTime)
 	dataPoint.SetTimestamp(now)
 	dataPoint.SetIntVal(value)
@@ -210,14 +210,14 @@ func initializeNetworkConnectionsMetric(metric pdata.Metric, now pdata.Timestamp
 	idps.EnsureCapacity(len(connectionStateCounts))
 
 	for connectionState, count := range connectionStateCounts {
-		initializeNetworkConnectionsDataPoint(idps.AppendEmpty(), now, metadata.LabelProtocol.Tcp, connectionState, count)
+		initializeNetworkConnectionsDataPoint(idps.AppendEmpty(), now, metadata.AttributeProtocol.Tcp, connectionState, count)
 	}
 }
 
 func initializeNetworkConnectionsDataPoint(dataPoint pdata.NumberDataPoint, now pdata.Timestamp, protocolLabel, stateLabel string, value int64) {
 	attributes := dataPoint.Attributes()
-	attributes.InsertString(metadata.Labels.Protocol, protocolLabel)
-	attributes.InsertString(metadata.Labels.State, stateLabel)
+	attributes.InsertString(metadata.Attributes.Protocol, protocolLabel)
+	attributes.InsertString(metadata.Attributes.State, stateLabel)
 	dataPoint.SetTimestamp(now)
 	dataPoint.SetIntVal(value)
 }

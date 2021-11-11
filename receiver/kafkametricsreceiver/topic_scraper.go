@@ -81,10 +81,10 @@ func (s *topicScraper) scrape(context.Context) (pdata.Metrics, error) {
 			continue
 		}
 		labels := pdata.NewAttributeMap()
-		labels.UpsertString(metadata.L.Topic, topic)
+		labels.UpsertString(metadata.A.Topic, topic)
 		addIntGauge(ilm.Metrics(), metadata.M.KafkaTopicPartitions.Name(), now, labels, int64(len(partitions)))
 		for _, partition := range partitions {
-			labels.UpsertInt(metadata.L.Partition, int64(partition))
+			labels.UpsertInt(metadata.A.Partition, int64(partition))
 			currentOffset, err := s.client.GetOffset(topic, partition, sarama.OffsetNewest)
 			if err != nil {
 				scrapeErrors.AddPartial(1, err)
