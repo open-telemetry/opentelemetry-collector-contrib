@@ -88,16 +88,16 @@ func (r *memcachedScraper) scrape(_ context.Context) (pdata.Metrics, error) {
 			case "total_connections":
 				addToMetric(totalConn, attributes, parseInt(v), now)
 			case "cmd_get":
-				attributes.Insert(metadata.L.Command, pdata.NewAttributeValueString("get"))
+				attributes.Insert(metadata.A.Command, pdata.NewAttributeValueString("get"))
 				addToMetric(commandCount, attributes, parseInt(v), now)
 			case "cmd_set":
-				attributes.Insert(metadata.L.Command, pdata.NewAttributeValueString("set"))
+				attributes.Insert(metadata.A.Command, pdata.NewAttributeValueString("set"))
 				addToMetric(commandCount, attributes, parseInt(v), now)
 			case "cmd_flush":
-				attributes.Insert(metadata.L.Command, pdata.NewAttributeValueString("flush"))
+				attributes.Insert(metadata.A.Command, pdata.NewAttributeValueString("flush"))
 				addToMetric(commandCount, attributes, parseInt(v), now)
 			case "cmd_touch":
-				attributes.Insert(metadata.L.Command, pdata.NewAttributeValueString("touch"))
+				attributes.Insert(metadata.A.Command, pdata.NewAttributeValueString("touch"))
 				addToMetric(commandCount, attributes, parseInt(v), now)
 			case "curr_items":
 				addToMetric(currItems, attributes, parseFloat(v), now)
@@ -106,13 +106,13 @@ func (r *memcachedScraper) scrape(_ context.Context) (pdata.Metrics, error) {
 			case "evictions":
 				addToMetric(evictions, attributes, parseInt(v), now)
 			case "bytes_read":
-				attributes.Insert(metadata.L.Direction, pdata.NewAttributeValueString("received"))
+				attributes.Insert(metadata.A.Direction, pdata.NewAttributeValueString("received"))
 				addToMetric(network, attributes, parseInt(v), now)
 			case "bytes_written":
-				attributes.Insert(metadata.L.Direction, pdata.NewAttributeValueString("sent"))
+				attributes.Insert(metadata.A.Direction, pdata.NewAttributeValueString("sent"))
 				addToMetric(network, attributes, parseInt(v), now)
 			case "get_hits":
-				attributes.Insert(metadata.L.Operation, pdata.NewAttributeValueString("get"))
+				attributes.Insert(metadata.A.Operation, pdata.NewAttributeValueString("get"))
 				statSlice := stats.Stats
 				hits := parseFloat(statSlice["get_hits"])
 				misses := parseFloat(statSlice["get_misses"])
@@ -121,14 +121,14 @@ func (r *memcachedScraper) scrape(_ context.Context) (pdata.Metrics, error) {
 				} else {
 					addToMetric(hitRatio, attributes, 0, now)
 				}
-				attributes.Insert(metadata.L.Type, pdata.NewAttributeValueString("hit"))
+				attributes.Insert(metadata.A.Type, pdata.NewAttributeValueString("hit"))
 				addToMetric(operationCount, attributes, parseInt(v), now)
 			case "get_misses":
-				attributes.Insert(metadata.L.Operation, pdata.NewAttributeValueString("get"))
-				attributes.Insert(metadata.L.Type, pdata.NewAttributeValueString("miss"))
+				attributes.Insert(metadata.A.Operation, pdata.NewAttributeValueString("get"))
+				attributes.Insert(metadata.A.Type, pdata.NewAttributeValueString("miss"))
 				addToMetric(operationCount, attributes, parseInt(v), now)
 			case "incr_hits":
-				attributes.Insert(metadata.L.Operation, pdata.NewAttributeValueString("increment"))
+				attributes.Insert(metadata.A.Operation, pdata.NewAttributeValueString("increment"))
 				statSlice := stats.Stats
 				hits := parseFloat(statSlice["incr_hits"])
 				misses := parseFloat(statSlice["incr_misses"])
@@ -137,14 +137,14 @@ func (r *memcachedScraper) scrape(_ context.Context) (pdata.Metrics, error) {
 				} else {
 					addToMetric(hitRatio, attributes, 0, now)
 				}
-				attributes.Insert(metadata.L.Type, pdata.NewAttributeValueString("hit"))
+				attributes.Insert(metadata.A.Type, pdata.NewAttributeValueString("hit"))
 				addToMetric(operationCount, attributes, parseInt(v), now)
 			case "incr_misses":
-				attributes.Insert(metadata.L.Operation, pdata.NewAttributeValueString("increment"))
-				attributes.Insert(metadata.L.Type, pdata.NewAttributeValueString("miss"))
+				attributes.Insert(metadata.A.Operation, pdata.NewAttributeValueString("increment"))
+				attributes.Insert(metadata.A.Type, pdata.NewAttributeValueString("miss"))
 				addToMetric(operationCount, attributes, parseInt(v), now)
 			case "decr_hits":
-				attributes.Insert(metadata.L.Operation, pdata.NewAttributeValueString("decrement"))
+				attributes.Insert(metadata.A.Operation, pdata.NewAttributeValueString("decrement"))
 				statSlice := stats.Stats
 				hits := parseFloat(statSlice["decr_hits"])
 				misses := parseFloat(statSlice["decr_misses"])
@@ -153,17 +153,17 @@ func (r *memcachedScraper) scrape(_ context.Context) (pdata.Metrics, error) {
 				} else {
 					addToMetric(hitRatio, attributes, 0, now)
 				}
-				attributes.Insert(metadata.L.Type, pdata.NewAttributeValueString("hit"))
+				attributes.Insert(metadata.A.Type, pdata.NewAttributeValueString("hit"))
 				addToMetric(operationCount, attributes, parseInt(v), now)
 			case "decr_misses":
-				attributes.Insert(metadata.L.Operation, pdata.NewAttributeValueString("decrement"))
-				attributes.Insert(metadata.L.Type, pdata.NewAttributeValueString("miss"))
+				attributes.Insert(metadata.A.Operation, pdata.NewAttributeValueString("decrement"))
+				attributes.Insert(metadata.A.Type, pdata.NewAttributeValueString("miss"))
 				addToMetric(operationCount, attributes, parseInt(v), now)
 			case "rusage_system":
-				attributes.Insert(metadata.L.UsageType, pdata.NewAttributeValueString("system"))
+				attributes.Insert(metadata.A.UsageType, pdata.NewAttributeValueString("system"))
 				addToMetric(rUsage, attributes, parseFloat(v), now)
 			case "rusage_user":
-				attributes.Insert(metadata.L.UsageType, pdata.NewAttributeValueString("user"))
+				attributes.Insert(metadata.A.UsageType, pdata.NewAttributeValueString("user"))
 				addToMetric(rUsage, attributes, parseFloat(v), now)
 			}
 		}
