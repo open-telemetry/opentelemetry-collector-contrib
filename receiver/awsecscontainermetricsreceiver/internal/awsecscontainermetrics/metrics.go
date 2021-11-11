@@ -17,10 +17,12 @@ package awsecscontainermetrics
 import (
 	"go.opentelemetry.io/collector/model/pdata"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil"
 )
 
 // MetricsData generates OTLP metrics from endpoint raw data
-func MetricsData(containerStatsMap map[string]*ContainerStats, metadata TaskMetadata, logger *zap.Logger) []pdata.Metrics {
+func MetricsData(containerStatsMap map[string]*ContainerStats, metadata ecsutil.TaskMetadata, logger *zap.Logger) []pdata.Metrics {
 	acc := &metricDataAccumulator{}
 	acc.getMetricsData(containerStatsMap, metadata, logger)
 

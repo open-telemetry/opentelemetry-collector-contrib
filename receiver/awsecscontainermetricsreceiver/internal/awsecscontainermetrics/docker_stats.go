@@ -16,6 +16,8 @@ package awsecscontainermetrics
 
 import "time"
 
+const TaskStatsPath = "/task/stats"
+
 // ContainerStats defines the structure for container stats
 type ContainerStats struct {
 	Name         string    `json:"name"`
