@@ -54,10 +54,12 @@ func (a AsapClientAuthenticator) PerRPCCredentials() (credentials.PerRPCCredenti
 	}, nil
 }
 
+// Start does nothing and returns nil
 func (a AsapClientAuthenticator) Start(_ context.Context, _ component.Host) error {
 	return nil
 }
 
+// Shutdown does nothing and returns nil
 func (a AsapClientAuthenticator) Shutdown(_ context.Context) error {
 	return nil
 }
@@ -91,6 +93,6 @@ func (c *PerRPCAuth) GetRequestMetadata(context.Context, ...string) (map[string]
 }
 
 // RequireTransportSecurity always returns true for this implementation.
-func (c *PerRPCAuth) RequireTransportSecurity() bool {
+func (*PerRPCAuth) RequireTransportSecurity() bool {
 	return true
 }
