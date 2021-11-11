@@ -16,6 +16,7 @@ package asapclientauthextension
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"time"
 
@@ -37,8 +38,20 @@ func (a AsapClientAuthenticator) RoundTripper(base http.RoundTripper) (http.Roun
 }
 
 func (a AsapClientAuthenticator) PerRPCCredentials() (credentials.PerRPCCredentials, error) {
-	// todo? Or leave
-	return nil, nil
+	token, err := a.provisioner.Provision()
+	if err != nil {
+		return nil, err
+	}
+	headerValue, err := token.Serialize(a.privateKey)
+	if err != nil {
+		return nil, err
+	}
+	header := map[string]string {
+		"authorization": fmt.Sprintf("Bearer %s", string(headerValue)),
+	}
+	return &PerRPCAuth{
+		metadata: header,
+	}, nil
 }
 
 func (a AsapClientAuthenticator) Start(_ context.Context, _ component.Host) error {
@@ -51,7 +64,7 @@ func (a AsapClientAuthenticator) Shutdown(_ context.Context) error {
 
 var _ configauth.ClientAuthenticator = (*AsapClientAuthenticator)(nil)
 
-func createAsapClientAuthenticator(_ component.ExtensionCreateSettings, cfg *Config) (AsapClientAuthenticator, error) {
+func createAsapClientAuthenticator(cfg *Config) (AsapClientAuthenticator, error) {
 	var a AsapClientAuthenticator
 	pk, err := asap.NewPrivateKey([]byte(cfg.PrivateKey))
 	if err != nil {
@@ -63,4 +76,21 @@ func createAsapClientAuthenticator(_ component.ExtensionCreateSettings, cfg *Con
 		privateKey: pk,
 	}
 	return a, nil
+}
+
+var _ credentials.PerRPCCredentials = (*PerRPCAuth)(nil)
+
+// PerRPCAuth is a gRPC credentials.PerRPCCredentials implementation that returns an 'authorization' header.
+type PerRPCAuth struct {
+	metadata map[string]string
+}
+
+// GetRequestMetadata returns the request metadata to be used with the RPC.
+func (c *PerRPCAuth) GetRequestMetadata(context.Context, ...string) (map[string]string, error) {
+	return c.metadata, nil
+}
+
+// RequireTransportSecurity always returns true for this implementation.
+func (c *PerRPCAuth) RequireTransportSecurity() bool {
+	return true
 }
