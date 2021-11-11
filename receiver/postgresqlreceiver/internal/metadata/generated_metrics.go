@@ -22,7 +22,7 @@ import (
 )
 
 // Type is the component type name.
-const Type config.Type = "postgresqlreceiver"
+const Type config.Type = "postgresql"
 
 // MetricIntf is an interface to generically interact with generated metric.
 type MetricIntf interface {
@@ -76,10 +76,9 @@ var Metrics = &metricStruct{}
 // manipulating those metrics. M is an alias for Metrics
 var M = Metrics
 
-// Labels contains the possible metric labels that can be used.
-var Labels = struct {
+// Attributes contains the possible metric attributes that can be used.
+var Attributes = struct {
 }{}
 
-// L contains the possible metric labels that can be used. L is an alias for
-// Labels.
-var L = Labels
+// A is an alias for Attributes.
+var A = Attributes
