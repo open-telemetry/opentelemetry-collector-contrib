@@ -10,7 +10,7 @@ Supported pipeline types: `metrics`
 
 This receiver supports PostgreSQL versions 9.6+
 
-Monitoring user must be granted SELECT ON pg_stat_database
+The monitoring user must be granted `SELECT` on `pg_stat_database`.
 
 ## Configuration
 
@@ -19,13 +19,17 @@ The following settings are required to create a database connection:
 - `password`
 
 The following settings are optional:
-- `host` (default = `localhost`): The host of the database. If the `host` field starts with a forward slash (`/`), the [lib/pq](https://github.com/lib/pq) module attempts to use a unix socket connection to `$host.s.PGSQL.$port`, otherwise it will attempt to make a TCP connection.
-- `port` (default = `5432`)
+- `endpoint` (default = `localhost:5432`): The endpoint of the postgresql server. Whether using TCP or Unix sockets, this value should be `host:port`. If `transport` is set to `unix`, the endpoint will internally be translated from `host:port` to `/host.s.PGSQL.port`
+- `transport` (default = `tcp`): The transport protocol being used to connect to postgresql. Available options are `tcp` and `unix`.
+
 - `databases` (default = `[]`): The list of databases for which the receiver will attempt to collect statistics. If an empty list is provided, the receiver will attempt to collect statistics for all non-template databases.
-- `ssl_mode` (default = `require`): The SSL mode of the connection. Supported are `require`, `verify-ca`, `verify-full`, `disable`. `ssl_mode` values in the golang [lib/pq](https://github.com/lib/pq) module are modeled after the values [documented here](https://www.postgresql.org/docs/9.6/libpq-ssl.html) for libpq, though there are some minor differences.
-- `ssl_root_cert` (default = ""): A set of certificate authorities used to validate the database server's SSL certificate. Only used when `ssl_mode` is not `disable`.
-- `ssl_cert` (default = `$HOME/.postgresql/postgresql.crt`): A cerficate used for client authentication, if necessary. Only used when `ssl_mode` is not `disable`.
-- `ssl_key` (default = `$HOME/.postgresql/postgresql.key`): A SSL key used to show ownership of `ssl_cert` for client authentication, if necessary. Only used when `ssl_mode` is not `disable`.
+
+- `insecure` (default = `false`): Whether to enable client transport security for the postgresql connection.
+- `insecure_skip_verify` (default = `true`): Whether to validate server name and certificate if client transport security is enabled.
+- `cert_file` (default = `$HOME/.postgresql/postgresql.crt`): A cerficate used for client authentication, if necessary.
+- `key_file` (default = `$HOME/.postgresql/postgresql.key`): An SSL key used for client authentication, if necessary.
+- `ca_file` (default = ""): A set of certificate authorities used to validate the database server's SSL certificate.
+
 - `collection_interval` (default = `10s`): This receiver collects metrics on an interval. This value must be a string readable by Golang's [time.ParseDuration](https://pkg.go.dev/time#ParseDuration). Valid time units are `ns`, `us` (or `µs`), `ms`, `s`, `m`, `h`.
 
 ### Example Configuration
@@ -33,20 +37,21 @@ The following settings are optional:
 ```yaml
 receivers:
   postgresql:
-    host: localhost
-    port: 5432
+    endpoint: localhost:5432
+    transport: tcp
     username: otel
     password: $POSTGRESQL_PASSWORD
     databases:
       - otel
     collection_interval: 10s
-    ssl_mode: verify-ca
-    ssl_root_cert: /home/otel/authorities.crt
-    ssl_cert: /home/otel/mypostgrescert.crt
-    ssl_key: /home/otel/mypostgreskey.key
+    insecure: false
+    unsecure_skip_verify: false
+    ca_file: /home/otel/authorities.crt
+    cert_file: /home/otel/mypostgrescert.crt
+    key_file: /home/otel/mypostgreskey.key
 ```
 
-The full list of settings exposed for this receiver are documented [here](./config.go) with detailed sample configurations [here](./testdata/config.yaml).
+The full list of settings exposed for this receiver are documented [here](./config.go) with detailed sample configurations [here](./testdata/config.yaml). TLS config is documented further under the [opentelemetry collector's configtls package](https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/configtls/README.md). 
 
 ## Metrics
 

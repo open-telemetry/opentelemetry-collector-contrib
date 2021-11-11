@@ -23,7 +23,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configtest"
 )
 
@@ -35,36 +34,33 @@ func TestLoadConfig(t *testing.T) {
 	factories.Exporters[typeStr] = factory
 	cfg, err := configtest.LoadConfigAndValidate(path.Join(".", "testdata", "config.yaml"), factories)
 
-	require.NoError(t, err)
+	require.Error(t, err)
 	require.NotNil(t, cfg)
 
 	e0 := cfg.Exporters[config.NewComponentID(typeStr)]
 
 	// Endpoint doesn't have a default value so set it directly.
 	defaultCfg := factory.CreateDefaultConfig().(*Config)
-	defaultCfg.TCPAddr = confignet.TCPAddr{
-		Endpoint: "cls.ap-beijing.tencentcloudapi.com",
-	}
+	defaultCfg.Region = "ap-beijing"
+
 	assert.Equal(t, defaultCfg, e0)
 
 	e1 := cfg.Exporters[config.NewComponentIDWithName(typeStr, "2")]
 	expectedCfg := Config{
 		ExporterSettings: config.NewExporterSettings(config.NewComponentIDWithName(typeStr, "2")),
-		TCPAddr: confignet.TCPAddr{
-			Endpoint: "cls.ap-beijing.tencentcloudapi.com",
-		},
-		LogSet:    "demo-logset",
-		Topic:     "demo-topic",
-		SecretID:  "demo-secret-id",
-		SecretKey: "demo-secret-key",
+		Region:           "ap-beijing",
+		LogSet:           "demo-logset",
+		Topic:            "demo-topic",
+		SecretID:         "demo-secret-id",
+		SecretKey:        "demo-secret-key",
 	}
 	assert.Equal(t, &expectedCfg, e1)
 
 	params := componenttest.NewNopExporterCreateSettings()
 
 	le, err := factory.CreateLogsExporter(context.Background(), params, e0)
-	require.Error(t, err)
-	require.Nil(t, le)
+	require.NoError(t, err)
+	require.NotNil(t, le)
 
 	le, err = factory.CreateLogsExporter(context.Background(), params, e1)
 	require.NoError(t, err)

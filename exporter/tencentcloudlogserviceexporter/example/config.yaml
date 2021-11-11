@@ -1,19 +1,14 @@
 receivers:
-  prometheus:
-    config:
-      scrape_configs:
-        - job_name: 'otel-collector'
-          scrape_interval: 10s
-          static_configs:
-            - targets: ['localhost:8890']
-            - targets: ['localhost:8889']
-            - targets: ['localhost:8888']
+  otlp:
+    protocols:
+      grpc:
+        endpoint: ":4317"
 
 exporters:
   tencentcloud_logservice:
-      # LogService's Endpoint, https://cloud.tencent.com/document/product/614/18940
-      # set cls.{region-id}.tencentcloudapi.com, eg cls.ap-beijing.tencentcloudapi.com;
-    endpoint: "cls.ap-beijing.tencentcloudapi.com"
+      # LogService's Region, https://cloud.tencent.com/document/product/614/18940
+      # set cls.{region}.tencentcloudapi.com, eg cls.ap-beijing.tencentcloudapi.com;
+    region: "ap-beijing"
     # LogService's LogSet ID
     logset: "demo-logset"
     # LogService's Topic ID
@@ -26,5 +21,5 @@ exporters:
 service:
   pipelines:
     metrics:
-      receivers: [prometheus]
+      receivers: [otlp]
       exporters: [tencentcloud_logservice]

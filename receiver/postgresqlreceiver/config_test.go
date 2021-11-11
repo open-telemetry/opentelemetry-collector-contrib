@@ -16,6 +16,7 @@ package postgresqlreceiver
 
 import (
 	"errors"
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -24,17 +25,13 @@ import (
 
 func TestValidate(t *testing.T) {
 	testCases := []struct {
-		desc     string
-		cfg      *Config
-		expected error
+		desc                  string
+		defaultConfigModifier func(cfg *Config)
+		expected              error
 	}{
 		{
-			desc: "missing username and password",
-			cfg: &Config{
-				SSLConfig: SSLConfig{
-					SSLMode: "require",
-				},
-			},
+			desc:                  "missing username and password",
+			defaultConfigModifier: func(cfg *Config) {},
 			expected: multierr.Combine(
 				errors.New(ErrNoUsername),
 				errors.New(ErrNoPassword),
@@ -42,11 +39,8 @@ func TestValidate(t *testing.T) {
 		},
 		{
 			desc: "missing password",
-			cfg: &Config{
-				Username: "otel",
-				SSLConfig: SSLConfig{
-					SSLMode: "require",
-				},
+			defaultConfigModifier: func(cfg *Config) {
+				cfg.Username = "otel"
 			},
 			expected: multierr.Combine(
 				errors.New(ErrNoPassword),
@@ -54,44 +48,65 @@ func TestValidate(t *testing.T) {
 		},
 		{
 			desc: "missing username",
-			cfg: &Config{
-				Password: "otel",
-				SSLConfig: SSLConfig{
-					SSLMode: "require",
-				},
+			defaultConfigModifier: func(cfg *Config) {
+				cfg.Password = "otel"
 			},
 			expected: multierr.Combine(
 				errors.New(ErrNoUsername),
 			),
 		},
 		{
-			desc: "bad SSL mode",
-			cfg: &Config{
-				Username: "otel",
-				Password: "otel",
-				SSLConfig: SSLConfig{
-					SSLMode: "assume",
-				},
+			desc: "bad endpoint",
+			defaultConfigModifier: func(cfg *Config) {
+				cfg.Username = "otel"
+				cfg.Password = "otel"
+				cfg.Endpoint = "open-telemetry"
 			},
 			expected: multierr.Combine(
-				errors.New("SSL Mode 'assume' not supported, valid values are 'require', 'verify-ca', 'verify-full', 'disable'. The default is 'require'"),
+				errors.New(ErrHostPort),
+			),
+		},
+		{
+			desc: "bad transport",
+			defaultConfigModifier: func(cfg *Config) {
+				cfg.Username = "otel"
+				cfg.Password = "otel"
+				cfg.Transport = "teacup"
+			},
+			expected: multierr.Combine(
+				errors.New(ErrTransportsSupported),
+			),
+		},
+		{
+			desc: "unsupported SSL params",
+			defaultConfigModifier: func(cfg *Config) {
+				cfg.Username = "otel"
+				cfg.Password = "otel"
+				cfg.ServerName = "notlocalhost"
+				cfg.MinVersion = "1.0"
+				cfg.MaxVersion = "1.0"
+			},
+			expected: multierr.Combine(
+				fmt.Errorf(ErrNotSupported, "ServerName"),
+				fmt.Errorf(ErrNotSupported, "MaxVersion"),
+				fmt.Errorf(ErrNotSupported, "MinVersion"),
 			),
 		},
 		{
 			desc: "no error",
-			cfg: &Config{
-				Username: "otel",
-				Password: "otel",
-				SSLConfig: SSLConfig{
-					SSLMode: "require",
-				},
+			defaultConfigModifier: func(cfg *Config) {
+				cfg.Username = "otel"
+				cfg.Password = "otel"
 			},
 			expected: nil,
 		},
 	}
 	for _, tC := range testCases {
 		t.Run(tC.desc, func(t *testing.T) {
-			actual := tC.cfg.Validate()
+			factory := NewFactory()
+			cfg := factory.CreateDefaultConfig().(*Config)
+			tC.defaultConfigModifier(cfg)
+			actual := cfg.Validate()
 			require.Equal(t, tC.expected, actual)
 		})
 	}
