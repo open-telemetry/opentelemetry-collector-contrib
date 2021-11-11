@@ -22,11 +22,7 @@ import (
 )
 
 // Type is the component type name.
-<<<<<<< HEAD
 const Type config.Type = "postgresql"
-=======
-const Type config.Type = "postgresqlreceiver"
->>>>>>> postgres-metrics-1
 
 // MetricIntf is an interface to generically interact with generated metric.
 type MetricIntf interface {
@@ -59,7 +55,6 @@ func (m *metricImpl) Init(metric pdata.Metric) {
 }
 
 type metricStruct struct {
-<<<<<<< HEAD
 	PostgresqlBackends   MetricIntf
 	PostgresqlBlocksRead MetricIntf
 	PostgresqlCommits    MetricIntf
@@ -67,13 +62,10 @@ type metricStruct struct {
 	PostgresqlOperations MetricIntf
 	PostgresqlRollbacks  MetricIntf
 	PostgresqlRows       MetricIntf
-=======
->>>>>>> postgres-metrics-1
 }
 
 // Names returns a list of all the metric name strings.
 func (m *metricStruct) Names() []string {
-<<<<<<< HEAD
 	return []string{
 		"postgresql.backends",
 		"postgresql.blocks_read",
@@ -94,12 +86,6 @@ var metricsByName = map[string]MetricIntf{
 	"postgresql.rollbacks":   Metrics.PostgresqlRollbacks,
 	"postgresql.rows":        Metrics.PostgresqlRows,
 }
-=======
-	return []string{}
-}
-
-var metricsByName = map[string]MetricIntf{}
->>>>>>> postgres-metrics-1
 
 func (m *metricStruct) ByName(n string) MetricIntf {
 	return metricsByName[n]
@@ -107,7 +93,6 @@ func (m *metricStruct) ByName(n string) MetricIntf {
 
 // Metrics contains a set of methods for each metric that help with
 // manipulating those metrics.
-<<<<<<< HEAD
 var Metrics = &metricStruct{
 	&metricImpl{
 		"postgresql.backends",
@@ -181,9 +166,6 @@ var Metrics = &metricStruct{
 		},
 	},
 }
-=======
-var Metrics = &metricStruct{}
->>>>>>> postgres-metrics-1
 
 // M contains a set of methods for each metric that help with
 // manipulating those metrics. M is an alias for Metrics
@@ -191,7 +173,6 @@ var M = Metrics
 
 // Labels contains the possible metric labels that can be used.
 var Labels = struct {
-<<<<<<< HEAD
 	// Database (The name of the database.)
 	Database string
 	// Operation (The database operation.)
@@ -209,14 +190,10 @@ var Labels = struct {
 	"state",
 	"table",
 }
-=======
-}{}
->>>>>>> postgres-metrics-1
 
 // L contains the possible metric labels that can be used. L is an alias for
 // Labels.
 var L = Labels
-<<<<<<< HEAD
 
 // LabelOperation are the possible values that the label "operation" can have.
 var LabelOperation = struct {
@@ -260,5 +237,3 @@ var LabelState = struct {
 	"dead",
 	"live",
 }
-=======
->>>>>>> postgres-metrics-1
