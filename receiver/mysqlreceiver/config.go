@@ -17,6 +17,7 @@ package mysqlreceiver
 import (
 	"errors"
 
+	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 	"go.uber.org/multierr"
 )
@@ -26,7 +27,7 @@ type Config struct {
 	Username                                string `mapstructure:"username"`
 	Password                                string `mapstructure:"password"`
 	Database                                string `mapstructure:"database"`
-	Endpoint                                string `mapstructure:"endpoint"`
+	confignet.NetAddr                       `mapstructure:",squash"`
 }
 
 // Errors for missing required config parameters.
