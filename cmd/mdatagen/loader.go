@@ -33,9 +33,9 @@ func (mn metricName) Render() (string, error) {
 	return formatIdentifier(string(mn), true)
 }
 
-type labelName string
+type attributeName string
 
-func (mn labelName) Render() (string, error) {
+func (mn attributeName) Render() (string, error) {
 	return formatIdentifier(string(mn), true)
 }
 
@@ -55,26 +55,26 @@ type metric struct {
 	// Date is set to generic metric data interface after validating.
 	Data MetricData `yaml:"-"`
 
-	// Labels is the list of labels that the metric emits.
-	Labels []labelName
+	// Attributes is the list of attributes that the metric emits.
+	Attributes []attributeName
 }
 
-type label struct {
-	// Description describes the purpose of the label.
+type attribute struct {
+	// Description describes the purpose of the attribute.
 	Description string `validate:"notblank"`
-	// Value can optionally specify the value this label will have.
-	// For example, the label may have the identifier `MemState` to its
+	// Value can optionally specify the value this attribute will have.
+	// For example, the attribute may have the identifier `MemState` to its
 	// value may be `state` when used.
 	Value string
-	// Enum can optionally describe the set of values to which the label can belong.
+	// Enum can optionally describe the set of values to which the attribute can belong.
 	Enum []string
 }
 
 type metadata struct {
 	// Name of the component.
 	Name string `validate:"notblank"`
-	// Labels emitted by one or more metrics.
-	Labels map[labelName]label `validate:"dive"`
+	// Attributes emitted by one or more metrics.
+	Attributes map[attributeName]attribute `validate:"dive"`
 	// Metrics that can be emitted by the component.
 	Metrics map[metricName]metric `validate:"dive"`
 }
@@ -120,13 +120,13 @@ func validateMetadata(out metadata) error {
 		return fmt.Errorf("failed registering translations: %v", err)
 	}
 
-	if err := v.RegisterTranslation("nosuchlabel", tr, func(ut ut.Translator) error {
-		return ut.Add("nosuchlabel", "unknown label value", true) // see universal-translator for details
+	if err := v.RegisterTranslation("nosuchattribute", tr, func(ut ut.Translator) error {
+		return ut.Add("nosuchattribute", "unknown attribute value", true) // see universal-translator for details
 	}, func(ut ut.Translator, fe validator.FieldError) string {
-		t, _ := ut.T("nosuchlabel", fe.Field())
+		t, _ := ut.T("nosuchattribute", fe.Field())
 		return t
 	}); err != nil {
-		return fmt.Errorf("failed registering nosuchlabel: %v", err)
+		return fmt.Errorf("failed registering nosuchattribute: %v", err)
 	}
 
 	v.RegisterStructValidation(metricValidation, metric{})
@@ -156,13 +156,14 @@ func validateMetadata(out metadata) error {
 
 // metricValidation validates metric structs.
 func metricValidation(sl validator.StructLevel) {
-	// Make sure that the labels are valid.
+	// Make sure that the attributes are valid.
 	md := sl.Top().Interface().(*metadata)
 	cur := sl.Current().Interface().(metric)
 
-	for _, l := range cur.Labels {
-		if _, ok := md.Labels[l]; !ok {
-			sl.ReportError(cur.Labels, fmt.Sprintf("Labels[%s]", string(l)), "Labels", "nosuchlabel", "")
+	for _, l := range cur.Attributes {
+		if _, ok := md.Attributes[l]; !ok {
+			sl.ReportError(cur.Attributes, fmt.Sprintf("Attributes[%s]", string(l)), "Attributes", "nosuchattribute",
+				"")
 		}
 	}
 }
