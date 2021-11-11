@@ -85,7 +85,7 @@ func TestClientSpanWithLegacyAwsSdkClientAttributes(t *testing.T) {
 	attributes[conventions.AttributeHTTPHost] = "dynamodb.us-east-1.amazonaws.com"
 	attributes[conventions.AttributeHTTPTarget] = "/"
 	attributes[awsxray.AWSServiceAttribute] = "DynamoDB"
-	attributes[conventions.AttributeRPCMethod] = "FalseAWSOperationAttribute"
+	attributes[conventions.AttributeRPCMethod] = "IncorrectAWSSDKOperation"
 	attributes[awsxray.AWSOperationAttribute] = "GetItem"
 	attributes[awsxray.AWSRequestIDAttribute] = "18BO1FEPJSSAOGNJEDPTPCMIU7VV4KQNSO5AEMVJF66Q9ASUAAJG"
 	attributes[awsxray.AWSTableNameAttribute] = "otel-dev-Testing"
