@@ -1,4 +1,4 @@
-package asapclientauthextension
+package asapauth
 
 import (
 	"context"
@@ -28,14 +28,14 @@ var _ http.RoundTripper = (*mockRoundTripper)(nil)
 type mockKeyFetcher struct{}
 
 func (k *mockKeyFetcher) Fetch(_ string) (interface{}, error) {
-	return asap.NewPublicKey([]byte(TestPubKey))
+	return asap.NewPublicKey([]byte(PublicKey))
 }
 
 var _ asap.KeyFetcher = (*mockKeyFetcher)(nil)
 
 func TestRoundTripper(t *testing.T) {
 	cfg := &Config{
-		PrivateKey: TestPvtKey,
+		PrivateKey: PrivateKey,
 		TTL:        60,
 		Audience:   []string{"test"},
 		Issuer:     "test_issuer",
@@ -61,14 +61,16 @@ func TestRoundTripper(t *testing.T) {
 
 func TestPerRPCCredentials(t *testing.T) {
 	cfg := &Config{
-		PrivateKey: TestPvtKey,
+		PrivateKey: PrivateKey,
 		TTL:        60,
 		Audience:   []string{"test"},
 		Issuer:     "test_issuer",
 		KeyID:      "test_issuer/test_kid",
 	}
 
-	asapAuth, _ := createAsapClientAuthenticator(cfg)
+	asapAuth, err := createAsapClientAuthenticator(cfg)
+	assert.NoError(t, err)
+
 	credentials, err := asapAuth.PerRPCCredentials()
 	assert.NoError(t, err)
 	assert.NotNil(t, credentials)

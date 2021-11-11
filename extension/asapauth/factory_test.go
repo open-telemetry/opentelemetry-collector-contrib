@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package asapclientauthextension
+package asapauth
 
 import (
 	"context"
@@ -45,7 +45,7 @@ func TestNewFactory(t *testing.T) {
 
 func TestCreateExtension(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	testKey := TestPvtKey
+	testKey := PrivateKey
 
 	tests := []struct {
 		name        string
