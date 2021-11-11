@@ -77,7 +77,7 @@ Reading: 6 Writing: 179 Waiting: 106
 			require.Equal(t, 4, dps.Len())
 			for j := 0; j < dps.Len(); j++ {
 				dp := dps.At(j)
-				state, _ := dp.Attributes().Get(metadata.L.State)
+				state, _ := dp.Attributes().Get(metadata.A.State)
 				label := fmt.Sprintf("%s state:%s", m.Name(), state.StringVal())
 				metricValues[label] = dp.IntVal()
 			}

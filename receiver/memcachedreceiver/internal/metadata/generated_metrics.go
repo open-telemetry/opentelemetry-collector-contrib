@@ -225,8 +225,8 @@ var Metrics = &metricStruct{
 // manipulating those metrics. M is an alias for Metrics
 var M = Metrics
 
-// Labels contains the possible metric labels that can be used.
-var Labels = struct {
+// Attributes contains the possible metric attributes that can be used.
+var Attributes = struct {
 	// Command (The type of command)
 	Command string
 	// Direction (direction of data flow)
@@ -245,12 +245,11 @@ var Labels = struct {
 	"usage_type",
 }
 
-// L contains the possible metric labels that can be used. L is an alias for
-// Labels.
-var L = Labels
+// A is an alias for Attributes.
+var A = Attributes
 
-// LabelCommand are the possible values that the label "command" can have.
-var LabelCommand = struct {
+// AttributeCommand are the possible values that the attribute "command" can have.
+var AttributeCommand = struct {
 	Get   string
 	Set   string
 	Flush string
@@ -262,8 +261,8 @@ var LabelCommand = struct {
 	"touch",
 }
 
-// LabelDirection are the possible values that the label "direction" can have.
-var LabelDirection = struct {
+// AttributeDirection are the possible values that the attribute "direction" can have.
+var AttributeDirection = struct {
 	Sent     string
 	Received string
 }{
@@ -271,8 +270,8 @@ var LabelDirection = struct {
 	"received",
 }
 
-// LabelOperation are the possible values that the label "operation" can have.
-var LabelOperation = struct {
+// AttributeOperation are the possible values that the attribute "operation" can have.
+var AttributeOperation = struct {
 	Increment string
 	Decrement string
 	Get       string
@@ -282,8 +281,8 @@ var LabelOperation = struct {
 	"get",
 }
 
-// LabelType are the possible values that the label "type" can have.
-var LabelType = struct {
+// AttributeType are the possible values that the attribute "type" can have.
+var AttributeType = struct {
 	Hit  string
 	Miss string
 }{
@@ -291,8 +290,8 @@ var LabelType = struct {
 	"miss",
 }
 
-// LabelUsageType are the possible values that the label "usage_type" can have.
-var LabelUsageType = struct {
+// AttributeUsageType are the possible values that the attribute "usage_type" can have.
+var AttributeUsageType = struct {
 	System string
 	User   string
 }{

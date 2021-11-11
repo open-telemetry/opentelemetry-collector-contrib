@@ -15,13 +15,13 @@ These are the metrics available for this scraper.
 | {{ $metricName }} | {{ $metricInfo.Description }} | {{ $metricInfo.Unit }} | {{ $metricInfo.Data.Type }} | <ul>
 {{- end }}
 
-{{- range $index, $labelName := $metricInfo.Labels }} <li>{{ $labelName }}</li> {{- end }} </ul> |
+{{- range $index, $attributeName := $metricInfo.Attributes }} <li>{{ $attributeName }}</li> {{- end }} </ul> |
 {{- end }}
 
 ## Attributes
 
 | Name | Description |
 | ---- | ----------- |
-{{- range $labelName, $labelInfo := .Labels }}
-| {{ $labelName }} | {{ $labelInfo.Description }} |
+{{- range $attributeName, $attributeInfo := .Attributes }}
+| {{ $attributeName }} | {{ $attributeInfo.Description }} |
 {{- end }}

@@ -1,6 +1,6 @@
 name: processes
 
-labels:
+attributes:
   status:
     description: Breakdown status of the processes.
     enum: [blocked, daemon, detached, orphan, paging, running, sleeping, stopped, system, unknown, zombies]
@@ -21,4 +21,4 @@ metrics:
       type: sum
       aggregation: cumulative
       monotonic: false
-    labels: [status]
+    attributes: [status]

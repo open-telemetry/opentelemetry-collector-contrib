@@ -1,6 +1,6 @@
 name: memcachedreceiver
 
-labels:
+attributes:
   command:
     description: The type of command
     enum:
@@ -36,13 +36,13 @@ metrics:
     unit: By
     data:
       type: gauge
-    labels: []
+    attributes: []
   memcached.current_connections:
     description: The current number of open connections.
     unit: connections
     data:
       type: gauge
-    labels: []
+    attributes: []
   memcached.total_connections:
     description: Total number of connections opened since the server started running.
     unit: connections
@@ -50,7 +50,7 @@ metrics:
       type: sum
       monotonic: true
       aggregation: cumulative
-    labels: []
+    attributes: []
   memcached.commands:
     description: Commands executed.
     unit: 1
@@ -58,7 +58,7 @@ metrics:
       type: sum
       monotonic: true
       aggregation: cumulative
-    labels: [command]
+    attributes: [command]
   memcached.current_items:
     description: Number of items currently stored in the cache.
     unit: 1
@@ -66,7 +66,7 @@ metrics:
       type: sum
       monotonic: false
       aggregation: cumulative
-    labels: []
+    attributes: []
   memcached.evictions:
     description: Cache item evictions.
     unit: 1
@@ -74,7 +74,7 @@ metrics:
       type: sum
       monotonic: true
       aggregation: cumulative
-    labels: []
+    attributes: []
   memcached.network:
     description: Bytes transferred over the network.
     unit: by
@@ -82,7 +82,7 @@ metrics:
       type: sum
       monotonic: true
       aggregation: cumulative
-    labels: [direction]
+    attributes: [direction]
   memcached.operations:
     description: Memcached operation hit/miss counts. 
     unit: 1
@@ -90,13 +90,13 @@ metrics:
       type: sum
       monotonic: true
       aggregation: cumulative
-    labels: [type,operation]
+    attributes: [type,operation]
   memcached.operation_hit_ratio:
     description: Hit ratio for memcached operations, expressed as a percentage value between 0.0 and 100.0.
     unit: '%'
     data:
       type: gauge
-    labels: [operation]
+    attributes: [operation]
   memcached.rusage:
     description: Accumulated user and system time. 
     unit: 1
