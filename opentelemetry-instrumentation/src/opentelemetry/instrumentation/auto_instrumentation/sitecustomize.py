@@ -26,6 +26,7 @@ from opentelemetry.instrumentation.distro import BaseDistro, DefaultDistro
 from opentelemetry.instrumentation.environment_variables import (
     OTEL_PYTHON_DISABLED_INSTRUMENTATIONS,
 )
+from opentelemetry.instrumentation.version import __version__
 
 logger = getLogger(__name__)
 
@@ -101,7 +102,7 @@ def _load_configurators():
             )
             continue
         try:
-            entry_point.load()().configure()  # type: ignore
+            entry_point.load()().configure(auto_instrumentation_version=__version__)  # type: ignore
             configured = entry_point.name
         except Exception as exc:  # pylint: disable=broad-except
             logger.exception("Configuration of %s failed", entry_point.name)

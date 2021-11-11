@@ -10,6 +10,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   ([#739](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/739))
 - Add support for Python 3.10
   ([#742](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/742))
+- Pass in auto-instrumentation version to configurator
+  ([#783](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/783))
 - `opentelemetry-instrumentation` Add `setuptools` to `install_requires`
   ([#781](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/781))
 - `opentelemetry-instrumentation-aws-lambda` Add instrumentation for AWS Lambda Service - Implementation (Part 2/2)
