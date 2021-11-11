@@ -24,7 +24,7 @@ metrics:
       type: sum
       monotonic: true
       aggregation: cumulative
-    labels: [ database, table, source ]
+    attributes: [ database, table, source ]
   postgresql.commits:
     description: The number of commits.
     units: 1
@@ -32,25 +32,25 @@ metrics:
       type: sum
       monotonic: true
       aggregation: cumulative
-    labels: [ database ]
+    attributes: [ database ]
   postgresql.db_size:
     description: The database disk usage.
     units: By
     data:
       type: gauge
-    labels: [ database ]
+    attributes: [ database ]
   postgresql.backends:
     description: The number of backends.
     units: 1
     data:
       type: gauge
-    labels: [ database ]
+    attributes: [ database ]
   postgresql.rows:
     description: The number of rows in the database.
     units: 1
     data:
       type: gauge
-    labels: [ database, table, state ]
+    attributes: [ database, table, state ]
   postgresql.operations:
     description: The number of db row operations.
     units: 1
@@ -58,7 +58,7 @@ metrics:
       type: sum
       monotonic: true
       aggregation: cumulative
-    labels: [ database, table, operation ]
+    attributes: [ database, table, operation ]
   postgresql.rollbacks:
     description: The number of rollbacks.
     units: 1
@@ -66,4 +66,4 @@ metrics:
       type: sum
       monotonic: true
       aggregation: cumulative
-    labels: [ database ]
+    attributes: [ database ]
