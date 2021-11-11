@@ -5,11 +5,11 @@
       "instrumentationLibraryMetrics": [
         {
           "instrumentationLibrary": {
-            "name": "otel/httpd"
+            "name": "otel/apache"
           },
           "metrics": [
             {
-              "name": "httpd.uptime",
+              "name": "apache.uptime",
               "description": "The amount of time that the server has been running in seconds.",
               "unit": "s",
               "sum": {
@@ -32,7 +32,7 @@
               }
             },
             {
-              "name": "httpd.current_connections",
+              "name": "apache.current_connections",
               "description": "The number of active connections currently attached to the HTTP server.",
               "unit": "connections",
               "sum": {
@@ -55,7 +55,7 @@
               }
             },
             {
-              "name": "httpd.workers",
+              "name": "apache.workers",
               "description": "The number of workers currently attached to the HTTP server.",
               "unit": "connections",
               "sum": {
@@ -102,7 +102,7 @@
               }
             },
             {
-              "name": "httpd.requests",
+              "name": "apache.requests",
               "description": "The number of requests serviced by the HTTP server per second.",
               "unit": "1",
               "sum": {
@@ -125,7 +125,7 @@
               }
             },
             {
-              "name": "httpd.traffic",
+              "name": "apache.traffic",
               "description": "Total HTTP server traffic.",
               "unit": "By",
               "sum": {
@@ -148,7 +148,7 @@
               }
             },
             {
-              "name": "httpd.scoreboard",
+              "name": "apache.scoreboard",
               "description": "The number of connections in each state.",
               "unit": "scoreboard",
               "sum": {

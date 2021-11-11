@@ -1,4 +1,4 @@
-module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/httpdreceiver
+module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/apachereceiver
 
 go 1.17
 

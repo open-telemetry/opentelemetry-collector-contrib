@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package httpdreceiver
+package apachereceiver
 
 import (
 	"context"
@@ -27,26 +27,26 @@ import (
 	"go.opentelemetry.io/collector/model/pdata"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/httpdreceiver/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/apachereceiver/internal/metadata"
 )
 
-type httpdScraper struct {
+type apacheScraper struct {
 	logger     *zap.Logger
 	cfg        *Config
 	httpClient *http.Client
 }
 
-func newHttpdScraper(
+func newApacheScraper(
 	logger *zap.Logger,
 	cfg *Config,
-) *httpdScraper {
-	return &httpdScraper{
+) *apacheScraper {
+	return &apacheScraper{
 		logger: logger,
 		cfg:    cfg,
 	}
 }
 
-func (r *httpdScraper) start(_ context.Context, host component.Host) error {
+func (r *apacheScraper) start(_ context.Context, host component.Host) error {
 	httpClient, err := r.cfg.ToClient(host.GetExtensions())
 	if err != nil {
 		return err
@@ -70,27 +70,27 @@ func addToIntMetric(metric pdata.NumberDataPointSlice, labels pdata.AttributeMap
 	}
 }
 
-func (r *httpdScraper) scrape(context.Context) (pdata.Metrics, error) {
+func (r *apacheScraper) scrape(context.Context) (pdata.Metrics, error) {
 	if r.httpClient == nil {
 		return pdata.Metrics{}, errors.New("failed to connect to Apache HTTPd")
 	}
 
 	stats, err := r.GetStats()
 	if err != nil {
-		r.logger.Error("failed to fetch HTTPd stats", zap.Error(err))
+		r.logger.Error("failed to fetch Apache Httpd stats", zap.Error(err))
 		return pdata.Metrics{}, err
 	}
 	md := pdata.NewMetrics()
 	ilm := md.ResourceMetrics().AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty()
-	ilm.InstrumentationLibrary().SetName("otel/httpd")
+	ilm.InstrumentationLibrary().SetName("otel/apache")
 	now := pdata.NewTimestampFromTime(time.Now())
 
-	uptime := initMetric(ilm.Metrics(), metadata.M.HttpdUptime).Sum().DataPoints()
-	connections := initMetric(ilm.Metrics(), metadata.M.HttpdCurrentConnections).Sum().DataPoints()
-	workers := initMetric(ilm.Metrics(), metadata.M.HttpdWorkers).Sum().DataPoints()
-	requests := initMetric(ilm.Metrics(), metadata.M.HttpdRequests).Sum().DataPoints()
-	traffic := initMetric(ilm.Metrics(), metadata.M.HttpdTraffic).Sum().DataPoints()
-	scoreboard := initMetric(ilm.Metrics(), metadata.M.HttpdScoreboard).Sum().DataPoints()
+	uptime := initMetric(ilm.Metrics(), metadata.M.ApacheUptime).Sum().DataPoints()
+	connections := initMetric(ilm.Metrics(), metadata.M.ApacheCurrentConnections).Sum().DataPoints()
+	workers := initMetric(ilm.Metrics(), metadata.M.ApacheWorkers).Sum().DataPoints()
+	requests := initMetric(ilm.Metrics(), metadata.M.ApacheRequests).Sum().DataPoints()
+	traffic := initMetric(ilm.Metrics(), metadata.M.ApacheTraffic).Sum().DataPoints()
+	scoreboard := initMetric(ilm.Metrics(), metadata.M.ApacheScoreboard).Sum().DataPoints()
 
 	for metricKey, metricValue := range parseStats(stats) {
 		labels := pdata.NewAttributeMap()
@@ -137,7 +137,7 @@ func (r *httpdScraper) scrape(context.Context) (pdata.Metrics, error) {
 }
 
 // GetStats collects metric stats by making a get request at an endpoint.
-func (r *httpdScraper) GetStats() (string, error) {
+func (r *apacheScraper) GetStats() (string, error) {
 	resp, err := r.httpClient.Get(r.cfg.Endpoint)
 	if err != nil {
 		return "", err
@@ -168,7 +168,7 @@ func parseStats(resp string) map[string]string {
 }
 
 // parseInt converts string to int64.
-func (r *httpdScraper) parseInt(key, value string) (int64, bool) {
+func (r *apacheScraper) parseInt(key, value string) (int64, bool) {
 	i, err := strconv.ParseInt(value, 10, 64)
 	if err != nil {
 		r.logInvalid("int", key, value)
@@ -177,7 +177,7 @@ func (r *httpdScraper) parseInt(key, value string) (int64, bool) {
 	return i, true
 }
 
-func (r *httpdScraper) logInvalid(expectedType, key, value string) {
+func (r *apacheScraper) logInvalid(expectedType, key, value string) {
 	r.logger.Info(
 		"invalid value",
 		zap.String("expectedType", expectedType),

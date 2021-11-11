@@ -1,5 +1,5 @@
 receivers:
-  httpd:
+  apache:
     endpoint: "http://localhost:8080/server-status?auto"
     collection_interval: 10s
 
@@ -12,6 +12,6 @@ exporters:
 service:
   pipelines:
     metrics:
-      receivers: [httpd]
+      receivers: [apache]
       processors: [nop]
       exporters: [nop]
