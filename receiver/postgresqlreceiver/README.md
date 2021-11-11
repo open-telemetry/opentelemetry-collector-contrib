@@ -24,6 +24,7 @@ The following settings are optional:
 
 - `databases` (default = `[]`): The list of databases for which the receiver will attempt to collect statistics. If an empty list is provided, the receiver will attempt to collect statistics for all non-template databases.
 
+The following settings are also optional and nested under `tls` to help configure client transport security
 - `insecure` (default = `false`): Whether to enable client transport security for the postgresql connection.
 - `insecure_skip_verify` (default = `true`): Whether to validate server name and certificate if client transport security is enabled.
 - `cert_file` (default = `$HOME/.postgresql/postgresql.crt`): A cerficate used for client authentication, if necessary.
@@ -44,11 +45,12 @@ receivers:
     databases:
       - otel
     collection_interval: 10s
-    insecure: false
-    unsecure_skip_verify: false
-    ca_file: /home/otel/authorities.crt
-    cert_file: /home/otel/mypostgrescert.crt
-    key_file: /home/otel/mypostgreskey.key
+    tls:
+      insecure: false
+      unsecure_skip_verify: false
+      ca_file: /home/otel/authorities.crt
+      cert_file: /home/otel/mypostgrescert.crt
+      key_file: /home/otel/mypostgreskey.key
 ```
 
 The full list of settings exposed for this receiver are documented [here](./config.go) with detailed sample configurations [here](./testdata/config.yaml). TLS config is documented further under the [opentelemetry collector's configtls package](https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/configtls/README.md). 
