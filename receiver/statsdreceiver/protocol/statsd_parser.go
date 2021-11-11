@@ -75,12 +75,17 @@ type StatsDParser struct {
 	lastIntervalTime       time.Time
 }
 
+type summaryRaw struct {
+	value float64
+	count float64
+}
+
 type summaryMetric struct {
-	name          string
-	summaryPoints []float64
-	labelKeys     []string
-	labelValues   []string
-	timeNow       time.Time
+	name        string
+	points      []float64
+	weights     []float64
+	labelKeys   []string
+	labelValues []string
 }
 
 type statsDMetric struct {
@@ -154,7 +159,11 @@ func (p *StatsDParser) GetMetrics() pdata.Metrics {
 	}
 
 	for _, summaryMetric := range p.summaries {
-		buildSummaryMetric(summaryMetric).CopyTo(
+		buildSummaryMetric(
+			summaryMetric,
+			p.lastIntervalTime,
+			timeNowFunc(),
+			statsDDefaultPercentiles,
 			rm.InstrumentationLibraryMetrics().AppendEmpty(),
 		)
 	}
@@ -215,22 +224,22 @@ func (p *StatsDParser) Aggregate(line string) error {
 		case GaugeObserver:
 			p.timersAndDistributions = append(p.timersAndDistributions, buildGaugeMetric(parsedMetric, timeNowFunc()))
 		case SummaryObserver:
-			if eachSummaryMetric, ok := p.summaries[parsedMetric.description]; !ok {
+			raw := parsedMetric.summaryValue()
+			if existing, ok := p.summaries[parsedMetric.description]; !ok {
 				p.summaries[parsedMetric.description] = summaryMetric{
-					name:          parsedMetric.description.name,
-					summaryPoints: []float64{parsedMetric.summaryValue()},
-					labelKeys:     parsedMetric.labelKeys,
-					labelValues:   parsedMetric.labelValues,
-					timeNow:       timeNowFunc(),
+					name:        parsedMetric.description.name,
+					points:      []float64{raw.value},
+					weights:     []float64{raw.count},
+					labelKeys:   parsedMetric.labelKeys,
+					labelValues: parsedMetric.labelValues,
 				}
 			} else {
-				points := eachSummaryMetric.summaryPoints
 				p.summaries[parsedMetric.description] = summaryMetric{
-					name:          parsedMetric.description.name,
-					summaryPoints: append(points, parsedMetric.summaryValue()),
-					labelKeys:     parsedMetric.labelKeys,
-					labelValues:   parsedMetric.labelValues,
-					timeNow:       timeNowFunc(),
+					name:        parsedMetric.description.name,
+					points:      append(existing.points, raw.value),
+					weights:     append(existing.weights, raw.count),
+					labelKeys:   parsedMetric.labelKeys,
+					labelValues: parsedMetric.labelValues,
 				}
 			}
 		case DisableObserver:
