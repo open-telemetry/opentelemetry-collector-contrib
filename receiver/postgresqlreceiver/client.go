@@ -17,9 +17,12 @@ package postgresqlreceiver
 import (
 	"database/sql"
 	"fmt"
+	"net"
 	"strings"
 
 	"github.com/lib/pq"
+	"go.opentelemetry.io/collector/config/confignet"
+	"go.opentelemetry.io/collector/config/configtls"
 )
 
 type client interface {
@@ -40,20 +43,58 @@ type postgreSQLClient struct {
 var _ client = (*postgreSQLClient)(nil)
 
 type postgreSQLConfig struct {
-	username  string
-	password  string
-	database  string
-	host      string
-	port      int
-	sslConfig SSLConfig
+	username string
+	password string
+	database string
+	address  confignet.NetAddr
+	tls      configtls.TLSClientSetting
+}
+
+func sslConnectionString(tls configtls.TLSClientSetting) string {
+	if tls.Insecure {
+		return "sslmode='disable'"
+	}
+
+	conn := ""
+
+	if tls.InsecureSkipVerify {
+		conn += "sslmode='require'"
+	} else {
+		conn += "sslmode='verify-full'"
+	}
+
+	if tls.CAFile != "" {
+		conn += fmt.Sprintf(" sslrootcert='%s'", tls.CAFile)
+	}
+
+	if tls.KeyFile != "" {
+		conn += fmt.Sprintf(" sslkey='%s'", tls.KeyFile)
+	}
+
+	if tls.CertFile != "" {
+		conn += fmt.Sprintf(" sslcert='%s'", tls.CertFile)
+	}
+
+	return conn
 }
 
 func newPostgreSQLClient(conf postgreSQLConfig) (*postgreSQLClient, error) {
 	dbField := ""
 	if conf.database != "" {
-		dbField = fmt.Sprintf("dbname=%s", conf.database)
+		dbField = fmt.Sprintf("dbname=%s ", conf.database)
 	}
-	connStr := fmt.Sprintf("port=%d host=%s user=%s password=%s %s %s", conf.port, conf.host, conf.username, conf.password, dbField, conf.sslConfig.ConnString())
+
+	host, port, err := net.SplitHostPort(conf.address.Endpoint)
+	if err != nil {
+		return nil, err
+	}
+
+	if conf.address.Transport == "unix" {
+		// lib/pg expects a unix socket host to start with a "/" and appends the appropriate .s.PGSQL.port internally
+		host = fmt.Sprintf("/%s", host)
+	}
+
+	connStr := fmt.Sprintf("port=%s host=%s user=%s password=%s %s%s", port, host, conf.username, conf.password, dbField, sslConnectionString(conf.tls))
 
 	conn, err := pq.NewConnector(connStr)
 	if err != nil {

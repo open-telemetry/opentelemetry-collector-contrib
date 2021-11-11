@@ -42,12 +42,11 @@ func newPostgreSQLScraper(
 
 var initializeClient = func(p *postgreSQLScraper, database string) (client, error) {
 	return newPostgreSQLClient(postgreSQLConfig{
-		username:  p.config.Username,
-		password:  p.config.Password,
-		database:  database,
-		host:      p.config.Host,
-		port:      p.config.Port,
-		sslConfig: p.config.SSLConfig,
+		username: p.config.Username,
+		password: p.config.Password,
+		database: database,
+		tls:      p.config.TLSClientSetting,
+		address:  p.config.NetAddr,
 	})
 }
 
@@ -164,9 +163,9 @@ func (p *postgreSQLScraper) databaseSpecificMetricCollection(
 			for k, v := range table.stats {
 				if i, ok := p.parseInt(k, v); ok {
 					attributes := pdata.NewAttributeMap()
-					attributes.Insert(metadata.L.Database, pdata.NewAttributeValueString(table.database))
-					attributes.Insert(metadata.L.Table, pdata.NewAttributeValueString(table.table))
-					attributes.Insert(metadata.L.Source, pdata.NewAttributeValueString(k))
+					attributes.Insert(metadata.A.Database, pdata.NewAttributeValueString(table.database))
+					attributes.Insert(metadata.A.Table, pdata.NewAttributeValueString(table.table))
+					attributes.Insert(metadata.A.Source, pdata.NewAttributeValueString(k))
 					addToIntMetric(blocksRead, attributes, i, now)
 				}
 			}
@@ -183,9 +182,9 @@ func (p *postgreSQLScraper) databaseSpecificMetricCollection(
 				value := table.stats[key]
 				if i, ok := p.parseInt(key, value); ok {
 					attributes := pdata.NewAttributeMap()
-					attributes.Insert(metadata.L.Database, pdata.NewAttributeValueString(table.database))
-					attributes.Insert(metadata.L.Table, pdata.NewAttributeValueString(table.table))
-					attributes.Insert(metadata.L.State, pdata.NewAttributeValueString(key))
+					attributes.Insert(metadata.A.Database, pdata.NewAttributeValueString(table.database))
+					attributes.Insert(metadata.A.Table, pdata.NewAttributeValueString(table.table))
+					attributes.Insert(metadata.A.State, pdata.NewAttributeValueString(key))
 					addToIntMetric(databaseRows, attributes, i, now)
 				}
 			}
@@ -194,9 +193,9 @@ func (p *postgreSQLScraper) databaseSpecificMetricCollection(
 				value := table.stats[key]
 				if i, ok := p.parseInt(key, value); ok {
 					attributes := pdata.NewAttributeMap()
-					attributes.Insert(metadata.L.Database, pdata.NewAttributeValueString(table.database))
-					attributes.Insert(metadata.L.Table, pdata.NewAttributeValueString(table.table))
-					attributes.Insert(metadata.L.Operation, pdata.NewAttributeValueString(key))
+					attributes.Insert(metadata.A.Database, pdata.NewAttributeValueString(table.database))
+					attributes.Insert(metadata.A.Table, pdata.NewAttributeValueString(table.table))
+					attributes.Insert(metadata.A.Operation, pdata.NewAttributeValueString(key))
 					addToIntMetric(operations, attributes, i, now)
 				}
 			}
@@ -222,14 +221,14 @@ func (p *postgreSQLScraper) databaseAgnosticMetricCollection(
 			commitValue := metric.stats["xact_commit"]
 			if i, ok := p.parseInt("xact_commit", commitValue); ok {
 				attributes := pdata.NewAttributeMap()
-				attributes.Insert(metadata.L.Database, pdata.NewAttributeValueString(metric.database))
+				attributes.Insert(metadata.A.Database, pdata.NewAttributeValueString(metric.database))
 				addToIntMetric(commits, attributes, i, now)
 			}
 
 			rollbackValue := metric.stats["xact_rollback"]
 			if i, ok := p.parseInt("xact_rollback", rollbackValue); ok {
 				attributes := pdata.NewAttributeMap()
-				attributes.Insert(metadata.L.Database, pdata.NewAttributeValueString(metric.database))
+				attributes.Insert(metadata.A.Database, pdata.NewAttributeValueString(metric.database))
 				addToIntMetric(rollbacks, attributes, i, now)
 			}
 		}
@@ -244,7 +243,7 @@ func (p *postgreSQLScraper) databaseAgnosticMetricCollection(
 			for k, v := range metric.stats {
 				if f, ok := p.parseInt(k, v); ok {
 					attributes := pdata.NewAttributeMap()
-					attributes.Insert(metadata.L.Database, pdata.NewAttributeValueString(metric.database))
+					attributes.Insert(metadata.A.Database, pdata.NewAttributeValueString(metric.database))
 					addToIntMetric(databaseSize, attributes, f, now)
 				}
 			}
@@ -260,7 +259,7 @@ func (p *postgreSQLScraper) databaseAgnosticMetricCollection(
 			for k, v := range metric.stats {
 				if f, ok := p.parseInt(k, v); ok {
 					attributes := pdata.NewAttributeMap()
-					attributes.Insert(metadata.L.Database, pdata.NewAttributeValueString(metric.database))
+					attributes.Insert(metadata.A.Database, pdata.NewAttributeValueString(metric.database))
 					addToIntMetric(backends, attributes, f, now)
 				}
 			}

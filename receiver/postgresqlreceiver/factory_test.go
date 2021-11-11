@@ -20,7 +20,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
@@ -42,9 +42,9 @@ func TestValidConfig(t *testing.T) {
 
 func TestCreateMetricsReceiver(t *testing.T) {
 	factory := NewFactory()
-	_, err := factory.CreateMetricsReceiver(
+	metricsReceiver, err := factory.CreateMetricsReceiver(
 		context.Background(),
-		component.ReceiverCreateSettings{},
+		componenttest.NewNopReceiverCreateSettings(),
 		&Config{
 			ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
 				ReceiverSettings:   config.NewReceiverSettings(config.NewComponentID("postgresql")),
@@ -56,4 +56,5 @@ func TestCreateMetricsReceiver(t *testing.T) {
 		consumertest.NewNop(),
 	)
 	require.NoError(t, err)
+	require.NotNil(t, metricsReceiver)
 }
