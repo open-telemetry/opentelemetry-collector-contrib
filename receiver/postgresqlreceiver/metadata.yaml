@@ -1,6 +1,6 @@
 name: postgresql
 
-labels:
+attributes:
   database:
     description: The name of the database.
   table:

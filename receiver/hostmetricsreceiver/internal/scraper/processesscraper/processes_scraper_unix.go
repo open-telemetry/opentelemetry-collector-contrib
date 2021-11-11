@@ -43,7 +43,7 @@ func (s *scraper) getProcessesMetadata() (processesMetadata, error) {
 		}
 		state, ok := charToState[status]
 		if !ok {
-			countByStatus[metadata.LabelStatus.Unknown]++
+			countByStatus[metadata.AttributeStatus.Unknown]++
 			continue
 		}
 		countByStatus[state]++
@@ -63,15 +63,15 @@ func (s *scraper) getProcessesMetadata() (processesMetadata, error) {
 		procsCreated = &v
 	}
 
-	countByStatus[metadata.LabelStatus.Blocked] = int64(miscStat.ProcsBlocked)
-	countByStatus[metadata.LabelStatus.Running] = int64(miscStat.ProcsRunning)
+	countByStatus[metadata.AttributeStatus.Blocked] = int64(miscStat.ProcsBlocked)
+	countByStatus[metadata.AttributeStatus.Running] = int64(miscStat.ProcsRunning)
 
 	totalKnown := int64(0)
 	for _, count := range countByStatus {
 		totalKnown += count
 	}
 	if int64(miscStat.ProcsTotal) > totalKnown {
-		countByStatus[metadata.LabelStatus.Unknown] = int64(miscStat.ProcsTotal) - totalKnown
+		countByStatus[metadata.AttributeStatus.Unknown] = int64(miscStat.ProcsTotal) - totalKnown
 	}
 
 	return processesMetadata{
@@ -81,14 +81,14 @@ func (s *scraper) getProcessesMetadata() (processesMetadata, error) {
 }
 
 var charToState = map[string]string{
-	"A": metadata.LabelStatus.Daemon,
-	"D": metadata.LabelStatus.Blocked,
-	"E": metadata.LabelStatus.Detached,
-	"O": metadata.LabelStatus.Orphan,
-	"R": metadata.LabelStatus.Running,
-	"S": metadata.LabelStatus.Sleeping,
-	"T": metadata.LabelStatus.Stopped,
-	"W": metadata.LabelStatus.Paging,
-	"Y": metadata.LabelStatus.System,
-	"Z": metadata.LabelStatus.Zombies,
+	"A": metadata.AttributeStatus.Daemon,
+	"D": metadata.AttributeStatus.Blocked,
+	"E": metadata.AttributeStatus.Detached,
+	"O": metadata.AttributeStatus.Orphan,
+	"R": metadata.AttributeStatus.Running,
+	"S": metadata.AttributeStatus.Sleeping,
+	"T": metadata.AttributeStatus.Stopped,
+	"W": metadata.AttributeStatus.Paging,
+	"Y": metadata.AttributeStatus.System,
+	"Z": metadata.AttributeStatus.Zombies,
 }

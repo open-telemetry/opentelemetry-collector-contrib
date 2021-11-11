@@ -163,8 +163,8 @@ var Metrics = &metricStruct{
 // manipulating those metrics. M is an alias for Metrics
 var M = Metrics
 
-// Labels contains the possible metric labels that can be used.
-var Labels = struct {
+// Attributes contains the possible metric attributes that can be used.
+var Attributes = struct {
 	// ScoreboardState (The state of a connection.)
 	ScoreboardState string
 	// ServerName (The name of the Apache HTTP server.)
@@ -177,12 +177,11 @@ var Labels = struct {
 	"state",
 }
 
-// L contains the possible metric labels that can be used. L is an alias for
-// Labels.
-var L = Labels
+// A is an alias for Attributes.
+var A = Attributes
 
-// LabelScoreboardState are the possible values that the label "scoreboard_state" can have.
-var LabelScoreboardState = struct {
+// AttributeScoreboardState are the possible values that the attribute "scoreboard_state" can have.
+var AttributeScoreboardState = struct {
 	Open        string
 	Waiting     string
 	Starting    string
@@ -208,8 +207,8 @@ var LabelScoreboardState = struct {
 	"idle_cleanup",
 }
 
-// LabelWorkersState are the possible values that the label "workers_state" can have.
-var LabelWorkersState = struct {
+// AttributeWorkersState are the possible values that the attribute "workers_state" can have.
+var AttributeWorkersState = struct {
 	Busy string
 	Idle string
 }{
