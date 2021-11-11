@@ -49,7 +49,7 @@ func (c *Config) Validate() error {
 	if c.TTL <= 0 {
 		return errNoTTLProvided
 	}
-	if c.Audience == nil || len(c.Audience) == 0 {
+if len(c.Audience) == 0 
 		return errNoAudienceProvided
 	}
 	if c.Issuer == "" {
