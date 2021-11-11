@@ -177,18 +177,17 @@ func (c *postgreSQLClient) collectStatsFromQuery(query string, orderedFields []s
 		rowFields := make([]interface{}, 0)
 
 		// Build a list of addresses that rows.Scan will load column data into
-		appendField := func(val string) {
+		if includeDatabase {
+			val := ""
 			rowFields = append(rowFields, &val)
 		}
-
-		if includeDatabase {
-			appendField("")
-		}
 		if includeTable {
-			appendField("")
+			val := ""
+			rowFields = append(rowFields, &val)
 		}
 		for range orderedFields {
-			appendField("")
+			val := ""
+			rowFields = append(rowFields, &val)
 		}
 
 		stats := map[string]string{}
