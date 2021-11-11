@@ -11,12 +11,13 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+import os
 
 from sqlalchemy.event import listen  # pylint: disable=no-name-in-module
 
 from opentelemetry import trace
 from opentelemetry.instrumentation.sqlalchemy.version import __version__
-from opentelemetry.semconv.trace import SpanAttributes
+from opentelemetry.semconv.trace import NetTransportValues, SpanAttributes
 from opentelemetry.trace.status import Status, StatusCode
 
 
@@ -157,14 +158,25 @@ def _get_attributes_from_url(url):
 def _get_attributes_from_cursor(vendor, cursor, attrs):
     """Attempt to set db connection attributes by introspecting the cursor."""
     if vendor == "postgresql":
-        # pylint: disable=import-outside-toplevel
-        from psycopg2.extensions import parse_dsn
+        info = getattr(getattr(cursor, "connection", None), "info", None)
+        if not info:
+            return attrs
 
-        if hasattr(cursor, "connection") and hasattr(cursor.connection, "dsn"):
-            dsn = getattr(cursor.connection, "dsn", None)
-            if dsn:
-                data = parse_dsn(dsn)
-                attrs[SpanAttributes.DB_NAME] = data.get("dbname")
-                attrs[SpanAttributes.NET_PEER_NAME] = data.get("host")
-                attrs[SpanAttributes.NET_PEER_PORT] = int(data.get("port"))
+        attrs[SpanAttributes.DB_NAME] = info.dbname
+        is_unix_socket = info.host and info.host.startswith("/")
+
+        if is_unix_socket:
+            attrs[SpanAttributes.NET_TRANSPORT] = NetTransportValues.UNIX.value
+            if info.port:
+                # postgresql enforces this pattern on all socket names
+                attrs[SpanAttributes.NET_PEER_NAME] = os.path.join(
+                    info.host, f".s.PGSQL.{info.port}"
+                )
+        else:
+            attrs[
+                SpanAttributes.NET_TRANSPORT
+            ] = NetTransportValues.IP_TCP.value
+            attrs[SpanAttributes.NET_PEER_NAME] = info.host
+            if info.port:
+                attrs[SpanAttributes.NET_PEER_PORT] = int(info.port)
     return attrs
