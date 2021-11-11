@@ -78,7 +78,6 @@ for example:
     ec2.describe_instances()
 """
 
-import json
 import logging
 from typing import Any, Callable, Collection, Dict, Optional, Tuple
 
@@ -161,27 +160,6 @@ class BotocoreInstrumentor(BaseInstrumentor):
         unwrap(BaseClient, "_make_api_call")
         unwrap(Endpoint, "prepare_request")
 
-    @staticmethod
-    def _is_lambda_invoke(call_context: _AwsSdkCallContext):
-        return (
-            call_context.service == "lambda"
-            and call_context.operation == "Invoke"
-            and isinstance(call_context.params, dict)
-            and "Payload" in call_context.params
-        )
-
-    @staticmethod
-    def _patch_lambda_invoke(api_params):
-        try:
-            payload_str = api_params["Payload"]
-            payload = json.loads(payload_str)
-            headers = payload.get("headers", {})
-            inject(headers)
-            payload["headers"] = headers
-            api_params["Payload"] = json.dumps(payload)
-        except ValueError:
-            pass
-
     # pylint: disable=too-many-branches
     def _patched_api_call(self, original_func, instance, args, kwargs):
         if context_api.get_value(_SUPPRESS_INSTRUMENTATION_KEY):
@@ -210,10 +188,6 @@ class BotocoreInstrumentor(BaseInstrumentor):
             kind=call_context.span_kind,
             attributes=attributes,
         ) as span:
-            # inject trace context into payload headers for lambda Invoke
-            if BotocoreInstrumentor._is_lambda_invoke(call_context):
-                BotocoreInstrumentor._patch_lambda_invoke(call_context.params)
-
             _safe_invoke(extension.before_service_call, span)
             self._call_request_hook(span, call_context)
 

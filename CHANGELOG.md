@@ -74,6 +74,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   ([#735](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/735))
 - `opentelemetry-sdk-extension-aws` & `opentelemetry-propagator-aws` Remove unnecessary dependencies on `opentelemetry-test`
   ([#752](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/752))
+- `opentelemetry-instrumentation-botocore` Add Lambda extension
+  ([#760](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/760))
 
 ## [1.6.0-0.25b0](https://github.com/open-telemetry/opentelemetry-python/releases/tag/v1.6.0-0.25b0) - 2021-10-13
 ### Added

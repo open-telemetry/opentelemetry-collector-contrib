@@ -11,26 +11,20 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-import io
 import json
-import sys
-import zipfile
 from unittest.mock import Mock, patch
 
 import botocore.session
 from botocore.exceptions import ParamValidationError
 from moto import (  # pylint: disable=import-error
     mock_ec2,
-    mock_iam,
     mock_kinesis,
     mock_kms,
-    mock_lambda,
     mock_s3,
     mock_sqs,
     mock_sts,
     mock_xray,
 )
-from pytest import mark
 
 from opentelemetry import trace as trace_api
 from opentelemetry.context import attach, detach, set_value
@@ -42,24 +36,6 @@ from opentelemetry.test.mock_textmap import MockTextMapPropagator
 from opentelemetry.test.test_base import TestBase
 
 _REQUEST_ID_REGEX_MATCH = r"[A-Z0-9]{52}"
-
-
-def get_as_zip_file(file_name, content):
-    zip_output = io.BytesIO()
-    with zipfile.ZipFile(zip_output, "w", zipfile.ZIP_DEFLATED) as zip_file:
-        zip_file.writestr(file_name, content)
-    zip_output.seek(0)
-    return zip_output.read()
-
-
-def return_headers_lambda_str():
-    pfunc = """
-def lambda_handler(event, context):
-    print("custom log event")
-    headers = event.get('headers', event.get('attributes', {}))
-    return headers
-"""
-    return pfunc
 
 
 # pylint:disable=too-many-public-methods
@@ -277,79 +253,6 @@ class TestBotocoreInstrumentor(TestBase):
         self.assert_span(
             "SQS", "ListQueues", request_id=_REQUEST_ID_REGEX_MATCH
         )
-
-    @mock_lambda
-    def test_lambda_client(self):
-        lamb = self._make_client("lambda")
-
-        lamb.list_functions()
-        self.assert_span("Lambda", "ListFunctions")
-
-    @mock_iam
-    def get_role_name(self):
-        iam = self._make_client("iam")
-        return iam.create_role(
-            RoleName="my-role",
-            AssumeRolePolicyDocument="some policy",
-            Path="/my-path/",
-        )["Role"]["Arn"]
-
-    @mark.skipif(
-        sys.platform == "win32",
-        reason="requires docker and Github CI Windows does not have docker installed by default",
-    )
-    @mock_lambda
-    def test_lambda_invoke_propagation(self):
-
-        previous_propagator = get_global_textmap()
-        try:
-            set_global_textmap(MockTextMapPropagator())
-
-            lamb = self._make_client("lambda")
-            lamb.create_function(
-                FunctionName="testFunction",
-                Runtime="python3.8",
-                Role=self.get_role_name(),
-                Handler="lambda_function.lambda_handler",
-                Code={
-                    "ZipFile": get_as_zip_file(
-                        "lambda_function.py", return_headers_lambda_str()
-                    )
-                },
-                Description="test lambda function",
-                Timeout=3,
-                MemorySize=128,
-                Publish=True,
-            )
-            # 2 spans for create IAM + create lambda
-            self.assertEqual(2, len(self.memory_exporter.get_finished_spans()))
-            self.memory_exporter.clear()
-
-            response = lamb.invoke(
-                Payload=json.dumps({}),
-                FunctionName="testFunction",
-                InvocationType="RequestResponse",
-            )
-
-            span = self.assert_span(
-                "Lambda", "Invoke", request_id=_REQUEST_ID_REGEX_MATCH
-            )
-            span_context = span.get_span_context()
-
-            # assert injected span
-            results = response["Payload"].read().decode("utf-8")
-            headers = json.loads(results)
-
-            self.assertEqual(
-                str(span_context.trace_id),
-                headers[MockTextMapPropagator.TRACE_ID_KEY],
-            )
-            self.assertEqual(
-                str(span_context.span_id),
-                headers[MockTextMapPropagator.SPAN_ID_KEY],
-            )
-        finally:
-            set_global_textmap(previous_propagator)
 
     @mock_kms
     def test_kms_client(self):
