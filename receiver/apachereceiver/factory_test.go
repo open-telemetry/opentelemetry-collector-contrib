@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package httpdreceiver
+package apachereceiver
 
 import (
 	"context"
@@ -28,7 +28,7 @@ import (
 func TestType(t *testing.T) {
 	factory := NewFactory()
 	ft := factory.Type()
-	require.EqualValues(t, "httpd", ft)
+	require.EqualValues(t, "apache", ft)
 }
 
 func TestValidConfig(t *testing.T) {
