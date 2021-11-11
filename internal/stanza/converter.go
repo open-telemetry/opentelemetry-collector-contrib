@@ -15,13 +15,14 @@
 package stanza
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
+	"encoding/binary"
 	"errors"
 	"fmt"
+	"hash/fnv"
 	"math"
 	"runtime"
+	"sort"
 	"sync"
 	"time"
 
@@ -106,7 +107,7 @@ type Converter struct {
 	flushChan chan pdata.Logs
 
 	// data holds currently converted and aggregated log entries, grouped by Resource.
-	data map[string]pdata.Logs
+	data map[uint64]pdata.Logs
 	// logRecordCount holds the number of translated and accumulated log Records
 	// and is compared against maxFlushCount to make a decision whether to flush.
 	logRecordCount uint
@@ -157,7 +158,7 @@ func NewConverter(opts ...ConverterOption) *Converter {
 		workerChan:    make(chan *entry.Entry),
 		workerCount:   int(math.Max(1, float64(runtime.NumCPU()/4))),
 		batchChan:     make(chan *workerItem),
-		data:          make(map[string]pdata.Logs),
+		data:          make(map[uint64]pdata.Logs),
 		pLogsChan:     make(chan pdata.Logs),
 		stopChan:      make(chan struct{}),
 		logger:        zap.NewNop(),
@@ -202,9 +203,9 @@ func (c *Converter) OutChannel() <-chan pdata.Logs {
 }
 
 type workerItem struct {
-	Resource       map[string]string
-	LogRecord      pdata.LogRecord
-	ResourceString string
+	Resource   map[string]string
+	LogRecord  pdata.LogRecord
+	ResourceID uint64
 }
 
 // workerLoop is responsible for obtaining log entries from Batch() calls,
@@ -212,11 +213,6 @@ type workerItem struct {
 // associated Resource through the batchChan for aggregation.
 func (c *Converter) workerLoop() {
 	defer c.wg.Done()
-
-	var (
-		buff    = bytes.Buffer{}
-		encoder = json.NewEncoder(&buff)
-	)
 
 	for {
 
@@ -229,21 +225,14 @@ func (c *Converter) workerLoop() {
 				return
 			}
 
-			buff.Reset()
 			lr := convert(e)
-
-			if err := encoder.Encode(e.Resource); err != nil {
-				c.logger.Debug("Failed marshaling entry.Resource to JSON",
-					zap.Any("resource", e.Resource),
-				)
-				continue
-			}
+			resourceID := getResourceID(e.Resource)
 
 			select {
 			case c.batchChan <- &workerItem{
-				Resource:       e.Resource,
-				ResourceString: buff.String(),
-				LogRecord:      lr,
+				Resource:   e.Resource,
+				ResourceID: resourceID,
+				LogRecord:  lr,
 			}:
 			case <-c.stopChan:
 			}
@@ -267,7 +256,7 @@ func (c *Converter) batchLoop() {
 				return
 			}
 
-			pLogs, ok := c.data[wi.ResourceString]
+			pLogs, ok := c.data[wi.ResourceID]
 			if ok {
 				lr := pLogs.ResourceLogs().
 					At(0).InstrumentationLibraryLogs().
@@ -290,7 +279,7 @@ func (c *Converter) batchLoop() {
 				wi.LogRecord.CopyTo(lr)
 			}
 
-			c.data[wi.ResourceString] = pLogs
+			c.data[wi.ResourceID] = pLogs
 			c.logRecordCount++
 
 			if c.logRecordCount >= c.maxFlushCount {
@@ -581,4 +570,61 @@ var sevTextMap = map[entry.Severity]string{
 	entry.Fatal2:  "Fatal2",
 	entry.Fatal3:  "Fatal3",
 	entry.Fatal4:  "Fatal4",
+}
+
+// pair_sep is chosen to be an invalid byte for a utf-8 sequence
+// making it more unlikely to be hit
+var pair_sep = []byte{0xfe}
+
+func getResourceID(resource map[string]string) uint64 {
+	var fnvHash = fnv.New64a()
+	var fnvHashOut = make([]byte, 0, 16)
+	var key_slice = make([]string, 0, len(resource))
+	var escapedSlice = make([]byte, 0, 64)
+
+	for k := range resource {
+		key_slice = append(key_slice, k)
+	}
+
+	// In order for this to be deterministic, we need to sort the map. Using range, like above,
+	// has no guarantee about order.
+	sort.Strings(key_slice)
+	for _, k := range key_slice {
+		escapedSlice = appendEscapedPairSeparator(escapedSlice[:0], k)
+		fnvHash.Write(escapedSlice)
+		fnvHash.Write(pair_sep)
+
+		escapedSlice = appendEscapedPairSeparator(escapedSlice[:0], resource[k])
+		fnvHash.Write(escapedSlice)
+		fnvHash.Write(pair_sep)
+	}
+
+	fnvHashOut = fnvHash.Sum(fnvHashOut)
+	return binary.BigEndian.Uint64(fnvHashOut)
+}
+
+// appendEscapedPairSeparator escapes (prefixes) "pair_sep" and byte '0xff' with byte '0xff', and appends it to the
+// incoming buffer. It returns the appended buffer.
+func appendEscapedPairSeparator(buf []byte, s string) []byte {
+	const escape_byte byte = '\xff'
+
+	if len(s) > cap(buf) {
+		new_buf := make([]byte, len(s))
+		copy(new_buf, buf)
+		buf = new_buf
+	}
+
+	sBytes := []byte(s)
+	for _, b := range sBytes {
+		switch b {
+		case escape_byte:
+			fallthrough
+		case pair_sep[0]:
+			buf = append(buf, escape_byte)
+		}
+
+		buf = append(buf, b)
+	}
+
+	return buf
 }
