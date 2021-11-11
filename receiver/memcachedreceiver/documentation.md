@@ -14,9 +14,9 @@ These are the metrics available for this scraper.
 | memcached.current_items | Number of items currently stored in the cache. | 1 | Sum | <ul> </ul> |
 | memcached.evictions | Cache item evictions. | 1 | Sum | <ul> </ul> |
 | memcached.network | Bytes transferred over the network. | by | Sum | <ul> <li>direction</li> </ul> |
-| memcached.operation_hit_ratio | Hit ratio for memcached operations, expressed as a percentage value between 0.0 and 100.0. | % | Gauge | <ul> <li>operation</li> </ul> |
-| memcached.operations | Memcached operation hit/miss counts. | 1 | Sum | <ul> <li>type</li> <li>operation</li> </ul> |
-| memcached.rusage | Accumulated user and system time. | 1 | Sum | <ul> </ul> |
+| memcached.operation_hit_ratio | Hit ratio for operations, expressed as a percentage value between 0.0 and 100.0. | % | Gauge | <ul> <li>operation</li> </ul> |
+| memcached.operations | operation hit/miss counts. | 1 | Sum | <ul> <li>type</li> <li>operation</li> </ul> |
+| memcached.rusage | Accumulated user and system time. | 1 | Sum | <ul> <li>usage_type</li> </ul> |
 | memcached.threads | Number of threads used by the memcached instance. | 1 | Gauge | <ul> </ul> |
 | memcached.total_connections | Total number of connections opened since the server started running. | connections | Sum | <ul> </ul> |
 
@@ -24,8 +24,8 @@ These are the metrics available for this scraper.
 
 | Name | Description |
 | ---- | ----------- |
-| command | The type of command |
-| direction | direction of data flow |
-| operation | the type of operation |
+| command | The type of command. |
+| direction | Direction of data flow. |
+| operation | The type of operation. |
 | type | hit/miss |
-| usage_type | type of CPU usage |
+| usage_type | The type of CPU usage. |

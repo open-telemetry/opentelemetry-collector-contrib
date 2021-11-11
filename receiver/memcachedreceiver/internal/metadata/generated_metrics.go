@@ -172,7 +172,7 @@ var Metrics = &metricStruct{
 		"memcached.operation_hit_ratio",
 		func(metric pdata.Metric) {
 			metric.SetName("memcached.operation_hit_ratio")
-			metric.SetDescription("Hit ratio for memcached operations, expressed as a percentage value between 0.0 and 100.0.")
+			metric.SetDescription("Hit ratio for operations, expressed as a percentage value between 0.0 and 100.0.")
 			metric.SetUnit("%")
 			metric.SetDataType(pdata.MetricDataTypeGauge)
 		},
@@ -181,7 +181,7 @@ var Metrics = &metricStruct{
 		"memcached.operations",
 		func(metric pdata.Metric) {
 			metric.SetName("memcached.operations")
-			metric.SetDescription("Memcached operation hit/miss counts.")
+			metric.SetDescription("operation hit/miss counts.")
 			metric.SetUnit("1")
 			metric.SetDataType(pdata.MetricDataTypeSum)
 			metric.Sum().SetIsMonotonic(true)
@@ -227,15 +227,15 @@ var M = Metrics
 
 // Attributes contains the possible metric attributes that can be used.
 var Attributes = struct {
-	// Command (The type of command)
+	// Command (The type of command.)
 	Command string
-	// Direction (direction of data flow)
+	// Direction (Direction of data flow.)
 	Direction string
-	// Operation (the type of operation)
+	// Operation (The type of operation.)
 	Operation string
 	// Type (hit/miss)
 	Type string
-	// UsageType (type of CPU usage)
+	// UsageType (The type of CPU usage.)
 	UsageType string
 }{
 	"command",

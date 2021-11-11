@@ -82,89 +82,89 @@ func (r *memcachedScraper) scrape(_ context.Context) (pdata.Metrics, error) {
 			attributes := pdata.NewAttributeMap()
 			switch k {
 			case "bytes":
-				addToMetric(bytes, attributes, parseInt(v), now)
+				addToIntMetric(bytes, attributes, parseInt(v), now)
 			case "curr_connections":
-				addToMetric(currConn, attributes, parseInt(v), now)
+				addToIntMetric(currConn, attributes, parseInt(v), now)
 			case "total_connections":
-				addToMetric(totalConn, attributes, parseInt(v), now)
+				addToIntMetric(totalConn, attributes, parseInt(v), now)
 			case "cmd_get":
 				attributes.Insert(metadata.A.Command, pdata.NewAttributeValueString("get"))
-				addToMetric(commandCount, attributes, parseInt(v), now)
+				addToIntMetric(commandCount, attributes, parseInt(v), now)
 			case "cmd_set":
 				attributes.Insert(metadata.A.Command, pdata.NewAttributeValueString("set"))
-				addToMetric(commandCount, attributes, parseInt(v), now)
+				addToIntMetric(commandCount, attributes, parseInt(v), now)
 			case "cmd_flush":
 				attributes.Insert(metadata.A.Command, pdata.NewAttributeValueString("flush"))
-				addToMetric(commandCount, attributes, parseInt(v), now)
+				addToIntMetric(commandCount, attributes, parseInt(v), now)
 			case "cmd_touch":
 				attributes.Insert(metadata.A.Command, pdata.NewAttributeValueString("touch"))
-				addToMetric(commandCount, attributes, parseInt(v), now)
+				addToIntMetric(commandCount, attributes, parseInt(v), now)
 			case "curr_items":
-				addToMetric(currItems, attributes, parseFloat(v), now)
+				addToDoubleMetric(currItems, attributes, parseFloat(v), now)
 			case "threads":
-				addToMetric(threads, attributes, parseFloat(v), now)
+				addToDoubleMetric(threads, attributes, parseFloat(v), now)
 			case "evictions":
-				addToMetric(evictions, attributes, parseInt(v), now)
+				addToIntMetric(evictions, attributes, parseInt(v), now)
 			case "bytes_read":
 				attributes.Insert(metadata.A.Direction, pdata.NewAttributeValueString("received"))
-				addToMetric(network, attributes, parseInt(v), now)
+				addToIntMetric(network, attributes, parseInt(v), now)
 			case "bytes_written":
 				attributes.Insert(metadata.A.Direction, pdata.NewAttributeValueString("sent"))
-				addToMetric(network, attributes, parseInt(v), now)
+				addToIntMetric(network, attributes, parseInt(v), now)
 			case "get_hits":
 				attributes.Insert(metadata.A.Operation, pdata.NewAttributeValueString("get"))
 				statSlice := stats.Stats
 				hits := parseFloat(statSlice["get_hits"])
 				misses := parseFloat(statSlice["get_misses"])
 				if hits+misses > 0 {
-					addToMetric(hitRatio, attributes, (hits / (hits + misses) * 100), now)
+					addToDoubleMetric(hitRatio, attributes, (hits / (hits + misses) * 100), now)
 				} else {
-					addToMetric(hitRatio, attributes, 0, now)
+					addToDoubleMetric(hitRatio, attributes, 0, now)
 				}
 				attributes.Insert(metadata.A.Type, pdata.NewAttributeValueString("hit"))
-				addToMetric(operationCount, attributes, parseInt(v), now)
+				addToIntMetric(operationCount, attributes, parseInt(v), now)
 			case "get_misses":
 				attributes.Insert(metadata.A.Operation, pdata.NewAttributeValueString("get"))
 				attributes.Insert(metadata.A.Type, pdata.NewAttributeValueString("miss"))
-				addToMetric(operationCount, attributes, parseInt(v), now)
+				addToIntMetric(operationCount, attributes, parseInt(v), now)
 			case "incr_hits":
 				attributes.Insert(metadata.A.Operation, pdata.NewAttributeValueString("increment"))
 				statSlice := stats.Stats
 				hits := parseFloat(statSlice["incr_hits"])
 				misses := parseFloat(statSlice["incr_misses"])
 				if hits+misses > 0 {
-					addToMetric(hitRatio, attributes, (hits / (hits + misses) * 100), now)
+					addToDoubleMetric(hitRatio, attributes, (hits / (hits + misses) * 100), now)
 				} else {
-					addToMetric(hitRatio, attributes, 0, now)
+					addToDoubleMetric(hitRatio, attributes, 0, now)
 				}
 				attributes.Insert(metadata.A.Type, pdata.NewAttributeValueString("hit"))
-				addToMetric(operationCount, attributes, parseInt(v), now)
+				addToIntMetric(operationCount, attributes, parseInt(v), now)
 			case "incr_misses":
 				attributes.Insert(metadata.A.Operation, pdata.NewAttributeValueString("increment"))
 				attributes.Insert(metadata.A.Type, pdata.NewAttributeValueString("miss"))
-				addToMetric(operationCount, attributes, parseInt(v), now)
+				addToIntMetric(operationCount, attributes, parseInt(v), now)
 			case "decr_hits":
 				attributes.Insert(metadata.A.Operation, pdata.NewAttributeValueString("decrement"))
 				statSlice := stats.Stats
 				hits := parseFloat(statSlice["decr_hits"])
 				misses := parseFloat(statSlice["decr_misses"])
 				if hits+misses > 0 {
-					addToMetric(hitRatio, attributes, (hits / (hits + misses) * 100), now)
+					addToDoubleMetric(hitRatio, attributes, (hits / (hits + misses) * 100), now)
 				} else {
-					addToMetric(hitRatio, attributes, 0, now)
+					addToDoubleMetric(hitRatio, attributes, 0, now)
 				}
 				attributes.Insert(metadata.A.Type, pdata.NewAttributeValueString("hit"))
-				addToMetric(operationCount, attributes, parseInt(v), now)
+				addToIntMetric(operationCount, attributes, parseInt(v), now)
 			case "decr_misses":
 				attributes.Insert(metadata.A.Operation, pdata.NewAttributeValueString("decrement"))
 				attributes.Insert(metadata.A.Type, pdata.NewAttributeValueString("miss"))
-				addToMetric(operationCount, attributes, parseInt(v), now)
+				addToIntMetric(operationCount, attributes, parseInt(v), now)
 			case "rusage_system":
 				attributes.Insert(metadata.A.UsageType, pdata.NewAttributeValueString("system"))
-				addToMetric(rUsage, attributes, parseFloat(v), now)
+				addToDoubleMetric(rUsage, attributes, parseFloat(v), now)
 			case "rusage_user":
 				attributes.Insert(metadata.A.UsageType, pdata.NewAttributeValueString("user"))
-				addToMetric(rUsage, attributes, parseFloat(v), now)
+				addToDoubleMetric(rUsage, attributes, parseFloat(v), now)
 			}
 		}
 	}
@@ -178,16 +178,19 @@ func initMetric(ms pdata.MetricSlice, mi metadata.MetricIntf) pdata.Metric {
 	return m
 }
 
-// addToMetric adds a datapoint to a NumberDataPointSlice
-func addToMetric(metric pdata.NumberDataPointSlice, attributes pdata.AttributeMap, value interface{}, ts pdata.Timestamp) {
+func addToDoubleMetric(metric pdata.NumberDataPointSlice, attributes pdata.AttributeMap, value float64, ts pdata.Timestamp) {
 	dataPoint := metric.AppendEmpty()
 	dataPoint.SetTimestamp(ts)
-	switch typedVal := value.(type) {
-	case int64:
-		dataPoint.SetIntVal(typedVal)
-	case float64:
-		dataPoint.SetDoubleVal(typedVal)
+	dataPoint.SetDoubleVal(value)
+	if attributes.Len() > 0 {
+		attributes.CopyTo(dataPoint.Attributes())
 	}
+}
+
+func addToIntMetric(metric pdata.NumberDataPointSlice, attributes pdata.AttributeMap, value int64, ts pdata.Timestamp) {
+	dataPoint := metric.AppendEmpty()
+	dataPoint.SetTimestamp(ts)
+	dataPoint.SetIntVal(value)
 	if attributes.Len() > 0 {
 		attributes.CopyTo(dataPoint.Attributes())
 	}
