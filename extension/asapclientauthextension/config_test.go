@@ -25,6 +25,15 @@ import (
 	"go.opentelemetry.io/collector/config/configtest"
 )
 
+const (
+	TestPvtKey = "data:application/pkcs8;kid=test;base64,MIIBUwIBADANBgkqhkiG9w0BAQEFAASCAT0wggE5AgEAAkEA0ZPr5JeyVDoB8RyZqQsx6qUD+9gMFg1/0hgdAvmytWBMXQJYdwkK2dFJwwZcWJVhJGcOJBDfB/8tcbdJd34KZQIDAQABAkBZD20tJTHJDSWKGsdJyNIbjqhUu4jXTkFFPK4Hd6jz3gV3fFvGnaolsD5Bt50dTXAiSCpFNSb9M9GY6XUAAdlBAiEA6MccfdZRfVapxKtAZbjXuAgMvnPtTvkVmwvhWLT5Wy0CIQDmfE8Et/pou0Jl6eM0eniT8/8oRzBWgy9ejDGfj86PGQIgWePqIL4OofRBgu0O5TlINI0HPtTNo12U9lbUIslgMdECICXT2RQpLcvqj+cyD7wZLZj6vrHZnTFVrnyR/cL2UyxhAiBswe/MCcD7T7J4QkNrCG+ceQGypc7LsxlIxQuKh5GWYA=="
+	TestPubKey = `-----BEGIN PUBLIC KEY-----
+MFwwDQYJKoZIhvcNAQEBBQADSwAwSAJBANGT6+SXslQ6AfEcmakLMeqlA/vYDBYN
+f9IYHQL5srVgTF0CWHcJCtnRScMGXFiVYSRnDiQQ3wf/LXG3SXd+CmUCAwEAAQ==
+-----END PUBLIC KEY-----`
+
+)
+
 func TestLoadConfig(t *testing.T) {
 	factories, err := componenttest.NopFactories()
 	assert.NoError(t, err)
@@ -41,8 +50,7 @@ func TestLoadConfig(t *testing.T) {
 	expected.Audience = []string{"test_service1", "test_service2"}
 	expected.Issuer = "test_issuer"
 	expected.KeyId = "test_issuer/test_kid"
-	expected.PrivateKey = "data:application/pkcs8;kid=test;base64,MIIBVAIBADANBgkqhkiG9w0BAQEFAASCAT4wggE6AgEAAkEA5DswDqF/YTq+c7PmMlc3CZcpJppdcvlNviMy4lCjS9FILXO9bjME6kCNfQE/AxgE3yp3rEmZ/j4oEf1jXUz5AQIDAQABAkBl7b0fu6ac8NRf7idPsj3FTbo2IFi94XOECEpQYr0bPWt6pQyoArlgqF8TlZD/H3zjn+y95DLOeZijleZlh67xAiEA80FkGtTfJRbcLBymJxPjlV9+Agj1o11bLLv0IqS2wYUCIQDwMEmc3pZlfpazeJPwvEmX1h3T72V8NQoRleFr7vr0TQIhALeC8GMxjnoricQZhNtcLMfGd4hPfAhXaG4SCTaNbnYFAiAx1QLgzfmMEyh3EdQ3xQjLvLuxheCbVXHCVkNPnmRonQIgYcX1m7kzkJatn5XuMeU8VndbGT66cpRoGY2FNPzvhZI="
-
+	expected.PrivateKey = TestPvtKey
 	ext := cfg.Extensions[config.NewComponentID(typeStr)]
 	assert.Equal(t, expected, ext)
 }

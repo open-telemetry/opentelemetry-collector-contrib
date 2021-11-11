@@ -46,7 +46,7 @@ func (a AsapClientAuthenticator) PerRPCCredentials() (credentials.PerRPCCredenti
 	if err != nil {
 		return nil, err
 	}
-	header := map[string]string {
+	header := map[string]string{
 		"authorization": fmt.Sprintf("Bearer %s", string(headerValue)),
 	}
 	return &PerRPCAuth{

@@ -36,11 +36,11 @@ func NewFactory() component.ExtensionFactory {
 	)
 }
 
-func createExtension(_ context.Context, settings component.ExtensionCreateSettings, cfg config.Extension) (component.Extension, error) {
+func createExtension(_ context.Context, _ component.ExtensionCreateSettings, cfg config.Extension) (component.Extension, error) {
 	if err := cfg.Validate(); err != nil {
 		return nil, err
 	}
-	return createAsapClientAuthenticator(settings, cfg.(*Config))
+	return createAsapClientAuthenticator(cfg.(*Config))
 }
 
 func createDefaultConfig() config.Extension {
