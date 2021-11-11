@@ -36,10 +36,10 @@ var _ asap.KeyFetcher = (*mockKeyFetcher)(nil)
 func TestRoundTripper(t *testing.T) {
 	cfg := &Config{
 		PrivateKey: TestPvtKey,
-		Ttl:        60,
+		TTL:        60,
 		Audience:   []string{"test"},
 		Issuer:     "test_issuer",
-		KeyId:      "test_issuer/test_kid",
+		KeyID:      "test_issuer/test_kid",
 	}
 
 	asapAuth, err := createAsapClientAuthenticator(cfg)
@@ -62,10 +62,10 @@ func TestRoundTripper(t *testing.T) {
 func TestPerRPCCredentials(t *testing.T) {
 	cfg := &Config{
 		PrivateKey: TestPvtKey,
-		Ttl:        60,
+		TTL:        60,
 		Audience:   []string{"test"},
 		Issuer:     "test_issuer",
-		KeyId:      "test_issuer/test_kid",
+		KeyID:      "test_issuer/test_kid",
 	}
 
 	asapAuth, _ := createAsapClientAuthenticator(cfg)
@@ -74,6 +74,7 @@ func TestPerRPCCredentials(t *testing.T) {
 	assert.NotNil(t, credentials)
 
 	metadata, err := credentials.GetRequestMetadata(context.Background())
+	assert.NoError(t, err)
 	tokenString := metadata["authorization"][7:]
 	validateAsapJwt(t, cfg, tokenString)
 }

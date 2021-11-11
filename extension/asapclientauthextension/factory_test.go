@@ -56,10 +56,10 @@ func TestCreateExtension(t *testing.T) {
 		{
 			name: "valid_settings",
 			settings: &Config{
-				KeyId:      "test_issuer/test_kid",
+				KeyID:      "test_issuer/test_kid",
 				Issuer:     "test_issuer",
 				Audience:   []string{"test_service"},
-				Ttl:        60,
+				TTL:        60,
 				PrivateKey: testKey,
 			},
 			shouldError: false,
@@ -67,10 +67,10 @@ func TestCreateExtension(t *testing.T) {
 		{
 			name: "invalid_settings_should_error",
 			settings: &Config{
-				KeyId:      "test_issuer/test_kid",
+				KeyID:      "test_issuer/test_kid",
 				Issuer:     "test_issuer",
 				Audience:   []string{"test_service"},
-				Ttl:        60,
+				TTL:        60,
 				PrivateKey: "data:application/pkcs8;kid=test;base64,INVALIDPEM", // invalid key data
 			},
 			shouldError: true,
@@ -78,10 +78,10 @@ func TestCreateExtension(t *testing.T) {
 		{
 			name: "invalid_settings_should_error2",
 			settings: &Config{
-				KeyId:      "test_issuer/test_kid",
+				KeyID:      "test_issuer/test_kid",
 				Issuer:     "test_issuer",
 				Audience:   []string{"test_service"},
-				Ttl:        -10, // invalid ttl
+				TTL:        -10, // invalid ttl
 				PrivateKey: testKey,
 			},
 			shouldError: true,
@@ -90,10 +90,10 @@ func TestCreateExtension(t *testing.T) {
 
 	for _, testcase := range tests {
 		t.Run(testcase.name, func(t *testing.T) {
-			cfg.KeyId = testcase.settings.KeyId
+			cfg.KeyID = testcase.settings.KeyID
 			cfg.Issuer = testcase.settings.Issuer
 			cfg.Audience = testcase.settings.Audience
-			cfg.Ttl = testcase.settings.Ttl
+			cfg.TTL = testcase.settings.TTL
 			cfg.PrivateKey = testcase.settings.PrivateKey
 			ext, err := createExtension(context.Background(), componenttest.NewNopExtensionCreateSettings(), cfg)
 			if testcase.shouldError {

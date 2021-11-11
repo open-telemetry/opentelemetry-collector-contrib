@@ -72,7 +72,7 @@ func createAsapClientAuthenticator(cfg *Config) (AsapClientAuthenticator, error)
 	}
 	a = AsapClientAuthenticator{
 		provisioner: asap.NewCachingProvisioner(asap.NewProvisioner(
-			cfg.KeyId, time.Duration(cfg.Ttl)*time.Second, cfg.Issuer, cfg.Audience, crypto.SigningMethodRS256)),
+			cfg.KeyID, time.Duration(cfg.TTL)*time.Second, cfg.Issuer, cfg.Audience, crypto.SigningMethodRS256)),
 		privateKey: pk,
 	}
 	return a, nil

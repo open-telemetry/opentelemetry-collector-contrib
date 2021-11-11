@@ -22,7 +22,7 @@ import (
 
 var (
 	errNoKeyIDProvided      = errors.New("no key id provided in asapclient configuration")
-	errNoTtlProvided        = errors.New("no valid ttl was provided in asapclient configuration")
+	errNoTTLProvided        = errors.New("no valid ttl was provided in asapclient configuration")
 	errNoIssuerProvided     = errors.New("no issuer provided in asapclient configuration")
 	errNoAudienceProvided   = errors.New("no audience provided in asapclient configuration")
 	errNoPrivateKeyProvided = errors.New("no private key provided in asapclient configuration")
@@ -31,9 +31,9 @@ var (
 type Config struct {
 	config.ExtensionSettings `mapstructure:",squash"`
 
-	KeyId string `mapstructure:"key_id"`
+	KeyID string `mapstructure:"key_id"`
 
-	Ttl int `mapstructure:"ttl_seconds"`
+	TTL int `mapstructure:"ttl_seconds"`
 
 	Issuer string `mapstructure:"issuer"`
 
@@ -43,11 +43,11 @@ type Config struct {
 }
 
 func (c *Config) Validate() error {
-	if c.KeyId == "" {
+	if c.KeyID == "" {
 		return errNoKeyIDProvided
 	}
-	if c.Ttl <= 0 {
-		return errNoTtlProvided
+	if c.TTL <= 0 {
+		return errNoTTLProvided
 	}
 	if c.Audience == nil || len(c.Audience) == 0 {
 		return errNoAudienceProvided

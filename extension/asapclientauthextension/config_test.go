@@ -31,7 +31,6 @@ const (
 MFwwDQYJKoZIhvcNAQEBBQADSwAwSAJBANGT6+SXslQ6AfEcmakLMeqlA/vYDBYN
 f9IYHQL5srVgTF0CWHcJCtnRScMGXFiVYSRnDiQQ3wf/LXG3SXd+CmUCAwEAAQ==
 -----END PUBLIC KEY-----`
-
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -41,15 +40,15 @@ func TestLoadConfig(t *testing.T) {
 	factories.Extensions[typeStr] = factory
 
 	cfg, err := configtest.LoadConfigAndValidate(path.Join(".", "testdata", "config.yaml"), factories)
-
-	require.NotNil(t, cfg)
+	assert.NotNil(t, cfg)
+	assert.NoError(t, err)
 	assert.NoError(t, cfg.Validate())
 
 	expected := factory.CreateDefaultConfig().(*Config)
-	expected.Ttl = 60
+	expected.TTL = 60
 	expected.Audience = []string{"test_service1", "test_service2"}
 	expected.Issuer = "test_issuer"
-	expected.KeyId = "test_issuer/test_kid"
+	expected.KeyID = "test_issuer/test_kid"
 	expected.PrivateKey = TestPvtKey
 	ext := cfg.Extensions[config.NewComponentID(typeStr)]
 	assert.Equal(t, expected, ext)
