@@ -16,6 +16,7 @@ package prometheusremotewriteexporter
 
 import (
 	"fmt"
+	"math"
 	"time"
 
 	"github.com/prometheus/prometheus/prompb"
@@ -80,23 +81,19 @@ var (
 		"Gauge" + "-" + label21 + "-" + value21 + "-" + label22 + "-" + value22: getTimeSeries(getPromLabels(label21, value21, label22, value22),
 			getSample(float64(intVal1), msTime2)),
 	}
-	twoHistogramPointsSameTs = map[string]*prompb.TimeSeries{
-		"Histogram" + "-" + label11 + "-" + value11 + "-" + label12 + "-" + value12: getTimeSeriesWithSamplesAndExemplars(getPromLabels(label11, value11, label12, value12),
-			[]prompb.Sample{getSample(float64(intVal1), msTime1), getSample(float64(intVal2), msTime2)},
-			getExemplar(float64(intVal1), msTime1),
-			getExemplar(float64(intVal2), msTime2)),
-	}
-	twoHistogramPointsDifferentTs = map[string]*prompb.TimeSeries{
-		"Histogram" + "-" + label11 + "-" + value11 + "-" + label12 + "-" + value12: getTimeSeriesWithSamplesAndExemplars(getPromLabels(label11, value11, label12, value12),
+	tsWithSamplesAndExemplars = map[string]*prompb.TimeSeries{
+		lb1Sig: getTimeSeriesWithSamplesAndExemplars(getPromLabels(label11, value11, label12, value12),
 			[]prompb.Sample{getSample(float64(intVal1), msTime1)},
-			getExemplar(float64(intVal1), msTime1)),
-		"Histogram" + "-" + label21 + "-" + value21 + "-" + label22 + "-" + value22: getTimeSeriesWithSamplesAndExemplars(getPromLabels(label21, value21, label22, value22),
-			[]prompb.Sample{getSample(float64(intVal1), msTime2)},
-			getExemplar(float64(intVal1), msTime2)),
+			[]prompb.Exemplar{getExemplar(floatVal2, msTime1)}),
 	}
-	twoHistogramsPointsWithSamplesAndEmptyExemplar = map[string]*prompb.TimeSeries{
-		"Histogram" + "-" + label11 + "-" + value11 + "-" + label12 + "-" + value12: getTimeSeriesWithSamplesAndExemplars(getPromLabels(label11, value11, label12, value12),
-			[]prompb.Sample{getSample(float64(intVal1), msTime1), getSample(float64(intVal2), msTime2)}),
+	tsWithInfiniteBoundExemplarValue = map[string]*prompb.TimeSeries{
+		lb1Sig: getTimeSeriesWithSamplesAndExemplars(getPromLabels(label11, value11, label12, value12),
+			[]prompb.Sample{getSample(float64(intVal1), msTime1)},
+			[]prompb.Exemplar{getExemplar(math.MaxFloat64, msTime1)}),
+	}
+	tsWithoutSampleAndExemplar = map[string]*prompb.TimeSeries{
+		lb1Sig: getTimeSeries(getPromLabels(label11, value11, label12, value12),
+			nil...),
 	}
 	bounds  = []float64{0.1, 0.5, 0.99}
 	buckets = []uint64{1, 2, 3}
@@ -212,7 +209,17 @@ func getExemplar(v float64, t int64) prompb.Exemplar {
 	}
 }
 
-func getTimeSeriesWithSamplesAndExemplars(labels []prompb.Label, samples []prompb.Sample, exemplars ...prompb.Exemplar) *prompb.TimeSeries {
+func getBucketBoundsData(values []float64) []bucketBoundsData {
+	var b []bucketBoundsData
+
+	for _, value := range values {
+		b = append(b, bucketBoundsData{sig: lb1Sig, bound: value})
+	}
+
+	return b
+}
+
+func getTimeSeriesWithSamplesAndExemplars(labels []prompb.Label, samples []prompb.Sample, exemplars []prompb.Exemplar) *prompb.TimeSeries {
 	return &prompb.TimeSeries{
 		Labels:    labels,
 		Samples:   samples,

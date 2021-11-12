@@ -17,6 +17,7 @@ package prometheusremotewriteexporter
 import (
 	"errors"
 	"log"
+	"math"
 	"sort"
 	"strconv"
 	"strings"
@@ -39,6 +40,18 @@ const (
 	pInfStr     = "+Inf"
 	keyStr      = "key"
 )
+
+type bucketBoundsData struct {
+	sig   string
+	bound float64
+}
+
+// byBucketBoundsData enables the usage of sort.Sort() with a slice of bucket bounds
+type byBucketBoundsData []bucketBoundsData
+
+func (m byBucketBoundsData) Len() int           { return len(m) }
+func (m byBucketBoundsData) Less(i, j int) bool { return m[i].bound < m[j].bound }
+func (m byBucketBoundsData) Swap(i, j int)      { m[i], m[j] = m[j], m[i] }
 
 // ByLabelName enables the usage of sort.Sort() with a slice of labels
 type ByLabelName []prompb.Label
@@ -64,13 +77,13 @@ func validateMetrics(metric pdata.Metric) bool {
 }
 
 // addSample finds a TimeSeries in tsMap that corresponds to the label set labels, and add sample to the TimeSeries; it
-// creates a new TimeSeries in the map if not found.
+// creates a new TimeSeries in the map if not found and returns the time series signature.
 // tsMap will be unmodified if either labels or sample is nil, but can still be modified if the exemplar is nil.
 func addSample(tsMap map[string]*prompb.TimeSeries, sample *prompb.Sample, labels []prompb.Label,
-	metric pdata.Metric) {
+	metric pdata.Metric) string {
 
 	if sample == nil || labels == nil || tsMap == nil {
-		return
+		return ""
 	}
 
 	sig := timeSeriesSignature(metric, &labels)
@@ -84,36 +97,44 @@ func addSample(tsMap map[string]*prompb.TimeSeries, sample *prompb.Sample, label
 			Samples: []prompb.Sample{*sample},
 		}
 		tsMap[sig] = newTs
+	}
+
+	return sig
+}
+
+// addExemplars finds a bucket bound that corresponds to the exemplars value and add the exemplar to the specific sig;
+// we only add exemplars if samples are presents
+// tsMap is unmodified if either of its parameters is nil and samples are nil.
+func addExemplars(tsMap map[string]*prompb.TimeSeries, exemplars []prompb.Exemplar, bucketBoundsData []bucketBoundsData) {
+	if tsMap == nil || bucketBoundsData == nil || exemplars == nil {
+		return
+	}
+
+	sort.Sort(byBucketBoundsData(bucketBoundsData))
+
+	for _, exemplar := range exemplars {
+		addExemplar(tsMap, bucketBoundsData, exemplar)
 	}
 }
 
-// addSampleAndExemplar finds a TimeSeries in tsMap that corresponds to the label set labels, add exemplars and samples to the TimeSeries; it
-// creates a new TimeSeries in the map if not found. tsMap is unmodified if either of its parameters is nil.
-func addSampleAndExemplar(tsMap map[string]*prompb.TimeSeries, sample *prompb.Sample, exemplar *prompb.Exemplar, labels []prompb.Label, metric pdata.Metric) {
-	if sample == nil || labels == nil || tsMap == nil {
-		return
-	}
+func addExemplar(tsMap map[string]*prompb.TimeSeries, bucketBounds []bucketBoundsData, exemplar prompb.Exemplar) {
+	for _, bucketBound := range bucketBounds {
+		sig := bucketBound.sig
+		bound := bucketBound.bound
 
-	sig := timeSeriesSignature(metric, &labels)
-	ts, ok := tsMap[sig]
+		_, ok := tsMap[sig]
+		if ok {
+			if tsMap[sig].Samples != nil {
+				if tsMap[sig].Exemplars == nil {
+					tsMap[sig].Exemplars = make([]prompb.Exemplar, 0)
+				}
 
-	if ok {
-		ts.Samples = append(ts.Samples, *sample)
-
-		if exemplar != nil {
-			ts.Exemplars = append(ts.Exemplars, *exemplar)
+				if exemplar.Value <= bound {
+					tsMap[sig].Exemplars = append(tsMap[sig].Exemplars, exemplar)
+					return
+				}
+			}
 		}
-	} else {
-		newTs := &prompb.TimeSeries{
-			Labels:  labels,
-			Samples: []prompb.Sample{*sample},
-		}
-
-		if exemplar != nil {
-			newTs.Exemplars = []prompb.Exemplar{*exemplar}
-		}
-
-		tsMap[sig] = newTs
 	}
 }
 
@@ -338,6 +359,10 @@ func addSingleHistogramDataPoint(pt pdata.HistogramDataPoint, resource pdata.Res
 	// cumulative count for conversion to cumulative histogram
 	var cumulativeCount uint64
 
+	promExemplars := getPromExemplars(pt)
+
+	bucketBounds := make([]bucketBoundsData, 0)
+
 	// process each bound, based on histograms proto definition, # of buckets = # of explicit bounds + 1
 	for index, bound := range pt.ExplicitBounds() {
 		if index >= len(pt.BucketCounts()) {
@@ -350,10 +375,9 @@ func addSingleHistogramDataPoint(pt pdata.HistogramDataPoint, resource pdata.Res
 		}
 		boundStr := strconv.FormatFloat(bound, 'f', -1, 64)
 		labels := createAttributes(resource, pt.Attributes(), externalLabels, nameStr, baseName+bucketStr, leStr, boundStr)
+		sig := addSample(tsMap, bucket, labels, metric)
 
-		promExemplar := getPromExemplar(pt, index)
-
-		addSampleAndExemplar(tsMap, bucket, promExemplar, labels, metric)
+		bucketBounds = append(bucketBounds, bucketBoundsData{sig: sig, bound: bound})
 	}
 	// add le=+Inf bucket
 	cumulativeCount += pt.BucketCounts()[len(pt.BucketCounts())-1]
@@ -362,16 +386,17 @@ func addSingleHistogramDataPoint(pt pdata.HistogramDataPoint, resource pdata.Res
 		Timestamp: time,
 	}
 	infLabels := createAttributes(resource, pt.Attributes(), externalLabels, nameStr, baseName+bucketStr, leStr, pInfStr)
+	sig := addSample(tsMap, infBucket, infLabels, metric)
 
-	// need to use the +inf bucket
-	promExemplar := getPromExemplar(pt, len(pt.BucketCounts())-1)
-
-	addSampleAndExemplar(tsMap, infBucket, promExemplar, infLabels, metric)
+	bucketBounds = append(bucketBounds, bucketBoundsData{sig: sig, bound: math.Inf(1)})
+	addExemplars(tsMap, promExemplars, bucketBounds)
 }
 
-func getPromExemplar(pt pdata.HistogramDataPoint, index int) *prompb.Exemplar {
-	if index < pt.Exemplars().Len() {
-		exemplar := pt.Exemplars().At(index)
+func getPromExemplars(pt pdata.HistogramDataPoint) []prompb.Exemplar {
+	var promExemplars []prompb.Exemplar
+
+	for i := 0; i < pt.Exemplars().Len(); i++ {
+		exemplar := pt.Exemplars().At(i)
 
 		promExemplar := &prompb.Exemplar{
 			Value:     exemplar.DoubleVal(),
@@ -385,12 +410,14 @@ func getPromExemplar(pt pdata.HistogramDataPoint, index int) *prompb.Exemplar {
 			}
 
 			promExemplar.Labels = append(promExemplar.Labels, promLabel)
+
 			return true
 		})
 
-		return promExemplar
+		promExemplars = append(promExemplars, *promExemplar)
 	}
-	return nil
+
+	return promExemplars
 }
 
 // addSingleSummaryDataPoint converts pt to len(QuantileValues) + 2 samples.

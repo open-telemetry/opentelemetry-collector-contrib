@@ -15,6 +15,7 @@
 package prometheusremotewriteexporter
 
 import (
+	"math"
 	"testing"
 	"time"
 
@@ -489,16 +490,11 @@ func TestEnsureTimeseriesPointsAreSortedByTimestamp(t *testing.T) {
 	}
 }
 
-// Test_addSampleAndExemplar checks addSampleAndExemplar updates the map it receives correctly based on the sample, exemplars and Label
-// set it receives.
-// Test cases are two exemplars/samples belonging to the same TimeSeries, two exemplars/samples belong to different TimeSeries
-// case, when nil exemplar with a non-nil sample and inversely.
-func Test_addSampleAndExemplar(t *testing.T) {
+// Test_addExemplars checks addExemplars updates the map it receives correctly based on the exemplars and bucket bounds data it receives.
+func Test_addExemplars(t *testing.T) {
 	type testCase struct {
-		metric   pdata.Metric
-		sample   *prompb.Sample
-		exemplar *prompb.Exemplar
-		labels   []prompb.Label
+		exemplars    []prompb.Exemplar
+		bucketBounds []bucketBoundsData
 	}
 
 	tests := []struct {
@@ -508,151 +504,82 @@ func Test_addSampleAndExemplar(t *testing.T) {
 		want     map[string]*prompb.TimeSeries
 	}{
 		{
-			"two_histogram_points_same_ts_same_metric",
+			"timeSeries_is_empty",
 			map[string]*prompb.TimeSeries{},
 			[]testCase{
 				{
-					validMetrics1[validHistogram],
-					&prompb.Sample{
-						Value:     floatVal1,
-						Timestamp: msTime1,
-					},
-					&prompb.Exemplar{
-						Value:     float64(intVal1),
-						Timestamp: msTime1,
-						Labels:    []prompb.Label{getLabel(traceIDKey, traceIDValue1)},
-					},
-					promLbs1,
-				},
-				{
-					validMetrics2[validHistogram],
-					&prompb.Sample{
-						Value:     floatVal2,
-						Timestamp: msTime2,
-					},
-					&prompb.Exemplar{
-						Value:     float64(intVal2),
-						Timestamp: msTime2,
-						Labels:    []prompb.Label{getLabel(traceIDKey, traceIDValue1)},
-					},
-					promLbs1,
-				},
-			},
-			twoHistogramPointsSameTs,
-		},
-		{
-			"two_histogram_points_different_ts_same_metric",
-			map[string]*prompb.TimeSeries{},
-			[]testCase{
-				{
-					validMetrics1[validHistogram],
-					&prompb.Sample{
-						Value:     floatVal1,
-						Timestamp: msTime1,
-					},
-					&prompb.Exemplar{
-						Value:     float64(intVal1),
-						Timestamp: msTime1,
-						Labels:    []prompb.Label{getLabel(traceIDKey, traceIDValue1)},
-					},
-					promLbs1,
-				},
-				{
-					validMetrics1[validHistogram],
-					&prompb.Sample{
-						Value:     floatVal1,
-						Timestamp: msTime2,
-					},
-					&prompb.Exemplar{
-						Value:     float64(intVal1),
-						Timestamp: msTime2,
-						Labels:    []prompb.Label{getLabel(traceIDKey, traceIDValue1)},
-					},
-					promLbs2,
-				},
-			},
-			twoHistogramPointsDifferentTs,
-		},
-		{
-			"two_histograms_with_exemplars_but_without_sample",
-			map[string]*prompb.TimeSeries{},
-			[]testCase{
-				{
-					validMetrics1[validHistogram],
-					nil,
-					&prompb.Exemplar{
-						Value:     float64(intVal1),
-						Timestamp: msTime1,
-						Labels:    []prompb.Label{getLabel(traceIDKey, traceIDValue1)},
-					},
-					promLbs1,
-				},
-				{
-					validMetrics2[validHistogram],
-					nil,
-					&prompb.Exemplar{
-						Value:     float64(intVal2),
-						Timestamp: msTime2,
-						Labels:    []prompb.Label{getLabel(traceIDKey, traceIDValue1)},
-					},
-					promLbs1,
+					[]prompb.Exemplar{getExemplar(float64(intVal1), msTime1)},
+					getBucketBoundsData([]float64{1, 2, 3}),
 				},
 			},
 			map[string]*prompb.TimeSeries{},
 		},
 		{
-			"two_histograms_with_samples_but_without_exemplar",
-			map[string]*prompb.TimeSeries{},
+			"timeSeries_without_sample",
+			tsWithoutSampleAndExemplar,
 			[]testCase{
 				{
-					validMetrics1[validHistogram],
-					&prompb.Sample{
-						Value:     float64(intVal1),
-						Timestamp: msTime1,
-					},
-					nil,
-					promLbs1,
-				},
-				{
-					validMetrics2[validHistogram],
-					&prompb.Sample{
-						Value:     float64(intVal2),
-						Timestamp: msTime2,
-					},
-					nil,
-					promLbs1,
+					[]prompb.Exemplar{getExemplar(float64(intVal1), msTime1)},
+					getBucketBoundsData([]float64{1, 2, 3}),
 				},
 			},
-			twoHistogramsPointsWithSamplesAndEmptyExemplar,
+			tsWithoutSampleAndExemplar,
+		},
+		{
+			"exemplar_value_less_than_bucket_bound",
+			map[string]*prompb.TimeSeries{
+				lb1Sig: getTimeSeries(getPromLabels(label11, value11, label12, value12),
+					getSample(float64(intVal1), msTime1)),
+			},
+			[]testCase{
+				{
+					[]prompb.Exemplar{getExemplar(floatVal2, msTime1)},
+					getBucketBoundsData([]float64{1, 2, 3}),
+				},
+			},
+			tsWithSamplesAndExemplars,
+		},
+		{
+			"infinite_bucket_bound",
+			map[string]*prompb.TimeSeries{
+				lb1Sig: getTimeSeries(getPromLabels(label11, value11, label12, value12),
+					getSample(float64(intVal1), msTime1)),
+			},
+			[]testCase{
+				{
+					[]prompb.Exemplar{getExemplar(math.MaxFloat64, msTime1)},
+					getBucketBoundsData([]float64{1, math.Inf(1)}),
+				},
+			},
+			tsWithInfiniteBoundExemplarValue,
 		},
 	}
 	// run tests
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			addSampleAndExemplar(tt.orig, tt.testCase[0].sample, tt.testCase[0].exemplar,
-				tt.testCase[0].labels, tt.testCase[0].metric)
-			addSampleAndExemplar(tt.orig, tt.testCase[1].sample, tt.testCase[1].exemplar,
-				tt.testCase[1].labels, tt.testCase[1].metric)
+			addExemplars(tt.orig, tt.testCase[0].exemplars, tt.testCase[0].bucketBounds)
 			assert.Exactly(t, tt.want, tt.orig)
 		})
 	}
 }
 
-// Test_getPromExemplar checks if exemplar is not nil and return the prometheus exemplar.
-func Test_getPromExemplar(t *testing.T) {
+// Test_getPromExemplars checks if exemplars is not nul and return the prometheus exemplars.
+func Test_getPromExemplars(t *testing.T) {
 	tnow := time.Now()
 	tests := []struct {
 		name      string
 		histogram *pdata.HistogramDataPoint
-		expected  *prompb.Exemplar
+		expected  []prompb.Exemplar
 	}{
 		{
 			"with_exemplars",
 			getHistogramDataPointWithExemplars(tnow, floatVal1, traceIDKey, traceIDValue1),
-			&prompb.Exemplar{
-				Value:     floatVal1,
-				Timestamp: timestamp.FromTime(tnow),
-				Labels:    []prompb.Label{getLabel(traceIDKey, traceIDValue1)},
+			[]prompb.Exemplar{
+				{
+					Value:     floatVal1,
+					Timestamp: timestamp.FromTime(tnow),
+					Labels:    []prompb.Label{getLabel(traceIDKey, traceIDValue1)},
+				},
 			},
 		},
 		{
@@ -664,7 +591,7 @@ func Test_getPromExemplar(t *testing.T) {
 	// run tests
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			requests := getPromExemplar(*tt.histogram, 0)
+			requests := getPromExemplars(*tt.histogram)
 			assert.Exactly(t, tt.expected, requests)
 		})
 	}
