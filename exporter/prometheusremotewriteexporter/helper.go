@@ -378,15 +378,15 @@ func getPromExemplar(pt pdata.HistogramDataPoint, index int) *prompb.Exemplar {
 			Timestamp: timestamp.FromTime(exemplar.Timestamp().AsTime()),
 		}
 
-		labels := exemplar.FilteredAttributes().AsRaw()
-		for key, value := range labels {
+		exemplar.FilteredAttributes().Range(func(key string, value pdata.AttributeValue) bool {
 			promLabel := prompb.Label{
 				Name:  key,
-				Value: value.(string),
+				Value: value.AsString(),
 			}
 
 			promExemplar.Labels = append(promExemplar.Labels, promLabel)
-		}
+			return true
+		})
 
 		return promExemplar
 	}
