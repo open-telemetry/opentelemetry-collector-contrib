@@ -218,6 +218,17 @@ func TestAwsWithAwsSqsResources(t *testing.T) {
 	assert.Equal(t, "us-east-2", *awsData.RemoteRegion)
 }
 
+func TestAwsWithRpcAttributes(t *testing.T) {
+	resource := pdata.NewResource()
+	attributes := make(map[string]pdata.AttributeValue)
+	attributes[conventions.AttributeRPCMethod] = pdata.NewAttributeValueString("ListBuckets")
+
+	_, awsData := makeAws(attributes, resource)
+
+	assert.NotNil(t, awsData)
+	assert.Equal(t, "ListBuckets", *awsData.Operation)
+}
+
 func TestAwsWithSqsAlternateAttribute(t *testing.T) {
 	queueURL := "https://sqs.use1.amazonaws.com/Meltdown-Alerts"
 	attributes := make(map[string]pdata.AttributeValue)
@@ -253,6 +264,7 @@ func TestAwsWithAwsDynamoDbResources(t *testing.T) {
 
 	tableName := "WIDGET_TYPES"
 	attributes := make(map[string]pdata.AttributeValue)
+	attributes[conventions.AttributeRPCMethod] = pdata.NewAttributeValueString("IncorrectAWSSDKOperation")
 	attributes[awsxray.AWSOperationAttribute] = pdata.NewAttributeValueString("PutItem")
 	attributes[awsxray.AWSRequestIDAttribute] = pdata.NewAttributeValueString("75107C82-EC8A-4F75-883F-4440B491B0AB")
 	attributes[awsxray.AWSTableNameAttribute] = pdata.NewAttributeValueString(tableName)
