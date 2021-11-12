@@ -273,7 +273,7 @@ type dataPointExpectation struct {
 
 type testExpectation func(*testing.T, *pdata.ResourceMetrics) bool
 
-func doCompare(name string, t *testing.T, want pdata.AttributeMap, got *pdata.ResourceMetrics, expectations []testExpectation) {
+func doCompare(t *testing.T, name string, want pdata.AttributeMap, got *pdata.ResourceMetrics, expectations []testExpectation) {
 	t.Run(name, func(t *testing.T) {
 		assert.Equal(t, expectedScrapeMetricCount, countScrapeMetricsRM(got))
 		assert.Equal(t, want.Len(), got.Resource().Attributes().Len())

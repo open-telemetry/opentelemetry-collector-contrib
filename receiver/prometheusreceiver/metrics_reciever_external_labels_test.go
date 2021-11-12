@@ -92,7 +92,7 @@ func verifyExternalLabels(t *testing.T, td *testData, rms []*pdata.ResourceMetri
 	wantAttributes := td.attributes
 	metrics1 := rms[0].InstrumentationLibraryMetrics().At(0).Metrics()
 	ts1 := metrics1.At(0).Gauge().DataPoints().At(0).Timestamp()
-	doCompare("scrape-externalLabels", t, wantAttributes, rms[0], []testExpectation{
+	doCompare(t, "scrape-externalLabels", wantAttributes, rms[0], []testExpectation{
 		assertMetricPresent("go_threads",
 			compareMetricType(pdata.MetricDataTypeGauge),
 			[]dataPointExpectation{

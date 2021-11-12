@@ -155,7 +155,7 @@ func verifyTarget1(t *testing.T, td *testData, resourceMetrics []*pdata.Resource
 				},
 			}),
 	}
-	doCompare("scrape1", t, wantAttributes, m1, e1)
+	doCompare(t, "scrape1", wantAttributes, m1, e1)
 
 	m2 := resourceMetrics[1]
 	// m2 has 4 metrics + 5 internal scraper metrics
@@ -219,7 +219,7 @@ func verifyTarget1(t *testing.T, td *testData, resourceMetrics []*pdata.Resource
 				},
 			}),
 	}
-	doCompare("scrape2", t, wantAttributes, m2, e2)
+	doCompare(t, "scrape2", wantAttributes, m2, e2)
 }
 
 // target2 is going to have 5 pages, and there's a newly added item on the 2nd page.
@@ -327,7 +327,7 @@ func verifyTarget2(t *testing.T, td *testData, resourceMetrics []*pdata.Resource
 				},
 			}),
 	}
-	doCompare("scrape1", t, wantAttributes, m1, e1)
+	doCompare(t, "scrape1", wantAttributes, m1, e1)
 
 	m2 := resourceMetrics[1]
 	// m2 has 2 metrics + 5 internal scraper metrics
@@ -375,7 +375,7 @@ func verifyTarget2(t *testing.T, td *testData, resourceMetrics []*pdata.Resource
 				},
 			}),
 	}
-	doCompare("scrape2", t, wantAttributes, m2, e2)
+	doCompare(t, "scrape2", wantAttributes, m2, e2)
 
 	m3 := resourceMetrics[2]
 	// m3 has 2 metrics + 5 internal scraper metrics
@@ -423,7 +423,7 @@ func verifyTarget2(t *testing.T, td *testData, resourceMetrics []*pdata.Resource
 				},
 			}),
 	}
-	doCompare("scrape3", t, wantAttributes, m3, e3)
+	doCompare(t, "scrape3", wantAttributes, m3, e3)
 
 	m4 := resourceMetrics[3]
 	// m4 has 2 metrics + 5 internal scraper metrics
@@ -471,7 +471,7 @@ func verifyTarget2(t *testing.T, td *testData, resourceMetrics []*pdata.Resource
 				},
 			}),
 	}
-	doCompare("scrape4", t, wantAttributes, m4, e4)
+	doCompare(t, "scrape4", wantAttributes, m4, e4)
 
 	m5 := resourceMetrics[4]
 	// m5 has 2 metrics + 5 internal scraper metrics
@@ -519,7 +519,7 @@ func verifyTarget2(t *testing.T, td *testData, resourceMetrics []*pdata.Resource
 				},
 			}),
 	}
-	doCompare("scrape5", t, wantAttributes, m5, e5)
+	doCompare(t, "scrape5", wantAttributes, m5, e5)
 }
 
 // target3 for complicated data types, including summaries and histograms. one of the summary and histogram have only
@@ -649,7 +649,7 @@ func verifyTarget3(t *testing.T, td *testData, resourceMetrics []*pdata.Resource
 				},
 			}),
 	}
-	doCompare("scrape1", t, wantAttributes, m1, e1)
+	doCompare(t, "scrape1", wantAttributes, m1, e1)
 
 	m2 := resourceMetrics[1]
 	// m2 has 3 metrics + 5 internal scraper metrics
@@ -701,7 +701,7 @@ func verifyTarget3(t *testing.T, td *testData, resourceMetrics []*pdata.Resource
 				},
 			}),
 	}
-	doCompare("scrape2", t, wantAttributes, m2, e2)
+	doCompare(t, "scrape2", wantAttributes, m2, e2)
 }
 
 // TestCoreMetricsEndToEnd end to end test executor
