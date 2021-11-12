@@ -140,8 +140,8 @@ func testMetricsFromDataPointBuilderBuild(t *testing.T, metricDataType pdata.Met
 
 		for dataPointIndex, expectedDataPoint := range expectedDataPoints {
 			assert.Equal(t, expectedDataPoint.metricName, ilMetric.Name())
-			assert.Equal(t, expectedDataPoint.metricValue.Unit(), ilMetric.Unit())
-			assert.Equal(t, expectedDataPoint.metricValue.DataType().MetricDataType(), ilMetric.DataType())
+			assert.Equal(t, expectedDataPoint.metricValue.Metadata().Unit(), ilMetric.Unit())
+			assert.Equal(t, expectedDataPoint.metricValue.Metadata().DataType().MetricDataType(), ilMetric.DataType())
 
 			var dataPoint pdata.NumberDataPoint
 
@@ -312,13 +312,13 @@ func generateTestData(metricDataType pdata.MetricDataType) testData {
 	expectedGroupingKeys := []MetricsDataPointKey{
 		{
 			MetricName:     metricName1,
-			MetricDataType: metricValues[0].DataType(),
-			MetricUnit:     metricValues[0].Unit(),
+			MetricDataType: metricValues[0].Metadata().DataType(),
+			MetricUnit:     metricValues[0].Metadata().Unit(),
 		},
 		{
 			MetricName:     metricName2,
-			MetricDataType: metricValues[0].DataType(),
-			MetricUnit:     metricValues[0].Unit(),
+			MetricDataType: metricValues[0].Metadata().DataType(),
+			MetricUnit:     metricValues[0].Metadata().Unit(),
 		},
 	}
 
