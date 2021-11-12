@@ -21,6 +21,11 @@ import (
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 )
 
+const (
+	minCollectionIntervalSeconds = 60
+	maxTopMetricsQueryMaxRows    = 100
+)
+
 type Config struct {
 	scraperhelper.ScraperControllerSettings `mapstructure:",squash"`
 
@@ -42,9 +47,9 @@ type Instance struct {
 }
 
 func (config *Config) Validate() error {
-	if config.CollectionInterval.Seconds() < 60 {
-		return fmt.Errorf("%v %q must be not lower than 60s, current value is %vs", config.ID(),
-			"collection_interval", config.CollectionInterval.Seconds())
+	if config.CollectionInterval.Seconds() < minCollectionIntervalSeconds {
+		return fmt.Errorf("%v %q must be not lower than %v seconds, current value is %v seconds", config.ID(),
+			"collection_interval", minCollectionIntervalSeconds, config.CollectionInterval.Seconds())
 	}
 
 	if config.TopMetricsQueryMaxRows <= 0 {
@@ -52,9 +57,9 @@ func (config *Config) Validate() error {
 			config.TopMetricsQueryMaxRows)
 	}
 
-	if config.TopMetricsQueryMaxRows > 100 {
-		return fmt.Errorf("%v %q must be not greater than 100, current value is %v", config.ID(),
-			"top_metrics_query_max_rows", config.TopMetricsQueryMaxRows)
+	if config.TopMetricsQueryMaxRows > maxTopMetricsQueryMaxRows {
+		return fmt.Errorf("%v %q must be not greater than %v, current value is %v", config.ID(),
+			"top_metrics_query_max_rows", maxTopMetricsQueryMaxRows, config.TopMetricsQueryMaxRows)
 	}
 
 	if config.CardinalityTotalLimit < 0 {
