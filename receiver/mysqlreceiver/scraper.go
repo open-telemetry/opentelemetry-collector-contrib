@@ -18,7 +18,6 @@ import (
 	"context"
 	"errors"
 	"strconv"
-	"sync"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
@@ -30,10 +29,8 @@ import (
 
 type mySQLScraper struct {
 	sqlclient client
-	stopOnce  sync.Once
-
-	logger *zap.Logger
-	config *Config
+	logger    *zap.Logger
+	config    *Config
 }
 
 func newMySQLScraper(
@@ -61,11 +58,10 @@ func (m *mySQLScraper) start(_ context.Context, host component.Host) error {
 
 // shutdown closes the db connection
 func (m *mySQLScraper) shutdown(context.Context) error {
-	var err error
-	m.stopOnce.Do(func() {
-		err = m.sqlclient.Close()
-	})
-	return err
+	if m.sqlclient == nil {
+		return nil
+	}
+	return m.sqlclient.Close()
 }
 
 // initMetric initializes a metric with a metadata label.
