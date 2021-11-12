@@ -60,7 +60,7 @@ func TestIntegration(t *testing.T) {
 	aMetricSlice := ilms.At(0).Metrics()
 	require.Equal(t, 11, aMetricSlice.Len())
 
-	expectedFileBytes, err := ioutil.ReadFile("./testdata/expected_metrics/test_scraper/exepected.json")
+	expectedFileBytes, err := ioutil.ReadFile("./testdata/expected_metrics/test_scraper/expected.json")
 	require.NoError(t, err)
 
 	unmarshaller := otlp.NewJSONMetricsUnmarshaler()

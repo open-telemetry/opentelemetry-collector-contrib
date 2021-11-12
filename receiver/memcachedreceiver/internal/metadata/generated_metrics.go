@@ -181,7 +181,7 @@ var Metrics = &metricStruct{
 		"memcached.operations",
 		func(metric pdata.Metric) {
 			metric.SetName("memcached.operations")
-			metric.SetDescription("operation hit/miss counts.")
+			metric.SetDescription("Operation counts.")
 			metric.SetUnit("1")
 			metric.SetDataType(pdata.MetricDataTypeSum)
 			metric.Sum().SetIsMonotonic(true)
@@ -233,16 +233,16 @@ var Attributes = struct {
 	Direction string
 	// Operation (The type of operation.)
 	Operation string
-	// Type (hit/miss)
+	// State (The type of CPU usage.)
+	State string
+	// Type (Result of cache request.)
 	Type string
-	// UsageType (The type of CPU usage.)
-	UsageType string
 }{
 	"command",
 	"direction",
 	"operation",
+	"state",
 	"type",
-	"usage_type",
 }
 
 // A is an alias for Attributes.
@@ -281,6 +281,15 @@ var AttributeOperation = struct {
 	"get",
 }
 
+// AttributeState are the possible values that the attribute "state" can have.
+var AttributeState = struct {
+	System string
+	User   string
+}{
+	"system",
+	"user",
+}
+
 // AttributeType are the possible values that the attribute "type" can have.
 var AttributeType = struct {
 	Hit  string
@@ -288,13 +297,4 @@ var AttributeType = struct {
 }{
 	"hit",
 	"miss",
-}
-
-// AttributeUsageType are the possible values that the attribute "usage_type" can have.
-var AttributeUsageType = struct {
-	System string
-	User   string
-}{
-	"system",
-	"user",
 }

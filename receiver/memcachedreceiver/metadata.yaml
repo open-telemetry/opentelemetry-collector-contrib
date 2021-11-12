@@ -14,7 +14,7 @@ attributes:
     - sent
     - received
   type: 
-    description: hit/miss
+    description: Result of cache request.
     enum:
     - hit
     - miss
@@ -24,7 +24,7 @@ attributes:
     - increment
     - decrement
     - get
-  usage_type:
+  state:
     description: The type of CPU usage.
     enum:
     - system
@@ -84,7 +84,7 @@ metrics:
       aggregation: cumulative
     attributes: [direction]
   memcached.operations:
-    description:  operation hit/miss counts. 
+    description:  Operation counts. 
     unit: 1
     data:
       type: sum
@@ -104,7 +104,7 @@ metrics:
       type: sum
       monotonic: true
       aggregation: cumulative
-    attributes: [usage_type]
+    attributes: [state]
   memcached.threads:
     description: Number of threads used by the memcached instance.
     unit: 1

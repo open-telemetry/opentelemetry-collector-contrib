@@ -16,8 +16,10 @@ package memcachedreceiver
 
 import (
 	"context"
+	"strconv"
 	"time"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/model/pdata"
 	"go.uber.org/zap"
 
@@ -28,6 +30,7 @@ type memcachedScraper struct {
 	client client
 	logger *zap.Logger
 	config *Config
+	now    pdata.Timestamp
 }
 
 func newMemcachedScraper(
@@ -40,27 +43,26 @@ func newMemcachedScraper(
 	}
 }
 
+func (r *memcachedScraper) start(_ context.Context, host component.Host) error {
+	r.client = newMemcachedClient(r.config)
+	return nil
+}
+
 func (r *memcachedScraper) scrape(_ context.Context) (pdata.Metrics, error) {
 	// Init client in scrape method in case there are transient errors in the
 	// constructor.
-
-	if r.client == nil {
-		r.client = &memcachedClient{}
-		err := r.client.Init(r.config.Endpoint)
-		if err != nil {
-			r.client = nil
-			return pdata.Metrics{}, err
-		}
-		r.client.SetTimeout(r.config.Timeout)
+	err := r.client.Init()
+	if err != nil {
+		return pdata.Metrics{}, err
 	}
 
-	stats, err := r.client.Stats()
+	allServerStats, err := r.client.Stats()
 	if err != nil {
 		r.logger.Error("Failed to fetch memcached stats", zap.Error(err))
 		return pdata.Metrics{}, err
 	}
 
-	now := pdata.NewTimestampFromTime(time.Now())
+	r.now = pdata.NewTimestampFromTime(time.Now())
 	md := pdata.NewMetrics()
 	ilm := md.ResourceMetrics().AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty()
 	ilm.InstrumentationLibrary().SetName("otelcol/memcached")
@@ -77,98 +79,121 @@ func (r *memcachedScraper) scrape(_ context.Context) (pdata.Metrics, error) {
 	threads := initMetric(ilm.Metrics(), metadata.M.MemcachedThreads).Gauge().DataPoints()
 	evictions := initMetric(ilm.Metrics(), metadata.M.MemcachedEvictions).Sum().DataPoints()
 
-	for _, stats := range stats {
+	for _, stats := range allServerStats {
 		for k, v := range stats.Stats {
 			attributes := pdata.NewAttributeMap()
 			switch k {
 			case "bytes":
-				addToIntMetric(bytes, attributes, parseInt(v), now)
+				if parsedV, ok := r.parseInt(k, v); ok {
+					r.addToIntMetric(bytes, attributes, parsedV)
+				}
 			case "curr_connections":
-				addToIntMetric(currConn, attributes, parseInt(v), now)
+				if parsedV, ok := r.parseInt(k, v); ok {
+					r.addToIntMetric(currConn, attributes, parsedV)
+				}
 			case "total_connections":
-				addToIntMetric(totalConn, attributes, parseInt(v), now)
+				if parsedV, ok := r.parseInt(k, v); ok {
+					r.addToIntMetric(totalConn, attributes, parsedV)
+				}
 			case "cmd_get":
 				attributes.Insert(metadata.A.Command, pdata.NewAttributeValueString("get"))
-				addToIntMetric(commandCount, attributes, parseInt(v), now)
+				if parsedV, ok := r.parseInt(k, v); ok {
+					r.addToIntMetric(commandCount, attributes, parsedV)
+				}
 			case "cmd_set":
 				attributes.Insert(metadata.A.Command, pdata.NewAttributeValueString("set"))
-				addToIntMetric(commandCount, attributes, parseInt(v), now)
+				if parsedV, ok := r.parseInt(k, v); ok {
+					r.addToIntMetric(commandCount, attributes, parsedV)
+				}
 			case "cmd_flush":
 				attributes.Insert(metadata.A.Command, pdata.NewAttributeValueString("flush"))
-				addToIntMetric(commandCount, attributes, parseInt(v), now)
+				if parsedV, ok := r.parseInt(k, v); ok {
+					r.addToIntMetric(commandCount, attributes, parsedV)
+				}
 			case "cmd_touch":
 				attributes.Insert(metadata.A.Command, pdata.NewAttributeValueString("touch"))
-				addToIntMetric(commandCount, attributes, parseInt(v), now)
+				if parsedV, ok := r.parseInt(k, v); ok {
+					r.addToIntMetric(commandCount, attributes, parsedV)
+				}
 			case "curr_items":
-				addToDoubleMetric(currItems, attributes, parseFloat(v), now)
+				if parsedV, ok := r.parseFloat(k, v); ok {
+					r.addToDoubleMetric(currItems, attributes, parsedV)
+				}
+
 			case "threads":
-				addToDoubleMetric(threads, attributes, parseFloat(v), now)
+				if parsedV, ok := r.parseFloat(k, v); ok {
+					r.addToDoubleMetric(threads, attributes, parsedV)
+				}
+
 			case "evictions":
-				addToIntMetric(evictions, attributes, parseInt(v), now)
+				if parsedV, ok := r.parseInt(k, v); ok {
+					r.addToIntMetric(evictions, attributes, parsedV)
+				}
 			case "bytes_read":
 				attributes.Insert(metadata.A.Direction, pdata.NewAttributeValueString("received"))
-				addToIntMetric(network, attributes, parseInt(v), now)
+				if parsedV, ok := r.parseInt(k, v); ok {
+					r.addToIntMetric(network, attributes, parsedV)
+				}
 			case "bytes_written":
 				attributes.Insert(metadata.A.Direction, pdata.NewAttributeValueString("sent"))
-				addToIntMetric(network, attributes, parseInt(v), now)
+				if parsedV, ok := r.parseInt(k, v); ok {
+					r.addToIntMetric(network, attributes, parsedV)
+				}
 			case "get_hits":
 				attributes.Insert(metadata.A.Operation, pdata.NewAttributeValueString("get"))
-				statSlice := stats.Stats
-				hits := parseFloat(statSlice["get_hits"])
-				misses := parseFloat(statSlice["get_misses"])
-				if hits+misses > 0 {
-					addToDoubleMetric(hitRatio, attributes, (hits / (hits + misses) * 100), now)
-				} else {
-					addToDoubleMetric(hitRatio, attributes, 0, now)
-				}
 				attributes.Insert(metadata.A.Type, pdata.NewAttributeValueString("hit"))
-				addToIntMetric(operationCount, attributes, parseInt(v), now)
+				if parsedV, ok := r.parseInt(k, v); ok {
+					r.addToIntMetric(operationCount, attributes, parsedV)
+				}
 			case "get_misses":
 				attributes.Insert(metadata.A.Operation, pdata.NewAttributeValueString("get"))
 				attributes.Insert(metadata.A.Type, pdata.NewAttributeValueString("miss"))
-				addToIntMetric(operationCount, attributes, parseInt(v), now)
+				if parsedV, ok := r.parseInt(k, v); ok {
+					r.addToIntMetric(operationCount, attributes, parsedV)
+				}
 			case "incr_hits":
 				attributes.Insert(metadata.A.Operation, pdata.NewAttributeValueString("increment"))
-				statSlice := stats.Stats
-				hits := parseFloat(statSlice["incr_hits"])
-				misses := parseFloat(statSlice["incr_misses"])
-				if hits+misses > 0 {
-					addToDoubleMetric(hitRatio, attributes, (hits / (hits + misses) * 100), now)
-				} else {
-					addToDoubleMetric(hitRatio, attributes, 0, now)
-				}
 				attributes.Insert(metadata.A.Type, pdata.NewAttributeValueString("hit"))
-				addToIntMetric(operationCount, attributes, parseInt(v), now)
+				if parsedV, ok := r.parseInt(k, v); ok {
+					r.addToIntMetric(operationCount, attributes, parsedV)
+				}
 			case "incr_misses":
 				attributes.Insert(metadata.A.Operation, pdata.NewAttributeValueString("increment"))
 				attributes.Insert(metadata.A.Type, pdata.NewAttributeValueString("miss"))
-				addToIntMetric(operationCount, attributes, parseInt(v), now)
+				if parsedV, ok := r.parseInt(k, v); ok {
+					r.addToIntMetric(operationCount, attributes, parsedV)
+				}
 			case "decr_hits":
 				attributes.Insert(metadata.A.Operation, pdata.NewAttributeValueString("decrement"))
-				statSlice := stats.Stats
-				hits := parseFloat(statSlice["decr_hits"])
-				misses := parseFloat(statSlice["decr_misses"])
-				if hits+misses > 0 {
-					addToDoubleMetric(hitRatio, attributes, (hits / (hits + misses) * 100), now)
-				} else {
-					addToDoubleMetric(hitRatio, attributes, 0, now)
-				}
 				attributes.Insert(metadata.A.Type, pdata.NewAttributeValueString("hit"))
-				addToIntMetric(operationCount, attributes, parseInt(v), now)
+				if parsedV, ok := r.parseInt(k, v); ok {
+					r.addToIntMetric(operationCount, attributes, parsedV)
+				}
 			case "decr_misses":
 				attributes.Insert(metadata.A.Operation, pdata.NewAttributeValueString("decrement"))
 				attributes.Insert(metadata.A.Type, pdata.NewAttributeValueString("miss"))
-				addToIntMetric(operationCount, attributes, parseInt(v), now)
+				if parsedV, ok := r.parseInt(k, v); ok {
+					r.addToIntMetric(operationCount, attributes, parsedV)
+				}
 			case "rusage_system":
-				attributes.Insert(metadata.A.UsageType, pdata.NewAttributeValueString("system"))
-				addToDoubleMetric(rUsage, attributes, parseFloat(v), now)
+				attributes.Insert(metadata.A.State, pdata.NewAttributeValueString("system"))
+				if parsedV, ok := r.parseFloat(k, v); ok {
+					r.addToDoubleMetric(rUsage, attributes, parsedV)
+				}
+
 			case "rusage_user":
-				attributes.Insert(metadata.A.UsageType, pdata.NewAttributeValueString("user"))
-				addToDoubleMetric(rUsage, attributes, parseFloat(v), now)
+				attributes.Insert(metadata.A.State, pdata.NewAttributeValueString("user"))
+				if parsedV, ok := r.parseFloat(k, v); ok {
+					r.addToDoubleMetric(rUsage, attributes, parsedV)
+				}
 			}
 		}
-	}
 
+		// Calculated Metrics
+		r.calculateHitRatio("increment", "incr_hits", "incr_misses", stats.Stats, hitRatio)
+		r.calculateHitRatio("decrement", "decr_hits", "decr_misses", stats.Stats, hitRatio)
+		r.calculateHitRatio("get", "get_hits", "get_misses", stats.Stats, hitRatio)
+	}
 	return md, nil
 }
 
@@ -178,18 +203,57 @@ func initMetric(ms pdata.MetricSlice, mi metadata.MetricIntf) pdata.Metric {
 	return m
 }
 
-func addToDoubleMetric(metric pdata.NumberDataPointSlice, attributes pdata.AttributeMap, value float64, ts pdata.Timestamp) {
+func (r *memcachedScraper) calculateHitRatio(operation, hitKey, missKey string, stats map[string]string, hitRatioMetric pdata.NumberDataPointSlice) {
+	attributes := pdata.NewAttributeMap()
+	attributes.Insert(metadata.A.Operation, pdata.NewAttributeValueString(operation))
+	hits, hitOk := r.parseFloat(hitKey, stats[hitKey])
+	misses, missOk := r.parseFloat(missKey, stats[missKey])
+	if hits+misses > 0 && (missOk && hitOk) {
+		r.addToDoubleMetric(hitRatioMetric, attributes, (hits / (hits + misses) * 100))
+	}
+}
+
+// parseInt converts string to int64.
+func (r *memcachedScraper) parseInt(key, value string) (int64, bool) {
+	i, err := strconv.ParseInt(value, 10, 64)
+	if err != nil {
+		r.logInvalid("int", key, value)
+		return 0, false
+	}
+	return i, true
+}
+
+// parseFloat converts string to float64.
+func (r *memcachedScraper) parseFloat(key, value string) (float64, bool) {
+	i, err := strconv.ParseFloat(value, 64)
+	if err != nil {
+		r.logInvalid("float", key, value)
+		return 0, false
+	}
+	return i, true
+}
+
+func (r *memcachedScraper) logInvalid(expectedType, key, value string) {
+	r.logger.Info(
+		"invalid value",
+		zap.String("expectedType", expectedType),
+		zap.String("key", key),
+		zap.String("value", value),
+	)
+}
+
+func (r *memcachedScraper) addToDoubleMetric(metric pdata.NumberDataPointSlice, attributes pdata.AttributeMap, value float64) {
 	dataPoint := metric.AppendEmpty()
-	dataPoint.SetTimestamp(ts)
+	dataPoint.SetTimestamp(r.now)
 	dataPoint.SetDoubleVal(value)
 	if attributes.Len() > 0 {
 		attributes.CopyTo(dataPoint.Attributes())
 	}
 }
 
-func addToIntMetric(metric pdata.NumberDataPointSlice, attributes pdata.AttributeMap, value int64, ts pdata.Timestamp) {
+func (r *memcachedScraper) addToIntMetric(metric pdata.NumberDataPointSlice, attributes pdata.AttributeMap, value int64) {
 	dataPoint := metric.AppendEmpty()
-	dataPoint.SetTimestamp(ts)
+	dataPoint.SetTimestamp(r.now)
 	dataPoint.SetIntVal(value)
 	if attributes.Len() > 0 {
 		attributes.CopyTo(dataPoint.Attributes())

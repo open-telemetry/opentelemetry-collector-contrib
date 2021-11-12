@@ -18,7 +18,6 @@ import (
 	"encoding/json"
 	"io/ioutil"
 	"net"
-	"time"
 
 	"github.com/grobie/gomemcache/memcache"
 )
@@ -27,11 +26,11 @@ type fakeClient struct{}
 
 var _ client = (*fakeClient)(nil)
 
-func (c *fakeClient) Init(endpoint string) error {
+func (c *fakeClient) Init() error {
 	return nil
 }
 
-func (c *fakeClient) SetTimeout(t time.Duration) {}
+func (c *fakeClient) SetTimeout() {}
 
 func (c *fakeClient) Stats() (map[net.Addr]memcache.Stats, error) {
 	bytes, err := ioutil.ReadFile("./testdata/fake_stats.json")
