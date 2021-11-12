@@ -208,9 +208,15 @@ func (r *memcachedScraper) calculateHitRatio(operation, hitKey, missKey string, 
 	attributes.Insert(metadata.A.Operation, pdata.NewAttributeValueString(operation))
 	hits, hitOk := r.parseFloat(hitKey, stats[hitKey])
 	misses, missOk := r.parseFloat(missKey, stats[missKey])
-	if hits+misses > 0 && (missOk && hitOk) {
-		r.addToDoubleMetric(hitRatioMetric, attributes, (hits / (hits + misses) * 100))
+	if !missOk || !hitOk {
+		return
 	}
+
+	if misses+hits == 0 {
+		r.addToDoubleMetric(hitRatioMetric, attributes, 0)
+		return
+	}
+	r.addToDoubleMetric(hitRatioMetric, attributes, (hits / (hits + misses) * 100))
 }
 
 // parseInt converts string to int64.

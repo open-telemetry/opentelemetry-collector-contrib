@@ -46,7 +46,8 @@ func (c *memcachedClient) Init() error {
 	if err != nil {
 		return err
 	}
-	c.client.Timeout = c.timeout
+
+	newClient.Timeout = c.timeout
 	c.client = newClient
 	return nil
 }
