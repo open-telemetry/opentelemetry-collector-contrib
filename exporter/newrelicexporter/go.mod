@@ -9,8 +9,8 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus v0.38.0
 	github.com/stretchr/testify v1.7.0
 	go.opencensus.io v0.23.0
-	go.opentelemetry.io/collector v0.38.1-0.20211112010215-bcb90636ae66
-	go.opentelemetry.io/collector/model v0.38.1-0.20211112010215-bcb90636ae66
+	go.opentelemetry.io/collector v0.39.0
+	go.opentelemetry.io/collector/model v0.39.0
 	go.uber.org/multierr v1.7.0
 	go.uber.org/zap v1.19.1
 	google.golang.org/genproto v0.0.0-20210604141403-392c879c8b08
