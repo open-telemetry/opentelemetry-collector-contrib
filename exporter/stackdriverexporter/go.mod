@@ -11,9 +11,9 @@ require (
 
 require (
 	cloud.google.com/go v0.97.0 // indirect
-	cloud.google.com/go/monitoring v0.1.0 // indirect
-	cloud.google.com/go/trace v0.1.0 // indirect
-	contrib.go.opencensus.io/exporter/stackdriver v0.13.8 // indirect
+	cloud.google.com/go/monitoring v1.1.0 // indirect
+	cloud.google.com/go/trace v1.0.0 // indirect
+	contrib.go.opencensus.io/exporter/stackdriver v0.13.10 // indirect
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/trace v1.0.0 // indirect
 	github.com/aws/aws-sdk-go v1.40.56 // indirect
 	github.com/cenkalti/backoff/v4 v4.1.1 // indirect
@@ -51,7 +51,7 @@ require (
 	golang.org/x/text v0.3.6 // indirect
 	google.golang.org/api v0.59.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
-	google.golang.org/genproto v0.0.0-20211008145708-270636b82663 // indirect
+	google.golang.org/genproto v0.0.0-20211018162055-cf77aa76bad2 // indirect
 	google.golang.org/grpc v1.41.0 // indirect
 	google.golang.org/protobuf v1.27.1 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect

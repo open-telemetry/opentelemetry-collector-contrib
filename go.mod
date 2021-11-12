@@ -111,12 +111,12 @@ require github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongo
 
 require (
 	cloud.google.com/go v0.97.0 // indirect
-	cloud.google.com/go/monitoring v0.1.0 // indirect
+	cloud.google.com/go/monitoring v1.1.0 // indirect
 	cloud.google.com/go/spanner v1.27.0 // indirect
-	cloud.google.com/go/trace v0.1.0 // indirect
+	cloud.google.com/go/trace v1.0.0 // indirect
 	code.cloudfoundry.org/clock v1.0.0 // indirect
 	contrib.go.opencensus.io/exporter/prometheus v0.4.0 // indirect
-	contrib.go.opencensus.io/exporter/stackdriver v0.13.8 // indirect
+	contrib.go.opencensus.io/exporter/stackdriver v0.13.10 // indirect
 	github.com/Azure/azure-sdk-for-go v55.2.0+incompatible // indirect
 	github.com/Azure/go-autorest v14.2.0+incompatible // indirect
 	github.com/Azure/go-autorest/autorest v0.11.19 // indirect
