@@ -28,10 +28,11 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config/configcheck"
-	"go.opentelemetry.io/collector/config/configparser"
+	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/config/configtest"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/receiver/scraperhelper"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
@@ -47,7 +48,7 @@ func TestType(t *testing.T) {
 
 func TestValidConfig(t *testing.T) {
 	factory := NewFactory()
-	err := configcheck.ValidateConfig(factory.CreateDefaultConfig())
+	err := configtest.CheckConfigStruct(factory.CreateDefaultConfig())
 	require.NoError(t, err)
 }
 
@@ -123,6 +124,9 @@ func TestRestClientErr(t *testing.T) {
 
 func tlsConfig() *Config {
 	return &Config{
+		ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
+			CollectionInterval: 10 * time.Second,
+		},
 		ClientConfig: kube.ClientConfig{
 			APIConfig: k8sconfig.APIConfig{
 				AuthType: "tls",
@@ -138,7 +142,7 @@ func tlsConfig() *Config {
 
 func TestCustomUnmarshaller(t *testing.T) {
 	type args struct {
-		componentParser *configparser.ConfigMap
+		componentParser *config.Map
 		intoCfg         *Config
 	}
 	tests := []struct {
@@ -156,14 +160,14 @@ func TestCustomUnmarshaller(t *testing.T) {
 		{
 			name: "Fail initial unmarshal",
 			args: args{
-				componentParser: configparser.NewConfigMap(),
+				componentParser: config.NewMap(),
 			},
 			wantErr: true,
 		},
 		{
 			name: "metric_group unset",
 			args: args{
-				componentParser: configparser.NewConfigMap(),
+				componentParser: config.NewMap(),
 				intoCfg:         &Config{},
 			},
 			result: &Config{
@@ -173,7 +177,7 @@ func TestCustomUnmarshaller(t *testing.T) {
 		{
 			name: "fail to unmarshall metric_groups",
 			args: args{
-				componentParser: configparser.NewConfigMap(),
+				componentParser: config.NewMap(),
 				intoCfg:         &Config{},
 			},
 			mockUnmarshallFailure: true,
@@ -182,17 +186,21 @@ func TestCustomUnmarshaller(t *testing.T) {
 		{
 			name: "successfully override metric_group",
 			args: args{
-				componentParser: configparser.NewConfigMap(),
+				componentParser: config.NewMap(),
 				intoCfg: &Config{
-					CollectionInterval: 10 * time.Second,
+					ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
+						CollectionInterval: 10 * time.Second,
+					},
 				},
 			},
 			configOverride: map[string]interface{}{
-				"metric_groups":       []kubelet.MetricGroup{kubelet.ContainerMetricGroup},
+				"metric_groups":       []string{string(kubelet.ContainerMetricGroup)},
 				"collection_interval": 20 * time.Second,
 			},
 			result: &Config{
-				CollectionInterval:    20 * time.Second,
+				ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
+					CollectionInterval: 20 * time.Second,
+				},
 				MetricGroupsToCollect: []kubelet.MetricGroup{kubelet.ContainerMetricGroup},
 			},
 		},
@@ -201,7 +209,7 @@ func TestCustomUnmarshaller(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			if tt.mockUnmarshallFailure {
 				// some arbitrary failure.
-				tt.args.componentParser.Set(metricGroupsConfig, map[string]string{})
+				tt.args.componentParser.Set(metricGroupsConfig, map[string]string{"foo": "bar"})
 			}
 
 			// Mock some config overrides.

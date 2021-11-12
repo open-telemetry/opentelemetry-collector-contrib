@@ -173,7 +173,7 @@ func Scenario10kItemsPerSecond(
 	defer tc.Stop()
 
 	tc.StartBackend()
-	tc.StartAgent("--log-level=debug")
+	tc.StartAgent()
 
 	tc.StartLoad(options)
 

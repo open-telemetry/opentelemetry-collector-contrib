@@ -82,7 +82,7 @@ func (c *Config) Validate() error {
 // DefaultConfig only applies docker label
 func DefaultConfig() Config {
 	return Config{
-		ExtensionSettings: config.NewExtensionSettings(config.NewID(typeStr)),
+		ExtensionSettings: config.NewExtensionSettings(config.NewComponentID(typeStr)),
 		ClusterName:       "default",
 		ClusterRegion:     os.Getenv(awsRegionEnvKey),
 		ResultFile:        "/etc/ecs_sd_targets.yaml",

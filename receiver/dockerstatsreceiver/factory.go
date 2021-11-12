@@ -22,6 +22,7 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
+	"go.opentelemetry.io/collector/receiver/scraperhelper"
 )
 
 const (
@@ -36,12 +37,13 @@ func NewFactory() component.ReceiverFactory {
 }
 
 func createDefaultConfig() config.Receiver {
+	scs := scraperhelper.DefaultScraperControllerSettings(typeStr)
+	scs.CollectionInterval = 10 * time.Second
 	return &Config{
-		ReceiverSettings:   config.NewReceiverSettings(config.NewID(typeStr)),
-		Endpoint:           "unix:///var/run/docker.sock",
-		CollectionInterval: 10 * time.Second,
-		Timeout:            5 * time.Second,
-		DockerAPIVersion:   defaultDockerAPIVersion,
+		ScraperControllerSettings: scs,
+		Endpoint:                  "unix:///var/run/docker.sock",
+		Timeout:                   5 * time.Second,
+		DockerAPIVersion:          defaultDockerAPIVersion,
 	}
 }
 
@@ -53,7 +55,7 @@ func createMetricsReceiver(
 ) (component.MetricsReceiver, error) {
 	dockerConfig := config.(*Config)
 
-	dsr, err := NewReceiver(ctx, params.Logger, dockerConfig, consumer)
+	dsr, err := NewReceiver(ctx, params, dockerConfig, consumer)
 	if err != nil {
 		return nil, err
 	}

@@ -519,7 +519,7 @@ func toAttributeMap(obsMap map[string]interface{}) pdata.AttributeValue {
 
 func toAttributeArray(obsArr []interface{}) pdata.AttributeValue {
 	arrVal := pdata.NewAttributeValueArray()
-	arr := arrVal.ArrayVal()
+	arr := arrVal.SliceVal()
 	arr.EnsureCapacity(len(obsArr))
 	for _, v := range obsArr {
 		insertToAttributeVal(v, arr.AppendEmpty())
@@ -556,7 +556,7 @@ var sevMap = map[entry.Severity]pdata.SeverityNumber{
 }
 
 var sevTextMap = map[entry.Severity]string{
-	entry.Default: "Undefined",
+	entry.Default: "",
 	entry.Trace:   "Trace",
 	entry.Trace2:  "Trace2",
 	entry.Trace3:  "Trace3",

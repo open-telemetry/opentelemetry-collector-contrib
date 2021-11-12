@@ -44,7 +44,7 @@ func NewFactory() component.ExporterFactory {
 func createDefaultConfig() config.Exporter {
 	defaultRetry := exporterhelper.DefaultRetrySettings()
 	return &Config{
-		ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
+		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
 
 		CommonConfig: EndpointConfig{
 			TimeoutSettings: exporterhelper.DefaultTimeoutSettings(),

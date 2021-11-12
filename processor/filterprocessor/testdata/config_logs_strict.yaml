@@ -47,7 +47,7 @@ service:
             receivers: [nop]
             processors: [filter/empty]
             exporters: [nop]
-        metrics:
+        logs:
             receivers: [nop]
-            processors: [filter/empty]
+            processors: [filter/empty, filter/include, filter/exclude, filter/includeexclude]
             exporters: [nop]

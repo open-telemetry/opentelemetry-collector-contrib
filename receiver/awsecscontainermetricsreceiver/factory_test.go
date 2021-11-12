@@ -22,14 +22,14 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config/configcheck"
+	"go.opentelemetry.io/collector/config/configtest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsecscontainermetricsreceiver/internal/awsecscontainermetrics"
 )
 
 func TestValidConfig(t *testing.T) {
-	err := configcheck.ValidateConfig(createDefaultConfig())
+	err := configtest.CheckConfigStruct(createDefaultConfig())
 	require.NoError(t, err)
 }
 

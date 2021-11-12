@@ -32,9 +32,11 @@ type Config struct {
 	exporterhelper.QueueSettings   `mapstructure:"sending_queue"`
 	exporterhelper.RetrySettings   `mapstructure:"retry_on_failure"`
 	// TLS Settings for http client to use when sending logs to endpoint
-	TLSSetting configtls.TLSClientSetting `mapstructure:",squash"`
-	// API key for authenticating with ingestion endpoint (required)
+	TLSSetting configtls.TLSClientSetting `mapstructure:"tls,omitempty"`
+	// API key for authenticating with ingestion endpoint (required if no SecretKey)
 	APIKey string `mapstructure:"api_key"`
+	// Secret key for authenticating with the ingestion endpoint (required if no APIKey)
+	SecretKey string `mapstructure:"secret_key"`
 	// Endpoint URL; Defines the ingestion endpoint (optional)
 	Endpoint string `mapstructure:"endpoint"`
 	// ID that identifies this agent (optional)
@@ -44,8 +46,12 @@ type Config struct {
 }
 
 func (c *Config) validateConfig() error {
-	if c.APIKey == "" {
-		return errors.New("api_key must not be empty")
+	if c.APIKey == "" && c.SecretKey == "" {
+		return errors.New("api_key or secret_key must be specified")
+	}
+
+	if c.APIKey != "" && c.SecretKey != "" {
+		return errors.New("only one of api_key OR secret_key can be specified, not both")
 	}
 
 	if c.Endpoint == "" {

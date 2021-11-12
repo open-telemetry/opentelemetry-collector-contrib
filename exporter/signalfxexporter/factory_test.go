@@ -28,7 +28,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/config/configcheck"
+	"go.opentelemetry.io/collector/config/configtest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/model/pdata"
 	"go.uber.org/zap"
@@ -40,7 +40,7 @@ import (
 func TestCreateDefaultConfig(t *testing.T) {
 	cfg := createDefaultConfig()
 	assert.NotNil(t, cfg, "failed to create default config")
-	assert.NoError(t, configcheck.ValidateConfig(cfg))
+	assert.NoError(t, configtest.CheckConfigStruct(cfg))
 }
 
 func TestCreateMetricsExporter(t *testing.T) {
@@ -110,7 +110,7 @@ func TestCreateInstanceViaFactory(t *testing.T) {
 
 func TestCreateMetricsExporter_CustomConfig(t *testing.T) {
 	config := &Config{
-		ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
+		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
 		AccessToken:      "testToken",
 		Realm:            "us1",
 		Headers: map[string]string{
@@ -134,7 +134,7 @@ func TestFactory_CreateMetricsExporterFails(t *testing.T) {
 		{
 			name: "negative_duration",
 			config: &Config{
-				ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
+				ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
 				AccessToken:      "testToken",
 				Realm:            "lab",
 				TimeoutSettings:  exporterhelper.TimeoutSettings{Timeout: -2 * time.Second},
@@ -144,7 +144,7 @@ func TestFactory_CreateMetricsExporterFails(t *testing.T) {
 		{
 			name: "empty_realm_and_urls",
 			config: &Config{
-				ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
+				ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
 				AccessToken:      "testToken",
 			},
 			errorMessage: "failed to process \"signalfx\" config: requires a non-empty \"realm\"," +
@@ -153,12 +153,24 @@ func TestFactory_CreateMetricsExporterFails(t *testing.T) {
 		{
 			name: "empty_realm_and_api_url",
 			config: &Config{
-				ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
+				ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
 				AccessToken:      "testToken",
 				IngestURL:        "http://localhost:123",
 			},
 			errorMessage: "failed to process \"signalfx\" config: requires a non-empty \"realm\"," +
 				" or \"ingest_url\" and \"api_url\" should be explicitly set",
+		},
+		{
+			name: "negative_MaxConnections",
+			config: &Config{
+				ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
+				AccessToken:      "testToken",
+				Realm:            "lab",
+				IngestURL:        "http://localhost:123",
+				APIURL:           "https://api.us1.signalfx.com/",
+				MaxConnections:   -10,
+			},
+			errorMessage: "failed to process \"signalfx\" config: cannot have a negative \"max_connections\"",
 		},
 	}
 	for _, tt := range tests {
@@ -250,7 +262,7 @@ func TestDefaultTranslationRules(t *testing.T) {
 
 func TestCreateMetricsExporterWithDefaultExcludeMetrics(t *testing.T) {
 	config := &Config{
-		ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
+		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
 		AccessToken:      "testToken",
 		Realm:            "us1",
 	}
@@ -260,12 +272,12 @@ func TestCreateMetricsExporterWithDefaultExcludeMetrics(t *testing.T) {
 	require.NotNil(t, te)
 
 	// Validate that default excludes are always loaded.
-	assert.Equal(t, 11, len(config.ExcludeMetrics))
+	assert.Equal(t, 12, len(config.ExcludeMetrics))
 }
 
 func TestCreateMetricsExporterWithExcludeMetrics(t *testing.T) {
 	config := &Config{
-		ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
+		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
 		AccessToken:      "testToken",
 		Realm:            "us1",
 		ExcludeMetrics: []dpfilters.MetricFilter{
@@ -280,12 +292,12 @@ func TestCreateMetricsExporterWithExcludeMetrics(t *testing.T) {
 	require.NotNil(t, te)
 
 	// Validate that default excludes are always loaded.
-	assert.Equal(t, 12, len(config.ExcludeMetrics))
+	assert.Equal(t, 13, len(config.ExcludeMetrics))
 }
 
 func TestCreateMetricsExporterWithEmptyExcludeMetrics(t *testing.T) {
 	config := &Config{
-		ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
+		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
 		AccessToken:      "testToken",
 		Realm:            "us1",
 		ExcludeMetrics:   []dpfilters.MetricFilter{},
@@ -333,7 +345,7 @@ func testMetricsData() pdata.ResourceMetrics {
 	m2.SetDescription("Disk I/O.")
 	m2.SetDataType(pdata.MetricDataTypeSum)
 	m2.Sum().SetIsMonotonic(true)
-	m2.Sum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+	m2.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
 	dp21 := m2.Sum().DataPoints().AppendEmpty()
 	dp21.Attributes().InitFromMap(map[string]pdata.AttributeValue{
 		"host":      pdata.NewAttributeValueString("host0"),
@@ -373,7 +385,7 @@ func testMetricsData() pdata.ResourceMetrics {
 	m3.SetUnit("bytes")
 	m3.SetDataType(pdata.MetricDataTypeSum)
 	m3.Sum().SetIsMonotonic(true)
-	m3.Sum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+	m3.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
 	dp31 := m3.Sum().DataPoints().AppendEmpty()
 	dp31.Attributes().InitFromMap(map[string]pdata.AttributeValue{
 		"host":      pdata.NewAttributeValueString("host0"),
@@ -413,7 +425,7 @@ func testMetricsData() pdata.ResourceMetrics {
 	m4.SetUnit("bytes")
 	m4.SetDataType(pdata.MetricDataTypeSum)
 	m4.Sum().SetIsMonotonic(true)
-	m4.Sum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+	m4.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
 	dp41 := m4.Sum().DataPoints().AppendEmpty()
 	dp41.Attributes().InitFromMap(map[string]pdata.AttributeValue{
 		"device":    pdata.NewAttributeValueString("sda1"),
@@ -618,11 +630,14 @@ func TestDefaultCPUTranslations(t *testing.T) {
 	cpuUtilPerCore := m["cpu.utilization_per_core"]
 	require.Equal(t, 8, len(cpuUtilPerCore))
 
-	cpuStateMetrics := []string{"cpu.idle", "cpu.interrupt", "cpu.num_processors", "cpu.system", "cpu.user"}
+	cpuNumProcessors := m["cpu.num_processors"]
+	require.Equal(t, 1, len(cpuNumProcessors))
+
+	cpuStateMetrics := []string{"cpu.idle", "cpu.interrupt", "cpu.system", "cpu.user"}
 	for _, metric := range cpuStateMetrics {
 		dps, ok := m[metric]
 		require.True(t, ok, fmt.Sprintf("%s metrics not found", metric))
-		require.Len(t, dps, 1)
+		require.Len(t, dps, 9)
 	}
 }
 

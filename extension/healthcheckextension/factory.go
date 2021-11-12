@@ -42,10 +42,11 @@ func NewFactory() component.ExtensionFactory {
 
 func createDefaultConfig() config.Extension {
 	return &Config{
-		ExtensionSettings: config.NewExtensionSettings(config.NewID(typeStr)),
+		ExtensionSettings: config.NewExtensionSettings(config.NewComponentID(typeStr)),
 		TCPAddr: confignet.TCPAddr{
 			Endpoint: defaultEndpoint,
 		},
+		CheckCollectorPipeline: defaultCheckCollectorPipelineSettings(),
 	}
 }
 
@@ -53,4 +54,13 @@ func createExtension(_ context.Context, set component.ExtensionCreateSettings, c
 	config := cfg.(*Config)
 
 	return newServer(*config, set.Logger), nil
+}
+
+// defaultCheckCollectorPipelineSettings returns the default settings for CheckCollectorPipeline.
+func defaultCheckCollectorPipelineSettings() checkCollectorPipelineSettings {
+	return checkCollectorPipelineSettings{
+		Enabled:                  false,
+		Interval:                 "5m",
+		ExporterFailureThreshold: 5,
+	}
 }

@@ -54,17 +54,18 @@ func (s *scraper) start(context.Context, component.Host) error {
 	return nil
 }
 
-func (s *scraper) scrape(_ context.Context) (pdata.MetricSlice, error) {
-	metrics := pdata.NewMetricSlice()
+func (s *scraper) scrape(_ context.Context) (pdata.Metrics, error) {
+	md := pdata.NewMetrics()
+	metrics := md.ResourceMetrics().AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty().Metrics()
 
 	now := pdata.NewTimestampFromTime(time.Now())
 	cpuTimes, err := s.times( /*percpu=*/ true)
 	if err != nil {
-		return metrics, scrapererror.NewPartialScrapeError(err, metricsLen)
+		return md, scrapererror.NewPartialScrapeError(err, metricsLen)
 	}
 
 	initializeCPUTimeMetric(metrics.AppendEmpty(), s.startTime, now, cpuTimes)
-	return metrics, nil
+	return md, nil
 }
 
 func initializeCPUTimeMetric(metric pdata.Metric, startTime, now pdata.Timestamp, cpuTimes []cpu.TimesStat) {
@@ -83,9 +84,9 @@ func initializeCPUTimeDataPoint(dataPoint pdata.NumberDataPoint, startTime, now 
 	attributes := dataPoint.Attributes()
 	// ignore cpu attribute if reporting "total" cpu usage
 	if cpuLabel != gopsCPUTotal {
-		attributes.InsertString(metadata.Labels.Cpu, cpuLabel)
+		attributes.InsertString(metadata.Attributes.Cpu, cpuLabel)
 	}
-	attributes.InsertString(metadata.Labels.State, stateLabel)
+	attributes.InsertString(metadata.Attributes.State, stateLabel)
 
 	dataPoint.SetStartTimestamp(startTime)
 	dataPoint.SetTimestamp(now)

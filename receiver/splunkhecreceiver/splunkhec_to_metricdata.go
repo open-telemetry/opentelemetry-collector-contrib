@@ -28,26 +28,28 @@ import (
 // splunkHecToMetricsData converts Splunk HEC metric points to
 // pdata.Metrics. Returning the converted data and the number of
 // dropped time series.
-func splunkHecToMetricsData(logger *zap.Logger, events []*splunk.Event, resourceCustomizer func(pdata.Resource), config splunk.HECConfiguration) (pdata.Metrics, int) {
+func splunkHecToMetricsData(logger *zap.Logger, events []*splunk.Event, resourceCustomizer func(pdata.Resource), config *Config) (pdata.Metrics, int) {
 	numDroppedTimeSeries := 0
 	md := pdata.NewMetrics()
 
 	for _, event := range events {
 		resourceMetrics := pdata.NewResourceMetrics()
+		if resourceCustomizer != nil {
+			resourceCustomizer(resourceMetrics.Resource())
+		}
 		attrs := resourceMetrics.Resource().Attributes()
 		if event.Host != "" {
-			attrs.InsertString(config.GetHostKey(), event.Host)
+			attrs.InsertString(config.HecToOtelAttrs.Host, event.Host)
 		}
 		if event.Source != "" {
-			attrs.InsertString(config.GetSourceKey(), event.Source)
+			attrs.InsertString(config.HecToOtelAttrs.Source, event.Source)
 		}
 		if event.SourceType != "" {
-			attrs.InsertString(config.GetSourceTypeKey(), event.SourceType)
+			attrs.InsertString(config.HecToOtelAttrs.SourceType, event.SourceType)
 		}
 		if event.Index != "" {
-			attrs.InsertString(config.GetIndexKey(), event.Index)
+			attrs.InsertString(config.HecToOtelAttrs.Index, event.Index)
 		}
-		resourceCustomizer(resourceMetrics.Resource())
 
 		values := event.GetMetricValues()
 

@@ -442,19 +442,57 @@ func TestLogUnknownError(t *testing.T) {
 func TestUserAgent(t *testing.T) {
 	logger := zap.NewNop()
 
-	buildInfo := component.BuildInfo{
-		Version: "1.0",
+	tests := []struct {
+		name                 string
+		buildInfo            component.BuildInfo
+		logGroupName         string
+		expectedUserAgentStr string
+	}{
+		{
+			"emptyLogGroup",
+			component.BuildInfo{Version: "1.0"},
+			"",
+			"opentelemetry-collector-contrib/1.0",
+		},
+		{
+			"non container insights",
+			component.BuildInfo{Version: "1.1"},
+			"test-group",
+			"opentelemetry-collector-contrib/1.1",
+		},
+		{
+			"container insights EKS",
+			component.BuildInfo{Version: "1.0"},
+			"/aws/containerinsights/eks-cluster-name/performance",
+			"opentelemetry-collector-contrib/1.0 (ContainerInsights)",
+		},
+		{
+			"container insights ECS",
+			component.BuildInfo{Version: "1.0"},
+			"/aws/ecs/containerinsights/ecs-cluster-name/performance",
+			"opentelemetry-collector-contrib/1.0 (ContainerInsights)",
+		},
+		{
+			"container insights prometheus",
+			component.BuildInfo{Version: "1.0"},
+			"/aws/containerinsights/cluster-name/prometheus",
+			"opentelemetry-collector-contrib/1.0 (ContainerInsights)",
+		},
 	}
 
 	session, _ := session.NewSession()
-	cwlog := newCloudWatchLogsClient(logger, &aws.Config{}, buildInfo, session)
-	logClient := cwlog.svc.(*cloudwatchlogs.CloudWatchLogs)
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			cwlog := newCloudWatchLogsClient(logger, &aws.Config{}, tc.buildInfo, tc.logGroupName, session)
+			logClient := cwlog.svc.(*cloudwatchlogs.CloudWatchLogs)
 
-	req := request.New(aws.Config{}, metadata.ClientInfo{}, logClient.Handlers, nil, &request.Operation{
-		HTTPMethod: "GET",
-		HTTPPath:   "/",
-	}, nil, nil)
+			req := request.New(aws.Config{}, metadata.ClientInfo{}, logClient.Handlers, nil, &request.Operation{
+				HTTPMethod: "GET",
+				HTTPPath:   "/",
+			}, nil, nil)
 
-	logClient.Handlers.Build.Run(req)
-	assert.Contains(t, req.HTTPRequest.UserAgent(), "opentelemetry-collector-contrib/1.0")
+			logClient.Handlers.Build.Run(req)
+			assert.Contains(t, req.HTTPRequest.UserAgent(), tc.expectedUserAgentStr)
+		})
+	}
 }

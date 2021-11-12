@@ -49,7 +49,7 @@ func NewFactory() component.ReceiverFactory {
 
 func createDefaultConfig() config.Receiver {
 	return &Config{
-		ReceiverSettings: config.NewReceiverSettings(config.NewID(typeStr)),
+		ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
 		HTTPServerSettings: confighttp.HTTPServerSettings{
 			Endpoint: defaultEndpoint,
 		},
@@ -103,7 +103,7 @@ func createMetricsReceiver(
 	receiverLock.Lock()
 	r := receivers[rCfg]
 	if r == nil {
-		r = newReceiver(params.TelemetrySettings, *rCfg)
+		r = newReceiver(params, *rCfg)
 		receivers[rCfg] = r
 	}
 	receiverLock.Unlock()
@@ -130,7 +130,7 @@ func createLogsReceiver(
 	receiverLock.Lock()
 	r := receivers[rCfg]
 	if r == nil {
-		r = newReceiver(params.TelemetrySettings, *rCfg)
+		r = newReceiver(params, *rCfg)
 		receivers[rCfg] = r
 	}
 	receiverLock.Unlock()

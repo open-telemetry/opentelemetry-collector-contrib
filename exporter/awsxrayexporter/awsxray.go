@@ -100,7 +100,7 @@ func newTracesExporter(
 func wrapErrorIfBadRequest(err *error) error {
 	_, ok := (*err).(awserr.RequestFailure)
 	if ok && (*err).(awserr.RequestFailure).StatusCode() < 500 {
-		return consumererror.Permanent(*err)
+		return consumererror.NewPermanent(*err)
 	}
 	return *err
 }

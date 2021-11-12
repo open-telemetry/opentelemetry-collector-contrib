@@ -87,7 +87,7 @@ var Metrics = &metricStruct{
 			metric.SetUnit("{processes}")
 			metric.SetDataType(pdata.MetricDataTypeSum)
 			metric.Sum().SetIsMonotonic(false)
-			metric.Sum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+			metric.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
 		},
 	},
 	&metricImpl{
@@ -98,7 +98,7 @@ var Metrics = &metricStruct{
 			metric.SetUnit("{processes}")
 			metric.SetDataType(pdata.MetricDataTypeSum)
 			metric.Sum().SetIsMonotonic(true)
-			metric.Sum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+			metric.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
 		},
 	},
 }
@@ -107,23 +107,40 @@ var Metrics = &metricStruct{
 // manipulating those metrics. M is an alias for Metrics
 var M = Metrics
 
-// Labels contains the possible metric labels that can be used.
-var Labels = struct {
+// Attributes contains the possible metric attributes that can be used.
+var Attributes = struct {
 	// Status (Breakdown status of the processes.)
 	Status string
 }{
 	"status",
 }
 
-// L contains the possible metric labels that can be used. L is an alias for
-// Labels.
-var L = Labels
+// A is an alias for Attributes.
+var A = Attributes
 
-// LabelStatus are the possible values that the label "status" can have.
-var LabelStatus = struct {
-	Blocked string
-	Running string
+// AttributeStatus are the possible values that the attribute "status" can have.
+var AttributeStatus = struct {
+	Blocked  string
+	Daemon   string
+	Detached string
+	Orphan   string
+	Paging   string
+	Running  string
+	Sleeping string
+	Stopped  string
+	System   string
+	Unknown  string
+	Zombies  string
 }{
 	"blocked",
+	"daemon",
+	"detached",
+	"orphan",
+	"paging",
 	"running",
+	"sleeping",
+	"stopped",
+	"system",
+	"unknown",
+	"zombies",
 }

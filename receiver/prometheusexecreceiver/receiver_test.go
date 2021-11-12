@@ -53,7 +53,7 @@ func loadConfigAssertNoError(t *testing.T, receiverConfigID config.ComponentID) 
 
 // TestExecKeyMissing loads config and asserts there is an error with that config
 func TestExecKeyMissing(t *testing.T) {
-	receiverConfig := loadConfigAssertNoError(t, config.NewID(typeStr))
+	receiverConfig := loadConfigAssertNoError(t, config.NewComponentID(typeStr))
 
 	assertErrorWhenExecKeyMissing(t, receiverConfig)
 }
@@ -66,7 +66,7 @@ func assertErrorWhenExecKeyMissing(t *testing.T, errorReceiverConfig config.Rece
 
 // TestEndToEnd loads the test config and completes an 2e2 test where Prometheus metrics are scrapped twice from `test_prometheus_exporter.go`
 func TestEndToEnd(t *testing.T) {
-	receiverConfig := loadConfigAssertNoError(t, config.NewIDWithName(typeStr, "end_to_end_test/2"))
+	receiverConfig := loadConfigAssertNoError(t, config.NewComponentIDWithName(typeStr, "end_to_end_test/2"))
 
 	// e2e test with port undefined by user
 	endToEndScrapeTest(t, receiverConfig, "end-to-end port not defined")
@@ -141,7 +141,7 @@ func TestConfigBuilderFunctions(t *testing.T) {
 		{
 			name: "no command",
 			cfg: &Config{
-				ReceiverSettings: config.NewReceiverSettings(config.NewID(typeStr)),
+				ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
 				ScrapeInterval:   60 * time.Second,
 				Port:             9104,
 				SubprocessConfig: subprocessmanager.SubprocessConfig{
@@ -150,7 +150,7 @@ func TestConfigBuilderFunctions(t *testing.T) {
 				},
 			},
 			wantReceiverConfig: &prometheusreceiver.Config{
-				ReceiverSettings: config.NewReceiverSettings(config.NewID(typeStr)),
+				ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
 				PrometheusConfig: &promconfig.Config{
 					ScrapeConfigs: []*promconfig.ScrapeConfig{
 						{
@@ -182,7 +182,7 @@ func TestConfigBuilderFunctions(t *testing.T) {
 		{
 			name: "normal config",
 			cfg: &Config{
-				ReceiverSettings: config.NewReceiverSettings(config.NewIDWithName(typeStr, "mysqld")),
+				ReceiverSettings: config.NewReceiverSettings(config.NewComponentIDWithName(typeStr, "mysqld")),
 				ScrapeInterval:   90 * time.Second,
 				Port:             9104,
 				SubprocessConfig: subprocessmanager.SubprocessConfig{
@@ -196,7 +196,7 @@ func TestConfigBuilderFunctions(t *testing.T) {
 				},
 			},
 			wantReceiverConfig: &prometheusreceiver.Config{
-				ReceiverSettings: config.NewReceiverSettings(config.NewIDWithName(typeStr, "mysqld")),
+				ReceiverSettings: config.NewReceiverSettings(config.NewComponentIDWithName(typeStr, "mysqld")),
 				PrometheusConfig: &promconfig.Config{
 					ScrapeConfigs: []*promconfig.ScrapeConfig{
 						{
@@ -234,7 +234,7 @@ func TestConfigBuilderFunctions(t *testing.T) {
 		{
 			name: "lots of defaults",
 			cfg: &Config{
-				ReceiverSettings: config.NewReceiverSettings(config.NewIDWithName(typeStr, "postgres/test")),
+				ReceiverSettings: config.NewReceiverSettings(config.NewComponentIDWithName(typeStr, "postgres/test")),
 				ScrapeInterval:   60 * time.Second,
 				SubprocessConfig: subprocessmanager.SubprocessConfig{
 					Command: "postgres_exporter",
@@ -247,7 +247,7 @@ func TestConfigBuilderFunctions(t *testing.T) {
 				},
 			},
 			wantReceiverConfig: &prometheusreceiver.Config{
-				ReceiverSettings: config.NewReceiverSettings(config.NewIDWithName(typeStr, "postgres/test")),
+				ReceiverSettings: config.NewReceiverSettings(config.NewComponentIDWithName(typeStr, "postgres/test")),
 				PrometheusConfig: &promconfig.Config{
 					ScrapeConfigs: []*promconfig.ScrapeConfig{
 						{

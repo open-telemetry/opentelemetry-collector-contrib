@@ -302,7 +302,7 @@ func getIntSumMetric(name string, attributes pdata.AttributeMap, value int64, ts
 	metric := pdata.NewMetric()
 	metric.SetName(name)
 	metric.SetDataType(pdata.MetricDataTypeSum)
-	metric.Sum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+	metric.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
 	dp := metric.Sum().DataPoints().AppendEmpty()
 	dp.SetIntVal(value)
 	attributes.CopyTo(dp.Attributes())
@@ -316,7 +316,7 @@ func getEmptyCumulativeSumMetric(name string) pdata.Metric {
 	metric := pdata.NewMetric()
 	metric.SetName(name)
 	metric.SetDataType(pdata.MetricDataTypeSum)
-	metric.Sum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+	metric.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
 	return metric
 }
 
@@ -324,7 +324,7 @@ func getSumMetric(name string, attributes pdata.AttributeMap, value float64, ts 
 	metric := pdata.NewMetric()
 	metric.SetName(name)
 	metric.SetDataType(pdata.MetricDataTypeSum)
-	metric.Sum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+	metric.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
 	dp := metric.Sum().DataPoints().AppendEmpty()
 	dp.SetDoubleVal(value)
 	attributes.CopyTo(dp.Attributes())
@@ -345,7 +345,7 @@ func getEmptyCumulativeHistogramMetric(name string) pdata.Metric {
 	metric := pdata.NewMetric()
 	metric.SetName(name)
 	metric.SetDataType(pdata.MetricDataTypeHistogram)
-	metric.Histogram().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+	metric.Histogram().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
 	return metric
 }
 
@@ -353,7 +353,7 @@ func getHistogramMetric(name string, attributes pdata.AttributeMap, ts uint64, s
 	metric := pdata.NewMetric()
 	metric.SetName(name)
 	metric.SetDataType(pdata.MetricDataTypeHistogram)
-	metric.Histogram().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+	metric.Histogram().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
 	dp := metric.Histogram().DataPoints().AppendEmpty()
 	dp.SetCount(count)
 	dp.SetSum(sum)

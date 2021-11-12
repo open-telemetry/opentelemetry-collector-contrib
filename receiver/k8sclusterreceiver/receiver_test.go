@@ -26,6 +26,7 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/obsreport"
+	"go.opentelemetry.io/collector/obsreport/obsreporttest"
 	"go.uber.org/atomic"
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
@@ -36,11 +37,15 @@ import (
 )
 
 func TestReceiver(t *testing.T) {
+	tt, err := obsreporttest.SetupTelemetry()
+	require.NoError(t, err)
+	defer tt.Shutdown(context.Background())
+
 	client := fake.NewSimpleClientset()
 	osQuotaClient := fakeQuota.NewSimpleClientset()
 	sink := new(consumertest.MetricsSink)
 
-	r := setupReceiver(client, osQuotaClient, sink, 10*time.Second)
+	r := setupReceiver(client, osQuotaClient, sink, 10*time.Second, tt)
 
 	// Setup k8s resources.
 	numPods := 2
@@ -80,10 +85,13 @@ func TestReceiver(t *testing.T) {
 }
 
 func TestReceiverTimesOutAfterStartup(t *testing.T) {
+	tt, err := obsreporttest.SetupTelemetry()
+	require.NoError(t, err)
+	defer tt.Shutdown(context.Background())
 	client := fake.NewSimpleClientset()
 
 	// Mock initial cache sync timing out, using a small timeout.
-	r := setupReceiver(client, nil, consumertest.NewNop(), 1*time.Millisecond)
+	r := setupReceiver(client, nil, consumertest.NewNop(), 1*time.Millisecond, tt)
 
 	createPods(t, client, 1)
 
@@ -96,11 +104,15 @@ func TestReceiverTimesOutAfterStartup(t *testing.T) {
 }
 
 func TestReceiverWithManyResources(t *testing.T) {
+	tt, err := obsreporttest.SetupTelemetry()
+	require.NoError(t, err)
+	defer tt.Shutdown(context.Background())
+
 	client := fake.NewSimpleClientset()
 	osQuotaClient := fakeQuota.NewSimpleClientset()
 	sink := new(consumertest.MetricsSink)
 
-	r := setupReceiver(client, osQuotaClient, sink, 10*time.Second)
+	r := setupReceiver(client, osQuotaClient, sink, 10*time.Second, tt)
 
 	numPods := 1000
 	numQuotas := 2
@@ -128,11 +140,15 @@ var consumeMetadataInvocation = func() {
 }
 
 func TestReceiverWithMetadata(t *testing.T) {
+	tt, err := obsreporttest.SetupTelemetry()
+	require.NoError(t, err)
+	defer tt.Shutdown(context.Background())
+
 	client := fake.NewSimpleClientset()
 	next := &mockExporterWithK8sMetadata{MetricsSink: new(consumertest.MetricsSink)}
 	numCalls = atomic.NewInt32(0)
 
-	r := setupReceiver(client, nil, next, 10*time.Second)
+	r := setupReceiver(client, nil, next, 10*time.Second, tt)
 	r.config.MetadataExporters = []string{"nop/withmetadata"}
 
 	// Setup k8s resources.
@@ -179,12 +195,14 @@ func setupReceiver(
 	client *fake.Clientset,
 	osQuotaClient quotaclientset.Interface,
 	consumer consumer.Metrics,
-	initialSyncTimeout time.Duration) *kubernetesReceiver {
+	initialSyncTimeout time.Duration,
+	tt obsreporttest.TestTelemetry) *kubernetesReceiver {
 
 	distribution := distributionKubernetes
 	if osQuotaClient != nil {
 		distribution = distributionOpenShift
 	}
+
 	logger := zap.NewNop()
 	config := &Config{
 		CollectionInterval:         1 * time.Second,
@@ -197,9 +215,13 @@ func setupReceiver(
 
 	return &kubernetesReceiver{
 		resourceWatcher: rw,
-		logger:          logger,
+		settings:        tt.ToReceiverCreateSettings(),
 		config:          config,
 		consumer:        consumer,
-		obsrecv:         obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverID: config.ID(), Transport: "http"}),
+		obsrecv: obsreport.NewReceiver(obsreport.ReceiverSettings{
+			ReceiverID:             config.ID(),
+			Transport:              "http",
+			ReceiverCreateSettings: tt.ToReceiverCreateSettings(),
+		}),
 	}
 }

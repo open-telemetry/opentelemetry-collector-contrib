@@ -90,7 +90,7 @@ func TestPushTraceData(t *testing.T) {
 			desc: "Forwards permanent errors",
 			client: &clientMock{
 				response: func() error {
-					return consumererror.Permanent(errors.New("Error"))
+					return consumererror.NewPermanent(errors.New("Error"))
 				},
 			},
 			wantErr:  true,
@@ -182,7 +182,7 @@ func TestPushTraceData_TransientOnPartialFailure(t *testing.T) {
 	assert.False(t, consumererror.IsPermanent(err))
 
 	tErr := consumererror.Traces{}
-	if ok := consumererror.AsTraces(err, &tErr); !ok {
+	if ok := errors.As(err, &tErr); !ok {
 		assert.Fail(t, "PushTraceData did not return a Traces error")
 	}
 	assert.Equal(t, 1, tErr.GetTraces().ResourceSpans().Len())
@@ -403,9 +403,9 @@ func TestToHumioAttributes(t *testing.T) {
 			attr: func() pdata.AttributeMap {
 				attrMap := pdata.NewAttributeMap()
 				arr := pdata.NewAttributeValueArray()
-				arr.ArrayVal().AppendEmpty().SetStringVal("a")
-				arr.ArrayVal().AppendEmpty().SetStringVal("b")
-				arr.ArrayVal().AppendEmpty().SetIntVal(4)
+				arr.SliceVal().AppendEmpty().SetStringVal("a")
+				arr.SliceVal().AppendEmpty().SetStringVal("b")
+				arr.SliceVal().AppendEmpty().SetIntVal(4)
 				attrMap.Insert("array", arr)
 				return attrMap
 			},

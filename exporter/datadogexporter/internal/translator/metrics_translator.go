@@ -19,36 +19,52 @@ import (
 	"fmt"
 	"math"
 	"strconv"
-	"time"
 
-	"go.opentelemetry.io/collector/component"
+	"github.com/DataDog/datadog-agent/pkg/quantile"
 	"go.opentelemetry.io/collector/model/pdata"
 	"go.uber.org/zap"
-	"gopkg.in/zorkian/go-datadog-api.v2"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/config"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/attributes"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metrics"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/instrumentationlibrary"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/translator/utils"
 )
 
 const metricName string = "metric name"
 
-// HostnameProvider gets a hostname
-type HostnameProvider interface {
-	// Hostname gets the hostname from the machine.
-	Hostname(ctx context.Context) (string, error)
-}
-
+// Translator is a metrics translator.
 type Translator struct {
-	prevPts                  *TTLCache
-	logger                   *zap.Logger
-	cfg                      config.MetricsConfig
-	buildInfo                component.BuildInfo
-	fallbackHostnameProvider HostnameProvider
+	prevPts *ttlCache
+	logger  *zap.Logger
+	cfg     translatorConfig
 }
 
-func New(cache *TTLCache, params component.ExporterCreateSettings, cfg config.MetricsConfig, fallbackHostProvider HostnameProvider) *Translator {
-	return &Translator{cache, params.Logger, cfg, params.BuildInfo, fallbackHostProvider}
+// New creates a new translator with given options.
+func New(logger *zap.Logger, options ...Option) (*Translator, error) {
+	cfg := translatorConfig{
+		HistMode:                             HistogramModeDistributions,
+		SendCountSum:                         false,
+		Quantiles:                            false,
+		SendMonotonic:                        true,
+		ResourceAttributesAsTags:             false,
+		InstrumentationLibraryMetadataAsTags: false,
+		sweepInterval:                        1800,
+		deltaTTL:                             3600,
+		fallbackHostnameProvider:             &noHostProvider{},
+	}
+
+	for _, opt := range options {
+		err := opt(&cfg)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	if cfg.HistMode == HistogramModeNoBuckets && !cfg.SendCountSum {
+		return nil, fmt.Errorf("no buckets mode and no send count sum are incompatible")
+	}
+
+	cache := newTTLCache(cfg.sweepInterval, cfg.deltaTTL)
+	return &Translator{cache, logger, cfg}, nil
 }
 
 // getTags maps an attributeMap into a slice of Datadog tags
@@ -56,11 +72,7 @@ func getTags(labels pdata.AttributeMap) []string {
 	tags := make([]string, 0, labels.Len())
 	labels.Range(func(key string, value pdata.AttributeValue) bool {
 		v := value.AsString()
-		if v == "" {
-			// Tags can't end with ":" so we replace empty values with "n/a"
-			v = "n/a"
-		}
-		tags = append(tags, fmt.Sprintf("%s:%s", key, v))
+		tags = append(tags, utils.FormatKeyValueTag(key, v))
 		return true
 	})
 	return tags
@@ -70,7 +82,7 @@ func getTags(labels pdata.AttributeMap) []string {
 func isCumulativeMonotonic(md pdata.Metric) bool {
 	switch md.DataType() {
 	case pdata.MetricDataTypeSum:
-		return md.Sum().AggregationTemporality() == pdata.AggregationTemporalityCumulative &&
+		return md.Sum().AggregationTemporality() == pdata.MetricAggregationTemporalityCumulative &&
 			md.Sum().IsMonotonic()
 	}
 	return false
@@ -87,12 +99,20 @@ func (t *Translator) isSkippable(name string, v float64) bool {
 }
 
 // mapNumberMetrics maps double datapoints into Datadog metrics
-func (t *Translator) mapNumberMetrics(name string, dt metrics.MetricDataType, slice pdata.NumberDataPointSlice, attrTags []string) []datadog.Metric {
-	ms := make([]datadog.Metric, 0, slice.Len())
+func (t *Translator) mapNumberMetrics(
+	ctx context.Context,
+	consumer TimeSeriesConsumer,
+	name string,
+	dt MetricDataType,
+	slice pdata.NumberDataPointSlice,
+	additionalTags []string,
+	host string,
+) {
+
 	for i := 0; i < slice.Len(); i++ {
 		p := slice.At(i)
 		tags := getTags(p.Attributes())
-		tags = append(tags, attrTags...)
+		tags = append(tags, additionalTags...)
 		var val float64
 		switch p.Type() {
 		case pdata.MetricValueTypeDouble:
@@ -105,21 +125,25 @@ func (t *Translator) mapNumberMetrics(name string, dt metrics.MetricDataType, sl
 			continue
 		}
 
-		ms = append(ms,
-			metrics.NewMetric(name, dt, uint64(p.Timestamp()), val, tags),
-		)
+		consumer.ConsumeTimeSeries(ctx, name, dt, uint64(p.Timestamp()), val, tags, host)
 	}
-	return ms
 }
 
 // mapNumberMonotonicMetrics maps monotonic datapoints into Datadog metrics
-func (t *Translator) mapNumberMonotonicMetrics(name string, slice pdata.NumberDataPointSlice, attrTags []string) []datadog.Metric {
-	ms := make([]datadog.Metric, 0, slice.Len())
+func (t *Translator) mapNumberMonotonicMetrics(
+	ctx context.Context,
+	consumer TimeSeriesConsumer,
+	name string,
+	slice pdata.NumberDataPointSlice,
+	additionalTags []string,
+	host string,
+) {
 	for i := 0; i < slice.Len(); i++ {
 		p := slice.At(i)
 		ts := uint64(p.Timestamp())
+		startTs := uint64(p.StartTimestamp())
 		tags := getTags(p.Attributes())
-		tags = append(tags, attrTags...)
+		tags = append(tags, additionalTags...)
 
 		var val float64
 		switch p.Type() {
@@ -133,14 +157,14 @@ func (t *Translator) mapNumberMonotonicMetrics(name string, slice pdata.NumberDa
 			continue
 		}
 
-		if dx, ok := t.prevPts.putAndGetDiff(name, tags, ts, val); ok {
-			ms = append(ms, metrics.NewCount(name, ts, dx, tags))
+		if dx, ok := t.prevPts.MonotonicDiff(name, tags, startTs, ts, val); ok {
+			consumer.ConsumeTimeSeries(ctx, name, Count, ts, dx, tags, host)
 		}
 	}
-	return ms
 }
 
 func getBounds(p pdata.HistogramDataPoint, idx int) (lowerBound float64, upperBound float64) {
+	// See https://github.com/open-telemetry/opentelemetry-proto/blob/v0.10.0/opentelemetry/proto/metrics/v1/metrics.proto#L427-L439
 	lowerBound = math.Inf(-1)
 	upperBound = math.Inf(1)
 	if idx > 0 {
@@ -152,27 +176,83 @@ func getBounds(p pdata.HistogramDataPoint, idx int) (lowerBound float64, upperBo
 	return
 }
 
-func (t *Translator) getLegacyBuckets(name string, p pdata.HistogramDataPoint, delta bool, tags []string) []datadog.Metric {
+func (t *Translator) getSketchBuckets(
+	ctx context.Context,
+	consumer SketchConsumer,
+	name string,
+	p pdata.HistogramDataPoint,
+	delta bool,
+	tags []string,
+	host string,
+) {
+	startTs := uint64(p.StartTimestamp())
+	ts := uint64(p.Timestamp())
+	as := &quantile.Agent{}
+	for j := range p.BucketCounts() {
+		lowerBound, upperBound := getBounds(p, j)
+
+		// Compute temporary bucketTags to have unique keys in the t.prevPts cache for each bucket
+		// The bucketTags are computed from the bounds before the InsertInterpolate fix is done,
+		// otherwise in the case where p.ExplicitBounds() has a size of 1 (eg. [0]), the two buckets
+		// would have the same bucketTags (lower_bound:0 and upper_bound:0), resulting in a buggy behavior.
+		bucketTags := []string{
+			fmt.Sprintf("lower_bound:%s", formatFloat(lowerBound)),
+			fmt.Sprintf("upper_bound:%s", formatFloat(upperBound)),
+		}
+		bucketTags = append(bucketTags, tags...)
+
+		// InsertInterpolate doesn't work with an infinite bound; insert in to the bucket that contains the non-infinite bound
+		// https://github.com/DataDog/datadog-agent/blob/7.31.0/pkg/aggregator/check_sampler.go#L107-L111
+		if math.IsInf(upperBound, 1) {
+			upperBound = lowerBound
+		} else if math.IsInf(lowerBound, -1) {
+			lowerBound = upperBound
+		}
+
+		count := p.BucketCounts()[j]
+		if delta {
+			as.InsertInterpolate(lowerBound, upperBound, uint(count))
+		} else if dx, ok := t.prevPts.Diff(name, bucketTags, startTs, ts, float64(count)); ok {
+			as.InsertInterpolate(lowerBound, upperBound, uint(dx))
+		}
+
+	}
+
+	sketch := as.Finish()
+	if sketch != nil {
+		consumer.ConsumeSketch(ctx, name, ts, sketch, tags, host)
+	}
+}
+
+func (t *Translator) getLegacyBuckets(
+	ctx context.Context,
+	consumer TimeSeriesConsumer,
+	name string,
+	p pdata.HistogramDataPoint,
+	delta bool,
+	tags []string,
+	host string,
+) {
+	startTs := uint64(p.StartTimestamp())
+	ts := uint64(p.Timestamp())
 	// We have a single metric, 'bucket', which is tagged with the bucket bounds. See:
 	// https://github.com/DataDog/integrations-core/blob/7.30.1/datadog_checks_base/datadog_checks/base/checks/openmetrics/v2/transformers/histogram.py
-	ms := make([]datadog.Metric, 0, len(p.BucketCounts()))
 	fullName := fmt.Sprintf("%s.bucket", name)
 	for idx, val := range p.BucketCounts() {
 		lowerBound, upperBound := getBounds(p, idx)
-		bucketTags := append(tags,
+		bucketTags := []string{
 			fmt.Sprintf("lower_bound:%s", formatFloat(lowerBound)),
 			fmt.Sprintf("upper_bound:%s", formatFloat(upperBound)),
-		)
+		}
+		bucketTags = append(bucketTags, tags...)
 
 		count := float64(val)
-		ts := uint64(p.Timestamp())
 		if delta {
-			ms = append(ms, metrics.NewCount(fullName, ts, count, bucketTags))
-		} else if dx, ok := t.prevPts.putAndGetDiff(fullName, bucketTags, ts, count); ok {
-			ms = append(ms, metrics.NewCount(fullName, ts, dx, bucketTags))
+			consumer.ConsumeTimeSeries(ctx, fullName, Count, ts, count, bucketTags, host)
+		} else if dx, ok := t.prevPts.Diff(fullName, bucketTags, startTs, ts, count); ok {
+			consumer.ConsumeTimeSeries(ctx, fullName, Count, ts, dx, bucketTags, host)
 		}
 	}
-	return ms
 }
 
 // mapHistogramMetrics maps double histogram metrics slices to Datadog metrics
@@ -188,42 +268,51 @@ func (t *Translator) getLegacyBuckets(name string, p pdata.HistogramDataPoint, d
 // We follow a similar approach to our OpenMetrics check:
 // we report sum and count by default; buckets count can also
 // be reported (opt-in) tagged by lower bound.
-func (t *Translator) mapHistogramMetrics(name string, slice pdata.HistogramDataPointSlice, delta bool, attrTags []string) []datadog.Metric {
-	// Allocate assuming none are nil and no buckets
-	ms := make([]datadog.Metric, 0, 2*slice.Len())
+func (t *Translator) mapHistogramMetrics(
+	ctx context.Context,
+	consumer Consumer,
+	name string,
+	slice pdata.HistogramDataPointSlice,
+	delta bool,
+	additionalTags []string,
+	host string,
+) {
 	for i := 0; i < slice.Len(); i++ {
 		p := slice.At(i)
+		startTs := uint64(p.StartTimestamp())
 		ts := uint64(p.Timestamp())
 		tags := getTags(p.Attributes())
-		tags = append(tags, attrTags...)
+		tags = append(tags, additionalTags...)
 
-		{
+		if t.cfg.SendCountSum {
 			count := float64(p.Count())
 			countName := fmt.Sprintf("%s.count", name)
 			if delta {
-				ms = append(ms, metrics.NewCount(countName, ts, count, tags))
-			} else if dx, ok := t.prevPts.putAndGetDiff(countName, tags, ts, count); ok {
-				ms = append(ms, metrics.NewCount(countName, ts, dx, tags))
+				consumer.ConsumeTimeSeries(ctx, countName, Count, ts, count, tags, host)
+			} else if dx, ok := t.prevPts.Diff(countName, tags, startTs, ts, count); ok {
+				consumer.ConsumeTimeSeries(ctx, countName, Count, ts, dx, tags, host)
 			}
 		}
 
-		{
+		if t.cfg.SendCountSum {
 			sum := p.Sum()
 			sumName := fmt.Sprintf("%s.sum", name)
 			if !t.isSkippable(sumName, p.Sum()) {
 				if delta {
-					ms = append(ms, metrics.NewCount(sumName, ts, sum, tags))
-				} else if dx, ok := t.prevPts.putAndGetDiff(sumName, tags, ts, sum); ok {
-					ms = append(ms, metrics.NewCount(sumName, ts, dx, tags))
+					consumer.ConsumeTimeSeries(ctx, sumName, Count, ts, sum, tags, host)
+				} else if dx, ok := t.prevPts.Diff(sumName, tags, startTs, ts, sum); ok {
+					consumer.ConsumeTimeSeries(ctx, sumName, Count, ts, dx, tags, host)
 				}
 			}
 		}
 
-		if t.cfg.Buckets {
-			ms = append(ms, t.getLegacyBuckets(name, p, delta, tags)...)
+		switch t.cfg.HistMode {
+		case HistogramModeCounters:
+			t.getLegacyBuckets(ctx, consumer, name, p, delta, tags, host)
+		case HistogramModeDistributions:
+			t.getSketchBuckets(ctx, consumer, name, p, delta, tags, host)
 		}
 	}
-	return ms
 }
 
 // formatFloat formats a float number as close as possible to what
@@ -254,28 +343,35 @@ func getQuantileTag(quantile float64) string {
 }
 
 // mapSummaryMetrics maps summary datapoints into Datadog metrics
-func (t *Translator) mapSummaryMetrics(name string, slice pdata.SummaryDataPointSlice, attrTags []string) []datadog.Metric {
-	// Allocate assuming none are nil and no quantiles
-	ms := make([]datadog.Metric, 0, 2*slice.Len())
+func (t *Translator) mapSummaryMetrics(
+	ctx context.Context,
+	consumer TimeSeriesConsumer,
+	name string,
+	slice pdata.SummaryDataPointSlice,
+	additionalTags []string,
+	host string,
+) {
+
 	for i := 0; i < slice.Len(); i++ {
 		p := slice.At(i)
+		startTs := uint64(p.StartTimestamp())
 		ts := uint64(p.Timestamp())
 		tags := getTags(p.Attributes())
-		tags = append(tags, attrTags...)
+		tags = append(tags, additionalTags...)
 
 		// count and sum are increasing; we treat them as cumulative monotonic sums.
 		{
 			countName := fmt.Sprintf("%s.count", name)
-			if dx, ok := t.prevPts.putAndGetDiff(countName, tags, ts, float64(p.Count())); ok && !t.isSkippable(countName, dx) {
-				ms = append(ms, metrics.NewCount(countName, ts, dx, tags))
+			if dx, ok := t.prevPts.Diff(countName, tags, startTs, ts, float64(p.Count())); ok && !t.isSkippable(countName, dx) {
+				consumer.ConsumeTimeSeries(ctx, countName, Count, ts, dx, tags, host)
 			}
 		}
 
 		{
 			sumName := fmt.Sprintf("%s.sum", name)
 			if !t.isSkippable(sumName, p.Sum()) {
-				if dx, ok := t.prevPts.putAndGetDiff(sumName, tags, ts, p.Sum()); ok {
-					ms = append(ms, metrics.NewCount(sumName, ts, dx, tags))
+				if dx, ok := t.prevPts.Diff(sumName, tags, startTs, ts, p.Sum()); ok {
+					consumer.ConsumeTimeSeries(ctx, sumName, Count, ts, dx, tags, host)
 				}
 			}
 		}
@@ -290,21 +386,17 @@ func (t *Translator) mapSummaryMetrics(name string, slice pdata.SummaryDataPoint
 					continue
 				}
 
-				quantileTags := append(tags, getQuantileTag(q.Quantile()))
-				ms = append(ms,
-					metrics.NewGauge(fullName, ts, q.Value(), quantileTags),
-				)
+				quantileTags := []string{getQuantileTag(q.Quantile())}
+				quantileTags = append(quantileTags, tags...)
+				consumer.ConsumeTimeSeries(ctx, fullName, Gauge, ts, q.Value(), quantileTags, host)
 			}
 		}
 	}
-	return ms
 }
 
 // MapMetrics maps OTLP metrics into the DataDog format
-func (t *Translator) MapMetrics(md pdata.Metrics) (series []datadog.Metric) {
-	pushTime := uint64(time.Now().UTC().UnixNano())
+func (t *Translator) MapMetrics(ctx context.Context, md pdata.Metrics, consumer Consumer) error {
 	rms := md.ResourceMetrics()
-	seenHosts := make(map[string]struct{})
 	for i := 0; i < rms.Len(); i++ {
 		rm := rms.At(i)
 
@@ -312,40 +404,49 @@ func (t *Translator) MapMetrics(md pdata.Metrics) (series []datadog.Metric) {
 
 		// Only fetch attribute tags if they're not already converted into labels.
 		// Otherwise some tags would be present twice in a metric's tag list.
-		if !t.cfg.ExporterConfig.ResourceAttributesAsTags {
+		if !t.cfg.ResourceAttributesAsTags {
 			attributeTags = attributes.TagsFromAttributes(rm.Resource().Attributes())
 		}
 
 		host, ok := attributes.HostnameFromAttributes(rm.Resource().Attributes())
 		if !ok {
-			fallbackHost, err := t.fallbackHostnameProvider.Hostname(context.Background())
-			host = ""
-			if err == nil {
-				host = fallbackHost
+			var err error
+			host, err = t.cfg.fallbackHostnameProvider.Hostname(context.Background())
+			if err != nil {
+				return fmt.Errorf("failed to get fallback host: %w", err)
 			}
 		}
-		seenHosts[host] = struct{}{}
+
+		// Track hosts if the consumer is a HostConsumer.
+		if c, ok := consumer.(HostConsumer); ok {
+			c.ConsumeHost(host)
+		}
 
 		ilms := rm.InstrumentationLibraryMetrics()
 		for j := 0; j < ilms.Len(); j++ {
 			ilm := ilms.At(j)
 			metricsArray := ilm.Metrics()
+
+			var additionalTags []string
+			if t.cfg.InstrumentationLibraryMetadataAsTags {
+				additionalTags = append(attributeTags, instrumentationlibrary.TagsFromInstrumentationLibraryMetadata(ilm.InstrumentationLibrary())...)
+			}
+
 			for k := 0; k < metricsArray.Len(); k++ {
 				md := metricsArray.At(k)
-				var datapoints []datadog.Metric
 				switch md.DataType() {
 				case pdata.MetricDataTypeGauge:
-					datapoints = t.mapNumberMetrics(md.Name(), metrics.Gauge, md.Gauge().DataPoints(), attributeTags)
+					t.mapNumberMetrics(ctx, consumer, md.Name(), Gauge, md.Gauge().DataPoints(), additionalTags, host)
 				case pdata.MetricDataTypeSum:
 					switch md.Sum().AggregationTemporality() {
-					case pdata.AggregationTemporalityCumulative:
+					case pdata.MetricAggregationTemporalityCumulative:
 						if t.cfg.SendMonotonic && isCumulativeMonotonic(md) {
-							datapoints = t.mapNumberMonotonicMetrics(md.Name(), md.Sum().DataPoints(), attributeTags)
+							t.mapNumberMonotonicMetrics(ctx, consumer, md.Name(), md.Sum().DataPoints(), additionalTags, host)
 						} else {
-							datapoints = t.mapNumberMetrics(md.Name(), metrics.Gauge, md.Sum().DataPoints(), attributeTags)
+							t.mapNumberMetrics(ctx, consumer, md.Name(), Gauge, md.Sum().DataPoints(), additionalTags, host)
 						}
-					case pdata.AggregationTemporalityDelta:
-						datapoints = t.mapNumberMetrics(md.Name(), metrics.Count, md.Sum().DataPoints(), attributeTags)
+					case pdata.MetricAggregationTemporalityDelta:
+						t.mapNumberMetrics(ctx, consumer, md.Name(), Count, md.Sum().DataPoints(), additionalTags, host)
 					default: // pdata.AggregationTemporalityUnspecified or any other not supported type
 						t.logger.Debug("Unknown or unsupported aggregation temporality",
 							zap.String(metricName, md.Name()),
@@ -355,9 +456,9 @@ func (t *Translator) MapMetrics(md pdata.Metrics) (series []datadog.Metric) {
 					}
 				case pdata.MetricDataTypeHistogram:
 					switch md.Histogram().AggregationTemporality() {
-					case pdata.AggregationTemporalityCumulative, pdata.AggregationTemporalityDelta:
-						delta := md.Histogram().AggregationTemporality() == pdata.AggregationTemporalityDelta
-						datapoints = t.mapHistogramMetrics(md.Name(), md.Histogram().DataPoints(), delta, attributeTags)
+					case pdata.MetricAggregationTemporalityCumulative, pdata.MetricAggregationTemporalityDelta:
+						delta := md.Histogram().AggregationTemporality() == pdata.MetricAggregationTemporalityDelta
+						t.mapHistogramMetrics(ctx, consumer, md.Name(), md.Histogram().DataPoints(), delta, additionalTags, host)
 					default: // pdata.AggregationTemporalityUnspecified or any other not supported type
 						t.logger.Debug("Unknown or unsupported aggregation temporality",
 							zap.String("metric name", md.Name()),
@@ -366,26 +467,13 @@ func (t *Translator) MapMetrics(md pdata.Metrics) (series []datadog.Metric) {
 						continue
 					}
 				case pdata.MetricDataTypeSummary:
-					datapoints = t.mapSummaryMetrics(md.Name(), md.Summary().DataPoints(), attributeTags)
+					t.mapSummaryMetrics(ctx, consumer, md.Name(), md.Summary().DataPoints(), additionalTags, host)
 				default: // pdata.MetricDataTypeNone or any other not supported type
 					t.logger.Debug("Unknown or unsupported metric type", zap.String(metricName, md.Name()), zap.Any("data type", md.DataType()))
 					continue
 				}
-
-				for i := range datapoints {
-					datapoints[i].SetHost(host)
-				}
-
-				series = append(series, datapoints...)
 			}
 		}
 	}
-
-	for host := range seenHosts {
-		// Report the host as running
-		runningMetric := metrics.DefaultMetrics("metrics", host, pushTime, t.buildInfo)
-		series = append(series, runningMetric...)
-	}
-
-	return
+	return nil
 }

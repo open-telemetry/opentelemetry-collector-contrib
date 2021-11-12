@@ -23,7 +23,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/config/configcheck"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configtest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -38,7 +37,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 	cfg := factory.CreateDefaultConfig()
 
 	assert.Equal(t, &dtconfig.Config{
-		ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
+		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
 		RetrySettings:    exporterhelper.DefaultRetrySettings(),
 		QueueSettings:    exporterhelper.DefaultQueueSettings(),
 		ResourceToTelemetrySettings: resourcetotelemetry.Settings{
@@ -49,7 +48,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 		DefaultDimensions: make(map[string]string),
 	}, cfg, "failed to create default config")
 
-	assert.NoError(t, configcheck.ValidateConfig(cfg))
+	assert.NoError(t, configtest.CheckConfigStruct(cfg))
 }
 
 // TestLoadConfig tests that the configuration is loaded correctly
@@ -65,11 +64,11 @@ func TestLoadConfig(t *testing.T) {
 	require.NotNil(t, cfg)
 
 	t.Run("defaults", func(t *testing.T) {
-		defaultConfig := cfg.Exporters[config.NewIDWithName(typeStr, "defaults")].(*dtconfig.Config)
+		defaultConfig := cfg.Exporters[config.NewComponentIDWithName(typeStr, "defaults")].(*dtconfig.Config)
 		err = defaultConfig.ValidateAndConfigureHTTPClientSettings()
 		require.NoError(t, err)
 		assert.Equal(t, &dtconfig.Config{
-			ExporterSettings: config.NewExporterSettings(config.NewIDWithName(typeStr, "defaults")),
+			ExporterSettings: config.NewExporterSettings(config.NewComponentIDWithName(typeStr, "defaults")),
 			RetrySettings:    exporterhelper.DefaultRetrySettings(),
 			QueueSettings:    exporterhelper.DefaultQueueSettings(),
 
@@ -84,12 +83,12 @@ func TestLoadConfig(t *testing.T) {
 		}, defaultConfig)
 	})
 	t.Run("valid config", func(t *testing.T) {
-		validConfig := cfg.Exporters[config.NewIDWithName(typeStr, "valid")].(*dtconfig.Config)
+		validConfig := cfg.Exporters[config.NewComponentIDWithName(typeStr, "valid")].(*dtconfig.Config)
 		err = validConfig.ValidateAndConfigureHTTPClientSettings()
 
 		require.NoError(t, err)
 		assert.Equal(t, &dtconfig.Config{
-			ExporterSettings: config.NewExporterSettings(config.NewIDWithName(typeStr, "valid")),
+			ExporterSettings: config.NewExporterSettings(config.NewComponentIDWithName(typeStr, "valid")),
 			RetrySettings:    exporterhelper.DefaultRetrySettings(),
 			QueueSettings:    exporterhelper.DefaultQueueSettings(),
 
@@ -111,12 +110,12 @@ func TestLoadConfig(t *testing.T) {
 		}, validConfig)
 	})
 	t.Run("valid config with tags", func(t *testing.T) {
-		validConfig := cfg.Exporters[config.NewIDWithName(typeStr, "valid_tags")].(*dtconfig.Config)
+		validConfig := cfg.Exporters[config.NewComponentIDWithName(typeStr, "valid_tags")].(*dtconfig.Config)
 		err = validConfig.ValidateAndConfigureHTTPClientSettings()
 
 		require.NoError(t, err)
 		assert.Equal(t, &dtconfig.Config{
-			ExporterSettings: config.NewExporterSettings(config.NewIDWithName(typeStr, "valid_tags")),
+			ExporterSettings: config.NewExporterSettings(config.NewComponentIDWithName(typeStr, "valid_tags")),
 			RetrySettings:    exporterhelper.DefaultRetrySettings(),
 			QueueSettings:    exporterhelper.DefaultQueueSettings(),
 
@@ -136,13 +135,13 @@ func TestLoadConfig(t *testing.T) {
 		}, validConfig)
 	})
 	t.Run("bad endpoint", func(t *testing.T) {
-		badEndpointConfig := cfg.Exporters[config.NewIDWithName(typeStr, "bad_endpoint")].(*dtconfig.Config)
+		badEndpointConfig := cfg.Exporters[config.NewComponentIDWithName(typeStr, "bad_endpoint")].(*dtconfig.Config)
 		err = badEndpointConfig.ValidateAndConfigureHTTPClientSettings()
 		require.Error(t, err)
 	})
 
 	t.Run("missing api token", func(t *testing.T) {
-		missingTokenConfig := cfg.Exporters[config.NewIDWithName(typeStr, "missing_token")].(*dtconfig.Config)
+		missingTokenConfig := cfg.Exporters[config.NewComponentIDWithName(typeStr, "missing_token")].(*dtconfig.Config)
 		err = missingTokenConfig.ValidateAndConfigureHTTPClientSettings()
 		require.Error(t, err)
 	})

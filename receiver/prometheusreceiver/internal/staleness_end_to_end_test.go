@@ -24,6 +24,7 @@ import (
 	"strings"
 	"sync/atomic"
 	"testing"
+	"time"
 
 	"github.com/gogo/protobuf/proto"
 	"github.com/golang/snappy"
@@ -32,9 +33,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configmapprovider"
 	"go.opentelemetry.io/collector/processor/batchprocessor"
 	"go.opentelemetry.io/collector/service"
-	"go.opentelemetry.io/collector/service/parserprovider"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 
@@ -127,7 +128,8 @@ processors:
 exporters:
   prometheusremotewrite:
     endpoint: %q
-    insecure: true
+    tls:
+      insecure: true
 
 service:
   pipelines:
@@ -151,8 +153,8 @@ service:
 	}
 
 	appSettings := service.CollectorSettings{
-		Factories:      factories,
-		ParserProvider: parserprovider.NewInMemory(strings.NewReader(config)),
+		Factories:         factories,
+		ConfigMapProvider: configmapprovider.NewInMemoryMapProvider(strings.NewReader(config)),
 		BuildInfo: component.BuildInfo{
 			Command:     "otelcol",
 			Description: "OpenTelemetry Collector",
@@ -165,11 +167,12 @@ service:
 			}),
 		},
 	}
+
 	app, err := service.New(appSettings)
 	require.Nil(t, err)
 
 	go func() {
-		if err := app.Run(); err != nil {
+		if err = app.Run(context.Background()); err != nil {
 			t.Error(err)
 		}
 	}()
@@ -188,6 +191,7 @@ service:
 	if false {
 		defer app.Shutdown()
 	}
+	time.Sleep(60 * time.Second)
 
 	// 5. Let's wait on 10 fetches.
 	var wReqL []*prompb.WriteRequest

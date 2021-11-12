@@ -42,7 +42,7 @@ func NewFactory() component.ReceiverFactory {
 
 func createDefaultConfig() config.Receiver {
 	return &Config{
-		ReceiverSettings: config.NewReceiverSettings(config.NewID(typeStr)),
+		ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
 		ResourceAttributes: resourceAttributes{
 			observer.PodType: map[string]string{
 				conventions.AttributeK8SPodName:       "`name`",

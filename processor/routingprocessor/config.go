@@ -15,6 +15,8 @@
 package routingprocessor
 
 import (
+	"fmt"
+
 	"go.opentelemetry.io/collector/config"
 )
 
@@ -25,6 +27,14 @@ type Config struct {
 	// DefaultExporters contains the list of exporters to use when a more specific record can't be found in the routing table.
 	// Optional.
 	DefaultExporters []string `mapstructure:"default_exporters"`
+
+	// AttributeSource defines where the attribute defined in `from_attribute` is searched for.
+	// The allowed values are:
+	// - "context" - the attribute must exist in the incoming context
+	// - "resource" - the attribute must exist in resource attributes
+	// The default value is "context".
+	// Optional.
+	AttributeSource AttributeSource `mapstructure:"attribute_source"`
 
 	// FromAttribute contains the attribute name to look up the route value. This attribute should be part of the context propagated
 	// down from the previous receivers and/or processors. If all the receivers and processors are propagating the entire context correctly,
@@ -38,6 +48,45 @@ type Config struct {
 	// Required.
 	Table []RoutingTableItem `mapstructure:"table"`
 }
+
+// Validate checks if the processor configuration is valid.
+func (c *Config) Validate() error {
+	// validate that every route has a value for the routing attribute and has
+	// at least one exporter
+	for _, item := range c.Table {
+		if len(item.Value) == 0 {
+			return fmt.Errorf("invalid (empty) route : %w", errEmptyRoute)
+		}
+
+		if len(item.Exporters) == 0 {
+			return fmt.Errorf("invalid route %s: %w", item.Value, errNoExporters)
+		}
+	}
+
+	// validate that there's at least one item in the table
+	if len(c.Table) == 0 {
+		return fmt.Errorf("invalid routing table: %w", errNoTableItems)
+	}
+
+	// we also need a "FromAttribute" value
+	if len(c.FromAttribute) == 0 {
+		return fmt.Errorf(
+			"invalid attribute to read the route's value from: %w",
+			errNoMissingFromAttribute,
+		)
+	}
+
+	return nil
+}
+
+type AttributeSource string
+
+const (
+	contextAttributeSource  = AttributeSource("context")
+	resourceAttributeSource = AttributeSource("resource")
+
+	defaultAttributeSource = contextAttributeSource
+)
 
 // RoutingTableItem specifies how data should be routed to the different exporters
 type RoutingTableItem struct {

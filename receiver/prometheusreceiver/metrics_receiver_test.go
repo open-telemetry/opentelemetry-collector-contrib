@@ -31,7 +31,7 @@ import (
 	agentmetricspb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/metrics/v1"
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
-	gokitlog "github.com/go-kit/kit/log"
+	gokitlog "github.com/go-kit/log"
 	promcfg "github.com/prometheus/prometheus/config"
 	"github.com/prometheus/prometheus/scrape"
 	"github.com/stretchr/testify/assert"
@@ -39,14 +39,11 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.uber.org/zap"
 	"google.golang.org/protobuf/types/known/timestamppb"
 	"gopkg.in/yaml.v2"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus"
 )
-
-var logger = zap.NewNop()
 
 type mockPrometheusResponse struct {
 	code int
@@ -1367,18 +1364,17 @@ var startTimeMetricPageStartTimestamp = &timestamppb.Timestamp{Seconds: 400, Nan
 const numStartTimeMetricPageTimeseries = 11
 
 func verifyStartTimeMetricPage(t *testing.T, _ *testData, mds []*agentmetricspb.ExportMetricsServiceRequest) {
+	require.Greater(t, len(mds), 0, "At least one metric request should be present")
 	numTimeseries := 0
-	for _, cmd := range mds {
-		for _, metric := range cmd.Metrics {
-			timestamp := startTimeMetricPageStartTimestamp
-			switch metric.GetMetricDescriptor().GetType() {
-			case metricspb.MetricDescriptor_GAUGE_DOUBLE, metricspb.MetricDescriptor_GAUGE_DISTRIBUTION:
-				timestamp = nil
-			}
-			for _, ts := range metric.GetTimeseries() {
-				assert.Equal(t, timestamp.AsTime(), ts.GetStartTimestamp().AsTime(), ts.String())
-				numTimeseries++
-			}
+	for _, metric := range mds[0].Metrics {
+		timestamp := startTimeMetricPageStartTimestamp
+		switch metric.GetMetricDescriptor().GetType() {
+		case metricspb.MetricDescriptor_GAUGE_DOUBLE, metricspb.MetricDescriptor_GAUGE_DISTRIBUTION:
+			timestamp = nil
+		}
+		for _, ts := range metric.GetTimeseries() {
+			assert.Equal(t, timestamp.AsTime(), ts.GetStartTimestamp().AsTime(), ts.String())
+			numTimeseries++
 		}
 	}
 	assert.Equal(t, numStartTimeMetricPageTimeseries, numTimeseries)
@@ -1405,8 +1401,8 @@ func testEndToEnd(t *testing.T, targets []*testData, useStartTimeMetric bool) {
 	defer mp.Close()
 
 	cms := new(consumertest.MetricsSink)
-	rcvr := newPrometheusReceiver(logger, &Config{
-		ReceiverSettings:   config.NewReceiverSettings(config.NewID(typeStr)),
+	rcvr := newPrometheusReceiver(componenttest.NewNopReceiverCreateSettings(), &Config{
+		ReceiverSettings:   config.NewReceiverSettings(config.NewComponentID(typeStr)),
 		PrometheusConfig:   cfg,
 		UseStartTimeMetric: useStartTimeMetric}, cms)
 
@@ -1524,12 +1520,12 @@ func TestStartTimeMetricRegex(t *testing.T) {
 func testEndToEndRegex(t *testing.T, targets []*testData, useStartTimeMetric bool, startTimeMetricRegex string) {
 	// 1. setup mock server
 	mp, cfg, err := setupMockPrometheus(targets...)
-	require.Nilf(t, err, "Failed to create Promtheus config: %v", err)
+	require.Nilf(t, err, "Failed to create Prometheus config: %v", err)
 	defer mp.Close()
 
 	cms := new(consumertest.MetricsSink)
-	rcvr := newPrometheusReceiver(logger, &Config{
-		ReceiverSettings:     config.NewReceiverSettings(config.NewID(typeStr)),
+	rcvr := newPrometheusReceiver(componenttest.NewNopReceiverCreateSettings(), &Config{
+		ReceiverSettings:     config.NewReceiverSettings(config.NewComponentID(typeStr)),
 		PrometheusConfig:     cfg,
 		UseStartTimeMetric:   useStartTimeMetric,
 		StartTimeMetricRegex: startTimeMetricRegex}, cms)

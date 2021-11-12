@@ -25,6 +25,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/model/pdata"
 	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/docker"
 )
 
 type MetricType int32
@@ -76,7 +78,7 @@ func metricsData(
 		case MetricTypeCumulative:
 			mdMetric.SetDataType(pdata.MetricDataTypeSum)
 			mdMetric.Sum().SetIsMonotonic(true)
-			mdMetric.Sum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+			mdMetric.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
 			dps = mdMetric.Sum().DataPoints()
 		case MetricTypeGauge, MetricTypeDoubleGauge:
 			mdMetric.SetDataType(pdata.MetricDataTypeGauge)
@@ -210,9 +212,7 @@ func TestZeroValueStats(t *testing.T) {
 	config := &Config{}
 
 	now := pdata.NewTimestampFromTime(time.Now())
-	md, err := ContainerStatsToMetrics(now, stats, containers, config)
-	assert.Nil(t, err)
-	assert.NotNil(t, md)
+	md := ContainerStatsToMetrics(now, stats, containers, config)
 
 	metrics := []Metric{
 		{name: "container.cpu.usage.system", mtype: MetricTypeCumulative, unit: "ns", labelKeys: nil, values: []Value{{labelValues: nil, value: 0}}},
@@ -245,7 +245,7 @@ func statsJSON(t *testing.T) *dtypes.StatsJSON {
 	return &stats
 }
 
-func containerJSON(t *testing.T) *DockerContainer {
+func containerJSON(t *testing.T) docker.Container {
 	containerRaw, err := ioutil.ReadFile(path.Join(".", "testdata", "container.json"))
 	if err != nil {
 		t.Fatal(err)
@@ -256,9 +256,9 @@ func containerJSON(t *testing.T) *DockerContainer {
 	if err != nil {
 		t.Fatal(err)
 	}
-	return &DockerContainer{
+	return docker.Container{
 		ContainerJSON: &container,
-		EnvMap:        containerEnvToMap(container.Config.Env),
+		EnvMap:        docker.ContainerEnvToMap(container.Config.Env),
 	}
 }
 
@@ -268,9 +268,7 @@ func TestStatsToDefaultMetrics(t *testing.T) {
 	config := &Config{}
 
 	now := pdata.NewTimestampFromTime(time.Now())
-	md, err := ContainerStatsToMetrics(now, stats, containers, config)
-	assert.Nil(t, err)
-	assert.NotNil(t, md)
+	md := ContainerStatsToMetrics(now, stats, containers, config)
 
 	assertMetricsDataEqual(t, now, defaultMetrics(), nil, md)
 }
@@ -283,9 +281,7 @@ func TestStatsToAllMetrics(t *testing.T) {
 	}
 
 	now := pdata.NewTimestampFromTime(time.Now())
-	md, err := ContainerStatsToMetrics(now, stats, containers, config)
-	assert.Nil(t, err)
-	assert.NotNil(t, md)
+	md := ContainerStatsToMetrics(now, stats, containers, config)
 
 	metrics := []Metric{
 		{name: "container.blockio.io_service_bytes_recursive.read", mtype: MetricTypeCumulative, unit: "By", labelKeys: []string{"device_major", "device_minor"}, values: []Value{{labelValues: []string{"202", "0"}, value: 56500224}}},
@@ -384,9 +380,7 @@ func TestEnvVarToMetricLabels(t *testing.T) {
 	}
 
 	now := pdata.NewTimestampFromTime(time.Now())
-	md, err := ContainerStatsToMetrics(now, stats, containers, config)
-	assert.Nil(t, err)
-	assert.NotNil(t, md)
+	md := ContainerStatsToMetrics(now, stats, containers, config)
 
 	expectedLabels := map[string]string{
 		"my.env.to.metric.label":       "my_env_var_value",
@@ -407,9 +401,7 @@ func TestContainerLabelToMetricLabels(t *testing.T) {
 	}
 
 	now := pdata.NewTimestampFromTime(time.Now())
-	md, err := ContainerStatsToMetrics(now, stats, containers, config)
-	assert.Nil(t, err)
-	assert.NotNil(t, md)
+	md := ContainerStatsToMetrics(now, stats, containers, config)
 
 	expectedLabels := map[string]string{
 		"my.docker.to.metric.label":       "my_specified_docker_label_value",

@@ -48,7 +48,7 @@ func (e *tracesExporter) pushTraces(ctx context.Context, td pdata.Traces) error 
 
 	err := e.converter.WriteTraces(ctx, td, batch)
 	if err != nil {
-		return consumererror.Permanent(err)
+		return consumererror.NewPermanent(err)
 	}
 	return batch.flushAndClose(ctx)
 }
@@ -101,7 +101,7 @@ func (e *metricsExporter) pushMetrics(ctx context.Context, md pdata.Metrics) err
 
 	err := e.converter.WriteMetrics(ctx, md, batch)
 	if err != nil {
-		return consumererror.Permanent(err)
+		return consumererror.NewPermanent(err)
 	}
 	return batch.flushAndClose(ctx)
 }
@@ -141,7 +141,7 @@ func (e *logsExporter) pushLogs(ctx context.Context, ld pdata.Logs) error {
 
 	err := e.converter.WriteLogs(ctx, ld, batch)
 	if err != nil {
-		return consumererror.Permanent(err)
+		return consumererror.NewPermanent(err)
 	}
 	return batch.flushAndClose(ctx)
 }

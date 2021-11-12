@@ -25,34 +25,13 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 )
 
-type testingHecConfiguration struct {
-	sourceKey     string
-	sourceTypeKey string
-	indexKey      string
-	hostKey       string
-}
-
-func (t *testingHecConfiguration) GetSourceKey() string {
-	return t.sourceKey
-}
-
-func (t *testingHecConfiguration) GetSourceTypeKey() string {
-	return t.sourceTypeKey
-}
-
-func (t *testingHecConfiguration) GetIndexKey() string {
-	return t.indexKey
-}
-
-func (t *testingHecConfiguration) GetHostKey() string {
-	return t.hostKey
-}
-
-var defaultTestingHecConfig = &testingHecConfiguration{
-	sourceKey:     splunk.DefaultSourceLabel,
-	sourceTypeKey: splunk.DefaultSourceTypeLabel,
-	indexKey:      splunk.DefaultIndexLabel,
-	hostKey:       conventions.AttributeHostName,
+var defaultTestingHecConfig = &Config{
+	HecToOtelAttrs: splunk.HecToOtelAttrs{
+		Source:     splunk.DefaultSourceLabel,
+		SourceType: splunk.DefaultSourceTypeLabel,
+		Index:      splunk.DefaultIndexLabel,
+		Host:       conventions.AttributeHostName,
+	},
 }
 
 func Test_SplunkHecToLogData(t *testing.T) {
@@ -64,7 +43,7 @@ func Test_SplunkHecToLogData(t *testing.T) {
 		name      string
 		event     splunk.Event
 		output    pdata.ResourceLogsSlice
-		hecConfig splunk.HECConfiguration
+		hecConfig *Config
 		wantErr   error
 	}{
 		{
@@ -124,7 +103,7 @@ func Test_SplunkHecToLogData(t *testing.T) {
 			output: func() pdata.ResourceLogsSlice {
 				logsSlice := createLogsSlice(nanoseconds)
 				arrVal := pdata.NewAttributeValueArray()
-				arr := arrVal.ArrayVal()
+				arr := arrVal.SliceVal()
 				arr.AppendEmpty().SetStringVal("foo")
 				arr.AppendEmpty().SetStringVal("bar")
 				arrVal.CopyTo(logsSlice.At(0).InstrumentationLibraryLogs().At(0).Logs().At(0).Body())
@@ -149,7 +128,7 @@ func Test_SplunkHecToLogData(t *testing.T) {
 			output: func() pdata.ResourceLogsSlice {
 				logsSlice := createLogsSlice(nanoseconds)
 				foosArr := pdata.NewAttributeValueArray()
-				foos := foosArr.ArrayVal()
+				foos := foosArr.SliceVal()
 				foos.EnsureCapacity(3)
 				foos.AppendEmpty().SetStringVal("foo")
 				foos.AppendEmpty().SetStringVal("bar")
@@ -197,11 +176,13 @@ func Test_SplunkHecToLogData(t *testing.T) {
 					"foo": "bar",
 				},
 			},
-			hecConfig: &testingHecConfiguration{
-				sourceKey:     "mysource",
-				sourceTypeKey: "mysourcetype",
-				indexKey:      "myindex",
-				hostKey:       "myhost",
+			hecConfig: &Config{
+				HecToOtelAttrs: splunk.HecToOtelAttrs{
+					Source:     "mysource",
+					SourceType: "mysourcetype",
+					Index:      "myindex",
+					Host:       "myhost",
+				},
 			},
 			output: func() pdata.ResourceLogsSlice {
 				lrs := pdata.NewResourceLogsSlice()
@@ -285,7 +266,7 @@ func Test_ConvertAttributeValueArray(t *testing.T) {
 	value, err := convertInterfaceToAttributeValue(zap.NewNop(), []interface{}{"foo"})
 	assert.NoError(t, err)
 	arrValue := pdata.NewAttributeValueArray()
-	arr := arrValue.ArrayVal()
+	arr := arrValue.SliceVal()
 	arr.AppendEmpty().SetStringVal("foo")
 	assert.Equal(t, arrValue, value)
 }

@@ -102,6 +102,10 @@ updates:
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
+    directory: "/exporter/jaegerthrifthttpexporter"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
     directory: "/exporter/kafkaexporter"
     schedule:
       interval: "weekly"
@@ -150,6 +154,10 @@ updates:
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
+    directory: "/exporter/skywalkingexporter"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
     directory: "/exporter/splunkhecexporter"
     schedule:
       interval: "weekly"
@@ -166,11 +174,15 @@ updates:
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
+    directory: "/exporter/tencentcloudlogserviceexporter"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
     directory: "/exporter/zipkinexporter"
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
-    directory: "/extension/awsxrayproxy"
+    directory: "/extension/awsproxy"
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
@@ -266,6 +278,10 @@ updates:
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
+    directory: "/internal/docker"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
     directory: "/internal/interval"
     schedule:
       interval: "weekly"
@@ -295,10 +311,6 @@ updates:
       interval: "weekly"
   - package-ecosystem: "gomod"
     directory: "/pkg/batchpersignal"
-    schedule:
-      interval: "weekly"
-  - package-ecosystem: "gomod"
-    directory: "/pkg/batchpertrace"
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
@@ -346,7 +358,7 @@ updates:
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
-    directory: "/processor/k8sprocessor"
+    directory: "/processor/k8sattributesprocessor"
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
@@ -402,6 +414,10 @@ updates:
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
+    directory: "/receiver/cloudfoundryreceiver"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
     directory: "/receiver/collectdreceiver"
     schedule:
       interval: "weekly"
@@ -426,7 +442,15 @@ updates:
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
+    directory: "/receiver/googlecloudspannerreceiver"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
     directory: "/receiver/hostmetricsreceiver"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
+    directory: "/receiver/httpdreceiver"
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
@@ -442,7 +466,15 @@ updates:
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
+    directory: "/receiver/journaldreceiver"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
     directory: "/receiver/k8sclusterreceiver"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
+    directory: "/receiver/k8seventsreceiver"
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
@@ -459,6 +491,14 @@ updates:
       interval: "weekly"
   - package-ecosystem: "gomod"
     directory: "/receiver/memcachedreceiver"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
+    directory: "/receiver/mongodbatlasreceiver"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
+    directory: "/receiver/mysqlreceiver"
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
@@ -491,10 +531,6 @@ updates:
       interval: "weekly"
   - package-ecosystem: "gomod"
     directory: "/receiver/sapmreceiver"
-    schedule:
-      interval: "weekly"
-  - package-ecosystem: "gomod"
-    directory: "/receiver/scrapererror"
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"

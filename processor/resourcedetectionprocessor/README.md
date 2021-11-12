@@ -17,6 +17,21 @@ details of which are currently pending confirmation in the OpenTelemetry specifi
     * host.name
     * os.type
 
+By default `host.name` is being set to FQDN if possible, and a hostname provided by OS used as fallback.
+This logic can be changed with `hostname_sources` configuration which is set to `["dns", "os"]` by default.
+
+Use the following config to avoid getting FQDN and apply hostname provided by OS only:
+
+    ```yaml
+    detectors: ["system"]
+    system:
+        hostname_sources: ["os"]
+    ```
+
+    * all valid options for hostname_sources:
+        * "dns"
+        * "os"
+
 Use the Docker detector (see below) if running the Collector as a Docker container.
 
 * Docker metadata: Queries the Docker daemon to retrieve the following resource attributes from the host machine:
@@ -100,7 +115,6 @@ ec2:
 
     * cloud.provider ("aws")
     * cloud.platform ("aws_eks")
-    * k8s.cluster.name (name of the EKS cluster)
     
 * Azure: Queries the [Azure Instance Metadata Service](https://aka.ms/azureimds) to retrieve the following resource attributes:
 
