@@ -53,6 +53,7 @@ extension/httpforwarder/                             @open-telemetry/collector-c
 extension/observer/                                  @open-telemetry/collector-contrib-approvers @asuresh4 @jrcamp
 extension/bearertokenauthextension/                  @open-telemetry/collector-contrib-approvers @jpkrohling @pavankrish123
 extension/oauth2clientauthextension/                 @open-telemetry/collector-contrib-approvers @pavankrish123
+extension/asapauth                                   @open-telemetry/collector-contrib-approvers @jamesmoessis @MovieStoreGuy
 
 internal/aws/                                        @open-telemetry/collector-contrib-approvers @anuraaga @mxiamxia
 internal/docker/                                     @open-telemetry/collector-contrib-approvers @mstumpfx @rmfitzpatrick
