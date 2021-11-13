@@ -18,6 +18,7 @@ import (
 	"context"
 	"time"
 
+	"github.com/Shopify/sarama"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
@@ -39,6 +40,8 @@ const (
 	defaultMetadataFull = true
 	// default max.message.bytes for the producer
 	defaultProducerMaxMessageBytes = 1000000
+	// default required_acks for the producer
+	defaultProducerRequiredAcks = sarama.WaitForLocal
 )
 
 // FactoryOption applies changes to kafkaExporterFactory.
@@ -91,6 +94,7 @@ func createDefaultConfig() config.Exporter {
 		},
 		Producer: Producer{
 			MaxMessageBytes: defaultProducerMaxMessageBytes,
+			RequiredAcks:    defaultProducerRequiredAcks,
 		},
 	}
 }

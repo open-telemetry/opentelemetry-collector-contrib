@@ -19,6 +19,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/Shopify/sarama"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -72,6 +73,7 @@ func TestLoadConfig(t *testing.T) {
 		},
 		Producer: Producer{
 			MaxMessageBytes: 10000000,
+			RequiredAcks:    sarama.WaitForAll,
 		},
 	}, c)
 }

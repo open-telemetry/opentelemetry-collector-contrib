@@ -17,6 +17,7 @@ package kafkaexporter
 import (
 	"time"
 
+	"github.com/Shopify/sarama"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
@@ -67,6 +68,13 @@ type Metadata struct {
 type Producer struct {
 	// Maximum message bytes the producer will accept to produce.
 	MaxMessageBytes int `mapstructure:"max_message_bytes"`
+
+	// RequiredAcks Number of Acknowledgements required to assume that a message has been sent.
+	// The options are:
+	//   0 -> NoResponse.  doesn't send any response
+	//   1 -> WaitForLocal. waits for only the local commit to succeed before responding ( default )
+	//   -1 -> WaitForAll. waits for all in-sync replicas to commit before responding.
+	RequiredAcks sarama.RequiredAcks `mapstructure:"required_acks"`
 }
 
 // MetadataRetry defines retry configuration for Metadata.
