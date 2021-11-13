@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package filterset
+package filterset // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterset"
 
 // FilterSet is an interface for matching strings against a set of filters.
 type FilterSet interface {

@@ -15,7 +15,7 @@
 //go:build !windows
 // +build !windows
 
-package podmanreceiver
+package podmanreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/podmanreceiver"
 
 import (
 	"bufio"

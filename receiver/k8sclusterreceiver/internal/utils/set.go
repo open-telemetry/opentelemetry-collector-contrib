@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package utils
+package utils // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/utils"
 
 // StringSliceToMap converts a slice of strings into a map with keys from the slice
 func StringSliceToMap(strings []string) map[string]bool {

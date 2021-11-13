@@ -15,7 +15,7 @@
 //go:build !linux
 // +build !linux
 
-package cadvisor
+package cadvisor // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver/internal/cadvisor"
 
 import (
 	"go.opentelemetry.io/collector/model/pdata"

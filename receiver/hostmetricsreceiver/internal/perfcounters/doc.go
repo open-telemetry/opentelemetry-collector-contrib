@@ -16,4 +16,4 @@
 // https://godoc.org/github.com/leoluk/perflib_exporter/perflib that
 // provides functions to scrape raw performance counter data, without
 // calculating rates or formatting them, from the registry.
-package perfcounters
+package perfcounters // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/perfcounters"

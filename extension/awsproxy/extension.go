@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package awsproxy
+package awsproxy // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/awsproxy"
 
 import (
 	"context"

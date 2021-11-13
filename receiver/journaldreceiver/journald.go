@@ -15,7 +15,7 @@
 //go:build linux
 // +build linux
 
-package journaldreceiver
+package journaldreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/journaldreceiver"
 
 import (
 	"github.com/open-telemetry/opentelemetry-log-collection/operator"

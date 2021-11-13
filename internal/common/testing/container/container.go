@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package container
+package container // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testing/container"
 
 import (
 	"bufio"

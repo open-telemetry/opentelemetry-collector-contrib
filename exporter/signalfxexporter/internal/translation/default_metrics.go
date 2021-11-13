@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package translation
+package translation // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/translation"
 
 // DefaultExcludeMetricsYaml holds list of hard coded metrics that will added to the
 // exclude list from the config. It includes non-default metrics collected by

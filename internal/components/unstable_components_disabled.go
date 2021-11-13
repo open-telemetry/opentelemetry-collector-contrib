@@ -15,7 +15,7 @@
 //go:build !enable_unstable
 // +build !enable_unstable
 
-package components
+package components // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/components"
 
 import (
 	"go.opentelemetry.io/collector/component"

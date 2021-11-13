@@ -16,4 +16,4 @@
 // using WithValue and read the value out using ValueFrom.
 // It is inspired by context package and works along with error wrapping
 // introduced in go 1.13.
-package errctx
+package errctx // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/ecsobserver/internal/errctx"

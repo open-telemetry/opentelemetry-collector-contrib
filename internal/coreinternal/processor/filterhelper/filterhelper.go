@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package filterhelper
+package filterhelper // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterhelper"
 
 import (
 	"fmt"

@@ -94,6 +94,10 @@ fmt:
 lint:
 	$(LINT) run --allow-parallel-runners
 
+.PHONY: porto
+porto:
+	porto -w --include-internal --skip-dirs "^cmd$$" ./
+
 .PHONY: misspell
 misspell:
 	$(MISSPELL) $(ALL_SRC_AND_DOC)

@@ -13,4 +13,4 @@
 // limitations under the License.
 
 // Package jaegerexporter sends trace data to a Jaeger Collector gRPC endpoint.
-package jaegerexporter
+package jaegerexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/jaegerexporter"

@@ -13,4 +13,4 @@
 // limitations under the License.
 
 // Package regexp provides an implementation to match strings against a set of regexp string filters.
-package regexp
+package regexp // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterset/regexp"

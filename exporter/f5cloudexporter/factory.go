@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package f5cloudexporter
+package f5cloudexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/f5cloudexporter"
 
 import (
 	"context"

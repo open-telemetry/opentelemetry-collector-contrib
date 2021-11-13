@@ -77,7 +77,7 @@ jobs:
       - name: Lint
         run: make -j2 golint
       - name: Checks 
-        run: make -j4 checklicense misspell checkdoc impi
+        run: make -j4 checklicense misspell checkdoc impi porto
       - name: Codegem
         run: |
           make generate

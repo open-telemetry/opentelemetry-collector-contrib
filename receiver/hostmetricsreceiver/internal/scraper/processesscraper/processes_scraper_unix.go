@@ -15,7 +15,7 @@
 //go:build linux || darwin || freebsd || openbsd
 // +build linux darwin freebsd openbsd
 
-package processesscraper
+package processesscraper // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/processesscraper"
 
 import (
 	"runtime"

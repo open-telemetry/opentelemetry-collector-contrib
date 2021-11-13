@@ -17,4 +17,4 @@
 
 //go:generate mdatagen metadata.yaml
 
-package mongodbatlasreceiver
+package mongodbatlasreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbatlasreceiver"

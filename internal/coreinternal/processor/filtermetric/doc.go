@@ -13,4 +13,4 @@
 // limitations under the License.
 
 // Package filtermetric is a helper package for processing metrics.
-package filtermetric
+package filtermetric // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filtermetric"

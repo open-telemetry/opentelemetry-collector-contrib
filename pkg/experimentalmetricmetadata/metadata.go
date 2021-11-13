@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package experimentalmetricmetadata
+package experimentalmetricmetadata // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata"
 
 // MetadataExporter provides an interface to implement
 // ConsumeMetadata in Exporters that support metadata.

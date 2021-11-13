@@ -13,4 +13,4 @@
 // limitations under the License.
 
 // Package zipkinreceiver receives Zipkin traces.
-package zipkinreceiver
+package zipkinreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zipkinreceiver"

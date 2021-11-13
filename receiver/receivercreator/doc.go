@@ -13,4 +13,4 @@
 // limitations under the License.
 
 // Package receivercreator implements receiver_creator that can instantiate other receivers at runtime.
-package receivercreator
+package receivercreator // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/receivercreator"

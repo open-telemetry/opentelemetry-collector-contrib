@@ -17,4 +17,4 @@
 // Log Proxy (RLP) Gateway component. The protocol is handled by the
 // go-loggregator library, which uses HTTP to connect to the gateway and receive
 // JSON-protobuf encoded v2 Envelope messages as documented by loggregator-api.
-package cloudfoundryreceiver
+package cloudfoundryreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/cloudfoundryreceiver"

@@ -15,7 +15,7 @@
 //go:build windows
 // +build windows
 
-package memoryscraper
+package memoryscraper // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/memoryscraper"
 
 import (
 	"github.com/shirou/gopsutil/mem"

@@ -15,7 +15,7 @@
 //go:build !windows
 // +build !windows
 
-package diskscraper
+package diskscraper // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/diskscraper"
 
 import (
 	"context"

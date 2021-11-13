@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package awsxrayreceiver
+package awsxrayreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsxrayreceiver/internal/errors"
 
 // ErrRecoverable represents an error that can be ignored
 // so that the receiver can continue to function.

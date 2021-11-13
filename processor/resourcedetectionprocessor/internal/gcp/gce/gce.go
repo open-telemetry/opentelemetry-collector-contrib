@@ -14,7 +14,7 @@
 
 // Package gce provides a detector that loads resource information from
 // the GCE metatdata
-package gce
+package gce // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/gcp/gce"
 
 import (
 	"context"

@@ -14,7 +14,7 @@
 
 // Package elasticexporter contains an opentelemetry-collector exporter
 // for Elastic APM.
-package elasticexporter
+package elasticexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticexporter"
 
 import (
 	"bytes"

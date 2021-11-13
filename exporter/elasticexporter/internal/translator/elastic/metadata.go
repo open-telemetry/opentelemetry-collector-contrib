@@ -13,7 +13,7 @@
 // limitations under the License.
 
 // Package elastic contains an OTLP exporter for Elastic APM.
-package elastic
+package elastic // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticexporter/internal/translator/elastic"
 
 import (
 	"fmt"

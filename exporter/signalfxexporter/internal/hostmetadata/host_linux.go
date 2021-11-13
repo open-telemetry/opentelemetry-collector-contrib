@@ -17,7 +17,7 @@
 
 // Taken from https://github.com/signalfx/golib/blob/master/metadata/hostmetadata/host-linux.go as is.
 
-package hostmetadata
+package hostmetadata // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/hostmetadata"
 
 import (
 	"syscall"

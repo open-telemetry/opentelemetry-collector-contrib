@@ -13,4 +13,4 @@
 // limitations under the License.
 
 // Package lokiexporter implements an exporter that sends log data to Loki.
-package lokiexporter
+package lokiexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/lokiexporter"

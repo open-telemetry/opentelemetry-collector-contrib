@@ -15,7 +15,7 @@
 //go:build !windows
 // +build !windows
 
-package windowsperfcountersreceiver
+package windowsperfcountersreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowsperfcountersreceiver"
 
 import (
 	"context"

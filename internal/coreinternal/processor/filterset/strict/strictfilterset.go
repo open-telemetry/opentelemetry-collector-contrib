@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package strict
+package strict // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterset/strict"
 
 // FilterSet encapsulates a set of exact string match filters.
 // FilterSet is exported for convenience, but has unexported fields and should be constructed through NewFilterSet.

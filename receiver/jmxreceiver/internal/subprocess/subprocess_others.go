@@ -15,7 +15,7 @@
 //go:build !linux
 // +build !linux
 
-package subprocess
+package subprocess // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jmxreceiver/internal/subprocess"
 
 import (
 	"os/exec"

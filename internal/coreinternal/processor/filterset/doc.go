@@ -13,4 +13,4 @@
 // limitations under the License.
 
 // Package filterset provides an interface for matching strings against a set of string filters.
-package filterset
+package filterset // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterset"

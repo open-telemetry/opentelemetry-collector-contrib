@@ -13,4 +13,4 @@
 // limitations under the License.
 
 // Package opencensusreceiver receives OpenCensus traces.
-package opencensusreceiver
+package opencensusreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/opencensusreceiver"

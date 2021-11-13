@@ -15,7 +15,7 @@
 //go:build windows
 // +build windows
 
-package pagingscraper
+package pagingscraper // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/pagingscraper"
 
 import (
 	"context"

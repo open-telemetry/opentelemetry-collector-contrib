@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package awsxray
+package awsxray // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray"
 
 // String returns a pointer to the provided string, or nil if it is an empty string.
 func String(v string) *string {

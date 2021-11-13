@@ -14,4 +14,4 @@
 
 // Package pprofextension implements an extension that exposes the golang
 // net/http/pprof (Performance Profiler) in a HTTP endpoint.
-package pprofextension
+package pprofextension // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/pprofextension"

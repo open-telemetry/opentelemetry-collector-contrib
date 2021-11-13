@@ -13,4 +13,4 @@
 // limitations under the License.
 
 // Package prometheusexporter exports metrics data as a Prometheus pull handler.
-package prometheusexporter
+package prometheusexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusexporter"

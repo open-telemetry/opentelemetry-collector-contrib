@@ -13,4 +13,4 @@
 // limitations under the License.
 
 // Package splunkhecexporter implements an exporter that sends data to Splunk.
-package splunkhecexporter
+package splunkhecexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/splunkhecexporter"

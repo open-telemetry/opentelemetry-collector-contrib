@@ -15,7 +15,7 @@
 //go:build !linux
 // +build !linux
 
-package fluentbitextension
+package fluentbitextension // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/fluentbitextension"
 
 import (
 	"os/exec"

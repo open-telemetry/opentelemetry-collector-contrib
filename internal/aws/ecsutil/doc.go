@@ -14,4 +14,4 @@
 // limitations under the License.
 
 // Package ecsutil provides a common task metadata definition and client for ECS environments
-package ecsutil
+package ecsutil // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil"

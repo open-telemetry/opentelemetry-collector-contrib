@@ -15,7 +15,7 @@
 //go:build linux
 // +build linux
 
-package cpuscraper
+package cpuscraper // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/cpuscraper"
 
 import (
 	"github.com/shirou/gopsutil/cpu"

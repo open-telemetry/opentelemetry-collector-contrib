@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package occonventions
+package occonventions // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/occonventions"
 
 // OTLP attributes to map certain OpenCensus proto fields. These fields don't have
 // corresponding fields in OTLP, nor are defined in OTLP semantic conventions.
