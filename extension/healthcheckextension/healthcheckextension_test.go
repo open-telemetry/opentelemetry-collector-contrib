@@ -33,6 +33,13 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testutil"
 )
 
+func ensureServerRunning(url string) func() bool {
+	return func() bool {
+		_, err := net.DialTimeout("tcp", url, 30*time.Second)
+		return err == nil
+	}
+}
+
 func TestHealthCheckExtensionUsageWithoutCheckCollectorPipeline(t *testing.T) {
 	config := Config{
 		TCPAddr: confignet.TCPAddr{
@@ -86,9 +93,7 @@ func TestHealthCheckExtensionUsageWithCustomizedPathWithoutCheckCollectorPipelin
 
 	require.NoError(t, hcExt.Start(context.Background(), componenttest.NewNopHost()))
 	t.Cleanup(func() { require.NoError(t, hcExt.Shutdown(context.Background())) })
-
-	// Give a chance for the server goroutine to run.
-	runtime.Gosched()
+	require.Eventuallyf(t, ensureServerRunning(config.TCPAddr.Endpoint), 30*time.Second, 1*time.Second, "Failed to start the testing server.")
 
 	client := &http.Client{}
 	url := "http://" + config.TCPAddr.Endpoint + config.Path
@@ -197,6 +202,7 @@ func TestHealthCheckExtensionUsageWithCustomPathWithCheckCollectorPipeline(t *te
 
 	// Give a chance for the server goroutine to run.
 	runtime.Gosched()
+	require.Eventuallyf(t, ensureServerRunning(config.TCPAddr.Endpoint), 30*time.Second, 1*time.Second, "Failed to start the testing server.")
 
 	newView := view.View{Name: exporterFailureView}
 
