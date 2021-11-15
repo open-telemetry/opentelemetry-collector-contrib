@@ -85,7 +85,7 @@ func (f *Flusher) CheckAndFlush() {
 }
 
 // ForceFlushed update struct fields after forced flush
-func (f *Flusher) ForceFlushed() {
+func (f *Flusher) Flush() {
 	f.force = false
 	f.lastForcedFlush = time.Now()
 }
@@ -156,7 +156,7 @@ func (c MultilineConfig) getSplitFunc(encodingVar encoding.Encoding, flushAtEOF 
 func NewLineStartSplitFunc(re *regexp.Regexp, flushAtEOF bool, force *Flusher) bufio.SplitFunc {
 	return func(data []byte, atEOF bool) (advance int, token []byte, err error) {
 		if force != nil && force.ShouldFlush() {
-			force.ForceFlushed()
+			force.Flush()
 			token = trimWhitespaces(data)
 			advance = len(data)
 			return
@@ -231,7 +231,7 @@ func SplitNone(maxLogSize int) bufio.SplitFunc {
 func NewLineEndSplitFunc(re *regexp.Regexp, flushAtEOF bool, force *Flusher) bufio.SplitFunc {
 	return func(data []byte, atEOF bool) (advance int, token []byte, err error) {
 		if force != nil && force.ShouldFlush() {
-			force.ForceFlushed()
+			force.Flush()
 			token = trimWhitespaces(data)
 			advance = len(data)
 			return
@@ -274,12 +274,6 @@ func NewNewlineSplitFunc(encoding encoding.Encoding, flushAtEOF bool, force *Flu
 	}
 
 	return func(data []byte, atEOF bool) (advance int, token []byte, err error) {
-		if force != nil && force.ShouldFlush() {
-			force.ForceFlushed()
-			token = trimWhitespaces(data)
-			advance = len(data)
-			return
-		}
 		if atEOF && len(data) == 0 {
 			return 0, nil, nil
 		}
@@ -289,10 +283,15 @@ func NewNewlineSplitFunc(encoding encoding.Encoding, flushAtEOF bool, force *Flu
 			return i + len(newline), bytes.TrimSuffix(data[:i], carriageReturn), nil
 		}
 
-		// Flush if no more data is expected
-		if atEOF && flushAtEOF {
+		// Flush if no more data is expected or if
+		// we don't want to wait for it
+		forceFlush := force != nil && force.ShouldFlush()
+		if atEOF && (flushAtEOF || forceFlush) {
 			token = trimWhitespaces(data)
 			advance = len(data)
+			if forceFlush {
+				force.Flushed()
+			}
 			return
 		}
 
