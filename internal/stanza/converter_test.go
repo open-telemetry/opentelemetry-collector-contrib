@@ -766,16 +766,16 @@ type resourceIDOutput struct {
 
 type resourceIDOutputSlice []resourceIDOutput
 
-func (o resourceIDOutputSlice) Len() int {
-	return len(o)
+func (r resourceIDOutputSlice) Len() int {
+	return len(r)
 }
 
-func (x resourceIDOutputSlice) Less(i, j int) bool {
-	return x[i].output < x[j].output
+func (r resourceIDOutputSlice) Less(i, j int) bool {
+	return r[i].output < r[j].output
 }
 
-func (o resourceIDOutputSlice) Swap(i, j int) {
-	o[i], o[j] = o[j], o[i]
+func (r resourceIDOutputSlice) Swap(i, j int) {
+	r[i], r[j] = r[j], r[i]
 }
 
 func TestGetResourceID(t *testing.T) {

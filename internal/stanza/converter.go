@@ -572,31 +572,31 @@ var sevTextMap = map[entry.Severity]string{
 	entry.Fatal4:  "Fatal4",
 }
 
-// pair_sep is chosen to be an invalid byte for a utf-8 sequence
+// pairSep is chosen to be an invalid byte for a utf-8 sequence
 // making it more unlikely to be hit
-var pair_sep = []byte{0xfe}
+var pairSep = []byte{0xfe}
 
 func getResourceID(resource map[string]string) uint64 {
 	var fnvHash = fnv.New64a()
 	var fnvHashOut = make([]byte, 0, 16)
-	var key_slice = make([]string, 0, len(resource))
+	var keySlice = make([]string, 0, len(resource))
 	var escapedSlice = make([]byte, 0, 64)
 
 	for k := range resource {
-		key_slice = append(key_slice, k)
+		keySlice = append(keySlice, k)
 	}
 
 	// In order for this to be deterministic, we need to sort the map. Using range, like above,
 	// has no guarantee about order.
-	sort.Strings(key_slice)
-	for _, k := range key_slice {
+	sort.Strings(keySlice)
+	for _, k := range keySlice {
 		escapedSlice = appendEscapedPairSeparator(escapedSlice[:0], k)
 		fnvHash.Write(escapedSlice)
-		fnvHash.Write(pair_sep)
+		fnvHash.Write(pairSep)
 
 		escapedSlice = appendEscapedPairSeparator(escapedSlice[:0], resource[k])
 		fnvHash.Write(escapedSlice)
-		fnvHash.Write(pair_sep)
+		fnvHash.Write(pairSep)
 	}
 
 	fnvHashOut = fnvHash.Sum(fnvHashOut)
@@ -606,21 +606,21 @@ func getResourceID(resource map[string]string) uint64 {
 // appendEscapedPairSeparator escapes (prefixes) "pair_sep" and byte '0xff' with byte '0xff', and appends it to the
 // incoming buffer. It returns the appended buffer.
 func appendEscapedPairSeparator(buf []byte, s string) []byte {
-	const escape_byte byte = '\xff'
+	const escapeByte byte = '\xff'
 
 	if len(s) > cap(buf) {
-		new_buf := make([]byte, len(s))
-		copy(new_buf, buf)
-		buf = new_buf
+		newBuf := make([]byte, len(s))
+		copy(newBuf, buf)
+		buf = newBuf
 	}
 
 	sBytes := []byte(s)
 	for _, b := range sBytes {
 		switch b {
-		case escape_byte:
+		case escapeByte:
 			fallthrough
-		case pair_sep[0]:
-			buf = append(buf, escape_byte)
+		case pairSep[0]:
+			buf = append(buf, escapeByte)
 		}
 
 		buf = append(buf, b)
