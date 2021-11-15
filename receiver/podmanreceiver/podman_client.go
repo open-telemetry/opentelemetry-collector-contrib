@@ -30,7 +30,6 @@ import (
 	"time"
 
 	"go.uber.org/zap"
-	dockerEvents "github.com/docker/docker/api/types/events"
 )
 
 type containerStats struct {
@@ -59,13 +58,28 @@ type containerStatsReport struct {
 	Error string
 	Stats []containerStats
 }
+
 type Type = string
+
 type Actor struct {
 	ID         string
 	Attributes map[string]string
 }
+
 type Event struct {
-	dockerEvents.Message
+	Status string `json:"status,omitempty"`
+	ID     string `json:"id,omitempty"`
+	From   string `json:"from,omitempty"`
+	
+	Type   string
+	Action string
+	Actor  Actor
+	
+	Scope string `json:"scope,omitempty"`
+	
+	Time     int64 `json:"time,omitempty"`
+	TimeNano int64 `json:"timeNano,omitempty"`
+
 	Error string
 }
 

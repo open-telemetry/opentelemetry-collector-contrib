@@ -66,36 +66,39 @@ func newReceiver(
 	return recv, err
 }
 
-func (r *receiver) RegisterMetricsConsumer(mc consumer.Metrics, set component.ReceiverCreateSettings) error {
+func (r *receiver) registerMetricsConsumer(mc consumer.Metrics, set component.ReceiverCreateSettings) error {
 	r.metricsConsumer = mc
 	scrp, err := scraperhelper.NewScraper(typeStr, r.scrape, scraperhelper.WithStart(r.start))
 	if err != nil {
 		return err
 	}
 	r.metricsComponent, err = scraperhelper.NewScraperControllerReceiver(&r.config.ScraperControllerSettings, set, mc, scraperhelper.AddScraper(scrp))
-	return nil
+	return err
 }
 
-func (r *receiver) RegisterLogsConsumer(lc consumer.Logs) {
+func (r *receiver) registerLogsConsumer(lc consumer.Logs) {
 	r.logsConsumer = lc
 }
 
-
 func (r *receiver) Start(ctx context.Context, host component.Host) error {
 	if r.logsConsumer != nil {
-		fmt.Println("Logs started")
 		go func() {
-			r.handleEvents()
+			r.handleEvents(ctx)
 		}()
 	}
 	if r.metricsConsumer != nil {
-		fmt.Println("Metrics Started")
 		go func() {
 			err := r.metricsComponent.Start(ctx, host)
 			if err != nil {
 				return
 			}
 		}()
+	}
+	if r.logsConsumer == nil {
+		r.set.Logger.Warn("Logs Receiver is not set")
+	}
+	if r.metricsConsumer == nil {
+		r.set.Logger.Warn("Metrics Receiver is not set")
 	}
 	return nil
 }
@@ -134,8 +137,7 @@ func (r *receiver) scrape(context.Context) (pdata.Metrics, error) {
 	return md, nil
 }
 
-func (r *receiver)handleEvents() error {
-	var err error
+func (r *receiver) handleEvents(ctx context.Context) {
 	c, err := r.clientFactory(r.set.Logger, r.config)
 	if err == nil {
 		r.client = c
@@ -148,9 +150,14 @@ func (r *receiver)handleEvents() error {
 	if err != nil {
 		r.set.Logger.Error("error fetching stats", zap.Error(err))
 	}
-	for event := range events {
-		fmt.Println(event.Message)
-		// Convert events to pdata.logs
+	for {
+		select {
+		case event := <-events:
+			fmt.Println(event)
+			// Convert events to pdata.logs
+		case <-ctx.Done():
+			r.set.Logger.Info("Stopping the channel")
+			close(events)
+		}
 	}
-	return nil
 }

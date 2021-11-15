@@ -60,12 +60,19 @@ func createMetricsReceiver(
 	consumer consumer.Metrics,
 ) (component.MetricsReceiver, error) {
 	podmanConfig := config.(*Config)
+	var err error
 	r := receivers[podmanConfig]
 	if r == nil {
-		r, _ = newReceiver(ctx, params, podmanConfig, nil)
+		r, err = newReceiver(ctx, params, podmanConfig, nil)
+		if err != nil {
+			return nil, err
+		}
 		receivers[podmanConfig] = r
 	}
-	r.RegisterMetricsConsumer(consumer, params)
+	err = r.registerMetricsConsumer(consumer, params)
+	if err != nil {
+		return nil, err
+	}
 	return r, nil
 }
 
@@ -76,12 +83,16 @@ func createLogsReceiver(
 	consumer consumer.Logs,
 ) (component.LogsReceiver, error) {
 	podmanConfig := config.(*Config)
+	var err error
 	r := receivers[podmanConfig]
 	if r == nil {
-		r, _ = newReceiver(ctx, params, podmanConfig, nil)
+		r, err = newReceiver(ctx, params, podmanConfig, nil)
+		if err != nil {
+			return nil, err
+		}
 		receivers[podmanConfig] = r
 	}
-	r.RegisterLogsConsumer(consumer)
+	r.registerLogsConsumer(consumer)
 	return r, nil
 }
 
