@@ -1,0 +1,17 @@
+receivers:
+  nop:
+
+processors:
+  nop:
+
+exporters:
+  filelog:
+    path: ./log
+    file_name_key: ""
+
+service:
+  pipelines:
+    logs:
+      receivers: [nop]
+      processors: [nop]
+      exporters: [filelog]

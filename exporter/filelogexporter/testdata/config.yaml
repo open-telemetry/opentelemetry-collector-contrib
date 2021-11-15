@@ -1,0 +1,19 @@
+receivers:
+  nop:
+
+processors:
+  nop:
+
+exporters:
+  filelog:
+    path: ./log
+    file_name_key: "f.n"
+    base_dir_key: "b.d"
+    max_open_files: 512
+
+service:
+  pipelines:
+    logs:
+      receivers: [nop]
+      processors: [nop]
+      exporters: [filelog]

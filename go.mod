@@ -15,6 +15,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticexporter v0.38.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/f5cloudexporter v0.38.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/fileexporter v0.38.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/filelogexporter v0.38.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/googlecloudexporter v0.38.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/honeycombexporter v0.38.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/humioexporter v0.38.0
@@ -477,6 +478,8 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/dynat
 replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/f5cloudexporter => ./exporter/f5cloudexporter
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/fileexporter => ./exporter/fileexporter
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/filelogexporter => ./exporter/filelogexporter
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/honeycombexporter => ./exporter/honeycombexporter
 

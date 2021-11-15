@@ -1,0 +1,15 @@
+receivers:
+  nop:
+
+processors:
+  nop:
+
+exporters:
+  filelog:
+
+service:
+  pipelines:
+    logs:
+      receivers: [nop]
+      processors: [nop]
+      exporters: [filelog]
