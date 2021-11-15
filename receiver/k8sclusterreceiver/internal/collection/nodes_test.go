@@ -19,6 +19,7 @@ import (
 
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -30,11 +31,11 @@ import (
 func TestNodeMetrics(t *testing.T) {
 	n := newNode("1")
 
-	actualResourceMetrics := getMetricsForNode(n, []string{"Ready", "MemoryPressure"}, []string{"cpu", "memory"})
+	actualResourceMetrics := getMetricsForNode(n, []string{"Ready", "MemoryPressure"}, []string{"cpu", "memory", "ephemeral-storage"}, &zap.Logger{})
 
 	require.Equal(t, 1, len(actualResourceMetrics))
 
-	require.Equal(t, 4, len(actualResourceMetrics[0].metrics))
+	require.Equal(t, 5, len(actualResourceMetrics[0].metrics))
 	testutils.AssertResource(t, actualResourceMetrics[0].resource, k8sType,
 		map[string]string{
 			"k8s.node.uid":     "test-node-1-uid",
@@ -54,6 +55,10 @@ func TestNodeMetrics(t *testing.T) {
 
 	testutils.AssertMetrics(t, actualResourceMetrics[0].metrics[3], "k8s.node.allocatable_memory",
 		metricspb.MetricDescriptor_GAUGE_INT64, 456)
+
+	testutils.AssertMetrics(t, actualResourceMetrics[0].metrics[4], "k8s.node.allocatable_ephemeral_storage",
+		metricspb.MetricDescriptor_GAUGE_INT64, 1234)
+
 }
 
 func newNode(id string) *corev1.Node {
@@ -79,8 +84,9 @@ func newNode(id string) *corev1.Node {
 				},
 			},
 			Allocatable: corev1.ResourceList{
-				corev1.ResourceCPU:    *resource.NewQuantity(123, resource.DecimalSI),
-				corev1.ResourceMemory: *resource.NewQuantity(456, resource.DecimalSI),
+				corev1.ResourceCPU:              *resource.NewQuantity(123, resource.DecimalSI),
+				corev1.ResourceMemory:           *resource.NewQuantity(456, resource.DecimalSI),
+				corev1.ResourceEphemeralStorage: *resource.NewQuantity(1234, resource.DecimalSI),
 			},
 		},
 	}

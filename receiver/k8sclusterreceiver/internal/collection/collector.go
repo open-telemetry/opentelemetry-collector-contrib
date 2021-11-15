@@ -129,7 +129,7 @@ func (dc *DataCollector) SyncMetrics(obj interface{}) {
 	case *corev1.Pod:
 		rm = getMetricsForPod(o)
 	case *corev1.Node:
-		rm = getMetricsForNode(o, dc.nodeConditionsToReport, dc.allocatableTypesToReport)
+		rm = getMetricsForNode(o, dc.nodeConditionsToReport, dc.allocatableTypesToReport, dc.logger)
 	case *corev1.Namespace:
 		rm = getMetricsForNamespace(o)
 	case *corev1.ReplicationController:

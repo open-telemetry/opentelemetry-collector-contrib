@@ -22,6 +22,7 @@ import (
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	"github.com/iancoleman/strcase"
 	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
+	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testing/util"
@@ -41,9 +42,9 @@ var allocatableDesciption = map[string]string{
 	"storage":           "How many bytes of storage remaining that the node can allocate to pods",
 }
 
-func getMetricsForNode(node *corev1.Node, nodeConditionTypesToReport, allocatableTypesToReport []string) []*resourceMetrics {
+func getMetricsForNode(node *corev1.Node, nodeConditionTypesToReport, allocatableTypesToReport []string, logger *zap.Logger) []*resourceMetrics {
 	var metrics []*metricspb.Metric
-	//Condition
+	// Adding 'node condition type' metrics
 	for _, nodeConditionTypeValue := range nodeConditionTypesToReport {
 		nodeConditionMetric := getNodeConditionMetric(nodeConditionTypeValue)
 		v1NodeConditionTypeValue := corev1.NodeConditionType(nodeConditionTypeValue)
@@ -60,12 +61,13 @@ func getMetricsForNode(node *corev1.Node, nodeConditionTypesToReport, allocatabl
 			},
 		})
 	}
-	//Allocatable
+	// Adding 'node allocatable type' metrics
 	for _, nodeAllocatableTypeValue := range allocatableTypesToReport {
 		nodeAllocatableMetric := getNodeAllocatableMetric(nodeAllocatableTypeValue)
 		v1NodeAllocatableTypeValue := corev1.ResourceName(nodeAllocatableTypeValue)
-		metricValue, ok := nodeAllocatableValue(node, v1NodeAllocatableTypeValue)
+		metricValue, ok := nodeAllocatableValue(node, v1NodeAllocatableTypeValue, logger)
 
+		// metrics will be skipped if metric not present in node or value is not convertable to int64
 		if ok {
 			metrics = append(metrics, &metricspb.Metric{
 				MetricDescriptor: &metricspb.MetricDescriptor{
@@ -113,12 +115,17 @@ var nodeConditionValues = map[corev1.ConditionStatus]int64{
 	corev1.ConditionUnknown: -1,
 }
 
-func nodeAllocatableValue(node *corev1.Node, allocatType corev1.ResourceName) (int64, bool) {
+func nodeAllocatableValue(node *corev1.Node, allocatType corev1.ResourceName, logger *zap.Logger) (int64, bool) {
 	value, ok := node.Status.Allocatable[allocatType]
 	if !ok {
+		logger.Debug(string(allocatType) + " value not found in node")
 		return 0, false
 	}
-	val, _ := value.AsInt64()
+	val, ok := value.AsInt64()
+	if !ok {
+		logger.Debug(fmt.Sprintf("Metric %s has value %v which is not convertable to int64", allocatType, val))
+		return 0, false
+	}
 	return val, true
 }
 

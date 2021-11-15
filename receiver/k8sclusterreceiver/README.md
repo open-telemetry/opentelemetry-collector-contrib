@@ -33,7 +33,7 @@ array.
 by the cluster. Currently supported versions are `kubernetes` and `openshift`. Setting
 the value to `openshift` enables OpenShift specific metrics in addition to standard
 kubernetes ones.
-- `allocatable_types_to_report` (no default): An array of allocatable resource types this receiver should report.
+- `allocatable_types_to_report` (default = `[]`): An array of allocatable resource types this receiver should report.
 The following allocatable resource types are available.
   - cpu
   - memory
