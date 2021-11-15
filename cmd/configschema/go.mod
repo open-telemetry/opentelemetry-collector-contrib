@@ -117,6 +117,7 @@ require (
 	github.com/googleapis/gnostic v0.5.5 // indirect
 	github.com/gophercloud/gophercloud v0.18.0 // indirect
 	github.com/gorilla/mux v1.8.0 // indirect
+	github.com/grobie/gomemcache v0.0.0-20180201122607-1f779c573665 // indirect
 	github.com/grpc-ecosystem/grpc-gateway v1.16.0 // indirect
 	github.com/hashicorp/consul/api v1.10.1 // indirect
 	github.com/hashicorp/errwrap v1.0.0 // indirect
@@ -285,6 +286,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkametricsreceiver v0.39.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkareceiver v0.39.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver v0.39.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/memcachedreceiver v0.39.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbatlasreceiver v0.39.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/opencensusreceiver v0.39.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/podmanreceiver v0.39.0 // indirect
@@ -485,8 +487,6 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/influ
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/jaegerexporter => ../../exporter/jaegerexporter
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/jaegerthrifthttpexporter => ../../exporter/jaegerthrifthttpexporter
-
 replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter => ../../exporter/kafkaexporter
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/loadbalancingexporter => ../../exporter/loadbalancingexporter
@@ -680,6 +680,8 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/googl
 replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/stackdriverexporter => ../../exporter/stackdriverexporter
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/googlecloudpubsubexporter => ../../exporter/googlecloudpubsubexporter
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/jaegerthrifthttpexporter => ../../exporter/jaegerthrifthttpexporter
 
 // see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/4433
 exclude github.com/StackExchange/wmi v1.2.0
