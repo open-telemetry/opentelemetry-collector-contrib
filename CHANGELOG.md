@@ -2,17 +2,43 @@
 
 ## Unreleased
 
+## v0.39.0
+
 ## 🛑 Breaking changes 🛑
 
 - `httpdreceiver` renamed to `apachereceiver` to match industry standards (#6207)
 
+## 🚀 New components 🚀
+
+- Add `postgresqlreceiver` config and factory (#6153)
+- Add TencentCloud LogService exporter `tencentcloudlogserviceexporter` (#5722)
+- Restore `jaegerthrifthttpexporter` (#5666)
+- Add `skywalkingexporter` (#5690, #6114)
+
 ## 🧰 Bug fixes 🧰
 
-- `datadogexporter` improve cumulative metrics reset detection using `StartTimestamp` (#6120)
+- `datadogexporter`: Improve cumulative metrics reset detection using `StartTimestamp` (#6120)
+- `mysqlreceiver`: Address issues in shutdown function (#6239)
+- `tailsamplingprocessor`: End go routines during shutdown (#5693)
+- `googlecloudexporter`: Update google cloud exporter to correctly close the metric exporter (#5990)
+- `statsdreceiver`: Fix the summary point calculation (#6155)
+- `datadogexporter` Correct default value for `send_count_sum_metrics` (#6130)
 
 ## 💡 Enhancements 💡
 
-- `datadogexporter` increase default timeout to 15 seconds (#6131)
+- `datadogexporter`: Increase default timeout to 15 seconds (#6131)
+- `googlecloudspannerreceiver`: Added metrics cardinality handling for Google Cloud Spanner receiver (#5981, #6148, #6229)
+- `mysqlreceiver`: Mysql add support for different protocols (#6138)
+- `bearertokenauthextension`: Added support of Bearer Auth for HTTP Exporters (#5962)
+- `awsxrayexporter`: Fallback to rpc.method for segment operation when aws.operation missing (#6231)
+- `healthcheckextension`: Add new health check feature for collector pipeline (#5643)
+- `datadogexporter`: Always add current hostname (#5967)
+- `k8sattributesprocessor`: Add code to fetch all annotations and labels by specifying key regex (#5780)
+- `datadogexporter`: Do not rely on collector to resolve envvar when possible to resolve them (#6122)
+- `datadogexporter`: Add container tags to attributes package (#6086)
+- `datadogexporter`: Preserve original TraceID (#6158)
+- `prometheusreceiver`: Enhance prometheus receiver logger to determine errors, test real e2e usage (#5870)
+- `awsxrayexporter`: Added support for AWS AppRunner origin (#6141)
 
 ## v0.38.0
 
