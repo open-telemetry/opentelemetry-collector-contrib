@@ -19,7 +19,6 @@ import (
 	"strconv"
 	"time"
 
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/model/pdata"
 	"go.uber.org/zap"
 
@@ -27,10 +26,10 @@ import (
 )
 
 type memcachedScraper struct {
-	client client
-	logger *zap.Logger
-	config *Config
-	now    pdata.Timestamp
+	logger    *zap.Logger
+	config    *Config
+	now       pdata.Timestamp
+	newClient newMemcachedClientFunc
 }
 
 func newMemcachedScraper(
@@ -38,25 +37,22 @@ func newMemcachedScraper(
 	config *Config,
 ) memcachedScraper {
 	return memcachedScraper{
-		logger: logger,
-		config: config,
+		logger:    logger,
+		config:    config,
+		newClient: newMemcachedClient,
 	}
-}
-
-func (r *memcachedScraper) start(_ context.Context, host component.Host) error {
-	r.client = newMemcachedClient(r.config)
-	return nil
 }
 
 func (r *memcachedScraper) scrape(_ context.Context) (pdata.Metrics, error) {
 	// Init client in scrape method in case there are transient errors in the
 	// constructor.
-	err := r.client.Init()
+	client, err := r.newClient(r.config.Endpoint, r.config.Timeout)
 	if err != nil {
+		r.logger.Error("Failed to estalbish client", zap.Error(err))
 		return pdata.Metrics{}, err
 	}
 
-	allServerStats, err := r.client.Stats()
+	allServerStats, err := client.Stats()
 	if err != nil {
 		r.logger.Error("Failed to fetch memcached stats", zap.Error(err))
 		return pdata.Metrics{}, err
@@ -190,9 +186,29 @@ func (r *memcachedScraper) scrape(_ context.Context) (pdata.Metrics, error) {
 		}
 
 		// Calculated Metrics
-		r.calculateHitRatio("increment", "incr_hits", "incr_misses", stats.Stats, hitRatio)
-		r.calculateHitRatio("decrement", "decr_hits", "decr_misses", stats.Stats, hitRatio)
-		r.calculateHitRatio("get", "get_hits", "get_misses", stats.Stats, hitRatio)
+		attributes := pdata.NewAttributeMap()
+		attributes.Insert(metadata.A.Operation, pdata.NewAttributeValueString("increment"))
+		parsedHit, okHit := r.parseInt("incr_hits", stats.Stats["incr_hits"])
+		parsedMiss, okMiss := r.parseInt("incr_misses", stats.Stats["incr_misses"])
+		if okHit && okMiss {
+			r.addToDoubleMetric(hitRatio, attributes, calculateHitRatio(float64(parsedHit), float64(parsedMiss)))
+		}
+
+		attributes = pdata.NewAttributeMap()
+		attributes.Insert(metadata.A.Operation, pdata.NewAttributeValueString("decrement"))
+		parsedHit, okHit = r.parseInt("decr_hits", stats.Stats["decr_hits"])
+		parsedMiss, okMiss = r.parseInt("decr_misses", stats.Stats["decr_misses"])
+		if okHit && okMiss {
+			r.addToDoubleMetric(hitRatio, attributes, calculateHitRatio(float64(parsedHit), float64(parsedMiss)))
+		}
+
+		attributes = pdata.NewAttributeMap()
+		attributes.Insert(metadata.A.Operation, pdata.NewAttributeValueString("get"))
+		parsedHit, okHit = r.parseInt("get_hits", stats.Stats["get_hits"])
+		parsedMiss, okMiss = r.parseInt("get_misses", stats.Stats["get_misses"])
+		if okHit && okMiss {
+			r.addToDoubleMetric(hitRatio, attributes, calculateHitRatio(float64(parsedHit), float64(parsedMiss)))
+		}
 	}
 	return md, nil
 }
@@ -203,20 +219,12 @@ func initMetric(ms pdata.MetricSlice, mi metadata.MetricIntf) pdata.Metric {
 	return m
 }
 
-func (r *memcachedScraper) calculateHitRatio(operation, hitKey, missKey string, stats map[string]string, hitRatioMetric pdata.NumberDataPointSlice) {
-	attributes := pdata.NewAttributeMap()
-	attributes.Insert(metadata.A.Operation, pdata.NewAttributeValueString(operation))
-	hits, hitOk := r.parseFloat(hitKey, stats[hitKey])
-	misses, missOk := r.parseFloat(missKey, stats[missKey])
-	if !missOk || !hitOk {
-		return
-	}
+func calculateHitRatio(misses, hits float64) float64 {
 
 	if misses+hits == 0 {
-		r.addToDoubleMetric(hitRatioMetric, attributes, 0)
-		return
+		return 0
 	}
-	r.addToDoubleMetric(hitRatioMetric, attributes, (hits / (hits + misses) * 100))
+	return (hits / (hits + misses) * 100)
 }
 
 // parseInt converts string to int64.

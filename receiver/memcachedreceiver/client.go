@@ -22,35 +22,28 @@ import (
 )
 
 type client interface {
-	Init() error
 	Stats() (map[net.Addr]memcache.Stats, error)
 }
 
 type memcachedClient struct {
-	client   *memcache.Client
-	endpoint string
-	timeout  time.Duration
+	client *memcache.Client
 }
 
-func newMemcachedClient(c *Config) client {
-	return &memcachedClient{
-		endpoint: c.Endpoint,
-		timeout:  c.Timeout,
+type newMemcachedClientFunc func(endpoint string, timeout time.Duration) (client, error)
+
+func newMemcachedClient(endpoint string, timeout time.Duration) (client, error) {
+	newClient, err := memcache.New(endpoint)
+	if err != nil {
+		return nil, err
 	}
+
+	newClient.Timeout = timeout
+	return &memcachedClient{
+		client: newClient,
+	}, nil
 }
 
 var _ client = (*memcachedClient)(nil)
-
-func (c *memcachedClient) Init() error {
-	newClient, err := memcache.New(c.endpoint)
-	if err != nil {
-		return err
-	}
-
-	newClient.Timeout = c.timeout
-	c.client = newClient
-	return nil
-}
 
 func (c *memcachedClient) Stats() (map[net.Addr]memcache.Stats, error) {
 	return c.client.Stats()

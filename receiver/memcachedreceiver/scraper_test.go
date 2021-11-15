@@ -17,6 +17,7 @@ package memcachedreceiver
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
@@ -28,7 +29,9 @@ func TestScraper(t *testing.T) {
 	f := NewFactory()
 	cfg := f.CreateDefaultConfig().(*Config)
 	sc := newMemcachedScraper(zap.NewNop(), cfg)
-	sc.client = &fakeClient{}
+	sc.newClient = func(endpoint string, timeout time.Duration) (client, error) {
+		return &fakeClient{}, nil
+	}
 
 	ms, err := sc.scrape(context.Background())
 	require.NoError(t, err)
@@ -38,6 +41,5 @@ func TestScraper(t *testing.T) {
 
 	eMetricSlice := expectedMetrics.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics()
 	aMetricSlice := ms.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics()
-
 	require.NoError(t, scrapertest.CompareMetricSlices(eMetricSlice, aMetricSlice, true))
 }
