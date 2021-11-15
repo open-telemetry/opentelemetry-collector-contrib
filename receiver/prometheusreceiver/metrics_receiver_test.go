@@ -15,15 +15,10 @@
 package prometheusreceiver
 
 import (
-	"context"
 	"testing"
 
-	"github.com/prometheus/prometheus/scrape"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/model/pdata"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
@@ -739,7 +734,7 @@ func TestCoreMetricsEndToEnd(t *testing.T) {
 			validateFunc: verifyTarget3,
 		},
 	}
-	testEndToEnd(t, targets, false)
+	testComponent(t, targets, false, "")
 }
 
 var startTimeMetricPage = `
@@ -825,66 +820,7 @@ func TestStartTimeMetric(t *testing.T) {
 			validateFunc: verifyStartTimeMetricPage,
 		},
 	}
-	testEndToEnd(t, targets, true)
-}
-
-func testEndToEnd(t *testing.T, targets []*testData, useStartTimeMetric bool) {
-	// 1. setup mock server
-	mp, cfg, err := setupMockPrometheus(targets...)
-	require.Nilf(t, err, "Failed to create Prometheus config: %v", err)
-	defer mp.Close()
-
-	cms := new(consumertest.MetricsSink)
-	rcvr := newPrometheusReceiver(componenttest.NewNopReceiverCreateSettings(), &Config{
-		ReceiverSettings:   config.NewReceiverSettings(config.NewComponentID(typeStr)),
-		PrometheusConfig:   cfg,
-		UseStartTimeMetric: useStartTimeMetric}, cms)
-
-	require.NoError(t, rcvr.Start(context.Background(), componenttest.NewNopHost()), "Failed to invoke Start: %v", err)
-	t.Cleanup(func() {
-		// verify state after shutdown is called
-		assert.Lenf(t, flattenTargets(rcvr.scrapeManager.TargetsAll()), len(targets), "expected %v targets to be running", len(targets))
-		require.NoError(t, rcvr.Shutdown(context.Background()))
-		assert.Len(t, flattenTargets(rcvr.scrapeManager.TargetsAll()), 0, "expected scrape manager to have no targets")
-	})
-
-	// wait for all provided data to be scraped
-	mp.wg.Wait()
-	metrics := cms.AllMetrics()
-
-	// split and store results by target name
-	pResults := make(map[string][]*pdata.ResourceMetrics)
-	for _, md := range metrics {
-		rms := md.ResourceMetrics()
-		for i := 0; i < rms.Len(); i++ {
-			name, _ := rms.At(i).Resource().Attributes().Get("service.name")
-			pResult, ok := pResults[name.AsString()]
-			if !ok {
-				pResult = make([]*pdata.ResourceMetrics, 0)
-			}
-			rm := rms.At(i)
-			pResults[name.AsString()] = append(pResult, &rm)
-		}
-	}
-	lres, lep := len(pResults), len(mp.endpoints)
-	assert.Equalf(t, lep, lres, "want %d targets, but got %v\n", lep, lres)
-
-	// loop to validate outputs for each targets
-	for _, target := range targets {
-		t.Run(target.name, func(t *testing.T) {
-			validScrapes := getValidScrapes(t, pResults[target.name])
-			target.validateFunc(t, target, validScrapes)
-		})
-	}
-}
-
-// flattenTargets takes a map of jobs to target and flattens to a list of targets
-func flattenTargets(targets map[string][]*scrape.Target) []*scrape.Target {
-	var flatTargets []*scrape.Target
-	for _, target := range targets {
-		flatTargets = append(flatTargets, target...)
-	}
-	return flatTargets
+	testComponent(t, targets, true, "")
 }
 
 var startTimeMetricRegexPage = `
@@ -933,50 +869,5 @@ func TestStartTimeMetricRegex(t *testing.T) {
 			validateFunc: verifyStartTimeMetricPage,
 		},
 	}
-	testEndToEndRegex(t, targets, true, "^(.+_)*process_start_time_seconds$")
-}
-
-func testEndToEndRegex(t *testing.T, targets []*testData, useStartTimeMetric bool, startTimeMetricRegex string) {
-	// 1. setup mock server
-	mp, cfg, err := setupMockPrometheus(targets...)
-	require.Nilf(t, err, "Failed to create Prometheus config: %v", err)
-	defer mp.Close()
-
-	cms := new(consumertest.MetricsSink)
-	rcvr := newPrometheusReceiver(componenttest.NewNopReceiverCreateSettings(), &Config{
-		ReceiverSettings:     config.NewReceiverSettings(config.NewComponentID(typeStr)),
-		PrometheusConfig:     cfg,
-		UseStartTimeMetric:   useStartTimeMetric,
-		StartTimeMetricRegex: startTimeMetricRegex}, cms)
-
-	require.NoError(t, rcvr.Start(context.Background(), componenttest.NewNopHost()), "Failed to invoke Start: %v", err)
-	t.Cleanup(func() { require.NoError(t, rcvr.Shutdown(context.Background())) })
-
-	// wait for all provided data to be scraped
-	mp.wg.Wait()
-	metrics := cms.AllMetrics()
-
-	// split and store results by target name
-	pResults := make(map[string][]*pdata.ResourceMetrics)
-	for _, md := range metrics {
-		rms := md.ResourceMetrics()
-		for i := 0; i < rms.Len(); i++ {
-			name, _ := rms.At(i).Resource().Attributes().Get("service.name")
-			pResult, ok := pResults[name.AsString()]
-			if !ok {
-				pResult = make([]*pdata.ResourceMetrics, 0)
-			}
-			rm := rms.At(i)
-			pResults[name.AsString()] = append(pResult, &rm)
-		}
-	}
-
-	lres, lep := len(pResults), len(mp.endpoints)
-	assert.Equalf(t, lep, lres, "want %d targets, but got %v\n", lep, lres)
-
-	// loop to validate outputs for each targets
-	for _, target := range targets {
-		validScrapes := getValidScrapes(t, pResults[target.name])
-		target.validateFunc(t, target, validScrapes)
-	}
+	testComponent(t, targets, true, "^(.+_)*process_start_time_seconds$")
 }
