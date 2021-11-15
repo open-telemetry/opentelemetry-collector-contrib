@@ -21,11 +21,17 @@ import (
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 )
 
+const (
+	minCollectionIntervalSeconds = 60
+	maxTopMetricsQueryMaxRows    = 100
+)
+
 type Config struct {
 	scraperhelper.ScraperControllerSettings `mapstructure:",squash"`
 
 	TopMetricsQueryMaxRows int       `mapstructure:"top_metrics_query_max_rows"`
 	BackfillEnabled        bool      `mapstructure:"backfill_enabled"`
+	CardinalityTotalLimit  int       `mapstructure:"cardinality_total_limit"`
 	Projects               []Project `mapstructure:"projects"`
 }
 
@@ -41,22 +47,28 @@ type Instance struct {
 }
 
 func (config *Config) Validate() error {
-	if config.CollectionInterval.Seconds() < 60 {
-		return fmt.Errorf("%v `collection_interval` must be not lower than 60s, current value is %vs",
-			config.ID(), config.CollectionInterval.Seconds())
+	if config.CollectionInterval.Seconds() < minCollectionIntervalSeconds {
+		return fmt.Errorf("%v %q must be not lower than %v seconds, current value is %v seconds", config.ID(),
+			"collection_interval", minCollectionIntervalSeconds, config.CollectionInterval.Seconds())
 	}
 
 	if config.TopMetricsQueryMaxRows <= 0 {
-		return fmt.Errorf("%v `top_metrics_query_max_rows` must be positive: %v", config.ID(), config.TopMetricsQueryMaxRows)
+		return fmt.Errorf("%v %q must be positive: %v", config.ID(), "top_metrics_query_max_rows",
+			config.TopMetricsQueryMaxRows)
 	}
 
-	if config.TopMetricsQueryMaxRows > 100 {
-		return fmt.Errorf("%v `top_metrics_query_max_rows` must be not greater than 100, current value is %v",
-			config.ID(), config.TopMetricsQueryMaxRows)
+	if config.TopMetricsQueryMaxRows > maxTopMetricsQueryMaxRows {
+		return fmt.Errorf("%v %q must be not greater than %v, current value is %v", config.ID(),
+			"top_metrics_query_max_rows", maxTopMetricsQueryMaxRows, config.TopMetricsQueryMaxRows)
+	}
+
+	if config.CardinalityTotalLimit < 0 {
+		return fmt.Errorf("%v %q must be not negative, current value is %v",
+			config.ID(), "cardinality_total_limit", config.CardinalityTotalLimit)
 	}
 
 	if len(config.Projects) <= 0 {
-		return fmt.Errorf("%v missing required field %v or its value is empty", config.ID(), "`projects`")
+		return fmt.Errorf("%v missing required field %q or its value is empty", config.ID(), "projects")
 	}
 
 	for _, project := range config.Projects {
@@ -72,11 +84,11 @@ func (project Project) Validate() error {
 	var missingFields []string
 
 	if project.ID == "" {
-		missingFields = append(missingFields, "`project_id`")
+		missingFields = append(missingFields, "\"project_id\"")
 	}
 
 	if project.ServiceAccountKey == "" {
-		missingFields = append(missingFields, "`service_account_key`")
+		missingFields = append(missingFields, "\"service_account_key\"")
 	}
 
 	if len(missingFields) > 0 {
@@ -84,7 +96,7 @@ func (project Project) Validate() error {
 	}
 
 	if len(project.Instances) <= 0 {
-		return fmt.Errorf("field %v is required and cannot be empty for project configuration", "`instances`")
+		return fmt.Errorf("field %q is required and cannot be empty for project configuration", "instances")
 	}
 
 	for _, instance := range project.Instances {
@@ -98,16 +110,16 @@ func (project Project) Validate() error {
 
 func (instance Instance) Validate() error {
 	if instance.ID == "" {
-		return fmt.Errorf("field %v is required and cannot be empty for instance configuration", "`instance_id`")
+		return fmt.Errorf("field %q is required and cannot be empty for instance configuration", "instance_id")
 	}
 
 	if len(instance.Databases) <= 0 {
-		return fmt.Errorf("field %v is required and cannot be empty for instance configuration", "`databases`")
+		return fmt.Errorf("field %q is required and cannot be empty for instance configuration", "databases")
 	}
 
 	for _, database := range instance.Databases {
 		if database == "" {
-			return fmt.Errorf("field %v contains empty database names", "`databases`")
+			return fmt.Errorf("field %q contains empty database names", "databases")
 		}
 	}
 

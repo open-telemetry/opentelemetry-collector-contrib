@@ -76,8 +76,8 @@ func (mdp *MetricsDataPoint) CopyTo(dataPoint pdata.NumberDataPoint) {
 func (mdp *MetricsDataPoint) GroupingKey() MetricsDataPointKey {
 	return MetricsDataPointKey{
 		MetricName:     mdp.metricName,
-		MetricUnit:     mdp.metricValue.Unit(),
-		MetricDataType: mdp.metricValue.DataType(),
+		MetricUnit:     mdp.metricValue.Metadata().Unit(),
+		MetricDataType: mdp.metricValue.Metadata().DataType(),
 	}
 }
 
@@ -104,7 +104,7 @@ func (mdp *MetricsDataPoint) toDataForHashing() dataForHashing {
 
 	labelsIndex := 3
 	for _, labelValue := range mdp.labelValues {
-		labels[labelsIndex] = label{Name: labelValue.Name(), Value: labelValue.Value()}
+		labels[labelsIndex] = label{Name: labelValue.Metadata().Name(), Value: labelValue.Value()}
 		labelsIndex++
 	}
 

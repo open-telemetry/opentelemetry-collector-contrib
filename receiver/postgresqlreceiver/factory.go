@@ -1,4 +1,4 @@
-// Copyright  OpenTelemetry Authors
+// Copyright  The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package httpdreceiver
+package postgresqlreceiver
 
 //go:generate mdatagen metadata.yaml
 
@@ -22,17 +22,17 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/confignet"
+	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 )
 
 const (
-	typeStr = "httpd"
+	typeStr = "postgresql"
 )
 
-// NewFactory creates a factory for httpd receiver.
 func NewFactory() component.ReceiverFactory {
 	return receiverhelper.NewFactory(
 		typeStr,
@@ -46,10 +46,15 @@ func createDefaultConfig() config.Receiver {
 			ReceiverSettings:   config.NewReceiverSettings(config.NewComponentID(typeStr)),
 			CollectionInterval: 10 * time.Second,
 		},
-		HTTPClientSettings: confighttp.HTTPClientSettings{
-			Endpoint: defaultEndpoint,
-			Timeout:  10 * time.Second,
+		NetAddr: confignet.NetAddr{
+			Endpoint:  "localhost:5432",
+			Transport: "tcp",
 		},
+		TLSClientSetting: configtls.TLSClientSetting{
+			Insecure:           false,
+			InsecureSkipVerify: true,
+		},
+		Databases: make([]string, 0),
 	}
 }
 
@@ -59,16 +64,5 @@ func createMetricsReceiver(
 	rConf config.Receiver,
 	consumer consumer.Metrics,
 ) (component.MetricsReceiver, error) {
-	cfg := rConf.(*Config)
-
-	ns := newHttpdScraper(params.Logger, cfg)
-	scraper, err := scraperhelper.NewScraper(typeStr, ns.scrape, scraperhelper.WithStart(ns.start))
-	if err != nil {
-		return nil, err
-	}
-
-	return scraperhelper.NewScraperControllerReceiver(
-		&cfg.ScraperControllerSettings, params, consumer,
-		scraperhelper.AddScraper(scraper),
-	)
+	return nil, nil // TODO build and return receiver in next PR
 }

@@ -106,7 +106,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zookeeperreceiver v0.38.0
 	github.com/prometheus/prometheus v1.8.2-0.20210621150501-ff58416a0b02
 	github.com/stretchr/testify v1.7.0
-	go.opentelemetry.io/collector v0.38.1-0.20211103215828-cffbecb2ac9e
+	go.opentelemetry.io/collector v0.39.0
 	golang.org/x/sys v0.0.0-20211025201205-69cdffdb9359
 )
 
@@ -254,7 +254,7 @@ require (
 	github.com/karrick/godirwalk v1.16.1 // indirect
 	github.com/kballard/go-shellquote v0.0.0-20180428030007-95032a82bc51 // indirect
 	github.com/klauspost/compress v1.13.6 // indirect
-	github.com/knadh/koanf v1.3.0 // indirect
+	github.com/knadh/koanf v1.3.2 // indirect
 	github.com/leoluk/perflib_exporter v0.1.0 // indirect
 	github.com/linode/linodego v0.28.5 // indirect
 	github.com/logzio/jaeger-logzio v1.0.4 // indirect
@@ -278,7 +278,7 @@ require (
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/mongodb-forks/digest v1.0.3 // indirect
-	github.com/montanaflynn/stats v0.0.0-20171201202039-1bf9dbcd8cbe // indirect
+	github.com/mostynb/go-grpc-compression v1.1.14 // indirect
 	github.com/mrunalp/fileutils v0.5.0 // indirect
 	github.com/mwitkow/go-conntrack v0.0.0-20190716064945-2f068394615f // indirect
 	github.com/newrelic/newrelic-telemetry-sdk-go v0.8.1 // indirect
@@ -377,10 +377,10 @@ require (
 	go.etcd.io/bbolt v1.3.6 // indirect
 	go.mongodb.org/atlas v0.13.0 // indirect
 	go.opencensus.io v0.23.0 // indirect
-	go.opentelemetry.io/collector/model v0.38.1-0.20211103215828-cffbecb2ac9e // indirect
+	go.opentelemetry.io/collector/model v0.39.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.26.1 // indirect
-	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.26.0 // indirect
-	go.opentelemetry.io/contrib/zpages v0.26.0 // indirect
+	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.26.1 // indirect
+	go.opentelemetry.io/contrib/zpages v0.26.1 // indirect
 	go.opentelemetry.io/otel v1.1.0 // indirect
 	go.opentelemetry.io/otel/exporters/prometheus v0.24.0 // indirect
 	go.opentelemetry.io/otel/internal/metric v0.24.0 // indirect

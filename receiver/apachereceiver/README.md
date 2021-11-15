@@ -1,6 +1,6 @@
-# HTTPd Receiver
+# Apache Web Server Receiver
 
-This receiver fetches stats from a Httpd server using the `server-status?auto` endpoint.
+This receiver fetches stats from a Apache Web Server instance using the `server-status?auto` endpoint.
 
 Supported pipeline types: `metrics`
 
@@ -8,7 +8,7 @@ Supported pipeline types: `metrics`
 
 ## Prerequisites
 
-This receiver supports Apache httpd version 2.4+
+This receiver supports Apache Web Server version 2.4+
 
 ### mod_status module
 
@@ -27,7 +27,7 @@ The following settings are optional:
 
 ```yaml
 receivers:
-  httpd:
+  apache:
     endpoint: "http://localhost:8080/server-status?auto"
 ```
 

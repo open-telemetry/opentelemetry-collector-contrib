@@ -18,7 +18,6 @@ import (
 	"context"
 	"errors"
 	"strconv"
-	"sync"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
@@ -29,11 +28,9 @@ import (
 )
 
 type mySQLScraper struct {
-	client   client
-	stopOnce sync.Once
-
-	logger *zap.Logger
-	config *Config
+	sqlclient client
+	logger    *zap.Logger
+	config    *Config
 }
 
 func newMySQLScraper(
@@ -48,27 +45,23 @@ func newMySQLScraper(
 
 // start starts the scraper by initializing the db client connection.
 func (m *mySQLScraper) start(_ context.Context, host component.Host) error {
-	client, err := newMySQLClient(mySQLConfig{
-		username: m.config.Username,
-		password: m.config.Password,
-		database: m.config.Database,
-		endpoint: m.config.Endpoint,
-	})
+	sqlclient := newMySQLClient(m.config)
+
+	err := sqlclient.Connect()
 	if err != nil {
 		return err
 	}
-	m.client = client
+	m.sqlclient = sqlclient
 
 	return nil
 }
 
 // shutdown closes the db connection
 func (m *mySQLScraper) shutdown(context.Context) error {
-	var err error
-	m.stopOnce.Do(func() {
-		err = m.client.Close()
-	})
-	return err
+	if m.sqlclient == nil {
+		return nil
+	}
+	return m.sqlclient.Close()
 }
 
 // initMetric initializes a metric with a metadata label.
@@ -100,8 +93,7 @@ func addToIntMetric(metric pdata.NumberDataPointSlice, labels pdata.AttributeMap
 
 // scrape scrapes the mysql db metric stats, transforms them and labels them into a metric slices.
 func (m *mySQLScraper) scrape(context.Context) (pdata.Metrics, error) {
-
-	if m.client == nil {
+	if m.sqlclient == nil {
 		return pdata.Metrics{}, errors.New("failed to connect to http client")
 	}
 
@@ -127,7 +119,7 @@ func (m *mySQLScraper) scrape(context.Context) (pdata.Metrics, error) {
 	threads := initMetric(ilm.Metrics(), metadata.M.MysqlThreads).Sum().DataPoints()
 
 	// collect innodb metrics.
-	innodbStats, err := m.client.getInnodbStats()
+	innodbStats, err := m.sqlclient.getInnodbStats()
 	if err != nil {
 		m.logger.Error("Failed to fetch InnoDB stats", zap.Error(err))
 	}
@@ -144,7 +136,7 @@ func (m *mySQLScraper) scrape(context.Context) (pdata.Metrics, error) {
 	}
 
 	// collect global status metrics.
-	globalStats, err := m.client.getGlobalStats()
+	globalStats, err := m.sqlclient.getGlobalStats()
 	if err != nil {
 		m.logger.Error("Failed to fetch global stats", zap.Error(err))
 		return pdata.Metrics{}, err
