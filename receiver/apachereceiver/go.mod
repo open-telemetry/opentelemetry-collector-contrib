@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/apache
 go 1.17
 
 require (
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest v0.0.0-00010101000000-000000000000
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest v0.0.0-20211114201455-50435b0581a7
 	github.com/stretchr/testify v1.7.0
 	go.opentelemetry.io/collector v0.39.0
 	go.opentelemetry.io/collector/model v0.39.0
