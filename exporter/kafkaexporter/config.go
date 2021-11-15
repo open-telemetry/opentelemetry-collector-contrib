@@ -69,7 +69,8 @@ type Producer struct {
 	// Maximum message bytes the producer will accept to produce.
 	MaxMessageBytes int `mapstructure:"max_message_bytes"`
 
-	// RequiredAcks Number of Acknowledgements required to assume that a message has been sent.
+	// RequiredAcks Number of acknowledgements required to assume that a message has been sent.
+	// https://pkg.go.dev/github.com/Shopify/sarama@v1.30.0#RequiredAcks
 	// The options are:
 	//   0 -> NoResponse.  doesn't send any response
 	//   1 -> WaitForLocal. waits for only the local commit to succeed before responding ( default )
