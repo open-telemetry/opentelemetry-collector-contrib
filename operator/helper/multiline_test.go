@@ -412,6 +412,18 @@ func TestNewlineSplitFunc(t *testing.T) {
 				lastForcedFlush: time.Now(),
 			},
 		},
+		{
+			Name: "DefaultFlusherSplits",
+			Raw:  []byte("log1\nlog2\n"),
+			ExpectedTokenized: []string{
+				"log1",
+				"log2",
+			},
+			Flusher: &Flusher{
+				force:           true,
+				lastForcedFlush: time.Now(),
+			},
+		},
 	}
 
 	for _, tc := range testCases {
