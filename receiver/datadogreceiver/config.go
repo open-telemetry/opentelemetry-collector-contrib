@@ -25,5 +25,5 @@ import (
 type Config struct {
 	config.ReceiverSettings       `mapstructure:",squash"`
 	confighttp.HTTPServerSettings `mapstructure:",squash"`
-	ReadTimeout                   time.Duration `mapstructure:"read_timeout"`
+	ReadTimeout                   time.Duration `mapstructure:"read_timeout"` // The read timeout of the http server
 }
