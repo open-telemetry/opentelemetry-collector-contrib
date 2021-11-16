@@ -8,8 +8,8 @@ require (
 	github.com/stretchr/testify v1.7.0
 	github.com/tinylib/msgp v1.1.2
 	github.com/vmihailenco/msgpack/v4 v4.3.12
-	go.opentelemetry.io/collector v0.38.0
-	go.opentelemetry.io/collector/model v0.38.0
+	go.opentelemetry.io/collector v0.39.0
+	go.opentelemetry.io/collector/model v0.39.0
 )
 
 require (

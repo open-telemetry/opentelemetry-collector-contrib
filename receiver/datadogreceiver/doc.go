@@ -12,6 +12,5 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Receives traces from Datadog APM Agent
-
+// Package datadogreciever ingests traces in the Datadog APM format and translates them OpenTelemetry for collector usage
 package datadogreceiver

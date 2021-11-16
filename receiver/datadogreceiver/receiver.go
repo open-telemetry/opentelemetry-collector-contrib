@@ -20,7 +20,7 @@ import (
 	"net/http"
 	"sync"
 
-	"github.com/DataDog/datadog-agent/pkg/trace/exportable/pb"
+	datadogpb "github.com/DataDog/datadog-agent/pkg/trace/exportable/pb"
 	"github.com/gorilla/mux"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenterror"
@@ -79,7 +79,7 @@ func (ddr *datadogReceiver) Shutdown(ctx context.Context) (err error) {
 
 func (ddr *datadogReceiver) handleTraces(w http.ResponseWriter, req *http.Request) {
 	obsCtx := ddr.obs.StartTracesOp(req.Context())
-	var ddTraces pb.Traces
+	var ddTraces datadogpb.Traces
 
 	err := decodeRequest(req, &ddTraces)
 	if err != nil {
@@ -88,7 +88,7 @@ func (ddr *datadogReceiver) handleTraces(w http.ResponseWriter, req *http.Reques
 		return
 	}
 
-	otelTraces := ToTraces(ddTraces, req)
+	otelTraces := toTraces(ddTraces, req)
 	spanCount := otelTraces.SpanCount()
 	err = ddr.nextConsumer.ConsumeTraces(obsCtx, otelTraces)
 	if err != nil {
