@@ -14,7 +14,9 @@
 
 package awsecscontainermetrics
 
-import "go.uber.org/zap"
+import (
+	"go.uber.org/zap"
+)
 
 // getContainerMetrics generate ECS Container metrics from Container stats
 func getContainerMetrics(stats *ContainerStats, logger *zap.Logger) ECSMetrics {
