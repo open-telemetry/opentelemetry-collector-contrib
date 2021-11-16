@@ -111,7 +111,8 @@ func SkipSpan(include Matcher, exclude Matcher, span pdata.Span, resource pdata.
 func (mp *propertiesMatcher) MatchSpan(span pdata.Span, resource pdata.Resource, library pdata.InstrumentationLibrary) bool {
 	// If a set of properties was not in the mp, all spans are considered to match on that property
 	if mp.serviceFilters != nil {
-		serviceName := serviceNameForResource(resource)
+		// Check resource and spans for service.name
+		serviceName := serviceNameForResource(resource, span)
 		if !mp.serviceFilters.Matches(serviceName) {
 			return false
 		}
@@ -124,11 +125,14 @@ func (mp *propertiesMatcher) MatchSpan(span pdata.Span, resource pdata.Resource,
 	return mp.PropertiesMatcher.Match(span.Attributes(), resource, library)
 }
 
-// serviceNameForResource gets the service name for a specified Resource.
-func serviceNameForResource(resource pdata.Resource) string {
+// serviceNameForResource gets the service name for a specified Resource and its associated Span.
+func serviceNameForResource(resource pdata.Resource, span pdata.Span) string {
 	service, found := resource.Attributes().Get(conventions.AttributeServiceName)
 	if !found {
-		return "<nil-service-name>"
+		service, found = span.Attributes().Get(conventions.AttributeServiceName)
+		if !found {
+			return "<nil-service-name>"
+		}
 	}
 
 	return service.StringVal()
