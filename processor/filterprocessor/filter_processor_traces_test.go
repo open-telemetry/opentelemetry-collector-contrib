@@ -64,8 +64,7 @@ var nameTraces = []testTrace{
 			"service.name": pdata.NewAttributeValueString("dont_keep"),
 		},
 		tags: map[string]pdata.AttributeValue{
-			"db.type":      pdata.NewAttributeValueString("redis"),
-			"service.name": pdata.NewAttributeValueString("dont_keep"),
+			"db.type": pdata.NewAttributeValueString("redis"),
 		},
 	},
 	{
