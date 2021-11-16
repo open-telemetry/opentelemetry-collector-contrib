@@ -54,7 +54,7 @@ func ToTraces(traces pb.Traces, req *http.Request) pdata.Traces {
 			}
 			if span.Error > 0 {
 				_, errorExists := newSpan.Attributes().Get("error")
-				if errorExists == false {
+				if !errorExists {
 					newSpan.Status().SetCode(pdata.StatusCodeError)
 				}
 			}
