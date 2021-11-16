@@ -15,17 +15,18 @@
 package tencentcloudlogserviceexporter
 
 import (
+	"errors"
+
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/config/confignet"
 )
 
 // Config defines configuration for TencentCloud Log Service exporter.
 type Config struct {
 	config.ExporterSettings `mapstructure:",squash"`
-	// LogService's Endpoint, https://cloud.tencent.com/document/product/614/18940
-	// for TencentCloud Kubernetes(or CVM), set ap-{region-id}.cls.tencentyun.com, eg ap-beijing.cls.tencentyun.com;
-	//  others set ap-{region-id}.cls.tencentcs.com, eg ap-beijing.cls.tencentcs.com
-	confignet.TCPAddr `mapstructure:",squash"`
+	// LogService's Region, https://cloud.tencent.com/document/product/614/18940
+	// for TencentCloud Kubernetes(or CVM), set ap-{region}.cls.tencentyun.com, eg ap-beijing.cls.tencentyun.com;
+	//  others set ap-{region}.cls.tencentcs.com, eg ap-beijing.cls.tencentcs.com
+	Region string `mapstructure:"region"`
 	// LogService's LogSet Name
 	LogSet string `mapstructure:"logset"`
 	// LogService's Topic Name
@@ -34,4 +35,14 @@ type Config struct {
 	SecretID string `mapstructure:"secret_id"`
 	// TencentCloud access key secret
 	SecretKey string `mapstructure:"secret_key"`
+}
+
+var _ config.Exporter = (*Config)(nil)
+
+// Validate checks if the exporter configuration is valid
+func (cfg *Config) Validate() error {
+	if cfg == nil || cfg.Region == "" || cfg.LogSet == "" || cfg.Topic == "" {
+		return errors.New("missing tencentcloudlogservice params: Region, LogSet, Topic")
+	}
+	return nil
 }

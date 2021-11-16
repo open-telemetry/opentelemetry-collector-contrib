@@ -123,13 +123,13 @@ func (suite *NginxIntegrationSuite) TestNginxScraperHappyPath() {
 					continue
 				}
 				switch state.StringVal() {
-				case metadata.LabelState.Active:
+				case metadata.AttributeState.Active:
 					present[state.StringVal()] = true
-				case metadata.LabelState.Reading:
+				case metadata.AttributeState.Reading:
 					present[state.StringVal()] = true
-				case metadata.LabelState.Writing:
+				case metadata.AttributeState.Writing:
 					present[state.StringVal()] = true
-				case metadata.LabelState.Waiting:
+				case metadata.AttributeState.Waiting:
 					present[state.StringVal()] = true
 				default:
 					t.Error(fmt.Sprintf("connections with state %s not expected", state.StringVal()))

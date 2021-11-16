@@ -54,7 +54,7 @@ func (ipp *inProcessCollector) Start(args StartParams) error {
 	settings := service.CollectorSettings{
 		BuildInfo:         component.NewDefaultBuildInfo(),
 		Factories:         ipp.factories,
-		ConfigMapProvider: configmapprovider.NewInMemoryMapProvider(strings.NewReader(ipp.configStr)),
+		ConfigMapProvider: configmapprovider.NewInMemory(strings.NewReader(ipp.configStr)),
 	}
 	var err error
 	ipp.svc, err = service.New(settings)

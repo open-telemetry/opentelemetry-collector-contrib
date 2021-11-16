@@ -113,16 +113,16 @@ func assertCPUMetricValid(t *testing.T, metric pdata.Metric, descriptor pdata.Me
 		internal.AssertSumMetricStartTimeEquals(t, metric, startTime)
 	}
 	assert.GreaterOrEqual(t, metric.Sum().DataPoints().Len(), 4*runtime.NumCPU())
-	internal.AssertSumMetricHasAttribute(t, metric, 0, metadata.Labels.Cpu)
-	internal.AssertSumMetricHasAttributeValue(t, metric, 0, metadata.Labels.State, pdata.NewAttributeValueString(metadata.LabelState.User))
-	internal.AssertSumMetricHasAttributeValue(t, metric, 1, metadata.Labels.State, pdata.NewAttributeValueString(metadata.LabelState.System))
-	internal.AssertSumMetricHasAttributeValue(t, metric, 2, metadata.Labels.State, pdata.NewAttributeValueString(metadata.LabelState.Idle))
-	internal.AssertSumMetricHasAttributeValue(t, metric, 3, metadata.Labels.State, pdata.NewAttributeValueString(metadata.LabelState.Interrupt))
+	internal.AssertSumMetricHasAttribute(t, metric, 0, metadata.Attributes.Cpu)
+	internal.AssertSumMetricHasAttributeValue(t, metric, 0, metadata.Attributes.State, pdata.NewAttributeValueString(metadata.AttributeState.User))
+	internal.AssertSumMetricHasAttributeValue(t, metric, 1, metadata.Attributes.State, pdata.NewAttributeValueString(metadata.AttributeState.System))
+	internal.AssertSumMetricHasAttributeValue(t, metric, 2, metadata.Attributes.State, pdata.NewAttributeValueString(metadata.AttributeState.Idle))
+	internal.AssertSumMetricHasAttributeValue(t, metric, 3, metadata.Attributes.State, pdata.NewAttributeValueString(metadata.AttributeState.Interrupt))
 }
 
 func assertCPUMetricHasLinuxSpecificStateLabels(t *testing.T, metric pdata.Metric) {
-	internal.AssertSumMetricHasAttributeValue(t, metric, 4, metadata.Labels.State, pdata.NewAttributeValueString(metadata.LabelState.Nice))
-	internal.AssertSumMetricHasAttributeValue(t, metric, 5, metadata.Labels.State, pdata.NewAttributeValueString(metadata.LabelState.Softirq))
-	internal.AssertSumMetricHasAttributeValue(t, metric, 6, metadata.Labels.State, pdata.NewAttributeValueString(metadata.LabelState.Steal))
-	internal.AssertSumMetricHasAttributeValue(t, metric, 7, metadata.Labels.State, pdata.NewAttributeValueString(metadata.LabelState.Wait))
+	internal.AssertSumMetricHasAttributeValue(t, metric, 4, metadata.Attributes.State, pdata.NewAttributeValueString(metadata.AttributeState.Nice))
+	internal.AssertSumMetricHasAttributeValue(t, metric, 5, metadata.Attributes.State, pdata.NewAttributeValueString(metadata.AttributeState.Softirq))
+	internal.AssertSumMetricHasAttributeValue(t, metric, 6, metadata.Attributes.State, pdata.NewAttributeValueString(metadata.AttributeState.Steal))
+	internal.AssertSumMetricHasAttributeValue(t, metric, 7, metadata.Attributes.State, pdata.NewAttributeValueString(metadata.AttributeState.Wait))
 }

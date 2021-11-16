@@ -177,8 +177,8 @@ var Metrics = &metricStruct{
 // manipulating those metrics. M is an alias for Metrics
 var M = Metrics
 
-// Labels contains the possible metric labels that can be used.
-var Labels = struct {
+// Attributes contains the possible metric attributes that can be used.
+var Attributes = struct {
 	// Device (Name of the disk.)
 	Device string
 	// Direction (Direction of flow of bytes/opertations (read or write).)
@@ -188,12 +188,11 @@ var Labels = struct {
 	"direction",
 }
 
-// L contains the possible metric labels that can be used. L is an alias for
-// Labels.
-var L = Labels
+// A is an alias for Attributes.
+var A = Attributes
 
-// LabelDirection are the possible values that the label "direction" can have.
-var LabelDirection = struct {
+// AttributeDirection are the possible values that the attribute "direction" can have.
+var AttributeDirection = struct {
 	Read  string
 	Write string
 }{

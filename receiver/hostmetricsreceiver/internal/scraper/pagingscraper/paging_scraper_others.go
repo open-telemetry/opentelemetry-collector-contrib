@@ -99,19 +99,19 @@ func initializePagingUsageMetric(metric pdata.Metric, now pdata.Timestamp, pageF
 	idps := metric.Sum().DataPoints()
 	idps.EnsureCapacity(3)
 	for _, pageFile := range pageFileStats {
-		initializePagingUsageDataPoint(idps.AppendEmpty(), now, pageFile.deviceName, metadata.LabelState.Used, int64(pageFile.usedBytes))
-		initializePagingUsageDataPoint(idps.AppendEmpty(), now, pageFile.deviceName, metadata.LabelState.Free, int64(pageFile.freeBytes))
+		initializePagingUsageDataPoint(idps.AppendEmpty(), now, pageFile.deviceName, metadata.AttributeState.Used, int64(pageFile.usedBytes))
+		initializePagingUsageDataPoint(idps.AppendEmpty(), now, pageFile.deviceName, metadata.AttributeState.Free, int64(pageFile.freeBytes))
 		if pageFile.cachedBytes != nil {
-			initializePagingUsageDataPoint(idps.AppendEmpty(), now, pageFile.deviceName, metadata.LabelState.Cached, int64(*pageFile.cachedBytes))
+			initializePagingUsageDataPoint(idps.AppendEmpty(), now, pageFile.deviceName, metadata.AttributeState.Cached, int64(*pageFile.cachedBytes))
 		}
 	}
 }
 
 func initializePagingUsageDataPoint(dataPoint pdata.NumberDataPoint, now pdata.Timestamp, deviceLabel, stateLabel string, value int64) {
 	if deviceLabel != "" {
-		dataPoint.Attributes().InsertString(metadata.Labels.Device, deviceLabel)
+		dataPoint.Attributes().InsertString(metadata.Attributes.Device, deviceLabel)
 	}
-	dataPoint.Attributes().InsertString(metadata.Labels.State, stateLabel)
+	dataPoint.Attributes().InsertString(metadata.Attributes.State, stateLabel)
 	dataPoint.SetTimestamp(now)
 	dataPoint.SetIntVal(value)
 }
@@ -135,16 +135,16 @@ func initializePagingOperationsMetric(metric pdata.Metric, startTime, now pdata.
 
 	idps := metric.Sum().DataPoints()
 	idps.EnsureCapacity(4)
-	initializePagingOperationsDataPoint(idps.AppendEmpty(), startTime, now, metadata.LabelType.Major, metadata.LabelDirection.PageIn, int64(swap.Sin))
-	initializePagingOperationsDataPoint(idps.AppendEmpty(), startTime, now, metadata.LabelType.Major, metadata.LabelDirection.PageOut, int64(swap.Sout))
-	initializePagingOperationsDataPoint(idps.AppendEmpty(), startTime, now, metadata.LabelType.Minor, metadata.LabelDirection.PageIn, int64(swap.PgIn))
-	initializePagingOperationsDataPoint(idps.AppendEmpty(), startTime, now, metadata.LabelType.Minor, metadata.LabelDirection.PageOut, int64(swap.PgOut))
+	initializePagingOperationsDataPoint(idps.AppendEmpty(), startTime, now, metadata.AttributeType.Major, metadata.AttributeDirection.PageIn, int64(swap.Sin))
+	initializePagingOperationsDataPoint(idps.AppendEmpty(), startTime, now, metadata.AttributeType.Major, metadata.AttributeDirection.PageOut, int64(swap.Sout))
+	initializePagingOperationsDataPoint(idps.AppendEmpty(), startTime, now, metadata.AttributeType.Minor, metadata.AttributeDirection.PageIn, int64(swap.PgIn))
+	initializePagingOperationsDataPoint(idps.AppendEmpty(), startTime, now, metadata.AttributeType.Minor, metadata.AttributeDirection.PageOut, int64(swap.PgOut))
 }
 
 func initializePagingOperationsDataPoint(dataPoint pdata.NumberDataPoint, startTime, now pdata.Timestamp, typeLabel string, directionLabel string, value int64) {
 	attributes := dataPoint.Attributes()
-	attributes.InsertString(metadata.Labels.Type, typeLabel)
-	attributes.InsertString(metadata.Labels.Direction, directionLabel)
+	attributes.InsertString(metadata.Attributes.Type, typeLabel)
+	attributes.InsertString(metadata.Attributes.Direction, directionLabel)
 	dataPoint.SetStartTimestamp(startTime)
 	dataPoint.SetTimestamp(now)
 	dataPoint.SetIntVal(value)
@@ -155,12 +155,12 @@ func initializePageFaultsMetric(metric pdata.Metric, startTime, now pdata.Timest
 
 	idps := metric.Sum().DataPoints()
 	idps.EnsureCapacity(2)
-	initializePageFaultDataPoint(idps.AppendEmpty(), startTime, now, metadata.LabelType.Major, int64(swap.PgMajFault))
-	initializePageFaultDataPoint(idps.AppendEmpty(), startTime, now, metadata.LabelType.Minor, int64(swap.PgFault-swap.PgMajFault))
+	initializePageFaultDataPoint(idps.AppendEmpty(), startTime, now, metadata.AttributeType.Major, int64(swap.PgMajFault))
+	initializePageFaultDataPoint(idps.AppendEmpty(), startTime, now, metadata.AttributeType.Minor, int64(swap.PgFault-swap.PgMajFault))
 }
 
 func initializePageFaultDataPoint(dataPoint pdata.NumberDataPoint, startTime, now pdata.Timestamp, typeLabel string, value int64) {
-	dataPoint.Attributes().InsertString(metadata.Labels.Type, typeLabel)
+	dataPoint.Attributes().InsertString(metadata.Attributes.Type, typeLabel)
 	dataPoint.SetStartTimestamp(startTime)
 	dataPoint.SetTimestamp(now)
 	dataPoint.SetIntVal(value)

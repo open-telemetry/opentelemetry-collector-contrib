@@ -38,8 +38,8 @@ func TestMetricsDataPoint_GroupingKey(t *testing.T) {
 
 	assert.NotNil(t, groupingKey)
 	assert.Equal(t, dataPoint.metricName, groupingKey.MetricName)
-	assert.Equal(t, dataPoint.metricValue.Unit(), groupingKey.MetricUnit)
-	assert.Equal(t, dataPoint.metricValue.DataType(), groupingKey.MetricDataType)
+	assert.Equal(t, dataPoint.metricValue.Metadata().Unit(), groupingKey.MetricUnit)
+	assert.Equal(t, dataPoint.metricValue.Metadata().DataType(), groupingKey.MetricDataType)
 }
 
 func TestMetricsDataPoint_ToItem(t *testing.T) {
@@ -65,7 +65,7 @@ func TestMetricsDataPoint_ToDataForHashing(t *testing.T) {
 
 	labelsIndex := 3
 	for _, labelValue := range dataPoint.labelValues {
-		assertLabel(t, actual.Labels[labelsIndex], labelValue.Name(), labelValue.Value())
+		assertLabel(t, actual.Labels[labelsIndex], labelValue.Metadata().Name(), labelValue.Value())
 		labelsIndex++
 	}
 }
@@ -112,31 +112,31 @@ func TestMetricsDataPoint_CopyTo(t *testing.T) {
 
 func allPossibleLabelValues() []LabelValue {
 	strLabelValue := stringLabelValue{
-		StringLabelValueMetadata: StringLabelValueMetadata{
+		metadata: StringLabelValueMetadata{
 			queryLabelValueMetadata: newQueryLabelValueMetadata("stringLabelName", "stringLabelColumnName"),
 		},
 		value: stringValue,
 	}
 	bLabelValue := boolLabelValue{
-		BoolLabelValueMetadata: BoolLabelValueMetadata{
+		metadata: BoolLabelValueMetadata{
 			queryLabelValueMetadata: newQueryLabelValueMetadata("boolLabelName", "boolLabelColumnName"),
 		},
 		value: boolValue,
 	}
 	i64LabelValue := int64LabelValue{
-		Int64LabelValueMetadata: Int64LabelValueMetadata{
+		metadata: Int64LabelValueMetadata{
 			queryLabelValueMetadata: newQueryLabelValueMetadata("int64LabelName", "int64LabelColumnName"),
 		},
 		value: int64Value,
 	}
 	strSliceLabelValue := stringSliceLabelValue{
-		StringSliceLabelValueMetadata: StringSliceLabelValueMetadata{
+		metadata: StringSliceLabelValueMetadata{
 			queryLabelValueMetadata: newQueryLabelValueMetadata("stringSliceLabelName", "stringSliceLabelColumnName"),
 		},
 		value: stringValue,
 	}
 	btSliceLabelValue := byteSliceLabelValue{
-		ByteSliceLabelValueMetadata: ByteSliceLabelValueMetadata{
+		metadata: ByteSliceLabelValueMetadata{
 			queryLabelValueMetadata: newQueryLabelValueMetadata("byteSliceLabelName", "byteSliceLabelColumnName"),
 		},
 		value: stringValue,
@@ -155,14 +155,14 @@ func allPossibleMetricValues(metricDataType pdata.MetricDataType) []MetricValue 
 	dataType := NewMetricDataType(metricDataType, pdata.MetricAggregationTemporalityDelta, true)
 	return []MetricValue{
 		int64MetricValue{
-			Int64MetricValueMetadata: Int64MetricValueMetadata{
+			metadata: Int64MetricValueMetadata{
 				queryMetricValueMetadata: newQueryMetricValueMetadata("int64MetricName",
 					"int64MetricColumnName", dataType, metricUnit),
 			},
 			value: int64Value,
 		},
 		float64MetricValue{
-			Float64MetricValueMetadata: Float64MetricValueMetadata{
+			metadata: Float64MetricValueMetadata{
 				queryMetricValueMetadata: newQueryMetricValueMetadata("float64MetricName",
 					"float64MetricColumnName", dataType, metricUnit),
 			},
@@ -184,7 +184,7 @@ func assertNonDefaultLabels(t *testing.T, attributesMap pdata.AttributeMap, labe
 }
 
 func assertLabelValue(t *testing.T, attributesMap pdata.AttributeMap, labelValue LabelValue) {
-	value, exists := attributesMap.Get(labelValue.Name())
+	value, exists := attributesMap.Get(labelValue.Metadata().Name())
 
 	assert.True(t, exists)
 	switch labelValue.(type) {
