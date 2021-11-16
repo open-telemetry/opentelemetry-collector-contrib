@@ -15,6 +15,9 @@
 package healthcheckextension
 
 import (
+	"errors"
+	"time"
+
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confignet"
 )
@@ -33,11 +36,37 @@ type Config struct {
 	// check status.
 	// The default endpoint is "0.0.0.0:13133".
 	TCPAddr confignet.TCPAddr `mapstructure:",squash"`
+
+	// CheckCollectorPipeline contains the list of settings of collector pipeline health check
+	CheckCollectorPipeline checkCollectorPipelineSettings `mapstructure:"check_collector_pipeline"`
 }
 
 var _ config.Extension = (*Config)(nil)
+var (
+	errNoEndpointProvided                      = errors.New("bad config: endpoint must be specified")
+	errInvalidExporterFailureThresholdProvided = errors.New("bad config: exporter_failure_threshold expects a positive number")
+)
 
 // Validate checks if the extension configuration is valid
 func (cfg *Config) Validate() error {
+	_, err := time.ParseDuration(cfg.CheckCollectorPipeline.Interval)
+	if err != nil {
+		return err
+	}
+	if cfg.TCPAddr.Endpoint == "" {
+		return errNoEndpointProvided
+	}
+	if cfg.CheckCollectorPipeline.ExporterFailureThreshold <= 0 {
+		return errInvalidExporterFailureThresholdProvided
+	}
 	return nil
+}
+
+type checkCollectorPipelineSettings struct {
+	// Enabled indicates whether to not enable collector pipeline check.
+	Enabled bool `mapstructure:"enabled"`
+	// Interval the time range to check healthy status of collector pipeline
+	Interval string `mapstructure:"interval"`
+	// ExporterFailureThreshold is the threshold of exporter failure numbers during the Interval
+	ExporterFailureThreshold int `mapstructure:"exporter_failure_threshold"`
 }

@@ -141,6 +141,7 @@ func (t *Translator) mapNumberMonotonicMetrics(
 	for i := 0; i < slice.Len(); i++ {
 		p := slice.At(i)
 		ts := uint64(p.Timestamp())
+		startTs := uint64(p.StartTimestamp())
 		tags := getTags(p.Attributes())
 		tags = append(tags, additionalTags...)
 
@@ -156,7 +157,7 @@ func (t *Translator) mapNumberMonotonicMetrics(
 			continue
 		}
 
-		if dx, ok := t.prevPts.putAndGetDiff(name, tags, ts, val); ok {
+		if dx, ok := t.prevPts.MonotonicDiff(name, tags, startTs, ts, val); ok {
 			consumer.ConsumeTimeSeries(ctx, name, Count, ts, dx, tags, host)
 		}
 	}
@@ -179,12 +180,13 @@ func (t *Translator) getSketchBuckets(
 	ctx context.Context,
 	consumer SketchConsumer,
 	name string,
-	ts uint64,
 	p pdata.HistogramDataPoint,
 	delta bool,
 	tags []string,
 	host string,
 ) {
+	startTs := uint64(p.StartTimestamp())
+	ts := uint64(p.Timestamp())
 	as := &quantile.Agent{}
 	for j := range p.BucketCounts() {
 		lowerBound, upperBound := getBounds(p, j)
@@ -210,7 +212,7 @@ func (t *Translator) getSketchBuckets(
 		count := p.BucketCounts()[j]
 		if delta {
 			as.InsertInterpolate(lowerBound, upperBound, uint(count))
-		} else if dx, ok := t.prevPts.putAndGetDiff(name, bucketTags, ts, float64(count)); ok {
+		} else if dx, ok := t.prevPts.Diff(name, bucketTags, startTs, ts, float64(count)); ok {
 			as.InsertInterpolate(lowerBound, upperBound, uint(dx))
 		}
 
@@ -231,6 +233,8 @@ func (t *Translator) getLegacyBuckets(
 	tags []string,
 	host string,
 ) {
+	startTs := uint64(p.StartTimestamp())
+	ts := uint64(p.Timestamp())
 	// We have a single metric, 'bucket', which is tagged with the bucket bounds. See:
 	// https://github.com/DataDog/integrations-core/blob/7.30.1/datadog_checks_base/datadog_checks/base/checks/openmetrics/v2/transformers/histogram.py
 	fullName := fmt.Sprintf("%s.bucket", name)
@@ -243,10 +247,9 @@ func (t *Translator) getLegacyBuckets(
 		bucketTags = append(bucketTags, tags...)
 
 		count := float64(val)
-		ts := uint64(p.Timestamp())
 		if delta {
 			consumer.ConsumeTimeSeries(ctx, fullName, Count, ts, count, bucketTags, host)
-		} else if dx, ok := t.prevPts.putAndGetDiff(fullName, bucketTags, ts, count); ok {
+		} else if dx, ok := t.prevPts.Diff(fullName, bucketTags, startTs, ts, count); ok {
 			consumer.ConsumeTimeSeries(ctx, fullName, Count, ts, dx, bucketTags, host)
 		}
 	}
@@ -276,6 +279,7 @@ func (t *Translator) mapHistogramMetrics(
 ) {
 	for i := 0; i < slice.Len(); i++ {
 		p := slice.At(i)
+		startTs := uint64(p.StartTimestamp())
 		ts := uint64(p.Timestamp())
 		tags := getTags(p.Attributes())
 		tags = append(tags, additionalTags...)
@@ -285,7 +289,7 @@ func (t *Translator) mapHistogramMetrics(
 			countName := fmt.Sprintf("%s.count", name)
 			if delta {
 				consumer.ConsumeTimeSeries(ctx, countName, Count, ts, count, tags, host)
-			} else if dx, ok := t.prevPts.putAndGetDiff(countName, tags, ts, count); ok {
+			} else if dx, ok := t.prevPts.Diff(countName, tags, startTs, ts, count); ok {
 				consumer.ConsumeTimeSeries(ctx, countName, Count, ts, dx, tags, host)
 			}
 		}
@@ -296,7 +300,7 @@ func (t *Translator) mapHistogramMetrics(
 			if !t.isSkippable(sumName, p.Sum()) {
 				if delta {
 					consumer.ConsumeTimeSeries(ctx, sumName, Count, ts, sum, tags, host)
-				} else if dx, ok := t.prevPts.putAndGetDiff(sumName, tags, ts, sum); ok {
+				} else if dx, ok := t.prevPts.Diff(sumName, tags, startTs, ts, sum); ok {
 					consumer.ConsumeTimeSeries(ctx, sumName, Count, ts, dx, tags, host)
 				}
 			}
@@ -306,7 +310,7 @@ func (t *Translator) mapHistogramMetrics(
 		case HistogramModeCounters:
 			t.getLegacyBuckets(ctx, consumer, name, p, delta, tags, host)
 		case HistogramModeDistributions:
-			t.getSketchBuckets(ctx, consumer, name, ts, p, delta, tags, host)
+			t.getSketchBuckets(ctx, consumer, name, p, delta, tags, host)
 		}
 	}
 }
@@ -350,6 +354,7 @@ func (t *Translator) mapSummaryMetrics(
 
 	for i := 0; i < slice.Len(); i++ {
 		p := slice.At(i)
+		startTs := uint64(p.StartTimestamp())
 		ts := uint64(p.Timestamp())
 		tags := getTags(p.Attributes())
 		tags = append(tags, additionalTags...)
@@ -357,7 +362,7 @@ func (t *Translator) mapSummaryMetrics(
 		// count and sum are increasing; we treat them as cumulative monotonic sums.
 		{
 			countName := fmt.Sprintf("%s.count", name)
-			if dx, ok := t.prevPts.putAndGetDiff(countName, tags, ts, float64(p.Count())); ok && !t.isSkippable(countName, dx) {
+			if dx, ok := t.prevPts.Diff(countName, tags, startTs, ts, float64(p.Count())); ok && !t.isSkippable(countName, dx) {
 				consumer.ConsumeTimeSeries(ctx, countName, Count, ts, dx, tags, host)
 			}
 		}
@@ -365,7 +370,7 @@ func (t *Translator) mapSummaryMetrics(
 		{
 			sumName := fmt.Sprintf("%s.sum", name)
 			if !t.isSkippable(sumName, p.Sum()) {
-				if dx, ok := t.prevPts.putAndGetDiff(sumName, tags, ts, p.Sum()); ok {
+				if dx, ok := t.prevPts.Diff(sumName, tags, startTs, ts, p.Sum()); ok {
 					consumer.ConsumeTimeSeries(ctx, sumName, Count, ts, dx, tags, host)
 				}
 			}

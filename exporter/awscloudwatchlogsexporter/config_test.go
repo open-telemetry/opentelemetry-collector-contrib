@@ -96,5 +96,5 @@ func TestFailedLoadConfig(t *testing.T) {
 	assert.EqualError(t, err, "exporter \"awscloudwatchlogs\" has invalid configuration: 'sending_queue.queue_size' must be 1 or greater")
 
 	_, err = configtest.LoadConfigAndValidate(path.Join(".", "testdata", "invalid_queue_setting.yaml"), factories)
-	assert.EqualError(t, err, "error reading exporters configuration for awscloudwatchlogs: 1 error(s) decoding:\n\n* 'sending_queue' has invalid keys: enabled, num_consumers")
+	assert.EqualError(t, err, "error reading exporters configuration for \"awscloudwatchlogs\": 1 error(s) decoding:\n\n* 'sending_queue' has invalid keys: enabled, num_consumers")
 }

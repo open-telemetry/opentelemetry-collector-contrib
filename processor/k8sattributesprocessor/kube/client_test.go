@@ -513,6 +513,33 @@ func TestExtractionRules(t *testing.T) {
 			"a1": "av1",
 		},
 	},
+		{
+			name: "all-labels",
+			rules: ExtractionRules{
+				Labels: []FieldExtractionRule{{
+					KeyRegex: regexp.MustCompile("la*"),
+					From:     MetadataFromPod,
+				},
+				},
+			},
+			attributes: map[string]string{
+				"k8s.pod.labels.label1": "lv1",
+				"k8s.pod.labels.label2": "k1=v1 k5=v5 extra!",
+			},
+		},
+		{
+			name: "all-annotations",
+			rules: ExtractionRules{
+				Annotations: []FieldExtractionRule{{
+					KeyRegex: regexp.MustCompile("an*"),
+					From:     MetadataFromPod,
+				},
+				},
+			},
+			attributes: map[string]string{
+				"k8s.pod.annotations.annotation1": "av1",
+			},
+		},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -577,6 +604,32 @@ func TestNamespaceExtractionRules(t *testing.T) {
 			"a1": "av1",
 		},
 	},
+		{
+			name: "all-labels",
+			rules: ExtractionRules{
+				Labels: []FieldExtractionRule{{
+					KeyRegex: regexp.MustCompile("la*"),
+					From:     MetadataFromNamespace,
+				},
+				},
+			},
+			attributes: map[string]string{
+				"k8s.namespace.labels.label1": "lv1",
+			},
+		},
+		{
+			name: "all-annotations",
+			rules: ExtractionRules{
+				Annotations: []FieldExtractionRule{{
+					KeyRegex: regexp.MustCompile("an*"),
+					From:     MetadataFromNamespace,
+				},
+				},
+			},
+			attributes: map[string]string{
+				"k8s.namespace.annotations.annotation1": "av1",
+			},
+		},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
