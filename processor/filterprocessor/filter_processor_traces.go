@@ -43,23 +43,18 @@ func newFilterTracesProcessor(logger *zap.Logger, cfg *Config) (*filterSpanProce
 	}
 
 	includeMatchType := ""
-	var includeResourceAttributes []filterconfig.Attribute
 	if cfg.Spans.Include != nil {
 		includeMatchType = string(cfg.Spans.Include.MatchType)
 	}
 
 	excludeMatchType := ""
-	var excludeResourceAttributes []filterconfig.Attribute
 	if cfg.Metrics.Exclude != nil {
 		excludeMatchType = string(cfg.Spans.Exclude.MatchType)
 	}
-
 	logger.Info(
 		"Span filter configured",
 		zap.String("include match_type", includeMatchType),
-		zap.Any("include spans with resource attributes", includeResourceAttributes),
 		zap.String("exclude match_type", excludeMatchType),
-		zap.Any("exclude spans with resource attributes", excludeResourceAttributes),
 	)
 
 	return &filterSpanProcessor{
@@ -89,7 +84,7 @@ func (fsp *filterSpanProcessor) processTraces(_ context.Context, pdt pdata.Trace
 			ils := resSpan.InstrumentationLibrarySpans().At(x)
 			for spanCount := 0; spanCount < ils.Spans().Len(); spanCount++ {
 				ils.Spans().RemoveIf(func(span pdata.Span) bool {
-					return filterspan.SkipSpan(fsp.include, fsp.exclude, span, resSpan.Resource(), ils.InstrumentationLibrary())
+					return !filterspan.SkipSpan(fsp.include, fsp.exclude, span, resSpan.Resource(), ils.InstrumentationLibrary())
 				})
 			}
 		}
