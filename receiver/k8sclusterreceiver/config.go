@@ -36,7 +36,7 @@ type Config struct {
 	// here: https://kubernetes.io/docs/concepts/architecture/nodes/#condition.
 	NodeConditionTypesToReport []string `mapstructure:"node_conditions_to_report"`
 	// Allocate resource types to report. See all resource types, see
-	//here: https://kubernetes.io/docs/concepts/architecture/nodes/#capacity
+	// here: https://kubernetes.io/docs/concepts/architecture/nodes/#capacity
 	AllocatableTypesToReport []string `mapstructure:"allocatable_types_to_report"`
 	// List of exporters to which metadata from this receiver should be forwarded to.
 	MetadataExporters []string `mapstructure:"metadata_exporters"`

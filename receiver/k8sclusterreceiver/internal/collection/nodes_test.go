@@ -31,7 +31,7 @@ import (
 func TestNodeMetrics(t *testing.T) {
 	n := newNode("1")
 
-	actualResourceMetrics := getMetricsForNode(n, []string{"Ready", "MemoryPressure"}, []string{"cpu", "memory", "ephemeral-storage"}, &zap.Logger{})
+	actualResourceMetrics := getMetricsForNode(n, []string{"Ready", "MemoryPressure"}, []string{"cpu", "memory", "ephemeral-storage", "storage"}, zap.NewNop())
 
 	require.Equal(t, 1, len(actualResourceMetrics))
 

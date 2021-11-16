@@ -43,7 +43,7 @@ var allocatableDesciption = map[string]string{
 }
 
 func getMetricsForNode(node *corev1.Node, nodeConditionTypesToReport, allocatableTypesToReport []string, logger *zap.Logger) []*resourceMetrics {
-	var metrics []*metricspb.Metric
+	metrics := make([]*metricspb.Metric, 0, len(nodeConditionTypesToReport)+len(allocatableTypesToReport))
 	// Adding 'node condition type' metrics
 	for _, nodeConditionTypeValue := range nodeConditionTypesToReport {
 		nodeConditionMetric := getNodeConditionMetric(nodeConditionTypeValue)
@@ -65,10 +65,12 @@ func getMetricsForNode(node *corev1.Node, nodeConditionTypesToReport, allocatabl
 	for _, nodeAllocatableTypeValue := range allocatableTypesToReport {
 		nodeAllocatableMetric := getNodeAllocatableMetric(nodeAllocatableTypeValue)
 		v1NodeAllocatableTypeValue := corev1.ResourceName(nodeAllocatableTypeValue)
-		metricValue, ok := nodeAllocatableValue(node, v1NodeAllocatableTypeValue, logger)
+		metricValue, err := nodeAllocatableValue(node, v1NodeAllocatableTypeValue)
 
 		// metrics will be skipped if metric not present in node or value is not convertable to int64
-		if ok {
+		if err != nil {
+			logger.Debug(err.Error())
+		} else {
 			metrics = append(metrics, &metricspb.Metric{
 				MetricDescriptor: &metricspb.MetricDescriptor{
 					Name:        nodeAllocatableMetric,
@@ -115,18 +117,17 @@ var nodeConditionValues = map[corev1.ConditionStatus]int64{
 	corev1.ConditionUnknown: -1,
 }
 
-func nodeAllocatableValue(node *corev1.Node, allocatType corev1.ResourceName, logger *zap.Logger) (int64, bool) {
-	value, ok := node.Status.Allocatable[allocatType]
+func nodeAllocatableValue(node *corev1.Node, allocatableType corev1.ResourceName) (int64, error) {
+	value, ok := node.Status.Allocatable[allocatableType]
 	if !ok {
-		logger.Debug(string(allocatType) + " value not found in node")
-		return 0, false
+		return 0, fmt.Errorf("allocatable type %v not found in node %v", allocatableType, node.GetName())
 	}
+
 	val, ok := value.AsInt64()
 	if !ok {
-		logger.Debug(fmt.Sprintf("Metric %s has value %v which is not convertable to int64", allocatType, val))
-		return 0, false
+		return 0, fmt.Errorf("metric %s has value %v which is not convertable to int64", allocatableType, value)
 	}
-	return val, true
+	return val, nil
 }
 
 func nodeConditionValue(node *corev1.Node, condType corev1.NodeConditionType) int64 {
