@@ -31,7 +31,7 @@ type filterSpanProcessor struct {
 	logger  *zap.Logger
 }
 
-func newFilterTracesProcessor(logger *zap.Logger, cfg *Config) (*filterSpanProcessor, error) {
+func newFilterSpansProcessor(logger *zap.Logger, cfg *Config) (*filterSpanProcessor, error) {
 	inc, err := createSpanMatcher(cfg.Spans.Include)
 	if err != nil {
 		return nil, err
@@ -48,9 +48,10 @@ func newFilterTracesProcessor(logger *zap.Logger, cfg *Config) (*filterSpanProce
 	}
 
 	excludeMatchType := ""
-	if cfg.Metrics.Exclude != nil {
+	if cfg.Spans.Exclude != nil {
 		excludeMatchType = string(cfg.Spans.Exclude.MatchType)
 	}
+
 	logger.Info(
 		"Span filter configured",
 		zap.String("include match_type", includeMatchType),
@@ -66,18 +67,14 @@ func newFilterTracesProcessor(logger *zap.Logger, cfg *Config) (*filterSpanProce
 }
 
 func createSpanMatcher(sp *filterconfig.MatchProperties) (filterspan.Matcher, error) {
-	var matcher filterspan.Matcher
-	var err error
 	if sp == nil {
-		panic("No Match Properties for Filter")
+		return nil, nil
 	}
-	matcher, err = filterspan.NewMatcher(sp)
-	return matcher, err
+	return filterspan.NewMatcher(sp)
 }
 
 // processTraces filters the given spans of a traces based off the filterSpanProcessor's filters.
 func (fsp *filterSpanProcessor) processTraces(_ context.Context, pdt pdata.Traces) (pdata.Traces, error) {
-
 	for i := 0; i < pdt.ResourceSpans().Len(); i++ {
 		resSpan := pdt.ResourceSpans().At(i)
 		for x := 0; x < resSpan.InstrumentationLibrarySpans().Len(); x++ {

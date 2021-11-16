@@ -50,7 +50,7 @@ type MetricFilters struct {
 	RegexpConfig *regexp.Config `mapstructure:"regexp"`
 }
 
-// MetricFilters filters by Metric properties.
+// SpanFilters filters by Span attributes and various other fields
 type SpanFilters struct {
 	// Include match properties describe metrics that should be included in the Collector Service pipeline,
 	// all other metrics should be dropped from further processing.

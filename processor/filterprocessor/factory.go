@@ -87,7 +87,7 @@ func createTracesProcessor(
 	cfg config.Processor,
 	nextConsumer consumer.Traces,
 ) (component.TracesProcessor, error) {
-	fp, err := newFilterTracesProcessor(set.Logger, cfg.(*Config))
+	fp, err := newFilterSpansProcessor(set.Logger, cfg.(*Config))
 	if err != nil {
 		return nil, err
 	}

@@ -220,5 +220,5 @@ processors:
           - hello/world
         attributes:
           - Key: container.name
-            Value: (app_container_1|app_container_1)
+            Value: (app_container_1|app_container_2)
 ```
