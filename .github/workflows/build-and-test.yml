@@ -443,14 +443,17 @@ jobs:
       - name: Set Release Tag
         id: github_tag
         run: ./.github/workflows/scripts/set_release_tag.sh
+      # The following step strips the 'v' prefix from the release tag for use in docker tags
+      - name: Set Docker Tag
+        run: echo "DOCKER_TAG=${RELEASE_TAG:1}" >> $GITHUB_ENV
+        env:
+          RELEASE_TAG: ${{ steps.github_tag.outputs.tag }}
       - name: Build Docker Image
         if: steps.check.outputs.passed == 'true'
         run: |
             make docker-otelcontribcol
-            docker tag otelcontribcol:latest otel/opentelemetry-collector-contrib:$RELEASE_TAG
+            docker tag otelcontribcol:latest otel/opentelemetry-collector-contrib:$DOCKER_TAG
             docker tag otelcontribcol:latest otel/opentelemetry-collector-contrib:latest
-        env:
-          RELEASE_TAG: ${{ steps.github_tag.outputs.tag }}
       - name: Login to Docker Hub
         uses: docker/login-action@v1
         with:
@@ -459,10 +462,8 @@ jobs:
       - name: Push Docker Image
         if: steps.check.outputs.passed == 'true'
         run: |
-            docker push otel/opentelemetry-collector-contrib:$RELEASE_TAG
+            docker push otel/opentelemetry-collector-contrib:$DOCKER_TAG
             docker push otel/opentelemetry-collector-contrib:latest
-        env:
-          RELEASE_TAG: ${{ steps.github_tag.outputs.tag }}
       - name: Create Github Release
         if: steps.check.outputs.passed == 'true'
         run: |
