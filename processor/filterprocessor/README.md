@@ -204,3 +204,21 @@ processors:
 ```
 
 In case the no metric names are provided, `matric_names` being empty, the filtering is only done at resource level.
+
+### Filter Spans from Traces
+
+See the documentation in the [attribute processor](../attributesprocessor/README.md) for syntax
+
+```yaml
+processors:
+  filter:
+    spans:
+      exclude:
+        match_type: regexp
+        span_names:
+          - hello_world
+          - hello/world
+        attributes:
+          - Key: container.name
+            Value: (app_container_1|app_container_1)
+```

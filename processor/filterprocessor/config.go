@@ -15,6 +15,7 @@
 package filterprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor"
 
 import (
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterset/regexp"
 	"go.opentelemetry.io/collector/config"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterconfig"
@@ -29,6 +30,8 @@ type Config struct {
 	Metrics MetricFilters `mapstructure:"metrics"`
 
 	Logs LogFilters `mapstructure:"logs"`
+
+	Spans SpanFilters `mapstructure:"spans"`
 }
 
 // MetricFilters filters by Metric properties.
@@ -42,6 +45,25 @@ type MetricFilters struct {
 	// all other metrics should be included.
 	// If both Include and Exclude are specified, Include filtering occurs first.
 	Exclude *filtermetric.MatchProperties `mapstructure:"exclude"`
+
+	// RegexpConfig specifies options for the Regexp match type
+	RegexpConfig *regexp.Config `mapstructure:"regexp"`
+}
+
+// MetricFilters filters by Metric properties.
+type SpanFilters struct {
+	// Include match properties describe metrics that should be included in the Collector Service pipeline,
+	// all other metrics should be dropped from further processing.
+	// If both Include and Exclude are specified, Include filtering occurs first.
+	Include *filterconfig.MatchProperties `mapstructure:"include"`
+
+	// Exclude match properties describe metrics that should be excluded from the Collector Service pipeline,
+	// all other metrics should be included.
+	// If both Include and Exclude are specified, Include filtering occurs first.
+	Exclude *filterconfig.MatchProperties `mapstructure:"exclude"`
+
+	// RegexpConfig specifies options for the Regexp match type
+	RegexpConfig *regexp.Config `mapstructure:"regexp"`
 }
 
 // LogFilters filters by Log properties.
