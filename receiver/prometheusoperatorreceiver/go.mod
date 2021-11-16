@@ -6,7 +6,6 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.0.0-00010101000000-000000000000
 	github.com/stretchr/testify v1.7.0
 	go.opentelemetry.io/collector v0.38.1-0.20211112010215-bcb90636ae66
-	k8s.io/apimachinery v0.22.3
 )
 
 require (
@@ -53,6 +52,7 @@ require (
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b // indirect
 	k8s.io/api v0.22.3 // indirect
+	k8s.io/apimachinery v0.22.3 // indirect
 	k8s.io/client-go v0.22.3 // indirect
 	k8s.io/klog/v2 v2.10.0 // indirect
 	k8s.io/utils v0.0.0-20210819203725-bdf08cb9a70a // indirect

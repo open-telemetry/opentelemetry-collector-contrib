@@ -5,7 +5,7 @@ receivers:
       - namespace1
       - namespace2
     monitor_selector:
-      MatchLabels:
+      match_labels:
         a_label_key: a_label_value
 
 processors:

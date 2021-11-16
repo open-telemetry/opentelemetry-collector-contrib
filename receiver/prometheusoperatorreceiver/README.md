@@ -30,7 +30,7 @@ Examples:
       - default
       - my_namespace
     monitor_selector:
-      MatchLabels:
+      match_labels:
         prometheus-operator-instance: "cluster"
 ```
 

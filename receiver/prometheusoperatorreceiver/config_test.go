@@ -23,7 +23,6 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtest"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 )
@@ -52,7 +51,7 @@ func TestLoadConfig(t *testing.T) {
 			APIConfig: k8sconfig.APIConfig{
 				AuthType: k8sconfig.AuthTypeServiceAccount,
 			},
-			MonitorSelector: metav1.LabelSelector{
+			MonitorSelector: LabelSelector{
 				MatchLabels: map[string]string{
 					"a_label_key": "a_label_value",
 				},

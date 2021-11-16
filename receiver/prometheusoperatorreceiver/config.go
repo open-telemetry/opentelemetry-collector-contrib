@@ -16,10 +16,15 @@ package prometheusoperatorreceiver
 
 import (
 	"go.opentelemetry.io/collector/config"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 )
+
+type MatchLabels map[string]string
+
+type LabelSelector struct {
+	MatchLabels MatchLabels `mapstructure:"match_labels"`
+}
 
 // Config defines configuration for simple prometheus receiver.
 type Config struct {
@@ -29,7 +34,7 @@ type Config struct {
 	// List of ‘namespaces’ to collect events from. An empty indicates that all namespaces should be searched
 	Namespaces []string `mapstructure:"namespaces"`
 
-	MonitorSelector metav1.LabelSelector `mapstructure:"monitor_selector"`
+	MonitorSelector LabelSelector `mapstructure:"monitor_selector"`
 }
 
 func (cfg *Config) Validate() error {
