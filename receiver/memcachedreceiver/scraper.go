@@ -46,13 +46,13 @@ func newMemcachedScraper(
 func (r *memcachedScraper) scrape(_ context.Context) (pdata.Metrics, error) {
 	// Init client in scrape method in case there are transient errors in the
 	// constructor.
-	client, err := r.newClient(r.config.Endpoint, r.config.Timeout)
+	statsClient, err := r.newClient(r.config.Endpoint, r.config.Timeout)
 	if err != nil {
 		r.logger.Error("Failed to estalbish client", zap.Error(err))
 		return pdata.Metrics{}, err
 	}
 
-	allServerStats, err := client.Stats()
+	allServerStats, err := statsClient.Stats()
 	if err != nil {
 		r.logger.Error("Failed to fetch memcached stats", zap.Error(err))
 		return pdata.Metrics{}, err
