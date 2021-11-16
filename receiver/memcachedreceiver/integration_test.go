@@ -49,6 +49,7 @@ func TestIntegration(t *testing.T) {
 	require.Eventuallyf(t, func() bool {
 		return len(consumer.AllMetrics()) > 0
 	}, 15*time.Second, 1*time.Second, "failed to receive at least 5 metrics")
+	require.NoError(t, rcvr.Shutdown(context.Background()))
 
 	md := consumer.AllMetrics()[0]
 
@@ -70,5 +71,4 @@ func TestIntegration(t *testing.T) {
 	eMetricSlice := expectedMetrics.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics()
 
 	require.NoError(t, scrapertest.CompareMetricSlices(eMetricSlice, aMetricSlice, false))
-	require.NoError(t, rcvr.Shutdown(context.Background()))
 }

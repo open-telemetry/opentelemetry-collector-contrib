@@ -47,7 +47,7 @@ func createDefaultConfig() config.Receiver {
 			CollectionInterval: 10 * time.Second,
 		},
 		Timeout: 10 * time.Second,
-		TCPAddr: confignet.TCPAddr{
+		NetAddr: confignet.NetAddr{
 			Endpoint: "localhost:11211",
 		},
 	}

@@ -191,7 +191,7 @@ func (r *memcachedScraper) scrape(_ context.Context) (pdata.Metrics, error) {
 		parsedHit, okHit := r.parseInt("incr_hits", stats.Stats["incr_hits"])
 		parsedMiss, okMiss := r.parseInt("incr_misses", stats.Stats["incr_misses"])
 		if okHit && okMiss {
-			r.addToDoubleMetric(hitRatio, attributes, calculateHitRatio(float64(parsedHit), float64(parsedMiss)))
+			r.addToDoubleMetric(hitRatio, attributes, calculateHitRatio(parsedHit, parsedMiss))
 		}
 
 		attributes = pdata.NewAttributeMap()
@@ -199,7 +199,7 @@ func (r *memcachedScraper) scrape(_ context.Context) (pdata.Metrics, error) {
 		parsedHit, okHit = r.parseInt("decr_hits", stats.Stats["decr_hits"])
 		parsedMiss, okMiss = r.parseInt("decr_misses", stats.Stats["decr_misses"])
 		if okHit && okMiss {
-			r.addToDoubleMetric(hitRatio, attributes, calculateHitRatio(float64(parsedHit), float64(parsedMiss)))
+			r.addToDoubleMetric(hitRatio, attributes, calculateHitRatio(parsedHit, parsedMiss))
 		}
 
 		attributes = pdata.NewAttributeMap()
@@ -207,7 +207,7 @@ func (r *memcachedScraper) scrape(_ context.Context) (pdata.Metrics, error) {
 		parsedHit, okHit = r.parseInt("get_hits", stats.Stats["get_hits"])
 		parsedMiss, okMiss = r.parseInt("get_misses", stats.Stats["get_misses"])
 		if okHit && okMiss {
-			r.addToDoubleMetric(hitRatio, attributes, calculateHitRatio(float64(parsedHit), float64(parsedMiss)))
+			r.addToDoubleMetric(hitRatio, attributes, calculateHitRatio(parsedHit, parsedMiss))
 		}
 	}
 	return md, nil
@@ -219,12 +219,13 @@ func initMetric(ms pdata.MetricSlice, mi metadata.MetricIntf) pdata.Metric {
 	return m
 }
 
-func calculateHitRatio(misses, hits float64) float64 {
-
+func calculateHitRatio(misses, hits int64) float64 {
 	if misses+hits == 0 {
 		return 0
 	}
-	return (hits / (hits + misses) * 100)
+	hitsFloat := float64(hits)
+	missesFloat := float64(misses)
+	return (hitsFloat / (hitsFloat + missesFloat) * 100)
 }
 
 // parseInt converts string to int64.
