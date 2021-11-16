@@ -251,6 +251,10 @@ var wantMetricsData = []*metricspb.Metric{
 		},
 		Timeseries: []*metricspb.TimeSeries{
 			{
+				StartTimestamp: &timestamppb.Timestamp{
+					Seconds: 1415062567,
+					Nanos:   494999808,
+				},
 				LabelValues: []*metricspb.LabelValue{
 					{Value: "value", HasValue: true},
 					{Value: "df", HasValue: true},
