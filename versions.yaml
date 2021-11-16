@@ -21,6 +21,7 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/cmd/mdatagen
       - github.com/open-telemetry/opentelemetry-collector-contrib/tracegen
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/awsproxy
+      - github.com/open-telemetry/opentelemetry-collector-contrib/extension/asapauth
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/fluentbitextension
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/oidcauthextension
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/bearertokenauthextension

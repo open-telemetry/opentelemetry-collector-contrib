@@ -54,6 +54,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/tanzuobservabilityexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/tencentcloudlogserviceexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/zipkinexporter"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/asapauth"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/awsproxy"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/bearertokenauthextension"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/fluentbitextension"
@@ -130,6 +131,7 @@ func Components() (component.Factories, error) {
 	delete(factories.Extensions, "pprof")
 
 	extensions := []component.ExtensionFactory{
+		asapauth.NewFactory(),
 		awsproxy.NewFactory(),
 		bearertokenauthextension.NewFactory(),
 		filestorage.NewFactory(),
