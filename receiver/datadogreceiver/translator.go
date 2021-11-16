@@ -38,7 +38,7 @@ func toTraces(traces datadogpb.Traces, req *http.Request) pdata.Traces {
 
 	for _, trace := range traces {
 		for _, span := range trace {
-			newSpan := ils.Spans().AppendEmpty() // TODO: Might be more efficient to resize spans and then populate it
+			newSpan := ils.Spans().AppendEmpty() // TODO: Might be more efficient to resize spans and then populate it Issue #6338
 
 			newSpan.SetTraceID(uInt64ToTraceID(0, span.TraceID))
 			newSpan.SetSpanID(uInt64ToSpanID(span.SpanID))

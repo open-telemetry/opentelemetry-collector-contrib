@@ -24,46 +24,69 @@ import (
 	vmsgp "github.com/vmihailenco/msgpack/v4"
 )
 
-func BenchmarkTranslator(b *testing.B) {
-	var data = [2]interface{}{
-		0: []string{
-			0:  "baggage",
-			1:  "item",
-			2:  "elasticsearch.version",
-			3:  "7.0",
-			4:  "my-name",
-			5:  "X",
-			6:  "my-service",
-			7:  "my-resource",
-			8:  "_dd.sampling_rate_whatever",
-			9:  "value whatever",
-			10: "sql",
-		},
-		1: [][][12]interface{}{
+var data = [2]interface{}{
+	0: []string{
+		0:  "baggage",
+		1:  "item",
+		2:  "elasticsearch.version",
+		3:  "7.0",
+		4:  "my-name",
+		5:  "X",
+		6:  "my-service",
+		7:  "my-resource",
+		8:  "_dd.sampling_rate_whatever",
+		9:  "value whatever",
+		10: "sql",
+	},
+	1: [][][12]interface{}{
+		{
 			{
-				{
-					6,
-					4,
-					7,
-					uint64(12345678901234561234),
-					uint64(2),
-					uint64(3),
-					int64(123),
-					int64(456),
-					1,
-					map[interface{}]interface{}{
-						8: 9,
-						0: 1,
-						2: 3,
-					},
-					map[interface{}]float64{
-						5: 1.2,
-					},
-					10,
+				6,
+				4,
+				7,
+				uint64(12345678901234561234),
+				uint64(2),
+				uint64(3),
+				int64(123),
+				int64(456),
+				1,
+				map[interface{}]interface{}{
+					8: 9,
+					0: 1,
+					2: 3,
 				},
+				map[interface{}]float64{
+					5: 1.2,
+				},
+				10,
 			},
 		},
+	},
+}
+
+func Test05Translation(t *testing.T) {
+	payload, err := vmsgp.Marshal(&data)
+	assert.NoError(t, err)
+	dc := pb.NewMsgpReader(bytes.NewReader(payload))
+	defer pb.FreeMsgpReader(dc)
+
+	var traces pb.Traces
+	if err := traces.DecodeMsgDictionary(dc); err != nil {
+		t.Fatal(err)
 	}
+	req := &http.Request{RequestURI: "/v0.5/traces"}
+
+	translated := toTraces(traces, req)
+	assert.Equal(t, 1, translated.SpanCount(), "Span Count wrong")
+	span := translated.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().At(0)
+	assert.NotNil(t, span)
+	assert.Equal(t, 4, span.Attributes().Len(), "missing tags")
+	value, exists := span.Attributes().Get("service.name")
+	assert.True(t, exists, "service.name missing")
+	assert.Equal(t, "my-service", value.AsString(), "service.name tag value incorrect")
+	assert.Equal(t, span.Name(), "my-name")
+}
+func BenchmarkTranslator(b *testing.B) {
 
 	payload, err := vmsgp.Marshal(&data)
 	assert.NoError(b, err)
@@ -80,7 +103,7 @@ func BenchmarkTranslator(b *testing.B) {
 	b.StartTimer()
 	req := &http.Request{RequestURI: "/v0.5/traces"}
 	for i := 0; i < b.N; i++ {
-		ToTraces(traces, req)
+		toTraces(traces, req)
 	}
 	b.StopTimer()
 }
