@@ -132,7 +132,9 @@ var Metrics = &metricStruct{
 			metric.SetName("memcached.current_connections")
 			metric.SetDescription("The current number of open connections.")
 			metric.SetUnit("connections")
-			metric.SetDataType(pdata.MetricDataTypeGauge)
+			metric.SetDataType(pdata.MetricDataTypeSum)
+			metric.Sum().SetIsMonotonic(false)
+			metric.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
 		},
 	},
 	&metricImpl{
@@ -205,7 +207,9 @@ var Metrics = &metricStruct{
 			metric.SetName("memcached.threads")
 			metric.SetDescription("Number of threads used by the memcached instance.")
 			metric.SetUnit("1")
-			metric.SetDataType(pdata.MetricDataTypeGauge)
+			metric.SetDataType(pdata.MetricDataTypeSum)
+			metric.Sum().SetIsMonotonic(false)
+			metric.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
 		},
 	},
 	&metricImpl{

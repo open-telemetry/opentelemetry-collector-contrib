@@ -69,10 +69,10 @@ func (r *memcachedScraper) scrape(_ context.Context) (pdata.Metrics, error) {
 	operationCount := initMetric(ilm.Metrics(), metadata.M.MemcachedOperations).Sum().DataPoints()
 	hitRatio := initMetric(ilm.Metrics(), metadata.M.MemcachedOperationHitRatio).Gauge().DataPoints()
 	bytes := initMetric(ilm.Metrics(), metadata.M.MemcachedBytes).Gauge().DataPoints()
-	currConn := initMetric(ilm.Metrics(), metadata.M.MemcachedCurrentConnections).Gauge().DataPoints()
+	currConn := initMetric(ilm.Metrics(), metadata.M.MemcachedCurrentConnections).Sum().DataPoints()
 	totalConn := initMetric(ilm.Metrics(), metadata.M.MemcachedTotalConnections).Sum().DataPoints()
 	currItems := initMetric(ilm.Metrics(), metadata.M.MemcachedCurrentItems).Sum().DataPoints()
-	threads := initMetric(ilm.Metrics(), metadata.M.MemcachedThreads).Gauge().DataPoints()
+	threads := initMetric(ilm.Metrics(), metadata.M.MemcachedThreads).Sum().DataPoints()
 	evictions := initMetric(ilm.Metrics(), metadata.M.MemcachedEvictions).Sum().DataPoints()
 
 	for _, stats := range allServerStats {
