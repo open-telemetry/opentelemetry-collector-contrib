@@ -1,7 +1,23 @@
+// Copyright The OpenTelemetry Authors
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//       http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package filterprocessor
 
 import (
 	"context"
+	"testing"
+
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterconfig"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterset"
 	"github.com/stretchr/testify/assert"
@@ -10,15 +26,14 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/model/pdata"
-	"testing"
 )
 
 type testTrace struct {
-	span_name           string
-	library_name        string
-	library_version     string
-	resource_attributes map[string]pdata.AttributeValue
-	tags                map[string]pdata.AttributeValue
+	spanName           string
+	libraryName        string
+	libraryVersion     string
+	resourceAttributes map[string]pdata.AttributeValue
+	tags               map[string]pdata.AttributeValue
 }
 
 type traceTest struct {
@@ -30,82 +45,83 @@ type traceTest struct {
 	spanCount         int
 }
 
-var redisTraces = []testTrace{
-	{
-		span_name:       "test!",
-		library_name:    "otel",
-		library_version: "11",
-		resource_attributes: map[string]pdata.AttributeValue{
-			"service.name": pdata.NewAttributeValueString("test_service"),
+var (
+	redisTraces = []testTrace{
+		{
+			spanName:       "test!",
+			libraryName:    "otel",
+			libraryVersion: "11",
+			resourceAttributes: map[string]pdata.AttributeValue{
+				"service.name": pdata.NewAttributeValueString("test_service"),
+			},
+			tags: map[string]pdata.AttributeValue{
+				"db.type": pdata.NewAttributeValueString("redis"),
+			},
 		},
-		tags: map[string]pdata.AttributeValue{
-			"db.type": pdata.NewAttributeValueString("redis"),
-		},
-	},
-}
+	}
 
-var nameTraces = []testTrace{
-	{
-		span_name:       "test!",
-		library_name:    "otel",
-		library_version: "11",
-		resource_attributes: map[string]pdata.AttributeValue{
-			"service.name": pdata.NewAttributeValueString("keep"),
+	nameTraces = []testTrace{
+		{
+			spanName:       "test!",
+			libraryName:    "otel",
+			libraryVersion: "11",
+			resourceAttributes: map[string]pdata.AttributeValue{
+				"service.name": pdata.NewAttributeValueString("keep"),
+			},
+			tags: map[string]pdata.AttributeValue{
+				"db.type": pdata.NewAttributeValueString("redis"),
+			},
 		},
-		tags: map[string]pdata.AttributeValue{
-			"db.type": pdata.NewAttributeValueString("redis"),
+		{
+			spanName:       "test!",
+			libraryName:    "otel",
+			libraryVersion: "11",
+			resourceAttributes: map[string]pdata.AttributeValue{
+				"service.name": pdata.NewAttributeValueString("dont_keep"),
+			},
+			tags: map[string]pdata.AttributeValue{
+				"db.type": pdata.NewAttributeValueString("redis"),
+			},
 		},
-	},
-	{
-		span_name:       "test!",
-		library_name:    "otel",
-		library_version: "11",
-		resource_attributes: map[string]pdata.AttributeValue{
-			"service.name": pdata.NewAttributeValueString("dont_keep"),
+		{
+			spanName:       "test!",
+			libraryName:    "otel",
+			libraryVersion: "11",
+			resourceAttributes: map[string]pdata.AttributeValue{
+				"service.name": pdata.NewAttributeValueString("keep"),
+			},
+			tags: map[string]pdata.AttributeValue{
+				"db.type": pdata.NewAttributeValueString("redis"),
+			},
 		},
-		tags: map[string]pdata.AttributeValue{
-			"db.type": pdata.NewAttributeValueString("redis"),
+	}
+	serviceNameMatchProperties = &filterconfig.MatchProperties{Config: filterset.Config{MatchType: filterset.Strict}, Services: []string{"keep"}}
+	redisMatchProperties       = &filterconfig.MatchProperties{Attributes: []filterconfig.Attribute{{Key: "db.type", Value: "redis"}}}
+	standardTraceTests         = []traceTest{
+		{
+			name:              "filterRedis",
+			exc:               redisMatchProperties,
+			inTraces:          generateTraces(redisTraces),
+			allTracesFiltered: true,
 		},
-	},
-	{
-		span_name:       "test!",
-		library_name:    "otel",
-		library_version: "11",
-		resource_attributes: map[string]pdata.AttributeValue{
-			"service.name": pdata.NewAttributeValueString("keep"),
+		{
+			name:      "keepRedis",
+			inc:       redisMatchProperties,
+			inTraces:  generateTraces(redisTraces),
+			spanCount: 1,
 		},
-		tags: map[string]pdata.AttributeValue{
-			"db.type": pdata.NewAttributeValueString("redis"),
+		{
+			name:      "keepServiceName",
+			inc:       serviceNameMatchProperties,
+			inTraces:  generateTraces(nameTraces),
+			spanCount: 2,
 		},
-	},
-}
-var serviceNameMatchProperties = &filterconfig.MatchProperties{Config: filterset.Config{MatchType: filterset.Strict}, Services: []string{"keep"}}
-var redisMatchProperties = &filterconfig.MatchProperties{Attributes: []filterconfig.Attribute{{Key: "db.type", Value: "redis"}}}
-var standardTraceTests = []traceTest{
-	{
-		name:              "filterRedis",
-		exc:               redisMatchProperties,
-		inTraces:          generateTraces(redisTraces),
-		allTracesFiltered: true,
-	},
-	{
-		name:      "keepRedis",
-		inc:       redisMatchProperties,
-		inTraces:  generateTraces(redisTraces),
-		spanCount: 1,
-	},
-	{
-		name:      "keepServiceName",
-		inc:       serviceNameMatchProperties,
-		inTraces:  generateTraces(nameTraces),
-		spanCount: 2,
-	},
-}
+	}
+)
 
 func TestFilterTraceProcessor(t *testing.T) {
 	for _, test := range standardTraceTests {
 		t.Run(test.name, func(t *testing.T) {
-			// next stores the results of the filter metric processor
 			next := new(consumertest.TracesSink)
 			cfg := &Config{
 				ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
@@ -142,18 +158,18 @@ func TestFilterTraceProcessor(t *testing.T) {
 		})
 	}
 }
-func generateTraces(tests []testTrace) pdata.Traces {
+func generateTraces(traces []testTrace) pdata.Traces {
 	md := pdata.NewTraces()
 
-	for _, test := range tests {
+	for _, test := range traces {
 		rs := md.ResourceSpans().AppendEmpty()
+		pdata.NewAttributeMapFromMap(test.resourceAttributes).CopyTo(rs.Resource().Attributes())
 		ils := rs.InstrumentationLibrarySpans().AppendEmpty()
-		ils.InstrumentationLibrary().SetName(test.library_name)
-		ils.InstrumentationLibrary().SetVersion(test.library_version)
-		rs.Resource().Attributes().InitFromMap(test.resource_attributes)
+		ils.InstrumentationLibrary().SetName(test.libraryName)
+		ils.InstrumentationLibrary().SetVersion(test.libraryVersion)
 		span := ils.Spans().AppendEmpty()
-		span.Attributes().InitFromMap(test.tags)
-		span.SetName(test.span_name)
+		pdata.NewAttributeMapFromMap(test.tags).CopyTo(span.Attributes())
+		span.SetName(test.spanName)
 	}
 	return md
 }
