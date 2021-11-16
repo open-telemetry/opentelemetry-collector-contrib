@@ -90,7 +90,6 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/opencensusreceiver v0.39.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/podmanreceiver v0.39.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusexecreceiver v0.39.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusoperatorreceiver v0.39.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver v0.39.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/receivercreator v0.39.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/redisreceiver v0.39.0
@@ -422,7 +421,7 @@ require (
 	k8s.io/apimachinery v0.22.3 // indirect
 	k8s.io/client-go v0.22.3 // indirect
 	k8s.io/klog v1.0.0 // indirect
-	k8s.io/klog/v2 v2.10.0 // indirect
+	k8s.io/klog/v2 v2.9.0 // indirect
 	k8s.io/kube-openapi v0.0.0-20210421082810-95288971da7e // indirect
 	k8s.io/kubelet v0.22.3 // indirect
 	k8s.io/utils v0.0.0-20210819203725-bdf08cb9a70a // indirect
@@ -609,8 +608,6 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/simpl
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/opencensusreceiver => ./receiver/opencensusreceiver
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusexecreceiver => ./receiver/prometheusexecreceiver
-
-replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusoperatorreceiver => ./receiver/prometheusoperatorreceiver
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver => ./receiver/prometheusreceiver
 
