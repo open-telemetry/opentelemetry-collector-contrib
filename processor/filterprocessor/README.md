@@ -38,6 +38,17 @@ For metrics:
   attributes to match metrics against.
   A match occurs if any resource attribute matches all expressions in this given list.
 
+
+For traces:
+
+- `match_type`: `strict`|`regexp`|`expr`
+- `metric_names`: (only for a `match_type` of `strict` or `regexp`) list of strings
+  or re2 regex patterns
+- `expressions`: (only for a `match_type` of `expr`) list of expr expressions
+  (see "Using an 'expr' match_type" below)
+- `resource_attributes`: ResourceAttributes defines a list of possible resource
+  attributes to match metrics against.
+  A match occurs if any resource attribute matches all expressions in this given list.
 This processor uses [re2 regex][re2_regex] for regex syntax.
 
 [re2_regex]: https://github.com/google/re2/wiki/Syntax
@@ -199,6 +210,24 @@ processors:
           - hello_world
           - hello/world
         resource_attributes:
+          - Key: container.name
+            Value: (app_container_1|app_container_1)
+```
+
+### Filter Spans from Traces
+
+See the documentation in the [attribute processor](../attributesprocessor/README.md) for syntax
+
+```yaml
+processors:
+  filter:
+    spans:
+      exclude:
+        match_type: regexp
+        span_names:
+          - hello_world
+          - hello/world
+        attributes:
           - Key: container.name
             Value: (app_container_1|app_container_1)
 ```
