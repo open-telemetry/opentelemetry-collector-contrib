@@ -1,0 +1,24 @@
+receivers:
+  prometheus_operator:
+  prometheus_operator/all_settings:
+    namespaces:
+      - namespace1
+      - namespace2
+    monitor_selector:
+      MatchLabels:
+        a_label_key: a_label_value
+
+processors:
+  nop:
+
+exporters:
+  nop:
+
+service:
+  pipelines:
+    metrics:
+      receivers:
+        - prometheus_operator
+        - prometheus_operator/all_settings
+      processors: [nop]
+      exporters: [nop]
