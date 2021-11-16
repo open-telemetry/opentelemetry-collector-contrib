@@ -15,6 +15,7 @@
 package kafkaexporter
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/Shopify/sarama"
@@ -92,5 +93,8 @@ var _ config.Exporter = (*Config)(nil)
 
 // Validate checks if the exporter configuration is valid
 func (cfg *Config) Validate() error {
+	if cfg.Producer.RequiredAcks < -1 || cfg.Producer.RequiredAcks > 1 {
+		return fmt.Errorf("producer.required_acks has to be between -1 and 1. configured value %v", cfg.Producer.RequiredAcks)
+	}
 	return nil
 }
