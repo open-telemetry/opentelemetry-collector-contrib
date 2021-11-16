@@ -5,7 +5,6 @@ go 1.17
 require (
 	github.com/census-instrumentation/opencensus-proto v0.3.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.39.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.39.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk v0.39.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchperresourceattr v0.39.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus v0.39.0
