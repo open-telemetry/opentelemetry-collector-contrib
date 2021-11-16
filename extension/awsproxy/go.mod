@@ -3,15 +3,15 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/extension/awspr
 go 1.17
 
 require (
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/proxy v0.38.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.38.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/proxy v0.39.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.39.0
 	github.com/stretchr/testify v1.7.0
 	go.opentelemetry.io/collector v0.39.0
 	go.uber.org/zap v1.19.1
 )
 
 require (
-	github.com/aws/aws-sdk-go v1.41.19 // indirect
+	github.com/aws/aws-sdk-go v1.42.5 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/fsnotify/fsnotify v1.4.9 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect

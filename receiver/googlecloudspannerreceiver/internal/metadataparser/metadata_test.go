@@ -62,8 +62,8 @@ func TestMetadata_ToMetricValuesMetadata(t *testing.T) {
 		dataType    MetricType
 		expectError bool
 	}{
-		"Happy path": {metricValueTypeInt, MetricType{DataType: metricDataTypeGauge}, false},
-		"With error": {"unknown", MetricType{DataType: metricDataTypeGauge}, true},
+		"Happy path": {metricValueTypeInt, MetricType{DataType: GaugeMetricDataType}, false},
+		"With error": {"unknown", MetricType{DataType: GaugeMetricDataType}, true},
 	}
 
 	for name, testCase := range testCases {
@@ -102,9 +102,9 @@ func TestMetadata_MetricsMetadata(t *testing.T) {
 		dataType        MetricType
 		expectError     bool
 	}{
-		"Happy path":        {labelValueTypeInt, metricValueTypeInt, MetricType{DataType: metricDataTypeGauge}, false},
-		"With label error":  {"unknown", metricValueTypeInt, MetricType{DataType: metricDataTypeGauge}, true},
-		"With metric error": {labelValueTypeInt, "unknown", MetricType{DataType: metricDataTypeGauge}, true},
+		"Happy path":        {labelValueTypeInt, metricValueTypeInt, MetricType{DataType: GaugeMetricDataType}, false},
+		"With label error":  {"unknown", metricValueTypeInt, MetricType{DataType: GaugeMetricDataType}, true},
+		"With metric error": {labelValueTypeInt, "unknown", MetricType{DataType: GaugeMetricDataType}, true},
 	}
 
 	for name, testCase := range testCases {

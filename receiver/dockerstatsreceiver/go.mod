@@ -4,8 +4,8 @@ go 1.17
 
 require (
 	github.com/docker/docker v20.10.10+incompatible
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.38.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/docker v0.38.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.39.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/docker v0.39.0
 	github.com/stretchr/testify v1.7.0
 	go.opentelemetry.io/collector v0.39.0
 	go.opentelemetry.io/collector/model v0.39.0
@@ -18,7 +18,7 @@ require go.uber.org/multierr v1.7.0
 require (
 	github.com/Azure/go-ansiterm v0.0.0-20210617225240-d185dfc1b5a1 // indirect
 	github.com/Microsoft/go-winio v0.4.17 // indirect
-	github.com/cenkalti/backoff/v4 v4.1.1 // indirect
+	github.com/cenkalti/backoff/v4 v4.1.2 // indirect
 	github.com/containerd/containerd v1.5.7 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/docker/distribution v2.7.1+incompatible // indirect

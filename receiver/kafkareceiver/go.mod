@@ -7,10 +7,10 @@ require (
 	github.com/apache/thrift v0.15.0
 	github.com/gogo/protobuf v1.3.2
 	github.com/jaegertracing/jaeger v1.28.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter v0.38.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.38.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.38.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin v0.38.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter v0.39.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.39.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.39.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin v0.39.0
 	github.com/openzipkin/zipkin-go v0.3.0
 	github.com/stretchr/testify v1.7.0
 	go.opencensus.io v0.23.0
@@ -20,7 +20,7 @@ require (
 )
 
 require (
-	github.com/aws/aws-sdk-go v1.41.19 // indirect
+	github.com/aws/aws-sdk-go v1.42.5 // indirect
 	github.com/cenkalti/backoff/v4 v4.1.1 // indirect
 	github.com/census-instrumentation/opencensus-proto v0.3.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
@@ -45,7 +45,7 @@ require (
 	github.com/mitchellh/copystructure v1.2.0 // indirect
 	github.com/mitchellh/mapstructure v1.4.2 // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus v0.38.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus v0.39.0 // indirect
 	github.com/opentracing/opentracing-go v1.2.0 // indirect
 	github.com/pierrec/lz4 v2.6.1+incompatible // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
