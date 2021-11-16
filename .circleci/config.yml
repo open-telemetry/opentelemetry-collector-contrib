@@ -603,7 +603,7 @@ jobs:
           command: sleep 180
       - run:
           name: "Execute Tracing Tests"
-          command: "pytest --rootdir=/opt/tracing-tests --junitxml=/opt/tracing-tests/test-results/junit.xml --html=/opt/tracing-tests/test-results/report.html --self-contained-html -vvv /opt/tracing-tests/tests"
+          command: "pytest --rootdir=/opt/tracing-tests --junitxml=/opt/tracing-tests/test-results/junit.xml --html=/opt/tracing-tests/test-results/report.html --self-contained-html -vvv /opt/tracing-tests/tests/test_java_app.py"
       - store_test_results:
           path: /opt/tracing-tests/test-results
       - store_artifacts:
