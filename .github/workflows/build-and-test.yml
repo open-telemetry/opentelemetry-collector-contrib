@@ -376,6 +376,7 @@ jobs:
         with:
           name: collector-binaries
           path: ./bin/
+      - run: chmod +x bin/*
       - name: Download Packages
         uses: actions/download-artifact@v2
         with:
@@ -430,6 +431,7 @@ jobs:
         with:
           name: collector-binaries
           path: ./bin/
+      - run: chmod +x bin/*
       - name: Download Packages
         uses: actions/download-artifact@v2
         with:
