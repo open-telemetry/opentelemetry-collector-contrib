@@ -85,6 +85,8 @@ func traceDataToSplunk(logger *zap.Logger, data pdata.Traces, config *Config) ([
 				sourceType = v.StringVal()
 			case indexKey:
 				index = v.StringVal()
+			case splunk.HecTokenLabel:
+				// ignore
 			default:
 				commonFields[k] = v.AsString()
 			}
