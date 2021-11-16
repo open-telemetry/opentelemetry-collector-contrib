@@ -15,7 +15,7 @@ https://github.com/memcached/memcached/blob/master/doc/protocol.txt#L1159.
 
 The following settings are required:
 
-- `endpoint` (default: `localhost:11211`): The hostname/IP address and port of the memcached instance
+- `endpoint` (default: `localhost:11211`): The connection to the memcached instance
 
 The following settings are optional:
 
