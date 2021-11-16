@@ -272,6 +272,46 @@ func TestLoadingConfigRegexp(t *testing.T) {
 	}
 }
 
+func TestLoadingSpans(t *testing.T) {
+	factories, err := componenttest.NopFactories()
+	require.NoError(t, err)
+	factory := NewFactory()
+	factories.Processors[typeStr] = factory
+	cfg, err := configtest.LoadConfigAndValidate(path.Join(".", "testdata", "config_traces.yaml"), factories)
+	require.NoError(t, err)
+	require.NotNil(t, cfg)
+
+	tests := []struct {
+		expCfg config.Processor
+	}{
+		{
+			expCfg: &Config{
+				ProcessorSettings: config.NewProcessorSettings(config.NewComponentIDWithName(typeStr, "includeexclude")),
+				Spans: SpanFilters{
+					Include: &filterconfig.MatchProperties{
+						Services: []string{"test"},
+						Attributes: []filterconfig.Attribute{
+							{Key: "should_include", Value: "(true|probably_true)"},
+						},
+					},
+					Exclude: &filterconfig.MatchProperties{
+						Attributes: []filterconfig.Attribute{
+							{Key: "should_exclude", Value: "(probably_false|false)"},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.expCfg.ID().String(), func(t *testing.T) {
+			cfg := cfg.Processors[test.expCfg.ID()]
+			assert.Equal(t, test.expCfg, cfg)
+		})
+	}
+}
+
 func TestLoadingConfigExpr(t *testing.T) {
 	factories, err := componenttest.NopFactories()
 	require.NoError(t, err)

@@ -214,7 +214,6 @@ processors:
   filter:
     spans:
       exclude:
-        match_type: regexp
         span_names:
           - hello_world
           - hello/world

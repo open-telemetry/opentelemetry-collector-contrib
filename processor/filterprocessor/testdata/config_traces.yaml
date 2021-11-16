@@ -1,0 +1,28 @@
+receivers:
+    nop:
+
+processors:
+    filter/includeexclude:
+        spans:
+            # if both include and exclude are specified, include filters are applied first
+            # the following configuration would only allow logs with resource attributes
+            # "should_include" to pass through
+            include:
+                services: test
+                attributes:
+                    - key: should_include
+                      value: "(true|probably_true)"
+            exclude:
+                attributes:
+                    - key: should_exclude
+                      value: "(probably_false|false)"
+
+exporters:
+    nop:
+
+service:
+    pipelines:
+        traces:
+            receivers: [nop]
+            processors: [filter/includeexclude]
+            exporters: [nop]
