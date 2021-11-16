@@ -599,6 +599,8 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/openc
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusexecreceiver => ../../receiver/prometheusexecreceiver
 
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusoperatorreceiver => ./receiver/prometheusoperatorreceiver
+
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/podmanreceiver => ../../receiver/podmanreceiver
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver => ../../receiver/prometheusreceiver

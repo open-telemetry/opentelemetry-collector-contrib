@@ -104,6 +104,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/opencensusreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/podmanreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusexecreceiver"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusoperatorreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/receivercreator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/redisreceiver"
@@ -177,6 +178,7 @@ func Components() (component.Factories, error) {
 		opencensusreceiver.NewFactory(),
 		podmanreceiver.NewFactory(),
 		prometheusexecreceiver.NewFactory(),
+		prometheusoperatorreceiver.NewFactory(),
 		prometheusreceiver.NewFactory(),
 		receivercreator.NewFactory(),
 		redisreceiver.NewFactory(),
