@@ -83,8 +83,14 @@ func (fsp *filterSpanProcessor) processTraces(_ context.Context, pdt pdata.Trace
 				return !fsp.shouldKeepSpan(span, resSpan.Resource(), ils.InstrumentationLibrary())
 			})
 		}
+
+		// Remove empty elements, that way if we delete everything we can tell
+		// the pipeline to stop processing completely (ErrSkipProcessingData)
 		resSpan.InstrumentationLibrarySpans().RemoveIf(func(ilsSpans pdata.InstrumentationLibrarySpans) bool {
 			return ilsSpans.Spans().Len() == 0
+		})
+		pdt.ResourceSpans().RemoveIf(func(res pdata.ResourceSpans) bool {
+			return res.InstrumentationLibrarySpans().Len() == 0
 		})
 	}
 	if pdt.ResourceSpans().Len() == 0 {
