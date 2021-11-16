@@ -81,7 +81,7 @@ func (fsp *filterSpanProcessor) processTraces(_ context.Context, pdt pdata.Trace
 			ils := resSpan.InstrumentationLibrarySpans().At(x)
 			for spanCount := 0; spanCount < ils.Spans().Len(); spanCount++ {
 				ils.Spans().RemoveIf(func(span pdata.Span) bool {
-					return !filterspan.SkipSpan(fsp.include, fsp.exclude, span, resSpan.Resource(), ils.InstrumentationLibrary())
+					return !fsp.shouldKeepSpan(span, resSpan.Resource(), ils.InstrumentationLibrary())
 				})
 			}
 		}
@@ -93,4 +93,20 @@ func (fsp *filterSpanProcessor) processTraces(_ context.Context, pdt pdata.Trace
 		return pdt, processorhelper.ErrSkipProcessingData
 	}
 	return pdt, nil
+}
+
+func (fsp *filterSpanProcessor) shouldKeepSpan(span pdata.Span, resource pdata.Resource, library pdata.InstrumentationLibrary) bool {
+	if fsp.include != nil {
+		if i := fsp.include.MatchSpan(span, resource, library); !i {
+			return false
+		}
+	}
+
+	if fsp.exclude != nil {
+		if e := fsp.exclude.MatchSpan(span, resource, library); e {
+			return false
+		}
+	}
+
+	return true
 }
