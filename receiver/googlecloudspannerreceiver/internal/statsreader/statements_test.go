@@ -42,12 +42,14 @@ func TestCurrentStatsStatement(t *testing.T) {
 			args := statementArgs{
 				query:                  query,
 				topMetricsQueryMaxRows: testCase.topMetricsQueryMaxRows,
+				stalenessRead:          true,
 			}
 
-			statement := currentStatsStatement(args)
+			stmt := currentStatsStatement(args)
 
-			assert.Equal(t, testCase.expectedSQL, statement.SQL)
-			assert.Equal(t, testCase.expectedParams, statement.Params)
+			assert.Equal(t, testCase.expectedSQL, stmt.statement.SQL)
+			assert.Equal(t, testCase.expectedParams, stmt.statement.Params)
+			assert.True(t, stmt.stalenessRead)
 		})
 	}
 }
@@ -73,12 +75,14 @@ func TestIntervalStatsStatement(t *testing.T) {
 				query:                  query,
 				topMetricsQueryMaxRows: testCase.topMetricsQueryMaxRows,
 				pullTimestamp:          pullTimestamp,
+				stalenessRead:          true,
 			}
 
-			statement := intervalStatsStatement(args)
+			stmt := intervalStatsStatement(args)
 
-			assert.Equal(t, testCase.expectedSQL, statement.SQL)
-			assert.Equal(t, testCase.expectedParams, statement.Params)
+			assert.Equal(t, testCase.expectedSQL, stmt.statement.SQL)
+			assert.Equal(t, testCase.expectedParams, stmt.statement.Params)
+			assert.True(t, stmt.stalenessRead)
 		})
 	}
 }

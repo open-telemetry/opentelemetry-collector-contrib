@@ -20,10 +20,11 @@ type MetricValueMetadata interface {
 	ValueMetadata
 	DataType() MetricDataType
 	Unit() string
+	NewMetricValue(value interface{}) MetricValue
 }
 
 type MetricValue interface {
-	MetricValueMetadata
+	Metadata() MetricValueMetadata
 	Value() interface{}
 	SetValueTo(ndp pdata.NumberDataPoint)
 }
@@ -58,6 +59,10 @@ func NewInt64MetricValueMetadata(name string, columnName string, dataType Metric
 	}
 }
 
+func (m Int64MetricValueMetadata) NewMetricValue(valueHolder interface{}) MetricValue {
+	return newInt64MetricValue(m, valueHolder)
+}
+
 type Float64MetricValueMetadata struct {
 	queryMetricValueMetadata
 }
@@ -70,14 +75,18 @@ func NewFloat64MetricValueMetadata(name string, columnName string, dataType Metr
 	}
 }
 
+func (m Float64MetricValueMetadata) NewMetricValue(valueHolder interface{}) MetricValue {
+	return newFloat64MetricValue(m, valueHolder)
+}
+
 type int64MetricValue struct {
-	Int64MetricValueMetadata
-	value int64
+	metadata Int64MetricValueMetadata
+	value    int64
 }
 
 type float64MetricValue struct {
-	Float64MetricValueMetadata
-	value float64
+	metadata Float64MetricValueMetadata
+	value    float64
 }
 
 func (metadata queryMetricValueMetadata) Name() string {
@@ -96,16 +105,24 @@ func (metadata queryMetricValueMetadata) Unit() string {
 	return metadata.unit
 }
 
-func (metadata Int64MetricValueMetadata) ValueHolder() interface{} {
+func (m Int64MetricValueMetadata) ValueHolder() interface{} {
 	var valueHolder int64
 
 	return &valueHolder
 }
 
-func (metadata Float64MetricValueMetadata) ValueHolder() interface{} {
+func (m Float64MetricValueMetadata) ValueHolder() interface{} {
 	var valueHolder float64
 
 	return &valueHolder
+}
+
+func (value int64MetricValue) Metadata() MetricValueMetadata {
+	return value.metadata
+}
+
+func (value float64MetricValue) Metadata() MetricValueMetadata {
+	return value.metadata
 }
 
 func (value int64MetricValue) Value() interface{} {
@@ -126,14 +143,14 @@ func (value float64MetricValue) SetValueTo(point pdata.NumberDataPoint) {
 
 func newInt64MetricValue(metadata Int64MetricValueMetadata, valueHolder interface{}) int64MetricValue {
 	return int64MetricValue{
-		Int64MetricValueMetadata: metadata,
-		value:                    *valueHolder.(*int64),
+		metadata: metadata,
+		value:    *valueHolder.(*int64),
 	}
 }
 
 func newFloat64MetricValue(metadata Float64MetricValueMetadata, valueHolder interface{}) float64MetricValue {
 	return float64MetricValue{
-		Float64MetricValueMetadata: metadata,
-		value:                      *valueHolder.(*float64),
+		metadata: metadata,
+		value:    *valueHolder.(*float64),
 	}
 }

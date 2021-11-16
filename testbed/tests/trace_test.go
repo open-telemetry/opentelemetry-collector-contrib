@@ -236,7 +236,7 @@ func TestTraceBallast1kSPSWithAttrs(t *testing.T) {
 		{
 			attrCount:      0,
 			attrSizeByte:   0,
-			expectedMaxCPU: 30,
+			expectedMaxCPU: 53,
 			expectedMaxRAM: 2200,
 			resultsSummary: performanceResultsSummary,
 		},

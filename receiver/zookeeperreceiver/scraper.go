@@ -139,10 +139,10 @@ func (z *zookeeperMetricsScraper) appendMetrics(scanner *bufio.Scanner, rms pdat
 		metricValue := parts[2]
 		switch metricKey {
 		case zkVersionKey:
-			rm.Resource().Attributes().UpsertString(metadata.Labels.ZkVersion, metricValue)
+			rm.Resource().Attributes().UpsertString(metadata.Attributes.ZkVersion, metricValue)
 			continue
 		case serverStateKey:
-			rm.Resource().Attributes().UpsertString(metadata.Labels.ServerState, metricValue)
+			rm.Resource().Attributes().UpsertString(metadata.Attributes.ServerState, metricValue)
 			continue
 		default:
 			// Skip metric if there is no descriptor associated with it.

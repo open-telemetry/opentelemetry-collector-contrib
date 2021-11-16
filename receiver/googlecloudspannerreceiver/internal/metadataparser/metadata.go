@@ -21,6 +21,7 @@ type Metadata struct {
 	Query               string   `yaml:"query"`
 	MetricNamePrefix    string   `yaml:"metric_name_prefix"`
 	TimestampColumnName string   `yaml:"timestamp_column_name"`
+	HighCardinality     bool     `yaml:"high_cardinality"`
 	Labels              []Label  `yaml:"labels"`
 	Metrics             []Metric `yaml:"metrics"`
 }
@@ -41,6 +42,7 @@ func (m Metadata) MetricsMetadata() (*metadata.MetricsMetadata, error) {
 		Query:                     m.Query,
 		MetricNamePrefix:          m.MetricNamePrefix,
 		TimestampColumnName:       m.TimestampColumnName,
+		HighCardinality:           m.HighCardinality,
 		QueryLabelValuesMetadata:  queryLabelValuesMetadata,
 		QueryMetricValuesMetadata: queryMetricValuesMetadata,
 	}, nil

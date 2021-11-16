@@ -17,42 +17,127 @@ package skywalkingexporter
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/model/pdata"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/metadata"
+	logpb "skywalking.apache.org/repo/goapi/collect/logging/v3"
 )
+
+// See https://godoc.org/google.golang.org/grpc#ClientConn.NewStream
+// why we need to keep the cancel func to cancel the stream
+type logsClientWithCancel struct {
+	cancel context.CancelFunc
+	tsec   logpb.LogReportService_CollectClient
+}
 
 type swExporter struct {
 	cfg *Config
+	// gRPC clients and connection.
+	logSvcClient logpb.LogReportServiceClient
+	// In any of the channels we keep always NumStreams object (sometimes nil),
+	// to make sure we don't open more than NumStreams RPCs at any moment.
+	logsClients    chan *logsClientWithCancel
+	grpcClientConn *grpc.ClientConn
+	metadata       metadata.MD
 }
 
-func newSwExporter(_ context.Context, cfg *Config) (*swExporter, error) {
-	if cfg.Endpoint == "" {
-		return nil, errors.New("SkyWalking exporter cfg requires an Endpoint")
-	}
-
+func newSwExporter(_ context.Context, cfg *Config) *swExporter {
 	oce := &swExporter{
-		cfg: cfg,
+		cfg:      cfg,
+		metadata: metadata.New(cfg.GRPCClientSettings.Headers),
 	}
-	return oce, nil
+	return oce
 }
 
+// start creates the gRPC client Connection
 func (oce *swExporter) start(ctx context.Context, host component.Host) error {
+	dialOpts, err := oce.cfg.GRPCClientSettings.ToDialOptions(host)
+	if err != nil {
+		return err
+	}
+	var clientConn *grpc.ClientConn
+	if clientConn, err = grpc.DialContext(ctx, oce.cfg.GRPCClientSettings.Endpoint, dialOpts...); err != nil {
+		return err
+	}
+
+	oce.grpcClientConn = clientConn
+
+	if oce.logsClients != nil {
+		oce.logSvcClient = logpb.NewLogReportServiceClient(oce.grpcClientConn)
+		// Try to create rpc clients now.
+		for i := 0; i < oce.cfg.NumStreams; i++ {
+			// Populate the channel with NumStreams nil RPCs to keep the number of streams
+			// constant in the channel.
+			oce.logsClients <- nil
+		}
+	}
 	return nil
 }
 
 func (oce *swExporter) shutdown(context.Context) error {
-	return nil
+	if oce.logsClients != nil {
+		// First remove all the clients from the channel.
+		for i := 0; i < oce.cfg.NumStreams; i++ {
+			<-oce.logsClients
+		}
+		// Now close the channel
+		close(oce.logsClients)
+	}
+	return oce.grpcClientConn.Close()
 }
 
-func newExporter(ctx context.Context, cfg *Config) (*swExporter, error) {
-	oce, err := newSwExporter(ctx, cfg)
-	if err != nil {
-		return nil, err
-	}
-	return oce, nil
+func newExporter(ctx context.Context, cfg *Config) *swExporter {
+	oce := newSwExporter(ctx, cfg)
+	oce.logsClients = make(chan *logsClientWithCancel, oce.cfg.NumStreams)
+	return oce
 }
 
 func (oce *swExporter) pushLogs(_ context.Context, td pdata.Logs) error {
+	// Get first available log Client.
+	tClient, ok := <-oce.logsClients
+	if !ok {
+		return errors.New("failed to push logs, Skywalking exporter was already stopped")
+	}
+
+	if tClient == nil {
+		var err error
+		tClient, err = oce.createLogServiceRPC()
+		if err != nil {
+			// Cannot create an RPC, put back nil to keep the number of streams constant.
+			oce.logsClients <- nil
+			return err
+		}
+	}
+
+	for _, logData := range logRecordToLogData(td) {
+		err := tClient.tsec.Send(logData)
+		if err != nil {
+			// Error received, cancel the context used to create the RPC to free all resources,
+			// put back nil to keep the number of streams constant.
+			tClient.cancel()
+			oce.logsClients <- nil
+			return err
+		}
+	}
+
+	oce.logsClients <- tClient
 	return nil
+}
+
+func (oce *swExporter) createLogServiceRPC() (*logsClientWithCancel, error) {
+	// Initiate the log service by sending over node identifier info.
+	ctx, cancel := context.WithCancel(context.Background())
+	if len(oce.cfg.Headers) > 0 {
+		ctx = metadata.NewOutgoingContext(ctx, metadata.New(oce.cfg.Headers))
+	}
+	// Cannot use grpc.WaitForReady(cfg.WaitForReady) because will block forever.
+	logClient, err := oce.logSvcClient.Collect(ctx)
+	if err != nil {
+		cancel()
+		return nil, fmt.Errorf("LogServiceClient: %w", err)
+	}
+	return &logsClientWithCancel{cancel: cancel, tsec: logClient}, nil
 }

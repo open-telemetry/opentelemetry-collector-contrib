@@ -865,8 +865,8 @@ func TestMapSummaryMetrics(t *testing.T) {
 
 	newTranslator := func(tags []string, quantiles bool) *Translator {
 		c := newTestCache()
-		c.cache.Set(c.metricDimensionsToMapKey("summary.example.count", tags), numberCounter{0, 1}, gocache.NoExpiration)
-		c.cache.Set(c.metricDimensionsToMapKey("summary.example.sum", tags), numberCounter{0, 1}, gocache.NoExpiration)
+		c.cache.Set(c.metricDimensionsToMapKey("summary.example.count", tags), numberCounter{0, 0, 1}, gocache.NoExpiration)
+		c.cache.Set(c.metricDimensionsToMapKey("summary.example.sum", tags), numberCounter{0, 0, 1}, gocache.NoExpiration)
 		options := []Option{WithFallbackHostnameProvider(testProvider("fallbackHostname"))}
 		if quantiles {
 			options = append(options, WithQuantiles())

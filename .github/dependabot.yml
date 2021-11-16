@@ -102,6 +102,10 @@ updates:
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
+    directory: "/exporter/jaegerthrifthttpexporter"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
     directory: "/exporter/kafkaexporter"
     schedule:
       interval: "weekly"
@@ -150,6 +154,10 @@ updates:
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
+    directory: "/exporter/skywalkingexporter"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
     directory: "/exporter/splunkhecexporter"
     schedule:
       interval: "weekly"
@@ -163,6 +171,10 @@ updates:
       interval: "weekly"
   - package-ecosystem: "gomod"
     directory: "/exporter/tanzuobservabilityexporter"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
+    directory: "/exporter/tencentcloudlogserviceexporter"
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
@@ -454,6 +466,10 @@ updates:
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
+    directory: "/receiver/journaldreceiver"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
     directory: "/receiver/k8sclusterreceiver"
     schedule:
       interval: "weekly"
@@ -495,6 +511,10 @@ updates:
       interval: "weekly"
   - package-ecosystem: "gomod"
     directory: "/receiver/podmanreceiver"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
+    directory: "/receiver/postgresqlreceiver"
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"

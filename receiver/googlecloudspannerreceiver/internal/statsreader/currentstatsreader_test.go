@@ -17,10 +17,11 @@ package statsreader
 import (
 	"context"
 	"testing"
+	"time"
 
 	"cloud.google.com/go/spanner"
 	"github.com/stretchr/testify/assert"
-	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudspannerreceiver/internal/datasource"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudspannerreceiver/internal/metadata"
@@ -60,7 +61,7 @@ func TestNewCurrentStatsReader(t *testing.T) {
 	metricsMetadata := &metadata.MetricsMetadata{
 		Name: name,
 	}
-	logger := zap.NewNop()
+	logger := zaptest.NewLogger(t)
 	config := ReaderConfig{
 		TopMetricsQueryMaxRows: topMetricsQueryMaxRows,
 	}
@@ -85,4 +86,22 @@ func TestCurrentStatsReader_NewPullStatement(t *testing.T) {
 	}
 
 	assert.NotZero(t, reader.newPullStatement())
+}
+
+func TestIsSafeToUseStaleRead(t *testing.T) {
+	testCases := map[string]struct {
+		secondsAfterStartOfMinute int
+		expectedResult            bool
+	}{
+		"Statement with top metrics query max rows":    {dataStalenessSeconds, false},
+		"Statement without top metrics query max rows": {dataStalenessSeconds*2 + 5, true},
+	}
+
+	for name, testCase := range testCases {
+		t.Run(name, func(t *testing.T) {
+			readTimestamp := time.Date(2021, 9, 17, 16, 25, testCase.secondsAfterStartOfMinute, 0, time.UTC)
+
+			assert.Equal(t, testCase.expectedResult, isSafeToUseStaleRead(readTimestamp))
+		})
+	}
 }

@@ -159,16 +159,16 @@ func TestFailedLoadConfig(t *testing.T) {
 	factory := NewFactory()
 	factories.Receivers[typeStr] = factory
 	_, err = configtest.LoadConfigAndValidate(path.Join(".", "testdata", "bad_typo_default_proto_config.yaml"), factories)
-	assert.EqualError(t, err, "error reading receivers configuration for jaeger: 1 error(s) decoding:\n\n* 'protocols' has invalid keys: thrift_htttp")
+	assert.EqualError(t, err, "error reading receivers configuration for \"jaeger\": 1 error(s) decoding:\n\n* 'protocols' has invalid keys: thrift_htttp")
 
 	_, err = configtest.LoadConfigAndValidate(path.Join(".", "testdata", "bad_proto_config.yaml"), factories)
-	assert.EqualError(t, err, "error reading receivers configuration for jaeger: 1 error(s) decoding:\n\n* 'protocols' has invalid keys: thrift_htttp")
+	assert.EqualError(t, err, "error reading receivers configuration for \"jaeger\": 1 error(s) decoding:\n\n* 'protocols' has invalid keys: thrift_htttp")
 
 	_, err = configtest.LoadConfigAndValidate(path.Join(".", "testdata", "bad_no_proto_config.yaml"), factories)
 	assert.EqualError(t, err, "receiver \"jaeger\" has invalid configuration: must specify at least one protocol when using the Jaeger receiver")
 
 	_, err = configtest.LoadConfigAndValidate(path.Join(".", "testdata", "bad_empty_config.yaml"), factories)
-	assert.EqualError(t, err, "error reading receivers configuration for jaeger: empty config for Jaeger receiver")
+	assert.EqualError(t, err, "error reading receivers configuration for \"jaeger\": empty config for Jaeger receiver")
 }
 
 func TestInvalidConfig(t *testing.T) {
