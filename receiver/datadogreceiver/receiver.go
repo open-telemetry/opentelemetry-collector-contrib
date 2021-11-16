@@ -64,7 +64,7 @@ func (ddr *datadogReceiver) Start(ctx context.Context, host component.Host) erro
 	ddr.server.Handler = ddmux
 	go ddr.startOnce.Do(func() {
 		if err := ddr.server.ListenAndServe(); err != http.ErrServerClosed {
-			host.ReportFatalError(fmt.Errorf("error starting datadog receiver: %v", err))
+			host.ReportFatalError(fmt.Errorf("error starting datadog receiver: %w", err))
 		}
 	})
 	return nil
