@@ -17,7 +17,6 @@ package filterprocessor
 import (
 	"context"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterconfig"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterspan"
 	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/processor/processorhelper"
@@ -36,11 +35,7 @@ func newFilterSpansProcessor(logger *zap.Logger, cfg *Config) (*filterSpanProces
 		return nil, nil
 	}
 
-	inc, err := createSpanMatcher(cfg.Spans.Include)
-	if err != nil {
-		return nil, err
-	}
-	exc, err := createSpanMatcher(cfg.Spans.Exclude)
+	inc, exc, err := createSpanMatcher(cfg)
 	if err != nil {
 		return nil, err
 	}
@@ -56,20 +51,10 @@ func newFilterSpansProcessor(logger *zap.Logger, cfg *Config) (*filterSpanProces
 	}
 
 	logger.Info(
-		"Span filtering configured",
+		"Span filter configured",
+		zap.String("ID", cfg.ID().String()),
 		zap.String("[Include] match_type", includeMatchType),
-		zap.Any("[Include] attributes", cfg.Spans.Include.Attributes),
-		zap.Any("[Include] libraries", cfg.Spans.Include.Libraries),
-		zap.Any("[Include] attributes", cfg.Spans.Include.Resources),
-		zap.Strings("[Include] services", cfg.Spans.Include.Services),
-		zap.Strings("[Include] span_names", cfg.Spans.Include.SpanNames),
 		zap.String("[Exclude] match_type", excludeMatchType),
-		zap.Any("[Exclude] attributes", cfg.Spans.Exclude.Attributes),
-		zap.Any("[Exclude] libraries", cfg.Spans.Exclude.Libraries),
-		zap.Any("[Exclude] resources", cfg.Spans.Exclude.Resources),
-		zap.Strings("[Exclude] services", cfg.Spans.Exclude.Services),
-		zap.Strings("[Exclude] span_names", cfg.Spans.Exclude.SpanNames),
-
 	)
 
 	return &filterSpanProcessor{
@@ -80,11 +65,23 @@ func newFilterSpansProcessor(logger *zap.Logger, cfg *Config) (*filterSpanProces
 	}, nil
 }
 
-func createSpanMatcher(sp *filterconfig.MatchProperties) (filterspan.Matcher, error) {
-	if sp == nil {
-		return nil, nil
+func createSpanMatcher(cfg *Config) (filterspan.Matcher, filterspan.Matcher, error) {
+	var includeMatcher filterspan.Matcher
+	var excludeMatcher filterspan.Matcher
+	var err error
+	if cfg.Spans.Include != nil {
+		includeMatcher, err = filterspan.NewMatcher(cfg.Spans.Include)
+		if err != nil {
+			return nil, nil, err
+		}
 	}
-	return filterspan.NewMatcher(sp)
+	if cfg.Spans.Exclude != nil {
+		excludeMatcher, err = filterspan.NewMatcher(cfg.Spans.Exclude)
+		if err != nil {
+			return nil, nil, err
+		}
+	}
+	return includeMatcher, excludeMatcher, nil
 }
 
 // processTraces filters the given spans of a traces based off the filterSpanProcessor's filters.
@@ -94,37 +91,36 @@ func (fsp *filterSpanProcessor) processTraces(_ context.Context, pdt pdata.Trace
 		for x := 0; x < resSpan.InstrumentationLibrarySpans().Len(); x++ {
 			ils := resSpan.InstrumentationLibrarySpans().At(x)
 			ils.Spans().RemoveIf(func(span pdata.Span) bool {
-				return !fsp.shouldKeepSpan(span, resSpan.Resource(), ils.InstrumentationLibrary())
+				return fsp.shouldRemoveSpan(span, resSpan.Resource(), ils.InstrumentationLibrary())
 			})
 		}
-
 		// Remove empty elements, that way if we delete everything we can tell
 		// the pipeline to stop processing completely (ErrSkipProcessingData)
 		resSpan.InstrumentationLibrarySpans().RemoveIf(func(ilsSpans pdata.InstrumentationLibrarySpans) bool {
 			return ilsSpans.Spans().Len() == 0
 		})
-		pdt.ResourceSpans().RemoveIf(func(res pdata.ResourceSpans) bool {
-			return res.InstrumentationLibrarySpans().Len() == 0
-		})
 	}
+	pdt.ResourceSpans().RemoveIf(func(res pdata.ResourceSpans) bool {
+		return res.InstrumentationLibrarySpans().Len() == 0
+	})
 	if pdt.ResourceSpans().Len() == 0 {
 		return pdt, processorhelper.ErrSkipProcessingData
 	}
 	return pdt, nil
 }
 
-func (fsp *filterSpanProcessor) shouldKeepSpan(span pdata.Span, resource pdata.Resource, library pdata.InstrumentationLibrary) bool {
+func (fsp *filterSpanProcessor) shouldRemoveSpan(span pdata.Span, resource pdata.Resource, library pdata.InstrumentationLibrary) bool {
 	if fsp.include != nil {
 		if i := fsp.include.MatchSpan(span, resource, library); !i {
-			return false
+			return true
 		}
 	}
 
 	if fsp.exclude != nil {
 		if e := fsp.exclude.MatchSpan(span, resource, library); e {
-			return false
+			return true
 		}
 	}
 
-	return true
+	return false
 }

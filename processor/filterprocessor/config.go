@@ -50,7 +50,7 @@ type MetricFilters struct {
 	RegexpConfig *regexp.Config `mapstructure:"regexp"`
 }
 
-// SpanFilters filters by Span attributes and various other fields
+// SpanFilters filters by Span attributes and various other fields, Regexp config is per matcher
 type SpanFilters struct {
 	// Include match properties describe spans that should be included in the Collector Service pipeline,
 	// all other spans should be dropped from further processing.
@@ -61,9 +61,6 @@ type SpanFilters struct {
 	// all other spans should be included.
 	// If both Include and Exclude are specified, Include filtering occurs first.
 	Exclude *filterconfig.MatchProperties `mapstructure:"exclude"`
-
-	// RegexpConfig specifies options for the Regexp match type
-	RegexpConfig *regexp.Config `mapstructure:"regexp"`
 }
 
 // LogFilters filters by Log properties.
