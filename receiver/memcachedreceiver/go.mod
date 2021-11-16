@@ -4,16 +4,16 @@ go 1.17
 
 require (
 	github.com/grobie/gomemcache v0.0.0-20180201122607-1f779c573665
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.38.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.39.0
 	github.com/stretchr/testify v1.7.0
-	go.opentelemetry.io/collector v0.38.1-0.20211112010215-bcb90636ae66
-	go.opentelemetry.io/collector/model v0.38.1-0.20211112010215-bcb90636ae66
+	go.opentelemetry.io/collector v0.39.0
+	go.opentelemetry.io/collector/model v0.39.0
 	go.uber.org/zap v1.19.1
 )
 
 require (
 	github.com/Microsoft/go-winio v0.4.17 // indirect
-	github.com/cenkalti/backoff/v4 v4.1.1 // indirect
+	github.com/cenkalti/backoff/v4 v4.1.2 // indirect
 	github.com/containerd/containerd v1.5.7 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/docker/distribution v2.7.1+incompatible // indirect

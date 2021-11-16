@@ -22,27 +22,35 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudspannerreceiver/internal/metadata"
 )
 
-const (
-	metricDataTypeGauge = "gauge"
-	metricDataTypeSum   = "sum"
+type MetricDataType string
 
-	aggregationTemporalityDelta      = "delta"
-	aggregationTemporalityCumulative = "cumulative"
+const (
+	UnknownMetricDataType MetricDataType = "unknown"
+	GaugeMetricDataType   MetricDataType = "gauge"
+	SumMetricDataType     MetricDataType = "sum"
+)
+
+type AggregationType string
+
+const (
+	UnknownAggregationType    AggregationType = "unknown"
+	DeltaAggregationType      AggregationType = "delta"
+	CumulativeAggregationType AggregationType = "cumulative"
 )
 
 type MetricType struct {
-	DataType    string `yaml:"type"`
-	Aggregation string `yaml:"aggregation"`
-	Monotonic   bool   `yaml:"monotonic"`
+	DataType    MetricDataType  `yaml:"type"`
+	Aggregation AggregationType `yaml:"aggregation"`
+	Monotonic   bool            `yaml:"monotonic"`
 }
 
 func (metricType MetricType) dataType() (pdata.MetricDataType, error) {
 	var dataType pdata.MetricDataType
 
 	switch metricType.DataType {
-	case metricDataTypeGauge:
+	case GaugeMetricDataType:
 		dataType = pdata.MetricDataTypeGauge
-	case metricDataTypeSum:
+	case SumMetricDataType:
 		dataType = pdata.MetricDataTypeSum
 	default:
 		return pdata.MetricDataTypeNone, errors.New("invalid data type received")
@@ -55,9 +63,9 @@ func (metricType MetricType) aggregationTemporality() (pdata.MetricAggregationTe
 	var aggregationTemporality pdata.MetricAggregationTemporality
 
 	switch metricType.Aggregation {
-	case aggregationTemporalityDelta:
+	case DeltaAggregationType:
 		aggregationTemporality = pdata.MetricAggregationTemporalityDelta
-	case aggregationTemporalityCumulative:
+	case CumulativeAggregationType:
 		aggregationTemporality = pdata.MetricAggregationTemporalityCumulative
 	case "":
 		aggregationTemporality = pdata.MetricAggregationTemporalityUnspecified

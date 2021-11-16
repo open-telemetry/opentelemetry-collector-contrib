@@ -5,10 +5,10 @@ go 1.17
 require (
 	github.com/aliyun/aliyun-log-go-sdk v0.1.24
 	github.com/gogo/protobuf v1.3.2
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.38.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.39.0
 	github.com/stretchr/testify v1.7.0
-	go.opentelemetry.io/collector v0.38.1-0.20211112010215-bcb90636ae66
-	go.opentelemetry.io/collector/model v0.38.1-0.20211112010215-bcb90636ae66
+	go.opentelemetry.io/collector v0.39.0
+	go.opentelemetry.io/collector/model v0.39.0
 	go.uber.org/zap v1.19.1
 )
 
