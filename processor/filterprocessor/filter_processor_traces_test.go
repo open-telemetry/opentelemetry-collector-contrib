@@ -28,6 +28,7 @@ import (
 	"go.opentelemetry.io/collector/model/pdata"
 )
 
+// All the data we need to test the Span filter
 type testTrace struct {
 	spanName           string
 	libraryName        string
@@ -36,13 +37,14 @@ type testTrace struct {
 	tags               map[string]pdata.AttributeValue
 }
 
+// All the data we need to define a test
 type traceTest struct {
 	name              string
 	inc               *filterconfig.MatchProperties
 	exc               *filterconfig.MatchProperties
 	inTraces          pdata.Traces
 	allTracesFiltered bool
-	spanCount         int
+	spanCountExpected int // The number of spans that should be left after all filtering
 }
 
 var (
@@ -68,9 +70,6 @@ var (
 			resourceAttributes: map[string]pdata.AttributeValue{
 				"service.name": pdata.NewAttributeValueString("keep"),
 			},
-			tags: map[string]pdata.AttributeValue{
-				"db.type": pdata.NewAttributeValueString("redis"),
-			},
 		},
 		{
 			spanName:       "test!",
@@ -78,9 +77,6 @@ var (
 			libraryVersion: "11",
 			resourceAttributes: map[string]pdata.AttributeValue{
 				"service.name": pdata.NewAttributeValueString("dont_keep"),
-			},
-			tags: map[string]pdata.AttributeValue{
-				"db.type": pdata.NewAttributeValueString("redis"),
 			},
 		},
 		{
@@ -90,14 +86,21 @@ var (
 			resourceAttributes: map[string]pdata.AttributeValue{
 				"service.name": pdata.NewAttributeValueString("keep"),
 			},
-			tags: map[string]pdata.AttributeValue{
-				"db.type": pdata.NewAttributeValueString("redis"),
-			},
 		},
 	}
-	serviceNameMatchProperties = &filterconfig.MatchProperties{Config: filterset.Config{MatchType: filterset.Strict}, Services: []string{"keep"}}
-	redisMatchProperties       = &filterconfig.MatchProperties{Attributes: []filterconfig.Attribute{{Key: "db.type", Value: "redis"}}}
-	standardTraceTests         = []traceTest{
+
+	serviceNameMatchProperties = &filterconfig.MatchProperties{
+		Config:   filterset.Config{MatchType: filterset.Strict},
+		Services: []string{"keep"},
+	}
+
+	redisMatchProperties = &filterconfig.MatchProperties{
+		Attributes: []filterconfig.Attribute{
+			{Key: "db.type", Value: "redis"},
+		},
+	}
+
+	standardTraceTests = []traceTest{
 		{
 			name:              "filterRedis",
 			exc:               redisMatchProperties,
@@ -105,16 +108,16 @@ var (
 			allTracesFiltered: true,
 		},
 		{
-			name:      "keepRedis",
-			inc:       redisMatchProperties,
-			inTraces:  generateTraces(redisTraces),
-			spanCount: 1,
+			name:              "keepRedis",
+			inc:               redisMatchProperties,
+			inTraces:          generateTraces(redisTraces),
+			spanCountExpected: 1,
 		},
 		{
-			name:      "keepServiceName",
-			inc:       serviceNameMatchProperties,
-			inTraces:  generateTraces(nameTraces),
-			spanCount: 2,
+			name:              "keepServiceName",
+			inc:               serviceNameMatchProperties,
+			inTraces:          generateTraces(nameTraces),
+			spanCountExpected: 2,
 		},
 	}
 )
@@ -122,6 +125,7 @@ var (
 func TestFilterTraceProcessor(t *testing.T) {
 	for _, test := range standardTraceTests {
 		t.Run(test.name, func(t *testing.T) {
+			ctx := context.Background()
 			next := new(consumertest.TracesSink)
 			cfg := &Config{
 				ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
@@ -132,7 +136,7 @@ func TestFilterTraceProcessor(t *testing.T) {
 			}
 			factory := NewFactory()
 			fmp, err := factory.CreateTracesProcessor(
-				context.Background(),
+				ctx,
 				componenttest.NewNopProcessorCreateSettings(),
 				cfg,
 				next,
@@ -142,34 +146,35 @@ func TestFilterTraceProcessor(t *testing.T) {
 
 			caps := fmp.Capabilities()
 			assert.True(t, caps.MutatesData)
-			ctx := context.Background()
+
 			assert.NoError(t, fmp.Start(ctx, nil))
 
-			cErr := fmp.ConsumeTraces(context.Background(), test.inTraces)
+			cErr := fmp.ConsumeTraces(ctx, test.inTraces)
 			assert.Nil(t, cErr)
 			got := next.AllTraces()
 
+			// If all traces got filtered you shouldnt even have ResourceSpans
 			if test.allTracesFiltered {
 				require.Equal(t, 0, len(got))
 			} else {
-				require.Equal(t, test.spanCount, got[0].SpanCount())
+				require.Equal(t, test.spanCountExpected, got[0].SpanCount())
 			}
 			assert.NoError(t, fmp.Shutdown(ctx))
 		})
 	}
 }
 func generateTraces(traces []testTrace) pdata.Traces {
-	md := pdata.NewTraces()
+	td := pdata.NewTraces()
 
-	for _, test := range traces {
-		rs := md.ResourceSpans().AppendEmpty()
-		pdata.NewAttributeMapFromMap(test.resourceAttributes).CopyTo(rs.Resource().Attributes())
+	for _, trace := range traces {
+		rs := td.ResourceSpans().AppendEmpty()
+		pdata.NewAttributeMapFromMap(trace.resourceAttributes).CopyTo(rs.Resource().Attributes())
 		ils := rs.InstrumentationLibrarySpans().AppendEmpty()
-		ils.InstrumentationLibrary().SetName(test.libraryName)
-		ils.InstrumentationLibrary().SetVersion(test.libraryVersion)
+		ils.InstrumentationLibrary().SetName(trace.libraryName)
+		ils.InstrumentationLibrary().SetVersion(trace.libraryVersion)
 		span := ils.Spans().AppendEmpty()
-		pdata.NewAttributeMapFromMap(test.tags).CopyTo(span.Attributes())
-		span.SetName(test.spanName)
+		pdata.NewAttributeMapFromMap(trace.tags).CopyTo(span.Attributes())
+		span.SetName(trace.spanName)
 	}
-	return md
+	return td
 }
