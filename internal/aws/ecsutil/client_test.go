@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package awsecscontainermetrics
+package ecsutil
 
 import (
 	"fmt"
@@ -23,6 +23,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/config/confighttp"
 	"go.uber.org/zap"
 )
 
@@ -46,18 +47,20 @@ func TestClient(t *testing.T) {
 
 func TestNewClientProvider(t *testing.T) {
 	baseURL, _ := url.Parse("http://localhost:8080")
-	provider := NewClientProvider(*baseURL, zap.NewNop())
+	provider := NewClientProvider(*baseURL, confighttp.HTTPClientSettings{}, zap.NewNop())
 	require.NotNil(t, provider)
 	_, ok := provider.(*defaultClientProvider)
 	require.True(t, ok)
 
-	client := provider.BuildClient()
+	client, err := provider.BuildClient()
+	require.NoError(t, err)
 	require.Equal(t, "http://localhost:8080", client.(*clientImpl).baseURL.String())
 }
 
 func TestDefaultClient(t *testing.T) {
 	endpoint, _ := url.Parse("http://localhost:8080")
-	client := defaultClient(*endpoint, zap.NewNop())
+	client, err := defaultClient(*endpoint, confighttp.HTTPClientSettings{}, zap.NewNop())
+	require.NoError(t, err)
 	require.NotNil(t, client.httpClient.Transport)
 	require.Equal(t, "http://localhost:8080", client.baseURL.String())
 }
@@ -65,10 +68,12 @@ func TestDefaultClient(t *testing.T) {
 func TestBuildReq(t *testing.T) {
 	endpoint, _ := url.Parse("http://localhost:8080")
 	p := &defaultClientProvider{
-		endpoint: *endpoint,
-		logger:   zap.NewNop(),
+		baseURL: *endpoint,
+		logger:  zap.NewNop(),
 	}
-	cl := p.BuildClient()
+	cl, err := p.BuildClient()
+	require.NoError(t, err)
+
 	req, err := cl.(*clientImpl).buildReq("/test")
 	require.NoError(t, err)
 	require.NotNil(t, req)
@@ -78,21 +83,23 @@ func TestBuildReq(t *testing.T) {
 func TestBuildBadReq(t *testing.T) {
 	endpoint, _ := url.Parse("http://localhost:8080")
 	p := &defaultClientProvider{
-		endpoint: *endpoint,
-		logger:   zap.NewNop(),
+		baseURL: *endpoint,
+		logger:  zap.NewNop(),
 	}
-	cl := p.BuildClient()
-	_, err := cl.(*clientImpl).buildReq(" ")
+	cl, err := p.BuildClient()
+	require.NoError(t, err)
+	_, err = cl.(*clientImpl).buildReq(" ")
 	require.Error(t, err)
 }
 
 func TestGetBad(t *testing.T) {
 	endpoint, _ := url.Parse("http://localhost:8080")
 	p := &defaultClientProvider{
-		endpoint: *endpoint,
-		logger:   zap.NewNop(),
+		baseURL: *endpoint,
+		logger:  zap.NewNop(),
 	}
-	cl := p.BuildClient()
+	cl, err := p.BuildClient()
+	require.NoError(t, err)
 	resp, err := cl.(*clientImpl).Get(" ")
 	require.Error(t, err)
 	require.Nil(t, resp)

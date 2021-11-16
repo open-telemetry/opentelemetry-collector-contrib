@@ -3,11 +3,11 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubele
 go 1.17
 
 require (
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.38.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/kubelet v0.38.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.39.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/kubelet v0.39.0
 	github.com/stretchr/testify v1.7.0
-	go.opentelemetry.io/collector v0.38.1-0.20211112010215-bcb90636ae66
-	go.opentelemetry.io/collector/model v0.38.1-0.20211112010215-bcb90636ae66
+	go.opentelemetry.io/collector v0.39.0
+	go.opentelemetry.io/collector/model v0.39.0
 	go.uber.org/zap v1.19.1
 	k8s.io/api v0.22.3
 	k8s.io/apimachinery v0.22.3
