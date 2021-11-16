@@ -209,15 +209,32 @@ In case the no metric names are provided, `matric_names` being empty, the filter
 
 See the documentation in the [attribute processor](../attributesprocessor/README.md) for syntax
 
+For spans, one of Services, SpanNames, Attributes, Resources or Libraries must be specified with a
+non-empty value for a valid configuration.
+
 ```yaml
 processors:
   filter:
     spans:
+      include:
+        match_type: strict
+        services:
+          - app_3
       exclude:
+        match_type: regex
+        services:
+          - app_1
+          - app_2
         span_names:
           - hello_world
           - hello/world
         attributes:
           - Key: container.name
             Value: (app_container_1|app_container_2)
+        libraries:
+          - Name: opentelemetry
+            Version: 0.0-beta
+        resources:
+          - Key: container.host
+            Value: (localhost|127.0.0.1)
 ```

@@ -32,11 +32,14 @@ type filterSpanProcessor struct {
 }
 
 func newFilterSpansProcessor(logger *zap.Logger, cfg *Config) (*filterSpanProcessor, error) {
+	if cfg.Spans.Include == nil && cfg.Spans.Exclude == nil {
+		return nil, nil
+	}
+
 	inc, err := createSpanMatcher(cfg.Spans.Include)
 	if err != nil {
 		return nil, err
 	}
-
 	exc, err := createSpanMatcher(cfg.Spans.Exclude)
 	if err != nil {
 		return nil, err
@@ -53,9 +56,20 @@ func newFilterSpansProcessor(logger *zap.Logger, cfg *Config) (*filterSpanProces
 	}
 
 	logger.Info(
-		"Span filter configured",
-		zap.String("include match_type", includeMatchType),
-		zap.String("exclude match_type", excludeMatchType),
+		"Span filtering configured",
+		zap.String("[Include] match_type", includeMatchType),
+		zap.Any("[Include] attributes", cfg.Spans.Include.Attributes),
+		zap.Any("[Include] libraries", cfg.Spans.Include.Libraries),
+		zap.Any("[Include] attributes", cfg.Spans.Include.Resources),
+		zap.Strings("[Include] services", cfg.Spans.Include.Services),
+		zap.Strings("[Include] span_names", cfg.Spans.Include.SpanNames),
+		zap.String("[Exclude] match_type", excludeMatchType),
+		zap.Any("[Exclude] attributes", cfg.Spans.Exclude.Attributes),
+		zap.Any("[Exclude] libraries", cfg.Spans.Exclude.Libraries),
+		zap.Any("[Exclude] resources", cfg.Spans.Exclude.Resources),
+		zap.Strings("[Exclude] services", cfg.Spans.Exclude.Services),
+		zap.Strings("[Exclude] span_names", cfg.Spans.Exclude.SpanNames),
+
 	)
 
 	return &filterSpanProcessor{

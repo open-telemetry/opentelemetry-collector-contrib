@@ -15,6 +15,7 @@
 package filterprocessor
 
 import (
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterset"
 	"path"
 	"testing"
 
@@ -286,15 +287,21 @@ func TestLoadingSpans(t *testing.T) {
 	}{
 		{
 			expCfg: &Config{
-				ProcessorSettings: config.NewProcessorSettings(config.NewComponentIDWithName(typeStr, "includeexclude")),
+				ProcessorSettings: config.NewProcessorSettings(config.NewComponentIDWithName(typeStr, "spans")),
 				Spans: SpanFilters{
 					Include: &filterconfig.MatchProperties{
-						Services: []string{"test"},
+						Config: filterset.Config{
+							MatchType: filterset.Strict,
+						},
+						Services: []string{"test", "test2"},
 						Attributes: []filterconfig.Attribute{
 							{Key: "should_include", Value: "(true|probably_true)"},
 						},
 					},
 					Exclude: &filterconfig.MatchProperties{
+						Config: filterset.Config{
+							MatchType: filterset.Regexp,
+						},
 						Attributes: []filterconfig.Attribute{
 							{Key: "should_exclude", Value: "(probably_false|false)"},
 						},
