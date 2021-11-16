@@ -26,28 +26,40 @@ import (
 )
 
 type postgreSQLScraper struct {
-	logger *zap.Logger
-	config *Config
+	logger        *zap.Logger
+	config        *Config
+	clientFactory postgreSQLClientFactory
+}
+
+type postgreSQLClientFactory interface {
+	getClient(c *Config, database string) (client, error)
+}
+
+type defaultClientFactory struct{}
+
+func (d *defaultClientFactory) getClient(c *Config, database string) (client, error) {
+	return newPostgreSQLClient(postgreSQLConfig{
+		username: c.Username,
+		password: c.Password,
+		database: database,
+		tls:      c.TLSClientSetting,
+		address:  c.NetAddr,
+	})
 }
 
 func newPostgreSQLScraper(
 	logger *zap.Logger,
 	config *Config,
+	clientFactory postgreSQLClientFactory,
 ) *postgreSQLScraper {
-	return &postgreSQLScraper{
-		logger: logger,
-		config: config,
+	if clientFactory == nil {
+		clientFactory = &defaultClientFactory{}
 	}
-}
-
-var initializeClient = func(p *postgreSQLScraper, database string) (client, error) {
-	return newPostgreSQLClient(postgreSQLConfig{
-		username: p.config.Username,
-		password: p.config.Password,
-		database: database,
-		tls:      p.config.TLSClientSetting,
-		address:  p.config.NetAddr,
-	})
+	return &postgreSQLScraper{
+		logger:        logger,
+		config:        config,
+		clientFactory: clientFactory,
+	}
 }
 
 // initMetric initializes a metric with a metadata attribute.
@@ -86,7 +98,7 @@ func (p *postgreSQLScraper) scrape(context.Context) (pdata.Metrics, error) {
 	databaseAgnosticMetricsCollected := false
 	databases := p.config.Databases
 	if len(databases) == 0 {
-		listClient, err := initializeClient(p, "")
+		listClient, err := p.clientFactory.getClient(p.config, "")
 		if err != nil {
 			p.logger.Error("Failed to initialize connection to postgres", zap.Error(err))
 			return md, err
@@ -113,7 +125,7 @@ func (p *postgreSQLScraper) scrape(context.Context) (pdata.Metrics, error) {
 	}
 
 	for _, database := range databases {
-		dbClient, err := initializeClient(p, database)
+		dbClient, err := p.clientFactory.getClient(p.config, database)
 		if err != nil {
 			// TODO - do string interpolation better
 			p.logger.Error("Failed to initialize connection to postgres", zap.String("database", database), zap.Error(err))

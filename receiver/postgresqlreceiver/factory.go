@@ -66,7 +66,7 @@ func createMetricsReceiver(
 ) (component.MetricsReceiver, error) {
 	cfg := rConf.(*Config)
 
-	ns := newPostgreSQLScraper(params.Logger, cfg)
+	ns := newPostgreSQLScraper(params.Logger, cfg, &defaultClientFactory{})
 	scraper, err := scraperhelper.NewScraper(typeStr, ns.scrape)
 
 	if err != nil {
