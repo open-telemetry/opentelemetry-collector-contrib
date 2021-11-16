@@ -79,14 +79,12 @@ func (fsp *filterSpanProcessor) processTraces(_ context.Context, pdt pdata.Trace
 		resSpan := pdt.ResourceSpans().At(i)
 		for x := 0; x < resSpan.InstrumentationLibrarySpans().Len(); x++ {
 			ils := resSpan.InstrumentationLibrarySpans().At(x)
-			for spanCount := 0; spanCount < ils.Spans().Len(); spanCount++ {
-				ils.Spans().RemoveIf(func(span pdata.Span) bool {
-					return !fsp.shouldKeepSpan(span, resSpan.Resource(), ils.InstrumentationLibrary())
-				})
-			}
+			ils.Spans().RemoveIf(func(span pdata.Span) bool {
+				return !fsp.shouldKeepSpan(span, resSpan.Resource(), ils.InstrumentationLibrary())
+			})
 		}
-		resSpan.InstrumentationLibrarySpans().RemoveIf(func(spans pdata.InstrumentationLibrarySpans) bool {
-			return spans.Spans().Len() == 0
+		resSpan.InstrumentationLibrarySpans().RemoveIf(func(ilsSpans pdata.InstrumentationLibrarySpans) bool {
+			return ilsSpans.Spans().Len() == 0
 		})
 	}
 	if pdt.ResourceSpans().Len() == 0 {
