@@ -44,7 +44,7 @@ func TestExternalLabels(t *testing.T) {
 		},
 	}
 
-	mp, cfg, err := setupMockPrometheus(targets...)
+	mp, cfg, err := setupMockPrometheus(false, targets...)
 	cfg.GlobalConfig.ExternalLabels = labels.FromStrings("key", "value")
 	require.Nilf(t, err, "Failed to create Prometheus config: %v", err)
 	defer mp.Close()
