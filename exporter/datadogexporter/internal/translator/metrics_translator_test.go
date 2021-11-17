@@ -116,12 +116,10 @@ func newTranslator(t *testing.T, logger *zap.Logger, resourceAttributesAsTags, i
 	}
 
 	if resourceAttributesAsTags {
-		fmt.Println("Here (resourceAttributesAsTags)")
 		options = append(options, WithResourceAttributesAsTags())
 	}
 
 	if instrumentationLibraryMetadataAsTags {
-		fmt.Println("There (instrumentationLibraryMetadataAsTags)")
 		options = append(options, WithInstrumentationLibraryMetadataAsTags())
 	}
 
