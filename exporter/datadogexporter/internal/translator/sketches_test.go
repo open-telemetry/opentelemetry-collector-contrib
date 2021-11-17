@@ -105,7 +105,7 @@ func TestHistogramSketches(t *testing.T) {
 	tol := 1e-8
 	cfg := quantile.Default()
 	ctx := context.Background()
-	tr := newTranslator(t, zap.NewNop(), false, false)
+	tr := newTranslator(t, zap.NewNop())
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
@@ -198,7 +198,7 @@ func TestInfiniteBounds(t *testing.T) {
 	}
 
 	ctx := context.Background()
-	tr := newTranslator(t, zap.NewNop(), false, false)
+	tr := newTranslator(t, zap.NewNop())
 	for _, testInstance := range tests {
 		t.Run(testInstance.name, func(t *testing.T) {
 			p := testInstance.getHist()

@@ -108,20 +108,12 @@ func (t testProvider) Hostname(context.Context) (string, error) {
 	return string(t), nil
 }
 
-func newTranslator(t *testing.T, logger *zap.Logger, resourceAttributesAsTags, instrumentationLibraryMetadataAsTags bool) *Translator {
-	options := []Option{
+func newTranslator(t *testing.T, logger *zap.Logger, opts ...Option) *Translator {
+	options := append([]Option{
 		WithFallbackHostnameProvider(testProvider("fallbackHostname")),
 		WithHistogramMode(HistogramModeDistributions),
 		WithNumberMode(NumberModeCumulativeToDelta),
-	}
-
-	if resourceAttributesAsTags {
-		options = append(options, WithResourceAttributesAsTags())
-	}
-
-	if instrumentationLibraryMetadataAsTags {
-		options = append(options, WithInstrumentationLibraryMetadataAsTags())
-	}
+	}, opts...)
 
 	tr, err := New(
 		logger,
@@ -195,7 +187,7 @@ func TestMapIntMetrics(t *testing.T) {
 	point.SetIntVal(17)
 	point.SetTimestamp(ts)
 	ctx := context.Background()
-	tr := newTranslator(t, zap.NewNop(), false, false)
+	tr := newTranslator(t, zap.NewNop())
 
 	consumer := &mockTimeSeriesConsumer{}
 	tr.mapNumberMetrics(ctx, consumer, "int64.test", Gauge, slice, []string{}, "")
@@ -227,7 +219,7 @@ func TestMapDoubleMetrics(t *testing.T) {
 	point.SetDoubleVal(math.Pi)
 	point.SetTimestamp(ts)
 	ctx := context.Background()
-	tr := newTranslator(t, zap.NewNop(), false, false)
+	tr := newTranslator(t, zap.NewNop())
 
 	consumer := &mockTimeSeriesConsumer{}
 	tr.mapNumberMetrics(ctx, consumer, "float64.test", Gauge, slice, []string{}, "")
@@ -283,7 +275,7 @@ func TestMapIntMonotonicMetrics(t *testing.T) {
 
 	ctx := context.Background()
 	consumer := &mockTimeSeriesConsumer{}
-	tr := newTranslator(t, zap.NewNop(), false, false)
+	tr := newTranslator(t, zap.NewNop())
 	tr.mapNumberMonotonicMetrics(ctx, consumer, metricName, slice, []string{}, "")
 
 	assert.ElementsMatch(t, expected, consumer.metrics)
@@ -322,7 +314,7 @@ func TestMapIntMonotonicDifferentDimensions(t *testing.T) {
 	point.Attributes().InsertString("key1", "valB")
 
 	ctx := context.Background()
-	tr := newTranslator(t, zap.NewNop(), false, false)
+	tr := newTranslator(t, zap.NewNop())
 
 	consumer := &mockTimeSeriesConsumer{}
 	tr.mapNumberMonotonicMetrics(ctx, consumer, metricName, slice, []string{}, "")
@@ -349,7 +341,7 @@ func TestMapIntMonotonicWithReboot(t *testing.T) {
 	}
 
 	ctx := context.Background()
-	tr := newTranslator(t, zap.NewNop(), false, false)
+	tr := newTranslator(t, zap.NewNop())
 	consumer := &mockTimeSeriesConsumer{}
 	tr.mapNumberMonotonicMetrics(ctx, consumer, metricName, slice, []string{}, "")
 	assert.ElementsMatch(t,
@@ -376,7 +368,7 @@ func TestMapIntMonotonicOutOfOrder(t *testing.T) {
 	}
 
 	ctx := context.Background()
-	tr := newTranslator(t, zap.NewNop(), false, false)
+	tr := newTranslator(t, zap.NewNop())
 	consumer := &mockTimeSeriesConsumer{}
 	tr.mapNumberMonotonicMetrics(ctx, consumer, metricName, slice, []string{}, "")
 	assert.ElementsMatch(t,
@@ -414,7 +406,7 @@ func TestMapDoubleMonotonicMetrics(t *testing.T) {
 
 	ctx := context.Background()
 	consumer := &mockTimeSeriesConsumer{}
-	tr := newTranslator(t, zap.NewNop(), false, false)
+	tr := newTranslator(t, zap.NewNop())
 	tr.mapNumberMonotonicMetrics(ctx, consumer, metricName, slice, []string{}, "")
 
 	assert.ElementsMatch(t, expected, consumer.metrics)
@@ -453,7 +445,7 @@ func TestMapDoubleMonotonicDifferentDimensions(t *testing.T) {
 	point.Attributes().InsertString("key1", "valB")
 
 	ctx := context.Background()
-	tr := newTranslator(t, zap.NewNop(), false, false)
+	tr := newTranslator(t, zap.NewNop())
 
 	consumer := &mockTimeSeriesConsumer{}
 	tr.mapNumberMonotonicMetrics(ctx, consumer, metricName, slice, []string{}, "")
@@ -480,7 +472,7 @@ func TestMapDoubleMonotonicWithReboot(t *testing.T) {
 	}
 
 	ctx := context.Background()
-	tr := newTranslator(t, zap.NewNop(), false, false)
+	tr := newTranslator(t, zap.NewNop())
 	consumer := &mockTimeSeriesConsumer{}
 	tr.mapNumberMonotonicMetrics(ctx, consumer, metricName, slice, []string{}, "")
 	assert.ElementsMatch(t,
@@ -507,7 +499,7 @@ func TestMapDoubleMonotonicOutOfOrder(t *testing.T) {
 	}
 
 	ctx := context.Background()
-	tr := newTranslator(t, zap.NewNop(), false, false)
+	tr := newTranslator(t, zap.NewNop())
 	consumer := &mockTimeSeriesConsumer{}
 	tr.mapNumberMonotonicMetrics(ctx, consumer, metricName, slice, []string{}, "")
 	assert.ElementsMatch(t,
@@ -685,7 +677,7 @@ func TestMapDeltaHistogramMetrics(t *testing.T) {
 
 	for _, testInstance := range tests {
 		t.Run(testInstance.name, func(t *testing.T) {
-			tr := newTranslator(t, zap.NewNop(), false, false)
+			tr := newTranslator(t, zap.NewNop())
 			tr.cfg.HistMode = testInstance.histogramMode
 			tr.cfg.SendCountSum = testInstance.sendCountSum
 			consumer := &mockFullConsumer{}
@@ -784,7 +776,7 @@ func TestMapCumulativeHistogramMetrics(t *testing.T) {
 
 	for _, testInstance := range tests {
 		t.Run(testInstance.name, func(t *testing.T) {
-			tr := newTranslator(t, zap.NewNop(), false, false)
+			tr := newTranslator(t, zap.NewNop())
 			tr.cfg.HistMode = testInstance.histogramMode
 			tr.cfg.SendCountSum = testInstance.sendCountSum
 			consumer := &mockFullConsumer{}
@@ -799,7 +791,7 @@ func TestMapCumulativeHistogramMetrics(t *testing.T) {
 func TestLegacyBucketsTags(t *testing.T) {
 	// Test that passing the same tags slice doesn't reuse the slice.
 	ctx := context.Background()
-	tr := newTranslator(t, zap.NewNop(), false, false)
+	tr := newTranslator(t, zap.NewNop())
 
 	tags := make([]string, 0, 10)
 
@@ -1295,7 +1287,15 @@ func TestMapMetrics(t *testing.T) {
 			testLogger := zap.New(core)
 			ctx := context.Background()
 			consumer := &mockFullConsumer{}
-			tr := newTranslator(t, testLogger, testInstance.resourceAttributesAsTags, testInstance.instrumentationLibraryMetadataAsTags)
+
+			options := []Option{}
+			if testInstance.resourceAttributesAsTags {
+				options = append(options, WithResourceAttributesAsTags())
+			}
+			if testInstance.instrumentationLibraryMetadataAsTags {
+				options = append(options, WithInstrumentationLibraryMetadataAsTags())
+			}
+			tr := newTranslator(t, testLogger, options...)
 			err := tr.MapMetrics(ctx, md, consumer)
 			require.NoError(t, err)
 
@@ -1404,7 +1404,7 @@ func TestNaNMetrics(t *testing.T) {
 	core, observed := observer.New(zapcore.DebugLevel)
 	testLogger := zap.New(core)
 	ctx := context.Background()
-	tr := newTranslator(t, testLogger, false, false)
+	tr := newTranslator(t, testLogger)
 	consumer := &mockFullConsumer{}
 	err := tr.MapMetrics(ctx, md, consumer)
 	require.NoError(t, err)
