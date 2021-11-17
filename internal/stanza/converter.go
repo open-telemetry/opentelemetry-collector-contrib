@@ -576,7 +576,15 @@ var sevTextMap = map[entry.Severity]string{
 // making it more unlikely to be hit
 var pairSep = []byte{0xfe}
 
+// emptyResourceID is the ID returned by getResourceID when it is passed an empty resource.
+// This specific number is chosen as it is the starting offset of fnv64.
+const emptyResourceID uint64 = 14695981039346656037
+
 func getResourceID(resource map[string]string) uint64 {
+	if len(resource) == 0 {
+		return emptyResourceID
+	}
+
 	var fnvHash = fnv.New64a()
 	var fnvHashOut = make([]byte, 0, 16)
 	var keySlice = make([]string, 0, len(resource))
@@ -609,7 +617,7 @@ func appendEscapedPairSeparator(buf []byte, s string) []byte {
 	const escapeByte byte = '\xff'
 
 	if len(s) > cap(buf) {
-		newBuf := make([]byte, len(s))
+		newBuf := make([]byte, 2*len(s))
 		copy(newBuf, buf)
 		buf = newBuf
 	}
@@ -617,9 +625,7 @@ func appendEscapedPairSeparator(buf []byte, s string) []byte {
 	sBytes := []byte(s)
 	for _, b := range sBytes {
 		switch b {
-		case escapeByte:
-			fallthrough
-		case pairSep[0]:
+		case escapeByte, pairSep[0]:
 			buf = append(buf, escapeByte)
 		}
 
