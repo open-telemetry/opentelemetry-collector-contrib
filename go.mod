@@ -91,6 +91,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/podmanreceiver v0.39.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusexecreceiver v0.39.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver v0.39.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusoperatorreceiver v0.39.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/receivercreator v0.39.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/redisreceiver v0.39.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sapmreceiver v0.39.0
@@ -610,6 +611,8 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/openc
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusexecreceiver => ./receiver/prometheusexecreceiver
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver => ./receiver/prometheusreceiver
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusoperatorreceiver => ./receiver/prometheusoperatorreceiver
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/podmanreceiver => ./receiver/podmanreceiver
 

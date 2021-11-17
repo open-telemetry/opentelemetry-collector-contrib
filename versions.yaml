@@ -110,6 +110,7 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/receivercreator
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudpubsubreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver
+      - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusoperatorreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8seventsreceiver
