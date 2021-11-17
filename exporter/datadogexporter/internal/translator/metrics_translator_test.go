@@ -960,10 +960,10 @@ func createTestMetrics(additionalAttributes map[string]string, name, version str
 	}
 	ilms := rm.InstrumentationLibraryMetrics()
 
-	metricsArrayMetadata := ilms.AppendEmpty()
-	metricsArrayMetadata.InstrumentationLibrary().SetName(name)
-	metricsArrayMetadata.InstrumentationLibrary().SetVersion(version)
-	metricsArray := metricsArrayMetadata.Metrics()
+	ilm := ilms.AppendEmpty()
+	ilm.InstrumentationLibrary().SetName(name)
+	ilm.InstrumentationLibrary().SetVersion(version)
+	metricsArray := ilm.Metrics()
 	metricsArray.AppendEmpty() // first one is TypeNone to test that it's ignored
 
 	// IntGauge
@@ -1149,11 +1149,11 @@ func TestMapMetrics(t *testing.T) {
 		"env:dev",
 	}
 
-	ILName := "instrumentation_library"
-	ILVersion := "1.0.0"
+	ilName := "instrumentation_library"
+	ilVersion := "1.0.0"
 	ilTags := []string{
-		fmt.Sprintf("instrumentation_library:%s", ILName),
-		fmt.Sprintf("instrumentation_library_version:%s", ILVersion),
+		fmt.Sprintf("instrumentation_library:%s", ilName),
+		fmt.Sprintf("instrumentation_library_version:%s", ilVersion),
 	}
 
 	tests := []struct {
@@ -1289,7 +1289,7 @@ func TestMapMetrics(t *testing.T) {
 
 	for _, testInstance := range tests {
 		t.Run(testInstance.name, func(t *testing.T) {
-			md := createTestMetrics(attrs, ILName, ILVersion)
+			md := createTestMetrics(attrs, ilName, ilVersion)
 
 			core, observed := observer.New(zapcore.DebugLevel)
 			testLogger := zap.New(core)
