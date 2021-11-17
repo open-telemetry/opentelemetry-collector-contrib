@@ -573,7 +573,7 @@ var sevTextMap = map[entry.Severity]string{
 }
 
 // pairSep is chosen to be an invalid byte for a utf-8 sequence
-// making it more unlikely to be hit
+// making it very unlikely to be present in the resource maps keys or values
 var pairSep = []byte{0xfe}
 
 // emptyResourceID is the ID returned by getResourceID when it is passed an empty resource.
@@ -588,7 +588,6 @@ func getResourceID(resource map[string]string) uint64 {
 	var fnvHash = fnv.New64a()
 	var fnvHashOut = make([]byte, 0, 16)
 	var keySlice = make([]string, 0, len(resource))
-	var escapedSlice = make([]byte, 0, 64)
 
 	for k := range resource {
 		keySlice = append(keySlice, k)
@@ -601,39 +600,13 @@ func getResourceID(resource map[string]string) uint64 {
 	}
 
 	for _, k := range keySlice {
-		escapedSlice = appendEscapedPairSeparator(escapedSlice[:0], k)
-		fnvHash.Write(escapedSlice)
+		fnvHash.Write([]byte(k))
 		fnvHash.Write(pairSep)
 
-		escapedSlice = appendEscapedPairSeparator(escapedSlice[:0], resource[k])
-		fnvHash.Write(escapedSlice)
+		fnvHash.Write([]byte(resource[k]))
 		fnvHash.Write(pairSep)
 	}
 
 	fnvHashOut = fnvHash.Sum(fnvHashOut)
 	return binary.BigEndian.Uint64(fnvHashOut)
-}
-
-// appendEscapedPairSeparator escapes (prefixes) "pair_sep" and byte '0xff' with byte '0xff', and appends it to the
-// incoming buffer. It returns the appended buffer.
-func appendEscapedPairSeparator(buf []byte, s string) []byte {
-	const escapeByte byte = '\xff'
-
-	if len(s) > cap(buf) {
-		newBuf := make([]byte, 2*len(s))
-		copy(newBuf, buf)
-		buf = newBuf
-	}
-
-	sBytes := []byte(s)
-	for _, b := range sBytes {
-		switch b {
-		case escapeByte, pairSep[0]:
-			buf = append(buf, escapeByte)
-		}
-
-		buf = append(buf, b)
-	}
-
-	return buf
 }

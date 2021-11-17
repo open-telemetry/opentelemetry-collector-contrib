@@ -806,13 +806,6 @@ func TestGetResourceID(t *testing.T) {
 			input: getResource(),
 		},
 		{
-			name: "Resource with non-utf bytes",
-			input: map[string]string{
-				"SomeKey":  "Value\xc0\xc1\xd4\xff\xfe",
-				"\xff\xfe": "Ooops",
-			},
-		},
-		{
 			name: "Empty value/key",
 			input: map[string]string{
 				"SomeKey": "",
@@ -838,20 +831,6 @@ func TestGetResourceID(t *testing.T) {
 			input: map[string]string{
 				"ABC": "DE",
 				"F":   "G",
-			},
-		},
-		{
-			name: "Ambiguous map 3",
-			input: map[string]string{
-				"ABC": "DE\xfe",
-				"F":   "G",
-			},
-		},
-		{
-			name: "Ambiguous map 4",
-			input: map[string]string{
-				"ABC":   "DE",
-				"\xfeF": "G",
 			},
 		},
 		{
