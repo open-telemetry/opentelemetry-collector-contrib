@@ -15,19 +15,11 @@
 package prometheusreceiver
 
 import (
-	"context"
 	"testing"
 
-	agentmetricspb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/metrics/v1"
-	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
-	promcfg "github.com/prometheus/prometheus/config"
 	"github.com/prometheus/prometheus/pkg/labels"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/consumer/consumertest"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus"
+	"go.opentelemetry.io/collector/model/pdata"
 )
 
 const targetExternalLabels = `
@@ -50,30 +42,25 @@ func TestExternalLabels(t *testing.T) {
 	cfg.GlobalConfig.ExternalLabels = labels.FromStrings("key", "value")
 	require.Nilf(t, err, "Failed to create Prometheus config: %v", err)
 
-	testMetricsReceiver(t, targets, mp, cfg)
+	testComponentCustomConfig(t, targets, mp, cfg)
 }
 
-func verifyExternalLabels(t *testing.T, td *testData, mds []*agentmetricspb.ExportMetricsServiceRequest) {
-	verifyNumScrapeResults(t, td, mds)
+func verifyExternalLabels(t *testing.T, td *testData, rms []*pdata.ResourceMetrics) {
+	verifyNumScrapeResults(t, td, rms)
+	require.Greater(t, len(rms), 0, "At least one resource metric should be present")
 
-	want := &agentmetricspb.ExportMetricsServiceRequest{
-		Node:     td.node,
-		Resource: td.resource,
-	}
-	doCompare("scrape-externalLabels", t, want, mds[0], []testExpectation{
+	wantAttributes := td.attributes
+	metrics1 := rms[0].InstrumentationLibraryMetrics().At(0).Metrics()
+	ts1 := metrics1.At(0).Gauge().DataPoints().At(0).Timestamp()
+	doCompare(t, "scrape-externalLabels", wantAttributes, rms[0], []testExpectation{
 		assertMetricPresent("go_threads",
-			[]descriptorComparator{
-				compareMetricType(metricspb.MetricDescriptor_GAUGE_DOUBLE),
-				compareMetricLabelKeys([]string{"key"}),
-			},
-			[]seriesExpectation{
+			compareMetricType(pdata.MetricDataTypeGauge),
+			[]dataPointExpectation{
 				{
-					series: []seriesComparator{
-						compareSeriesLabelValues([]string{"value"}),
-					},
-					points: []pointComparator{
-						comparePointTimestamp(mds[0].Metrics[0].Timeseries[0].Points[0].Timestamp),
-						compareDoubleVal(19),
+					numberPointComparator: []numberPointComparator{
+						compareTimestamp(ts1),
+						compareDoubleValue(19),
+						compareAttributes(map[string]string{"key": "value"}),
 					},
 				},
 			}),
@@ -86,31 +73,28 @@ const targetLabelLimit1 = `
 test_gauge0{label1="value1",label2="value2"} 10
 `
 
-func verifyLabelLimitTarget1(t *testing.T, td *testData, result []*agentmetricspb.ExportMetricsServiceRequest) {
+func verifyLabelLimitTarget1(t *testing.T, td *testData, rms []*pdata.ResourceMetrics) {
 	//each sample in the scraped metrics is within the configured label_limit, scrape should be successful
-	assertUp(t, 1, result[0])
+	verifyNumScrapeResults(t, td, rms)
+	require.Greater(t, len(rms), 0, "At least one resource metric should be present")
 
-	want := &agentmetricspb.ExportMetricsServiceRequest{
-		Node:     td.node,
-		Resource: td.resource,
-	}
-	doCompare("scrape-labelLimit", t, want, result[0], []testExpectation{
+	want := td.attributes
+	metrics1 := rms[0].InstrumentationLibraryMetrics().At(0).Metrics()
+	ts1 := metrics1.At(0).Gauge().DataPoints().At(0).Timestamp()
+
+	doCompare(t, "scrape-labelLimit", want, rms[0], []testExpectation{
 		assertMetricPresent("test_gauge0",
-			[]descriptorComparator{
-				compareMetricType(metricspb.MetricDescriptor_GAUGE_DOUBLE),
-				compareMetricLabelKeys([]string{"label1", "label2"}),
-			},
-			[]seriesExpectation{
+			compareMetricType(pdata.MetricDataTypeGauge),
+			[]dataPointExpectation{
 				{
-					series: []seriesComparator{
-						compareSeriesLabelValues([]string{"value1", "value2"}),
-					},
-					points: []pointComparator{
-						comparePointTimestamp(result[0].Metrics[0].Timeseries[0].Points[0].Timestamp),
-						compareDoubleVal(10),
+					numberPointComparator: []numberPointComparator{
+						compareTimestamp(ts1),
+						compareDoubleValue(10),
+						compareAttributes(map[string]string{"label1": "value1", "label2": "value2"}),
 					},
 				},
-			}),
+			},
+		),
 	})
 }
 
@@ -120,9 +104,12 @@ const targetLabelLimit2 = `
 test_gauge0{label1="value1",label2="value2",label3="value3"} 10
 `
 
-func verifyLabelLimitTarget2(t *testing.T, _ *testData, result []*agentmetricspb.ExportMetricsServiceRequest) {
-	//The number of labels in targetLabelLimit2 exceeds the configured label_limit, scrape should be unsuccessful
-	assertUp(t, 0, result[0])
+func verifyLabelLimitTarget2(t *testing.T, _ *testData, rms []*pdata.ResourceMetrics) {
+	//Scrape should be unsuccessful since limit is exceeded in target2
+	for _, rm := range rms {
+		metrics := getMetrics(rm)
+		assertUp(t, 0, metrics)
+	}
 }
 
 func TestLabelLimitConfig(t *testing.T) {
@@ -151,47 +138,5 @@ func TestLabelLimitConfig(t *testing.T) {
 		scrapeCfg.LabelLimit = 5
 	}
 
-	testMetricsReceiver(t, targets, mp, cfg)
-}
-
-// starts prometheus receiver with custom config, retrieves metrics from MetricsSink
-func testMetricsReceiver(t *testing.T, targets []*testData, mp *mockPrometheus, cfg *promcfg.Config) {
-	ctx := context.Background()
-	defer mp.Close()
-
-	cms := new(consumertest.MetricsSink)
-	receiver := newPrometheusReceiver(componenttest.NewNopReceiverCreateSettings(), &Config{
-		ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
-		PrometheusConfig: cfg}, cms)
-
-	require.NoError(t, receiver.Start(ctx, componenttest.NewNopHost()))
-
-	// verify state after shutdown is called
-	t.Cleanup(func() { require.NoError(t, receiver.Shutdown(ctx)) })
-
-	// wait for all provided data to be scraped
-	mp.wg.Wait()
-	metrics := cms.AllMetrics()
-
-	// split and store results by target name
-	results := make(map[string][]*agentmetricspb.ExportMetricsServiceRequest)
-	for _, md := range metrics {
-		rms := md.ResourceMetrics()
-		for i := 0; i < rms.Len(); i++ {
-			ocmd := &agentmetricspb.ExportMetricsServiceRequest{}
-			ocmd.Node, ocmd.Resource, ocmd.Metrics = opencensus.ResourceMetricsToOC(rms.At(i))
-			result, ok := results[ocmd.Node.ServiceInfo.Name]
-			if !ok {
-				result = make([]*agentmetricspb.ExportMetricsServiceRequest, 0)
-			}
-			results[ocmd.Node.ServiceInfo.Name] = append(result, ocmd)
-		}
-	}
-
-	// loop to validate outputs for each targets
-	for _, target := range targets {
-		t.Run(target.name, func(t *testing.T) {
-			target.validateFunc(t, target, results[target.name])
-		})
-	}
+	testComponentCustomConfig(t, targets, mp, cfg)
 }

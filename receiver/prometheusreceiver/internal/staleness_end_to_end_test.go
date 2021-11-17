@@ -154,7 +154,7 @@ service:
 
 	appSettings := service.CollectorSettings{
 		Factories:         factories,
-		ConfigMapProvider: configmapprovider.NewInMemoryMapProvider(strings.NewReader(config)),
+		ConfigMapProvider: configmapprovider.NewInMemory(strings.NewReader(config)),
 		BuildInfo: component.BuildInfo{
 			Command:     "otelcol",
 			Description: "OpenTelemetry Collector",

@@ -17,6 +17,7 @@ package awsecscontainermetricsreceiver
 import (
 	"context"
 	"errors"
+	"fmt"
 	"io/ioutil"
 	"testing"
 
@@ -24,21 +25,21 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil/ecsutiltest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsecscontainermetricsreceiver/internal/awsecscontainermetrics"
 )
 
-type fakeRestClient struct {
-}
+type fakeRestClient struct{ *testing.T }
 
-func (f fakeRestClient) EndpointResponse() ([]byte, []byte, error) {
-	taskStats, err := ioutil.ReadFile("testdata/task_stats.json")
-	if err != nil {
-		return nil, nil, err
+func (f fakeRestClient) GetResponse(path string) ([]byte, error) {
+	if body, err := ecsutiltest.GetTestdataResponseByPath(f.T, path); body != nil || err != nil {
+		return body, err
 	}
-	taskMetadata, err := ioutil.ReadFile("testdata/task_metadata.json")
-	if err != nil {
-		return nil, nil, err
+	if path == awsecscontainermetrics.TaskStatsPath {
+		return ioutil.ReadFile("testdata/task_stats.json")
 	}
-	return taskStats, taskMetadata, nil
+	return nil, nil
 }
 
 func TestReceiver(t *testing.T) {
@@ -47,7 +48,7 @@ func TestReceiver(t *testing.T) {
 		zap.NewNop(),
 		cfg,
 		consumertest.NewNop(),
-		&fakeRestClient{},
+		&fakeRestClient{t},
 	)
 
 	require.NoError(t, err)
@@ -118,16 +119,8 @@ func TestCollectDataFromEndpointWithConsumerError(t *testing.T) {
 type invalidFakeClient struct {
 }
 
-func (f invalidFakeClient) EndpointResponse() ([]byte, []byte, error) {
-	taskStats, err := ioutil.ReadFile("testdata/wrong_file.json")
-	if err != nil {
-		return nil, nil, err
-	}
-	taskMetadata, err := ioutil.ReadFile("testdata/wrong_file.json")
-	if err != nil {
-		return nil, nil, err
-	}
-	return taskStats, taskMetadata, nil
+func (f invalidFakeClient) GetResponse(path string) ([]byte, error) {
+	return nil, fmt.Errorf("intentional error")
 }
 
 func TestCollectDataFromEndpointWithEndpointError(t *testing.T) {

@@ -6,9 +6,9 @@ processors:
 
 exporters:
   tencentcloud_logservice:
-    endpoint: "cls.ap-beijing.tencentcloudapi.com"
+    region: "ap-beijing"
   tencentcloud_logservice/2:
-    endpoint: "cls.ap-beijing.tencentcloudapi.com"
+    region: "ap-beijing"
     # LogService's LogSet ID
     logset: "demo-logset"
     # LogService's Topic ID

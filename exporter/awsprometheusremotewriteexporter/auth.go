@@ -71,7 +71,7 @@ func (si *signingRoundTripper) RoundTrip(req *http.Request) (*http.Response, err
 	// Sign the request
 	_, err = si.signer.Sign(req2, body, si.service, si.region, time.Now())
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error signing the request: %v", err)
 	}
 
 	// Send the request to Prometheus Remote Write Backend.
