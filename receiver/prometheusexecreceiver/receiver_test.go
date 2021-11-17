@@ -76,7 +76,7 @@ func TestEndToEnd(t *testing.T) {
 // TestEndToEndWindows loads the test config and completes an e2e test where the command line contains backslashes, quotes and spaces
 // This test is similar to TestEndToEnd, except it runs on Windows only as the specified command line uses Windows syntax
 func TestEndToEndWindows(t *testing.T) {
-	if (runtime.GOOS != "windows") {
+	if runtime.GOOS != "windows" {
 		return
 	}
 

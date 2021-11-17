@@ -26,12 +26,11 @@ import (
 // Compiles on Windows only
 func ExecCommand(commandLine string) (*exec.Cmd, error) {
 
-
 	var comSpec = os.Getenv("COMSPEC")
 	if comSpec == "" {
 		comSpec = os.Getenv("SystemRoot") + "\\System32\\cmd.exe"
 	}
-	childProcess := exec.Command(comSpec) // #nosec
+	childProcess := exec.Command(comSpec)                                                  // #nosec
 	childProcess.SysProcAttr = &syscall.SysProcAttr{CmdLine: "/C \"" + commandLine + "\""} // #nosec
 
 	return childProcess, nil

@@ -30,7 +30,7 @@ import (
 func (proc *SubprocessConfig) Run(ctx context.Context, logger *zap.Logger) (time.Duration, error) {
 
 	childProcess, err := ExecCommand(proc.Command)
-	if (err != nil) {
+	if err != nil {
 		return 0, err
 	}
 
