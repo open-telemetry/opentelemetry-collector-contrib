@@ -53,6 +53,24 @@ func TestLoadConfig(t *testing.T) {
 			UseHostnameIfPresent:  true,
 			UseHostBindings:       true,
 			IgnoreNonHostBindings: true,
+			DockerAPIVersion:      1.22,
 		},
 		ext1)
+}
+
+func TestValidateConfig(t *testing.T) {
+	cfg := &Config{}
+	assert.Equal(t, "endpoint must be specified", cfg.Validate().Error())
+
+	cfg = &Config{Endpoint: "someEndpoint"}
+	assert.Equal(t, "api_version must be at least 1.22", cfg.Validate().Error())
+
+	cfg = &Config{Endpoint: "someEndpoint", DockerAPIVersion: 1.22}
+	assert.Equal(t, "timeout must be specified", cfg.Validate().Error())
+
+	cfg = &Config{Endpoint: "someEndpoint", DockerAPIVersion: 1.22, Timeout: 5 * time.Minute}
+	assert.Equal(t, "cache_sync_interval must be specified", cfg.Validate().Error())
+
+	cfg = &Config{Endpoint: "someEndpoint", DockerAPIVersion: 1.22, Timeout: 5 * time.Minute, CacheSyncInterval: 5 * time.Minute}
+	assert.Nil(t, cfg.Validate())
 }

@@ -1,6 +1,6 @@
 name: zookeeperreceiver
 
-labels:
+attributes:
   server.state:
     description: State of the Zookeeper server (leader, standalone or follower).
   zk.version:

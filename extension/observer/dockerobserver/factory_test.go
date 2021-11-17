@@ -29,7 +29,7 @@ func TestValidConfig(t *testing.T) {
 	require.NoError(t, err)
 }
 
-func TestCreateMetricsReceiver(t *testing.T) {
+func TestCreateExtension(t *testing.T) {
 	dockerObserver, err := createExtension(
 		context.Background(),
 		componenttest.NewNopExtensionCreateSettings(),

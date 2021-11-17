@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/tinylib/msgp/msgp"
 	"go.opentelemetry.io/collector/model/pdata"
@@ -102,9 +103,9 @@ func TestAttributeTypeConversion(t *testing.T) {
 	le.Attributes().Sort()
 
 	nv := pdata.NewAttributeValueArray()
-	nv.ArrayVal().EnsureCapacity(2)
-	nv.ArrayVal().AppendEmpty().SetStringVal("first")
-	nv.ArrayVal().AppendEmpty().SetStringVal("second")
+	nv.SliceVal().EnsureCapacity(2)
+	nv.SliceVal().AppendEmpty().SetStringVal("first")
+	nv.SliceVal().AppendEmpty().SetStringVal("second")
 
 	require.EqualValues(t, Logs(
 		Log{
@@ -257,16 +258,19 @@ func TestBodyConversion(t *testing.T) {
 	body.MapVal().InsertString("a", "value")
 
 	bv := pdata.NewAttributeValueArray()
-	bv.ArrayVal().EnsureCapacity(2)
-	bv.ArrayVal().AppendEmpty().SetStringVal("first")
-	bv.ArrayVal().AppendEmpty().SetStringVal("second")
+	bv.SliceVal().EnsureCapacity(2)
+	bv.SliceVal().AppendEmpty().SetStringVal("first")
+	bv.SliceVal().AppendEmpty().SetStringVal("second")
 	body.MapVal().Insert("b", bv)
 
 	cv := pdata.NewAttributeValueMap()
 	cv.MapVal().InsertInt("d", 24)
 	body.MapVal().Insert("c", cv)
 
-	require.EqualValues(t, Logs(
+	// Sort the map, sometimes may get in a different order.
+	require.Equal(t, pdata.AttributeValueTypeMap, le.Body().Type())
+	le.Body().MapVal().Sort()
+	assert.EqualValues(t, Logs(
 		Log{
 			Timestamp: 5000000000000,
 			Body:      body,

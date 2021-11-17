@@ -38,8 +38,8 @@ func addNetworkIOMetric(dest pdata.MetricSlice, prefix string, s *stats.NetworkS
 	metadata.M.NetworkIo.Init(m)
 	m.SetName(prefix + m.Name())
 
-	fillNetworkDataPoint(m.Sum().DataPoints(), s.Name, metadata.LabelDirection.Receive, s.RxBytes, startTime, currentTime)
-	fillNetworkDataPoint(m.Sum().DataPoints(), s.Name, metadata.LabelDirection.Transmit, s.TxBytes, startTime, currentTime)
+	fillNetworkDataPoint(m.Sum().DataPoints(), s.Name, metadata.AttributeDirection.Receive, s.RxBytes, startTime, currentTime)
+	fillNetworkDataPoint(m.Sum().DataPoints(), s.Name, metadata.AttributeDirection.Transmit, s.TxBytes, startTime, currentTime)
 }
 
 func addNetworkErrorsMetric(dest pdata.MetricSlice, prefix string, s *stats.NetworkStats, startTime pdata.Timestamp, currentTime pdata.Timestamp) {
@@ -51,8 +51,8 @@ func addNetworkErrorsMetric(dest pdata.MetricSlice, prefix string, s *stats.Netw
 	metadata.M.NetworkErrors.Init(m)
 	m.SetName(prefix + m.Name())
 
-	fillNetworkDataPoint(m.Sum().DataPoints(), s.Name, metadata.LabelDirection.Receive, s.RxErrors, startTime, currentTime)
-	fillNetworkDataPoint(m.Sum().DataPoints(), s.Name, metadata.LabelDirection.Transmit, s.TxErrors, startTime, currentTime)
+	fillNetworkDataPoint(m.Sum().DataPoints(), s.Name, metadata.AttributeDirection.Receive, s.RxErrors, startTime, currentTime)
+	fillNetworkDataPoint(m.Sum().DataPoints(), s.Name, metadata.AttributeDirection.Transmit, s.TxErrors, startTime, currentTime)
 }
 
 func fillNetworkDataPoint(dps pdata.NumberDataPointSlice, interfaceName string, direction string, value *uint64, startTime pdata.Timestamp, currentTime pdata.Timestamp) {
@@ -60,8 +60,8 @@ func fillNetworkDataPoint(dps pdata.NumberDataPointSlice, interfaceName string, 
 		return
 	}
 	dp := dps.AppendEmpty()
-	dp.Attributes().UpsertString(metadata.L.Interface, interfaceName)
-	dp.Attributes().UpsertString(metadata.L.Direction, direction)
+	dp.Attributes().UpsertString(metadata.A.Interface, interfaceName)
+	dp.Attributes().UpsertString(metadata.A.Direction, direction)
 	dp.SetIntVal(int64(*value))
 	dp.SetStartTimestamp(startTime)
 	dp.SetTimestamp(currentTime)

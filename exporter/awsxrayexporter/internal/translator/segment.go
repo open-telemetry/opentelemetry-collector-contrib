@@ -39,6 +39,7 @@ const (
 	OriginECSFargate = "AWS::ECS::Fargate"
 	OriginEB         = "AWS::ElasticBeanstalk::Environment"
 	OriginEKS        = "AWS::EKS::Container"
+	OriginAppRunner  = "AWS::AppRunner::Service"
 )
 
 var (
@@ -231,16 +232,17 @@ func determineAwsOrigin(resource pdata.Resource) string {
 		}
 	}
 
-	// TODO(willarmiros): Only use platform for origin resolution once detectors for all AWS environments are
-	// implemented for robustness
 	if is, present := resource.Attributes().Get(conventions.AttributeCloudPlatform); present {
 		switch is.StringVal() {
+		// TODO: Replace with semantic convention const when aws_app_runner is included in an official semconv release
+		case "aws_app_runner":
+			return OriginAppRunner
 		case conventions.AttributeCloudPlatformAWSEKS:
 			return OriginEKS
 		case conventions.AttributeCloudPlatformAWSElasticBeanstalk:
 			return OriginEB
 		case conventions.AttributeCloudPlatformAWSECS:
-			lt, present := resource.Attributes().Get("aws.ecs.launchtype")
+			lt, present := resource.Attributes().Get(conventions.AttributeAWSECSLaunchtype)
 			if !present {
 				return OriginECS
 			}
@@ -255,7 +257,7 @@ func determineAwsOrigin(resource pdata.Resource) string {
 		case conventions.AttributeCloudPlatformAWSEC2:
 			return OriginEC2
 
-		// If infrastructure_service is defined with a non-AWS value, we should not assign it an AWS origin
+		// If cloud_platform is defined with a non-AWS value, we should not assign it an AWS origin
 		default:
 			return ""
 		}
@@ -425,7 +427,7 @@ func metadataValue(value pdata.AttributeValue) interface{} {
 		})
 		return converted
 	case pdata.AttributeValueTypeArray:
-		arrVal := value.ArrayVal()
+		arrVal := value.SliceVal()
 		converted := make([]interface{}, arrVal.Len())
 		for i := 0; i < arrVal.Len(); i++ {
 			converted[i] = metadataValue(arrVal.At(i))

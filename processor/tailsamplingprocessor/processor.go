@@ -50,12 +50,12 @@ type policy struct {
 type tailSamplingSpanProcessor struct {
 	ctx             context.Context
 	nextConsumer    consumer.Traces
-	start           sync.Once
 	maxNumTraces    uint64
 	policies        []*policy
 	logger          *zap.Logger
 	idToTrace       sync.Map
 	policyTicker    tTicker
+	tickerFrequency time.Duration
 	decisionBatcher idbatcher.Batcher
 	deleteChan      chan pdata.TraceID
 	numTracesOnMap  uint64
@@ -105,6 +105,7 @@ func newTracesProcessor(logger *zap.Logger, nextConsumer consumer.Traces, cfg Co
 		logger:          logger,
 		decisionBatcher: inBatcher,
 		policies:        policies,
+		tickerFrequency: time.Second,
 	}
 
 	tsp.policyTicker = &policyTicker{onTickFunc: tsp.samplingPolicyOnTick}
@@ -285,10 +286,6 @@ func (tsp *tailSamplingSpanProcessor) makeDecision(id pdata.TraceID, trace *samp
 
 // ConsumeTraceData is required by the SpanProcessor interface.
 func (tsp *tailSamplingSpanProcessor) ConsumeTraces(ctx context.Context, td pdata.Traces) error {
-	tsp.start.Do(func() {
-		tsp.logger.Info("First trace data arrived, starting tail_sampling timers")
-		tsp.policyTicker.start(1 * time.Second)
-	})
 	resourceSpans := td.ResourceSpans()
 	for i := 0; i < resourceSpans.Len(); i++ {
 		tsp.processTraces(resourceSpans.At(i))
@@ -402,11 +399,14 @@ func (tsp *tailSamplingSpanProcessor) Capabilities() consumer.Capabilities {
 
 // Start is invoked during service startup.
 func (tsp *tailSamplingSpanProcessor) Start(context.Context, component.Host) error {
+	tsp.policyTicker.start(tsp.tickerFrequency)
 	return nil
 }
 
 // Shutdown is invoked during service shutdown.
 func (tsp *tailSamplingSpanProcessor) Shutdown(context.Context) error {
+	tsp.decisionBatcher.Stop()
+	tsp.policyTicker.stop()
 	return nil
 }
 
@@ -451,13 +451,20 @@ type tTicker interface {
 type policyTicker struct {
 	ticker     *time.Ticker
 	onTickFunc func()
+	stopCh     chan struct{}
 }
 
 func (pt *policyTicker) start(d time.Duration) {
 	pt.ticker = time.NewTicker(d)
+	pt.stopCh = make(chan struct{})
 	go func() {
-		for range pt.ticker.C {
-			pt.onTick()
+		for {
+			select {
+			case <-pt.ticker.C:
+				pt.onTick()
+			case <-pt.stopCh:
+				return
+			}
 		}
 	}()
 }
@@ -465,6 +472,7 @@ func (pt *policyTicker) onTick() {
 	pt.onTickFunc()
 }
 func (pt *policyTicker) stop() {
+	close(pt.stopCh)
 	pt.ticker.Stop()
 }
 

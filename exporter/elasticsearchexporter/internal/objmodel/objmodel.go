@@ -378,7 +378,7 @@ func ValueFromAttribute(attr pdata.AttributeValue) Value {
 	case pdata.AttributeValueTypeBool:
 		return BoolValue(attr.BoolVal())
 	case pdata.AttributeValueTypeArray:
-		sub := arrFromAttributes(attr.ArrayVal())
+		sub := arrFromAttributes(attr.SliceVal())
 		return ArrValue(sub...)
 	case pdata.AttributeValueTypeMap:
 		sub := DocumentFromAttributes(attr.MapVal())
@@ -464,7 +464,7 @@ func (v *Value) iterJSON(w *json.Visitor, dedot bool) error {
 	return nil
 }
 
-func arrFromAttributes(aa pdata.AnyValueArray) []Value {
+func arrFromAttributes(aa pdata.AttributeValueSlice) []Value {
 	if aa.Len() == 0 {
 		return nil
 	}

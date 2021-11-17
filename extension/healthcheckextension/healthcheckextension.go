@@ -19,18 +19,21 @@ import (
 	"net"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/jaegertracing/jaeger/pkg/healthcheck"
+	"go.opencensus.io/stats/view"
 	"go.opentelemetry.io/collector/component"
 	"go.uber.org/zap"
 )
 
 type healthCheckExtension struct {
-	config Config
-	logger *zap.Logger
-	state  *healthcheck.HealthCheck
-	server http.Server
-	stopCh chan struct{}
+	config   Config
+	logger   *zap.Logger
+	state    *healthcheck.HealthCheck
+	server   http.Server
+	stopCh   chan struct{}
+	exporter *healthCheckExporter
 }
 
 var _ component.PipelineWatcher = (*healthCheckExtension)(nil)
@@ -55,19 +58,71 @@ func (hc *healthCheckExtension) Start(_ context.Context, host component.Host) er
 		return err
 	}
 
-	// Mount HC handler
-	hc.server.Handler = hc.state.Handler()
-	hc.stopCh = make(chan struct{})
-	go func() {
-		defer close(hc.stopCh)
+	if !hc.config.CheckCollectorPipeline.Enabled {
+		// Mount HC handler
+		hc.server.Handler = hc.state.Handler()
+		hc.stopCh = make(chan struct{})
+		go func() {
+			defer close(hc.stopCh)
 
-		// The listener ownership goes to the server.
-		if err := hc.server.Serve(ln); err != http.ErrServerClosed && err != nil {
-			host.ReportFatalError(err)
+			// The listener ownership goes to the server.
+			if err = hc.server.Serve(ln); err != http.ErrServerClosed && err != nil {
+				host.ReportFatalError(err)
+			}
+		}()
+	} else {
+		// collector pipeline health check
+		hc.exporter = newHealthCheckExporter()
+		view.RegisterExporter(hc.exporter)
+
+		interval, err := time.ParseDuration(hc.config.CheckCollectorPipeline.Interval)
+		if err != nil {
+			return err
 		}
-	}()
+
+		// ticker used by collector pipeline health check for rotation
+		ticker := time.NewTicker(time.Second)
+
+		hc.server.Handler = hc.handler()
+		hc.stopCh = make(chan struct{})
+		go func() {
+			defer close(hc.stopCh)
+			defer view.UnregisterExporter(hc.exporter)
+
+			go func() {
+				for {
+					select {
+					case <-ticker.C:
+						hc.exporter.rotate(interval)
+					case <-hc.stopCh:
+						return
+					}
+				}
+			}()
+
+			if err = hc.server.Serve(ln); err != http.ErrServerClosed && err != nil {
+				host.ReportFatalError(err)
+			}
+
+		}()
+	}
 
 	return nil
+}
+
+// new handler function used for check collector pipeline
+func (hc *healthCheckExtension) handler() http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		if hc.check() && hc.state.Get() == healthcheck.Ready {
+			w.WriteHeader(200)
+		} else {
+			w.WriteHeader(500)
+		}
+	})
+}
+
+func (hc *healthCheckExtension) check() bool {
+	return hc.exporter.checkHealthStatus(hc.config.CheckCollectorPipeline.ExporterFailureThreshold)
 }
 
 func (hc *healthCheckExtension) Shutdown(context.Context) error {

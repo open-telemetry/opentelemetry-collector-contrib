@@ -23,6 +23,7 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/obsreport"
+	"go.opentelemetry.io/collector/receiver/receiverhelper"
 )
 
 const (
@@ -31,26 +32,33 @@ const (
 )
 
 func NewFactory() component.ReceiverFactory {
-	return &PubsubReceiverFactory{
+	f := &pubsubReceiverFactory{
 		receivers: make(map[*Config]*pubsubReceiver),
 	}
+	return receiverhelper.NewFactory(
+		typeStr,
+		f.CreateDefaultConfig,
+		receiverhelper.WithTraces(f.CreateTracesReceiver),
+		receiverhelper.WithMetrics(f.CreateMetricsReceiver),
+		receiverhelper.WithLogs(f.CreateLogsReceiver),
+	)
 }
 
-type PubsubReceiverFactory struct {
+type pubsubReceiverFactory struct {
 	receivers map[*Config]*pubsubReceiver
 }
 
-func (factory *PubsubReceiverFactory) Type() config.Type {
+func (factory *pubsubReceiverFactory) Type() config.Type {
 	return typeStr
 }
 
-func (factory *PubsubReceiverFactory) CreateDefaultConfig() config.Receiver {
+func (factory *pubsubReceiverFactory) CreateDefaultConfig() config.Receiver {
 	return &Config{
 		ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
 	}
 }
 
-func (factory *PubsubReceiverFactory) ensureReceiver(params component.ReceiverCreateSettings, config config.Receiver) *pubsubReceiver {
+func (factory *pubsubReceiverFactory) ensureReceiver(params component.ReceiverCreateSettings, config config.Receiver) *pubsubReceiver {
 	receiver := factory.receivers[config.(*Config)]
 	if receiver != nil {
 		return receiver
@@ -70,7 +78,7 @@ func (factory *PubsubReceiverFactory) ensureReceiver(params component.ReceiverCr
 	return receiver
 }
 
-func (factory *PubsubReceiverFactory) CreateTracesReceiver(
+func (factory *pubsubReceiverFactory) CreateTracesReceiver(
 	_ context.Context,
 	params component.ReceiverCreateSettings,
 	cfg config.Receiver,
@@ -88,7 +96,7 @@ func (factory *PubsubReceiverFactory) CreateTracesReceiver(
 	return receiver, nil
 }
 
-func (factory *PubsubReceiverFactory) CreateMetricsReceiver(
+func (factory *pubsubReceiverFactory) CreateMetricsReceiver(
 	_ context.Context,
 	params component.ReceiverCreateSettings,
 	cfg config.Receiver,
@@ -106,7 +114,7 @@ func (factory *PubsubReceiverFactory) CreateMetricsReceiver(
 	return receiver, nil
 }
 
-func (factory *PubsubReceiverFactory) CreateLogsReceiver(
+func (factory *pubsubReceiverFactory) CreateLogsReceiver(
 	_ context.Context,
 	params component.ReceiverCreateSettings,
 	cfg config.Receiver,

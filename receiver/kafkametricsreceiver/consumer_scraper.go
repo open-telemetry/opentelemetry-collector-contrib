@@ -126,7 +126,7 @@ func (s *consumerScraper) scrape(context.Context) (pdata.Metrics, error) {
 	ilm.InstrumentationLibrary().SetName(instrumentationLibName)
 	for _, group := range consumerGroups {
 		labels := pdata.NewAttributeMap()
-		labels.UpsertString(metadata.L.Group, group.GroupId)
+		labels.UpsertString(metadata.A.Group, group.GroupId)
 		addIntGauge(ilm.Metrics(), metadata.M.KafkaConsumerGroupMembers.Name(), now, labels, int64(len(group.Members)))
 		groupOffsetFetchResponse, err := s.clusterAdmin.ListConsumerGroupOffsets(group.GroupId, topicPartitions)
 		if err != nil {
@@ -143,12 +143,12 @@ func (s *consumerScraper) scrape(context.Context) (pdata.Metrics, error) {
 					break
 				}
 			}
-			labels.UpsertString(metadata.L.Topic, topic)
+			labels.UpsertString(metadata.A.Topic, topic)
 			if isConsumed {
 				var lagSum int64
 				var offsetSum int64
 				for partition, block := range partitions {
-					labels.UpsertInt(metadata.L.Partition, int64(partition))
+					labels.UpsertInt(metadata.A.Partition, int64(partition))
 					consumerOffset := block.Offset
 					offsetSum += consumerOffset
 					addIntGauge(ilm.Metrics(), metadata.M.KafkaConsumerGroupOffset.Name(), now, labels, consumerOffset)
@@ -163,7 +163,7 @@ func (s *consumerScraper) scrape(context.Context) (pdata.Metrics, error) {
 					}
 					addIntGauge(ilm.Metrics(), metadata.M.KafkaConsumerGroupLag.Name(), now, labels, consumerLag)
 				}
-				labels.Delete(metadata.L.Partition)
+				labels.Delete(metadata.A.Partition)
 				addIntGauge(ilm.Metrics(), metadata.M.KafkaConsumerGroupOffsetSum.Name(), now, labels, offsetSum)
 				addIntGauge(ilm.Metrics(), metadata.M.KafkaConsumerGroupLagSum.Name(), now, labels, lagSum)
 			}

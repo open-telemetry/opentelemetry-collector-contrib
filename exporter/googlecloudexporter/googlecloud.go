@@ -53,7 +53,7 @@ func (te *traceExporter) Shutdown(ctx context.Context) error {
 func (me *metricsExporter) Shutdown(context.Context) error {
 	me.mexporter.Flush()
 	me.mexporter.StopMetricsExporter()
-	return nil
+	return me.mexporter.Close()
 }
 
 func setVersionInUserAgent(cfg *Config, version string) {
