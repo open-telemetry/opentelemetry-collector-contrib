@@ -594,9 +594,12 @@ func getResourceID(resource map[string]string) uint64 {
 		keySlice = append(keySlice, k)
 	}
 
-	// In order for this to be deterministic, we need to sort the map. Using range, like above,
-	// has no guarantee about order.
-	sort.Strings(keySlice)
+	if len(keySlice) > 1 {
+		// In order for this to be deterministic, we need to sort the map. Using range, like above,
+		// has no guarantee about order.
+		sort.Strings(keySlice)
+	}
+
 	for _, k := range keySlice {
 		escapedSlice = appendEscapedPairSeparator(escapedSlice[:0], k)
 		fnvHash.Write(escapedSlice)

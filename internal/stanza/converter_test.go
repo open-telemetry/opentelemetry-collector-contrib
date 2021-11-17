@@ -746,6 +746,24 @@ func BenchmarkGetResourceID(b *testing.B) {
 	}
 }
 
+func BenchmarkGetResourceIDEmptyResource(b *testing.B) {
+	res := map[string]string{}
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		getResourceID(res)
+	}
+}
+
+func BenchmarkGetResourceIDSingleResource(b *testing.B) {
+	res := map[string]string{
+		"resource": "value",
+	}
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		getResourceID(res)
+	}
+}
+
 func getResource() map[string]string {
 	return map[string]string{
 		"file.name":        "filename.log",
