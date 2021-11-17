@@ -45,8 +45,7 @@ func TestHTTPAttributeMapping(t *testing.T) {
 		conventions.AttributeHTTPClientIP:   pdata.NewAttributeValueString(conventions.AttributeHTTPClientIP),
 	}
 
-	attributeMap := pdata.NewAttributeMap()
-	attributeMap.InitFromMap(httpAttributeValues)
+	attributeMap := pdata.NewAttributeMapFromMap(httpAttributeValues)
 
 	// Add all the network attributes
 	appendToAttributeMap(attributeMap, getNetworkAttributes())
@@ -81,8 +80,7 @@ func TestRPCPAttributeMapping(t *testing.T) {
 		conventions.AttributeRPCMethod:  pdata.NewAttributeValueString(conventions.AttributeRPCMethod),
 	}
 
-	attributeMap := pdata.NewAttributeMap()
-	attributeMap.InitFromMap(rpcAttributeValues)
+	attributeMap := pdata.NewAttributeMapFromMap(rpcAttributeValues)
 
 	// Add all the network attributes
 	appendToAttributeMap(attributeMap, getNetworkAttributes())
@@ -112,8 +110,7 @@ func TestDatabaseAttributeMapping(t *testing.T) {
 		conventions.AttributeDBMongoDBCollection:   pdata.NewAttributeValueString(conventions.AttributeDBMongoDBCollection),
 	}
 
-	attributeMap := pdata.NewAttributeMap()
-	attributeMap.InitFromMap(databaseAttributeValues)
+	attributeMap := pdata.NewAttributeMapFromMap(databaseAttributeValues)
 
 	// Add all the network attributes
 	appendToAttributeMap(attributeMap, getNetworkAttributes())
@@ -150,8 +147,7 @@ func TestMessagingAttributeMapping(t *testing.T) {
 		conventions.AttributeMessagingOperation:                         pdata.NewAttributeValueString(conventions.AttributeMessagingOperation),
 	}
 
-	attributeMap := pdata.NewAttributeMap()
-	attributeMap.InitFromMap(messagingAttributeValues)
+	attributeMap := pdata.NewAttributeMapFromMap(messagingAttributeValues)
 
 	// Add all the network attributes
 	appendToAttributeMap(attributeMap, getNetworkAttributes())
@@ -181,8 +177,7 @@ func TestAttributeMappingWithSomeBadValues(t *testing.T) {
 		conventions.AttributeNetPeerPort: pdata.NewAttributeValueString("xx"),
 	}
 
-	attributeMap := pdata.NewAttributeMap()
-	attributeMap.InitFromMap(values)
+	attributeMap := pdata.NewAttributeMapFromMap(values)
 
 	attrs := &NetworkAttributes{}
 	attributeMap.Range(attrs.MapAttribute)
