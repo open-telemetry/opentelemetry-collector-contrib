@@ -33,6 +33,8 @@ type Config struct {
 	Password string `mapstructure:"password"`
 
 	TLS configtls.TLSClientSetting `mapstructure:"tls,omitempty"`
-	//Optional redis instance. Name of the redis instance
+	// Optional redis instance for identifying resource attribute.
+	// Can be used to set the reported name of the redis instance,
+	// with a default of the configured `Endpoint`.
 	RedisInstance string `mapstructure:"redis_instance"`
 }
