@@ -16,6 +16,7 @@ package healthcheckextension
 
 import (
 	"errors"
+	"strings"
 	"time"
 
 	"go.opentelemetry.io/collector/config"
@@ -37,6 +38,10 @@ type Config struct {
 	// The default endpoint is "0.0.0.0:13133".
 	TCPAddr confignet.TCPAddr `mapstructure:",squash"`
 
+	// Path represents the path the health check service will serve.
+	// The default path is "/".
+	Path string `mapstructure:"path"`
+
 	// CheckCollectorPipeline contains the list of settings of collector pipeline health check
 	CheckCollectorPipeline checkCollectorPipelineSettings `mapstructure:"check_collector_pipeline"`
 }
@@ -45,6 +50,7 @@ var _ config.Extension = (*Config)(nil)
 var (
 	errNoEndpointProvided                      = errors.New("bad config: endpoint must be specified")
 	errInvalidExporterFailureThresholdProvided = errors.New("bad config: exporter_failure_threshold expects a positive number")
+	errInvalidPath                             = errors.New("bad config: path must start with /")
 )
 
 // Validate checks if the extension configuration is valid
@@ -58,6 +64,9 @@ func (cfg *Config) Validate() error {
 	}
 	if cfg.CheckCollectorPipeline.ExporterFailureThreshold <= 0 {
 		return errInvalidExporterFailureThresholdProvided
+	}
+	if !strings.HasPrefix(cfg.Path, "/") {
+		return errInvalidPath
 	}
 	return nil
 }
