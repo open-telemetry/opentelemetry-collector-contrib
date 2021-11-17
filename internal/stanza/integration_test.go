@@ -140,6 +140,7 @@ func TestEmitterToConsumer(t *testing.T) {
 		5*time.Second, 5*time.Millisecond, "Did not receive all logs (only received %d)", consumer.Received(),
 	)
 
+	// Wait for a small bit of time in order to let any potential extra entries drain out of the pipeline
 	<-time.After(500 * time.Millisecond)
 
 	require.Equal(t, entryCount, consumer.Received())
