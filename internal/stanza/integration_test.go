@@ -126,8 +126,6 @@ func TestEmitterToConsumer(t *testing.T) {
 	err = logsReceiver.Start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err)
 
-	consumer.ResetReceivedCount()
-
 	go func() {
 		ctx := context.Background()
 		for _, e := range entries {
