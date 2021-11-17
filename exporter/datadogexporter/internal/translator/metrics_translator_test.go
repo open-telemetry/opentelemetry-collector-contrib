@@ -1120,8 +1120,8 @@ func newCountWithHostname(name string, val float64, seconds uint64, tags []strin
 	return m
 }
 
-func newSketchWithHostname(name string, summary summary.Summary, seconds uint64, tags []string) sketch {
-	s := newSketch(name, seconds, summary, tags)
+func newSketchWithHostname(name string, summary summary.Summary, tags []string) sketch {
+	s := newSketch(name, 0, summary, tags)
 	s.host = testHostname
 	return s
 }
@@ -1182,7 +1182,7 @@ func TestMapMetrics(t *testing.T) {
 					Sum: 0,
 					Avg: 0,
 					Cnt: 20,
-				}, 0, attrTags),
+				}, attrTags),
 			},
 			expectedUnknownMetricType:                 1,
 			expectedUnsupportedAggregationTemporality: 2,
@@ -1212,7 +1212,7 @@ func TestMapMetrics(t *testing.T) {
 					Sum: 0,
 					Avg: 0,
 					Cnt: 20,
-				}, 0, []string{}),
+				}, []string{}),
 			},
 			expectedUnknownMetricType:                 1,
 			expectedUnsupportedAggregationTemporality: 2,
@@ -1242,7 +1242,7 @@ func TestMapMetrics(t *testing.T) {
 					Sum: 0,
 					Avg: 0,
 					Cnt: 20,
-				}, 0, append(attrTags, ilTags...)),
+				}, append(attrTags, ilTags...)),
 			},
 			expectedUnknownMetricType:                 1,
 			expectedUnsupportedAggregationTemporality: 2,
@@ -1272,7 +1272,7 @@ func TestMapMetrics(t *testing.T) {
 					Sum: 0,
 					Avg: 0,
 					Cnt: 20,
-				}, 0, ilTags),
+				}, ilTags),
 			},
 			expectedUnknownMetricType:                 1,
 			expectedUnsupportedAggregationTemporality: 2,
@@ -1420,7 +1420,7 @@ func TestNaNMetrics(t *testing.T) {
 			Sum: 0,
 			Avg: 0,
 			Cnt: 20,
-		}, 0, []string{}),
+		}, []string{}),
 	})
 
 	// One metric type was unknown or unsupported
