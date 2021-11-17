@@ -12,6 +12,7 @@
 ## 🛑 Breaking changes 🛑
 
 - `httpdreceiver` renamed to `apachereceiver` to match industry standards (#6207)
+- `tencentcloudlogserviceexporter` change `Endpoint` to `Region` to simplify configuration (#6135)
 
 ## 🚀 New components 🚀
 
