@@ -81,7 +81,7 @@ func TestDefaultReceivers(t *testing.T) {
 		},
 	}
 
-	assert.Equal(t, len(tests)+30 /* not tested */, len(rcvrFactories))
+	assert.Equal(t, len(tests)+31 /* not tested */, len(rcvrFactories))
 	for _, tt := range tests {
 		t.Run(string(tt.receiver), func(t *testing.T) {
 			factory, ok := rcvrFactories[tt.receiver]

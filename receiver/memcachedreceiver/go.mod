@@ -4,6 +4,7 @@ go 1.17
 
 require (
 	github.com/grobie/gomemcache v0.0.0-20180201122607-1f779c573665
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest v0.39.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.39.0
 	github.com/stretchr/testify v1.7.0
 	go.opentelemetry.io/collector v0.39.0
@@ -24,7 +25,6 @@ require (
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/knadh/koanf v1.3.2 // indirect
-	github.com/kr/pretty v0.3.0 // indirect
 	github.com/magiconair/properties v1.8.5 // indirect
 	github.com/mitchellh/copystructure v1.2.0 // indirect
 	github.com/mitchellh/mapstructure v1.4.2 // indirect
@@ -34,6 +34,7 @@ require (
 	github.com/pelletier/go-toml v1.9.3 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
+	github.com/rogpeppe/go-internal v1.6.1 // indirect
 	github.com/sirupsen/logrus v1.8.1 // indirect
 	github.com/spf13/cast v1.4.1 // indirect
 	go.opencensus.io v0.23.0 // indirect
@@ -52,3 +53,5 @@ require (
 )
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/common => ../../internal/common
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest => ../../internal/scrapertest
