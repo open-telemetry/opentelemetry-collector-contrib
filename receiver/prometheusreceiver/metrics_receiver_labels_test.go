@@ -140,3 +140,89 @@ func TestLabelLimitConfig(t *testing.T) {
 
 	testComponentCustomConfig(t, targets, mp, cfg)
 }
+
+const targetLabelNameLimit1 = `
+# HELP test_gauge0 This is my gauge
+# TYPE test_gauge0 gauge
+test_gauge0{label1="value1",label2="value2"} 10
+
+# HELP test_counter0 This is my counter
+# TYPE test_counter0 counter
+test_counter0{label1="value1",label2="value2"} 1
+`
+
+func verifyLabelLengthTarget1(t *testing.T, td *testData, rms []*pdata.ResourceMetrics) {
+	verifyNumScrapeResults(t, td, rms)
+	require.Greater(t, len(rms), 0, "At least one resource metric should be present")
+
+	want := td.attributes
+	metrics1 := rms[0].InstrumentationLibraryMetrics().At(0).Metrics()
+	ts1 := metrics1.At(0).Gauge().DataPoints().At(0).Timestamp()
+
+	doCompare(t, "scrape-labelNameLimit", want, rms[0], []testExpectation{
+		assertMetricPresent("test_counter0",
+			compareMetricType(pdata.MetricDataTypeSum),
+			[]dataPointExpectation{
+				{
+					numberPointComparator: []numberPointComparator{
+						compareStartTimestamp(ts1),
+						compareTimestamp(ts1),
+						compareDoubleValue(1),
+						compareAttributes(map[string]string{"label1": "value1", "label2": "value2"}),
+					},
+				},
+			},
+		),
+		assertMetricPresent("test_gauge0",
+			compareMetricType(pdata.MetricDataTypeGauge),
+			[]dataPointExpectation{
+				{
+					numberPointComparator: []numberPointComparator{
+						compareTimestamp(ts1),
+						compareDoubleValue(10),
+						compareAttributes(map[string]string{"label1": "value1", "label2": "value2"}),
+					},
+				},
+			},
+		),
+	})
+}
+
+const targetLabelNameLimit2 = `
+# HELP test_gauge0 This is my gauge
+# TYPE test_gauge0 gauge
+test_gauge0{label1="value1",labelNameExceedingLimit="value2"} 10
+
+# HELP test_counter0 This is my counter
+# TYPE test_counter0 counter
+test_counter0{label1="value1",label2="value2"} 1
+`
+
+func TestLabelNameLimitConfig(t *testing.T) {
+	targets := []*testData{
+		{
+			name: "target1",
+			pages: []mockPrometheusResponse{
+				{code: 200, data: targetLabelNameLimit1},
+			},
+			validateFunc: verifyLabelLengthTarget1,
+		},
+		{
+			name: "target2",
+			pages: []mockPrometheusResponse{
+				{code: 200, data: targetLabelNameLimit2},
+			},
+			validateFunc: verifyLabelLimitTarget2,
+		},
+	}
+
+	mp, cfg, err := setupMockPrometheus(targets...)
+	require.Nilf(t, err, "Failed to create Prometheus config: %v", err)
+
+	// set label name limit in scrape_config
+	for _, scrapeCfg := range cfg.ScrapeConfigs {
+		scrapeCfg.LabelNameLengthLimit = 20
+	}
+
+	testComponentCustomConfig(t, targets, mp, cfg)
+}
