@@ -24,7 +24,6 @@ import (
 	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/model/pdata"
-	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver/protocol"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver/transport"
@@ -34,8 +33,8 @@ var _ component.MetricsReceiver = (*statsdReceiver)(nil)
 
 // statsdReceiver implements the component.MetricsReceiver for StatsD protocol.
 type statsdReceiver struct {
-	logger *zap.Logger
-	config *Config
+	settings component.ReceiverCreateSettings
+	config   *Config
 
 	server       transport.Server
 	reporter     transport.Reporter
@@ -46,7 +45,7 @@ type statsdReceiver struct {
 
 // New creates the StatsD receiver with the given parameters.
 func New(
-	logger *zap.Logger,
+	set component.ReceiverCreateSettings,
 	config Config,
 	nextConsumer consumer.Metrics,
 ) (component.MetricsReceiver, error) {
@@ -64,11 +63,11 @@ func New(
 	}
 
 	r := &statsdReceiver{
-		logger:       logger,
+		settings:     set,
 		config:       &config,
 		nextConsumer: nextConsumer,
 		server:       server,
-		reporter:     newReporter(config.ID(), logger),
+		reporter:     newReporter(config.ID(), set),
 		parser:       &protocol.StatsDParser{},
 	}
 	return r, nil

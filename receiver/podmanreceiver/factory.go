@@ -22,12 +22,12 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/scraperhelper"
+	"go.opentelemetry.io/collector/receiver/scraperhelper"
 )
 
 const (
-	typeStr = "podman_stats"
+	typeStr           = "podman_stats"
+	defaultAPIVersion = "3.3.1"
 )
 
 func NewFactory() component.ReceiverFactory {
@@ -40,10 +40,11 @@ func NewFactory() component.ReceiverFactory {
 func createDefaultConfig() *Config {
 	return &Config{
 		ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
-			ReceiverSettings:   config.NewReceiverSettings(config.NewID(typeStr)),
+			ReceiverSettings:   config.NewReceiverSettings(config.NewComponentID(typeStr)),
 			CollectionInterval: 10 * time.Second,
 		},
-		Endpoint: "unix:///run/podman/podman.sock",
+		Endpoint:   "unix:///run/podman/podman.sock",
+		APIVersion: defaultAPIVersion,
 	}
 }
 
@@ -58,7 +59,7 @@ func createMetricsReceiver(
 	consumer consumer.Metrics,
 ) (component.MetricsReceiver, error) {
 	podmanConfig := config.(*Config)
-	dsr, err := newReceiver(ctx, params.Logger, podmanConfig, consumer, nil)
+	dsr, err := newReceiver(ctx, params, podmanConfig, consumer, nil)
 	if err != nil {
 		return nil, err
 	}

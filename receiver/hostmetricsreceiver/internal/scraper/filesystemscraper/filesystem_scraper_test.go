@@ -193,7 +193,7 @@ func TestScrape(t *testing.T) {
 				scraper.usage = test.usageFunc
 			}
 
-			metrics, err := scraper.Scrape(context.Background())
+			md, err := scraper.Scrape(context.Background())
 			if test.expectedErr != "" {
 				assert.Contains(t, err.Error(), test.expectedErr)
 
@@ -208,12 +208,13 @@ func TestScrape(t *testing.T) {
 			require.NoError(t, err, "Failed to scrape metrics: %v", err)
 
 			if !test.expectMetrics {
-				assert.Equal(t, 0, metrics.Len())
+				assert.Equal(t, 0, md.MetricCount())
 				return
 			}
 
-			assert.GreaterOrEqual(t, metrics.Len(), 1)
+			assert.GreaterOrEqual(t, md.MetricCount(), 1)
 
+			metrics := md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics()
 			assertFileSystemUsageMetricValid(
 				t,
 				metrics.At(0),
@@ -270,12 +271,12 @@ func assertFileSystemUsageMetricValid(
 	} else {
 		assert.GreaterOrEqual(t, metric.Sum().DataPoints().Len(), fileSystemStatesLen)
 	}
-	internal.AssertSumMetricHasAttributeValue(t, metric, 0, "state", pdata.NewAttributeValueString(metadata.LabelState.Used))
-	internal.AssertSumMetricHasAttributeValue(t, metric, 1, "state", pdata.NewAttributeValueString(metadata.LabelState.Free))
+	internal.AssertSumMetricHasAttributeValue(t, metric, 0, "state", pdata.NewAttributeValueString(metadata.AttributeState.Used))
+	internal.AssertSumMetricHasAttributeValue(t, metric, 1, "state", pdata.NewAttributeValueString(metadata.AttributeState.Free))
 }
 
 func assertFileSystemUsageMetricHasUnixSpecificStateLabels(t *testing.T, metric pdata.Metric) {
-	internal.AssertSumMetricHasAttributeValue(t, metric, 2, "state", pdata.NewAttributeValueString(metadata.LabelState.Reserved))
+	internal.AssertSumMetricHasAttributeValue(t, metric, 2, "state", pdata.NewAttributeValueString(metadata.AttributeState.Reserved))
 }
 
 func isUnix() bool {

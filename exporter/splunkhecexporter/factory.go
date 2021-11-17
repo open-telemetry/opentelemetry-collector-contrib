@@ -21,7 +21,12 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchperresourceattr"
 )
 
 const (
@@ -30,6 +35,18 @@ const (
 	defaultMaxIdleCons = 100
 	defaultHTTPTimeout = 10 * time.Second
 )
+
+// TODO: Find a place for this to be shared.
+type baseMetricsExporter struct {
+	component.Component
+	consumer.Metrics
+}
+
+// TODO: Find a place for this to be shared.
+type baseLogsExporter struct {
+	component.Component
+	consumer.Logs
+}
 
 // NewFactory creates a factory for Splunk HEC exporter.
 func NewFactory() component.ExporterFactory {
@@ -43,7 +60,7 @@ func NewFactory() component.ExporterFactory {
 
 func createDefaultConfig() config.Exporter {
 	return &Config{
-		ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
+		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
 		TimeoutSettings: exporterhelper.TimeoutSettings{
 			Timeout: defaultHTTPTimeout,
 		},
@@ -52,6 +69,17 @@ func createDefaultConfig() config.Exporter {
 		DisableCompression:   false,
 		MaxConnections:       defaultMaxIdleCons,
 		MaxContentLengthLogs: maxContentLengthLogsLimit,
+		HecToOtelAttrs: splunk.HecToOtelAttrs{
+			Source:     splunk.DefaultSourceLabel,
+			SourceType: splunk.DefaultSourceTypeLabel,
+			Index:      splunk.DefaultIndexLabel,
+			Host:       conventions.AttributeHostName,
+		},
+		HecFields: OtelToHecFields{
+			SeverityText:   splunk.DefaultSeverityTextLabel,
+			SeverityNumber: splunk.DefaultSeverityNumberLabel,
+			Name:           splunk.DefaultNameLabel,
+		},
 	}
 }
 
@@ -98,7 +126,7 @@ func createMetricsExporter(
 		return nil, err
 	}
 
-	return exporterhelper.NewMetricsExporter(
+	exporter, err := exporterhelper.NewMetricsExporter(
 		expCfg,
 		set,
 		exp.pushMetricsData,
@@ -108,6 +136,16 @@ func createMetricsExporter(
 		exporterhelper.WithQueue(expCfg.QueueSettings),
 		exporterhelper.WithStart(exp.start),
 		exporterhelper.WithShutdown(exp.stop))
+	if err != nil {
+		return nil, err
+	}
+
+	wrapped := &baseMetricsExporter{
+		Component: exporter,
+		Metrics:   batchperresourceattr.NewBatchPerResourceMetrics(splunk.HecTokenLabel, exporter),
+	}
+
+	return wrapped, nil
 }
 
 func createLogsExporter(
@@ -126,7 +164,7 @@ func createLogsExporter(
 		return nil, err
 	}
 
-	return exporterhelper.NewLogsExporter(
+	logsExporter, err := exporterhelper.NewLogsExporter(
 		expCfg,
 		set,
 		exp.pushLogData,
@@ -136,4 +174,15 @@ func createLogsExporter(
 		exporterhelper.WithQueue(expCfg.QueueSettings),
 		exporterhelper.WithStart(exp.start),
 		exporterhelper.WithShutdown(exp.stop))
+
+	if err != nil {
+		return nil, err
+	}
+
+	wrapped := &baseLogsExporter{
+		Component: logsExporter,
+		Logs:      batchperresourceattr.NewBatchPerResourceLogs(splunk.HecTokenLabel, logsExporter),
+	}
+
+	return wrapped, nil
 }

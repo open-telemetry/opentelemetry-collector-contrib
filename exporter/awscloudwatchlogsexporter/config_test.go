@@ -41,11 +41,11 @@ func TestLoadConfig(t *testing.T) {
 
 	defaultRetrySettings := exporterhelper.DefaultRetrySettings()
 
-	e1 := cfg.Exporters[config.NewIDWithName(typeStr, "e1-defaults")].(*Config)
+	e1 := cfg.Exporters[config.NewComponentIDWithName(typeStr, "e1-defaults")].(*Config)
 
 	assert.Equal(t,
 		&Config{
-			ExporterSettings: config.NewExporterSettings(config.NewIDWithName(typeStr, "e1-defaults")),
+			ExporterSettings: config.NewExporterSettings(config.NewComponentIDWithName(typeStr, "e1-defaults")),
 			RetrySettings:    defaultRetrySettings,
 			LogGroupName:     "test-1",
 			LogStreamName:    "testing",
@@ -58,11 +58,11 @@ func TestLoadConfig(t *testing.T) {
 		e1,
 	)
 
-	e2 := cfg.Exporters[config.NewIDWithName(typeStr, "e2-no-retries-short-queue")].(*Config)
+	e2 := cfg.Exporters[config.NewComponentIDWithName(typeStr, "e2-no-retries-short-queue")].(*Config)
 
 	assert.Equal(t,
 		&Config{
-			ExporterSettings: config.NewExporterSettings(config.NewIDWithName(typeStr, "e2-no-retries-short-queue")),
+			ExporterSettings: config.NewExporterSettings(config.NewComponentIDWithName(typeStr, "e2-no-retries-short-queue")),
 			RetrySettings: exporterhelper.RetrySettings{
 				Enabled:         false,
 				InitialInterval: defaultRetrySettings.InitialInterval,
@@ -96,5 +96,5 @@ func TestFailedLoadConfig(t *testing.T) {
 	assert.EqualError(t, err, "exporter \"awscloudwatchlogs\" has invalid configuration: 'sending_queue.queue_size' must be 1 or greater")
 
 	_, err = configtest.LoadConfigAndValidate(path.Join(".", "testdata", "invalid_queue_setting.yaml"), factories)
-	assert.EqualError(t, err, "error reading exporters configuration for awscloudwatchlogs: 1 error(s) decoding:\n\n* 'sending_queue' has invalid keys: enabled, num_consumers")
+	assert.EqualError(t, err, "error reading exporters configuration for \"awscloudwatchlogs\": 1 error(s) decoding:\n\n* 'sending_queue' has invalid keys: enabled, num_consumers")
 }

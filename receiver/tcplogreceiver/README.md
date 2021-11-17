@@ -19,7 +19,7 @@ Supported pipeline types: logs
 | `resource`        | {}               | A map of `key: value` pairs to add to the entry's resource                                                         |
 | `add_attributes`  | false            | Adds `net.*` attributes according to [semantic convention][https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/trace/semantic_conventions/span-general.md#general-network-connection-attributes] |
 | `multiline`       |                  | A `multiline` configuration block. See below for details                                                           |
-| `encoding`        | `nop`            | The encoding of the file being read. See the list of supported encodings below for available options               |
+| `encoding`        | `utf-8`          | The encoding of the file being read. See the list of supported encodings below for available options               |
 | `operators`       | []               | An array of [operators](https://github.com/open-telemetry/opentelemetry-log-collection/blob/main/docs/operators/README.md#what-operators-are-available). See below for more details |
 
 ### TLS Configuration

@@ -25,7 +25,6 @@ import (
 	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/config/configcheck"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/confignet"
@@ -43,7 +42,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	assert.NotNil(t, cfg, "failed to create default config")
-	assert.NoError(t, configcheck.ValidateConfig(cfg))
+	assert.NoError(t, configtest.CheckConfigStruct(cfg))
 }
 
 func TestCreateReceiver(t *testing.T) {
@@ -77,7 +76,7 @@ func TestCreateReceiverGeneralConfig(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 
-	rCfg, ok := cfg.Receivers[config.NewIDWithName(typeStr, "customname")]
+	rCfg, ok := cfg.Receivers[config.NewComponentIDWithName(typeStr, "customname")]
 	require.True(t, ok)
 
 	set := componenttest.NewNopReceiverCreateSettings()
@@ -231,81 +230,6 @@ func TestAgentRemoteSamplingEndpoint(t *testing.T) {
 	assert.Equal(t, defaultAgentRemoteSamplingHTTPPort, r.(*jReceiver).config.AgentHTTPPort, "agent http port should be default")
 }
 
-func TestCreateNoPort(t *testing.T) {
-	factory := NewFactory()
-	cfg := factory.CreateDefaultConfig()
-
-	cfg.(*Config).Protocols.ThriftHTTP = &confighttp.HTTPServerSettings{
-		Endpoint: "localhost:",
-	}
-	set := componenttest.NewNopReceiverCreateSettings()
-	_, err := factory.CreateTracesReceiver(context.Background(), set, cfg, nil)
-	assert.Error(t, err, "receiver creation with no port number must fail")
-}
-
-func TestCreateLargePort(t *testing.T) {
-	factory := NewFactory()
-	cfg := factory.CreateDefaultConfig()
-
-	cfg.(*Config).Protocols.ThriftHTTP = &confighttp.HTTPServerSettings{
-		Endpoint: "localhost:65536",
-	}
-	set := componenttest.NewNopReceiverCreateSettings()
-	_, err := factory.CreateTracesReceiver(context.Background(), set, cfg, nil)
-	assert.Error(t, err, "receiver creation with too large port number must fail")
-}
-
-func TestCreateInvalidHost(t *testing.T) {
-	factory := NewFactory()
-	cfg := factory.CreateDefaultConfig()
-
-	cfg.(*Config).Protocols.GRPC = &configgrpc.GRPCServerSettings{
-		NetAddr: confignet.NetAddr{
-			Endpoint:  "1234",
-			Transport: "tcp",
-		},
-	}
-
-	set := componenttest.NewNopReceiverCreateSettings()
-	_, err := factory.CreateTracesReceiver(context.Background(), set, cfg, nil)
-	assert.Error(t, err, "receiver creation with bad hostname must fail")
-}
-
-func TestCreateNoProtocols(t *testing.T) {
-	factory := NewFactory()
-	cfg := factory.CreateDefaultConfig()
-
-	cfg.(*Config).Protocols = Protocols{}
-	set := componenttest.NewNopReceiverCreateSettings()
-	_, err := factory.CreateTracesReceiver(context.Background(), set, cfg, nil)
-	assert.Error(t, err, "receiver creation with no protocols must fail")
-}
-
-func TestThriftBinaryBadPort(t *testing.T) {
-	factory := NewFactory()
-	cfg := factory.CreateDefaultConfig()
-
-	cfg.(*Config).Protocols.ThriftBinary = &ProtocolUDP{
-		Endpoint: "localhost:65536",
-	}
-	set := componenttest.NewNopReceiverCreateSettings()
-	_, err := factory.CreateTracesReceiver(context.Background(), set, cfg, nil)
-	assert.Error(t, err, "receiver creation with a bad thrift binary port must fail")
-}
-
-func TestThriftCompactBadPort(t *testing.T) {
-	factory := NewFactory()
-	cfg := factory.CreateDefaultConfig()
-
-	cfg.(*Config).Protocols.ThriftCompact = &ProtocolUDP{
-		Endpoint: "localhost:65536",
-	}
-
-	set := componenttest.NewNopReceiverCreateSettings()
-	_, err := factory.CreateTracesReceiver(context.Background(), set, cfg, nil)
-	assert.Error(t, err, "receiver creation with a bad thrift compact port must fail")
-}
-
 func TestRemoteSamplingConfigPropagation(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
@@ -334,23 +258,4 @@ func TestRemoteSamplingConfigPropagation(t *testing.T) {
 	assert.Equal(t, endpoint, r.(*jReceiver).config.RemoteSamplingClientSettings.Endpoint)
 	assert.Equal(t, hostPort, r.(*jReceiver).config.AgentHTTPPort, "agent http port should be configured value")
 	assert.Equal(t, strategyFile, r.(*jReceiver).config.RemoteSamplingStrategyFile)
-}
-
-func TestRemoteSamplingFileRequiresGRPC(t *testing.T) {
-	factory := NewFactory()
-	cfg := factory.CreateDefaultConfig()
-	rCfg := cfg.(*Config)
-
-	// Remove all default protocols
-	rCfg.Protocols = Protocols{}
-	rCfg.Protocols.ThriftCompact = &ProtocolUDP{
-		Endpoint: defaultThriftCompactBindEndpoint,
-	}
-	rCfg.RemoteSampling = &RemoteSamplingConfig{
-		StrategyFile: "strategies.json",
-	}
-	set := componenttest.NewNopReceiverCreateSettings()
-	_, err := factory.CreateTracesReceiver(context.Background(), set, cfg, nil)
-
-	assert.Error(t, err, "create trace receiver should error")
 }

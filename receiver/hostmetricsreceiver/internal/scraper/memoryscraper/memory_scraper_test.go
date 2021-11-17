@@ -55,7 +55,7 @@ func TestScrape(t *testing.T) {
 				scraper.virtualMemory = test.virtualMemoryFunc
 			}
 
-			metrics, err := scraper.Scrape(context.Background())
+			md, err := scraper.Scrape(context.Background())
 			if test.expectedErr != "" {
 				assert.EqualError(t, err, test.expectedErr)
 
@@ -69,14 +69,15 @@ func TestScrape(t *testing.T) {
 			}
 			require.NoError(t, err, "Failed to scrape metrics: %v", err)
 
-			assert.Equal(t, 1, metrics.Len())
+			assert.Equal(t, 1, md.MetricCount())
 
+			metrics := md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics()
 			assertMemoryUsageMetricValid(t, metrics.At(0), metadata.Metrics.SystemMemoryUsage.New())
 
 			if runtime.GOOS == "linux" {
 				assertMemoryUsageMetricHasLinuxSpecificStateLabels(t, metrics.At(0))
 			} else if runtime.GOOS != "windows" {
-				internal.AssertSumMetricHasAttributeValue(t, metrics.At(0), 2, metadata.Labels.State, pdata.NewAttributeValueString(metadata.LabelState.Inactive))
+				internal.AssertSumMetricHasAttributeValue(t, metrics.At(0), 2, metadata.Attributes.State, pdata.NewAttributeValueString(metadata.AttributeState.Inactive))
 			}
 
 			internal.AssertSameTimeStampForAllMetrics(t, metrics)
@@ -87,13 +88,13 @@ func TestScrape(t *testing.T) {
 func assertMemoryUsageMetricValid(t *testing.T, metric pdata.Metric, descriptor pdata.Metric) {
 	internal.AssertDescriptorEqual(t, descriptor, metric)
 	assert.GreaterOrEqual(t, metric.Sum().DataPoints().Len(), 2)
-	internal.AssertSumMetricHasAttributeValue(t, metric, 0, metadata.Labels.State, pdata.NewAttributeValueString(metadata.LabelState.Used))
-	internal.AssertSumMetricHasAttributeValue(t, metric, 1, metadata.Labels.State, pdata.NewAttributeValueString(metadata.LabelState.Free))
+	internal.AssertSumMetricHasAttributeValue(t, metric, 0, metadata.Attributes.State, pdata.NewAttributeValueString(metadata.AttributeState.Used))
+	internal.AssertSumMetricHasAttributeValue(t, metric, 1, metadata.Attributes.State, pdata.NewAttributeValueString(metadata.AttributeState.Free))
 }
 
 func assertMemoryUsageMetricHasLinuxSpecificStateLabels(t *testing.T, metric pdata.Metric) {
-	internal.AssertSumMetricHasAttributeValue(t, metric, 2, metadata.Labels.State, pdata.NewAttributeValueString(metadata.LabelState.Buffered))
-	internal.AssertSumMetricHasAttributeValue(t, metric, 3, metadata.Labels.State, pdata.NewAttributeValueString(metadata.LabelState.Cached))
-	internal.AssertSumMetricHasAttributeValue(t, metric, 4, metadata.Labels.State, pdata.NewAttributeValueString(metadata.LabelState.SlabReclaimable))
-	internal.AssertSumMetricHasAttributeValue(t, metric, 5, metadata.Labels.State, pdata.NewAttributeValueString(metadata.LabelState.SlabUnreclaimable))
+	internal.AssertSumMetricHasAttributeValue(t, metric, 2, metadata.Attributes.State, pdata.NewAttributeValueString(metadata.AttributeState.Buffered))
+	internal.AssertSumMetricHasAttributeValue(t, metric, 3, metadata.Attributes.State, pdata.NewAttributeValueString(metadata.AttributeState.Cached))
+	internal.AssertSumMetricHasAttributeValue(t, metric, 4, metadata.Attributes.State, pdata.NewAttributeValueString(metadata.AttributeState.SlabReclaimable))
+	internal.AssertSumMetricHasAttributeValue(t, metric, 5, metadata.Attributes.State, pdata.NewAttributeValueString(metadata.AttributeState.SlabUnreclaimable))
 }

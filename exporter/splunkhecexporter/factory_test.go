@@ -22,13 +22,13 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/config/configcheck"
+	"go.opentelemetry.io/collector/config/configtest"
 )
 
 func TestCreateDefaultConfig(t *testing.T) {
 	cfg := createDefaultConfig()
 	assert.NotNil(t, cfg, "failed to create default config")
-	assert.NoError(t, configcheck.ValidateConfig(cfg))
+	assert.NoError(t, configtest.CheckConfigStruct(cfg))
 }
 
 func TestCreateMetricsExporter(t *testing.T) {
@@ -122,7 +122,7 @@ func TestCreateInstanceViaFactory(t *testing.T) {
 
 func TestFactory_CreateMetricsExporter(t *testing.T) {
 	config := &Config{
-		ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
+		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
 		Token:            "testToken",
 		Endpoint:         "https://example.com:8000",
 	}
@@ -142,7 +142,7 @@ func TestFactory_CreateMetricsExporterFails(t *testing.T) {
 		{
 			name: "empty_endpoint",
 			config: &Config{
-				ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
+				ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
 				Token:            "token",
 			},
 			errorMessage: "failed to process \"splunk_hec\" config: requires a non-empty \"endpoint\"",
@@ -150,7 +150,7 @@ func TestFactory_CreateMetricsExporterFails(t *testing.T) {
 		{
 			name: "empty_token",
 			config: &Config{
-				ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
+				ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
 				Endpoint:         "https://example.com:8000",
 			},
 			errorMessage: "failed to process \"splunk_hec\" config: requires a non-empty \"token\"",

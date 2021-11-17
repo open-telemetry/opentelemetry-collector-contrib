@@ -30,6 +30,7 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/receiver/scraperhelper"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal"
@@ -42,7 +43,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/pagingscraper"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/processesscraper"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/processscraper"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/scraperhelper"
 )
 
 var standardMetrics = []string{
@@ -100,7 +100,7 @@ func TestGatherMetrics_EndToEnd(t *testing.T) {
 
 	cfg := &Config{
 		ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
-			ReceiverSettings:   config.NewReceiverSettings(config.NewID(typeStr)),
+			ReceiverSettings:   config.NewReceiverSettings(config.NewComponentID(typeStr)),
 			CollectionInterval: 100 * time.Millisecond,
 		},
 		Scrapers: map[string]internal.Config{
@@ -132,7 +132,7 @@ func TestGatherMetrics_EndToEnd(t *testing.T) {
 	cancelFn()
 
 	const tick = 50 * time.Millisecond
-	const waitFor = 5 * time.Second
+	const waitFor = 10 * time.Second
 	require.Eventuallyf(t, func() bool {
 		got := sink.AllMetrics()
 		if len(got) == 0 {
@@ -213,10 +213,10 @@ func (m *mockFactory) CreateMetricsScraper(context.Context, *zap.Logger, interna
 	return args.Get(0).(scraperhelper.Scraper), args.Error(1)
 }
 
-func (m *mockScraper) ID() config.ComponentID                      { return config.NewID("") }
+func (m *mockScraper) ID() config.ComponentID                      { return config.NewComponentID("") }
 func (m *mockScraper) Start(context.Context, component.Host) error { return nil }
 func (m *mockScraper) Shutdown(context.Context) error              { return nil }
-func (m *mockScraper) Scrape(context.Context, config.ComponentID) (pdata.Metrics, error) {
+func (m *mockScraper) Scrape(context.Context) (pdata.Metrics, error) {
 	return pdata.NewMetrics(), errors.New("err1")
 }
 
@@ -270,7 +270,7 @@ func benchmarkScrapeMetrics(b *testing.B, cfg *Config) {
 	require.NoError(b, err)
 	options = append(options, scraperhelper.WithTickerChannel(tickerCh))
 
-	receiver, err := scraperhelper.NewScraperControllerReceiver(&cfg.ScraperControllerSettings, zap.NewNop(), sink, options...)
+	receiver, err := scraperhelper.NewScraperControllerReceiver(&cfg.ScraperControllerSettings, componenttest.NewNopReceiverCreateSettings(), sink, options...)
 	require.NoError(b, err)
 
 	require.NoError(b, receiver.Start(context.Background(), componenttest.NewNopHost()))

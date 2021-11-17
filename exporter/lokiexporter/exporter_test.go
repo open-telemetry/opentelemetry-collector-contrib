@@ -16,6 +16,7 @@ package lokiexporter
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -161,8 +162,8 @@ func TestExporter_pushLogData(t *testing.T) {
 			genLogsFunc:      genericGenLogsFunc,
 			errFunc: func(err error) {
 				var e consumererror.Logs
-				consumererror.AsLogs(err, &e)
-				require.Equal(t, 10, e.GetLogs().LogRecordCount())
+				require.True(t, errors.As(err, &e))
+				assert.Equal(t, 10, e.GetLogs().LogRecordCount())
 			},
 		},
 		{
@@ -174,8 +175,8 @@ func TestExporter_pushLogData(t *testing.T) {
 			genLogsFunc:      genericGenLogsFunc,
 			errFunc: func(err error) {
 				var e consumererror.Logs
-				consumererror.AsLogs(err, &e)
-				require.Equal(t, 10, e.GetLogs().LogRecordCount())
+				require.True(t, errors.As(err, &e))
+				assert.Equal(t, 10, e.GetLogs().LogRecordCount())
 			},
 		},
 		{

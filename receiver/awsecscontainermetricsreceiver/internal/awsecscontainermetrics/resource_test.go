@@ -20,10 +20,12 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/model/pdata"
 	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil"
 )
 
 func TestContainerResource(t *testing.T) {
-	cm := ContainerMetadata{
+	cm := ecsutil.ContainerMetadata{
 		ContainerName: "container-1",
 		DockerID:      "001",
 		DockerName:    "docker-container-1",
@@ -55,7 +57,7 @@ func TestContainerResource(t *testing.T) {
 
 func TestContainerResourceForStoppedContainer(t *testing.T) {
 	var exitCode int64 = 2
-	cm := ContainerMetadata{
+	cm := ecsutil.ContainerMetadata{
 		ContainerName: "container-1",
 		DockerID:      "001",
 		DockerName:    "docker-container-1",
@@ -92,7 +94,7 @@ func TestContainerResourceForStoppedContainer(t *testing.T) {
 }
 
 func TestTaskResource(t *testing.T) {
-	tm := TaskMetadata{
+	tm := ecsutil.TaskMetadata{
 		Cluster:          "cluster-1",
 		TaskARN:          "arn:aws:ecs:us-west-2:111122223333:task/default/158d1c8083dd49d6b527399fd6414f5c",
 		Family:           "task-def-family-1",
@@ -127,7 +129,7 @@ func TestTaskResource(t *testing.T) {
 }
 
 func TestTaskResourceWithClusterARN(t *testing.T) {
-	tm := TaskMetadata{
+	tm := ecsutil.TaskMetadata{
 		Cluster:          "arn:aws:ecs:us-west-2:803860917211:cluster/main-cluster",
 		TaskARN:          "arn:aws:ecs:us-west-2:803860917211:cluster/main-cluster/c8083dd49d6b527399fd6414",
 		Family:           "task-def-family-1",

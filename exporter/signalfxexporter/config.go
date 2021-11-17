@@ -21,7 +21,6 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/config/configparser"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/correlation"
@@ -51,9 +50,8 @@ type Config struct {
 
 	// IngestURL is the destination to where SignalFx metrics will be sent to, it is
 	// intended for tests and debugging. The value of Realm is ignored if the
-	// URL is specified. If a path is not included the exporter will
-	// automatically append the appropriate path, eg.: "v2/datapoint".
-	// If a path is specified it will act as a prefix.
+	// URL is specified. The exporter will automatically append the appropriate
+	// path: "/v2/datapoint" for metrics, and "/v2/event" for events.
 	IngestURL string `mapstructure:"ingest_url"`
 
 	// APIURL is the destination to where SignalFx metadata will be sent. This
@@ -65,6 +63,9 @@ type Config struct {
 	// exporter, eg: "User-Agent" can be set to a custom value if specified
 	// here.
 	Headers map[string]string `mapstructure:"headers"`
+
+	// Whether to log datapoints dispatched to Splunk Observability Cloud
+	LogDataPoints bool `mapstructure:"log_data_points"`
 
 	// Whether to log dimension updates being sent to SignalFx.
 	LogDimensionUpdates bool `mapstructure:"log_dimension_updates"`
@@ -105,6 +106,9 @@ type Config struct {
 	// NonAlphanumericDimensionChars is a list of allowable characters, in addition to alphanumeric ones,
 	// to be used in a dimension key.
 	NonAlphanumericDimensionChars string `mapstructure:"nonalphanumeric_dimension_chars"`
+
+	// MaxConnections is used to set a limit to the maximum idle HTTP connection the exporter can keep open.
+	MaxConnections int `mapstructure:"max_connections"`
 }
 
 func (cfg *Config) getOptionsFromConfig() (*exporterOptions, error) {
@@ -136,6 +140,7 @@ func (cfg *Config) getOptionsFromConfig() (*exporterOptions, error) {
 		apiURL:           apiURL,
 		httpTimeout:      cfg.Timeout,
 		token:            cfg.AccessToken,
+		logDataPoints:    cfg.LogDataPoints,
 		logDimUpdate:     cfg.LogDimensionUpdates,
 		metricTranslator: metricTranslator,
 	}, nil
@@ -153,6 +158,10 @@ func (cfg *Config) validateConfig() error {
 
 	if cfg.Timeout < 0 {
 		return errors.New(`cannot have a negative "timeout"`)
+	}
+
+	if cfg.MaxConnections < 0 {
+		return errors.New(`cannot have a negative "max_connections"`)
 	}
 
 	return nil
@@ -176,7 +185,7 @@ func (cfg *Config) getAPIURL() (*url.URL, error) {
 	return url.Parse(fmt.Sprintf("https://api.%s.signalfx.com", cfg.Realm))
 }
 
-func (cfg *Config) Unmarshal(componentParser *configparser.ConfigMap) (err error) {
+func (cfg *Config) Unmarshal(componentParser *config.Map) (err error) {
 	if componentParser == nil {
 		// Nothing to do if there is no config given.
 		return nil

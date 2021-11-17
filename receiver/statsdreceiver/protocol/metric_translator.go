@@ -15,13 +15,18 @@
 package protocol
 
 import (
+	"sort"
 	"time"
 
-	"github.com/montanaflynn/stats"
 	"go.opentelemetry.io/collector/model/pdata"
+	"gonum.org/v1/gonum/stat"
 )
 
-func buildCounterMetric(parsedMetric statsDMetric, isMonotonicCounter bool, timeNow time.Time) pdata.InstrumentationLibraryMetrics {
+var (
+	statsDDefaultPercentiles = []float64{0, 10, 50, 90, 95, 100}
+)
+
+func buildCounterMetric(parsedMetric statsDMetric, isMonotonicCounter bool, timeNow, lastIntervalTime time.Time) pdata.InstrumentationLibraryMetrics {
 	ilm := pdata.NewInstrumentationLibraryMetrics()
 	nm := ilm.Metrics().AppendEmpty()
 	nm.SetName(parsedMetric.description.name)
@@ -30,15 +35,12 @@ func buildCounterMetric(parsedMetric statsDMetric, isMonotonicCounter bool, time
 	}
 	nm.SetDataType(pdata.MetricDataTypeSum)
 
-	nm.Sum().SetAggregationTemporality(pdata.AggregationTemporalityDelta)
-	if isMonotonicCounter {
-		nm.Sum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
-	}
-
-	nm.Sum().SetIsMonotonic(true)
+	nm.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityDelta)
+	nm.Sum().SetIsMonotonic(isMonotonicCounter)
 
 	dp := nm.Sum().DataPoints().AppendEmpty()
-	dp.SetIntVal(parsedMetric.intvalue)
+	dp.SetIntVal(parsedMetric.counterValue())
+	dp.SetStartTimestamp(pdata.NewTimestampFromTime(lastIntervalTime))
 	dp.SetTimestamp(pdata.NewTimestampFromTime(timeNow))
 	for i, key := range parsedMetric.labelKeys {
 		dp.Attributes().InsertString(key, parsedMetric.labelValues[i])
@@ -56,7 +58,7 @@ func buildGaugeMetric(parsedMetric statsDMetric, timeNow time.Time) pdata.Instru
 	}
 	nm.SetDataType(pdata.MetricDataTypeGauge)
 	dp := nm.Gauge().DataPoints().AppendEmpty()
-	dp.SetDoubleVal(parsedMetric.floatvalue)
+	dp.SetDoubleVal(parsedMetric.gaugeValue())
 	dp.SetTimestamp(pdata.NewTimestampFromTime(timeNow))
 	for i, key := range parsedMetric.labelKeys {
 		dp.Attributes().InsertString(key, parsedMetric.labelValues[i])
@@ -65,29 +67,82 @@ func buildGaugeMetric(parsedMetric statsDMetric, timeNow time.Time) pdata.Instru
 	return ilm
 }
 
-func buildSummaryMetric(summaryMetric summaryMetric) pdata.InstrumentationLibraryMetrics {
-	ilm := pdata.NewInstrumentationLibraryMetrics()
+func buildSummaryMetric(summary summaryMetric, startTime, timeNow time.Time, percentiles []float64, ilm pdata.InstrumentationLibraryMetrics) {
 	nm := ilm.Metrics().AppendEmpty()
-	nm.SetName(summaryMetric.name)
+	nm.SetName(summary.name)
 	nm.SetDataType(pdata.MetricDataTypeSummary)
 
 	dp := nm.Summary().DataPoints().AppendEmpty()
-	dp.SetCount(uint64(len(summaryMetric.summaryPoints)))
-	sum, _ := stats.Sum(summaryMetric.summaryPoints)
+
+	count := float64(0)
+	sum := float64(0)
+	for i := range summary.points {
+		c := summary.weights[i]
+		count += c
+		sum += summary.points[i] * c
+	}
+
+	// Note: count is rounded here, see note in counterValue().
+	dp.SetCount(uint64(count))
 	dp.SetSum(sum)
-	dp.SetTimestamp(pdata.NewTimestampFromTime(summaryMetric.timeNow))
-	for i, key := range summaryMetric.labelKeys {
-		dp.Attributes().InsertString(key, summaryMetric.labelValues[i])
+
+	dp.SetStartTimestamp(pdata.NewTimestampFromTime(startTime))
+	dp.SetTimestamp(pdata.NewTimestampFromTime(timeNow))
+	for i, key := range summary.labelKeys {
+		dp.Attributes().InsertString(key, summary.labelValues[i])
 	}
 
-	quantile := []float64{0, 10, 50, 90, 95, 100}
-	for _, v := range quantile {
+	sort.Sort(dualSorter{summary.points, summary.weights})
+
+	for _, pct := range percentiles {
 		eachQuantile := dp.QuantileValues().AppendEmpty()
-		eachQuantile.SetQuantile(v)
-		eachQuantileValue, _ := stats.PercentileNearestRank(summaryMetric.summaryPoints, v)
-		eachQuantile.SetValue(eachQuantileValue)
+		eachQuantile.SetQuantile(pct / 100)
+		eachQuantile.SetValue(stat.Quantile(pct/100, stat.Empirical, summary.points, summary.weights))
 	}
+}
 
-	return ilm
+func (s statsDMetric) counterValue() int64 {
+	x := s.asFloat
+	// Note statds counters are always represented as integers.
+	// There is no statsd specification that says what should or
+	// shouldn't be done here.  Rounding may occur for sample
+	// rates that are not integer reciprocals.  Recommendation:
+	// use integer reciprocal sampling rates.
+	if 0 < s.sampleRate && s.sampleRate < 1 {
+		x = x / s.sampleRate
+	}
+	return int64(x)
+}
 
+func (s statsDMetric) gaugeValue() float64 {
+	// sampleRate does not have effect for gauge points.
+	return s.asFloat
+}
+
+func (s statsDMetric) summaryValue() summaryRaw {
+	count := 1.0
+	if 0 < s.sampleRate && s.sampleRate < 1 {
+		count /= s.sampleRate
+	}
+	return summaryRaw{
+		value: s.asFloat,
+		count: count,
+	}
+}
+
+type dualSorter struct {
+	values, weights []float64
+}
+
+func (d dualSorter) Len() int {
+	return len(d.values)
+}
+
+func (d dualSorter) Swap(i, j int) {
+	d.values[i], d.values[j] = d.values[j], d.values[i]
+	d.weights[i], d.weights[j] = d.weights[j], d.weights[i]
+}
+
+func (d dualSorter) Less(i, j int) bool {
+	return d.values[i] < d.values[j]
 }

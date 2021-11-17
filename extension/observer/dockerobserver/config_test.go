@@ -37,22 +37,40 @@ func TestLoadConfig(t *testing.T) {
 	require.Nil(t, err)
 	require.NotNil(t, cfg)
 
-	require.Len(t, cfg.Extensions, 2)
+	require.Len(t, cfg.Extensions, 6)
 
-	ext0 := cfg.Extensions[config.NewID(typeStr)]
+	ext0 := cfg.Extensions[config.NewComponentID(typeStr)]
 	assert.Equal(t, factory.CreateDefaultConfig(), ext0)
 
-	ext1 := cfg.Extensions[config.NewIDWithName(typeStr, "all_settings")]
+	ext1 := cfg.Extensions[config.NewComponentIDWithName(typeStr, "all_settings")]
 	assert.Equal(t,
 		&Config{
 			Endpoint:              "unix:///var/run/docker.sock",
-			ExtensionSettings:     config.NewExtensionSettings(config.NewIDWithName(typeStr, "all_settings")),
+			ExtensionSettings:     config.NewExtensionSettings(config.NewComponentIDWithName(typeStr, "all_settings")),
 			CacheSyncInterval:     5 * time.Minute,
 			Timeout:               20 * time.Second,
 			ExcludedImages:        []string{"excluded", "image"},
 			UseHostnameIfPresent:  true,
 			UseHostBindings:       true,
 			IgnoreNonHostBindings: true,
+			DockerAPIVersion:      1.22,
 		},
 		ext1)
+}
+
+func TestValidateConfig(t *testing.T) {
+	cfg := &Config{}
+	assert.Equal(t, "endpoint must be specified", cfg.Validate().Error())
+
+	cfg = &Config{Endpoint: "someEndpoint"}
+	assert.Equal(t, "api_version must be at least 1.22", cfg.Validate().Error())
+
+	cfg = &Config{Endpoint: "someEndpoint", DockerAPIVersion: 1.22}
+	assert.Equal(t, "timeout must be specified", cfg.Validate().Error())
+
+	cfg = &Config{Endpoint: "someEndpoint", DockerAPIVersion: 1.22, Timeout: 5 * time.Minute}
+	assert.Equal(t, "cache_sync_interval must be specified", cfg.Validate().Error())
+
+	cfg = &Config{Endpoint: "someEndpoint", DockerAPIVersion: 1.22, Timeout: 5 * time.Minute, CacheSyncInterval: 5 * time.Minute}
+	assert.Nil(t, cfg.Validate())
 }

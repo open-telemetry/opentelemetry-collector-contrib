@@ -41,12 +41,12 @@ func NewFactory() component.ProcessorFactory {
 
 func createDefaultConfig() config.Processor {
 	return &Config{
-		ProcessorSettings: config.NewProcessorSettings(config.NewID(typeStr)),
+		ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
 	}
 }
 
 func createMetricsProcessor(
-	ctx context.Context,
+	_ context.Context,
 	params component.ProcessorCreateSettings,
 	cfg config.Processor,
 	nextConsumer consumer.Metrics,
@@ -56,12 +56,12 @@ func createMetricsProcessor(
 		return nil, fmt.Errorf("configuration parsing error")
 	}
 
-	processorConfig.Validate()
 	metricsProcessor := newCumulativeToDeltaProcessor(processorConfig, params.Logger)
 
 	return processorhelper.NewMetricsProcessor(
 		cfg,
 		nextConsumer,
 		metricsProcessor.processMetrics,
-		processorhelper.WithCapabilities(processorCapabilities))
+		processorhelper.WithCapabilities(processorCapabilities),
+		processorhelper.WithShutdown(metricsProcessor.shutdown))
 }

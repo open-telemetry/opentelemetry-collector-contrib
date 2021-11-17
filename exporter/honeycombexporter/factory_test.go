@@ -23,14 +23,13 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/config/configcheck"
 	"go.opentelemetry.io/collector/config/configtest"
 )
 
 func TestCreateDefaultConfig(t *testing.T) {
 	cfg := createDefaultConfig()
 	assert.NotNil(t, cfg, "failed to create default config")
-	assert.NoError(t, configcheck.ValidateConfig(cfg))
+	assert.NoError(t, configtest.CheckConfigStruct(cfg))
 }
 
 func TestCreateTracesExporter(t *testing.T) {
@@ -42,7 +41,7 @@ func TestCreateTracesExporter(t *testing.T) {
 	require.NoError(t, err)
 
 	params := componenttest.NewNopExporterCreateSettings()
-	exporter, err := factory.CreateTracesExporter(context.Background(), params, cfg.Exporters[config.NewIDWithName(typeStr, "customname")])
+	exporter, err := factory.CreateTracesExporter(context.Background(), params, cfg.Exporters[config.NewComponentIDWithName(typeStr, "customname")])
 	assert.Nil(t, err)
 	assert.NotNil(t, exporter)
 }
@@ -56,7 +55,7 @@ func TestCreateMetricsExporter(t *testing.T) {
 	require.NoError(t, err)
 
 	params := componenttest.NewNopExporterCreateSettings()
-	exporter, err := factory.CreateMetricsExporter(context.Background(), params, cfg.Exporters[config.NewIDWithName(typeStr, "customname")])
+	exporter, err := factory.CreateMetricsExporter(context.Background(), params, cfg.Exporters[config.NewComponentIDWithName(typeStr, "customname")])
 	assert.NotNil(t, err)
 	assert.Nil(t, exporter)
 }

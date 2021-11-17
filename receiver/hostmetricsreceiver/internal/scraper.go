@@ -17,9 +17,8 @@ package internal
 import (
 	"context"
 
+	"go.opentelemetry.io/collector/receiver/scraperhelper"
 	"go.uber.org/zap"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/scraperhelper"
 )
 
 // ScraperFactory can create a MetricScraper.

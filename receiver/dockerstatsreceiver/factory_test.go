@@ -21,7 +21,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config/configcheck"
+	"go.opentelemetry.io/collector/config/configtest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 )
 
@@ -31,7 +31,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 
 	config := factory.CreateDefaultConfig()
 	assert.NotNil(t, config, "failed to create default config")
-	assert.NoError(t, configcheck.ValidateConfig(config))
+	assert.NoError(t, configtest.CheckConfigStruct(config))
 }
 
 func TestCreateReceiver(t *testing.T) {
@@ -45,28 +45,5 @@ func TestCreateReceiver(t *testing.T) {
 
 	metricReceiver, err := factory.CreateMetricsReceiver(context.Background(), params, config, consumertest.NewNop())
 	assert.NoError(t, err, "Metric receiver creation failed")
-	assert.NotNil(t, metricReceiver, "Receiver creation failed")
-}
-
-func TestCreateInvalidHTTPEndpoint(t *testing.T) {
-	factory := NewFactory()
-	config := factory.CreateDefaultConfig()
-	receiverCfg := config.(*Config)
-
-	receiverCfg.Endpoint = ""
-
-	params := componenttest.NewNopReceiverCreateSettings()
-	receiver, err := factory.CreateMetricsReceiver(context.Background(), params, receiverCfg, consumertest.NewNop())
-	assert.Nil(t, receiver)
-	assert.Error(t, err)
-	assert.Equal(t, "config.Endpoint must be specified", err.Error())
-
-	receiverCfg.Endpoint = "\a"
-	receiver, err = factory.CreateMetricsReceiver(context.Background(), params, receiverCfg, consumertest.NewNop())
-	assert.Nil(t, receiver)
-	assert.Error(t, err)
-	assert.Equal(
-		t, "could not determine receiver transport: parse \"\\a\": net/url: invalid control character in URL",
-		err.Error(),
-	)
+	assert.NotNil(t, metricReceiver, "receiver creation failed")
 }

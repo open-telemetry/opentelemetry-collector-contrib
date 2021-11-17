@@ -4,11 +4,185 @@
 
 ## 🛑 Breaking changes 🛑
 
+- `tencentcloudlogserviceexporter` change `Endpoint` to `Region` to simplify configuration (#6135)
+
+## 💡 Enhancements 💡
+
+- `awsprometheusremotewrite` exporter: Improve error message when failing to sign request
+
+## v0.39.0
+
+## 🛑 Breaking changes 🛑
+
+- `httpdreceiver` renamed to `apachereceiver` to match industry standards (#6207)
+- `tencentcloudlogserviceexporter` change `Endpoint` to `Region` to simplify configuration (#6135)
+
+## 🚀 New components 🚀
+
+- Add `postgresqlreceiver` config and factory (#6153)
+- Add TencentCloud LogService exporter `tencentcloudlogserviceexporter` (#5722)
+- Restore `jaegerthrifthttpexporter` (#5666)
+- Add `skywalkingexporter` (#5690, #6114)
+
+## 🧰 Bug fixes 🧰
+
+- `datadogexporter`: Improve cumulative metrics reset detection using `StartTimestamp` (#6120)
+- `mysqlreceiver`: Address issues in shutdown function (#6239)
+- `tailsamplingprocessor`: End go routines during shutdown (#5693)
+- `googlecloudexporter`: Update google cloud exporter to correctly close the metric exporter (#5990)
+- `statsdreceiver`: Fix the summary point calculation (#6155)
+- `datadogexporter` Correct default value for `send_count_sum_metrics` (#6130)
+
+## 💡 Enhancements 💡
+
+- `datadogexporter`: Increase default timeout to 15 seconds (#6131)
+- `googlecloudspannerreceiver`: Added metrics cardinality handling for Google Cloud Spanner receiver (#5981, #6148, #6229)
+- `mysqlreceiver`: Mysql add support for different protocols (#6138)
+- `bearertokenauthextension`: Added support of Bearer Auth for HTTP Exporters (#5962)
+- `awsxrayexporter`: Fallback to rpc.method for segment operation when aws.operation missing (#6231)
+- `healthcheckextension`: Add new health check feature for collector pipeline (#5643)
+- `datadogexporter`: Always add current hostname (#5967)
+- `k8sattributesprocessor`: Add code to fetch all annotations and labels by specifying key regex (#5780)
+- `datadogexporter`: Do not rely on collector to resolve envvar when possible to resolve them (#6122)
+- `datadogexporter`: Add container tags to attributes package (#6086)
+- `datadogexporter`: Preserve original TraceID (#6158)
+- `prometheusreceiver`: Enhance prometheus receiver logger to determine errors, test real e2e usage (#5870)
+- `awsxrayexporter`: Added support for AWS AppRunner origin (#6141)
+
+## v0.38.0
+
+## 🛑 Breaking changes 🛑
+
+- `datadogexporter` Make distributions the default histogram export option. (#5885)
+- `redisreceiver` Update Redis receiver's metric names. (#5837)
+- Remove `scraperhelper` from contrib, use the core version. (#5826)
+
+## 🚀 New components 🚀
+
+- `googlecloudspannerreceiver` Added implementation of Google Cloud Spanner receiver. (#5727)
+- `awsxrayproxy` Wire up awsxrayproxy extension. (#5747)
+- `awscontainerinsightreceiver` Enable AWS Container Insight receiver. (#5960)
+
+## 🧰 Bug fixes 🧰
+
+- `statsdreceiver`: fix start timestamp / temporality for counters. (#5714)
+- Fix security issue related to github.com/tidwall/gjson. (#5936)
+- `datadogexporter` Fix cumulative histogram handling in distributions mode (#5867)
+- `datadogexporter` Skip nil sketches (#5925)
+
+## 💡 Enhancements 💡
+
+- Extend `kafkareceiver` configuration capabilities. (#5677)
+- Convert `mongodbatlas` receiver to use scraperhelper. (#5827)
+- Convert `dockerstats` receiver to use scraperhelper. (#5825)
+- Convert `podman` receiver to use scraperhelper. (#5822)
+- Convert `redisreceiver` to use scraperhelper. (#5796)
+- Convert `kubeletstats` receiver to use scraperhelper. (#5821)
+- `googlecloudspannerreceiver` Migrated Google Cloud Spanner receiver to scraper approach. (#5868)
+- `datadogexporter` Use a `Consumer` interface for decoupling from zorkian's package. (#5315)
+- `mdatagen` - Add support for extended metric descriptions (#5688)
+- `signalfxexporter` Log datapoints option. (#5689)
+- `cumulativetodeltaprocessor`: Update cumulative to delta. (#5772)
+- Update configuration default values in log receivers docs. (#5840)
+- `fluentforwardreceiver`: support more complex fluent-bit objects. (#5676)
+- `datadogexporter` Remove spammy logging. (#5856)
+- `datadogexporter` Remove obsolete report_buckets config. (#5858)
+- Improve performance of metric expression matcher. (#5864)
+- `tanzuobservabilityexporter` Introduce metricsConsumer and gaugeMetricConsumer. (#5426)
+- `awsxrayexporter` rpc.system has priority to determine aws namespace. (#5833)
+- `tailsamplingprocessor` Add support for composite sampling policy to the tailsampler. (#4958)
+- `kafkaexporter` Add support for AWS_MSK_IAM SASL Auth (#5763)
+- Refactor the client Authenticators  for the new "ClientAuthenticator" interfaces (#5905)
+- `mongodbatlasreceiver` Add client wrapper for MongoDB Atlas support (#5386)
+- `redisreceiver` Update Redis config options (#5861)
+- `routingprocessor`: allow routing for all signals (#5869)
+- `extension/observer/docker` add ListAndWatch to observer (#5851)
+
+## v0.37.1
+
+## 🧰 Bug fixes 🧰
+
+- Fixes a problem with v0.37.0 which contained dependencies on v0.36.0 components. They should have been updated to v0.37.0.
+
+## v0.37.0
+
+## 🚀 New components 🚀
+
+- [`journald` receiver](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/journaldreceiver) to parse Journald events from systemd journal using the [opentelemetry-log-collection](https://github.com/open-telemetry/opentelemetry-log-collection) library
+
+## 🛑 Breaking changes 🛑
+
+- Remove squash on configtls.TLSClientSetting for splunkhecexporter (#5541)
+- Remove squash on configtls.TLSClientSetting for elastic components (#5539)
+- Remove squash on configtls.TLSClientSetting for observiqexporter (#5540)
+- Remove squash on configtls.TLSClientSetting for AWS components (#5454)
+- Move `k8sprocessor` to `k8sattributesprocessor`.
+- Rename `k8s_tagger` configuration `k8sattributes`.
+- filelog receiver: use empty value for `SeverityText` field instead of `"Undefined"` (#5423)
+- Rename `configparser.ConfigMap` to `config.Map`
+- Rename `pdata.AggregationTemporality*` to `pdata.MetricAggregationTemporality*`
+- Remove deprecated `batchpertrace` package/module (#5380)
+
+## 💡 Enhancements 💡
+
+- `k8sattributes` processor: add container metadata enrichment (#5467, #5572)
+- `resourcedetection` processor: Add an option to force using hostname instead of FQDN (#5064)
+- `dockerstats` receiver: Move docker client into new shared `internal/docker` (#4702)
+- `spanmetrics` processor:
+  - Add exemplars to metrics (#5263)
+  - Support resource attributes in metrics dimensions (#4624)
+- `filter` processor:
+  - Add log filtering by `regexp` type filters (#5237)
+  - Add record level log filtering (#5418)
+- `dynatrace` exporter: Handle non-gauge data types (#5056)
+- `datadog` exporter:
+  - Add support for exporting histograms as sketches (#5082)
+  - Scrub sensitive information from errors (#5575)
+  - Add option to send instrumentation library metadata tags with metrics (#5431)
+- `podman` receiver: Add `api_version`, `ssh_key`, and `ssh_passphrase` config options (#5430)
+- `signalfx` exporter:
+  - Add `max_connections` config option (#5432)
+  - Add dimension name to log when value > 256 chars (#5258)
+  - Discourage setting of endpoint path (#4851)
+- `kubeletstats` receiver: Convert to pdata instead of using OpenCensus (#5458)
+- `tailsampling` processor: Add `invert_match` config option to `string_attribute` policy (#4393)
+- `awsemf` exporter: Add a feature flag in UserAgent for AWS backend to monitor the adoptions (#5178)
+- `splunkhec` exporter: Handle explicitly NaN and Inf values (#5581)
+- `hostmetrics` receiver:
+  - Collect more process states in processes scraper (#4856)
+  - Add device label to paging scraper (#4854)
+- `awskinesis` exporter: Extend to allow for dynamic export types (#5440)
+
+## 🧰 Bug fixes 🧰
+
+- `datadog` exporter:
+  - Fix tags on summary and bucket metrics (#5416)
+  - Fix cache key generation for cumulative metrics (#5417)
+- `resourcedetection` processor: Fix failure to start collector if at least one detector returns an error (#5242)
+- `prometheus` exporter: Do not record obsreport calls (#5438)
+- `prometheus` receiver: Metric type fixes to match Prometheus functionality (#4865)
+- `sentry` exporter: Fix sentry tracing (#4320)
+- `statsd` receiver: Set quantiles for metrics (#5647)
+
+## v0.36.0
+
+## 🛑 Breaking changes 🛑
+
 - `filter` processor: The configs for `logs` filter processor have been changed to be consistent with the `metrics` filter processor. (#4895)
+- `splunk_hec` receiver: 
+  - `source_key`, `sourcetype_key`, `host_key` and `index_key` have now moved under `hec_metadata_to_otel_attrs` (#4726)
+  - `path` field on splunkhecreceiver configuration is removed: We removed the `path` attribute as any request going to the Splunk HEC receiver port should be accepted, and added the `raw_path` field to explicitly map the path accepting raw HEC data. (#4951)
+- feat(dynatrace): tags is deprecated in favor of default_dimensions (#5055)
 
 ## 💡 Enhancements 💡
 
 - `filter` processor: Add ability to `include` logs based on resource attributes in addition to excluding logs based on resource attributes for strict matching. (#4895)
+- `kubelet` API: Add ability to create an empty CertPool when the system run environment is windows
+- `JMX` receiver: Allow JMX receiver logging level to be configured (#4898)
+- `datadog` exporter: Export histograms as in OpenMetrics Datadog check (#5065)
+- `dockerstats` receiver: Set Schema URL (#5239)
+- Rename memorylimiter -> memorylimiterprocessor (#5262)
+- `awskinesis` exporter: Refactor AWS kinesis exporter to be synchronous  (#5248)
 
 ## v0.35.0
 

@@ -83,8 +83,9 @@ func (s *scraper) start(context.Context, component.Host) error {
 	return nil
 }
 
-func (s *scraper) scrape(_ context.Context) (pdata.ResourceMetricsSlice, error) {
-	rms := pdata.NewResourceMetricsSlice()
+func (s *scraper) scrape(_ context.Context) (pdata.Metrics, error) {
+	md := pdata.NewMetrics()
+	rms := md.ResourceMetrics()
 
 	var errs scrapererror.ScrapeErrors
 
@@ -92,7 +93,7 @@ func (s *scraper) scrape(_ context.Context) (pdata.ResourceMetricsSlice, error) 
 	if err != nil {
 		partialErr, isPartial := err.(scrapererror.PartialScrapeError)
 		if !isPartial {
-			return rms, err
+			return md, err
 		}
 
 		errs.AddPartial(partialErr.Failed, partialErr)
@@ -119,7 +120,7 @@ func (s *scraper) scrape(_ context.Context) (pdata.ResourceMetricsSlice, error) 
 		}
 	}
 
-	return rms, errs.Combine()
+	return md, errs.Combine()
 }
 
 // getProcessMetadata returns a slice of processMetadata, including handles,
@@ -228,12 +229,12 @@ func initializeDiskIOMetric(metric pdata.Metric, startTime, now pdata.Timestamp,
 	metadata.Metrics.ProcessDiskIo.Init(metric)
 
 	idps := metric.Sum().DataPoints()
-	initializeDiskIODataPoint(idps.AppendEmpty(), startTime, now, int64(io.ReadBytes), metadata.LabelDirection.Read)
-	initializeDiskIODataPoint(idps.AppendEmpty(), startTime, now, int64(io.WriteBytes), metadata.LabelDirection.Write)
+	initializeDiskIODataPoint(idps.AppendEmpty(), startTime, now, int64(io.ReadBytes), metadata.AttributeDirection.Read)
+	initializeDiskIODataPoint(idps.AppendEmpty(), startTime, now, int64(io.WriteBytes), metadata.AttributeDirection.Write)
 }
 
 func initializeDiskIODataPoint(dataPoint pdata.NumberDataPoint, startTime, now pdata.Timestamp, value int64, directionLabel string) {
-	dataPoint.Attributes().InsertString(metadata.Labels.Direction, directionLabel)
+	dataPoint.Attributes().InsertString(metadata.Attributes.Direction, directionLabel)
 	dataPoint.SetStartTimestamp(startTime)
 	dataPoint.SetTimestamp(now)
 	dataPoint.SetIntVal(value)

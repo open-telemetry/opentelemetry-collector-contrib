@@ -57,7 +57,7 @@ type ocReceiver struct {
 	startMetricsReceiverOnce sync.Once
 
 	id       config.ComponentID
-	settings component.TelemetrySettings
+	settings component.ReceiverCreateSettings
 }
 
 // newOpenCensusReceiver just creates the OpenCensus receiver services. It is the caller's
@@ -69,7 +69,7 @@ func newOpenCensusReceiver(
 	addr string,
 	tc consumer.Traces,
 	mc consumer.Metrics,
-	settings component.TelemetrySettings,
+	settings component.ReceiverCreateSettings,
 	opts ...ocOption,
 ) (*ocReceiver, error) {
 	// TODO: (@odeke-em) use options to enable address binding changes.
@@ -130,7 +130,7 @@ func (ocr *ocReceiver) registerTraceConsumer(host component.Host) error {
 	var err error
 
 	ocr.startTracesReceiverOnce.Do(func() {
-		ocr.traceReceiver, err = octrace.New(ocr.id, ocr.traceConsumer)
+		ocr.traceReceiver, err = octrace.New(ocr.id, ocr.traceConsumer, ocr.settings)
 		if err != nil {
 			return
 		}
@@ -152,7 +152,7 @@ func (ocr *ocReceiver) registerMetricsConsumer(host component.Host) error {
 	var err error
 
 	ocr.startMetricsReceiverOnce.Do(func() {
-		ocr.metricsReceiver, err = ocmetrics.New(ocr.id, ocr.metricsConsumer)
+		ocr.metricsReceiver, err = ocmetrics.New(ocr.id, ocr.metricsConsumer, ocr.settings)
 		if err != nil {
 			return
 		}
@@ -173,7 +173,7 @@ func (ocr *ocReceiver) grpcServer(host component.Host) (*grpc.Server, error) {
 	defer ocr.mu.Unlock()
 
 	if ocr.serverGRPC == nil {
-		opts, err := ocr.grpcServerSettings.ToServerOption(host.GetExtensions(), ocr.settings)
+		opts, err := ocr.grpcServerSettings.ToServerOption(host, ocr.settings.TelemetrySettings)
 		if err != nil {
 			return nil, err
 		}

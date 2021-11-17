@@ -8,25 +8,25 @@ Aggregates Request, Error and Duration (R.E.D) metrics from span data.
 **Request** counts are computed as the number of spans seen per unique set of dimensions, including Errors.
 For example, the following metric shows 142 calls:
 ```
-promexample_calls{http_method="GET",http_status_code="200",operation="/Address",service_name="shippingservice",span_kind="SPAN_KIND_SERVER",status_code="STATUS_CODE_UNSET"} 142
+calls{http_method="GET",http_status_code="200",operation="/Address",service_name="shippingservice",span_kind="SPAN_KIND_SERVER",status_code="STATUS_CODE_UNSET"} 142
 ```
 Multiple metrics can be aggregated if, for instance, a user wishes to view call counts just on `service_name` and `operation`.
 
 **Error** counts are computed from the Request counts which have an "Error" Status Code metric dimension.
 For example, the following metric indicates 220 errors:
 ```
-promexample_calls{http_method="GET",http_status_code="503",operation="/checkout",service_name="frontend",span_kind="SPAN_KIND_CLIENT",status_code="STATUS_CODE_ERROR"} 220
+calls{http_method="GET",http_status_code="503",operation="/checkout",service_name="frontend",span_kind="SPAN_KIND_CLIENT",status_code="STATUS_CODE_ERROR"} 220
 ```
 
 **Duration** is computed from the difference between the span start and end times and inserted into the
 relevant latency histogram time bucket for each unique set dimensions.
 For example, the following latency buckets indicate the vast majority of spans (9K) have a 100ms latency:
 ```
-promexample_latency_bucket{http_method="GET",http_status_code="200",label1="value1",operation="/Address",service_name="shippingservice",span_kind="SPAN_KIND_SERVER",status_code="STATUS_CODE_UNSET",le="2"} 327
-promexample_latency_bucket{http_method="GET",http_status_code="200",label1="value1",operation="/Address",service_name="shippingservice",span_kind="SPAN_KIND_SERVER",status_code="STATUS_CODE_UNSET",le="6"} 751
-promexample_latency_bucket{http_method="GET",http_status_code="200",label1="value1",operation="/Address",service_name="shippingservice",span_kind="SPAN_KIND_SERVER",status_code="STATUS_CODE_UNSET",le="10"} 1195
-promexample_latency_bucket{http_method="GET",http_status_code="200",label1="value1",operation="/Address",service_name="shippingservice",span_kind="SPAN_KIND_SERVER",status_code="STATUS_CODE_UNSET",le="100"} 10180
-promexample_latency_bucket{http_method="GET",http_status_code="200",label1="value1",operation="/Address",service_name="shippingservice",span_kind="SPAN_KIND_SERVER",status_code="STATUS_CODE_UNSET",le="250"} 10180
+latency_bucket{http_method="GET",http_status_code="200",label1="value1",operation="/Address",service_name="shippingservice",span_kind="SPAN_KIND_SERVER",status_code="STATUS_CODE_UNSET",le="2"} 327
+latency_bucket{http_method="GET",http_status_code="200",label1="value1",operation="/Address",service_name="shippingservice",span_kind="SPAN_KIND_SERVER",status_code="STATUS_CODE_UNSET",le="6"} 751
+latency_bucket{http_method="GET",http_status_code="200",label1="value1",operation="/Address",service_name="shippingservice",span_kind="SPAN_KIND_SERVER",status_code="STATUS_CODE_UNSET",le="10"} 1195
+latency_bucket{http_method="GET",http_status_code="200",label1="value1",operation="/Address",service_name="shippingservice",span_kind="SPAN_KIND_SERVER",status_code="STATUS_CODE_UNSET",le="100"} 10180
+latency_bucket{http_method="GET",http_status_code="200",label1="value1",operation="/Address",service_name="shippingservice",span_kind="SPAN_KIND_SERVER",status_code="STATUS_CODE_UNSET",le="250"} 10180
 ...
 ```
 
@@ -46,7 +46,14 @@ The following settings can be optionally configured:
 
 - `latency_histogram_buckets`: the list of durations defining the latency histogram buckets.
   - Default: `[2ms, 4ms, 6ms, 8ms, 10ms, 50ms, 100ms, 200ms, 400ms, 800ms, 1s, 1400ms, 2s, 5s, 10s, 15s]`
-- `dimensions`: the list of dimensions to add together with the default dimensions defined above. Each additional dimension is defined with a `name` which is looked up in the span's collection of attributes. If the `name`d attribute is missing in the span, the optional provided `default` is used. If no `default` is provided, this dimension will be **omitted** from the metric.
+- `dimensions`: the list of dimensions to add together with the default dimensions defined above.
+  
+  Each additional dimension is defined with a `name` which is looked up in the span's collection of attributes or
+  resource attributes (AKA process tags) such as `ip`, `host.name` or `region`.
+  
+  If the `name`d attribute is missing in the span, the optional provided `default` is used.
+  
+  If no `default` is provided, this dimension will be **omitted** from the metric.
 
 ## Examples
 
@@ -90,11 +97,11 @@ exporters:
 
   otlp/spanmetrics:
     endpoint: "localhost:55677"
-    insecure: true
+    tls:
+      insecure: true
 
   prometheus:
     endpoint: "0.0.0.0:8889"
-    namespace: promexample
 
 service:
   pipelines:

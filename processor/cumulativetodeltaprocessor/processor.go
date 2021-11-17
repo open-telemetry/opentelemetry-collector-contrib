@@ -17,100 +17,125 @@ package cumulativetodeltaprocessor
 import (
 	"context"
 	"math"
-	"time"
 
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/model/pdata"
 	"go.uber.org/zap"
 
-	awsmetrics "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/metrics"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/cumulativetodeltaprocessor/internal/tracking"
 )
 
 type cumulativeToDeltaProcessor struct {
-	metrics         map[string]bool
+	metrics         map[string]struct{}
 	logger          *zap.Logger
-	deltaCalculator awsmetrics.MetricCalculator
+	deltaCalculator *tracking.MetricTracker
+	cancelFunc      context.CancelFunc
 }
 
 func newCumulativeToDeltaProcessor(config *Config, logger *zap.Logger) *cumulativeToDeltaProcessor {
-	inputMetricSet := make(map[string]bool, len(config.Metrics))
-	for _, name := range config.Metrics {
-		inputMetricSet[name] = true
-	}
-
-	return &cumulativeToDeltaProcessor{
-		metrics:         inputMetricSet,
+	ctx, cancel := context.WithCancel(context.Background())
+	p := &cumulativeToDeltaProcessor{
 		logger:          logger,
-		deltaCalculator: newDeltaCalculator(),
+		deltaCalculator: tracking.NewMetricTracker(ctx, logger, config.MaxStaleness),
+		cancelFunc:      cancel,
 	}
-}
-
-// Start is invoked during service startup.
-func (ctdp *cumulativeToDeltaProcessor) Start(context.Context, component.Host) error {
-	return nil
+	if len(config.Metrics) > 0 {
+		p.metrics = make(map[string]struct{}, len(config.Metrics))
+		for _, m := range config.Metrics {
+			p.metrics[m] = struct{}{}
+		}
+	}
+	return p
 }
 
 // processMetrics implements the ProcessMetricsFunc type.
 func (ctdp *cumulativeToDeltaProcessor) processMetrics(_ context.Context, md pdata.Metrics) (pdata.Metrics, error) {
 	resourceMetricsSlice := md.ResourceMetrics()
-	for i := 0; i < resourceMetricsSlice.Len(); i++ {
-		rm := resourceMetricsSlice.At(i)
+	resourceMetricsSlice.RemoveIf(func(rm pdata.ResourceMetrics) bool {
 		ilms := rm.InstrumentationLibraryMetrics()
-		for j := 0; j < ilms.Len(); j++ {
-			ilm := ilms.At(j)
-			metricSlice := ilm.Metrics()
-			for k := 0; k < metricSlice.Len(); k++ {
-				metric := metricSlice.At(k)
-				if ctdp.metrics[metric.Name()] {
-					if metric.DataType() == pdata.MetricDataTypeSum && metric.Sum().AggregationTemporality() == pdata.AggregationTemporalityCumulative {
-						dataPoints := metric.Sum().DataPoints()
-
-						for l := 0; l < dataPoints.Len(); l++ {
-							fromDataPoint := dataPoints.At(l)
-							labelMap := make(map[string]string)
-
-							fromDataPoint.Attributes().Range(func(k string, v pdata.AttributeValue) bool {
-								labelMap[k] = v.AsString()
-								return true
-							})
-							datapointValue := fromDataPoint.DoubleVal()
-							if math.IsNaN(datapointValue) {
-								continue
-							}
-							result, _ := ctdp.deltaCalculator.Calculate(metric.Name(), labelMap, datapointValue, fromDataPoint.Timestamp().AsTime())
-
-							fromDataPoint.SetDoubleVal(result.(delta).value)
-							fromDataPoint.SetStartTimestamp(pdata.NewTimestampFromTime(result.(delta).prevTimestamp))
-						}
-						metric.Sum().SetAggregationTemporality(pdata.AggregationTemporalityDelta)
-					}
+		ilms.RemoveIf(func(ilm pdata.InstrumentationLibraryMetrics) bool {
+			ms := ilm.Metrics()
+			ms.RemoveIf(func(m pdata.Metric) bool {
+				if _, ok := ctdp.metrics[m.Name()]; !ok {
+					return false
 				}
-			}
-		}
-	}
+				switch m.DataType() {
+				case pdata.MetricDataTypeSum:
+					ms := m.Sum()
+					if ms.AggregationTemporality() != pdata.MetricAggregationTemporalityCumulative {
+						return false
+					}
+
+					// Ignore any metrics that aren't monotonic
+					if !ms.IsMonotonic() {
+						return false
+					}
+
+					baseIdentity := tracking.MetricIdentity{
+						Resource:               rm.Resource(),
+						InstrumentationLibrary: ilm.InstrumentationLibrary(),
+						MetricDataType:         m.DataType(),
+						MetricName:             m.Name(),
+						MetricUnit:             m.Unit(),
+						MetricIsMonotonic:      ms.IsMonotonic(),
+					}
+					ctdp.convertDataPoints(ms.DataPoints(), baseIdentity)
+					ms.SetAggregationTemporality(pdata.MetricAggregationTemporalityDelta)
+					return ms.DataPoints().Len() == 0
+				default:
+					return false
+				}
+			})
+			return ilm.Metrics().Len() == 0
+		})
+		return rm.InstrumentationLibraryMetrics().Len() == 0
+	})
 	return md, nil
 }
 
-// Shutdown is invoked during service shutdown.
-func (ctdp *cumulativeToDeltaProcessor) Shutdown(context.Context) error {
+func (ctdp *cumulativeToDeltaProcessor) shutdown(context.Context) error {
+	ctdp.cancelFunc()
 	return nil
 }
 
-func newDeltaCalculator() awsmetrics.MetricCalculator {
-	return awsmetrics.NewMetricCalculator(func(prev *awsmetrics.MetricValue, val interface{}, timestamp time.Time) (interface{}, bool) {
-		result := delta{value: val.(float64), prevTimestamp: timestamp}
+func (ctdp *cumulativeToDeltaProcessor) convertDataPoints(in interface{}, baseIdentity tracking.MetricIdentity) {
+	switch dps := in.(type) {
+	case pdata.NumberDataPointSlice:
+		dps.RemoveIf(func(dp pdata.NumberDataPoint) bool {
+			id := baseIdentity
+			id.StartTimestamp = dp.StartTimestamp()
+			id.Attributes = dp.Attributes()
+			id.MetricValueType = dp.Type()
+			point := tracking.ValuePoint{
+				ObservedTimestamp: dp.Timestamp(),
+			}
+			if id.IsFloatVal() {
+				// Do not attempt to transform NaN values
+				if math.IsNaN(dp.DoubleVal()) {
+					return false
+				}
+				point.FloatValue = dp.DoubleVal()
+			} else {
+				point.IntValue = dp.IntVal()
+			}
+			trackingPoint := tracking.MetricPoint{
+				Identity: id,
+				Value:    point,
+			}
+			delta, valid := ctdp.deltaCalculator.Convert(trackingPoint)
 
-		if prev != nil {
-			deltaValue := val.(float64) - prev.RawValue.(float64)
-			result.value = deltaValue
-			result.prevTimestamp = prev.Timestamp
-			return result, true
-		}
-		return result, false
-	})
-}
-
-type delta struct {
-	value         float64
-	prevTimestamp time.Time
+			// When converting non-monotonic cumulative counters,
+			// the first data point is omitted since the initial
+			// reference is not assumed to be zero
+			if !valid {
+				return true
+			}
+			dp.SetStartTimestamp(delta.StartTimestamp)
+			if id.IsFloatVal() {
+				dp.SetDoubleVal(delta.FloatValue)
+			} else {
+				dp.SetIntVal(delta.IntValue)
+			}
+			return false
+		})
+	}
 }

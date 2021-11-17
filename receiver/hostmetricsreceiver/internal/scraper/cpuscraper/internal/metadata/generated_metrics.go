@@ -84,7 +84,7 @@ var Metrics = &metricStruct{
 			metric.SetUnit("s")
 			metric.SetDataType(pdata.MetricDataTypeSum)
 			metric.Sum().SetIsMonotonic(true)
-			metric.Sum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+			metric.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
 		},
 	},
 }
@@ -93,8 +93,8 @@ var Metrics = &metricStruct{
 // manipulating those metrics. M is an alias for Metrics
 var M = Metrics
 
-// Labels contains the possible metric labels that can be used.
-var Labels = struct {
+// Attributes contains the possible metric attributes that can be used.
+var Attributes = struct {
 	// Cpu (CPU number starting at 0.)
 	Cpu string
 	// State (Breakdown of CPU usage by type.)
@@ -104,12 +104,11 @@ var Labels = struct {
 	"state",
 }
 
-// L contains the possible metric labels that can be used. L is an alias for
-// Labels.
-var L = Labels
+// A is an alias for Attributes.
+var A = Attributes
 
-// LabelState are the possible values that the label "state" can have.
-var LabelState = struct {
+// AttributeState are the possible values that the attribute "state" can have.
+var AttributeState = struct {
 	Idle      string
 	Interrupt string
 	Nice      string

@@ -17,6 +17,7 @@ package bearertokenauthextension
 import (
 	"context"
 	"fmt"
+	"net/http"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configauth"
@@ -47,7 +48,7 @@ type BearerTokenAuth struct {
 	logger      *zap.Logger
 }
 
-var _ configauth.GRPCClientAuthenticator = (*BearerTokenAuth)(nil)
+var _ configauth.ClientAuthenticator = (*BearerTokenAuth)(nil)
 
 func newBearerTokenAuth(cfg *Config, logger *zap.Logger) *BearerTokenAuth {
 	return &BearerTokenAuth{
@@ -69,6 +70,34 @@ func (b *BearerTokenAuth) Shutdown(ctx context.Context) error {
 // PerRPCCredentials returns PerRPCAuth an implementation of credentials.PerRPCCredentials that
 func (b *BearerTokenAuth) PerRPCCredentials() (credentials.PerRPCCredentials, error) {
 	return &PerRPCAuth{
-		metadata: map[string]string{"authorization": fmt.Sprintf("Bearer %s", b.tokenString)},
+		metadata: map[string]string{"authorization": b.bearerToken()},
 	}, nil
+}
+
+func (b *BearerTokenAuth) bearerToken() string {
+	return fmt.Sprintf("Bearer %s", b.tokenString)
+}
+
+// RoundTripper is not implemented by BearerTokenAuth
+func (b *BearerTokenAuth) RoundTripper(base http.RoundTripper) (http.RoundTripper, error) {
+	return &BearerAuthRoundTripper{
+		baseTransport: base,
+		bearerToken:   b.bearerToken(),
+	}, nil
+}
+
+// BearerAuthRoundTripper intercepts and adds Bearer token Authorization headers to each http request.
+type BearerAuthRoundTripper struct {
+	baseTransport http.RoundTripper
+	bearerToken   string
+}
+
+// RoundTrip modifies the original request and adds Bearer token Authorization headers.
+func (interceptor *BearerAuthRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
+	req2 := req.Clone(req.Context())
+	if req2.Header == nil {
+		req2.Header = make(http.Header)
+	}
+	req2.Header.Set("Authorization", interceptor.bearerToken)
+	return interceptor.baseTransport.RoundTrip(req2)
 }

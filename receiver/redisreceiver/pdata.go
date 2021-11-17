@@ -29,7 +29,7 @@ func buildKeyspaceTriplet(k *keyspace, t *timeBundle) pdata.MetricSlice {
 
 func initKeyspaceKeysMetric(k *keyspace, t *timeBundle, dest pdata.Metric) {
 	m := &redisMetric{
-		name:   "redis/db/keys",
+		name:   "redis.db.keys",
 		labels: map[string]pdata.AttributeValue{"db": pdata.NewAttributeValueString(k.db)},
 		pdType: pdata.MetricDataTypeGauge,
 	}
@@ -38,7 +38,7 @@ func initKeyspaceKeysMetric(k *keyspace, t *timeBundle, dest pdata.Metric) {
 
 func initKeyspaceExpiresMetric(k *keyspace, t *timeBundle, dest pdata.Metric) {
 	m := &redisMetric{
-		name:   "redis/db/expires",
+		name:   "redis.db.expires",
 		labels: map[string]pdata.AttributeValue{"db": pdata.NewAttributeValueString(k.db)},
 		pdType: pdata.MetricDataTypeGauge,
 	}
@@ -47,7 +47,7 @@ func initKeyspaceExpiresMetric(k *keyspace, t *timeBundle, dest pdata.Metric) {
 
 func initKeyspaceTTLMetric(k *keyspace, t *timeBundle, dest pdata.Metric) {
 	m := &redisMetric{
-		name:   "redis/db/avg_ttl",
+		name:   "redis.db.avg_ttl",
 		units:  "ms",
 		labels: map[string]pdata.AttributeValue{"db": pdata.NewAttributeValueString(k.db)},
 		pdType: pdata.MetricDataTypeGauge,
@@ -64,7 +64,7 @@ func initIntMetric(m *redisMetric, value int64, t *timeBundle, dest pdata.Metric
 	} else if m.pdType == pdata.MetricDataTypeSum {
 		sum := dest.Sum()
 		sum.SetIsMonotonic(m.isMonotonic)
-		sum.SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+		sum.SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
 		pt = sum.DataPoints().AppendEmpty()
 		pt.SetStartTimestamp(pdata.NewTimestampFromTime(t.serverStart))
 	}
@@ -82,7 +82,7 @@ func initDoubleMetric(m *redisMetric, value float64, t *timeBundle, dest pdata.M
 	} else if m.pdType == pdata.MetricDataTypeSum {
 		sum := dest.Sum()
 		sum.SetIsMonotonic(m.isMonotonic)
-		sum.SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+		sum.SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
 		pt = sum.DataPoints().AppendEmpty()
 		pt.SetStartTimestamp(pdata.NewTimestampFromTime(t.serverStart))
 	}

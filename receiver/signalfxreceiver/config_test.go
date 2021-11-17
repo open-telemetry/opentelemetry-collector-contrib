@@ -42,13 +42,13 @@ func TestLoadConfig(t *testing.T) {
 
 	assert.Equal(t, len(cfg.Receivers), 3)
 
-	r0 := cfg.Receivers[config.NewID(typeStr)]
+	r0 := cfg.Receivers[config.NewComponentID(typeStr)]
 	assert.Equal(t, r0, factory.CreateDefaultConfig())
 
-	r1 := cfg.Receivers[config.NewIDWithName(typeStr, "allsettings")].(*Config)
+	r1 := cfg.Receivers[config.NewComponentIDWithName(typeStr, "allsettings")].(*Config)
 	assert.Equal(t, r1,
 		&Config{
-			ReceiverSettings: config.NewReceiverSettings(config.NewIDWithName(typeStr, "allsettings")),
+			ReceiverSettings: config.NewReceiverSettings(config.NewComponentIDWithName(typeStr, "allsettings")),
 			HTTPServerSettings: confighttp.HTTPServerSettings{
 				Endpoint: "localhost:9943",
 			},
@@ -57,10 +57,10 @@ func TestLoadConfig(t *testing.T) {
 			},
 		})
 
-	r2 := cfg.Receivers[config.NewIDWithName(typeStr, "tls")].(*Config)
+	r2 := cfg.Receivers[config.NewComponentIDWithName(typeStr, "tls")].(*Config)
 	assert.Equal(t, r2,
 		&Config{
-			ReceiverSettings: config.NewReceiverSettings(config.NewIDWithName(typeStr, "tls")),
+			ReceiverSettings: config.NewReceiverSettings(config.NewComponentIDWithName(typeStr, "tls")),
 			HTTPServerSettings: confighttp.HTTPServerSettings{
 				Endpoint: ":9943",
 				TLSSetting: &configtls.TLSServerSetting{

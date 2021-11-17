@@ -24,9 +24,9 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtest"
 	"go.opentelemetry.io/collector/config/configtls"
+	"go.opentelemetry.io/collector/receiver/scraperhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/scraperhelper"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -39,7 +39,7 @@ func TestLoadConfig(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, 1, len(cfg.Receivers))
 
-	r := cfg.Receivers[config.NewID(typeStr)].(*Config)
+	r := cfg.Receivers[config.NewComponentID(typeStr)].(*Config)
 	assert.Equal(t, &Config{
 		ScraperControllerSettings: scraperhelper.DefaultScraperControllerSettings(typeStr),
 		Brokers:                   []string{"10.10.10.10:9092"},
