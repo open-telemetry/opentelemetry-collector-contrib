@@ -22,7 +22,7 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 )
 
-func newReceiver(
+func newReceiverWindows(
 	_ context.Context,
 	settings component.ReceiverCreateSettings,
 	config *Config,

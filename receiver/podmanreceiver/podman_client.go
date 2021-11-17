@@ -25,6 +25,7 @@ import (
 	"io"
 	"io/ioutil"
 	"log"
+	"math"
 	"net/http"
 	"net/url"
 	"time"
@@ -70,13 +71,13 @@ type Event struct {
 	Status string `json:"status,omitempty"`
 	ID     string `json:"id,omitempty"`
 	From   string `json:"from,omitempty"`
-	
+
 	Type   string
 	Action string
 	Actor  Actor
-	
+
 	Scope string `json:"scope,omitempty"`
-	
+
 	Time     int64 `json:"time,omitempty"`
 	TimeNano int64 `json:"timeNano,omitempty"`
 
@@ -161,17 +162,31 @@ func (c *podmanClient) events() (chan Event, error) {
 
 	go func() {
 		dec := json.NewDecoder(response.Body)
-		for {
-			var event Event
-			if err := dec.Decode(&event); err != nil {
-				if err == io.EOF {
+
+		shouldRetry := true
+		for retries := 1; retries <= 3 && shouldRetry; retries++ {
+			if retries != 1 {
+				fmt.Println("Retrying")
+			}
+			for {
+				var event Event
+				if err := dec.Decode(&event); err != nil {
+					if err == io.EOF {
+						break
+					}
+					shouldRetry = true
 					break
 				}
-				log.Fatalf("error decoding event: %w", err)
+				shouldRetry = false
+				ch <- event
 			}
-			ch <- event
+			response.Body.Close()
+			delay := math.Pow(2, float64(retries))
+			time.Sleep(time.Duration(delay) * time.Second)
 		}
-		response.Body.Close()
+		if shouldRetry {
+			log.Fatal("Error while decoding events")
+		}
 	}()
 	return ch, nil
 }

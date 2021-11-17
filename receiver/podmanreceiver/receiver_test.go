@@ -42,7 +42,7 @@ func TestNewReceiver(t *testing.T) {
 	}
 	nextConsumer := consumertest.NewNop()
 	mr, err := newReceiver(context.Background(), componenttest.NewNopReceiverCreateSettings(), config, nil)
-	mr.RegisterMetricsConsumer(nextConsumer, componenttest.NewNopReceiverCreateSettings())
+	mr.registerMetricsConsumer(nextConsumer, componenttest.NewNopReceiverCreateSettings())
 
 	assert.NotNil(t, mr)
 	assert.Nil(t, err)
@@ -68,7 +68,7 @@ func TestScraperLoop(t *testing.T) {
 	consumer := make(mockConsumer)
 
 	r, err := newReceiver(context.Background(), componenttest.NewNopReceiverCreateSettings(), cfg, client.factory)
-	r.RegisterMetricsConsumer(consumer, componenttest.NewNopReceiverCreateSettings())
+	r.registerMetricsConsumer(consumer, componenttest.NewNopReceiverCreateSettings())
 	assert.NotNil(t, r)
 	require.NoError(t, err)
 

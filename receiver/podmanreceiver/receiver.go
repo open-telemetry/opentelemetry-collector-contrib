@@ -19,7 +19,6 @@ package podmanreceiver
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
@@ -153,8 +152,15 @@ func (r *receiver) handleEvents(ctx context.Context) {
 	for {
 		select {
 		case event := <-events:
-			fmt.Println(event)
-			// Convert events to pdata.logs
+			ld, err := traslateEventsToLogs(r.set.Logger, event)
+			if err != nil {
+				r.set.Logger.Error("Failed to translate into logs")
+			}
+			decodeErr := r.logsConsumer.ConsumeLogs(ctx, ld)
+			r.obsrecv.EndLogsOp(ctx, typeStr, len(events), decodeErr)
+			if decodeErr != nil {
+				r.set.Logger.Error("Something went wrong")
+			}
 		case <-ctx.Done():
 			r.set.Logger.Info("Stopping the channel")
 			close(events)
