@@ -22,6 +22,7 @@ INTEGRATION_TEST_MODULES := \
 	receiver/zookeeperreceiver \
 	receiver/kafkametricsreceiver \
 	receiver/nginxreceiver \
+	receiver/memcachedreceiver \
 	internal/common \
 	extension/observer/dockerobserver
 

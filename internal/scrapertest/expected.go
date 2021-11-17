@@ -42,5 +42,6 @@ func WriteExpected(filePath string, metrics pdata.Metrics) error {
 	if err != nil {
 		return err
 	}
+	b = append(b, []byte("\n")...)
 	return ioutil.WriteFile(filePath, b, 0600)
 }
