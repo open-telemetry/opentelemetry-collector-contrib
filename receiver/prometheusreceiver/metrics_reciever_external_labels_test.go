@@ -18,15 +18,13 @@ import (
 	"context"
 	"testing"
 
-	agentmetricspb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/metrics/v1"
-	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	"github.com/prometheus/prometheus/pkg/labels"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus"
+	"go.opentelemetry.io/collector/model/pdata"
 )
 
 const targetExternalLabels = `
@@ -48,7 +46,7 @@ func TestExternalLabels(t *testing.T) {
 
 	mp, cfg, err := setupMockPrometheus(targets...)
 	cfg.GlobalConfig.ExternalLabels = labels.FromStrings("key", "value")
-	require.Nilf(t, err, "Failed to create Promtheus config: %v", err)
+	require.Nilf(t, err, "Failed to create Prometheus config: %v", err)
 	defer mp.Close()
 
 	cms := new(consumertest.MetricsSink)
@@ -62,46 +60,47 @@ func TestExternalLabels(t *testing.T) {
 	mp.wg.Wait()
 	metrics := cms.AllMetrics()
 
-	results := make(map[string][]*agentmetricspb.ExportMetricsServiceRequest)
+	// split and store results by target name
+	pResults := make(map[string][]*pdata.ResourceMetrics)
 	for _, md := range metrics {
 		rms := md.ResourceMetrics()
 		for i := 0; i < rms.Len(); i++ {
-			ocmd := &agentmetricspb.ExportMetricsServiceRequest{}
-			ocmd.Node, ocmd.Resource, ocmd.Metrics = opencensus.ResourceMetricsToOC(rms.At(i))
-			result, ok := results[ocmd.Node.ServiceInfo.Name]
+			name, _ := rms.At(i).Resource().Attributes().Get("service.name")
+			pResult, ok := pResults[name.AsString()]
 			if !ok {
-				result = make([]*agentmetricspb.ExportMetricsServiceRequest, 0)
+				pResult = make([]*pdata.ResourceMetrics, 0)
 			}
-			results[ocmd.Node.ServiceInfo.Name] = append(result, ocmd)
+			rm := rms.At(i)
+			pResults[name.AsString()] = append(pResult, &rm)
 		}
-
 	}
+	lres, lep := len(pResults), len(mp.endpoints)
+	assert.Equalf(t, lep, lres, "want %d targets, but got %v\n", lep, lres)
+
+	// loop to validate outputs for each targets
 	for _, target := range targets {
-		target.validateFunc(t, target, results[target.name])
+		validScrapes := getValidScrapes(t, pResults[target.name])
+		target.validateFunc(t, target, validScrapes)
 	}
 }
 
-func verifyExternalLabels(t *testing.T, td *testData, mds []*agentmetricspb.ExportMetricsServiceRequest) {
-	verifyNumScrapeResults(t, td, mds)
-
-	want := &agentmetricspb.ExportMetricsServiceRequest{
-		Node:     td.node,
-		Resource: td.resource,
+func verifyExternalLabels(t *testing.T, td *testData, rms []*pdata.ResourceMetrics) {
+	verifyNumScrapeResults(t, td, rms)
+	if len(rms) < 1 {
+		t.Fatal("At least one metric request should be present")
 	}
-	doCompare("scrape-externalLabels", t, want, mds[0], []testExpectation{
+	wantAttributes := td.attributes
+	metrics1 := rms[0].InstrumentationLibraryMetrics().At(0).Metrics()
+	ts1 := metrics1.At(0).Gauge().DataPoints().At(0).Timestamp()
+	doCompare(t, "scrape-externalLabels", wantAttributes, rms[0], []testExpectation{
 		assertMetricPresent("go_threads",
-			[]descriptorComparator{
-				compareMetricType(metricspb.MetricDescriptor_GAUGE_DOUBLE),
-				compareMetricLabelKeys([]string{"key"}),
-			},
-			[]seriesExpectation{
+			compareMetricType(pdata.MetricDataTypeGauge),
+			[]dataPointExpectation{
 				{
-					series: []seriesComparator{
-						compareSeriesLabelValues([]string{"value"}),
-					},
-					points: []pointComparator{
-						comparePointTimestamp(mds[0].Metrics[0].Timeseries[0].Points[0].Timestamp),
-						compareDoubleVal(19),
+					numberPointComparator: []numberPointComparator{
+						compareTimestamp(ts1),
+						compareDoubleValue(19),
+						compareAttributes(map[string]string{"key": "value"}),
 					},
 				},
 			}),
