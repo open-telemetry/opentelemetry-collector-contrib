@@ -31,9 +31,15 @@ type statementArgs struct {
 	query                  string
 	topMetricsQueryMaxRows int
 	pullTimestamp          time.Time
+	stalenessRead          bool
 }
 
-func currentStatsStatement(args statementArgs) spanner.Statement {
+type statsStatement struct {
+	statement     spanner.Statement
+	stalenessRead bool
+}
+
+func currentStatsStatement(args statementArgs) statsStatement {
 	stmt := spanner.Statement{SQL: args.query, Params: map[string]interface{}{}}
 
 	if args.topMetricsQueryMaxRows > 0 {
@@ -45,17 +51,20 @@ func currentStatsStatement(args statementArgs) spanner.Statement {
 		}
 	}
 
-	return stmt
+	return statsStatement{
+		statement:     stmt,
+		stalenessRead: args.stalenessRead,
+	}
 }
 
-func intervalStatsStatement(args statementArgs) spanner.Statement {
+func intervalStatsStatement(args statementArgs) statsStatement {
 	stmt := currentStatsStatement(args)
 
-	if len(stmt.Params) <= 0 {
-		stmt.Params = map[string]interface{}{}
+	if len(stmt.statement.Params) <= 0 {
+		stmt.statement.Params = map[string]interface{}{}
 	}
 
-	stmt.Params[pullTimestampParameterName] = args.pullTimestamp
+	stmt.statement.Params[pullTimestampParameterName] = args.pullTimestamp
 
 	return stmt
 }

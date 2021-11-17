@@ -110,11 +110,11 @@ func TestStringLabelValue(t *testing.T) {
 	}
 
 	labelValue := stringLabelValue{
-		StringLabelValueMetadata: metadata,
-		value:                    stringValue,
+		metadata: metadata,
+		value:    stringValue,
 	}
 
-	assert.Equal(t, metadata, labelValue.StringLabelValueMetadata)
+	assert.Equal(t, metadata, labelValue.Metadata())
 	assert.Equal(t, stringValue, labelValue.Value())
 
 	attributes := pdata.NewAttributeMap()
@@ -136,11 +136,11 @@ func TestInt64LabelValue(t *testing.T) {
 	}
 
 	labelValue := int64LabelValue{
-		Int64LabelValueMetadata: metadata,
-		value:                   int64Value,
+		metadata: metadata,
+		value:    int64Value,
 	}
 
-	assert.Equal(t, metadata, labelValue.Int64LabelValueMetadata)
+	assert.Equal(t, metadata, labelValue.Metadata())
 	assert.Equal(t, int64Value, labelValue.Value())
 
 	attributes := pdata.NewAttributeMap()
@@ -162,11 +162,11 @@ func TestBoolLabelValue(t *testing.T) {
 	}
 
 	labelValue := boolLabelValue{
-		BoolLabelValueMetadata: metadata,
-		value:                  boolValue,
+		metadata: metadata,
+		value:    boolValue,
 	}
 
-	assert.Equal(t, metadata, labelValue.BoolLabelValueMetadata)
+	assert.Equal(t, metadata, labelValue.Metadata())
 	assert.Equal(t, boolValue, labelValue.Value())
 
 	attributes := pdata.NewAttributeMap()
@@ -188,11 +188,11 @@ func TestStringSliceLabelValue(t *testing.T) {
 	}
 
 	labelValue := stringSliceLabelValue{
-		StringSliceLabelValueMetadata: metadata,
-		value:                         stringValue,
+		metadata: metadata,
+		value:    stringValue,
 	}
 
-	assert.Equal(t, metadata, labelValue.StringSliceLabelValueMetadata)
+	assert.Equal(t, metadata, labelValue.Metadata())
 	assert.Equal(t, stringValue, labelValue.Value())
 
 	attributes := pdata.NewAttributeMap()
@@ -214,11 +214,11 @@ func TestByteSliceLabelValue(t *testing.T) {
 	}
 
 	labelValue := byteSliceLabelValue{
-		ByteSliceLabelValueMetadata: metadata,
-		value:                       stringValue,
+		metadata: metadata,
+		value:    stringValue,
 	}
 
-	assert.Equal(t, metadata, labelValue.ByteSliceLabelValueMetadata)
+	assert.Equal(t, metadata, labelValue.Metadata())
 	assert.Equal(t, stringValue, labelValue.Value())
 
 	attributes := pdata.NewAttributeMap()
@@ -286,7 +286,7 @@ func TestNewStringLabelValue(t *testing.T) {
 
 	labelValue := newStringLabelValue(metadata, valueHolder)
 
-	assert.Equal(t, metadata, labelValue.StringLabelValueMetadata)
+	assert.Equal(t, metadata, labelValue.Metadata())
 	assert.Equal(t, stringValue, labelValue.Value())
 }
 
@@ -303,7 +303,7 @@ func TestNewInt64LabelValue(t *testing.T) {
 
 	labelValue := newInt64LabelValue(metadata, valueHolder)
 
-	assert.Equal(t, metadata, labelValue.Int64LabelValueMetadata)
+	assert.Equal(t, metadata, labelValue.Metadata())
 	assert.Equal(t, int64Value, labelValue.Value())
 }
 
@@ -320,7 +320,7 @@ func TestNewBoolLabelValue(t *testing.T) {
 
 	labelValue := newBoolLabelValue(metadata, valueHolder)
 
-	assert.Equal(t, metadata, labelValue.BoolLabelValueMetadata)
+	assert.Equal(t, metadata, labelValue.Metadata())
 	assert.Equal(t, boolValue, labelValue.Value())
 }
 
@@ -338,7 +338,7 @@ func TestNewStringSliceLabelValue(t *testing.T) {
 
 	labelValue := newStringSliceLabelValue(metadata, valueHolder)
 
-	assert.Equal(t, metadata, labelValue.StringSliceLabelValueMetadata)
+	assert.Equal(t, metadata, labelValue.Metadata())
 	assert.Equal(t, expectedValue, labelValue.Value())
 }
 
@@ -355,6 +355,6 @@ func TestNewByteSliceLabelValue(t *testing.T) {
 
 	labelValue := newByteSliceLabelValue(metadata, valueHolder)
 
-	assert.Equal(t, metadata, labelValue.ByteSliceLabelValueMetadata)
+	assert.Equal(t, metadata, labelValue.Metadata())
 	assert.Equal(t, stringValue, labelValue.Value())
 }

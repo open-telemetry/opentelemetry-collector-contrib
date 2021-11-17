@@ -73,7 +73,7 @@ func TestToLabelValue(t *testing.T) {
 	rowColumnNames := []string{labelColumnName}
 	testCases := map[string]struct {
 		metadata                 LabelValueMetadata
-		expectedType             LabelValueMetadata
+		expectedType             LabelValue
 		expectedValue            interface{}
 		expectedTransformedValue interface{}
 	}{
@@ -91,8 +91,8 @@ func TestToLabelValue(t *testing.T) {
 			labelValue, _ := toLabelValue(testCase.metadata, row)
 
 			assert.IsType(t, testCase.expectedType, labelValue)
-			assert.Equal(t, labelName, labelValue.Name())
-			assert.Equal(t, labelColumnName, labelValue.ColumnName())
+			assert.Equal(t, labelName, labelValue.Metadata().Name())
+			assert.Equal(t, labelColumnName, labelValue.Metadata().ColumnName())
 			if testCase.expectedTransformedValue != nil {
 				assert.Equal(t, testCase.expectedTransformedValue, labelValue.Value())
 			} else {
@@ -179,7 +179,7 @@ func TestToMetricValue(t *testing.T) {
 	rowColumnNames := []string{metricColumnName}
 	testCases := map[string]struct {
 		metadata      MetricValueMetadata
-		expectedType  MetricValueMetadata
+		expectedType  MetricValue
 		expectedValue interface{}
 	}{
 		"Int64 label value metadata": {Int64MetricValueMetadata{queryMetricValueMetadata: metricValueMetadata}, int64MetricValue{}, int64Value},
@@ -193,10 +193,10 @@ func TestToMetricValue(t *testing.T) {
 			metricValue, _ := toMetricValue(testCase.metadata, row)
 
 			assert.IsType(t, testCase.expectedType, metricValue)
-			assert.Equal(t, metricName, metricValue.Name())
-			assert.Equal(t, metricColumnName, metricValue.ColumnName())
-			assert.Equal(t, metricDataType, metricValue.DataType())
-			assert.Equal(t, metricUnit, metricValue.Unit())
+			assert.Equal(t, metricName, metricValue.Metadata().Name())
+			assert.Equal(t, metricColumnName, metricValue.Metadata().ColumnName())
+			assert.Equal(t, metricDataType, metricValue.Metadata().DataType())
+			assert.Equal(t, metricUnit, metricValue.Metadata().Unit())
 			assert.Equal(t, testCase.expectedValue, metricValue.Value())
 		})
 	}
@@ -322,7 +322,7 @@ func TestMetricsMetadata_ToMetricsDataPoints(t *testing.T) {
 	assert.Equal(t, len(metricValues), len(dataPoints))
 
 	for i, dataPoint := range dataPoints {
-		assert.Equal(t, metadata.MetricNamePrefix+metricValues[i].Name(), dataPoint.metricName)
+		assert.Equal(t, metadata.MetricNamePrefix+metricValues[i].Metadata().Name(), dataPoint.metricName)
 		assert.Equal(t, timestamp, dataPoint.timestamp)
 		assert.Equal(t, databaseID, dataPoint.databaseID)
 		assert.Equal(t, labelValues, dataPoint.labelValues)

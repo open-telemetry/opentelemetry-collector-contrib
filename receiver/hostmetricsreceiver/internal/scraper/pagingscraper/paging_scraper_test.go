@@ -106,11 +106,11 @@ func assertPagingUsageMetricValid(t *testing.T, hostPagingUsageMetric pdata.Metr
 	}
 
 	assert.GreaterOrEqual(t, hostPagingUsageMetric.Sum().DataPoints().Len(), expectedDataPoints)
-	internal.AssertSumMetricHasAttributeValue(t, hostPagingUsageMetric, 0, "state", pdata.NewAttributeValueString(metadata.LabelState.Used))
-	internal.AssertSumMetricHasAttributeValue(t, hostPagingUsageMetric, 1, "state", pdata.NewAttributeValueString(metadata.LabelState.Free))
+	internal.AssertSumMetricHasAttributeValue(t, hostPagingUsageMetric, 0, "state", pdata.NewAttributeValueString(metadata.AttributeState.Used))
+	internal.AssertSumMetricHasAttributeValue(t, hostPagingUsageMetric, 1, "state", pdata.NewAttributeValueString(metadata.AttributeState.Free))
 	// Windows and Linux do not support cached state label
 	if runtime.GOOS != "windows" && runtime.GOOS != "linux" {
-		internal.AssertSumMetricHasAttributeValue(t, hostPagingUsageMetric, 2, "state", pdata.NewAttributeValueString(metadata.LabelState.Cached))
+		internal.AssertSumMetricHasAttributeValue(t, hostPagingUsageMetric, 2, "state", pdata.NewAttributeValueString(metadata.AttributeState.Cached))
 	}
 
 	// on Windows and Linux, also expect the page file device name label
@@ -133,15 +133,15 @@ func assertPagingOperationsMetricValid(t *testing.T, pagingMetric pdata.Metric, 
 	}
 	assert.Equal(t, expectedDataPoints, pagingMetric.Sum().DataPoints().Len())
 
-	internal.AssertSumMetricHasAttributeValue(t, pagingMetric, 0, "type", pdata.NewAttributeValueString(metadata.LabelType.Major))
-	internal.AssertSumMetricHasAttributeValue(t, pagingMetric, 0, "direction", pdata.NewAttributeValueString(metadata.LabelDirection.PageIn))
-	internal.AssertSumMetricHasAttributeValue(t, pagingMetric, 1, "type", pdata.NewAttributeValueString(metadata.LabelType.Major))
-	internal.AssertSumMetricHasAttributeValue(t, pagingMetric, 1, "direction", pdata.NewAttributeValueString(metadata.LabelDirection.PageOut))
+	internal.AssertSumMetricHasAttributeValue(t, pagingMetric, 0, "type", pdata.NewAttributeValueString(metadata.AttributeType.Major))
+	internal.AssertSumMetricHasAttributeValue(t, pagingMetric, 0, "direction", pdata.NewAttributeValueString(metadata.AttributeDirection.PageIn))
+	internal.AssertSumMetricHasAttributeValue(t, pagingMetric, 1, "type", pdata.NewAttributeValueString(metadata.AttributeType.Major))
+	internal.AssertSumMetricHasAttributeValue(t, pagingMetric, 1, "direction", pdata.NewAttributeValueString(metadata.AttributeDirection.PageOut))
 	if runtime.GOOS != "windows" {
-		internal.AssertSumMetricHasAttributeValue(t, pagingMetric, 2, "type", pdata.NewAttributeValueString(metadata.LabelType.Minor))
-		internal.AssertSumMetricHasAttributeValue(t, pagingMetric, 2, "direction", pdata.NewAttributeValueString(metadata.LabelDirection.PageIn))
-		internal.AssertSumMetricHasAttributeValue(t, pagingMetric, 3, "type", pdata.NewAttributeValueString(metadata.LabelType.Minor))
-		internal.AssertSumMetricHasAttributeValue(t, pagingMetric, 3, "direction", pdata.NewAttributeValueString(metadata.LabelDirection.PageOut))
+		internal.AssertSumMetricHasAttributeValue(t, pagingMetric, 2, "type", pdata.NewAttributeValueString(metadata.AttributeType.Minor))
+		internal.AssertSumMetricHasAttributeValue(t, pagingMetric, 2, "direction", pdata.NewAttributeValueString(metadata.AttributeDirection.PageIn))
+		internal.AssertSumMetricHasAttributeValue(t, pagingMetric, 3, "type", pdata.NewAttributeValueString(metadata.AttributeType.Minor))
+		internal.AssertSumMetricHasAttributeValue(t, pagingMetric, 3, "direction", pdata.NewAttributeValueString(metadata.AttributeDirection.PageOut))
 	}
 }
 
@@ -152,6 +152,6 @@ func assertPageFaultsMetricValid(t *testing.T, pageFaultsMetric pdata.Metric, st
 	}
 
 	assert.Equal(t, 2, pageFaultsMetric.Sum().DataPoints().Len())
-	internal.AssertSumMetricHasAttributeValue(t, pageFaultsMetric, 0, "type", pdata.NewAttributeValueString(metadata.LabelType.Major))
-	internal.AssertSumMetricHasAttributeValue(t, pageFaultsMetric, 1, "type", pdata.NewAttributeValueString(metadata.LabelType.Minor))
+	internal.AssertSumMetricHasAttributeValue(t, pageFaultsMetric, 0, "type", pdata.NewAttributeValueString(metadata.AttributeType.Major))
+	internal.AssertSumMetricHasAttributeValue(t, pageFaultsMetric, 1, "type", pdata.NewAttributeValueString(metadata.AttributeType.Minor))
 }

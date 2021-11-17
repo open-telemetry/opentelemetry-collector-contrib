@@ -118,7 +118,7 @@ func setProcessesCountMetric(metric pdata.Metric, startTime, now pdata.Timestamp
 }
 
 func setProcessesCountDataPoint(dataPoint pdata.NumberDataPoint, startTime, now pdata.Timestamp, statusLabel string, value int64) {
-	dataPoint.Attributes().InsertString(metadata.Labels.Status, statusLabel)
+	dataPoint.Attributes().InsertString(metadata.Attributes.Status, statusLabel)
 	dataPoint.SetStartTimestamp(startTime)
 	dataPoint.SetTimestamp(now)
 	dataPoint.SetIntVal(value)

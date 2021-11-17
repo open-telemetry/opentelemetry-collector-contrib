@@ -111,23 +111,22 @@ Generally, when designing a test for new exporter and receiver components, devel
 
 Here providing some examples of how to run and get the results of testing.
 
-1. Under the [collector-contrib](https://github.com/open-telemetry/opentelemetry-collector-contrib) repo, by running following command:
+1. Under the [collector-contrib](https://github.com/open-telemetry/opentelemetry-collector-contrib) repo, the following runs all the tests:
 
 ```
-  cd /testbed/tests
-  TESTBED_CONFIG=local.yaml go test -v
+  cd ./testbed
+  ./runtests.sh
 ```
 
 ​	Then get the result:
 
 ![collector-contrib tests result](CCRepo_result.png)
 
-2. Under [collector-contrib/testbed/](.) repo, here taking correctness tests as an example, by running:
+2. Under the [collector-contrib](https://github.com/open-telemetry/opentelemetry-collector-contrib) repo, the following runs the correctness tests only:
 
 ```
-  cd correctness
-  source ~/.bash_profile # remember you should enable your envir var here
-  ./runtests.sh 
+  cd ./testbed
+  TESTS_DIR=correctnesstests/metrics ./runtests.sh
 ```
 
 Then get the result:

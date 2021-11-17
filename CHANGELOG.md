@@ -2,6 +2,98 @@
 
 ## Unreleased
 
+
+## 💡 Enhancements 💡
+
+- `awsprometheusremotewrite` exporter: Improve error message when failing to sign request
+
+## v0.39.0
+
+## 🛑 Breaking changes 🛑
+
+- `httpdreceiver` renamed to `apachereceiver` to match industry standards (#6207)
+
+## 🚀 New components 🚀
+
+- Add `postgresqlreceiver` config and factory (#6153)
+- Add TencentCloud LogService exporter `tencentcloudlogserviceexporter` (#5722)
+- Restore `jaegerthrifthttpexporter` (#5666)
+- Add `skywalkingexporter` (#5690, #6114)
+
+## 🧰 Bug fixes 🧰
+
+- `datadogexporter`: Improve cumulative metrics reset detection using `StartTimestamp` (#6120)
+- `mysqlreceiver`: Address issues in shutdown function (#6239)
+- `tailsamplingprocessor`: End go routines during shutdown (#5693)
+- `googlecloudexporter`: Update google cloud exporter to correctly close the metric exporter (#5990)
+- `statsdreceiver`: Fix the summary point calculation (#6155)
+- `datadogexporter` Correct default value for `send_count_sum_metrics` (#6130)
+
+## 💡 Enhancements 💡
+
+- `datadogexporter`: Increase default timeout to 15 seconds (#6131)
+- `googlecloudspannerreceiver`: Added metrics cardinality handling for Google Cloud Spanner receiver (#5981, #6148, #6229)
+- `mysqlreceiver`: Mysql add support for different protocols (#6138)
+- `bearertokenauthextension`: Added support of Bearer Auth for HTTP Exporters (#5962)
+- `awsxrayexporter`: Fallback to rpc.method for segment operation when aws.operation missing (#6231)
+- `healthcheckextension`: Add new health check feature for collector pipeline (#5643)
+- `datadogexporter`: Always add current hostname (#5967)
+- `k8sattributesprocessor`: Add code to fetch all annotations and labels by specifying key regex (#5780)
+- `datadogexporter`: Do not rely on collector to resolve envvar when possible to resolve them (#6122)
+- `datadogexporter`: Add container tags to attributes package (#6086)
+- `datadogexporter`: Preserve original TraceID (#6158)
+- `prometheusreceiver`: Enhance prometheus receiver logger to determine errors, test real e2e usage (#5870)
+- `awsxrayexporter`: Added support for AWS AppRunner origin (#6141)
+
+## v0.38.0
+
+## 🛑 Breaking changes 🛑
+
+- `datadogexporter` Make distributions the default histogram export option. (#5885)
+- `redisreceiver` Update Redis receiver's metric names. (#5837)
+- Remove `scraperhelper` from contrib, use the core version. (#5826)
+
+## 🚀 New components 🚀
+
+- `googlecloudspannerreceiver` Added implementation of Google Cloud Spanner receiver. (#5727)
+- `awsxrayproxy` Wire up awsxrayproxy extension. (#5747)
+- `awscontainerinsightreceiver` Enable AWS Container Insight receiver. (#5960)
+
+## 🧰 Bug fixes 🧰
+
+- `statsdreceiver`: fix start timestamp / temporality for counters. (#5714)
+- Fix security issue related to github.com/tidwall/gjson. (#5936)
+- `datadogexporter` Fix cumulative histogram handling in distributions mode (#5867)
+- `datadogexporter` Skip nil sketches (#5925)
+
+## 💡 Enhancements 💡
+
+- Extend `kafkareceiver` configuration capabilities. (#5677)
+- Convert `mongodbatlas` receiver to use scraperhelper. (#5827)
+- Convert `dockerstats` receiver to use scraperhelper. (#5825)
+- Convert `podman` receiver to use scraperhelper. (#5822)
+- Convert `redisreceiver` to use scraperhelper. (#5796)
+- Convert `kubeletstats` receiver to use scraperhelper. (#5821)
+- `googlecloudspannerreceiver` Migrated Google Cloud Spanner receiver to scraper approach. (#5868)
+- `datadogexporter` Use a `Consumer` interface for decoupling from zorkian's package. (#5315)
+- `mdatagen` - Add support for extended metric descriptions (#5688)
+- `signalfxexporter` Log datapoints option. (#5689)
+- `cumulativetodeltaprocessor`: Update cumulative to delta. (#5772)
+- Update configuration default values in log receivers docs. (#5840)
+- `fluentforwardreceiver`: support more complex fluent-bit objects. (#5676)
+- `datadogexporter` Remove spammy logging. (#5856)
+- `datadogexporter` Remove obsolete report_buckets config. (#5858)
+- Improve performance of metric expression matcher. (#5864)
+- `tanzuobservabilityexporter` Introduce metricsConsumer and gaugeMetricConsumer. (#5426)
+- `awsxrayexporter` rpc.system has priority to determine aws namespace. (#5833)
+- `tailsamplingprocessor` Add support for composite sampling policy to the tailsampler. (#4958)
+- `kafkaexporter` Add support for AWS_MSK_IAM SASL Auth (#5763)
+- Refactor the client Authenticators  for the new "ClientAuthenticator" interfaces (#5905)
+- `mongodbatlasreceiver` Add client wrapper for MongoDB Atlas support (#5386)
+- `redisreceiver` Update Redis config options (#5861)
+- `routingprocessor`: allow routing for all signals (#5869)
+- `extension/observer/docker` add ListAndWatch to observer (#5851)
+
 ## v0.37.1
 
 ## 🧰 Bug fixes 🧰

@@ -134,6 +134,42 @@ func TestWithExtractAnnotations(t *testing.T) {
 			},
 			"",
 		},
+		{
+			"basic-pod-keyregex",
+			[]FieldExtractConfig{
+				{
+					TagName:  "tag1",
+					KeyRegex: "key*",
+					From:     kube.MetadataFromPod,
+				},
+			},
+			[]kube.FieldExtractionRule{
+				{
+					Name:     "tag1",
+					KeyRegex: regexp.MustCompile("key*"),
+					From:     kube.MetadataFromPod,
+				},
+			},
+			"",
+		},
+		{
+			"basic-namespace-keyregex",
+			[]FieldExtractConfig{
+				{
+					TagName:  "tag1",
+					KeyRegex: "key*",
+					From:     kube.MetadataFromNamespace,
+				},
+			},
+			[]kube.FieldExtractionRule{
+				{
+					Name:     "tag1",
+					KeyRegex: regexp.MustCompile("key*"),
+					From:     kube.MetadataFromNamespace,
+				},
+			},
+			"",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -213,6 +249,42 @@ func TestWithExtractLabels(t *testing.T) {
 					Name: "tag1",
 					Key:  "key1",
 					From: kube.MetadataFromNamespace,
+				},
+			},
+			"",
+		},
+		{
+			"basic-pod-keyregex",
+			[]FieldExtractConfig{
+				{
+					TagName:  "tag1",
+					KeyRegex: "key*",
+					From:     kube.MetadataFromPod,
+				},
+			},
+			[]kube.FieldExtractionRule{
+				{
+					Name:     "tag1",
+					KeyRegex: regexp.MustCompile("key*"),
+					From:     kube.MetadataFromPod,
+				},
+			},
+			"",
+		},
+		{
+			"basic-namespace",
+			[]FieldExtractConfig{
+				{
+					TagName:  "tag1",
+					KeyRegex: "key*",
+					From:     kube.MetadataFromNamespace,
+				},
+			},
+			[]kube.FieldExtractionRule{
+				{
+					Name:     "tag1",
+					KeyRegex: regexp.MustCompile("key*"),
+					From:     kube.MetadataFromNamespace,
 				},
 			},
 			"",
@@ -599,6 +671,24 @@ func Test_extractFieldRules(t *testing.T) {
 			}},
 			[]kube.FieldExtractionRule{},
 			true,
+		},
+		{
+			"match-keyregex",
+			args{"labels", []FieldExtractConfig{
+				{
+					TagName:  "name",
+					KeyRegex: "key*",
+					From:     kube.MetadataFromPod,
+				},
+			}},
+			[]kube.FieldExtractionRule{
+				{
+					Name:     "name",
+					KeyRegex: regexp.MustCompile("key*"),
+					From:     kube.MetadataFromPod,
+				},
+			},
+			false,
 		},
 	}
 	for _, tt := range tests {

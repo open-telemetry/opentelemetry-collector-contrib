@@ -16,6 +16,7 @@ package attributes
 
 import (
 	"fmt"
+	"strings"
 
 	"go.opentelemetry.io/collector/model/pdata"
 	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
@@ -31,6 +32,12 @@ var (
 		conventions.AttributeServiceName:           "service",
 		conventions.AttributeServiceVersion:        "version",
 
+		// Containers
+		conventions.AttributeContainerID:        "container_id",
+		conventions.AttributeContainerName:      "container_name",
+		conventions.AttributeContainerImageName: "image_name",
+		conventions.AttributeContainerImageTag:  "image_tag",
+
 		// Cloud conventions
 		// https://www.datadoghq.com/blog/tagging-best-practices/
 		conventions.AttributeCloudProvider:         "cloud_provider",
@@ -39,19 +46,50 @@ var (
 
 		// ECS conventions
 		// https://github.com/DataDog/datadog-agent/blob/e081bed/pkg/tagger/collectors/ecs_extract.go
-		conventions.AttributeAWSECSTaskFamily: "task_family",
-		conventions.AttributeAWSECSClusterARN: "ecs_cluster_name",
-		"aws.ecs.task.revision":               "task_version",
+		conventions.AttributeAWSECSTaskFamily:   "task_family",
+		conventions.AttributeAWSECSTaskARN:      "task_arn",
+		conventions.AttributeAWSECSClusterARN:   "ecs_cluster_name",
+		conventions.AttributeAWSECSTaskRevision: "task_version",
+		conventions.AttributeAWSECSContainerARN: "ecs_container_name",
 
 		// Kubernetes resource name (via semantic conventions)
 		// https://github.com/DataDog/datadog-agent/blob/e081bed/pkg/util/kubernetes/const.go
-		conventions.AttributeK8SPodName:         "pod_name",
+		conventions.AttributeK8SContainerName:   "kube_container_name",
+		conventions.AttributeK8SClusterName:     "kube_cluster_name",
 		conventions.AttributeK8SDeploymentName:  "kube_deployment",
 		conventions.AttributeK8SReplicaSetName:  "kube_replica_set",
 		conventions.AttributeK8SStatefulSetName: "kube_stateful_set",
 		conventions.AttributeK8SDaemonSetName:   "kube_daemon_set",
 		conventions.AttributeK8SJobName:         "kube_job",
 		conventions.AttributeK8SCronJobName:     "kube_cronjob",
+		conventions.AttributeK8SNamespaceName:   "kube_namespace",
+		conventions.AttributeK8SPodName:         "pod_name",
+	}
+
+	// containerTagsAttributes contains a set of attributes that will be extracted as Datadog container tags.
+	containerTagsAttributes = []string{
+		conventions.AttributeContainerID,
+		conventions.AttributeContainerName,
+		conventions.AttributeContainerImageName,
+		conventions.AttributeContainerImageTag,
+		conventions.AttributeK8SContainerName,
+		conventions.AttributeK8SClusterName,
+		conventions.AttributeK8SDeploymentName,
+		conventions.AttributeK8SReplicaSetName,
+		conventions.AttributeK8SStatefulSetName,
+		conventions.AttributeK8SDaemonSetName,
+		conventions.AttributeK8SJobName,
+		conventions.AttributeK8SCronJobName,
+		conventions.AttributeK8SNamespaceName,
+		conventions.AttributeK8SPodName,
+		conventions.AttributeCloudProvider,
+		conventions.AttributeCloudRegion,
+		conventions.AttributeCloudAvailabilityZone,
+		conventions.AttributeAWSECSTaskFamily,
+		conventions.AttributeAWSECSTaskARN,
+		conventions.AttributeAWSECSClusterARN,
+		conventions.AttributeAWSECSTaskRevision,
+		conventions.AttributeAWSECSContainerARN,
 	}
 
 	// Kubernetes mappings defines the mapping between Kubernetes conventions (both general and Datadog specific)
@@ -119,4 +157,23 @@ func TagsFromAttributes(attrs pdata.AttributeMap) []string {
 	tags = append(tags, systemAttributes.extractTags()...)
 
 	return tags
+}
+
+// ContainerTagFromAttributes extracts the value of _dd.tags.container from the given
+// set of attributes.
+func ContainerTagFromAttributes(attr map[string]string) string {
+	var str strings.Builder
+	for _, key := range containerTagsAttributes {
+		val, ok := attr[key]
+		if !ok {
+			continue
+		}
+		if str.Len() > 0 {
+			str.WriteByte(',')
+		}
+		str.WriteString(conventionsMapping[key])
+		str.WriteByte(':')
+		str.WriteString(val)
+	}
+	return str.String()
 }

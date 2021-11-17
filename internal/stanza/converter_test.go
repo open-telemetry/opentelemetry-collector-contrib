@@ -521,7 +521,7 @@ func TestConvertArrayBody(t *testing.T) {
 		map[string]interface{}{"one": 1, "yes": true},
 	}
 
-	result := anyToBody(structuredBody).ArrayVal()
+	result := anyToBody(structuredBody).SliceVal()
 
 	require.True(t, result.At(0).BoolVal())
 	require.False(t, result.At(1).BoolVal())
@@ -542,7 +542,7 @@ func TestConvertArrayBody(t *testing.T) {
 	require.Equal(t, float64(1), result.At(14).DoubleVal()) // float32
 	require.Equal(t, float64(1), result.At(15).DoubleVal()) // float64
 
-	nestedArr := result.At(16).ArrayVal()
+	nestedArr := result.At(16).SliceVal()
 	require.Equal(t, "string", nestedArr.At(0).StringVal())
 	require.Equal(t, int64(1), nestedArr.At(1).IntVal())
 
@@ -571,7 +571,7 @@ func TestConvertNestedMapBody(t *testing.T) {
 	result := anyToBody(structuredBody).MapVal()
 
 	arrayAttVal, _ := result.Get("array")
-	a := arrayAttVal.ArrayVal()
+	a := arrayAttVal.SliceVal()
 	require.Equal(t, int64(0), a.At(0).IntVal())
 	require.Equal(t, int64(1), a.At(1).IntVal())
 

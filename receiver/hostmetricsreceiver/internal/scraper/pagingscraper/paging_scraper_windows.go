@@ -107,15 +107,15 @@ func (s *scraper) initializePagingUsageMetric(metric pdata.Metric, now pdata.Tim
 	idps.EnsureCapacity(2 * len(pageFiles))
 
 	for _, pageFile := range pageFiles {
-		initializePagingUsageDataPoint(idps.AppendEmpty(), now, pageFile.deviceName, metadata.LabelState.Used, int64(pageFile.usedBytes))
-		initializePagingUsageDataPoint(idps.AppendEmpty(), now, pageFile.deviceName, metadata.LabelState.Free, int64((pageFile.freeBytes)))
+		initializePagingUsageDataPoint(idps.AppendEmpty(), now, pageFile.deviceName, metadata.AttributeState.Used, int64(pageFile.usedBytes))
+		initializePagingUsageDataPoint(idps.AppendEmpty(), now, pageFile.deviceName, metadata.AttributeState.Free, int64((pageFile.freeBytes)))
 	}
 }
 
 func initializePagingUsageDataPoint(dataPoint pdata.NumberDataPoint, now pdata.Timestamp, deviceLabel string, stateLabel string, value int64) {
 	attributes := dataPoint.Attributes()
-	attributes.InsertString(metadata.Labels.Device, deviceLabel)
-	attributes.InsertString(metadata.Labels.State, stateLabel)
+	attributes.InsertString(metadata.Attributes.Device, deviceLabel)
+	attributes.InsertString(metadata.Attributes.State, stateLabel)
 	dataPoint.SetTimestamp(now)
 	dataPoint.SetIntVal(value)
 }
@@ -152,14 +152,14 @@ func initializePagingOperationsMetric(metric pdata.Metric, startTime, now pdata.
 
 	idps := metric.Sum().DataPoints()
 	idps.EnsureCapacity(2)
-	initializePagingOperationsDataPoint(idps.AppendEmpty(), startTime, now, metadata.LabelDirection.PageIn, memoryCounterValues.Values[pageReadsPerSec])
-	initializePagingOperationsDataPoint(idps.AppendEmpty(), startTime, now, metadata.LabelDirection.PageOut, memoryCounterValues.Values[pageWritesPerSec])
+	initializePagingOperationsDataPoint(idps.AppendEmpty(), startTime, now, metadata.AttributeDirection.PageIn, memoryCounterValues.Values[pageReadsPerSec])
+	initializePagingOperationsDataPoint(idps.AppendEmpty(), startTime, now, metadata.AttributeDirection.PageOut, memoryCounterValues.Values[pageWritesPerSec])
 }
 
 func initializePagingOperationsDataPoint(dataPoint pdata.NumberDataPoint, startTime, now pdata.Timestamp, directionLabel string, value int64) {
 	attributes := dataPoint.Attributes()
-	attributes.InsertString(metadata.Labels.Type, metadata.LabelType.Major)
-	attributes.InsertString(metadata.Labels.Direction, directionLabel)
+	attributes.InsertString(metadata.Attributes.Type, metadata.AttributeType.Major)
+	attributes.InsertString(metadata.Attributes.Direction, directionLabel)
 	dataPoint.SetStartTimestamp(startTime)
 	dataPoint.SetTimestamp(now)
 	dataPoint.SetIntVal(value)
