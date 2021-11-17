@@ -44,17 +44,17 @@ func createMetricsMetadata(query string) *metadata.MetricsMetadata {
 }
 
 func createMetricsMetadataFromTimestampColumn(query string, timestampColumn string) *metadata.MetricsMetadata {
+	labelValueMetadata, _ := metadata.NewLabelValueMetadata("metric_label", "METRIC_LABEL",
+		metadata.StringValueType)
 	// Labels
-	queryLabelValuesMetadata := []metadata.LabelValueMetadata{
-		metadata.NewStringLabelValueMetadata("metric_label", "METRIC_LABEL"),
-	}
+	queryLabelValuesMetadata := []metadata.LabelValueMetadata{labelValueMetadata}
 
 	metricDataType := metadata.NewMetricDataType(pdata.MetricDataTypeGauge, pdata.MetricAggregationTemporalityUnspecified, false)
 
+	metricValueMetadata, _ := metadata.NewMetricValueMetadata("metric_value", "METRIC_VALUE", metricDataType, "unit",
+		metadata.IntValueType)
 	// Metrics
-	queryMetricValuesMetadata := []metadata.MetricValueMetadata{
-		metadata.NewInt64MetricValueMetadata("metric_value", "METRIC_VALUE", metricDataType, "unit"),
-	}
+	queryMetricValuesMetadata := []metadata.MetricValueMetadata{metricValueMetadata}
 
 	return &metadata.MetricsMetadata{
 		Name:                      "test stats",

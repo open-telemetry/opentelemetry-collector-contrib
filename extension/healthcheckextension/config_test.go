@@ -48,6 +48,7 @@ func TestLoadConfig(t *testing.T) {
 				Endpoint: "localhost:13",
 			},
 			CheckCollectorPipeline: defaultCheckCollectorPipelineSettings(),
+			Path:                   "/",
 		},
 		ext1)
 
@@ -70,6 +71,10 @@ func TestLoadConfigError(t *testing.T) {
 		{
 			"invalidthreshold",
 			errInvalidExporterFailureThresholdProvided,
+		},
+		{
+			"invalidpath",
+			errInvalidPath,
 		},
 	}
 	for _, tt := range tests {
