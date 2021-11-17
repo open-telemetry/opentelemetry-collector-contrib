@@ -52,9 +52,6 @@ func newPostgreSQLScraper(
 	config *Config,
 	clientFactory postgreSQLClientFactory,
 ) *postgreSQLScraper {
-	if clientFactory == nil {
-		clientFactory = &defaultClientFactory{}
-	}
 	return &postgreSQLScraper{
 		logger:        logger,
 		config:        config,
@@ -95,15 +92,15 @@ func (p *postgreSQLScraper) scrape(context.Context) (pdata.Metrics, error) {
 	operations := initMetric(ilm.Metrics(), metadata.M.PostgresqlOperations).Sum().DataPoints()
 	rollbacks := initMetric(ilm.Metrics(), metadata.M.PostgresqlRollbacks).Sum().DataPoints()
 
-	databaseAgnosticMetricsCollected := false
 	databases := p.config.Databases
+	listClient, err := p.clientFactory.getClient(p.config, "")
+	if err != nil {
+		p.logger.Error("Failed to initialize connection to postgres", zap.Error(err))
+		return md, err
+	}
+	defer listClient.Close()
+
 	if len(databases) == 0 {
-		listClient, err := p.clientFactory.getClient(p.config, "")
-		if err != nil {
-			p.logger.Error("Failed to initialize connection to postgres", zap.Error(err))
-			return md, err
-		}
-		defer listClient.Close()
 
 		dbList, err := listClient.listDatabases()
 		if err != nil {
@@ -112,40 +109,26 @@ func (p *postgreSQLScraper) scrape(context.Context) (pdata.Metrics, error) {
 		}
 
 		databases = dbList
-		p.databaseAgnosticMetricCollection(
-			now,
-			listClient,
-			databases,
-			commits,
-			rollbacks,
-			databaseSize,
-			backends,
-		)
-		databaseAgnosticMetricsCollected = true
 	}
+
+	p.databaseAgnosticMetricCollection(
+		now,
+		listClient,
+		databases,
+		commits,
+		rollbacks,
+		databaseSize,
+		backends,
+	)
 
 	for _, database := range databases {
 		dbClient, err := p.clientFactory.getClient(p.config, database)
 		if err != nil {
-			// TODO - do string interpolation better
 			p.logger.Error("Failed to initialize connection to postgres", zap.String("database", database), zap.Error(err))
 			continue
 		}
 
 		defer dbClient.Close()
-
-		if !databaseAgnosticMetricsCollected {
-			p.databaseAgnosticMetricCollection(
-				now,
-				dbClient,
-				databases,
-				commits,
-				rollbacks,
-				databaseSize,
-				backends,
-			)
-			databaseAgnosticMetricsCollected = true
-		}
 
 		p.databaseSpecificMetricCollection(
 			now,
@@ -170,17 +153,21 @@ func (p *postgreSQLScraper) databaseSpecificMetricCollection(
 	blocksReadByTableMetrics, err := client.getBlocksReadByTable()
 	if err != nil {
 		p.logger.Error("Failed to fetch blocks read by table", zap.Error(err))
-	} else {
-		for _, table := range blocksReadByTableMetrics {
-			for k, v := range table.stats {
-				if i, ok := p.parseInt(k, v); ok {
-					attributes := pdata.NewAttributeMap()
-					attributes.Insert(metadata.A.Database, pdata.NewAttributeValueString(table.database))
-					attributes.Insert(metadata.A.Table, pdata.NewAttributeValueString(table.table))
-					attributes.Insert(metadata.A.Source, pdata.NewAttributeValueString(k))
-					addToIntMetric(blocksRead, attributes, i, now)
-				}
+		return
+	}
+
+	for _, table := range blocksReadByTableMetrics {
+		for k, v := range table.stats {
+			i, ok := p.parseInt(k, v)
+			if !ok {
+				continue
 			}
+
+			attributes := pdata.NewAttributeMap()
+			attributes.Insert(metadata.A.Database, pdata.NewAttributeValueString(table.database))
+			attributes.Insert(metadata.A.Table, pdata.NewAttributeValueString(table.table))
+			attributes.Insert(metadata.A.Source, pdata.NewAttributeValueString(k))
+			addToIntMetric(blocksRead, attributes, i, now)
 		}
 	}
 
@@ -188,29 +175,35 @@ func (p *postgreSQLScraper) databaseSpecificMetricCollection(
 	databaseTableMetrics, err := client.getDatabaseTableMetrics()
 	if err != nil {
 		p.logger.Error("Failed to fetch database table metrics", zap.Error(err))
-	} else {
-		for _, table := range databaseTableMetrics {
-			for _, key := range []string{"live", "dead"} {
-				value := table.stats[key]
-				if i, ok := p.parseInt(key, value); ok {
-					attributes := pdata.NewAttributeMap()
-					attributes.Insert(metadata.A.Database, pdata.NewAttributeValueString(table.database))
-					attributes.Insert(metadata.A.Table, pdata.NewAttributeValueString(table.table))
-					attributes.Insert(metadata.A.State, pdata.NewAttributeValueString(key))
-					addToIntMetric(databaseRows, attributes, i, now)
-				}
+		return
+	}
+	for _, table := range databaseTableMetrics {
+		for _, key := range []string{"live", "dead"} {
+			value := table.stats[key]
+			i, ok := p.parseInt(key, value)
+			if !ok {
+				continue
 			}
 
-			for _, key := range []string{"ins", "upd", "del", "hot_upd"} {
-				value := table.stats[key]
-				if i, ok := p.parseInt(key, value); ok {
-					attributes := pdata.NewAttributeMap()
-					attributes.Insert(metadata.A.Database, pdata.NewAttributeValueString(table.database))
-					attributes.Insert(metadata.A.Table, pdata.NewAttributeValueString(table.table))
-					attributes.Insert(metadata.A.Operation, pdata.NewAttributeValueString(key))
-					addToIntMetric(operations, attributes, i, now)
-				}
+			attributes := pdata.NewAttributeMap()
+			attributes.Insert(metadata.A.Database, pdata.NewAttributeValueString(table.database))
+			attributes.Insert(metadata.A.Table, pdata.NewAttributeValueString(table.table))
+			attributes.Insert(metadata.A.State, pdata.NewAttributeValueString(key))
+			addToIntMetric(databaseRows, attributes, i, now)
+		}
+
+		for _, key := range []string{"ins", "upd", "del", "hot_upd"} {
+			value := table.stats[key]
+			i, ok := p.parseInt(key, value)
+			if !ok {
+				continue
 			}
+
+			attributes := pdata.NewAttributeMap()
+			attributes.Insert(metadata.A.Database, pdata.NewAttributeValueString(table.database))
+			attributes.Insert(metadata.A.Table, pdata.NewAttributeValueString(table.table))
+			attributes.Insert(metadata.A.Operation, pdata.NewAttributeValueString(key))
+			addToIntMetric(operations, attributes, i, now)
 		}
 	}
 }
@@ -228,21 +221,21 @@ func (p *postgreSQLScraper) databaseAgnosticMetricCollection(
 	xactMetrics, err := client.getCommitsAndRollbacks(databases)
 	if err != nil {
 		p.logger.Error("Failed to fetch commits and rollbacks", zap.Error(err))
-	} else {
-		for _, metric := range xactMetrics {
-			commitValue := metric.stats["xact_commit"]
-			if i, ok := p.parseInt("xact_commit", commitValue); ok {
-				attributes := pdata.NewAttributeMap()
-				attributes.Insert(metadata.A.Database, pdata.NewAttributeValueString(metric.database))
-				addToIntMetric(commits, attributes, i, now)
-			}
+		return
+	}
+	for _, metric := range xactMetrics {
+		commitValue := metric.stats["xact_commit"]
+		if i, ok := p.parseInt("xact_commit", commitValue); ok {
+			attributes := pdata.NewAttributeMap()
+			attributes.Insert(metadata.A.Database, pdata.NewAttributeValueString(metric.database))
+			addToIntMetric(commits, attributes, i, now)
+		}
 
-			rollbackValue := metric.stats["xact_rollback"]
-			if i, ok := p.parseInt("xact_rollback", rollbackValue); ok {
-				attributes := pdata.NewAttributeMap()
-				attributes.Insert(metadata.A.Database, pdata.NewAttributeValueString(metric.database))
-				addToIntMetric(rollbacks, attributes, i, now)
-			}
+		rollbackValue := metric.stats["xact_rollback"]
+		if i, ok := p.parseInt("xact_rollback", rollbackValue); ok {
+			attributes := pdata.NewAttributeMap()
+			attributes.Insert(metadata.A.Database, pdata.NewAttributeValueString(metric.database))
+			addToIntMetric(rollbacks, attributes, i, now)
 		}
 	}
 
@@ -250,15 +243,18 @@ func (p *postgreSQLScraper) databaseAgnosticMetricCollection(
 	databaseSizeMetric, err := client.getDatabaseSize(databases)
 	if err != nil {
 		p.logger.Error("Failed to fetch database size", zap.Error(err))
-	} else {
-		for _, metric := range databaseSizeMetric {
-			for k, v := range metric.stats {
-				if f, ok := p.parseInt(k, v); ok {
-					attributes := pdata.NewAttributeMap()
-					attributes.Insert(metadata.A.Database, pdata.NewAttributeValueString(metric.database))
-					addToIntMetric(databaseSize, attributes, f, now)
-				}
+		return
+	}
+	for _, metric := range databaseSizeMetric {
+		for k, v := range metric.stats {
+			i, ok := p.parseInt(k, v)
+			if !ok {
+				continue
 			}
+
+			attributes := pdata.NewAttributeMap()
+			attributes.Insert(metadata.A.Database, pdata.NewAttributeValueString(metric.database))
+			addToIntMetric(databaseSize, attributes, i, now)
 		}
 	}
 
@@ -269,11 +265,14 @@ func (p *postgreSQLScraper) databaseAgnosticMetricCollection(
 	} else {
 		for _, metric := range backendsMetric {
 			for k, v := range metric.stats {
-				if f, ok := p.parseInt(k, v); ok {
-					attributes := pdata.NewAttributeMap()
-					attributes.Insert(metadata.A.Database, pdata.NewAttributeValueString(metric.database))
-					addToIntMetric(backends, attributes, f, now)
+				i, ok := p.parseInt(k, v)
+				if !ok {
+					continue
 				}
+
+				attributes := pdata.NewAttributeMap()
+				attributes.Insert(metadata.A.Database, pdata.NewAttributeValueString(metric.database))
+				addToIntMetric(backends, attributes, i, now)
 			}
 		}
 	}

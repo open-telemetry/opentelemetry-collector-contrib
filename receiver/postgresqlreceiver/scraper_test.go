@@ -29,7 +29,7 @@ import (
 
 func TestScraper(t *testing.T) {
 	factory := new(mockClientFactory)
-	factory.initMocks(false, []string{"otel"})
+	factory.initMocks([]string{"otel"})
 	sc := newPostgreSQLScraper(zap.NewNop(), &Config{Databases: []string{"otel"}}, factory)
 
 	scrapedRMS, err := sc.scrape(context.Background())
@@ -47,7 +47,7 @@ func TestScraper(t *testing.T) {
 
 func TestScraperNoDatabaseSingle(t *testing.T) {
 	factory := new(mockClientFactory)
-	factory.initMocks(true, []string{"otel"})
+	factory.initMocks([]string{"otel"})
 	sc := newPostgreSQLScraper(zap.NewNop(), &Config{}, factory)
 
 	scrapedRMS, err := sc.scrape(context.Background())
@@ -65,7 +65,7 @@ func TestScraperNoDatabaseSingle(t *testing.T) {
 
 func TestScraperNoDatabaseMultiple(t *testing.T) {
 	factory := mockClientFactory{}
-	factory.initMocks(true, []string{"otel", "open", "telemetry"})
+	factory.initMocks([]string{"otel", "open", "telemetry"})
 	sc := newPostgreSQLScraper(zap.NewNop(), &Config{}, &factory)
 
 	scrapedRMS, err := sc.scrape(context.Background())
@@ -124,12 +124,10 @@ func (m *mockClientFactory) getClient(c *Config, database string) (client, error
 	return args.Get(0).(client), args.Error(1)
 }
 
-func (m *mockClientFactory) initMocks(shouldUseListClient bool, databases []string) {
-	if shouldUseListClient {
-		listClient := new(mockClient)
-		listClient.initMocks("", databases, 0)
-		m.On("getClient", "").Return(listClient, nil)
-	}
+func (m *mockClientFactory) initMocks(databases []string) {
+	listClient := new(mockClient)
+	listClient.initMocks("", databases, 0)
+	m.On("getClient", "").Return(listClient, nil)
 
 	for index, db := range databases {
 		client := new(mockClient)
@@ -141,7 +139,9 @@ func (m *mockClientFactory) initMocks(shouldUseListClient bool, databases []stri
 func (m *mockClient) initMocks(database string, databases []string, index int) {
 	m.On("Close").Return(nil)
 
-	if index == 0 {
+	if database == "" {
+		m.On("listDatabases").Return(databases, nil)
+
 		commitsAndRollbacks := []MetricStat{}
 		dbSize := []MetricStat{}
 		backends := []MetricStat{}
@@ -167,11 +167,6 @@ func (m *mockClient) initMocks(database string, databases []string, index int) {
 		m.On("getCommitsAndRollbacks", databases).Return(commitsAndRollbacks, nil)
 		m.On("getDatabaseSize", databases).Return(dbSize, nil)
 		m.On("getBackends", databases).Return(backends, nil)
-
-	}
-
-	if database == "" {
-		m.On("listDatabases").Return(databases, nil)
 	} else {
 		tableMetrics := []MetricStat{}
 		tableMetrics = append(tableMetrics, MetricStat{

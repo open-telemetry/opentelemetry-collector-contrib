@@ -122,19 +122,19 @@ type MetricStat struct {
 func (c *postgreSQLClient) getCommitsAndRollbacks(databases []string) ([]MetricStat, error) {
 	query := filterQueryByDatabases("SELECT datname, xact_commit, xact_rollback FROM pg_stat_database", databases, false)
 
-	return c.collectStatsFromQuery(query, []string{"xact_commit", "xact_rollback"}, true, false)
+	return c.collectStatsFromQuery(query, true, false, "xact_commit", "xact_rollback")
 }
 
 func (c *postgreSQLClient) getBackends(databases []string) ([]MetricStat, error) {
 	query := filterQueryByDatabases("SELECT datname, count(*) as count from pg_stat_activity", databases, true)
 
-	return c.collectStatsFromQuery(query, []string{"count"}, true, false)
+	return c.collectStatsFromQuery(query, true, false, "count")
 }
 
 func (c *postgreSQLClient) getDatabaseSize(databases []string) ([]MetricStat, error) {
 	query := filterQueryByDatabases("SELECT datname, pg_database_size(datname) FROM pg_catalog.pg_database WHERE datistemplate = false", databases, false)
 
-	return c.collectStatsFromQuery(query, []string{"db_size"}, true, false)
+	return c.collectStatsFromQuery(query, true, false, "db_size")
 }
 
 func (c *postgreSQLClient) getDatabaseTableMetrics() ([]MetricStat, error) {
@@ -147,7 +147,7 @@ func (c *postgreSQLClient) getDatabaseTableMetrics() ([]MetricStat, error) {
 	n_tup_hot_upd AS hot_upd
 	FROM pg_stat_user_tables;`
 
-	return c.collectStatsFromQuery(query, []string{"live", "dead", "ins", "upd", "del", "hot_upd"}, false, true)
+	return c.collectStatsFromQuery(query, false, true, "live", "dead", "ins", "upd", "del", "hot_upd")
 }
 
 func (c *postgreSQLClient) getBlocksReadByTable() ([]MetricStat, error) {
@@ -162,10 +162,10 @@ func (c *postgreSQLClient) getBlocksReadByTable() ([]MetricStat, error) {
 	coalesce(tidx_blks_hit, 0) AS tidx_hit 
 	FROM pg_statio_user_tables;`
 
-	return c.collectStatsFromQuery(query, []string{"heap_read", "heap_hit", "idx_read", "idx_hit", "toast_read", "toast_hit", "tidx_read", "tidx_hit"}, false, true)
+	return c.collectStatsFromQuery(query, false, true, "heap_read", "heap_hit", "idx_read", "idx_hit", "toast_read", "toast_hit", "tidx_read", "tidx_hit")
 }
 
-func (c *postgreSQLClient) collectStatsFromQuery(query string, orderedFields []string, includeDatabase bool, includeTable bool) ([]MetricStat, error) {
+func (c *postgreSQLClient) collectStatsFromQuery(query string, includeDatabase bool, includeTable bool, orderedFields ...string) ([]MetricStat, error) {
 	rows, err := c.client.Query(query)
 	if err != nil {
 		return nil, err
@@ -178,15 +178,15 @@ func (c *postgreSQLClient) collectStatsFromQuery(query string, orderedFields []s
 
 		// Build a list of addresses that rows.Scan will load column data into
 		if includeDatabase {
-			val := ""
+			var val *string
 			rowFields = append(rowFields, &val)
 		}
 		if includeTable {
-			val := ""
+			var val *string
 			rowFields = append(rowFields, &val)
 		}
 		for range orderedFields {
-			val := ""
+			var val *string
 			rowFields = append(rowFields, &val)
 		}
 
