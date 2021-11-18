@@ -121,7 +121,7 @@ func getOpenMetricsTestData(negativeTestsOnly bool) map[string]string {
 func getTestCase(testName string) (string, int) {
 	response, err := http.Get(fmt.Sprintf("%s/%s/metrics", baseTestCaseURL, testName))
 
-	if err != nil || response == nil || response.StatusCode != http.StatusOK {
+	if err != nil || response.StatusCode != http.StatusOK {
 		return "", response.StatusCode
 	}
 	defer response.Body.Close()
