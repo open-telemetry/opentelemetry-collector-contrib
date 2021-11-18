@@ -36,7 +36,7 @@ func prepareAttributeMap() pdata.AttributeMap {
 	}
 
 	am := pdata.NewAttributeMap()
-	am.InitFromMap(attributeValues)
+	pdata.NewAttributeMapFromMap(attributeValues).CopyTo(am)
 
 	am.Sort()
 	return am

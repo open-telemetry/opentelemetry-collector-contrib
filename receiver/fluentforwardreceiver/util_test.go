@@ -38,7 +38,7 @@ func Logs(recs ...Log) pdata.Logs {
 		l := logSlice.AppendEmpty()
 		recs[i].Body.CopyTo(l.Body())
 		l.SetTimestamp(pdata.Timestamp(recs[i].Timestamp))
-		l.Attributes().InitFromMap(recs[i].Attributes)
+		pdata.NewAttributeMapFromMap(recs[i].Attributes).CopyTo(l.Attributes())
 		l.Attributes().Sort()
 	}
 

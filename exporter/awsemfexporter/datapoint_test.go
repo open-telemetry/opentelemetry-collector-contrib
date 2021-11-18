@@ -296,7 +296,7 @@ func TestIntDataPointSliceAt(t *testing.T) {
 			testDPS := pdata.NewNumberDataPointSlice()
 			testDP := testDPS.AppendEmpty()
 			testDP.SetIntVal(tc.value.(int64))
-			testDP.Attributes().InitFromMap(labels)
+			pdata.NewAttributeMapFromMap(labels).CopyTo(testDP.Attributes())
 
 			dps := numberDataPointSlice{
 				instrLibName,
@@ -367,7 +367,7 @@ func TestDoubleDataPointSliceAt(t *testing.T) {
 			testDPS := pdata.NewNumberDataPointSlice()
 			testDP := testDPS.AppendEmpty()
 			testDP.SetDoubleVal(tc.value.(float64))
-			testDP.Attributes().InitFromMap(labels)
+			pdata.NewAttributeMapFromMap(labels).CopyTo(testDP.Attributes())
 
 			dps := numberDataPointSlice{
 				instrLibName,
@@ -402,7 +402,7 @@ func TestHistogramDataPointSliceAt(t *testing.T) {
 	testDP.SetSum(17.13)
 	testDP.SetBucketCounts([]uint64{1, 2, 3})
 	testDP.SetExplicitBounds([]float64{1, 2, 3})
-	testDP.Attributes().InitFromMap(labels)
+	pdata.NewAttributeMapFromMap(labels).CopyTo(testDP.Attributes())
 
 	dps := histogramDataPointSlice{
 		instrLibName,
@@ -468,7 +468,7 @@ func TestSummaryDataPointSliceAt(t *testing.T) {
 			testQuantileValue = testDP.QuantileValues().AppendEmpty()
 			testQuantileValue.SetQuantile(100)
 			testQuantileValue.SetValue(float64(5))
-			testDP.Attributes().InitFromMap(labels)
+			pdata.NewAttributeMapFromMap(labels).CopyTo(testDP.Attributes())
 
 			dps := summaryDataPointSlice{
 				instrLibName,
