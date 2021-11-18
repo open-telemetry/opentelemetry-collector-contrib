@@ -42,7 +42,6 @@ import (
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configtls"
-	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/model/pdata"
 	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
@@ -60,19 +59,6 @@ func TestTraceSource(t *testing.T) {
 	set := componenttest.NewNopReceiverCreateSettings()
 	jr := newJaegerReceiver(jaegerReceiver, &configuration{}, nil, set)
 	require.NotNil(t, jr)
-}
-
-type traceConsumer struct {
-	cb func(context.Context, pdata.Traces)
-}
-
-func (t traceConsumer) Capabilities() consumer.Capabilities {
-	return consumer.Capabilities{MutatesData: false}
-}
-
-func (t traceConsumer) ConsumeTraces(ctx context.Context, td pdata.Traces) error {
-	go t.cb(ctx, td)
-	return nil
 }
 
 func jaegerBatchToHTTPBody(b *jaegerthrift.Batch) (*http.Request, error) {
