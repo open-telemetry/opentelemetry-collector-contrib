@@ -89,28 +89,20 @@ type Converter struct {
 
 	// workerChan is an internal communication channel that gets the log
 	// entries from Batch() calls and it receives the data in workerLoop().
-	workerChan chan *entry.Entry
+	workerChan chan []*entry.Entry
 	// workerCount configures the amount of workers started.
 	workerCount int
 	// batchChan obtains log entries converted by the pool of workers,
 	// in a form of logRecords grouped by Resource and then after aggregating
 	// them decides based on maxFlushCount if the flush should be triggered.
 	// If also serves the ticker flushes configured by flushInterval.
-	batchChan chan *workerItem
+	batchChan chan []workerItem
 
-	// flushInterval defines how often we flush the aggregated log entries.
-	flushInterval time.Duration
-	// maxFlushCount defines what's the amount of entries in the buffer that
-	// will trigger a flush of log entries.
-	maxFlushCount uint
 	// flushChan is an internal channel used for transporting batched pdata.Logs.
 	flushChan chan pdata.Logs
 
 	// data holds currently converted and aggregated log entries, grouped by Resource.
 	data map[uint64]pdata.Logs
-	// logRecordCount holds the number of translated and accumulated log Records
-	// and is compared against maxFlushCount to make a decision whether to flush.
-	logRecordCount uint
 
 	// wg is a WaitGroup that makes sure that we wait for spun up goroutines exit
 	// when Stop() is called.
@@ -129,18 +121,6 @@ func (f optionFunc) apply(c *Converter) {
 	f(c)
 }
 
-func WithFlushInterval(interval time.Duration) ConverterOption {
-	return optionFunc(func(c *Converter) {
-		c.flushInterval = interval
-	})
-}
-
-func WithMaxFlushCount(count uint) ConverterOption {
-	return optionFunc(func(c *Converter) {
-		c.maxFlushCount = count
-	})
-}
-
 func WithLogger(logger *zap.Logger) ConverterOption {
 	return optionFunc(func(c *Converter) {
 		c.logger = logger
@@ -155,16 +135,14 @@ func WithWorkerCount(workerCount int) ConverterOption {
 
 func NewConverter(opts ...ConverterOption) *Converter {
 	c := &Converter{
-		workerChan:    make(chan *entry.Entry),
-		workerCount:   int(math.Max(1, float64(runtime.NumCPU()/4))),
-		batchChan:     make(chan *workerItem),
-		data:          make(map[uint64]pdata.Logs),
-		pLogsChan:     make(chan pdata.Logs),
-		stopChan:      make(chan struct{}),
-		logger:        zap.NewNop(),
-		flushChan:     make(chan pdata.Logs),
-		flushInterval: DefaultFlushInterval,
-		maxFlushCount: DefaultMaxFlushCount,
+		workerChan:  make(chan []*entry.Entry),
+		workerCount: int(math.Max(1, float64(runtime.NumCPU()/4))),
+		batchChan:   make(chan []workerItem),
+		data:        make(map[uint64]pdata.Logs),
+		pLogsChan:   make(chan pdata.Logs),
+		stopChan:    make(chan struct{}),
+		logger:      zap.NewNop(),
+		flushChan:   make(chan pdata.Logs),
 	}
 
 	for _, opt := range opts {
@@ -220,20 +198,25 @@ func (c *Converter) workerLoop() {
 		case <-c.stopChan:
 			return
 
-		case e, ok := <-c.workerChan:
+		case entries, ok := <-c.workerChan:
 			if !ok {
 				return
 			}
 
-			lr := convert(e)
-			resourceID := getResourceID(e.Resource)
+			workerItems := make([]workerItem, 0, len(entries))
+
+			for _, e := range entries {
+				lr := convert(e)
+				resourceID := getResourceID(e.Resource)
+				workerItems = append(workerItems, workerItem{
+					Resource:   e.Resource,
+					ResourceID: resourceID,
+					LogRecord:  lr,
+				})
+			}
 
 			select {
-			case c.batchChan <- &workerItem{
-				Resource:   e.Resource,
-				ResourceID: resourceID,
-				LogRecord:  lr,
-			}:
+			case c.batchChan <- workerItems:
 			case <-c.stopChan:
 			}
 		}
@@ -246,56 +229,44 @@ func (c *Converter) workerLoop() {
 func (c *Converter) batchLoop() {
 	defer c.wg.Done()
 
-	ticker := time.NewTicker(c.flushInterval)
-	defer ticker.Stop()
-
 	for {
 		select {
-		case wi, ok := <-c.batchChan:
+		case workerItems, ok := <-c.batchChan:
 			if !ok {
 				return
 			}
 
-			pLogs, ok := c.data[wi.ResourceID]
-			if ok {
-				lr := pLogs.ResourceLogs().
-					At(0).InstrumentationLibraryLogs().
-					At(0).Logs().AppendEmpty()
-				wi.LogRecord.CopyTo(lr)
-			} else {
-				pLogs = pdata.NewLogs()
-				logs := pLogs.ResourceLogs()
-				rls := logs.AppendEmpty()
+			for _, wi := range workerItems {
+				pLogs, ok := c.data[wi.ResourceID]
+				if ok {
+					lr := pLogs.ResourceLogs().
+						At(0).InstrumentationLibraryLogs().
+						At(0).Logs().AppendEmpty()
+					wi.LogRecord.CopyTo(lr)
+				} else {
+					pLogs = pdata.NewLogs()
+					logs := pLogs.ResourceLogs()
+					rls := logs.AppendEmpty()
 
-				resource := rls.Resource()
-				resourceAtts := resource.Attributes()
-				resourceAtts.EnsureCapacity(len(wi.Resource))
-				for k, v := range wi.Resource {
-					resourceAtts.InsertString(k, v)
+					resource := rls.Resource()
+					resourceAtts := resource.Attributes()
+					resourceAtts.EnsureCapacity(len(wi.Resource))
+					for k, v := range wi.Resource {
+						resourceAtts.InsertString(k, v)
+					}
+
+					ills := rls.InstrumentationLibraryLogs()
+					lr := ills.AppendEmpty().Logs().AppendEmpty()
+					wi.LogRecord.CopyTo(lr)
 				}
 
-				ills := rls.InstrumentationLibraryLogs()
-				lr := ills.AppendEmpty().Logs().AppendEmpty()
-				wi.LogRecord.CopyTo(lr)
+				c.data[wi.ResourceID] = pLogs
 			}
 
-			c.data[wi.ResourceID] = pLogs
-			c.logRecordCount++
-
-			if c.logRecordCount >= c.maxFlushCount {
-				for r, pLogs := range c.data {
-					c.flushChan <- pLogs
-					delete(c.data, r)
-				}
-				c.logRecordCount = 0
-			}
-
-		case <-ticker.C:
 			for r, pLogs := range c.data {
 				c.flushChan <- pLogs
 				delete(c.data, r)
 			}
-			c.logRecordCount = 0
 
 		case <-c.stopChan:
 			return
@@ -342,7 +313,7 @@ func (c *Converter) flush(ctx context.Context, pLogs pdata.Logs) error {
 }
 
 // Batch takes in an entry.Entry and sends it to an available worker for processing.
-func (c *Converter) Batch(e *entry.Entry) error {
+func (c *Converter) Batch(e []*entry.Entry) error {
 	select {
 	case c.workerChan <- e:
 		return nil
