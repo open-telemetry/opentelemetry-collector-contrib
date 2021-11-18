@@ -18,7 +18,6 @@ import (
 	"context"
 	"fmt"
 	"path"
-	"runtime"
 	"testing"
 	"time"
 
@@ -68,19 +67,6 @@ func assertErrorWhenExecKeyMissing(t *testing.T, errorReceiverConfig config.Rece
 // TestEndToEnd loads the test config and completes an e2e test where Prometheus metrics are scrapped twice from `test_prometheus_exporter.go`
 func TestEndToEnd(t *testing.T) {
 	receiverConfig := loadConfigAssertNoError(t, config.NewComponentIDWithName(typeStr, "end_to_end_test/2"))
-
-	// e2e test with port undefined by user
-	endToEndScrapeTest(t, receiverConfig, "end-to-end port not defined")
-}
-
-// TestEndToEndWindows loads the test config and completes an e2e test where the command line contains backslashes, quotes and spaces
-// This test is similar to TestEndToEnd, except it runs on Windows only as the specified command line uses Windows syntax
-func TestEndToEndWindows(t *testing.T) {
-	if runtime.GOOS != "windows" {
-		return
-	}
-
-	receiverConfig := loadConfigAssertNoError(t, config.NewComponentIDWithName(typeStr, "end_to_end_test/windows"))
 
 	// e2e test with port undefined by user
 	endToEndScrapeTest(t, receiverConfig, "end-to-end port not defined")

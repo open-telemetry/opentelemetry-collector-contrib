@@ -96,15 +96,42 @@ func TestRun(t *testing.T) {
 		wantErr     bool
 	}{
 		{
-			name: "normal process 1, error process exit",
+			name: "sleep 4ms and succeeds",
 			process: &SubprocessConfig{
-				Command: "go run testdata/test_crasher.go",
+				Command: "go run testdata/test_crasher.go 4 0",
 				Env: []EnvConfig{
 					{
 						Name:  "DATA_SOURCE",
 						Value: "username:password@(url:port)/dbname",
 					},
 				},
+			},
+			wantElapsed: 4 * time.Millisecond,
+			wantErr:     false,
+		},
+		{
+			name: "sleep 4ms and fail",
+			process: &SubprocessConfig{
+				Command: "go run testdata/test_crasher.go 4 1",
+				Env:     []EnvConfig{},
+			},
+			wantElapsed: 4 * time.Millisecond,
+			wantErr:     true,
+		},
+		{
+			name: "sleep the default time (because broken value with spaces) and succeeds",
+			process: &SubprocessConfig{
+				Command: "go run testdata/test_crasher.go \"1 2 3\" 0",
+				Env:     []EnvConfig{},
+			},
+			wantElapsed: 2 * time.Millisecond,
+			wantErr:     false,
+		},
+		{
+			name: "sleep 4 and succeeds, with quotes",
+			process: &SubprocessConfig{
+				Command: "\"go\" \"run\" \"testdata/test_crasher.go\" \"4\" \"0\"",
+				Env:     []EnvConfig{},
 			},
 			wantElapsed: 4 * time.Millisecond,
 			wantErr:     false,
