@@ -122,7 +122,7 @@ func (p *postgreSQLScraper) scrape(ctx context.Context) (pdata.Metrics, error) {
 	for _, database := range databases {
 		dbClient, err := p.clientFactory.getClient(p.config, database)
 		if err != nil {
-			errors.AddPartial(2, err)
+			errors.Add(err)
 			p.logger.Error("Failed to initialize connection to postgres", zap.String("database", database), zap.Error(err))
 			continue
 		}
@@ -145,7 +145,7 @@ func (p *postgreSQLScraper) collectBlockReads(
 	blocksReadByTableMetrics, err := client.getBlocksReadByTable(ctx)
 	if err != nil {
 		p.logger.Error("Errors encountered while fetching blocks read by table", zap.Error(err))
-		errors.AddPartial(1, err)
+		errors.AddPartial(0, err)
 	}
 
 	// Metrics can be partially collected (non-nil) even if there were partial errors reported
@@ -156,7 +156,7 @@ func (p *postgreSQLScraper) collectBlockReads(
 		for k, v := range table.stats {
 			i, err := p.parseInt(k, v)
 			if err != nil {
-				errors.AddPartial(1, err)
+				errors.AddPartial(0, err)
 				continue
 			}
 
@@ -180,7 +180,7 @@ func (p *postgreSQLScraper) collectDatabaseTableMetrics(
 	databaseTableMetrics, err := client.getDatabaseTableMetrics(ctx)
 	if err != nil {
 		p.logger.Error("Errors encountered while fetching database table metrics", zap.Error(err))
-		errors.AddPartial(1, err)
+		errors.AddPartial(0, err)
 	}
 
 	// Metrics can be partially collected (non-nil) even if there were partial errors reported
@@ -196,7 +196,7 @@ func (p *postgreSQLScraper) collectDatabaseTableMetrics(
 			}
 			i, err := p.parseInt(key, value)
 			if err != nil {
-				errors.AddPartial(1, err)
+				errors.AddPartial(0, err)
 				continue
 			}
 
@@ -215,7 +215,7 @@ func (p *postgreSQLScraper) collectDatabaseTableMetrics(
 			}
 			i, err := p.parseInt(key, value)
 			if err != nil {
-				errors.AddPartial(1, err)
+				errors.AddPartial(0, err)
 				continue
 			}
 
@@ -240,7 +240,7 @@ func (p *postgreSQLScraper) collectCommitsAndRollbacks(
 	xactMetrics, err := client.getCommitsAndRollbacks(ctx, databases)
 	if err != nil {
 		p.logger.Error("Errors encountered while fetching commits and rollbacks", zap.Error(err))
-		errors.AddPartial(1, err)
+		errors.AddPartial(0, err)
 	}
 
 	// Metrics can be partially collected (non-nil) even if there were partial errors reported
@@ -250,7 +250,7 @@ func (p *postgreSQLScraper) collectCommitsAndRollbacks(
 	for _, metric := range xactMetrics {
 		commitValue := metric.stats["xact_commit"]
 		if i, err := p.parseInt("xact_commit", commitValue); err != nil {
-			errors.AddPartial(1, err)
+			errors.AddPartial(0, err)
 			continue
 		} else {
 			attributes := pdata.NewAttributeMap()
@@ -260,7 +260,7 @@ func (p *postgreSQLScraper) collectCommitsAndRollbacks(
 
 		rollbackValue := metric.stats["xact_rollback"]
 		if i, err := p.parseInt("xact_rollback", rollbackValue); err != nil {
-			errors.AddPartial(1, err)
+			errors.AddPartial(0, err)
 			continue
 		} else {
 			attributes := pdata.NewAttributeMap()
@@ -281,7 +281,7 @@ func (p *postgreSQLScraper) collectDatabaseSize(
 	databaseSizeMetric, err := client.getDatabaseSize(ctx, databases)
 	if err != nil {
 		p.logger.Error("Errors encountered while fetching database size", zap.Error(err))
-		errors.AddPartial(1, err)
+		errors.AddPartial(0, err)
 	}
 
 	// Metrics can be partially collected (non-nil) even if there were partial errors reported
@@ -292,7 +292,7 @@ func (p *postgreSQLScraper) collectDatabaseSize(
 		for k, v := range metric.stats {
 			i, err := p.parseInt(k, v)
 			if err != nil {
-				errors.AddPartial(1, err)
+				errors.AddPartial(0, err)
 				continue
 			}
 
@@ -314,7 +314,7 @@ func (p *postgreSQLScraper) collectBackends(
 	backendsMetric, err := client.getBackends(ctx, databases)
 	if err != nil {
 		p.logger.Error("Errors encountered while fetching backends", zap.Error(err))
-		errors.AddPartial(1, err)
+		errors.AddPartial(0, err)
 	}
 
 	// Metrics can be partially collected (non-nil) even if there were partial errors reported
@@ -325,7 +325,7 @@ func (p *postgreSQLScraper) collectBackends(
 		for k, v := range metric.stats {
 			i, err := p.parseInt(k, v)
 			if err != nil {
-				errors.AddPartial(1, err)
+				errors.AddPartial(0, err)
 				continue
 			}
 

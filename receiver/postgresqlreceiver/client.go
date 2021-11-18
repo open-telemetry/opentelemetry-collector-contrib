@@ -202,7 +202,7 @@ func (c *postgreSQLClient) collectStatsFromQuery(ctx context.Context, query stri
 		if includeDatabase {
 			v, err := convertInterfaceToString(rowFields[0])
 			if err != nil {
-				errors.AddPartial(len(orderedFields), err)
+				errors.AddPartial(0, err)
 				continue
 			}
 			database = v
@@ -212,7 +212,7 @@ func (c *postgreSQLClient) collectStatsFromQuery(ctx context.Context, query stri
 		if includeTable {
 			v, err := convertInterfaceToString(rowFields[0])
 			if err != nil {
-				errors.AddPartial(len(orderedFields), err)
+				errors.AddPartial(0, err)
 				continue
 			}
 			table = v
@@ -223,7 +223,7 @@ func (c *postgreSQLClient) collectStatsFromQuery(ctx context.Context, query stri
 		for idx, val := range rowFields {
 			v, err := convertInterfaceToString(val)
 			if err != nil {
-				errors.AddPartial(1, err)
+				errors.AddPartial(0, err)
 				continue
 			}
 			stats[orderedFields[idx]] = v
