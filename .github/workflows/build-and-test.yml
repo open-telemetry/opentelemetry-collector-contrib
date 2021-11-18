@@ -471,7 +471,7 @@ jobs:
         run: |
           cp bin/* dist/
           cd dist && shasum -a 256 * > checksums.txt && cd ../
-          ghr -t $GITHUB_TOKEN -u "GitHub Action" -r opentelemetry-collector-contrib --replace $RELEASE_TAG dist/
+          ghr -t $GITHUB_TOKEN -u open-telemetry -r opentelemetry-collector-contrib --replace $RELEASE_TAG dist/
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           RELEASE_TAG: ${{ steps.github_tag.outputs.tag }}
