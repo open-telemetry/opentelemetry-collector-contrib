@@ -88,7 +88,7 @@ func TestReadStaticFile(t *testing.T) {
 	cfg.Converter.MaxFlushCount = 10
 	cfg.Converter.FlushInterval = time.Millisecond
 
-	converter := stanza.NewConverter(stanza.WithFlushInterval(time.Millisecond))
+	converter := stanza.NewConverter()
 	converter.Start()
 	defer converter.Stop()
 
@@ -108,7 +108,7 @@ func TestReadStaticFile(t *testing.T) {
 		e.Set(entry.NewBodyField("msg"), msg)
 		e.Severity = severity
 		e.AddAttribute("file_name", "simple.log")
-		require.NoError(t, c.Batch(e))
+		require.NoError(t, c.Batch([]*entry.Entry{e}))
 	}
 	queueEntry(t, converter, "Something routine", entry.Info)
 	queueEntry(t, converter, "Something bad happened!", entry.Error)
@@ -185,7 +185,7 @@ func (rt *rotationTest) Run(t *testing.T) {
 
 	// Build expected outputs
 	expectedTimestamp, _ := time.ParseInLocation("2006-01-02", "2020-08-25", time.Local)
-	converter := stanza.NewConverter(stanza.WithFlushInterval(time.Millisecond))
+	converter := stanza.NewConverter()
 	converter.Start()
 
 	var wg sync.WaitGroup
@@ -203,7 +203,7 @@ func (rt *rotationTest) Run(t *testing.T) {
 		e := entry.New()
 		e.Timestamp = expectedTimestamp
 		e.Set(entry.NewBodyField("msg"), msg)
-		require.NoError(t, converter.Batch(e))
+		require.NoError(t, converter.Batch([]*entry.Entry{e}))
 
 		// ... and write the logs lines to the actual file consumed by receiver.
 		logger.Print(fmt.Sprintf("2020-08-25 %s", msg))
