@@ -20,6 +20,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/receiver/scrapererror"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/postgresqlreceiver/internal/metadata"
@@ -77,7 +78,7 @@ func addToIntMetric(metric pdata.NumberDataPointSlice, attributes pdata.Attribut
 }
 
 // scrape scrapes the metric stats, transforms them and attributes them into a metric slices.
-func (p *postgreSQLScraper) scrape(context.Context) (pdata.Metrics, error) {
+func (p *postgreSQLScraper) scrape(ctx context.Context) (pdata.Metrics, error) {
 	// metric initialization
 	md := pdata.NewMetrics()
 	ilm := md.ResourceMetrics().AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty()
@@ -92,74 +93,66 @@ func (p *postgreSQLScraper) scrape(context.Context) (pdata.Metrics, error) {
 	operations := initMetric(ilm.Metrics(), metadata.M.PostgresqlOperations).Sum().DataPoints()
 	rollbacks := initMetric(ilm.Metrics(), metadata.M.PostgresqlRollbacks).Sum().DataPoints()
 
+	var errors scrapererror.ScrapeErrors
+
 	databases := p.config.Databases
 	listClient, err := p.clientFactory.getClient(p.config, "")
 	if err != nil {
 		p.logger.Error("Failed to initialize connection to postgres", zap.Error(err))
-		return md, err
+		errors.Add(err)
+		return md, errors.Combine()
 	}
 	defer listClient.Close()
 
 	if len(databases) == 0 {
-
 		dbList, err := listClient.listDatabases()
 		if err != nil {
 			p.logger.Error("Failed to request list of databases from postgres", zap.Error(err))
-			return md, err
+			errors.Add(err)
+			return md, errors.Combine()
 		}
 
 		databases = dbList
 	}
 
-	p.databaseAgnosticMetricCollection(
-		now,
-		listClient,
-		databases,
-		commits,
-		rollbacks,
-		databaseSize,
-		backends,
-	)
+	p.collectCommitsAndRollbacks(now, listClient, databases, commits, rollbacks, errors)
+	p.collectDatabaseSize(now, listClient, databases, databaseSize, errors)
+	p.collectBackends(now, listClient, databases, backends, errors)
 
 	for _, database := range databases {
 		dbClient, err := p.clientFactory.getClient(p.config, database)
 		if err != nil {
+			errors.AddPartial(2, err)
 			p.logger.Error("Failed to initialize connection to postgres", zap.String("database", database), zap.Error(err))
 			continue
 		}
-
 		defer dbClient.Close()
 
-		p.databaseSpecificMetricCollection(
-			now,
-			dbClient,
-			blocksRead,
-			databaseRows,
-			operations,
-		)
+		p.collectBlockReads(now, dbClient, blocksRead, errors)
+		p.collectDatabaseTableMetrics(now, dbClient, databaseRows, operations, errors)
 	}
 
-	return md, nil
+	return md, errors.Combine()
 }
 
-func (p *postgreSQLScraper) databaseSpecificMetricCollection(
+func (p *postgreSQLScraper) collectBlockReads(
 	now pdata.Timestamp,
 	client client,
 	blocksRead pdata.NumberDataPointSlice,
-	databaseRows pdata.NumberDataPointSlice,
-	operations pdata.NumberDataPointSlice,
+	errors scrapererror.ScrapeErrors,
 ) {
-	// blocks read by table
 	blocksReadByTableMetrics, err := client.getBlocksReadByTable()
 	if err != nil {
 		p.logger.Error("Failed to fetch blocks read by table", zap.Error(err))
+		errors.AddPartial(1, err)
 		return
 	}
 
 	for _, table := range blocksReadByTableMetrics {
 		for k, v := range table.stats {
-			i, ok := p.parseInt(k, v)
-			if !ok {
+			i, err := p.parseInt(k, v)
+			if err != nil {
+				errors.AddPartial(1, err)
 				continue
 			}
 
@@ -170,18 +163,27 @@ func (p *postgreSQLScraper) databaseSpecificMetricCollection(
 			addToIntMetric(blocksRead, attributes, i, now)
 		}
 	}
+}
 
-	// database rows & operations by table
+func (p *postgreSQLScraper) collectDatabaseTableMetrics(
+	now pdata.Timestamp,
+	client client,
+	databaseRows pdata.NumberDataPointSlice,
+	operations pdata.NumberDataPointSlice,
+	errors scrapererror.ScrapeErrors,
+) {
 	databaseTableMetrics, err := client.getDatabaseTableMetrics()
 	if err != nil {
 		p.logger.Error("Failed to fetch database table metrics", zap.Error(err))
+		errors.AddPartial(1, err)
 		return
 	}
 	for _, table := range databaseTableMetrics {
 		for _, key := range []string{"live", "dead"} {
 			value := table.stats[key]
-			i, ok := p.parseInt(key, value)
-			if !ok {
+			i, err := p.parseInt(key, value)
+			if err != nil {
+				errors.AddPartial(1, err)
 				continue
 			}
 
@@ -194,8 +196,9 @@ func (p *postgreSQLScraper) databaseSpecificMetricCollection(
 
 		for _, key := range []string{"ins", "upd", "del", "hot_upd"} {
 			value := table.stats[key]
-			i, ok := p.parseInt(key, value)
-			if !ok {
+			i, err := p.parseInt(key, value)
+			if err != nil {
+				errors.AddPartial(1, err)
 				continue
 			}
 
@@ -208,47 +211,61 @@ func (p *postgreSQLScraper) databaseSpecificMetricCollection(
 	}
 }
 
-func (p *postgreSQLScraper) databaseAgnosticMetricCollection(
+func (p *postgreSQLScraper) collectCommitsAndRollbacks(
 	now pdata.Timestamp,
 	client client,
 	databases []string,
 	commits pdata.NumberDataPointSlice,
 	rollbacks pdata.NumberDataPointSlice,
-	databaseSize pdata.NumberDataPointSlice,
-	backends pdata.NumberDataPointSlice,
+	errors scrapererror.ScrapeErrors,
 ) {
-	// commits & rollbacks
 	xactMetrics, err := client.getCommitsAndRollbacks(databases)
 	if err != nil {
 		p.logger.Error("Failed to fetch commits and rollbacks", zap.Error(err))
+		errors.AddPartial(1, err)
 		return
 	}
 	for _, metric := range xactMetrics {
 		commitValue := metric.stats["xact_commit"]
-		if i, ok := p.parseInt("xact_commit", commitValue); ok {
+		if i, err := p.parseInt("xact_commit", commitValue); err != nil {
+			errors.AddPartial(1, err)
+			continue
+		} else {
 			attributes := pdata.NewAttributeMap()
 			attributes.Insert(metadata.A.Database, pdata.NewAttributeValueString(metric.database))
 			addToIntMetric(commits, attributes, i, now)
 		}
 
 		rollbackValue := metric.stats["xact_rollback"]
-		if i, ok := p.parseInt("xact_rollback", rollbackValue); ok {
+		if i, err := p.parseInt("xact_rollback", rollbackValue); err != nil {
+			errors.AddPartial(1, err)
+			continue
+		} else {
 			attributes := pdata.NewAttributeMap()
 			attributes.Insert(metadata.A.Database, pdata.NewAttributeValueString(metric.database))
 			addToIntMetric(rollbacks, attributes, i, now)
 		}
 	}
+}
 
-	// database size
+func (p *postgreSQLScraper) collectDatabaseSize(
+	now pdata.Timestamp,
+	client client,
+	databases []string,
+	databaseSize pdata.NumberDataPointSlice,
+	errors scrapererror.ScrapeErrors,
+) {
 	databaseSizeMetric, err := client.getDatabaseSize(databases)
 	if err != nil {
 		p.logger.Error("Failed to fetch database size", zap.Error(err))
+		errors.AddPartial(1, err)
 		return
 	}
 	for _, metric := range databaseSizeMetric {
 		for k, v := range metric.stats {
-			i, ok := p.parseInt(k, v)
-			if !ok {
+			i, err := p.parseInt(k, v)
+			if err != nil {
+				errors.AddPartial(1, err)
 				continue
 			}
 
@@ -257,29 +274,38 @@ func (p *postgreSQLScraper) databaseAgnosticMetricCollection(
 			addToIntMetric(databaseSize, attributes, i, now)
 		}
 	}
+}
 
-	// backends
+func (p *postgreSQLScraper) collectBackends(
+	now pdata.Timestamp,
+	client client,
+	databases []string,
+	backends pdata.NumberDataPointSlice,
+	errors scrapererror.ScrapeErrors,
+) {
 	backendsMetric, err := client.getBackends(databases)
 	if err != nil {
 		p.logger.Error("Failed to fetch backends", zap.Error(err))
-	} else {
-		for _, metric := range backendsMetric {
-			for k, v := range metric.stats {
-				i, ok := p.parseInt(k, v)
-				if !ok {
-					continue
-				}
-
-				attributes := pdata.NewAttributeMap()
-				attributes.Insert(metadata.A.Database, pdata.NewAttributeValueString(metric.database))
-				addToIntMetric(backends, attributes, i, now)
+		errors.AddPartial(1, err)
+		return
+	}
+	for _, metric := range backendsMetric {
+		for k, v := range metric.stats {
+			i, err := p.parseInt(k, v)
+			if err != nil {
+				errors.AddPartial(1, err)
+				continue
 			}
+
+			attributes := pdata.NewAttributeMap()
+			attributes.Insert(metadata.A.Database, pdata.NewAttributeValueString(metric.database))
+			addToIntMetric(backends, attributes, i, now)
 		}
 	}
 }
 
 // parseInt converts string to int64.
-func (p *postgreSQLScraper) parseInt(key, value string) (int64, bool) {
+func (p *postgreSQLScraper) parseInt(key, value string) (int64, error) {
 	i, err := strconv.ParseInt(value, 10, 64)
 	if err != nil {
 		p.logger.Info(
@@ -288,7 +314,7 @@ func (p *postgreSQLScraper) parseInt(key, value string) (int64, bool) {
 			zap.String("key", key),
 			zap.String("value", value),
 		)
-		return 0, false
+		return 0, err
 	}
-	return i, true
+	return i, nil
 }

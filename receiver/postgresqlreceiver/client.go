@@ -195,13 +195,6 @@ func (c *postgreSQLClient) collectStatsFromQuery(query string, includeDatabase b
 			return nil, err
 		}
 
-		convertInterfaceToString := func(input interface{}) string {
-			if val, ok := input.(*string); ok {
-				return *val
-			}
-			return ""
-		}
-
 		database := c.database
 		if includeDatabase {
 			database, rowFields = convertInterfaceToString(rowFields[0]), rowFields[1:]
@@ -260,4 +253,11 @@ func filterQueryByDatabases(baseQuery string, databases []string, groupBy bool) 
 	}
 
 	return baseQuery + ";"
+}
+
+func convertInterfaceToString(input interface{}) string {
+	if val, ok := input.(*string); ok {
+		return *val
+	}
+	return ""
 }

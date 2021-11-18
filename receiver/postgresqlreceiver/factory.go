@@ -68,7 +68,6 @@ func createMetricsReceiver(
 
 	ns := newPostgreSQLScraper(params.Logger, cfg, &defaultClientFactory{})
 	scraper, err := scraperhelper.NewScraper(typeStr, ns.scrape)
-
 	if err != nil {
 		return nil, err
 	}
