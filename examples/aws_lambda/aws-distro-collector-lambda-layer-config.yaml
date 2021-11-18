@@ -7,7 +7,8 @@ receivers:
 exporters:
   otlphttp:
     traces_endpoint: $SUMOLOGIC_HTTP_TRACES_ENDPOINT_URL
-    insecure: true
+    tls:
+      insecure: true
 
 service:
   pipelines:

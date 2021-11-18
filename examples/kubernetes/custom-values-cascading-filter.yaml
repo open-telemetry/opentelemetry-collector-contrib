@@ -29,43 +29,55 @@ otelcol:
         expected_new_traces_per_sec: 100
         ## (default = 0): defines maximum number of spans per second
         spans_per_second: 1600
-        ## (default = 0.2): Ratio of spans that are always probabilistically filtered
+        ## Number of spans that are always probabilistically filtered
         ## (hence might be used for metrics calculation).
-        probabilistic_filtering_ratio: 0.2
-        ## (no default): Policies used to make a sampling decision
-        policies:
+        probabilistic_filtering_rate: 100
+        ## Rules that will reject all traces matching them
+        trace_reject_filters:
+          # Adjust or remove the example as needed
+          - name: remove-all-traces-with-health-span
+            name_pattern: "health.*"
+          # Adjust or remove the example as needed
+          - name: remove-all-traces-with-healthcheck-service
+            attributes:
+              - key: service.name
+                values:
+                  - "healthcheck/.*"
+                use_regex: true
+        ## Rules that will accept traces with this criteria, but only to a given volume
+        trace_accept_filters:
+          # Adjust or remove the example as needed
           - name: sampling-priority,
-            ## string_attribute: allows to specify conditions that need to be met
-            string_attribute: {
-              key: sampling.priority, values: [ "1" ]
-            },
-            ## Spans_per_second: max number of emitted spans per second by this policy.
-            spans_per_second: 500
-          - name: everything-else
-            ## This selects all traces, up the to the global limit
-            spans_per_second: -1
-          ## Following are some examples of other rules that could be used
-          # - name: extended-duration
-          #  ## Spans_per_second: max number of emitted spans per second by this policy.
-          #  spans_per_second: 500
-          #   properties:
-          #     ## Selects the span if the duration is greater or equal the given
-          #     ## value (use s or ms as the suffix to indicate unit).
-          #     min_duration: 5s
-          # - name: "status_code_condition",
-          #   ## Spans_per_second: max number of emitted spans per second by this policy.
-          #   spans_per_second: 500,
-          #   ## numeric_attribute: provides a list of conditions that need to be met
-          #   numeric_attribute: {
-          #     key: "http.status_code", min_value: 400, max_value: 999
-          #   }
-          # - name: everything-that-is-not-healthcheck
-          #   ## This selects all traces where there is NO span starting with `health` operation name
-          #   ## If employed, "everything-else" rule must be replaced with it
-          #   properties:
-          #     name_pattern: "^(healthcheck|otherhealthcheck).*"
-          #   invert_match: true
-          #   spans_per_second: -1
+            attributes:
+              - key: sampling.priority
+                values:
+                  - "1"
+            spans_per_second: 400 # <- adjust the output traffic level
+          # Adjust or remove the example as needed
+          - name: traces-with-errors
+            properties:
+              min_number_of_errors: 1
+            spans_per_second: 400 # <- adjust the output traffic level
+          # Adjust or remove the example as needed
+          - name: traces-with-and-high-latency
+            properties:
+              min_duration: 10s
+            spans_per_second: 800 # <- adjust the output traffic level
+          # Adjust or remove the example as needed
+          #- name: some-service-traces-with-some-attribute
+          #  attributes:
+          #    - key: service.name
+          #      values:
+          #        - some-service
+          #    - key: important-key
+          #      values:
+          #        - value1
+          #        - value2
+          #      use_regex: true
+          #  spans_per_second: 300 # <- adjust the output traffic level
+          # Adjust or remove the example as needed
+          - name: everything_else
+            spans_per_second: -1 # If there's anything left in the budget, it will randomly select remaining traces
     service:
       pipelines:
         traces:
