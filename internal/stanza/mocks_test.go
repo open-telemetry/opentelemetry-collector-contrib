@@ -85,13 +85,17 @@ func (m *mockLogsConsumer) Capabilities() consumer.Capabilities {
 }
 
 func (m *mockLogsConsumer) ConsumeLogs(ctx context.Context, ld pdata.Logs) error {
-	atomic.AddInt32(&m.received, 1)
+	atomic.AddInt32(&m.received, int32(ld.LogRecordCount()))
 	return nil
 }
 
 func (m *mockLogsConsumer) Received() int {
 	ret := atomic.LoadInt32(&m.received)
 	return int(ret)
+}
+
+func (m *mockLogsConsumer) ResetReceivedCount() {
+	atomic.StoreInt32(&m.received, 0)
 }
 
 type mockLogsRejecter struct {
