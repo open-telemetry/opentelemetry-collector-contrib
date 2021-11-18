@@ -82,7 +82,7 @@ func (p *postgreSQLScraper) scrape(ctx context.Context) (pdata.Metrics, error) {
 	// metric initialization
 	md := pdata.NewMetrics()
 	ilm := md.ResourceMetrics().AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty()
-	ilm.InstrumentationLibrary().SetName("otel/postgresql")
+	ilm.InstrumentationLibrary().SetName("otelcol/postgresql")
 	now := pdata.NewTimestampFromTime(time.Now())
 
 	blocksRead := initMetric(ilm.Metrics(), metadata.M.PostgresqlBlocksRead).Sum().DataPoints()
