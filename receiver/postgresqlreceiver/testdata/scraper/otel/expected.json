@@ -4,7 +4,7 @@
          "instrumentationLibraryMetrics": [
             {
                "instrumentationLibrary": {
-                  "name": "otel/postgresql"
+                  "name": "otelcol/postgresql"
                },
                "metrics": [
                   {
@@ -13,78 +13,6 @@
                      "sum": {
                         "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                         "dataPoints": [
-                           {
-                              "asInt": "21",
-                              "attributes": [
-                                 {
-                                    "key": "database",
-                                    "value": {
-                                       "stringValue": "otel"
-                                    }
-                                 },
-                                 {
-                                    "key": "table",
-                                    "value": {
-                                       "stringValue": "public.table1"
-                                    }
-                                 },
-                                 {
-                                    "key": "source",
-                                    "value": {
-                                       "stringValue": "idx_read"
-                                    }
-                                 }
-                              ],
-                              "timeUnixNano": "1633639622621536000"
-                           },
-                           {
-                              "asInt": "22",
-                              "attributes": [
-                                 {
-                                    "key": "database",
-                                    "value": {
-                                       "stringValue": "otel"
-                                    }
-                                 },
-                                 {
-                                    "key": "table",
-                                    "value": {
-                                       "stringValue": "public.table1"
-                                    }
-                                 },
-                                 {
-                                    "key": "source",
-                                    "value": {
-                                       "stringValue": "idx_hit"
-                                    }
-                                 }
-                              ],
-                              "timeUnixNano": "1633639622621536000"
-                           },
-                           {
-                              "asInt": "23",
-                              "attributes": [
-                                 {
-                                    "key": "database",
-                                    "value": {
-                                       "stringValue": "otel"
-                                    }
-                                 },
-                                 {
-                                    "key": "table",
-                                    "value": {
-                                       "stringValue": "public.table1"
-                                    }
-                                 },
-                                 {
-                                    "key": "source",
-                                    "value": {
-                                       "stringValue": "toast_read"
-                                    }
-                                 }
-                              ],
-                              "timeUnixNano": "1633639622621536000"
-                           },
                            {
                               "asInt": "24",
                               "attributes": [
@@ -107,7 +35,7 @@
                                     }
                                  }
                               ],
-                              "timeUnixNano": "1633639622621536000"
+                              "timeUnixNano": "1637261076898397000"
                            },
                            {
                               "asInt": "25",
@@ -131,7 +59,7 @@
                                     }
                                  }
                               ],
-                              "timeUnixNano": "1633639622621536000"
+                              "timeUnixNano": "1637261076898397000"
                            },
                            {
                               "asInt": "26",
@@ -155,7 +83,7 @@
                                     }
                                  }
                               ],
-                              "timeUnixNano": "1633639622621536000"
+                              "timeUnixNano": "1637261076898397000"
                            },
                            {
                               "asInt": "19",
@@ -179,7 +107,7 @@
                                     }
                                  }
                               ],
-                              "timeUnixNano": "1633639622621536000"
+                              "timeUnixNano": "1637261076898397000"
                            },
                            {
                               "asInt": "20",
@@ -203,10 +131,10 @@
                                     }
                                  }
                               ],
-                              "timeUnixNano": "1633639622621536000"
+                              "timeUnixNano": "1637261076898397000"
                            },
                            {
-                              "asInt": "29",
+                              "asInt": "21",
                               "attributes": [
                                  {
                                     "key": "database",
@@ -217,7 +145,7 @@
                                  {
                                     "key": "table",
                                     "value": {
-                                       "stringValue": "public.table2"
+                                       "stringValue": "public.table1"
                                     }
                                  },
                                  {
@@ -227,10 +155,10 @@
                                     }
                                  }
                               ],
-                              "timeUnixNano": "1633639622621536000"
+                              "timeUnixNano": "1637261076898397000"
                            },
                            {
-                              "asInt": "30",
+                              "asInt": "22",
                               "attributes": [
                                  {
                                     "key": "database",
@@ -241,7 +169,7 @@
                                  {
                                     "key": "table",
                                     "value": {
-                                       "stringValue": "public.table2"
+                                       "stringValue": "public.table1"
                                     }
                                  },
                                  {
@@ -251,10 +179,10 @@
                                     }
                                  }
                               ],
-                              "timeUnixNano": "1633639622621536000"
+                              "timeUnixNano": "1637261076898397000"
                            },
                            {
-                              "asInt": "31",
+                              "asInt": "23",
                               "attributes": [
                                  {
                                     "key": "database",
@@ -265,7 +193,7 @@
                                  {
                                     "key": "table",
                                     "value": {
-                                       "stringValue": "public.table2"
+                                       "stringValue": "public.table1"
                                     }
                                  },
                                  {
@@ -275,7 +203,7 @@
                                     }
                                  }
                               ],
-                              "timeUnixNano": "1633639622621536000"
+                              "timeUnixNano": "1637261076898397000"
                            },
                            {
                               "asInt": "32",
@@ -299,7 +227,7 @@
                                     }
                                  }
                               ],
-                              "timeUnixNano": "1633639622621536000"
+                              "timeUnixNano": "1637261076898397000"
                            },
                            {
                               "asInt": "33",
@@ -323,7 +251,7 @@
                                     }
                                  }
                               ],
-                              "timeUnixNano": "1633639622621536000"
+                              "timeUnixNano": "1637261076898397000"
                            },
                            {
                               "asInt": "34",
@@ -347,7 +275,7 @@
                                     }
                                  }
                               ],
-                              "timeUnixNano": "1633639622621536000"
+                              "timeUnixNano": "1637261076898397000"
                            },
                            {
                               "asInt": "27",
@@ -371,7 +299,7 @@
                                     }
                                  }
                               ],
-                              "timeUnixNano": "1633639622621536000"
+                              "timeUnixNano": "1637261076898397000"
                            },
                            {
                               "asInt": "28",
@@ -395,7 +323,79 @@
                                     }
                                  }
                               ],
-                              "timeUnixNano": "1633639622621536000"
+                              "timeUnixNano": "1637261076898397000"
+                           },
+                           {
+                              "asInt": "29",
+                              "attributes": [
+                                 {
+                                    "key": "database",
+                                    "value": {
+                                       "stringValue": "otel"
+                                    }
+                                 },
+                                 {
+                                    "key": "table",
+                                    "value": {
+                                       "stringValue": "public.table2"
+                                    }
+                                 },
+                                 {
+                                    "key": "source",
+                                    "value": {
+                                       "stringValue": "idx_read"
+                                    }
+                                 }
+                              ],
+                              "timeUnixNano": "1637261076898397000"
+                           },
+                           {
+                              "asInt": "30",
+                              "attributes": [
+                                 {
+                                    "key": "database",
+                                    "value": {
+                                       "stringValue": "otel"
+                                    }
+                                 },
+                                 {
+                                    "key": "table",
+                                    "value": {
+                                       "stringValue": "public.table2"
+                                    }
+                                 },
+                                 {
+                                    "key": "source",
+                                    "value": {
+                                       "stringValue": "idx_hit"
+                                    }
+                                 }
+                              ],
+                              "timeUnixNano": "1637261076898397000"
+                           },
+                           {
+                              "asInt": "31",
+                              "attributes": [
+                                 {
+                                    "key": "database",
+                                    "value": {
+                                       "stringValue": "otel"
+                                    }
+                                 },
+                                 {
+                                    "key": "table",
+                                    "value": {
+                                       "stringValue": "public.table2"
+                                    }
+                                 },
+                                 {
+                                    "key": "source",
+                                    "value": {
+                                       "stringValue": "toast_read"
+                                    }
+                                 }
+                              ],
+                              "timeUnixNano": "1637261076898397000"
                            }
                         ],
                         "isMonotonic": true
@@ -417,7 +417,7 @@
                                     }
                                  }
                               ],
-                              "timeUnixNano": "1633639622621536000"
+                              "timeUnixNano": "1637261076898397000"
                            }
                         ],
                         "isMonotonic": true
@@ -425,7 +425,9 @@
                   },
                   {
                      "description": "The database disk usage.",
-                     "gauge": {
+                     "name": "postgresql.db_size",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                         "dataPoints": [
                            {
                               "asInt": "4",
@@ -437,15 +439,16 @@
                                     }
                                  }
                               ],
-                              "timeUnixNano": "1633639622621536000"
+                              "timeUnixNano": "1637261076898397000"
                            }
                         ]
-                     },
-                     "name": "postgresql.db_size"
+                     }
                   },
                   {
                      "description": "The number of backends.",
-                     "gauge": {
+                     "name": "postgresql.backends",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                         "dataPoints": [
                            {
                               "asInt": "3",
@@ -457,15 +460,16 @@
                                     }
                                  }
                               ],
-                              "timeUnixNano": "1633639622621536000"
+                              "timeUnixNano": "1637261076898397000"
                            }
                         ]
-                     },
-                     "name": "postgresql.backends"
+                     }
                   },
                   {
                      "description": "The number of rows in the database.",
-                     "gauge": {
+                     "name": "postgresql.rows",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                         "dataPoints": [
                            {
                               "asInt": "7",
@@ -489,7 +493,7 @@
                                     }
                                  }
                               ],
-                              "timeUnixNano": "1633639622621536000"
+                              "timeUnixNano": "1637261076898397000"
                            },
                            {
                               "asInt": "8",
@@ -513,7 +517,7 @@
                                     }
                                  }
                               ],
-                              "timeUnixNano": "1633639622621536000"
+                              "timeUnixNano": "1637261076898397000"
                            },
                            {
                               "asInt": "9",
@@ -537,7 +541,7 @@
                                     }
                                  }
                               ],
-                              "timeUnixNano": "1633639622621536000"
+                              "timeUnixNano": "1637261076898397000"
                            },
                            {
                               "asInt": "10",
@@ -561,11 +565,10 @@
                                     }
                                  }
                               ],
-                              "timeUnixNano": "1633639622621536000"
+                              "timeUnixNano": "1637261076898397000"
                            }
                         ]
-                     },
-                     "name": "postgresql.rows"
+                     }
                   },
                   {
                      "description": "The number of db row operations.",
@@ -595,7 +598,7 @@
                                     }
                                  }
                               ],
-                              "timeUnixNano": "1633639622621536000"
+                              "timeUnixNano": "1637261076898397000"
                            },
                            {
                               "asInt": "40",
@@ -619,7 +622,7 @@
                                     }
                                  }
                               ],
-                              "timeUnixNano": "1633639622621536000"
+                              "timeUnixNano": "1637261076898397000"
                            },
                            {
                               "asInt": "41",
@@ -643,7 +646,7 @@
                                     }
                                  }
                               ],
-                              "timeUnixNano": "1633639622621536000"
+                              "timeUnixNano": "1637261076898397000"
                            },
                            {
                               "asInt": "42",
@@ -667,7 +670,7 @@
                                     }
                                  }
                               ],
-                              "timeUnixNano": "1633639622621536000"
+                              "timeUnixNano": "1637261076898397000"
                            },
                            {
                               "asInt": "43",
@@ -691,7 +694,7 @@
                                     }
                                  }
                               ],
-                              "timeUnixNano": "1633639622621536000"
+                              "timeUnixNano": "1637261076898397000"
                            },
                            {
                               "asInt": "44",
@@ -715,7 +718,7 @@
                                     }
                                  }
                               ],
-                              "timeUnixNano": "1633639622621536000"
+                              "timeUnixNano": "1637261076898397000"
                            },
                            {
                               "asInt": "45",
@@ -739,7 +742,7 @@
                                     }
                                  }
                               ],
-                              "timeUnixNano": "1633639622621536000"
+                              "timeUnixNano": "1637261076898397000"
                            },
                            {
                               "asInt": "46",
@@ -763,7 +766,7 @@
                                     }
                                  }
                               ],
-                              "timeUnixNano": "1633639622621536000"
+                              "timeUnixNano": "1637261076898397000"
                            }
                         ],
                         "isMonotonic": true
@@ -785,7 +788,7 @@
                                     }
                                  }
                               ],
-                              "timeUnixNano": "1633639622621536000"
+                              "timeUnixNano": "1637261076898397000"
                            }
                         ],
                         "isMonotonic": true

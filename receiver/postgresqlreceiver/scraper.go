@@ -87,9 +87,9 @@ func (p *postgreSQLScraper) scrape(ctx context.Context) (pdata.Metrics, error) {
 
 	blocksRead := initMetric(ilm.Metrics(), metadata.M.PostgresqlBlocksRead).Sum().DataPoints()
 	commits := initMetric(ilm.Metrics(), metadata.M.PostgresqlCommits).Sum().DataPoints()
-	databaseSize := initMetric(ilm.Metrics(), metadata.M.PostgresqlDbSize).Gauge().DataPoints()
-	backends := initMetric(ilm.Metrics(), metadata.M.PostgresqlBackends).Gauge().DataPoints()
-	databaseRows := initMetric(ilm.Metrics(), metadata.M.PostgresqlRows).Gauge().DataPoints()
+	databaseSize := initMetric(ilm.Metrics(), metadata.M.PostgresqlDbSize).Sum().DataPoints()
+	backends := initMetric(ilm.Metrics(), metadata.M.PostgresqlBackends).Sum().DataPoints()
+	databaseRows := initMetric(ilm.Metrics(), metadata.M.PostgresqlRows).Sum().DataPoints()
 	operations := initMetric(ilm.Metrics(), metadata.M.PostgresqlOperations).Sum().DataPoints()
 	rollbacks := initMetric(ilm.Metrics(), metadata.M.PostgresqlRollbacks).Sum().DataPoints()
 
@@ -189,7 +189,11 @@ func (p *postgreSQLScraper) collectDatabaseTableMetrics(
 	}
 	for _, table := range databaseTableMetrics {
 		for _, key := range []string{"live", "dead"} {
-			value := table.stats[key]
+			value, ok := table.stats[key]
+			if !ok {
+				// Data isn't present, error was already logged at a lower level
+				continue
+			}
 			i, err := p.parseInt(key, value)
 			if err != nil {
 				errors.AddPartial(1, err)
@@ -204,7 +208,11 @@ func (p *postgreSQLScraper) collectDatabaseTableMetrics(
 		}
 
 		for _, key := range []string{"ins", "upd", "del", "hot_upd"} {
-			value := table.stats[key]
+			value, ok := table.stats[key]
+			if !ok {
+				// Data isn't present, error was already logged at a lower level
+				continue
+			}
 			i, err := p.parseInt(key, value)
 			if err != nil {
 				errors.AddPartial(1, err)

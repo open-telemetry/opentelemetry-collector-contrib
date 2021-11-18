@@ -100,7 +100,9 @@ var Metrics = &metricStruct{
 			metric.SetName("postgresql.backends")
 			metric.SetDescription("The number of backends.")
 			metric.SetUnit("")
-			metric.SetDataType(pdata.MetricDataTypeGauge)
+			metric.SetDataType(pdata.MetricDataTypeSum)
+			metric.Sum().SetIsMonotonic(false)
+			metric.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
 		},
 	},
 	&metricImpl{
@@ -131,7 +133,9 @@ var Metrics = &metricStruct{
 			metric.SetName("postgresql.db_size")
 			metric.SetDescription("The database disk usage.")
 			metric.SetUnit("")
-			metric.SetDataType(pdata.MetricDataTypeGauge)
+			metric.SetDataType(pdata.MetricDataTypeSum)
+			metric.Sum().SetIsMonotonic(false)
+			metric.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
 		},
 	},
 	&metricImpl{
@@ -162,7 +166,9 @@ var Metrics = &metricStruct{
 			metric.SetName("postgresql.rows")
 			metric.SetDescription("The number of rows in the database.")
 			metric.SetUnit("")
-			metric.SetDataType(pdata.MetricDataTypeGauge)
+			metric.SetDataType(pdata.MetricDataTypeSum)
+			metric.Sum().SetIsMonotonic(false)
+			metric.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
 		},
 	},
 }

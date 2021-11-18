@@ -200,32 +200,33 @@ func (c *postgreSQLClient) collectStatsFromQuery(ctx context.Context, query stri
 
 		database := c.database
 		if includeDatabase {
-			if v, err := convertInterfaceToString(rowFields[0]); err != nil {
-				errors.AddPartial(len(rowFields), err)
+			v, err := convertInterfaceToString(rowFields[0])
+			if err != nil {
+				errors.AddPartial(len(orderedFields), err)
 				continue
-			} else {
-				database = v
 			}
+			database = v
 			rowFields = rowFields[1:]
 		}
 		table := ""
 		if includeTable {
-			if v, err := convertInterfaceToString(rowFields[0]); err != nil {
-				errors.AddPartial(len(rowFields), err)
+			v, err := convertInterfaceToString(rowFields[0])
+			if err != nil {
+				errors.AddPartial(len(orderedFields), err)
 				continue
-			} else {
-				table = v
 			}
+			table = v
 			rowFields = rowFields[1:]
 		}
 
 		stats := map[string]string{}
 		for idx, val := range rowFields {
-			if v, err := convertInterfaceToString(val); err != nil {
+			v, err := convertInterfaceToString(val)
+			if err != nil {
 				errors.AddPartial(1, err)
-			} else {
-				stats[orderedFields[idx]] = v
+				continue
 			}
+			stats[orderedFields[idx]] = v
 		}
 
 		metricStats = append(metricStats, MetricStat{

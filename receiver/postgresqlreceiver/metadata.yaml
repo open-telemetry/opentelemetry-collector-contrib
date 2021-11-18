@@ -37,19 +37,25 @@ metrics:
     description: The database disk usage.
     units: By
     data:
-      type: gauge
+      type: sum
+      monotonic: false
+      aggregation: cumulative
     attributes: [ database ]
   postgresql.backends:
     description: The number of backends.
     units: 1
     data:
-      type: gauge
+      type: sum
+      monotonic: false
+      aggregation: cumulative
     attributes: [ database ]
   postgresql.rows:
     description: The number of rows in the database.
     units: 1
     data:
-      type: gauge
+      type: sum
+      monotonic: false
+      aggregation: cumulative
     attributes: [ database, table, state ]
   postgresql.operations:
     description: The number of db row operations.

@@ -8,13 +8,13 @@ These are the metrics available for this scraper.
 
 | Name | Description | Unit | Type | Attributes |
 | ---- | ----------- | ---- | ---- | ---------- |
-| postgresql.backends | The number of backends. |  | Gauge | <ul> <li>database</li> </ul> |
+| postgresql.backends | The number of backends. |  | Sum | <ul> <li>database</li> </ul> |
 | postgresql.blocks_read | The number of blocks read. |  | Sum | <ul> <li>database</li> <li>table</li> <li>source</li> </ul> |
 | postgresql.commits | The number of commits. |  | Sum | <ul> <li>database</li> </ul> |
-| postgresql.db_size | The database disk usage. |  | Gauge | <ul> <li>database</li> </ul> |
+| postgresql.db_size | The database disk usage. |  | Sum | <ul> <li>database</li> </ul> |
 | postgresql.operations | The number of db row operations. |  | Sum | <ul> <li>database</li> <li>table</li> <li>operation</li> </ul> |
 | postgresql.rollbacks | The number of rollbacks. |  | Sum | <ul> <li>database</li> </ul> |
-| postgresql.rows | The number of rows in the database. |  | Gauge | <ul> <li>database</li> <li>table</li> <li>state</li> </ul> |
+| postgresql.rows | The number of rows in the database. |  | Sum | <ul> <li>database</li> <li>table</li> <li>state</li> </ul> |
 
 ## Attributes
 
