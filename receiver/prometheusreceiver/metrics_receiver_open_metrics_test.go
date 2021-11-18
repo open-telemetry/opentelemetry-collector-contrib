@@ -15,6 +15,7 @@
 package prometheusreceiver
 
 import (
+	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -25,7 +26,8 @@ import (
 	"go.opentelemetry.io/collector/model/pdata"
 )
 
-const testDataUrl string = "https://raw.githubusercontent.com/OpenObservability/OpenMetrics/main/tests/urls.txt"
+const testDataURL string = "https://raw.githubusercontent.com/OpenObservability/OpenMetrics/main/tests/urls.txt"
+const baseTestCaseURL string = "https://raw.githubusercontent.com/OpenObservability/OpenMetrics/main/tests/testdata/parsers/"
 
 func verifyPositiveTarget(t *testing.T, _ *testData, mds []*pdata.ResourceMetrics) {
 	require.Greater(t, len(mds), 0, "At least one resource metric should be present")
@@ -52,6 +54,11 @@ func TestOpenMetricsPositive(t *testing.T) {
 }
 
 func verifyNegativeTarget(t *testing.T, _ *testData, mds []*pdata.ResourceMetrics) {
+	// negative tests are skipped since prometheus scrape package is currently not fully
+	// compatible with OpenMetrics tests and successfully scrapes some invalid metrics
+	// see: https://github.com/prometheus/prometheus/issues/9699
+	t.Skip("skipping negative OpenMetrics parser tests")
+
 	require.Greater(t, len(mds), 0, "At least one resource metric should be present")
 	metrics := getMetrics(mds[0])
 	assertUp(t, 0, metrics)
@@ -59,11 +66,6 @@ func verifyNegativeTarget(t *testing.T, _ *testData, mds []*pdata.ResourceMetric
 
 // Test open metrics negative test cases
 func TestOpenMetricsNegative(t *testing.T) {
-	// negative tests are skipped since prometheus scrape package is currently not fully
-	// compatible with OpenMetrics tests and successfully scrapes some invalid metrics
-	// see: https://github.com/prometheus/prometheus/issues/9699
-	t.Skip("skipping negative OpenMetrics parser tests")
-
 	targetsMap := getOpenMetricsTestData(true)
 	targets := make([]*testData, 0)
 	for k, v := range targetsMap {
@@ -82,7 +84,7 @@ func TestOpenMetricsNegative(t *testing.T) {
 
 // maps each test name to the test data from OpenMetrics repository
 func getOpenMetricsTestData(negativeTestsOnly bool) map[string]string {
-	response, err := http.Get(testDataUrl)
+	response, err := http.Get(testDataURL)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -96,28 +98,28 @@ func getOpenMetricsTestData(negativeTestsOnly bool) map[string]string {
 		log.Fatal(err)
 	}
 
-	targetUrls := strings.Split(string(responseBody), "\n")
+	targetURLs := strings.Split(string(responseBody), "\n")
 	targetsData := make(map[string]string)
-	for _, targetUrl := range targetUrls {
-		if negativeTestsOnly && !strings.Contains(targetUrl, "bad") || targetUrl == "" {
+	for _, targetURL := range targetURLs {
+		if negativeTestsOnly && !strings.Contains(targetURL, "bad") || targetURL == "" {
 			continue
-		} else if !negativeTestsOnly && strings.Contains(targetUrl, "bad") || targetUrl == "" {
+		} else if !negativeTestsOnly && strings.Contains(targetURL, "bad") || targetURL == "" {
 			continue
 		}
+		testName := strings.TrimPrefix(targetURL, baseTestCaseURL)
+		testName = strings.TrimSuffix(testName, "/metrics")
 
-		if data, statusCode := getTestCase(targetUrl); statusCode == http.StatusOK {
-			testName := strings.TrimPrefix(targetUrl, "https://raw.githubusercontent.com/OpenObservability/OpenMetrics/main/tests/testdata/parsers/")
-			testName = strings.TrimSuffix(testName, "/metrics")
+		if data, statusCode := getTestCase(testName); statusCode == http.StatusOK {
 			targetsData[testName] = data
 		} else {
-			log.Printf("Failed to get test data from: %s", targetUrl)
+			log.Printf("Failed to get test data from: %s", targetURL)
 		}
 	}
 	return targetsData
 }
 
-func getTestCase(url string) (string, int) {
-	response, err := http.Get(url)
+func getTestCase(testName string) (string, int) {
+	response, err := http.Get(fmt.Sprintf("%s/%s/metrics", baseTestCaseURL, testName))
 
 	if err != nil || response == nil || response.StatusCode != http.StatusOK {
 		return "", response.StatusCode
