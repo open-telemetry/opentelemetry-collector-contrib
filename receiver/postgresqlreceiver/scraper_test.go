@@ -89,32 +89,32 @@ func (m *mockClient) Close() error {
 	return args.Error(0)
 }
 
-func (m *mockClient) getCommitsAndRollbacks(ctx context.Context, databases []string) ([]MetricStat, error) {
+func (m *mockClient) getCommitsAndRollbacks(_ context.Context, databases []string) ([]MetricStat, error) {
 	args := m.Called(databases)
 	return args.Get(0).([]MetricStat), args.Error(1)
 }
 
-func (m *mockClient) getBackends(ctx context.Context, databases []string) ([]MetricStat, error) {
+func (m *mockClient) getBackends(_ context.Context, databases []string) ([]MetricStat, error) {
 	args := m.Called(databases)
 	return args.Get(0).([]MetricStat), args.Error(1)
 }
 
-func (m *mockClient) getDatabaseSize(ctx context.Context, databases []string) ([]MetricStat, error) {
+func (m *mockClient) getDatabaseSize(_ context.Context, databases []string) ([]MetricStat, error) {
 	args := m.Called(databases)
 	return args.Get(0).([]MetricStat), args.Error(1)
 }
 
-func (m *mockClient) getDatabaseTableMetrics(ctx context.Context) ([]MetricStat, error) {
+func (m *mockClient) getDatabaseTableMetrics(_ context.Context) ([]MetricStat, error) {
 	args := m.Called()
 	return args.Get(0).([]MetricStat), args.Error(1)
 }
 
-func (m *mockClient) getBlocksReadByTable(ctx context.Context) ([]MetricStat, error) {
+func (m *mockClient) getBlocksReadByTable(_ context.Context) ([]MetricStat, error) {
 	args := m.Called()
 	return args.Get(0).([]MetricStat), args.Error(1)
 }
 
-func (m *mockClient) listDatabases(ctx context.Context) ([]string, error) {
+func (m *mockClient) listDatabases(_ context.Context) ([]string, error) {
 	args := m.Called()
 	return args.Get(0).([]string), args.Error(1)
 }
