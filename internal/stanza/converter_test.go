@@ -17,6 +17,7 @@ package stanza
 import (
 	"context"
 	"fmt"
+	"sort"
 	"strconv"
 	"sync"
 	"testing"
@@ -730,4 +731,135 @@ func BenchmarkConverter(b *testing.B) {
 			}
 		})
 	}
+}
+
+func BenchmarkGetResourceID(b *testing.B) {
+	b.StopTimer()
+	res := getResource()
+	b.StartTimer()
+	for i := 0; i < b.N; i++ {
+		getResourceID(res)
+	}
+}
+
+func BenchmarkGetResourceIDEmptyResource(b *testing.B) {
+	res := map[string]string{}
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		getResourceID(res)
+	}
+}
+
+func BenchmarkGetResourceIDSingleResource(b *testing.B) {
+	res := map[string]string{
+		"resource": "value",
+	}
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		getResourceID(res)
+	}
+}
+
+func getResource() map[string]string {
+	return map[string]string{
+		"file.name":        "filename.log",
+		"file.directory":   "/some_directory",
+		"host.name":        "localhost",
+		"host.ip":          "192.168.1.12",
+		"k8s.pod.name":     "test-pod-123zwe1",
+		"k8s.node.name":    "aws-us-east-1.asfasf.aws.com",
+		"k8s.container.id": "192end1yu823aocajsiocjnasd",
+		"k8s.cluster.name": "my-cluster",
+	}
+}
+
+type resourceIDOutput struct {
+	name   string
+	output uint64
+}
+
+type resourceIDOutputSlice []resourceIDOutput
+
+func (r resourceIDOutputSlice) Len() int {
+	return len(r)
+}
+
+func (r resourceIDOutputSlice) Less(i, j int) bool {
+	return r[i].output < r[j].output
+}
+
+func (r resourceIDOutputSlice) Swap(i, j int) {
+	r[i], r[j] = r[j], r[i]
+}
+
+func TestGetResourceID(t *testing.T) {
+	testCases := []struct {
+		name  string
+		input map[string]string
+	}{
+		{
+			name:  "Typical Resource",
+			input: getResource(),
+		},
+		{
+			name: "Empty value/key",
+			input: map[string]string{
+				"SomeKey": "",
+				"":        "Ooops",
+			},
+		},
+		{
+			name: "Empty value/key (reversed)",
+			input: map[string]string{
+				"":      "SomeKey",
+				"Ooops": "",
+			},
+		},
+		{
+			name: "Ambiguous map 1",
+			input: map[string]string{
+				"AB": "CD",
+				"EF": "G",
+			},
+		},
+		{
+			name: "Ambiguous map 2",
+			input: map[string]string{
+				"ABC": "DE",
+				"F":   "G",
+			},
+		},
+		{
+			name:  "nil resource",
+			input: nil,
+		},
+		{
+			name: "Long resource value",
+			input: map[string]string{
+				"key": "This is a really long resource value; It's so long that the internal pre-allocated buffer doesn't hold it.",
+			},
+		},
+	}
+
+	outputs := resourceIDOutputSlice{}
+	for _, testCase := range testCases {
+		outputs = append(outputs, resourceIDOutput{
+			name:   testCase.name,
+			output: getResourceID(testCase.input),
+		})
+	}
+
+	// Ensure every output is unique
+	sort.Sort(outputs)
+	for i := 1; i < len(outputs); i++ {
+		if outputs[i].output == outputs[i-1].output {
+			t.Errorf("Test case %s and %s had the same output", outputs[i].name, outputs[i-1].name)
+		}
+	}
+}
+
+func TestGetResourceIDEmptyAndNilAreEqual(t *testing.T) {
+	nilID := getResourceID(nil)
+	emptyID := getResourceID(map[string]string{})
+	require.Equal(t, nilID, emptyID)
 }

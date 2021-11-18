@@ -15,13 +15,14 @@
 package stanza
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
+	"encoding/binary"
 	"errors"
 	"fmt"
+	"hash/fnv"
 	"math"
 	"runtime"
+	"sort"
 	"sync"
 	"time"
 
@@ -106,7 +107,7 @@ type Converter struct {
 	flushChan chan pdata.Logs
 
 	// data holds currently converted and aggregated log entries, grouped by Resource.
-	data map[string]pdata.Logs
+	data map[uint64]pdata.Logs
 	// logRecordCount holds the number of translated and accumulated log Records
 	// and is compared against maxFlushCount to make a decision whether to flush.
 	logRecordCount uint
@@ -157,7 +158,7 @@ func NewConverter(opts ...ConverterOption) *Converter {
 		workerChan:    make(chan *entry.Entry),
 		workerCount:   int(math.Max(1, float64(runtime.NumCPU()/4))),
 		batchChan:     make(chan *workerItem),
-		data:          make(map[string]pdata.Logs),
+		data:          make(map[uint64]pdata.Logs),
 		pLogsChan:     make(chan pdata.Logs),
 		stopChan:      make(chan struct{}),
 		logger:        zap.NewNop(),
@@ -202,9 +203,9 @@ func (c *Converter) OutChannel() <-chan pdata.Logs {
 }
 
 type workerItem struct {
-	Resource       map[string]string
-	LogRecord      pdata.LogRecord
-	ResourceString string
+	Resource   map[string]string
+	LogRecord  pdata.LogRecord
+	ResourceID uint64
 }
 
 // workerLoop is responsible for obtaining log entries from Batch() calls,
@@ -212,11 +213,6 @@ type workerItem struct {
 // associated Resource through the batchChan for aggregation.
 func (c *Converter) workerLoop() {
 	defer c.wg.Done()
-
-	var (
-		buff    = bytes.Buffer{}
-		encoder = json.NewEncoder(&buff)
-	)
 
 	for {
 
@@ -229,21 +225,14 @@ func (c *Converter) workerLoop() {
 				return
 			}
 
-			buff.Reset()
 			lr := convert(e)
-
-			if err := encoder.Encode(e.Resource); err != nil {
-				c.logger.Debug("Failed marshaling entry.Resource to JSON",
-					zap.Any("resource", e.Resource),
-				)
-				continue
-			}
+			resourceID := getResourceID(e.Resource)
 
 			select {
 			case c.batchChan <- &workerItem{
-				Resource:       e.Resource,
-				ResourceString: buff.String(),
-				LogRecord:      lr,
+				Resource:   e.Resource,
+				ResourceID: resourceID,
+				LogRecord:  lr,
 			}:
 			case <-c.stopChan:
 			}
@@ -267,7 +256,7 @@ func (c *Converter) batchLoop() {
 				return
 			}
 
-			pLogs, ok := c.data[wi.ResourceString]
+			pLogs, ok := c.data[wi.ResourceID]
 			if ok {
 				lr := pLogs.ResourceLogs().
 					At(0).InstrumentationLibraryLogs().
@@ -290,7 +279,7 @@ func (c *Converter) batchLoop() {
 				wi.LogRecord.CopyTo(lr)
 			}
 
-			c.data[wi.ResourceString] = pLogs
+			c.data[wi.ResourceID] = pLogs
 			c.logRecordCount++
 
 			if c.logRecordCount >= c.maxFlushCount {
@@ -581,4 +570,43 @@ var sevTextMap = map[entry.Severity]string{
 	entry.Fatal2:  "Fatal2",
 	entry.Fatal3:  "Fatal3",
 	entry.Fatal4:  "Fatal4",
+}
+
+// pairSep is chosen to be an invalid byte for a utf-8 sequence
+// making it very unlikely to be present in the resource maps keys or values
+var pairSep = []byte{0xfe}
+
+// emptyResourceID is the ID returned by getResourceID when it is passed an empty resource.
+// This specific number is chosen as it is the starting offset of fnv64.
+const emptyResourceID uint64 = 14695981039346656037
+
+func getResourceID(resource map[string]string) uint64 {
+	if len(resource) == 0 {
+		return emptyResourceID
+	}
+
+	var fnvHash = fnv.New64a()
+	var fnvHashOut = make([]byte, 0, 16)
+	var keySlice = make([]string, 0, len(resource))
+
+	for k := range resource {
+		keySlice = append(keySlice, k)
+	}
+
+	if len(keySlice) > 1 {
+		// In order for this to be deterministic, we need to sort the map. Using range, like above,
+		// has no guarantee about order.
+		sort.Strings(keySlice)
+	}
+
+	for _, k := range keySlice {
+		fnvHash.Write([]byte(k))
+		fnvHash.Write(pairSep)
+
+		fnvHash.Write([]byte(resource[k]))
+		fnvHash.Write(pairSep)
+	}
+
+	fnvHashOut = fnvHash.Sum(fnvHashOut)
+	return binary.BigEndian.Uint64(fnvHashOut)
 }
