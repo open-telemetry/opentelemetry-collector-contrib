@@ -6,8 +6,8 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.39.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/kubelet v0.39.0
 	github.com/stretchr/testify v1.7.0
-	go.opentelemetry.io/collector v0.39.0
-	go.opentelemetry.io/collector/model v0.39.0
+	go.opentelemetry.io/collector v0.39.1-0.20211117203239-e23c9d0a0183
+	go.opentelemetry.io/collector/model v0.39.1-0.20211117203239-e23c9d0a0183
 	go.uber.org/zap v1.19.1
 	k8s.io/api v0.22.3
 	k8s.io/apimachinery v0.22.3
@@ -45,9 +45,9 @@ require (
 	github.com/spf13/cast v1.4.1 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	go.opencensus.io v0.23.0 // indirect
-	go.opentelemetry.io/otel v1.1.0 // indirect
-	go.opentelemetry.io/otel/metric v0.24.0 // indirect
-	go.opentelemetry.io/otel/trace v1.1.0 // indirect
+	go.opentelemetry.io/otel v1.2.0 // indirect
+	go.opentelemetry.io/otel/metric v0.25.0 // indirect
+	go.opentelemetry.io/otel/trace v1.2.0 // indirect
 	go.uber.org/atomic v1.9.0 // indirect
 	go.uber.org/multierr v1.7.0 // indirect
 	golang.org/x/net v0.0.0-20210614182718-04defd469f4e // indirect
