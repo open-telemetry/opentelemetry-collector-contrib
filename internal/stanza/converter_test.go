@@ -160,24 +160,20 @@ func TestConvert(t *testing.T) {
 
 	if atts := lr.Attributes(); assert.Equal(t, 2, atts.Len()) {
 		m := pdata.NewAttributeMap()
-		m.InitFromMap(map[string]pdata.AttributeValue{
-			"one": pdata.NewAttributeValueString("two"),
-			"two": pdata.NewAttributeValueString("three"),
-		})
+		m.InsertString("one", "two")
+		m.InsertString("two", "three")
 		assert.EqualValues(t, m.Sort(), atts.Sort())
 	}
 
 	if assert.Equal(t, pdata.AttributeValueTypeMap, lr.Body().Type()) {
 		m := pdata.NewAttributeMap()
-		m.InitFromMap(map[string]pdata.AttributeValue{
-			"bool":   pdata.NewAttributeValueBool(true),
-			"int":    pdata.NewAttributeValueInt(123),
-			"double": pdata.NewAttributeValueDouble(12.34),
-			"string": pdata.NewAttributeValueString("hello"),
-			"bytes":  pdata.NewAttributeValueString("asdf"),
-			// Don't include a nested object because AttributeValueMap sorting
-			// doesn't sort recursively.
-		})
+		// Don't include a nested object because AttributeValueMap sorting
+		// doesn't sort recursively.
+		m.InsertBool("bool", true)
+		m.InsertInt("int", 123)
+		m.InsertDouble("double", 12.34)
+		m.InsertString("string", "hello")
+		m.InsertString("bytes", "asdf")
 		assert.EqualValues(t, m.Sort(), lr.Body().MapVal().Sort())
 	}
 }

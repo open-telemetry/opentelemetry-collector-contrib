@@ -570,11 +570,9 @@ func Test_sfxReceiver_TLS(t *testing.T) {
 	dp.SetTimestamp(pdata.Timestamp(msec * 1e6))
 	dp.SetIntVal(13)
 
-	dp.Attributes().InitFromMap(map[string]pdata.AttributeValue{
-		"k0": pdata.NewAttributeValueString("v0"),
-		"k1": pdata.NewAttributeValueString("v1"),
-		"k2": pdata.NewAttributeValueString("v2"),
-	})
+	dp.Attributes().InsertString("k0", "v0")
+	dp.Attributes().InsertString("k1", "v1")
+	dp.Attributes().InsertString("k2", "v2")
 	dp.Attributes().Sort()
 
 	t.Log("Sending SignalFx metric data Request")

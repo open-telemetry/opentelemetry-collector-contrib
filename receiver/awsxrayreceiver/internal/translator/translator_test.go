@@ -991,7 +991,7 @@ func initResourceSpans(expectedSeg *awsxray.Segment,
 	rs := pdata.NewResourceSpans()
 
 	if len(resourceAttrs) > 0 {
-		rs.Resource().Attributes().InitFromMap(resourceAttrs)
+		pdata.NewAttributeMapFromMap(resourceAttrs).CopyTo(rs.Resource().Attributes())
 	} else {
 		rs.Resource().Attributes().Clear()
 		rs.Resource().Attributes().EnsureCapacity(initAttrCapacity)
@@ -1028,12 +1028,12 @@ func initResourceSpans(expectedSeg *awsxray.Segment,
 			for _, evtProps := range props.eventsProps {
 				spEvt := sp.Events().AppendEmpty()
 				spEvt.SetName(evtProps.name)
-				spEvt.Attributes().InitFromMap(evtProps.attrs)
+				pdata.NewAttributeMapFromMap(evtProps.attrs).CopyTo(spEvt.Attributes())
 			}
 		}
 
 		if len(props.attrs) > 0 {
-			sp.Attributes().InitFromMap(props.attrs)
+			pdata.NewAttributeMapFromMap(props.attrs).CopyTo(sp.Attributes())
 		} else {
 			sp.Attributes().Clear()
 			sp.Attributes().EnsureCapacity(initAttrCapacity)

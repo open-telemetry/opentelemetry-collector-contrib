@@ -34,8 +34,7 @@ func TestAddAnnotations(t *testing.T) {
 	attrMap.EnsureCapacity(initAttrCapacity)
 	addAnnotations(input, &attrMap)
 
-	expectedAttrMap := pdata.NewAttributeMap()
-	expectedAttrMap.InitFromMap(
+	expectedAttrMap := pdata.NewAttributeMapFromMap(
 		map[string]pdata.AttributeValue{
 			"int":     pdata.NewAttributeValueInt(int64(0)),
 			"int32":   pdata.NewAttributeValueInt(int64(1)),

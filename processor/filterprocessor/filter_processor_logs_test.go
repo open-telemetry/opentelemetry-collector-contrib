@@ -389,7 +389,7 @@ func testResourceLogs(lwrs []logWithResource) pdata.Logs {
 		rl := ld.ResourceLogs().AppendEmpty()
 
 		// Add resource level attribtues
-		rl.Resource().Attributes().InitFromMap(lwr.resourceAttributes)
+		pdata.NewAttributeMapFromMap(lwr.resourceAttributes).CopyTo(rl.Resource().Attributes())
 		ls := rl.InstrumentationLibraryLogs().AppendEmpty().Logs()
 		for _, name := range lwr.logNames {
 			l := ls.AppendEmpty()
@@ -397,7 +397,7 @@ func testResourceLogs(lwrs []logWithResource) pdata.Logs {
 
 			// Add record level attribtues
 			for k := 0; k < ls.Len(); k++ {
-				ls.At(k).Attributes().InitFromMap(lwrs[i].recordAttributes)
+				pdata.NewAttributeMapFromMap(lwrs[i].recordAttributes).CopyTo(ls.At(k).Attributes())
 			}
 		}
 	}

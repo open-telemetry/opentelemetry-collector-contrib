@@ -139,7 +139,7 @@ func TestMetadataKubernetes(t *testing.T) {
 
 func resourceFromAttributesMap(attrs map[string]pdata.AttributeValue) pdata.Resource {
 	resource := pdata.NewResource()
-	resource.Attributes().InitFromMap(attrs)
+	pdata.NewAttributeMapFromMap(attrs).CopyTo(resource.Attributes())
 	return resource
 }
 
