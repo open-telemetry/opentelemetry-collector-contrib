@@ -50,7 +50,7 @@ func (leo logEmitterOptionFunc) Apply(le *LogEmitter) {
 
 var (
 	defaultFlushInterval      = 100 * time.Millisecond
-	defaultMaxBatchSize  uint = 200
+	defaultMaxBatchSize  uint = 100
 )
 
 // LogEmitterWithMaxBatchSize returns an option that makes the LogEmitter use the specified max batch size
