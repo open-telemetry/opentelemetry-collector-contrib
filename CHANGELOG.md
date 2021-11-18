@@ -10,6 +10,10 @@
 
 - `awsprometheusremotewrite` exporter: Improve error message when failing to sign request
 
+## 🚀 New components 🚀
+
+- Add `mongodbatlasreceiver` receiver (#6367)
+
 ## v0.39.0
 
 ## 🛑 Breaking changes 🛑
