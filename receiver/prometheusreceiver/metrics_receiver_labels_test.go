@@ -140,3 +140,102 @@ func TestLabelLimitConfig(t *testing.T) {
 
 	testComponentCustomConfig(t, targets, mp, cfg)
 }
+
+const honorLabelsTarget = `
+# HELP test_gauge0 This is my gauge
+# TYPE test_gauge0 gauge
+test_gauge0{instance="hostname:8080",job="honor_labels_test",testLabel="value1"} 1
+`
+
+func verifyHonorLabelsFalse(t *testing.T, td *testData, rms []*pdata.ResourceMetrics) {
+	want := td.attributes
+	require.Greater(t, len(rms), 0, "At least one resource metric should be present")
+
+	metrics1 := rms[0].InstrumentationLibraryMetrics().At(0).Metrics()
+	ts1 := metrics1.At(0).Gauge().DataPoints().At(0).Timestamp()
+
+	doCompare(t, "honor_labels_false", want, rms[0], []testExpectation{
+		assertMetricPresent("test_gauge0",
+			compareMetricType(pdata.MetricDataTypeGauge),
+			[]dataPointExpectation{
+				{
+					numberPointComparator: []numberPointComparator{
+						compareTimestamp(ts1),
+						compareDoubleValue(1),
+						//job and instance labels must be prefixed with "exported_"
+						compareAttributes(map[string]string{"exported_job": "honor_labels_test", "exported_instance": "hostname:8080", "testLabel": "value1"}),
+					},
+				},
+			}),
+	})
+}
+
+func TestHonorLabelsFalseConfig(t *testing.T) {
+	targets := []*testData{
+		{
+			name: "target1",
+			pages: []mockPrometheusResponse{
+				{code: 200, data: honorLabelsTarget},
+			},
+			validateFunc: verifyHonorLabelsFalse,
+		},
+	}
+
+	mp, cfg, err := setupMockPrometheus(targets...)
+	require.Nilf(t, err, "Failed to create Prometheus config: %v", err)
+
+	testComponentCustomConfig(t, targets, mp, cfg)
+}
+
+func verifyHonorLabelsTrue(t *testing.T, td *testData, rms []*pdata.ResourceMetrics) {
+	//Test for honor_labels: true is skipped. Currently, the Prometheus receiver is unable to support this config
+	//See: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/5757
+	t.Skip("skipping test for honor_labels true configuration")
+
+	require.Greater(t, len(rms), 0, "At least one resource metric should be present")
+
+	//job and instance label values should be honored from honorLabelsTarget
+	expectedAttributes := td.attributes
+	expectedAttributes.Update("job", pdata.NewAttributeValueString("honor_labels_test"))
+	expectedAttributes.Update("instance", pdata.NewAttributeValueString("hostname:8080"))
+	expectedAttributes.Update("host.name", pdata.NewAttributeValueString("hostname"))
+	expectedAttributes.Update("port", pdata.NewAttributeValueString("8080"))
+
+	metrics1 := rms[0].InstrumentationLibraryMetrics().At(0).Metrics()
+	ts1 := metrics1.At(0).Gauge().DataPoints().At(0).Timestamp()
+
+	doCompare(t, "honor_labels_true", expectedAttributes, rms[0], []testExpectation{
+		assertMetricPresent("test_gauge0",
+			compareMetricType(pdata.MetricDataTypeGauge),
+			[]dataPointExpectation{
+				{
+					numberPointComparator: []numberPointComparator{
+						compareTimestamp(ts1),
+						compareDoubleValue(1),
+						compareAttributes(map[string]string{"testLabel": "value1"}),
+					},
+				},
+			}),
+	})
+}
+
+func TestHonorLabelsTrueConfig(t *testing.T) {
+	targets := []*testData{
+		{
+			name: "honor_labels_test",
+			pages: []mockPrometheusResponse{
+				{code: 200, data: honorLabelsTarget},
+			},
+			validateFunc: verifyHonorLabelsTrue,
+		},
+	}
+
+	mp, cfg, err := setupMockPrometheus(targets...)
+	require.Nilf(t, err, "Failed to create Prometheus config: %v", err)
+
+	for _, scrapeCfg := range cfg.ScrapeConfigs {
+		scrapeCfg.HonorLabels = true
+	}
+
+	testComponentCustomConfig(t, targets, mp, cfg)
+}
