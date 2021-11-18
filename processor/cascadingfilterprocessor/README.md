@@ -54,7 +54,7 @@ Each of the specified drop rules has several properties:
   - `values: [<value1>, value2>]` (default=`empty`): list of string values, when present at least
     one of them must be matched
   - `use_regex: <use_regex>` (default=`false`): indication whether values provided should be treated as regular expressions
-  - `ranges: [{min_value: <min_value>, max_value: <max_value>}]` (default=`empty`): list of numeric ranges; when present at least
+  - `ranges: [{min: <min_value>, max: <max_value>}]` (default=`empty`): list of numeric ranges; when present at least
     one must be matched
 
 
@@ -73,7 +73,7 @@ When several elements are specified, conditions for each of them must be met. Ea
   - `values: [<value1>, value2>]` (default=`empty`): list of string values, when present at least 
   one of them must be matched
   - `use_regex: <use_regex>` (default=`false`): indication whether values provided should be treated as regular expressions
-  - `ranges: [{min_value: <min_value>, max_value: <max_value>}]` (default=`empty`): list of numeric ranges; when present at least
+  - `ranges: [{min: <min_value>, max: <max_value>}]` (default=`empty`): list of numeric ranges; when present at least
   one must be matched
 - `properties: { min_number_of_errors: <number>}`: selects the trace if it has at least provided number of errors 
 (determined based on the span status field value)
