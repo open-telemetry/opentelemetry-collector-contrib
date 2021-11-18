@@ -15,7 +15,9 @@
 package postgresqlreceiver
 
 import (
+	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"net"
 	"strings"
@@ -23,16 +25,17 @@ import (
 	"github.com/lib/pq"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configtls"
+	"go.opentelemetry.io/collector/receiver/scrapererror"
 )
 
 type client interface {
 	Close() error
-	getCommitsAndRollbacks(databases []string) ([]MetricStat, error)
-	getBackends(databases []string) ([]MetricStat, error)
-	getDatabaseSize(databases []string) ([]MetricStat, error)
-	getDatabaseTableMetrics() ([]MetricStat, error)
-	getBlocksReadByTable() ([]MetricStat, error)
-	listDatabases() ([]string, error)
+	getCommitsAndRollbacks(ctx context.Context, databases []string) ([]MetricStat, error)
+	getBackends(ctx context.Context, databases []string) ([]MetricStat, error)
+	getDatabaseSize(ctx context.Context, databases []string) ([]MetricStat, error)
+	getDatabaseTableMetrics(ctx context.Context) ([]MetricStat, error)
+	getBlocksReadByTable(ctx context.Context) ([]MetricStat, error)
+	listDatabases(ctx context.Context) ([]string, error)
 }
 
 type postgreSQLClient struct {
@@ -119,25 +122,25 @@ type MetricStat struct {
 	stats    map[string]string
 }
 
-func (c *postgreSQLClient) getCommitsAndRollbacks(databases []string) ([]MetricStat, error) {
+func (c *postgreSQLClient) getCommitsAndRollbacks(ctx context.Context, databases []string) ([]MetricStat, error) {
 	query := filterQueryByDatabases("SELECT datname, xact_commit, xact_rollback FROM pg_stat_database", databases, false)
 
-	return c.collectStatsFromQuery(query, true, false, "xact_commit", "xact_rollback")
+	return c.collectStatsFromQuery(ctx, query, true, false, "xact_commit", "xact_rollback")
 }
 
-func (c *postgreSQLClient) getBackends(databases []string) ([]MetricStat, error) {
+func (c *postgreSQLClient) getBackends(ctx context.Context, databases []string) ([]MetricStat, error) {
 	query := filterQueryByDatabases("SELECT datname, count(*) as count from pg_stat_activity", databases, true)
 
-	return c.collectStatsFromQuery(query, true, false, "count")
+	return c.collectStatsFromQuery(ctx, query, true, false, "count")
 }
 
-func (c *postgreSQLClient) getDatabaseSize(databases []string) ([]MetricStat, error) {
+func (c *postgreSQLClient) getDatabaseSize(ctx context.Context, databases []string) ([]MetricStat, error) {
 	query := filterQueryByDatabases("SELECT datname, pg_database_size(datname) FROM pg_catalog.pg_database WHERE datistemplate = false", databases, false)
 
-	return c.collectStatsFromQuery(query, true, false, "db_size")
+	return c.collectStatsFromQuery(ctx, query, true, false, "db_size")
 }
 
-func (c *postgreSQLClient) getDatabaseTableMetrics() ([]MetricStat, error) {
+func (c *postgreSQLClient) getDatabaseTableMetrics(ctx context.Context) ([]MetricStat, error) {
 	query := `SELECT schemaname || '.' || relname AS table,
 	n_live_tup AS live,
 	n_dead_tup AS dead,
@@ -147,10 +150,10 @@ func (c *postgreSQLClient) getDatabaseTableMetrics() ([]MetricStat, error) {
 	n_tup_hot_upd AS hot_upd
 	FROM pg_stat_user_tables;`
 
-	return c.collectStatsFromQuery(query, false, true, "live", "dead", "ins", "upd", "del", "hot_upd")
+	return c.collectStatsFromQuery(ctx, query, false, true, "live", "dead", "ins", "upd", "del", "hot_upd")
 }
 
-func (c *postgreSQLClient) getBlocksReadByTable() ([]MetricStat, error) {
+func (c *postgreSQLClient) getBlocksReadByTable(ctx context.Context) ([]MetricStat, error) {
 	query := `SELECT schemaname || '.' || relname AS table, 
 	coalesce(heap_blks_read, 0) AS heap_read, 
 	coalesce(heap_blks_hit, 0) AS heap_hit, 
@@ -162,63 +165,82 @@ func (c *postgreSQLClient) getBlocksReadByTable() ([]MetricStat, error) {
 	coalesce(tidx_blks_hit, 0) AS tidx_hit 
 	FROM pg_statio_user_tables;`
 
-	return c.collectStatsFromQuery(query, false, true, "heap_read", "heap_hit", "idx_read", "idx_hit", "toast_read", "toast_hit", "tidx_read", "tidx_hit")
+	return c.collectStatsFromQuery(ctx, query, false, true, "heap_read", "heap_hit", "idx_read", "idx_hit", "toast_read", "toast_hit", "tidx_read", "tidx_hit")
 }
 
-func (c *postgreSQLClient) collectStatsFromQuery(query string, includeDatabase bool, includeTable bool, orderedFields ...string) ([]MetricStat, error) {
-	rows, err := c.client.Query(query)
+func (c *postgreSQLClient) collectStatsFromQuery(ctx context.Context, query string, includeDatabase bool, includeTable bool, orderedFields ...string) ([]MetricStat, error) {
+	rows, err := c.client.QueryContext(ctx, query)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 
+	errors := scrapererror.ScrapeErrors{}
 	metricStats := []MetricStat{}
 	for rows.Next() {
 		rowFields := make([]interface{}, 0)
 
 		// Build a list of addresses that rows.Scan will load column data into
 		if includeDatabase {
-			var val *string
+			var val string
 			rowFields = append(rowFields, &val)
 		}
 		if includeTable {
-			var val *string
+			var val string
 			rowFields = append(rowFields, &val)
 		}
 		for range orderedFields {
-			var val *string
+			var val string
 			rowFields = append(rowFields, &val)
 		}
 
-		stats := map[string]string{}
 		if err := rows.Scan(rowFields...); err != nil {
 			return nil, err
 		}
 
 		database := c.database
 		if includeDatabase {
-			database, rowFields = convertInterfaceToString(rowFields[0]), rowFields[1:]
+			if v, err := convertInterfaceToString(rowFields[0]); err != nil {
+				errors.AddPartial(len(rowFields), err)
+				continue
+			} else {
+				database = v
+			}
+			rowFields = rowFields[1:]
 		}
 		table := ""
 		if includeTable {
-			table, rowFields = convertInterfaceToString(rowFields[0]), rowFields[1:]
+			if v, err := convertInterfaceToString(rowFields[0]); err != nil {
+				errors.AddPartial(len(rowFields), err)
+				continue
+			} else {
+				table = v
+			}
+			rowFields = rowFields[1:]
 		}
+
+		stats := map[string]string{}
 		for idx, val := range rowFields {
-			stats[orderedFields[idx]] = convertInterfaceToString(val)
+			if v, err := convertInterfaceToString(val); err != nil {
+				errors.AddPartial(1, err)
+			} else {
+				stats[orderedFields[idx]] = v
+			}
 		}
+
 		metricStats = append(metricStats, MetricStat{
 			database: database,
 			table:    table,
 			stats:    stats,
 		})
 	}
-	return metricStats, nil
+	return metricStats, errors.Combine()
 }
 
-func (c *postgreSQLClient) listDatabases() ([]string, error) {
+func (c *postgreSQLClient) listDatabases(ctx context.Context) ([]string, error) {
 	query := `SELECT datname FROM pg_database
 	WHERE datistemplate = false;`
-	rows, err := c.client.Query(query)
+	rows, err := c.client.QueryContext(ctx, query)
 	if err != nil {
 		return nil, err
 	}
@@ -255,9 +277,9 @@ func filterQueryByDatabases(baseQuery string, databases []string, groupBy bool) 
 	return baseQuery + ";"
 }
 
-func convertInterfaceToString(input interface{}) string {
+func convertInterfaceToString(input interface{}) (string, error) {
 	if val, ok := input.(*string); ok {
-		return *val
+		return *val, nil
 	}
-	return ""
+	return "", errors.New("issue converting interface into string")
 }

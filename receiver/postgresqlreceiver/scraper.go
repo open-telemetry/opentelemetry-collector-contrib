@@ -105,7 +105,7 @@ func (p *postgreSQLScraper) scrape(ctx context.Context) (pdata.Metrics, error) {
 	defer listClient.Close()
 
 	if len(databases) == 0 {
-		dbList, err := listClient.listDatabases()
+		dbList, err := listClient.listDatabases(ctx)
 		if err != nil {
 			p.logger.Error("Failed to request list of databases from postgres", zap.Error(err))
 			errors.Add(err)
@@ -115,9 +115,9 @@ func (p *postgreSQLScraper) scrape(ctx context.Context) (pdata.Metrics, error) {
 		databases = dbList
 	}
 
-	p.collectCommitsAndRollbacks(now, listClient, databases, commits, rollbacks, errors)
-	p.collectDatabaseSize(now, listClient, databases, databaseSize, errors)
-	p.collectBackends(now, listClient, databases, backends, errors)
+	p.collectCommitsAndRollbacks(ctx, now, listClient, databases, commits, rollbacks, errors)
+	p.collectDatabaseSize(ctx, now, listClient, databases, databaseSize, errors)
+	p.collectBackends(ctx, now, listClient, databases, backends, errors)
 
 	for _, database := range databases {
 		dbClient, err := p.clientFactory.getClient(p.config, database)
@@ -128,26 +128,30 @@ func (p *postgreSQLScraper) scrape(ctx context.Context) (pdata.Metrics, error) {
 		}
 		defer dbClient.Close()
 
-		p.collectBlockReads(now, dbClient, blocksRead, errors)
-		p.collectDatabaseTableMetrics(now, dbClient, databaseRows, operations, errors)
+		p.collectBlockReads(ctx, now, dbClient, blocksRead, errors)
+		p.collectDatabaseTableMetrics(ctx, now, dbClient, databaseRows, operations, errors)
 	}
 
 	return md, errors.Combine()
 }
 
 func (p *postgreSQLScraper) collectBlockReads(
+	ctx context.Context,
 	now pdata.Timestamp,
 	client client,
 	blocksRead pdata.NumberDataPointSlice,
 	errors scrapererror.ScrapeErrors,
 ) {
-	blocksReadByTableMetrics, err := client.getBlocksReadByTable()
+	blocksReadByTableMetrics, err := client.getBlocksReadByTable(ctx)
 	if err != nil {
-		p.logger.Error("Failed to fetch blocks read by table", zap.Error(err))
+		p.logger.Error("Errors encountered while fetching blocks read by table", zap.Error(err))
 		errors.AddPartial(1, err)
-		return
 	}
 
+	// Metrics can be partially collected (non-nil) even if there were partial errors reported
+	if blocksReadByTableMetrics == nil {
+		return
+	}
 	for _, table := range blocksReadByTableMetrics {
 		for k, v := range table.stats {
 			i, err := p.parseInt(k, v)
@@ -166,16 +170,21 @@ func (p *postgreSQLScraper) collectBlockReads(
 }
 
 func (p *postgreSQLScraper) collectDatabaseTableMetrics(
+	ctx context.Context,
 	now pdata.Timestamp,
 	client client,
 	databaseRows pdata.NumberDataPointSlice,
 	operations pdata.NumberDataPointSlice,
 	errors scrapererror.ScrapeErrors,
 ) {
-	databaseTableMetrics, err := client.getDatabaseTableMetrics()
+	databaseTableMetrics, err := client.getDatabaseTableMetrics(ctx)
 	if err != nil {
-		p.logger.Error("Failed to fetch database table metrics", zap.Error(err))
+		p.logger.Error("Errors encountered while fetching database table metrics", zap.Error(err))
 		errors.AddPartial(1, err)
+	}
+
+	// Metrics can be partially collected (non-nil) even if there were partial errors reported
+	if databaseTableMetrics == nil {
 		return
 	}
 	for _, table := range databaseTableMetrics {
@@ -212,6 +221,7 @@ func (p *postgreSQLScraper) collectDatabaseTableMetrics(
 }
 
 func (p *postgreSQLScraper) collectCommitsAndRollbacks(
+	ctx context.Context,
 	now pdata.Timestamp,
 	client client,
 	databases []string,
@@ -219,10 +229,14 @@ func (p *postgreSQLScraper) collectCommitsAndRollbacks(
 	rollbacks pdata.NumberDataPointSlice,
 	errors scrapererror.ScrapeErrors,
 ) {
-	xactMetrics, err := client.getCommitsAndRollbacks(databases)
+	xactMetrics, err := client.getCommitsAndRollbacks(ctx, databases)
 	if err != nil {
-		p.logger.Error("Failed to fetch commits and rollbacks", zap.Error(err))
+		p.logger.Error("Errors encountered while fetching commits and rollbacks", zap.Error(err))
 		errors.AddPartial(1, err)
+	}
+
+	// Metrics can be partially collected (non-nil) even if there were partial errors reported
+	if xactMetrics == nil {
 		return
 	}
 	for _, metric := range xactMetrics {
@@ -249,16 +263,21 @@ func (p *postgreSQLScraper) collectCommitsAndRollbacks(
 }
 
 func (p *postgreSQLScraper) collectDatabaseSize(
+	ctx context.Context,
 	now pdata.Timestamp,
 	client client,
 	databases []string,
 	databaseSize pdata.NumberDataPointSlice,
 	errors scrapererror.ScrapeErrors,
 ) {
-	databaseSizeMetric, err := client.getDatabaseSize(databases)
+	databaseSizeMetric, err := client.getDatabaseSize(ctx, databases)
 	if err != nil {
-		p.logger.Error("Failed to fetch database size", zap.Error(err))
+		p.logger.Error("Errors encountered while fetching database size", zap.Error(err))
 		errors.AddPartial(1, err)
+	}
+
+	// Metrics can be partially collected (non-nil) even if there were partial errors reported
+	if databaseSizeMetric == nil {
 		return
 	}
 	for _, metric := range databaseSizeMetric {
@@ -277,16 +296,21 @@ func (p *postgreSQLScraper) collectDatabaseSize(
 }
 
 func (p *postgreSQLScraper) collectBackends(
+	ctx context.Context,
 	now pdata.Timestamp,
 	client client,
 	databases []string,
 	backends pdata.NumberDataPointSlice,
 	errors scrapererror.ScrapeErrors,
 ) {
-	backendsMetric, err := client.getBackends(databases)
+	backendsMetric, err := client.getBackends(ctx, databases)
 	if err != nil {
-		p.logger.Error("Failed to fetch backends", zap.Error(err))
+		p.logger.Error("Errors encountered while fetching backends", zap.Error(err))
 		errors.AddPartial(1, err)
+	}
+
+	// Metrics can be partially collected (non-nil) even if there were partial errors reported
+	if backendsMetric == nil {
 		return
 	}
 	for _, metric := range backendsMetric {
