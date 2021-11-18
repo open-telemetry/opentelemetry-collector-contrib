@@ -38,9 +38,7 @@ func TestPDataResourceSpansToOTSpanData_endToEnd(t *testing.T) {
 
 	rs := pdata.NewResourceSpans()
 	resource := rs.Resource()
-	resource.Attributes().InitFromMap(map[string]pdata.AttributeValue{
-		"namespace": pdata.NewAttributeValueString("kube-system"),
-	})
+	resource.Attributes().InsertString("namespace", "kube-system")
 	ilss := rs.InstrumentationLibrarySpans()
 	il := ilss.AppendEmpty().InstrumentationLibrary()
 	il.SetName("test_il_name")
@@ -69,9 +67,7 @@ func TestPDataResourceSpansToOTSpanData_endToEnd(t *testing.T) {
 	event1 := events.AppendEmpty()
 	event1.SetTimestamp(pdataEndTime)
 	event1.SetName("end")
-	event1.Attributes().InitFromMap(map[string]pdata.AttributeValue{
-		"flag": pdata.NewAttributeValueBool(false),
-	})
+	event1.Attributes().InsertBool("flag", false)
 
 	links := span.Links()
 	link0 := links.AppendEmpty()
@@ -81,12 +77,10 @@ func TestPDataResourceSpansToOTSpanData_endToEnd(t *testing.T) {
 	link1.SetTraceID(pdata.NewTraceID([16]byte{0xE0, 0xE1, 0xE2, 0xE3, 0xE4, 0xE5, 0xE6, 0xE7, 0xE8, 0xE9, 0xEA, 0xEB, 0xEC, 0xED, 0xEE, 0xEF}))
 	link1.SetSpanID(pdata.NewSpanID([8]byte{0xD0, 0xD1, 0xD2, 0xD3, 0xD4, 0xD5, 0xD6, 0xD7}))
 
-	span.Attributes().InitFromMap(map[string]pdata.AttributeValue{
-		"cache_hit":  pdata.NewAttributeValueBool(true),
-		"timeout_ns": pdata.NewAttributeValueInt(12e9),
-		"ping_count": pdata.NewAttributeValueInt(25),
-		"agent":      pdata.NewAttributeValueString("ocagent"),
-	})
+	span.Attributes().InsertBool("cache_hit", true)
+	span.Attributes().InsertInt("timeout_ns", 12e9)
+	span.Attributes().InsertInt("ping_count", 25)
+	span.Attributes().InsertString("agent", "ocagent")
 
 	gotOTSpanData := pdataResourceSpansToOTSpanData(rs)
 

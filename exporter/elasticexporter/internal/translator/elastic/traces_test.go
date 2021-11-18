@@ -45,12 +45,10 @@ func TestEncodeSpan(t *testing.T) {
 	rootSpan := pdata.NewSpan()
 	rootSpan.SetSpanID(pdata.NewSpanID(rootTransactionID))
 	rootSpan.SetName("root_span")
-	rootSpan.Attributes().InitFromMap(map[string]pdata.AttributeValue{
-		"string.attr": pdata.NewAttributeValueString("string_value"),
-		"int.attr":    pdata.NewAttributeValueInt(123),
-		"double.attr": pdata.NewAttributeValueDouble(123.456),
-		"bool.attr":   pdata.NewAttributeValueBool(true),
-	})
+	rootSpan.Attributes().InsertString("string.attr", "string_value")
+	rootSpan.Attributes().InsertInt("int.attr", 123)
+	rootSpan.Attributes().InsertDouble("double.attr", 123.456)
+	rootSpan.Attributes().InsertBool("bool.attr", true)
 
 	clientSpan := pdata.NewSpan()
 	clientSpan.SetSpanID(pdata.NewSpanID(clientSpanID))
@@ -58,12 +56,10 @@ func TestEncodeSpan(t *testing.T) {
 	clientSpan.SetKind(pdata.SpanKindClient)
 	clientSpan.SetName("client_span")
 	clientSpan.Status().SetCode(pdata.StatusCodeError)
-	clientSpan.Attributes().InitFromMap(map[string]pdata.AttributeValue{
-		"string.attr": pdata.NewAttributeValueString("string_value"),
-		"int.attr":    pdata.NewAttributeValueInt(123),
-		"double.attr": pdata.NewAttributeValueDouble(123.456),
-		"bool.attr":   pdata.NewAttributeValueBool(true),
-	})
+	clientSpan.Attributes().InsertString("string.attr", "string_value")
+	clientSpan.Attributes().InsertInt("int.attr", 123)
+	clientSpan.Attributes().InsertDouble("double.attr", 123.456)
+	clientSpan.Attributes().InsertBool("bool.attr", true)
 
 	serverSpan := pdata.NewSpan()
 	serverSpan.SetSpanID(pdata.NewSpanID(serverTransactionID))
@@ -522,7 +518,7 @@ func transactionWithAttributes(t *testing.T, attrs map[string]pdata.AttributeVal
 	var recorder transporttest.RecorderTransport
 
 	span := pdata.NewSpan()
-	span.Attributes().InitFromMap(attrs)
+	pdata.NewAttributeMapFromMap(attrs).CopyTo(span.Attributes())
 
 	resource := pdata.NewResource()
 	elastic.EncodeResourceMetadata(resource, &w)
@@ -541,7 +537,7 @@ func spanWithAttributes(t *testing.T, attrs map[string]pdata.AttributeValue) mod
 
 	span := pdata.NewSpan()
 	span.SetParentSpanID(pdata.NewSpanID([8]byte{1}))
-	span.Attributes().InitFromMap(attrs)
+	pdata.NewAttributeMapFromMap(attrs).CopyTo(span.Attributes())
 
 	resource := pdata.NewResource()
 	elastic.EncodeResourceMetadata(resource, &w)

@@ -24,18 +24,14 @@ import (
 
 func TestMetricIdentity_Write(t *testing.T) {
 	resource := pdata.NewResource()
-	resource.Attributes().InitFromMap(map[string]pdata.AttributeValue{
-		"resource": pdata.NewAttributeValueBool(true),
-	})
+	resource.Attributes().InsertBool("resource", true)
 
 	il := pdata.NewInstrumentationLibrary()
 	il.SetName("ilm_name")
 	il.SetVersion("ilm_version")
 
 	attributes := pdata.NewAttributeMap()
-	attributes.InitFromMap(map[string]pdata.AttributeValue{
-		"label": pdata.NewAttributeValueString("value"),
-	})
+	attributes.InsertString("label", "value")
 	type fields struct {
 		Resource               pdata.Resource
 		InstrumentationLibrary pdata.InstrumentationLibrary
