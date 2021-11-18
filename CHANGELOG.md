@@ -2,11 +2,20 @@
 
 ## Unreleased
 
+## 🛑 Breaking changes 🛑
+
+- `tencentcloudlogserviceexporter` change `Endpoint` to `Region` to simplify configuration (#6135)
+
+## 💡 Enhancements 💡
+
+- `awsprometheusremotewrite` exporter: Improve error message when failing to sign request
+
 ## v0.39.0
 
 ## 🛑 Breaking changes 🛑
 
 - `httpdreceiver` renamed to `apachereceiver` to match industry standards (#6207)
+- `tencentcloudlogserviceexporter` change `Endpoint` to `Region` to simplify configuration (#6135)
 
 ## 🚀 New components 🚀
 

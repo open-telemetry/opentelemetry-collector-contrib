@@ -767,7 +767,7 @@ func getSpan(spanName string, spanKind pdata.SpanKind, initialAttributes map[str
 	span.SetKind(spanKind)
 	span.SetStartTimestamp(defaultSpanStartTime)
 	span.SetEndTimestamp(defaultSpanEndTme)
-	span.Attributes().InitFromMap(initialAttributes)
+	pdata.NewAttributeMapFromMap(initialAttributes).CopyTo(span.Attributes())
 	return span
 }
 
@@ -847,12 +847,9 @@ func getDefaultInternalSpan() pdata.Span {
 // Returns a default Resource
 func getResource() pdata.Resource {
 	r := pdata.NewResource()
-	r.Attributes().InitFromMap(map[string]pdata.AttributeValue{
-		conventions.AttributeServiceName:       pdata.NewAttributeValueString(defaultServiceName),
-		conventions.AttributeServiceNamespace:  pdata.NewAttributeValueString(defaultServiceNamespace),
-		conventions.AttributeServiceInstanceID: pdata.NewAttributeValueString(defaultServiceInstance),
-	})
-
+	r.Attributes().InsertString(conventions.AttributeServiceName, defaultServiceName)
+	r.Attributes().InsertString(conventions.AttributeServiceNamespace, defaultServiceNamespace)
+	r.Attributes().InsertString(conventions.AttributeServiceInstanceID, defaultServiceInstance)
 	return r
 }
 

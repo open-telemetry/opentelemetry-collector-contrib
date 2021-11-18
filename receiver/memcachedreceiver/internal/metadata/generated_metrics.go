@@ -56,9 +56,15 @@ func (m *metricImpl) Init(metric pdata.Metric) {
 
 type metricStruct struct {
 	MemcachedBytes              MetricIntf
+	MemcachedCommands           MetricIntf
 	MemcachedCurrentConnections MetricIntf
-	MemcachedGetHits            MetricIntf
-	MemcachedGetMisses          MetricIntf
+	MemcachedCurrentItems       MetricIntf
+	MemcachedEvictions          MetricIntf
+	MemcachedNetwork            MetricIntf
+	MemcachedOperationHitRatio  MetricIntf
+	MemcachedOperations         MetricIntf
+	MemcachedRusage             MetricIntf
+	MemcachedThreads            MetricIntf
 	MemcachedTotalConnections   MetricIntf
 }
 
@@ -66,18 +72,30 @@ type metricStruct struct {
 func (m *metricStruct) Names() []string {
 	return []string{
 		"memcached.bytes",
+		"memcached.commands",
 		"memcached.current_connections",
-		"memcached.get_hits",
-		"memcached.get_misses",
+		"memcached.current_items",
+		"memcached.evictions",
+		"memcached.network",
+		"memcached.operation_hit_ratio",
+		"memcached.operations",
+		"memcached.rusage",
+		"memcached.threads",
 		"memcached.total_connections",
 	}
 }
 
 var metricsByName = map[string]MetricIntf{
 	"memcached.bytes":               Metrics.MemcachedBytes,
+	"memcached.commands":            Metrics.MemcachedCommands,
 	"memcached.current_connections": Metrics.MemcachedCurrentConnections,
-	"memcached.get_hits":            Metrics.MemcachedGetHits,
-	"memcached.get_misses":          Metrics.MemcachedGetMisses,
+	"memcached.current_items":       Metrics.MemcachedCurrentItems,
+	"memcached.evictions":           Metrics.MemcachedEvictions,
+	"memcached.network":             Metrics.MemcachedNetwork,
+	"memcached.operation_hit_ratio": Metrics.MemcachedOperationHitRatio,
+	"memcached.operations":          Metrics.MemcachedOperations,
+	"memcached.rusage":              Metrics.MemcachedRusage,
+	"memcached.threads":             Metrics.MemcachedThreads,
 	"memcached.total_connections":   Metrics.MemcachedTotalConnections,
 }
 
@@ -92,39 +110,105 @@ var Metrics = &metricStruct{
 		"memcached.bytes",
 		func(metric pdata.Metric) {
 			metric.SetName("memcached.bytes")
-			metric.SetDescription("Current number of bytes used by this server to store items")
+			metric.SetDescription("Current number of bytes used by this server to store items.")
 			metric.SetUnit("By")
 			metric.SetDataType(pdata.MetricDataTypeGauge)
 		},
 	},
 	&metricImpl{
-		"memcached.current_connections",
+		"memcached.commands",
 		func(metric pdata.Metric) {
-			metric.SetName("memcached.current_connections")
-			metric.SetDescription("The current number of open connections")
-			metric.SetUnit("connections")
-			metric.SetDataType(pdata.MetricDataTypeGauge)
-		},
-	},
-	&metricImpl{
-		"memcached.get_hits",
-		func(metric pdata.Metric) {
-			metric.SetName("memcached.get_hits")
-			metric.SetDescription("Number of keys that have been requested and found present")
-			metric.SetUnit("connections")
+			metric.SetName("memcached.commands")
+			metric.SetDescription("Commands executed.")
+			metric.SetUnit("1")
 			metric.SetDataType(pdata.MetricDataTypeSum)
 			metric.Sum().SetIsMonotonic(true)
 			metric.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
 		},
 	},
 	&metricImpl{
-		"memcached.get_misses",
+		"memcached.current_connections",
 		func(metric pdata.Metric) {
-			metric.SetName("memcached.get_misses")
-			metric.SetDescription("Number of items that have been requested and not found")
+			metric.SetName("memcached.current_connections")
+			metric.SetDescription("The current number of open connections.")
 			metric.SetUnit("connections")
 			metric.SetDataType(pdata.MetricDataTypeSum)
+			metric.Sum().SetIsMonotonic(false)
+			metric.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
+		},
+	},
+	&metricImpl{
+		"memcached.current_items",
+		func(metric pdata.Metric) {
+			metric.SetName("memcached.current_items")
+			metric.SetDescription("Number of items currently stored in the cache.")
+			metric.SetUnit("1")
+			metric.SetDataType(pdata.MetricDataTypeSum)
+			metric.Sum().SetIsMonotonic(false)
+			metric.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
+		},
+	},
+	&metricImpl{
+		"memcached.evictions",
+		func(metric pdata.Metric) {
+			metric.SetName("memcached.evictions")
+			metric.SetDescription("Cache item evictions.")
+			metric.SetUnit("1")
+			metric.SetDataType(pdata.MetricDataTypeSum)
 			metric.Sum().SetIsMonotonic(true)
+			metric.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
+		},
+	},
+	&metricImpl{
+		"memcached.network",
+		func(metric pdata.Metric) {
+			metric.SetName("memcached.network")
+			metric.SetDescription("Bytes transferred over the network.")
+			metric.SetUnit("by")
+			metric.SetDataType(pdata.MetricDataTypeSum)
+			metric.Sum().SetIsMonotonic(true)
+			metric.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
+		},
+	},
+	&metricImpl{
+		"memcached.operation_hit_ratio",
+		func(metric pdata.Metric) {
+			metric.SetName("memcached.operation_hit_ratio")
+			metric.SetDescription("Hit ratio for operations, expressed as a percentage value between 0.0 and 100.0.")
+			metric.SetUnit("%")
+			metric.SetDataType(pdata.MetricDataTypeGauge)
+		},
+	},
+	&metricImpl{
+		"memcached.operations",
+		func(metric pdata.Metric) {
+			metric.SetName("memcached.operations")
+			metric.SetDescription("Operation counts.")
+			metric.SetUnit("1")
+			metric.SetDataType(pdata.MetricDataTypeSum)
+			metric.Sum().SetIsMonotonic(true)
+			metric.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
+		},
+	},
+	&metricImpl{
+		"memcached.rusage",
+		func(metric pdata.Metric) {
+			metric.SetName("memcached.rusage")
+			metric.SetDescription("Accumulated user and system time.")
+			metric.SetUnit("1")
+			metric.SetDataType(pdata.MetricDataTypeSum)
+			metric.Sum().SetIsMonotonic(true)
+			metric.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
+		},
+	},
+	&metricImpl{
+		"memcached.threads",
+		func(metric pdata.Metric) {
+			metric.SetName("memcached.threads")
+			metric.SetDescription("Number of threads used by the memcached instance.")
+			metric.SetUnit("1")
+			metric.SetDataType(pdata.MetricDataTypeSum)
+			metric.Sum().SetIsMonotonic(false)
 			metric.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
 		},
 	},
@@ -132,7 +216,7 @@ var Metrics = &metricStruct{
 		"memcached.total_connections",
 		func(metric pdata.Metric) {
 			metric.SetName("memcached.total_connections")
-			metric.SetDescription("Total number of connections opened since the server started running")
+			metric.SetDescription("Total number of connections opened since the server started running.")
 			metric.SetUnit("connections")
 			metric.SetDataType(pdata.MetricDataTypeSum)
 			metric.Sum().SetIsMonotonic(true)
@@ -147,7 +231,74 @@ var M = Metrics
 
 // Attributes contains the possible metric attributes that can be used.
 var Attributes = struct {
-}{}
+	// Command (The type of command.)
+	Command string
+	// Direction (Direction of data flow.)
+	Direction string
+	// Operation (The type of operation.)
+	Operation string
+	// State (The type of CPU usage.)
+	State string
+	// Type (Result of cache request.)
+	Type string
+}{
+	"command",
+	"direction",
+	"operation",
+	"state",
+	"type",
+}
 
 // A is an alias for Attributes.
 var A = Attributes
+
+// AttributeCommand are the possible values that the attribute "command" can have.
+var AttributeCommand = struct {
+	Get   string
+	Set   string
+	Flush string
+	Touch string
+}{
+	"get",
+	"set",
+	"flush",
+	"touch",
+}
+
+// AttributeDirection are the possible values that the attribute "direction" can have.
+var AttributeDirection = struct {
+	Sent     string
+	Received string
+}{
+	"sent",
+	"received",
+}
+
+// AttributeOperation are the possible values that the attribute "operation" can have.
+var AttributeOperation = struct {
+	Increment string
+	Decrement string
+	Get       string
+}{
+	"increment",
+	"decrement",
+	"get",
+}
+
+// AttributeState are the possible values that the attribute "state" can have.
+var AttributeState = struct {
+	System string
+	User   string
+}{
+	"system",
+	"user",
+}
+
+// AttributeType are the possible values that the attribute "type" can have.
+var AttributeType = struct {
+	Hit  string
+	Miss string
+}{
+	"hit",
+	"miss",
+}

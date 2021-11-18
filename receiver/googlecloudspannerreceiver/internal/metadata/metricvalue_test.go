@@ -18,24 +18,19 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/model/pdata"
 )
 
 func TestInt64MetricValueMetadata(t *testing.T) {
 	metricDataType := metricValueDataType{dataType: metricDataType}
-	metadata := Int64MetricValueMetadata{
-		queryMetricValueMetadata{
-			name:       metricName,
-			columnName: metricColumnName,
-			dataType:   metricDataType,
-			unit:       metricUnit,
-		},
-	}
+	metadata, _ := NewMetricValueMetadata(metricName, metricColumnName, metricDataType, metricUnit, IntValueType)
 
 	assert.Equal(t, metricName, metadata.Name())
 	assert.Equal(t, metricColumnName, metadata.ColumnName())
 	assert.Equal(t, metricDataType, metadata.DataType())
 	assert.Equal(t, metricUnit, metadata.Unit())
+	assert.Equal(t, IntValueType, metadata.ValueType())
 
 	var expectedType *int64
 
@@ -44,44 +39,37 @@ func TestInt64MetricValueMetadata(t *testing.T) {
 
 func TestFloat64MetricValueMetadata(t *testing.T) {
 	metricDataType := metricValueDataType{dataType: metricDataType}
-	metadata := Float64MetricValueMetadata{
-		queryMetricValueMetadata{
-			name:       metricName,
-			columnName: metricColumnName,
-			dataType:   metricDataType,
-			unit:       metricUnit,
-		},
-	}
+	metadata, _ := NewMetricValueMetadata(metricName, metricColumnName, metricDataType, metricUnit, FloatValueType)
 
 	assert.Equal(t, metricName, metadata.Name())
 	assert.Equal(t, metricColumnName, metadata.ColumnName())
 	assert.Equal(t, metricDataType, metadata.DataType())
 	assert.Equal(t, metricUnit, metadata.Unit())
+	assert.Equal(t, FloatValueType, metadata.ValueType())
 
 	var expectedType *float64
 
 	assert.IsType(t, expectedType, metadata.ValueHolder())
 }
 
+func TestUnknownMetricValueMetadata(t *testing.T) {
+	metricDataType := metricValueDataType{dataType: metricDataType}
+	metadata, err := NewMetricValueMetadata(metricName, metricColumnName, metricDataType, metricUnit, UnknownValueType)
+
+	require.Error(t, err)
+	require.Nil(t, metadata)
+}
+
 func TestInt64MetricValue(t *testing.T) {
 	metricDataType := metricValueDataType{dataType: metricDataType}
-	metadata := Int64MetricValueMetadata{
-		queryMetricValueMetadata{
-			name:       metricName,
-			columnName: metricColumnName,
-			dataType:   metricDataType,
-			unit:       metricUnit,
-		},
+	metadata, _ := NewMetricValueMetadata(metricName, metricColumnName, metricDataType, metricUnit, IntValueType)
+	metricValue := int64MetricValue{
+		metadata: metadata,
+		value:    int64Value,
 	}
 
-	metricValue :=
-		int64MetricValue{
-			metadata: metadata,
-			value:    int64Value,
-		}
-
-	assert.Equal(t, metadata, metricValue.Metadata())
 	assert.Equal(t, int64Value, metricValue.Value())
+	assert.Equal(t, IntValueType, metadata.ValueType())
 
 	dataPoint := pdata.NewNumberDataPoint()
 
@@ -92,23 +80,14 @@ func TestInt64MetricValue(t *testing.T) {
 
 func TestFloat64MetricValue(t *testing.T) {
 	metricDataType := metricValueDataType{dataType: metricDataType}
-	metadata := Float64MetricValueMetadata{
-		queryMetricValueMetadata{
-			name:       metricName,
-			columnName: metricColumnName,
-			dataType:   metricDataType,
-			unit:       metricUnit,
-		},
+	metadata, _ := NewMetricValueMetadata(metricName, metricColumnName, metricDataType, metricUnit, FloatValueType)
+	metricValue := float64MetricValue{
+		metadata: metadata,
+		value:    float64Value,
 	}
 
-	metricValue :=
-		float64MetricValue{
-			metadata: metadata,
-			value:    float64Value,
-		}
-
-	assert.Equal(t, metadata, metricValue.Metadata())
 	assert.Equal(t, float64Value, metricValue.Value())
+	assert.Equal(t, FloatValueType, metadata.ValueType())
 
 	dataPoint := pdata.NewNumberDataPoint()
 
@@ -117,72 +96,26 @@ func TestFloat64MetricValue(t *testing.T) {
 	assert.Equal(t, float64Value, dataPoint.DoubleVal())
 }
 
-func TestNewQueryMetricValueMetadata(t *testing.T) {
-	metricDataType := metricValueDataType{dataType: metricDataType}
-	metadata := newQueryMetricValueMetadata(metricName, metricColumnName, metricDataType, metricUnit)
-
-	assert.Equal(t, metricName, metadata.name)
-	assert.Equal(t, metricColumnName, metadata.columnName)
-	assert.Equal(t, metricDataType, metadata.dataType)
-	assert.Equal(t, metricUnit, metadata.unit)
-}
-
-func TestNewInt64MetricValueMetadata(t *testing.T) {
-	metricDataType := metricValueDataType{dataType: metricDataType}
-	metadata := NewInt64MetricValueMetadata(metricName, metricColumnName, metricDataType, metricUnit)
-
-	assert.Equal(t, metricName, metadata.name)
-	assert.Equal(t, metricColumnName, metadata.columnName)
-	assert.Equal(t, metricDataType, metadata.dataType)
-	assert.Equal(t, metricUnit, metadata.unit)
-}
-
-func TestNewFloat64MetricValueMetadata(t *testing.T) {
-	metricDataType := metricValueDataType{dataType: metricDataType}
-	metadata := NewFloat64MetricValueMetadata(metricName, metricColumnName, metricDataType, metricUnit)
-
-	assert.Equal(t, metricName, metadata.name)
-	assert.Equal(t, metricColumnName, metadata.columnName)
-	assert.Equal(t, metricDataType, metadata.dataType)
-	assert.Equal(t, metricUnit, metadata.unit)
-}
-
 func TestNewInt64MetricValue(t *testing.T) {
 	metricDataType := metricValueDataType{dataType: metricDataType}
-	metadata := Int64MetricValueMetadata{
-		queryMetricValueMetadata{
-			name:       metricName,
-			columnName: metricColumnName,
-			dataType:   metricDataType,
-			unit:       metricUnit,
-		},
-	}
-
+	metadata, _ := NewMetricValueMetadata(metricName, metricColumnName, metricDataType, metricUnit, IntValueType)
 	value := int64Value
 	valueHolder := &value
 
 	metricValue := newInt64MetricValue(metadata, valueHolder)
 
-	assert.Equal(t, metadata, metricValue.Metadata())
 	assert.Equal(t, int64Value, metricValue.Value())
+	assert.Equal(t, IntValueType, metadata.ValueType())
 }
 
 func TestNewFloat64MetricValue(t *testing.T) {
 	metricDataType := metricValueDataType{dataType: metricDataType}
-	metadata := Float64MetricValueMetadata{
-		queryMetricValueMetadata{
-			name:       metricName,
-			columnName: metricColumnName,
-			dataType:   metricDataType,
-			unit:       metricUnit,
-		},
-	}
-
+	metadata, _ := NewMetricValueMetadata(metricName, metricColumnName, metricDataType, metricUnit, FloatValueType)
 	value := float64Value
 	valueHolder := &value
 
 	metricValue := newFloat64MetricValue(metadata, valueHolder)
 
-	assert.Equal(t, metadata, metricValue.Metadata())
 	assert.Equal(t, float64Value, metricValue.Value())
+	assert.Equal(t, FloatValueType, metadata.ValueType())
 }

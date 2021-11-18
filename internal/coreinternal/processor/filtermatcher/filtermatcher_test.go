@@ -367,10 +367,8 @@ func Test_Matching_True(t *testing.T) {
 	})
 
 	resource := pdata.NewResource()
-	resource.Attributes().InitFromMap(map[string]pdata.AttributeValue{
-		conventions.AttributeServiceName: pdata.NewAttributeValueString("svcA"),
-		"resString":                      pdata.NewAttributeValueString("arithmetic"),
-	})
+	resource.Attributes().InsertString(conventions.AttributeServiceName, "svcA")
+	resource.Attributes().InsertString("resString", "arithmetic")
 
 	library := pdata.NewInstrumentationLibrary()
 	library.SetName("lib")
@@ -389,6 +387,6 @@ func Test_Matching_True(t *testing.T) {
 
 func resource(service string) pdata.Resource {
 	r := pdata.NewResource()
-	r.Attributes().InitFromMap(map[string]pdata.AttributeValue{conventions.AttributeServiceName: pdata.NewAttributeValueString(service)})
+	r.Attributes().InsertString(conventions.AttributeServiceName, service)
 	return r
 }

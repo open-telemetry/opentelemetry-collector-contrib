@@ -62,12 +62,12 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 
 	initDoublePtWithLabels := func(doublePtWithLabels pdata.NumberDataPoint) {
 		initDoublePt(doublePtWithLabels)
-		doublePtWithLabels.Attributes().InitFromMap(stringMapToAttributeMap(labelMap))
+		pdata.NewAttributeMapFromMap(stringMapToAttributeMap(labelMap)).CopyTo(doublePtWithLabels.Attributes())
 	}
 
 	initDoublePtWithLongLabels := func(doublePtWithLabels pdata.NumberDataPoint) {
 		initDoublePt(doublePtWithLabels)
-		doublePtWithLabels.Attributes().InitFromMap(stringMapToAttributeMap(longLabelMap))
+		pdata.NewAttributeMapFromMap(stringMapToAttributeMap(longLabelMap)).CopyTo(doublePtWithLabels.Attributes())
 	}
 
 	differentLabelMap := map[string]string{
@@ -76,7 +76,7 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 	}
 	initDoublePtWithDifferentLabels := func(doublePtWithDifferentLabels pdata.NumberDataPoint) {
 		initDoublePt(doublePtWithDifferentLabels)
-		doublePtWithDifferentLabels.Attributes().InitFromMap(stringMapToAttributeMap(differentLabelMap))
+		pdata.NewAttributeMapFromMap(stringMapToAttributeMap(differentLabelMap)).CopyTo(doublePtWithDifferentLabels.Attributes())
 	}
 
 	const int64Val = int64(123)
@@ -87,7 +87,7 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 
 	initInt64PtWithLabels := func(int64PtWithLabels pdata.NumberDataPoint) {
 		initInt64Pt(int64PtWithLabels)
-		int64PtWithLabels.Attributes().InitFromMap(stringMapToAttributeMap(labelMap))
+		pdata.NewAttributeMapFromMap(stringMapToAttributeMap(labelMap)).CopyTo(int64PtWithLabels.Attributes())
 	}
 
 	histBounds := []float64{1, 2, 4}
@@ -99,7 +99,7 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 		histDP.SetSum(100.0)
 		histDP.SetExplicitBounds(histBounds)
 		histDP.SetBucketCounts(histCounts)
-		histDP.Attributes().InitFromMap(stringMapToAttributeMap(labelMap))
+		pdata.NewAttributeMapFromMap(stringMapToAttributeMap(labelMap)).CopyTo(histDP.Attributes())
 	}
 	histDP := pdata.NewHistogramDataPoint()
 	initHistDP(histDP)
@@ -108,7 +108,7 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 		histDP.SetCount(2)
 		histDP.SetSum(10)
 		histDP.SetTimestamp(ts)
-		histDP.Attributes().InitFromMap(stringMapToAttributeMap(labelMap))
+		pdata.NewAttributeMapFromMap(stringMapToAttributeMap(labelMap)).CopyTo(histDP.Attributes())
 	}
 	histDPNoBuckets := pdata.NewHistogramDataPoint()
 	initHistDPNoBuckets(histDPNoBuckets)
@@ -126,14 +126,14 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 			qv.SetQuantile(0.25 * float64(i+1))
 			qv.SetValue(float64(i))
 		}
-		summaryDP.Attributes().InitFromMap(stringMapToAttributeMap(labelMap))
+		pdata.NewAttributeMapFromMap(stringMapToAttributeMap(labelMap)).CopyTo(summaryDP.Attributes())
 	}
 
 	initEmptySummaryDP := func(summaryDP pdata.SummaryDataPoint) {
 		summaryDP.SetTimestamp(ts)
 		summaryDP.SetSum(summarySumVal)
 		summaryDP.SetCount(summaryCountVal)
-		summaryDP.Attributes().InitFromMap(stringMapToAttributeMap(labelMap))
+		pdata.NewAttributeMapFromMap(stringMapToAttributeMap(labelMap)).CopyTo(summaryDP.Attributes())
 	}
 
 	tests := []struct {
@@ -793,9 +793,7 @@ func TestMetricDataToSignalFxV2WithTranslation(t *testing.T) {
 	md.SetName("metric1")
 	dp := md.Gauge().DataPoints().AppendEmpty()
 	dp.SetIntVal(123)
-	dp.Attributes().InitFromMap(map[string]pdata.AttributeValue{
-		"old.dim": pdata.NewAttributeValueString("val1"),
-	})
+	dp.Attributes().InsertString("old.dim", "val1")
 
 	gaugeType := sfxpb.MetricType_GAUGE
 	expected := []*sfxpb.DataPoint{
@@ -835,9 +833,7 @@ func TestDimensionKeyCharsWithPeriod(t *testing.T) {
 	md.SetName("metric1")
 	dp := md.Gauge().DataPoints().AppendEmpty()
 	dp.SetIntVal(123)
-	dp.Attributes().InitFromMap(map[string]pdata.AttributeValue{
-		"old.dim.with.periods": pdata.NewAttributeValueString("val1"),
-	})
+	dp.Attributes().InsertString("old.dim.with.periods", "val1")
 
 	gaugeType := sfxpb.MetricType_GAUGE
 	expected := []*sfxpb.DataPoint{

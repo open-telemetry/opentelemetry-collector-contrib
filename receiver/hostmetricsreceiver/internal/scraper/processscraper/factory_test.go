@@ -33,7 +33,7 @@ func TestCreateResourceMetricsScraper(t *testing.T) {
 	factory := &Factory{}
 	cfg := &Config{}
 
-	scraper, err := factory.CreateResourceMetricsScraper(context.Background(), zap.NewNop(), cfg)
+	scraper, err := factory.CreateMetricsScraper(context.Background(), zap.NewNop(), cfg)
 
 	if runtime.GOOS == "linux" || runtime.GOOS == "windows" {
 		assert.NoError(t, err)

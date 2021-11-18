@@ -19,17 +19,17 @@ package memcachedreceiver
 
 import (
 	"context"
+	"io/ioutil"
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/model/otlp"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testing/container"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/memcachedreceiver/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest"
 )
 
 func TestIntegration(t *testing.T) {
@@ -49,6 +49,7 @@ func TestIntegration(t *testing.T) {
 	require.Eventuallyf(t, func() bool {
 		return len(consumer.AllMetrics()) > 0
 	}, 15*time.Second, 1*time.Second, "failed to receive at least 5 metrics")
+	require.NoError(t, rcvr.Shutdown(context.Background()))
 
 	md := consumer.AllMetrics()[0]
 
@@ -57,27 +58,17 @@ func TestIntegration(t *testing.T) {
 	ilms := md.ResourceMetrics().At(0).InstrumentationLibraryMetrics()
 	require.Equal(t, 1, ilms.Len())
 
-	metrics := ilms.At(0).Metrics()
-	require.Equal(t, 5, metrics.Len())
+	aMetricSlice := ilms.At(0).Metrics()
+	require.Equal(t, 11, aMetricSlice.Len())
 
-	assertAllMetricNamesArePresent(t, metadata.Metrics.Names(), metrics)
+	expectedFileBytes, err := ioutil.ReadFile("./testdata/expected_metrics/test_scraper/expected.json")
+	require.NoError(t, err)
 
-	assert.NoError(t, rcvr.Shutdown(context.Background()))
-}
+	unmarshaller := otlp.NewJSONMetricsUnmarshaler()
+	expectedMetrics, err := unmarshaller.UnmarshalMetrics(expectedFileBytes)
+	require.NoError(t, err)
 
-func assertAllMetricNamesArePresent(t *testing.T, names []string, metrics pdata.MetricSlice) {
-	seen := make(map[string]bool, len(names))
-	for i := range names {
-		seen[names[i]] = false
-	}
+	eMetricSlice := expectedMetrics.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics()
 
-	for i := 0; i < metrics.Len(); i++ {
-		seen[metrics.At(i).Name()] = true
-	}
-
-	for k, v := range seen {
-		if !v {
-			t.Fatalf("Did not find metric %q", k)
-		}
-	}
+	require.NoError(t, scrapertest.CompareMetricSlices(eMetricSlice, aMetricSlice, false))
 }
