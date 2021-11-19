@@ -20,7 +20,7 @@ import (
 	"runtime"
 	"testing"
 
-	"github.com/shirou/gopsutil/load"
+	"github.com/shirou/gopsutil/v3/load"
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/model/pdata"
@@ -181,14 +181,14 @@ var fakeProcessesData = []proc{
 
 type errProcess struct{}
 
-func (e errProcess) Status() (string, error) {
-	return "", errors.New("errProcess")
+func (e errProcess) Status() ([]string, error) {
+	return []string{""}, errors.New("errProcess")
 }
 
 type fakeProcess string
 
-func (f fakeProcess) Status() (string, error) {
-	return string(f), nil
+func (f fakeProcess) Status() ([]string, error) {
+	return []string{string(f)}, nil
 }
 
 func validateFakeData(t *testing.T, metrics pdata.MetricSlice) {

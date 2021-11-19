@@ -34,14 +34,14 @@ func (s *scraper) getProcessesMetadata() (processesMetadata, error) {
 
 	countByStatus := map[string]int64{}
 	for _, process := range processes {
-		var status string
+		var status []string
 		status, err = process.Status()
 		if err != nil {
 			// We expect an error in the case that a process has
 			// been terminated as we run this code.
 			continue
 		}
-		state, ok := charToState[status]
+		state, ok := toAttributeStatus(status)
 		if !ok {
 			countByStatus[metadata.AttributeStatus.Unknown]++
 			continue
@@ -78,6 +78,14 @@ func (s *scraper) getProcessesMetadata() (processesMetadata, error) {
 		countByStatus:    countByStatus,
 		processesCreated: procsCreated,
 	}, nil
+}
+
+func toAttributeStatus(status []string) (string, bool) {
+	if len(status) == 0 || len(status[0]) == 0 {
+		return "", false
+	}
+	state, ok := charToState[status[0][0:1]]
+	return state, ok
 }
 
 var charToState = map[string]string{

@@ -20,7 +20,7 @@ package loadscraper
 import (
 	"context"
 
-	"github.com/shirou/gopsutil/load"
+	"github.com/shirou/gopsutil/v3/load"
 	"go.uber.org/zap"
 )
 

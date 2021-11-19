@@ -17,7 +17,7 @@
 
 package pagingscraper
 
-import "github.com/shirou/gopsutil/mem"
+import "github.com/shirou/gopsutil/v3/mem"
 
 func getPageFileStats() ([]*pageFileStats, error) {
 	vmem, err := mem.VirtualMemory()

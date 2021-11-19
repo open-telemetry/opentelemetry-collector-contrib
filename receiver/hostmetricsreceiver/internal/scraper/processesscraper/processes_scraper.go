@@ -18,9 +18,9 @@ import (
 	"context"
 	"time"
 
-	"github.com/shirou/gopsutil/host"
-	"github.com/shirou/gopsutil/load"
-	"github.com/shirou/gopsutil/process"
+	"github.com/shirou/gopsutil/v3/host"
+	"github.com/shirou/gopsutil/v3/load"
+	"github.com/shirou/gopsutil/v3/process"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
@@ -51,7 +51,7 @@ type scraper struct {
 
 // for mocking out gopsutil process.Process
 type proc interface {
-	Status() (string, error)
+	Status() ([]string, error)
 }
 
 type processesMetadata struct {

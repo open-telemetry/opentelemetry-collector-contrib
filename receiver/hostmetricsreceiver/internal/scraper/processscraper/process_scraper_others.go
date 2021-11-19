@@ -18,7 +18,7 @@
 package processscraper
 
 import (
-	"github.com/shirou/gopsutil/cpu"
+	"github.com/shirou/gopsutil/v3/cpu"
 	"go.opentelemetry.io/collector/model/pdata"
 )
 
