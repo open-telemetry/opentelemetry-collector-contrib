@@ -78,6 +78,8 @@ type cascadingFilterSpanProcessor struct {
 	deleteChan       chan traceKey
 	numTracesOnMap   uint64
 
+	filteringEnabled bool
+
 	currentSecond        int64
 	maxSpansPerSecond    int32
 	spansInCurrentSecond int32
@@ -220,6 +222,10 @@ func newCascadingFilterSpanProcessor(logger *zap.Logger, nextConsumer consumer.T
 		logger.Info("Not setting probabilistic filtering rate")
 	}
 
+	if len(policies) == 0 && len(dropTraceEvals) == 0 {
+		logger.Info("No rules set for cascading_filter processor. Processor wil output all incoming spans without filtering.")
+	}
+
 	// Build the span procesor
 
 	cfsp := &cascadingFilterSpanProcessor{
@@ -231,6 +237,7 @@ func newCascadingFilterSpanProcessor(logger *zap.Logger, nextConsumer consumer.T
 		decisionBatcher:   inBatcher,
 		traceAcceptRules:  policies,
 		traceRejectRules:  dropTraceEvals,
+		filteringEnabled:  len(policies) > 0 || len(dropTraceEvals) > 0,
 	}
 
 	cfsp.policyTicker = &policyTicker{onTick: cfsp.samplingPolicyOnTick}
@@ -538,6 +545,10 @@ func (cfsp *cascadingFilterSpanProcessor) makeProvisionalDecision(id pdata.Trace
 
 // ConsumeTraces is required by the SpanProcessor interface.
 func (cfsp *cascadingFilterSpanProcessor) ConsumeTraces(ctx context.Context, td pdata.Traces) error {
+	if !cfsp.filteringEnabled {
+		return cfsp.nextConsumer.ConsumeTraces(ctx, td)
+	}
+
 	cfsp.start.Do(func() {
 		cfsp.logger.Info("First trace data arrived, starting cascading_filter timers")
 		cfsp.policyTicker.Start(1 * time.Second)

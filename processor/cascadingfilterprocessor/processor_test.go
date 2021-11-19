@@ -185,6 +185,7 @@ func TestSamplingPolicyTypicalPath(t *testing.T) {
 		deleteChan:        make(chan traceKey, maxSize),
 		policyTicker:      mtt,
 		maxSpansPerSecond: 10000,
+		filteringEnabled:  true,
 	}
 
 	_, batches := generateIdsAndBatches(210)
@@ -227,6 +228,33 @@ func TestSamplingPolicyTypicalPath(t *testing.T) {
 	require.Equal(t, expectedNumWithLateSpan, msp.SpanCount(), "late span was not accounted for")
 }
 
+func TestSamplingPolicyNoFiltering(t *testing.T) {
+	const maxSize = 100
+	const decisionWaitSeconds = 5
+	// For this test explicitly control the timer calls and batcher, and set a mock
+	// sampling policy evaluator.
+	msp := new(consumertest.TracesSink)
+	mtt := &manualTTicker{}
+	tsp := &cascadingFilterSpanProcessor{
+		ctx:               context.Background(),
+		nextConsumer:      msp,
+		maxNumTraces:      maxSize,
+		logger:            zap.NewNop(),
+		decisionBatcher:   newSyncIDBatcher(decisionWaitSeconds),
+		deleteChan:        make(chan traceKey, maxSize),
+		policyTicker:      mtt,
+		maxSpansPerSecond: 10000,
+		filteringEnabled:  false,
+	}
+
+	_, batches := generateIdsAndBatches(1)
+	if err := tsp.ConsumeTraces(context.Background(), batches[0]); err != nil {
+		t.Errorf("Failed consuming traces: %v", err)
+	}
+	require.False(t, mtt.Started, "Time ticker was expected to have not started since filtering is not enabled")
+	require.Equal(t, 1, msp.SpanCount(), "all spans were accounted for")
+}
+
 func TestSamplingMultiplePolicies(t *testing.T) {
 	const maxSize = 100
 	const decisionWaitSeconds = 5
@@ -252,6 +280,7 @@ func TestSamplingMultiplePolicies(t *testing.T) {
 		deleteChan:        make(chan traceKey, maxSize),
 		policyTicker:      mtt,
 		maxSpansPerSecond: 10000,
+		filteringEnabled:  true,
 	}
 
 	_, batches := generateIdsAndBatches(210)
@@ -316,6 +345,7 @@ func TestSamplingPolicyDecisionNotSampled(t *testing.T) {
 		deleteChan:        make(chan traceKey, maxSize),
 		policyTicker:      mtt,
 		maxSpansPerSecond: 10000,
+		filteringEnabled:  true,
 	}
 
 	_, batches := generateIdsAndBatches(210)
@@ -383,6 +413,7 @@ func TestSamplingPolicyDecisionDrop(t *testing.T) {
 		deleteChan:        make(chan traceKey, maxSize),
 		policyTicker:      mtt,
 		maxSpansPerSecond: 10000,
+		filteringEnabled:  true,
 	}
 
 	_, batches := generateIdsAndBatches(210)
@@ -426,6 +457,7 @@ func TestSamplingPolicyDecisionNoLimitSet(t *testing.T) {
 		deleteChan:        make(chan traceKey, maxSize),
 		policyTicker:      mtt,
 		maxSpansPerSecond: 0,
+		filteringEnabled:  true,
 	}
 
 	_, batches := generateIdsAndBatches(210)
@@ -467,6 +499,7 @@ func TestMultipleBatchesAreCombinedIntoOne(t *testing.T) {
 		deleteChan:        make(chan traceKey, maxSize),
 		policyTicker:      mtt,
 		maxSpansPerSecond: 10000,
+		filteringEnabled:  true,
 	}
 
 	mpe.NextDecision = sampling.Sampled
