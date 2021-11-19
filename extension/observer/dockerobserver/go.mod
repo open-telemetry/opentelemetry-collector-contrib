@@ -3,8 +3,8 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/extension/obser
 go 1.17
 
 require (
-	github.com/docker/docker v20.10.10+incompatible
-	github.com/docker/go-connections v0.4.0
+	github.com/docker/docker v20.10.11+incompatible
+	github.com/docker/go-connections v0.4.1-0.20210727194412-58542c764a11
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer v0.39.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.39.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/docker v0.39.0
@@ -18,7 +18,7 @@ require (
 	github.com/Microsoft/go-winio v0.4.17 // indirect
 	github.com/benbjohnson/clock v1.2.0 // indirect
 	github.com/cenkalti/backoff/v4 v4.1.2 // indirect
-	github.com/containerd/containerd v1.5.7 // indirect
+	github.com/containerd/containerd v1.5.8 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/docker/distribution v2.7.1+incompatible // indirect
 	github.com/docker/go-units v0.4.0 // indirect
@@ -45,7 +45,6 @@ require (
 	go.opentelemetry.io/otel/trace v1.2.0 // indirect
 	go.uber.org/atomic v1.9.0 // indirect
 	go.uber.org/multierr v1.7.0 // indirect
-	golang.org/x/net v0.0.0-20210614182718-04defd469f4e // indirect
 	golang.org/x/sys v0.0.0-20211013075003-97ac67df715c // indirect
 	google.golang.org/genproto v0.0.0-20210604141403-392c879c8b08 // indirect
 	google.golang.org/grpc v1.42.0 // indirect
