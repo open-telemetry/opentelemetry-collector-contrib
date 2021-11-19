@@ -38,8 +38,8 @@ processors:
     ## (default = 30s): Wait time since the first span of a trace arrived before making
     ## a filtering decision
     decision_wait: 30s
-    ## (default = 50000): Maximum number of traces kept in memory
-    num_traces: 100000
+    ## (default = 100000): Maximum number of traces kept in memory
+    num_traces: 200000
     ## (default = 0): Expected number of new traces (helps in allocating data structures)
     expected_new_traces_per_sec: 1000
     ## (default = 0): defines the global limit of maximum number of spans per second

@@ -42,6 +42,46 @@ processors:
     ## Time duration after which a batch will be sent regardless of size
     timeout: 5s
 
+  ## This processor allows to shape tracing traffic
+  cascading_filter:
+    ## (default = 30s): Wait time since the first span of a trace before making
+    ## a filtering decision
+    # decision_wait: 30s
+    ## (default = 100000): Number of traces kept in memory. This number must be greater
+	## than the number of traces which arrive within decision_wait time
+    # num_traces: 200000
+
+    ## 1. Pattern filtering
+    ## Uncomment and Adjust the filters as needed
+    # trace_reject_filters:
+    #    - name: filter_out_pattern
+    #      name_pattern: "/healtcheck" ## <- set to filter out spans with name matching this pattern
+
+    ## 2. Probabilistic sampling  
+    ## Uncomment and adjust the limit as needed
+    # probabilistic_filtering_rate: 100 # <- output limit for this rule in spans/sec
+
+    ## 3. Tail-based filtering
+    ## Uncomment and adjust as needed
+    trace_accept_filters:
+      ## Adjust the duration threshold and limit as needed
+      # - name: tail-based-duration
+      #   properties:
+      #     min_duration: 3s      ## <- traces longer then this will qualify to be sent
+      #   spans_per_second: 500   ## <- output limit for this rule
+      ## Adjust number of errors and limit as needed
+      # - name: tail-based-errors
+      #   properties:
+      #     min_number_of_errors: 2 ## <- traces with at least this number of errors will qualify to be sent
+      #   spans_per_second: 400     ## <- output limit for this rule
+      ## Adjust number of errors and limit as needed
+      # - name: tail-based-attributes
+      #   attributes:               ## <- traces with at least one span or resource
+      #     - key: service.name     ##    matching this attribute will qualify to be sent
+      #       values:
+      #         - login-service     ## <- pass all traces where at least one span belongs to "login-service" service
+      #   spans_per_second: 300     ## <- output limit for this rule
+
 extensions:
   health_check: {}
 exporters:
@@ -58,5 +98,5 @@ service:
   pipelines:
     traces:
       receivers: [jaeger, opencensus, otlp, zipkin]
-      processors: [memory_limiter, batch]
+      processors: [memory_limiter, cascading_filter, batch]
       exporters: [otlphttp]

@@ -12,8 +12,8 @@ otelagent:
 ## Note that if cascading_filter is used, deployment must include only a single instance
 otelcol:
   metrics:
-    ## This enables exposing OpenTelemetry Collector metrics. Note that they will consume your DPM
-    ## hence by default they are disabled
+    ## This enables exposing OpenTelemetry Collector metrics, which are disabled by default. 
+    ## Note that they will consume your DPM.
     enabled:
       true
   config:
@@ -23,8 +23,8 @@ otelcol:
         ## (default = 30s): Wait time since the first span of a trace before making
         ## a filtering decision
         decision_wait: 30s
-        ## (default = 50000): Number of traces kept in memory
-        num_traces: 50000
+        ## (default = 100000): Number of traces kept in memory
+        num_traces: 200000
         ## (default = 0): Expected number of new traces (helps in allocating data structures)
         expected_new_traces_per_sec: 100
         ## (default = 0): defines maximum number of spans per second
@@ -78,8 +78,3 @@ otelcol:
           # Adjust or remove the example as needed
           - name: everything_else
             spans_per_second: -1 # If there's anything left in the budget, it will randomly select remaining traces
-    service:
-      pipelines:
-        traces:
-          ## This is required to enable cascading_filter
-          processors: [memory_limiter, k8s_tagger, source, resource, cascading_filter, batch]
