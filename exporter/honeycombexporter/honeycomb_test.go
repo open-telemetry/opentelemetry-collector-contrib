@@ -100,11 +100,9 @@ func baseConfig() *Config {
 func TestExporter(t *testing.T) {
 	td := pdata.NewTraces()
 	rs := td.ResourceSpans().AppendEmpty()
-	rs.Resource().Attributes().InitFromMap(map[string]pdata.AttributeValue{
-		"service.name": pdata.NewAttributeValueString("test_service"),
-		"A":            pdata.NewAttributeValueString("B"),
-		"B":            pdata.NewAttributeValueString("C"),
-	})
+	rs.Resource().Attributes().InsertString("service.name", "test_service")
+	rs.Resource().Attributes().InsertString("A", "B")
+	rs.Resource().Attributes().InsertString("B", "C")
 	instrLibrarySpans := rs.InstrumentationLibrarySpans().AppendEmpty()
 	lib := instrLibrarySpans.InstrumentationLibrary()
 	lib.SetName("my.custom.library")
@@ -119,9 +117,7 @@ func TestExporter(t *testing.T) {
 	clientSpanLink := clientSpan.Links().AppendEmpty()
 	clientSpanLink.SetTraceID(pdata.NewTraceID([16]byte{0x04}))
 	clientSpanLink.SetSpanID(pdata.NewSpanID([8]byte{0x05}))
-	clientSpanLink.Attributes().InitFromMap(map[string]pdata.AttributeValue{
-		"span_link_attr": pdata.NewAttributeValueInt(12345),
-	})
+	clientSpanLink.Attributes().InsertInt("span_link_attr", 12345)
 
 	serverSpan := instrLibrarySpans.Spans().AppendEmpty()
 	serverSpan.SetTraceID(pdata.NewTraceID([16]byte{0x01}))
@@ -135,17 +131,13 @@ func TestExporter(t *testing.T) {
 	rootSpan.SetSpanID(pdata.NewSpanID([8]byte{0x02}))
 	rootSpan.SetName("root")
 	rootSpan.SetKind(pdata.SpanKindServer)
-	rootSpan.Attributes().InitFromMap(map[string]pdata.AttributeValue{
-		"span_attr_name": pdata.NewAttributeValueString("Span Attribute"),
-		"B":              pdata.NewAttributeValueString("D"),
-	})
+	rootSpan.Attributes().InsertString("span_attr_name", "Span Attribute")
+	rootSpan.Attributes().InsertString("B", "D")
 	rootSpanEvent := rootSpan.Events().AppendEmpty()
 	rootSpanEvent.SetTimestamp(0)
 	rootSpanEvent.SetName("Some Description")
-	rootSpanEvent.Attributes().InitFromMap(map[string]pdata.AttributeValue{
-		"attribute_name": pdata.NewAttributeValueString("Hello MessageEvent"),
-		"B":              pdata.NewAttributeValueString("D"),
-	})
+	rootSpanEvent.Attributes().InsertString("attribute_name", "Hello MessageEvent")
+	rootSpanEvent.Attributes().InsertString("B", "D")
 
 	got := testTracesExporter(td, t, baseConfig())
 	want := []honeycombData{
@@ -233,9 +225,7 @@ func TestExporter(t *testing.T) {
 func TestSpanKinds(t *testing.T) {
 	td := pdata.NewTraces()
 	rs := td.ResourceSpans().AppendEmpty()
-	rs.Resource().Attributes().InitFromMap(map[string]pdata.AttributeValue{
-		"service.name": pdata.NewAttributeValueString("test_service"),
-	})
+	rs.Resource().Attributes().InsertString("service.name", "test_service")
 	instrLibrarySpans := rs.InstrumentationLibrarySpans().AppendEmpty()
 	lib := instrLibrarySpans.InstrumentationLibrary()
 	lib.SetName("my.custom.library")
@@ -301,16 +291,12 @@ func initSpan(span pdata.Span) {
 	span.SetTraceID(pdata.NewTraceID([16]byte{0x01}))
 	span.SetParentSpanID(pdata.NewSpanID([8]byte{0x02}))
 	span.SetSpanID(pdata.NewSpanID([8]byte{0x03}))
-
-	span.Attributes().InitFromMap(map[string]pdata.AttributeValue{
-		"span_attr_name": pdata.NewAttributeValueString("Span Attribute"),
-	})
+	span.Attributes().InsertString("span_attr_name", "Span Attribute")
 }
 
 func TestSampleRateAttribute(t *testing.T) {
 	td := pdata.NewTraces()
 	rs := td.ResourceSpans().AppendEmpty()
-	rs.Resource().Attributes().InitFromMap(map[string]pdata.AttributeValue{})
 	instrLibrarySpans := rs.InstrumentationLibrarySpans().AppendEmpty()
 
 	intSampleRateSpan := instrLibrarySpans.Spans().AppendEmpty()
@@ -318,28 +304,22 @@ func TestSampleRateAttribute(t *testing.T) {
 	intSampleRateSpan.SetSpanID(pdata.NewSpanID([8]byte{0x02}))
 	intSampleRateSpan.SetName("root")
 	intSampleRateSpan.SetKind(pdata.SpanKindServer)
-	intSampleRateSpan.Attributes().InitFromMap(map[string]pdata.AttributeValue{
-		"some_attribute": pdata.NewAttributeValueString("A value"),
-		"hc.sample.rate": pdata.NewAttributeValueInt(13),
-	})
+	intSampleRateSpan.Attributes().InsertString("some_attribute", "A value")
+	intSampleRateSpan.Attributes().InsertInt("hc.sample.rate", 13)
 
 	noSampleRateSpan := instrLibrarySpans.Spans().AppendEmpty()
 	noSampleRateSpan.SetTraceID(pdata.NewTraceID([16]byte{0x01}))
 	noSampleRateSpan.SetSpanID(pdata.NewSpanID([8]byte{0x02}))
 	noSampleRateSpan.SetName("root")
 	noSampleRateSpan.SetKind(pdata.SpanKindServer)
-	noSampleRateSpan.Attributes().InitFromMap(map[string]pdata.AttributeValue{
-		"no_sample_rate": pdata.NewAttributeValueString("gets_default"),
-	})
+	noSampleRateSpan.Attributes().InsertString("no_sample_rate", "gets_default")
 
 	invalidSampleRateSpan := instrLibrarySpans.Spans().AppendEmpty()
 	invalidSampleRateSpan.SetTraceID(pdata.NewTraceID([16]byte{0x01}))
 	invalidSampleRateSpan.SetSpanID(pdata.NewSpanID([8]byte{0x02}))
 	invalidSampleRateSpan.SetName("root")
 	invalidSampleRateSpan.SetKind(pdata.SpanKindServer)
-	invalidSampleRateSpan.Attributes().InitFromMap(map[string]pdata.AttributeValue{
-		"hc.sample.rate": pdata.NewAttributeValueString("wrong_type"),
-	})
+	invalidSampleRateSpan.Attributes().InsertString("hc.sample.rate", "wrong_type")
 
 	cfg := baseConfig()
 	cfg.SampleRateAttribute = "hc.sample.rate"

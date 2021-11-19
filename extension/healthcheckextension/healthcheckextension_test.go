@@ -33,12 +33,20 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testutil"
 )
 
+func ensureServerRunning(url string) func() bool {
+	return func() bool {
+		_, err := net.DialTimeout("tcp", url, 30*time.Second)
+		return err == nil
+	}
+}
+
 func TestHealthCheckExtensionUsageWithoutCheckCollectorPipeline(t *testing.T) {
 	config := Config{
 		TCPAddr: confignet.TCPAddr{
 			Endpoint: testutil.GetAvailableLocalAddress(t),
 		},
 		CheckCollectorPipeline: defaultCheckCollectorPipelineSettings(),
+		Path:                   "/",
 	}
 
 	hcExt := newServer(config, zap.NewNop())
@@ -71,6 +79,43 @@ func TestHealthCheckExtensionUsageWithoutCheckCollectorPipeline(t *testing.T) {
 	require.Equal(t, http.StatusServiceUnavailable, resp2.StatusCode)
 }
 
+func TestHealthCheckExtensionUsageWithCustomizedPathWithoutCheckCollectorPipeline(t *testing.T) {
+	config := Config{
+		TCPAddr: confignet.TCPAddr{
+			Endpoint: testutil.GetAvailableLocalAddress(t),
+		},
+		CheckCollectorPipeline: defaultCheckCollectorPipelineSettings(),
+		Path:                   "/health",
+	}
+
+	hcExt := newServer(config, zap.NewNop())
+	require.NotNil(t, hcExt)
+
+	require.NoError(t, hcExt.Start(context.Background(), componenttest.NewNopHost()))
+	t.Cleanup(func() { require.NoError(t, hcExt.Shutdown(context.Background())) })
+	require.Eventuallyf(t, ensureServerRunning(config.TCPAddr.Endpoint), 30*time.Second, 1*time.Second, "Failed to start the testing server.")
+
+	client := &http.Client{}
+	url := "http://" + config.TCPAddr.Endpoint + config.Path
+	resp0, err := client.Get(url)
+	require.NoError(t, err)
+	require.NoError(t, resp0.Body.Close(), "Must be able to close the response")
+
+	require.Equal(t, http.StatusServiceUnavailable, resp0.StatusCode)
+
+	require.NoError(t, hcExt.Ready())
+	resp1, err := client.Get(url)
+	require.NoError(t, err)
+	require.Equal(t, http.StatusOK, resp1.StatusCode)
+	require.NoError(t, resp1.Body.Close(), "Must be able to close the response")
+
+	require.NoError(t, hcExt.NotReady())
+	resp2, err := client.Get(url)
+	require.NoError(t, err)
+	require.Equal(t, http.StatusServiceUnavailable, resp2.StatusCode)
+	require.NoError(t, resp2.Body.Close(), "Must be able to close the response")
+}
+
 func TestHealthCheckExtensionUsageWithCheckCollectorPipeline(t *testing.T) {
 	config := Config{
 		TCPAddr: confignet.TCPAddr{
@@ -81,6 +126,7 @@ func TestHealthCheckExtensionUsageWithCheckCollectorPipeline(t *testing.T) {
 			Interval:                 "5m",
 			ExporterFailureThreshold: 1,
 		},
+		Path: "/",
 	}
 
 	hcExt := newServer(config, zap.NewNop())
@@ -135,6 +181,72 @@ func TestHealthCheckExtensionUsageWithCheckCollectorPipeline(t *testing.T) {
 	require.Equal(t, http.StatusInternalServerError, resp3.StatusCode)
 }
 
+func TestHealthCheckExtensionUsageWithCustomPathWithCheckCollectorPipeline(t *testing.T) {
+	config := Config{
+		TCPAddr: confignet.TCPAddr{
+			Endpoint: testutil.GetAvailableLocalAddress(t),
+		},
+		CheckCollectorPipeline: checkCollectorPipelineSettings{
+			Enabled:                  true,
+			Interval:                 "5m",
+			ExporterFailureThreshold: 1,
+		},
+		Path: "/health",
+	}
+
+	hcExt := newServer(config, zap.NewNop())
+	require.NotNil(t, hcExt)
+
+	require.NoError(t, hcExt.Start(context.Background(), componenttest.NewNopHost()))
+	t.Cleanup(func() { require.NoError(t, hcExt.Shutdown(context.Background())) })
+
+	// Give a chance for the server goroutine to run.
+	runtime.Gosched()
+	require.Eventuallyf(t, ensureServerRunning(config.TCPAddr.Endpoint), 30*time.Second, 1*time.Second, "Failed to start the testing server.")
+
+	newView := view.View{Name: exporterFailureView}
+
+	currentTime := time.Now()
+	vd1 := &view.Data{
+		View:  &newView,
+		Start: currentTime.Add(-2 * time.Minute),
+		End:   currentTime,
+		Rows:  nil,
+	}
+	vd2 := &view.Data{
+		View:  &newView,
+		Start: currentTime.Add(-1 * time.Minute),
+		End:   currentTime,
+		Rows:  nil,
+	}
+
+	client := &http.Client{}
+	url := "http://" + config.TCPAddr.Endpoint + config.Path
+	resp0, err := client.Get(url)
+	require.NoError(t, err)
+	require.NoError(t, resp0.Body.Close(), "Must be able to close the response")
+
+	hcExt.exporter.exporterFailureQueue = append(hcExt.exporter.exporterFailureQueue, vd1)
+	require.NoError(t, hcExt.Ready())
+	resp1, err := client.Get(url)
+	require.NoError(t, err)
+	require.Equal(t, http.StatusOK, resp1.StatusCode)
+	require.NoError(t, resp1.Body.Close(), "Must be able to close the response")
+
+	require.NoError(t, hcExt.NotReady())
+	resp2, err := client.Get(url)
+	require.NoError(t, err)
+	require.Equal(t, http.StatusInternalServerError, resp2.StatusCode)
+	require.NoError(t, resp2.Body.Close(), "Must be able to close the response")
+
+	hcExt.exporter.exporterFailureQueue = append(hcExt.exporter.exporterFailureQueue, vd2)
+	require.NoError(t, hcExt.Ready())
+	resp3, err := client.Get(url)
+	require.NoError(t, err)
+	require.Equal(t, http.StatusInternalServerError, resp3.StatusCode)
+	require.NoError(t, resp3.Body.Close(), "Must be able to close the response")
+}
+
 func TestHealthCheckExtensionPortAlreadyInUse(t *testing.T) {
 	endpoint := testutil.GetAvailableLocalAddress(t)
 
@@ -164,6 +276,7 @@ func TestHealthCheckMultipleStarts(t *testing.T) {
 			Endpoint: testutil.GetAvailableLocalAddress(t),
 		},
 		CheckCollectorPipeline: defaultCheckCollectorPipelineSettings(),
+		Path:                   "/",
 	}
 
 	hcExt := newServer(config, zap.NewNop())
@@ -182,6 +295,7 @@ func TestHealthCheckMultipleShutdowns(t *testing.T) {
 			Endpoint: testutil.GetAvailableLocalAddress(t),
 		},
 		CheckCollectorPipeline: defaultCheckCollectorPipelineSettings(),
+		Path:                   "/",
 	}
 
 	hcExt := newServer(config, zap.NewNop())

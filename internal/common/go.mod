@@ -4,14 +4,14 @@ go 1.17
 
 require (
 	github.com/cenkalti/backoff/v4 v4.1.2
-	github.com/docker/docker v20.10.10+incompatible
-	github.com/docker/go-connections v0.4.0
+	github.com/docker/docker v20.10.11+incompatible
+	github.com/docker/go-connections v0.4.1-0.20210727194412-58542c764a11
 	github.com/stretchr/testify v1.7.0
 )
 
 require (
 	github.com/Microsoft/go-winio v0.4.17 // indirect
-	github.com/containerd/containerd v1.5.7 // indirect
+	github.com/containerd/containerd v1.5.8 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/docker/distribution v2.7.1+incompatible // indirect
 	github.com/docker/go-units v0.4.0 // indirect

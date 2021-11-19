@@ -70,7 +70,7 @@ func initIntMetric(m *redisMetric, value int64, t *timeBundle, dest pdata.Metric
 	}
 	pt.SetIntVal(value)
 	pt.SetTimestamp(pdata.NewTimestampFromTime(t.current))
-	pt.Attributes().InitFromMap(m.labels)
+	pdata.NewAttributeMapFromMap(m.labels).CopyTo(pt.Attributes())
 }
 
 func initDoubleMetric(m *redisMetric, value float64, t *timeBundle, dest pdata.Metric) {
@@ -88,7 +88,7 @@ func initDoubleMetric(m *redisMetric, value float64, t *timeBundle, dest pdata.M
 	}
 	pt.SetDoubleVal(value)
 	pt.SetTimestamp(pdata.NewTimestampFromTime(t.current))
-	pt.Attributes().InitFromMap(m.labels)
+	pdata.NewAttributeMapFromMap(m.labels).CopyTo(pt.Attributes())
 }
 
 func redisMetricToPDM(m *redisMetric, dest pdata.Metric) {

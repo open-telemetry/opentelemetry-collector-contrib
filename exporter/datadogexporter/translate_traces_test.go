@@ -93,10 +93,7 @@ func NewResourceSpansData(mockTraceID [16]byte, mockSpanID [8]byte, mockParentSp
 	evt = events.AppendEmpty()
 	evt.SetTimestamp(pdataEndTime)
 	evt.SetName("end")
-	evt.Attributes().InitFromMap(map[string]pdata.AttributeValue{
-		"flag": pdata.NewAttributeValueBool(false),
-	})
-
+	evt.Attributes().InsertBool("flag", false)
 	attribs := map[string]pdata.AttributeValue{
 		"cache_hit":  pdata.NewAttributeValueBool(true),
 		"timeout_ns": pdata.NewAttributeValueInt(12e9),
@@ -108,25 +105,20 @@ func NewResourceSpansData(mockTraceID [16]byte, mockSpanID [8]byte, mockParentSp
 		attribs["http.status_code"] = pdata.NewAttributeValueString("501")
 	}
 
-	span.Attributes().InitFromMap(attribs)
+	pdata.NewAttributeMapFromMap(attribs).CopyTo(span.Attributes())
 
 	resource := rs.Resource()
 
 	if resourceEnvAndService {
-		resource.Attributes().InitFromMap(map[string]pdata.AttributeValue{
-			conventions.AttributeContainerID:           pdata.NewAttributeValueString("3249847017410247"),
-			conventions.AttributeDeploymentEnvironment: pdata.NewAttributeValueString("test-env"),
-			conventions.AttributeK8SPodName:            pdata.NewAttributeValueString("example-pod-name"),
-			conventions.AttributeAWSECSTaskARN:         pdata.NewAttributeValueString("arn:aws:ecs:ap-southwest-1:241423265983:task/test-environment-test-echo-Cluster-2lrqTJKFjACT/746bf64740324812835f688c30cf1512"),
-			"namespace":                                pdata.NewAttributeValueString("kube-system"),
-			"service.name":                             pdata.NewAttributeValueString("test-resource-service-name"),
-			"service.version":                          pdata.NewAttributeValueString("test-version"),
-		})
-
+		resource.Attributes().InsertString(conventions.AttributeContainerID, "3249847017410247")
+		resource.Attributes().InsertString(conventions.AttributeDeploymentEnvironment, "test-env")
+		resource.Attributes().InsertString(conventions.AttributeK8SPodName, "example-pod-name")
+		resource.Attributes().InsertString(conventions.AttributeAWSECSTaskARN, "arn:aws:ecs:ap-southwest-1:241423265983:task/test-environment-test-echo-Cluster-2lrqTJKFjACT/746bf64740324812835f688c30cf1512")
+		resource.Attributes().InsertString("namespace", "kube-system")
+		resource.Attributes().InsertString("service.name", "test-resource-service-name")
+		resource.Attributes().InsertString("service.version", "test-version")
 	} else {
-		resource.Attributes().InitFromMap(map[string]pdata.AttributeValue{
-			"namespace": pdata.NewAttributeValueString("kube-system"),
-		})
+		resource.Attributes().InsertString("namespace", "kube-system")
 	}
 
 	return rs
@@ -207,9 +199,7 @@ func TestObfuscation(t *testing.T) {
 	traces := pdata.NewTraces()
 	rs := traces.ResourceSpans().AppendEmpty()
 	resource := rs.Resource()
-	resource.Attributes().InitFromMap(map[string]pdata.AttributeValue{
-		"service.name": pdata.NewAttributeValueString("sure"),
-	})
+	resource.Attributes().InsertString("service.name", "sure")
 	ilss := rs.InstrumentationLibrarySpans().AppendEmpty()
 	instrumentationLibrary := ilss.InstrumentationLibrary()
 	instrumentationLibrary.SetName("flash")
@@ -465,21 +455,17 @@ func TestTracesTranslationErrorsFromEventsUsesLast(t *testing.T) {
 
 	event := events.AppendEmpty()
 	event.SetName(AttributeExceptionEventName)
-	event.Attributes().InitFromMap(map[string]pdata.AttributeValue{
-		conventions.AttributeExceptionType:       pdata.NewAttributeValueString("SomeOtherErr"),
-		conventions.AttributeExceptionStacktrace: pdata.NewAttributeValueString("SomeOtherErr at line 67\nthing at line 45"),
-		conventions.AttributeExceptionMessage:    pdata.NewAttributeValueString("SomeOtherErr error occurred"),
-	})
+	event.Attributes().InsertString(conventions.AttributeExceptionType, "SomeOtherErr")
+	event.Attributes().InsertString(conventions.AttributeExceptionStacktrace, "SomeOtherErr at line 67\nthing at line 45")
+	event.Attributes().InsertString(conventions.AttributeExceptionMessage, "SomeOtherErr error occurred")
 
 	event = events.AppendEmpty()
 	event.SetName(AttributeExceptionEventName)
-	event.Attributes().InitFromMap(attribs)
+	pdata.NewAttributeMapFromMap(attribs).CopyTo(event.Attributes())
 
 	event = events.AppendEmpty()
 	event.SetName("end")
-	event.Attributes().InitFromMap(map[string]pdata.AttributeValue{
-		"flag": pdata.NewAttributeValueBool(false),
-	})
+	event.Attributes().InsertBool("flag", false)
 
 	// translate mocks to datadog traces
 	cfg := config.Config{
@@ -528,16 +514,14 @@ func TestTracesTranslationErrorsFromEventsBounds(t *testing.T) {
 
 	evt := events.AppendEmpty()
 	evt.SetName(AttributeExceptionEventName)
-	evt.Attributes().InitFromMap(attribs)
+	pdata.NewAttributeMapFromMap(attribs).CopyTo(evt.Attributes())
 
 	evt = events.AppendEmpty()
 	evt.SetName("start")
 
 	evt = events.AppendEmpty()
 	evt.SetName("end")
-	evt.Attributes().InitFromMap(map[string]pdata.AttributeValue{
-		"flag": pdata.NewAttributeValueBool(false),
-	})
+	evt.Attributes().InsertBool("flag", false)
 
 	// translate mocks to datadog traces
 	cfg := config.Config{
@@ -560,15 +544,13 @@ func TestTracesTranslationErrorsFromEventsBounds(t *testing.T) {
 	// Now with the error event at the end of the list...
 	events.At(0).SetName("start")
 	// Reset the attributes
-	events.At(0).Attributes().InitFromMap(map[string]pdata.AttributeValue{})
+	pdata.NewAttributeMap().CopyTo(events.At(0).Attributes())
 
 	events.At(1).SetName("end")
-	events.At(1).Attributes().InitFromMap(map[string]pdata.AttributeValue{
-		"flag": pdata.NewAttributeValueBool(false),
-	})
+	events.At(1).Attributes().InsertBool("flag", false)
 
 	events.At(2).SetName(AttributeExceptionEventName)
-	events.At(2).Attributes().InitFromMap(attribs)
+	pdata.NewAttributeMapFromMap(attribs).CopyTo(events.At(2).Attributes())
 
 	// Ensure the error type is copied over
 	assert.Equal(t, attribs[conventions.AttributeExceptionType].StringVal(), datadogPayload.Traces[0].Spans[0].Meta[ext.ErrorType])
@@ -1287,12 +1269,7 @@ func TestSamplingWeightedStatsAggregations(t *testing.T) {
 	instrumentationLibrary.SetName("flash")
 	instrumentationLibrary.SetVersion("v1")
 	span := ilss.Spans().AppendEmpty()
-
-	attribs := map[string]pdata.AttributeValue{
-		"_sample_rate": pdata.NewAttributeValueString("0.2"),
-	}
-
-	span.Attributes().InitFromMap(attribs)
+	span.Attributes().InsertString("_sample_rate", "0.2")
 	span.SetKind(pdata.SpanKindServer)
 
 	// translate mocks to datadog traces
@@ -1327,9 +1304,7 @@ func TestSanitization(t *testing.T) {
 	traces.ResourceSpans().EnsureCapacity(1)
 	rs := traces.ResourceSpans().AppendEmpty()
 	resource := rs.Resource()
-	resource.Attributes().InitFromMap(map[string]pdata.AttributeValue{
-		"deployment.environment": pdata.NewAttributeValueString("UpperCase"),
-	})
+	resource.Attributes().InsertString("deployment.environment", "UpperCase")
 	rs.InstrumentationLibrarySpans().EnsureCapacity(1)
 	ilss := rs.InstrumentationLibrarySpans().AppendEmpty()
 	instrumentationLibrary := ilss.InstrumentationLibrary()
@@ -1427,9 +1402,7 @@ func TestSpanNameMapping(t *testing.T) {
 	traces.ResourceSpans().EnsureCapacity(1)
 	rs := traces.ResourceSpans().AppendEmpty()
 	resource := rs.Resource()
-	resource.Attributes().InitFromMap(map[string]pdata.AttributeValue{
-		"deployment.environment": pdata.NewAttributeValueString("UpperCase"),
-	})
+	resource.Attributes().InsertString("deployment.environment", "UpperCase")
 	rs.InstrumentationLibrarySpans().EnsureCapacity(1)
 	ilss := rs.InstrumentationLibrarySpans().AppendEmpty()
 	instrumentationLibrary := ilss.InstrumentationLibrary()
@@ -1479,10 +1452,8 @@ func TestSpanEnvClobbering(t *testing.T) {
 	traces.ResourceSpans().EnsureCapacity(1)
 	rs := traces.ResourceSpans().AppendEmpty()
 	resource := rs.Resource()
-	resource.Attributes().InitFromMap(map[string]pdata.AttributeValue{
-		conventions.AttributeDeploymentEnvironment: pdata.NewAttributeValueString("correctenv"),
-		"env": pdata.NewAttributeValueString("incorrectenv"),
-	})
+	resource.Attributes().InsertString(conventions.AttributeDeploymentEnvironment, "correctenv")
+	resource.Attributes().InsertString("env", "incorrectenv")
 
 	rs.InstrumentationLibrarySpans().EnsureCapacity(1)
 	ilss := rs.InstrumentationLibrarySpans().AppendEmpty()
@@ -1528,9 +1499,7 @@ func TestSpanRateLimitTag(t *testing.T) {
 	traces.ResourceSpans().EnsureCapacity(1)
 	rs := traces.ResourceSpans().AppendEmpty()
 	resource := rs.Resource()
-	resource.Attributes().InitFromMap(map[string]pdata.AttributeValue{
-		conventions.AttributeDeploymentEnvironment: pdata.NewAttributeValueString("correctenv"),
-	})
+	resource.Attributes().InsertString(conventions.AttributeDeploymentEnvironment, "correctenv")
 
 	rs.InstrumentationLibrarySpans().EnsureCapacity(1)
 	ilss := rs.InstrumentationLibrarySpans().AppendEmpty()
@@ -1543,7 +1512,7 @@ func TestSpanRateLimitTag(t *testing.T) {
 		"_sample_rate": pdata.NewAttributeValueString("0.5"),
 	}
 
-	span.Attributes().InitFromMap(attribs)
+	pdata.NewAttributeMapFromMap(attribs).CopyTo(span.Attributes())
 
 	traceID := pdata.NewTraceID(mockTraceID)
 	spanID := pdata.NewSpanID(mockSpanID)

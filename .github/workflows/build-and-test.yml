@@ -393,6 +393,11 @@ jobs:
             make docker-otelcontribcol
             docker tag otelcontribcol:latest otel/opentelemetry-collector-contrib-dev:$GITHUB_SHA
             docker tag otelcontribcol:latest otel/opentelemetry-collector-contrib-dev:latest
+      - name: Validate Docker Image
+        if: steps.check.outputs.passed == 'true'
+        run: |
+            docker run otel/opentelemetry-collector-contrib-dev:$GITHUB_SHA --version
+            docker run otel/opentelemetry-collector-contrib-dev:latest --version
       - name: Login to Docker Hub
         uses: docker/login-action@v1
         with:
@@ -456,6 +461,11 @@ jobs:
             make docker-otelcontribcol
             docker tag otelcontribcol:latest otel/opentelemetry-collector-contrib:$DOCKER_TAG
             docker tag otelcontribcol:latest otel/opentelemetry-collector-contrib:latest
+      - name: Validate Docker Image
+        if: steps.check.outputs.passed == 'true'
+        run: |
+            docker run otel/opentelemetry-collector-contrib:$DOCKER_TAG --version
+            docker run otel/opentelemetry-collector-contrib:latest --version
       - name: Login to Docker Hub
         uses: docker/login-action@v1
         with:
@@ -471,7 +481,7 @@ jobs:
         run: |
           cp bin/* dist/
           cd dist && shasum -a 256 * > checksums.txt && cd ../
-          ghr -t $GITHUB_TOKEN -u "GitHub Action" -r opentelemetry-collector-contrib --replace $RELEASE_TAG dist/
+          ghr -t $GITHUB_TOKEN -u open-telemetry -r opentelemetry-collector-contrib --replace $RELEASE_TAG dist/
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           RELEASE_TAG: ${{ steps.github_tag.outputs.tag }}
