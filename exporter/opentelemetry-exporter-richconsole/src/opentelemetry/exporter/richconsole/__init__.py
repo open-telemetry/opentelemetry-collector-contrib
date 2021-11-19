@@ -36,13 +36,13 @@ all spans will be printed in a list.
 
     from opentelemetry import trace
     from opentelemetry.sdk.trace.export import BatchSpanProcessor
-    from opentelemetry.exporter.richconsole import RichConsoleExporter
+    from opentelemetry.exporter.richconsole import RichConsoleSpanExporter
     from opentelemetry.sdk.trace import TracerProvider
 
     trace.set_tracer_provider(TracerProvider())
     tracer = trace.get_tracer(__name__)
 
-    tracer.add_span_processor(BatchSpanProcessor(RichConsoleExporter()))
+    tracer.add_span_processor(BatchSpanProcessor(RichConsoleSpanExporter()))
 
 
 API
@@ -155,18 +155,19 @@ class RichConsoleSpanExporter(SpanExporter):
             _child_to_tree(child, span)
 
         for span in spans:
-            if span.parent and span.parent.span_id not in parents:
-                child = tree.add(
-                    label=Text.from_markup(
-                        f"[blue][{_ns_to_time(span.start_time)}][/blue] [bold]{span.name}[/bold], span {opentelemetry.trace.format_span_id(span.context.span_id)}"
-                    )
-                )
-            else:
+            if span.parent and span.parent.span_id in parents:
                 child = parents[span.parent.span_id].add(
                     label=Text.from_markup(
                         f"[blue][{_ns_to_time(span.start_time)}][/blue] [bold]{span.name}[/bold], span {opentelemetry.trace.format_span_id(span.context.span_id)}"
                     )
                 )
+            else:
+                child = tree.add(
+                    label=Text.from_markup(
+                        f"[blue][{_ns_to_time(span.start_time)}][/blue] [bold]{span.name}[/bold], span {opentelemetry.trace.format_span_id(span.context.span_id)}"
+                    )
+                )
+
             parents[span.context.span_id] = child
             _child_to_tree(child, span)
 
