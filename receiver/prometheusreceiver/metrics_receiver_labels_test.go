@@ -104,7 +104,7 @@ const targetLabelLimit2 = `
 test_gauge0{label1="value1",label2="value2",label3="value3"} 10
 `
 
-func verifyLabelLimitTarget2(t *testing.T, _ *testData, rms []*pdata.ResourceMetrics) {
+func verifyFailedScrape(t *testing.T, _ *testData, rms []*pdata.ResourceMetrics) {
 	//Scrape should be unsuccessful since limit is exceeded in target2
 	for _, rm := range rms {
 		metrics := getMetrics(rm)
@@ -126,7 +126,7 @@ func TestLabelLimitConfig(t *testing.T) {
 			pages: []mockPrometheusResponse{
 				{code: 200, data: targetLabelLimit2},
 			},
-			validateFunc: verifyLabelLimitTarget2,
+			validateFunc: verifyFailedScrape,
 		},
 	}
 
@@ -212,7 +212,7 @@ func TestLabelNameLimitConfig(t *testing.T) {
 			pages: []mockPrometheusResponse{
 				{code: 200, data: targetLabelNameLimit2},
 			},
-			validateFunc: verifyLabelLimitTarget2,
+			validateFunc: verifyFailedScrape,
 		},
 	}
 
