@@ -5,11 +5,12 @@ go 1.17
 require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.39.0
 	github.com/stretchr/testify v1.7.0
-	go.opentelemetry.io/collector v0.39.0
+	go.opentelemetry.io/collector v0.39.1-0.20211117203239-e23c9d0a0183
 	go.uber.org/zap v1.19.1
 )
 
 require (
+	github.com/benbjohnson/clock v1.2.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/go-logr/logr v0.4.0 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect

@@ -5,8 +5,8 @@ go 1.17
 require (
 	cloud.google.com/go/spanner v1.27.0
 	github.com/stretchr/testify v1.7.0
-	go.opentelemetry.io/collector v0.39.0
-	go.opentelemetry.io/collector/model v0.39.0
+	go.opentelemetry.io/collector v0.39.1-0.20211117203239-e23c9d0a0183
+	go.opentelemetry.io/collector/model v0.39.1-0.20211117203239-e23c9d0a0183
 	go.uber.org/zap v1.19.1
 	google.golang.org/api v0.60.0
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b
@@ -25,6 +25,7 @@ require (
 
 require (
 	cloud.google.com/go v0.97.0 // indirect
+	github.com/benbjohnson/clock v1.2.0 // indirect
 	github.com/census-instrumentation/opencensus-proto v0.2.1 // indirect
 	github.com/cespare/xxhash/v2 v2.1.1 // indirect
 	github.com/cncf/udpa/go v0.0.0-20210930031921-04548b0d99d4 // indirect
@@ -50,9 +51,9 @@ require (
 	github.com/spf13/cast v1.4.1 // indirect
 	github.com/stretchr/objx v0.1.1 // indirect
 	go.opencensus.io v0.23.0 // indirect
-	go.opentelemetry.io/otel v1.1.0 // indirect
-	go.opentelemetry.io/otel/metric v0.24.0 // indirect
-	go.opentelemetry.io/otel/trace v1.1.0 // indirect
+	go.opentelemetry.io/otel v1.2.0 // indirect
+	go.opentelemetry.io/otel/metric v0.25.0 // indirect
+	go.opentelemetry.io/otel/trace v1.2.0 // indirect
 	go.uber.org/atomic v1.9.0 // indirect
 	go.uber.org/multierr v1.7.0 // indirect
 	golang.org/x/net v0.0.0-20210614182718-04defd469f4e // indirect

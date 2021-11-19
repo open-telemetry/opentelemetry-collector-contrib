@@ -82,14 +82,12 @@ func TestResourceToOC(t *testing.T) {
 
 func TestContainerResourceToOC(t *testing.T) {
 	resource := pdata.NewResource()
-	resource.Attributes().InitFromMap(map[string]pdata.AttributeValue{
-		conventions.AttributeK8SClusterName:        pdata.NewAttributeValueString("cluster1"),
-		conventions.AttributeK8SPodName:            pdata.NewAttributeValueString("pod1"),
-		conventions.AttributeK8SNamespaceName:      pdata.NewAttributeValueString("namespace1"),
-		conventions.AttributeContainerName:         pdata.NewAttributeValueString("container-name1"),
-		conventions.AttributeCloudAccountID:        pdata.NewAttributeValueString("proj1"),
-		conventions.AttributeCloudAvailabilityZone: pdata.NewAttributeValueString("zone1"),
-	})
+	resource.Attributes().InsertString(conventions.AttributeK8SClusterName, "cluster1")
+	resource.Attributes().InsertString(conventions.AttributeK8SPodName, "pod1")
+	resource.Attributes().InsertString(conventions.AttributeK8SNamespaceName, "namespace1")
+	resource.Attributes().InsertString(conventions.AttributeContainerName, "container-name1")
+	resource.Attributes().InsertString(conventions.AttributeCloudAccountID, "proj1")
+	resource.Attributes().InsertString(conventions.AttributeCloudAvailabilityZone, "zone1")
 
 	want := &ocresource.Resource{
 		Type: resourcekeys.ContainerType, // Inferred type
