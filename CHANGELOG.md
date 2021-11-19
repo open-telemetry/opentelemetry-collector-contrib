@@ -12,6 +12,7 @@
 - `redisreceiver`: Add missing description fields to keyspace metrics (#6940)
 - `kafkaexporter`: Allow controlling Kafka acknowledgment behaviour  (#6301)
 - `lokiexporter`: Log the first part of the http body on failed pushes to loki (#6946)
+- `resourcedetectionprocessor`: add the [consul](https://www.consul.io/) detector (#6382)
 
 ## 🛑 Breaking changes 🛑
 
