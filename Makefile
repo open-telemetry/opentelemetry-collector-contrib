@@ -5,7 +5,7 @@ CMD?=
 OTEL_VERSION=main
 
 BUILD_INFO_IMPORT_PATH=github.com/open-telemetry/opentelemetry-collector-contrib/internal/version
-VERSION=$(shell git describe --always --match "v[0-9]*" HEAD)
+VERSION=$(shell git describe --always --tags --match "v[0-9]*" HEAD)
 BUILD_INFO=-ldflags "-X $(BUILD_INFO_IMPORT_PATH).Version=$(VERSION)"
 
 COMP_REL_PATH=internal/components/components.go
