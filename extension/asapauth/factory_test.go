@@ -75,17 +75,6 @@ func TestCreateExtension(t *testing.T) {
 			},
 			shouldError: true,
 		},
-		{
-			name: "invalid_settings_should_error2",
-			settings: &Config{
-				KeyID:      "test_issuer/test_kid",
-				Issuer:     "test_issuer",
-				Audience:   []string{"test_service"},
-				TTL:        -10, // invalid ttl
-				PrivateKey: testKey,
-			},
-			shouldError: true,
-		},
 	}
 
 	for _, testcase := range tests {
@@ -95,6 +84,8 @@ func TestCreateExtension(t *testing.T) {
 			cfg.Audience = testcase.settings.Audience
 			cfg.TTL = testcase.settings.TTL
 			cfg.PrivateKey = testcase.settings.PrivateKey
+
+			// validate extension creation
 			ext, err := createExtension(context.Background(), componenttest.NewNopExtensionCreateSettings(), cfg)
 			if testcase.shouldError {
 				assert.Error(t, err)
