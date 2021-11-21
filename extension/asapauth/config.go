@@ -18,6 +18,7 @@ import (
 	"errors"
 
 	"go.opentelemetry.io/collector/config"
+	"go.uber.org/multierr"
 )
 
 var (
@@ -43,20 +44,21 @@ type Config struct {
 }
 
 func (c *Config) Validate() error {
+	var errs error
 	if c.KeyID == "" {
-		return errNoKeyIDProvided
+		errs = multierr.Append(errs, errNoKeyIDProvided)
 	}
 	if c.TTL <= 0 {
-		return errNoTTLProvided
+		errs = multierr.Append(errs, errNoTTLProvided)
 	}
 	if len(c.Audience) == 0 {
-		return errNoAudienceProvided
+		errs = multierr.Append(errs, errNoAudienceProvided)
 	}
 	if c.Issuer == "" {
-		return errNoIssuerProvided
+		errs = multierr.Append(errs, errNoIssuerProvided)
 	}
 	if c.PrivateKey == "" {
-		return errNoPrivateKeyProvided
+		errs = multierr.Append(errs, errNoPrivateKeyProvided)
 	}
-	return nil
+	return errs
 }
