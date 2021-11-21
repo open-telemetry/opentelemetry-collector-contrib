@@ -1,4 +1,4 @@
-module github.com/open-telemetry/opentelemetry-collector-contrib/extension/asapauth
+module github.com/open-telemetry/opentelemetry-collector-contrib/extension/asapclientauthextension
 
 go 1.17
 
