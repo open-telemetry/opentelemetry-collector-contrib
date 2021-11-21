@@ -37,9 +37,6 @@ func NewFactory() component.ExtensionFactory {
 }
 
 func createExtension(_ context.Context, _ component.ExtensionCreateSettings, cfg config.Extension) (component.Extension, error) {
-	if err := cfg.Validate(); err != nil {
-		return nil, err
-	}
 	return createAsapClientAuthenticator(cfg.(*Config))
 }
 
