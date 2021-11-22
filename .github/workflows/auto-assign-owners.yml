@@ -8,7 +8,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: run
-        uses: kentaro-m/auto-assign-action@v1.2.0
+        uses: kentaro-m/auto-assign-action@v1.2.1
         with:
           configuration-path: ".github/auto_assign.yml"
           repo-token: '${{ secrets.GITHUB_TOKEN }}'
