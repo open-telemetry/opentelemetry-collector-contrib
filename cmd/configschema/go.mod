@@ -8,8 +8,8 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib v0.39.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry v0.39.0
 	github.com/stretchr/testify v1.7.0
-	go.opentelemetry.io/collector v0.39.0
-	go.opentelemetry.io/collector/model v0.39.0
+	go.opentelemetry.io/collector v0.39.1-0.20211119172502-53d057f9c0e7
+	go.opentelemetry.io/collector/model v0.39.1-0.20211119172502-53d057f9c0e7
 	golang.org/x/mod v0.4.2
 )
 
@@ -63,8 +63,8 @@ require (
 	github.com/cncf/udpa/go v0.0.0-20210930031921-04548b0d99d4 // indirect
 	github.com/cncf/xds/go v0.0.0-20211011173535-cb28da3451f1 // indirect
 	github.com/containerd/console v1.0.2 // indirect
-	github.com/containerd/containerd v1.5.7 // indirect
-	github.com/containerd/ttrpc v1.0.2 // indirect
+	github.com/containerd/containerd v1.5.8 // indirect
+	github.com/containerd/ttrpc v1.1.0 // indirect
 	github.com/coreos/go-oidc v2.2.1+incompatible // indirect
 	github.com/coreos/go-systemd/v22 v22.3.2 // indirect
 	github.com/cyphar/filepath-securejoin v0.2.2 // indirect
@@ -72,8 +72,8 @@ require (
 	github.com/dgraph-io/ristretto v0.1.0 // indirect
 	github.com/digitalocean/godo v1.62.0 // indirect
 	github.com/docker/distribution v2.7.1+incompatible // indirect
-	github.com/docker/docker v20.10.10+incompatible // indirect
-	github.com/docker/go-connections v0.4.0 // indirect
+	github.com/docker/docker v20.10.11+incompatible // indirect
+	github.com/docker/go-connections v0.4.1-0.20210727194412-58542c764a11 // indirect
 	github.com/docker/go-units v0.4.0 // indirect
 	github.com/dustin/go-humanize v1.0.0 // indirect
 	github.com/dynatrace-oss/dynatrace-metric-utils-go v0.3.0 // indirect
@@ -175,7 +175,7 @@ require (
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/mongodb-forks/digest v1.0.3 // indirect
-	github.com/mostynb/go-grpc-compression v1.1.14 // indirect
+	github.com/mostynb/go-grpc-compression v1.1.15 // indirect
 	github.com/mrunalp/fileutils v0.5.0 // indirect
 	github.com/mwitkow/go-conntrack v0.0.0-20190716064945-2f068394615f // indirect
 	github.com/newrelic/newrelic-telemetry-sdk-go v0.8.1 // indirect
@@ -379,8 +379,8 @@ require (
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.26.1 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.26.1 // indirect
 	go.opentelemetry.io/otel v1.2.0 // indirect
-	go.opentelemetry.io/otel/internal/metric v0.24.0 // indirect
-	go.opentelemetry.io/otel/metric v0.24.0 // indirect
+	go.opentelemetry.io/otel/internal/metric v0.25.0 // indirect
+	go.opentelemetry.io/otel/metric v0.25.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.2.0 // indirect
 	go.opentelemetry.io/otel/trace v1.2.0 // indirect
 	go.uber.org/atomic v1.9.0 // indirect
