@@ -61,7 +61,7 @@ func (r *collectDRecord) protoTime() *timestamppb.Timestamp {
 
 func (r *collectDRecord) startTimestamp(mdType metricspb.MetricDescriptor_Type) *timestamppb.Timestamp {
 	if mdType == metricspb.MetricDescriptor_CUMULATIVE_DISTRIBUTION || mdType == metricspb.MetricDescriptor_CUMULATIVE_DOUBLE || mdType == metricspb.MetricDescriptor_CUMULATIVE_INT64 {
-		return timestamppb.New(time.Unix(0, int64(float64(time.Second)**r.Time)-int64(float64(time.Second)**r.Interval)))
+		return timestamppb.New(time.Unix(0, int64((*r.Time-*r.Interval)*float64(time.Second))))
 	}
 	return nil
 }
