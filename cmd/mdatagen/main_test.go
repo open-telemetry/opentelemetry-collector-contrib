@@ -34,7 +34,7 @@ metrics:
     data:
       type: sum
       aggregation: cumulative
-    labels: []
+    attributes: []
 `
 )
 
