@@ -4,11 +4,11 @@ go 1.17
 
 require (
 	github.com/stretchr/testify v1.7.0
-	go.opentelemetry.io/collector v0.39.1-0.20211117203239-e23c9d0a0183
+	go.opentelemetry.io/collector v0.39.1-0.20211119172502-53d057f9c0e7
 	go.uber.org/multierr v1.7.0
 )
 
-require go.opentelemetry.io/collector/model v0.39.1-0.20211117203239-e23c9d0a0183
+require go.opentelemetry.io/collector/model v0.39.1-0.20211119172502-53d057f9c0e7
 
 require (
 	github.com/benbjohnson/clock v1.2.0 // indirect
