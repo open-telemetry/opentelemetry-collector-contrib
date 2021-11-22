@@ -18,7 +18,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
-	"net/http"
+	"os"
 	"strings"
 	"testing"
 
@@ -26,8 +26,7 @@ import (
 	"go.opentelemetry.io/collector/model/pdata"
 )
 
-const testDataURL string = "https://raw.githubusercontent.com/OpenObservability/OpenMetrics/main/tests/urls.txt"
-const baseTestCaseURL string = "https://raw.githubusercontent.com/OpenObservability/OpenMetrics/main/tests/testdata/parsers/"
+const testDir = "./testdata/openmetrics/"
 
 func verifyPositiveTarget(t *testing.T, _ *testData, mds []*pdata.ResourceMetrics) {
 	require.Greater(t, len(mds), 0, "At least one resource metric should be present")
@@ -82,53 +81,41 @@ func TestOpenMetricsNegative(t *testing.T) {
 	testComponent(t, targets, false, "", true)
 }
 
-// maps each test name to the test data from OpenMetrics repository
+//reads test data from testdata/openmetrics directory
 func getOpenMetricsTestData(negativeTestsOnly bool) map[string]string {
-	response, err := http.Get(testDataURL)
+	testDir, err := os.Open(testDir)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("failed opening openmetrics test directory")
 	}
-	if response == nil || response.StatusCode != http.StatusOK {
-		log.Fatal("Failed to get OpenMetrics test data")
-	}
-	defer response.Body.Close()
+	defer testDir.Close()
 
-	responseBody, err := ioutil.ReadAll(response.Body)
-	if err != nil {
-		log.Fatal(err)
-	}
+	//read all test file names in testdata/openmetrics
+	testList, _ := testDir.Readdirnames(0)
 
-	targetURLs := strings.Split(string(responseBody), "\n")
 	targetsData := make(map[string]string)
-	for _, targetURL := range targetURLs {
-		if negativeTestsOnly && !strings.Contains(targetURL, "bad") || targetURL == "" {
-			continue
-		} else if !negativeTestsOnly && strings.Contains(targetURL, "bad") || targetURL == "" {
+	for _, testName := range testList {
+		//ignore hidden files
+		if strings.HasPrefix(testName, ".") {
 			continue
 		}
-		testName := strings.TrimPrefix(targetURL, baseTestCaseURL)
-		testName = strings.TrimSuffix(testName, "/metrics")
-
-		if data, statusCode := getTestCase(testName); statusCode == http.StatusOK {
-			targetsData[testName] = data
-		} else {
-			log.Printf("Failed to get test data from: %s", targetURL)
+		if negativeTestsOnly && !strings.Contains(testName, "bad") {
+			continue
+		} else if !negativeTestsOnly && strings.Contains(testName, "bad") {
+			continue
+		}
+		if testData, err := readTestCase(testName); err == nil {
+			targetsData[testName] = testData
 		}
 	}
 	return targetsData
 }
 
-func getTestCase(testName string) (string, int) {
-	response, err := http.Get(fmt.Sprintf("%s/%s/metrics", baseTestCaseURL, testName))
-
-	if err != nil || response.StatusCode != http.StatusOK {
-		return "", response.StatusCode
-	}
-	defer response.Body.Close()
-
-	responseBody, err := ioutil.ReadAll(response.Body)
+func readTestCase(testName string) (string, error) {
+	filePath := fmt.Sprintf("%s/%s/metrics", testDir, testName)
+	content, err := ioutil.ReadFile(filePath)
 	if err != nil {
-		log.Fatal(err)
+		log.Printf("failed opening file: %s", filePath)
+		return "", err
 	}
-	return string(responseBody), response.StatusCode
+	return string(content), nil
 }
