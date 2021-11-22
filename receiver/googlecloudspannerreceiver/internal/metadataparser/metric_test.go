@@ -32,20 +32,19 @@ const (
 
 func TestMetric_ToMetricValueMetadata(t *testing.T) {
 	testCases := map[string]struct {
-		valueType        string
+		valueType        metadata.ValueType
 		dataType         MetricType
-		expectedType     interface{}
 		expectedDataType pdata.MetricDataType
 		expectError      bool
 	}{
-		"Value type is int and data type is gauge":     {metricValueTypeInt, MetricType{DataType: GaugeMetricDataType}, metadata.Int64MetricValueMetadata{}, pdata.MetricDataTypeGauge, false},
-		"Value type is int and data type is sum":       {metricValueTypeInt, MetricType{DataType: SumMetricDataType, Aggregation: DeltaAggregationType, Monotonic: true}, metadata.Int64MetricValueMetadata{}, pdata.MetricDataTypeSum, false},
-		"Value type is int and data type is unknown":   {metricValueTypeInt, MetricType{DataType: UnknownMetricDataType}, nil, pdata.MetricDataTypeNone, true},
-		"Value type is float and data type is gauge":   {metricValueTypeFloat, MetricType{DataType: GaugeMetricDataType}, metadata.Float64MetricValueMetadata{}, pdata.MetricDataTypeGauge, false},
-		"Value type is float and data type is sum":     {metricValueTypeFloat, MetricType{DataType: SumMetricDataType, Aggregation: DeltaAggregationType, Monotonic: true}, metadata.Float64MetricValueMetadata{}, pdata.MetricDataTypeSum, false},
-		"Value type is float and data type is unknown": {metricValueTypeFloat, MetricType{DataType: UnknownMetricDataType}, nil, pdata.MetricDataTypeNone, true},
-		"Value type is unknown and data type is gauge": {"unknown", MetricType{DataType: GaugeMetricDataType}, nil, pdata.MetricDataTypeNone, true},
-		"Value type is unknown and data type is sum":   {"unknown", MetricType{DataType: SumMetricDataType, Aggregation: DeltaAggregationType, Monotonic: true}, nil, pdata.MetricDataTypeNone, true},
+		"Value type is int and data type is gauge":     {metadata.IntValueType, MetricType{DataType: GaugeMetricDataType}, pdata.MetricDataTypeGauge, false},
+		"Value type is int and data type is sum":       {metadata.IntValueType, MetricType{DataType: SumMetricDataType, Aggregation: DeltaAggregationType, Monotonic: true}, pdata.MetricDataTypeSum, false},
+		"Value type is int and data type is unknown":   {metadata.IntValueType, MetricType{DataType: UnknownMetricDataType}, pdata.MetricDataTypeNone, true},
+		"Value type is float and data type is gauge":   {metadata.FloatValueType, MetricType{DataType: GaugeMetricDataType}, pdata.MetricDataTypeGauge, false},
+		"Value type is float and data type is sum":     {metadata.FloatValueType, MetricType{DataType: SumMetricDataType, Aggregation: DeltaAggregationType, Monotonic: true}, pdata.MetricDataTypeSum, false},
+		"Value type is float and data type is unknown": {metadata.FloatValueType, MetricType{DataType: UnknownMetricDataType}, pdata.MetricDataTypeNone, true},
+		"Value type is unknown and data type is gauge": {metadata.UnknownValueType, MetricType{DataType: GaugeMetricDataType}, pdata.MetricDataTypeNone, true},
+		"Value type is unknown and data type is sum":   {metadata.UnknownValueType, MetricType{DataType: SumMetricDataType, Aggregation: DeltaAggregationType, Monotonic: true}, pdata.MetricDataTypeNone, true},
 	}
 
 	for name, testCase := range testCases {
@@ -69,11 +68,11 @@ func TestMetric_ToMetricValueMetadata(t *testing.T) {
 				require.NotNil(t, valueMetadata)
 				require.NoError(t, err)
 
-				assert.IsType(t, testCase.expectedType, valueMetadata)
 				assert.Equal(t, metric.Name, valueMetadata.Name())
 				assert.Equal(t, metric.ColumnName, valueMetadata.ColumnName())
 				assert.Equal(t, metric.Unit, valueMetadata.Unit())
 				assert.Equal(t, testCase.expectedDataType, valueMetadata.DataType().MetricDataType())
+				assert.Equal(t, metric.ValueType, valueMetadata.ValueType())
 			}
 		})
 	}

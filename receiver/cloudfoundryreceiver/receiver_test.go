@@ -1,4 +1,4 @@
-// Copyright 2020, OpenTelemetry Authors
+// Copyright 2019, OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,12 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package memcachedreceiver
+package cloudfoundryreceiver
 
-import "strconv"
-
-// Returns 0 if s cannot be parsed as an integer, otherwise the parsed integer.
-func parseInt(s string) int64 {
-	i, _ := strconv.ParseInt(s, 10, 64)
-	return i
-}
+// TODO: integration test to be added in next PR

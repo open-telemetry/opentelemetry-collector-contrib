@@ -430,6 +430,8 @@ func (t *Translator) MapMetrics(ctx context.Context, md pdata.Metrics, consumer 
 			var additionalTags []string
 			if t.cfg.InstrumentationLibraryMetadataAsTags {
 				additionalTags = append(attributeTags, instrumentationlibrary.TagsFromInstrumentationLibraryMetadata(ilm.InstrumentationLibrary())...)
+			} else {
+				additionalTags = attributeTags
 			}
 
 			for k := 0; k < metricsArray.Len(); k++ {

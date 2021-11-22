@@ -26,7 +26,6 @@ import (
 	"strings"
 	"sync"
 
-	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/config"
@@ -198,9 +197,6 @@ const (
 // unmarshalls them and sends them along to the nextConsumer.
 func (zr *zipkinReceiver) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	if c, ok := client.FromHTTP(r); ok {
-		ctx = client.NewContext(ctx, c)
-	}
 
 	// Now deserialize and process the spans.
 	asZipkinv1 := r.URL != nil && strings.Contains(r.URL.Path, "api/v1/spans")

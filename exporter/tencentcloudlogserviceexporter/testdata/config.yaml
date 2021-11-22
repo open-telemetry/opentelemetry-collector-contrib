@@ -20,7 +20,7 @@ exporters:
 
 service:
   pipelines:
-    traces:
+    logs:
       receivers: [nop]
       processors: [nop]
       exporters: [tencentcloud_logservice, tencentcloud_logservice/2]

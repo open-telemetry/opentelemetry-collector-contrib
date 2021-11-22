@@ -54,10 +54,7 @@ var (
 		networkscraper.TypeStr:    &networkscraper.Factory{},
 		pagingscraper.TypeStr:     &pagingscraper.Factory{},
 		processesscraper.TypeStr:  &processesscraper.Factory{},
-	}
-
-	resourceScraperFactories = map[string]internal.ResourceScraperFactory{
-		processscraper.TypeStr: &processscraper.Factory{},
+		processscraper.TypeStr:    &processscraper.Factory{},
 	}
 )
 
@@ -69,12 +66,8 @@ func NewFactory() component.ReceiverFactory {
 		receiverhelper.WithMetrics(createMetricsReceiver))
 }
 
-func getScraperFactory(key string) (internal.BaseFactory, bool) {
+func getScraperFactory(key string) (internal.ScraperFactory, bool) {
 	if factory, ok := scraperFactories[key]; ok {
-		return factory, true
-	}
-
-	if factory, ok := resourceScraperFactories[key]; ok {
 		return factory, true
 	}
 
@@ -95,7 +88,7 @@ func createMetricsReceiver(
 ) (component.MetricsReceiver, error) {
 	oCfg := cfg.(*Config)
 
-	addScraperOptions, err := createAddScraperOptions(ctx, set.Logger, oCfg, scraperFactories, resourceScraperFactories)
+	addScraperOptions, err := createAddScraperOptions(ctx, set.Logger, oCfg, scraperFactories)
 	if err != nil {
 		return nil, err
 	}
@@ -113,7 +106,6 @@ func createAddScraperOptions(
 	logger *zap.Logger,
 	config *Config,
 	factories map[string]internal.ScraperFactory,
-	resourceFactories map[string]internal.ResourceScraperFactory,
 ) ([]scraperhelper.ScraperControllerOption, error) {
 	scraperControllerOptions := make([]scraperhelper.ScraperControllerOption, 0, len(config.Scrapers))
 
@@ -125,16 +117,6 @@ func createAddScraperOptions(
 
 		if ok {
 			scraperControllerOptions = append(scraperControllerOptions, scraperhelper.AddScraper(hostMetricsScraper))
-			continue
-		}
-
-		resourceMetricsScraper, ok, err := createResourceMetricsScraper(ctx, logger, key, cfg, resourceFactories)
-		if err != nil {
-			return nil, fmt.Errorf("failed to create resource scraper for key %q: %w", key, err)
-		}
-
-		if ok {
-			scraperControllerOptions = append(scraperControllerOptions, scraperhelper.AddScraper(resourceMetricsScraper))
 			continue
 		}
 
@@ -153,17 +135,5 @@ func createHostMetricsScraper(ctx context.Context, logger *zap.Logger, key strin
 
 	ok = true
 	scraper, err = factory.CreateMetricsScraper(ctx, logger, cfg)
-	return
-}
-
-func createResourceMetricsScraper(ctx context.Context, logger *zap.Logger, key string, cfg internal.Config, factories map[string]internal.ResourceScraperFactory) (scraper scraperhelper.Scraper, ok bool, err error) {
-	factory := factories[key]
-	if factory == nil {
-		ok = false
-		return
-	}
-
-	ok = true
-	scraper, err = factory.CreateResourceMetricsScraper(ctx, logger, cfg)
 	return
 }
