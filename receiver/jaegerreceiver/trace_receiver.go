@@ -331,7 +331,7 @@ func (jr *jReceiver) startAgent(host component.Host) error {
 
 	// Start upstream grpc client before serving sampling endpoints over HTTP
 	if jr.config.RemoteSamplingClientSettings.Endpoint != "" {
-		grpcOpts, err := jr.config.RemoteSamplingClientSettings.ToDialOptions(host)
+		grpcOpts, err := jr.config.RemoteSamplingClientSettings.ToDialOptions(host, jr.settings.TelemetrySettings)
 		if err != nil {
 			jr.settings.Logger.Error("Error creating grpc dial options for remote sampling endpoint", zap.Error(err))
 			return err

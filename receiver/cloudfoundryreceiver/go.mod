@@ -6,8 +6,8 @@ require (
 	code.cloudfoundry.org/go-loggregator v7.4.0+incompatible
 	github.com/cloudfoundry-incubator/uaago v0.0.0-20190307164349-8136b7bbe76e
 	github.com/stretchr/testify v1.7.0
-	go.opentelemetry.io/collector v0.39.1-0.20211117203239-e23c9d0a0183
-	go.opentelemetry.io/collector/model v0.39.1-0.20211117203239-e23c9d0a0183
+	go.opentelemetry.io/collector v0.39.1-0.20211119172502-53d057f9c0e7
+	go.opentelemetry.io/collector/model v0.39.1-0.20211119172502-53d057f9c0e7
 	go.uber.org/zap v1.19.1
 )
 
