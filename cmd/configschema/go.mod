@@ -415,7 +415,7 @@ require (
 	k8s.io/apimachinery v0.22.3 // indirect
 	k8s.io/client-go v0.22.3 // indirect
 	k8s.io/klog v1.0.0 // indirect
-	k8s.io/klog/v2 v2.9.0 // indirect
+	k8s.io/klog/v2 v2.10.0 // indirect
 	k8s.io/kube-openapi v0.0.0-20210421082810-95288971da7e // indirect
 	k8s.io/kubelet v0.22.3 // indirect
 	k8s.io/utils v0.0.0-20210819203725-bdf08cb9a70a // indirect
@@ -594,6 +594,8 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/signa
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/splunkhecreceiver => ../../receiver/splunkhecreceiver
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/simpleprometheusreceiver => ../../receiver/simpleprometheusreceiver
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusoperatorreceiver => ./receiver/prometheusoperatorreceiver
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/opencensusreceiver => ../../receiver/opencensusreceiver
 
