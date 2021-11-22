@@ -81,17 +81,19 @@ func (r *receiver) registerLogsConsumer(lc consumer.Logs) {
 
 func (r *receiver) Start(ctx context.Context, host component.Host) error {
 	if r.logsConsumer != nil {
-		go func() {
-			r.handleEvents(ctx)
-		}()
+		go r.handleEvents(ctx)
 	}
 	if r.metricsConsumer != nil {
+		er := make (chan error)
 		go func() {
 			err := r.metricsComponent.Start(ctx, host)
 			if err != nil {
-				return
+				er <- err
 			}
+			close(er)
 		}()
+		error := <- er
+		return error
 	}
 	if r.logsConsumer == nil {
 		r.set.Logger.Warn("Logs Receiver is not set")
@@ -145,7 +147,7 @@ func (r *receiver) handleEvents(ctx context.Context) {
 		r.set.Logger.Error("error fetching/processing events", zap.Error(err))
 	}
 
-	events, _ := r.client.events()
+	events, _ := r.client.events(r.set.Logger, r.config)
 	if err != nil {
 		r.set.Logger.Error("error fetching stats", zap.Error(err))
 	}
@@ -154,7 +156,7 @@ func (r *receiver) handleEvents(ctx context.Context) {
 		case event := <-events:
 			ld, err := traslateEventsToLogs(r.set.Logger, event)
 			if err != nil {
-				r.set.Logger.Error("Failed to translate into logs")
+				r.set.Logger.Error("Failed to translate into logs", zap.Error(err))
 			}
 			decodeErr := r.logsConsumer.ConsumeLogs(ctx, ld)
 			r.obsrecv.EndLogsOp(ctx, typeStr, len(events), decodeErr)

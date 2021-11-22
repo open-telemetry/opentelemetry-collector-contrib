@@ -28,6 +28,7 @@ import (
 	"math"
 	"net/http"
 	"net/url"
+	"strconv"
 	"time"
 
 	"go.uber.org/zap"
@@ -62,19 +63,19 @@ type containerStatsReport struct {
 
 type Type = string
 
-type Actor struct {
+type actor struct {
 	ID         string
 	Attributes map[string]string
 }
 
-type Event struct {
+type event struct {
 	Status string `json:"status,omitempty"`
 	ID     string `json:"id,omitempty"`
 	From   string `json:"from,omitempty"`
 
 	Type   string
 	Action string
-	Actor  Actor
+	Actor  actor
 
 	Scope string `json:"scope,omitempty"`
 
@@ -88,7 +89,7 @@ type clientFactory func(logger *zap.Logger, cfg *Config) (client, error)
 
 type client interface {
 	stats() ([]containerStats, error)
-	events() (chan Event, error)
+	events(logger *zap.Logger, cfg *Config) (chan event, error)
 }
 
 type podmanClient struct {
@@ -149,8 +150,8 @@ func (c *podmanClient) stats() ([]containerStats, error) {
 	}
 	return report.Stats, nil
 }
-func (c *podmanClient) events() (chan Event, error) {
-	ch := make(chan Event)
+func (c *podmanClient) events(logger *zap.Logger, cfg *Config) (chan event, error) {
+	ch := make(chan event)
 	params := url.Values{}
 	params.Add("stream", "true")
 	params.Add("since", "0m")
@@ -159,22 +160,28 @@ func (c *podmanClient) events() (chan Event, error) {
 	if err != nil {
 		return nil, err
 	}
+	maxRetries, err := strconv.Atoi(cfg.MaxRetries)
+	if err != nil {
+		return nil, err
+	}
 
 	go func() {
 		dec := json.NewDecoder(response.Body)
 
 		shouldRetry := true
-		for retries := 1; retries <= 3 && shouldRetry; retries++ {
+		for retries := 1; retries <= int(maxRetries) && shouldRetry; retries++ {
 			if retries != 1 {
-				fmt.Println("Retrying")
+				logger.Info("Retrying...")
 			}
 			for {
-				var event Event
+				var event event
 				if err := dec.Decode(&event); err != nil {
 					if err == io.EOF {
+						logger.Error("Error while decoding events")
 						break
 					}
 					shouldRetry = true
+					logger.Error("Error while decoding events")
 					break
 				}
 				shouldRetry = false

@@ -80,18 +80,46 @@ func TestScraperLoop(t *testing.T) {
 			Error: "",
 		}
 	}()
-
 	r.Start(context.Background(), componenttest.NewNopHost())
-
 	md := <-consumer
 	assert.Equal(t, md.ResourceMetrics().Len(), 1)
 
 	r.Shutdown(context.Background())
 }
 
+func TestLogsLoop(t *testing.T) {
+	cfg := createDefaultConfig()
+
+	client := make(mockClientLogs)
+	consumer := make(mockConsumerLogs)
+
+	r, err := newReceiver(context.Background(), componenttest.NewNopReceiverCreateSettings(), cfg, client.factory)
+	r.registerLogsConsumer(consumer)
+	assert.NotNil(t, r)
+	require.NoError(t, err)
+
+	go func() {
+		client <- event{
+			Type:  "Container",
+			Error: "",
+		}
+	}()
+	r.Start(context.Background(), componenttest.NewNopHost())
+
+	md := <-consumer
+	assert.Equal(t, md.ResourceLogs().Len(), 1)
+
+	r.Shutdown(context.Background())
+}
+
 type mockClient chan containerStatsReport
+type mockClientLogs chan event
 
 func (c mockClient) factory(logger *zap.Logger, cfg *Config) (client, error) {
+	return c, nil
+}
+
+func (c mockClientLogs) factory(logger *zap.Logger, cfg *Config) (client, error) {
 	return c, nil
 }
 
@@ -103,18 +131,46 @@ func (c mockClient) stats() ([]containerStats, error) {
 	return report.Stats, nil
 }
 
-func (c mockClient) events() (chan Event, error) {
-	ch := make(chan Event)
+func (c mockClientLogs) stats() ([]containerStats, error) {
+	report := make([]containerStats, 1)
+	return report, nil
+}
+
+func (c mockClient) events(logger *zap.Logger, cfg *Config) (chan event, error) {
+	ch := make(chan event)
 	return ch, nil
 }
 
+func (c mockClientLogs) events(logger *zap.Logger, cfg *Config) (chan event, error) {
+	reportChan := make(chan event)
+	report := <-c
+	go func() {
+		reportChan <- report
+		close(reportChan)
+	}()
+	if report.Error != "" {
+		return nil, errors.New(report.Error)
+	}
+	return reportChan, nil
+}
+
 type mockConsumer chan pdata.Metrics
+type mockConsumerLogs chan pdata.Logs
 
 func (m mockConsumer) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{}
 }
 
+func (m mockConsumerLogs) Capabilities() consumer.Capabilities {
+	return consumer.Capabilities{}
+}
+
 func (m mockConsumer) ConsumeMetrics(ctx context.Context, md pdata.Metrics) error {
 	m <- md
+	return nil
+}
+
+func (m mockConsumerLogs) ConsumeLogs(ctx context.Context, ld pdata.Logs) error {
+	m <- ld
 	return nil
 }

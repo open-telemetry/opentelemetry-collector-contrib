@@ -8,7 +8,7 @@ import (
 	"go.uber.org/zap"
 )
 
-func traslateEventsToLogs(logger *zap.Logger, event Event) (pdata.Logs, error) {
+func traslateEventsToLogs(logger *zap.Logger, event event) (pdata.Logs, error) {
 	ld := pdata.NewLogs()
 	rl := ld.ResourceLogs().AppendEmpty()
 	ill := rl.InstrumentationLibraryLogs().AppendEmpty()
