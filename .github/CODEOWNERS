@@ -32,7 +32,7 @@ exporter/awskinesisexporter/                         @open-telemetry/collector-c
 exporter/loadbalancingexporter/                      @open-telemetry/collector-contrib-approvers @jpkrohling
 exporter/logzioexporter/                             @open-telemetry/collector-contrib-approvers @jkowall @Doron-Bargo @yotamloe
 exporter/lokiexporter/                               @open-telemetry/collector-contrib-approvers @gramidt
-exporter/newrelicexporter/                           @open-telemetry/collector-contrib-approvers @alanwest @a-feld @jack-berg @nrcventura
+exporter/newrelicexporter/                           @open-telemetry/collector-contrib-approvers @alanwest @jack-berg @nrcventura
 exporter/observiqexporter/                           @open-telemetry/collector-contrib-approvers @binaryfissiongames
 exporter/sapmexporter/                               @open-telemetry/collector-contrib-approvers @owais @dmitryax
 exporter/sentryexporter/                             @open-telemetry/collector-contrib-approvers @AbhiPrasad
