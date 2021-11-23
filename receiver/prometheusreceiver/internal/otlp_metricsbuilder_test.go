@@ -478,14 +478,14 @@ func runBuilderTestsPdata(t *testing.T, tests []buildTestDataPdata) {
 				}
 				metrics, _, _, err := b.Build()
 				assert.NoError(t, err)
-				assertEquivalentMetrics(t, wants[i], metrics)
+				assertEquivalentMetricsPdata(t, wants[i], metrics)
 				st += interval
 			}
 		})
 	}
 }
 
-func assertEquivalentMetrics(t *testing.T, want, got *pdata.MetricSlice) {
+func assertEquivalentMetricsPdata(t *testing.T, want, got *pdata.MetricSlice) {
 	if !assert.Equal(t, want.Len(), got.Len()) {
 		return
 	}
