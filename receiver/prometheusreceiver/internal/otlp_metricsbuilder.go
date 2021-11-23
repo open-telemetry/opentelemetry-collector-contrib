@@ -84,7 +84,6 @@ func convToPdataMetricType(metricType textparse.MetricType) pdata.MetricDataType
 type metricBuilderPdata struct {
 	metrics              pdata.MetricSlice
 	families             map[string]MetricFamilyPdata
-	currentMf            MetricFamilyPdata
 	hasData              bool
 	hasInternalMetric    bool
 	mc                   MetadataCache
