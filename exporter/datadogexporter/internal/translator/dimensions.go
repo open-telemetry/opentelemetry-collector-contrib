@@ -45,13 +45,15 @@ func getTags(labels pdata.AttributeMap) []string {
 	return tags
 }
 
-// AddTags to metrics dimensions. The argument may be modified.
+// AddTags to metrics dimensions.
 func (m *metricsDimensions) AddTags(tags ...string) metricsDimensions {
+	// defensively copy the tags
+	newTags := make([]string, 0, len(tags)+len(m.tags))
+	newTags = append(newTags, tags...)
+	newTags = append(newTags, m.tags...)
 	return metricsDimensions{
 		name: m.name,
-		// append the field to the passed argument,
-		// so that the slice we modify is the one we get as an argument.
-		tags: append(tags, m.tags...),
+		tags: newTags,
 		host: m.host,
 	}
 }
