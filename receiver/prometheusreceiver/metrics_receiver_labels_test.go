@@ -181,10 +181,7 @@ func TestHonorLabelsFalseConfig(t *testing.T) {
 		},
 	}
 
-	mp, cfg, err := setupMockPrometheus(targets...)
-	require.Nilf(t, err, "Failed to create Prometheus config: %v", err)
-
-	testComponentCustomConfig(t, targets, mp, cfg)
+	testComponent(t, targets, false, "")
 }
 
 func verifyHonorLabelsTrue(t *testing.T, td *testData, rms []*pdata.ResourceMetrics) {
