@@ -82,6 +82,8 @@ func mapLogRecordToSplunkEvent(res pdata.Resource, lr pdata.LogRecord, config *C
 			sourcetype = v.StringVal()
 		case indexKey:
 			index = v.StringVal()
+		case splunk.HecTokenLabel:
+			// ignore
 		default:
 			fields[k] = convertAttributeValue(v, logger)
 		}
@@ -98,6 +100,8 @@ func mapLogRecordToSplunkEvent(res pdata.Resource, lr pdata.LogRecord, config *C
 			sourcetype = v.StringVal()
 		case indexKey:
 			index = v.StringVal()
+		case splunk.HecTokenLabel:
+			// ignore
 		default:
 			fields[k] = convertAttributeValue(v, logger)
 		}
@@ -134,7 +138,7 @@ func convertAttributeValue(value pdata.AttributeValue, logger *zap.Logger) inter
 		})
 		return values
 	case pdata.AttributeValueTypeArray:
-		arrayVal := value.ArrayVal()
+		arrayVal := value.SliceVal()
 		values := make([]interface{}, arrayVal.Len())
 		for i := 0; i < arrayVal.Len(); i++ {
 			values[i] = convertAttributeValue(arrayVal.At(i), logger)

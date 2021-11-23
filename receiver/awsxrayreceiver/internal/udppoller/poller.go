@@ -21,6 +21,7 @@ import (
 	"net"
 	"sync"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/obsreport"
 	"go.uber.org/zap"
@@ -89,7 +90,7 @@ type poller struct {
 }
 
 // New creates a new UDP poller
-func New(cfg *Config, logger *zap.Logger) (Poller, error) {
+func New(cfg *Config, set component.ReceiverCreateSettings) (Poller, error) {
 	if cfg.Transport != Transport {
 		return nil, fmt.Errorf(
 			"X-Ray receiver only supports ingesting spans through UDP, provided: %s",
@@ -105,17 +106,22 @@ func New(cfg *Config, logger *zap.Logger) (Poller, error) {
 	if err != nil {
 		return nil, err
 	}
-	logger.Info("Listening on endpoint for X-Ray segments",
+	set.Logger.Info("Listening on endpoint for X-Ray segments",
 		zap.String(Transport, addr.String()))
 
 	return &poller{
 		receiverID:     cfg.ReceiverID,
 		udpSock:        sock,
-		logger:         logger,
+		logger:         set.Logger,
 		maxPollerCount: cfg.NumOfPollerToStart,
 		shutDown:       make(chan struct{}),
 		segChan:        make(chan RawSegment, segChanSize),
-		obsrecv:        obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverID: cfg.ReceiverID, Transport: cfg.Transport, LongLivedCtx: true}),
+		obsrecv: obsreport.NewReceiver(obsreport.ReceiverSettings{
+			ReceiverID:             cfg.ReceiverID,
+			Transport:              cfg.Transport,
+			LongLivedCtx:           true,
+			ReceiverCreateSettings: set,
+		}),
 	}, nil
 }
 

@@ -86,7 +86,7 @@ func Test_signalfxeceiver_New(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := newReceiver(componenttest.NewNopTelemetrySettings(), tt.args.config)
+			got := newReceiver(componenttest.NewNopReceiverCreateSettings(), tt.args.config)
 			if tt.args.nextConsumer != nil {
 				got.RegisterMetricsConsumer(tt.args.nextConsumer)
 			}
@@ -102,7 +102,7 @@ func Test_signalfxeceiver_EndToEnd(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.Endpoint = addr
 	sink := new(consumertest.MetricsSink)
-	r := newReceiver(componenttest.NewNopTelemetrySettings(), *cfg)
+	r := newReceiver(componenttest.NewNopReceiverCreateSettings(), *cfg)
 	r.RegisterMetricsConsumer(sink)
 
 	require.NoError(t, r.Start(context.Background(), componenttest.NewNopHost()))
@@ -139,7 +139,7 @@ func Test_signalfxeceiver_EndToEnd(t *testing.T) {
 		m := ilm.Metrics().AppendEmpty()
 		m.SetName("cumulative_double_with_dims")
 		m.SetDataType(pdata.MetricDataTypeSum)
-		m.Sum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+		m.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
 		m.Sum().SetIsMonotonic(true)
 		doublePt := m.Sum().DataPoints().AppendEmpty()
 		doublePt.SetTimestamp(ts)
@@ -149,7 +149,7 @@ func Test_signalfxeceiver_EndToEnd(t *testing.T) {
 		m := ilm.Metrics().AppendEmpty()
 		m.SetName("cumulative_int_with_dims")
 		m.SetDataType(pdata.MetricDataTypeSum)
-		m.Sum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+		m.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
 		m.Sum().SetIsMonotonic(true)
 		int64Pt := m.Sum().DataPoints().AppendEmpty()
 		int64Pt.SetTimestamp(ts)
@@ -157,8 +157,8 @@ func Test_signalfxeceiver_EndToEnd(t *testing.T) {
 	}
 
 	expCfg := &signalfxexporter.Config{
-		ExporterSettings: config.NewExporterSettings(config.NewID("signalfx")),
-		IngestURL:        "http://" + addr + "/v2/datapoint",
+		ExporterSettings: config.NewExporterSettings(config.NewComponentID("signalfx")),
+		IngestURL:        "http://" + addr,
 		APIURL:           "http://localhost",
 		AccessToken:      "access_token",
 	}
@@ -341,7 +341,7 @@ func Test_sfxReceiver_handleReq(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			sink := new(consumertest.MetricsSink)
-			rcv := newReceiver(componenttest.NewNopTelemetrySettings(), *config)
+			rcv := newReceiver(componenttest.NewNopReceiverCreateSettings(), *config)
 			if !tt.skipRegistration {
 				rcv.RegisterMetricsConsumer(sink)
 			}
@@ -516,7 +516,7 @@ func Test_sfxReceiver_handleEventReq(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			sink := new(consumertest.LogsSink)
-			rcv := newReceiver(componenttest.NewNopTelemetrySettings(), *config)
+			rcv := newReceiver(componenttest.NewNopReceiverCreateSettings(), *config)
 			if !tt.skipRegistration {
 				rcv.RegisterLogsConsumer(sink)
 			}
@@ -547,7 +547,7 @@ func Test_sfxReceiver_TLS(t *testing.T) {
 		},
 	}
 	sink := new(consumertest.MetricsSink)
-	r := newReceiver(componenttest.NewNopTelemetrySettings(), *cfg)
+	r := newReceiver(componenttest.NewNopReceiverCreateSettings(), *cfg)
 	r.RegisterMetricsConsumer(sink)
 	defer r.Shutdown(context.Background())
 
@@ -570,11 +570,9 @@ func Test_sfxReceiver_TLS(t *testing.T) {
 	dp.SetTimestamp(pdata.Timestamp(msec * 1e6))
 	dp.SetIntVal(13)
 
-	dp.Attributes().InitFromMap(map[string]pdata.AttributeValue{
-		"k0": pdata.NewAttributeValueString("v0"),
-		"k1": pdata.NewAttributeValueString("v1"),
-		"k2": pdata.NewAttributeValueString("v2"),
-	})
+	dp.Attributes().InsertString("k0", "v0")
+	dp.Attributes().InsertString("k1", "v1")
+	dp.Attributes().InsertString("k2", "v2")
 	dp.Attributes().Sort()
 
 	t.Log("Sending SignalFx metric data Request")
@@ -652,7 +650,7 @@ func Test_sfxReceiver_DatapointAccessTokenPassthrough(t *testing.T) {
 			config.AccessTokenPassthrough = tt.passthrough
 
 			sink := new(consumertest.MetricsSink)
-			rcv := newReceiver(componenttest.NewNopTelemetrySettings(), *config)
+			rcv := newReceiver(componenttest.NewNopReceiverCreateSettings(), *config)
 			rcv.RegisterMetricsConsumer(sink)
 
 			currentTime := time.Now().Unix() * 1e3
@@ -729,7 +727,7 @@ func Test_sfxReceiver_EventAccessTokenPassthrough(t *testing.T) {
 			config.AccessTokenPassthrough = tt.passthrough
 
 			sink := new(consumertest.LogsSink)
-			rcv := newReceiver(componenttest.NewNopTelemetrySettings(), *config)
+			rcv := newReceiver(componenttest.NewNopReceiverCreateSettings(), *config)
 			rcv.RegisterLogsConsumer(sink)
 
 			currentTime := time.Now().Unix() * 1e3

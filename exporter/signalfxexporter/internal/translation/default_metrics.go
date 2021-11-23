@@ -51,6 +51,10 @@ exclude_metrics:
   dimensions:
     state: [interrupt, nice, softirq, steal, system, user, wait]
 
+- metric_name: cpu.idle
+  dimensions:
+    cpu: ["*"]
+
 # Memory metrics.
 - metric_name: system.memory.usage
   dimensions:

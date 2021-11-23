@@ -66,7 +66,7 @@ func TestEndToEndSummarySupport(t *testing.T) {
 
 	// 2. Create the Prometheus metrics exporter that'll receive and verify the metrics produced.
 	exporterCfg := &Config{
-		ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
+		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
 		Namespace:        "test",
 		Endpoint:         ":8787",
 		SendTimestamps:   true,
@@ -104,7 +104,7 @@ func TestEndToEndSummarySupport(t *testing.T) {
 	receiverCreateSet := componenttest.NewNopReceiverCreateSettings()
 	rcvCfg := &prometheusreceiver.Config{
 		PrometheusConfig: receiverConfig,
-		ReceiverSettings: config.NewReceiverSettings(config.NewID("prometheus")),
+		ReceiverSettings: config.NewReceiverSettings(config.NewComponentID("prometheus")),
 	}
 	// 3.5 Create the Prometheus receiver and pass in the preivously created Prometheus exporter.
 	prometheusReceiver, err := receiverFactory.CreateMetricsReceiver(ctx, receiverCreateSet, rcvCfg, exporter)
@@ -184,6 +184,8 @@ func TestEndToEndSummarySupport(t *testing.T) {
 
 }
 
+// the following triggers G101: Potential hardcoded credentials
+// nolint:gosec
 const dropWizardResponse = `
 # HELP jvm_memory_pool_bytes_used Used bytes of a given JVM memory pool.
 # TYPE jvm_memory_pool_bytes_used gauge

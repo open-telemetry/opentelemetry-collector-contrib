@@ -45,7 +45,7 @@ func NewFactory() component.ReceiverFactory {
 }
 func createDefaultConfig() config.Receiver {
 	return &Config{
-		ReceiverSettings: config.NewReceiverSettings(config.NewID(typeStr)),
+		ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
 		TCPAddr: confignet.TCPAddr{
 			Endpoint: defaultBindEndpoint,
 		},

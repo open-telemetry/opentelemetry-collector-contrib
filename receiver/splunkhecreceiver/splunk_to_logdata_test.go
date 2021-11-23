@@ -103,7 +103,7 @@ func Test_SplunkHecToLogData(t *testing.T) {
 			output: func() pdata.ResourceLogsSlice {
 				logsSlice := createLogsSlice(nanoseconds)
 				arrVal := pdata.NewAttributeValueArray()
-				arr := arrVal.ArrayVal()
+				arr := arrVal.SliceVal()
 				arr.AppendEmpty().SetStringVal("foo")
 				arr.AppendEmpty().SetStringVal("bar")
 				arrVal.CopyTo(logsSlice.At(0).InstrumentationLibraryLogs().At(0).Logs().At(0).Body())
@@ -128,7 +128,7 @@ func Test_SplunkHecToLogData(t *testing.T) {
 			output: func() pdata.ResourceLogsSlice {
 				logsSlice := createLogsSlice(nanoseconds)
 				foosArr := pdata.NewAttributeValueArray()
-				foos := foosArr.ArrayVal()
+				foos := foosArr.SliceVal()
 				foos.EnsureCapacity(3)
 				foos.AppendEmpty().SetStringVal("foo")
 				foos.AppendEmpty().SetStringVal("bar")
@@ -266,7 +266,7 @@ func Test_ConvertAttributeValueArray(t *testing.T) {
 	value, err := convertInterfaceToAttributeValue(zap.NewNop(), []interface{}{"foo"})
 	assert.NoError(t, err)
 	arrValue := pdata.NewAttributeValueArray()
-	arr := arrValue.ArrayVal()
+	arr := arrValue.SliceVal()
 	arr.AppendEmpty().SetStringVal("foo")
 	assert.Equal(t, arrValue, value)
 }

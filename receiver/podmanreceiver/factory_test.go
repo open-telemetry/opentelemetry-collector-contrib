@@ -56,17 +56,8 @@ func TestCreateInvalidEndpoint(t *testing.T) {
 	receiverCfg.Endpoint = ""
 
 	params := componenttest.NewNopReceiverCreateSettings()
-	receiver, err := factory.CreateMetricsReceiver(context.Background(), params, receiverCfg, consumertest.NewNop())
-	assert.Nil(t, receiver)
+	recv, err := factory.CreateMetricsReceiver(context.Background(), params, receiverCfg, consumertest.NewNop())
+	assert.Nil(t, recv)
 	assert.Error(t, err)
 	assert.Equal(t, "config.Endpoint must be specified", err.Error())
-
-	receiverCfg.Endpoint = "\a"
-	receiver, err = factory.CreateMetricsReceiver(context.Background(), params, receiverCfg, consumertest.NewNop())
-	assert.Nil(t, receiver)
-	assert.Error(t, err)
-	assert.Equal(
-		t, "could not determine receiver transport: parse \"\\a\": net/url: invalid control character in URL",
-		err.Error(),
-	)
 }

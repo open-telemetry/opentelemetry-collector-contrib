@@ -20,12 +20,12 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/config/configparser"
+	"go.opentelemetry.io/collector/config"
 )
 
 func TestConfig(t *testing.T) {
 	testFile := path.Join(".", "testdata", "config.yaml")
-	v, err := configparser.NewConfigMapFromFile(testFile)
+	v, err := config.NewMapFromFile(testFile)
 	require.NoError(t, err)
 
 	actualConfigs := map[string]*Config{}

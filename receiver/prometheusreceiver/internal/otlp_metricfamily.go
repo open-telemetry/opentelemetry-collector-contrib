@@ -86,13 +86,25 @@ func newMetricFamilyPdata(metricName string, mc MetadataCache, logger *zap.Logge
 			metadata.Metric = familyName
 			metadata.Type = textparse.MetricTypeUnknown
 		}
-	} else if !ok && isInternalMetric(metricName) {
-		metadata = defineInternalMetric(metricName, metadata, logger)
+	} else if !ok {
+		if isInternalMetric(metricName) {
+			metadata = defineInternalMetric(metricName, metadata, logger)
+		} else {
+			// Prometheus sends metrics without a type hint as gauges.
+			// MetricTypeUnknown is converted to a gauge in convToOCAMetricType()
+			metadata.Type = textparse.MetricTypeUnknown
+		}
 	}
 
 	mtype := convToPdataMetricType(metadata.Type)
 	if mtype == pdata.MetricDataTypeNone {
 		logger.Debug(fmt.Sprintf("Invalid metric : %s %+v", metricName, metadata))
+	}
+
+	// If a counter has a _total suffix but metadata is stored without it, keep _total suffix as the name otherwise
+	// the metric sent won't have the suffix
+	if mtype == pdata.MetricDataTypeSum && strings.HasSuffix(metricName, metricSuffixTotal) {
+		familyName = metricName
 	}
 
 	return &metricFamilyPdata{

@@ -15,45 +15,39 @@
 package kubelet
 
 import (
-	"time"
+	"go.opentelemetry.io/collector/model/pdata"
 
-	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
-	"google.golang.org/protobuf/types/known/timestamppb"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver/internal/metadata"
 )
 
-func applyCurrentTime(metrics []*metricspb.Metric, t time.Time) []*metricspb.Metric {
-	currentTime := timestamppb.New(t)
-	for _, metric := range metrics {
-		if metric != nil {
-			metric.Timeseries[0].Points[0].Timestamp = currentTime
-		}
-	}
-	return metrics
+func fillDoubleGauge(dest pdata.Metric, prefix string, metricInt metadata.MetricIntf, value float64, currentTime pdata.Timestamp) {
+	metricInt.Init(dest)
+	dest.SetName(prefix + dest.Name())
+	dp := dest.Gauge().DataPoints().AppendEmpty()
+	dp.SetDoubleVal(value)
+	dp.SetTimestamp(currentTime)
 }
 
-// todo put this in a common lib
-func labels(labels map[string]string, descriptions map[string]string) (
-	[]*metricspb.LabelKey, []*metricspb.LabelValue,
-) {
-	var keys []*metricspb.LabelKey
-	var values []*metricspb.LabelValue
-	for key, val := range labels {
-		labelKey := &metricspb.LabelKey{Key: key}
-		desc, hasDesc := descriptions[key]
-		if hasDesc {
-			labelKey.Description = desc
-		}
-		keys = append(keys, labelKey)
-		values = append(values, &metricspb.LabelValue{
-			Value:    val,
-			HasValue: true,
-		})
+func addIntGauge(dest pdata.MetricSlice, prefix string, metricInt metadata.MetricIntf, value *uint64, currentTime pdata.Timestamp) {
+	if value == nil {
+		return
 	}
-	return keys, values
+	fillIntGauge(dest.AppendEmpty(), prefix, metricInt, int64(*value), currentTime)
 }
 
-func applyLabels(metric *metricspb.Metric, attrs map[string]string) {
-	if metric != nil {
-		metric.MetricDescriptor.LabelKeys, metric.Timeseries[0].LabelValues = labels(attrs, nil)
-	}
+func fillIntGauge(dest pdata.Metric, prefix string, metricInt metadata.MetricIntf, value int64, currentTime pdata.Timestamp) {
+	metricInt.Init(dest)
+	dest.SetName(prefix + dest.Name())
+	dp := dest.Gauge().DataPoints().AppendEmpty()
+	dp.SetIntVal(value)
+	dp.SetTimestamp(currentTime)
+}
+
+func fillDoubleSum(dest pdata.Metric, prefix string, metricInt metadata.MetricIntf, value float64, startTime pdata.Timestamp, currentTime pdata.Timestamp) {
+	metricInt.Init(dest)
+	dest.SetName(prefix + dest.Name())
+	dp := dest.Sum().DataPoints().AppendEmpty()
+	dp.SetDoubleVal(value)
+	dp.SetStartTimestamp(startTime)
+	dp.SetTimestamp(currentTime)
 }

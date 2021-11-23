@@ -21,104 +21,52 @@ package dockerstatsreceiver
 
 import (
 	"context"
-	"sync"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.uber.org/zap"
+	"go.opentelemetry.io/collector/receiver/scraperhelper"
 )
 
 func TestNewReceiver(t *testing.T) {
-	config := &Config{
-		Endpoint:           "unix:///run/some.sock",
-		CollectionInterval: 1 * time.Second,
-		DockerAPIVersion:   defaultDockerAPIVersion,
+	cfg := &Config{
+		ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
+			CollectionInterval: 1 * time.Second,
+		},
+		Endpoint:         "unix:///run/some.sock",
+		DockerAPIVersion: defaultDockerAPIVersion,
 	}
-	logger := zap.NewNop()
 	nextConsumer := consumertest.NewNop()
-	mr, err := NewReceiver(context.Background(), logger, config, nextConsumer)
+	mr, err := NewReceiver(context.Background(), componenttest.NewNopReceiverCreateSettings(), cfg, nextConsumer)
 	assert.NotNil(t, mr)
 	assert.Nil(t, err)
-
-	receiver := mr.(*Receiver)
-	assert.Equal(t, config, receiver.config)
-	assert.Same(t, nextConsumer, receiver.nextConsumer)
-	assert.Equal(t, logger, receiver.logger)
-	assert.Equal(t, "unix", receiver.transport)
-}
-
-func TestNewReceiverErrors(t *testing.T) {
-	logger := zap.NewNop()
-
-	r, err := NewReceiver(context.Background(), logger, &Config{}, consumertest.NewNop())
-	assert.Nil(t, r)
-	require.Error(t, err)
-	assert.Equal(t, "config.Endpoint must be specified", err.Error())
-
-	r, err = NewReceiver(context.Background(), logger, &Config{Endpoint: "someEndpoint"}, consumertest.NewNop())
-	assert.Nil(t, r)
-	require.Error(t, err)
-	assert.Equal(t, "config.CollectionInterval must be specified", err.Error())
 }
 
 func TestErrorsInStart(t *testing.T) {
 	unreachable := "unix:///not/a/thing.sock"
-	config := &Config{
-		Endpoint:           unreachable,
-		CollectionInterval: 1 * time.Second,
-		DockerAPIVersion:   defaultDockerAPIVersion,
+	cfg := &Config{
+		ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
+			CollectionInterval: 1 * time.Second,
+		},
+		Endpoint:         unreachable,
+		DockerAPIVersion: defaultDockerAPIVersion,
 	}
-	logger := zap.NewNop()
-	receiver, err := NewReceiver(context.Background(), logger, config, consumertest.NewNop())
-	assert.NotNil(t, receiver)
+	recv, err := NewReceiver(context.Background(), componenttest.NewNopReceiverCreateSettings(), cfg, consumertest.NewNop())
+	assert.NotNil(t, recv)
 	assert.Nil(t, err)
 
-	// out of order modification to trigger client creation failure
-	config.Endpoint = "..not/a/valid/endpoint"
+	cfg.Endpoint = "..not/a/valid/endpoint"
+	err = recv.Start(context.Background(), componenttest.NewNopHost())
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "unable to parse docker host")
 
-	host := newErrorWaitingHost()
-	err = receiver.Start(context.Background(), host)
-	require.Error(t, err)
+	cfg.Endpoint = unreachable
+	err = recv.Start(context.Background(), componenttest.NewNopHost())
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "context deadline exceeded")
 
-	// restore for connection error a host fatal error
-	config.Endpoint = unreachable
-	err = receiver.Start(context.Background(), host)
-	assert.Nil(t, err)
-
-	<-time.After(500 * time.Millisecond)
-	hostErr := host.getErr()
-	require.Error(t, hostErr)
-	assert.Contains(t, hostErr.Error(), "context deadline exceeded")
-
-	require.NoError(t, receiver.Shutdown(context.Background()))
-}
-
-type errorWaitingHost struct {
-	component.Host
-	sync.Mutex
-	err error
-}
-
-// newAssertNoErrorHost returns a new instance of assertNoErrorHost.
-func newErrorWaitingHost() *errorWaitingHost {
-	return &errorWaitingHost{
-		Host: componenttest.NewNopHost(),
-	}
-}
-
-func (aneh *errorWaitingHost) ReportFatalError(err error) {
-	aneh.Lock()
-	defer aneh.Unlock()
-	aneh.err = err
-}
-
-func (aneh *errorWaitingHost) getErr() error {
-	aneh.Lock()
-	defer aneh.Unlock()
-	return aneh.err
+	require.NoError(t, recv.Shutdown(context.Background()))
 }

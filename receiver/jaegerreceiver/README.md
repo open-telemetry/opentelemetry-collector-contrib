@@ -78,7 +78,8 @@ receivers:
       grpc:
     remote_sampling:
       endpoint: "jaeger-collector:14250"
-      insecure: true
+      tls:
+        insecure: true
 ```
 
 Remote sampling can also be directly served by the collector by providing a

@@ -127,6 +127,8 @@ func (c *MetricsConverter) metricToSfxDataPoints(metric pdata.Metric, extraDimen
 				dps[resultSliceLen] = dp
 			}
 			resultSliceLen++
+		} else {
+			c.logger.Debug("Datapoint does not match filter, skipping", zap.String("dp", DatapointToString(dp)))
 		}
 	}
 	dps = dps[:resultSliceLen]
@@ -246,13 +248,13 @@ func fromMetricDataTypeToMetricType(metric pdata.Metric) *sfxpb.MetricType {
 		if !metric.Sum().IsMonotonic() {
 			return &sfxMetricTypeGauge
 		}
-		if metric.Sum().AggregationTemporality() == pdata.AggregationTemporalityDelta {
+		if metric.Sum().AggregationTemporality() == pdata.MetricAggregationTemporalityDelta {
 			return &sfxMetricTypeCounter
 		}
 		return &sfxMetricTypeCumulativeCounter
 
 	case pdata.MetricDataTypeHistogram:
-		if metric.Histogram().AggregationTemporality() == pdata.AggregationTemporalityDelta {
+		if metric.Histogram().AggregationTemporality() == pdata.MetricAggregationTemporalityDelta {
 			return &sfxMetricTypeCounter
 		}
 		return &sfxMetricTypeCumulativeCounter
@@ -455,7 +457,7 @@ func (dpv *datapointValidator) isValidMetricName(name string) bool {
 }
 
 func (dpv *datapointValidator) isValidDimension(dimension *sfxpb.Dimension) bool {
-	return dpv.isValidDimensionName(dimension.Key) && dpv.isValidDimensionValue(dimension.Value)
+	return dpv.isValidDimensionName(dimension.Key) && dpv.isValidDimensionValue(dimension.Value, dimension.Key)
 }
 
 func (dpv *datapointValidator) isValidDimensionName(name string) bool {
@@ -470,9 +472,10 @@ func (dpv *datapointValidator) isValidDimensionName(name string) bool {
 	return true
 }
 
-func (dpv *datapointValidator) isValidDimensionValue(value string) bool {
+func (dpv *datapointValidator) isValidDimensionValue(value, name string) bool {
 	if len(value) > maxDimensionValueLength {
 		dpv.logger.Warn("dropping dimension",
+			zap.String("dimension_name", name),
 			zap.String("reason", invalidDimensionValueReason),
 			zap.String("dimension_value", value),
 			zap.Int("dimension_value_length", len(value)),
@@ -500,4 +503,33 @@ func createSampledLogger(logger *zap.Logger) *zap.Logger {
 		)
 	})
 	return logger.WithOptions(opts)
+}
+
+func DatapointToString(dp *sfxpb.DataPoint) string {
+	var tsStr string
+	if dp.Timestamp != 0 {
+		tsStr = strconv.FormatInt(dp.Timestamp, 10)
+	}
+
+	var dimsStr string
+	for _, dim := range dp.Dimensions {
+		dimsStr = dimsStr + dim.String()
+	}
+
+	return fmt.Sprintf("%s: %s (%s) %s\n%s", dp.Metric, dp.Value.String(), dpTypeToString(*dp.MetricType), tsStr, dimsStr)
+}
+
+func dpTypeToString(t sfxpb.MetricType) string {
+	switch t {
+	case sfxpb.MetricType_GAUGE:
+		return "Gauge"
+	case sfxpb.MetricType_COUNTER:
+		return "Counter"
+	case sfxpb.MetricType_ENUM:
+		return "Enum"
+	case sfxpb.MetricType_CUMULATIVE_COUNTER:
+		return "Cumulative Counter"
+	default:
+		return fmt.Sprintf("unsupported type %d", t)
+	}
 }

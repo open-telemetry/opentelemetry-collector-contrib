@@ -40,7 +40,42 @@ const (
 	StringAttribute PolicyType = "string_attribute"
 	// RateLimiting allows all traces until the specified limits are satisfied.
 	RateLimiting PolicyType = "rate_limiting"
+	// Composite allows defining a composite policy, combining the other policies in one
+	Composite PolicyType = "composite"
 )
+
+// SubPolicyCfg holds the common configuration to all policies under composite policy.
+type SubPolicyCfg struct {
+	// Name given to the instance of the policy to make easy to identify it in metrics and logs.
+	Name string `mapstructure:"name"`
+	// Type of the policy this will be used to match the proper configuration of the policy.
+	Type PolicyType `mapstructure:"type"`
+	// Configs for numeric attribute filter sampling policy evaluator.
+	NumericAttributeCfg NumericAttributeCfg `mapstructure:"numeric_attribute"`
+	// Configs for string attribute filter sampling policy evaluator.
+	StringAttributeCfg StringAttributeCfg `mapstructure:"string_attribute"`
+	// Configs for rate limiting filter sampling policy evaluator.
+	RateLimitingCfg RateLimitingCfg `mapstructure:"rate_limiting"`
+	// Configs for latency filter sampling policy evaluator.
+	LatencyCfg LatencyCfg `mapstructure:"latency"`
+	// Configs for status code filter sampling policy evaluator.
+	StatusCodeCfg StatusCodeCfg `mapstructure:"status_code"`
+}
+
+// CompositeCfg holds the configurable settings to create a composite
+// sampling policy evaluator.
+type CompositeCfg struct {
+	MaxTotalSpansPerSecond int64               `mapstructure:"max_total_spans_per_second"`
+	PolicyOrder            []string            `mapstructure:"policy_order"`
+	SubPolicyCfg           []SubPolicyCfg      `mapstructure:"composite_sub_policy"`
+	RateAllocation         []RateAllocationCfg `mapstructure:"rate_allocation"`
+}
+
+// RateAllocationCfg  used within composite policy
+type RateAllocationCfg struct {
+	Policy  string `mapstructure:"policy"`
+	Percent int64  `mapstructure:"percent"`
+}
 
 // PolicyCfg holds the common configuration to all policies.
 type PolicyCfg struct {
@@ -60,6 +95,8 @@ type PolicyCfg struct {
 	StringAttributeCfg StringAttributeCfg `mapstructure:"string_attribute"`
 	// Configs for rate limiting filter sampling policy evaluator.
 	RateLimitingCfg RateLimitingCfg `mapstructure:"rate_limiting"`
+	// Configs for defining composite policy
+	CompositeCfg CompositeCfg `mapstructure:"composite"`
 }
 
 // LatencyCfg holds the configurable settings to create a latency filter sampling policy
@@ -112,6 +149,10 @@ type StringAttributeCfg struct {
 	// from the regular expressions defined in Values.
 	// CacheMaxSize will not be used if EnabledRegexMatching is set to false.
 	CacheMaxSize int `mapstructure:"cache_max_size"`
+	// InvertMatch indicates that values or regular expressions must not match against attribute values.
+	// If InvertMatch is true and Values is equal to 'acme', all other values will be sampled except 'acme'.
+	// Also, if the specified Key does not match on any resource or span attributes, data will be sampled.
+	InvertMatch bool `mapstructure:"invert_match"`
 }
 
 // RateLimitingCfg holds the configurable settings to create a rate limiting

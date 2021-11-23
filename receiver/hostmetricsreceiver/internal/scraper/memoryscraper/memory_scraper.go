@@ -40,18 +40,19 @@ func newMemoryScraper(_ context.Context, cfg *Config) *scraper {
 	return &scraper{config: cfg, virtualMemory: mem.VirtualMemory}
 }
 
-func (s *scraper) Scrape(_ context.Context) (pdata.MetricSlice, error) {
-	metrics := pdata.NewMetricSlice()
+func (s *scraper) Scrape(_ context.Context) (pdata.Metrics, error) {
+	md := pdata.NewMetrics()
+	metrics := md.ResourceMetrics().AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty().Metrics()
 
 	now := pdata.NewTimestampFromTime(time.Now())
 	memInfo, err := s.virtualMemory()
 	if err != nil {
-		return metrics, scrapererror.NewPartialScrapeError(err, metricsLen)
+		return md, scrapererror.NewPartialScrapeError(err, metricsLen)
 	}
 
 	metrics.EnsureCapacity(metricsLen)
 	initializeMemoryUsageMetric(metrics.AppendEmpty(), now, memInfo)
-	return metrics, nil
+	return md, nil
 }
 
 func initializeMemoryUsageMetric(metric pdata.Metric, now pdata.Timestamp, memInfo *mem.VirtualMemoryStat) {
@@ -63,7 +64,7 @@ func initializeMemoryUsageMetric(metric pdata.Metric, now pdata.Timestamp, memIn
 }
 
 func initializeMemoryUsageDataPoint(dataPoint pdata.NumberDataPoint, now pdata.Timestamp, stateLabel string, value int64) {
-	dataPoint.Attributes().InsertString(metadata.Labels.State, stateLabel)
+	dataPoint.Attributes().InsertString(metadata.Attributes.State, stateLabel)
 	dataPoint.SetTimestamp(now)
 	dataPoint.SetIntVal(value)
 }

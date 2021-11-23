@@ -24,7 +24,7 @@ import (
 
 func TestDefaultConfig_exporterSettings(t *testing.T) {
 	want := &Config{
-		ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
+		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
 		RetrySettings:    exporterhelper.DefaultRetrySettings(),
 		QueueSettings: QueueSettings{
 			QueueSize: exporterhelper.DefaultQueueSettings().QueueSize,

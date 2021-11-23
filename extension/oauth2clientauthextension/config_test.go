@@ -44,10 +44,10 @@ func TestLoadConfig(t *testing.T) {
 	expected.Scopes = []string{"api.metrics"}
 	expected.TokenURL = "https://example.com/oauth2/default/v1/token"
 
-	ext := cfg.Extensions[config.NewIDWithName(typeStr, "1")]
+	ext := cfg.Extensions[config.NewComponentIDWithName(typeStr, "1")]
 	assert.Equal(t,
 		&Config{
-			ExtensionSettings: config.NewExtensionSettings(config.NewIDWithName(typeStr, "1")),
+			ExtensionSettings: config.NewExtensionSettings(config.NewComponentIDWithName(typeStr, "1")),
 			ClientSecret:      "someclientsecret",
 			ClientID:          "someclientid",
 			Scopes:            []string{"api.metrics"},
@@ -57,7 +57,7 @@ func TestLoadConfig(t *testing.T) {
 		ext)
 
 	assert.Equal(t, 2, len(cfg.Service.Extensions))
-	assert.Equal(t, config.NewIDWithName(typeStr, "1"), cfg.Service.Extensions[0])
+	assert.Equal(t, config.NewComponentIDWithName(typeStr, "1"), cfg.Service.Extensions[0])
 }
 
 func TestConfigTLSSettings(t *testing.T) {
@@ -71,7 +71,7 @@ func TestConfigTLSSettings(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 
-	ext2 := cfg.Extensions[config.NewIDWithName(typeStr, "withtls")]
+	ext2 := cfg.Extensions[config.NewComponentIDWithName(typeStr, "withtls")]
 
 	cfg2 := ext2.(*Config)
 	assert.Equal(t, cfg2.TLSSetting, configtls.TLSClientSetting{
@@ -111,7 +111,7 @@ func TestLoadConfigError(t *testing.T) {
 		factory := NewFactory()
 		factories.Extensions[typeStr] = factory
 		cfg, _ := configtest.LoadConfig(path.Join(".", "testdata", "config_bad.yaml"), factories)
-		extension := cfg.Extensions[config.NewIDWithName(typeStr, tt.configName)]
+		extension := cfg.Extensions[config.NewComponentIDWithName(typeStr, tt.configName)]
 		verr := extension.Validate()
 		require.ErrorIs(t, verr, tt.expectedErr)
 	}

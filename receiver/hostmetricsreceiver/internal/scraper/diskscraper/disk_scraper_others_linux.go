@@ -49,7 +49,7 @@ func initializeDiskMergedMetric(metric pdata.Metric, startTime, now pdata.Timest
 	idps.EnsureCapacity(2 * len(ioCounters))
 
 	for device, ioCounter := range ioCounters {
-		initializeNumberDataPointAsInt(idps.AppendEmpty(), startTime, now, device, metadata.LabelDirection.Read, int64(ioCounter.MergedReadCount))
-		initializeNumberDataPointAsInt(idps.AppendEmpty(), startTime, now, device, metadata.LabelDirection.Write, int64(ioCounter.MergedWriteCount))
+		initializeNumberDataPointAsInt(idps.AppendEmpty(), startTime, now, device, metadata.AttributeDirection.Read, int64(ioCounter.MergedReadCount))
+		initializeNumberDataPointAsInt(idps.AppendEmpty(), startTime, now, device, metadata.AttributeDirection.Write, int64(ioCounter.MergedWriteCount))
 	}
 }

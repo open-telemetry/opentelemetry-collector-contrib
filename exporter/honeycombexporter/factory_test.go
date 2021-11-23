@@ -41,7 +41,7 @@ func TestCreateTracesExporter(t *testing.T) {
 	require.NoError(t, err)
 
 	params := componenttest.NewNopExporterCreateSettings()
-	exporter, err := factory.CreateTracesExporter(context.Background(), params, cfg.Exporters[config.NewIDWithName(typeStr, "customname")])
+	exporter, err := factory.CreateTracesExporter(context.Background(), params, cfg.Exporters[config.NewComponentIDWithName(typeStr, "customname")])
 	assert.Nil(t, err)
 	assert.NotNil(t, exporter)
 }
@@ -55,7 +55,7 @@ func TestCreateMetricsExporter(t *testing.T) {
 	require.NoError(t, err)
 
 	params := componenttest.NewNopExporterCreateSettings()
-	exporter, err := factory.CreateMetricsExporter(context.Background(), params, cfg.Exporters[config.NewIDWithName(typeStr, "customname")])
+	exporter, err := factory.CreateMetricsExporter(context.Background(), params, cfg.Exporters[config.NewComponentIDWithName(typeStr, "customname")])
 	assert.NotNil(t, err)
 	assert.Nil(t, exporter)
 }

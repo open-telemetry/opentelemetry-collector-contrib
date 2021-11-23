@@ -93,7 +93,7 @@ func Test_splunkhecreceiver_NewLogsReceiver(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := newLogsReceiver(componenttest.NewNopTelemetrySettings(), tt.args.config, tt.args.logsConsumer)
+			got, err := newLogsReceiver(componenttest.NewNopReceiverCreateSettings(), tt.args.config, tt.args.logsConsumer)
 			assert.Equal(t, tt.wantErr, err)
 			if err == nil {
 				assert.NotNil(t, got)
@@ -153,7 +153,7 @@ func Test_splunkhecreceiver_NewMetricsReceiver(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := newMetricsReceiver(componenttest.NewNopTelemetrySettings(), tt.args.config, tt.args.metricsConsumer)
+			got, err := newMetricsReceiver(componenttest.NewNopReceiverCreateSettings(), tt.args.config, tt.args.metricsConsumer)
 			assert.Equal(t, tt.wantErr, err)
 			if err == nil {
 				assert.NotNil(t, got)
@@ -299,7 +299,7 @@ func Test_splunkhecReceiver_handleReq(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			sink := new(consumertest.LogsSink)
-			rcv, err := newLogsReceiver(componenttest.NewNopTelemetrySettings(), *config, sink)
+			rcv, err := newLogsReceiver(componenttest.NewNopReceiverCreateSettings(), *config, sink)
 			assert.NoError(t, err)
 
 			r := rcv.(*splunkReceiver)
@@ -323,7 +323,7 @@ func Test_consumer_err(t *testing.T) {
 	splunkMsg := buildSplunkHecMsg(currentTime, 3)
 	config := createDefaultConfig().(*Config)
 	config.Endpoint = "localhost:0" // Actually not creating the endpoint
-	rcv, err := newLogsReceiver(componenttest.NewNopTelemetrySettings(), *config, consumertest.NewErr(errors.New("bad consumer")))
+	rcv, err := newLogsReceiver(componenttest.NewNopReceiverCreateSettings(), *config, consumertest.NewErr(errors.New("bad consumer")))
 	assert.NoError(t, err)
 
 	r := rcv.(*splunkReceiver)
@@ -350,7 +350,7 @@ func Test_consumer_err_metrics(t *testing.T) {
 	assert.True(t, splunkMsg.IsMetric())
 	config := createDefaultConfig().(*Config)
 	config.Endpoint = "localhost:0" // Actually not creating the endpoint\
-	rcv, err := newMetricsReceiver(componenttest.NewNopTelemetrySettings(), *config, consumertest.NewErr(errors.New("bad consumer")))
+	rcv, err := newMetricsReceiver(componenttest.NewNopReceiverCreateSettings(), *config, consumertest.NewErr(errors.New("bad consumer")))
 	assert.NoError(t, err)
 
 	r := rcv.(*splunkReceiver)
@@ -382,7 +382,7 @@ func Test_splunkhecReceiver_TLS(t *testing.T) {
 		},
 	}
 	sink := new(consumertest.LogsSink)
-	r, err := newLogsReceiver(componenttest.NewNopTelemetrySettings(), *cfg, sink)
+	r, err := newLogsReceiver(componenttest.NewNopReceiverCreateSettings(), *cfg, sink)
 	require.NoError(t, err)
 	defer r.Shutdown(context.Background())
 
@@ -447,29 +447,63 @@ func Test_splunkhecReceiver_TLS(t *testing.T) {
 
 func Test_splunkhecReceiver_AccessTokenPassthrough(t *testing.T) {
 	tests := []struct {
-		name        string
-		passthrough bool
-		token       pdata.AttributeValue
+		name          string
+		passthrough   bool
+		tokenProvided string
+		tokenExpected string
+		metric        bool
 	}{
 		{
-			name:        "No token provided and passthrough false",
-			passthrough: false,
-			token:       pdata.NewAttributeValueEmpty(),
+			name:          "Log, No token provided and passthrough false",
+			tokenExpected: "ignored",
+			passthrough:   false,
+			metric:        false,
 		},
 		{
-			name:        "No token provided and passthrough true",
-			passthrough: true,
-			token:       pdata.NewAttributeValueEmpty(),
+			name:          "Log, No token provided and passthrough true",
+			tokenExpected: "ignored",
+			passthrough:   true,
+			metric:        false,
 		},
 		{
-			name:        "token provided and passthrough false",
-			passthrough: false,
-			token:       pdata.NewAttributeValueString("myToken"),
+			name:          "Log, token provided and passthrough false",
+			tokenProvided: "passthroughToken",
+			passthrough:   false,
+			tokenExpected: "ignored",
+			metric:        false,
 		},
 		{
-			name:        "token provided and passthrough true",
-			passthrough: true,
-			token:       pdata.NewAttributeValueString("myToken"),
+			name:          "Log, token provided and passthrough true",
+			passthrough:   true,
+			tokenProvided: "passthroughToken",
+			tokenExpected: "passthroughToken",
+			metric:        false,
+		},
+		{
+			name:          "Metric, No token provided and passthrough false",
+			tokenExpected: "ignored",
+			passthrough:   false,
+			metric:        true,
+		},
+		{
+			name:          "Metric, No token provided and passthrough true",
+			tokenExpected: "ignored",
+			passthrough:   true,
+			metric:        true,
+		},
+		{
+			name:          "Metric, token provided and passthrough false",
+			tokenProvided: "passthroughToken",
+			passthrough:   false,
+			tokenExpected: "ignored",
+			metric:        true,
+		},
+		{
+			name:          "Metric, token provided and passthrough true",
+			passthrough:   true,
+			tokenProvided: "passthroughToken",
+			tokenExpected: "passthroughToken",
+			metric:        true,
 		},
 	}
 
@@ -478,47 +512,78 @@ func Test_splunkhecReceiver_AccessTokenPassthrough(t *testing.T) {
 			config := createDefaultConfig().(*Config)
 			config.Endpoint = "localhost:0"
 			config.AccessTokenPassthrough = tt.passthrough
+			accessTokensChan := make(chan string)
 
-			sink := new(consumertest.LogsSink)
-			rcv, err := newLogsReceiver(componenttest.NewNopTelemetrySettings(), *config, sink)
-			assert.NoError(t, err)
+			endServer := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+				_, err := io.Copy(io.Discard, req.Body)
+				assert.NoError(t, err)
+				rw.WriteHeader(http.StatusAccepted)
+				accessTokensChan <- req.Header.Get("Authorization")
+			}))
+			defer endServer.Close()
+			factory := splunkhecexporter.NewFactory()
+			exporterConfig := factory.CreateDefaultConfig().(*splunkhecexporter.Config)
+			exporterConfig.Token = "ignored"
+			exporterConfig.SourceType = "defaultsourcetype"
+			exporterConfig.Index = "defaultindex"
+			exporterConfig.DisableCompression = true
+			exporterConfig.Endpoint = endServer.URL
 
 			currentTime := float64(time.Now().UnixNano()) / 1e6
-			splunkhecMsg := buildSplunkHecMsg(currentTime, 3)
+			var splunkhecMsg *splunk.Event
+			if tt.metric {
+				splunkhecMsg = buildSplunkHecMetricsMsg(currentTime, 1.0, 3)
+			} else {
+				splunkhecMsg = buildSplunkHecMsg(currentTime, 3)
+			}
 			msgBytes, _ := json.Marshal(splunkhecMsg)
 			req := httptest.NewRequest("POST", "http://localhost", bytes.NewReader(msgBytes))
-			if tt.token.Type() != pdata.AttributeValueTypeEmpty {
-				req.Header.Set("Splunk", tt.token.StringVal())
-			}
-
-			r := rcv.(*splunkReceiver)
-			w := httptest.NewRecorder()
-			r.handleReq(w, req)
-
-			resp := w.Result()
-			respBytes, err := ioutil.ReadAll(resp.Body)
-			assert.NoError(t, err)
-
-			var bodyStr string
-			assert.NoError(t, json.Unmarshal(respBytes, &bodyStr))
-
-			assert.Equal(t, http.StatusAccepted, resp.StatusCode)
-			assert.Equal(t, responseOK, bodyStr)
-
-			got := sink.AllLogs()
-
-			resource := got[0].ResourceLogs().At(0).Resource()
-			tokenLabel, exists := resource.Attributes().Get("com.splunk.hec.access_token")
-
 			if tt.passthrough {
-				if tt.token.Type() == pdata.AttributeValueTypeEmpty {
-					assert.False(t, exists)
-				} else {
-					assert.Equal(t, tt.token.StringVal(), tokenLabel.StringVal())
+				if tt.tokenProvided != "" {
+					req.Header.Set("Authorization", "Splunk "+tt.tokenProvided)
 				}
-			} else {
-				assert.Empty(t, tokenLabel)
 			}
+
+			done := make(chan bool)
+			go func() {
+				tokenReceived := <-accessTokensChan
+				assert.Equal(t, "Splunk "+tt.tokenExpected, tokenReceived)
+				done <- true
+			}()
+
+			if tt.metric {
+				exporter, err := factory.CreateMetricsExporter(context.Background(), componenttest.NewNopExporterCreateSettings(), exporterConfig)
+				exporter.Start(context.Background(), nil)
+				assert.NoError(t, err)
+				rcv, err := newMetricsReceiver(componenttest.NewNopReceiverCreateSettings(), *config, exporter)
+				assert.NoError(t, err)
+				r := rcv.(*splunkReceiver)
+				w := httptest.NewRecorder()
+				r.handleReq(w, req)
+				resp := w.Result()
+				_, err = ioutil.ReadAll(resp.Body)
+				assert.NoError(t, err)
+			} else {
+				exporter, err := factory.CreateLogsExporter(context.Background(), componenttest.NewNopExporterCreateSettings(), exporterConfig)
+				exporter.Start(context.Background(), nil)
+				assert.NoError(t, err)
+				rcv, err := newLogsReceiver(componenttest.NewNopReceiverCreateSettings(), *config, exporter)
+				assert.NoError(t, err)
+				r := rcv.(*splunkReceiver)
+				w := httptest.NewRecorder()
+				r.handleReq(w, req)
+				resp := w.Result()
+				_, err = ioutil.ReadAll(resp.Body)
+				assert.NoError(t, err)
+			}
+
+			select {
+			case <-done:
+				break
+			case <-time.After(5 * time.Second):
+				assert.Fail(t, "Timeout")
+			}
+
 		})
 	}
 }
@@ -567,7 +632,7 @@ func Test_Logs_splunkhecReceiver_IndexSourceTypePassthrough(t *testing.T) {
 			exporter, err := factory.CreateLogsExporter(context.Background(), componenttest.NewNopExporterCreateSettings(), exporterConfig)
 			exporter.Start(context.Background(), nil)
 			assert.NoError(t, err)
-			rcv, err := newLogsReceiver(componenttest.NewNopTelemetrySettings(), *cfg, exporter)
+			rcv, err := newLogsReceiver(componenttest.NewNopReceiverCreateSettings(), *cfg, exporter)
 			assert.NoError(t, err)
 
 			currentTime := float64(time.Now().UnixNano()) / 1e6
@@ -661,7 +726,7 @@ func Test_Metrics_splunkhecReceiver_IndexSourceTypePassthrough(t *testing.T) {
 			exporter, err := factory.CreateMetricsExporter(context.Background(), componenttest.NewNopExporterCreateSettings(), exporterConfig)
 			exporter.Start(context.Background(), nil)
 			assert.NoError(t, err)
-			rcv, err := newMetricsReceiver(componenttest.NewNopTelemetrySettings(), *cfg, exporter)
+			rcv, err := newMetricsReceiver(componenttest.NewNopReceiverCreateSettings(), *cfg, exporter)
 			assert.NoError(t, err)
 
 			currentTime := float64(time.Now().UnixNano()) / 1e6
@@ -887,7 +952,7 @@ func Test_splunkhecReceiver_handleRawReq(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			sink := new(consumertest.LogsSink)
-			rcv, err := newLogsReceiver(componenttest.NewNopTelemetrySettings(), *config, sink)
+			rcv, err := newLogsReceiver(componenttest.NewNopReceiverCreateSettings(), *config, sink)
 			assert.NoError(t, err)
 
 			r := rcv.(*splunkReceiver)

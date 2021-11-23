@@ -41,14 +41,14 @@ type scraper struct {
 	startTime pdata.Timestamp
 
 	// for mocking
-	bootTime      func() (uint64, error)
-	virtualMemory func() (*mem.VirtualMemoryStat, error)
-	swapMemory    func() (*mem.SwapMemoryStat, error)
+	bootTime         func() (uint64, error)
+	getPageFileStats func() ([]*pageFileStats, error)
+	swapMemory       func() (*mem.SwapMemoryStat, error)
 }
 
 // newPagingScraper creates a Paging Scraper
 func newPagingScraper(_ context.Context, cfg *Config) *scraper {
-	return &scraper{config: cfg, bootTime: host.BootTime, virtualMemory: mem.VirtualMemory, swapMemory: mem.SwapMemory}
+	return &scraper{config: cfg, bootTime: host.BootTime, getPageFileStats: getPageFileStats, swapMemory: mem.SwapMemory}
 }
 
 func (s *scraper) start(context.Context, component.Host) error {
@@ -61,8 +61,9 @@ func (s *scraper) start(context.Context, component.Host) error {
 	return nil
 }
 
-func (s *scraper) scrape(_ context.Context) (pdata.MetricSlice, error) {
-	metrics := pdata.NewMetricSlice()
+func (s *scraper) scrape(_ context.Context) (pdata.Metrics, error) {
+	md := pdata.NewMetrics()
+	metrics := md.ResourceMetrics().AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty().Metrics()
 
 	var errors scrapererror.ScrapeErrors
 
@@ -76,34 +77,41 @@ func (s *scraper) scrape(_ context.Context) (pdata.MetricSlice, error) {
 		errors.AddPartial(pagingMetricsLen, err)
 	}
 
-	return metrics, errors.Combine()
+	return md, errors.Combine()
 }
 
 func (s *scraper) scrapeAndAppendPagingUsageMetric(metrics pdata.MetricSlice) error {
 	now := pdata.NewTimestampFromTime(time.Now())
-	vmem, err := s.virtualMemory()
+	pageFileStats, err := s.getPageFileStats()
 	if err != nil {
 		return err
 	}
 
 	idx := metrics.Len()
 	metrics.EnsureCapacity(idx + pagingUsageMetricsLen)
-	initializePagingUsageMetric(metrics.AppendEmpty(), now, vmem)
+	initializePagingUsageMetric(metrics.AppendEmpty(), now, pageFileStats)
 	return nil
 }
 
-func initializePagingUsageMetric(metric pdata.Metric, now pdata.Timestamp, vmem *mem.VirtualMemoryStat) {
+func initializePagingUsageMetric(metric pdata.Metric, now pdata.Timestamp, pageFileStats []*pageFileStats) {
 	metadata.Metrics.SystemPagingUsage.Init(metric)
 
 	idps := metric.Sum().DataPoints()
 	idps.EnsureCapacity(3)
-	initializePagingUsageDataPoint(idps.AppendEmpty(), now, metadata.LabelState.Used, int64(vmem.SwapTotal-vmem.SwapFree-vmem.SwapCached))
-	initializePagingUsageDataPoint(idps.AppendEmpty(), now, metadata.LabelState.Free, int64(vmem.SwapFree))
-	initializePagingUsageDataPoint(idps.AppendEmpty(), now, metadata.LabelState.Cached, int64(vmem.SwapCached))
+	for _, pageFile := range pageFileStats {
+		initializePagingUsageDataPoint(idps.AppendEmpty(), now, pageFile.deviceName, metadata.AttributeState.Used, int64(pageFile.usedBytes))
+		initializePagingUsageDataPoint(idps.AppendEmpty(), now, pageFile.deviceName, metadata.AttributeState.Free, int64(pageFile.freeBytes))
+		if pageFile.cachedBytes != nil {
+			initializePagingUsageDataPoint(idps.AppendEmpty(), now, pageFile.deviceName, metadata.AttributeState.Cached, int64(*pageFile.cachedBytes))
+		}
+	}
 }
 
-func initializePagingUsageDataPoint(dataPoint pdata.NumberDataPoint, now pdata.Timestamp, stateLabel string, value int64) {
-	dataPoint.Attributes().InsertString(metadata.Labels.State, stateLabel)
+func initializePagingUsageDataPoint(dataPoint pdata.NumberDataPoint, now pdata.Timestamp, deviceLabel, stateLabel string, value int64) {
+	if deviceLabel != "" {
+		dataPoint.Attributes().InsertString(metadata.Attributes.Device, deviceLabel)
+	}
+	dataPoint.Attributes().InsertString(metadata.Attributes.State, stateLabel)
 	dataPoint.SetTimestamp(now)
 	dataPoint.SetIntVal(value)
 }
@@ -127,16 +135,16 @@ func initializePagingOperationsMetric(metric pdata.Metric, startTime, now pdata.
 
 	idps := metric.Sum().DataPoints()
 	idps.EnsureCapacity(4)
-	initializePagingOperationsDataPoint(idps.AppendEmpty(), startTime, now, metadata.LabelType.Major, metadata.LabelDirection.PageIn, int64(swap.Sin))
-	initializePagingOperationsDataPoint(idps.AppendEmpty(), startTime, now, metadata.LabelType.Major, metadata.LabelDirection.PageOut, int64(swap.Sout))
-	initializePagingOperationsDataPoint(idps.AppendEmpty(), startTime, now, metadata.LabelType.Minor, metadata.LabelDirection.PageIn, int64(swap.PgIn))
-	initializePagingOperationsDataPoint(idps.AppendEmpty(), startTime, now, metadata.LabelType.Minor, metadata.LabelDirection.PageOut, int64(swap.PgOut))
+	initializePagingOperationsDataPoint(idps.AppendEmpty(), startTime, now, metadata.AttributeType.Major, metadata.AttributeDirection.PageIn, int64(swap.Sin))
+	initializePagingOperationsDataPoint(idps.AppendEmpty(), startTime, now, metadata.AttributeType.Major, metadata.AttributeDirection.PageOut, int64(swap.Sout))
+	initializePagingOperationsDataPoint(idps.AppendEmpty(), startTime, now, metadata.AttributeType.Minor, metadata.AttributeDirection.PageIn, int64(swap.PgIn))
+	initializePagingOperationsDataPoint(idps.AppendEmpty(), startTime, now, metadata.AttributeType.Minor, metadata.AttributeDirection.PageOut, int64(swap.PgOut))
 }
 
 func initializePagingOperationsDataPoint(dataPoint pdata.NumberDataPoint, startTime, now pdata.Timestamp, typeLabel string, directionLabel string, value int64) {
 	attributes := dataPoint.Attributes()
-	attributes.InsertString(metadata.Labels.Type, typeLabel)
-	attributes.InsertString(metadata.Labels.Direction, directionLabel)
+	attributes.InsertString(metadata.Attributes.Type, typeLabel)
+	attributes.InsertString(metadata.Attributes.Direction, directionLabel)
 	dataPoint.SetStartTimestamp(startTime)
 	dataPoint.SetTimestamp(now)
 	dataPoint.SetIntVal(value)
@@ -147,12 +155,12 @@ func initializePageFaultsMetric(metric pdata.Metric, startTime, now pdata.Timest
 
 	idps := metric.Sum().DataPoints()
 	idps.EnsureCapacity(2)
-	initializePageFaultDataPoint(idps.AppendEmpty(), startTime, now, metadata.LabelType.Major, int64(swap.PgMajFault))
-	initializePageFaultDataPoint(idps.AppendEmpty(), startTime, now, metadata.LabelType.Minor, int64(swap.PgFault-swap.PgMajFault))
+	initializePageFaultDataPoint(idps.AppendEmpty(), startTime, now, metadata.AttributeType.Major, int64(swap.PgMajFault))
+	initializePageFaultDataPoint(idps.AppendEmpty(), startTime, now, metadata.AttributeType.Minor, int64(swap.PgFault-swap.PgMajFault))
 }
 
 func initializePageFaultDataPoint(dataPoint pdata.NumberDataPoint, startTime, now pdata.Timestamp, typeLabel string, value int64) {
-	dataPoint.Attributes().InsertString(metadata.Labels.Type, typeLabel)
+	dataPoint.Attributes().InsertString(metadata.Attributes.Type, typeLabel)
 	dataPoint.SetStartTimestamp(startTime)
 	dataPoint.SetTimestamp(now)
 	dataPoint.SetIntVal(value)

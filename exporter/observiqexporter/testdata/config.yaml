@@ -10,12 +10,14 @@ exporters:
   observiq/customname:
     api_key: "11111111-2222-3333-4444-555555555555"
     endpoint: "https://sometest.endpoint"
-    timeout: 10s
+    timeout: 100s
     agent_id: "08e097a6-8580-43f6-b4f5-9d3b4eb2d962"
     agent_name: "otel-collector-1"
-    ca_file: ""
-    cert_file: ""
-    key_file: ""
+    dialer_timeout: 30s
+    tls:
+      ca_file: ""
+      cert_file: ""
+      key_file: ""
     sending_queue:
       enabled: true
       num_consumers: 2

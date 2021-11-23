@@ -30,10 +30,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/tracetranslator"
 )
 
-var (
-	defaultProcessID = 0
-)
-
 // ResourceSpansToOC may be used only by OpenCensus receiver and exporter implementations.
 // Deprecated: Use pdata.Traces.
 // TODO: move this function to OpenCensus package.

@@ -31,7 +31,7 @@ import (
 
 var (
 	cfg = &Config{
-		ProcessorSettings: config.NewProcessorSettings(config.NewID(typeStr)),
+		ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
 		AttributesActions: []attraction.ActionKeyValue{
 			{Key: "cloud.availability_zone", Value: "zone-1", Action: attraction.UPSERT},
 			{Key: "k8s.cluster.name", FromAttribute: "k8s-cluster", Action: attraction.INSERT},
@@ -80,7 +80,7 @@ func TestResourceProcessorAttributesUpsert(t *testing.T) {
 		{
 			name: "config_attributes_replacement",
 			config: &Config{
-				ProcessorSettings: config.NewProcessorSettings(config.NewID(typeStr)),
+				ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
 				AttributesActions: []attraction.ActionKeyValue{
 					{Key: "k8s.cluster.name", FromAttribute: "k8s-cluster", Action: attraction.INSERT},
 					{Key: "k8s-cluster", Action: attraction.DELETE},
@@ -149,7 +149,7 @@ func TestResourceProcessorAttributesUpsert(t *testing.T) {
 
 func TestResourceProcessorError(t *testing.T) {
 	badCfg := &Config{
-		ProcessorSettings: config.NewProcessorSettings(config.NewID(typeStr)),
+		ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
 		AttributesActions: nil,
 	}
 

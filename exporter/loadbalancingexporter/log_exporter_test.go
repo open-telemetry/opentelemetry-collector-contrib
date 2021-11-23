@@ -49,7 +49,7 @@ func TestNewLogsExporter(t *testing.T) {
 		{
 			"empty",
 			&Config{
-				ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
+				ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
 			},
 			errNoResolver,
 		},
@@ -330,6 +330,11 @@ func TestRollingUpdatesWhenConsumeLogs(t *testing.T) {
 	res, err := newDNSResolver(zap.NewNop(), "service-1", "")
 	require.NoError(t, err)
 
+	var lastResolved []string
+	res.onChange(func(s []string) {
+		lastResolved = s
+	})
+
 	resolverCh := make(chan struct{}, 1)
 	counter := 0
 	resolve := [][]net.IPAddr{
@@ -363,7 +368,7 @@ func TestRollingUpdatesWhenConsumeLogs(t *testing.T) {
 	res.resInterval = 10 * time.Millisecond
 
 	cfg := &Config{
-		ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
+		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
 		Resolver: ResolverSettings{
 			DNS: &DNSResolver{Hostname: "service-1", Port: ""},
 		},
@@ -441,7 +446,7 @@ func TestRollingUpdatesWhenConsumeLogs(t *testing.T) {
 	<-consumeCh
 
 	// verify
-	require.Equal(t, []string{"127.0.0.2"}, res.endpoints)
+	require.Equal(t, []string{"127.0.0.2"}, lastResolved)
 	require.Greater(t, atomic.LoadInt64(&counter1), int64(0))
 	require.Greater(t, atomic.LoadInt64(&counter2), int64(0))
 }

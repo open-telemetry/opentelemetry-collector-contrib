@@ -90,7 +90,7 @@ var Metrics = &metricStruct{
 			metric.SetUnit("{faults}")
 			metric.SetDataType(pdata.MetricDataTypeSum)
 			metric.Sum().SetIsMonotonic(true)
-			metric.Sum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+			metric.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
 		},
 	},
 	&metricImpl{
@@ -101,7 +101,7 @@ var Metrics = &metricStruct{
 			metric.SetUnit("{operations}")
 			metric.SetDataType(pdata.MetricDataTypeSum)
 			metric.Sum().SetIsMonotonic(true)
-			metric.Sum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+			metric.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
 		},
 	},
 	&metricImpl{
@@ -112,7 +112,7 @@ var Metrics = &metricStruct{
 			metric.SetUnit("By")
 			metric.SetDataType(pdata.MetricDataTypeSum)
 			metric.Sum().SetIsMonotonic(false)
-			metric.Sum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+			metric.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
 		},
 	},
 }
@@ -121,8 +121,8 @@ var Metrics = &metricStruct{
 // manipulating those metrics. M is an alias for Metrics
 var M = Metrics
 
-// Labels contains the possible metric labels that can be used.
-var Labels = struct {
+// Attributes contains the possible metric attributes that can be used.
+var Attributes = struct {
 	// Device (Name of the page file.)
 	Device string
 	// Direction (Page In or Page Out.)
@@ -138,12 +138,11 @@ var Labels = struct {
 	"type",
 }
 
-// L contains the possible metric labels that can be used. L is an alias for
-// Labels.
-var L = Labels
+// A is an alias for Attributes.
+var A = Attributes
 
-// LabelDirection are the possible values that the label "direction" can have.
-var LabelDirection = struct {
+// AttributeDirection are the possible values that the attribute "direction" can have.
+var AttributeDirection = struct {
 	PageIn  string
 	PageOut string
 }{
@@ -151,8 +150,8 @@ var LabelDirection = struct {
 	"page_out",
 }
 
-// LabelState are the possible values that the label "state" can have.
-var LabelState = struct {
+// AttributeState are the possible values that the attribute "state" can have.
+var AttributeState = struct {
 	Cached string
 	Free   string
 	Used   string
@@ -162,8 +161,8 @@ var LabelState = struct {
 	"used",
 }
 
-// LabelType are the possible values that the label "type" can have.
-var LabelType = struct {
+// AttributeType are the possible values that the attribute "type" can have.
+var AttributeType = struct {
 	Major string
 	Minor string
 }{

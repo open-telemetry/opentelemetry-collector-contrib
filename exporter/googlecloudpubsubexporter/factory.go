@@ -62,7 +62,7 @@ func ensureExporter(params component.ExporterCreateSettings, pCfg *Config) *pubs
 // createDefaultConfig creates the default configuration for exporter.
 func createDefaultConfig() config.Exporter {
 	return &Config{
-		ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
+		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
 		UserAgent:        "opentelemetry-collector-contrib {{version}}",
 		TimeoutSettings:  exporterhelper.TimeoutSettings{Timeout: defaultTimeout},
 	}

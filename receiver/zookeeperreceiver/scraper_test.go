@@ -234,22 +234,22 @@ func TestZookeeperMetricsScraperScrape(t *testing.T) {
 
 			if tt.wantErr {
 				require.Error(t, err)
-				require.Equal(t, pdata.NewResourceMetricsSlice(), got)
+				require.Equal(t, pdata.NewMetrics(), got)
 
 				require.NoError(t, z.shutdown(ctx))
 				return
 			}
 
-			require.Equal(t, tt.expectedNumResourceMetrics, got.Len())
+			require.Equal(t, tt.expectedNumResourceMetrics, got.ResourceMetrics().Len())
 			for i := 0; i < tt.expectedNumResourceMetrics; i++ {
-				resource := got.At(i).Resource()
+				resource := got.ResourceMetrics().At(i).Resource()
 				require.Equal(t, len(tt.expectedResourceAttributes), resource.Attributes().Len())
 				resource.Attributes().Range(func(k string, v pdata.AttributeValue) bool {
 					require.Equal(t, tt.expectedResourceAttributes[k], v.StringVal())
 					return true
 				})
 
-				ilms := got.At(0).InstrumentationLibraryMetrics()
+				ilms := got.ResourceMetrics().At(0).InstrumentationLibraryMetrics()
 				require.Equal(t, 1, ilms.Len())
 
 				metrics := ilms.At(0).Metrics()

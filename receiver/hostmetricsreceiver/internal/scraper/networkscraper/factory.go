@@ -17,10 +17,10 @@ package networkscraper
 import (
 	"context"
 
+	"go.opentelemetry.io/collector/receiver/scraperhelper"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/scraperhelper"
 )
 
 // This file implements Factory for Network scraper.
@@ -51,11 +51,9 @@ func (f *Factory) CreateMetricsScraper(
 		return nil, err
 	}
 
-	ms := scraperhelper.NewMetricsScraper(
+	return scraperhelper.NewScraper(
 		TypeStr,
 		s.scrape,
 		scraperhelper.WithStart(s.start),
 	)
-
-	return ms, nil
 }

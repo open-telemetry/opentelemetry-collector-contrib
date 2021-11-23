@@ -45,7 +45,7 @@ func NewFactory() component.ReceiverFactory {
 
 func createDefaultConfig() config.Receiver {
 	return &Config{
-		ReceiverSettings: config.NewReceiverSettings(config.NewID(typeStr)),
+		ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
 		TCPAddr: confignet.TCPAddr{
 			Endpoint: "localhost:2003",
 		},
@@ -82,5 +82,5 @@ func createMetricsReceiver(
 			},
 		},
 	}
-	return carbonreceiver.New(params.Logger, carbonCfg, consumer)
+	return carbonreceiver.New(params, carbonCfg, consumer)
 }

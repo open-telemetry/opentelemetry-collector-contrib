@@ -50,12 +50,12 @@ type policy struct {
 type tailSamplingSpanProcessor struct {
 	ctx             context.Context
 	nextConsumer    consumer.Traces
-	start           sync.Once
 	maxNumTraces    uint64
 	policies        []*policy
 	logger          *zap.Logger
 	idToTrace       sync.Map
 	policyTicker    tTicker
+	tickerFrequency time.Duration
 	decisionBatcher idbatcher.Batcher
 	deleteChan      chan pdata.TraceID
 	numTracesOnMap  uint64
@@ -105,6 +105,7 @@ func newTracesProcessor(logger *zap.Logger, nextConsumer consumer.Traces, cfg Co
 		logger:          logger,
 		decisionBatcher: inBatcher,
 		policies:        policies,
+		tickerFrequency: time.Second,
 	}
 
 	tsp.policyTicker = &policyTicker{onTickFunc: tsp.samplingPolicyOnTick}
@@ -128,13 +129,16 @@ func getPolicyEvaluator(logger *zap.Logger, cfg *PolicyCfg) (sampling.PolicyEval
 		return sampling.NewProbabilisticSampler(logger, pCfg.HashSalt, pCfg.SamplingPercentage), nil
 	case StringAttribute:
 		safCfg := cfg.StringAttributeCfg
-		return sampling.NewStringAttributeFilter(logger, safCfg.Key, safCfg.Values, safCfg.EnabledRegexMatching, safCfg.CacheMaxSize), nil
+		return sampling.NewStringAttributeFilter(logger, safCfg.Key, safCfg.Values, safCfg.EnabledRegexMatching, safCfg.CacheMaxSize, safCfg.InvertMatch), nil
 	case StatusCode:
 		scfCfg := cfg.StatusCodeCfg
 		return sampling.NewStatusCodeFilter(logger, scfCfg.StatusCodes)
 	case RateLimiting:
 		rlfCfg := cfg.RateLimitingCfg
 		return sampling.NewRateLimiting(logger, rlfCfg.SpansPerSecond), nil
+	case Composite:
+		rlfCfg := cfg.CompositeCfg
+		return getNewCompositePolicy(logger, rlfCfg)
 	default:
 		return nil, fmt.Errorf("unknown sampling policy type %s", cfg.Type)
 	}
@@ -200,7 +204,15 @@ func (tsp *tailSamplingSpanProcessor) samplingPolicyOnTick() {
 func (tsp *tailSamplingSpanProcessor) makeDecision(id pdata.TraceID, trace *sampling.TraceData, metrics *policyMetrics) (sampling.Decision, *policy) {
 	finalDecision := sampling.NotSampled
 	var matchingPolicy *policy
+	samplingDecision := map[sampling.Decision]bool{
+		sampling.Error:            false,
+		sampling.Sampled:          false,
+		sampling.NotSampled:       false,
+		sampling.InvertSampled:    false,
+		sampling.InvertNotSampled: false,
+	}
 
+	// Check all policies before making a final decision
 	for i, p := range tsp.policies {
 		policyEvaluateStartTime := time.Now()
 		decision, err := p.evaluator.Evaluate(id, trace)
@@ -209,36 +221,63 @@ func (tsp *tailSamplingSpanProcessor) makeDecision(id pdata.TraceID, trace *samp
 			statDecisionLatencyMicroSec.M(int64(time.Since(policyEvaluateStartTime)/time.Microsecond)))
 
 		if err != nil {
+			samplingDecision[sampling.Error] = true
 			trace.Decisions[i] = sampling.NotSampled
 			metrics.evaluateErrorCount++
 			tsp.logger.Debug("Sampling policy error", zap.Error(err))
 		} else {
-			trace.Decisions[i] = decision
-
 			switch decision {
 			case sampling.Sampled:
-				// any single policy that decides to sample will cause the decision to be sampled
-				// the nextConsumer will get the context from the first matching policy
-				finalDecision = sampling.Sampled
-				if matchingPolicy == nil {
-					matchingPolicy = p
-				}
-
-				_ = stats.RecordWithTags(
-					p.ctx,
-					[]tag.Mutator{tag.Insert(tagSampledKey, "true")},
-					statCountTracesSampled.M(int64(1)),
-				)
-				metrics.decisionSampled++
+				samplingDecision[sampling.Sampled] = true
+				trace.Decisions[i] = decision
 
 			case sampling.NotSampled:
-				_ = stats.RecordWithTags(
-					p.ctx,
-					[]tag.Mutator{tag.Insert(tagSampledKey, "false")},
-					statCountTracesSampled.M(int64(1)),
-				)
-				metrics.decisionNotSampled++
+				samplingDecision[sampling.NotSampled] = true
+				trace.Decisions[i] = decision
+
+			case sampling.InvertSampled:
+				samplingDecision[sampling.InvertSampled] = true
+				trace.Decisions[i] = sampling.Sampled
+
+			case sampling.InvertNotSampled:
+				samplingDecision[sampling.InvertNotSampled] = true
+				trace.Decisions[i] = sampling.NotSampled
 			}
+		}
+	}
+
+	// InvertNotSampled takes precedence over any other decision
+	if samplingDecision[sampling.InvertNotSampled] {
+		finalDecision = sampling.NotSampled
+	} else if samplingDecision[sampling.Sampled] {
+		finalDecision = sampling.Sampled
+	} else if samplingDecision[sampling.InvertSampled] && !samplingDecision[sampling.NotSampled] {
+		finalDecision = sampling.Sampled
+	}
+
+	for _, p := range tsp.policies {
+		switch finalDecision {
+		case sampling.Sampled:
+			// any single policy that decides to sample will cause the decision to be sampled
+			// the nextConsumer will get the context from the first matching policy
+			if matchingPolicy == nil {
+				matchingPolicy = p
+			}
+
+			_ = stats.RecordWithTags(
+				p.ctx,
+				[]tag.Mutator{tag.Insert(tagSampledKey, "true")},
+				statCountTracesSampled.M(int64(1)),
+			)
+			metrics.decisionSampled++
+
+		case sampling.NotSampled:
+			_ = stats.RecordWithTags(
+				p.ctx,
+				[]tag.Mutator{tag.Insert(tagSampledKey, "false")},
+				statCountTracesSampled.M(int64(1)),
+			)
+			metrics.decisionNotSampled++
 		}
 	}
 
@@ -247,10 +286,6 @@ func (tsp *tailSamplingSpanProcessor) makeDecision(id pdata.TraceID, trace *samp
 
 // ConsumeTraceData is required by the SpanProcessor interface.
 func (tsp *tailSamplingSpanProcessor) ConsumeTraces(ctx context.Context, td pdata.Traces) error {
-	tsp.start.Do(func() {
-		tsp.logger.Info("First trace data arrived, starting tail_sampling timers")
-		tsp.policyTicker.start(1 * time.Second)
-	})
 	resourceSpans := td.ResourceSpans()
 	for i := 0; i < resourceSpans.Len(); i++ {
 		tsp.processTraces(resourceSpans.At(i))
@@ -364,11 +399,14 @@ func (tsp *tailSamplingSpanProcessor) Capabilities() consumer.Capabilities {
 
 // Start is invoked during service startup.
 func (tsp *tailSamplingSpanProcessor) Start(context.Context, component.Host) error {
+	tsp.policyTicker.start(tsp.tickerFrequency)
 	return nil
 }
 
 // Shutdown is invoked during service shutdown.
 func (tsp *tailSamplingSpanProcessor) Shutdown(context.Context) error {
+	tsp.decisionBatcher.Stop()
+	tsp.policyTicker.stop()
 	return nil
 }
 
@@ -413,13 +451,20 @@ type tTicker interface {
 type policyTicker struct {
 	ticker     *time.Ticker
 	onTickFunc func()
+	stopCh     chan struct{}
 }
 
 func (pt *policyTicker) start(d time.Duration) {
 	pt.ticker = time.NewTicker(d)
+	pt.stopCh = make(chan struct{})
 	go func() {
-		for range pt.ticker.C {
-			pt.onTick()
+		for {
+			select {
+			case <-pt.ticker.C:
+				pt.onTick()
+			case <-pt.stopCh:
+				return
+			}
 		}
 	}()
 }
@@ -427,6 +472,7 @@ func (pt *policyTicker) onTick() {
 	pt.onTickFunc()
 }
 func (pt *policyTicker) stop() {
+	close(pt.stopCh)
 	pt.ticker.Stop()
 }
 

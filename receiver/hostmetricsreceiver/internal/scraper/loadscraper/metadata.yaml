@@ -1,6 +1,6 @@
 name: load
 
-labels:
+attributes:
 
 metrics:
   system.cpu.load_average.1m:

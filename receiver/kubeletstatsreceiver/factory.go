@@ -22,6 +22,7 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
+	"go.opentelemetry.io/collector/receiver/scraperhelper"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
@@ -49,20 +50,22 @@ func NewFactory() component.ReceiverFactory {
 }
 
 func createDefaultConfig() config.Receiver {
+	scs := scraperhelper.DefaultScraperControllerSettings(typeStr)
+	scs.CollectionInterval = 10 * time.Second
+
 	return &Config{
-		ReceiverSettings: config.NewReceiverSettings(config.NewID(typeStr)),
+		ScraperControllerSettings: scs,
 		ClientConfig: kube.ClientConfig{
 			APIConfig: k8sconfig.APIConfig{
 				AuthType: k8sconfig.AuthTypeTLS,
 			},
 		},
-		CollectionInterval: 10 * time.Second,
 	}
 }
 
 func createMetricsReceiver(
 	ctx context.Context,
-	params component.ReceiverCreateSettings,
+	set component.ReceiverCreateSettings,
 	baseCfg config.Receiver,
 	consumer consumer.Metrics,
 ) (component.MetricsReceiver, error) {
@@ -71,12 +74,17 @@ func createMetricsReceiver(
 	if err != nil {
 		return nil, err
 	}
-	rest, err := restClient(params.Logger, cfg)
+	rest, err := restClient(set.Logger, cfg)
 	if err != nil {
 		return nil, err
 	}
 
-	return newReceiver(rOptions, params.Logger, rest, consumer), nil
+	scrp, err := newKubletScraper(rest, set, rOptions)
+	if err != nil {
+		return nil, err
+	}
+
+	return scraperhelper.NewScraperControllerReceiver(&cfg.ScraperControllerSettings, set, consumer, scraperhelper.AddScraper(scrp))
 }
 
 func restClient(logger *zap.Logger, cfg *Config) (kubelet.RestClient, error) {

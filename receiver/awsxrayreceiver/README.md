@@ -18,8 +18,9 @@ receivers:
     proxy_server:
       endpoint: 0.0.0.0:2000
       proxy_address: ""
-      insecure: false
-      server_name_override: ""
+      tls:
+        insecure: false
+        server_name_override: ""
       region: ""
       role_arn: ""
       aws_endpoint: ""

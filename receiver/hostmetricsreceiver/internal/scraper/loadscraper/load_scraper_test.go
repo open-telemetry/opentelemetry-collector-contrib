@@ -60,7 +60,7 @@ func TestScrape(t *testing.T) {
 			require.NoError(t, err, "Failed to initialize load scraper: %v", err)
 			defer func() { assert.NoError(t, scraper.shutdown(context.Background())) }()
 
-			metrics, err := scraper.scrape(context.Background())
+			md, err := scraper.scrape(context.Background())
 			if test.expectedErr != "" {
 				assert.EqualError(t, err, test.expectedErr)
 
@@ -75,8 +75,9 @@ func TestScrape(t *testing.T) {
 			require.NoError(t, err, "Failed to scrape metrics: %v", err)
 
 			// expect 3 metrics
-			assert.Equal(t, 3, metrics.Len())
+			assert.Equal(t, 3, md.MetricCount())
 
+			metrics := md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics()
 			// expect a single datapoint for 1m, 5m & 15m load metrics
 			assertMetricHasSingleDatapoint(t, metrics.At(0), metadata.Metrics.SystemCPULoadAverage1m.New())
 			assertMetricHasSingleDatapoint(t, metrics.At(1), metadata.Metrics.SystemCPULoadAverage5m.New())

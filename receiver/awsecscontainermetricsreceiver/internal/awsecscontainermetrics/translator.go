@@ -86,7 +86,7 @@ func appendIntSum(metricName string, unit string, value int64, ts pdata.Timestam
 
 	metric.SetDataType(pdata.MetricDataTypeSum)
 	intSum := metric.Sum()
-	intSum.SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+	intSum.SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
 
 	appendIntDataPoint(intSum.DataPoints(), value, ts)
 }

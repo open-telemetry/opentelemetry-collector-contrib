@@ -17,8 +17,9 @@
 
 package processesscraper
 
-import "go.opentelemetry.io/collector/model/pdata"
+const enableProcessesCount = false
+const enableProcessesCreated = false
 
-func appendSystemSpecificProcessesMetrics(metrics pdata.MetricSlice, startTime pdata.Timestamp, miscFunc getMiscStats) error {
-	return nil
+func (s *scraper) getProcessesMetadata() (processesMetadata, error) {
+	return processesMetadata{}, nil
 }

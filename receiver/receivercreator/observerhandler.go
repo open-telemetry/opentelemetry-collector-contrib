@@ -19,7 +19,7 @@ import (
 	"sync"
 
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/consumer/consumererror"
+	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer"
@@ -58,7 +58,7 @@ func (obs *observerHandler) shutdown() error {
 	}
 
 	if len(errs) > 0 {
-		return fmt.Errorf("shutdown on %d receivers failed: %v", len(errs), consumererror.Combine(errs))
+		return fmt.Errorf("shutdown on %d receivers failed: %v", len(errs), multierr.Combine(errs...))
 	}
 
 	return nil

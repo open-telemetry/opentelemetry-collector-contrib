@@ -24,8 +24,8 @@ import (
 	"net/http"
 	"strings"
 
-	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/model/pdata"
+	"go.uber.org/multierr"
 )
 
 type appendResponse struct {
@@ -190,7 +190,7 @@ func (s *sender) logToJSON(record pdata.LogRecord) (string, error) {
 func (s *sender) sendLogs(ctx context.Context, flds fields) ([]pdata.LogRecord, error) {
 	var (
 		body           strings.Builder
-		errs           []error
+		errs           error
 		droppedRecords []pdata.LogRecord
 		currentRecords []pdata.LogRecord
 	)
@@ -210,13 +210,13 @@ func (s *sender) sendLogs(ctx context.Context, flds fields) ([]pdata.LogRecord, 
 
 		if err != nil {
 			droppedRecords = append(droppedRecords, record)
-			errs = append(errs, err)
+			errs = multierr.Append(errs, err)
 			continue
 		}
 
 		ar, err := s.appendAndSend(ctx, formattedLine, LogsPipeline, &body, flds)
 		if err != nil {
-			errs = append(errs, err)
+			errs = multierr.Append(errs, err)
 			if ar.sent {
 				droppedRecords = append(droppedRecords, currentRecords...)
 			}
@@ -239,22 +239,19 @@ func (s *sender) sendLogs(ctx context.Context, flds fields) ([]pdata.LogRecord, 
 
 	if body.Len() > 0 {
 		if err := s.send(ctx, LogsPipeline, strings.NewReader(body.String()), flds); err != nil {
-			errs = append(errs, err)
+			errs = multierr.Append(errs, err)
 			droppedRecords = append(droppedRecords, currentRecords...)
 		}
 	}
 
-	if len(errs) > 0 {
-		return droppedRecords, consumererror.Combine(errs)
-	}
-	return droppedRecords, nil
+	return droppedRecords, errs
 }
 
 // sendMetrics sends metrics in right format basing on the s.config.MetricFormat
 func (s *sender) sendMetrics(ctx context.Context, flds fields) ([]metricPair, error) {
 	var (
 		body           strings.Builder
-		errs           []error
+		errs           error
 		droppedRecords []metricPair
 		currentRecords []metricPair
 	)
@@ -276,13 +273,13 @@ func (s *sender) sendMetrics(ctx context.Context, flds fields) ([]metricPair, er
 
 		if err != nil {
 			droppedRecords = append(droppedRecords, record)
-			errs = append(errs, err)
+			errs = multierr.Append(errs, err)
 			continue
 		}
 
 		ar, err := s.appendAndSend(ctx, formattedLine, MetricsPipeline, &body, flds)
 		if err != nil {
-			errs = append(errs, err)
+			errs = multierr.Append(errs, err)
 			if ar.sent {
 				droppedRecords = append(droppedRecords, currentRecords...)
 			}
@@ -305,15 +302,12 @@ func (s *sender) sendMetrics(ctx context.Context, flds fields) ([]metricPair, er
 
 	if body.Len() > 0 {
 		if err := s.send(ctx, MetricsPipeline, strings.NewReader(body.String()), flds); err != nil {
-			errs = append(errs, err)
+			errs = multierr.Append(errs, err)
 			droppedRecords = append(droppedRecords, currentRecords...)
 		}
 	}
 
-	if len(errs) > 0 {
-		return droppedRecords, consumererror.Combine(errs)
-	}
-	return droppedRecords, nil
+	return droppedRecords, errs
 }
 
 // appendAndSend appends line to the request body that will be sent and sends
@@ -326,21 +320,19 @@ func (s *sender) appendAndSend(
 	body *strings.Builder,
 	flds fields,
 ) (appendResponse, error) {
-	var errors []error
+	var errs error
 	ar := newAppendResponse()
 
 	if body.Len() > 0 && body.Len()+len(line) >= s.config.MaxRequestBodySize {
 		ar.sent = true
-		if err := s.send(ctx, pipeline, strings.NewReader(body.String()), flds); err != nil {
-			errors = append(errors, err)
-		}
+		errs = multierr.Append(errs, s.send(ctx, pipeline, strings.NewReader(body.String()), flds))
 		body.Reset()
 	}
 
 	if body.Len() > 0 {
 		// Do not add newline if the body is empty
 		if _, err := body.WriteString("\n"); err != nil {
-			errors = append(errors, err)
+			errs = multierr.Append(errs, err)
 			ar.appended = false
 		}
 	}
@@ -348,15 +340,12 @@ func (s *sender) appendAndSend(
 	if ar.appended {
 		// Do not append new line if separator was not appended
 		if _, err := body.WriteString(line); err != nil {
-			errors = append(errors, err)
+			errs = multierr.Append(errs, err)
 			ar.appended = false
 		}
 	}
 
-	if len(errors) > 0 {
-		return ar, consumererror.Combine(errors)
-	}
-	return ar, nil
+	return ar, errs
 }
 
 // cleanLogsBuffer zeroes logBuffer

@@ -25,6 +25,7 @@ import (
 	"github.com/prometheus/prometheus/storage"
 	"go.uber.org/zap"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 )
@@ -51,14 +52,14 @@ type OcaStore struct {
 	receiverID           config.ComponentID
 	externalLabels       labels.Labels
 
-	logger *zap.Logger
+	settings component.ReceiverCreateSettings
 }
 
 // NewOcaStore returns an ocaStore instance, which can be acted as prometheus' scrape.Appendable
 func NewOcaStore(
 	ctx context.Context,
 	sink consumer.Metrics,
-	logger *zap.Logger,
+	set component.ReceiverCreateSettings,
 	jobsMap *JobsMapPdata,
 	useStartTimeMetric bool,
 	startTimeMetricRegex string,
@@ -68,7 +69,7 @@ func NewOcaStore(
 		running:              runningStateInit,
 		ctx:                  ctx,
 		sink:                 sink,
-		logger:               logger,
+		settings:             set,
 		jobsMap:              jobsMap,
 		useStartTimeMetric:   useStartTimeMetric,
 		startTimeMetricRegex: startTimeMetricRegex,
@@ -98,7 +99,7 @@ func (o *OcaStore) Appender(context.Context) storage.Appender {
 				ms:                   o.mc,
 				sink:                 o.sink,
 				externalLabels:       o.externalLabels,
-				logger:               o.logger,
+				settings:             o.settings,
 			},
 		)
 	} else if state == runningStateInit {

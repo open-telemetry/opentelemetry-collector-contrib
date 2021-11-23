@@ -23,7 +23,6 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/consumer"
-	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver/protocol"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver/transport"
@@ -36,8 +35,8 @@ var (
 // carbonreceiver implements a component.MetricsReceiver for Carbon plaintext, aka "line", protocol.
 // see https://graphite.readthedocs.io/en/latest/feeding-carbon.html#the-plaintext-protocol.
 type carbonReceiver struct {
-	logger *zap.Logger
-	config *Config
+	settings component.ReceiverCreateSettings
+	config   *Config
 
 	server       transport.Server
 	reporter     transport.Reporter
@@ -49,7 +48,7 @@ var _ component.MetricsReceiver = (*carbonReceiver)(nil)
 
 // New creates the Carbon receiver with the given configuration.
 func New(
-	logger *zap.Logger,
+	set component.ReceiverCreateSettings,
 	config Config,
 	nextConsumer consumer.Metrics,
 ) (component.MetricsReceiver, error) {
@@ -83,11 +82,11 @@ func New(
 	}
 
 	r := carbonReceiver{
-		logger:       logger,
+		settings:     set,
 		config:       &config,
 		nextConsumer: nextConsumer,
 		server:       server,
-		reporter:     newReporter(config.ID(), logger),
+		reporter:     newReporter(config.ID(), set),
 		parser:       parser,
 	}
 

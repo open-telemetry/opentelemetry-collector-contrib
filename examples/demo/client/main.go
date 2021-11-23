@@ -62,14 +62,14 @@ func initProvider() func() {
 	handleErr(err, "Failed to create the collector metric exporter")
 
 	pusher := controller.New(
-		processor.New(
+		processor.NewFactory(
 			simple.NewWithExactDistribution(),
 			metricExp,
 		),
 		controller.WithExporter(metricExp),
 		controller.WithCollectPeriod(2*time.Second),
 	)
-	global.SetMeterProvider(pusher.MeterProvider())
+	global.SetMeterProvider(pusher)
 
 	err = pusher.Start(ctx)
 	handleErr(err, "Failed to start metric pusher")

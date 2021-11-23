@@ -107,11 +107,10 @@ func internalResourceToOC(resource pdata.Resource) (*occommon.Node, *ocresource.
 		case conventions.AttributeHostName:
 			getProcessIdentifier(ocNode).HostName = val
 		case conventions.AttributeProcessPID:
-			pid, err := strconv.Atoi(val)
-			if err != nil {
-				pid = defaultProcessID
+			pid, err := strconv.ParseUint(val, 10, 32)
+			if err == nil {
+				getProcessIdentifier(ocNode).Pid = uint32(pid)
 			}
-			getProcessIdentifier(ocNode).Pid = uint32(pid)
 		case conventions.AttributeTelemetrySDKVersion:
 			getLibraryInfo(ocNode).CoreLibraryVersion = val
 		case occonventions.AttributeExporterVersion:

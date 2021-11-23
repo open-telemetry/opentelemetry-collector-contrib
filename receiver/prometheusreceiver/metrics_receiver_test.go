@@ -15,239 +15,15 @@
 package prometheusreceiver
 
 import (
-	"context"
-	"fmt"
-	"log"
-	"net"
-	"net/http"
-	"net/http/httptest"
-	"net/url"
-	"strings"
-	"sync"
-	"sync/atomic"
 	"testing"
-	"time"
 
-	gokitlog "github.com/go-kit/kit/log"
-	promcfg "github.com/prometheus/prometheus/config"
-	"github.com/prometheus/prometheus/scrape"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/model/pdata"
-	"go.uber.org/zap"
 	"google.golang.org/protobuf/types/known/timestamppb"
-	"gopkg.in/yaml.v2"
 )
 
-var logger = zap.NewNop()
-
-type mockPrometheusResponse struct {
-	code int
-	data string
-}
-
-type mockPrometheus struct {
-	mu          sync.Mutex // mu protects the fields below.
-	endpoints   map[string][]mockPrometheusResponse
-	accessIndex map[string]*int32
-	wg          *sync.WaitGroup
-	srv         *httptest.Server
-}
-
-func newMockPrometheus(endpoints map[string][]mockPrometheusResponse) *mockPrometheus {
-	accessIndex := make(map[string]*int32)
-	wg := &sync.WaitGroup{}
-	wg.Add(len(endpoints))
-	for k := range endpoints {
-		v := int32(0)
-		accessIndex[k] = &v
-	}
-	mp := &mockPrometheus{
-		wg:          wg,
-		accessIndex: accessIndex,
-		endpoints:   endpoints,
-	}
-	srv := httptest.NewServer(mp)
-	mp.srv = srv
-	return mp
-}
-
-func (mp *mockPrometheus) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
-	mp.mu.Lock()
-	defer mp.mu.Unlock()
-
-	iptr, ok := mp.accessIndex[req.URL.Path]
-	if !ok {
-		rw.WriteHeader(404)
-		return
-	}
-	index := int(*iptr)
-	atomic.AddInt32(iptr, 1)
-	pages := mp.endpoints[req.URL.Path]
-	if index >= len(pages) {
-		if index == len(pages) {
-			mp.wg.Done()
-		}
-		rw.WriteHeader(404)
-		return
-	}
-	rw.WriteHeader(pages[index].code)
-	_, _ = rw.Write([]byte(pages[index].data))
-}
-
-func (mp *mockPrometheus) Close() {
-	mp.srv.Close()
-}
-
-// -------------------------
-// EndToEnd Test and related
-// -------------------------
-
-var (
-	srvPlaceHolder            = "__SERVER_ADDRESS__"
-	expectedScrapeMetricCount = 5
-)
-
-type testData struct {
-	name         string
-	pages        []mockPrometheusResponse
-	resource     pdata.Resource
-	validateFunc func(t *testing.T, td *testData, rmsL []pdata.ResourceMetrics)
-}
-
-// Given that pdata doesn't allow us to trivially construct pdata.Metrics,
-// we can extract pdata.ResourceMetrics from each value.
-func resourceMetricsFromMetrics(metricsL []pdata.Metrics) (rmsL []pdata.ResourceMetrics) {
-	for _, metrics := range metricsL {
-		irmsL := metrics.ResourceMetrics()
-		for i := 0; i < irmsL.Len(); i++ {
-			rmsL = append(rmsL, irmsL.At(i))
-		}
-	}
-	return rmsL
-}
-
-// setupMockPrometheus to create a mocked prometheus based on targets, returning the server and a prometheus exporting
-// config
-func setupMockPrometheus(tds ...*testData) (*mockPrometheus, *promcfg.Config, error) {
-	jobs := make([]map[string]interface{}, 0, len(tds))
-	endpoints := make(map[string][]mockPrometheusResponse)
-	for _, t := range tds {
-		metricPath := fmt.Sprintf("/%s/metrics", t.name)
-		endpoints[metricPath] = t.pages
-		job := make(map[string]interface{})
-		job["job_name"] = t.name
-		job["metrics_path"] = metricPath
-		job["scrape_interval"] = "1s"
-		job["static_configs"] = []map[string]interface{}{{"targets": []string{srvPlaceHolder}}}
-		jobs = append(jobs, job)
-	}
-
-	if len(jobs) != len(tds) {
-		log.Fatal("len(jobs) != len(targets), make sure job names are unique")
-	}
-	config := make(map[string]interface{})
-	config["scrape_configs"] = jobs
-
-	mp := newMockPrometheus(endpoints)
-	cfg, err := yaml.Marshal(&config)
-	if err != nil {
-		return mp, nil, err
-	}
-	u, _ := url.Parse(mp.srv.URL)
-	host, port, _ := net.SplitHostPort(u.Host)
-
-	// update node value (will use for validation)
-	for _, t := range tds {
-		rsc := pdata.NewResource()
-		attrs := rsc.Attributes()
-		attrs.InsertString("instance", u.Host)
-		attrs.InsertString("scheme", "http")
-		attrs.InsertString("port", port)
-		attrs.InsertString("job", t.name)
-		attrs.InsertString("host.name", host)
-		attrs.InsertString("service.name", t.name)
-		t.resource = rsc
-	}
-
-	cfgStr := strings.ReplaceAll(string(cfg), srvPlaceHolder, u.Host)
-	pCfg, err := promcfg.Load(cfgStr, false, gokitlog.NewNopLogger())
-	return mp, pCfg, err
-}
-
-func verifyNumScrapeResults(t *testing.T, td *testData, metricsL []pdata.ResourceMetrics) {
-	want := 0
-	for _, p := range td.pages {
-		if p.code == 200 {
-			want++
-		}
-	}
-	if l := len(metricsL); l != want {
-		t.Errorf("want %d, but got %d\n", want, l)
-	}
-}
-
-func doCompare(t *testing.T, name string, want, got pdata.ResourceMetrics) {
-	// Ensure that the resource attributes can be deterministically compared.
-	got.Resource().Attributes().Sort()
-	want.Resource().Attributes().Sort()
-
-	t.Run(name, func(t *testing.T) {
-		assert.Equal(t, want.Resource(), got.Resource(), "Resource mismatch")
-		assert.Equal(t, want.SchemaUrl(), got.SchemaUrl(), "Resource mismatch")
-		assert.Equal(t, want.InstrumentationLibraryMetrics(), got.InstrumentationLibraryMetrics())
-	})
-}
-
-func getValidScrapes(t *testing.T, metricsL []pdata.ResourceMetrics) (out []pdata.ResourceMetrics) {
-	return metricsL
-	panic("FIX ME")
-	/*
-		for _, metrics := range metricsL {
-			// mds will include scrapes that received no metrics but have internal scrape metrics, filter those out
-			if expectedScrapeMetricCount < len(md.Metrics) && countScrapeMetrics(md) == expectedScrapeMetricCount {
-				assertUp(t, 1, md)
-				out = append(out, md)
-			} else {
-				assertUp(t, 0, md)
-			}
-		}
-		return out
-	*/
-}
-
-func assertUp(t *testing.T, expected float64, metrics pdata.ResourceMetrics) {
-	panic("FIX ME")
-	/*
-		for _, m := range md.Metrics {
-			if m.GetMetricDescriptor().Name == "up" {
-				assert.Equal(t, expected, m.Timeseries[0].Points[0].GetDoubleValue())
-				return
-			}
-		}
-		t.Error("No 'up' metric found")
-	*/
-}
-
-func countScrapeMetrics(in pdata.ResourceMetrics) int {
-	panic("FIX ME")
-	/*
-		n := 0
-		for _, m := range in.Metrics {
-			switch m.MetricDescriptor.Name {
-			case "up", "scrape_duration_seconds", "scrape_samples_scraped", "scrape_samples_post_metric_relabeling", "scrape_series_added":
-				n++
-			default:
-			}
-		}
-		return n
-	*/
-}
-
-// Test data and validation functions for EndToEnd test
+// Test data and validation functions for all four core metrics for Prometheus Receiver.
 // Make sure every page has a gauge, we are relying on it to figure out the start time if needed
 
 // target1 has one gauge, two counts of a same family, one histogram and one summary. We are expecting the both
@@ -308,216 +84,137 @@ rpc_duration_seconds_sum 5002
 rpc_duration_seconds_count 1001
 `
 
-func dataPointCount(rms pdata.ResourceMetrics) int {
-	return rms.InstrumentationLibraryMetrics().At(0).Metrics().Len()
-}
+func verifyTarget1(t *testing.T, td *testData, resourceMetrics []*pdata.ResourceMetrics) {
+	verifyNumScrapeResults(t, td, resourceMetrics)
+	require.Greater(t, len(resourceMetrics), 0, "At least one resource metric should be present")
+	m1 := resourceMetrics[0]
 
-func extractFirstTimestamp(rms pdata.ResourceMetrics) (startTimestamp, timestamp pdata.Timestamp) {
-	startTs, ts, _ := extractFirstTimestampDataType(rms)
-	return startTs, ts
-}
+	// m1 has 4 metrics + 5 internal scraper metrics
+	assert.Equal(t, 9, metricsCount(m1))
 
-func extractFirstTimestampDataType(rms pdata.ResourceMetrics) (startTimestamp, timestamp pdata.Timestamp, _ pdata.MetricDataType) {
-	metric := rms.InstrumentationLibraryMetrics().At(0).Metrics().At(0)
-	switch dataType := metric.DataType(); dataType {
-	case pdata.MetricDataTypeGauge:
-		point0 := metric.Gauge().DataPoints().At(0)
-		return point0.StartTimestamp(), point0.Timestamp(), dataType
-	case pdata.MetricDataTypeSum:
-		point0 := metric.Sum().DataPoints().At(0)
-		return point0.StartTimestamp(), point0.Timestamp(), dataType
-	case pdata.MetricDataTypeHistogram:
-		point0 := metric.Histogram().DataPoints().At(0)
-		return point0.StartTimestamp(), point0.Timestamp(), dataType
-	case pdata.MetricDataTypeSummary:
-		point0 := metric.Summary().DataPoints().At(0)
-		return point0.StartTimestamp(), point0.Timestamp(), dataType
-	default:
-		panic("Unhandled " + metric.DataType().String())
+	wantAttributes := td.attributes
+
+	metrics1 := m1.InstrumentationLibraryMetrics().At(0).Metrics()
+	ts1 := metrics1.At(0).Gauge().DataPoints().At(0).Timestamp()
+	e1 := []testExpectation{
+		assertMetricPresent("go_threads",
+			compareMetricType(pdata.MetricDataTypeGauge),
+			[]dataPointExpectation{
+				{
+					numberPointComparator: []numberPointComparator{
+						compareTimestamp(ts1),
+						compareDoubleValue(19),
+					},
+				},
+			}),
+		assertMetricPresent("http_requests_total",
+			compareMetricType(pdata.MetricDataTypeSum),
+			[]dataPointExpectation{
+				{
+					numberPointComparator: []numberPointComparator{
+						compareStartTimestamp(ts1),
+						compareTimestamp(ts1),
+						compareDoubleValue(100),
+						compareAttributes(map[string]string{"method": "post", "code": "200"}),
+					},
+				},
+				{
+					numberPointComparator: []numberPointComparator{
+						compareStartTimestamp(ts1),
+						compareTimestamp(ts1),
+						compareDoubleValue(5),
+						compareAttributes(map[string]string{"method": "post", "code": "400"}),
+					},
+				},
+			}),
+		assertMetricPresent("http_request_duration_seconds",
+			compareMetricType(pdata.MetricDataTypeHistogram),
+			[]dataPointExpectation{
+				{
+					histogramPointComparator: []histogramPointComparator{
+						compareHistogramStartTimestamp(ts1),
+						compareHistogramTimestamp(ts1),
+						compareHistogram(2500, 5000, []uint64{1000, 500, 500, 500}),
+					},
+				},
+			}),
+		assertMetricPresent("rpc_duration_seconds",
+			compareMetricType(pdata.MetricDataTypeSummary),
+			[]dataPointExpectation{
+				{
+					summaryPointComparator: []summaryPointComparator{
+						compareSummaryStartTimestamp(ts1),
+						compareSummaryTimestamp(ts1),
+						compareSummary(1000, 5000, [][]float64{{0.01, 1}, {0.9, 5}, {0.99, 8}}),
+					},
+				},
+			}),
 	}
-}
+	doCompare(t, "scrape1", wantAttributes, m1, e1)
 
-const ts1 = pdata.Timestamp(1e9)
-const ts2 = pdata.Timestamp(2e9)
+	m2 := resourceMetrics[1]
+	// m2 has 4 metrics + 5 internal scraper metrics
+	assert.Equal(t, 9, metricsCount(m2))
 
-func verifyTarget1(t *testing.T, td *testData, metricsL []pdata.ResourceMetrics) {
-	verifyNumScrapeResults(t, td, metricsL)
-	if len(metricsL) < 1 {
-		t.Fatal("At least one metric request should be present")
+	metricsScrape2 := m2.InstrumentationLibraryMetrics().At(0).Metrics()
+	ts2 := metricsScrape2.At(0).Gauge().DataPoints().At(0).Timestamp()
+	e2 := []testExpectation{
+		assertMetricPresent("go_threads",
+			compareMetricType(pdata.MetricDataTypeGauge),
+			[]dataPointExpectation{
+				{
+					numberPointComparator: []numberPointComparator{
+						compareTimestamp(ts2),
+						compareDoubleValue(18),
+					},
+				},
+			}),
+		assertMetricPresent("http_requests_total",
+			compareMetricType(pdata.MetricDataTypeSum),
+			[]dataPointExpectation{
+				{
+					numberPointComparator: []numberPointComparator{
+						compareStartTimestamp(ts1),
+						compareTimestamp(ts2),
+						compareDoubleValue(199),
+						compareAttributes(map[string]string{"method": "post", "code": "200"}),
+					},
+				},
+				{
+					numberPointComparator: []numberPointComparator{
+						compareStartTimestamp(ts1),
+						compareTimestamp(ts2),
+						compareDoubleValue(12),
+						compareAttributes(map[string]string{"method": "post", "code": "400"}),
+					},
+				},
+			}),
+		assertMetricPresent("http_request_duration_seconds",
+			compareMetricType(pdata.MetricDataTypeHistogram),
+			[]dataPointExpectation{
+				{
+					histogramPointComparator: []histogramPointComparator{
+						// TODO: Prometheus Receiver Issue- start_timestamp are incorrect for Summary and Histogram metrics after a failed scrape (issue not yet posted on collector-contrib repo)
+						//compareHistogramStartTimestamp(ts1),
+						compareHistogramTimestamp(ts2),
+						compareHistogram(2600, 5050, []uint64{1100, 500, 500, 500}),
+					},
+				},
+			}),
+		assertMetricPresent("rpc_duration_seconds",
+			compareMetricType(pdata.MetricDataTypeSummary),
+			[]dataPointExpectation{
+				{
+					summaryPointComparator: []summaryPointComparator{
+						// TODO: Prometheus Receiver Issue- start_timestamp are incorrect for Summary and Histogram metrics after a failed scrape (issue not yet posted on collector-contrib repo)
+						//compareSummaryStartTimestamp(ts1),
+						compareSummaryTimestamp(ts2),
+						compareSummary(1001, 5002, [][]float64{{0.01, 1}, {0.9, 6}, {0.99, 8}}),
+					},
+				},
+			}),
 	}
-
-	// Extract the first startTimestamp.
-	got1 := metricsL[0]
-
-	// got 1 has 4 metrics + 5 internal scraper metrics
-	if g, w := dataPointCount(got1), 9; g != w {
-		t.Fatalf("got %d, want %d", g, w)
-	}
-	startTs1, ts1 := extractFirstTimestamp(got1)
-
-	want1 := makeMetrics(
-		td,
-		makeGaugeMetric("go_threads", startTs1, makeDoublePoint(ts1, 19.0)),
-		makeSumMetric("http_requests_total", startTs1,
-			makeDoublePoint(ts1, 100.0, kv{"code", "200"}, kv{"method", "post"}),
-			makeDoublePoint(ts1, 3, kv{"code", "400"}, kv{"method", "post"}),
-		),
-		makeCumulativeDistMetric("http_request_duration_seconds", startTs1,
-			makeDistPoint(ts1, 2500, 5000, []uint64{1000, 500, 500, 500}, []float64{0.05, 0.5, 1}),
-		),
-		makeSummaryMetric("rpc_duration_seconds", startTs1,
-			makeSummaryPoint(ts1, 1000, 5000, map[float64]float64{1: 1, 90: 5, 99: 8}),
-		),
-		makeGaugeMetric("up", startTs1, makeDoublePoint(ts1, 1.0)),
-		makeGaugeMetric("scrape_duration_seconds", startTs1, makeDoublePoint(ts1, 0.001662471)),
-		makeGaugeMetric("scrape_samples_scraped", startTs1, makeDoublePoint(ts1, 18.0)),
-		makeGaugeMetric("scrape_samples_post_metric_relabeling", startTs1, makeDoublePoint(ts1, 18.0)),
-		makeGaugeMetric("scrape_series_added", startTs1, makeDoublePoint(ts1, 18.0)),
-	)
-
-	doCompare(t, "scrape1", want1, got1)
-
-	got2 := metricsL[1]
-	startTs2, ts2 := extractFirstTimestamp(got2)
-	// Verify the 2nd data.
-	want2 := makeMetrics(
-		td,
-		makeGaugeMetric("go_threads", startTs2, makeDoublePoint(ts2, 18.0)),
-		makeSumMetric("http_requests_total", startTs2,
-			makeDoublePoint(ts2, 199, kv{"code", "200"}, kv{"method", "post"}),
-			makeDoublePoint(ts2, 12, kv{"code", "400"}, kv{"method", "post"}),
-		),
-		makeCumulativeDistMetric("http_requests_duration_seconds", startTs2,
-			makeDistPoint(ts2, 2600, 5050, []uint64{1100, 500, 500, 500}, []float64{0.05, 0.5, 1}),
-		),
-		makeSummaryMetric("rpc_duration_seconds", startTs2,
-			makeSummaryPoint(ts2, 1000, 5000, map[float64]float64{1: 1, 90: 6, 99: 8}),
-		),
-		makeGaugeMetric("up", startTs1, makeDoublePoint(ts1, 1.0)),
-		makeGaugeMetric("scrape_duration_seconds", startTs1, makeDoublePoint(ts1, 0.001662471)),
-		makeGaugeMetric("scrape_samples_scraped", startTs1, makeDoublePoint(ts1, 18.0)),
-		makeGaugeMetric("scrape_samples_post_metric_relabeling", startTs1, makeDoublePoint(ts1, 18.0)),
-		makeGaugeMetric("scrape_series_added", startTs1, makeDoublePoint(ts1, 18.0)),
-	)
-
-	doCompare(t, "scrape2", want2, got2)
-}
-
-type kv struct {
-	key, value string
-}
-
-func makeDoublePoint(ts pdata.Timestamp, value float64, kvp ...kv) pdata.NumberDataPoint {
-	ndp := pdata.NewNumberDataPoint()
-	ndp.SetTimestamp(ts)
-	ndp.SetDoubleVal(value)
-
-	attrs := ndp.Attributes()
-	for _, kv := range kvp {
-		attrs.InsertString(kv.key, kv.value)
-	}
-	return ndp
-}
-
-func makeGaugeMetric(name string, startTs pdata.Timestamp, points ...pdata.NumberDataPoint) pdata.Metric {
-	metric := pdata.NewMetric()
-	metric.SetName(name)
-	metric.SetDataType(pdata.MetricDataTypeGauge)
-
-	destPointL := metric.Gauge().DataPoints()
-	for _, point := range points {
-		destPoint := destPointL.AppendEmpty()
-		point.CopyTo(destPoint)
-		destPoint.SetStartTimestamp(startTs)
-	}
-	return metric
-}
-
-func makeSummaryPoint(ts pdata.Timestamp, count uint64, sum float64, qvm map[float64]float64, kvp ...kv) pdata.SummaryDataPoint {
-	sdp := pdata.NewSummaryDataPoint()
-	sdp.SetTimestamp(ts)
-	sdp.SetCount(count)
-	sdp.SetSum(sum)
-	qvL := sdp.QuantileValues()
-	for quantile, value := range qvm {
-		qvi := qvL.AppendEmpty()
-		qvi.SetQuantile(quantile)
-		qvi.SetValue(value)
-	}
-
-	attrs := sdp.Attributes()
-	for _, kv := range kvp {
-		attrs.InsertString(kv.key, kv.value)
-	}
-	return sdp
-}
-
-func makeSummaryMetric(name string, startTs pdata.Timestamp, points ...pdata.SummaryDataPoint) pdata.Metric {
-	metric := pdata.NewMetric()
-	metric.SetName(name)
-	metric.SetDataType(pdata.MetricDataTypeSummary)
-
-	destPointL := metric.Summary().DataPoints()
-	for _, point := range points {
-		destPoint := destPointL.AppendEmpty()
-		point.CopyTo(destPoint)
-		destPoint.SetStartTimestamp(startTs)
-	}
-	return metric
-}
-
-func makeSumMetric(name string, startTs pdata.Timestamp, points ...pdata.NumberDataPoint) pdata.Metric {
-	metric := pdata.NewMetric()
-	metric.SetName(name)
-	metric.SetDataType(pdata.MetricDataTypeSum)
-	sum := metric.Sum()
-	sum.SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
-	destPointL := sum.DataPoints()
-
-	for _, point := range points {
-		destPoint := destPointL.AppendEmpty()
-		point.CopyTo(destPoint)
-		destPoint.SetStartTimestamp(startTs)
-	}
-	return metric
-}
-
-func makeDistPoint(ts pdata.Timestamp, count uint64, sum float64, counts []uint64, bounds []float64, kvp ...kv) pdata.HistogramDataPoint {
-	hdp := pdata.NewHistogramDataPoint()
-	hdp.SetExplicitBounds(bounds)
-	hdp.SetBucketCounts(counts)
-	hdp.SetTimestamp(ts)
-	hdp.SetCount(count)
-	hdp.SetSum(sum)
-
-	attrs := hdp.Attributes()
-	for _, kv := range kvp {
-		attrs.InsertString(kv.key, kv.value)
-	}
-	return hdp
-}
-
-func makeGaugeDistMetric(name string, startTs pdata.Timestamp, points ...pdata.HistogramDataPoint) pdata.Metric {
-	hMetric := makeCumulativeDistMetric(name, startTs, points...)
-	hMetric.Histogram().SetAggregationTemporality(pdata.AggregationTemporalityDelta)
-	return hMetric
-}
-
-func makeCumulativeDistMetric(name string, startTs pdata.Timestamp, points ...pdata.HistogramDataPoint) pdata.Metric {
-	metric := pdata.NewMetric()
-	metric.SetName(name)
-	metric.SetDataType(pdata.MetricDataTypeHistogram)
-	histogram := metric.Histogram()
-	histogram.SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
-
-	destPointL := histogram.DataPoints()
-	// By default the AggregationTemporality is Cumulative until it'll be changed by the caller.
-	for _, point := range points {
-		destPoint := destPointL.AppendEmpty()
-		point.CopyTo(destPoint)
-		destPoint.SetStartTimestamp(startTs)
-	}
-	return metric
+	doCompare(t, "scrape2", wantAttributes, m2, e2)
 }
 
 // target2 is going to have 5 pages, and there's a newly added item on the 2nd page.
@@ -582,110 +279,242 @@ http_requests_total{method="post",code="400"} 59
 http_requests_total{method="post",code="500"} 5
 `
 
-func verifyTarget2(t *testing.T, td *testData, metricsL []pdata.ResourceMetrics) {
-	verifyNumScrapeResults(t, td, metricsL)
-	if len(metricsL) < 1 {
-		t.Fatal("At least one metric request should be present")
+func verifyTarget2(t *testing.T, td *testData, resourceMetrics []*pdata.ResourceMetrics) {
+	verifyNumScrapeResults(t, td, resourceMetrics)
+	require.Greater(t, len(resourceMetrics), 0, "At least one resource metric should be present")
+	m1 := resourceMetrics[0]
+	// m1 has 2 metrics + 5 internal scraper metrics
+	assert.Equal(t, 7, metricsCount(m1))
+
+	wantAttributes := td.attributes
+
+	metrics1 := m1.InstrumentationLibraryMetrics().At(0).Metrics()
+	ts1 := metrics1.At(0).Gauge().DataPoints().At(0).Timestamp()
+	e1 := []testExpectation{
+		assertMetricPresent("go_threads",
+			compareMetricType(pdata.MetricDataTypeGauge),
+			[]dataPointExpectation{
+				{
+					numberPointComparator: []numberPointComparator{
+						compareTimestamp(ts1),
+						compareDoubleValue(18),
+					},
+				},
+			}),
+		assertMetricPresent("http_requests_total",
+			compareMetricType(pdata.MetricDataTypeSum),
+			[]dataPointExpectation{
+				{
+					numberPointComparator: []numberPointComparator{
+						compareStartTimestamp(ts1),
+						compareTimestamp(ts1),
+						compareDoubleValue(10),
+						compareAttributes(map[string]string{"method": "post", "code": "200"}),
+					},
+				},
+				{
+					numberPointComparator: []numberPointComparator{
+						compareStartTimestamp(ts1),
+						compareTimestamp(ts1),
+						compareDoubleValue(50),
+						compareAttributes(map[string]string{"method": "post", "code": "400"}),
+					},
+				},
+			}),
 	}
+	doCompare(t, "scrape1", wantAttributes, m1, e1)
 
-	// Extract the first startTimestamp.
-	got1 := metricsL[0]
+	m2 := resourceMetrics[1]
+	// m2 has 2 metrics + 5 internal scraper metrics
+	assert.Equal(t, 7, metricsCount(m2))
 
-	// got has 2 metrics + 5 internal scraper metrics
-	if g, w := dataPointCount(got1), 7; g != w {
-		t.Fatalf("got %d, want %d", g, w)
+	metricsScrape2 := m2.InstrumentationLibraryMetrics().At(0).Metrics()
+	ts2 := metricsScrape2.At(0).Gauge().DataPoints().At(0).Timestamp()
+	e2 := []testExpectation{
+		assertMetricPresent("go_threads",
+			compareMetricType(pdata.MetricDataTypeGauge),
+			[]dataPointExpectation{
+				{
+					numberPointComparator: []numberPointComparator{
+						compareTimestamp(ts2),
+						compareDoubleValue(16),
+					},
+				},
+			}),
+		assertMetricPresent("http_requests_total",
+			compareMetricType(pdata.MetricDataTypeSum),
+			[]dataPointExpectation{
+				{
+					numberPointComparator: []numberPointComparator{
+						compareStartTimestamp(ts1),
+						compareTimestamp(ts2),
+						compareDoubleValue(50),
+						compareAttributes(map[string]string{"method": "post", "code": "200"}),
+					},
+				},
+				{
+					numberPointComparator: []numberPointComparator{
+						compareStartTimestamp(ts1),
+						compareTimestamp(ts2),
+						compareDoubleValue(60),
+						compareAttributes(map[string]string{"method": "post", "code": "400"}),
+					},
+				},
+				{
+					numberPointComparator: []numberPointComparator{
+						compareStartTimestamp(ts2),
+						compareTimestamp(ts2),
+						compareDoubleValue(3),
+						compareAttributes(map[string]string{"method": "post", "code": "500"}),
+					},
+				},
+			}),
 	}
-	startTs1, ts1 := extractFirstTimestamp(got1)
+	doCompare(t, "scrape2", wantAttributes, m2, e2)
 
-	want1 := makeMetrics(
-		td,
-		makeGaugeMetric("go_threads", startTs1, makeDoublePoint(ts1, 18.0)),
-		makeSumMetric("http_requests_total", startTs1,
-			makeDoublePoint(ts1, 10, kv{"code", "200"}, kv{"method", "post"}),
-			makeDoublePoint(ts1, 50, kv{"code", "400"}, kv{"method", "post"}),
-		),
-		makeGaugeMetric("up", startTs1, makeDoublePoint(ts1, 1.0)),
-		makeGaugeMetric("scrape_duration_seconds", startTs1, makeDoublePoint(ts1, 0.001662471)),
-		makeGaugeMetric("scrape_samples_scraped", startTs1, makeDoublePoint(ts1, 14.0)),
-		makeGaugeMetric("scrape_samples_post_metric_relabeling", startTs1, makeDoublePoint(ts1, 14.0)),
-		makeGaugeMetric("scrape_series_added", startTs1, makeDoublePoint(ts1, 14.0)),
-	)
-	doCompare(t, "scrape1", want1, got1)
+	m3 := resourceMetrics[2]
+	// m3 has 2 metrics + 5 internal scraper metrics
+	assert.Equal(t, 7, metricsCount(m3))
 
-	// Verify the 2nd data.
-	got2 := metricsL[1]
-	startTs2, ts2 := extractFirstTimestamp(got2)
-	want2 := makeMetrics(
-		td,
-		makeGaugeMetric("go_threads", startTs2, makeDoublePoint(ts2, 16.0)),
-		makeSumMetric("http_requests_total", startTs2,
-			makeDoublePoint(ts2, 50, kv{"code", "200"}, kv{"method", "post"}),
-			makeDoublePoint(ts2, 60, kv{"code", "400"}, kv{"method", "post"}),
-			makeDoublePoint(ts2, 3, kv{"code", "500"}, kv{"method", "post"}),
-		),
-		makeGaugeMetric("up", startTs1, makeDoublePoint(ts1, 1.0)),
-		makeGaugeMetric("scrape_duration_seconds", startTs1, makeDoublePoint(ts1, 0.001662471)),
-		makeGaugeMetric("scrape_samples_scraped", startTs1, makeDoublePoint(ts1, 14.0)),
-		makeGaugeMetric("scrape_samples_post_metric_relabeling", startTs1, makeDoublePoint(ts1, 14.0)),
-		makeGaugeMetric("scrape_series_added", startTs1, makeDoublePoint(ts1, 14.0)),
-	)
+	metricsScrape3 := m3.InstrumentationLibraryMetrics().At(0).Metrics()
+	ts3 := metricsScrape3.At(0).Gauge().DataPoints().At(0).Timestamp()
+	e3 := []testExpectation{
+		assertMetricPresent("go_threads",
+			compareMetricType(pdata.MetricDataTypeGauge),
+			[]dataPointExpectation{
+				{
+					numberPointComparator: []numberPointComparator{
+						compareTimestamp(ts3),
+						compareDoubleValue(16),
+					},
+				},
+			}),
+		assertMetricPresent("http_requests_total",
+			compareMetricType(pdata.MetricDataTypeSum),
+			[]dataPointExpectation{
+				{
+					numberPointComparator: []numberPointComparator{
+						compareStartTimestamp(ts1),
+						compareTimestamp(ts3),
+						compareDoubleValue(50),
+						compareAttributes(map[string]string{"method": "post", "code": "200"}),
+					},
+				},
+				{
+					numberPointComparator: []numberPointComparator{
+						compareStartTimestamp(ts1),
+						compareTimestamp(ts3),
+						compareDoubleValue(60),
+						compareAttributes(map[string]string{"method": "post", "code": "400"}),
+					},
+				},
+				{
+					numberPointComparator: []numberPointComparator{
+						compareStartTimestamp(ts2),
+						compareTimestamp(ts3),
+						compareDoubleValue(5),
+						compareAttributes(map[string]string{"method": "post", "code": "500"}),
+					},
+				},
+			}),
+	}
+	doCompare(t, "scrape3", wantAttributes, m3, e3)
 
-	doCompare(t, "scrape2", want2, got2)
+	m4 := resourceMetrics[3]
+	// m4 has 2 metrics + 5 internal scraper metrics
+	assert.Equal(t, 7, metricsCount(m4))
 
-	// Verify the 3rd, with the new coce=500 counter which first appeared on the 2nd run.
-	got3 := metricsL[2]
-	startTs3, ts3 := extractFirstTimestamp(got3)
-	want3 := makeMetrics(
-		td,
-		makeGaugeMetric("go_threads", startTs3, makeDoublePoint(ts3, 16.0)),
-		makeSumMetric("http_requests_total", startTs3,
-			makeDoublePoint(ts1, 50, kv{"code", "200"}, kv{"method", "post"}),
-			makeDoublePoint(ts3, 60, kv{"code", "400"}, kv{"method", "post"}),
-			makeDoublePoint(ts3, 5, kv{"code", "500"}, kv{"method", "post"}),
-		),
-		makeGaugeMetric("up", startTs1, makeDoublePoint(ts1, 1.0)),
-		makeGaugeMetric("scrape_duration_seconds", startTs1, makeDoublePoint(ts1, 0.001662471)),
-		makeGaugeMetric("scrape_samples_scraped", startTs1, makeDoublePoint(ts1, 14.0)),
-		makeGaugeMetric("scrape_samples_post_metric_relabeling", startTs1, makeDoublePoint(ts1, 14.0)),
-		makeGaugeMetric("scrape_series_added", startTs1, makeDoublePoint(ts1, 14.0)),
-	)
-	doCompare(t, "scrape3", want3, got3)
+	metricsScrape4 := m4.InstrumentationLibraryMetrics().At(0).Metrics()
+	ts4 := metricsScrape4.At(0).Gauge().DataPoints().At(0).Timestamp()
+	e4 := []testExpectation{
+		assertMetricPresent("go_threads",
+			compareMetricType(pdata.MetricDataTypeGauge),
+			[]dataPointExpectation{
+				{
+					numberPointComparator: []numberPointComparator{
+						compareTimestamp(ts4),
+						compareDoubleValue(16),
+					},
+				},
+			}),
+		assertMetricPresent("http_requests_total",
+			compareMetricType(pdata.MetricDataTypeSum),
+			[]dataPointExpectation{
+				{
+					numberPointComparator: []numberPointComparator{
+						compareStartTimestamp(ts4),
+						compareTimestamp(ts4),
+						compareDoubleValue(49),
+						compareAttributes(map[string]string{"method": "post", "code": "200"}),
+					},
+				},
+				{
+					numberPointComparator: []numberPointComparator{
+						compareStartTimestamp(ts4),
+						compareTimestamp(ts4),
+						compareDoubleValue(59),
+						compareAttributes(map[string]string{"method": "post", "code": "400"}),
+					},
+				},
+				{
+					numberPointComparator: []numberPointComparator{
+						compareStartTimestamp(ts4),
+						compareTimestamp(ts4),
+						compareDoubleValue(3),
+						compareAttributes(map[string]string{"method": "post", "code": "500"}),
+					},
+				},
+			}),
+	}
+	doCompare(t, "scrape4", wantAttributes, m4, e4)
 
-	got4 := metricsL[3]
-	startTs4, ts4 := extractFirstTimestamp(got4)
-	want4 := makeMetrics(
-		td,
-		makeGaugeMetric("go_threads", startTs4, makeDoublePoint(ts4, 16.0)),
-		makeSumMetric("http_requests_total", startTs3,
-			makeDoublePoint(ts4, 50, kv{"code", "200"}, kv{"method", "post"}),
-			makeDoublePoint(ts4, 60, kv{"code", "400"}, kv{"method", "post"}),
-			makeDoublePoint(ts4, 5, kv{"code", "500"}, kv{"method", "post"}),
-		),
-		makeGaugeMetric("up", startTs4, makeDoublePoint(ts4, 1.0)),
-		makeGaugeMetric("scrape_duration_seconds", startTs4, makeDoublePoint(ts4, 0.001662471)),
-		makeGaugeMetric("scrape_samples_scraped", startTs4, makeDoublePoint(ts4, 14.0)),
-		makeGaugeMetric("scrape_samples_post_metric_relabeling", startTs4, makeDoublePoint(ts4, 14.0)),
-		makeGaugeMetric("scrape_series_added", startTs4, makeDoublePoint(ts4, 14.0)),
-	)
-	doCompare(t, "scrape4", want4, got4)
+	m5 := resourceMetrics[4]
+	// m5 has 2 metrics + 5 internal scraper metrics
+	assert.Equal(t, 7, metricsCount(m5))
 
-	got5 := metricsL[4]
-	startTs5, ts5 := extractFirstTimestamp(got5)
-	want5 := makeMetrics(
-		td,
-		makeGaugeMetric("go_threads", startTs5, makeDoublePoint(ts5, 16.0)),
-		makeSumMetric("http_requests_total", startTs5,
-			makeDoublePoint(ts4, 49, kv{"code", "200"}, kv{"method", "post"}),
-			makeDoublePoint(ts4, 60, kv{"code", "400"}, kv{"method", "post"}),
-			makeDoublePoint(ts3, 3, kv{"code", "500"}, kv{"method", "post"}),
-		),
-		makeGaugeMetric("up", startTs1, makeDoublePoint(ts1, 1.0)),
-		makeGaugeMetric("scrape_duration_seconds", startTs1, makeDoublePoint(ts1, 0.001662471)),
-		makeGaugeMetric("scrape_samples_scraped", startTs1, makeDoublePoint(ts1, 4.0)),
-		makeGaugeMetric("scrape_samples_post_metric_relabeling", startTs1, makeDoublePoint(ts1, 4.0)),
-		makeGaugeMetric("scrape_series_added", startTs1, makeDoublePoint(ts1, 4.0)),
-	)
-	doCompare(t, "scrape5", want5, got5)
+	metricsScrape5 := m5.InstrumentationLibraryMetrics().At(0).Metrics()
+	ts5 := metricsScrape5.At(0).Gauge().DataPoints().At(0).Timestamp()
+	e5 := []testExpectation{
+		assertMetricPresent("go_threads",
+			compareMetricType(pdata.MetricDataTypeGauge),
+			[]dataPointExpectation{
+				{
+					numberPointComparator: []numberPointComparator{
+						compareTimestamp(ts5),
+						compareDoubleValue(16),
+					},
+				},
+			}),
+		assertMetricPresent("http_requests_total",
+			compareMetricType(pdata.MetricDataTypeSum),
+			[]dataPointExpectation{
+				{
+					numberPointComparator: []numberPointComparator{
+						compareStartTimestamp(ts4),
+						compareTimestamp(ts5),
+						compareDoubleValue(50),
+						compareAttributes(map[string]string{"method": "post", "code": "200"}),
+					},
+				},
+				{
+					numberPointComparator: []numberPointComparator{
+						compareStartTimestamp(ts4),
+						compareTimestamp(ts5),
+						compareDoubleValue(59),
+						compareAttributes(map[string]string{"method": "post", "code": "400"}),
+					},
+				},
+				{
+					numberPointComparator: []numberPointComparator{
+						compareStartTimestamp(ts4),
+						compareTimestamp(ts5),
+						compareDoubleValue(5),
+						compareAttributes(map[string]string{"method": "post", "code": "500"}),
+					},
+				},
+			}),
+	}
+	doCompare(t, "scrape5", wantAttributes, m5, e5)
 }
 
 // target3 for complicated data types, including summaries and histograms. one of the summary and histogram have only
@@ -740,7 +569,7 @@ http_request_duration_seconds_bucket{le="+Inf"} 14003
 http_request_duration_seconds_sum 50100
 http_request_duration_seconds_count 14003
 
-# A corrupted histogram with only sum and count
+# A corrupted histogram with only sum and count	
 # HELP corrupted_hist A corrupted_hist.
 # TYPE corrupted_hist histogram
 corrupted_hist_sum 101
@@ -760,65 +589,118 @@ rpc_duration_seconds_sum{foo="no_quantile"} 101
 rpc_duration_seconds_count{foo="no_quantile"} 55
 `
 
-func verifyTarget3(t *testing.T, td *testData, metricsL []pdata.ResourceMetrics) {
-	verifyNumScrapeResults(t, td, metricsL)
-	if len(metricsL) < 1 {
-		t.Fatal("At least one metric request should be present")
+func verifyTarget3(t *testing.T, td *testData, resourceMetrics []*pdata.ResourceMetrics) {
+	verifyNumScrapeResults(t, td, resourceMetrics)
+	require.Greater(t, len(resourceMetrics), 0, "At least one resource metric should be present")
+	m1 := resourceMetrics[0]
+	// m1 has 3 metrics + 5 internal scraper metrics
+	assert.Equal(t, 8, metricsCount(m1))
+
+	wantAttributes := td.attributes
+
+	metrics1 := m1.InstrumentationLibraryMetrics().At(0).Metrics()
+	ts1 := metrics1.At(0).Gauge().DataPoints().At(0).Timestamp()
+	e1 := []testExpectation{
+		assertMetricPresent("go_threads",
+			compareMetricType(pdata.MetricDataTypeGauge),
+			[]dataPointExpectation{
+				{
+					numberPointComparator: []numberPointComparator{
+						compareTimestamp(ts1),
+						compareDoubleValue(18),
+					},
+				},
+			}),
+		assertMetricPresent("http_request_duration_seconds",
+			compareMetricType(pdata.MetricDataTypeHistogram),
+			[]dataPointExpectation{
+				{
+					histogramPointComparator: []histogramPointComparator{
+						compareHistogramStartTimestamp(ts1),
+						compareHistogramTimestamp(ts1),
+						compareHistogram(13003, 50000, []uint64{10000, 1000, 1001, 1002}),
+					},
+				},
+			}),
+		assertMetricAbsent("corrupted_hist"),
+		assertMetricPresent("rpc_duration_seconds",
+			compareMetricType(pdata.MetricDataTypeSummary),
+			[]dataPointExpectation{
+				{
+					summaryPointComparator: []summaryPointComparator{
+						compareSummaryStartTimestamp(ts1),
+						compareSummaryTimestamp(ts1),
+						compareSummaryAttributes(map[string]string{"foo": "bar"}),
+						compareSummary(900, 8000, [][]float64{{0.01, 31}, {0.05, 35}, {0.5, 47}, {0.9, 70}, {0.99, 76}}),
+					},
+				},
+				{
+					summaryPointComparator: []summaryPointComparator{
+						compareSummaryStartTimestamp(ts1),
+						compareSummaryTimestamp(ts1),
+						compareSummaryAttributes(map[string]string{"foo": "no_quantile"}),
+						compareSummary(50, 100, [][]float64{}),
+					},
+				},
+			}),
 	}
+	doCompare(t, "scrape1", wantAttributes, m1, e1)
 
-	// Extract the first startTimestamp.
-	got1 := metricsL[0]
+	m2 := resourceMetrics[1]
+	// m2 has 3 metrics + 5 internal scraper metrics
+	assert.Equal(t, 8, metricsCount(m2))
 
-	// got has 8 metrics + 5 internal scraper metrics
-	if g, w := dataPointCount(got1), 8; g != w {
-		t.Fatalf("got %d, want %d", g, w)
+	metricsScrape2 := m2.InstrumentationLibraryMetrics().At(0).Metrics()
+	ts2 := metricsScrape2.At(0).Gauge().DataPoints().At(0).Timestamp()
+	e2 := []testExpectation{
+		assertMetricPresent("go_threads",
+			compareMetricType(pdata.MetricDataTypeGauge),
+			[]dataPointExpectation{
+				{
+					numberPointComparator: []numberPointComparator{
+						compareTimestamp(ts2),
+						compareDoubleValue(16),
+					},
+				},
+			}),
+		assertMetricPresent("http_request_duration_seconds",
+			compareMetricType(pdata.MetricDataTypeHistogram),
+			[]dataPointExpectation{
+				{
+					histogramPointComparator: []histogramPointComparator{
+						compareHistogramStartTimestamp(ts1),
+						compareHistogramTimestamp(ts2),
+						compareHistogram(14003, 50100, []uint64{11000, 1000, 1001, 1002}),
+					},
+				},
+			}),
+		assertMetricAbsent("corrupted_hist"),
+		assertMetricPresent("rpc_duration_seconds",
+			compareMetricType(pdata.MetricDataTypeSummary),
+			[]dataPointExpectation{
+				{
+					summaryPointComparator: []summaryPointComparator{
+						compareSummaryStartTimestamp(ts1),
+						compareSummaryTimestamp(ts2),
+						compareSummaryAttributes(map[string]string{"foo": "bar"}),
+						compareSummary(950, 8100, [][]float64{{0.01, 32}, {0.05, 35}, {0.5, 47}, {0.9, 70}, {0.99, 77}}),
+					},
+				},
+				{
+					summaryPointComparator: []summaryPointComparator{
+						compareSummaryStartTimestamp(ts1),
+						compareSummaryTimestamp(ts2),
+						compareSummaryAttributes(map[string]string{"foo": "no_quantile"}),
+						compareSummary(55, 101, [][]float64{}),
+					},
+				},
+			}),
 	}
-	startTs1, ts1 := extractFirstTimestamp(got1)
-
-	want1 := makeMetrics(
-		td,
-		makeGaugeMetric("go_threads", startTs1, makeDoublePoint(ts1, 18.0)),
-		makeCumulativeDistMetric("http_request_duration_seconds", startTs1,
-			makeDistPoint(ts1, 13003, 50000, []uint64{10000, 1000, 1001, 1002}, []float64{0.2, 0.5, 1}),
-		),
-		makeSummaryMetric("rpc_duration_seconds", startTs1,
-			makeSummaryPoint(ts1, 900, 8000, map[float64]float64{1: 31, 5: 35, 50: 47, 90: 70, 99: 76}, kv{"foo", "bar"}),
-			makeSummaryPoint(ts1, 50, 100, nil, kv{"foo", "no_quantile"}),
-		),
-		/*
-			makeGaugeMetric("up", startTs1, makeDoublePoint(ts1, 1.0)),
-			makeGaugeMetric("scrape_duration_seconds", startTs1, makeDoublePoint(ts1, 0.001662471)),
-			makeGaugeMetric("scrape_samples_scraped", startTs1, makeDoublePoint(ts1, 18.0)),
-			makeGaugeMetric("scrape_samples_post_metric_relabeling", startTs1, makeDoublePoint(ts1, 18.0)),
-			makeGaugeMetric("scrape_series_added", startTs1, makeDoublePoint(ts1, 18.0)),
-		*/
-	)
-	doCompare(t, "scrape1", want1, got1)
-
-	// Verify the 2nd data.
-	got2 := metricsL[1]
-	startTs2, ts2 := extractFirstTimestamp(got2)
-	want2 := makeMetrics(
-		td,
-		makeGaugeMetric("go_threads", startTs2, makeDoublePoint(ts2, 16.0)),
-		makeCumulativeDistMetric("http_request_duration_seconds", startTs2,
-			makeDistPoint(ts2, 14003, 50100, []uint64{11000, 1000, 1001, 1002}, []float64{0.2, 0.5, 1}),
-		),
-		makeSummaryMetric("rpc_duration_seconds", startTs2,
-			makeSummaryPoint(ts2, 950, 8100, map[float64]float64{1: 32, 5: 35, 50: 47, 90: 70, 99: 77}, kv{"foo", "bar"}),
-			makeSummaryPoint(ts1, 55, 101, nil, kv{"foo", "no_quantile"}),
-		),
-		makeGaugeMetric("up", startTs1, makeDoublePoint(ts1, 1.0)),
-		makeGaugeMetric("scrape_duration_seconds", startTs1, makeDoublePoint(ts1, 0.001662471)),
-		makeGaugeMetric("scrape_samples_scraped", startTs1, makeDoublePoint(ts1, 18.0)),
-		makeGaugeMetric("scrape_samples_post_metric_relabeling", startTs1, makeDoublePoint(ts1, 18.0)),
-		makeGaugeMetric("scrape_series_added", startTs1, makeDoublePoint(ts1, 18.0)),
-	)
-	doCompare(t, "scrape2", want2, got2)
+	doCompare(t, "scrape2", wantAttributes, m2, e2)
 }
 
-// TestEndToEnd  end to end test executor
-func TestEndToEnd(t *testing.T) {
+// TestCoreMetricsEndToEnd end to end test executor
+func TestCoreMetricsEndToEnd(t *testing.T) {
 	// 1. setup input data
 	targets := []*testData{
 		{
@@ -852,8 +734,7 @@ func TestEndToEnd(t *testing.T) {
 			validateFunc: verifyTarget3,
 		},
 	}
-
-	testEndToEnd(t, targets, false)
+	testComponent(t, targets, false, "")
 }
 
 var startTimeMetricPage = `
@@ -889,28 +770,43 @@ var startTimeMetricPageStartTimestamp = &timestamppb.Timestamp{Seconds: 400, Nan
 // 6 metrics + 5 internal metrics
 const numStartTimeMetricPageTimeseries = 11
 
-const timestampZero pdata.Timestamp = 0
-
-func verifyStartTimeMetricPage(t *testing.T, _ *testData, metricsL []pdata.ResourceMetrics) {
+func verifyStartTimeMetricPage(t *testing.T, td *testData, result []*pdata.ResourceMetrics) {
+	verifyNumScrapeResults(t, td, result)
 	numTimeseries := 0
-	for _, rms := range metricsL {
-		_, ts, dataType := extractFirstTimestampDataType(rms)
-		want := pdata.NewTimestampFromTime(time.Unix(400, 800000000))
-		switch dataType {
-		case pdata.MetricDataTypeGauge:
-			want = timestampZero
+	for _, rm := range result {
+		metrics := getMetrics(rm)
+		for i := 0; i < len(metrics); i++ {
+			timestamp := startTimeMetricPageStartTimestamp
+			switch metrics[i].DataType() {
+			case pdata.MetricDataTypeGauge:
+				timestamp = nil
+				for j := 0; j < metrics[i].Gauge().DataPoints().Len(); j++ {
+					time := timestamppb.New(metrics[i].Gauge().DataPoints().At(j).StartTimestamp().AsTime())
+					assert.Equal(t, timestamp.AsTime(), time.AsTime())
+					numTimeseries++
+				}
 
-		case pdata.MetricDataTypeHistogram:
-			histogram := rms.InstrumentationLibraryMetrics().At(0).Metrics().At(0).Histogram()
-			if histogram.AggregationTemporality() == pdata.AggregationTemporalityDelta {
-				want = timestampZero
+			case pdata.MetricDataTypeSum:
+				for j := 0; j < metrics[i].Sum().DataPoints().Len(); j++ {
+					assert.Equal(t, timestamp.AsTime(), timestamppb.New(metrics[i].Sum().DataPoints().At(j).StartTimestamp().AsTime()).AsTime())
+					numTimeseries++
+				}
+
+			case pdata.MetricDataTypeHistogram:
+				for j := 0; j < metrics[i].Histogram().DataPoints().Len(); j++ {
+					assert.Equal(t, timestamp.AsTime(), timestamppb.New(metrics[i].Histogram().DataPoints().At(j).StartTimestamp().AsTime()).AsTime())
+					numTimeseries++
+				}
+
+			case pdata.MetricDataTypeSummary:
+				for j := 0; j < metrics[i].Summary().DataPoints().Len(); j++ {
+					assert.Equal(t, timestamp.AsTime(), timestamppb.New(metrics[i].Summary().DataPoints().At(j).StartTimestamp().AsTime()).AsTime())
+					numTimeseries++
+				}
 			}
 		}
-		assert.Equal(t, want, ts, "Timestamp mismatch")
-		numTimeseries++
+		assert.Equal(t, numStartTimeMetricPageTimeseries, numTimeseries)
 	}
-
-	assert.Equal(t, numStartTimeMetricPageTimeseries, numTimeseries)
 }
 
 // TestStartTimeMetric validates that timeseries have start time set to 'process_start_time_seconds'
@@ -924,61 +820,7 @@ func TestStartTimeMetric(t *testing.T) {
 			validateFunc: verifyStartTimeMetricPage,
 		},
 	}
-	testEndToEnd(t, targets, true)
-}
-
-func testEndToEnd(t *testing.T, targets []*testData, useStartTimeMetric bool) {
-	// 1. setup mock server
-	mp, cfg, err := setupMockPrometheus(targets...)
-	require.Nilf(t, err, "Failed to create Promtheus config: %v", err)
-	defer mp.Close()
-
-	cms := new(consumertest.MetricsSink)
-	rcvr := newPrometheusReceiver(logger, &Config{
-		ReceiverSettings:   config.NewReceiverSettings(config.NewID(typeStr)),
-		PrometheusConfig:   cfg,
-		UseStartTimeMetric: useStartTimeMetric}, cms)
-
-	require.NoError(t, rcvr.Start(context.Background(), componenttest.NewNopHost()), "Failed to invoke Start: %v", err)
-	t.Cleanup(func() {
-		// verify state after shutdown is called
-		assert.Lenf(t, flattenTargets(rcvr.scrapeManager.TargetsAll()), len(targets), "expected %v targets to be running", len(targets))
-		require.NoError(t, rcvr.Shutdown(context.Background()))
-		assert.Len(t, flattenTargets(rcvr.scrapeManager.TargetsAll()), 0, "expected scrape manager to have no targets")
-	})
-
-	// wait for all provided data to be scraped
-	mp.wg.Wait()
-
-	// split and store results by target name
-	results := metricsGroupedByServiceName(t, cms.AllMetrics())
-
-	lres, lep := len(results), len(mp.endpoints)
-	assert.Equalf(t, lep, lres, "want %d targets, but got %v\n", lep, lres)
-
-	// Skipping the validate loop below, because it falsely assumed that
-	// staleness markers would not be returned, yet the tests are a bit rigid.
-	if false {
-		t.Log(`Skipping the "up" metric checks as they seem to be spuriously failing after staleness marker insertions`)
-		return
-	}
-
-	// loop to validate outputs for each targets
-	for _, target := range targets {
-		t.Run(target.name, func(t *testing.T) {
-			mds := getValidScrapes(t, results[target.name])
-			target.validateFunc(t, target, mds)
-		})
-	}
-}
-
-// flattenTargets takes a map of jobs to target and flattens to a list of targets
-func flattenTargets(targets map[string][]*scrape.Target) []*scrape.Target {
-	var flatTargets []*scrape.Target
-	for _, target := range targets {
-		flatTargets = append(flatTargets, target...)
-	}
-	return flatTargets
+	testComponent(t, targets, true, "")
 }
 
 var startTimeMetricRegexPage = `
@@ -1027,57 +869,5 @@ func TestStartTimeMetricRegex(t *testing.T) {
 			validateFunc: verifyStartTimeMetricPage,
 		},
 	}
-	// Splitting out targets, because the prior tests were oblivious
-	// about staleness metrics being emitted, and hence when trying
-	// to compare values across 2 different scrapes emits staleness
-	// markers whose NaN values are unaccounted for.
-	// TODO: Perhaps refactor these tests.
-	for _, target := range targets {
-		testEndToEndRegex(t, []*testData{target}, true, "^(.+_)*process_start_time_seconds$")
-	}
-}
-
-func metricsGroupedByServiceName(t *testing.T, metricsL []pdata.Metrics) map[string][]pdata.ResourceMetrics {
-	// split and store results by target name
-	splits := make(map[string][]pdata.ResourceMetrics)
-	for _, metrics := range metricsL {
-		rms := metrics.ResourceMetrics()
-		for i := 0; i < rms.Len(); i++ {
-			rmi := rms.At(i)
-			serviceNameAttr, ok := rmi.Resource().Attributes().Get("service.name")
-			assert.True(t, ok, `expected "service.name" as a known attribute`)
-			serviceName := serviceNameAttr.StringVal()
-			splits[serviceName] = append(splits[serviceName], rmi)
-		}
-	}
-	return splits
-}
-
-func testEndToEndRegex(t *testing.T, targets []*testData, useStartTimeMetric bool, startTimeMetricRegex string) {
-	// 1. setup mock server
-	mp, cfg, err := setupMockPrometheus(targets...)
-	require.Nilf(t, err, "Failed to create Promtheus config: %v", err)
-	defer mp.Close()
-
-	cms := new(consumertest.MetricsSink)
-	rcvr := newPrometheusReceiver(logger, &Config{
-		ReceiverSettings:     config.NewReceiverSettings(config.NewID(typeStr)),
-		PrometheusConfig:     cfg,
-		UseStartTimeMetric:   useStartTimeMetric,
-		StartTimeMetricRegex: startTimeMetricRegex}, cms)
-
-	require.NoError(t, rcvr.Start(context.Background(), componenttest.NewNopHost()), "Failed to invoke Start: %v", err)
-	t.Cleanup(func() { require.NoError(t, rcvr.Shutdown(context.Background())) })
-
-	// wait for all provided data to be scraped
-	mp.wg.Wait()
-	results := metricsGroupedByServiceName(t, cms.AllMetrics())
-
-	lres, lep := len(results), len(mp.endpoints)
-	assert.Equalf(t, lep, lres, "want %d targets, but got %v\n", lep, lres)
-
-	// loop to validate outputs for each targets
-	for _, target := range targets {
-		target.validateFunc(t, target, results[target.name])
-	}
+	testComponent(t, targets, true, "^(.+_)*process_start_time_seconds$")
 }

@@ -1,7 +1,7 @@
 # Kinesis Exporter
 
 
-The kinesis exporter currently exports Jaeger traces (dynamic encodings coming) to the configured kinesis stream.
+The kinesis exporter currently exports dynamic encodings to the configured kinesis stream.
 The exporter relies heavily on the kinesis.PutRecords api to reduce network I/O and and reduces records into smallest atomic representation
 to avoid hitting the hard limits placed on Records (No greater than 1Mb).
 This producer will block until the operation is done to allow for retryable and queued data to help during high loads.
@@ -15,6 +15,9 @@ The following settings can be optionally configured:
     - `kinesis_endpoint` (no default)
     - `region` (default = us-west-2): the region that the kinesis stream is deployed in
     - `role` (no default): The role to be used in order to send data to the kinesis stream
+- `encoding`
+    - `name` (default = otlp): defines the export type to be used to send to kinesis (available is `otlp-proto`, `otlp-json`, `zipkin-proto`, `zipkin-json`, `jaeger`)
+    - `compression` (default = none): allows to set the compression type (defaults BestSpeed for all) before forwarding to kinesis (available is `flate`, `gzip`, `zlib` or `none`)
 - `max_records_per_batch` (default = 500, PutRecords limit): The number of records that can be batched together then sent to kinesis.
 - `max_record_size` (default = 1Mb, PutRecord(s) limit on record size): The max allowed size that can be exported to kinesis
 - `timeout` (default = 5s): Is the timeout for every attempt to send data to the backend.

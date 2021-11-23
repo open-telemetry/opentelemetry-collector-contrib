@@ -2,8 +2,7 @@
 
 Supported pipeline types: traces
 
-The span processor modifies either the span name or attributes of a span based
-on the span name. Please refer to
+The span processor modifies the span name based on its attributes or extract span attributes from the span name. Please refer to
 [config.go](./config.go) for the config spec.
 
 It optionally supports the ability to [include/exclude spans](../README.md#includeexclude-spans).

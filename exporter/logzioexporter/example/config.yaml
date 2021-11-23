@@ -29,3 +29,7 @@ service:
       receivers: [opencensus, jaeger, zipkin]
       processors: [batch]
       exporters: [logzio]
+
+  telemetry:
+    logs:
+      level: debug #activate debug mode

@@ -93,8 +93,8 @@ func GenerateMetricsOneCounterOneSummaryMetrics() pdata.Metrics {
 func GenerateMetricsOneMetricNoAttributes() pdata.Metrics {
 	md := GenerateMetricsOneMetric()
 	dps := md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(0).Sum().DataPoints()
-	dps.At(0).Attributes().InitFromMap(map[string]pdata.AttributeValue{})
-	dps.At(1).Attributes().InitFromMap(map[string]pdata.AttributeValue{})
+	pdata.NewAttributeMap().CopyTo(dps.At(0).Attributes())
+	pdata.NewAttributeMap().CopyTo(dps.At(1).Attributes())
 	return md
 }
 
@@ -279,10 +279,10 @@ func initMetric(m pdata.Metric, name string, ty pdata.MetricDataType) {
 	case pdata.MetricDataTypeSum:
 		sum := m.Sum()
 		sum.SetIsMonotonic(true)
-		sum.SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+		sum.SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
 	case pdata.MetricDataTypeHistogram:
 		histo := m.Histogram()
-		histo.SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+		histo.SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
 	}
 }
 

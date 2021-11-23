@@ -44,7 +44,7 @@ func (v *traceVisitor) visit(
 	envelope, err := spanToEnvelope(resource, instrumentationLibrary, span, v.exporter.logger)
 	if err != nil {
 		// record the error and short-circuit
-		v.err = consumererror.Permanent(err)
+		v.err = consumererror.NewPermanent(err)
 		return false
 	}
 

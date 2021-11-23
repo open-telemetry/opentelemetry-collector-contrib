@@ -20,12 +20,11 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
-	"go.uber.org/zap"
 )
 
 func newReceiver(
 	_ context.Context,
-	logger *zap.Logger,
+	settings component.ReceiverCreateSettings,
 	config *Config,
 	nextConsumer consumer.Metrics,
 	clientFactory interface{},

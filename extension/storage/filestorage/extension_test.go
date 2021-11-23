@@ -25,7 +25,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/extension/storage"
+	"go.opentelemetry.io/collector/extension/experimental/storage"
 )
 
 func TestExtensionIntegrity(t *testing.T) {
@@ -242,5 +242,5 @@ func newTestExtension(t *testing.T) storage.Extension {
 }
 
 func newTestEntity(name string) config.ComponentID {
-	return config.NewIDWithName("nop", name)
+	return config.NewComponentIDWithName("nop", name)
 }

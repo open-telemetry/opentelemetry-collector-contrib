@@ -42,12 +42,12 @@ func TestLoadConfig(t *testing.T) {
 
 	assert.Equal(t, len(cfg.Receivers), 3)
 
-	r0 := cfg.Receivers[config.NewID(typeStr)].(*Config)
+	r0 := cfg.Receivers[config.NewComponentID(typeStr)].(*Config)
 	assert.Equal(t, r0, createDefaultConfig())
 
-	r1 := cfg.Receivers[config.NewIDWithName(typeStr, "allsettings")].(*Config)
+	r1 := cfg.Receivers[config.NewComponentIDWithName(typeStr, "allsettings")].(*Config)
 	expectedAllSettings := &Config{
-		ReceiverSettings: config.NewReceiverSettings(config.NewIDWithName(typeStr, "allsettings")),
+		ReceiverSettings: config.NewReceiverSettings(config.NewComponentIDWithName(typeStr, "allsettings")),
 		HTTPServerSettings: confighttp.HTTPServerSettings{
 			Endpoint: "localhost:8088",
 		},
@@ -64,9 +64,9 @@ func TestLoadConfig(t *testing.T) {
 	}
 	assert.Equal(t, expectedAllSettings, r1)
 
-	r2 := cfg.Receivers[config.NewIDWithName(typeStr, "tls")].(*Config)
+	r2 := cfg.Receivers[config.NewComponentIDWithName(typeStr, "tls")].(*Config)
 	expectedTLSConfig := &Config{
-		ReceiverSettings: config.NewReceiverSettings(config.NewIDWithName(typeStr, "tls")),
+		ReceiverSettings: config.NewReceiverSettings(config.NewComponentIDWithName(typeStr, "tls")),
 		HTTPServerSettings: confighttp.HTTPServerSettings{
 			Endpoint: ":8088",
 			TLSSetting: &configtls.TLSServerSetting{

@@ -43,12 +43,12 @@ func TestLoadConfig(t *testing.T) {
 
 	assert.Equal(t, len(cfg.Receivers), 2)
 
-	r0 := cfg.Receivers[config.NewID(typeStr)]
+	r0 := cfg.Receivers[config.NewComponentID(typeStr)]
 	assert.Equal(t, factory.CreateDefaultConfig(), r0)
 
-	r1 := cfg.Receivers[config.NewIDWithName(typeStr, "receiver_settings")]
+	r1 := cfg.Receivers[config.NewComponentIDWithName(typeStr, "receiver_settings")]
 	assert.Equal(t, &Config{
-		ReceiverSettings: config.NewReceiverSettings(config.NewIDWithName(typeStr, "receiver_settings")),
+		ReceiverSettings: config.NewReceiverSettings(config.NewComponentIDWithName(typeStr, "receiver_settings")),
 		NetAddr: confignet.NetAddr{
 			Endpoint:  "localhost:12345",
 			Transport: "custom_transport",
@@ -68,7 +68,7 @@ func TestValidate(t *testing.T) {
 	const (
 		negativeAggregationIntervalErr = "aggregation_interval must be a positive duration"
 		noObjectNameErr                = "must specify object id for all TimerHistogramMappings"
-		statsdTypeNotSupportErr        = "statsd_type is not supported: %s"
+		statsdTypeNotSupportErr        = "statsd_type is not a supported mapping: %s"
 		observerTypeNotSupportErr      = "observer_type is not supported: %s"
 	)
 

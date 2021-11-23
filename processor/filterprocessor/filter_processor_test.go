@@ -299,7 +299,7 @@ func TestFilterMetricProcessor(t *testing.T) {
 			// next stores the results of the filter metric processor
 			next := new(consumertest.MetricsSink)
 			cfg := &Config{
-				ProcessorSettings: config.NewProcessorSettings(config.NewID(typeStr)),
+				ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
 				Metrics: MetricFilters{
 					Include: test.inc,
 					Exclude: test.exc,
@@ -349,7 +349,7 @@ func testResourceMetrics(mwrs []metricWithResource) pdata.Metrics {
 
 	for _, mwr := range mwrs {
 		rm := md.ResourceMetrics().AppendEmpty()
-		rm.Resource().Attributes().InitFromMap(mwr.resourceAttributes)
+		pdata.NewAttributeMapFromMap(mwr.resourceAttributes).CopyTo(rm.Resource().Attributes())
 		ms := rm.InstrumentationLibraryMetrics().AppendEmpty().Metrics()
 		for _, name := range mwr.metricNames {
 			m := ms.AppendEmpty()

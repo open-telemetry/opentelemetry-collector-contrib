@@ -26,11 +26,11 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/receiver/scraperhelper"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest/observer"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/scraperhelper"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowsperfcountersreceiver/internal/third_party/telegraf/win_perf_counters"
 )
 
@@ -167,13 +167,13 @@ func Test_WindowsPerfCounterScraper(t *testing.T) {
 				}
 			}
 
-			metrics, err := scraper.scrape(context.Background())
+			md, err := scraper.scrape(context.Background())
 			if test.scrapeErr != nil {
 				assert.Equal(t, err, test.scrapeErr)
 			} else {
 				require.NoError(t, err)
 			}
-
+			metrics := md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics()
 			require.Equal(t, len(test.expectedMetrics), metrics.Len())
 			for i, e := range test.expectedMetrics {
 				metric := metrics.At(i)

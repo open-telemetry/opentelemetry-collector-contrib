@@ -18,10 +18,8 @@ import (
 	"io/ioutil"
 	"testing"
 
-	agentmetricspb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/metrics/v1"
-	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
-	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/model/pdata"
 	"go.uber.org/zap"
 )
 
@@ -43,125 +41,121 @@ func TestMetricAccumulator(t *testing.T) {
 	metadataProvider := NewMetadataProvider(rc)
 	podsMetadata, _ := metadataProvider.Pods()
 	metadata := NewMetadata([]MetadataLabel{MetadataLabelContainerID}, podsMetadata, nil)
-	requireMetricsDataOk(t, MetricsData(zap.NewNop(), summary, metadata, "", ValidMetricGroups))
+	requireMetricsOk(t, MetricsData(zap.NewNop(), summary, metadata, "", ValidMetricGroups))
 
 	// Disable all groups
 	require.Equal(t, 0, len(MetricsData(zap.NewNop(), summary, metadata, "", map[MetricGroup]bool{})))
 }
 
-func requireMetricsDataOk(t *testing.T, mds []*agentmetricspb.ExportMetricsServiceRequest) {
+func requireMetricsOk(t *testing.T, mds []pdata.Metrics) {
 	for _, md := range mds {
-		requireResourceOk(t, md.Resource)
-		for _, metric := range md.Metrics {
-			requireDescriptorOk(t, metric.MetricDescriptor)
-			isCumulativeType := isCumulativeType(metric.GetMetricDescriptor().Type)
-			for _, ts := range metric.Timeseries {
-				// Start time is required for cumulative metrics. Make assertions
-				// around start time only when dealing with one or when it is set.
-				shouldCheckStartTime := isCumulativeType || ts.StartTimestamp != nil
-				requireTimeSeriesOk(t, ts, shouldCheckStartTime)
+		for i := 0; i < md.ResourceMetrics().Len(); i++ {
+			rm := md.ResourceMetrics().At(i)
+			requireResourceOk(t, rm.Resource())
+			for j := 0; j < rm.InstrumentationLibraryMetrics().Len(); j++ {
+				ilm := rm.InstrumentationLibraryMetrics().At(j)
+				for k := 0; k < ilm.Metrics().Len(); k++ {
+					requireMetricOk(t, ilm.Metrics().At(k))
+				}
 			}
 		}
 	}
 }
 
-func requireTimeSeriesOk(t *testing.T, ts *metricspb.TimeSeries, shouldCheckStartTime bool) {
-	if shouldCheckStartTime {
-		require.True(t, ts.StartTimestamp.Seconds > 0)
+func requireMetricOk(t *testing.T, m pdata.Metric) {
+	require.NotZero(t, m.Name())
+	require.NotEqual(t, pdata.MetricDataTypeNone, m.DataType())
+
+	switch m.DataType() {
+	case pdata.MetricDataTypeGauge:
+		gauge := m.Gauge()
+		for i := 0; i < gauge.DataPoints().Len(); i++ {
+			dp := gauge.DataPoints().At(i)
+			require.NotZero(t, dp.Timestamp())
+			requirePointOk(t, dp)
+		}
+	case pdata.MetricDataTypeSum:
+		sum := m.Sum()
+		require.True(t, sum.IsMonotonic())
+		require.Equal(t, pdata.MetricAggregationTemporalityCumulative, sum.AggregationTemporality())
+		for i := 0; i < sum.DataPoints().Len(); i++ {
+			dp := sum.DataPoints().At(i)
+			// Start time is required for cumulative metrics. Make assertions
+			// around start time only when dealing with one or when it is set.
+			require.NotZero(t, dp.StartTimestamp())
+			require.NotZero(t, dp.Timestamp())
+			require.Less(t, dp.StartTimestamp(), dp.Timestamp())
+			requirePointOk(t, dp)
+		}
 	}
-
-	for _, point := range ts.Points {
-		requirePointOk(t, point, ts, shouldCheckStartTime)
-	}
 }
 
-func requirePointOk(t *testing.T, point *metricspb.Point, ts *metricspb.TimeSeries, shouldCheckStartTime bool) {
-	if shouldCheckStartTime {
-		require.True(t, point.Timestamp.Seconds > ts.StartTimestamp.Seconds)
-	}
-	require.NotNil(t, point.Value)
+func requirePointOk(t *testing.T, point pdata.NumberDataPoint) {
+	require.NotZero(t, point.Timestamp())
+	require.NotEqual(t, pdata.MetricValueTypeNone, point.Type())
 }
 
-func requireDescriptorOk(t *testing.T, desc *metricspb.MetricDescriptor) {
-	require.True(t, desc.Name != "")
-	require.True(t, desc.Type != metricspb.MetricDescriptor_UNSPECIFIED)
-}
-
-func requireResourceOk(t *testing.T, resource *resourcepb.Resource) {
-	require.True(t, resource.Type != "")
-	require.NotNil(t, resource.Labels)
-}
-
-func isCumulativeType(typ metricspb.MetricDescriptor_Type) bool {
-	return typ == metricspb.MetricDescriptor_CUMULATIVE_DOUBLE ||
-		typ == metricspb.MetricDescriptor_CUMULATIVE_INT64 ||
-		typ == metricspb.MetricDescriptor_CUMULATIVE_DISTRIBUTION
-}
-
-func TestLabels(t *testing.T) {
-	labelKeys, labelValues := labels(
-		map[string]string{"mykey": "myval"},
-		map[string]string{"mykey": "mydesc"},
-	)
-	labelKey := labelKeys[0]
-	require.Equal(t, labelKey.Key, "mykey")
-	require.Equal(t, labelKey.Description, "mydesc")
-	labelValue := labelValues[0]
-	require.Equal(t, labelValue.Value, "myval")
-	require.True(t, labelValue.HasValue)
+func requireResourceOk(t *testing.T, resource pdata.Resource) {
+	require.NotZero(t, resource.Attributes().Len())
 }
 
 func TestWorkingSetMem(t *testing.T) {
 	metrics := indexedFakeMetrics()
-	nodeWsMetrics := metrics["k8s.node.memory.working_set"]
-	wsMetric := nodeWsMetrics[0]
-	value := wsMetric.Timeseries[0].Points[0].Value
-	ptv := value.(*metricspb.Point_Int64Value)
-	require.Equal(t, int64(1234567890), ptv.Int64Value)
 	requireContains(t, metrics, "k8s.pod.memory.working_set")
 	requireContains(t, metrics, "container.memory.working_set")
+
+	nodeWsMetrics := metrics["k8s.node.memory.working_set"]
+	value := nodeWsMetrics[0].Gauge().DataPoints().At(0).IntVal()
+	require.Equal(t, int64(1234567890), value)
 }
 
 func TestPageFaults(t *testing.T) {
 	metrics := indexedFakeMetrics()
-	nodePageFaults := metrics["k8s.node.memory.page_faults"]
-	value := nodePageFaults[0].Timeseries[0].Points[0].Value
-	ptv := value.(*metricspb.Point_Int64Value)
-	require.Equal(t, int64(12345), ptv.Int64Value)
 	requireContains(t, metrics, "k8s.pod.memory.page_faults")
 	requireContains(t, metrics, "container.memory.page_faults")
+
+	nodePageFaults := metrics["k8s.node.memory.page_faults"]
+	value := nodePageFaults[0].Gauge().DataPoints().At(0).IntVal()
+	require.Equal(t, int64(12345), value)
 }
 
 func TestMajorPageFaults(t *testing.T) {
 	metrics := indexedFakeMetrics()
-	nodePageFaults := metrics["k8s.node.memory.major_page_faults"]
-	value := nodePageFaults[0].Timeseries[0].Points[0].Value
-	ptv := value.(*metricspb.Point_Int64Value)
-	require.Equal(t, int64(12), ptv.Int64Value)
 	requireContains(t, metrics, "k8s.pod.memory.major_page_faults")
 	requireContains(t, metrics, "container.memory.major_page_faults")
+
+	nodePageFaults := metrics["k8s.node.memory.major_page_faults"]
+	value := nodePageFaults[0].Gauge().DataPoints().At(0).IntVal()
+	require.Equal(t, int64(12), value)
 }
 
-func requireContains(t *testing.T, metrics map[string][]*metricspb.Metric, metricName string) {
+func requireContains(t *testing.T, metrics map[string][]pdata.Metric, metricName string) {
 	_, found := metrics[metricName]
 	require.True(t, found)
 }
 
-func indexedFakeMetrics() map[string][]*metricspb.Metric {
+func indexedFakeMetrics() map[string][]pdata.Metric {
 	mds := fakeMetrics()
-	metrics := make(map[string][]*metricspb.Metric)
+	metrics := make(map[string][]pdata.Metric)
 	for _, md := range mds {
-		for _, metric := range md.Metrics {
-			metricName := metric.MetricDescriptor.Name
-			list := metrics[metricName]
-			list = append(list, metric)
-			metrics[metricName] = list
+		for i := 0; i < md.ResourceMetrics().Len(); i++ {
+			rm := md.ResourceMetrics().At(i)
+			for j := 0; j < rm.InstrumentationLibraryMetrics().Len(); j++ {
+				ilm := rm.InstrumentationLibraryMetrics().At(j)
+				for k := 0; k < ilm.Metrics().Len(); k++ {
+					m := ilm.Metrics().At(k)
+					metricName := m.Name()
+					list := metrics[metricName]
+					list = append(list, m)
+					metrics[metricName] = list
+				}
+			}
 		}
 	}
 	return metrics
 }
 
-func fakeMetrics() []*agentmetricspb.ExportMetricsServiceRequest {
+func fakeMetrics() []pdata.Metrics {
 	rc := &fakeRestClient{}
 	statsProvider := NewStatsProvider(rc)
 	summary, _ := statsProvider.StatsSummary()

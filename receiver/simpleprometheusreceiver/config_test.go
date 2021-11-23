@@ -41,13 +41,13 @@ func TestLoadConfig(t *testing.T) {
 
 	assert.Equal(t, len(cfg.Receivers), 4)
 
-	r1 := cfg.Receivers[config.NewID(typeStr)]
+	r1 := cfg.Receivers[config.NewComponentID(typeStr)]
 	assert.Equal(t, r1, factory.CreateDefaultConfig())
 
-	r2 := cfg.Receivers[config.NewIDWithName(typeStr, "all_settings")].(*Config)
+	r2 := cfg.Receivers[config.NewComponentIDWithName(typeStr, "all_settings")].(*Config)
 	assert.Equal(t, r2,
 		&Config{
-			ReceiverSettings: config.NewReceiverSettings(config.NewIDWithName(typeStr, "all_settings")),
+			ReceiverSettings: config.NewReceiverSettings(config.NewComponentIDWithName(typeStr, "all_settings")),
 			TCPAddr: confignet.TCPAddr{
 				Endpoint: "localhost:1234",
 			},
@@ -66,10 +66,10 @@ func TestLoadConfig(t *testing.T) {
 			UseServiceAccount:  true,
 		})
 
-	r3 := cfg.Receivers[config.NewIDWithName(typeStr, "partial_settings")].(*Config)
+	r3 := cfg.Receivers[config.NewComponentIDWithName(typeStr, "partial_settings")].(*Config)
 	assert.Equal(t, r3,
 		&Config{
-			ReceiverSettings: config.NewReceiverSettings(config.NewIDWithName(typeStr, "partial_settings")),
+			ReceiverSettings: config.NewReceiverSettings(config.NewComponentIDWithName(typeStr, "partial_settings")),
 			TCPAddr: confignet.TCPAddr{
 				Endpoint: "localhost:1234",
 			},
@@ -77,10 +77,10 @@ func TestLoadConfig(t *testing.T) {
 			MetricsPath:        "/metrics",
 		})
 
-	r4 := cfg.Receivers[config.NewIDWithName(typeStr, "partial_tls_settings")].(*Config)
+	r4 := cfg.Receivers[config.NewComponentIDWithName(typeStr, "partial_tls_settings")].(*Config)
 	assert.Equal(t, r4,
 		&Config{
-			ReceiverSettings: config.NewReceiverSettings(config.NewIDWithName(typeStr, "partial_tls_settings")),
+			ReceiverSettings: config.NewReceiverSettings(config.NewComponentIDWithName(typeStr, "partial_tls_settings")),
 			TCPAddr: confignet.TCPAddr{
 				Endpoint: "localhost:1234",
 			},

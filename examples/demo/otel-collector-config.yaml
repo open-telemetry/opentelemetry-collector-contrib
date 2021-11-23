@@ -6,7 +6,6 @@ receivers:
 exporters:
   prometheus:
     endpoint: "0.0.0.0:8889"
-    namespace: promexample
     const_labels:
       label1: value1
   logging:
@@ -17,7 +16,8 @@ exporters:
 
   jaeger:
     endpoint: jaeger-all-in-one:14250
-    insecure: true
+    tls:
+      insecure: true
 
 processors:
   batch:

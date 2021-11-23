@@ -40,19 +40,19 @@ func TestLoadConfig(t *testing.T) {
 
 	assert.Equal(t, len(cfg.Receivers), 6)
 
-	r0 := cfg.Receivers[config.NewID(typeStr)].(*Config)
+	r0 := cfg.Receivers[config.NewComponentID(typeStr)].(*Config)
 	require.NoError(t, configtest.CheckConfigStruct(r0))
 	assert.Equal(t, r0, factory.CreateDefaultConfig())
 	err = r0.validate()
 	require.Error(t, err)
 	assert.Equal(t, "jmx missing required fields: `endpoint`, `target_system` or `groovy_script`", err.Error())
 
-	r1 := cfg.Receivers[config.NewIDWithName(typeStr, "all")].(*Config)
+	r1 := cfg.Receivers[config.NewComponentIDWithName(typeStr, "all")].(*Config)
 	require.NoError(t, configtest.CheckConfigStruct(r1))
 	require.NoError(t, r1.validate())
 	assert.Equal(t,
 		&Config{
-			ReceiverSettings:   config.NewReceiverSettings(config.NewIDWithName(typeStr, "all")),
+			ReceiverSettings:   config.NewReceiverSettings(config.NewComponentIDWithName(typeStr, "all")),
 			JARPath:            "myjarpath",
 			Endpoint:           "myendpoint:12345",
 			GroovyScript:       "mygroovyscriptpath",
@@ -88,11 +88,11 @@ func TestLoadConfig(t *testing.T) {
 		r1.parseProperties(),
 	)
 
-	r2 := cfg.Receivers[config.NewIDWithName(typeStr, "missingendpoint")].(*Config)
+	r2 := cfg.Receivers[config.NewComponentIDWithName(typeStr, "missingendpoint")].(*Config)
 	require.NoError(t, configtest.CheckConfigStruct(r2))
 	assert.Equal(t,
 		&Config{
-			ReceiverSettings:   config.NewReceiverSettings(config.NewIDWithName(typeStr, "missingendpoint")),
+			ReceiverSettings:   config.NewReceiverSettings(config.NewComponentIDWithName(typeStr, "missingendpoint")),
 			JARPath:            "/opt/opentelemetry-java-contrib-jmx-metrics.jar",
 			GroovyScript:       "mygroovyscriptpath",
 			CollectionInterval: 10 * time.Second,
@@ -108,11 +108,11 @@ func TestLoadConfig(t *testing.T) {
 	require.Error(t, err)
 	assert.Equal(t, "jmx/missingendpoint missing required field: `endpoint`", err.Error())
 
-	r3 := cfg.Receivers[config.NewIDWithName(typeStr, "missinggroovy")].(*Config)
+	r3 := cfg.Receivers[config.NewComponentIDWithName(typeStr, "missinggroovy")].(*Config)
 	require.NoError(t, configtest.CheckConfigStruct(r3))
 	assert.Equal(t,
 		&Config{
-			ReceiverSettings:   config.NewReceiverSettings(config.NewIDWithName(typeStr, "missinggroovy")),
+			ReceiverSettings:   config.NewReceiverSettings(config.NewComponentIDWithName(typeStr, "missinggroovy")),
 			JARPath:            "/opt/opentelemetry-java-contrib-jmx-metrics.jar",
 			Endpoint:           "service:jmx:rmi:///jndi/rmi://host:12345/jmxrmi",
 			Properties:         map[string]string{"org.slf4j.simpleLogger.defaultLogLevel": "info"},
@@ -128,11 +128,11 @@ func TestLoadConfig(t *testing.T) {
 	require.Error(t, err)
 	assert.Equal(t, "jmx/missinggroovy missing required field: `target_system` or `groovy_script`", err.Error())
 
-	r4 := cfg.Receivers[config.NewIDWithName(typeStr, "invalidinterval")].(*Config)
+	r4 := cfg.Receivers[config.NewComponentIDWithName(typeStr, "invalidinterval")].(*Config)
 	require.NoError(t, configtest.CheckConfigStruct(r4))
 	assert.Equal(t,
 		&Config{
-			ReceiverSettings:   config.NewReceiverSettings(config.NewIDWithName(typeStr, "invalidinterval")),
+			ReceiverSettings:   config.NewReceiverSettings(config.NewComponentIDWithName(typeStr, "invalidinterval")),
 			JARPath:            "/opt/opentelemetry-java-contrib-jmx-metrics.jar",
 			Endpoint:           "myendpoint:23456",
 			GroovyScript:       "mygroovyscriptpath",
@@ -149,11 +149,11 @@ func TestLoadConfig(t *testing.T) {
 	require.Error(t, err)
 	assert.Equal(t, "jmx/invalidinterval `interval` must be positive: -100ms", err.Error())
 
-	r5 := cfg.Receivers[config.NewIDWithName(typeStr, "invalidotlptimeout")].(*Config)
+	r5 := cfg.Receivers[config.NewComponentIDWithName(typeStr, "invalidotlptimeout")].(*Config)
 	require.NoError(t, configtest.CheckConfigStruct(r5))
 	assert.Equal(t,
 		&Config{
-			ReceiverSettings:   config.NewReceiverSettings(config.NewIDWithName(typeStr, "invalidotlptimeout")),
+			ReceiverSettings:   config.NewReceiverSettings(config.NewComponentIDWithName(typeStr, "invalidotlptimeout")),
 			JARPath:            "/opt/opentelemetry-java-contrib-jmx-metrics.jar",
 			Endpoint:           "myendpoint:34567",
 			GroovyScript:       "mygroovyscriptpath",

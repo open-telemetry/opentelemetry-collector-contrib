@@ -54,6 +54,8 @@ This exporter supports sending OpenTelemetry logs to [Elasticsearch](https://www
 - `user` (optional): Username used for HTTP Basic Authentication.
 - `password` (optional): Password used for HTTP Basic Authentication.
 - `api_key` (optional):  Authorization [API Key](https://www.elastic.co/guide/en/elasticsearch/reference/current/security-api-create-api-key.html).
+
+### TLS settings
 - `ca_file` (optional): Root Certificate Authority (CA) certificate, for
   verifying the server's identity, if TLS is enabled.
 - `cert_file` (optional): Client TLS certificate.

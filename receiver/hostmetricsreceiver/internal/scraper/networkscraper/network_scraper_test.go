@@ -118,7 +118,7 @@ func TestScrape(t *testing.T) {
 			}
 			require.NoError(t, err, "Failed to initialize network scraper: %v", err)
 
-			metrics, err := scraper.scrape(context.Background())
+			md, err := scraper.scrape(context.Background())
 			if test.expectedErr != "" {
 				assert.EqualError(t, err, test.expectedErr)
 
@@ -136,8 +136,9 @@ func TestScrape(t *testing.T) {
 			if test.expectNetworkMetrics {
 				expectedMetricCount += 4
 			}
-			assert.Equal(t, expectedMetricCount, metrics.Len())
+			assert.Equal(t, expectedMetricCount, md.MetricCount())
 
+			metrics := md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics()
 			idx := 0
 			if test.expectNetworkMetrics {
 				assertNetworkIOMetricValid(t, metrics.At(idx+0), metadata.Metrics.SystemNetworkPackets.New(), test.expectedStartTime)
@@ -161,13 +162,13 @@ func assertNetworkIOMetricValid(t *testing.T, metric pdata.Metric, descriptor pd
 	}
 	assert.GreaterOrEqual(t, metric.Sum().DataPoints().Len(), 2)
 	internal.AssertSumMetricHasAttribute(t, metric, 0, "device")
-	internal.AssertSumMetricHasAttributeValue(t, metric, 0, "direction", pdata.NewAttributeValueString(metadata.LabelDirection.Transmit))
-	internal.AssertSumMetricHasAttributeValue(t, metric, 1, "direction", pdata.NewAttributeValueString(metadata.LabelDirection.Receive))
+	internal.AssertSumMetricHasAttributeValue(t, metric, 0, "direction", pdata.NewAttributeValueString(metadata.AttributeDirection.Transmit))
+	internal.AssertSumMetricHasAttributeValue(t, metric, 1, "direction", pdata.NewAttributeValueString(metadata.AttributeDirection.Receive))
 }
 
 func assertNetworkConnectionsMetricValid(t *testing.T, metric pdata.Metric) {
 	internal.AssertDescriptorEqual(t, metadata.Metrics.SystemNetworkConnections.New(), metric)
-	internal.AssertSumMetricHasAttributeValue(t, metric, 0, "protocol", pdata.NewAttributeValueString(metadata.LabelProtocol.Tcp))
+	internal.AssertSumMetricHasAttributeValue(t, metric, 0, "protocol", pdata.NewAttributeValueString(metadata.AttributeProtocol.Tcp))
 	internal.AssertSumMetricHasAttribute(t, metric, 0, "state")
 	assert.Equal(t, 12, metric.Sum().DataPoints().Len())
 }

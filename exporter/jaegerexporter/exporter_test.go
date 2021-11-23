@@ -31,7 +31,6 @@ import (
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/model/pdata"
-	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/connectivity"
 	"google.golang.org/grpc/credentials"
@@ -48,7 +47,7 @@ func TestNew(t *testing.T) {
 		{
 			name: "createExporter",
 			config: Config{
-				ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
+				ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
 				GRPCClientSettings: configgrpc.GRPCClientSettings{
 					Headers:     nil,
 					Endpoint:    "foo.bar",
@@ -63,7 +62,7 @@ func TestNew(t *testing.T) {
 		{
 			name: "createExporterWithHeaders",
 			config: Config{
-				ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
+				ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
 				GRPCClientSettings: configgrpc.GRPCClientSettings{
 					Headers:     map[string]string{"extra-header": "header-value"},
 					Endpoint:    "foo.bar",
@@ -75,7 +74,7 @@ func TestNew(t *testing.T) {
 		{
 			name: "createBasicSecureExporter",
 			config: Config{
-				ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
+				ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
 				GRPCClientSettings: configgrpc.GRPCClientSettings{
 					Headers:     nil,
 					Endpoint:    "foo.bar",
@@ -87,7 +86,7 @@ func TestNew(t *testing.T) {
 		{
 			name: "createSecureExporterWithClientTLS",
 			config: Config{
-				ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
+				ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
 				GRPCClientSettings: configgrpc.GRPCClientSettings{
 					Headers:     nil,
 					Endpoint:    "foo.bar",
@@ -105,7 +104,7 @@ func TestNew(t *testing.T) {
 		{
 			name: "createSecureExporterWithKeepAlive",
 			config: Config{
-				ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
+				ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
 				GRPCClientSettings: configgrpc.GRPCClientSettings{
 					Headers:     nil,
 					Endpoint:    "foo.bar",
@@ -128,7 +127,7 @@ func TestNew(t *testing.T) {
 		{
 			name: "createSecureExporterWithMissingFile",
 			config: Config{
-				ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
+				ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
 				GRPCClientSettings: configgrpc.GRPCClientSettings{
 					Headers:     nil,
 					Endpoint:    "foo.bar",
@@ -256,7 +255,7 @@ func TestConnectionStateChange(t *testing.T) {
 		state: connectivity.Connecting,
 	}
 	sender := &protoGRPCSender{
-		logger:                    zap.NewNop(),
+		settings:                  componenttest.NewNopTelemetrySettings(),
 		stopCh:                    make(chan struct{}),
 		conn:                      sr,
 		connStateReporterInterval: 10 * time.Millisecond,
@@ -308,7 +307,7 @@ func TestConnectionReporterEndsOnStopped(t *testing.T) {
 	}
 
 	sender := &protoGRPCSender{
-		logger:                    zap.NewNop(),
+		settings:                  componenttest.NewNopTelemetrySettings(),
 		stopCh:                    make(chan struct{}),
 		conn:                      sr,
 		connStateReporterInterval: 10 * time.Millisecond,

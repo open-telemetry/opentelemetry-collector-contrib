@@ -85,14 +85,14 @@ func TestDefaultExtensions(t *testing.T) {
 	}
 
 	// * The OIDC Auth extension requires an OIDC server to get the config from, and we don't want to spawn one here for this test.
-	assert.Equal(t, len(tests)+7 /* not tested */, len(extFactories))
+	assert.Equal(t, len(tests)+8 /* not tested */, len(extFactories))
 
 	for _, tt := range tests {
 		t.Run(string(tt.extension), func(t *testing.T) {
 			factory, ok := extFactories[tt.extension]
 			require.True(t, ok)
 			assert.Equal(t, tt.extension, factory.Type())
-			assert.Equal(t, config.NewID(tt.extension), factory.CreateDefaultConfig().ID())
+			assert.Equal(t, config.NewComponentID(tt.extension), factory.CreateDefaultConfig().ID())
 
 			verifyExtensionLifecycle(t, factory, tt.getConfigFn)
 		})

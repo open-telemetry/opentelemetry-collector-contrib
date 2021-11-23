@@ -27,10 +27,10 @@ import (
 const memStatesLen = 6
 
 func appendMemoryUsageStateDataPoints(idps pdata.NumberDataPointSlice, now pdata.Timestamp, memInfo *mem.VirtualMemoryStat) {
-	initializeMemoryUsageDataPoint(idps.AppendEmpty(), now, metadata.LabelState.Used, int64(memInfo.Used))
-	initializeMemoryUsageDataPoint(idps.AppendEmpty(), now, metadata.LabelState.Free, int64(memInfo.Free))
-	initializeMemoryUsageDataPoint(idps.AppendEmpty(), now, metadata.LabelState.Buffered, int64(memInfo.Buffers))
-	initializeMemoryUsageDataPoint(idps.AppendEmpty(), now, metadata.LabelState.Cached, int64(memInfo.Cached))
-	initializeMemoryUsageDataPoint(idps.AppendEmpty(), now, metadata.LabelState.SlabReclaimable, int64(memInfo.SReclaimable))
-	initializeMemoryUsageDataPoint(idps.AppendEmpty(), now, metadata.LabelState.SlabUnreclaimable, int64(memInfo.SUnreclaim))
+	initializeMemoryUsageDataPoint(idps.AppendEmpty(), now, metadata.AttributeState.Used, int64(memInfo.Used))
+	initializeMemoryUsageDataPoint(idps.AppendEmpty(), now, metadata.AttributeState.Free, int64(memInfo.Free))
+	initializeMemoryUsageDataPoint(idps.AppendEmpty(), now, metadata.AttributeState.Buffered, int64(memInfo.Buffers))
+	initializeMemoryUsageDataPoint(idps.AppendEmpty(), now, metadata.AttributeState.Cached, int64(memInfo.Cached))
+	initializeMemoryUsageDataPoint(idps.AppendEmpty(), now, metadata.AttributeState.SlabReclaimable, int64(memInfo.SReclaimable))
+	initializeMemoryUsageDataPoint(idps.AppendEmpty(), now, metadata.AttributeState.SlabUnreclaimable, int64(memInfo.SUnreclaim))
 }

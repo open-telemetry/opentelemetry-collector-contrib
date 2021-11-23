@@ -40,7 +40,7 @@ func NewFactory() component.ExporterFactory {
 // CreateDefaultConfig creates the default configuration for exporter.
 func createDefaultConfig() config.Exporter {
 	return &Config{
-		ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
+		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
 	}
 }
 

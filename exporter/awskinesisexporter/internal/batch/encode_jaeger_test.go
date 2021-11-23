@@ -14,27 +14,4 @@
 
 package batch_test
 
-import (
-	"testing"
-
-	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/model/pdata"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awskinesisexporter/internal/batch"
-)
-
-func TestJaegerBatchEncoder(t *testing.T) {
-	t.Parallel()
-
-	jbe := batch.NewJaeger(1, 1)
-
-	_, err := jbe.Logs(pdata.NewLogs())
-	assert.Equal(t, err, batch.ErrUnsupportedEncodedType)
-
-	_, err = jbe.Metrics(pdata.NewMetrics())
-	assert.Equal(t, err, batch.ErrUnsupportedEncodedType)
-
-	bt, err := jbe.Traces(pdata.NewTraces())
-	assert.NoError(t, err)
-	assert.NotNil(t, bt)
-}
+// Tests for jeager encoder are part of the encode_marshaler_test.go

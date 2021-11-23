@@ -78,11 +78,11 @@ type Aggregated struct {
 func (agg Aggregated) Type() string {
 	switch agg.Aggregation {
 	case "delta":
-		return "pdata.AggregationTemporalityDelta"
+		return "pdata.MetricAggregationTemporalityDelta"
 	case "cumulative":
-		return "pdata.AggregationTemporalityCumulative"
+		return "pdata.MetricAggregationTemporalityCumulative"
 	default:
-		return "pdata.AggregationTemporalityUnknown"
+		return "pdata.MetricAggregationTemporalityUnknown"
 	}
 }
 

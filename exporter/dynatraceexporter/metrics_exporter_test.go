@@ -113,7 +113,10 @@ func Test_exporter_PushMetricsData(t *testing.T) {
 	doubleHistogramDataPoint := doubleHistogramDataPoints.AppendEmpty()
 	doubleHistogramDataPoint.SetCount(2)
 	doubleHistogramDataPoint.SetSum(10.1)
+	doubleHistogramDataPoint.SetExplicitBounds([]float64{0, 2, 4, 8})
+	doubleHistogramDataPoint.SetBucketCounts([]uint64{0, 1, 0, 1, 0})
 	doubleHistogramDataPoint.SetTimestamp(testTimestamp)
+	doubleHistogram.SetAggregationTemporality(pdata.MetricAggregationTemporalityDelta)
 
 	type fields struct {
 		logger *zap.Logger
@@ -161,7 +164,7 @@ func Test_exporter_PushMetricsData(t *testing.T) {
 		}
 	})
 
-	if wantBody := "prefix.int_gauge gauge,10 1626438600000\nprefix.int_sum gauge,10 1626438600000\nprefix.double_gauge gauge,10.1 1626438600000\nprefix.double_sum gauge,10.1 1626438600000\nprefix.double_histogram gauge,min=5.05,max=5.05,sum=10.1,count=2 1626438600000"; sent != wantBody {
+	if wantBody := "prefix.int_gauge gauge,10 1626438600000\nprefix.int_sum count,delta=10 1626438600000\nprefix.double_gauge gauge,10.1 1626438600000\nprefix.double_sum count,delta=10.1 1626438600000\nprefix.double_histogram gauge,min=0,max=8,sum=10.1,count=2 1626438600000"; sent != wantBody {
 		t.Errorf("exporter.PushMetricsData():ResponseBody = %v, want %v", sent, wantBody)
 	}
 }
@@ -255,11 +258,7 @@ func Test_exporter_send_BadRequest(t *testing.T) {
 		},
 		client: ts.Client(),
 	}
-	invalid, err := e.send(context.Background(), []string{""})
-	if invalid != 10 {
-		t.Errorf("Expected 10 lines to be reported invalid")
-		return
-	}
+	err := e.send(context.Background(), []string{""})
 	if consumererror.IsPermanent(err) {
 		t.Errorf("Expected error to not be permanent %v", err)
 		return
@@ -284,7 +283,7 @@ func Test_exporter_send_Unauthorized(t *testing.T) {
 		},
 		client: ts.Client(),
 	}
-	_, err := e.send(context.Background(), []string{""})
+	err := e.send(context.Background(), []string{""})
 	if !consumererror.IsPermanent(err) {
 		t.Errorf("Expected error to be permanent %v", err)
 		return
@@ -309,7 +308,7 @@ func Test_exporter_send_TooLarge(t *testing.T) {
 		},
 		client: ts.Client(),
 	}
-	_, err := e.send(context.Background(), []string{""})
+	err := e.send(context.Background(), []string{""})
 	if !consumererror.IsPermanent(err) {
 		t.Errorf("Expected error to be permanent %v", err)
 		return
@@ -337,7 +336,7 @@ func Test_exporter_send_NotFound(t *testing.T) {
 		},
 		client: ts.Client(),
 	}
-	_, err := e.send(context.Background(), []string{""})
+	err := e.send(context.Background(), []string{""})
 	if !consumererror.IsPermanent(err) {
 		t.Errorf("Expected error to be permanent %v", err)
 		return
@@ -376,13 +375,9 @@ func Test_exporter_send_chunking(t *testing.T) {
 		batch[i] = fmt.Sprintf("%d", i)
 	}
 
-	invalid, err := e.send(context.Background(), batch)
+	err := e.send(context.Background(), batch)
 	if sentChunks != 2 {
 		t.Errorf("Expected batch to be sent in 2 chunks")
-	}
-	if invalid != 2 {
-		t.Errorf("Expected 2 lines to be reported invalid")
-		return
 	}
 	if consumererror.IsPermanent(err) {
 		t.Errorf("Expected error to not be permanent %v", err)

@@ -42,14 +42,14 @@ func TestLoadConfig(t *testing.T) {
 
 	assert.Equal(t, 3, len(cfg.Exporters))
 
-	r0 := cfg.Exporters[config.NewID(typeStr)]
+	r0 := cfg.Exporters[config.NewComponentID(typeStr)]
 	assert.Equal(t, factory.CreateDefaultConfig(), r0)
 
-	r1 := cfg.Exporters[config.NewIDWithName(typeStr, "1")].(*Config)
+	r1 := cfg.Exporters[config.NewComponentIDWithName(typeStr, "1")].(*Config)
 	assert.NoError(t, r1.Validate())
 	assert.Equal(t,
 		&Config{
-			ExporterSettings: config.NewExporterSettings(config.NewIDWithName(typeStr, "1")),
+			ExporterSettings: config.NewExporterSettings(config.NewComponentIDWithName(typeStr, "1")),
 			AWSSessionSettings: awsutil.AWSSessionSettings{
 				NumberOfWorkers:       8,
 				Endpoint:              "",
@@ -69,11 +69,11 @@ func TestLoadConfig(t *testing.T) {
 			MetricDescriptors:               []MetricDescriptor{},
 		}, r1)
 
-	r2 := cfg.Exporters[config.NewIDWithName(typeStr, "resource_attr_to_label")].(*Config)
+	r2 := cfg.Exporters[config.NewComponentIDWithName(typeStr, "resource_attr_to_label")].(*Config)
 	assert.NoError(t, r2.Validate())
 	assert.Equal(t, r2,
 		&Config{
-			ExporterSettings: config.NewExporterSettings(config.NewIDWithName(typeStr, "resource_attr_to_label")),
+			ExporterSettings: config.NewExporterSettings(config.NewComponentIDWithName(typeStr, "resource_attr_to_label")),
 			AWSSessionSettings: awsutil.AWSSessionSettings{
 				NumberOfWorkers:       8,
 				Endpoint:              "",
@@ -103,7 +103,7 @@ func TestConfigValidate(t *testing.T) {
 		{unit: "Megabytes", metricName: "memory_usage"},
 	}
 	cfg := &Config{
-		ExporterSettings: config.NewExporterSettings(config.NewIDWithName(typeStr, "1")),
+		ExporterSettings: config.NewExporterSettings(config.NewComponentIDWithName(typeStr, "1")),
 		AWSSessionSettings: awsutil.AWSSessionSettings{
 			RequestTimeoutSeconds: 30,
 			MaxRetries:            1,

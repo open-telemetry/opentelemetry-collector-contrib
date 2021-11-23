@@ -18,8 +18,8 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/model/pdata"
+	"go.uber.org/multierr"
 )
 
 type batchTraces struct {
@@ -66,13 +66,11 @@ func (bt *batchTraces) ConsumeTraces(ctx context.Context, td pdata.Traces) error
 		rs.CopyTo(tgt)
 	}
 
-	var errs []error
+	var errs error
 	for _, td := range tracesByAttr {
-		if err := bt.next.ConsumeTraces(ctx, td); err != nil {
-			errs = append(errs, err)
-		}
+		errs = multierr.Append(errs, bt.next.ConsumeTraces(ctx, td))
 	}
-	return consumererror.Combine(errs)
+	return errs
 }
 
 type batchMetrics struct {
@@ -119,13 +117,11 @@ func (bt *batchMetrics) ConsumeMetrics(ctx context.Context, td pdata.Metrics) er
 		rm.CopyTo(tgt)
 	}
 
-	var errs []error
+	var errs error
 	for _, td := range metricsByAttr {
-		if err := bt.next.ConsumeMetrics(ctx, td); err != nil {
-			errs = append(errs, err)
-		}
+		errs = multierr.Append(errs, bt.next.ConsumeMetrics(ctx, td))
 	}
-	return consumererror.Combine(errs)
+	return errs
 }
 
 type batchLogs struct {
@@ -172,11 +168,9 @@ func (bt *batchLogs) ConsumeLogs(ctx context.Context, td pdata.Logs) error {
 		rl.CopyTo(tgt)
 	}
 
-	var errs []error
+	var errs error
 	for _, td := range logsByAttr {
-		if err := bt.next.ConsumeLogs(ctx, td); err != nil {
-			errs = append(errs, err)
-		}
+		errs = multierr.Append(errs, bt.next.ConsumeLogs(ctx, td))
 	}
-	return consumererror.Combine(errs)
+	return errs
 }

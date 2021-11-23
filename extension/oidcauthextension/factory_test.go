@@ -27,7 +27,7 @@ import (
 func TestCreateDefaultConfig(t *testing.T) {
 	// prepare and test
 	expected := &Config{
-		ExtensionSettings: config.NewExtensionSettings(config.NewID(typeStr)),
+		ExtensionSettings: config.NewExtensionSettings(config.NewComponentID(typeStr)),
 		Attribute:         defaultAttribute,
 	}
 

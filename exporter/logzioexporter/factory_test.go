@@ -42,7 +42,7 @@ func TestCreateTracesExporter(t *testing.T) {
 	require.NoError(t, err)
 
 	params := componenttest.NewNopExporterCreateSettings()
-	exporter, err := factory.CreateTracesExporter(context.Background(), params, cfg.Exporters[config.NewIDWithName(typeStr, "2")])
+	exporter, err := factory.CreateTracesExporter(context.Background(), params, cfg.Exporters[config.NewComponentIDWithName(typeStr, "2")])
 	assert.Nil(t, err)
 	assert.NotNil(t, exporter)
 }

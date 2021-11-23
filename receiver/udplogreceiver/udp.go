@@ -44,7 +44,7 @@ func (f ReceiverType) Type() config.Type {
 func (f ReceiverType) CreateDefaultConfig() config.Receiver {
 	return &UDPLogConfig{
 		BaseConfig: stanza.BaseConfig{
-			ReceiverSettings: config.NewReceiverSettings(config.NewID(typeStr)),
+			ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
 			Operators:        stanza.OperatorConfigs{},
 		},
 		Input: stanza.InputConfig{},

@@ -39,22 +39,22 @@ func TestLoadConfig(t *testing.T) {
 
 	assert.Equal(t, len(cfg.Receivers), 3)
 
-	r0 := cfg.Receivers[config.NewID(typeStr)]
+	r0 := cfg.Receivers[config.NewComponentID(typeStr)]
 	assert.Equal(t, r0, factory.CreateDefaultConfig())
 
-	r1 := cfg.Receivers[config.NewIDWithName(typeStr, "customname")].(*Config)
+	r1 := cfg.Receivers[config.NewComponentIDWithName(typeStr, "customname")].(*Config)
 	assert.Equal(t, r1,
 		&Config{
-			ReceiverSettings: config.NewReceiverSettings(config.NewIDWithName(typeStr, "customname")),
+			ReceiverSettings: config.NewReceiverSettings(config.NewComponentIDWithName(typeStr, "customname")),
 			HTTPServerSettings: confighttp.HTTPServerSettings{
 				Endpoint: "localhost:8765",
 			},
 		})
 
-	r2 := cfg.Receivers[config.NewIDWithName(typeStr, "parse_strings")].(*Config)
+	r2 := cfg.Receivers[config.NewComponentIDWithName(typeStr, "parse_strings")].(*Config)
 	assert.Equal(t, r2,
 		&Config{
-			ReceiverSettings: config.NewReceiverSettings(config.NewIDWithName(typeStr, "parse_strings")),
+			ReceiverSettings: config.NewReceiverSettings(config.NewComponentIDWithName(typeStr, "parse_strings")),
 			HTTPServerSettings: confighttp.HTTPServerSettings{
 				Endpoint: "0.0.0.0:9411",
 			},

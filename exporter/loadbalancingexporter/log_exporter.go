@@ -26,9 +26,9 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter/otlpexporter"
 	"go.opentelemetry.io/collector/model/pdata"
+	"go.uber.org/multierr"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchpersignal"
 )
@@ -74,15 +74,13 @@ func (e *logExporterImp) Shutdown(context.Context) error {
 }
 
 func (e *logExporterImp) ConsumeLogs(ctx context.Context, ld pdata.Logs) error {
-	var errors []error
+	var errs error
 	batches := batchpersignal.SplitLogs(ld)
 	for _, batch := range batches {
-		if err := e.consumeLog(ctx, batch); err != nil {
-			errors = append(errors, err)
-		}
+		errs = multierr.Append(errs, e.consumeLog(ctx, batch))
 	}
 
-	return consumererror.Combine(errors)
+	return errs
 }
 
 func (e *logExporterImp) consumeLog(ctx context.Context, ld pdata.Logs) error {

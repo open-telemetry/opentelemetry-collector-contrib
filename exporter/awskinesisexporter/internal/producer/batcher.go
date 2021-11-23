@@ -61,7 +61,7 @@ func (b *batcher) Put(ctx context.Context, bt *batch.Batch) error {
 			if aerr, ok := err.(awserr.Error); ok {
 				switch aerr.Code() {
 				case kinesis.ErrCodeResourceNotFoundException, kinesis.ErrCodeInvalidArgumentException:
-					err = consumererror.Permanent(err)
+					err = consumererror.NewPermanent(err)
 				}
 			}
 			fields := []zap.Field{

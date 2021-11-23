@@ -30,7 +30,7 @@ func TestCompileExprError(t *testing.T) {
 func TestRunExprError(t *testing.T) {
 	matcher, err := NewMatcher("foo")
 	require.NoError(t, err)
-	matched, _ := matcher.match(env{})
+	matched, _ := matcher.match(&env{})
 	require.False(t, matched)
 }
 
@@ -161,7 +161,7 @@ func testMatchGauge(t *testing.T, metricName, expression string, lbls map[string
 	dps := m.Gauge().DataPoints()
 	pt := dps.AppendEmpty()
 	if lbls != nil {
-		pt.Attributes().InitFromMap(lbls)
+		pdata.NewAttributeMapFromMap(lbls).CopyTo(pt.Attributes())
 	}
 	match, err := matcher.MatchMetric(m)
 	assert.NoError(t, err)

@@ -61,7 +61,7 @@ func (dtrp *deltaToRateProcessor) processMetrics(_ context.Context, md pdata.Met
 				if _, ok := dtrp.ConfiguredMetrics[metric.Name()]; !ok {
 					continue
 				}
-				if metric.DataType() != pdata.MetricDataTypeSum || metric.Sum().AggregationTemporality() != pdata.AggregationTemporalityDelta {
+				if metric.DataType() != pdata.MetricDataTypeSum || metric.Sum().AggregationTemporality() != pdata.MetricAggregationTemporalityDelta {
 					dtrp.logger.Info(fmt.Sprintf("Configured metric for rate calculation %s is not a delta sum\n", metric.Name()))
 					continue
 				}

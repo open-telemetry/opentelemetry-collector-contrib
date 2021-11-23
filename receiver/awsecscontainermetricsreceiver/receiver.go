@@ -23,6 +23,7 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsecscontainermetricsreceiver/internal/awsecscontainermetrics"
 )
 
@@ -34,7 +35,7 @@ type awsEcsContainerMetricsReceiver struct {
 	nextConsumer consumer.Metrics
 	config       *Config
 	cancel       context.CancelFunc
-	restClient   awsecscontainermetrics.RestClient
+	restClient   ecsutil.RestClient
 	provider     *awsecscontainermetrics.StatsProvider
 }
 
@@ -43,7 +44,7 @@ func newAWSECSContainermetrics(
 	logger *zap.Logger,
 	config *Config,
 	nextConsumer consumer.Metrics,
-	rest awsecscontainermetrics.RestClient) (component.MetricsReceiver, error) {
+	rest ecsutil.RestClient) (component.MetricsReceiver, error) {
 	if nextConsumer == nil {
 		return nil, componenterror.ErrNilNextConsumer
 	}
@@ -84,7 +85,7 @@ func (aecmr *awsEcsContainerMetricsReceiver) Shutdown(context.Context) error {
 
 // collectDataFromEndpoint collects container stats from Amazon ECS Task Metadata Endpoint
 func (aecmr *awsEcsContainerMetricsReceiver) collectDataFromEndpoint(ctx context.Context) error {
-	aecmr.provider = awsecscontainermetrics.NewStatsProvider(aecmr.restClient)
+	aecmr.provider = awsecscontainermetrics.NewStatsProvider(aecmr.restClient, aecmr.logger)
 	stats, metadata, err := aecmr.provider.GetStats()
 
 	if err != nil {

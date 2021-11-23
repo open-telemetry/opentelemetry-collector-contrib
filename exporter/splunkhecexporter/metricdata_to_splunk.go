@@ -38,7 +38,26 @@ const (
 	sumSuffix = "_sum"
 	// bucketSuffix is the bucket metric value suffix.
 	bucketSuffix = "_bucket"
+	// nanValue is the string representation of a NaN value in HEC events
+	nanValue = "NaN"
+	// plusInfValue is the string representation of a +Inf value in HEC events
+	plusInfValue = "+Inf"
+	// minusInfValue is the string representation of a -Inf value in HEC events
+	minusInfValue = "-Inf"
 )
+
+func sanitizeFloat(value float64) interface{} {
+	if math.IsNaN(value) {
+		return nanValue
+	}
+	if math.IsInf(value, 1) {
+		return plusInfValue
+	}
+	if math.IsInf(value, -1) {
+		return minusInfValue
+	}
+	return value
+}
 
 func metricDataToSplunk(logger *zap.Logger, data pdata.Metrics, config *Config) ([]*splunk.Event, int) {
 	numDroppedTimeSeries := 0
@@ -67,6 +86,8 @@ func metricDataToSplunk(logger *zap.Logger, data pdata.Metrics, config *Config) 
 				sourceType = v.StringVal()
 			case indexKey:
 				index = v.StringVal()
+			case splunk.HecTokenLabel:
+				// ignore
 			default:
 				commonFields[k] = v.AsString()
 			}
@@ -90,7 +111,7 @@ func metricDataToSplunk(logger *zap.Logger, data pdata.Metrics, config *Config) 
 						case pdata.MetricValueTypeInt:
 							fields[metricFieldName] = dataPt.IntVal()
 						case pdata.MetricValueTypeDouble:
-							fields[metricFieldName] = dataPt.DoubleVal()
+							fields[metricFieldName] = sanitizeFloat(dataPt.DoubleVal())
 						}
 						fields[splunkMetricTypeKey] = pdata.MetricDataTypeGauge.String()
 						sm := createEvent(dataPt.Timestamp(), host, source, sourceType, index, fields)
@@ -157,7 +178,7 @@ func metricDataToSplunk(logger *zap.Logger, data pdata.Metrics, config *Config) 
 						case pdata.MetricValueTypeInt:
 							fields[metricFieldName] = dataPt.IntVal()
 						case pdata.MetricValueTypeDouble:
-							fields[metricFieldName] = dataPt.DoubleVal()
+							fields[metricFieldName] = sanitizeFloat(dataPt.DoubleVal())
 						}
 						fields[splunkMetricTypeKey] = pdata.MetricDataTypeSum.String()
 						sm := createEvent(dataPt.Timestamp(), host, source, sourceType, index, fields)
@@ -191,7 +212,7 @@ func metricDataToSplunk(logger *zap.Logger, data pdata.Metrics, config *Config) 
 							populateAttributes(fields, dataPt.Attributes())
 							dp := dataPt.QuantileValues().At(bi)
 							fields["qt"] = float64ToDimValue(dp.Quantile())
-							fields[metricFieldName+"_"+strconv.FormatFloat(dp.Quantile(), 'f', -1, 64)] = dp.Value()
+							fields[metricFieldName+"_"+strconv.FormatFloat(dp.Quantile(), 'f', -1, 64)] = sanitizeFloat(dp.Value())
 							fields[splunkMetricTypeKey] = pdata.MetricDataTypeSummary.String()
 							sm := createEvent(dataPt.Timestamp(), host, source, sourceType, index, fields)
 							splunkMetrics = append(splunkMetrics, sm)

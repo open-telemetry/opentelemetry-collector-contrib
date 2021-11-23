@@ -17,10 +17,10 @@ package cpuscraper
 import (
 	"context"
 
+	"go.opentelemetry.io/collector/receiver/scraperhelper"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/scraperhelper"
 )
 
 // This file implements Factory for CPU scraper.
@@ -48,11 +48,9 @@ func (f *Factory) CreateMetricsScraper(
 	cfg := config.(*Config)
 	s := newCPUScraper(ctx, cfg)
 
-	ms := scraperhelper.NewMetricsScraper(
+	return scraperhelper.NewScraper(
 		TypeStr,
 		s.scrape,
 		scraperhelper.WithStart(s.start),
 	)
-
-	return ms, nil
 }

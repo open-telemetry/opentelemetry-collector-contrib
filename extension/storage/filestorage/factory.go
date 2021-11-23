@@ -36,7 +36,7 @@ func NewFactory() component.ExtensionFactory {
 
 func createDefaultConfig() config.Extension {
 	return &Config{
-		ExtensionSettings: config.NewExtensionSettings(config.NewID(typeStr)),
+		ExtensionSettings: config.NewExtensionSettings(config.NewComponentID(typeStr)),
 		Directory:         getDefaultDirectory(),
 		Timeout:           time.Second,
 	}

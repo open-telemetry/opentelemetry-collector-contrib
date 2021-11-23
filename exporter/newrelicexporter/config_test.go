@@ -40,7 +40,7 @@ func TestLoadConfig(t *testing.T) {
 
 	assert.Equal(t, len(cfg.Exporters), 2)
 
-	r0 := cfg.Exporters[config.NewID(typeStr)]
+	r0 := cfg.Exporters[config.NewComponentID(typeStr)]
 	defaultConfig := factory.CreateDefaultConfig().(*Config)
 
 	// The marshaller should set the endpoint specific configuration to the common config by default
@@ -49,9 +49,9 @@ func TestLoadConfig(t *testing.T) {
 	defaultConfig.MetricsConfig = defaultConfig.CommonConfig
 	assert.Equal(t, r0, defaultConfig)
 
-	r1 := cfg.Exporters[config.NewIDWithName(typeStr, "alt")].(*Config)
+	r1 := cfg.Exporters[config.NewComponentIDWithName(typeStr, "alt")].(*Config)
 	assert.Equal(t, r1, &Config{
-		ExporterSettings: config.NewExporterSettings(config.NewIDWithName(typeStr, "alt")),
+		ExporterSettings: config.NewExporterSettings(config.NewComponentIDWithName(typeStr, "alt")),
 		CommonConfig: EndpointConfig{
 			APIKey: "a1b2c3d4",
 			TimeoutSettings: exporterhelper.TimeoutSettings{

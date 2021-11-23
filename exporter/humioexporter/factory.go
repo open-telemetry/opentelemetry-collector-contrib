@@ -41,7 +41,7 @@ func NewFactory() component.ExporterFactory {
 // Provides a struct with default values for all relevant configuration settings
 func createDefaultConfig() config.Exporter {
 	return &Config{
-		ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
+		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
 
 		// Default settings inherited from exporter helper
 		QueueSettings: exporterhelper.DefaultQueueSettings(),

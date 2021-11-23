@@ -19,7 +19,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/DataDog/datadog-agent/pkg/trace/exportable/pb"
@@ -81,6 +80,7 @@ func convertToDatadogTd(td pdata.Traces, fallbackHost string, cfg *config.Config
 	var traces []*pb.TracePayload
 
 	seenHosts := make(map[string]struct{})
+	seenHosts[fallbackHost] = struct{}{}
 	var series []datadog.Metric
 	pushTime := pdata.NewTimestampFromTime(time.Now())
 
@@ -232,8 +232,8 @@ func spanToDatadogSpan(s pdata.Span,
 	cfg *config.Config,
 	spanNameMap map[string]string,
 ) *pb.Span {
-
 	tags := aggregateSpanTags(s, datadogTags)
+	tags["otlp.trace_id"] = s.TraceID().HexString()
 
 	// otel specification resource service.name takes precedence
 	// and configuration DD_SERVICE as fallback if it exists
@@ -389,27 +389,8 @@ func aggregateSpanTags(span pdata.Span, datadogTags map[string]string) map[strin
 	})
 
 	// we don't want to normalize these tags since `_dd` is a special case
-	spanTags[tagContainersTags] = buildDatadogContainerTags(spanTags)
+	spanTags[tagContainersTags] = attributes.ContainerTagFromAttributes(spanTags)
 	return spanTags
-}
-
-// buildDatadogContainerTags returns container and orchestrator tags belonging to containerID
-// as a comma delimeted list for datadog's special container tag key
-func buildDatadogContainerTags(spanTags map[string]string) string {
-	var b strings.Builder
-
-	if val, ok := spanTags[conventions.AttributeContainerID]; ok {
-		b.WriteString(fmt.Sprintf("%s:%s,", "container_id", val))
-	}
-	if val, ok := spanTags[conventions.AttributeK8SPodName]; ok {
-		b.WriteString(fmt.Sprintf("%s:%s,", "pod_name", val))
-	}
-
-	if val, ok := spanTags[conventions.AttributeAWSECSTaskARN]; ok {
-		b.WriteString(fmt.Sprintf("%s:%s,", "task_arn", val))
-	}
-
-	return strings.TrimSuffix(b.String(), ",")
 }
 
 // inferDatadogTypes returns a string for the datadog type based on metadata

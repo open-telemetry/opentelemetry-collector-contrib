@@ -47,7 +47,7 @@ func TestLoadConfig(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 
-	e0 := cfg.Exporters[config.NewID(typeStr)]
+	e0 := cfg.Exporters[config.NewComponentID(typeStr)]
 
 	// Realm doesn't have a default value so set it directly.
 	defaultCfg := factory.CreateDefaultConfig().(*Config)
@@ -57,11 +57,12 @@ func TestLoadConfig(t *testing.T) {
 	defaultCfg.TranslationRules = defaultTranslationRules
 	assert.Equal(t, defaultCfg, e0)
 
-	e1 := cfg.Exporters[config.NewIDWithName(typeStr, "allsettings")]
+	e1 := cfg.Exporters[config.NewComponentIDWithName(typeStr, "allsettings")]
 	expectedCfg := Config{
-		ExporterSettings: config.NewExporterSettings(config.NewIDWithName(typeStr, "allsettings")),
+		ExporterSettings: config.NewExporterSettings(config.NewComponentIDWithName(typeStr, "allsettings")),
 		AccessToken:      "testToken",
 		Realm:            "us1",
+		MaxConnections:   70,
 		Headers: map[string]string{
 			"added-entry": "added value",
 			"dot.test":    "test",
@@ -309,7 +310,7 @@ func TestConfig_getOptionsFromConfig(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := &Config{
-				ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
+				ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
 				AccessToken:      tt.fields.AccessToken,
 				Realm:            tt.fields.Realm,
 				IngestURL:        tt.fields.IngestURL,

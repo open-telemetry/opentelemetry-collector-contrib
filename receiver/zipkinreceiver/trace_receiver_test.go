@@ -49,7 +49,7 @@ const (
 	zipkinV1SingleBatch = "../../pkg/translator/zipkin/zipkinv1/testdata/zipkin_v1_single_batch.json"
 )
 
-var zipkinReceiverID = config.NewIDWithName(typeStr, "receiver_test")
+var zipkinReceiverID = config.NewComponentIDWithName(typeStr, "receiver_test")
 
 func TestNew(t *testing.T) {
 	type args struct {
@@ -81,7 +81,7 @@ func TestNew(t *testing.T) {
 					Endpoint: tt.args.address,
 				},
 			}
-			got, err := newReceiver(cfg, tt.args.nextConsumer, componenttest.NewNopTelemetrySettings())
+			got, err := newReceiver(cfg, tt.args.nextConsumer, componenttest.NewNopReceiverCreateSettings())
 			require.Equal(t, tt.wantErr, err)
 			if tt.wantErr == nil {
 				require.NotNil(t, got)
@@ -104,7 +104,7 @@ func TestZipkinReceiverPortAlreadyInUse(t *testing.T) {
 			Endpoint: "localhost:" + portStr,
 		},
 	}
-	traceReceiver, err := newReceiver(cfg, consumertest.NewNop(), componenttest.NewNopTelemetrySettings())
+	traceReceiver, err := newReceiver(cfg, consumertest.NewNop(), componenttest.NewNopReceiverCreateSettings())
 	require.NoError(t, err, "Failed to create receiver: %v", err)
 	err = traceReceiver.Start(context.Background(), componenttest.NewNopHost())
 	require.Error(t, err)
@@ -153,7 +153,7 @@ func TestStartTraceReception(t *testing.T) {
 					Endpoint: "localhost:0",
 				},
 			}
-			zr, err := newReceiver(cfg, sink, componenttest.NewNopTelemetrySettings())
+			zr, err := newReceiver(cfg, sink, componenttest.NewNopReceiverCreateSettings())
 			require.Nil(t, err)
 			require.NotNil(t, zr)
 
@@ -247,7 +247,7 @@ func TestReceiverContentTypes(t *testing.T) {
 					Endpoint: "",
 				},
 			}
-			zr, err := newReceiver(cfg, next, componenttest.NewNopTelemetrySettings())
+			zr, err := newReceiver(cfg, next, componenttest.NewNopReceiverCreateSettings())
 			require.NoError(t, err)
 
 			req := httptest.NewRecorder()
@@ -275,7 +275,7 @@ func TestReceiverInvalidContentType(t *testing.T) {
 			Endpoint: "",
 		},
 	}
-	zr, err := newReceiver(cfg, consumertest.NewNop(), componenttest.NewNopTelemetrySettings())
+	zr, err := newReceiver(cfg, consumertest.NewNop(), componenttest.NewNopReceiverCreateSettings())
 	require.NoError(t, err)
 
 	req := httptest.NewRecorder()
@@ -298,7 +298,7 @@ func TestReceiverConsumerError(t *testing.T) {
 			Endpoint: "localhost:9411",
 		},
 	}
-	zr, err := newReceiver(cfg, consumertest.NewErr(errors.New("consumer error")), componenttest.NewNopTelemetrySettings())
+	zr, err := newReceiver(cfg, consumertest.NewErr(errors.New("consumer error")), componenttest.NewNopReceiverCreateSettings())
 	require.NoError(t, err)
 
 	req := httptest.NewRecorder()
@@ -388,7 +388,7 @@ func TestReceiverConvertsStringsToTypes(t *testing.T) {
 		},
 		ParseStringTags: true,
 	}
-	zr, err := newReceiver(cfg, next, componenttest.NewNopTelemetrySettings())
+	zr, err := newReceiver(cfg, next, componenttest.NewNopReceiverCreateSettings())
 	require.NoError(t, err)
 
 	req := httptest.NewRecorder()
@@ -426,13 +426,13 @@ func TestFromBytesWithNoTimestamp(t *testing.T) {
 	require.NoError(t, err, "Failed to read sample JSON file: %v", err)
 
 	cfg := &Config{
-		ReceiverSettings: config.NewReceiverSettings(config.NewID(typeStr)),
+		ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
 		HTTPServerSettings: confighttp.HTTPServerSettings{
 			Endpoint: "",
 		},
 		ParseStringTags: true,
 	}
-	zi, err := newReceiver(cfg, consumertest.NewNop(), componenttest.NewNopTelemetrySettings())
+	zi, err := newReceiver(cfg, consumertest.NewNop(), componenttest.NewNopReceiverCreateSettings())
 	require.NoError(t, err)
 
 	hdr := make(http.Header)

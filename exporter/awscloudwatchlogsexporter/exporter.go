@@ -229,7 +229,7 @@ func attrValue(value pdata.AttributeValue) interface{} {
 		})
 		return values
 	case pdata.AttributeValueTypeArray:
-		arrayVal := value.ArrayVal()
+		arrayVal := value.SliceVal()
 		values := make([]interface{}, arrayVal.Len())
 		for i := 0; i < arrayVal.Len(); i++ {
 			values[i] = attrValue(arrayVal.At(i))

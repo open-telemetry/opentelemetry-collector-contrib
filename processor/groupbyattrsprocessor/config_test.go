@@ -40,10 +40,10 @@ func TestLoadConfig(t *testing.T) {
 	require.Nil(t, err)
 	require.NotNil(t, cfg)
 
-	conf := cfg.Processors[config.NewIDWithName(typeStr, "custom")]
+	conf := cfg.Processors[config.NewComponentIDWithName(typeStr, "custom")]
 	assert.Equal(t, conf,
 		&Config{
-			ProcessorSettings: config.NewProcessorSettings(config.NewIDWithName(typeStr, "custom")),
+			ProcessorSettings: config.NewProcessorSettings(config.NewComponentIDWithName(typeStr, "custom")),
 			GroupByKeys:       []string{"key1", "key2"},
 		})
 }

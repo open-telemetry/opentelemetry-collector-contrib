@@ -1,22 +1,46 @@
 # Filter Processor
 
-Supported pipeline types: metrics
+Supported pipeline types: logs, metrics
 
-The filter processor can be configured to include or exclude metrics based on
-metric name in the case of the 'strict' or 'regexp' match types, or based on other
-metric attributes in the case of the 'expr' match type. Please refer to
-[config.go](./config.go) for the config spec.
+The filter processor can be configured to include or exclude:
 
-It takes a pipeline type, of which only `metrics` is supported, followed by an
-action:
+- logs, based on resource attributes using the `strict` or `regexp` match types
+- metrics based on metric name in the case of the `strict` or `regexp` match types,
+  or based on other metric attributes in the case of the `expr` match type.
+  Please refer to [config.go](./config.go) for the config spec.
+
+It takes a pipeline type, of which `logs` and `metrics` are supported, followed
+by an action:
+
 - `include`: Any names NOT matching filters are excluded from remainder of pipeline
 - `exclude`: Any names matching filters are excluded from remainder of pipeline
 
 For the actions the following parameters are required:
- - `match_type`: strict|regexp|expr
- - `metric_names`: (only for a `match_type` of 'strict' or 'regexp') list of strings or re2 regex patterns
- - `expressions`: (only for a `match_type` of 'expr') list of expr expressions (see "Using an 'expr' match_type" below)
- - `resource_attributes`: ResourceAttributes defines a list of possible resource attributes to match metrics against. A match occurs if any resource attribute matches at least one expression in this given list. 
+
+For logs:
+
+- `match_type`: `strict`|`regexp`
+- `resource_attributes`: ResourceAttributes defines a list of possible resource
+  attributes to match logs against.
+  A match occurs if any resource attribute matches all expressions in this given list.
+- `record_attributes`: RecordAttributes defines a list of possible record
+  attributes to match logs against.
+  A match occurs if any record attribute matches all expressions in this given list.
+
+For metrics:
+
+- `match_type`: `strict`|`regexp`|`expr`
+- `metric_names`: (only for a `match_type` of `strict` or `regexp`) list of strings
+  or re2 regex patterns
+- `expressions`: (only for a `match_type` of `expr`) list of expr expressions
+  (see "Using an 'expr' match_type" below)
+- `resource_attributes`: ResourceAttributes defines a list of possible resource
+  attributes to match metrics against.
+  A match occurs if any resource attribute matches all expressions in this given list.
+
+This processor uses [re2 regex][re2_regex] for regex syntax.
+
+[re2_regex]: https://github.com/google/re2/wiki/Syntax
 
 More details can found at [include/exclude metrics](../README.md#includeexclude-metrics).
 
@@ -39,6 +63,23 @@ processors:
         metric_names:
           - hello_world
           - hello/world
+  filter/2:
+    logs:
+      include:
+        match_type: strict
+        resource_attributes:
+          - Key: host.name
+            Value: just_this_one_hostname
+    logs/regexp:
+        match_type: regexp
+        resource_attributes:
+          - Key: host.name
+            Value: prefix.*
+    logs/regexp_record:
+        match_type: regexp
+        record_attributes:
+          - Key: record_attr
+            Value: prefix_.*
 ```
 
 Refer to the config files in [testdata](./testdata) for detailed

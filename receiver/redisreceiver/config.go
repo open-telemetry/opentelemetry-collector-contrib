@@ -15,22 +15,22 @@
 package redisreceiver
 
 import (
-	"time"
-
-	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/config/confignet"
+	"go.opentelemetry.io/collector/config/configtls"
+	"go.opentelemetry.io/collector/receiver/scraperhelper"
 )
 
 type Config struct {
-	config.ReceiverSettings `mapstructure:",squash"`
+	scraperhelper.ScraperControllerSettings `mapstructure:",squash"`
 	// TODO: Use one of the configs from core.
 	// The target endpoint.
-	Endpoint string `mapstructure:"endpoint"`
-	// The duration between Redis metric fetches.
-	CollectionInterval time.Duration `mapstructure:"collection_interval"`
+	confignet.NetAddr `mapstructure:",squash"`
 
 	// TODO allow users to add additional resource key value pairs?
 
 	// Optional password. Must match the password specified in the
 	// requirepass server configuration option.
 	Password string `mapstructure:"password"`
+
+	TLS configtls.TLSClientSetting `mapstructure:"tls,omitempty"`
 }

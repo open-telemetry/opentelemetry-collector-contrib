@@ -9,6 +9,7 @@ Supported pipeline types: metrics
 
 > :information_source: Requires Podman API version 3.3.1+ and Windows is not supported.
 
+
 ## Configuration
 
 The following settings are required:
@@ -24,13 +25,34 @@ Example:
 ```yaml
 receivers:
   podman_stats:
-    endpoint: http://example.com/
+    endpoint: unix://run/podman/podman.sock
     collection_interval: 10s
 ```
 
 The full list of settings exposed for this receiver are documented [here](./config.go)
 with detailed sample configurations [here](./testdata/config.yaml).
 
+### Connecting over SSH
+
+```yaml
+receivers:
+  podman_stats:
+    endpoint: ssh://core@localhost:53841/run/user/1000/podman/podman.sock
+    ssh_key: /path/to/ssh/private/key
+    ssh_passphrase: <password>
+```
+
+### Podman API compatibility
+
+The receiver has only been tested with API 3.3.1+ but it may work with older versions as well. If you want to use the
+receiver with an older API version, please set the `api_version` to the desired version. For example,
+
+```yaml
+receivers:
+  podman_stats:
+    endpoint: unix://run/podman/podman.sock
+    api_version: 3.2.0
+```
 ## Metrics
 
 The receiver emits the following metrics:

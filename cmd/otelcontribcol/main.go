@@ -40,19 +40,14 @@ func main() {
 		Version:     version.Version,
 	}
 
-	if err := run(service.CollectorSettings{BuildInfo: info, Factories: factories}); err != nil {
+	if err = run(service.CollectorSettings{BuildInfo: info, Factories: factories}); err != nil {
 		log.Fatal(err)
 	}
 }
 
 func runInteractive(params service.CollectorSettings) error {
-	app, err := service.New(params)
-	if err != nil {
-		return fmt.Errorf("failed to construct the collector server: %w", err)
-	}
-
-	cmd := service.NewCommand(app)
-	if err = cmd.Execute(); err != nil {
+	cmd := service.NewCommand(params)
+	if err := cmd.Execute(); err != nil {
 		return fmt.Errorf("collector server run finished with error: %w", err)
 	}
 

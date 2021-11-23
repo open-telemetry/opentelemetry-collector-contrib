@@ -74,32 +74,32 @@ func (cfg *Config) createFilter() (*fsFilter, error) {
 	var err error
 	filter := fsFilter{}
 
-	filter.includeDeviceFilter, err = newIncludeFilterHelper(cfg.IncludeDevices.Devices, &cfg.IncludeDevices.Config, metadata.Labels.Device)
+	filter.includeDeviceFilter, err = newIncludeFilterHelper(cfg.IncludeDevices.Devices, &cfg.IncludeDevices.Config, metadata.Attributes.Device)
 	if err != nil {
 		return nil, err
 	}
 
-	filter.excludeDeviceFilter, err = newExcludeFilterHelper(cfg.ExcludeDevices.Devices, &cfg.ExcludeDevices.Config, metadata.Labels.Device)
+	filter.excludeDeviceFilter, err = newExcludeFilterHelper(cfg.ExcludeDevices.Devices, &cfg.ExcludeDevices.Config, metadata.Attributes.Device)
 	if err != nil {
 		return nil, err
 	}
 
-	filter.includeFSTypeFilter, err = newIncludeFilterHelper(cfg.IncludeFSTypes.FSTypes, &cfg.IncludeFSTypes.Config, metadata.Labels.Type)
+	filter.includeFSTypeFilter, err = newIncludeFilterHelper(cfg.IncludeFSTypes.FSTypes, &cfg.IncludeFSTypes.Config, metadata.Attributes.Type)
 	if err != nil {
 		return nil, err
 	}
 
-	filter.excludeFSTypeFilter, err = newExcludeFilterHelper(cfg.ExcludeFSTypes.FSTypes, &cfg.ExcludeFSTypes.Config, metadata.Labels.Type)
+	filter.excludeFSTypeFilter, err = newExcludeFilterHelper(cfg.ExcludeFSTypes.FSTypes, &cfg.ExcludeFSTypes.Config, metadata.Attributes.Type)
 	if err != nil {
 		return nil, err
 	}
 
-	filter.includeMountPointFilter, err = newIncludeFilterHelper(cfg.IncludeMountPoints.MountPoints, &cfg.IncludeMountPoints.Config, metadata.Labels.Mountpoint)
+	filter.includeMountPointFilter, err = newIncludeFilterHelper(cfg.IncludeMountPoints.MountPoints, &cfg.IncludeMountPoints.Config, metadata.Attributes.Mountpoint)
 	if err != nil {
 		return nil, err
 	}
 
-	filter.excludeMountPointFilter, err = newExcludeFilterHelper(cfg.ExcludeMountPoints.MountPoints, &cfg.ExcludeMountPoints.Config, metadata.Labels.Mountpoint)
+	filter.excludeMountPointFilter, err = newExcludeFilterHelper(cfg.ExcludeMountPoints.MountPoints, &cfg.ExcludeMountPoints.Config, metadata.Attributes.Mountpoint)
 	if err != nil {
 		return nil, err
 	}

@@ -127,12 +127,12 @@ func (g *metricGenerator) populateMetrics(cfg MetricsCfg, ilm pdata.Instrumentat
 			metric.SetDataType(pdata.MetricDataTypeSum)
 			sum := metric.Sum()
 			sum.SetIsMonotonic(cfg.IsMonotonicSum)
-			sum.SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+			sum.SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
 			populateNumberPoints(cfg, sum.DataPoints())
 		case pdata.MetricDataTypeHistogram:
 			metric.SetDataType(pdata.MetricDataTypeHistogram)
 			histo := metric.Histogram()
-			histo.SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+			histo.SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
 			populateDoubleHistogram(cfg, histo)
 		}
 	}

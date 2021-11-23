@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//go:build !windows
 // +build !windows
 
 package podmanreceiver
@@ -21,25 +22,21 @@ import (
 	"testing"
 	"time"
 
-	"github.com/containers/podman/v3/libpod/define"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/model/pdata"
 )
 
 func TestTranslateStatsToMetrics(t *testing.T) {
 	ts := time.Now()
 	stats := genContainerStats()
-	metrics, err := translateStatsToMetrics(stats, ts)
-	require.NoError(t, err)
-	assert.NotNil(t, metrics)
-
-	assertStatsEqualToMetrics(t, stats, metrics, ts)
+	md := pdata.NewMetrics()
+	translateStatsToMetrics(stats, ts, md.ResourceMetrics().AppendEmpty())
+	assertStatsEqualToMetrics(t, stats, md)
 }
 
-func assertStatsEqualToMetrics(t *testing.T, podmanStats *define.ContainerStats, pdataMetrics pdata.Metrics, ts time.Time) {
-	assert.Equal(t, pdataMetrics.ResourceMetrics().Len(), 1)
-	rsm := pdataMetrics.ResourceMetrics().At(0)
+func assertStatsEqualToMetrics(t *testing.T, podmanStats *containerStats, md pdata.Metrics) {
+	assert.Equal(t, md.ResourceMetrics().Len(), 1)
+	rsm := md.ResourceMetrics().At(0)
 
 	resourceAttrs := map[string]string{
 		"container.id":   "abcd1234",
@@ -112,16 +109,16 @@ func assertPoints(t *testing.T, dpts pdata.NumberDataPointSlice, pts []point) {
 		got := dpts.At(i)
 		assert.Equal(t, got.IntVal(), int64(expected.intVal))
 		assert.Equal(t, got.DoubleVal(), expected.doubleVal)
-		for k, expected_v := range expected.attributes {
-			got_v, exists := got.Attributes().Get(k)
+		for k, expectedV := range expected.attributes {
+			gotV, exists := got.Attributes().Get(k)
 			assert.True(t, exists)
-			assert.Equal(t, got_v.StringVal(), expected_v)
+			assert.Equal(t, gotV.StringVal(), expectedV)
 		}
 	}
 }
 
-func genContainerStats() *define.ContainerStats {
-	return &define.ContainerStats{
+func genContainerStats() *containerStats {
+	return &containerStats{
 		ContainerID:   "abcd1234",
 		Name:          "cntrA",
 		PerCPU:        []uint64{40, 50, 20, 15},

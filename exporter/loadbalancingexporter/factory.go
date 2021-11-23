@@ -46,7 +46,7 @@ func createDefaultConfig() config.Exporter {
 	otlpDefaultCfg := otlpFactory.CreateDefaultConfig().(*otlpexporter.Config)
 
 	return &Config{
-		ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
+		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
 		Protocol: Protocol{
 			OTLP: *otlpDefaultCfg,
 		},

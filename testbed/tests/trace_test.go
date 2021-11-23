@@ -236,21 +236,21 @@ func TestTraceBallast1kSPSWithAttrs(t *testing.T) {
 		{
 			attrCount:      0,
 			attrSizeByte:   0,
-			expectedMaxCPU: 30,
+			expectedMaxCPU: 53,
 			expectedMaxRAM: 2200,
 			resultsSummary: performanceResultsSummary,
 		},
 		{
 			attrCount:      100,
 			attrSizeByte:   50,
-			expectedMaxCPU: 80,
+			expectedMaxCPU: 100,
 			expectedMaxRAM: 2200,
 			resultsSummary: performanceResultsSummary,
 		},
 		{
 			attrCount:      10,
 			attrSizeByte:   1000,
-			expectedMaxCPU: 80,
+			expectedMaxCPU: 100,
 			expectedMaxRAM: 2200,
 			resultsSummary: performanceResultsSummary,
 		},
@@ -346,9 +346,7 @@ func verifySingleSpan(
 	// Send one span.
 	td := pdata.NewTraces()
 	rs := td.ResourceSpans().AppendEmpty()
-	rs.Resource().Attributes().InitFromMap(map[string]pdata.AttributeValue{
-		conventions.AttributeServiceName: pdata.NewAttributeValueString(serviceName),
-	})
+	rs.Resource().Attributes().InsertString(conventions.AttributeServiceName, serviceName)
 	span := rs.InstrumentationLibrarySpans().AppendEmpty().Spans().AppendEmpty()
 	span.SetTraceID(idutils.UInt64ToTraceID(0, 1))
 	span.SetSpanID(idutils.UInt64ToSpanID(1))

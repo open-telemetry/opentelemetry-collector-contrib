@@ -21,6 +21,7 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/processor/processorhelper"
+	"go.uber.org/zap"
 )
 
 const (
@@ -34,19 +35,36 @@ func NewFactory() component.ProcessorFactory {
 		typeStr,
 		createDefaultConfig,
 		processorhelper.WithTraces(createTracesProcessor),
+		processorhelper.WithMetrics(createMetricsProcessor),
+		processorhelper.WithLogs(createLogsProcessor),
 	)
 }
 
 func createDefaultConfig() config.Processor {
 	return &Config{
-		ProcessorSettings: config.NewProcessorSettings(config.NewID(typeStr)),
+		ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
+		AttributeSource:   defaultAttributeSource,
 	}
 }
 
 func createTracesProcessor(_ context.Context, params component.ProcessorCreateSettings, cfg config.Processor, nextConsumer consumer.Traces) (component.TracesProcessor, error) {
+	warnIfNotLastInPipeline(nextConsumer, params.Logger)
+	return newProcessor(params.Logger, cfg), nil
+}
+
+func createMetricsProcessor(_ context.Context, params component.ProcessorCreateSettings, cfg config.Processor, nextConsumer consumer.Metrics) (component.MetricsProcessor, error) {
+	warnIfNotLastInPipeline(nextConsumer, params.Logger)
+	return newProcessor(params.Logger, cfg), nil
+}
+
+func createLogsProcessor(_ context.Context, params component.ProcessorCreateSettings, cfg config.Processor, nextConsumer consumer.Logs) (component.LogsProcessor, error) {
+	warnIfNotLastInPipeline(nextConsumer, params.Logger)
+	return newProcessor(params.Logger, cfg), nil
+}
+
+func warnIfNotLastInPipeline(nextConsumer interface{}, logger *zap.Logger) {
 	_, ok := nextConsumer.(component.Processor)
 	if ok {
-		params.Logger.Warn("another processor has been defined after the routing processor: it will NOT receive any data!")
+		logger.Warn("another processor has been defined after the routing processor: it will NOT receive any data!")
 	}
-	return newProcessor(params.Logger, cfg)
 }

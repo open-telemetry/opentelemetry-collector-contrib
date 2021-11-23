@@ -31,10 +31,12 @@ import (
 func TestFactory_CreateDefaultConfig(t *testing.T) {
 	cfg := createDefaultConfig()
 	assert.Equal(t, &Config{
-		ExtensionSettings: config.NewExtensionSettings(config.NewID(typeStr)),
+		ExtensionSettings: config.NewExtensionSettings(config.NewComponentID(typeStr)),
 		TCPAddr: confignet.TCPAddr{
 			Endpoint: defaultEndpoint,
 		},
+		CheckCollectorPipeline: defaultCheckCollectorPipelineSettings(),
+		Path:                   "/",
 	}, cfg)
 
 	assert.NoError(t, configtest.CheckConfigStruct(cfg))

@@ -69,7 +69,7 @@ func (sr *SFxMetricsDataReceiver) GenConfigYAMLStr() string {
 	// Note that this generates an exporter config for agent.
 	return fmt.Sprintf(`
     signalfx:
-      ingest_url: "http://localhost:%d/v2/datapoint"
+      ingest_url: "http://localhost:%d"
       api_url: "http://localhost/"
       access_token: "access_token"`, sr.Port)
 }

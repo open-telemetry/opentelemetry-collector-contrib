@@ -50,7 +50,7 @@ func NewFactory() component.ReceiverFactory {
 // CreateDefaultConfig creates the default configuration for Splunk HEC receiver.
 func createDefaultConfig() config.Receiver {
 	return &Config{
-		ReceiverSettings: config.NewReceiverSettings(config.NewID(typeStr)),
+		ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
 		HTTPServerSettings: confighttp.HTTPServerSettings{
 			Endpoint: defaultEndpoint,
 		},
@@ -79,7 +79,7 @@ func createMetricsReceiver(
 		params.Logger.Warn("splunk_hec receiver path is deprecated", zap.String("path", rCfg.Path))
 	}
 
-	return newMetricsReceiver(params.TelemetrySettings, *rCfg, consumer)
+	return newMetricsReceiver(params, *rCfg, consumer)
 }
 
 // createLogsReceiver creates a logs receiver based on provided config.
@@ -96,5 +96,5 @@ func createLogsReceiver(
 		params.Logger.Warn("splunk_hec receiver path is deprecated", zap.String("path", rCfg.Path))
 	}
 
-	return newLogsReceiver(params.TelemetrySettings, *rCfg, consumer)
+	return newLogsReceiver(params, *rCfg, consumer)
 }

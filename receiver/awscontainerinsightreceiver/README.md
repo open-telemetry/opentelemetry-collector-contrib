@@ -208,7 +208,6 @@ data:
 
       extensions: [health_check]
 
-
 ---
 # create Daemonset
 apiVersion: apps/v1
@@ -250,7 +249,6 @@ spec:
           imagePullPolicy: Always
           command:
             - "/awscollector"
-              #- "--log-level=DEBUG"
             - "--config=/conf/otel-agent-config.yaml"
           volumeMounts:
             - name: rootfs
@@ -572,7 +570,6 @@ kubectl apply -f config.yaml
 | kubernete            |
 | pod_status           |
 
-
 <br/><br/> 
 
 ### Pod Network
@@ -660,3 +657,196 @@ kubectl apply -f config.yaml
 | container_last_termination_reason | 
 
 The attribute `container_status_reason` is present only when `container_status` is in "Waiting" or "Terminated" State. The attribute `container_last_termination_reason` is present only when `container_status` is in "Terminated" State.
+
+This is a sample configuration for AWS Container Insights using the `awscontainerinsightreceiver` and `awsemfexporter` for an ECS cluster to collect the instance level metrics:
+```
+receivers:
+  awscontainerinsightreceiver:
+    collection_interval: 10s
+    container_orchestrator: ecs
+
+processors:
+  batch/metrics:
+    timeout: 60s
+
+exporters:
+  awsemf:
+    namespace: ContainerInsightsEC2Instance
+    log_group_name: '/aws/ecs/containerinsights/{ClusterName}/performance'
+    log_stream_name: 'instanceTelemetry/{ContainerInstanceId}'
+    resource_to_telemetry_conversion:
+      enabled: true
+    dimension_rollup_option: NoDimensionRollup
+    parse_json_encoded_attr_values: [Sources]
+    metric_declarations:
+      # instance metrics
+      - dimensions: [ [ ContainerInstanceId, InstanceId, ClusterName] ]
+        metric_name_selectors:
+          - instance_cpu_utilization
+          - instance_memory_utilization
+          - instance_network_total_bytes
+          - instance_cpu_reserved_capacity
+          - instance_memory_reserved_capacity
+          - instance_number_of_running_tasks
+          - instance_filesystem_utilization
+      - dimensions: [ [ClusterName] ]
+        metric_name_selectors:
+          - instance_cpu_utilization
+          - instance_memory_utilization
+          - instance_network_total_bytes
+          - instance_cpu_reserved_capacity
+          - instance_memory_reserved_capacity
+          - instance_number_of_running_tasks
+          - instance_cpu_usage_total
+          - instance_cpu_limit
+          - instance_memory_working_set
+          - instance_memory_limit
+  logging:
+    loglevel: debug
+service:
+  pipelines:
+    metrics:
+      receivers: [awscontainerinsightreceiver]
+      processors: [batch/metrics]
+      exporters: [awsemf,logging]
+```
+To deploy to an ECS cluster check this [doc](https://aws-otel.github.io/docs/setup/ecs#3-setup-the-aws-otel-collector-for-ecs-ec2-instance-metrics) for details
+
+## Available Metrics and Resource Attributes
+### Instance
+| Metric                                  | Unit          |
+|-----------------------------------------|---------------|
+| instance_cpu_limit                      | Millicore     |
+| instance_cpu_reserved_capacity          | Percent       |
+| instance_cpu_usage_system               | Millicore     |
+| instance_cpu_usage_total                | Millicore     |
+| instance_cpu_usage_user                 | Millicore     |
+| instance_cpu_utilization                | Percent       |
+| instance_memory_cache                   | Bytes         |
+| instance_memory_failcnt                 | Count         |
+| instance_memory_hierarchical_pgfault    | Count/Second  |
+| instance_memory_hierarchical_pgmajfault | Count/Second  |
+| instance_memory_limit                   | Bytes         |
+| instance_memory_mapped_file             | Bytes         |
+| instance_memory_max_usage               | Bytes         |
+| instance_memory_pgfault                 | Count/Second  |
+| instance_memory_pgmajfault              | Count/Second  |
+| instance_memory_reserved_capacity       | Percent       |
+| instance_memory_rss                     | Bytes         |
+| instance_memory_swap                    | Bytes         |
+| instance_memory_usage                   | Bytes         |
+| instance_memory_utilization             | Percent       |
+| instance_memory_working_set             | Bytes         |
+| instance_network_rx_bytes               | Bytes/Second  |
+| instance_network_rx_dropped             | Count/Second  |
+| instance_network_rx_errors              | Count/Second  |
+| instance_network_rx_packets             | Count/Second  |
+| instance_network_total_bytes            | Bytes/Second  |
+| instance_network_tx_bytes               | Bytes/Second  |
+| instance_network_tx_dropped             | Count/Second  |
+| instance_network_tx_errors              | Count/Second  |
+| instance_network_tx_packets             | Count/Second  |
+| instance_number_of_running_tasks        | Count         |
+<br/><br/>
+
+| Resource Attribute   |
+|----------------------|
+| ClusterName          |
+| InstanceType         |
+| AutoScalingGroupName |
+| Timestamp            |
+| Type                 |
+| Version              |
+| Sources              |
+| ContainerInstanceId  |
+| InstanceId           |
+
+<br/><br/>
+<br/><br/>
+
+### Instance Disk IO
+| Metric                                 | Unit          |
+|----------------------------------------|---------------|
+| instance_diskio_io_serviced_async      | Count/Second  |
+| instance_diskio_io_serviced_read       | Count/Second  |
+| instance_diskio_io_serviced_sync       | Count/Second  |
+| instance_diskio_io_serviced_total      | Count/Second  |
+| instance_diskio_io_serviced_write      | Count/Second  |
+| instance_diskio_io_service_bytes_async | Bytes/Second  |
+| instance_diskio_io_service_bytes_read  | Bytes/Second  |
+| instance_diskio_io_service_bytes_sync  | Bytes/Second  |
+| instance_diskio_io_service_bytes_total | Bytes/Second  |
+| instance_diskio_io_service_bytes_write | Bytes/Second  |
+
+<br/><br/>
+
+| Resource Attribute   |
+|----------------------|
+| ClusterName          |
+| InstanceType         |
+| AutoScalingGroupName |
+| Timestamp            |
+| Type                 |
+| Version              |
+| Sources              |
+| ContainerInstanceId  |
+| InstanceId           |
+| EBSVolumeId          |
+
+<br/><br/>
+<br/><br/>
+
+### Instance Filesystem
+| Metric                          | Unit    |
+|---------------------------------|---------|
+| instance_filesystem_available   | Bytes   |
+| instance_filesystem_capacity    | Bytes   |
+| instance_filesystem_inodes      | Count   |
+| instance_filesystem_inodes_free | Count   |
+| instance_filesystem_usage       | Bytes   |
+| instance_filesystem_utilization | Percent |
+
+<br/><br/>
+| Resource Attribute   |
+|----------------------|
+| ClusterName          |
+| InstanceType         |
+| AutoScalingGroupName |
+| Timestamp            |
+| Type                 |
+| Version              |
+| Sources              |
+| ContainerInstanceId  |
+| InstanceId           |
+| EBSVolumeId          |
+<br/><br/>
+<br/><br/>
+
+### Instance Network
+| Metric                                 | Unit         |
+|----------------------------------------|--------------|
+| instance_interface_network_rx_bytes    | Bytes/Second |
+| instance_interface_network_rx_dropped  | Count/Second |
+| instance_interface_network_rx_errors   | Count/Second |
+| instance_interface_network_rx_packets  | Count/Second |
+| instance_interface_network_total_bytes | Bytes/Second |
+| instance_interface_network_tx_bytes    | Bytes/Second |
+| instance_interface_network_tx_dropped  | Count/Second |
+| instance_interface_network_tx_errors   | Count/Second |
+| instance_interface_network_tx_packets  | Count/Second |
+
+<br/><br/>
+| Resource Attribute   |
+|----------------------|
+| ClusterName          |
+| InstanceType         |
+| AutoScalingGroupName |
+| Timestamp            |
+| Type                 |
+| Version              |
+| Sources              |
+| ContainerInstanceId  |
+| InstanceId           |
+| EBSVolumeId          |
+<br/><br/>
+<br/><br/>

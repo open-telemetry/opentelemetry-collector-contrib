@@ -25,8 +25,8 @@ import (
 
 	"github.com/newrelic/newrelic-telemetry-sdk-go/telemetry"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/model/pdata"
+	"go.uber.org/multierr"
 	"go.uber.org/zap"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
@@ -129,7 +129,7 @@ func (e exporter) pushTraceData(ctx context.Context, td pdata.Traces) (outputErr
 }
 
 func (e exporter) buildTraceBatch(details *exportMetadata, td pdata.Traces) ([]telemetry.Batch, error) {
-	var errs []error
+	var errs error
 
 	transform := newTransformer(e.logger, e.buildInfo, details)
 	batches := make([]telemetry.Batch, 0, calcSpanBatches(td))
@@ -142,7 +142,7 @@ func (e exporter) buildTraceBatch(details *exportMetadata, td pdata.Traces) ([]t
 			spanCommon, err := telemetry.NewSpanCommonBlock(telemetry.WithSpanAttributes(commonAttributes))
 			if err != nil {
 				e.logger.Error("Transform of span common attributes failed.", zap.Error(err))
-				errs = append(errs, err)
+				errs = multierr.Append(errs, err)
 				continue
 			}
 			spans := make([]telemetry.Span, 0, ispans.Spans().Len())
@@ -151,7 +151,7 @@ func (e exporter) buildTraceBatch(details *exportMetadata, td pdata.Traces) ([]t
 				nrSpan, err := transform.Span(span)
 				if err != nil {
 					e.logger.Debug("Transform of span failed.", zap.Error(err))
-					errs = append(errs, err)
+					errs = multierr.Append(errs, err)
 					continue
 				}
 
@@ -162,7 +162,7 @@ func (e exporter) buildTraceBatch(details *exportMetadata, td pdata.Traces) ([]t
 		}
 	}
 
-	return batches, consumererror.Combine(errs)
+	return batches, errs
 }
 
 func calcSpanBatches(td pdata.Traces) int {
@@ -182,7 +182,7 @@ func (e exporter) pushLogData(ctx context.Context, ld pdata.Logs) (outputErr err
 }
 
 func (e exporter) buildLogBatch(details *exportMetadata, ld pdata.Logs) ([]telemetry.Batch, error) {
-	var errs []error
+	var errs error
 
 	transform := newTransformer(e.logger, e.buildInfo, details)
 	batches := make([]telemetry.Batch, 0, calcLogBatches(ld))
@@ -195,7 +195,7 @@ func (e exporter) buildLogBatch(details *exportMetadata, ld pdata.Logs) ([]telem
 			logCommon, err := telemetry.NewLogCommonBlock(telemetry.WithLogAttributes(commonAttributes))
 			if err != nil {
 				e.logger.Error("Transform of log common attributes failed.", zap.Error(err))
-				errs = append(errs, err)
+				errs = multierr.Append(errs, err)
 				continue
 			}
 			logs := make([]telemetry.Log, 0, ilogs.Logs().Len())
@@ -204,7 +204,7 @@ func (e exporter) buildLogBatch(details *exportMetadata, ld pdata.Logs) ([]telem
 				nrLog, err := transform.Log(log)
 				if err != nil {
 					e.logger.Error("Transform of log failed.", zap.Error(err))
-					errs = append(errs, err)
+					errs = multierr.Append(errs, err)
 					continue
 				}
 
@@ -215,7 +215,7 @@ func (e exporter) buildLogBatch(details *exportMetadata, ld pdata.Logs) ([]telem
 		}
 	}
 
-	return batches, consumererror.Combine(errs)
+	return batches, errs
 }
 
 func calcLogBatches(ld pdata.Logs) int {
@@ -235,7 +235,7 @@ func (e exporter) pushMetricData(ctx context.Context, md pdata.Metrics) (outputE
 }
 
 func (e exporter) buildMetricBatch(details *exportMetadata, md pdata.Metrics) ([]telemetry.Batch, error) {
-	var errs []error
+	var errs error
 
 	transform := newTransformer(e.logger, e.buildInfo, details)
 	batches := make([]telemetry.Batch, 0, calcMetricBatches(md))
@@ -248,7 +248,7 @@ func (e exporter) buildMetricBatch(details *exportMetadata, md pdata.Metrics) ([
 			metricCommon, err := telemetry.NewMetricCommonBlock(telemetry.WithMetricAttributes(commonAttributes))
 			if err != nil {
 				e.logger.Error("Transform of metric common attributes failed.", zap.Error(err))
-				errs = append(errs, err)
+				errs = multierr.Append(errs, err)
 				continue
 			}
 			metricSlices := make([][]telemetry.Metric, 0, imetrics.Metrics().Len())
@@ -264,7 +264,7 @@ func (e exporter) buildMetricBatch(details *exportMetadata, md pdata.Metrics) ([
 						}
 					}
 					e.logger.Debug("Transform of metric failed.", zap.Error(err))
-					errs = append(errs, err)
+					errs = multierr.Append(errs, err)
 					continue
 				}
 				details.dataOutputCount += len(nrMetrics)
@@ -275,7 +275,7 @@ func (e exporter) buildMetricBatch(details *exportMetadata, md pdata.Metrics) ([
 		}
 	}
 
-	return batches, consumererror.Combine(errs)
+	return batches, errs
 }
 
 func calcMetricBatches(md pdata.Metrics) int {

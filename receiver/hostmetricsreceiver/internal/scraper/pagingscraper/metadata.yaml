@@ -1,6 +1,6 @@
 name: paging
 
-labels:
+attributes:
   device:
     description: Name of the page file.
 
@@ -24,7 +24,7 @@ metrics:
       type: sum
       aggregation: cumulative
       monotonic: false
-    labels: [device, state]
+    attributes: [device, state]
 
   system.paging.operations:
     description: The number of paging operations.
@@ -33,7 +33,7 @@ metrics:
       type: sum
       aggregation: cumulative
       monotonic: true
-    labels: [direction, type]
+    attributes: [direction, type]
 
   system.paging.faults:
     description: The number of page faults.
@@ -42,4 +42,4 @@ metrics:
       type: sum
       aggregation: cumulative
       monotonic: true
-    labels: [type]
+    attributes: [type]

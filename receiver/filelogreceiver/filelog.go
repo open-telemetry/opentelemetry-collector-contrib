@@ -47,7 +47,7 @@ func (f ReceiverType) CreateDefaultConfig() config.Receiver {
 func createDefaultConfig() *FileLogConfig {
 	return &FileLogConfig{
 		BaseConfig: stanza.BaseConfig{
-			ReceiverSettings: config.NewReceiverSettings(config.NewID(typeStr)),
+			ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
 			Operators:        stanza.OperatorConfigs{},
 			Converter: stanza.ConverterConfig{
 				MaxFlushCount: stanza.DefaultMaxFlushCount,

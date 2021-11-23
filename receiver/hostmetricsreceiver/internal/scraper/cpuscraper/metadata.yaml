@@ -1,6 +1,6 @@
 name: cpu
 
-labels:
+attributes:
   cpu:
     description: CPU number starting at 0.
 
@@ -16,4 +16,4 @@ metrics:
       type: sum
       aggregation: cumulative
       monotonic: true
-    labels: [state]
+    attributes: [state]

@@ -40,10 +40,6 @@ const (
 	taskPrefix      = "ecs.task."
 	containerPrefix = "container."
 
-	EndpointEnvKey   = "ECS_CONTAINER_METADATA_URI_V4"
-	taskStatsPath    = "/task/stats"
-	taskMetadataPath = "/task"
-
 	attributeMemoryUsage    = "memory.usage"
 	attributeMemoryMaxUsage = "memory.usage.max"
 	attributeMemoryLimit    = "memory.usage.limit"

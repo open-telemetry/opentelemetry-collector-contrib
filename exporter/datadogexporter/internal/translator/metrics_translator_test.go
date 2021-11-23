@@ -16,37 +16,24 @@ package translator
 
 import (
 	"context"
+	"fmt"
 	"math"
 	"testing"
 	"time"
 
+	"github.com/DataDog/datadog-agent/pkg/quantile"
+	"github.com/DataDog/datadog-agent/pkg/quantile/summary"
 	gocache "github.com/patrickmn/go-cache"
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenttest"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/model/pdata"
+	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest/observer"
-	"gopkg.in/zorkian/go-datadog-api.v2"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/config"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/attributes"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metrics"
 )
-
-func TestMetricValue(t *testing.T) {
-	var (
-		name  = "name"
-		value = math.Pi
-		ts    = uint64(time.Now().UnixNano())
-		tags  = []string{"tool:opentelemetry", "version:0.1.0"}
-	)
-
-	metric := metrics.NewGauge(name, ts, value, tags)
-	assert.Equal(t, string(metrics.Gauge), metric.GetType())
-	assert.Equal(t, tags, metric.Tags)
-}
 
 func TestGetTags(t *testing.T) {
 	attributes := pdata.NewAttributeMapFromMap(map[string]pdata.AttributeValue{
@@ -75,7 +62,7 @@ func TestIsCumulativeMonotonic(t *testing.T) {
 		metric.SetDataType(pdata.MetricDataTypeSum)
 		sum := metric.Sum()
 		sum.SetIsMonotonic(false)
-		sum.SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+		sum.SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
 
 		assert.False(t, isCumulativeMonotonic(metric))
 	}
@@ -88,7 +75,7 @@ func TestIsCumulativeMonotonic(t *testing.T) {
 		metric.SetDataType(pdata.MetricDataTypeSum)
 		sum := metric.Sum()
 		sum.SetIsMonotonic(true)
-		sum.SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+		sum.SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
 
 		assert.True(t, isCumulativeMonotonic(metric))
 	}
@@ -99,7 +86,7 @@ func TestIsCumulativeMonotonic(t *testing.T) {
 		metric.SetDataType(pdata.MetricDataTypeSum)
 		sum := metric.Sum()
 		sum.SetIsMonotonic(true)
-		sum.SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+		sum.SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
 
 		assert.True(t, isCumulativeMonotonic(metric))
 	}
@@ -121,16 +108,76 @@ func (t testProvider) Hostname(context.Context) (string, error) {
 	return string(t), nil
 }
 
-func newTranslator(logger *zap.Logger, cfg config.MetricsConfig) *Translator {
-	params := component.ExporterCreateSettings{
-		BuildInfo: component.BuildInfo{
-			Version: "1.0",
+func newTranslator(t *testing.T, logger *zap.Logger, opts ...Option) *Translator {
+	options := append([]Option{
+		WithFallbackHostnameProvider(testProvider("fallbackHostname")),
+		WithHistogramMode(HistogramModeDistributions),
+		WithNumberMode(NumberModeCumulativeToDelta),
+	}, opts...)
+
+	tr, err := New(
+		logger,
+		options...,
+	)
+
+	require.NoError(t, err)
+	return tr
+}
+
+type metric struct {
+	name      string
+	typ       MetricDataType
+	timestamp uint64
+	value     float64
+	tags      []string
+	host      string
+}
+
+type sketch struct {
+	name      string
+	basic     summary.Summary
+	timestamp uint64
+	tags      []string
+	host      string
+}
+
+var _ TimeSeriesConsumer = (*mockTimeSeriesConsumer)(nil)
+
+type mockTimeSeriesConsumer struct {
+	metrics []metric
+}
+
+func (m *mockTimeSeriesConsumer) ConsumeTimeSeries(
+	_ context.Context,
+	name string,
+	typ MetricDataType,
+	ts uint64,
+	val float64,
+	tags []string,
+	host string,
+) {
+	m.metrics = append(m.metrics,
+		metric{
+			name:      name,
+			typ:       typ,
+			timestamp: ts,
+			value:     val,
+			tags:      tags,
+			host:      host,
 		},
-		TelemetrySettings: component.TelemetrySettings{
-			Logger: logger,
-		},
-	}
-	return New(newTestCache(), params, cfg, testProvider("fallbackHostname"))
+	)
+}
+
+func newGauge(name string, ts uint64, val float64, tags []string) metric {
+	return metric{name: name, typ: Gauge, timestamp: ts, value: val, tags: tags}
+}
+
+func newCount(name string, ts uint64, val float64, tags []string) metric {
+	return metric{name: name, typ: Count, timestamp: ts, value: val, tags: tags}
+}
+
+func newSketch(name string, ts uint64, s summary.Summary, tags []string) sketch {
+	return sketch{name: name, basic: s, timestamp: ts, tags: tags}
 }
 
 func TestMapIntMetrics(t *testing.T) {
@@ -139,22 +186,29 @@ func TestMapIntMetrics(t *testing.T) {
 	point := slice.AppendEmpty()
 	point.SetIntVal(17)
 	point.SetTimestamp(ts)
-	tr := newTranslator(zap.NewNop(), config.MetricsConfig{})
+	ctx := context.Background()
+	tr := newTranslator(t, zap.NewNop())
 
+	consumer := &mockTimeSeriesConsumer{}
+	tr.mapNumberMetrics(ctx, consumer, "int64.test", Gauge, slice, []string{}, "")
 	assert.ElementsMatch(t,
-		tr.mapNumberMetrics("int64.test", metrics.Gauge, slice, []string{}),
-		[]datadog.Metric{metrics.NewGauge("int64.test", uint64(ts), 17, []string{})},
+		consumer.metrics,
+		[]metric{newGauge("int64.test", uint64(ts), 17, []string{})},
 	)
 
+	consumer = &mockTimeSeriesConsumer{}
+	tr.mapNumberMetrics(ctx, consumer, "int64.delta.test", Count, slice, []string{}, "")
 	assert.ElementsMatch(t,
-		tr.mapNumberMetrics("int64.delta.test", metrics.Count, slice, []string{}),
-		[]datadog.Metric{metrics.NewCount("int64.delta.test", uint64(ts), 17, []string{})},
+		consumer.metrics,
+		[]metric{newCount("int64.delta.test", uint64(ts), 17, []string{})},
 	)
 
 	// With attribute tags
+	consumer = &mockTimeSeriesConsumer{}
+	tr.mapNumberMetrics(ctx, consumer, "int64.test", Gauge, slice, []string{"attribute_tag:attribute_value"}, "")
 	assert.ElementsMatch(t,
-		tr.mapNumberMetrics("int64.test", metrics.Gauge, slice, []string{"attribute_tag:attribute_value"}),
-		[]datadog.Metric{metrics.NewGauge("int64.test", uint64(ts), 17, []string{"attribute_tag:attribute_value"})},
+		consumer.metrics,
+		[]metric{newGauge("int64.test", uint64(ts), 17, []string{"attribute_tag:attribute_value"})},
 	)
 }
 
@@ -164,22 +218,29 @@ func TestMapDoubleMetrics(t *testing.T) {
 	point := slice.AppendEmpty()
 	point.SetDoubleVal(math.Pi)
 	point.SetTimestamp(ts)
-	tr := newTranslator(zap.NewNop(), config.MetricsConfig{})
+	ctx := context.Background()
+	tr := newTranslator(t, zap.NewNop())
 
+	consumer := &mockTimeSeriesConsumer{}
+	tr.mapNumberMetrics(ctx, consumer, "float64.test", Gauge, slice, []string{}, "")
 	assert.ElementsMatch(t,
-		tr.mapNumberMetrics("float64.test", metrics.Gauge, slice, []string{}),
-		[]datadog.Metric{metrics.NewGauge("float64.test", uint64(ts), math.Pi, []string{})},
+		consumer.metrics,
+		[]metric{newGauge("float64.test", uint64(ts), math.Pi, []string{})},
 	)
 
+	consumer = &mockTimeSeriesConsumer{}
+	tr.mapNumberMetrics(ctx, consumer, "float64.delta.test", Count, slice, []string{}, "")
 	assert.ElementsMatch(t,
-		tr.mapNumberMetrics("float64.delta.test", metrics.Count, slice, []string{}),
-		[]datadog.Metric{metrics.NewCount("float64.delta.test", uint64(ts), math.Pi, []string{})},
+		consumer.metrics,
+		[]metric{newCount("float64.delta.test", uint64(ts), math.Pi, []string{})},
 	)
 
 	// With attribute tags
+	consumer = &mockTimeSeriesConsumer{}
+	tr.mapNumberMetrics(ctx, consumer, "float64.test", Gauge, slice, []string{"attribute_tag:attribute_value"}, "")
 	assert.ElementsMatch(t,
-		tr.mapNumberMetrics("float64.test", metrics.Gauge, slice, []string{"attribute_tag:attribute_value"}),
-		[]datadog.Metric{metrics.NewGauge("float64.test", uint64(ts), math.Pi, []string{"attribute_tag:attribute_value"})},
+		consumer.metrics,
+		[]metric{newGauge("float64.test", uint64(ts), math.Pi, []string{"attribute_tag:attribute_value"})},
 	)
 }
 
@@ -207,15 +268,17 @@ func TestMapIntMonotonicMetrics(t *testing.T) {
 
 	// Map to Datadog format
 	metricName := "metric.example"
-	expected := make([]datadog.Metric, len(deltas))
+	expected := make([]metric, len(deltas))
 	for i, val := range deltas {
-		expected[i] = metrics.NewCount(metricName, uint64(seconds(i+1)), float64(val), []string{})
+		expected[i] = newCount(metricName, uint64(seconds(i+1)), float64(val), []string{})
 	}
 
-	tr := newTranslator(zap.NewNop(), config.MetricsConfig{SendMonotonic: true})
-	output := tr.mapNumberMonotonicMetrics(metricName, slice, []string{})
+	ctx := context.Background()
+	consumer := &mockTimeSeriesConsumer{}
+	tr := newTranslator(t, zap.NewNop())
+	tr.mapNumberMonotonicMetrics(ctx, consumer, metricName, slice, []string{}, "")
 
-	assert.ElementsMatch(t, output, expected)
+	assert.ElementsMatch(t, expected, consumer.metrics)
 }
 
 func TestMapIntMonotonicDifferentDimensions(t *testing.T) {
@@ -250,14 +313,17 @@ func TestMapIntMonotonicDifferentDimensions(t *testing.T) {
 	point.SetTimestamp(seconds(1))
 	point.Attributes().InsertString("key1", "valB")
 
-	tr := newTranslator(zap.NewNop(), config.MetricsConfig{SendMonotonic: true})
+	ctx := context.Background()
+	tr := newTranslator(t, zap.NewNop())
 
+	consumer := &mockTimeSeriesConsumer{}
+	tr.mapNumberMonotonicMetrics(ctx, consumer, metricName, slice, []string{}, "")
 	assert.ElementsMatch(t,
-		tr.mapNumberMonotonicMetrics(metricName, slice, []string{}),
-		[]datadog.Metric{
-			metrics.NewCount(metricName, uint64(seconds(1)), 20, []string{}),
-			metrics.NewCount(metricName, uint64(seconds(1)), 30, []string{"key1:valA"}),
-			metrics.NewCount(metricName, uint64(seconds(1)), 40, []string{"key1:valB"}),
+		consumer.metrics,
+		[]metric{
+			newCount(metricName, uint64(seconds(1)), 20, []string{}),
+			newCount(metricName, uint64(seconds(1)), 30, []string{"key1:valA"}),
+			newCount(metricName, uint64(seconds(1)), 40, []string{"key1:valB"}),
 		},
 	)
 }
@@ -274,12 +340,15 @@ func TestMapIntMonotonicWithReboot(t *testing.T) {
 		point.SetIntVal(val)
 	}
 
-	tr := newTranslator(zap.NewNop(), config.MetricsConfig{SendMonotonic: true})
+	ctx := context.Background()
+	tr := newTranslator(t, zap.NewNop())
+	consumer := &mockTimeSeriesConsumer{}
+	tr.mapNumberMonotonicMetrics(ctx, consumer, metricName, slice, []string{}, "")
 	assert.ElementsMatch(t,
-		tr.mapNumberMonotonicMetrics(metricName, slice, []string{}),
-		[]datadog.Metric{
-			metrics.NewCount(metricName, uint64(seconds(1)), 30, []string{}),
-			metrics.NewCount(metricName, uint64(seconds(3)), 20, []string{}),
+		consumer.metrics,
+		[]metric{
+			newCount(metricName, uint64(seconds(1)), 30, []string{}),
+			newCount(metricName, uint64(seconds(3)), 20, []string{}),
 		},
 	)
 }
@@ -298,12 +367,15 @@ func TestMapIntMonotonicOutOfOrder(t *testing.T) {
 		point.SetIntVal(val)
 	}
 
-	tr := newTranslator(zap.NewNop(), config.MetricsConfig{SendMonotonic: true})
+	ctx := context.Background()
+	tr := newTranslator(t, zap.NewNop())
+	consumer := &mockTimeSeriesConsumer{}
+	tr.mapNumberMonotonicMetrics(ctx, consumer, metricName, slice, []string{}, "")
 	assert.ElementsMatch(t,
-		tr.mapNumberMonotonicMetrics(metricName, slice, []string{}),
-		[]datadog.Metric{
-			metrics.NewCount(metricName, uint64(seconds(2)), 2, []string{}),
-			metrics.NewCount(metricName, uint64(seconds(3)), 1, []string{}),
+		consumer.metrics,
+		[]metric{
+			newCount(metricName, uint64(seconds(2)), 2, []string{}),
+			newCount(metricName, uint64(seconds(3)), 1, []string{}),
 		},
 	)
 }
@@ -327,15 +399,17 @@ func TestMapDoubleMonotonicMetrics(t *testing.T) {
 
 	// Map to Datadog format
 	metricName := "metric.example"
-	expected := make([]datadog.Metric, len(deltas))
+	expected := make([]metric, len(deltas))
 	for i, val := range deltas {
-		expected[i] = metrics.NewCount(metricName, uint64(seconds(i+1)), val, []string{})
+		expected[i] = newCount(metricName, uint64(seconds(i+1)), val, []string{})
 	}
 
-	tr := newTranslator(zap.NewNop(), config.MetricsConfig{SendMonotonic: true})
-	output := tr.mapNumberMonotonicMetrics(metricName, slice, []string{})
+	ctx := context.Background()
+	consumer := &mockTimeSeriesConsumer{}
+	tr := newTranslator(t, zap.NewNop())
+	tr.mapNumberMonotonicMetrics(ctx, consumer, metricName, slice, []string{}, "")
 
-	assert.ElementsMatch(t, expected, output)
+	assert.ElementsMatch(t, expected, consumer.metrics)
 }
 
 func TestMapDoubleMonotonicDifferentDimensions(t *testing.T) {
@@ -370,14 +444,17 @@ func TestMapDoubleMonotonicDifferentDimensions(t *testing.T) {
 	point.SetTimestamp(seconds(1))
 	point.Attributes().InsertString("key1", "valB")
 
-	tr := newTranslator(zap.NewNop(), config.MetricsConfig{SendMonotonic: true})
+	ctx := context.Background()
+	tr := newTranslator(t, zap.NewNop())
 
+	consumer := &mockTimeSeriesConsumer{}
+	tr.mapNumberMonotonicMetrics(ctx, consumer, metricName, slice, []string{}, "")
 	assert.ElementsMatch(t,
-		tr.mapNumberMonotonicMetrics(metricName, slice, []string{}),
-		[]datadog.Metric{
-			metrics.NewCount(metricName, uint64(seconds(1)), 20, []string{}),
-			metrics.NewCount(metricName, uint64(seconds(1)), 30, []string{"key1:valA"}),
-			metrics.NewCount(metricName, uint64(seconds(1)), 40, []string{"key1:valB"}),
+		consumer.metrics,
+		[]metric{
+			newCount(metricName, uint64(seconds(1)), 20, []string{}),
+			newCount(metricName, uint64(seconds(1)), 30, []string{"key1:valA"}),
+			newCount(metricName, uint64(seconds(1)), 40, []string{"key1:valB"}),
 		},
 	)
 }
@@ -394,12 +471,15 @@ func TestMapDoubleMonotonicWithReboot(t *testing.T) {
 		point.SetDoubleVal(val)
 	}
 
-	tr := newTranslator(zap.NewNop(), config.MetricsConfig{SendMonotonic: true})
+	ctx := context.Background()
+	tr := newTranslator(t, zap.NewNop())
+	consumer := &mockTimeSeriesConsumer{}
+	tr.mapNumberMonotonicMetrics(ctx, consumer, metricName, slice, []string{}, "")
 	assert.ElementsMatch(t,
-		tr.mapNumberMonotonicMetrics(metricName, slice, []string{}),
-		[]datadog.Metric{
-			metrics.NewCount(metricName, uint64(seconds(2)), 30, []string{}),
-			metrics.NewCount(metricName, uint64(seconds(6)), 20, []string{}),
+		consumer.metrics,
+		[]metric{
+			newCount(metricName, uint64(seconds(2)), 30, []string{}),
+			newCount(metricName, uint64(seconds(6)), 20, []string{}),
 		},
 	)
 }
@@ -418,12 +498,32 @@ func TestMapDoubleMonotonicOutOfOrder(t *testing.T) {
 		point.SetDoubleVal(val)
 	}
 
-	tr := newTranslator(zap.NewNop(), config.MetricsConfig{SendMonotonic: true})
+	ctx := context.Background()
+	tr := newTranslator(t, zap.NewNop())
+	consumer := &mockTimeSeriesConsumer{}
+	tr.mapNumberMonotonicMetrics(ctx, consumer, metricName, slice, []string{}, "")
 	assert.ElementsMatch(t,
-		tr.mapNumberMonotonicMetrics(metricName, slice, []string{}),
-		[]datadog.Metric{
-			metrics.NewCount(metricName, uint64(seconds(2)), 2, []string{}),
-			metrics.NewCount(metricName, uint64(seconds(3)), 1, []string{}),
+		consumer.metrics,
+		[]metric{
+			newCount(metricName, uint64(seconds(2)), 2, []string{}),
+			newCount(metricName, uint64(seconds(3)), 1, []string{}),
+		},
+	)
+}
+
+type mockFullConsumer struct {
+	mockTimeSeriesConsumer
+	sketches []sketch
+}
+
+func (c *mockFullConsumer) ConsumeSketch(_ context.Context, name string, ts uint64, sk *quantile.Sketch, tags []string, host string) {
+	c.sketches = append(c.sketches,
+		sketch{
+			name:      name,
+			basic:     sk.Basic,
+			timestamp: ts,
+			tags:      tags,
+			host:      host,
 		},
 	)
 }
@@ -438,53 +538,155 @@ func TestMapDeltaHistogramMetrics(t *testing.T) {
 	point.SetExplicitBounds([]float64{0})
 	point.SetTimestamp(ts)
 
-	noBuckets := []datadog.Metric{
-		metrics.NewCount("doubleHist.test.count", uint64(ts), 20, []string{}),
-		metrics.NewCount("doubleHist.test.sum", uint64(ts), math.Pi, []string{}),
+	counts := []metric{
+		newCount("doubleHist.test.count", uint64(ts), 20, []string{}),
+		newCount("doubleHist.test.sum", uint64(ts), math.Pi, []string{}),
 	}
 
-	buckets := []datadog.Metric{
-		metrics.NewCount("doubleHist.test.bucket", uint64(ts), 2, []string{"lower_bound:-inf", "upper_bound:0"}),
-		metrics.NewCount("doubleHist.test.bucket", uint64(ts), 18, []string{"lower_bound:0", "upper_bound:inf"}),
+	countsAttributeTags := []metric{
+		newCount("doubleHist.test.count", uint64(ts), 20, []string{"attribute_tag:attribute_value"}),
+		newCount("doubleHist.test.sum", uint64(ts), math.Pi, []string{"attribute_tag:attribute_value"}),
 	}
 
-	tr := newTranslator(zap.NewNop(), config.MetricsConfig{SendMonotonic: true})
+	bucketsCounts := []metric{
+		newCount("doubleHist.test.bucket", uint64(ts), 2, []string{"lower_bound:-inf", "upper_bound:0"}),
+		newCount("doubleHist.test.bucket", uint64(ts), 18, []string{"lower_bound:0", "upper_bound:inf"}),
+	}
+
+	bucketsCountsAttributeTags := []metric{
+		newCount("doubleHist.test.bucket", uint64(ts), 2, []string{"lower_bound:-inf", "upper_bound:0", "attribute_tag:attribute_value"}),
+		newCount("doubleHist.test.bucket", uint64(ts), 18, []string{"lower_bound:0", "upper_bound:inf", "attribute_tag:attribute_value"}),
+	}
+
+	sketches := []sketch{
+		newSketch("doubleHist.test", uint64(ts), summary.Summary{
+			Min: 0,
+			Max: 0,
+			Sum: 0,
+			Avg: 0,
+			Cnt: 20,
+		},
+			[]string{},
+		),
+	}
+
+	sketchesAttributeTags := []sketch{
+		newSketch("doubleHist.test", uint64(ts), summary.Summary{
+			Min: 0,
+			Max: 0,
+			Sum: 0,
+			Avg: 0,
+			Cnt: 20,
+		},
+			[]string{"attribute_tag:attribute_value"},
+		),
+	}
+
+	ctx := context.Background()
 	delta := true
 
-	tr.cfg.Buckets = false
-	assert.ElementsMatch(t,
-		tr.mapHistogramMetrics("doubleHist.test", slice, delta, []string{}), // No buckets
-		noBuckets,
-	)
-
-	tr.cfg.Buckets = true
-	assert.ElementsMatch(t,
-		tr.mapHistogramMetrics("doubleHist.test", slice, delta, []string{}), // buckets
-		append(noBuckets, buckets...),
-	)
-
-	// With attribute tags
-	noBucketsAttributeTags := []datadog.Metric{
-		metrics.NewCount("doubleHist.test.count", uint64(ts), 20, []string{"attribute_tag:attribute_value"}),
-		metrics.NewCount("doubleHist.test.sum", uint64(ts), math.Pi, []string{"attribute_tag:attribute_value"}),
+	tests := []struct {
+		name             string
+		histogramMode    HistogramMode
+		sendCountSum     bool
+		tags             []string
+		expectedMetrics  []metric
+		expectedSketches []sketch
+	}{
+		{
+			name:             "No buckets: send count & sum metrics, no attribute tags",
+			histogramMode:    HistogramModeNoBuckets,
+			sendCountSum:     true,
+			tags:             []string{},
+			expectedMetrics:  counts,
+			expectedSketches: []sketch{},
+		},
+		{
+			name:             "No buckets: send count & sum metrics, attribute tags",
+			histogramMode:    HistogramModeNoBuckets,
+			sendCountSum:     true,
+			tags:             []string{"attribute_tag:attribute_value"},
+			expectedMetrics:  countsAttributeTags,
+			expectedSketches: []sketch{},
+		},
+		{
+			name:             "Counters: do not send count & sum metrics, no tags",
+			histogramMode:    HistogramModeCounters,
+			sendCountSum:     false,
+			tags:             []string{},
+			expectedMetrics:  bucketsCounts,
+			expectedSketches: []sketch{},
+		},
+		{
+			name:             "Counters: do not send count & sum metrics, attribute tags",
+			histogramMode:    HistogramModeCounters,
+			sendCountSum:     false,
+			tags:             []string{"attribute_tag:attribute_value"},
+			expectedMetrics:  bucketsCountsAttributeTags,
+			expectedSketches: []sketch{},
+		},
+		{
+			name:             "Counters: send count & sum metrics, no tags",
+			histogramMode:    HistogramModeCounters,
+			sendCountSum:     true,
+			tags:             []string{},
+			expectedMetrics:  append(counts, bucketsCounts...),
+			expectedSketches: []sketch{},
+		},
+		{
+			name:             "Counters: send count & sum metrics, attribute tags",
+			histogramMode:    HistogramModeCounters,
+			sendCountSum:     true,
+			tags:             []string{"attribute_tag:attribute_value"},
+			expectedMetrics:  append(countsAttributeTags, bucketsCountsAttributeTags...),
+			expectedSketches: []sketch{},
+		},
+		{
+			name:             "Distributions: do not send count & sum metrics, no tags",
+			histogramMode:    HistogramModeDistributions,
+			sendCountSum:     false,
+			tags:             []string{},
+			expectedMetrics:  []metric{},
+			expectedSketches: sketches,
+		},
+		{
+			name:             "Distributions: do not send count & sum metrics, attribute tags",
+			histogramMode:    HistogramModeDistributions,
+			sendCountSum:     false,
+			tags:             []string{"attribute_tag:attribute_value"},
+			expectedMetrics:  []metric{},
+			expectedSketches: sketchesAttributeTags,
+		},
+		{
+			name:             "Distributions: send count & sum metrics, no tags",
+			histogramMode:    HistogramModeDistributions,
+			sendCountSum:     true,
+			tags:             []string{},
+			expectedMetrics:  counts,
+			expectedSketches: sketches,
+		},
+		{
+			name:             "Distributions: send count & sum metrics, attribute tags",
+			histogramMode:    HistogramModeDistributions,
+			sendCountSum:     true,
+			tags:             []string{"attribute_tag:attribute_value"},
+			expectedMetrics:  countsAttributeTags,
+			expectedSketches: sketchesAttributeTags,
+		},
 	}
 
-	bucketsAttributeTags := []datadog.Metric{
-		metrics.NewCount("doubleHist.test.bucket", uint64(ts), 2, []string{"attribute_tag:attribute_value", "lower_bound:-inf", "upper_bound:0"}),
-		metrics.NewCount("doubleHist.test.bucket", uint64(ts), 18, []string{"attribute_tag:attribute_value", "lower_bound:0", "upper_bound:inf"}),
+	for _, testInstance := range tests {
+		t.Run(testInstance.name, func(t *testing.T) {
+			tr := newTranslator(t, zap.NewNop())
+			tr.cfg.HistMode = testInstance.histogramMode
+			tr.cfg.SendCountSum = testInstance.sendCountSum
+			consumer := &mockFullConsumer{}
+
+			tr.mapHistogramMetrics(ctx, consumer, "doubleHist.test", slice, delta, testInstance.tags, "")
+			assert.ElementsMatch(t, consumer.metrics, testInstance.expectedMetrics)
+			assert.ElementsMatch(t, consumer.sketches, testInstance.expectedSketches)
+		})
 	}
-
-	tr.cfg.Buckets = false
-	assert.ElementsMatch(t,
-		tr.mapHistogramMetrics("doubleHist.test", slice, delta, []string{"attribute_tag:attribute_value"}), // No buckets
-		noBucketsAttributeTags,
-	)
-
-	tr.cfg.Buckets = true
-	assert.ElementsMatch(t,
-		tr.mapHistogramMetrics("doubleHist.test", slice, delta, []string{"attribute_tag:attribute_value"}), // buckets
-		append(noBucketsAttributeTags, bucketsAttributeTags...),
-	)
 }
 
 func TestMapCumulativeHistogramMetrics(t *testing.T) {
@@ -499,25 +701,118 @@ func TestMapCumulativeHistogramMetrics(t *testing.T) {
 	point = slice.AppendEmpty()
 	point.SetCount(20 + 30)
 	point.SetSum(math.Pi + 20)
-	point.SetBucketCounts([]uint64{2 + 11, 18 + 2})
+	point.SetBucketCounts([]uint64{2 + 11, 18 + 19})
 	point.SetExplicitBounds([]float64{0})
 	point.SetTimestamp(seconds(2))
 
-	expected := []datadog.Metric{
-		metrics.NewCount("doubleHist.test.count", uint64(seconds(2)), 30, []string{}),
-		metrics.NewCount("doubleHist.test.sum", uint64(seconds(2)), 20, []string{}),
-		metrics.NewCount("doubleHist.test.bucket", uint64(seconds(2)), 11, []string{"lower_bound:-inf", "upper_bound:0"}),
-		metrics.NewCount("doubleHist.test.bucket", uint64(seconds(2)), 2, []string{"lower_bound:0", "upper_bound:inf"}),
+	counts := []metric{
+		newCount("doubleHist.test.count", uint64(seconds(2)), 30, []string{}),
+		newCount("doubleHist.test.sum", uint64(seconds(2)), 20, []string{}),
 	}
 
-	tr := newTranslator(zap.NewNop(), config.MetricsConfig{SendMonotonic: true})
+	bucketsCounts := []metric{
+		newCount("doubleHist.test.bucket", uint64(seconds(2)), 11, []string{"lower_bound:-inf", "upper_bound:0"}),
+		newCount("doubleHist.test.bucket", uint64(seconds(2)), 19, []string{"lower_bound:0", "upper_bound:inf"}),
+	}
+
+	sketches := []sketch{
+		newSketch("doubleHist.test", uint64(seconds(2)), summary.Summary{
+			Min: 0,
+			Max: 0,
+			Sum: 0,
+			Avg: 0,
+			Cnt: 30,
+		},
+			[]string{},
+		),
+	}
+
+	ctx := context.Background()
 	delta := false
 
-	tr.cfg.Buckets = true
-	assert.ElementsMatch(t,
-		tr.mapHistogramMetrics("doubleHist.test", slice, delta, []string{}),
-		expected,
-	)
+	tests := []struct {
+		name             string
+		histogramMode    HistogramMode
+		sendCountSum     bool
+		expectedMetrics  []metric
+		expectedSketches []sketch
+	}{
+		{
+			name:             "No buckets: send count & sum metrics",
+			histogramMode:    HistogramModeNoBuckets,
+			sendCountSum:     true,
+			expectedMetrics:  counts,
+			expectedSketches: []sketch{},
+		},
+		{
+			name:             "Counters: do not send count & sum metrics",
+			histogramMode:    HistogramModeCounters,
+			sendCountSum:     false,
+			expectedMetrics:  bucketsCounts,
+			expectedSketches: []sketch{},
+		},
+		{
+			name:             "Counters: send count & sum metrics",
+			histogramMode:    HistogramModeCounters,
+			sendCountSum:     true,
+			expectedMetrics:  append(counts, bucketsCounts...),
+			expectedSketches: []sketch{},
+		},
+		{
+			name:             "Distributions: do not send count & sum metrics",
+			histogramMode:    HistogramModeDistributions,
+			sendCountSum:     false,
+			expectedMetrics:  []metric{},
+			expectedSketches: sketches,
+		},
+		{
+			name:             "Distributions: send count & sum metrics",
+			histogramMode:    HistogramModeDistributions,
+			sendCountSum:     true,
+			expectedMetrics:  counts,
+			expectedSketches: sketches,
+		},
+	}
+
+	for _, testInstance := range tests {
+		t.Run(testInstance.name, func(t *testing.T) {
+			tr := newTranslator(t, zap.NewNop())
+			tr.cfg.HistMode = testInstance.histogramMode
+			tr.cfg.SendCountSum = testInstance.sendCountSum
+			consumer := &mockFullConsumer{}
+
+			tr.mapHistogramMetrics(ctx, consumer, "doubleHist.test", slice, delta, []string{}, "")
+			assert.ElementsMatch(t, consumer.metrics, testInstance.expectedMetrics)
+			assert.ElementsMatch(t, consumer.sketches, testInstance.expectedSketches)
+		})
+	}
+}
+
+func TestLegacyBucketsTags(t *testing.T) {
+	// Test that passing the same tags slice doesn't reuse the slice.
+	ctx := context.Background()
+	tr := newTranslator(t, zap.NewNop())
+
+	tags := make([]string, 0, 10)
+
+	pointOne := pdata.NewHistogramDataPoint()
+	pointOne.SetBucketCounts([]uint64{2, 18})
+	pointOne.SetExplicitBounds([]float64{0})
+	pointOne.SetTimestamp(seconds(0))
+	consumer := &mockTimeSeriesConsumer{}
+	tr.getLegacyBuckets(ctx, consumer, "test.histogram.one", pointOne, true, tags, "")
+	seriesOne := consumer.metrics
+
+	pointTwo := pdata.NewHistogramDataPoint()
+	pointTwo.SetBucketCounts([]uint64{2, 18})
+	pointTwo.SetExplicitBounds([]float64{1})
+	pointTwo.SetTimestamp(seconds(0))
+	consumer = &mockTimeSeriesConsumer{}
+	tr.getLegacyBuckets(ctx, consumer, "test.histogram.two", pointTwo, true, tags, "")
+	seriesTwo := consumer.metrics
+
+	assert.ElementsMatch(t, seriesOne[0].tags, []string{"lower_bound:-inf", "upper_bound:0"})
+	assert.ElementsMatch(t, seriesTwo[0].tags, []string{"lower_bound:-inf", "upper_bound:1.0"})
 }
 
 func TestFormatFloat(t *testing.T) {
@@ -576,108 +871,91 @@ func TestMapSummaryMetrics(t *testing.T) {
 
 	newTranslator := func(tags []string, quantiles bool) *Translator {
 		c := newTestCache()
-		c.cache.Set(c.metricDimensionsToMapKey("summary.example.count", tags), numberCounter{0, 1}, gocache.NoExpiration)
-		c.cache.Set(c.metricDimensionsToMapKey("summary.example.sum", tags), numberCounter{0, 1}, gocache.NoExpiration)
-		return New(c, componenttest.NewNopExporterCreateSettings(), config.MetricsConfig{Quantiles: quantiles}, testProvider("fallbackHostname"))
+		c.cache.Set(c.metricDimensionsToMapKey("summary.example.count", tags), numberCounter{0, 0, 1}, gocache.NoExpiration)
+		c.cache.Set(c.metricDimensionsToMapKey("summary.example.sum", tags), numberCounter{0, 0, 1}, gocache.NoExpiration)
+		options := []Option{WithFallbackHostnameProvider(testProvider("fallbackHostname"))}
+		if quantiles {
+			options = append(options, WithQuantiles())
+		}
+		tr, err := New(zap.NewNop(), options...)
+		require.NoError(t, err)
+		tr.prevPts = c
+		return tr
 	}
 
-	noQuantiles := []datadog.Metric{
-		metrics.NewCount("summary.example.count", uint64(ts), 100, []string{}),
-		metrics.NewCount("summary.example.sum", uint64(ts), 10_000, []string{}),
+	noQuantiles := []metric{
+		newCount("summary.example.count", uint64(ts), 100, []string{}),
+		newCount("summary.example.sum", uint64(ts), 10_000, []string{}),
 	}
-	quantiles := []datadog.Metric{
-		metrics.NewGauge("summary.example.quantile", uint64(ts), 0, []string{"quantile:0"}),
-		metrics.NewGauge("summary.example.quantile", uint64(ts), 100, []string{"quantile:0.5"}),
-		metrics.NewGauge("summary.example.quantile", uint64(ts), 500, []string{"quantile:0.999"}),
-		metrics.NewGauge("summary.example.quantile", uint64(ts), 600, []string{"quantile:1.0"}),
+	quantiles := []metric{
+		newGauge("summary.example.quantile", uint64(ts), 0, []string{"quantile:0"}),
+		newGauge("summary.example.quantile", uint64(ts), 100, []string{"quantile:0.5"}),
+		newGauge("summary.example.quantile", uint64(ts), 500, []string{"quantile:0.999"}),
+		newGauge("summary.example.quantile", uint64(ts), 600, []string{"quantile:1.0"}),
 	}
+	ctx := context.Background()
 	tr := newTranslator([]string{}, false)
+	consumer := &mockTimeSeriesConsumer{}
+	tr.mapSummaryMetrics(ctx, consumer, "summary.example", slice, []string{}, "")
 	assert.ElementsMatch(t,
-		tr.mapSummaryMetrics("summary.example", slice, []string{}),
+		consumer.metrics,
 		noQuantiles,
 	)
 	tr = newTranslator([]string{}, true)
+	consumer = &mockTimeSeriesConsumer{}
+	tr.mapSummaryMetrics(ctx, consumer, "summary.example", slice, []string{}, "")
 	assert.ElementsMatch(t,
-		tr.mapSummaryMetrics("summary.example", slice, []string{}),
+		consumer.metrics,
 		append(noQuantiles, quantiles...),
 	)
 
-	noQuantilesAttr := []datadog.Metric{
-		metrics.NewCount("summary.example.count", uint64(ts), 100, []string{"attribute_tag:attribute_value"}),
-		metrics.NewCount("summary.example.sum", uint64(ts), 10_000, []string{"attribute_tag:attribute_value"}),
+	noQuantilesAttr := []metric{
+		newCount("summary.example.count", uint64(ts), 100, []string{"attribute_tag:attribute_value"}),
+		newCount("summary.example.sum", uint64(ts), 10_000, []string{"attribute_tag:attribute_value"}),
 	}
-	quantilesAttr := []datadog.Metric{
-		metrics.NewGauge("summary.example.quantile", uint64(ts), 0, []string{"attribute_tag:attribute_value", "quantile:0"}),
-		metrics.NewGauge("summary.example.quantile", uint64(ts), 100, []string{"attribute_tag:attribute_value", "quantile:0.5"}),
-		metrics.NewGauge("summary.example.quantile", uint64(ts), 500, []string{"attribute_tag:attribute_value", "quantile:0.999"}),
-		metrics.NewGauge("summary.example.quantile", uint64(ts), 600, []string{"attribute_tag:attribute_value", "quantile:1.0"}),
+
+	quantilesAttr := []metric{
+		newGauge("summary.example.quantile", uint64(ts), 0, []string{"quantile:0", "attribute_tag:attribute_value"}),
+		newGauge("summary.example.quantile", uint64(ts), 100, []string{"quantile:0.5", "attribute_tag:attribute_value"}),
+		newGauge("summary.example.quantile", uint64(ts), 500, []string{"quantile:0.999", "attribute_tag:attribute_value"}),
+		newGauge("summary.example.quantile", uint64(ts), 600, []string{"quantile:1.0", "attribute_tag:attribute_value"}),
 	}
 	tr = newTranslator([]string{"attribute_tag:attribute_value"}, false)
+	consumer = &mockTimeSeriesConsumer{}
+	tr.mapSummaryMetrics(ctx, consumer, "summary.example", slice, []string{"attribute_tag:attribute_value"}, "")
 	assert.ElementsMatch(t,
-		tr.mapSummaryMetrics("summary.example", slice, []string{"attribute_tag:attribute_value"}),
+		consumer.metrics,
 		noQuantilesAttr,
 	)
 	tr = newTranslator([]string{"attribute_tag:attribute_value"}, true)
+	consumer = &mockTimeSeriesConsumer{}
+	tr.mapSummaryMetrics(ctx, consumer, "summary.example", slice, []string{"attribute_tag:attribute_value"}, "")
 	assert.ElementsMatch(t,
-		tr.mapSummaryMetrics("summary.example", slice, []string{"attribute_tag:attribute_value"}),
+		consumer.metrics,
 		append(noQuantilesAttr, quantilesAttr...),
 	)
-}
-
-func TestRunningMetrics(t *testing.T) {
-	ms := pdata.NewMetrics()
-	rms := ms.ResourceMetrics()
-
-	rm := rms.AppendEmpty()
-	resAttrs := rm.Resource().Attributes()
-	resAttrs.Insert(attributes.AttributeDatadogHostname, pdata.NewAttributeValueString("resource-hostname-1"))
-
-	rm = rms.AppendEmpty()
-	resAttrs = rm.Resource().Attributes()
-	resAttrs.Insert(attributes.AttributeDatadogHostname, pdata.NewAttributeValueString("resource-hostname-1"))
-
-	rm = rms.AppendEmpty()
-	resAttrs = rm.Resource().Attributes()
-	resAttrs.Insert(attributes.AttributeDatadogHostname, pdata.NewAttributeValueString("resource-hostname-2"))
-
-	rms.AppendEmpty()
-
-	cfg := config.MetricsConfig{}
-	tr := newTranslator(zap.NewNop(), cfg)
-
-	series := tr.MapMetrics(ms)
-
-	runningHostnames := []string{}
-
-	for _, metric := range series {
-		if *metric.Metric == "otel.datadog_exporter.metrics.running" {
-			if metric.Host != nil {
-				runningHostnames = append(runningHostnames, *metric.Host)
-			}
-		}
-	}
-
-	assert.ElementsMatch(t,
-		runningHostnames,
-		[]string{"fallbackHostname", "resource-hostname-1", "resource-hostname-2"},
-	)
-
 }
 
 const (
 	testHostname = "res-hostname"
 )
 
-func createTestMetrics() pdata.Metrics {
+func createTestMetrics(additionalAttributes map[string]string, name, version string) pdata.Metrics {
 	md := pdata.NewMetrics()
 	rms := md.ResourceMetrics()
 	rm := rms.AppendEmpty()
 
 	attrs := rm.Resource().Attributes()
 	attrs.InsertString(attributes.AttributeDatadogHostname, testHostname)
+	for attr, val := range additionalAttributes {
+		attrs.InsertString(attr, val)
+	}
 	ilms := rm.InstrumentationLibraryMetrics()
 
-	metricsArray := ilms.AppendEmpty().Metrics()
+	ilm := ilms.AppendEmpty()
+	ilm.InstrumentationLibrary().SetName(name)
+	ilm.InstrumentationLibrary().SetVersion(version)
+	metricsArray := ilm.Metrics()
 	metricsArray.AppendEmpty() // first one is TypeNone to test that it's ignored
 
 	// IntGauge
@@ -702,13 +980,13 @@ func createTestMetrics() pdata.Metrics {
 	met = metricsArray.AppendEmpty()
 	met.SetName("unspecified.sum")
 	met.SetDataType(pdata.MetricDataTypeSum)
-	met.Sum().SetAggregationTemporality(pdata.AggregationTemporalityUnspecified)
+	met.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityUnspecified)
 
 	// Int Sum (delta)
 	met = metricsArray.AppendEmpty()
 	met.SetName("int.delta.sum")
 	met.SetDataType(pdata.MetricDataTypeSum)
-	met.Sum().SetAggregationTemporality(pdata.AggregationTemporalityDelta)
+	met.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityDelta)
 	dpsInt = met.Sum().DataPoints()
 	dpInt = dpsInt.AppendEmpty()
 	dpInt.SetTimestamp(seconds(0))
@@ -718,7 +996,7 @@ func createTestMetrics() pdata.Metrics {
 	met = metricsArray.AppendEmpty()
 	met.SetName("double.delta.sum")
 	met.SetDataType(pdata.MetricDataTypeSum)
-	met.Sum().SetAggregationTemporality(pdata.AggregationTemporalityDelta)
+	met.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityDelta)
 	dpsDouble = met.Sum().DataPoints()
 	dpDouble = dpsDouble.AppendEmpty()
 	dpDouble.SetTimestamp(seconds(0))
@@ -728,7 +1006,7 @@ func createTestMetrics() pdata.Metrics {
 	met = metricsArray.AppendEmpty()
 	met.SetName("int.delta.monotonic.sum")
 	met.SetDataType(pdata.MetricDataTypeSum)
-	met.Sum().SetAggregationTemporality(pdata.AggregationTemporalityDelta)
+	met.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityDelta)
 	dpsInt = met.Sum().DataPoints()
 	dpInt = dpsInt.AppendEmpty()
 	dpInt.SetTimestamp(seconds(0))
@@ -738,7 +1016,7 @@ func createTestMetrics() pdata.Metrics {
 	met = metricsArray.AppendEmpty()
 	met.SetName("double.delta.monotonic.sum")
 	met.SetDataType(pdata.MetricDataTypeSum)
-	met.Sum().SetAggregationTemporality(pdata.AggregationTemporalityDelta)
+	met.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityDelta)
 	dpsDouble = met.Sum().DataPoints()
 	dpDouble = dpsDouble.AppendEmpty()
 	dpDouble.SetTimestamp(seconds(0))
@@ -748,13 +1026,13 @@ func createTestMetrics() pdata.Metrics {
 	met = metricsArray.AppendEmpty()
 	met.SetName("unspecified.histogram")
 	met.SetDataType(pdata.MetricDataTypeHistogram)
-	met.Histogram().SetAggregationTemporality(pdata.AggregationTemporalityUnspecified)
+	met.Histogram().SetAggregationTemporality(pdata.MetricAggregationTemporalityUnspecified)
 
 	// Histogram (delta)
 	met = metricsArray.AppendEmpty()
 	met.SetName("double.histogram")
 	met.SetDataType(pdata.MetricDataTypeHistogram)
-	met.Histogram().SetAggregationTemporality(pdata.AggregationTemporalityDelta)
+	met.Histogram().SetAggregationTemporality(pdata.MetricAggregationTemporalityDelta)
 	dpsDoubleHist := met.Histogram().DataPoints()
 	dpDoubleHist := dpsDoubleHist.AppendEmpty()
 	dpDoubleHist.SetCount(20)
@@ -767,7 +1045,7 @@ func createTestMetrics() pdata.Metrics {
 	met = metricsArray.AppendEmpty()
 	met.SetName("int.cumulative.sum")
 	met.SetDataType(pdata.MetricDataTypeSum)
-	met.Sum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+	met.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
 	dpsInt = met.Sum().DataPoints()
 	dpsInt.EnsureCapacity(2)
 	dpInt = dpsInt.AppendEmpty()
@@ -778,7 +1056,7 @@ func createTestMetrics() pdata.Metrics {
 	met = metricsArray.AppendEmpty()
 	met.SetName("double.cumulative.sum")
 	met.SetDataType(pdata.MetricDataTypeSum)
-	met.Sum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+	met.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
 	dpsDouble = met.Sum().DataPoints()
 	dpsDouble.EnsureCapacity(2)
 	dpDouble = dpsDouble.AppendEmpty()
@@ -789,7 +1067,7 @@ func createTestMetrics() pdata.Metrics {
 	met = metricsArray.AppendEmpty()
 	met.SetName("int.cumulative.monotonic.sum")
 	met.SetDataType(pdata.MetricDataTypeSum)
-	met.Sum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+	met.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
 	met.Sum().SetIsMonotonic(true)
 	dpsInt = met.Sum().DataPoints()
 	dpsInt.EnsureCapacity(2)
@@ -804,7 +1082,7 @@ func createTestMetrics() pdata.Metrics {
 	met = metricsArray.AppendEmpty()
 	met.SetName("double.cumulative.monotonic.sum")
 	met.SetDataType(pdata.MetricDataTypeSum)
-	met.Sum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+	met.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
 	met.Sum().SetIsMonotonic(true)
 	dpsDouble = met.Sum().DataPoints()
 	dpsDouble.EnsureCapacity(2)
@@ -830,59 +1108,203 @@ func createTestMetrics() pdata.Metrics {
 	return md
 }
 
-func removeRunningMetrics(series []datadog.Metric) []datadog.Metric {
-	filtered := []datadog.Metric{}
-	for _, m := range series {
-		if m.GetMetric() != "otel.datadog_exporter.metrics.running" {
-			filtered = append(filtered, m)
-		}
-	}
-	return filtered
-}
-
-func testGauge(name string, val float64) datadog.Metric {
-	m := metrics.NewGauge(name, 0, val, []string{})
-	m.SetHost(testHostname)
+func newGaugeWithHostname(name string, val float64, tags []string) metric {
+	m := newGauge(name, 0, val, tags)
+	m.host = testHostname
 	return m
 }
 
-func testCount(name string, val float64, seconds uint64) datadog.Metric {
-	m := metrics.NewCount(name, seconds*1e9, val, []string{})
-	m.SetHost(testHostname)
+func newCountWithHostname(name string, val float64, seconds uint64, tags []string) metric {
+	m := newCount(name, seconds*1e9, val, tags)
+	m.host = testHostname
 	return m
+}
+
+func newSketchWithHostname(name string, summary summary.Summary, tags []string) sketch {
+	s := newSketch(name, 0, summary, tags)
+	s.host = testHostname
+	return s
 }
 
 func TestMapMetrics(t *testing.T) {
-	md := createTestMetrics()
-	cfg := config.MetricsConfig{SendMonotonic: true}
+	attrs := map[string]string{
+		conventions.AttributeDeploymentEnvironment: "dev",
+		"custom_attribute":                         "custom_value",
+	}
+	// When ResourceAttributesAsTags is true, attributes are
+	// converted into labels by the resourcetotelemetry helper,
+	// so MapMetrics doesn't do any conversion.
+	// When ResourceAttributesAsTags is false, attributes
+	// defined in internal/attributes get converted to tags.
+	// Other tags do not get converted.
+	attrTags := []string{
+		"env:dev",
+	}
 
-	core, observed := observer.New(zapcore.DebugLevel)
-	testLogger := zap.New(core)
-	tr := newTranslator(testLogger, cfg)
-	series := tr.MapMetrics(md)
+	ilName := "instrumentation_library"
+	ilVersion := "1.0.0"
+	ilTags := []string{
+		fmt.Sprintf("instrumentation_library:%s", ilName),
+		fmt.Sprintf("instrumentation_library_version:%s", ilVersion),
+	}
 
-	filtered := removeRunningMetrics(series)
-	assert.ElementsMatch(t, filtered, []datadog.Metric{
-		testGauge("int.gauge", 1),
-		testGauge("double.gauge", math.Pi),
-		testCount("int.delta.sum", 2, 0),
-		testCount("double.delta.sum", math.E, 0),
-		testCount("int.delta.monotonic.sum", 2, 0),
-		testCount("double.delta.monotonic.sum", math.E, 0),
-		testCount("double.histogram.sum", math.Phi, 0),
-		testCount("double.histogram.count", 20, 0),
-		testCount("summary.sum", 10_000, 2),
-		testCount("summary.count", 100, 2),
-		testGauge("int.cumulative.sum", 4),
-		testGauge("double.cumulative.sum", 4),
-		testCount("int.cumulative.monotonic.sum", 3, 2),
-		testCount("double.cumulative.monotonic.sum", math.Pi, 2),
-	})
+	tests := []struct {
+		name                                      string
+		resourceAttributesAsTags                  bool
+		instrumentationLibraryMetadataAsTags      bool
+		expectedMetrics                           []metric
+		expectedSketches                          []sketch
+		expectedUnknownMetricType                 int
+		expectedUnsupportedAggregationTemporality int
+	}{
+		{
+			name:                                 "ResourceAttributesAsTags: false, InstrumentationLibraryMetadataAsTags: false",
+			resourceAttributesAsTags:             false,
+			instrumentationLibraryMetadataAsTags: false,
+			expectedMetrics: []metric{
+				newGaugeWithHostname("int.gauge", 1, attrTags),
+				newGaugeWithHostname("double.gauge", math.Pi, attrTags),
+				newCountWithHostname("int.delta.sum", 2, 0, attrTags),
+				newCountWithHostname("double.delta.sum", math.E, 0, attrTags),
+				newCountWithHostname("int.delta.monotonic.sum", 2, 0, attrTags),
+				newCountWithHostname("double.delta.monotonic.sum", math.E, 0, attrTags),
+				newCountWithHostname("summary.sum", 10_000, 2, attrTags),
+				newCountWithHostname("summary.count", 100, 2, attrTags),
+				newGaugeWithHostname("int.cumulative.sum", 4, attrTags),
+				newGaugeWithHostname("double.cumulative.sum", 4, attrTags),
+				newCountWithHostname("int.cumulative.monotonic.sum", 3, 2, attrTags),
+				newCountWithHostname("double.cumulative.monotonic.sum", math.Pi, 2, attrTags),
+			},
+			expectedSketches: []sketch{
+				newSketchWithHostname("double.histogram", summary.Summary{
+					Min: 0,
+					Max: 0,
+					Sum: 0,
+					Avg: 0,
+					Cnt: 20,
+				}, attrTags),
+			},
+			expectedUnknownMetricType:                 1,
+			expectedUnsupportedAggregationTemporality: 2,
+		},
+		{
+			name:                                 "ResourceAttributesAsTags: true, InstrumentationLibraryMetadataAsTags: false",
+			resourceAttributesAsTags:             true,
+			instrumentationLibraryMetadataAsTags: false,
+			expectedMetrics: []metric{
+				newGaugeWithHostname("int.gauge", 1, []string{}),
+				newGaugeWithHostname("double.gauge", math.Pi, []string{}),
+				newCountWithHostname("int.delta.sum", 2, 0, []string{}),
+				newCountWithHostname("double.delta.sum", math.E, 0, []string{}),
+				newCountWithHostname("int.delta.monotonic.sum", 2, 0, []string{}),
+				newCountWithHostname("double.delta.monotonic.sum", math.E, 0, []string{}),
+				newCountWithHostname("summary.sum", 10_000, 2, []string{}),
+				newCountWithHostname("summary.count", 100, 2, []string{}),
+				newGaugeWithHostname("int.cumulative.sum", 4, []string{}),
+				newGaugeWithHostname("double.cumulative.sum", 4, []string{}),
+				newCountWithHostname("int.cumulative.monotonic.sum", 3, 2, []string{}),
+				newCountWithHostname("double.cumulative.monotonic.sum", math.Pi, 2, []string{}),
+			},
+			expectedSketches: []sketch{
+				newSketchWithHostname("double.histogram", summary.Summary{
+					Min: 0,
+					Max: 0,
+					Sum: 0,
+					Avg: 0,
+					Cnt: 20,
+				}, []string{}),
+			},
+			expectedUnknownMetricType:                 1,
+			expectedUnsupportedAggregationTemporality: 2,
+		},
+		{
+			name:                                 "ResourceAttributesAsTags: false, InstrumentationLibraryMetadataAsTags: true",
+			resourceAttributesAsTags:             false,
+			instrumentationLibraryMetadataAsTags: true,
+			expectedMetrics: []metric{
+				newGaugeWithHostname("int.gauge", 1, append(attrTags, ilTags...)),
+				newGaugeWithHostname("double.gauge", math.Pi, append(attrTags, ilTags...)),
+				newCountWithHostname("int.delta.sum", 2, 0, append(attrTags, ilTags...)),
+				newCountWithHostname("double.delta.sum", math.E, 0, append(attrTags, ilTags...)),
+				newCountWithHostname("int.delta.monotonic.sum", 2, 0, append(attrTags, ilTags...)),
+				newCountWithHostname("double.delta.monotonic.sum", math.E, 0, append(attrTags, ilTags...)),
+				newCountWithHostname("summary.sum", 10_000, 2, append(attrTags, ilTags...)),
+				newCountWithHostname("summary.count", 100, 2, append(attrTags, ilTags...)),
+				newGaugeWithHostname("int.cumulative.sum", 4, append(attrTags, ilTags...)),
+				newGaugeWithHostname("double.cumulative.sum", 4, append(attrTags, ilTags...)),
+				newCountWithHostname("int.cumulative.monotonic.sum", 3, 2, append(attrTags, ilTags...)),
+				newCountWithHostname("double.cumulative.monotonic.sum", math.Pi, 2, append(attrTags, ilTags...)),
+			},
+			expectedSketches: []sketch{
+				newSketchWithHostname("double.histogram", summary.Summary{
+					Min: 0,
+					Max: 0,
+					Sum: 0,
+					Avg: 0,
+					Cnt: 20,
+				}, append(attrTags, ilTags...)),
+			},
+			expectedUnknownMetricType:                 1,
+			expectedUnsupportedAggregationTemporality: 2,
+		},
+		{
+			name:                                 "ResourceAttributesAsTags: true, InstrumentationLibraryMetadataAsTags: true",
+			resourceAttributesAsTags:             true,
+			instrumentationLibraryMetadataAsTags: true,
+			expectedMetrics: []metric{
+				newGaugeWithHostname("int.gauge", 1, ilTags),
+				newGaugeWithHostname("double.gauge", math.Pi, ilTags),
+				newCountWithHostname("int.delta.sum", 2, 0, ilTags),
+				newCountWithHostname("double.delta.sum", math.E, 0, ilTags),
+				newCountWithHostname("int.delta.monotonic.sum", 2, 0, ilTags),
+				newCountWithHostname("double.delta.monotonic.sum", math.E, 0, ilTags),
+				newCountWithHostname("summary.sum", 10_000, 2, ilTags),
+				newCountWithHostname("summary.count", 100, 2, ilTags),
+				newGaugeWithHostname("int.cumulative.sum", 4, ilTags),
+				newGaugeWithHostname("double.cumulative.sum", 4, ilTags),
+				newCountWithHostname("int.cumulative.monotonic.sum", 3, 2, ilTags),
+				newCountWithHostname("double.cumulative.monotonic.sum", math.Pi, 2, ilTags),
+			},
+			expectedSketches: []sketch{
+				newSketchWithHostname("double.histogram", summary.Summary{
+					Min: 0,
+					Max: 0,
+					Sum: 0,
+					Avg: 0,
+					Cnt: 20,
+				}, ilTags),
+			},
+			expectedUnknownMetricType:                 1,
+			expectedUnsupportedAggregationTemporality: 2,
+		},
+	}
 
-	// One metric type was unknown or unsupported
-	assert.Equal(t, observed.FilterMessage("Unknown or unsupported metric type").Len(), 1)
-	// Two metric aggregation temporality was unknown or unsupported
-	assert.Equal(t, observed.FilterMessage("Unknown or unsupported aggregation temporality").Len(), 2)
+	for _, testInstance := range tests {
+		t.Run(testInstance.name, func(t *testing.T) {
+			md := createTestMetrics(attrs, ilName, ilVersion)
+
+			core, observed := observer.New(zapcore.DebugLevel)
+			testLogger := zap.New(core)
+			ctx := context.Background()
+			consumer := &mockFullConsumer{}
+
+			options := []Option{}
+			if testInstance.resourceAttributesAsTags {
+				options = append(options, WithResourceAttributesAsTags())
+			}
+			if testInstance.instrumentationLibraryMetadataAsTags {
+				options = append(options, WithInstrumentationLibraryMetadataAsTags())
+			}
+			tr := newTranslator(t, testLogger, options...)
+			err := tr.MapMetrics(ctx, md, consumer)
+			require.NoError(t, err)
+
+			assert.ElementsMatch(t, consumer.metrics, testInstance.expectedMetrics)
+			assert.ElementsMatch(t, consumer.sketches, testInstance.expectedSketches)
+			assert.Equal(t, observed.FilterMessage("Unknown or unsupported metric type").Len(), testInstance.expectedUnknownMetricType)
+			assert.Equal(t, observed.FilterMessage("Unknown or unsupported aggregation temporality").Len(), testInstance.expectedUnsupportedAggregationTemporality)
+		})
+	}
 }
 
 func createNaNMetrics() pdata.Metrics {
@@ -909,7 +1331,7 @@ func createNaNMetrics() pdata.Metrics {
 	met = metricsArray.AppendEmpty()
 	met.SetName("nan.delta.sum")
 	met.SetDataType(pdata.MetricDataTypeSum)
-	met.Sum().SetAggregationTemporality(pdata.AggregationTemporalityDelta)
+	met.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityDelta)
 	dpsDouble = met.Sum().DataPoints()
 	dpDouble = dpsDouble.AppendEmpty()
 	dpDouble.SetTimestamp(seconds(0))
@@ -919,7 +1341,7 @@ func createNaNMetrics() pdata.Metrics {
 	met = metricsArray.AppendEmpty()
 	met.SetName("nan.delta.monotonic.sum")
 	met.SetDataType(pdata.MetricDataTypeSum)
-	met.Sum().SetAggregationTemporality(pdata.AggregationTemporalityDelta)
+	met.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityDelta)
 	dpsDouble = met.Sum().DataPoints()
 	dpDouble = dpsDouble.AppendEmpty()
 	dpDouble.SetTimestamp(seconds(0))
@@ -929,19 +1351,20 @@ func createNaNMetrics() pdata.Metrics {
 	met = metricsArray.AppendEmpty()
 	met.SetName("nan.histogram")
 	met.SetDataType(pdata.MetricDataTypeHistogram)
-	met.Histogram().SetAggregationTemporality(pdata.AggregationTemporalityDelta)
+	met.Histogram().SetAggregationTemporality(pdata.MetricAggregationTemporalityDelta)
 	dpsDoubleHist := met.Histogram().DataPoints()
 	dpDoubleHist := dpsDoubleHist.AppendEmpty()
 	dpDoubleHist.SetCount(20)
 	dpDoubleHist.SetSum(math.NaN())
 	dpDoubleHist.SetBucketCounts([]uint64{2, 18})
+	dpDoubleHist.SetExplicitBounds([]float64{0})
 	dpDoubleHist.SetTimestamp(seconds(0))
 
 	// Double Sum (cumulative)
 	met = metricsArray.AppendEmpty()
 	met.SetName("nan.cumulative.sum")
 	met.SetDataType(pdata.MetricDataTypeSum)
-	met.Sum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+	met.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
 	dpsDouble = met.Sum().DataPoints()
 	dpsDouble.EnsureCapacity(2)
 	dpDouble = dpsDouble.AppendEmpty()
@@ -952,7 +1375,7 @@ func createNaNMetrics() pdata.Metrics {
 	met = metricsArray.AppendEmpty()
 	met.SetName("nan.cumulative.monotonic.sum")
 	met.SetDataType(pdata.MetricDataTypeSum)
-	met.Sum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+	met.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
 	met.Sum().SetIsMonotonic(true)
 	dpsDouble = met.Sum().DataPoints()
 	dpsDouble.EnsureCapacity(2)
@@ -977,19 +1400,29 @@ func createNaNMetrics() pdata.Metrics {
 
 func TestNaNMetrics(t *testing.T) {
 	md := createNaNMetrics()
-	cfg := config.MetricsConfig{SendMonotonic: true}
 
 	core, observed := observer.New(zapcore.DebugLevel)
 	testLogger := zap.New(core)
-	tr := newTranslator(testLogger, cfg)
-	series := tr.MapMetrics(md)
+	ctx := context.Background()
+	tr := newTranslator(t, testLogger)
+	consumer := &mockFullConsumer{}
+	err := tr.MapMetrics(ctx, md, consumer)
+	require.NoError(t, err)
 
-	filtered := removeRunningMetrics(series)
-	assert.ElementsMatch(t, filtered, []datadog.Metric{
-		testCount("nan.histogram.count", 20, 0),
-		testCount("nan.summary.count", 100, 2),
+	assert.ElementsMatch(t, consumer.metrics, []metric{
+		newCountWithHostname("nan.summary.count", 100, 2, []string{}),
+	})
+
+	assert.ElementsMatch(t, consumer.sketches, []sketch{
+		newSketchWithHostname("nan.histogram", summary.Summary{
+			Min: 0,
+			Max: 0,
+			Sum: 0,
+			Avg: 0,
+			Cnt: 20,
+		}, []string{}),
 	})
 
 	// One metric type was unknown or unsupported
-	assert.Equal(t, observed.FilterMessage("Unsupported metric value").Len(), 7)
+	assert.Equal(t, observed.FilterMessage("Unsupported metric value").Len(), 6)
 }

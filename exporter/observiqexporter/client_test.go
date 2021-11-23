@@ -48,7 +48,6 @@ type testFailRoundTripper struct {
 
 func (t testFailRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 	return nil, t.err
-
 }
 
 type requestVerificationFunc func(t *testing.T, req *http.Request)
@@ -80,7 +79,7 @@ func newTestClient(config *Config, httpClient *http.Client) *client {
 		client:       httpClient,
 		logger:       zap.NewNop(),
 		config:       config,
-		buildVersion: component.DefaultBuildInfo().Version,
+		buildVersion: component.NewDefaultBuildInfo().Version,
 	}
 }
 
@@ -158,7 +157,6 @@ func TestClientSendLogs(t *testing.T) {
 		},
 		Message:  "message",
 		Severity: "default",
-		Resource: map[string]interface{}{},
 		Agent:    &observIQAgentInfo{ID: "0", Name: "agent", Version: "latest"},
 	}
 
@@ -263,6 +261,42 @@ func TestClientSendLogs(t *testing.T) {
 					logs:             createLogData(),
 					shouldError:      true,
 					errorIsPermanant: false,
+				},
+			},
+		},
+		{
+			name: "APIKey header exists if APIKey is specified",
+			config: Config{
+				Endpoint:  testURL,
+				AgentName: "agent",
+				APIKey:    "api-key",
+			},
+			reqs: []testCaseRequest{
+				{
+					logs:           createLogData(),
+					responseStatus: 200,
+					respBody:       "",
+					verifyRequest: func(t *testing.T, req *http.Request) {
+						require.Equal(t, "api-key", req.Header.Get("x-cabin-api-key"))
+					},
+				},
+			},
+		},
+		{
+			name: "Secret Key header exists if SecretKey is specified",
+			config: Config{
+				Endpoint:  testURL,
+				AgentName: "agent",
+				SecretKey: "secret-key",
+			},
+			reqs: []testCaseRequest{
+				{
+					logs:           createLogData(),
+					responseStatus: 200,
+					respBody:       "",
+					verifyRequest: func(t *testing.T, req *http.Request) {
+						require.Equal(t, "secret-key", req.Header.Get("x-cabin-secret-key"))
+					},
 				},
 			},
 		},

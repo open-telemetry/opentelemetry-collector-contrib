@@ -53,7 +53,7 @@ func (f *factory) Type() config.Type {
 
 func (f *factory) CreateDefaultConfig() config.Exporter {
 	cfg := f.ExporterFactory.CreateDefaultConfig()
-	cfg.(*googlecloudexporter.Config).ExporterSettings = config.NewExporterSettings(config.NewID(typeVal))
+	cfg.(*googlecloudexporter.Config).ExporterSettings = config.NewExporterSettings(config.NewComponentID(typeVal))
 	return cfg
 }
 

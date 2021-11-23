@@ -24,7 +24,6 @@ import (
 	"github.com/aws/aws-sdk-go/aws/request"
 	"github.com/aws/aws-sdk-go/service/kinesis"
 	"github.com/aws/aws-sdk-go/service/kinesis/kinesisiface"
-	"github.com/golang/protobuf/ptypes/empty"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/consumer/consumererror"
@@ -98,7 +97,7 @@ func TestBatchedExporter(t *testing.T) {
 
 	bt := batch.New()
 	for i := 0; i < 500; i++ {
-		assert.NoError(t, bt.AddProtobufV1(new(empty.Empty), "fixed-key"))
+		assert.NoError(t, bt.AddRecord([]byte("foobar"), "fixed-key"))
 	}
 
 	for _, tc := range cases {
