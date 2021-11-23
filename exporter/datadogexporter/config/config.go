@@ -150,7 +150,8 @@ type TracesConfig struct {
 	// automatically map Datadog Span Operation Names to an updated value. All entries should be key/value pairs.
 	// span_name_remappings:
 	//   io.opentelemetry.javaagent.spring.client: spring.client
-	//   instrumentation::express.server: express
+	//   instrumentation:express.server: express
+	//   go.opentelemetry.io_contrib_instrumentation_net_http_otelhttp.client: http.client
 	SpanNameRemappings map[string]string `mapstructure:"span_name_remappings"`
 }
 

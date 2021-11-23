@@ -10,8 +10,8 @@ require (
 	github.com/prometheus/client_model v0.2.0
 	github.com/prometheus/prometheus v1.8.2-0.20210621150501-ff58416a0b02
 	github.com/stretchr/testify v1.7.0
-	go.opentelemetry.io/collector v0.39.1-0.20211117203239-e23c9d0a0183
-	go.opentelemetry.io/collector/model v0.39.1-0.20211117203239-e23c9d0a0183
+	go.opentelemetry.io/collector v0.39.1-0.20211122170858-f69d23494726
+	go.opentelemetry.io/collector/model v0.39.1-0.20211122170858-f69d23494726
 	go.uber.org/zap v1.19.1
 	gopkg.in/yaml.v2 v2.4.0
 )
@@ -35,7 +35,7 @@ require (
 	github.com/cenkalti/backoff/v4 v4.1.2 // indirect
 	github.com/census-instrumentation/opencensus-proto v0.3.0 // indirect
 	github.com/cespare/xxhash/v2 v2.1.2 // indirect
-	github.com/containerd/containerd v1.5.7 // indirect
+	github.com/containerd/containerd v1.5.8 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/digitalocean/godo v1.62.0 // indirect
 	github.com/docker/distribution v2.7.1+incompatible // indirect
@@ -87,7 +87,7 @@ require (
 	github.com/mwitkow/go-conntrack v0.0.0-20190716064945-2f068394615f // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus v0.39.0 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
-	github.com/opencontainers/image-spec v1.0.1 // indirect
+	github.com/opencontainers/image-spec v1.0.2 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/prometheus/common v0.32.1 // indirect

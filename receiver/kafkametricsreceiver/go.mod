@@ -7,8 +7,8 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter v0.39.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.39.0
 	github.com/stretchr/testify v1.7.0
-	go.opentelemetry.io/collector v0.39.1-0.20211117203239-e23c9d0a0183
-	go.opentelemetry.io/collector/model v0.39.1-0.20211117203239-e23c9d0a0183
+	go.opentelemetry.io/collector v0.39.1-0.20211122170858-f69d23494726
+	go.opentelemetry.io/collector/model v0.39.1-0.20211122170858-f69d23494726
 	go.uber.org/zap v1.19.1
 )
 
@@ -17,13 +17,13 @@ require go.uber.org/multierr v1.7.0
 require (
 	github.com/Microsoft/go-winio v0.4.17 // indirect
 	github.com/apache/thrift v0.15.0 // indirect
-	github.com/aws/aws-sdk-go v1.42.5 // indirect
+	github.com/aws/aws-sdk-go v1.42.9 // indirect
 	github.com/cenkalti/backoff/v4 v4.1.2 // indirect
-	github.com/containerd/containerd v1.5.7 // indirect
+	github.com/containerd/containerd v1.5.8 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/docker/distribution v2.7.1+incompatible // indirect
-	github.com/docker/docker v20.10.10+incompatible // indirect
-	github.com/docker/go-connections v0.4.0 // indirect
+	github.com/docker/docker v20.10.11+incompatible // indirect
+	github.com/docker/go-connections v0.4.1-0.20210727194412-58542c764a11 // indirect
 	github.com/docker/go-units v0.4.0 // indirect
 	github.com/eapache/go-resiliency v1.2.0 // indirect
 	github.com/eapache/go-xerial-snappy v0.0.0-20180814174437-776d5712da21 // indirect
@@ -50,7 +50,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.39.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.39.0 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
-	github.com/opencontainers/image-spec v1.0.1 // indirect
+	github.com/opencontainers/image-spec v1.0.2 // indirect
 	github.com/opentracing/opentracing-go v1.2.0 // indirect
 	github.com/pierrec/lz4 v2.6.1+incompatible // indirect
 	github.com/pkg/errors v0.9.1 // indirect

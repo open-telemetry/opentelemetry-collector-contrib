@@ -19,6 +19,8 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
 )
@@ -42,14 +44,25 @@ func NewFactory() component.ReceiverFactory {
 
 func createDefaultConfig() config.Receiver {
 	return &Config{
-		ReceiverSettings:        config.NewReceiverSettings(config.NewComponentID(typeStr)),
-		RLPGatewayURL:           defaultURL,
-		RLPGatewaySkipTLSVerify: false,
-		RLPGatewayShardID:       defaultRLPGatewayShardID,
-		UAAUsername:             defaultUAAUsername,
-		UAAPassword:             "",
-		UAAUrl:                  defaultURL,
-		UAASkipTLSVerify:        false,
+		ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
+		RLPGateway: RLPGatewayConfig{
+			HTTPClientSettings: confighttp.HTTPClientSettings{
+				Endpoint: defaultURL,
+				TLSSetting: configtls.TLSClientSetting{
+					InsecureSkipVerify: false,
+				},
+			},
+			ShardID: defaultRLPGatewayShardID,
+		},
+		UAA: UAAConfig{
+			LimitedHTTPClientSettings: LimitedHTTPClientSettings{
+				Endpoint: defaultURL,
+				TLSSetting: LimitedTLSClientSetting{
+					InsecureSkipVerify: false,
+				},
+			},
+			Username: defaultUAAUsername,
+		},
 	}
 }
 
@@ -60,5 +73,5 @@ func createMetricsReceiver(
 	nextConsumer consumer.Metrics,
 ) (component.MetricsReceiver, error) {
 	c := cfg.(*Config)
-	return newCloudFoundryReceiver(params.Logger, *c, nextConsumer)
+	return newCloudFoundryReceiver(params, *c, nextConsumer)
 }

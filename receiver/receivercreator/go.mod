@@ -9,8 +9,8 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus v0.39.0
 	github.com/spf13/cast v1.4.1
 	github.com/stretchr/testify v1.7.0
-	go.opentelemetry.io/collector v0.39.1-0.20211117203239-e23c9d0a0183
-	go.opentelemetry.io/collector/model v0.39.1-0.20211117203239-e23c9d0a0183
+	go.opentelemetry.io/collector v0.39.1-0.20211122170858-f69d23494726
+	go.opentelemetry.io/collector/model v0.39.1-0.20211122170858-f69d23494726
 	go.uber.org/multierr v1.7.0
 	go.uber.org/zap v1.19.1
 )

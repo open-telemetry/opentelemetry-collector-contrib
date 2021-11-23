@@ -26,8 +26,8 @@ require (
 	github.com/prometheus/prometheus v1.8.2-0.20210621150501-ff58416a0b02
 	github.com/shirou/gopsutil/v3 v3.21.10
 	github.com/stretchr/testify v1.7.0
-	go.opentelemetry.io/collector v0.39.1-0.20211117203239-e23c9d0a0183
-	go.opentelemetry.io/collector/model v0.39.1-0.20211117203239-e23c9d0a0183
+	go.opentelemetry.io/collector v0.39.1-0.20211122170858-f69d23494726
+	go.opentelemetry.io/collector/model v0.39.1-0.20211122170858-f69d23494726
 	go.uber.org/atomic v1.9.0
 	go.uber.org/zap v1.19.1
 	golang.org/x/text v0.3.7
@@ -55,12 +55,12 @@ require (
 	github.com/cenkalti/backoff/v4 v4.1.2 // indirect
 	github.com/census-instrumentation/opencensus-proto v0.3.0 // indirect
 	github.com/cespare/xxhash/v2 v2.1.2 // indirect
-	github.com/containerd/containerd v1.5.7 // indirect
+	github.com/containerd/containerd v1.5.8 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/digitalocean/godo v1.62.0 // indirect
 	github.com/docker/distribution v2.7.1+incompatible // indirect
-	github.com/docker/docker v20.10.10+incompatible // indirect
-	github.com/docker/go-connections v0.4.0 // indirect
+	github.com/docker/docker v20.10.11+incompatible // indirect
+	github.com/docker/go-connections v0.4.1-0.20210727194412-58542c764a11 // indirect
 	github.com/docker/go-units v0.4.0 // indirect
 	github.com/fatih/color v1.12.0 // indirect
 	github.com/felixge/httpsnoop v1.0.2 // indirect
@@ -132,7 +132,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus v0.39.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin v0.39.0 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
-	github.com/opencontainers/image-spec v1.0.1 // indirect
+	github.com/opencontainers/image-spec v1.0.2 // indirect
 	github.com/opentracing/opentracing-go v1.2.0 // indirect
 	github.com/openzipkin/zipkin-go v0.3.0 // indirect
 	github.com/pelletier/go-toml v1.9.4 // indirect
@@ -165,9 +165,9 @@ require (
 	github.com/uber/jaeger-client-go v2.29.1+incompatible // indirect
 	github.com/uber/jaeger-lib v2.4.1+incompatible // indirect
 	go.opencensus.io v0.23.0 // indirect
-	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.26.1 // indirect
-	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.26.1 // indirect
-	go.opentelemetry.io/contrib/zpages v0.26.1 // indirect
+	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.27.0 // indirect
+	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.27.0 // indirect
+	go.opentelemetry.io/contrib/zpages v0.27.0 // indirect
 	go.opentelemetry.io/otel v1.2.0 // indirect
 	go.opentelemetry.io/otel/exporters/prometheus v0.25.0 // indirect
 	go.opentelemetry.io/otel/internal/metric v0.25.0 // indirect

@@ -467,20 +467,40 @@ func testComponent(t *testing.T, targets []*testData, useStartTimeMetric bool, s
 	metrics := cms.AllMetrics()
 
 	// split and store results by target name
-	pResults := make(map[string][]*pdata.ResourceMetrics)
-	for _, md := range metrics {
-		rms := md.ResourceMetrics()
-		for i := 0; i < rms.Len(); i++ {
-			name, _ := rms.At(i).Resource().Attributes().Get("service.name")
-			pResult, ok := pResults[name.AsString()]
-			if !ok {
-				pResult = make([]*pdata.ResourceMetrics, 0)
-			}
-			rm := rms.At(i)
-			pResults[name.AsString()] = append(pResult, &rm)
-		}
-	}
+	pResults := splitMetricsByTarget(metrics)
+	lres, lep := len(pResults), len(mp.endpoints)
+	assert.Equalf(t, lep, lres, "want %d targets, but got %v\n", lep, lres)
 
+	// loop to validate outputs for each targets
+	for _, target := range targets {
+		t.Run(target.name, func(t *testing.T) {
+			validScrapes := getValidScrapes(t, pResults[target.name])
+			target.validateFunc(t, target, validScrapes)
+		})
+	}
+}
+
+// starts prometheus receiver with custom config, retrieves metrics from MetricsSink
+func testComponentCustomConfig(t *testing.T, targets []*testData, mp *mockPrometheus, cfg *promcfg.Config) {
+	ctx := context.Background()
+	defer mp.Close()
+
+	cms := new(consumertest.MetricsSink)
+	receiver := newPrometheusReceiver(componenttest.NewNopReceiverCreateSettings(), &Config{
+		ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
+		PrometheusConfig: cfg}, cms)
+
+	require.NoError(t, receiver.Start(ctx, componenttest.NewNopHost()))
+
+	// verify state after shutdown is called
+	t.Cleanup(func() { require.NoError(t, receiver.Shutdown(ctx)) })
+
+	// wait for all provided data to be scraped
+	mp.wg.Wait()
+	metrics := cms.AllMetrics()
+
+	// split and store results by target name
+	pResults := splitMetricsByTarget(metrics)
 	lres, lep := len(pResults), len(mp.endpoints)
 	assert.Equalf(t, lep, lres, "want %d targets, but got %v\n", lep, lres)
 
@@ -500,4 +520,21 @@ func flattenTargets(targets map[string][]*scrape.Target) []*scrape.Target {
 		flatTargets = append(flatTargets, target...)
 	}
 	return flatTargets
+}
+
+func splitMetricsByTarget(metrics []pdata.Metrics) map[string][]*pdata.ResourceMetrics {
+	pResults := make(map[string][]*pdata.ResourceMetrics)
+	for _, md := range metrics {
+		rms := md.ResourceMetrics()
+		for i := 0; i < rms.Len(); i++ {
+			name, _ := rms.At(i).Resource().Attributes().Get("service.name")
+			pResult, ok := pResults[name.AsString()]
+			if !ok {
+				pResult = make([]*pdata.ResourceMetrics, 0)
+			}
+			rm := rms.At(i)
+			pResults[name.AsString()] = append(pResult, &rm)
+		}
+	}
+	return pResults
 }

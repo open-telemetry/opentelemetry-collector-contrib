@@ -107,7 +107,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zookeeperreceiver v0.39.0
 	github.com/prometheus/prometheus v1.8.2-0.20210621150501-ff58416a0b02
 	github.com/stretchr/testify v1.7.0
-	go.opentelemetry.io/collector v0.39.1-0.20211117203239-e23c9d0a0183
+	go.opentelemetry.io/collector v0.39.1-0.20211122170858-f69d23494726
 	golang.org/x/sys v0.0.0-20211025201205-69cdffdb9359
 )
 
@@ -147,7 +147,7 @@ require (
 	github.com/apache/thrift v0.15.0 // indirect
 	github.com/armon/go-metrics v0.3.9 // indirect
 	github.com/avast/retry-go v3.0.0+incompatible // indirect
-	github.com/aws/aws-sdk-go v1.42.5 // indirect
+	github.com/aws/aws-sdk-go v1.42.9 // indirect
 	github.com/beeker1121/goque v2.1.0+incompatible // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/bits-and-blooms/bitset v1.2.0 // indirect
@@ -164,8 +164,8 @@ require (
 	github.com/cncf/udpa/go v0.0.0-20210930031921-04548b0d99d4 // indirect
 	github.com/cncf/xds/go v0.0.0-20211011173535-cb28da3451f1 // indirect
 	github.com/containerd/console v1.0.2 // indirect
-	github.com/containerd/containerd v1.5.7 // indirect
-	github.com/containerd/ttrpc v1.0.2 // indirect
+	github.com/containerd/containerd v1.5.8 // indirect
+	github.com/containerd/ttrpc v1.1.0 // indirect
 	github.com/coreos/go-oidc v2.2.1+incompatible // indirect
 	github.com/coreos/go-systemd/v22 v22.3.2 // indirect
 	github.com/cyphar/filepath-securejoin v0.2.2 // indirect
@@ -173,8 +173,8 @@ require (
 	github.com/dgraph-io/ristretto v0.1.0 // indirect
 	github.com/digitalocean/godo v1.62.0 // indirect
 	github.com/docker/distribution v2.7.1+incompatible // indirect
-	github.com/docker/docker v20.10.10+incompatible // indirect
-	github.com/docker/go-connections v0.4.0 // indirect
+	github.com/docker/docker v20.10.11+incompatible // indirect
+	github.com/docker/go-connections v0.4.1-0.20210727194412-58542c764a11 // indirect
 	github.com/docker/go-units v0.4.0 // indirect
 	github.com/dustin/go-humanize v1.0.0 // indirect
 	github.com/dynatrace-oss/dynatrace-metric-utils-go v0.3.0 // indirect
@@ -309,7 +309,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin v0.39.0 // indirect
 	github.com/open-telemetry/opentelemetry-log-collection v0.22.0 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
-	github.com/opencontainers/image-spec v1.0.2-0.20190823105129-775207bd45b6 // indirect
+	github.com/opencontainers/image-spec v1.0.2 // indirect
 	github.com/opencontainers/runc v1.0.2 // indirect
 	github.com/opencontainers/runtime-spec v1.0.3-0.20210326190908-1c3f411f0417 // indirect
 	github.com/opencontainers/selinux v1.8.2 // indirect
@@ -354,7 +354,7 @@ require (
 	github.com/subosito/gotenv v1.2.0 // indirect
 	github.com/syndtr/gocapability v0.0.0-20200815063812-42c35b437635 // indirect
 	github.com/syndtr/goleveldb v1.0.0 // indirect
-	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common v1.0.290 // indirect
+	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common v1.0.296 // indirect
 	github.com/tidwall/gjson v1.10.2 // indirect
 	github.com/tidwall/match v1.1.1 // indirect
 	github.com/tidwall/pretty v1.2.0 // indirect
@@ -378,10 +378,10 @@ require (
 	go.etcd.io/bbolt v1.3.6 // indirect
 	go.mongodb.org/atlas v0.13.0 // indirect
 	go.opencensus.io v0.23.0 // indirect
-	go.opentelemetry.io/collector/model v0.39.1-0.20211117203239-e23c9d0a0183 // indirect
-	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.26.1 // indirect
-	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.26.1 // indirect
-	go.opentelemetry.io/contrib/zpages v0.26.1 // indirect
+	go.opentelemetry.io/collector/model v0.39.1-0.20211122170858-f69d23494726 // indirect
+	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.27.0 // indirect
+	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.27.0 // indirect
+	go.opentelemetry.io/contrib/zpages v0.27.0 // indirect
 	go.opentelemetry.io/otel v1.2.0 // indirect
 	go.opentelemetry.io/otel/exporters/prometheus v0.25.0 // indirect
 	go.opentelemetry.io/otel/internal/metric v0.25.0 // indirect
@@ -417,13 +417,13 @@ require (
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b // indirect
 	gopkg.in/zorkian/go-datadog-api.v2 v2.30.0 // indirect
-	k8s.io/api v0.22.3 // indirect
-	k8s.io/apimachinery v0.22.3 // indirect
-	k8s.io/client-go v0.22.3 // indirect
+	k8s.io/api v0.22.4 // indirect
+	k8s.io/apimachinery v0.22.4 // indirect
+	k8s.io/client-go v0.22.4 // indirect
 	k8s.io/klog v1.0.0 // indirect
 	k8s.io/klog/v2 v2.9.0 // indirect
-	k8s.io/kube-openapi v0.0.0-20210421082810-95288971da7e // indirect
-	k8s.io/kubelet v0.22.3 // indirect
+	k8s.io/kube-openapi v0.0.0-20211109043538-20434351676c // indirect
+	k8s.io/kubelet v0.22.4 // indirect
 	k8s.io/utils v0.0.0-20210819203725-bdf08cb9a70a // indirect
 	sigs.k8s.io/structured-merge-diff/v4 v4.1.2 // indirect
 	sigs.k8s.io/yaml v1.2.0 // indirect
