@@ -29,6 +29,7 @@ import (
 	"time"
 
 	"github.com/coreos/go-oidc"
+	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configauth"
 	"go.uber.org/zap"
@@ -111,7 +112,8 @@ func (e *oidcExtension) Authenticate(ctx context.Context, headers map[string][]s
 		return ctx, errInvalidAuthenticationHeaderFormat
 	}
 
-	idToken, err := e.verifier.Verify(ctx, parts[1])
+	raw := parts[1]
+	idToken, err := e.verifier.Verify(ctx, raw)
 	if err != nil {
 		return ctx, fmt.Errorf("failed to verify token: %w", err)
 	}
@@ -127,19 +129,22 @@ func (e *oidcExtension) Authenticate(ctx context.Context, headers map[string][]s
 		return ctx, errFailedToObtainClaimsFromToken
 	}
 
-	_, err = getSubjectFromClaims(claims, e.cfg.UsernameClaim, idToken.Subject)
+	subject, err := getSubjectFromClaims(claims, e.cfg.UsernameClaim, idToken.Subject)
 	if err != nil {
 		return ctx, fmt.Errorf("failed to get subject from claims in the token: %w", err)
 	}
-
-	_, err = getGroupsFromClaims(claims, e.cfg.GroupsClaim)
+	membership, err := getGroupsFromClaims(claims, e.cfg.GroupsClaim)
 	if err != nil {
 		return ctx, fmt.Errorf("failed to get groups from claims in the token: %w", err)
 	}
 
-	// TODO: once the design for #2734 is determined, we will probably need to add the auth data to the context
-	// https://github.com/open-telemetry/opentelemetry-collector/issues/2734
-	return ctx, nil
+	cl := client.FromContext(ctx)
+	cl.Auth = &authData{
+		raw:        raw,
+		subject:    subject,
+		membership: membership,
+	}
+	return client.NewContext(ctx, cl), nil
 }
 
 // GRPCUnaryServerInterceptor is a helper method to provide a gRPC-compatible UnaryInterceptor, typically calling the authenticator's Authenticate method.
