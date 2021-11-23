@@ -25,6 +25,7 @@ import (
 	"github.com/DataDog/datadog-agent/pkg/trace/exportable/stats"
 	"github.com/gogo/protobuf/proto"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/utils"
 )
@@ -45,19 +46,18 @@ type traceEdgeConnectionImpl struct {
 }
 
 const (
-	traceEdgeTimeout       time.Duration = 10 * time.Second
 	traceEdgeRetryInterval time.Duration = 10 * time.Second
 )
 
 // createTraceEdgeConnection returns a new traceEdgeConnection
-func createTraceEdgeConnection(rootURL, apiKey string, buildInfo component.BuildInfo) traceEdgeConnection {
+func createTraceEdgeConnection(rootURL, apiKey string, buildInfo component.BuildInfo, settings exporterhelper.TimeoutSettings) traceEdgeConnection {
 
 	return &traceEdgeConnectionImpl{
 		traceURL:  rootURL + "/api/v0.2/traces",
 		statsURL:  rootURL + "/api/v0.2/stats",
 		buildInfo: buildInfo,
 		apiKey:    apiKey,
-		client:    utils.NewHTTPClient(traceEdgeTimeout),
+		client:    utils.NewHTTPClient(settings),
 	}
 }
 
