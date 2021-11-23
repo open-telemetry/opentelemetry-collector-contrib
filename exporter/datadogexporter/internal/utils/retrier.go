@@ -31,7 +31,6 @@ type Retrier struct {
 	cfg      exporterhelper.RetrySettings
 	logger   *zap.Logger
 	scrubber scrub.Scrubber
-	stopCh   chan struct{}
 }
 
 func NewRetrier(logger *zap.Logger, settings exporterhelper.RetrySettings, scrubber scrub.Scrubber) *Retrier {
@@ -39,13 +38,7 @@ func NewRetrier(logger *zap.Logger, settings exporterhelper.RetrySettings, scrub
 		cfg:      settings,
 		logger:   logger,
 		scrubber: scrubber,
-		stopCh:   make(chan struct{}),
 	}
-}
-
-// Stop the retrier
-func (r *Retrier) Stop() {
-	close(r.stopCh)
 }
 
 // DoWithRetries does a function with retries. This is a condensed version of the code on
@@ -88,7 +81,7 @@ func (r *Retrier) DoWithRetries(ctx context.Context, fn func(context.Context) er
 
 		backoffDelayStr := backoffDelay.String()
 		r.logger.Info(
-			"Exporting failed. Will retry the request after interval.",
+			"Request failed. Will retry the request after interval.",
 			zap.Error(err),
 			zap.String("interval", backoffDelayStr),
 		)
@@ -98,8 +91,6 @@ func (r *Retrier) DoWithRetries(ctx context.Context, fn func(context.Context) er
 		select {
 		case <-ctx.Done():
 			return fmt.Errorf("request is cancelled or timed out %w", err)
-		case <-r.stopCh:
-			return fmt.Errorf("interrupted due to shutdown %w", err)
 		case <-time.After(backoffDelay):
 		}
 	}

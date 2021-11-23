@@ -197,7 +197,6 @@ func Pusher(ctx context.Context, params component.ExporterCreateSettings, cfg *c
 	defer ticker.Stop()
 	defer params.Logger.Debug("Shut down host metadata routine")
 	retrier := utils.NewRetrier(params.Logger, cfg.RetrySettings, scrub.NewScrubber())
-	defer retrier.Stop()
 
 	// Get host metadata from resources and fill missing info using our exporter.
 	// Currently we only retrieve it once but still send the same payload

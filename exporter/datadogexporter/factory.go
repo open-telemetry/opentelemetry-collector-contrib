@@ -155,7 +155,8 @@ func createMetricsExporter(
 		set,
 		pushMetricsFn,
 		exporterhelper.WithTimeout(cfg.TimeoutSettings),
-		exporterhelper.WithRetry(cfg.RetrySettings),
+		// We use our own custom mechanism for retries, since we hit several endpoints.
+		exporterhelper.WithRetry(exporterhelper.RetrySettings{Enabled: false}),
 		exporterhelper.WithQueue(cfg.QueueSettings),
 		exporterhelper.WithShutdown(func(context.Context) error {
 			cancel()
@@ -208,7 +209,8 @@ func createTracesExporter(
 		set,
 		pushTracesFn,
 		exporterhelper.WithTimeout(cfg.TimeoutSettings),
-		exporterhelper.WithRetry(cfg.RetrySettings),
+		// We don't do retries on traces because of deduping concerns on APM Events.
+		exporterhelper.WithRetry(exporterhelper.RetrySettings{Enabled: false}),
 		exporterhelper.WithQueue(cfg.QueueSettings),
 		exporterhelper.WithShutdown(func(context.Context) error {
 			cancel()
