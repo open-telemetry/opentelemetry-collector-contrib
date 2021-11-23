@@ -21,7 +21,7 @@
 //
 // Agent and load generator must be pre-built and their paths must be specified in
 // test bed config file. RUN_TESTBED env variable must be defined for tests to run.
-package testbed
+package testbed // import "github.com/open-telemetry/opentelemetry-collector-contrib/testbed/testbed"
 
 import (
 	"log"

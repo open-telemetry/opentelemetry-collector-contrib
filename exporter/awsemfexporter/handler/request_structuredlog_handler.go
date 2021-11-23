@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package handler
+package handler // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsemfexporter/handler"
 
 import "github.com/aws/aws-sdk-go/aws/request"
 
