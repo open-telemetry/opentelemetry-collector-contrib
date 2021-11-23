@@ -23,7 +23,7 @@ import (
 
 type Config struct {
 	scraperhelper.ScraperControllerSettings `mapstructure:",squash"`
-	confignet.TCPAddr                       `mapstructure:",squash"`
+	confignet.NetAddr                       `mapstructure:",squash"`
 
 	// Timeout for the memcache stats request
 	Timeout time.Duration `mapstructure:"timeout"`

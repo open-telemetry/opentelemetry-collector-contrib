@@ -394,7 +394,7 @@ func (r *router) registerTracesExporters(hostTracesExporters map[config.Componen
 // registerExportersForRoutes registers exporters according to the configuring
 // routing table, taking into account the provided map of available exporters.
 func (r *router) registerExportersForRoutes(available ExporterMap) error {
-	r.logger.Debug("Registering exporters for routes", zap.Any("exporters", available))
+	r.logger.Debug("Registering exporters for routes")
 
 	// default exporters
 	if err := r.registerExportersForDefaultRoute(available); err != nil {
@@ -442,7 +442,6 @@ func (r *router) registerExportersForDefaultRoute(available ExporterMap) error {
 func (r *router) registerExportersForRoute(route string, available ExporterMap, requested []string) error {
 	r.logger.Debug("Registering exporter for route",
 		zap.String("route", route),
-		zap.Any("available", available),
 		zap.Any("requested", requested),
 	)
 

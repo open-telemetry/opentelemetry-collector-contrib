@@ -19,6 +19,8 @@ import (
 
 	"go.opentelemetry.io/collector/model/pdata"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil"
 )
 
 // metricDataAccumulator defines the accumulator
@@ -27,7 +29,7 @@ type metricDataAccumulator struct {
 }
 
 // getMetricsData generates OT Metrics data from task metadata and docker stats
-func (acc *metricDataAccumulator) getMetricsData(containerStatsMap map[string]*ContainerStats, metadata TaskMetadata, logger *zap.Logger) {
+func (acc *metricDataAccumulator) getMetricsData(containerStatsMap map[string]*ContainerStats, metadata ecsutil.TaskMetadata, logger *zap.Logger) {
 
 	taskMetrics := ECSMetrics{}
 	timestamp := pdata.NewTimestampFromTime(time.Now())
@@ -73,7 +75,7 @@ func isEmptyStats(stats *ContainerStats) bool {
 	return stats == nil || stats.ID == ""
 }
 
-func convertContainerMetrics(stats *ContainerStats, logger *zap.Logger, containerMetadata ContainerMetadata) ECSMetrics {
+func convertContainerMetrics(stats *ContainerStats, logger *zap.Logger, containerMetadata ecsutil.ContainerMetadata) ECSMetrics {
 	containerMetrics := getContainerMetrics(stats, logger)
 	if containerMetadata.Limits.Memory != nil {
 		containerMetrics.MemoryReserved = *containerMetadata.Limits.Memory
@@ -89,7 +91,7 @@ func convertContainerMetrics(stats *ContainerStats, logger *zap.Logger, containe
 	return containerMetrics
 }
 
-func overrideWithTaskLevelLimit(taskMetrics *ECSMetrics, metadata TaskMetadata) {
+func overrideWithTaskLevelLimit(taskMetrics *ECSMetrics, metadata ecsutil.TaskMetadata) {
 	// Overwrite Memory limit with task level limit
 	if metadata.Limits.Memory != nil {
 		taskMetrics.MemoryReserved = *metadata.Limits.Memory

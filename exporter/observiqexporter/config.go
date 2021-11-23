@@ -18,6 +18,7 @@ import (
 	"errors"
 	"net/url"
 	"os"
+	"time"
 
 	"github.com/google/uuid"
 	"go.opentelemetry.io/collector/config"
@@ -31,18 +32,21 @@ type Config struct {
 	exporterhelper.TimeoutSettings `mapstructure:",squash"`
 	exporterhelper.QueueSettings   `mapstructure:"sending_queue"`
 	exporterhelper.RetrySettings   `mapstructure:"retry_on_failure"`
-	// TLS Settings for http client to use when sending logs to endpoint
+	// TLSSetting is the TLS settings for http client to use when sending logs to endpoint
 	TLSSetting configtls.TLSClientSetting `mapstructure:"tls,omitempty"`
-	// API key for authenticating with ingestion endpoint (required if no SecretKey)
+	// APIkey is the api key for authenticating with ingestion endpoint (required if no SecretKey)
 	APIKey string `mapstructure:"api_key"`
-	// Secret key for authenticating with the ingestion endpoint (required if no APIKey)
+	// SecretKey is the secret key for authenticating with the ingestion endpoint (required if no APIKey)
 	SecretKey string `mapstructure:"secret_key"`
-	// Endpoint URL; Defines the ingestion endpoint (optional)
+	// Endpoint is the url that defines the ingestion endpoint (default: "https://nozzle.app.observiq.com/v1/add")
 	Endpoint string `mapstructure:"endpoint"`
-	// ID that identifies this agent (optional)
+	// AgentID is the ID that identifies this agent (default: uuid based off os.HostName())
 	AgentID string `mapstructure:"agent_id"`
-	// Name that identifies this agent (optional)
+	// AgentName is the name identifies this agent (default: os.HostName())
 	AgentName string `mapstructure:"agent_name"`
+	// DialerTimeout is the amount of time to wait before aborting establishing the tcp connection when making
+	// an http request (default: 10s)
+	DialerTimeout time.Duration `mapstructure:"dialer_timeout"`
 }
 
 func (c *Config) validateConfig() error {

@@ -35,8 +35,7 @@ var v2FromTranslator zipkinv2.FromTranslator
 func TestUnmarshalZipkin(t *testing.T) {
 	td := pdata.NewTraces()
 	rs := td.ResourceSpans().AppendEmpty()
-	rs.Resource().Attributes().InitFromMap(
-		map[string]pdata.AttributeValue{conventions.AttributeServiceName: pdata.NewAttributeValueString("my_service")})
+	rs.Resource().Attributes().InsertString(conventions.AttributeServiceName, "my_service")
 	span := rs.InstrumentationLibrarySpans().AppendEmpty().Spans().AppendEmpty()
 	span.SetName("foo")
 	span.SetStartTimestamp(pdata.Timestamp(1597759000))

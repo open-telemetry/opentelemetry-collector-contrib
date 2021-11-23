@@ -53,7 +53,8 @@ func generateLogData(logName string, attrs map[string]pdata.AttributeValue) pdat
 	td := pdata.NewLogs()
 	lr := td.ResourceLogs().AppendEmpty().InstrumentationLibraryLogs().AppendEmpty().Logs().AppendEmpty()
 	lr.SetName(logName)
-	lr.Attributes().InitFromMap(attrs).Sort()
+	pdata.NewAttributeMapFromMap(attrs).CopyTo(lr.Attributes())
+	lr.Attributes().Sort()
 	return td
 }
 

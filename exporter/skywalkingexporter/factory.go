@@ -58,7 +58,7 @@ func createLogsExporter(
 	cfg config.Exporter,
 ) (component.LogsExporter, error) {
 	oCfg := cfg.(*Config)
-	oce := newExporter(ctx, oCfg)
+	oce := newExporter(ctx, oCfg, set.TelemetrySettings)
 	return exporterhelper.NewLogsExporter(
 		cfg,
 		set,
