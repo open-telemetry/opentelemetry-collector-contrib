@@ -12,15 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package metricstestutil
+package internal
 
 import "go.opentelemetry.io/collector/model/pdata"
 
-type KV struct {
+type kv struct {
 	Key, Value string
 }
 
-func DistPointPdata(ts pdata.Timestamp, bounds []float64, counts []uint64) *pdata.HistogramDataPoint {
+func distPointPdata(ts pdata.Timestamp, bounds []float64, counts []uint64) *pdata.HistogramDataPoint {
 	hdp := pdata.NewHistogramDataPoint()
 	hdp.SetExplicitBounds(bounds)
 	hdp.SetBucketCounts(counts)
@@ -39,13 +39,13 @@ func DistPointPdata(ts pdata.Timestamp, bounds []float64, counts []uint64) *pdat
 	return &hdp
 }
 
-func GaugeDistMetricPdata(name string, kvp []*KV, startTs pdata.Timestamp, points ...*pdata.HistogramDataPoint) *pdata.Metric {
-	hMetric := CumulativeDistMetricPdata(name, kvp, startTs, points...)
+func gaugeDistMetricPdata(name string, kvp []*kv, startTs pdata.Timestamp, points ...*pdata.HistogramDataPoint) *pdata.Metric {
+	hMetric := cumulativeDistMetricPdata(name, kvp, startTs, points...)
 	hMetric.Histogram().SetAggregationTemporality(pdata.MetricAggregationTemporalityDelta)
 	return hMetric
 }
 
-func CumulativeDistMetricPdata(name string, kvp []*KV, startTs pdata.Timestamp, points ...*pdata.HistogramDataPoint) *pdata.Metric {
+func cumulativeDistMetricPdata(name string, kvp []*kv, startTs pdata.Timestamp, points ...*pdata.HistogramDataPoint) *pdata.Metric {
 	metric := pdata.NewMetric()
 	metric.SetName(name)
 	metric.SetDataType(pdata.MetricDataTypeHistogram)
@@ -66,7 +66,7 @@ func CumulativeDistMetricPdata(name string, kvp []*KV, startTs pdata.Timestamp, 
 	return &metric
 }
 
-func DoublePointPdata(ts pdata.Timestamp, value float64) *pdata.NumberDataPoint {
+func doublePointPdata(ts pdata.Timestamp, value float64) *pdata.NumberDataPoint {
 	ndp := pdata.NewNumberDataPoint()
 	ndp.SetTimestamp(ts)
 	ndp.SetDoubleVal(value)
@@ -74,7 +74,7 @@ func DoublePointPdata(ts pdata.Timestamp, value float64) *pdata.NumberDataPoint 
 	return &ndp
 }
 
-func GaugeMetricPdata(name string, kvp []*KV, startTs pdata.Timestamp, points ...*pdata.NumberDataPoint) *pdata.Metric {
+func gaugeMetricPdata(name string, kvp []*kv, startTs pdata.Timestamp, points ...*pdata.NumberDataPoint) *pdata.Metric {
 	metric := pdata.NewMetric()
 	metric.SetName(name)
 	metric.SetDataType(pdata.MetricDataTypeGauge)
@@ -92,7 +92,7 @@ func GaugeMetricPdata(name string, kvp []*KV, startTs pdata.Timestamp, points ..
 	return &metric
 }
 
-func SummaryPointPdata(ts pdata.Timestamp, count uint64, sum float64, quantiles, values []float64) *pdata.SummaryDataPoint {
+func summaryPointPdata(ts pdata.Timestamp, count uint64, sum float64, quantiles, values []float64) *pdata.SummaryDataPoint {
 	sdp := pdata.NewSummaryDataPoint()
 	sdp.SetTimestamp(ts)
 	sdp.SetCount(count)
@@ -106,7 +106,7 @@ func SummaryPointPdata(ts pdata.Timestamp, count uint64, sum float64, quantiles,
 	return &sdp
 }
 
-func SummaryMetricPdata(name string, kvp []*KV, startTs pdata.Timestamp, points ...*pdata.SummaryDataPoint) *pdata.Metric {
+func summaryMetricPdata(name string, kvp []*kv, startTs pdata.Timestamp, points ...*pdata.SummaryDataPoint) *pdata.Metric {
 	metric := pdata.NewMetric()
 	metric.SetName(name)
 	metric.SetDataType(pdata.MetricDataTypeSummary)
@@ -124,7 +124,7 @@ func SummaryMetricPdata(name string, kvp []*KV, startTs pdata.Timestamp, points 
 	return &metric
 }
 
-func SumMetricPdata(name string, kvp []*KV, startTs pdata.Timestamp, points ...*pdata.NumberDataPoint) *pdata.Metric {
+func sumMetricPdata(name string, kvp []*kv, startTs pdata.Timestamp, points ...*pdata.NumberDataPoint) *pdata.Metric {
 	metric := pdata.NewMetric()
 	metric.SetName(name)
 	metric.SetDataType(pdata.MetricDataTypeSum)

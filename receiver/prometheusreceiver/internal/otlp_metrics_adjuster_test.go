@@ -23,8 +23,6 @@ import (
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/model/pdata"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/metricstestutil"
 )
 
 var (
@@ -506,17 +504,15 @@ func Test_summary_pdata(t *testing.T) {
 	runScriptPdata(t, NewJobsMapPdata(time.Minute).get("job", "0"), script)
 }
 
-type kv = metricstestutil.KV
-
 var (
-	distPoint       = metricstestutil.DistPointPdata
-	gaugeDistMetric = metricstestutil.GaugeDistMetricPdata
-	histogramMetric = metricstestutil.CumulativeDistMetricPdata
-	doublePoint     = metricstestutil.DoublePointPdata
-	gaugeMetric     = metricstestutil.GaugeMetricPdata
-	summaryPoint    = metricstestutil.SummaryPointPdata
-	summaryMetric   = metricstestutil.SummaryMetricPdata
-	sumMetric       = metricstestutil.SumMetricPdata
+	distPoint       = distPointPdata
+	gaugeDistMetric = gaugeDistMetricPdata
+	histogramMetric = cumulativeDistMetricPdata
+	doublePoint     = doublePointPdata
+	gaugeMetric     = gaugeMetricPdata
+	summaryPoint    = summaryPointPdata
+	summaryMetric   = summaryMetricPdata
+	sumMetric       = sumMetricPdata
 )
 
 func metricSlice(metrics ...*pdata.Metric) *pdata.MetricSlice {
