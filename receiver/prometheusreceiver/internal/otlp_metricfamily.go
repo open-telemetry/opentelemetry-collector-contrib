@@ -28,11 +28,6 @@ import (
 	"go.opentelemetry.io/collector/model/pdata"
 )
 
-type dataPoint struct {
-	value    float64
-	boundary float64
-}
-
 // MetricFamilyPdata is unit which is corresponding to the metrics items which shared the same TYPE/UNIT/... metadata from
 // a single scrape.
 type MetricFamilyPdata interface {
@@ -187,9 +182,9 @@ func (mg *metricGroupPdata) toDistributionPoint(orderedLabelKeys []string, dest 
 	point.SetSum(mg.sum)
 	point.SetBucketCounts(bucketCounts)
 	// The timestamp MUST be in retrieved from milliseconds and converted to nanoseconds.
-	tsNanos := timestampFromMs(mg.ts)
+	tsNanos := pdataTimestampFromMs(mg.ts)
 	if mg.family.isCumulativeTypePdata() {
-		point.SetStartTimestamp(timestampFromMs(mg.intervalStartTimeMs))
+		point.SetStartTimestamp(pdataTimestampFromMs(mg.intervalStartTimeMs))
 	}
 	point.SetTimestamp(tsNanos)
 	populateAttributesPdata(orderedLabelKeys, mg.ls, point.Attributes())
@@ -197,7 +192,7 @@ func (mg *metricGroupPdata) toDistributionPoint(orderedLabelKeys []string, dest 
 	return true
 }
 
-func timestampFromMs(timeAtMs int64) pdata.Timestamp {
+func pdataTimestampFromMs(timeAtMs int64) pdata.Timestamp {
 	secs, ns := timeAtMs/1e3, (timeAtMs%1e3)*1e6
 	return pdata.NewTimestampFromTime(time.Unix(secs, ns))
 }
@@ -225,10 +220,10 @@ func (mg *metricGroupPdata) toSummaryPoint(orderedLabelKeys []string, dest *pdat
 	// observations and the corresponding sum is a sum of all observed values, thus the sum and count used
 	// at the global level of the metricspb.SummaryValue
 	// The timestamp MUST be in retrieved from milliseconds and converted to nanoseconds.
-	tsNanos := timestampFromMs(mg.ts)
+	tsNanos := pdataTimestampFromMs(mg.ts)
 	point.SetTimestamp(tsNanos)
 	if mg.family.isCumulativeTypePdata() {
-		point.SetStartTimestamp(timestampFromMs(mg.intervalStartTimeMs))
+		point.SetStartTimestamp(pdataTimestampFromMs(mg.intervalStartTimeMs))
 	}
 	point.SetSum(mg.sum)
 	point.SetCount(uint64(mg.count))
@@ -239,10 +234,10 @@ func (mg *metricGroupPdata) toSummaryPoint(orderedLabelKeys []string, dest *pdat
 
 func (mg *metricGroupPdata) toNumberDataPoint(orderedLabelKeys []string, dest *pdata.NumberDataPointSlice) bool {
 	var startTsNanos pdata.Timestamp
-	tsNanos := timestampFromMs(mg.ts)
+	tsNanos := pdataTimestampFromMs(mg.ts)
 	// gauge/undefined types have no start time.
 	if mg.family.isCumulativeTypePdata() {
-		startTsNanos = timestampFromMs(mg.intervalStartTimeMs)
+		startTsNanos = pdataTimestampFromMs(mg.intervalStartTimeMs)
 	}
 
 	point := dest.AppendEmpty()
@@ -386,33 +381,4 @@ func (mf *metricFamilyPdata) ToMetricPdata(metrics *pdata.MetricSlice) (int, int
 
 	// note: the total number of points is the number of points+droppedTimeseries.
 	return pointCount + mf.droppedTimeseries, mf.droppedTimeseries
-}
-
-// Define manually the metadata of prometheus scrapper internal metrics
-func defineInternalMetric(metricName string, metadata scrape.MetricMetadata, logger *zap.Logger) scrape.MetricMetadata {
-	if metadata.Metric != "" && metadata.Type != "" && metadata.Help != "" {
-		logger.Debug("Internal metric seems already fully defined")
-		return metadata
-	}
-	metadata.Metric = metricName
-
-	switch metricName {
-	case scrapeUpMetricName:
-		metadata.Type = textparse.MetricTypeGauge
-		metadata.Help = "The scraping was successful"
-	case "scrape_duration_seconds":
-		metadata.Unit = "seconds"
-		metadata.Type = textparse.MetricTypeGauge
-		metadata.Help = "Duration of the scrape"
-	case "scrape_samples_scraped":
-		metadata.Type = textparse.MetricTypeGauge
-		metadata.Help = "The number of samples the target exposed"
-	case "scrape_series_added":
-		metadata.Type = textparse.MetricTypeGauge
-		metadata.Help = "The approximate number of new series in this scrape"
-	case "scrape_samples_post_metric_relabeling":
-		metadata.Type = textparse.MetricTypeGauge
-		metadata.Help = "The number of samples remaining after metric relabeling was applied"
-	}
-	return metadata
 }

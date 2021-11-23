@@ -16,7 +16,6 @@ package internal
 
 import (
 	"context"
-	"errors"
 	"sync/atomic"
 	"time"
 
@@ -32,21 +31,6 @@ import (
 	"github.com/prometheus/prometheus/pkg/exemplar"
 	"github.com/prometheus/prometheus/pkg/labels"
 )
-
-const (
-	portAttr     = "port"
-	schemeAttr   = "scheme"
-	jobAttr      = "job"
-	instanceAttr = "instance"
-
-	transport  = "http"
-	dataformat = "prometheus"
-)
-
-var errMetricNameNotFound = errors.New("metricName not found from labels")
-var errTransactionAborted = errors.New("transaction aborted")
-var errNoJobInstance = errors.New("job or instance cannot be found from labels")
-var errNoStartTimeMetrics = errors.New("process_start_time_seconds metric is missing")
 
 type transactionPdata struct {
 	id                   int64
@@ -181,14 +165,14 @@ func (t *transactionPdata) Rollback() error {
 	return nil
 }
 
-func timestampFromFloat64(ts float64) pdata.Timestamp {
+func pdataTimestampFromFloat64(ts float64) pdata.Timestamp {
 	secs := int64(ts)
 	nanos := int64((ts - float64(secs)) * 1e9)
 	return pdata.NewTimestampFromTime(time.Unix(secs, nanos))
 }
 
 func adjustStartTimestampPdata(startTime float64, metricsL *pdata.MetricSlice) {
-	startTimeTs := timestampFromFloat64(startTime)
+	startTimeTs := pdataTimestampFromFloat64(startTime)
 	for i := 0; i < metricsL.Len(); i++ {
 		metric := metricsL.At(i)
 		switch metric.DataType() {

@@ -15,12 +15,10 @@
 package internal
 
 import (
-	"errors"
 	"fmt"
 	"regexp"
 	"sort"
 	"strconv"
-	"strings"
 
 	"github.com/prometheus/common/model"
 	"github.com/prometheus/prometheus/pkg/labels"
@@ -30,105 +28,6 @@ import (
 	"go.opentelemetry.io/collector/model/pdata"
 )
 
-const (
-	metricsSuffixCount  = "_count"
-	metricsSuffixBucket = "_bucket"
-	metricsSuffixSum    = "_sum"
-	metricSuffixTotal   = "_total"
-	startTimeMetricName = "process_start_time_seconds"
-	scrapeUpMetricName  = "up"
-)
-
-var (
-	trimmableSuffixes     = []string{metricsSuffixBucket, metricsSuffixCount, metricsSuffixSum, metricSuffixTotal}
-	errNoDataToBuild      = errors.New("there's no data to build")
-	errNoBoundaryLabel    = errors.New("given metricType has no BucketLabel or QuantileLabel")
-	errEmptyBoundaryLabel = errors.New("BucketLabel or QuantileLabel is empty")
-)
-
-// dpgSignature is used to create a key for data complexValue belong to a same group of a metric family
-func dpgSignature(orderedKnownLabelKeys []string, ls labels.Labels) string {
-	size := 0
-	for _, k := range orderedKnownLabelKeys {
-		v := ls.Get(k)
-		if v == "" {
-			continue
-		}
-		// 2 enclosing quotes + 1 equality sign = 3 extra chars.
-		// Note: if any character in the label value requires escaping,
-		// we'll need more space than that, which will lead to some
-		// extra allocation.
-		size += 3 + len(k) + len(v)
-	}
-	sign := make([]byte, 0, size)
-	for _, k := range orderedKnownLabelKeys {
-		v := ls.Get(k)
-		if v == "" {
-			continue
-		}
-		sign = strconv.AppendQuote(sign, k+"="+v)
-	}
-	return string(sign)
-}
-
-func normalizeMetricName(name string) string {
-	for _, s := range trimmableSuffixes {
-		if strings.HasSuffix(name, s) && name != s {
-			return strings.TrimSuffix(name, s)
-		}
-	}
-	return name
-}
-
-// Code borrowed from the original promreceiver
-func heuristicalMetricAndKnownUnits(metricName, parsedUnit string) string {
-	if parsedUnit != "" {
-		return parsedUnit
-	}
-	lastUnderscoreIndex := strings.LastIndex(metricName, "_")
-	if lastUnderscoreIndex <= 0 || lastUnderscoreIndex >= len(metricName)-1 {
-		return ""
-	}
-
-	unit := ""
-
-	supposedUnit := metricName[lastUnderscoreIndex+1:]
-	switch strings.ToLower(supposedUnit) {
-	case "millisecond", "milliseconds", "ms":
-		unit = "ms"
-	case "second", "seconds", "s":
-		unit = "s"
-	case "microsecond", "microseconds", "us":
-		unit = "us"
-	case "nanosecond", "nanoseconds", "ns":
-		unit = "ns"
-	case "byte", "bytes", "by":
-		unit = "By"
-	case "bit", "bits":
-		unit = "Bi"
-	case "kilogram", "kilograms", "kg":
-		unit = "kg"
-	case "gram", "grams", "g":
-		unit = "g"
-	case "meter", "meters", "metre", "metres", "m":
-		unit = "m"
-	case "kilometer", "kilometers", "kilometre", "kilometres", "km":
-		unit = "km"
-	case "milimeter", "milimeters", "milimetre", "milimetres", "mm":
-		unit = "mm"
-	case "nanogram", "ng", "nanograms":
-		unit = "ng"
-	}
-
-	return unit
-}
-
-func isInternalMetric(metricName string) bool {
-	if metricName == scrapeUpMetricName || strings.HasPrefix(metricName, "scrape_") {
-		return true
-	}
-	return false
-}
 func isUsefulLabelPdata(mType pdata.MetricDataType, labelKey string) bool {
 	switch labelKey {
 	case model.MetricNameLabel, model.InstanceLabel, model.SchemeLabel, model.MetricsPathLabel, model.JobLabel:
