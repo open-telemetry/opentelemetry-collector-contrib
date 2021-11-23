@@ -184,6 +184,7 @@ func convToPdataMetricType(metricType textparse.MetricType) pdata.MetricDataType
 
 type metricBuilderPdata struct {
 	metrics              pdata.MetricSlice
+	families             map[string]MetricFamilyPdata
 	currentMf            MetricFamilyPdata
 	hasData              bool
 	hasInternalMetric    bool
@@ -207,6 +208,7 @@ func newMetricBuilderPdata(mc MetadataCache, useStartTimeMetric bool, startTimeM
 	}
 	return &metricBuilderPdata{
 		metrics:              pdata.NewMetricSlice(),
+		families:             map[string]MetricFamilyPdata{},
 		mc:                   mc,
 		logger:               logger,
 		numTimeseries:        0,
@@ -273,16 +275,18 @@ func (b *metricBuilderPdata) AddDataPoint(ls labels.Labels, t int64, v float64) 
 
 	b.hasData = true
 
-	if b.currentMf != nil && !b.currentMf.IsSameFamily(metricName) {
-		nTs, nDts := b.currentMf.ToMetricPdata(&b.metrics)
-		b.numTimeseries += nTs
-		b.droppedTimeseries += nDts
-		b.currentMf = newMetricFamilyPdata(metricName, b.mc, b.logger, b.intervalStartTimeMs)
-	} else if b.currentMf == nil {
-		b.currentMf = newMetricFamilyPdata(metricName, b.mc, b.logger, b.intervalStartTimeMs)
+	familyName := normalizeMetricName(metricName)
+	curMF, ok := b.families[familyName]
+	if !ok {
+		if mf, ok := b.families[metricName]; ok {
+			curMF = mf
+		} else {
+			curMF = newMetricFamilyPdata(metricName, b.mc, b.logger, b.intervalStartTimeMs)
+			b.families[familyName] = curMF
+		}
 	}
 
-	return b.currentMf.Add(metricName, ls, t, v)
+	return curMF.Add(metricName, ls, t, v)
 }
 
 // Build an pdata.MetricSlice based on all added data complexValue.
@@ -296,11 +300,10 @@ func (b *metricBuilderPdata) Build() (*pdata.MetricSlice, int, int, error) {
 		return nil, 0, 0, errNoDataToBuild
 	}
 
-	if b.currentMf != nil {
-		ts, dts := b.currentMf.ToMetricPdata(&b.metrics)
+	for _, mf := range b.families {
+		ts, dts := mf.ToMetricPdata(&b.metrics)
 		b.numTimeseries += ts
 		b.droppedTimeseries += dts
-		b.currentMf = nil
 	}
 
 	return &b.metrics, b.numTimeseries, b.droppedTimeseries, nil
