@@ -21,6 +21,7 @@ import (
 	"github.com/prometheus/prometheus/pkg/textparse"
 	"github.com/prometheus/prometheus/scrape"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/model/pdata"
 )
@@ -92,7 +93,7 @@ func TestMetricGroupData_toDistributionUnitTest(t *testing.T) {
 		{
 			name:                "histogram with startTimestamp of 11",
 			metricName:          "histogram",
-			intervalStartTimeMs: 1717,
+			intervalStartTimeMs: 11,
 			labels:              labels.Labels{{Name: "a", Value: "A"}, {Name: "le", Value: "0.75"}, {Name: "b", Value: "B"}},
 			scrapes: []*scrape{
 				{at: 11, value: 10, metric: "histogram_count"},
@@ -118,7 +119,7 @@ func TestMetricGroupData_toDistributionUnitTest(t *testing.T) {
 	for _, tt := range tests {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
-			mp := newMetricFamilyPdata(tt.metricName, mc, testLogger, tt.intervalStartTimeMs).(*metricFamilyPdata)
+			mp := newMetricFamilyPdata(tt.metricName, mc, zap.NewNop(), tt.intervalStartTimeMs).(*metricFamilyPdata)
 			for _, tv := range tt.scrapes {
 				require.NoError(t, mp.Add(tv.metric, tt.labels.Copy(), tv.at, tv.value))
 			}
@@ -216,16 +217,16 @@ func TestMetricGroupData_toSummaryUnitTest(t *testing.T) {
 				qn0.SetQuantile(0)
 				qn0.SetValue(8)
 				qn50 := qtL.AppendEmpty()
-				qn50.SetQuantile(50)
+				qn50.SetQuantile(.5)
 				qn50.SetValue(27)
 				qn75 := qtL.AppendEmpty()
-				qn75.SetQuantile(75)
+				qn75.SetQuantile(.75)
 				qn75.SetValue(33.7)
 				qn90 := qtL.AppendEmpty()
-				qn90.SetQuantile(90)
+				qn90.SetQuantile(.9)
 				qn90.SetValue(56)
 				qn99 := qtL.AppendEmpty()
-				qn99.SetQuantile(99)
+				qn99.SetQuantile(.99)
 				qn99.SetValue(82)
 				point.SetTimestamp(14 * 1e6) // the time in milliseconds -> nanoseconds.
 				point.SetStartTimestamp(10 * 1e5)
@@ -240,7 +241,7 @@ func TestMetricGroupData_toSummaryUnitTest(t *testing.T) {
 	for _, tt := range tests {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
-			mp := newMetricFamilyPdata(tt.name, mc, testLogger, 1).(*metricFamilyPdata)
+			mp := newMetricFamilyPdata(tt.name, mc, zap.NewNop(), 1).(*metricFamilyPdata)
 			for _, lbs := range tt.labelsScrapes {
 				for _, scrape := range lbs.scrapes {
 					require.NoError(t, mp.Add(scrape.metric, lbs.labels.Copy(), scrape.at, scrape.value))
@@ -322,7 +323,7 @@ func TestMetricGroupData_toNumberDataUnitTest(t *testing.T) {
 	for _, tt := range tests {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
-			mp := newMetricFamilyPdata(tt.metricKind, mc, testLogger, tt.intervalStartTimestampMs).(*metricFamilyPdata)
+			mp := newMetricFamilyPdata(tt.metricKind, mc, zap.NewNop(), tt.intervalStartTimestampMs).(*metricFamilyPdata)
 			for _, tv := range tt.scrapes {
 				require.NoError(t, mp.Add(tv.metric, tt.labels.Copy(), tv.at, tv.value))
 			}

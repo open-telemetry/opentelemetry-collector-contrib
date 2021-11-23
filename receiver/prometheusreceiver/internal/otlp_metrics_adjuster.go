@@ -270,6 +270,7 @@ func (ma *MetricsAdjusterPdata) adjustMetricGauge(current *pdata.Metric) (resets
 			// initial || reset timeseries.
 			tsi.initial = current
 			resets++
+			continue
 		}
 		initialPoints := tsi.initial.Gauge().DataPoints()
 		previousPoints := previous.Gauge().DataPoints()
@@ -299,7 +300,7 @@ func (ma *MetricsAdjusterPdata) adjustMetricGauge(current *pdata.Metric) (resets
 
 func (ma *MetricsAdjusterPdata) adjustMetricHistogram(current *pdata.Metric) (resets int) {
 	histogram := current.Histogram()
-	if histogram.AggregationTemporality() != pdata.AggregationTemporalityCumulative {
+	if histogram.AggregationTemporality() != pdata.MetricAggregationTemporalityCumulative {
 		// Only dealing with CumulativeDistributions.
 		return 0
 	}

@@ -22,6 +22,7 @@ import (
 
 	"go.uber.org/zap"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/model/pdata"
@@ -74,7 +75,7 @@ type txConfig struct {
 	ms                   *metadataService
 	sink                 consumer.Metrics
 	externalLabels       labels.Labels
-	logger               *zap.Logger
+	settings             component.ReceiverCreateSettings
 }
 
 func newTransactionPdata(ctx context.Context, txc *txConfig) *transactionPdata {
@@ -89,8 +90,8 @@ func newTransactionPdata(ctx context.Context, txc *txConfig) *transactionPdata {
 		receiverID:           txc.receiverID,
 		metadataService:      txc.ms,
 		externalLabels:       txc.externalLabels,
-		logger:               txc.logger,
-		obsrecv:              obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverID: txc.receiverID, Transport: transport}),
+		logger:               txc.settings.Logger,
+		obsrecv:              obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverID: txc.receiverID, Transport: transport, ReceiverCreateSettings: txc.settings}),
 	}
 }
 
@@ -107,6 +108,7 @@ func (t *transactionPdata) Append(ref uint64, labels labels.Labels, atMs int64, 
 	}
 
 	if t.isNew {
+		t.startTimeMs = atMs
 		if err := t.initTransaction(labels); err != nil {
 			return 0, err
 		}
@@ -195,23 +197,23 @@ func adjustStartTimestampPdata(startTime float64, metricsL *pdata.MetricSlice) {
 
 		case pdata.MetricDataTypeSum:
 			dataPoints := metric.Sum().DataPoints()
-			for i := 0; i < dataPoints.Len(); i++ {
-				dataPoint := dataPoints.At(i)
-				dataPoint.SetStartTimestamp(startTimeTs)
+			for j := 0; j < dataPoints.Len(); j++ {
+				dp := dataPoints.At(j)
+				dp.SetStartTimestamp(startTimeTs)
 			}
 
 		case pdata.MetricDataTypeSummary:
 			dataPoints := metric.Summary().DataPoints()
-			for i := 0; i < dataPoints.Len(); i++ {
-				dataPoint := dataPoints.At(i)
-				dataPoint.SetStartTimestamp(startTimeTs)
+			for j := 0; j < dataPoints.Len(); j++ {
+				dp := dataPoints.At(j)
+				dp.SetStartTimestamp(startTimeTs)
 			}
 
 		case pdata.MetricDataTypeHistogram:
 			dataPoints := metric.Histogram().DataPoints()
-			for i := 0; i < dataPoints.Len(); i++ {
-				dataPoint := dataPoints.At(i)
-				dataPoint.SetStartTimestamp(startTimeTs)
+			for j := 0; j < dataPoints.Len(); j++ {
+				dp := dataPoints.At(j)
+				dp.SetStartTimestamp(startTimeTs)
 			}
 
 		default:

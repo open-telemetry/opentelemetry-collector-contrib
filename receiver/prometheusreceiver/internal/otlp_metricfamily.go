@@ -217,7 +217,7 @@ func (mg *metricGroupPdata) toSummaryPoint(orderedLabelKeys []string, dest *pdat
 	for _, p := range mg.complexValue {
 		quantile := quantileValues.AppendEmpty()
 		quantile.SetValue(p.value)
-		quantile.SetQuantile(p.boundary * 100)
+		quantile.SetQuantile(p.boundary)
 	}
 
 	// Based on the summary description from https://prometheus.io/docs/concepts/metric_types/#summary
@@ -336,7 +336,7 @@ func (mf *metricFamilyPdata) ToMetricPdata(metrics *pdata.MetricSlice) (int, int
 	switch mf.mtype {
 	case pdata.MetricDataTypeHistogram:
 		histogram := metric.Histogram()
-		histogram.SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+		histogram.SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
 		hdpL := histogram.DataPoints()
 		for _, mg := range mf.getGroups() {
 			if !mg.toDistributionPoint(mf.labelKeysOrdered, &hdpL) {
@@ -357,7 +357,7 @@ func (mf *metricFamilyPdata) ToMetricPdata(metrics *pdata.MetricSlice) (int, int
 
 	case pdata.MetricDataTypeSum:
 		sum := metric.Sum()
-		sum.SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+		sum.SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
 		sdpL := sum.DataPoints()
 		for _, mg := range mf.getGroups() {
 			if !mg.toNumberDataPoint(mf.labelKeysOrdered, &sdpL) {

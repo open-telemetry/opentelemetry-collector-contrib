@@ -24,6 +24,7 @@ import (
 	"github.com/prometheus/prometheus/scrape"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/model/pdata"
 )
@@ -92,7 +93,7 @@ func runBuilderStartTimeTests(t *testing.T, tests []buildTestDataPdata,
 			mc := newMockMetadataCache(testMetadata)
 			st := startTs
 			for _, page := range tt.inputs {
-				b := newMetricBuilderPdata(mc, true, startTimeMetricRegex, testLogger, 0)
+				b := newMetricBuilderPdata(mc, true, startTimeMetricRegex, zap.NewNop(), 0)
 				b.startTime = defaultBuilderStartTime // set to a non-zero value
 				for _, pt := range page.pts {
 					// set ts for testing
@@ -461,6 +462,7 @@ func Test_OTLPMetricBuilder_counters(t *testing.T) {
 				m0.SetName("counter_test")
 				m0.SetDataType(pdata.MetricDataTypeSum)
 				sum := m0.Sum()
+				sum.SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
 				pt0 := sum.DataPoints().AppendEmpty()
 				pt0.SetDoubleVal(100.0)
 				pt0.SetStartTimestamp(startTsNanos)
@@ -486,6 +488,7 @@ func Test_OTLPMetricBuilder_counters(t *testing.T) {
 				m0.SetName("counter_test")
 				m0.SetDataType(pdata.MetricDataTypeSum)
 				sum := m0.Sum()
+				sum.SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
 				pt0 := sum.DataPoints().AppendEmpty()
 				pt0.SetDoubleVal(150.0)
 				pt0.SetStartTimestamp(startTsNanos)
@@ -518,6 +521,7 @@ func Test_OTLPMetricBuilder_counters(t *testing.T) {
 				m0.SetName("counter_test")
 				m0.SetDataType(pdata.MetricDataTypeSum)
 				sum0 := m0.Sum()
+				sum0.SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
 				pt0 := sum0.DataPoints().AppendEmpty()
 				pt0.SetDoubleVal(150.0)
 				pt0.SetStartTimestamp(startTsNanos)
@@ -534,6 +538,7 @@ func Test_OTLPMetricBuilder_counters(t *testing.T) {
 				m1.SetName("counter_test2")
 				m1.SetDataType(pdata.MetricDataTypeSum)
 				sum1 := m1.Sum()
+				sum1.SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
 				pt2 := sum1.DataPoints().AppendEmpty()
 				pt2.SetDoubleVal(100.0)
 				pt2.SetStartTimestamp(startTsNanos)
@@ -558,6 +563,7 @@ func Test_OTLPMetricBuilder_counters(t *testing.T) {
 				m0.SetName("poor_name_count")
 				m0.SetDataType(pdata.MetricDataTypeSum)
 				sum := m0.Sum()
+				sum.SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
 				pt0 := sum.DataPoints().AppendEmpty()
 				pt0.SetDoubleVal(100.0)
 				pt0.SetStartTimestamp(startTsNanos)
@@ -580,7 +586,7 @@ func runBuilderTestsPdata(t *testing.T, tests []buildTestDataPdata) {
 			mc := newMockMetadataCache(testMetadata)
 			st := startTs
 			for i, page := range tt.inputs {
-				b := newMetricBuilderPdata(mc, true, "", testLogger, startTs)
+				b := newMetricBuilderPdata(mc, true, "", zap.NewNop(), startTs)
 				b.startTime = defaultBuilderStartTime // set to a non-zero value
 				b.intervalStartTimeMs = startTs
 				for _, pt := range page.pts {
@@ -590,11 +596,28 @@ func runBuilderTestsPdata(t *testing.T, tests []buildTestDataPdata) {
 				}
 				metrics, _, _, err := b.Build()
 				assert.NoError(t, err)
-				assert.EqualValues(t, wants[i], metrics)
+				assertEquivalentMetrics(t, wants[i], metrics)
 				st += interval
 			}
 		})
 	}
+}
+
+func assertEquivalentMetrics(t *testing.T, want, got *pdata.MetricSlice) {
+	if !assert.Equal(t, want.Len(), got.Len()) {
+		return
+	}
+	wmap := map[string]pdata.Metric{}
+	gmap := map[string]pdata.Metric{}
+
+	for i := 0; i < want.Len(); i++ {
+		wi := want.At(i)
+		wmap[wi.Name()] = wi
+		gi := got.At(i)
+		gmap[gi.Name()] = gi
+	}
+
+	assert.EqualValues(t, wmap, gmap)
 }
 
 var (
@@ -849,6 +872,7 @@ func Test_OTLPMetricBuilder_histogram(t *testing.T) {
 				m0.SetName("hist_test")
 				m0.SetDataType(pdata.MetricDataTypeHistogram)
 				hist0 := m0.Histogram()
+				hist0.SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
 				pt0 := hist0.DataPoints().AppendEmpty()
 				pt0.SetCount(10)
 				pt0.SetSum(99)
@@ -885,6 +909,7 @@ func Test_OTLPMetricBuilder_histogram(t *testing.T) {
 				m0.SetName("hist_test")
 				m0.SetDataType(pdata.MetricDataTypeHistogram)
 				hist0 := m0.Histogram()
+				hist0.SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
 				pt0 := hist0.DataPoints().AppendEmpty()
 				pt0.SetCount(10)
 				pt0.SetSum(99)
@@ -937,6 +962,7 @@ func Test_OTLPMetricBuilder_histogram(t *testing.T) {
 				m0.SetName("hist_test")
 				m0.SetDataType(pdata.MetricDataTypeHistogram)
 				hist0 := m0.Histogram()
+				hist0.SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
 				pt0 := hist0.DataPoints().AppendEmpty()
 				pt0.SetCount(10)
 				pt0.SetSum(99)
@@ -961,6 +987,7 @@ func Test_OTLPMetricBuilder_histogram(t *testing.T) {
 				m1.SetName("hist_test2")
 				m1.SetDataType(pdata.MetricDataTypeHistogram)
 				hist1 := m1.Histogram()
+				hist1.SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
 				pt2 := hist1.DataPoints().AppendEmpty()
 				pt2.SetCount(3)
 				pt2.SetSum(50)
@@ -991,6 +1018,7 @@ func Test_OTLPMetricBuilder_histogram(t *testing.T) {
 				m0.SetName("hist_test")
 				m0.SetDataType(pdata.MetricDataTypeHistogram)
 				hist0 := m0.Histogram()
+				hist0.SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
 				pt0 := hist0.DataPoints().AppendEmpty()
 				pt0.SetCount(10)
 				pt0.SetSum(99)
@@ -1021,6 +1049,7 @@ func Test_OTLPMetricBuilder_histogram(t *testing.T) {
 				m0.SetName("hist_test")
 				m0.SetDataType(pdata.MetricDataTypeHistogram)
 				hist0 := m0.Histogram()
+				hist0.SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
 				pt0 := hist0.DataPoints().AppendEmpty()
 				pt0.SetCount(3)
 				pt0.SetSum(100)
@@ -1050,6 +1079,7 @@ func Test_OTLPMetricBuilder_histogram(t *testing.T) {
 				m0.SetName("hist_test")
 				m0.SetDataType(pdata.MetricDataTypeHistogram)
 				hist0 := m0.Histogram()
+				hist0.SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
 				pt0 := hist0.DataPoints().AppendEmpty()
 				pt0.SetCount(3)
 				pt0.SetSum(100)
@@ -1079,6 +1109,7 @@ func Test_OTLPMetricBuilder_histogram(t *testing.T) {
 				m0.SetName("hist_test")
 				m0.SetDataType(pdata.MetricDataTypeHistogram)
 				hist0 := m0.Histogram()
+				hist0.SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
 				pt0 := hist0.DataPoints().AppendEmpty()
 				pt0.SetCount(3)
 				pt0.SetSum(0)
@@ -1187,13 +1218,13 @@ func Test_metricBuilder_summary(t *testing.T) {
 				pt0.Attributes().InsertString("foo", "bar")
 				qvL := pt0.QuantileValues()
 				q50 := qvL.AppendEmpty()
-				q50.SetQuantile(50)
+				q50.SetQuantile(.50)
 				q50.SetValue(1.0)
 				q75 := qvL.AppendEmpty()
-				q75.SetQuantile(75)
+				q75.SetQuantile(.75)
 				q75.SetValue(2.0)
 				q100 := qvL.AppendEmpty()
-				q100.SetQuantile(100)
+				q100.SetQuantile(1)
 				q100.SetValue(5.0)
 
 				return []*pdata.MetricSlice{&mL0}
@@ -1252,13 +1283,13 @@ func Test_metricBuilder_summary(t *testing.T) {
 				pt0.Attributes().InsertString("foo", "bar")
 				qvL := pt0.QuantileValues()
 				q50 := qvL.AppendEmpty()
-				q50.SetQuantile(50)
+				q50.SetQuantile(.50)
 				q50.SetValue(1.0)
 				q75 := qvL.AppendEmpty()
-				q75.SetQuantile(75)
+				q75.SetQuantile(.75)
 				q75.SetValue(2.0)
 				q100 := qvL.AppendEmpty()
-				q100.SetQuantile(100)
+				q100.SetQuantile(1)
 				q100.SetValue(5.0)
 
 				return []*pdata.MetricSlice{&mL0}
@@ -1272,7 +1303,7 @@ func Test_metricBuilder_summary(t *testing.T) {
 // Ensure that we reject duplicate label keys. See https://github.com/open-telemetry/wg-prometheus/issues/44.
 func TestMetricBuilderDuplicateLabelKeysAreRejected(t *testing.T) {
 	mc := newMockMetadataCache(testMetadata)
-	mb := newMetricBuilderPdata(mc, true, "", testLogger, 0)
+	mb := newMetricBuilderPdata(mc, true, "", zap.NewNop(), 0)
 
 	dupLabels := labels.Labels{
 		{Name: "__name__", Value: "test"},
@@ -1292,7 +1323,7 @@ func TestMetricBuilderDuplicateLabelKeysAreRejected(t *testing.T) {
 func Test_metricBuilder_baddata(t *testing.T) {
 	t.Run("empty-metric-name", func(t *testing.T) {
 		mc := newMockMetadataCache(testMetadata)
-		b := newMetricBuilderPdata(mc, true, "", testLogger, 0)
+		b := newMetricBuilderPdata(mc, true, "", zap.NewNop(), 0)
 		b.startTime = 1.0 // set to a non-zero value
 		if err := b.AddDataPoint(labels.FromStrings("a", "b"), startTs, 123); err != errMetricNameNotFound {
 			t.Error("expecting errMetricNameNotFound error, but get nil")
@@ -1306,7 +1337,7 @@ func Test_metricBuilder_baddata(t *testing.T) {
 
 	t.Run("histogram-datapoint-no-bucket-label", func(t *testing.T) {
 		mc := newMockMetadataCache(testMetadata)
-		b := newMetricBuilderPdata(mc, true, "", testLogger, 0)
+		b := newMetricBuilderPdata(mc, true, "", zap.NewNop(), 0)
 		b.startTime = 1.0 // set to a non-zero value
 		if err := b.AddDataPoint(createLabels("hist_test", "k", "v"), startTs, 123); err != errEmptyBoundaryLabel {
 			t.Error("expecting errEmptyBoundaryLabel error, but get nil")
@@ -1315,7 +1346,7 @@ func Test_metricBuilder_baddata(t *testing.T) {
 
 	t.Run("summary-datapoint-no-quantile-label", func(t *testing.T) {
 		mc := newMockMetadataCache(testMetadata)
-		b := newMetricBuilderPdata(mc, true, "", testLogger, 0)
+		b := newMetricBuilderPdata(mc, true, "", zap.NewNop(), 0)
 		b.startTime = 1.0 // set to a non-zero value
 		if err := b.AddDataPoint(createLabels("summary_test", "k", "v"), startTs, 123); err != errEmptyBoundaryLabel {
 			t.Error("expecting errEmptyBoundaryLabel error, but get nil")

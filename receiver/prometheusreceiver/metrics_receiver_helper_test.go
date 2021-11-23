@@ -538,3 +538,14 @@ func splitMetricsByTarget(metrics []pdata.Metrics) map[string][]*pdata.ResourceM
 	}
 	return pResults
 }
+
+func getTS(ms pdata.MetricSlice) pdata.Timestamp {
+	for i := 0; i < ms.Len(); i++ {
+		m := ms.At(i)
+		switch m.DataType() {
+		case pdata.MetricDataTypeGauge:
+			return m.Gauge().DataPoints().At(0).Timestamp()
+		}
+	}
+	return 0
+}

@@ -41,7 +41,7 @@ func DistPointPdata(ts pdata.Timestamp, bounds []float64, counts []uint64) *pdat
 
 func GaugeDistMetricPdata(name string, kvp []*KV, startTs pdata.Timestamp, points ...*pdata.HistogramDataPoint) *pdata.Metric {
 	hMetric := CumulativeDistMetricPdata(name, kvp, startTs, points...)
-	hMetric.Histogram().SetAggregationTemporality(pdata.AggregationTemporalityDelta)
+	hMetric.Histogram().SetAggregationTemporality(pdata.MetricAggregationTemporalityDelta)
 	return hMetric
 }
 
@@ -50,7 +50,7 @@ func CumulativeDistMetricPdata(name string, kvp []*KV, startTs pdata.Timestamp, 
 	metric.SetName(name)
 	metric.SetDataType(pdata.MetricDataTypeHistogram)
 	histogram := metric.Histogram()
-	histogram.SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+	histogram.SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
 
 	destPointL := histogram.DataPoints()
 	// By default the AggregationTemporality is Cumulative until it'll be changed by the caller.
