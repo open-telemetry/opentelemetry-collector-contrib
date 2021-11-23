@@ -19,17 +19,15 @@ import (
 	"sync/atomic"
 	"time"
 
-	"go.uber.org/zap"
-
+	"github.com/prometheus/common/model"
+	"github.com/prometheus/prometheus/pkg/exemplar"
+	"github.com/prometheus/prometheus/pkg/labels"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/obsreport"
-
-	"github.com/prometheus/common/model"
-	"github.com/prometheus/prometheus/pkg/exemplar"
-	"github.com/prometheus/prometheus/pkg/labels"
+	"go.uber.org/zap"
 )
 
 type transactionPdata struct {

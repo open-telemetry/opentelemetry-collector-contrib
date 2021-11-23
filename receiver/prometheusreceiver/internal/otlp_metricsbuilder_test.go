@@ -22,9 +22,8 @@ import (
 	"github.com/prometheus/prometheus/pkg/textparse"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.uber.org/zap"
-
 	"go.opentelemetry.io/collector/model/pdata"
+	"go.uber.org/zap"
 )
 
 func runBuilderStartTimeTestsPdata(t *testing.T, tests []buildTestDataPdata,
