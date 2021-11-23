@@ -28,6 +28,30 @@ import (
 
 const testDir = "./testdata/openmetrics/"
 
+var skippedTests = map[string]struct{}{
+	"bad_clashing_names_0": {}, "bad_clashing_names_1": {}, "bad_clashing_names_2": {},
+	"bad_counter_values_0": {}, "bad_counter_values_1": {}, "bad_counter_values_2": {},
+	"bad_counter_values_3": {}, "bad_counter_values_5": {}, "bad_counter_values_6": {},
+	"bad_counter_values_10": {}, "bad_counter_values_11": {}, "bad_counter_values_12": {},
+	"bad_counter_values_13": {}, "bad_counter_values_14": {}, "bad_counter_values_15": {},
+	"bad_counter_values_16": {}, "bad_counter_values_17": {}, "bad_counter_values_18": {},
+	"bad_counter_values_19": {}, "bad_exemplars_on_unallowed_samples_2": {}, "bad_exemplar_timestamp_0": {},
+	"bad_exemplar_timestamp_1": {}, "bad_exemplar_timestamp_2": {}, "bad_grouping_or_ordering_0": {},
+	"bad_grouping_or_ordering_2": {}, "bad_grouping_or_ordering_3": {}, "bad_grouping_or_ordering_4": {},
+	"bad_grouping_or_ordering_5": {}, "bad_grouping_or_ordering_6": {}, "bad_grouping_or_ordering_7": {},
+	"bad_grouping_or_ordering_8": {}, "bad_grouping_or_ordering_9": {}, "bad_grouping_or_ordering_10": {},
+	"bad_histograms_0": {}, "bad_histograms_1": {}, "bad_histograms_2": {}, "bad_histograms_3": {},
+	"bad_histograms_6": {}, "bad_histograms_7": {}, "bad_histograms_8": {},
+	"bad_info_and_stateset_values_0": {}, "bad_info_and_stateset_values_1": {}, "bad_metadata_in_wrong_place_0": {},
+	"bad_metadata_in_wrong_place_1": {}, "bad_metadata_in_wrong_place_2": {},
+	"bad_missing_or_invalid_labels_for_a_type_1": {}, "bad_missing_or_invalid_labels_for_a_type_3": {},
+	"bad_missing_or_invalid_labels_for_a_type_4": {}, "bad_missing_or_invalid_labels_for_a_type_6": {},
+	"bad_missing_or_invalid_labels_for_a_type_7": {}, "bad_repeated_metadata_0": {},
+	"bad_repeated_metadata_1": {}, "bad_repeated_metadata_3": {}, "bad_stateset_info_values_0": {},
+	"bad_stateset_info_values_1": {}, "bad_stateset_info_values_2": {}, "bad_stateset_info_values_3": {},
+	"bad_timestamp_4": {}, "bad_timestamp_5": {}, "bad_timestamp_7": {}, "bad_unit_6": {}, "bad_unit_7": {},
+}
+
 func verifyPositiveTarget(t *testing.T, _ *testData, mds []*pdata.ResourceMetrics) {
 	require.Greater(t, len(mds), 0, "At least one resource metric should be present")
 	metrics := getMetrics(mds[0])
@@ -52,11 +76,13 @@ func TestOpenMetricsPositive(t *testing.T) {
 	testComponent(t, targets, false, "", true)
 }
 
-func verifyNegativeTarget(t *testing.T, _ *testData, mds []*pdata.ResourceMetrics) {
-	// negative tests are skipped since prometheus scrape package is currently not fully
+func verifyNegativeTarget(t *testing.T, td *testData, mds []*pdata.ResourceMetrics) {
+	// failing negative tests are skipped since prometheus scrape package is currently not fully
 	// compatible with OpenMetrics tests and successfully scrapes some invalid metrics
 	// see: https://github.com/prometheus/prometheus/issues/9699
-	t.Skip("skipping negative OpenMetrics parser tests")
+	if _, ok := skippedTests[td.name]; ok {
+		t.Skip("skipping failing negative OpenMetrics parser tests")
+	}
 
 	require.Greater(t, len(mds), 0, "At least one resource metric should be present")
 	metrics := getMetrics(mds[0])
