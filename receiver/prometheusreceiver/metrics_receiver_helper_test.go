@@ -442,73 +442,95 @@ func compareSummary(count uint64, sum float64, quantiles [][]float64) summaryPoi
 }
 
 func testComponent(t *testing.T, targets []*testData, useStartTimeMetric bool, startTimeMetricRegex string) {
-	// 1. setup mock server
-	mp, cfg, err := setupMockPrometheus(targets...)
-	require.Nilf(t, err, "Failed to create Prometheus config: %v", err)
-	defer mp.Close()
+	for _, pdataDirect := range []bool{false, true} {
+		pipelineType := "OpenCensus"
+		if pdataDirect {
+			pipelineType = "pdata"
+		}
+		t.Run(pipelineType, func(t *testing.T) { // 1. setup mock server
+			mp, cfg, err := setupMockPrometheus(targets...)
+			require.Nilf(t, err, "Failed to create Prometheus config: %v", err)
+			defer mp.Close()
 
-	cms := new(consumertest.MetricsSink)
-	rcvr := newPrometheusReceiver(componenttest.NewNopReceiverCreateSettings(), &Config{
-		ReceiverSettings:     config.NewReceiverSettings(config.NewComponentID(typeStr)),
-		PrometheusConfig:     cfg,
-		UseStartTimeMetric:   useStartTimeMetric,
-		StartTimeMetricRegex: startTimeMetricRegex}, cms)
+			cms := new(consumertest.MetricsSink)
+			rcvr := newPrometheusReceiver(componenttest.NewNopReceiverCreateSettings(), &Config{
+				ReceiverSettings:     config.NewReceiverSettings(config.NewComponentID(typeStr)),
+				PrometheusConfig:     cfg,
+				UseStartTimeMetric:   useStartTimeMetric,
+				StartTimeMetricRegex: startTimeMetricRegex,
+				pdataDirect:          pdataDirect,
+			}, cms)
 
-	require.NoError(t, rcvr.Start(context.Background(), componenttest.NewNopHost()), "Failed to invoke Start: %v", err)
-	t.Cleanup(func() {
-		// verify state after shutdown is called
-		assert.Lenf(t, flattenTargets(rcvr.scrapeManager.TargetsAll()), len(targets), "expected %v targets to be running", len(targets))
-		require.NoError(t, rcvr.Shutdown(context.Background()))
-		assert.Len(t, flattenTargets(rcvr.scrapeManager.TargetsAll()), 0, "expected scrape manager to have no targets")
-	})
+			require.NoError(t, rcvr.Start(context.Background(), componenttest.NewNopHost()), "Failed to invoke Start: %v", err)
+			t.Cleanup(func() {
+				// verify state after shutdown is called
+				assert.Lenf(t, flattenTargets(rcvr.scrapeManager.TargetsAll()), len(targets), "expected %v targets to be running", len(targets))
+				require.NoError(t, rcvr.Shutdown(context.Background()))
+				assert.Len(t, flattenTargets(rcvr.scrapeManager.TargetsAll()), 0, "expected scrape manager to have no targets")
+			})
 
-	// wait for all provided data to be scraped
-	mp.wg.Wait()
-	metrics := cms.AllMetrics()
+			// wait for all provided data to be scraped
+			mp.wg.Wait()
+			metrics := cms.AllMetrics()
 
-	// split and store results by target name
-	pResults := splitMetricsByTarget(metrics)
-	lres, lep := len(pResults), len(mp.endpoints)
-	assert.Equalf(t, lep, lres, "want %d targets, but got %v\n", lep, lres)
+			// split and store results by target name
+			pResults := splitMetricsByTarget(metrics)
+			lres, lep := len(pResults), len(mp.endpoints)
+			assert.Equalf(t, lep, lres, "want %d targets, but got %v\n", lep, lres)
 
-	// loop to validate outputs for each targets
-	for _, target := range targets {
-		t.Run(target.name, func(t *testing.T) {
-			validScrapes := getValidScrapes(t, pResults[target.name])
-			target.validateFunc(t, target, validScrapes)
+			// loop to validate outputs for each targets
+			for _, target := range targets {
+				t.Run(target.name, func(t *testing.T) {
+					validScrapes := getValidScrapes(t, pResults[target.name])
+					target.validateFunc(t, target, validScrapes)
+				})
+			}
 		})
 	}
 }
 
 // starts prometheus receiver with custom config, retrieves metrics from MetricsSink
-func testComponentCustomConfig(t *testing.T, targets []*testData, mp *mockPrometheus, cfg *promcfg.Config) {
-	ctx := context.Background()
-	defer mp.Close()
+func testComponentCustomConfig(t *testing.T, targets []*testData, cfgMut func(*promcfg.Config)) {
+	for _, pdataDirect := range []bool{false, true} {
+		pipelineType := "OpenCensus"
+		if pdataDirect {
+			pipelineType = "pdata"
+		}
+		t.Run(pipelineType, func(t *testing.T) {
+			ctx := context.Background()
+			mp, cfg, err := setupMockPrometheus(targets...)
+			cfgMut(cfg)
+			require.Nilf(t, err, "Failed to create Prometheus config: %v", err)
+			defer mp.Close()
 
-	cms := new(consumertest.MetricsSink)
-	receiver := newPrometheusReceiver(componenttest.NewNopReceiverCreateSettings(), &Config{
-		ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
-		PrometheusConfig: cfg}, cms)
+			cms := new(consumertest.MetricsSink)
+			receiver := newPrometheusReceiver(componenttest.NewNopReceiverCreateSettings(), &Config{
+				ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
+				PrometheusConfig: cfg,
+				pdataDirect:      pdataDirect,
+			}, cms)
 
-	require.NoError(t, receiver.Start(ctx, componenttest.NewNopHost()))
+			require.NoError(t, receiver.Start(ctx, componenttest.NewNopHost()))
 
-	// verify state after shutdown is called
-	t.Cleanup(func() { require.NoError(t, receiver.Shutdown(ctx)) })
+			// verify state after shutdown is called
+			t.Cleanup(func() { require.NoError(t, receiver.Shutdown(ctx)) })
 
-	// wait for all provided data to be scraped
-	mp.wg.Wait()
-	metrics := cms.AllMetrics()
+			// wait for all provided data to be scraped
+			mp.wg.Wait()
+			metrics := cms.AllMetrics()
 
-	// split and store results by target name
-	pResults := splitMetricsByTarget(metrics)
-	lres, lep := len(pResults), len(mp.endpoints)
-	assert.Equalf(t, lep, lres, "want %d targets, but got %v\n", lep, lres)
+			// split and store results by target name
+			pResults := splitMetricsByTarget(metrics)
+			lres, lep := len(pResults), len(mp.endpoints)
+			assert.Equalf(t, lep, lres, "want %d targets, but got %v\n", lep, lres)
 
-	// loop to validate outputs for each targets
-	for _, target := range targets {
-		t.Run(target.name, func(t *testing.T) {
-			validScrapes := getValidScrapes(t, pResults[target.name])
-			target.validateFunc(t, target, validScrapes)
+			// loop to validate outputs for each targets
+			for _, target := range targets {
+				t.Run(target.name, func(t *testing.T) {
+					validScrapes := getValidScrapes(t, pResults[target.name])
+					target.validateFunc(t, target, validScrapes)
+				})
+			}
 		})
 	}
 }

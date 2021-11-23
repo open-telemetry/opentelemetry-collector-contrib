@@ -17,6 +17,7 @@ package prometheusreceiver
 import (
 	"testing"
 
+	promcfg "github.com/prometheus/prometheus/config"
 	"github.com/prometheus/prometheus/pkg/labels"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/model/pdata"
@@ -38,11 +39,9 @@ func TestExternalLabels(t *testing.T) {
 		},
 	}
 
-	mp, cfg, err := setupMockPrometheus(targets...)
-	cfg.GlobalConfig.ExternalLabels = labels.FromStrings("key", "value")
-	require.Nilf(t, err, "Failed to create Prometheus config: %v", err)
-
-	testComponentCustomConfig(t, targets, mp, cfg)
+	testComponentCustomConfig(t, targets, func(cfg *promcfg.Config) {
+		cfg.GlobalConfig.ExternalLabels = labels.FromStrings("key", "value")
+	})
 }
 
 func verifyExternalLabels(t *testing.T, td *testData, rms []*pdata.ResourceMetrics) {
@@ -130,15 +129,12 @@ func TestLabelLimitConfig(t *testing.T) {
 		},
 	}
 
-	mp, cfg, err := setupMockPrometheus(targets...)
-	require.Nilf(t, err, "Failed to create Prometheus config: %v", err)
-
-	// set label limit in scrape_config
-	for _, scrapeCfg := range cfg.ScrapeConfigs {
-		scrapeCfg.LabelLimit = 5
-	}
-
-	testComponentCustomConfig(t, targets, mp, cfg)
+	testComponentCustomConfig(t, targets, func(cfg *promcfg.Config) {
+		// set label limit in scrape_config
+		for _, scrapeCfg := range cfg.ScrapeConfigs {
+			scrapeCfg.LabelLimit = 5
+		}
+	})
 }
 
 const targetLabelNameLimit1 = `
@@ -157,7 +153,7 @@ func verifyLabelLengthTarget1(t *testing.T, td *testData, rms []*pdata.ResourceM
 
 	want := td.attributes
 	metrics1 := rms[0].InstrumentationLibraryMetrics().At(0).Metrics()
-	ts1 := metrics1.At(0).Gauge().DataPoints().At(0).Timestamp()
+	ts1 := getTS(metrics1)
 
 	doCompare(t, "scrape-labelNameLimit", want, rms[0], []testExpectation{
 		assertMetricPresent("test_counter0",
@@ -216,13 +212,10 @@ func TestLabelNameLimitConfig(t *testing.T) {
 		},
 	}
 
-	mp, cfg, err := setupMockPrometheus(targets...)
-	require.Nilf(t, err, "Failed to create Prometheus config: %v", err)
-
-	// set label name limit in scrape_config
-	for _, scrapeCfg := range cfg.ScrapeConfigs {
-		scrapeCfg.LabelNameLengthLimit = 20
-	}
-
-	testComponentCustomConfig(t, targets, mp, cfg)
+	testComponentCustomConfig(t, targets, func(cfg *promcfg.Config) {
+		// set label name limit in scrape_config
+		for _, scrapeCfg := range cfg.ScrapeConfigs {
+			scrapeCfg.LabelNameLengthLimit = 20
+		}
+	})
 }
