@@ -17,17 +17,16 @@ package awsecscontainermetricsreceiver
 import (
 	"context"
 	"fmt"
-	"net/url"
-	"os"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
-	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsecscontainermetricsreceiver/internal/awsecscontainermetrics"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil/endpoints"
 )
 
 // Factory for awscontainermetrics
@@ -62,27 +61,17 @@ func createMetricsReceiver(
 	baseCfg config.Receiver,
 	consumer consumer.Metrics,
 ) (component.MetricsReceiver, error) {
-	ecsTaskMetadataEndpointV4 := os.Getenv(awsecscontainermetrics.EndpointEnvKey)
-	if ecsTaskMetadataEndpointV4 == "" {
-		return nil, fmt.Errorf("no environment variable found for %s", awsecscontainermetrics.EndpointEnvKey)
+	endpoint, err := endpoints.GetTMEV4FromEnv()
+	if err != nil || endpoint == nil {
+		return nil, fmt.Errorf("unable to detect task metadata endpoint: %w", err)
 	}
-
-	endpoint, err := url.ParseRequestURI(ecsTaskMetadataEndpointV4)
+	clientSettings := confighttp.HTTPClientSettings{}
+	rest, err := ecsutil.NewRestClient(*endpoint, clientSettings, params.Logger)
 	if err != nil {
 		return nil, err
 	}
-	rest := restClient(params.Logger, *endpoint)
 
 	rCfg := baseCfg.(*Config)
 	logger := params.Logger
 	return newAWSECSContainermetrics(logger, rCfg, consumer, rest)
-}
-
-func restClient(logger *zap.Logger, endpoint url.URL) awsecscontainermetrics.RestClient {
-	clientProvider := awsecscontainermetrics.NewClientProvider(endpoint, logger)
-
-	client := clientProvider.BuildClient()
-	rest := awsecscontainermetrics.NewRestClient(client)
-
-	return rest
 }

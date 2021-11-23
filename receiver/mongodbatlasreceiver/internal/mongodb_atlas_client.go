@@ -311,8 +311,7 @@ func (s *MongoDBAtlasClient) ProcessDatabaseMetrics(
 			resolution,
 		)
 		if err != nil {
-			s.log.Debug("Error retrieving database metrics from MongoDB Atlas API", zap.Error(err))
-			break // Return partial results
+			return pdata.Metrics{}, err
 		}
 		pageNum++
 		allMeasurements = append(allMeasurements, measurements...)
@@ -426,8 +425,7 @@ func (s *MongoDBAtlasClient) ProcessDiskMetrics(
 			resolution,
 		)
 		if err != nil {
-			s.log.Debug("Error retrieving process disk metrics from MongoDB Atlas API", zap.Error(err))
-			break // Return partial results
+			return pdata.Metrics{}, err
 		}
 		pageNum++
 		allMeasurements = append(allMeasurements, measurements...)
@@ -467,10 +465,4 @@ func (s *MongoDBAtlasClient) processDiskMeasurementsPage(
 		return nil, false, err
 	}
 	return measurements.Measurements, hasNext(measurements.Links), nil
-}
-
-func processMeasurements(_ pdata.Resource, measurements []*mongodbatlas.Measurements) (pdata.Metrics, error) {
-	// Stub- will be replaced with code for normalizing and processing metrics
-	fmt.Printf("Fake processing %d metrics\n", len(measurements))
-	return pdata.NewMetrics(), nil
 }

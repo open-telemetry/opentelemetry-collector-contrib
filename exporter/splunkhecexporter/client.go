@@ -90,6 +90,13 @@ func (c *client) pushMetricsData(
 		req.Header.Set("Content-Encoding", "gzip")
 	}
 
+	if md.ResourceMetrics().Len() != 0 {
+		accessToken, found := md.ResourceMetrics().At(0).Resource().Attributes().Get(splunk.HecTokenLabel)
+		if found {
+			req.Header.Set("Authorization", splunk.HECTokenHeader+" "+accessToken.StringVal())
+		}
+	}
+
 	resp, err := c.client.Do(req)
 	if err != nil {
 		return err
@@ -136,6 +143,18 @@ func (c *client) pushLogData(ctx context.Context, ld pdata.Logs) error {
 
 	// Callback when each batch is to be sent.
 	send := func(ctx context.Context, buf *bytes.Buffer, headers map[string]string) (err error) {
+		localHeaders := headers
+		if ld.ResourceLogs().Len() != 0 {
+			accessToken, found := ld.ResourceLogs().At(0).Resource().Attributes().Get(splunk.HecTokenLabel)
+			if found {
+				localHeaders = map[string]string{}
+				for k, v := range headers {
+					localHeaders[k] = v
+				}
+				localHeaders["Authorization"] = splunk.HECTokenHeader + " " + accessToken.StringVal()
+			}
+		}
+
 		shouldCompress := buf.Len() >= minCompressionLen && !c.config.DisableCompression
 
 		if shouldCompress {
@@ -150,10 +169,10 @@ func (c *client) pushLogData(ctx context.Context, ld pdata.Logs) error {
 				return fmt.Errorf("failed flushing compressed data to gzip writer: %v", err)
 			}
 
-			return c.postEvents(ctx, gzipBuffer, headers, shouldCompress)
+			return c.postEvents(ctx, gzipBuffer, localHeaders, shouldCompress)
 		}
 
-		return c.postEvents(ctx, buf, headers, shouldCompress)
+		return c.postEvents(ctx, buf, localHeaders, shouldCompress)
 	}
 
 	return c.pushLogDataInBatches(ctx, ld, send)

@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package awsecscontainermetrics
+package ecsutil
 
 import (
 	"fmt"
@@ -20,54 +20,62 @@ import (
 	"net/http"
 	"net/url"
 
+	"go.opentelemetry.io/collector/component"
+	cconfig "go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/config/confighttp"
 	"go.uber.org/zap"
 )
 
-// Client defines the rest client interface
+// Client defines the basic HTTP client interface with GET response validation and content parsing
 type Client interface {
 	Get(path string) ([]byte, error)
 }
 
 // NewClientProvider creates the default rest client provider
-func NewClientProvider(endpoint url.URL, logger *zap.Logger) ClientProvider {
+func NewClientProvider(baseURL url.URL, clientSettings confighttp.HTTPClientSettings, logger *zap.Logger) ClientProvider {
 	return &defaultClientProvider{
-		endpoint: endpoint,
-		logger:   logger,
+		baseURL:        baseURL,
+		clientSettings: clientSettings,
+		logger:         logger,
 	}
 }
 
 // ClientProvider defines
 type ClientProvider interface {
-	BuildClient() Client
+	BuildClient() (Client, error)
 }
 
 type defaultClientProvider struct {
-	endpoint url.URL
-	logger   *zap.Logger
+	baseURL        url.URL
+	clientSettings confighttp.HTTPClientSettings
+	logger         *zap.Logger
 }
 
-func (dcp *defaultClientProvider) BuildClient() Client {
+func (dcp *defaultClientProvider) BuildClient() (Client, error) {
 	return defaultClient(
-		dcp.endpoint,
+		dcp.baseURL,
+		dcp.clientSettings,
 		dcp.logger,
 	)
 }
 
-// TODO: Try using config.HTTPClientSettings
 func defaultClient(
-	endpoint url.URL,
+	baseURL url.URL,
+	clientSettings confighttp.HTTPClientSettings,
 	logger *zap.Logger,
-) *clientImpl {
-	tr := defaultTransport()
-	return &clientImpl{
-		baseURL:    endpoint,
-		httpClient: http.Client{Transport: tr},
-		logger:     logger,
+) (*clientImpl, error) {
+	client, err := clientSettings.ToClient(map[cconfig.ComponentID]component.Extension{})
+	if err != nil {
+		return nil, err
 	}
-}
-
-func defaultTransport() *http.Transport {
-	return http.DefaultTransport.(*http.Transport).Clone()
+	if client == nil {
+		return nil, fmt.Errorf("unexpected default client nil value")
+	}
+	return &clientImpl{
+		baseURL:    baseURL,
+		httpClient: *client,
+		logger:     logger,
+	}, nil
 }
 
 var _ Client = (*clientImpl)(nil)

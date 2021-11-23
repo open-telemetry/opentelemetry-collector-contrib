@@ -4,7 +4,7 @@ This exporter supports sending OpenTelemetry log data to [LogService](https://cl
 
 # Configuration options:
 
-- `endpoint` (required): LogService's [Endpoint](https://cloud.tencent.com/document/product/614/56473).
+- `region` (required): LogService's [Region](https://cloud.tencent.com/document/product/614/56473).
 - `logset` (required): LogService's LogSet ID.
 - `topic` (required): LogService's topic ID.
 - `secret_id` (optional): TencentCloud secret id.
@@ -15,19 +15,33 @@ This exporter supports sending OpenTelemetry log data to [LogService](https://cl
 
 ```yaml
 receivers:
-  examplereceiver:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: ":4317"
 
 exporters:
   tencentcloud_logservice:
-    endpoint: "ap-beijing.cls.tencentcs.com"
-    logset: "test-logset"
-    topic: "test-topic"
-    secret_id: "secret-id"
-    secret_key: "secret-key"
+      # LogService's Region, https://cloud.tencent.com/document/product/614/18940
+      # set cls.{region}.tencentcloudapi.com, eg cls.ap-beijing.tencentcloudapi.com;
+    region: "ap-beijing"
+    # LogService's LogSet ID
+    logset: "demo-logset"
+    # LogService's Topic ID
+    topic: "demo-topic"
+    # TencentCloud secret id
+    secret_id: "demo-secret-id"
+    # TencentCloud secret key
+    secret_key: "demo-secret-key"
 
 service:
   pipelines:
-    traces:
-      receivers: [examplereceiver]
+    logs:
+      receivers: [otlp]
       exporters: [tencentcloud_logservice]
 ```
+
+# Changelog
+
+- 2021-11-10 Change configuration item **endpoint** to **region**, by @wgliang
+- 2021-11-01 Initial implementation by @wgliang in #5722

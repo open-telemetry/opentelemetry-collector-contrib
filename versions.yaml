@@ -57,6 +57,7 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/containerinsight
       - github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/proxy
       - github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil
+      - github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil
       - github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/k8s
       - github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray/testdata/sampleserver
       - github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray/testdata/sampleapp

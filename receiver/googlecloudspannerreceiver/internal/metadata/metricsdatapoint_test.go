@@ -111,35 +111,30 @@ func TestMetricsDataPoint_CopyTo(t *testing.T) {
 }
 
 func allPossibleLabelValues() []LabelValue {
+	strLabelValueMetadata, _ := NewLabelValueMetadata("stringLabelName", "stringLabelColumnName", StringValueType)
 	strLabelValue := stringLabelValue{
-		metadata: StringLabelValueMetadata{
-			queryLabelValueMetadata: newQueryLabelValueMetadata("stringLabelName", "stringLabelColumnName"),
-		},
-		value: stringValue,
+		metadata: strLabelValueMetadata,
+		value:    stringValue,
 	}
+	bLabelValueMetadata, _ := NewLabelValueMetadata("boolLabelName", "boolLabelColumnName", BoolValueType)
 	bLabelValue := boolLabelValue{
-		metadata: BoolLabelValueMetadata{
-			queryLabelValueMetadata: newQueryLabelValueMetadata("boolLabelName", "boolLabelColumnName"),
-		},
-		value: boolValue,
+		metadata: bLabelValueMetadata,
+		value:    boolValue,
 	}
+	i64LabelValueMetadata, _ := NewLabelValueMetadata("int64LabelName", "int64LabelColumnName", StringValueType)
 	i64LabelValue := int64LabelValue{
-		metadata: Int64LabelValueMetadata{
-			queryLabelValueMetadata: newQueryLabelValueMetadata("int64LabelName", "int64LabelColumnName"),
-		},
-		value: int64Value,
+		metadata: i64LabelValueMetadata,
+		value:    int64Value,
 	}
+	strSliceLabelValueMetadata, _ := NewLabelValueMetadata("stringSliceLabelName", "stringSliceLabelColumnName", StringValueType)
 	strSliceLabelValue := stringSliceLabelValue{
-		metadata: StringSliceLabelValueMetadata{
-			queryLabelValueMetadata: newQueryLabelValueMetadata("stringSliceLabelName", "stringSliceLabelColumnName"),
-		},
-		value: stringValue,
+		metadata: strSliceLabelValueMetadata,
+		value:    stringValue,
 	}
+	btSliceLabelValueMetadata, _ := NewLabelValueMetadata("byteSliceLabelName", "byteSliceLabelColumnName", StringValueType)
 	btSliceLabelValue := byteSliceLabelValue{
-		metadata: ByteSliceLabelValueMetadata{
-			queryLabelValueMetadata: newQueryLabelValueMetadata("byteSliceLabelName", "byteSliceLabelColumnName"),
-		},
-		value: stringValue,
+		metadata: btSliceLabelValueMetadata,
+		value:    stringValue,
 	}
 
 	return []LabelValue{
@@ -153,20 +148,18 @@ func allPossibleLabelValues() []LabelValue {
 
 func allPossibleMetricValues(metricDataType pdata.MetricDataType) []MetricValue {
 	dataType := NewMetricDataType(metricDataType, pdata.MetricAggregationTemporalityDelta, true)
+	int64Metadata, _ := NewMetricValueMetadata("int64MetricName", "int64MetricColumnName", dataType,
+		metricUnit, IntValueType)
+	float64Metadata, _ := NewMetricValueMetadata("float64MetricName", "float64MetricColumnName", dataType,
+		metricUnit, FloatValueType)
 	return []MetricValue{
 		int64MetricValue{
-			metadata: Int64MetricValueMetadata{
-				queryMetricValueMetadata: newQueryMetricValueMetadata("int64MetricName",
-					"int64MetricColumnName", dataType, metricUnit),
-			},
-			value: int64Value,
+			metadata: int64Metadata,
+			value:    int64Value,
 		},
 		float64MetricValue{
-			metadata: Float64MetricValueMetadata{
-				queryMetricValueMetadata: newQueryMetricValueMetadata("float64MetricName",
-					"float64MetricColumnName", dataType, metricUnit),
-			},
-			value: float64Value,
+			metadata: float64Metadata,
+			value:    float64Value,
 		},
 	}
 }
