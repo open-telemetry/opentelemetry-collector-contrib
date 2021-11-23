@@ -89,7 +89,7 @@ func (m *metricsDimensions) String() string {
 	copy(dimensions, m.tags)
 
 	dimensions = append(dimensions, fmt.Sprintf("name:%s", m.name))
-	dimensions = append(dimensions, fmt.Sprintf("host:%s", m.name))
+	dimensions = append(dimensions, fmt.Sprintf("host:%s", m.host))
 	sort.Strings(dimensions)
 
 	for _, dim := range dimensions {

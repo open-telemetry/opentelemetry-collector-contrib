@@ -36,19 +36,23 @@ func TestWithAttributeMap(t *testing.T) {
 }
 
 func TestMetricDimensionsString(t *testing.T) {
-	getKey := func(name string, tags []string) string {
-		dims := metricsDimensions{name: name, tags: tags}
+	getKey := func(name string, tags []string, host string) string {
+		dims := metricsDimensions{name: name, tags: tags, host: host}
 		return dims.String()
 	}
 	metricName := "metric.name"
-	noTags := getKey(metricName, []string{})
-	someTags := getKey(metricName, []string{"key1:val1", "key2:val2"})
-	sameTags := getKey(metricName, []string{"key2:val2", "key1:val1"})
-	diffTags := getKey(metricName, []string{"key3:val3"})
+	hostOne := "host-one"
+	hostTwo := "host-two"
+	noTags := getKey(metricName, []string{}, hostOne)
+	someTags := getKey(metricName, []string{"key1:val1", "key2:val2"}, hostOne)
+	sameTags := getKey(metricName, []string{"key2:val2", "key1:val1"}, hostOne)
+	diffTags := getKey(metricName, []string{"key3:val3"}, hostOne)
+	diffHost := getKey(metricName, []string{"key1:val1", "key2:val2"}, hostTwo)
 
 	assert.NotEqual(t, noTags, someTags)
 	assert.NotEqual(t, someTags, diffTags)
 	assert.Equal(t, someTags, sameTags)
+	assert.NotEqual(t, someTags, diffHost)
 }
 
 func TestMetricDimensionsStringNoTagsChange(t *testing.T) {
