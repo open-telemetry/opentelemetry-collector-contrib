@@ -113,19 +113,18 @@ func (o *OcaStore) Appender(context.Context) storage.Appender {
 					settings:             o.settings,
 				},
 			)
-		} else {
-			return newTransaction(
-				o.ctx,
-				o.jobsMapOC,
-				o.useStartTimeMetric,
-				o.startTimeMetricRegex,
-				o.receiverID,
-				o.mc,
-				o.sink,
-				o.externalLabels,
-				o.settings,
-			)
 		}
+		return newTransaction(
+			o.ctx,
+			o.jobsMapOC,
+			o.useStartTimeMetric,
+			o.startTimeMetricRegex,
+			o.receiverID,
+			o.mc,
+			o.sink,
+			o.externalLabels,
+			o.settings,
+		)
 	} else if state == runningStateInit {
 		panic("ScrapeManager is not set")
 	}

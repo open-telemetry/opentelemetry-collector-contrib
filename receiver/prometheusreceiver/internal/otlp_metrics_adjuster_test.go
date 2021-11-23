@@ -293,22 +293,6 @@ func Test_cumulative_pdata(t *testing.T) {
 	runScriptPdata(t, NewJobsMapPdata(time.Minute).get("job", "0"), script)
 }
 
-func populateHistogram(hdp *pdata.HistogramDataPoint, timestamp pdata.Timestamp, bounds []float64, counts []uint64) {
-	count := uint64(0)
-	sum := float64(0)
-	for i, counti := range counts {
-		if i > 0 {
-			sum += float64(counti) * bounds[i-1]
-		}
-		count += counti
-	}
-	hdp.SetBucketCounts(counts)
-	hdp.SetSum(sum)
-	hdp.SetCount(count)
-	hdp.SetTimestamp(timestamp)
-	hdp.SetExplicitBounds(bounds)
-}
-
 func Test_gaugeDistribution_pdata(t *testing.T) {
 	script := []*metricsAdjusterTestPdata{
 		{
@@ -867,7 +851,6 @@ func Test_jobGC_pdata(t *testing.T) {
 	jobsMap.gc()
 	// run job 1, round 2 - verify that all job 1 timeseries have been gc'd
 	runScriptPdata(t, jobsMap.get("job", "0"), job1Script2)
-	return
 }
 
 type metricsAdjusterTestPdata struct {
