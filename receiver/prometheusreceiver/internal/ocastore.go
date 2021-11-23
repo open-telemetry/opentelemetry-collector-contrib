@@ -18,6 +18,7 @@ import (
 	"context"
 	"errors"
 	"sync/atomic"
+	"time"
 
 	"github.com/prometheus/prometheus/pkg/exemplar"
 	"github.com/prometheus/prometheus/pkg/labels"
@@ -45,11 +46,13 @@ type OcaStore struct {
 	running              int32 // access atomically
 	sink                 consumer.Metrics
 	mc                   *metadataService
-	jobsMap              *JobsMapPdata
+	jobsMapPdata         *JobsMapPdata
+	jobsMapOC            *JobsMap
 	useStartTimeMetric   bool
 	startTimeMetricRegex string
 	receiverID           config.ComponentID
 	externalLabels       labels.Labels
+	pdataDirect          bool
 
 	settings component.ReceiverCreateSettings
 }
@@ -59,21 +62,29 @@ func NewOcaStore(
 	ctx context.Context,
 	sink consumer.Metrics,
 	set component.ReceiverCreateSettings,
-	jobsMap *JobsMapPdata,
 	useStartTimeMetric bool,
 	startTimeMetricRegex string,
 	receiverID config.ComponentID,
-	externalLabels labels.Labels) *OcaStore {
+	externalLabels labels.Labels,
+	pdataDirect bool) *OcaStore {
+	var jobsMapPdata *JobsMapPdata
+	var jobsMapOC *JobsMap
+	if !useStartTimeMetric {
+		jobsMapPdata = NewJobsMapPdata(2 * time.Minute)
+		jobsMapOC = NewJobsMap(2 * time.Minute)
+	}
 	return &OcaStore{
 		running:              runningStateInit,
 		ctx:                  ctx,
 		sink:                 sink,
 		settings:             set,
-		jobsMap:              jobsMap,
+		jobsMapPdata:         jobsMapPdata,
+		jobsMapOC:            jobsMapOC,
 		useStartTimeMetric:   useStartTimeMetric,
 		startTimeMetricRegex: startTimeMetricRegex,
 		receiverID:           receiverID,
 		externalLabels:       externalLabels,
+		pdataDirect:          pdataDirect,
 	}
 }
 
@@ -88,19 +99,33 @@ func (o *OcaStore) SetScrapeManager(scrapeManager *scrape.Manager) {
 func (o *OcaStore) Appender(context.Context) storage.Appender {
 	state := atomic.LoadInt32(&o.running)
 	if state == runningStateReady {
-		return newTransactionPdata(
-			o.ctx,
-			&txConfig{
-				jobsMap:              o.jobsMap,
-				useStartTimeMetric:   o.useStartTimeMetric,
-				startTimeMetricRegex: o.startTimeMetricRegex,
-				receiverID:           o.receiverID,
-				ms:                   o.mc,
-				sink:                 o.sink,
-				externalLabels:       o.externalLabels,
-				settings:             o.settings,
-			},
-		)
+		if o.pdataDirect {
+			return newTransactionPdata(
+				o.ctx,
+				&txConfig{
+					jobsMap:              o.jobsMapPdata,
+					useStartTimeMetric:   o.useStartTimeMetric,
+					startTimeMetricRegex: o.startTimeMetricRegex,
+					receiverID:           o.receiverID,
+					ms:                   o.mc,
+					sink:                 o.sink,
+					externalLabels:       o.externalLabels,
+					settings:             o.settings,
+				},
+			)
+		} else {
+			return newTransaction(
+				o.ctx,
+				o.jobsMapOC,
+				o.useStartTimeMetric,
+				o.startTimeMetricRegex,
+				o.receiverID,
+				o.mc,
+				o.sink,
+				o.externalLabels,
+				o.settings,
+			)
+		}
 	} else if state == runningStateInit {
 		panic("ScrapeManager is not set")
 	}
