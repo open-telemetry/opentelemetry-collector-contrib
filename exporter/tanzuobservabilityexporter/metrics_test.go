@@ -394,67 +394,43 @@ func TestSumConsumerMissingValue(t *testing.T) {
 }
 
 // Tests that the histogramConsumer correctly delegates to its
-// histogramDataPointConsumers. This tests no cumulative histogram
-// datapoint consumer.
+// histogramDataPointConsumers. This tests delta histograms
 func TestHistogramConsumerDeltaAggregation(t *testing.T) {
+	// TODO: Change this test when delta histograms are supported.
 	countAttributeForEachDataPoint := []uint64{2, 5, 10}
 	deltaMetric := newHistogramMetricWithDataPoints(
 		"delta.metric",
 		pdata.MetricAggregationTemporalityDelta,
 		countAttributeForEachDataPoint)
-	cumulativeMetric := newHistogramMetricWithDataPoints(
-		"cum.metric",
-		pdata.MetricAggregationTemporalityCumulative,
-		countAttributeForEachDataPoint)
 	sender := &mockGaugeSender{}
-	deltaConsumer := &mockHistogramDataPointConsumer{}
-
-	// We pass nil for the cumulative histogram data point consumer so
-	// sending a cumulative histogram metric will generate an error.
+	cumulativeConsumer := &mockHistogramDataPointConsumer{}
 	consumer := newHistogramConsumer(
-		nil, deltaConsumer, sender, nil)
+		cumulativeConsumer, nil, sender, nil)
 	var errs []error
-
 	consumer.Consume(deltaMetric, &errs)
-	consumer.Consume(cumulativeMetric, &errs) // generates an error
-	consumer.PushInternalMetrics(&errs)       // A no-op
-
 	assert.Len(t, errs, 1)
-
-	// We had three datapoints. Our mock just captures the metric name
-	// of each data point consumed.
-	assert.Equal(
-		t, []string{"delta.metric", "delta.metric", "delta.metric"}, deltaConsumer.names)
-	assert.Equal(t, countAttributeForEachDataPoint, deltaConsumer.counts)
+	consumer.PushInternalMetrics(&errs)
+	assert.Len(t, errs, 1)
 }
 
 // Tests that the histogramConsumer correctly delegates to its
-// histogramDataPointConsumers. This tests no delta histogram
-// datapoint consumer.
+// histogramDataPointConsumers. This tests cumulative histograms
 func TestHistogramConsumerCumulativeAggregation(t *testing.T) {
 	countAttributeForEachDataPoint := []uint64{2, 5, 10}
-	deltaMetric := newHistogramMetricWithDataPoints(
-		"delta.metric",
-		pdata.MetricAggregationTemporalityDelta,
-		countAttributeForEachDataPoint)
 	cumulativeMetric := newHistogramMetricWithDataPoints(
 		"cum.metric",
 		pdata.MetricAggregationTemporalityCumulative,
 		countAttributeForEachDataPoint)
 	sender := &mockGaugeSender{}
 	cumulativeConsumer := &mockHistogramDataPointConsumer{}
-
-	// We pass nil for the delta histogram data point consumer so
-	// sending a delta histogram metric will generate an error.
 	consumer := newHistogramConsumer(
 		cumulativeConsumer, nil, sender, nil)
 	var errs []error
 
-	consumer.Consume(deltaMetric, &errs) // generates an error
 	consumer.Consume(cumulativeMetric, &errs)
-	consumer.PushInternalMetrics(&errs) // A no-op
+	consumer.PushInternalMetrics(&errs)
 
-	assert.Len(t, errs, 1)
+	assert.Empty(t, errs)
 
 	// We had three datapoints. Our mock just captures the metric name of
 	// each data point consumed.
@@ -473,7 +449,7 @@ func TestHistogramConsumerNoAggregation(t *testing.T) {
 	sender := &mockGaugeSender{}
 	observedZapCore, observedLogs := observer.New(zap.DebugLevel)
 	consumer := newHistogramConsumer(
-		nil,
+		&mockHistogramDataPointConsumer{},
 		nil,
 		sender,
 		&consumerOptions{
@@ -481,7 +457,6 @@ func TestHistogramConsumerNoAggregation(t *testing.T) {
 			ReportInternalMetrics: true,
 		},
 	)
-
 	assert.Equal(t, pdata.MetricDataTypeHistogram, consumer.Type())
 	var errs []error
 	expectedNoAggregationCount := 3
@@ -494,7 +469,8 @@ func TestHistogramConsumerNoAggregation(t *testing.T) {
 	assert.Contains(t, sender.metrics, tobsMetric{
 		Name:  noAggregationTemporalityMetricName,
 		Value: float64(expectedNoAggregationCount),
-		Tags:  map[string]string{"type": "histogram"}})
+		Tags:  map[string]string{"type": "histogram"},
+	})
 	allLogs := observedLogs.All()
 	assert.Len(t, allLogs, expectedNoAggregationCount)
 }
@@ -565,18 +541,72 @@ func TestHistogramReportingError(t *testing.T) {
 }
 
 func TestCumulativeHistogramDataPointConsumer(t *testing.T) {
-	verifyCumulativeHistogramDataPointConsumer(t, false)
+	metric := newMetric("a.metric", pdata.MetricDataTypeHistogram)
+	histogramDataPoint := pdata.NewHistogramDataPoint()
+
+	// Creates bounds of -Inf to <=2.0; >2.0 to <=5.0; >5.0 to <=10.0; >10.0 to +Inf
+	histogramDataPoint.SetExplicitBounds([]float64{2.0, 5.0, 10.0})
+	histogramDataPoint.SetBucketCounts([]uint64{5, 1, 3, 2})
+	setTags(map[string]interface{}{"foo": "bar"}, histogramDataPoint.Attributes())
+	sender := &mockGaugeSender{}
+	report := newHistogramReporting(zap.NewNop())
+	consumer := newCumulativeHistogramDataPointConsumer(sender)
+	var errs []error
+
+	consumer.Consume(metric, histogramDataPoint, &errs, report)
+
+	assert.Empty(t, errs)
+	assert.Equal(
+		t,
+		[]tobsMetric{
+			{
+				Name:  "a.metric",
+				Value: 5.0,
+				Tags:  map[string]string{"foo": "bar", "le": "2"},
+			},
+			{
+				Name:  "a.metric",
+				Value: 6.0,
+				Tags:  map[string]string{"foo": "bar", "le": "5"},
+			},
+			{
+				Name:  "a.metric",
+				Value: 9.0,
+				Tags:  map[string]string{"foo": "bar", "le": "10"},
+			},
+			{
+				Name:  "a.metric",
+				Value: 11.0,
+				Tags:  map[string]string{"foo": "bar", "le": "+Inf"},
+			},
+		},
+		sender.metrics,
+	)
 }
 
 func TestCumulativeHistogramDataPointConsumerError(t *testing.T) {
-	verifyCumulativeHistogramDataPointConsumer(t, true)
+	metric := newMetric("a.metric", pdata.MetricDataTypeHistogram)
+	histogramDataPoint := pdata.NewHistogramDataPoint()
+
+	// Creates bounds of -Inf to <=2.0; >2.0 to <=5.0; >5.0 to <=10.0; >10.0 to +Inf
+	histogramDataPoint.SetExplicitBounds([]float64{2.0, 5.0, 10.0})
+	histogramDataPoint.SetBucketCounts([]uint64{5, 1, 3, 2})
+	sender := &mockGaugeSender{errorOnSend: true}
+	report := newHistogramReporting(zap.NewNop())
+	consumer := newCumulativeHistogramDataPointConsumer(sender)
+	var errs []error
+
+	consumer.Consume(metric, histogramDataPoint, &errs, report)
+
+	// We tried to send 4 metrics. We get 4 errors.
+	assert.Len(t, errs, 4)
 }
 
 func TestCumulativeHistogramDataPointConsumerLeInUse(t *testing.T) {
 	metric := newMetric("a.metric", pdata.MetricDataTypeHistogram)
 	histogramDataPoint := pdata.NewHistogramDataPoint()
-	histogramDataPoint.SetBucketCounts([]uint64{4, 12})
 	histogramDataPoint.SetExplicitBounds([]float64{10.0})
+	histogramDataPoint.SetBucketCounts([]uint64{4, 12})
 	setTags(map[string]interface{}{"le": 8}, histogramDataPoint.Attributes())
 	sender := &mockGaugeSender{}
 	report := newHistogramReporting(zap.NewNop())
@@ -625,51 +655,6 @@ func newHistogramMetricWithDataPoints(
 		histogram.DataPoints().AppendEmpty().SetCount(count)
 	}
 	return result
-}
-
-func verifyCumulativeHistogramDataPointConsumer(t *testing.T, errorOnSend bool) {
-	metric := newMetric("a.metric", pdata.MetricDataTypeHistogram)
-	histogramDataPoint := pdata.NewHistogramDataPoint()
-	histogramDataPoint.SetBucketCounts([]uint64{2, 3, 5, 7})
-	histogramDataPoint.SetExplicitBounds([]float64{2.0, 5.0, 10.0})
-	setTags(map[string]interface{}{"foo": "bar"}, histogramDataPoint.Attributes())
-	sender := &mockGaugeSender{errorOnSend: errorOnSend}
-	report := newHistogramReporting(zap.NewNop())
-	consumer := newCumulativeHistogramDataPointConsumer(sender)
-	var errs []error
-
-	consumer.Consume(metric, histogramDataPoint, &errs, report)
-
-	if !errorOnSend {
-		assert.Empty(t, errs)
-	} else {
-		assert.Len(t, errs, len(sender.metrics))
-	}
-	assert.Equal(
-		t,
-		[]tobsMetric{
-			{
-				Name:  "a.metric",
-				Value: 2.0,
-				Tags:  map[string]string{"foo": "bar", "le": "2"},
-			},
-			{
-				Name:  "a.metric",
-				Value: 3.0,
-				Tags:  map[string]string{"foo": "bar", "le": "5"},
-			},
-			{
-				Name:  "a.metric",
-				Value: 5.0,
-				Tags:  map[string]string{"foo": "bar", "le": "10"},
-			},
-			{
-				Name:  "a.metric",
-				Value: 7.0,
-				Tags:  map[string]string{"foo": "bar", "le": "+Inf"},
-			},
-		},
-		sender.metrics)
 }
 
 func verifyGaugeConsumer(t *testing.T, errorOnSend bool) {

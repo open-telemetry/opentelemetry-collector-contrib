@@ -456,16 +456,10 @@ func (h *histogramConsumer) Consume(metric pdata.Metric, errs *[]error) {
 	var consumer histogramDataPointConsumer
 	switch aggregationTemporality {
 	case pdata.MetricAggregationTemporalityDelta:
-		if h.delta == nil {
-			*errs = append(*errs, errors.New("delta histograms not supported"))
-			return
-		}
-		consumer = h.delta
+		// TODO: follow-on pull request will add support for Delta Histograms.
+		*errs = append(*errs, errors.New("delta histograms not supported"))
+		return
 	case pdata.MetricAggregationTemporalityCumulative:
-		if h.cumulative == nil {
-			*errs = append(*errs, errors.New("cumulative histograms not supported"))
-			return
-		}
 		consumer = h.cumulative
 	default:
 		h.reporting.LogNoAggregationTemporality(metric)
@@ -531,10 +525,11 @@ func (c *cumulativeHistogramDataPointConsumer) Consume(
 	if abort {
 		return
 	}
-	bucketCountLen := len(bucketCounts)
-	for i := 0; i < bucketCountLen; i++ {
+	var leCount uint64
+	for i := range bucketCounts {
 		tags["le"] = leTagValue(explicitBounds, i)
-		err := c.sender.SendMetric(name, float64(bucketCounts[i]), ts, "", tags)
+		leCount += bucketCounts[i]
+		err := c.sender.SendMetric(name, float64(leCount), ts, "", tags)
 		if err != nil {
 			*errs = append(*errs, err)
 		}
