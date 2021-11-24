@@ -196,12 +196,161 @@ func TestGaugeConsumerMissingValue(t *testing.T) {
 	assert.Len(t, allLogs, expectedMissingValueCount)
 }
 
-func TestSumConsumerNormal(t *testing.T) {
-	verifySumConsumer(t, false)
+func TestSumConsumerDelta(t *testing.T) {
+	deltaMetric := newMetric(
+		"test.delta.metric", pdata.MetricDataTypeSum)
+	sum := deltaMetric.Sum()
+	sum.SetAggregationTemporality(pdata.MetricAggregationTemporalityDelta)
+	dataPoints := sum.DataPoints()
+	dataPoints.EnsureCapacity(2)
+	addDataPoint(
+		35,
+		1635205001,
+		map[string]interface{}{
+			"env": "dev",
+		},
+		dataPoints,
+	)
+	addDataPoint(
+		52.375,
+		1635205002,
+		map[string]interface{}{
+			"env": "prod",
+		},
+		dataPoints,
+	)
+
+	sender := &mockSumSender{}
+	consumer := newSumConsumer(sender, nil)
+	assert.Equal(t, pdata.MetricDataTypeSum, consumer.Type())
+	var errs []error
+
+	// delta sums get treated as delta counters
+	consumer.Consume(deltaMetric, &errs)
+	consumer.PushInternalMetrics(&errs)
+
+	expected := []tobsMetric{
+		{
+			Name:  "test.delta.metric",
+			Value: 35.0,
+			Tags:  map[string]string{"env": "dev"},
+		},
+		{
+			Name:  "test.delta.metric",
+			Value: 52.375,
+			Tags:  map[string]string{"env": "prod"},
+		},
+	}
+	assert.ElementsMatch(t, expected, sender.deltaMetrics)
+	assert.Empty(t, errs)
 }
 
-func TestSumConsumerErrorSending(t *testing.T) {
-	verifySumConsumer(t, true)
+func TestSumConsumerErrorOnSend(t *testing.T) {
+	deltaMetric := newMetric(
+		"test.delta.metric", pdata.MetricDataTypeSum)
+	sum := deltaMetric.Sum()
+	sum.SetAggregationTemporality(pdata.MetricAggregationTemporalityDelta)
+	dataPoints := sum.DataPoints()
+	dataPoints.EnsureCapacity(2)
+	addDataPoint(
+		35,
+		1635205001,
+		map[string]interface{}{
+			"env": "dev",
+		},
+		dataPoints,
+	)
+	addDataPoint(
+		52.375,
+		1635205002,
+		map[string]interface{}{
+			"env": "prod",
+		},
+		dataPoints,
+	)
+
+	sender := &mockSumSender{errorOnSend: true}
+	consumer := newSumConsumer(sender, nil)
+	assert.Equal(t, pdata.MetricDataTypeSum, consumer.Type())
+	var errs []error
+
+	// delta sums get treated as delta counters
+	consumer.Consume(deltaMetric, &errs)
+	consumer.PushInternalMetrics(&errs)
+
+	assert.Len(t, errs, 2)
+}
+
+func TestSumConsumerCumulative(t *testing.T) {
+	cumulativeMetric := newMetric(
+		"test.cumulative.metric", pdata.MetricDataTypeSum)
+	sum := cumulativeMetric.Sum()
+	sum.SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
+	dataPoints := sum.DataPoints()
+	dataPoints.EnsureCapacity(1)
+	addDataPoint(
+		62.25,
+		1634205001,
+		map[string]interface{}{
+			"env": "dev",
+		},
+		dataPoints,
+	)
+	sender := &mockSumSender{}
+	consumer := newSumConsumer(sender, nil)
+	assert.Equal(t, pdata.MetricDataTypeSum, consumer.Type())
+	var errs []error
+
+	// cumulative sums get treated as regular wavefront metrics
+	consumer.Consume(cumulativeMetric, &errs)
+	consumer.PushInternalMetrics(&errs)
+
+	expected := []tobsMetric{
+		{
+			Name:  "test.cumulative.metric",
+			Value: 62.25,
+			Ts:    1634205001,
+			Tags:  map[string]string{"env": "dev"},
+		},
+	}
+	assert.ElementsMatch(t, expected, sender.metrics)
+	assert.Empty(t, errs)
+}
+
+func TestSumConsumerUnspecified(t *testing.T) {
+	cumulativeMetric := newMetric(
+		"test.unspecified.metric", pdata.MetricDataTypeSum)
+	sum := cumulativeMetric.Sum()
+	sum.SetAggregationTemporality(pdata.MetricAggregationTemporalityUnspecified)
+	dataPoints := sum.DataPoints()
+	dataPoints.EnsureCapacity(1)
+	addDataPoint(
+		72.25,
+		1634206001,
+		map[string]interface{}{
+			"env": "qa",
+		},
+		dataPoints,
+	)
+	sender := &mockSumSender{}
+	consumer := newSumConsumer(sender, nil)
+	assert.Equal(t, pdata.MetricDataTypeSum, consumer.Type())
+	var errs []error
+
+	// unspecified sums get treated as regular wavefront metrics
+	consumer.Consume(cumulativeMetric, &errs)
+	consumer.PushInternalMetrics(&errs)
+
+	expected := []tobsMetric{
+		{
+			Name:  "test.unspecified.metric",
+			Value: 72.25,
+			Ts:    1634206001,
+			Tags:  map[string]string{"env": "qa"},
+		},
+	}
+	assert.ElementsMatch(t, expected, sender.metrics)
+	assert.Empty(t, errs)
 }
 
 func TestSumConsumerMissingValueNoLogging(t *testing.T) {
@@ -463,105 +612,6 @@ func copyTags(tags map[string]string) map[string]string {
 		tagsCopy[k] = v
 	}
 	return tagsCopy
-}
-
-func verifySumConsumer(t *testing.T, errorOnSend bool) {
-	deltaMetric := newMetric(
-		"test.delta.metric", pdata.MetricDataTypeSum)
-	sum := deltaMetric.Sum()
-	sum.SetAggregationTemporality(pdata.MetricAggregationTemporalityDelta)
-	dataPoints := sum.DataPoints()
-	dataPoints.EnsureCapacity(2)
-	addDataPoint(
-		35,
-		1635205001,
-		map[string]interface{}{
-			"env": "dev",
-		},
-		dataPoints,
-	)
-	addDataPoint(
-		52.375,
-		1635205002,
-		map[string]interface{}{
-			"env": "prod",
-		},
-		dataPoints,
-	)
-
-	cumulativeMetric := newMetric(
-		"test.cumulative.metric", pdata.MetricDataTypeSum)
-	sum = cumulativeMetric.Sum()
-	sum.SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
-	dataPoints = sum.DataPoints()
-	dataPoints.EnsureCapacity(1)
-	addDataPoint(
-		62.25,
-		1634205001,
-		map[string]interface{}{
-			"env": "dev",
-		},
-		dataPoints,
-	)
-	unspecifiedMetric := newMetric(
-		"test.unspecified.metric", pdata.MetricDataTypeSum)
-	sum = unspecifiedMetric.Sum()
-	sum.SetAggregationTemporality(pdata.MetricAggregationTemporalityUnspecified)
-	dataPoints = sum.DataPoints()
-	dataPoints.EnsureCapacity(1)
-	addDataPoint(
-		72.25,
-		1634206001,
-		map[string]interface{}{
-			"env": "qa",
-		},
-		dataPoints,
-	)
-	sender := &mockSumSender{errorOnSend: errorOnSend}
-	consumer := newSumConsumer(sender, nil)
-	assert.Equal(t, pdata.MetricDataTypeSum, consumer.Type())
-	var errs []error
-
-	// delta sums get treated as delta counters
-	consumer.Consume(deltaMetric, &errs)
-
-	// cumulative and unspecified sums get treated as ordinary metrics
-	consumer.Consume(cumulativeMetric, &errs)
-	consumer.Consume(unspecifiedMetric, &errs)
-	consumer.PushInternalMetrics(&errs)
-	expected := []tobsMetric{
-		{
-			Name:  "test.delta.metric",
-			Value: 35.0,
-			Tags:  map[string]string{"env": "dev"},
-		},
-		{
-			Name:  "test.delta.metric",
-			Value: 52.375,
-			Tags:  map[string]string{"env": "prod"},
-		},
-	}
-	assert.ElementsMatch(t, expected, sender.deltaMetrics)
-	expected = []tobsMetric{
-		{
-			Name:  "test.cumulative.metric",
-			Value: 62.25,
-			Ts:    1634205001,
-			Tags:  map[string]string{"env": "dev"},
-		},
-		{
-			Name:  "test.unspecified.metric",
-			Value: 72.25,
-			Ts:    1634206001,
-			Tags:  map[string]string{"env": "qa"},
-		},
-	}
-	assert.ElementsMatch(t, expected, sender.metrics)
-	if errorOnSend {
-		assert.Len(t, errs, len(sender.deltaMetrics)+len(sender.metrics))
-	} else {
-		assert.Empty(t, errs)
-	}
 }
 
 type mockSumSender struct {
