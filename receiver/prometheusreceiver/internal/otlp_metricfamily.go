@@ -244,6 +244,10 @@ func (mg *metricGroupPdata) toNumberDataPoint(orderedLabelKeys []string, dest *p
 func populateAttributesPdata(orderedKeys []string, ls labels.Labels, dest pdata.AttributeMap) {
 	src := ls.Map()
 	for _, key := range orderedKeys {
+		if src[key] == "" {
+			// empty label values should be omitted
+			continue
+		}
 		dest.InsertString(key, src[key])
 	}
 }
