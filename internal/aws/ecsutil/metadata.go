@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package ecsutil
+package ecsutil // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil"
 
 // TaskMetadata defines task metadata for a task
 type TaskMetadata struct {

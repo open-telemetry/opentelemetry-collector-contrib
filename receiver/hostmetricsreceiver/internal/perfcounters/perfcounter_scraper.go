@@ -15,7 +15,7 @@
 //go:build windows
 // +build windows
 
-package perfcounters
+package perfcounters // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/perfcounters"
 
 import (
 	"fmt"
