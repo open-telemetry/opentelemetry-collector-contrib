@@ -111,10 +111,6 @@ type testData struct {
 	validateFunc func(t *testing.T, td *testData, result []*pdata.ResourceMetrics)
 }
 
-func (t testData) clone() *testData {
-	return &testData{name: t.name, pages: t.pages, validateFunc: t.validateFunc}
-}
-
 // setupMockPrometheus to create a mocked prometheus based on targets, returning the server and a prometheus exporting
 // config
 func setupMockPrometheus(tds ...*testData) (*mockPrometheus, *promcfg.Config, error) {
@@ -281,7 +277,6 @@ type testExpectation func(*testing.T, *pdata.ResourceMetrics)
 
 func doCompare(t *testing.T, name string, want pdata.AttributeMap, got *pdata.ResourceMetrics, expectations []testExpectation) {
 	t.Run(name, func(t *testing.T) {
-		t.Parallel()
 		assert.Equal(t, expectedScrapeMetricCount, countScrapeMetricsRM(got))
 		assert.Equal(t, want.Len(), got.Resource().Attributes().Len())
 		for k, v := range want.AsRaw() {
@@ -453,13 +448,7 @@ func testComponent(t *testing.T, targets []*testData, useStartTimeMetric bool, s
 			pipelineType = "pdata"
 		}
 		t.Run(pipelineType, func(t *testing.T) { // 1. setup mock server
-			// Clone the target data to allow the tests to run in parallel
-			tgts := make([]*testData, len(targets))
-			for i, t := range targets {
-				tgts[i] = t.clone()
-			}
-			t.Parallel()
-			mp, cfg, err := setupMockPrometheus(tgts...)
+			mp, cfg, err := setupMockPrometheus(targets...)
 			require.Nilf(t, err, "Failed to create Prometheus config: %v", err)
 			defer mp.Close()
 
@@ -475,7 +464,7 @@ func testComponent(t *testing.T, targets []*testData, useStartTimeMetric bool, s
 			require.NoError(t, rcvr.Start(context.Background(), componenttest.NewNopHost()), "Failed to invoke Start: %v", err)
 			t.Cleanup(func() {
 				// verify state after shutdown is called
-				assert.Lenf(t, flattenTargets(rcvr.scrapeManager.TargetsAll()), len(tgts), "expected %v targets to be running", len(tgts))
+				assert.Lenf(t, flattenTargets(rcvr.scrapeManager.TargetsAll()), len(targets), "expected %v targets to be running", len(targets))
 				require.NoError(t, rcvr.Shutdown(context.Background()))
 				assert.Len(t, flattenTargets(rcvr.scrapeManager.TargetsAll()), 0, "expected scrape manager to have no targets")
 			})
@@ -490,9 +479,8 @@ func testComponent(t *testing.T, targets []*testData, useStartTimeMetric bool, s
 			assert.Equalf(t, lep, lres, "want %d targets, but got %v\n", lep, lres)
 
 			// loop to validate outputs for each targets
-			for _, target := range tgts {
+			for _, target := range targets {
 				t.Run(target.name, func(t *testing.T) {
-					t.Parallel()
 					validScrapes := getValidScrapes(t, pResults[target.name])
 					target.validateFunc(t, target, validScrapes)
 				})
@@ -509,14 +497,8 @@ func testComponentCustomConfig(t *testing.T, targets []*testData, cfgMut func(*p
 			pipelineType = "pdata"
 		}
 		t.Run(pipelineType, func(t *testing.T) {
-			// Clone the target data to allow the tests to run in parallel
-			tgts := make([]*testData, len(targets))
-			for i, t := range targets {
-				tgts[i] = t.clone()
-			}
-			t.Parallel()
 			ctx := context.Background()
-			mp, cfg, err := setupMockPrometheus(tgts...)
+			mp, cfg, err := setupMockPrometheus(targets...)
 			cfgMut(cfg)
 			require.Nilf(t, err, "Failed to create Prometheus config: %v", err)
 			defer mp.Close()
@@ -543,9 +525,8 @@ func testComponentCustomConfig(t *testing.T, targets []*testData, cfgMut func(*p
 			assert.Equalf(t, lep, lres, "want %d targets, but got %v\n", lep, lres)
 
 			// loop to validate outputs for each targets
-			for _, target := range tgts {
+			for _, target := range targets {
 				t.Run(target.name, func(t *testing.T) {
-					t.Parallel()
 					validScrapes := getValidScrapes(t, pResults[target.name])
 					target.validateFunc(t, target, validScrapes)
 				})
