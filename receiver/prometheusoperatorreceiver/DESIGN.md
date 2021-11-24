@@ -86,6 +86,11 @@ scrape_configs:
       - ingress
 ```
 
+Sharding should be supported using the optional `sharding` options, which declares which to which shard the receiver
+belongs to. Details about sharding can be found in the [sharding](#sharding) section. 
+After generation of the base config the shard substitution `$(SHARD)` is replaced  with the current shard instance 
+(default = `1`)
+
 This config is then used to create a `prometheusreceiver` `Config` struct.  
 
 ### Major components of the config generation
@@ -140,3 +145,20 @@ receivers:
       match_labels:
         prometheus-operator-instance: a-instance
 ```
+
+## Sharding
+Sharding is implemented trough sharding the targets which the receiver is scraping.    
+
+This is achieved through `hashmod` relabeling rules which are provided by the `ConfigGenerator`, which implements 
+sharding based onto the `__address__` label.    
+
+This necessitates additional optional config options:
+```yaml
+sharding:
+  shard_count: 1 # number of total shards 
+  shard: 1   # current shard of the receiver.   1 <= value <= shard_count 
+```
+
+`sharding.shard_count` is supplied to the `ConfigGenerator` as part of the Prometheus configs. The resulting configuration will 
+contain multiple instances of the `$(SHARD)` substitution which should be replaced by the value of `sharding.shard`
+Multiple collectors with the same `shard` will scrape the same targets and therefore will duplicate data.
