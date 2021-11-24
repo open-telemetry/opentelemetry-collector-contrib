@@ -18,6 +18,7 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/shirou/gopsutil/v3/process"
 	"go.opentelemetry.io/collector/component"
@@ -70,17 +71,16 @@ func (ipp *inProcessCollector) Start(args StartParams) error {
 		}
 	}()
 
-	for state := range ipp.svc.GetStateChannel() {
-		switch state {
+	for {
+		switch state := ipp.svc.GetState(); state {
 		case service.Starting:
-			// NoOp
+			time.Sleep(10 * time.Millisecond)
 		case service.Running:
 			return err
 		default:
 			err = fmt.Errorf("unable to start, otelcol state is %d", state)
 		}
 	}
-	return err
 }
 
 func (ipp *inProcessCollector) Stop() (stopped bool, err error) {
