@@ -19,9 +19,8 @@ In every other case other Prometheus receivers should be used.
 Below you can find a short description of the available options.
 
 ### Prometheus scrape annotations
-If you use an annotations based scrape configs like `prometheus.io/scrape = true`, then you can use the
-[receivercreator](../receivercreator/README.md). This receiver is able to create multiple receivers based on a set of
-rules, which are defined by the user.
+If you use annotation based scrape configs like `prometheus.io/scrape = true`, then you should use the
+[prometheusreceiver](../prometheusreceiver/README.md).
 
 A guide how to use this meta receiver with Prometheus annotations you can find in the
 [examples of the receivercreator](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/receivercreator#examples)
