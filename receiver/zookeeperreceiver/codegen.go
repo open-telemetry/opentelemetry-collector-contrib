@@ -17,4 +17,4 @@
 
 //go:generate mdatagen metadata.yaml
 
-package zookeeperreceiver
+package zookeeperreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zookeeperreceiver"

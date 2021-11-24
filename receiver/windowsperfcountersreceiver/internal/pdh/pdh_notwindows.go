@@ -15,4 +15,4 @@
 //go:build !windows
 // +build !windows
 
-package pdh
+package pdh // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowsperfcountersreceiver/internal/pdh"

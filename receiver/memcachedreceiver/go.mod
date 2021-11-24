@@ -7,8 +7,8 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.39.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest v0.39.0
 	github.com/stretchr/testify v1.7.0
-	go.opentelemetry.io/collector v0.39.1-0.20211119172502-53d057f9c0e7
-	go.opentelemetry.io/collector/model v0.39.1-0.20211119172502-53d057f9c0e7
+	go.opentelemetry.io/collector v0.39.1-0.20211122170858-f69d23494726
+	go.opentelemetry.io/collector/model v0.39.1-0.20211122170858-f69d23494726
 	go.uber.org/zap v1.19.1
 )
 
@@ -31,7 +31,7 @@ require (
 	github.com/mitchellh/mapstructure v1.4.2 // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
-	github.com/opencontainers/image-spec v1.0.1 // indirect
+	github.com/opencontainers/image-spec v1.0.2 // indirect
 	github.com/pelletier/go-toml v1.9.3 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect

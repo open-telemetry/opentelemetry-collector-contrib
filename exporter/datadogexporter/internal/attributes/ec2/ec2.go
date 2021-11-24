@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package ec2
+package ec2 // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/attributes/ec2"
 
 import (
 	"fmt"
