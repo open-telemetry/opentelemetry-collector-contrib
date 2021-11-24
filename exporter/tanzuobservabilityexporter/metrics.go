@@ -151,7 +151,8 @@ type counter struct {
 // the metric to be reported. tags is the tags for the metric. sender is what
 // sends the metric to tanzu observability. Any errors get added to errs.
 func (c *counter) Report(
-	name string, tags map[string]string, sender gaugeSender, errs *[]error) {
+	name string, tags map[string]string, sender gaugeSender, errs *[]error,
+) {
 	err := sender.SendMetric(name, float64(c.Get()), 0, "", tags)
 	if err != nil {
 		*errs = append(*errs, err)
@@ -190,18 +191,19 @@ func getValue(numberDataPoint pdata.NumberDataPoint) (float64, error) {
 	}
 }
 
-// pushGaugeSingleNumberDataPoint sends a metric as a gauge metric to tanzu
+// pushGaugeNumberDataPoint sends a metric as a gauge metric to tanzu
 // observability. metric is the metric to send. numberDataPoint is the value
 // of the metric. Any errors get appended to errs. sender is what sends the
 // gauge metric to tanzu observability. logger is the logger. missingValues
 // keeps track of metrics with missing values.
-func pushGaugeSingleNumberDataPoint(
+func pushGaugeNumberDataPoint(
 	metric pdata.Metric,
 	numberDataPoint pdata.NumberDataPoint,
 	errs *[]error,
 	sender gaugeSender,
 	logger *zap.Logger,
-	missingValues *counter) {
+	missingValues *counter,
+) {
 	tags := attributesToTags(numberDataPoint.Attributes())
 	ts := numberDataPoint.Timestamp().AsTime().Unix()
 	value, err := getValue(numberDataPoint)
@@ -266,7 +268,7 @@ func (g *gaugeConsumer) Consume(metric pdata.Metric, errs *[]error) {
 	gauge := metric.Gauge()
 	numberDataPoints := gauge.DataPoints()
 	for i := 0; i < numberDataPoints.Len(); i++ {
-		pushGaugeSingleNumberDataPoint(
+		pushGaugeNumberDataPoint(
 			metric,
 			numberDataPoints.At(i),
 			errs,
@@ -315,9 +317,9 @@ func (s *sumConsumer) Consume(metric pdata.Metric, errs *[]error) {
 		// delta counter. Otherwise, send it to tanzu observability as a gauge
 		// metric.
 		if isDelta {
-			s.pushSingleNumberDataPoint(metric, numberDataPoints.At(i), errs)
+			s.pushNumberDataPoint(metric, numberDataPoints.At(i), errs)
 		} else {
-			pushGaugeSingleNumberDataPoint(
+			pushGaugeNumberDataPoint(
 				metric, numberDataPoints.At(i), errs, s.sender, s.logger, &s.missingValues)
 		}
 	}
@@ -329,10 +331,9 @@ func (s *sumConsumer) PushInternalMetrics(errs *[]error) {
 	}
 }
 
-func (s *sumConsumer) pushSingleNumberDataPoint(
-	metric pdata.Metric,
-	numberDataPoint pdata.NumberDataPoint,
-	errs *[]error) {
+func (s *sumConsumer) pushNumberDataPoint(
+	metric pdata.Metric, numberDataPoint pdata.NumberDataPoint, errs *[]error,
+) {
 	tags := attributesToTags(numberDataPoint.Attributes())
 	value, err := getValue(numberDataPoint)
 	if err != nil {

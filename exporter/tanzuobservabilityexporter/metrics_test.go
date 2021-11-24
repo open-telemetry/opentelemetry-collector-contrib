@@ -333,7 +333,8 @@ func addDataPoint(
 	value interface{},
 	ts int64,
 	tags map[string]interface{},
-	slice pdata.NumberDataPointSlice) {
+	slice pdata.NumberDataPointSlice,
+) {
 	dataPoint := slice.AppendEmpty()
 	if value != nil {
 		setDataPointValue(value, dataPoint)
@@ -394,7 +395,8 @@ type mockGaugeSender struct {
 }
 
 func (m *mockGaugeSender) SendMetric(
-	name string, value float64, ts int64, source string, tags map[string]string) error {
+	name string, value float64, ts int64, source string, tags map[string]string,
+) error {
 	m.metrics = append(m.metrics, tobsMetric{
 		Name:   name,
 		Value:  value,
@@ -569,7 +571,8 @@ type mockSumSender struct {
 }
 
 func (m *mockSumSender) SendMetric(
-	name string, value float64, ts int64, source string, tags map[string]string) error {
+	name string, value float64, ts int64, source string, tags map[string]string,
+) error {
 	m.metrics = append(m.metrics, tobsMetric{
 		Name:   name,
 		Value:  value,
@@ -583,7 +586,9 @@ func (m *mockSumSender) SendMetric(
 	return nil
 }
 
-func (m *mockSumSender) SendDeltaCounter(name string, value float64, source string, tags map[string]string) error {
+func (m *mockSumSender) SendDeltaCounter(
+	name string, value float64, source string, tags map[string]string,
+) error {
 	m.deltaMetrics = append(m.deltaMetrics, tobsMetric{
 		Name:   name,
 		Value:  value,
