@@ -15,7 +15,7 @@
 //go:build !linux && !darwin && !freebsd && !openbsd && !solaris
 // +build !linux,!darwin,!freebsd,!openbsd,!solaris
 
-package filesystemscraper
+package filesystemscraper // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/filesystemscraper"
 
 import (
 	"go.opentelemetry.io/collector/model/pdata"
