@@ -15,8 +15,11 @@
 package prometheusremotewriteexporter
 
 import (
+	"math"
 	"testing"
+	"time"
 
+	"github.com/prometheus/prometheus/pkg/timestamp"
 	"github.com/prometheus/prometheus/prompb"
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/model/pdata"
@@ -484,5 +487,112 @@ func TestEnsureTimeseriesPointsAreSortedByTimestamp(t *testing.T) {
 				}
 			}
 		}
+	}
+}
+
+// Test_addExemplars checks addExemplars updates the map it receives correctly based on the exemplars and bucket bounds data it receives.
+func Test_addExemplars(t *testing.T) {
+	type testCase struct {
+		exemplars    []prompb.Exemplar
+		bucketBounds []bucketBoundsData
+	}
+
+	tests := []struct {
+		name     string
+		orig     map[string]*prompb.TimeSeries
+		testCase []testCase
+		want     map[string]*prompb.TimeSeries
+	}{
+		{
+			"timeSeries_is_empty",
+			map[string]*prompb.TimeSeries{},
+			[]testCase{
+				{
+					[]prompb.Exemplar{getExemplar(float64(intVal1), msTime1)},
+					getBucketBoundsData([]float64{1, 2, 3}),
+				},
+			},
+			map[string]*prompb.TimeSeries{},
+		},
+		{
+			"timeSeries_without_sample",
+			tsWithoutSampleAndExemplar,
+			[]testCase{
+				{
+					[]prompb.Exemplar{getExemplar(float64(intVal1), msTime1)},
+					getBucketBoundsData([]float64{1, 2, 3}),
+				},
+			},
+			tsWithoutSampleAndExemplar,
+		},
+		{
+			"exemplar_value_less_than_bucket_bound",
+			map[string]*prompb.TimeSeries{
+				lb1Sig: getTimeSeries(getPromLabels(label11, value11, label12, value12),
+					getSample(float64(intVal1), msTime1)),
+			},
+			[]testCase{
+				{
+					[]prompb.Exemplar{getExemplar(floatVal2, msTime1)},
+					getBucketBoundsData([]float64{1, 2, 3}),
+				},
+			},
+			tsWithSamplesAndExemplars,
+		},
+		{
+			"infinite_bucket_bound",
+			map[string]*prompb.TimeSeries{
+				lb1Sig: getTimeSeries(getPromLabels(label11, value11, label12, value12),
+					getSample(float64(intVal1), msTime1)),
+			},
+			[]testCase{
+				{
+					[]prompb.Exemplar{getExemplar(math.MaxFloat64, msTime1)},
+					getBucketBoundsData([]float64{1, math.Inf(1)}),
+				},
+			},
+			tsWithInfiniteBoundExemplarValue,
+		},
+	}
+	// run tests
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			addExemplars(tt.orig, tt.testCase[0].exemplars, tt.testCase[0].bucketBounds)
+			assert.Exactly(t, tt.want, tt.orig)
+		})
+	}
+}
+
+// Test_getPromExemplars checks if exemplars is not nul and return the prometheus exemplars.
+func Test_getPromExemplars(t *testing.T) {
+	tnow := time.Now()
+	tests := []struct {
+		name      string
+		histogram *pdata.HistogramDataPoint
+		expected  []prompb.Exemplar
+	}{
+		{
+			"with_exemplars",
+			getHistogramDataPointWithExemplars(tnow, floatVal1, traceIDKey, traceIDValue1),
+			[]prompb.Exemplar{
+				{
+					Value:     floatVal1,
+					Timestamp: timestamp.FromTime(tnow),
+					Labels:    []prompb.Label{getLabel(traceIDKey, traceIDValue1)},
+				},
+			},
+		},
+		{
+			"without_exemplar",
+			getHistogramDataPoint(),
+			nil,
+		},
+	}
+	// run tests
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			requests := getPromExemplars(*tt.histogram)
+			assert.Exactly(t, tt.expected, requests)
+		})
 	}
 }

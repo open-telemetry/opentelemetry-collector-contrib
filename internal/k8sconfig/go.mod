@@ -4,7 +4,7 @@ go 1.17
 
 require (
 	github.com/openshift/client-go v0.0.0-20210521082421-73d9475a9142
-	k8s.io/client-go v0.22.3
+	k8s.io/client-go v0.22.4
 )
 
 require (
@@ -32,8 +32,8 @@ require (
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b // indirect
-	k8s.io/api v0.22.3 // indirect
-	k8s.io/apimachinery v0.22.3 // indirect
+	k8s.io/api v0.22.4 // indirect
+	k8s.io/apimachinery v0.22.4 // indirect
 	k8s.io/klog/v2 v2.9.0 // indirect
 	k8s.io/utils v0.0.0-20210819203725-bdf08cb9a70a // indirect
 	sigs.k8s.io/structured-merge-diff/v4 v4.1.2 // indirect

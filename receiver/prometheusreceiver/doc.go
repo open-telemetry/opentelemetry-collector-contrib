@@ -13,4 +13,4 @@
 // limitations under the License.
 
 // Package prometheusreceiver autodiscovers and scrapes Prometheus metrics handlers, often served at /metrics.
-package prometheusreceiver
+package prometheusreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver"

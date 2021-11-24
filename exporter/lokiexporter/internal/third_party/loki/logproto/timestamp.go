@@ -1,4 +1,4 @@
-package logproto
+package logproto // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/lokiexporter/internal/third_party/loki/logproto"
 
 import (
 	"errors"

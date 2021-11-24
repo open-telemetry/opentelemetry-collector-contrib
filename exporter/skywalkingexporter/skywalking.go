@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package skywalkingexporter
+package skywalkingexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/skywalkingexporter"
 
 import (
 	"context"
@@ -42,19 +42,22 @@ type swExporter struct {
 	logsClients    chan *logsClientWithCancel
 	grpcClientConn *grpc.ClientConn
 	metadata       metadata.MD
+
+	settings component.TelemetrySettings
 }
 
-func newSwExporter(_ context.Context, cfg *Config) *swExporter {
+func newSwExporter(_ context.Context, cfg *Config, settings component.TelemetrySettings) *swExporter {
 	oce := &swExporter{
 		cfg:      cfg,
 		metadata: metadata.New(cfg.GRPCClientSettings.Headers),
+		settings: settings,
 	}
 	return oce
 }
 
 // start creates the gRPC client Connection
 func (oce *swExporter) start(ctx context.Context, host component.Host) error {
-	dialOpts, err := oce.cfg.GRPCClientSettings.ToDialOptions(host)
+	dialOpts, err := oce.cfg.GRPCClientSettings.ToDialOptions(host, oce.settings)
 	if err != nil {
 		return err
 	}
@@ -89,8 +92,8 @@ func (oce *swExporter) shutdown(context.Context) error {
 	return oce.grpcClientConn.Close()
 }
 
-func newExporter(ctx context.Context, cfg *Config) *swExporter {
-	oce := newSwExporter(ctx, cfg)
+func newExporter(ctx context.Context, cfg *Config, settings component.TelemetrySettings) *swExporter {
+	oce := newSwExporter(ctx, cfg, settings)
 	oce.logsClients = make(chan *logsClientWithCancel, oce.cfg.NumStreams)
 	return oce
 }

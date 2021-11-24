@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package awsprometheusremotewriteexporter
+package awsprometheusremotewriteexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsprometheusremotewriteexporter"
 
 import (
 	"bytes"

@@ -1,16 +1,16 @@
 # Required: name of the receiver.
 name:
 
-# Optional: map of label definitions with the key being the label name and value
+# Optional: map of attribute definitions with the key being the attribute name and value
 # being described below.
-labels:
-  label.name:
-    # Optional: if the label name as described by the key is not the actual label
+attributes:
+  attribute.name:
+    # Optional: if the attribute name as described by the key is not the actual attribute
     # value to be reported that value can be overridden here.
     value:
-    # Required: description of the label.
+    # Required: description of the attribute.
     description:
-    # Optional: array of label values if they are static values.
+    # Optional: array of attribute values if they are static values.
     enum:
 
 # Required: map of metric names with the key being the metric name and value
@@ -29,5 +29,5 @@ metrics:
       monotonic: # true | false
       # Required for int sum, sum, and histogram.
       aggregation: # delta | cumulative
-    # Optional: array of labels that were defined in the labels section that are emitted by this metric.
-    labels:
+    # Optional: array of attributes that were defined in the attributes section that are emitted by this metric.
+    attributes:
