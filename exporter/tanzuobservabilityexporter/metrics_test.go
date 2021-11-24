@@ -242,6 +242,7 @@ func TestSumConsumerDelta(t *testing.T) {
 		},
 	}
 	assert.ElementsMatch(t, expected, sender.deltaMetrics)
+	assert.Empty(t, sender.metrics)
 	assert.Empty(t, errs)
 }
 
@@ -314,6 +315,7 @@ func TestSumConsumerCumulative(t *testing.T) {
 		},
 	}
 	assert.ElementsMatch(t, expected, sender.metrics)
+	assert.Empty(t, sender.deltaMetrics)
 	assert.Empty(t, errs)
 }
 
@@ -350,29 +352,8 @@ func TestSumConsumerUnspecified(t *testing.T) {
 		},
 	}
 	assert.ElementsMatch(t, expected, sender.metrics)
-	assert.Empty(t, errs)
-}
-
-func TestSumConsumerMissingValueNoLogging(t *testing.T) {
-	metric := newMetric("bad.metric", pdata.MetricDataTypeSum)
-	dataPoints := metric.Sum().DataPoints()
-	dataPoints.EnsureCapacity(1)
-	addDataPoint(
-		nil,
-		1633123456,
-		nil,
-		dataPoints,
-	)
-	sender := &mockSumSender{}
-	consumer := newSumConsumer(sender, nil)
-	var errs []error
-
-	consumer.Consume(metric, &errs)
-	consumer.PushInternalMetrics(&errs)
-
-	assert.Len(t, errs, 0)
-	assert.Empty(t, sender.metrics)
 	assert.Empty(t, sender.deltaMetrics)
+	assert.Empty(t, errs)
 }
 
 func TestSumConsumerMissingValue(t *testing.T) {
@@ -403,12 +384,11 @@ func TestSumConsumerMissingValue(t *testing.T) {
 
 	assert.Len(t, errs, 0)
 	assert.Empty(t, sender.deltaMetrics)
-	require.Len(t, sender.metrics, 1)
-	assert.Equal(t, tobsMetric{
+	assert.Contains(t, sender.metrics, tobsMetric{
 		Name:  missingValueMetricName,
 		Value: float64(expectedMissingValueCount),
-		Tags:  map[string]string{"type": "sum"}},
-		sender.metrics[0])
+		Tags:  map[string]string{"type": "sum"},
+	})
 	allLogs := observedLogs.All()
 	assert.Len(t, allLogs, expectedMissingValueCount)
 }
