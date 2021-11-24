@@ -143,7 +143,7 @@ func (t *transactionPdata) Commit() error {
 			return err
 		}
 		// Otherwise adjust the startTimestamp for all the metrics.
-		adjustStartTimestampPdata(t.metricBuilder.startTime, metricsL)
+		t.adjustStartTimestampPdata(metricsL)
 	} else {
 		// TODO: Derive numPoints in this case.
 		_ = NewMetricsAdjusterPdata(t.jobsMap.get(t.job, t.instance), t.logger).AdjustMetrics(metricsL)
@@ -169,8 +169,8 @@ func pdataTimestampFromFloat64(ts float64) pdata.Timestamp {
 	return pdata.NewTimestampFromTime(time.Unix(secs, nanos))
 }
 
-func adjustStartTimestampPdata(startTime float64, metricsL *pdata.MetricSlice) {
-	startTimeTs := pdataTimestampFromFloat64(startTime)
+func (t transactionPdata) adjustStartTimestampPdata(metricsL *pdata.MetricSlice) {
+	startTimeTs := pdataTimestampFromFloat64(t.metricBuilder.startTime)
 	for i := 0; i < metricsL.Len(); i++ {
 		metric := metricsL.At(i)
 		switch metric.DataType() {
@@ -199,7 +199,7 @@ func adjustStartTimestampPdata(startTime float64, metricsL *pdata.MetricSlice) {
 			}
 
 		default:
-			panic("Unknown type:: " + metric.DataType().String())
+			t.logger.Warn("Unknown metric type", zap.String("type", metric.DataType().String()))
 		}
 	}
 }

@@ -31,7 +31,6 @@ import (
 // a single scrape.
 type MetricFamilyPdata interface {
 	Add(metricName string, ls labels.Labels, t int64, v float64) error
-	IsSameFamily(metricName string) bool
 	ToMetricPdata(metrics *pdata.MetricSlice) (int, int)
 }
 
@@ -113,12 +112,6 @@ func newMetricFamilyPdata(metricName string, mc MetadataCache, logger *zap.Logge
 		groupOrders:         make(map[string]int),
 		intervalStartTimeMs: intervalStartTimeMs,
 	}
-}
-
-func (mf *metricFamilyPdata) IsSameFamily(metricName string) bool {
-	// trim known suffix if necessary
-	familyName := normalizeMetricName(metricName)
-	return mf.name == familyName || familyName != metricName && mf.name == metricName
 }
 
 // updateLabelKeys is used to store all the label keys of a same metric family in observed order. since prometheus
@@ -352,6 +345,7 @@ func (mf *metricFamilyPdata) ToMetricPdata(metrics *pdata.MetricSlice) (int, int
 	case pdata.MetricDataTypeSum:
 		sum := metric.Sum()
 		sum.SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
+		sum.SetIsMonotonic(true)
 		sdpL := sum.DataPoints()
 		for _, mg := range mf.getGroups() {
 			if !mg.toNumberDataPoint(mf.labelKeysOrdered, &sdpL) {

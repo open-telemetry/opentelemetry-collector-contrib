@@ -128,8 +128,11 @@ func sumMetricPdata(name string, kvp []*kv, startTs pdata.Timestamp, points ...*
 	metric := pdata.NewMetric()
 	metric.SetName(name)
 	metric.SetDataType(pdata.MetricDataTypeSum)
+	sum := metric.Sum()
+	sum.SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
+	sum.SetIsMonotonic(true)
 
-	destPointL := metric.Sum().DataPoints()
+	destPointL := sum.DataPoints()
 	for _, point := range points {
 		destPoint := destPointL.AppendEmpty()
 		point.CopyTo(destPoint)

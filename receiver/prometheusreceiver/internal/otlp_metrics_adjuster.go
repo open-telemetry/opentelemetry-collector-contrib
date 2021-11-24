@@ -274,7 +274,7 @@ func (ma *MetricsAdjusterPdata) adjustMetricGauge(current *pdata.Metric) (resets
 		initialPoints := tsi.initial.Gauge().DataPoints()
 		previousPoints := previous.Gauge().DataPoints()
 		if i >= initialPoints.Len() || i >= previousPoints.Len() {
-			ma.logger.Info("Adjusting Points, all lengths should be equal",
+			ma.logger.Debug("Adjusting Points, all lengths should be equal",
 				zap.Int("len(current)", currentPoints.Len()),
 				zap.Int("len(initial)", initialPoints.Len()),
 				zap.Int("len(previous)", previousPoints.Len()))
@@ -325,7 +325,7 @@ func (ma *MetricsAdjusterPdata) adjustMetricHistogram(current *pdata.Metric) (re
 		initialPoints := tsi.initial.Histogram().DataPoints()
 		previousPoints := previous.Histogram().DataPoints()
 		if i >= initialPoints.Len() || i >= previousPoints.Len() {
-			ma.logger.Info("Adjusting Points, all lengths should be equal",
+			ma.logger.Debug("Adjusting Points, all lengths should be equal",
 				zap.Int("len(current)", currentPoints.Len()),
 				zap.Int("len(initial)", initialPoints.Len()),
 				zap.Int("len(previous)", previousPoints.Len()))
@@ -365,7 +365,7 @@ func (ma *MetricsAdjusterPdata) adjustMetricSum(current *pdata.Metric) (resets i
 		initialPoints := tsi.initial.Sum().DataPoints()
 		previousPoints := previous.Sum().DataPoints()
 		if i >= initialPoints.Len() || i >= previousPoints.Len() {
-			ma.logger.Info("Adjusting Points, all lengths should be equal",
+			ma.logger.Debug("Adjusting Points, all lengths should be equal",
 				zap.Int("len(current)", currentPoints.Len()),
 				zap.Int("len(initial)", initialPoints.Len()),
 				zap.Int("len(previous)", previousPoints.Len()))
@@ -405,7 +405,7 @@ func (ma *MetricsAdjusterPdata) adjustMetricSummary(current *pdata.Metric) (rese
 		initialPoints := tsi.initial.Summary().DataPoints()
 		previousPoints := previous.Summary().DataPoints()
 		if i >= initialPoints.Len() || i >= previousPoints.Len() {
-			ma.logger.Info("Adjusting Points, all lengths should be equal",
+			ma.logger.Debug("Adjusting Points, all lengths should be equal",
 				zap.Int("len(current)", currentPoints.Len()),
 				zap.Int("len(initial)", initialPoints.Len()),
 				zap.Int("len(previous)", previousPoints.Len()))
