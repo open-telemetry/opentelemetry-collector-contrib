@@ -141,7 +141,7 @@ func TestLabelLimitConfig(t *testing.T) {
 	testComponentCustomConfig(t, targets, mp, cfg)
 }
 
-const target1 = `
+const targetLabelLimits1 = `
 # HELP test_gauge0 This is my gauge
 # TYPE test_gauge0 gauge
 test_gauge0{label1="value1",label2="value2"} 10
@@ -243,7 +243,7 @@ func TestLabelNameLimitConfig(t *testing.T) {
 		{
 			name: "target1",
 			pages: []mockPrometheusResponse{
-				{code: 200, data: target1},
+				{code: 200, data: targetLabelLimits1},
 			},
 			validateFunc: verifyLabelConfigTarget1,
 		},
@@ -282,7 +282,7 @@ func TestLabelValueLimitConfig(t *testing.T) {
 		{
 			name: "target1",
 			pages: []mockPrometheusResponse{
-				{code: 200, data: target1},
+				{code: 200, data: targetLabelLimits1},
 			},
 			validateFunc: verifyLabelConfigTarget1,
 		},
