@@ -56,6 +56,11 @@ func (h *handler) convertPodToEndpoints(pod *v1.Pod) []observer.Endpoint {
 		Namespace:   pod.Namespace,
 	}
 
+	// Return no endpoints if the Pod is not running
+	if pod.Status.Phase != v1.PodRunning {
+		return nil
+	}
+
 	endpoints := []observer.Endpoint{{
 		ID:      podID,
 		Target:  podIP,
