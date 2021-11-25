@@ -305,3 +305,170 @@ func TestLabelValueLimitConfig(t *testing.T) {
 
 	testComponentCustomConfig(t, targets, mp, cfg)
 }
+
+//for all metric types, testLabel has empty value
+const emptyLabelValuesTarget1 = `
+# HELP test_gauge0 This is my gauge
+# TYPE test_gauge0 gauge
+test_gauge0{id="1",testLabel=""} 19
+
+# HELP test_counter0 This is my counter
+# TYPE test_counter0 counter
+test_counter0{id="1",testLabel=""} 100
+
+# HELP test_histogram0 This is my histogram
+# TYPE test_histogram0 histogram
+test_histogram0_bucket{id="1",testLabel="",le="0.1"} 1000
+test_histogram0_bucket{id="1",testLabel="",le="0.5"} 1500
+test_histogram0_bucket{id="1",testLabel="",le="1"} 2000
+test_histogram0_bucket{id="1",testLabel="",le="+Inf"} 2500
+test_histogram0_sum{id="1",testLabel=""} 5000
+test_histogram0_count{id="1",testLabel=""} 2500
+
+# HELP test_summary0 This is my summary
+# TYPE test_summary0 summary
+test_summary0{id="1",testLabel="",quantile="0.1"} 1
+test_summary0{id="1",testLabel="",quantile="0.5"} 5
+test_summary0{id="1",testLabel="",quantile="0.99"} 8
+test_summary0_sum{id="1",testLabel=""} 5000
+test_summary0_count{id="1",testLabel=""} 1000
+`
+
+func verifyEmptyLabelValuesTarget1(t *testing.T, td *testData, rms []*pdata.ResourceMetrics) {
+	require.Greater(t, len(rms), 0, "At least one resource metric should be present")
+
+	want := td.attributes
+	metrics1 := rms[0].InstrumentationLibraryMetrics().At(0).Metrics()
+	ts1 := metrics1.At(0).Gauge().DataPoints().At(0).Timestamp()
+
+	e1 := []testExpectation{
+		assertMetricPresent("test_gauge0",
+			compareMetricType(pdata.MetricDataTypeGauge),
+			[]dataPointExpectation{
+				{
+					numberPointComparator: []numberPointComparator{
+						compareTimestamp(ts1),
+						compareDoubleValue(19),
+						compareAttributes(map[string]string{"id": "1"}),
+					},
+				},
+			}),
+		assertMetricPresent("test_counter0",
+			compareMetricType(pdata.MetricDataTypeSum),
+			[]dataPointExpectation{
+				{
+					numberPointComparator: []numberPointComparator{
+						compareTimestamp(ts1),
+						compareDoubleValue(100),
+						compareAttributes(map[string]string{"id": "1"}),
+					},
+				},
+			}),
+		assertMetricPresent("test_histogram0",
+			compareMetricType(pdata.MetricDataTypeHistogram),
+			[]dataPointExpectation{
+				{
+					histogramPointComparator: []histogramPointComparator{
+						compareHistogramStartTimestamp(ts1),
+						compareHistogramTimestamp(ts1),
+						compareHistogram(2500, 5000, []uint64{1000, 500, 500, 500}),
+						compareHistogramAttributes(map[string]string{"id": "1"}),
+					},
+				},
+			}),
+		assertMetricPresent("test_summary0",
+			compareMetricType(pdata.MetricDataTypeSummary),
+			[]dataPointExpectation{
+				{
+					summaryPointComparator: []summaryPointComparator{
+						compareSummaryStartTimestamp(ts1),
+						compareSummaryTimestamp(ts1),
+						compareSummary(1000, 5000, [][]float64{{0.1, 1}, {0.5, 5}, {0.99, 8}}),
+						compareSummaryAttributes(map[string]string{"id": "1"}),
+					},
+				},
+			}),
+	}
+	doCompare(t, "scrape-empty-label-values-1", want, rms[0], e1)
+}
+
+// target has two time series for both gauge and counter, only one time series has a value for the label "testLabel"
+const emptyLabelValuesTarget2 = `
+# HELP test_gauge0 This is my gauge.
+# TYPE test_gauge0 gauge
+test_gauge0{id="1",testLabel=""} 19
+test_gauge0{id="2",testLabel="foobar"} 2
+
+# HELP test_counter0 This is my counter
+# TYPE test_counter0 counter
+test_counter0{id="1",testLabel=""} 100
+test_counter0{id="2",testLabel="foobar"} 110
+`
+
+func verifyEmptyLabelValuesTarget2(t *testing.T, td *testData, rms []*pdata.ResourceMetrics) {
+	require.Greater(t, len(rms), 0, "At least one resource metric should be present")
+
+	want := td.attributes
+	metrics1 := rms[0].InstrumentationLibraryMetrics().At(0).Metrics()
+	ts1 := metrics1.At(0).Gauge().DataPoints().At(0).Timestamp()
+
+	e1 := []testExpectation{
+		assertMetricPresent("test_gauge0",
+			compareMetricType(pdata.MetricDataTypeGauge),
+			[]dataPointExpectation{
+				{
+					numberPointComparator: []numberPointComparator{
+						compareTimestamp(ts1),
+						compareDoubleValue(19),
+						compareAttributes(map[string]string{"id": "1"}),
+					},
+				},
+				{
+					numberPointComparator: []numberPointComparator{
+						compareTimestamp(ts1),
+						compareDoubleValue(2),
+						compareAttributes(map[string]string{"id": "2", "testLabel": "foobar"}),
+					},
+				},
+			}),
+		assertMetricPresent("test_counter0",
+			compareMetricType(pdata.MetricDataTypeSum),
+			[]dataPointExpectation{
+				{
+					numberPointComparator: []numberPointComparator{
+						compareTimestamp(ts1),
+						compareDoubleValue(100),
+						compareAttributes(map[string]string{"id": "1"}),
+					},
+				},
+				{
+					numberPointComparator: []numberPointComparator{
+						compareTimestamp(ts1),
+						compareDoubleValue(110),
+						compareAttributes(map[string]string{"id": "2", "testLabel": "foobar"}),
+					},
+				},
+			}),
+	}
+	doCompare(t, "scrape-empty-label-values-2", want, rms[0], e1)
+}
+
+func TestEmptyLabelValues(t *testing.T) {
+	targets := []*testData{
+		{
+			name: "target1",
+			pages: []mockPrometheusResponse{
+				{code: 200, data: emptyLabelValuesTarget1},
+			},
+			validateFunc: verifyEmptyLabelValuesTarget1,
+		},
+		{
+			name: "target2",
+			pages: []mockPrometheusResponse{
+				{code: 200, data: emptyLabelValuesTarget2},
+			},
+			validateFunc: verifyEmptyLabelValuesTarget2,
+		},
+	}
+	testComponent(t, targets, false, "")
+}

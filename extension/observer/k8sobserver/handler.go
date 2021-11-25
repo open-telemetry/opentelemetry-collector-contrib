@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package k8sobserver
+package k8sobserver // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/k8sobserver"
 
 import (
 	"fmt"
@@ -54,6 +54,11 @@ func (h *handler) convertPodToEndpoints(pod *v1.Pod) []observer.Endpoint {
 		Labels:      pod.Labels,
 		Name:        pod.Name,
 		Namespace:   pod.Namespace,
+	}
+
+	// Return no endpoints if the Pod is not running
+	if pod.Status.Phase != v1.PodRunning {
+		return nil
 	}
 
 	endpoints := []observer.Endpoint{{

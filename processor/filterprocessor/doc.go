@@ -14,4 +14,4 @@
 
 // Package filterprocessor implements a processor for filtering
 // (dropping) metrics and/or spans by various properties.
-package filterprocessor
+package filterprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor"
