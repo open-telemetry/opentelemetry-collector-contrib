@@ -6,6 +6,6 @@ Example:
 ```yaml
 exporters:
   prometheustracemetrics:
-    scrape_path: "/metrics"
-    scrape_listen: ":8080"
+    scrape_path: "/trace_metrics"
+    scrape_listen: ":8000"
 ```
