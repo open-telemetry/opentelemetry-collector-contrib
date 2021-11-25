@@ -578,12 +578,21 @@ func splitMetricsByTarget(metrics []pdata.Metrics) map[string][]*pdata.ResourceM
 }
 
 func getTS(ms pdata.MetricSlice) pdata.Timestamp {
-	for i := 0; i < ms.Len(); i++ {
-		m := ms.At(i)
-		switch m.DataType() {
-		case pdata.MetricDataTypeGauge:
-			return m.Gauge().DataPoints().At(0).Timestamp()
-		}
+	if ms.Len() == 0 {
+		return 0
+	}
+	m := ms.At(0)
+	switch m.DataType() {
+	case pdata.MetricDataTypeGauge:
+		return m.Gauge().DataPoints().At(0).Timestamp()
+	case pdata.MetricDataTypeSum:
+		return m.Sum().DataPoints().At(0).Timestamp()
+	case pdata.MetricDataTypeHistogram:
+		return m.Histogram().DataPoints().At(0).Timestamp()
+	case pdata.MetricDataTypeSummary:
+		return m.Summary().DataPoints().At(0).Timestamp()
+	case pdata.MetricDataTypeExponentialHistogram:
+		return m.ExponentialHistogram().DataPoints().At(0).Timestamp()
 	}
 	return 0
 }
