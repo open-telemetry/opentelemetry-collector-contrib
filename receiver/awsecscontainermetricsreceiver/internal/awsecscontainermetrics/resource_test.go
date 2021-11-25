@@ -44,7 +44,7 @@ func TestContainerResource(t *testing.T) {
 		conventions.AttributeContainerName:      "container-1",
 		conventions.AttributeContainerID:        "001",
 		attributeECSDockerName:                  "docker-container-1",
-		conventions.AttributeContainerImageName: "nginx:v1.0",
+		conventions.AttributeContainerImageName: "nginx",
 		attributeContainerImageID:               "sha256:8cf1bfb43ff5d9b05af9b6b63983440f137",
 		conventions.AttributeContainerImageTag:  "v1.0",
 		attributeContainerCreatedAt:             "2020-07-30T22:12:29.837074927Z",
@@ -81,7 +81,7 @@ func TestContainerResourceForStoppedContainer(t *testing.T) {
 		conventions.AttributeContainerName:      "container-1",
 		conventions.AttributeContainerID:        "001",
 		attributeECSDockerName:                  "docker-container-1",
-		conventions.AttributeContainerImageName: "nginx:v1.0",
+		conventions.AttributeContainerImageName: "nginx",
 		attributeContainerImageID:               "sha256:8cf1bfb43ff5d9b05af9b6b63983440f137",
 		conventions.AttributeContainerImageTag:  "v1.0",
 		attributeContainerCreatedAt:             "2020-07-30T22:12:29.837074927Z",
@@ -186,15 +186,6 @@ func TestGetResourceFromARN(t *testing.T) {
 	require.LessOrEqual(t, 0, len(region))
 	require.LessOrEqual(t, 0, len(accountID))
 	require.LessOrEqual(t, 0, len(taskID))
-}
-
-func TestGetVersionFromImage(t *testing.T) {
-	version := getVersionFromIamge("docker-Im.age:v1.0")
-	require.EqualValues(t, "v1.0", version)
-	version = getVersionFromIamge("dockerIm-agev1.0")
-	require.EqualValues(t, "latest", version)
-	version = getVersionFromIamge("")
-	require.LessOrEqual(t, 0, len(version))
 }
 
 func TestGetNameFromCluster(t *testing.T) {

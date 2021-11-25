@@ -21,16 +21,20 @@ import (
 	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/docker"
 )
 
 func containerResource(cm ecsutil.ContainerMetadata) pdata.Resource {
 	resource := pdata.NewResource()
+
+	imageName, imageTag, _ := docker.ImageToElements(cm.Image)
+
 	resource.Attributes().UpsertString(conventions.AttributeContainerName, cm.ContainerName)
 	resource.Attributes().UpsertString(conventions.AttributeContainerID, cm.DockerID)
 	resource.Attributes().UpsertString(attributeECSDockerName, cm.DockerName)
-	resource.Attributes().UpsertString(conventions.AttributeContainerImageName, cm.Image)
+	resource.Attributes().UpsertString(conventions.AttributeContainerImageName, imageName)
 	resource.Attributes().UpsertString(attributeContainerImageID, cm.ImageID)
-	resource.Attributes().UpsertString(conventions.AttributeContainerImageTag, getVersionFromIamge(cm.Image))
+	resource.Attributes().UpsertString(conventions.AttributeContainerImageTag, imageTag)
 	resource.Attributes().UpsertString(attributeContainerCreatedAt, cm.CreatedAt)
 	resource.Attributes().UpsertString(attributeContainerStartedAt, cm.StartedAt)
 	if cm.FinishedAt != "" {
@@ -79,17 +83,6 @@ func getResourceFromARN(arn string) (string, string, string) {
 	accountID := subSplits[4]
 
 	return region, accountID, taskID
-}
-
-func getVersionFromIamge(image string) string {
-	if image == "" {
-		return ""
-	}
-	splits := strings.Split(image, ":")
-	if len(splits) == 1 {
-		return "latest"
-	}
-	return splits[len(splits)-1]
 }
 
 //The Amazon Resource Name (ARN) that identifies the cluster. The ARN contains the arn:aws:ecs namespace,

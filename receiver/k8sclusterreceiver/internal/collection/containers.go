@@ -22,6 +22,7 @@ import (
 	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
 	corev1 "k8s.io/api/core/v1"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/docker"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testing/util"
 	metadataPkg "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/utils"
@@ -144,11 +145,14 @@ func getResourceForContainer(labels map[string]string) *resourcepb.Resource {
 func getAllContainerLabels(cs corev1.ContainerStatus,
 	dims map[string]string) map[string]string {
 
+	repository, tag, _ := docker.ImageToElements(cs.Image)
+
 	out := util.CloneStringMap(dims)
 
 	out[conventions.AttributeContainerID] = utils.StripContainerID(cs.ContainerID)
 	out[conventions.AttributeK8SContainerName] = cs.Name
-	out[conventions.AttributeContainerImageName] = cs.Image
+	out[conventions.AttributeContainerImageName] = repository
+	out[conventions.AttributeContainerImageTag] = tag
 
 	return out
 }

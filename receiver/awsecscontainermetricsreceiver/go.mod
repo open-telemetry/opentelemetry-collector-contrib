@@ -6,6 +6,7 @@ require (
 	github.com/census-instrumentation/opencensus-proto v0.3.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil v0.40.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.40.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.40.0
 	github.com/stretchr/testify v1.7.0
 	go.opentelemetry.io/collector v0.40.0
 	go.opentelemetry.io/collector/model v0.40.0
@@ -47,3 +48,5 @@ require (
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal => ../../internal/coreinternal
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil => ../../internal/aws/ecsutil
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/common => ../../internal/common
