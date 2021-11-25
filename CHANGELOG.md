@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+## v0.40.0
 ## 🛑 Breaking changes 🛑
 
 - `tencentcloudlogserviceexporter` change `Endpoint` to `Region` to simplify configuration (#6135)
