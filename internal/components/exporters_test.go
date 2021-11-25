@@ -134,6 +134,9 @@ func TestDefaultExporters(t *testing.T) {
 			exporter: "prometheusremotewrite",
 		},
 		{
+			exporter: "prometheustracemetrics",
+		},
+		{
 			exporter: "zipkin",
 			getConfigFn: func() config.Exporter {
 				cfg := expFactories["zipkin"].CreateDefaultConfig().(*zipkinexporter.Config)
