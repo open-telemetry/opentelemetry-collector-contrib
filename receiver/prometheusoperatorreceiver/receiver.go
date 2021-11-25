@@ -30,7 +30,7 @@ type prometheusOperatorReceiverWrapper struct {
 }
 
 // new returns a prometheusOperatorReceiverWrapper
-func new(params component.ReceiverCreateSettings, cfg *Config, consumer consumer.Metrics) *prometheusOperatorReceiverWrapper {
+func newReceiver(params component.ReceiverCreateSettings, cfg *Config, consumer consumer.Metrics) *prometheusOperatorReceiverWrapper {
 	return &prometheusOperatorReceiverWrapper{params: params, config: cfg, consumer: consumer}
 }
 
