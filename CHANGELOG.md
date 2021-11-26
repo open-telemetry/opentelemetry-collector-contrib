@@ -2,6 +2,19 @@
 
 ## Unreleased
 
+## 🛑 Breaking changes 🛑
+
+- `awsecscontainermetricsreceiver`: remove tag from `container.image.name` (#6436)
+- `k8sclusterreceiver`: remove tag from `container.image.name` (#6436)
+
+## 🚀 New components 🚀
+
+## 🧰 Bug fixes 🧰
+
+## 💡 Enhancements 💡
+
+- `k8sclusterreceiver` add `container.image.tag` attribute (#6436)
+
 ## v0.40.0
 
 ## 🛑 Breaking changes 🛑
