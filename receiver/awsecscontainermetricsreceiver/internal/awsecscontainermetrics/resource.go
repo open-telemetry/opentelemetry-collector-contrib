@@ -27,7 +27,7 @@ import (
 func containerResource(cm ecsutil.ContainerMetadata) pdata.Resource {
 	resource := pdata.NewResource()
 
-	imageName, imageTag, _ := docker.ImageToElements(cm.Image)
+	imageName, imageTag, _ := docker.ParseImageName(cm.Image)
 
 	resource.Attributes().UpsertString(conventions.AttributeContainerName, cm.ContainerName)
 	resource.Attributes().UpsertString(conventions.AttributeContainerID, cm.DockerID)

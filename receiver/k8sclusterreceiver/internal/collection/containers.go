@@ -145,7 +145,7 @@ func getResourceForContainer(labels map[string]string) *resourcepb.Resource {
 func getAllContainerLabels(cs corev1.ContainerStatus,
 	dims map[string]string) map[string]string {
 
-	repository, tag, _ := docker.ImageToElements(cs.Image)
+	repository, tag, _ := docker.ParseImageName(cs.Image)
 
 	out := util.CloneStringMap(dims)
 

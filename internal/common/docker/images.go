@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package docker
+package docker // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/docker"
 
 import (
 	"fmt"
@@ -23,9 +23,9 @@ var (
 	extractImageRegexp = regexp.MustCompile(`^(?P<repository>([^/\s]+/)?([^:\s]+))(:(?P<tag>[^@\s]+))?(@sha256:\d+)?$`)
 )
 
-// ImageToElements extracts image repository and tag from a combined image reference
+// ParseImageName extracts image repository and tag from a combined image reference
 // e.g. example.com:5000/alpine/alpine:test --> `example.com:5000/alpine/alpine` and `test`
-func ImageToElements(image string) (string, string, error) {
+func ParseImageName(image string) (string, string, error) {
 	if image == "" {
 		return "", "", fmt.Errorf("empty image")
 	}
