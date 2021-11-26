@@ -20,7 +20,7 @@ import (
 )
 
 var (
-	extractImageRegexp = regexp.MustCompile("^(?P<repository>([^/\\s]+/)?([^:\\s]+))(:(?P<tag>[^@\\s]+))?(@sha256:\\d+)?$")
+	extractImageRegexp = regexp.MustCompile(`^(?P<repository>([^/\s]+/)?([^:\s]+))(:(?P<tag>[^@\s]+))?(@sha256:\d+)?$`)
 )
 
 // ImageToElements extracts image repository and tag from a combined image reference
