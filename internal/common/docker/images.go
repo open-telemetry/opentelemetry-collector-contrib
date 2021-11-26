@@ -17,6 +17,8 @@ package docker // import "github.com/open-telemetry/opentelemetry-collector-cont
 import (
 	"fmt"
 	"regexp"
+
+	"go.uber.org/zap"
 )
 
 var (
@@ -43,4 +45,10 @@ func ParseImageName(image string) (string, string, error) {
 	repository := match[extractImageRegexp.SubexpIndex("repository")]
 
 	return repository, tag, nil
+}
+
+func LogParseError(err error, image string, logger *zap.Logger) {
+	logger.Debug(err.Error(),
+		zap.String("image", image),
+	)
 }

@@ -37,7 +37,7 @@ func (acc *metricDataAccumulator) getMetricsData(containerStatsMap map[string]*C
 
 	for _, containerMetadata := range metadata.Containers {
 
-		containerResource := containerResource(containerMetadata)
+		containerResource := containerResource(containerMetadata, logger)
 		taskResource.Attributes().Range(func(k string, av pdata.AttributeValue) bool {
 			containerResource.Attributes().Upsert(k, av)
 			return true

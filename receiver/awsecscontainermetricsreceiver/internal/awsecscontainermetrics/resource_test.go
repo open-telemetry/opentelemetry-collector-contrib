@@ -20,6 +20,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/model/pdata"
 	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil"
 )
@@ -36,7 +37,7 @@ func TestContainerResource(t *testing.T) {
 		KnownStatus:   "RUNNING",
 	}
 
-	r := containerResource(cm)
+	r := containerResource(cm, zap.NewNop())
 	require.NotNil(t, r)
 	attrMap := r.Attributes()
 	require.EqualValues(t, 9, attrMap.Len())
@@ -70,7 +71,7 @@ func TestContainerResourceForStoppedContainer(t *testing.T) {
 		ExitCode:      &exitCode,
 	}
 
-	r := containerResource(cm)
+	r := containerResource(cm, zap.NewNop())
 	require.NotNil(t, r)
 	attrMap := r.Attributes()
 	getExitCodeAd, found := attrMap.Get(attributeContainerExitCode)

@@ -19,15 +19,19 @@ import (
 
 	"go.opentelemetry.io/collector/model/pdata"
 	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/docker"
 )
 
-func containerResource(cm ecsutil.ContainerMetadata) pdata.Resource {
+func containerResource(cm ecsutil.ContainerMetadata, logger *zap.Logger) pdata.Resource {
 	resource := pdata.NewResource()
 
-	imageName, imageTag, _ := docker.ParseImageName(cm.Image)
+	imageName, imageTag, err := docker.ParseImageName(cm.Image)
+	if err != nil {
+		docker.LogParseError(err, cm.Image, logger)
+	}
 
 	resource.Attributes().UpsertString(conventions.AttributeContainerName, cm.ContainerName)
 	resource.Attributes().UpsertString(conventions.AttributeContainerID, cm.DockerID)
