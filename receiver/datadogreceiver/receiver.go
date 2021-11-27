@@ -95,7 +95,7 @@ func (ddr *datadogReceiver) handleTraces(w http.ResponseWriter, req *http.Reques
 		http.Error(w, "Trace consumer errored out", http.StatusInternalServerError)
 	} else {
 		w.WriteHeader(http.StatusOK)
-		_, _ = w.Write([]byte("OK"))
+		w.Write([]byte("OK"))
 	}
 	ddr.obs.EndTracesOp(obsCtx, "datadog", spanCount, err)
 }
