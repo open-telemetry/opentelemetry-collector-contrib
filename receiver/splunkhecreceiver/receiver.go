@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package splunkhecreceiver
+package splunkhecreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/splunkhecreceiver"
 
 import (
 	"bufio"
@@ -24,6 +24,7 @@ import (
 	"io/ioutil"
 	"net"
 	"net/http"
+	"strings"
 	"sync"
 	"time"
 
@@ -367,10 +368,11 @@ func (r *splunkReceiver) consumeLogs(ctx context.Context, events []*splunk.Event
 
 func (r *splunkReceiver) createResourceCustomizer(req *http.Request) func(resource pdata.Resource) {
 	if r.config.AccessTokenPassthrough {
-		accessToken := req.Header.Get(splunk.HECTokenHeader)
-		if accessToken != "" {
+		accessToken := req.Header.Get("Authorization")
+		if strings.HasPrefix(accessToken, splunk.HECTokenHeader+" ") {
+			accessTokenValue := accessToken[len(splunk.HECTokenHeader)+1:]
 			return func(resource pdata.Resource) {
-				resource.Attributes().InsertString(splunk.HecTokenLabel, accessToken)
+				resource.Attributes().InsertString(splunk.HecTokenLabel, accessTokenValue)
 			}
 		}
 	}

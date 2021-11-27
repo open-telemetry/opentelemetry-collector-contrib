@@ -5,6 +5,7 @@
     "Revision": "1",
     "DesiredStatus": "RUNNING",
     "KnownStatus": "RUNNING",
+    "LaunchType": "ec2",
     "PullStartedAt": "2020-07-30T22:12:25.705983342Z",
     "PullStoppedAt": "2020-07-30T22:12:29.827677602Z",
     "AvailabilityZone": "us-west-2a",

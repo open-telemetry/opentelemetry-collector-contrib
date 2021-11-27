@@ -12,17 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package metadataparser
+package metadataparser // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudspannerreceiver/internal/metadataparser"
 
 import (
 	"fmt"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudspannerreceiver/internal/metadata"
-)
-
-const (
-	metricValueTypeInt   = "int"
-	metricValueTypeFloat = "float"
 )
 
 type Metric struct {
@@ -32,21 +27,10 @@ type Metric struct {
 }
 
 func (metric Metric) toMetricValueMetadata() (metadata.MetricValueMetadata, error) {
-	var valueMetadata metadata.MetricValueMetadata
-
 	dataType, err := metric.DataType.toMetricDataType()
 	if err != nil {
 		return nil, fmt.Errorf("invalid value data type received for metric %q", metric.Name)
 	}
 
-	switch metric.ValueType {
-	case metricValueTypeInt:
-		valueMetadata = metadata.NewInt64MetricValueMetadata(metric.Name, metric.ColumnName, dataType, metric.Unit)
-	case metricValueTypeFloat:
-		valueMetadata = metadata.NewFloat64MetricValueMetadata(metric.Name, metric.ColumnName, dataType, metric.Unit)
-	default:
-		return nil, fmt.Errorf("invalid value type received for metric %q", metric.Name)
-	}
-
-	return valueMetadata, nil
+	return metadata.NewMetricValueMetadata(metric.Name, metric.ColumnName, dataType, metric.Unit, metric.ValueType)
 }

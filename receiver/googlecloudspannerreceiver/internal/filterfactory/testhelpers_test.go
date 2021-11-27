@@ -52,14 +52,16 @@ func (f *mockFilter) LimitByTimestamp() int {
 func generateMetadataItems(prefixes []string, prefixHighCardinality []bool) []*metadata.MetricsMetadata {
 	metricDataType := metadata.NewMetricDataType(pdata.MetricDataTypeGauge, pdata.MetricAggregationTemporalityUnspecified, false)
 	metadataItems := make([]*metadata.MetricsMetadata, len(prefixes))
+	int64MetricValueMetadata, _ := metadata.NewMetricValueMetadata("int64", "int64Column", metricDataType, "int64Unit", metadata.IntValueType)
+	float64MetricValueMetadata, _ := metadata.NewMetricValueMetadata("float64", "float64Column", metricDataType, "float64Unit", metadata.FloatValueType)
 
 	for i, prefix := range prefixes {
 		metadataItems[i] = &metadata.MetricsMetadata{
 			MetricNamePrefix: prefix,
 			HighCardinality:  prefixHighCardinality[i],
 			QueryMetricValuesMetadata: []metadata.MetricValueMetadata{
-				metadata.NewInt64MetricValueMetadata("int64", "int64Column", metricDataType, "int64Unit"),
-				metadata.NewFloat64MetricValueMetadata("float64", "float64Column", metricDataType, "float64Unit"),
+				int64MetricValueMetadata,
+				float64MetricValueMetadata,
 			},
 		}
 	}

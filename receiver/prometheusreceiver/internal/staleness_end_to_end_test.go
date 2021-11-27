@@ -176,22 +176,17 @@ service:
 			t.Error(err)
 		}
 	}()
+	defer app.Shutdown()
 
 	// Wait until the collector has actually started.
-	stateChannel := app.GetStateChannel()
 	for notYetStarted := true; notYetStarted; {
-		switch state := <-stateChannel; state {
+		state := app.GetState()
+		switch state {
 		case service.Running, service.Closed, service.Closing:
 			notYetStarted = false
 		}
+		time.Sleep(10 * time.Millisecond)
 	}
-
-	// The OpenTelemetry collector has a data race because it closes
-	// a channel while
-	if false {
-		defer app.Shutdown()
-	}
-	time.Sleep(60 * time.Second)
 
 	// 5. Let's wait on 10 fetches.
 	var wReqL []*prompb.WriteRequest

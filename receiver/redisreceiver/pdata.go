@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package redisreceiver
+package redisreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/redisreceiver"
 
 import (
 	"go.opentelemetry.io/collector/model/pdata"
@@ -70,7 +70,7 @@ func initIntMetric(m *redisMetric, value int64, t *timeBundle, dest pdata.Metric
 	}
 	pt.SetIntVal(value)
 	pt.SetTimestamp(pdata.NewTimestampFromTime(t.current))
-	pt.Attributes().InitFromMap(m.labels)
+	pdata.NewAttributeMapFromMap(m.labels).CopyTo(pt.Attributes())
 }
 
 func initDoubleMetric(m *redisMetric, value float64, t *timeBundle, dest pdata.Metric) {
@@ -88,7 +88,7 @@ func initDoubleMetric(m *redisMetric, value float64, t *timeBundle, dest pdata.M
 	}
 	pt.SetDoubleVal(value)
 	pt.SetTimestamp(pdata.NewTimestampFromTime(t.current))
-	pt.Attributes().InitFromMap(m.labels)
+	pdata.NewAttributeMapFromMap(m.labels).CopyTo(pt.Attributes())
 }
 
 func redisMetricToPDM(m *redisMetric, dest pdata.Metric) {

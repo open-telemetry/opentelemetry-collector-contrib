@@ -54,22 +54,17 @@ func TestSignalFxV2EventsToLogData(t *testing.T) {
 		l.SetName("shutdown")
 		l.SetTimestamp(pdata.NewTimestampFromTime(now.Truncate(time.Millisecond)))
 		attrs := l.Attributes()
-
-		attrs.InitFromMap(map[string]pdata.AttributeValue{
-			"k0": pdata.NewAttributeValueString("v0"),
-			"k1": pdata.NewAttributeValueString("v1"),
-			"k2": pdata.NewAttributeValueString("v2"),
-		})
+		attrs.InsertString("k0", "v0")
+		attrs.InsertString("k1", "v1")
+		attrs.InsertString("k2", "v2")
 
 		propMapVal := pdata.NewAttributeValueMap()
 		propMap := propMapVal.MapVal()
-		propMap.InitFromMap(map[string]pdata.AttributeValue{
-			"env":      pdata.NewAttributeValueString("prod"),
-			"isActive": pdata.NewAttributeValueBool(true),
-			"rack":     pdata.NewAttributeValueInt(5),
-			"temp":     pdata.NewAttributeValueDouble(40.5),
-			"nullProp": pdata.NewAttributeValueEmpty(),
-		})
+		propMap.InsertString("env", "prod")
+		propMap.InsertBool("isActive", true)
+		propMap.InsertInt("rack", 5)
+		propMap.InsertDouble("temp", 40.5)
+		propMap.InsertNull("nullProp")
 		propMap.Sort()
 		attrs.Insert("com.splunk.signalfx.event_properties", propMapVal)
 		attrs.Insert("com.splunk.signalfx.event_category", pdata.NewAttributeValueInt(int64(sfxpb.EventCategory_USER_DEFINED)))

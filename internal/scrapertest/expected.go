@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package scrapertest
+package scrapertest // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest"
 
 import (
 	"encoding/json"
@@ -42,5 +42,6 @@ func WriteExpected(filePath string, metrics pdata.Metrics) error {
 	if err != nil {
 		return err
 	}
+	b = append(b, []byte("\n")...)
 	return ioutil.WriteFile(filePath, b, 0600)
 }

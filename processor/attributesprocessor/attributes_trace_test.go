@@ -59,7 +59,8 @@ func generateTraceData(serviceName, spanName string, attrs map[string]pdata.Attr
 	}
 	span := rs.InstrumentationLibrarySpans().AppendEmpty().Spans().AppendEmpty()
 	span.SetName(spanName)
-	span.Attributes().InitFromMap(attrs).Sort()
+	pdata.NewAttributeMapFromMap(attrs).CopyTo(span.Attributes())
+	span.Attributes().Sort()
 	return td
 }
 
