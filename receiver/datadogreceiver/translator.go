@@ -17,7 +17,6 @@ package datadogreceiver
 import (
 	"encoding/binary"
 	"encoding/json"
-	"fmt"
 	"mime"
 	"net/http"
 	"strings"
@@ -25,7 +24,6 @@ import (
 	datadogpb "github.com/DataDog/datadog-agent/pkg/trace/exportable/pb"
 	"github.com/tinylib/msgp/msgp"
 	"go.opentelemetry.io/collector/model/pdata"
-	"go.opentelemetry.io/collector/model/semconv/v1.6.1"
 )
 
 func toTraces(traces datadogpb.Traces, req *http.Request) pdata.Traces {
@@ -84,22 +82,10 @@ func decodeRequest(req *http.Request, dest *datadogpb.Traces) error {
 			return msgp.Decode(req.Body, dest)
 		}
 	case "application/json":
-		fallthrough
 	case "text/json":
-		fallthrough
 	case "":
 		return json.NewDecoder(req.Body).Decode(dest)
 	default:
-		// do our best
-		if err1 := json.NewDecoder(req.Body).Decode(dest); err1 != nil {
-			if err2 := msgp.Decode(req.Body, dest); err2 != nil {
-				reader := datadogpb.NewMsgpReader(req.Body)
-				defer datadogpb.FreeMsgpReader(reader)
-				if err3 := dest.DecodeMsgDictionary(reader); err3 != nil {
-					return fmt.Errorf("could not decode JSON (%q), nor Msgpack (%q), nor v0.5 (%q)", err1, err2, err3)
-				}
-			}
-		}
 		return nil
 	}
 
