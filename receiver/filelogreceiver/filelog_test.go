@@ -284,8 +284,8 @@ func testdataConfigYamlAsMap() *FileLogConfig {
 				},
 			},
 			Converter: stanza.ConverterConfig{
-				MaxFlushCount: stanza.DefaultMaxFlushCount,
-				FlushInterval: stanza.DefaultFlushInterval,
+				MaxFlushCount: 100,
+				FlushInterval: 100 * time.Millisecond,
 			},
 		},
 		Input: stanza.InputConfig{
@@ -311,10 +311,7 @@ func testdataRotateTestYamlAsMap(tempDir string) *FileLogConfig {
 					},
 				},
 			},
-			Converter: stanza.ConverterConfig{
-				MaxFlushCount: stanza.DefaultMaxFlushCount,
-				FlushInterval: stanza.DefaultFlushInterval,
-			},
+			Converter: stanza.ConverterConfig{},
 		},
 		Input: stanza.InputConfig{
 			"type": "file_input",
