@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package signalfxreceiver
+package signalfxreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/signalfxreceiver"
 
 import (
 	sfxpb "github.com/signalfx/com_signalfx_metrics_protobuf/model"

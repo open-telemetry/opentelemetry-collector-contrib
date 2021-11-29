@@ -6,10 +6,10 @@ require (
 	github.com/census-instrumentation/opencensus-proto v0.3.0
 	github.com/golang/protobuf v1.5.2
 	github.com/google/go-cmp v0.5.6
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.39.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.40.0
 	github.com/stretchr/testify v1.7.0
 	go.opencensus.io v0.23.0
-	go.opentelemetry.io/collector/model v0.39.1-0.20211122170858-f69d23494726
+	go.opentelemetry.io/collector/model v0.40.0
 	google.golang.org/protobuf v1.27.1
 )
 
