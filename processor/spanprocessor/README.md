@@ -2,14 +2,15 @@
 
 Supported pipeline types: traces
 
-The span processor modifies the span name based on its attributes or extract span attributes from the span name. Please refer to
-[config.go](./config.go) for the config spec.
+The span processor modifies the span name based on its attributes or extract span attributes from the span name. It also allows
+to change span status. Please refer to [config.go](./config.go) for the config spec.
 
 It optionally supports the ability to [include/exclude spans](../README.md#includeexclude-spans).
 
 The following actions are supported:
 
 - `name`: Modify the name of attributes within a span
+- `status`: Modify the status of the span
 
 ### Name a span
 
@@ -95,6 +96,29 @@ span/to_attributes:
       rules:
         - ^\/api\/v1\/document\/(?P<documentId>.*)\/update$
 ```
+
+### Set status for span
+
+The following setting is required:
+
+- `code`: Represents span status. One of the following values "Unset", "Error", "Ok".
+
+The following setting is allowed only for code "Error":
+- `description`
+
+Example:
+
+```yaml
+# Set status allows to set specific status for a given span. Possible values are
+# Ok, Error and Unset as per
+# https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/trace/api.md#set-status
+# The description field allows to set a human-readable message for errors.
+span/set_status:
+  status:
+    code: Error
+    description: "some error description"
+```
+
 
 Refer to [config.yaml](./testdata/config.yaml) for detailed
 examples on using the processor.
