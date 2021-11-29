@@ -1,0 +1,18 @@
+processors:
+  transform:
+    queries:
+      - set(name, "bear") where attributes["http.path"] == "/animal"
+      - keep(attributes, "http.method", "http.path")
+
+receivers:
+  nop:
+
+exporters:
+  nop:
+
+service:
+  pipelines:
+    traces:
+      receivers: [nop]
+      processors: [transform]
+      exporters: [nop]
