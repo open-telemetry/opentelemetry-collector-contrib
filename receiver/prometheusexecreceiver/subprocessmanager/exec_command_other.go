@@ -12,32 +12,25 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package main
+//go:build !windows
+
+package subprocessmanager
 
 import (
-	"os"
-	"strconv"
-	"time"
+	"os/exec"
+
+	"github.com/kballard/go-shellquote"
 )
 
-const defaultSleepTime = 2
-const defaultExitCode = 0
+// Non-Windows version of exec.Command(...)
+// Compiles on all but Windows
+func ExecCommand(commandLine string) (*exec.Cmd, error) {
 
-// This program is simply a test program that does nothing but crash after a certain time, with a non-zero exit code, used in
-// subprocessmanager tests
-func main() {
-
-	sleepTime, err := strconv.Atoi(os.Args[1])
+	var args, err = shellquote.Split(commandLine)
 	if err != nil {
-		sleepTime = defaultSleepTime
+		return nil, err
 	}
 
-	exitCode, err := strconv.Atoi(os.Args[2])
-	if err != nil {
-		exitCode = defaultExitCode
-	}
-
-	time.Sleep(time.Millisecond * time.Duration(sleepTime))
-	os.Exit(exitCode)
+	return exec.Command(args[0], args[1:]...), nil // #nosec
 
 }
