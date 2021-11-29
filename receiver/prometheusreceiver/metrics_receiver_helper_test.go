@@ -39,8 +39,9 @@ import (
 )
 
 type mockPrometheusResponse struct {
-	code int
-	data string
+	code           int
+	data           string
+	useOpenMetrics bool
 }
 
 type mockPrometheus struct {
@@ -88,6 +89,9 @@ func (mp *mockPrometheus) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 		rw.WriteHeader(404)
 		return
 	}
+	if pages[index].useOpenMetrics {
+		rw.Header().Set("Content-Type", "application/openmetrics-text")
+	}
 	rw.WriteHeader(pages[index].code)
 	_, _ = rw.Write([]byte(pages[index].data))
 }
@@ -105,10 +109,11 @@ var (
 )
 
 type testData struct {
-	name         string
-	pages        []mockPrometheusResponse
-	attributes   pdata.AttributeMap
-	validateFunc func(t *testing.T, td *testData, result []*pdata.ResourceMetrics)
+	name           string
+	pages          []mockPrometheusResponse
+	attributes     pdata.AttributeMap
+	useOpenMetrics bool
+	validateFunc   func(t *testing.T, td *testData, result []*pdata.ResourceMetrics)
 }
 
 // setupMockPrometheus to create a mocked prometheus based on targets, returning the server and a prometheus exporting
@@ -118,6 +123,9 @@ func setupMockPrometheus(tds ...*testData) (*mockPrometheus, *promcfg.Config, er
 	endpoints := make(map[string][]mockPrometheusResponse)
 	metricPaths := make([]string, 0)
 	for _, t := range tds {
+		for i := range t.pages {
+			t.pages[i].useOpenMetrics = t.useOpenMetrics
+		}
 		metricPath := fmt.Sprintf("/%s/metrics", t.name)
 		endpoints[metricPath] = t.pages
 		metricPaths = append(metricPaths, metricPath)
@@ -497,7 +505,10 @@ func testComponent(t *testing.T, targets []*testData, useStartTimeMetric bool, s
 			// loop to validate outputs for each targets
 			for _, target := range targets {
 				t.Run(target.name, func(t *testing.T) {
-					validScrapes := getValidScrapes(t, pResults[target.name])
+					validScrapes := pResults[target.name]
+					if !target.useOpenMetrics {
+						validScrapes = getValidScrapes(t, pResults[target.name])
+					}
 					target.validateFunc(t, target, validScrapes)
 				})
 			}
@@ -543,7 +554,10 @@ func testComponentCustomConfig(t *testing.T, targets []*testData, cfgMut func(*p
 			// loop to validate outputs for each targets
 			for _, target := range targets {
 				t.Run(target.name, func(t *testing.T) {
-					validScrapes := getValidScrapes(t, pResults[target.name])
+					validScrapes := pResults[target.name]
+					if !target.useOpenMetrics {
+						validScrapes = getValidScrapes(t, pResults[target.name])
+					}
 					target.validateFunc(t, target, validScrapes)
 				})
 			}
