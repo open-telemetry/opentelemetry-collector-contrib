@@ -111,7 +111,10 @@ func (e *LogEmitter) Start(_ operator.Persister) error {
 // Process will emit an entry to the output channel
 func (e *LogEmitter) Process(ctx context.Context, ent *entry.Entry) error {
 	batchToFlush := e.appendEntry(ent)
-	e.flush(ctx, batchToFlush)
+
+	if batchToFlush != nil {
+		e.flush(ctx, batchToFlush)
+	}
 
 	return nil
 }
@@ -142,19 +145,17 @@ func (e *LogEmitter) flusher(ctx context.Context) {
 		select {
 		case <-ticker.C:
 			batch := e.makeNewBatch()
-			e.flush(ctx, batch)
+			if batch != nil {
+				e.flush(ctx, batch)
+			}
 		case <-ctx.Done():
 			return
 		}
 	}
 }
 
-// flush flushes the provided batch to the log channel. If the batch is nil, does nothing
+// flush flushes the provided batch to the log channel.
 func (e *LogEmitter) flush(ctx context.Context, batch []*entry.Entry) {
-	if batch == nil {
-		return
-	}
-
 	select {
 	case e.logChan <- batch:
 	case <-ctx.Done():
@@ -166,16 +167,16 @@ func (e *LogEmitter) makeNewBatch() []*entry.Entry {
 	e.batchMux.Lock()
 	defer e.batchMux.Unlock()
 
+	if len(e.batch) == 0 {
+		return nil
+	}
+
 	return e.makeNewBatchNoLock()
 }
 
 // makeNewBatchNoLock replaces the current batch on the log emitter with a new batch, returning the old one. It does not acquire the batchMux,
 // so it should used in cases where the batchMux is already acquired
 func (e *LogEmitter) makeNewBatchNoLock() []*entry.Entry {
-	if len(e.batch) == 0 {
-		return nil
-	}
-
 	oldBatch := e.batch
 	e.batch = make([]*entry.Entry, 0, e.maxBatchSize)
 
