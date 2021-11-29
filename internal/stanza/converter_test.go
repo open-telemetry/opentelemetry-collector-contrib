@@ -548,7 +548,7 @@ func BenchmarkConverter(b *testing.B) {
 	const (
 		entryCount = 1_000_000
 		hostsCount = 4
-		batchCount = 200
+		batchSize  = 200
 	)
 
 	var (
@@ -568,11 +568,11 @@ func BenchmarkConverter(b *testing.B) {
 				b.ResetTimer()
 
 				go func() {
-					for i := 0; i < entryCount; i += batchCount {
-						if i+batchCount > entryCount {
+					for i := 0; i < entryCount; i += batchSize {
+						if i+batchSize > entryCount {
 							assert.NoError(b, converter.Batch(entries[i:entryCount]))
 						} else {
-							assert.NoError(b, converter.Batch(entries[i:i+batchCount]))
+							assert.NoError(b, converter.Batch(entries[i:i+batchSize]))
 						}
 					}
 				}()
