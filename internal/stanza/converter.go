@@ -243,22 +243,23 @@ func (c *Converter) batchLoop() {
 						At(0).InstrumentationLibraryLogs().
 						At(0).Logs().AppendEmpty()
 					wi.LogRecord.CopyTo(lr)
-				} else {
-					pLogs = pdata.NewLogs()
-					logs := pLogs.ResourceLogs()
-					rls := logs.AppendEmpty()
-
-					resource := rls.Resource()
-					resourceAtts := resource.Attributes()
-					resourceAtts.EnsureCapacity(len(wi.Resource))
-					for k, v := range wi.Resource {
-						resourceAtts.InsertString(k, v)
-					}
-
-					ills := rls.InstrumentationLibraryLogs()
-					lr := ills.AppendEmpty().Logs().AppendEmpty()
-					wi.LogRecord.CopyTo(lr)
+					continue
 				}
+
+				pLogs = pdata.NewLogs()
+				logs := pLogs.ResourceLogs()
+				rls := logs.AppendEmpty()
+
+				resource := rls.Resource()
+				resourceAtts := resource.Attributes()
+				resourceAtts.EnsureCapacity(len(wi.Resource))
+				for k, v := range wi.Resource {
+					resourceAtts.InsertString(k, v)
+				}
+
+				ills := rls.InstrumentationLibraryLogs()
+				lr := ills.AppendEmpty().Logs().AppendEmpty()
+				wi.LogRecord.CopyTo(lr)
 
 				c.data[wi.ResourceID] = pLogs
 			}
