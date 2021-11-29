@@ -17,8 +17,10 @@ package prometheusexporter // import "github.com/open-telemetry/opentelemetry-co
 import (
 	"context"
 	"errors"
+	"log"
 	"net"
 	"net/http"
+	"os"
 	"strings"
 
 	"github.com/prometheus/client_golang/prometheus"
@@ -58,6 +60,7 @@ func newPrometheusExporter(config *Config, set component.ExporterCreateSettings)
 			registry,
 			promhttp.HandlerOpts{
 				ErrorHandling: promhttp.ContinueOnError,
+				ErrorLog:      log.New(os.Stderr, "Prometheus Exporter Check Error ", 0),
 			},
 		),
 	}, nil
