@@ -6,7 +6,7 @@ require (
 	bitbucket.org/atlassian/go-asap v0.0.0-20210823164515-3d5971c40c4c
 	github.com/SermoDigital/jose v0.9.2-0.20161205224733-f6df55f235c2
 	github.com/stretchr/testify v1.7.0
-	go.opentelemetry.io/collector v0.39.0
+	go.opentelemetry.io/collector v0.40.0
 	go.uber.org/multierr v1.7.0
 	google.golang.org/grpc v1.42.0
 )
@@ -28,10 +28,10 @@ require (
 	github.com/pquerna/cachecontrol v0.0.0-20201205024021-ac21108117ac // indirect
 	github.com/spf13/cast v1.4.1 // indirect
 	github.com/vincent-petithory/dataurl v0.0.0-20160330182126-9a301d65acbb // indirect
-	go.opentelemetry.io/collector/model v0.39.0 // indirect
-	go.opentelemetry.io/otel v1.1.0 // indirect
-	go.opentelemetry.io/otel/metric v0.24.0 // indirect
-	go.opentelemetry.io/otel/trace v1.1.0 // indirect
+	go.opentelemetry.io/collector/model v0.40.0 // indirect
+	go.opentelemetry.io/otel v1.2.0 // indirect
+	go.opentelemetry.io/otel/metric v0.25.0 // indirect
+	go.opentelemetry.io/otel/trace v1.2.0 // indirect
 	go.uber.org/atomic v1.9.0 // indirect
 	go.uber.org/zap v1.19.1 // indirect
 	golang.org/x/net v0.0.0-20210614182718-04defd469f4e // indirect
