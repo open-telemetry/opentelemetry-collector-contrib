@@ -525,14 +525,14 @@ metrics:
     description: Disk partition space
     extended_documentation: Aggregate of MongoDB Metrics DISK_PARTITION_SPACE_FREE, DISK_PARTITION_SPACE_USED
     unit: By
-    lables: [memory_state]
+    attributes: [memory_state]
     data:
       type: gauge
   mongodbatlas.disk.partition.space.average:
     description: Disk partition space
     extended_documentation: Aggregate of MongoDB Metrics DISK_PARTITION_SPACE_FREE, DISK_PARTITION_SPACE_USED
     unit: By
-    lables: [memory_state]
+    attributes: [memory_state]
     data:
       type: gauge
   mongodbatlas.db.size:
