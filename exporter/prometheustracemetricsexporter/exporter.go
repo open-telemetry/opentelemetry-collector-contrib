@@ -19,14 +19,13 @@ import (
 	"net/http"
 	"sync/atomic"
 
-	"go.uber.org/zap"
-
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/model/otlp"
 	"go.opentelemetry.io/collector/model/pdata"
+	"go.uber.org/zap"
 )
 
 type (
