@@ -89,9 +89,6 @@ type Converter struct {
 	// flushChan is an internal channel used for transporting batched pdata.Logs.
 	flushChan chan pdata.Logs
 
-	// data holds currently converted and aggregated log entries, grouped by Resource.
-	data map[uint64]pdata.Logs
-
 	// wg is a WaitGroup that makes sure that we wait for spun up goroutines exit
 	// when Stop() is called.
 	wg sync.WaitGroup
@@ -126,7 +123,6 @@ func NewConverter(opts ...ConverterOption) *Converter {
 		workerChan:      make(chan []*entry.Entry),
 		workerCount:     int(math.Max(1, float64(runtime.NumCPU()/4))),
 		aggregationChan: make(chan []workerItem),
-		data:            make(map[uint64]pdata.Logs),
 		pLogsChan:       make(chan pdata.Logs),
 		stopChan:        make(chan struct{}),
 		logger:          zap.NewNop(),
@@ -216,6 +212,8 @@ func (c *Converter) workerLoop() {
 func (c *Converter) aggregationLoop() {
 	defer c.wg.Done()
 
+	resourceIDToLogs := make(map[uint64]pdata.Logs)
+
 	for {
 		select {
 		case workerItems, ok := <-c.aggregationChan:
@@ -224,7 +222,7 @@ func (c *Converter) aggregationLoop() {
 			}
 
 			for _, wi := range workerItems {
-				pLogs, ok := c.data[wi.ResourceID]
+				pLogs, ok := resourceIDToLogs[wi.ResourceID]
 				if ok {
 					lr := pLogs.ResourceLogs().
 						At(0).InstrumentationLibraryLogs().
@@ -248,12 +246,12 @@ func (c *Converter) aggregationLoop() {
 				lr := ills.AppendEmpty().Logs().AppendEmpty()
 				wi.LogRecord.CopyTo(lr)
 
-				c.data[wi.ResourceID] = pLogs
+				resourceIDToLogs[wi.ResourceID] = pLogs
 			}
 
-			for r, pLogs := range c.data {
+			for r, pLogs := range resourceIDToLogs {
 				c.flushChan <- pLogs
-				delete(c.data, r)
+				delete(resourceIDToLogs, r)
 			}
 
 		case <-c.stopChan:
