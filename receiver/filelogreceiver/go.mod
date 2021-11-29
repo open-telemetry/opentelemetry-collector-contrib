@@ -4,12 +4,12 @@ go 1.17
 
 require (
 	github.com/observiq/nanojack v0.0.0-20201106172433-343928847ebc
-	github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage v0.39.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/stanza v0.39.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage v0.40.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/stanza v0.40.0
 	github.com/open-telemetry/opentelemetry-log-collection v0.22.0
 	github.com/stretchr/testify v1.7.0
-	go.opentelemetry.io/collector v0.39.1-0.20211117203239-e23c9d0a0183
-	go.opentelemetry.io/collector/model v0.39.1-0.20211117203239-e23c9d0a0183
+	go.opentelemetry.io/collector v0.40.0
+	go.opentelemetry.io/collector/model v0.40.0
 	gopkg.in/yaml.v2 v2.4.0
 )
 

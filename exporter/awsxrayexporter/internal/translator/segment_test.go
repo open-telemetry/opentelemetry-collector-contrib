@@ -681,6 +681,24 @@ func TestOriginEks(t *testing.T) {
 	assert.Equal(t, OriginEKS, *segment.Origin)
 }
 
+func TestOriginAppRunner(t *testing.T) {
+	attributes := make(map[string]interface{})
+	resource := pdata.NewResource()
+	attrs := pdata.NewAttributeMap()
+	attrs.InsertString(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAWS)
+	// TODO: Replace with semantic convention const when aws_app_runner is included in an official semconv release
+	attrs.InsertString(conventions.AttributeCloudPlatform, "aws_app_runner")
+	attrs.CopyTo(resource.Attributes())
+	spanName := "/test"
+	parentSpanID := newSegmentID()
+	span := constructServerSpan(parentSpanID, spanName, pdata.StatusCodeError, "OK", attributes)
+
+	segment, _ := MakeSegment(span, resource, []string{}, false)
+
+	assert.NotNil(t, segment)
+	assert.Equal(t, OriginAppRunner, *segment.Origin)
+}
+
 func TestOriginBlank(t *testing.T) {
 	spanName := "/test"
 	parentSpanID := newSegmentID()

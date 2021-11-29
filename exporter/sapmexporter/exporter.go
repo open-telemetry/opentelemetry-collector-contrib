@@ -13,7 +13,7 @@
 // limitations under the License.
 
 // Package sapmexporter exports trace data using Splunk's SAPM protocol.
-package sapmexporter
+package sapmexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sapmexporter"
 
 import (
 	"context"

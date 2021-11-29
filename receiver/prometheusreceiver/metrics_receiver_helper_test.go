@@ -377,6 +377,22 @@ func compareSummaryAttributes(attributes map[string]string) summaryPointComparat
 	}
 }
 
+func compareHistogramAttributes(attributes map[string]string) histogramPointComparator {
+	return func(t *testing.T, histogramDataPoint *pdata.HistogramDataPoint) {
+		req := assert.Equal(t, len(attributes), histogramDataPoint.Attributes().Len(), "Histogram attributes length do not match")
+		if req {
+			for k, v := range attributes {
+				value, ok := histogramDataPoint.Attributes().Get(k)
+				if ok {
+					assert.Equal(t, v, value.AsString(), "Histogram attributes value do not match")
+				} else {
+					assert.Fail(t, "Histogram attributes key do not match")
+				}
+			}
+		}
+	}
+}
+
 func compareStartTimestamp(startTimeStamp pdata.Timestamp) numberPointComparator {
 	return func(t *testing.T, numberDataPoint *pdata.NumberDataPoint) {
 		assert.Equal(t, startTimeStamp.String(), numberDataPoint.StartTimestamp().String(), "Start-Timestamp does not match")

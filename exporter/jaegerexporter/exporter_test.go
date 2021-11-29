@@ -31,7 +31,6 @@ import (
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/model/pdata"
-	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/connectivity"
 	"google.golang.org/grpc/credentials"
@@ -256,7 +255,7 @@ func TestConnectionStateChange(t *testing.T) {
 		state: connectivity.Connecting,
 	}
 	sender := &protoGRPCSender{
-		logger:                    zap.NewNop(),
+		settings:                  componenttest.NewNopTelemetrySettings(),
 		stopCh:                    make(chan struct{}),
 		conn:                      sr,
 		connStateReporterInterval: 10 * time.Millisecond,
@@ -308,7 +307,7 @@ func TestConnectionReporterEndsOnStopped(t *testing.T) {
 	}
 
 	sender := &protoGRPCSender{
-		logger:                    zap.NewNop(),
+		settings:                  componenttest.NewNopTelemetrySettings(),
 		stopCh:                    make(chan struct{}),
 		conn:                      sr,
 		connStateReporterInterval: 10 * time.Millisecond,
