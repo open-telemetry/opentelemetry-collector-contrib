@@ -847,7 +847,318 @@ var M = Metrics
 
 // Attributes contains the possible metric attributes that can be used.
 var Attributes = struct {
-}{}
+	// AssertType (MongoDB assertion type)
+	AssertType string
+	// BtreeCounterType (Database index effectiveness)
+	BtreeCounterType string
+	// CacheDirection (Whether read into or written from)
+	CacheDirection string
+	// CacheStatus (Cache status)
+	CacheStatus string
+	// ClusterRole (Whether process is acting as replica or primary)
+	ClusterRole string
+	// CPUState (CPU state)
+	CPUState string
+	// CursorState (Whether cursor is open or timed out)
+	CursorState string
+	// Direction (Network traffic direction)
+	Direction string
+	// DiskDirection (Measurement type for disk operation)
+	DiskDirection string
+	// DiskStatus (Disk measurement type)
+	DiskStatus string
+	// DocumentStatus (Status of documents in the database)
+	DocumentStatus string
+	// ExecutionType (Type of command)
+	ExecutionType string
+	// GlobalLockState (Which queue is locked)
+	GlobalLockState string
+	// MemoryIssueType (Type of memory issue encountered)
+	MemoryIssueType string
+	// MemoryState (Memory usage type)
+	MemoryState string
+	// ObjectType (MongoDB object type)
+	ObjectType string
+	// Operation (Type of database operation)
+	Operation string
+	// OplogType (Oplog type)
+	OplogType string
+	// ScannedType (Objects or indexes scanned during query)
+	ScannedType string
+	// StorageStatus (Views on database size)
+	StorageStatus string
+	// TicketType (Type of ticket available)
+	TicketType string
+}{
+	"assert_type",
+	"btree_counter_type",
+	"cache_direction",
+	"cache_status",
+	"cluster_role",
+	"cpu_state",
+	"cursor_state",
+	"direction",
+	"disk_direction",
+	"disk_status",
+	"document_status",
+	"execution_type",
+	"global_lock_state",
+	"memory_issue_type",
+	"memory_state",
+	"object_type",
+	"operation",
+	"oplog_type",
+	"scanned_type",
+	"storage_status",
+	"ticket_type",
+}
 
 // A is an alias for Attributes.
 var A = Attributes
+
+// AttributeAssertType are the possible values that the attribute "assert_type" can have.
+var AttributeAssertType = struct {
+	Regular string
+	Warning string
+	Msg     string
+	User    string
+}{
+	"regular",
+	"warning",
+	"msg",
+	"user",
+}
+
+// AttributeBtreeCounterType are the possible values that the attribute "btree_counter_type" can have.
+var AttributeBtreeCounterType = struct {
+	Accesses string
+	Hits     string
+	Misses   string
+}{
+	"accesses",
+	"hits",
+	"misses",
+}
+
+// AttributeCacheDirection are the possible values that the attribute "cache_direction" can have.
+var AttributeCacheDirection = struct {
+	ReadInto    string
+	WrittenFrom string
+}{
+	"read_into",
+	"written_from",
+}
+
+// AttributeCacheStatus are the possible values that the attribute "cache_status" can have.
+var AttributeCacheStatus = struct {
+	Dirty string
+	Used  string
+}{
+	"dirty",
+	"used",
+}
+
+// AttributeClusterRole are the possible values that the attribute "cluster_role" can have.
+var AttributeClusterRole = struct {
+	Primary string
+	Replica string
+}{
+	"primary",
+	"replica",
+}
+
+// AttributeCPUState are the possible values that the attribute "cpu_state" can have.
+var AttributeCPUState = struct {
+	Kernel  string
+	User    string
+	Nice    string
+	Iowait  string
+	Irq     string
+	Softirq string
+	Guest   string
+	Steal   string
+}{
+	"kernel",
+	"user",
+	"nice",
+	"iowait",
+	"irq",
+	"softirq",
+	"guest",
+	"steal",
+}
+
+// AttributeCursorState are the possible values that the attribute "cursor_state" can have.
+var AttributeCursorState = struct {
+	TimedOut string
+	Open     string
+}{
+	"timed_out",
+	"open",
+}
+
+// AttributeDirection are the possible values that the attribute "direction" can have.
+var AttributeDirection = struct {
+	Receive  string
+	Transmit string
+}{
+	"receive",
+	"transmit",
+}
+
+// AttributeDiskDirection are the possible values that the attribute "disk_direction" can have.
+var AttributeDiskDirection = struct {
+	Read  string
+	Write string
+	Total string
+}{
+	"read",
+	"write",
+	"total",
+}
+
+// AttributeDiskStatus are the possible values that the attribute "disk_status" can have.
+var AttributeDiskStatus = struct {
+	Free string
+	Used string
+}{
+	"free",
+	"used",
+}
+
+// AttributeDocumentStatus are the possible values that the attribute "document_status" can have.
+var AttributeDocumentStatus = struct {
+	Returned string
+	Inserted string
+	Updated  string
+	Deleted  string
+}{
+	"returned",
+	"inserted",
+	"updated",
+	"deleted",
+}
+
+// AttributeExecutionType are the possible values that the attribute "execution_type" can have.
+var AttributeExecutionType = struct {
+	Reads    string
+	Writes   string
+	Commands string
+}{
+	"reads",
+	"writes",
+	"commands",
+}
+
+// AttributeGlobalLockState are the possible values that the attribute "global_lock_state" can have.
+var AttributeGlobalLockState = struct {
+	CurrentQueueTotal   string
+	CurrentQueueReaders string
+	CurrentQueueWriters string
+}{
+	"current_queue_total",
+	"current_queue_readers",
+	"current_queue_writers",
+}
+
+// AttributeMemoryIssueType are the possible values that the attribute "memory_issue_type" can have.
+var AttributeMemoryIssueType = struct {
+	ExtraInfo                 string
+	GlobalAccessesNotInMemory string
+	ExceptionsThrown          string
+}{
+	"extra_info",
+	"global_accesses_not_in_memory",
+	"exceptions_thrown",
+}
+
+// AttributeMemoryState are the possible values that the attribute "memory_state" can have.
+var AttributeMemoryState = struct {
+	Resident string
+	Virtual  string
+	Mapped   string
+	Computed string
+}{
+	"resident",
+	"virtual",
+	"mapped",
+	"computed",
+}
+
+// AttributeObjectType are the possible values that the attribute "object_type" can have.
+var AttributeObjectType = struct {
+	Collection string
+	Index      string
+	Extent     string
+	Object     string
+	View       string
+	Storage    string
+	Data       string
+}{
+	"collection",
+	"index",
+	"extent",
+	"object",
+	"view",
+	"storage",
+	"data",
+}
+
+// AttributeOperation are the possible values that the attribute "operation" can have.
+var AttributeOperation = struct {
+	Cmd     string
+	Query   string
+	Update  string
+	Delete  string
+	Getmore string
+	Insert  string
+}{
+	"cmd",
+	"query",
+	"update",
+	"delete",
+	"getmore",
+	"insert",
+}
+
+// AttributeOplogType are the possible values that the attribute "oplog_type" can have.
+var AttributeOplogType = struct {
+	SlaveLagMasterTime string
+	MasterTime         string
+	MasterLagTimeDiff  string
+}{
+	"slave_lag_master_time",
+	"master_time",
+	"master_lag_time_diff",
+}
+
+// AttributeScannedType are the possible values that the attribute "scanned_type" can have.
+var AttributeScannedType = struct {
+	IndexItems string
+	Objects    string
+}{
+	"index_items",
+	"objects",
+}
+
+// AttributeStorageStatus are the possible values that the attribute "storage_status" can have.
+var AttributeStorageStatus = struct {
+	Total            string
+	DataSize         string
+	IndexSize        string
+	DataSizeWoSystem string
+}{
+	"total",
+	"data_size",
+	"index_size",
+	"data_size_wo_system",
+}
+
+// AttributeTicketType are the possible values that the attribute "ticket_type" can have.
+var AttributeTicketType = struct {
+	AvailableReads  string
+	AvailableWrites string
+}{
+	"available_reads",
+	"available_writes",
+}

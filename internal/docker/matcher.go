@@ -17,7 +17,7 @@
 // monitors.  Filter instances have a Matches function which takes an instance
 // of the type that they items and return whether that instance matches the
 // items.
-package docker
+package docker // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/docker"
 
 import (
 	"fmt"

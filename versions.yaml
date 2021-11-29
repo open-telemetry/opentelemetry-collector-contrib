@@ -14,7 +14,7 @@
 
 module-sets:
   contrib-base:
-    version: v0.39.0
+    version: v0.40.0
     modules:
       - github.com/open-telemetry/opentelemetry-collector-contrib
       - github.com/open-telemetry/opentelemetry-collector-contrib/cmd/configschema
@@ -50,6 +50,7 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbytraceprocessor
+      - github.com/open-telemetry/opentelemetry-collector-contrib/processor/redactionprocessor
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/routingprocessor
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourceprocessor

@@ -5,14 +5,14 @@ go 1.17
 require (
 	github.com/gorilla/mux v1.8.0
 	github.com/jaegertracing/jaeger v1.28.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.39.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk v0.39.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.39.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.40.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk v0.40.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.40.0
 	github.com/signalfx/sapm-proto v0.7.2
 	github.com/stretchr/testify v1.7.0
 	go.opencensus.io v0.23.0
-	go.opentelemetry.io/collector v0.39.1-0.20211119172502-53d057f9c0e7
-	go.opentelemetry.io/collector/model v0.39.1-0.20211119172502-53d057f9c0e7
+	go.opentelemetry.io/collector v0.40.0
+	go.opentelemetry.io/collector/model v0.40.0
 )
 
 require (
@@ -35,7 +35,7 @@ require (
 	github.com/spf13/cast v1.4.1 // indirect
 	github.com/uber/jaeger-client-go v2.29.1+incompatible // indirect
 	github.com/uber/jaeger-lib v2.4.1+incompatible // indirect
-	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.26.1 // indirect
+	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.27.0 // indirect
 	go.opentelemetry.io/otel v1.2.0 // indirect
 	go.opentelemetry.io/otel/internal/metric v0.25.0 // indirect
 	go.opentelemetry.io/otel/metric v0.25.0 // indirect

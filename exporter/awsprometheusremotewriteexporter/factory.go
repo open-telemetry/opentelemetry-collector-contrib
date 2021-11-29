@@ -13,7 +13,7 @@
 // limitations under the License.
 
 // Package awsprometheusremotewriteexporter provides a Prometheus Remote Write Exporter with AWS Sigv4 authentication
-package awsprometheusremotewriteexporter
+package awsprometheusremotewriteexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsprometheusremotewriteexporter"
 
 import (
 	"context"

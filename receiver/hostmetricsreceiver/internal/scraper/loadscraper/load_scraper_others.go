@@ -15,7 +15,7 @@
 //go:build !windows
 // +build !windows
 
-package loadscraper
+package loadscraper // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/loadscraper"
 
 import (
 	"context"

@@ -4,11 +4,11 @@ go 1.17
 
 require (
 	github.com/Shopify/sarama v1.30.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter v0.39.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.39.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter v0.40.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.40.0
 	github.com/stretchr/testify v1.7.0
-	go.opentelemetry.io/collector v0.39.1-0.20211119172502-53d057f9c0e7
-	go.opentelemetry.io/collector/model v0.39.1-0.20211119172502-53d057f9c0e7
+	go.opentelemetry.io/collector v0.40.0
+	go.opentelemetry.io/collector/model v0.40.0
 	go.uber.org/zap v1.19.1
 )
 
@@ -47,8 +47,8 @@ require (
 	github.com/mitchellh/copystructure v1.2.0 // indirect
 	github.com/mitchellh/mapstructure v1.4.2 // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.39.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.39.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.40.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.40.0 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/opencontainers/image-spec v1.0.2 // indirect
 	github.com/opentracing/opentracing-go v1.2.0 // indirect
