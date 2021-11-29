@@ -124,7 +124,7 @@ func (e *LogEmitter) appendEntry(ent *entry.Entry) []*entry.Entry {
 
 	e.batch = append(e.batch, ent)
 	if uint(len(e.batch)) >= e.maxBatchSize {
-		// flushTriggerAmount triggers a blocking flush
+		// maxBatchSize has been exceeded; create a new batch, returning the old one.
 		return e.makeNewBatchNoLock()
 	}
 
@@ -186,13 +186,14 @@ func (e *LogEmitter) makeNewBatchNoLock() []*entry.Entry {
 func (e *LogEmitter) Stop() error {
 	e.stopOnce.Do(func() {
 		close(e.logChan)
+
+		if e.cancel != nil {
+			e.cancel()
+			e.cancel = nil
+		}
+
+		e.wg.Wait()
 	})
 
-	if e.cancel != nil {
-		e.cancel()
-		e.cancel = nil
-	}
-
-	e.wg.Wait()
 	return nil
 }
