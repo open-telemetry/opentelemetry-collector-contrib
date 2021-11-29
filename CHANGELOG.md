@@ -30,6 +30,10 @@
 - `routingprocessor`: remove broken debug log fields (#6373)
 - `prometheusremotewriteexporter`: Add exemplars support (#5578) 
 
+## 🚀 New components 🚀
+
+- Add `mongodbatlasreceiver` receiver (#6367)
+
 ## v0.39.0
 
 ## 🛑 Breaking changes 🛑
