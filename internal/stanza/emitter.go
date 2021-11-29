@@ -108,6 +108,22 @@ func (e *LogEmitter) Start(_ operator.Persister) error {
 	return nil
 }
 
+// Stop will close the log channel and stop running goroutines
+func (e *LogEmitter) Stop() error {
+	e.stopOnce.Do(func() {
+		close(e.logChan)
+
+		if e.cancel != nil {
+			e.cancel()
+			e.cancel = nil
+		}
+
+		e.wg.Wait()
+	})
+
+	return nil
+}
+
 // Process will emit an entry to the output channel
 func (e *LogEmitter) Process(ctx context.Context, ent *entry.Entry) error {
 	batchToFlush := e.appendEntry(ent)
@@ -181,20 +197,4 @@ func (e *LogEmitter) makeNewBatchNoLock() []*entry.Entry {
 	e.batch = make([]*entry.Entry, 0, e.maxBatchSize)
 
 	return oldBatch
-}
-
-// Stop will close the log channel and stop running goroutines
-func (e *LogEmitter) Stop() error {
-	e.stopOnce.Do(func() {
-		close(e.logChan)
-
-		if e.cancel != nil {
-			e.cancel()
-			e.cancel = nil
-		}
-
-		e.wg.Wait()
-	})
-
-	return nil
 }
