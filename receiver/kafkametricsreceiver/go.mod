@@ -17,7 +17,7 @@ require go.uber.org/multierr v1.7.0
 require (
 	github.com/Microsoft/go-winio v0.4.17 // indirect
 	github.com/apache/thrift v0.15.0 // indirect
-	github.com/aws/aws-sdk-go v1.42.9 // indirect
+	github.com/aws/aws-sdk-go v1.42.14 // indirect
 	github.com/cenkalti/backoff/v4 v4.1.2 // indirect
 	github.com/containerd/containerd v1.5.8 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
