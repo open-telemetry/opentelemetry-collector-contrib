@@ -6,7 +6,7 @@ The `recombine` operator combines consecutive logs into single logs based on sim
 
 | Field            | Default          | Description |
 | ---              | ---              | ---         |
-| `id`             | `metadata`       | A unique identifier for the operator. |
+| `id`             | `recombine`      | A unique identifier for the operator. |
 | `output`         | Next in pipeline | The connected operator(s) that will receive all outbound entries. |
 | `on_error`       | `send`           | The behavior of the operator if it encounters an error. See [on_error](/docs/types/on_error.md). |
 | `is_first_entry` |                  | An [expression](/docs/types/expression.md) that returns true if the entry being processed is the first entry in a multiline series. |

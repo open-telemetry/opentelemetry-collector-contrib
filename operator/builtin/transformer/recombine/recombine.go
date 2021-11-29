@@ -36,7 +36,7 @@ func init() {
 // NewRecombineOperatorConfig creates a new recombine config with default values
 func NewRecombineOperatorConfig(operatorID string) *RecombineOperatorConfig {
 	return &RecombineOperatorConfig{
-		TransformerConfig: helper.NewTransformerConfig(operatorID, "metadata"),
+		TransformerConfig: helper.NewTransformerConfig(operatorID, "recombine"),
 		MaxBatchSize:      1000,
 		OverwriteWith:     "oldest",
 	}
