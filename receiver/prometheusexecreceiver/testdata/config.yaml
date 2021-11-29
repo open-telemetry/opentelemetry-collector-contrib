@@ -10,7 +10,7 @@ receivers:
     exec: go run ./testdata/end_to_end_metrics_test/test_prometheus_exporter.go {{port}}
     scrape_interval: 1s
     port: 9999
-    env: 
+    env:
       - name: "DATA_SOURCE_NAME"
         value: user:password@(hostname:port)/dbname
       - name: SECONDARY_PORT
