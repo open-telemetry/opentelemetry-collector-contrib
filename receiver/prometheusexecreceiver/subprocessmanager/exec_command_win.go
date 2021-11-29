@@ -12,32 +12,27 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package main
+//go:build windows
+
+package subprocessmanager
 
 import (
 	"os"
-	"strconv"
-	"time"
+	"os/exec"
+	"syscall"
 )
 
-const defaultSleepTime = 2
-const defaultExitCode = 0
+// Windows version of exec.Command(...)
+// Compiles on Windows only
+func ExecCommand(commandLine string) (*exec.Cmd, error) {
 
-// This program is simply a test program that does nothing but crash after a certain time, with a non-zero exit code, used in
-// subprocessmanager tests
-func main() {
-
-	sleepTime, err := strconv.Atoi(os.Args[1])
-	if err != nil {
-		sleepTime = defaultSleepTime
+	var comSpec = os.Getenv("COMSPEC")
+	if comSpec == "" {
+		comSpec = os.Getenv("SystemRoot") + "\\System32\\cmd.exe"
 	}
+	childProcess := exec.Command(comSpec)                                                  // #nosec
+	childProcess.SysProcAttr = &syscall.SysProcAttr{CmdLine: "/C \"" + commandLine + "\""} // #nosec
 
-	exitCode, err := strconv.Atoi(os.Args[2])
-	if err != nil {
-		exitCode = defaultExitCode
-	}
-
-	time.Sleep(time.Millisecond * time.Duration(sleepTime))
-	os.Exit(exitCode)
+	return childProcess, nil
 
 }
