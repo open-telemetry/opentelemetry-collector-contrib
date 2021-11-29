@@ -66,6 +66,6 @@ func TestNewLogsExporter(t *testing.T) {
 
 func TestNewFailsWithEmptyLogsExporterName(t *testing.T) {
 	got, err := newLogsExporter(componenttest.NewNopExporterCreateSettings(), &Config{})
-	assert.Error(t, err)
-	require.Nil(t, got)
+	assert.NoError(t, err)
+	require.NotNil(t, got)
 }

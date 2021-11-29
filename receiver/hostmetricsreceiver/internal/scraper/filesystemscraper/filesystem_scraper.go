@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package filesystemscraper
+package filesystemscraper // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/filesystemscraper"
 
 import (
 	"context"
@@ -110,11 +110,11 @@ func initializeFileSystemUsageMetric(metric pdata.Metric, now pdata.Timestamp, d
 
 func initializeFileSystemUsageDataPoint(dataPoint pdata.NumberDataPoint, now pdata.Timestamp, partition disk.PartitionStat, stateLabel string, value int64) {
 	attributes := dataPoint.Attributes()
-	attributes.InsertString(metadata.Labels.Device, partition.Device)
-	attributes.InsertString(metadata.Labels.Type, partition.Fstype)
-	attributes.InsertString(metadata.Labels.Mode, getMountMode(partition.Opts))
-	attributes.InsertString(metadata.Labels.Mountpoint, partition.Mountpoint)
-	attributes.InsertString(metadata.Labels.State, stateLabel)
+	attributes.InsertString(metadata.Attributes.Device, partition.Device)
+	attributes.InsertString(metadata.Attributes.Type, partition.Fstype)
+	attributes.InsertString(metadata.Attributes.Mode, getMountMode(partition.Opts))
+	attributes.InsertString(metadata.Attributes.Mountpoint, partition.Mountpoint)
+	attributes.InsertString(metadata.Attributes.State, stateLabel)
 	dataPoint.SetTimestamp(now)
 	dataPoint.SetIntVal(value)
 }

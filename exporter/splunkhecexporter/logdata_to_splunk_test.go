@@ -86,6 +86,27 @@ func Test_mapLogRecordToSplunkEvent(t *testing.T) {
 			},
 		},
 		{
+			name: "with_hec_token",
+			logRecordFn: func() pdata.LogRecord {
+				logRecord := pdata.NewLogRecord()
+				logRecord.Body().SetStringVal("mylog")
+				logRecord.Attributes().InsertString(splunk.HecTokenLabel, "mytoken")
+				logRecord.SetTimestamp(ts)
+				return logRecord
+			},
+			logResourceFn: pdata.NewResource,
+			configDataFn: func() *Config {
+				config := createDefaultConfig().(*Config)
+				config.Source = "source"
+				config.SourceType = "sourcetype"
+				return config
+			},
+			wantSplunkEvents: []*splunk.Event{
+				commonLogSplunkEvent("mylog", ts, map[string]interface{}{},
+					"unknown", "source", "sourcetype"),
+			},
+		},
+		{
 			name: "non-string attribute",
 			logRecordFn: func() pdata.LogRecord {
 				logRecord := pdata.NewLogRecord()
@@ -362,15 +383,12 @@ func Test_mapLogRecordToSplunkEvent(t *testing.T) {
 				return logRecord
 			},
 			logResourceFn: func() pdata.Resource {
-				attr := map[string]pdata.AttributeValue{
-					"resourceAttr1":               pdata.NewAttributeValueString("some_string"),
-					splunk.DefaultSourceTypeLabel: pdata.NewAttributeValueString("myapp-type-from-resource-attr"),
-					splunk.DefaultIndexLabel:      pdata.NewAttributeValueString("index-resource"),
-					splunk.DefaultSourceLabel:     pdata.NewAttributeValueString("myapp-resource"),
-					conventions.AttributeHostName: pdata.NewAttributeValueString("myhost-resource"),
-				}
 				resource := pdata.NewResource()
-				resource.Attributes().InitFromMap(attr)
+				resource.Attributes().InsertString("resourceAttr1", "some_string")
+				resource.Attributes().InsertString(splunk.DefaultSourceTypeLabel, "myapp-type-from-resource-attr")
+				resource.Attributes().InsertString(splunk.DefaultIndexLabel, "index-resource")
+				resource.Attributes().InsertString(splunk.DefaultSourceLabel, "myapp-resource")
+				resource.Attributes().InsertString(conventions.AttributeHostName, "myhost-resource")
 				return resource
 			},
 			configDataFn: func() *Config {

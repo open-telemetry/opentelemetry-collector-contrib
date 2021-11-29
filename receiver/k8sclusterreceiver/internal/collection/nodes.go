@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package collection
+package collection // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/collection"
 
 import (
 	"fmt"
@@ -22,6 +22,7 @@ import (
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	"github.com/iancoleman/strcase"
 	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
+	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testing/util"
@@ -34,14 +35,21 @@ const (
 	nodeCreationTime = "node.creation_timestamp"
 )
 
-func getMetricsForNode(node *corev1.Node, nodeConditionTypesToReport []string) []*resourceMetrics {
-	metrics := make([]*metricspb.Metric, len(nodeConditionTypesToReport))
+var allocatableDesciption = map[string]string{
+	"cpu":               "How many CPU cores remaining that the node can allocate to pods",
+	"memory":            "How many bytes of RAM memory remaining that the node can allocate to pods",
+	"ephemeral-storage": "How many bytes of ephemeral storage remaining that the node can allocate to pods",
+	"storage":           "How many bytes of storage remaining that the node can allocate to pods",
+}
 
-	for i, nodeConditionTypeValue := range nodeConditionTypesToReport {
+func getMetricsForNode(node *corev1.Node, nodeConditionTypesToReport, allocatableTypesToReport []string, logger *zap.Logger) []*resourceMetrics {
+	metrics := make([]*metricspb.Metric, 0, len(nodeConditionTypesToReport)+len(allocatableTypesToReport))
+	// Adding 'node condition type' metrics
+	for _, nodeConditionTypeValue := range nodeConditionTypesToReport {
 		nodeConditionMetric := getNodeConditionMetric(nodeConditionTypeValue)
 		v1NodeConditionTypeValue := corev1.NodeConditionType(nodeConditionTypeValue)
 
-		metrics[i] = &metricspb.Metric{
+		metrics = append(metrics, &metricspb.Metric{
 			MetricDescriptor: &metricspb.MetricDescriptor{
 				Name: nodeConditionMetric,
 				Description: fmt.Sprintf("Whether this node is %s (1), "+
@@ -51,6 +59,28 @@ func getMetricsForNode(node *corev1.Node, nodeConditionTypesToReport []string) [
 			Timeseries: []*metricspb.TimeSeries{
 				utils.GetInt64TimeSeries(nodeConditionValue(node, v1NodeConditionTypeValue)),
 			},
+		})
+	}
+	// Adding 'node allocatable type' metrics
+	for _, nodeAllocatableTypeValue := range allocatableTypesToReport {
+		nodeAllocatableMetric := getNodeAllocatableMetric(nodeAllocatableTypeValue)
+		v1NodeAllocatableTypeValue := corev1.ResourceName(nodeAllocatableTypeValue)
+		metricValue, err := nodeAllocatableValue(node, v1NodeAllocatableTypeValue)
+
+		// metrics will be skipped if metric not present in node or value is not convertable to int64
+		if err != nil {
+			logger.Debug(err.Error())
+		} else {
+			metrics = append(metrics, &metricspb.Metric{
+				MetricDescriptor: &metricspb.MetricDescriptor{
+					Name:        nodeAllocatableMetric,
+					Description: allocatableDesciption[v1NodeAllocatableTypeValue.String()],
+					Type:        metricspb.MetricDescriptor_GAUGE_INT64,
+				},
+				Timeseries: []*metricspb.TimeSeries{
+					utils.GetInt64TimeSeries(metricValue),
+				},
+			})
 		}
 	}
 
@@ -64,6 +94,10 @@ func getMetricsForNode(node *corev1.Node, nodeConditionTypesToReport []string) [
 
 func getNodeConditionMetric(nodeConditionTypeValue string) string {
 	return fmt.Sprintf("k8s.node.condition_%s", strcase.ToSnake(nodeConditionTypeValue))
+}
+
+func getNodeAllocatableMetric(nodeAllocatableTypeValue string) string {
+	return fmt.Sprintf("k8s.node.allocatable_%s", strcase.ToSnake(nodeAllocatableTypeValue))
 }
 
 func getResourceForNode(node *corev1.Node) *resourcepb.Resource {
@@ -81,6 +115,19 @@ var nodeConditionValues = map[corev1.ConditionStatus]int64{
 	corev1.ConditionTrue:    1,
 	corev1.ConditionFalse:   0,
 	corev1.ConditionUnknown: -1,
+}
+
+func nodeAllocatableValue(node *corev1.Node, allocatableType corev1.ResourceName) (int64, error) {
+	value, ok := node.Status.Allocatable[allocatableType]
+	if !ok {
+		return 0, fmt.Errorf("allocatable type %v not found in node %v", allocatableType, node.GetName())
+	}
+
+	val, ok := value.AsInt64()
+	if !ok {
+		return 0, fmt.Errorf("metric %s has value %v which is not convertable to int64", allocatableType, value)
+	}
+	return val, nil
 }
 
 func nodeConditionValue(node *corev1.Node, condType corev1.NodeConditionType) int64 {

@@ -20,6 +20,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/config/confignet"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest"
@@ -30,9 +31,11 @@ func TestScrape(t *testing.T) {
 	sc := newMySQLScraper(zap.NewNop(), &Config{
 		Username: "otel",
 		Password: "otel",
-		Endpoint: "localhost:3306",
+		NetAddr: confignet.NetAddr{
+			Endpoint: "localhost:3306",
+		},
 	})
-	sc.client = &mysqlMock
+	sc.sqlclient = &mysqlMock
 
 	scrapedRMS, err := sc.scrape(context.Background())
 	require.NoError(t, err)
@@ -44,5 +47,5 @@ func TestScrape(t *testing.T) {
 	eMetricSlice := expectedMetrics.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics()
 	aMetricSlice := scrapedRMS.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics()
 
-	require.NoError(t, scrapertest.CompareMetricSlices(eMetricSlice, aMetricSlice))
+	require.NoError(t, scrapertest.CompareMetricSlices(eMetricSlice, aMetricSlice, true))
 }

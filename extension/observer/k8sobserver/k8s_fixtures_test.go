@@ -35,6 +35,7 @@ func NewPod(name, host string) *v1.Pod {
 			NodeName: host,
 		},
 		Status: v1.PodStatus{
+			Phase: v1.PodRunning,
 			PodIP: "1.2.3.4",
 			Conditions: []v1.PodCondition{
 				{

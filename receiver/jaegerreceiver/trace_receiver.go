@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package jaegerreceiver
+package jaegerreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jaegerreceiver"
 
 import (
 	"context"
@@ -42,7 +42,6 @@ import (
 	"github.com/jaegertracing/jaeger/thrift-gen/sampling"
 	"github.com/jaegertracing/jaeger/thrift-gen/zipkincore"
 	"github.com/uber/jaeger-lib/metrics"
-	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configgrpc"
@@ -272,10 +271,6 @@ func (jr *jReceiver) GetBaggageRestrictions(ctx context.Context, serviceName str
 }
 
 func (jr *jReceiver) PostSpans(ctx context.Context, r *api_v2.PostSpansRequest) (*api_v2.PostSpansResponse, error) {
-	if c, ok := client.FromGRPC(ctx); ok {
-		ctx = client.NewContext(ctx, c)
-	}
-
 	ctx = jr.grpcObsrecv.StartTracesOp(ctx)
 
 	td := jaegertranslator.ProtoBatchToInternalTraces(r.GetBatch())
@@ -336,7 +331,7 @@ func (jr *jReceiver) startAgent(host component.Host) error {
 
 	// Start upstream grpc client before serving sampling endpoints over HTTP
 	if jr.config.RemoteSamplingClientSettings.Endpoint != "" {
-		grpcOpts, err := jr.config.RemoteSamplingClientSettings.ToDialOptions(host)
+		grpcOpts, err := jr.config.RemoteSamplingClientSettings.ToDialOptions(host, jr.settings.TelemetrySettings)
 		if err != nil {
 			jr.settings.Logger.Error("Error creating grpc dial options for remote sampling endpoint", zap.Error(err))
 			return err
@@ -424,12 +419,7 @@ func (jr *jReceiver) decodeThriftHTTPBody(r *http.Request) (*jaeger.Batch, *http
 
 // HandleThriftHTTPBatch implements Jaeger HTTP Thrift handler.
 func (jr *jReceiver) HandleThriftHTTPBatch(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-	if c, ok := client.FromHTTP(r); ok {
-		ctx = client.NewContext(ctx, c)
-	}
-
-	ctx = jr.httpObsrecv.StartTracesOp(ctx)
+	ctx := jr.httpObsrecv.StartTracesOp(r.Context())
 
 	batch, hErr := jr.decodeThriftHTTPBody(r)
 	if hErr != nil {

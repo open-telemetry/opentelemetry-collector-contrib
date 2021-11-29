@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package cpuscraper
+package cpuscraper // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/cpuscraper"
 
 import (
 	"context"
@@ -84,9 +84,9 @@ func initializeCPUTimeDataPoint(dataPoint pdata.NumberDataPoint, startTime, now 
 	attributes := dataPoint.Attributes()
 	// ignore cpu attribute if reporting "total" cpu usage
 	if cpuLabel != gopsCPUTotal {
-		attributes.InsertString(metadata.Labels.Cpu, cpuLabel)
+		attributes.InsertString(metadata.Attributes.Cpu, cpuLabel)
 	}
-	attributes.InsertString(metadata.Labels.State, stateLabel)
+	attributes.InsertString(metadata.Attributes.State, stateLabel)
 
 	dataPoint.SetStartTimestamp(startTime)
 	dataPoint.SetTimestamp(now)

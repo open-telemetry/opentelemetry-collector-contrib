@@ -12,11 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package mysqlreceiver
+package mysqlreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mysqlreceiver"
 
 import (
 	"errors"
 
+	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 	"go.uber.org/multierr"
 )
@@ -26,7 +27,7 @@ type Config struct {
 	Username                                string `mapstructure:"username"`
 	Password                                string `mapstructure:"password"`
 	Database                                string `mapstructure:"database"`
-	Endpoint                                string `mapstructure:"endpoint"`
+	confignet.NetAddr                       `mapstructure:",squash"`
 }
 
 // Errors for missing required config parameters.

@@ -271,12 +271,12 @@ func assertFileSystemUsageMetricValid(
 	} else {
 		assert.GreaterOrEqual(t, metric.Sum().DataPoints().Len(), fileSystemStatesLen)
 	}
-	internal.AssertSumMetricHasAttributeValue(t, metric, 0, "state", pdata.NewAttributeValueString(metadata.LabelState.Used))
-	internal.AssertSumMetricHasAttributeValue(t, metric, 1, "state", pdata.NewAttributeValueString(metadata.LabelState.Free))
+	internal.AssertSumMetricHasAttributeValue(t, metric, 0, "state", pdata.NewAttributeValueString(metadata.AttributeState.Used))
+	internal.AssertSumMetricHasAttributeValue(t, metric, 1, "state", pdata.NewAttributeValueString(metadata.AttributeState.Free))
 }
 
 func assertFileSystemUsageMetricHasUnixSpecificStateLabels(t *testing.T, metric pdata.Metric) {
-	internal.AssertSumMetricHasAttributeValue(t, metric, 2, "state", pdata.NewAttributeValueString(metadata.LabelState.Reserved))
+	internal.AssertSumMetricHasAttributeValue(t, metric, 2, "state", pdata.NewAttributeValueString(metadata.AttributeState.Reserved))
 }
 
 func isUnix() bool {

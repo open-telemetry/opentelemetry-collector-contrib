@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package splunkhecexporter
+package splunkhecexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/splunkhecexporter"
 
 import (
 	"math"
@@ -86,6 +86,8 @@ func metricDataToSplunk(logger *zap.Logger, data pdata.Metrics, config *Config) 
 				sourceType = v.StringVal()
 			case indexKey:
 				index = v.StringVal()
+			case splunk.HecTokenLabel:
+				// ignore
 			default:
 				commonFields[k] = v.AsString()
 			}

@@ -106,15 +106,15 @@ var Metrics = &metricStruct{
 // manipulating those metrics. M is an alias for Metrics
 var M = Metrics
 
-{{- /* Renders label names. */}}
-// Labels contains the possible metric labels that can be used.
-var Labels = struct {
-    {{- range $name, $info := .Labels }}
+{{- /* Renders attribute names. */}}
+// Attributes contains the possible metric attributes that can be used.
+var Attributes = struct {
+    {{- range $name, $info := .Attributes }}
     // {{ $name.Render }} ({{ $info.Description }})
     {{ $name.Render }} string
     {{- end }}
 }{
-    {{- range $name, $info := .Labels }}
+    {{- range $name, $info := .Attributes }}
     {{- if $info.Value }}
     "{{ $info.Value }}",
     {{- else }}
@@ -123,16 +123,15 @@ var Labels = struct {
     {{- end }}
 }
 
-// L contains the possible metric labels that can be used. L is an alias for
-// Labels.
-var L = Labels
+// A is an alias for Attributes.
+var A = Attributes
 
-{{- /* Renders label enum values. */}}
+{{- /* Renders attribute enum values. */}}
 
-{{ range $name, $info := .Labels }}
+{{ range $name, $info := .Attributes }}
 {{ if $info.Enum }}
-// Label{{ $name.Render }} are the possible values that the label "{{ $name }}" can have.
-var Label{{ $name.Render }} = struct {
+// Attribute{{ $name.Render }} are the possible values that the attribute "{{ $name }}" can have.
+var Attribute{{ $name.Render }} = struct {
     {{- range $info.Enum }}
     {{ . | publicVar }} string
     {{- end }}

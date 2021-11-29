@@ -111,5 +111,5 @@ func TestLoadInvalidConfig_InvalidScraperKey(t *testing.T) {
 	factories.Receivers[typeStr] = factory
 	_, err = configtest.LoadConfigAndValidate(path.Join(".", "testdata", "config-invalidscraperkey.yaml"), factories)
 
-	require.EqualError(t, err, "error reading receivers configuration for hostmetrics: invalid scraper key: invalidscraperkey")
+	require.EqualError(t, err, "error reading receivers configuration for \"hostmetrics\": invalid scraper key: invalidscraperkey")
 }

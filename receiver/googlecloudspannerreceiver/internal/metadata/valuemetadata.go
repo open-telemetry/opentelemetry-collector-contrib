@@ -12,10 +12,24 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package metadata
+package metadata // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudspannerreceiver/internal/metadata"
+
+type ValueType string
+
+const (
+	UnknownValueType     ValueType = "unknown"
+	StringValueType      ValueType = "string"
+	IntValueType         ValueType = "int"
+	FloatValueType       ValueType = "float"
+	BoolValueType        ValueType = "bool"
+	StringSliceValueType ValueType = "string_slice"
+	ByteSliceValueType   ValueType = "byte_slice"
+)
 
 type ValueMetadata interface {
 	Name() string
 	ColumnName() string
 	ValueHolder() interface{}
 }
+
+type valueHolderFunction func() interface{}

@@ -23,16 +23,16 @@ import (
 const (
 	allOptions = `
 name: metricreceiver
-labels:
-  freeFormLabel:
-    description: Label that can take on any value.
+attributes:
+  freeFormAttribute:
+    description: Attribute that can take on any value.
 
-  freeFormLabelWithValue:
+  freeFormAttributeWithValue:
     value: state
-    description: Label that has alternate value set.
+    description: Attribute that has alternate value set.
 
-  enumLabel:
-    description: Label with a known set of values.
+  enumAttribute:
+    description: Attribute with a known set of values.
     enum: [red, green, blue]
 
 metrics:
@@ -44,10 +44,10 @@ metrics:
       type: sum
       monotonic: true
       aggregation: cumulative
-    labels: [freeFormLabel, freeFormLabelWithValue, enumLabel]
+    attributes: [freeFormAttribute, freeFormAttributeWithValue, enumAttribute]
 `
 
-	unknownMetricLabel = `
+	unknownMetricAttribute = `
 name: metricreceiver
 metrics:
   system.cpu.time:
@@ -57,7 +57,7 @@ metrics:
       type: sum
       monotonic: true
       aggregation: cumulative
-    labels: [missing]
+    attributes: [missing]
 `
 	unknownMetricType = `
 name: metricreceiver
@@ -67,7 +67,7 @@ metrics:
     unit: s
     data:
       type: invalid
-    labels:
+    attributes:
 `
 )
 
@@ -83,16 +83,16 @@ func Test_loadMetadata(t *testing.T) {
 			yml:  allOptions,
 			want: metadata{
 				Name: "metricreceiver",
-				Labels: map[labelName]label{
-					"enumLabel": {
-						Description: "Label with a known set of values.",
+				Attributes: map[attributeName]attribute{
+					"enumAttribute": {
+						Description: "Attribute with a known set of values.",
 						Value:       "",
 						Enum:        []string{"red", "green", "blue"}},
-					"freeFormLabel": {
-						Description: "Label that can take on any value.",
+					"freeFormAttribute": {
+						Description: "Attribute that can take on any value.",
 						Value:       ""},
-					"freeFormLabelWithValue": {
-						Description: "Label that has alternate value set.",
+					"freeFormAttributeWithValue": {
+						Description: "Attribute that has alternate value set.",
 						Value:       "state"}},
 				Metrics: map[metricName]metric{
 					"system.cpu.time": {
@@ -104,14 +104,16 @@ func Test_loadMetadata(t *testing.T) {
 							Mono:       Mono{Monotonic: true},
 						},
 						// YmlData: nil,
-						Labels: []labelName{"freeFormLabel", "freeFormLabelWithValue", "enumLabel"}}},
+						Attributes: []attributeName{"freeFormAttribute", "freeFormAttributeWithValue",
+							"enumAttribute"}}},
 			},
 		},
 		{
-			name:    "unknown metric label",
-			yml:     unknownMetricLabel,
-			want:    metadata{},
-			wantErr: "error validating struct:\n\tmetadata.Metrics[system.cpu.time].Labels[missing]: unknown label value\n",
+			name: "unknown metric attribute",
+			yml:  unknownMetricAttribute,
+			want: metadata{},
+			wantErr: "error validating struct:\n\tmetadata.Metrics[system.cpu.time]." +
+				"Attributes[missing]: unknown attribute value\n",
 		},
 		{
 			name:    "unknownMetricType",

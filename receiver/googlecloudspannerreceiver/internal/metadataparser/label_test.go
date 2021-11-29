@@ -30,16 +30,15 @@ const (
 
 func TestLabel_ToLabelValueMetadata(t *testing.T) {
 	testCases := map[string]struct {
-		valueType    string
-		expectedType interface{}
-		expectError  bool
+		valueType   metadata.ValueType
+		expectError bool
 	}{
-		"Value type is string":       {labelValueTypeString, metadata.StringLabelValueMetadata{}, false},
-		"Value type is int":          {labelValueTypeInt, metadata.Int64LabelValueMetadata{}, false},
-		"Value type is bool":         {labelValueTypeBool, metadata.BoolLabelValueMetadata{}, false},
-		"Value type is string slice": {labelValueTypeStringSlice, metadata.StringSliceLabelValueMetadata{}, false},
-		"Value type is byte slice":   {labelValueTypeByteSlice, metadata.ByteSliceLabelValueMetadata{}, false},
-		"Value type is unknown":      {"unknown", nil, true},
+		"Value type is string":       {metadata.StringValueType, false},
+		"Value type is int":          {metadata.IntValueType, false},
+		"Value type is bool":         {metadata.BoolValueType, false},
+		"Value type is string slice": {metadata.StringSliceValueType, false},
+		"Value type is byte slice":   {metadata.ByteSliceValueType, false},
+		"Value type is unknown":      {metadata.UnknownValueType, true},
 	}
 
 	for name, testCase := range testCases {
@@ -59,9 +58,9 @@ func TestLabel_ToLabelValueMetadata(t *testing.T) {
 				require.NotNil(t, valueMetadata)
 				require.NoError(t, err)
 
-				assert.IsType(t, testCase.expectedType, valueMetadata)
 				assert.Equal(t, label.Name, valueMetadata.Name())
 				assert.Equal(t, label.ColumnName, valueMetadata.ColumnName())
+				assert.Equal(t, label.ValueType, valueMetadata.ValueType())
 			}
 		})
 	}

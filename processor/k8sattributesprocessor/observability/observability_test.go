@@ -21,7 +21,6 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	"go.opencensus.io/metric/metricdata"
 	"go.opencensus.io/metric/metricexport"
 )
@@ -37,12 +36,19 @@ func newExporter() *exporter {
 func (e *exporter) ReturnAfter(after int) chan []*metricdata.Metric {
 	ch := make(chan []*metricdata.Metric)
 	go func() {
-		received := []*metricdata.Metric{}
+		// Sometimes we can get only subset of all metrics, so lets make sure
+		// we look at unique records
+		receivedUnique := map[string]*metricdata.Metric{}
 		for m := range e.pipe {
-			received = append(received, m)
-			if len(received) >= after {
+			receivedUnique[m.Descriptor.Name] = m
+			if len(receivedUnique) >= after {
 				break
 			}
+		}
+
+		var received []*metricdata.Metric
+		for _, value := range receivedUnique {
+			received = append(received, value)
 		}
 		ch <- received
 	}()
@@ -142,12 +148,13 @@ func TestMetrics(t *testing.T) {
 		return data[i].Descriptor.Name < data[j].Descriptor.Name
 	})
 
+	assert.Len(t, data, len(tests))
+
 	for i, tt := range tests {
-		require.Len(t, data, len(tests))
 		d := data[i]
-		assert.Equal(t, d.Descriptor.Name, tt.name)
-		require.Len(t, d.TimeSeries, 1)
-		require.Len(t, d.TimeSeries[0].Points, 1)
-		assert.Equal(t, d.TimeSeries[0].Points[0].Value, int64(1))
+		assert.Equal(t, tt.name, d.Descriptor.Name)
+		assert.Len(t, d.TimeSeries, 1)
+		assert.Len(t, d.TimeSeries[0].Points, 1)
+		assert.Equal(t, int64(1), d.TimeSeries[0].Points[0].Value)
 	}
 }

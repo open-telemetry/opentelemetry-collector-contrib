@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package processesscraper
+package processesscraper // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/processesscraper"
 
 import (
 	"context"
@@ -118,7 +118,7 @@ func setProcessesCountMetric(metric pdata.Metric, startTime, now pdata.Timestamp
 }
 
 func setProcessesCountDataPoint(dataPoint pdata.NumberDataPoint, startTime, now pdata.Timestamp, statusLabel string, value int64) {
-	dataPoint.Attributes().InsertString(metadata.Labels.Status, statusLabel)
+	dataPoint.Attributes().InsertString(metadata.Attributes.Status, statusLabel)
 	dataPoint.SetStartTimestamp(startTime)
 	dataPoint.SetTimestamp(now)
 	dataPoint.SetIntVal(value)

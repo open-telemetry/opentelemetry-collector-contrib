@@ -9,19 +9,14 @@ These are the metrics available for this scraper.
 | Name | Description | Unit | Type | Attributes |
 | ---- | ----------- | ---- | ---- | ---------- |
 {{- range $metricName, $metricInfo := .Metrics }}
-{{- if $metricInfo.ExtendedDocumentation }}
-| {{ $metricName }} | {{ $metricInfo.Description }} {{ $metricInfo.ExtendedDocumentation }} | {{ $metricInfo.Unit }} | {{ $metricInfo.Data.Type }} | <ul>
-{{ else }}
-| {{ $metricName }} | {{ $metricInfo.Description }} | {{ $metricInfo.Unit }} | {{ $metricInfo.Data.Type }} | <ul>
-{{- end }}
-
-{{- range $index, $labelName := $metricInfo.Labels }} <li>{{ $labelName }}</li> {{- end }} </ul> |
+| {{ $metricName }} | {{ $metricInfo.Description }} {{- if $metricInfo.ExtendedDocumentation }} {{ $metricInfo.ExtendedDocumentation }} {{ end }} | {{ $metricInfo.Unit }} | {{ $metricInfo.Data.Type }} | <ul>
+{{- range $index, $attributeName := $metricInfo.Attributes }} <li>{{ $attributeName }}</li> {{- end }} </ul> |
 {{- end }}
 
 ## Attributes
 
 | Name | Description |
 | ---- | ----------- |
-{{- range $labelName, $labelInfo := .Labels }}
-| {{ $labelName }} | {{ $labelInfo.Description }} |
+{{- range $attributeName, $attributeInfo := .Attributes }}
+| {{ $attributeName }} | {{ $attributeInfo.Description }} |
 {{- end }}

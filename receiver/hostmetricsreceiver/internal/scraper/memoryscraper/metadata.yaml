@@ -1,6 +1,6 @@
 name: memory
 
-labels:
+attributes:
   state:
     description: Breakdown of memory usage by type.
     enum: [buffered, cached, inactive, free, slab_reclaimable, slab_unreclaimable, used]
@@ -13,4 +13,4 @@ metrics:
       type: sum
       aggregation: cumulative
       monotonic: false
-    labels: [state]
+    attributes: [state]

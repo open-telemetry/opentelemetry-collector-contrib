@@ -301,8 +301,8 @@ var Metrics = &metricStruct{
 // manipulating those metrics. M is an alias for Metrics
 var M = Metrics
 
-// Labels contains the possible metric labels that can be used.
-var Labels = struct {
+// Attributes contains the possible metric attributes that can be used.
+var Attributes = struct {
 	// Direction (Direction of flow of bytes/opertations (receive or transmit).)
 	Direction string
 	// Interface (Name of the network interface.)
@@ -312,12 +312,11 @@ var Labels = struct {
 	"interface",
 }
 
-// L contains the possible metric labels that can be used. L is an alias for
-// Labels.
-var L = Labels
+// A is an alias for Attributes.
+var A = Attributes
 
-// LabelDirection are the possible values that the label "direction" can have.
-var LabelDirection = struct {
+// AttributeDirection are the possible values that the attribute "direction" can have.
+var AttributeDirection = struct {
 	Receive  string
 	Transmit string
 }{

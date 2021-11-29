@@ -12,7 +12,7 @@ COMP_REL_PATH=internal/components/components.go
 MOD_NAME=github.com/open-telemetry/opentelemetry-collector-contrib
 
 # ALL_MODULES includes ./* dirs (excludes . dir and example with go code)
-ALL_MODULES := $(shell find . -type f -name "go.mod" -not -path './cmd/configschema/*' -exec dirname {} \; | sort | egrep '^./' )
+ALL_MODULES := $(shell find . -type f -name "go.mod" -exec dirname {} \; | sort | egrep '^./' )
 # Modules to run integration tests on.
 # XXX: Find a way to automatically populate this. Too slow to run across all modules when there are just a few.
 INTEGRATION_TEST_MODULES := \
@@ -22,6 +22,7 @@ INTEGRATION_TEST_MODULES := \
 	receiver/zookeeperreceiver \
 	receiver/kafkametricsreceiver \
 	receiver/nginxreceiver \
+	receiver/memcachedreceiver \
 	internal/common \
 	extension/observer/dockerobserver
 
@@ -75,6 +76,10 @@ gofmt:
 .PHONY: golint
 golint:
 	$(MAKE) for-all-target TARGET="lint"
+
+.PHONY: goporto
+goporto:
+	$(MAKE) for-all-target TARGET="porto"
 
 .PHONY: for-all
 for-all:
@@ -162,6 +167,7 @@ install-tools:
 	cd $(TOOLS_MOD_DIR) && go install go.opentelemetry.io/build-tools/issuegenerator
 	cd $(TOOLS_MOD_DIR) && go install golang.org/x/tools/cmd/goimports
 	cd $(TOOLS_MOD_DIR) && go install go.opentelemetry.io/build-tools/multimod
+	cd $(TOOLS_MOD_DIR) && go install github.com/jcchavezs/porto/cmd/porto
 
 .PHONY: run
 run:

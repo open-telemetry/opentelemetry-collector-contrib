@@ -221,19 +221,15 @@ func TestSpan_Matching_True(t *testing.T) {
 
 	span := pdata.NewSpan()
 	span.SetName("spanName")
-	span.Attributes().InitFromMap(map[string]pdata.AttributeValue{
-		"keyString": pdata.NewAttributeValueString("arithmetic"),
-		"keyInt":    pdata.NewAttributeValueInt(123),
-		"keyDouble": pdata.NewAttributeValueDouble(3245.6),
-		"keyBool":   pdata.NewAttributeValueBool(true),
-		"keyExists": pdata.NewAttributeValueString("present"),
-	})
+	span.Attributes().InsertString("keyString", "arithmetic")
+	span.Attributes().InsertInt("keyInt", 123)
+	span.Attributes().InsertDouble("keyDouble", 3245.6)
+	span.Attributes().InsertBool("keyBool", true)
+	span.Attributes().InsertString("keyExists", "present")
 	assert.NotNil(t, span)
 
 	resource := pdata.NewResource()
-	resource.Attributes().InitFromMap(map[string]pdata.AttributeValue{
-		conventions.AttributeServiceName: pdata.NewAttributeValueString("svcA"),
-	})
+	resource.Attributes().InsertString(conventions.AttributeServiceName, "svcA")
 
 	library := pdata.NewInstrumentationLibrary()
 
