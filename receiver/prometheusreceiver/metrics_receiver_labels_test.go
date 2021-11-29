@@ -295,7 +295,7 @@ func TestLabelValueLimitConfig(t *testing.T) {
 		},
 	}
 
-	mp, cfg, err := setupMockPrometheus(targets...)
+	mp, cfg, err := setupMockPrometheus(false, targets...)
 	require.Nilf(t, err, "Failed to create Prometheus config: %v", err)
 
 	//set label value length limit in scrape_config
@@ -303,7 +303,7 @@ func TestLabelValueLimitConfig(t *testing.T) {
 		scrapeCfg.LabelValueLengthLimit = 25
 	}
 
-	testComponentCustomConfig(t, targets, mp, cfg)
+	testComponentCustomConfig(t, targets, mp, cfg, false)
 }
 
 //for all metric types, testLabel has empty value
@@ -470,7 +470,7 @@ func TestEmptyLabelValues(t *testing.T) {
 			validateFunc: verifyEmptyLabelValuesTarget2,
 		},
 	}
-	testComponent(t, targets, false, "")
+	testComponent(t, targets, false, "", false)
 }
 
 const honorLabelsTarget = `
@@ -513,7 +513,7 @@ func TestHonorLabelsFalseConfig(t *testing.T) {
 		},
 	}
 
-	testComponent(t, targets, false, "")
+	testComponent(t, targets, false, "", false)
 }
 
 func verifyHonorLabelsTrue(t *testing.T, td *testData, rms []*pdata.ResourceMetrics) {
@@ -560,12 +560,12 @@ func TestHonorLabelsTrueConfig(t *testing.T) {
 		},
 	}
 
-	mp, cfg, err := setupMockPrometheus(targets...)
+	mp, cfg, err := setupMockPrometheus(false, targets...)
 	require.Nilf(t, err, "Failed to create Prometheus config: %v", err)
 
 	for _, scrapeCfg := range cfg.ScrapeConfigs {
 		scrapeCfg.HonorLabels = true
 	}
 
-	testComponentCustomConfig(t, targets, mp, cfg)
+	testComponentCustomConfig(t, targets, mp, cfg, false)
 }
