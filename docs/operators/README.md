@@ -34,7 +34,6 @@ Outputs:
 General purpose:
 - [add](/docs/operators/add.md)
 - [copy](/docs/operators/copy.md)
-- [flatten](/docs/operators/flatten.md)
 - [filter](/docs/operators/filter.md)
 - [flatten](/docs/operators/flatten.md)
 - [metadata](/docs/operators/metadata.md)
