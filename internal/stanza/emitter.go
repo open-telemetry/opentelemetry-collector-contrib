@@ -98,6 +98,7 @@ func NewLogEmitter(opts ...LogEmitterOption) *LogEmitter {
 	return le
 }
 
+// Start starts the goroutine(s) required for this operator
 func (e *LogEmitter) Start(_ operator.Persister) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	e.cancel = cancel
@@ -109,20 +110,28 @@ func (e *LogEmitter) Start(_ operator.Persister) error {
 
 // Process will emit an entry to the output channel
 func (e *LogEmitter) Process(ctx context.Context, ent *entry.Entry) error {
+	batchToFlush := e.appendEntry(ent)
+	e.flush(ctx, batchToFlush)
+
+	return nil
+}
+
+// appendEntry appends the entry to the current batch. If maxBatchSize is reached, a new batch will be made, and the old batch
+// (which should be flushed) will be returned
+func (e *LogEmitter) appendEntry(ent *entry.Entry) []*entry.Entry {
 	e.batchMux.Lock()
+	defer e.batchMux.Unlock()
 
 	e.batch = append(e.batch, ent)
 	if uint(len(e.batch)) >= e.maxBatchSize {
 		// flushTriggerAmount triggers a blocking flush
-		e.batchMux.Unlock()
-		e.flush(ctx)
-		return nil
+		return e.makeNewBatchNoLock()
 	}
 
-	e.batchMux.Unlock()
 	return nil
 }
 
+// flusher flushes the current batch every flush interval. Intended to be run as a goroutine
 func (e *LogEmitter) flusher(ctx context.Context) {
 	defer e.wg.Done()
 
@@ -132,25 +141,19 @@ func (e *LogEmitter) flusher(ctx context.Context) {
 	for {
 		select {
 		case <-ticker.C:
-			e.flush(ctx)
+			batch := e.makeNewBatch()
+			e.flush(ctx, batch)
 		case <-ctx.Done():
 			return
 		}
 	}
 }
 
-func (e *LogEmitter) flush(ctx context.Context) {
-	var batch []*entry.Entry
-	e.batchMux.Lock()
-
-	if len(e.batch) == 0 {
-		e.batchMux.Unlock()
+// flush flushes the provided batch to the log channel. If the batch is nil, does nothing
+func (e *LogEmitter) flush(ctx context.Context, batch []*entry.Entry) {
+	if batch == nil {
 		return
 	}
-	batch = e.batch
-	e.batch = make([]*entry.Entry, 0, e.maxBatchSize)
-
-	e.batchMux.Unlock()
 
 	select {
 	case e.logChan <- batch:
@@ -158,7 +161,28 @@ func (e *LogEmitter) flush(ctx context.Context) {
 	}
 }
 
-// Stop will close the log channel
+// makeNewBatch replaces the current batch on the log emitter with a new batch, returning the old one
+func (e *LogEmitter) makeNewBatch() []*entry.Entry {
+	e.batchMux.Lock()
+	defer e.batchMux.Unlock()
+
+	return e.makeNewBatchNoLock()
+}
+
+// makeNewBatchNoLock replaces the current batch on the log emitter with a new batch, returning the old one. It does not acquire the batchMux,
+// so it should used in cases where the batchMux is already acquired
+func (e *LogEmitter) makeNewBatchNoLock() []*entry.Entry {
+	if len(e.batch) == 0 {
+		return nil
+	}
+
+	oldBatch := e.batch
+	e.batch = make([]*entry.Entry, 0, e.maxBatchSize)
+
+	return oldBatch
+}
+
+// Stop will close the log channel and stop running goroutines
 func (e *LogEmitter) Stop() error {
 	e.stopOnce.Do(func() {
 		close(e.logChan)
