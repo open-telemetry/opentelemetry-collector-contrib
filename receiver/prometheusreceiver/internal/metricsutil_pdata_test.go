@@ -39,12 +39,6 @@ func distPointPdata(ts pdata.Timestamp, bounds []float64, counts []uint64) *pdat
 	return &hdp
 }
 
-func gaugeDistMetricPdata(name string, kvp []*kv, startTs pdata.Timestamp, points ...*pdata.HistogramDataPoint) *pdata.Metric {
-	hMetric := cumulativeDistMetricPdata(name, kvp, startTs, points...)
-	hMetric.Histogram().SetAggregationTemporality(pdata.MetricAggregationTemporalityDelta)
-	return hMetric
-}
-
 func cumulativeDistMetricPdata(name string, kvp []*kv, startTs pdata.Timestamp, points ...*pdata.HistogramDataPoint) *pdata.Metric {
 	metric := pdata.NewMetric()
 	metric.SetName(name)
