@@ -13,4 +13,4 @@
 // limitations under the License.
 
 // Package jaegerreceiver receives Jaeger traces.
-package jaegerreceiver
+package jaegerreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jaegerreceiver"

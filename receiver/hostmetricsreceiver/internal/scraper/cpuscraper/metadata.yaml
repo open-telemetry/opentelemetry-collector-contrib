@@ -16,4 +16,4 @@ metrics:
       type: sum
       aggregation: cumulative
       monotonic: true
-    attributes: [state]
+    attributes: [cpu, state]

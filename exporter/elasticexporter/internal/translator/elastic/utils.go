@@ -14,7 +14,7 @@
 
 // Package elastic contains an opentelemetry-collector exporter
 // for Elastic APM.
-package elastic
+package elastic // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticexporter/internal/translator/elastic"
 
 import (
 	"regexp"
