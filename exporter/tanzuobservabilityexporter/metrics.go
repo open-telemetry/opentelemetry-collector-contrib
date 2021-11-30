@@ -21,6 +21,7 @@ import (
 	"strconv"
 	"sync/atomic"
 
+	"github.com/wavefronthq/wavefront-sdk-go/histogram"
 	"github.com/wavefronthq/wavefront-sdk-go/senders"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/model/pdata"
@@ -40,6 +41,10 @@ var (
 	typeIsGaugeTags     = map[string]string{"type": "gauge"}
 	typeIsSumTags       = map[string]string{"type": "sum"}
 	typeIsHistogramTags = map[string]string{"type": "histogram"}
+)
+
+var (
+	allGranularity = map[histogram.Granularity]bool{histogram.DAY: true, histogram.HOUR: true, histogram.MINUTE: true}
 )
 
 // metricsConsumer instances consume OTEL metrics
@@ -411,9 +416,7 @@ func (h *histogramConsumer) Consume(metric pdata.Metric, errs *[]error) {
 	var consumer histogramDataPointConsumer
 	switch aggregationTemporality {
 	case pdata.MetricAggregationTemporalityDelta:
-		// TODO: follow-on pull request will add support for Delta Histograms.
-		*errs = append(*errs, errors.New("delta histograms not supported"))
-		return
+		consumer = h.delta
 	case pdata.MetricAggregationTemporalityCumulative:
 		consumer = h.cumulative
 	default:
@@ -489,4 +492,52 @@ func leTagValue(explicitBounds []float64, bucketIndex int) string {
 		return "+Inf"
 	}
 	return strconv.FormatFloat(explicitBounds[bucketIndex], 'f', -1, 64)
+}
+
+type deltaHistogramDataPointConsumer struct {
+	sender senders.DistributionSender
+}
+
+// newDeltaHistogramDataPointConsumer returns a consumer for delta
+// histogram data points.
+func newDeltaHistogramDataPointConsumer(
+	sender senders.DistributionSender) histogramDataPointConsumer {
+	return &deltaHistogramDataPointConsumer{sender: sender}
+}
+
+func (d *deltaHistogramDataPointConsumer) Consume(
+	metric pdata.Metric,
+	h pdata.HistogramDataPoint,
+	errs *[]error,
+	reporting *histogramReporting,
+) {
+	name := metric.Name()
+	tags := attributesToTags(h.Attributes())
+	ts := h.Timestamp().AsTime().Unix()
+	explicitBounds := h.ExplicitBounds()
+	bucketCounts := h.BucketCounts()
+	if len(bucketCounts) != len(explicitBounds)+1 {
+		reporting.LogMalformed(metric)
+		return
+	}
+	centroids := make([]histogram.Centroid, len(bucketCounts))
+	for i := range bucketCounts {
+		centroids[i] = histogram.Centroid{
+			Value: centroidValue(explicitBounds, i), Count: int(bucketCounts[i])}
+	}
+	err := d.sender.SendDistribution(name, centroids, allGranularity, ts, "", tags)
+	if err != nil {
+		*errs = append(*errs, err)
+	}
+}
+
+func centroidValue(explicitBounds []float64, index int) float64 {
+	if index == 0 {
+		return explicitBounds[0]
+	}
+	length := len(explicitBounds)
+	if index == length {
+		return explicitBounds[length-1]
+	}
+	return (explicitBounds[index-1] + explicitBounds[index]) / 2.0
 }
