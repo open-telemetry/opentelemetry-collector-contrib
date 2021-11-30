@@ -17,9 +17,12 @@ package kafkaexporter // import "github.com/open-telemetry/opentelemetry-collect
 import (
 	"context"
 	"fmt"
-
 	"github.com/Shopify/sarama"
+	"go.opencensus.io/stats"
+	"go.opencensus.io/stats/view"
+	"go.opencensus.io/tag"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/model/pdata"
 	"go.uber.org/zap"
@@ -29,6 +32,7 @@ var errUnrecognizedEncoding = fmt.Errorf("unrecognized encoding")
 
 // kafkaTracesProducer uses sarama to produce trace messages to Kafka.
 type kafkaTracesProducer struct {
+	id config.ComponentID
 	producer  sarama.SyncProducer
 	topic     string
 	marshaler TracesMarshaler
@@ -44,7 +48,7 @@ func (ke kafkaErrors) Error() string {
 	return fmt.Sprintf("Failed to deliver %d messages due to %s", ke.count, ke.err)
 }
 
-func (e *kafkaTracesProducer) tracesPusher(_ context.Context, td pdata.Traces) error {
+func (e *kafkaTracesProducer) tracesPusher(ctx context.Context, td pdata.Traces) error {
 	messages, err := e.marshaler.Marshal(td, e.topic)
 	if err != nil {
 		return consumererror.NewPermanent(err)
@@ -57,7 +61,11 @@ func (e *kafkaTracesProducer) tracesPusher(_ context.Context, td pdata.Traces) e
 			}
 		}
 		return err
+	} else {
+		statsTags := []tag.Mutator{tag.Insert(tagInstanceName, e.id.String()), tag.Insert(tagInstanceType, string(config.TracesDataType))}
+		_ = stats.RecordWithTags(ctx, statsTags, statMessageCount.M(int64(len(messages))))
 	}
+
 	return nil
 }
 
@@ -67,13 +75,14 @@ func (e *kafkaTracesProducer) Close(context.Context) error {
 
 // kafkaMetricsProducer uses sarama to produce metrics messages to kafka
 type kafkaMetricsProducer struct {
+	id config.ComponentID
 	producer  sarama.SyncProducer
 	topic     string
 	marshaler MetricsMarshaler
 	logger    *zap.Logger
 }
 
-func (e *kafkaMetricsProducer) metricsDataPusher(_ context.Context, md pdata.Metrics) error {
+func (e *kafkaMetricsProducer) metricsDataPusher(ctx context.Context, md pdata.Metrics) error {
 	messages, err := e.marshaler.Marshal(md, e.topic)
 	if err != nil {
 		return consumererror.NewPermanent(err)
@@ -86,6 +95,9 @@ func (e *kafkaMetricsProducer) metricsDataPusher(_ context.Context, md pdata.Met
 			}
 		}
 		return err
+	} else {
+		statsTags := []tag.Mutator{tag.Insert(tagInstanceName, e.id.String()), tag.Insert(tagInstanceType, string(config.MetricsDataType))}
+		_ = stats.RecordWithTags(ctx, statsTags, statMessageCount.M(int64(len(messages))))
 	}
 	return nil
 }
@@ -96,13 +108,14 @@ func (e *kafkaMetricsProducer) Close(context.Context) error {
 
 // kafkaLogsProducer uses sarama to produce logs messages to kafka
 type kafkaLogsProducer struct {
+	id config.ComponentID
 	producer  sarama.SyncProducer
 	topic     string
 	marshaler LogsMarshaler
 	logger    *zap.Logger
 }
 
-func (e *kafkaLogsProducer) logsDataPusher(_ context.Context, ld pdata.Logs) error {
+func (e *kafkaLogsProducer) logsDataPusher(ctx context.Context, ld pdata.Logs) error {
 	messages, err := e.marshaler.Marshal(ld, e.topic)
 	if err != nil {
 		return consumererror.NewPermanent(err)
@@ -115,6 +128,9 @@ func (e *kafkaLogsProducer) logsDataPusher(_ context.Context, ld pdata.Logs) err
 			}
 		}
 		return err
+	} else {
+		statsTags := []tag.Mutator{tag.Insert(tagInstanceName, e.id.String()), tag.Insert(tagInstanceType, string(config.LogsDataType))}
+		_ = stats.RecordWithTags(ctx, statsTags, statMessageCount.M(int64(len(messages))))
 	}
 	return nil
 }
@@ -163,7 +179,12 @@ func newMetricsExporter(config Config, set component.ExporterCreateSettings, mar
 		return nil, err
 	}
 
+	if err := view.Register(MetricViews()...); err != nil {
+		return nil, err
+	}
+
 	return &kafkaMetricsProducer{
+		id: config.ID(),
 		producer:  producer,
 		topic:     config.Topic,
 		marshaler: marshaler,
@@ -182,7 +203,13 @@ func newTracesExporter(config Config, set component.ExporterCreateSettings, mars
 	if err != nil {
 		return nil, err
 	}
+
+	if err := view.Register(MetricViews()...); err != nil {
+		return nil, err
+	}
+
 	return &kafkaTracesProducer{
+		id: config.ID(),
 		producer:  producer,
 		topic:     config.Topic,
 		marshaler: marshaler,
@@ -200,7 +227,12 @@ func newLogsExporter(config Config, set component.ExporterCreateSettings, marsha
 		return nil, err
 	}
 
+	if err := view.Register(MetricViews()...); err != nil {
+		return nil, err
+	}
+
 	return &kafkaLogsProducer{
+		id: config.ID(),
 		producer:  producer,
 		topic:     config.Topic,
 		marshaler: marshaler,
