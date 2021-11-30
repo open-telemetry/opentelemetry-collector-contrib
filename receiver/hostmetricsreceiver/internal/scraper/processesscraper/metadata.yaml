@@ -9,16 +9,14 @@ metrics:
   system.processes.created:
     description: Total number of created processes.
     unit: "{processes}"
-    data:
-      type: sum
+    sum:
       aggregation: cumulative
       monotonic: true
 
   system.processes.count:
     description: Total number of processes in each state.
     unit: "{processes}"
-    data:
-      type: sum
+    sum:
       aggregation: cumulative
       monotonic: false
     attributes: [status]

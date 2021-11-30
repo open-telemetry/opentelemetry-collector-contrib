@@ -40,8 +40,7 @@ metrics:
     description: Total CPU seconds broken down by different states.
     extended_documentation: Additional information on CPU Time can be found [here](https://en.wikipedia.org/wiki/CPU_time).
     unit: s
-    data:
-      type: sum
+    sum:
       monotonic: true
       aggregation: cumulative
     attributes: [freeFormAttribute, freeFormAttributeWithValue, enumAttribute]
@@ -53,20 +52,29 @@ metrics:
   system.cpu.time:
     description: Total CPU seconds broken down by different states.
     unit: s
-    data:
-      type: sum
+    sum:
       monotonic: true
       aggregation: cumulative
     attributes: [missing]
 `
-	unknownMetricType = `
+	noMetricType = `
 name: metricreceiver
 metrics:
   system.cpu.time:
     description: Total CPU seconds broken down by different states.
     unit: s
-    data:
-      type: invalid
+    attributes:
+`
+	twoMetricTypes = `
+name: metricreceiver
+metrics:
+  system.cpu.time:
+    description: Total CPU seconds broken down by different states.
+    unit: s
+    gauge: {}
+    sum:
+      monotonic: true
+      aggregation: cumulative
     attributes:
 `
 )
@@ -99,7 +107,7 @@ func Test_loadMetadata(t *testing.T) {
 						Description:           "Total CPU seconds broken down by different states.",
 						ExtendedDocumentation: "Additional information on CPU Time can be found [here](https://en.wikipedia.org/wiki/CPU_time).",
 						Unit:                  "s",
-						Data: &sum{
+						Sum: &sum{
 							Aggregated: Aggregated{Aggregation: "cumulative"},
 							Mono:       Mono{Monotonic: true},
 						},
@@ -116,10 +124,18 @@ func Test_loadMetadata(t *testing.T) {
 				"Attributes[missing]: unknown attribute value\n",
 		},
 		{
-			name:    "unknownMetricType",
-			yml:     unknownMetricType,
-			want:    metadata{},
-			wantErr: `unable to unmarshal yaml: metric data "invalid" type invalid`,
+			name: "no metric type",
+			yml:  noMetricType,
+			want: metadata{},
+			wantErr: "metric system.cpu.time doesn't have a metric type key, " +
+				"one of the following has to be specified: sum, gauge, histogram",
+		},
+		{
+			name: "two metric types",
+			yml:  twoMetricTypes,
+			want: metadata{},
+			wantErr: "metric system.cpu.time has more than one metric type keys, " +
+				"only one of the following has to be specified: sum, gauge, histogram",
 		},
 	}
 	for _, tt := range tests {
