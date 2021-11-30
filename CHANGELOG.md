@@ -4,6 +4,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.23.0] - 2020-11-30
+
+
+### Added
+- `combine_with` setting to `recombine` operator, to allow for joining on custom delimiter ([PR315](https://github.com/open-telemetry/opentelemetry-log-collection/pull/315))
+### Fixed
+- Issue where `force_flush_period` could cause line splitting to be skipped ([PR303](https://github.com/open-telemetry/opentelemetry-log-collection/pull/303))
+- Issue where `tcp_input` and `udp_input` could panic when stopping ([PR273](https://github.com/open-telemetry/opentelemetry-log-collection/pull/273))
+- Syslog severity mapping is now aligned with log specification ([PR300](https://github.com/open-telemetry/opentelemetry-log-collection/pull/300))
+
+### Changed
+- Improve error message when timezone database is not found ([PR289](https://github.com/open-telemetry/opentelemetry-log-collection/pull/289))
+
+
+
 ## [0.22.0] - 2020-10-05
 
 ### Fixed
