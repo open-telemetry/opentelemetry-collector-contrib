@@ -17,6 +17,7 @@ package kafkaexporter // import "github.com/open-telemetry/opentelemetry-collect
 import (
 	"context"
 	"fmt"
+
 	"github.com/Shopify/sarama"
 	"go.opencensus.io/stats"
 	"go.opencensus.io/stats/view"
@@ -32,7 +33,7 @@ var errUnrecognizedEncoding = fmt.Errorf("unrecognized encoding")
 
 // kafkaTracesProducer uses sarama to produce trace messages to Kafka.
 type kafkaTracesProducer struct {
-	id config.ComponentID
+	id        config.ComponentID
 	producer  sarama.SyncProducer
 	topic     string
 	marshaler TracesMarshaler
@@ -75,7 +76,7 @@ func (e *kafkaTracesProducer) Close(context.Context) error {
 
 // kafkaMetricsProducer uses sarama to produce metrics messages to kafka
 type kafkaMetricsProducer struct {
-	id config.ComponentID
+	id        config.ComponentID
 	producer  sarama.SyncProducer
 	topic     string
 	marshaler MetricsMarshaler
@@ -108,7 +109,7 @@ func (e *kafkaMetricsProducer) Close(context.Context) error {
 
 // kafkaLogsProducer uses sarama to produce logs messages to kafka
 type kafkaLogsProducer struct {
-	id config.ComponentID
+	id        config.ComponentID
 	producer  sarama.SyncProducer
 	topic     string
 	marshaler LogsMarshaler
@@ -184,7 +185,7 @@ func newMetricsExporter(config Config, set component.ExporterCreateSettings, mar
 	}
 
 	return &kafkaMetricsProducer{
-		id: config.ID(),
+		id:        config.ID(),
 		producer:  producer,
 		topic:     config.Topic,
 		marshaler: marshaler,
@@ -209,7 +210,7 @@ func newTracesExporter(config Config, set component.ExporterCreateSettings, mars
 	}
 
 	return &kafkaTracesProducer{
-		id: config.ID(),
+		id:        config.ID(),
 		producer:  producer,
 		topic:     config.Topic,
 		marshaler: marshaler,
@@ -232,7 +233,7 @@ func newLogsExporter(config Config, set component.ExporterCreateSettings, marsha
 	}
 
 	return &kafkaLogsProducer{
-		id: config.ID(),
+		id:        config.ID(),
 		producer:  producer,
 		topic:     config.Topic,
 		marshaler: marshaler,
