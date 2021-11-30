@@ -123,6 +123,8 @@ var AttributeStatus = struct {
 	Blocked  string
 	Daemon   string
 	Detached string
+	Idle     string
+	Locked   string
 	Orphan   string
 	Paging   string
 	Running  string
@@ -135,6 +137,8 @@ var AttributeStatus = struct {
 	"blocked",
 	"daemon",
 	"detached",
+	"idle",
+	"locked",
 	"orphan",
 	"paging",
 	"running",
