@@ -292,30 +292,6 @@ func Test_cumulative_pdata(t *testing.T) {
 	runScriptPdata(t, NewJobsMapPdata(time.Minute).get("job", "0"), script)
 }
 
-func Test_gaugeDistribution_pdata(t *testing.T) {
-	script := []*metricsAdjusterTestPdata{
-		{
-			"GaugeDist: round 1 - gauge distribution not adjusted",
-			metricSlice(gaugeDistMetric(gd1, k1v1k2v2, pdt1Ms, distPoint(pdt1Ms, bounds0, []uint64{4, 2, 3, 7}))),
-			metricSlice(gaugeDistMetric(gd1, k1v1k2v2, pdt1Ms, distPoint(pdt1Ms, bounds0, []uint64{4, 2, 3, 7}))),
-			0,
-		},
-		{
-			"GaugeDist: round 2 - gauge distribution not adjusted",
-			metricSlice(gaugeDistMetric(gd1, k1v1k2v2, pdt2Ms, distPoint(pdt2Ms, bounds0, []uint64{6, 5, 8, 11}))),
-			metricSlice(gaugeDistMetric(gd1, k1v1k2v2, pdt2Ms, distPoint(pdt2Ms, bounds0, []uint64{6, 5, 8, 11}))),
-			0,
-		},
-		{
-			"GaugeDist: round 3 - count/sum less than previous - gauge distribution not adjusted",
-			metricSlice(gaugeDistMetric(gd1, k1v1k2v2, pdt3Ms, distPoint(pdt3Ms, bounds0, []uint64{2, 0, 1, 5}))),
-			metricSlice(gaugeDistMetric(gd1, k1v1k2v2, pdt3Ms, distPoint(pdt3Ms, bounds0, []uint64{2, 0, 1, 5}))),
-			0,
-		},
-	}
-	runScriptPdata(t, NewJobsMapPdata(time.Minute).get("job", "0"), script)
-}
-
 func populateSummary(sdp *pdata.SummaryDataPoint, timestamp pdata.Timestamp, count uint64, sum float64, quantilePercents, quantileValues []float64) {
 	quantiles := sdp.QuantileValues()
 	for i := range quantilePercents {
@@ -489,7 +465,6 @@ func Test_summary_pdata(t *testing.T) {
 
 var (
 	distPoint       = distPointPdata
-	gaugeDistMetric = gaugeDistMetricPdata
 	histogramMetric = cumulativeDistMetricPdata
 	doublePoint     = doublePointPdata
 	gaugeMetric     = gaugeMetricPdata
@@ -558,14 +533,12 @@ func Test_multiMetrics_pdata(t *testing.T) {
 			"MultiMetrics: round 1 - combined round 1 of individual metrics",
 			metricSlice(
 				gaugeMetric(g1, k1v1k2v2, pdt1Ms, doublePoint(pdt1Ms, 44)),
-				gaugeDistMetric(gd1, k1v1k2v2, pdt1Ms, distPoint(pdt1Ms, bounds0, []uint64{4, 2, 3, 7})),
 				sumMetric(c1, k1v1k2v2, pdt1Ms, doublePoint(pdt1Ms, 44)),
 				histogramMetric(cd1, k1v1k2v2, pdt1Ms, distPoint(pdt1Ms, bounds0, []uint64{4, 2, 3, 7})),
 				summaryMetric(s1, k1v1k2v2, pdt1Ms, summaryPoint(pdt1Ms, 10, 40, percent0, []float64{1, 5, 8})),
 			),
 			metricSlice(
 				gaugeMetric(g1, k1v1k2v2, pdt1Ms, doublePoint(pdt1Ms, 44)),
-				gaugeDistMetric(gd1, k1v1k2v2, pdt1Ms, distPoint(pdt1Ms, bounds0, []uint64{4, 2, 3, 7})),
 				sumMetric(c1, k1v1k2v2, pdt1Ms, doublePoint(pdt1Ms, 44)),
 				histogramMetric(cd1, k1v1k2v2, pdt1Ms, distPoint(pdt1Ms, bounds0, []uint64{4, 2, 3, 7})),
 				summaryMetric(s1, k1v1k2v2, pdt1Ms, summaryPoint(pdt1Ms, 10, 40, percent0, []float64{1, 5, 8})),
@@ -575,14 +548,12 @@ func Test_multiMetrics_pdata(t *testing.T) {
 			"MultiMetrics: round 2 - combined round 2 of individual metrics",
 			metricSlice(
 				gaugeMetric(g1, k1v1k2v2, pdt2Ms, doublePoint(pdt2Ms, 66)),
-				gaugeDistMetric(gd1, k1v1k2v2, pdt2Ms, distPoint(pdt2Ms, bounds0, []uint64{6, 5, 8, 11})),
 				sumMetric(c1, k1v1k2v2, pdt2Ms, doublePoint(pdt2Ms, 66)),
 				histogramMetric(cd1, k1v1k2v2, pdt2Ms, distPoint(pdt2Ms, bounds0, []uint64{6, 3, 4, 8})),
 				summaryMetric(s1, k1v1k2v2, pdt2Ms, summaryPoint(pdt2Ms, 15, 70, percent0, []float64{7, 44, 9})),
 			),
 			metricSlice(
 				gaugeMetric(g1, k1v1k2v2, pdt2Ms, doublePoint(pdt2Ms, 66)),
-				gaugeDistMetric(gd1, k1v1k2v2, pdt2Ms, distPoint(pdt2Ms, bounds0, []uint64{6, 5, 8, 11})),
 				sumMetric(c1, k1v1k2v2, pdt1Ms, doublePoint(pdt2Ms, 66)),
 				histogramMetric(cd1, k1v1k2v2, pdt1Ms, distPoint(pdt2Ms, bounds0, []uint64{6, 3, 4, 8})),
 				summaryMetric(s1, k1v1k2v2, pdt1Ms, summaryPoint(pdt2Ms, 15, 70, percent0, []float64{7, 44, 9})),
@@ -592,14 +563,12 @@ func Test_multiMetrics_pdata(t *testing.T) {
 			"MultiMetrics: round 3 - combined round 3 of individual metrics",
 			metricSlice(
 				gaugeMetric(g1, k1v1k2v2, pdt3Ms, doublePoint(pdt3Ms, 55)),
-				gaugeDistMetric(gd1, k1v1k2v2, pdt3Ms, distPoint(pdt3Ms, bounds0, []uint64{2, 0, 1, 5})),
 				sumMetric(c1, k1v1k2v2, pdt3Ms, doublePoint(pdt3Ms, 55)),
 				histogramMetric(cd1, k1v1k2v2, pdt3Ms, distPoint(pdt3Ms, bounds0, []uint64{5, 3, 2, 7})),
 				summaryMetric(s1, k1v1k2v2, pdt3Ms, summaryPoint(pdt3Ms, 12, 66, percent0, []float64{3, 22, 5})),
 			),
 			metricSlice(
 				gaugeMetric(g1, k1v1k2v2, pdt3Ms, doublePoint(pdt3Ms, 55)),
-				gaugeDistMetric(gd1, k1v1k2v2, pdt3Ms, distPoint(pdt3Ms, bounds0, []uint64{2, 0, 1, 5})),
 				sumMetric(c1, k1v1k2v2, pdt3Ms, doublePoint(pdt3Ms, 55)),
 				histogramMetric(cd1, k1v1k2v2, pdt3Ms, distPoint(pdt3Ms, bounds0, []uint64{5, 3, 2, 7})),
 				summaryMetric(s1, k1v1k2v2, pdt3Ms, summaryPoint(pdt3Ms, 12, 66, percent0, []float64{3, 22, 5})),
