@@ -15,19 +15,11 @@
 package utils
 
 import (
-	"context"
-	"errors"
 	"net/http"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/exporter/exporterhelper"
-	"go.uber.org/zap"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/scrub"
 )
 
 var (
@@ -49,25 +41,4 @@ func TestDDHeaders(t *testing.T) {
 	assert.Equal(t, header.Get("DD-Api-Key"), apiKey)
 	assert.Equal(t, header.Get("USer-Agent"), "otelcontribcol/1.0")
 
-}
-
-func TestDoWithRetries(t *testing.T) {
-	scrubber := scrub.NewScrubber()
-	retrier := NewRetrier(zap.NewNop(), exporterhelper.DefaultRetrySettings(), scrubber)
-	ctx := context.Background()
-
-	err := retrier.DoWithRetries(ctx, func(context.Context) error { return nil })
-	require.NoError(t, err)
-
-	retrier = NewRetrier(zap.NewNop(),
-		exporterhelper.RetrySettings{
-			Enabled:         true,
-			InitialInterval: 5 * time.Millisecond,
-			MaxInterval:     30 * time.Millisecond,
-			MaxElapsedTime:  100 * time.Millisecond,
-		},
-		scrubber,
-	)
-	err = retrier.DoWithRetries(ctx, func(context.Context) error { return errors.New("action failed") })
-	require.Error(t, err)
 }
