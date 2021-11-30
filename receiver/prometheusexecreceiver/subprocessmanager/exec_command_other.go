@@ -14,7 +14,7 @@
 
 //go:build !windows
 
-package subprocessmanager
+package subprocessmanager // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusexecreceiver/subprocessmanager"
 
 import (
 	"os/exec"
