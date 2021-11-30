@@ -112,11 +112,7 @@ func (e *LogEmitter) Start(_ operator.Persister) error {
 func (e *LogEmitter) Stop() error {
 	e.stopOnce.Do(func() {
 		close(e.logChan)
-
-		if e.cancel != nil {
-			e.cancel()
-			e.cancel = nil
-		}
+		e.cancel()
 
 		e.wg.Wait()
 	})
