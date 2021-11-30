@@ -89,6 +89,7 @@ func NewLogEmitter(opts ...LogEmitterOption) *LogEmitter {
 		maxBatchSize:  defaultMaxBatchSize,
 		batch:         make([]*entry.Entry, 0, defaultMaxBatchSize),
 		flushInterval: defaultFlushInterval,
+		cancel:        func() {},
 	}
 
 	for _, opt := range opts {
