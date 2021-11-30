@@ -133,7 +133,7 @@ func TestGaugeConsumerErrorSending(t *testing.T) {
 }
 
 func TestGaugeConsumerMissingValueNoLogging(t *testing.T) {
-	metric := newMetric("bad.metric", pdata.MetricDataTypeGauge)
+	metric := newMetric("missing.value.metric", pdata.MetricDataTypeGauge)
 	dataPoints := metric.Gauge().DataPoints()
 	dataPoints.EnsureCapacity(1)
 	addDataPoint(
@@ -154,7 +154,7 @@ func TestGaugeConsumerMissingValueNoLogging(t *testing.T) {
 }
 
 func TestGaugeConsumerMissingValue(t *testing.T) {
-	metric := newMetric("bad.metric", pdata.MetricDataTypeGauge)
+	metric := newMetric("missing.value.metric", pdata.MetricDataTypeGauge)
 	dataPoints := metric.Gauge().DataPoints()
 	dataPoints.EnsureCapacity(1)
 	addDataPoint(
@@ -357,7 +357,7 @@ func TestSumConsumerUnspecified(t *testing.T) {
 }
 
 func TestSumConsumerMissingValue(t *testing.T) {
-	metric := newMetric("bad.metric", pdata.MetricDataTypeSum)
+	metric := newMetric("missing.value.metric", pdata.MetricDataTypeSum)
 	sum := metric.Sum()
 	sum.SetAggregationTemporality(pdata.MetricAggregationTemporalityDelta)
 	dataPoints := sum.DataPoints()
@@ -418,7 +418,7 @@ func TestHistogramConsumerDeltaAggregation(t *testing.T) {
 func TestHistogramConsumerCumulativeAggregation(t *testing.T) {
 	countAttributeForEachDataPoint := []uint64{2, 5, 10}
 	cumulativeMetric := newHistogramMetricWithDataPoints(
-		"cum.metric",
+		"cumulative.metric",
 		pdata.MetricAggregationTemporalityCumulative,
 		countAttributeForEachDataPoint)
 	sender := &mockGaugeSender{}
@@ -435,7 +435,9 @@ func TestHistogramConsumerCumulativeAggregation(t *testing.T) {
 	// We had three datapoints. Our mock just captures the metric name of
 	// each data point consumed.
 	assert.Equal(
-		t, []string{"cum.metric", "cum.metric", "cum.metric"}, cumulativeConsumer.names)
+		t,
+		[]string{"cumulative.metric", "cumulative.metric", "cumulative.metric"},
+		cumulativeConsumer.names)
 	assert.Equal(t, countAttributeForEachDataPoint, cumulativeConsumer.counts)
 }
 
@@ -445,7 +447,9 @@ func TestHistogramConsumerNoAggregation(t *testing.T) {
 
 	// Create a histogram metric with missing aggregation attribute
 	metric := newHistogramMetricWithDataPoints(
-		"bad.metric", pdata.MetricAggregationTemporalityUnspecified, nil)
+		"missing.aggregation.metric",
+		pdata.MetricAggregationTemporalityUnspecified,
+		nil)
 	sender := &mockGaugeSender{}
 	observedZapCore, observedLogs := observer.New(zap.DebugLevel)
 	consumer := newHistogramConsumer(

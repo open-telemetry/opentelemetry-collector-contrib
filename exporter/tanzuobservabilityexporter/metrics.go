@@ -360,7 +360,7 @@ type histogramReporting struct {
 }
 
 // newHistogramReporting returns a new histogramReporting instance.
-// logger is the logger to use.
+// log messages are sent to logger.
 func newHistogramReporting(logger *zap.Logger) *histogramReporting {
 	return &histogramReporting{logger: logger}
 }
@@ -536,9 +536,9 @@ func (c *cumulativeHistogramDataPointConsumer) Consume(
 	}
 }
 
-func leTagValue(explicitBounds []float64, idx int) string {
-	if idx == len(explicitBounds) {
+func leTagValue(explicitBounds []float64, bucketIndex int) string {
+	if bucketIndex == len(explicitBounds) {
 		return "+Inf"
 	}
-	return strconv.FormatFloat(explicitBounds[idx], 'f', -1, 64)
+	return strconv.FormatFloat(explicitBounds[bucketIndex], 'f', -1, 64)
 }
