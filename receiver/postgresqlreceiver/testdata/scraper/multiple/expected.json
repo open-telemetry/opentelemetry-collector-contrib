@@ -10,6 +10,7 @@
                   {
                      "description": "The number of blocks read.",
                      "name": "postgresql.blocks_read",
+                     "unit": "1",
                      "sum": {
                         "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                         "dataPoints": [
@@ -1172,6 +1173,7 @@
                   {
                      "description": "The number of commits.",
                      "name": "postgresql.commits",
+                     "unit":  "1",
                      "sum": {
                         "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                         "dataPoints": [
@@ -1218,6 +1220,7 @@
                   {
                      "description": "The database disk usage.",
                      "name": "postgresql.db_size",
+                     "unit":  "By",
                      "sum": {
                         "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                         "dataPoints": [
@@ -1263,6 +1266,7 @@
                   {
                      "description": "The number of backends.",
                      "name": "postgresql.backends",
+                     "unit":  "1",
                      "sum": {
                         "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                         "dataPoints": [
@@ -1308,6 +1312,7 @@
                   {
                      "description": "The number of rows in the database.",
                      "name": "postgresql.rows",
+                     "unit":  "1",
                      "sum": {
                         "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                         "dataPoints": [
@@ -1605,6 +1610,7 @@
                   {
                      "description": "The number of db row operations.",
                      "name": "postgresql.operations",
+                     "unit":  "1",
                      "sum": {
                         "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                         "dataPoints": [
@@ -2191,6 +2197,7 @@
                   {
                      "description": "The number of rollbacks.",
                      "name": "postgresql.rollbacks",
+                     "unit":  "1",
                      "sum": {
                         "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                         "dataPoints": [

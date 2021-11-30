@@ -19,49 +19,49 @@ attributes:
 metrics:
   postgresql.blocks_read:
     description: The number of blocks read.
-    units: 1
+    unit: 1
     sum:
       monotonic: true
       aggregation: cumulative
     attributes: [ database, table, source ]
   postgresql.commits:
     description: The number of commits.
-    units: 1
+    unit: 1
     sum:
       monotonic: true
       aggregation: cumulative
     attributes: [ database ]
   postgresql.db_size:
     description: The database disk usage.
-    units: By
+    unit: By
     sum:
       monotonic: false
       aggregation: cumulative
     attributes: [ database ]
   postgresql.backends:
     description: The number of backends.
-    units: 1
+    unit: 1
     sum:
       monotonic: false
       aggregation: cumulative
     attributes: [ database ]
   postgresql.rows:
     description: The number of rows in the database.
-    units: 1
+    unit: 1
     sum:
       monotonic: false
       aggregation: cumulative
     attributes: [ database, table, state ]
   postgresql.operations:
     description: The number of db row operations.
-    units: 1
+    unit: 1
     sum:
       monotonic: true
       aggregation: cumulative
     attributes: [ database, table, operation ]
   postgresql.rollbacks:
     description: The number of rollbacks.
-    units: 1
+    unit: 1
     sum:
       monotonic: true
       aggregation: cumulative
