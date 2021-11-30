@@ -601,7 +601,7 @@ func generateTraceDataSetStatus(code pdata.StatusCode, description string, attrs
 	span := rs.InstrumentationLibrarySpans().AppendEmpty().Spans().AppendEmpty()
 	span.Status().SetCode(code)
 	span.Status().SetMessage(description)
-	span.Attributes().InitFromMap(attrs).Sort()
+	pdata.NewAttributeMapFromMap(attrs).Sort().CopyTo(span.Attributes())
 	return td
 }
 
