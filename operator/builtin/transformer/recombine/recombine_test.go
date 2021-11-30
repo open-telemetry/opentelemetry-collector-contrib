@@ -125,6 +125,22 @@ func TestRecombineOperator(t *testing.T) {
 				entryWithBody(t2, "test1\ntest2"),
 			},
 		},
+		{
+			"CombineWithEmptyString",
+			func() *RecombineOperatorConfig {
+				cfg := NewRecombineOperatorConfig("")
+				cfg.CombineField = entry.NewBodyField()
+				cfg.CombineWith = ""
+				cfg.IsLastEntry = "$body == 'test2'"
+				cfg.OutputIDs = []string{"fake"}
+				return cfg
+			}(),
+			[]*entry.Entry{
+				entryWithBody(t1, "test1"),
+				entryWithBody(t1, "test2"),
+			},
+			[]*entry.Entry{entryWithBody(t1, "test1test2")},
+		},
 	}
 
 	for _, tc := range cases {
