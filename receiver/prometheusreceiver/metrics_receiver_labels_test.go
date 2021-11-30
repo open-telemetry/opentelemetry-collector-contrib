@@ -42,7 +42,7 @@ func TestExternalLabels(t *testing.T) {
 	cfg.GlobalConfig.ExternalLabels = labels.FromStrings("key", "value")
 	require.Nilf(t, err, "Failed to create Prometheus config: %v", err)
 
-	testComponentCustomConfig(t, targets, mp, cfg, false)
+	testComponentCustomConfig(t, targets, mp, cfg)
 }
 
 func verifyExternalLabels(t *testing.T, td *testData, rms []*pdata.ResourceMetrics) {
@@ -138,7 +138,7 @@ func TestLabelLimitConfig(t *testing.T) {
 		scrapeCfg.LabelLimit = 5
 	}
 
-	testComponentCustomConfig(t, targets, mp, cfg, false)
+	testComponentCustomConfig(t, targets, mp, cfg)
 }
 
 const targetLabelLimits1 = `
@@ -264,7 +264,7 @@ func TestLabelNameLimitConfig(t *testing.T) {
 		scrapeCfg.LabelNameLengthLimit = 20
 	}
 
-	testComponentCustomConfig(t, targets, mp, cfg, false)
+	testComponentCustomConfig(t, targets, mp, cfg)
 }
 
 const targetLabelValueLimit = `
@@ -295,7 +295,7 @@ func TestLabelValueLimitConfig(t *testing.T) {
 		},
 	}
 
-	mp, cfg, err := setupMockPrometheus(targets...)
+	mp, cfg, err := setupMockPrometheus(false, targets...)
 	require.Nilf(t, err, "Failed to create Prometheus config: %v", err)
 
 	//set label value length limit in scrape_config
@@ -470,7 +470,7 @@ func TestEmptyLabelValues(t *testing.T) {
 			validateFunc: verifyEmptyLabelValuesTarget2,
 		},
 	}
-	testComponent(t, targets, false, "")
+	testComponent(t, targets, false, "", false)
 }
 
 const honorLabelsTarget = `
@@ -513,7 +513,7 @@ func TestHonorLabelsFalseConfig(t *testing.T) {
 		},
 	}
 
-	testComponent(t, targets, false, "")
+	testComponent(t, targets, false, "", false)
 }
 
 func verifyHonorLabelsTrue(t *testing.T, td *testData, rms []*pdata.ResourceMetrics) {
@@ -560,7 +560,7 @@ func TestHonorLabelsTrueConfig(t *testing.T) {
 		},
 	}
 
-	mp, cfg, err := setupMockPrometheus(targets...)
+	mp, cfg, err := setupMockPrometheus(false, targets...)
 	require.Nilf(t, err, "Failed to create Prometheus config: %v", err)
 
 	for _, scrapeCfg := range cfg.ScrapeConfigs {

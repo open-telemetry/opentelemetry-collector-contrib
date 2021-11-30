@@ -505,7 +505,7 @@ func testComponent(t *testing.T, targets []*testData, useStartTimeMetric bool, s
 }
 
 // starts prometheus receiver with custom config, retrieves metrics from MetricsSink
-func testComponentCustomConfig(t *testing.T, targets []*testData, mp *mockPrometheus, cfg *promcfg.Config, useOpenMetrics bool) {
+func testComponentCustomConfig(t *testing.T, targets []*testData, mp *mockPrometheus, cfg *promcfg.Config) {
 	ctx := context.Background()
 	defer mp.Close()
 
@@ -531,10 +531,7 @@ func testComponentCustomConfig(t *testing.T, targets []*testData, mp *mockPromet
 	// loop to validate outputs for each targets
 	for _, target := range targets {
 		t.Run(target.name, func(t *testing.T) {
-			validScrapes := pResults[target.name]
-			if !useOpenMetrics {
-				validScrapes = getValidScrapes(t, pResults[target.name])
-			}
+			validScrapes := getValidScrapes(t, pResults[target.name])
 			target.validateFunc(t, target, validScrapes)
 		})
 	}
