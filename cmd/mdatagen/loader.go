@@ -50,13 +50,28 @@ type metric struct {
 	// Unit of the metric.
 	Unit string `yaml:"unit"`
 
-	// Raw data that is used to set Data interface below.
-	YmlData *ymlMetricData `yaml:"data" validate:"required"`
-	// Date is set to generic metric data interface after validating.
-	Data MetricData `yaml:"-"`
+	// Sum stores metadata for sum metric type
+	Sum *sum `yaml:"sum"`
+	// Gauge stores metadata for gauge metric type
+	Gauge *gauge `yaml:"gauge"`
+	// Histogram stores metadata for histogram metric type
+	Histogram *histogram `yaml:"histogram"`
 
 	// Attributes is the list of attributes that the metric emits.
 	Attributes []attributeName
+}
+
+func (m metric) Data() MetricData {
+	if m.Sum != nil {
+		return m.Sum
+	}
+	if m.Gauge != nil {
+		return m.Gauge
+	}
+	if m.Histogram != nil {
+		return m.Histogram
+	}
+	return nil
 }
 
 type attribute struct {
@@ -146,9 +161,24 @@ func validateMetadata(out metadata) error {
 
 	// Set metric data interface.
 	for k, v := range out.Metrics {
-		v.Data = v.YmlData.MetricData
-		v.YmlData = nil
-		out.Metrics[k] = v
+		dataTypesSet := 0
+		if v.Sum != nil {
+			dataTypesSet++
+		}
+		if v.Gauge != nil {
+			dataTypesSet++
+		}
+		if v.Histogram != nil {
+			dataTypesSet++
+		}
+		if dataTypesSet == 0 {
+			return fmt.Errorf("metric %v doesn't have a metric type key, "+
+				"one of the following has to be specified: sum, gauge, histogram", k)
+		}
+		if dataTypesSet > 1 {
+			return fmt.Errorf("metric %v has more than one metric type keys, "+
+				"only one of the following has to be specified: sum, gauge, histogram", k)
+		}
 	}
 
 	return nil
