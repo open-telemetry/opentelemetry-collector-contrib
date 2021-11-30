@@ -38,6 +38,7 @@ func NewRecombineOperatorConfig(operatorID string) *RecombineOperatorConfig {
 	return &RecombineOperatorConfig{
 		TransformerConfig: helper.NewTransformerConfig(operatorID, "recombine"),
 		MaxBatchSize:      1000,
+		CombineWith:       "\n",
 		OverwriteWith:     "oldest",
 	}
 }
@@ -49,6 +50,7 @@ type RecombineOperatorConfig struct {
 	IsLastEntry              string      `json:"is_last_entry"  yaml:"is_last_entry"`
 	MaxBatchSize             int         `json:"max_batch_size" yaml:"max_batch_size"`
 	CombineField             entry.Field `json:"combine_field"  yaml:"combine_field"`
+	CombineWith              string      `json:"combine_with"   yaml:"combine_with"`
 	OverwriteWith            string      `json:"overwrite_with" yaml:"overwrite_with"`
 }
 
@@ -105,6 +107,7 @@ func (c *RecombineOperatorConfig) Build(bc operator.BuildContext) ([]operator.Op
 		overwriteWithOldest: overwriteWithOldest,
 		batch:               make([]*entry.Entry, 0, c.MaxBatchSize),
 		combineField:        c.CombineField,
+		combineWith:         c.CombineWith,
 	}
 
 	return []operator.Operator{recombine}, nil
@@ -119,6 +122,7 @@ type RecombineOperator struct {
 	maxBatchSize        int
 	overwriteWithOldest bool
 	combineField        entry.Field
+	combineWith         string
 
 	sync.Mutex
 	batch []*entry.Entry
@@ -243,8 +247,8 @@ func (r *RecombineOperator) flushCombined() error {
 		}
 
 		recombined.WriteString(s)
-		if i != len(r.batch)-1 {
-			recombined.WriteByte('\n')
+		if i != len(r.batch)-1 && len(r.combineWith) > 0 {
+			recombined.WriteString(r.combineWith)
 		}
 	}
 
