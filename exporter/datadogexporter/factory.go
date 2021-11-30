@@ -154,7 +154,8 @@ func createMetricsExporter(
 		cfg,
 		set,
 		pushMetricsFn,
-		exporterhelper.WithTimeout(cfg.TimeoutSettings),
+		// explicitly disable since we rely on http.Client timeout logic.
+		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0 * time.Second}),
 		exporterhelper.WithRetry(cfg.RetrySettings),
 		exporterhelper.WithQueue(cfg.QueueSettings),
 		exporterhelper.WithShutdown(func(context.Context) error {
@@ -207,7 +208,8 @@ func createTracesExporter(
 		cfg,
 		set,
 		pushTracesFn,
-		exporterhelper.WithTimeout(cfg.TimeoutSettings),
+		// explicitly disable since we rely on http.Client timeout logic.
+		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0 * time.Second}),
 		exporterhelper.WithRetry(cfg.RetrySettings),
 		exporterhelper.WithQueue(cfg.QueueSettings),
 		exporterhelper.WithShutdown(func(context.Context) error {
