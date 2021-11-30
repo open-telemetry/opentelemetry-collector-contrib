@@ -62,10 +62,9 @@ func (e *kafkaTracesProducer) tracesPusher(ctx context.Context, td pdata.Traces)
 			}
 		}
 		return err
-	} else {
-		statsTags := []tag.Mutator{tag.Insert(tagInstanceName, e.id.String()), tag.Insert(tagInstanceType, string(config.TracesDataType))}
-		_ = stats.RecordWithTags(ctx, statsTags, statMessageCount.M(int64(len(messages))))
 	}
+	statsTags := []tag.Mutator{tag.Insert(tagInstanceName, e.id.String()), tag.Insert(tagInstanceType, string(config.TracesDataType))}
+	_ = stats.RecordWithTags(ctx, statsTags, statMessageCount.M(int64(len(messages))))
 
 	return nil
 }
@@ -96,10 +95,9 @@ func (e *kafkaMetricsProducer) metricsDataPusher(ctx context.Context, md pdata.M
 			}
 		}
 		return err
-	} else {
-		statsTags := []tag.Mutator{tag.Insert(tagInstanceName, e.id.String()), tag.Insert(tagInstanceType, string(config.MetricsDataType))}
-		_ = stats.RecordWithTags(ctx, statsTags, statMessageCount.M(int64(len(messages))))
 	}
+	statsTags := []tag.Mutator{tag.Insert(tagInstanceName, e.id.String()), tag.Insert(tagInstanceType, string(config.MetricsDataType))}
+	_ = stats.RecordWithTags(ctx, statsTags, statMessageCount.M(int64(len(messages))))
 	return nil
 }
 
@@ -129,10 +127,9 @@ func (e *kafkaLogsProducer) logsDataPusher(ctx context.Context, ld pdata.Logs) e
 			}
 		}
 		return err
-	} else {
-		statsTags := []tag.Mutator{tag.Insert(tagInstanceName, e.id.String()), tag.Insert(tagInstanceType, string(config.LogsDataType))}
-		_ = stats.RecordWithTags(ctx, statsTags, statMessageCount.M(int64(len(messages))))
 	}
+	statsTags := []tag.Mutator{tag.Insert(tagInstanceName, e.id.String()), tag.Insert(tagInstanceType, string(config.LogsDataType))}
+	_ = stats.RecordWithTags(ctx, statsTags, statMessageCount.M(int64(len(messages))))
 	return nil
 }
 
