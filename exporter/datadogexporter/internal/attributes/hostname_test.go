@@ -99,6 +99,13 @@ func TestHostnameFromAttributes(t *testing.T) {
 	hostname, ok = HostnameFromAttributes(attrs)
 	assert.False(t, ok)
 	assert.Empty(t, hostname)
+
+	attrs = testutils.NewAttributeMap(map[string]string{
+		AttributeDatadogHostname: "127.0.0.1",
+	})
+	hostname, ok = HostnameFromAttributes(attrs)
+	assert.False(t, ok)
+	assert.Empty(t, hostname)
 }
 
 func TestGetClusterName(t *testing.T) {
