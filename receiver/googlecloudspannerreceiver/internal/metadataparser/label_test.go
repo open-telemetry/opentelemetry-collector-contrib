@@ -33,12 +33,13 @@ func TestLabel_ToLabelValueMetadata(t *testing.T) {
 		valueType   metadata.ValueType
 		expectError bool
 	}{
-		"Value type is string":       {metadata.StringValueType, false},
-		"Value type is int":          {metadata.IntValueType, false},
-		"Value type is bool":         {metadata.BoolValueType, false},
-		"Value type is string slice": {metadata.StringSliceValueType, false},
-		"Value type is byte slice":   {metadata.ByteSliceValueType, false},
-		"Value type is unknown":      {metadata.UnknownValueType, true},
+		"Value type is string":             {metadata.StringValueType, false},
+		"Value type is int":                {metadata.IntValueType, false},
+		"Value type is bool":               {metadata.BoolValueType, false},
+		"Value type is string slice":       {metadata.StringSliceValueType, false},
+		"Value type is byte slice":         {metadata.ByteSliceValueType, false},
+		"Value type is lock request slice": {metadata.LockRequestSliceValueType, false},
+		"Value type is unknown":            {metadata.UnknownValueType, true},
 	}
 
 	for name, testCase := range testCases {
