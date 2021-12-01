@@ -1,1 +1,68 @@
 name: postgresql
+
+attributes:
+  database:
+    description: The name of the database.
+  table:
+    description: The schema name followed by the table name.
+  source:
+    description: The block read source type.
+    enum: [ heap_read, heap_hit, idx_read, idx_hit, toast_read, toast_hit, tidx_read, tidx_hit ]  
+  operation:
+    description: The database operation.
+    enum: [ ins, upd, del, hot_upd ]
+  state:
+    description: The tuple (row) state.
+    enum: [ dead, live ]
+
+
+metrics:
+  postgresql.blocks_read:
+    description: The number of blocks read.
+    unit: 1
+    sum:
+      monotonic: true
+      aggregation: cumulative
+    attributes: [ database, table, source ]
+  postgresql.commits:
+    description: The number of commits.
+    unit: 1
+    sum:
+      monotonic: true
+      aggregation: cumulative
+    attributes: [ database ]
+  postgresql.db_size:
+    description: The database disk usage.
+    unit: By
+    sum:
+      monotonic: false
+      aggregation: cumulative
+    attributes: [ database ]
+  postgresql.backends:
+    description: The number of backends.
+    unit: 1
+    sum:
+      monotonic: false
+      aggregation: cumulative
+    attributes: [ database ]
+  postgresql.rows:
+    description: The number of rows in the database.
+    unit: 1
+    sum:
+      monotonic: false
+      aggregation: cumulative
+    attributes: [ database, table, state ]
+  postgresql.operations:
+    description: The number of db row operations.
+    unit: 1
+    sum:
+      monotonic: true
+      aggregation: cumulative
+    attributes: [ database, table, operation ]
+  postgresql.rollbacks:
+    description: The number of rollbacks.
+    unit: 1
+    sum:
+      monotonic: true
+      aggregation: cumulative
+    attributes: [ database ]

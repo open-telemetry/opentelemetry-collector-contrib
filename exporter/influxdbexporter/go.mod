@@ -5,10 +5,10 @@ go 1.17
 require (
 	github.com/influxdata/influxdb-observability/common v0.2.10
 	github.com/influxdata/influxdb-observability/otel2influx v0.2.10
-	github.com/influxdata/line-protocol/v2 v2.2.0
+	github.com/influxdata/line-protocol/v2 v2.2.1
 	github.com/stretchr/testify v1.7.0
-	go.opentelemetry.io/collector v0.39.1-0.20211122170858-f69d23494726
-	go.opentelemetry.io/collector/model v0.39.1-0.20211122170858-f69d23494726
+	go.opentelemetry.io/collector v0.40.0
+	go.opentelemetry.io/collector/model v0.40.0
 	go.uber.org/zap v1.19.1
 
 )
