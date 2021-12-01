@@ -14,51 +14,11 @@
 
 package main
 
-import (
-	"fmt"
-)
-
 var (
 	_ MetricData = &gauge{}
 	_ MetricData = &sum{}
 	_ MetricData = &histogram{}
 )
-
-type ymlMetricData struct {
-	MetricData `yaml:"-"`
-}
-
-// UnmarshalYAML converts the metrics.data map based on metrics.data.type.
-func (e *ymlMetricData) UnmarshalYAML(unmarshal func(interface{}) error) error {
-	var m struct {
-		Type string `yaml:"type"`
-	}
-
-	if err := unmarshal(&m); err != nil {
-		return err
-	}
-
-	var md MetricData
-
-	switch m.Type {
-	case "gauge":
-		md = &gauge{}
-	case "sum":
-		md = &sum{}
-	case "histogram":
-		md = &histogram{}
-	default:
-		return fmt.Errorf("metric data %q type invalid", m.Type)
-	}
-
-	if err := unmarshal(md); err != nil {
-		return fmt.Errorf("unable to unmarshal data for type %q: %v", m.Type, err)
-	}
-
-	e.MetricData = md
-
-	return nil
-}
 
 // MetricData is generic interface for all metric datatypes.
 type MetricData interface {
