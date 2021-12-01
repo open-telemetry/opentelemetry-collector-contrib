@@ -15,6 +15,7 @@
 package filestorage
 
 import (
+	"os"
 	"path"
 	"testing"
 	"time"
@@ -34,20 +35,54 @@ func TestLoadConfig(t *testing.T) {
 	factories.Extensions[typeStr] = factory
 	cfg, err := configtest.LoadConfigAndValidate(path.Join(".", "testdata", "config.yaml"), factories)
 
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.NotNil(t, cfg)
 
 	require.Len(t, cfg.Extensions, 2)
 
 	ext0 := cfg.Extensions[config.NewComponentID(typeStr)]
-	assert.Equal(t, factory.CreateDefaultConfig(), ext0)
+	defaultConfig := factory.CreateDefaultConfig()
+	defaultConfigFileStorage, ok := defaultConfig.(*Config)
+	require.True(t, ok)
+	// Specify a directory so that tests will pass because on some systems the
+	// default dir (e.g. on not windows: /var/lib/otelcol/file_storage) might not
+	// exist which will fail the test when config.Validate() will be called.
+	defaultConfigFileStorage.Directory = "."
+	assert.Equal(t, defaultConfig, ext0)
 
 	ext1 := cfg.Extensions[config.NewComponentIDWithName(typeStr, "all_settings")]
 	assert.Equal(t,
 		&Config{
 			ExtensionSettings: config.NewExtensionSettings(config.NewComponentIDWithName(typeStr, "all_settings")),
-			Directory:         "/var/lib/otelcol/mydir",
+			Directory:         ".",
 			Timeout:           2 * time.Second,
 		},
 		ext1)
+}
+
+func TestHandleNonExistingDirectoryWithAnError(t *testing.T) {
+	f := NewFactory()
+	cfg := f.CreateDefaultConfig().(*Config)
+	cfg.Directory = "/not/a/dir"
+
+	err := cfg.Validate()
+	require.Error(t, err)
+	require.EqualError(t, err, "directory must exist: stat /not/a/dir: no such file or directory")
+}
+
+func TestHandleProvidingFilePathAsDirWithAnError(t *testing.T) {
+	f := NewFactory()
+	cfg := f.CreateDefaultConfig().(*Config)
+
+	file, err := os.CreateTemp("", "")
+	require.NoError(t, err)
+	t.Cleanup(func() {
+		require.NoError(t, os.Remove(file.Name()))
+	})
+
+	cfg.Directory = file.Name()
+
+	err = cfg.Validate()
+	require.Error(t, err)
+	require.EqualError(t, err, file.Name()+" is not a directory")
 }
