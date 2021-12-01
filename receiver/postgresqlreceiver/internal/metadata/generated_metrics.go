@@ -99,7 +99,7 @@ var Metrics = &metricStruct{
 		func(metric pdata.Metric) {
 			metric.SetName("postgresql.backends")
 			metric.SetDescription("The number of backends.")
-			metric.SetUnit("")
+			metric.SetUnit("1")
 			metric.SetDataType(pdata.MetricDataTypeSum)
 			metric.Sum().SetIsMonotonic(false)
 			metric.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
@@ -110,7 +110,7 @@ var Metrics = &metricStruct{
 		func(metric pdata.Metric) {
 			metric.SetName("postgresql.blocks_read")
 			metric.SetDescription("The number of blocks read.")
-			metric.SetUnit("")
+			metric.SetUnit("1")
 			metric.SetDataType(pdata.MetricDataTypeSum)
 			metric.Sum().SetIsMonotonic(true)
 			metric.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
@@ -121,7 +121,7 @@ var Metrics = &metricStruct{
 		func(metric pdata.Metric) {
 			metric.SetName("postgresql.commits")
 			metric.SetDescription("The number of commits.")
-			metric.SetUnit("")
+			metric.SetUnit("1")
 			metric.SetDataType(pdata.MetricDataTypeSum)
 			metric.Sum().SetIsMonotonic(true)
 			metric.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
@@ -132,7 +132,7 @@ var Metrics = &metricStruct{
 		func(metric pdata.Metric) {
 			metric.SetName("postgresql.db_size")
 			metric.SetDescription("The database disk usage.")
-			metric.SetUnit("")
+			metric.SetUnit("By")
 			metric.SetDataType(pdata.MetricDataTypeSum)
 			metric.Sum().SetIsMonotonic(false)
 			metric.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
@@ -143,7 +143,7 @@ var Metrics = &metricStruct{
 		func(metric pdata.Metric) {
 			metric.SetName("postgresql.operations")
 			metric.SetDescription("The number of db row operations.")
-			metric.SetUnit("")
+			metric.SetUnit("1")
 			metric.SetDataType(pdata.MetricDataTypeSum)
 			metric.Sum().SetIsMonotonic(true)
 			metric.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
@@ -154,7 +154,7 @@ var Metrics = &metricStruct{
 		func(metric pdata.Metric) {
 			metric.SetName("postgresql.rollbacks")
 			metric.SetDescription("The number of rollbacks.")
-			metric.SetUnit("")
+			metric.SetUnit("1")
 			metric.SetDataType(pdata.MetricDataTypeSum)
 			metric.Sum().SetIsMonotonic(true)
 			metric.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
@@ -165,7 +165,7 @@ var Metrics = &metricStruct{
 		func(metric pdata.Metric) {
 			metric.SetName("postgresql.rows")
 			metric.SetDescription("The number of rows in the database.")
-			metric.SetUnit("")
+			metric.SetUnit("1")
 			metric.SetDataType(pdata.MetricDataTypeSum)
 			metric.Sum().SetIsMonotonic(false)
 			metric.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
