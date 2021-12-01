@@ -26,9 +26,3 @@ type Config struct {
 	Database                                string `mapstructure:"database,omitempty"`
 	confignet.NetAddr                       `mapstructure:",squash"`
 }
-
-// Errors for missing required config parameters.
-const (
-	errNoUsername = "invalid config: missing username"
-	errNoPassword = "invalid config: missing password" // #nosec G101 - not hardcoded credentials
-)
