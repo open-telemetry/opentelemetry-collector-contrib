@@ -108,6 +108,13 @@ func TestCreateNodeAndResourcePromToOTLP(t *testing.T) {
 				"job", "", "", "http", "",
 			}),
 		},
+		{
+			name: "0.0.0.0 address",
+			job:  "job", instance: "0.0.0.0:8888", scheme: "http",
+			want: makeResourceWithJobInstanceScheme(&jobInstanceDefinition{
+				"job", "0.0.0.0:8888", "127.0.0.1", "http", "8888",
+			}),
+		},
 	}
 
 	for _, tt := range tests {

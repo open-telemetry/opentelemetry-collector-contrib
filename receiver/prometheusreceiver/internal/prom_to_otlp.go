@@ -21,11 +21,24 @@ import (
 	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
 )
 
+const (
+	localHostIPv4 = "127.0.0.1"
+	anyIPIPv4     = "0.0.0.0"
+)
+
+func sanitizeHost(host string) string {
+	if host == anyIPIPv4 {
+		return localHostIPv4
+	}
+	return host
+}
+
 func createNodeAndResourcePdata(job, instance, scheme string) pdata.Resource {
 	host, port, err := net.SplitHostPort(instance)
 	if err != nil {
 		host = instance
 	}
+	host = sanitizeHost(host)
 	resource := pdata.NewResource()
 	attrs := resource.Attributes()
 	attrs.UpsertString(conventions.AttributeServiceName, job)
