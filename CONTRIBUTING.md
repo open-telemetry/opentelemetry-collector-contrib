@@ -46,6 +46,7 @@ contributors.
   needed.
 - Add a `replace` directive at the root `go.mod` file so your component is
   included in the build of the contrib executable.
+- Add your component to `versions.yaml`.
 
 ## General Recommendations
 Below are some recommendations that apply to typical components. These are not

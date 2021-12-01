@@ -1,0 +1,3 @@
+# TYPE a summary
+a{quantile="-1"} 0
+# EOF

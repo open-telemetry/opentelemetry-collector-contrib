@@ -2,13 +2,37 @@
 
 ## Unreleased
 
+## v0.40.0
+
 ## 🛑 Breaking changes 🛑
 
-- `tencentcloudlogserviceexporter` change `Endpoint` to `Region` to simplify configuration (#6135)
+- `tencentcloudlogserviceexporter`: change `Endpoint` to `Region` to simplify configuration (#6135)
+
+## 🚀 New components 🚀
+
+- Add `memcached` receiver (#5839)
+
+## 🧰 Bug fixes 🧰
+
+- Fix token passthrough for HEC (#5435)
+- `datadogexporter`: Fix missing resource attributes default mapping when resource_attributes_as_tags: false (#6359)
+- `tanzuobservabilityexporter`: Log and report missing metric values. (#5835)
+- `mongodbatlasreceiver`: Fix metrics metadata (#6395)
 
 ## 💡 Enhancements 💡
 
 - `awsprometheusremotewrite` exporter: Improve error message when failing to sign request
+- `mongodbatlas`: add metrics (#5921)
+- `healthcheckextension`: Add path option (#6111)
+- Set unprivileged user to container image (#6380)
+- `k8sclusterreceiver`: Add allocatable type of metrics (#6113)
+- `observiqexporter`: Allow Dialer timeout to be configured (#5906)
+- `routingprocessor`: remove broken debug log fields (#6373)
+- `prometheusremotewriteexporter`: Add exemplars support (#5578) 
+
+## 🚀 New components 🚀
+
+- Add `mongodbatlasreceiver` receiver (#6367)
 
 ## v0.39.0
 

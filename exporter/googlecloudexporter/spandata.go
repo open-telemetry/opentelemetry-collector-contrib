@@ -13,7 +13,7 @@
 // limitations under the License.
 
 // Package spandata defines translators from Trace proto spans to OpenCensus Go spanData.
-package googlecloudexporter
+package googlecloudexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/googlecloudexporter"
 
 import (
 	"context"

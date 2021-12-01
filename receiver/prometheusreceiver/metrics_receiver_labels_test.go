@@ -38,7 +38,7 @@ func TestExternalLabels(t *testing.T) {
 		},
 	}
 
-	mp, cfg, err := setupMockPrometheus(targets...)
+	mp, cfg, err := setupMockPrometheus(false, targets...)
 	cfg.GlobalConfig.ExternalLabels = labels.FromStrings("key", "value")
 	require.Nilf(t, err, "Failed to create Prometheus config: %v", err)
 
@@ -130,7 +130,7 @@ func TestLabelLimitConfig(t *testing.T) {
 		},
 	}
 
-	mp, cfg, err := setupMockPrometheus(targets...)
+	mp, cfg, err := setupMockPrometheus(false, targets...)
 	require.Nilf(t, err, "Failed to create Prometheus config: %v", err)
 
 	// set label limit in scrape_config
@@ -141,7 +141,7 @@ func TestLabelLimitConfig(t *testing.T) {
 	testComponentCustomConfig(t, targets, mp, cfg)
 }
 
-const targetLabelNameLimit1 = `
+const targetLabelLimits1 = `
 # HELP test_gauge0 This is my gauge
 # TYPE test_gauge0 gauge
 test_gauge0{label1="value1",label2="value2"} 10
@@ -149,9 +149,26 @@ test_gauge0{label1="value1",label2="value2"} 10
 # HELP test_counter0 This is my counter
 # TYPE test_counter0 counter
 test_counter0{label1="value1",label2="value2"} 1
+
+# HELP test_histogram0 This is my histogram
+# TYPE test_histogram0 histogram
+test_histogram0_bucket{label1="value1",label2="value2",le="0.1"} 1000
+test_histogram0_bucket{label1="value1",label2="value2",le="0.5"} 1500
+test_histogram0_bucket{label1="value1",label2="value2",le="1"} 2000
+test_histogram0_bucket{label1="value1",label2="value2",le="+Inf"} 2500
+test_histogram0_sum{label1="value1",label2="value2"} 5000
+test_histogram0_count{label1="value1",label2="value2"} 2500
+
+# HELP test_summary0 This is my summary
+# TYPE test_summary0 summary
+test_summary0{label1="value1",label2="value2",quantile="0.1"} 1
+test_summary0{label1="value1",label2="value2",quantile="0.5"} 5
+test_summary0{label1="value1",label2="value2",quantile="0.99"} 8
+test_summary0_sum{label1="value1",label2="value2"} 5000
+test_summary0_count{label1="value1",label2="value2"} 1000
 `
 
-func verifyLabelLengthTarget1(t *testing.T, td *testData, rms []*pdata.ResourceMetrics) {
+func verifyLabelConfigTarget1(t *testing.T, td *testData, rms []*pdata.ResourceMetrics) {
 	verifyNumScrapeResults(t, td, rms)
 	require.Greater(t, len(rms), 0, "At least one resource metric should be present")
 
@@ -159,7 +176,7 @@ func verifyLabelLengthTarget1(t *testing.T, td *testData, rms []*pdata.ResourceM
 	metrics1 := rms[0].InstrumentationLibraryMetrics().At(0).Metrics()
 	ts1 := metrics1.At(0).Gauge().DataPoints().At(0).Timestamp()
 
-	doCompare(t, "scrape-labelNameLimit", want, rms[0], []testExpectation{
+	e1 := []testExpectation{
 		assertMetricPresent("test_counter0",
 			compareMetricType(pdata.MetricDataTypeSum),
 			[]dataPointExpectation{
@@ -171,8 +188,7 @@ func verifyLabelLengthTarget1(t *testing.T, td *testData, rms []*pdata.ResourceM
 						compareAttributes(map[string]string{"label1": "value1", "label2": "value2"}),
 					},
 				},
-			},
-		),
+			}),
 		assertMetricPresent("test_gauge0",
 			compareMetricType(pdata.MetricDataTypeGauge),
 			[]dataPointExpectation{
@@ -183,12 +199,36 @@ func verifyLabelLengthTarget1(t *testing.T, td *testData, rms []*pdata.ResourceM
 						compareAttributes(map[string]string{"label1": "value1", "label2": "value2"}),
 					},
 				},
-			},
-		),
-	})
+			}),
+		assertMetricPresent("test_histogram0",
+			compareMetricType(pdata.MetricDataTypeHistogram),
+			[]dataPointExpectation{
+				{
+					histogramPointComparator: []histogramPointComparator{
+						compareHistogramStartTimestamp(ts1),
+						compareHistogramTimestamp(ts1),
+						compareHistogram(2500, 5000, []uint64{1000, 500, 500, 500}),
+						compareHistogramAttributes(map[string]string{"label1": "value1", "label2": "value2"}),
+					},
+				},
+			}),
+		assertMetricPresent("test_summary0",
+			compareMetricType(pdata.MetricDataTypeSummary),
+			[]dataPointExpectation{
+				{
+					summaryPointComparator: []summaryPointComparator{
+						compareSummaryStartTimestamp(ts1),
+						compareSummaryTimestamp(ts1),
+						compareSummary(1000, 5000, [][]float64{{0.1, 1}, {0.5, 5}, {0.99, 8}}),
+						compareSummaryAttributes(map[string]string{"label1": "value1", "label2": "value2"}),
+					},
+				},
+			}),
+	}
+	doCompare(t, "scrape-label-config-test", want, rms[0], e1)
 }
 
-const targetLabelNameLimit2 = `
+const targetLabelNameLimit = `
 # HELP test_gauge0 This is my gauge
 # TYPE test_gauge0 gauge
 test_gauge0{label1="value1",labelNameExceedingLimit="value2"} 10
@@ -203,25 +243,328 @@ func TestLabelNameLimitConfig(t *testing.T) {
 		{
 			name: "target1",
 			pages: []mockPrometheusResponse{
-				{code: 200, data: targetLabelNameLimit1},
+				{code: 200, data: targetLabelLimits1},
 			},
-			validateFunc: verifyLabelLengthTarget1,
+			validateFunc: verifyLabelConfigTarget1,
 		},
 		{
 			name: "target2",
 			pages: []mockPrometheusResponse{
-				{code: 200, data: targetLabelNameLimit2},
+				{code: 200, data: targetLabelNameLimit},
 			},
 			validateFunc: verifyFailedScrape,
 		},
 	}
 
-	mp, cfg, err := setupMockPrometheus(targets...)
+	mp, cfg, err := setupMockPrometheus(false, targets...)
 	require.Nilf(t, err, "Failed to create Prometheus config: %v", err)
 
 	// set label name limit in scrape_config
 	for _, scrapeCfg := range cfg.ScrapeConfigs {
 		scrapeCfg.LabelNameLengthLimit = 20
+	}
+
+	testComponentCustomConfig(t, targets, mp, cfg)
+}
+
+const targetLabelValueLimit = `
+# HELP test_gauge0 This is my gauge
+# TYPE test_gauge0 gauge
+test_gauge0{label1="value1",label2="label-value-exceeding-limit"} 10
+
+# HELP test_counter0 This is my counter
+# TYPE test_counter0 counter
+test_counter0{label1="value1",label2="value2"} 1
+`
+
+func TestLabelValueLimitConfig(t *testing.T) {
+	targets := []*testData{
+		{
+			name: "target1",
+			pages: []mockPrometheusResponse{
+				{code: 200, data: targetLabelLimits1},
+			},
+			validateFunc: verifyLabelConfigTarget1,
+		},
+		{
+			name: "target2",
+			pages: []mockPrometheusResponse{
+				{code: 200, data: targetLabelValueLimit},
+			},
+			validateFunc: verifyFailedScrape,
+		},
+	}
+
+	mp, cfg, err := setupMockPrometheus(false, targets...)
+	require.Nilf(t, err, "Failed to create Prometheus config: %v", err)
+
+	//set label value length limit in scrape_config
+	for _, scrapeCfg := range cfg.ScrapeConfigs {
+		scrapeCfg.LabelValueLengthLimit = 25
+	}
+
+	testComponentCustomConfig(t, targets, mp, cfg)
+}
+
+//for all metric types, testLabel has empty value
+const emptyLabelValuesTarget1 = `
+# HELP test_gauge0 This is my gauge
+# TYPE test_gauge0 gauge
+test_gauge0{id="1",testLabel=""} 19
+
+# HELP test_counter0 This is my counter
+# TYPE test_counter0 counter
+test_counter0{id="1",testLabel=""} 100
+
+# HELP test_histogram0 This is my histogram
+# TYPE test_histogram0 histogram
+test_histogram0_bucket{id="1",testLabel="",le="0.1"} 1000
+test_histogram0_bucket{id="1",testLabel="",le="0.5"} 1500
+test_histogram0_bucket{id="1",testLabel="",le="1"} 2000
+test_histogram0_bucket{id="1",testLabel="",le="+Inf"} 2500
+test_histogram0_sum{id="1",testLabel=""} 5000
+test_histogram0_count{id="1",testLabel=""} 2500
+
+# HELP test_summary0 This is my summary
+# TYPE test_summary0 summary
+test_summary0{id="1",testLabel="",quantile="0.1"} 1
+test_summary0{id="1",testLabel="",quantile="0.5"} 5
+test_summary0{id="1",testLabel="",quantile="0.99"} 8
+test_summary0_sum{id="1",testLabel=""} 5000
+test_summary0_count{id="1",testLabel=""} 1000
+`
+
+func verifyEmptyLabelValuesTarget1(t *testing.T, td *testData, rms []*pdata.ResourceMetrics) {
+	require.Greater(t, len(rms), 0, "At least one resource metric should be present")
+
+	want := td.attributes
+	metrics1 := rms[0].InstrumentationLibraryMetrics().At(0).Metrics()
+	ts1 := metrics1.At(0).Gauge().DataPoints().At(0).Timestamp()
+
+	e1 := []testExpectation{
+		assertMetricPresent("test_gauge0",
+			compareMetricType(pdata.MetricDataTypeGauge),
+			[]dataPointExpectation{
+				{
+					numberPointComparator: []numberPointComparator{
+						compareTimestamp(ts1),
+						compareDoubleValue(19),
+						compareAttributes(map[string]string{"id": "1"}),
+					},
+				},
+			}),
+		assertMetricPresent("test_counter0",
+			compareMetricType(pdata.MetricDataTypeSum),
+			[]dataPointExpectation{
+				{
+					numberPointComparator: []numberPointComparator{
+						compareTimestamp(ts1),
+						compareDoubleValue(100),
+						compareAttributes(map[string]string{"id": "1"}),
+					},
+				},
+			}),
+		assertMetricPresent("test_histogram0",
+			compareMetricType(pdata.MetricDataTypeHistogram),
+			[]dataPointExpectation{
+				{
+					histogramPointComparator: []histogramPointComparator{
+						compareHistogramStartTimestamp(ts1),
+						compareHistogramTimestamp(ts1),
+						compareHistogram(2500, 5000, []uint64{1000, 500, 500, 500}),
+						compareHistogramAttributes(map[string]string{"id": "1"}),
+					},
+				},
+			}),
+		assertMetricPresent("test_summary0",
+			compareMetricType(pdata.MetricDataTypeSummary),
+			[]dataPointExpectation{
+				{
+					summaryPointComparator: []summaryPointComparator{
+						compareSummaryStartTimestamp(ts1),
+						compareSummaryTimestamp(ts1),
+						compareSummary(1000, 5000, [][]float64{{0.1, 1}, {0.5, 5}, {0.99, 8}}),
+						compareSummaryAttributes(map[string]string{"id": "1"}),
+					},
+				},
+			}),
+	}
+	doCompare(t, "scrape-empty-label-values-1", want, rms[0], e1)
+}
+
+// target has two time series for both gauge and counter, only one time series has a value for the label "testLabel"
+const emptyLabelValuesTarget2 = `
+# HELP test_gauge0 This is my gauge.
+# TYPE test_gauge0 gauge
+test_gauge0{id="1",testLabel=""} 19
+test_gauge0{id="2",testLabel="foobar"} 2
+
+# HELP test_counter0 This is my counter
+# TYPE test_counter0 counter
+test_counter0{id="1",testLabel=""} 100
+test_counter0{id="2",testLabel="foobar"} 110
+`
+
+func verifyEmptyLabelValuesTarget2(t *testing.T, td *testData, rms []*pdata.ResourceMetrics) {
+	require.Greater(t, len(rms), 0, "At least one resource metric should be present")
+
+	want := td.attributes
+	metrics1 := rms[0].InstrumentationLibraryMetrics().At(0).Metrics()
+	ts1 := metrics1.At(0).Gauge().DataPoints().At(0).Timestamp()
+
+	e1 := []testExpectation{
+		assertMetricPresent("test_gauge0",
+			compareMetricType(pdata.MetricDataTypeGauge),
+			[]dataPointExpectation{
+				{
+					numberPointComparator: []numberPointComparator{
+						compareTimestamp(ts1),
+						compareDoubleValue(19),
+						compareAttributes(map[string]string{"id": "1"}),
+					},
+				},
+				{
+					numberPointComparator: []numberPointComparator{
+						compareTimestamp(ts1),
+						compareDoubleValue(2),
+						compareAttributes(map[string]string{"id": "2", "testLabel": "foobar"}),
+					},
+				},
+			}),
+		assertMetricPresent("test_counter0",
+			compareMetricType(pdata.MetricDataTypeSum),
+			[]dataPointExpectation{
+				{
+					numberPointComparator: []numberPointComparator{
+						compareTimestamp(ts1),
+						compareDoubleValue(100),
+						compareAttributes(map[string]string{"id": "1"}),
+					},
+				},
+				{
+					numberPointComparator: []numberPointComparator{
+						compareTimestamp(ts1),
+						compareDoubleValue(110),
+						compareAttributes(map[string]string{"id": "2", "testLabel": "foobar"}),
+					},
+				},
+			}),
+	}
+	doCompare(t, "scrape-empty-label-values-2", want, rms[0], e1)
+}
+
+func TestEmptyLabelValues(t *testing.T) {
+	targets := []*testData{
+		{
+			name: "target1",
+			pages: []mockPrometheusResponse{
+				{code: 200, data: emptyLabelValuesTarget1},
+			},
+			validateFunc: verifyEmptyLabelValuesTarget1,
+		},
+		{
+			name: "target2",
+			pages: []mockPrometheusResponse{
+				{code: 200, data: emptyLabelValuesTarget2},
+			},
+			validateFunc: verifyEmptyLabelValuesTarget2,
+		},
+	}
+	testComponent(t, targets, false, "", false)
+}
+
+const honorLabelsTarget = `
+# HELP test_gauge0 This is my gauge
+# TYPE test_gauge0 gauge
+test_gauge0{instance="hostname:8080",job="honor_labels_test",testLabel="value1"} 1
+`
+
+func verifyHonorLabelsFalse(t *testing.T, td *testData, rms []*pdata.ResourceMetrics) {
+	want := td.attributes
+	require.Greater(t, len(rms), 0, "At least one resource metric should be present")
+
+	metrics1 := rms[0].InstrumentationLibraryMetrics().At(0).Metrics()
+	ts1 := metrics1.At(0).Gauge().DataPoints().At(0).Timestamp()
+
+	doCompare(t, "honor_labels_false", want, rms[0], []testExpectation{
+		assertMetricPresent("test_gauge0",
+			compareMetricType(pdata.MetricDataTypeGauge),
+			[]dataPointExpectation{
+				{
+					numberPointComparator: []numberPointComparator{
+						compareTimestamp(ts1),
+						compareDoubleValue(1),
+						//job and instance labels must be prefixed with "exported_"
+						compareAttributes(map[string]string{"exported_job": "honor_labels_test", "exported_instance": "hostname:8080", "testLabel": "value1"}),
+					},
+				},
+			}),
+	})
+}
+
+func TestHonorLabelsFalseConfig(t *testing.T) {
+	targets := []*testData{
+		{
+			name: "target1",
+			pages: []mockPrometheusResponse{
+				{code: 200, data: honorLabelsTarget},
+			},
+			validateFunc: verifyHonorLabelsFalse,
+		},
+	}
+
+	testComponent(t, targets, false, "", false)
+}
+
+func verifyHonorLabelsTrue(t *testing.T, td *testData, rms []*pdata.ResourceMetrics) {
+	//Test for honor_labels: true is skipped. Currently, the Prometheus receiver is unable to support this config
+	//See: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/5757
+	//TODO: Enable this test once issue 5757 is resolved
+	t.Skip("skipping test for honor_labels true configuration")
+
+	require.Greater(t, len(rms), 0, "At least one resource metric should be present")
+
+	//job and instance label values should be honored from honorLabelsTarget
+	expectedAttributes := td.attributes
+	expectedAttributes.Update("job", pdata.NewAttributeValueString("honor_labels_test"))
+	expectedAttributes.Update("instance", pdata.NewAttributeValueString("hostname:8080"))
+	expectedAttributes.Update("host.name", pdata.NewAttributeValueString("hostname"))
+	expectedAttributes.Update("port", pdata.NewAttributeValueString("8080"))
+
+	metrics1 := rms[0].InstrumentationLibraryMetrics().At(0).Metrics()
+	ts1 := metrics1.At(0).Gauge().DataPoints().At(0).Timestamp()
+
+	doCompare(t, "honor_labels_true", expectedAttributes, rms[0], []testExpectation{
+		assertMetricPresent("test_gauge0",
+			compareMetricType(pdata.MetricDataTypeGauge),
+			[]dataPointExpectation{
+				{
+					numberPointComparator: []numberPointComparator{
+						compareTimestamp(ts1),
+						compareDoubleValue(1),
+						compareAttributes(map[string]string{"testLabel": "value1"}),
+					},
+				},
+			}),
+	})
+}
+
+func TestHonorLabelsTrueConfig(t *testing.T) {
+	targets := []*testData{
+		{
+			name: "honor_labels_test",
+			pages: []mockPrometheusResponse{
+				{code: 200, data: honorLabelsTarget},
+			},
+			validateFunc: verifyHonorLabelsTrue,
+		},
+	}
+
+	mp, cfg, err := setupMockPrometheus(false, targets...)
+	require.Nilf(t, err, "Failed to create Prometheus config: %v", err)
+
+	for _, scrapeCfg := range cfg.ScrapeConfigs {
+		scrapeCfg.HonorLabels = true
 	}
 
 	testComponentCustomConfig(t, targets, mp, cfg)

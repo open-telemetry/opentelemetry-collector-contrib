@@ -18,6 +18,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	v1 "k8s.io/api/core/v1"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer"
 )
@@ -145,4 +146,44 @@ func TestEndpointsChanged(t *testing.T) {
 				Port:      443,
 				Transport: observer.ProtocolTCP}},
 	}, sink.changed)
+}
+
+func TestEndpointsPodNotRunning(t *testing.T) {
+	sink := endpointSink{}
+	h := handler{
+		idNamespace: "test-1",
+		watcher:     &sink,
+	}
+
+	completedPod := podWithNamedPorts.DeepCopy()
+	completedPod.Status.Phase = v1.PodSucceeded
+
+	h.OnUpdate(podWithNamedPorts, completedPod)
+	assert.ElementsMatch(t, []observer.Endpoint{
+		{
+			ID:     "test-1/pod-2-UID",
+			Target: "1.2.3.4",
+			Details: &observer.Pod{
+				Name:      "pod-2",
+				Namespace: "default",
+				UID:       "pod-2-UID",
+				Labels:    map[string]string{"env": "prod"},
+			},
+		}, {
+			ID:     "test-1/pod-2-UID/https(443)",
+			Target: "1.2.3.4:443",
+			Details: &observer.Port{
+				Name: "https",
+				Pod: observer.Pod{
+					Namespace: "default",
+					UID:       "pod-2-UID",
+					Name:      "pod-2",
+					Labels:    map[string]string{"env": "prod"},
+				},
+				Port:      443,
+				Transport: observer.ProtocolTCP,
+			},
+		}}, sink.removed)
+	assert.Nil(t, sink.changed)
+	assert.Nil(t, sink.added)
 }

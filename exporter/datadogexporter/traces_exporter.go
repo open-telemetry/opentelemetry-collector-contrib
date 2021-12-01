@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package datadogexporter
+package datadogexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter"
 
 import (
 	"context"
@@ -78,7 +78,7 @@ func newTracesExporter(ctx context.Context, params component.ExporterCreateSetti
 		params:         params,
 		cfg:            cfg,
 		ctx:            ctx,
-		edgeConnection: createTraceEdgeConnection(cfg.Traces.TCPAddr.Endpoint, cfg.API.Key, params.BuildInfo),
+		edgeConnection: createTraceEdgeConnection(cfg.Traces.TCPAddr.Endpoint, cfg.API.Key, params.BuildInfo, cfg.TimeoutSettings),
 		obfuscator:     obfuscator,
 		client:         client,
 		denylister:     denylister,

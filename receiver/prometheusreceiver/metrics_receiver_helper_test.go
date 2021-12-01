@@ -44,14 +44,15 @@ type mockPrometheusResponse struct {
 }
 
 type mockPrometheus struct {
-	mu          sync.Mutex // mu protects the fields below.
-	endpoints   map[string][]mockPrometheusResponse
-	accessIndex map[string]*int32
-	wg          *sync.WaitGroup
-	srv         *httptest.Server
+	mu             sync.Mutex // mu protects the fields below.
+	endpoints      map[string][]mockPrometheusResponse
+	accessIndex    map[string]*int32
+	wg             *sync.WaitGroup
+	srv            *httptest.Server
+	useOpenMetrics bool
 }
 
-func newMockPrometheus(endpoints map[string][]mockPrometheusResponse) *mockPrometheus {
+func newMockPrometheus(endpoints map[string][]mockPrometheusResponse, openMetricsContentType bool) *mockPrometheus {
 	accessIndex := make(map[string]*int32)
 	wg := &sync.WaitGroup{}
 	wg.Add(len(endpoints))
@@ -60,9 +61,10 @@ func newMockPrometheus(endpoints map[string][]mockPrometheusResponse) *mockProme
 		accessIndex[k] = &v
 	}
 	mp := &mockPrometheus{
-		wg:          wg,
-		accessIndex: accessIndex,
-		endpoints:   endpoints,
+		wg:             wg,
+		accessIndex:    accessIndex,
+		endpoints:      endpoints,
+		useOpenMetrics: openMetricsContentType,
 	}
 	srv := httptest.NewServer(mp)
 	mp.srv = srv
@@ -73,6 +75,9 @@ func (mp *mockPrometheus) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 	mp.mu.Lock()
 	defer mp.mu.Unlock()
 
+	if mp.useOpenMetrics {
+		rw.Header().Set("Content-Type", "application/openmetrics-text")
+	}
 	iptr, ok := mp.accessIndex[req.URL.Path]
 	if !ok {
 		rw.WriteHeader(404)
@@ -113,7 +118,7 @@ type testData struct {
 
 // setupMockPrometheus to create a mocked prometheus based on targets, returning the server and a prometheus exporting
 // config
-func setupMockPrometheus(tds ...*testData) (*mockPrometheus, *promcfg.Config, error) {
+func setupMockPrometheus(openMetricsContentType bool, tds ...*testData) (*mockPrometheus, *promcfg.Config, error) {
 	jobs := make([]map[string]interface{}, 0, len(tds))
 	endpoints := make(map[string][]mockPrometheusResponse)
 	metricPaths := make([]string, 0)
@@ -122,7 +127,7 @@ func setupMockPrometheus(tds ...*testData) (*mockPrometheus, *promcfg.Config, er
 		endpoints[metricPath] = t.pages
 		metricPaths = append(metricPaths, metricPath)
 	}
-	mp := newMockPrometheus(endpoints)
+	mp := newMockPrometheus(endpoints, openMetricsContentType)
 	u, _ := url.Parse(mp.srv.URL)
 	host, port, _ := net.SplitHostPort(u.Host)
 	for i := 0; i < len(tds); i++ {
@@ -377,6 +382,22 @@ func compareSummaryAttributes(attributes map[string]string) summaryPointComparat
 	}
 }
 
+func compareHistogramAttributes(attributes map[string]string) histogramPointComparator {
+	return func(t *testing.T, histogramDataPoint *pdata.HistogramDataPoint) {
+		req := assert.Equal(t, len(attributes), histogramDataPoint.Attributes().Len(), "Histogram attributes length do not match")
+		if req {
+			for k, v := range attributes {
+				value, ok := histogramDataPoint.Attributes().Get(k)
+				if ok {
+					assert.Equal(t, v, value.AsString(), "Histogram attributes value do not match")
+				} else {
+					assert.Fail(t, "Histogram attributes key do not match")
+				}
+			}
+		}
+	}
+}
+
 func compareStartTimestamp(startTimeStamp pdata.Timestamp) numberPointComparator {
 	return func(t *testing.T, numberDataPoint *pdata.NumberDataPoint) {
 		assert.Equal(t, startTimeStamp.String(), numberDataPoint.StartTimestamp().String(), "Start-Timestamp does not match")
@@ -441,9 +462,9 @@ func compareSummary(count uint64, sum float64, quantiles [][]float64) summaryPoi
 	}
 }
 
-func testComponent(t *testing.T, targets []*testData, useStartTimeMetric bool, startTimeMetricRegex string) {
+func testComponent(t *testing.T, targets []*testData, useStartTimeMetric bool, startTimeMetricRegex string, useOpenMetrics bool) {
 	// 1. setup mock server
-	mp, cfg, err := setupMockPrometheus(targets...)
+	mp, cfg, err := setupMockPrometheus(useOpenMetrics, targets...)
 	require.Nilf(t, err, "Failed to create Prometheus config: %v", err)
 	defer mp.Close()
 
@@ -474,7 +495,10 @@ func testComponent(t *testing.T, targets []*testData, useStartTimeMetric bool, s
 	// loop to validate outputs for each targets
 	for _, target := range targets {
 		t.Run(target.name, func(t *testing.T) {
-			validScrapes := getValidScrapes(t, pResults[target.name])
+			validScrapes := pResults[target.name]
+			if !useOpenMetrics {
+				validScrapes = getValidScrapes(t, pResults[target.name])
+			}
 			target.validateFunc(t, target, validScrapes)
 		})
 	}
