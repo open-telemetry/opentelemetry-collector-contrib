@@ -221,6 +221,8 @@ func (p *processorImp) ConsumeTraces(ctx context.Context, traces pdata.Traces) e
 		return err
 	}
 
+	p.resetExemplarData()
+
 	// Forward trace data unmodified.
 	return p.nextConsumer.ConsumeTraces(ctx, traces)
 }
@@ -326,7 +328,7 @@ func (p *processorImp) aggregateMetricsForSpan(serviceName string, span pdata.Sp
 	p.cache(serviceName, span, key, resourceAttr)
 	p.updateCallMetrics(key)
 	p.updateLatencyMetrics(key, latencyInMilliseconds, index)
-	p.updateLatencyExemplars(key, latencyInMilliseconds, index, span.TraceID())
+	p.updateLatencyExemplars(key, latencyInMilliseconds, span.TraceID())
 	p.lock.Unlock()
 }
 
@@ -335,15 +337,24 @@ func (p *processorImp) updateCallMetrics(key metricKey) {
 	p.callSum[key]++
 }
 
-// updateLatencyExemplars sets the histogram exemplars for the given metric key and bucket index.
-func (p *processorImp) updateLatencyExemplars(key metricKey, value float64, index int, traceID pdata.TraceID) {
+// updateLatencyExemplars sets the histogram exemplars for the given metric key and append the exemplar data.
+func (p *processorImp) updateLatencyExemplars(key metricKey, value float64, traceID pdata.TraceID) {
 	if _, ok := p.latencyExemplarsData[key]; !ok {
-		p.latencyExemplarsData[key] = make([]exemplarData, len(p.latencyBounds))
+		p.latencyExemplarsData[key] = []exemplarData{}
 	}
-	p.latencyExemplarsData[key][index] = exemplarData{
+
+	e := exemplarData{
 		traceID: traceID,
 		value:   value,
 	}
+	p.latencyExemplarsData[key] = append(p.latencyExemplarsData[key], e)
+}
+
+// resetExemplarData resets the entire exemplars map so the next trace will recreate all
+// the data structure. An exemplar is a punctual value that exists at specific moment in time
+// and should be not considered like a metrics that persist over time.
+func (p *processorImp) resetExemplarData() {
+	p.latencyExemplarsData = make(map[metricKey][]exemplarData)
 }
 
 // updateLatencyMetrics increments the histogram counts for the given metric key and bucket index.
