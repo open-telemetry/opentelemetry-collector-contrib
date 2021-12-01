@@ -115,9 +115,7 @@ func (e *LogEmitter) Stop() error {
 
 // Process will emit an entry to the output channel
 func (e *LogEmitter) Process(ctx context.Context, ent *entry.Entry) error {
-	oldBatch := e.appendEntry(ent)
-
-	if len(oldBatch) > 0 {
+	if oldBatch := e.appendEntry(ent); len(oldBatch) > 0 {
 		e.flush(ctx, oldBatch)
 	}
 
@@ -150,9 +148,7 @@ func (e *LogEmitter) flusher(ctx context.Context) {
 	for {
 		select {
 		case <-ticker.C:
-			oldBatch := e.makeNewBatch()
-
-			if len(oldBatch) > 0 {
+			if oldBatch := e.makeNewBatch(); len(oldBatch) > 0 {
 				e.flush(ctx, oldBatch)
 			}
 		case <-ctx.Done():
