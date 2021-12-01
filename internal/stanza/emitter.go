@@ -115,23 +115,19 @@ func (e *LogEmitter) Stop() error {
 
 // Process will emit an entry to the output channel
 func (e *LogEmitter) Process(ctx context.Context, ent *entry.Entry) error {
-	if batch := e.appendEntry(ent); batch != nil {
-		e.flush(ctx, batch)
-	}
-
-	return nil
-}
-
-// appendEntry appends the entry to the current batch. If maxBatchSize is reached, a new batch will be made, and the old batch
-// (which should be flushed) will be returned
-func (e *LogEmitter) appendEntry(ent *entry.Entry) []*entry.Entry {
 	e.batchMux.Lock()
-	defer e.batchMux.Unlock()
 
 	e.batch = append(e.batch, ent)
+
+	var oldBatch []*entry.Entry
 	if uint(len(e.batch)) >= e.maxBatchSize {
-		// maxBatchSize has been exceeded; create a new batch, returning the old one.
-		return e.makeNewBatchNoLock()
+		oldBatch, e.batch = e.batch, make([]*entry.Entry, 0, e.maxBatchSize)
+	}
+
+	e.batchMux.Unlock()
+
+	if len(oldBatch) > 0 {
+		e.flush(ctx, oldBatch)
 	}
 
 	return nil
@@ -147,8 +143,16 @@ func (e *LogEmitter) flusher(ctx context.Context) {
 	for {
 		select {
 		case <-ticker.C:
-			if batch := e.makeNewBatch(); batch != nil {
-				e.flush(ctx, batch)
+			var oldBatch []*entry.Entry
+
+			e.batchMux.Lock()
+			if len(e.batch) != 0 {
+				oldBatch, e.batch = e.batch, make([]*entry.Entry, 0, e.maxBatchSize)
+			}
+			e.batchMux.Unlock()
+
+			if len(oldBatch) > 0 {
+				e.flush(ctx, oldBatch)
 			}
 		case <-ctx.Done():
 			return
@@ -162,25 +166,4 @@ func (e *LogEmitter) flush(ctx context.Context, batch []*entry.Entry) {
 	case e.logChan <- batch:
 	case <-ctx.Done():
 	}
-}
-
-// makeNewBatch replaces the current batch on the log emitter with a new batch, returning the old one
-func (e *LogEmitter) makeNewBatch() []*entry.Entry {
-	e.batchMux.Lock()
-	defer e.batchMux.Unlock()
-
-	if len(e.batch) == 0 {
-		return nil
-	}
-
-	return e.makeNewBatchNoLock()
-}
-
-// makeNewBatchNoLock replaces the current batch on the log emitter with a new batch, returning the old one. It does not acquire the batchMux,
-// so it should used in cases where the batchMux is already acquired
-func (e *LogEmitter) makeNewBatchNoLock() []*entry.Entry {
-	oldBatch := e.batch
-	e.batch = make([]*entry.Entry, 0, e.maxBatchSize)
-
-	return oldBatch
 }
