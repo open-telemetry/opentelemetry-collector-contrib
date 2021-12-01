@@ -214,12 +214,12 @@ func TestAllConvertedEntriesAreSentAndReceived(t *testing.T) {
 
 			go func() {
 				entries := complexEntries(tc.entries)
-				for i := 0; i < tc.entries; i += int(tc.maxFlushCount) {
-					if i+int(tc.maxFlushCount) > tc.entries {
-						assert.NoError(t, converter.Batch(entries[i:tc.entries]))
-					} else {
-						assert.NoError(t, converter.Batch(entries[i:i+int(tc.maxFlushCount)]))
+				for from := 0; from < tc.entries; from += int(tc.maxFlushCount) {
+					to := from + int(tc.maxFlushCount)
+					if to > tc.entries {
+						to = tc.entries
 					}
+					assert.NoError(t, converter.Batch(entries[from:to]))
 				}
 			}()
 
@@ -568,12 +568,12 @@ func BenchmarkConverter(b *testing.B) {
 				b.ResetTimer()
 
 				go func() {
-					for i := 0; i < entryCount; i += batchSize {
-						if i+batchSize > entryCount {
-							assert.NoError(b, converter.Batch(entries[i:entryCount]))
-						} else {
-							assert.NoError(b, converter.Batch(entries[i:i+batchSize]))
+					for from := 0; from < entryCount; from += int(batchSize) {
+						to := from + int(batchSize)
+						if to > entryCount {
+							to = entryCount
 						}
+						assert.NoError(b, converter.Batch(entries[from:to]))
 					}
 				}()
 
