@@ -32,6 +32,7 @@ import (
 	"go.opentelemetry.io/collector/model/pdata"
 	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest"
 	"google.golang.org/grpc/metadata"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanmetricsprocessor/mocks"
@@ -131,7 +132,7 @@ func TestProcessorShutdown(t *testing.T) {
 
 	// Test
 	next := new(consumertest.TracesSink)
-	p, err := newProcessor(zap.NewNop(), cfg, next)
+	p, err := newProcessor(zaptest.NewLogger(t), cfg, next)
 	assert.NoError(t, err)
 	err = p.Shutdown(context.Background())
 
@@ -152,7 +153,7 @@ func TestConfigureLatencyBounds(t *testing.T) {
 
 	// Test
 	next := new(consumertest.TracesSink)
-	p, err := newProcessor(zap.NewNop(), cfg, next)
+	p, err := newProcessor(zaptest.NewLogger(t), cfg, next)
 
 	// Verify
 	assert.NoError(t, err)
@@ -167,7 +168,7 @@ func TestProcessorCapabilities(t *testing.T) {
 
 	// Test
 	next := new(consumertest.TracesSink)
-	p, err := newProcessor(zap.NewNop(), cfg, next)
+	p, err := newProcessor(zaptest.NewLogger(t), cfg, next)
 	assert.NoError(t, err)
 	caps := p.Capabilities()
 
@@ -619,7 +620,7 @@ func TestProcessorDuplicateDimensions(t *testing.T) {
 
 	// Test
 	next := new(consumertest.TracesSink)
-	p, err := newProcessor(zap.NewNop(), cfg, next)
+	p, err := newProcessor(zaptest.NewLogger(t), cfg, next)
 	assert.Error(t, err)
 	assert.Nil(t, p)
 }
@@ -728,15 +729,31 @@ func TestProcessorUpdateLatencyExemplars(t *testing.T) {
 	traceID := traces.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().At(0).TraceID()
 	key := metricKey("metricKey")
 	next := new(consumertest.TracesSink)
-	p, err := newProcessor(zap.NewNop(), cfg, next)
+	p, err := newProcessor(zaptest.NewLogger(t), cfg, next)
 	value := float64(42)
-	index := 12
 
 	// ----- call -------------------------------------------------------------
-	p.updateLatencyExemplars(key, value, index, traceID)
+	p.updateLatencyExemplars(key, value, traceID)
 
 	// ----- verify -----------------------------------------------------------
 	assert.NoError(t, err)
 	assert.NotEmpty(t, p.latencyExemplarsData[key])
-	assert.Equal(t, p.latencyExemplarsData[key][index], exemplarData{traceID: traceID, value: value})
+	assert.Equal(t, p.latencyExemplarsData[key][0], exemplarData{traceID: traceID, value: value})
+}
+
+func TestProcessorResetExemplarData(t *testing.T) {
+	// ----- conditions -------------------------------------------------------
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+
+	key := metricKey("metricKey")
+	next := new(consumertest.TracesSink)
+	p, err := newProcessor(zaptest.NewLogger(t), cfg, next)
+
+	// ----- call -------------------------------------------------------------
+	p.resetExemplarData()
+
+	// ----- verify -----------------------------------------------------------
+	assert.NoError(t, err)
+	assert.Empty(t, p.latencyExemplarsData[key])
 }
