@@ -43,6 +43,9 @@ metadata:
       - name: "row_range_start_key"
         column_name: "ROW_RANGE_START_KEY"
         value_type: "byte_slice"
+      - name: "sample_lock_requests"
+        column_name: "SAMPLE_LOCK_REQUESTS"
+        value_type: "lock_request_slice"
     metrics:
       - name: "lock_wait_seconds"
         column_name: "LOCK_WAIT_SECONDS"

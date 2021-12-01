@@ -81,6 +81,11 @@ type byteSliceLabelValue struct {
 	value    string
 }
 
+type lockRequestSliceLabelValue struct {
+	metadata LabelValueMetadata
+	value    string
+}
+
 func (m queryLabelValueMetadata) Name() string {
 	return m.name
 }
@@ -190,6 +195,40 @@ func newByteSliceLabelValue(metadata LabelValueMetadata, valueHolder interface{}
 	}
 }
 
+func (v lockRequestSliceLabelValue) Metadata() LabelValueMetadata {
+	return v.metadata
+}
+
+func (v lockRequestSliceLabelValue) Value() interface{} {
+	return v.value
+}
+
+func (v lockRequestSliceLabelValue) SetValueTo(attributes pdata.AttributeMap) {
+	attributes.InsertString(v.metadata.Name(), v.value)
+}
+
+type lockRequest struct {
+	LockMode       string `spanner:"lock_mode"`
+	Column         string `spanner:"column"`
+	TransactionTag string `spanner:"transaction_tag"`
+}
+
+func newLockRequestSliceLabelValue(metadata LabelValueMetadata, valueHolder interface{}) LabelValue {
+	value := *valueHolder.(*[]*lockRequest)
+	convertedValue := make([]string, len(value))
+
+	for i, valueItem := range value {
+		convertedValue[i] = fmt.Sprintf("{%v,%v,%v}", valueItem.LockMode, valueItem.Column, valueItem.TransactionTag)
+	}
+
+	constructedValue := strings.Join(convertedValue, ",")
+
+	return lockRequestSliceLabelValue{
+		metadata: metadata,
+		value:    constructedValue,
+	}
+}
+
 func NewLabelValueMetadata(name string, columnName string, valueType ValueType) (LabelValueMetadata, error) {
 	var newLabelValueFunc newLabelValueFunction
 	var valueHolderFunc valueHolderFunction
@@ -223,6 +262,12 @@ func NewLabelValueMetadata(name string, columnName string, valueType ValueType) 
 		newLabelValueFunc = newByteSliceLabelValue
 		valueHolderFunc = func() interface{} {
 			var valueHolder []byte
+			return &valueHolder
+		}
+	case LockRequestSliceValueType:
+		newLabelValueFunc = newLockRequestSliceLabelValue
+		valueHolderFunc = func() interface{} {
+			var valueHolder []*lockRequest
 			return &valueHolder
 		}
 	default:
