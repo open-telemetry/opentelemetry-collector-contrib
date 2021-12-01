@@ -115,19 +115,26 @@ func (e *LogEmitter) Stop() error {
 
 // Process will emit an entry to the output channel
 func (e *LogEmitter) Process(ctx context.Context, ent *entry.Entry) error {
-	e.batchMux.Lock()
-
-	e.batch = append(e.batch, ent)
-
-	var oldBatch []*entry.Entry
-	if uint(len(e.batch)) >= e.maxBatchSize {
-		oldBatch, e.batch = e.batch, make([]*entry.Entry, 0, e.maxBatchSize)
-	}
-
-	e.batchMux.Unlock()
+	oldBatch := e.appendEntry(ent)
 
 	if len(oldBatch) > 0 {
 		e.flush(ctx, oldBatch)
+	}
+
+	return nil
+}
+
+// appendEntry appends the entry to the current batch. If maxBatchSize is reached, a new batch will be made, and the old batch
+// (which should be flushed) will be returned
+func (e *LogEmitter) appendEntry(ent *entry.Entry) []*entry.Entry {
+	e.batchMux.Lock()
+	defer e.batchMux.Unlock()
+
+	e.batch = append(e.batch, ent)
+	if uint(len(e.batch)) >= e.maxBatchSize {
+		var oldBatch []*entry.Entry
+		oldBatch, e.batch = e.batch, make([]*entry.Entry, 0, e.maxBatchSize)
+		return oldBatch
 	}
 
 	return nil
@@ -143,13 +150,7 @@ func (e *LogEmitter) flusher(ctx context.Context) {
 	for {
 		select {
 		case <-ticker.C:
-			var oldBatch []*entry.Entry
-
-			e.batchMux.Lock()
-			if len(e.batch) != 0 {
-				oldBatch, e.batch = e.batch, make([]*entry.Entry, 0, e.maxBatchSize)
-			}
-			e.batchMux.Unlock()
+			oldBatch := e.makeNewBatch()
 
 			if len(oldBatch) > 0 {
 				e.flush(ctx, oldBatch)
@@ -166,4 +167,18 @@ func (e *LogEmitter) flush(ctx context.Context, batch []*entry.Entry) {
 	case e.logChan <- batch:
 	case <-ctx.Done():
 	}
+}
+
+// makeNewBatch replaces the current batch on the log emitter with a new batch, returning the old one
+func (e *LogEmitter) makeNewBatch() []*entry.Entry {
+	e.batchMux.Lock()
+	defer e.batchMux.Unlock()
+
+	if len(e.batch) == 0 {
+		return nil
+	}
+
+	var oldBatch []*entry.Entry
+	oldBatch, e.batch = e.batch, make([]*entry.Entry, 0, e.maxBatchSize)
+	return oldBatch
 }
