@@ -217,7 +217,7 @@ func TestProcessorConsumeTracesErrors(t *testing.T) {
 	}
 }
 
-func TestProcessorConsumeTraces(t *testing.T) {
+func setupNewProcessor(t *testing.T) *processorImp {
 	// Prepare
 	mexp := &mocks.MetricsExporter{}
 	tcon := &mocks.TracesConsumer{}
@@ -228,7 +228,24 @@ func TestProcessorConsumeTraces(t *testing.T) {
 	tcon.On("ConsumeTraces", mock.Anything, mock.Anything).Return(nil)
 
 	defaultNullValue := "defaultNullValue"
-	p := newProcessorImp(mexp, tcon, &defaultNullValue)
+	return newProcessorImp(mexp, tcon, &defaultNullValue)
+}
+
+func TestProcessorConsumeBatchesOfTraces(t *testing.T) {
+	p := setupNewProcessor(t)
+	// Test
+	ctx := metadata.NewIncomingContext(context.Background(), nil)
+	for i := 0; i < 3; i++ {
+		traces := buildSampleTraceWithOperation(fmt.Sprintf("/ping_%v", i))
+		err := p.ConsumeTraces(ctx, traces)
+		// Verify
+		assert.NoError(t, err)
+	}
+}
+
+func TestProcessorConsumeTraces(t *testing.T) {
+	// Prepare
+	p := setupNewProcessor(t)
 
 	traces := buildSampleTrace()
 
@@ -441,7 +458,8 @@ func verifyMetricLabels(dp metricDataPoint, t *testing.T, seenMetricIDs map[metr
 //   service-a/ping (server) ->
 //     service-a/ping (client) ->
 //       service-b/ping (server)
-func buildSampleTrace() pdata.Traces {
+
+func buildSampleTraceWithOperation(operation string) pdata.Traces {
 	traces := pdata.NewTraces()
 
 	initServiceSpans(
@@ -449,12 +467,12 @@ func buildSampleTrace() pdata.Traces {
 			serviceName: "service-a",
 			spans: []span{
 				{
-					operation:  "/ping",
+					operation:  operation,
 					kind:       pdata.SpanKindServer,
-					statusCode: pdata.StatusCodeOk,
+					statusCode: pdata.StatusCodeError,
 				},
 				{
-					operation:  "/ping",
+					operation:  operation,
 					kind:       pdata.SpanKindClient,
 					statusCode: pdata.StatusCodeOk,
 				},
@@ -465,7 +483,7 @@ func buildSampleTrace() pdata.Traces {
 			serviceName: "service-b",
 			spans: []span{
 				{
-					operation:  "/ping",
+					operation:  operation,
 					kind:       pdata.SpanKindServer,
 					statusCode: pdata.StatusCodeError,
 				},
@@ -473,6 +491,10 @@ func buildSampleTrace() pdata.Traces {
 		}, traces.ResourceSpans().AppendEmpty())
 	initServiceSpans(serviceSpans{}, traces.ResourceSpans().AppendEmpty())
 	return traces
+}
+
+func buildSampleTrace() pdata.Traces {
+	return buildSampleTraceWithOperation("/ping")
 }
 
 func initServiceSpans(serviceSpans serviceSpans, spans pdata.ResourceSpans) {

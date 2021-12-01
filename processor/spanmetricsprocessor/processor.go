@@ -264,6 +264,7 @@ func (p *processorImp) collectLatencyMetrics(ilm pdata.InstrumentationLibraryMet
 		setLatencyExemplars(p.latencyExemplarsData[key], timestamp, dpLatency.Exemplars())
 
 		p.metricKeyToDimensions[key].CopyTo(dpLatency.Attributes())
+		delete(p.latencyCount, key)
 	}
 }
 
@@ -283,6 +284,7 @@ func (p *processorImp) collectCallMetrics(ilm pdata.InstrumentationLibraryMetric
 		dpCalls.SetIntVal(p.callSum[key])
 
 		p.metricKeyToDimensions[key].CopyTo(dpCalls.Attributes())
+		delete(p.callSum, key)
 	}
 }
 
