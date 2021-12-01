@@ -1,0 +1,10 @@
+name: metricreceiver
+metrics:
+  system.cpu.time:
+    description: Total CPU seconds broken down by different states.
+    unit: s
+    gauge: {}
+    sum:
+      monotonic: true
+      aggregation: cumulative
+    attributes:
