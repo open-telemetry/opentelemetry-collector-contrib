@@ -32,7 +32,10 @@ import (
 )
 
 func createNoopReceiver(workerCount int, nextConsumer consumer.Logs) (*receiver, error) {
-	emitter := NewLogEmitter(zap.NewNop().Sugar())
+	emitter := NewLogEmitter(
+		LogEmitterWithLogger(zap.NewNop().Sugar()),
+	)
+
 	logAgent, err := agent.NewBuilder(zap.NewNop().Sugar()).
 		WithConfig(&agent.Config{Pipeline: pipeline.Config{
 			operator.Config{
