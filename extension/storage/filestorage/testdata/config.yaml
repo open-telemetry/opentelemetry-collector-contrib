@@ -1,7 +1,11 @@
 extensions:
   file_storage:
+    # Specify a directory so that tests will pass because on some systems the
+    # default dir (e.g. on not windows: /var/lib/otelcol/file_storage) might not
+    # exist which will fail the test when config.Validate() will be called.
+    directory: .
   file_storage/all_settings:
-    directory: /var/lib/otelcol/mydir
+    directory: .
     timeout: 2s
 
 service:
