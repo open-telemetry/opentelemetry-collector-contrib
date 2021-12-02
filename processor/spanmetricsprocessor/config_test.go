@@ -15,7 +15,8 @@
 package spanmetricsprocessor
 
 import (
-	"path"
+  "go.opentelemetry.io/collector/model/pdata"
+  "path"
 	"testing"
 	"time"
 
@@ -99,4 +100,15 @@ func TestLoadConfig(t *testing.T) {
 			)
 		})
 	}
+}
+
+func TestGetAggregationTemporality(t *testing.T) {
+  cfg := &Config{AggregationTemporality: DELTA}
+  assert.Equal(t, pdata.MetricAggregationTemporalityDelta, cfg.GetAggregationTemporality())
+
+  cfg = &Config{AggregationTemporality: CUMULATIVE}
+  assert.Equal(t, pdata.MetricAggregationTemporalityCumulative, cfg.GetAggregationTemporality())
+
+  cfg = &Config{}
+  assert.Equal(t, pdata.MetricAggregationTemporalityCumulative, cfg.GetAggregationTemporality())
 }
