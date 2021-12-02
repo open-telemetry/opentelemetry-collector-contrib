@@ -479,6 +479,8 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azure
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/carbonexporter => ./exporter/carbonexporter
 
+replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/coralogixexporter => ./exporter/coralogixexporter
+
 replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter => ./exporter/datadogexporter
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/dynatraceexporter => ./exporter/dynatraceexporter
@@ -686,6 +688,8 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/cumu
 replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/googlecloudexporter => ./exporter/googlecloudexporter
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/stackdriverexporter => ./exporter/stackdriverexporter
+
+// replace github.com/coralogix/opentelemetry-cx-protobuf-api/coralogixpb => ./exporter/coralogixexporter/coralogixpb
 
 // see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/4433
 exclude github.com/StackExchange/wmi v1.2.0

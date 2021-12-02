@@ -1,0 +1,22 @@
+receivers:
+  nop:
+
+
+processors:
+  nop:
+
+exporters:
+  coralogix:
+    # endpoint: "http://localhost:8000"
+    endpoint: "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+    private_key: "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+    application_name: "APP_NAME"
+    subsystem_name: "SUBSYSTEM_NAME"
+
+
+service:
+  pipelines:
+    traces:
+      receivers: [nop]
+      processors: [nop]
+      exporters: [coralogix]
