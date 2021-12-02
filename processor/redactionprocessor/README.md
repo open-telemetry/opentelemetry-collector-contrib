@@ -37,10 +37,6 @@ processors:
     blocked_values:
       - "4[0-9]{12}(?:[0-9]{3})?" ## Visa credit card number
       - "(5[1-5][0-9]{14})"       ## MasterCard number
-    # DryRun mode documents the changes the processor would make without
-    # deleting your data. You can use it to confirm that the right span
-    # attributes will be redacted
-    dry_run: false
     # Summary controls the verbosity level of the diagnostic attributes that
     # the processor adds to the spans when it redacts or masks other
     # attributes. In some contexts a list of redacted attributes leaks

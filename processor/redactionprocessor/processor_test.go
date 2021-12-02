@@ -82,63 +82,6 @@ func TestRedactUnknownAttributes(t *testing.T) {
 	}
 }
 
-// TestDryRun validates that the processor does not delete any spans or mask
-// any span attribute values while in dry run mode
-func TestDryRun(t *testing.T) {
-	config := &Config{
-		AllowedKeys:   []string{"id", "group", "name", "group.id", "member (id)"},
-		BlockedValues: []string{"4[0-9]{12}(?:[0-9]{3})?"},
-		DryRun:        true,
-		Summary:       "debug",
-	}
-	allowed := map[string]pdata.AttributeValue{
-		"id":          pdata.NewAttributeValueInt(5),
-		"group.id":    pdata.NewAttributeValueString("some.valid.id"),
-		"member (id)": pdata.NewAttributeValueString("some other valid id"),
-	}
-	masked := map[string]pdata.AttributeValue{
-		"name": pdata.NewAttributeValueString("placeholder 4111111111111111"),
-	}
-	redacted := map[string]pdata.AttributeValue{
-		"credit_card": pdata.NewAttributeValueString("would be nice"),
-	}
-
-	_, _, next := runTest(t, allowed, redacted, masked, config)
-
-	firstOutILS := next.AllTraces()[0].ResourceSpans().At(0).InstrumentationLibrarySpans().At(0)
-	attr := firstOutILS.Spans().At(0).Attributes()
-	// Confirm no keys were redacted
-	var deleted []string
-	for k := range redacted {
-		val, ok := attr.Get(k)
-		assert.True(t, ok)
-		expected, ok := redacted[k]
-		assert.True(t, ok)
-		assert.Equal(t, expected.StringVal(), val.StringVal())
-		deleted = append(deleted, k)
-	}
-	maskedKeys, ok := attr.Get(redactedKeys)
-	assert.True(t, ok)
-	sort.Strings(deleted)
-	assert.Equal(t, strings.Join(deleted, ","), maskedKeys.StringVal())
-	maskedKeyCount, ok := attr.Get(redactedKeyCount)
-	assert.True(t, ok)
-	assert.Equal(t, int64(len(deleted)), maskedKeyCount.IntVal())
-
-	// Confirm no values were masked
-	blockedKeys := []string{"name"}
-	expected, ok := masked["name"]
-	assert.True(t, ok)
-	maskedValues, ok := attr.Get(maskedValues)
-	assert.True(t, ok)
-	assert.Equal(t, strings.Join(blockedKeys, ","), maskedValues.StringVal())
-	maskedValueCount, ok := attr.Get(maskedValueCount)
-	assert.True(t, ok)
-	assert.Equal(t, int64(1), maskedValueCount.IntVal())
-	value, _ := attr.Get("name")
-	assert.Equal(t, expected.StringVal(), value.StringVal())
-}
-
 // TODO: Test redaction with metric tags in a metrics PR
 
 // TestRedactSummaryDebug validates that the processor writes a verbose summary
@@ -391,35 +334,6 @@ func runTest(
 	assert.NoError(t, err)
 	assert.Len(t, next.AllTraces(), 1)
 	return library, span, next
-}
-
-// BenchmarkDryRun measures the performance impact of running the processor
-// in dry run mode
-func BenchmarkDryRun(b *testing.B) {
-	config := &Config{
-		AllowedKeys:   []string{"id", "group", "name", "group.id", "member (id)"},
-		BlockedValues: []string{"4[0-9]{12}(?:[0-9]{3})?"},
-		DryRun:        true,
-		Summary:       "debug",
-	}
-	allowed := map[string]pdata.AttributeValue{
-		"id":          pdata.NewAttributeValueInt(5),
-		"group.id":    pdata.NewAttributeValueString("some.valid.id"),
-		"member (id)": pdata.NewAttributeValueString("some other valid id"),
-	}
-	masked := map[string]pdata.AttributeValue{
-		"name": pdata.NewAttributeValueString("placeholder 4111111111111111"),
-	}
-	redacted := map[string]pdata.AttributeValue{
-		"credit_card": pdata.NewAttributeValueString("would be nice"),
-	}
-	ctx := context.Background()
-	next := new(consumertest.TracesSink)
-	processor, _ := newRedaction(ctx, config, zaptest.NewLogger(b), next)
-
-	for i := 0; i < b.N; i++ {
-		runBenchmark(allowed, redacted, masked, processor)
-	}
 }
 
 // BenchmarkRedactSummaryDebug measures the performance impact of running the processor

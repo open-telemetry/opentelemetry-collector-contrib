@@ -118,21 +118,17 @@ func (s *redaction) processAttrs(_ context.Context, attributes *pdata.AttributeM
 			if match {
 				toBlock = append(toBlock, k)
 
-				if !s.config.DryRun {
-					valueCopy := value.StringVal()
-					maskedValue := compiledRE.ReplaceAllString(valueCopy, "****")
-					attributes.Update(k, pdata.NewAttributeValueString(maskedValue))
-				}
+				valueCopy := value.StringVal()
+				maskedValue := compiledRE.ReplaceAllString(valueCopy, "****")
+				attributes.Update(k, pdata.NewAttributeValueString(maskedValue))
 			}
 		}
 		return true
 	})
 
 	// Delete the attributes on the redaction list
-	if !s.config.DryRun {
-		for _, k := range toDelete {
-			attributes.Delete(k)
-		}
+	for _, k := range toDelete {
+		attributes.Delete(k)
 	}
 	// Add diagnostic information to the span
 	s.summarizeRedactedSpan(toDelete, attributes)

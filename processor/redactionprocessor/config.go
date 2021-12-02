@@ -35,11 +35,6 @@ type Config struct {
 	// allowed span attributes. Values that match are masked
 	BlockedValues []string `mapstructure:"blocked_values"`
 
-	// DryRun mode documents the changes the processor would make without
-	// deleting your data. You can use it to confirm that the right span
-	// attributes will be redacted
-	DryRun bool `mapstructure:"dry_run"`
-
 	// Summary controls the verbosity level of the diagnostic attributes that
 	// the processor adds to the spans when it redacts or masks other
 	// attributes. In some contexts a list of redacted attributes leaks
