@@ -64,9 +64,9 @@ type TimerHistogramMapping struct {
 
 // StatsDParser supports the Parse method for parsing StatsD messages with Tags.
 type StatsDParser struct {
-	gauges                 map[statsDMetricdescription]pdata.InstrumentationLibraryMetrics
-	counters               map[statsDMetricdescription]pdata.InstrumentationLibraryMetrics
-	summaries              map[statsDMetricdescription]summaryMetric
+	gauges                 map[statsDMetricDescription]pdata.InstrumentationLibraryMetrics
+	counters               map[statsDMetricDescription]pdata.InstrumentationLibraryMetrics
+	summaries              map[statsDMetricDescription]summaryMetric
 	timersAndDistributions []pdata.InstrumentationLibraryMetrics
 	enableMetricType       bool
 	isMonotonicCounter     bool
@@ -81,15 +81,12 @@ type summaryRaw struct {
 }
 
 type summaryMetric struct {
-	name        string
-	points      []float64
-	weights     []float64
-	labelKeys   []string
-	labelValues []string
+	points  []float64
+	weights []float64
 }
 
 type statsDMetric struct {
-	description statsDMetricdescription
+	description statsDMetricDescription
 	asFloat     float64
 	addition    bool
 	unit        string
@@ -98,10 +95,10 @@ type statsDMetric struct {
 	labelValues []string
 }
 
-type statsDMetricdescription struct {
+type statsDMetricDescription struct {
 	name       string
 	metricType MetricType
-	labels     attribute.Distinct
+	attrs      attribute.Set
 }
 
 func (t MetricType) FullName() TypeName {
@@ -120,10 +117,10 @@ func (t MetricType) FullName() TypeName {
 
 func (p *StatsDParser) Initialize(enableMetricType bool, isMonotonicCounter bool, sendTimerHistogram []TimerHistogramMapping) error {
 	p.lastIntervalTime = timeNowFunc()
-	p.gauges = make(map[statsDMetricdescription]pdata.InstrumentationLibraryMetrics)
-	p.counters = make(map[statsDMetricdescription]pdata.InstrumentationLibraryMetrics)
+	p.gauges = make(map[statsDMetricDescription]pdata.InstrumentationLibraryMetrics)
+	p.counters = make(map[statsDMetricDescription]pdata.InstrumentationLibraryMetrics)
 	p.timersAndDistributions = make([]pdata.InstrumentationLibraryMetrics, 0)
-	p.summaries = make(map[statsDMetricdescription]summaryMetric)
+	p.summaries = make(map[statsDMetricDescription]summaryMetric)
 
 	p.observeHistogram = DefaultObserverType
 	p.observeTimer = DefaultObserverType
@@ -158,8 +155,9 @@ func (p *StatsDParser) GetMetrics() pdata.Metrics {
 		metric.CopyTo(rm.InstrumentationLibraryMetrics().AppendEmpty())
 	}
 
-	for _, summaryMetric := range p.summaries {
+	for desc, summaryMetric := range p.summaries {
 		buildSummaryMetric(
+			desc,
 			summaryMetric,
 			p.lastIntervalTime,
 			timeNowFunc(),
@@ -169,10 +167,10 @@ func (p *StatsDParser) GetMetrics() pdata.Metrics {
 	}
 
 	p.lastIntervalTime = timeNowFunc()
-	p.gauges = make(map[statsDMetricdescription]pdata.InstrumentationLibraryMetrics)
-	p.counters = make(map[statsDMetricdescription]pdata.InstrumentationLibraryMetrics)
+	p.gauges = make(map[statsDMetricDescription]pdata.InstrumentationLibraryMetrics)
+	p.counters = make(map[statsDMetricDescription]pdata.InstrumentationLibraryMetrics)
 	p.timersAndDistributions = make([]pdata.InstrumentationLibraryMetrics, 0)
-	p.summaries = make(map[statsDMetricdescription]summaryMetric)
+	p.summaries = make(map[statsDMetricDescription]summaryMetric)
 	return metrics
 }
 
@@ -227,19 +225,17 @@ func (p *StatsDParser) Aggregate(line string) error {
 			raw := parsedMetric.summaryValue()
 			if existing, ok := p.summaries[parsedMetric.description]; !ok {
 				p.summaries[parsedMetric.description] = summaryMetric{
-					name:        parsedMetric.description.name,
-					points:      []float64{raw.value},
-					weights:     []float64{raw.count},
-					labelKeys:   parsedMetric.labelKeys,
-					labelValues: parsedMetric.labelValues,
+					points:  []float64{raw.value},
+					weights: []float64{raw.count},
+					// labelKeys:   parsedMetric.labelKeys,
+					// labelValues: parsedMetric.labelValues,
 				}
 			} else {
 				p.summaries[parsedMetric.description] = summaryMetric{
-					name:        parsedMetric.description.name,
-					points:      append(existing.points, raw.value),
-					weights:     append(existing.weights, raw.count),
-					labelKeys:   parsedMetric.labelKeys,
-					labelValues: parsedMetric.labelValues,
+					points:  append(existing.points, raw.value),
+					weights: append(existing.weights, raw.count),
+					// labelKeys:   parsedMetric.labelKeys,
+					// labelValues: parsedMetric.labelValues,
 				}
 			}
 		case DisableObserver:
@@ -333,8 +329,7 @@ func parseMessageToMetric(line string, enableMetricType bool) (statsDMetric, err
 	}
 
 	if len(kvs) != 0 {
-		set := attribute.NewSet(kvs...)
-		result.description.labels = set.Equivalent()
+		result.description.attrs = attribute.NewSet(kvs...)
 	}
 
 	return result, nil
