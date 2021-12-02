@@ -24,6 +24,7 @@ import (
 	"github.com/shirou/gopsutil/v3/process"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/model/pdata"
+	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterset"
@@ -102,6 +103,7 @@ func (s *scraper) scrape(_ context.Context) (pdata.Metrics, error) {
 	rms.EnsureCapacity(len(metadata))
 	for _, md := range metadata {
 		rm := rms.AppendEmpty()
+		rm.SetSchemaUrl(conventions.SchemaURL)
 		md.initializeResource(rm.Resource())
 		metrics := rm.InstrumentationLibraryMetrics().AppendEmpty().Metrics()
 
