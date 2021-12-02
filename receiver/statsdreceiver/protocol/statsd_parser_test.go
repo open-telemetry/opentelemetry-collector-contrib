@@ -902,8 +902,8 @@ func TestStatsDParser_Initialize(t *testing.T) {
 		attrs:      *attribute.EmptySet()}
 	p.gauges[teststatsdDMetricdescription] = pdata.InstrumentationLibraryMetrics{}
 	assert.Equal(t, 1, len(p.gauges))
-	assert.Equal(t, GaugeObserver, p.observeTimer)
-	assert.Equal(t, GaugeObserver, p.observeHistogram)
+	assert.Equal(t, GaugeObserver, p.timingEvents.method)
+	assert.Equal(t, GaugeObserver, p.histogramEvents.method)
 }
 
 func TestStatsDParser_GetMetricsWithMetricType(t *testing.T) {

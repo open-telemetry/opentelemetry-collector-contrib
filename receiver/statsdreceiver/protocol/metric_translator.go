@@ -19,6 +19,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/otel/sdk/export/metric/aggregation"
 	"gonum.org/v1/gonum/stat"
 )
 
@@ -98,6 +99,55 @@ func buildSummaryMetric(desc statsDMetricDescription, summary summaryMetric, sta
 		eachQuantile := dp.QuantileValues().AppendEmpty()
 		eachQuantile.SetQuantile(pct / 100)
 		eachQuantile.SetValue(stat.Quantile(pct/100, stat.Empirical, summary.points, summary.weights))
+	}
+}
+
+func buildHistogramMetric(desc statsDMetricDescription, histogram histogramMetric, startTime, timeNow time.Time, ilm pdata.InstrumentationLibraryMetrics) {
+	nm := ilm.Metrics().AppendEmpty()
+	nm.SetName(desc.name)
+	nm.SetDataType(pdata.MetricDataTypeExponentialHistogram)
+	expo := nm.ExponentialHistogram()
+	expo.SetAggregationTemporality(pdata.MetricAggregationTemporalityDelta)
+
+	dp := expo.DataPoints().AppendEmpty()
+	agg := histogram.agg
+
+	if cnt, err := agg.Count(); err == nil {
+		dp.SetCount(cnt)
+	}
+	if sum, err := agg.Sum(); err == nil {
+		dp.SetSum(sum.AsFloat64())
+	}
+
+	dp.SetStartTimestamp(pdata.NewTimestampFromTime(startTime))
+	dp.SetTimestamp(pdata.NewTimestampFromTime(timeNow))
+
+	for i := desc.attrs.Iter(); i.Next(); {
+		dp.Attributes().InsertString(string(i.Attribute().Key), i.Attribute().Value.AsString())
+	}
+
+	if zc, err := agg.ZeroCount(); err == nil {
+		dp.SetZeroCount(zc)
+	}
+
+	for _, half := range []struct{
+		inFunc func() (aggregation.ExponentialBuckets, error)
+		outFunc func() pdata.Buckets
+	}{
+		{agg.Positive, dp.Positive},
+		{agg.Negative, dp.Negative},
+	} {
+		in, err := half.inFunc()
+		if err != nil {
+			continue
+		}
+		out := half.outFunc()
+		out.SetOffset(in.Offset())
+		cpy := make([]uint64, in.Len())
+		for i := range cpy {
+			cpy[i] = in.At(uint32(i))
+		}
+		out.SetBucketCounts(cpy)
 	}
 }
 
