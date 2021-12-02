@@ -17,6 +17,7 @@ package spanmetricsprocessor
 import (
 	"context"
 	"fmt"
+	lru "github.com/hashicorp/golang-lru"
 	"testing"
 	"time"
 
@@ -255,18 +256,26 @@ func TestMetricKeyCache(t *testing.T) {
 
 	// Test
 	ctx := metadata.NewIncomingContext(context.Background(), nil)
+
+	// 0 key was cached at beginning
+	keys := p.metricKeyToDimensions.Keys()
+	assert.Equal(t, 0, len(keys))
+
 	err := p.ConsumeTraces(ctx, traces)
+
+	// 3 keys was cached at beginning
+	keys = p.metricKeyToDimensions.Keys()
+	assert.Equal(t, 3, len(keys))
 
 	// Validate
 	require.NoError(t, err)
 
-	origKeyCache := make(map[metricKey]pdata.AttributeMap)
-	for k, v := range p.metricKeyToDimensions {
-		origKeyCache[k] = v
-	}
 	err = p.ConsumeTraces(ctx, traces)
+
+	keys = p.metricKeyToDimensions.Keys()
+	assert.Equal(t, 3, len(keys))
+
 	require.NoError(t, err)
-	assert.Equal(t, origKeyCache, p.metricKeyToDimensions)
 }
 
 func BenchmarkProcessorConsumeTraces(b *testing.B) {
@@ -291,6 +300,11 @@ func BenchmarkProcessorConsumeTraces(b *testing.B) {
 
 func newProcessorImp(mexp *mocks.MetricsExporter, tcon *mocks.TracesConsumer, defaultNullValue *string) *processorImp {
 	defaultNotInSpanAttrVal := "defaultNotInSpanAttrVal"
+	// use size 1 for LRU cache for testing purpose
+	metricKeyToDimensions, err := lru.New(defaultMetricKeyToDimensionsLength)
+	if err != nil {
+		return nil
+	}
 	return &processorImp{
 		logger:          zap.NewNop(),
 		metricsExporter: mexp,
@@ -319,7 +333,7 @@ func newProcessorImp(mexp *mocks.MetricsExporter, tcon *mocks.TracesConsumer, de
 			// Add a resource attribute to test "process" attributes like IP, host, region, cluster, etc.
 			{regionResourceAttrName, nil},
 		},
-		metricKeyToDimensions: make(map[metricKey]pdata.AttributeMap),
+		metricKeyToDimensions: metricKeyToDimensions,
 	}
 }
 

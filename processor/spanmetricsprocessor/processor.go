@@ -24,6 +24,7 @@ import (
 	"time"
 	"unicode"
 
+	"github.com/hashicorp/golang-lru"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
@@ -39,6 +40,8 @@ const (
 	statusCodeKey      = "status.code" // OpenTelemetry non-standard constant.
 	metricKeySeparator = string(byte(0))
 	traceIDKey         = "trace_id"
+
+	defaultMetricKeyToDimensionsLength = 1000
 )
 
 var (
@@ -81,9 +84,9 @@ type processorImp struct {
 	latencyBounds        []float64
 	latencyExemplarsData map[metricKey][]exemplarData
 
-	// A cache of dimension key-value maps keyed by a unique identifier formed by a concatenation of its values:
+	// An LRU cache of dimension key-value maps keyed by a unique identifier formed by a concatenation of its values:
 	// e.g. { "foo/barOK": { "serviceName": "foo", "operation": "/bar", "status_code": "OK" }}
-	metricKeyToDimensions map[metricKey]pdata.AttributeMap
+	metricKeyToDimensions *lru.Cache
 }
 
 func newProcessor(logger *zap.Logger, config config.Processor, nextConsumer consumer.Traces) (*processorImp, error) {
@@ -104,6 +107,11 @@ func newProcessor(logger *zap.Logger, config config.Processor, nextConsumer cons
 		return nil, err
 	}
 
+	metricKeyToDimensionsCache, err := lru.New(pConfig.GetMetricKeyToDimensionsLength())
+	if err != nil {
+		return nil, err
+	}
+
 	return &processorImp{
 		logger:                logger,
 		config:                *pConfig,
@@ -116,7 +124,7 @@ func newProcessor(logger *zap.Logger, config config.Processor, nextConsumer cons
 		latencyExemplarsData:  make(map[metricKey][]exemplarData),
 		nextConsumer:          nextConsumer,
 		dimensions:            pConfig.Dimensions,
-		metricKeyToDimensions: make(map[metricKey]pdata.AttributeMap),
+		metricKeyToDimensions: metricKeyToDimensionsCache,
 	}, nil
 }
 
@@ -262,8 +270,15 @@ func (p *processorImp) collectLatencyMetrics(ilm pdata.InstrumentationLibraryMet
 		dpLatency.SetSum(p.latencySum[key])
 
 		setLatencyExemplars(p.latencyExemplarsData[key], timestamp, dpLatency.Exemplars())
-
-		p.metricKeyToDimensions[key].CopyTo(dpLatency.Attributes())
+		if item, ok := p.metricKeyToDimensions.Get(key); ok {
+			if attributeMap, ok := item.(pdata.AttributeMap); ok {
+				attributeMap.CopyTo(dpLatency.Attributes())
+			} else {
+				p.logger.Error("type assertion of attributes failed")
+			}
+		} else {
+			p.logger.Error("metricKey not found in metricKeyToDimensions cache")
+		}
 	}
 }
 
@@ -282,7 +297,15 @@ func (p *processorImp) collectCallMetrics(ilm pdata.InstrumentationLibraryMetric
 		dpCalls.SetTimestamp(pdata.NewTimestampFromTime(time.Now()))
 		dpCalls.SetIntVal(p.callSum[key])
 
-		p.metricKeyToDimensions[key].CopyTo(dpCalls.Attributes())
+		if item, ok := p.metricKeyToDimensions.Get(key); ok {
+			if attributeMap, ok := item.(pdata.AttributeMap); ok {
+				attributeMap.CopyTo(dpCalls.Attributes())
+			} else {
+				p.logger.Error("type assertion of attributes failed")
+			}
+		} else {
+			p.logger.Error("metricKey not found in metricKeyToDimensions cache")
+		}
 	}
 }
 
@@ -438,8 +461,8 @@ func getDimensionValue(d Dimension, spanAttr pdata.AttributeMap, resourceAttr pd
 // This enables a lookup of the dimension key-value map when constructing the metric like so:
 //   LabelsMap().InitFromMap(p.metricKeyToDimensions[key])
 func (p *processorImp) cache(serviceName string, span pdata.Span, k metricKey, resourceAttrs pdata.AttributeMap) {
-	if _, ok := p.metricKeyToDimensions[k]; !ok {
-		p.metricKeyToDimensions[k] = p.buildDimensionKVs(serviceName, span, p.dimensions, resourceAttrs)
+	if !p.metricKeyToDimensions.Contains(k) {
+		_ = p.metricKeyToDimensions.Add(k, p.buildDimensionKVs(serviceName, span, p.dimensions, resourceAttrs))
 	}
 }
 
