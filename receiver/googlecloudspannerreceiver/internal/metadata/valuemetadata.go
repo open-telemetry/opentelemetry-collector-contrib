@@ -17,13 +17,14 @@ package metadata // import "github.com/open-telemetry/opentelemetry-collector-co
 type ValueType string
 
 const (
-	UnknownValueType     ValueType = "unknown"
-	StringValueType      ValueType = "string"
-	IntValueType         ValueType = "int"
-	FloatValueType       ValueType = "float"
-	BoolValueType        ValueType = "bool"
-	StringSliceValueType ValueType = "string_slice"
-	ByteSliceValueType   ValueType = "byte_slice"
+	UnknownValueType          ValueType = "unknown"
+	StringValueType           ValueType = "string"
+	IntValueType              ValueType = "int"
+	FloatValueType            ValueType = "float"
+	BoolValueType             ValueType = "bool"
+	StringSliceValueType      ValueType = "string_slice"
+	ByteSliceValueType        ValueType = "byte_slice"
+	LockRequestSliceValueType ValueType = "lock_request_slice"
 )
 
 type ValueMetadata interface {

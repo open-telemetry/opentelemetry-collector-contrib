@@ -15,6 +15,9 @@
 package filestorage // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/filestorage"
 
 import (
+	"fmt"
+	"io/fs"
+	"os"
 	"time"
 
 	"go.opentelemetry.io/collector/config"
@@ -26,4 +29,25 @@ type Config struct {
 
 	Directory string        `mapstructure:"directory,omitempty"`
 	Timeout   time.Duration `mapstructure:"timeout,omitempty"`
+}
+
+func (cfg *Config) Validate() error {
+	info, err := os.Stat(cfg.Directory)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return fmt.Errorf("directory must exist: %v", err)
+		}
+		if fsErr, ok := err.(*fs.PathError); ok {
+			return fmt.Errorf(
+				"problem accessing configured directory: %s, err: %v",
+				cfg.Directory, fsErr,
+			)
+		}
+
+	}
+	if !info.IsDir() {
+		return fmt.Errorf("%s is not a directory", cfg.Directory)
+	}
+
+	return nil
 }

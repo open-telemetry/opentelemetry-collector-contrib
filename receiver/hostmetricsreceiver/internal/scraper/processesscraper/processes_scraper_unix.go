@@ -20,6 +20,8 @@ package processesscraper // import "github.com/open-telemetry/opentelemetry-coll
 import (
 	"runtime"
 
+	"github.com/shirou/gopsutil/v3/process"
+
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/processesscraper/internal/metadata"
 )
 
@@ -34,14 +36,14 @@ func (s *scraper) getProcessesMetadata() (processesMetadata, error) {
 
 	countByStatus := map[string]int64{}
 	for _, process := range processes {
-		var status string
+		var status []string
 		status, err = process.Status()
 		if err != nil {
 			// We expect an error in the case that a process has
 			// been terminated as we run this code.
 			continue
 		}
-		state, ok := charToState[status]
+		state, ok := toAttributeStatus(status)
 		if !ok {
 			countByStatus[metadata.AttributeStatus.Unknown]++
 			continue
@@ -80,15 +82,25 @@ func (s *scraper) getProcessesMetadata() (processesMetadata, error) {
 	}, nil
 }
 
+func toAttributeStatus(status []string) (string, bool) {
+	if len(status) == 0 || len(status[0]) == 0 {
+		return "", false
+	}
+	state, ok := charToState[status[0]]
+	return state, ok
+}
+
 var charToState = map[string]string{
-	"A": metadata.AttributeStatus.Daemon,
-	"D": metadata.AttributeStatus.Blocked,
-	"E": metadata.AttributeStatus.Detached,
-	"O": metadata.AttributeStatus.Orphan,
-	"R": metadata.AttributeStatus.Running,
-	"S": metadata.AttributeStatus.Sleeping,
-	"T": metadata.AttributeStatus.Stopped,
-	"W": metadata.AttributeStatus.Paging,
-	"Y": metadata.AttributeStatus.System,
-	"Z": metadata.AttributeStatus.Zombies,
+	process.Blocked:  metadata.AttributeStatus.Blocked,
+	process.Daemon:   metadata.AttributeStatus.Daemon,
+	process.Detached: metadata.AttributeStatus.Detached,
+	process.Idle:     metadata.AttributeStatus.Idle,
+	process.Lock:     metadata.AttributeStatus.Locked,
+	process.Orphan:   metadata.AttributeStatus.Orphan,
+	process.Running:  metadata.AttributeStatus.Running,
+	process.Sleep:    metadata.AttributeStatus.Sleeping,
+	process.Stop:     metadata.AttributeStatus.Stopped,
+	process.System:   metadata.AttributeStatus.System,
+	process.Wait:     metadata.AttributeStatus.Paging,
+	process.Zombie:   metadata.AttributeStatus.Zombies,
 }

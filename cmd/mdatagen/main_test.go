@@ -29,10 +29,9 @@ name: metricreceiver
 metrics:
   system.cpu.time:
     description: Total CPU seconds broken down by different states.
-    extended_description: Additional information on CPU Time can be found [here](https://en.wikipedia.org/wiki/CPU_time).
+    extended_documentation: Additional information on CPU Time can be found [here](https://en.wikipedia.org/wiki/CPU_time).
     unit: s
-    data:
-      type: sum
+    sum:
       aggregation: cumulative
     attributes: []
 `

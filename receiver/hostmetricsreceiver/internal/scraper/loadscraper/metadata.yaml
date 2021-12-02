@@ -6,17 +6,14 @@ metrics:
   system.cpu.load_average.1m:
     description: Average CPU Load over 1 minute.
     unit: 1
-    data:
-      type: gauge
+    gauge: {}
 
   system.cpu.load_average.5m:
     description: Average CPU Load over 5 minutes.
     unit: 1
-    data:
-      type: gauge
+    gauge: {}
 
   system.cpu.load_average.15m:
     description: Average CPU Load over 15 minutes.
     unit: 1
-    data:
-      type: gauge
+    gauge: {}

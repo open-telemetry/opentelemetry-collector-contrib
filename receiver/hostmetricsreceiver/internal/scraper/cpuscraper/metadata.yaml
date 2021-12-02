@@ -12,8 +12,7 @@ metrics:
   system.cpu.time:
     description: Total CPU seconds broken down by different states.
     unit: s
-    data:
-      type: sum
+    sum:
       aggregation: cumulative
       monotonic: true
-    attributes: [state]
+    attributes: [cpu, state]
