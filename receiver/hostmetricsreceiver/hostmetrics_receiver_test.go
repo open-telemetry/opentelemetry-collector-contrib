@@ -30,6 +30,7 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/model/pdata"
+	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 	"go.uber.org/zap"
 
@@ -153,6 +154,8 @@ func assertIncludesExpectedMetrics(t *testing.T, got pdata.Metrics) {
 		rm := rms.At(i)
 		metrics := getMetricSlice(t, rm)
 		returnedMetricNames := getReturnedMetricNames(metrics)
+		assert.EqualValues(t, conventions.SchemaURL, rm.SchemaUrl(),
+			"SchemaURL is incorrect for metrics: %v", returnedMetricNames)
 		if rm.Resource().Attributes().Len() == 0 {
 			appendMapInto(returnedMetrics, returnedMetricNames)
 		} else {
