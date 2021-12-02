@@ -237,6 +237,15 @@ func (p *processorImp) buildMetrics() *pdata.Metrics {
 	p.lock.RLock()
 	p.collectCallMetrics(ilm)
 	p.collectLatencyMetrics(ilm)
+
+	// If delta metrics, flush accumulated data
+	if p.config.GetAggregationTemporality() == pdata.MetricAggregationTemporalityDelta {
+		p.callSum = make(map[metricKey]int64)
+		p.latencyCount = make(map[metricKey]uint64)
+		p.latencySum = make(map[metricKey]float64)
+		p.latencyBucketCounts = make(map[metricKey][]uint64)
+	}
+
 	p.lock.RUnlock()
 
 	return &m
@@ -249,7 +258,7 @@ func (p *processorImp) collectLatencyMetrics(ilm pdata.InstrumentationLibraryMet
 		mLatency := ilm.Metrics().AppendEmpty()
 		mLatency.SetDataType(pdata.MetricDataTypeHistogram)
 		mLatency.SetName("latency")
-		mLatency.Histogram().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
+		mLatency.Histogram().SetAggregationTemporality(p.config.GetAggregationTemporality())
 
 		timestamp := pdata.NewTimestampFromTime(time.Now())
 
@@ -275,7 +284,7 @@ func (p *processorImp) collectCallMetrics(ilm pdata.InstrumentationLibraryMetric
 		mCalls.SetDataType(pdata.MetricDataTypeSum)
 		mCalls.SetName("calls_total")
 		mCalls.Sum().SetIsMonotonic(true)
-		mCalls.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
+		mCalls.Sum().SetAggregationTemporality(p.config.GetAggregationTemporality())
 
 		dpCalls := mCalls.Sum().DataPoints().AppendEmpty()
 		dpCalls.SetStartTimestamp(pdata.NewTimestampFromTime(p.startTime))
