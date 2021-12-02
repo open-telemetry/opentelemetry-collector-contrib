@@ -42,8 +42,8 @@ func buildCounterMetric(parsedMetric statsDMetric, isMonotonicCounter bool, time
 	dp.SetIntVal(parsedMetric.counterValue())
 	dp.SetStartTimestamp(pdata.NewTimestampFromTime(lastIntervalTime))
 	dp.SetTimestamp(pdata.NewTimestampFromTime(timeNow))
-	for i, key := range parsedMetric.labelKeys {
-		dp.Attributes().InsertString(key, parsedMetric.labelValues[i])
+	for i := parsedMetric.description.attrs.Iter(); i.Next(); {
+		dp.Attributes().InsertString(string(i.Attribute().Key), i.Attribute().Value.AsString())
 	}
 
 	return ilm
@@ -60,8 +60,8 @@ func buildGaugeMetric(parsedMetric statsDMetric, timeNow time.Time) pdata.Instru
 	dp := nm.Gauge().DataPoints().AppendEmpty()
 	dp.SetDoubleVal(parsedMetric.gaugeValue())
 	dp.SetTimestamp(pdata.NewTimestampFromTime(timeNow))
-	for i, key := range parsedMetric.labelKeys {
-		dp.Attributes().InsertString(key, parsedMetric.labelValues[i])
+	for i := parsedMetric.description.attrs.Iter(); i.Next(); {
+		dp.Attributes().InsertString(string(i.Attribute().Key), i.Attribute().Value.AsString())
 	}
 
 	return ilm

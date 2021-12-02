@@ -455,8 +455,6 @@ func testStatsDMetric(
 			addition:    addition,
 			unit:        "",
 			sampleRate:  sampleRate,
-			labelKeys:   labelKeys,
-			labelValues: labelValue,
 		}
 	}
 	return statsDMetric{
@@ -468,8 +466,6 @@ func testStatsDMetric(
 		addition:    addition,
 		unit:        "",
 		sampleRate:  sampleRate,
-		labelKeys:   labelKeys,
-		labelValues: labelValue,
 	}
 }
 

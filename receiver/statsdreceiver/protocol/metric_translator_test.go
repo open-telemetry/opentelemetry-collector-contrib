@@ -28,13 +28,13 @@ func TestBuildCounterMetric(t *testing.T) {
 	lastUpdateInterval := timeNow.Add(-1 * time.Minute)
 	metricDescription := statsDMetricDescription{
 		name: "testCounter",
+		attrs: attribute.NewSet(attribute.String("mykey", "myvalue")),
 	}
+	
 	parsedMetric := statsDMetric{
 		description: metricDescription,
 		asFloat:     32,
 		unit:        "meter",
-		labelKeys:   []string{"mykey"},
-		labelValues: []string{"myvalue"},
 	}
 	isMonotonicCounter := false
 	metric := buildCounterMetric(parsedMetric, isMonotonicCounter, timeNow, lastUpdateInterval)
@@ -57,13 +57,15 @@ func TestBuildGaugeMetric(t *testing.T) {
 	timeNow := time.Now()
 	metricDescription := statsDMetricDescription{
 		name: "testGauge",
+		attrs: attribute.NewSet(
+			attribute.String("mykey", "myvalue"),
+			attribute.String("mykey2", "myvalue2"),
+		),
 	}
 	parsedMetric := statsDMetric{
 		description: metricDescription,
 		asFloat:     32.3,
 		unit:        "meter",
-		labelKeys:   []string{"mykey", "mykey2"},
-		labelValues: []string{"myvalue", "myvalue2"},
 	}
 	metric := buildGaugeMetric(parsedMetric, timeNow)
 	expectedMetrics := pdata.NewInstrumentationLibraryMetrics()

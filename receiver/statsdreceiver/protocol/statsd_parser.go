@@ -91,8 +91,6 @@ type statsDMetric struct {
 	addition    bool
 	unit        string
 	sampleRate  float64
-	labelKeys   []string
-	labelValues []string
 }
 
 type statsDMetricDescription struct {
@@ -303,8 +301,6 @@ func parseMessageToMetric(line string, enableMetricType bool) (statsDMetric, err
 				if len(tagParts) != 2 {
 					return result, fmt.Errorf("invalid tag format: %s", tagParts)
 				}
-				result.labelKeys = append(result.labelKeys, tagParts[0])
-				result.labelValues = append(result.labelValues, tagParts[1])
 				kvs = append(kvs, attribute.String(tagParts[0], tagParts[1]))
 			}
 
@@ -321,9 +317,6 @@ func parseMessageToMetric(line string, enableMetricType bool) (statsDMetric, err
 	// add metric_type dimension for all metrics
 	if enableMetricType {
 		metricType := string(result.description.metricType.FullName())
-
-		result.labelKeys = append(result.labelKeys, tagMetricType)
-		result.labelValues = append(result.labelValues, metricType)
 
 		kvs = append(kvs, attribute.String(tagMetricType, metricType))
 	}
