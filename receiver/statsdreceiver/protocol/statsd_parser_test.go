@@ -451,10 +451,10 @@ func testStatsDMetric(
 				metricType: metricType,
 				attrs:      attribute.NewSetWithSortable(kvs, &sortable),
 			},
-			asFloat:     asFloat,
-			addition:    addition,
-			unit:        "",
-			sampleRate:  sampleRate,
+			asFloat:    asFloat,
+			addition:   addition,
+			unit:       "",
+			sampleRate: sampleRate,
 		}
 	}
 	return statsDMetric{
@@ -462,10 +462,10 @@ func testStatsDMetric(
 			name:       name,
 			metricType: metricType,
 		},
-		asFloat:     asFloat,
-		addition:    addition,
-		unit:        "",
-		sampleRate:  sampleRate,
+		asFloat:    asFloat,
+		addition:   addition,
+		unit:       "",
+		sampleRate: sampleRate,
 	}
 }
 
@@ -922,8 +922,8 @@ func TestStatsDParser_GetMetricsWithMetricType(t *testing.T) {
 	p.summaries = map[statsDMetricDescription]summaryMetric{
 		testDescription("statsdTestMetric1", "h",
 			[]string{"mykey"}, []string{"myvalue"}): {
-			points:      []float64{1, 1, 10, 20},
-			weights:     []float64{1, 1, 1, 1},
+			points:  []float64{1, 1, 10, 20},
+			weights: []float64{1, 1, 1, 1},
 		}}
 	metrics := p.GetMetrics()
 	assert.Equal(t, 5, metrics.ResourceMetrics().At(0).InstrumentationLibraryMetrics().Len())

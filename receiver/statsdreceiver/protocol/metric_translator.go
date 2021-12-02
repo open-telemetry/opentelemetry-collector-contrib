@@ -130,8 +130,8 @@ func buildHistogramMetric(desc statsDMetricDescription, histogram histogramMetri
 		dp.SetZeroCount(zc)
 	}
 
-	for _, half := range []struct{
-		inFunc func() (aggregation.ExponentialBuckets, error)
+	for _, half := range []struct {
+		inFunc  func() (aggregation.ExponentialBuckets, error)
 		outFunc func() pdata.Buckets
 	}{
 		{agg.Positive, dp.Positive},
