@@ -180,14 +180,14 @@ func buildEndpoint(endpoint string, useSecurePort bool, logger *zap.Logger) (str
 			endpoint = fmt.Sprintf("http://%s:%s", host, defaultReadOnlyPort)
 		}
 		logger.Warn("Kubelet endpoint not defined, using default endpoint " + endpoint)
+		return endpoint, nil
 	}
 
 	if !strings.HasPrefix(endpoint, "http://") && !strings.HasPrefix(endpoint, "https://") {
 		if useSecurePort {
-			endpoint = "https://" + endpoint
-		} else {
-			endpoint = "http://" + endpoint
+			return "https://" + endpoint, nil
 		}
+		return "http://" + endpoint, nil
 	}
 
 	return endpoint, nil
