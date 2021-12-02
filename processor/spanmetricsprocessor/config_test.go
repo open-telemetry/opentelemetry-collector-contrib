@@ -33,6 +33,8 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jaegerreceiver"
 )
 
+
+
 func TestLoadConfig(t *testing.T) {
 	defaultMethod := "GET"
 	testcases := []struct {
@@ -40,9 +42,10 @@ func TestLoadConfig(t *testing.T) {
 		wantMetricsExporter         string
 		wantLatencyHistogramBuckets []time.Duration
 		wantDimensions              []Dimension
+		wantAggregationTemporality  string
 	}{
-		{configFile: "config-2-pipelines.yaml", wantMetricsExporter: "prometheus"},
-		{configFile: "config-3-pipelines.yaml", wantMetricsExporter: "otlp/spanmetrics"},
+		{configFile: "config-2-pipelines.yaml", wantMetricsExporter: "prometheus", wantAggregationTemporality: CUMULATIVE},
+		{configFile: "config-3-pipelines.yaml", wantMetricsExporter: "otlp/spanmetrics", wantAggregationTemporality: CUMULATIVE},
 		{
 			configFile:          "config-full.yaml",
 			wantMetricsExporter: "otlp/spanmetrics",
@@ -59,6 +62,7 @@ func TestLoadConfig(t *testing.T) {
 				{"http.method", &defaultMethod},
 				{"http.status_code", nil},
 			},
+			wantAggregationTemporality: DELTA,
 		},
 	}
 	for _, tc := range testcases {
@@ -89,6 +93,7 @@ func TestLoadConfig(t *testing.T) {
 					MetricsExporter:         tc.wantMetricsExporter,
 					LatencyHistogramBuckets: tc.wantLatencyHistogramBuckets,
 					Dimensions:              tc.wantDimensions,
+					AggregationTemporality:  tc.wantAggregationTemporality,
 				},
 				cfg.Processors[config.NewComponentID(typeStr)],
 			)
