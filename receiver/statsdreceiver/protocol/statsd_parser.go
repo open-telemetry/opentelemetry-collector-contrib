@@ -239,9 +239,7 @@ func (p *StatsDParser) GetMetrics() pdata.Metrics {
 	return metrics
 }
 
-var timeNowFunc = func() time.Time {
-	return time.Now()
-}
+var timeNowFunc = time.Now
 
 func (p *StatsDParser) observerCategoryFor(t MetricType) ObserverCategory {
 	switch t {
