@@ -2,6 +2,12 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsd
 
 go 1.17
 
+replace go.opentelemetry.io/otel => ../../../go
+
+replace go.opentelemetry.io/otel/sdk/export/metric => ../../../go/sdk/export/metric
+
+replace go.opentelemetry.io/otel/sdk/metric => ../../../go/sdk/metric
+
 require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.40.0
 	github.com/stretchr/testify v1.7.0
@@ -9,6 +15,7 @@ require (
 	go.opentelemetry.io/collector v0.40.0
 	go.opentelemetry.io/collector/model v0.40.0
 	go.opentelemetry.io/otel v1.2.0
+	go.opentelemetry.io/otel/sdk/metric v0.25.0
 	go.uber.org/multierr v1.7.0
 	go.uber.org/zap v1.19.1
 	gonum.org/v1/gonum v0.9.3
@@ -29,6 +36,7 @@ require (
 	github.com/spf13/cast v1.4.1 // indirect
 	go.opentelemetry.io/otel/metric v0.25.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.2.0 // indirect
+	go.opentelemetry.io/otel/sdk/export/metric v0.25.0 // indirect
 	go.opentelemetry.io/otel/trace v1.2.0 // indirect
 	go.uber.org/atomic v1.9.0 // indirect
 	golang.org/x/exp v0.0.0-20200224162631-6cc2880d07d6 // indirect

@@ -15,6 +15,7 @@
 package protocol // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver/protocol"
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"strconv"
@@ -23,11 +24,23 @@ import (
 
 	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/otel/attribute"
+
+	"go.opentelemetry.io/otel/metric/number"
+	"go.opentelemetry.io/otel/metric/sdkapi"
+	"go.opentelemetry.io/otel/sdk/metric/aggregator/exponential"
 )
 
 var (
 	errEmptyMetricName  = errors.New("empty metric name")
 	errEmptyMetricValue = errors.New("empty metric value")
+
+	dummyFloatHistoDescriptor = sdkapi.NewDescriptor(
+		"unused",
+		sdkapi.HistogramInstrumentKind,
+		number.Float64Kind,
+		"unused",
+		"unused",
+	)
 )
 
 type (
@@ -50,9 +63,10 @@ const (
 	TimingTypeName    TypeName = "timing"
 	TimingAltTypeName TypeName = "timer"
 
-	GaugeObserver   ObserverType = "gauge"
-	SummaryObserver ObserverType = "summary"
-	DisableObserver ObserverType = "disabled"
+	GaugeObserver     ObserverType = "gauge"
+	SummaryObserver   ObserverType = "summary"
+	HistogramObserver ObserverType = "histogram"
+	DisableObserver   ObserverType = "disabled"
 
 	DefaultObserverType = DisableObserver
 )
@@ -67,6 +81,7 @@ type StatsDParser struct {
 	gauges                 map[statsDMetricDescription]pdata.InstrumentationLibraryMetrics
 	counters               map[statsDMetricDescription]pdata.InstrumentationLibraryMetrics
 	summaries              map[statsDMetricDescription]summaryMetric
+	histograms             map[statsDMetricDescription]histogramMetric
 	timersAndDistributions []pdata.InstrumentationLibraryMetrics
 	enableMetricType       bool
 	isMonotonicCounter     bool
@@ -75,7 +90,7 @@ type StatsDParser struct {
 	lastIntervalTime       time.Time
 }
 
-type summaryRaw struct {
+type rawSample struct {
 	value float64
 	count float64
 }
@@ -83,6 +98,10 @@ type summaryRaw struct {
 type summaryMetric struct {
 	points  []float64
 	weights []float64
+}
+
+type histogramMetric struct {
+	agg *exponential.Aggregator
 }
 
 type statsDMetric struct {
@@ -119,6 +138,7 @@ func (p *StatsDParser) Initialize(enableMetricType bool, isMonotonicCounter bool
 	p.counters = make(map[statsDMetricDescription]pdata.InstrumentationLibraryMetrics)
 	p.timersAndDistributions = make([]pdata.InstrumentationLibraryMetrics, 0)
 	p.summaries = make(map[statsDMetricDescription]summaryMetric)
+	p.histograms = make(map[statsDMetricDescription]histogramMetric)
 
 	p.observeHistogram = DefaultObserverType
 	p.observeTimer = DefaultObserverType
@@ -169,6 +189,7 @@ func (p *StatsDParser) GetMetrics() pdata.Metrics {
 	p.counters = make(map[statsDMetricDescription]pdata.InstrumentationLibraryMetrics)
 	p.timersAndDistributions = make([]pdata.InstrumentationLibraryMetrics, 0)
 	p.summaries = make(map[statsDMetricDescription]summaryMetric)
+	p.histograms = make(map[statsDMetricDescription]histogramMetric)
 	return metrics
 }
 
@@ -220,7 +241,7 @@ func (p *StatsDParser) Aggregate(line string) error {
 		case GaugeObserver:
 			p.timersAndDistributions = append(p.timersAndDistributions, buildGaugeMetric(parsedMetric, timeNowFunc()))
 		case SummaryObserver:
-			raw := parsedMetric.summaryValue()
+			raw := parsedMetric.rawValue()
 			if existing, ok := p.summaries[parsedMetric.description]; !ok {
 				p.summaries[parsedMetric.description] = summaryMetric{
 					points:  []float64{raw.value},
@@ -232,6 +253,28 @@ func (p *StatsDParser) Aggregate(line string) error {
 					weights: append(existing.weights, raw.count),
 				}
 			}
+		case HistogramObserver:
+			raw := parsedMetric.rawValue()
+			var agg *exponential.Aggregator
+			if existing, ok := p.histograms[parsedMetric.description]; !ok {
+				agg = &exponential.New(1, &dummyFloatHistoDescriptor)[0]
+				
+				p.histograms[parsedMetric.description] = histogramMetric{
+					agg: agg,
+				}
+			} else {
+				agg = existing.agg
+			}
+			// Note: rounding raw.count to uint64 below.
+			if err := agg.UpdateByIncr(
+				context.Background(),
+				number.NewFloat64Number(raw.value),
+				uint64(raw.count),
+				&dummyFloatHistoDescriptor,
+			); err != nil {
+				return err
+			}
+
 		case DisableObserver:
 			// No action.
 		}

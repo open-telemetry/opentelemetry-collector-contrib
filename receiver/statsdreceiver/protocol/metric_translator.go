@@ -119,12 +119,12 @@ func (s statsDMetric) gaugeValue() float64 {
 	return s.asFloat
 }
 
-func (s statsDMetric) summaryValue() summaryRaw {
+func (s statsDMetric) rawValue() rawSample {
 	count := 1.0
 	if 0 < s.sampleRate && s.sampleRate < 1 {
 		count /= s.sampleRate
 	}
-	return summaryRaw{
+	return rawSample{
 		value: s.asFloat,
 		count: count,
 	}

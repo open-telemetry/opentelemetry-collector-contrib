@@ -63,7 +63,7 @@ func (c *Config) validate() error {
 		}
 
 		switch eachMap.ObserverType {
-		case protocol.GaugeObserver, protocol.SummaryObserver:
+		case protocol.GaugeObserver, protocol.SummaryObserver, protocol.HistogramObserver, protocol.DisableObserver:
 		default:
 			errs = multierr.Append(errs, fmt.Errorf("observer_type is not supported: %s", eachMap.ObserverType))
 		}
