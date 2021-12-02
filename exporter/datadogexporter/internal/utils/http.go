@@ -72,19 +72,3 @@ func SetDDHeaders(reqHeader http.Header, buildInfo component.BuildInfo, apiKey s
 	reqHeader.Set("DD-Api-Key", apiKey)
 	reqHeader.Set("User-Agent", UserAgent(buildInfo))
 }
-
-// DoWithRetries repeats a fallible action up to `maxRetries` times
-// with exponential backoff
-func DoWithRetries(maxRetries int, fn func() error) (i int, err error) {
-	wait := 1 * time.Second
-	for i = 0; i < maxRetries; i++ {
-		err = fn()
-		if err == nil {
-			return
-		}
-		time.Sleep(wait)
-		wait = 2 * wait
-	}
-
-	return
-}
