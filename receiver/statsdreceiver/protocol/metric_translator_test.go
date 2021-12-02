@@ -27,10 +27,10 @@ func TestBuildCounterMetric(t *testing.T) {
 	timeNow := time.Now()
 	lastUpdateInterval := timeNow.Add(-1 * time.Minute)
 	metricDescription := statsDMetricDescription{
-		name: "testCounter",
+		name:  "testCounter",
 		attrs: attribute.NewSet(attribute.String("mykey", "myvalue")),
 	}
-	
+
 	parsedMetric := statsDMetric{
 		description: metricDescription,
 		asFloat:     32,
