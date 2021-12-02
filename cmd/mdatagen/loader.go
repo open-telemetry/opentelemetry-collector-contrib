@@ -33,6 +33,10 @@ func (mn metricName) Render() (string, error) {
 	return formatIdentifier(string(mn), true)
 }
 
+func (mn metricName) RenderUnexported() (string, error) {
+	return formatIdentifier(string(mn), false)
+}
+
 type attributeName string
 
 func (mn attributeName) Render() (string, error) {
@@ -40,6 +44,9 @@ func (mn attributeName) Render() (string, error) {
 }
 
 type metric struct {
+	// Enabled defines whether the metric is enabled by default.
+	Enabled bool `yaml:"enabled"`
+
 	// Description of the metric.
 	Description string `validate:"required,notblank"`
 
@@ -98,6 +105,8 @@ type templateContext struct {
 	metadata
 	// Package name for generated code.
 	Package string
+	// ExpFileNote contains a note about experimental metrics builder.
+	ExpFileNote string
 }
 
 func loadMetadata(ymlData []byte) (metadata, error) {
