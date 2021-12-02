@@ -225,15 +225,11 @@ func (p *StatsDParser) Aggregate(line string) error {
 				p.summaries[parsedMetric.description] = summaryMetric{
 					points:  []float64{raw.value},
 					weights: []float64{raw.count},
-					// labelKeys:   parsedMetric.labelKeys,
-					// labelValues: parsedMetric.labelValues,
 				}
 			} else {
 				p.summaries[parsedMetric.description] = summaryMetric{
 					points:  append(existing.points, raw.value),
 					weights: append(existing.weights, raw.count),
-					// labelKeys:   parsedMetric.labelKeys,
-					// labelValues: parsedMetric.labelValues,
 				}
 			}
 		case DisableObserver:
