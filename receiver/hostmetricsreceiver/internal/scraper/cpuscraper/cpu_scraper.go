@@ -12,14 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package cpuscraper
+package cpuscraper // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/cpuscraper"
 
 import (
 	"context"
 	"time"
 
-	"github.com/shirou/gopsutil/cpu"
-	"github.com/shirou/gopsutil/host"
+	"github.com/shirou/gopsutil/v3/cpu"
+	"github.com/shirou/gopsutil/v3/host"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
@@ -84,9 +84,9 @@ func initializeCPUTimeDataPoint(dataPoint pdata.NumberDataPoint, startTime, now 
 	attributes := dataPoint.Attributes()
 	// ignore cpu attribute if reporting "total" cpu usage
 	if cpuLabel != gopsCPUTotal {
-		attributes.InsertString(metadata.Labels.Cpu, cpuLabel)
+		attributes.InsertString(metadata.Attributes.Cpu, cpuLabel)
 	}
-	attributes.InsertString(metadata.Labels.State, stateLabel)
+	attributes.InsertString(metadata.Attributes.State, stateLabel)
 
 	dataPoint.SetStartTimestamp(startTime)
 	dataPoint.SetTimestamp(now)

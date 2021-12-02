@@ -14,7 +14,7 @@
 
 // Package internal contains an interface for detecting resource information,
 // and a provider to merge the resources returned by a slice of custom detectors.
-package internal
+package internal // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
 
 import (
 	"context"

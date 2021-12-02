@@ -6,6 +6,13 @@ extensions:
       enabled: false
       interval: "5m"
       exporter_failure_threshold: 5
+  health_check/2:
+    endpoint: "localhost:13"
+    path: "/health"
+    check_collector_pipeline:
+      enabled: false
+      interval: "5m"
+      exporter_failure_threshold: 5
 
 service:
   extensions: [health_check/1]

@@ -145,7 +145,8 @@ exporters:
       #
       # span_name_remappings: 
       #   io.opentelemetry.javaagent.spring.client: spring.client
-      #   instrumentation::express.server: express
+      #   instrumentation:express.server: express
+      #   go.opentelemetry.io_contrib_instrumentation_net_http_otelhttp.client: http.client
 
 
 service:

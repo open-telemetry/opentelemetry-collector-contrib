@@ -17,4 +17,4 @@
 
 //go:generate mdatagen metadata.yaml
 
-package pagingscraper
+package pagingscraper // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/pagingscraper"

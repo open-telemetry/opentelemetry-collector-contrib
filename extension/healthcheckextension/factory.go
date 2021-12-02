@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package healthcheckextension
+package healthcheckextension // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckextension"
 
 import (
 	"context"
@@ -47,6 +47,7 @@ func createDefaultConfig() config.Extension {
 			Endpoint: defaultEndpoint,
 		},
 		CheckCollectorPipeline: defaultCheckCollectorPipelineSettings(),
+		Path:                   "/",
 	}
 }
 

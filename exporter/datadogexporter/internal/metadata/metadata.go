@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package metadata
+package metadata // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata"
 
 import (
 	"bytes"
@@ -154,7 +154,7 @@ func pushMetadata(cfg *config.Config, buildInfo component.BuildInfo, metadata *H
 	req, _ := http.NewRequest(http.MethodPost, path, bytes.NewBuffer(buf))
 	utils.SetDDHeaders(req.Header, buildInfo, cfg.API.Key)
 	utils.SetExtraHeaders(req.Header, utils.JSONHeaders)
-	client := utils.NewHTTPClient(10 * time.Second)
+	client := utils.NewHTTPClient(cfg.TimeoutSettings)
 	resp, err := client.Do(req)
 
 	if err != nil {

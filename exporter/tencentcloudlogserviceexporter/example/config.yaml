@@ -20,6 +20,6 @@ exporters:
 
 service:
   pipelines:
-    metrics:
+    logs:
       receivers: [otlp]
       exporters: [tencentcloud_logservice]

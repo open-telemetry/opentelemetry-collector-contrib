@@ -1,6 +1,6 @@
 name: network
 
-labels:
+attributes:
   device:
     description: Name of the network interface.
 
@@ -19,44 +19,39 @@ metrics:
   system.network.packets:
     description: The number of packets transferred.
     unit: "{packets}"
-    data:
-      type: sum
+    sum:
       aggregation: cumulative
       monotonic: true
-    labels: [device, direction]
+    attributes: [device, direction]
 
   system.network.dropped:
     description: The number of packets dropped.
     unit: "{packets}"
-    data:
-      type: sum
+    sum:
       aggregation: cumulative
       monotonic: true
-    labels: [device, direction]
+    attributes: [device, direction]
 
   system.network.errors:
     description: The number of errors encountered.
     unit: "{errors}"
-    data:
-      type: sum
+    sum:
       aggregation: cumulative
       monotonic: true
-    labels: [device, direction]
+    attributes: [device, direction]
 
   system.network.io:
     description: The number of bytes transmitted and received.
     unit: "By"
-    data:
-      type: sum
+    sum:
       aggregation: cumulative
       monotonic: true
-    labels: [device, direction]
+    attributes: [device, direction]
 
   system.network.connections:
     description: The number of connections.
     unit: "{connections}"
-    data:
-      type: sum
+    sum:
       aggregation: cumulative
       monotonic: false
-    labels: [protocol, state]
+    attributes: [protocol, state]

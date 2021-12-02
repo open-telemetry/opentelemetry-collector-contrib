@@ -507,9 +507,7 @@ func generateTracesResourceOnly() pdata.Traces {
 }
 
 func generateTracesResourceOnlyWithNoAttrs() pdata.Traces {
-	td := testdata.GenerateTracesOneEmptyResourceSpans()
-	td.ResourceSpans().At(0).Resource().Attributes().InitFromMap(map[string]pdata.AttributeValue{})
-	return td
+	return testdata.GenerateTracesOneEmptyResourceSpans()
 }
 
 func generateProtoProcess() *model.Process {
@@ -720,10 +718,7 @@ func generateTracesTwoSpansChildParent() pdata.Traces {
 	span.SetStartTimestamp(spans.At(0).StartTimestamp())
 	span.SetEndTimestamp(spans.At(0).EndTimestamp())
 	span.Status().SetCode(pdata.StatusCodeError)
-	span.Attributes().InitFromMap(map[string]pdata.AttributeValue{
-		conventions.AttributeHTTPStatusCode: pdata.NewAttributeValueInt(404),
-	})
-
+	span.Attributes().InsertInt(conventions.AttributeHTTPStatusCode, 404)
 	return td
 }
 

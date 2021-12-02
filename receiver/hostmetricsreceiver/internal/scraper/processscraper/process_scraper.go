@@ -12,16 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package processscraper
+package processscraper // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/processscraper"
 
 import (
 	"context"
 	"fmt"
 	"time"
 
-	"github.com/shirou/gopsutil/cpu"
-	"github.com/shirou/gopsutil/host"
-	"github.com/shirou/gopsutil/process"
+	"github.com/shirou/gopsutil/v3/cpu"
+	"github.com/shirou/gopsutil/v3/host"
+	"github.com/shirou/gopsutil/v3/process"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
@@ -229,12 +229,12 @@ func initializeDiskIOMetric(metric pdata.Metric, startTime, now pdata.Timestamp,
 	metadata.Metrics.ProcessDiskIo.Init(metric)
 
 	idps := metric.Sum().DataPoints()
-	initializeDiskIODataPoint(idps.AppendEmpty(), startTime, now, int64(io.ReadBytes), metadata.LabelDirection.Read)
-	initializeDiskIODataPoint(idps.AppendEmpty(), startTime, now, int64(io.WriteBytes), metadata.LabelDirection.Write)
+	initializeDiskIODataPoint(idps.AppendEmpty(), startTime, now, int64(io.ReadBytes), metadata.AttributeDirection.Read)
+	initializeDiskIODataPoint(idps.AppendEmpty(), startTime, now, int64(io.WriteBytes), metadata.AttributeDirection.Write)
 }
 
 func initializeDiskIODataPoint(dataPoint pdata.NumberDataPoint, startTime, now pdata.Timestamp, value int64, directionLabel string) {
-	dataPoint.Attributes().InsertString(metadata.Labels.Direction, directionLabel)
+	dataPoint.Attributes().InsertString(metadata.Attributes.Direction, directionLabel)
 	dataPoint.SetStartTimestamp(startTime)
 	dataPoint.SetTimestamp(now)
 	dataPoint.SetIntVal(value)

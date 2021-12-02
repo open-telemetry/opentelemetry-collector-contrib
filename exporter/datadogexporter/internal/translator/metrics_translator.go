@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package translator
+package translator // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/translator"
 
 import (
 	"context"
@@ -430,6 +430,8 @@ func (t *Translator) MapMetrics(ctx context.Context, md pdata.Metrics, consumer 
 			var additionalTags []string
 			if t.cfg.InstrumentationLibraryMetadataAsTags {
 				additionalTags = append(attributeTags, instrumentationlibrary.TagsFromInstrumentationLibraryMetadata(ilm.InstrumentationLibrary())...)
+			} else {
+				additionalTags = attributeTags
 			}
 
 			for k := 0; k < metricsArray.Len(); k++ {

@@ -12,198 +12,158 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package metadata
+package metadata // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudspannerreceiver/internal/metadata"
 
 import (
+	"fmt"
 	"sort"
 	"strings"
 
 	"go.opentelemetry.io/collector/model/pdata"
 )
 
+type newLabelValueFunction func(m LabelValueMetadata, value interface{}) LabelValue
+
 type LabelValueMetadata interface {
 	ValueMetadata
+	ValueType() ValueType
+	NewLabelValue(value interface{}) LabelValue
 }
 
 type LabelValue interface {
-	LabelValueMetadata
+	Metadata() LabelValueMetadata
 	Value() interface{}
 	SetValueTo(attributes pdata.AttributeMap)
 }
 
 type queryLabelValueMetadata struct {
-	name       string
-	columnName string
+	name              string
+	columnName        string
+	valueType         ValueType
+	newLabelValueFunc newLabelValueFunction
+	valueHolderFunc   valueHolderFunction
 }
 
-func newQueryLabelValueMetadata(name string, columnName string) queryLabelValueMetadata {
-	return queryLabelValueMetadata{
-		name:       name,
-		columnName: columnName,
-	}
+func (m queryLabelValueMetadata) ValueHolder() interface{} {
+	return m.valueHolderFunc()
 }
 
-type StringLabelValueMetadata struct {
-	queryLabelValueMetadata
+func (m queryLabelValueMetadata) NewLabelValue(value interface{}) LabelValue {
+	return m.newLabelValueFunc(m, value)
 }
 
-func NewStringLabelValueMetadata(name string, columnName string) StringLabelValueMetadata {
-	return StringLabelValueMetadata{
-		queryLabelValueMetadata: newQueryLabelValueMetadata(name, columnName),
-	}
-}
-
-type Int64LabelValueMetadata struct {
-	queryLabelValueMetadata
-}
-
-func NewInt64LabelValueMetadata(name string, columnName string) Int64LabelValueMetadata {
-	return Int64LabelValueMetadata{
-		queryLabelValueMetadata: newQueryLabelValueMetadata(name, columnName),
-	}
-}
-
-type BoolLabelValueMetadata struct {
-	queryLabelValueMetadata
-}
-
-func NewBoolLabelValueMetadata(name string, columnName string) BoolLabelValueMetadata {
-	return BoolLabelValueMetadata{
-		queryLabelValueMetadata: newQueryLabelValueMetadata(name, columnName),
-	}
-}
-
-type StringSliceLabelValueMetadata struct {
-	queryLabelValueMetadata
-}
-
-func NewStringSliceLabelValueMetadata(name string, columnName string) StringSliceLabelValueMetadata {
-	return StringSliceLabelValueMetadata{
-		queryLabelValueMetadata: newQueryLabelValueMetadata(name, columnName),
-	}
-}
-
-type ByteSliceLabelValueMetadata struct {
-	queryLabelValueMetadata
-}
-
-func NewByteSliceLabelValueMetadata(name string, columnName string) ByteSliceLabelValueMetadata {
-	return ByteSliceLabelValueMetadata{
-		queryLabelValueMetadata: newQueryLabelValueMetadata(name, columnName),
-	}
+func (m queryLabelValueMetadata) ValueType() ValueType {
+	return m.valueType
 }
 
 type stringLabelValue struct {
-	StringLabelValueMetadata
-	value string
+	metadata LabelValueMetadata
+	value    string
 }
 
 type int64LabelValue struct {
-	Int64LabelValueMetadata
-	value int64
+	metadata LabelValueMetadata
+	value    int64
 }
 
 type boolLabelValue struct {
-	BoolLabelValueMetadata
-	value bool
+	metadata LabelValueMetadata
+	value    bool
 }
 
 type stringSliceLabelValue struct {
-	StringSliceLabelValueMetadata
-	value string
+	metadata LabelValueMetadata
+	value    string
 }
 
 type byteSliceLabelValue struct {
-	ByteSliceLabelValueMetadata
-	value string
+	metadata LabelValueMetadata
+	value    string
 }
 
-func (metadata queryLabelValueMetadata) Name() string {
-	return metadata.name
+type lockRequestSliceLabelValue struct {
+	metadata LabelValueMetadata
+	value    string
 }
 
-func (metadata queryLabelValueMetadata) ColumnName() string {
-	return metadata.columnName
+func (m queryLabelValueMetadata) Name() string {
+	return m.name
 }
 
-func (metadata StringLabelValueMetadata) ValueHolder() interface{} {
-	var valueHolder string
-
-	return &valueHolder
+func (m queryLabelValueMetadata) ColumnName() string {
+	return m.columnName
 }
 
-func (value stringLabelValue) Value() interface{} {
-	return value.value
+func (v stringLabelValue) Metadata() LabelValueMetadata {
+	return v.metadata
 }
 
-func (value stringLabelValue) SetValueTo(attributes pdata.AttributeMap) {
-	attributes.InsertString(value.name, value.value)
+func (v stringLabelValue) Value() interface{} {
+	return v.value
 }
 
-func newStringLabelValue(metadata StringLabelValueMetadata, valueHolder interface{}) stringLabelValue {
+func (v stringLabelValue) SetValueTo(attributes pdata.AttributeMap) {
+	attributes.InsertString(v.metadata.Name(), v.value)
+}
+
+func newStringLabelValue(metadata LabelValueMetadata, valueHolder interface{}) LabelValue {
 	return stringLabelValue{
-		StringLabelValueMetadata: metadata,
-		value:                    *valueHolder.(*string),
+		metadata: metadata,
+		value:    *valueHolder.(*string),
 	}
 }
 
-func (metadata Int64LabelValueMetadata) ValueHolder() interface{} {
-	var valueHolder int64
-
-	return &valueHolder
+func (v int64LabelValue) Metadata() LabelValueMetadata {
+	return v.metadata
 }
 
-func (value int64LabelValue) Value() interface{} {
-	return value.value
+func (v int64LabelValue) Value() interface{} {
+	return v.value
 }
 
-func (value int64LabelValue) SetValueTo(attributes pdata.AttributeMap) {
-	attributes.InsertInt(value.name, value.value)
+func (v int64LabelValue) SetValueTo(attributes pdata.AttributeMap) {
+	attributes.InsertInt(v.metadata.Name(), v.value)
 }
 
-func newInt64LabelValue(metadata Int64LabelValueMetadata, valueHolder interface{}) int64LabelValue {
+func newInt64LabelValue(metadata LabelValueMetadata, valueHolder interface{}) LabelValue {
 	return int64LabelValue{
-		Int64LabelValueMetadata: metadata,
-		value:                   *valueHolder.(*int64),
+		metadata: metadata,
+		value:    *valueHolder.(*int64),
 	}
 }
 
-func (metadata BoolLabelValueMetadata) ValueHolder() interface{} {
-	var valueHolder bool
-
-	return &valueHolder
+func (v boolLabelValue) Metadata() LabelValueMetadata {
+	return v.metadata
 }
 
-func (value boolLabelValue) Value() interface{} {
-	return value.value
+func (v boolLabelValue) Value() interface{} {
+	return v.value
 }
 
-func (value boolLabelValue) SetValueTo(attributes pdata.AttributeMap) {
-	attributes.InsertBool(value.name, value.value)
+func (v boolLabelValue) SetValueTo(attributes pdata.AttributeMap) {
+	attributes.InsertBool(v.metadata.Name(), v.value)
 }
 
-func newBoolLabelValue(metadata BoolLabelValueMetadata, valueHolder interface{}) boolLabelValue {
+func newBoolLabelValue(metadata LabelValueMetadata, valueHolder interface{}) LabelValue {
 	return boolLabelValue{
-		BoolLabelValueMetadata: metadata,
-		value:                  *valueHolder.(*bool),
+		metadata: metadata,
+		value:    *valueHolder.(*bool),
 	}
 }
 
-func (metadata StringSliceLabelValueMetadata) ValueHolder() interface{} {
-	var valueHolder []string
-
-	return &valueHolder
+func (v stringSliceLabelValue) Metadata() LabelValueMetadata {
+	return v.metadata
 }
 
-func (value stringSliceLabelValue) Value() interface{} {
-	return value.value
+func (v stringSliceLabelValue) Value() interface{} {
+	return v.value
 }
 
-func (value stringSliceLabelValue) SetValueTo(attributes pdata.AttributeMap) {
-	attributes.InsertString(value.name, value.value)
+func (v stringSliceLabelValue) SetValueTo(attributes pdata.AttributeMap) {
+	attributes.InsertString(v.metadata.Name(), v.value)
 }
 
-func newStringSliceLabelValue(metadata StringSliceLabelValueMetadata, valueHolder interface{}) stringSliceLabelValue {
+func newStringSliceLabelValue(metadata LabelValueMetadata, valueHolder interface{}) LabelValue {
 	value := *valueHolder.(*[]string)
 
 	sort.Strings(value)
@@ -211,28 +171,114 @@ func newStringSliceLabelValue(metadata StringSliceLabelValueMetadata, valueHolde
 	sortedAndConstructedValue := strings.Join(value, ",")
 
 	return stringSliceLabelValue{
-		StringSliceLabelValueMetadata: metadata,
-		value:                         sortedAndConstructedValue,
+		metadata: metadata,
+		value:    sortedAndConstructedValue,
 	}
 }
 
-func (metadata ByteSliceLabelValueMetadata) ValueHolder() interface{} {
-	var valueHolder []byte
-
-	return &valueHolder
+func (v byteSliceLabelValue) Metadata() LabelValueMetadata {
+	return v.metadata
 }
 
-func (value byteSliceLabelValue) Value() interface{} {
-	return value.value
+func (v byteSliceLabelValue) Value() interface{} {
+	return v.value
 }
 
-func (value byteSliceLabelValue) SetValueTo(attributes pdata.AttributeMap) {
-	attributes.InsertString(value.name, value.value)
+func (v byteSliceLabelValue) SetValueTo(attributes pdata.AttributeMap) {
+	attributes.InsertString(v.metadata.Name(), v.value)
 }
 
-func newByteSliceLabelValue(metadata ByteSliceLabelValueMetadata, valueHolder interface{}) byteSliceLabelValue {
+func newByteSliceLabelValue(metadata LabelValueMetadata, valueHolder interface{}) LabelValue {
 	return byteSliceLabelValue{
-		ByteSliceLabelValueMetadata: metadata,
-		value:                       string(*valueHolder.(*[]byte)),
+		metadata: metadata,
+		value:    string(*valueHolder.(*[]byte)),
 	}
+}
+
+func (v lockRequestSliceLabelValue) Metadata() LabelValueMetadata {
+	return v.metadata
+}
+
+func (v lockRequestSliceLabelValue) Value() interface{} {
+	return v.value
+}
+
+func (v lockRequestSliceLabelValue) SetValueTo(attributes pdata.AttributeMap) {
+	attributes.InsertString(v.metadata.Name(), v.value)
+}
+
+type lockRequest struct {
+	LockMode       string `spanner:"lock_mode"`
+	Column         string `spanner:"column"`
+	TransactionTag string `spanner:"transaction_tag"`
+}
+
+func newLockRequestSliceLabelValue(metadata LabelValueMetadata, valueHolder interface{}) LabelValue {
+	value := *valueHolder.(*[]*lockRequest)
+	convertedValue := make([]string, len(value))
+
+	for i, valueItem := range value {
+		convertedValue[i] = fmt.Sprintf("{%v,%v,%v}", valueItem.LockMode, valueItem.Column, valueItem.TransactionTag)
+	}
+
+	constructedValue := strings.Join(convertedValue, ",")
+
+	return lockRequestSliceLabelValue{
+		metadata: metadata,
+		value:    constructedValue,
+	}
+}
+
+func NewLabelValueMetadata(name string, columnName string, valueType ValueType) (LabelValueMetadata, error) {
+	var newLabelValueFunc newLabelValueFunction
+	var valueHolderFunc valueHolderFunction
+
+	switch valueType {
+	case StringValueType:
+		newLabelValueFunc = newStringLabelValue
+		valueHolderFunc = func() interface{} {
+			var valueHolder string
+			return &valueHolder
+		}
+	case IntValueType:
+		newLabelValueFunc = newInt64LabelValue
+		valueHolderFunc = func() interface{} {
+			var valueHolder int64
+			return &valueHolder
+		}
+	case BoolValueType:
+		newLabelValueFunc = newBoolLabelValue
+		valueHolderFunc = func() interface{} {
+			var valueHolder bool
+			return &valueHolder
+		}
+	case StringSliceValueType:
+		newLabelValueFunc = newStringSliceLabelValue
+		valueHolderFunc = func() interface{} {
+			var valueHolder []string
+			return &valueHolder
+		}
+	case ByteSliceValueType:
+		newLabelValueFunc = newByteSliceLabelValue
+		valueHolderFunc = func() interface{} {
+			var valueHolder []byte
+			return &valueHolder
+		}
+	case LockRequestSliceValueType:
+		newLabelValueFunc = newLockRequestSliceLabelValue
+		valueHolderFunc = func() interface{} {
+			var valueHolder []*lockRequest
+			return &valueHolder
+		}
+	default:
+		return nil, fmt.Errorf("invalid value type received for label %q", name)
+	}
+
+	return queryLabelValueMetadata{
+		name:              name,
+		columnName:        columnName,
+		valueType:         valueType,
+		newLabelValueFunc: newLabelValueFunc,
+		valueHolderFunc:   valueHolderFunc,
+	}, nil
 }

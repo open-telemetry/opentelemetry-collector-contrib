@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package healthcheckextension
+package healthcheckextension // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckextension"
 
 import (
 	"context"
@@ -60,7 +60,9 @@ func (hc *healthCheckExtension) Start(_ context.Context, host component.Host) er
 
 	if !hc.config.CheckCollectorPipeline.Enabled {
 		// Mount HC handler
-		hc.server.Handler = hc.state.Handler()
+		mux := http.NewServeMux()
+		mux.Handle(hc.config.Path, hc.state.Handler())
+		hc.server.Handler = mux
 		hc.stopCh = make(chan struct{})
 		go func() {
 			defer close(hc.stopCh)
@@ -83,7 +85,9 @@ func (hc *healthCheckExtension) Start(_ context.Context, host component.Host) er
 		// ticker used by collector pipeline health check for rotation
 		ticker := time.NewTicker(time.Second)
 
-		hc.server.Handler = hc.handler()
+		mux := http.NewServeMux()
+		mux.Handle(hc.config.Path, hc.handler())
+		hc.server.Handler = mux
 		hc.stopCh = make(chan struct{})
 		go func() {
 			defer close(hc.stopCh)

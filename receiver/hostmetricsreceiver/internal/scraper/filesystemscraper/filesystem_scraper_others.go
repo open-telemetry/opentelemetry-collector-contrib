@@ -15,7 +15,7 @@
 //go:build !linux && !darwin && !freebsd && !openbsd && !solaris
 // +build !linux,!darwin,!freebsd,!openbsd,!solaris
 
-package filesystemscraper
+package filesystemscraper // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/filesystemscraper"
 
 import (
 	"go.opentelemetry.io/collector/model/pdata"
@@ -26,8 +26,8 @@ import (
 const fileSystemStatesLen = 2
 
 func appendFileSystemUsageStateDataPoints(idps pdata.NumberDataPointSlice, now pdata.Timestamp, deviceUsage *deviceUsage) {
-	initializeFileSystemUsageDataPoint(idps.AppendEmpty(), now, deviceUsage.partition, metadata.LabelState.Used, int64(deviceUsage.usage.Used))
-	initializeFileSystemUsageDataPoint(idps.AppendEmpty(), now, deviceUsage.partition, metadata.LabelState.Free, int64(deviceUsage.usage.Free))
+	initializeFileSystemUsageDataPoint(idps.AppendEmpty(), now, deviceUsage.partition, metadata.AttributeState.Used, int64(deviceUsage.usage.Used))
+	initializeFileSystemUsageDataPoint(idps.AppendEmpty(), now, deviceUsage.partition, metadata.AttributeState.Free, int64(deviceUsage.usage.Free))
 }
 
 const systemSpecificMetricsLen = 0

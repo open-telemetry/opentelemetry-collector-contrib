@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package utils
+package utils // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/utils"
 
 import (
 	"crypto/tls"
@@ -22,6 +22,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
 var (
@@ -38,9 +39,9 @@ var (
 )
 
 // NewHTTPClient returns a http.Client configured with the Agent options.
-func NewHTTPClient(timeout time.Duration) *http.Client {
+func NewHTTPClient(settings exporterhelper.TimeoutSettings) *http.Client {
 	return &http.Client{
-		Timeout: timeout,
+		Timeout: settings.Timeout,
 		Transport: &http.Transport{
 			Proxy: http.ProxyFromEnvironment,
 			DialContext: (&net.Dialer{

@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package memcachedreceiver
+package memcachedreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/memcachedreceiver"
 
 //go:generate mdatagen metadata.yaml
 
@@ -47,7 +47,7 @@ func createDefaultConfig() config.Receiver {
 			CollectionInterval: 10 * time.Second,
 		},
 		Timeout: 10 * time.Second,
-		TCPAddr: confignet.TCPAddr{
+		NetAddr: confignet.NetAddr{
 			Endpoint: "localhost:11211",
 		},
 	}
@@ -61,7 +61,8 @@ func createMetricsReceiver(
 ) (component.MetricsReceiver, error) {
 	cfg := rConf.(*Config)
 
-	scraper, err := newMemcachedScraper(params.Logger, cfg)
+	ms := newMemcachedScraper(params.Logger, cfg)
+	scraper, err := scraperhelper.NewScraper(typeStr, ms.scrape)
 	if err != nil {
 		return nil, err
 	}

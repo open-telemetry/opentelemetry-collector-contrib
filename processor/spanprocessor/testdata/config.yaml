@@ -84,6 +84,24 @@ processors:
         rules:
           - "(?P<operation_website>.*?)$"
 
+  # This example changes status of a span to error and sets description.
+  # Possible values for code are: "Ok", "Error" or "Unset".
+  # Description is an optional field used for documenting Error statuses.
+  span/set_status_err:
+    status:
+      code: "Error"
+      description: "some additional error description"
+
+  # However you may want to set status conditionally. Example below sets
+  # status to success only when attribute http.status_code is equal to 400
+  span/set_status_ok:
+    include:
+      attributes:
+        - Key: http.status_code
+          Value: 400
+    status:
+      code: "Ok"
+
 exporters:
   nop:
 

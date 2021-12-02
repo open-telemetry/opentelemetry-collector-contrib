@@ -211,8 +211,8 @@ var Metrics = &metricStruct{
 // manipulating those metrics. M is an alias for Metrics
 var M = Metrics
 
-// Labels contains the possible metric labels that can be used.
-var Labels = struct {
+// Attributes contains the possible metric attributes that can be used.
+var Attributes = struct {
 	// Group (The ID (string) of a consumer group)
 	Group string
 	// Partition (The number (integer) of the partition)
@@ -225,6 +225,5 @@ var Labels = struct {
 	"topic",
 }
 
-// L contains the possible metric labels that can be used. L is an alias for
-// Labels.
-var L = Labels
+// A is an alias for Attributes.
+var A = Attributes
