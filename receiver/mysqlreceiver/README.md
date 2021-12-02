@@ -14,12 +14,11 @@ Collecting most metrics requires the ability to execute `SHOW GLOBAL STATUS`. Th
 
 ## Configuration
 
-The following settings are required to create a database connection:
-- `endpoint`
-- `username`
-- `password`
 
 The following settings are optional:
+- `endpoint`: (default = `localhost:3306`)
+- `username`: (default = `root`)
+- `password`: The password to the username.
 - `database`: The database name. If not specified, metrics will be collected for all databases.
 
 - `collection_interval` (default = `10s`): This receiver collects metrics on an interval. This value must be a string readable by Golang's [time.ParseDuration](https://pkg.go.dev/time#ParseDuration). Valid time units are `ns`, `us` (or `µs`), `ms`, `s`, `m`, `h`.
