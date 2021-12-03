@@ -116,6 +116,7 @@ func (mb *MetricsBuilder) Emit(metrics pdata.MetricSlice) {
 }
 
 {{ range $name, $metric := .Metrics -}}
+{{ if $metric.Attributes -}}
 // {{ $name.RenderUnexported }}DataPointsCapacity calculates initial data points capacity for {{ $name }} metric.
 func (mb *MetricsBuilder) {{ $name.RenderUnexported }}DataPointsCapacity() int {
 	return {{ range $idx, $attr := $metric.Attributes -}}
@@ -123,6 +124,7 @@ func (mb *MetricsBuilder) {{ $name.RenderUnexported }}DataPointsCapacity() int {
 	mb.attribute{{ $attr.Render }}Capacity
 	{{- end }}
 }
+{{- end }}
 
 // {{ $name.RenderUnexported }}Metric builds new {{ $name }} metric.
 func (mb *MetricsBuilder) {{ $name.RenderUnexported }}Metric() pdata.Metric {
@@ -137,7 +139,9 @@ func (mb *MetricsBuilder) {{ $name.RenderUnexported }}Metric() pdata.Metric {
 	{{- if $metric.Data.HasAggregated }}
 	metric.{{ $metric.Data.Type }}().SetAggregationTemporality({{ $metric.Data.Aggregated.Type }})
 	{{- end }}
+	{{- if $metric.Attributes }}
 	metric.{{ $metric.Data.Type }}().DataPoints().EnsureCapacity(mb.{{ $name.RenderUnexported }}DataPointsCapacity())
+	{{- end }}
 	return metric
 }
 
