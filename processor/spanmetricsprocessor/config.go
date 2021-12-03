@@ -22,8 +22,8 @@ import (
 )
 
 const (
-	DELTA = "AGGREGATION_TEMPORALITY_DELTA"
-	CUMULATIVE = "AGGREGATION_TEMPORALITY_CUMULATIVE"
+	delta      = "AGGREGATION_TEMPORALITY_DELTA"
+	cumulative = "AGGREGATION_TEMPORALITY_CUMULATIVE"
 )
 
 // Dimension defines the dimension name and optional default value if the Dimension is missing from a span attribute.
@@ -58,8 +58,7 @@ type Config struct {
 // GetAggregationTemporality converts the string value given in the config into a MetricAggregationTemporality.
 // Returns cumulative, unless delta is correctly specified.
 func (c Config) GetAggregationTemporality() pdata.MetricAggregationTemporality {
-
-	if c.AggregationTemporality == DELTA {
+	if c.AggregationTemporality == delta {
 		return pdata.MetricAggregationTemporalityDelta
 	}
 	return pdata.MetricAggregationTemporalityCumulative

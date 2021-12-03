@@ -45,8 +45,8 @@ func TestLoadConfig(t *testing.T) {
 		wantDimensions              []Dimension
 		wantAggregationTemporality  string
 	}{
-		{configFile: "config-2-pipelines.yaml", wantMetricsExporter: "prometheus", wantAggregationTemporality: CUMULATIVE},
-		{configFile: "config-3-pipelines.yaml", wantMetricsExporter: "otlp/spanmetrics", wantAggregationTemporality: CUMULATIVE},
+		{configFile: "config-2-pipelines.yaml", wantMetricsExporter: "prometheus", wantAggregationTemporality: cumulative},
+		{configFile: "config-3-pipelines.yaml", wantMetricsExporter: "otlp/spanmetrics", wantAggregationTemporality: cumulative},
 		{
 			configFile:          "config-full.yaml",
 			wantMetricsExporter: "otlp/spanmetrics",
@@ -63,7 +63,7 @@ func TestLoadConfig(t *testing.T) {
 				{"http.method", &defaultMethod},
 				{"http.status_code", nil},
 			},
-			wantAggregationTemporality: DELTA,
+			wantAggregationTemporality: delta,
 		},
 	}
 	for _, tc := range testcases {
@@ -103,10 +103,10 @@ func TestLoadConfig(t *testing.T) {
 }
 
 func TestGetAggregationTemporality(t *testing.T) {
-  cfg := &Config{AggregationTemporality: DELTA}
+  cfg := &Config{AggregationTemporality: delta}
   assert.Equal(t, pdata.MetricAggregationTemporalityDelta, cfg.GetAggregationTemporality())
 
-  cfg = &Config{AggregationTemporality: CUMULATIVE}
+  cfg = &Config{AggregationTemporality: cumulative}
   assert.Equal(t, pdata.MetricAggregationTemporalityCumulative, cfg.GetAggregationTemporality())
 
   cfg = &Config{}

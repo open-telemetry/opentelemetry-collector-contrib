@@ -203,7 +203,7 @@ func TestProcessorConsumeTracesErrors(t *testing.T) {
 			tcon := &mocks.TracesConsumer{}
 			tcon.On("ConsumeTraces", mock.Anything, mock.Anything).Return(tc.consumeTracesErr)
 
-			p := newProcessorImp(mexp, tcon, nil)
+			p := newProcessorImp(mexp, tcon, nil, cumulative)
 
 			traces := buildSampleTrace()
 
@@ -217,27 +217,55 @@ func TestProcessorConsumeTracesErrors(t *testing.T) {
 	}
 }
 
+type VerifyMetric func(t testing.TB, input pdata.Metrics) bool
+
 func TestProcessorConsumeTraces(t *testing.T) {
-	// Prepare
-	mexp := &mocks.MetricsExporter{}
-	tcon := &mocks.TracesConsumer{}
+	//t.Parallel()
 
-	mexp.On("ConsumeMetrics", mock.Anything, mock.MatchedBy(func(input pdata.Metrics) bool {
-		return verifyConsumeMetricsInput(input, t)
-	})).Return(nil)
-	tcon.On("ConsumeTraces", mock.Anything, mock.Anything).Return(nil)
+	testcases := []struct {
+		name     string
+		verifier VerifyMetric
+		traces 	 pdata.Traces
+	}{
+		{
+			name: "Test single trace with three spans.",
+			verifier: verifyConsumeMetricsInput,
+			traces: buildSampleTrace(),
+		},
+		{
+			name: "test1",
+			verifier: func(t testing.TB, input pdata.Metrics) bool {
+				return true //todo
+			},
+			traces: buildSampleTrace(),
+		},
+	}
 
-	defaultNullValue := "defaultNullValue"
-	p := newProcessorImp(mexp, tcon, &defaultNullValue)
 
-	traces := buildSampleTrace()
+	for _, tc := range testcases {
+		t.Run(tc.name, func(t *testing.T) {
+			// Prepare
+			mexp := &mocks.MetricsExporter{}
+			tcon := &mocks.TracesConsumer{}
 
-	// Test
-	ctx := metadata.NewIncomingContext(context.Background(), nil)
-	err := p.ConsumeTraces(ctx, traces)
+			mexp.On("ConsumeMetrics", mock.Anything, mock.MatchedBy(func(input pdata.Metrics) bool {
+				return tc.verifier(t, input)
+			})).Return(nil)
+			tcon.On("ConsumeTraces", mock.Anything, mock.Anything).Return(nil)
 
-	// Verify
-	assert.NoError(t, err)
+			defaultNullValue := "defaultNullValue"
+			p := newProcessorImp(mexp, tcon, &defaultNullValue, cumulative)
+
+			traces := tc.traces
+
+			// Test
+			ctx := metadata.NewIncomingContext(context.Background(), nil)
+			err := p.ConsumeTraces(ctx, traces)
+
+			// Verify
+			assert.NoError(t, err)
+		})
+	}
 }
 
 func TestMetricKeyCache(t *testing.T) {
@@ -249,7 +277,7 @@ func TestMetricKeyCache(t *testing.T) {
 	tcon.On("ConsumeTraces", mock.Anything, mock.Anything).Return(nil)
 
 	defaultNullValue := "defaultNullValue"
-	p := newProcessorImp(mexp, tcon, &defaultNullValue)
+	p := newProcessorImp(mexp, tcon, &defaultNullValue, cumulative)
 
 	traces := buildSampleTrace()
 
@@ -278,7 +306,7 @@ func BenchmarkProcessorConsumeTraces(b *testing.B) {
 	tcon.On("ConsumeTraces", mock.Anything, mock.Anything).Return(nil)
 
 	defaultNullValue := "defaultNullValue"
-	p := newProcessorImp(mexp, tcon, &defaultNullValue)
+	p := newProcessorImp(mexp, tcon, &defaultNullValue, cumulative)
 
 	traces := buildSampleTrace()
 
@@ -289,10 +317,11 @@ func BenchmarkProcessorConsumeTraces(b *testing.B) {
 	}
 }
 
-func newProcessorImp(mexp *mocks.MetricsExporter, tcon *mocks.TracesConsumer, defaultNullValue *string) *processorImp {
+func newProcessorImp(mexp *mocks.MetricsExporter, tcon *mocks.TracesConsumer, defaultNullValue *string, temporality string) *processorImp {
 	defaultNotInSpanAttrVal := "defaultNotInSpanAttrVal"
 	return &processorImp{
 		logger:          zap.NewNop(),
+		config:			 Config{AggregationTemporality: temporality},
 		metricsExporter: mexp,
 		nextConsumer:    tcon,
 
@@ -325,7 +354,7 @@ func newProcessorImp(mexp *mocks.MetricsExporter, tcon *mocks.TracesConsumer, de
 
 // verifyConsumeMetricsInput verifies the input of the ConsumeMetrics call from this processor.
 // This is the best point to verify the computed metrics from spans are as expected.
-func verifyConsumeMetricsInput(input pdata.Metrics, t *testing.T) bool {
+func verifyConsumeMetricsInput(t testing.TB, input pdata.Metrics) bool {
 	require.Equal(t, 6, input.MetricCount(),
 		"Should be 3 for each of call count and latency. Each group of 3 metrics is made of: "+
 			"service-a (server kind) -> service-a (client kind) -> service-b (service kind)",
@@ -399,7 +428,7 @@ func verifyConsumeMetricsInput(input pdata.Metrics, t *testing.T) bool {
 	return true
 }
 
-func verifyMetricLabels(dp metricDataPoint, t *testing.T, seenMetricIDs map[metricID]bool) {
+func verifyMetricLabels(dp metricDataPoint, t testing.TB, seenMetricIDs map[metricID]bool) {
 	mID := metricID{}
 	wantDimensions := map[string]pdata.AttributeValue{
 		stringAttrName:         pdata.NewAttributeValueString("stringAttrValue"),
