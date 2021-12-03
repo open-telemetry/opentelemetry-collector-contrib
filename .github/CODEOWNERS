@@ -87,7 +87,9 @@ receiver/k8sclusterreceiver/                         @open-telemetry/collector-c
 receiver/k8seventsreceiver/                          @open-telemetry/collector-contrib-approvers @dmitryax
 receiver/kubeletstatsreceiver/                       @open-telemetry/collector-contrib-approvers @pmcollins @asuresh4
 receiver/mongodbatlasreceiver/                       @open-telemetry/collector-contrib-approvers @zenmoto
+receiver/memcachedreceiver/                          @open-telemetry/collector-contrib-approvers @djaglowski
 receiver/mysqlreceiver/                              @open-telemetry/collector-contrib-approvers @djaglowski
+receiver/nginxreceiver/                              @open-telemetry/collector-contrib-approvers @djaglowski
 receiver/postgresqlreceiver/                         @open-telemetry/collector-contrib-approvers @djaglowski
 receiver/prometheusexecreceiver/                     @open-telemetry/collector-contrib-approvers @keitwb
 receiver/prometheusreceiver/                         @open-telemetry/collector-contrib-approvers @Aneurysm9 @dashpole
@@ -98,11 +100,15 @@ receiver/signalfxreceiver/                           @open-telemetry/collector-c
 receiver/simpleprometheusreceiver/                   @open-telemetry/collector-contrib-approvers @asuresh4
 receiver/splunkhecreceiver/                          @open-telemetry/collector-contrib-approvers @atoulme @keitwb
 receiver/filelogreceiver/                            @open-telemetry/collector-contrib-approvers @djaglowski
+receiver/syslogreceiver/                             @open-telemetry/collector-contrib-approvers @djaglowski
+receiver/tcplogreceiver/                             @open-telemetry/collector-contrib-approvers @djaglowski
+receiver/udplogreceiver/                             @open-telemetry/collector-contrib-approvers @djaglowski
 receiver/statsdreceiver/                             @open-telemetry/collector-contrib-approvers @keitwb @jmacd
 receiver/wavefrontreceiver/                          @open-telemetry/collector-contrib-approvers @pjanotti
 receiver/windowsperfcountersreceiver/                @open-telemetry/collector-contrib-approvers @dashpole
 receiver/googlecloudpubsubexporter/                  @open-telemetry/collector-contrib-approvers @alexvanboxel
 receiver/influxdbreceiver/                           @open-telemetry/collector-contrib-approvers @jacobmarble @8none1
 receiver/googlecloudspannerreceiver/                 @open-telemetry/collector-contrib-approvers @ydrozhdzhal @asukhyy @khospodarysko @architjugran
+receiver/zookeeperreceiver/                          @open-telemetry/collector-contrib-approvers @djaglowski
 
 tracegen/                                            @open-telemetry/collector-contrib-approvers @jpkrohling
