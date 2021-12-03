@@ -1028,7 +1028,8 @@ func TestSpanResourceTranslationRpcFallback(t *testing.T) {
 // ensure that the datadog span name uses IL name +kind when available and falls back to opetelemetry + kind
 func TestSpanNameTranslation(t *testing.T) {
 	span := pdata.NewSpan()
-	span.SetName("Default Name")
+	spanName := "Default Name"
+	span.SetName(spanName)
 	span.SetKind(pdata.SpanKindServer)
 
 	ddIlTags := map[string]string{
@@ -1061,6 +1062,7 @@ func TestSpanNameTranslation(t *testing.T) {
 	spanNameCur := getDatadogSpanName(span, ddIlTagsCur, false)
 	spanNameUnusual := getDatadogSpanName(span, ddIlTagsUnusual, false)
 	spanNameHyphen := getDatadogSpanName(span, ddIlTagsHyphen, false)
+	spanNameAsResourceName := getDatadogSpanName(span, ddIlTagsHyphen, true)
 
 	assert.Equal(t, strings.ToLower(fmt.Sprintf("%s.%s", "il_name", strings.TrimPrefix(pdata.SpanKindServer.String(), "SPAN_KIND_"))), spanNameIl)
 	assert.Equal(t, strings.ToLower(fmt.Sprintf("%s.%s", "opentelemetry", strings.TrimPrefix(pdata.SpanKindServer.String(), "SPAN_KIND_"))), spanNameDefault)
@@ -1068,6 +1070,7 @@ func TestSpanNameTranslation(t *testing.T) {
 	assert.Equal(t, strings.ToLower(fmt.Sprintf("%s.%s", "current_value", strings.TrimPrefix(pdata.SpanKindServer.String(), "SPAN_KIND_"))), spanNameCur)
 	assert.Equal(t, strings.ToLower(fmt.Sprintf("%s.%s", "unusual_value", strings.TrimPrefix(pdata.SpanKindServer.String(), "SPAN_KIND_"))), spanNameUnusual)
 	assert.Equal(t, strings.ToLower(fmt.Sprintf("%s.%s", "hyphenated_value", strings.TrimPrefix(pdata.SpanKindServer.String(), "SPAN_KIND_"))), spanNameHyphen)
+	assert.Equal(t, spanName, spanNameAsResourceName)
 }
 
 // ensure that the datadog span name uses IL name +kind when available and falls back to opetelemetry + kind
