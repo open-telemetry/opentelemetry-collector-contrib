@@ -87,7 +87,7 @@ receiver/k8sclusterreceiver/                         @open-telemetry/collector-c
 receiver/k8seventsreceiver/                          @open-telemetry/collector-contrib-approvers @dmitryax
 receiver/kubeletstatsreceiver/                       @open-telemetry/collector-contrib-approvers @pmcollins @asuresh4
 receiver/mongodbatlasreceiver/                       @open-telemetry/collector-contrib-approvers @zenmoto
-receiver/memcahcedreceiver/                          @open-telemetry/collector-contrib-approvers @djaglowski
+receiver/memcachedreceiver/                          @open-telemetry/collector-contrib-approvers @djaglowski
 receiver/mysqlreceiver/                              @open-telemetry/collector-contrib-approvers @djaglowski
 receiver/nginxreceiver/                              @open-telemetry/collector-contrib-approvers @djaglowski
 receiver/postgresqlreceiver/                         @open-telemetry/collector-contrib-approvers @djaglowski
