@@ -78,13 +78,14 @@ func (p *pprofExtension) Start(_ context.Context, host component.Host) error {
 	p.logger.Info("Starting net/http/pprof server", zap.Any("config", p.config))
 	p.stopCh = make(chan struct{})
 	go func() {
-		defer close(p.stopCh)
+		defer func() {
+			atomic.StorePointer(activeInstancePtr, nil)
+			close(p.stopCh)
+		}()
 
 		// The listener ownership goes to the server.
-		err := p.server.Serve(ln)
-		atomic.StorePointer(activeInstancePtr, nil)
-		if err != nil && err != http.ErrServerClosed {
-			host.ReportFatalError(err)
+		if errHTTP := p.server.Serve(ln); !errors.Is(errHTTP, http.ErrServerClosed) && errHTTP != nil {
+			host.ReportFatalError(errHTTP)
 		}
 	}()
 

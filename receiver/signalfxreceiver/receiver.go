@@ -154,7 +154,7 @@ func (r *sfxReceiver) Start(_ context.Context, host component.Host) error {
 	r.server.WriteTimeout = defaultServerTimeout
 
 	go func() {
-		if errHTTP := r.server.Serve(ln); errHTTP != http.ErrServerClosed {
+		if errHTTP := r.server.Serve(ln); !errors.Is(errHTTP, http.ErrServerClosed) && errHTTP != nil {
 			host.ReportFatalError(errHTTP)
 		}
 	}()
