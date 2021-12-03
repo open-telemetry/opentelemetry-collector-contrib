@@ -22,6 +22,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/otel/attribute"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/correctnesstests/metrics"
 )
 
 func Test_ParseMessageToMetric(t *testing.T) {
@@ -1006,4 +1008,69 @@ func TestStatsDParser_Mappings(t *testing.T) {
 func TestTimeNowFunc(t *testing.T) {
 	timeNow := timeNowFunc()
 	assert.NotNil(t, timeNow)
+}
+
+func TestStatsDParser_AggregateTimerWithHistogram(t *testing.T) {
+	timeNowFunc = func() time.Time {
+		return time.Unix(711, 0)
+	}
+
+	normalMapping := []TimerHistogramMapping{
+		{
+			StatsdType:   "timer",
+			ObserverType: "histogram",
+		},
+		{
+			StatsdType:   "histogram",
+			ObserverType: "histogram",
+		},
+	}
+
+	
+
+	tests := []struct {
+		name     string
+		input    []string
+		expected pdata.Metrics
+		mapping  []TimerHistogramMapping
+	}{
+		{
+			name: "basic",
+			input: []string{
+				"expohisto:0|ms|#mykey:myvalue",
+				"expohisto:1|ms|#mykey:myvalue",
+				"expohisto:100|ms|#mykey:myvalue",
+				"expohisto:600|ms|#mykey:myvalue",
+				"expohisto:1000|ms|#mykey:myvalue",
+			},
+			expected: func() pdata.Metrics {
+				data := pdata.NewMetrics()
+				ilm := data.ResourceMetrics().AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty()
+				m := ilm.Metrics().AppendEmpty()
+				m.SetName("expohisto")
+				m.SetDataType(pdata.MetricDataTypeExponentialHistogram)
+				ep := m.ExponentialHistogram()
+				ep.SetAggregationTemporality(pdata.MetricAggregationTemporalityDelta)
+				dp := ep.DataPoints().AppendEmpty()
+
+				dp.SetCount(5)
+				dp.SetSum(1611)
+				dp.SetZeroCount(1)
+				return data
+			}(),
+			mapping: normalMapping,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var err error
+			p := &StatsDParser{}
+			p.Initialize(false, false, tt.mapping)
+			for _, line := range tt.input {
+				err = p.Aggregate(line)
+				assert.NoError(t, err)
+			}
+			assert.Equal(t, nil, metrics.DiffMetrics(nil, tt.expected, p.GetMetrics()))
+		})
+	}
 }

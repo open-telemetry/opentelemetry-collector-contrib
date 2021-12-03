@@ -4,6 +4,8 @@ go 1.17
 
 replace go.opentelemetry.io/otel => ../../../go
 
+replace go.opentelemetry.io/otel/metric => ../../../go/metric
+
 replace go.opentelemetry.io/otel/sdk/export/metric => ../../../go/sdk/export/metric
 
 replace go.opentelemetry.io/otel/sdk/metric => ../../../go/sdk/metric
@@ -15,6 +17,8 @@ require (
 	go.opentelemetry.io/collector v0.40.0
 	go.opentelemetry.io/collector/model v0.40.0
 	go.opentelemetry.io/otel v1.2.0
+	go.opentelemetry.io/otel/metric v0.25.0
+	go.opentelemetry.io/otel/sdk/export/metric v0.25.0
 	go.opentelemetry.io/otel/sdk/metric v0.25.0
 	go.uber.org/multierr v1.7.0
 	go.uber.org/zap v1.19.1
@@ -46,3 +50,5 @@ require (
 )
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal => ../../internal/coreinternal
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/testbed => ../../testbed

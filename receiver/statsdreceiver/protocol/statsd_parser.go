@@ -196,6 +196,7 @@ func expoHistogramOptions(opts HistogramOptions) []exponential.Option {
 func (p *StatsDParser) GetMetrics() pdata.Metrics {
 	metrics := pdata.NewMetrics()
 	rm := metrics.ResourceMetrics().AppendEmpty()
+	// TODO: Do not add one ILM per metric, use a single IL.
 
 	for _, metric := range p.gauges {
 		metric.CopyTo(rm.InstrumentationLibraryMetrics().AppendEmpty())
