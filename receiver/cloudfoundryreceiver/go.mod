@@ -6,8 +6,8 @@ require (
 	code.cloudfoundry.org/go-loggregator v7.4.0+incompatible
 	github.com/cloudfoundry-incubator/uaago v0.0.0-20190307164349-8136b7bbe76e
 	github.com/stretchr/testify v1.7.0
-	go.opentelemetry.io/collector v0.40.0
-	go.opentelemetry.io/collector/model v0.40.0
+	go.opentelemetry.io/collector v0.40.1-0.20211202221455-42566a660aac
+	go.opentelemetry.io/collector/model v0.40.1-0.20211202221455-42566a660aac
 	go.uber.org/zap v1.19.1
 )
 
@@ -17,10 +17,9 @@ require (
 	github.com/benbjohnson/clock v1.2.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/felixge/httpsnoop v1.0.2 // indirect
-	github.com/fsnotify/fsnotify v1.4.9 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
-	github.com/knadh/koanf v1.3.2 // indirect
+	github.com/knadh/koanf v1.3.3 // indirect
 	github.com/kr/pretty v0.3.0 // indirect
 	github.com/magiconair/properties v1.8.5 // indirect
 	github.com/mitchellh/copystructure v1.2.0 // indirect

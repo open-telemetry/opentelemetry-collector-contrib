@@ -8,8 +8,8 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib v0.40.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry v0.40.0
 	github.com/stretchr/testify v1.7.0
-	go.opentelemetry.io/collector v0.40.0
-	go.opentelemetry.io/collector/model v0.40.0
+	go.opentelemetry.io/collector v0.40.1-0.20211202221455-42566a660aac
+	go.opentelemetry.io/collector/model v0.40.1-0.20211202221455-42566a660aac
 	golang.org/x/mod v0.4.2
 )
 
@@ -151,7 +151,7 @@ require (
 	github.com/karrick/godirwalk v1.16.1 // indirect
 	github.com/kballard/go-shellquote v0.0.0-20180428030007-95032a82bc51 // indirect
 	github.com/klauspost/compress v1.13.6 // indirect
-	github.com/knadh/koanf v1.3.2 // indirect
+	github.com/knadh/koanf v1.3.3 // indirect
 	github.com/leoluk/perflib_exporter v0.1.0 // indirect
 	github.com/linode/linodego v0.28.5 // indirect
 	github.com/logzio/jaeger-logzio v1.0.4 // indirect
