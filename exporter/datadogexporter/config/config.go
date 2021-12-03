@@ -58,6 +58,11 @@ type APIConfig struct {
 	// It can also be set through the `DD_SITE` environment variable.
 	// The default value is "datadoghq.com".
 	Site string `mapstructure:"site"`
+
+	// If set to true the OpenTelemetry span name will used in the Datadog resource name.
+	// If set to false the resource name will be filled with the instrumentation library name + span kind.
+	// The default value is `false`.
+	SpanNameAsResourceName bool `mapstructure:"span_name_as_resource_name"`
 }
 
 // GetCensoredKey returns the API key censored for logging purposes
