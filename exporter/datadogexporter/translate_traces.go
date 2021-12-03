@@ -292,7 +292,7 @@ func spanToDatadogSpan(s pdata.Span,
 	span := &pb.Span{
 		TraceID:  decodeAPMTraceID(s.TraceID().Bytes()),
 		SpanID:   decodeAPMSpanID(s.SpanID().Bytes()),
-		Name:     remapDatadogSpanName(getDatadogSpanName(s, tags), spanNameMap),
+		Name:     remapDatadogSpanName(getDatadogSpanName(s, tags, cfg.API.SpanNameAsResourceName), spanNameMap),
 		Resource: resourceName,
 		Service:  normalizedServiceName,
 		Start:    int64(startTime),
@@ -487,7 +487,14 @@ func decodeAPMId(id string) uint64 {
 	return val
 }
 
-func getDatadogSpanName(s pdata.Span, datadogTags map[string]string) string {
+func getDatadogSpanName(s pdata.Span, datadogTags map[string]string, spanNameAsResourceName bool) string {
+	// Option created to maintain similarity with the OpenTelemetry semantic conventions
+	// https://github.com/open-telemetry/opentelemetry-specification/tree/main/specification/trace/semantic_conventions
+	// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/1909
+	if spanNameAsResourceName {
+		return s.Name()
+	}
+	
 	// largely a port of logic here
 	// https://github.com/open-telemetry/opentelemetry-python/blob/b2559409b2bf82e693f3e68ed890dd7fd1fa8eae/exporter/opentelemetry-exporter-datadog/src/opentelemetry/exporter/datadog/exporter.py#L213
 	// Get span name by using instrumentation library name and span kind while backing off to span.kind

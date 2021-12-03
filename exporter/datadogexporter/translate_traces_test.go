@@ -1055,12 +1055,12 @@ func TestSpanNameTranslation(t *testing.T) {
 		"otel.library.name": "hyphenated-value",
 	}
 
-	spanNameIl := getDatadogSpanName(span, ddIlTags)
-	spanNameDefault := getDatadogSpanName(span, ddNoIlTags)
-	spanNameOld := getDatadogSpanName(span, ddIlTagsOld)
-	spanNameCur := getDatadogSpanName(span, ddIlTagsCur)
-	spanNameUnusual := getDatadogSpanName(span, ddIlTagsUnusual)
-	spanNameHyphen := getDatadogSpanName(span, ddIlTagsHyphen)
+	spanNameIl := getDatadogSpanName(span, ddIlTags, false)
+	spanNameDefault := getDatadogSpanName(span, ddNoIlTags, false)
+	spanNameOld := getDatadogSpanName(span, ddIlTagsOld, false)
+	spanNameCur := getDatadogSpanName(span, ddIlTagsCur, false)
+	spanNameUnusual := getDatadogSpanName(span, ddIlTagsUnusual, false)
+	spanNameHyphen := getDatadogSpanName(span, ddIlTagsHyphen, false)
 
 	assert.Equal(t, strings.ToLower(fmt.Sprintf("%s.%s", "il_name", strings.TrimPrefix(pdata.SpanKindServer.String(), "SPAN_KIND_"))), spanNameIl)
 	assert.Equal(t, strings.ToLower(fmt.Sprintf("%s.%s", "opentelemetry", strings.TrimPrefix(pdata.SpanKindServer.String(), "SPAN_KIND_"))), spanNameDefault)
