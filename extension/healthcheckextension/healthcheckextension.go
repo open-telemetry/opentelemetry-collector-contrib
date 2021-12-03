@@ -16,6 +16,7 @@ package healthcheckextension // import "github.com/open-telemetry/opentelemetry-
 
 import (
 	"context"
+	"errors"
 	"net"
 	"net/http"
 	"strconv"
@@ -68,7 +69,7 @@ func (hc *healthCheckExtension) Start(_ context.Context, host component.Host) er
 			defer close(hc.stopCh)
 
 			// The listener ownership goes to the server.
-			if err = hc.server.Serve(ln); err != http.ErrServerClosed && err != nil {
+			if err = hc.server.Serve(ln); !errors.Is(err, http.ErrServerClosed) && err != nil {
 				host.ReportFatalError(err)
 			}
 		}()
@@ -104,8 +105,8 @@ func (hc *healthCheckExtension) Start(_ context.Context, host component.Host) er
 				}
 			}()
 
-			if err = hc.server.Serve(ln); err != http.ErrServerClosed && err != nil {
-				host.ReportFatalError(err)
+			if errHTTP := hc.server.Serve(ln); !errors.Is(errHTTP, http.ErrServerClosed) && errHTTP != nil {
+				host.ReportFatalError(errHTTP)
 			}
 
 		}()

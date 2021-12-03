@@ -16,6 +16,7 @@ package jaegerreceiver // import "github.com/open-telemetry/opentelemetry-collec
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"html"
 	"io/ioutil"
@@ -351,7 +352,7 @@ func (jr *jReceiver) startAgent(host component.Host) error {
 		jr.goroutines.Add(1)
 		go func() {
 			defer jr.goroutines.Done()
-			if err := jr.agentServer.ListenAndServe(); err != http.ErrServerClosed {
+			if err := jr.agentServer.ListenAndServe(); !errors.Is(err, http.ErrServerClosed) && err != nil {
 				host.ReportFatalError(fmt.Errorf("jaeger agent server error: %w", err))
 			}
 		}()
@@ -455,8 +456,8 @@ func (jr *jReceiver) startCollector(host component.Host) error {
 		jr.goroutines.Add(1)
 		go func() {
 			defer jr.goroutines.Done()
-			if err := jr.collectorServer.Serve(cln); err != http.ErrServerClosed {
-				host.ReportFatalError(err)
+			if errHTTP := jr.collectorServer.Serve(cln); !errors.Is(errHTTP, http.ErrServerClosed) && errHTTP != nil {
+				host.ReportFatalError(errHTTP)
 			}
 		}()
 	}
@@ -488,8 +489,8 @@ func (jr *jReceiver) startCollector(host component.Host) error {
 		jr.goroutines.Add(1)
 		go func() {
 			defer jr.goroutines.Done()
-			if err := jr.grpc.Serve(gln); err != nil && err != grpc.ErrServerStopped {
-				host.ReportFatalError(err)
+			if errGrpc := jr.grpc.Serve(gln); !errors.Is(errGrpc, grpc.ErrServerStopped) && errGrpc != nil {
+				host.ReportFatalError(errGrpc)
 			}
 		}()
 	}
