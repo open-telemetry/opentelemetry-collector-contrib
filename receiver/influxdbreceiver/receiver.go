@@ -16,6 +16,7 @@ package influxdbreceiver // import "github.com/open-telemetry/opentelemetry-coll
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"sync"
@@ -73,8 +74,8 @@ func (r *metricsReceiver) Start(_ context.Context, host component.Host) error {
 	r.server = r.httpServerSettings.ToServer(router, r.settings)
 	go func() {
 		defer r.wg.Done()
-		if err := r.server.Serve(ln); err != nil && err != http.ErrServerClosed {
-			host.ReportFatalError(err)
+		if errHTTP := r.server.Serve(ln); !errors.Is(errHTTP, http.ErrServerClosed) && errHTTP != nil {
+			host.ReportFatalError(errHTTP)
 		}
 	}()
 

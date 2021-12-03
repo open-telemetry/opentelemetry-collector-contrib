@@ -18,6 +18,7 @@ import (
 	"bytes"
 	"compress/gzip"
 	"context"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -165,7 +166,7 @@ func (sr *sapmReceiver) Start(_ context.Context, host component.Host) error {
 
 	// run the server on a routine
 	go func() {
-		if errHTTP := sr.server.Serve(ln); errHTTP != http.ErrServerClosed {
+		if errHTTP := sr.server.Serve(ln); !errors.Is(errHTTP, http.ErrServerClosed) && errHTTP != nil {
 			host.ReportFatalError(errHTTP)
 		}
 	}()

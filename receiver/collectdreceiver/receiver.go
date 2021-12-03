@@ -17,6 +17,7 @@ package collectdreceiver // import "github.com/open-telemetry/opentelemetry-coll
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -72,7 +73,7 @@ func newCollectdReceiver(
 // Start starts an HTTP server that can process CollectD JSON requests.
 func (cdr *collectdReceiver) Start(_ context.Context, host component.Host) error {
 	go func() {
-		if err := cdr.server.ListenAndServe(); err != http.ErrServerClosed {
+		if err := cdr.server.ListenAndServe(); !errors.Is(err, http.ErrServerClosed) && err != nil {
 			host.ReportFatalError(fmt.Errorf("error starting collectd receiver: %v", err))
 		}
 	}()
