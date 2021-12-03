@@ -350,16 +350,16 @@ func newProcessorImp(mexp *mocks.MetricsExporter, tcon *mocks.TracesConsumer, de
 }
 
 func verifyConsumeMetricsInputCumulative(t testing.TB, input pdata.Metrics) bool {
-	return verifyConsumeMetricsInput(t, input, cumulative)
+	return verifyConsumeMetricsInput(t, input, pdata.MetricAggregationTemporalityCumulative)
 }
 
 func verifyConsumeMetricsInputDelta(t testing.TB, input pdata.Metrics) bool {
-	return verifyConsumeMetricsInput(t, input, delta)
+	return verifyConsumeMetricsInput(t, input, pdata.MetricAggregationTemporalityDelta)
 }
 
 // verifyConsumeMetricsInput verifies the input of the ConsumeMetrics call from this processor.
 // This is the best point to verify the computed metrics from spans are as expected.
-func verifyConsumeMetricsInput(t testing.TB, input pdata.Metrics, temporality string) bool {
+func verifyConsumeMetricsInput(t testing.TB, input pdata.Metrics, expectedTemporality pdata.MetricAggregationTemporality) bool {
 	require.Equal(t, 6, input.MetricCount(),
 		"Should be 3 for each of call count and latency. Each group of 3 metrics is made of: "+
 			"service-a (server kind) -> service-a (client kind) -> service-b (service kind)",
@@ -382,7 +382,7 @@ func verifyConsumeMetricsInput(t testing.TB, input pdata.Metrics, temporality st
 		assert.Equal(t, "calls_total", m.At(mi).Name())
 
 		data := m.At(mi).Sum()
-		assert.Equal(t, pdata.MetricAggregationTemporalityCumulative, data.AggregationTemporality())
+		assert.Equal(t, expectedTemporality, data.AggregationTemporality())
 		assert.True(t, data.IsMonotonic())
 
 		dps := data.DataPoints()
@@ -402,7 +402,7 @@ func verifyConsumeMetricsInput(t testing.TB, input pdata.Metrics, temporality st
 		assert.Equal(t, "latency", m.At(mi).Name())
 
 		data := m.At(mi).Histogram()
-		assert.Equal(t, pdata.MetricAggregationTemporalityCumulative, data.AggregationTemporality())
+		assert.Equal(t, expectedTemporality, data.AggregationTemporality())
 
 		dps := data.DataPoints()
 		require.Equal(t, 1, dps.Len())
