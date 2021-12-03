@@ -217,30 +217,28 @@ func TestProcessorConsumeTracesErrors(t *testing.T) {
 	}
 }
 
-type VerifyMetric func(t testing.TB, input pdata.Metrics) bool
-
 func TestProcessorConsumeTraces(t *testing.T) {
 	//t.Parallel()
 
 	testcases := []struct {
-		name     string
-		verifier VerifyMetric
-		traces 	 pdata.Traces
+		name                   string
+		aggregationTemporality string
+		verifier               func(t testing.TB, input pdata.Metrics) bool
+		traces                 pdata.Traces
 	}{
 		{
-			name: "Test single trace with three spans.",
-			verifier: verifyConsumeMetricsInput,
-			traces: buildSampleTrace(),
+			name:                   "Test single trace with three spans (Cumulative).",
+			aggregationTemporality: cumulative,
+			verifier:               verifyConsumeMetricsInputCumulative,
+			traces:                 buildSampleTrace(),
 		},
 		{
-			name: "test1",
-			verifier: func(t testing.TB, input pdata.Metrics) bool {
-				return true //todo
-			},
-			traces: buildSampleTrace(),
+			name:                   "Test single trace with three spans (Delta).",
+			aggregationTemporality: delta,
+			verifier:               verifyConsumeMetricsInputDelta,
+			traces:                 buildSampleTrace(),
 		},
 	}
-
 
 	for _, tc := range testcases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -248,19 +246,18 @@ func TestProcessorConsumeTraces(t *testing.T) {
 			mexp := &mocks.MetricsExporter{}
 			tcon := &mocks.TracesConsumer{}
 
+			// Mocked metric exporter will perform validation on metrics, after p.ConsumeTraces()
 			mexp.On("ConsumeMetrics", mock.Anything, mock.MatchedBy(func(input pdata.Metrics) bool {
 				return tc.verifier(t, input)
 			})).Return(nil)
 			tcon.On("ConsumeTraces", mock.Anything, mock.Anything).Return(nil)
 
 			defaultNullValue := "defaultNullValue"
-			p := newProcessorImp(mexp, tcon, &defaultNullValue, cumulative)
-
-			traces := tc.traces
+			p := newProcessorImp(mexp, tcon, &defaultNullValue, tc.aggregationTemporality)
 
 			// Test
 			ctx := metadata.NewIncomingContext(context.Background(), nil)
-			err := p.ConsumeTraces(ctx, traces)
+			err := p.ConsumeTraces(ctx, tc.traces)
 
 			// Verify
 			assert.NoError(t, err)
@@ -321,7 +318,7 @@ func newProcessorImp(mexp *mocks.MetricsExporter, tcon *mocks.TracesConsumer, de
 	defaultNotInSpanAttrVal := "defaultNotInSpanAttrVal"
 	return &processorImp{
 		logger:          zap.NewNop(),
-		config:			 Config{AggregationTemporality: temporality},
+		config:          Config{AggregationTemporality: temporality},
 		metricsExporter: mexp,
 		nextConsumer:    tcon,
 
@@ -352,9 +349,17 @@ func newProcessorImp(mexp *mocks.MetricsExporter, tcon *mocks.TracesConsumer, de
 	}
 }
 
+func verifyConsumeMetricsInputCumulative(t testing.TB, input pdata.Metrics) bool {
+	return verifyConsumeMetricsInput(t, input, cumulative)
+}
+
+func verifyConsumeMetricsInputDelta(t testing.TB, input pdata.Metrics) bool {
+	return verifyConsumeMetricsInput(t, input, delta)
+}
+
 // verifyConsumeMetricsInput verifies the input of the ConsumeMetrics call from this processor.
 // This is the best point to verify the computed metrics from spans are as expected.
-func verifyConsumeMetricsInput(t testing.TB, input pdata.Metrics) bool {
+func verifyConsumeMetricsInput(t testing.TB, input pdata.Metrics, temporality string) bool {
 	require.Equal(t, 6, input.MetricCount(),
 		"Should be 3 for each of call count and latency. Each group of 3 metrics is made of: "+
 			"service-a (server kind) -> service-a (client kind) -> service-b (service kind)",
