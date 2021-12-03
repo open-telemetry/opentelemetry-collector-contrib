@@ -218,25 +218,39 @@ func TestProcessorConsumeTracesErrors(t *testing.T) {
 }
 
 func TestProcessorConsumeTraces(t *testing.T) {
-	//t.Parallel()
+	t.Parallel()
 
 	testcases := []struct {
 		name                   string
 		aggregationTemporality string
 		verifier               func(t testing.TB, input pdata.Metrics) bool
-		traces                 pdata.Traces
+		traces                 []pdata.Traces
 	}{
 		{
-			name:                   "Test single trace with three spans (Cumulative).",
+			name:                   "Test single consumption, three spans (Cumulative).",
 			aggregationTemporality: cumulative,
 			verifier:               verifyConsumeMetricsInputCumulative,
-			traces:                 buildSampleTrace(),
+			traces:                 []pdata.Traces{buildSampleTrace()},
 		},
 		{
-			name:                   "Test single trace with three spans (Delta).",
+			name:                   "Test single consumption, three spans (Delta).",
 			aggregationTemporality: delta,
 			verifier:               verifyConsumeMetricsInputDelta,
-			traces:                 buildSampleTrace(),
+			traces:                 []pdata.Traces{buildSampleTrace()},
+		},
+		{
+			// More consumptions, should accumulate additively.
+			name:                   "Test two consumptions (Cumulative).",
+			aggregationTemporality: cumulative,
+			verifier:               verifyMultipleCumulativeConsumptions,
+			traces:                 []pdata.Traces{buildSampleTrace(), buildSampleTrace()},
+		},
+		{
+			// More consumptions, should not accumulate. Therefore, end state should be the same as single consumption case.
+			name:                   "Test two consumptions (Delta).",
+			aggregationTemporality: delta,
+			verifier:               verifyConsumeMetricsInputDelta,
+			traces:                 []pdata.Traces{buildSampleTrace(), buildSampleTrace()},
 		},
 	}
 
@@ -246,7 +260,7 @@ func TestProcessorConsumeTraces(t *testing.T) {
 			mexp := &mocks.MetricsExporter{}
 			tcon := &mocks.TracesConsumer{}
 
-			// Mocked metric exporter will perform validation on metrics, after p.ConsumeTraces()
+			// Mocked metric exporter will perform validation on metrics, during p.ConsumeTraces()
 			mexp.On("ConsumeMetrics", mock.Anything, mock.MatchedBy(func(input pdata.Metrics) bool {
 				return tc.verifier(t, input)
 			})).Return(nil)
@@ -255,12 +269,14 @@ func TestProcessorConsumeTraces(t *testing.T) {
 			defaultNullValue := "defaultNullValue"
 			p := newProcessorImp(mexp, tcon, &defaultNullValue, tc.aggregationTemporality)
 
-			// Test
-			ctx := metadata.NewIncomingContext(context.Background(), nil)
-			err := p.ConsumeTraces(ctx, tc.traces)
+			for _, traces := range tc.traces {
+				// Test
+				ctx := metadata.NewIncomingContext(context.Background(), nil)
+				err := p.ConsumeTraces(ctx, traces)
 
-			// Verify
-			assert.NoError(t, err)
+				// Verify
+				assert.NoError(t, err)
+			}
 		})
 	}
 }
@@ -349,17 +365,28 @@ func newProcessorImp(mexp *mocks.MetricsExporter, tcon *mocks.TracesConsumer, de
 	}
 }
 
+// verifyConsumeMetricsInputCumulative expects one accumulation of metrics, and marked as cumulative
 func verifyConsumeMetricsInputCumulative(t testing.TB, input pdata.Metrics) bool {
-	return verifyConsumeMetricsInput(t, input, pdata.MetricAggregationTemporalityCumulative)
+	return verifyConsumeMetricsInput(t, input, pdata.MetricAggregationTemporalityCumulative, 1)
 }
 
+// verifyConsumeMetricsInputDelta expects one accumulation of metrics, and marked as delta
 func verifyConsumeMetricsInputDelta(t testing.TB, input pdata.Metrics) bool {
-	return verifyConsumeMetricsInput(t, input, pdata.MetricAggregationTemporalityDelta)
+	return verifyConsumeMetricsInput(t, input, pdata.MetricAggregationTemporalityDelta, 1)
+}
+
+var numCumulativeConsumptions = 0
+
+// verifyMultipleCumulativeConsumptions expects the amount of accumulations as kept track of by numCumulativeConsumptions.
+// numCumulativeConsumptions acts as a multiplier for the values, since the cumulative metrics are additive.
+func verifyMultipleCumulativeConsumptions(t testing.TB, input pdata.Metrics) bool {
+	numCumulativeConsumptions++
+	return verifyConsumeMetricsInput(t, input, pdata.MetricAggregationTemporalityCumulative, numCumulativeConsumptions)
 }
 
 // verifyConsumeMetricsInput verifies the input of the ConsumeMetrics call from this processor.
 // This is the best point to verify the computed metrics from spans are as expected.
-func verifyConsumeMetricsInput(t testing.TB, input pdata.Metrics, expectedTemporality pdata.MetricAggregationTemporality) bool {
+func verifyConsumeMetricsInput(t testing.TB, input pdata.Metrics, expectedTemporality pdata.MetricAggregationTemporality, numCumulativeConsumptions int) bool {
 	require.Equal(t, 6, input.MetricCount(),
 		"Should be 3 for each of call count and latency. Each group of 3 metrics is made of: "+
 			"service-a (server kind) -> service-a (client kind) -> service-b (service kind)",
@@ -389,7 +416,7 @@ func verifyConsumeMetricsInput(t testing.TB, input pdata.Metrics, expectedTempor
 		require.Equal(t, 1, dps.Len())
 
 		dp := dps.At(0)
-		assert.Equal(t, int64(1), dp.IntVal(), "There should only be one metric per Service/operation/kind combination")
+		assert.Equal(t, int64(numCumulativeConsumptions), dp.IntVal(), "There should only be one metric per Service/operation/kind combination")
 		assert.NotZero(t, dp.StartTimestamp(), "StartTimestamp should be set")
 		assert.NotZero(t, dp.Timestamp(), "Timestamp should be set")
 
@@ -408,7 +435,7 @@ func verifyConsumeMetricsInput(t testing.TB, input pdata.Metrics, expectedTempor
 		require.Equal(t, 1, dps.Len())
 
 		dp := dps.At(0)
-		assert.Equal(t, sampleLatency, dp.Sum(), "Should be a single 11ms latency measurement")
+		assert.Equal(t, sampleLatency*float64(numCumulativeConsumptions), dp.Sum(), "Should be a 11ms latency measurement, multiplied by the number of stateful accumulations.")
 		assert.NotZero(t, dp.Timestamp(), "Timestamp should be set")
 
 		// Verify bucket counts. Firstly, find the bucket index where the 11ms latency should belong in.
@@ -424,7 +451,7 @@ func verifyConsumeMetricsInput(t testing.TB, input pdata.Metrics, expectedTempor
 		for bi := 0; bi < len(dp.BucketCounts()); bi++ {
 			wantBucketCount = 0
 			if bi == foundLatencyIndex {
-				wantBucketCount = 1
+				wantBucketCount = uint64(numCumulativeConsumptions)
 			}
 			assert.Equal(t, wantBucketCount, dp.BucketCounts()[bi])
 		}
