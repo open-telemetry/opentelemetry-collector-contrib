@@ -1,0 +1,22 @@
+extensions:
+  sub_process:
+  sub_process/1:
+    executable_path: bin/cmd
+    args: ["arg1", "arg2"]
+    working_directory: /usr/local
+
+service:
+  extensions: [sub_process/1]
+  pipelines:
+    traces:
+      receivers: [nop]
+      processors: [nop]
+      exporters: [nop]
+
+# Data pipeline is required to load the config.
+receivers:
+  nop:
+processors:
+  nop:
+exporters:
+  nop:
