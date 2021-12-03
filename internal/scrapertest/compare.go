@@ -22,9 +22,26 @@ import (
 	"go.uber.org/multierr"
 )
 
+// CompareOption is applied by the CompareMetricSlices function
+// to mutates an expected and/or actual result before comparing.
+type CompareOption interface {
+	apply(expected, actual pdata.MetricSlice)
+}
+
 // CompareMetricSlices compares each part of two given MetricSlices and returns
-// an error if they don't match. The error describes what didn't match.
-func CompareMetricSlices(expected, actual pdata.MetricSlice, checkValues bool) error {
+// an error if they don't match. The error describes what didn't match. The
+// expected and actual values are clones before options are applied.
+func CompareMetricSlices(expected, actual pdata.MetricSlice, options ...CompareOption) error {
+	expClone := pdata.NewMetricSlice()
+	expected.CopyTo(expClone)
+	actClone := pdata.NewMetricSlice()
+	actual.CopyTo(actClone)
+	expected, actual = expClone, actClone
+
+	for _, option := range options {
+		option.apply(expected, actual)
+	}
+
 	if actual.Len() != expected.Len() {
 		return fmt.Errorf("metric slices not of same length")
 	}
@@ -91,7 +108,7 @@ func CompareMetricSlices(expected, actual pdata.MetricSlice, checkValues bool) e
 			expectedDataPoints = expectedMetric.Sum().DataPoints()
 		}
 
-		if err := CompareNumberDataPointSlices(actualDataPoints, expectedDataPoints, checkValues); err != nil {
+		if err := CompareNumberDataPointSlices(actualDataPoints, expectedDataPoints); err != nil {
 			return multierr.Combine(fmt.Errorf("datapoints for metric: `%s`, do not match expected", actualMetric.Name()), err)
 		}
 	}
@@ -100,7 +117,7 @@ func CompareMetricSlices(expected, actual pdata.MetricSlice, checkValues bool) e
 
 // CompareNumberDataPointSlices compares each part of two given NumberDataPointSlices and returns
 // an error if they don't match. The error describes what didn't match.
-func CompareNumberDataPointSlices(actual, expected pdata.NumberDataPointSlice, checkValues bool) error {
+func CompareNumberDataPointSlices(actual, expected pdata.NumberDataPointSlice) error {
 	if actual.Len() != expected.Len() {
 		return fmt.Errorf("length of datapoints don't match")
 	}
@@ -145,7 +162,7 @@ func CompareNumberDataPointSlices(actual, expected pdata.NumberDataPointSlice, c
 	}
 
 	for adp, edp := range matchingDPS {
-		if err := CompareNumberDataPoints(adp, edp, checkValues); err != nil {
+		if err := CompareNumberDataPoints(adp, edp); err != nil {
 			return multierr.Combine(fmt.Errorf("datapoint with label(s): %v, does not match expected", adp.Attributes().AsRaw()), err)
 		}
 	}
@@ -154,12 +171,9 @@ func CompareNumberDataPointSlices(actual, expected pdata.NumberDataPointSlice, c
 
 // CompareNumberDataPoints compares each part of two given NumberDataPoints and returns
 // an error if they don't match. The error describes what didn't match.
-func CompareNumberDataPoints(actual, expected pdata.NumberDataPoint, checkValues bool) error {
+func CompareNumberDataPoints(actual, expected pdata.NumberDataPoint) error {
 	if expected.Type() != actual.Type() {
 		return fmt.Errorf("metric datapoint types don't match: expected type: %v, actual type: %v", expected.Type(), actual.Type())
-	}
-	if !checkValues {
-		return nil
 	}
 	if expected.IntVal() != actual.IntVal() {
 		return fmt.Errorf("metric datapoint IntVal doesn't match expected: %d, actual: %d", expected.IntVal(), actual.IntVal())
