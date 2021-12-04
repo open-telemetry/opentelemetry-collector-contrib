@@ -56,13 +56,13 @@ func newDataDogReceiver(config *Config, nextConsumer consumer.Traces, params com
 	}, nil
 }
 
-func (ddr *datadogReceiver) Start(ctx context.Context, host component.Host) error {
-	ddmux := mux.NewRouter()
-	ddmux.HandleFunc("/v0.3/traces", ddr.handleTraces)
-	ddmux.HandleFunc("/v0.4/traces", ddr.handleTraces)
-	ddmux.HandleFunc("/v0.5/traces", ddr.handleTraces)
-	ddr.server.Handler = ddmux
+func (ddr *datadogReceiver) Start(_ context.Context, host component.Host) error {
 	go ddr.startOnce.Do(func() {
+		ddmux := mux.NewRouter()
+		ddmux.HandleFunc("/v0.3/traces", ddr.handleTraces)
+		ddmux.HandleFunc("/v0.4/traces", ddr.handleTraces)
+		ddmux.HandleFunc("/v0.5/traces", ddr.handleTraces)
+		ddr.server.Handler = ddmux
 		if err := ddr.server.ListenAndServe(); err != http.ErrServerClosed {
 			host.ReportFatalError(fmt.Errorf("error starting datadog receiver: %w", err))
 		}
@@ -79,9 +79,12 @@ func (ddr *datadogReceiver) Shutdown(ctx context.Context) (err error) {
 
 func (ddr *datadogReceiver) handleTraces(w http.ResponseWriter, req *http.Request) {
 	obsCtx := ddr.obs.StartTracesOp(req.Context())
+	var err error
+	spanCount := 0
+	defer ddr.obs.EndTracesOp(obsCtx, "datadog", spanCount, err)
 	var ddTraces datadogpb.Traces
 
-	err := decodeRequest(req, &ddTraces)
+	err = decodeRequest(req, &ddTraces)
 	if err != nil {
 		http.Error(w, "Unable to unmarshal reqs", http.StatusInternalServerError)
 		ddr.obs.EndTracesOp(obsCtx, "datadog", 0, err)
@@ -89,13 +92,11 @@ func (ddr *datadogReceiver) handleTraces(w http.ResponseWriter, req *http.Reques
 	}
 
 	otelTraces := toTraces(ddTraces, req)
-	spanCount := otelTraces.SpanCount()
+	spanCount = otelTraces.SpanCount()
 	err = ddr.nextConsumer.ConsumeTraces(obsCtx, otelTraces)
 	if err != nil {
 		http.Error(w, "Trace consumer errored out", http.StatusInternalServerError)
 	} else {
-		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("OK"))
+		_, _ = w.Write([]byte("OK"))
 	}
-	ddr.obs.EndTracesOp(obsCtx, "datadog", spanCount, err)
 }
