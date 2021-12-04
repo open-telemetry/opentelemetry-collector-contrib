@@ -1,4 +1,5 @@
 files=(
+    bin/otelcontribcol_darwin_arm64
     bin/otelcontribcol_darwin_amd64
     bin/otelcontribcol_linux_arm64
     bin/otelcontribcol_linux_amd64

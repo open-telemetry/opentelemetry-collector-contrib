@@ -106,12 +106,12 @@ func TestHistogramSketches(t *testing.T) {
 	cfg := quantile.Default()
 	ctx := context.Background()
 	tr := newTranslator(t, zap.NewNop())
-
+	dims := metricsDimensions{name: "test"}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			p := fromCDF(test.cdf)
 			consumer := &sketchConsumer{}
-			tr.getSketchBuckets(ctx, consumer, "test", p, true, []string{}, "")
+			tr.getSketchBuckets(ctx, consumer, dims, p, true)
 			sk := consumer.sk
 
 			// Check the minimum is 0.0
@@ -199,11 +199,12 @@ func TestInfiniteBounds(t *testing.T) {
 
 	ctx := context.Background()
 	tr := newTranslator(t, zap.NewNop())
+	dims := metricsDimensions{name: "test"}
 	for _, testInstance := range tests {
 		t.Run(testInstance.name, func(t *testing.T) {
 			p := testInstance.getHist()
 			consumer := &sketchConsumer{}
-			tr.getSketchBuckets(ctx, consumer, "test", p, true, []string{}, "")
+			tr.getSketchBuckets(ctx, consumer, dims, p, true)
 			sk := consumer.sk
 			assert.InDelta(t, sk.Basic.Sum, p.Sum(), 1)
 			assert.Equal(t, uint64(sk.Basic.Cnt), p.Count())
