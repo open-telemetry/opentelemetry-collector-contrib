@@ -92,8 +92,10 @@ func (r *statsdReceiver) Start(ctx context.Context, host component.Host) error {
 	ticker := time.NewTicker(r.config.AggregationInterval)
 	r.parser.Initialize(r.config.EnableMetricType, r.config.IsMonotonicCounter, r.config.TimerHistogramMapping)
 	go func() {
-		if err := r.server.ListenAndServe(r.parser, r.nextConsumer, r.reporter, transferChan); !errors.Is(err, net.ErrClosed) {
-			host.ReportFatalError(err)
+		if err := r.server.ListenAndServe(r.parser, r.nextConsumer, r.reporter, transferChan); err != nil {
+			if !errors.Is(err, net.ErrClosed) {
+				host.ReportFatalError(err)
+			}
 		}
 	}()
 	go func() {
