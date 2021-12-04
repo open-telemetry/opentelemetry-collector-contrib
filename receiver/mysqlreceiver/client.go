@@ -19,7 +19,7 @@ import (
 	"fmt"
 
 	// registers the mysql driver
-	_ "github.com/go-sql-driver/mysql"
+	"github.com/go-sql-driver/mysql"
 )
 
 type client interface {
@@ -37,7 +37,14 @@ type mySQLClient struct {
 var _ client = (*mySQLClient)(nil)
 
 func newMySQLClient(conf *Config) client {
-	connStr := fmt.Sprintf("%s:%s@%s(%s)/%s", conf.Username, conf.Password, conf.Transport, conf.Endpoint, conf.Database)
+	driverConf := mysql.Config{
+		User:   conf.Username,
+		Passwd: conf.Password,
+		Net:    conf.Transport,
+		Addr:   conf.Endpoint,
+		DBName: conf.Database,
+	}
+	connStr := driverConf.FormatDSN()
 
 	return &mySQLClient{
 		connStr: connStr,

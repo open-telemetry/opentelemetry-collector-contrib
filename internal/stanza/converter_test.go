@@ -208,15 +208,18 @@ func TestAllConvertedEntriesAreSentAndReceived(t *testing.T) {
 
 			converter := NewConverter(
 				WithWorkerCount(1),
-				WithMaxFlushCount(tc.maxFlushCount),
-				WithFlushInterval(10*time.Millisecond), // To minimize time spent in test
 			)
 			converter.Start()
 			defer converter.Stop()
 
 			go func() {
-				for _, ent := range complexEntries(tc.entries) {
-					assert.NoError(t, converter.Batch(ent))
+				entries := complexEntries(tc.entries)
+				for from := 0; from < tc.entries; from += int(tc.maxFlushCount) {
+					to := from + int(tc.maxFlushCount)
+					if to > tc.entries {
+						to = tc.entries
+					}
+					assert.NoError(t, converter.Batch(entries[from:to]))
 				}
 			}()
 
@@ -266,127 +269,8 @@ func TestAllConvertedEntriesAreSentAndReceived(t *testing.T) {
 	}
 }
 
-func TestAllConvertedEntriesAreSentAndReceivedWithinAnExpectedTimeDuration(t *testing.T) {
-	t.Parallel()
-
-	testcases := []struct {
-		entries       int
-		hostsCount    int
-		maxFlushCount uint
-		flushInterval time.Duration
-	}{
-		{
-			entries:       10,
-			hostsCount:    1,
-			maxFlushCount: 20,
-			flushInterval: 100 * time.Millisecond,
-		},
-		{
-			entries:       50,
-			hostsCount:    1,
-			maxFlushCount: 51,
-			flushInterval: 100 * time.Millisecond,
-		},
-		{
-			entries:       500,
-			hostsCount:    1,
-			maxFlushCount: 501,
-			flushInterval: 100 * time.Millisecond,
-		},
-		{
-			entries:       500,
-			hostsCount:    1,
-			maxFlushCount: 100,
-			flushInterval: 100 * time.Millisecond,
-		},
-		{
-			entries:       500,
-			hostsCount:    4,
-			maxFlushCount: 501,
-			flushInterval: 100 * time.Millisecond,
-		},
-	}
-
-	for i, tc := range testcases {
-		tc := tc
-
-		t.Run(strconv.Itoa(i), func(t *testing.T) {
-			t.Parallel()
-
-			converter := NewConverter(
-				WithWorkerCount(1),
-				WithMaxFlushCount(tc.maxFlushCount),
-				WithFlushInterval(tc.flushInterval),
-			)
-			converter.Start()
-			defer converter.Stop()
-
-			go func() {
-				for _, ent := range complexEntriesForNDifferentHosts(tc.entries, tc.hostsCount) {
-					assert.NoError(t, converter.Batch(ent))
-				}
-			}()
-
-			var (
-				actualCount      int
-				actualFlushCount int
-				timeoutTimer     = time.NewTimer(10 * time.Second)
-				ch               = converter.OutChannel()
-			)
-			defer timeoutTimer.Stop()
-
-		forLoop:
-			for start := time.Now(); ; start = time.Now() {
-				if tc.entries == actualCount {
-					break
-				}
-
-				select {
-				case pLogs, ok := <-ch:
-					if !ok {
-						break forLoop
-					}
-
-					assert.WithinDuration(t,
-						start.Add(tc.flushInterval),
-						time.Now(),
-						tc.flushInterval,
-					)
-
-					actualFlushCount++
-
-					rLogs := pLogs.ResourceLogs()
-					require.Equal(t, 1, rLogs.Len())
-
-					rLog := rLogs.At(0)
-					ills := rLog.InstrumentationLibraryLogs()
-					require.Equal(t, 1, ills.Len())
-
-					ill := ills.At(0)
-
-					actualCount += ill.Logs().Len()
-
-					assert.LessOrEqual(t, uint(ill.Logs().Len()), tc.maxFlushCount,
-						"Received more log records in one flush than configured by maxFlushCount",
-					)
-
-				case <-timeoutTimer.C:
-					break forLoop
-				}
-			}
-
-			assert.Equal(t, tc.entries, actualCount,
-				"didn't receive expected number of entries after conversion",
-			)
-		})
-	}
-}
-
 func TestConverterCancelledContextCancellsTheFlush(t *testing.T) {
-	converter := NewConverter(
-		WithMaxFlushCount(1),
-		WithFlushInterval(time.Millisecond),
-	)
+	converter := NewConverter()
 	converter.Start()
 	defer converter.Stop()
 	var wg sync.WaitGroup
@@ -664,6 +548,7 @@ func BenchmarkConverter(b *testing.B) {
 	const (
 		entryCount = 1_000_000
 		hostsCount = 4
+		batchSize  = 200
 	)
 
 	var (
@@ -677,16 +562,18 @@ func BenchmarkConverter(b *testing.B) {
 
 				converter := NewConverter(
 					WithWorkerCount(wc),
-					WithMaxFlushCount(1_000),
-					WithFlushInterval(250*time.Millisecond),
 				)
 				converter.Start()
 				defer converter.Stop()
 				b.ResetTimer()
 
 				go func() {
-					for _, ent := range entries {
-						assert.NoError(b, converter.Batch(ent))
+					for from := 0; from < entryCount; from += int(batchSize) {
+						to := from + int(batchSize)
+						if to > entryCount {
+							to = entryCount
+						}
+						assert.NoError(b, converter.Batch(entries[from:to]))
 					}
 				}()
 

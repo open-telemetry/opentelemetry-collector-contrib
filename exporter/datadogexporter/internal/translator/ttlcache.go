@@ -15,15 +15,9 @@
 package translator // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/translator"
 
 import (
-	"sort"
-	"strings"
 	"time"
 
 	gocache "github.com/patrickmn/go-cache"
-)
-
-const (
-	metricKeySeparator = string(byte(0))
 )
 
 type ttlCache struct {
@@ -43,53 +37,27 @@ func newTTLCache(sweepInterval int64, deltaTTL int64) *ttlCache {
 	return &ttlCache{cache}
 }
 
-// Uses a logic similar to what is done in the span processor to build metric keys:
-// https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/b2327211df976e0a57ef0425493448988772a16b/processor/spanmetricsprocessor/processor.go#L353-L387
-// TODO: make this a public util function?
-func concatDimensionValue(metricKeyBuilder *strings.Builder, value string) {
-	metricKeyBuilder.WriteString(value)
-	metricKeyBuilder.WriteString(metricKeySeparator)
-}
-
-// metricDimensionsToMapKey maps name and tags to a string to use as an identifier
-// The tags order does not matter
-func (*ttlCache) metricDimensionsToMapKey(name string, tags []string) string {
-	var metricKeyBuilder strings.Builder
-
-	dimensions := make([]string, len(tags))
-	copy(dimensions, tags)
-
-	dimensions = append(dimensions, name)
-	sort.Strings(dimensions)
-
-	for _, dim := range dimensions {
-		concatDimensionValue(&metricKeyBuilder, dim)
-	}
-	return metricKeyBuilder.String()
-}
-
 // Diff submits a new value for a given non-monotonic metric and returns the difference with the
 // last submitted value (ordered by timestamp). The diff value is only valid if `ok` is true.
-func (t *ttlCache) Diff(name string, tags []string, startTs, ts uint64, val float64) (float64, bool) {
-	return t.putAndGetDiff(name, tags, false, startTs, ts, val)
+func (t *ttlCache) Diff(dimensions metricsDimensions, startTs, ts uint64, val float64) (float64, bool) {
+	return t.putAndGetDiff(dimensions, false, startTs, ts, val)
 }
 
 // MonotonicDiff submits a new value for a given monotonic metric and returns the difference with the
 // last submitted value (ordered by timestamp). The diff value is only valid if `ok` is true.
-func (t *ttlCache) MonotonicDiff(name string, tags []string, startTs, ts uint64, val float64) (float64, bool) {
-	return t.putAndGetDiff(name, tags, true, startTs, ts, val)
+func (t *ttlCache) MonotonicDiff(dimensions metricsDimensions, startTs, ts uint64, val float64) (float64, bool) {
+	return t.putAndGetDiff(dimensions, true, startTs, ts, val)
 }
 
 // putAndGetDiff submits a new value for a given metric and returns the difference with the
 // last submitted value (ordered by timestamp). The diff value is only valid if `ok` is true.
 func (t *ttlCache) putAndGetDiff(
-	name string,
-	tags []string,
+	dimensions metricsDimensions,
 	monotonic bool,
 	startTs, ts uint64,
 	val float64,
 ) (dx float64, ok bool) {
-	key := t.metricDimensionsToMapKey(name, tags)
+	key := dimensions.String()
 	if c, found := t.cache.Get(key); found {
 		cnt := c.(numberCounter)
 		if cnt.ts > ts {

@@ -21,14 +21,19 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
+	"strings"
 
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 )
 
-const svcAcctCACertPath = "/var/run/secrets/kubernetes.io/serviceaccount/ca.crt"
-const svcAcctTokenPath = "/var/run/secrets/kubernetes.io/serviceaccount/token" // #nosec
+const (
+	svcAcctCACertPath   = "/var/run/secrets/kubernetes.io/serviceaccount/ca.crt"
+	svcAcctTokenPath    = "/var/run/secrets/kubernetes.io/serviceaccount/token" // #nosec
+	defaultSecurePort   = "10250"
+	defaultReadOnlyPort = "10255"
+)
 
 type Client interface {
 	Get(path string) ([]byte, error)
@@ -49,6 +54,11 @@ func NewClientProvider(endpoint string, cfg *ClientConfig, logger *zap.Logger) (
 			tokenPath:  svcAcctTokenPath,
 			logger:     logger,
 		}, nil
+	case k8sconfig.AuthTypeNone:
+		return &readOnlyClientProvider{
+			endpoint: endpoint,
+			logger:   logger,
+		}, nil
 	default:
 		return nil, fmt.Errorf("AuthType [%s] not supported", cfg.APIConfig.AuthType)
 	}
@@ -56,6 +66,26 @@ func NewClientProvider(endpoint string, cfg *ClientConfig, logger *zap.Logger) (
 
 type ClientProvider interface {
 	BuildClient() (Client, error)
+}
+
+type readOnlyClientProvider struct {
+	endpoint string
+	logger   *zap.Logger
+}
+
+func (p *readOnlyClientProvider) BuildClient() (Client, error) {
+	tr := defaultTransport()
+	endpoint, err := buildEndpoint(p.endpoint, false, p.logger)
+	if err != nil {
+		return nil, err
+	}
+	return &clientImpl{
+		baseURL:    endpoint,
+		httpClient: http.Client{Transport: tr},
+		tok:        nil,
+		logger:     p.logger,
+	}, nil
+
 }
 
 type tlsClientProvider struct {
@@ -120,32 +150,47 @@ func defaultTLSClient(
 		Certificates:       certificates,
 		InsecureSkipVerify: insecureSkipVerify,
 	}
-	if endpoint == "" {
-		var err error
-		endpoint, err = defaultEndpoint()
-		if err != nil {
-			return nil, err
-		}
-		logger.Warn("Kubelet endpoint not defined, using default endpoint " + endpoint)
+	endpoint, err := buildEndpoint(endpoint, true, logger)
+	if err != nil {
+		return nil, err
 	}
 	return &clientImpl{
-		baseURL:    "https://" + endpoint,
+		baseURL:    endpoint,
 		httpClient: http.Client{Transport: tr},
 		tok:        tok,
 		logger:     logger,
 	}, nil
 }
 
-// This will work if hostNetwork is turned on, in which case the pod has access
-// to the node's loopback device.
-// https://kubernetes.io/docs/concepts/policy/pod-security-policy/#host-namespaces
-func defaultEndpoint() (string, error) {
-	hostname, err := os.Hostname()
-	if err != nil {
-		return "", fmt.Errorf("unable to get hostname for default endpoint: %w", err)
+// buildEndpoint builds a kubelet endpoint based on value provided by user and whether secure or read-only endpoint
+// should be used.
+func buildEndpoint(endpoint string, useSecurePort bool, logger *zap.Logger) (string, error) {
+	if endpoint == "" {
+		// This will work if hostNetwork is turned on, in which case the pod has access
+		// to the node's loopback device.
+		// https://kubernetes.io/docs/concepts/policy/pod-security-policy/#host-namespaces
+		host, err := os.Hostname()
+		if err != nil {
+			return "", fmt.Errorf("unable to get hostname for default endpoint: %w", err)
+		}
+
+		if useSecurePort {
+			endpoint = fmt.Sprintf("https://%s:%s", host, defaultSecurePort)
+		} else {
+			endpoint = fmt.Sprintf("http://%s:%s", host, defaultReadOnlyPort)
+		}
+		logger.Warn("Kubelet endpoint not defined, using default endpoint " + endpoint)
+		return endpoint, nil
 	}
-	const kubeletPort = "10250"
-	return hostname + ":" + kubeletPort, nil
+
+	if !strings.HasPrefix(endpoint, "http://") && !strings.HasPrefix(endpoint, "https://") {
+		if useSecurePort {
+			return "https://" + endpoint, nil
+		}
+		return "http://" + endpoint, nil
+	}
+
+	return endpoint, nil
 }
 
 func defaultTransport() *http.Transport {
