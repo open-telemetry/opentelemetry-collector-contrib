@@ -76,11 +76,12 @@ func TestToLabelValue(t *testing.T) {
 		expectedValue            interface{}
 		expectedTransformedValue interface{}
 	}{
-		"String label value metadata":       {StringValueType, stringLabelValue{}, stringValue, nil},
-		"Int64 label value metadata":        {IntValueType, int64LabelValue{}, int64Value, nil},
-		"Bool label value metadata":         {BoolValueType, boolLabelValue{}, boolValue, nil},
-		"String slice label value metadata": {StringSliceValueType, stringSliceLabelValue{}, []string{stringValue, stringValue}, stringValue + "," + stringValue},
-		"Byte slice label value metadata":   {ByteSliceValueType, byteSliceLabelValue{}, []byte(stringValue), stringValue},
+		"String label value metadata":             {StringValueType, stringLabelValue{}, stringValue, nil},
+		"Int64 label value metadata":              {IntValueType, int64LabelValue{}, int64Value, nil},
+		"Bool label value metadata":               {BoolValueType, boolLabelValue{}, boolValue, nil},
+		"String slice label value metadata":       {StringSliceValueType, stringSliceLabelValue{}, []string{stringValue, stringValue}, stringValue + "," + stringValue},
+		"Byte slice label value metadata":         {ByteSliceValueType, byteSliceLabelValue{}, []byte(stringValue), stringValue},
+		"Lock request slice label value metadata": {LockRequestSliceValueType, lockRequestSliceLabelValue{}, []*lockRequest{{"lockMode", "column", "transactionTag"}}, "{lockMode,column,transactionTag}"},
 	}
 
 	for name, testCase := range testCases {
@@ -108,12 +109,14 @@ func TestMetricsMetadata_ToLabelValues_AllPossibleMetadata(t *testing.T) {
 	int64LabelValueMetadata, _ := NewLabelValueMetadata("int64LabelName", "int64LabelColumnName", IntValueType)
 	stringSliceLabelValueMetadata, _ := NewLabelValueMetadata("stringSliceLabelName", "stringSliceLabelColumnName", StringSliceValueType)
 	byteSliceLabelValueMetadata, _ := NewLabelValueMetadata("byteSliceLabelName", "byteSliceLabelColumnName", ByteSliceValueType)
+	lockRequestSliceLabelValueMetadata, _ := NewLabelValueMetadata("lockRequestSliceLabelName", "lockRequestSliceLabelColumnName", LockRequestSliceValueType)
 	queryLabelValuesMetadata := []LabelValueMetadata{
 		stringLabelValueMetadata,
 		boolLabelValueMetadata,
 		int64LabelValueMetadata,
 		stringSliceLabelValueMetadata,
 		byteSliceLabelValueMetadata,
+		lockRequestSliceLabelValueMetadata,
 	}
 	metadata := MetricsMetadata{QueryLabelValuesMetadata: queryLabelValuesMetadata}
 	row, _ := spanner.NewRow(
@@ -123,6 +126,7 @@ func TestMetricsMetadata_ToLabelValues_AllPossibleMetadata(t *testing.T) {
 			int64LabelValueMetadata.ColumnName(),
 			stringSliceLabelValueMetadata.ColumnName(),
 			byteSliceLabelValueMetadata.ColumnName(),
+			lockRequestSliceLabelValueMetadata.ColumnName(),
 		},
 		[]interface{}{
 			stringValue,
@@ -130,6 +134,7 @@ func TestMetricsMetadata_ToLabelValues_AllPossibleMetadata(t *testing.T) {
 			int64Value,
 			[]string{stringValue, stringValue},
 			[]byte(stringValue),
+			[]*lockRequest{{}},
 		})
 
 	labelValues, _ := metadata.toLabelValues(row)
@@ -142,6 +147,7 @@ func TestMetricsMetadata_ToLabelValues_AllPossibleMetadata(t *testing.T) {
 		int64LabelValue{},
 		stringSliceLabelValue{},
 		byteSliceLabelValue{},
+		lockRequestSliceLabelValue{},
 	}
 
 	for i, expectedType := range expectedTypes {
