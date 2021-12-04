@@ -80,8 +80,10 @@ func (ddr *datadogReceiver) Shutdown(ctx context.Context) (err error) {
 func (ddr *datadogReceiver) handleTraces(w http.ResponseWriter, req *http.Request) {
 	obsCtx := ddr.obs.StartTracesOp(req.Context())
 	var err error
-	spanCount := 0
-	defer ddr.obs.EndTracesOp(obsCtx, "datadog", spanCount, err)
+	var spanCount int
+	defer func(spanCount *int) {
+		ddr.obs.EndTracesOp(obsCtx, "datadog", *spanCount, err)
+	}(&spanCount)
 	var ddTraces datadogpb.Traces
 
 	err = decodeRequest(req, &ddTraces)
