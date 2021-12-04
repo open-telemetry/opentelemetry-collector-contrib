@@ -17,10 +17,11 @@ package datadogreceiver
 import (
 	"encoding/binary"
 	"encoding/json"
-	semconv "go.opentelemetry.io/collector/model/semconv/v1.6.1"
 	"mime"
 	"net/http"
 	"strings"
+
+	semconv "go.opentelemetry.io/collector/model/semconv/v1.6.1"
 
 	datadogpb "github.com/DataDog/datadog-agent/pkg/trace/exportable/pb"
 	"github.com/tinylib/msgp/msgp"
@@ -30,7 +31,7 @@ import (
 func toTraces(traces datadogpb.Traces, req *http.Request) pdata.Traces {
 	dest := pdata.NewTraces()
 	resSpans := dest.ResourceSpans().AppendEmpty()
-	resSpans.SetSchemaUrl("https://opentelemetry.io/schemas/1.5.0")
+	resSpans.SetSchemaUrl(semconv.SchemaURL)
 
 	for _, trace := range traces {
 		ils := pdata.NewInstrumentationLibrarySpans()
