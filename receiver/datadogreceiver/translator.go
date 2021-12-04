@@ -92,7 +92,7 @@ func translateDataDogKeyToOtel(k string) (string, bool) {
 		return semconv.AttributeDeploymentEnvironment, true
 	case "version":
 		return semconv.AttributeServiceVersion, true
-	case "dd.container_id":
+	case "container_id":
 		return semconv.AttributeContainerID, true
 	case "container_name":
 		return semconv.AttributeContainerName, true
