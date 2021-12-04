@@ -36,12 +36,10 @@ type lokiEntry struct {
 func serializeBody(body pdata.AttributeValue) (string, error) {
 	str := ""
 	var err error
-	switch body.Type() {
-	case pdata.AttributeValueTypeString:
+	if body.Type() == pdata.AttributeValueTypeString {
 		str = body.StringVal()
-	case pdata.AttributeValueTypeMap:
-		str = ""
-		err = fmt.Errorf("Unsuported body type to serialize")
+	} else {
+		err = fmt.Errorf("unsuported body type to serialize")
 	}
 	return str, err
 }

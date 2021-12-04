@@ -43,10 +43,24 @@ func exampleJSON() string {
 	return jsonExample
 }
 
-func TestConvert(t *testing.T) {
+func TestConvertString(t *testing.T) {
 	in := exampleJSON()
 	out, err := encodeJSON(exampleLog())
 	t.Log(in)
 	t.Log(out, err)
 	assert.Equal(t, in, out)
+}
+
+func TestConvertNonString(t *testing.T) {
+	in := exampleJSON()
+	log, resource := exampleLog()
+	mapVal := pdata.NewAttributeValueMap()
+	mapVal.MapVal().Insert("key1", pdata.NewAttributeValueString("value"))
+	mapVal.MapVal().Insert("key2", pdata.NewAttributeValueString("value"))
+	mapVal.CopyTo(log.Body())
+
+	out, err := encodeJSON(log, resource)
+	t.Log(in)
+	t.Log(out, err)
+	assert.EqualError(t, err, "unsuported body type to serialize")
 }
