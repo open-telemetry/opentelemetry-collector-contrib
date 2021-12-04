@@ -16,6 +16,7 @@ package oauth2clientauthextension // import "github.com/open-telemetry/opentelem
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 
 	"go.opentelemetry.io/collector/component"
@@ -37,6 +38,14 @@ type ClientCredentialsAuthenticator struct {
 
 // ClientCredentialsAuthenticator implements ClientAuthenticator
 var _ configauth.ClientAuthenticator = (*ClientCredentialsAuthenticator)(nil)
+
+type errorWrappingTokenSource struct {
+	ts      oauth2.TokenSource
+	wrapper string
+}
+
+// errorWrappingTokenSource implements TokenSource
+var _ oauth2.TokenSource = (*errorWrappingTokenSource)(nil)
 
 func newClientCredentialsExtension(cfg *Config, logger *zap.Logger) (*ClientCredentialsAuthenticator, error) {
 	if cfg.ClientID == "" {
@@ -82,13 +91,24 @@ func (o *ClientCredentialsAuthenticator) Shutdown(_ context.Context) error {
 	return nil
 }
 
+func (ewts errorWrappingTokenSource) Token() (*oauth2.Token, error) {
+	tok, err := ewts.ts.Token()
+	if err != nil {
+		err = fmt.Errorf(ewts.wrapper, err)
+	}
+	return tok, err
+}
+
 // RoundTripper returns oauth2.Transport, an http.RoundTripper that performs "client-credential" OAuth flow and
 // also auto refreshes OAuth tokens as needed.
 func (o *ClientCredentialsAuthenticator) RoundTripper(base http.RoundTripper) (http.RoundTripper, error) {
 	ctx := context.WithValue(context.Background(), oauth2.HTTPClient, o.client)
 	return &oauth2.Transport{
-		Source: o.clientCredentials.TokenSource(ctx),
-		Base:   base,
+		Source: errorWrappingTokenSource{
+			o.clientCredentials.TokenSource(ctx),
+			fmt.Sprintf("failed to get security token from token endpoint %s: %%w", o.clientCredentials.TokenURL),
+		},
+		Base: base,
 	}, nil
 }
 
