@@ -77,7 +77,6 @@ func toTraces(traces datadogpb.Traces, req *http.Request) pdata.Traces {
 		}
 		spans.MoveAndAppendTo(ils.Spans())
 		ils.MoveTo(resSpans.InstrumentationLibrarySpans().AppendEmpty())
-		ils.CopyTo(resSpans.InstrumentationLibrarySpans().AppendEmpty())
 	}
 
 	return dest
