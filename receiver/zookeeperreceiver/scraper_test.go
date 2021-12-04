@@ -25,7 +25,6 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/model/pdata"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -41,29 +40,31 @@ type logMsg struct {
 }
 
 func TestZookeeperMetricsScraperScrape(t *testing.T) {
-	commonMetrics := []pdata.Metric{
-		metadata.Metrics.ZookeeperLatencyAvg.New(),
-		metadata.Metrics.ZookeeperLatencyMax.New(),
-		metadata.Metrics.ZookeeperLatencyMin.New(),
-		metadata.Metrics.ZookeeperPacketsReceived.New(),
-		metadata.Metrics.ZookeeperPacketsSent.New(),
-		metadata.Metrics.ZookeeperConnectionsAlive.New(),
-		metadata.Metrics.ZookeeperOutstandingRequests.New(),
-		metadata.Metrics.ZookeeperZnodes.New(),
-		metadata.Metrics.ZookeeperWatches.New(),
-		metadata.Metrics.ZookeeperEphemeralNodes.New(),
-		metadata.Metrics.ZookeeperApproximateDateSize.New(),
-		metadata.Metrics.ZookeeperOpenFileDescriptors.New(),
-		metadata.Metrics.ZookeeperMaxFileDescriptors.New(),
+	cfg := createDefaultConfig().(*Config)
+	mb := metadata.NewMetricsBuilder(cfg.Metrics)
+	commonMetricsRecorders := []func(ts pdata.Timestamp, val int64){
+		mb.RecordZookeeperLatencyAvgDataPoint,
+		mb.RecordZookeeperLatencyMaxDataPoint,
+		mb.RecordZookeeperLatencyMinDataPoint,
+		mb.RecordZookeeperPacketsReceivedDataPoint,
+		mb.RecordZookeeperPacketsSentDataPoint,
+		mb.RecordZookeeperConnectionsAliveDataPoint,
+		mb.RecordZookeeperOutstandingRequestsDataPoint,
+		mb.RecordZookeeperZnodesDataPoint,
+		mb.RecordZookeeperWatchesDataPoint,
+		mb.RecordZookeeperEphemeralNodesDataPoint,
+		mb.RecordZookeeperApproximateDateSizeDataPoint,
+		mb.RecordZookeeperOpenFileDescriptorsDataPoint,
+		mb.RecordZookeeperMaxFileDescriptorsDataPoint,
 	}
 
-	var metricsV3414 []pdata.Metric
-	metricsV3414 = append(metricsV3414, commonMetrics...)
-	metricsV3414 = append(metricsV3414, metadata.Metrics.ZookeeperFsyncThresholdExceeds.New())
+	var metricRecordersV3414 []func(ts pdata.Timestamp, val int64)
+	metricRecordersV3414 = append(metricRecordersV3414, commonMetricsRecorders...)
+	metricRecordersV3414 = append(metricRecordersV3414, mb.RecordZookeeperFsyncThresholdExceedsDataPoint)
 
 	tests := []struct {
 		name                         string
-		expectedMetrics              []pdata.Metric
+		expectedMetricRecorders      []func(ts pdata.Timestamp, val int64)
 		expectedResourceAttributes   map[string]string
 		mockedZKOutputSourceFilename string
 		mockZKConnectionErr          bool
@@ -77,7 +78,7 @@ func TestZookeeperMetricsScraperScrape(t *testing.T) {
 		{
 			name:                         "Test correctness with v3.4.14",
 			mockedZKOutputSourceFilename: "mntr-3.4.14",
-			expectedMetrics:              metricsV3414,
+			expectedMetricRecorders:      metricRecordersV3414,
 			expectedResourceAttributes: map[string]string{
 				"server.state": "standalone",
 				"zk.version":   "3.4.14-4c25d480e66aadd371de8bd2fd8da255ac140bcf",
@@ -87,14 +88,14 @@ func TestZookeeperMetricsScraperScrape(t *testing.T) {
 		{
 			name:                         "Test correctness with v3.5.5",
 			mockedZKOutputSourceFilename: "mntr-3.5.5",
-			expectedMetrics: func() []pdata.Metric {
-				out := make([]pdata.Metric, 0, len(commonMetrics)+3)
-				out = append(out, commonMetrics...)
+			expectedMetricRecorders: func() []func(ts pdata.Timestamp, val int64) {
+				out := make([]func(ts pdata.Timestamp, val int64), 0, len(commonMetricsRecorders)+3)
+				out = append(out, commonMetricsRecorders...)
 
-				out = append(out, []pdata.Metric{
-					metadata.Metrics.ZookeeperFollowers.New(),
-					metadata.Metrics.ZookeeperSyncedFollowers.New(),
-					metadata.Metrics.ZookeeperPendingSyncs.New(),
+				out = append(out, []func(ts pdata.Timestamp, val int64){
+					mb.RecordZookeeperFollowersDataPoint,
+					mb.RecordZookeeperSyncedFollowersDataPoint,
+					mb.RecordZookeeperPendingSyncsDataPoint,
 				}...)
 				return out
 			}(),
@@ -146,7 +147,7 @@ func TestZookeeperMetricsScraperScrape(t *testing.T) {
 					level: zapcore.WarnLevel,
 				},
 			},
-			expectedMetrics: metricsV3414,
+			expectedMetricRecorders: metricRecordersV3414,
 			expectedResourceAttributes: map[string]string{
 				"server.state": "standalone",
 				"zk.version":   "3.4.14-4c25d480e66aadd371de8bd2fd8da255ac140bcf",
@@ -165,7 +166,7 @@ func TestZookeeperMetricsScraperScrape(t *testing.T) {
 					level: zapcore.WarnLevel,
 				},
 			},
-			expectedMetrics: metricsV3414,
+			expectedMetricRecorders: metricRecordersV3414,
 			expectedResourceAttributes: map[string]string{
 				"server.state": "standalone",
 				"zk.version":   "3.4.14-4c25d480e66aadd371de8bd2fd8da255ac140bcf",
@@ -197,13 +198,7 @@ func TestZookeeperMetricsScraperScrape(t *testing.T) {
 				go ms.mockZKServer(t, localAddr, tt.mockedZKOutputSourceFilename)
 				<-ms.ready
 			}
-
-			cfg := &Config{
-				TCPAddr: confignet.TCPAddr{
-					Endpoint: localAddr,
-				},
-				Timeout: defaultTimeout,
-			}
+			cfg.TCPAddr.Endpoint = localAddr
 
 			core, observedLogs := observer.New(zap.DebugLevel)
 			z, err := newZookeeperMetricsScraper(zap.New(core), cfg)
@@ -253,10 +248,19 @@ func TestZookeeperMetricsScraperScrape(t *testing.T) {
 				require.Equal(t, 1, ilms.Len())
 
 				metrics := ilms.At(0).Metrics()
-				require.Equal(t, len(tt.expectedMetrics), metrics.Len())
 
-				for i, metric := range tt.expectedMetrics {
-					assertMetricValid(t, metrics.At(i), metric)
+				// prepare set of expected metrics from metrics recorders.
+				now := pdata.NewTimestampFromTime(time.Now())
+				for _, recorder := range tt.expectedMetricRecorders {
+					recorder(now, 1)
+				}
+				expectedMetrics := pdata.NewMetricSlice()
+				mb.Emit(expectedMetrics)
+
+				require.Equal(t, expectedMetrics.Len(), metrics.Len())
+
+				for i := 0; i < expectedMetrics.Len(); i++ {
+					assertMetricValid(t, metrics.At(i), expectedMetrics.At(i))
 				}
 			}
 
