@@ -121,13 +121,13 @@ func TestJSONLoadConfig(t *testing.T) {
 			},
 			ReadBufferSize:  0,
 			WriteBufferSize: 524288,
-			Timeout:         time.Second * 10,
+			Timeout:         time.Second * 30,
 		},
 		RetrySettings: exporterhelper.RetrySettings{
 			Enabled:         true,
-			InitialInterval: 10 * time.Second,
-			MaxInterval:     1 * time.Minute,
-			MaxElapsedTime:  10 * time.Minute,
+			InitialInterval: 5 * time.Second,
+			MaxInterval:     30 * time.Second,
+			MaxElapsedTime:  5 * time.Minute,
 		},
 		QueueSettings: exporterhelper.QueueSettings{
 			Enabled:      true,
