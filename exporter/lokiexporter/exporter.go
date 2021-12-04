@@ -178,7 +178,9 @@ func (l *lokiExporter) logDataToLoki(ld pdata.Logs) (pr *logproto.PushRequest, n
 		}
 	}
 
-	l.logger.Error("some logs has been dropped", zap.Error(errs))
+	if errs != nil {
+		l.logger.Error("some logs has been dropped", zap.Error(errs))
+	}
 
 	pr = &logproto.PushRequest{
 		Streams: make([]logproto.Stream, len(streams)),

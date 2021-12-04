@@ -16,6 +16,7 @@ package lokiexporter
 
 import (
 	"encoding/json"
+	"fmt"
 
 	"go.opentelemetry.io/collector/model/pdata"
 )
@@ -32,21 +33,41 @@ type lokiEntry struct {
 	Resources  map[string]interface{} `json:"resources,omitempty"`
 }
 
+func serializeBody(body pdata.AttributeValue) (string, error) {
+	str := ""
+	var err error
+	switch body.Type() {
+	case pdata.AttributeValueTypeString:
+		str = body.StringVal()
+	case pdata.AttributeValueTypeMap:
+		str = ""
+		err = fmt.Errorf("Unsuported body type to serialize")
+	}
+	return str, err
+}
+
 func encodeJSON(lr pdata.LogRecord, res pdata.Resource) (string, error) {
 	var logRecord lokiEntry
 	var jsonRecord []byte
+	var err error
+	var body string
 
+	body, err = serializeBody(lr.Body())
+	if err != nil {
+		return "", err
+	}
 	logRecord = lokiEntry{
 		Name:       lr.Name(),
-		Body:       lr.Body().StringVal(),
+		Body:       body,
 		TraceID:    lr.TraceID().HexString(),
 		SpanID:     lr.SpanID().HexString(),
 		Severity:   lr.SeverityText(),
 		Attributes: lr.Attributes().AsRaw(),
 		Resources:  res.Attributes().AsRaw(),
 	}
+	lr.Body().Type()
 
-	jsonRecord, err := json.Marshal(logRecord)
+	jsonRecord, err = json.Marshal(logRecord)
 	if err != nil {
 		return "", err
 	}
