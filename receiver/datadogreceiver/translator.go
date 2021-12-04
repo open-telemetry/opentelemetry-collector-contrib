@@ -17,6 +17,7 @@ package datadogreceiver
 import (
 	"encoding/binary"
 	"encoding/json"
+	semconv "go.opentelemetry.io/collector/model/semconv/v1.6.1"
 	"mime"
 	"net/http"
 	"strings"
@@ -29,14 +30,17 @@ import (
 func toTraces(traces datadogpb.Traces, req *http.Request) pdata.Traces {
 	dest := pdata.NewTraces()
 	resSpans := dest.ResourceSpans().AppendEmpty()
-	ils := resSpans.InstrumentationLibrarySpans().AppendEmpty()
-
-	ils.InstrumentationLibrary().SetName("Datadog")
-	ils.InstrumentationLibrary().SetVersion(req.Header.Get("Datadog-Meta-Tracer-Version"))
+	resSpans.SetSchemaUrl("https://opentelemetry.io/schemas/1.5.0")
 
 	for _, trace := range traces {
+		ils := pdata.NewInstrumentationLibrarySpans()
+		ils.Spans().EnsureCapacity(len(trace))
+		ils.InstrumentationLibrary().SetName("Datadog")
+		ils.InstrumentationLibrary().SetVersion(req.Header.Get("Datadog-Meta-Tracer-Version"))
+		spans := pdata.NewSpanSlice()
+		spans.EnsureCapacity(len(trace))
 		for _, span := range trace {
-			newSpan := ils.Spans().AppendEmpty() // TODO: Might be more efficient to resize spans and then populate it Issue #6338
+			newSpan := spans.AppendEmpty()
 
 			newSpan.SetTraceID(uInt64ToTraceID(0, span.TraceID))
 			newSpan.SetSpanID(uInt64ToSpanID(span.SpanID))
@@ -44,31 +48,66 @@ func toTraces(traces datadogpb.Traces, req *http.Request) pdata.Traces {
 			newSpan.SetEndTimestamp(pdata.Timestamp(span.Start + span.Duration))
 			newSpan.SetParentSpanID(uInt64ToSpanID(span.ParentID))
 			newSpan.SetName(span.Name)
-			newSpan.Attributes().InsertString(semconv.AttributeServiceName, span.Service)
-			newSpan.Status().SetCode(pdata.StatusCodeOk)
 
-			for k, v := range span.GetMeta() {
-				newSpan.Attributes().InsertString(k, v)
-			}
 			if span.Error > 0 {
-				_, errorExists := newSpan.Attributes().Get("error")
-				if !errorExists {
-					newSpan.Status().SetCode(pdata.StatusCodeError)
+				newSpan.Status().SetCode(pdata.StatusCodeError)
+			} else {
+				newSpan.Status().SetCode(pdata.StatusCodeOk)
+			}
+
+			attrs := newSpan.Attributes()
+			attrs.InsertString(semconv.AttributeServiceName, span.Service)
+			for k, v := range span.GetMeta() {
+				if key, found := translateDataDogKeyToOtel(k); found {
+					attrs.InsertString(key, v)
+				} else {
+					attrs.InsertString(k, v)
 				}
 			}
+
 			switch span.Type {
 			case "web":
 				newSpan.SetKind(pdata.SpanKindServer)
-			case "client":
-				newSpan.SetKind(pdata.SpanKindClient)
-			default:
+			case "custom":
 				newSpan.SetKind(pdata.SpanKindUnspecified)
+			default:
+				newSpan.SetKind(pdata.SpanKindClient)
 			}
-
 		}
+		spans.MoveAndAppendTo(ils.Spans())
+		ils.MoveTo(resSpans.InstrumentationLibrarySpans().AppendEmpty())
+		ils.CopyTo(resSpans.InstrumentationLibrarySpans().AppendEmpty())
 	}
 
 	return dest
+}
+
+func translateDataDogKeyToOtel(k string) (string, bool) {
+	// We dont want these
+	if strings.HasPrefix(k, "_dd.") {
+		return "", false
+	}
+	switch strings.ToLower(k) {
+	case "env":
+		return semconv.AttributeDeploymentEnvironment, true
+	case "version":
+		return semconv.AttributeServiceVersion, true
+	case "dd.container_id":
+		return semconv.AttributeContainerID, true
+	case "container_name":
+		return semconv.AttributeContainerName, true
+	case "image_name":
+		return semconv.AttributeContainerImageName, true
+	case "image_tag":
+		return semconv.AttributeContainerImageTag, true
+	case "process_id":
+		return semconv.AttributeProcessPID, true
+	case "error.msg":
+		return semconv.AttributeExceptionMessage, true
+	default:
+		return k, false
+	}
+
 }
 
 func decodeRequest(req *http.Request, dest *datadogpb.Traces) error {
@@ -78,17 +117,11 @@ func decodeRequest(req *http.Request, dest *datadogpb.Traces) error {
 			reader := datadogpb.NewMsgpReader(req.Body)
 			defer datadogpb.FreeMsgpReader(reader)
 			return dest.DecodeMsgDictionary(reader)
-		} else {
-			return msgp.Decode(req.Body, dest)
 		}
-	case "application/json":
-	case "text/json":
-	case "":
-		return json.NewDecoder(req.Body).Decode(dest)
+		return msgp.Decode(req.Body, dest)
 	default:
-		return nil
+		return json.NewDecoder(req.Body).Decode(dest)
 	}
-
 }
 
 func getMediaType(req *http.Request) string {
