@@ -87,7 +87,6 @@ func (ddr *datadogReceiver) handleTraces(w http.ResponseWriter, req *http.Reques
 	err = decodeRequest(req, &ddTraces)
 	if err != nil {
 		http.Error(w, "Unable to unmarshal reqs", http.StatusInternalServerError)
-		ddr.obs.EndTracesOp(obsCtx, "datadog", 0, err)
 		return
 	}
 
