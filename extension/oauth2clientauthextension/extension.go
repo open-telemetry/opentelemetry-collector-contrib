@@ -106,7 +106,7 @@ func (o *ClientCredentialsAuthenticator) RoundTripper(base http.RoundTripper) (h
 	return &oauth2.Transport{
 		Source: errorWrappingTokenSource{
 			o.clientCredentials.TokenSource(ctx),
-			fmt.Sprintf("failed to get security token from token endpoint %s: %%w", o.clientCredentials.TokenURL),
+			fmt.Sprintf("failed to get security token from token endpoint %q: %%w", o.clientCredentials.TokenURL),
 		},
 		Base: base,
 	}, nil
