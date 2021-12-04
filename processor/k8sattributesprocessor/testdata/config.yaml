@@ -76,6 +76,16 @@ processors:
         - name: jaeger-agent
         - name: jaeger-collector
 
+  k8sattributes/3:
+    passthrough: false
+    auth_type: "kubeConfig"
+    extract:
+      annotations:
+        - key_regex: opentel.* # extracts Keys & values of annotations matching regex `opentel.*`
+          from: pod
+      labels:
+        - key_regex: opentel.* # extracts Keys & values of labels matching regex `opentel.*`
+          from: pod
 
 exporters:
   nop:

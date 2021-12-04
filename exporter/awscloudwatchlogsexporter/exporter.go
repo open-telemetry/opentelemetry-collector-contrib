@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package awscloudwatchlogsexporter
+package awscloudwatchlogsexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awscloudwatchlogsexporter"
 
 import (
 	"context"
@@ -229,7 +229,7 @@ func attrValue(value pdata.AttributeValue) interface{} {
 		})
 		return values
 	case pdata.AttributeValueTypeArray:
-		arrayVal := value.ArrayVal()
+		arrayVal := value.SliceVal()
 		values := make([]interface{}, arrayVal.Len())
 		for i := 0; i < arrayVal.Len(); i++ {
 			values[i] = attrValue(arrayVal.At(i))

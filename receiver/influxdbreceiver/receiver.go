@@ -12,10 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package influxdbreceiver
+package influxdbreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/influxdbreceiver"
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"sync"
@@ -23,7 +24,7 @@ import (
 
 	"github.com/influxdata/influxdb-observability/common"
 	"github.com/influxdata/influxdb-observability/influx2otel"
-	lineprotocol "github.com/influxdata/line-protocol/v2/influxdata"
+	"github.com/influxdata/line-protocol/v2/lineprotocol"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer"
@@ -73,8 +74,8 @@ func (r *metricsReceiver) Start(_ context.Context, host component.Host) error {
 	r.server = r.httpServerSettings.ToServer(router, r.settings)
 	go func() {
 		defer r.wg.Done()
-		if err := r.server.Serve(ln); err != nil && err != http.ErrServerClosed {
-			host.ReportFatalError(err)
+		if errHTTP := r.server.Serve(ln); !errors.Is(errHTTP, http.ErrServerClosed) && errHTTP != nil {
+			host.ReportFatalError(errHTTP)
 		}
 	}()
 

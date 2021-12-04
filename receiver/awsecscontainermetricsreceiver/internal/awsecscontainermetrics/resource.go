@@ -12,16 +12,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package awsecscontainermetrics
+package awsecscontainermetrics // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsecscontainermetricsreceiver/internal/awsecscontainermetrics"
 
 import (
 	"strings"
 
 	"go.opentelemetry.io/collector/model/pdata"
 	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil"
 )
 
-func containerResource(cm ContainerMetadata) pdata.Resource {
+func containerResource(cm ecsutil.ContainerMetadata) pdata.Resource {
 	resource := pdata.NewResource()
 	resource.Attributes().UpsertString(conventions.AttributeContainerName, cm.ContainerName)
 	resource.Attributes().UpsertString(conventions.AttributeContainerID, cm.DockerID)
@@ -41,7 +43,7 @@ func containerResource(cm ContainerMetadata) pdata.Resource {
 	return resource
 }
 
-func taskResource(tm TaskMetadata) pdata.Resource {
+func taskResource(tm ecsutil.TaskMetadata) pdata.Resource {
 	resource := pdata.NewResource()
 	region, accountID, taskID := getResourceFromARN(tm.TaskARN)
 	resource.Attributes().UpsertString(attributeECSCluster, getNameFromCluster(tm.Cluster))

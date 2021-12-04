@@ -99,19 +99,19 @@ exporters:
 
       ## @param histograms - custom object - optional
       ## Histograms specific configuration.
-        ## @param mode - string - optional - default: nobuckets
+        ## @param mode - string - optional - default: distributions
         ## How to report histograms. Valid values are:
         ## 
+        ## - `distributions` to report metrics as Datadog distributions (recommended).
         ## - `nobuckets` to not report bucket metrics,
         ## - `counters` to report one metric per histogram bucket.
-        ## - `distributions` to report metrics as Datadog distributions (recommended).
         #
-        # mode: nobuckets
+        # mode: distributions
       
-        ## @param send_count_sum_metrics - boolean - optional - default: true
+        ## @param send_count_sum_metrics - boolean - optional - default: false
         ## Whether to report sum and count as separate histogram metrics.
         #
-        # send_count_sum_metrics: true
+        # send_count_sum_metrics: false
 
     ## @param traces - custom object - optional
     ## Trace exporter specific configuration.
@@ -145,7 +145,8 @@ exporters:
       #
       # span_name_remappings: 
       #   io.opentelemetry.javaagent.spring.client: spring.client
-      #   instrumentation::express.server: express
+      #   instrumentation:express.server: express
+      #   go.opentelemetry.io_contrib_instrumentation_net_http_otelhttp.client: http.client
 
 
 service:

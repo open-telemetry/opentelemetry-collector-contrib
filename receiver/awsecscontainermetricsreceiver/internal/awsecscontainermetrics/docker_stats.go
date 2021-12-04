@@ -12,9 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package awsecscontainermetrics
+package awsecscontainermetrics // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsecscontainermetricsreceiver/internal/awsecscontainermetrics"
 
 import "time"
+
+const TaskStatsPath = "/task/stats"
 
 // ContainerStats defines the structure for container stats
 type ContainerStats struct {

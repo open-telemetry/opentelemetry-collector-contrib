@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package goldendataset
+package goldendataset // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/goldendataset"
 
 import (
 	"go.opentelemetry.io/collector/model/pdata"
@@ -118,8 +118,8 @@ func appendFassAttributes(attrMap pdata.AttributeMap) {
 func appendExecAttributes(attrMap pdata.AttributeMap) {
 	attrMap.UpsertString(conventions.AttributeProcessExecutableName, "otelcol")
 	parts := pdata.NewAttributeValueArray()
-	parts.ArrayVal().AppendEmpty().SetStringVal("otelcol")
-	parts.ArrayVal().AppendEmpty().SetStringVal("--config=/etc/otel-collector-config.yaml")
+	parts.SliceVal().AppendEmpty().SetStringVal("otelcol")
+	parts.SliceVal().AppendEmpty().SetStringVal("--config=/etc/otel-collector-config.yaml")
 	attrMap.Upsert(conventions.AttributeProcessCommandLine, parts)
 	attrMap.UpsertString(conventions.AttributeProcessExecutablePath, "/usr/local/bin/otelcol")
 	attrMap.UpsertInt(conventions.AttributeProcessPID, 2020)

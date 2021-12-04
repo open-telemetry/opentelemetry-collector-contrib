@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package splunkhecreceiver
+package splunkhecreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/splunkhecreceiver"
 
 import (
 	"bufio"
@@ -24,6 +24,7 @@ import (
 	"io/ioutil"
 	"net"
 	"net/http"
+	"strings"
 	"sync"
 	"time"
 
@@ -78,6 +79,7 @@ type splunkReceiver struct {
 	logsConsumer    consumer.Logs
 	metricsConsumer consumer.Metrics
 	server          *http.Server
+	shutdownWG      sync.WaitGroup
 	obsrecv         *obsreport.Receiver
 	gzipReaderPool  *sync.Pool
 }
@@ -189,8 +191,10 @@ func (r *splunkReceiver) Start(_ context.Context, host component.Host) error {
 	r.server.ReadHeaderTimeout = defaultServerTimeout
 	r.server.WriteTimeout = defaultServerTimeout
 
+	r.shutdownWG.Add(1)
 	go func() {
-		if errHTTP := r.server.Serve(ln); errHTTP != http.ErrServerClosed {
+		defer r.shutdownWG.Done()
+		if errHTTP := r.server.Serve(ln); !errors.Is(errHTTP, http.ErrServerClosed) && errHTTP != nil {
 			host.ReportFatalError(errHTTP)
 		}
 	}()
@@ -201,7 +205,9 @@ func (r *splunkReceiver) Start(_ context.Context, host component.Host) error {
 // Shutdown tells the receiver that should stop reception,
 // giving it a chance to perform any necessary clean-up.
 func (r *splunkReceiver) Shutdown(context.Context) error {
-	return r.server.Close()
+	err := r.server.Close()
+	r.shutdownWG.Wait()
+	return err
 }
 
 func (r *splunkReceiver) handleRawReq(resp http.ResponseWriter, req *http.Request) {
@@ -367,10 +373,11 @@ func (r *splunkReceiver) consumeLogs(ctx context.Context, events []*splunk.Event
 
 func (r *splunkReceiver) createResourceCustomizer(req *http.Request) func(resource pdata.Resource) {
 	if r.config.AccessTokenPassthrough {
-		accessToken := req.Header.Get(splunk.HECTokenHeader)
-		if accessToken != "" {
+		accessToken := req.Header.Get("Authorization")
+		if strings.HasPrefix(accessToken, splunk.HECTokenHeader+" ") {
+			accessTokenValue := accessToken[len(splunk.HECTokenHeader)+1:]
 			return func(resource pdata.Resource) {
-				resource.Attributes().InsertString(splunk.HecTokenLabel, accessToken)
+				resource.Attributes().InsertString(splunk.HecTokenLabel, accessTokenValue)
 			}
 		}
 	}

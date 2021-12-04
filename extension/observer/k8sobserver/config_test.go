@@ -31,7 +31,7 @@ func TestLoadConfig(t *testing.T) {
 	factories, err := componenttest.NopFactories()
 	assert.NoError(t, err)
 
-	factory := &Factory{}
+	factory := NewFactory()
 	factories.Extensions[typeStr] = factory
 	cfg, err := configtest.LoadConfigAndValidate(path.Join(".", "testdata", "config.yaml"), factories)
 
@@ -41,10 +41,10 @@ func TestLoadConfig(t *testing.T) {
 	require.Len(t, cfg.Extensions, 2)
 
 	ext0 := cfg.Extensions[config.NewComponentID(typeStr)]
-	assert.Equal(t, factory.CreateDefaultConfig(), ext0)
+	assert.EqualValues(t, factory.CreateDefaultConfig(), ext0)
 
 	ext1 := cfg.Extensions[config.NewComponentIDWithName(typeStr, "1")]
-	assert.Equal(t,
+	assert.EqualValues(t,
 		&Config{
 			ExtensionSettings: config.NewExtensionSettings(config.NewComponentIDWithName(typeStr, "1")),
 			Node:              "node-1",

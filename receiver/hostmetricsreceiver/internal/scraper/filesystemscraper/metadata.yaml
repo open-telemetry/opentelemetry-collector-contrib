@@ -1,6 +1,6 @@
 name: filesystem
 
-labels:
+attributes:
   device:
     description: Identifier of the filesystem.
 
@@ -21,17 +21,15 @@ metrics:
   system.filesystem.usage:
     description: Filesystem bytes used.
     unit: By
-    data:
-      type: sum
+    sum:
       aggregation: cumulative
       monotonic: false
-    labels: [device, mode, mountpoint, type, state]
+    attributes: [device, mode, mountpoint, type, state]
 
   system.filesystem.inodes.usage:
     description: FileSystem inodes used.
     unit: "{inodes}"
-    data:
-      type: sum
+    sum:
       aggregation: cumulative
       monotonic: false
-    labels: [device, mode, mountpoint, type, state]
+    attributes: [device, mode, mountpoint, type, state]

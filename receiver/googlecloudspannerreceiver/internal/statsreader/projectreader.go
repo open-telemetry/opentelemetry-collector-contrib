@@ -12,14 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package statsreader
+package statsreader // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudspannerreceiver/internal/statsreader"
 
 import (
 	"context"
 	"strings"
 
-	"go.opentelemetry.io/collector/model/pdata"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudspannerreceiver/internal/metadata"
 )
 
 type ProjectReader struct {
@@ -42,14 +43,19 @@ func (projectReader *ProjectReader) Shutdown() {
 	}
 }
 
-func (projectReader *ProjectReader) Read(ctx context.Context) []pdata.Metrics {
-	var projectMetrics []pdata.Metrics
+func (projectReader *ProjectReader) Read(ctx context.Context) ([]*metadata.MetricsDataPoint, error) {
+	var result []*metadata.MetricsDataPoint
 
 	for _, databaseReader := range projectReader.databaseReaders {
-		projectMetrics = append(projectMetrics, databaseReader.Read(ctx)...)
+		dataPoints, err := databaseReader.Read(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		result = append(result, dataPoints...)
 	}
 
-	return projectMetrics
+	return result, nil
 }
 
 func (projectReader *ProjectReader) Name() string {

@@ -18,15 +18,13 @@ import (
 	"context"
 	"errors"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/model/pdata"
-	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudspannerreceiver/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudspannerreceiver/internal/statsreader"
@@ -38,52 +36,53 @@ const (
 )
 
 type mockCompositeReader struct {
+	mock.Mock
 }
 
-func (r mockCompositeReader) Name() string {
+func (r *mockCompositeReader) Name() string {
 	return "mockCompositeReader"
 }
 
-func (r mockCompositeReader) Read(_ context.Context) []pdata.Metrics {
-	md := pdata.NewMetrics()
-	rms := md.ResourceMetrics()
-	rm := rms.AppendEmpty()
-
-	ilms := rm.InstrumentationLibraryMetrics()
-	ilm := ilms.AppendEmpty()
-	metric := ilm.Metrics().AppendEmpty()
-	metric.SetName("testMetric")
-
-	return []pdata.Metrics{md}
+func (r *mockCompositeReader) Read(ctx context.Context) ([]*metadata.MetricsDataPoint, error) {
+	args := r.Called(ctx)
+	return args.Get(0).([]*metadata.MetricsDataPoint), args.Error(1)
 }
 
-func (r mockCompositeReader) Shutdown() {
+func (r *mockCompositeReader) Shutdown() {
 	// Do nothing
 }
 
-func TestNewGoogleCloudSpannerReceiver(t *testing.T) {
-	logger := zap.NewNop()
-	nextConsumer := consumertest.NewNop()
-	cfg := createDefaultConfig().(*Config)
-
-	receiver, err := newGoogleCloudSpannerReceiver(logger, cfg, nextConsumer)
-	receiverCasted := receiver.(*googleCloudSpannerReceiver)
-
-	require.NoError(t, err)
-	require.NotNil(t, receiver)
-
-	assert.Equal(t, logger, receiverCasted.logger)
-	assert.Equal(t, nextConsumer, receiverCasted.nextConsumer)
-	assert.Equal(t, cfg, receiverCasted.config)
+type metricsBuilder struct {
+	throwErrorOnShutdown bool
 }
 
-func TestNewGoogleCloudSpannerReceiver_NilConsumer(t *testing.T) {
+func newMetricsBuilder(throwErrorOnShutdown bool) metadata.MetricsBuilder {
+	return &metricsBuilder{
+		throwErrorOnShutdown: throwErrorOnShutdown,
+	}
+}
+
+func (b *metricsBuilder) Build([]*metadata.MetricsDataPoint) (pdata.Metrics, error) {
+	return pdata.Metrics{}, nil
+}
+
+func (b *metricsBuilder) Shutdown() error {
+	if b.throwErrorOnShutdown {
+		return errors.New("error on shutdown")
+	}
+
+	return nil
+}
+
+func TestNewGoogleCloudSpannerReceiver(t *testing.T) {
+	logger := zaptest.NewLogger(t)
 	cfg := createDefaultConfig().(*Config)
+	receiver := newGoogleCloudSpannerReceiver(logger, cfg)
 
-	metricsReceiver, err := newGoogleCloudSpannerReceiver(zap.NewNop(), cfg, nil)
+	require.NotNil(t, receiver)
 
-	require.NotNil(t, err)
-	require.Nil(t, metricsReceiver)
+	assert.Equal(t, logger, receiver.logger)
+	assert.Equal(t, cfg, receiver.config)
 }
 
 func createConfig(serviceAccountPath string) *Config {
@@ -116,76 +115,28 @@ func TestStart(t *testing.T) {
 
 	for name, testCase := range testCases {
 		t.Run(name, func(t *testing.T) {
-			logger := zap.NewNop()
-			nextConsumer := consumertest.NewNop()
+			logger := zaptest.NewLogger(t)
 			cfg := createConfig(testCase.serviceAccountPath)
-
 			host := componenttest.NewNopHost()
 
-			receiver, err := newGoogleCloudSpannerReceiver(logger, cfg, nextConsumer)
-			receiverCasted := receiver.(*googleCloudSpannerReceiver)
+			receiver := newGoogleCloudSpannerReceiver(logger, cfg)
 
-			require.NoError(t, err)
 			require.NotNil(t, receiver)
 
-			err = receiverCasted.Start(context.Background(), host)
+			err := receiver.Start(context.Background(), host)
 
 			if testCase.expectError {
 				require.Error(t, err)
-				assert.Equal(t, 0, len(receiverCasted.projectReaders))
+				assert.Equal(t, 0, len(receiver.projectReaders))
 			} else {
 				require.NoError(t, err)
-				assert.Equal(t, 1, len(receiverCasted.projectReaders))
+				assert.Equal(t, 1, len(receiver.projectReaders))
 			}
 		})
 	}
 }
 
-func TestStartInitializesDataCollectionWithCollectDataError(t *testing.T) {
-	logger := zap.NewNop()
-	nextConsumer := consumertest.NewErr(errors.New("error"))
-	cfg := createConfig(serviceAccountValidPath)
-	cfg.CollectionInterval = 10 * time.Millisecond
-	host := componenttest.NewNopHost()
-	receiver, err := newGoogleCloudSpannerReceiver(logger, cfg, nextConsumer)
-	receiverCasted := receiver.(*googleCloudSpannerReceiver)
-
-	require.NoError(t, err)
-	require.NotNil(t, receiver)
-
-	errs := make(chan error)
-
-	receiverCasted.onCollectData = append(receiverCasted.onCollectData, func(err error) {
-		errs <- err
-	})
-
-	err = receiverCasted.Start(context.Background(), host)
-
-	assert.NoError(t, <-errs)
-
-	require.NoError(t, err)
-}
-
-func TestStartWithContextDone(t *testing.T) {
-	logger := zap.NewNop()
-	nextConsumer := consumertest.NewNop()
-	cfg := createConfig(serviceAccountValidPath)
-	ctx := context.Background()
-	host := componenttest.NewNopHost()
-
-	receiver, err := newGoogleCloudSpannerReceiver(logger, cfg, nextConsumer)
-	receiverCasted := receiver.(*googleCloudSpannerReceiver)
-
-	require.NoError(t, err)
-	require.NotNil(t, receiver)
-
-	err = receiverCasted.Start(ctx, host)
-
-	require.NoError(t, err)
-	receiverCasted.cancel()
-}
-
-func TestInitializeProjectReaders(t *testing.T) {
+func TestInitialize(t *testing.T) {
 	testCases := map[string]struct {
 		serviceAccountPath    string
 		expectError           bool
@@ -198,14 +149,11 @@ func TestInitializeProjectReaders(t *testing.T) {
 
 	for name, testCase := range testCases {
 		t.Run(name, func(t *testing.T) {
-			logger := zap.NewNop()
-			nextConsumer := consumertest.NewNop()
+			logger := zaptest.NewLogger(t)
 			cfg := createConfig(testCase.serviceAccountPath)
 
-			receiver, err := newGoogleCloudSpannerReceiver(logger, cfg, nextConsumer)
-			receiverCasted := receiver.(*googleCloudSpannerReceiver)
+			receiver := newGoogleCloudSpannerReceiver(logger, cfg)
 
-			require.NoError(t, err)
 			require.NotNil(t, receiver)
 
 			yaml := metadataYaml
@@ -214,7 +162,7 @@ func TestInitializeProjectReaders(t *testing.T) {
 				metadataYaml = []byte{1}
 			}
 
-			err = receiverCasted.initializeProjectReaders(context.Background())
+			err := receiver.initialize(context.Background())
 
 			if testCase.replaceMetadataConfig {
 				metadataYaml = yaml
@@ -222,10 +170,70 @@ func TestInitializeProjectReaders(t *testing.T) {
 
 			if testCase.expectError {
 				require.Error(t, err)
-				assert.Equal(t, 0, len(receiverCasted.projectReaders))
 			} else {
 				require.NoError(t, err)
-				assert.Equal(t, 1, len(receiverCasted.projectReaders))
+			}
+		})
+	}
+}
+
+func TestInitializeProjectReaders(t *testing.T) {
+	testCases := map[string]struct {
+		serviceAccountPath string
+		expectError        bool
+	}{
+		"Happy path":                 {serviceAccountValidPath, false},
+		"With error":                 {serviceAccountInvalidPath, true},
+		"With metadata config error": {serviceAccountInvalidPath, true},
+	}
+
+	for name, testCase := range testCases {
+		t.Run(name, func(t *testing.T) {
+			logger := zaptest.NewLogger(t)
+			cfg := createConfig(testCase.serviceAccountPath)
+
+			receiver := newGoogleCloudSpannerReceiver(logger, cfg)
+
+			require.NotNil(t, receiver)
+
+			err := receiver.initializeProjectReaders(context.Background(), []*metadata.MetricsMetadata{})
+
+			if testCase.expectError {
+				require.Error(t, err)
+				assert.Equal(t, 0, len(receiver.projectReaders))
+			} else {
+				require.NoError(t, err)
+				assert.Equal(t, 1, len(receiver.projectReaders))
+			}
+		})
+	}
+}
+
+func TestInitializeMetricsBuilder(t *testing.T) {
+	logger := zaptest.NewLogger(t)
+	cfg := createConfig(serviceAccountValidPath)
+	testCases := map[string]struct {
+		metadataItems []*metadata.MetricsMetadata
+		expectError   bool
+	}{
+		"Happy path": {[]*metadata.MetricsMetadata{{}}, false},
+		"With error": {[]*metadata.MetricsMetadata{}, true},
+	}
+
+	for name, testCase := range testCases {
+		t.Run(name, func(t *testing.T) {
+			receiver := newGoogleCloudSpannerReceiver(logger, cfg)
+
+			require.NotNil(t, receiver)
+
+			err := receiver.initializeMetricsBuilder(testCase.metadataItems)
+
+			if testCase.expectError {
+				require.Error(t, err)
+				require.Nil(t, receiver.metricsBuilder)
+			} else {
+				require.NoError(t, err)
+				require.NotNil(t, receiver.metricsBuilder)
 			}
 		})
 	}
@@ -242,7 +250,7 @@ func TestNewProjectReader(t *testing.T) {
 
 	for name, testCase := range testCases {
 		t.Run(name, func(t *testing.T) {
-			logger := zap.NewNop()
+			logger := zaptest.NewLogger(t)
 			cfg := createConfig(testCase.serviceAccountPath)
 			var parsedMetadata []*metadata.MetricsMetadata
 
@@ -260,32 +268,60 @@ func TestNewProjectReader(t *testing.T) {
 	}
 }
 
-func TestCollectData(t *testing.T) {
-	logger := zap.NewNop()
-
+func TestScrape(t *testing.T) {
+	logger := zaptest.NewLogger(t)
 	testCases := map[string]struct {
-		nextConsumer  consumer.Metrics
-		projectReader statsreader.CompositeReader
-		expectError   bool
+		metricsBuilder metadata.MetricsBuilder
+		expectedError  error
 	}{
-		"Happy path": {consumertest.NewNop(), statsreader.NewProjectReader([]statsreader.CompositeReader{}, logger), false},
-		"With error": {consumertest.NewErr(errors.New("an error")), mockCompositeReader{}, true},
+		"Happy path": {newMetricsBuilder(false), nil},
+		"With error": {newMetricsBuilder(true), errors.New("error")},
 	}
 
 	for name, testCase := range testCases {
 		t.Run(name, func(t *testing.T) {
 			cfg := createDefaultConfig().(*Config)
+			receiver := newGoogleCloudSpannerReceiver(logger, cfg)
+			mcr := &mockCompositeReader{}
 
-			receiver, err := newGoogleCloudSpannerReceiver(logger, cfg, testCase.nextConsumer)
-
-			require.NoError(t, err)
 			require.NotNil(t, receiver)
 
-			r := receiver.(*googleCloudSpannerReceiver)
-			r.projectReaders = []statsreader.CompositeReader{testCase.projectReader}
+			receiver.projectReaders = []statsreader.CompositeReader{mcr}
+			receiver.metricsBuilder = testCase.metricsBuilder
 			ctx := context.Background()
 
-			err = r.collectData(ctx)
+			mcr.On("Read", ctx).Return([]*metadata.MetricsDataPoint{}, testCase.expectedError)
+
+			_, err := receiver.Scrape(ctx)
+
+			mcr.AssertExpectations(t)
+			assert.Equal(t, testCase.expectedError, err)
+		})
+	}
+}
+
+func TestGoogleCloudSpannerReceiver_Shutdown(t *testing.T) {
+	logger := zaptest.NewLogger(t)
+	projectReader := statsreader.NewProjectReader([]statsreader.CompositeReader{}, logger)
+
+	testCases := map[string]struct {
+		metricsBuilder metadata.MetricsBuilder
+		expectError    bool
+	}{
+		"Happy path": {newMetricsBuilder(false), false},
+		"With error": {newMetricsBuilder(true), true},
+	}
+
+	for name, testCase := range testCases {
+		t.Run(name, func(t *testing.T) {
+			receiver := &googleCloudSpannerReceiver{
+				projectReaders: []statsreader.CompositeReader{projectReader},
+				metricsBuilder: testCase.metricsBuilder,
+			}
+			ctx := context.Background()
+			ctx, receiver.cancel = context.WithCancel(ctx)
+
+			err := receiver.Shutdown(ctx)
 
 			if testCase.expectError {
 				require.NotNil(t, err)
@@ -294,38 +330,4 @@ func TestCollectData(t *testing.T) {
 			}
 		})
 	}
-
-}
-
-func TestGoogleCloudSpannerReceiver_Shutdown(t *testing.T) {
-	logger := zap.NewNop()
-	projectReader := statsreader.NewProjectReader([]statsreader.CompositeReader{}, logger)
-
-	receiver := &googleCloudSpannerReceiver{
-		projectReaders: []statsreader.CompositeReader{projectReader},
-	}
-
-	ctx := context.Background()
-	ctx, receiver.cancel = context.WithCancel(ctx)
-
-	err := receiver.Shutdown(ctx)
-
-	require.NoError(t, err)
-}
-
-func TestMetricName(t *testing.T) {
-	md := pdata.NewMetrics()
-	rms := md.ResourceMetrics()
-	rm := rms.AppendEmpty()
-
-	ilms := rm.InstrumentationLibraryMetrics()
-	ilm := ilms.AppendEmpty()
-	metric := ilm.Metrics().AppendEmpty()
-	metric.SetName("testMetric1")
-	metric = ilm.Metrics().AppendEmpty()
-	metric.SetName("testMetric2")
-
-	metricName := metricName(md)
-
-	assert.Equal(t, "testMetric1,testMetric2", metricName)
 }

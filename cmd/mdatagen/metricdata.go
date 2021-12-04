@@ -16,6 +16,7 @@ package main
 
 import (
 	"fmt"
+	"strings"
 )
 
 var (
@@ -24,47 +25,12 @@ var (
 	_ MetricData = &histogram{}
 )
 
-type ymlMetricData struct {
-	MetricData `yaml:"-"`
-}
-
-// UnmarshalYAML converts the metrics.data map based on metrics.data.type.
-func (e *ymlMetricData) UnmarshalYAML(unmarshal func(interface{}) error) error {
-	var m struct {
-		Type string `yaml:"type"`
-	}
-
-	if err := unmarshal(&m); err != nil {
-		return err
-	}
-
-	var md MetricData
-
-	switch m.Type {
-	case "gauge":
-		md = &gauge{}
-	case "sum":
-		md = &sum{}
-	case "histogram":
-		md = &histogram{}
-	default:
-		return fmt.Errorf("metric data %q type invalid", m.Type)
-	}
-
-	if err := unmarshal(md); err != nil {
-		return fmt.Errorf("unable to unmarshal data for type %q: %v", m.Type, err)
-	}
-
-	e.MetricData = md
-
-	return nil
-}
-
 // MetricData is generic interface for all metric datatypes.
 type MetricData interface {
 	Type() string
 	HasMonotonic() bool
 	HasAggregated() bool
+	HasNumberDataPoints() bool
 }
 
 // Aggregated defines a metric aggregation type.
@@ -92,6 +58,30 @@ type Mono struct {
 	Monotonic bool `yaml:"monotonic"`
 }
 
+// NumberDataPoints defines the metric number type.
+type NumberDataPoints struct {
+	// Type is type of the metric number, options are "double", "int".
+	// TODO: Add validation once the metric number type added to all metadata files.
+	NumberType string `yaml:"number_type"`
+}
+
+// Type returns name of the datapoint type.
+func (ndp NumberDataPoints) Type() string {
+	return strings.Title(ndp.NumberType)
+}
+
+// BasicType returns name of a golang basic type for the datapoint type.
+func (ndp NumberDataPoints) BasicType() string {
+	switch ndp.NumberType {
+	case "int":
+		return "int64"
+	case "double":
+		return "float64"
+	default:
+		panic(fmt.Sprintf("unknown number data point type: %v", ndp.NumberType))
+	}
+}
+
 type gauge struct {
 }
 
@@ -107,9 +97,14 @@ func (d gauge) HasAggregated() bool {
 	return false
 }
 
+func (d gauge) HasNumberDataPoints() bool {
+	return true
+}
+
 type sum struct {
-	Aggregated `yaml:",inline"`
-	Mono       `yaml:",inline"`
+	Aggregated       `yaml:",inline"`
+	Mono             `yaml:",inline"`
+	NumberDataPoints `yaml:",inline"`
 }
 
 func (d sum) Type() string {
@@ -121,6 +116,10 @@ func (d sum) HasMonotonic() bool {
 }
 
 func (d sum) HasAggregated() bool {
+	return true
+}
+
+func (d sum) HasNumberDataPoints() bool {
 	return true
 }
 
@@ -138,4 +137,8 @@ func (d histogram) HasMonotonic() bool {
 
 func (d histogram) HasAggregated() bool {
 	return true
+}
+
+func (d histogram) HasNumberDataPoints() bool {
+	return false
 }

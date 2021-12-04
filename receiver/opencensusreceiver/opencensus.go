@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package opencensusreceiver
+package opencensusreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/opencensusreceiver"
 
 import (
 	"context"
@@ -250,12 +250,12 @@ func (ocr *ocReceiver) startServer(host component.Host) error {
 
 	httpL := m.Match(cmux.Any())
 	go func() {
-		if errGrpc := ocr.serverGRPC.Serve(grpcL); errGrpc != nil {
+		if errGrpc := ocr.serverGRPC.Serve(grpcL); !errors.Is(errGrpc, grpc.ErrServerStopped) && errGrpc != nil {
 			host.ReportFatalError(errGrpc)
 		}
 	}()
 	go func() {
-		if errHTTP := ocr.httpServer().Serve(httpL); errHTTP != nil && errHTTP != http.ErrServerClosed {
+		if errHTTP := ocr.httpServer().Serve(httpL); !errors.Is(errHTTP, http.ErrServerClosed) && errHTTP != nil {
 			host.ReportFatalError(errHTTP)
 		}
 	}()

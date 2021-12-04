@@ -16,30 +16,36 @@ package statsreader
 
 import (
 	"context"
+	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/model/pdata"
-	"go.uber.org/zap"
+	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/require"
+	"go.uber.org/zap/zaptest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudspannerreceiver/internal/metadata"
 )
 
 type mockCompositeReader struct {
+	mock.Mock
 }
 
-func (tcr mockCompositeReader) Name() string {
+func (r *mockCompositeReader) Name() string {
 	return "mockCompositeReader"
 }
 
-func (tcr mockCompositeReader) Read(_ context.Context) []pdata.Metrics {
-	return []pdata.Metrics{pdata.NewMetrics()}
+func (r *mockCompositeReader) Read(ctx context.Context) ([]*metadata.MetricsDataPoint, error) {
+	args := r.Called(ctx)
+	return args.Get(0).([]*metadata.MetricsDataPoint), args.Error(1)
 }
 
-func (tcr mockCompositeReader) Shutdown() {
+func (r *mockCompositeReader) Shutdown() {
 	// Do nothing
 }
 
 func TestNewProjectReader(t *testing.T) {
-	logger := zap.NewNop()
+	logger := zaptest.NewLogger(t)
 	var databaseReaders []CompositeReader
 
 	reader := NewProjectReader(databaseReaders, logger)
@@ -51,9 +57,9 @@ func TestNewProjectReader(t *testing.T) {
 }
 
 func TestProjectReader_Shutdown(t *testing.T) {
-	logger := zap.NewNop()
+	logger := zaptest.NewLogger(t)
 
-	databaseReaders := []CompositeReader{mockCompositeReader{}}
+	databaseReaders := []CompositeReader{&mockCompositeReader{}}
 
 	reader := ProjectReader{
 		databaseReaders: databaseReaders,
@@ -65,25 +71,43 @@ func TestProjectReader_Shutdown(t *testing.T) {
 
 func TestProjectReader_Read(t *testing.T) {
 	ctx := context.Background()
-	logger := zap.NewNop()
-
-	databaseReaders := []CompositeReader{mockCompositeReader{}}
-
-	reader := ProjectReader{
-		databaseReaders: databaseReaders,
-		logger:          logger,
+	logger := zaptest.NewLogger(t)
+	testCases := map[string]struct {
+		expectedError error
+	}{
+		"Happy path":     {nil},
+		"Error occurred": {errors.New("read error")},
 	}
-	defer reader.Shutdown()
 
-	metrics := reader.Read(ctx)
+	for name, testCase := range testCases {
+		t.Run(name, func(t *testing.T) {
+			compositeReader := &mockCompositeReader{}
+			databaseReaders := []CompositeReader{compositeReader}
+			reader := ProjectReader{
+				databaseReaders: databaseReaders,
+				logger:          logger,
+			}
+			defer reader.Shutdown()
 
-	assert.Equal(t, 1, len(metrics))
+			compositeReader.On("Read", ctx).Return([]*metadata.MetricsDataPoint{}, testCase.expectedError)
+
+			_, err := reader.Read(ctx)
+
+			compositeReader.AssertExpectations(t)
+
+			if testCase.expectedError != nil {
+				require.Error(t, err)
+			} else {
+				require.NoError(t, err)
+			}
+		})
+	}
 }
 
 func TestProjectReader_Name(t *testing.T) {
-	logger := zap.NewNop()
+	logger := zaptest.NewLogger(t)
 
-	databaseReader := mockCompositeReader{}
+	databaseReader := &mockCompositeReader{}
 	databaseReaders := []CompositeReader{databaseReader}
 
 	reader := ProjectReader{

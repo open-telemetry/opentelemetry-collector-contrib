@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package statsreader
+package statsreader // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudspannerreceiver/internal/statsreader"
 
 import "time"
 
@@ -61,4 +61,8 @@ func pullTimestampsWithDifference(lowerBound time.Time, upperBound time.Time, di
 
 func shiftToStartOfMinute(now time.Time) time.Time {
 	return time.Date(now.Year(), now.Month(), now.Day(), now.Hour(), now.Minute(), 0, 0, now.Location())
+}
+
+func (g *timestampsGenerator) isBackfillExecution(lastPullTimestamp time.Time) bool {
+	return lastPullTimestamp.IsZero() && g.backfillEnabled
 }

@@ -2426,8 +2426,7 @@ func generateTestMetrics(tm testMetric) pdata.Metrics {
 	now := time.Now()
 
 	rm := md.ResourceMetrics().AppendEmpty()
-
-	rm.Resource().Attributes().InitFromMap(tm.resourceAttributeMap)
+	pdata.NewAttributeMapFromMap(tm.resourceAttributeMap).CopyTo(rm.Resource().Attributes())
 	ms := rm.InstrumentationLibraryMetrics().AppendEmpty().Metrics()
 
 	for i, name := range tm.metricNames {
@@ -2438,7 +2437,7 @@ func generateTestMetrics(tm testMetric) pdata.Metrics {
 			dp := m.Gauge().DataPoints().AppendEmpty()
 			dp.SetTimestamp(pdata.NewTimestampFromTime(now.Add(10 * time.Second)))
 			dp.SetDoubleVal(value)
-			dp.Attributes().InitFromMap(tm.attributeMap)
+			pdata.NewAttributeMapFromMap(tm.attributeMap).CopyTo(dp.Attributes())
 		}
 	}
 	return md

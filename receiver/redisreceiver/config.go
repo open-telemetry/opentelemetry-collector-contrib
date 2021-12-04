@@ -12,9 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package redisreceiver
+package redisreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/redisreceiver"
 
 import (
+	"go.opentelemetry.io/collector/config/confignet"
+	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 )
 
@@ -22,11 +24,13 @@ type Config struct {
 	scraperhelper.ScraperControllerSettings `mapstructure:",squash"`
 	// TODO: Use one of the configs from core.
 	// The target endpoint.
-	Endpoint string `mapstructure:"endpoint"`
+	confignet.NetAddr `mapstructure:",squash"`
 
 	// TODO allow users to add additional resource key value pairs?
 
 	// Optional password. Must match the password specified in the
 	// requirepass server configuration option.
 	Password string `mapstructure:"password"`
+
+	TLS configtls.TLSClientSetting `mapstructure:"tls,omitempty"`
 }

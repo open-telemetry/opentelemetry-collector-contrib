@@ -21,7 +21,10 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/model/pdata"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest/observer"
 )
 
 func TestMetricsConsumerNormal(t *testing.T) {
@@ -29,16 +32,18 @@ func TestMetricsConsumerNormal(t *testing.T) {
 	sum1 := newMetric("sum1", pdata.MetricDataTypeSum)
 	gauge2 := newMetric("gauge2", pdata.MetricDataTypeGauge)
 	sum2 := newMetric("sum2", pdata.MetricDataTypeSum)
-	mockGaugeConsumer := &mockMetricConsumer{typ: pdata.MetricDataTypeGauge}
-	mockSumConsumer := &mockMetricConsumer{typ: pdata.MetricDataTypeSum}
+	mockGaugeConsumer := &mockTypedMetricConsumer{typ: pdata.MetricDataTypeGauge}
+	mockSumConsumer := &mockTypedMetricConsumer{typ: pdata.MetricDataTypeSum}
 	sender := &mockFlushCloser{}
 	metrics := constructMetrics(gauge1, sum1, gauge2, sum2)
-	consumer := newMetricsConsumer([]metricConsumer{mockGaugeConsumer, mockSumConsumer}, sender)
+	consumer := newMetricsConsumer([]typedMetricConsumer{mockGaugeConsumer, mockSumConsumer}, sender)
 
 	assert.NoError(t, consumer.Consume(context.Background(), metrics))
 
 	assert.ElementsMatch(t, []string{"gauge1", "gauge2"}, mockGaugeConsumer.names)
 	assert.ElementsMatch(t, []string{"sum1", "sum2"}, mockSumConsumer.names)
+	assert.Equal(t, 1, mockGaugeConsumer.pushInternalMetricsCallCount)
+	assert.Equal(t, 1, mockSumConsumer.pushInternalMetricsCallCount)
 	assert.Equal(t, 1, sender.numFlushCalls)
 	assert.Equal(t, 0, sender.numCloseCalls)
 
@@ -56,11 +61,11 @@ func TestMetricsConsumerNone(t *testing.T) {
 }
 
 func TestNewMetricsConsumerPanicsWithDuplicateMetricType(t *testing.T) {
-	mockGaugeConsumer1 := &mockMetricConsumer{typ: pdata.MetricDataTypeGauge}
-	mockGaugeConsumer2 := &mockMetricConsumer{typ: pdata.MetricDataTypeGauge}
+	mockGaugeConsumer1 := &mockTypedMetricConsumer{typ: pdata.MetricDataTypeGauge}
+	mockGaugeConsumer2 := &mockTypedMetricConsumer{typ: pdata.MetricDataTypeGauge}
 
 	assert.Panics(t, func() {
-		newMetricsConsumer([]metricConsumer{mockGaugeConsumer1, mockGaugeConsumer2}, nil)
+		newMetricsConsumer([]typedMetricConsumer{mockGaugeConsumer1, mockGaugeConsumer2}, nil)
 	})
 }
 
@@ -83,19 +88,32 @@ func TestMetricsConsumerErrorsWithUnregisteredMetricType(t *testing.T) {
 
 func TestMetricsConsumerErrorConsuming(t *testing.T) {
 	gauge1 := newMetric("gauge1", pdata.MetricDataTypeGauge)
-	mockGaugeConsumer := &mockMetricConsumer{typ: pdata.MetricDataTypeGauge, errorOnConsume: true}
+	mockGaugeConsumer := &mockTypedMetricConsumer{typ: pdata.MetricDataTypeGauge, errorOnConsume: true}
 	metrics := constructMetrics(gauge1)
-	consumer := newMetricsConsumer([]metricConsumer{mockGaugeConsumer}, nil)
+	consumer := newMetricsConsumer([]typedMetricConsumer{mockGaugeConsumer}, nil)
 
 	assert.Error(t, consumer.Consume(context.Background(), metrics))
 	assert.Len(t, mockGaugeConsumer.names, 1)
+	assert.Equal(t, 1, mockGaugeConsumer.pushInternalMetricsCallCount)
+}
+
+func TestMetricsConsumerErrorConsumingInternal(t *testing.T) {
+	gauge1 := newMetric("gauge1", pdata.MetricDataTypeGauge)
+	mockGaugeConsumer := &mockTypedMetricConsumer{
+		typ: pdata.MetricDataTypeGauge, errorOnPushInternalMetrics: true}
+	metrics := constructMetrics(gauge1)
+	consumer := newMetricsConsumer([]typedMetricConsumer{mockGaugeConsumer}, nil)
+
+	assert.Error(t, consumer.Consume(context.Background(), metrics))
+	assert.Len(t, mockGaugeConsumer.names, 1)
+	assert.Equal(t, 1, mockGaugeConsumer.pushInternalMetricsCallCount)
 }
 
 func TestMetricsConsumerRespectContext(t *testing.T) {
 	sender := &mockFlushCloser{}
 	gauge1 := newMetric("gauge1", pdata.MetricDataTypeGauge)
-	mockGaugeConsumer := &mockMetricConsumer{typ: pdata.MetricDataTypeGauge}
-	consumer := newMetricsConsumer([]metricConsumer{mockGaugeConsumer}, sender)
+	mockGaugeConsumer := &mockTypedMetricConsumer{typ: pdata.MetricDataTypeGauge}
+	consumer := newMetricsConsumer([]typedMetricConsumer{mockGaugeConsumer}, sender)
 	ctx, cancel := context.WithCancel(context.Background())
 
 	cancel()
@@ -103,6 +121,7 @@ func TestMetricsConsumerRespectContext(t *testing.T) {
 
 	assert.Zero(t, sender.numFlushCalls)
 	assert.Empty(t, mockGaugeConsumer.names)
+	assert.Zero(t, mockGaugeConsumer.pushInternalMetricsCallCount)
 }
 
 func TestGaugeConsumerNormal(t *testing.T) {
@@ -113,7 +132,7 @@ func TestGaugeConsumerErrorSending(t *testing.T) {
 	verifyGaugeConsumer(t, true)
 }
 
-func TestGaugeConsumerBadValue(t *testing.T) {
+func TestGaugeConsumerMissingValueNoLogging(t *testing.T) {
 	metric := newMetric("bad.metric", pdata.MetricDataTypeGauge)
 	dataPoints := metric.Gauge().DataPoints()
 	dataPoints.EnsureCapacity(1)
@@ -124,11 +143,254 @@ func TestGaugeConsumerBadValue(t *testing.T) {
 		dataPoints,
 	)
 	sender := &mockGaugeSender{}
-	consumer := newGaugeConsumer(sender)
+	consumer := newGaugeConsumer(sender, nil)
 	var errs []error
+
 	consumer.Consume(metric, &errs)
-	assert.Len(t, errs, 1)
+	consumer.PushInternalMetrics(&errs)
+
+	assert.Empty(t, errs)
 	assert.Empty(t, sender.metrics)
+}
+
+func TestGaugeConsumerMissingValue(t *testing.T) {
+	metric := newMetric("bad.metric", pdata.MetricDataTypeGauge)
+	dataPoints := metric.Gauge().DataPoints()
+	dataPoints.EnsureCapacity(1)
+	addDataPoint(
+		nil,
+		1633123456,
+		nil,
+		dataPoints,
+	)
+	// Sending to tanzu observability should fail
+	sender := &mockGaugeSender{errorOnSend: true}
+	observedZapCore, observedLogs := observer.New(zap.DebugLevel)
+	consumer := newGaugeConsumer(sender, &consumerOptions{
+		Logger:                zap.New(observedZapCore),
+		ReportInternalMetrics: true,
+	})
+	var errs []error
+	expectedMissingValueCount := 2
+	for i := 0; i < expectedMissingValueCount; i++ {
+		// This call to Consume does not emit any metrics to tanzuobservability
+		// because the metric is missing its value.
+		consumer.Consume(metric, &errs)
+	}
+	assert.Empty(t, errs)
+
+	// This call adds one error to errs because it emits a metric to
+	// tanzu observability and emitting there is set up to fail.
+	consumer.PushInternalMetrics(&errs)
+
+	// One error from emitting the internal metric
+	assert.Len(t, errs, 1)
+	// Only the internal metric was sent
+	require.Len(t, sender.metrics, 1)
+	assert.Equal(t, tobsMetric{
+		Name:  missingValueMetricName,
+		Value: float64(expectedMissingValueCount),
+		Tags:  map[string]string{"type": "gauge"}},
+		sender.metrics[0])
+	allLogs := observedLogs.All()
+	assert.Len(t, allLogs, expectedMissingValueCount)
+}
+
+func TestSumConsumerDelta(t *testing.T) {
+	deltaMetric := newMetric(
+		"test.delta.metric", pdata.MetricDataTypeSum)
+	sum := deltaMetric.Sum()
+	sum.SetAggregationTemporality(pdata.MetricAggregationTemporalityDelta)
+	dataPoints := sum.DataPoints()
+	dataPoints.EnsureCapacity(2)
+	addDataPoint(
+		35,
+		1635205001,
+		map[string]interface{}{
+			"env": "dev",
+		},
+		dataPoints,
+	)
+	addDataPoint(
+		52.375,
+		1635205002,
+		map[string]interface{}{
+			"env": "prod",
+		},
+		dataPoints,
+	)
+
+	sender := &mockSumSender{}
+	consumer := newSumConsumer(sender, nil)
+	assert.Equal(t, pdata.MetricDataTypeSum, consumer.Type())
+	var errs []error
+
+	// delta sums get treated as delta counters
+	consumer.Consume(deltaMetric, &errs)
+	consumer.PushInternalMetrics(&errs)
+
+	expected := []tobsMetric{
+		{
+			Name:  "test.delta.metric",
+			Value: 35.0,
+			Tags:  map[string]string{"env": "dev"},
+		},
+		{
+			Name:  "test.delta.metric",
+			Value: 52.375,
+			Tags:  map[string]string{"env": "prod"},
+		},
+	}
+	assert.ElementsMatch(t, expected, sender.deltaMetrics)
+	assert.Empty(t, sender.metrics)
+	assert.Empty(t, errs)
+}
+
+func TestSumConsumerErrorOnSend(t *testing.T) {
+	deltaMetric := newMetric(
+		"test.delta.metric", pdata.MetricDataTypeSum)
+	sum := deltaMetric.Sum()
+	sum.SetAggregationTemporality(pdata.MetricAggregationTemporalityDelta)
+	dataPoints := sum.DataPoints()
+	dataPoints.EnsureCapacity(2)
+	addDataPoint(
+		35,
+		1635205001,
+		map[string]interface{}{
+			"env": "dev",
+		},
+		dataPoints,
+	)
+	addDataPoint(
+		52.375,
+		1635205002,
+		map[string]interface{}{
+			"env": "prod",
+		},
+		dataPoints,
+	)
+
+	sender := &mockSumSender{errorOnSend: true}
+	consumer := newSumConsumer(sender, nil)
+	assert.Equal(t, pdata.MetricDataTypeSum, consumer.Type())
+	var errs []error
+
+	// delta sums get treated as delta counters
+	consumer.Consume(deltaMetric, &errs)
+	consumer.PushInternalMetrics(&errs)
+
+	assert.Len(t, errs, 2)
+}
+
+func TestSumConsumerCumulative(t *testing.T) {
+	cumulativeMetric := newMetric(
+		"test.cumulative.metric", pdata.MetricDataTypeSum)
+	sum := cumulativeMetric.Sum()
+	sum.SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
+	dataPoints := sum.DataPoints()
+	dataPoints.EnsureCapacity(1)
+	addDataPoint(
+		62.25,
+		1634205001,
+		map[string]interface{}{
+			"env": "dev",
+		},
+		dataPoints,
+	)
+	sender := &mockSumSender{}
+	consumer := newSumConsumer(sender, nil)
+	assert.Equal(t, pdata.MetricDataTypeSum, consumer.Type())
+	var errs []error
+
+	// cumulative sums get treated as regular wavefront metrics
+	consumer.Consume(cumulativeMetric, &errs)
+	consumer.PushInternalMetrics(&errs)
+
+	expected := []tobsMetric{
+		{
+			Name:  "test.cumulative.metric",
+			Value: 62.25,
+			Ts:    1634205001,
+			Tags:  map[string]string{"env": "dev"},
+		},
+	}
+	assert.ElementsMatch(t, expected, sender.metrics)
+	assert.Empty(t, sender.deltaMetrics)
+	assert.Empty(t, errs)
+}
+
+func TestSumConsumerUnspecified(t *testing.T) {
+	cumulativeMetric := newMetric(
+		"test.unspecified.metric", pdata.MetricDataTypeSum)
+	sum := cumulativeMetric.Sum()
+	sum.SetAggregationTemporality(pdata.MetricAggregationTemporalityUnspecified)
+	dataPoints := sum.DataPoints()
+	dataPoints.EnsureCapacity(1)
+	addDataPoint(
+		72.25,
+		1634206001,
+		map[string]interface{}{
+			"env": "qa",
+		},
+		dataPoints,
+	)
+	sender := &mockSumSender{}
+	consumer := newSumConsumer(sender, nil)
+	assert.Equal(t, pdata.MetricDataTypeSum, consumer.Type())
+	var errs []error
+
+	// unspecified sums get treated as regular wavefront metrics
+	consumer.Consume(cumulativeMetric, &errs)
+	consumer.PushInternalMetrics(&errs)
+
+	expected := []tobsMetric{
+		{
+			Name:  "test.unspecified.metric",
+			Value: 72.25,
+			Ts:    1634206001,
+			Tags:  map[string]string{"env": "qa"},
+		},
+	}
+	assert.ElementsMatch(t, expected, sender.metrics)
+	assert.Empty(t, sender.deltaMetrics)
+	assert.Empty(t, errs)
+}
+
+func TestSumConsumerMissingValue(t *testing.T) {
+	metric := newMetric("bad.metric", pdata.MetricDataTypeSum)
+	sum := metric.Sum()
+	sum.SetAggregationTemporality(pdata.MetricAggregationTemporalityDelta)
+	dataPoints := sum.DataPoints()
+	dataPoints.EnsureCapacity(1)
+	addDataPoint(
+		nil,
+		1633123456,
+		nil,
+		dataPoints,
+	)
+	sender := &mockSumSender{}
+	observedZapCore, observedLogs := observer.New(zap.DebugLevel)
+	consumer := newSumConsumer(sender, &consumerOptions{
+		Logger:                zap.New(observedZapCore),
+		ReportInternalMetrics: true,
+	})
+	var errs []error
+
+	expectedMissingValueCount := 2
+	for i := 0; i < expectedMissingValueCount; i++ {
+		consumer.Consume(metric, &errs)
+	}
+	consumer.PushInternalMetrics(&errs)
+
+	assert.Len(t, errs, 0)
+	assert.Empty(t, sender.deltaMetrics)
+	assert.Contains(t, sender.metrics, tobsMetric{
+		Name:  missingValueMetricName,
+		Value: float64(expectedMissingValueCount),
+		Tags:  map[string]string{"type": "sum"},
+	})
+	allLogs := observedLogs.All()
+	assert.Len(t, allLogs, expectedMissingValueCount)
 }
 
 func verifyGaugeConsumer(t *testing.T, errorOnSend bool) {
@@ -162,11 +424,12 @@ func verifyGaugeConsumer(t *testing.T, errorOnSend bool) {
 		},
 	}
 	sender := &mockGaugeSender{errorOnSend: errorOnSend}
-	consumer := newGaugeConsumer(sender)
+	consumer := newGaugeConsumer(sender, nil)
 
 	assert.Equal(t, pdata.MetricDataTypeGauge, consumer.Type())
 	var errs []error
 	consumer.Consume(metric, &errs)
+	consumer.PushInternalMetrics(&errs)
 	assert.ElementsMatch(t, expected, sender.metrics)
 	if errorOnSend {
 		assert.Len(t, errs, len(expected))
@@ -199,13 +462,14 @@ func addDataPoint(
 	value interface{},
 	ts int64,
 	tags map[string]interface{},
-	slice pdata.NumberDataPointSlice) {
+	slice pdata.NumberDataPointSlice,
+) {
 	dataPoint := slice.AppendEmpty()
 	if value != nil {
 		setDataPointValue(value, dataPoint)
 	}
 	setDataPointTimestamp(ts, dataPoint)
-	setTags(tags, dataPoint)
+	setTags(tags, dataPoint.Attributes())
 }
 
 func setDataPointTimestamp(ts int64, dataPoint pdata.NumberDataPoint) {
@@ -226,7 +490,7 @@ func setDataPointValue(value interface{}, dataPoint pdata.NumberDataPoint) {
 	}
 }
 
-func setTags(tags map[string]interface{}, dataPoint pdata.NumberDataPoint) {
+func setTags(tags map[string]interface{}, attributes pdata.AttributeMap) {
 	valueMap := make(map[string]pdata.AttributeValue, len(tags))
 	for key, value := range tags {
 		switch v := value.(type) {
@@ -243,7 +507,7 @@ func setTags(tags map[string]interface{}, dataPoint pdata.NumberDataPoint) {
 		}
 	}
 	attributeMap := pdata.NewAttributeMapFromMap(valueMap)
-	attributeMap.CopyTo(dataPoint.Attributes())
+	attributeMap.CopyTo(attributes)
 }
 
 type tobsMetric struct {
@@ -260,17 +524,14 @@ type mockGaugeSender struct {
 }
 
 func (m *mockGaugeSender) SendMetric(
-	name string, value float64, ts int64, source string, tags map[string]string) error {
-	tagsCopy := make(map[string]string, len(tags))
-	for k, v := range tags {
-		tagsCopy[k] = v
-	}
+	name string, value float64, ts int64, source string, tags map[string]string,
+) error {
 	m.metrics = append(m.metrics, tobsMetric{
 		Name:   name,
 		Value:  value,
 		Ts:     ts,
 		Source: source,
-		Tags:   tagsCopy,
+		Tags:   copyTags(tags),
 	})
 	if m.errorOnSend {
 		return errors.New("error sending")
@@ -278,19 +539,28 @@ func (m *mockGaugeSender) SendMetric(
 	return nil
 }
 
-type mockMetricConsumer struct {
-	typ            pdata.MetricDataType
-	errorOnConsume bool
-	names          []string
+type mockTypedMetricConsumer struct {
+	typ                          pdata.MetricDataType
+	errorOnConsume               bool
+	errorOnPushInternalMetrics   bool
+	names                        []string
+	pushInternalMetricsCallCount int
 }
 
-func (m *mockMetricConsumer) Type() pdata.MetricDataType {
+func (m *mockTypedMetricConsumer) Type() pdata.MetricDataType {
 	return m.typ
 }
 
-func (m *mockMetricConsumer) Consume(metric pdata.Metric, errs *[]error) {
+func (m *mockTypedMetricConsumer) Consume(metric pdata.Metric, errs *[]error) {
 	m.names = append(m.names, metric.Name())
 	if m.errorOnConsume {
+		*errs = append(*errs, errors.New("error in consume"))
+	}
+}
+
+func (m *mockTypedMetricConsumer) PushInternalMetrics(errs *[]error) {
+	m.pushInternalMetricsCallCount++
+	if m.errorOnPushInternalMetrics {
 		*errs = append(*errs, errors.New("error in consume"))
 	}
 }
@@ -311,4 +581,52 @@ func (m *mockFlushCloser) Flush() error {
 
 func (m *mockFlushCloser) Close() {
 	m.numCloseCalls++
+}
+
+func copyTags(tags map[string]string) map[string]string {
+	if tags == nil {
+		return nil
+	}
+	tagsCopy := make(map[string]string, len(tags))
+	for k, v := range tags {
+		tagsCopy[k] = v
+	}
+	return tagsCopy
+}
+
+type mockSumSender struct {
+	errorOnSend  bool
+	metrics      []tobsMetric
+	deltaMetrics []tobsMetric
+}
+
+func (m *mockSumSender) SendMetric(
+	name string, value float64, ts int64, source string, tags map[string]string,
+) error {
+	m.metrics = append(m.metrics, tobsMetric{
+		Name:   name,
+		Value:  value,
+		Ts:     ts,
+		Source: source,
+		Tags:   copyTags(tags),
+	})
+	if m.errorOnSend {
+		return errors.New("error sending")
+	}
+	return nil
+}
+
+func (m *mockSumSender) SendDeltaCounter(
+	name string, value float64, source string, tags map[string]string,
+) error {
+	m.deltaMetrics = append(m.deltaMetrics, tobsMetric{
+		Name:   name,
+		Value:  value,
+		Source: source,
+		Tags:   copyTags(tags),
+	})
+	if m.errorOnSend {
+		return errors.New("error sending")
+	}
+	return nil
 }

@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package awsecscontainermetrics
+package awsecscontainermetrics // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsecscontainermetricsreceiver/internal/awsecscontainermetrics"
 
 // Constant attributes for aws ecs container metrics.
 const (
@@ -39,10 +39,6 @@ const (
 
 	taskPrefix      = "ecs.task."
 	containerPrefix = "container."
-
-	EndpointEnvKey   = "ECS_CONTAINER_METADATA_URI_V4"
-	taskStatsPath    = "/task/stats"
-	taskMetadataPath = "/task"
 
 	attributeMemoryUsage    = "memory.usage"
 	attributeMemoryMaxUsage = "memory.usage.max"

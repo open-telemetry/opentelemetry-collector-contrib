@@ -1,0 +1,22 @@
+name: metricreceiver
+attributes:
+  freeFormAttribute:
+    description: Attribute that can take on any value.
+
+  freeFormAttributeWithValue:
+    value: state
+    description: Attribute that has alternate value set.
+
+  enumAttribute:
+    description: Attribute with a known set of values.
+    enum: [red, green, blue]
+
+metrics:
+  system.cpu.time:
+    description: Total CPU seconds broken down by different states.
+    extended_documentation: Additional information on CPU Time can be found [here](https://en.wikipedia.org/wiki/CPU_time).
+    unit: s
+    sum:
+      monotonic: true
+      aggregation: cumulative
+    attributes: [freeFormAttribute, freeFormAttributeWithValue, enumAttribute]

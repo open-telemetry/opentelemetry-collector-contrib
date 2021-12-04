@@ -29,18 +29,19 @@ name: metricreceiver
 metrics:
   system.cpu.time:
     description: Total CPU seconds broken down by different states.
-    extended_description: Additional information on CPU Time can be found [here](https://en.wikipedia.org/wiki/CPU_time).
+    extended_documentation: Additional information on CPU Time can be found [here](https://en.wikipedia.org/wiki/CPU_time).
     unit: s
-    data:
-      type: sum
+    sum:
       aggregation: cumulative
-    labels: []
+      number_type: double
+    attributes: []
 `
 )
 
 func Test_runContents(t *testing.T) {
 	type args struct {
-		yml string
+		yml       string
+		useExpGen bool
 	}
 	tests := []struct {
 		name    string
@@ -50,12 +51,17 @@ func Test_runContents(t *testing.T) {
 	}{
 		{
 			name: "valid metadata",
-			args: args{validMetadata},
+			args: args{validMetadata, false},
+			want: "",
+		},
+		{
+			name: "valid metadata v2",
+			args: args{validMetadata, true},
 			want: "",
 		},
 		{
 			name:    "invalid yaml",
-			args:    args{"invalid"},
+			args:    args{"invalid", false},
 			want:    "",
 			wantErr: "cannot unmarshal",
 		},
@@ -71,13 +77,19 @@ func Test_runContents(t *testing.T) {
 			metadataFile := path.Join(tmpdir, "metadata.yaml")
 			require.NoError(t, ioutil.WriteFile(metadataFile, []byte(tt.args.yml), 0600))
 
-			err = run(metadataFile)
+			err = run(metadataFile, tt.args.useExpGen)
 
 			if tt.wantErr != "" {
 				require.Regexp(t, tt.wantErr, err)
 			} else {
 				require.NoError(t, err)
-				require.FileExists(t, path.Join(tmpdir, "internal/metadata/generated_metrics.go"))
+
+				genFilePath := path.Join(tmpdir, "internal/metadata/generated_metrics.go")
+				if tt.args.useExpGen {
+					genFilePath = path.Join(tmpdir, "internal/metadata/generated_metrics_v2.go")
+				}
+				require.FileExists(t, genFilePath)
+
 				require.FileExists(t, path.Join(tmpdir, "documentation.md"))
 			}
 		})
@@ -106,7 +118,7 @@ func Test_run(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if err := run(tt.args.ymlPath); (err != nil) != tt.wantErr {
+			if err := run(tt.args.ymlPath, false); (err != nil) != tt.wantErr {
 				t.Errorf("run() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})

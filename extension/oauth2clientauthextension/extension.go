@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package oauth2clientauthextension
+package oauth2clientauthextension // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/oauth2clientauthextension"
 
 import (
 	"context"
@@ -35,11 +35,8 @@ type ClientCredentialsAuthenticator struct {
 	client            *http.Client
 }
 
-// ClientCredentialsAuthenticator implements both HTTPClientAuth and GRPCClientAuth
-var (
-	_ configauth.HTTPClientAuthenticator = (*ClientCredentialsAuthenticator)(nil)
-	_ configauth.GRPCClientAuthenticator = (*ClientCredentialsAuthenticator)(nil)
-)
+// ClientCredentialsAuthenticator implements ClientAuthenticator
+var _ configauth.ClientAuthenticator = (*ClientCredentialsAuthenticator)(nil)
 
 func newClientCredentialsExtension(cfg *Config, logger *zap.Logger) (*ClientCredentialsAuthenticator, error) {
 	if cfg.ClientID == "" {

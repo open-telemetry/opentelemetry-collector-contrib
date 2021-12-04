@@ -80,10 +80,10 @@ func TestCollectEndpointsDefaultConfig(t *testing.T) {
 	c := containerJSON(t)
 	cEndpoints := obvs.endpointsForContainer(&c)
 
-	want := []observer.Endpoint{
-		{
+	want := map[observer.EndpointID]observer.Endpoint{
+		"babc5a6d7af2a48e7f52e1da26047024dcf98b737e754c9c3459bb84d1e4f80c:8080": {
 			ID:     "babc5a6d7af2a48e7f52e1da26047024dcf98b737e754c9c3459bb84d1e4f80c:8080",
-			Target: "172.17.0.2",
+			Target: "172.17.0.2:80",
 			Details: &observer.Container{
 				Name:        "/agitated_wu",
 				Image:       "nginx",
@@ -102,7 +102,7 @@ func TestCollectEndpointsDefaultConfig(t *testing.T) {
 		},
 	}
 
-	require.Equal(t, cEndpoints, want)
+	require.Equal(t, want, cEndpoints)
 }
 
 func TestCollectEndpointsAllConfigSettings(t *testing.T) {
@@ -127,10 +127,10 @@ func TestCollectEndpointsAllConfigSettings(t *testing.T) {
 	c := containerJSON(t)
 	cEndpoints := obvs.endpointsForContainer(&c)
 
-	want := []observer.Endpoint{
-		{
+	want := map[observer.EndpointID]observer.Endpoint{
+		"babc5a6d7af2a48e7f52e1da26047024dcf98b737e754c9c3459bb84d1e4f80c:8080": {
 			ID:     "babc5a6d7af2a48e7f52e1da26047024dcf98b737e754c9c3459bb84d1e4f80c:8080",
-			Target: "127.0.0.1",
+			Target: "127.0.0.1:8080",
 			Details: &observer.Container{
 				Name:        "/agitated_wu",
 				Image:       "nginx",
@@ -149,7 +149,7 @@ func TestCollectEndpointsAllConfigSettings(t *testing.T) {
 		},
 	}
 
-	require.Equal(t, cEndpoints, want)
+	require.Equal(t, want, cEndpoints)
 }
 
 func TestCollectEndpointsUseHostnameIfPresent(t *testing.T) {
@@ -174,10 +174,10 @@ func TestCollectEndpointsUseHostnameIfPresent(t *testing.T) {
 	c := containerJSON(t)
 	cEndpoints := obvs.endpointsForContainer(&c)
 
-	want := []observer.Endpoint{
-		{
+	want := map[observer.EndpointID]observer.Endpoint{
+		"babc5a6d7af2a48e7f52e1da26047024dcf98b737e754c9c3459bb84d1e4f80c:8080": {
 			ID:     "babc5a6d7af2a48e7f52e1da26047024dcf98b737e754c9c3459bb84d1e4f80c:8080",
-			Target: "babc5a6d7af2",
+			Target: "babc5a6d7af2:80",
 			Details: &observer.Container{
 				Name:        "/agitated_wu",
 				Image:       "nginx",
@@ -196,7 +196,7 @@ func TestCollectEndpointsUseHostnameIfPresent(t *testing.T) {
 		},
 	}
 
-	require.Equal(t, cEndpoints, want)
+	require.Equal(t, want, cEndpoints)
 }
 
 func TestCollectEndpointsUseHostBindings(t *testing.T) {
@@ -221,10 +221,10 @@ func TestCollectEndpointsUseHostBindings(t *testing.T) {
 	c := containerJSON(t)
 	cEndpoints := obvs.endpointsForContainer(&c)
 
-	want := []observer.Endpoint{
-		{
+	want := map[observer.EndpointID]observer.Endpoint{
+		"babc5a6d7af2a48e7f52e1da26047024dcf98b737e754c9c3459bb84d1e4f80c:8080": {
 			ID:     "babc5a6d7af2a48e7f52e1da26047024dcf98b737e754c9c3459bb84d1e4f80c:8080",
-			Target: "127.0.0.1",
+			Target: "127.0.0.1:8080",
 			Details: &observer.Container{
 				Name:        "/agitated_wu",
 				Image:       "nginx",
@@ -243,7 +243,7 @@ func TestCollectEndpointsUseHostBindings(t *testing.T) {
 		},
 	}
 
-	require.Equal(t, cEndpoints, want)
+	require.Equal(t, want, cEndpoints)
 }
 
 func TestCollectEndpointsIgnoreNonHostBindings(t *testing.T) {
@@ -268,10 +268,10 @@ func TestCollectEndpointsIgnoreNonHostBindings(t *testing.T) {
 	c := containerJSON(t)
 	cEndpoints := obvs.endpointsForContainer(&c)
 
-	want := []observer.Endpoint{
-		{
+	want := map[observer.EndpointID]observer.Endpoint{
+		"babc5a6d7af2a48e7f52e1da26047024dcf98b737e754c9c3459bb84d1e4f80c:8080": {
 			ID:     "babc5a6d7af2a48e7f52e1da26047024dcf98b737e754c9c3459bb84d1e4f80c:8080",
-			Target: "172.17.0.2",
+			Target: "172.17.0.2:80",
 			Details: &observer.Container{
 				Name:        "/agitated_wu",
 				Image:       "nginx",
@@ -290,5 +290,5 @@ func TestCollectEndpointsIgnoreNonHostBindings(t *testing.T) {
 		},
 	}
 
-	require.Equal(t, cEndpoints, want)
+	require.Equal(t, want, cEndpoints)
 }

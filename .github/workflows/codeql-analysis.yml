@@ -1,18 +1,8 @@
 name: "CodeQL Analysis"
 
 on:
-  workflow_dispatch:
-  schedule:
-    #        ┌───────────── minute (0 - 59)
-    #        │  ┌───────────── hour (0 - 23)
-    #        │  │ ┌───────────── day of the month (1 - 31)
-    #        │  │ │ ┌───────────── month (1 - 12 or JAN-DEC)
-    #        │  │ │ │ ┌───────────── day of the week (0 - 6 or SUN-SAT)
-    #        │  │ │ │ │
-    #        │  │ │ │ │
-    #        │  │ │ │ │
-    #        *  * * * *
-    - cron: '30 1 * * *'
+  push:
+    branches: [ main ]
 
 jobs:
   CodeQL-Build:
@@ -21,6 +11,11 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2
+        
+      - name: Set up Go
+        uses: actions/setup-go@v2.1.4
+        with:
+          go-version: 1.17
 
       # Initializes the CodeQL tools for scanning.
       - name: Initialize CodeQL

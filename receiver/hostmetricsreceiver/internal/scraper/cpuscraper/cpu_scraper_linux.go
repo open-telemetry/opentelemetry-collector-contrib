@@ -15,10 +15,10 @@
 //go:build linux
 // +build linux
 
-package cpuscraper
+package cpuscraper // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/cpuscraper"
 
 import (
-	"github.com/shirou/gopsutil/cpu"
+	"github.com/shirou/gopsutil/v3/cpu"
 	"go.opentelemetry.io/collector/model/pdata"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/cpuscraper/internal/metadata"
@@ -26,13 +26,13 @@ import (
 
 const cpuStatesLen = 8
 
-func appendCPUTimeStateDataPoints(ddps pdata.NumberDataPointSlice, startTime, now pdata.Timestamp, cpuTime cpu.TimesStat) {
-	initializeCPUTimeDataPoint(ddps.AppendEmpty(), startTime, now, cpuTime.CPU, metadata.LabelState.User, cpuTime.User)
-	initializeCPUTimeDataPoint(ddps.AppendEmpty(), startTime, now, cpuTime.CPU, metadata.LabelState.System, cpuTime.System)
-	initializeCPUTimeDataPoint(ddps.AppendEmpty(), startTime, now, cpuTime.CPU, metadata.LabelState.Idle, cpuTime.Idle)
-	initializeCPUTimeDataPoint(ddps.AppendEmpty(), startTime, now, cpuTime.CPU, metadata.LabelState.Interrupt, cpuTime.Irq)
-	initializeCPUTimeDataPoint(ddps.AppendEmpty(), startTime, now, cpuTime.CPU, metadata.LabelState.Nice, cpuTime.Nice)
-	initializeCPUTimeDataPoint(ddps.AppendEmpty(), startTime, now, cpuTime.CPU, metadata.LabelState.Softirq, cpuTime.Softirq)
-	initializeCPUTimeDataPoint(ddps.AppendEmpty(), startTime, now, cpuTime.CPU, metadata.LabelState.Steal, cpuTime.Steal)
-	initializeCPUTimeDataPoint(ddps.AppendEmpty(), startTime, now, cpuTime.CPU, metadata.LabelState.Wait, cpuTime.Iowait)
+func (s *scraper) recordCPUTimeStateDataPoints(now pdata.Timestamp, cpuTime cpu.TimesStat) {
+	s.mb.RecordSystemCPUTimeDataPoint(now, cpuTime.User, cpuTime.CPU, metadata.AttributeState.User)
+	s.mb.RecordSystemCPUTimeDataPoint(now, cpuTime.System, cpuTime.CPU, metadata.AttributeState.System)
+	s.mb.RecordSystemCPUTimeDataPoint(now, cpuTime.Idle, cpuTime.CPU, metadata.AttributeState.Idle)
+	s.mb.RecordSystemCPUTimeDataPoint(now, cpuTime.Irq, cpuTime.CPU, metadata.AttributeState.Interrupt)
+	s.mb.RecordSystemCPUTimeDataPoint(now, cpuTime.Nice, cpuTime.CPU, metadata.AttributeState.Nice)
+	s.mb.RecordSystemCPUTimeDataPoint(now, cpuTime.Softirq, cpuTime.CPU, metadata.AttributeState.Softirq)
+	s.mb.RecordSystemCPUTimeDataPoint(now, cpuTime.Steal, cpuTime.CPU, metadata.AttributeState.Steal)
+	s.mb.RecordSystemCPUTimeDataPoint(now, cpuTime.Iowait, cpuTime.CPU, metadata.AttributeState.Wait)
 }

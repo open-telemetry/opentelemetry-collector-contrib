@@ -14,7 +14,7 @@
 
 // Package googlecloudexporter contains the wrapper for OpenTelemetry-GoogleCloud
 // exporter to be used in opentelemetry-collector.
-package googlecloudexporter
+package googlecloudexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/googlecloudexporter"
 
 import (
 	"context"
@@ -53,7 +53,7 @@ func (te *traceExporter) Shutdown(ctx context.Context) error {
 func (me *metricsExporter) Shutdown(context.Context) error {
 	me.mexporter.Flush()
 	me.mexporter.StopMetricsExporter()
-	return nil
+	return me.mexporter.Close()
 }
 
 func setVersionInUserAgent(cfg *Config, version string) {

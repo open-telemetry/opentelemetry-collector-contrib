@@ -12,12 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package statsreader
+package statsreader // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudspannerreceiver/internal/statsreader"
 
 import (
 	"context"
 
-	"go.opentelemetry.io/collector/model/pdata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudspannerreceiver/internal/metadata"
 )
 
 type ReaderConfig struct {
@@ -27,16 +27,14 @@ type ReaderConfig struct {
 
 type Reader interface {
 	Name() string
-	Read(ctx context.Context) ([]pdata.Metrics, error)
+	Read(ctx context.Context) ([]*metadata.MetricsDataPoint, error)
 }
 
 // CompositeReader - this interface is used for the composition of multiple Reader(s).
-// Main differences between it and Reader are:
-// - Read method doesn't return error;
-// - this interface also has Shutdown method for performing some additional cleanup necessary for each Reader instance.
+// Main difference between it and Reader - this interface also has Shutdown method for performing some additional
+// cleanup necessary for each Reader instance.
 type CompositeReader interface {
-	Name() string
-	Read(ctx context.Context) []pdata.Metrics
+	Reader
 	// Shutdown Use this method to perform any additional cleanup of underlying components.
 	Shutdown()
 }

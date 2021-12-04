@@ -12,21 +12,19 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package googlecloudspannerreceiver
+package googlecloudspannerreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudspannerreceiver"
 
 import (
 	"context"
 	_ "embed"
 	"fmt"
-	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenterror"
-	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/model/pdata"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudspannerreceiver/internal/datasource"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudspannerreceiver/internal/filterfactory"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudspannerreceiver/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudspannerreceiver/internal/metadataparser"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudspannerreceiver/internal/statsreader"
@@ -39,51 +37,40 @@ var _ component.MetricsReceiver = (*googleCloudSpannerReceiver)(nil)
 
 type googleCloudSpannerReceiver struct {
 	logger         *zap.Logger
-	nextConsumer   consumer.Metrics
 	config         *Config
 	cancel         context.CancelFunc
 	projectReaders []statsreader.CompositeReader
-	onCollectData  []func(error)
+	metricsBuilder metadata.MetricsBuilder
 }
 
-func newGoogleCloudSpannerReceiver(
-	logger *zap.Logger,
-	config *Config,
-	nextConsumer consumer.Metrics) (component.MetricsReceiver, error) {
+func newGoogleCloudSpannerReceiver(logger *zap.Logger, config *Config) *googleCloudSpannerReceiver {
+	return &googleCloudSpannerReceiver{
+		logger: logger,
+		config: config,
+	}
+}
 
-	if nextConsumer == nil {
-		return nil, componenterror.ErrNilNextConsumer
+func (r *googleCloudSpannerReceiver) Scrape(ctx context.Context) (pdata.Metrics, error) {
+	var allMetricsDataPoints []*metadata.MetricsDataPoint
+
+	for _, projectReader := range r.projectReaders {
+		dataPoints, err := projectReader.Read(ctx)
+		if err != nil {
+			return pdata.Metrics{}, err
+		}
+
+		allMetricsDataPoints = append(allMetricsDataPoints, dataPoints...)
 	}
 
-	r := &googleCloudSpannerReceiver{
-		logger:       logger,
-		nextConsumer: nextConsumer,
-		config:       config,
-	}
-	return r, nil
+	return r.metricsBuilder.Build(allMetricsDataPoints)
 }
 
 func (r *googleCloudSpannerReceiver) Start(ctx context.Context, _ component.Host) error {
 	ctx, r.cancel = context.WithCancel(ctx)
-	err := r.initializeProjectReaders(ctx)
+	err := r.initialize(ctx)
 	if err != nil {
 		return err
 	}
-
-	go func() {
-		ticker := time.NewTicker(r.config.CollectionInterval)
-		defer ticker.Stop()
-
-		for {
-			select {
-			case <-ticker.C:
-				// Ignoring this error because it has been already logged inside collectData
-				r.notifyOnCollectData(r.collectData(ctx))
-			case <-ctx.Done():
-				return
-			}
-		}
-	}()
 
 	return nil
 }
@@ -93,30 +80,78 @@ func (r *googleCloudSpannerReceiver) Shutdown(context.Context) error {
 		projectReader.Shutdown()
 	}
 
+	err := r.metricsBuilder.Shutdown()
+	if err != nil {
+		return err
+	}
+
 	r.cancel()
 
 	return nil
 }
 
-func (r *googleCloudSpannerReceiver) initializeProjectReaders(ctx context.Context) error {
+func (r *googleCloudSpannerReceiver) initialize(ctx context.Context) error {
+	parsedMetadata, err := metadataparser.ParseMetadataConfig(metadataYaml)
+	if err != nil {
+		return fmt.Errorf("error occurred during parsing of metadata: %w", err)
+	}
+
+	err = r.initializeProjectReaders(ctx, parsedMetadata)
+	if err != nil {
+		return err
+	}
+
+	return r.initializeMetricsBuilder(parsedMetadata)
+}
+
+func (r *googleCloudSpannerReceiver) initializeProjectReaders(ctx context.Context,
+	parsedMetadata []*metadata.MetricsMetadata) error {
+
 	readerConfig := statsreader.ReaderConfig{
 		BackfillEnabled:        r.config.BackfillEnabled,
 		TopMetricsQueryMaxRows: r.config.TopMetricsQueryMaxRows,
 	}
 
-	parseMetadata, err := metadataparser.ParseMetadataConfig(metadataYaml)
-	if err != nil {
-		return fmt.Errorf("error occurred during parsing of metadata: %w", err)
-	}
-
 	for _, project := range r.config.Projects {
-		projectReader, err := newProjectReader(ctx, r.logger, project, parseMetadata, readerConfig)
+		projectReader, err := newProjectReader(ctx, r.logger, project, parsedMetadata, readerConfig)
 		if err != nil {
 			return err
 		}
 
 		r.projectReaders = append(r.projectReaders, projectReader)
 	}
+
+	return nil
+}
+
+func (r *googleCloudSpannerReceiver) initializeMetricsBuilder(parsedMetadata []*metadata.MetricsMetadata) error {
+	r.logger.Debug("Constructing metrics builder")
+
+	projectAmount := len(r.config.Projects)
+	instanceAmount := 0
+	databaseAmount := 0
+
+	for _, project := range r.config.Projects {
+		instanceAmount += len(project.Instances)
+
+		for _, instance := range project.Instances {
+			databaseAmount += len(instance.Databases)
+		}
+	}
+
+	factoryConfig := &filterfactory.ItemFilterFactoryConfig{
+		MetadataItems:  parsedMetadata,
+		TotalLimit:     r.config.CardinalityTotalLimit,
+		ProjectAmount:  projectAmount,
+		InstanceAmount: instanceAmount,
+		DatabaseAmount: databaseAmount,
+	}
+	itemFilterResolver, err := filterfactory.NewItemFilterResolver(r.logger, factoryConfig)
+	if err != nil {
+		return err
+	}
+
+	r.metricsBuilder = metadata.NewMetricsFromDataPointBuilder(itemFilterResolver)
 
 	return nil
 }
@@ -151,53 +186,4 @@ func newProjectReader(ctx context.Context, logger *zap.Logger, project Project, 
 	}
 
 	return statsreader.NewProjectReader(databaseReaders, logger), nil
-}
-
-func (r *googleCloudSpannerReceiver) collectData(ctx context.Context) error {
-	var allMetrics []pdata.Metrics
-
-	for _, projectReader := range r.projectReaders {
-		allMetrics = append(allMetrics, projectReader.Read(ctx)...)
-	}
-
-	for _, metric := range allMetrics {
-		if err := r.nextConsumer.ConsumeMetrics(ctx, metric); err != nil {
-			// TODO Use obsreport instead to make the component observable and emit metrics on errors
-			//r.logger.Error("Failed to consume metric(s) because of an error",
-			//	zap.String("metric name", metricName(metric)), zap.Error(err))
-
-			return err
-		}
-	}
-
-	return nil
-}
-
-func (r *googleCloudSpannerReceiver) notifyOnCollectData(err error) {
-	for _, onCollectData := range r.onCollectData {
-		onCollectData(err)
-	}
-}
-
-func metricName(metric pdata.Metrics) string {
-	var mName string
-	resourceMetrics := metric.ResourceMetrics()
-
-	for i := 0; i < resourceMetrics.Len(); i++ {
-		ilm := resourceMetrics.At(i).InstrumentationLibraryMetrics()
-
-		for j := 0; j < ilm.Len(); j++ {
-			metrics := ilm.At(j).Metrics()
-
-			for k := 0; k < metrics.Len(); k++ {
-				mName += metrics.At(k).Name() + ","
-			}
-		}
-	}
-
-	if mName != "" {
-		mName = mName[:len(mName)-1]
-	}
-
-	return mName
 }

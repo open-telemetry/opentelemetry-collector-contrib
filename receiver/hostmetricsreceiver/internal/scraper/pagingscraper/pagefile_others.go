@@ -15,9 +15,9 @@
 //go:build !windows && !linux
 // +build !windows,!linux
 
-package pagingscraper
+package pagingscraper // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/pagingscraper"
 
-import "github.com/shirou/gopsutil/mem"
+import "github.com/shirou/gopsutil/v3/mem"
 
 func getPageFileStats() ([]*pageFileStats, error) {
 	vmem, err := mem.VirtualMemory()

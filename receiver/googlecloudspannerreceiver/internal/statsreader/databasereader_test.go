@@ -21,27 +21,25 @@ import (
 
 	"cloud.google.com/go/spanner"
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/model/pdata"
-	"go.uber.org/zap"
+	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/require"
+	"go.uber.org/zap/zaptest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudspannerreceiver/internal/datasource"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudspannerreceiver/internal/metadata"
 )
 
-type testReader struct {
-	throwError bool
+type mockReader struct {
+	mock.Mock
 }
 
-func (tr testReader) Name() string {
-	return "testReader"
+func (r *mockReader) Name() string {
+	return "mockReader"
 }
 
-func (tr testReader) Read(_ context.Context) ([]pdata.Metrics, error) {
-	if tr.throwError {
-		return nil, errors.New("error")
-	}
-
-	return []pdata.Metrics{{}}, nil
+func (r *mockReader) Read(ctx context.Context) ([]*metadata.MetricsDataPoint, error) {
+	args := r.Called(ctx)
+	return args.Get(0).([]*metadata.MetricsDataPoint), args.Error(1)
 }
 
 func TestNewDatabaseReader(t *testing.T) {
@@ -52,7 +50,7 @@ func TestNewDatabaseReader(t *testing.T) {
 		TopMetricsQueryMaxRows: topMetricsQueryMaxRows,
 		BackfillEnabled:        false,
 	}
-	logger := zap.NewNop()
+	logger := zaptest.NewLogger(t)
 	var parsedMetadata []*metadata.MetricsMetadata
 
 	reader, err := NewDatabaseReader(ctx, parsedMetadata, databaseID, serviceAccountPath, readerConfig, logger)
@@ -74,7 +72,7 @@ func TestNewDatabaseReaderWithError(t *testing.T) {
 		TopMetricsQueryMaxRows: topMetricsQueryMaxRows,
 		BackfillEnabled:        false,
 	}
-	logger := zap.NewNop()
+	logger := zaptest.NewLogger(t)
 	var parsedMetadata []*metadata.MetricsMetadata
 
 	reader, err := NewDatabaseReader(ctx, parsedMetadata, databaseID, serviceAccountPath, readerConfig, logger)
@@ -86,7 +84,7 @@ func TestNewDatabaseReaderWithError(t *testing.T) {
 
 func TestInitializeReaders(t *testing.T) {
 	databaseID := datasource.NewDatabaseID(projectID, instanceID, databaseName)
-	logger := zap.NewNop()
+	logger := zaptest.NewLogger(t)
 	var client *spanner.Client
 	database := datasource.NewDatabaseFromClient(client, databaseID)
 	currentStatsMetadata := createMetricsMetadata(query)
@@ -117,7 +115,7 @@ func TestDatabaseReader_Name(t *testing.T) {
 	ctx := context.Background()
 	client, _ := spanner.NewClient(ctx, databaseName)
 	database := datasource.NewDatabaseFromClient(client, databaseID)
-	logger := zap.NewNop()
+	logger := zaptest.NewLogger(t)
 
 	reader := &DatabaseReader{
 		logger:   logger,
@@ -133,7 +131,7 @@ func TestDatabaseReader_Shutdown(t *testing.T) {
 	ctx := context.Background()
 	client, _ := spanner.NewClient(ctx, databaseName)
 	database := datasource.NewDatabaseFromClient(client, databaseID)
-	logger := zap.NewNop()
+	logger := zaptest.NewLogger(t)
 
 	reader := &DatabaseReader{
 		logger:   logger,
@@ -148,36 +146,36 @@ func TestDatabaseReader_Read(t *testing.T) {
 	ctx := context.Background()
 	client, _ := spanner.NewClient(ctx, databaseName)
 	database := datasource.NewDatabaseFromClient(client, databaseID)
-	logger := zap.NewNop()
-
-	testReaderThrowNoError := testReader{
-		throwError: false,
-	}
-
-	testReaderThrowError := testReader{
-		throwError: true,
-	}
-
+	logger := zaptest.NewLogger(t)
 	testCases := map[string]struct {
-		readers              []Reader
-		expectedMetricsCount int
+		expectedError error
 	}{
-		"Read with no error": {[]Reader{testReaderThrowNoError}, 1},
-		"Read with error":    {[]Reader{testReaderThrowError}, 0},
+		"Read with no error": {nil},
+		"Read with error":    {errors.New("read error")},
 	}
 
 	for name, testCase := range testCases {
 		t.Run(name, func(t *testing.T) {
+			mr := &mockReader{}
+			readers := []Reader{mr}
 			reader := &DatabaseReader{
 				logger:   logger,
 				database: database,
-				readers:  testCase.readers,
+				readers:  readers,
 			}
 			defer executeShutdown(reader)
 
-			metrics := reader.Read(ctx)
+			mr.On("Read", ctx).Return([]*metadata.MetricsDataPoint{}, testCase.expectedError)
 
-			assert.Equal(t, testCase.expectedMetricsCount, len(metrics))
+			_, err := reader.Read(ctx)
+
+			mr.AssertExpectations(t)
+
+			if testCase.expectedError != nil {
+				require.Error(t, err)
+			} else {
+				require.NoError(t, err)
+			}
 		})
 	}
 }

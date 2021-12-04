@@ -12,17 +12,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package testbed
+package testbed // import "github.com/open-telemetry/opentelemetry-collector-contrib/testbed/testbed"
 
 import (
 	"context"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/shirou/gopsutil/v3/process"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configmapprovider"
 	"go.opentelemetry.io/collector/service"
-	"go.opentelemetry.io/collector/service/parserprovider"
 )
 
 // inProcessCollector implements the OtelcolRunner interfaces running a single otelcol as a go routine within the
@@ -54,7 +55,7 @@ func (ipp *inProcessCollector) Start(args StartParams) error {
 	settings := service.CollectorSettings{
 		BuildInfo:         component.NewDefaultBuildInfo(),
 		Factories:         ipp.factories,
-		ConfigMapProvider: parserprovider.NewInMemoryMapProvider(strings.NewReader(ipp.configStr)),
+		ConfigMapProvider: configmapprovider.NewInMemory(strings.NewReader(ipp.configStr)),
 	}
 	var err error
 	ipp.svc, err = service.New(settings)
@@ -70,17 +71,16 @@ func (ipp *inProcessCollector) Start(args StartParams) error {
 		}
 	}()
 
-	for state := range ipp.svc.GetStateChannel() {
-		switch state {
+	for {
+		switch state := ipp.svc.GetState(); state {
 		case service.Starting:
-			// NoOp
+			time.Sleep(10 * time.Millisecond)
 		case service.Running:
 			return err
 		default:
 			err = fmt.Errorf("unable to start, otelcol state is %d", state)
 		}
 	}
-	return err
 }
 
 func (ipp *inProcessCollector) Stop() (stopped bool, err error) {

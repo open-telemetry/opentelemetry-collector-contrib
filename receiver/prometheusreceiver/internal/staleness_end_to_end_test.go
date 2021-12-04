@@ -33,9 +33,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configmapprovider"
 	"go.opentelemetry.io/collector/processor/batchprocessor"
 	"go.opentelemetry.io/collector/service"
-	"go.opentelemetry.io/collector/service/parserprovider"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 
@@ -154,7 +154,7 @@ service:
 
 	appSettings := service.CollectorSettings{
 		Factories:         factories,
-		ConfigMapProvider: parserprovider.NewInMemoryMapProvider(strings.NewReader(config)),
+		ConfigMapProvider: configmapprovider.NewInMemory(strings.NewReader(config)),
 		BuildInfo: component.BuildInfo{
 			Command:     "otelcol",
 			Description: "OpenTelemetry Collector",
@@ -176,22 +176,17 @@ service:
 			t.Error(err)
 		}
 	}()
+	defer app.Shutdown()
 
 	// Wait until the collector has actually started.
-	stateChannel := app.GetStateChannel()
 	for notYetStarted := true; notYetStarted; {
-		switch state := <-stateChannel; state {
+		state := app.GetState()
+		switch state {
 		case service.Running, service.Closed, service.Closing:
 			notYetStarted = false
 		}
+		time.Sleep(10 * time.Millisecond)
 	}
-
-	// The OpenTelemetry collector has a data race because it closes
-	// a channel while
-	if false {
-		defer app.Shutdown()
-	}
-	time.Sleep(60 * time.Second)
 
 	// 5. Let's wait on 10 fetches.
 	var wReqL []*prompb.WriteRequest

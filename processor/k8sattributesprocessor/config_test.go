@@ -110,4 +110,26 @@ func TestLoadConfig(t *testing.T) {
 				},
 			},
 		})
+
+	p2 := cfg.Processors[config.NewComponentIDWithName(typeStr, "3")]
+	assert.Equal(t, p2,
+		&Config{
+			ProcessorSettings: config.NewProcessorSettings(config.NewComponentIDWithName(typeStr, "3")),
+			APIConfig:         k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeKubeConfig},
+			Passthrough:       false,
+			Extract: ExtractConfig{
+				Annotations: []FieldExtractConfig{
+					{KeyRegex: "opentel.*", From: kube.MetadataFromPod},
+				},
+				Labels: []FieldExtractConfig{
+					{KeyRegex: "opentel.*", From: kube.MetadataFromPod},
+				},
+			},
+			Exclude: ExcludeConfig{
+				Pods: []ExcludePodConfig{
+					{Name: "jaeger-agent"},
+					{Name: "jaeger-collector"},
+				},
+			},
+		})
 }

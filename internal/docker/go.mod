@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/internal/docker
 go 1.17
 
 require (
-	github.com/docker/docker v20.10.9+incompatible
+	github.com/docker/docker v20.10.11+incompatible
 	github.com/gobwas/glob v0.2.3
 	github.com/stretchr/testify v1.7.0
 	go.uber.org/zap v1.19.1
@@ -11,7 +11,7 @@ require (
 
 require (
 	github.com/Microsoft/go-winio v0.4.17 // indirect
-	github.com/containerd/containerd v1.5.7 // indirect
+	github.com/containerd/containerd v1.5.8 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/docker/distribution v2.7.1+incompatible // indirect
 	github.com/docker/go-connections v0.4.0 // indirect
@@ -22,7 +22,7 @@ require (
 	github.com/moby/term v0.0.0-20210619224110-3f7ff695adc6 // indirect
 	github.com/morikuni/aec v1.0.0 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
-	github.com/opencontainers/image-spec v1.0.1 // indirect
+	github.com/opencontainers/image-spec v1.0.2 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/sirupsen/logrus v1.8.1 // indirect
@@ -33,6 +33,6 @@ require (
 	golang.org/x/time v0.0.0-20210723032227-1f47c861a9ac // indirect
 	google.golang.org/genproto v0.0.0-20201110150050-8816d57aaa9a // indirect
 	google.golang.org/grpc v1.40.0 // indirect
-	google.golang.org/protobuf v1.26.0 // indirect
+	google.golang.org/protobuf v1.27.1 // indirect
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b // indirect
 )

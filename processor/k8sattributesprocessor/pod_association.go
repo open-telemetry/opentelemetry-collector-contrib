@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package k8sattributesprocessor
+package k8sattributesprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor"
 
 import (
 	"context"
@@ -87,10 +87,12 @@ func extractPodIDNoAssociations(ctx context.Context, attrs pdata.AttributeMap) (
 }
 
 func getConnectionIP(ctx context.Context) kube.PodIdentifier {
-	if c, ok := client.FromContext(ctx); ok {
-		return kube.PodIdentifier(c.IP)
+	c := client.FromContext(ctx)
+	if c.Addr == nil {
+		return ""
 	}
-	return ""
+	return kube.PodIdentifier(c.Addr.String())
+
 }
 
 func stringAttributeFromMap(attrs pdata.AttributeMap, key string) string {

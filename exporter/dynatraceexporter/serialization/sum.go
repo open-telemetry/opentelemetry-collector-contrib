@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package serialization
+package serialization // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/dynatraceexporter/serialization"
 
 import (
 	"fmt"
@@ -41,12 +41,15 @@ func serializeSum(name, prefix string, dims dimensions.NormalizedDimensionList, 
 func serializeDeltaCounter(name, prefix string, dims dimensions.NormalizedDimensionList, dp pdata.NumberDataPoint) (string, error) {
 	var valueOpt dtMetric.MetricOption
 
-	if dp.Type() == pdata.MetricValueTypeInt {
+	switch dp.Type() {
+	case pdata.MetricValueTypeNone:
+		return "", fmt.Errorf("unsupported value type none")
+	case pdata.MetricValueTypeInt:
 		valueOpt = dtMetric.WithIntCounterValueDelta(dp.IntVal())
-	} else if dp.Type() == pdata.MetricValueTypeDouble {
+	case pdata.MetricValueTypeDouble:
 		valueOpt = dtMetric.WithFloatCounterValueDelta(dp.DoubleVal())
-	} else {
-		return "", nil
+	default:
+		return "", fmt.Errorf("unknown data type")
 	}
 
 	dm, err := dtMetric.NewMetric(

@@ -36,8 +36,7 @@ func (t testProvider) Hostname(context.Context) (string, error) {
 
 func newTranslator(t *testing.T, logger *zap.Logger) *translator.Translator {
 	tr, err := translator.New(logger,
-		translator.WithCountSumMetrics(),
-		translator.WithHistogramMode(translator.HistogramModeNoBuckets),
+		translator.WithHistogramMode(translator.HistogramModeDistributions),
 		translator.WithNumberMode(translator.NumberModeCumulativeToDelta),
 		translator.WithFallbackHostnameProvider(testProvider("fallbackHostname")),
 	)

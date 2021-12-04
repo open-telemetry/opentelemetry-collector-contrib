@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package cumulativetodeltaprocessor
+package cumulativetodeltaprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/cumulativetodeltaprocessor"
 
 import (
 	"context"
@@ -62,5 +62,6 @@ func createMetricsProcessor(
 		cfg,
 		nextConsumer,
 		metricsProcessor.processMetrics,
-		processorhelper.WithCapabilities(processorCapabilities))
+		processorhelper.WithCapabilities(processorCapabilities),
+		processorhelper.WithShutdown(metricsProcessor.shutdown))
 }
