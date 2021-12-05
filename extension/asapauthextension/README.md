@@ -1,7 +1,7 @@
 # ASAP Client Authentication Extension
 
 This extension provides [Atlassian Service Authentication Protocol](https://s2sauth.bitbucket.io/) (ASAP) client 
-credentials for HTTP or RPC based exporters. 
+credentials for HTTP or gRPC based exporters. 
 
 ## Example Configuration
 
