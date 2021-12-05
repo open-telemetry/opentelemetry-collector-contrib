@@ -16,6 +16,7 @@ package cpuscraper // import "github.com/open-telemetry/opentelemetry-collector-
 
 import (
 	"context"
+	"runtime"
 	"time"
 
 	"github.com/shirou/gopsutil/v3/cpu"
@@ -31,8 +32,8 @@ const metricsLen = 1
 
 // scraper for CPU Metrics
 type scraper struct {
-	config    *Config
-	startTime pdata.Timestamp
+	config *Config
+	mb     *metadata.MetricsBuilder
 
 	// for mocking
 	bootTime func() (uint64, error)
@@ -49,8 +50,11 @@ func (s *scraper) start(context.Context, component.Host) error {
 	if err != nil {
 		return err
 	}
-
-	s.startTime = pdata.Timestamp(bootTime * 1e9)
+	s.mb = metadata.NewMetricsBuilder(
+		s.config.Metrics,
+		metadata.WithStartTime(pdata.Timestamp(bootTime*1e9)),
+		metadata.WithAttributeStateCapacity(cpuStatesLen),
+		metadata.WithAttributeCpuCapacity(runtime.NumCPU()))
 	return nil
 }
 
@@ -64,31 +68,9 @@ func (s *scraper) scrape(_ context.Context) (pdata.Metrics, error) {
 		return md, scrapererror.NewPartialScrapeError(err, metricsLen)
 	}
 
-	initializeCPUTimeMetric(metrics.AppendEmpty(), s.startTime, now, cpuTimes)
-	return md, nil
-}
-
-func initializeCPUTimeMetric(metric pdata.Metric, startTime, now pdata.Timestamp, cpuTimes []cpu.TimesStat) {
-	metadata.Metrics.SystemCPUTime.Init(metric)
-
-	ddps := metric.Sum().DataPoints()
-	ddps.EnsureCapacity(len(cpuTimes) * cpuStatesLen)
 	for _, cpuTime := range cpuTimes {
-		appendCPUTimeStateDataPoints(ddps, startTime, now, cpuTime)
+		s.recordCPUTimeStateDataPoints(now, cpuTime)
 	}
-}
-
-const gopsCPUTotal string = "cpu-total"
-
-func initializeCPUTimeDataPoint(dataPoint pdata.NumberDataPoint, startTime, now pdata.Timestamp, cpuLabel string, stateLabel string, value float64) {
-	attributes := dataPoint.Attributes()
-	// ignore cpu attribute if reporting "total" cpu usage
-	if cpuLabel != gopsCPUTotal {
-		attributes.InsertString(metadata.Attributes.Cpu, cpuLabel)
-	}
-	attributes.InsertString(metadata.Attributes.State, stateLabel)
-
-	dataPoint.SetStartTimestamp(startTime)
-	dataPoint.SetTimestamp(now)
-	dataPoint.SetDoubleVal(value)
+	s.mb.Emit(metrics)
+	return md, nil
 }

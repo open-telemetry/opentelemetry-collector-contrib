@@ -14,6 +14,11 @@
 
 package main
 
+import (
+	"fmt"
+	"strings"
+)
+
 var (
 	_ MetricData = &gauge{}
 	_ MetricData = &sum{}
@@ -25,6 +30,7 @@ type MetricData interface {
 	Type() string
 	HasMonotonic() bool
 	HasAggregated() bool
+	HasNumberDataPoints() bool
 }
 
 // Aggregated defines a metric aggregation type.
@@ -52,7 +58,32 @@ type Mono struct {
 	Monotonic bool `yaml:"monotonic"`
 }
 
+// NumberDataPoints defines the metric number type.
+type NumberDataPoints struct {
+	// Type is type of the metric number, options are "double", "int".
+	// TODO: Add validation once the metric number type added to all metadata files.
+	NumberType string `yaml:"number_type"`
+}
+
+// Type returns name of the datapoint type.
+func (ndp NumberDataPoints) Type() string {
+	return strings.Title(ndp.NumberType)
+}
+
+// BasicType returns name of a golang basic type for the datapoint type.
+func (ndp NumberDataPoints) BasicType() string {
+	switch ndp.NumberType {
+	case "int":
+		return "int64"
+	case "double":
+		return "float64"
+	default:
+		panic(fmt.Sprintf("unknown number data point type: %v", ndp.NumberType))
+	}
+}
+
 type gauge struct {
+	NumberDataPoints `yaml:",inline"`
 }
 
 func (d gauge) Type() string {
@@ -67,9 +98,14 @@ func (d gauge) HasAggregated() bool {
 	return false
 }
 
+func (d gauge) HasNumberDataPoints() bool {
+	return true
+}
+
 type sum struct {
-	Aggregated `yaml:",inline"`
-	Mono       `yaml:",inline"`
+	Aggregated       `yaml:",inline"`
+	Mono             `yaml:",inline"`
+	NumberDataPoints `yaml:",inline"`
 }
 
 func (d sum) Type() string {
@@ -81,6 +117,10 @@ func (d sum) HasMonotonic() bool {
 }
 
 func (d sum) HasAggregated() bool {
+	return true
+}
+
+func (d sum) HasNumberDataPoints() bool {
 	return true
 }
 
@@ -98,4 +138,8 @@ func (d histogram) HasMonotonic() bool {
 
 func (d histogram) HasAggregated() bool {
 	return true
+}
+
+func (d histogram) HasNumberDataPoints() bool {
+	return false
 }

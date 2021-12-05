@@ -67,7 +67,7 @@ func TestLoadConfig(t *testing.T) {
 			CollectionInterval: 30 * time.Second,
 		},
 		Scrapers: map[string]internal.Config{
-			cpuscraper.TypeStr:        &cpuscraper.Config{},
+			cpuscraper.TypeStr:        (&cpuscraper.Factory{}).CreateDefaultConfig(),
 			diskscraper.TypeStr:       &diskscraper.Config{},
 			loadscraper.TypeStr:       &loadscraper.Config{},
 			filesystemscraper.TypeStr: &filesystemscraper.Config{},

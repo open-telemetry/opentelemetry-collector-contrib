@@ -15,34 +15,14 @@
 package mysqlreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mysqlreceiver"
 
 import (
-	"errors"
-
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
-	"go.uber.org/multierr"
 )
 
 type Config struct {
 	scraperhelper.ScraperControllerSettings `mapstructure:",squash"`
-	Username                                string `mapstructure:"username"`
-	Password                                string `mapstructure:"password"`
-	Database                                string `mapstructure:"database"`
+	Username                                string `mapstructure:"username,omitempty"`
+	Password                                string `mapstructure:"password,omitempty"`
+	Database                                string `mapstructure:"database,omitempty"`
 	confignet.NetAddr                       `mapstructure:",squash"`
-}
-
-// Errors for missing required config parameters.
-const (
-	errNoUsername = "invalid config: missing username"
-	errNoPassword = "invalid config: missing password" // #nosec G101 - not hardcoded credentials
-)
-
-func (cfg *Config) Validate() error {
-	var errs error
-	if cfg.Username == "" {
-		errs = multierr.Append(errs, errors.New(errNoUsername))
-	}
-	if cfg.Password == "" {
-		errs = multierr.Append(errs, errors.New(errNoPassword))
-	}
-	return errs
 }
