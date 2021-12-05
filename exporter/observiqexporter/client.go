@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package observiqexporter
+package observiqexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/observiqexporter"
 
 import (
 	"bytes"
@@ -22,6 +22,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"sync"
 	"time"
@@ -205,6 +206,9 @@ func buildClient(config *Config, logger *zap.Logger, buildInfo component.BuildIn
 			Transport: &http.Transport{
 				Proxy:           http.ProxyFromEnvironment,
 				TLSClientConfig: tlsCfg,
+				DialContext: (&net.Dialer{
+					Timeout: config.DialerTimeout,
+				}).DialContext,
 			},
 		},
 		logger:       logger,

@@ -21,6 +21,7 @@ import (
 
 	"cloud.google.com/go/spanner"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap/zaptest"
 
@@ -28,20 +29,17 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudspannerreceiver/internal/metadata"
 )
 
-type testReader struct {
-	throwError bool
+type mockReader struct {
+	mock.Mock
 }
 
-func (tr testReader) Name() string {
-	return "testReader"
+func (r *mockReader) Name() string {
+	return "mockReader"
 }
 
-func (tr testReader) Read(_ context.Context) ([]*metadata.MetricsDataPoint, error) {
-	if tr.throwError {
-		return nil, errors.New("error")
-	}
-
-	return []*metadata.MetricsDataPoint{{}}, nil
+func (r *mockReader) Read(ctx context.Context) ([]*metadata.MetricsDataPoint, error) {
+	args := r.Called(ctx)
+	return args.Get(0).([]*metadata.MetricsDataPoint), args.Error(1)
 }
 
 func TestNewDatabaseReader(t *testing.T) {
@@ -149,41 +147,35 @@ func TestDatabaseReader_Read(t *testing.T) {
 	client, _ := spanner.NewClient(ctx, databaseName)
 	database := datasource.NewDatabaseFromClient(client, databaseID)
 	logger := zaptest.NewLogger(t)
-
-	testReaderThrowNoError := testReader{
-		throwError: false,
-	}
-
-	testReaderThrowError := testReader{
-		throwError: true,
-	}
-
 	testCases := map[string]struct {
-		readers                 []Reader
-		expectedDataPointsCount int
-		expectError             bool
+		expectedError error
 	}{
-		"Read with no error": {[]Reader{testReaderThrowNoError}, 1, false},
-		"Read with error":    {[]Reader{testReaderThrowError}, 0, true},
+		"Read with no error": {nil},
+		"Read with error":    {errors.New("read error")},
 	}
 
 	for name, testCase := range testCases {
 		t.Run(name, func(t *testing.T) {
+			mr := &mockReader{}
+			readers := []Reader{mr}
 			reader := &DatabaseReader{
 				logger:   logger,
 				database: database,
-				readers:  testCase.readers,
+				readers:  readers,
 			}
 			defer executeShutdown(reader)
 
-			dataPoints, err := reader.Read(ctx)
-			if testCase.expectError {
+			mr.On("Read", ctx).Return([]*metadata.MetricsDataPoint{}, testCase.expectedError)
+
+			_, err := reader.Read(ctx)
+
+			mr.AssertExpectations(t)
+
+			if testCase.expectedError != nil {
 				require.Error(t, err)
 			} else {
 				require.NoError(t, err)
 			}
-
-			assert.Equal(t, testCase.expectedDataPointsCount, len(dataPoints))
 		})
 	}
 }

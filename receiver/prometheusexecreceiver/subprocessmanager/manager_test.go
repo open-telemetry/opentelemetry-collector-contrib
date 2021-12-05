@@ -96,15 +96,53 @@ func TestRun(t *testing.T) {
 		wantErr     bool
 	}{
 		{
-			name: "normal process 1, error process exit",
+			name: "sleep 4ms and succeeds",
 			process: &SubprocessConfig{
-				Command: "go run testdata/test_crasher.go",
+				Command: "go run testdata/test_crasher.go 4 0",
 				Env: []EnvConfig{
 					{
 						Name:  "DATA_SOURCE",
 						Value: "username:password@(url:port)/dbname",
 					},
 				},
+			},
+			wantElapsed: 4 * time.Millisecond,
+			wantErr:     false,
+		},
+		{
+			name: "sleep 4ms and fail",
+			process: &SubprocessConfig{
+				Command: "go run testdata/test_crasher.go 4 1",
+				Env:     []EnvConfig{},
+			},
+			wantElapsed: 4 * time.Millisecond,
+			wantErr:     true,
+		},
+		{
+			// Run test_crasher with 2 arguments:
+			// - sleepTime: "1 2 3" (with spaces in it, because surrounded by quotes), which is invalid
+			// - exitCode: 0
+			//
+			// test_crasher will see that "1 2 3" is not a proper integer and will
+			// default to 2ms, and its exit code will be zero (the second argument)
+			//
+			// If the command line is not parsed properly (notably on Windows),
+			// "1 2 3" will be considered as 3 separate arguments, so test_crasher
+			// will exit with code 2 (the wrongly 2nd argument)
+			// The below test will detect and report this issue.
+			name: "proper parsing of arguments with spaces, surrounded by quotes",
+			process: &SubprocessConfig{
+				Command: "go run testdata/test_crasher.go \"1 2 3\" 0",
+				Env:     []EnvConfig{},
+			},
+			wantElapsed: 2 * time.Millisecond,
+			wantErr:     false,
+		},
+		{
+			name: "sleep 4 and succeeds, with quotes",
+			process: &SubprocessConfig{
+				Command: "\"go\" \"run\" \"testdata/test_crasher.go\" \"4\" \"0\"",
+				Env:     []EnvConfig{},
 			},
 			wantElapsed: 4 * time.Millisecond,
 			wantErr:     false,

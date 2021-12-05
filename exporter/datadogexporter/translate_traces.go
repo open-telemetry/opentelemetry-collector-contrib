@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package datadogexporter
+package datadogexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter"
 
 import (
 	"encoding/hex"
@@ -232,8 +232,8 @@ func spanToDatadogSpan(s pdata.Span,
 	cfg *config.Config,
 	spanNameMap map[string]string,
 ) *pb.Span {
-
 	tags := aggregateSpanTags(s, datadogTags)
+	tags["otel.trace_id"] = s.TraceID().HexString()
 
 	// otel specification resource service.name takes precedence
 	// and configuration DD_SERVICE as fallback if it exists

@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package utils
+package utils // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/utils"
 
 import (
 	"crypto/tls"
@@ -22,6 +22,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
 var (
@@ -38,9 +39,9 @@ var (
 )
 
 // NewHTTPClient returns a http.Client configured with the Agent options.
-func NewHTTPClient(timeout time.Duration) *http.Client {
+func NewHTTPClient(settings exporterhelper.TimeoutSettings) *http.Client {
 	return &http.Client{
-		Timeout: timeout,
+		Timeout: settings.Timeout,
 		Transport: &http.Transport{
 			Proxy: http.ProxyFromEnvironment,
 			DialContext: (&net.Dialer{
@@ -70,20 +71,4 @@ func UserAgent(buildInfo component.BuildInfo) string {
 func SetDDHeaders(reqHeader http.Header, buildInfo component.BuildInfo, apiKey string) {
 	reqHeader.Set("DD-Api-Key", apiKey)
 	reqHeader.Set("User-Agent", UserAgent(buildInfo))
-}
-
-// DoWithRetries repeats a fallible action up to `maxRetries` times
-// with exponential backoff
-func DoWithRetries(maxRetries int, fn func() error) (i int, err error) {
-	wait := 1 * time.Second
-	for i = 0; i < maxRetries; i++ {
-		err = fn()
-		if err == nil {
-			return
-		}
-		time.Sleep(wait)
-		wait = 2 * wait
-	}
-
-	return
 }

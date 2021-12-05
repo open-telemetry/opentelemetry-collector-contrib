@@ -23,6 +23,8 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/model/pdata"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil/endpoints"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
 )
 
@@ -30,13 +32,13 @@ type mockMetaDataProvider struct {
 	isV4 bool
 }
 
-var _ ecsMetadataProvider = (*mockMetaDataProvider)(nil)
+var _ ecsutil.MetadataProvider = (*mockMetaDataProvider)(nil)
 
-func (md *mockMetaDataProvider) fetchTaskMetaData(tmde string) (*TaskMetaData, error) {
+func (md *mockMetaDataProvider) FetchTaskMetadata() (*ecsutil.TaskMetadata, error) {
 	c := createTestContainer(md.isV4)
 	c.DockerID = "05281997" // Simulate one "application" and one "collector" container
-	cs := []Container{createTestContainer(md.isV4), c}
-	tmd := &TaskMetaData{
+	cs := []ecsutil.ContainerMetadata{createTestContainer(md.isV4), c}
+	tmd := &ecsutil.TaskMetadata{
 		Cluster:          "my-cluster",
 		TaskARN:          "arn:aws:ecs:us-west-2:123456789123:task/123",
 		Family:           "family",
@@ -52,16 +54,18 @@ func (md *mockMetaDataProvider) fetchTaskMetaData(tmde string) (*TaskMetaData, e
 	return tmd, nil
 }
 
-func (md *mockMetaDataProvider) fetchContainerMetaData(string) (*Container, error) {
+func (md *mockMetaDataProvider) FetchContainerMetadata() (*ecsutil.ContainerMetadata, error) {
 	c := createTestContainer(md.isV4)
 	return &c, nil
 }
 
 func Test_ecsNewDetector(t *testing.T) {
+	os.Clearenv()
+	os.Setenv(endpoints.TaskMetadataEndpointV4EnvVar, "endpoint")
 	d, err := NewDetector(componenttest.NewNopProcessorCreateSettings(), nil)
 
+	assert.NoError(t, err)
 	assert.NotNil(t, d)
-	assert.Nil(t, err)
 }
 
 func Test_detectorReturnsIfNoEnvVars(t *testing.T) {
@@ -73,19 +77,9 @@ func Test_detectorReturnsIfNoEnvVars(t *testing.T) {
 	assert.Equal(t, 0, res.Attributes().Len())
 }
 
-func Test_ecsPrefersLatestTmde(t *testing.T) {
-	os.Clearenv()
-	os.Setenv(tmde3EnvVar, "3")
-	os.Setenv(tmde4EnvVar, "4")
-
-	tmde := getTmdeFromEnv()
-
-	assert.Equal(t, "4", tmde)
-}
-
 func Test_ecsFiltersInvalidContainers(t *testing.T) {
 	// Should ignore empty container
-	c1 := Container{}
+	c1 := ecsutil.ContainerMetadata{}
 
 	// Should ignore non-normal container
 	c2 := createTestContainer(true)
@@ -98,7 +92,7 @@ func Test_ecsFiltersInvalidContainers(t *testing.T) {
 	// Should ignore its own container
 	c4 := createTestContainer(true)
 
-	containers := []Container{c1, c2, c3, c4}
+	containers := []ecsutil.ContainerMetadata{c1, c2, c3, c4}
 
 	ld := getValidLogData(containers, &c4, "123")
 
@@ -109,7 +103,7 @@ func Test_ecsFiltersInvalidContainers(t *testing.T) {
 
 func Test_ecsDetectV4(t *testing.T) {
 	os.Clearenv()
-	os.Setenv(tmde4EnvVar, "endpoint")
+	os.Setenv(endpoints.TaskMetadataEndpointV4EnvVar, "endpoint")
 
 	want := pdata.NewResource()
 	attr := want.Attributes()
@@ -145,7 +139,7 @@ func Test_ecsDetectV4(t *testing.T) {
 
 func Test_ecsDetectV3(t *testing.T) {
 	os.Clearenv()
-	os.Setenv(tmde3EnvVar, "endpoint")
+	os.Setenv(endpoints.TaskMetadataEndpointV3EnvVar, "endpoint")
 
 	want := pdata.NewResource()
 	attr := want.Attributes()
@@ -167,8 +161,8 @@ func Test_ecsDetectV3(t *testing.T) {
 	assert.Equal(t, internal.AttributesToMap(want.Attributes()), internal.AttributesToMap(got.Attributes()))
 }
 
-func createTestContainer(isV4 bool) Container {
-	c := Container{
+func createTestContainer(isV4 bool) ecsutil.ContainerMetadata {
+	c := ecsutil.ContainerMetadata{
 		DockerID:    "123",
 		Type:        "NORMAL",
 		KnownStatus: "RUNNING",
@@ -177,7 +171,7 @@ func createTestContainer(isV4 bool) Container {
 	if isV4 {
 		c.LogDriver = "awslogs"
 		c.ContainerARN = "arn:aws:ecs"
-		c.LogOptions = LogData{LogGroup: "group", Region: "us-east-1", Stream: "stream"}
+		c.LogOptions = ecsutil.LogOptions{LogGroup: "group", Region: "us-east-1", Stream: "stream"}
 	}
 
 	return c

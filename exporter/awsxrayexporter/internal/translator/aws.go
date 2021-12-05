@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package translator
+package translator // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsxrayexporter/internal/translator"
 
 import (
 	"bytes"
@@ -124,10 +124,18 @@ func makeAws(attributes map[string]pdata.AttributeValue, resource pdata.Resource
 		return true
 	})
 
+	if awsOperation, ok := attributes[awsxray.AWSOperationAttribute]; ok {
+		operation = awsOperation.StringVal()
+	} else if rpcMethod, ok := attributes[conventions.AttributeRPCMethod]; ok {
+		operation = rpcMethod.StringVal()
+	}
+
 	for key, value := range attributes {
 		switch key {
+		case conventions.AttributeRPCMethod:
+			// Determinstically handled with if else above
 		case awsxray.AWSOperationAttribute:
-			operation = value.StringVal()
+			// Determinstically handled with if else above
 		case awsxray.AWSAccountAttribute:
 			if value.Type() != pdata.AttributeValueTypeEmpty {
 				account = value.StringVal()

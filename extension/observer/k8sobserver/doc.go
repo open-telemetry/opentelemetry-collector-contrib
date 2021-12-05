@@ -13,4 +13,4 @@
 // limitations under the License.
 
 // Package k8sobserver implements a k8s observer extension for monitoring pods.
-package k8sobserver
+package k8sobserver // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/k8sobserver"

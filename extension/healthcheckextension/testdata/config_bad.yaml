@@ -12,6 +12,13 @@ extensions:
       enabled: false
       interval: "5m"
       exporter_failure_threshold: -1
+  health_check/invalidpath:
+    endpoint: "localhost:13"
+    path: "invalid"
+    check_collector_pipeline:
+      enabled: false
+      interval: "5m"
+      exporter_failure_threshold: 5
 
 service:
   extensions: [health_check/1]

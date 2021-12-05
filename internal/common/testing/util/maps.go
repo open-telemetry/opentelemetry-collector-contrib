@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package util
+package util // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testing/util"
 
 // MergeStringMaps merges n maps with a later map's keys overriding earlier maps.
 func MergeStringMaps(maps ...map[string]string) map[string]string {

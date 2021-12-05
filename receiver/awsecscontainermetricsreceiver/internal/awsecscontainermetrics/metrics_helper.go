@@ -12,9 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package awsecscontainermetrics
+package awsecscontainermetrics // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsecscontainermetricsreceiver/internal/awsecscontainermetrics"
 
-import "go.uber.org/zap"
+import (
+	"go.uber.org/zap"
+)
 
 // getContainerMetrics generate ECS Container metrics from Container stats
 func getContainerMetrics(stats *ContainerStats, logger *zap.Logger) ECSMetrics {

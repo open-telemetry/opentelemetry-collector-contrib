@@ -27,28 +27,34 @@ The receiver takes the following configuration options:
 
 | Field | Default | Description |
 | --- | --- | --- |
-| `rlp_gateway_url` | required | URL of the RLP gateway, typically `https://log-stream.<cf-system-domain>` |
-| `rlp_gateway_skip_tls_verify` | `false` | whether to skip TLS verify for the RLP Gateway endpoint |
-| `rlp_gateway_shard_id` | `opentelemetry` | metrics are load balanced among receivers that use the same shard ID, therefore this must only be set if there are multiple receivers which must both receive all the metrics instead of them being balanced between them |
-| `uaa_url` | required | URL of the UAA provider, typically `https://uaa.<cf-system-domain>` |
-| `uaa_skip_tls_verify` | `false` | whether to skip TLS verify for the UAA endpoint |
-| `uaa_username` | required | name of the UAA user (required grant types/authorities described above) |
-| `uaa_password` | required | password of the UAA user |
-| `http_timeout` | `10s` | HTTP socket timeout used for RLP Gateway |
+| `rlp_gateway.endpoint` | required | URL of the RLP gateway, typically `https://log-stream.<cf-system-domain>` |
+| `rlp_gateway.tls.insecure_skip_verify` | `false` | whether to skip TLS verify for the RLP gateway endpoint |
+| `rlp_gateway.shard_id` | `opentelemetry` | metrics are load balanced among receivers that use the same shard ID, therefore this must only be set if there are multiple receivers which must both receive all the metrics instead of them being balanced between them |
+| `uaa.endpoint` | required | URL of the UAA provider, typically `https://uaa.<cf-system-domain>` |
+| `uaa.tls.insecure_skip_verify` | `false` | whether to skip TLS verify for the UAA endpoint |
+| `uaa.username` | required | name of the UAA user (required grant types/authorities described above) |
+| `uaa.password` | required | password of the UAA user |
+
+The `rlp_gateway` configuration section also inherits configuration options from the global from:
+
+- [HTTP Client Configuration](https://github.com/open-telemetry/opentelemetry-collector/tree/main/config/confighttp#client-configuration)
 
 Example:
 
 ```yaml
 receivers:
   cloudfoundry:
-    rlp_gateway_url: "https://log-stream.sys.example.internal"
-    rlp_gateway_skip_tls_verify: false
-    rlp_gateway_shard_id: "opentelemetry"
-    uaa_url: "https://uaa.sys.example.internal"
-    uaa_skip_tls_verify: false
-    uaa_username: "otelclient"
-    uaa_password: "changeit"
-    http_timeout: "20s"
+    rlp_gateway:
+      endpoint: "https://log-stream.sys.example.internal"
+      tls:
+        insecure_skip_verify: false
+      shard_id: "opentelemetry"
+    uaa:
+      endpoint: "https://uaa.sys.example.internal"
+      tls:
+        insecure_skip_verify: false
+      username: "otelclient"
+      password: "changeit"
 ```
 
 The full list of settings exposed for this receiver are documented [here](./config.go)
@@ -63,16 +69,20 @@ origin name is prepended to the metric name with `.` separator. All metrics eith
 ### Attributes
 
 All the metrics have the following attributes:
+
 * `origin` - origin name as documented by Cloud Foundry
 * `source` - for applications, the GUID of the application, otherwise equal to `origin`
 
-For CF/TAS deployed in BOSH, the following attributes are also present, using their canonical BOSH meanings:
+For Cloud Foundry/Tanzu Application Service deployed in BOSH, the following attributes are also present, using their
+canonical BOSH meanings:
+
 * `deployment` - BOSH deployment name
 * `index` - BOSH instance ID (GUID)
 * `ip` - BOSH instance IP
 * `job` - BOSH job name
 
 For metrics originating with `rep` origin name (specific to applications), the following metrics are present:
+
 * `instance_id` - numerical index of the application instance. However, also present for `bbs` origin, where it matches
   the value of `index`
 * `process_id` - process ID (GUID). For a process of type "web" which is the main process of an application, this is

@@ -23,8 +23,7 @@ import (
 
 var _ client = (*fakeClient)(nil)
 
-type fakeClient struct {
-}
+type fakeClient struct{}
 
 func readFile(fname string) (map[string]string, error) {
 	var stats = map[string]string{}
@@ -40,6 +39,10 @@ func readFile(fname string) (map[string]string, error) {
 		stats[text[0]] = text[1]
 	}
 	return stats, nil
+}
+
+func (c *fakeClient) Connect() error {
+	return nil
 }
 
 func (c *fakeClient) getGlobalStats() (map[string]string, error) {

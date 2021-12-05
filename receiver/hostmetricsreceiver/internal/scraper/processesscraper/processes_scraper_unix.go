@@ -15,10 +15,12 @@
 //go:build linux || darwin || freebsd || openbsd
 // +build linux darwin freebsd openbsd
 
-package processesscraper
+package processesscraper // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/processesscraper"
 
 import (
 	"runtime"
+
+	"github.com/shirou/gopsutil/v3/process"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/processesscraper/internal/metadata"
 )
@@ -34,16 +36,16 @@ func (s *scraper) getProcessesMetadata() (processesMetadata, error) {
 
 	countByStatus := map[string]int64{}
 	for _, process := range processes {
-		var status string
+		var status []string
 		status, err = process.Status()
 		if err != nil {
 			// We expect an error in the case that a process has
 			// been terminated as we run this code.
 			continue
 		}
-		state, ok := charToState[status]
+		state, ok := toAttributeStatus(status)
 		if !ok {
-			countByStatus[metadata.LabelStatus.Unknown]++
+			countByStatus[metadata.AttributeStatus.Unknown]++
 			continue
 		}
 		countByStatus[state]++
@@ -63,15 +65,15 @@ func (s *scraper) getProcessesMetadata() (processesMetadata, error) {
 		procsCreated = &v
 	}
 
-	countByStatus[metadata.LabelStatus.Blocked] = int64(miscStat.ProcsBlocked)
-	countByStatus[metadata.LabelStatus.Running] = int64(miscStat.ProcsRunning)
+	countByStatus[metadata.AttributeStatus.Blocked] = int64(miscStat.ProcsBlocked)
+	countByStatus[metadata.AttributeStatus.Running] = int64(miscStat.ProcsRunning)
 
 	totalKnown := int64(0)
 	for _, count := range countByStatus {
 		totalKnown += count
 	}
 	if int64(miscStat.ProcsTotal) > totalKnown {
-		countByStatus[metadata.LabelStatus.Unknown] = int64(miscStat.ProcsTotal) - totalKnown
+		countByStatus[metadata.AttributeStatus.Unknown] = int64(miscStat.ProcsTotal) - totalKnown
 	}
 
 	return processesMetadata{
@@ -80,15 +82,25 @@ func (s *scraper) getProcessesMetadata() (processesMetadata, error) {
 	}, nil
 }
 
+func toAttributeStatus(status []string) (string, bool) {
+	if len(status) == 0 || len(status[0]) == 0 {
+		return "", false
+	}
+	state, ok := charToState[status[0]]
+	return state, ok
+}
+
 var charToState = map[string]string{
-	"A": metadata.LabelStatus.Daemon,
-	"D": metadata.LabelStatus.Blocked,
-	"E": metadata.LabelStatus.Detached,
-	"O": metadata.LabelStatus.Orphan,
-	"R": metadata.LabelStatus.Running,
-	"S": metadata.LabelStatus.Sleeping,
-	"T": metadata.LabelStatus.Stopped,
-	"W": metadata.LabelStatus.Paging,
-	"Y": metadata.LabelStatus.System,
-	"Z": metadata.LabelStatus.Zombies,
+	process.Blocked:  metadata.AttributeStatus.Blocked,
+	process.Daemon:   metadata.AttributeStatus.Daemon,
+	process.Detached: metadata.AttributeStatus.Detached,
+	process.Idle:     metadata.AttributeStatus.Idle,
+	process.Lock:     metadata.AttributeStatus.Locked,
+	process.Orphan:   metadata.AttributeStatus.Orphan,
+	process.Running:  metadata.AttributeStatus.Running,
+	process.Sleep:    metadata.AttributeStatus.Sleeping,
+	process.Stop:     metadata.AttributeStatus.Stopped,
+	process.System:   metadata.AttributeStatus.System,
+	process.Wait:     metadata.AttributeStatus.Paging,
+	process.Zombie:   metadata.AttributeStatus.Zombies,
 }

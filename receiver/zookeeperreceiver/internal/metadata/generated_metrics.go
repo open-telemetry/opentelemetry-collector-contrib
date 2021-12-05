@@ -289,8 +289,8 @@ var Metrics = &metricStruct{
 // manipulating those metrics. M is an alias for Metrics
 var M = Metrics
 
-// Labels contains the possible metric labels that can be used.
-var Labels = struct {
+// Attributes contains the possible metric attributes that can be used.
+var Attributes = struct {
 	// ServerState (State of the Zookeeper server (leader, standalone or follower).)
 	ServerState string
 	// ZkVersion (Zookeeper version of the instance.)
@@ -300,6 +300,5 @@ var Labels = struct {
 	"zk.version",
 }
 
-// L contains the possible metric labels that can be used. L is an alias for
-// Labels.
-var L = Labels
+// A is an alias for Attributes.
+var A = Attributes

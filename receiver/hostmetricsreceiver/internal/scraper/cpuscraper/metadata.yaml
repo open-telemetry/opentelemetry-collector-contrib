@@ -1,6 +1,6 @@
 name: cpu
 
-labels:
+attributes:
   cpu:
     description: CPU number starting at 0.
 
@@ -10,10 +10,11 @@ labels:
 
 metrics:
   system.cpu.time:
+    enabled: true
     description: Total CPU seconds broken down by different states.
     unit: s
-    data:
-      type: sum
+    sum:
+      number_type: double
       aggregation: cumulative
       monotonic: true
-    labels: [state]
+    attributes: [cpu, state]

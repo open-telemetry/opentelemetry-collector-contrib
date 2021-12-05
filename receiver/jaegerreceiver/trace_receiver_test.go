@@ -36,18 +36,15 @@ import (
 	jaegerthrift "github.com/jaegertracing/jaeger/thrift-gen/jaeger"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configtls"
-	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/model/pdata"
 	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
-	"go.opentelemetry.io/collector/obsreport"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
@@ -62,19 +59,6 @@ func TestTraceSource(t *testing.T) {
 	set := componenttest.NewNopReceiverCreateSettings()
 	jr := newJaegerReceiver(jaegerReceiver, &configuration{}, nil, set)
 	require.NotNil(t, jr)
-}
-
-type traceConsumer struct {
-	cb func(context.Context, pdata.Traces)
-}
-
-func (t traceConsumer) Capabilities() consumer.Capabilities {
-	return consumer.Capabilities{MutatesData: false}
-}
-
-func (t traceConsumer) ConsumeTraces(ctx context.Context, td pdata.Traces) error {
-	go t.cb(ctx, td)
-	return nil
 }
 
 func jaegerBatchToHTTPBody(b *jaegerthrift.Batch) (*http.Request, error) {
@@ -99,39 +83,6 @@ func TestThriftHTTPBodyDecode(t *testing.T) {
 	gotBatch, hErr := jr.decodeThriftHTTPBody(r)
 	require.Nil(t, hErr, "failed to decode http body")
 	assert.Equal(t, batch, gotBatch)
-}
-
-func TestClientIPDetection(t *testing.T) {
-	ch := make(chan context.Context)
-	jr := jReceiver{
-		nextConsumer: traceConsumer{
-			func(ctx context.Context, _ pdata.Traces) {
-				ch <- ctx
-			},
-		},
-		grpcObsrecv: obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverCreateSettings: componenttest.NewNopReceiverCreateSettings()}),
-		httpObsrecv: obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverCreateSettings: componenttest.NewNopReceiverCreateSettings()}),
-	}
-	batch := &jaegerthrift.Batch{
-		Process: jaegerthrift.NewProcess(),
-		Spans:   []*jaegerthrift.Span{jaegerthrift.NewSpan()},
-	}
-	r, err := jaegerBatchToHTTPBody(batch)
-	require.NoError(t, err)
-
-	wantClient, ok := client.FromHTTP(r)
-	assert.True(t, ok)
-	jr.HandleThriftHTTPBatch(httptest.NewRecorder(), r)
-
-	select {
-	case ctx := <-ch:
-		gotClient, ok := client.FromContext(ctx)
-		assert.True(t, ok, "must get client back from context")
-		assert.Equal(t, wantClient, gotClient)
-		break
-	case <-time.After(time.Second * 2):
-		t.Error("next consumer did not receive the batch")
-	}
 }
 
 func TestReception(t *testing.T) {

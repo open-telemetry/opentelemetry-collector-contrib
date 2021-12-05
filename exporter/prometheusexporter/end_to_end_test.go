@@ -184,6 +184,8 @@ func TestEndToEndSummarySupport(t *testing.T) {
 
 }
 
+// the following triggers G101: Potential hardcoded credentials
+// nolint:gosec
 const dropWizardResponse = `
 # HELP jvm_memory_pool_bytes_used Used bytes of a given JVM memory pool.
 # TYPE jvm_memory_pool_bytes_used gauge

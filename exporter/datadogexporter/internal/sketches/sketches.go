@@ -15,10 +15,10 @@
 // Parts of this package are based on the code from the datadog-agent,
 // https://github.com/DataDog/datadog-agent/blob/main/pkg/metrics/sketch_series.go
 
-package sketches
+package sketches // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/sketches"
 
 import (
-	"github.com/DataDog/agent-payload/gogen"
+	"github.com/DataDog/agent-payload/v5/gogen"
 	"github.com/DataDog/datadog-agent/pkg/quantile"
 )
 

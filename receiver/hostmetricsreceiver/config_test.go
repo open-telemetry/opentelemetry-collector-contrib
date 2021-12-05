@@ -67,7 +67,7 @@ func TestLoadConfig(t *testing.T) {
 			CollectionInterval: 30 * time.Second,
 		},
 		Scrapers: map[string]internal.Config{
-			cpuscraper.TypeStr:        &cpuscraper.Config{},
+			cpuscraper.TypeStr:        (&cpuscraper.Factory{}).CreateDefaultConfig(),
 			diskscraper.TypeStr:       &diskscraper.Config{},
 			loadscraper.TypeStr:       &loadscraper.Config{},
 			filesystemscraper.TypeStr: &filesystemscraper.Config{},
@@ -111,5 +111,5 @@ func TestLoadInvalidConfig_InvalidScraperKey(t *testing.T) {
 	factories.Receivers[typeStr] = factory
 	_, err = configtest.LoadConfigAndValidate(path.Join(".", "testdata", "config-invalidscraperkey.yaml"), factories)
 
-	require.EqualError(t, err, "error reading receivers configuration for hostmetrics: invalid scraper key: invalidscraperkey")
+	require.EqualError(t, err, "error reading receivers configuration for \"hostmetrics\": invalid scraper key: invalidscraperkey")
 }
