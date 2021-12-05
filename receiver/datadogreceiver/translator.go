@@ -34,9 +34,8 @@ func toTraces(traces datadogpb.Traces, req *http.Request) pdata.Traces {
 	resSpans.SetSchemaUrl(semconv.SchemaURL)
 
 	for _, trace := range traces {
-		ils := pdata.NewInstrumentationLibrarySpans()
-		ils.Spans().EnsureCapacity(len(trace))
-		ils.InstrumentationLibrary().SetName("Datadog")
+		ils := resSpans.InstrumentationLibrarySpans().AppendEmpty()
+		ils.InstrumentationLibrary().SetName("Datadog-" + req.Header.Get("Datadog-Meta-Lang"))
 		ils.InstrumentationLibrary().SetVersion(req.Header.Get("Datadog-Meta-Tracer-Version"))
 		spans := pdata.NewSpanSlice()
 		spans.EnsureCapacity(len(trace))
@@ -57,11 +56,11 @@ func toTraces(traces datadogpb.Traces, req *http.Request) pdata.Traces {
 			}
 
 			attrs := newSpan.Attributes()
+			attrs.EnsureCapacity(len(span.GetMeta()) + 1)
 			attrs.InsertString(semconv.AttributeServiceName, span.Service)
 			for k, v := range span.GetMeta() {
-				if key, found := translateDataDogKeyToOtel(k); found {
-					attrs.InsertString(key, v)
-				} else {
+				k = translateDataDogKeyToOtel(k)
+				if len(k) > 0 {
 					attrs.InsertString(k, v)
 				}
 			}
@@ -69,43 +68,46 @@ func toTraces(traces datadogpb.Traces, req *http.Request) pdata.Traces {
 			switch span.Type {
 			case "web":
 				newSpan.SetKind(pdata.SpanKindServer)
+				break
 			case "custom":
 				newSpan.SetKind(pdata.SpanKindUnspecified)
+				break
 			default:
 				newSpan.SetKind(pdata.SpanKindClient)
 			}
 		}
 		spans.MoveAndAppendTo(ils.Spans())
-		ils.MoveTo(resSpans.InstrumentationLibrarySpans().AppendEmpty())
 	}
 
 	return dest
 }
 
-func translateDataDogKeyToOtel(k string) (string, bool) {
+func translateDataDogKeyToOtel(k string) string {
 	// We dont want these
 	if strings.HasPrefix(k, "_dd.") {
-		return "", false
+		return ""
 	}
 	switch strings.ToLower(k) {
 	case "env":
-		return semconv.AttributeDeploymentEnvironment, true
+		return semconv.AttributeDeploymentEnvironment
 	case "version":
-		return semconv.AttributeServiceVersion, true
+		return semconv.AttributeServiceVersion
 	case "container_id":
-		return semconv.AttributeContainerID, true
+		return semconv.AttributeContainerID
 	case "container_name":
-		return semconv.AttributeContainerName, true
+		return semconv.AttributeContainerName
 	case "image_name":
-		return semconv.AttributeContainerImageName, true
+		return semconv.AttributeContainerImageName
 	case "image_tag":
-		return semconv.AttributeContainerImageTag, true
+		return semconv.AttributeContainerImageTag
 	case "process_id":
-		return semconv.AttributeProcessPID, true
+		return semconv.AttributeProcessPID
+	case "error.stacktrace":
+		return semconv.AttributeExceptionStacktrace
 	case "error.msg":
-		return semconv.AttributeExceptionMessage, true
+		return semconv.AttributeExceptionMessage
 	default:
-		return k, false
+		return k
 	}
 
 }

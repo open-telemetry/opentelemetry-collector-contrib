@@ -121,6 +121,15 @@ func TestTrace10kSPS(t *testing.T) {
 				ExpectedMaxRAM: 100,
 			},
 		},
+		{
+			"Datadog",
+			datasenders.NewDatadogDataSender(),
+			datareceivers.NewDataDogDataReceiver(),
+			testbed.ResourceSpec{
+				ExpectedMaxCPU: 80,
+				ExpectedMaxRAM: 100,
+			},
+		},
 	}
 
 	processors := map[string]string{
