@@ -15,6 +15,8 @@
 package coralogixexporter
 
 import (
+	"fmt"
+
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
@@ -29,8 +31,21 @@ type Config struct {
 	exporterhelper.QueueSettings `mapstructure:"sending_queue"`
 	exporterhelper.RetrySettings `mapstructure:"retry_on_failure"`
 
-	Endpoint   string `mapstructure:"endpoint"`
+	// The Coralogix logs ingress endpoint
+	Endpoint string `mapstructure:"endpoint"`
+
+	// Your Coralogix private key (sensitive) for authentication
 	PrivateKey string `mapstructure:"private_key"`
-	AppName    string `mapstructure:"application_name"`
-	SubSystem  string `mapstructure:"subsystem_name"`
+
+	// Traces emitted by this OpenTelemetry exporter should be tagged
+	// in Coralogix with the following application and subsystem names
+	AppName   string `mapstructure:"application_name"`
+	SubSystem string `mapstructure:"subsystem_name"`
+}
+
+func (c *Config) Validate() error {
+	if c.Endpoint == "" || c.PrivateKey == "" || c.AppName == "" || c.SubSystem == "" {
+		return fmt.Errorf("One of your configureation field (endpoint, private_key, application_name, subsystem_name) is empty, please fix the configuration file")
+	}
+	return nil
 }

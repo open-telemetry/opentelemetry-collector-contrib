@@ -16,6 +16,7 @@ package coralogixexporter
 
 import (
 	"context"
+	"fmt"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
@@ -45,16 +46,5 @@ func createDefaultConfig() config.Exporter {
 }
 
 func createTraceExporter(_ context.Context, set component.ExporterCreateSettings, config config.Exporter) (component.TracesExporter, error) {
-	// cfg := config.(*Config)
-	set.Logger.Info("Coralogix traces exporter configuration started")
-	return nil, nil
-	//exporter := NewCoralogixExporter(cfg, set)
-
-	// return exporterhelper.NewTracesExporter(
-	// 	config,
-	// 	set,
-	// 	exporter.tracesPusher,
-	// 	exporterhelper.WithQueue(cfg.QueueSettings),
-	// 	exporterhelper.WithRetry(cfg.RetrySettings),
-	// )
+	return nil, fmt.Errorf("Coralogix exporter is not implemented yet")
 }
