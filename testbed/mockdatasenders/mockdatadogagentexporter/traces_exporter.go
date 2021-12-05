@@ -73,7 +73,7 @@ func (dd *ddExporter) pushTraces(ctx context.Context, td pdata.Traces) error {
 					Type:     "custom",
 				}
 				span.Attributes().Range(func(k string, v pdata.AttributeValue) bool {
-					newSpan.GetMeta()[k] = v.StringVal()
+					newSpan.GetMeta()[k] = v.AsString()
 					return true
 				})
 				var traceIdBytes = span.TraceID().Bytes()
