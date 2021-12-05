@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package asapauth // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/asapauth"
+package asapauthextension // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/asapauthextension"
 
 import (
 	"context"
@@ -27,7 +27,7 @@ const (
 	typeStr = "asapclient"
 )
 
-// NewFactory creates a factory for asapauth.
+// NewFactory creates a factory for asapauthextension.
 func NewFactory() component.ExtensionFactory {
 	return extensionhelper.NewFactory(
 		typeStr,
