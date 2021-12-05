@@ -79,9 +79,9 @@ func (dd *ddExporter) pushTraces(ctx context.Context, td pdata.Traces) error {
 				var traceIdBytes = span.TraceID().Bytes()
 				var spanIdBytes = span.SpanID().Bytes()
 				var parentIdBytes = span.ParentSpanID().Bytes()
-				binary.LittleEndian.PutUint64(traceIdBytes[:8], newSpan.TraceID)
-				binary.LittleEndian.PutUint64(spanIdBytes[:], newSpan.SpanID)
-				binary.LittleEndian.PutUint64(parentIdBytes[:], newSpan.ParentID)
+				binary.BigEndian.PutUint64(traceIdBytes[:], newSpan.TraceID)
+				binary.BigEndian.PutUint64(spanIdBytes[:], newSpan.SpanID)
+				binary.BigEndian.PutUint64(parentIdBytes[:], newSpan.ParentID)
 				trace = append(trace, &newSpan)
 			}
 			traces = append(traces, trace)

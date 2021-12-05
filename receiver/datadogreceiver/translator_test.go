@@ -97,11 +97,12 @@ func BenchmarkTranslator(b *testing.B) {
 	if err := traces.DecodeMsgDictionary(dc); err != nil {
 		b.Fatal(err)
 	}
+
+	req := &http.Request{RequestURI: "/v0.5/traces"}
 	b.ResetTimer()
 	b.ReportAllocs()
 	b.SetBytes(int64(len(payload)))
 	b.StartTimer()
-	req := &http.Request{RequestURI: "/v0.5/traces"}
 	for i := 0; i < b.N; i++ {
 		toTraces(traces, req)
 	}
