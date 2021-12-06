@@ -63,6 +63,7 @@ internal/splunk/                                     @open-telemetry/collector-c
 internal/stanza/                                     @open-telemetry/collector-contrib-approvers @djaglowski
 
 pkg/batchpersignal/                                  @open-telemetry/collector-contrib-approvers @jpkrohling
+pkg/resourcetotelemetry/                             @open-telemetry/collector-contrib-approvers @mx-psi
 
 processor/groupbyattrsprocessor/                     @open-telemetry/collector-contrib-approvers @pmm-sumo
 processor/groupbytraceprocessor/                     @open-telemetry/collector-contrib-approvers @jpkrohling
