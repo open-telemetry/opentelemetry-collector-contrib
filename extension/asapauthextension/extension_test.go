@@ -72,7 +72,8 @@ func TestRoundTripper(t *testing.T) {
 	validateAsapJwt(t, cfg, tokenString)
 }
 
-func TestPerRPCCredentials(t *testing.T) {
+// TestRPCAuth tests RPC authentication, obtaining an auth header and validating the JWT inside it
+func TestRPCAuth(t *testing.T) {
 	cfg := &Config{
 		PrivateKey: PrivateKey,
 		TTL:        60,
@@ -84,30 +85,17 @@ func TestPerRPCCredentials(t *testing.T) {
 	asapAuth, err := createAsapClientAuthenticator(cfg)
 	assert.NoError(t, err)
 
+	// Setup credentials
 	credentials, err := asapAuth.PerRPCCredentials()
 	assert.NoError(t, err)
 	assert.NotNil(t, credentials)
+	assert.True(t, credentials.RequireTransportSecurity())
 
+	// Generate auth header
 	metadata, err := credentials.GetRequestMetadata(context.Background())
 	assert.NoError(t, err)
-	tokenString := metadata["authorization"][7:]
+	tokenString := metadata["authorization"][7:] // Remove "Bearer " from front
 	validateAsapJwt(t, cfg, tokenString)
-}
-
-func TestPerRPCAuth(t *testing.T) {
-	metadata := map[string]string{
-		"authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-	}
-
-	// test meta data is properly stored
-	perRPCAuth := &PerRPCAuth{metadata: metadata}
-	md, err := perRPCAuth.GetRequestMetadata(context.Background())
-	assert.NoError(t, err)
-	assert.Equal(t, md, metadata)
-
-	// always true
-	ok := perRPCAuth.RequireTransportSecurity()
-	assert.True(t, ok)
 }
 
 // Helper function to validate token using the asap library and keypair from config_test.go

@@ -17,13 +17,13 @@ package asapauthextension // import "github.com/open-telemetry/opentelemetry-col
 import (
 	"context"
 	"fmt"
-	"go.opentelemetry.io/collector/config/configauth"
 	"net/http"
 	"time"
 
 	asap "bitbucket.org/atlassian/go-asap/v2"
 	"github.com/SermoDigital/jose/crypto"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configauth"
 	"google.golang.org/grpc/credentials"
 )
 
@@ -40,19 +40,8 @@ func (a AsapClientAuthenticator) RoundTripper(base http.RoundTripper) (http.Roun
 }
 
 func (a AsapClientAuthenticator) PerRPCCredentials() (credentials.PerRPCCredentials, error) {
-	token, err := a.provisioner.Provision()
-	if err != nil {
-		return nil, err
-	}
-	headerValue, err := token.Serialize(a.privateKey)
-	if err != nil {
-		return nil, err
-	}
-	header := map[string]string{
-		"authorization": fmt.Sprintf("Bearer %s", string(headerValue)),
-	}
 	return &PerRPCAuth{
-		metadata: header,
+		authenticator: a,
 	}, nil
 }
 
@@ -73,24 +62,37 @@ func createAsapClientAuthenticator(cfg *Config) (AsapClientAuthenticator, error)
 		return a, err
 	}
 
-	a = AsapClientAuthenticator{
-		provisioner: asap.NewCachingProvisioner(asap.NewProvisioner(
-			cfg.KeyID, time.Duration(cfg.TTL)*time.Second, cfg.Issuer, cfg.Audience, crypto.SigningMethodRS256)),
-		privateKey: pk,
-	}
-	return a, nil
+	// Caching provisioner will only issue a new token after the current token's expiry (determined by TTL).
+	p := asap.NewCachingProvisioner(asap.NewProvisioner(
+		cfg.KeyID, time.Duration(cfg.TTL)*time.Second, cfg.Issuer, cfg.Audience, crypto.SigningMethodRS256))
+
+	return AsapClientAuthenticator{
+		provisioner: p,
+		privateKey:  pk,
+	}, nil
 }
 
 var _ credentials.PerRPCCredentials = (*PerRPCAuth)(nil)
 
 // PerRPCAuth is a gRPC credentials.PerRPCCredentials implementation that returns an 'authorization' header.
 type PerRPCAuth struct {
-	metadata map[string]string
+	authenticator AsapClientAuthenticator
 }
 
 // GetRequestMetadata returns the request metadata to be used with the RPC.
 func (c *PerRPCAuth) GetRequestMetadata(context.Context, ...string) (map[string]string, error) {
-	return c.metadata, nil
+	token, err := c.authenticator.provisioner.Provision()
+	if err != nil {
+		return nil, err
+	}
+	headerValue, err := token.Serialize(c.authenticator.privateKey)
+	if err != nil {
+		return nil, err
+	}
+	header := map[string]string{
+		"authorization": fmt.Sprintf("Bearer %s", string(headerValue)),
+	}
+	return header, nil
 }
 
 // RequireTransportSecurity always returns true for this implementation.
