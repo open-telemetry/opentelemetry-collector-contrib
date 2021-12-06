@@ -78,12 +78,12 @@ var (
 
 // sfxReceiver implements the component.MetricsReceiver for SignalFx metric protocol.
 type sfxReceiver struct {
-	sync.Mutex
 	settings        component.ReceiverCreateSettings
 	config          *Config
 	metricsConsumer consumer.Metrics
 	logsConsumer    consumer.Logs
 	server          *http.Server
+	shutdownWG      sync.WaitGroup
 	obsrecv         *obsreport.Receiver
 }
 
@@ -112,16 +112,10 @@ func newReceiver(
 }
 
 func (r *sfxReceiver) RegisterMetricsConsumer(mc consumer.Metrics) {
-	r.Lock()
-	defer r.Unlock()
-
 	r.metricsConsumer = mc
 }
 
 func (r *sfxReceiver) RegisterLogsConsumer(lc consumer.Logs) {
-	r.Lock()
-	defer r.Unlock()
-
 	r.logsConsumer = lc
 }
 
@@ -129,9 +123,6 @@ func (r *sfxReceiver) RegisterLogsConsumer(lc consumer.Logs) {
 // By convention the consumer of the received data is set when the receiver
 // instance is created.
 func (r *sfxReceiver) Start(_ context.Context, host component.Host) error {
-	r.Lock()
-	defer r.Unlock()
-
 	if r.metricsConsumer == nil && r.logsConsumer == nil {
 		return componenterror.ErrNilNextConsumer
 	}
@@ -153,8 +144,10 @@ func (r *sfxReceiver) Start(_ context.Context, host component.Host) error {
 	r.server.ReadHeaderTimeout = defaultServerTimeout
 	r.server.WriteTimeout = defaultServerTimeout
 
+	r.shutdownWG.Add(1)
 	go func() {
-		if errHTTP := r.server.Serve(ln); errHTTP != http.ErrServerClosed {
+		defer r.shutdownWG.Done()
+		if errHTTP := r.server.Serve(ln); !errors.Is(errHTTP, http.ErrServerClosed) && errHTTP != nil {
 			host.ReportFatalError(errHTTP)
 		}
 	}()
@@ -164,10 +157,9 @@ func (r *sfxReceiver) Start(_ context.Context, host component.Host) error {
 // Shutdown tells the receiver that should stop reception,
 // giving it a chance to perform any necessary clean-up.
 func (r *sfxReceiver) Shutdown(context.Context) error {
-	r.Lock()
-	defer r.Unlock()
-
-	return r.server.Close()
+	err := r.server.Close()
+	r.shutdownWG.Wait()
+	return err
 }
 
 func (r *sfxReceiver) readBody(ctx context.Context, resp http.ResponseWriter, req *http.Request) ([]byte, bool) {

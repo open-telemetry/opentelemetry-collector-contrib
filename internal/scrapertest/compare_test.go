@@ -25,90 +25,6 @@ import (
 	"go.uber.org/multierr"
 )
 
-func baseTestMetrics() pdata.MetricSlice {
-	slice := pdata.NewMetricSlice()
-
-	// set Gauge with two double dps
-	metric := slice.AppendEmpty()
-	initGauge(metric, "test gauge multi", "multi gauge", "1")
-	dps := metric.Gauge().DataPoints()
-
-	dp := dps.AppendEmpty()
-	attributes := pdata.NewAttributeMap()
-	attributes.Insert("testKey1", pdata.NewAttributeValueString("teststringvalue1"))
-	attributes.Insert("testKey2", pdata.NewAttributeValueString("testvalue1"))
-	setDPDoubleVal(dp, 2, attributes, time.Time{})
-
-	dp = dps.AppendEmpty()
-	attributes = pdata.NewAttributeMap()
-	attributes.Insert("testKey1", pdata.NewAttributeValueString("teststringvalue2"))
-	attributes.Insert("testKey2", pdata.NewAttributeValueString("testvalue2"))
-	setDPDoubleVal(dp, 2, attributes, time.Time{})
-
-	// set Gauge with one int dp
-	metric = slice.AppendEmpty()
-	initGauge(metric, "test gauge single", "single gauge", "By")
-	dps = metric.Gauge().DataPoints()
-
-	dp = dps.AppendEmpty()
-	attributes = pdata.NewAttributeMap()
-	attributes.Insert("testKey2", pdata.NewAttributeValueString("teststringvalue2"))
-	setDPIntVal(dp, 2, attributes, time.Time{})
-
-	// set Delta Sum with two int dps
-	metric = slice.AppendEmpty()
-	initSum(metric, "test delta sum multi", "multi sum", "s", pdata.MetricAggregationTemporalityDelta, false)
-	dps = metric.Sum().DataPoints()
-
-	dp = dps.AppendEmpty()
-	attributes = pdata.NewAttributeMap()
-	attributes.Insert("testKey2", pdata.NewAttributeValueString("teststringvalue2"))
-	setDPIntVal(dp, 2, attributes, time.Time{})
-
-	dp = dps.AppendEmpty()
-	attributes = pdata.NewAttributeMap()
-	attributes.Insert("testKey2", pdata.NewAttributeValueString("teststringvalue2"))
-	setDPIntVal(dp, 2, attributes, time.Time{})
-
-	// set Cumulative Sum with one double dp
-	metric = slice.AppendEmpty()
-	initSum(metric, "test cumulative sum single", "single sum", "1/s", pdata.MetricAggregationTemporalityCumulative, true)
-	dps = metric.Sum().DataPoints()
-
-	dp = dps.AppendEmpty()
-	attributes = pdata.NewAttributeMap()
-	setDPDoubleVal(dp, 2, attributes, time.Date(1997, 07, 27, 1, 1, 1, 1, &time.Location{}))
-	return slice
-}
-
-func setDPDoubleVal(dp pdata.NumberDataPoint, value float64, attributes pdata.AttributeMap, timeStamp time.Time) {
-	dp.SetDoubleVal(value)
-	dp.SetTimestamp(pdata.NewTimestampFromTime(timeStamp))
-	attributes.CopyTo(dp.Attributes())
-}
-
-func setDPIntVal(dp pdata.NumberDataPoint, value int64, attributes pdata.AttributeMap, timeStamp time.Time) {
-	dp.SetIntVal(value)
-	dp.SetTimestamp(pdata.NewTimestampFromTime(timeStamp))
-	attributes.CopyTo(dp.Attributes())
-}
-
-func initGauge(metric pdata.Metric, name, desc, unit string) {
-	metric.SetDataType(pdata.MetricDataTypeGauge)
-	metric.SetDescription(desc)
-	metric.SetName(name)
-	metric.SetUnit(unit)
-}
-
-func initSum(metric pdata.Metric, name, desc, unit string, aggr pdata.MetricAggregationTemporality, isMonotonic bool) {
-	metric.SetDataType(pdata.MetricDataTypeSum)
-	metric.Sum().SetIsMonotonic(isMonotonic)
-	metric.Sum().SetAggregationTemporality(aggr)
-	metric.SetDescription(desc)
-	metric.SetName(name)
-	metric.SetUnit(unit)
-}
-
 // TestCompareMetrics tests the ability of comparing one metric slice to another
 func TestCompareMetrics(t *testing.T) {
 	tcs := []struct {
@@ -338,52 +254,7 @@ func TestCompareMetrics(t *testing.T) {
 
 	for _, tc := range tcs {
 		t.Run(tc.name, func(t *testing.T) {
-			err := CompareMetricSlices(tc.expected, tc.actual, true)
-			if tc.expectedError != nil {
-				require.Equal(t, tc.expectedError, err)
-			} else {
-				require.NoError(t, err)
-			}
-		})
-	}
-}
-
-func TestCompareMetricsWithoutComparingValues(t *testing.T) {
-	tcs := []struct {
-		name          string
-		expected      pdata.MetricSlice
-		actual        pdata.MetricSlice
-		expectedError error
-	}{
-		{
-			name: "Ignore mismatched doubleVal",
-			actual: func() pdata.MetricSlice {
-				metrics := baseTestMetrics()
-				m := metrics.At(0)
-				dp := m.Gauge().DataPoints().At(0)
-				dp.SetDoubleVal(123)
-				return metrics
-			}(),
-			expected:      baseTestMetrics(),
-			expectedError: nil,
-		},
-		{
-			name: "Ignore mismatched intVal",
-			actual: func() pdata.MetricSlice {
-				metrics := baseTestMetrics()
-				m := metrics.At(2)
-				dp := m.Sum().DataPoints().At(0)
-				dp.SetIntVal(123)
-				return metrics
-			}(),
-			expected:      baseTestMetrics(),
-			expectedError: nil,
-		},
-	}
-
-	for _, tc := range tcs {
-		t.Run(tc.name, func(t *testing.T) {
-			err := CompareMetricSlices(tc.expected, tc.actual, false)
+			err := CompareMetricSlices(tc.expected, tc.actual)
 			if tc.expectedError != nil {
 				require.Equal(t, tc.expectedError, err)
 			} else {
