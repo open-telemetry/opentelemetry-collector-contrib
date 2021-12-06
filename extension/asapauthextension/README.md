@@ -8,13 +8,19 @@ credentials for HTTP or RPC based exporters.
 ```yaml
 extensions:
   asapclient:
+    # The `kid` as specified by the asap specification.
     key_id: somekeyid
+    # The `iss` as specified by the asap specification.
     issuer: someissuer
+    # The `aud` as specified by the asap specification.
     audience:
       - someservice
       - someotherservice
+    # The private key of the client, used to sign the token. For an example, see `testdata/config.yaml`.
     private_key: ${ASAP_PRIVATE_KEY}
-    ttl_seconds: 120 # Default: 60
+    # The time until expiry of each given token. The token will be cached and then re-provisioned upon expiry. 
+    # For more info see the "exp" claim in the asap specification: https://s2sauth.bitbucket.io/spec/#access-token-generation
+    ttl_seconds: 60
     
 exporters:
   otlphttp/withauth:
