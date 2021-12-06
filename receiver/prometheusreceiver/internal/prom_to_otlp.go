@@ -21,7 +21,27 @@ import (
 	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
 )
 
-func createNodeAndResourcePdata(job, instance, scheme string) pdata.Resource {
+// isDiscernibleHost checks if a host can be used as a value for the 'host.name' key.
+// localhost-like hosts and unspecified (0.0.0.0) hosts are not discernible.
+func isDiscernibleHost(host string) bool {
+	ip := net.ParseIP(host)
+	if ip != nil {
+		// An IP is discernible if
+		//  - it's not local (e.g. belongs to 127.0.0.0/8 or ::1/128) and
+		//  - it's not unspecified (e.g. the 0.0.0.0 address).
+		return !ip.IsLoopback() && !ip.IsUnspecified()
+	}
+
+	if host == "localhost" {
+		return false
+	}
+
+	// not an IP, not 'localhost', assume it is discernible.
+	return true
+}
+
+// CreateNodeAndResourcePdata creates the resource data added to OTLP payloads.
+func CreateNodeAndResourcePdata(job, instance, scheme string) pdata.Resource {
 	host, port, err := net.SplitHostPort(instance)
 	if err != nil {
 		host = instance
@@ -29,7 +49,9 @@ func createNodeAndResourcePdata(job, instance, scheme string) pdata.Resource {
 	resource := pdata.NewResource()
 	attrs := resource.Attributes()
 	attrs.UpsertString(conventions.AttributeServiceName, job)
-	attrs.UpsertString(conventions.AttributeHostName, host)
+	if isDiscernibleHost(host) {
+		attrs.UpsertString(conventions.AttributeHostName, host)
+	}
 	attrs.UpsertString(jobAttr, job)
 	attrs.UpsertString(instanceAttr, instance)
 	attrs.UpsertString(portAttr, port)

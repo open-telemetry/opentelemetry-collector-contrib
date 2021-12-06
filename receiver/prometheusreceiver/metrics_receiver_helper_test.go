@@ -18,7 +18,6 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"net"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -36,6 +35,8 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/model/pdata"
 	"gopkg.in/yaml.v2"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver/internal"
 )
 
 type mockPrometheusResponse struct {
@@ -129,7 +130,6 @@ func setupMockPrometheus(openMetricsContentType bool, tds ...*testData) (*mockPr
 	}
 	mp := newMockPrometheus(endpoints, openMetricsContentType)
 	u, _ := url.Parse(mp.srv.URL)
-	host, port, _ := net.SplitHostPort(u.Host)
 	for i := 0; i < len(tds); i++ {
 		job := make(map[string]interface{})
 		job["job_name"] = tds[i].name
@@ -149,13 +149,7 @@ func setupMockPrometheus(openMetricsContentType bool, tds ...*testData) (*mockPr
 	}
 	// update attributes value (will use for validation)
 	for _, t := range tds {
-		t.attributes = pdata.NewAttributeMap()
-		t.attributes.Insert("service.name", pdata.NewAttributeValueString(t.name))
-		t.attributes.Insert("host.name", pdata.NewAttributeValueString(host))
-		t.attributes.Insert("job", pdata.NewAttributeValueString(t.name))
-		t.attributes.Insert("instance", pdata.NewAttributeValueString(u.Host))
-		t.attributes.Insert("port", pdata.NewAttributeValueString(port))
-		t.attributes.Insert("scheme", pdata.NewAttributeValueString("http"))
+		t.attributes = internal.CreateNodeAndResourcePdata(t.name, u.Host, "http").Attributes()
 	}
 	pCfg, err := promcfg.Load(string(cfg), false, gokitlog.NewNopLogger())
 	return mp, pCfg, err
@@ -285,8 +279,11 @@ func doCompare(t *testing.T, name string, want pdata.AttributeMap, got *pdata.Re
 		assert.Equal(t, expectedScrapeMetricCount, countScrapeMetricsRM(got))
 		assert.Equal(t, want.Len(), got.Resource().Attributes().Len())
 		for k, v := range want.AsRaw() {
-			value, _ := got.Resource().Attributes().Get(k)
-			assert.EqualValues(t, v, value.AsString())
+			value, ok := got.Resource().Attributes().Get(k)
+			assert.True(t, ok, "%q attribute is missing", k)
+			if ok {
+				assert.EqualValues(t, v, value.AsString())
+			}
 		}
 		for _, e := range expectations {
 			e(t, got)
