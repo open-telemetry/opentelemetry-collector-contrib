@@ -106,7 +106,11 @@ func newProcessor(logger *zap.Logger, config config.Processor, nextConsumer cons
 		return nil, err
 	}
 
-	metricKeyToDimensionsCache, err := NewCache(pConfig.GetMetricKeyToDimensionsCacheSize())
+	metricKeyToDimensionsCacheSize := defaultMetricKeyToDimensionsCacheSize
+	if pConfig.MetricKeyToDimensionsCacheSize > 0 {
+		metricKeyToDimensionsCacheSize = pConfig.MetricKeyToDimensionsCacheSize
+	}
+	metricKeyToDimensionsCache, err := NewCache(metricKeyToDimensionsCacheSize)
 	if err != nil {
 		return nil, err
 	}
@@ -303,16 +307,14 @@ func (p *processorImp) getDimensionsByMetricKey(k metricKey) (v *pdata.Attribute
 	if item, ok := p.metricKeyToDimensions.Get(k); ok {
 		if attributeMap, ok := item.(pdata.AttributeMap); ok {
 			return &attributeMap, true
-		} else {
-			p.logger.Error("type assertion of metricKeyToDimensions attributes failed")
-			return nil, false
 		}
+		p.logger.Error("type assertion of metricKeyToDimensions attributes failed")
+		return nil, false
 	}
 
 	p.logger.Error("value not found in metricKeyToDimensions cache")
 	return nil, false
 }
-
 
 // aggregateMetrics aggregates the raw metrics from the input trace data.
 // Each metric is identified by a key that is built from the service name

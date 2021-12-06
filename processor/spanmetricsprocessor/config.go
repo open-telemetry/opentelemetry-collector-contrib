@@ -49,12 +49,3 @@ type Config struct {
 	// MetricKeyToDimensionsCacheSize defines the size of the LRU cache for storing MetricKeyToDimensions cache
 	MetricKeyToDimensionsCacheSize int `mapstructure:"metric_key_to_dimensions_cache_size"`
 }
-
-// GetMetricKeyToDimensionsCacheSize get the value from config for the length of LRU cache `MetricKeyToDimensionsCacheSize`
-// if the value from the config is invalid, return the default value.
-func (c Config) GetMetricKeyToDimensionsCacheSize() int {
-	if c.MetricKeyToDimensionsCacheSize <= 0 {
-		return defaultMetricKeyToDimensionsCacheSize
-	}
-	return c.MetricKeyToDimensionsCacheSize
-}
