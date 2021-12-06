@@ -17,13 +17,13 @@ package asapauthextension // import "github.com/open-telemetry/opentelemetry-col
 import (
 	"context"
 	"fmt"
+	"go.opentelemetry.io/collector/config/configauth"
 	"net/http"
 	"time"
 
 	asap "bitbucket.org/atlassian/go-asap/v2"
 	"github.com/SermoDigital/jose/crypto"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configauth"
 	"google.golang.org/grpc/credentials"
 )
 
@@ -32,6 +32,8 @@ type AsapClientAuthenticator struct {
 	provisioner asap.Provisioner
 	privateKey  interface{}
 }
+
+var _ configauth.ClientAuthenticator = (*AsapClientAuthenticator)(nil)
 
 func (a AsapClientAuthenticator) RoundTripper(base http.RoundTripper) (http.RoundTripper, error) {
 	return asap.NewTransportDecorator(a.provisioner, a.privateKey)(base), nil
@@ -63,8 +65,6 @@ func (a AsapClientAuthenticator) Start(_ context.Context, _ component.Host) erro
 func (a AsapClientAuthenticator) Shutdown(_ context.Context) error {
 	return nil
 }
-
-var _ configauth.ClientAuthenticator = (*AsapClientAuthenticator)(nil)
 
 func createAsapClientAuthenticator(cfg *Config) (AsapClientAuthenticator, error) {
 	var a AsapClientAuthenticator
