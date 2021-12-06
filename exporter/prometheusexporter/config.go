@@ -19,13 +19,20 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus"
 	"go.opentelemetry.io/collector/config"
-
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry"
 )
 
 // Config defines configuration for Prometheus exporter.
 type Config struct {
-	config.ExporterSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
+	// squash ensures fields are correctly decoded in embedded struct
+	config.ExporterSettings `mapstructure:",squash"`
+
+	//Retry on failure ensures Prometheus Export interfaces are reliable because of HTTP Request relating to network issues, Timeout,...
+	//Documentation: https://pkg.go.dev/go.opentelemetry.io/collector/exporter/exporterhelper#RetrySettings
+	//Default values: https://github.com/open-telemetry/opentelemetry-collector/blob/v0.39.0/exporter/exporterhelper/queued_retry.go#L52
+	exporterhelper.RetrySettings   `mapstructure:"retry_on_failure"`
+	exporterhelper.TimeoutSettings `mapstructure:",squash"`
 
 	// The address on which the Prometheus scrape handler will be run on.
 	Endpoint string `mapstructure:"endpoint"`

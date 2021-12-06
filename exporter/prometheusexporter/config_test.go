@@ -24,6 +24,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtest"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -49,6 +50,15 @@ func TestLoadConfig(t *testing.T) {
 			ConstLabels: map[string]string{
 				"label1":        "value1",
 				"another label": "spaced value",
+			},
+			TimeoutSettings: exporterhelper.TimeoutSettings{
+				Timeout: 20 * time.Second,
+			},
+			RetrySettings: exporterhelper.RetrySettings{
+				Enabled:         true,
+				InitialInterval: 10 * time.Second,
+				MaxInterval:     1 * time.Minute,
+				MaxElapsedTime:  10 * time.Minute,
 			},
 			SendTimestamps:   true,
 			MetricExpiration: 60 * time.Minute,
