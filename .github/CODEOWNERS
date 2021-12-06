@@ -15,6 +15,7 @@
 * @open-telemetry/collector-contrib-approvers
 
 exporter/alibabacloudlogserviceexporter/             @open-telemetry/collector-contrib-approvers @shabicheng @kongluoxing @qiansheng91
+exporter/awscloudwatchlogsexporter                   @open-telemetry/collector-contrib-approvers @boostchicken
 exporter/awsemfexporter/                             @open-telemetry/collector-contrib-approvers @anuraaga @shaochengwang @mxiamxia
 exporter/awskinesisexporter/                         @open-telemetry/collector-contrib-approvers @anuraaga @MovieStoreGuy
 exporter/awsprometheusremotewriteexporter/           @open-telemetry/collector-contrib-approvers @anuraaga @rakyll @alolita
