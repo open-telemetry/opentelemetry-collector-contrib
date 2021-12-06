@@ -219,23 +219,6 @@ func TestZookeeperMetricsScraperScrape(t *testing.T) {
 	}
 }
 
-func assertMetricValid(t *testing.T, metric pdata.Metric, descriptor pdata.Metric) {
-	assertDescriptorEqual(t, descriptor, metric)
-	switch metric.DataType() {
-	case pdata.MetricDataTypeGauge:
-		require.GreaterOrEqual(t, metric.Gauge().DataPoints().Len(), 1)
-	case pdata.MetricDataTypeSum:
-		require.GreaterOrEqual(t, metric.Sum().DataPoints().Len(), 1)
-	}
-}
-
-func assertDescriptorEqual(t *testing.T, expected pdata.Metric, actual pdata.Metric) {
-	require.Equal(t, expected.Name(), actual.Name())
-	require.Equal(t, expected.Description(), actual.Description())
-	require.Equal(t, expected.Unit(), actual.Unit())
-	require.Equal(t, expected.DataType(), actual.DataType())
-}
-
 type mockedServer struct {
 	ready chan bool
 }
