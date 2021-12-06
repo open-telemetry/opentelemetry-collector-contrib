@@ -2,7 +2,7 @@ package spanmetricsprocessor
 
 import lru "github.com/hashicorp/golang-lru"
 
-// Cache is cache consist of an LRU cache and the evicted items from the LRU cache
+// Cache is consist of an LRU cache and the evicted items from the LRU cache
 // this data structure makes sure all the cached item can be retrieved either from the LRU cache or the evictedItems map
 type Cache struct {
 	*lru.Cache
