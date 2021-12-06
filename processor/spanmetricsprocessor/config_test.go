@@ -36,9 +36,9 @@ import (
 func TestLoadConfig(t *testing.T) {
 	defaultMethod := "GET"
 	testcases := []struct {
-		configFile                  string
-		wantMetricsExporter         string
-		wantLatencyHistogramBuckets []time.Duration
+		configFile                         string
+		wantMetricsExporter                string
+		wantLatencyHistogramBuckets        []time.Duration
 		wantDimensions                     []Dimension
 		wantMetricKeyToDimensionsCacheSize int
 	}{
@@ -47,7 +47,7 @@ func TestLoadConfig(t *testing.T) {
 			wantMetricsExporter:                "prometheus",
 			wantMetricKeyToDimensionsCacheSize: 500,
 		},
-		{	configFile: "config-3-pipelines.yaml",
+		{configFile: "config-3-pipelines.yaml",
 			wantMetricsExporter:                "otlp/spanmetrics",
 			wantMetricKeyToDimensionsCacheSize: defaultMetricKeyToDimensionsCacheSize,
 		},

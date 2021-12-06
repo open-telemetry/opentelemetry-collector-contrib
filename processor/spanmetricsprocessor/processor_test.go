@@ -273,7 +273,6 @@ func TestMetricKeyCache(t *testing.T) {
 	assert.Equal(t, metricKeyToDimensionsCacheSize, len(p.metricKeyToDimensions.Keys()))
 	assert.Equal(t, 0, len(p.metricKeyToDimensions.evictedItems))
 
-
 	require.NoError(t, err)
 }
 

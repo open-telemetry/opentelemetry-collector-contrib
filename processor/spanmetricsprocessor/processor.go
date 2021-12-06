@@ -88,7 +88,6 @@ type processorImp struct {
 	metricKeyToDimensions *Cache
 }
 
-
 func newProcessor(logger *zap.Logger, config config.Processor, nextConsumer consumer.Traces) (*processorImp, error) {
 	logger.Info("Building spanmetricsprocessor")
 	pConfig := config.(*Config)
@@ -107,7 +106,7 @@ func newProcessor(logger *zap.Logger, config config.Processor, nextConsumer cons
 		return nil, err
 	}
 
-	metricKeyToDimensionsCache, err := 	NewCache(pConfig.GetMetricKeyToDimensionsCacheSize())
+	metricKeyToDimensionsCache, err := NewCache(pConfig.GetMetricKeyToDimensionsCacheSize())
 	if err != nil {
 		return nil, err
 	}
