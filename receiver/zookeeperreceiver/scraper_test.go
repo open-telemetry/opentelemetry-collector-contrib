@@ -18,9 +18,11 @@ import (
 	"bufio"
 	"context"
 	"errors"
+	"fmt"
 	"io/ioutil"
 	"net"
 	"path"
+	"path/filepath"
 	"testing"
 	"time"
 
@@ -32,7 +34,7 @@ import (
 	"go.uber.org/zap/zaptest/observer"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testutil"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zookeeperreceiver/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest"
 )
 
 type logMsg struct {
@@ -41,29 +43,9 @@ type logMsg struct {
 }
 
 func TestZookeeperMetricsScraperScrape(t *testing.T) {
-	commonMetrics := []pdata.Metric{
-		metadata.Metrics.ZookeeperLatencyAvg.New(),
-		metadata.Metrics.ZookeeperLatencyMax.New(),
-		metadata.Metrics.ZookeeperLatencyMin.New(),
-		metadata.Metrics.ZookeeperPacketsReceived.New(),
-		metadata.Metrics.ZookeeperPacketsSent.New(),
-		metadata.Metrics.ZookeeperConnectionsAlive.New(),
-		metadata.Metrics.ZookeeperOutstandingRequests.New(),
-		metadata.Metrics.ZookeeperZnodes.New(),
-		metadata.Metrics.ZookeeperWatches.New(),
-		metadata.Metrics.ZookeeperEphemeralNodes.New(),
-		metadata.Metrics.ZookeeperApproximateDateSize.New(),
-		metadata.Metrics.ZookeeperOpenFileDescriptors.New(),
-		metadata.Metrics.ZookeeperMaxFileDescriptors.New(),
-	}
-
-	var metricsV3414 []pdata.Metric
-	metricsV3414 = append(metricsV3414, commonMetrics...)
-	metricsV3414 = append(metricsV3414, metadata.Metrics.ZookeeperFsyncThresholdExceeds.New())
-
 	tests := []struct {
 		name                         string
-		expectedMetrics              []pdata.Metric
+		expectedMetricsFilename      string
 		expectedResourceAttributes   map[string]string
 		mockedZKOutputSourceFilename string
 		mockZKConnectionErr          bool
@@ -77,7 +59,7 @@ func TestZookeeperMetricsScraperScrape(t *testing.T) {
 		{
 			name:                         "Test correctness with v3.4.14",
 			mockedZKOutputSourceFilename: "mntr-3.4.14",
-			expectedMetrics:              metricsV3414,
+			expectedMetricsFilename:      "correctness-v3.4.14",
 			expectedResourceAttributes: map[string]string{
 				"server.state": "standalone",
 				"zk.version":   "3.4.14-4c25d480e66aadd371de8bd2fd8da255ac140bcf",
@@ -87,17 +69,7 @@ func TestZookeeperMetricsScraperScrape(t *testing.T) {
 		{
 			name:                         "Test correctness with v3.5.5",
 			mockedZKOutputSourceFilename: "mntr-3.5.5",
-			expectedMetrics: func() []pdata.Metric {
-				out := make([]pdata.Metric, 0, len(commonMetrics)+3)
-				out = append(out, commonMetrics...)
-
-				out = append(out, []pdata.Metric{
-					metadata.Metrics.ZookeeperFollowers.New(),
-					metadata.Metrics.ZookeeperSyncedFollowers.New(),
-					metadata.Metrics.ZookeeperPendingSyncs.New(),
-				}...)
-				return out
-			}(),
+			expectedMetricsFilename:      "correctness-v3.5.5",
 			expectedResourceAttributes: map[string]string{
 				"server.state": "leader",
 				"zk.version":   "3.5.5-390fe37ea45dee01bf87dc1c042b5e3dcce88653",
@@ -146,7 +118,7 @@ func TestZookeeperMetricsScraperScrape(t *testing.T) {
 					level: zapcore.WarnLevel,
 				},
 			},
-			expectedMetrics: metricsV3414,
+			expectedMetricsFilename: "error-setting-connection-deadline",
 			expectedResourceAttributes: map[string]string{
 				"server.state": "standalone",
 				"zk.version":   "3.4.14-4c25d480e66aadd371de8bd2fd8da255ac140bcf",
@@ -165,7 +137,7 @@ func TestZookeeperMetricsScraperScrape(t *testing.T) {
 					level: zapcore.WarnLevel,
 				},
 			},
-			expectedMetrics: metricsV3414,
+			expectedMetricsFilename: "error-closing-connection",
 			expectedResourceAttributes: map[string]string{
 				"server.state": "standalone",
 				"zk.version":   "3.4.14-4c25d480e66aadd371de8bd2fd8da255ac140bcf",
@@ -232,35 +204,23 @@ func TestZookeeperMetricsScraperScrape(t *testing.T) {
 				require.Equal(t, log.level, observedLogs.All()[i].Level)
 			}
 
-			if tt.wantErr {
-				require.Error(t, err)
-				require.Equal(t, pdata.NewMetrics(), got)
+			if tt.expectedNumResourceMetrics == 0 {
+				if tt.wantErr {
+					require.Error(t, err)
+					require.Equal(t, pdata.NewMetrics(), got)
+				}
 
 				require.NoError(t, z.shutdown(ctx))
 				return
 			}
 
-			require.Equal(t, tt.expectedNumResourceMetrics, got.ResourceMetrics().Len())
-			for i := 0; i < tt.expectedNumResourceMetrics; i++ {
-				resource := got.ResourceMetrics().At(i).Resource()
-				require.Equal(t, len(tt.expectedResourceAttributes), resource.Attributes().Len())
-				resource.Attributes().Range(func(k string, v pdata.AttributeValue) bool {
-					require.Equal(t, tt.expectedResourceAttributes[k], v.StringVal())
-					return true
-				})
+			expectedFile := filepath.Join("testdata", "scraper", fmt.Sprintf("%s.json", tt.expectedMetricsFilename))
+			expectedMetrics, err := scrapertest.ReadExpected(expectedFile)
+			require.NoError(t, err)
+			eMetricSlice := expectedMetrics.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics()
+			aMetricSlice := got.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics()
 
-				ilms := got.ResourceMetrics().At(0).InstrumentationLibraryMetrics()
-				require.Equal(t, 1, ilms.Len())
-
-				metrics := ilms.At(0).Metrics()
-				require.Equal(t, len(tt.expectedMetrics), metrics.Len())
-
-				for i, metric := range tt.expectedMetrics {
-					assertMetricValid(t, metrics.At(i), metric)
-				}
-			}
-
-			require.NoError(t, z.shutdown(ctx))
+			require.NoError(t, scrapertest.CompareMetricSlices(eMetricSlice, aMetricSlice))
 		})
 	}
 }
