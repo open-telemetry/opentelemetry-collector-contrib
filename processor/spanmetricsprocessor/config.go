@@ -56,5 +56,5 @@ func (c Config) GetMetricKeyToDimensionsCacheSize() int {
 	if c.MetricKeyToDimensionsCacheSize <= 0 {
 		return defaultMetricKeyToDimensionsCacheSize
 	}
-	return defaultMetricKeyToDimensionsCacheSize
+	return c.MetricKeyToDimensionsCacheSize
 }
