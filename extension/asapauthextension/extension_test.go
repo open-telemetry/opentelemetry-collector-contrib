@@ -19,7 +19,7 @@ import (
 	"net/http"
 	"testing"
 
-	"bitbucket.org/atlassian/go-asap"
+	"bitbucket.org/atlassian/go-asap/v2"
 	"github.com/stretchr/testify/assert"
 )
 

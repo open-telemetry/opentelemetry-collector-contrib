@@ -20,7 +20,7 @@ import (
 	"net/http"
 	"time"
 
-	asap "bitbucket.org/atlassian/go-asap"
+	asap "bitbucket.org/atlassian/go-asap/v2"
 	"github.com/SermoDigital/jose/crypto"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configauth"
@@ -72,6 +72,7 @@ func createAsapClientAuthenticator(cfg *Config) (AsapClientAuthenticator, error)
 	if err != nil {
 		return a, err
 	}
+
 	a = AsapClientAuthenticator{
 		provisioner: asap.NewCachingProvisioner(asap.NewProvisioner(
 			cfg.KeyID, time.Duration(cfg.TTL)*time.Second, cfg.Issuer, cfg.Audience, crypto.SigningMethodRS256)),
