@@ -43,7 +43,7 @@ func TestCreateNodeAndResourceEquivalence(t *testing.T) {
 	)
 
 	fromOCResource := mdFromOC.ResourceMetrics().At(0).Resource().Attributes().Sort()
-	byDirectOTLPResource := createNodeAndResourcePdata(job, instance, scheme).Attributes().Sort()
+	byDirectOTLPResource := CreateNodeAndResourcePdata(job, instance, scheme).Attributes().Sort()
 
 	require.Equal(t, byDirectOTLPResource, fromOCResource)
 }
@@ -129,7 +129,7 @@ func TestCreateNodeAndResourcePromToOTLP(t *testing.T) {
 	for _, tt := range tests {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
-			got := createNodeAndResourcePdata(tt.job, tt.instance, tt.scheme)
+			got := CreateNodeAndResourcePdata(tt.job, tt.instance, tt.scheme)
 			require.Equal(t, got, tt.want)
 		})
 	}
