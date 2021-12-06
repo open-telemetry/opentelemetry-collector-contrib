@@ -74,7 +74,7 @@ processor/resourcedetectionprocessor/                @open-telemetry/collector-c
 processor/resourcedetectionprocessor/internal/azure  @open-telemetry/collector-contrib-approvers @mx-psi
 processor/routingprocessor/                          @open-telemetry/collector-contrib-approvers @jpkrohling
 processor/spanmetricsprocessor/                      @open-telemetry/collector-contrib-approvers @albertteoh
-processor/spanprocessor/                              @open-telemetry/collector-contrib-approvers @boostchicken
+processor/spanprocessor/                             @open-telemetry/collector-contrib-approvers @boostchicken
 processor/tailsamplingprocessor/                     @open-telemetry/collector-contrib-approvers @jpkrohling
 
 receiver/apachereceiver/                             @open-telemetry/collector-contrib-approvers @djaglowski
