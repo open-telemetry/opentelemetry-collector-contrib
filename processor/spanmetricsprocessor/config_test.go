@@ -39,17 +39,17 @@ func TestLoadConfig(t *testing.T) {
 		configFile                  string
 		wantMetricsExporter         string
 		wantLatencyHistogramBuckets []time.Duration
-		wantDimensions              []Dimension
-		wantMetricKeyToDimensionsLength int
+		wantDimensions                     []Dimension
+		wantMetricKeyToDimensionsCacheSize int
 	}{
 		{
-			configFile: "config-2-pipelines.yaml",
-			wantMetricsExporter: "prometheus",
-			wantMetricKeyToDimensionsLength: 500,
+			configFile:                         "config-2-pipelines.yaml",
+			wantMetricsExporter:                "prometheus",
+			wantMetricKeyToDimensionsCacheSize: 500,
 		},
 		{	configFile: "config-3-pipelines.yaml",
-			wantMetricsExporter: "otlp/spanmetrics",
-			wantMetricKeyToDimensionsLength: defaultMetricKeyToDimensionsLength,
+			wantMetricsExporter:                "otlp/spanmetrics",
+			wantMetricKeyToDimensionsCacheSize: defaultMetricKeyToDimensionsCacheSize,
 		},
 		{
 			configFile:          "config-full.yaml",
@@ -67,7 +67,7 @@ func TestLoadConfig(t *testing.T) {
 				{"http.method", &defaultMethod},
 				{"http.status_code", nil},
 			},
-			wantMetricKeyToDimensionsLength: 1500,
+			wantMetricKeyToDimensionsCacheSize: 1500,
 		},
 	}
 	for _, tc := range testcases {
@@ -94,11 +94,11 @@ func TestLoadConfig(t *testing.T) {
 			require.NotNil(t, cfg)
 			assert.Equal(t,
 				&Config{
-					ProcessorSettings:       config.NewProcessorSettings(config.NewComponentID(typeStr)),
-					MetricsExporter:         tc.wantMetricsExporter,
-					LatencyHistogramBuckets: tc.wantLatencyHistogramBuckets,
-					Dimensions:              tc.wantDimensions,
-					MetricKeyToDimensionsLength: tc.wantMetricKeyToDimensionsLength,
+					ProcessorSettings:              config.NewProcessorSettings(config.NewComponentID(typeStr)),
+					MetricsExporter:                tc.wantMetricsExporter,
+					LatencyHistogramBuckets:        tc.wantLatencyHistogramBuckets,
+					Dimensions:                     tc.wantDimensions,
+					MetricKeyToDimensionsCacheSize: tc.wantMetricKeyToDimensionsCacheSize,
 				},
 				cfg.Processors[config.NewComponentID(typeStr)],
 			)

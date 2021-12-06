@@ -46,15 +46,15 @@ type Config struct {
 	// https://github.com/open-telemetry/opentelemetry-collector/blob/main/model/semconv/opentelemetry.go.
 	Dimensions []Dimension `mapstructure:"dimensions"`
 
-	// MetricKeyToDimensionsLength defines the length of the LRU cache for storing MetricKeyToDimensions cache
-	MetricKeyToDimensionsLength int `mapstructure:"metric_key_to_dimensions_length"`
+	// MetricKeyToDimensionsCacheSize defines the size of the LRU cache for storing MetricKeyToDimensions cache
+	MetricKeyToDimensionsCacheSize int `mapstructure:"metric_key_to_dimensions_cache_size"`
 }
 
-// GetMetricKeyToDimensionsLength get the value from config for the length of LRU cache `MetricKeyToDimensionsLength`
+// GetMetricKeyToDimensionsCacheSize get the value from config for the length of LRU cache `MetricKeyToDimensionsCacheSize`
 // if the valve from the config is invalid, return the default value.
-func (c Config) GetMetricKeyToDimensionsLength() int {
-	if c.MetricKeyToDimensionsLength <= 0 {
-		return defaultMetricKeyToDimensionsLength
+func (c Config) GetMetricKeyToDimensionsCacheSize() int {
+	if c.MetricKeyToDimensionsCacheSize <= 0 {
+		return defaultMetricKeyToDimensionsCacheSize
 	}
-	return defaultMetricKeyToDimensionsLength
+	return defaultMetricKeyToDimensionsCacheSize
 }
