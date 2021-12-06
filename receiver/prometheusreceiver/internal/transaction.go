@@ -247,7 +247,7 @@ func createNodeAndResource(job, instance, scheme string) (*commonpb.Node, *resou
 		ServiceInfo: &commonpb.ServiceInfo{Name: job},
 	}
 
-	if isAllowedHost(host) {
+	if isDiscernibleHost(host) {
 		node.Identifier = &commonpb.ProcessIdentifier{
 			HostName: host,
 		}
