@@ -28,6 +28,7 @@ exporter/f5cloudexporter/                            @open-telemetry/collector-c
 exporter/honeycombexporter/                          @open-telemetry/collector-contrib-approvers @paulosman @lizthegrey @MikeGoldsmith
 exporter/humioexporter/                              @open-telemetry/collector-contrib-approvers @xitric
 exporter/jaegerthrifthttpexporter/                   @open-telemetry/collector-contrib-approvers @jpkrohling @pavolloffay
+exporter/jaegerexporter/                             @open-telemetry/collector-contrib-approvers @jpkrohling
 exporter/awskinesisexporter/                         @open-telemetry/collector-contrib-approvers @anuraaga @MovieStoreGuy
 exporter/loadbalancingexporter/                      @open-telemetry/collector-contrib-approvers @jpkrohling
 exporter/logzioexporter/                             @open-telemetry/collector-contrib-approvers @jkowall @Doron-Bargo @yotamloe
@@ -49,10 +50,12 @@ exporter/tencentcloudlogserviceexporter/             @open-telemetry/collector-c
 exporter/influxdbexporter/                           @open-telemetry/collector-contrib-approvers @jacobmarble @8none1
 
 extension/awsproxy/                                  @open-telemetry/collector-contrib-approvers @anuraaga @Aneurysm9 @mxiamxia
+extension/healthcheckextension/                      @open-telemetry/collector-contrib-approvers @jpkrohling
 extension/httpforwarder/                             @open-telemetry/collector-contrib-approvers @asuresh4
 extension/observer/                                  @open-telemetry/collector-contrib-approvers @asuresh4 @jrcamp
+extension/oidcauthextension/                         @open-telemetry/collector-contrib-approvers @jpkrohling
 extension/bearertokenauthextension/                  @open-telemetry/collector-contrib-approvers @jpkrohling @pavankrish123
-extension/oauth2clientauthextension/                 @open-telemetry/collector-contrib-approvers @pavankrish123
+extension/oauth2clientauthextension/                 @open-telemetry/collector-contrib-approvers @jpkrohling @pavankrish123
 
 internal/aws/                                        @open-telemetry/collector-contrib-approvers @anuraaga @mxiamxia
 internal/docker/                                     @open-telemetry/collector-contrib-approvers @mstumpfx @rmfitzpatrick
@@ -73,6 +76,7 @@ processor/resourcedetectionprocessor/internal/azure  @open-telemetry/collector-c
 processor/routingprocessor/                          @open-telemetry/collector-contrib-approvers @jpkrohling
 processor/spanmetricsprocessor/                      @open-telemetry/collector-contrib-approvers @albertteoh
 processor/tailsamplingprocessor/                     @open-telemetry/collector-contrib-approvers @jpkrohling
+processor/probabilisticsamplerprocessor/             @open-telemetry/collector-contrib-approvers @jpkrohling
 
 receiver/apachereceiver/                             @open-telemetry/collector-contrib-approvers @djaglowski
 receiver/awscontainerinsightreceiver/                @open-telemetry/collector-contrib-approvers @Aneurysm9 @pxaws
@@ -87,6 +91,7 @@ receiver/fluentforwardreceiver/                      @open-telemetry/collector-c
 receiver/jmxreceiver/                                @open-telemetry/collector-contrib-approvers @rmfitzpatrick
 receiver/kafkametricsreceiver/                       @open-telemetry/collector-contrib-approvers @dmitryax
 receiver/k8sclusterreceiver/                         @open-telemetry/collector-contrib-approvers @asuresh4
+receiver/jaegerreceiver/                             @open-telemetry/collector-contrib-approvers @jpkrohling
 receiver/k8seventsreceiver/                          @open-telemetry/collector-contrib-approvers @dmitryax
 receiver/kubeletstatsreceiver/                       @open-telemetry/collector-contrib-approvers @pmcollins @asuresh4
 receiver/mongodbatlasreceiver/                       @open-telemetry/collector-contrib-approvers @zenmoto
