@@ -54,6 +54,8 @@ The following settings can be optionally configured:
   If the `name`d attribute is missing in the span, the optional provided `default` is used.
   
   If no `default` is provided, this dimension will be **omitted** from the metric.
+- `metric_key_to_dimensions_cache_size`: the size of `metric_key_to_dimensions_cache`. If not provided, will use default
+  value size `1000`.
 
 ## Examples
 
