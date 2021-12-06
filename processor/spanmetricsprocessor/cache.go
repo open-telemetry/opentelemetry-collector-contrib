@@ -18,6 +18,8 @@ import lru "github.com/hashicorp/golang-lru"
 
 // Cache is consist of an LRU cache and the evicted items from the LRU cache
 // this data structure makes sure all the cached item can be retrieved either from the LRU cache or the evictedItems map
+// In spanmetricsprocessor's use case, we need to hold all the items during the current processing step for building the
+// metrics. The evicted items can/should be safely removed once the metrics are built from the current batch of spans.
 type Cache struct {
 	*lru.Cache
 	evictedItems map[interface{}]interface{}
