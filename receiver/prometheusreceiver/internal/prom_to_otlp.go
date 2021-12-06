@@ -28,7 +28,7 @@ func isDiscernibleHost(host string) bool {
 	if ip != nil {
 		// An IP is discernible if
 		//  - it's not local (e.g. belongs to 127.0.0.0/8 or ::1/128) and
-		//  - it's not unspecficied (e.g. the 0.0.0.0 address).
+		//  - it's not unspecified (e.g. the 0.0.0.0 address).
 		return !ip.IsLoopback() && !ip.IsUnspecified()
 	}
 
