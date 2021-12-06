@@ -53,7 +53,7 @@ func (gap *groupByAttrsProcessor) processTraces(ctx context.Context, td pdata.Tr
 
 				// Lets combine the base resource attributes + the extracted (grouped) attributes
 				// and keep them in the grouping entry
-				groupedSpans := groupedResourceSpans.findResourceOrElseCreate(rs.Resource(), requiredAttributes)
+				groupedSpans := groupedResourceSpans.findOrCreateResource(rs.Resource(), requiredAttributes)
 				sp := matchingInstrumentationLibrarySpans(groupedSpans, ils.InstrumentationLibrary()).Spans().AppendEmpty()
 				span.CopyTo(sp)
 			}

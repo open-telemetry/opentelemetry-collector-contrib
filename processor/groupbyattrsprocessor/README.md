@@ -109,14 +109,14 @@ Please refer to:
 
 The following internal metrics are recorded by this processor:
 
-| Metric | Description |
-|---|---|
-| `num_grouped_spans` | the number of spans that had attributes grouped |
-| `num_non_grouped_spans` | the number of spans that did not have attributes grouped |
-| `span_groups` | distributon of groups extracted for spans |
-| `num_grouped_logs` | number of logs that had attributes grouped |
-| `num_non_grouped_logs` | number of logs that did not have attributes grouped |
-| `log_groups` | distributon of groups extracted for logs |
-| `num_grouped_metrics` | number of metrics that had attributes grouped |
-| `num_non_grouped_metrics` | number of metrics that did not have attributes grouped |
-| `metric_groups` | distributon of groups extracted for metrics |
+| Metric                    | Description                                              |
+|---------------------------|----------------------------------------------------------|
+| `num_grouped_spans`       | the number of spans that had attributes grouped          |
+| `num_non_grouped_spans`   | the number of spans that did not have attributes grouped |
+| `span_groups`             | distribution of groups extracted for spans               |
+| `num_grouped_logs`        | number of logs that had attributes grouped               |
+| `num_non_grouped_logs`    | number of logs that did not have attributes grouped      |
+| `log_groups`              | distribution of groups extracted for logs                |
+| `num_grouped_metrics`     | number of metrics that had attributes grouped            |
+| `num_non_grouped_metrics` | number of metrics that did not have attributes grouped   |
+| `metric_groups`           | distribution of groups extracted for metrics             |

@@ -188,8 +188,8 @@ func updateResourceToMatch(newResource pdata.Resource, originResource pdata.Reso
 
 }
 
-// findResourceOrElseCreate searches for a Resource with matching attributes and returns it. If nothing is found, it is being created
-func (sgba *spansGroupedByAttrs) findResourceOrElseCreate(originResource pdata.Resource, requiredAttributes pdata.AttributeMap) pdata.ResourceSpans {
+// findOrCreateResource searches for a Resource with matching attributes and returns it. If nothing is found, it is being created
+func (sgba *spansGroupedByAttrs) findOrCreateResource(originResource pdata.Resource, requiredAttributes pdata.AttributeMap) pdata.ResourceSpans {
 
 	// Build the reference attributes that we're looking for in Resources
 	referenceAttributes := buildReferenceAttributes(originResource, requiredAttributes)
