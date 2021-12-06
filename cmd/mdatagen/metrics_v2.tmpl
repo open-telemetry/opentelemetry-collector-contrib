@@ -106,7 +106,7 @@ func NewMetricsBuilder(config MetricsSettings, options ...metricBuilderOption) *
 // defined in metadata and user configuration, e.g. delta/cumulative translation.
 func (mb *MetricsBuilder) Emit(metrics pdata.MetricSlice) {
 	{{- range $name, $metric := .Metrics }}
-	if mb.config.{{- $name.Render }}.Enabled {
+	if mb.config.{{ $name.Render }}.Enabled && mb.metrics.{{ $name.Render }}.{{ $metric.Data.Type }}().DataPoints().Len() > 0 {
 		mb.metrics.{{- $name.Render }}.CopyTo(metrics.AppendEmpty())
 	}
 	{{- end }}
