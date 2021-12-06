@@ -64,6 +64,8 @@ internal/stanza/                                     @open-telemetry/collector-c
 
 pkg/batchpersignal/                                  @open-telemetry/collector-contrib-approvers @jpkrohling
 
+processor/attributesprocessor/                       @open-telemetry/collector-contrib-approvers @boostchicken
+processor/filterprocessor/                           @open-telemetry/collector-contrib-approvers @boostchicken
 processor/groupbyattrsprocessor/                     @open-telemetry/collector-contrib-approvers @pmm-sumo
 processor/groupbytraceprocessor/                     @open-telemetry/collector-contrib-approvers @jpkrohling
 processor/k8sattributesprocessor/                    @open-telemetry/collector-contrib-approvers @owais @dmitryax @pmm-sumo
@@ -72,6 +74,7 @@ processor/resourcedetectionprocessor/                @open-telemetry/collector-c
 processor/resourcedetectionprocessor/internal/azure  @open-telemetry/collector-contrib-approvers @mx-psi
 processor/routingprocessor/                          @open-telemetry/collector-contrib-approvers @jpkrohling
 processor/spanmetricsprocessor/                      @open-telemetry/collector-contrib-approvers @albertteoh
+processor/spanprocessor/                              @open-telemetry/collector-contrib-approvers @boostchicken
 processor/tailsamplingprocessor/                     @open-telemetry/collector-contrib-approvers @jpkrohling
 
 receiver/apachereceiver/                             @open-telemetry/collector-contrib-approvers @djaglowski
