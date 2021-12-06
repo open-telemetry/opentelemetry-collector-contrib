@@ -51,6 +51,10 @@ func TestEndToEndSummarySupport(t *testing.T) {
 			// Serve back the metrics as if they were from DropWizard.
 			_, err := rw.Write([]byte(dropWizardResponse))
 			require.NoError(t, err)
+		default:
+			// Non-blocking serve for DropWizard
+			_, err := rw.Write([]byte(dropWizardResponse))
+			require.NoError(t, err)
 		}
 	}))
 	defer dropWizardServer.Close()
