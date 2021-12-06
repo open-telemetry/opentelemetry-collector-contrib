@@ -43,6 +43,11 @@ func TestDefaultReceivers(t *testing.T) {
 		getConfigFn  getReceiverConfigFn
 	}{
 		{
+			receiver: "awscontainerinsightreceiver",
+			// TODO: skipped since it will only function in a container environment with procfs in expected location.
+			skipLifecyle: true,
+		},
+		{
 			receiver: "hostmetrics",
 		},
 		{
@@ -51,6 +56,9 @@ func TestDefaultReceivers(t *testing.T) {
 		{
 			receiver:     "kafka",
 			skipLifecyle: true, // TODO: It needs access to internals to successful start.
+		},
+		{
+			receiver: "mongodbatlas",
 		},
 		{
 			receiver:     "opencensus",
@@ -72,19 +80,20 @@ func TestDefaultReceivers(t *testing.T) {
 			},
 		},
 		{
+			receiver: "sapm",
+		},
+		{
+			receiver: "signalfx",
+		},
+		{
+			receiver: "splunk_hec",
+		},
+		{
 			receiver: "zipkin",
-		},
-		{
-			receiver: "mongodbatlas",
-		},
-		{
-			receiver: "awscontainerinsightreceiver",
-			// TODO: skipped since it will only function in a container environment with procfs in expected location.
-			skipLifecyle: true,
 		},
 	}
 
-	assert.Equal(t, len(tests)+31 /* not tested */, len(rcvrFactories))
+	assert.Equal(t, len(tests)+28 /* not tested */, len(rcvrFactories))
 	for _, tt := range tests {
 		t.Run(string(tt.receiver), func(t *testing.T) {
 			factory, ok := rcvrFactories[tt.receiver]

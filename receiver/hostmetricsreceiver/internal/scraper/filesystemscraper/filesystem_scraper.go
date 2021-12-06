@@ -16,10 +16,9 @@ package filesystemscraper // import "github.com/open-telemetry/opentelemetry-col
 
 import (
 	"context"
-	"strings"
 	"time"
 
-	"github.com/shirou/gopsutil/disk"
+	"github.com/shirou/gopsutil/v3/disk"
 	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
 
@@ -119,11 +118,10 @@ func initializeFileSystemUsageDataPoint(dataPoint pdata.NumberDataPoint, now pda
 	dataPoint.SetIntVal(value)
 }
 
-func getMountMode(opts string) string {
-	splitOptions := strings.Split(opts, ",")
-	if exists(splitOptions, "rw") {
+func getMountMode(opts []string) string {
+	if exists(opts, "rw") {
 		return "rw"
-	} else if exists(splitOptions, "ro") {
+	} else if exists(opts, "ro") {
 		return "ro"
 	}
 	return "unknown"

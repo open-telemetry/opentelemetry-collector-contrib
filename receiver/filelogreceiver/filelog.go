@@ -49,10 +49,7 @@ func createDefaultConfig() *FileLogConfig {
 		BaseConfig: stanza.BaseConfig{
 			ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
 			Operators:        stanza.OperatorConfigs{},
-			Converter: stanza.ConverterConfig{
-				MaxFlushCount: stanza.DefaultMaxFlushCount,
-				FlushInterval: stanza.DefaultFlushInterval,
-			},
+			Converter:        stanza.ConverterConfig{},
 		},
 		Input: stanza.InputConfig{},
 	}

@@ -21,8 +21,7 @@ metrics:
   system.filesystem.usage:
     description: Filesystem bytes used.
     unit: By
-    data:
-      type: sum
+    sum:
       aggregation: cumulative
       monotonic: false
     attributes: [device, mode, mountpoint, type, state]
@@ -30,8 +29,7 @@ metrics:
   system.filesystem.inodes.usage:
     description: FileSystem inodes used.
     unit: "{inodes}"
-    data:
-      type: sum
+    sum:
       aggregation: cumulative
       monotonic: false
     attributes: [device, mode, mountpoint, type, state]
