@@ -7,8 +7,8 @@ require (
 	github.com/elastic/go-elasticsearch/v7 v7.15.1
 	github.com/elastic/go-structform v0.0.9
 	github.com/stretchr/testify v1.7.0
-	go.opentelemetry.io/collector v0.40.1-0.20211202221455-42566a660aac
-	go.opentelemetry.io/collector/model v0.40.1-0.20211202221455-42566a660aac
+	go.opentelemetry.io/collector v0.40.1-0.20211206203115-a06ca26079fe
+	go.opentelemetry.io/collector/model v0.40.1-0.20211206203115-a06ca26079fe
 	go.uber.org/multierr v1.7.0
 	go.uber.org/zap v1.19.1
 
@@ -22,7 +22,7 @@ require (
 	github.com/kr/pretty v0.3.0 // indirect
 	github.com/magiconair/properties v1.8.5 // indirect
 	github.com/mitchellh/copystructure v1.2.0 // indirect
-	github.com/mitchellh/mapstructure v1.4.2 // indirect
+	github.com/mitchellh/mapstructure v1.4.3 // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/pelletier/go-toml v1.9.3 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
