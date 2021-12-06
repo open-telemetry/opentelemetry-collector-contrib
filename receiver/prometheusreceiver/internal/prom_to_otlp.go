@@ -21,16 +21,23 @@ import (
 	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
 )
 
-const (
-	localHostIPv4 = "127.0.0.1"
-	anyIPIPv4     = "0.0.0.0"
-)
-
-func sanitizeHost(host string) string {
-	if host == anyIPIPv4 {
-		return localHostIPv4
+// isAllowedHost returns if a host can be used as a value for the 'host.name' key.
+// localhost-like hosts and unspecified (0.0.0.0) hosts are not allowed.
+func isAllowedHost(host string) bool {
+	ip := net.ParseIP(host)
+	if ip != nil {
+		// An IP is allowed if
+		//  - it's not local (e.g. belongs to 127.0.0.0/8 or ::1/128) and
+		//  - it's not unspecficied (e.g. the 0.0.0.0 address).
+		return !ip.IsLoopback() && !ip.IsUnspecified()
 	}
-	return host
+
+	if host == "localhost" {
+		return false
+	}
+
+	// not an IP, not 'localhost', assume it is allowed.
+	return true
 }
 
 func createNodeAndResourcePdata(job, instance, scheme string) pdata.Resource {
@@ -38,11 +45,12 @@ func createNodeAndResourcePdata(job, instance, scheme string) pdata.Resource {
 	if err != nil {
 		host = instance
 	}
-	host = sanitizeHost(host)
 	resource := pdata.NewResource()
 	attrs := resource.Attributes()
 	attrs.UpsertString(conventions.AttributeServiceName, job)
-	attrs.UpsertString(conventions.AttributeHostName, host)
+	if isAllowedHost(host) {
+		attrs.UpsertString(conventions.AttributeHostName, host)
+	}
 	attrs.UpsertString(jobAttr, job)
 	attrs.UpsertString(instanceAttr, instance)
 	attrs.UpsertString(portAttr, port)

@@ -52,13 +52,15 @@ type jobInstanceDefinition struct {
 	job, instance, host, scheme, port string
 }
 
-func makeResourceWithJobInstanceScheme(def *jobInstanceDefinition) pdata.Resource {
+func makeResourceWithJobInstanceScheme(def *jobInstanceDefinition, noHost bool) pdata.Resource {
 	resource := pdata.NewResource()
 	attrs := resource.Attributes()
 	// Using hardcoded values to assert on outward expectations so that
 	// when variables change, these tests will fail and we'll have reports.
 	attrs.UpsertString("service.name", def.job)
-	attrs.UpsertString("host.name", def.host)
+	if !noHost {
+		attrs.UpsertString("host.name", def.host)
+	}
 	attrs.UpsertString("job", def.job)
 	attrs.UpsertString("instance", def.instance)
 	attrs.UpsertString("port", def.port)
@@ -78,42 +80,42 @@ func TestCreateNodeAndResourcePromToOTLP(t *testing.T) {
 			job:  "job", instance: "localhost:8888", scheme: "http",
 			want: makeResourceWithJobInstanceScheme(&jobInstanceDefinition{
 				"job", "localhost:8888", "localhost", "http", "8888",
-			}),
+			}, false),
 		},
 		{
 			name: "missing port",
 			job:  "job", instance: "myinstance", scheme: "https",
 			want: makeResourceWithJobInstanceScheme(&jobInstanceDefinition{
 				"job", "myinstance", "myinstance", "https", "",
-			}),
+			}, false),
 		},
 		{
 			name: "blank scheme",
 			job:  "job", instance: "myinstance:443", scheme: "",
 			want: makeResourceWithJobInstanceScheme(&jobInstanceDefinition{
 				"job", "myinstance:443", "myinstance", "", "443",
-			}),
+			}, false),
 		},
 		{
 			name: "blank instance, blank scheme",
 			job:  "job", instance: "", scheme: "",
 			want: makeResourceWithJobInstanceScheme(&jobInstanceDefinition{
 				"job", "", "", "", "",
-			}),
+			}, false),
 		},
 		{
 			name: "blank instance, non-blank scheme",
 			job:  "job", instance: "", scheme: "http",
 			want: makeResourceWithJobInstanceScheme(&jobInstanceDefinition{
 				"job", "", "", "http", "",
-			}),
+			}, false),
 		},
 		{
 			name: "0.0.0.0 address",
 			job:  "job", instance: "0.0.0.0:8888", scheme: "http",
 			want: makeResourceWithJobInstanceScheme(&jobInstanceDefinition{
-				"job", "0.0.0.0:8888", "127.0.0.1", "http", "8888",
-			}),
+				"job", "0.0.0.0:8888", "", "http", "8888",
+			}, true),
 		},
 	}
 

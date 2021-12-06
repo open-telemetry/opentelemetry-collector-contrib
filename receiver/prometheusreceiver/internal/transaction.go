@@ -242,7 +242,11 @@ func createNodeAndResource(job, instance, scheme string) (*commonpb.Node, *resou
 	if err != nil {
 		host = instance
 	}
-	host = sanitizeHost(host)
+
+	if !isAllowedHost(host) {
+		host = ""
+	}
+
 	node := &commonpb.Node{
 		ServiceInfo: &commonpb.ServiceInfo{Name: job},
 		Identifier: &commonpb.ProcessIdentifier{
