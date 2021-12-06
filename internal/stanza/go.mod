@@ -4,7 +4,7 @@ go 1.17
 
 require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage v0.40.0
-	github.com/open-telemetry/opentelemetry-log-collection v0.22.0
+	github.com/open-telemetry/opentelemetry-log-collection v0.23.0
 	github.com/stretchr/testify v1.7.0
 	go.opentelemetry.io/collector v0.40.1-0.20211202221455-42566a660aac
 	go.opentelemetry.io/collector/model v0.40.1-0.20211202221455-42566a660aac
@@ -26,6 +26,7 @@ require (
 	github.com/modern-go/reflect2 v1.0.1 // indirect
 	github.com/observiq/ctimefmt v1.0.0 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
+	github.com/rogpeppe/go-internal v1.8.0 // indirect
 	github.com/spf13/cast v1.4.1 // indirect
 	github.com/stretchr/objx v0.2.0 // indirect
 	go.etcd.io/bbolt v1.3.6 // indirect
