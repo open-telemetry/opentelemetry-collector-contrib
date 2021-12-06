@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkar
 go 1.17
 
 require (
-	github.com/Shopify/sarama v1.30.0
+	github.com/Shopify/sarama v1.30.1
 	github.com/apache/thrift v0.15.0
 	github.com/gogo/protobuf v1.3.2
 	github.com/jaegertracing/jaeger v1.28.0
