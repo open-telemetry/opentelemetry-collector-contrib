@@ -77,9 +77,9 @@ func TestCreateNodeAndResourcePromToOTLP(t *testing.T) {
 	}{
 		{
 			name: "all attributes proper",
-			job:  "job", instance: "localhost:8888", scheme: "http",
+			job:  "job", instance: "hostname:8888", scheme: "http",
 			want: makeResourceWithJobInstanceScheme(&jobInstanceDefinition{
-				"job", "localhost:8888", "localhost", "http", "8888",
+				"job", "hostname:8888", "hostname", "http", "8888",
 			}, false),
 		},
 		{
@@ -115,6 +115,13 @@ func TestCreateNodeAndResourcePromToOTLP(t *testing.T) {
 			job:  "job", instance: "0.0.0.0:8888", scheme: "http",
 			want: makeResourceWithJobInstanceScheme(&jobInstanceDefinition{
 				"job", "0.0.0.0:8888", "", "http", "8888",
+			}, true),
+		},
+		{
+			name: "localhost",
+			job:  "job", instance: "localhost:8888", scheme: "http",
+			want: makeResourceWithJobInstanceScheme(&jobInstanceDefinition{
+				"job", "localhost:8888", "", "http", "8888",
 			}, true),
 		},
 	}
