@@ -47,7 +47,6 @@ exporter/stackdriverexporter/                        @open-telemetry/collector-c
 exporter/sumologicexporter/                          @open-telemetry/collector-contrib-approvers @pmm-sumo @sumo-drosiek
 exporter/tanzuobservabilityexporter/                 @open-telemetry/collector-contrib-approvers @oppegard @thepeterstone @keep94
 exporter/tencentcloudlogserviceexporter/             @open-telemetry/collector-contrib-approvers @wgliang @yiyang5055
-exporter/uptraceexporter/                            @open-telemetry/collector-contrib-approvers @vmihailenco
 
 extension/awsproxy/                                  @open-telemetry/collector-contrib-approvers @anuraaga @Aneurysm9 @mxiamxia
 extension/bearertokenauthextension/                  @open-telemetry/collector-contrib-approvers @jpkrohling @pavankrish123
@@ -90,7 +89,7 @@ receiver/dockerstatsreceiver/                        @open-telemetry/collector-c
 receiver/dotnetdiagnosticsreceiver/                  @open-telemetry/collector-contrib-approvers @pmcollins @davmason
 receiver/filelogreceiver/                            @open-telemetry/collector-contrib-approvers @djaglowski
 receiver/fluentforwardreceiver/                      @open-telemetry/collector-contrib-approvers @dmitryax
-receiver/googlecloudpubsubexporter/                  @open-telemetry/collector-contrib-approvers @alexvanboxel
+receiver/googlecloudpubsubreceiver/                  @open-telemetry/collector-contrib-approvers @alexvanboxel
 receiver/googlecloudspannerreceiver/                 @open-telemetry/collector-contrib-approvers @ydrozhdzhal @asukhyy @khospodarysko @architjugran
 receiver/influxdbreceiver/                           @open-telemetry/collector-contrib-approvers @jacobmarble @8none1
 receiver/jaegerreceiver/                             @open-telemetry/collector-contrib-approvers @jpkrohling
