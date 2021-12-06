@@ -34,6 +34,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/model/pdata"
 	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
+	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
@@ -972,4 +973,23 @@ func validateCompressedContains(t *testing.T, expected []string, got []byte) {
 		assert.Contains(t, string(p), e)
 	}
 
+}
+
+func BenchmarkPushLogRecords(b *testing.B) {
+	logs := createLogData(1, 1, 1)
+	c := client{
+		url: &url.URL{Scheme: "http", Host: "splunk"},
+		zippers: sync.Pool{New: func() interface{} {
+			return gzip.NewWriter(nil)
+		}},
+		config: NewFactory().CreateDefaultConfig().(*Config),
+		logger: zap.NewNop(),
+	}
+	sender := func(ctx context.Context, buffer *bytes.Buffer, headers map[string]string) error {
+		return nil
+	}
+	state := makeBlankBufferState(4096)
+	for n := 0; n < b.N; n++ {
+		_, _ = c.pushLogRecords(context.Background(), logs.ResourceLogs(), &state, map[string]string{}, sender)
+	}
 }
