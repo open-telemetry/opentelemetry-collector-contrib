@@ -24,7 +24,6 @@ import (
 	"time"
 	"unicode"
 
-	"github.com/hashicorp/golang-lru"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
@@ -41,7 +40,7 @@ const (
 	metricKeySeparator = string(byte(0))
 	traceIDKey         = "trace_id"
 
-	defaultMetricKeyToDimensionsLength = 1000
+	defaultMetricKeyToDimensionsCacheSize = 1000
 )
 
 var (
@@ -86,8 +85,9 @@ type processorImp struct {
 
 	// An LRU cache of dimension key-value maps keyed by a unique identifier formed by a concatenation of its values:
 	// e.g. { "foo/barOK": { "serviceName": "foo", "operation": "/bar", "status_code": "OK" }}
-	metricKeyToDimensions *lru.Cache
+	metricKeyToDimensions *Cache
 }
+
 
 func newProcessor(logger *zap.Logger, config config.Processor, nextConsumer consumer.Traces) (*processorImp, error) {
 	logger.Info("Building spanmetricsprocessor")
@@ -107,7 +107,7 @@ func newProcessor(logger *zap.Logger, config config.Processor, nextConsumer cons
 		return nil, err
 	}
 
-	metricKeyToDimensionsCache, err := lru.New(pConfig.GetMetricKeyToDimensionsLength())
+	metricKeyToDimensionsCache, err := 	NewCache(pConfig.GetMetricKeyToDimensionsCacheSize())
 	if err != nil {
 		return nil, err
 	}
@@ -245,6 +245,7 @@ func (p *processorImp) buildMetrics() *pdata.Metrics {
 	p.lock.RLock()
 	p.collectCallMetrics(ilm)
 	p.collectLatencyMetrics(ilm)
+	p.metricKeyToDimensions.RemoveEvictedItems()
 	p.lock.RUnlock()
 
 	return &m

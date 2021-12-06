@@ -17,7 +17,6 @@ package spanmetricsprocessor
 import (
 	"context"
 	"fmt"
-	lru "github.com/hashicorp/golang-lru"
 	"testing"
 	"time"
 
@@ -40,16 +39,17 @@ import (
 )
 
 const (
-	stringAttrName         = "stringAttrName"
-	intAttrName            = "intAttrName"
-	doubleAttrName         = "doubleAttrName"
-	boolAttrName           = "boolAttrName"
-	nullAttrName           = "nullAttrName"
-	mapAttrName            = "mapAttrName"
-	arrayAttrName          = "arrayAttrName"
-	notInSpanAttrName0     = "shouldBeInMetric"
-	notInSpanAttrName1     = "shouldNotBeInMetric"
-	regionResourceAttrName = "region"
+	stringAttrName                 = "stringAttrName"
+	intAttrName                    = "intAttrName"
+	doubleAttrName                 = "doubleAttrName"
+	boolAttrName                   = "boolAttrName"
+	nullAttrName                   = "nullAttrName"
+	mapAttrName                    = "mapAttrName"
+	arrayAttrName                  = "arrayAttrName"
+	notInSpanAttrName0             = "shouldBeInMetric"
+	notInSpanAttrName1             = "shouldNotBeInMetric"
+	regionResourceAttrName         = "region"
+	metricKeyToDimensionsCacheSize = 2
 
 	sampleRegion          = "us-east-1"
 	sampleLatency         = float64(11)
@@ -242,7 +242,6 @@ func TestProcessorConsumeTraces(t *testing.T) {
 }
 
 func TestMetricKeyCache(t *testing.T) {
-	// Prepare
 	mexp := &mocks.MetricsExporter{}
 	tcon := &mocks.TracesConsumer{}
 
@@ -258,22 +257,22 @@ func TestMetricKeyCache(t *testing.T) {
 	ctx := metadata.NewIncomingContext(context.Background(), nil)
 
 	// 0 key was cached at beginning
-	keys := p.metricKeyToDimensions.Keys()
-	assert.Equal(t, 0, len(keys))
+	assert.Equal(t, 0, len(p.metricKeyToDimensions.Keys()))
+	assert.Equal(t, 0, len(p.metricKeyToDimensions.evictedItems))
 
 	err := p.ConsumeTraces(ctx, traces)
-
-	// 3 keys was cached at beginning
-	keys = p.metricKeyToDimensions.Keys()
-	assert.Equal(t, 3, len(keys))
-
 	// Validate
 	require.NoError(t, err)
+	// 2 key was cached, 1 key was evicted and cleaned after the processing
+	assert.Equal(t, metricKeyToDimensionsCacheSize, len(p.metricKeyToDimensions.Keys()))
+	assert.Equal(t, 0, len(p.metricKeyToDimensions.evictedItems))
 
+	// consume another batch of traces
 	err = p.ConsumeTraces(ctx, traces)
+	// 2 key was cached, other keys were evicted and cleaned after the processing
+	assert.Equal(t, metricKeyToDimensionsCacheSize, len(p.metricKeyToDimensions.Keys()))
+	assert.Equal(t, 0, len(p.metricKeyToDimensions.evictedItems))
 
-	keys = p.metricKeyToDimensions.Keys()
-	assert.Equal(t, 3, len(keys))
 
 	require.NoError(t, err)
 }
@@ -300,8 +299,8 @@ func BenchmarkProcessorConsumeTraces(b *testing.B) {
 
 func newProcessorImp(mexp *mocks.MetricsExporter, tcon *mocks.TracesConsumer, defaultNullValue *string) *processorImp {
 	defaultNotInSpanAttrVal := "defaultNotInSpanAttrVal"
-	// use size 1 for LRU cache for testing purpose
-	metricKeyToDimensions, err := lru.New(defaultMetricKeyToDimensionsLength)
+	// use size 2 for LRU cache for testing purpose
+	metricKeyToDimensions, err := NewCache(metricKeyToDimensionsCacheSize)
 	if err != nil {
 		return nil
 	}
