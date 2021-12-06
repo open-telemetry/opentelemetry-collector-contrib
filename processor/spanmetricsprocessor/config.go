@@ -51,7 +51,7 @@ type Config struct {
 }
 
 // GetMetricKeyToDimensionsCacheSize get the value from config for the length of LRU cache `MetricKeyToDimensionsCacheSize`
-// if the valve from the config is invalid, return the default value.
+// if the value from the config is invalid, return the default value.
 func (c Config) GetMetricKeyToDimensionsCacheSize() int {
 	if c.MetricKeyToDimensionsCacheSize <= 0 {
 		return defaultMetricKeyToDimensionsCacheSize
