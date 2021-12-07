@@ -116,7 +116,7 @@ func TestResourceAttributeScenarios(t *testing.T) {
 				tt.fillExpectedResourceFun(tt.baseResource, expectedResource)
 			}
 
-			rl := lagAttrs.attributeGroup(tt.baseResource, recordAttributeMap)
+			rl := lagAttrs.findResourceOrElseCreate(tt.baseResource, recordAttributeMap)
 			assert.EqualValues(t, expectedResource.Attributes(), rl.Resource().Attributes())
 		})
 	}
@@ -125,6 +125,7 @@ func TestResourceAttributeScenarios(t *testing.T) {
 func TestInstrumentationLibraryMatching(t *testing.T) {
 	rl := pdata.NewResourceLogs()
 	rs := pdata.NewResourceSpans()
+	rm := pdata.NewResourceMetrics()
 
 	il1 := pdata.NewInstrumentationLibrary()
 	il1.SetName("Name1")
@@ -133,20 +134,26 @@ func TestInstrumentationLibraryMatching(t *testing.T) {
 
 	ill1 := matchingInstrumentationLibraryLogs(rl, il1)
 	ils1 := matchingInstrumentationLibrarySpans(rs, il1)
+	ilm1 := matchingInstrumentationLibraryMetrics(rm, il1)
 	assert.EqualValues(t, il1, ill1.InstrumentationLibrary())
 	assert.EqualValues(t, il1, ils1.InstrumentationLibrary())
+	assert.EqualValues(t, il1, ilm1.InstrumentationLibrary())
 
 	ill2 := matchingInstrumentationLibraryLogs(rl, il2)
 	ils2 := matchingInstrumentationLibrarySpans(rs, il2)
+	ilm2 := matchingInstrumentationLibraryMetrics(rm, il2)
 	assert.EqualValues(t, il2, ill2.InstrumentationLibrary())
 	assert.EqualValues(t, il2, ils2.InstrumentationLibrary())
+	assert.EqualValues(t, il2, ilm2.InstrumentationLibrary())
 
 	ill1 = matchingInstrumentationLibraryLogs(rl, il1)
 	ils1 = matchingInstrumentationLibrarySpans(rs, il1)
+	ilm1 = matchingInstrumentationLibraryMetrics(rm, il1)
 	assert.EqualValues(t, il1, ill1.InstrumentationLibrary())
 	assert.EqualValues(t, il1, ils1.InstrumentationLibrary())
+	assert.EqualValues(t, il1, ilm1.InstrumentationLibrary())
 }
 
 func BenchmarkAttrGrouping(b *testing.B) {
-	lagAttrs.attributeGroup(res, groups[rand.Intn(count)])
+	lagAttrs.findResourceOrElseCreate(res, groups[rand.Intn(count)])
 }
