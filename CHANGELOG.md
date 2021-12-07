@@ -10,6 +10,8 @@
 
 ## 💡 Enhancements 💡
 
+- `lokiexporter`: add complete log record to body (#6619)
+
 ## v0.41.0
 
 ## 🛑 Breaking changes 🛑
