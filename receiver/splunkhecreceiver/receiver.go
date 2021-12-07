@@ -184,7 +184,10 @@ func (r *splunkReceiver) Start(_ context.Context, host component.Host) error {
 	}
 	mx.NewRoute().HandlerFunc(r.handleReq)
 
-	r.server = r.config.HTTPServerSettings.ToServer(mx, r.settings.TelemetrySettings)
+	r.server, err = r.config.HTTPServerSettings.ToServer(host, r.settings.TelemetrySettings, mx)
+	if err != nil {
+		return err
+	}
 
 	// TODO: Evaluate what properties should be configurable, for now
 	//		set some hard-coded values.
