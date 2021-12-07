@@ -17,9 +17,9 @@ package prometheusremotewriteexporter
 import (
 	"fmt"
 	"math"
+	"strings"
 	"time"
 
-	"github.com/prometheus/prometheus/pkg/value"
 	"github.com/prometheus/prometheus/prompb"
 	"go.opentelemetry.io/collector/model/pdata"
 )
@@ -51,14 +51,11 @@ var (
 	traceIDValue1 = "traceID-value1"
 	traceIDKey    = "trace_id"
 
-	intVal1 int64 = 1
-	intVal2 int64 = 2
-	intVal3       = int64(value.StaleNaN)
-
-	floatVal1 = 1.0
-	floatVal2 = 2.0
-	floatVal3 = 3.0
-	floatVal4 = math.Float64frombits(value.StaleNaN)
+	intVal1   int64 = 1
+	intVal2   int64 = 2
+	floatVal1       = 1.0
+	floatVal2       = 2.0
+	floatVal3       = 3.0
 
 	lbs1      = getAttributes(label11, value11, label12, value12)
 	lbs2      = getAttributes(label21, value21, label22, value22)
@@ -169,10 +166,10 @@ var (
 
 	// staleNaN metrics as input should have the staleness marker flag
 	staleNaNMetrics = map[string]pdata.Metric{
-		staleNaNIntGauge:    getIntGaugeMetric(staleNaNIntGauge, lbs1, intVal3, time1),
-		staleNaNDoubleGauge: getDoubleGaugeMetric(staleNaNDoubleGauge, lbs1, floatVal4, time1),
-		staleNaNIntSum:      getIntSumMetric(staleNaNIntSum, lbs1, intVal3, time1),
-		staleNaNSum:         getSumMetric(staleNaNSum, lbs1, floatVal4, time1),
+		staleNaNIntGauge:    getIntGaugeMetric(staleNaNIntGauge, lbs1, intVal1, time1),
+		staleNaNDoubleGauge: getDoubleGaugeMetric(staleNaNDoubleGauge, lbs1, floatVal1, time1),
+		staleNaNIntSum:      getIntSumMetric(staleNaNIntSum, lbs1, intVal1, time1),
+		staleNaNSum:         getSumMetric(staleNaNSum, lbs1, floatVal1, time1),
 	}
 )
 
@@ -289,15 +286,15 @@ func getEmptyGaugeMetric(name string) pdata.Metric {
 	return metric
 }
 
-func getIntGaugeMetric(name string, attributes pdata.AttributeMap, val int64, ts uint64) pdata.Metric {
+func getIntGaugeMetric(name string, attributes pdata.AttributeMap, value int64, ts uint64) pdata.Metric {
 	metric := pdata.NewMetric()
 	metric.SetName(name)
 	metric.SetDataType(pdata.MetricDataTypeGauge)
 	dp := metric.Gauge().DataPoints().AppendEmpty()
-	if value.IsStaleNaN(math.Float64frombits(uint64(val))) {
+	if strings.HasPrefix(name, "staleNaN") {
 		dp.SetFlags(1)
 	}
-	dp.SetIntVal(val)
+	dp.SetIntVal(value)
 	attributes.CopyTo(dp.Attributes())
 
 	dp.SetStartTimestamp(pdata.Timestamp(0))
@@ -305,15 +302,15 @@ func getIntGaugeMetric(name string, attributes pdata.AttributeMap, val int64, ts
 	return metric
 }
 
-func getDoubleGaugeMetric(name string, attributes pdata.AttributeMap, val float64, ts uint64) pdata.Metric {
+func getDoubleGaugeMetric(name string, attributes pdata.AttributeMap, value float64, ts uint64) pdata.Metric {
 	metric := pdata.NewMetric()
 	metric.SetName(name)
 	metric.SetDataType(pdata.MetricDataTypeGauge)
 	dp := metric.Gauge().DataPoints().AppendEmpty()
-	if value.IsStaleNaN(val) {
+	if strings.HasPrefix(name, "staleNaN") {
 		dp.SetFlags(1)
 	}
-	dp.SetDoubleVal(val)
+	dp.SetDoubleVal(value)
 	attributes.CopyTo(dp.Attributes())
 
 	dp.SetStartTimestamp(pdata.Timestamp(0))
@@ -328,16 +325,16 @@ func getEmptySumMetric(name string) pdata.Metric {
 	return metric
 }
 
-func getIntSumMetric(name string, attributes pdata.AttributeMap, val int64, ts uint64) pdata.Metric {
+func getIntSumMetric(name string, attributes pdata.AttributeMap, value int64, ts uint64) pdata.Metric {
 	metric := pdata.NewMetric()
 	metric.SetName(name)
 	metric.SetDataType(pdata.MetricDataTypeSum)
 	metric.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
 	dp := metric.Sum().DataPoints().AppendEmpty()
-	if value.IsStaleNaN(math.Float64frombits(uint64(val))) {
+	if strings.HasPrefix(name, "staleNaN") {
 		dp.SetFlags(1)
 	}
-	dp.SetIntVal(val)
+	dp.SetIntVal(value)
 	attributes.CopyTo(dp.Attributes())
 
 	dp.SetStartTimestamp(pdata.Timestamp(0))
@@ -353,16 +350,16 @@ func getEmptyCumulativeSumMetric(name string) pdata.Metric {
 	return metric
 }
 
-func getSumMetric(name string, attributes pdata.AttributeMap, val float64, ts uint64) pdata.Metric {
+func getSumMetric(name string, attributes pdata.AttributeMap, value float64, ts uint64) pdata.Metric {
 	metric := pdata.NewMetric()
 	metric.SetName(name)
 	metric.SetDataType(pdata.MetricDataTypeSum)
 	metric.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
 	dp := metric.Sum().DataPoints().AppendEmpty()
-	if value.IsStaleNaN(val) {
+	if strings.HasPrefix(name, "staleNaN") {
 		dp.SetFlags(1)
 	}
-	dp.SetDoubleVal(val)
+	dp.SetDoubleVal(value)
 	attributes.CopyTo(dp.Attributes())
 
 	dp.SetStartTimestamp(pdata.Timestamp(0))
