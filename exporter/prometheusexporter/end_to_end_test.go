@@ -18,6 +18,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -71,6 +72,15 @@ func TestEndToEndSummarySupport(t *testing.T) {
 		Endpoint:         ":8787",
 		SendTimestamps:   true,
 		MetricExpiration: 2 * time.Hour,
+		TimeoutSettings: exporterhelper.TimeoutSettings{
+			Timeout: 20 * time.Second,
+		},
+		RetrySettings: exporterhelper.RetrySettings{
+			Enabled:         true,
+			InitialInterval: 10 * time.Second,
+			MaxInterval:     1 * time.Minute,
+			MaxElapsedTime:  10 * time.Minute,
+		},
 	}
 	exporterFactory := NewFactory()
 	set := componenttest.NewNopExporterCreateSettings()
