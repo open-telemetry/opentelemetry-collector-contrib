@@ -17,6 +17,7 @@ package lokiexporter // import "github.com/open-telemetry/opentelemetry-collecto
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -30,23 +31,31 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/model/pdata"
+	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/lokiexporter/internal/third_party/loki/logproto"
 )
 
 type lokiExporter struct {
-	config *Config
-	logger *zap.Logger
-	client *http.Client
-	wg     sync.WaitGroup
+	config  *Config
+	logger  *zap.Logger
+	client  *http.Client
+	wg      sync.WaitGroup
+	convert func(pdata.LogRecord, pdata.Resource) (*logproto.Entry, error)
 }
 
 func newExporter(config *Config, logger *zap.Logger) *lokiExporter {
-	return &lokiExporter{
+	lokiexporter := &lokiExporter{
 		config: config,
 		logger: logger,
 	}
+	if config.Format == "json" {
+		lokiexporter.convert = convertLogToJSONEntry
+	} else {
+		lokiexporter.convert = convertLogBodyToEntry
+	}
+	return lokiexporter
 }
 
 func (l *lokiExporter) pushLogData(ctx context.Context, ld pdata.Logs) error {
@@ -119,6 +128,8 @@ func (l *lokiExporter) stop(context.Context) (err error) {
 }
 
 func (l *lokiExporter) logDataToLoki(ld pdata.Logs) (pr *logproto.PushRequest, numDroppedLogs int) {
+	var errs error
+
 	streams := make(map[string]*logproto.Stream)
 	rls := ld.ResourceLogs()
 	for i := 0; i < rls.Len(); i++ {
@@ -135,7 +146,24 @@ func (l *lokiExporter) logDataToLoki(ld pdata.Logs) (pr *logproto.PushRequest, n
 					continue
 				}
 				labels := mergedLabels.String()
-				entry := convertLogToLokiEntry(log)
+				var entry *logproto.Entry
+				var err error
+				entry, err = l.convert(log, resource)
+				if err != nil {
+					// Couldn't convert so dropping log.
+					numDroppedLogs++
+					errs = multierr.Append(
+						errs,
+						errors.New(
+							fmt.Sprint(
+								"failed to convert, dropping log",
+								zap.String("format", l.config.Format),
+								zap.Error(err),
+							),
+						),
+					)
+					continue
+				}
 
 				if stream, ok := streams[labels]; ok {
 					stream.Entries = append(stream.Entries, *entry)
@@ -148,6 +176,10 @@ func (l *lokiExporter) logDataToLoki(ld pdata.Logs) (pr *logproto.PushRequest, n
 				}
 			}
 		}
+	}
+
+	if errs != nil {
+		l.logger.Debug("some logs has been dropped", zap.Error(errs))
 	}
 
 	pr = &logproto.PushRequest{
@@ -195,9 +227,20 @@ func (l *lokiExporter) convertAttributesToLabels(attributes pdata.AttributeMap, 
 	return ls
 }
 
-func convertLogToLokiEntry(lr pdata.LogRecord) *logproto.Entry {
+func convertLogBodyToEntry(lr pdata.LogRecord, res pdata.Resource) (*logproto.Entry, error) {
 	return &logproto.Entry{
 		Timestamp: time.Unix(0, int64(lr.Timestamp())),
 		Line:      lr.Body().StringVal(),
+	}, nil
+}
+
+func convertLogToJSONEntry(lr pdata.LogRecord, res pdata.Resource) (*logproto.Entry, error) {
+	line, err := encodeJSON(lr, res)
+	if err != nil {
+		return nil, err
 	}
+	return &logproto.Entry{
+		Timestamp: time.Unix(0, int64(lr.Timestamp())),
+		Line:      line,
+	}, nil
 }
