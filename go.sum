@@ -1855,6 +1855,7 @@ github.com/shirou/gopsutil v3.21.10+incompatible h1:AL2kpVykjkqeN+MFe1WcwSBVUjGj
 github.com/shirou/gopsutil v3.21.10+incompatible/go.mod h1:5b4v6he4MtMOwMlS0TUMTu2PcXUg8+E1lC7eC3UO/RA=
 github.com/shirou/gopsutil/v3 v3.21.1/go.mod h1:igHnfak0qnw1biGeI2qKQvu0ZkwvEkUcCLlYhZzdr/4=
 github.com/shirou/gopsutil/v3 v3.21.6/go.mod h1:JfVbDpIBLVzT8oKbvMg9P3wEIMDDpVn+LwHTKj0ST88=
+github.com/shirou/gopsutil/v3 v3.21.10/go.mod h1:t75NhzCZ/dYyPQjyQmrAYP6c8+LCdFANeBMdLPCNnew=
 github.com/shirou/gopsutil/v3 v3.21.11 h1:d5tOAP5+bmJ8Hf2+4bxOSkQ/64+sjEbjU9nSW9nJgG0=
 github.com/shirou/gopsutil/v3 v3.21.11/go.mod h1:BToYZVTlSVlfazpDDYFnsVZLaoRG+g8ufT6fPQLdJzA=
 github.com/shirou/w32 v0.0.0-20160930032740-bb4de0191aa4/go.mod h1:qsXQc7+bwAM3Q1u/4XEfrquwF8Lw7D7y5cD8CuHnfIc=
@@ -2142,29 +2143,18 @@ go.opencensus.io v0.22.4/go.mod h1:yxeiOL68Rb0Xd1ddK5vPZ/oVn4vY4Ynel7k9FzqtOIw=
 go.opencensus.io v0.22.5/go.mod h1:5pWMHQbX5EPX2/62yrJeAkowc+lfs/XD7Uxpq3pI6kk=
 go.opencensus.io v0.23.0 h1:gqCw0LfLxScz8irSi8exQc7fyQ0fKQU/qnC/X8+V/1M=
 go.opencensus.io v0.23.0/go.mod h1:XItmlyltB5F7CS4xOC1DcqMoFqwtC6OG2xF7mCv7P7E=
-<<<<<<< HEAD
-go.opentelemetry.io/collector v0.35.0/go.mod h1:mMW4VJHhy8CwoTenV75axteKd0aZhWHDZjcZ59V53kc=
+go.opentelemetry.io/collector v0.39.0/go.mod h1:LSOk+VL3LFHE6Q8wuWeljbRZYpnx36wJH807vDElcos=
 go.opentelemetry.io/collector v0.40.1-0.20211206203115-a06ca26079fe h1:/2zBgX3hTGnN/ZTEbjnPn9SfXNQZWVN8fV+JUtnRmKE=
 go.opentelemetry.io/collector v0.40.1-0.20211206203115-a06ca26079fe/go.mod h1:Ul4CoHW8QdXOnJBu6ShqoHNcIW2ISH3Gi2y4jbafAtg=
-=======
-go.opentelemetry.io/collector v0.39.0/go.mod h1:LSOk+VL3LFHE6Q8wuWeljbRZYpnx36wJH807vDElcos=
-go.opentelemetry.io/collector v0.40.1-0.20211202221455-42566a660aac h1:z7pb318aZ8FENczM1L76zl0dcdxEpZvi8jvIrEKSHfk=
-go.opentelemetry.io/collector v0.40.1-0.20211202221455-42566a660aac/go.mod h1:6fswuHfJ2ggGgDvo67PYDCDC3etQVk/ytNkIqccSmQ8=
->>>>>>> 014a8f50f... Update log-collection library
 go.opentelemetry.io/collector/model v0.30.2-0.20210719230137-809cae954ed3/go.mod h1:PcHNnM+RUl0uD8VkSn93PO78N7kQYhfqpI/eki57pl4=
 go.opentelemetry.io/collector/model v0.30.2-0.20210723184018-3b7d6ce4830c/go.mod h1:PcHNnM+RUl0uD8VkSn93PO78N7kQYhfqpI/eki57pl4=
 go.opentelemetry.io/collector/model v0.36.1-0.20211004155959-190f8fbb2b9a/go.mod h1:ESh1oWDNdS4fTg9sTFoYuiuvs8QuaX8yNGTPix3JZc8=
 go.opentelemetry.io/collector/model v0.38.0/go.mod h1:gS8A27wi+8gM3hrXL+dEjTbrbLxktjHjAwwqI31ELgQ=
 go.opentelemetry.io/collector/model v0.39.0/go.mod h1:gS8A27wi+8gM3hrXL+dEjTbrbLxktjHjAwwqI31ELgQ=
 go.opentelemetry.io/collector/model v0.40.0/go.mod h1:dXqjAeml+cB+YzJ3kUnd3v5/JvGAKl3MqHXfgSWRIo8=
-<<<<<<< HEAD
 go.opentelemetry.io/collector/model v0.40.1-0.20211206203115-a06ca26079fe h1:LSYWMLOgY9FacV9LTqHtnyN8zX17iyToAfcnNbOEdlU=
 go.opentelemetry.io/collector/model v0.40.1-0.20211206203115-a06ca26079fe/go.mod h1:dXqjAeml+cB+YzJ3kUnd3v5/JvGAKl3MqHXfgSWRIo8=
-=======
-go.opentelemetry.io/collector/model v0.40.1-0.20211202221455-42566a660aac h1:8wWhZO/neqUUc9VRkS8rkpPt7wP2NICzH8dvfjh9RAg=
-go.opentelemetry.io/collector/model v0.40.1-0.20211202221455-42566a660aac/go.mod h1:dXqjAeml+cB+YzJ3kUnd3v5/JvGAKl3MqHXfgSWRIo8=
 go.opentelemetry.io/contrib v0.20.0 h1:ubFQUn0VCZ0gPwIoJfBJVpeBlyRMxu8Mm/huKWYd9p0=
->>>>>>> 014a8f50f... Update log-collection library
 go.opentelemetry.io/contrib v0.20.0/go.mod h1:G/EtFaa6qaN7+LxqfIAT3GiZa7Wv5DTBUzl5H4LY0Kc=
 go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.26.1/go.mod h1:4wsfAAW5N9wUHM0QTmZS8z7fvYZ1rv3m+sVeSpf8NhU=
 go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.27.0 h1:TON1iU3Y5oIytGQHIejDYLam5uoSMsmA0UV9Yupb5gQ=
