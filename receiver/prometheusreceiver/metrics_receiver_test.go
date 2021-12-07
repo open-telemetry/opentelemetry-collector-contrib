@@ -734,7 +734,7 @@ func TestCoreMetricsEndToEnd(t *testing.T) {
 			validateFunc: verifyTarget3,
 		},
 	}
-	testComponent(t, targets, false, "")
+	testComponent(t, targets, false, "", false)
 }
 
 var startTimeMetricPage = `
@@ -820,7 +820,7 @@ func TestStartTimeMetric(t *testing.T) {
 			validateFunc: verifyStartTimeMetricPage,
 		},
 	}
-	testComponent(t, targets, true, "")
+	testComponent(t, targets, true, "", false)
 }
 
 var startTimeMetricRegexPage = `
@@ -869,5 +869,5 @@ func TestStartTimeMetricRegex(t *testing.T) {
 			validateFunc: verifyStartTimeMetricPage,
 		},
 	}
-	testComponent(t, targets, true, "^(.+_)*process_start_time_seconds$")
+	testComponent(t, targets, true, "^(.+_)*process_start_time_seconds$", false)
 }

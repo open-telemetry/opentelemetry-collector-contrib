@@ -15,25 +15,23 @@
 package protocol
 
 import (
-	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/config"
 )
 
 func TestLoadParserConfig(t *testing.T) {
 	tests := []struct {
 		name    string
-		yaml    string
+		cfgMap  map[string]interface{}
 		cfg     Config
 		want    Config
 		wantErr bool
 	}{
 		{
 			name:    "unknow_type",
-			yaml:    `type: unknow`,
+			cfgMap:  map[string]interface{}{"type": "unknow"},
 			cfg:     Config{Type: "unknown"},
 			want:    Config{Type: "unknown"},
 			wantErr: true,
@@ -42,12 +40,12 @@ func TestLoadParserConfig(t *testing.T) {
 			// Keep this test before the default_regex to ensure that the
 			// default configuration is not being corrupted.
 			name: "custom_delimiter",
-			yaml: `
-type: regex
-config:
-  rules:
-    - regexp: "(?<key_test>.*test)"
-`,
+			cfgMap: map[string]interface{}{
+				"type": "regex",
+				"config": map[string]interface{}{
+					"rules": []interface{}{map[string]interface{}{"regexp": "(?<key_test>.*test)"}},
+				},
+			},
 			cfg: Config{Type: "regex"},
 			want: Config{
 				Type: "regex",
@@ -58,9 +56,9 @@ config:
 			},
 		},
 		{
-			name: "default_regex",
-			yaml: `type: regex`,
-			cfg:  Config{Type: "regex"},
+			name:   "default_regex",
+			cfgMap: map[string]interface{}{"type": "regex"},
+			cfg:    Config{Type: "regex"},
 			want: Config{
 				Type:   "regex",
 				Config: &RegexParserConfig{},
@@ -69,11 +67,10 @@ config:
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			v, err := config.NewMapFromBuffer(strings.NewReader(tt.yaml))
-			require.NoError(t, err)
+			v := config.NewMapFromStringMap(tt.cfgMap)
 
 			got := tt.cfg // Not strictly necessary but it makes easier to debug issues.
-			err = LoadParserConfig(v, &got)
+			err := LoadParserConfig(v, &got)
 			assert.Equal(t, tt.want, got)
 			assert.Equal(t, tt.wantErr, err != nil)
 		})

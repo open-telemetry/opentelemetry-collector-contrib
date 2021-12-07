@@ -9,8 +9,7 @@ metrics:
   system.memory.usage:
     description: Bytes of memory in use.
     unit: By
-    data:
-      type: sum
+    sum:
       aggregation: cumulative
       monotonic: false
     attributes: [state]

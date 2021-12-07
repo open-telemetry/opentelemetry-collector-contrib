@@ -4,7 +4,7 @@ name:
 # Optional: map of attribute definitions with the key being the attribute name and value
 # being described below.
 attributes:
-  attribute.name:
+  <attribute.name>:
     # Optional: if the attribute name as described by the key is not the actual attribute
     # value to be reported that value can be overridden here.
     value:
@@ -16,18 +16,18 @@ attributes:
 # Required: map of metric names with the key being the metric name and value
 # being described below.
 metrics:
-  metric.name:
-    # Required: metric description
+  <metric.name>:
+    # Required: metric description.
     description:
-    # Required: metric type as defined by https://ucum.org/ucum.html
+    # Optional: extended documentation of the metric.
+    extended_documentation:
+    # Required: metric unit as defined by https://ucum.org/ucum.html.
     unit:
-    # Required
-    data:
-      # Required: one of int gauge, int sum, gauge, sum, or histogram.
-      type:
-      # Required for int sum and sum.
+    # Required: metric type with its settings.
+    <sum|gauge|histogram>:
+      # Required for sum metric.
       monotonic: # true | false
-      # Required for int sum, sum, and histogram.
+      # Required for int sum and histogram metrics.
       aggregation: # delta | cumulative
     # Optional: array of attributes that were defined in the attributes section that are emitted by this metric.
     attributes:

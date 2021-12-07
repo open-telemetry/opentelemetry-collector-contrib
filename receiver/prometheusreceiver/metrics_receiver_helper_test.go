@@ -18,7 +18,6 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"net"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -36,6 +35,8 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/model/pdata"
 	"gopkg.in/yaml.v2"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver/internal"
 )
 
 type mockPrometheusResponse struct {
@@ -44,14 +45,15 @@ type mockPrometheusResponse struct {
 }
 
 type mockPrometheus struct {
-	mu          sync.Mutex // mu protects the fields below.
-	endpoints   map[string][]mockPrometheusResponse
-	accessIndex map[string]*int32
-	wg          *sync.WaitGroup
-	srv         *httptest.Server
+	mu             sync.Mutex // mu protects the fields below.
+	endpoints      map[string][]mockPrometheusResponse
+	accessIndex    map[string]*int32
+	wg             *sync.WaitGroup
+	srv            *httptest.Server
+	useOpenMetrics bool
 }
 
-func newMockPrometheus(endpoints map[string][]mockPrometheusResponse) *mockPrometheus {
+func newMockPrometheus(endpoints map[string][]mockPrometheusResponse, openMetricsContentType bool) *mockPrometheus {
 	accessIndex := make(map[string]*int32)
 	wg := &sync.WaitGroup{}
 	wg.Add(len(endpoints))
@@ -60,9 +62,10 @@ func newMockPrometheus(endpoints map[string][]mockPrometheusResponse) *mockProme
 		accessIndex[k] = &v
 	}
 	mp := &mockPrometheus{
-		wg:          wg,
-		accessIndex: accessIndex,
-		endpoints:   endpoints,
+		wg:             wg,
+		accessIndex:    accessIndex,
+		endpoints:      endpoints,
+		useOpenMetrics: openMetricsContentType,
 	}
 	srv := httptest.NewServer(mp)
 	mp.srv = srv
@@ -73,6 +76,9 @@ func (mp *mockPrometheus) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 	mp.mu.Lock()
 	defer mp.mu.Unlock()
 
+	if mp.useOpenMetrics {
+		rw.Header().Set("Content-Type", "application/openmetrics-text")
+	}
 	iptr, ok := mp.accessIndex[req.URL.Path]
 	if !ok {
 		rw.WriteHeader(404)
@@ -113,7 +119,7 @@ type testData struct {
 
 // setupMockPrometheus to create a mocked prometheus based on targets, returning the server and a prometheus exporting
 // config
-func setupMockPrometheus(tds ...*testData) (*mockPrometheus, *promcfg.Config, error) {
+func setupMockPrometheus(openMetricsContentType bool, tds ...*testData) (*mockPrometheus, *promcfg.Config, error) {
 	jobs := make([]map[string]interface{}, 0, len(tds))
 	endpoints := make(map[string][]mockPrometheusResponse)
 	metricPaths := make([]string, 0)
@@ -122,9 +128,8 @@ func setupMockPrometheus(tds ...*testData) (*mockPrometheus, *promcfg.Config, er
 		endpoints[metricPath] = t.pages
 		metricPaths = append(metricPaths, metricPath)
 	}
-	mp := newMockPrometheus(endpoints)
+	mp := newMockPrometheus(endpoints, openMetricsContentType)
 	u, _ := url.Parse(mp.srv.URL)
-	host, port, _ := net.SplitHostPort(u.Host)
 	for i := 0; i < len(tds); i++ {
 		job := make(map[string]interface{})
 		job["job_name"] = tds[i].name
@@ -144,13 +149,7 @@ func setupMockPrometheus(tds ...*testData) (*mockPrometheus, *promcfg.Config, er
 	}
 	// update attributes value (will use for validation)
 	for _, t := range tds {
-		t.attributes = pdata.NewAttributeMap()
-		t.attributes.Insert("service.name", pdata.NewAttributeValueString(t.name))
-		t.attributes.Insert("host.name", pdata.NewAttributeValueString(host))
-		t.attributes.Insert("job", pdata.NewAttributeValueString(t.name))
-		t.attributes.Insert("instance", pdata.NewAttributeValueString(u.Host))
-		t.attributes.Insert("port", pdata.NewAttributeValueString(port))
-		t.attributes.Insert("scheme", pdata.NewAttributeValueString("http"))
+		t.attributes = internal.CreateNodeAndResourcePdata(t.name, u.Host, "http").Attributes()
 	}
 	pCfg, err := promcfg.Load(string(cfg), false, gokitlog.NewNopLogger())
 	return mp, pCfg, err
@@ -280,8 +279,11 @@ func doCompare(t *testing.T, name string, want pdata.AttributeMap, got *pdata.Re
 		assert.Equal(t, expectedScrapeMetricCount, countScrapeMetricsRM(got))
 		assert.Equal(t, want.Len(), got.Resource().Attributes().Len())
 		for k, v := range want.AsRaw() {
-			value, _ := got.Resource().Attributes().Get(k)
-			assert.EqualValues(t, v, value.AsString())
+			value, ok := got.Resource().Attributes().Get(k)
+			assert.True(t, ok, "%q attribute is missing", k)
+			if ok {
+				assert.EqualValues(t, v, value.AsString())
+			}
 		}
 		for _, e := range expectations {
 			e(t, got)
@@ -457,9 +459,9 @@ func compareSummary(count uint64, sum float64, quantiles [][]float64) summaryPoi
 	}
 }
 
-func testComponent(t *testing.T, targets []*testData, useStartTimeMetric bool, startTimeMetricRegex string) {
+func testComponent(t *testing.T, targets []*testData, useStartTimeMetric bool, startTimeMetricRegex string, useOpenMetrics bool) {
 	// 1. setup mock server
-	mp, cfg, err := setupMockPrometheus(targets...)
+	mp, cfg, err := setupMockPrometheus(useOpenMetrics, targets...)
 	require.Nilf(t, err, "Failed to create Prometheus config: %v", err)
 	defer mp.Close()
 
@@ -490,7 +492,10 @@ func testComponent(t *testing.T, targets []*testData, useStartTimeMetric bool, s
 	// loop to validate outputs for each targets
 	for _, target := range targets {
 		t.Run(target.name, func(t *testing.T) {
-			validScrapes := getValidScrapes(t, pResults[target.name])
+			validScrapes := pResults[target.name]
+			if !useOpenMetrics {
+				validScrapes = getValidScrapes(t, pResults[target.name])
+			}
 			target.validateFunc(t, target, validScrapes)
 		})
 	}

@@ -42,8 +42,8 @@ func buildCounterMetric(parsedMetric statsDMetric, isMonotonicCounter bool, time
 	dp.SetIntVal(parsedMetric.counterValue())
 	dp.SetStartTimestamp(pdata.NewTimestampFromTime(lastIntervalTime))
 	dp.SetTimestamp(pdata.NewTimestampFromTime(timeNow))
-	for i, key := range parsedMetric.labelKeys {
-		dp.Attributes().InsertString(key, parsedMetric.labelValues[i])
+	for i := parsedMetric.description.attrs.Iter(); i.Next(); {
+		dp.Attributes().InsertString(string(i.Attribute().Key), i.Attribute().Value.AsString())
 	}
 
 	return ilm
@@ -60,16 +60,16 @@ func buildGaugeMetric(parsedMetric statsDMetric, timeNow time.Time) pdata.Instru
 	dp := nm.Gauge().DataPoints().AppendEmpty()
 	dp.SetDoubleVal(parsedMetric.gaugeValue())
 	dp.SetTimestamp(pdata.NewTimestampFromTime(timeNow))
-	for i, key := range parsedMetric.labelKeys {
-		dp.Attributes().InsertString(key, parsedMetric.labelValues[i])
+	for i := parsedMetric.description.attrs.Iter(); i.Next(); {
+		dp.Attributes().InsertString(string(i.Attribute().Key), i.Attribute().Value.AsString())
 	}
 
 	return ilm
 }
 
-func buildSummaryMetric(summary summaryMetric, startTime, timeNow time.Time, percentiles []float64, ilm pdata.InstrumentationLibraryMetrics) {
+func buildSummaryMetric(desc statsDMetricDescription, summary summaryMetric, startTime, timeNow time.Time, percentiles []float64, ilm pdata.InstrumentationLibraryMetrics) {
 	nm := ilm.Metrics().AppendEmpty()
-	nm.SetName(summary.name)
+	nm.SetName(desc.name)
 	nm.SetDataType(pdata.MetricDataTypeSummary)
 
 	dp := nm.Summary().DataPoints().AppendEmpty()
@@ -88,8 +88,8 @@ func buildSummaryMetric(summary summaryMetric, startTime, timeNow time.Time, per
 
 	dp.SetStartTimestamp(pdata.NewTimestampFromTime(startTime))
 	dp.SetTimestamp(pdata.NewTimestampFromTime(timeNow))
-	for i, key := range summary.labelKeys {
-		dp.Attributes().InsertString(key, summary.labelValues[i])
+	for i := desc.attrs.Iter(); i.Next(); {
+		dp.Attributes().InsertString(string(i.Attribute().Key), i.Attribute().Value.AsString())
 	}
 
 	sort.Sort(dualSorter{summary.points, summary.weights})

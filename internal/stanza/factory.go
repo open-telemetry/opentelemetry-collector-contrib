@@ -62,7 +62,19 @@ func createLogsReceiver(logReceiverType LogReceiverType) receiverhelper.CreateLo
 
 		pipeline := append([]operator.Config{*inputCfg}, operatorCfgs...)
 
-		emitter := NewLogEmitter(params.Logger.Sugar())
+		emitterOpts := []LogEmitterOption{
+			LogEmitterWithLogger(params.Logger.Sugar()),
+		}
+
+		if baseCfg.Converter.MaxFlushCount > 0 {
+			emitterOpts = append(emitterOpts, LogEmitterWithMaxBatchSize(baseCfg.Converter.MaxFlushCount))
+		}
+
+		if baseCfg.Converter.FlushInterval > 0 {
+			emitterOpts = append(emitterOpts, LogEmitterWithFlushInterval(baseCfg.Converter.FlushInterval))
+		}
+
+		emitter := NewLogEmitter(emitterOpts...)
 		logAgent, err := agent.NewBuilder(params.Logger.Sugar()).
 			WithConfig(&agent.Config{Pipeline: pipeline}).
 			WithDefaultOutput(emitter).
@@ -74,12 +86,7 @@ func createLogsReceiver(logReceiverType LogReceiverType) receiverhelper.CreateLo
 		opts := []ConverterOption{
 			WithLogger(params.Logger),
 		}
-		if baseCfg.Converter.MaxFlushCount > 0 {
-			opts = append(opts, WithMaxFlushCount(baseCfg.Converter.MaxFlushCount))
-		}
-		if baseCfg.Converter.FlushInterval > 0 {
-			opts = append(opts, WithFlushInterval(baseCfg.Converter.FlushInterval))
-		}
+
 		if baseCfg.Converter.WorkerCount > 0 {
 			opts = append(opts, WithWorkerCount(baseCfg.Converter.WorkerCount))
 		}

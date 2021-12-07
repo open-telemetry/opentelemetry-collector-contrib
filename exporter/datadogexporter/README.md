@@ -33,6 +33,7 @@ The exporter will try to retrieve a hostname following the OpenTelemetry semanti
 
 See the sample configuration files under the `example` folder for other available options, as well as an example K8s Manifest.
 This exporter also supports the `exporterhelper` queuing, retry and timeout settings documented [here](https://github.com/open-telemetry/opentelemetry-collector/tree/main/exporter/exporterhelper#configuration).
+Retry settings will only affect metrics.
 
 ## Trace exporter
 ### **Important Pipeline Setup Details** 
