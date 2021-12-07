@@ -16,6 +16,7 @@ package prometheusremotewriteexporter // import "github.com/open-telemetry/opent
 
 import (
 	"errors"
+	"github.com/prometheus/prometheus/pkg/value"
 	"log"
 	"math"
 	"sort"
@@ -344,6 +345,12 @@ func addSingleHistogramDataPoint(pt pdata.HistogramDataPoint, resource pdata.Res
 		Value:     pt.Sum(),
 		Timestamp: time,
 	}
+	hasOTLPFlagForStaleMarker := func () bool {
+		return pt.Flags().HasFlag(pdata.MetricDataPointFlagNoRecordedValue)
+	}
+	if hasOTLPFlagForStaleMarker() {
+		sum.Value = math.Float64frombits(value.StaleNaN)
+	}
 
 	sumlabels := createAttributes(resource, pt.Attributes(), externalLabels, nameStr, baseName+sumStr)
 	addSample(tsMap, sum, sumlabels, metric)
@@ -353,6 +360,10 @@ func addSingleHistogramDataPoint(pt pdata.HistogramDataPoint, resource pdata.Res
 		Value:     float64(pt.Count()),
 		Timestamp: time,
 	}
+	if hasOTLPFlagForStaleMarker() {
+		count.Value = math.Float64frombits(value.StaleNaN)
+	}
+
 	countlabels := createAttributes(resource, pt.Attributes(), externalLabels, nameStr, baseName+countStr)
 	addSample(tsMap, count, countlabels, metric)
 
@@ -373,6 +384,9 @@ func addSingleHistogramDataPoint(pt pdata.HistogramDataPoint, resource pdata.Res
 			Value:     float64(cumulativeCount),
 			Timestamp: time,
 		}
+		if hasOTLPFlagForStaleMarker() {
+			bucket.Value = math.Float64frombits(value.StaleNaN)
+		}
 		boundStr := strconv.FormatFloat(bound, 'f', -1, 64)
 		labels := createAttributes(resource, pt.Attributes(), externalLabels, nameStr, baseName+bucketStr, leStr, boundStr)
 		sig := addSample(tsMap, bucket, labels, metric)
@@ -384,6 +398,9 @@ func addSingleHistogramDataPoint(pt pdata.HistogramDataPoint, resource pdata.Res
 	infBucket := &prompb.Sample{
 		Value:     float64(cumulativeCount),
 		Timestamp: time,
+	}
+	if hasOTLPFlagForStaleMarker() {
+		infBucket.Value = math.Float64frombits(value.StaleNaN)
 	}
 	infLabels := createAttributes(resource, pt.Attributes(), externalLabels, nameStr, baseName+bucketStr, leStr, pInfStr)
 	sig := addSample(tsMap, infBucket, infLabels, metric)
@@ -431,7 +448,12 @@ func addSingleSummaryDataPoint(pt pdata.SummaryDataPoint, resource pdata.Resourc
 		Value:     pt.Sum(),
 		Timestamp: time,
 	}
-
+	hasOTLPFlagForStaleMarker := func () bool {
+		return pt.Flags().HasFlag(pdata.MetricDataPointFlagNoRecordedValue)
+	}
+	if hasOTLPFlagForStaleMarker() {
+		sum.Value = math.Float64frombits(value.StaleNaN)
+	}
 	sumlabels := createAttributes(resource, pt.Attributes(), externalLabels, nameStr, baseName+sumStr)
 	addSample(tsMap, sum, sumlabels, metric)
 
@@ -439,6 +461,9 @@ func addSingleSummaryDataPoint(pt pdata.SummaryDataPoint, resource pdata.Resourc
 	count := &prompb.Sample{
 		Value:     float64(pt.Count()),
 		Timestamp: time,
+	}
+	if hasOTLPFlagForStaleMarker() {
+		count.Value = math.Float64frombits(value.StaleNaN)
 	}
 	countlabels := createAttributes(resource, pt.Attributes(), externalLabels, nameStr, baseName+countStr)
 	addSample(tsMap, count, countlabels, metric)
@@ -449,6 +474,9 @@ func addSingleSummaryDataPoint(pt pdata.SummaryDataPoint, resource pdata.Resourc
 		quantile := &prompb.Sample{
 			Value:     qt.Value(),
 			Timestamp: time,
+		}
+		if hasOTLPFlagForStaleMarker() {
+			quantile.Value = math.Float64frombits(value.StaleNaN)
 		}
 		percentileStr := strconv.FormatFloat(qt.Quantile(), 'f', -1, 64)
 		qtlabels := createAttributes(resource, pt.Attributes(), externalLabels, nameStr, baseName, quantileStr, percentileStr)
@@ -477,3 +505,11 @@ func convertTimeseriesToRequest(tsArray []prompb.TimeSeries) *prompb.WriteReques
 		Timeseries: orderBySampleTimestamp(tsArray),
 	}
 }
+
+//func hasOTLPFlagForStaleMarker(pt ...interface{}) bool {
+//	switch interface{}(pt).(type) {
+//	case pdata.HistogramDataPoint, pdata.SummaryDataPoint, pdata.NumberDataPoint:
+//		return pt.Flags().HasFlag(pdata.MetricDataPointFlagNoRecordedValue)
+//	}
+//	return false
+//}
