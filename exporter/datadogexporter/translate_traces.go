@@ -292,7 +292,7 @@ func spanToDatadogSpan(s pdata.Span,
 	span := &pb.Span{
 		TraceID:  decodeAPMTraceID(s.TraceID().Bytes()),
 		SpanID:   decodeAPMSpanID(s.SpanID().Bytes()),
-		Name:     remapDatadogSpanName(getDatadogSpanName(s, tags, cfg.API.SpanNameAsResourceName), spanNameMap),
+		Name:     remapDatadogSpanName(getDatadogSpanName(s, tags, cfg.Traces.SpanNameAsResourceName), spanNameMap),
 		Resource: resourceName,
 		Service:  normalizedServiceName,
 		Start:    int64(startTime),
