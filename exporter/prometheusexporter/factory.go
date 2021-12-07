@@ -29,7 +29,6 @@ import (
 const (
 	// The value of "type" key in configuration.
 	typeStr = "prometheus"
-	defaultTimeout = 20 * time.Second
 )
 
 // NewFactory creates a new Prometheus exporter factory.
@@ -43,8 +42,13 @@ func NewFactory() component.ExporterFactory {
 func createDefaultConfig() config.Exporter {
 	return &Config{
 		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
-		TimeoutSettings:  exporterhelper.TimeoutSettings{Timeout: defaultTimeout},
-		RetrySettings:    exporterhelper.DefaultRetrySettings(),
+		TimeoutSettings:  exporterhelper.DefaultTimeoutSettings(),
+		RetrySettings: exporterhelper.RetrySettings{
+			Enabled:         true,
+			InitialInterval: 50 * time.Millisecond,
+			MaxInterval:     200 * time.Millisecond,
+			MaxElapsedTime:  1 * time.Minute,
+		},
 		ConstLabels:      map[string]string{},
 		SendTimestamps:   false,
 		MetricExpiration: time.Minute * 5,
@@ -67,7 +71,9 @@ func createMetricsExporter(
 		cfg,
 		set,
 		prometheus.ConsumeMetrics,
+		exporterhelper.WithTimeout(pcfg.TimeoutSettings),
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
+		exporterhelper.WithRetry(pcfg.RetrySettings),
 		exporterhelper.WithStart(prometheus.Start),
 		exporterhelper.WithShutdown(prometheus.Shutdown),
 	)
