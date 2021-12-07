@@ -1,0 +1,18 @@
+{
+   "resourceMetrics": [
+      {
+         "instrumentationLibraryMetrics": [
+            {
+               "metrics": [
+                  {
+                     "name": "delta.one",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE"
+                     }
+                  }
+               ]
+            }
+         ]
+      }
+   ]
+}
