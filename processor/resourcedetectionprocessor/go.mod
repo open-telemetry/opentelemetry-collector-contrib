@@ -5,7 +5,7 @@ go 1.17
 require (
 	cloud.google.com/go v0.97.0
 	github.com/Showmax/go-fqdn v1.0.0
-	github.com/aws/aws-sdk-go v1.42.14
+	github.com/aws/aws-sdk-go v1.42.20
 	github.com/census-instrumentation/opencensus-proto v0.3.0
 	github.com/docker/docker v20.10.11+incompatible
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil v0.40.0
