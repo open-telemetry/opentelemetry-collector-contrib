@@ -71,7 +71,10 @@ func (r *metricsReceiver) Start(_ context.Context, host component.Host) error {
 	router.HandleFunc("/api/v2/write", r.handleWrite) // InfluxDB 2.x
 
 	r.wg.Add(1)
-	r.server = r.httpServerSettings.ToServer(router, r.settings)
+	r.server, err = r.httpServerSettings.ToServer(host, r.settings, router)
+	if err != nil {
+		return err
+	}
 	go func() {
 		defer r.wg.Done()
 		if errHTTP := r.server.Serve(ln); !errors.Is(errHTTP, http.ErrServerClosed) && errHTTP != nil {

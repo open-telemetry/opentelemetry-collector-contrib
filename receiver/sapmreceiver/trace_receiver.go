@@ -163,7 +163,10 @@ func (sr *sapmReceiver) Start(_ context.Context, host component.Host) error {
 	nr.HandleFunc(sapmprotocol.TraceEndpointV2, sr.HTTPHandlerFunc)
 
 	// create a server with the handler
-	sr.server = sr.config.HTTPServerSettings.ToServer(nr, sr.settings)
+	sr.server, err = sr.config.HTTPServerSettings.ToServer(host, sr.settings, nr)
+	if err != nil {
+		return err
+	}
 
 	sr.shutdownWG.Add(1)
 	// run the server on a routine

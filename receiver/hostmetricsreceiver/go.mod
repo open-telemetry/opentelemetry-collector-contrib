@@ -5,10 +5,10 @@ go 1.17
 require (
 	github.com/leoluk/perflib_exporter v0.1.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.40.0
-	github.com/shirou/gopsutil/v3 v3.21.11-0.20211128073732-aa3378b5ffc8
+	github.com/shirou/gopsutil/v3 v3.21.11
 	github.com/stretchr/testify v1.7.0
-	go.opentelemetry.io/collector v0.40.1-0.20211202221455-42566a660aac
-	go.opentelemetry.io/collector/model v0.40.1-0.20211202221455-42566a660aac
+	go.opentelemetry.io/collector v0.40.1-0.20211206203115-a06ca26079fe
+	go.opentelemetry.io/collector/model v0.40.1-0.20211206203115-a06ca26079fe
 	go.uber.org/zap v1.19.1
 	golang.org/x/sys v0.0.0-20211013075003-97ac67df715c
 
@@ -23,7 +23,7 @@ require (
 	github.com/lufia/plan9stats v0.0.0-20211012122336-39d0f177ccd0 // indirect
 	github.com/magiconair/properties v1.8.5 // indirect
 	github.com/mitchellh/copystructure v1.2.0 // indirect
-	github.com/mitchellh/mapstructure v1.4.2 // indirect
+	github.com/mitchellh/mapstructure v1.4.3 // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/power-devops/perfstat v0.0.0-20210106213030-5aafc221ea8c // indirect
