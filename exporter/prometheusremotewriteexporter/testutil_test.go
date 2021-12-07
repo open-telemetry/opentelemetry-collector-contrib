@@ -17,6 +17,7 @@ package prometheusremotewriteexporter
 import (
 	"fmt"
 	"math"
+	"strings"
 	"time"
 
 	"github.com/prometheus/prometheus/prompb"
@@ -50,11 +51,11 @@ var (
 	traceIDValue1 = "traceID-value1"
 	traceIDKey    = "trace_id"
 
-	intVal1   int64 = 1
-	intVal2   int64 = 2
-	floatVal1       = 1.0
-	floatVal2       = 2.0
-	floatVal3       = 3.0
+	intVal1          int64 = 1
+	intVal2          int64 = 2
+	floatVal1              = 1.0
+	floatVal2              = 2.0
+	floatVal3              = 3.0
 
 	lbs1      = getAttributes(label11, value11, label12, value12)
 	lbs2      = getAttributes(label21, value21, label22, value22)
@@ -156,6 +157,14 @@ var (
 		emptySummary:             getEmptySummaryMetric(emptySummary),
 		emptyCumulativeSum:       getEmptyCumulativeSumMetric(emptyCumulativeSum),
 		emptyCumulativeHistogram: getEmptyCumulativeHistogramMetric(emptyCumulativeHistogram),
+	}
+	staleNaNHistogram = "staleNaNHistogram"
+	staleNaNSummary   = "staleNaNSummary"
+
+	// staleNaN metrics as input should have the staleness marker flag
+	staleNaNMetrics = map[string]pdata.Metric{
+		staleNaNHistogram: getHistogramMetric(staleNaNHistogram, lbs1, time1, floatVal2, uint64(intVal2), bounds, buckets),
+		staleNaNSummary:   getSummaryMetric(staleNaNSummary, lbs2, time2, floatVal2, uint64(intVal2), quantiles),
 	}
 )
 
@@ -362,6 +371,9 @@ func getHistogramMetric(name string, attributes pdata.AttributeMap, ts uint64, s
 	metric.SetDataType(pdata.MetricDataTypeHistogram)
 	metric.Histogram().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
 	dp := metric.Histogram().DataPoints().AppendEmpty()
+	if strings.HasPrefix(name, "staleNaN") {
+		dp.SetFlags(1)
+	}
 	dp.SetCount(count)
 	dp.SetSum(sum)
 	dp.SetBucketCounts(buckets)
@@ -384,9 +396,11 @@ func getSummaryMetric(name string, attributes pdata.AttributeMap, ts uint64, sum
 	metric.SetName(name)
 	metric.SetDataType(pdata.MetricDataTypeSummary)
 	dp := metric.Summary().DataPoints().AppendEmpty()
+	if strings.HasPrefix(name, "staleNaN") {
+		dp.SetFlags(1)
+	}
 	dp.SetCount(count)
 	dp.SetSum(sum)
-
 	attributes.Range(func(k string, v pdata.AttributeValue) bool {
 		dp.Attributes().Upsert(k, v)
 		return true
