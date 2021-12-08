@@ -41,14 +41,14 @@ var _ http.RoundTripper = (*mockRoundTripper)(nil)
 type mockKeyFetcher struct{}
 
 func (k *mockKeyFetcher) Fetch(_ string) (interface{}, error) {
-	return asap.NewPublicKey([]byte(PublicKey))
+	return asap.NewPublicKey([]byte(publicKey))
 }
 
 var _ asap.KeyFetcher = (*mockKeyFetcher)(nil)
 
 func TestRoundTripper(t *testing.T) {
 	cfg := &Config{
-		PrivateKey: PrivateKey,
+		PrivateKey: privateKey,
 		TTL:        60,
 		Audience:   []string{"test"},
 		Issuer:     "test_issuer",
@@ -69,13 +69,13 @@ func TestRoundTripper(t *testing.T) {
 	authHeaderValue := resp.Header.Get("Authorization")
 	tokenString := authHeaderValue[7:] // Remove prefix "Bearer "
 
-	validateAsapJwt(t, cfg, tokenString)
+	validateAsapJWT(t, cfg, tokenString)
 }
 
 // TestRPCAuth tests RPC authentication, obtaining an auth header and validating the JWT inside it
 func TestRPCAuth(t *testing.T) {
 	cfg := &Config{
-		PrivateKey: PrivateKey,
+		PrivateKey: privateKey,
 		TTL:        60,
 		Audience:   []string{"test"},
 		Issuer:     "test_issuer",
@@ -95,11 +95,11 @@ func TestRPCAuth(t *testing.T) {
 	metadata, err := credentials.GetRequestMetadata(context.Background())
 	assert.NoError(t, err)
 	tokenString := metadata["authorization"][7:] // Remove "Bearer " from front
-	validateAsapJwt(t, cfg, tokenString)
+	validateAsapJWT(t, cfg, tokenString)
 }
 
 // Helper function to validate token using the asap library and keypair from config_test.go
-func validateAsapJwt(t *testing.T, cfg *Config, jwt string) {
+func validateAsapJWT(t *testing.T, cfg *Config, jwt string) {
 	validator := asap.NewValidatorChain(
 		asap.NewSignatureValidator(&mockKeyFetcher{}),
 		asap.NewAllowedAudienceValidator(cfg.Audience[0]),

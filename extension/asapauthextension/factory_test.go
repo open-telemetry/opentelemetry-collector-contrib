@@ -45,7 +45,7 @@ func TestNewFactory(t *testing.T) {
 
 func TestCreateExtension(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	testKey := PrivateKey
+	testKey := privateKey
 
 	tests := []struct {
 		name        string
