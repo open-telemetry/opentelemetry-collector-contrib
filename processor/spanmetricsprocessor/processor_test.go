@@ -35,6 +35,7 @@ import (
 	"go.uber.org/zap/zaptest"
 	"google.golang.org/grpc/metadata"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanmetricsprocessor/cache"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanmetricsprocessor/mocks"
 )
 
@@ -258,20 +259,17 @@ func TestMetricKeyCache(t *testing.T) {
 
 	// 0 key was cached at beginning
 	assert.Empty(t, p.metricKeyToDimensions.Keys())
-	assert.Empty(t, p.metricKeyToDimensions.evictedItems)
 
 	err := p.ConsumeTraces(ctx, traces)
 	// Validate
 	require.NoError(t, err)
 	// 2 key was cached, 1 key was evicted and cleaned after the processing
 	assert.Len(t, p.metricKeyToDimensions.Keys(), metricKeyToDimensionsCacheSize)
-	assert.Empty(t, p.metricKeyToDimensions.evictedItems, "evicted keys are cleaned after the processing")
 
 	// consume another batch of traces
 	err = p.ConsumeTraces(ctx, traces)
 	// 2 key was cached, other keys were evicted and cleaned after the processing
 	assert.Len(t, p.metricKeyToDimensions.Keys(), metricKeyToDimensionsCacheSize)
-	assert.Empty(t, p.metricKeyToDimensions.evictedItems, "evicted keys are cleaned after the processing")
 
 	require.NoError(t, err)
 }
@@ -299,7 +297,7 @@ func BenchmarkProcessorConsumeTraces(b *testing.B) {
 func newProcessorImp(mexp *mocks.MetricsExporter, tcon *mocks.TracesConsumer, defaultNullValue *string) *processorImp {
 	defaultNotInSpanAttrVal := "defaultNotInSpanAttrVal"
 	// use size 2 for LRU cache for testing purpose
-	metricKeyToDimensions, err := NewCache(metricKeyToDimensionsCacheSize)
+	metricKeyToDimensions, err := cache.NewCache(metricKeyToDimensionsCacheSize)
 	if err != nil {
 		panic(err)
 	}

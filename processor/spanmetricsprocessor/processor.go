@@ -24,6 +24,8 @@ import (
 	"time"
 	"unicode"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanmetricsprocessor/cache"
+
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
@@ -85,7 +87,7 @@ type processorImp struct {
 
 	// An LRU cache of dimension key-value maps keyed by a unique identifier formed by a concatenation of its values:
 	// e.g. { "foo/barOK": { "serviceName": "foo", "operation": "/bar", "status_code": "OK" }}
-	metricKeyToDimensions *Cache
+	metricKeyToDimensions *cache.Cache
 }
 
 func newProcessor(logger *zap.Logger, config config.Processor, nextConsumer consumer.Traces) (*processorImp, error) {
@@ -110,7 +112,7 @@ func newProcessor(logger *zap.Logger, config config.Processor, nextConsumer cons
 	if pConfig.MetricKeyToDimensionsCacheSize > 0 {
 		metricKeyToDimensionsCacheSize = pConfig.MetricKeyToDimensionsCacheSize
 	}
-	metricKeyToDimensionsCache, err := NewCache(metricKeyToDimensionsCacheSize)
+	metricKeyToDimensionsCache, err := cache.NewCache(metricKeyToDimensionsCacheSize)
 	if err != nil {
 		return nil, err
 	}
