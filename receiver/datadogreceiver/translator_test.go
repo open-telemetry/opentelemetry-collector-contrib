@@ -80,7 +80,7 @@ func Test05Translation(t *testing.T) {
 	assert.Equal(t, 1, translated.SpanCount(), "Span Count wrong")
 	span := translated.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().At(0)
 	assert.NotNil(t, span)
-	assert.Equal(t, 4, span.Attributes().Len(), "missing tags")
+	assert.Equal(t, 3, span.Attributes().Len(), "missing tags")
 	value, exists := span.Attributes().Get("service.name")
 	assert.True(t, exists, "service.name missing")
 	assert.Equal(t, "my-service", value.AsString(), "service.name tag value incorrect")
