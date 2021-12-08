@@ -51,11 +51,11 @@ var (
 	traceIDValue1 = "traceID-value1"
 	traceIDKey    = "trace_id"
 
-	intVal1          int64 = 1
-	intVal2          int64 = 2
-	floatVal1              = 1.0
-	floatVal2              = 2.0
-	floatVal3              = 3.0
+	intVal1   int64 = 1
+	intVal2   int64 = 2
+	floatVal1       = 1.0
+	floatVal2       = 2.0
+	floatVal3       = 3.0
 
 	lbs1      = getAttributes(label11, value11, label12, value12)
 	lbs2      = getAttributes(label21, value21, label22, value22)
