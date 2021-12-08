@@ -275,7 +275,7 @@ func (p *processorImp) collectLatencyMetrics(ilm pdata.InstrumentationLibraryMet
 
 		setLatencyExemplars(p.latencyExemplarsData[key], timestamp, dpLatency.Exemplars())
 
-		if dimensions, okay := p.getDimensionsByMetricKey(key); okay {
+		if dimensions, ok := p.getDimensionsByMetricKey(key); ok {
 			dimensions.CopyTo(dpLatency.Attributes())
 		}
 	}
@@ -296,14 +296,14 @@ func (p *processorImp) collectCallMetrics(ilm pdata.InstrumentationLibraryMetric
 		dpCalls.SetTimestamp(pdata.NewTimestampFromTime(time.Now()))
 		dpCalls.SetIntVal(p.callSum[key])
 
-		if dimensions, okay := p.getDimensionsByMetricKey(key); okay {
+		if dimensions, ok := p.getDimensionsByMetricKey(key); ok {
 			dimensions.CopyTo(dpCalls.Attributes())
 		}
 	}
 }
 
 // getDimensionsByMetricKey get dimensions from `metricKeyToDimensions` cache
-func (p *processorImp) getDimensionsByMetricKey(k metricKey) (v *pdata.AttributeMap, okay bool) {
+func (p *processorImp) getDimensionsByMetricKey(k metricKey) (*pdata.AttributeMap, bool) {
 	if item, ok := p.metricKeyToDimensions.Get(k); ok {
 		if attributeMap, ok := item.(pdata.AttributeMap); ok {
 			return &attributeMap, true
