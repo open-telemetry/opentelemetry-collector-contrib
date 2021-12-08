@@ -257,21 +257,21 @@ func TestMetricKeyCache(t *testing.T) {
 	ctx := metadata.NewIncomingContext(context.Background(), nil)
 
 	// 0 key was cached at beginning
-	assert.Equal(t, 0, len(p.metricKeyToDimensions.Keys()))
-	assert.Equal(t, 0, len(p.metricKeyToDimensions.evictedItems))
+	assert.Len(t, p.metricKeyToDimensions.Keys(), 0)
+	assert.Len(t, p.metricKeyToDimensions.evictedItems, 0)
 
 	err := p.ConsumeTraces(ctx, traces)
 	// Validate
 	require.NoError(t, err)
 	// 2 key was cached, 1 key was evicted and cleaned after the processing
-	assert.Equal(t, metricKeyToDimensionsCacheSize, len(p.metricKeyToDimensions.Keys()))
-	assert.Equal(t, 0, len(p.metricKeyToDimensions.evictedItems))
+	assert.Len(t, p.metricKeyToDimensions.Keys(), metricKeyToDimensionsCacheSize)
+	assert.Len(t, p.metricKeyToDimensions.evictedItems, 0)
 
 	// consume another batch of traces
 	err = p.ConsumeTraces(ctx, traces)
 	// 2 key was cached, other keys were evicted and cleaned after the processing
-	assert.Equal(t, metricKeyToDimensionsCacheSize, len(p.metricKeyToDimensions.Keys()))
-	assert.Equal(t, 0, len(p.metricKeyToDimensions.evictedItems))
+	assert.Len(t, p.metricKeyToDimensions.Keys(), metricKeyToDimensionsCacheSize)
+	assert.Len(t, p.metricKeyToDimensions.evictedItems, 0)
 
 	require.NoError(t, err)
 }
