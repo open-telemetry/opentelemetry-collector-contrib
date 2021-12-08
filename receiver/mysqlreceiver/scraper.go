@@ -16,11 +16,9 @@ package mysqlreceiver // import "github.com/open-telemetry/opentelemetry-collect
 
 import (
 	"context"
-	"errors"
 	"strconv"
 	"time"
 
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/model/pdata"
 	"go.uber.org/zap"
 
@@ -28,9 +26,9 @@ import (
 )
 
 type mySQLScraper struct {
-	sqlclient client
-	logger    *zap.Logger
-	config    *Config
+	sqlClientFunc newClientFunc
+	logger        *zap.Logger
+	config        *Config
 }
 
 func newMySQLScraper(
@@ -38,30 +36,10 @@ func newMySQLScraper(
 	config *Config,
 ) *mySQLScraper {
 	return &mySQLScraper{
-		logger: logger,
-		config: config,
+		logger:        logger,
+		config:        config,
+		sqlClientFunc: newMySQLClient,
 	}
-}
-
-// start starts the scraper by initializing the db client connection.
-func (m *mySQLScraper) start(_ context.Context, host component.Host) error {
-	sqlclient := newMySQLClient(m.config)
-
-	err := sqlclient.Connect()
-	if err != nil {
-		return err
-	}
-	m.sqlclient = sqlclient
-
-	return nil
-}
-
-// shutdown closes the db connection
-func (m *mySQLScraper) shutdown(context.Context) error {
-	if m.sqlclient == nil {
-		return nil
-	}
-	return m.sqlclient.Close()
 }
 
 // initMetric initializes a metric with a metadata label.
@@ -93,9 +71,13 @@ func addToIntMetric(metric pdata.NumberDataPointSlice, labels pdata.AttributeMap
 
 // scrape scrapes the mysql db metric stats, transforms them and labels them into a metric slices.
 func (m *mySQLScraper) scrape(context.Context) (pdata.Metrics, error) {
-	if m.sqlclient == nil {
-		return pdata.Metrics{}, errors.New("failed to connect to http client")
+	sqlclient := m.sqlClientFunc(m.config)
+
+	err := sqlclient.Connect()
+	if err != nil {
+		return pdata.Metrics{}, err
 	}
+	defer sqlclient.Close()
 
 	// metric initialization
 	md := pdata.NewMetrics()
@@ -119,7 +101,7 @@ func (m *mySQLScraper) scrape(context.Context) (pdata.Metrics, error) {
 	threads := initMetric(ilm.Metrics(), metadata.M.MysqlThreads).Sum().DataPoints()
 
 	// collect innodb metrics.
-	innodbStats, err := m.sqlclient.getInnodbStats()
+	innodbStats, err := sqlclient.getInnodbStats()
 	if err != nil {
 		m.logger.Error("Failed to fetch InnoDB stats", zap.Error(err))
 	}
@@ -136,7 +118,7 @@ func (m *mySQLScraper) scrape(context.Context) (pdata.Metrics, error) {
 	}
 
 	// collect global status metrics.
-	globalStats, err := m.sqlclient.getGlobalStats()
+	globalStats, err := sqlclient.getGlobalStats()
 	if err != nil {
 		m.logger.Error("Failed to fetch global stats", zap.Error(err))
 		return pdata.Metrics{}, err

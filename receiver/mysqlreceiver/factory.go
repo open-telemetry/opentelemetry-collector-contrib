@@ -62,8 +62,7 @@ func createMetricsReceiver(
 	cfg := rConf.(*Config)
 
 	ns := newMySQLScraper(params.Logger, cfg)
-	scraper, err := scraperhelper.NewScraper(typeStr, ns.scrape, scraperhelper.WithStart(ns.start),
-		scraperhelper.WithShutdown(ns.shutdown))
+	scraper, err := scraperhelper.NewScraper(typeStr, ns.scrape)
 
 	if err != nil {
 		return nil, err

@@ -25,6 +25,10 @@ var _ client = (*fakeClient)(nil)
 
 type fakeClient struct{}
 
+func newMySQLMockClient(conf *Config) client {
+	return &fakeClient{}
+}
+
 func readFile(fname string) (map[string]string, error) {
 	var stats = map[string]string{}
 	file, err := os.Open(path.Join("testdata", "scraper", fname+".txt"))

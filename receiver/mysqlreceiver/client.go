@@ -36,6 +36,8 @@ type mySQLClient struct {
 
 var _ client = (*mySQLClient)(nil)
 
+type newClientFunc func(conf *Config) client
+
 func newMySQLClient(conf *Config) client {
 	driverConf := mysql.Config{
 		User:   conf.Username,

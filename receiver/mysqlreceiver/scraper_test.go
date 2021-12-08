@@ -27,7 +27,6 @@ import (
 )
 
 func TestScrape(t *testing.T) {
-	mysqlMock := fakeClient{}
 	sc := newMySQLScraper(zap.NewNop(), &Config{
 		Username: "otel",
 		Password: "otel",
@@ -35,7 +34,7 @@ func TestScrape(t *testing.T) {
 			Endpoint: "localhost:3306",
 		},
 	})
-	sc.sqlclient = &mysqlMock
+	sc.sqlClientFunc = newMySQLMockClient
 
 	scrapedRMS, err := sc.scrape(context.Background())
 	require.NoError(t, err)
