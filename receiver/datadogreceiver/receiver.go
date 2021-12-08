@@ -77,7 +77,7 @@ func (ddr *datadogReceiver) Shutdown(ctx context.Context) (err error) {
 	ddr.stopOnce.Do(func() {
 		err = ddr.server.Shutdown(ctx)
 	})
-	ddr.shutdownWG.Done()
+	ddr.shutdownWG.Wait()
 	return err
 }
 
