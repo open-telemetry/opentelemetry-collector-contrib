@@ -86,6 +86,7 @@ func Test05Translation(t *testing.T) {
 	assert.Equal(t, "my-service", value.AsString(), "service.name tag value incorrect")
 	assert.Equal(t, span.Name(), "my-name")
 }
+
 func BenchmarkTranslator(b *testing.B) {
 
 	payload, err := vmsgp.Marshal(&data)
