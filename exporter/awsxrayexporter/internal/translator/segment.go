@@ -27,6 +27,7 @@ import (
 	awsP "github.com/aws/aws-sdk-go/aws"
 	"go.opentelemetry.io/collector/model/pdata"
 	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
+	"go.uber.org/zap"
 
 	awsxray "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray"
 )
@@ -65,8 +66,8 @@ var (
 )
 
 // MakeSegmentDocumentString converts an OpenTelemetry Span to an X-Ray Segment and then serialzies to JSON
-func MakeSegmentDocumentString(span pdata.Span, resource pdata.Resource, indexedAttrs []string, indexAllAttrs bool) (string, error) {
-	segment, err := MakeSegment(span, resource, indexedAttrs, indexAllAttrs)
+func MakeSegmentDocumentString(logger *zap.Logger, span pdata.Span, resource pdata.Resource, indexedAttrs []string, indexAllAttrs bool) (string, error) {
+	segment, err := MakeSegment(logger, span, resource, indexedAttrs, indexAllAttrs)
 	if err != nil {
 		return "", err
 	}
@@ -80,7 +81,7 @@ func MakeSegmentDocumentString(span pdata.Span, resource pdata.Resource, indexed
 }
 
 // MakeSegment converts an OpenTelemetry Span to an X-Ray Segment
-func MakeSegment(span pdata.Span, resource pdata.Resource, indexedAttrs []string, indexAllAttrs bool) (*awsxray.Segment, error) {
+func MakeSegment(logger *zap.Logger, span pdata.Span, resource pdata.Resource, indexedAttrs []string, indexAllAttrs bool) (*awsxray.Segment, error) {
 	var segmentType string
 
 	storeResource := true
@@ -100,7 +101,7 @@ func MakeSegment(span pdata.Span, resource pdata.Resource, indexedAttrs []string
 	var (
 		startTime                                          = timestampToFloatSeconds(span.StartTimestamp())
 		endTime                                            = timestampToFloatSeconds(span.EndTimestamp())
-		httpfiltered, http                                 = makeHTTP(span)
+		httpfiltered, http                                 = makeHTTP(logger, span)
 		isError, isFault, isThrottle, causefiltered, cause = makeCause(span, httpfiltered, resource)
 		origin                                             = determineAwsOrigin(resource)
 		awsfiltered, aws                                   = makeAws(causefiltered, resource)

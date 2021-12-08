@@ -22,6 +22,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/model/pdata"
 	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
+	"go.uber.org/zap"
 )
 
 func TestClientSpanWithURLAttribute(t *testing.T) {
@@ -31,7 +32,7 @@ func TestClientSpanWithURLAttribute(t *testing.T) {
 	attributes[conventions.AttributeHTTPStatusCode] = 200
 	span := constructHTTPClientSpan(attributes)
 
-	filtered, httpData := makeHTTP(span)
+	filtered, httpData := makeHTTP(zap.L(), span)
 
 	assert.NotNil(t, httpData)
 	assert.NotNil(t, filtered)
@@ -54,7 +55,7 @@ func TestClientSpanWithSchemeHostTargetAttributes(t *testing.T) {
 	attributes["user.id"] = "junit"
 	span := constructHTTPClientSpan(attributes)
 
-	filtered, httpData := makeHTTP(span)
+	filtered, httpData := makeHTTP(zap.L(), span)
 
 	assert.NotNil(t, httpData)
 	assert.NotNil(t, filtered)
@@ -78,7 +79,7 @@ func TestClientSpanWithPeerAttributes(t *testing.T) {
 	attributes[conventions.AttributeHTTPStatusCode] = 200
 	span := constructHTTPClientSpan(attributes)
 
-	filtered, httpData := makeHTTP(span)
+	filtered, httpData := makeHTTP(zap.L(), span)
 
 	assert.NotNil(t, httpData)
 	assert.NotNil(t, filtered)
@@ -100,7 +101,7 @@ func TestClientSpanWithHttpPeerAttributes(t *testing.T) {
 	attributes[conventions.AttributeNetPeerIP] = "10.8.17.36"
 	span := constructHTTPClientSpan(attributes)
 
-	filtered, httpData := makeHTTP(span)
+	filtered, httpData := makeHTTP(zap.L(), span)
 
 	assert.NotNil(t, httpData)
 	assert.NotNil(t, filtered)
@@ -117,7 +118,7 @@ func TestClientSpanWithPeerIp4Attributes(t *testing.T) {
 	attributes[conventions.AttributeHTTPTarget] = "/users/junit"
 	span := constructHTTPClientSpan(attributes)
 
-	filtered, httpData := makeHTTP(span)
+	filtered, httpData := makeHTTP(zap.L(), span)
 	assert.NotNil(t, httpData)
 	assert.NotNil(t, filtered)
 	w := testWriters.borrow()
@@ -138,7 +139,7 @@ func TestClientSpanWithPeerIp6Attributes(t *testing.T) {
 	attributes[conventions.AttributeHTTPTarget] = "/users/junit"
 	span := constructHTTPClientSpan(attributes)
 
-	filtered, httpData := makeHTTP(span)
+	filtered, httpData := makeHTTP(zap.L(), span)
 	assert.NotNil(t, httpData)
 	assert.NotNil(t, filtered)
 	w := testWriters.borrow()
@@ -159,7 +160,7 @@ func TestServerSpanWithURLAttribute(t *testing.T) {
 	attributes[conventions.AttributeHTTPStatusCode] = 200
 	span := constructHTTPServerSpan(attributes)
 
-	filtered, httpData := makeHTTP(span)
+	filtered, httpData := makeHTTP(zap.L(), span)
 
 	assert.NotNil(t, httpData)
 	assert.NotNil(t, filtered)
@@ -182,7 +183,7 @@ func TestServerSpanWithSchemeHostTargetAttributes(t *testing.T) {
 	attributes[conventions.AttributeHTTPStatusCode] = 200
 	span := constructHTTPServerSpan(attributes)
 
-	filtered, httpData := makeHTTP(span)
+	filtered, httpData := makeHTTP(zap.L(), span)
 
 	assert.NotNil(t, httpData)
 	assert.NotNil(t, filtered)
@@ -206,7 +207,7 @@ func TestServerSpanWithSchemeServernamePortTargetAttributes(t *testing.T) {
 	attributes[conventions.AttributeHTTPStatusCode] = 200
 	span := constructHTTPServerSpan(attributes)
 
-	filtered, httpData := makeHTTP(span)
+	filtered, httpData := makeHTTP(zap.L(), span)
 
 	assert.NotNil(t, httpData)
 	assert.NotNil(t, filtered)
@@ -232,7 +233,7 @@ func TestServerSpanWithSchemeNamePortTargetAttributes(t *testing.T) {
 	timeEvents := constructTimedEventsWithReceivedMessageEvent(span.EndTimestamp())
 	timeEvents.CopyTo(span.Events())
 
-	filtered, httpData := makeHTTP(span)
+	filtered, httpData := makeHTTP(zap.L(), span)
 
 	assert.NotNil(t, httpData)
 	assert.NotNil(t, filtered)
@@ -259,7 +260,7 @@ func TestSpanWithNotEnoughHTTPRequestURLAttributes(t *testing.T) {
 	timeEvents := constructTimedEventsWithReceivedMessageEvent(span.EndTimestamp())
 	timeEvents.CopyTo(span.Events())
 
-	filtered, httpData := makeHTTP(span)
+	filtered, httpData := makeHTTP(zap.L(), span)
 
 	assert.Nil(t, httpData.Request.URL)
 	assert.Equal(t, "192.168.15.32", *httpData.Request.ClientIP)

@@ -22,6 +22,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/model/pdata"
 	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
+	"go.uber.org/zap"
 )
 
 func TestCauseWithExceptions(t *testing.T) {
@@ -49,7 +50,7 @@ Caused by: java.lang.IllegalArgumentException: bad argument`)
 	attributes.InsertString(conventions.AttributeExceptionType, "EmptyError")
 	attributes.CopyTo(event2.Attributes())
 
-	filtered, _ := makeHTTP(span)
+	filtered, _ := makeHTTP(zap.L(), span)
 
 	res := pdata.NewResource()
 	res.Attributes().InsertString(conventions.AttributeTelemetrySDKLanguage, "java")
@@ -80,7 +81,7 @@ func TestCauseWithStatusMessage(t *testing.T) {
 	attributes[conventions.AttributeHTTPStatusCode] = 500
 	span := constructExceptionServerSpan(attributes, pdata.StatusCodeError)
 	span.Status().SetMessage(errorMsg)
-	filtered, _ := makeHTTP(span)
+	filtered, _ := makeHTTP(zap.L(), span)
 
 	res := pdata.NewResource()
 	isError, isFault, isThrottle, filtered, cause := makeCause(span, filtered, res)
@@ -107,7 +108,7 @@ func TestCauseWithHttpStatusMessage(t *testing.T) {
 	attributes[conventions.AttributeHTTPStatusCode] = 500
 	attributes["http.status_text"] = errorMsg
 	span := constructExceptionServerSpan(attributes, pdata.StatusCodeError)
-	filtered, _ := makeHTTP(span)
+	filtered, _ := makeHTTP(zap.L(), span)
 
 	res := pdata.NewResource()
 	isError, isFault, isThrottle, filtered, cause := makeCause(span, filtered, res)
@@ -135,7 +136,7 @@ func TestCauseWithZeroStatusMessage(t *testing.T) {
 	attributes["http.status_text"] = errorMsg
 
 	span := constructExceptionServerSpan(attributes, pdata.StatusCodeUnset)
-	filtered, _ := makeHTTP(span)
+	filtered, _ := makeHTTP(zap.L(), span)
 	// Status is used to determine whether an error or not.
 	// This span illustrates incorrect instrumentation,
 	// marking a success status with an error http status code, and status wins.
@@ -159,7 +160,7 @@ func TestCauseWithClientErrorMessage(t *testing.T) {
 	attributes["http.status_text"] = errorMsg
 
 	span := constructExceptionServerSpan(attributes, pdata.StatusCodeError)
-	filtered, _ := makeHTTP(span)
+	filtered, _ := makeHTTP(zap.L(), span)
 
 	res := pdata.NewResource()
 	isError, isFault, isThrottle, filtered, cause := makeCause(span, filtered, res)
@@ -180,7 +181,7 @@ func TestCauseWithThrottled(t *testing.T) {
 	attributes["http.status_text"] = errorMsg
 
 	span := constructExceptionServerSpan(attributes, pdata.StatusCodeError)
-	filtered, _ := makeHTTP(span)
+	filtered, _ := makeHTTP(zap.L(), span)
 
 	res := pdata.NewResource()
 	isError, isFault, isThrottle, filtered, cause := makeCause(span, filtered, res)

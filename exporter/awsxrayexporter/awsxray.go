@@ -59,7 +59,7 @@ func newTracesExporter(
 				for j := 0; j < rspans.InstrumentationLibrarySpans().Len(); j++ {
 					spans := rspans.InstrumentationLibrarySpans().At(j).Spans()
 					for k := 0; k < spans.Len(); k++ {
-						document, localErr := translator.MakeSegmentDocumentString(spans.At(k), resource,
+						document, localErr := translator.MakeSegmentDocumentString(logger, spans.At(k), resource,
 							config.(*Config).IndexedAttributes, config.(*Config).IndexAllAttributes)
 						if localErr != nil {
 							logger.Debug("Error translating span.", zap.Error(localErr))

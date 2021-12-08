@@ -20,11 +20,12 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"go.opentelemetry.io/collector/model/pdata"
 	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
+	"go.uber.org/zap"
 
 	awsxray "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray"
 )
 
-func makeHTTP(span pdata.Span) (map[string]pdata.AttributeValue, *awsxray.HTTPData) {
+func makeHTTP(logger *zap.Logger, span pdata.Span) (map[string]pdata.AttributeValue, *awsxray.HTTPData) {
 	var (
 		info = awsxray.HTTPData{
 			Request:  &awsxray.RequestData{},
@@ -54,7 +55,18 @@ func makeHTTP(span pdata.Span) (map[string]pdata.AttributeValue, *awsxray.HTTPDa
 			info.Request.UserAgent = awsxray.String(value.StringVal())
 			hasHTTP = true
 		case conventions.AttributeHTTPStatusCode:
-			info.Response.Status = aws.Int64(value.IntVal())
+			statusCode := value.IntVal()
+			if value.Type() == pdata.AttributeValueTypeString {
+				statusCodeStr := value.StringVal()
+				v, err := strconv.ParseInt(statusCodeStr, 10, 64)
+				if err != nil {
+					logger.Error("failed to parse status code", zap.Error(err))
+				}
+
+				statusCode = v
+			}
+
+			info.Response.Status = &statusCode
 			hasHTTP = true
 		case conventions.AttributeHTTPURL:
 			urlParts[key] = value.StringVal()
