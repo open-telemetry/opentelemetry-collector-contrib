@@ -302,7 +302,7 @@ func (p *processorImp) collectCallMetrics(ilm pdata.InstrumentationLibraryMetric
 	}
 }
 
-// getDimensionsByMetricKey get dimensions from `metricKeyToDimensions` cache
+// getDimensionsByMetricKey gets dimensions from `metricKeyToDimensions` cache.
 func (p *processorImp) getDimensionsByMetricKey(k metricKey) (*pdata.AttributeMap, bool) {
 	if item, ok := p.metricKeyToDimensions.Get(k); ok {
 		if attributeMap, ok := item.(pdata.AttributeMap); ok {

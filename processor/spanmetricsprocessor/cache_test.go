@@ -55,10 +55,11 @@ func TestNewCache(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			_, err := NewCache(tt.args.size)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("NewCache() error = %v, wantErr %v", err, tt.wantErr)
+			if tt.wantErr {
+				assert.Error(t, err)
 				return
 			}
+			assert.NoError(t, err)
 		})
 	}
 }
@@ -146,7 +147,7 @@ func TestCache_RemoveEvictedItems(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			cache := tt.lruCache()
 			cache.RemoveEvictedItems()
-			assert.Equal(t, 0, len(cache.evictedItems))
+			assert.Empty(t, cache.evictedItems)
 		})
 	}
 }
