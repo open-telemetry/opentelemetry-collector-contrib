@@ -32,7 +32,7 @@ type datadogDataSender struct {
 	consumer.Traces
 }
 
-// NewZipkinDataSender creates a new Zipkin exporter sender that will send
+// NewDatadogDataSender creates a new Zipkin exporter sender that will send
 // to the specified port after Start is called.
 func NewDatadogDataSender() testbed.TraceDataSender {
 	return &datadogDataSender{

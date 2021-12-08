@@ -33,6 +33,7 @@ type datadogReceiver struct {
 	params       component.ReceiverCreateSettings
 	nextConsumer consumer.Traces
 	server       *http.Server
+	shutdownWG   sync.WaitGroup
 	obs          *obsreport.Receiver
 
 	startOnce sync.Once
@@ -58,6 +59,7 @@ func newDataDogReceiver(config *Config, nextConsumer consumer.Traces, params com
 
 func (ddr *datadogReceiver) Start(_ context.Context, host component.Host) error {
 	go ddr.startOnce.Do(func() {
+		defer ddr.shutdownWG.Done()
 		ddmux := mux.NewRouter()
 		ddmux.HandleFunc("/v0.3/traces", ddr.handleTraces)
 		ddmux.HandleFunc("/v0.4/traces", ddr.handleTraces)
@@ -67,6 +69,7 @@ func (ddr *datadogReceiver) Start(_ context.Context, host component.Host) error 
 			host.ReportFatalError(fmt.Errorf("error starting datadog receiver: %w", err))
 		}
 	})
+	ddr.shutdownWG.Add(1)
 	return nil
 }
 
@@ -74,6 +77,7 @@ func (ddr *datadogReceiver) Shutdown(ctx context.Context) (err error) {
 	ddr.stopOnce.Do(func() {
 		err = ddr.server.Shutdown(ctx)
 	})
+	ddr.shutdownWG.Done()
 	return err
 }
 
