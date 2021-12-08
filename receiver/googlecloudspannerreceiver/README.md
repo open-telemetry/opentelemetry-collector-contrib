@@ -59,7 +59,7 @@ Brief description of configuration properties:
 - **cardinality_total_limit** - limit of active series per 24 hours period. If specified, turns on cardinality filtering and handling. If zero or not specified, cardinality is not handled. You can read [this document](cardinality.md) for more information about cardinality handling and filtering.
 - **projects** - list of GCP projects
     - **project_id** - identifier of GCP project
-    - **service_account_key** - path to service account JSON key
+    - **service_account_key** - path to service account JSON key It is highly recommended to set this property to the correct value. In case it is empty, the [Application Default Credentials](https://google.aip.dev/auth/4110) will be used for the database connection.
     - **instances** - list of Google Cloud Spanner instance for connection
         - **instance_id** - identifier of Google Cloud Spanner instance
         - **databases** - list of databases used from this instance
