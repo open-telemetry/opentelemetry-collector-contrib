@@ -29,6 +29,7 @@
 - `observiqexporter`: Allow Dialer timeout to be configured (#5906)
 - `routingprocessor`: remove broken debug log fields (#6373)
 - `prometheusremotewriteexporter`: Add exemplars support (#5578) 
+- `statsdreceiver`: Use the exponential histogram. (TODO)
 
 ## 🚀 New components 🚀
 
