@@ -27,7 +27,9 @@ type processManager struct {
 	shutdownSignal chan struct{}
 }
 
-func newProcessManager(conf *Config, logger *zap.Logger) *processManager {
+var _ component.Extension = (*processManager)(nil)
+
+func newProcessManager(conf *Config, logger *zap.Logger) component.Extension {
 	return &processManager{
 		conf:           conf,
 		logger:         logger,
