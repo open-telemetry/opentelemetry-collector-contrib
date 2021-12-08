@@ -49,10 +49,9 @@ func (c *Cache) RemoveEvictedItems() {
 
 // Get retrieves an item from the LRU cache or evicted items.
 func (c *Cache) Get(key interface{}) (interface{}, bool) {
-	val, okay := c.Cache.Get(key)
-	if !okay {
-		val, okay = c.evictedItems[key]
-		return val, okay
+	if val, ok := c.Cache.Get(key); ok {
+		return val, ok
 	}
-	return val, okay
+	val, ok := c.evictedItems[key]
+	return val, ok
 }
