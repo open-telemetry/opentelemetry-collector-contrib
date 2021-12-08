@@ -16,7 +16,6 @@ package googlecloudspannerreceiver // import "github.com/open-telemetry/opentele
 
 import (
 	"fmt"
-	"strings"
 
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 )
@@ -81,18 +80,8 @@ func (config *Config) Validate() error {
 }
 
 func (project Project) Validate() error {
-	var missingFields []string
-
 	if project.ID == "" {
-		missingFields = append(missingFields, "\"project_id\"")
-	}
-
-	if project.ServiceAccountKey == "" {
-		missingFields = append(missingFields, "\"service_account_key\"")
-	}
-
-	if len(missingFields) > 0 {
-		return fmt.Errorf("field(s) %v is(are) required for project configuration", strings.Join(missingFields, ", "))
+		return fmt.Errorf("field %q is required and cannot be empty for project configuration", "project_id")
 	}
 
 	if len(project.Instances) <= 0 {
