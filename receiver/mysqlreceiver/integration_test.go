@@ -105,7 +105,7 @@ func TestMySqlIntegration(t *testing.T) {
 var (
 	containerRequest5_7 = testcontainers.ContainerRequest{
 		FromDockerfile: testcontainers.FromDockerfile{
-			Context:    path.Join(".", "testdata", "dockerfiles"),
+			Context:    path.Join(".", "testdata", "integration"),
 			Dockerfile: "Dockerfile.mysql.5_7",
 		},
 		ExposedPorts: []string{"3307:3306"},
@@ -114,7 +114,7 @@ var (
 	}
 	containerRequest8_0 = testcontainers.ContainerRequest{
 		FromDockerfile: testcontainers.FromDockerfile{
-			Context:    path.Join(".", "testdata", "dockerfiles"),
+			Context:    path.Join(".", "testdata", "integration"),
 			Dockerfile: "Dockerfile.mysql.8_0",
 		},
 		ExposedPorts: []string{"3306:3306"},
