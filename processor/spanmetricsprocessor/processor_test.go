@@ -257,21 +257,21 @@ func TestMetricKeyCache(t *testing.T) {
 	ctx := metadata.NewIncomingContext(context.Background(), nil)
 
 	// 0 key was cached at beginning
-	assert.Len(t, p.metricKeyToDimensions.Keys(), 0)
-	assert.Len(t, p.metricKeyToDimensions.evictedItems, 0)
+	assert.Empty(t, p.metricKeyToDimensions.Keys())
+	assert.Empty(t, p.metricKeyToDimensions.evictedItems)
 
 	err := p.ConsumeTraces(ctx, traces)
 	// Validate
 	require.NoError(t, err)
 	// 2 key was cached, 1 key was evicted and cleaned after the processing
 	assert.Len(t, p.metricKeyToDimensions.Keys(), metricKeyToDimensionsCacheSize)
-	assert.Len(t, p.metricKeyToDimensions.evictedItems, 0)
+	assert.Empty(t, p.metricKeyToDimensions.evictedItems, "evicted keys are cleaned after the processing")
 
 	// consume another batch of traces
 	err = p.ConsumeTraces(ctx, traces)
 	// 2 key was cached, other keys were evicted and cleaned after the processing
 	assert.Len(t, p.metricKeyToDimensions.Keys(), metricKeyToDimensionsCacheSize)
-	assert.Len(t, p.metricKeyToDimensions.evictedItems, 0)
+	assert.Empty(t, p.metricKeyToDimensions.evictedItems, "evicted keys are cleaned after the processing")
 
 	require.NoError(t, err)
 }
