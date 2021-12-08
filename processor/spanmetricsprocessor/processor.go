@@ -221,8 +221,6 @@ func (p *processorImp) ConsumeTraces(ctx context.Context, traces pdata.Traces) e
 		return err
 	}
 
-	p.resetExemplarData()
-
 	// Forward trace data unmodified.
 	return p.nextConsumer.ConsumeTraces(ctx, traces)
 }
@@ -234,19 +232,18 @@ func (p *processorImp) buildMetrics() *pdata.Metrics {
 	ilm := m.ResourceMetrics().AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty()
 	ilm.InstrumentationLibrary().SetName("spanmetricsprocessor")
 
-	p.lock.RLock()
+	p.lock.Lock()
+
 	p.collectCallMetrics(ilm)
 	p.collectLatencyMetrics(ilm)
 
-	// If delta metrics, flush accumulated data
+	// If delta metrics, reset accumulated data
 	if p.config.GetAggregationTemporality() == pdata.MetricAggregationTemporalityDelta {
-		p.callSum = make(map[metricKey]int64)
-		p.latencyCount = make(map[metricKey]uint64)
-		p.latencySum = make(map[metricKey]float64)
-		p.latencyBucketCounts = make(map[metricKey][]uint64)
+		p.resetAccumulatedMetrics()
 	}
+	p.resetExemplarData()
 
-	p.lock.RUnlock()
+	p.lock.Unlock()
 
 	return &m
 }
@@ -344,6 +341,14 @@ func (p *processorImp) aggregateMetricsForSpan(serviceName string, span pdata.Sp
 // updateCallMetrics increments the call count for the given metric key.
 func (p *processorImp) updateCallMetrics(key metricKey) {
 	p.callSum[key]++
+}
+
+// resetAccumulatedMetrics resets the internal maps used to store created metric data
+func (p *processorImp) resetAccumulatedMetrics() {
+	p.callSum = make(map[metricKey]int64)
+	p.latencyCount = make(map[metricKey]uint64)
+	p.latencySum = make(map[metricKey]float64)
+	p.latencyBucketCounts = make(map[metricKey][]uint64)
 }
 
 // updateLatencyExemplars sets the histogram exemplars for the given metric key and append the exemplar data.
