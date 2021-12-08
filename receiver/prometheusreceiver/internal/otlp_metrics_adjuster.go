@@ -70,12 +70,17 @@ type timeseriesinfoPdata struct {
 // the instance.
 type timeseriesMapPdata struct {
 	sync.RWMutex
+	// The mutex is used to protect access to the member fields. It is acquired for the entirety of
+	// AdjustMetrics() and also acquired by gc().
+
 	mark   bool
 	tsiMap map[string]*timeseriesinfoPdata
 }
 
 // Get the timeseriesinfo for the timeseries associated with the metric and label values.
 func (tsm *timeseriesMapPdata) get(metric *pdata.Metric, kv pdata.AttributeMap) *timeseriesinfoPdata {
+	// This should only be invoked be functions called (directly or indirectly) by AdjustMetrics().
+	// The lock protecting tsm.tsiMap is acquired there.
 	name := metric.Name()
 	sig := getTimeseriesSignaturePdata(name, kv)
 	if metric.DataType() == pdata.MetricDataTypeHistogram {
@@ -133,6 +138,9 @@ func newTimeseriesMapPdata() *timeseriesMapPdata {
 // JobsMapPdata maps from a job instance to a map of timeseriesPdata instances for the job.
 type JobsMapPdata struct {
 	sync.RWMutex
+	// The mutex is used to protect access to the member fields. It is acquired for most of
+	// get() and also acquired by gc().
+
 	gcInterval time.Duration
 	lastGC     time.Time
 	jobsMap    map[string]*timeseriesMapPdata
@@ -152,10 +160,12 @@ func (jm *JobsMapPdata) gc() {
 		for sig, tsm := range jm.jobsMap {
 			tsm.RLock()
 			tsmNotMarked := !tsm.mark
+			// take a read lock here, no need to get a full lock as we have a lock on the JobsMapPdata
 			tsm.RUnlock()
 			if tsmNotMarked {
 				delete(jm.jobsMap, sig)
 			} else {
+				// a full lock will be obtained in here, if required.
 				tsm.gc()
 			}
 		}
@@ -174,6 +184,7 @@ func (jm *JobsMapPdata) maybeGC() {
 
 func (jm *JobsMapPdata) get(job, instance string) *timeseriesMapPdata {
 	sig := job + ":" + instance
+	// a read locke is taken here as we will not need to modify jobsMap if the target timeseriesMap is available.
 	jm.RLock()
 	tsm, ok := jm.jobsMap[sig]
 	jm.RUnlock()
@@ -183,6 +194,8 @@ func (jm *JobsMapPdata) get(job, instance string) *timeseriesMapPdata {
 	}
 	jm.Lock()
 	defer jm.Unlock()
+	// Now that we've got an exclusive lock, check once more to ensure an entry wasn't created in the interim
+	// and then create a new timeseriesMap if required.
 	tsm2, ok2 := jm.jobsMap[sig]
 	if ok2 {
 		return tsm2
@@ -213,6 +226,8 @@ func NewMetricsAdjusterPdata(tsm *timeseriesMapPdata, logger *zap.Logger) *Metri
 // Returns the total number of timeseries that had reset start times.
 func (ma *MetricsAdjusterPdata) AdjustMetrics(metricL *pdata.MetricSlice) int {
 	resets := 0
+	// The lock on the relevant timeseriesMap is held throughout the adjustment process to ensure that
+	// nothing else can modify the data used for adjustment.
 	ma.tsm.Lock()
 	defer ma.tsm.Unlock()
 	for i := 0; i < metricL.Len(); i++ {
