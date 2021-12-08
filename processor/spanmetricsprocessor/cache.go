@@ -16,10 +16,11 @@ package spanmetricsprocessor // import "github.com/open-telemetry/opentelemetry-
 
 import lru "github.com/hashicorp/golang-lru"
 
-// Cache is consist of an LRU cache and the evicted items from the LRU cache
-// this data structure makes sure all the cached item can be retrieved either from the LRU cache or the evictedItems map
-// In spanmetricsprocessor's use case, we need to hold all the items during the current processing step for building the
-// metrics. The evicted items can/should be safely removed once the metrics are built from the current batch of spans.
+// Cache is consist of an LRU cache and the evicted items from the LRU cache.
+// This data structure makes sure all the cached items can be retrieved either from the LRU cache or the evictedItems
+// map. In spanmetricsprocessor's use case, we need to hold all the items during the current processing step for
+// building the metrics. The evicted items can/should be safely removed once the metrics are built from the current
+// batch of spans.
 type Cache struct {
 	*lru.Cache
 	evictedItems map[interface{}]interface{}
@@ -46,7 +47,7 @@ func (c *Cache) RemoveEvictedItems() {
 	c.evictedItems = make(map[interface{}]interface{})
 }
 
-// Get retrieve item from the LRU or evicted Items
+// Get retrieves an item from the LRU cache or evicted items.
 func (c *Cache) Get(key interface{}) (value interface{}, ok bool) {
 	val, okay := c.Cache.Get(key)
 	if !okay {
