@@ -8,13 +8,13 @@ require (
 	go.opentelemetry.io/collector v0.40.1-0.20211206203115-a06ca26079fe
 	go.opentelemetry.io/collector/model v0.40.1-0.20211206203115-a06ca26079fe
 	go.uber.org/zap v1.19.1
-	google.golang.org/api v0.60.0
+	google.golang.org/api v0.61.0
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b
 
 )
 
 require (
-	google.golang.org/genproto v0.0.0-20211021150943-2b146023228c
+	google.golang.org/genproto v0.0.0-20211206160659-862468c7d6e0
 	google.golang.org/grpc v1.42.0
 )
 
@@ -24,7 +24,7 @@ require (
 )
 
 require (
-	cloud.google.com/go v0.97.0 // indirect
+	cloud.google.com/go v0.99.0 // indirect
 	github.com/benbjohnson/clock v1.2.0 // indirect
 	github.com/census-instrumentation/opencensus-proto v0.2.1 // indirect
 	github.com/cespare/xxhash/v2 v2.1.1 // indirect
@@ -56,9 +56,9 @@ require (
 	go.uber.org/atomic v1.9.0 // indirect
 	go.uber.org/multierr v1.7.0 // indirect
 	golang.org/x/net v0.0.0-20210614182718-04defd469f4e // indirect
-	golang.org/x/oauth2 v0.0.0-20211005180243-6b3c2da341f1 // indirect
+	golang.org/x/oauth2 v0.0.0-20211104180415-d3ed0bb246c8 // indirect
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c // indirect
-	golang.org/x/sys v0.0.0-20211025201205-69cdffdb9359 // indirect
+	golang.org/x/sys v0.0.0-20211124211545-fe61309f8881 // indirect
 	golang.org/x/text v0.3.6 // indirect
 	golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
