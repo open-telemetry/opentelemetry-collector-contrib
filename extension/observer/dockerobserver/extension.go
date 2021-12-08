@@ -132,41 +132,39 @@ func (d *dockerObserver) watchContainerEvents(listener observer.Notify, cacheRef
 		{Key: "event", Value: "update"},
 	}...)
 
+	opts := dtypes.EventsOptions{
+		Filters: filters,
+		Since:   lastEventTime.Format(time.RFC3339Nano),
+	}
+
+	eventsCh, errCh := d.dClient.Events(d.ctx, opts)
+
 	for {
-		opts := dtypes.EventsOptions{
-			Filters: filters,
-			Since:   lastEventTime.Format(time.RFC3339Nano),
-		}
-
-		eventsCh, errCh := d.dClient.Events(d.ctx, opts)
-
-		for {
-			select {
-			case <-d.ctx.Done():
-				return lastEventTime, nil
-			case <-cacheRefreshTicker.C:
-				err := d.syncContainerList(listener)
-				if err != nil {
-					d.logger.Error("Could not sync container cache", zap.Error(err))
-				}
-			case event := <-eventsCh:
-				switch event.Action {
-				case "destroy":
-					d.updateEndpointsByContainerID(listener, event.ID, nil)
-					d.dClient.RemoveContainer(event.ID)
-				default:
-					if c, ok := d.dClient.InspectAndPersistContainer(d.ctx, event.ID); ok {
-						endpointsMap := d.endpointsForContainer(c)
-						d.updateEndpointsByContainerID(listener, c.ID, endpointsMap)
-					}
-				}
-				if event.TimeNano > lastEventTime.UnixNano() {
-					lastEventTime = time.Unix(0, event.TimeNano)
-				}
-
-			case err := <-errCh:
-				return lastEventTime, err
+		select {
+		case <-d.ctx.Done():
+			return lastEventTime, nil
+		case <-cacheRefreshTicker.C:
+			err := d.syncContainerList(listener)
+			if err != nil {
+				d.logger.Error("Could not sync container cache", zap.Error(err))
 			}
+		case event := <-eventsCh:
+			switch event.Action {
+			case "destroy":
+				d.updateEndpointsByContainerID(listener, event.ID, nil)
+				d.dClient.RemoveContainer(event.ID)
+			default:
+				if c, ok := d.dClient.InspectAndPersistContainer(d.ctx, event.ID); ok {
+					endpointsMap := d.endpointsForContainer(c)
+					d.updateEndpointsByContainerID(listener, c.ID, endpointsMap)
+				}
+			}
+			if event.TimeNano > lastEventTime.UnixNano() {
+				lastEventTime = time.Unix(0, event.TimeNano)
+			}
+
+		case err := <-errCh:
+			return lastEventTime, err
 		}
 	}
 }

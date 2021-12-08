@@ -64,15 +64,15 @@ func TestObserverEmitsEndpointsIntegration(t *testing.T) {
 	config.UseHostnameIfPresent = true
 	mn := &mockNotifier{endpointsMap: map[observer.EndpointID]observer.Endpoint{}}
 	obvs := startObserverWithConfig(t, mn, config)
-	time.Sleep(2 * time.Second) // wait for endpoints to sync
-	endpoints := mn.getEndpointsMap()
-	require.Equal(t, 1, len(endpoints))
+	defer stopObserver(t, obvs)
+	require.Eventually(t, func() bool { return mn.AddCount() == 1 }, 3*time.Second, 10*time.Millisecond)
+	endpoints := mn.EndpointsMap()
+	require.Equal(t, len(endpoints), 1)
 	for _, e := range endpoints {
 		require.Equal(t, uint16(80), e.Details.Env()["alternate_port"])
 		require.Equal(t, string(cntr.ID), e.Details.Env()["container_id"])
 		require.Equal(t, image, e.Details.Env()["image"])
 	}
-	stopObserver(t, obvs)
 }
 
 func TestObserverUpdatesEndpointsIntegration(t *testing.T) {
@@ -81,8 +81,9 @@ func TestObserverUpdatesEndpointsIntegration(t *testing.T) {
 	cntr := c.StartImage(image, container.WithPortReady(80))
 	mn := &mockNotifier{endpointsMap: map[observer.EndpointID]observer.Endpoint{}}
 	obvs := startObserver(t, mn)
-	time.Sleep(2 * time.Second) // wait for endpoints to sync
-	endpoints := mn.getEndpointsMap()
+	defer stopObserver(t, obvs)
+	require.Eventually(t, func() bool { return mn.AddCount() == 1 }, 3*time.Second, 10*time.Millisecond)
+	endpoints := mn.EndpointsMap()
 	require.Equal(t, len(endpoints), 1)
 	for _, e := range endpoints {
 		require.Equal(t, uint16(80), e.Details.Env()["port"])
@@ -91,16 +92,16 @@ func TestObserverUpdatesEndpointsIntegration(t *testing.T) {
 	}
 
 	c.RenameContainer(cntr, "nginx-updated")
+	require.Eventually(t, func() bool { return mn.ChangeCount() == 1 }, 3*time.Second, 10*time.Millisecond)
+	require.Equal(t, 1, mn.AddCount())
 
-	time.Sleep(5 * time.Second) // wait for endpoints to sync
-	endpoints = mn.getEndpointsMap()
+	endpoints = mn.EndpointsMap()
 	for _, e := range endpoints {
 		require.Equal(t, "nginx-updated", e.Details.Env()["name"])
 		require.Equal(t, uint16(80), e.Details.Env()["port"])
 		require.Equal(t, string(cntr.ID), e.Details.Env()["container_id"])
 		require.Equal(t, image, e.Details.Env()["image"])
 	}
-	stopObserver(t, obvs)
 }
 
 func TestObserverRemovesEndpointsIntegration(t *testing.T) {
@@ -109,8 +110,9 @@ func TestObserverRemovesEndpointsIntegration(t *testing.T) {
 	tmpCntr := d.StartImage(image, container.WithPortReady(80))
 	mn := &mockNotifier{endpointsMap: map[observer.EndpointID]observer.Endpoint{}}
 	obvs := startObserver(t, mn)
-	time.Sleep(2 * time.Second) // wait for endpoints to sync
-	endpoints := mn.getEndpointsMap()
+	defer stopObserver(t, obvs)
+	require.Eventually(t, func() bool { return mn.AddCount() == 1 }, 3*time.Second, 10*time.Millisecond)
+	endpoints := mn.EndpointsMap()
 	require.Equal(t, len(endpoints), 1)
 	for _, e := range endpoints {
 		require.Equal(t, uint16(80), e.Details.Env()["port"])
@@ -118,9 +120,8 @@ func TestObserverRemovesEndpointsIntegration(t *testing.T) {
 		require.Equal(t, image, e.Details.Env()["image"])
 	}
 	d.RemoveContainer(tmpCntr)
-	time.Sleep(5 * time.Second) // wait for endpoints to sync
-	require.Empty(t, mn.getEndpointsMap())
-	stopObserver(t, obvs)
+	require.Eventually(t, func() bool { return mn.RemoveCount() == 1 }, 3*time.Second, 10*time.Millisecond)
+	require.Empty(t, mn.EndpointsMap())
 }
 
 func TestObserverExcludesImagesIntegration(t *testing.T) {
@@ -132,14 +133,16 @@ func TestObserverExcludesImagesIntegration(t *testing.T) {
 
 	mn := &mockNotifier{endpointsMap: map[observer.EndpointID]observer.Endpoint{}}
 	obvs := startObserverWithConfig(t, mn, config)
+	defer stopObserver(t, obvs)
 	time.Sleep(2 * time.Second) // wait for endpoints to sync
-	require.Empty(t, mn.getEndpointsMap())
-	stopObserver(t, obvs)
+	require.Equal(t, 0, mn.AddCount())
+	require.Equal(t, 0, mn.ChangeCount())
+	require.Empty(t, mn.EndpointsMap())
 }
 
 func startObserver(t *testing.T, listener observer.Notify) *dockerObserver {
 	config := NewFactory().CreateDefaultConfig().(*Config)
-	config.Validate()
+	require.NoError(t, config.Validate())
 	return startObserverWithConfig(t, listener, config)
 }
 
@@ -169,9 +172,30 @@ func stopObserver(t *testing.T, obvs *dockerObserver) {
 type mockNotifier struct {
 	sync.Mutex
 	endpointsMap map[observer.EndpointID]observer.Endpoint
+	addCount     int
+	removeCount  int
+	changeCount  int
 }
 
-func (m *mockNotifier) getEndpointsMap() map[observer.EndpointID]observer.Endpoint {
+func (m *mockNotifier) AddCount() int {
+	m.Lock()
+	defer m.Unlock()
+	return m.addCount
+}
+
+func (m *mockNotifier) ChangeCount() int {
+	m.Lock()
+	defer m.Unlock()
+	return m.changeCount
+}
+
+func (m *mockNotifier) RemoveCount() int {
+	m.Lock()
+	defer m.Unlock()
+	return m.removeCount
+}
+
+func (m *mockNotifier) EndpointsMap() map[observer.EndpointID]observer.Endpoint {
 	m.Lock()
 	defer m.Unlock()
 	return m.endpointsMap
@@ -180,6 +204,7 @@ func (m *mockNotifier) getEndpointsMap() map[observer.EndpointID]observer.Endpoi
 func (m *mockNotifier) OnAdd(added []observer.Endpoint) {
 	m.Lock()
 	defer m.Unlock()
+	m.addCount++
 	for _, e := range added {
 		m.endpointsMap[e.ID] = e
 	}
@@ -188,6 +213,7 @@ func (m *mockNotifier) OnAdd(added []observer.Endpoint) {
 func (m *mockNotifier) OnRemove(removed []observer.Endpoint) {
 	m.Lock()
 	defer m.Unlock()
+	m.removeCount++
 	for _, e := range removed {
 		delete(m.endpointsMap, e.ID)
 	}
@@ -196,6 +222,7 @@ func (m *mockNotifier) OnRemove(removed []observer.Endpoint) {
 func (m *mockNotifier) OnChange(changed []observer.Endpoint) {
 	m.Lock()
 	defer m.Unlock()
+	m.changeCount++
 	for _, e := range changed {
 		m.endpointsMap[e.ID] = e
 	}
