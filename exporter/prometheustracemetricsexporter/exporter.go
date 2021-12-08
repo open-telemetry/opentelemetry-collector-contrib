@@ -53,8 +53,8 @@ type (
 
 const (
 	metricsNamespace  = "promtracemetrics"
-	tenantLabel       = "tenant"
-	serviceLabel      = "service"
+	tenantLabel       = "dtracing_tenant"
+	serviceLabel      = "dtracing_service"
 	unknownLabelValue = "unknown"
 )
 
