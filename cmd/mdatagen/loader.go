@@ -15,6 +15,7 @@
 package main
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"strings"
@@ -24,7 +25,7 @@ import (
 	"github.com/go-playground/validator/v10"
 	"github.com/go-playground/validator/v10/non-standard/validators"
 	en_translations "github.com/go-playground/validator/v10/translations/en"
-	"gopkg.in/yaml.v2"
+	"go.opentelemetry.io/collector/config/configmapprovider"
 )
 
 type metricName string
@@ -52,10 +53,10 @@ type metric struct {
 
 	// ExtendedDocumentation of the metric. If specified, this will
 	// be appended to the description used in generated documentation.
-	ExtendedDocumentation string `yaml:"extended_documentation"`
+	ExtendedDocumentation string `mapstructure:"extended_documentation"`
 
 	// Unit of the metric.
-	Unit string `yaml:"unit"`
+	Unit string `mapstructure:"unit"`
 
 	// Sum stores metadata for sum metric type
 	Sum *sum `yaml:"sum"`
@@ -109,20 +110,26 @@ type templateContext struct {
 	ExpFileNote string
 }
 
-func loadMetadata(ymlData []byte) (metadata, error) {
-	var out metadata
-
-	// Unmarshal metadata.
-	if err := yaml.Unmarshal(ymlData, &out); err != nil {
-		return metadata{}, fmt.Errorf("unable to unmarshal yaml: %v", err)
+func loadMetadata(filePath string) (metadata, error) {
+	cp, err := configmapprovider.NewFile(filePath).Retrieve(context.Background(), nil)
+	if err != nil {
+		return metadata{}, err
 	}
-
-	// Validate metadata.
-	if err := validateMetadata(out); err != nil {
+	mdMap, err := cp.Get(context.Background())
+	if err != nil {
 		return metadata{}, err
 	}
 
-	return out, nil
+	var md metadata
+	if err := mdMap.UnmarshalExact(&md); err != nil {
+		return metadata{}, err
+	}
+
+	if err := validateMetadata(md); err != nil {
+		return md, err
+	}
+
+	return md, nil
 }
 
 func validateMetadata(out metadata) error {

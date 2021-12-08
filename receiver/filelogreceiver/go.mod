@@ -6,10 +6,10 @@ require (
 	github.com/observiq/nanojack v0.0.0-20201106172433-343928847ebc
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage v0.40.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/stanza v0.40.0
-	github.com/open-telemetry/opentelemetry-log-collection v0.22.0
+	github.com/open-telemetry/opentelemetry-log-collection v0.23.0
 	github.com/stretchr/testify v1.7.0
-	go.opentelemetry.io/collector v0.40.1-0.20211202221455-42566a660aac
-	go.opentelemetry.io/collector/model v0.40.1-0.20211202221455-42566a660aac
+	go.opentelemetry.io/collector v0.40.1-0.20211206203115-a06ca26079fe
+	go.opentelemetry.io/collector/model v0.40.1-0.20211206203115-a06ca26079fe
 	gopkg.in/yaml.v2 v2.4.0
 )
 
@@ -22,7 +22,7 @@ require (
 	github.com/knadh/koanf v1.3.3 // indirect
 	github.com/magiconair/properties v1.8.5 // indirect
 	github.com/mitchellh/copystructure v1.2.0 // indirect
-	github.com/mitchellh/mapstructure v1.4.2 // indirect
+	github.com/mitchellh/mapstructure v1.4.3 // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.1 // indirect
